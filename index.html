@@ -389,6 +389,7 @@ function initBackend(){
   playerId=localStorage.getItem('wm_playerId');
   if(!playerId){playerId='p_'+Math.random().toString(36).slice(2,10);localStorage.setItem('wm_playerId',playerId);}
   syncPlayer();
+  checkPendingPurchase();
  }catch(e){}
 }
 function syncPlayer(){
@@ -454,13 +455,39 @@ async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone){
  }
  return false;
 }
-async function payWithTon(gramAmount,onSuccess){
+// Grant a verified purchase from its descriptor. Single grant path for live
+// purchases and for replaying purchases that completed while the page was closed.
+function grantPurchase(desc){
+ if(!desc)return;
+ if(desc.kind==='box'){
+  const cost=RPRICE[desc.ri]||0;
+  save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(desc.tk,desc.ri);
+ }else if(desc.kind==='moonbeam'){
+  if(!save.moonbeam){save.moonbeam=true;save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;store();syncPlayer();showToast('MOONBEAM UNLOCKED!');}
+ }else if(desc.kind==='skin'){
+  if(save.skin!=='lunar'){save.skin='lunar';C.me=SKINS.lunar.c;save.spendGram=(save.spendGram||0)+SKINS.lunar.price;store();syncPlayer();showToast('LUNAR SKIN APPLIED!');}
+ }
+ save.pendingTx=null;store();
+}
+// If a purchase was paid on-chain but the page closed before granting,
+// finish it on next launch.
+function checkPendingPurchase(){
+ const p=save.pendingTx;
+ if(!p||!p.desc)return;
+ if(Date.now()-p.since>2*3600*1000){save.pendingTx=null;store();return;} // stale
+ verifyPurchaseOnChain(p.amount,p.since,60000,()=>false).then(ok=>{
+  if(ok){grantPurchase(p.desc);showToast('PURCHASE COMPLETED');}
+ });
+}
+async function payWithTon(gramAmount,desc){
  if(!tonConnectUI){showToast('WALLET NOT READY');return;}
  if(!tonWallet){showToast('CONNECT WALLET FIRST');return;}
  if(TON_RECIPIENT.indexOf('REPLACE')===0){showToast('SELLER WALLET NOT SET');return;}
  const sinceTs=Date.now();
  let granted=false;
- const grant=()=>{if(granted)return;granted=true;onSuccess();};
+ const grant=()=>{if(granted)return;granted=true;grantPurchase(desc);};
+ // Persist so a closed/killed page can still complete the purchase on next launch.
+ if(desc){save.pendingTx={desc:desc,amount:gramAmount,since:sinceTs};store();}
  // If the wallet app never returns (iOS), confirm the payment on-chain instead.
  verifyPurchaseOnChain(gramAmount,sinceTs,120000,()=>granted).then(ok=>{
   if(ok)grant();
@@ -1481,7 +1508,7 @@ function isBoxMaxed(tk,ri){
 function openBox(tk,ri){
  const cost=RPRICE[ri];
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
- payWithTon(cost,()=>{save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(tk,ri);});
+ payWithTon(cost,{kind:'box',tk:tk,ri:ri});
 }
 function doOpenBox(tk,ri){
  const col=RCOL[ri];
@@ -1550,16 +1577,10 @@ function shopTap(x,y){
 function buyPremium(id){
  if(id==='moonbeam'){
   if(save.moonbeam){showToast('ALREADY OWNED');return;}
-  payWithTon(MOONBEAM_PRICE,()=>{
-   save.moonbeam=true;save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;store();syncPlayer();
-   showToast('MOONBEAM UNLOCKED!');
-  });
+  payWithTon(MOONBEAM_PRICE,{kind:'moonbeam'});
  }else if(id==='lunarskin'){
   if(save.skin==='lunar'){showToast('ALREADY OWNED');return;}
-  payWithTon(SKINS.lunar.price,()=>{
-   save.skin='lunar';C.me=SKINS.lunar.c;save.spendGram=(save.spendGram||0)+SKINS.lunar.price;store();syncPlayer();
-   showToast('LUNAR SKIN APPLIED!');
-  });
+  payWithTon(SKINS.lunar.price,{kind:'skin'});
  }
 }
 function drawReveal(){
