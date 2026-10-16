@@ -1639,10 +1639,10 @@ function drawQuests(){
    }
    if(!isLink){
     const pwx=rx+14,pww=tw;
-    g.fillStyle='rgba(255,255,255,.1)';g.fillRect(pwx,ry+rh-16,pww,6);
-    g.fillStyle='#3fd0c9';g.fillRect(pwx,ry+rh-16,pww*Math.min(1,e.p/Q.goal),6);
     g.fillStyle='#8fa3b8';g.font=font(10);g.textAlign='center';
-    g.fillText(Math.min(Math.floor(e.p),Q.goal)+'/'+Q.goal,pwx+pww/2,ry+rh-22);
+    g.fillText(Math.min(Math.floor(e.p),Q.goal)+'/'+Q.goal,pwx+pww/2,ry+38);
+    g.fillStyle='rgba(255,255,255,.1)';g.fillRect(pwx,ry+52,pww,5);
+    g.fillStyle='#3fd0c9';g.fillRect(pwx,ry+52,pww*Math.min(1,e.p/Q.goal),5);
    }
    const can=e.done&&!e.claimed;
    const btnX=rx+vw-24-bw2-8;
