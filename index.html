@@ -515,7 +515,7 @@ function fit(){vw=cv.clientWidth;vh=cv.clientHeight;cv.width=vw*dpr;cv.height=vh
 addEventListener('resize',fit);fit();
 const X=x=>ox+x*sc,Y=y=>oy+y*sc;
 
-let me,bullets,timeLeft,state,endAt,box,sidx,sched,pops,nums,beams;
+let me,bullets,timeLeft,state,endAt,boxes,sidx,sched,pops,nums,beams;
 // cores are socketed in the garage (save.cores); the bot rolls random gems
 const randGems=()=>{const k=Object.keys(GEM),a=[];for(let i=0;i<4;i++)a.push(k[(Math.random()*k.length)|0]);return a;};
 // ---- team battle modes ----
@@ -568,7 +568,7 @@ function newMatch(){
  mstat={dmg:0,sup:0,box:0,taken:0};
  bullets=[];timeLeft=MATCH;state='play';
  if(typeof THREE!=='undefined'){init3D();buildArena3d();}
- box=null;sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
+ boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
 }
 function toArena(){state='arena';}
 loadSave();state='garage';
@@ -691,11 +691,13 @@ function takeHit(r,amt){
 }
 function pop(x,y,txt,c){pops.push({x,y,txt,c,t:1.4});}
 function spawnBox(){
+ const maxB=MODES[modeKey()].n;   // 1v1: 1 box, 2v2: 2 boxes, 3v3: 3 boxes on the map
+ if(boxes.length>=maxB)return;
  for(let i=0;i<400;i++){
   const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
   if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
   if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<3.5))continue;      // never spawn on top of a robot
-  box={x,y,life:20,age:0};pop(x,y,'MYSTERY BOX','#ffd24a');return;
+  boxes.push({x,y,life:20,age:0});pop(x,y,'MYSTERY BOX','#ffd24a');return;
  }
 }
 // ---- super attacks: one per weapon. All telegraphed so they can be dodged ----
@@ -825,16 +827,16 @@ function boxTick(dt){
   if(rg>0&&r.hp>0&&r.hp<r.mhp){const h=Math.min(r.mhp-r.hp,r.mhp*rg*dt);r.hp+=h;r.rh=(r.rh||0)+h;
    if(r.rh>=5){nums.push({x:r.x+(Math.random()-0.5)*1.2,y:r.y-R,t:0.9,txt:'+'+Math.round(r.rh),c:'#4be3a0'});r.rh=0;}}}
  if(sidx<sched.length&&MATCH-timeLeft>=sched[sidx]){sidx++;spawnBox();}
- if(box){
-  box.life-=dt;box.age+=dt;
+ for(const bx of boxes){
+  bx.life-=dt;bx.age+=dt;
   for(const r of units){
-   if(box&&Math.hypot(r.x-box.x,r.y-box.y)<R+0.9){
+   if(bx.life>0&&r.hp>0&&Math.hypot(r.x-bx.x,r.y-bx.y)<R+0.9){
     const ks=Object.keys(BUFF),k=ks[Math.floor(Math.random()*ks.length)];
-    r.buffs.push({k,taken:0});pop(box.x,box.y,BUFF[k].txt,BUFF[k].c);if(r.isPlayer&&mstat)mstat.box++;box=null;
+    r.buffs.push({k,taken:0});pop(bx.x,bx.y,BUFF[k].txt,BUFF[k].c);if(r.isPlayer&&mstat)mstat.box++;bx.life=0;break;
    }
   }
-  if(box&&box.life<=0)box=null;
  }
+ boxes=boxes.filter(b=>b.life>0);
  for(const q of pops)q.t-=dt;
  pops=pops.filter(q=>q.t>0);
  for(const q of nums)q.t-=dt;
@@ -910,7 +912,7 @@ function botAI(dt,u){
    if(dist2(u,b.spot)<0.7){b.w+=dt;if(b.mode==='peek'&&b.w>0.7){b.out=true;b.t=Math.max(b.t,2.5);}} // wait, then step out and fight
   }
  }
- if(box)goal=box;   // the bot heads for every box the moment it spawns
+ if(boxes.length){let nb=boxes[0],nd=1e9;for(const bx of boxes){const d=dist2(u,bx);if(d<nd){nd=d;nb=bx;}}goal=nb;}   // head for the nearest box
  let tx,ty;
  if(goal===tgt&&seen){            // engaging: hold range and strafe
   let mx=0,my=0;
@@ -2097,7 +2099,7 @@ function draw(){
  g.strokeStyle='rgba(63,208,201,.18)';g.lineWidth=1.5;g.setLineDash([6,6]);
  g.beginPath();g.arc(X(me.x),Y(me.y),STAT.range*sc,0,7);g.stroke();g.setLineDash([]);
  // tracers
- if(box){const bx=X(box.x),by=Y(box.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
+ for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
   g.fillStyle='#ffd24a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
   g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
  for(const q of bullets){g.fillStyle=q.o.team===0?C.me:C.bot;
