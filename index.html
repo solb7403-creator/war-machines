@@ -691,13 +691,16 @@ function takeHit(r,amt){
 }
 function pop(x,y,txt,c){pops.push({x,y,txt,c,t:1.4});}
 function spawnBox(){
- const maxB=MODES[modeKey()].n;   // 1v1: 1 box, 2v2: 2 boxes, 3v3: 3 boxes on the map
- if(boxes.length>=maxB)return;
- for(let i=0;i<400;i++){
-  const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
-  if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
-  if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<3.5))continue;      // never spawn on top of a robot
-  boxes.push({x,y,life:20,age:0});pop(x,y,'MYSTERY BOX','#ffd24a');return;
+ const n=MODES[modeKey()].n;   // boxes per spawn event: 1 in 1v1, 2 in 2v2, 3 in 3v3
+ for(let s=0;s<n;s++){
+  if(boxes.length>=n+2)break;   // safety cap so unclaimed boxes can't pile up
+  for(let i=0;i<400;i++){
+   const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
+   if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
+   if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<3.5))continue;      // never spawn on top of a robot
+   if(boxes.some(b=>Math.hypot(b.x-x,b.y-y)<4))continue;   // don't stack boxes on each other
+   boxes.push({x,y,life:20,age:0});pop(x,y,'MYSTERY BOX','#ffd24a');break;
+  }
  }
 }
 // ---- super attacks: one per weapon. All telegraphed so they can be dodged ----
