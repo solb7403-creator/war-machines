@@ -1669,8 +1669,13 @@ function draw(){
  c2.style.display='block';c2.style.position=in3d?'absolute':'static';c2.style.pointerEvents='auto';
  c2.style.zIndex=in3d?'2':'auto';
  g.setTransform(dpr,0,0,dpr,0,0);
- g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg')||'#0c1118';
- g.fillRect(0,0,vw,vh);
+ // in 3D battle mode, keep 2D canvas transparent so 3D shows through
+ if(state!=='play'){
+  g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg')||'#0c1118';
+  g.fillRect(0,0,vw,vh);
+ } else {
+  g.clearRect(0,0,vw,vh);
+ }
  if(state==='garage'){drawGarage();return;}
  if(state==='arena'){drawLoadout();drawTabs();return;}
  if(state==='shop'){drawShop();return;}
