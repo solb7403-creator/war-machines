@@ -2055,7 +2055,7 @@ function drawShop(){
  // so the shop can never again drift under the tabs when sections change.
  const SEC_H=34,SEC_GAP=10,NSEC=4;
  let bh=(vh-62-y)/NSEC-SEC_H-SEC_GAP;
- bh=Math.max(64,Math.min(104,bh));
+ bh=Math.max(64,Math.min(132,bh));
  const secs=[['gem','GEM CACHE','level up your gems'],['weapon','WEAPON CACHE','unlock weapons'],['chassis','CHASSIS CRATE','unlock chassis']];
  secs.forEach(([tk,name,desc])=>{
   const upg=tk==='weapon'?(save.wTier.pulse+save.wTier.twin+save.wTier.siege):(save.cTier.scout+save.cTier.vanguard+save.cTier.titan);
