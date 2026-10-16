@@ -934,7 +934,22 @@ function drawLoadout(){
  g.shadowColor='#3fd0c9';g.shadowBlur=20;
  g.fillStyle='#1f9e8e';rr(cx-fw/2,y,fw,54,12);g.fill();
  g.shadowBlur=0;
- g.fillStyle='#fff';g.font=font(19);g.fillText('\u2694 FIGHT',cx,y+17);
+ // two cannons facing each other (instead of crossed swords)
+ g.fillStyle='#fff';g.font=font(19);g.textAlign='center';
+ const tw=g.measureText('FIGHT').width;
+ // left cannon (barrel pointing right)
+ const c1x=cx-tw/2-28,cy2=y+24;
+ g.fillStyle='#fff';
+ g.beginPath();g.arc(c1x-6,cy2,7,0,7);g.fill(); // base
+ g.fillRect(c1x-4,cy2-3,20,6); // barrel pointing right
+ g.fillRect(c1x+12,cy2-4,4,8); // muzzle
+ // right cannon (barrel pointing left)
+ const c2x=cx+tw/2+28;
+ g.beginPath();g.arc(c2x+6,cy2,7,0,7);g.fill(); // base
+ g.fillRect(c2x-16,cy2-3,20,6); // barrel pointing left
+ g.fillRect(c2x-16,cy2-4,4,8); // muzzle
+ g.fillStyle='#fff';g.font=font(19);
+ g.fillText('FIGHT',cx,y+17);
  y+=66;
  {const pw=calcPower(),brk=powerBracket(pw);
   if(y+40<vh-62){g.fillStyle=brk.c;g.font=font(13);g.fillText('Power '+pw+' · '+brk.n+' (x'+brk.mult+' pts)',cx,y);y+=18;}
