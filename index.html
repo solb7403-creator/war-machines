@@ -1449,7 +1449,7 @@ function isBoxMaxed(tk,ri){
 function openBox(tk,ri){
  const cost=RPRICE[ri];
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
- if(save.unlimGram){save.spendGram=(save.spendGram||0)+cost;store();doOpenBox(tk,ri);return;}
+ if(save.unlimGram){save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(tk,ri);return;}
  payWithTon(cost,()=>{save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(tk,ri);});
 }
 function doOpenBox(tk,ri){
