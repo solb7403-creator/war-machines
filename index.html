@@ -894,10 +894,43 @@ function drawLoadout(){
  const x0=cx-(n*cw+(n-1)*gap)/2;
  for(let i=0;i<n;i++){
   const bx=x0+i*(cw+gap),k=(save.cores||[])[i];
-  g.fillStyle='#141c26';rr(bx,y,cw,cw,10);g.fill();
-  g.strokeStyle=k?GEM[k].c:'#3a4552';g.lineWidth=1.5;rr(bx,y,cw,cw,10);g.stroke();
-  if(k){diamond(bx+cw/2,y+cw/2-8,11,GEM[k].c);
-   g.fillStyle='#e6ebf0';g.font=font(10);g.fillText(GEM[k].n,bx+cw/2,y+cw-14);
+  const col=k?GEM[k].c:'#3a4552';
+  // outer metallic plate (bolted to car)
+  const grad=g.createLinearGradient(0,y,0,y+cw);
+  grad.addColorStop(0,'#2a3442');grad.addColorStop(0.5,'#1c242e');grad.addColorStop(1,'#12181f');
+  g.fillStyle=grad;rr(bx,y,cw,cw,10);g.fill();
+  g.strokeStyle=col;g.lineWidth=2;rr(bx,y,cw,cw,10);g.stroke();
+  // corner bolts
+  g.fillStyle='#5a6a7d';
+  const br=2.5,bo=6;
+  [[bx+bo,y+bo],[bx+cw-bo,y+bo],[bx+bo,y+cw-bo],[bx+cw-bo,y+cw-bo]].forEach(([px,py])=>{
+   g.beginPath();g.arc(px,py,br,0,7);g.fill();
+   g.fillStyle='#2a3442';g.beginPath();g.arc(px,py,br*0.4,0,7);g.fill();g.fillStyle='#5a6a7d';
+  });
+  // inner recessed socket
+  const sx=bx+10,sy=y+8,sw=cw-20,sh=cw-28;
+  g.fillStyle='#080c11';rr(sx,sy,sw,sh,6);g.fill();
+  g.strokeStyle='rgba(0,0,0,.6)';g.lineWidth=1;rr(sx,sy,sw,sh,6);g.stroke();
+  // gem in socket with glow
+  if(k){
+   g.save();g.shadowColor=col;g.shadowBlur=12;
+   diamond(bx+cw/2,sy+sh/2,12,col);
+   g.restore();
+   // socket prongs gripping the gem
+   g.fillStyle=col;g.globalAlpha=0.6;
+   const gx=bx+cw/2,gy=sy+sh/2;
+   [[-14,-10],[14,-10],[-14,10],[14,10]].forEach(([dx,dy])=>{
+    g.fillRect(gx+dx-2,gy+dy-2,4,4);
+   });
+   g.globalAlpha=1;
+   g.fillStyle='#e6ebf0';g.font=font(10);g.textAlign='center';
+   g.fillText(GEM[k].n,bx+cw/2,y+cw-8);
+  }else{
+   // empty socket - show outline
+   g.strokeStyle='#2a3442';g.lineWidth=1;g.setLineDash([4,3]);
+   g.strokeRect(sx+4,sy+4,sw-8,sh-8);g.setLineDash([]);
+   g.fillStyle='#3a4552';g.font=font(9);g.textAlign='center';
+   g.fillText('EMPTY',bx+cw/2,sy+sh/2+3);
   }
  }
  y+=cw+28;
