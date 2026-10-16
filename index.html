@@ -1726,14 +1726,14 @@ function drawBoard(){
  const bw=(vw-24-(brs.length-1)*6)/brs.length;
  brs.forEach((b,i)=>{
   const bx=12+i*(bw+6),sel=lbBracket===b;
-  ui.lbBrackets.push({x:bx,y:y,w:bw,h:28,id:b});
-  g.fillStyle=sel?'#232d3a':'#141c26';rr(bx,y,bw,28,8);g.fill();
-  g.strokeStyle=sel?(b==='ALL'?'#3fd0c9':BRKC[b]):'#232d3a';g.lineWidth=1.5;rr(bx,y,bw,28,8);g.stroke();
+  ui.lbBrackets.push({x:bx,y:y,w:bw,h:34,id:b});
+  g.fillStyle=sel?'#232d3a':'#141c26';rr(bx,y,bw,34,8);g.fill();
+  g.strokeStyle=sel?(b==='ALL'?'#3fd0c9':BRKC[b]):'#232d3a';g.lineWidth=1.5;rr(bx,y,bw,34,8);g.stroke();
   g.fillStyle=sel?(b==='ALL'?'#e6ebf0':BRKC[b]):'#5c6b7d';g.font=font(10);g.textAlign='center';
   let nm=b;while(g.measureText(nm).width>bw-6&&nm.length>3)nm=nm.slice(0,-2);
-  g.fillText(nm,bx+bw/2,y+8);
+  g.fillText(nm,bx+bw/2,y+11);
  });
- y+=36;
+ y+=42;
  // ranked rows (real players from Firebase)
  if(!lbCache){
   g.fillStyle='#5c6b7d';g.font=font(13);g.textAlign='center';
