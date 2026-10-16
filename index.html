@@ -118,13 +118,21 @@ function rollItem(cat,ri){
 }
 
 function tierIdx(){let t=0;for(let i=0;i<TPTS.length;i++)if(save.pts>=TPTS[i])t=i;return t;}
+// External links - fill in when pages exist
+const WIKI_URL=''; // wiki: how to play, airdrop, tokenomics
+const X_URL=''; // X/Twitter profile
+const TG_URL=''; // Telegram news channel
 const QUESTS=[
  {id:'q_win1',n:'FIRST BLOOD',d:'Win 1 match',pts:50,goal:1},
  {id:'q_win3',n:'WARMONGER',d:'Win 3 matches',pts:150,goal:3},
  {id:'q_dmg',n:'HEAVY HITTER',d:'Deal 2500 damage in one match',pts:100,goal:2500},
  {id:'q_super',n:'OVERCHARGED',d:'Fire your super twice in one match',pts:100,goal:2},
  {id:'q_box',n:'SCAVENGER',d:'Grab 3 mystery boxes in one match',pts:75,goal:3},
- {id:'q_clean',n:'UNTOUCHABLE',d:'Win a match taking under 600 damage',pts:150,goal:1}];
+ {id:'q_clean',n:'UNTOUCHABLE',d:'Win a match taking under 600 damage',pts:150,goal:1},
+ // link quests (visit external pages)
+ {id:'q_wiki',n:'READ THE LUNER PAPER',d:'Wiki: how to play, farm the airdrop, tokenomics. Top 1000 players get guaranteed $LUNER allocation!',pts:200,goal:1,link:'wiki'},
+ {id:'q_x',n:'FOLLOW ON X',d:'Follow for updates and announcements',pts:50,goal:1,link:'x'},
+ {id:'q_tg',n:'JOIN TG CHANNEL',d:'News channel for airdrop updates',pts:50,goal:1,link:'tg'}];
 function qp(id,val,isMax){
  const Q=QUESTS.find(q=>q.id===id);if(!Q)return;
  let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
@@ -1213,8 +1221,13 @@ function menuTap(x,y){
  }
  if(state==='quests'&&ui.qrows)
   for(const r of ui.qrows){
-   const c=r.claim;
-   if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){claimQuest(r.id);return;}
+   if(r.visit){
+    const v=r.visit;
+    if(x>=v.x&&x<=v.x+v.w&&y>=v.y&&y<=v.y+v.h){visitLinkQuest(r.id,r.link);return;}
+   }else if(r.claim){
+    const c=r.claim;
+    if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){claimQuest(r.id);return;}
+   }
   }
  if(state==='board'&&ui.daily){
   const d=ui.daily;
@@ -1233,21 +1246,48 @@ function drawQuests(){
  QUESTS.forEach(Q=>{
   const e=save.q[Q.id]||{p:0,done:false,claimed:false};
   const rx=12,ry=y,bw2=88;
+  const isLink=!!Q.link;
+  const linkUrl=Q.link==='wiki'?WIKI_URL:Q.link==='x'?X_URL:Q.link==='tg'?TG_URL:'';
   g.fillStyle='#141c26';rr(rx,ry,vw-24,rh,10);g.fill();
   g.textAlign='left';g.fillStyle=e.done?'#7be07b':'#e6ebf0';g.font=font(13.5);
   g.fillText(Q.n,rx+14,ry+7);
-  g.fillStyle='#8fa3b8';g.font=font(11);g.fillText(Q.d,rx+14,ry+26);
-  const pwx=rx+14,pww=vw-28-bw2-14;
-  g.fillStyle='rgba(255,255,255,.1)';g.fillRect(pwx,ry+rh-15,pww,6);
-  g.fillStyle='#3fd0c9';g.fillRect(pwx,ry+rh-15,pww*Math.min(1,e.p/Q.goal),6);
-  g.fillStyle='#8fa3b8';g.font=font(10);g.textAlign='right';
-  g.fillText(Math.min(Math.floor(e.p),Q.goal)+'/'+Q.goal,rx+vw-28-bw2,ry+rh-19);
+  g.fillStyle='#8fa3b8';g.font=font(10);
+  // wrap description for link quests (longer text)
+  if(isLink){
+   const words=Q.d.split(' ');let line='',ly=ry+24;
+   for(const w of words){
+    const t=line?line+' '+w:w;
+    if(g.measureText(t).width>vw-28-bw2-28&&line){g.fillText(line,rx+14,ly);line=w;ly+=13;}
+    else line=t;
+   }
+   if(line)g.fillText(line,rx+14,ly);
+  }else{
+   g.fillText(Q.d,rx+14,ry+26);
+  }
+  if(!isLink){
+   const pwx=rx+14,pww=vw-28-bw2-14;
+   g.fillStyle='rgba(255,255,255,.1)';g.fillRect(pwx,ry+rh-15,pww,6);
+   g.fillStyle='#3fd0c9';g.fillRect(pwx,ry+rh-15,pww*Math.min(1,e.p/Q.goal),6);
+   g.fillStyle='#8fa3b8';g.font=font(10);g.textAlign='right';
+   g.fillText(Math.min(Math.floor(e.p),Q.goal)+'/'+Q.goal,rx+vw-28-bw2,ry+rh-19);
+  }
   const can=e.done&&!e.claimed;
-  ui.qrows.push({id:Q.id,claim:{x:rx+vw-24-bw2-8,y:ry+8,w:bw2,h:rh-16}});
-  g.fillStyle=e.claimed?'#2a3542':can?'#1f9e8e':'#3a4552';
-  rr(rx+vw-24-bw2-8,ry+8,bw2,rh-16,8);g.fill();
-  g.fillStyle=can?'#fff':'#8fa3b8';g.textAlign='center';g.font=font(12.5);
-  g.fillText(e.claimed?'DONE':can?'CLAIM':'+'+Q.pts,rx+vw-24-8-bw2/2,ry+rh/2-7);
+  const btnX=rx+vw-24-bw2-8;
+  if(isLink){
+   // VISIT button for link quests
+   ui.qrows.push({id:Q.id,visit:{x:btnX,y:ry+8,w:bw2,h:rh-16},link:Q.link});
+   const hasUrl=!!linkUrl;
+   g.fillStyle=e.claimed?'#2a3542':hasUrl?'#1f9e8e':'#3a4552';
+   rr(btnX,ry+8,bw2,rh-16,8);g.fill();
+   g.fillStyle=e.claimed?'#8fa3b8':hasUrl?'#fff':'#8fa3b8';g.textAlign='center';g.font=font(12.5);
+   g.fillText(e.claimed?'DONE':hasUrl?'VISIT':'+'+Q.pts+' SOON',btnX+bw2/2,ry+rh/2-7);
+  }else{
+   ui.qrows.push({id:Q.id,claim:{x:btnX,y:ry+8,w:bw2,h:rh-16}});
+   g.fillStyle=e.claimed?'#2a3542':can?'#1f9e8e':'#3a4552';
+   rr(btnX,ry+8,bw2,rh-16,8);g.fill();
+   g.fillStyle=can?'#fff':'#8fa3b8';g.textAlign='center';g.font=font(12.5);
+   g.fillText(e.claimed?'DONE':can?'CLAIM':'+'+Q.pts,btnX+bw2/2,ry+rh/2-7);
+  }
   y+=rh+8;
  });
  drawTabs();drawToast();
@@ -1256,6 +1296,15 @@ function claimQuest(id){
  const Q=QUESTS.find(q=>q.id===id),e=save.q[id];
  if(!Q||!e||!e.done||e.claimed)return;
  e.claimed=true;save.pts+=Q.pts;store();showToast('+'+Q.pts+' PTS — '+Q.n);
+}
+function visitLinkQuest(id,link){
+ const url=link==='wiki'?WIKI_URL:link==='x'?X_URL:link==='tg'?TG_URL:'';
+ if(!url){showToast('Coming soon!');return;}
+ window.open(url,'_blank');
+ // mark as done after visiting
+ const Q=QUESTS.find(q=>q.id===id);
+ let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
+ e.p=Q.goal;e.done=true;store();
 }
 let rivals=null;
 function drawBoard(){
