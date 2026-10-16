@@ -42,7 +42,7 @@ function loadSave(){try{save=JSON.parse(localStorage.getItem('wm_save_v1'));}cat
  if(!save.unlocked)save.unlocked={chassis:['vanguard'],weapons:['pulse']};
  if(!save.gemLvl)save.gemLvl={dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1};
  if(!save.gemShards)save.gemShards={dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0};
- if(save.streak===undefined)save.streak=0;if(save.unlimGram===undefined)save.unlimGram=false;
+ if(save.streak===undefined)save.streak=0;
  if(!save.cores)save.cores=['dmg','rof','arm','spd'];
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
@@ -52,7 +52,6 @@ function loadSave(){try{save=JSON.parse(localStorage.getItem('wm_save_v1'));}cat
  // migrate old TON field names to GRAM (one-time)
  if(save.tons!==undefined){save.grams=save.tons;delete save.tons;}
  if(save.spendTON!==undefined){save.spendGram=save.spendTON;delete save.spendTON;}
- if(save.unlimTon!==undefined){save.unlimGram=save.unlimTon;delete save.unlimTon;}
  C.me=SKINS[save.skin].c;
  // migrate from the old 75-item loot system to 3x3 tiers (once)
  if(!save.wTier){
@@ -1438,7 +1437,7 @@ function drawMatchmaking(){
 // ---- shop: loot boxes for gems, weapons, chassis ----
 const RAR=['common','rare','epic'],RPRICE=[1,3,10],RCOL=['#9fb3c8','#c28bff','#ffd24a'];
 const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a gem from level L to L+1
-let reveal=null,cheatN=0,cheatT=0;   // hidden test cheat: tap the GRAM balance 5x in the shop to toggle unlimited GRAM
+let reveal=null;
 function isBoxMaxed(tk,ri){
  if(tk==='gem')return false;
  const isW=tk==='weapon';
@@ -1449,7 +1448,6 @@ function isBoxMaxed(tk,ri){
 function openBox(tk,ri){
  const cost=RPRICE[ri];
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
- if(save.unlimGram){save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(tk,ri);return;}
  payWithTon(cost,()=>{save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(tk,ri);});
 }
 function doOpenBox(tk,ri){
@@ -1506,14 +1504,6 @@ function shopTap(x,y){
   else{showToast('WALLET LOADING...');initTonConnect();}
   return;
  }
- const c=ui.tonCheat;
- if(c&&x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){
-  const now=performance.now();
-  if(now-cheatT>4000)cheatN=0;
-  cheatT=now;cheatN++;
-  if(cheatN>=5){cheatN=0;save.unlimGram=!save.unlimGram;store();showToast(save.unlimGram?'UNLIMITED GRAM: ON (TEST)':'UNLIMITED GRAM: OFF');}
-  return;
- }
  for(const b of (ui.shopBoxes||[]))
   if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){openBox(b.tk,b.ri);return;}
  for(const pm of (ui.premium||[]))
@@ -1522,16 +1512,14 @@ function shopTap(x,y){
 function buyPremium(id){
  if(id==='moonbeam'){
   if(save.moonbeam){showToast('ALREADY OWNED');return;}
-  if(save.unlimGram){save.moonbeam=true;store();showToast('MOONBEAM UNLOCKED! (TEST)');return;}
   payWithTon(MOONBEAM_PRICE,()=>{
-   save.moonbeam=true;save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;store();
+   save.moonbeam=true;save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;store();syncPlayer();
    showToast('MOONBEAM UNLOCKED!');
   });
  }else if(id==='lunarskin'){
   if(save.skin==='lunar'){showToast('ALREADY OWNED');return;}
-  if(save.unlimGram){save.skin='lunar';C.me=SKINS.lunar.c;store();showToast('LUNAR SKIN APPLIED! (TEST)');return;}
   payWithTon(SKINS.lunar.price,()=>{
-   save.skin='lunar';C.me=SKINS.lunar.c;save.spendGram=(save.spendGram||0)+SKINS.lunar.price;store();
+   save.skin='lunar';C.me=SKINS.lunar.c;save.spendGram=(save.spendGram||0)+SKINS.lunar.price;store();syncPlayer();
    showToast('LUNAR SKIN APPLIED!');
   });
  }
@@ -1643,8 +1631,7 @@ function drawShop(){
  const wtxt=tonWallet?'WALLET CONNECTED':'CONNECT WALLET';
  g.fillStyle=tonWallet?'#3fd0c9':'#1f9e8e';rr(cx-90,y-6,180,36,10);g.fill();
  g.fillStyle='#fff';g.font=font(14);g.fillText(wtxt,cx,y+5);
- ui.walletBtn={x:cx-90,y:y-6,w:180,h:36};
- ui.tonCheat={x:cx-80,y:y-8,w:160,h:40};y+=36;
+ ui.walletBtn={x:cx-90,y:y-6,w:180,h:36};y+=36;
  g.fillStyle='#5c6b7d';g.font=font(11);g.fillText('prices are placeholders',cx,y);y+=26;
  ui.shopBoxes=[];
  const bh=Math.max(84,Math.min(104,(vh-62-y)/4-36));
