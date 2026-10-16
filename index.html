@@ -122,6 +122,7 @@ function tierIdx(){let t=0;for(let i=0;i<TPTS.length;i++)if(save.pts>=TPTS[i])t=
 const WIKI_URL=''; // wiki: how to play, airdrop, tokenomics
 const X_URL=''; // X/Twitter profile
 const TG_URL=''; // Telegram news channel
+const CHAN_URL=''; // new channel link — fill in when Jake provides it
 const QUESTS=[
  {id:'q_win1',n:'FIRST BLOOD',d:'Win 1 match',pts:50,goal:1},
  {id:'q_win3',n:'WARMONGER',d:'Win 3 matches',pts:150,goal:3},
@@ -132,7 +133,8 @@ const QUESTS=[
  // link quests (visit external pages)
  {id:'q_wiki',n:'WAR MACHINES WIKI',d:'Wiki: how to play, farm the airdrop, tokenomics. Top 1000 players get guaranteed $LUNER allocation!',pts:200,goal:1,link:'wiki'},
  {id:'q_x',n:'FOLLOW ON X',d:'Follow for updates and announcements',pts:50,goal:1,link:'x'},
- {id:'q_tg',n:'JOIN TG CHANNEL',d:'News channel for airdrop updates',pts:50,goal:1,link:'tg'}];
+ {id:'q_tg',n:'JOIN TG CHANNEL',d:'News channel for airdrop updates',pts:50,goal:1,link:'tg'},
+ {id:'q_chan',n:'FOLLOW NEW CHANNEL',d:'Follow our new channel for drops and announcements',pts:50,goal:1,link:'chan'}];
 function qp(id,val,isMax){
  const Q=QUESTS.find(q=>q.id===id);if(!Q)return;
  let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
@@ -1284,11 +1286,11 @@ function menuTap(x,y){
 }
 function drawQuests(){
  g.fillStyle='#0c1118';g.fillRect(0,0,vw,vh);
- const cx=vw/2;let y=Math.max(16,vh*0.03);
+ const cx=vw/2;let y=8;
  g.textAlign='center';g.textBaseline='top';
  g.fillStyle='#e6ebf0';g.font=font(Math.round(Math.min(30,vw*0.07)));
- g.fillText('QUESTS',cx,y);y+=38;
- drawPts(cx,y);y+=52;
+ g.fillText('QUESTS',cx,y);y+=34;
+ drawPts(cx,y);y+=46;
  // quest sections: battle quests first, then community/link quests
  const SECTIONS=[['battle','\u2694\uFE0F BATTLE QUESTS'],['social','\uD83C\uDF10 COMMUNITY']];
  const SH=32; // section header height
@@ -1307,7 +1309,7 @@ function drawQuests(){
    const e=save.q[Q.id]||{p:0,done:false,claimed:false};
    const rx=12,ry=y,bw2=88;
    const isLink=!!Q.link;
-   const linkUrl=Q.link==='wiki'?WIKI_URL:Q.link==='x'?X_URL:Q.link==='tg'?TG_URL:'';
+   const linkUrl=Q.link==='wiki'?WIKI_URL:Q.link==='x'?X_URL:Q.link==='tg'?TG_URL:Q.link==='chan'?CHAN_URL:'';
    g.fillStyle='#141c26';rr(rx,ry,vw-24,rh,10);g.fill();
    const tx=rx+14,tw=vw-28-bw2-14,tcx=tx+tw/2;
    // quest name - centered
@@ -1362,7 +1364,7 @@ function claimQuest(id){
  e.claimed=true;save.pts+=Q.pts;store();showToast('+'+Q.pts+' PTS — '+Q.n);
 }
 function visitLinkQuest(id,link){
- const url=link==='wiki'?WIKI_URL:link==='x'?X_URL:link==='tg'?TG_URL:'';
+ const url=link==='wiki'?WIKI_URL:link==='x'?X_URL:link==='tg'?TG_URL:link==='chan'?CHAN_URL:'';
  if(!url){showToast('Coming soon!');return;}
  window.open(url,'_blank');
  // mark as done after visiting
