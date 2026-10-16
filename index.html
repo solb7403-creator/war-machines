@@ -347,6 +347,7 @@ function setMap(id){
  curMap=id;walls=MAPS[id].walls;
 }
 const C={floor:'#232733',grid:'#2e3342',wall:'#4a4e5e',wallTop:'#6e7490',me:'#3fd0c9',bot:'#ff7a45',hit:'#ffe27a',star:'#ffffff',moonGlow:'#e8f4ff'};
+const TC=['#4d9fff','#ff4d5e'];   // team colors in battle: blue (your team) vs red (foes), with underglow
 const SKINS={
  default:{n:'DEFAULT',c:'#3fd0c9',price:0,d:'Standard issue'},
  lunar:{n:'LUNAR',c:'#e8f4ff',price:30,d:'+8% HP · +8% DMG',glow:true}};
@@ -554,14 +555,16 @@ function newMatch(){
   const bw={arch:bwA,dps:Math.round(WEAPONS[bwA].dps*bwm*pScale),shot:WEAPONS[bwA].shot,pspd:22,tier:wt};
   const bc={cls:bcC,hp:CH[bcC].hp*bcm*pScale,spd:CH[bcC].spd,turn:CH[bcC].turn,tier:ct,size:CH[bcC].ds};
   const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:randGems(),sp:0,sup:null,
-   mhp:Math.round(STAT.hp*bc.hp),dmgM:1,spdM:bc.spd,critB:0,fillM:1,turnM:bc.turn,
+   mhp:Math.round(STAT.hp*bc.hp*modeN),dmgM:1,spdM:bc.spd,critB:0,fillM:1,turnM:bc.turn,
    wtype:bw.arch,wdps:bw.dps,wshot:bw.shot,wpspd:bw.pspd,wtier:bw.tier,dscale:bc.size,
    team,isPlayer:false,brain:{mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0},strafe:1,strafeT:1.5};
   u.hp=u.mhp;
   return u;
  };
  me.team=0;me.isPlayer=true;
- const n=MODES[modeKey()].n;
+ const modeN=MODES[modeKey()].n;
+ me.mhp=Math.round(me.mhp*modeN);me.hp=me.mhp;   // scale health with mode so team battles last like 1v1
+ const n=modeN;
  units=[me];
  for(let i=1;i<n;i++)units.push(mkBot(0,i===1?6:14,26));   // your AI teammates
  for(let i=0;i<n;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6));   // the enemy team
@@ -659,7 +662,7 @@ function moveBullets(dt){
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE);
-   takeHit(t,dmg);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1));t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1));if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:(isCrit?'CRIT ':'')+dmg.toFixed(1),c:isCrit?'#ffd24a':q.o.team===0?C.me:C.bot});q.life=0;}
+   takeHit(t,dmg);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1));t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1));if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:(isCrit?'CRIT ':'')+dmg.toFixed(1),c:isCrit?'#ffd24a':TC[q.o.team]});q.life=0;}
   }
   q.life-=dt;
  }
@@ -731,7 +734,7 @@ function useSuper(r){
  r.sup={t:S.charge,ang,w:r.wtype||'pulse'};
 }
 function fireSuper(r,S){
- const col=r.team===0?C.me:C.bot;
+ const col=TC[r.team];
  const hurt=(e,dmg)=>{dmg=dmg*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e));takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
   if(r.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});};
  if(S.kind==='beam'){
@@ -2074,8 +2077,8 @@ function draw(){
  for(let j=0;j<=H;j+=2){g.moveTo(X(0),Y(j));g.lineTo(X(W),Y(j));}
  g.stroke();
  // spawn zones
- g.fillStyle='rgba(255,122,69,.08)';g.fillRect(X(0),Y(0),W*sc,5*sc);
- g.fillStyle='rgba(63,208,201,.08)';g.fillRect(X(0),Y(H-5),W*sc,5*sc);
+ g.fillStyle='rgba(255,77,94,.08)';g.fillRect(X(0),Y(0),W*sc,5*sc);
+ g.fillStyle='rgba(77,159,255,.08)';g.fillRect(X(0),Y(H-5),W*sc,5*sc);
  // cover
  for(const [x,y,w,h] of walls){
   g.fillStyle=C.wall;g.fillRect(X(x),Y(y),w*sc,h*sc);
@@ -2099,13 +2102,13 @@ function draw(){
  }
  g.strokeStyle=C.wallTop;g.lineWidth=3;g.strokeRect(X(0),Y(0),W*sc,H*sc);
  // range ring (yours)
- g.strokeStyle='rgba(63,208,201,.18)';g.lineWidth=1.5;g.setLineDash([6,6]);
+ g.strokeStyle='rgba(77,159,255,.2)';g.lineWidth=1.5;g.setLineDash([6,6]);
  g.beginPath();g.arc(X(me.x),Y(me.y),STAT.range*sc,0,7);g.stroke();g.setLineDash([]);
  // tracers
  for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
   g.fillStyle='#ffd24a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
   g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
- for(const q of bullets){g.fillStyle=q.o.team===0?C.me:C.bot;
+ for(const q of bullets){g.fillStyle=TC[q.o.team];
   g.beginPath();g.arc(X(q.x),Y(q.y),Math.max(2.5,sc*0.16)*Math.min(1.8,q.dm),0,7);g.fill();}
  // super telegraphs (lane for beam/shell, danger ring for nova) and super fx
  for(const r of units){
@@ -2152,6 +2155,12 @@ function draw(){
  // robots: ground level first (bridge will cover those in tunnels)
  function drawOne(b,col){
   const px=X(b.x),py=Y(b.y),r=R*sc,a=b.ang;
+  // team underglow: neon light spilling from under the chassis
+  g.save();
+  g.shadowColor=col;g.shadowBlur=22;
+  g.globalAlpha=0.4;g.fillStyle=col;
+  g.beginPath();g.ellipse(px,py+r*0.95,r*1.2,r*0.55,0,0,7);g.fill();
+  g.restore();g.globalAlpha=1;
   // elevation shadow (on bridge = higher)
   if(b.elev===1){
    g.fillStyle='rgba(0,0,0,.35)';
@@ -2170,8 +2179,8 @@ function draw(){
   if(spdMult(b)>1&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
   drawTank(b,col);
  }
- for(const u of units)if(u.team===1&&(u.elev||0)===0&&u.hp>0)drawOne(u,C.bot);
- for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,C.me);
+ for(const u of units)if(u.team===1&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[1]);
+ for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);
  // draw bridge OVER ground units (tunnel effect)
  const br2=MAPS[curMap].bridge;
  if(br2){
@@ -2184,8 +2193,8 @@ function draw(){
   }
  }
  // elevated units on top of bridge
- for(const u of units)if(u.team===1&&(u.elev||0)===1&&u.hp>0)drawOne(u,C.bot);
- for(const u of units)if(u.team===0&&(u.elev||0)===1&&u.hp>0)drawOne(u,C.me);
+ for(const u of units)if(u.team===1&&(u.elev||0)===1&&u.hp>0)drawOne(u,TC[1]);
+ for(const u of units)if(u.team===0&&(u.elev||0)===1&&u.hp>0)drawOne(u,TC[0]);
  // buff chips (arena top corners) and pickup pop-ups
  const chips=(r,x0,dir)=>{r.buffs.forEach((b,i)=>{const w=sc*1.7,h=sc*0.9,x=dir>0?x0+i*(w+3):x0-w-i*(w+3),y=Y(0)+4;
   g.fillStyle=BUFF[b.k].c;g.fillRect(x,y,w,h);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x,y+h-3,w*(1-b.taken/BUFF_LIFE),3);
@@ -2198,10 +2207,10 @@ function draw(){
  // HUD: team health bars + survivors
  const hy=oy-HUD*sc+sc*0.5,bw=sc*7.4,bh=sc*0.8;
  g.textBaseline='top';g.font=font(Math.round(sc*0.9));
- g.fillStyle=C.me;g.textAlign='left';g.fillText('YOU'+(MODES[modeKey()].n>1?' ×'+aliveCount(0):''),X(0),hy-sc*0.05);
- g.fillStyle=C.bot;g.textAlign='right';g.fillText('FOES'+(MODES[modeKey()].n>1?' ×'+aliveCount(1):''),X(W),hy-sc*0.05);
- bar(X(0),hy+sc*1.05,bw,bh,teamHpFrac(0),C.me,false);
- bar(X(W)-bw,hy+sc*1.05,bw,bh,teamHpFrac(1),C.bot,true);
+ g.fillStyle=TC[0];g.textAlign='left';g.fillText('YOU'+(MODES[modeKey()].n>1?' ×'+aliveCount(0):''),X(0),hy-sc*0.05);
+ g.fillStyle=TC[1];g.textAlign='right';g.fillText('FOES'+(MODES[modeKey()].n>1?' ×'+aliveCount(1):''),X(W),hy-sc*0.05);
+ bar(X(0),hy+sc*1.05,bw,bh,teamHpFrac(0),TC[0],false);
+ bar(X(W)-bw,hy+sc*1.05,bw,bh,teamHpFrac(1),TC[1],true);
  const tl=Math.max(0,Math.ceil(timeLeft)),mm=Math.floor(tl/60),ss=String(tl%60).padStart(2,'0');
  g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg')||'#fff';
  g.textAlign='center';g.font=font(Math.round(sc*1.5));g.fillText(mm+':'+ss,X(W/2),hy-sc*0.1);
