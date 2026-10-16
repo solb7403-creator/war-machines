@@ -435,18 +435,45 @@ function initTonConnect(attempt){
 }
 // Send real TON payment via connected wallet. Amount in GRAM (=TON).
 // onSuccess() is called after the transaction is confirmed.
+// Fallback: if the wallet app doesn't return to the page after paying (common on iOS),
+// verify the payment directly on the TON blockchain so the purchase still goes through.
+async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone){
+ const t0=Date.now();
+ while(Date.now()-t0<timeoutMs){
+  if(isDone())return false;
+  try{
+   const r=await fetch('https://toncenter.com/api/v2/getTransactions?address='+TON_RECIPIENT+'&limit=20');
+   const d=await r.json();
+   for(const t of (d.result||[])){
+    if((t.utime*1000)<sinceTs-10000)continue;
+    const val=parseInt(((t.in_msg||{}).value||'0'),10)/1e9;
+    if(val+1e-9>=gramAmount)return true;
+   }
+  }catch(e){}
+  await new Promise(r=>setTimeout(r,5000));
+ }
+ return false;
+}
 async function payWithTon(gramAmount,onSuccess){
  if(!tonConnectUI){showToast('WALLET NOT READY');return;}
  if(!tonWallet){showToast('CONNECT WALLET FIRST');return;}
  if(TON_RECIPIENT.indexOf('REPLACE')===0){showToast('SELLER WALLET NOT SET');return;}
- const nanotons=(gramAmount*1e9).toString();
+ const sinceTs=Date.now();
+ let granted=false;
+ const grant=()=>{if(granted)return;granted=true;onSuccess();};
+ // If the wallet app never returns (iOS), confirm the payment on-chain instead.
+ verifyPurchaseOnChain(gramAmount,sinceTs,120000,()=>granted).then(ok=>{
+  if(ok)grant();
+  else if(!granted)showToast('PAYMENT NOT DETECTED');
+ });
+ showToast('WAITING FOR WALLET...');
  try{
   const res=await tonConnectUI.sendTransaction({
    validUntil:Math.floor(Date.now()/1000)+300,
-   messages:[{address:TON_RECIPIENT,amount:nanotons}]
+   messages:[{address:TON_RECIPIENT,amount:(gramAmount*1e9).toString()}]
   });
   // transaction sent (res.boc) - grant the item
-  onSuccess();
+  grant();
  }catch(e){
   if(e&&e.message&&e.message.indexOf('cancel')>=0)showToast('PAYMENT CANCELLED');
   else showToast('PAYMENT FAILED');
@@ -623,10 +650,16 @@ function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse p
  return SUPER_LEN;
 }
 function useSuper(r){
- if(state!=='play'||r.sup||r.sp<SUPER_MAX)return;r.sp=0;
+ if(state!=='play'||r.sup||r.sp<SUPER_MAX)return;
+ const S=SUP[r.wtype||'pulse'],e=r===me?bot:me;
+ if(S.kind!=='nova'&&!los(r,e)){
+  // don't burn the charge on a blind fire (the bot already requires LOS too)
+  if(r===me)showToast('NO LINE OF SIGHT');
+  return;
+ }
+ r.sp=0;
  if(r===me&&mstat)mstat.sup++;
- const S=SUP[r.wtype||'pulse'],e=r===me?bot:me;let ang=r.ang;
- if(S.kind!=='nova'&&los(r,e))ang=Math.atan2(e.y+(e.vy||0)*S.charge-r.y,e.x+(e.vx||0)*S.charge-r.x);
+ let ang=Math.atan2(e.y+(e.vy||0)*S.charge-r.y,e.x+(e.vx||0)*S.charge-r.x);
  r.sup={t:S.charge,ang,w:r.wtype||'pulse'};
 }
 function fireSuper(r,S){
