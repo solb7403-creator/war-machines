@@ -1500,7 +1500,12 @@ function shopTap(x,y){
  }
  const wb=ui.walletBtn;
  if(wb&&x>=wb.x&&x<=wb.x+wb.w&&y>=wb.y&&y<=wb.y+wb.h){
-  if(tonConnectUI){tonConnectUI.openModal();}
+  if(tonWallet&&tonConnectUI){
+   // disconnect so players can switch wallets at will; status change resets tonWallet
+   try{tonConnectUI.disconnect();}catch(e){}
+   showToast('WALLET DISCONNECTED');
+  }
+  else if(tonConnectUI){tonConnectUI.openModal();}
   else{showToast('WALLET LOADING...');initTonConnect();}
   return;
  }
@@ -1628,7 +1633,7 @@ function drawShop(){
  g.fillText('SHOP',cx,y);
  ui.devTap={x:cx-60,y:y-8,w:120,h:40};y+=38;
  // wallet connect button (replaces GRAM balance - real payments via TON Connect)
- const wtxt=tonWallet?'WALLET CONNECTED':'CONNECT WALLET';
+ const wtxt=tonWallet?'DISCONNECT WALLET':'CONNECT WALLET';
  g.fillStyle=tonWallet?'#3fd0c9':'#1f9e8e';rr(cx-90,y-6,180,36,10);g.fill();
  g.fillStyle='#fff';g.font=font(14);g.fillText(wtxt,cx,y+5);
  ui.walletBtn={x:cx-90,y:y-6,w:180,h:36};y+=36;
