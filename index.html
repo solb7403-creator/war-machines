@@ -1660,8 +1660,8 @@ function drawTank(b,col){
  g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffd24a';g.fillRect(bx,by,bw*f,0.36*r);
 }
 function draw(){
- // toggle canvases
- const in3d=(state==='play');
+ // toggle canvases - 3D DISABLED, using 2D (revert 2026-10-16)
+ const in3d=false; // (state==='play');
  const c3=document.getElementById('c3d');
  c3.style.display=in3d?'block':'none';
  c3.style.zIndex='1';
@@ -1683,8 +1683,8 @@ function draw(){
  if(state==='ranks'){drawBoard();return;}
  if(state==='board'){drawBoard();return;}
  if(state==='matchmaking'){drawMatchmaking();return;}
- // 3D battle
- if(state==='play'){
+ // 3D battle - DISABLED, using 2D
+ if(false && state==='play'){
   init3D();
   update3D();
   // HUD drawn on 2D canvas overlay (transparent, receives input)
