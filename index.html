@@ -621,15 +621,27 @@ cv.addEventListener('pointerdown',e=>{
  }
  if(state==='matchmaking')return;
  if(!(state==='garage'&&pickOpen)&&tabTap(L.x,L.y))return;
+ if(state==='quests'){qDragY=L.y;qDragMoved=0;return;}   // tap vs drag decided on pointerup
  if(state==='arena')loadoutTap(L.x,L.y);
  else if(state==='shop'){if(reveal){reveal=null;return;}shopTap(L.x,L.y);}
  else menuTap(L.x,L.y);});
 cv.addEventListener('pointermove',e=>{
+ if(state==='quests'&&qDragY!==null){
+  const L=loc(e),dy=L.y-qDragY;
+  if(Math.abs(dy)>1){qScroll-=dy;qDragY=L.y;qDragMoved+=Math.abs(dy);}
+  return;
+ }
  if(!joy.on||e.pointerId!==joy.id)return;
  const max=55;const L=loc(e);let dx=L.x-joy.sx,dy=L.y-joy.sy,d=Math.hypot(dx,dy);
  if(d>max){dx=dx/d*max;dy=dy/d*max;d=max;}
  joy.x=joy.sx+dx;joy.y=joy.sy+dy;joy.dx=dx/max;joy.dy=dy/max;});
-const up=e=>{if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
+const up=e=>{
+ if(state==='quests'&&qDragY!==null){
+  const L=loc(e);
+  if(qDragMoved<12)menuTap(L.x,L.y);   // treat as a tap
+  qDragY=null;return;
+ }
+ if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play')useSuper(me);if(state==='over'&&performance.now()>endAt+600)toArena();if(state==='arena')loadoutKey(e.key);});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
@@ -1285,7 +1297,7 @@ function drawTabs(){
  g.textBaseline='top';
 }
 function tabTap(x,y){
- for(const t of tabRects)if(x>=t.x&&x<=t.x+t.w&&y>=t.y&&y<=t.y+t.h){state=t.id;return true;}
+ for(const t of tabRects)if(x>=t.x&&x<=t.x+t.w&&y>=t.y&&y<=t.y+t.h){state=t.id;if(t.id==='quests')qScroll=0;return true;}
  return false;
 }
 function drawPts(cx,y){
@@ -1568,6 +1580,7 @@ function menuTap(x,y){
   if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){lbBracket=b.id;return;}
  }
 }
+let qScroll=0,qDragY=null,qDragMoved=0;
 function drawQuests(){
  g.fillStyle='#0c1118';g.fillRect(0,0,vw,vh);
  const cx=vw/2;let y=8;
@@ -1577,32 +1590,44 @@ function drawQuests(){
  drawPts(cx,y);y+=46;
  // quest sections: battle quests first, then community/link quests
  const SECTIONS=[['battle','\u2694\uFE0F BATTLE QUESTS'],['social','\uD83C\uDF10 COMMUNITY']];
- const SH=32; // section header height
- const rh=Math.max(46,Math.min(66,(vh-62-y-SECTIONS.length*SH)/QUESTS.length-8));
+ const SH=34,rh=64,gap=10;   // comfortable fixed row height; list scrolls when it overflows
+ const listTop=y,listBot=vh-62;
  ui.qrows=[];
+ // total content height -> scroll range
+ let total=0;
+ SECTIONS.forEach(sec=>{
+  const n=QUESTS.filter(Q=>(Q.link?'social':'battle')===sec[0]).length;
+  if(n)total+=SH+n*(rh+gap);
+ });
+ const maxS=Math.max(0,total-(listBot-listTop));
+ if(qScroll>maxS)qScroll=maxS;if(qScroll<0)qScroll=0;
+ // draw the scrollable list clipped to its viewport
+ g.save();
+ g.beginPath();g.rect(0,listTop,vw,listBot-listTop);g.clip();
+ let yy=listTop-qScroll;
  SECTIONS.forEach(sec=>{
   const qs=QUESTS.filter(Q=>(Q.link?'social':'battle')===sec[0]);
   if(!qs.length)return;
   // centered section header with divider line
   g.textAlign='center';g.fillStyle='#ffd24a';g.font=font(12);
-  g.fillText(sec[1],cx,y+8);
+  g.fillText(sec[1],cx,yy+9);
   g.strokeStyle='rgba(255,210,74,.35)';g.lineWidth=1;
-  g.beginPath();g.moveTo(cx-72,y+SH-6);g.lineTo(cx+72,y+SH-6);g.stroke();
-  y+=SH;
+  g.beginPath();g.moveTo(cx-72,yy+SH-6);g.lineTo(cx+72,yy+SH-6);g.stroke();
+  yy+=SH;
   qs.forEach(Q=>{
    const e=save.q[Q.id]||{p:0,done:false,claimed:false};
-   const rx=12,ry=y,bw2=88;
+   const rx=12,ry=yy,bw2=88;
    const isLink=!!Q.link;
    const linkUrl=Q.link==='wiki'?WIKI_URL:Q.link==='x'?X_URL:Q.link==='tg'?TG_URL:Q.link==='chan'?CHAN_URL:'';
    g.fillStyle='#141c26';rr(rx,ry,vw-24,rh,10);g.fill();
    const tx=rx+14,tw=vw-28-bw2-14,tcx=tx+tw/2;
    // quest name - centered
    g.textAlign='center';g.fillStyle=e.done?'#7be07b':'#e6ebf0';g.font=font(13.5);
-   g.fillText(Q.n,tcx,ry+7);
+   g.fillText(Q.n,tcx,ry+9);
    // description - centered (wrapped for link quests)
    g.fillStyle='#8fa3b8';g.font=font(10);
    if(isLink){
-    const words=Q.d.split(' ');let line='',ly=ry+24;
+    const words=Q.d.split(' ');let line='',ly=ry+28;
     for(const w of words){
      const t=line?line+' '+w:w;
      if(g.measureText(t).width>tw&&line){g.fillText(line,tcx,ly);line=w;ly+=13;}
@@ -1610,35 +1635,43 @@ function drawQuests(){
     }
     if(line)g.fillText(line,tcx,ly);
    }else{
-    g.fillText(Q.d,tcx,ry+26);
+    g.fillText(Q.d,tcx,ry+28);
    }
    if(!isLink){
     const pwx=rx+14,pww=tw;
-    g.fillStyle='rgba(255,255,255,.1)';g.fillRect(pwx,ry+rh-15,pww,6);
-    g.fillStyle='#3fd0c9';g.fillRect(pwx,ry+rh-15,pww*Math.min(1,e.p/Q.goal),6);
+    g.fillStyle='rgba(255,255,255,.1)';g.fillRect(pwx,ry+rh-16,pww,6);
+    g.fillStyle='#3fd0c9';g.fillRect(pwx,ry+rh-16,pww*Math.min(1,e.p/Q.goal),6);
     g.fillStyle='#8fa3b8';g.font=font(10);g.textAlign='center';
-    g.fillText(Math.min(Math.floor(e.p),Q.goal)+'/'+Q.goal,pwx+pww/2,ry+rh-30);
+    g.fillText(Math.min(Math.floor(e.p),Q.goal)+'/'+Q.goal,pwx+pww/2,ry+rh-32);
    }
    const can=e.done&&!e.claimed;
    const btnX=rx+vw-24-bw2-8;
+   const vis=ry+rh>listTop&&ry<listBot;   // only hittable when visible
    if(isLink){
     // VISIT button for link quests
-    ui.qrows.push({id:Q.id,visit:{x:btnX,y:ry+8,w:bw2,h:rh-16},link:Q.link});
+    if(vis)ui.qrows.push({id:Q.id,visit:{x:btnX,y:ry+8,w:bw2,h:rh-16},link:Q.link});
     const hasUrl=!!linkUrl;
     g.fillStyle=e.claimed?'#2a3542':hasUrl?'#1f9e8e':'#3a4552';
     rr(btnX,ry+8,bw2,rh-16,8);g.fill();
     g.fillStyle=e.claimed?'#8fa3b8':hasUrl?'#fff':'#8fa3b8';g.textAlign='center';g.font=font(12.5);
     g.fillText(e.claimed?'DONE':hasUrl?'VISIT':'+'+Q.pts+' SOON',btnX+bw2/2,ry+rh/2-7);
    }else{
-    ui.qrows.push({id:Q.id,claim:{x:btnX,y:ry+8,w:bw2,h:rh-16}});
+    if(vis)ui.qrows.push({id:Q.id,claim:{x:btnX,y:ry+8,w:bw2,h:rh-16}});
     g.fillStyle=e.claimed?'#2a3542':can?'#1f9e8e':'#3a4552';
     rr(btnX,ry+8,bw2,rh-16,8);g.fill();
     g.fillStyle=can?'#fff':'#8fa3b8';g.textAlign='center';g.font=font(12.5);
     g.fillText(e.claimed?'DONE':can?'CLAIM':'+'+Q.pts,btnX+bw2/2,ry+rh/2-7);
    }
-   y+=rh+8;
+   yy+=rh+gap;
   });
  });
+ g.restore();
+ // scrollbar
+ if(maxS>0){
+  const th=listBot-listTop,thh=Math.max(34,th*th/total),thy=listTop+(th-thh)*(qScroll/maxS);
+  g.fillStyle='rgba(255,255,255,.10)';rr(vw-9,listTop,5,th,3);g.fill();
+  g.fillStyle='#3fd0c9';rr(vw-9,thy,5,thh,3);g.fill();
+ }
  drawTabs();drawToast();
 }
 
