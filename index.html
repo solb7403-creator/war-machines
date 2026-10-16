@@ -204,8 +204,9 @@ function buildArena3d(){
   scene3d.add(m);walls3d.push(m);
  }
  // bridge (real 3D!)
- const br=MAPS[curMap].bridge;
- if(br){
+ try{
+ const br=MAPS[curMap]&&MAPS[curMap].bridge;
+ if(br&&br.segs){
   bridge3d=new THREE.Group();
   for(const [sx,sy,sw,sh] of br.segs){
    const deck=new THREE.Mesh(new THREE.BoxGeometry(sw,0.5,sh),
@@ -229,6 +230,7 @@ function buildArena3d(){
   }
   scene3d.add(bridge3d);
  }
+ }catch(e){console.log('bridge 3D error',e);}
  // tanks
  if(tankMe3d)scene3d.remove(tankMe3d);
  if(tankBot3d)scene3d.remove(tankBot3d);
