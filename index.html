@@ -908,9 +908,17 @@ function drawLoadout(){
   g.fillStyle=sel?'#1f9e8e':'#141c26';rr(bx,y,mw,44,10);g.fill();
   if(sel){g.strokeStyle='#3fd0c9';g.lineWidth=2;rr(bx,y,mw,44,10);g.stroke();}
   g.fillStyle=sel?'#fff':'#8fa3b8';g.font=font(11);g.textAlign='center';
-  g.fillText(MAPS[mid].n,bx+mw/2,y+10);
+  // truncate name if too wide
+  let nm=MAPS[mid].n;
+  while(g.measureText(nm).width>mw-8&&nm.length>4)nm=nm.slice(0,-2);
+  if(nm!==MAPS[mid].n)nm+='…';
+  g.fillText(nm,bx+mw/2,y+10);
   g.fillStyle='#5c6b7d';g.font=font(9);
-  g.fillText(MAPS[mid].d,bx+mw/2,y+26);
+  // truncate description if too wide
+  let ds=MAPS[mid].d;
+  while(g.measureText(ds).width>mw-8&&ds.length>4)ds=ds.slice(0,-2);
+  if(ds!==MAPS[mid].d)ds+='…';
+  g.fillText(ds,bx+mw/2,y+26);
  });
  y+=56;
  const fw=Math.min(300,vw*0.7);
@@ -1479,9 +1487,9 @@ function drawCrate(x,y,w,h,tk,ri){
   diamond(cx+s*0.17,cy-s*0.03,s*0.06,col);
  }
  g.shadowBlur=0;
- if(ri===2){                                           // epic sparkles
+ if(ri===2){                                           // epic sparkles (moved outward to avoid EPIC text overlap)
   g.strokeStyle='#ffe9a8';g.lineWidth=1.5;
-  [[x-7,y-5,4],[x+w+7,y+12,3],[x+w*0.5,y-9,5]].forEach(([px,py,pr])=>{
+  [[x-9,y+8,4],[x+w+9,y+12,3],[x+w+9,y-6,3]].forEach(([px,py,pr])=>{
    g.beginPath();g.moveTo(px-pr,py);g.lineTo(px+pr,py);g.moveTo(px,py-pr);g.lineTo(px,py+pr);g.stroke();
   });
  }
