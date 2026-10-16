@@ -959,6 +959,31 @@ function plateTitle(t,cx2,y){
  g.fillStyle='#05070a';g.fillText(t,cx2,y+1);
  g.fillStyle='#9fb2c8';g.fillText(t,cx2,y);
 }
+// big rugged cannon, dir=1 points right, dir=-1 points left
+function drawCannon(x,y,dir,s,col){
+ g.save();g.translate(x,y);g.scale(dir*s,s);
+ // mount base with rivets
+ g.fillStyle=col;
+ g.beginPath();g.arc(0,0,13,0,7);g.fill();
+ g.lineWidth=2;g.strokeStyle='#5a4a33';g.stroke();
+ g.fillStyle='#5a4a33';
+ for(let a=0;a<6;a++){const an=a*Math.PI/3+0.52;g.beginPath();g.arc(Math.cos(an)*10,Math.sin(an)*10,1.7,0,7);g.fill();}
+ g.fillStyle='#2a2419';g.beginPath();g.arc(0,0,6,0,7);g.fill();
+ // tapered barrel
+ const bg=g.createLinearGradient(0,-6,0,6);
+ bg.addColorStop(0,col);bg.addColorStop(0.5,'#8a6f4d');bg.addColorStop(1,col);
+ g.fillStyle=bg;
+ g.beginPath();g.moveTo(8,-6.5);g.lineTo(36,-4.5);g.lineTo(36,4.5);g.lineTo(8,6.5);g.closePath();g.fill();
+ // barrel bands
+ g.fillStyle='#3a3226';
+ g.fillRect(15,-7,4.5,14);g.fillRect(25,-6,4.5,12);
+ // muzzle brake
+ g.fillStyle=col;g.fillRect(34,-8,12,16);
+ g.fillStyle='#14100a';
+ g.fillRect(37.5,-8,2.5,16);g.fillRect(42,-8,2.5,16);
+ g.fillStyle='rgba(255,150,60,.25)';g.fillRect(46,-6,3,12);
+ g.restore();
+}
 function drawLoadout(){
  g.fillStyle='#0b0f15';g.fillRect(0,0,vw,vh);
  const cx=vw/2;
@@ -1023,26 +1048,47 @@ function drawLoadout(){
    g.beginPath();g.arc(pp[0],pp[1],br,0,7);g.fill();
    g.fillStyle='#2a3442';g.beginPath();g.arc(pp[0],pp[1],br*0.4,0,7);g.fill();g.fillStyle='#5a6a7d';
   });
-  const sx=bx+10,syy=sy0+8,sw=cw-20,sh=cw-28;
-  g.fillStyle='#080c11';rr(sx,syy,sw,sh,6);g.fill();
-  g.strokeStyle='rgba(0,0,0,.6)';g.lineWidth=1;rr(sx,syy,sw,sh,6);g.stroke();
+  // circular reactor port: machined bezel + dark core housing
+  const ccx=bx+cw/2,ccy=sy0+cw/2-2,sr=cw/2-8;
+  g.fillStyle='#232d3a';g.beginPath();g.arc(ccx,ccy,sr,0,7);g.fill();
+  g.strokeStyle='#4a5a70';g.lineWidth=2;g.beginPath();g.arc(ccx,ccy,sr,0,7);g.stroke();
+  g.strokeStyle=col;g.globalAlpha=0.55;g.lineWidth=1;g.beginPath();g.arc(ccx,ccy,sr-3.5,0,7);g.stroke();g.globalAlpha=1;
+  // bezel notches
+  g.fillStyle='#141a23';
+  for(let a=0;a<8;a++){const an=a*Math.PI/4+Math.PI/8;g.beginPath();g.arc(ccx+Math.cos(an)*(sr-4),ccy+Math.sin(an)*(sr-4),2,0,7);g.fill();}
+  // dark port
+  const pr=sr-8;
+  g.fillStyle='#04070b';g.beginPath();g.arc(ccx,ccy,pr,0,7);g.fill();
   if(k){
-   g.save();g.shadowColor=col;g.shadowBlur=12;
-   diamond(bx+cw/2,syy+sh/2,12,col);
-   g.restore();
-   g.fillStyle=col;g.globalAlpha=0.6;
-   const gx=bx+cw/2,gy=syy+sh/2;
-   [[-14,-10],[14,-10],[-14,10],[14,10]].forEach(function(dd){
-    g.fillRect(gx+dd[0]-2,gy+dd[1]-2,4,4);
-   });
+   const t=performance.now()/450+i*1.7;
+   const pulse=0.45+0.25*Math.sin(t);
+   // energy conduits feeding the core
+   g.strokeStyle=col;g.globalAlpha=pulse;g.lineWidth=2.5;
+   for(let a=0;a<4;a++){const an=a*Math.PI/2+Math.PI/4;
+    g.beginPath();g.moveTo(ccx+Math.cos(an)*(pr+5),ccy+Math.sin(an)*(pr+5));
+    g.lineTo(ccx+Math.cos(an)*13,ccy+Math.sin(an)*13);g.stroke();}
    g.globalAlpha=1;
+   // claw arms gripping the core
+   for(let a=0;a<4;a++){const an=a*Math.PI/2+Math.PI/4;
+    g.save();g.translate(ccx,ccy);g.rotate(an);
+    g.fillStyle='#46586e';
+    g.beginPath();g.moveTo(11,-4.5);g.lineTo(21,-2.8);g.lineTo(21,2.8);g.lineTo(11,4.5);g.closePath();g.fill();
+    g.fillStyle='#232d3a';g.beginPath();g.arc(15.5,0,1.6,0,7);g.fill();
+    g.restore();}
+   // the core itself, hot and pulsing
+   g.save();g.shadowColor=col;g.shadowBlur=10+6*Math.sin(t);
+   diamond(ccx,ccy,13,col);
+   g.restore();
+   diamond(ccx,ccy-1,4.5,'#ffffff');
    g.fillStyle='#e6ebf0';g.font=font(10);g.textAlign='center';
-   g.fillText(GEM[k].n,bx+cw/2,sy0+cw-8);
+   g.fillText(GEM[k].n,ccx,sy0+cw-5);
   }else{
-   g.strokeStyle='#2a3442';g.lineWidth=1;g.setLineDash([4,3]);
-   g.strokeRect(sx+4,syy+4,sw-8,sh-8);g.setLineDash([]);
+   // empty port: threaded rings
+   g.strokeStyle='#2b3542';g.lineWidth=2;
+   for(let r2=pr-2;r2>5;r2-=5){g.beginPath();g.arc(ccx,ccy,r2,0,7);g.stroke();}
+   g.fillStyle='#11161d';g.beginPath();g.arc(ccx,ccy,4,0,7);g.fill();
    g.fillStyle='#3a4552';g.font=font(9);g.textAlign='center';
-   g.fillText('EMPTY',bx+cw/2,syy+sh/2+3);
+   g.fillText('EMPTY',ccx,sy0+cw-5);
   }
  }
  g.fillStyle='#5c6b7d';g.font=font(10);g.textAlign='center';
@@ -1092,14 +1138,8 @@ function drawLoadout(){
  hazardStrip(fx+fw-24,py+8,16,fh-16);
  g.fillStyle='#ffd9ad';g.font=font(20);g.textAlign='center';
  const tw=g.measureText('FIGHT').width;
- const c1x=cx-tw/2-34,cy2=py+fh/2;
- g.beginPath();g.arc(c1x-6,cy2,7,0,7);g.fill();
- g.fillRect(c1x-4,cy2-3,20,6);
- g.fillRect(c1x+12,cy2-4,4,8);
- const c2x=cx+tw/2+34;
- g.beginPath();g.arc(c2x+6,cy2,7,0,7);g.fill();
- g.fillRect(c2x-16,cy2-3,20,6);
- g.fillRect(c2x-16,cy2-4,4,8);
+ drawCannon(cx-tw/2-52,py+fh/2,1,1,'#c8a06a');
+ drawCannon(cx+tw/2+52,py+fh/2,-1,1,'#c8a06a');
  g.fillStyle='#fff';
  g.shadowColor='#ff7b2e';g.shadowBlur=8;
  g.fillText('FIGHT',cx,py+fh/2-10);
