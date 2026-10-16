@@ -140,6 +140,29 @@ function qp(id,val,isMax){
  e.p=isMax?Math.max(e.p,val):e.p+val;
  if(e.p>=Q.goal)e.done=true;
 }
+// ---- points: every PTS award flows through here so daily/weekly boards stay accurate
+function dayId(d){return d.toISOString().slice(0,10);}
+function weekId(d){   // ISO week, YYYY-Www (UTC)
+ const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+ const day=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-day+3);
+ const first=new Date(Date.UTC(t.getUTCFullYear(),0,4));
+ const fday=(first.getUTCDay()+6)%7;first.setUTCDate(first.getUTCDate()-fday+3);
+ const w=1+Math.round((t-first)/(7*864e5));
+ return t.getUTCFullYear()+'-W'+String(w).padStart(2,'0');
+}
+function rollPeriods(){
+ const now=new Date(),d=dayId(now),w=weekId(now);
+ if(save.dailyDate!==d){save.dailyDate=d;save.dailyPts=0;}
+ if(save.weeklyId!==w){save.weeklyId=w;save.weeklyPts=0;}
+}
+function awardPts(n){
+ if(!n||n<=0)return;
+ rollPeriods();
+ save.pts=(save.pts||0)+n;
+ save.dailyPts=(save.dailyPts||0)+n;
+ save.weeklyPts=(save.weeklyPts||0)+n;
+ store();
+}
 let mstat=null,lastPts=0,lastTons=0,toast=null,mmT=0;
 function showToast(t){toast={txt:t,t:1.6};}
 const W=20,H=32,HUD=2.6,R=0.7,MATCH=180;
@@ -400,6 +423,8 @@ function syncPlayer(){
   const pw=calcPower(),brk=powerBracket(pw);
   db.ref('players/'+playerId).set({
    pts:save.pts||0,
+   dailyPts:save.dailyPts||0,
+   weeklyPts:save.weeklyPts||0,
    spendGram:save.spendGram||0,
    power:pw,
    bracket:brk.n,
@@ -574,7 +599,7 @@ function newMatch(){
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
 }
 function toArena(){state='arena';}
-loadSave();state='garage';
+loadSave();rollPeriods();state='garage';
 
 // ---- input: floating touch joystick + WASD/arrows ----
 const loc=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
@@ -970,7 +995,7 @@ function endMatch(){
  syncPlayer();
  lastTons=0;
  lastStreakBonusPts=won?sb*20:0;
- save.pts+=lastPts;
+ awardPts(lastPts);
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
  qp('q_win1',won?1:0);qp('q_win3',won?1:0);
  qp('q_dmg',mstat.dmg,true);qp('q_super',mstat.sup,true);qp('q_box',mstat.box,true);
@@ -1530,9 +1555,15 @@ function menuTap(x,y){
     if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){claimQuest(r.id);return;}
    }
   }
- if(state==='board'&&ui.daily){
+ if((state==='board'||state==='ranks')&&ui.daily){
   const d=ui.daily;
-  if(x>=d.x&&x<=d.x+d.w&&y>=d.y&&y<=d.y+d.h)claimDaily();
+  if(x>=d.x&&x<=d.x+d.w&&y>=d.y&&y<=d.y+d.h){claimDaily();return;}
+ }
+ if((state==='board'||state==='ranks')&&ui.lbScopeBtns)for(const b of ui.lbScopeBtns){
+  if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){lbScope=b.id;return;}
+ }
+ if((state==='board'||state==='ranks')&&ui.lbBrackets)for(const b of ui.lbBrackets){
+  if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){lbBracket=b.id;return;}
  }
 }
 function drawQuests(){
@@ -1612,7 +1643,7 @@ function drawQuests(){
 function claimQuest(id){
  const Q=QUESTS.find(q=>q.id===id),e=save.q[id];
  if(!Q||!e||!e.done||e.claimed)return;
- e.claimed=true;save.pts+=Q.pts;store();showToast('+'+Q.pts+' PTS — '+Q.n);
+ e.claimed=true;awardPts(Q.pts);showToast('+'+Q.pts+' PTS — '+Q.n);
 }
 function visitLinkQuest(id,link){
  const url=link==='wiki'?WIKI_URL:link==='x'?X_URL:link==='tg'?TG_URL:link==='chan'?CHAN_URL:'';
@@ -1624,55 +1655,138 @@ function visitLinkQuest(id,link){
  e.p=Q.goal;e.done=true;store();
 }
 let rivals=null;
+const BRKC={BRONZE:'#b08d57',SILVER:'#c0c8d0',GOLD:'#ffd24a',PLATINUM:'#7be3e0',DIAMOND:'#c28bff'};
+let lbCache=null,lbCacheT=0,lbScope='overall',lbBracket='ALL';
+function lbMetric(p){return lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):(p.pts||0);}
+function loadLB(){
+ if(!db)return;
+ const now=Date.now();
+ if(lbCache&&now-lbCacheT<60000)return;   // refresh at most once a minute
+ db.ref('players').once('value',snap=>{
+  const v=snap.val()||{};
+  lbCache=Object.keys(v).map(k=>({id:k,n:v[k].name||'Pilot-????',pts:v[k].pts||0,dailyPts:v[k].dailyPts||0,weeklyPts:v[k].weeklyPts||0,bracket:v[k].bracket||'BRONZE'}));
+  lbCacheT=Date.now();
+ });
+}
+function msToDailyReset(){const n=new Date();return Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+1)-n.getTime();}
+function msToWeeklyReset(){const n=new Date();const d=(n.getUTCDay()+6)%7;return Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+(6-d)+1)-n.getTime();}
+function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d>0?d+'D '+h+'H':h+'H '+m+'M';}
+const fmtNum=n=>Math.round(n).toLocaleString('en-US');
 function drawBoard(){
+ loadLB();
  g.fillStyle='#0c1118';g.fillRect(0,0,vw,vh);
  const cx=vw/2;let y=Math.max(16,vh*0.03);
  g.textAlign='center';g.textBaseline='top';
  g.fillStyle='#e6ebf0';g.font=font(Math.round(Math.min(30,vw*0.07)));
  g.fillText('LEADERBOARD',cx,y);y+=38;
+ // YOU card: overall points + tier
  const t=tierIdx();
  g.fillStyle='#141c26';rr(12,y,vw-24,88,12);g.fill();
  g.strokeStyle=TIERC[t];g.lineWidth=2;rr(12,y,vw-24,88,12);g.stroke();
  g.textAlign='left';g.fillStyle='#e6ebf0';g.font=font(16);g.fillText('YOU',26,y+10);
  g.fillStyle=TIERC[t];g.font=font(13);g.fillText(TIERS[t]+' TIER',26,y+32);
- g.textAlign='right';g.fillStyle='#ffd24a';g.font=font(18);g.fillText(save.pts+' PTS',vw-26,y+10);
+ g.textAlign='right';g.fillStyle='#ffd24a';g.font=font(18);g.fillText(fmtNum(save.pts)+' PTS',vw-26,y+10);
  if(t<TIERS.length-1){
   const pr=(save.pts-TPTS[t])/(TPTS[t+1]-TPTS[t]);
   g.fillStyle='rgba(255,255,255,.1)';g.fillRect(26,y+58,vw-52,8);
   g.fillStyle=TIERC[t+1];g.fillRect(26,y+58,(vw-52)*pr,8);
   g.fillStyle='#8fa3b8';g.font=font(11);g.textAlign='center';
-  g.fillText((TPTS[t+1]-save.pts)+' PTS TO '+TIERS[t+1],cx,y+72);
+  g.fillText(fmtNum(TPTS[t+1]-save.pts)+' PTS TO '+TIERS[t+1],cx,y+72);
  }else{g.fillStyle='#8fa3b8';g.font=font(11);g.textAlign='center';g.fillText('MAX TIER REACHED',cx,y+70);}
  y+=102;
+ // daily claim
  const today=new Date().toISOString().slice(0,10),can=save.daily!==today;
  ui.daily={x:cx-130,y:y,w:260,h:46};
  g.fillStyle=can?'#1f9e8e':'#2a3542';rr(cx-130,y,260,46,10);g.fill();
  g.fillStyle=can?'#fff':'#5c6b7d';g.font=font(15);g.textAlign='center';
  g.fillText(can?'CLAIM DAILY +'+TDAILY[tierIdx()]+' PTS':'DAILY CLAIMED',cx,y+14);
- y+=62;
- if(!rivals)rivals=['VOLT-9','SCRAPJACK','NIXIE','TURBO','GOLIATH-2','PIXEL','RONIN'].map((n,i)=>({n,base:120+i*160+((i*37)%90)}));
- const rows=rivals.map(r=>({n:r.n,pts:Math.round(r.base+save.pts*0.85)}));
- rows.push({n:'YOU',pts:save.pts,you:true});
- rows.sort((a,b)=>b.pts-a.pts);
- g.fillStyle='#8fa3b8';g.font=font(12);g.textAlign='center';
- g.fillText('LOCAL LADDER',cx,y);y+=20;
- rows.forEach((r,i)=>{
-  const rh2=34;
-  if(y+rh2>vh-70)return;
-  if(r.you){g.fillStyle='rgba(63,208,201,.12)';rr(12,y,vw-24,rh2,8);g.fill();}
-  g.fillStyle=r.you?'#3fd0c9':'#8fa3b8';g.font=font(13);g.textAlign='left';
-  g.fillText((i+1)+'. '+r.n,26,y+9);
-  g.textAlign='right';g.fillStyle=r.you?'#ffd24a':'#c7d2dd';
-  g.fillText(r.pts+' PTS',vw-26,y+9);
-  y+=rh2+4;
+ y+=58;
+ // scope tabs: overall / daily / weekly
+ ui.lbScopeBtns=[];
+ const scopes=[['overall','OVERALL'],['daily','DAILY'],['weekly','WEEKLY']];
+ const sw=(vw-24-16)/3;
+ scopes.forEach((sc,i)=>{
+  const bx=12+i*(sw+8),sel=lbScope===sc[0];
+  ui.lbScopeBtns.push({x:bx,y:y,w:sw,h:36,id:sc[0]});
+  g.fillStyle=sel?'#1f9e8e':'#141c26';rr(bx,y,sw,36,10);g.fill();
+  if(sel){g.strokeStyle='#3fd0c9';g.lineWidth=2;rr(bx,y,sw,36,10);g.stroke();}
+  g.fillStyle=sel?'#fff':'#8fa3b8';g.font=font(14);g.textAlign='center';
+  g.fillText(sc[1],bx+sw/2,y+10);
  });
+ y+=44;
+ // context line: reset countdowns for tournaments, allocation note for overall
+ g.font=font(11);g.fillStyle='#8fa3b8';g.textAlign='center';
+ if(lbScope==='daily')g.fillText('DAILY TOURNAMENT · RESETS IN '+fmtDur(msToDailyReset()),cx,y);
+ else if(lbScope==='weekly')g.fillText('WEEKLY TOURNAMENT · RESETS IN '+fmtDur(msToWeeklyReset()),cx,y);
+ else g.fillStyle='#ffd24a',g.fillText('TOP 1000 QUALIFY FOR ALLOCATION',cx,y);
+ y+=20;
+ // bracket filter chips
+ ui.lbBrackets=[];
+ const brs=['ALL','BRONZE','SILVER','GOLD','PLATINUM','DIAMOND'];
+ const bw=(vw-24-(brs.length-1)*6)/brs.length;
+ brs.forEach((b,i)=>{
+  const bx=12+i*(bw+6),sel=lbBracket===b;
+  ui.lbBrackets.push({x:bx,y:y,w:bw,h:28,id:b});
+  g.fillStyle=sel?'#232d3a':'#141c26';rr(bx,y,bw,28,8);g.fill();
+  g.strokeStyle=sel?(b==='ALL'?'#3fd0c9':BRKC[b]):'#232d3a';g.lineWidth=1.5;rr(bx,y,bw,28,8);g.stroke();
+  g.fillStyle=sel?(b==='ALL'?'#e6ebf0':BRKC[b]):'#5c6b7d';g.font=font(10);g.textAlign='center';
+  let nm=b;while(g.measureText(nm).width>bw-6&&nm.length>3)nm=nm.slice(0,-2);
+  g.fillText(nm,bx+bw/2,y+8);
+ });
+ y+=36;
+ // ranked rows (real players from Firebase)
+ if(!lbCache){
+  g.fillStyle='#5c6b7d';g.font=font(13);g.textAlign='center';
+  g.fillText('LOADING LEADERBOARD…',cx,y+20);
+ }else{
+  let rows=lbCache.filter(p=>lbBracket==='ALL'||p.bracket===lbBracket);
+  rows.sort((a,b)=>lbMetric(b)-lbMetric(a)||(a.n<b.n?-1:1));
+  const myRank=rows.findIndex(r=>r.id===playerId);
+  g.font=font(12);g.textAlign='center';
+  if(myRank>=0){
+   g.fillStyle='#3fd0c9';
+   let q=lbScope==='overall'?(myRank<1000?' · QUALIFIED FOR TOP 1000':' · OUTSIDE TOP 1000'):'';
+   g.fillText('YOUR RANK: #'+(myRank+1)+q,cx,y);
+  }else{
+   g.fillStyle='#5c6b7d';g.fillText('PLAY A MATCH TO ENTER THE RANKINGS',cx,y);
+  }
+  y+=20;
+  let shown=0;
+  for(let i=0;i<rows.length&&shown<12;i++){
+   const r=rows[i],rh2=36;
+   if(y+rh2>vh-70)break;
+   // top-1000 cutoff line (overall scope)
+   if(lbScope==='overall'&&lbBracket==='ALL'&&i===1000){
+    g.strokeStyle='#ffd24a';g.lineWidth=1;g.setLineDash([6,4]);
+    g.beginPath();g.moveTo(12,y+2);g.lineTo(vw-12,y+2);g.stroke();g.setLineDash([]);
+    g.fillStyle='#ffd24a';g.font=font(10);g.textAlign='center';
+    g.fillText('TOP 1000 CUTOFF',cx,y+6);y+=22;
+    if(y+rh2>vh-70)break;
+   }
+   if(r.id===playerId){g.fillStyle='rgba(63,208,201,.12)';rr(12,y,vw-24,rh2,8);g.fill();}
+   g.textAlign='left';g.font=font(13);
+   g.fillStyle=r.id===playerId?'#3fd0c9':'#8fa3b8';
+   let nm=(i+1)+'. '+(r.id===playerId?'YOU':r.n);
+   while(g.measureText(nm).width>vw*0.5&&nm.length>4)nm=nm.slice(0,-2);
+   g.fillText(nm,26,y+4);
+   g.fillStyle=BRKC[r.bracket]||'#8fa3b8';g.font=font(9);
+   g.fillText(r.bracket,26,y+20);
+   g.textAlign='right';g.fillStyle=r.id===playerId?'#ffd24a':'#c7d2dd';g.font=font(13);
+   g.fillText(fmtNum(lbMetric(r))+' PTS',vw-26,y+10);
+   y+=rh2+4;shown++;
+  }
+  if(rows.length===0){
+   g.fillStyle='#5c6b7d';g.font=font(12);g.textAlign='center';
+   g.fillText('NO PLAYERS IN THIS BRACKET YET',cx,y+16);
+  }
+ }
  drawTabs();drawToast();
 }
 function claimDaily(){
  const today=new Date().toISOString().slice(0,10);
  if(save.daily===today){showToast('ALREADY CLAIMED');return;}
  const rw=TDAILY[tierIdx()];
- save.daily=today;save.pts+=rw;store();showToast('DAILY +'+rw+' PTS');
+ save.daily=today;awardPts(rw);showToast('DAILY +'+rw+' PTS');
 }
 function drawMatchmaking(){
  g.fillStyle='#0c1118';g.fillRect(0,0,vw,vh);
@@ -1726,7 +1840,7 @@ function doOpenBox(tk,ri){
     sub:isW?(w0.dps+' DPS · '+(1/w0.shot).toFixed(1)+'/s'):('HP '+c0.hp+'x · SPD '+c0.spd+'x')};
   }else{
    const pts=ri===0?20:ri===1?60:150;
-   save.pts+=pts;store();
+   awardPts(pts);
    reveal={color:col,tk,ri,title:'+'+pts+' PTS SCRAP',sub:'nothing new to unlock!'};
   }
  }
