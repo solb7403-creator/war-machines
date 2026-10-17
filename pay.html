@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LUNAR: War Machines · Pay with SOL</title>
+<script type="module">
+import { Buffer } from "https://cdn.jsdelivr.net/npm/buffer@6.0.3/+esm";
+window.Buffer = window.Buffer || Buffer;
+if (window.__bufReady) window.__bufReady();
+</script>
 <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -112,10 +117,13 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
   for(var i=0;i<RPCS.length;i++){try{var c=new solanaWeb3.Connection(RPCS[i],'confirmed');return {conn:c,bh:(await c.getLatestBlockhash()).blockhash};}catch(e){}}
   throw new Error('Network busy, try again');
  }
+ var bufP=new Promise(function(res){if(window.Buffer)return res();window.__bufReady=res;setTimeout(res,6000);});
  async function pay(){
   var p=provider();if(!p)return;
   $('payBtn').disabled=true;status('Connecting…');
   try{
+   await bufP;
+   if(!window.Buffer)throw new Error('Wallet browser still loading, tap again');
    if(!p.publicKey||!p.isConnected)await p.connect();
    var W=solanaWeb3,from=p.publicKey;
    var ix=W.SystemProgram.transfer({fromPubkey:from,toPubkey:new W.PublicKey(RECIPIENT),lamports:lamports});
