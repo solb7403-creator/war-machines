@@ -491,7 +491,7 @@ function initBackend(){
   if(IN_TG){
    db.ref('players/'+playerId).once('value',sn=>{
     const v=sn.val();
-    srv=v?{pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0}:{pts:0,daily:0,weekly:0,d:null,w:null,t:0,fresh:true};
+    srv=v?{pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0}:{pts:0,daily:0,weekly:0,d:null,w:null,t:0,days:0,ld:null,sk:0,fresh:true};
     // server is the floor: never show fewer points than the leaderboard has
     if(srv.pts>(save.earned||0)){save.pts=(save.pts||0)+srv.pts-(save.earned||0);save.earned=srv.pts;store();}
     syncPlayer();
@@ -516,18 +516,20 @@ function syncPlayer(){
   t:firebase.database.ServerValue.TIMESTAMP,
   spendGram:save.spendGram||0,power:pw,bracket:brk.n,tier:TIERS[tierIdx()],
   wins:save.wins||0,losses:save.losses||0,lastSeen:firebase.database.ServerValue.TIMESTAMP,
-  name:tgName(TG_USER)
+  name:tgName(TG_USER),
+  // days active (distinct UTC days played) + consecutive-day streak; the rules allow +1 per new day only
+  days:srv.ld===d?srv.days:(srv.days||0)+1,ld:d,sk:srv.ld===d?(srv.sk||1):(srv.ld===d-1?(srv.sk||0)+1:1)
  };
  syncBusy=true;
  db.ref('players/'+playerId).set(rec).then(()=>{
   syncBusy=false;
-  srv={pts:rec.pts,daily:rec.dailyPts,weekly:rec.weeklyPts,d:d,w:w,t:Date.now()+srvOff};
+  srv={pts:rec.pts,daily:rec.dailyPts,weekly:rec.weeklyPts,d:d,w:w,t:Date.now()+srvOff,days:rec.days,ld:rec.ld,sk:rec.sk};
   const again=syncAgain===true;if(again)syncAgain=null;
   if(again||((save.earned||0)>srv.pts&&srv.daily<DAILY_CAP))syncPlayer(); // next step goes out after the gap
  }).catch(()=>{
   syncBusy=false;
   // rejected (clock skew or another device wrote first): reload server state and retry later
-  db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0};
+  db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0};
    setTimeout(syncPlayer,SYNC_GAP);});
  });
 }
