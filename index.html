@@ -2088,7 +2088,9 @@ function isBoxMaxed(tk,ri){
  return keys.every(k=>isW?ownW(k,ri):ownC(k,ri));
 }
 function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayId(new Date()):tk+ri;}
-function boxPrice(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return RPRICE[ri]*(1+n);}
+function boxPrice(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;
+ // gear crates: x1, x2, x3 (only 3 items each). Gem caches: +25% per buy that day, resets daily (repeat purchase)
+ return tk==='gem'?Math.round(RPRICE[ri]*(1+0.25*n)*100)/100:RPRICE[ri]*(1+n);}
 function openBox(tk,ri){
  const cost=boxPrice(tk,ri);
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
