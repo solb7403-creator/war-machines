@@ -7,7 +7,7 @@
 <script>
 // Auto-update: phones and GitHub's CDN can keep an old copy for ~10 min. version.json is fetched fresh;
 // if it's newer than this page, reload with ?v=<new> (a URL the cache has never seen). Telegram data in the #hash is kept.
-window.BUILD='20261017224258';
+window.BUILD='20261017231351';
 fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
  const q=new URLSearchParams(location.search);
  if(j&&j.v&&j.v!==window.BUILD&&q.get('v')!==j.v){q.set('v',j.v);location.replace(location.pathname+'?'+q.toString()+location.hash);}
@@ -523,7 +523,7 @@ const FIREBASE_CONFIG={
  databaseURL:"https://warmachines-a6034-default-rtdb.firebaseio.com",
  projectId:"warmachines-a6034"
 };
-let db=null,playerId=null,srvOff=0,srv=null,syncBusy=false,syncAgain=null,noDays=false;
+let db=null,playerId=null,srvOff=0,srv=null,syncBusy=false,syncAgain=null,noDays=false,noRef=false;
 // srv = what the server currently holds for this player; points are pushed in steps the rules allow
 function initBackend(){
  try{
@@ -537,7 +537,7 @@ function initBackend(){
   if(IN_TG){
    db.ref('players/'+playerId).once('value',sn=>{
     const v=sn.val();
-    srv=v?{pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0}:{pts:0,daily:0,weekly:0,d:null,w:null,t:0,days:0,ld:null,sk:0,fresh:true};
+    srv=v?{pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0,ref:v.ref||null}:{pts:0,daily:0,weekly:0,d:null,w:null,t:0,days:0,ld:null,sk:0,ref:null,fresh:true};
     // server is the floor: never show fewer points than the leaderboard has
     if(srv.pts>(save.earned||0)){save.pts=(save.pts||0)+srv.pts-(save.earned||0);save.earned=srv.pts;store();}
     syncPlayer();
@@ -567,17 +567,21 @@ function syncPlayer(){
   days:srv.ld===d?srv.days:(srv.days||0)+1,ld:d,sk:srv.ld===d?(srv.sk||1):(srv.ld===d-1?(srv.sk||0)+1:1)
  };
  if(noDays){delete rec.days;delete rec.ld;delete rec.sk;}
+ captureRef();
+ // referrer: written once, only while the account is brand new (the rules enforce both)
+ if(!noRef){const rf=srv.ref||(save.refBy&&(srv.days||0)<=1?save.refBy:null);if(rf)rec.ref=rf;}
  syncBusy=true;
  db.ref('players/'+playerId).set(rec).then(()=>{
   syncBusy=false;
-  srv={pts:rec.pts,daily:rec.dailyPts,weekly:rec.weeklyPts,d:d,w:w,t:Date.now()+srvOff,days:rec.days,ld:rec.ld,sk:rec.sk};
+  srv={pts:rec.pts,daily:rec.dailyPts,weekly:rec.weeklyPts,d:d,w:w,t:Date.now()+srvOff,days:rec.days,ld:rec.ld,sk:rec.sk,ref:rec.ref||srv.ref||null};
   const again=syncAgain===true;if(again)syncAgain=null;
   if(again||((save.earned||0)>srv.pts&&srv.daily<DAILY_CAP))syncPlayer(); // next step goes out after the gap
  }).catch(()=>{
   syncBusy=false;
-  if(!noDays&&rec.days!==undefined)noDays=true; // older rules without days tracking: keep syncing points without it
+  if(rec.ref&&!srv.ref&&!noRef)noRef=true;   // referral refused (not a new account): drop it, keep everything else
+  else if(!noDays&&rec.days!==undefined)noDays=true; // older rules without days tracking: keep syncing points without it
   // rejected (clock skew or another device wrote first): reload server state and retry later
-  db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0};
+  db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0,ref:v.ref||null};
    setTimeout(syncPlayer,SYNC_GAP);});
  });
 }
@@ -2033,6 +2037,8 @@ function menuTap(x,y){
   for(const u of (ui.upMini||[]))if(hit(u)){buyUp(u.k);return;}
   return;
  }
+ if(state==='quests'&&ui.refBtns)for(const b of ui.refBtns)if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){
+  if(b.id==='share')shareRef();else if(b.id==='copy')copyRef();else if(b.id==='squad')info=squadInfo();else claimRefs();return;}
  if(state==='quests'&&ui.qrows)
   for(const r of ui.qrows){
    if(r.visit){
@@ -2062,6 +2068,20 @@ function drawQuests(){
  g.fillStyle='#e6ebf0';g.font=font(Math.round(Math.min(30,vw*0.07)));
  g.fillText('QUESTS',cx,y);y+=34;
  drawPts(cx,y);y+=46;
+ // ---- SQUAD / referral card ----
+ loadLB();
+ {const sq=squad(),act=sq.filter(r=>refStatus(r)[0]==='ACTIVE').length,pend=refPending(),cw=vw-24,ch=118,x0=12;
+  g.fillStyle='#16202b';rr(x0,y,cw,ch,12);g.fill();g.strokeStyle='#ffd24a';g.lineWidth=1.5;rr(x0,y,cw,ch,12);g.stroke();
+  g.textAlign='left';g.fillStyle='#ffd24a';g.font=font(15);g.fillText('INVITE PILOTS',x0+14,y+12);
+  qmark(x0+cw-18,y+20,refHowInfo);
+  g.fillStyle='#8fa3b8';g.font=font(10.5);g.fillText('You get paid when your squad keeps playing',x0+14,y+33);
+  g.fillStyle='#e6ebf0';g.font=font(12);g.fillText('SQUAD '+sq.length+'  ·  ACTIVE '+act,x0+14,y+52);
+  g.textAlign='right';g.fillStyle=pend?'#7be07b':'#5c6b7d';g.fillText(pend?'+'+fmtNum(pend)+' READY':'0 READY',x0+cw-14,y+52);
+  const bg=6,bw=(cw-28-bg*3)/4,by=y+74,bh=32;ui.refBtns=[];
+  [['SHARE','share','#1f9e8e'],['COPY LINK','copy','#2a3542'],['SQUAD','squad','#2a3542'],['CLAIM','claim',pend?'#d4a017':'#2a3542']].forEach(([lb,id,c],i)=>{
+   const bx=x0+14+i*(bw+bg);ui.refBtns.push({x:bx,y:by,w:bw,h:bh,id});
+   g.fillStyle=c;rr(bx,by,bw,bh,8);g.fill();g.fillStyle=id==='claim'&&!pend?'#5c6b7d':'#fff';g.textAlign='center';g.font=font(11.5);g.fillText(lb,bx+bw/2,by+9);});
+  y+=ch+10;}
  // quest sections: battle quests first, then community/link quests
  const SECTIONS=[['battle','\u2694\uFE0F BATTLE QUESTS'],['social','\uD83C\uDF10 COMMUNITY']];
  const SH=34,rh=64,gap=10;   // comfortable fixed row height; list scrolls when it overflows
@@ -2149,6 +2169,60 @@ function drawQuests(){
  drawTabs();drawToast();
 }
 
+
+// ---- REFERRALS: invite link -> squad. You earn when your recruits keep playing, not when they just sign up. ----
+const BOT_PLAY='https://t.me/LunarWarMachinesBot/play';
+const REF_MS=[{days:2,pts:1500,r:500,n:'Came back the next day'},{days:5,pts:10000,r:2000,n:'5 days active · 10K pts'},{days:10,pts:40000,r:5000,n:'10 days active · 40K pts'}];
+const REF_PCT=0.10,REF_WELCOME=1000;
+const refLink=()=>BOT_PLAY+'?startapp=ref_'+(TG_USER?TG_USER.id:'0');
+function captureRef(){   // the start_param of the link that opened the game
+ try{
+  const sp=IN_TG&&TG.initDataUnsafe&&TG.initDataUnsafe.start_param;
+  if(!sp||!/^ref_\d{3,15}$/.test(sp)||save.refBy)return;
+  const rid='tg_'+sp.slice(4);
+  if(rid===playerId||(save.earned||0)>5000)return;   // can't recruit yourself or an existing player
+  save.refBy=rid;store();
+ }catch(e){}
+}
+const squad=()=>(lbCache&&playerId)?lbCache.filter(p=>p.ref===playerId&&p.id!==playerId):[];
+const dayNow=()=>Math.floor((Date.now()+srvOff)/864e5);
+function refStatus(r){const ago=r.ld==null?99:dayNow()-r.ld;return ago<=1?['ACTIVE','#7be07b']:ago<=6?['IDLE '+ago+'D','#ffd24a']:['INACTIVE','#ff6b5e'];}
+function refOwed(r){   // milestones reached + 10% of what they've earned since you last claimed
+ const c=(save.refC||{})[r.id]||{m:0,seen:0};let m=c.m,ms=0;
+ while(m<REF_MS.length&&r.days>=REF_MS[m].days&&r.pts>=REF_MS[m].pts){ms+=REF_MS[m].r;m++;}
+ const pct=Math.max(0,Math.floor((r.pts-(c.seen||0))*REF_PCT));
+ return {ms,pct,m,tot:ms+pct};
+}
+const welcomeReady=()=>!!(save.refBy&&!save.refWelcome&&srv&&srv.ref===save.refBy&&(srv.days||0)>=2);
+function refPending(){let t=welcomeReady()?REF_WELCOME:0;for(const r of squad())t+=refOwed(r).tot;return t;}
+function claimRefs(){
+ rollPeriods();let room=Math.max(0,DAILY_CAP-(save.dailyPts||0)),got=0;
+ save.refC=save.refC||{};
+ if(welcomeReady()&&room>=REF_WELCOME){save.refWelcome=true;got+=REF_WELCOME;room-=REF_WELCOME;}
+ for(const r of squad()){const o=refOwed(r);if(!o.tot)continue;if(o.tot>room)break;save.refC[r.id]={m:o.m,seen:r.pts};got+=o.tot;room-=o.tot;}
+ if(!got){showToast(refPending()?'DAILY CAP REACHED · CLAIM TOMORROW':'NOTHING TO CLAIM YET');return;}
+ awardPts(got);showToast('+'+fmtNum(got)+' SQUAD PTS');
+}
+function shareRef(){
+ const txt='Join my squad in LUNAR: War Machines. Real-time robot tank battles on Telegram, and the top 1,000 pilots get a guaranteed $LUNAR allocation.';
+ const u='https://t.me/share/url?url='+encodeURIComponent(refLink())+'&text='+encodeURIComponent(txt);
+ try{if(IN_TG)TG.openTelegramLink(u);else window.open(u,'_blank');}catch(e){copyRef();}
+}
+function copyRef(){try{navigator.clipboard.writeText(refLink()).then(()=>showToast('INVITE LINK COPIED'),()=>showToast(refLink()));}catch(e){showToast(refLink());}}
+function refHowInfo(){return {t:'SQUAD REWARDS',c:'#ffd24a',L:[
+ 'HOW IT WORKS','Share your invite link. Anyone who opens the game with it for the first time joins your squad.',
+ 'YOU GET PAID WHEN THEY STICK AROUND','Sign-ups alone pay nothing. You earn when your recruits actually keep playing:',
+ '+500 · they come back for a 2nd day (1,500+ pts)','+2,000 · 5 days active and 10K pts','+5,000 · 10 days active and 40K pts',
+ '+10% FOREVER','You get 10% of every point your squad earns, for as long as they keep playing. They lose nothing.',
+ 'THEY GET +1,000','Your recruit gets a 1,000 point welcome bonus when they come back for day 2.',
+ 'RULES','Days active means separate days played. Squad points count toward the 20,000 daily cap and the leaderboard. Fake or alt accounts are removed from the airdrop.']};}
+function squadInfo(){const sq=squad(),L=[];
+ if(!sq.length)L.push('No recruits yet. Tap SHARE and send your link to friends or groups.');
+ sq.sort((a,b)=>b.pts-a.pts).slice(0,12).forEach(r=>{const st=refStatus(r),o=refOwed(r),nx=REF_MS[o.m];
+  L.push(String(r.n).toUpperCase().replace(/[^A-Z0-9 ]/g,'').slice(0,18)+' · '+st[0]);
+  L.push('Day '+r.days+' · '+fmtNum(r.pts)+' pts'+(o.tot?' · +'+fmtNum(o.tot)+' ready':'')+(nx?' · next: '+nx.n:''));});
+ if(sq.length>12)L.push('+'+(sq.length-12)+' more');
+ return {t:'YOUR SQUAD ('+sq.length+')',c:'#3fd0c9',L};}
 function claimQuest(id){
  const Q=QUESTS.find(q=>q.id===id),e=save.q[id];
  if(!Q||!e||!e.done||e.claimed)return;
@@ -2178,7 +2252,7 @@ function loadLB(){
  db.ref('players').once('value',snap=>{
   const v=snap.val()||{};
   const nowS=Date.now()+srvOff,dNow=Math.floor(nowS/864e5),wNow=Math.floor((nowS-4*864e5)/(7*864e5));
-  lbCache=Object.keys(v).filter(k=>k.indexOf('tg_')===0).map(k=>({id:k,n:v[k].name||'Pilot-????',pts:v[k].pts||0,dailyPts:v[k].d===dNow?(v[k].dailyPts||0):0,weeklyPts:v[k].w===wNow?(v[k].weeklyPts||0):0,bracket:v[k].bracket||'BRONZE'}));
+  lbCache=Object.keys(v).filter(k=>k.indexOf('tg_')===0).map(k=>({id:k,n:v[k].name||'Pilot-????',pts:v[k].pts||0,dailyPts:v[k].d===dNow?(v[k].dailyPts||0):0,weeklyPts:v[k].w===wNow?(v[k].weeklyPts||0):0,bracket:v[k].bracket||'BRONZE',ref:v[k].ref||null,days:v[k].days||0,ld:v[k].ld??null}));
   lbCacheT=Date.now();
  });
 }

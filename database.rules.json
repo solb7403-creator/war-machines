@@ -58,10 +58,16 @@
         "sk": {
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },
+        "ref": {
+          ".validate": "newData.isString() && newData.val().beginsWith('tg_') && newData.val().length <= 24 && newData.val() != $pid && (data.val() == newData.val() || (!data.exists() && (!data.parent().child('days').exists() || data.parent().child('days').val() <= 1)))"
+        },
         "$other": {
           ".validate": false
         }
-      }
+      },
+      ".indexOn": [
+        "ref"
+      ]
     },
     "payments": {
       ".read": false,
