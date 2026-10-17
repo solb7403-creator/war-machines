@@ -180,7 +180,7 @@ const QUESTS=[
  {id:'q_wiki',n:'WAR MACHINES WIKI',d:'Wiki: how to play, farm the airdrop, tokenomics. Top 1000 players get guaranteed $LUNER allocation!',pts:200,goal:1,link:'wiki'},
  {id:'q_x',n:'FOLLOW ON X',d:'Follow for updates and announcements',pts:50,goal:1,link:'x'},
  {id:'q_tg',n:'JOIN TG CHANNEL',d:'News channel for airdrop updates',pts:50,goal:1,link:'tg'},
- {id:'q_chan',n:'FOLLOW NEW CHANNEL',d:'Follow our new channel for drops and announcements',pts:50,goal:1,link:'chan'}];
+ {id:'q_chan',n:'FOLLOW NEW CHANNEL',d:'Follow our new channel for drops and announcements',pts:50,goal:1,link:'chan'}].filter(q=>!q.link||({wiki:WIKI_URL,x:X_URL,tg:TG_URL,chan:CHAN_URL})[q.link]); // link quests stay hidden until their URL is set
 function qp(id,val,isMax){
  const Q=QUESTS.find(q=>q.id===id);if(!Q)return;
  let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
