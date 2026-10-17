@@ -161,18 +161,38 @@ const WNAMES={pulse:['PULSE CANNON','ARC PULSE','NOVA PULSE'],twin:['TWIN REPEAT
 const CNAMES={scout:['SCOUT','STRIDER','PHANTOM'],vanguard:['VANGUARD','SENTINEL','PALADIN'],titan:['TITAN','BULWARK','COLOSSUS']};
 const ownW=(k,t)=>!!(save.wOwn&&save.wOwn[k]&&save.wOwn[k].indexOf(t)>=0);
 const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
-function getW(arch,tt){
+// Paid gear rolls 100-110% of its tier's stats. Salvaged gear (points only) gets 50-75% of the real item's boost.
+const ROLL_MIN=1.00,ROLL_MAX=1.10,SALV_MIN=0.50,SALV_MAX=0.75,SALV_COL='#b0805a',SALV_PTS=[0,5000,20000];
+const rollOf=(k,t)=>(save.roll&&save.roll[k+':'+t])||1;
+const salvOf=(k,t)=>(save.salv&&save.salv[k+':'+t])||0;
+const gearMult=(k,tc,sal)=>sal?1+(TIER_MULT[tc]-1)*salvOf(k,tc):TIER_MULT[tc]*rollOf(k,tc);
+const pct=q=>Math.round(q*100)+'%';
+function getW(arch,tt,sal){
  if(arch==='moon'){
   const b=WEAPONS.moon;
-  return {id:'moon',arch:'moon',tier:2,name:b.n,dps:b.dps,shot:b.shot,pspd:26,premium:true};
+  return {id:'moon',arch:'moon',tier:2,name:b.n,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:TIER_MULT[2],q:1,sal:false};
  }
- const t=tt!==undefined?tt:((save.wTier&&save.wTier[arch])||0),tc=Math.max(0,t),mt=TIER_MULT[tc],b=WEAPONS[arch]||WEAPONS.pulse;
- return {id:arch+':'+tc,arch,tier:t,name:(WNAMES[arch]||WNAMES.pulse)[tc],dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
+ if(sal===undefined)sal=tt===undefined&&!!(save.wSal&&save.wSal[arch]);
+ const t=tt!==undefined?tt:((save.wTier&&save.wTier[arch])||0),tc=Math.max(0,t),mt=gearMult(arch,tc,sal),b=WEAPONS[arch]||WEAPONS.pulse;
+ return {id:arch+':'+tc+(sal?'s':''),arch,tier:t,sal,q:sal?salvOf(arch,tc):rollOf(arch,tc),mult:mt,name:(sal?'SALVAGED ':'')+(WNAMES[arch]||WNAMES.pulse)[tc],dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
 }
-function getC(cls,tt){
- const t=tt!==undefined?tt:((save.cTier&&save.cTier[cls])||0),tc=Math.max(0,t),mt=TIER_MULT[tc],b=CH[cls]||CH.vanguard;
- return {id:cls+':'+tc,cls,tier:t,name:(CNAMES[cls]||CNAMES.vanguard)[tc],hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:Math.round((b.turn+0.05*tc)*100)/100,size:b.ds};
+function getC(cls,tt,sal){
+ if(sal===undefined)sal=tt===undefined&&!!(save.cSal&&save.cSal[cls]);
+ const t=tt!==undefined?tt:((save.cTier&&save.cTier[cls])||0),tc=Math.max(0,t),mt=gearMult(cls,tc,sal),b=CH[cls]||CH.vanguard;
+ return {id:cls+':'+tc+(sal?'s':''),cls,tier:t,sal,q:sal?salvOf(cls,tc):rollOf(cls,tc),mult:mt,name:(sal?'SALVAGED ':'')+(CNAMES[cls]||CNAMES.vanguard)[tc],hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:Math.round((b.turn+0.05*tc)*100)/100,size:b.ds};
 }
+// after any new gear, equip the strongest version of that line (paid or salvaged)
+function equipBest(isW,k){
+ const own=(isW?save.wOwn:save.cOwn)[k]||[];let best=null;
+ own.forEach(t=>{const m=gearMult(k,t,false);if(!best||m>best.m)best={t,s:false,m};});
+ [1,2].forEach(t=>{if(salvOf(k,t)){const m=gearMult(k,t,true);if(!best||m>best.m)best={t,s:true,m};}});
+ if(!best)return;
+ if(isW){save.wTier[k]=best.t;save.wSal=save.wSal||{};save.wSal[k]=best.s;}
+ else{save.cTier[k]=best.t;save.cSal=save.cSal||{};save.cSal[k]=best.s;}
+}
+const gcol=it=>it.sal?SALV_COL:tierCol(it.tier);
+const gbadge=it=>it.sal?'SALV':tierName(it.tier);
+const gq=it=>it.premium?'':' · '+pct(it.q);
 const BOXODDS=[[0.70,0.25,0.05],[0.25,0.60,0.15],[0,0.30,0.70]];
 function rollItem(cat,ri){
  const isW=cat==='w';
@@ -803,7 +823,7 @@ function newMatch(){
  const pwr=calcPower(),brk=powerBracket(pwr);
  // bot mirrors your power level for fair fights
  const bwA=['pulse','twin','siege'][(Math.random()*3)|0],bcC=['scout','vanguard','titan'][(Math.random()*3)|0];
- const bwm=TIER_MULT[wt],bcm=TIER_MULT[ct];
+ const bwm=W.mult||TIER_MULT[Math.max(0,wt)],bcm=Cc.mult||TIER_MULT[Math.max(0,ct)];
  // scale bot to match player power (with slight variance for challenge)
  const pScale=0.92+Math.random()*0.16;
  const bw={arch:bwA,dps:Math.round(WEAPONS[bwA].dps*bwm*pScale),shot:WEAPONS[bwA].shot,pspd:22,tier:wt};
@@ -813,7 +833,7 @@ function newMatch(){
  me={x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],gems:(save.cores||[]).filter(Boolean),sp:0,sup:null,
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skinHp),dmgM:(1+0.08*U.cannon)*skinDmg,spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,
-  wtype:W.arch,wdps:W.dps,wshot:W.shot,wpspd:W.pspd,wtier:W.tier,dscale:Cc.size,cls:save.chassis};
+  wtype:W.arch,wdps:W.dps,wshot:W.shot,wpspd:W.pspd,wtier:W.tier,wmult:W.mult,dscale:Cc.size,cls:save.chassis};
  me.hp=me.mhp;
  // AI bot factory (allies and enemies mirror your power tier)
  const mkBot=(team,x,y)=>{
@@ -1021,7 +1041,7 @@ function useSuper(r){
 }
 function fireSuper(r,S){
  const col=TC[r.team];
- const hurt=(e,dmg)=>{dmg=dmg*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
+ const hurt=(e,dmg)=>{dmg=dmg*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
   if(r.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});};
  if(S.kind==='beam'){
   const ang=r.sup.ang;
@@ -1062,7 +1082,7 @@ function explode(s){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
   if(d<s.r+R){
    const fall=1-0.65*(d/(s.r+R));
-   const dmg=s.dmg*fall*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
+   const dmg=s.dmg*fall*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
    if(r.isPlayer&&mstat)mstat.dmg+=dmg;
    nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});
   }
@@ -1576,8 +1596,8 @@ function buildStats(){
   gear:(W.tier<0?0:W.tier)+(Cc.tier<0?0:Cc.tier)};
 }
 function eqId(isW){
- if(isW)return save.weapon==='moon'?'moon':save.weapon+':'+Math.max(0,save.wTier[save.weapon]||0);
- return save.chassis+':'+Math.max(0,save.cTier[save.chassis]||0);
+ if(isW)return save.weapon==='moon'?'moon':save.weapon+':'+Math.max(0,save.wTier[save.weapon]||0)+((save.wSal&&save.wSal[save.weapon])?'s':'');
+ return save.chassis+':'+Math.max(0,save.cTier[save.chassis]||0)+((save.cSal&&save.cSal[save.chassis])?'s':'');
 }
 function ownedList(isW){
  const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
@@ -1585,11 +1605,12 @@ function ownedList(isW){
  if(isW&&save.moonbeam)items.push(getW('moon'));
  for(let t=2;t>=0;t--)keys.forEach(k=>{
   const own=isW?ownW(k,t):ownC(k,t);
-  const it=isW?getW(k,t):getC(k,t);it.locked=!own;
+  const it=isW?getW(k,t,false):getC(k,t,false);it.locked=!own;
   items.push(it);
+  if(t>0&&salvOf(k,t))items.push(isW?getW(k,t,true):getC(k,t,true));
  });
  const eq=eqId(isW);
- items.sort((a,b)=>(a.id===eq?-1:b.id===eq?1:0)||((a.locked?1:0)-(b.locked?1:0))||(b.tier-a.tier));
+ items.sort((a,b)=>(a.id===eq?-1:b.id===eq?1:0)||((a.locked?1:0)-(b.locked?1:0))||(b.mult-a.mult));
  return items;
 }
 
@@ -1711,13 +1732,13 @@ function drawSlotCard(y,id,label,it){
  const h=78,bx=14;
  ui.slotCards.push({x:bx,y:y,w:vw-28,h:h,id});
  g.fillStyle='#141c26';rr(bx,y,vw-28,h,10);g.fill();
- g.strokeStyle=tierCol(it.tier);g.lineWidth=2;rr(bx,y,vw-28,h,10);g.stroke();
+ g.strokeStyle=gcol(it);g.lineWidth=2;rr(bx,y,vw-28,h,10);g.stroke();
  g.textAlign='left';g.fillStyle='#8fa3b8';g.font=font(10);g.fillText(label,bx+12,y+8);
  const nm=it.name.length>24?it.name.slice(0,23)+'…':it.name;
  if(isW&&it.arch==='moon')legendText('\u2726 '+nm,bx+12,y+22,15,'left');
  else{g.fillStyle='#e6ebf0';g.font=font(15);g.fillText(nm,bx+12,y+24);}
- g.fillStyle=tierCol(it.tier);g.font=font(11);
- g.fillText(tierName(it.tier)+' '+(isW?it.arch:it.cls).toUpperCase()+' · '+
+ g.fillStyle=gcol(it);g.font=font(11);
+ g.fillText(gbadge(it)+gq(it)+' · '+
   (isW?(it.dps+' DPS · '+(1/it.shot).toFixed(1)+'/s · VEL '+it.pspd):('HP '+it.hp+'× · SPD '+it.spd+'× · TRN '+it.turn)),bx+12,y+42);
  if(isW){g.fillStyle='#5c6b7d';g.font=font(10);g.fillText('SUPER: '+WEAPONS[it.arch].sup,bx+12,y+58);}
  g.fillStyle='#8fa3b8';g.font=font(18);g.textAlign='right';
@@ -1742,13 +1763,13 @@ function drawGearBrowser(){
  g.fillText(isW?'WEAPONS':'CHASSIS',cx,y+2);
  g.fillStyle='#8fa3b8';g.font=font(12);
  g.fillStyle='#8fa3b8';g.font=font(12);
- {const tot=items.filter(o=>!o.locked&&o.arch!=='moon').length;
+ {const tot=items.filter(o=>!o.locked&&!o.sal&&o.arch!=='moon').length;
  g.fillText(tot+'/9 COLLECTED · 3 per cache',cx,y+30);}
  y+=72;
  const rh=86,gap=8;
  slice.forEach((o,i)=>{
   const ry=y+i*(rh+gap),eq=o.id===eqId(isW);
-  ui.pickRows.push({x:14,y:ry,w:vw-28,h:rh,id:o.id,slot:pickOpen,locked:o.locked,tier:o.tier});
+  ui.pickRows.push({x:14,y:ry,w:vw-28,h:rh,id:o.id,slot:pickOpen,locked:o.locked,tier:o.tier,sal:o.sal});
   if(o.locked){
    g.fillStyle='#0f151d';rr(14,ry,vw-28,rh,10);g.fill();
    g.strokeStyle='#2a3542';g.lineWidth=1.5;rr(14,ry,vw-28,rh,10);g.stroke();
@@ -1762,17 +1783,17 @@ function drawGearBrowser(){
    return;
   }
   g.fillStyle=eq?'#1a2a38':'#141c26';rr(14,ry,vw-28,rh,10);g.fill();
-  g.strokeStyle=tierCol(o.tier);g.lineWidth=eq?2.5:1.5;rr(14,ry,vw-28,rh,10);g.stroke();
-  g.fillStyle=tierCol(o.tier);rr(vw-86,ry+10,58,20,6);g.fill();
+  g.strokeStyle=gcol(o);g.lineWidth=eq?2.5:1.5;rr(14,ry,vw-28,rh,10);g.stroke();
+  g.fillStyle=gcol(o);rr(vw-86,ry+10,58,20,6);g.fill();
   g.fillStyle='#0c1118';g.font=font(10);g.textAlign='center';
-  g.fillText(tierName(o.tier),vw-57,ry+13);
+  g.fillText(gbadge(o),vw-57,ry+13);
   g.textAlign='left';g.font=font(15);
   const nm=o.name.length>26?o.name.slice(0,25)+'…':o.name;
   if(isW&&o.arch==='moon')legendText('\u2726 '+nm,26,ry+8,15,'left');
   else{g.fillStyle=eq?'#fff':'#e6ebf0';g.fillText(nm,26,ry+10);}
   g.fillStyle='#8fa3b8';g.font=font(12);
-  g.fillText(isW?(o.arch.toUpperCase()+' · '+o.dps+' DPS · '+(1/o.shot).toFixed(1)+'/s · VEL '+o.pspd)
-               :(o.cls.toUpperCase()+' · HP '+o.hp+'x · SPD '+o.spd+'x'),26,ry+34);
+  g.fillText(isW?(o.arch.toUpperCase()+gq(o)+' · '+o.dps+' DPS · '+(1/o.shot).toFixed(1)+'/s')
+               :(o.cls.toUpperCase()+gq(o)+' · HP '+o.hp+'x · SPD '+o.spd+'x'),26,ry+34);
   g.fillStyle='#5c6b7d';g.font=font(11);
   g.fillText(isW?('SUPER: '+WEAPONS[o.arch].sup)
                :('BEATS '+COUNTER[o.cls].toUpperCase()+' · WEAK TO '+beatenBy(o.cls).toUpperCase()),26,ry+54);
@@ -1808,8 +1829,9 @@ function menuTap(x,y){
    if(ui.gearBack&&hit(ui.gearBack)){pickOpen=null;return;}
    for(const r of (ui.pickRows||[]))if(hit(r)){
     if(r.locked){showToast('FIND IT IN THE '+TIER_N[r.tier]+' '+(r.slot==='w'?'WEAPON CACHE':'CHASSIS CRATE'));return;}
-    const [k,ts]=String(r.id).split(':'),t=ts===undefined?0:parseInt(ts,10);
-    if(r.slot==='w'){save.weapon=k;if(k!=='moon')save.wTier[k]=t;}else{save.chassis=k;save.cTier[k]=t;}
+    const [k,ts]=String(r.id).split(':'),t=ts===undefined?0:parseInt(ts,10),sl=!!ts&&ts.slice(-1)==='s';
+    if(r.slot==='w'){save.weapon=k;if(k!=='moon'){save.wTier[k]=t;save.wSal=save.wSal||{};save.wSal[k]=sl;}}
+    else{save.chassis=k;save.cTier[k]=t;save.cSal=save.cSal||{};save.cSal[k]=sl;}
     const it=r.slot==='w'?getW(k):getC(k);
     store();syncPlayer();showToast('EQUIPPED: '+it.name);return;
    }
@@ -2113,14 +2135,11 @@ const RAR=['common','rare','epic'],RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[2
 const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a gem from level L to L+1
 let reveal=null;
 function isBoxMaxed(tk,ri){
- if(tk==='gem')return false;
- const isW=tk==='weapon';
- const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
- return keys.every(k=>isW?ownW(k,ri):ownC(k,ri));
+ return false; // gear crates never max out: once all 3 are found they re-roll
 }
 function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayId(new Date()):tk+ri;}
 // gear crates: x1, x2, x3 (only 3 items each). Gem caches: +25% per buy that day, resets daily
-function boxMult(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:1+n;}
+function boxMult(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:Math.min(3,1+n);}
 function boxPrice(tk,ri){return Math.round(RPRICE[ri]*boxMult(tk,ri)*100)/100;}   // TON
 function boxStars(tk,ri){return Math.round(RSTARS[ri]*boxMult(tk,ri));}
 function boxPts(tk,ri){return RPTS[ri]||0;} // points price is flat: no repeat-buy increase
@@ -2150,21 +2169,26 @@ function doOpenBox(tk,ri){
    sub:up>0?GEM[k].n+' GEM → LEVEL '+lv+'!':GEM[k].n+' · Lv'+lv+' ('+save.gemShards[k]+'/'+(SHARD_NEED[lv]||'MAX')+' shards)'};
  }else{
   const isW=tk==='weapon';
+  const roll=Math.round((ROLL_MIN+Math.random()*(ROLL_MAX-ROLL_MIN))*100)/100;
+  save.roll=save.roll||{};
   const it=rollItem(isW?'w':'c',ri);
   if(it){
-   const own=isW?save.wOwn:save.cOwn,cur=isW?save.wTier:save.cTier;
+   const own=isW?save.wOwn:save.cOwn;
    if(!own[it.k])own[it.k]=[];own[it.k].push(it.tier);
-   if(it.tier>(cur[it.k]??-1))cur[it.k]=it.tier; // best in line becomes that line's loadout
-   store();
+   save.roll[it.k+':'+it.tier]=roll;
+   equipBest(isW,it.k);store();
    const nm=isW?WNAMES[it.k][it.tier]:CNAMES[it.k][it.tier];
-   const w0=getW(it.k,it.tier),c0=getC(it.k,it.tier);
-   const icol=RCOL[it.tier];
-   reveal={color:icol,tk,ri,rit:it.tier,title:'NEW '+TIER_N[it.tier]+': '+nm,
-    sub:isW?(w0.dps+' DPS · '+(1/w0.shot).toFixed(1)+'/s'):('HP '+c0.hp+'x · SPD '+c0.spd+'x')};
+   const w0=getW(it.k,it.tier,false),c0=getC(it.k,it.tier,false);
+   reveal={color:RCOL[it.tier],tk,ri,rit:it.tier,title:'NEW '+TIER_N[it.tier]+': '+nm,
+    sub:'ROLL '+pct(roll)+' · '+(isW?(w0.dps+' DPS'):('HP '+c0.hp+'x · SPD '+c0.spd+'x'))};
   }else{
-   const pts=ri===0?20:ri===1?60:150;
-   awardPts(pts);
-   reveal={color:col,tk,ri,title:'+'+pts+' PTS SCRAP',sub:'nothing new to unlock!'};
+   // collection complete: re-roll a random item of this rarity, keep the better roll
+   const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
+   const k=keys[(Math.random()*3)|0],key=k+':'+ri,old=rollOf(k,ri),nm=isW?WNAMES[k][ri]:CNAMES[k][ri];
+   if(roll>old){save.roll[key]=roll;equipBest(isW,k);store();
+    reveal={color:RCOL[ri],tk,ri,rit:ri,title:'ROLL UPGRADED!',sub:nm+': '+pct(old)+' → '+pct(roll)};}
+   else{const pts=ri===0?50:ri===1?150:400;awardPts(pts);
+    reveal={color:RCOL[ri],tk,ri,rit:ri,title:'ROLLED '+pct(roll),sub:'kept your '+pct(old)+' '+nm+' · +'+pts+' PTS'};}
   }
  }
 }
@@ -2208,8 +2232,22 @@ function shopTap(x,y){
  }
  for(const b of (ui.shopBoxes||[]))
   if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){openBox(b.tk,b.ri);return;}
+ if(save.payCur==='pts')for(const b of (ui.salvBoxes||[]))
+  if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){buySalvage(b.tk,b.ri);return;}
  for(const pm of (ui.premium||[]))
   if(x>=pm.x&&x<=pm.x+pm.w&&y>=pm.y&&y<=pm.y+pm.h){buyPremium(pm.id);return;}
+}
+function buySalvage(tk,ri){
+ const c=SALV_PTS[ri],isW=tk==='weapon';
+ if((save.pts||0)<c){showToast('NOT ENOUGH POINTS: '+fmtNum(c-(save.pts||0))+' MORE');return;}
+ const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
+ const k=keys[(Math.random()*3)|0],key=k+':'+ri,old=salvOf(k,ri);
+ const q=Math.round((SALV_MIN+Math.random()*(SALV_MAX-SALV_MIN))*100)/100;
+ save.pts-=c;save.ptsSpent=(save.ptsSpent||0)+c;save.salv=save.salv||{};
+ const nm='SALVAGED '+(isW?WNAMES[k][ri]:CNAMES[k][ri]);
+ if(q>old){save.salv[key]=q;equipBest(isW,k);store();
+  reveal={color:SALV_COL,tk,ri,rit:ri,title:nm,sub:(old?pct(old)+' → ':'')+pct(q)+' power'};}
+ else{store();reveal={color:SALV_COL,tk,ri,rit:ri,title:'ROLLED '+pct(q),sub:'kept your '+pct(old)+' '+nm};}
 }
 function buyPremium(id){
  if(save.payCur==='pts'){showToast('LUNAR PREMIUM IS PAID ONLY');return;}
@@ -2319,7 +2357,7 @@ function drawLootBox(bx,by,bw,bh,tk,ri){
  g.fillStyle='#5c6b7d';g.font=font(9);
  {const ks=tk==='weapon'?['pulse','twin','siege']:['scout','vanguard','titan'];
  const got=tk==='gem'?0:ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;
- g.fillText(tk==='gem'?(ri===0?'1-2':ri===1?'3-4':'6-9')+' shards':maxed?'all 3 found':got+'/3 found',bx+bw/2,by+bh-10);}
+ g.fillText(tk==='gem'?(ri===0?'1-2':ri===1?'3-4':'6-9')+' shards':(got<3?got+'/3 found':'RE-ROLL')+' · 100–110%',bx+bw/2,by+bh-10);}
 }
 // legendary gold nameplate: gradient gold + glow, for MOONBEAM / LUNAR SKIN
 function legendText(txt,x,y,size,align){
@@ -2359,7 +2397,7 @@ function drawShop(){
  g.fillStyle='#fff';g.font=font(12);g.fillText(wtxt,wx+ww/2,y+6);
  ui.walletBtn={x:wx,y:y-6,w:ww,h:36};y+=36;
  g.fillStyle='#5c6b7d';g.font=font(11);g.textAlign='center';
- g.fillText(isPts?'Spend points on Common & Rare caches · Epic is paid only':isStars?'Telegram Stars · buy with Apple Pay or card':isSol?(px.sol?'SOL prices match TON at live rates':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
+ g.fillText(isPts?'Points: real Common & Rare caches + the Salvage Yard':isStars?'Telegram Stars · buy with Apple Pay or card':isSol?(px.sol?'SOL prices match TON at live rates':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
  ui.shopBoxes=[];
  // exact-fit layout: 4 sections must end exactly at the tab bar (vh-62).
  // each section costs a header + the box + a gap; bh is derived from that
@@ -2385,6 +2423,26 @@ function drawShop(){
   });
   y+=bh+SEC_GAP;
  });
+ if(save.payCur==='pts'){
+  g.textAlign='left';g.fillStyle='#e6ebf0';g.font=font(13);
+  g.fillText('SALVAGE YARD · points only',14,y);
+  g.fillStyle='#5c6b7d';g.font=font(11);g.fillText('rebuilt gear: 50–75% of the real boost',14,y+15);
+  y+=SEC_H;
+  ui.salvBoxes=[];
+  const sw=(vw-28-3*6)/4;
+  [['weapon',1,'WPN'],['weapon',2,'WPN'],['chassis',1,'CHS'],['chassis',2,'CHS']].forEach(([tk,ri,lb],i)=>{
+   const bx=14+i*(sw+6),afford=(save.pts||0)>=SALV_PTS[ri];
+   ui.salvBoxes.push({x:bx,y:y,w:sw,h:bh,tk,ri});
+   g.fillStyle='rgba(176,128,90,.08)';rr(bx,y,sw,bh,10);g.fill();
+   g.strokeStyle=SALV_COL;g.globalAlpha=0.6;g.lineWidth=1.5;rr(bx,y,sw,bh,10);g.stroke();g.globalAlpha=1;
+   g.textAlign='center';g.fillStyle=SALV_COL;g.font=font(10);g.fillText(lb+' '+TIER_N[ri],bx+sw/2,y+6);
+   const ch=Math.min(26,bh-52),cw=Math.min(sw*0.8,ch*2.2);
+   g.globalAlpha=0.55;drawCrate(bx+(sw-cw)/2,y+22+(bh-52-ch)/2,cw,ch,tk,ri);g.globalAlpha=1;
+   g.fillStyle=afford?'#e6ebf0':'#7a8796';g.font=font(11);g.fillText(fmtNum(SALV_PTS[ri]),bx+sw/2,y+bh-26);
+   g.fillStyle='#5c6b7d';g.font=font(9);g.fillText('PTS',bx+sw/2,y+bh-12);
+  });
+  y+=bh+SEC_GAP;
+ }else
  // premium lunar items
  {
   const tk='premium';
