@@ -1,0 +1,18 @@
+name: SOL payment check
+# Manual: shows the War Machines SOL wallet balance and its latest transactions.
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Solana
+        run: |
+          A=A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE
+          R=https://solana-rpc.publicnode.com
+          BAL=$(curl -s $R -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getBalance\",\"params\":[\"$A\"]}" | jq '.result.value')
+          echo "::notice::balance lamports=$BAL"
+          SIGS=$(curl -s $R -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getSignaturesForAddress\",\"params\":[\"$A\",{\"limit\":6}]}")
+          for s in $(echo "$SIGS" | jq -r '.result[].signature'); do
+            T=$(curl -s $R -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTransaction\",\"params\":[\"$s\",{\"encoding\":\"jsonParsed\",\"maxSupportedTransactionVersion\":0}]}")
+            echo "$T" | jq -r --arg A "$A" '.result as $r | ($r.transaction.message.accountKeys | map(.pubkey) | index($A)) as $i | "::notice::sig='"$s"' time=\($r.blockTime|todate) change=\(($r.meta.postBalances[$i]-$r.meta.preBalances[$i])) err=\($r.meta.err)"'
+          done
