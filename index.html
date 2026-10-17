@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Lunar War Machines</title>
+<title>LUNAR: War Machines</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -178,12 +178,10 @@ const QUESTS=[
  {id:'q_box',n:'SCAVENGER',d:'Grab 3 mystery boxes in one match',pts:75,goal:3},
  {id:'q_clean',n:'UNTOUCHABLE',d:'Win a match taking under 600 damage',pts:150,goal:1},
  // link quests (visit external pages)
- {id:'q_wiki',n:'WAR MACHINES WIKI',d:'Wiki: how to play, farm the airdrop, tokenomics. Top 1000 players get guaranteed $LUNER allocation!',pts:200,goal:1,link:'wiki'},
+ {id:'q_wiki',n:'LUNAR WIKI',d:'Wiki: how to play, farm the airdrop, tokenomics. Top 1000 players get guaranteed $LUNER allocation!',pts:200,goal:1,link:'wiki'},
  {id:'q_x',n:'FOLLOW ON X',d:'Follow for updates and announcements',pts:50,goal:1,link:'x'},
  {id:'q_tg',n:'JOIN TG CHANNEL',d:'News channel for airdrop updates',pts:50,goal:1,link:'tg'},
  {id:'q_chan',n:'FOLLOW NEW CHANNEL',d:'Follow our new channel for drops and announcements',pts:50,goal:1,link:'chan'}].filter(q=>!q.link||({wiki:WIKI_URL,x:X_URL,tg:TG_URL,chan:CHAN_URL})[q.link]); // link quests stay hidden until their URL is set
-// hide link quests until their page exists (no 'Coming soon' rows)
-for(let i=QUESTS.length-1;i>=0;i--){const L=QUESTS[i].link;if(L&&!(L==='wiki'?WIKI_URL:L==='x'?X_URL:L==='tg'?TG_URL:L==='chan'?CHAN_URL:''))QUESTS.splice(i,1);}
 function qp(id,val,isMax){
  const Q=QUESTS.find(q=>q.id===id);if(!Q)return;
  let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
