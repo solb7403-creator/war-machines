@@ -1,0 +1,28 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "players": {
+      ".read": true,
+      "$pid": {
+        ".write": "$pid.beginsWith('tg_') && $pid.length <= 24",
+        ".validate": "newData.hasChildren(['pts','dailyPts','weeklyPts','d','w','t','name']) && newData.child('t').val() == now && newData.child('d').val() * 86400000 <= now + 120000 && (newData.child('d').val() + 1) * 86400000 > now - 120000 && newData.child('w').val() * 604800000 + 345600000 <= now + 120000 && (newData.child('w').val() + 1) * 604800000 + 345600000 > now - 120000 && newData.child('dailyPts').val() <= 20000 && ((!data.exists() && newData.child('pts').val() <= 1500 && newData.child('dailyPts').val() == newData.child('pts').val() && newData.child('weeklyPts').val() == newData.child('pts').val()) || (data.exists() && now - data.child('t').val() >= 25000 && newData.child('pts').val() >= data.child('pts').val() && newData.child('pts').val() - data.child('pts').val() <= 1500 && newData.child('dailyPts').val() == (newData.child('d').val() == data.child('d').val() ? data.child('dailyPts').val() : 0) + newData.child('pts').val() - data.child('pts').val() && newData.child('weeklyPts').val() == (newData.child('w').val() == data.child('w').val() ? data.child('weeklyPts').val() : 0) + newData.child('pts').val() - data.child('pts').val()))",
+        "pts": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "dailyPts": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "weeklyPts": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "d": { ".validate": "newData.isNumber()" },
+        "w": { ".validate": "newData.isNumber()" },
+        "t": { ".validate": "newData.isNumber()" },
+        "lastSeen": { ".validate": "newData.isNumber()" },
+        "name": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "spendGram": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "power": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+        "bracket": { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "tier": { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "wins": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "losses": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

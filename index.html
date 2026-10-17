@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>War Machines: Combat Sandbox</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -20,6 +21,49 @@ canvas{display:block;width:100%;height:100%}
 <body>
 <div id="wrap"><canvas id="c"></canvas><canvas id="c3d" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%"></canvas></div>
 <script>
+// ---- Telegram Mini App bootstrap ----
+const TG=(window.Telegram&&window.Telegram.WebApp)||null;
+const IN_TG=!!(TG&&TG.initData&&TG.initDataUnsafe&&TG.initDataUnsafe.user);
+const TG_USER=IN_TG?TG.initDataUnsafe.user:null;
+const DEV_IDS=[]; // Jake: put your Telegram user ID here (number) to use the dev panel inside Telegram
+const IS_DEV=!IN_TG||DEV_IDS.indexOf(TG_USER&&TG_USER.id)>=0;
+function tgName(u){
+ if(!u)return null;
+ let n=(u.username?u.username:((u.first_name||'')+(u.last_name?' '+u.last_name:''))).trim();
+ n=n.replace(/[^\w .\-]/g,'').slice(0,16);
+ return n||('Pilot-'+String(u.id).slice(-4));
+}
+if(TG){try{
+ TG.ready();TG.expand();
+ if(TG.isVersionAtLeast&&TG.isVersionAtLeast('7.7')&&TG.disableVerticalSwipes)TG.disableVerticalSwipes();
+ if(TG.isVersionAtLeast&&TG.isVersionAtLeast('6.1')){TG.setHeaderColor('#0c1118');TG.setBackgroundColor('#0c1118');}
+}catch(e){}}
+// Telegram CloudStorage: progress follows the Telegram account (survives cache clears, works across devices)
+const CLOUD_OK=IN_TG&&TG.CloudStorage&&TG.isVersionAtLeast&&TG.isVersionAtLeast('6.9');
+const CS_CHUNK=3800;
+let cloudTimer=null;
+function cloudSave(){
+ if(!CLOUD_OK||!save)return;
+ clearTimeout(cloudTimer);
+ cloudTimer=setTimeout(()=>{try{
+  const str=JSON.stringify(save),n=Math.ceil(str.length/CS_CHUNK);
+  for(let i=0;i<n;i++)TG.CloudStorage.setItem('wm_s'+i,str.slice(i*CS_CHUNK,(i+1)*CS_CHUNK),()=>{});
+  TG.CloudStorage.setItem('wm_n',String(n),()=>{});
+ }catch(e){}},1500);
+}
+function cloudLoad(cb){
+ if(!CLOUD_OK)return cb(null);
+ let done=false;const fin=v=>{if(!done){done=true;cb(v);}};
+ setTimeout(()=>fin(null),4000);
+ try{TG.CloudStorage.getItem('wm_n',(err,nv)=>{
+  const n=parseInt(nv||'0',10);if(err||!n)return fin(null);
+  const keys=[];for(let i=0;i<n;i++)keys.push('wm_s'+i);
+  TG.CloudStorage.getItems(keys,(e2,vals)=>{
+   if(e2||!vals)return fin(null);
+   try{fin(JSON.parse(keys.map(k=>vals[k]||'').join('')));}catch(e){fin(null);}
+  });
+ });}catch(e){fin(null);}
+}
 // ---- Striker placeholder stats (tune later) ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
@@ -34,9 +78,12 @@ const GEM={dmg:{n:'DMG',c:'#ff6b5e',amt:0.12,txt:'+12% damage'},rof:{n:'ROF',c:'
 const GORDER=['dmg','rof','arm','spd','lck','reg'];
 // ---- meta progression: points, garage upgrades, quests, tiers (saved locally) ----
 let save=null;
-function loadSave(){try{save=JSON.parse(localStorage.getItem('wm_save_v1'));}catch(e){save=null;}
+// separate save per Telegram account so two accounts on one device don't share progress
+const SAVE_KEY=IN_TG?'wm_save_tg_'+TG_USER.id:'wm_save_v1';
+function loadSave(obj){if(obj!==undefined)save=obj;else{try{save=JSON.parse(localStorage.getItem(SAVE_KEY));}catch(e){save=null;}}
  if(!save||typeof save.pts!=='number')save={pts:0,grams:0,up:{hull:0,cannon:0,engine:0,target:0,reactor:0},q:{},daily:'',chassis:'vanguard',weapon:'pulse',
   unlocked:{chassis:['vanguard'],weapons:['pulse']},gemLvl:{dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1},gemShards:{dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0},invW:[],invC:[]};
+ if(typeof save.earned!=='number'){let sp=0;for(const k in (save.up||{}))for(let i=0;i<save.up[k];i++)sp+=(UPS[k]?UPS[k].costs[i]:0);save.earned=(save.pts||0)+sp;}
  if(!save.chassis)save.chassis='vanguard';if(!save.weapon)save.weapon='pulse';
  if(save.grams===undefined)save.grams=0;
  if(!save.unlocked)save.unlocked={chassis:['vanguard'],weapons:['pulse']};
@@ -66,7 +113,7 @@ function loadSave(){try{save=JSON.parse(localStorage.getItem('wm_save_v1'));}cat
   if(!CH[save.chassis])save.chassis='vanguard';
   delete save.invW;delete save.invC;delete save.unlocked;
  }}
-function store(){try{localStorage.setItem('wm_save_v1',JSON.stringify(save));}catch(e){}}
+function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudSave();}
 const UPS={
  hull:{n:'HULL',d:'+8% max HP per level',c:'#5aa9ff',costs:[100,250,500,1000]},
  cannon:{n:'CANNON',d:'+8% damage per level',c:'#ff6b5e',costs:[100,250,500,1000]},
@@ -116,9 +163,9 @@ function rollItem(cat,ri){
  return {isW,k:cands[(Math.random()*cands.length)|0],tier:t};
 }
 
-function tierIdx(){let t=0;for(let i=0;i<TPTS.length;i++)if(save.pts>=TPTS[i])t=i;return t;}
+function tierIdx(){let t=0;for(let i=0;i<TPTS.length;i++)if((save.earned||0)>=TPTS[i])t=i;return t;}
 // External links - fill in when pages exist
-const WIKI_URL=''; // wiki: how to play, airdrop, tokenomics
+const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html'; // wiki: how to play, airdrop, tokenomics
 const X_URL=''; // X/Twitter profile
 const TG_URL=''; // Telegram news channel
 const CHAN_URL=''; // new channel link — fill in when Jake provides it
@@ -155,13 +202,18 @@ function rollPeriods(){
  if(save.dailyDate!==d){save.dailyDate=d;save.dailyPts=0;}
  if(save.weeklyId!==w){save.weeklyId=w;save.weeklyPts=0;}
 }
+// must match the Firebase rules (database.rules.json)
+const DAILY_CAP=20000,SYNC_STEP=1500,SYNC_GAP=26000;
 function awardPts(n){
  if(!n||n<=0)return;
  rollPeriods();
+ n=Math.min(n,Math.max(0,DAILY_CAP-(save.dailyPts||0)));
+ if(n<=0){showToast('DAILY POINT CAP REACHED');return;}
  save.pts=(save.pts||0)+n;
+ save.earned=(save.earned||0)+n;
  save.dailyPts=(save.dailyPts||0)+n;
  save.weeklyPts=(save.weeklyPts||0)+n;
- store();
+ store();syncPlayer();
 }
 let mstat=null,lastPts=0,lastTons=0,toast=null,mmT=0;
 function showToast(t){toast={txt:t,t:1.6};}
@@ -405,36 +457,59 @@ const FIREBASE_CONFIG={
  databaseURL:"https://warmachines-a6034-default-rtdb.firebaseio.com",
  projectId:"warmachines-a6034"
 };
-let db=null,playerId=null;
+let db=null,playerId=null,srvOff=0,srv=null,syncBusy=false,syncAgain=null;
+// srv = what the server currently holds for this player; points are pushed in steps the rules allow
 function initBackend(){
  try{
   if(FIREBASE_CONFIG.apiKey.indexOf('REPLACE')===0)return; // not configured yet
   firebase.initializeApp(FIREBASE_CONFIG);
   db=firebase.database();
-  playerId=localStorage.getItem('wm_playerId');
-  if(!playerId){playerId='p_'+Math.random().toString(36).slice(2,10);localStorage.setItem('wm_playerId',playerId);}
-  syncPlayer();
+  if(IN_TG)playerId='tg_'+TG_USER.id;
+  else{playerId=localStorage.getItem('wm_playerId');
+   if(!playerId){playerId='p_'+Math.random().toString(36).slice(2,10);localStorage.setItem('wm_playerId',playerId);}}
+  db.ref('.info/serverTimeOffset').on('value',sn=>{srvOff=sn.val()||0;});
+  if(IN_TG){
+   db.ref('players/'+playerId).once('value',sn=>{
+    const v=sn.val();
+    srv=v?{pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0}:{pts:0,daily:0,weekly:0,d:null,w:null,t:0,fresh:true};
+    // server is the floor: never show fewer points than the leaderboard has
+    if(srv.pts>(save.earned||0)){save.pts=(save.pts||0)+srv.pts-(save.earned||0);save.earned=srv.pts;store();}
+    syncPlayer();
+   });
+  }
   checkPendingPurchase();
  }catch(e){}
 }
+// Only real Telegram accounts sync to the leaderboard (that's the airdrop population).
 function syncPlayer(){
- if(!db||!playerId)return;
- try{
-  const pw=calcPower(),brk=powerBracket(pw);
-  db.ref('players/'+playerId).set({
-   pts:save.pts||0,
-   dailyPts:save.dailyPts||0,
-   weeklyPts:save.weeklyPts||0,
-   spendGram:save.spendGram||0,
-   power:pw,
-   bracket:brk.n,
-   tier:TIERS[tierIdx()],
-   wins:save.wins||0,
-   losses:save.losses||0,
-   lastSeen:Date.now(),
-   name:'Pilot-'+playerId.slice(2,6).toUpperCase()
-  });
- }catch(e){}
+ if(!db||!playerId||!IN_TG||!srv)return;
+ if(syncBusy){syncAgain=true;return;}
+ const now=Date.now()+srvOff;
+ if(!srv.fresh&&now-srv.t<SYNC_GAP){if(syncAgain&&syncAgain!==true)return;syncAgain=setTimeout(()=>{syncAgain=null;syncPlayer();},SYNC_GAP-(now-srv.t)+500);return;}
+ const d=Math.floor(now/864e5),w=Math.floor((now-4*864e5)/(7*864e5));
+ const dBase=srv.d===d?srv.daily:0,wBase=srv.w===w?srv.weekly:0;
+ let delta=Math.max(0,(save.earned||0)-srv.pts);
+ delta=Math.min(delta,SYNC_STEP,DAILY_CAP-dBase);if(delta<0)delta=0;
+ const pw=calcPower(),brk=powerBracket(pw);
+ const rec={
+  pts:srv.pts+delta,dailyPts:dBase+delta,weeklyPts:wBase+delta,d:d,w:w,
+  t:firebase.database.ServerValue.TIMESTAMP,
+  spendGram:save.spendGram||0,power:pw,bracket:brk.n,tier:TIERS[tierIdx()],
+  wins:save.wins||0,losses:save.losses||0,lastSeen:firebase.database.ServerValue.TIMESTAMP,
+  name:tgName(TG_USER)
+ };
+ syncBusy=true;
+ db.ref('players/'+playerId).set(rec).then(()=>{
+  syncBusy=false;
+  srv={pts:rec.pts,daily:rec.dailyPts,weekly:rec.weeklyPts,d:d,w:w,t:Date.now()+srvOff};
+  const again=syncAgain===true;if(again)syncAgain=null;
+  if(again||((save.earned||0)>srv.pts&&srv.daily<DAILY_CAP))syncPlayer(); // next step goes out after the gap
+ }).catch(()=>{
+  syncBusy=false;
+  // rejected (clock skew or another device wrote first): reload server state and retry later
+  db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0};
+   setTimeout(syncPlayer,SYNC_GAP);});
+ });
 }
 // Visitor tracking (local for now; global needs backend)
 let visitorCount=null,devOpen=false,devTapN=0,devTapT=0;
@@ -600,6 +675,10 @@ function newMatch(){
 }
 function toArena(){state='arena';}
 loadSave();rollPeriods();state='garage';
+cloudLoad(cs=>{
+ if(cs&&typeof cs.pts==='number'&&((cs._ts||0)>(save._ts||0)||(cs.earned||cs.pts)>(save.earned||0))){loadSave(cs);rollPeriods();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
+ else cloudSave(); // first run in Telegram: upload this device's progress
+});
 
 // ---- input: floating touch joystick + WASD/arrows ----
 const loc=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
@@ -1004,7 +1083,6 @@ function endMatch(){
  lastPts=Math.round(base*brk.mult)+sb*20;
  lastBracket=brk.n;
  if(won)save.wins=(save.wins||0)+1;else if(!drawn)save.losses=(save.losses||0)+1;
- syncPlayer();
  lastTons=0;
  lastStreakBonusPts=won?sb*20:0;
  awardPts(lastPts);
@@ -1683,7 +1761,11 @@ function claimQuest(id){
 function visitLinkQuest(id,link){
  const url=link==='wiki'?WIKI_URL:link==='x'?X_URL:link==='tg'?TG_URL:link==='chan'?CHAN_URL:'';
  if(!url){showToast('Coming soon!');return;}
- window.open(url,'_blank');
+ try{
+  if(IN_TG&&/^https?:\/\/t\.me\//.test(url))TG.openTelegramLink(url);
+  else if(IN_TG)TG.openLink(url);
+  else window.open(url,'_blank');
+ }catch(e){window.open(url,'_blank');}
  // mark as done after visiting
  const Q=QUESTS.find(q=>q.id===id);
  let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
@@ -1699,7 +1781,8 @@ function loadLB(){
  if(lbCache&&now-lbCacheT<60000)return;   // refresh at most once a minute
  db.ref('players').once('value',snap=>{
   const v=snap.val()||{};
-  lbCache=Object.keys(v).map(k=>({id:k,n:v[k].name||'Pilot-????',pts:v[k].pts||0,dailyPts:v[k].dailyPts||0,weeklyPts:v[k].weeklyPts||0,bracket:v[k].bracket||'BRONZE'}));
+  const nowS=Date.now()+srvOff,dNow=Math.floor(nowS/864e5),wNow=Math.floor((nowS-4*864e5)/(7*864e5));
+  lbCache=Object.keys(v).filter(k=>k.indexOf('tg_')===0).map(k=>({id:k,n:v[k].name||'Pilot-????',pts:v[k].pts||0,dailyPts:v[k].d===dNow?(v[k].dailyPts||0):0,weeklyPts:v[k].w===wNow?(v[k].weeklyPts||0):0,bracket:v[k].bracket||'BRONZE'}));
   lbCacheT=Date.now();
  });
 }
@@ -1720,13 +1803,13 @@ function drawBoard(){
  g.strokeStyle=TIERC[t];g.lineWidth=2;rr(12,y,vw-24,88,12);g.stroke();
  g.textAlign='left';g.fillStyle='#e6ebf0';g.font=font(16);g.fillText('YOU',26,y+10);
  g.fillStyle=TIERC[t];g.font=font(13);g.fillText(TIERS[t]+' TIER',26,y+32);
- g.textAlign='right';g.fillStyle='#ffd24a';g.font=font(18);g.fillText(fmtNum(save.pts)+' PTS',vw-26,y+10);
+ g.textAlign='right';g.fillStyle='#ffd24a';g.font=font(18);g.fillText(fmtNum((save.earned||0))+' PTS',vw-26,y+10);
  if(t<TIERS.length-1){
-  const pr=(save.pts-TPTS[t])/(TPTS[t+1]-TPTS[t]);
+  const pr=((save.earned||0)-TPTS[t])/(TPTS[t+1]-TPTS[t]);
   g.fillStyle='rgba(255,255,255,.1)';g.fillRect(26,y+58,vw-52,8);
   g.fillStyle=TIERC[t+1];g.fillRect(26,y+58,(vw-52)*pr,8);
   g.fillStyle='#8fa3b8';g.font=font(11);g.textAlign='center';
-  g.fillText(fmtNum(TPTS[t+1]-save.pts)+' PTS TO '+TIERS[t+1],cx,y+72);
+  g.fillText(fmtNum(TPTS[t+1]-(save.earned||0))+' PTS TO '+TIERS[t+1],cx,y+72);
  }else{g.fillStyle='#8fa3b8';g.font=font(11);g.textAlign='center';g.fillText('MAX TIER REACHED',cx,y+70);}
  y+=102;
  // daily claim
@@ -1882,14 +1965,14 @@ function doOpenBox(tk,ri){
 }
 function shopTap(x,y){
  const dt=ui.devTap;
- if(dt&&x>=dt.x&&x<=dt.x+dt.w&&y>=dt.y&&y<=dt.y+dt.h){
+ if(IS_DEV&&dt&&x>=dt.x&&x<=dt.x+dt.w&&y>=dt.y&&y<=dt.y+dt.h){
   const now=performance.now();
   if(now-devTapT>4000)devTapN=0;
   devTapT=now;devTapN++;
   if(devTapN>=5){devTapN=0;devOpen=!devOpen;if(devOpen)getVisitors();}
   return;
  }
- if(devOpen){
+ if(devOpen&&IS_DEV){
   const gm=ui.devGrantMoon,gs=ui.devGrantSkin,gc=ui.devGrantChassis;
   if(gc&&x>=gc.x&&x<=gc.x+gc.w&&y>=gc.y&&y<=gc.y+gc.h){
    save.cTier={scout:2,vanguard:2,titan:2};store();syncPlayer();showToast('EPIC CHASSIS GRANTED (TEST)');return;

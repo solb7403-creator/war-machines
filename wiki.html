@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>War Machines Wiki</title>
+<meta name="description" content="How to play War Machines, farm points, and qualify for the $LUNER airdrop.">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0c1118;--card:#141c26;--line:#233042;--fg:#e6ebf0;--mut:#8fa3b8;--teal:#3fd0c9;--gold:#ffd24a;--red:#ff6b5e;--blue:#5aa9ff;--green:#7be07b;--violet:#c28bff}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:0 16px 48px}
+.wrap{max-width:680px;margin:0 auto}
+header{text-align:center;padding:28px 0 18px}
+h1{font:800 30px/1.1 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:3px}
+h1 span{color:var(--gold)}
+.tag{color:var(--mut);font-size:13px;letter-spacing:1px;margin-top:6px}
+.hero{background:linear-gradient(135deg,#17323a,#1c1a33);border:1px solid var(--line);border-radius:14px;padding:16px;margin:8px 0 18px;text-align:center}
+.hero b{color:var(--gold)}
+.play{display:inline-block;margin-top:12px;background:var(--teal);color:#062022;font-weight:800;letter-spacing:2px;text-decoration:none;padding:11px 22px;border-radius:10px}
+nav{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px}
+nav a{color:var(--teal);text-decoration:none;font-size:12px;letter-spacing:1px;border:1px solid var(--line);border-radius:20px;padding:6px 11px;background:var(--card)}
+section{margin-top:26px}
+h2{font:800 16px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:2.5px;color:var(--teal);margin-bottom:10px;text-transform:uppercase}
+p{margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+ol,ul{padding-left:20px}li{margin-bottom:6px}
+.mut{color:var(--mut);font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-size:11px;letter-spacing:1px;font-weight:600}
+td.n{text-align:right;font-variant-numeric:tabular-nums}th.n{text-align:right}
+.chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:6px;border:1px solid currentColor}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid .card{margin:0}
+.grid h3{font-size:13px;letter-spacing:1px;margin-bottom:4px}
+.note{border-left:3px solid var(--gold);padding:10px 12px;background:#1a1a12;border-radius:0 10px 10px 0;margin:10px 0}
+footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
+@media (max-width:380px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <h1>WAR <span>MACHINES</span></h1>
+ <div class="tag">OFFICIAL WIKI</div>
+</header>
+
+<div class="hero">
+ Battle robot tanks in real-time PvP arenas, upgrade your machine, and climb the leaderboard.<br>
+ <b>The top 1,000 players get a guaranteed $LUNER allocation.</b>
+ <br><a class="play" id="playBtn" href="https://solb7403-creator.github.io/war-machines/">PLAY NOW</a>
+</div>
+
+<nav>
+ <a href="#start">How to play</a><a href="#combat">Combat</a><a href="#points">Points</a><a href="#tiers">Tiers</a>
+ <a href="#garage">Garage</a><a href="#quests">Quests</a><a href="#shop">Shop</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
+</nav>
+
+<section id="start">
+ <h2>How to play</h2>
+ <div class="card"><ol>
+  <li>Open the game in Telegram. Your progress is tied to your Telegram account, so it follows you across devices.</li>
+  <li>Pick a mode in the <b>Arena</b>: 1v1, 2v2 or 3v3.</li>
+  <li>Drag to drive. Your cannon aims and fires on its own; your job is positioning, dodging and grabbing boxes.</li>
+  <li>Win by destroying the enemy, or by having more health left when the 3-minute timer runs out.</li>
+  <li>Spend points in the <b>Garage</b> to upgrade, then queue again.</li>
+ </ol></div>
+</section>
+
+<section id="combat">
+ <h2>Combat</h2>
+ <div class="card">
+  <p><b>Shots are physical projectiles.</b> They travel, so moving makes you harder to hit. Direct hits can <b>crit</b> for double damage; shots that only clip the edge are <b>grazes</b> and deal less.</p>
+  <p><b>Super attack.</b> The meter above your tank fills as you deal damage (fastest), take damage, and land crits. When it's full, hit the red button. Each weapon has its own super.</p>
+  <p class="mut">Matches last 3 minutes.</p>
+ </div>
+ <div class="card">
+  <p><b>Mystery boxes</b> drop at random spots, 5 per match, starting 15–30 seconds in. Drive over one to claim a random buff. A buff lasts until you've absorbed a set amount of damage (the ring around your tank drains as it wears off). Buffs of the same type stack.</p>
+  <table>
+   <tr><th>Buff</th><th class="n">Effect</th></tr>
+   <tr><td><span class="chip" style="color:var(--red)">DMG</span></td><td class="n">+40% damage</td></tr>
+   <tr><td><span class="chip" style="color:var(--blue)">ARM</span></td><td class="n">+35% armor</td></tr>
+   <tr><td><span class="chip" style="color:var(--gold)">ROF</span></td><td class="n">+40% fire rate</td></tr>
+   <tr><td><span class="chip" style="color:var(--green)">SPD</span></td><td class="n">+30% speed</td></tr>
+   <tr><td><span class="chip" style="color:var(--violet)">LCK</span></td><td class="n">+10% crit chance</td></tr>
+   <tr><td><span class="chip" style="color:#4be3a0">REG</span></td><td class="n">+0.3% max HP per second</td></tr>
+  </table>
+ </div>
+</section>
+
+<section id="points">
+ <h2>Earning points</h2>
+ <div class="card">
+  <table>
+   <tr><th>Mode</th><th class="n">Win</th><th class="n">Draw</th><th class="n">Loss</th></tr>
+   <tr><td>1v1</td><td class="n">125</td><td class="n">60</td><td class="n">30</td></tr>
+   <tr><td>2v2</td><td class="n">200</td><td class="n">100</td><td class="n">50</td></tr>
+   <tr><td>3v3</td><td class="n">300</td><td class="n">150</td><td class="n">75</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Base points are multiplied by your power bracket (below). Win streaks add +20 per win in the streak, up to +100.</p>
+ </div>
+ <div class="card">
+  <table>
+   <tr><th>Power bracket</th><th class="n">Power</th><th class="n">Multiplier</th></tr>
+   <tr><td style="color:#b08d57">BRONZE</td><td class="n">0–149</td><td class="n">1.0×</td></tr>
+   <tr><td style="color:#c0c8d0">SILVER</td><td class="n">150–249</td><td class="n">1.25×</td></tr>
+   <tr><td style="color:var(--gold)">GOLD</td><td class="n">250–399</td><td class="n">1.5×</td></tr>
+   <tr><td style="color:#7be3e0">PLATINUM</td><td class="n">400–599</td><td class="n">1.75×</td></tr>
+   <tr><td style="color:var(--violet)">DIAMOND</td><td class="n">600+</td><td class="n">2.0×</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Power is the overall strength of your machine: upgrades, chassis, weapon, cores and skin. Higher power means tougher opponents and bigger rewards.</p>
+ </div>
+ <div class="note">You can earn up to <b>20,000 points per day</b> (resets 00:00 UTC). Spending points on upgrades never lowers your leaderboard score; the leaderboard counts lifetime points earned.</div>
+</section>
+
+<section id="tiers">
+ <h2>Player tiers &amp; daily reward</h2>
+ <div class="card">
+  <table>
+   <tr><th>Tier</th><th class="n">Lifetime points</th><th class="n">Daily reward</th></tr>
+   <tr><td>BRONZE</td><td class="n">0</td><td class="n">25</td></tr>
+   <tr><td>SILVER</td><td class="n">500</td><td class="n">50</td></tr>
+   <tr><td>GOLD</td><td class="n">1,500</td><td class="n">100</td></tr>
+   <tr><td>PLATINUM</td><td class="n">3,500</td><td class="n">200</td></tr>
+   <tr><td>DIAMOND</td><td class="n">7,000</td><td class="n">400</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Claim your daily reward once per day in the RANKS tab.</p>
+ </div>
+</section>
+
+<section id="garage">
+ <h2>Garage</h2>
+ <div class="card">
+  <p><b>Upgrades</b> cost 100 / 250 / 500 / 1,000 points for levels 1–4.</p>
+  <ul>
+   <li><b>Hull</b>: +8% max HP per level</li>
+   <li><b>Cannon</b>: +8% damage per level</li>
+   <li><b>Engine</b>: +6% speed per level</li>
+   <li><b>Targeting</b>: +2% crit chance per level</li>
+   <li><b>Reactor</b>: +10% super charge per level</li>
+  </ul>
+ </div>
+ <div class="grid">
+  <div class="card"><h3 style="color:var(--green)">SCOUT</h3><div class="mut">Fast and agile. Less HP, more speed.</div></div>
+  <div class="card"><h3 style="color:var(--teal)">VANGUARD</h3><div class="mut">Balanced all-rounder.</div></div>
+  <div class="card"><h3 style="color:var(--violet)">TITAN</h3><div class="mut">Slow, very tanky.</div></div>
+  <div class="card"><h3 style="color:var(--gold)">CHASSIS TIERS</h3><div class="mut">Common → Rare (+12%) → Epic (+28%).</div></div>
+ </div>
+ <div class="card" style="margin-top:10px">
+  <table>
+   <tr><th>Weapon</th><th>Style</th><th>Super</th></tr>
+   <tr><td>Pulse Cannon</td><td>Balanced</td><td>Pierce Lance</td></tr>
+   <tr><td>Twin Repeater</td><td>Fast, light hits</td><td>Static Nova</td></tr>
+   <tr><td>Siege Breaker</td><td>Slow, heavy hits</td><td>Siege Blast</td></tr>
+   <tr><td style="color:var(--gold)">Moonbeam</td><td>Precision laser</td><td>Moonfall</td></tr>
+  </table>
+ </div>
+ <div class="card">
+  <p><b>Cores</b> are permanent boosts socketed into your machine, always active:</p>
+  <ul>
+   <li><b style="color:var(--red)">DMG</b> +12% damage · <b style="color:var(--gold)">ROF</b> +10% fire rate</li>
+   <li><b style="color:var(--blue)">ARM</b> +8% armor · <b style="color:var(--green)">SPD</b> +8% speed</li>
+   <li><b style="color:var(--violet)">LCK</b> +3% crit · <b style="color:#4be3a0">REG</b> +0.1% HP/sec</li>
+  </ul>
+  <p class="mut">Cores stack with mystery-box buffs.</p>
+ </div>
+</section>
+
+<section id="quests">
+ <h2>Quests</h2>
+ <div class="card">
+  <table>
+   <tr><th>Quest</th><th class="n">Reward</th></tr>
+   <tr><td>First Blood: win 1 match</td><td class="n">50</td></tr>
+   <tr><td>Warmonger: win 3 matches</td><td class="n">150</td></tr>
+   <tr><td>Heavy Hitter: 2,500 damage in one match</td><td class="n">100</td></tr>
+   <tr><td>Overcharged: 2 supers in one match</td><td class="n">100</td></tr>
+   <tr><td>Scavenger: 3 boxes in one match</td><td class="n">75</td></tr>
+   <tr><td>Untouchable: win taking under 600 damage</td><td class="n">150</td></tr>
+   <tr><td>Read this wiki</td><td class="n">200</td></tr>
+   <tr><td>Follow on X · Join the TG channel</td><td class="n">50 each</td></tr>
+  </table>
+ </div>
+</section>
+
+<section id="shop">
+ <h2>Shop</h2>
+ <div class="card">
+  <p>Connect a TON wallet in the Shop to buy with GRAM (1 GRAM = 1 TON).</p>
+  <table>
+   <tr><th>Item</th><th class="n">Price</th></tr>
+   <tr><td>Common crate</td><td class="n">1 GRAM</td></tr>
+   <tr><td>Rare crate</td><td class="n">3 GRAM</td></tr>
+   <tr><td>Epic crate</td><td class="n">10 GRAM</td></tr>
+   <tr><td>Lunar Skin (+8% HP, +8% DMG)</td><td class="n">30 GRAM</td></tr>
+   <tr><td>Moonbeam weapon</td><td class="n">50 GRAM</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Crates unlock weapon and chassis tiers. If a crate has nothing new for you, it pays out points instead.</p>
+ </div>
+</section>
+
+<section id="airdrop">
+ <h2>$LUNER airdrop</h2>
+ <div class="card">
+  <p><b>The top 1,000 players on the overall leaderboard at the snapshot receive a guaranteed $LUNER allocation.</b></p>
+  <ol>
+   <li>Play in Telegram. Only Telegram accounts appear on the leaderboard.</li>
+   <li>Every point you earn counts toward your rank, including quests and daily rewards. Spending points on upgrades doesn't lower your score.</li>
+   <li>Upgrade to climb power brackets for bigger multipliers.</li>
+   <li>Join the TG channel for the snapshot date and announcements.</li>
+  </ol>
+ </div>
+ <div class="note">Multi-accounting and modified clients are not allowed. Flagged accounts are removed from the airdrop before the snapshot.</div>
+</section>
+
+<section id="token">
+ <h2>Tokenomics</h2>
+ <div class="card">
+  <p>Full $LUNER tokenomics (supply, allocation split and airdrop share) will be published here and in the TG channel before the snapshot.</p>
+ </div>
+</section>
+
+<section id="faq">
+ <h2>FAQ</h2>
+ <div class="card">
+  <p><b>Will I lose progress if I switch phones?</b><br><span class="mut">No. Progress is saved to your Telegram account.</span></p>
+  <p><b>Why didn't my rank update right away?</b><br><span class="mut">The leaderboard syncs in steps every ~30 seconds and refreshes once a minute.</span></p>
+  <p><b>Do I need to spend money?</b><br><span class="mut">No. Gear gives an edge, but skill and positioning win fights.</span></p>
+ </div>
+</section>
+
+<footer>War Machines · built for Telegram</footer>
+</div>
+<script>
+// Inside Telegram: back button returns to the game, Play opens the Mini App properly
+(function(){
+ var tg=window.Telegram&&window.Telegram.WebApp;
+ if(!tg||!tg.initData)return;
+ try{tg.ready();tg.expand();if(tg.isVersionAtLeast&&tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#0c1118');tg.setBackgroundColor('#0c1118');}}catch(e){}
+})();
+</script>
+</body>
+</html>
