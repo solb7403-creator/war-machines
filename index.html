@@ -589,8 +589,11 @@ function payWithSol(gram,desc){
  const sol=solFor(gram);
  if(!sol){fetchPrices();showToast('LOADING SOL PRICE, TRY AGAIN');return;}
  const ref=b58(crypto.getRandomValues(new Uint8Array(32))),memo=newMemo();
- save.pendingSol={desc,gram,sol,lamports:Math.round(sol*1e9),ref,memo,since:Date.now(),usd:Math.round(gram*px.ton*100)/100};store();
- const q='?a='+sol+'&r='+ref+'&m='+encodeURIComponent(memo)+'&d='+encodeURIComponent(descLabel(desc))+'&u='+(save.pendingSol.usd||'');
+ // unique tail (1-999 micro-SOL) makes each order's exact amount identifiable on-chain
+ const lamports=Math.floor(sol*1e9/1e6)*1e6+(1+Math.floor(Math.random()*999))*1e3;
+ const solX=(lamports/1e9).toFixed(6).replace(/0+$/,'');
+ save.pendingSol={desc,gram,sol:+solX,lamports,ref,memo,since:Date.now(),usd:Math.round(gram*px.ton*100)/100};store();
+ const q='?a='+solX+'&r='+ref+'&m='+encodeURIComponent(memo)+'&d='+encodeURIComponent(descLabel(desc))+'&u='+(save.pendingSol.usd||'');
  try{if(IN_TG)TG.openLink(PAY_PAGE+q);else window.open(PAY_PAGE+q,'_blank');}catch(e){window.open(PAY_PAGE+q,'_blank');}
  showToast('PAY IN YOUR SOL WALLET, THEN COME BACK');
  watchSol(900000);
@@ -600,14 +603,18 @@ async function solRpc(method,params){
  return (await r.json()).result;
 }
 async function findSolPayment(p){
- const sigs=await solRpc('getSignaturesForAddress',[p.ref,{limit:5,commitment:'confirmed'}]);
- for(const sg of (sigs||[])){
+ // 1) wallet-link payments carry our reference key; 2) manual sends (Keeper etc.) match by exact unique amount
+ let sigs=await solRpc('getSignaturesForAddress',[p.ref,{limit:5,commitment:'confirmed'}])||[];
+ const exactOnly=!sigs.length;
+ if(exactOnly)sigs=(await solRpc('getSignaturesForAddress',[SOL_RECIPIENT,{limit:25,commitment:'confirmed'}])||[]).filter(sg=>!sg.blockTime||sg.blockTime*1000>=p.since-60000);
+ for(const sg of sigs){
   if(sg.err)continue;
   const tx=await solRpc('getTransaction',[sg.signature,{encoding:'jsonParsed',maxSupportedTransactionVersion:0,commitment:'confirmed'}]);
   if(!tx||!tx.meta||tx.meta.err)continue;
   const keys=tx.transaction.message.accountKeys.map(k=>k.pubkey||k),i=keys.indexOf(SOL_RECIPIENT);
   if(i<0)continue;
-  if(tx.meta.postBalances[i]-tx.meta.preBalances[i]>=p.lamports*0.999)return sg.signature;
+  const got=tx.meta.postBalances[i]-tx.meta.preBalances[i];
+  if(exactOnly?got===p.lamports:got>=p.lamports*0.999)return sg.signature;
  }
  return null;
 }
