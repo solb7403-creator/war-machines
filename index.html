@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>LUNAR: War Machines</title>
+<script>
+// Auto-update: phones and GitHub's CDN can keep an old copy for ~10 min. version.json is fetched fresh;
+// if it's newer than this page, reload with ?v=<new> (a URL the cache has never seen). Telegram data in the #hash is kept.
+window.BUILD='20261017224258';
+fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
+ const q=new URLSearchParams(location.search);
+ if(j&&j.v&&j.v!==window.BUILD&&q.get('v')!==j.v){q.set('v',j.v);location.replace(location.pathname+'?'+q.toString()+location.hash);}
+}).catch(()=>{});
+</script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -2183,7 +2192,7 @@ function drawBoard(){
  const cx=vw/2;let y=Math.max(16,vh*0.03);
  g.textAlign='center';g.textBaseline='top';
  g.fillStyle='#e6ebf0';g.font=font(Math.round(Math.min(30,vw*0.07)));
- g.fillText('LEADERBOARD',cx,y);y+=38;
+ g.fillText('LEADERBOARD',cx,y);g.fillStyle='#3d4d61';g.font=font(9);g.textAlign='right';g.fillText('build '+String(window.BUILD).slice(4,12),vw-14,y+4);g.textAlign='center';y+=38;
  // YOU card: your tier + a ladder showing the points needed for every tier
  const t=tierIdx(),ern=save.earned||0,ch=124;
  g.fillStyle='#141c26';rr(12,y,vw-24,ch,12);g.fill();
