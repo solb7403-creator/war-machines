@@ -4,9 +4,11 @@ const GAME_ORIGIN = "https://solb7403-creator.github.io";
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
 const WIKI_URL = "https://solb7403-creator.github.io/war-machines/wiki.html";
 const DB_URL = "https://warmachines-a6034-default-rtdb.firebaseio.com";
-const STARS_PER_TON = 100;
-const BOX_BASE = [1, 4, 15];
-const PREMIUM = { moonbeam: 50, skin: 30 };
+// base prices: TON (what the game sends) and Stars (what we charge). Repeat buys scale both by the same multiplier.
+const BOX_TON = [4, 8, 23];
+const BOX_STARS = [250, 500, 1500];
+const PREMIUM_TON = { moonbeam: 50, skin: 30 };
+const PREMIUM_STARS = { moonbeam: 3300, skin: 2000 };
 
 const enc = new TextEncoder();
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -59,16 +61,17 @@ async function starsInvoice(req, env) {
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user) return json({ error: "not verified" }, 401);
   const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0);
-  let base = 0;
+  let base = 0, starBase = 0;
   if (k === "box") {
     if (!["gem", "weapon", "chassis"].includes(tk) || ![0, 1, 2].includes(ri)) return json({ error: "item" }, 400);
-    base = BOX_BASE[ri];
-  } else if (PREMIUM[k]) base = PREMIUM[k];
+    base = BOX_TON[ri]; starBase = BOX_STARS[ri];
+  } else if (PREMIUM_TON[k]) { base = PREMIUM_TON[k]; starBase = PREMIUM_STARS[k]; }
   else return json({ error: "item" }, 400);
+  // the game sends its escalated TON price; never below base, never absurdly above it
   let price = Number(b.price || base);
   if (!(price >= base)) price = base;
   if (price > base * 10) price = base * 10;
-  const stars = Math.max(1, Math.round(price * STARS_PER_TON));
+  const stars = Math.max(1, Math.round(starBase * (price / base)));
   const nonce = Math.random().toString(36).slice(2, 8);
   const payload = JSON.stringify({ u: user.id, k, t: tk || undefined, r: k === "box" ? ri : undefined, g: price, n: nonce });
   const label = itemLabel(k, tk, ri);
@@ -96,7 +99,7 @@ async function webhook(req, env) {
     const pid = "tg_" + m.from.id;
     const charge = String(sp.telegram_payment_charge_id).replace(/[.#$\[\]\/]/g, "_");
     const item = itemLabel(p.k, p.t, p.r);
-    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: (m.from.username || m.from.first_name || "").slice(0, 20), cur: "STARS", amt: sp.total_amount, gram: p.g || sp.total_amount / STARS_PER_TON, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + charge, proof: charge, t: { ".sv": "timestamp" } });
+    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: (m.from.username || m.from.first_name || "").slice(0, 20), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + charge, proof: charge, t: { ".sv": "timestamp" } });
     await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, stars: sp.total_amount, n: p.n || "", ts: { ".sv": "timestamp" } });
     return new Response("ok");
   }
