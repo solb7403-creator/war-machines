@@ -2123,7 +2123,7 @@ function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayId(new Date()):tk+ri;}
 function boxMult(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:1+n;}
 function boxPrice(tk,ri){return Math.round(RPRICE[ri]*boxMult(tk,ri)*100)/100;}   // TON
 function boxStars(tk,ri){return Math.round(RSTARS[ri]*boxMult(tk,ri));}
-function boxPts(tk,ri){return RPTS[ri]?Math.round(RPTS[ri]*boxMult(tk,ri)):0;}
+function boxPts(tk,ri){return RPTS[ri]||0;} // points price is flat: no repeat-buy increase
 function boxLabel(tk,ri){return save.payCur==='pts'?(boxPts(tk,ri)?fmtNum(boxPts(tk,ri))+' PTS':'PAID ONLY'):priceLabel(boxPrice(tk,ri),boxStars(tk,ri));}
 function openBox(tk,ri){
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
