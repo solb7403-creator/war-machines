@@ -1,0 +1,28 @@
+name: Deploy Firebase rules
+# Publishes database.rules.json to the Realtime Database whenever it changes on main.
+on:
+  push:
+    branches: [main]
+    paths: [database.rules.json]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check secret
+        env:
+          SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+        run: |
+          if [ -z "$SECRET" ]; then echo "FIREBASE_DB_SECRET is not set in repo secrets"; exit 1; fi
+      - name: Validate JSON
+        run: python3 -c "import json;json.load(open('database.rules.json'))"
+      - name: Publish rules
+        env:
+          SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+        run: |
+          code=$(curl -s -o out.txt -w '%{http_code}' -X PUT --data-binary @database.rules.json \
+            "https://warmachines-a6034-default-rtdb.firebaseio.com/.settings/rules.json?auth=${SECRET}")
+          cat out.txt; echo
+          if [ "$code" != "200" ]; then echo "Publish failed: HTTP $code"; exit 1; fi
+          echo "Rules published."
