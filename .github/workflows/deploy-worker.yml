@@ -22,6 +22,23 @@ jobs:
           [ -n "$CF" ] || { echo "::error::CLOUDFLARE_API_TOKEN secret missing"; exit 1; }
           [ -n "$BOT" ] || { echo "::error::BOT_TOKEN secret missing"; exit 1; }
           [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
+      - name: Find account + ensure workers.dev subdomain
+        env:
+          CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts | jq -r '.result[0].id')
+          [ -n "$ACC" ] && [ "$ACC" != "null" ] || { echo "::error::token can't list accounts: $(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts | head -c 500)"; exit 1; }
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACC" >> $GITHUB_ENV
+          SUB=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts/$ACC/workers/subdomain | jq -r '.result.subdomain // empty')
+          if [ -z "$SUB" ]; then
+            for name in lunarwarmachines lunarwm lunar-war-machines lunarwarmachines-$RANDOM; do
+              R=$(curl -s -X PUT -H "Authorization: Bearer $CF" -H 'Content-Type: application/json' -d "{\"subdomain\":\"$name\"}" https://api.cloudflare.com/client/v4/accounts/$ACC/workers/subdomain)
+              echo "$R" | jq -e '.success' >/dev/null && { SUB=$name; break; }
+              echo "subdomain $name: $(echo $R | head -c 300)"
+            done
+          fi
+          [ -n "$SUB" ] || { echo "::error::could not set up workers.dev subdomain"; exit 1; }
+          echo "::notice::workers.dev subdomain: $SUB"
       - name: Deploy worker
         working-directory: worker
         env:
