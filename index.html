@@ -7,7 +7,7 @@
 <script>
 // Auto-update: phones and GitHub's CDN can keep an old copy for ~10 min. version.json is fetched fresh;
 // if it's newer than this page, reload with ?v=<new> (a URL the cache has never seen). Telegram data in the #hash is kept.
-window.BUILD='20261017232121';
+window.BUILD='20261017232554';
 fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
  const q=new URLSearchParams(location.search);
  if(j&&j.v&&j.v!==window.BUILD&&q.get('v')!==j.v){q.set('v',j.v);location.replace(location.pathname+'?'+q.toString()+location.hash);}
@@ -2172,7 +2172,7 @@ function drawQuests(){
 
 // ---- REFERRALS: invite link -> squad. You earn when your recruits keep playing, not when they just sign up. ----
 const BOT_PLAY='https://t.me/LunarWarMachinesBot/play';
-const REF_MS=[{days:2,pts:1500,r:500,n:'Came back the next day'},{days:5,pts:5000,r:2000,n:'5 days active · 5K pts'},{days:10,pts:15000,r:5000,n:'10 days active · 15K pts'}];
+const REF_MS=[{days:2,pts:1500,r:500,n:'Came back the next day'},{days:5,pts:5000,r:2000,n:'5 days active · 5K pts'},{days:10,pts:20000,r:5000,n:'10 days active · 20K pts'}];
 const REF_PCT=0.05,REF_WELCOME=1000,REF_PCT_CAP=2000;   // 5% of recruits' points, max 2,000/day from the % part
 const refLink=()=>BOT_PLAY+'?startapp=ref_'+(TG_USER?TG_USER.id:'0');
 function captureRef(){   // the start_param of the link that opened the game
@@ -2217,7 +2217,7 @@ function copyRef(){try{navigator.clipboard.writeText(refLink()).then(()=>showToa
 function refHowInfo(){return {t:'SQUAD REWARDS',c:'#ffd24a',L:[
  'HOW IT WORKS','Share your invite link. Anyone who opens the game with it for the first time joins your squad.',
  'YOU GET PAID WHEN THEY STICK AROUND','Sign-ups alone pay nothing. You earn when your recruits actually keep playing:',
- '+500 · they come back for a 2nd day (1,500+ pts)','+2,000 · 5 days active and 5K pts','+5,000 · 10 days active and 15K pts',
+ '+500 · they come back for a 2nd day (1,500+ pts)','+2,000 · 5 days active and 5K pts','+5,000 · 10 days active and 20K pts',
  '+5% ONGOING','You get 5% of every point your squad earns while they keep playing, up to 2,000 a day. Anything over that carries to the next day. They lose nothing.',
  'THEY GET +1,000','Your recruit gets a 1,000 point welcome bonus when they come back for day 2.',
  'RULES','Days active means separate days played. Squad points count toward the 20,000 daily cap and the leaderboard. Fake or alt accounts are removed from the airdrop.']};}
