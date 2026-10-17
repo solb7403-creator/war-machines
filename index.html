@@ -584,9 +584,9 @@ function fetchPrices(){
 }
 function solFor(gram){if(!px.ton||!px.sol)return 0;const v=gram*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
 // ---- Telegram Stars: invoice created + payment confirmed by the LUNAR server (Netlify) ----
-const STARS_API='https://lunar-war-machines-api.netlify.app/api/stars-invoice';
+const STARS_API='https://lunar-api.solb7403.workers.dev/api/stars-invoice';
 const STARS_PER_TON=100;
-const STARS_ON=false; // flip on once the Stars server is live // must match the server's STARS_PER_TON
+const STARS_ON=true; // must match the server's STARS_PER_TON
 const starsFor=gram=>Math.max(1,Math.round(gram*STARS_PER_TON));
 let starsBusy=false;
 async function payWithStars(gram,desc){
