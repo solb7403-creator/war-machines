@@ -4,86 +4,143 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>LUNAR: War Machines · Pay with SOL</title>
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-:root{--bg:#0c1118;--card:#141c26;--line:#233042;--fg:#e6ebf0;--mut:#8fa3b8;--sol:#9945ff;--teal:#3fd0c9;--gold:#ffd24a}
+:root{--bg:#0c1118;--card:#141c26;--line:#233042;--fg:#e6ebf0;--mut:#8fa3b8;--sol:#9945ff;--ok:#3fd0c9;--bad:#ff6b5e}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px 16px 40px;min-height:100vh}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:22px 16px 40px;min-height:100vh}
 .wrap{max-width:420px;margin:0 auto;text-align:center}
 .brand{font:800 13px/1 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:4px;color:var(--mut)}
-h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:2px;margin:10px 0 18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px}
-.item{color:var(--mut);font-size:13px;letter-spacing:1px}
-.amt{font:800 34px/1.1 system-ui,sans-serif;margin:6px 0 2px}
-.amt span{color:var(--sol)}
+h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:2px;margin:10px 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.item{color:var(--mut);font-size:12px;letter-spacing:1.5px}
+.amt{font:800 32px/1.1 system-ui,sans-serif;margin:6px 0 2px}.amt span{color:var(--sol)}
 .usd{color:var(--mut);font-size:13px}
-.btn{display:block;width:100%;padding:15px;border-radius:12px;font-weight:800;letter-spacing:1.5px;text-decoration:none;font-size:15px;border:0;margin-top:10px}
-.pay{background:var(--sol);color:#fff}
+.btn{display:block;width:100%;padding:14px;border-radius:12px;font-weight:800;letter-spacing:1.2px;text-decoration:none;font-size:15px;border:0;margin-top:10px;color:#fff;cursor:pointer}
+.pay{background:var(--sol)}.phantom{background:#ab9ff2;color:#1c1530}.solflare{background:#fc7227}.backpack{background:#e33e3f}
 .back{background:#1c2632;color:var(--fg)}
-.steps{text-align:left;color:var(--mut);font-size:13px;padding-left:18px}
-.steps li{margin-bottom:6px}
-#qr{display:inline-block;background:#fff;padding:10px;border-radius:10px;margin-top:6px}
 .small{font-size:12px;color:var(--mut);margin-top:8px}
-.err{color:#ff6b5e}
 .copyrow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0f151d;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;text-align:left}
 .lbl{font-size:10px;letter-spacing:1.5px;color:var(--mut)}
-.val{font:700 16px/1.3 ui-monospace,Menlo,monospace}
-.addr{font-size:12px;word-break:break-all}
+.val{font:700 16px/1.3 ui-monospace,Menlo,monospace}.addr{font-size:12px;word-break:break-all}
 .cp{background:var(--sol);color:#fff;border:0;border-radius:8px;padding:9px 12px;font-weight:800;letter-spacing:1px;font-size:12px;flex:none}
+#status{margin-top:10px;font-size:14px;min-height:20px}.ok{color:var(--ok)}.err{color:var(--bad)}
+#qr{display:inline-block;background:#fff;padding:10px;border-radius:10px;margin-top:6px}
+.hide{display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
  <div class="brand">☾ LUNAR: WAR MACHINES</div>
  <h1>PAY WITH SOL</h1>
- <div class="card" id="box">
+
+ <div class="card">
   <div class="item" id="item">PURCHASE</div>
   <div class="amt"><span id="sol">0</span> SOL</div>
   <div class="usd" id="usd"></div>
-  <a class="btn pay" id="payBtn" href="#">OPEN WALLET &amp; PAY</a>
+  <!-- inside a Solana wallet's browser: one-tap pay -->
+  <div id="inwallet" class="hide">
+   <button class="btn pay" id="payBtn">APPROVE PAYMENT</button>
+   <div id="status"></div>
+  </div>
+  <!-- in a normal browser: choose a wallet -->
+  <div id="choose" class="hide">
+   <a class="btn phantom" id="bPhantom">PAY WITH PHANTOM</a>
+   <a class="btn solflare" id="bSolflare">PAY WITH SOLFLARE</a>
+   <a class="btn backpack" id="bBackpack">PAY WITH BACKPACK</a>
+   <div class="small">Opens the payment inside your wallet. Just tap approve.</div>
+  </div>
  </div>
- <div class="card">
-  <div class="item">PAYING FROM KEEPER OR ANOTHER WALLET?</div>
+
+ <div class="card" id="manual">
+  <div class="item">KEEPER OR ANOTHER WALLET?</div>
   <p class="small" style="margin:6px 0 10px">Send <b>exactly</b> this amount of SOL to this address. The exact amount is how we match the payment to your account, so don't round it.</p>
   <div class="copyrow"><div><div class="lbl">AMOUNT</div><div class="val" id="amtV">0</div></div><button class="cp" data-k="amt">COPY</button></div>
   <div class="copyrow"><div style="min-width:0"><div class="lbl">ADDRESS (SOLANA)</div><div class="val addr" id="addrV"></div></div><button class="cp" data-k="addr">COPY</button></div>
  </div>
+
  <div class="card">
-  <ol class="steps">
-   <li>Tap <b>Open wallet &amp; pay</b>. Phantom, Solflare or Backpack opens with the payment filled in.</li>
-   <li>Approve it.</li>
-   <li>Or send the exact amount from Keeper using the copy buttons above.</li>
-   <li>Go back to the game. Your item unlocks automatically once the payment confirms (usually under 30 seconds).</li>
-  </ol>
+  <div class="small" style="margin-top:0">After paying, go back to the game. Your item unlocks automatically once the payment confirms (usually under 30 seconds).</div>
   <a class="btn back" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a>
  </div>
- <div class="card">
-  <div class="small">Paying from another device? Scan this with your Solana wallet:</div>
+
+ <div class="card" id="qrCard">
+  <div class="small" style="margin-top:0">Paying from another device? Scan with a Solana wallet:</div>
   <div id="qr"></div>
-  <div class="small">Only pay through this button or QR code. A manual transfer can't be matched to your account.</div>
  </div>
 </div>
 <script>
 (function(){
  var RECIPIENT='A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE';
+ var RPCS=['https://solana-rpc.publicnode.com','https://api.mainnet-beta.solana.com','https://solana.drpc.org'];
  var q=new URLSearchParams(location.search);
  var a=q.get('a'),r=q.get('r'),m=q.get('m'),d=q.get('d')||'Purchase',u=q.get('u');
- if(!a||!r||!m||!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(r)||!(parseFloat(a)>0)){
-  document.getElementById('box').innerHTML='<div class="err">This payment link is incomplete. Go back to the game and tap the item again.</div><a class="btn back" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a>';return;
+ var $=function(id){return document.getElementById(id);};
+ if(!a||!r||!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(r)||!(parseFloat(a)>0)){
+  document.querySelector('.wrap').innerHTML='<div class="brand">☾ LUNAR: WAR MACHINES</div><h1>LINK INCOMPLETE</h1><div class="card">Go back to the game and tap the item again.<a class="btn back" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a></div>';return;
  }
- document.getElementById('item').textContent=d.toUpperCase();
- document.getElementById('sol').textContent=a;
- if(u)document.getElementById('usd').textContent='≈ $'+u;
- var url='solana:'+RECIPIENT+'?amount='+encodeURIComponent(a)+'&reference='+encodeURIComponent(r)
-  +'&label='+encodeURIComponent('LUNAR: War Machines')+'&message='+encodeURIComponent(d)+'&memo='+encodeURIComponent(m);
- document.getElementById('payBtn').href=url;
- document.getElementById('amtV').textContent=a;document.getElementById('addrV').textContent=RECIPIENT;
+ var lamports=Math.round(parseFloat(a)*1e9);
+ $('item').textContent=d.toUpperCase();$('sol').textContent=a;if(u)$('usd').textContent='≈ $'+u;
+ $('amtV').textContent=a;$('addrV').textContent=RECIPIENT;
+
+ // wallet links (open this same page inside the wallet's browser)
+ var self=location.href,ref=encodeURIComponent(location.origin);
+ $('bPhantom').href='https://phantom.app/ul/browse/'+encodeURIComponent(self)+'?ref='+ref;
+ $('bSolflare').href='https://solflare.com/ul/v1/browse/'+encodeURIComponent(self)+'?ref='+ref;
+ $('bBackpack').href='https://backpack.app/ul/v1/browse/'+encodeURIComponent(self)+'?ref='+ref;
+
+ // QR for scanning from another device (Solana Pay standard)
+ var spUrl='solana:'+RECIPIENT+'?amount='+encodeURIComponent(a)+'&reference='+encodeURIComponent(r)+'&label='+encodeURIComponent('LUNAR: War Machines')+'&message='+encodeURIComponent(d);
+ try{new QRCode($('qr'),{text:spUrl,width:170,height:170});}catch(e){$('qrCard').classList.add('hide');}
+
  Array.prototype.forEach.call(document.querySelectorAll('.cp'),function(b){b.addEventListener('click',function(){
   var v=b.getAttribute('data-k')==='amt'?a:RECIPIENT;
   var done=function(){b.textContent='COPIED';setTimeout(function(){b.textContent='COPY';},1500);};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(done,function(){prompt('Copy:',v);});else prompt('Copy:',v);
  });});
- try{new QRCode(document.getElementById('qr'),{text:url,width:180,height:180});}catch(e){document.getElementById('qr').style.display='none';}
+
+ function provider(){
+  if(window.phantom&&window.phantom.solana&&window.phantom.solana.isPhantom)return window.phantom.solana;
+  if(window.solflare&&window.solflare.isSolflare)return window.solflare;
+  if(window.backpack&&(window.backpack.isBackpack||window.backpack.connect))return window.backpack;
+  if(window.solana&&window.solana.connect)return window.solana;
+  return null;
+ }
+ function status(t,cls){$('status').textContent=t;$('status').className=cls||'';}
+ async function blockhash(conn){
+  for(var i=0;i<RPCS.length;i++){try{var c=new solanaWeb3.Connection(RPCS[i],'confirmed');return {conn:c,bh:(await c.getLatestBlockhash()).blockhash};}catch(e){}}
+  throw new Error('Network busy, try again');
+ }
+ async function pay(){
+  var p=provider();if(!p)return;
+  $('payBtn').disabled=true;status('Connecting…');
+  try{
+   if(!p.publicKey||!p.isConnected)await p.connect();
+   var W=solanaWeb3,from=p.publicKey;
+   var ix=W.SystemProgram.transfer({fromPubkey:from,toPubkey:new W.PublicKey(RECIPIENT),lamports:lamports});
+   ix.keys.push({pubkey:new W.PublicKey(r),isSigner:false,isWritable:false}); // reference: lets the game find this exact payment
+   var net=await blockhash();
+   var tx=new W.Transaction().add(ix);tx.feePayer=from;tx.recentBlockhash=net.bh;
+   status('Approve in your wallet…');
+   var sig;
+   if(p.signAndSendTransaction){var res=await p.signAndSendTransaction(tx);sig=res&&(res.signature||res);}
+   else{var signed=await p.signTransaction(tx);sig=await net.conn.sendRawTransaction(signed.serialize());}
+   status('✓ Payment sent! Go back to the game: your item unlocks in a few seconds.','ok');
+   $('payBtn').textContent='PAID ✓';
+  }catch(e){
+   $('payBtn').disabled=false;
+   status((e&&e.message&&/reject|cancel|declin/i.test(e.message))?'Payment cancelled.':'Something went wrong: '+((e&&e.message)||e)+'. Tap to try again.','err');
+  }
+ }
+ $('payBtn').addEventListener('click',pay);
+
+ // providers inject shortly after load inside wallet browsers
+ var tries=0;(function detect(){
+  if(provider()){$('inwallet').classList.remove('hide');$('choose').classList.add('hide');$('qrCard').classList.add('hide');pay();return;}
+  if(++tries<8){setTimeout(detect,250);return;}
+  $('choose').classList.remove('hide');
+ })();
 })();
 </script>
 </body>

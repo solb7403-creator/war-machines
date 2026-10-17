@@ -639,6 +639,15 @@ function pay(gram,desc){if(save.payCur==='pts')return;if(save.payCur==='stars')p
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 function b58(bytes){let d=[0];for(const by of bytes){let c=by;for(let i=0;i<d.length;i++){c+=d[i]<<8;d[i]=c%58;c=(c/58)|0;}while(c){d.push(c%58);c=(c/58)|0;}}
  let out='';for(const by of bytes){if(by===0)out+='1';else break;}for(let i=d.length-1;i>=0;i--)out+=B58[d[i]];return out;}
+// SOL wallets: Phantom / Solflare / Backpack open the pay page inside the wallet for a one-tap approve.
+// 'other' (Keeper etc.) opens the pay page in the browser with copy-paste address + exact amount.
+const SOL_REF=encodeURIComponent('https://solb7403-creator.github.io');
+const SOL_WALLETS={
+ phantom:{n:'PHANTOM',ul:u=>'https://phantom.app/ul/browse/'+encodeURIComponent(u)+'?ref='+SOL_REF},
+ solflare:{n:'SOLFLARE',ul:u=>'https://solflare.com/ul/v1/browse/'+encodeURIComponent(u)+'?ref='+SOL_REF},
+ backpack:{n:'BACKPACK',ul:u=>'https://backpack.app/ul/v1/browse/'+encodeURIComponent(u)+'?ref='+SOL_REF},
+ other:{n:'KEEPER / OTHER',ul:null}};
+const SOL_ORDER=['phantom','solflare','backpack','other'];
 function payWithSol(gram,desc){
  const sol=solFor(gram);
  if(!sol){fetchPrices();showToast('LOADING SOL PRICE, TRY AGAIN');return;}
@@ -648,8 +657,10 @@ function payWithSol(gram,desc){
  const solX=(lamports/1e9).toFixed(6).replace(/0+$/,'');
  save.pendingSol={desc,gram,sol:+solX,lamports,ref,memo,since:Date.now(),usd:Math.round(gram*px.ton*100)/100};store();
  const q='?a='+solX+'&r='+ref+'&m='+encodeURIComponent(memo)+'&d='+encodeURIComponent(descLabel(desc))+'&u='+(save.pendingSol.usd||'');
- try{if(IN_TG)TG.openLink(PAY_PAGE+q);else window.open(PAY_PAGE+q,'_blank');}catch(e){window.open(PAY_PAGE+q,'_blank');}
- showToast('PAY IN YOUR SOL WALLET, THEN COME BACK');
+ const w=SOL_WALLETS[save.solWallet]?save.solWallet:'phantom',page=PAY_PAGE+q+'&w='+w;
+ const link=SOL_WALLETS[w].ul?SOL_WALLETS[w].ul(page):page;
+ try{if(IN_TG)TG.openLink(link);else window.open(link,'_blank');}catch(e){window.open(link,'_blank');}
+ showToast(SOL_WALLETS[w].ul?'APPROVE IN '+SOL_WALLETS[w].n+', THEN COME BACK':'SEND THE EXACT AMOUNT, THEN COME BACK');
  watchSol(900000);
 }
 // several public Solana endpoints: if one blocks or rate-limits the Telegram webview, try the next
@@ -2222,7 +2233,7 @@ function shopTap(x,y){
   if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){save.payCur=c.id;store();fetchPrices();showToast(c.id==='sol'?'PAYING IN SOL':c.id==='stars'?'PAYING WITH TELEGRAM STARS':c.id==='pts'?'SPENDING POINTS':'PAYING IN TON');return;}
  const wb=ui.walletBtn;
  if(wb&&x>=wb.x&&x<=wb.x+wb.w&&y>=wb.y&&y<=wb.y+wb.h){
-  if(save.payCur==='sol'){showToast('TAP ANY ITEM: YOUR SOL WALLET OPENS TO PAY');return;}
+  if(save.payCur==='sol'){const i=SOL_ORDER.indexOf(save.solWallet||'phantom');save.solWallet=SOL_ORDER[(i+1)%SOL_ORDER.length];store();showToast('SOL WALLET: '+SOL_WALLETS[save.solWallet].n);return;}
   if(save.payCur==='stars'){showToast('TAP ANY ITEM: PAY WITH STARS, NO WALLET NEEDED');return;}
   if(save.payCur==='pts'){showToast('YOUR SPENDABLE POINTS (LEADERBOARD SCORE IS NOT AFFECTED)');return;}
   if(tonWallet&&tonConnectUI){
@@ -2396,12 +2407,12 @@ function drawShop(){
  });
  const isStars=save.payCur==='stars',isPts=save.payCur==='pts';
  const wx=tx0+(STARS_ON?4:3)*(tw2+4)+6,ww=vw-14-wx;
- const wtxt=isPts?fmtNum(save.pts||0)+' PTS':isStars?'NO WALLET NEEDED':isSol?'ANY SOL WALLET':tonWallet?'DISCONNECT':'CONNECT WALLET';
+ const wtxt=isPts?fmtNum(save.pts||0)+' PTS':isStars?'NO WALLET NEEDED':isSol?(SOL_WALLETS[save.solWallet||'phantom']||SOL_WALLETS.phantom).n+' ▾':tonWallet?'DISCONNECT':'CONNECT WALLET';
  g.fillStyle=isStars?'#3a2e0a':isSol?'#2a1f45':tonWallet?'#3fd0c9':'#1f9e8e';rr(wx,y-6,ww,36,10);g.fill();
  g.fillStyle='#fff';g.font=font(12);g.fillText(wtxt,wx+ww/2,y+6);
  ui.walletBtn={x:wx,y:y-6,w:ww,h:36};y+=36;
  g.fillStyle='#5c6b7d';g.font=font(11);g.textAlign='center';
- g.fillText(isPts?'Points: real Common & Rare caches + the Salvage Yard':isStars?'Telegram Stars · buy with Apple Pay or card':isSol?(px.sol?'SOL prices match TON at live rates':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
+ g.fillText(isPts?'Points: real Common & Rare caches + the Salvage Yard':isStars?'Telegram Stars · buy with Apple Pay or card':isSol?(px.sol?'Tap the wallet button to switch · prices match TON':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
  ui.shopBoxes=[];
  // exact-fit layout: 4 sections must end exactly at the tab bar (vh-62).
  // each section costs a header + the box + a gap; bh is derived from that
