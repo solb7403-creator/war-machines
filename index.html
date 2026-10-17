@@ -137,6 +137,11 @@ const CH={
  vanguard:{n:'VANGUARD',d:'Balanced all-rounder',hp:1.0,spd:1.0,turn:1.0,ds:1.0,c:'#3fd0c9'},
  titan:{n:'TITAN',d:'Slow, very tanky',hp:1.35,spd:0.85,turn:0.9,ds:1.12,c:'#c28bff'}};
 const CHORDER=['scout','vanguard','titan'];
+// chassis counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.
+// The advantaged side deals +25% damage to the line it counters.
+const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.25;
+const cmult=(a,d)=>(a&&d&&a.cls&&COUNTER[a.cls]===d.cls)?1+COUNTER_BONUS:1;
+const beatenBy=c=>Object.keys(COUNTER).find(k=>COUNTER[k]===c);
 const WEAPONS={
  pulse:{n:'PULSE CANNON',d:'Standard balanced gun',dps:70,shot:0.2,c:'#3fd0c9',sup:'PIERCE LANCE'},
  twin:{n:'TWIN REPEATER',d:'Faster, lighter hits',dps:66,shot:0.09,c:'#ffd24a',sup:'STATIC NOVA'},
@@ -492,7 +497,7 @@ function initBackend(){
     syncPlayer();
    });
   }
-  checkPendingPurchase();
+  checkPendingPurchase();checkPendingSol();
  }catch(e){}
 }
 // Only real Telegram accounts sync to the leaderboard (that's the airdrop population).
@@ -540,6 +545,95 @@ function getVisitors(){trackVisit();}
 const TON_RECIPIENT='UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu';  // Jake's Tonkeeper - receives all GRAM payments
 const TON_MANIFEST_URL='https://solb7403-creator.github.io/war-machines/tonconnect-manifest.json';
 let tonConnectUI=null,tonWallet=null;
+// ---- payment tracking: every payment carries a memo with the player's ID, is verified on-chain, and is logged ----
+const SOL_RECIPIENT='A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE'; // Jake's War Machines SOL wallet
+const SOL_RPC='https://api.mainnet-beta.solana.com';
+const PAY_PAGE='https://solb7403-creator.github.io/war-machines/pay.html';
+function newMemo(){return 'LWM|'+(playerId||'guest')+'|'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function descLabel(d){
+ if(!d)return 'Purchase';
+ if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache');
+ return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':'Purchase';
+}
+// record a confirmed payment locally and in Firebase (payments/), keyed by memo so it can't double-log
+function logPayment(rec){
+ save.purchases=save.purchases||[];save.purchases.push(rec);
+ if(rec.cur==='SOL')save.spendSol=Math.round(((save.spendSol||0)+rec.amt)*1e6)/1e6;
+ store();
+ if(!db||!IN_TG)return;
+ try{db.ref('payments/'+rec.memo.replace(/[.#$\[\]\/|]/g,'_')).set({pid:playerId,name:tgName(TG_USER),cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||'',t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});}catch(e){}
+}
+// TON text comment as a one-cell BOC (opcode 0 + UTF-8 text), base64 for TON Connect payload
+function tonCommentPayload(txt){
+ const tb=Array.from(new TextEncoder().encode(txt)).slice(0,120),n=4+tb.length;
+ const b=[0xb5,0xee,0x9c,0x72,0x01,0x01,0x01,0x01,0x00,2+n,0x00,0x00,2*n,0,0,0,0].concat(tb);
+ let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin);
+}
+// live prices so SOL costs about the same $ as the TON price
+let px={ton:0,sol:0,t:0},pxBusy=false;
+function fetchPrices(){
+ if(pxBusy||Date.now()-px.t<300000)return;
+ pxBusy=true;
+ fetch('https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd')
+  .then(r=>r.json()).then(d=>{const t=d['the-open-network'].usd,s=d.solana.usd;if(t>0&&s>0)px={ton:t,sol:s,t:Date.now()};})
+  .catch(()=>{}).finally(()=>{pxBusy=false;});
+}
+function solFor(gram){if(!px.ton||!px.sol)return 0;const v=gram*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
+function priceLabel(gram){if(save.payCur!=='sol')return gram+' TON';const s=solFor(gram);return s?s+' SOL':'… SOL';}
+function pay(gram,desc){if(save.payCur==='sol')payWithSol(gram,desc);else payWithTon(gram,desc);}
+// Solana Pay: random reference key lets us find exactly this payment on-chain
+const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function b58(bytes){let d=[0];for(const by of bytes){let c=by;for(let i=0;i<d.length;i++){c+=d[i]<<8;d[i]=c%58;c=(c/58)|0;}while(c){d.push(c%58);c=(c/58)|0;}}
+ let out='';for(const by of bytes){if(by===0)out+='1';else break;}for(let i=d.length-1;i>=0;i--)out+=B58[d[i]];return out;}
+function payWithSol(gram,desc){
+ const sol=solFor(gram);
+ if(!sol){fetchPrices();showToast('LOADING SOL PRICE, TRY AGAIN');return;}
+ const ref=b58(crypto.getRandomValues(new Uint8Array(32))),memo=newMemo();
+ save.pendingSol={desc,gram,sol,lamports:Math.round(sol*1e9),ref,memo,since:Date.now(),usd:Math.round(gram*px.ton*100)/100};store();
+ const q='?a='+sol+'&r='+ref+'&m='+encodeURIComponent(memo)+'&d='+encodeURIComponent(descLabel(desc))+'&u='+(save.pendingSol.usd||'');
+ try{if(IN_TG)TG.openLink(PAY_PAGE+q);else window.open(PAY_PAGE+q,'_blank');}catch(e){window.open(PAY_PAGE+q,'_blank');}
+ showToast('PAY IN YOUR SOL WALLET, THEN COME BACK');
+ watchSol(900000);
+}
+async function solRpc(method,params){
+ const r=await fetch(SOL_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+ return (await r.json()).result;
+}
+async function findSolPayment(p){
+ const sigs=await solRpc('getSignaturesForAddress',[p.ref,{limit:5,commitment:'confirmed'}]);
+ for(const sg of (sigs||[])){
+  if(sg.err)continue;
+  const tx=await solRpc('getTransaction',[sg.signature,{encoding:'jsonParsed',maxSupportedTransactionVersion:0,commitment:'confirmed'}]);
+  if(!tx||!tx.meta||tx.meta.err)continue;
+  const keys=tx.transaction.message.accountKeys.map(k=>k.pubkey||k),i=keys.indexOf(SOL_RECIPIENT);
+  if(i<0)continue;
+  if(tx.meta.postBalances[i]-tx.meta.preBalances[i]>=p.lamports*0.999)return sg.signature;
+ }
+ return null;
+}
+let solWatch=null;
+function watchSol(ms){
+ if(solWatch)return;
+ const t0=Date.now();
+ const tick=async()=>{
+  const p=save.pendingSol;if(!p){solWatch=null;return;}
+  try{const sig=await findSolPayment(p);
+   if(sig&&save.pendingSol){save.pendingSol=null;
+    logPayment({cur:'SOL',amt:p.sol,gram:p.gram,usd:p.usd,what:descLabel(p.desc),memo:p.memo,proof:sig,ts:Date.now()});
+    grantPurchase(p.desc);showToast('SOL PAYMENT CONFIRMED');solWatch=null;return;}
+  }catch(e){}
+  if(Date.now()-t0>ms){solWatch=null;return;}
+  solWatch=setTimeout(tick,5000);
+ };
+ solWatch=setTimeout(tick,3000);
+}
+function checkPendingSol(){
+ const p=save.pendingSol;if(!p)return;
+ if(Date.now()-p.since>24*3600*1000){save.pendingSol=null;store();return;}
+ watchSol(600000);
+}
+// coming back from the wallet app: resume checking right away
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(save&&save.pendingSol){clearTimeout(solWatch);solWatch=null;watchSol(600000);}if(save&&save.pendingTx)checkPendingPurchase();}});
 function initTonConnect(attempt){
  attempt=attempt||0;
  try{
@@ -555,7 +649,7 @@ function initTonConnect(attempt){
 // onSuccess() is called after the transaction is confirmed.
 // Fallback: if the wallet app doesn't return to the page after paying (common on iOS),
 // verify the payment directly on the TON blockchain so the purchase still goes through.
-async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone){
+async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone,memo){
  const t0=Date.now();
  while(Date.now()-t0<timeoutMs){
   if(isDone())return false;
@@ -565,7 +659,8 @@ async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone){
    for(const t of (d.result||[])){
     if((t.utime*1000)<sinceTs-10000)continue;
     const val=parseInt(((t.in_msg||{}).value||'0'),10)/1e9;
-    if(val+1e-9>=gramAmount)return true;
+    if(memo&&String((t.in_msg||{}).message||'')!==memo)continue; // only OUR payment counts
+    if(val+1e-9>=gramAmount)return (t.transaction_id&&t.transaction_id.hash)||true;
    }
   }catch(e){}
   await new Promise(r=>setTimeout(r,5000));
@@ -592,34 +687,38 @@ function checkPendingPurchase(){
  const p=save.pendingTx;
  if(!p||!p.desc)return;
  if(Date.now()-p.since>2*3600*1000){save.pendingTx=null;store();return;} // stale
- verifyPurchaseOnChain(p.amount,p.since,60000,()=>false).then(ok=>{
-  if(ok){grantPurchase(p.desc);showToast('PURCHASE COMPLETED');}
+ verifyPurchaseOnChain(p.amount,p.since,60000,()=>false,p.memo).then(ok=>{
+  if(ok&&save.pendingTx){logPayment({cur:'TON',amt:p.amount,gram:p.amount,what:descLabel(p.desc),memo:p.memo||'',proof:typeof ok==='string'?ok:'',ts:Date.now()});grantPurchase(p.desc);showToast('PURCHASE COMPLETED');}
  });
 }
 async function payWithTon(gramAmount,desc){
  if(!tonConnectUI){showToast('WALLET NOT READY');return;}
  if(!tonWallet){showToast('CONNECT WALLET FIRST');return;}
- if(TON_RECIPIENT.indexOf('REPLACE')===0){showToast('SELLER WALLET NOT SET');return;}
- const sinceTs=Date.now();
+ const sinceTs=Date.now(),memo=newMemo();
  let granted=false;
- const grant=()=>{if(granted)return;granted=true;grantPurchase(desc);};
+ const grant=(proof)=>{if(granted)return;granted=true;
+  logPayment({cur:'TON',amt:gramAmount,gram:gramAmount,usd:px.ton?Math.round(gramAmount*px.ton*100)/100:0,what:descLabel(desc),memo,proof:proof||'',ts:Date.now()});
+  grantPurchase(desc);};
  // Persist so a closed/killed page can still complete the purchase on next launch.
- if(desc){save.pendingTx={desc:desc,amount:gramAmount,since:sinceTs};store();}
- // If the wallet app never returns (iOS), confirm the payment on-chain instead.
- verifyPurchaseOnChain(gramAmount,sinceTs,120000,()=>granted).then(ok=>{
-  if(ok)grant();
+ if(desc){save.pendingTx={desc:desc,amount:gramAmount,since:sinceTs,memo};store();}
+ // If the wallet app never returns (iOS), confirm the payment on-chain by its memo instead.
+ verifyPurchaseOnChain(gramAmount,sinceTs,180000,()=>granted,memo).then(ok=>{
+  if(ok)grant(typeof ok==='string'?ok:'');
   else if(!granted)showToast('PAYMENT NOT DETECTED');
  });
  showToast('WAITING FOR WALLET...');
  try{
-  const res=await tonConnectUI.sendTransaction({
-   validUntil:Math.floor(Date.now()/1000)+300,
-   messages:[{address:TON_RECIPIENT,amount:(gramAmount*1e9).toString()}]
-  });
-  // transaction sent (res.boc) - grant the item
-  grant();
+  const tx=pl=>tonConnectUI.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,
+   messages:[Object.assign({address:TON_RECIPIENT,amount:Math.round(gramAmount*1e9).toString()},pl?{payload:pl}:{})]});
+  let res;
+  try{res=await tx(tonCommentPayload(memo));}
+  catch(e1){
+   if(e1&&e1.message&&/cancel|reject|declin/i.test(e1.message))throw e1;
+   res=await tx(null); // wallet refused the comment: pay without it (still logged with the memo here)
+  }
+  grant(res&&res.boc?'boc':'');
  }catch(e){
-  if(e&&e.message&&e.message.indexOf('cancel')>=0)showToast('PAYMENT CANCELLED');
+  if(e&&e.message&&/cancel|reject|declin/i.test(e.message))showToast('PAYMENT CANCELLED');
   else showToast('PAYMENT FAILED');
  }
 }
@@ -661,7 +760,7 @@ function newMatch(){
  me={x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],gems:(save.cores||[]).filter(Boolean),sp:0,sup:null,
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skinHp),dmgM:(1+0.08*U.cannon)*skinDmg,spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,
-  wtype:W.arch,wdps:W.dps,wshot:W.shot,wpspd:W.pspd,wtier:W.tier,dscale:Cc.size};
+  wtype:W.arch,wdps:W.dps,wshot:W.shot,wpspd:W.pspd,wtier:W.tier,dscale:Cc.size,cls:save.chassis};
  me.hp=me.mhp;
  // AI bot factory (allies and enemies mirror your power tier)
  const mkBot=(team,x,y)=>{
@@ -671,7 +770,7 @@ function newMatch(){
   const bc={cls:bcC,hp:CH[bcC].hp*bcm*pScale,spd:CH[bcC].spd,turn:CH[bcC].turn,tier:ct,size:CH[bcC].ds};
   const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:randGems(),sp:0,sup:null,
    mhp:Math.round(STAT.hp*bc.hp*modeN),dmgM:1,spdM:bc.spd,critB:0,fillM:1,turnM:bc.turn,
-   wtype:bw.arch,wdps:bw.dps,wshot:bw.shot,wpspd:bw.pspd,wtier:bw.tier,dscale:bc.size,
+   wtype:bw.arch,wdps:bw.dps,wshot:bw.shot,wpspd:bw.pspd,wtier:bw.tier,dscale:bc.size,cls:bcC,
    team,isPlayer:false,brain:{mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0},strafe:1,strafeT:1.5};
   u.hp=u.mhp;
   return u;
@@ -684,6 +783,8 @@ function newMatch(){
  for(let i=1;i<n;i++)units.push(mkBot(0,i===1?6:14,26));   // your AI teammates
  for(let i=0;i<n;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6));   // the enemy team
  mstat={dmg:0,sup:0,box:0,taken:0};
+ {const foes=units.filter(u=>u.team===1),adv=foes.some(f=>COUNTER[me.cls]===f.cls),dis=foes.some(f=>COUNTER[f.cls]===me.cls);
+  nums=[];if(adv||dis)setTimeout(()=>{if(state==='play')nums.push({x:me.x,y:me.y-R-1,t:2.2,z:1.1,txt:adv&&!dis?'COUNTER ADVANTAGE +25%':dis&&!adv?'COUNTERED: ENEMY +25%':'MIXED MATCHUP',c:adv&&!dis?'#7be07b':dis&&!adv?'#ff6b5e':'#ffd24a'});},300);}
  bullets=[];timeLeft=MATCH;state='play';
  if(typeof THREE!=='undefined'){init3D();buildArena3d();}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
@@ -792,7 +893,7 @@ function moveBullets(dt){
    for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<R+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
-   const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE);
+   const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t);
    takeHit(t,dmg);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1));t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1));if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:(isCrit?'CRIT ':'')+dmg.toFixed(1),c:isCrit?'#ffd24a':TC[q.o.team]});q.life=0;}
   }
   q.life-=dt;
@@ -866,7 +967,7 @@ function useSuper(r){
 }
 function fireSuper(r,S){
  const col=TC[r.team];
- const hurt=(e,dmg)=>{dmg=dmg*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e));takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
+ const hurt=(e,dmg)=>{dmg=dmg*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
   if(r.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});};
  if(S.kind==='beam'){
   const ang=r.sup.ang;
@@ -907,7 +1008,7 @@ function explode(s){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
   if(d<s.r+R){
    const fall=1-0.65*(d/(s.r+R));
-   const dmg=s.dmg*fall*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e));takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
+   const dmg=s.dmg*fall*TIER_MULT[r.wtier||0]*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
    if(r.isPlayer&&mstat)mstat.dmg+=dmg;
    nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});
   }
@@ -1620,7 +1721,7 @@ function drawGearBrowser(){
                :(o.cls.toUpperCase()+' · HP '+o.hp+'x · SPD '+o.spd+'x'),26,ry+34);
   g.fillStyle='#5c6b7d';g.font=font(11);
   g.fillText(isW?('SUPER: '+WEAPONS[o.arch].sup)
-               :('TURN '+o.turn+' · SIZE '+o.size+'x'),26,ry+54);
+               :('BEATS '+COUNTER[o.cls].toUpperCase()+' · WEAK TO '+beatenBy(o.cls).toUpperCase()),26,ry+54);
   if(eq){
    g.fillStyle='#3fd0c9';g.font=font(11);g.textAlign='right';
    g.fillText('EQUIPPED',vw-28,ry+54);g.textAlign='center';
@@ -1966,7 +2067,7 @@ function isBoxMaxed(tk,ri){
 function openBox(tk,ri){
  const cost=RPRICE[ri];
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
- payWithTon(cost,{kind:'box',tk:tk,ri:ri});
+ pay(cost,{kind:'box',tk:tk,ri:ri});
 }
 function doOpenBox(tk,ri){
  const col=RCOL[ri];
@@ -2021,8 +2122,11 @@ function shopTap(x,y){
   }
   devOpen=false;return;
  }
+ for(const c of (ui.curBtns||[]))
+  if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){save.payCur=c.id;store();fetchPrices();showToast(c.id==='sol'?'PAYING IN SOL':'PAYING IN TON');return;}
  const wb=ui.walletBtn;
  if(wb&&x>=wb.x&&x<=wb.x+wb.w&&y>=wb.y&&y<=wb.y+wb.h){
+  if(save.payCur==='sol'){showToast('TAP ANY ITEM: YOUR SOL WALLET OPENS TO PAY');return;}
   if(tonWallet&&tonConnectUI){
    // disconnect so players can switch wallets at will; status change resets tonWallet
    try{tonConnectUI.disconnect();}catch(e){}
@@ -2040,10 +2144,10 @@ function shopTap(x,y){
 function buyPremium(id){
  if(id==='moonbeam'){
   if(save.moonbeam){showToast('ALREADY OWNED');return;}
-  payWithTon(MOONBEAM_PRICE,{kind:'moonbeam'});
+  pay(MOONBEAM_PRICE,{kind:'moonbeam'});
  }else if(id==='lunarskin'){
   if(save.skin==='lunar'){showToast('ALREADY OWNED');return;}
-  payWithTon(SKINS.lunar.price,{kind:'skin'});
+  pay(SKINS.lunar.price,{kind:'skin'});
  }
 }
 function drawReveal(){
@@ -2140,7 +2244,7 @@ function drawLootBox(bx,by,bw,bh,tk,ri){
  g.globalAlpha=1;
  // price and description with clear separation
  g.fillStyle=maxed?'#5c6b7d':'#e6ebf0';g.font=font(12);
- g.fillText(maxed?'MAXED':RPRICE[ri]+' GRAM',bx+bw/2,by+bh-26);
+ g.fillText(maxed?'MAXED':priceLabel(RPRICE[ri]),bx+bw/2,by+bh-26);
  g.fillStyle='#5c6b7d';g.font=font(9);
  {const ks=tk==='weapon'?['pulse','twin','siege']:['scout','vanguard','titan'];
  const got=tk==='gem'?0:ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;
@@ -2165,11 +2269,24 @@ function drawShop(){
  g.fillText('SHOP',cx,y);
  ui.devTap={x:cx-60,y:y-8,w:120,h:40};y+=38;
  // wallet connect button (replaces GRAM balance - real payments via TON Connect)
- const wtxt=tonWallet?'DISCONNECT WALLET':'CONNECT WALLET';
- g.fillStyle=tonWallet?'#3fd0c9':'#1f9e8e';rr(cx-90,y-6,180,36,10);g.fill();
- g.fillStyle='#fff';g.font=font(14);g.fillText(wtxt,cx,y+5);
- ui.walletBtn={x:cx-90,y:y-6,w:180,h:36};y+=36;
- g.fillStyle='#5c6b7d';g.font=font(11);g.fillText('prices are placeholders',cx,y);y+=26;
+ fetchPrices();
+ const isSol=save.payCur==='sol';
+ // pay-with toggle (left) + wallet button (right)
+ ui.curBtns=[];
+ const tw2=58,tx0=14;
+ [['ton','TON'],['sol','SOL']].forEach(([id,lb],i)=>{
+  const bx=tx0+i*(tw2+4),on=(save.payCur||'ton')===id;
+  ui.curBtns.push({x:bx,y:y-6,w:tw2,h:36,id});
+  g.fillStyle=on?(id==='sol'?'#9945ff':'#0098ea'):'#1c2632';rr(bx,y-6,tw2,36,10);g.fill();
+  g.fillStyle=on?'#fff':'#8fa3b8';g.font=font(13);g.textAlign='center';g.fillText(lb,bx+tw2/2,y+5);
+ });
+ const wx=tx0+2*(tw2+4)+6,ww=vw-14-wx;
+ const wtxt=isSol?'PAY WITH ANY SOL WALLET':tonWallet?'DISCONNECT WALLET':'CONNECT TON WALLET';
+ g.fillStyle=isSol?'#2a1f45':tonWallet?'#3fd0c9':'#1f9e8e';rr(wx,y-6,ww,36,10);g.fill();
+ g.fillStyle='#fff';g.font=font(12);g.fillText(wtxt,wx+ww/2,y+6);
+ ui.walletBtn={x:wx,y:y-6,w:ww,h:36};y+=36;
+ g.fillStyle='#5c6b7d';g.font=font(11);g.textAlign='center';
+ g.fillText(isSol?(px.sol?'SOL prices match TON at live rates':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
  ui.shopBoxes=[];
  // exact-fit layout: 4 sections must end exactly at the tab bar (vh-62).
  // each section costs a header + the box + a gap; bh is derived from that
@@ -2217,7 +2334,7 @@ function drawShop(){
    g.fillStyle='#8fa3b8';g.font=font(10);g.textAlign='center';
    g.fillText(it.d,bx+pw/2,y+34);
    g.fillStyle=it.owned?'#3fd0c9':'#ffd24a';g.font=font(12);
-   g.fillText(it.owned?'OWNED':it.price+' GRAM',bx+pw/2,y+bh-14);
+   g.fillText(it.owned?'OWNED':priceLabel(it.price),bx+pw/2,y+bh-14);
   });
   y+=bh+SEC_GAP;
  }
