@@ -890,6 +890,8 @@ const btn=()=>({x:vw-58,y:vh-92,r:38});
 const joy={on:false,id:null,sx:0,sy:0,x:0,y:0,dx:0,dy:0},keys={};
 cv.addEventListener('pointerdown',e=>{
  const L=loc(e);
+ if(info){info=null;return;}
+ if(state!=='play'&&state!=='matchmaking')for(const q of (ui.qs||[]))if(L.x>=q.x&&L.x<=q.x+q.w&&L.y>=q.y&&L.y<=q.y+q.h){info=q.f();return;}
  if(state==='play'){
   const B=btn();if(Math.hypot(L.x-B.x,L.y-B.y)<=B.r+14){if(me.sp<SUPER_MAX&&!me.sup)nums.push({x:me.x,y:me.y-1.6,t:0.9,z:1,txt:'NOT READY '+Math.round(me.sp/SUPER_MAX*100)+'%',c:'#ff9d9d'});useSuper(me);return;}
   if(joy.on)return;joy.on=true;joy.id=e.pointerId;joy.sx=joy.x=L.x;joy.sy=joy.y=L.y;joy.dx=joy.dy=0;cv.setPointerCapture(e.pointerId);return;
@@ -1304,6 +1306,7 @@ let ui={slots:[],gems:[],fight:null,random:null};
 function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
 function diamond(x,y,s,c){g.fillStyle=c;g.beginPath();g.moveTo(x,y-s);g.lineTo(x+s*0.7,y);g.lineTo(x,y+s);g.lineTo(x-s*0.7,y);g.closePath();g.fill();}
 function loadoutTap(x,y){
+ const HB=ui.helpBtn;if(HB&&x>=HB.x&&x<=HB.x+HB.w&&y>=HB.y&&y<=HB.y+HB.h){info=howToInfo();return;}
  // battle mode selection
  if(ui.modeBtns)for(const m of ui.modeBtns){
   if(x>=m.x&&x<=m.x+m.w&&y>=m.y&&y<=m.y+m.h){save.mode=m.id;store();showToast(MODES[m.id].label+' MODE');return;}
@@ -1390,38 +1393,34 @@ function drawLoadout(){
  hazardStrip(0,0,vw,7);
  hazardStrip(0,vh-69,vw,7);
  g.textAlign='center';g.textBaseline='top';
- // title
- let y=16;
- g.font=font(32);
- g.lineWidth=6;g.lineJoin='round';g.strokeStyle='#04060a';g.strokeText('ARENA',cx,y);
- const tg=g.createLinearGradient(0,y,0,y+36);
+ // header: points (left) · ARENA (center) · how-to-play (right)
+ let y=14;
+ g.fillStyle='#ffd24a';g.textAlign='left';g.font=font(14);g.fillText(fmtNum(save.pts||0)+' PTS',14,y+6);
+ if((save.streak||0)>=2){g.fillStyle='#ff9d3c';g.font=font(11);g.fillText(save.streak+' WIN STREAK',14,y+24);}
+ g.textAlign='center';g.font=font(26);
+ g.lineWidth=5;g.lineJoin='round';g.strokeStyle='#04060a';g.strokeText('ARENA',cx,y);
+ const tg=g.createLinearGradient(0,y,0,y+30);
  tg.addColorStop(0,'#f5f8fb');tg.addColorStop(0.55,'#bcc9d8');tg.addColorStop(1,'#7e90a4');
  g.fillStyle=tg;g.fillText('ARENA',cx,y);
- // rivets flanking title
- g.fillStyle='#6a7d92';
- const twA=g.measureText('ARENA').width;
- [cx-twA/2-24,cx+twA/2+24].forEach(function(px){g.beginPath();g.arc(px,y+16,4,0,7);g.fill();g.fillStyle='#2a3442';g.beginPath();g.arc(px,y+16,1.6,0,7);g.fill();g.fillStyle='#6a7d92';});
- y+=46;
- // pts + streak (top left)
- g.fillStyle='#ffd24a';g.textAlign='left';g.font=font(14);g.fillText(save.pts+' PTS',14,20);
- if((save.streak||0)>=2){g.fillStyle='#ff9d3c';g.font=font(12);g.fillText(save.streak+' WIN STREAK',14,40);}
- // battle mode selector (top right)
+ {const hw=96,hx=vw-14-hw;ui.helpBtn={x:hx,y:y,w:hw,h:28};
+  g.fillStyle='#1c2632';chamP(hx,y,hw,28,7);g.fill();g.strokeStyle='#ff9d3c';g.lineWidth=1.5;chamP(hx,y,hw,28,7);g.stroke();
+  g.fillStyle='#ffd9ad';g.font=font(11);g.fillText('? HOW TO PLAY',hx+hw/2,y+8);}
+ y+=42;
+ // battle mode selector: full-width row
  ui.modeBtns=[];
- const mks=['1v1','2v2','3v3'],mbw=58,mbg=8;
+ const mks=['1v1','2v2','3v3'],mbg=8,mbw=(vw-28-30-2*mbg)/3;
  const msel=modeKey();
  mks.forEach((mk,i)=>{
-  const bx=vw-14-(mks.length-i)*(mbw+mbg)+mbg;
-  const sel=mk===msel;
-  ui.modeBtns.push({x:bx,y:12,w:mbw,h:32,id:mk});
-  const mg=g.createLinearGradient(0,12,0,44);
-  if(sel){mg.addColorStop(0,'#4a3a22');mg.addColorStop(1,'#2a2114');}
-  else{mg.addColorStop(0,'#232d3a');mg.addColorStop(1,'#141a23');}
-  g.fillStyle=mg;chamP(bx,12,mbw,32,7);g.fill();
-  g.strokeStyle=sel?'#ff7b2e':'#3d4d61';g.lineWidth=sel?2.5:1.5;chamP(bx,12,mbw,32,7);g.stroke();
-  if(sel){g.save();g.shadowColor='#ff7b2e';g.shadowBlur=8;g.strokeStyle='#ff7b2e';g.lineWidth=1;chamP(bx,12,mbw,32,7);g.stroke();g.restore();}
-  g.fillStyle=sel?'#ffd9ad':'#8fa3b8';g.font=font(13);g.textAlign='center';
-  g.fillText(MODES[mk].label,bx+mbw/2,21);
+  const bx=14+i*(mbw+mbg),sel=mk===msel;
+  ui.modeBtns.push({x:bx,y:y,w:mbw,h:34,id:mk});
+  const mg=g.createLinearGradient(0,y,0,y+34);
+  if(sel){mg.addColorStop(0,'#4a3a22');mg.addColorStop(1,'#2a2114');}else{mg.addColorStop(0,'#232d3a');mg.addColorStop(1,'#141a23');}
+  g.fillStyle=mg;chamP(bx,y,mbw,34,7);g.fill();
+  g.strokeStyle=sel?'#ff7b2e':'#3d4d61';g.lineWidth=sel?2.5:1.5;chamP(bx,y,mbw,34,7);g.stroke();
+  g.fillStyle=sel?'#ffd9ad':'#8fa3b8';g.font=font(14);g.textAlign='center';g.fillText(MODES[mk].label,bx+mbw/2,y+9);
  });
+ qmark(vw-24,y+17,modeInfo);
+ y+=46;
  g.textAlign='center';
  const W=getW(save.weapon),Cc=getC(save.chassis);
  // ---- UNIT SPEC plate ----
@@ -1429,10 +1428,12 @@ function drawLoadout(){
  let py=y;const ph=118;
  steelPlate(px,py,pw,ph);
  plateTitle('UNIT SPEC',cx,py+10);
+ qmark(px+pw-20,py+18,weaponInfo);
  g.font=font(15);g.fillStyle='#e8eef4';g.textAlign='center';
- g.fillText(Cc.name+' · '+TIER_N[Cc.tier],cx,py+34);
- if(W.arch==='moon')legendText('\u2726 '+W.name+' · '+TIER_N[W.tier],cx,py+56,15);
- else g.fillText(W.name+' · '+TIER_N[W.tier],cx,py+58);
+ g.fillText(Cc.name+' · '+(Cc.sal?'SALVAGED':TIER_N[Math.max(0,Cc.tier)])+' · '+pct(Cc.q),cx,py+34);
+ qmark(px+20,py+42,chassisInfo);
+ if(W.arch==='moon')legendText('\u2726 '+W.name+' · LEGENDARY',cx,py+56,15);
+ else g.fillText(W.name+' · '+(W.sal?'SALVAGED':TIER_N[Math.max(0,W.tier)])+' · '+pct(W.q),cx,py+58);
  g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=1;
  g.beginPath();g.moveTo(px+20,py+80);g.lineTo(px+pw-20,py+80);g.stroke();
  g.fillStyle='#7d8fa3';g.font=font(11);
@@ -1442,6 +1443,7 @@ function drawLoadout(){
  const ch=134;
  steelPlate(px,py,pw,ch);
  plateTitle('CORE SOCKETS',cx,py+10);
+ qmark(px+pw-20,py+18,coresInfo);
  const n=4,gap=10,cw=Math.min(64,(pw-24-(n-1)*gap)/n);
  const x0=cx-(n*cw+(n-1)*gap)/2;const sy0=py+32;
  for(let i=0;i<n;i++){
@@ -1490,7 +1492,7 @@ function drawLoadout(){
    g.restore();
    diamond(ccx,ccy-1,4.5,'#ffffff');
    g.fillStyle='#e6ebf0';g.font=font(10);g.textAlign='center';
-   g.fillText(GEM[k].n,ccx,sy0+cw-5);
+   g.fillText(GEM[k].n+' '+fmtCore(k,coreVal(k,(save.gemLvl&&save.gemLvl[k])||1)).trim(),ccx,sy0+cw-5);
   }else{
    // empty port: threaded rings
    g.strokeStyle='#2b3542';g.lineWidth=2;
@@ -1500,8 +1502,9 @@ function drawLoadout(){
    g.fillText('EMPTY',ccx,sy0+cw-5);
   }
  }
+ for(let i=0;i<n;i++){const k=(save.cores||[])[i];qmark(x0+i*(cw+gap)+cw-4,sy0+4,()=>coreInfo(k));}
  g.fillStyle='#5c6b7d';g.font=font(10);g.textAlign='center';
- g.fillText('— change cores in the GARAGE —',cx,py+ch-16);
+ g.fillText('tap ? to see what each core does · change cores in the GARAGE',cx,py+ch-16);
  py+=ch+12;
  // ---- BATTLEFIELD plate ----
  const mh=106;
@@ -1514,24 +1517,21 @@ function drawLoadout(){
  mapIds.forEach(function(mid,i){
   const bx=px+12+i*(mw+8);
   const sel=curMap===mid;
-  ui.mapSel.push({x:bx,y:my,w:mw,h:46,id:mid});
-  const mg=g.createLinearGradient(0,my,0,my+46);
+  ui.mapSel.push({x:bx,y:my,w:mw,h:40,id:mid});
+  const mg=g.createLinearGradient(0,my,0,my+40);
   if(sel){mg.addColorStop(0,'#4a3a22');mg.addColorStop(1,'#2a2114');}
   else{mg.addColorStop(0,'#232d3a');mg.addColorStop(1,'#141a23');}
-  g.fillStyle=mg;chamP(bx,my,mw,46,8);g.fill();
-  g.strokeStyle=sel?'#ff7b2e':'#3d4d61';g.lineWidth=sel?2.5:1.5;chamP(bx,my,mw,46,8);g.stroke();
-  if(sel){g.save();g.shadowColor='#ff7b2e';g.shadowBlur=10;g.strokeStyle='#ff7b2e';g.lineWidth=1;chamP(bx,my,mw,46,8);g.stroke();g.restore();}
-  g.fillStyle=sel?'#ffd9ad':'#8fa3b8';g.font=font(11);g.textAlign='center';
-  let nm=MAPS[mid].n;
-  while(g.measureText(nm).width>mw-8&&nm.length>4)nm=nm.slice(0,-2);
-  if(nm!==MAPS[mid].n)nm+='…';
-  g.fillText(nm,bx+mw/2,my+9);
-  g.fillStyle='#5c6b7d';g.font=font(9);
-  let ds=MAPS[mid].d;
-  while(g.measureText(ds).width>mw-8&&ds.length>4)ds=ds.slice(0,-2);
-  if(ds!==MAPS[mid].d)ds+='…';
-  g.fillText(ds,bx+mw/2,my+26);
+  g.fillStyle=mg;chamP(bx,my,mw,40,8);g.fill();
+  g.strokeStyle=sel?'#ff7b2e':'#3d4d61';g.lineWidth=sel?2.5:1.5;chamP(bx,my,mw,40,8);g.stroke();
+  if(sel){g.save();g.shadowColor='#ff7b2e';g.shadowBlur=10;g.strokeStyle='#ff7b2e';g.lineWidth=1;chamP(bx,my,mw,40,8);g.stroke();g.restore();}
+  g.fillStyle=sel?'#ffd9ad':'#8fa3b8';g.textAlign='center';
+  // map name on up to two lines so nothing gets cut off
+  const words=MAPS[mid].n.split(' ');g.font=font(11);
+  if(words.length>1&&g.measureText(MAPS[mid].n).width>mw-8){g.font=font(10);g.fillText(words[0],bx+mw/2,my+7);g.fillText(words.slice(1).join(' '),bx+mw/2,my+21);}
+  else g.fillText(MAPS[mid].n,bx+mw/2,my+13);
  });
+ g.fillStyle='#9fb0c2';g.font=font(11);g.textAlign='center';
+ g.fillText((MAPS[curMap]?MAPS[curMap].n+': '+MAPS[curMap].d:''),cx,my+48);
  py+=mh+14;
  // ---- FIGHT button ----
  const fw=Math.min(320,vw*0.8),fh=62;
@@ -1683,7 +1683,7 @@ function drawGarage(){
 let coreSel=null;
 function drawCores(y){
  g.textAlign='left';g.fillStyle='#8fa3b8';g.font=font(10);
- g.fillText('CORES \u2014 permanent socketed boosts',14,y);y+=18;
+ g.fillText('CORES \u2014 permanent socketed boosts',14,y);qmark(vw-24,y+5,coresInfo);y+=18;
  const n=4,gap=6,cw=(vw-28-(n-1)*gap)/n,ch=56;
  ui.coreSlots=[];
  for(let i=0;i<n;i++){
@@ -1695,7 +1695,8 @@ function drawCores(y){
   g.textAlign='center';
   if(k){diamond(bx+cw/2,y+16,8,GEM[k].c);
    g.fillStyle='#e6ebf0';g.font=font(9);g.fillText(GEM[k].n,bx+cw/2,y+32);
-   g.fillStyle='#8fa3b8';g.font=font(8);g.fillText('Lv'+save.gemLvl[k],bx+cw/2,y+44);
+   g.fillStyle='#8fa3b8';g.font=font(8);g.fillText('Lv'+save.gemLvl[k]+' · '+fmtCore(k,coreVal(k,save.gemLvl[k])).trim(),bx+cw/2,y+44);
+   const kk=k;qmark(bx+cw-10,y+10,()=>coreInfo(kk));
   }else{
    g.fillStyle='#3a4a5c';g.font=font(9);g.fillText('EMPTY',bx+cw/2,y+32);
   }
@@ -1711,6 +1712,7 @@ function drawCores(y){
    g.strokeStyle=GEM[k].c;g.lineWidth=1;rr(bx,y,gw,gh,7);g.stroke();
    diamond(bx+gw/2,y+13,6,GEM[k].c);
    g.fillStyle='#e6ebf0';g.font=font(8);g.textAlign='center';g.fillText(GEM[k].n,bx+gw/2,y+26);
+   qmark(bx+gw-8,y+8,()=>coreInfo(k));
   });
   y+=gh+6;
   ui.coreClear={x:14,y:y,w:vw-28,h:28};
@@ -1739,6 +1741,7 @@ function drawUpgradeStrip(y){
   g.fillText('●'.repeat(lvl)+'○'.repeat(4-lvl),bx+cw/2,y+35);
   g.fillStyle=maxed?'#5c6b7d':afford?'#fff':'#5c6b7d';g.font=font(8);
   g.fillText(maxed?'MAX':''+cost,bx+cw/2,y+49);
+  qmark(bx+cw-8,y+9,()=>upInfo(k));
  });
  return y+ch+8;
 }
@@ -1758,6 +1761,7 @@ function drawSlotCard(y,id,label,it){
  if(isW){g.fillStyle='#5c6b7d';g.font=font(10);g.fillText('SUPER: '+WEAPONS[it.arch].sup,bx+12,y+58);}
  g.fillStyle='#8fa3b8';g.font=font(18);g.textAlign='right';
  g.fillText('\u203a',bx+vw-40,y+24);
+ qmark(bx+vw-62,y+16,isW?weaponInfo:chassisInfo);
  return y+h+10;
 }
 function drawGearBrowser(){
@@ -2582,7 +2586,84 @@ function drawTank(b,col){
  g.fillStyle='rgba(0,0,0,.6)';g.fillRect(bx-1.5,by-1.5,bw+3,0.36*r+3);
  g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffd24a';g.fillRect(bx,by,bw*f,0.36*r);
 }
-function draw(){
+// ---- info cards: every ? badge registers a tap target that opens a plain-language explanation ----
+let info=null;
+function qmark(x,y,f){
+ g.save();g.fillStyle='rgba(12,17,24,.9)';g.beginPath();g.arc(x,y,8,0,7);g.fill();
+ g.strokeStyle='#8fb4d6';g.lineWidth=1.3;g.beginPath();g.arc(x,y,8,0,7);g.stroke();
+ g.fillStyle='#cfe3f5';g.font=font(11);g.textAlign='center';g.textBaseline='middle';g.fillText('?',x,y+0.5);g.restore();
+ g.textBaseline='top';
+ (ui.qs=ui.qs||[]).push({x:x-13,y:y-13,w:26,h:26,f});
+}
+function wrapText(t,mw){const out=[];String(t).split('\n').forEach(par=>{if(!par){out.push('');return;}let line='';par.split(' ').forEach(w=>{const tst=line?line+' '+w:w;if(g.measureText(tst).width>mw&&line){out.push(line);line=w;}else line=tst;});out.push(line);});return out;}
+function drawInfo(){
+ const I=info;g.save();g.setTransform(dpr,0,0,dpr,0,0);
+ g.fillStyle='rgba(4,8,12,.82)';g.fillRect(0,0,vw,vh);
+ const w=Math.min(vw-32,360),pad=16,x=vw/2-w/2;
+ g.font=font(13);
+ const rows=[];I.L.forEach(l=>{const hd=/^[A-Z0-9 :·→/%+.\-]+$/.test(l)&&l.length<46&&/[A-Z]/.test(l);wrapText(l,w-pad*2).forEach(t=>rows.push({t,hd}));});
+ const lh=19,h=Math.min(vh-60,60+rows.length*lh+34),y=Math.max(30,vh/2-h/2);
+ g.fillStyle='#101722';rr(x,y,w,h,14);g.fill();
+ g.strokeStyle=I.c||'#3fd0c9';g.lineWidth=2.5;rr(x,y,w,h,14);g.stroke();
+ g.textAlign='left';g.textBaseline='top';
+ g.fillStyle=I.c||'#3fd0c9';g.font=font(17);g.fillText(I.t,x+pad,y+16);
+ let ty=y+48;
+ rows.forEach(r=>{if(ty>y+h-40)return;g.font=font(r.hd?12:13);g.fillStyle=r.hd?'#ffd24a':'#d5dee8';g.fillText(r.t,x+pad,ty);ty+=lh;});
+ g.textAlign='center';g.fillStyle='#5c6b7d';g.font=font(11);g.fillText('tap anywhere to close',vw/2,y+h-24);
+ g.restore();
+}
+const CORE_INFO={
+ dmg:{t:'DAMAGE CORE',w:'Every shot you fire hits harder, including your super.',u:'damage'},
+ rof:{t:'FIRE RATE CORE',w:'Your cannon fires faster, so you deal more damage every second.',u:'fire rate'},
+ arm:{t:'ARMOR CORE',w:'You take less damage from every hit. Armor from cores and box buffs adds up, capped at 70%.',u:'less damage taken'},
+ spd:{t:'SPEED CORE',w:'Your tank drives faster: easier to dodge shots and win the race to mystery boxes.',u:'move speed'},
+ lck:{t:'LUCK CORE',w:'More critical hits. Crits only happen on direct hits and deal 2x damage.',u:'crit chance'},
+ reg:{t:'REPAIR CORE',w:'Slowly repairs your tank during every fight.',u:'of max HP repaired per second'}};
+const coreVal=(k,lv)=>GEM[k].amt*GEM_LV[Math.min(4,Math.max(0,lv-1))];
+const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(Math.round(v*1000)/10))+'% ';
+function coreInfo(k){
+ if(!k)return {t:'EMPTY SOCKET',c:'#8fa3b8',L:['This socket has no core. Go to the GARAGE, tap the socket, then pick a core to put in it.']};
+ const I=CORE_INFO[k],lv=(save.gemLvl&&save.gemLvl[k])||1,sh=(save.gemShards&&save.gemShards[k])||0,need=SHARD_NEED[lv];
+ const L=[I.w,'','YOUR LEVEL: LV'+lv+' → '+fmtCore(k,coreVal(k,lv))+I.u.toUpperCase()];
+ if(lv<5){L.push('NEXT: LV'+(lv+1)+' → '+fmtCore(k,coreVal(k,lv+1))+I.u.toUpperCase());L.push('SHARDS: '+sh+' / '+need+' TO LEVEL UP');}
+ else L.push('MAX LEVEL');
+ L.push('','Get shards from GEM CACHES in the Shop. You can socket up to 4 cores in the Garage. Cores stack with mystery-box buffs of the same type.');
+ return {t:I.t,c:GEM[k].c,L};
+}
+const UP_INFO={hull:'More max HP, so your tank survives longer.',cannon:'More damage on every shot and on your super.',engine:'Faster driving: dodge more shots and grab boxes first.',target:'Higher crit chance. Crits need a direct hit and deal 2x damage.',reactor:'Your super meter fills faster, so you fire it more often.'};
+function upInfo(k){const U=UPS[k],lv=save.up[k];
+ return {t:U.n+' UPGRADE',c:U.c,L:[UP_INFO[k],'','EACH LEVEL: '+U.d.toUpperCase(),'YOUR LEVEL: '+lv+' / 4',lv<4?'NEXT LEVEL: '+fmtNum(U.costs[lv])+' POINTS':'MAXED','','Tap the upgrade to buy the next level with points. Upgrades are permanent.']};}
+const SUPER_DESC={pulse:'PIERCE LANCE: a rail beam that goes through cover and hits every enemy in a straight line.',
+ twin:'STATIC NOVA: an electric shockwave around your tank that hits every enemy close to you.',
+ siege:'SIEGE BLAST: a huge shell that explodes with a big blast radius.',
+ moon:'MOONFALL: a massive lunar beam, the strongest super in the game.'};
+function weaponInfo(){const W=getW(save.weapon);
+ return {t:W.name,c:gcol(W),L:[(W.sal?'SALVAGED ':'')+(W.premium?'LEGENDARY':TIER_N[Math.max(0,W.tier)])+(W.premium?'':' · ROLL '+pct(W.q)),'',
+  'DPS: '+W.dps+' damage per second','FIRE RATE: '+(1/W.shot).toFixed(1)+' shots per second','VEL: '+W.pspd+' bullet speed (faster is harder to dodge)','',
+  SUPER_DESC[W.arch]||'',
+  'Your super meter fills as you deal damage (fastest), take damage, and land crits. When it is full, tap the red button.','',
+  'Rare is +10% over Common, Epic is +32%. Every crate item rolls 100-110%.']};}
+function chassisInfo(){const C=getC(save.chassis);
+ return {t:C.name,c:gcol(C),L:[(C.sal?'SALVAGED ':'')+TIER_N[Math.max(0,C.tier)]+' · ROLL '+pct(C.q),'',
+  'HP: '+C.hp+'x max health','SPD: '+C.spd+'x driving speed','TRN: '+C.turn+' turning speed','',
+  'BEATS '+COUNTER[C.cls].toUpperCase()+' · WEAK TO '+beatenBy(C.cls).toUpperCase(),
+  'Against the class you beat you deal +30% damage and take 20% less. The class that beats you gets the same edge on you.','',
+  'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.']};}
+function howToInfo(){return {t:'HOW TO PLAY',c:'#ff9d3c',L:[
+ 'DRIVE','Drag anywhere on the screen. Your cannon aims and fires by itself.',
+ 'WIN','Destroy the enemy, or have more health left when the 3-minute timer ends.',
+ 'MYSTERY BOXES','5 per match. Drive over one for a random buff. A buff lasts until you take enough damage (the ring around your tank drains).',
+ 'SUPER','The meter above your tank fills as you fight. When it is full, tap the red button.',
+ 'CRITS','Direct hits can crit for 2x damage. Shots that only clip the edge do less.',
+ 'COUNTERS','Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.',
+ 'POINTS','Every match earns points. Points climb the leaderboard and buy upgrades and crates.']};}
+function modeInfo(){const L=['Points per match (before your league multiplier):',''];
+ Object.keys(MODES).forEach(k=>{const M=MODES[k];L.push(M.label+': WIN '+M.win+' · DRAW '+M.draw+' · LOSS '+M.loss);});
+ L.push('','Higher leagues multiply your points (up to 2x in Diamond). Win streaks add up to +100. In team modes, AI teammates fight alongside you.');
+ return {t:'BATTLE MODES',c:'#ff7b2e',L};}
+function coresInfo(){return {t:'CORES',c:'#3fd0c9',L:['Cores are permanent boosts for your tank. You can socket 4 at a time in the Garage.','','Tap the ? on any core to see exactly what it does and its next level.','Level cores up with shards from GEM CACHES in the Shop.']};}
+function draw(){ui.qs=[];drawInner();if(info&&state!=='play')drawInfo();}
+function drawInner(){
  // toggle canvases - 3D DISABLED, using 2D (revert 2026-10-16)
  const in3d=false; // (state==='play');
  const c3=document.getElementById('c3d');
