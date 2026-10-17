@@ -1,0 +1,49 @@
+name: Deploy Stars server (Cloudflare)
+# Deploys worker/ to Cloudflare Workers, sets its secrets, and points the Telegram bot webhook at it.
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', '.github/workflows/deploy-worker.yml']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check secrets
+        env:
+          CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          BOT: ${{ secrets.BOT_TOKEN }}
+          DB: ${{ secrets.FIREBASE_DB_SECRET }}
+        run: |
+          [ -n "$CF" ] || { echo "::error::CLOUDFLARE_API_TOKEN secret missing"; exit 1; }
+          [ -n "$BOT" ] || { echo "::error::BOT_TOKEN secret missing"; exit 1; }
+          [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
+      - name: Deploy worker
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+        run: |
+          set -o pipefail
+          run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
+          run npx -y wrangler@3.80.0 deploy
+          printf '%s' "$BOT_TOKEN" | run npx -y wrangler@3.80.0 secret put BOT_TOKEN
+          printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@3.80.0 secret put FIREBASE_DB_SECRET
+          URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
+          echo "WORKER_URL=$URL" >> $GITHUB_ENV
+          echo "::notice::WORKER_URL=$URL"
+      - name: Point bot webhook at the worker
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          [ -n "$WORKER_URL" ] || { echo "::error::worker URL not found (is the workers.dev subdomain set up?)"; exit 1; }
+          SECRET=$(node -e 'const c=require("crypto");process.stdout.write(c.createHmac("sha256",process.env.BOT_TOKEN).update("lunar-webhook").digest("hex").slice(0,48))')
+          R=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" -H 'Content-Type: application/json' \
+            -d "{\"url\":\"${WORKER_URL}/api/tg-webhook\",\"secret_token\":\"${SECRET}\",\"allowed_updates\":[\"message\",\"pre_checkout_query\"]}")
+          echo "::notice::setWebhook: $R"
+          echo "$R" | grep -q '"ok":true' || exit 1
