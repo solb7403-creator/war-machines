@@ -461,11 +461,10 @@ const MAPS={
 };
 let curMap='classic';
 let walls=MAPS.classic.walls;
+const MAP_REAL=['classic','overpass','longshot'];
+const mapKey=()=>(save.map&&MAPS[save.map])?save.map:'classic';   // the player's pick (may be 'random'); the real map is chosen at match start
 function setMap(id){
- if(id==='random'){
-  const opts=['classic','overpass','longshot'];
-  id=opts[(Math.random()*opts.length)|0];
- }
+ if(!MAPS[id]||MAPS[id].isRandom)id=MAP_REAL[(Math.random()*MAP_REAL.length)|0];
  curMap=id;baseWalls=MAPS[id].walls;BR=MAPS[id].bridge||null;walls=baseWalls.slice();
  if(BR){const [dx,dy,dw,dh]=BR.deck;let x0=dx;
   for(const [tx,tw] of BR.tunnels){walls.push([x0,dy,tx-x0,dh]);x0=tx+tw;}   // solid deck blocks between tunnels
@@ -839,7 +838,9 @@ const MODES={
 const modeKey=()=>(save.mode&&MODES[save.mode])?save.mode:'1v1';
 // game types: ARENA (destroy the enemy) and MOON ZONE (hold zones to score; 1 zone in 1v1, 3 zones in team modes)
 const GTYPES={arena:{label:'ARENA',d:'Destroy the enemy team'},zone:{label:'MOON ZONE',d:'Hold the moving zone · first to 100'}};
-const gtypeKey=()=>(save.gtype&&GTYPES[save.gtype])?save.gtype:'arena';
+const GT_PICK={...GTYPES,random:{label:'RANDOM',d:'Surprise me'}};   // what the selector shows; RANDOM resolves at match start
+const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
+let matchG='arena';
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
 // Score while you hold it uncontested, +5 per kill, respawn gets longer each death, tanks repair when out of combat.
 const ZONE_R=2.8,ZONE_WIN=100,CAP_RATE=0.55,RESPAWN_T=4,ZONE_RATE=2.4,KILL_PTS=5,ZONE_WARN=6,REPAIR_DELAY=3.5,REPAIR_RATE=0.07;
@@ -904,6 +905,9 @@ const aliveCount=t=>units.filter(u=>u.team===t&&u.hp>0).length;
 function teamHpFrac(t){const us=units.filter(u=>u.team===t);const m=us.reduce((a,u)=>a+u.mhp,0);return m?us.reduce((a,u)=>a+u.hp,0)/m:0;}
 function nearestFoe(u){let best=null,bd=1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<bd){bd=d;best=v;}}return best;}
 function newMatch(){
+ {const pk=mapKey();setMap(pk==='random'?MAP_REAL[(Math.random()*MAP_REAL.length)|0]:pk);}
+ {const gk=gtypeKey(),real=Object.keys(GTYPES);matchG=gk==='random'?real[(Math.random()*real.length)|0]:gk;
+  if(gk==='random'||mapKey()==='random')setTimeout(()=>{if(state==='play')showToast(GTYPES[matchG].label+' · '+MAPS[curMap].n);},300);}
  const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis);
  const wt=W.tier,ct=Cc.tier;
  const pwr=calcPower(),brk=powerBracket(pwr);
@@ -947,7 +951,7 @@ function newMatch(){
  bullets=[];timeLeft=MATCH;state='play';
  gscore=[0,0];gzones=null;
  units.forEach(u=>{u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;});
- if(gtypeKey()==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
+ if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
  if(typeof THREE!=='undefined'){init3D();buildArena3d();}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
 }
@@ -1439,7 +1443,7 @@ let ui={slots:[],gems:[],fight:null,random:null};
 function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
 function diamond(x,y,s,c){g.fillStyle=c;g.beginPath();g.moveTo(x,y-s);g.lineTo(x+s*0.7,y);g.lineTo(x,y+s);g.lineTo(x-s*0.7,y);g.closePath();g.fill();}
 function loadoutTap(x,y){
- if(ui.gtBtns)for(const b of ui.gtBtns)if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){save.gtype=b.id;store();showToast(GTYPES[b.id].label);return;}
+ if(ui.gtBtns)for(const b of ui.gtBtns)if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){save.gtype=b.id;store();showToast(GT_PICK[b.id].label);return;}
  const HB=ui.helpBtn;if(HB&&x>=HB.x&&x<=HB.x+HB.w&&y>=HB.y&&y<=HB.y+HB.h){info=howToInfo();return;}
  // battle mode selection
  if(ui.modeBtns)for(const m of ui.modeBtns){
@@ -1447,7 +1451,7 @@ function loadoutTap(x,y){
  }
  // map selection
  if(ui.mapSel)for(const m of ui.mapSel){
-  if(x>=m.x&&x<=m.x+m.w&&y>=m.y&&y<=m.y+m.h){setMap(m.id);return;}
+  if(x>=m.x&&x<=m.x+m.w&&y>=m.y&&y<=m.y+m.h){save.map=m.id;store();if(m.id!=='random')setMap(m.id);return;}
  }
  const F=ui.fight;
  if(F&&x>=F.x&&x<=F.x+F.w&&y>=F.y&&y<=F.y+F.h){mmT=0;state='matchmaking';}
@@ -1542,15 +1546,16 @@ function drawLoadout(){
  y+=42;
  // game type selector
  ui.gtBtns=[];
- {const gts=Object.keys(GTYPES),gg=8,gbw=(vw-28-30-gg*(gts.length-1))/gts.length,gsel=gtypeKey();
+ {const gts=Object.keys(GT_PICK),gg=8,gbw=(vw-28-30-gg*(gts.length-1))/gts.length,gsel=gtypeKey();
   gts.forEach((gk,i)=>{const bx=14+i*(gbw+gg),sel=gk===gsel;
    ui.gtBtns.push({x:bx,y:y,w:gbw,h:40,id:gk});
    const mg=g.createLinearGradient(0,y,0,y+40);
    if(sel){mg.addColorStop(0,'#1d3b46');mg.addColorStop(1,'#122229');}else{mg.addColorStop(0,'#232d3a');mg.addColorStop(1,'#141a23');}
    g.fillStyle=mg;chamP(bx,y,gbw,40,7);g.fill();
    g.strokeStyle=sel?'#3fd0c9':'#3d4d61';g.lineWidth=sel?2.5:1.5;chamP(bx,y,gbw,40,7);g.stroke();
-   g.textAlign='center';g.fillStyle=sel?'#bff5f1':'#8fa3b8';g.font=font(14);g.fillText(GTYPES[gk].label,bx+gbw/2,y+5);
-   g.fillStyle=sel?'#7fb7b3':'#5c6b7d';g.font=font(9);g.fillText(GTYPES[gk].d,bx+gbw/2,y+24);});
+   g.textAlign='center';g.fillStyle=sel?'#bff5f1':'#8fa3b8';g.font=font(14);g.fillText(GT_PICK[gk].label,bx+gbw/2,y+5);
+   g.fillStyle=sel?'#7fb7b3':'#5c6b7d';let fs=9;g.font=font(fs);while(fs>7&&g.measureText(GT_PICK[gk].d).width>gbw-8){fs-=0.5;g.font=font(fs);}
+   const dd=GT_PICK[gk].d.split(' · ');if(g.measureText(GT_PICK[gk].d).width>gbw-8&&dd.length>1){g.font=font(8);g.fillText(dd[0],bx+gbw/2,y+21);g.fillText(dd[1],bx+gbw/2,y+30);}else g.fillText(GT_PICK[gk].d,bx+gbw/2,y+24);});
   qmark(vw-24,y+20,gtypeInfo);}
  y+=48;
  // battle mode selector: full-width row
@@ -1663,7 +1668,7 @@ function drawLoadout(){
  ui.mapSel=[];
  mapIds.forEach(function(mid,i){
   const bx=px+12+i*(mw+8);
-  const sel=curMap===mid;
+  const sel=mapKey()===mid;
   ui.mapSel.push({x:bx,y:my,w:mw,h:40,id:mid});
   const mg=g.createLinearGradient(0,my,0,my+40);
   if(sel){mg.addColorStop(0,'#4a3a22');mg.addColorStop(1,'#2a2114');}
@@ -1678,7 +1683,7 @@ function drawLoadout(){
   else g.fillText(MAPS[mid].n,bx+mw/2,my+13);
  });
  g.fillStyle='#9fb0c2';g.font=font(11);g.textAlign='center';
- g.fillText((MAPS[curMap]?MAPS[curMap].n+': '+MAPS[curMap].d:''),cx,my+48);
+ g.fillText(MAPS[mapKey()].n+': '+MAPS[mapKey()].d,cx,my+48);
  py+=mh+14;
  // ---- FIGHT button ----
  const fw=Math.min(320,vw*0.8),fh=62;
@@ -2808,6 +2813,7 @@ function howToInfo(){return {t:'HOW TO PLAY',c:'#ff9d3c',L:[
  'POINTS','Every match earns points. Points climb the leaderboard and buy upgrades and crates.']};}
 function gtypeInfo(){return {t:'GAME TYPES',c:'#3fd0c9',L:[
  'ARENA','Destroy the enemy team, or have more health left when the timer ends. One life.',
+ 'RANDOM','Picks Arena or Moon Zone for you when the match starts.',
  'MOON ZONE','Stand in the zone to capture it. While your team holds it, you score. First to 100 wins, or the higher score when time runs out.',
  'IT MOVES','Every 20-28s the zone jumps to a random spot. 6s before, a gold ghost ring shows where it is going. Get there first.',
  'KILLS','Each kill is +5 points. Dying also costs you time: respawn starts at 4s and grows 1.5s per death (max 9s).',
