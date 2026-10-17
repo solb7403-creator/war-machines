@@ -52,7 +52,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 <div class="hero">
  Battle robot tanks in real-time PvP arenas, upgrade your machine, and climb the leaderboard.<br>
  <b>The top 1,000 players get a guaranteed $LUNER allocation.</b>
- <br><a class="play" id="playBtn" href="https://solb7403-creator.github.io/war-machines/">PLAY NOW</a>
+ <br><a class="play" id="playBtn" href="https://t.me/LunarWarMachinesBot/play">PLAY NOW</a>
 </div>
 
 <nav>
@@ -240,6 +240,8 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 (function(){
  var tg=window.Telegram&&window.Telegram.WebApp;
  if(!tg||!tg.initData)return;
+ var pb=document.getElementById('playBtn');
+ if(pb)pb.addEventListener('click',function(e){e.preventDefault();try{tg.openTelegramLink(pb.href);}catch(x){location.href=pb.href;}});
  try{tg.ready();tg.expand();if(tg.isVersionAtLeast&&tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#0c1118');tg.setBackgroundColor('#0c1118');}}catch(e){}
 })();
 </script>
