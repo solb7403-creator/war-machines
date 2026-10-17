@@ -139,8 +139,12 @@ const CH={
 const CHORDER=['scout','vanguard','titan'];
 // chassis counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.
 // The advantaged side deals +25% damage to the line it counters.
-const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.25;
-const cmult=(a,d)=>(a&&d&&a.cls&&COUNTER[a.cls]===d.cls)?1+COUNTER_BONUS:1;
+// Counter edge ~1.6x (deals +30%, takes 20% less) so it weighs about the same as a full Epic loadout (~1.7x)
+const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.30,COUNTER_RES=0.20;
+const cmult=(a,d)=>{if(!a||!d||!a.cls||!d.cls)return 1;
+ if(COUNTER[a.cls]===d.cls)return 1+COUNTER_BONUS;   // attacker counters target
+ if(COUNTER[d.cls]===a.cls)return 1-COUNTER_RES;     // target counters attacker
+ return 1;};
 const beatenBy=c=>Object.keys(COUNTER).find(k=>COUNTER[k]===c);
 const WEAPONS={
  pulse:{n:'PULSE CANNON',d:'Standard balanced gun',dps:70,shot:0.2,c:'#3fd0c9',sup:'PIERCE LANCE'},
@@ -857,7 +861,7 @@ function newMatch(){
  for(let i=0;i<n;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6));   // the enemy team
  mstat={dmg:0,sup:0,box:0,taken:0};
  {const foes=units.filter(u=>u.team===1),adv=foes.some(f=>COUNTER[me.cls]===f.cls),dis=foes.some(f=>COUNTER[f.cls]===me.cls);
-  nums=[];if(adv||dis)setTimeout(()=>{if(state==='play')nums.push({x:me.x,y:me.y-R-1,t:2.2,z:1.1,txt:adv&&!dis?'COUNTER ADVANTAGE +25%':dis&&!adv?'COUNTERED: ENEMY +25%':'MIXED MATCHUP',c:adv&&!dis?'#7be07b':dis&&!adv?'#ff6b5e':'#ffd24a'});},300);}
+  nums=[];if(adv||dis)setTimeout(()=>{if(state==='play')nums.push({x:me.x,y:me.y-R-1,t:2.2,z:1.1,txt:adv&&!dis?'COUNTER ADVANTAGE: +30% DMG, -20% TAKEN':dis&&!adv?'COUNTERED: ENEMY HAS THE EDGE':'MIXED MATCHUP',c:adv&&!dis?'#7be07b':dis&&!adv?'#ff6b5e':'#ffd24a'});},300);}
  bullets=[];timeLeft=MATCH;state='play';
  if(typeof THREE!=='undefined'){init3D();buildArena3d();}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
