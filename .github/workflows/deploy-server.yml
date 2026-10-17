@@ -1,0 +1,26 @@
+name: Deploy Stars server (Netlify)
+# Deploys server/ (Telegram Stars invoice + webhook functions) to Netlify on every change.
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', '.github/workflows/deploy-server.yml']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check token
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then echo "NETLIFY_AUTH_TOKEN secret is not set"; exit 1; fi
+      - name: Deploy
+        working-directory: server
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: c2a77ec4-5d14-476d-b3ab-665bde794883
+        run: npx -y netlify-cli@17.38.1 deploy --prod --dir public --functions netlify/functions --message "deploy ${GITHUB_SHA::7}"

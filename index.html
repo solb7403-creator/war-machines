@@ -583,8 +583,34 @@ function fetchPrices(){
   .catch(()=>{}).finally(()=>{pxBusy=false;});
 }
 function solFor(gram){if(!px.ton||!px.sol)return 0;const v=gram*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
-function priceLabel(gram){if(save.payCur!=='sol')return gram+' TON';const s=solFor(gram);return s?s+' SOL':'… SOL';}
-function pay(gram,desc){if(save.payCur==='sol')payWithSol(gram,desc);else payWithTon(gram,desc);}
+// ---- Telegram Stars: invoice created + payment confirmed by the LUNAR server (Netlify) ----
+const STARS_API='https://lunar-war-machines-api.netlify.app/api/stars-invoice';
+const STARS_PER_TON=100; // must match the server's STARS_PER_TON
+const starsFor=gram=>Math.max(1,Math.round(gram*STARS_PER_TON));
+let starsBusy=false;
+async function payWithStars(gram,desc){
+ if(!IN_TG||!TG.openInvoice){showToast('OPEN THE GAME IN TELEGRAM TO PAY WITH STARS');return;}
+ if(starsBusy)return;starsBusy=true;showToast('OPENING STARS CHECKOUT...');
+ try{
+  const r=await fetch(STARS_API,{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({initData:TG.initData,kind:desc.kind,tk:desc.tk,ri:desc.ri,price:gram})});
+  const d=await r.json();
+  if(!r.ok||!d.link)throw new Error(d.error||'invoice');
+  TG.openInvoice(d.link,status=>{
+   starsBusy=false;
+   if(status==='paid'){
+    save.purchases=save.purchases||[];save.purchases.push({cur:'STARS',amt:d.stars,gram,what:descLabel(desc),memo:'STARS|'+d.nonce,ts:Date.now()});
+    save.spendStars=(save.spendStars||0)+d.stars;store();
+    grantPurchase(desc);showToast('PAID WITH STARS ⭐');
+   }else if(status==='cancelled')showToast('PAYMENT CANCELLED');
+   else if(status==='failed')showToast('STARS PAYMENT FAILED');
+  });
+ }catch(e){starsBusy=false;showToast('STARS UNAVAILABLE, TRY AGAIN');}
+}
+function priceLabel(gram){
+ if(save.payCur==='stars')return starsFor(gram)+' ⭐';
+ if(save.payCur!=='sol')return gram+' TON';const s=solFor(gram);return s?s+' SOL':'… SOL';}
+function pay(gram,desc){if(save.payCur==='stars')payWithStars(gram,desc);else if(save.payCur==='sol')payWithSol(gram,desc);else payWithTon(gram,desc);}
 // Solana Pay: random reference key lets us find exactly this payment on-chain
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 function b58(bytes){let d=[0];for(const by of bytes){let c=by;for(let i=0;i<d.length;i++){c+=d[i]<<8;d[i]=c%58;c=(c/58)|0;}while(c){d.push(c%58);c=(c/58)|0;}}
@@ -2154,10 +2180,11 @@ function shopTap(x,y){
   devOpen=false;return;
  }
  for(const c of (ui.curBtns||[]))
-  if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){save.payCur=c.id;store();fetchPrices();showToast(c.id==='sol'?'PAYING IN SOL':'PAYING IN TON');return;}
+  if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){save.payCur=c.id;store();fetchPrices();showToast(c.id==='sol'?'PAYING IN SOL':c.id==='stars'?'PAYING WITH TELEGRAM STARS':'PAYING IN TON');return;}
  const wb=ui.walletBtn;
  if(wb&&x>=wb.x&&x<=wb.x+wb.w&&y>=wb.y&&y<=wb.y+wb.h){
   if(save.payCur==='sol'){showToast('TAP ANY ITEM: YOUR SOL WALLET OPENS TO PAY');return;}
+  if(save.payCur==='stars'){showToast('TAP ANY ITEM: PAY WITH STARS, NO WALLET NEEDED');return;}
   if(tonWallet&&tonConnectUI){
    // disconnect so players can switch wallets at will; status change resets tonWallet
    try{tonConnectUI.disconnect();}catch(e){}
@@ -2304,20 +2331,21 @@ function drawShop(){
  const isSol=save.payCur==='sol';
  // pay-with toggle (left) + wallet button (right)
  ui.curBtns=[];
- const tw2=58,tx0=14;
- [['ton','TON'],['sol','SOL']].forEach(([id,lb],i)=>{
+ const tw2=50,tx0=14;
+ [['ton','TON'],['sol','SOL'],['stars','⭐']].forEach(([id,lb],i)=>{
   const bx=tx0+i*(tw2+4),on=(save.payCur||'ton')===id;
   ui.curBtns.push({x:bx,y:y-6,w:tw2,h:36,id});
-  g.fillStyle=on?(id==='sol'?'#9945ff':'#0098ea'):'#1c2632';rr(bx,y-6,tw2,36,10);g.fill();
+  g.fillStyle=on?(id==='sol'?'#9945ff':id==='stars'?'#e0a100':'#0098ea'):'#1c2632';rr(bx,y-6,tw2,36,10);g.fill();
   g.fillStyle=on?'#fff':'#8fa3b8';g.font=font(13);g.textAlign='center';g.fillText(lb,bx+tw2/2,y+5);
  });
- const wx=tx0+2*(tw2+4)+6,ww=vw-14-wx;
- const wtxt=isSol?'PAY WITH ANY SOL WALLET':tonWallet?'DISCONNECT WALLET':'CONNECT TON WALLET';
- g.fillStyle=isSol?'#2a1f45':tonWallet?'#3fd0c9':'#1f9e8e';rr(wx,y-6,ww,36,10);g.fill();
+ const isStars=save.payCur==='stars';
+ const wx=tx0+3*(tw2+4)+6,ww=vw-14-wx;
+ const wtxt=isStars?'NO WALLET NEEDED':isSol?'ANY SOL WALLET':tonWallet?'DISCONNECT WALLET':'CONNECT TON WALLET';
+ g.fillStyle=isStars?'#3a2e0a':isSol?'#2a1f45':tonWallet?'#3fd0c9':'#1f9e8e';rr(wx,y-6,ww,36,10);g.fill();
  g.fillStyle='#fff';g.font=font(12);g.fillText(wtxt,wx+ww/2,y+6);
  ui.walletBtn={x:wx,y:y-6,w:ww,h:36};y+=36;
  g.fillStyle='#5c6b7d';g.font=font(11);g.textAlign='center';
- g.fillText(isSol?(px.sol?'SOL prices match TON at live rates':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
+ g.fillText(isStars?'Telegram Stars · buy with Apple Pay or card':isSol?(px.sol?'SOL prices match TON at live rates':'loading SOL prices…'):'1 GRAM = 1 TON',cx,y);y+=26;
  ui.shopBoxes=[];
  // exact-fit layout: 4 sections must end exactly at the tab bar (vh-62).
  // each section costs a header + the box + a gap; bh is derived from that
