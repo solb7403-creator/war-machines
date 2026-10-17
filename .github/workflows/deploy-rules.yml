@@ -1,28 +1,42 @@
 name: Deploy Firebase rules
 # Publishes database.rules.json to the Realtime Database whenever it changes on main.
+# Auth: repo secret FIREBASE_DB_SECRET (legacy database secret) OR FIREBASE_SA_JSON (service account key JSON).
 on:
   push:
     branches: [main]
-    paths: [database.rules.json]
+    paths: [database.rules.json, .github/workflows/deploy-rules.yml]
   workflow_dispatch:
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check secret
-        env:
-          SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
-        run: |
-          if [ -z "$SECRET" ]; then echo "FIREBASE_DB_SECRET is not set in repo secrets"; exit 1; fi
       - name: Validate JSON
         run: python3 -c "import json;json.load(open('database.rules.json'))"
       - name: Publish rules
         env:
-          SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+          DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+          SA_JSON: ${{ secrets.FIREBASE_SA_JSON }}
         run: |
-          code=$(curl -s -o out.txt -w '%{http_code}' -X PUT --data-binary @database.rules.json \
-            "https://warmachines-a6034-default-rtdb.firebaseio.com/.settings/rules.json?auth=${SECRET}")
+          URL="https://warmachines-a6034-default-rtdb.firebaseio.com/.settings/rules.json"
+          if [ -n "$SA_JSON" ]; then
+            pip install -q google-auth requests
+            TOKEN=$(python3 - <<'PY'
+          import json, os
+          from google.oauth2 import service_account
+          import google.auth.transport.requests as r
+          c = service_account.Credentials.from_service_account_info(json.loads(os.environ["SA_JSON"]),
+              scopes=["https://www.googleapis.com/auth/firebase.database","https://www.googleapis.com/auth/userinfo.email"])
+          c.refresh(r.Request()); print(c.token)
+          PY
+          )
+            AUTH="access_token=${TOKEN}"
+          elif [ -n "$DB_SECRET" ]; then
+            AUTH="auth=${DB_SECRET}"
+          else
+            echo "No FIREBASE_DB_SECRET or FIREBASE_SA_JSON secret set"; exit 1
+          fi
+          code=$(curl -s -o out.txt -w '%{http_code}' -X PUT --data-binary @database.rules.json "${URL}?${AUTH}")
           cat out.txt; echo
           if [ "$code" != "200" ]; then echo "Publish failed: HTTP $code"; exit 1; fi
           echo "Rules published."
