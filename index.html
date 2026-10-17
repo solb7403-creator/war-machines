@@ -642,9 +642,9 @@ function watchSol(ms){
     grantPurchase(p.desc);showToast('SOL PAYMENT CONFIRMED');solWatch=null;return;}
   }catch(e){}
   if(Date.now()-t0>ms){solWatch=null;return;}
-  solWatch=setTimeout(tick,5000);
+  solWatch=setTimeout(tick,2500);
  };
- solWatch=setTimeout(tick,3000);
+ solWatch=setTimeout(tick,1500);
 }
 function checkPendingSol(){
  const p=save.pendingSol;if(!p)return;
@@ -652,6 +652,9 @@ function checkPendingSol(){
  watchSol(600000);
 }
 // coming back from the wallet app: resume checking right away
+function payResume(){if(save&&save.pendingSol){clearTimeout(solWatch);solWatch=null;watchSol(600000);}if(save&&save.pendingTx)checkPendingPurchase();}
+try{if(TG&&TG.onEvent)TG.onEvent('activated',payResume);}catch(e){}
+addEventListener('focus',payResume);addEventListener('pageshow',payResume);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(save&&save.pendingSol){clearTimeout(solWatch);solWatch=null;watchSol(600000);}if(save&&save.pendingTx)checkPendingPurchase();}});
 function initTonConnect(attempt){
  attempt=attempt||0;
@@ -691,7 +694,8 @@ async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone,memo){
 function grantPurchase(desc){
  if(!desc)return;
  if(desc.kind==='box'){
-  const cost=RPRICE[desc.ri]||0;
+  const cost=desc.price||RPRICE[desc.ri]||0;
+  save.buys=save.buys||{};const bk=buyKey(desc.tk,desc.ri);save.buys[bk]=(save.buys[bk]||0)+1;
   save.spendGram=(save.spendGram||0)+cost;store();syncPlayer();doOpenBox(desc.tk,desc.ri);
  }else if(desc.kind==='moonbeam'){
   if(!save.moonbeam){save.moonbeam=true;save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;store();syncPlayer();showToast('MOONBEAM UNLOCKED!');}
@@ -737,7 +741,7 @@ async function payWithTon(gramAmount,desc){
   }
   grant(res&&res.boc?'boc':'');
  }catch(e){
-  if(e&&e.message&&/cancel|reject|declin/i.test(e.message))showToast('PAYMENT CANCELLED');
+  if(e&&e.message&&/cancel|reject|declin/i.test(e.message)){save.pendingTx=null;store();showToast('PAYMENT CANCELLED');}
   else showToast('PAYMENT FAILED');
  }
 }
@@ -2083,10 +2087,12 @@ function isBoxMaxed(tk,ri){
  const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
  return keys.every(k=>isW?ownW(k,ri):ownC(k,ri));
 }
+function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayId(new Date()):tk+ri;}
+function boxPrice(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return RPRICE[ri]*(1+n);}
 function openBox(tk,ri){
- const cost=RPRICE[ri];
+ const cost=boxPrice(tk,ri);
  if(isBoxMaxed(tk,ri)){showToast('ALL '+TIER_N[ri]+' GEAR UNLOCKED');return;}
- pay(cost,{kind:'box',tk:tk,ri:ri});
+ pay(cost,{kind:'box',tk:tk,ri:ri,price:cost});
 }
 function doOpenBox(tk,ri){
  const col=RCOL[ri];
@@ -2263,7 +2269,7 @@ function drawLootBox(bx,by,bw,bh,tk,ri){
  g.globalAlpha=1;
  // price and description with clear separation
  g.fillStyle=maxed?'#5c6b7d':'#e6ebf0';g.font=font(12);
- g.fillText(maxed?'MAXED':priceLabel(RPRICE[ri]),bx+bw/2,by+bh-26);
+ g.fillText(maxed?'MAXED':priceLabel(boxPrice(tk,ri)),bx+bw/2,by+bh-26);
  g.fillStyle='#5c6b7d';g.font=font(9);
  {const ks=tk==='weapon'?['pulse','twin','siege']:['scout','vanguard','titan'];
  const got=tk==='gem'?0:ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;
@@ -2357,6 +2363,12 @@ function drawShop(){
   });
   y+=bh+SEC_GAP;
  }
+ {const pp=save.pendingSol||save.pendingTx;if(pp&&Date.now()-pp.since<15*60000){
+  const t=performance.now()/400,dots='.'.repeat(1+((t|0)%3));
+  g.fillStyle='rgba(153,69,255,.95)';rr(14,vh-62-46,vw-28,38,10);g.fill();
+  g.fillStyle='#fff';g.font=font(13);g.textAlign='center';
+  g.fillText('CHECKING YOUR PAYMENT'+dots+' item unlocks automatically',vw/2,vh-62-35);
+ }}
  if(devOpen)drawDevPanel();
  drawTabs();drawToast();drawReveal();
 }
