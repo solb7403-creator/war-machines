@@ -145,7 +145,7 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
 
  // providers inject shortly after load inside wallet browsers
  var tries=0;(function detect(){
-  if(provider()){$('inwallet').classList.remove('hide');$('choose').classList.add('hide');$('qrCard').classList.add('hide');pay();return;}
+  if(provider()){$('inwallet').classList.remove('hide');$('choose').classList.add('hide');$('qrCard').classList.add('hide');status('Check the amount, then tap Approve Payment.');return;}
   if(++tries<8){setTimeout(detect,250);return;}
   $('choose').classList.remove('hide');
  })();
