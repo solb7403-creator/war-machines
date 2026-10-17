@@ -23,4 +23,8 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: c2a77ec4-5d14-476d-b3ab-665bde794883
-        run: npx -y netlify-cli@17.38.1 deploy --prod --dir public --functions netlify/functions --message "deploy ${GITHUB_SHA::7}"
+        run: |
+          set -o pipefail
+          npx -y netlify-cli@17.38.1 deploy --prod --dir public --functions netlify/functions --message "deploy ${GITHUB_SHA::7}" 2>&1 | tee out.txt || {
+            msg=$(tail -c 3000 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' ' | sed "s/$NETLIFY_AUTH_TOKEN/***/g")
+            echo "::error::$msg"; exit 1; }
