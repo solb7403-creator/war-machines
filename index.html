@@ -101,9 +101,15 @@ function loadSave(obj){if(obj!==undefined)save=obj;else{try{save=JSON.parse(loca
  if(save.tons!==undefined){save.grams=save.tons;delete save.tons;}
  if(save.spendTON!==undefined){save.spendGram=save.spendTON;delete save.spendTON;}
  C.me=SKINS[save.skin].c;
+ if(save.wTier&&!save.wOwn){
+  save.wOwn={};save.cOwn={};
+  ['pulse','twin','siege'].forEach(k=>{save.wOwn[k]=[];for(let t=0;t<=(save.wTier[k]);t++)save.wOwn[k].push(t);});
+  ['scout','vanguard','titan'].forEach(k=>{save.cOwn[k]=[];for(let t=0;t<=(save.cTier[k]);t++)save.cOwn[k].push(t);});
+ }
  // migrate from the old 75-item loot system to 3x3 tiers (once)
  if(!save.wTier){
-  save.wTier={pulse:0,twin:0,siege:0};save.cTier={scout:0,vanguard:0,titan:0};
+  const fresh=!(save.invW&&save.invW.length)&&!(save.invC&&save.invC.length);
+  save.wTier=fresh?{pulse:0,twin:-1,siege:-1}:{pulse:0,twin:0,siege:0};save.cTier=fresh?{scout:-1,vanguard:0,titan:-1}:{scout:0,vanguard:0,titan:0};
   const TI=[0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2];
   const WA=['pulse','twin','siege'],CA=['scout','vanguard','titan'];
   (save.invW||[]).forEach(id=>{const i=parseInt(String(id).slice(1));if(!isNaN(i)){const a=WA[(i/25)|0];save.wTier[a]=Math.max(save.wTier[a],TI[i%25]);}});
@@ -113,6 +119,9 @@ function loadSave(obj){if(obj!==undefined)save=obj;else{try{save=JSON.parse(loca
   if(typeof save.chassis==='string'&&save.chassis[0]==='c'){const i=parseInt(save.chassis.slice(1));if(!isNaN(i))save.chassis=CA[(i/25)|0];}
   if(!CH[save.chassis])save.chassis='vanguard';
   delete save.invW;delete save.invC;delete save.unlocked;
+  save.wOwn={};save.cOwn={};
+  ['pulse','twin','siege'].forEach(k=>{save.wOwn[k]=[];for(let t=0;t<=save.wTier[k];t++)save.wOwn[k].push(t);});
+  ['scout','vanguard','titan'].forEach(k=>{save.cOwn[k]=[];for(let t=0;t<=save.cTier[k];t++)save.cOwn[k].push(t);});
  }}
 function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudSave();}
 const UPS={
@@ -141,25 +150,30 @@ const TIERS=['BRONZE','SILVER','GOLD','PLATINUM','DIAMOND'],TPTS=[0,500,1500,350
 const TIERC=['#b08d57','#c0c8d0','#ffd24a','#7be3e0','#c28bff'];
 const TABS=[['garage','\u2699 GARAGE'],['arena','\u2694 ARENA'],['shop','\uD83D\uDED2 SHOP'],['quests','\u2B50 QUESTS'],['ranks','\uD83C\uDFC6 RANKS']];
 // ---- gear: 3 chassis classes x 3 tiers, 3 weapons x 3 tiers. Higher tier is ALWAYS better. ----
-function getW(arch){
+// 9 weapons + 9 chassis: each line (archetype/class) has one named item per rarity.
+// Each item drops only from its own rarity's cache. Same line + higher rarity = strictly stronger.
+const WNAMES={pulse:['PULSE CANNON','ARC PULSE','NOVA PULSE'],twin:['TWIN REPEATER','STORM REPEATER','HELIX REPEATER'],siege:['SIEGE BREAKER','RAIL BREAKER','TITANFALL']};
+const CNAMES={scout:['SCOUT','STRIDER','PHANTOM'],vanguard:['VANGUARD','SENTINEL','PALADIN'],titan:['TITAN','BULWARK','COLOSSUS']};
+const ownW=(k,t)=>!!(save.wOwn&&save.wOwn[k]&&save.wOwn[k].indexOf(t)>=0);
+const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
+function getW(arch,tt){
  if(arch==='moon'){
   const b=WEAPONS.moon;
   return {id:'moon',arch:'moon',tier:2,name:b.n,dps:b.dps,shot:b.shot,pspd:26,premium:true};
  }
- const t=(save.wTier&&save.wTier[arch])||0,mt=TIER_MULT[t],b=WEAPONS[arch]||WEAPONS.pulse;
- return {id:arch,arch,tier:t,name:b.n,dps:Math.round(b.dps*mt),shot:b.shot,pspd:22};
+ const t=tt!==undefined?tt:((save.wTier&&save.wTier[arch])||0),tc=Math.max(0,t),mt=TIER_MULT[tc],b=WEAPONS[arch]||WEAPONS.pulse;
+ return {id:arch+':'+tc,arch,tier:t,name:(WNAMES[arch]||WNAMES.pulse)[tc],dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
 }
-function getC(cls){
- const t=(save.cTier&&save.cTier[cls])||0,mt=TIER_MULT[t],b=CH[cls]||CH.vanguard;
- return {id:cls,cls,tier:t,name:b.n,hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:b.turn,size:b.ds};
+function getC(cls,tt){
+ const t=tt!==undefined?tt:((save.cTier&&save.cTier[cls])||0),tc=Math.max(0,t),mt=TIER_MULT[tc],b=CH[cls]||CH.vanguard;
+ return {id:cls+':'+tc,cls,tier:t,name:(CNAMES[cls]||CNAMES.vanguard)[tc],hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:Math.round((b.turn+0.05*tc)*100)/100,size:b.ds};
 }
 const BOXODDS=[[0.70,0.25,0.05],[0.25,0.60,0.15],[0,0.30,0.70]];
 function rollItem(cat,ri){
  const isW=cat==='w';
  const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
- const tiers=isW?save.wTier:save.cTier;
- const t=ri; // deterministic: box rarity = gear tier
- const cands=keys.filter(k=>t>(tiers[k]||0));
+ const t=ri; // each cache drops only its own rarity's items
+ const cands=keys.filter(k=>!(isW?ownW(k,t):ownC(k,t)));
  if(!cands.length)return null;
  return {isW,k:cands[(Math.random()*cands.length)|0],tier:t};
 }
@@ -1406,16 +1420,21 @@ function buildStats(){
   spd:(STAT.speed*(1+0.06*U.engine)*Cc.spd*(1+gb('spd'))).toFixed(1),
   gear:(W.tier<0?0:W.tier)+(Cc.tier<0?0:Cc.tier)};
 }
+function eqId(isW){
+ if(isW)return save.weapon==='moon'?'moon':save.weapon+':'+Math.max(0,save.wTier[save.weapon]||0);
+ return save.chassis+':'+Math.max(0,save.cTier[save.chassis]||0);
+}
 function ownedList(isW){
  const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
- if(isW&&save.moonbeam)keys.push('moon');
- const items=keys.map(k=>isW?getW(k):getC(k));
- const eq=isW?save.weapon:save.chassis;
- items.sort((a,b)=>{
-  const aid=isW?a.arch:a.cls,bid=isW?b.arch:b.cls;
-  if(aid===eq)return -1;if(bid===eq)return 1;
-  return b.tier-a.tier;
+ const items=[];
+ if(isW&&save.moonbeam)items.push(getW('moon'));
+ for(let t=2;t>=0;t--)keys.forEach(k=>{
+  const own=isW?ownW(k,t):ownC(k,t);
+  const it=isW?getW(k,t):getC(k,t);it.locked=!own;
+  items.push(it);
  });
+ const eq=eqId(isW);
+ items.sort((a,b)=>(a.id===eq?-1:b.id===eq?1:0)||((a.locked?1:0)-(b.locked?1:0))||(b.tier-a.tier));
  return items;
 }
 
@@ -1568,12 +1587,25 @@ function drawGearBrowser(){
  g.fillText(isW?'WEAPONS':'CHASSIS',cx,y+2);
  g.fillStyle='#8fa3b8';g.font=font(12);
  g.fillStyle='#8fa3b8';g.font=font(12);
- g.fillText(isW?'3 archetypes · higher tier always wins':'3 classes · higher tier always wins',cx,y+30);
+ {const tot=items.filter(o=>!o.locked&&o.arch!=='moon').length;
+ g.fillText(tot+'/9 COLLECTED · 3 per cache',cx,y+30);}
  y+=72;
  const rh=86,gap=8;
  slice.forEach((o,i)=>{
-  const ry=y+i*(rh+gap),eq=o.id===(isW?save.weapon:save.chassis);
-  ui.pickRows.push({x:14,y:ry,w:vw-28,h:rh,id:o.id,slot:pickOpen});
+  const ry=y+i*(rh+gap),eq=o.id===eqId(isW);
+  ui.pickRows.push({x:14,y:ry,w:vw-28,h:rh,id:o.id,slot:pickOpen,locked:o.locked,tier:o.tier});
+  if(o.locked){
+   g.fillStyle='#0f151d';rr(14,ry,vw-28,rh,10);g.fill();
+   g.strokeStyle='#2a3542';g.lineWidth=1.5;rr(14,ry,vw-28,rh,10);g.stroke();
+   g.fillStyle=tierCol(o.tier);g.globalAlpha=0.35;rr(vw-86,ry+10,58,20,6);g.fill();g.globalAlpha=1;
+   g.fillStyle='#0c1118';g.font=font(10);g.textAlign='center';g.fillText(tierName(o.tier),vw-57,ry+13);
+   g.textAlign='left';g.fillStyle='#4a5868';g.font=font(15);g.fillText('\uD83D\uDD12 '+o.name,26,ry+10);
+   g.fillStyle='#4a5868';g.font=font(12);
+   g.fillText(isW?(o.arch.toUpperCase()+' · '+o.dps+' DPS · VEL '+o.pspd):(o.cls.toUpperCase()+' · HP '+o.hp+'x · SPD '+o.spd+'x'),26,ry+34);
+   g.fillStyle=tierCol(o.tier);g.globalAlpha=0.6;g.font=font(11);
+   g.fillText('DROPS FROM '+TIER_N[o.tier]+' '+(isW?'WEAPON CACHE':'CHASSIS CRATE'),26,ry+54);g.globalAlpha=1;
+   return;
+  }
   g.fillStyle=eq?'#1a2a38':'#141c26';rr(14,ry,vw-28,rh,10);g.fill();
   g.strokeStyle=tierCol(o.tier);g.lineWidth=eq?2.5:1.5;rr(14,ry,vw-28,rh,10);g.stroke();
   g.fillStyle=tierCol(o.tier);rr(vw-86,ry+10,58,20,6);g.fill();
@@ -1620,9 +1652,11 @@ function menuTap(x,y){
   if(pickOpen){
    if(ui.gearBack&&hit(ui.gearBack)){pickOpen=null;return;}
    for(const r of (ui.pickRows||[]))if(hit(r)){
-    const it=r.slot==='w'?getW(r.id):getC(r.id);
-    if(r.slot==='w')save.weapon=r.id;else save.chassis=r.id;
-    store();showToast('EQUIPPED: '+it.name);return;
+    if(r.locked){showToast('FIND IT IN THE '+TIER_N[r.tier]+' '+(r.slot==='w'?'WEAPON CACHE':'CHASSIS CRATE'));return;}
+    const [k,ts]=String(r.id).split(':'),t=ts===undefined?0:parseInt(ts,10);
+    if(r.slot==='w'){save.weapon=k;if(k!=='moon')save.wTier[k]=t;}else{save.chassis=k;save.cTier[k]=t;}
+    const it=r.slot==='w'?getW(k):getC(k);
+    store();syncPlayer();showToast('EQUIPPED: '+it.name);return;
    }
    for(const p of (ui.pickPager||[]))if(hit(p)){
     const per=vh<700?4:6;
@@ -1927,8 +1961,7 @@ function isBoxMaxed(tk,ri){
  if(tk==='gem')return false;
  const isW=tk==='weapon';
  const keys=isW?['pulse','twin','siege']:['scout','vanguard','titan'];
- const tiers=isW?save.wTier:save.cTier;
- return keys.every(k=>(tiers[k]||0)>=ri);
+ return keys.every(k=>isW?ownW(k,ri):ownC(k,ri));
 }
 function openBox(tk,ri){
  const cost=RPRICE[ri];
@@ -1950,12 +1983,14 @@ function doOpenBox(tk,ri){
   const isW=tk==='weapon';
   const it=rollItem(isW?'w':'c',ri);
   if(it){
-   if(isW)save.wTier[it.k]=it.tier;else save.cTier[it.k]=it.tier;
+   const own=isW?save.wOwn:save.cOwn,cur=isW?save.wTier:save.cTier;
+   if(!own[it.k])own[it.k]=[];own[it.k].push(it.tier);
+   if(it.tier>(cur[it.k]??-1))cur[it.k]=it.tier; // best in line becomes that line's loadout
    store();
-   const nm=isW?WEAPONS[it.k].n:CH[it.k].n;
-   const w0=getW(it.k),c0=getC(it.k);
+   const nm=isW?WNAMES[it.k][it.tier]:CNAMES[it.k][it.tier];
+   const w0=getW(it.k,it.tier),c0=getC(it.k,it.tier);
    const icol=RCOL[it.tier];
-   reveal={color:icol,tk,ri,rit:it.tier,title:'NEW: '+TIER_N[it.tier]+' '+nm,
+   reveal={color:icol,tk,ri,rit:it.tier,title:'NEW '+TIER_N[it.tier]+': '+nm,
     sub:isW?(w0.dps+' DPS · '+(1/w0.shot).toFixed(1)+'/s'):('HP '+c0.hp+'x · SPD '+c0.spd+'x')};
   }else{
    const pts=ri===0?20:ri===1?60:150;
@@ -1976,7 +2011,7 @@ function shopTap(x,y){
  if(devOpen&&IS_DEV){
   const gm=ui.devGrantMoon,gs=ui.devGrantSkin,gc=ui.devGrantChassis;
   if(gc&&x>=gc.x&&x<=gc.x+gc.w&&y>=gc.y&&y<=gc.y+gc.h){
-   save.cTier={scout:2,vanguard:2,titan:2};store();syncPlayer();showToast('EPIC CHASSIS GRANTED (TEST)');return;
+   save.cTier={scout:2,vanguard:2,titan:2};save.cOwn={scout:[0,1,2],vanguard:[0,1,2],titan:[0,1,2]};store();syncPlayer();showToast('EPIC CHASSIS GRANTED (TEST)');return;
   }
   if(gm&&x>=gm.x&&x<=gm.x+gm.w&&y>=gm.y&&y<=gm.y+gm.h){
    save.moonbeam=true;store();syncPlayer();showToast('MOONBEAM GRANTED (TEST)');return;
@@ -2107,7 +2142,9 @@ function drawLootBox(bx,by,bw,bh,tk,ri){
  g.fillStyle=maxed?'#5c6b7d':'#e6ebf0';g.font=font(12);
  g.fillText(maxed?'MAXED':RPRICE[ri]+' GRAM',bx+bw/2,by+bh-26);
  g.fillStyle='#5c6b7d';g.font=font(9);
- g.fillText(tk==='gem'?(ri===0?'1-2':ri===1?'3-4':'5-7')+' shards':maxed?'all unlocked':TIER_N[ri]+' gear',bx+bw/2,by+bh-10);
+ {const ks=tk==='weapon'?['pulse','twin','siege']:['scout','vanguard','titan'];
+ const got=tk==='gem'?0:ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;
+ g.fillText(tk==='gem'?(ri===0?'1-2':ri===1?'3-4':'5-7')+' shards':maxed?'all 3 found':got+'/3 found',bx+bw/2,by+bh-10);}
 }
 // legendary gold nameplate: gradient gold + glow, for MOONBEAM / LUNAR SKIN
 function legendText(txt,x,y,size,align){
@@ -2140,15 +2177,16 @@ function drawShop(){
  const SEC_H=34,SEC_GAP=10,NSEC=4;
  let bh=(vh-62-y)/NSEC-SEC_H-SEC_GAP;
  bh=Math.max(64,Math.min(132,bh));
- const secs=[['gem','GEM CACHE','level up your gems'],['weapon','WEAPON CACHE','unlock weapons'],['chassis','CHASSIS CRATE','unlock chassis']];
+ const secs=[['gem','GEM CACHE','level up your gems'],['weapon','WEAPON CACHE','3 weapons per rarity'],['chassis','CHASSIS CRATE','3 chassis per rarity']];
  secs.forEach(([tk,name,desc])=>{
-  const upg=tk==='weapon'?(save.wTier.pulse+save.wTier.twin+save.wTier.siege):(save.cTier.scout+save.cTier.vanguard+save.cTier.titan);
-  const owned=tk==='gem'?'':upg+'/6 tiers';
+  const ow=tk==='weapon'?save.wOwn:save.cOwn;
+  const upg=tk==='gem'?0:Object.keys(ow||{}).reduce((a,k)=>a+(ow[k]||[]).length,0);
+  const owned=tk==='gem'?'':upg+'/9 collected';
   g.textAlign='left';g.fillStyle='#e6ebf0';g.font=font(13);
   g.fillText(name+(owned?'  ·  '+owned:''),14,y);
   g.fillStyle='#5c6b7d';g.font=font(11);g.fillText(desc,14,y+15);
   y+=SEC_H;
-  const ris=tk==='gem'?[0,1,2]:[1,2]; // gear starts at Common, so only Rare/Epic boxes
+  const ris=[0,1,2]; // Common crates unlock new weapons/chassis; Rare/Epic upgrade them
   const bw2=(vw-28-(ris.length-1)*8)/ris.length;
   ris.forEach((ri)=>{
    const bx=14+ris.indexOf(ri)*(bw2+8);
