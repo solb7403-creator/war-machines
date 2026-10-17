@@ -37,6 +37,11 @@ td.n{text-align:right;font-variant-numeric:tabular-nums}th.n{text-align:right}
 .grid .card{margin:0}
 .grid h3{font-size:13px;letter-spacing:1px;margin-bottom:4px}
 .note{border-left:3px solid var(--gold);padding:10px 12px;background:#1a1a12;border-radius:0 10px 10px 0;margin:10px 0}
+p.kick{font:700 17px/1.35 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;color:#e8f4ff;letter-spacing:.3px;margin:-2px 0 12px}
+.bar{display:flex;height:22px;border-radius:7px;overflow:hidden;margin:4px 0 12px;border:1px solid var(--line)}
+.bar i{display:block;height:100%}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+.hero .big{font:800 21px/1.25 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:.5px;color:#e8f4ff;margin-bottom:8px}
 footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 @media (max-width:380px){.grid{grid-template-columns:1fr}}
 </style>
@@ -49,36 +54,56 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 </header>
 
 <div class="hero">
- Battle robot tanks in real-time PvP arenas, upgrade your machine, and climb the leaderboard.<br>
- <b>The top 1,000 players get a guaranteed $LUNAR allocation.</b>
+ <div class="big">$LUNAR doesn't launch from a VC deck.<br>It launches from the arena.</div>
+ Every match you play is fuel in the tank. When the countdown hits zero, <b>the top 1,000 pilots on the leaderboard are guaranteed a $LUNAR allocation.</b>
  <br><a class="play" id="playBtn" href="https://t.me/LunarWarMachinesBot/play">PLAY NOW</a>
 </div>
 
 <nav>
- <a href="#start">How to play</a><a href="#combat">Combat</a><a href="#modes">Modes</a><a href="#points">Points</a><a href="#tiers">Tiers</a>
+ <a href="#mission">The mission</a><a href="#start">How to play</a><a href="#combat">Combat</a><a href="#modes">Modes</a><a href="#points">Points</a><a href="#tiers">Tiers</a>
  <a href="#garage">Garage</a><a href="#quests">Quests</a><a href="#shop">Shop</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
 </nav>
 
+<section id="mission">
+ <h2>The mission</h2>
+ <p class="kick">LUNAR is the meme. War Machines is how it gets to orbit.</p>
+ <div class="card">
+  <p>Most tokens launch the same tired way. A few insiders get in cheap, the chart rips, and everyone who shows up after is their exit.</p>
+  <p>We're flipping that. $LUNAR is a community token, and the community is whoever climbs into a tank and fights for it. You play, you stack points, you climb the board. When launch day comes, the people who put in the hours are the ones holding $LUNAR.</p>
+  <p>No VC round. No private presale. The founder's tokens sit in one public, labeled wallet and unlock slowly over a year, same rules for everyone to see.</p>
+ </div>
+ <div class="card">
+  <p><b>How you get a seat on the rocket</b></p>
+  <ul>
+   <li><b>Finish in the top 1,000</b> on the overall leaderboard at the snapshot. Your allocation is guaranteed.</li>
+   <li><b>Show up.</b> Allocation size counts your points and the days you played. One crazy weekend won't beat a pilot who logs in every day.</li>
+   <li><b>Free works.</b> Gear helps you win, but rank is earned in the arena. Nobody buys their way onto the board.</li>
+  </ul>
+ </div>
+</section>
+
 <section id="start">
  <h2>How to play</h2>
+ <p class="kick">Drag. Dodge. Delete.</p>
  <div class="card"><ol>
-  <li>Open the game in Telegram. Your progress is tied to your Telegram account, so it follows you across devices.</li>
-  <li>Pick a mode in the <b>Arena</b>: 1v1, 2v2 or 3v3.</li>
-  <li>Drag to drive. Your cannon aims and fires on its own; your job is positioning, dodging and grabbing boxes.</li>
-  <li>Win by destroying the enemy, or by having more health left when the 3-minute timer runs out.</li>
-  <li>Spend points in the <b>Garage</b> to upgrade, then queue again.</li>
+  <li>Open the game in Telegram. Your save lives on your Telegram account, so switching phones costs you nothing.</li>
+  <li>Head to the <b>Arena</b>, pick 1v1, 2v2 or 3v3, and pick a game type (or hit RANDOM and live a little).</li>
+  <li>Drag anywhere to drive. Your cannon aims and fires by itself. Your whole job is where you stand.</li>
+  <li>Wreck the other team, or have more health left when the 3-minute clock runs out.</li>
+  <li>Cash your points in at the <b>Garage</b>, come back meaner, queue again.</li>
  </ol></div>
 </section>
 
 <section id="combat">
  <h2>Combat</h2>
+ <p class="kick">Your cannon aims itself. Staying alive is on you.</p>
  <div class="card">
-  <p><b>Shots are physical projectiles.</b> They travel, so moving makes you harder to hit. Direct hits can <b>crit</b> for double damage; shots that only clip the edge are <b>grazes</b> and deal less.</p>
-  <p><b>Super attack.</b> The meter above your tank fills as you deal damage (fastest), take damage, and land crits. When it's full, hit the red button. Each weapon has its own super.</p>
-  <p class="mut">Matches last 3 minutes.</p>
+  <p><b>Bullets actually fly.</b> They take time to land, so a tank that keeps moving eats a lot fewer of them. A dead-center hit can <b>crit</b> for double damage. A shot that just clips you is a <b>graze</b> and hurts less.</p>
+  <p><b>Supers.</b> The meter over your tank fills when you deal damage (fastest), take damage, or land crits. Full meter, smash the red button. Every weapon line has its own super, and each one has a tell, so watch for the red warning lane.</p>
+  <p class="mut">Matches run 3 minutes.</p>
  </div>
  <div class="card">
-  <p><b>Mystery boxes</b> drop at random spots, 5 per match, starting 15–30 seconds in. Drive over one to claim a random buff. A buff lasts until you've absorbed a set amount of damage (the ring around your tank drains as it wears off). Buffs of the same type stack.</p>
+  <p><b>Mystery boxes.</b> Five drop per match at random spots, the first one 15 to 30 seconds in. Roll over it for a random buff. The buff sticks until you soak a set amount of damage (watch the ring around your tank drain). Same buffs stack, so greed is sometimes correct.</p>
   <table>
    <tr><th>Buff</th><th class="n">Effect</th></tr>
    <tr><td><span class="chip" style="color:var(--red)">DMG</span></td><td class="n">+40% damage</td></tr>
@@ -93,9 +118,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 
 <section id="modes">
  <h2>Game types</h2>
+ <p class="kick">Smash them, or out-hold them.</p>
  <div class="card">
-  <p><b>Arena</b>: destroy the enemy team, or have more health left when the 3-minute timer ends. One life.</p>
-  <p><b>Moon Zone</b>: stand in the glowing zone to capture it. While your team holds it, you score. First to <b>100</b> wins, or the higher score when time runs out. If an enemy is inside your zone, it stops scoring until you push them out.</p>
+  <p><b>Arena</b>: one life each. Wipe the other team, or have more health left when the clock runs out.</p>
+  <p><b>Moon Zone</b>: park in the glowing circle to capture it. While your team owns it, you score. First to <b>100</b> wins, or whoever's ahead at the buzzer. One enemy tank sitting in your zone freezes your score, so you can't just camp and pray.</p>
   <ul>
    <li><b>The zone moves.</b> Every 20 to 28 seconds it jumps to a random spot. 6 seconds before, a gold ring shows where it is going. Rotate early to get there first.</li>
    <li><b>Kills are +5 points</b> for your team.</li>
@@ -103,12 +129,14 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
    <li><b>Repair</b>: off the zone, avoid damage for 3.5 seconds and your tank heals itself. No repairs while standing on the zone, so holding it wears you down. Losing a fight? Back off, heal, come back.</li>
   </ul>
   <p class="mut">Points per match are the same as Arena.</p>
+  <p><b>Random</b>: can't decide? The game picks Arena or Moon Zone when the match starts.</p>
   <p><b>Overpass map</b>: the bridge is solid. Drive up a ramp (gold arrows) to reach the deck and shoot down from high ground. Two tunnels run underneath: tanks in a tunnel can't be hit from the deck, and can't shoot up.</p>
  </div>
 </section>
 
 <section id="points">
  <h2>Earning points</h2>
+ <p class="kick">Points are your boarding pass. Here's how they stack up.</p>
  <div class="card">
   <table>
    <tr><th>Mode</th><th class="n">Win</th><th class="n">Draw</th><th class="n">Loss</th></tr>
@@ -129,12 +157,13 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
   </table>
   <p class="mut" style="margin-top:10px">Power is the overall strength of your machine: upgrades, chassis, weapon, cores and skin. Higher power means tougher opponents and bigger rewards. Your league decides who you fight; your tier (below) shows how far you've climbed the leaderboard.</p>
  </div>
- <div class="note">You can earn up to <b>20,000 points per day</b> (resets 00:00 UTC). Spending points on upgrades never lowers your leaderboard score; the leaderboard counts lifetime points earned.</div>
+ <div class="note">Daily cap is <b>20,000 points</b> (resets 00:00 UTC). Spend all you want: the leaderboard counts lifetime points earned, so shopping never knocks you down the board.</div>
 </section>
 
 <section id="tiers">
  <h2>Leaderboard tiers &amp; daily reward</h2>
- <p>Your tier is set by <b>lifetime points earned</b>, the same number the leaderboard ranks. Spending points never drops your tier.</p>
+ <p class="kick">Bronze to Diamond. Everybody can see where you stand.</p>
+ <p>Your tier comes from <b>lifetime points earned</b>, the same number the leaderboard ranks. Spending points never drops you a tier. Higher tiers also pay a bigger daily bonus.</p>
  <div class="card">
   <table>
    <tr><th>Tier</th><th class="n">Lifetime points</th><th class="n">Daily reward</th></tr>
@@ -144,14 +173,15 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
    <tr><td>PLATINUM</td><td class="n">150,000</td><td class="n">200</td></tr>
    <tr><td>DIAMOND</td><td class="n">400,000</td><td class="n">400</td></tr>
   </table>
-  <p class="mut" style="margin-top:10px">Claim your daily reward once per day in the RANKS tab.</p>
+  <p class="mut" style="margin-top:10px">Grab your daily reward in the RANKS tab. Once a day, every day. It adds up.</p>
  </div>
 </section>
 
 <section id="garage">
  <h2>Garage</h2>
+ <p class="kick">Where scrap metal turns into a war machine.</p>
  <div class="card">
-  <p><b>Upgrades</b> cost 100 / 250 / 500 / 1,000 points for levels 1–4.</p>
+  <p><b>Upgrades</b> cost 100 / 250 / 500 / 1,000 points for levels 1 to 4. Cheap early, so do them first.</p>
   <ul>
    <li><b>Hull</b>: +8% max HP per level</li>
    <li><b>Cannon</b>: +8% damage per level</li>
@@ -161,9 +191,9 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
   </ul>
  </div>
  <div class="card">
-  <p><b>9 weapons and 9 chassis to collect.</b> Each line has a Common, Rare and Epic version, and each version drops only from that rarity's cache. Same line, higher rarity is always stronger: Rare is +10% over Common, and Epic is +32%, a much bigger jump. Your best version of a line is equipped automatically when you find it.</p>
-  <p><b>Rolls.</b> Every item from a crate rolls between <b>100% and 110%</b> of its listed stats, so no two players' gear is quite the same. Once you've found all 3 items of a rarity, that crate becomes a <b>re-roll</b>: it picks one of those items and keeps whichever roll is better.</p>
-  <p><b>Salvage Yard (points only).</b> Rebuilt Rare and Epic gear with <b>50–75%</b> of the real item's boost. Salvaged Rare costs 5,000 points and Salvaged Epic 20,000. Buy again to roll for a better one; you always keep your best. Finding the real item outclasses it.</p>
+  <p><b>9 weapons and 9 chassis to hunt down.</b> Every line comes in Common, Rare and Epic, and each version only drops from its own rarity's crate. Rare hits +10% over Common. Epic jumps to +32%. When you pull a better version of a line, it bolts on automatically.</p>
+  <p><b>Rolls.</b> Every crate item rolls <b>100% to 110%</b> of its listed stats, so your Titanfall isn't quite the same as the next guy's. Found all 3 of a rarity? That crate turns into a <b>re-roll</b>: it picks one of them and keeps whichever roll is better.</p>
+  <p><b>Salvage Yard (points only).</b> Junkyard rebuilds of Rare and Epic gear, carrying <b>50% to 75%</b> of the real item's boost. 5,000 points for Salvaged Rare, 20,000 for Salvaged Epic. Buy again to chase a better roll, you always keep your best. The real thing still beats it.</p>
   <table>
    <tr><th>Weapon line</th><th>Common</th><th>Rare</th><th>Epic</th></tr>
    <tr><td><b>Pulse</b><div class="mut">balanced · Pierce Lance</div></td><td>Pulse Cannon</td><td style="color:var(--violet)">Arc Pulse</td><td style="color:var(--gold)">Nova Pulse</td></tr>
@@ -179,21 +209,22 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
    <tr><td><b>Titan</b><div class="mut">slow, very tanky</div></td><td>Titan</td><td style="color:var(--violet)">Bulwark</td><td style="color:var(--gold)">Colossus</td></tr>
   </table>
   <p style="margin-top:10px"><b>Counter triangle:</b> <span style="color:var(--green)">Scout</span> beats <span style="color:var(--violet)">Titan</span> · <span style="color:var(--violet)">Titan</span> beats <span style="color:var(--teal)">Vanguard</span> · <span style="color:var(--teal)">Vanguard</span> beats <span style="color:var(--green)">Scout</span>. The counter deals <b>+30% damage</b> and takes <b>20% less</b> from the class it beats. Pick your chassis for the fight, not just the stats.</p>
-  <p class="mut" style="margin-top:10px">Plus the legendary <b style="color:var(--gold)">Moonbeam</b> weapon (Moonfall super), sold in the Lunar Premium shop.</p>
+  <p class="mut" style="margin-top:10px">And then there's <b style="color:var(--gold)">Moonbeam</b>, the legendary weapon with the Moonfall super. Lunar Premium shop only.</p>
  </div>
  <div class="card">
-  <p><b>Cores</b> are permanent boosts socketed into your machine, always active:</p>
+  <p><b>Cores</b> are permanent boosts you socket into your machine. Always on, every match:</p>
   <ul>
    <li><b style="color:var(--red)">DMG</b> +12% damage · <b style="color:var(--gold)">ROF</b> +10% fire rate</li>
    <li><b style="color:var(--blue)">ARM</b> +8% armor · <b style="color:var(--green)">SPD</b> +8% speed</li>
    <li><b style="color:var(--violet)">LCK</b> +3% crit · <b style="color:#4be3a0">REG</b> +0.1% HP/sec</li>
   </ul>
-  <p class="mut">Cores stack with mystery-box buffs. Shards from Gem Caches level them up (Common 1–2, Rare 3–4, Epic 6–9 shards). Each level is a bigger jump than the last: Lv2 ×1.2, Lv3 ×1.45, Lv4 ×1.8, Lv5 ×2.25.</p>
+  <p class="mut">Cores stack with mystery-box buffs. Shards from Gem Caches level them up (Common 1 to 2 shards, Rare 3 to 4, Epic 6 to 9). Every level hits harder than the last: Lv2 ×1.2, Lv3 ×1.45, Lv4 ×1.8, Lv5 ×2.25.</p>
  </div>
 </section>
 
 <section id="quests">
  <h2>Quests</h2>
+ <p class="kick">Free points for stuff you were going to do anyway.</p>
  <div class="card">
   <table>
    <tr><th>Quest</th><th class="n">Reward</th></tr>
@@ -211,8 +242,9 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 
 <section id="shop">
  <h2>Shop</h2>
+ <p class="kick">Tired of digging through the scrapyard? Gear up here.</p>
  <div class="card">
-  <p>Pay with <b>Telegram Stars</b> (Apple Pay or card, no wallet needed), <b>TON</b> (connect Keeper or any TON wallet) or <b>SOL</b> (one-tap with Phantom, Solflare or Backpack; Keeper and other wallets by sending the exact amount). Switch between them at the top of the Shop. SOL prices match the TON price at live rates. Every purchase is confirmed on-chain and recorded to your account.</p>
+  <p>Pay how you like. <b>Telegram Stars</b> work with Apple Pay or a card, no wallet needed. <b>TON</b> works with Keeper or any TON wallet. <b>SOL</b> is one tap with Phantom, Solflare or Backpack, or send the exact amount from Keeper or anything else. Flip between them at the top of the Shop. Every purchase is confirmed on-chain and logged to your account.</p>
   <table>
    <tr><th>Item</th><th class="n">Stars</th><th class="n">TON</th><th class="n">Points</th></tr>
    <tr><td>Common crate</td><td class="n">250 ⭐</td><td class="n">4</td><td class="n">20,000</td></tr>
@@ -221,41 +253,70 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
    <tr><td>Lunar Skin (+8% HP, +8% DMG)</td><td class="n">2,000 ⭐</td><td class="n">30</td><td class="n">paid only</td></tr>
    <tr><td>Moonbeam weapon</td><td class="n">3,300 ⭐</td><td class="n">50</td><td class="n">paid only</td></tr>
   </table>
-  <p class="mut" style="margin-top:10px">SOL prices match the TON price at live rates. Spending points on crates never lowers your leaderboard score. Points prices stay the same on every purchase. Prices above are for your first purchase. Each repeat of the same weapon or chassis crate costs more for you: 2nd ×2, 3rd ×3. Gem caches rise only 25% per purchase and reset every day. Each weapon cache and chassis crate drops one of the 3 items of its rarity you don't own yet. Once you've found all 3, that crate is marked maxed.</p>
+  <p class="mut" style="margin-top:10px">SOL tracks the TON price at live rates. Points prices never change. Paid prices above are for your first buy: the same weapon or chassis crate costs ×2 the second time and ×3 the third. Gem caches go up 25% per buy and reset daily. Weapon and chassis crates always drop an item of that rarity you don't own yet. Shop purchases buy gear, not $LUNAR. Your allocation comes from your rank.</p>
  </div>
 </section>
 
 <section id="airdrop">
  <h2>$LUNAR airdrop</h2>
+ <p class="kick">T-minus whenever. Be on the list when it hits zero.</p>
  <div class="card">
-  <p><b>The top 1,000 players on the overall leaderboard at the snapshot receive a guaranteed $LUNAR allocation.</b></p>
+  <p><b>The top 1,000 pilots on the overall leaderboard at the snapshot get a guaranteed $LUNAR allocation.</b></p>
   <ol>
-   <li>Play in Telegram. Only Telegram accounts appear on the leaderboard.</li>
-   <li>Every point you earn counts toward your rank, including quests and daily rewards. Spending points on upgrades doesn't lower your score.</li>
-   <li>Upgrade your machine to move up a league for bigger point multipliers.</li>
-   <li>Join the TG channel for the snapshot date and announcements.</li>
+   <li>Play inside Telegram. Only Telegram accounts make the board.</li>
+   <li>Every point counts: matches, quests, daily rewards. Spending points never lowers your score.</li>
+   <li>Days matter. Allocation size weighs your points <b>and</b> how many days you played.</li>
+   <li>Climb a league for bigger point multipliers.</li>
+   <li>Join the TG channel. Snapshot date drops there first.</li>
   </ol>
  </div>
- <div class="note">Multi-accounting and modified clients are not allowed. Flagged accounts are removed from the airdrop before the snapshot.</div>
+ <div class="note">One pilot, one account. Multi-accounts and modded clients get pulled from the airdrop before the snapshot.</div>
 </section>
 
 <section id="token">
  <h2>Tokenomics</h2>
+ <p class="kick">1,000,000,000 $LUNAR. Here's where every one of them goes.</p>
  <div class="card">
-  <p>Full $LUNAR tokenomics (supply, allocation split and airdrop share) will be published here and in the TG channel before the snapshot.</p>
+  <p><b>Chain:</b> Solana &nbsp;·&nbsp; <b>Supply:</b> 1,000,000,000 &nbsp;·&nbsp; <b>Liquidity:</b> burned</p>
+  <div class="bar"><i style="width:30%;background:#3fd0c9"></i><i style="width:27.5%;background:#ffd24a"></i><i style="width:8%;background:#c28bff"></i><i style="width:8%;background:#5aa9ff"></i><i style="width:7.5%;background:#ff6b5e"></i><i style="width:7%;background:#7be07b"></i><i style="width:7%;background:#ff9d3c"></i><i style="width:5%;background:#8fa3b8"></i></div>
+  <table>
+   <tr><th>Allocation</th><th class="n">Share</th><th class="n">Tokens</th></tr>
+   <tr><td><span class="dot" style="background:#3fd0c9"></span>Liquidity pool</td><td class="n">30%</td><td class="n">300M</td></tr>
+   <tr><td><span class="dot" style="background:#ffd24a"></span>Player airdrop</td><td class="n">27.5%</td><td class="n">275M</td></tr>
+   <tr><td><span class="dot" style="background:#c28bff"></span>Holder loyalty rewards</td><td class="n">8%</td><td class="n">80M</td></tr>
+   <tr><td><span class="dot" style="background:#5aa9ff"></span>Ecosystem &amp; post-launch</td><td class="n">8%</td><td class="n">80M</td></tr>
+   <tr><td><span class="dot" style="background:#ff6b5e"></span>Founder (vested)</td><td class="n">7.5%</td><td class="n">75M</td></tr>
+   <tr><td><span class="dot" style="background:#7be07b"></span>In-app launch sale</td><td class="n">7%</td><td class="n">70M</td></tr>
+   <tr><td><span class="dot" style="background:#ff9d3c"></span>Marketing &amp; creators</td><td class="n">7%</td><td class="n">70M</td></tr>
+   <tr><td><span class="dot" style="background:#8fa3b8"></span>Exchange reserve</td><td class="n">5%</td><td class="n">50M</td></tr>
+  </table>
+ </div>
+ <div class="card">
+  <ul>
+   <li><b>Liquidity gets burned.</b> The LP tokens are destroyed at launch, so nobody can pull the pool. Ever.</li>
+   <li><b>Players get the biggest slice after liquidity.</b> 27.5% goes to the people who fought for it, across 3 seasons. About a quarter unlocks at launch, the rest drips out over roughly 4 months so the chart isn't a cliff on day one.</li>
+   <li><b>Diamond hands get paid.</b> The 8% loyalty pool pays out at 3 and 6 months to wallets that never sold.</li>
+   <li><b>Founder waits in line.</b> 7.5%, nothing unlocks for 3 months, then 6.25M a month for 12 months. One public, labeled wallet. No other team bags.</li>
+   <li><b>Launch sale happens in the app.</b> Same button for everyone, no private round.</li>
+  </ul>
+  <p class="mut">Final numbers get locked and posted in the TG channel before the snapshot.</p>
  </div>
 </section>
 
 <section id="faq">
  <h2>FAQ</h2>
+ <p class="kick">Stuff people keep asking in the chat.</p>
  <div class="card">
-  <p><b>Will I lose progress if I switch phones?</b><br><span class="mut">No. Progress is saved to your Telegram account.</span></p>
-  <p><b>Why didn't my rank update right away?</b><br><span class="mut">The leaderboard syncs in steps every ~30 seconds and refreshes once a minute.</span></p>
-  <p><b>Do I need to spend money?</b><br><span class="mut">No. Gear gives an edge, but skill and positioning win fights.</span></p>
+  <p><b>Is the airdrop actually guaranteed?</b><br><span class="mut">Top 1,000 at the snapshot, on a clean account: yes.</span></p>
+  <p><b>Does buying stuff get me more $LUNAR?</b><br><span class="mut">No. The shop sells gear. Tokens come from your rank and the days you played.</span></p>
+  <p><b>Do I need to spend money?</b><br><span class="mut">Nope. Gear gives you an edge, but positioning wins fights and points come from playing.</span></p>
+  <p><b>When's launch?</b><br><span class="mut">After the pre-launch seasons wrap. The snapshot date gets announced in the TG channel first.</span></p>
+  <p><b>Do I lose progress if I switch phones?</b><br><span class="mut">No. Your save rides on your Telegram account.</span></p>
+  <p><b>Why didn't my rank update right away?</b><br><span class="mut">The leaderboard syncs about every 30 seconds and refreshes once a minute. Give it a sec.</span></p>
  </div>
 </section>
 
-<footer>LUNAR: War Machines · built for Telegram</footer>
+<footer>LUNAR: War Machines · fueled by the players · see you in orbit</footer>
 </div>
 <script>
 // Inside Telegram: back button returns to the game, Play opens the Mini App properly
