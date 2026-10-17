@@ -477,7 +477,7 @@ const FIREBASE_CONFIG={
  databaseURL:"https://warmachines-a6034-default-rtdb.firebaseio.com",
  projectId:"warmachines-a6034"
 };
-let db=null,playerId=null,srvOff=0,srv=null,syncBusy=false,syncAgain=null;
+let db=null,playerId=null,srvOff=0,srv=null,syncBusy=false,syncAgain=null,noDays=false;
 // srv = what the server currently holds for this player; points are pushed in steps the rules allow
 function initBackend(){
  try{
@@ -520,6 +520,7 @@ function syncPlayer(){
   // days active (distinct UTC days played) + consecutive-day streak; the rules allow +1 per new day only
   days:srv.ld===d?srv.days:(srv.days||0)+1,ld:d,sk:srv.ld===d?(srv.sk||1):(srv.ld===d-1?(srv.sk||0)+1:1)
  };
+ if(noDays){delete rec.days;delete rec.ld;delete rec.sk;}
  syncBusy=true;
  db.ref('players/'+playerId).set(rec).then(()=>{
   syncBusy=false;
@@ -528,6 +529,7 @@ function syncPlayer(){
   if(again||((save.earned||0)>srv.pts&&srv.daily<DAILY_CAP))syncPlayer(); // next step goes out after the gap
  }).catch(()=>{
   syncBusy=false;
+  if(!noDays&&rec.days!==undefined)noDays=true; // older rules without days tracking: keep syncing points without it
   // rejected (clock skew or another device wrote first): reload server state and retry later
   db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0};
    setTimeout(syncPlayer,SYNC_GAP);});
