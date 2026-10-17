@@ -155,7 +155,7 @@ const WORDER=['pulse','twin','siege'];
 // ---- procedural loot: 75 weapons + 75 chassis, deterministic from a fixed seed ----
 function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const TIER_N=['COMMON','RARE','EPIC'],TIER_MULT=[1.0,1.10,1.32];
-const TIERS=['BRONZE','SILVER','GOLD','PLATINUM','DIAMOND'],TPTS=[0,500,1500,3500,7000],TDAILY=[25,50,100,200,400];
+const TIERS=['BRONZE','SILVER','GOLD','PLATINUM','DIAMOND'],TPTS=[0,10000,50000,150000,400000],TDAILY=[25,50,100,200,400];
 const TIERC=['#b08d57','#c0c8d0','#ffd24a','#7be3e0','#c28bff'];
 const TABS=[['garage','\u2699 GARAGE'],['arena','\u2694 ARENA'],['shop','\uD83D\uDED2 SHOP'],['quests','\u2B50 QUESTS'],['ranks','\uD83C\uDFC6 RANKS']];
 // ---- gear: 3 chassis classes x 3 tiers, 3 weapons x 3 tiers. Higher tier is ALWAYS better. ----
@@ -207,6 +207,8 @@ function rollItem(cat,ri){
  return {isW,k:cands[(Math.random()*cands.length)|0],tier:t};
 }
 
+const tierOfPts=p=>{let t=0;for(let i=0;i<TPTS.length;i++)if((p||0)>=TPTS[i])t=i;return t;};
+const fmtK=n=>n>=1000?(n/1000)+'K':''+n;
 function tierIdx(){let t=0;for(let i=0;i<TPTS.length;i++)if((save.earned||0)>=TPTS[i])t=i;return t;}
 // External links - fill in when pages exist
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html'; // wiki: how to play, airdrop, tokenomics
@@ -496,12 +498,14 @@ function calcPower(){
  return Math.round(Math.pow(hp*dps*spd,1/3)*coreM*1.2);
 }
 // Power bracket: determines matchmaking tier and point multiplier
+// LEAGUE (by gear power): who you get matched against + point multiplier.
+// Not the same as your TIER (Bronze-Diamond), which is earned with lifetime points on the leaderboard.
 function powerBracket(pw){
- if(pw<150)return {n:'BRONZE',mult:1.0,c:'#b08d57'};
- if(pw<250)return {n:'SILVER',mult:1.25,c:'#c0c8d0'};
- if(pw<400)return {n:'GOLD',mult:1.5,c:'#ffd24a'};
- if(pw<600)return {n:'PLATINUM',mult:1.75,c:'#7be3e0'};
- return {n:'DIAMOND',mult:2.0,c:'#c28bff'};
+ if(pw<150)return {n:'ROOKIE',mult:1.0,c:'#9fb0c2'};
+ if(pw<250)return {n:'PILOT',mult:1.25,c:'#6fcf97'};
+ if(pw<400)return {n:'ACE',mult:1.5,c:'#4d9fff'};
+ if(pw<600)return {n:'ELITE',mult:1.75,c:'#ff9d3c'};
+ return {n:'LEGEND',mult:2.0,c:'#ff4d6d'};
 }
 // Firebase backend — central player database
 const FIREBASE_CONFIG={
@@ -1708,9 +1712,9 @@ function drawLoadout(){
  py+=fh+16;
  // power line
  if(py+40<vh-62){
-  const pw2=calcPower(),brk=powerBracket(pw);
+  const pw2=calcPower(),brk=powerBracket(pw2);
   g.fillStyle='#ff9d3c';g.font=font(13);g.textAlign='center';
-  g.fillText('Power '+pw2+' · '+brk.n+' (x'+brk.mult+' pts) · '+MODES[modeKey()].label,cx,py);py+=20;
+  g.fillText('Power '+pw2+' · '+brk.n+' LEAGUE (x'+brk.mult+' pts) · '+MODES[modeKey()].label,cx,py);py+=20;
   if(py+40<vh-62){g.fillStyle='#5c6b7d';g.font=font(11);g.fillText('bot scales to your power',cx,py);}
  }
  drawTabs();drawToast();
@@ -2180,21 +2184,25 @@ function drawBoard(){
  g.textAlign='center';g.textBaseline='top';
  g.fillStyle='#e6ebf0';g.font=font(Math.round(Math.min(30,vw*0.07)));
  g.fillText('LEADERBOARD',cx,y);y+=38;
- // YOU card: overall points + tier
- const t=tierIdx();
- g.fillStyle='#141c26';rr(12,y,vw-24,88,12);g.fill();
- g.strokeStyle=TIERC[t];g.lineWidth=2;rr(12,y,vw-24,88,12);g.stroke();
+ // YOU card: your tier + a ladder showing the points needed for every tier
+ const t=tierIdx(),ern=save.earned||0,ch=124;
+ g.fillStyle='#141c26';rr(12,y,vw-24,ch,12);g.fill();
+ g.strokeStyle=TIERC[t];g.lineWidth=2;rr(12,y,vw-24,ch,12);g.stroke();
  g.textAlign='left';g.fillStyle='#e6ebf0';g.font=font(16);g.fillText('YOU',26,y+10);
  g.fillStyle=TIERC[t];g.font=font(13);g.fillText(TIERS[t]+' TIER',26,y+32);
- g.textAlign='right';g.fillStyle='#ffd24a';g.font=font(18);g.fillText(fmtNum((save.earned||0))+' PTS',vw-26,y+10);
- if(t<TIERS.length-1){
-  const pr=((save.earned||0)-TPTS[t])/(TPTS[t+1]-TPTS[t]);
-  g.fillStyle='rgba(255,255,255,.1)';g.fillRect(26,y+58,vw-52,8);
-  g.fillStyle=TIERC[t+1];g.fillRect(26,y+58,(vw-52)*pr,8);
-  g.fillStyle='#8fa3b8';g.font=font(11);g.textAlign='center';
-  g.fillText(fmtNum(TPTS[t+1]-(save.earned||0))+' PTS TO '+TIERS[t+1],cx,y+72);
- }else{g.fillStyle='#8fa3b8';g.font=font(11);g.textAlign='center';g.fillText('MAX TIER REACHED',cx,y+70);}
- y+=102;
+ g.textAlign='right';g.fillStyle='#ffd24a';g.font=font(18);g.fillText(fmtNum(ern)+' PTS',vw-26,y+10);
+ g.fillStyle='#8fa3b8';g.font=font(11);
+ g.fillText(t<TIERS.length-1?fmtNum(TPTS[t+1]-ern)+' PTS TO '+TIERS[t+1]:'MAX TIER',vw-26,y+34);
+ {const lx=26,lw=vw-52,sw=lw/TIERS.length,ly=y+62;
+  TIERS.forEach((nm,k)=>{const sx=lx+k*sw,fill=k<t?1:k>t?0:(k===TIERS.length-1?1:Math.min(1,(ern-TPTS[k])/(TPTS[k+1]-TPTS[k])));
+   g.fillStyle='rgba(255,255,255,.08)';g.fillRect(sx+1,ly,sw-2,10);
+   g.fillStyle=TIERC[k];g.globalAlpha=k<=t?1:0.35;g.fillRect(sx+1,ly,(sw-2)*fill,10);g.globalAlpha=1;
+   g.fillStyle=TIERC[k];g.fillRect(sx,ly-4,2,18);   // tier marker
+   g.textAlign='left';g.font=font(10);g.globalAlpha=k<=t?1:0.6;g.fillText(nm,sx+3,ly+16);
+   g.fillStyle='#8fa3b8';g.font=font(9);g.fillText(fmtK(TPTS[k]),sx+3,ly+30);g.globalAlpha=1;});
+  const pk=t+(t<TIERS.length-1?Math.min(1,(ern-TPTS[t])/(TPTS[t+1]-TPTS[t])):1),px=lx+pk*sw;   // you are here
+  g.fillStyle='#fff';g.beginPath();g.moveTo(px,ly-1);g.lineTo(px-5,ly-9);g.lineTo(px+5,ly-9);g.closePath();g.fill();}
+ y+=ch+14;
  // daily claim
  const today=new Date().toISOString().slice(0,10),can=save.daily!==today;
  ui.daily={x:cx-130,y:y,w:260,h:46};
@@ -2229,8 +2237,8 @@ function drawBoard(){
   const bx=12+i*(bw+6),sel=lbBracket===b;
   ui.lbBrackets.push({x:bx,y:y,w:bw,h:34,id:b});
   g.fillStyle=sel?'#232d3a':'#141c26';rr(bx,y,bw,34,8);g.fill();
-  g.strokeStyle=sel?(b==='ALL'?'#3fd0c9':BRKC[b]):'#232d3a';g.lineWidth=1.5;rr(bx,y,bw,34,8);g.stroke();
-  g.fillStyle=sel?(b==='ALL'?'#e6ebf0':BRKC[b]):'#5c6b7d';g.font=font(10);g.textAlign='center';
+  g.strokeStyle=sel?(b==='ALL'?'#3fd0c9':TIERC[TIERS.indexOf(b)]):'#232d3a';g.lineWidth=1.5;rr(bx,y,bw,34,8);g.stroke();
+  g.fillStyle=sel?(b==='ALL'?'#e6ebf0':TIERC[TIERS.indexOf(b)]):'#5c6b7d';g.font=font(10);g.textAlign='center';
   let nm=b;while(g.measureText(nm).width>bw-6&&nm.length>3)nm=nm.slice(0,-2);
   g.fillText(nm,bx+bw/2,y+11);
  });
@@ -2240,7 +2248,7 @@ function drawBoard(){
   g.fillStyle='#5c6b7d';g.font=font(13);g.textAlign='center';
   g.fillText('LOADING LEADERBOARD…',cx,y+20);
  }else{
-  let rows=lbCache.filter(p=>lbBracket==='ALL'||p.bracket===lbBracket);
+  let rows=lbCache.filter(p=>lbBracket==='ALL'||TIERS[tierOfPts(p.pts)]===lbBracket);
   rows.sort((a,b)=>lbMetric(b)-lbMetric(a)||(a.n<b.n?-1:1));
   const myRank=rows.findIndex(r=>r.id===playerId);
   g.font=font(12);g.textAlign='center';
@@ -2264,21 +2272,24 @@ function drawBoard(){
     g.fillText('TOP 1000 CUTOFF',cx,y+6);y+=22;
     if(y+rh2>vh-70)break;
    }
+   {const rt=tierOfPts(r.pts),pt=i>0?tierOfPts(rows[i-1].pts):-1;   // tier divider: where each tier starts in the overall list
+    if(lbScope==='overall'&&rt!==pt){g.strokeStyle=TIERC[rt];g.globalAlpha=0.6;g.lineWidth=1;g.beginPath();g.moveTo(12,y+8);g.lineTo(vw-12,y+8);g.stroke();g.globalAlpha=1;
+     const lab=TIERS[rt]+' · '+fmtK(TPTS[rt])+'+ PTS';g.font=font(10);const lw2=g.measureText(lab).width+14;g.fillStyle='#0c1118';g.fillRect(cx-lw2/2,y,lw2,16);
+     g.fillStyle=TIERC[rt];g.textAlign='center';g.fillText(lab,cx,y+3);y+=20;if(y+rh2>vh-70)break;}}
    if(r.id===playerId){g.fillStyle='rgba(63,208,201,.12)';rr(12,y,vw-24,rh2,8);g.fill();}
    g.textAlign='left';g.font=font(13);
    g.fillStyle=r.id===playerId?'#3fd0c9':'#8fa3b8';
    let nm=(i+1)+'. '+(r.id===playerId?'YOU':r.n);
    while(g.measureText(nm).width>vw*0.5&&nm.length>4)nm=nm.slice(0,-2);
    g.fillText(nm,26,y+4);
-   g.fillStyle=BRKC[r.bracket]||'#8fa3b8';g.font=font(9);
-   g.fillText(r.bracket,26,y+20);
+   {const rt=tierOfPts(r.pts);g.fillStyle=TIERC[rt];g.font=font(9);g.fillText(TIERS[rt]+(r.bracket&&r.bracket.length<9&&!TIERS.includes(r.bracket)?' · '+r.bracket+' LEAGUE':''),26,y+20);}
    g.textAlign='right';g.fillStyle=r.id===playerId?'#ffd24a':'#c7d2dd';g.font=font(13);
    g.fillText(fmtNum(lbMetric(r))+' PTS',vw-26,y+10);
    y+=rh2+4;shown++;
   }
   if(rows.length===0){
    g.fillStyle='#5c6b7d';g.font=font(12);g.textAlign='center';
-   g.fillText('NO PLAYERS IN THIS BRACKET YET',cx,y+16);
+   g.fillText('NO PLAYERS IN THIS TIER YET',cx,y+16);
   }
  }
  drawTabs();drawToast();
@@ -2821,7 +2832,7 @@ function gtypeInfo(){return {t:'GAME TYPES',c:'#3fd0c9',L:[
  'CONTESTED','If an enemy is inside your zone, it stops scoring until you push them out.']};}
 function modeInfo(){const L=['Points per match (before your league multiplier):',''];
  Object.keys(MODES).forEach(k=>{const M=MODES[k];L.push(M.label+': WIN '+M.win+' · DRAW '+M.draw+' · LOSS '+M.loss);});
- L.push('','Higher leagues multiply your points (up to 2x in Diamond). Win streaks add up to +100. In team modes, AI teammates fight alongside you.');
+ L.push('','Higher leagues multiply your points (up to 2x in LEGEND league). Win streaks add up to +100. In team modes, AI teammates fight alongside you.');
  return {t:'BATTLE MODES',c:'#ff7b2e',L};}
 function coresInfo(){return {t:'CORES',c:'#3fd0c9',L:['Cores are permanent boosts for your tank. You can socket 4 at a time in the Garage.','','Tap the ? on any core to see exactly what it does and its next level.','Level cores up with shards from GEM CACHES in the Shop.']};}
 function draw(){ui.qs=[];drawInner();if(info&&state!=='play')drawInfo();}

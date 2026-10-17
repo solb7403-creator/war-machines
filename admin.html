@@ -90,7 +90,7 @@ if(sessionStorage.getItem('wm_admin')==='1'){unlock();}
 function start(){
  let db;try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.database();}catch(e){
   document.getElementById('upd').textContent='firebase init failed';return;}
- const BR=['BRONZE','SILVER','GOLD','PLATINUM','DIAMOND'];
+ const BR=['ROOKIE','PILOT','ACE','ELITE','LEGEND'];
  db.ref('players').on('value',snap=>{
   const all=snap.val()||{},ids=Object.keys(all);
   const ps=ids.map(id=>Object.assign({id},all[id]));
@@ -98,7 +98,7 @@ function start(){
   document.getElementById('cSpend').textContent=fmt(ps.reduce((a,p)=>a+(+p.spendGram||0),0));
   document.getElementById('cPts').textContent=fmt(ps.reduce((a,p)=>a+(+p.pts||0),0));
   document.getElementById('cPower').textContent=ps.length?Math.round(ps.reduce((a,p)=>a+(+p.power||0),0)/ps.length):0;
-  const dist={};BR.forEach(b=>dist[b]=0);ps.forEach(p=>{const b=(p.bracket||'BRONZE').toUpperCase();if(dist[b]==null)dist[b]=0;dist[b]++;});
+  const dist={};BR.forEach(b=>dist[b]=0);ps.forEach(p=>{const b=(p.bracket||'ROOKIE').toUpperCase();if(dist[b]==null)dist[b]=0;dist[b]++;});
   const mx=Math.max(1,...BR.map(b=>dist[b]));
   document.getElementById('brackets').innerHTML=BR.map(b=>
    '<div class="brow"><div class="bn">'+b+'</div><div class="bt"><div class="bf" style="width:'+(dist[b]/mx*100)+'%"></div></div><div class="bc">'+dist[b]+'</div></div>').join('');
