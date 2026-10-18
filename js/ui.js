@@ -545,7 +545,7 @@ function resultsHTML(r){
  else if(r.quests.length)tip='Quest done: '+r.quests.join(', ')+'. Claim it in Quests.';
  else tip=TIPS[(save.mp||0)%TIPS.length];
  const st=r.stats;
- return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+(i*3.6+Math.random()*3)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
+ return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+Math.min(96,i*3.5+Math.random()*2)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
   '<div class="grow"></div><div class="title '+cls+'">'+title+'</div>'+
   '<div class="sub">'+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+

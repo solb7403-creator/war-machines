@@ -89,7 +89,7 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .fight .small{font:600 13px/1.2 var(--disp);opacity:.8;margin-top:4px}
 .fight:active{filter:brightness(.94);transform:translateY(1px)}
 .stickyfoot{position:sticky;bottom:-24px;margin:14px calc(-1 * var(--gut)) -24px;padding:12px var(--gut) 14px;background:linear-gradient(180deg,rgba(10,14,23,0),rgba(10,14,23,.94) 30%)}
-.linkbtn{display:block;margin:10px auto 0;color:var(--dust);font:600 14px var(--disp);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--edge3)}
+.linkbtn{display:block;min-height:40px;padding:10px 12px;margin:2px auto 0;color:var(--dust);font:600 14px var(--disp);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--edge3)}
 
 /* ---- surfaces ---- */
 .panel{background:var(--rock);border:1px solid var(--edge);border-radius:14px;padding:14px}
@@ -109,7 +109,7 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .seg button.on small{color:var(--dust)}
 
 /* ---- Play: hero tank ---- */
-.hero{position:relative;flex:1 1 auto;min-height:150px;overflow:hidden}
+.hero{position:relative;flex:1 0 auto;min-height:150px;overflow:hidden}
 .hero canvas{position:absolute;inset:0;width:100%;height:100%}
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,rgba(10,14,23,0),rgba(10,14,23,.85) 70%,var(--void));pointer-events:none}
 .loadline{position:absolute;z-index:1;left:12px;right:12px;bottom:8px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:4px 8px;border-radius:12px}
@@ -323,7 +323,7 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .full{opacity:0;transition:opacity .2s}
 .full.show{opacity:1}
 .full .grow{flex:1;min-height:8px}
-#s-play.on{display:flex;flex-direction:column;padding:0;overflow:hidden}
+#s-play.on{display:flex;flex-direction:column;padding:0;overflow-x:hidden;overflow-y:auto}
 .sheet h3.sec{margin:16px 0 8px}
 .nowrap{white-space:nowrap}
 .pts{font:inherit}
@@ -350,8 +350,8 @@ button.q{display:flex;width:100%;text-align:left}
 .squad .t.big{font:700 18px/1.2 var(--disp);margin-bottom:4px}
 .btn-quiet.on{border-color:var(--moon);box-shadow:inset 0 0 0 1px var(--moon)}
 .panel.lunar{margin-top:12px;border-color:rgba(232,244,255,.35);color:#e8f4ff;font-size:14px}
-.toggle{position:relative;width:48px;height:28px;border-radius:14px;background:var(--rock4);border:1px solid var(--edge2);flex:none;transition:background .15s}
-.toggle i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--dust);transition:transform .15s,background .15s}
+.toggle{position:relative;width:52px;height:32px;border-radius:16px;background:var(--rock4);border:1px solid var(--edge2);flex:none;transition:background .15s}
+.toggle i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--dust);transition:transform .15s,background .15s}
 .toggle.on{background:rgba(95,227,161,.25);border-color:rgba(95,227,161,.6)}
 .toggle.on i{transform:translateX(20px);background:var(--ok)}
 .premium:disabled{opacity:.6}
@@ -365,3 +365,22 @@ button.q{display:flex;width:100%;text-align:left}
 .rm .rscore{font:700 44px/1 var(--disp);margin:10px 0 8px;display:flex;justify-content:center;gap:14px}
 .rm .rscore i{font-style:normal;color:var(--dim)}
 .rm .swap{display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ---- short screens (older iPhones, Telegram with the keyboard bar) ---- */
+@media (max-height:620px){
+ .hero{min-height:100px}
+ .loadline .nm{font-size:18px}.loadline .sub{font-size:12px}
+ .lobby{gap:6px;padding-bottom:8px}
+ .nudge{padding:7px 10px}.nudge .gem{width:26px;height:26px}
+ .setup{padding:6px 10px 6px 6px}.setup canvas{width:38px;height:50px}.setup .dimtxt{display:none}
+ .fight{height:58px}.fight .big{font-size:22px}.fight .small{font-size:12px;margin-top:2px}
+ .vs .team{margin-top:8px}.vs .unit canvas{width:60px;height:60px}.vs .mark{font-size:26px;margin-top:6px}.vs .match{margin-top:10px;padding:10px}
+ .welcome .big{font-size:24px}.welcome .step{margin-top:8px}.wtank{height:84px}
+ .res .title{font-size:36px}.res .gain{font-size:32px;margin-top:10px}
+}
+/* ---- wide screens (Telegram desktop, tablets): keep the phone layout, centered ---- */
+@media (min-width:620px){
+ .app{max-width:560px;margin:0 auto;border-left:1px solid var(--edge);border-right:1px solid var(--edge)}
+ .sheet{max-width:560px;margin:0 auto}
+ .full{padding-left:calc(50% - 270px);padding-right:calc(50% - 270px)}
+}

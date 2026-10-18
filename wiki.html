@@ -3,54 +3,54 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>LUNAR: War Machines · Wiki</title>
+<meta name="color-scheme" content="dark">
+<title>LUNAR: War Machines wiki</title>
 <meta name="description" content="How to play LUNAR: War Machines, farm points, and qualify for the $LUNAR airdrop.">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-:root{--bg:#0c1118;--card:#141c26;--line:#233042;--fg:#e6ebf0;--mut:#8fa3b8;--teal:#3fd0c9;--gold:#ffd24a;--red:#ff6b5e;--blue:#5aa9ff;--green:#7be07b;--violet:#c28bff}
+@font-face{font-family:"Chakra Petch";src:url(fonts/chakra-petch-600.woff) format("woff");font-weight:600;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url(fonts/chakra-petch-700.woff) format("woff");font-weight:700;font-display:swap}
+:root{--void:#0a0e17;--rock:#141c2a;--rock2:#1b2536;--edge:rgba(223,231,242,.1);--moon:#dfe7f2;--dust:#8a97ab;--thrust:#ff7a2f;--gold:#ffcf4a;
+ --red:#ff6b5e;--blue:#5aa9ff;--green:#7be07b;--violet:#b78bff;--teal:#3fd0c9;--disp:"Chakra Petch","Arial Narrow",system-ui,sans-serif;color-scheme:dark}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:0 16px 48px}
+body{background:radial-gradient(120% 50% at 85% -5%,rgba(223,231,242,.09),transparent 60%),var(--void);color:var(--moon);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:0 16px 48px;min-height:100vh}
 .wrap{max-width:680px;margin:0 auto}
-header{text-align:center;padding:28px 0 18px}
-h1{font:800 30px/1.1 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:3px}
+header{padding:30px 0 16px}
+h1{font:700 32px/1.05 var(--disp);letter-spacing:.01em}
 h1 span{color:var(--gold)}
-.pre{font:800 13px/1 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:6px;color:#e8f4ff;margin-bottom:8px;text-shadow:0 0 12px rgba(232,244,255,.6)}
-.tag{color:var(--mut);font-size:13px;letter-spacing:1px;margin-top:6px}
-.hero{background:linear-gradient(135deg,#17323a,#1c1a33);border:1px solid var(--line);border-radius:14px;padding:16px;margin:8px 0 18px;text-align:center}
+.tag{color:var(--dust);font-size:14px;margin-top:6px}
+.hero{background:linear-gradient(135deg,rgba(255,122,47,.16),rgba(183,139,255,.10) 60%,rgba(77,159,255,.08)),var(--rock);border:1px solid rgba(255,154,85,.35);border-radius:16px;padding:18px;margin:8px 0 18px}
+.hero .big{font:700 23px/1.2 var(--disp);margin-bottom:8px}
 .hero b{color:var(--gold)}
-.play{display:inline-block;margin-top:12px;background:var(--teal);color:#062022;font-weight:800;letter-spacing:2px;text-decoration:none;padding:11px 22px;border-radius:10px}
-nav{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px}
-nav a{color:var(--teal);text-decoration:none;font-size:12px;letter-spacing:1px;border:1px solid var(--line);border-radius:20px;padding:6px 11px;background:var(--card)}
-section{margin-top:26px}
-h2{font:800 16px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:2.5px;color:var(--teal);margin-bottom:10px;text-transform:uppercase}
+.play{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;background:linear-gradient(180deg,#ff9a55,var(--thrust));color:#2a1004;font:700 17px var(--disp);letter-spacing:.08em;text-decoration:none;padding:12px 26px;clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px)}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+nav a{color:var(--moon);text-decoration:none;font:600 13px var(--disp);border:1px solid var(--edge);border-radius:20px;padding:6px 12px;background:var(--rock)}
+section{margin-top:30px}
+h2{font:700 21px/1.2 var(--disp);margin-bottom:4px}
 p{margin-bottom:10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+p.kick{color:var(--gold);font:600 15px/1.4 var(--disp);margin:0 0 12px}
+.card{background:var(--rock);border:1px solid var(--edge);border-radius:14px;padding:14px;margin-bottom:10px}
 ol,ul{padding-left:20px}li{margin-bottom:6px}
-.mut{color:var(--mut);font-size:13px}
+.mut{color:var(--dust);font-size:14px}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
-th{color:var(--mut);font-size:11px;letter-spacing:1px;font-weight:600}
-td.n{text-align:right;font-variant-numeric:tabular-nums}th.n{text-align:right}
-.chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:6px;border:1px solid currentColor}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid .card{margin:0}
-.grid h3{font-size:13px;letter-spacing:1px;margin-bottom:4px}
-.note{border-left:3px solid var(--gold);padding:10px 12px;background:#1a1a12;border-radius:0 10px 10px 0;margin:10px 0}
-p.kick{font:700 17px/1.35 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;color:#e8f4ff;letter-spacing:.3px;margin:-2px 0 12px}
-.bar{display:flex;height:22px;border-radius:7px;overflow:hidden;margin:4px 0 12px;border:1px solid var(--line)}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--edge);vertical-align:top}
+th{color:var(--dust);font:600 12px var(--disp)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th.n{text-align:right}
+.chip{display:inline-block;font:700 11px var(--disp);padding:1px 7px;border-radius:6px;border:1px solid currentColor}
+.note{border-left:3px solid var(--gold);padding:10px 12px;background:rgba(255,207,74,.07);border-radius:0 10px 10px 0;margin:10px 0}
+.bar{display:flex;height:22px;border-radius:7px;overflow:hidden;margin:4px 0 12px;border:1px solid var(--edge)}
 .bar i{display:block;height:100%}
 .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
-.hero .big{font:800 21px/1.25 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;letter-spacing:.5px;color:#e8f4ff;margin-bottom:8px}
-footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
-@media (max-width:380px){.grid{grid-template-columns:1fr}}
+.new{display:inline-block;font:700 11px var(--disp);color:#2a1004;background:var(--gold);border-radius:5px;padding:0 6px;margin-left:6px;vertical-align:2px}
+footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
- <h1><span>LUNAR:</span> WAR MACHINES</h1>
- <div class="tag">OFFICIAL WIKI</div>
+ <h1><span>LUNAR:</span> War Machines</h1>
+ <div class="tag">The official wiki</div>
 </header>
 
 <div class="hero">
@@ -60,7 +60,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 </div>
 
 <nav>
- <a href="#mission">The mission</a><a href="#start">How to play</a><a href="#combat">Combat</a><a href="#modes">Modes</a><a href="#points">Points</a><a href="#tiers">Tiers</a>
+ <a href="#mission">The mission</a><a href="#start">How to play</a><a href="#combat">Combat</a><a href="#maps">Maps</a><a href="#modes">Modes</a><a href="#points">Points</a><a href="#tiers">Tiers</a>
  <a href="#garage">Garage</a><a href="#quests">Quests</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
 </nav>
 
@@ -87,10 +87,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  <p class="kick">Drag. Dodge. Delete.</p>
  <div class="card"><ol>
   <li>Open the game in Telegram. Your save lives on your Telegram account, so switching phones costs you nothing.</li>
-  <li>Head to the <b>Arena</b>, pick 1v1, 2v2 or 3v3, and pick a game type (or hit RANDOM and live a little).</li>
+  <li>On the <b>Play</b> tab, tap <b>Change</b> to pick a game type, team size (1v1, 2v2, 3v3) and map. Or let Random pick for you.</li>
+  <li>Hit <b>FIGHT</b>. The start screen shows who you're up against and lets you swap chassis to counter them.</li>
   <li>Drag anywhere to drive. Your cannon aims and fires by itself. Your whole job is where you stand.</li>
-  <li>Wreck the other team, or have more health left when the 3-minute clock runs out.</li>
-  <li>Cash your points in at the <b>Garage</b>, come back meaner, queue again.</li>
+  <li>Wreck the other team. Cash your points in at the <b>Garage</b>, come back meaner, queue again.</li>
  </ol></div>
 </section>
 
@@ -99,11 +99,11 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  <p class="kick">Your cannon aims itself. Staying alive is on you.</p>
  <div class="card">
   <p><b>Bullets actually fly.</b> They take time to land, so a tank that keeps moving eats a lot fewer of them. A dead-center hit can <b>crit</b> for double damage. A shot that just clips you is a <b>graze</b> and hurts less.</p>
-  <p><b>Supers.</b> The meter over your tank fills when you deal damage (fastest), take damage, or land crits. Full meter, smash the red button. Every weapon line has its own super, and each one has a tell, so watch for the red warning lane.</p>
-  <p class="mut">Matches run 3 minutes.</p>
+  <p><b>Supers.</b> The thin bar under your health fills when you deal damage (fastest), take damage, or land crits. When it's full, tap the red <b>Super</b> button to auto-aim, or <b>drag from it to aim it yourself</b>. Every weapon line has its own super, and each one has a tell, so watch for the red warning lane. Enemy supers beep while they charge.</p>
+  <p><b>Dash.</b> The blue button bursts you forward in the direction you're driving. Time it right and you slip out of a super. It recharges in 4 seconds. The bots dash too.</p>
  </div>
  <div class="card">
-  <p><b>Mystery boxes.</b> Five drop per match at random spots, the first one 15 to 30 seconds in. Roll over it for a random buff. The buff sticks until you soak a set amount of damage (watch the ring around your tank drain). Same buffs stack, so greed is sometimes correct.</p>
+  <p><b>Mystery boxes.</b> Five drop per match at random spots, the first one 5 to 8 seconds in. Roll over it for a random buff. The buff sticks until you soak a set amount of damage (watch the ring around your tank drain). Same buffs stack, so greed is sometimes correct.</p>
   <table>
    <tr><th>Buff</th><th class="n">Effect</th></tr>
    <tr><td><span class="chip" style="color:var(--red)">DMG</span></td><td class="n">+40% damage</td></tr>
@@ -114,23 +114,51 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
    <tr><td><span class="chip" style="color:#4be3a0">REG</span></td><td class="n">+0.3% max HP per second</td></tr>
   </table>
  </div>
+ <div class="card">
+  <p><b>Events.</b> Team matches and Moon Zone throw one curveball each match:</p>
+  <ul>
+   <li><b>Supply drop:</b> three extra boxes land mid-map. Go get them.</li>
+   <li><b>Meteor shower:</b> red circles mark where rocks are about to hit. Get out, or eat 260 damage. They don't care whose team you're on.</li>
+   <li><b>Solar flare:</b> for 20 seconds every super charges twice as fast.</li>
+  </ul>
+ </div>
+</section>
+
+<section id="maps">
+ <h2>Maps</h2>
+ <p class="kick">Cover is real. Use it or lose to it.</p>
+ <div class="card">
+  <p>Containers, domes, boulders and canyon walls block both bullets and tanks. A few things play by their own rules:</p>
+  <ul>
+   <li><b>Supply crates</b> (orange) break after enough hits, and sometimes drop a mystery box when they go.</li>
+   <li><b>Craters</b> slow you to 60% speed. Cutting through one is a gamble.</li>
+  </ul>
+  <table>
+   <tr><th>Map</th><th>What it's about</th></tr>
+   <tr><td><b>Moonbase</b></td><td>The classic. Containers, habitat domes, a command module in the middle and a slow crater on each flank.</td></tr>
+   <tr><td><b>Overpass</b></td><td>A solid bridge across the middle. Ramps (gold arrows) take you up for high ground; two tunnels run underneath. Tanks in a tunnel can't be hit from the deck, and can't shoot up.</td></tr>
+   <tr><td><b>Longshot</b></td><td>A narrow canyon with long sight lines. Crates hug the walls.</td></tr>
+   <tr><td><b>Crater Field</b><span class="new">New</span></td><td>Open ground, boulders for cover and a big crater dead center.</td></tr>
+  </table>
+ </div>
 </section>
 
 <section id="modes">
  <h2>Game types</h2>
  <p class="kick">Smash them, or out-hold them.</p>
  <div class="card">
-  <p><b>Arena</b>: one life each. Wipe the other team, or have more health left when the clock runs out.</p>
+  <p><b>Arena</b>: one life each. Wipe the other team, or have more health left when the 3-minute clock runs out.</p>
+  <p><b>Arena 1v1 is a best of 3.</b> First to 2 rounds wins, and the match pays double. Between rounds you see the chassis they're bringing next, and you get the last word: swap yours to counter it. Rounds run 90 seconds.</p>
   <p><b>Moon Zone</b>: park in the glowing circle to capture it. While your team owns it, you score. First to <b>100</b> wins, or whoever's ahead at the buzzer. One enemy tank sitting in your zone freezes your score, so you can't just camp and pray.</p>
   <ul>
    <li><b>The zone moves.</b> Every 20 to 28 seconds it jumps to a random spot. 6 seconds before, a gold ring shows where it is going. Rotate early to get there first.</li>
    <li><b>Kills are +5 points</b> for your team.</li>
    <li><b>Respawn grows</b>: 4s the first time, +1.5s for each extra death (max 9s). Throwing your tank away costs your team time on the zone.</li>
-   <li><b>Repair</b>: off the zone, avoid damage for 3.5 seconds and your tank heals itself. No repairs while standing on the zone, so holding it wears you down. Losing a fight? Back off, heal, come back.</li>
+   <li><b>Repair</b>: off the zone, avoid damage for 3.5 seconds and your tank heals itself. No repairs while standing on the zone, so holding it wears you down.</li>
   </ul>
-  <p class="mut">Moon Zone matches run about four times longer than Arena, so they pay more per match: ×3 in 1v1, ×2 in 2v2, ×1.5 in 3v3.</p>
+  <p class="mut">Moon Zone matches run much longer than Arena, so they pay more per match: ×3 in 1v1, ×2 in 2v2, ×1.5 in 3v3.</p>
   <p><b>Random</b>: can't decide? The game picks Arena or Moon Zone when the match starts.</p>
-  <p><b>Overpass map</b>: the bridge is solid. Drive up a ramp (gold arrows) to reach the deck and shoot down from high ground. Two tunnels run underneath: tanks in a tunnel can't be hit from the deck, and can't shoot up.</p>
+  <p class="mut">Out of a team Arena match early? Tap <b>Fast forward</b> to watch the rest at triple speed.</p>
  </div>
 </section>
 
@@ -140,20 +168,23 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  <div class="card">
   <table>
    <tr><th>Mode</th><th class="n">Win</th><th class="n">Draw</th><th class="n">Loss</th></tr>
-   <tr><td>1v1</td><td class="n">125</td><td class="n">60</td><td class="n">30</td></tr>
-   <tr><td>2v2</td><td class="n">200</td><td class="n">100</td><td class="n">50</td></tr>
-   <tr><td>3v3</td><td class="n">300</td><td class="n">150</td><td class="n">75</td></tr>
+   <tr><td>1v1 Arena (best of 3)</td><td class="n">250</td><td class="n">120</td><td class="n">60</td></tr>
+   <tr><td>1v1 Moon Zone</td><td class="n">375</td><td class="n">180</td><td class="n">90</td></tr>
+   <tr><td>2v2 Arena</td><td class="n">200</td><td class="n">100</td><td class="n">50</td></tr>
+   <tr><td>2v2 Moon Zone</td><td class="n">400</td><td class="n">200</td><td class="n">100</td></tr>
+   <tr><td>3v3 Arena</td><td class="n">300</td><td class="n">150</td><td class="n">75</td></tr>
+   <tr><td>3v3 Moon Zone</td><td class="n">450</td><td class="n">225</td><td class="n">113</td></tr>
   </table>
   <p class="mut" style="margin-top:10px">Base points are multiplied by your league (below). Win streaks add +20 per win in the streak, up to +100.</p>
  </div>
  <div class="card">
   <table>
    <tr><th>League</th><th class="n">Power</th><th class="n">Multiplier</th></tr>
-   <tr><td style="color:#9fb0c2">ROOKIE</td><td class="n">0–149</td><td class="n">1.0×</td></tr>
-   <tr><td style="color:#6fcf97">PILOT</td><td class="n">150–249</td><td class="n">1.25×</td></tr>
-   <tr><td style="color:#4d9fff">ACE</td><td class="n">250–399</td><td class="n">1.5×</td></tr>
-   <tr><td style="color:#ff9d3c">ELITE</td><td class="n">400–599</td><td class="n">1.75×</td></tr>
-   <tr><td style="color:#ff4d6d">LEGEND</td><td class="n">600+</td><td class="n">2.0×</td></tr>
+   <tr><td style="color:#9fb0c2">Rookie</td><td class="n">0–149</td><td class="n">1.0×</td></tr>
+   <tr><td style="color:#6fcf97">Pilot</td><td class="n">150–249</td><td class="n">1.25×</td></tr>
+   <tr><td style="color:#4d9fff">Ace</td><td class="n">250–399</td><td class="n">1.5×</td></tr>
+   <tr><td style="color:#ff9d3c">Elite</td><td class="n">400–599</td><td class="n">1.75×</td></tr>
+   <tr><td style="color:#ff4d6d">Legend</td><td class="n">600+</td><td class="n">2.0×</td></tr>
   </table>
   <p class="mut" style="margin-top:10px">Power is the overall strength of your machine: upgrades, chassis, weapon, cores and skin. Higher power means tougher opponents and bigger rewards. Your league decides who you fight; your tier (below) shows how far you've climbed the leaderboard.</p>
  </div>
@@ -161,19 +192,26 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
 </section>
 
 <section id="tiers">
- <h2>Leaderboard tiers &amp; daily reward</h2>
+ <h2>Tiers and the daily reward</h2>
  <p class="kick">Bronze to Diamond. Everybody can see where you stand.</p>
- <p>Your tier comes from <b>lifetime points earned</b>, the same number the leaderboard ranks. Spending points never drops you a tier. Higher tiers also pay a bigger daily bonus.</p>
+ <p>Your tier comes from <b>lifetime points earned</b>, the same number the leaderboard ranks. Spending points never drops you a tier. Higher tiers add a bigger bonus to your daily reward.</p>
  <div class="card">
   <table>
-   <tr><th>Tier</th><th class="n">Lifetime points</th><th class="n">Daily reward</th></tr>
-   <tr><td>BRONZE</td><td class="n">0</td><td class="n">25</td></tr>
-   <tr><td>SILVER</td><td class="n">10,000</td><td class="n">50</td></tr>
-   <tr><td>GOLD</td><td class="n">50,000</td><td class="n">100</td></tr>
-   <tr><td>PLATINUM</td><td class="n">150,000</td><td class="n">200</td></tr>
-   <tr><td>DIAMOND</td><td class="n">400,000</td><td class="n">400</td></tr>
+   <tr><th>Tier</th><th class="n">Lifetime points</th><th class="n">Daily bonus</th></tr>
+   <tr><td style="color:#c08a54">Bronze</td><td class="n">0</td><td class="n">+25</td></tr>
+   <tr><td style="color:#c3ccd6">Silver</td><td class="n">10,000</td><td class="n">+50</td></tr>
+   <tr><td style="color:#ffcf4a">Gold</td><td class="n">50,000</td><td class="n">+100</td></tr>
+   <tr><td style="color:#7be3e0">Platinum</td><td class="n">150,000</td><td class="n">+200</td></tr>
+   <tr><td style="color:#c79bff">Diamond</td><td class="n">400,000</td><td class="n">+400</td></tr>
   </table>
-  <p class="mut" style="margin-top:10px">Grab your daily reward in the RANKS tab. Once a day, every day. It adds up.</p>
+ </div>
+ <div class="card">
+  <p><b>Login streak.</b> Claim your daily reward in the <b>Quests</b> tab. Every day in a row pays more, and day 7 drops a free gem cache. Miss a day and the streak starts over.</p>
+  <table>
+   <tr><th>Day</th><th class="n">1</th><th class="n">2</th><th class="n">3</th><th class="n">4</th><th class="n">5</th><th class="n">6</th><th class="n">7</th></tr>
+   <tr><td>Points</td><td class="n">100</td><td class="n">150</td><td class="n">200</td><td class="n">250</td><td class="n">300</td><td class="n">400</td><td class="n">1,000</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Plus your tier's daily bonus on top, every day. Want a nudge? Turn on the daily reminder in Settings and the bot sends one message when your reward is ready.</p>
  </div>
 </section>
 
@@ -196,9 +234,9 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
   <p><b>Salvage Yard (points only).</b> Junkyard rebuilds of Rare and Epic gear, carrying <b>50% to 75%</b> of the real item's boost. 5,000 points for Salvaged Rare, 20,000 for Salvaged Epic. Buy again to chase a better roll, you always keep your best. The real thing still beats it.</p>
   <table>
    <tr><th>Weapon line</th><th>Common</th><th>Rare</th><th>Epic</th></tr>
-   <tr><td><b>Pulse</b><div class="mut">balanced · Pierce Lance</div></td><td>Pulse Cannon</td><td style="color:var(--violet)">Arc Pulse</td><td style="color:var(--gold)">Nova Pulse</td></tr>
-   <tr><td><b>Twin</b><div class="mut">fast, light · Static Nova</div></td><td>Twin Repeater</td><td style="color:var(--violet)">Storm Repeater</td><td style="color:var(--gold)">Helix Repeater</td></tr>
-   <tr><td><b>Siege</b><div class="mut">slow, heavy · Siege Blast</div></td><td>Siege Breaker</td><td style="color:var(--violet)">Rail Breaker</td><td style="color:var(--gold)">Titanfall</td></tr>
+   <tr><td><b>Pulse</b><div class="mut">balanced, Pierce Lance</div></td><td>Pulse Cannon</td><td style="color:var(--violet)">Arc Pulse</td><td style="color:var(--gold)">Nova Pulse</td></tr>
+   <tr><td><b>Twin</b><div class="mut">fast, light, Static Nova</div></td><td>Twin Repeater</td><td style="color:var(--violet)">Storm Repeater</td><td style="color:var(--gold)">Helix Repeater</td></tr>
+   <tr><td><b>Siege</b><div class="mut">slow, heavy, Siege Blast</div></td><td>Siege Breaker</td><td style="color:var(--violet)">Rail Breaker</td><td style="color:var(--gold)">Titanfall</td></tr>
   </table>
  </div>
  <div class="card">
@@ -208,17 +246,17 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
    <tr><td><b>Vanguard</b><div class="mut">balanced</div></td><td>Vanguard</td><td style="color:var(--violet)">Sentinel</td><td style="color:var(--gold)">Paladin</td></tr>
    <tr><td><b>Titan</b><div class="mut">slow, very tanky</div></td><td>Titan</td><td style="color:var(--violet)">Bulwark</td><td style="color:var(--gold)">Colossus</td></tr>
   </table>
-  <p style="margin-top:10px"><b>Counter triangle:</b> <span style="color:var(--green)">Scout</span> beats <span style="color:var(--violet)">Titan</span> · <span style="color:var(--violet)">Titan</span> beats <span style="color:var(--teal)">Vanguard</span> · <span style="color:var(--teal)">Vanguard</span> beats <span style="color:var(--green)">Scout</span>. The counter deals <b>+15% damage</b> and takes <b>10% less</b> from the class it beats. Pick your chassis for the fight, not just the stats.</p>
+  <p style="margin-top:10px"><b>Counter triangle:</b> <span style="color:var(--green)">Scout</span> beats <span style="color:var(--violet)">Titan</span>, <span style="color:var(--violet)">Titan</span> beats <span style="color:var(--teal)">Vanguard</span>, <span style="color:var(--teal)">Vanguard</span> beats <span style="color:var(--green)">Scout</span>. The counter deals <b>+15% damage</b> and takes <b>10% less</b> from the class it beats. Pick your chassis for the fight, not just the stats.</p>
   <p class="mut" style="margin-top:10px">And then there's <b style="color:var(--gold)">Moonbeam</b>, the legendary weapon with the Moonfall super. Lunar Premium shop only.</p>
  </div>
  <div class="card">
-  <p><b>Cores</b> are permanent boosts you socket into your machine. Always on, every match:</p>
+  <p><b>Cores</b> are permanent boosts you socket into your machine. You get 4 sockets and 6 core types, and <b>each type fits once</b>, so you're building, not stacking. Always on, every match:</p>
   <ul>
-   <li><b style="color:var(--red)">DMG</b> +12% damage · <b style="color:var(--gold)">ROF</b> +10% fire rate</li>
-   <li><b style="color:var(--blue)">ARM</b> +8% armor · <b style="color:var(--green)">SPD</b> +8% speed</li>
-   <li><b style="color:var(--violet)">LCK</b> +3% crit · <b style="color:#4be3a0">REG</b> +0.1% HP/sec</li>
+   <li><b style="color:var(--red)">Damage</b> +12% &nbsp; <b style="color:var(--gold)">Fire rate</b> +10%</li>
+   <li><b style="color:var(--blue)">Armor</b> +8% &nbsp; <b style="color:var(--green)">Speed</b> +8%</li>
+   <li><b style="color:var(--violet)">Luck</b> +3% crit &nbsp; <b style="color:#4be3a0">Repair</b> +0.1% HP per second</li>
   </ul>
-  <p class="mut">Cores stack with mystery-box buffs. Shards from Gem Caches level them up (Common 1 to 2 shards, Rare 3 to 4, Epic 6 to 9). Every level hits harder than the last: Lv2 ×1.2, Lv3 ×1.45, Lv4 ×1.8, Lv5 ×2.25.</p>
+  <p class="mut">Cores stack with mystery-box buffs. Shards from gem caches level them up (Common 1 to 2 shards, Rare 3 to 4, Epic 6 to 9). Every level hits harder than the last: Lv2 ×1.2, Lv3 ×1.45, Lv4 ×1.8, Lv5 ×2.25.</p>
  </div>
 </section>
 
@@ -226,16 +264,20 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  <h2>Quests</h2>
  <p class="kick">Free points for stuff you were going to do anyway.</p>
  <div class="card">
+  <p><b>Daily quests.</b> Three new ones every day at 00:00 UTC, worth 75 to 150 points each. Finish all three for a <b>+200 bonus</b>.</p>
+  <p><b>Weekly chest.</b> Claim 12 daily quests in a week (Monday to Sunday, UTC) and the chest pays <b>1,500 points and a rare gem cache</b>.</p>
+ </div>
+ <div class="card">
+  <p><b>Milestones</b> (one time each)</p>
   <table>
    <tr><th>Quest</th><th class="n">Reward</th></tr>
-   <tr><td>First Blood: win 1 match</td><td class="n">50</td></tr>
+   <tr><td>First blood: win 1 match</td><td class="n">50</td></tr>
    <tr><td>Warmonger: win 3 matches</td><td class="n">150</td></tr>
-   <tr><td>Heavy Hitter: 2,500 damage in one match</td><td class="n">100</td></tr>
+   <tr><td>Heavy hitter: 2,500 damage in one match</td><td class="n">100</td></tr>
    <tr><td>Overcharged: 2 supers in one match</td><td class="n">100</td></tr>
    <tr><td>Scavenger: 3 boxes in one match</td><td class="n">75</td></tr>
    <tr><td>Untouchable: win taking under 600 damage</td><td class="n">150</td></tr>
    <tr><td>Read this wiki</td><td class="n">200</td></tr>
-   <tr><td>Follow on X · Join the TG channel</td><td class="n">50 each</td></tr>
   </table>
  </div>
 </section>
@@ -260,9 +302,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  <h2>Shop</h2>
  <p class="kick">Tired of digging through the scrapyard? Gear up here.</p>
  <div class="card">
-  <p>Pay how you like. <b>Telegram Stars</b> work with Apple Pay or a card, no wallet needed. <b>TON</b> works with Keeper or any TON wallet. <b>SOL</b> is one tap with Phantom, Solflare or Backpack, or send the exact amount from Keeper or anything else. Flip between them at the top of the Shop. Every purchase is confirmed on-chain and logged to your account.</p>
+  <p>Pay how you like. <b>Telegram Stars</b> work with Apple Pay or a card, no wallet needed. <b>TON</b> works with Keeper or any TON wallet. <b>SOL</b> is one tap with Phantom, Solflare or Backpack, or send the exact amount from Keeper or anything else. Flip between them at the top of the Shop. Crates you can buy with points have their own points button. Every purchase is confirmed on-chain and logged to your account.</p>
   <table>
    <tr><th>Item</th><th class="n">Stars</th><th class="n">TON</th><th class="n">Points</th></tr>
+   <tr><td>Starter pack (once): a rare weapon, a rare chassis and a rare gem cache<span class="new">New</span></td><td class="n">399 ⭐</td><td class="n">6</td><td class="n">paid only</td></tr>
    <tr><td>Common crate</td><td class="n">250 ⭐</td><td class="n">4</td><td class="n">20,000</td></tr>
    <tr><td>Rare crate</td><td class="n">500 ⭐</td><td class="n">8</td><td class="n">80,000</td></tr>
    <tr><td>Epic crate</td><td class="n">1,500 ⭐</td><td class="n">23</td><td class="n">paid only</td></tr>
@@ -280,11 +323,12 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
   <p><b>The top 1,000 pilots on the overall leaderboard at the snapshot get a guaranteed $LUNAR allocation.</b></p>
   <ol>
    <li>Play inside Telegram. Only Telegram accounts make the board.</li>
-   <li>Every point counts: matches, quests, daily rewards. Spending points never lowers your score.</li>
+   <li>Every point counts: matches, quests, daily rewards, your squad. Spending points never lowers your score.</li>
    <li>Days matter. Allocation size weighs your points <b>and</b> how many days you played.</li>
    <li>Climb a league for bigger point multipliers.</li>
    <li>Join the TG channel. Snapshot date drops there first.</li>
   </ol>
+  <p class="mut">The Ranks tab shows the live top-1,000 cutoff and how far you are from it.</p>
  </div>
  <div class="note">One pilot, one account. Multi-accounts and modded clients get pulled from the airdrop before the snapshot.</div>
 </section>
@@ -293,7 +337,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  <h2>Tokenomics</h2>
  <p class="kick">1,000,000,000 $LUNAR. Here's where every one of them goes.</p>
  <div class="card">
-  <p><b>Chain:</b> Solana &nbsp;·&nbsp; <b>Supply:</b> 1,000,000,000 &nbsp;·&nbsp; <b>Liquidity:</b> burned</p>
+  <p><b>Chain:</b> Solana &nbsp;&nbsp; <b>Supply:</b> 1,000,000,000 &nbsp;&nbsp; <b>Liquidity:</b> burned</p>
   <div class="bar"><i style="width:30%;background:#3fd0c9"></i><i style="width:26.5%;background:#ffd24a"></i><i style="width:8%;background:#c28bff"></i><i style="width:8%;background:#5aa9ff"></i><i style="width:8.5%;background:#ff6b5e"></i><i style="width:7%;background:#7be07b"></i><i style="width:7%;background:#ff9d3c"></i><i style="width:5%;background:#8fa3b8"></i></div>
   <table>
    <tr><th>Allocation</th><th class="n">Share</th><th class="n">Tokens</th></tr>
@@ -326,13 +370,15 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
   <p><b>Is the airdrop actually guaranteed?</b><br><span class="mut">Top 1,000 at the snapshot, on a clean account: yes.</span></p>
   <p><b>Does buying stuff get me more $LUNAR?</b><br><span class="mut">No. The shop sells gear. Tokens come from your rank and the days you played.</span></p>
   <p><b>Do I need to spend money?</b><br><span class="mut">Nope. Gear gives you an edge, but positioning wins fights and points come from playing.</span></p>
+  <p><b>Am I playing real people?</b><br><span class="mut">Right now you're up against AI pilots, and the start screen says so. Live PvP is on the way.</span></p>
   <p><b>When's launch?</b><br><span class="mut">After the pre-launch seasons wrap. The snapshot date gets announced in the TG channel first.</span></p>
   <p><b>Do I lose progress if I switch phones?</b><br><span class="mut">No. Your save rides on your Telegram account.</span></p>
-  <p><b>Why didn't my rank update right away?</b><br><span class="mut">The leaderboard syncs about every 30 seconds and refreshes once a minute. Give it a sec.</span></p>
+  <p><b>Why didn't my rank update right away?</b><br><span class="mut">Your points reach the server within seconds, and the leaderboard rebuilds every 5 minutes. Give it a moment.</span></p>
+  <p><b>Can I turn off the sound?</b><br><span class="mut">Yes, in Settings (the sliders icon, top right). Sound also follows your phone's silent switch.</span></p>
  </div>
 </section>
 
-<footer>LUNAR: War Machines · fueled by the players · see you in orbit</footer>
+<footer>LUNAR: War Machines. Fueled by the players. See you in orbit.</footer>
 </div>
 <script>
 // Inside Telegram: back button returns to the game, Play opens the Mini App properly
@@ -341,7 +387,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;margin-top:36px}
  if(!tg||!tg.initData)return;
  var pb=document.getElementById('playBtn');
  if(pb)pb.addEventListener('click',function(e){e.preventDefault();try{tg.openTelegramLink(pb.href);}catch(x){location.href=pb.href;}});
- try{tg.ready();tg.expand();if(tg.isVersionAtLeast&&tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#0c1118');tg.setBackgroundColor('#0c1118');}}catch(e){}
+ try{tg.ready();tg.expand();if(tg.isVersionAtLeast&&tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#0a0e17');tg.setBackgroundColor('#0a0e17');}}catch(e){}
 })();
 </script>
 </body>
