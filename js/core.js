@@ -81,11 +81,11 @@ const gemMult=k=>GEM_LV[Math.min(4,Math.max(0,((save.gemLvl&&save.gemLvl[k])||1)
 const coreVal=(k,lv)=>GEM[k].amt*GEM_LV[Math.min(4,Math.max(0,lv-1))];
 const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(Math.round(v*1000)/10))+'%';
 const UPS={
- hull:{n:'Hull',d:'+8% max health per level',c:'#5aa9ff',costs:[100,250,500,1000]},
- cannon:{n:'Cannon',d:'+8% damage per level',c:'#ff6b5e',costs:[100,250,500,1000]},
- engine:{n:'Engine',d:'+6% speed per level',c:'#7be07b',costs:[100,250,500,1000]},
- target:{n:'Targeting',d:'+2% crit chance per level',c:'#c28bff',costs:[100,250,500,1000]},
- reactor:{n:'Reactor',d:'+10% super charge per level',c:'#ffd24a',costs:[100,250,500,1000]}};
+ hull:{n:'Hull',d:'+8% max health per level',c:'#5aa9ff',costs:[500,2000,5000,12500]},
+ cannon:{n:'Cannon',d:'+8% damage per level',c:'#ff6b5e',costs:[500,2000,5000,12500]},
+ engine:{n:'Engine',d:'+6% speed per level',c:'#7be07b',costs:[500,2000,5000,12500]},
+ target:{n:'Targeting',d:'+2% crit chance per level',c:'#c28bff',costs:[500,2000,5000,12500]},
+ reactor:{n:'Reactor',d:'+10% super charge per level',c:'#ffd24a',costs:[500,2000,5000,12500]}};
 const UORDER=['hull','cannon','engine','target','reactor'];
 // ---- chassis classes & weapons ----
 const CH={
@@ -120,7 +120,7 @@ const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel
 const ownW=(k,t)=>!!(save.wOwn&&save.wOwn[k]&&save.wOwn[k].indexOf(t)>=0);
 const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
 // crate items roll 100-110% of their tier's stats; salvaged gear (points only) gets 50-75% of the real item's boost
-const ROLL_MIN=1.00,ROLL_MAX=1.10,SALV_MIN=0.50,SALV_MAX=0.75,SALV_COL='#c48a5c',SALV_PTS=[0,5000,20000];
+const ROLL_MIN=1.00,ROLL_MAX=1.10,SALV_MIN=0.50,SALV_MAX=0.75,SALV_COL='#c48a5c',SALV_PTS=[0,10000,40000];
 const rollOf=(k,t)=>(save.roll&&save.roll[k+':'+t])||1;
 const salvOf=(k,t)=>(save.salv&&save.salv[k+':'+t])||0;
 const gearMult=(k,tc,sal)=>sal?1+(TIER_MULT[tc]-1)*salvOf(k,tc):TIER_MULT[tc]*rollOf(k,tc);
