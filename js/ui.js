@@ -144,6 +144,7 @@ function renderPlay(){
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
+  (quickOK()?'<button class="quick" data-act="quick"><b>QUICK MATCH</b><span>Live pilots, any mode, random map</span></button>':'')+
   '</div>';
 }
 
@@ -661,7 +662,7 @@ function resultsHTML(r){
   '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span></div>'+
   '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span><span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
   '<div class="tip">'+esc(tip)+'</div>'+
-  '<div class="grow"></div><div class="acts"><button class="fight" data-act="again"><span class="big">PLAY AGAIN</span><span class="small">Win '+rangeTxt(winRange(gtypeKey(),modeKey()))+' points</span></button>'+
+  '<div class="grow"></div><div class="acts"><button class="fight" data-act="again"><span class="big">PLAY AGAIN</span><span class="small">'+(lastQuick?'Another quick match':'Win '+rangeTxt(winRange(gtypeKey(),modeKey()))+' points')+'</span></button>'+
   '<div class="two">'+(r.won&&IN_TG?'<button class="btn btn-quiet" data-act="sharewin">Share win</button>':'<button class="btn btn-quiet" data-act="tabmenu" data-arg="garage">Garage</button>')+'<button class="btn btn-ghost" data-act="menu">Menu</button></div></div>';
 }
 function onMatchEnd(r){
@@ -780,16 +781,17 @@ const ACT={
  termsno:()=>{const ov=findOv('terms');if(ov)closeOverlay(ov);},
  mode:a=>{save.mode=a;store();fx('tap');},
  map:a=>{save.map=a;store();fx('tap');},
- fight:()=>beginMatch(),
+ fight:()=>{lastQuick=false;beginMatch();},
+ quick:()=>quickMatch(),
  setup:()=>openSetup(),
  setupdone:()=>{const ov=findOv('setup');if(ov)closeOverlay(ov);},
  firstfight:()=>{save.welcomed=true;store();closeAll();beginMatch();},
  vsstart:()=>vsGo(),
  vsback:()=>{const ov=findOv('vs');if(ov)closeOverlay(ov);},
- pvpai:()=>{if(!pvp)return;const g=pvp.q.g;pvpCancel();closeFind();prepareMatch(g);showVS();},
+ pvpai:()=>{if(!pvp)return;let g=pvp.q.g;if(g==='quick'){const gs=quickModes();g=gs[(Math.random()*gs.length)|0];}pvpCancel();closeFind();prepareMatch(g);showVS();},
  pvpcancel:()=>{pvpCancel();closeFind();},
  swapcls:a=>{if(!pvpOn()){clearInterval(vsTimer);vsTimer=null;}switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},   // live: the server's countdown keeps running
- again:()=>{closeAll();exitBattle();beginMatch();},
+ again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},
  sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
  login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak');if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},

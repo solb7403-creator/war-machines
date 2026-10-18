@@ -24,6 +24,12 @@ export const seatsFor = (g, m) => (g === "royale" ? 6 : rules().MODES[m].n * 2);
 // ================= lobby =================
 // Rooms open for pilots in the same queue (mode + team size) and league. The league band widens while a room
 // waits: same league for 10 s, then one league either side, then two.
+// Quick Match pilots ("quick.<size>") fit any live room of their team size, and a mode pilot fits a Quick Match room
+// (which then becomes that mode), so everyone looking for a live match at one team size can meet.
+export const queueFits = (rq, q) => {
+  const [rg, rm] = rq.split("."), [g, m] = q.split(".");
+  return rm === m && (rg === g || (rg === "quick" && g !== "royale") || (g === "quick" && rg !== "royale"));
+};
 export class LobbyCore {
   constructor(now = () => Date.now(), waitMs = PVP.WAIT_MS) { this.rooms = []; this.now = now; this.waitMs = waitMs; }
   assign({ q, league, pid, seats }) {
@@ -34,12 +40,13 @@ export class LobbyCore {
     if (mine) return { room: mine.id, n: mine.pids.length };   // already waiting somewhere (a double tap, or a retry): same room, same seat
     let best = null;
     for (const r of this.rooms) {
-      if (r.q !== q || r.pids.length >= r.seats) continue;
+      if (!queueFits(r.q, q) || r.pids.length >= r.seats) continue;
       const age = t - r.t0, band = age < 10000 ? 0 : age < 20000 ? 1 : 2;
       if (Math.abs(r.league - league) > band) continue;
       if (!best || r.pids.length > best.pids.length || (r.pids.length === best.pids.length && r.t0 < best.t0)) best = r;
     }
     if (!best) { best = { id: rid(), q, league, seats, t0: t, pids: [] }; this.rooms.push(best); }
+    if (best.q.startsWith("quick.") && !q.startsWith("quick.")) best.q = q;   // a Quick Match room takes the mode of the first pilot who picked one
     best.pids.push(pid);
     return { room: best.id, n: best.pids.length };
   }
@@ -77,12 +84,13 @@ export class RoomCore {
       this.later(this.o.WAIT_MS, () => this.waitOver());
     }
     if (this.phase !== "wait") return { ok: false, err: "started" };
-    if (q.g !== this.q.g || q.m !== this.q.m) return { ok: false, err: "queue" };
+    if (!queueFits(this.q.g + "." + this.q.m, q.g + "." + q.m)) return { ok: false, err: "queue" };
+    if (this.q.g === "quick" && q.g !== "quick") this.q.g = q.g;   // Quick Match room: the first pilot with a mode sets it
     const have = this.humans().find((s) => s.pid === pid);
     if (have) { Object.assign(have, { name, L, power, league }); return { ok: true, seat: have.idx, wait: this.t0 + this.o.WAIT_MS - now }; }
     const idx = this.order.find((i) => !this.seats[i]);
     if (idx === undefined) return { ok: false, err: "full" };
-    this.seats[idx] = { pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false };
+    this.seats[idx] = { pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
     return { ok: true, seat: idx, wait: this.t0 + this.o.WAIT_MS - now };
   }
   connect(pid, sock) {
@@ -164,6 +172,10 @@ export class RoomCore {
   startVs() {
     const R = this.R, now = this.io.now();
     this.phase = "vs";
+    if (this.q.g === "quick") {   // only Quick Match pilots: a random live mode for this team size
+      const gs = R.liveModes(this.io.day()).filter((g) => g !== "royale");
+      this.q.g = gs[Math.floor(Math.random() * gs.length)];
+    }
     this.series = this.q.g === "arena" && this.q.m === "1v1";
     this.sim = createSim(this.host());
     const maps = this.sim.R.MAP_REAL, map = this.o.MAP || maps[Math.floor(Math.random() * maps.length)];   // live matches pick the map (tests can fix it)
@@ -260,7 +272,7 @@ export class RoomCore {
     const won = !quit && o.won, drawn = !quit && o.drawn;
     const base = quit ? 0 : Math.round(g === "royale" ? R.ROYALE_PTS[o.place - 1] : (won ? M.win : drawn ? M.draw : M.loss) * zx);
     const st = u.st || {}, se = this.sim.series;
-    const res = { live: true, won, drawn, quit, place: o.place, top3, score: o.score, g, m, base, modeX: zx, featured: feat, featX: fxm,
+    const res = { live: true, quick: !!s.quick, won, drawn, quit, place: o.place, top3, score: o.score, g, m, base, modeX: zx, featured: feat, featX: fxm,
       league: { n: brk.n, key: brk.key, mult: brk.mult, c: brk.c, i: brk.i },
       stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0 },
       series: se ? { w: u.team === 0 ? [se.w[0], se.w[1]] : [se.w[1], se.w[0]] } : null, cls: u.cls };
@@ -411,7 +423,7 @@ export async function pvpJoin(env, a) {
   const R = rules(), b = a.b, now = Date.now();
   if (Number(b.v) !== R.PVP_V) return { status: 409, body: { error: "update" } };
   const g = String(b.g || ""), m = String(b.m || "");
-  if (!R.liveModes(dayOf(now)).includes(g) && !(env.PVP_ALL && R.GT_ORDER.includes(g))) return { status: 400, body: { error: "not live" } };   // PVP_ALL: local tests of every mode
+  if (g !== "quick" && !R.liveModes(dayOf(now)).includes(g) && !(env.PVP_ALL && R.GT_ORDER.includes(g))) return { status: 400, body: { error: "not live" } };   // quick: any live mode, picked when the room starts   // PVP_ALL: local tests of every mode
   if (g === "royale" ? m !== "solo" : !R.MODES[m]) return { status: 400, body: { error: "mode" } };
   const rec = (await dbGet(env, `players/${a.pid}`).catch(() => null)) || {};
   const L = await checkLoadout(env, R, b.L, rec, a.pid);

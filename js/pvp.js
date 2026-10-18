@@ -13,12 +13,24 @@ const pvpQueue=gk=>gk==='royale'?'solo':modeKey();
 // live queues: Arena, Moon Zone and today's featured mode; you need Telegram (the server checks your login) and one match played
 const isLiveMode=gk=>liveModes(dayNum()).includes(gk)||(!!window.LUNAR_LIVE_ALL&&GT_ORDER.includes(gk));   // LUNAR_LIVE_ALL: local tests of every mode
 function pvpEligible(gk){return IN_TG&&(save.mp||0)>=1&&typeof WebSocket==='function'&&!window.LUNAR_NO_PVP&&isLiveMode(gk);}   // LUNAR_NO_PVP: the AI-match tests
+// Quick Match: one live queue per team size. Any live mode, picked when the match starts; it also meets players
+// queued for a specific live mode at your team size, so it's the fastest way to find real pilots
+let lastQuick=false;   // the last match came from Quick Match (Play again repeats it)
+const quickOK=()=>IN_TG&&(save.mp||0)>=1&&typeof WebSocket==='function'&&!window.LUNAR_NO_PVP;
+const quickModes=()=>liveModes(dayNum()).filter(g=>g!=='royale');
+function quickMatch(){
+ if(state==='play'||(pvp&&pvp.phase==='find'))return;
+ closeAll();if(pvp)pvpClose();
+ lastQuick=true;
+ if(quickOK()){pvpFind('quick');return;}
+ const gs=quickModes();prepareMatch(gs[(Math.random()*gs.length)|0]);showVS();   // outside Telegram: a random live mode against AI
+}
 function pvpSend(o){const P=pvp;if(P&&P.sock&&P.sock.readyState===1)try{P.sock.send(JSON.stringify(o));}catch(e){}}
 
 // ---- finding opponents ----
 function pvpFind(gk){
  const m=pvpQueue(gk);
- pvp={phase:'find',live:false,q:{g:gk,m},t0:Date.now(),n:1,cap:gk==='royale'?6:MODES[m].n*2,left:30000,snaps:[],evq:[],off:null,jit:0,delay:110,tp:0,sent:null,lastSnapAt:0,retry:0,id:Math.random()};
+ pvp={phase:'find',live:false,q:{g:gk,m},quick:gk==='quick',t0:Date.now(),n:1,cap:gk==='royale'?6:MODES[m].n*2,left:30000,snaps:[],evq:[],off:null,jit:0,delay:110,tp:0,sent:null,lastSnapAt:0,retry:0,id:Math.random()};
  const P=pvp;
  showFind();
  api('/api/pvp/join',{v:PVP_V,g:gk,m,L:myLoadout()}).then(r=>{
@@ -30,7 +42,7 @@ function pvpFind(gk){
 }
 function findHTML(){
  const P=pvp,q=P.q,left=Math.max(0,Math.ceil((P.left-(Date.now()-P.t0))/1000)),slots=Array.from({length:P.cap},(_,i)=>'<i class="'+(i<P.n?'on':'')+'"></i>').join('');
- return '<div class="grow"></div><div class="fhead"><b>'+esc(modeName(q.g,q.m==='solo'?modeKey():q.m))+'</b><span>'+(q.g==='arena'&&q.m==='1v1'?'Best of 3, live':'Live match')+(q.g===featuredMode()?', featured +25%':'')+'</span></div>'+
+ return '<div class="grow"></div><div class="fhead">'+(P.quick?'<b>Quick Match '+esc(q.m)+'</b><span>Any live mode, random map</span>':'<b>'+esc(modeName(q.g,q.m==='solo'?modeKey():q.m))+'</b><span>'+(q.g==='arena'&&q.m==='1v1'?'Best of 3, live':'Live match')+(q.g===featuredMode()?', featured +25%':'')+'</span>')+'</div>'+
   '<div class="radar" aria-hidden="true"><span class="sweep"></span><b class="num" id="fCount">'+left+'</b></div>'+
   '<p class="ftitle">Finding live pilots</p>'+
   '<div class="slots" aria-label="'+P.n+' of '+P.cap+' pilots">'+slots+'</div>'+
@@ -47,7 +59,8 @@ function closeFind(){clearInterval(findTimer);findTimer=null;const ov=findOv('fi
 function pvpCancel(){const P=pvp;if(!P)return;pvpSend({k:'q'});pvpClose();}
 // no live match: the same mode against AI pilots, on the phone
 function pvpFallback(msg){
- const g=pvp&&pvp.q.g;pvpClose();closeFind();
+ let g=pvp&&pvp.q.g;if(g==='quick'){const gs=quickModes();g=gs[(Math.random()*gs.length)|0];}
+ pvpClose();closeFind();
  if(msg)showToast(msg);
  prepareMatch(g);showVS();
 }

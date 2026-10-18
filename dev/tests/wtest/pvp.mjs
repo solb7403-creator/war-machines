@@ -6,7 +6,7 @@ import { makeDB } from './fakedb.mjs';
 import { makeNamespace, installWebSocketPair } from './fakedo.mjs';
 buildSim();
 installWebSocketPair();
-const { RoomCore, LobbyCore, PVP, rules, checkLoadout, PvpRoom, PvpLobby } = await import('../../../worker/src/pvp.js');
+const { RoomCore, LobbyCore, PVP, rules, checkLoadout, PvpRoom, PvpLobby, queueFits } = await import('../../../worker/src/pvp.js');
 const R = rules();
 let ok = 0, bad = 0;
 const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
@@ -70,6 +70,30 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   now = 40000;
   t(lb.assign({ q: 'arena.1v1', league: 0, pid: 'H', seats: 2 }).room !== c.room, 'lobby: rooms past their wait close');
   t(lb.stats().open >= 1, 'lobby stats');
+}
+
+// ================= Quick Match: one pool per team size =================
+{
+  t(queueFits('quick.1v1', 'arena.1v1') && queueFits('zone.2v2', 'quick.2v2') && queueFits('quick.3v3', 'quick.3v3'), 'quick fits live modes of its size');
+  t(!queueFits('quick.1v1', 'arena.2v2') && !queueFits('quick.1v1', 'royale.solo') && !queueFits('royale.solo', 'quick.solo') && !queueFits('arena.1v1', 'zone.1v1'), 'quick never crosses sizes, Last Standing or two set modes');
+  let now = 0;
+  const lb = new LobbyCore(() => now, 30000);
+  const a = lb.assign({ q: 'quick.1v1', league: 0, pid: 'QA', seats: 2 }), b = lb.assign({ q: 'zone.1v1', league: 0, pid: 'QB', seats: 2 });
+  t(a.room === b.room && lb.rooms.find((r) => r.id === a.room).q === 'zone.1v1', 'quick room takes the mode of a mode pilot');
+  const c = lb.assign({ q: 'arena.2v2', league: 0, pid: 'QC', seats: 4 }), d = lb.assign({ q: 'quick.2v2', league: 0, pid: 'QD', seats: 4 });
+  t(c.room === d.room && lb.rooms.find((r) => r.id === c.room).q === 'arena.2v2', 'quick pilot joins a waiting mode room');
+  // rooms: quick + mode pilot = that mode; two quick pilots = a random live mode (never Last Standing)
+  const r1 = rig(); seat(r1.room, 'qa', { g: 'quick', m: '1v1' }); seat(r1.room, 'qb', { g: 'zone', m: '1v1' });
+  t(r1.room.q.g === 'zone' && !seat(r1.room, 'qc', { g: 'arena', m: '1v1' }).ok, 'room adopts the mode; other modes refused');
+  const r2 = rig(), S2 = {};
+  for (const p of ['qa', 'qb']) { seat(r2.room, p, { g: 'quick', m: '2v2' }); S2[p] = sock(p); r2.room.connect(p, S2[p]); }
+  await r2.run(PVP.WAIT_MS + 50);
+  const gq = last(S2.qa, 'go');
+  t(gq && R.liveModes(Math.floor(r2.now / 864e5)).includes(gq.g) && gq.g !== 'royale' && gq.m === '2v2', 'two quick pilots: random live mode ' + (gq && gq.g));
+  await r2.run(PVP.VS_MS + 100); say(r2.room, 'qa', S2.qa, { k: 'q' });
+  await r2.run(100);
+  const rq = last(S2.qa, 'res');
+  t(rq && rq.r.quick === true && rq.r.g === gq.g, 'result marks Quick Match');
 }
 
 // ================= 1v1 arena: the full life of a match =================
