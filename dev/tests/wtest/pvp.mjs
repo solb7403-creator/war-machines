@@ -212,6 +212,7 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   const exp = rB.r.won ? Math.round(R.MODES['1v1'].win * R.SERIES_X * (rB.r.featured ? R.FEATURED_X : 1)) + 20 : rB.r.drawn ? Math.round(R.MODES['1v1'].draw * R.SERIES_X * (rB.r.featured ? R.FEATURED_X : 1)) : Math.round(R.MODES['1v1'].loss * R.SERIES_X * (rB.r.featured ? R.FEATURED_X : 1));
   t(rB.r.pts === exp, 'server points: ' + rB.r.pts + ' expected ' + exp);
   t(rB.r.series.w[0] === (rB.r.won ? 2 : rB.r.series.w[0]), 'series score from your side');
+  t(typeof rB.r.stats.low === 'number' && rB.r.stats.low >= 0 && rB.r.stats.low <= 1 && (rB.r.stats.taken > 0 ? rB.r.stats.low < 1 : true), 'lowest health in the stats (quests) ' + JSON.stringify(rB.r.stats));
   await run(100);
   t(B2.msgs.some((m) => m.k === 'end'), 'end message after results');
   await run(5000);

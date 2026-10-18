@@ -71,7 +71,8 @@ function localEnd(forced){
 }
 // everything after the points: wins and losses, pass XP, quests, the results screen. Shared with live matches
 function afterMatch(o){
- const {won,drawn,top3,feat}=o,st=o.st||{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0},M=MODES[o.mode]||MODES['1v1'];
+ const {won,drawn,top3,feat}=o,st=o.st||{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0,low:0},M=MODES[o.mode]||MODES['1v1'];
+ const low=typeof st.low==='number'?st.low:0,clean=won&&low>0,sw=o.seriesW||(series&&series.w);   // low: your lowest health all match (0 = destroyed at least once)
  endAt=performance.now();
  if(won)save.wins=(save.wins||0)+1;else if(!drawn&&!top3)save.losses=(save.losses||0)+1;
  save.mp=(save.mp||0)+1;
@@ -80,11 +81,14 @@ function afterMatch(o){
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
  qp('q_win1',won?1:0);qp('q_win3',won?1:0);
  qp('q_dmg',st.dmg,true);qp('q_super',st.sup,true);qp('q_box',st.box,true);
- if(won&&st.taken<600)qp('q_clean',1);
- const dqBefore=dailyQuests().filter(q=>q.done).map(q=>q.id);
- dqProgress({wins:won?1:0,plays:1,dmg:Math.round(st.dmg),boxes:st.box,sups:st.sup,kills:st.kills,zoneWins:won&&matchG==='zone'?1:0,teamWins:won&&M.n>1&&!storm?1:0,caps:st.caps,overpass:curMap==='overpass'?1:0,
-  crystals:st.cry,stars:st.stars,top3:top3?1:0,featured:feat?1:0});
- const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id));
+ if(won&&low>=0.2)qp('q_clean',1);   // never below 20% health
+ const dqBefore=dailyQuests().filter(q=>q.done).map(q=>q.id),wqBefore=weeklyQuests().filter(q=>q.done).map(q=>q.id);
+ const W=g=>won&&matchG===g?1:0;
+ dqProgress({wins:won?1:0,plays:1,dmg:Math.round(st.dmg),boxes:st.box,sups:st.sup,kills:st.kills,zoneWins:W('zone'),teamWins:won&&M.n>1&&!storm?1:0,caps:st.caps,
+  crystals:st.cry,stars:st.stars,top3:top3?1:0,featured:feat?1:0,featWins:won&&feat?1:0,quick:typeof lastQuick!=='undefined'&&lastQuick?1:0,
+  cleanWins:clean?1:0,streak:won?(save.streak||0):0,ovpWins:won&&curMap==='overpass'?1:0,sweeps:won&&sw&&sw[0]>=2&&sw[1]===0?1:0,
+  royaleWins:W('royale'),bountyWins:W('bounty'),crystalWins:W('crystal'),day:dayNum(),winMode:won?matchG:null});
+ const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id)).concat(weeklyQuests().filter(q=>q.done&&!wqBefore.includes(q.id)));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
  lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,
   before:o.before,after:save.earned||0,stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),cry:st.cry,stars:st.stars},

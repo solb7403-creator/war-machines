@@ -65,6 +65,9 @@ const FEATURE_ROT=['crystal','royale','bounty','crystal','bounty','royale','zone
 const featuredOn=day=>FEATURE_ROT[((day%7)+7)%7];
 const LIVE_BASE=['arena','zone'];   // always live; the featured mode joins them each day. Other modes stay vs AI
 const liveModes=day=>LIVE_BASE.includes(featuredOn(day))?LIVE_BASE.slice():LIVE_BASE.concat(featuredOn(day));
+// ---- daily deal: one rare or epic crate a day at 30% off, every currency. The server allows the lower Stars price on that crate only ----
+const DEAL_ROT=[['weapon',1],['gem',2],['chassis',1],['weapon',2],['gem',1],['chassis',2]],DEAL_OFF=0.3;   // by UTC day
+const dealOn=day=>{const r=DEAL_ROT[((day%DEAL_ROT.length)+DEAL_ROT.length)%DEAL_ROT.length];return {tk:r[0],ri:r[1]};};
 // ---- match modes: team sizes, game types and what they pay (the PvP server scores with these too) ----
 const MODES={
  '1v1':{n:1,label:'1v1',win:125,draw:60,loss:30},

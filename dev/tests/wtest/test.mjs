@@ -90,6 +90,14 @@ t((await mod.sendReminders(env, d1.getTime())) === 0, 'no reminders off-hours');
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'pass', tk: '1', price: 99 }); t(s === 200 && r.stars === 799, 'pass invoice ' + JSON.stringify(r));
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'gem', ri: 0, price: 4 }); t(s === 200 && r.stars === 250, 'common crate 250');
 const lastInv = tgCalls.filter(c => c[0] === 'createInvoiceLink').pop(); t(/Common Gem Cache/.test(lastInv[1].title), 'invoice title');
+{ // daily deal: today's crate may be 30% off; any other crate at that price is charged in full
+  const { RULES } = await import('../../../worker/src/sim.gen.js');
+  const D = RULES.dealOn(Math.floor(Date.now() / 86400000)), base = [4, 8, 23][D.ri], st = [250, 500, 1500][D.ri];
+  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: D.tk, ri: D.ri, price: Math.round(base * 0.7 * 100) / 100 }); t(s === 200 && r.stars === Math.round(st * 0.7), 'deal crate 30% off ' + JSON.stringify(r));
+  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: D.tk, ri: D.ri, price: Math.round(base * 0.5 * 100) / 100 }); t(s === 200 && r.stars === st, 'deal floor is 30%, not more ' + JSON.stringify(r));
+  const O = ['weapon', 'chassis', 'gem'].find((k) => k !== D.tk);
+  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: O, ri: D.ri, price: Math.round(base * 0.7 * 100) / 100 }); t(s === 200 && r.stars === st, 'no deal on other crates ' + JSON.stringify(r));
+}
 const cmd = async (text) => { const n0 = tgCalls.length; await worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec }, body: JSON.stringify({ message: { from: { id: 333 }, chat: { id: 333, type: 'private' }, text } }) }), env); return tgCalls.slice(n0); };
 let out = await cmd('/paysupport'); t(out.length === 1 && /@LunarBattle/.test(out[0][1].text) && /Telegram support can't help/.test(out[0][1].text), 'paysupport reply');
 out = await cmd('/terms'); t(out.length === 1 && /terms\.html/.test(out[0][1].text), 'terms reply');

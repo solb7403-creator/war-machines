@@ -274,7 +274,7 @@ export class RoomCore {
     const st = u.st || {}, se = this.sim.series;
     const res = { live: true, quick: !!s.quick, won, drawn, quit, place: o.place, top3, score: o.score, g, m, base, modeX: zx, featured: feat, featX: fxm,
       league: { n: brk.n, key: brk.key, mult: brk.mult, c: brk.c, i: brk.i },
-      stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0 },
+      stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0, low: Math.round((st.low ?? 1) * 1000) / 1000 },
       series: se ? { w: u.team === 0 ? [se.w[0], se.w[1]] : [se.w[1], se.w[0]] } : null, cls: u.cls };
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak

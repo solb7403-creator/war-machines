@@ -240,7 +240,7 @@ const QUESTS=[
  {id:'q_dmg',n:'Heavy hitter',d:'Deal 2,500 damage in one match',pts:100,goal:2500},
  {id:'q_super',n:'Overcharged',d:'Fire your super twice in one match',pts:100,goal:2},
  {id:'q_box',n:'Scavenger',d:'Grab 3 mystery boxes in one match',pts:75,goal:3},
- {id:'q_clean',n:'Untouchable',d:'Win a match taking under 600 damage',pts:150,goal:1},
+ {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 20% health',pts:250,goal:1},
  {id:'q_wiki',n:'Read the wiki',d:'How to play, the airdrop and tokenomics',pts:200,goal:1,link:'wiki'},
  {id:'q_x',n:'Follow on X',d:'Updates and announcements',pts:50,goal:1,link:'x'},
  {id:'q_tg',n:'Join the channel',d:'Airdrop news first',pts:50,goal:1,link:'tg'}].filter(q=>!q.link||({wiki:WIKI_URL,x:X_URL,tg:TG_URL})[q.link]);
@@ -266,50 +266,124 @@ function visitLinkQuest(id){
  e.p=Q.goal;e.done=true;store();
 }
 
-// ---- daily quests: 3 a day, picked per player per day; finish all 3 for a bonus. Weekly chest for 12 dailies. ----
+// ---- daily quests: 4 a day (2 easy, 1 medium, 1 hard), picked per player per day; finish all 4 for a bonus.
+// 1 free swap a day (2 with the premium pass). Weekly: 5 quests a week, plus a chest for claiming 20 dailies.
+// Your login streak boosts every quest's points (see questBoost). Stats come from afterMatch (match.js).
 const DQ_POOL=[
- {id:'win3',t:'Win 3 matches',goal:3,pts:150,st:'wins'},
- {id:'play5',t:'Play 5 matches',goal:5,pts:100,st:'plays'},
- {id:'dmg6k',t:'Deal 6,000 damage',goal:6000,pts:120,st:'dmg'},
- {id:'box4',t:'Grab 4 mystery boxes',goal:4,pts:100,st:'boxes'},
- {id:'sup4',t:'Fire 4 supers',goal:4,pts:100,st:'sups'},
- {id:'kill6',t:'Destroy 6 enemy tanks',goal:6,pts:150,st:'kills'},
- {id:'zwin',t:'Win a Moon Zone match',goal:1,pts:150,st:'zoneWins'},
- {id:'twin',t:'Win a 2v2 or 3v3 match',goal:1,pts:150,st:'teamWins'},
- {id:'cap3',t:'Capture the Moon Zone 3 times',goal:3,pts:120,st:'caps'},
- {id:'ovp',t:'Play a match on Overpass',goal:1,pts:75,st:'overpass'},
- {id:'cry10',t:'Collect 10 crystals in Crystal Rush',goal:10,pts:120,st:'crystals'},
- {id:'bnt5',t:'Earn 5 bounty stars',goal:5,pts:120,st:'stars'},
- {id:'top3',t:'Finish top 3 in Last Standing',goal:1,pts:150,st:'top3'},
- {id:'feat2',t:'Play 2 featured-mode matches',goal:2,pts:100,st:'featured'}];
-const DQ_ALL_BONUS=200,WQ_GOAL=12,WQ_PTS=1500;
+ {id:'play4',lv:0,t:'Play 4 matches',goal:4,pts:100,st:'plays'},
+ {id:'win2',lv:0,t:'Win 2 matches',goal:2,pts:120,st:'wins'},
+ {id:'box3',lv:0,t:'Grab 3 mystery boxes',goal:3,pts:100,st:'boxes'},
+ {id:'sup3',lv:0,t:'Fire 3 supers',goal:3,pts:100,st:'sups'},
+ {id:'dmg6k',lv:0,t:'Deal 6,000 damage',goal:6000,pts:100,st:'dmg'},
+ {id:'kill4',lv:0,t:'Destroy 4 enemy tanks',goal:4,pts:100,st:'kills'},
+ {id:'feat1',lv:0,t:'Play a featured-mode match',goal:1,pts:100,st:'featured'},
+ {id:'quick1',lv:0,t:'Play a Quick Match',goal:1,pts:100,st:'quick'},
+ {id:'win4',lv:1,t:'Win 4 matches',goal:4,pts:180,st:'wins'},
+ {id:'kill10',lv:1,t:'Destroy 10 enemy tanks',goal:10,pts:170,st:'kills'},
+ {id:'dmg15k',lv:1,t:'Deal 15,000 damage',goal:15000,pts:170,st:'dmg'},
+ {id:'kill4m',lv:1,t:'Destroy 4 tanks in one match',goal:4,pts:180,st:'kills',mx:1},
+ {id:'nodie',lv:1,t:'Win without being destroyed',goal:1,pts:170,st:'cleanWins'},
+ {id:'zwin',lv:1,t:'Win a Moon Zone match',goal:1,pts:160,st:'zoneWins'},
+ {id:'cap3',lv:1,t:'Capture the Moon Zone 3 times',goal:3,pts:160,st:'caps'},
+ {id:'cry10',lv:1,t:'Collect 10 crystals in Crystal Rush',goal:10,pts:160,st:'crystals'},
+ {id:'bnt5',lv:1,t:'Earn 5 bounty stars',goal:5,pts:160,st:'stars'},
+ {id:'top3',lv:1,t:'Finish top 3 in Last Standing',goal:1,pts:160,st:'top3'},
+ {id:'twin',lv:1,t:'Win a 2v2 or 3v3 match',goal:1,pts:160,st:'teamWins'},
+ {id:'ovpw',lv:1,t:'Win a match on Overpass',goal:1,pts:160,st:'ovpWins'},
+ {id:'win6',lv:2,t:'Win 6 matches',goal:6,pts:280,st:'wins'},
+ {id:'row3',lv:2,t:'Win 3 matches in a row',goal:3,pts:280,st:'streak',mx:1},
+ {id:'nodie2',lv:2,t:'Win 2 matches without being destroyed',goal:2,pts:280,st:'cleanWins'},
+ {id:'sweep',lv:2,t:'Win a 1v1 Arena match 2-0',goal:1,pts:260,st:'sweeps'},
+ {id:'ls1',lv:2,t:'Win a Last Standing match',goal:1,pts:300,st:'royaleWins'},
+ {id:'featw3',lv:2,t:'Win 3 featured-mode matches',goal:3,pts:260,st:'featWins'},
+ {id:'bntw2',lv:2,t:'Win 2 Bounty matches',goal:2,pts:260,st:'bountyWins'},
+ {id:'cryw2',lv:2,t:'Win 2 Crystal Rush matches',goal:2,pts:260,st:'crystalWins'}];
+const DQ_SLOTS=[0,0,1,2],DQ_LV=['Easy','Medium','Hard'],DQ_ALL_BONUS=250,DQ_SWAPS=1;
+// u: counts different values (days played, modes won), not a total. mx: best single match (or current win streak)
+const WQ_POOL=[
+ {id:'wdays',t:'Play on 5 different days',goal:5,pts:1500,st:'day',u:1},
+ {id:'wwin20',t:'Win 20 matches',goal:20,pts:1250,st:'wins'},
+ {id:'wplay35',t:'Play 35 matches',goal:35,pts:1000,st:'plays'},
+ {id:'wkill50',t:'Destroy 50 enemy tanks',goal:50,pts:1000,st:'kills'},
+ {id:'wdmg',t:'Deal 80,000 damage',goal:80000,pts:1000,st:'dmg'},
+ {id:'wmodes',t:'Win in 4 different modes',goal:4,pts:1000,st:'winMode',u:1},
+ {id:'wzone6',t:'Win 6 Moon Zone matches',goal:6,pts:1000,st:'zoneWins'},
+ {id:'wteam8',t:'Win 8 team matches (2v2 or 3v3)',goal:8,pts:1000,st:'teamWins'},
+ {id:'wls2',t:'Win 2 Last Standing matches',goal:2,pts:1250,st:'royaleWins'},
+ {id:'wrow5',t:'Win 5 matches in a row',goal:5,pts:1250,st:'streak',mx:1},
+ {id:'wquick8',t:'Play 8 Quick Matches',goal:8,pts:1000,st:'quick'},
+ {id:'wfeat8',t:'Play 8 featured-mode matches',goal:8,pts:1000,st:'featured'},
+ {id:'wsup25',t:'Fire 25 supers',goal:25,pts:750,st:'sups'},
+ {id:'wbox30',t:'Grab 30 mystery boxes',goal:30,pts:750,st:'boxes'},
+ {id:'wclean5',t:'Win 5 matches without being destroyed',goal:5,pts:1000,st:'cleanWins'},
+ {id:'wcap15',t:'Capture the Moon Zone 15 times',goal:15,pts:1000,st:'caps'}];
+const WQ_N=5,PASS_XP_WQ=150,WQ_GOAL=20,WQ_PTS=2000;   // WQ_GOAL dailies open the weekly chest
+const DQ_BY={},WQ_BY={};DQ_POOL.forEach(q=>DQ_BY[q.id]=q);WQ_POOL.forEach(q=>WQ_BY[q.id]=q);
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+// login streak bonus on quest points: day 2 of your streak +5%, up to +30% from day 7. Counts once today's daily reward is claimed
+const QB_STEP=0.05,QB_MAX=0.3;
+const streakBoost=n=>Math.min(QB_MAX,QB_STEP*Math.max(0,n-1));
+function questBoost(){const L=loginState();return L.claimedToday?streakBoost(L.streak):0;}
+const qPts=n=>Math.round(n*(1+questBoost()));
+const swapsLeft=()=>{dailyQuests();return Math.max(0,DQ_SWAPS+(passState().prem?1:0)-(save.dq.sw||0));};
+function questRows(ids,p,c,BY){return ids.filter(id=>BY[id]).map(id=>{const Q=BY[id],v=p[id]||0;return {...Q,p:Math.min(v,Q.goal),done:v>=Q.goal,claimed:!!c[id]};});}
 function dailyQuests(){
  const d=dayNum();
- if(!save.dq||save.dq.d!==d){
-  const r=rng32(hashStr((playerKey())+':'+d)),pool=DQ_POOL.slice(),ids=[];
-  while(ids.length<3){const i=(r()*pool.length)|0;ids.push(pool.splice(i,1)[0].id);}
-  save.dq={d,ids,p:{},c:{},all:false};
+ if(!save.dq||save.dq.d!==d||save.dq.v!==2){
+  const r=rng32(hashStr((playerKey())+':'+d)),ids=[];
+  for(const lv of DQ_SLOTS){const pool=DQ_POOL.filter(q=>q.lv===lv&&!ids.includes(q.id));ids.push(pool[(r()*pool.length)|0].id);}
+  save.dq={v:2,d,ids,p:{},c:{},all:false,sw:0};
  }
- const w=weekNum();if(!save.wq||save.wq.w!==w)save.wq={w,n:0,claimed:false};
- return save.dq.ids.map(id=>{const Q=DQ_POOL.find(q=>q.id===id);const p=save.dq.p[id]||0;return {...Q,p:Math.min(p,Q.goal),done:p>=Q.goal,claimed:!!save.dq.c[id]};});
+ const w=weekNum();
+ if(!save.wq||save.wq.w!==w)save.wq={w,n:0,claimed:false};
+ if(!save.wk||save.wk.w!==w){
+  const r=rng32(hashStr((playerKey())+':w'+w)),pool=WQ_POOL.slice(1),ids=[WQ_POOL[0].id];   // "play on 5 days" every week
+  while(ids.length<WQ_N){const i=(r()*pool.length)|0;ids.push(pool.splice(i,1)[0].id);}
+  save.wk={w,ids,p:{},u:{},c:{}};
+ }
+ return questRows(save.dq.ids,save.dq.p,save.dq.c,DQ_BY);
+}
+function weeklyQuests(){dailyQuests();return questRows(save.wk.ids,save.wk.p,save.wk.c,WQ_BY);}
+function qAdd(p,u,Q,stats){   // one match's stats into one quest
+ const v=stats[Q.st];
+ if(Q.u){if(v===undefined||v===null||v===false)return;const s=u[Q.id]||(u[Q.id]=[]);if(!s.includes(v))s.push(v);p[Q.id]=s.length;return;}
+ if(!v)return;
+ p[Q.id]=Q.mx?Math.max(p[Q.id]||0,v):(p[Q.id]||0)+v;
 }
 function dqProgress(stats){   // called after every match with that match's stats
  dailyQuests();
- for(const id of save.dq.ids){const Q=DQ_POOL.find(q=>q.id===id);if(stats[Q.st])save.dq.p[id]=(save.dq.p[id]||0)+stats[Q.st];}
+ for(const id of save.dq.ids)if(DQ_BY[id])qAdd(save.dq.p,{},DQ_BY[id],stats);
+ for(const id of save.wk.ids)if(WQ_BY[id])qAdd(save.wk.p,save.wk.u,WQ_BY[id],stats);
+}
+// swap one unfinished daily for another of the same difficulty
+function swapDaily(id){
+ const qs=dailyQuests(),Q=qs.find(q=>q.id===id);
+ if(!Q||Q.done||Q.claimed||swapsLeft()<1)return null;
+ const pool=DQ_POOL.filter(q=>q.lv===Q.lv&&!save.dq.ids.includes(q.id)&&!(save.dq.was||[]).includes(q.id));
+ if(!pool.length)return null;
+ const N=pool[(Math.random()*pool.length)|0];
+ save.dq.ids[save.dq.ids.indexOf(id)]=N.id;delete save.dq.p[id];
+ save.dq.was=(save.dq.was||[]).concat(id);save.dq.sw=(save.dq.sw||0)+1;
+ store();fx('tap');return N;
 }
 function claimDaily(id){
  const qs=dailyQuests(),Q=qs.find(q=>q.id===id);
  if(!Q||!Q.done||Q.claimed)return 0;
  save.dq.c[id]=true;save.wq.n=(save.wq.n||0)+1;
- let n=awardPts(Q.pts);passXP(PASS_XP_QUEST);
- if(!save.dq.all&&qs.every(q=>q.claimed||q.id===id)){save.dq.all=true;n+=awardPts(DQ_ALL_BONUS);passXP(PASS_XP_ALL);}
+ let n=awardPts(qPts(Q.pts));passXP(PASS_XP_QUEST);
+ if(!save.dq.all&&qs.every(q=>q.claimed||q.id===id)){save.dq.all=true;n+=awardPts(qPts(DQ_ALL_BONUS));passXP(PASS_XP_ALL);}
+ store();fx('claim');return n;
+}
+function claimWeeklyQuest(id){
+ const Q=weeklyQuests().find(q=>q.id===id);
+ if(!Q||!Q.done||Q.claimed)return 0;
+ save.wk.c[id]=true;const n=awardPts(qPts(Q.pts));passXP(PASS_XP_WQ);
  store();fx('claim');return n;
 }
 function claimWeekly(){
  dailyQuests();
  if(save.wq.claimed||(save.wq.n||0)<WQ_GOAL)return null;
- save.wq.claimed=true;const n=awardPts(WQ_PTS);store();fx('claim');
+ save.wq.claimed=true;const n=awardPts(qPts(WQ_PTS));store();fx('claim');
  return {pts:n,reveal:doOpenBox('gem',1)};
 }
 // ---- Lunar Pass: a 28-day season with 30 tiers. Free track for everyone, premium track for pass owners.
@@ -422,8 +496,10 @@ const PSTARS={moonbeam:3300,skin:2000,starter:STARTER.stars}; // premium items i
 function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayNum():tk+ri;}
 // gear crates: x1, x2, x3 (only 3 items each). Gem caches: +25% per buy that day, resets daily
 function boxMult(tk,ri){if(ri===0)return 1;const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:Math.min(3,1+n);}   // Common crates are always 250 Stars / 4 TON
-function boxPrice(tk,ri){return Math.round(RPRICE[ri]*boxMult(tk,ri)*100)/100;}   // TON
-function boxStars(tk,ri){return Math.round(RSTARS[ri]*boxMult(tk,ri));}
+const isDeal=(tk,ri)=>{const D=dealOn(dayNum());return D.tk===tk&&D.ri===ri;};   // today's deal crate (rules.js): 30% off in every currency
+const dealX=(tk,ri)=>isDeal(tk,ri)?1-DEAL_OFF:1;
+function boxPrice(tk,ri,full){return Math.round(RPRICE[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri))*100)/100;}   // TON. full: before the deal
+function boxStars(tk,ri,full){return Math.round(RSTARS[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri)));}
 function boxPts(tk,ri){return RPTS[ri]||0;} // points price is flat
 function crateFound(tk,ri){if(tk==='gem')return 0;const ks=tk==='weapon'?WORDER:CHORDER;return ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;}
 function openBoxWithPoints(tk,ri){

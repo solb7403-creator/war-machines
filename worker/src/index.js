@@ -3,6 +3,7 @@
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
 import { DAILY_CAP, BUCKET_MAX, DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
+import { RULES } from "./sim.gen.js";
 export { PvpRoom, PvpLobby };
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -209,9 +210,11 @@ async function starsInvoice(env, b, user) {
   else return { status: 400, body: { error: "item" } };
   // only crates have repeat-buy pricing; everything else is a fixed price
   if (k !== "box") b.price = base;
-  // the game sends its escalated TON price; never below base, never absurdly above it
+  // the game sends its escalated TON price; never below base (today's deal crate: 30% off), never absurdly above it
+  const now = Date.now(), deal = k === "box" && [dayOf(now), dayOf(now - 10 * 60 * 1000)].some((d) => { const D = RULES.dealOn(d); return D.tk === tk && D.ri === ri; });
+  const floor = deal ? base * (1 - RULES.DEAL_OFF) : base;
   let price = Number(b.price || base);
-  if (!(price >= base)) price = base;
+  if (!(price >= floor - 0.005)) price = base;
   if (price > base * 10) price = base * 10;
   const stars = Math.max(1, Math.round(starBase * (price / base)));
   const nonce = Math.random().toString(36).slice(2, 10);
@@ -304,8 +307,8 @@ export async function sendReminders(env, now = Date.now()) {
     if (p && p.ld === d) { await dbPatch(env, `ntf/${pid}`, { last: d }); continue; } // already played today
     const streak = p && p.ld === d - 1 ? p.sk || 0 : 0;
     const text = streak >= 2
-      ? `☾ Your ${streak}-day streak ends at midnight UTC. Your daily reward is waiting, pilot.`
-      : "☾ Your daily reward is ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
+      ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
+      : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
     const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
     // blocked or deleted chats switch reminders off
     await dbPatch(env, `ntf/${pid}`, r && r.ok ? { last: d } : { last: d, on: 0 });

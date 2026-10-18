@@ -308,7 +308,7 @@ function pvpResult(r){
  const st=r.stats||{};
  afterMatch({won:r.won,drawn:r.drawn,place:r.place,score:r.score,mode:r.m==='solo'?modeKey():r.m,feat:r.featured,top3:r.top3,base:r.base,modeX:r.modeX,featX:r.featX,
   league:r.league,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded||0,before,live:true,quit:r.quit,seriesW:r.series&&r.series.w,
-  st:{dmg:st.dmg||0,sup:st.sups||0,box:st.boxes||0,taken:st.taken||0,kills:st.kills||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0}});
+  st:{dmg:st.dmg||0,sup:st.sups||0,box:st.boxes||0,taken:st.taken||0,kills:st.kills||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?st.low:0}});
 }
 // leaving mid-match: a loss, no points. On the VS screen it costs nothing (an AI pilot takes the seat)
 function pvpLeave(){const P=pvp;if(!P)return;P.quitting=true;pvpSend({k:'q'});const s=P.sock;pvpClose();if(s)try{s.close(1000,'left');}catch(e){}}

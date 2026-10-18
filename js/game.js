@@ -211,7 +211,7 @@ function simStart(){
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;cry=null;storm=null;
  units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
-  u.st=u.hum||u.pid?{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0}:null;});   // match stats for every human (quests, results)
+  u.st=u.hum||u.pid?{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
  if(matchG==='royale'){const c=freeSpot(10+(Math.random()-0.5)*4,16+(Math.random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
@@ -338,7 +338,7 @@ const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+b
 function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const wasAlive=r.hp>0;
  r.hp-=amt;r.flash=0.08;r.calm=0;
- if(r.st)r.st.taken+=amt;
+ if(r.st){r.st.taken+=amt;const f=Math.max(0,r.hp)/r.mhp;if(f<r.st.low)r.st.low=f;}
  ev('h',r.id,amt,kind||0,crit?1:0,direct?1:0,src?src.id:-1,bid||0);
  for(const b of r.buffs)b.taken+=amt;
  r.buffs=r.buffs.filter(b=>b.taken<BUFF_LIFE);   // buff wears off after enough damage taken

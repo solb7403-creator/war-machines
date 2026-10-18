@@ -56,7 +56,7 @@ function setTab(t){
 function questsAlert(){
  if(!loginState().claimedToday)return true;
  if(passReady())return true;
- if(dailyQuests().some(q=>q.done&&!q.claimed))return true;
+ if(dailyQuests().some(q=>q.done&&!q.claimed)||weeklyQuests().some(q=>q.done&&!q.claimed))return true;
  if(!save.wq.claimed&&(save.wq.n||0)>=WQ_GOAL)return true;
  if(QUESTS.some(q=>{const e=save.q[q.id];return e&&e.done&&!e.claimed;}))return true;
  return refPending()>0;
@@ -110,13 +110,14 @@ const daysLeft=()=>Math.max(1,Math.ceil(seasonEndMs()/864e5));
 // ---------- PLAY ----------
 function playNudge(){
  const L=loginState();
- if(!L.claimedToday)return {gem:'★',b:'Daily reward ready',s:'+'+fmtNum(L.reward)+' points, day '+(L.slot+1)+' of 7',act:'login'};
- const dq=dailyQuests().find(q=>q.done&&!q.claimed);
- if(dq)return {gem:'✓',b:'Quest complete',s:dq.t+': +'+dq.pts+' points',act:'tab',arg:'quests'};
+ if(!L.claimedToday){const nb=streakBoost(L.next);return {gem:'★',b:'Daily reward ready',s:'+'+fmtNum(L.reward)+' points, day '+(L.slot+1)+' of 7'+(nb?', +'+Math.round(nb*100)+'% quest points':''),act:'login'};}
+ const dq=dailyQuests().find(q=>q.done&&!q.claimed)||weeklyQuests().find(q=>q.done&&!q.claimed);
+ if(dq)return {gem:'✓',b:'Quest complete',s:dq.t+': +'+fmtNum(qPts(dq.pts))+' points',act:'tab',arg:'quests'};
  const pr=passReady();
  if(pr)return {gem:String(passTier()),b:'Lunar Pass reward ready',s:pr+(pr===1?' reward':' rewards')+' to claim',act:'pass'};
  const fm=featuredMode();
  if(gtypeKey()!==fm&&save.featSeen!==dayNum()&&(save.mp||0)>=2)return {svg:ICON[fm],b:'Featured today: '+GTYPES[fm].label,s:'+25% points and +10 pass XP a match. Tap to switch.',act:'feat'};
+ if(save.dealSeen!==dayNum()&&(save.mp||0)>=3){const D=dealOn(dayNum());return {gem:'%',b:'Today’s deal: 30% off',s:crateName(D.tk,D.ri)+' until 00:00 UTC',act:'deal'};}
  const u=nextUp();
  if(u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
  if(IN_TG&&(save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points for each friend who keeps playing',act:'share'};
@@ -183,15 +184,18 @@ function renderShop(){
  const cur=save.payCur;
  const crate=(tk,ri)=>{const f=crateFound(tk,ri);
   return '<button class="crate" data-act="crate" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
-   '<div class="p">'+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</div><div class="f">'+(tk==='gem'?(boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';};
+   '<div class="p">'+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</div><div class="f">'+(isDeal(tk,ri)?'<span class="dealf">30% off today</span>':tk==='gem'?(boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';};
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
  const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const pend=save.pendingSol||save.pendingTx;
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
   '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
+  (()=>{const D=dealOn(dayNum());
+   return '<button class="deal" data-act="crate" data-arg="'+D.tk+':'+D.ri+'"><canvas data-art="crate:'+D.tk+':'+D.ri+'"></canvas><div class="grow"><span class="tag">30% off today</span><h4>'+crateName(D.tk,D.ri)+'</h4>'+
+    '<p>A new deal every day. This one ends in '+fmtDur(msToDailyReset())+'.</p><div class="p"><s>'+priceLabel(boxPrice(D.tk,D.ri,true),boxStars(D.tk,D.ri,true))+'</s> '+priceLabel(boxPrice(D.tk,D.ri),boxStars(D.tk,D.ri))+'</div></div></button>';})()+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
-  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
+  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches, plus an extra daily quest swap. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
@@ -223,7 +227,7 @@ function openPass(){
    return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r))+'</span>'+
     (claimed?'<b class="ok">✓</b>':got&&!locked?'<button class="btn sm btn-gold" data-act="claimpass" data-arg="'+track+':'+i+'">Claim</button>':'')+'</div>';};
   let rows='';for(let i=1;i<=PASS_TIERS;i++)rows+='<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';
-  return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+' ends in '+daysLeft()+(daysLeft()===1?' day':' days')+'. XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all 3 +'+PASS_XP_ALL+'.</p>'+
+  return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+' ends in '+daysLeft()+(daysLeft()===1?' day':' days')+'. XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all '+DQ_SLOTS.length+' +'+PASS_XP_ALL+', each weekly quest +'+PASS_XP_WQ+'.</p>'+
    '<div class="pxp"><b class="num">Tier '+t+'</b><div class="bar"><i style="width:'+(t>=PASS_TIERS?100:Math.round(xpIn/PASS_XP*100))+'%"></i></div><span class="num">'+(t>=PASS_TIERS?'Done':xpIn+' / '+PASS_XP+' XP')+'</span></div>'+
    (P.prem?'<p class="passown">Premium unlocked for this season</p>':'<button class="btn btn-go block" style="margin-top:12px" data-act="buypass">Unlock premium for '+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><p class="dimtxt" style="margin-top:6px">Premium never gives points, so it can’t buy leaderboard rank. Rewards you’ve already reached unlock right away.</p>')+
    '<div class="phead"><span></span><span>Free</span><span>Premium</span></div><div class="ptiers">'+rows+'</div>';
@@ -233,14 +237,15 @@ function openPass(){
 
 // ---------- QUESTS ----------
 function renderQuests(){
- const L=loginState(),dq=dailyQuests(),wq=save.wq,t=tierIdx();
+ const L=loginState(),dq=dailyQuests(),wk=weeklyQuests(),wq=save.wq,t=tierIdx(),qb=questBoost(),nb=streakBoost(L.next),sw=swapsLeft();
  const cal=STREAK_PTS.map((p,i)=>{
   const got=i<L.slot||(L.claimedToday&&i===L.slot),today=!L.claimedToday&&i===L.slot;
   return '<div class="day'+(got?' got':'')+(today?' today':'')+(i===6?' big':'')+'"><small>Day '+(i+1)+'</small><b>'+(got?'✓':shortNum(p+TDAILY[t]))+'</b></div>';}).join('');
- const qRow=(q,act,sub)=>{const f=Math.min(1,q.p/q.goal);
+ const qRow=(q,act,sub,pts,swap)=>{const f=Math.min(1,q.p/q.goal);
   return '<div class="q'+(q.claimed?' done':'')+'"><div class="grow"><div class="t">'+esc(q.t)+'</div><div class="bar"><i style="width:'+Math.round(f*100)+'%"></i></div><div class="p">'+(sub||fmtNum(q.p)+' / '+fmtNum(q.goal))+'</div></div>'+
-   (q.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+(q.done?'btn-gold':'btn-quiet')+'" data-act="'+act+'" data-arg="'+q.id+'">+'+q.pts+'</button>')+'</div>';};
- const allDone=save.dq&&save.dq.all;
+   (swap&&!q.done&&!q.claimed?'<button class="btn sm btn-quiet swap" data-act="swapdq" data-arg="'+q.id+'" aria-label="Swap for another quest"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5"/></svg></button>':'')+
+   (q.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+(q.done?'btn-gold':'btn-quiet')+'" data-act="'+act+'" data-arg="'+q.id+'">+'+fmtNum(pts||q.pts)+'</button>')+'</div>';};
+ const allDone=save.dq&&save.dq.all,lvTag=q=>'<span class="lv l'+q.lv+'">'+DQ_LV[q.lv]+'</span>';
  const sq=squad(),active=sq.filter(r=>refStatus(r)[0]==='Active').length,pend=refPending();
  const recruits=sq.slice().sort((a,b)=>b.pts-a.pts).slice(0,5).map(r=>{const st=refStatus(r),o=refOwed(r),nx=REF_MS[o.m];
   return '<div class="q"><div class="grow"><div class="t">'+esc(r.n)+' <span class="dimtxt" style="color:'+st[1]+'">'+st[0]+'</span></div><div class="p">Day '+r.days+', '+fmtNum(r.pts)+' points'+(nx?'. Next: '+nx.n.toLowerCase():'')+'</div></div>'+(o.tot?'<span class="num" style="color:var(--gold)">+'+fmtNum(o.tot)+'</span>':'')+'</div>';}).join('');
@@ -251,11 +256,14 @@ function renderQuests(){
  return passCard()+sec('Daily reward','Streak: '+L.streak+(L.streak===1?' day':' days'))+
   '<div class="cal">'+cal+'</div>'+
   (L.claimedToday?'<button class="btn btn-quiet block off">Next reward in '+fmtDur(msToDailyReset())+'</button>':'<button class="btn btn-gold block" data-act="login">Claim day '+(L.slot+1)+': +'+fmtNum(L.reward)+' points'+(L.slot===6?' and a gem cache':'')+'</button>')+
-  '<p class="dimtxt" style="margin-top:6px">Missing a day restarts the streak. Higher tiers add +'+TDAILY[t]+' a day.</p>'+
+  '<div class="boost'+(qb?' on':'')+'"><b>'+(qb?'+'+Math.round(qb*100)+'% quest points today':L.claimedToday?'Come back tomorrow for +5% quest points':nb?'Claim to get +'+Math.round(nb*100)+'% quest points today':'Log in tomorrow for +5% quest points')+'</b>'+
+   '<span>Each streak day adds +5% to every daily and weekly quest, up to +30% from day 7. Missing a day restarts the streak. Higher tiers add +'+TDAILY[t]+' a day to the reward.</span></div>'+
   sec('Today’s quests','New in '+fmtDur(msToDailyReset()))+
-  '<div class="panel list">'+dq.map(q=>qRow(q,'claimdq')).join('')+'<div class="q'+(allDone?' done':'')+'"><div class="grow"><div class="t">Finish all 3</div><div class="p">Bonus on top of each quest</div></div><span class="num" style="color:'+(allDone?'var(--dust)':'var(--gold)')+'">'+(allDone?'Claimed':'+'+DQ_ALL_BONUS)+'</span></div></div>'+
-  sec('Weekly chest','Resets in '+fmtDur(msToWeeklyReset()))+
-  '<div class="panel"><div class="q"><div class="grow"><div class="t">Claim '+WQ_GOAL+' daily quests this week</div><div class="bar"><i style="width:'+Math.round(Math.min(1,(wq.n||0)/WQ_GOAL)*100)+'%;background:var(--gold)"></i></div><div class="p">'+Math.min(wq.n||0,WQ_GOAL)+' / '+WQ_GOAL+'. Chest: '+fmtNum(WQ_PTS)+' points and a rare gem cache</div></div>'+
+  '<div class="panel list">'+dq.map(q=>qRow(q,'claimdq',lvTag(q)+fmtNum(q.p)+' / '+fmtNum(q.goal),qPts(q.pts),sw>0)).join('')+
+   '<div class="q'+(allDone?' done':'')+'"><div class="grow"><div class="t">Finish all '+DQ_SLOTS.length+'</div><div class="p">Bonus on top of each quest'+(sw?'. '+sw+(sw===1?' swap':' swaps')+' left today':'')+'</div></div><span class="num" style="color:'+(allDone?'var(--dust)':'var(--gold)')+'">'+(allDone?'Claimed':'+'+fmtNum(qPts(DQ_ALL_BONUS)))+'</span></div></div>'+
+  sec('Weekly quests','Resets in '+fmtDur(msToWeeklyReset()))+
+  '<div class="panel list">'+wk.map(q=>qRow(q,'claimwq',null,qPts(q.pts))).join('')+
+   '<div class="q'+(wq.claimed?' done':'')+'"><div class="grow"><div class="t">Weekly chest: claim '+WQ_GOAL+' daily quests</div><div class="bar"><i style="width:'+Math.round(Math.min(1,(wq.n||0)/WQ_GOAL)*100)+'%;background:var(--gold)"></i></div><div class="p">'+Math.min(wq.n||0,WQ_GOAL)+' / '+WQ_GOAL+'. '+fmtNum(qPts(WQ_PTS))+' points and a rare gem cache</div></div>'+
   (wq.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+((wq.n||0)>=WQ_GOAL?'btn-gold':'btn-quiet')+'" data-act="weekly">Open</button>')+'</div></div>'+
   sec('Your squad','','squad')+
   '<div class="plate squad"><div class="t big">Earn when friends you invite keep playing</div><p class="mut">Sign-ups alone pay nothing. Active recruits pay up to +7,500 each, plus 5% of what they earn.</p>'+
@@ -510,6 +518,7 @@ function openCrate(tk,ri){
    :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
   const odds=isGem?'Odds: each of the 6 core types is 1 in 6, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
   return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+'</h3><p class="mut">'+what+'</p></div></div>'+items+
+   (isDeal(tk,ri)?'<p class="dealnote">Today’s deal: 30% off until 00:00 UTC. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
    '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
    (pts?'<button class="btn btn-quiet block" style="margin-top:8px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pts)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic crates can’t be bought with points.</p>')+
    '<p class="dimtxt odds">'+odds+'</p>'+
@@ -631,7 +640,7 @@ function beginMatch(){
 const TIPS=['Mystery boxes boost you until you take enough damage. Grab them early.','Supers are strongest when enemies line up. Pierce Lance goes through cover.',
  'Crystal Rush: if you carry a lot, fall back. Every crystal drops when you go down.','Bounty: a 7-star tank is worth more than three 2-star kills.','Last Standing: let others fight, then clean up. Wrecks drop boxes.',
  'Upgrades in the Garage are permanent and cheap at first.','Moon Zone pays ×3 in 1v1.','Back off to repair in Moon Zone: 3.5 seconds out of fire and you start healing.',
- 'Daily quests and the login streak add up fast. Check Quests every day.','Friends you invite pay you when they keep playing.'];
+ 'Your login streak adds up to +30% to every quest. Check Quests every day.','Friends you invite pay you when they keep playing.'];
 const ORD=['1st','2nd','3rd','4th','5th','6th'];
 function resultsHTML(r){
  const M=MODES[r.mode],solo=isSolo(r.gtype),G=GTYPES[r.gtype];
@@ -794,8 +803,11 @@ const ACT={
  again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},
  sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
- login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak');if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},
+ login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},
  claimdq:a=>{const n=claimDaily(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=dailyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
+ claimwq:a=>{const n=claimWeeklyQuest(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=weeklyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
+ swapdq:a=>{const N=swapDaily(a);if(N)showToast('New quest: '+N.t);else showToast(swapsLeft()?'No other quest to swap in':'No swaps left today');},
+ deal:()=>{save.dealSeen=dayNum();store();const D=dealOn(dayNum());openCrate(D.tk,D.ri);},
  claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}const n=claimQuest(a);if(n)showToast('+'+n+' points: '+Q.n);},
  visit:a=>{visitLinkQuest(a);uiDirty('quests');},
  weekly:()=>{const r=claimWeekly();if(!r){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);},
