@@ -196,8 +196,8 @@ function loadSave(obj){
  if(!save.gemLvl)save.gemLvl={dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1};
  if(!save.gemShards)save.gemShards={dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0};
  if(save.streak===undefined)save.streak=0;
- if(!save.cores)save.cores=['dmg','rof','arm','spd'];
- {const seen={};save.cores=save.cores.slice(0,4).map(k=>{if(!k||!GEM[k]||seen[k])return null;seen[k]=1;return k;});while(save.cores.length<4)save.cores.push(null);}   // one of each core type
+ if(!save.cores)save.cores=['dmg','rof','arm'];
+ {const seen={};save.cores=save.cores.slice(0,3).map(k=>{if(!k||!GEM[k]||seen[k])return null;seen[k]=1;return k;});while(save.cores.length<3)save.cores.push(null);}   // one of each core type
  if(!save.wTier||!save.wOwn){save.wTier={pulse:0,twin:-1,siege:-1};save.cTier={scout:-1,vanguard:0,titan:-1};save.wOwn={pulse:[0],twin:[],siege:[]};save.cOwn={scout:[],vanguard:[0],titan:[]};}
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
@@ -236,7 +236,7 @@ function awardPts(n){
 }
 // put core k in socket i; if it's already in another socket, the two swap (each core type fits once)
 function socketCore(i,k){
- const c=save.cores;if(i<0||i>3)return;
+ const c=save.cores;if(i<0||i>2)return;
  if(k===null){c[i]=null;store();return;}
  const j=c.indexOf(k);if(j===i)return;
  if(j>=0)c[j]=c[i];c[i]=k;store();
@@ -394,7 +394,7 @@ const STARTER={ton:6,stars:399};
 const PSTARS={moonbeam:3300,skin:2000,starter:STARTER.stars}; // premium items in Stars (must match the server)
 function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayNum():tk+ri;}
 // gear crates: x1, x2, x3 (only 3 items each). Gem caches: +25% per buy that day, resets daily
-function boxMult(tk,ri){const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:Math.min(3,1+n);}
+function boxMult(tk,ri){if(ri===0)return 1;const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:Math.min(3,1+n);}   // Common crates are always 250 Stars / 4 TON
 function boxPrice(tk,ri){return Math.round(RPRICE[ri]*boxMult(tk,ri)*100)/100;}   // TON
 function boxStars(tk,ri){return Math.round(RSTARS[ri]*boxMult(tk,ri));}
 function boxPts(tk,ri){return RPTS[ri]||0;} // points price is flat

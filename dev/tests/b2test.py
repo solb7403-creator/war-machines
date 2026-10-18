@@ -80,7 +80,7 @@ async def run(p,w,h,tag,uid):
     await pg.click('[data-act=core][data-arg="0"]');await pg.wait_for_timeout(400);await shot('10_core_picker')
     await pg.click('[data-act=coreset][data-arg="0:spd"]');await pg.wait_for_timeout(300)
     cores=await pg.evaluate("()=>save.cores.slice()")
-    check(cores[0]=='spd' and cores[3]=='dmg' and len(set([c for c in cores if c]))==len([c for c in cores if c]),'core swap wrong '+str(cores))
+    check(cores[0]=='spd' and len(cores)==3 and len(set([c for c in cores if c]))==len([c for c in cores if c]),'core swap wrong '+str(cores))
     await pg.click('[data-act=gear][data-arg=w]');await pg.wait_for_timeout(400);await shot('11_weapon_picker')
     await pg.evaluate("()=>closeAll()");await pg.wait_for_timeout(300)
     # 7) Shop

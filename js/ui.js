@@ -151,7 +151,7 @@ function renderGarage(){
  return '<div class="powerline"><div class="grow"><div class="pw num">Power '+pw+'</div><div class="mut"><span style="color:'+brk.c+'">'+brk.n+' league</span>, points ×'+brk.mult+'</div></div><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button></div>'+
   '<div class="stats">'+stat(fmtNum(st.hp),'Health')+stat(st.dps,'Damage/s')+stat(st.spd,'Speed')+stat(st.armor+'%','Armor')+stat(st.crit+'%','Crit')+'</div>'+
   sec('Gear')+gearRow(true,W0)+gearRow(false,C0)+
-  sec('Cores','Each type fits once','cores')+'<div class="cores">'+[0,1,2,3].map(coreCard).join('')+'</div>'+
+  sec('Cores','Each type fits once','cores')+'<div class="cores">'+[0,1,2].map(coreCard).join('')+'</div>'+
   sec('Upgrades','Permanent')+'<div class="ups list">'+UORDER.map(upRow).join('')+'</div>'+
   (save.skin==='lunar'?'<div class="panel lunar">Lunar skin: +8% health and +8% damage, always on</div>':'');
 }
@@ -348,14 +348,14 @@ const INFO={
   ['Multipliers','Rookie ×1 (under 150 power), Pilot ×1.25 (150+), Ace ×1.5 (250+), Elite ×1.75 (400+), Legend ×2 (600+).'],
   ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime points and shows on the leaderboard. Your league comes from gear.']]],
  cores:()=>['Cores',[
-  ['What they do','Cores are permanent boosts. You have 4 sockets and each core type fits once.'],
+  ['What they do','Cores are permanent boosts. You have 3 sockets and each core type fits once.'],
   ['Leveling','Gem caches in the Shop give shards. Enough shards level a core up, to level 5.'],
   ['Stacking','Cores add on top of mystery-box boosts of the same type.']]],
  crates:()=>['Crates',[
-  ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so each one costs ×1, then ×2, then ×3 as you collect them.'],
+  ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
   ['Rolls','Every item rolls 100 to 110% of its rarity’s stats. Rare is 10% stronger than Common, Epic 32%.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
-  ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 6 to 9, for a random core. The price rises 25% with each buy that day and resets at 00:00 UTC.'],
+  ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 6 to 9, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
   ['Salvage','Paid with points. Salvaged gear gives 50 to 75% of the real item’s boost.']]],
  squad:()=>['Squad rewards',[
   ['How it works','Share your invite link. Anyone who opens the game with it for the first time joins your squad.'],
@@ -425,7 +425,7 @@ function openCrate(tk,ri){
   return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+'</h3><p class="mut">'+what+'</p></div></div>'+items+
    '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
    (pts?'<button class="btn btn-quiet block" style="margin-top:8px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pts)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic crates can’t be bought with points.</p>')+
-   (!isGem?'<p class="dimtxt" style="margin-top:8px">Each purchase of this crate raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'.</p>':'');
+   (ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each purchase of this crate raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'.</p>':'');
  });
 }
 function openSolWallets(){
