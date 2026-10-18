@@ -65,52 +65,15 @@ function msToWeeklyReset(){const n=new Date();const d=(n.getUTCDay()+6)%7;return
 function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d>0?d+'d '+h+'h':h+'h '+m+'m';}
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 
-// ---- combat tuning ----
-const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
-// mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
-const BUFF={dmg:{n:'DMG',c:'#ff6b5e',amt:0.4,txt:'+40% DAMAGE'},arm:{n:'ARM',c:'#5aa9ff',amt:0.35,txt:'+35% ARMOR'},rof:{n:'ROF',c:'#ffd24a',amt:0.4,txt:'+40% FIRE RATE'},spd:{n:'SPD',c:'#7be07b',amt:0.3,txt:'+30% SPEED'},lck:{n:'LCK',c:'#c28bff',amt:0.1,txt:'+10% CRIT CHANCE'},reg:{n:'REG',c:'#4be3a0',amt:0.003,txt:'+0.3% HP/SEC'}};
-const CRIT_BASE=0.1,CRIT_MULT=2,GRAZE=0.75,DIRECT=0.4;
-const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;
-const BUFF_LIFE=780;
-// core gems: socketed in the garage, permanent all game. Weaker than box buffs; they multiply with them.
-const GEM={dmg:{n:'DMG',name:'Damage',c:'#ff6b5e',amt:0.12},rof:{n:'ROF',name:'Fire rate',c:'#ffd24a',amt:0.10},arm:{n:'ARM',name:'Armor',c:'#5aa9ff',amt:0.08},spd:{n:'SPD',name:'Speed',c:'#7be07b',amt:0.08},lck:{n:'LCK',name:'Luck',c:'#c28bff',amt:0.03},reg:{n:'REG',name:'Repair',c:'#4be3a0',amt:0.001}};
-const GORDER=['dmg','rof','arm','spd','lck','reg'];
-const GEM_LV=[1,1.2,1.45,1.8,2.25]; // Lv1..5
+// ---- combat rules, gear math and paints live in rules.js (shared with the PvP server) ----
 const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a gem from level L to L+1
-const gemMult=k=>GEM_LV[Math.min(4,Math.max(0,((save.gemLvl&&save.gemLvl[k])||1)-1))];
-const coreVal=(k,lv)=>GEM[k].amt*GEM_LV[Math.min(4,Math.max(0,lv-1))];
+const gemMult=k=>gemLvMult(save.gemLvl&&save.gemLvl[k]);
 const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(Math.round(v*1000)/10))+'%';
-const UPS={
- hull:{n:'Hull',d:'+8% max health per level',c:'#5aa9ff',costs:[500,2000,5000,12500]},
- cannon:{n:'Cannon',d:'+8% damage per level',c:'#ff6b5e',costs:[500,2000,5000,12500]},
- engine:{n:'Engine',d:'+6% speed per level',c:'#7be07b',costs:[500,2000,5000,12500]},
- target:{n:'Targeting',d:'+2% crit chance per level',c:'#c28bff',costs:[500,2000,5000,12500]},
- reactor:{n:'Reactor',d:'+10% super charge per level',c:'#ffd24a',costs:[500,2000,5000,12500]}};
-const UORDER=['hull','cannon','engine','target','reactor'];
-// ---- chassis classes & weapons ----
-const CH={
- scout:{n:'Scout',d:'Fast and agile',hp:0.8,spd:1.25,turn:1.15,ds:0.9,c:'#7be07b'},
- vanguard:{n:'Vanguard',d:'Balanced all-rounder',hp:1.0,spd:1.0,turn:1.0,ds:1.0,c:'#3fd0c9'},
- titan:{n:'Titan',d:'Slow, very tanky',hp:1.35,spd:0.85,turn:0.9,ds:1.12,c:'#c28bff'}};
-const CHORDER=['scout','vanguard','titan'];
-// counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout (+15% damage dealt, 10% less taken)
-const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.15,COUNTER_RES=0.10;
-const cmult=(a,d)=>{if(!a||!d||!a.cls||!d.cls)return 1;
- if(COUNTER[a.cls]===d.cls)return 1+COUNTER_BONUS;
- if(COUNTER[d.cls]===a.cls)return 1-COUNTER_RES;
- return 1;};
-const beatenBy=c=>Object.keys(COUNTER).find(k=>COUNTER[k]===c);
-const WEAPONS={
- pulse:{n:'Pulse Cannon',d:'Balanced gun',dps:70,shot:0.2,c:'#3fd0c9',sup:'Pierce Lance'},
- twin:{n:'Twin Repeater',d:'Fast, light hits',dps:66,shot:0.09,c:'#ffd24a',sup:'Static Nova'},
- siege:{n:'Siege Breaker',d:'Slow, heavy hits',dps:74,shot:0.45,c:'#ff6b5e',sup:'Siege Blast'},
- moon:{n:'Moonbeam',d:'Lunar precision laser',dps:72,shot:0.12,c:'#e8f4ff',sup:'Moonfall',premium:true}};
-const WORDER=['pulse','twin','siege'];
 const SUPER_DESC={pulse:'Pierce Lance: a rail beam that goes through cover and hits every enemy in a line.',
  twin:'Static Nova: an electric shockwave that hits every enemy near you.',
  siege:'Siege Blast: a heavy shell with a big blast radius.',
  moon:'Moonfall: a massive lunar beam, the strongest super in the game.'};
-const TIER_N=['Common','Rare','Epic'],TIER_MULT=[1.0,1.10,1.32];
+const TIER_N=['Common','Rare','Epic'];
 const RCOL=['#9fb3c8','#b78bff','#ffcf4a'];
 const TIERS=['Bronze','Silver','Gold','Platinum','Diamond'],TPTS=[0,10000,50000,150000,400000],TDAILY=[25,50,100,200,400];
 const TIERC=['#c08a54','#c3ccd6','#ffcf4a','#7be3e0','#c79bff'];
@@ -123,8 +86,7 @@ const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
 //   stock starter gear 1.00 | Salvaged Rare 1.010-1.030 | Salvaged Epic 1.031-1.044
 //   Common crate 1.050-1.100 | Rare crate 1.155-1.210 | Epic crate 1.386-1.452
 // Crate items roll 105-110% of their rarity; salvage stores its own multiplier.
-const ROLL_MIN=1.05,ROLL_MAX=1.10,SALV_COL='#c48a5c',SALV_PTS=[0,10000,20000];
-const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
+const SALV_COL='#c48a5c',SALV_PTS=[0,10000,20000];
 const rollOf=(k,t)=>(save.roll&&save.roll[k+':'+t])||1;
 const salvOf=(k,t)=>{const v=save.salv&&save.salv[k+':'+t];return v?(v<1?SALV_MIN[t]||1.01:v):0;};   // old saves stored a fraction
 const gearMult=(k,tc,sal)=>sal?salvOf(k,tc):TIER_MULT[tc]*rollOf(k,tc);
@@ -143,15 +105,15 @@ function tuneItem(isW,k,t){
  return {better,old,roll};
 }
 function getW(arch,tt,sal){
- if(arch==='moon'){const b=WEAPONS.moon;return {id:'moon',arch:'moon',tier:2,name:b.n,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:TIER_MULT[2],q:1,sal:false};}
+ if(arch==='moon')return Object.assign(weaponOf('moon'),{id:'moon',name:WEAPONS.moon.n});
  if(sal===undefined)sal=tt===undefined&&!!(save.wSal&&save.wSal[arch]);
- const t=tt!==undefined?tt:((save.wTier&&save.wTier[arch])||0),tc=Math.max(0,t),mt=gearMult(arch,tc,sal),b=WEAPONS[arch]||WEAPONS.pulse;
- return {id:arch+':'+tc+(sal?'s':''),arch,tier:t,sal,q:sal?salvOf(arch,tc):rollOf(arch,tc),mult:mt,name:(sal?'Salvaged ':'')+(WNAMES[arch]||WNAMES.pulse)[tc],dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
+ const t=tt!==undefined?tt:((save.wTier&&save.wTier[arch])||0),tc=Math.max(0,t);
+ return Object.assign(weaponOf(arch,t,sal?salvOf(arch,tc):rollOf(arch,tc),sal),{id:arch+':'+tc+(sal?'s':''),name:(sal?'Salvaged ':'')+(WNAMES[arch]||WNAMES.pulse)[tc]});
 }
 function getC(cls,tt,sal){
  if(sal===undefined)sal=tt===undefined&&!!(save.cSal&&save.cSal[cls]);
- const t=tt!==undefined?tt:((save.cTier&&save.cTier[cls])||0),tc=Math.max(0,t),mt=gearMult(cls,tc,sal),b=CH[cls]||CH.vanguard;
- return {id:cls+':'+tc+(sal?'s':''),cls,tier:t,sal,q:sal?salvOf(cls,tc):rollOf(cls,tc),mult:mt,name:(sal?'Salvaged ':'')+(CNAMES[cls]||CNAMES.vanguard)[tc],hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:Math.round((b.turn+0.05*tc)*100)/100,size:b.ds};
+ const t=tt!==undefined?tt:((save.cTier&&save.cTier[cls])||0),tc=Math.max(0,t);
+ return Object.assign(chassisOf(cls,t,sal?salvOf(cls,tc):rollOf(cls,tc),sal),{id:cls+':'+tc+(sal?'s':''),name:(sal?'Salvaged ':'')+(CNAMES[cls]||CNAMES.vanguard)[tc]});
 }
 // after any new gear, equip the strongest version of that line (paid or salvaged)
 function equipBest(isW,k){
@@ -178,21 +140,13 @@ const tierOfPts=p=>{let t=0;for(let i=0;i<TPTS.length;i++)if((p||0)>=TPTS[i])t=i
 const tierIdx=()=>tierOfPts(save.earned||0);
 const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:30,d:'+8% health, +8% damage'}};
 const MOONBEAM_PRICE=50;
-function calcPower(){
- const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis);
- const skinM=save.skin==='lunar'?1.08:1;
- const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*skinM,dps=W.dps*(1+0.08*U.cannon)*skinM,spd=(1+0.06*U.engine)*Cc.spd;
- let coreM=1;for(const c of (save.cores||[]))if(c){const lv=(save.gemLvl&&save.gemLvl[c])||1;coreM*=(1+0.05*lv);}
- return Math.round(Math.pow(hp*dps*spd,1/3)*coreM*1.2);   // starter ≈ 72-100
+// everything that sets your tank's stats, in the form the PvP server checks (see rules.js)
+function myLoadout(){
+ const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
+ return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
+  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c)))};
 }
-// LEAGUE (by gear power): who you get matched against + point multiplier. Not the same as your TIER (lifetime points).
-function powerBracket(pw){
- if(pw<150)return {n:'Rookie',key:'ROOKIE',mult:1.0,c:'#9fb0c2'};
- if(pw<250)return {n:'Pilot',key:'PILOT',mult:1.25,c:'#6fcf97'};
- if(pw<400)return {n:'Ace',key:'ACE',mult:1.5,c:'#4d9fff'};
- if(pw<600)return {n:'Elite',key:'ELITE',mult:1.75,c:'#ff9d3c'};
- return {n:'Legend',key:'LEGEND',mult:2.0,c:'#ff4d6d'};
-}
+const calcPower=()=>powerOf(myLoadout());
 function buildStats(){
  const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),skin=save.skin==='lunar'?1.08:1;
  const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k):0),0);
@@ -250,6 +204,14 @@ function awardPts(n){
  save.earned=(save.earned||0)+n;
  save.dailyPts=(save.dailyPts||0)+n;
  save.weeklyPts=(save.weeklyPts||0)+n;
+ store();if(typeof syncPlayer==='function')syncPlayer();
+ return n;
+}
+// points the server already credited (live matches): bank them here too, so the next sync has nothing left to claim
+function bankPts(n){
+ if(!n||n<=0)return 0;
+ rollPeriods();n=Math.round(n);
+ save.pts=(save.pts||0)+n;save.earned=(save.earned||0)+n;save.dailyPts=(save.dailyPts||0)+n;save.weeklyPts=(save.weeklyPts||0)+n;
  store();if(typeof syncPlayer==='function')syncPlayer();
  return n;
 }
@@ -388,22 +350,10 @@ function claimPass(track,i){
  return out;
 }
 // ---- paints: looks only, no stats. Your team color still shows on the tracks, turret core and health bar ----
-const PAINTS={
- stock:{n:'Stock',hull:'#2c3a49',tur:'#3b4a5b',trim:'#d5dee7'},
- regolith:{n:'Regolith',hull:'#565a62',tur:'#6a6f79',trim:'#d8c49a',pass:'free'},
- eclipse:{n:'Eclipse',hull:'#17131f',tur:'#251e31',trim:'#ff9a55',pass:'prem'},
- aurora:{n:'Aurora',hull:'#15393a',tur:'#1f4e50',trim:'#7be3e0',pass:'prem'},
- nebula:{n:'Nebula',hull:'#35255a',tur:'#463271',trim:'#c79bff',ton:2.4,stars:150},
- ember:{n:'Ember',hull:'#5a2418',tur:'#73301f',trim:'#ff9a55',ton:2.4,stars:150},
- arctic:{n:'Arctic',hull:'#a9b6c8',tur:'#c2ccd9',trim:'#ffffff',ton:2.4,stars:150},
- venom:{n:'Venom',hull:'#1d3b21',tur:'#28502d',trim:'#7be07b',ton:2.4,stars:150},
- gold:{n:'Gold plate',hull:'#7a5c16',tur:'#9a7720',trim:'#ffe08a',ton:4.8,stars:300,shine:true},
- void:{n:'Void',hull:'#07080d',tur:'#121522',trim:'#4d9fff',ton:4.8,stars:300,shine:true}};
 const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora'];
 const myPaint=()=>PAINTS[save.paint]||PAINTS.stock;
-// ---- featured mode: one mode a day pays +25% (and gets the live-PvP queue once PvP launches) ----
-const FEATURE_ROT=['crystal','royale','bounty','crystal','bounty','royale','zone'],FEATURED_X=1.25;   // by UTC day; season 1 opens with Crystal Rush
-const featuredMode=()=>FEATURE_ROT[((dayNum()%7)+7)%7];
+// ---- featured mode: one mode a day pays +25% and gets a live queue ----
+const featuredMode=()=>featuredOn(dayNum());   // FEATURE_ROT is in rules.js
 // ---- daily login reward: 7-day streak calendar (misses reset it) + tier bonus ----
 const STREAK_PTS=[100,150,200,250,300,400,1000];
 function loginState(){

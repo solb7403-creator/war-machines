@@ -16,10 +16,12 @@ def start_dev():
 def dev(path,data=None):
     req=urllib.request.Request(DEV+path,data=json.dumps(data).encode() if data is not None else None,method='POST' if data is not None else 'GET')
     return json.loads(urllib.request.urlopen(req).read())
-def tg_mock(user,start_param=None):
+def tg_mock(user,start_param=None,pvp=False):
     idata=dev('/__initdata?user='+urllib.parse.quote(json.dumps(user)))['initData']
     sp=(",start_param:"+json.dumps(start_param)) if start_param else ''
-    return """
+    # live matches are off unless a test asks for them (pvp=True points the game's socket at the local server)
+    live="window.LUNAR_WS_BASE='ws://127.0.0.1:8787';" if pvp else "window.LUNAR_NO_PVP=1;"
+    return live+"""
 window.__cs={};window.__opened=null;window.__haptic=[];
 window.Telegram={WebApp:{initData:%s,initDataUnsafe:{user:%s%s},platform:'ios',version:'8.0',
  ready(){},expand(){},isVersionAtLeast(v){return true},disableVerticalSwipes(){},setHeaderColor(){},setBackgroundColor(){},setBottomBarColor(){},
@@ -29,14 +31,14 @@ window.Telegram={WebApp:{initData:%s,initDataUnsafe:{user:%s%s},platform:'ios',v
  CloudStorage:{setItem(k,v,cb){__cs[k]=v;cb&&cb(null,true)},getItem(k,cb){cb(null,__cs[k]||'')},getItems(ks,cb){const o={};ks.forEach(k=>o[k]=__cs[k]||'');cb(null,o)}}}};
 """ % (json.dumps(idata), json.dumps(user), sp)
 import urllib.parse
-async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark'):
+async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None):
     user=user or {'id':777001,'username':'jaketest','first_name':'Jake'}
-    b=await p.chromium.launch()
+    b=browser or await p.chromium.launch()
     ctx=await b.new_context(viewport={'width':w,'height':h},device_scale_factor=scale,color_scheme=color_scheme)
     pg=await ctx.new_page()
     errs=[]
     pg.on('pageerror',lambda e:errs.append(str(e)))
-    mock=tg_mock(user,start_param)
+    mock=tg_mock(user,start_param,pvp)
     async def route(r):
         u=r.request.url
         if 'telegram-web-app' in u: return await r.fulfill(body=mock,content_type='application/javascript')

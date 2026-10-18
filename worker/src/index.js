@@ -1,10 +1,12 @@
 // LUNAR: War Machines — game server (Cloudflare Worker)
 // Every write to the database goes through here, tied to a verified Telegram login.
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
+import { DAILY_CAP, BUCKET_MAX, DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
+import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
+export { PvpRoom, PvpLobby };
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
 const WIKI_URL = "https://solb7403-creator.github.io/war-machines/wiki.html";
-const DB_URL = "https://warmachines-a6034-default-rtdb.firebaseio.com";
 const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin stats (lowercase)
 
 // ---- prices (must match the game) ----
@@ -20,24 +22,13 @@ const TERMS_URL = "https://solb7403-creator.github.io/war-machines/terms.html";
 const SUPPORT_TEXT = "Need help with a purchase?\n\nMessage @LunarBattle with your Player ID (in the game: Settings, top right) and roughly when you bought. We reply within 48 hours.\n\nTelegram support can't help with purchases made in this bot. Terms: " + TERMS_URL;
 
 // ---- points rules (the server is the referee) ----
-const DAILY_CAP = 20000;          // max points a player can bank per UTC day
-const BUCKET_MAX = 12000;         // short-term burst allowance (big claims like squad milestones)
 const BUCKET_RATE = 25;           // allowance refill per second
-const DAY_MS = 86400000;
-const dayOf = (ms) => Math.floor(ms / DAY_MS);
-const weekOf = (ms) => Math.floor((ms - 4 * DAY_MS) / (7 * DAY_MS)); // weeks start Monday 00:00 UTC
 
 // ---- TON / SOL verification ----
 const TON_RECIPIENT = "UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu";
 const SOL_RECIPIENT = "A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE";
 const SOL_RPCS = ["https://solana-rpc.publicnode.com", "https://api.mainnet-beta.solana.com"];
 
-const enc = new TextEncoder();
-const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-async function hmac(key, data) {
-  const k = await crypto.subtle.importKey("raw", typeof key === "string" ? enc.encode(key) : key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return crypto.subtle.sign("HMAC", k, enc.encode(data));
-}
 // webhook secret derived from the bot token, so it never needs storing separately
 export async function webhookSecret(env) { return hex(await hmac(env.BOT_TOKEN, "lunar-webhook")).slice(0, 48); }
 
@@ -55,29 +46,6 @@ async function tg(env, method, body) {
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
-// ---- Firebase Realtime Database over REST, with the database secret (bypasses the locked rules) ----
-function dbUrl(env, path, q) {
-  const qs = Object.entries(q || {}).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
-  return `${DB_URL}/${path}.json?auth=${env.FIREBASE_DB_SECRET}${qs ? "&" + qs : ""}`;
-}
-async function dbGet(env, path, q) {
-  const r = await fetch(dbUrl(env, path, q));
-  if (!r.ok) throw new Error("db get " + path + " " + r.status);
-  return r.json();
-}
-async function dbPut(env, path, value) {
-  const r = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
-  return r.ok;
-}
-async function dbPatch(env, path, value) {
-  const r = await fetch(dbUrl(env, path), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
-  return r.ok;
-}
-async function dbDel(env, path) {
-  const r = await fetch(dbUrl(env, path), { method: "DELETE" });
-  return r.ok;
-}
-
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
 async function verifyInitData(env, initData, maxAgeSec = 172800) {
   if (!initData) return null;
@@ -92,11 +60,6 @@ async function verifyInitData(env, initData, maxAgeSec = 172800) {
   if (!authDate || Date.now() / 1000 - authDate > maxAgeSec) return null;
   try { return JSON.parse(p.get("user") || "null"); } catch { return null; }
 }
-const cleanName = (u) => {
-  let n = String((u && (u.username || [u.first_name, u.last_name].filter(Boolean).join(" "))) || "").trim();
-  n = n.replace(/[^\w .\-]/g, "").slice(0, 16);
-  return n || "Pilot-" + String((u && u.id) || "").slice(-4);
-};
 const num = (v, lo, hi, d = 0) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
 const safeKey = (s) => String(s).replace(/[.#$\[\]\/|]/g, "_").slice(0, 100);
 async function readBody(req) { try { return await req.json(); } catch { return null; } }
@@ -402,6 +365,7 @@ const ROUTES = {
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
   "/api/admin": async (env, a) => admin(env, a.user),
+  "/api/pvp/join": async (env, a) => pvpJoin(env, a),
 };
 
 export default {
@@ -420,6 +384,8 @@ export default {
       }
     }
     if (path === "/api/tg-webhook" && req.method === "POST") return webhook(req, env);
+    if (path === "/pvp/ws") return pvpSocket(req, env);   // live matches (WebSocket into the match room)
+    if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
     if (path === "/") return new Response("LUNAR: War Machines API");
     return new Response("not found", { status: 404 });
   },

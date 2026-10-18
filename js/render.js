@@ -76,7 +76,7 @@ function drawTank(b,col){
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
   const bw=2.6*r,bx=px-bw/2,by=py-2.25*r,hh=Math.max(4,0.36*r),sh=Math.max(2,0.16*r),hf=Math.max(0,b.hp/b.mhp),f=b.sp/SUPER_MAX;
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
-  g.fillStyle=b.team!==0?'#ff4d5e':b.isPlayer?'#5fe3a1':'#4d9fff';g.fillRect(bx,by,bw*hf,hh);
+  g.fillStyle=b.team!==0?'#ff4d5e':b===me?'#5fe3a1':'#4d9fff';g.fillRect(bx,by,bw*hf,hh);
   g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffcf4a';g.fillRect(bx,by+hh+1,bw*f,sh);
   // what this tank is worth: crystals carried (Crystal Rush) or its bounty (Bounty)
   const n=cry&&b.cry>0?b.cry:matchG==='bounty'&&b.bty?b.bty:0;
@@ -279,7 +279,7 @@ function drawGemArt(ctx,w,h,k){
 }
 function drawUnitArt(ctx,w,h,u){
  ctx.clearRect(0,0,w,h);if(!u)return;
- const col=u.isPlayer?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*(u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
+ const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*(u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(w/2,h/2+r*0.8,r*1.3,r*0.5,0,0,7);ctx.fill();ctx.restore();
  drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint]);
 }
@@ -289,7 +289,10 @@ const btn=()=>({x:vw-62,y:vh-96-SAB,r:40});
 const dashBtn=()=>({x:vw-150,y:vh-70-SAB,r:30});
 let aim=null;   // {id,sx,sy,x,y,on}: dragging from SUPER to aim it
 const aimAng=()=>aim&&aim.on?Math.atan2(aim.y-aim.sy,aim.x-aim.sx):null;
-const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0;
+const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
+// your super and dash: straight into the sim in AI matches, to the server in live ones
+const superGo=a=>pvpOn()?pvpSuper(a):useSuper(me,a);
+const dashGo=(x,y)=>pvpOn()?pvpDash(x,y):useDash(me,x,y);
 const ffBtn=()=>({x:vw/2-80,y:vh-74-SAB,w:160,h:44});
 const joy={on:false,id:null,sx:0,sy:0,x:0,y:0,dx:0,dy:0},keys={};
 const loc=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
@@ -300,7 +303,7 @@ cv.addEventListener('pointerdown',e=>{
  const B=btn();if(me.hp>0&&Math.hypot(L.x-B.x,L.y-B.y)<=B.r+16){
   if(me.sp<SUPER_MAX||me.sup){nums.push({x:me.x,y:me.y-1.6,t:0.9,z:1,txt:'Super '+Math.round(me.sp/SUPER_MAX*100)+'%',c:'#ff9d9d'});return;}
   aim={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,on:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}return;}
- const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();useDash(me,ix,iy);return;}
+ const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();dashGo(ix,iy);return;}
  if(joy.on)return;joy.on=true;joy.id=e.pointerId;joy.sx=joy.x=L.x;joy.sy=joy.y=L.y;joy.dx=joy.dy=0;try{cv.setPointerCapture(e.pointerId);}catch(_){}
 });
 cv.addEventListener('pointermove',e=>{
@@ -312,10 +315,10 @@ cv.addEventListener('pointermove',e=>{
  if(tut)tut.moved=(tut.moved||0)+d*0.001;
 });
 const joyUp=e=>{
- if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)useSuper(me,e.type==='pointercancel'?undefined:a);return;}
+ if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(e.type==='pointercancel'?undefined:a);return;}
  if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play')useSuper(me);if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();useDash(me,ix,iy);}});
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 function inputVec(){
  let x=joy.dx,y=joy.dy;
@@ -437,12 +440,13 @@ function drawBattle(){
   if(b.aura>0){const ac=b.aura>=3?'#e8f4ff':RCOL[b.aura],pl=b.aura>=2?0.5+0.5*Math.sin(performance.now()/420):0.5;   // rarity ring: rare, epic, legendary
    g.save();g.globalAlpha=0.3+0.3*pl;g.strokeStyle=ac;g.lineWidth=b.aura>=2?2.4:1.5;g.beginPath();g.ellipse(px,py+r*0.2,r*1.45,r*1.1,0,0,7);g.stroke();
    if(b.aura>=2){g.globalAlpha=0.07+0.07*pl;g.fillStyle=ac;g.fill();}g.restore();}
-  if(b.isPlayer&&save.skin==='lunar'){g.strokeStyle='rgba(232,244,255,.6)';g.lineWidth=2;g.beginPath();g.arc(px,py,r*1.3,0,7);g.stroke();}
+  if(b.skin==='lunar'){g.strokeStyle='rgba(232,244,255,.6)';g.lineWidth=2;g.beginPath();g.arc(px,py,r*1.3,0,7);g.stroke();}
   b.buffs.forEach((bf,i)=>{const rr2=r*(1.6+0.22*i),left=Math.max(0,1-bf.taken/BUFF_LIFE);g.strokeStyle=BUFF[bf.k].c;g.lineWidth=2.5;
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
   if((spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
-  drawTank(b,b.isPlayer&&save.skin==='lunar'?'#e8f4ff':col);
+  drawTank(b,b===me&&b.skin==='lunar'?'#e8f4ff':col);
+  if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);
@@ -488,7 +492,7 @@ function drawHUD(){
  const top=oy-HUD*sc,mid=X(W/2),pad=Math.max(8,sc*0.4);
  const hy=top+sc*0.35,bh=Math.max(10,sc*0.62),bw=Math.min(sc*7.2,(vw-pad*2)/2-sc*2.6);
  g.textBaseline='middle';
- const n=MODES[modeKey()].n,solo=!!storm,topLine=!!(gzones||cry||storm||matchG==='bounty');
+ const n=MM.n,solo=!!storm,topLine=!!(gzones||cry||storm||matchG==='bounty');
  const side=(t,left)=>{
   const x0=left?pad:vw-pad-bw,col=TC[t];
   let lbl=(t===0?'You':'Foes')+(n>1&&!solo?' ×'+aliveCount(t):'');
@@ -543,6 +547,8 @@ function drawHUD(){
  if(banner){g.globalAlpha=Math.min(1,banner.t*2);g.font=font(Math.round(sc*0.72));const bw2=g.measureText(banner.txt).width+26,bh2=sc*1.3,bx2=mid-bw2/2,by2=Y(0)+sc*(topLine?1.5:0.5);
   g.fillStyle='rgba(8,12,18,.88)';rr(g,bx2,by2,bw2,bh2,bh2/2);g.fill();g.strokeStyle=banner.c;g.lineWidth=1.5;rr(g,bx2,by2,bw2,bh2,bh2/2);g.stroke();
   g.fillStyle=banner.c;g.textAlign='center';g.fillText(banner.txt,mid,by2+bh2/2+1);g.globalAlpha=1;}
+ if(pvpLag()){const tw4=sc*6,th4=sc*1.2,yy=Y(H/2)-sc*4;g.fillStyle='rgba(10,14,23,.88)';rr(g,mid-tw4/2,yy,tw4,th4,th4/2);g.fill();g.strokeStyle='#ffcf4a';g.lineWidth=1.5;rr(g,mid-tw4/2,yy,tw4,th4,th4/2);g.stroke();
+  g.fillStyle='#ffcf4a';g.textAlign='center';g.font=font(Math.round(sc*0.62));g.fillText('Reconnecting…',mid,yy+th4/2+1);}
  // joystick
  if(joy.on){g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=2;g.beginPath();g.arc(joy.sx,joy.sy,55,0,7);g.stroke();
   g.fillStyle='rgba(255,255,255,.45)';g.beginPath();g.arc(joy.x,joy.y,22,0,7);g.fill();}

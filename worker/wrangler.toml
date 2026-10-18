@@ -3,6 +3,18 @@ main = "src/index.js"
 compatibility_date = "2024-09-23"
 workers_dev = true
 
-# leaderboard rebuild + daily reminders
 [triggers]
 crons = ["*/5 * * * *"]
+
+# Live PvP: one room per match plus the matchmaking lobby. SQLite-backed classes, so they run on the Workers Free plan.
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "PvpRoom"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "PvpLobby"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PvpRoom", "PvpLobby"]

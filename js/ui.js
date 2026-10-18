@@ -124,13 +124,13 @@ function playNudge(){
 }
 const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',crystal:'Hold 10 crystals for 15s',bounty:'Kills earn stars',royale:'6 tanks, 1 survivor',random:'A different mode each match'};
 function setupPickers(){
- const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),fm=featuredMode(),solo=isSolo(gk);
- return sec('Game type','','gtypes')+
-  '<div class="modes">'+GT_ORDER.concat('random').map(k=>'<button class="mode'+(gk===k?' on':'')+'" data-act="gtype" data-arg="'+k+'">'+(k===fm?'<span class="feat">+25% today</span>':'')+ICON[k]+'<b>'+GT_PICK[k].label+'</b><small>'+GT_DESC[k]+'</small></button>').join('')+'</div>'+
-  sec('Team size',solo?'':MODES[mk].n>1?'AI pilots fill your team':'','modes')+
-  (solo?'<div class="seg"><button class="on solo" disabled>Solo<small>You and 5 AI pilots, free for all. 1st place pays '+fmtNum(winRange(gk,mk)[0])+'</small></button></div>'
+ const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),fm=featuredMode(),solo=isSolo(gk),liveOK=IN_TG&&(save.mp||0)>=1,live=liveOK&&isLiveMode(gk);
+ return sec('Game type',liveOK?'Live = real pilots':'','gtypes')+
+  '<div class="modes">'+GT_ORDER.concat('random').map(k=>'<button class="mode'+(gk===k?' on':'')+'" data-act="gtype" data-arg="'+k+'">'+(k===fm?'<span class="feat">+25% today</span>':'')+(liveOK&&isLiveMode(k)?'<span class="live">Live</span>':'')+ICON[k]+'<b>'+GT_PICK[k].label+'</b><small>'+GT_DESC[k]+'</small></button>').join('')+'</div>'+
+  sec('Team size',solo?'':live?'Live pilots first, AI fills empty seats':MODES[mk].n>1?'AI pilots fill your team':'','modes')+
+  (solo?'<div class="seg"><button class="on solo" disabled>Solo<small>'+(live?'Up to 6 live pilots, AI fills the rest':'You and 5 AI pilots')+', free for all. 1st place pays '+fmtNum(winRange(gk,mk)[0])+'</small></button></div>'
    :'<div class="seg c3">'+Object.keys(MODES).map(k=>{const r=winRange(gk,k);return '<button class="'+(mk===k?'on':'')+'" data-act="mode" data-arg="'+k+'">'+k+'<small>win '+(r[0]===r[1]?fmtNum(r[0]):fmtNum(r[0])+'–'+fmtNum(r[1]))+'</small></button>';}).join('')+'</div>')+
-  sec('Map')+
+  sec('Map',live?'Live matches pick one at random':'')+
   '<div class="maps">'+['classic','overpass','longshot','craters','random'].map(id=>'<button class="map'+(mp===id?' on':'')+'" data-act="map" data-arg="'+id+'"><canvas data-art="map:'+id+'"></canvas><b>'+(MAPS[id].short||MAPS[id].n)+'</b></button>').join('')+'</div>'+
   '<p class="dimtxt" style="margin-top:8px">'+esc(MAPS[mp].d)+'</p>';
 }
@@ -142,7 +142,7 @@ function renderPlay(){
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
   '<div class="lobby">'+
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
-  '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
+  '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
   '</div>';
 }
@@ -589,31 +589,39 @@ function showWelcome(){
 let vsTimer=null;
 function vsBuild(){
  const {adv,dis}=matchup(),foes=units.filter(u=>u.team!==0),mine=units.filter(u=>u.team===0),solo=isSolo(matchG);
- const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u.isPlayer?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u.isPlayer?'You':u.name)+'</b><span style="color:'+CH[u.cls].c+'">'+CH[u.cls].n+'</span></div>';};
+ const live=pvpOn(),liveFoes=live&&pvpLiveFoes();
+ const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u===me?'You':u.name)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+CH[u.cls].c+'">'+CH[u.cls].n+'</span></div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
  else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+'.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
  else if(adv&&dis){txt='Mixed matchup: you counter some, some counter you.';}
  else txt='Even matchup. No counters either way.';
  const owned=ownedChassisClasses();
- return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag">AI opponents</span></div>'+
+ return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents')+'</span></div>'+
   '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
   '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+
-  '<div class="grow"></div><button class="fight" data-act="vsstart"><span class="big">START</span><span class="small" id="vsCount"></span></button>'+
+  '<div class="grow"></div><button class="fight'+(live?' wait':'')+'" data-act="vsstart"'+(live?' disabled':'')+'><span class="big">'+(live?'GET READY':'START')+'</span><span class="small" id="vsCount"></span></button>'+
   '<button class="linkbtn" data-act="vsback">Back to menu</button>';
 }
-function showVS(){
+function showVS(o){
+ const live=!!(o&&o.live),end=Date.now()+(live?o.ms:4000);
  let n=4;
- const ov=openOverlay('full',vsBuild(),{cls:'vs',key:'vs',build:vsBuild,onClose:fromBack=>{clearInterval(vsTimer);vsTimer=null;if(state==='vs')state='menu';}});
- const tick=()=>{const el=$('#vsCount');if(el)el.textContent=vsTimer?'Starts in '+n:'Tap to start';};
- clearInterval(vsTimer);vsTimer=setInterval(()=>{n--;if(n<=0){vsGo();return;}tick();},1000);tick();
+ const ov=openOverlay('full',vsBuild(),{cls:'vs',key:'vs',build:vsBuild,onClose:fromBack=>{clearInterval(vsTimer);vsTimer=null;if(pvpOn()&&state==='vs'){pvpLeave();state='menu';}else if(state==='vs')state='menu';}});
+ // live: the server starts the fight for everyone at once; AI: tap START or wait 4 seconds
+ const tick=()=>{const el=$('#vsCount');if(!el)return;if(live)el.textContent='Fight starts in '+Math.max(1,Math.ceil((end-Date.now())/1000));else el.textContent=vsTimer?'Starts in '+n:'Tap to start';};
+ clearInterval(vsTimer);vsTimer=setInterval(()=>{if(live){tick();return;}n--;if(n<=0){vsGo();return;}tick();},live?250:1000);tick();
  ov.re=()=>{ov.box.innerHTML=vsBuild();paintArt(ov.box);tick();};
 }
-function vsGo(){clearInterval(vsTimer);vsTimer=null;const ov=findOv('vs');if(ov){ov.onClose=null;closeOverlay(ov);}if(state==='vs')startMatch();}
+function vsGo(){if(pvpOn())return;clearInterval(vsTimer);vsTimer=null;const ov=findOv('vs');if(ov){ov.onClose=null;closeOverlay(ov);}if(state==='vs')startMatch();}
 function beginMatch(){
- if(state==='play')return;
- closeAll();prepareMatch();
+ if(state==='play'||(pvp&&pvp.phase==='find'))return;
+ if(pvp)pvpClose();   // anything left from a live match that's over
+ closeAll();
+ // Arena, Moon Zone and today's featured mode look for live pilots first (the coached first match is always AI)
+ const gk0=gtypeKey(),gk=gk0==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk0;
+ if(pvpEligible(gk)){pvpFind(gk);return;}
+ prepareMatch(gk);
  if((save.mp||0)===0){startMatch();return;}   // the first match goes straight in, with coaching
  showVS();
 }
@@ -647,7 +655,7 @@ function resultsHTML(r){
  const st=r.stats;
  return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+Math.min(96,i*3.5+Math.random()*2)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
   '<div class="grow"></div><div class="title '+cls+'">'+title+'</div>'+
-  '<div class="sub">'+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
+  '<div class="sub">'+(r.live?'Live ':'')+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
   '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span></div>'+
@@ -676,17 +684,18 @@ function roundHTML(info){
   '<div class="rscore num"><span style="color:var(--ally)">'+info.w[0]+'</span><i>–</i><span style="color:var(--foe)">'+info.w[1]+'</span></div>'+
   '<p class="mut">First to 2 wins. '+esc(tip)+'</p>'+
   (owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="rswap" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+
-  '<button class="btn btn-go block" style="margin-top:14px" data-act="nextround">Start round '+info.round+'<span id="rCount" class="dimtxt" style="color:inherit;opacity:.7"></span></button>';
+  (info.live?'<button class="btn btn-quiet block" style="margin-top:14px" disabled>Round '+info.round+'<span id="rCount" class="dimtxt" style="color:inherit;opacity:.7"></span></button>'
+   :'<button class="btn btn-go block" style="margin-top:14px" data-act="nextround">Start round '+info.round+'<span id="rCount" class="dimtxt" style="color:inherit;opacity:.7"></span></button>');
 }
 function onRoundEnd(info){
  if(state!=='round'||!inBattle())return;
- let n=4;
+ let n=4;const end=Date.now()+(info.ms||4000);
  const ov=openOverlay('modal',roundHTML(info),{key:'round',sticky:true,noBack:true,cls:'rm'});
- const tick=()=>{const el=$('#rCount',ov.box);if(el)el.textContent=roundTimer?' in '+n:'';};
+ const tick=()=>{const el=$('#rCount',ov.box);if(!el)return;el.textContent=info.live?' starts in '+Math.max(1,Math.ceil((end-Date.now())/1000)):roundTimer?' in '+n:'';};
  ov.re=()=>{ov.box.innerHTML=roundHTML(info);tick();};
- clearInterval(roundTimer);roundTimer=setInterval(()=>{n--;if(n<=0){goRound();return;}tick();},1000);tick();
+ clearInterval(roundTimer);roundTimer=setInterval(()=>{if(info.live){tick();return;}n--;if(n<=0){goRound();return;}tick();},info.live?250:1000);tick();
 }
-function goRound(){clearInterval(roundTimer);roundTimer=null;const ov=findOv('round');if(ov){ov.onClose=null;closeOverlay(ov);}startRound();}
+function goRound(){if(pvpOn())return;clearInterval(roundTimer);roundTimer=null;const ov=findOv('round');if(ov){ov.onClose=null;closeOverlay(ov);}startRound();}
 function onRoundStart(){clearInterval(roundTimer);roundTimer=null;const ov=findOv('round');if(ov){ov.onClose=null;closeOverlay(ov);}}
 
 // ---------- match start / leave ----------
@@ -708,11 +717,13 @@ function forfeit(){
  const ov=findOv('leave');if(ov){ov.onClose=null;closeOverlay(ov);}
  if(state!=='play'&&state!=='round')return;
  clearInterval(roundTimer);roundTimer=null;
+ if(pvpOn())pvpLeave();
  state='menu';paused=false;
  save.streak=0;save.losses=(save.losses||0)+1;save.mp=(save.mp||0)+1;store();
  exitBattle();
 }
 function exitBattle(){
+ if(pvp)pvpClose();   // leaving the results of a live match (or a lost one)
  closeAll();if(leaveFn){dropBack(leaveFn);leaveFn=null;}
  if(state!=='play')state='menu';
  document.body.classList.remove('battle');tut=null;paused=false;
@@ -775,10 +786,12 @@ const ACT={
  firstfight:()=>{save.welcomed=true;store();closeAll();beginMatch();},
  vsstart:()=>vsGo(),
  vsback:()=>{const ov=findOv('vs');if(ov)closeOverlay(ov);},
- swapcls:a=>{clearInterval(vsTimer);vsTimer=null;switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},
+ pvpai:()=>{if(!pvp)return;const g=pvp.q.g;pvpCancel();closeFind();prepareMatch(g);showVS();},
+ pvpcancel:()=>{pvpCancel();closeFind();},
+ swapcls:a=>{if(!pvpOn()){clearInterval(vsTimer);vsTimer=null;}switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},   // live: the server's countdown keeps running
  again:()=>{closeAll();exitBattle();beginMatch();},
  menu:()=>{exitBattle();setTab('play');},
- sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?'Last Standing':'a '+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
+ sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
  login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak');if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},
  claimdq:a=>{const n=claimDaily(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=dailyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
  claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}const n=claimQuest(a);if(n)showToast('+'+n+' points: '+Q.n);},
@@ -825,7 +838,7 @@ const ACT={
   store();showToast('Granted on this device (test)');},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),
- rswap:a=>{clearInterval(roundTimer);roundTimer=null;switchChassis(a);fx('tap');},
+ rswap:a=>{if(!pvpOn()){clearInterval(roundTimer);roundTimer=null;}switchChassis(a);fx('tap');},
  nextround:()=>goRound()};
 function onTap(e){
  const el=e.target.closest('[data-act]');if(!el||el.disabled)return;

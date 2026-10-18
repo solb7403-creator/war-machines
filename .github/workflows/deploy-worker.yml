@@ -1,9 +1,11 @@
 name: Deploy Stars server (Cloudflare)
-# Deploys worker/ to Cloudflare Workers, sets its secrets, and points the Telegram bot webhook at it.
+# Deploys worker/ to Cloudflare Workers (with the live-match Durable Objects), sets its secrets, and points the
+# Telegram bot webhook at it. The live-match server runs the game's own sim, so js/game.js and js/rules.js deploy it too.
+# Before deploying: the server tests, and a live-match smoke test in the real Workers runtime (wrangler dev).
 on:
   push:
     branches: [main]
-    paths: ['worker/**', '.github/workflows/deploy-worker.yml']
+    paths: ['worker/**', 'js/game.js', 'js/rules.js', 'dev/tests/wtest/**', '.github/workflows/deploy-worker.yml']
   workflow_dispatch:
 jobs:
   deploy:
@@ -12,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Check secrets
         env:
           CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -22,6 +24,21 @@ jobs:
           [ -n "$CF" ] || { echo "::error::CLOUDFLARE_API_TOKEN secret missing"; exit 1; }
           [ -n "$BOT" ] || { echo "::error::BOT_TOKEN secret missing"; exit 1; }
           [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
+      - name: Build the match sim (js/rules.js + js/game.js -> worker/src/sim.gen.js)
+        run: node worker/build-sim.mjs
+      - name: Server tests (points, payments, live matches)
+        run: |
+          node dev/tests/wtest/test.mjs
+          node dev/tests/wtest/pvp.mjs
+      - name: Live-match smoke test in the Workers runtime
+        working-directory: worker
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          npx -y wrangler@4 dev --port 8787 --ip 127.0.0.1 --var BOT_TOKEN:smoke-token --var FIREBASE_DB_SECRET:offline --var PVP_WAIT_MS:3000 > dev.log 2>&1 &
+          for i in $(seq 1 90); do curl -s http://127.0.0.1:8787/ >/dev/null 2>&1 && break; sleep 1; done
+          SMOKE_BOT_TOKEN=smoke-token node smoke.mjs || { echo "--- wrangler dev log"; tail -80 dev.log; exit 1; }
+          kill %1 2>/dev/null || true
       - name: Find account + ensure workers.dev subdomain
         env:
           CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -48,9 +65,9 @@ jobs:
         run: |
           set -o pipefail
           run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
-          run npx -y wrangler@3.80.0 deploy
-          printf '%s' "$BOT_TOKEN" | run npx -y wrangler@3.80.0 secret put BOT_TOKEN
-          printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@3.80.0 secret put FIREBASE_DB_SECRET
+          run npx -y wrangler@4 deploy
+          printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
+          printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@4 secret put FIREBASE_DB_SECRET
           URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
           echo "WORKER_URL=$URL" >> $GITHUB_ENV
           echo "::notice::WORKER_URL=$URL"
@@ -64,3 +81,8 @@ jobs:
             -d "{\"url\":\"${WORKER_URL}/api/tg-webhook\",\"secret_token\":\"${SECRET}\",\"allowed_updates\":[\"message\",\"pre_checkout_query\"]}")
           echo "::notice::setWebhook: $R"
           echo "$R" | grep -q '"ok":true' || exit 1
+      - name: Live matches answer
+        run: |
+          for i in 1 2 3 4 5; do H=$(curl -s "$WORKER_URL/pvp/health"); echo "$H" | grep -q '"ok":true' && break; sleep 5; done
+          echo "::notice::pvp health: $H"
+          echo "$H" | grep -q '"ok":true' || { echo "::error::live-match lobby not answering: $H"; exit 1; }

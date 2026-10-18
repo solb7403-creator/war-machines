@@ -429,6 +429,28 @@ button.q{display:flex;width:100%;text-align:left}
 .vs .team.many .unit canvas{width:64px;height:64px}
 .vs .vsgoal{text-align:center;margin-top:10px}
 
+/* ---- live matches: finding pilots, live tags ---- */
+.find{text-align:center;align-items:center}
+.find .fhead b{display:block;font:700 22px var(--disp)}
+.find .fhead span{color:var(--dust);font-size:13px}
+.radar{position:relative;width:180px;height:180px;margin:26px auto 0;border-radius:50%;border:1px solid var(--edge2);overflow:hidden;
+ background:radial-gradient(circle,rgba(77,159,255,.10) 0 30%,transparent 31%),repeating-radial-gradient(circle,transparent 0 29px,rgba(223,231,242,.07) 29px 30px),var(--void2)}
+.radar .sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,207,74,.0) 0deg,rgba(255,207,74,.0) 300deg,rgba(255,207,74,.32) 360deg);animation:sweep 2.4s linear infinite}
+.radar b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 52px/1 var(--disp);color:var(--moon)}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.radar .sweep{animation:none;opacity:.5}}
+.find .ftitle{font:600 17px var(--disp);margin-top:16px}
+.find .slots{display:flex;justify-content:center;gap:10px;margin-top:12px}
+.find .slots i{width:16px;height:16px;border-radius:50%;border:1.5px dashed var(--edge3)}
+.find .slots i.on{border:0;background:var(--gold);box-shadow:0 0 10px rgba(255,207,74,.5)}
+.find .fnote{max-width:300px;margin:12px auto 0;font-size:13px}
+.find .btn.block{width:100%;max-width:420px;margin:0 auto}
+.aitag.live{border-color:rgba(95,227,161,.55);color:var(--ok)}
+.vs .unit .ai{font-style:normal;font:700 10px/1 var(--disp);padding:1px 4px;border-radius:5px;border:1px solid var(--edge3);color:var(--dust);vertical-align:2px}
+.mode .live{position:absolute;top:8px;left:8px;padding:1px 6px;border-radius:6px;border:1px solid rgba(95,227,161,.6);color:var(--ok);font:700 10px/1.5 var(--disp)}
+.livechip{display:inline-block;padding:0 6px;border-radius:6px;border:1px solid rgba(95,227,161,.6);color:var(--ok);font:700 11px/1.45 var(--disp);vertical-align:2px}
+.fight.wait{filter:saturate(.6);cursor:default}
+
 /* ---- short screens (older iPhones, Telegram with the keyboard bar) ---- */
 @media (max-height:620px){
  .hero{min-height:100px}
@@ -439,6 +461,7 @@ button.q{display:flex;width:100%;text-align:left}
  .fight{height:58px}.fight .big{font-size:22px}.fight .small{font-size:12px;margin-top:2px}
  .vs .team{margin-top:8px}.vs .unit canvas{width:60px;height:60px}.vs .mark{font-size:26px;margin-top:6px}.vs .match{margin-top:10px;padding:10px}
  .vs .team.many .unit canvas{width:50px;height:50px}.vs .team.many .unit{width:60px}.vs .vsgoal{display:none}
+ .radar{width:130px;height:130px;margin-top:14px}.radar b{font-size:40px}
  .welcome .big{font-size:24px}.welcome .step{margin-top:8px}.wtank{height:84px}
  .res .title{font-size:36px}.res .gain{font-size:32px;margin-top:10px}
 }
