@@ -30,7 +30,7 @@ async def main():
         check(r['lo']['2']>=1.031 and r['hi']['2']<=1.044,'salvaged epic out of range '+json.dumps(r))
         check(r['cmin']>=1.05 and r['cmax']<=1.10,'crate roll out of 105-110% '+json.dumps(r))
         check(r['hi']['2']<r['cmin'],'a salvaged epic beat a common crate item')
-        check(r['price']==[0,5000,10000],'salvage prices '+str(r['price']))
+        check(r['price']==[0,10000,20000],'salvage prices '+str(r['price']))
         # paid gear wins equipBest over salvage of a higher rarity
         r=await pg.evaluate("""()=>{save.wOwn={pulse:[0],twin:[0],siege:[]};save.roll={'twin:0':1.05};save.salv={'twin:2':1.044};equipBest(true,'twin');return [save.wTier.twin,!!save.wSal.twin,getW('twin').mult];}""")
         check(r[0]==0 and r[1]==False,'equipBest picked salvage over a crate item '+str(r))
@@ -164,6 +164,24 @@ async def main():
             want={'royale':'Last Standing, 1st of 6','crystal':'Crystal Rush 3v3','bounty':'Bounty 2v2'}[g]
             check(want in sub,'results subtitle for %s: %s'%(g,sub))
             await pg.screenshot(path=OUT+'results_'+g+'.png')
+        # 9) pull a sheet down to close it; scrolling, small or upward moves never close it
+        SW='''(c)=>new Promise(res=>{closeAll();setTab('play');eval(c.open);setTimeout(()=>{
+         const box=[...document.querySelectorAll('.sheet,.modal')].pop();if(c.scroll)box.scrollTop=c.scroll;
+         const r=box.getBoundingClientRect(),x=r.left+r.width/2,y0=r.top+(c.y0||120);
+         const T=y=>new Touch({identifier:1,target:box,clientX:x,clientY:y});
+         const fire=(type,y)=>box.dispatchEvent(new TouchEvent(type,{cancelable:true,bubbles:true,touches:type==='touchend'?[]:[T(y)],targetTouches:type==='touchend'?[]:[T(y)],changedTouches:[T(y)]}));
+         fire('touchstart',y0);let i=0;const steps=10;
+         const step=()=>{i++;fire('touchmove',y0+c.dy*i/steps);if(i<steps)setTimeout(step,c.slow?60:16);else{fire('touchend',y0+c.dy);setTimeout(()=>res(!box.classList.contains('show')),350);}};
+         setTimeout(step,16);},450);})'''
+        for name,cfg,want in [('pull down closes',{'open':"openSetup()",'dy':180},True),
+                              ('scrolled page does not close',{'open':"openPass()",'scroll':400,'dy':180},False),
+                              ('small slow pull does not close',{'open':"openSetup()",'dy':60,'slow':True},False),
+                              ('upward scroll does not close',{'open':"openSetup()",'dy':-150},False),
+                              ('grab bar closes a scrolled sheet',{'open':"openPass()",'scroll':400,'dy':200,'y0':12},True),
+                              ('popup closes too',{'open':"askTerms(()=>{})",'dy':200,'y0':40},True)]:
+            closed=await pg.evaluate(SW,cfg)
+            print('swipe:',name,closed)
+            check(closed==want,'swipe-to-close: '+name)
         print('fails:',fails,'errors:',errs[:6])
         await b.close()
     print('RESULT','PASS' if not fails and not errs else 'FAIL')

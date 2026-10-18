@@ -738,6 +738,21 @@ function botAI(dt,u){
   if((!u.wp||u.wpT<=0||!u.wpG||Math.hypot(u.wpG.x-goal.x,u.wpG.y-goal.y)>1||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<0.6)&&(!u.wp||planBudget>0)){planBudget--;u.wp=waypoint(u,goal);u.wpG={x:goal.x,y:goal.y};u.wpT=0.25;}
   tx=u.wp.x;ty=u.wp.y;}
  for(const w of warns){const dx=u.x-w.x,dy=u.y-w.y,d=Math.hypot(dx,dy);if(d<w.r+R+0.4){const k=d||1;tx=u.x+(d?dx/k:1)*2;ty=u.y+(d?dy/k:0)*2;break;}}
+ // on a ramp: pick up or down once and drive it to the end. Without this, strafing and re-planning
+ // make bots rock up and down the ramp (they'd flip between "go to the deck" and "go to the ground" every few frames)
+ // the ramp plus its lips while up there; on the ground, the 1.6-unit mouth in front of its open end
+ const mouth=([rx,ry,rw,rh,o])=>u.x>=rx&&u.x<=rx+rw&&(o<0?u.y>=ry-1.6&&u.y<=ry:u.y>=ry+rh&&u.y<=ry+rh+1.6);
+ let onRamp=null;
+ if(BR){
+  if((u.elev||0)===1)onRamp=BR.ramps.find(([rx,ry,rw,rh])=>u.x>=rx&&u.x<=rx+rw&&u.y>=ry-R&&u.y<=ry+rh+R)||null;
+  else if(u.rc&&mouth(u.rc.rp)&&!u.rc.up)onRamp=u.rc.rp;   // just rolled off: finish clearing the mouth
+  else{const m=BR.ramps.find(mouth);if(m&&ptLevel(goal)===1)onRamp=m;}   // about to climb: commit now, no dithering at the foot
+ }
+ if(onRamp){
+  if(!u.rc||u.rc.rp!==onRamp)u.rc={rp:onRamp,up:ptLevel(goal)===1};
+  const [rx,ry,rw,rh,o]=onRamp,cx=rx+rw/2,deckY=o<0?ry+rh+0.9:ry-0.9,footY=o<0?ry-1.1:ry+rh+1.1;
+  tx=cx;ty=u.rc.up?deckY:footY;
+ }else u.rc=null;
  const vx=tx-u.x,vy=ty-u.y,vm=Math.hypot(vx,vy);
  if(vm>0.15){const k=STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*slowAt(u)*dt;u.x+=vx/vm*k;u.y+=vy/vm*k;}
  push(u);

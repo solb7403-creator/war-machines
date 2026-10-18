@@ -123,7 +123,7 @@ const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
 //   stock starter gear 1.00 | Salvaged Rare 1.010-1.030 | Salvaged Epic 1.031-1.044
 //   Common crate 1.050-1.100 | Rare crate 1.155-1.210 | Epic crate 1.386-1.452
 // Crate items roll 105-110% of their rarity; salvage stores its own multiplier.
-const ROLL_MIN=1.05,ROLL_MAX=1.10,SALV_COL='#c48a5c',SALV_PTS=[0,5000,10000];
+const ROLL_MIN=1.05,ROLL_MAX=1.10,SALV_COL='#c48a5c',SALV_PTS=[0,10000,20000];
 const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
 const rollOf=(k,t)=>(save.roll&&save.roll[k+':'+t])||1;
 const salvOf=(k,t)=>{const v=save.salv&&save.salv[k+':'+t];return v?(v<1?SALV_MIN[t]||1.01:v):0;};   // old saves stored a fraction
@@ -352,7 +352,7 @@ function claimWeekly(){
 }
 // ---- Lunar Pass: a 28-day season with 30 tiers. Free track for everyone, premium track for pass owners.
 // The premium track never gives points, so buying it can't buy leaderboard rank (the airdrop stays earned).
-const PASS_LEN=28,PASS_TIERS=30,PASS_XP=350,PASS_START=20744,PASS_PRICE={ton:8,stars:499};   // season 1 starts Oct 18, 2026 (UTC day 20744)
+const PASS_LEN=28,PASS_TIERS=30,PASS_XP=350,PASS_START=20744,PASS_PRICE={ton:13,stars:799};   // season 1 starts Oct 18, 2026 (UTC day 20744)
 const PASS_XP_WIN=40,PASS_XP_DRAW=25,PASS_XP_LOSS=20,PASS_XP_FEAT=10,PASS_XP_QUEST=50,PASS_XP_ALL=100;
 const seasonNo=()=>Math.max(1,Math.floor((dayNum()-PASS_START)/PASS_LEN)+1);
 const seasonEndMs=()=>(PASS_START+seasonNo()*PASS_LEN)*864e5-(Date.now()+(typeof srvOff==='number'?srvOff:0));

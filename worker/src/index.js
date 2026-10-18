@@ -10,8 +10,8 @@ const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin s
 // ---- prices (must match the game) ----
 const BOX_TON = [4, 8, 23];
 const BOX_STARS = [250, 500, 1500];
-const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6, pass: 8 };
-const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399, pass: 499 };
+const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6, pass: 13 };
+const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399, pass: 799 };
 // paints are looks only (no stats)
 const PAINT_TON = { nebula: 2.4, ember: 2.4, arctic: 2.4, venom: 2.4, gold: 4.8, void: 4.8 };
 const PAINT_STARS = { nebula: 150, ember: 150, arctic: 150, venom: 150, gold: 300, void: 300 };

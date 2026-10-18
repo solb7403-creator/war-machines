@@ -344,11 +344,43 @@ function openOverlay(kind,html,opt){
  box.innerHTML=(kind==='sheet'?'<div class="grab"></div>':'')+html;
  if(opt.build)ov.re=()=>fill(opt.build());
  ov.close=()=>closeOverlay(ov);
- if(scrim&&!opt.sticky)scrim.addEventListener('click',()=>ov.close());
+ if(scrim&&!opt.sticky){scrim.addEventListener('click',()=>ov.close());swipeToClose(ov);}
  if(!opt.noBack){ov.back=()=>closeOverlay(ov,true);pushBack(ov.back);}
  overlays.push(ov);
  requestAnimationFrame(()=>{if(scrim)scrim.classList.add('show');box.classList.add('show');paintArt(box);});
  return ov;
+}
+// Pull a sheet or popup down to close it. Only a deliberate pull counts: the touch has to start at the
+// top of the content (or on the grab bar) and move mostly downward, far or fast enough. Scrolling never closes it.
+function swipeToClose(ov){
+ const box=ov.box,isSheet=ov.kind==='sheet';
+ let sx=0,sy=0,t0=0,dy=0,armed=false,drag=false;
+ const place=d=>{box.style.transform=isSheet?'translateY('+d+'px)':'translate(-50%,calc(-50% + '+d+'px))';if(!isSheet)box.style.opacity=String(Math.max(0.4,1-d/400));};
+ box.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1){armed=false;return;}
+  const t=e.touches[0],top=box.getBoundingClientRect().top;
+  sx=t.clientX;sy=t.clientY;t0=performance.now();dy=0;drag=false;
+  armed=box.scrollTop<=0||t.clientY-top<44;   // already at the top, or touching the grab area
+ },{passive:true});
+ box.addEventListener('touchmove',e=>{
+  if(!armed||e.touches.length!==1)return;
+  const t=e.touches[0],ddx=t.clientX-sx,ddy=t.clientY-sy;
+  if(!drag){
+   if(ddy<-4||(Math.abs(ddx)>10&&Math.abs(ddx)>Math.abs(ddy))){armed=false;return;}   // scrolling or swiping sideways: leave it alone
+   if(ddy<12)return;
+   drag=true;box.style.transition='none';
+  }
+  dy=Math.max(0,ddy-12);place(dy);e.preventDefault();
+ },{passive:false});
+ const end=()=>{
+  if(!drag){armed=false;return;}
+  drag=false;armed=false;
+  const fast=dy>40&&dy/Math.max(1,performance.now()-t0)>0.5;
+  box.style.transition='';
+  if(dy>110||fast){if(isSheet)box.style.transform='translateY(100%)';else{box.style.transform='';box.style.opacity='';}ov.close();}
+  else{box.style.transform='';box.style.opacity='';}
+ };
+ box.addEventListener('touchend',end);box.addEventListener('touchcancel',end);
 }
 function closeOverlay(ov,fromBack){
  const i=overlays.indexOf(ov);if(i<0)return;overlays.splice(i,1);
@@ -407,7 +439,7 @@ const INFO={
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
   ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 6 to 9, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
-  ['Salvage','Paid with points: Salvaged Rare 5,000 (101 to 103% power), Salvaged Epic 10,000 (103.1 to 104.4%). Every crate item beats every salvaged item.']]],
+  ['Salvage','Paid with points: Salvaged Rare 10,000 (101 to 103% power), Salvaged Epic 20,000 (103.1 to 104.4%). Every crate item beats every salvaged item.']]],
  squad:()=>['Squad rewards',[
   ['How it works','Share your invite link. Anyone who opens the game with it for the first time joins your squad.'],
   ['You get paid when they stick around','+500 when they come back for a 2nd day with 1,500 points. +2,000 at 5 days and 5,000 points. +5,000 at 10 days and 20,000 points.'],
