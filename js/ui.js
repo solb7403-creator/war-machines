@@ -108,6 +108,7 @@ function playNudge(){
  if(dq)return {gem:'✓',b:'Quest complete',s:dq.t+': +'+dq.pts+' points',act:'tab',arg:'quests'};
  const u=nextUp();
  if(u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
+ if(IN_TG&&(save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points for each friend who keeps playing',act:'share'};
  return null;
 }
 const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',random:'Arena or Moon Zone, picked at the start'};
@@ -322,7 +323,8 @@ const INFO={
   ['Drive','Drag anywhere on the screen. Your cannon aims and fires on its own.'],
   ['Win','Arena: destroy the enemy team, or have more health left when the 3-minute timer runs out. Moon Zone: first team to 100.'],
   ['Mystery boxes','Drive over the gold box for a random boost. It lasts until you take enough damage; the ring around your tank shows what’s left.'],
-  ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button.'],
+  ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button to auto-aim, or drag from it to aim yourself.'],
+  ['Dash','The blue Dash button bursts you forward in the direction you’re driving. Use it to dodge supers. It recharges in 4 seconds.'],
   ['Crits','Direct hits can crit for double damage. Shots that only clip the edge do less.'],
   ['Counters','Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout. The winning side deals 15% more damage and takes 10% less.'],
   ['Map objects','Rocks, domes and containers block shots and movement. Orange supply crates break under fire and sometimes drop a box. Craters slow you down.'],
@@ -434,7 +436,9 @@ function openSolWallets(){
 function openSettings(){
  sheet('settings',()=>'<h3>Settings</h3>'+
   '<div class="list" style="margin-top:8px">'+
+  '<div class="q"><div class="grow"><div class="t">Sound</div><div class="p">Follows your phone’s silent switch</div></div><button class="toggle'+(save.sound!==false?' on':'')+'" data-act="sound" aria-pressed="'+(save.sound!==false)+'"><i></i></button></div>'+
   '<div class="q"><div class="grow"><div class="t">Vibration</div><div class="p">Buzz on hits, kills and rewards</div></div><button class="toggle'+(save.haptics?' on':'')+'" data-act="haptics" aria-pressed="'+(save.haptics?'true':'false')+'"><i></i></button></div>'+
+  '<div class="q"><div class="grow"><div class="t">Daily reminder</div><div class="p">One message when your reward is ready</div></div><button class="toggle'+(save.remind?' on':'')+'" data-act="remind" aria-pressed="'+(!!save.remind)+'"><i></i></button></div>'+
   '<button class="q" data-act="info" data-arg="howto"><div class="grow"><div class="t">How to play</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="wiki"><div class="grow"><div class="t">Wiki and tokenomics</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="copyid"><div class="grow"><div class="t">Player ID</div><div class="p">'+esc(playerKey())+(IN_TG?', '+esc(tgName(TG_USER)):'')+'</div></div><span class="mut">Copy</span></button>'+
@@ -504,7 +508,7 @@ function vsBuild(){
   '<button class="linkbtn" data-act="vsback">Back to menu</button>';
 }
 function showVS(){
- let n=5;
+ let n=4;
  const ov=openOverlay('full',vsBuild(),{cls:'vs',key:'vs',build:vsBuild,onClose:fromBack=>{clearInterval(vsTimer);vsTimer=null;if(state==='vs')state='menu';}});
  const tick=()=>{const el=$('#vsCount');if(el)el.textContent=vsTimer?'Starts in '+n:'Tap to start';};
  clearInterval(vsTimer);vsTimer=setInterval(()=>{n--;if(n<=0){vsGo();return;}tick();},1000);tick();
@@ -576,7 +580,7 @@ function roundHTML(info){
 }
 function onRoundEnd(info){
  if(state!=='round'||!inBattle())return;
- let n=5;
+ let n=4;
  const ov=openOverlay('modal',roundHTML(info),{key:'round',sticky:true,noBack:true,cls:'rm'});
  const tick=()=>{const el=$('#rCount',ov.box);if(el)el.textContent=roundTimer?' in '+n:'';};
  ov.re=()=>{ov.box.innerHTML=roundHTML(info);tick();};
@@ -619,6 +623,19 @@ function exitBattle(){
 let toastTimer=0;
 function showToast(msg){const el=$('#toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2300);}
 
+// ---------- daily reminder (the bot sends one message when the reward is ready) ----------
+function setReminders(on){
+ if(!IN_TG){showToast('Reminders work inside Telegram');return;}
+ save.remindAsked=true;
+ if(!on){save.remind=false;store();api('/api/notify-optin',{on:false}).catch(()=>{});showToast('Daily reminder off');return;}
+ const done=ok=>{save.remind=!!ok;store();if(ok)api('/api/notify-optin',{on:true}).catch(()=>{});showToast(ok?'Daily reminder on':'Allow messages from the bot to get reminders');uiDirty();};
+ try{if(TG.requestWriteAccess&&tgv('6.9'))TG.requestWriteAccess(ok=>done(ok));else done(true);}catch(e){done(true);}
+}
+function askReminder(){
+ setTimeout(()=>{if(findOv('remind')||inBattle())return;
+  openOverlay('modal','<h3>Keep your streak alive</h3><p class="mut">Get one message a day when your reward is ready. Turn it off any time in Settings.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-ghost" data-act="remindno">Not now</button><button class="btn btn-go" data-act="remindyes">Remind me</button></div>',{key:'remind'});},700);
+}
+
 // ---------- taps ----------
 const ACT={
  tab:a=>setTab(a),
@@ -640,7 +657,7 @@ const ACT={
  again:()=>{closeAll();exitBattle();beginMatch();},
  menu:()=>{exitBattle();setTab('play');},
  sharewin:()=>{const r=lastResult;shareRef('I just won a '+(r.gtype==='zone'?'Moon Zone ':'')+r.mode+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
- login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak');if(c.reveal)showReveal([c.reveal]);},
+ login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak');if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},
  claimdq:a=>{const n=claimDaily(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=dailyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
  claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}const n=claimQuest(a);if(n)showToast('+'+n+' points: '+Q.n);},
  visit:a=>{visitLinkQuest(a);uiDirty('quests');},
@@ -670,6 +687,10 @@ const ACT={
  lbscope:a=>{lbScope=a;fx('tap');uiDirty('ranks');},
  wiki:()=>openLink(WIKI_URL),
  haptics:()=>{save.haptics=!save.haptics;store();if(save.haptics)fx('tap');},
+ sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}},
+ remind:()=>setReminders(!save.remind),
+ remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
+ remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},
  copyid:()=>{try{navigator.clipboard.writeText(playerKey()).then(()=>showToast('Player ID copied'),()=>showToast(playerKey()));}catch(e){showToast(playerKey());}},
  devtap:()=>{if(!IS_DEV)return;const now=performance.now();if(now-devTapT>4000)devTapN=0;devTapT=now;if(++devTapN>=5){devTapN=0;openAdmin();}},
  dev:a=>{if(!IS_DEV)return;

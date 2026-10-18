@@ -101,7 +101,8 @@ const isSeriesMode=()=>matchG==='arena'&&modeKey()==='1v1'&&(save.mp||0)>0;   //
 // ---- one random event per team match or Moon Zone match ----
 const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},meteor:{txt:'Meteor shower! Stay out of the red circles',c:'#ff6b5e'},flare:{txt:'Solar flare: supers charge twice as fast',c:'#ffb347'}};
 const EVT_KEYS=Object.keys(EVENTS),METEOR_DMG=260;
-let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0;
+let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0,feed=[];
+function feedPush(txt,c){feed.push({txt,c,t:3.2});if(feed.length>3)feed.shift();}
 const flareMult=()=>evt&&evt.k==='flare'?2:1;
 const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+Math.random()*3:15+Math.random()*15;a.push(tt);}return a;};   // first box lands early
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
@@ -221,7 +222,7 @@ function startMatch(){
   banner=null;if(adv||dis)banner={t:3,txt:adv&&!dis?'You counter them: +15% damage':dis&&!adv?'Countered: '+CH[beatenBy(me.cls)].n+' beats '+CH[me.cls].n:'Mixed matchup',c:adv&&!dis?'#5fe3a1':dis&&!adv?'#ff6b5e':'#ffcf4a'};}
  series=isSeriesMode()?{w:[0,0],round:1}:null;
  if(series&&!banner)banner={t:2.4,txt:'Best of 3: first to 2 rounds wins',c:'#ffcf4a'};
- bullets=[];timeLeft=series?ROUND_T:MATCH;state='play';elapsed=0;ffwd=false;warns=[];evt=null;
+ bullets=[];timeLeft=series?ROUND_T:MATCH;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];
  evtAt=series?0:(matchG==='zone'?50:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;
  units.forEach(u=>{u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;});
@@ -286,7 +287,7 @@ function hitCrate(c,dmg){
  for(const L of [walls,baseWalls,navWalls]){const i=L.indexOf(c);if(i>=0)L.splice(i,1);}
  const i=crates.indexOf(c);if(i>=0)crates.splice(i,1);
  const x=c[0]+c[2]/2,y=c[1]+c[3]/2;
- blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);
+ blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);if(typeof fx==='function')fx('crate');
  if(Math.random()<0.45){boxes.push({x,y,life:20,age:0});pop(x,y-0.8,'MYSTERY BOX','#ffd24a');}
  else pop(x,y-0.8,'CRATE DESTROYED','#c9d6e3');
  buildNav();for(const u of units)u.wp=null;   // routes open up through the gap
@@ -316,7 +317,7 @@ function turret(a,dt){
  let r=Math.atan2(b.y-a.y,b.x-a.x)-a.ang;r=Math.atan2(Math.sin(r),Math.cos(r));
  const dist=Math.hypot(b.x-a.x,b.y-a.y);
  if(a.cd<=0&&seen&&Math.abs(r)<0.14&&dist<=STAT.range){
-  a.cd=a.wshot/rofMult(a);
+  a.cd=a.wshot/rofMult(a);if(a.isPlayer&&typeof fx==='function')fx('shot',a.wtype);
   bullets.push({x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a),life:(STAT.range+1)/a.wpspd});
  }
 }
@@ -332,7 +333,7 @@ function moveBullets(dt){
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t);
-   takeHit(t,dmg,owner);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':TC[q.o.team]});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
+   takeHit(t,dmg,owner);if(owner.isPlayer&&typeof fx==='function')fx('dealt',isCrit);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':TC[q.o.team]});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
   }
   q.life-=dt;
  }
@@ -345,13 +346,14 @@ const gsum=(r,k)=>r.gems.reduce((a,g)=>a+(g===k?GEM[k].amt*((r.gemM&&r.gemM[k])|
 const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+bsum(r,'rof'))*(1+gsum(r,'rof')),spdMult=r=>(1+bsum(r,'spd'))*(1+gsum(r,'spd'))*(r.spdM||1),armor=r=>Math.min(0.7,bsum(r,'arm')+gsum(r,'arm'));
 function takeHit(r,amt,src){
  const wasAlive=r.hp>0;
- r.hp-=amt;r.flash=0.08;r.calm=0;
+ r.hp-=amt;r.flash=0.08;r.calm=0;if(r.isPlayer&&amt>0)r.hurtT=0.3;
  if(r.isPlayer&&mstat)mstat.taken+=amt;
  if(r.isPlayer&&amt>0&&typeof fx==='function')fx('hit',amt);
  for(const b of r.buffs)b.taken+=amt;
  r.buffs=r.buffs.filter(b=>b.taken<BUFF_LIFE);   // buff wears off after enough damage taken
  if(wasAlive&&r.hp<=0&&gzones){r.deaths=(r.deaths||0)+1;const k=1-r.team;gscore[k]=Math.min(ZONE_WIN,gscore[k]+KILL_PTS);pop(r.x,r.y-1.6,'+'+KILL_PTS+' KILL',TC[k]);}
  if(wasAlive&&r.hp<=0&&src&&src.isPlayer&&mstat)mstat.kills++;
+ if(wasAlive&&r.hp<=0)feedPush(src?(src.isPlayer?'You':src.name)+' destroyed '+(r.isPlayer?'you':r.name):(r.isPlayer?'You':r.name)+' got hit by a meteor',src?TC[src.team]:'#ff8a3d');
  if(wasAlive&&r.hp<=0&&typeof fx==='function')fx(r.isPlayer?'die':src&&src.isPlayer?'kill':'boom');
  if(wasAlive&&r.hp<=0){   // robot destroyed: wreck explosion
   blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});
@@ -395,20 +397,54 @@ function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse p
   if(inRock(x,y))return d;}
  return SUPER_LEN;
 }
-function useSuper(r){
- if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0)return;
- const S=SUP[r.wtype||'pulse'],e=nearestFoe(r);
- if(!e)return;
- if(S.kind!=='nova'&&!los(r,e)){
-  // don't burn the charge on a blind fire (the bot already requires LOS too)
-  if(r.isPlayer)showToast('No line of sight to an enemy');
-  return;
+function useSuper(r,aimAng){
+ if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0)return false;
+ const S=SUP[r.wtype||'pulse'],e=nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;
+ if(!aimed){
+  if(!e)return false;
+  if(S.kind!=='nova'&&!los(r,e)){   // don't burn the charge on a blind auto-fire
+   if(r.isPlayer)showToast('No line of sight. Drag from Super to aim it yourself.');
+   return false;
+  }
  }
  r.sp=0;
  if(r.isPlayer&&mstat)mstat.sup++;
- if(r.isPlayer&&typeof fx==='function')fx('super');
- let ang=Math.atan2(e.y+(e.vy||0)*S.charge-r.y,e.x+(e.vx||0)*S.charge-r.x);
- r.sup={t:S.charge,ang,w:r.wtype||'pulse'};
+ if(typeof fx==='function')fx(r.isPlayer?'super':'warn');   // an enemy super beeps as it charges
+ const ang=aimed?aimAng:Math.atan2(e.y+(e.vy||0)*S.charge-r.y,e.x+(e.vx||0)*S.charge-r.x);
+ r.sup={t:S.charge,ang,w:r.wtype||'pulse',fixed:aimed};
+ return true;
+}
+// ---- dash: a quick burst in the direction you're steering (4s cooldown) ----
+const DASH_CD=4,DASH_T=0.2,DASH_SPD=3.4;
+function useDash(u,dx,dy){
+ if(state!=='play'||u.hp<=0||(u.dashCd||0)>0||u.dash)return false;
+ let m=Math.hypot(dx||0,dy||0);
+ if(m<0.2){const a=u.hd===undefined?u.ang:u.hd;dx=Math.cos(a);dy=Math.sin(a);m=1;}
+ u.dash={t:DASH_T,dx:dx/m,dy:dy/m};u.dashCd=DASH_CD;
+ if(u.isPlayer&&typeof fx==='function')fx('dash');
+ return true;
+}
+function dashStep(u,dt){   // returns true while dashing
+ if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);
+ if(!u.dash)return false;
+ const k=STAT.speed*DASH_SPD*slowAt(u)*dt;u.x+=u.dash.dx*k;u.y+=u.dash.dy*k;push(u);
+ u.dash.t-=dt;if(u.dash.t<=0)u.dash=null;
+ return true;
+}
+// bots dash out of a super they see coming (about half the time)
+function botDodge(u){
+ if((u.dashCd||0)>0||u.dash)return;
+ for(const v of units){
+  if(v.team===u.team||v.hp<=0||!v.sup||v.sup.dodged&&v.sup.dodged[u.name])continue;
+  const S=SUP[v.sup.w];let inDanger=false,px=0,py=0;
+  if(S.kind==='nova'){const d=Math.hypot(u.x-v.x,u.y-v.y);if(d<S.r+R){inDanger=true;px=(u.x-v.x)/(d||1);py=(u.y-v.y)/(d||1);}}
+  else{const ca=Math.cos(v.sup.ang),sa=Math.sin(v.sup.ang),ex=u.x-v.x,ey=u.y-v.y,along=ex*ca+ey*sa,side=-ex*sa+ey*ca,wd=S.kind==='beam'?S.w:S.r*0.6,ln=S.kind==='beam'?S.len:S.range;
+   if(along>0&&along<ln&&Math.abs(side)<wd+R){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
+  if(!inDanger)continue;
+  v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.name]=1;
+  if(Math.random()<0.5)useDash(u,px,py);
+  return;
+ }
 }
 function fireSuper(r,S){
  const col=TC[r.team];
@@ -466,7 +502,7 @@ function superTick(dt){
  for(const r of units){
   if(!r.sup||r.hp<=0)continue;
   const S=SUP[r.sup.w],e=nearestFoe(r);
-  if(e&&S.kind!=='nova'&&r.sup.t>0.25){   // the aim keeps steering until the last 0.25s, then locks
+  if(e&&S.kind!=='nova'&&r.sup.t>0.25&&!r.sup.fixed){   // the aim keeps steering until the last 0.25s, then locks
    if(los(r,e)){const want=Math.atan2(e.y+(e.vy||0)*r.sup.t-r.y,e.x+(e.vx||0)*r.sup.t-r.x);let d=want-r.sup.ang;d=Math.atan2(Math.sin(d),Math.cos(d));const st=1.6*dt;r.sup.ang+=Math.max(-st,Math.min(st,d));}
   }
   r.sup.t-=dt;
@@ -491,7 +527,7 @@ function superTick(dt){
  novas=novas.filter(n=>n.t>0);
  for(const b of beams)b.t-=dt;
  beams=beams.filter(b=>b.t>0);
- if(me.sp>=SUPER_MAX&&!me.rdyShown){me.rdyShown=true;nums.push({x:me.x,y:me.y-1.8,t:0.9,z:1.5,txt:'SUPER READY',c:'#ff4d4d'});}
+ if(me.sp>=SUPER_MAX&&!me.rdyShown){me.rdyShown=true;nums.push({x:me.x,y:me.y-1.8,t:0.9,z:1.5,txt:'SUPER READY',c:'#ff4d4d'});if(typeof fx==='function')fx('ready');}
  if(me.sp<SUPER_MAX)me.rdyShown=false;
  for(const u of units){   // AI units fire their super when ready, with sight and in range
   if(u.isPlayer||u.hp<=0)continue;
@@ -597,6 +633,7 @@ function coverSpot(from,threat){
 function botAI(dt,u){
  const tgt=nearestFoe(u);
  if(!tgt||u.hp<=0)return;
+ botDodge(u);if(dashStep(u,dt))return;
  const b=u.brain,d=dist2(u,tgt),seen=los(u,tgt),hurt=u.hp/u.mhp<0.5&&u.hp<tgt.hp;
  u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=1+Math.random()*1.8;}
  b.t-=dt;b.age+=dt;b.hideCd-=dt;
@@ -664,9 +701,11 @@ function update(dt){
  if(shakeT>0){shakeT-=dt;if(shakeT<=0)shakeM=0;}
  if(state!=='play')return;
  if(me.hp>0){   // dead players spectate their team
-  const [ix,iy]=inputVec();
-  const k=STAT.speed*spdMult(me)*(me.sup?0.6:1)*slowAt(me)*dt;me.x+=ix*k;me.y+=iy*k;push(me);
+  if(!dashStep(me,dt)){const [ix,iy]=inputVec();
+   const k=STAT.speed*spdMult(me)*(me.sup?0.6:1)*slowAt(me)*dt;me.x+=ix*k;me.y+=iy*k;push(me);}
  }
+ me.hurtT=Math.max(0,(me.hurtT||0)-dt);
+ for(const f of feed)f.t-=dt;if(feed.length&&feed[0].t<=0)feed.shift();
  planBudget=2;   // at most two bots re-plan their route per frame
  for(const u of units)if(!u.isPlayer&&u.hp>0)botAI(dt,u);
  boxTick(dt);heading(dt);superTick(dt);
@@ -704,10 +743,10 @@ function meteorWarn(){
  const alive=units.filter(u=>u.hp>0);let x,y;
  if(alive.length&&Math.random()<0.6){const u=alive[(Math.random()*alive.length)|0];x=u.x+(Math.random()-0.5)*4;y=u.y+(Math.random()-0.5)*4;}
  else{x=2+Math.random()*(W-4);y=4+Math.random()*(H-8);}
- warns.push({x:Math.max(1,Math.min(W-1,x)),y:Math.max(1,Math.min(H-1,y)),r:1.6,t:1.3,t0:1.3});
+ warns.push({x:Math.max(1,Math.min(W-1,x)),y:Math.max(1,Math.min(H-1,y)),r:1.6,t:1.3,t0:1.3});if(typeof fx==='function')fx('warn');
 }
 function meteorHit(w){
- blasts.push({x:w.x,y:w.y,r:w.r*1.25,t:0.5,t0:0.5,c:'#ff8a3d'});blasts.push({x:w.x,y:w.y,r:w.r*0.6,t:0.3,t0:0.3,c:'#ffe08a'});shake(7,0.35);
+ blasts.push({x:w.x,y:w.y,r:w.r*1.25,t:0.5,t0:0.5,c:'#ff8a3d'});if(typeof fx==='function')fx('meteor');blasts.push({x:w.x,y:w.y,r:w.r*0.6,t:0.3,t0:0.3,c:'#ffe08a'});shake(7,0.35);
  for(const u of units){
   if(u.hp<=0||underDeck(u))continue;
   if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+R*0.5){const d=METEOR_DMG*(1-armor(u));takeHit(u,d,null);nums.push({x:u.x,y:u.y-R,t:0.9,z:1.6,txt:'METEOR '+Math.round(d),c:'#ff8a3d'});}
@@ -739,10 +778,10 @@ function endRound(){
 function startRound(){
  if(!series||state!=='round')return;
  setMap(curMap);   // fresh crates
- bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
+ bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
  me=units[0];
  for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
-  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
+  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.hurtT=0;if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  const {adv,dis}=matchup();
  banner={t:2.4,txt:'Round '+series.round+(adv&&!dis?': you counter them':dis&&!adv?': they counter you':''),c:adv&&!dis?'#5fe3a1':dis&&!adv?'#ff6b5e':'#ffcf4a'};
  state='play';
