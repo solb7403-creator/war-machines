@@ -59,15 +59,18 @@ const PAINTS={
  arctic:{n:'Arctic',hull:'#a9b6c8',tur:'#c2ccd9',trim:'#ffffff',ton:2.4,stars:150},
  venom:{n:'Venom',hull:'#1d3b21',tur:'#28502d',trim:'#7be07b',ton:2.4,stars:150},
  gold:{n:'Gold plate',hull:'#7a5c16',tur:'#9a7720',trim:'#ffe08a',ton:4.8,stars:300,shine:true},
- void:{n:'Void',hull:'#07080d',tur:'#121522',trim:'#4d9fff',ton:4.8,stars:300,shine:true}};
+ void:{n:'Void',hull:'#07080d',tur:'#121522',trim:'#4d9fff',ton:4.8,stars:300,shine:true},
+ founder:{n:'Founder',hull:'#aab2c0',tur:'#d3d9e3',trim:'#ffcf4a',shine:true,only:'founder'}};   // Founder pack only, never sold on its own
 // ---- featured mode: one mode a day pays +25% and gets a live queue ----
 const FEATURE_ROT=['crystal','royale','bounty','crystal','bounty','royale','zone'],FEATURED_X=1.25;   // by UTC day; season 1 opens with Crystal Rush
 const featuredOn=day=>FEATURE_ROT[((day%7)+7)%7];
 const LIVE_BASE=['arena','zone'];   // always live; the featured mode joins them each day. Other modes stay vs AI
 const liveModes=day=>LIVE_BASE.includes(featuredOn(day))?LIVE_BASE.slice():LIVE_BASE.concat(featuredOn(day));
-// ---- daily deal: one rare or epic crate a day at 30% off, every currency. The server allows the lower Stars price on that crate only ----
-const DEAL_ROT=[['weapon',1],['gem',2],['chassis',1],['weapon',2],['gem',1],['chassis',2]],DEAL_OFF=0.3;   // by UTC day
-const dealOn=day=>{const r=DEAL_ROT[((day%DEAL_ROT.length)+DEAL_ROT.length)%DEAL_ROT.length];return {tk:r[0],ri:r[1]};};
+// ---- deals, per pilot: the first rare or epic gem cache each UTC day is 30% off; one epic crate (any kind) each UTC week is 25% off.
+// Every currency. The server tracks Stars use (deals/<pid>) and only then allows the lower price
+const DEAL_D_OFF=0.3,DEAL_W_OFF=0.25;
+// ---- Founder pack: one per pilot, sold only until $LUNAR launches (set to false at launch; the server stops selling it too) ----
+const FOUNDER_OPEN=true;
 // ---- match modes: team sizes, game types and what they pay (the PvP server scores with these too) ----
 const MODES={
  '1v1':{n:1,label:'1v1',win:125,draw:60,loss:30},

@@ -49,7 +49,7 @@ function recoverStars(list){
   if(!it.n)continue;
   if(!save.starsDone[it.n]){
    save.starsDone[it.n]=1;n++;
-   grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k});
+   grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g,deal:it.x||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k});
   }
   starsAckQ.push(it.n);
  }
@@ -103,7 +103,7 @@ function descLabel(d){
  if(!d)return 'Purchase';
  if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache');
  if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
- return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():'Purchase';
+ return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():'Purchase';
 }
 // record a confirmed payment locally and on the server (which re-checks it on-chain)
 function logPayment(rec){
@@ -146,7 +146,7 @@ async function payWithStars(ton,desc){
  if(!IN_TG||!TG.openInvoice){showToast('Open the game in Telegram to pay with Stars');return;}
  if(starsBusy)return;starsBusy=true;showToast('Opening Stars checkout…');
  try{
-  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.kind==='paint'?desc.id:desc.kind==='pass'?String(seasonNo()):desc.tk,ri:desc.ri,price:ton});
+  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.kind==='paint'?desc.id:desc.kind==='pass'?String(seasonNo()):desc.tk,ri:desc.ri,price:ton,deal:desc.deal||''});
   if(!d.link)throw new Error(d.error||'invoice');
   TG.openInvoice(d.link,status=>{
    starsBusy=false;
@@ -157,7 +157,9 @@ async function payWithStars(ton,desc){
    }else if(status==='cancelled')showToast('Payment cancelled');
    else if(status==='failed')showToast('Stars payment failed. Nothing was charged.');
   });
- }catch(e){starsBusy=false;showToast('Stars checkout is unavailable right now. Try again in a minute.');}
+ }catch(e){starsBusy=false;
+  if(e&&e.message==='deal_used'){markDeal(desc.deal);store();if(typeof uiDirty==='function')uiDirty();showToast('You already used this deal. Check the new price.');return;}   // used on another device
+  showToast('Stars checkout is unavailable right now. Try again in a minute.');}
 }
 // ---- SOL: Solana Pay reference key lets us find exactly this payment on-chain ----
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';

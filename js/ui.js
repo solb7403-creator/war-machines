@@ -117,7 +117,10 @@ function playNudge(){
  if(pr)return {gem:String(passTier()),b:'Lunar Pass reward ready',s:pr+(pr===1?' reward':' rewards')+' to claim',act:'pass'};
  const fm=featuredMode();
  if(gtypeKey()!==fm&&save.featSeen!==dayNum()&&(save.mp||0)>=2)return {svg:ICON[fm],b:'Featured today: '+GTYPES[fm].label,s:'+25% points and +10 pass XP a match. Tap to switch.',act:'feat'};
- if(save.dealSeen!==dayNum()&&(save.mp||0)>=3){const D=dealOn(dayNum());return {gem:'%',b:'Today’s deal: 30% off',s:crateName(D.tk,D.ri)+' until 00:00 UTC',act:'deal'};}
+ if((save.mp||0)>=3){   // each deal nudges once per period, while it's unused
+  if(dealWeekFree()&&save.wdealSeen!==weekNum())return {gem:'%',b:'Weekly epic deal: 25% off',s:DEAL_TXT.w.on,act:'deals',arg:'w'};
+  if(dealDayFree()&&save.dealSeen!==dayNum())return {gem:'%',b:'Daily gem deal: 30% off',s:DEAL_TXT.d.on,act:'deals',arg:'d'};
+ }
  const u=nextUp();
  if(u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
  if(IN_TG&&(save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points for each friend who keeps playing',act:'share'};
@@ -180,20 +183,32 @@ function payNote(){
  const w=SOL_WALLETS[save.solWallet]?save.solWallet:'phantom';
  return px.sol?'Pays from '+SOL_WALLETS[w].n:'Loading the SOL price…';
 }
+function crate(tk,ri){const f=crateFound(tk,ri),dk=dealOf(tk,ri);
+ return '<button class="crate" data-act="crate" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
+  '<div class="p">'+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</div><div class="f">'+(dk?'<span class="dealf">'+(dk==='d'?'30':'25')+'% off</span>':tk==='gem'?(boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';}
+// the two deals (rules.js): daily gem cache 30% off, weekly epic crate 25% off. Each is once per period, per pilot
+const DEAL_TXT={d:{n:'Daily gem deal',off:'30% off',on:'Your first rare or epic gem cache today',full:'Your first rare or epic gem cache each day is 30% off. It resets at 00:00 UTC.',art:'crate:gem:2'},
+ w:{n:'Weekly epic deal',off:'25% off',on:'One epic crate this week, your pick',full:'One epic crate a week is 25% off: weapon, chassis or gem, your pick. It resets Monday 00:00 UTC.',art:'crate:weapon:2'}};
+function dealCard(k){const T=DEAL_TXT[k],free=k==='d'?dealDayFree():dealWeekFree();
+ return '<button class="deal'+(free?'':' used')+'" data-act="deals" data-arg="'+k+'"><canvas data-art="'+T.art+'"></canvas><span class="tag">'+(free?T.off:'Used')+'</span><h4>'+T.n+'</h4>'+
+  '<p>'+(free?T.on:'Back in '+fmtDur(k==='d'?msToDailyReset():msToWeeklyReset()))+'</p></button>';}
+function openDeals(k){
+ const T=DEAL_TXT[k],list=k==='d'?[['gem',1],['gem',2]]:[['weapon',2],['chassis',2],['gem',2]];
+ sheet('deals',()=>'<h3>'+T.n+'</h3><p class="mut">'+T.full+((k==='d'?dealDayFree():dealWeekFree())?'':' You’ve used this one. Prices below are full price.')+'</p>'+
+  '<div class="crates'+(list.length===2?' c2':'')+'" style="margin-top:12px">'+list.map(([tk,ri])=>crate(tk,ri)).join('')+'</div>');
+}
 function renderShop(){
  const cur=save.payCur;
- const crate=(tk,ri)=>{const f=crateFound(tk,ri);
-  return '<button class="crate" data-act="crate" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
-   '<div class="p">'+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</div><div class="f">'+(isDeal(tk,ri)?'<span class="dealf">30% off today</span>':tk==='gem'?(boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';};
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
  const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const pend=save.pendingSol||save.pendingTx;
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
   '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
-  (()=>{const D=dealOn(dayNum());
-   return '<button class="deal" data-act="crate" data-arg="'+D.tk+':'+D.ri+'"><canvas data-art="crate:'+D.tk+':'+D.ri+'"></canvas><div class="grow"><span class="tag">30% off today</span><h4>'+crateName(D.tk,D.ri)+'</h4>'+
-    '<p>A new deal every day. This one ends in '+fmtDur(msToDailyReset())+'.</p><div class="p"><s>'+priceLabel(boxPrice(D.tk,D.ri,true),boxStars(D.tk,D.ri,true))+'</s> '+priceLabel(boxPrice(D.tk,D.ri),boxStars(D.tk,D.ri))+'</div></div></button>';})()+
+  '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
+  (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
+   '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
+   '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and no $LUNAR.</p></div>':'')+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
   (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches, plus an extra daily quest swap. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
@@ -208,7 +223,7 @@ function renderShop(){
 
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
- const how=on?'Equipped':own?'Owned':P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
+ const how=on?'Equipped':own?'Owned':P.only==='founder'?'Founder pack':P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
  return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
 
@@ -236,6 +251,10 @@ function openPass(){
 }
 
 // ---------- QUESTS ----------
+function wkSub(q){   // weekly progress line: days for day-based quests, plus today's part of an "N a day" quest
+ if(q.pd)return fmtNum(q.p)+' / '+q.goal+' days'+(q.done?'':q.today>=q.pd?'. Today done':q.pd>1?'. Today '+q.today+' / '+q.pd:'');
+ return fmtNum(q.p)+' / '+fmtNum(q.goal)+(q.st==='day'?' days':'');
+}
 function renderQuests(){
  const L=loginState(),dq=dailyQuests(),wk=weeklyQuests(),wq=save.wq,t=tierIdx(),qb=questBoost(),nb=streakBoost(L.next),sw=swapsLeft();
  const cal=STREAK_PTS.map((p,i)=>{
@@ -262,7 +281,7 @@ function renderQuests(){
   '<div class="panel list">'+dq.map(q=>qRow(q,'claimdq',lvTag(q)+fmtNum(q.p)+' / '+fmtNum(q.goal),qPts(q.pts),sw>0)).join('')+
    '<div class="q'+(allDone?' done':'')+'"><div class="grow"><div class="t">Finish all '+DQ_SLOTS.length+'</div><div class="p">Bonus on top of each quest'+(sw?'. '+sw+(sw===1?' swap':' swaps')+' left today':'')+'</div></div><span class="num" style="color:'+(allDone?'var(--dust)':'var(--gold)')+'">'+(allDone?'Claimed':'+'+fmtNum(qPts(DQ_ALL_BONUS)))+'</span></div></div>'+
   sec('Weekly quests','Resets in '+fmtDur(msToWeeklyReset()))+
-  '<div class="panel list">'+wk.map(q=>qRow(q,'claimwq',null,qPts(q.pts))).join('')+
+  '<div class="panel list">'+wk.map(q=>qRow(q,'claimwq',wkSub(q),qPts(q.pts))).join('')+
    '<div class="q'+(wq.claimed?' done':'')+'"><div class="grow"><div class="t">Weekly chest: claim '+WQ_GOAL+' daily quests</div><div class="bar"><i style="width:'+Math.round(Math.min(1,(wq.n||0)/WQ_GOAL)*100)+'%;background:var(--gold)"></i></div><div class="p">'+Math.min(wq.n||0,WQ_GOAL)+' / '+WQ_GOAL+'. '+fmtNum(qPts(WQ_PTS))+' points and a rare gem cache</div></div>'+
   (wq.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+((wq.n||0)>=WQ_GOAL?'btn-gold':'btn-quiet')+'" data-act="weekly">Open</button>')+'</div></div>'+
   sec('Your squad','','squad')+
@@ -518,7 +537,7 @@ function openCrate(tk,ri){
    :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
   const odds=isGem?'Odds: each of the 6 core types is 1 in 6, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
   return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+'</h3><p class="mut">'+what+'</p></div></div>'+items+
-   (isDeal(tk,ri)?'<p class="dealnote">Today’s deal: 30% off until 00:00 UTC. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
+   (dealOf(tk,ri)?'<p class="dealnote">'+DEAL_TXT[dealOf(tk,ri)].n+': '+DEAL_TXT[dealOf(tk,ri)].off+'. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
    '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
    (pts?'<button class="btn btn-quiet block" style="margin-top:8px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pts)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic crates can’t be bought with points.</p>')+
    '<p class="dimtxt odds">'+odds+'</p>'+
@@ -526,7 +545,7 @@ function openCrate(tk,ri){
  });
 }
 function openPaints(){
- sheet('paints',()=>'<h3>Paints</h3><p class="mut">Paints change how your tank looks, never its stats. Your team color stays on the tracks and core, so allies and foes are always easy to tell apart.</p><div class="paints" style="margin-top:12px">'+PAINT_ORDER.map(paintCard).join('')+'</div>');
+ sheet('paints',()=>'<h3>Paints</h3><p class="mut">Paints change how your tank looks, never its stats. Your team color stays on the tracks and core, so allies and foes are always easy to tell apart.</p><div class="paints" style="margin-top:12px">'+PAINT_ORDER.filter(id=>id!=='founder'||FOUNDER_OPEN||(save.paints&&save.paints.founder)).map(paintCard).join('')+'</div>');
 }
 function openSolWallets(){
  sheet('solw',()=>'<h3>Pay SOL from</h3><div style="margin-top:10px">'+SOL_ORDER.map(k=>'<button class="gear'+((save.solWallet||'phantom')===k?' equipped':'')+'" data-act="setsolw" data-arg="'+k+'"><div class="grow"><div class="nm">'+SOL_WALLETS[k].n+'</div><div class="meta">'+(SOL_WALLETS[k].ul?'Opens the wallet app to approve':'Shows the address and exact amount to send')+'</div></div></button>').join('')+'</div>');
@@ -783,6 +802,7 @@ const ACT={
  paint:a=>{const P=PAINTS[a];if(!P)return;
   if(save.paints&&save.paints[a]){save.paint=a;store();fx('tap');showToast(P.n+' paint on');return;}
   if(P.pass){openPass();return;}
+  if(P.only){showToast('Only in the Founder pack');if(FOUNDER_OPEN){closeAll();setTab('shop');}return;}
   pay(P.ton,{kind:'paint',id:a});},
  tune:a=>{const [sl,k,t]=a.split('|'),r=tuneItem(sl==='w',k,+t);if(!r)return;showToast(r.better?'New roll '+pct(r.roll)+', up from '+pct(r.old):'Rolled '+pct(r.roll)+'. You kept '+pct(r.old));syncPlayer();},
  terms:()=>openLink(TERMS_URL),
@@ -807,7 +827,8 @@ const ACT={
  claimdq:a=>{const n=claimDaily(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=dailyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
  claimwq:a=>{const n=claimWeeklyQuest(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=weeklyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
  swapdq:a=>{const N=swapDaily(a);if(N)showToast('New quest: '+N.t);else showToast(swapsLeft()?'No other quest to swap in':'No swaps left today');},
- deal:()=>{save.dealSeen=dayNum();store();const D=dealOn(dayNum());openCrate(D.tk,D.ri);},
+ deals:a=>{if(a==='w')save.wdealSeen=weekNum();else save.dealSeen=dayNum();store();openDeals(a==='w'?'w':'d');},
+ founder:()=>{if(save.founder||!FOUNDER_OPEN)return;pay(FOUNDER.ton,{kind:'founder'});},
  claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}const n=claimQuest(a);if(n)showToast('+'+n+' points: '+Q.n);},
  visit:a=>{visitLinkQuest(a);uiDirty('quests');},
  weekly:()=>{const r=claimWeekly();if(!r){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);},
@@ -827,7 +848,7 @@ const ACT={
  solwallet:()=>openSolWallets(),
  setsolw:a=>{save.solWallet=a;store();const ov=findOv('solw');if(ov)closeOverlay(ov);},
  crate:a=>{const [tk,ri]=a.split(':');openCrate(tk,+ri);},
- buybox:a=>{const [tk,ri]=a.split(':'),p=boxPrice(tk,+ri);pay(p,{kind:'box',tk,ri:+ri,price:p});},
+ buybox:a=>{const [tk,ri]=a.split(':'),p=boxPrice(tk,+ri);pay(p,{kind:'box',tk,ri:+ri,price:p,deal:dealOf(tk,+ri)});},
  buypts:a=>{const [tk,ri]=a.split(':'),r=openBoxWithPoints(tk,+ri);if(r){const ov=findOv('crate');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}},
  salvage:a=>{const [tk,ri]=a.split(':'),r=buySalvage(tk,+ri);if(r){fx('buy');showReveal([r]);}},
  starter:()=>{if(save.starter)return;pay(STARTER.ton,{kind:'starter'});},

@@ -13,8 +13,8 @@ const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin s
 // ---- prices (must match the game) ----
 const BOX_TON = [4, 8, 23];
 const BOX_STARS = [250, 500, 1500];
-const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6, pass: 13 };
-const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399, pass: 799 };
+const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6, pass: 13, founder: 19 };
+const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399, pass: 799, founder: 1199 };
 // paints are looks only (no stats)
 const PAINT_TON = { nebula: 2.4, ember: 2.4, arctic: 2.4, venom: 2.4, gold: 4.8, void: 4.8 };
 const PAINT_STARS = { nebula: 150, ember: 150, arctic: 150, venom: 150, gold: 300, void: 300 };
@@ -76,7 +76,7 @@ function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
   if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
   if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
-  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : "Purchase";
+  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : "Purchase";
 }
 
 // ================= /api/sync =================
@@ -139,7 +139,7 @@ async function undeliveredStars(env, pid, now) {
   for (const [charge, p] of Object.entries(paid || {})) {
     if (!p || !p.n || (acked && acked[p.n])) continue;
     if (typeof p.ts === "number" && now - p.ts > 30 * DAY_MS) continue;
-    out.push({ n: p.n, k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, stars: p.stars || 0 });
+    out.push({ n: p.n, k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: p.stars || 0 });
   }
   return out.slice(0, 10);
 }
@@ -194,7 +194,7 @@ async function payLog(env, b, user, pid) {
 }
 
 // ================= /api/stars-invoice =================
-async function starsInvoice(env, b, user) {
+async function starsInvoice(env, b, user, pid) {
   const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0);
   let base = 0, starBase = 0;
   if (k === "box") {
@@ -205,20 +205,28 @@ async function starsInvoice(env, b, user) {
     base = PAINT_TON[tk]; starBase = PAINT_STARS[tk];
   } else if (PREMIUM_TON[k]) {
     if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
+    if (k === "founder" && !RULES.FOUNDER_OPEN) return { status: 400, body: { error: "closed" } };   // sold only until $LUNAR launches
     base = PREMIUM_TON[k]; starBase = PREMIUM_STARS[k];
   }
   else return { status: 400, body: { error: "item" } };
   // only crates have repeat-buy pricing; everything else is a fixed price
   if (k !== "box") b.price = base;
-  // the game sends its escalated TON price; never below base (today's deal crate: 30% off), never absurdly above it
-  const now = Date.now(), deal = k === "box" && [dayOf(now), dayOf(now - 10 * 60 * 1000)].some((d) => { const D = RULES.dealOn(d); return D.tk === tk && D.ri === ri; });
-  const floor = deal ? base * (1 - RULES.DEAL_OFF) : base;
+  // the game sends its escalated TON price; never below base, never absurdly above it.
+  // Deals (once per pilot per period, tracked here once paid): d = first rare/epic gem cache of the UTC day 30% off, w = one epic crate a UTC week 25% off
+  const now = Date.now(), dk = k === "box" && (b.deal === "d" || b.deal === "w") ? b.deal : null;
+  let floor = base;
+  if (dk) {
+    if (dk === "d" ? !(tk === "gem" && ri >= 1) : ri !== 2) return { status: 400, body: { error: "deal" } };
+    const used = (await dbGet(env, `deals/${pid}`).catch(() => null)) || {};
+    if (dk === "d" ? used.d === dayOf(now) : used.w === weekOf(now)) return { status: 409, body: { error: "deal_used" } };
+    floor = base * (1 - (dk === "d" ? RULES.DEAL_D_OFF : RULES.DEAL_W_OFF));
+  }
   let price = Number(b.price || base);
   if (!(price >= floor - 0.005)) price = base;
   if (price > base * 10) price = base * 10;
   const stars = Math.max(1, Math.round(starBase * (price / base)));
   const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: tk || undefined, r: k === "box" ? ri : undefined, g: price, n: nonce });
+  const payload = JSON.stringify({ u: user.id, k, t: tk || undefined, r: k === "box" ? ri : undefined, g: price, n: nonce, x: dk || undefined });
   const label = itemLabel(k, tk, ri);
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
@@ -338,7 +346,8 @@ async function webhook(req, env) {
     const charge = safeKey(sp.telegram_payment_charge_id);
     const item = itemLabel(p.k, p.t, p.r);
     await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, stars: sp.total_amount, n: p.n || "", ts: { ".sv": "timestamp" } });
+    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", ts: { ".sv": "timestamp" } });
+    if (p.x === "d" || p.x === "w") { const now = Date.now(); await dbPatch(env, `deals/${pid}`, p.x === "d" ? { d: dayOf(now) } : { w: weekOf(now) }); }   // that deal is used for this period
     return new Response("ok");
   }
   if (m && m.text && /^\/start/.test(m.text)) {
@@ -365,7 +374,7 @@ const ROUTES = {
   "/api/sync": async (env, a) => ({ status: 200, body: await sync(env, a.b, a.user, a.pid) }),
   "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
-  "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user),
+  "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
   "/api/admin": async (env, a) => admin(env, a.user),
   "/api/pvp/join": async (env, a) => pvpJoin(env, a),

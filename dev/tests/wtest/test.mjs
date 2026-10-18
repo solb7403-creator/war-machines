@@ -90,13 +90,28 @@ t((await mod.sendReminders(env, d1.getTime())) === 0, 'no reminders off-hours');
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'pass', tk: '1', price: 99 }); t(s === 200 && r.stars === 799, 'pass invoice ' + JSON.stringify(r));
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'gem', ri: 0, price: 4 }); t(s === 200 && r.stars === 250, 'common crate 250');
 const lastInv = tgCalls.filter(c => c[0] === 'createInvoiceLink').pop(); t(/Common Gem Cache/.test(lastInv[1].title), 'invoice title');
-{ // daily deal: today's crate may be 30% off; any other crate at that price is charged in full
-  const { RULES } = await import('../../../worker/src/sim.gen.js');
-  const D = RULES.dealOn(Math.floor(Date.now() / 86400000)), base = [4, 8, 23][D.ri], st = [250, 500, 1500][D.ri];
-  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: D.tk, ri: D.ri, price: Math.round(base * 0.7 * 100) / 100 }); t(s === 200 && r.stars === Math.round(st * 0.7), 'deal crate 30% off ' + JSON.stringify(r));
-  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: D.tk, ri: D.ri, price: Math.round(base * 0.5 * 100) / 100 }); t(s === 200 && r.stars === st, 'deal floor is 30%, not more ' + JSON.stringify(r));
-  const O = ['weapon', 'chassis', 'gem'].find((k) => k !== D.tk);
-  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: O, ri: D.ri, price: Math.round(base * 0.7 * 100) / 100 }); t(s === 200 && r.stars === st, 'no deal on other crates ' + JSON.stringify(r));
+{ // deals: d = first rare/epic gem cache of the day 30% off, w = one epic crate a week 25% off; once paid, that period's deal is used
+  const inv = (o) => call('/api/stars-invoice', Object.assign({ initData: initData(A), kind: 'box' }, o));
+  const lastPayload = () => JSON.parse(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].payload);
+  [s, r] = await inv({ tk: 'gem', ri: 1, price: 5.6, deal: 'd' }); t(s === 200 && r.stars === 350 && lastPayload().x === 'd', 'daily gem deal 30% off ' + JSON.stringify(r));
+  [s, r] = await inv({ tk: 'gem', ri: 2, price: 16.1, deal: 'd' }); t(s === 200 && r.stars === 1050, 'daily deal on an epic gem cache ' + JSON.stringify(r));
+  [s, r] = await inv({ tk: 'weapon', ri: 1, price: 5.6, deal: 'd' }); t(s === 400, 'daily deal is gems only');
+  [s, r] = await inv({ tk: 'gem', ri: 0, price: 2.8, deal: 'd' }); t(s === 400, 'no deal on common caches');
+  [s, r] = await inv({ tk: 'chassis', ri: 2, price: 17.25, deal: 'w' }); t(s === 200 && r.stars === 1125 && lastPayload().x === 'w', 'weekly epic deal 25% off ' + JSON.stringify(r));
+  [s, r] = await inv({ tk: 'chassis', ri: 1, price: 6, deal: 'w' }); t(s === 400, 'weekly deal is epic only');
+  [s, r] = await inv({ tk: 'weapon', ri: 2, price: 16.1, deal: 'w' }); t(s === 200 && r.stars === 1500, 'weekly floor is 25%, not more ' + JSON.stringify(r));
+  [s, r] = await inv({ tk: 'gem', ri: 1, price: 5.6 }); t(s === 200 && r.stars === 500 && !lastPayload().x, 'no deal asked: full price ' + JSON.stringify(r));
+  const paid = async (x, ch) => worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec },
+    body: JSON.stringify({ message: { from: { id: 111, username: 'alice' }, chat: { id: 111, type: 'private' }, successful_payment: { total_amount: 1125, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 111, k: 'box', t: 'chassis', r: 2, g: 17.25, n: 'dw' + ch.slice(-1), x }) } } }) }), env);
+  await paid('w', 'ch.w1');
+  [s, r] = await inv({ tk: 'weapon', ri: 2, price: 17.25, deal: 'w' }); t(s === 409 && r.error === 'deal_used', 'weekly deal used after paying ' + s + ' ' + JSON.stringify(r));
+  [s, r] = await inv({ tk: 'gem', ri: 1, price: 5.6, deal: 'd' }); t(s === 200 && r.stars === 350, 'daily deal still open');
+  await paid('d', 'ch.d1');
+  [s, r] = await inv({ tk: 'gem', ri: 2, price: 16.1, deal: 'd' }); t(s === 409, 'daily deal used after paying');
+  const rec = (await call('/api/sync', { initData: initData(A), earned: 0, boot: true }))[1];
+  const lost = (rec.stars || []).find((x) => x.n === 'dw1'); t(lost && lost.x === 'w', 'undelivered deal purchase keeps its deal tag ' + JSON.stringify(rec.stars));
+  // Founder pack: fixed price, one product
+  [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'founder', price: 1 }); t(s === 200 && r.stars === 1199 && /Founder Pack/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'founder pack invoice ' + JSON.stringify(r));
 }
 const cmd = async (text) => { const n0 = tgCalls.length; await worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec }, body: JSON.stringify({ message: { from: { id: 333 }, chat: { id: 333, type: 'private' }, text } }) }), env); return tgCalls.slice(n0); };
 let out = await cmd('/paysupport'); t(out.length === 1 && /@LunarBattle/.test(out[0][1].text) && /Telegram support can't help/.test(out[0][1].text), 'paysupport reply');

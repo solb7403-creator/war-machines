@@ -44,7 +44,7 @@ python3 dev/tests/b2test.py            # menus, first-time flow, start screen, r
 python3 dev/tests/b3test.py            # map objects, crates, events, fast forward, best of 3
 python3 dev/tests/b4test.py            # sound, drag-to-aim supers, dash, bot dodges, reminders
 python3 dev/tests/b6test.py            # salvage ladder, tune-up, Lunar Pass, paints, terms, featured mode, the 3 new modes
-python3 dev/tests/b7test.py            # Untouchable health floor, 4 dailies + swaps, weekly quests, streak quest bonus, weekly chest, daily deal
+python3 dev/tests/b7test.py            # Untouchable, dailies + swaps, weekly quests (multi-day), streak bonus, chest, daily/weekly deals, Founder pack
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons

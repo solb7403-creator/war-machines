@@ -80,7 +80,7 @@ async def main():
         await pg.evaluate("()=>{setTab('garage');}");await pg.wait_for_timeout(300)
         await pg.click('[data-act=paints]');await pg.wait_for_timeout(400)
         n=await pg.evaluate("()=>document.querySelectorAll('.sheet .paint').length")
-        check(n==10,'paint picker count '+str(n))
+        check(n==11,'paint picker count '+str(n))   # 10 paints + Founder (shown while the Founder pack is on sale)
         await pg.screenshot(path=OUT+'paints.png')
         await pg.click('.sheet .paint[data-arg=stock]');await pg.wait_for_timeout(200)
         check(await pg.evaluate("()=>save.paint==='stock'"),'equipping an owned paint failed')
