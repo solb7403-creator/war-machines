@@ -119,11 +119,29 @@ const WNAMES={pulse:['Pulse Cannon','Arc Pulse','Nova Pulse'],twin:['Twin Repeat
 const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
 const ownW=(k,t)=>!!(save.wOwn&&save.wOwn[k]&&save.wOwn[k].indexOf(t)>=0);
 const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
-// crate items roll 100-110% of their tier's stats; salvaged gear (points only) gets 50-75% of the real item's boost
-const ROLL_MIN=1.00,ROLL_MAX=1.10,SALV_MIN=0.50,SALV_MAX=0.75,SALV_COL='#c48a5c',SALV_PTS=[0,10000,40000];
+// Power ladder (stat multiplier vs stock gear). Every crate item beats every salvaged item:
+//   stock starter gear 1.00 | Salvaged Rare 1.010-1.030 | Salvaged Epic 1.031-1.044
+//   Common crate 1.050-1.100 | Rare crate 1.155-1.210 | Epic crate 1.386-1.452
+// Crate items roll 105-110% of their rarity; salvage stores its own multiplier.
+const ROLL_MIN=1.05,ROLL_MAX=1.10,SALV_COL='#c48a5c',SALV_PTS=[0,5000,10000];
+const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
 const rollOf=(k,t)=>(save.roll&&save.roll[k+':'+t])||1;
-const salvOf=(k,t)=>(save.salv&&save.salv[k+':'+t])||0;
-const gearMult=(k,tc,sal)=>sal?1+(TIER_MULT[tc]-1)*salvOf(k,tc):TIER_MULT[tc]*rollOf(k,tc);
+const salvOf=(k,t)=>{const v=save.salv&&save.salv[k+':'+t];return v?(v<1?SALV_MIN[t]||1.01:v):0;};   // old saves stored a fraction
+const gearMult=(k,tc,sal)=>sal?salvOf(k,tc):TIER_MULT[tc]*rollOf(k,tc);
+// Tune-up: pay points to re-roll an owned crate item (105-110%), you keep the better roll
+const TUNE_PTS=[3000,10000,30000];
+const canTune=(isW,k,t)=>(isW?ownW(k,t):ownC(k,t))&&!!(save.roll&&save.roll[k+':'+t]);   // crate items only: starter gear has no roll to tune
+function tuneItem(isW,k,t){
+ if(!canTune(isW,k,t)){showToast('Only crate gear can be tuned');return null;}
+ const old=rollOf(k,t),c=TUNE_PTS[t];
+ if(old>=ROLL_MAX-0.0001){showToast('Already at the best roll (110%)');return null;}
+ if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
+ save.pts-=c;save.ptsSpent=(save.ptsSpent||0)+c;save.roll=save.roll||{};
+ const roll=Math.round((ROLL_MIN+Math.random()*(ROLL_MAX-ROLL_MIN))*100)/100,better=roll>old;
+ if(better){save.roll[k+':'+t]=roll;equipBest(isW,k);}
+ store();if(typeof fx==='function')fx(better?'claim':'tap');
+ return {better,old,roll};
+}
 function getW(arch,tt,sal){
  if(arch==='moon'){const b=WEAPONS.moon;return {id:'moon',arch:'moon',tier:2,name:b.n,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:TIER_MULT[2],q:1,sal:false};}
  if(sal===undefined)sal=tt===undefined&&!!(save.wSal&&save.wSal[arch]);
@@ -209,6 +227,7 @@ function loadSave(obj){
  if(save.haptics===undefined)save.haptics=true;
  if(save.mp===undefined)save.mp=(save.wins||0)+(save.losses||0);
  if(!save.mode)save.mode='1v1';if(!save.gtype)save.gtype='arena';if(!save.map)save.map='classic';
+ if(!save.paints)save.paints={stock:1};if(!save.paint||!save.paints[save.paint])save.paint='stock';
 }
 function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudSave();if(typeof uiDirty==='function')uiDirty();}
 
@@ -296,7 +315,11 @@ const DQ_POOL=[
  {id:'zwin',t:'Win a Moon Zone match',goal:1,pts:150,st:'zoneWins'},
  {id:'twin',t:'Win a 2v2 or 3v3 match',goal:1,pts:150,st:'teamWins'},
  {id:'cap3',t:'Capture the Moon Zone 3 times',goal:3,pts:120,st:'caps'},
- {id:'ovp',t:'Play a match on Overpass',goal:1,pts:75,st:'overpass'}];
+ {id:'ovp',t:'Play a match on Overpass',goal:1,pts:75,st:'overpass'},
+ {id:'cry10',t:'Collect 10 crystals in Crystal Rush',goal:10,pts:120,st:'crystals'},
+ {id:'bnt5',t:'Earn 5 bounty stars',goal:5,pts:120,st:'stars'},
+ {id:'top3',t:'Finish top 3 in Last Standing',goal:1,pts:150,st:'top3'},
+ {id:'feat2',t:'Play 2 featured-mode matches',goal:2,pts:100,st:'featured'}];
 const DQ_ALL_BONUS=200,WQ_GOAL=12,WQ_PTS=1500;
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function dailyQuests(){
@@ -317,8 +340,8 @@ function claimDaily(id){
  const qs=dailyQuests(),Q=qs.find(q=>q.id===id);
  if(!Q||!Q.done||Q.claimed)return 0;
  save.dq.c[id]=true;save.wq.n=(save.wq.n||0)+1;
- let n=awardPts(Q.pts);
- if(!save.dq.all&&qs.every(q=>q.claimed||q.id===id)){save.dq.all=true;n+=awardPts(DQ_ALL_BONUS);}
+ let n=awardPts(Q.pts);passXP(PASS_XP_QUEST);
+ if(!save.dq.all&&qs.every(q=>q.claimed||q.id===id)){save.dq.all=true;n+=awardPts(DQ_ALL_BONUS);passXP(PASS_XP_ALL);}
  store();fx('claim');return n;
 }
 function claimWeekly(){
@@ -327,6 +350,60 @@ function claimWeekly(){
  save.wq.claimed=true;const n=awardPts(WQ_PTS);store();fx('claim');
  return {pts:n,reveal:doOpenBox('gem',1)};
 }
+// ---- Lunar Pass: a 28-day season with 30 tiers. Free track for everyone, premium track for pass owners.
+// The premium track never gives points, so buying it can't buy leaderboard rank (the airdrop stays earned).
+const PASS_LEN=28,PASS_TIERS=30,PASS_XP=350,PASS_START=20744,PASS_PRICE={ton:8,stars:499};   // season 1 starts Oct 18, 2026 (UTC day 20744)
+const PASS_XP_WIN=40,PASS_XP_DRAW=25,PASS_XP_LOSS=20,PASS_XP_FEAT=10,PASS_XP_QUEST=50,PASS_XP_ALL=100;
+const seasonNo=()=>Math.max(1,Math.floor((dayNum()-PASS_START)/PASS_LEN)+1);
+const seasonEndMs=()=>(PASS_START+seasonNo()*PASS_LEN)*864e5-(Date.now()+(typeof srvOff==='number'?srvOff:0));
+const PASS_FREE=[null,{k:'pts',n:150},{k:'box',tk:'gem',ri:0},{k:'pts',n:150},{k:'pts',n:200},{k:'box',tk:'weapon',ri:0},{k:'pts',n:200},{k:'box',tk:'gem',ri:0},{k:'pts',n:250},{k:'pts',n:250},{k:'box',tk:'chassis',ri:0},
+ {k:'pts',n:250},{k:'box',tk:'gem',ri:0},{k:'pts',n:300},{k:'pts',n:300},{k:'box',tk:'gem',ri:1},{k:'pts',n:300},{k:'box',tk:'gem',ri:0},{k:'pts',n:350},{k:'pts',n:350},{k:'box',tk:'weapon',ri:0},
+ {k:'pts',n:350},{k:'box',tk:'gem',ri:0},{k:'pts',n:400},{k:'pts',n:400},{k:'box',tk:'gem',ri:1},{k:'pts',n:400},{k:'box',tk:'gem',ri:0},{k:'pts',n:500},{k:'pts',n:500},{k:'paint',id:'regolith'}];
+const PASS_PREM=[null,{k:'paint',id:'eclipse'},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:1},
+ {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'paint',id:'aurora'},
+ {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:2}];
+function passState(){const s=seasonNo();if(!save.pass||save.pass.s!==s)save.pass={s,xp:0,prem:false,cf:[],cp:[]};return save.pass;}
+const passTier=()=>Math.min(PASS_TIERS,Math.floor(passState().xp/PASS_XP));
+function passXP(n){
+ if(!n)return;const P=passState(),before=passTier();P.xp=Math.min(PASS_TIERS*PASS_XP,P.xp+n);const after=passTier();
+ if(after>before&&typeof showToast==='function')setTimeout(()=>showToast('Lunar Pass: tier '+after+' reached'),900);
+}
+function rewardLabel(r){
+ if(!r)return '';
+ if(r.k==='pts')return '+'+fmtNum(r.n)+' points';
+ if(r.k==='paint')return PAINTS[r.id].n+' paint';
+ return TIER_N[r.ri]+' '+(r.tk==='weapon'?'weapon cache':r.tk==='chassis'?'chassis crate':'gem cache');
+}
+const passReady=()=>{const P=passState(),t=passTier();let n=0;for(let i=1;i<=t;i++){if(!P.cf.includes(i))n++;if(P.prem&&!P.cp.includes(i))n++;}return n;};
+function claimPass(track,i){
+ const P=passState();i=+i;
+ if(i<1||i>passTier())return null;
+ const prem=track==='p',list=prem?P.cp:P.cf,r=(prem?PASS_PREM:PASS_FREE)[i];
+ if(!r||list.includes(i)||(prem&&!P.prem))return null;
+ list.push(i);
+ let out;
+ if(r.k==='pts'){const n=awardPts(r.n);store();fx('claim');out={pts:n};}
+ else if(r.k==='paint'){save.paints[r.id]=1;save.paint=r.id;store();fx('buy');out={reveal:{tk:'paint',rar:2,color:PAINTS[r.id].trim,paint:r.id,title:PAINTS[r.id].n+' paint',sub:'Equipped. Change it in the Garage.'}};}
+ else{out={reveal:doOpenBox(r.tk,r.ri)};store();}
+ return out;
+}
+// ---- paints: looks only, no stats. Your team color still shows on the tracks, turret core and health bar ----
+const PAINTS={
+ stock:{n:'Stock',hull:'#2c3a49',tur:'#3b4a5b',trim:'#d5dee7'},
+ regolith:{n:'Regolith',hull:'#565a62',tur:'#6a6f79',trim:'#d8c49a',pass:'free'},
+ eclipse:{n:'Eclipse',hull:'#17131f',tur:'#251e31',trim:'#ff9a55',pass:'prem'},
+ aurora:{n:'Aurora',hull:'#15393a',tur:'#1f4e50',trim:'#7be3e0',pass:'prem'},
+ nebula:{n:'Nebula',hull:'#35255a',tur:'#463271',trim:'#c79bff',ton:2.4,stars:150},
+ ember:{n:'Ember',hull:'#5a2418',tur:'#73301f',trim:'#ff9a55',ton:2.4,stars:150},
+ arctic:{n:'Arctic',hull:'#a9b6c8',tur:'#c2ccd9',trim:'#ffffff',ton:2.4,stars:150},
+ venom:{n:'Venom',hull:'#1d3b21',tur:'#28502d',trim:'#7be07b',ton:2.4,stars:150},
+ gold:{n:'Gold plate',hull:'#7a5c16',tur:'#9a7720',trim:'#ffe08a',ton:4.8,stars:300,shine:true},
+ void:{n:'Void',hull:'#07080d',tur:'#121522',trim:'#4d9fff',ton:4.8,stars:300,shine:true}};
+const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora'];
+const myPaint=()=>PAINTS[save.paint]||PAINTS.stock;
+// ---- featured mode: one mode a day pays +25% (and gets the live-PvP queue once PvP launches) ----
+const FEATURE_ROT=['crystal','royale','bounty','crystal','bounty','royale','zone'],FEATURED_X=1.25;   // by UTC day; season 1 opens with Crystal Rush
+const featuredMode=()=>FEATURE_ROT[((dayNum()%7)+7)%7];
 // ---- daily login reward: 7-day streak calendar (misses reset it) + tier bonus ----
 const STREAK_PTS=[100,150,200,250,300,400,1000];
 function loginState(){
@@ -446,12 +523,12 @@ function buySalvage(tk,ri){
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
  const keys=isW?WORDER:CHORDER;
  const k=keys[(Math.random()*3)|0],key=k+':'+ri,old=salvOf(k,ri);
- const q=Math.round((SALV_MIN+Math.random()*(SALV_MAX-SALV_MIN))*100)/100;
+ const q=Math.round((SALV_MIN[ri]+Math.random()*(SALV_MAX[ri]-SALV_MIN[ri]))*1000)/1000;
  save.pts-=c;save.ptsSpent=(save.ptsSpent||0)+c;save.salv=save.salv||{};
- const nm='Salvaged '+(isW?WNAMES[k][ri]:CNAMES[k][ri]);
+ const nm='Salvaged '+(isW?WNAMES[k][ri]:CNAMES[k][ri]),pw=v=>(Math.round(v*1000)/10)+'%';
  if(q>old){save.salv[key]=q;equipBest(isW,k);store();
-  return {tk,ri,rar:ri,color:SALV_COL,item:{isW,k,tier:ri,sal:true},title:nm,sub:(old?pct(old)+' → ':'')+pct(q)+' of the real boost'};}
- store();return {tk,ri,rar:ri,color:SALV_COL,item:{isW,k,tier:ri,sal:true},title:'Rolled '+pct(q),sub:'You kept your '+pct(old)+' '+nm};
+  return {tk,ri,rar:ri,color:SALV_COL,item:{isW,k,tier:ri,sal:true},title:nm,sub:(old?pw(old)+' → ':'')+pw(q)+' power. Crate gear starts at 105%.'};}
+ store();return {tk,ri,rar:ri,color:SALV_COL,item:{isW,k,tier:ri,sal:true},title:'Rolled '+pw(q),sub:'You kept your '+pw(old)+' '+nm};
 }
 // Grant a verified purchase. Single path for live purchases and for purchases finished while the game was closed.
 function grantPurchase(desc){
@@ -467,6 +544,14 @@ function grantPurchase(desc){
  }else if(desc.kind==='moonbeam'){
   if(!save.moonbeam){save.moonbeam=true;save.weapon='moon';save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;
    reveals.push({tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'});}
+ }else if(desc.kind==='paint'){
+  const P=PAINTS[desc.id];
+  if(P&&!save.paints[desc.id]){save.paints[desc.id]=1;save.paint=desc.id;save.spendGram=(save.spendGram||0)+(P.ton||0);
+   reveals.push({tk:'paint',rar:2,color:P.trim,paint:desc.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'});}
+ }else if(desc.kind==='pass'){
+  const P=passState();
+  if(!P.prem){P.prem=true;save.spendGram=(save.spendGram||0)+PASS_PRICE.ton;
+   reveals.push({tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'});}
  }else if(desc.kind==='skin'){
   if(save.skin!=='lunar'){save.skin='lunar';save.spendGram=(save.spendGram||0)+SKINS.lunar.price;
    reveals.push({tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:'+8% health and +8% damage, applied.'});}

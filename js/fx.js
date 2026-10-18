@@ -62,8 +62,9 @@ const SND={
  draw:()=>{tone(440,440,0.18,'triangle',0.06);tone(440,440,0.18,'triangle',0.06,0.2);},
  tap:()=>tone(1150,950,0.03,'sine',0.025),
  claim:()=>{tone(988,988,0.07,'triangle',0.07);tone(1319,1319,0.14,'triangle',0.07,0.06);},
+ crystal:()=>{tone(1568,1568,0.06,'sine',0.06);tone(2093,2093,0.1,'sine',0.05,0.05);},
  buy:()=>[659,880,1175].forEach((f,i)=>tone(f,f,0.12,'triangle',0.07,i*0.07))};
-const SND_GAP={shot_pulse:0.07,shot_twin:0.06,shot_siege:0.1,shot_moon:0.07,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1};
+const SND_GAP={crystal:0.05,shot_pulse:0.07,shot_twin:0.06,shot_siege:0.1,shot_moon:0.07,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1};
 function sfx(n){
  if(!save||save.sound===false||!SND[n])return;
  audioInit();if(!AC||AC.state!=='running')return;
@@ -81,6 +82,7 @@ function fx(name,arg){
   case 'super':haptic('i','rigid');sfx('super');break;
   case 'ready':haptic('i','light');sfx('ready');break;
   case 'box':haptic('i','soft');sfx('box');break;
+  case 'crystal':haptic('i','soft');sfx('crystal');break;
   case 'cap':haptic('n','success');sfx('cap');break;
   case 'event':haptic('n','warning');sfx('event');break;
   case 'meteor':haptic('i','medium');sfx('meteor');break;

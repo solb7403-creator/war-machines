@@ -10,8 +10,14 @@ const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin s
 // ---- prices (must match the game) ----
 const BOX_TON = [4, 8, 23];
 const BOX_STARS = [250, 500, 1500];
-const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6 };
-const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399 };
+const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6, pass: 8 };
+const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399, pass: 499 };
+// paints are looks only (no stats)
+const PAINT_TON = { nebula: 2.4, ember: 2.4, arctic: 2.4, venom: 2.4, gold: 4.8, void: 4.8 };
+const PAINT_STARS = { nebula: 150, ember: 150, arctic: 150, venom: 150, gold: 300, void: 300 };
+const PAINT_NAMES = { nebula: "Nebula", ember: "Ember", arctic: "Arctic", venom: "Venom", gold: "Gold Plate", void: "Void" };
+const TERMS_URL = "https://solb7403-creator.github.io/war-machines/terms.html";
+const SUPPORT_TEXT = "Need help with a purchase?\n\nMessage @LunarBattle with your Player ID (in the game: Settings, top right) and roughly when you bought. We reply within 48 hours.\n\nTelegram support can't help with purchases made in this bot. Terms: " + TERMS_URL;
 
 // ---- points rules (the server is the referee) ----
 const DAILY_CAP = 20000;          // max points a player can bank per UTC day
@@ -104,6 +110,8 @@ async function auth(req, env) {
 
 function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
+  if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
+  if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
   return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : "Purchase";
 }
 
@@ -113,7 +121,7 @@ function itemLabel(k, tk, ri) {
 export async function sync(env, b, user, pid, now = Date.now()) {
   const rec = (await dbGet(env, `players/${pid}`)) || null;
   const d = dayOf(now), w = weekOf(now);
-  const r = rec ? { ...rec } : { pts: 0, dailyPts: 0, weeklyPts: 0, d, w, days: 0, sk: 0, t: now, al: BUCKET_MAX };
+  const r = rec ? { ...rec } : { pts: 0, dailyPts: 0, weeklyPts: 0, d, w, days: 0, sk: 0, t: now, al: BUCKET_MAX, fd: d };
   const isNew = !rec;
   if (r.d !== d) { r.d = d; r.dailyPts = 0; }
   if (r.w !== w) { r.w = w; r.weeklyPts = 0; }
@@ -228,8 +236,16 @@ async function starsInvoice(env, b, user) {
   if (k === "box") {
     if (!["gem", "weapon", "chassis"].includes(tk) || ![0, 1, 2].includes(ri)) return { status: 400, body: { error: "item" } };
     base = BOX_TON[ri]; starBase = BOX_STARS[ri];
-  } else if (PREMIUM_TON[k]) { base = PREMIUM_TON[k]; starBase = PREMIUM_STARS[k]; }
+  } else if (k === "paint") {
+    if (!PAINT_TON[tk]) return { status: 400, body: { error: "item" } };
+    base = PAINT_TON[tk]; starBase = PAINT_STARS[tk];
+  } else if (PREMIUM_TON[k]) {
+    if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
+    base = PREMIUM_TON[k]; starBase = PREMIUM_STARS[k];
+  }
   else return { status: 400, body: { error: "item" } };
+  // only crates have repeat-buy pricing; everything else is a fixed price
+  if (k !== "box") b.price = base;
   // the game sends its escalated TON price; never below base, never absurdly above it
   let price = Number(b.price || base);
   if (!(price >= base)) price = base;
@@ -271,7 +287,19 @@ async function admin(env, user) {
     recent.push({ name: p.name, cur: p.cur, amt: p.amt, item: p.item, t: p.t, v: p.verified !== false });
   }
   recent.sort((a, b) => (b.t || 0) - (a.t || 0));
-  return { status: 200, body: { ok: true, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length,
+  // retention + conversion from up to 1,000 player records
+  const all = Object.values((await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1000 }).catch(() => ({}))) || {});
+  const payers = new Set(Object.values(pays || {}).filter(Boolean).map((p) => p.pid));
+  const old1 = all.filter((p) => (p.fd ?? p.ld ?? today) <= today - 1), old7 = all.filter((p) => (p.fd ?? p.ld ?? today) <= today - 7);
+  const stats = {
+    newToday: all.filter((p) => p.fd === today).length,
+    back2: old1.length ? Math.round((old1.filter((p) => (p.days || 0) >= 2).length / old1.length) * 100) : null,
+    back5of7: old7.length ? Math.round((old7.filter((p) => (p.days || 0) >= 5).length / old7.length) * 100) : null,
+    avgMatches: all.length ? Math.round(all.reduce((a, p) => a + (p.mp || 0), 0) / all.length) : 0,
+    payers: payers.size, conv: all.length ? Math.round((payers.size / all.length) * 1000) / 10 : 0,
+    arppu: payers.size ? Math.round(rev.USD / payers.size) : 0,
+  };
+  return { status: 200, body: { ok: true, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
     revenue: { TON: +rev.TON.toFixed(3), SOL: +rev.SOL.toFixed(4), STARS: rev.STARS, USD: Math.round(rev.USD), count: rev.count, unverified: rev.unverified },
     recent: recent.slice(0, 15), top: Object.values(top || {}).sort((a, b) => (b.pts || 0) - (a.pts || 0)).map((p) => ({ name: p.name, pts: p.pts, days: p.days, power: p.power })) } };
 }
@@ -355,6 +383,10 @@ async function webhook(req, env) {
       text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
       reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "📖 Wiki", url: WIKI_URL }]] },
     });
+  } else if (m && m.text && /^\/(paysupport|support)/.test(m.text)) {
+    await tg(env, "sendMessage", { chat_id: m.chat.id, text: SUPPORT_TEXT });
+  } else if (m && m.text && /^\/terms/.test(m.text)) {
+    await tg(env, "sendMessage", { chat_id: m.chat.id, text: "Terms of service and purchase: " + TERMS_URL, reply_markup: { inline_keyboard: [[{ text: "📄 Read the terms", url: TERMS_URL }]] } });
   } else if (m && m.text && /^\/stop/.test(m.text)) {
     await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 0 }).catch(() => {});
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: "Daily reminders are off. Send /start to turn them back on." });

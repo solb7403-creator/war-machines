@@ -84,4 +84,15 @@ t(n1 === 1 && n2 === 0, 'reminders once ' + n1 + ' ' + n2);
 t(/3-day streak/.test(tgCalls[tgCalls.length - 1][1].text), 'streak text: ' + tgCalls[tgCalls.length - 1][1].text);
 const d1 = new Date(); d1.setUTCHours(3, 0, 0, 0);
 t((await mod.sendReminders(env, d1.getTime())) === 0, 'no reminders off-hours');
+// batch 6: paints, the pass, Common crates flat, support + terms commands, admin stats
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'paint', tk: 'gold', price: 1 }); t(s === 200 && r.stars === 300, 'paint invoice fixed price ' + JSON.stringify(r));
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'paint', tk: 'stock' }); t(s === 400, 'free paint not sold');
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'pass', tk: '1', price: 99 }); t(s === 200 && r.stars === 499, 'pass invoice ' + JSON.stringify(r));
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'gem', ri: 0, price: 4 }); t(s === 200 && r.stars === 250, 'common crate 250');
+const lastInv = tgCalls.filter(c => c[0] === 'createInvoiceLink').pop(); t(/Common Gem Cache/.test(lastInv[1].title), 'invoice title');
+const cmd = async (text) => { const n0 = tgCalls.length; await worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec }, body: JSON.stringify({ message: { from: { id: 333 }, chat: { id: 333, type: 'private' }, text } }) }), env); return tgCalls.slice(n0); };
+let out = await cmd('/paysupport'); t(out.length === 1 && /@LunarBattle/.test(out[0][1].text) && /Telegram support can't help/.test(out[0][1].text), 'paysupport reply');
+out = await cmd('/terms'); t(out.length === 1 && /terms\.html/.test(out[0][1].text), 'terms reply');
+[s, r] = await call('/api/admin', { initData: initData(J) }); t(s === 200 && r.stats && typeof r.stats.conv === 'number' && r.stats.payers >= 1, 'admin stats ' + JSON.stringify(r.stats));
+t(db.get('/players/tg_111/fd') !== undefined, 'first day stored');
 console.log(`after reminders: passed ${ok}, failed ${bad}`);

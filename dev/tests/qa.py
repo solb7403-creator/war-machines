@@ -34,7 +34,7 @@ async def run(p,w,h,tag,uid):
         await pg.evaluate("(t)=>setTab(t)",t);await pg.wait_for_timeout(350)
         issues+=await pg.evaluate(CHECK,t)
         await pg.screenshot(path=OUT+tag+'_'+t+'.png')
-    for sh,js in [('setup',"openSetup()"),('settings',"openSettings()"),('gear',"openGearPicker(true)"),('core',"openCorePicker(0)"),('crate',"openCrate('weapon',1)"),('howto',"showInfo('howto')")]:
+    for sh,js in [('setup',"openSetup()"),('settings',"openSettings()"),('gear',"openGearPicker(true)"),('core',"openCorePicker(0)"),('crate',"openCrate('weapon',1)"),('howto',"showInfo('howto')"),('pass',"openPass()"),('paints',"openPaints()"),('gtypes',"showInfo('gtypes')"),('terms',"askTerms(()=>{})")]:
         await pg.evaluate("(js)=>{closeAll();setTab('play');eval(js)}",js);await pg.wait_for_timeout(350)
         issues+=await pg.evaluate(CHECK,sh)
         await pg.screenshot(path=OUT+tag+'_sheet_'+sh+'.png')
@@ -56,6 +56,17 @@ async def run(p,w,h,tag,uid):
     await pg.evaluate("()=>{exitBattle();save.gtype='arena';save.mode='1v1';store();beginMatch();vsGo();units[1].hp=0;update(1/30);}");await pg.wait_for_timeout(1200)
     issues+=await pg.evaluate(CHECK,'round')
     await pg.screenshot(path=OUT+tag+'_round.png')
+    # the new modes: VS (6 tanks in Last Standing), HUD, results
+    for g,m,mp,end in [('royale','1v1','classic',"units.slice(1).forEach(u=>u.hp=0)"),('crystal','3v3','overpass',"me.cry=CRY_GOAL;crystalTick(1/30);cry.cd.t=0.001"),('bounty','2v2','craters',"timeLeft=0")]:
+        await pg.evaluate("(c)=>{closeAll();exitBattle();state='menu';save.gtype=c[0];save.mode=c[1];save.map=c[2];store();beginMatch();}",[g,m,mp]);await pg.wait_for_timeout(450)
+        issues+=await pg.evaluate(CHECK,'vs_'+g);await pg.screenshot(path=OUT+tag+'_vs_'+g+'.png')
+        await pg.evaluate("()=>{vsGo();for(let i=0;i<30*6;i++){me.hp=me.mhp;update(1/30);}}");await pg.wait_for_timeout(200)
+        await pg.screenshot(path=OUT+tag+'_battle_'+g+'.png')
+        await pg.evaluate("()=>{"+end+";update(1/30);}");await pg.wait_for_timeout(1400)
+        issues+=await pg.evaluate(CHECK,'results_'+g)
+        rf=await pg.evaluate("()=>{const all=document.querySelectorAll('.res .fight');const f=all[all.length-1];if(!f)return 'missing';const o=f.closest('.full.res');o.scrollTop=9999;const r=f.getBoundingClientRect();return r.bottom<=innerHeight?'ok':'cut'}")
+        if rf!='ok': issues.append('results_'+g+': PLAY AGAIN '+rf)
+        await pg.screenshot(path=OUT+tag+'_results_'+g+'.png')
     await b.close()
     return issues,errs
 async def main():

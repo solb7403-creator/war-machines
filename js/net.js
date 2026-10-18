@@ -49,7 +49,7 @@ function recoverStars(list){
   if(!it.n)continue;
   if(!save.starsDone[it.n]){
    save.starsDone[it.n]=1;n++;
-   grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g}:{kind:it.k});
+   grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k});
   }
   starsAckQ.push(it.n);
  }
@@ -102,7 +102,8 @@ function newMemo(){return 'LWM|'+playerKey()+'|'+Date.now().toString(36)+Math.ra
 function descLabel(d){
  if(!d)return 'Purchase';
  if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache');
- return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':'Purchase';
+ if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
+ return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():'Purchase';
 }
 // record a confirmed payment locally and on the server (which re-checks it on-chain)
 function logPayment(rec){
@@ -136,6 +137,7 @@ function priceLabel(ton,stars){
 }
 function pay(ton,desc){
  if(save.payCur==='pts')return;
+ if(!save.termsOk&&typeof askTerms==='function'){askTerms(()=>pay(ton,desc));return;}   // agree to the terms once, before the first purchase
  if(save.payCur==='stars')payWithStars(ton,desc);else if(save.payCur==='sol')payWithSol(ton,desc);else payWithTon(ton,desc);
 }
 // ---- Telegram Stars: invoice created + payment confirmed by the LUNAR server ----
@@ -144,7 +146,7 @@ async function payWithStars(ton,desc){
  if(!IN_TG||!TG.openInvoice){showToast('Open the game in Telegram to pay with Stars');return;}
  if(starsBusy)return;starsBusy=true;showToast('Opening Stars checkout…');
  try{
-  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.tk,ri:desc.ri,price:ton});
+  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.kind==='paint'?desc.id:desc.kind==='pass'?String(seasonNo()):desc.tk,ri:desc.ri,price:ton});
   if(!d.link)throw new Error(d.error||'invoice');
   TG.openInvoice(d.link,status=>{
    starsBusy=false;

@@ -92,7 +92,11 @@ async def run(p,w,h,tag,uid):
     await pg.wait_for_timeout(800);await shot('15_reveal_open')
     await pg.click('[data-act=revealok]');await pg.wait_for_timeout(400)
     # stars purchase outside the real Telegram invoice: invoice opens
-    await pg.click('[data-act=starter]');await pg.wait_for_timeout(800)
+    await pg.click('[data-act=starter]');await pg.wait_for_timeout(500)
+    terms=await pg.evaluate("()=>!!document.querySelector('[data-act=termsok]')")
+    check(terms,'terms check missing before the first purchase')
+    if terms: await pg.click('[data-act=termsok]')   # first purchase: agree once, then checkout opens
+    await pg.wait_for_timeout(800)
     inv=await pg.evaluate("()=>!!window.__invoice")
     check(inv,'Stars invoice did not open for starter pack')
     # 8) Quests + Ranks

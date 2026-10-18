@@ -14,7 +14,10 @@ const ICON={
  cog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1"/><circle cx="15" cy="6.5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17.5" r="2"/></svg>',
  arena:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l1.9 5.1 5.3-1.6-2.2 5 4.6 2.9-5.4 1 .6 5.4L12 17.3l-4.8 3.3.6-5.4-5.4-1 4.6-2.9-2.2-5 5.3 1.6z"/></svg>',
  zone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 3"/><path d="M14.6 7.6a5 5 0 1 0 2.2 7.6 4.1 4.1 0 0 1-2.2-7.6z" stroke-linejoin="round"/></svg>',
- random:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l10 10H21M3 17h3.5l3-3M14 10l2.5-3H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>'};
+ random:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l10 10H21M3 17h3.5l3-3M14 10l2.5-3H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>',
+ crystal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8 19 9.5 12 21.2 5 9.5z"/><path d="M5 9.5h14M12 2.8 9.3 9.5 12 21.2l2.7-11.7z"/></svg>',
+ bounty:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6.6l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z"/></svg>',
+ royale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4.2 17.2 3 7.6l5 3.9 4-6 4 6 5-3.9-1.2 9.6z"/><path d="M4.5 20.5h15"/></svg>'};
 const TAB_LIST=[['play','Play'],['garage','Garage'],['shop','Shop'],['quests','Quests'],['ranks','Ranks']];
 let uiTab='play',uiReady=false,uiRaf=0,ptrDown=false,heroCv=null,lbScope='overall';
 const stale=new Set(TAB_LIST.map(t=>t[0]));
@@ -52,6 +55,7 @@ function setTab(t){
 // ---------- top bar + tab badges ----------
 function questsAlert(){
  if(!loginState().claimedToday)return true;
+ if(passReady())return true;
  if(dailyQuests().some(q=>q.done&&!q.claimed))return true;
  if(!save.wq.claimed&&(save.wq.n||0)>=WQ_GOAL)return true;
  if(QUESTS.some(q=>{const e=save.q[q.id];return e&&e.done&&!e.claimed;}))return true;
@@ -94,11 +98,14 @@ function gearMeta(isW,it){
 }
 function winRange(gk,mk){
  const sb=Math.min((save.streak||0)+1,5)*20;
- if(gk==='random'){const a=winPoints('arena',mk)+sb,z=winPoints('zone',mk)+sb;return [Math.min(a,z),Math.max(a,z)];}
+ if(gk==='random'){const v=GT_ORDER.map(g=>winPoints(g,mk)+sb);return [Math.min(...v),Math.max(...v)];}
  const v=winPoints(gk,mk)+sb;return [v,v];
 }
 const shortNum=n=>n<10000?fmtNum(n):fmtK(Math.round(n/100)*100);
 const rangeTxt=r=>r[0]===r[1]?'+'+fmtNum(r[0]):'+'+fmtNum(r[0])+' to +'+fmtNum(r[1]);
+const pct1=q=>(Math.round(q*1000)/10)+'%';
+const modeName=(gk,mk)=>GT_PICK[gk].label+(isSolo(gk)?'':' '+mk);
+const daysLeft=()=>Math.max(1,Math.ceil(seasonEndMs()/864e5));
 
 // ---------- PLAY ----------
 function playNudge(){
@@ -106,18 +113,23 @@ function playNudge(){
  if(!L.claimedToday)return {gem:'★',b:'Daily reward ready',s:'+'+fmtNum(L.reward)+' points, day '+(L.slot+1)+' of 7',act:'login'};
  const dq=dailyQuests().find(q=>q.done&&!q.claimed);
  if(dq)return {gem:'✓',b:'Quest complete',s:dq.t+': +'+dq.pts+' points',act:'tab',arg:'quests'};
+ const pr=passReady();
+ if(pr)return {gem:String(passTier()),b:'Lunar Pass reward ready',s:pr+(pr===1?' reward':' rewards')+' to claim',act:'pass'};
+ const fm=featuredMode();
+ if(gtypeKey()!==fm&&save.featSeen!==dayNum()&&(save.mp||0)>=2)return {svg:ICON[fm],b:'Featured today: '+GTYPES[fm].label,s:'+25% points and +10 pass XP a match. Tap to switch.',act:'feat'};
  const u=nextUp();
  if(u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
  if(IN_TG&&(save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points for each friend who keeps playing',act:'share'};
  return null;
 }
-const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',random:'Arena or Moon Zone, picked at the start'};
+const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',crystal:'Hold 10 crystals for 15s',bounty:'Kills earn stars',royale:'6 tanks, 1 survivor',random:'A different mode each match'};
 function setupPickers(){
- const gk=gtypeKey(),mk=modeKey(),mp=mapKey();
+ const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),fm=featuredMode(),solo=isSolo(gk);
  return sec('Game type','','gtypes')+
-  '<div class="modes">'+['arena','zone','random'].map(k=>'<button class="mode'+(gk===k?' on':'')+'" data-act="gtype" data-arg="'+k+'">'+ICON[k]+'<b>'+GT_PICK[k].label+'</b><small>'+GT_DESC[k]+'</small></button>').join('')+'</div>'+
-  sec('Team size',MODES[mk].n>1?'AI pilots fill your team':'','modes')+
-  '<div class="seg c3">'+Object.keys(MODES).map(k=>{const r=winRange(gk,k);return '<button class="'+(mk===k?'on':'')+'" data-act="mode" data-arg="'+k+'">'+k+'<small>win '+(r[0]===r[1]?fmtNum(r[0]):fmtNum(r[0])+'–'+fmtNum(r[1]))+'</small></button>';}).join('')+'</div>'+
+  '<div class="modes">'+GT_ORDER.concat('random').map(k=>'<button class="mode'+(gk===k?' on':'')+'" data-act="gtype" data-arg="'+k+'">'+(k===fm?'<span class="feat">+25% today</span>':'')+ICON[k]+'<b>'+GT_PICK[k].label+'</b><small>'+GT_DESC[k]+'</small></button>').join('')+'</div>'+
+  sec('Team size',solo?'':MODES[mk].n>1?'AI pilots fill your team':'','modes')+
+  (solo?'<div class="seg"><button class="on solo" disabled>Solo<small>You and 5 AI pilots, free for all. 1st place pays '+fmtNum(winRange(gk,mk)[0])+'</small></button></div>'
+   :'<div class="seg c3">'+Object.keys(MODES).map(k=>{const r=winRange(gk,k);return '<button class="'+(mk===k?'on':'')+'" data-act="mode" data-arg="'+k+'">'+k+'<small>win '+(r[0]===r[1]?fmtNum(r[0]):fmtNum(r[0])+'–'+fmtNum(r[1]))+'</small></button>';}).join('')+'</div>')+
   sec('Map')+
   '<div class="maps">'+['classic','overpass','longshot','craters','random'].map(id=>'<button class="map'+(mp===id?' on':'')+'" data-act="map" data-arg="'+id+'"><canvas data-art="map:'+id+'"></canvas><b>'+(MAPS[id].short||MAPS[id].n)+'</b></button>').join('')+'</div>'+
   '<p class="dimtxt" style="margin-top:8px">'+esc(MAPS[mp].d)+'</p>';
@@ -129,8 +141,8 @@ function renderPlay(){
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
   '<div class="lobby">'+
-  (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+n.gem+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
-  '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+GT_PICK[gk].label+' '+mk+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
+  (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
+  '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
   '</div>';
 }
@@ -151,6 +163,7 @@ function renderGarage(){
  return '<div class="powerline"><div class="grow"><div class="pw num">Power '+pw+'</div><div class="mut"><span style="color:'+brk.c+'">'+brk.n+' league</span>, points ×'+brk.mult+'</div></div><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button></div>'+
   '<div class="stats">'+stat(fmtNum(st.hp),'Health')+stat(st.dps,'Damage/s')+stat(st.spd,'Speed')+stat(st.armor+'%','Armor')+stat(st.crit+'%','Crit')+'</div>'+
   sec('Gear')+gearRow(true,W0)+gearRow(false,C0)+
+  '<button class="gear" data-act="paints"><div class="ico"><canvas data-art="tank:paint:'+esc(save.paint)+'"></canvas></div><div class="grow"><div class="kind">Paint</div><div class="nm">'+esc(myPaint().n)+'</div><div class="meta">Looks only. '+Object.keys(save.paints||{}).length+' of '+PAINT_ORDER.length+' owned</div></div><span class="chev">›</span></button>'+
   sec('Cores','Each type fits once','cores')+'<div class="cores">'+[0,1,2].map(coreCard).join('')+'</div>'+
   sec('Upgrades','Permanent')+'<div class="ups list">'+UORDER.map(upRow).join('')+'</div>'+
   (save.skin==='lunar'?'<div class="panel lunar">Lunar skin: +8% health and +8% damage, always on</div>':'');
@@ -171,18 +184,50 @@ function renderShop(){
   return '<button class="crate" data-act="crate" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
    '<div class="p">'+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</div><div class="f">'+(tk==='gem'?(boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';};
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
- const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at 50–75% of the real boost</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
+ const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const pend=save.pendingSol||save.pendingTx;
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
   '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
+  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
+   '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
   sec('Gem caches','Level up your cores')+'<div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
+  sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
   sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon, Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin','+8% health, +8% damage',SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
+}
+
+function paintCard(id){
+ const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
+ const how=on?'Equipped':own?'Owned':P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
+ return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
+}
+
+// ---------- LUNAR PASS ----------
+function passCard(){
+ const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP,ready=passReady(),done=t>=PASS_TIERS;
+ return '<button class="passcard" data-act="pass"><div class="row"><div class="grow"><div class="pt">Lunar Pass'+(P.prem?' <span class="rar" style="background:var(--gold)">Premium</span>':'')+'</div><div class="mut">Season '+seasonNo()+', tier '+t+' of '+PASS_TIERS+', '+daysLeft()+(daysLeft()===1?' day':' days')+' left</div></div>'+
+  (ready?'<span class="rdy">'+ready+' to claim</span>':'<span class="chev">›</span>')+'</div>'+
+  '<div class="bar"><i style="width:'+(done?100:Math.round(xpIn/PASS_XP*100))+'%"></i></div>'+
+  '<div class="dimtxt">'+(done?'Season complete. New season in '+daysLeft()+(daysLeft()===1?' day':' days'):'Next: '+esc(rewardLabel(PASS_FREE[t+1]))+(P.prem?' and '+esc(rewardLabel(PASS_PREM[t+1])):'')+'. '+(PASS_XP-xpIn)+' XP to go')+'</div></button>';
+}
+function openPass(){
+ const ov=sheet('pass',()=>{
+  const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP;
+  const cell=(r,track,i,claimed,locked)=>{const got=i<=t;
+   return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r))+'</span>'+
+    (claimed?'<b class="ok">✓</b>':got&&!locked?'<button class="btn sm btn-gold" data-act="claimpass" data-arg="'+track+':'+i+'">Claim</button>':'')+'</div>';};
+  let rows='';for(let i=1;i<=PASS_TIERS;i++)rows+='<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';
+  return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+' ends in '+daysLeft()+(daysLeft()===1?' day':' days')+'. XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all 3 +'+PASS_XP_ALL+'.</p>'+
+   '<div class="pxp"><b class="num">Tier '+t+'</b><div class="bar"><i style="width:'+(t>=PASS_TIERS?100:Math.round(xpIn/PASS_XP*100))+'%"></i></div><span class="num">'+(t>=PASS_TIERS?'Done':xpIn+' / '+PASS_XP+' XP')+'</span></div>'+
+   (P.prem?'<p class="passown">Premium unlocked for this season</p>':'<button class="btn btn-go block" style="margin-top:12px" data-act="buypass">Unlock premium for '+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><p class="dimtxt" style="margin-top:6px">Premium never gives points, so it can’t buy leaderboard rank. Rewards you’ve already reached unlock right away.</p>')+
+   '<div class="phead"><span></span><span>Free</span><span>Premium</span></div><div class="ptiers">'+rows+'</div>';
+ });
+ if(passTier()>=5)setTimeout(()=>{const el=$('.ptier.next',ov.box)||$('.ptier.on:last-child',ov.box);if(el)try{el.scrollIntoView({block:'center'});}catch(e){}},80);   // early on, the header matters more
 }
 
 // ---------- QUESTS ----------
@@ -202,7 +247,7 @@ function renderQuests(){
   if(Q.link&&!e.done)return '<div class="q"><div class="grow"><div class="t">'+Q.n+'</div><div class="p">'+Q.d+'</div></div><button class="btn sm btn-quiet" data-act="visit" data-arg="'+Q.id+'">Open</button></div>';
   const p=Math.min(e.p||0,Q.goal);
   return qRow({id:Q.id,t:Q.n,goal:Q.goal,p,done:e.done,claimed:e.claimed,pts:Q.pts},'claimq',Q.d+(Q.goal>1&&!e.done?' ('+fmtNum(p)+' / '+fmtNum(Q.goal)+')':''));}).join('');
- return sec('Daily reward','Streak: '+L.streak+(L.streak===1?' day':' days'))+
+ return passCard()+sec('Daily reward','Streak: '+L.streak+(L.streak===1?' day':' days'))+
   '<div class="cal">'+cal+'</div>'+
   (L.claimedToday?'<button class="btn btn-quiet block off">Next reward in '+fmtDur(msToDailyReset())+'</button>':'<button class="btn btn-gold block" data-act="login">Claim day '+(L.slot+1)+': +'+fmtNum(L.reward)+' points'+(L.slot===6?' and a gem cache':'')+'</button>')+
   '<p class="dimtxt" style="margin-top:6px">Missing a day restarts the streak. Higher tiers add +'+TDAILY[t]+' a day.</p>'+
@@ -272,7 +317,7 @@ function paintArt(root){
     if(c.dataset.locked)ctx.globalAlpha=0.45;drawGearIcon(ctx,w,h,isW,it);ctx.globalAlpha=1;}
    else if(a[0]==='gem')drawGemArt(ctx,w,h,a[1]);
    else if(a[0]==='unit')drawUnitArt(ctx,w,h,units[+a[1]]);
-   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,a[1]==='lunar'?'#e8f4ff':TC[0],null,'pulse',null);}
+   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,a[1]==='lunar'?'#e8f4ff':TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'?myPaint():null);}
   }catch(e){}
  }
 }
@@ -321,14 +366,14 @@ function infoBody(sections){return '<div class="infobody">'+sections.map(([h,p])
 const INFO={
  howto:()=>['How to play',[
   ['Drive','Drag anywhere on the screen. Your cannon aims and fires on its own.'],
-  ['Win','Arena: destroy the enemy team, or have more health left when the 3-minute timer runs out. Moon Zone: first team to 100.'],
+  ['Win','Every mode has its own goal: Arena, Moon Zone, Crystal Rush, Bounty and Last Standing. The start screen tells you what it is.'],
   ['Mystery boxes','Drive over the gold box for a random boost. It lasts until you take enough damage; the ring around your tank shows what’s left.'],
   ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button to auto-aim, or drag from it to aim yourself.'],
   ['Dash','The blue Dash button bursts you forward in the direction you’re driving. Use it to dodge supers. It recharges in 4 seconds.'],
   ['Crits','Direct hits can crit for double damage. Shots that only clip the edge do less.'],
   ['Counters','Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout. The winning side deals 15% more damage and takes 10% less.'],
   ['Map objects','Rocks, domes and containers block shots and movement. Orange supply crates break under fire and sometimes drop a box. Craters slow you down.'],
-  ['Events','Team matches and Moon Zone get one surprise: a supply drop, a meteor shower (stay out of the red circles) or a solar flare that charges supers twice as fast.'],
+  ['Events','Most matches get one surprise: a supply drop, a meteor shower (stay out of the red circles) or a solar flare that charges supers twice as fast.'],
   ['Points','Every match pays points. They rank you on the leaderboard and buy upgrades and crates. Spending never lowers your rank.']]],
  gtypes:()=>['Game types',[
   ['Arena','Destroy the enemy team, or have more health left when time runs out. One life each.'],
@@ -336,8 +381,12 @@ const INFO={
   ['Moon Zone','Stand in the zone to capture it. While your team holds it, you score. First to 100 wins. It pays ×3 in 1v1, ×2 in 2v2 and ×1.5 in 3v3 because matches run longer.'],
   ['The zone moves','Every 20 to 28 seconds it jumps somewhere new. A gold ring shows where, 6 seconds early.'],
   ['Kills and respawns','Each kill adds 5. You respawn after 4 seconds, plus 1.5 for each death after that (9 at most).'],
-  ['Repairs','Stay off the zone and out of fire for 3.5 seconds and your tank repairs itself.'],
-  ['Random','Picks Arena or Moon Zone when the match starts.']]],
+  ['Repairs','In Moon Zone, Crystal Rush and Bounty, stay out of fire for 3.5 seconds and your tank repairs itself (not while you’re on the zone).'],
+  ['Crystal Rush','A crystal appears at the mine in the middle every 6 seconds. When your team holds 10 or more, and more than the other team, a 15-second countdown starts. Last it out and you win. Destroyed tanks drop every crystal they carry. Pays ×3 / ×2 / ×1.5.'],
+  ['Bounty','Every tank starts worth 2 stars. Destroy one and your team gets its stars, and your own bounty rises by 1, up to 7. Get destroyed and yours drops back to 2. Most stars after 2 minutes wins. Tanks are lighter and respawn in 3 seconds. Pays ×3.5 / ×2.25 / ×1.5.'],
+  ['Last Standing','You and 5 AI pilots, every tank for itself, no respawns. The ring closes from 15 seconds in; outside it you lose 4% health a second. Wrecks drop boxes. Pays by place: '+ROYALE_PTS.join(', ')+'. 2nd and 3rd keep your win streak.'],
+  ['Featured mode','One mode a day pays +25% points and +'+PASS_XP_FEAT+' pass XP. It changes at 00:00 UTC.'],
+  ['Random','Picks any mode when the match starts.']]],
  modes:()=>['Team size',[
   ['Points per match','Before your league multiplier:'],
   ...Object.keys(MODES).map(k=>{const M=MODES[k];return [k,'Win '+M.win+', draw '+M.draw+', loss '+M.loss+'.'];}),
@@ -353,10 +402,12 @@ const INFO={
   ['Stacking','Cores add on top of mystery-box boosts of the same type.']]],
  crates:()=>['Crates',[
   ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
-  ['Rolls','Every item rolls 100 to 110% of its rarity’s stats. Rare is 10% stronger than Common, Epic 32%.'],
+  ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 10% stronger than Common, Epic 32%. So power runs 105–110% (Common), 115.5–121% (Rare), 138.6–145.2% (Epic).'],
+  ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 6 core types, 1 in 6 each.'],
+  ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
   ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 6 to 9, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
-  ['Salvage','Paid with points. Salvaged gear gives 50 to 75% of the real item’s boost.']]],
+  ['Salvage','Paid with points: Salvaged Rare 5,000 (101 to 103% power), Salvaged Epic 10,000 (103.1 to 104.4%). Every crate item beats every salvaged item.']]],
  squad:()=>['Squad rewards',[
   ['How it works','Share your invite link. Anyone who opens the game with it for the first time joins your squad.'],
   ['You get paid when they stick around','+500 when they come back for a 2nd day with 1,500 points. +2,000 at 5 days and 5,000 points. +5,000 at 10 days and 20,000 points.'],
@@ -393,9 +444,11 @@ function openGearPicker(isW){
  sheet('gear',()=>{
   const eq=eqId(isW);
   const rows=ownedList(isW).map(it=>{const id=it.premium?'moon':(it.arch||it.cls)+':'+Math.max(0,it.tier)+(it.sal?'s':''),on=id===eq;
-   const where=it.locked?'In the '+crateName(isW?'weapon':'chassis',Math.max(0,it.tier)).toLowerCase():it.premium?'Legendary':'Roll '+pct(it.q);
-   return '<button class="gear'+(it.locked?' locked':'')+(on?' equipped':'')+'" data-act="equip" data-arg="'+(isW?'w':'c')+'|'+id+'"><div class="ico"><canvas data-art="gear:'+(isW?'w':'c')+':'+gearKey(it)+'"'+(it.locked?' data-locked="1"':'')+'></canvas></div>'+
-    '<div class="grow"><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div><div class="meta">'+where+'</div></div>'+(on?'<span class="eq">Equipped</span>':'')+'</button>';}).join('');
+   const k=it.arch||it.cls,t=Math.max(0,it.tier),tunable=!it.locked&&!it.premium&&!it.sal&&canTune(isW,k,t);
+   const where=it.locked?'In the '+crateName(isW?'weapon':'chassis',t).toLowerCase():it.premium?'Legendary':it.sal?'Power '+pct1(it.mult)+'. Crate gear starts at 105%':tunable?'Power '+pct1(it.mult)+', roll '+pct(it.q):'Starter gear, power '+pct1(it.mult);
+   const tune=tunable&&it.q<ROLL_MAX-0.0001?'<div class="tunerow"><span>Tune-up: re-roll 105 to 110%, keep the better</span><button class="btn sm '+((save.pts||0)>=TUNE_PTS[t]?'btn-gold':'btn-quiet')+'" data-act="tune" data-arg="'+(isW?'w':'c')+'|'+k+'|'+t+'">'+coin()+fmtK(TUNE_PTS[t])+'</button></div>':'';
+   return '<button class="gear'+(it.locked?' locked':'')+(on?' equipped':'')+(tune?' hastune':'')+'" data-act="equip" data-arg="'+(isW?'w':'c')+'|'+id+'"><div class="ico"><canvas data-art="gear:'+(isW?'w':'c')+':'+gearKey(it)+'"'+(it.locked?' data-locked="1"':'')+'></canvas></div>'+
+    '<div class="grow"><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div><div class="meta">'+where+'</div></div>'+(on?'<span class="eq">Equipped</span>':'')+'</button>'+tune;}).join('');
   return '<h3>'+(isW?'Weapons':'Chassis')+'</h3><p class="mut">'+(isW?'Each weapon has its own super.':'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.')+'</p><div style="margin-top:12px">'+rows+'</div>';
  });
 }
@@ -421,12 +474,17 @@ function openCrate(tk,ri){
   const found=crateFound(tk,ri),pts=boxPts(tk,ri);
   const what=isGem?['1 to 2','3 to 4','6 to 9'][ri]+' shards for a random core. Price rises 25% with each buy today and resets at 00:00 UTC.'
    :found>=3?'You own all 3. Opening re-rolls one: you keep the better roll, or get '+[50,150,400][ri]+' points.'
-   :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 100 to 110%. It’s equipped if it beats your current one.';
+   :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
+  const odds=isGem?'Odds: each of the 6 core types is 1 in 6, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
   return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+'</h3><p class="mut">'+what+'</p></div></div>'+items+
    '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
    (pts?'<button class="btn btn-quiet block" style="margin-top:8px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pts)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic crates can’t be bought with points.</p>')+
+   '<p class="dimtxt odds">'+odds+'</p>'+
    (ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each purchase of this crate raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'.</p>':'');
  });
+}
+function openPaints(){
+ sheet('paints',()=>'<h3>Paints</h3><p class="mut">Paints change how your tank looks, never its stats. Your team color stays on the tracks and core, so allies and foes are always easy to tell apart.</p><div class="paints" style="margin-top:12px">'+PAINT_ORDER.map(paintCard).join('')+'</div>');
 }
 function openSolWallets(){
  sheet('solw',()=>'<h3>Pay SOL from</h3><div style="margin-top:10px">'+SOL_ORDER.map(k=>'<button class="gear'+((save.solWallet||'phantom')===k?' equipped':'')+'" data-act="setsolw" data-arg="'+k+'"><div class="grow"><div class="nm">'+SOL_WALLETS[k].n+'</div><div class="meta">'+(SOL_WALLETS[k].ul?'Opens the wallet app to approve':'Shows the address and exact amount to send')+'</div></div></button>').join('')+'</div>');
@@ -441,6 +499,7 @@ function openSettings(){
   '<div class="q"><div class="grow"><div class="t">Daily reminder</div><div class="p">One message when your reward is ready</div></div><button class="toggle'+(save.remind?' on':'')+'" data-act="remind" aria-pressed="'+(!!save.remind)+'"><i></i></button></div>'+
   '<button class="q" data-act="info" data-arg="howto"><div class="grow"><div class="t">How to play</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="wiki"><div class="grow"><div class="t">Wiki and tokenomics</div></div><span class="chev">›</span></button>'+
+  '<button class="q" data-act="terms"><div class="grow"><div class="t">Terms and purchase help</div><div class="p">Refunds and payment problems: send /paysupport to the bot</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="copyid"><div class="grow"><div class="t">Player ID</div><div class="p">'+esc(playerKey())+(IN_TG?', '+esc(tgName(TG_USER)):'')+'</div></div><span class="mut">Copy</span></button>'+
   '</div><p class="dimtxt" style="margin-top:12px">Build '+esc(window.BUILD||'dev')+'</p>');
 }
@@ -452,10 +511,13 @@ function openAdmin(){
   return '<h3>Admin</h3>'+
    (A.loading?'<p class="mut">Loading server stats…</p>':A.error?'<p class="mut">Server stats: '+esc(A.error)+'</p>':
    '<div class="kv"><div><b class="num">'+fmtNum(A.players)+'</b><span>Players</span></div><div><b class="num">'+fmtNum(A.activeToday)+'</b><span>Active today</span></div><div><b class="num">$'+fmtNum(R.USD)+'</b><span>Revenue</span></div></div>'+
-   '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.unverified?'. '+R.unverified+' need checking':'')+'</p>')+
+   '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.unverified?'. '+R.unverified+' need checking':'')+'</p>'+
+   (A.stats?'<div class="kv"><div><b class="num">'+fmtNum(A.stats.newToday)+'</b><span>New today</span></div><div><b class="num">'+A.stats.back2+'%</b><span>Came back day 2</span></div><div><b class="num">'+A.stats.back5of7+'%</b><span>5+ of 7 days</span></div></div>'+
+    '<div class="kv"><div><b class="num">'+A.stats.avgMatches+'</b><span>Matches per player</span></div><div><b class="num">'+A.stats.conv+'%</b><span>Paid</span></div><div><b class="num">$'+A.stats.arppu+'</b><span>Per payer</span></div></div>'+
+    '<p class="dimtxt" style="margin-top:6px">Retention from the top 1,000 players. Paid = payers out of all players.</p>':''))+
    '<p class="mut" style="margin-top:8px">This device: power '+pw+', '+fmtNum(save.earned)+' lifetime points, '+(save.mp||0)+' matches</p>'+
    '<h3 style="margin-top:16px;font-size:16px">Test grants (this device only)</h3>'+
-   '<div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn sm btn-quiet" data-act="dev" data-arg="pts">+50K points</button><button class="btn sm btn-quiet" data-act="dev" data-arg="epic">All epic gear</button><button class="btn sm btn-quiet" data-act="dev" data-arg="moon">Moonbeam</button><button class="btn sm btn-quiet" data-act="dev" data-arg="skin">Lunar skin</button></div>';
+   '<div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn sm btn-quiet" data-act="dev" data-arg="pts">+50K points</button><button class="btn sm btn-quiet" data-act="dev" data-arg="epic">All epic gear</button><button class="btn sm btn-quiet" data-act="dev" data-arg="moon">Moonbeam</button><button class="btn sm btn-quiet" data-act="dev" data-arg="skin">Lunar skin</button><button class="btn sm btn-quiet" data-act="dev" data-arg="passxp">+2,000 pass XP</button><button class="btn sm btn-quiet" data-act="dev" data-arg="pass">Premium pass</button></div>';
  });
 }
 
@@ -466,6 +528,7 @@ function itemArt(r){
  if(r.gem)return 'gem:'+r.gem;
  if(r.tk==='moonbeam')return 'gear:w:moon:2:0';
  if(r.tk==='skin')return 'tank:lunar';
+ if(r.tk==='paint'||r.tk==='pass')return 'tank:paint:'+(r.paint||'stock');
  if(r.item)return 'gear:'+(r.item.isW?'w':'c')+':'+r.item.k+':'+r.item.tier+':'+(r.item.sal?1:0);
  return 'crate:'+r.tk+':'+(r.ri||0);
 }
@@ -493,7 +556,7 @@ function showWelcome(){
 // ---------- VS screen (before every match after the first) ----------
 let vsTimer=null;
 function vsBuild(){
- const {adv,dis}=matchup(),foes=units.filter(u=>u.team===1),mine=units.filter(u=>u.team===0);
+ const {adv,dis}=matchup(),foes=units.filter(u=>u.team!==0),mine=units.filter(u=>u.team===0),solo=isSolo(matchG);
  const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u.isPlayer?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u.isPlayer?'You':u.name)+'</b><span style="color:'+CH[u.cls].c+'">'+CH[u.cls].n+'</span></div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
@@ -501,8 +564,9 @@ function vsBuild(){
  else if(adv&&dis){txt='Mixed matchup: you counter some, some counter you.';}
  else txt='Even matchup. No counters either way.';
  const owned=ownedChassisClasses();
- return '<div class="head"><b>'+(matchG==='zone'?'Moon Zone':'Arena')+' '+modeKey()+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+'</span><br><span class="aitag">AI opponents</span></div>'+
-  '<div class="team">'+foes.map(card).join('')+'</div><div class="mark">VS</div><div class="team">'+mine.map(card).join('')+'</div>'+
+ return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag">AI opponents</span></div>'+
+  '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
+  '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
   '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+
   '<div class="grow"></div><button class="fight" data-act="vsstart"><span class="big">START</span><span class="small" id="vsCount"></span></button>'+
   '<button class="linkbtn" data-act="vsback">Back to menu</button>';
@@ -524,13 +588,17 @@ function beginMatch(){
 
 // ---------- results ----------
 const TIPS=['Mystery boxes boost you until you take enough damage. Grab them early.','Supers are strongest when enemies line up. Pierce Lance goes through cover.',
+ 'Crystal Rush: if you carry a lot, fall back. Every crystal drops when you go down.','Bounty: a 7-star tank is worth more than three 2-star kills.','Last Standing: let others fight, then clean up. Wrecks drop boxes.',
  'Upgrades in the Garage are permanent and cheap at first.','Moon Zone pays ×3 in 1v1.','Back off to repair in Moon Zone: 3.5 seconds out of fire and you start healing.',
  'Daily quests and the login streak add up fast. Check Quests every day.','Friends you invite pay you when they keep playing.'];
+const ORD=['1st','2nd','3rd','4th','5th','6th'];
 function resultsHTML(r){
- const M=MODES[r.mode],title=r.won?'Victory':r.drawn?'Draw':'Defeat',cls=r.won?'win':r.drawn?'draw':'lose';
- const lines=[[(r.won?'Win':r.drawn?'Draw':'Loss')+' in '+r.mode,fmtNum(r.won?M.win:r.drawn?M.draw:M.loss)]];
- if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.zoneX]);
- else if(r.zoneX!==1)lines.push(['Moon Zone','×'+r.zoneX]);
+ const M=MODES[r.mode],solo=isSolo(r.gtype),G=GTYPES[r.gtype];
+ const title=r.won?'Victory':solo&&r.place<=3?ORD[r.place-1]+' place':r.drawn?'Draw':'Defeat',cls=r.won?'win':r.drawn||(solo&&r.place<=3)?'draw':'lose';
+ const lines=solo?[[ORD[r.place-1]+' of '+units.length,fmtNum(r.base)]]:[[(r.won?'Win':r.drawn?'Draw':'Loss')+' in '+r.mode,fmtNum(r.won?M.win:r.drawn?M.draw:M.loss)]];
+ if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.modeX]);
+ else if(r.modeX!==1)lines.push([G.label,'×'+r.modeX]);
+ if(r.featured)lines.push(['Featured mode','×'+r.featX]);
  if(r.leagueMult!==1)lines.push([r.league.n+' league','×'+r.leagueMult]);
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
@@ -547,10 +615,10 @@ function resultsHTML(r){
  const st=r.stats;
  return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+Math.min(96,i*3.5+Math.random()*2)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
   '<div class="grow"></div><div class="title '+cls+'">'+title+'</div>'+
-  '<div class="sub">'+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
+  '<div class="sub">'+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
-  '<div class="chips"><span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span></div>'+
+  '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span></div>'+
   '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span><span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
   '<div class="tip">'+esc(tip)+'</div>'+
   '<div class="grow"></div><div class="acts"><button class="fight" data-act="again"><span class="big">PLAY AGAIN</span><span class="small">Win '+rangeTxt(winRange(gtypeKey(),modeKey()))+' points</span></button>'+
@@ -619,6 +687,15 @@ function exitBattle(){
  uiDirty();
 }
 
+// ---------- terms: shown once, before the first purchase ----------
+const TERMS_URL='https://solb7403-creator.github.io/war-machines/terms.html';
+let termsGo=null;
+function askTerms(go){
+ termsGo=go;
+ openOverlay('modal','<h3>Before your first purchase</h3><p class="mut">You’re buying in-game items for LUNAR: War Machines. They have no cash value and can’t be traded or cashed out. Purchases don’t buy $LUNAR and aren’t an investment. For refunds or payment problems, send /paysupport to the bot.</p>'+
+  '<button class="linkbtn" data-act="terms">Read the full terms</button><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn btn-ghost" data-act="termsno">Not now</button><button class="btn btn-go" data-act="termsok">I agree</button></div>',{key:'terms',onClose:()=>{termsGo=null;}});
+}
+
 // ---------- toast ----------
 let toastTimer=0;
 function showToast(msg){const el=$('#toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2300);}
@@ -645,6 +722,19 @@ const ACT={
  settings:()=>openSettings(),
  points:()=>showInfo('points'),
  gtype:a=>{save.gtype=a;store();fx('tap');},
+ feat:()=>{save.gtype=featuredMode();save.featSeen=dayNum();store();fx('tap');showToast(GTYPES[save.gtype].label+' selected: +25% today');},
+ pass:()=>openPass(),
+ claimpass:a=>{const [tr,i]=a.split(':'),r=claimPass(tr,+i);if(!r)return;if(r.pts)showToast('+'+fmtNum(r.pts)+' points');if(r.reveal)showReveal([r.reveal]);},
+ buypass:()=>{if(passState().prem)return;pay(PASS_PRICE.ton,{kind:'pass'});},
+ paints:()=>openPaints(),
+ paint:a=>{const P=PAINTS[a];if(!P)return;
+  if(save.paints&&save.paints[a]){save.paint=a;store();fx('tap');showToast(P.n+' paint on');return;}
+  if(P.pass){openPass();return;}
+  pay(P.ton,{kind:'paint',id:a});},
+ tune:a=>{const [sl,k,t]=a.split('|'),r=tuneItem(sl==='w',k,+t);if(!r)return;showToast(r.better?'New roll '+pct(r.roll)+', up from '+pct(r.old):'Rolled '+pct(r.roll)+'. You kept '+pct(r.old));syncPlayer();},
+ terms:()=>openLink(TERMS_URL),
+ termsok:()=>{save.termsOk=Date.now();store();const go=termsGo;termsGo=null;const ov=findOv('terms');if(ov)closeOverlay(ov);if(go)go();},
+ termsno:()=>{const ov=findOv('terms');if(ov)closeOverlay(ov);},
  mode:a=>{save.mode=a;store();fx('tap');},
  map:a=>{save.map=a;store();fx('tap');},
  fight:()=>beginMatch(),
@@ -656,7 +746,7 @@ const ACT={
  swapcls:a=>{clearInterval(vsTimer);vsTimer=null;switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},
  again:()=>{closeAll();exitBattle();beginMatch();},
  menu:()=>{exitBattle();setTab('play');},
- sharewin:()=>{const r=lastResult;shareRef('I just won a '+(r.gtype==='zone'?'Moon Zone ':'')+r.mode+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
+ sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?'Last Standing':'a '+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
  login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak');if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},
  claimdq:a=>{const n=claimDaily(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=dailyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
  claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}const n=claimQuest(a);if(n)showToast('+'+n+' points: '+Q.n);},
@@ -698,6 +788,8 @@ const ACT={
   if(a==='epic'){save.cTier={scout:2,vanguard:2,titan:2};save.cOwn={scout:[0,1,2],vanguard:[0,1,2],titan:[0,1,2]};save.wTier={pulse:2,twin:2,siege:2};save.wOwn={pulse:[0,1,2],twin:[0,1,2],siege:[0,1,2]};}
   if(a==='moon'){save.moonbeam=true;}
   if(a==='skin'){save.skin='lunar';}
+  if(a==='passxp'){passXP(2000);}
+  if(a==='pass'){passState().prem=true;}
   store();showToast('Granted on this device (test)');},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),

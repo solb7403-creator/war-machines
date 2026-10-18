@@ -9,7 +9,7 @@
 <script>
 // Auto-update: phones and GitHub's CDN can keep an old copy for ~10 min. version.json is fetched fresh;
 // if it's newer than this page, reload with ?v=<new> (a URL the cache has never seen). Telegram data in the #hash is kept.
-window.BUILD='20261018025730';
+window.BUILD='20261018040311';
 fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
  const q=new URLSearchParams(location.search);
  if(j&&j.v&&j.v!==window.BUILD&&q.get('v')!==j.v){q.set('v',j.v);location.replace(location.pathname+'?'+q.toString()+location.hash);}
@@ -20,7 +20,7 @@ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=
 <link rel="preconnect" href="https://warmachines-a6034-default-rtdb.firebaseio.com">
 <link rel="preload" href="fonts/chakra-petch-700.woff" as="font" type="font/woff" crossorigin>
 <link rel="preload" href="fonts/chakra-petch-600.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="css/app.css?v=20261018025730">
+<link rel="stylesheet" href="css/app.css?v=20261018040311">
 <link rel="icon" href="icon.png">
 </head>
 <body>
@@ -44,12 +44,12 @@ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=
 <div id="layer"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div id="sab"></div>
-<script src="js/core.js?v=20261018025730"></script>
-<script src="js/net.js?v=20261018025730"></script>
-<script src="js/game.js?v=20261018025730"></script>
-<script src="js/render.js?v=20261018025730"></script>
-<script src="js/fx.js?v=20261018025730"></script>
-<script src="js/ui.js?v=20261018025730"></script>
-<script src="js/main.js?v=20261018025730"></script>
+<script src="js/core.js?v=20261018040311"></script>
+<script src="js/net.js?v=20261018040311"></script>
+<script src="js/game.js?v=20261018040311"></script>
+<script src="js/render.js?v=20261018040311"></script>
+<script src="js/fx.js?v=20261018040311"></script>
+<script src="js/ui.js?v=20261018040311"></script>
+<script src="js/main.js?v=20261018040311"></script>
 </body>
 </html>

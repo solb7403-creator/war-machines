@@ -1,10 +1,11 @@
 'use strict';
 // =====================================================================
-// game: maps, units, physics, combat, supers, AI, Moon Zone, match flow
+// game: maps, units, physics, combat, supers, AI, game modes, match flow
 // (pure simulation: rendering lives in render.js, menus in ui.js)
 // =====================================================================
 const W=20,H=32,R=0.7,MATCH=180;
 const TC=['#4d9fff','#ff4d5e'];   // team colors in battle: blue (your team) vs red (foes)
+const tcol=t=>t===0?TC[0]:TC[1];   // Last Standing has 6 teams: every tank that isn't on your team is red
 // ---- two-level bridge (Overpass): elev 0 = ground, 1 = on the deck/ramps ----
 // Ground level: the deck is a solid block except the two tunnels; ramps have side rails, so you drive up only from the ramp's open end.
 // Deck level: you can only drive on the deck and ramps. High ground shoots over everything; units in a tunnel are hidden from the deck.
@@ -88,12 +89,29 @@ const MODES={
  '3v3':{n:3,label:'3v3',win:300,draw:150,loss:75}};
 const ZONE_X={'1v1':3,'2v2':2,'3v3':1.5};   // Moon Zone runs ~4x longer, so it pays more per match
 const modeKey=()=>(save.mode&&MODES[save.mode])?save.mode:'1v1';
-// game types: ARENA (destroy the enemy) and MOON ZONE (hold zones to score; 1 zone in 1v1, 3 zones in team modes)
-const GTYPES={arena:{label:'Arena',d:'Destroy the enemy team'},zone:{label:'Moon Zone',d:'Hold the moving zone. First to 100.'}};
-const GT_PICK={...GTYPES,random:{label:'Random',d:'Arena or Moon Zone'}};   // what the selector shows; Random resolves at match start
+// Game types. The rules are data, so a PvP server or a 3D client can run the same matches.
+// t: time limit (s). respawn: tanks come back after dying. x: pay multiplier per team size (longer matches pay more per match,
+// so points per minute stay level across modes). solo: free for all with that many tanks, no teams.
+// Every mode is playable against AI pilots now and built so live PvP can drop real players into the same slots.
+const GTYPES={
+ arena:{label:'Arena',d:'Destroy the enemy team',t:180},
+ zone:{label:'Moon Zone',d:'Hold the moving zone. First to 100.',t:180,respawn:true,x:ZONE_X},
+ crystal:{label:'Crystal Rush',d:'Grab crystals from the mine. Hold 10 for 15 seconds to win.',t:180,respawn:true,x:{'1v1':3,'2v2':2,'3v3':1.5}},
+ bounty:{label:'Bounty',d:'Kills earn stars. Every kill raises your bounty.',t:120,respawn:true,x:{'1v1':3.5,'2v2':2.25,'3v3':1.5}},
+ royale:{label:'Last Standing',d:'6 tanks, 1 survivor. Stay inside the ring.',t:150,solo:6}};
+const GT_ORDER=['arena','zone','crystal','bounty','royale'];
+const GT_PICK={...GTYPES,random:{label:'Random',d:'A different mode every match'}};   // what the selector shows; Random resolves at match start
 const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
 let matchG='arena';
-function winPoints(gk,mk){const M=MODES[mk],x=gk==='zone'?ZONE_X[mk]:gk==='arena'&&mk==='1v1'?SERIES_X:1;return Math.round(M.win*x*powerBracket(calcPower()).mult);}
+const ROYALE_PTS=[260,200,140,100,60,30],ROYALE_HP=2,BTY_HP=0.5,BTY_RESPAWN=3;   // Last Standing pays by place, 1st to 6th. Bounty: lighter tanks and quick respawns, so kills keep coming
+const isSolo=gk=>!!(GTYPES[gk]&&GTYPES[gk].solo);
+const respawns=()=>!!(GTYPES[matchG]&&GTYPES[matchG].respawn);
+const hpScale=()=>isSolo(matchG)?ROYALE_HP:MODES[modeKey()].n*(matchG==='bounty'?BTY_HP:1);   // team matches scale health with team size so fights last
+function winBase(gk,mk){   // points for a win before the league multiplier, featured bonus and streak
+ if(isSolo(gk))return ROYALE_PTS[0];
+ const M=MODES[mk];return Math.round(M.win*(gk==='arena'?(mk==='1v1'?SERIES_X:1):GTYPES[gk].x[mk]));
+}
+function winPoints(gk,mk){return Math.round(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1)*powerBracket(calcPower()).mult);}
 // ---- 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most) ----
 const SERIES_X=2,ROUND_T=90;
 let series=null;
@@ -109,7 +127,7 @@ const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===
 // Score while you hold it uncontested, +5 per kill, respawn gets longer each death, tanks repair when out of combat.
 const ZONE_R=2.8,ZONE_WIN=100,CAP_RATE=0.55,RESPAWN_T=4,ZONE_RATE=2.4,KILL_PTS=5,ZONE_WARN=6,REPAIR_DELAY=3.5,REPAIR_RATE=0.07;
 let gzones=null,gscore=[0,0];
-const respawnFor=u=>Math.min(9,RESPAWN_T+1.5*Math.max(0,(u.deaths||1)-1));
+const respawnFor=u=>matchG==='bounty'?BTY_RESPAWN:Math.min(9,RESPAWN_T+1.5*Math.max(0,(u.deaths||1)-1));
 function zoneSpot(avoid){
  for(let k=0;k<80;k++){
   const x=3+Math.random()*14,y=8.5+Math.random()*15;
@@ -140,17 +158,18 @@ function zoneTick(dt){
  if(z.own>=0&&!contested)gscore[z.own]=Math.min(ZONE_WIN,gscore[z.own]+ZONE_RATE*dt);
 }
 function respawnTick(dt){
+ const zz=gzones&&gzones[0];
  for(const u of units){
   if(u.hp>0){   // out-of-combat repair: pull back, heal up, come back
    u.calm=(u.calm||0)+dt;
-   const zz=gzones[0],inZ=Math.hypot(u.x-zz.x,u.y-zz.y)<zz.r;   // no repairs while standing on the zone: holding it costs you
+   const inZ=!!zz&&Math.hypot(u.x-zz.x,u.y-zz.y)<zz.r;   // no repairs while standing on the zone: holding it costs you
    if(u.calm>REPAIR_DELAY&&u.hp<u.mhp&&!inZ){u.hp=Math.min(u.mhp,u.hp+u.mhp*REPAIR_RATE*dt);u.rep=0.3;}else u.rep=Math.max(0,(u.rep||0)-dt);
    continue;
   }
   u.dead=(u.dead||0)+dt;
   if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.flash=0;u.trail=[];u.calm=0;
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
-   pop(u.x,u.y-1,u.isPlayer?'BACK IN THE FIGHT':'RESPAWNED',TC[u.team]);}
+   pop(u.x,u.y-1,u.isPlayer?'BACK IN THE FIGHT':'RESPAWNED',tcol(u.team));}
  }
 }
 // where a bot wants to be in Moon Zone: rotate early to the next spot, otherwise hold a point inside the zone
@@ -170,40 +189,49 @@ const foesOf=u=>units.filter(v=>v.team!==u.team&&v.hp>0);
 const aliveCount=t=>units.filter(u=>u.team===t&&u.hp>0).length;
 function teamHpFrac(t){const us=units.filter(u=>u.team===t);const m=us.reduce((a,u)=>a+u.mhp,0);return m?us.reduce((a,u)=>a+u.hp,0)/m:0;}
 function nearestFoe(u){let best=null,bd=1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<bd){bd=d;best=v;}}return best;}
+const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring under the tank: none, rare, epic, legendary
 function buildMe(){
- const U=save.up,W0=getW(save.weapon),Cc=getC(save.chassis),skin=save.skin==='lunar'?1.08:1,n=MODES[modeKey()].n;
+ const U=save.up,W0=getW(save.weapon),Cc=getC(save.chassis),skin=save.skin==='lunar'?1.08:1,n=hpScale();
  const m={x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],gems:(save.cores||[]).filter(Boolean),gemM:Object.fromEntries(GORDER.map(k=>[k,gemMult(k)])),sp:0,sup:null,
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin*n),dmgM:(1+0.08*U.cannon)*skin,spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,team:0,isPlayer:true,
-  wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,dscale:Cc.size,cls:save.chassis,name:IN_TG?tgName(TG_USER):'You'};
+  wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,dscale:Cc.size,cls:save.chassis,name:IN_TG?tgName(TG_USER):'You',
+  aura:Math.max(auraOf(W0),auraOf(Cc)),paint:save.paint||'stock'};
  m.hp=m.mhp;return m;
 }
 const BOT_NAMES=['Rust','Vex','Kilo','Nyx','Bolt','Ion','Echo','Grit','Onyx','Rook','Volt','Zed','Hex','Juno','Mako','Pike'];
+const BOT_PAINTS=['nebula','ember','arctic','venom','gold','void'];
 // pick the map, mode and bots; the VS screen shows them before the fight starts
 function prepareMatch(){
  {const pk=mapKey();setMap(pk==='random'?MAP_REAL[(Math.random()*MAP_REAL.length)|0]:pk);}
- {const gk=gtypeKey(),real=Object.keys(GTYPES);matchG=gk==='random'?real[(Math.random()*real.length)|0]:gk;}
+ {const gk=gtypeKey();matchG=gk==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk;}
  me=buildMe();
  const W0=getW(save.weapon),Cc=getC(save.chassis);
  const bwm=W0.mult||TIER_MULT[Math.max(0,W0.tier)],bcm=Cc.mult||TIER_MULT[Math.max(0,Cc.tier)];
- const modeN=MODES[modeKey()].n,mp=save.mp||0;
+ const modeN=MODES[modeKey()].n,mp=save.mp||0,hs=hpScale();
  const names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  // AI tank factory (allies and enemies mirror your gear level and cores)
  const mkBot=(team,x,y)=>{
   const bwA=WORDER[(Math.random()*3)|0];
   // brand-new pilots (first 10 matches) never face a chassis that counters theirs
-  const cls=team===1&&mp<10?CHORDER.filter(c=>COUNTER[c]!==me.cls):CHORDER;
+  const cls=team!==0&&mp<10?CHORDER.filter(c=>COUNTER[c]!==me.cls):CHORDER;
   const bcC=cls[(Math.random()*cls.length)|0];
-  const pScale=(team===1&&mp<3?0.8:0.92)+Math.random()*0.16;   // first 3 matches: gentler enemies
+  const pScale=(team!==0&&mp<3?0.8:0.92)+Math.random()*0.16;   // first 3 matches: gentler enemies
   const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:me.gems.slice(),gemM:Object.assign({},me.gemM),sp:0,sup:null,
-   mhp:Math.round(STAT.hp*CH[bcC].hp*bcm*pScale*modeN),dmgM:1,spdM:CH[bcC].spd,critB:0,fillM:1,turnM:CH[bcC].turn,
+   mhp:Math.round(STAT.hp*CH[bcC].hp*bcm*pScale*hs),dmgM:1,spdM:CH[bcC].spd,critB:0,fillM:1,turnM:CH[bcC].turn,
    wtype:bwA,wdps:Math.round(WEAPONS[bwA].dps*bwm*pScale),wshot:WEAPONS[bwA].shot,wpspd:22,wtier:W0.tier,dscale:CH[bcC].ds,cls:bcC,
-   team,isPlayer:false,name:names.pop()||'Bot',brain:{mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0},strafe:1,strafeT:1.5};
+   team,isPlayer:false,name:names.pop()||'Bot',brain:{mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0},strafe:1,strafeT:1.5,
+   aura:Math.min(2,me.aura),paint:Math.random()<0.35?BOT_PAINTS[(Math.random()*BOT_PAINTS.length)|0]:'stock'};   // about 1 in 3 AI pilots shows off a shop paint
   u.hp=u.mhp;return u;
  };
  units=[me];
- for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26));   // your AI teammates
- for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6));   // the enemy team
+ if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
+  const sp=royaleSpawns();
+  for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y));
+ }else{
+  for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26));   // your AI teammates
+  for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6));   // the enemy team
+ }
  state='vs';
 }
 // switch chassis on the VS screen (counter-pick): rebuild your tank with the best owned version of that class
@@ -213,21 +241,26 @@ function switchChassis(cls){
  const keep={x:me.x,y:me.y,sx:me.sx,sy:me.sy,deaths:me.deaths||0,zo:me.zo||0};me=buildMe();Object.assign(me,keep);units[0]=me;
 }
 function matchup(){   // how your chassis fares against the enemy lineup
- const foes=units.filter(u=>u.team===1),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
+ const foes=units.filter(u=>u.team!==0),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
  return {adv,dis,foes};
 }
 function startMatch(){
- mstat={dmg:0,sup:0,box:0,taken:0,kills:0,caps:0};
+ mstat={dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0};
  {const {adv,dis}=matchup();
-  banner=null;if(adv||dis)banner={t:3,txt:adv&&!dis?'You counter them: +15% damage':dis&&!adv?'Countered: '+CH[beatenBy(me.cls)].n+' beats '+CH[me.cls].n:'Mixed matchup',c:adv&&!dis?'#5fe3a1':dis&&!adv?'#ff6b5e':'#ffcf4a'};}
+  banner=null;if((adv||dis)&&!isSolo(matchG))banner={t:3,txt:adv&&!dis?'You counter them: +15% damage':dis&&!adv?'Countered: '+CH[beatenBy(me.cls)].n+' beats '+CH[me.cls].n:'Mixed matchup',c:adv&&!dis?'#5fe3a1':dis&&!adv?'#ff6b5e':'#ffcf4a'};}
  series=isSeriesMode()?{w:[0,0],round:1}:null;
  if(series&&!banner)banner={t:2.4,txt:'Best of 3: first to 2 rounds wins',c:'#ffcf4a'};
- bullets=[];timeLeft=series?ROUND_T:MATCH;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];
- evtAt=series?0:(matchG==='zone'?50:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
- gscore=[0,0];gzones=null;
- units.forEach(u=>{u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;});
+ const G=GTYPES[matchG];
+ bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];
+ evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
+ gscore=[0,0];gzones=null;cry=null;storm=null;
+ units.forEach(u=>{u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;});
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
+ if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
+ if(matchG==='royale'){const c=freeSpot(10+(Math.random()-0.5)*4,16+(Math.random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=boxSchedule();
+ if(storm)for(let i=0;i<6;i++)placeBox(true);   // Last Standing: loot is already on the ground
+ if(!banner&&MODE_TIP[matchG]&&!series)banner={t:3,txt:MODE_TIP[matchG],c:'#ffcf4a'};
  if(typeof onMatchStart==='function')onMatchStart();
 }
 function newMatch(){prepareMatch();startMatch();}   // tests and quick restarts
@@ -240,10 +273,11 @@ function push(b){
   if(b.elev===1){
    if(!upOk(b.x,b.y)){
     if(rampExit(b.x,b.y))b.elev=0;                          // rolled off the open end of a ramp
-    else if(upOk(b.x,b.oy))b.y=b.oy;else if(upOk(b.ox,b.y))b.x=b.ox;else{b.x=b.ox;b.y=b.oy;}   // deck edge: slide along it
+    else if(upOk(b.x,b.oy))b.y=b.oy;else if(upOk(b.ox,b.y))b.x=b.ox;else if(upOk(b.ox,b.oy)){b.x=b.ox;b.y=b.oy;}   // deck edge: slide along it
+    else{const rp=rampAt(b.x,b.y);if(rp)b.x=Math.max(rp[0]+R*0.75,Math.min(rp[0]+rp[2]-R*0.75,b.x));else if(!inDeck(b.x,b.y))b.elev=0;}   // never left in a spot it can't drive out of
    }
    if(b.elev===1){b.ox=b.x;b.oy=b.y;return;}
-  }else if(rampAt(b.x,b.y)&&!inDeck(b.x,b.y))b.elev=1;     // drove onto a ramp
+  }else if(rampAt(b.x,b.y)&&!inDeck(b.x,b.y)){const rp=rampAt(b.x,b.y);b.elev=1;b.x=Math.max(rp[0]+R*0.75,Math.min(rp[0]+rp[2]-R*0.75,b.x));}     // drove (or dashed) onto a ramp: line up with its lane
   if(b.elev===1){b.ox=b.x;b.oy=b.y;return;}
  }
  b.elev=0;
@@ -303,8 +337,9 @@ function los(a,b){   // combat sight, level aware
 // turret turns toward the enemy at a limited rate; fires only when lined up, in range, with clear sight.
 // Bullets travel, so shots land where the target WAS: moving well makes enemy shots miss.
 function turret(a,dt){
- const b=nearestFoe(a);
+ let b=nearestFoe(a);
  if(!b||a.hp<=0)return;
+ const f=a.focus;if(f&&f!==b&&f.hp>0&&f.team!==a.team&&dist2(a,f)<=STAT.range&&los(a,f))b=f;   // bots lock onto their objective target once it's in reach
  const seen=los(a,b);
  if(seen)a.lk={x:b.x,y:b.y};            // remember where the enemy was last seen
  const aim=a.isPlayer?b:a.lk;   // you always see the enemy; the bot only knows where it last saw you
@@ -333,7 +368,7 @@ function moveBullets(dt){
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t);
-   takeHit(t,dmg,owner);if(owner.isPlayer&&typeof fx==='function')fx('dealt',isCrit);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':TC[q.o.team]});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
+   takeHit(t,dmg,owner);if(owner.isPlayer&&typeof fx==='function')fx('dealt',isCrit);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':tcol(q.o.team)});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
   }
   q.life-=dt;
  }
@@ -344,16 +379,22 @@ function moveBullets(dt){
 const bsum=(r,k)=>r.buffs.reduce((a,b)=>a+(b.k===k?BUFF[k].amt:0),0);
 const gsum=(r,k)=>r.gems.reduce((a,g)=>a+(g===k?GEM[k].amt*((r.gemM&&r.gemM[k])||1):0),0);
 const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+bsum(r,'rof'))*(1+gsum(r,'rof')),spdMult=r=>(1+bsum(r,'spd'))*(1+gsum(r,'spd'))*(r.spdM||1),armor=r=>Math.min(0.7,bsum(r,'arm')+gsum(r,'arm'));
-function takeHit(r,amt,src){
+function takeHit(r,amt,src,why){
  const wasAlive=r.hp>0;
  r.hp-=amt;r.flash=0.08;r.calm=0;if(r.isPlayer&&amt>0)r.hurtT=0.3;
  if(r.isPlayer&&mstat)mstat.taken+=amt;
  if(r.isPlayer&&amt>0&&typeof fx==='function')fx('hit',amt);
  for(const b of r.buffs)b.taken+=amt;
  r.buffs=r.buffs.filter(b=>b.taken<BUFF_LIFE);   // buff wears off after enough damage taken
- if(wasAlive&&r.hp<=0&&gzones){r.deaths=(r.deaths||0)+1;const k=1-r.team;gscore[k]=Math.min(ZONE_WIN,gscore[k]+KILL_PTS);pop(r.x,r.y-1.6,'+'+KILL_PTS+' KILL',TC[k]);}
+ if(wasAlive&&r.hp<=0){
+  r.deaths=(r.deaths||0)+1;
+  if(gzones){const k=1-r.team;gscore[k]=Math.min(ZONE_WIN,gscore[k]+KILL_PTS);pop(r.x,r.y-1.6,'+'+KILL_PTS+' KILL',TC[k]);}
+  if(cry)dropCrystals(r);
+  if(matchG==='bounty')bountyKill(r,src);
+  if(storm&&!r.isPlayer){boxes.push({x:r.x,y:r.y,life:20,age:0});pop(r.x,r.y-0.6,'LOOT DROPPED','#ffd24a');}   // every wreck drops a box
+ }
  if(wasAlive&&r.hp<=0&&src&&src.isPlayer&&mstat)mstat.kills++;
- if(wasAlive&&r.hp<=0)feedPush(src?(src.isPlayer?'You':src.name)+' destroyed '+(r.isPlayer?'you':r.name):(r.isPlayer?'You':r.name)+' got hit by a meteor',src?TC[src.team]:'#ff8a3d');
+ if(wasAlive&&r.hp<=0)feedPush(src?(src.isPlayer?'You':src.name)+' destroyed '+(r.isPlayer?'you':r.name):(r.isPlayer?'You':r.name)+(why==='storm'?' got caught in the storm':' got hit by a meteor'),src?tcol(src.team):why==='storm'?'#c79bff':'#ff8a3d');
  if(wasAlive&&r.hp<=0&&typeof fx==='function')fx(r.isPlayer?'die':src&&src.isPlayer?'kill':'boom');
  if(wasAlive&&r.hp<=0){   // robot destroyed: wreck explosion
   blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});
@@ -369,19 +410,21 @@ function dmgNum(q,t,dmg,isCrit){
  q.tg=t;q.v=dmg;q.crit=isCrit;q.txt=(isCrit?'CRIT ':'')+Math.round(dmg);nums.push(q);
 }
 
-function spawnBox(){
- const n=MODES[modeKey()].n;   // boxes per spawn event: 1 in 1v1, 2 in 2v2, 3 in 3v3
- for(let s=0;s<n;s++){
-  if(boxes.length>=n+2)break;   // safety cap so unclaimed boxes can't pile up
-  for(let i=0;i<400;i++){
-   const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
-   if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
-   if(rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+1.4))continue;
-   if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<3.5))continue;      // never spawn on top of a robot
-   if(boxes.some(b=>Math.hypot(b.x-x,b.y-y)<4))continue;   // don't stack boxes on each other
-   boxes.push({x,y,life:20,age:0});pop(x,y,'MYSTERY BOX','#ffd24a');break;
-  }
+function placeBox(quiet){   // one box at a random open spot
+ for(let i=0;i<400;i++){
+  const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
+  if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
+  if(rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+1.4))continue;
+  if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<(quiet?4.5:3.5)))continue;      // never spawn on top of a robot
+  if(boxes.some(b=>Math.hypot(b.x-x,b.y-y)<4))continue;   // don't stack boxes on each other
+  if(storm&&Math.hypot(x-storm.x,y-storm.y)>storm.r-1.5)continue;   // never outside the ring
+  boxes.push({x,y,life:quiet?40:20,age:0});if(!quiet)pop(x,y,'MYSTERY BOX','#ffd24a');return true;
  }
+ return false;
+}
+function spawnBox(){
+ const n=storm?2:MODES[modeKey()].n,cap=storm?8:n+2;   // boxes per spawn event: 1 in 1v1, 2 in 2v2, 3 in 3v3, 2 in Last Standing
+ for(let s=0;s<n;s++){if(boxes.length>=cap)break;placeBox(false);}   // the cap stops unclaimed boxes piling up
 }
 // ---- super attacks: one per weapon. All telegraphed so they can be dodged ----
 const SUP={
@@ -447,7 +490,7 @@ function botDodge(u){
  }
 }
 function fireSuper(r,S){
- const col=TC[r.team];
+ const col=tcol(r.team);
  const hurt=(e,dmg)=>{if(!lvOK(r,e))return;dmg=dmg*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg,r);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
   if(r.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+Math.round(dmg),c:'#ff4d4d'});};
  if(S.kind==='beam'){
@@ -602,6 +645,8 @@ function waypoint(from,to){
  const n=nav.length,dd=Array(n).fill(1e9),prev=Array(n).fill(-1),done=Array(n).fill(false);
  const gv=nav.map(c=>c.l===lt&&visL(c,to,lt)?dist2(c,to):0);
  nav.forEach((c,i)=>{if(c.l===lf&&visL(from,c,lf))dd[i]=dist2(from,c);});
+ const rp=lf===1&&rampAt(from.x,from.y);   // on a ramp: its foot is one straight drive down (without this, bots rock up and down the ramp)
+ if(rp){const cx=rp[0]+rp[2]/2,fy=rp[4]<0?rp[1]-1.0:rp[1]+rp[3]+1.0;nav.forEach((c,i)=>{if(c.l===0&&Math.abs(c.x-cx)<0.01&&Math.abs(c.y-fy)<0.01)dd[i]=Math.min(dd[i],dist2(from,c));});}
  for(let k=0;k<n;k++){
   let u=-1;for(let i=0;i<n;i++)if(!done[i]&&dd[i]<1e9&&(u<0||dd[i]<dd[u]))u=i;
   if(u<0)break;done[u]=true;
@@ -631,8 +676,9 @@ function coverSpot(from,threat){
  return best;
 }
 function botAI(dt,u){
- const tgt=nearestFoe(u);
+ const tgt=botTarget(u);
  if(!tgt||u.hp<=0)return;
+ u.focus=tgt;
  botDodge(u);if(dashStep(u,dt))return;
  const b=u.brain,d=dist2(u,tgt),seen=los(u,tgt),hurt=u.hp/u.mhp<0.5&&u.hp<tgt.hp;
  u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=1+Math.random()*1.8;}
@@ -662,21 +708,23 @@ function botAI(dt,u){
   }
  }
  let zin=null;
- if(gzones){
-  const z=gzones[0],fr=u.hp/u.mhp,tf=tgt.hp/tgt.mhp;
-  // losing the trade? break off, repair out of sight, come back healthy
-  if(!b.zr&&fr<0.3&&seen&&d<8&&tf>fr+0.2){b.zr=true;b.spot=coverSpot(u,tgt);}
+ if(respawns()){   // modes with respawns and repairs: losing the trade? break off, repair out of sight, come back healthy
+  const fr=u.hp/u.mhp,tf=tgt.hp/tgt.mhp,lim=(u.cry||0)>=3||(matchG==='bounty'&&(u.bty||0)>=5)?0.45:0.3;   // carriers and big bounties play it safer
+  if(!b.zr&&fr<lim&&seen&&d<8&&tf>fr+0.2){b.zr=true;b.spot=coverSpot(u,tgt);}
   if(b.zr&&(fr>0.8||(!seen&&fr>0.6)))b.zr=false;
-  if(b.zr){
-   goal=b.spot&&dist2(b.spot,tgt)>3?b.spot:clampP(u.x-nx*5,u.y-ny*5);
-   if(b.spot&&dist2(u,b.spot)<0.7&&los(u,tgt))b.spot=coverSpot(u,tgt);
-  }else{
-   let zg=botZoneGoal(u),nb=null,nd=4.5;for(const bx of boxes){const dd=dist2(u,bx);if(dd<nd){nd=dd;nb=bx;}}if(nb&&!z.next)zg=nb;
-   const zt=z.next&&dist2(zg,z.next)<1.5?z.next:z;
-   if(zt===z&&dist2(u,z)<z.r-0.4)zin=z;
-   if(zg&&!(seen&&d<5.5&&dist2(u,zt)<z.r+3))goal=zg;   // fight only near the objective, otherwise keep moving to it
-  }
  }
+ if(b.zr){
+  goal=b.spot&&dist2(b.spot,tgt)>3?b.spot:clampP(u.x-nx*5,u.y-ny*5);
+  if(b.spot&&dist2(u,b.spot)<0.7&&los(u,tgt))b.spot=coverSpot(u,tgt);
+ }else if(gzones){
+  const z=gzones[0];
+  let zg=botZoneGoal(u),nb=null,nd=4.5;for(const bx of boxes){const dd=dist2(u,bx);if(dd<nd){nd=dd;nb=bx;}}if(nb&&!z.next)zg=nb;
+  const zt=z.next&&dist2(zg,z.next)<1.5?z.next:z;
+  if(zt===z&&dist2(u,z)<z.r-0.4)zin=z;
+  if(zg&&!(seen&&d<5.5&&dist2(u,zt)<z.r+3))goal=zg;   // fight only near the objective, otherwise keep moving to it
+ }
+ else if(cry){const cg=crystalGoal(u,tgt,seen,d);if(cg)goal=cg;}
+ else if(storm){const sg=royaleGoal(u,tgt,seen,d);if(sg)goal=sg;}
  else if(boxes.length){let nb=boxes[0],nd=1e9;for(const bx of boxes){const d=dist2(u,bx);if(d<nd){nd=d;nb=bx;}}goal=nb;}   // head for the nearest box
  let tx,ty;
  if(goal===tgt&&seen){            // engaging: hold range and strafe
@@ -693,6 +741,119 @@ function botAI(dt,u){
  const vx=tx-u.x,vy=ty-u.y,vm=Math.hypot(vx,vy);
  if(vm>0.15){const k=STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*slowAt(u)*dt;u.x+=vx/vm*k;u.y+=vy/vm*k;}
  push(u);
+}
+
+// ---- shared helpers for the objective modes ----
+const MODE_TIP={crystal:'Grab crystals at the mine. Hold 10 for 15s to win',bounty:'Kills earn stars. Hunt the big bounties',royale:'Last tank standing wins. Stay inside the ring'};
+// a random open spot within rad of (cx,cy): clear of walls, rocks and ramps. Bridge decks count as level 1 unless ground is set
+function freeSpot(cx,cy,rad,ground){
+ for(let k=0;k<80;k++){
+  const a=Math.random()*6.283,dd=Math.sqrt(Math.random())*rad,x=cx+Math.cos(a)*dd,y=cy+Math.sin(a)*dd;
+  if(x<R+0.3||x>W-R-0.3||y<R+0.3||y>H-R-0.3||rampAt(x,y))continue;
+  const deck=inDeck(x,y)&&!inTunnel(x,y);
+  if(deck&&(ground||!upOk(x,y)))continue;
+  if(baseWalls.some(([rx,ry,rw,rh])=>x>rx-R-0.1&&x<rx+rw+R+0.1&&y>ry-R-0.1&&y<ry+rh+R+0.1))continue;
+  if(rocks.some(([rx,ry,rr2])=>Math.hypot(x-rx,y-ry)<rr2+R+0.15))continue;
+  if(!deck&&walls.some(([rx,ry,rw,rh])=>x>rx-R-0.1&&x<rx+rw+R+0.1&&y>ry-R-0.1&&y<ry+rh+R+0.1))continue;
+  return {x,y,l:deck?1:0};
+ }
+ return null;
+}
+const groundOk=(x,y)=>x>R*0.6&&x<W-R*0.6&&y>R*0.6&&y<H-R*0.6&&!walls.some(([rx,ry,rw,rh])=>x>rx-R*0.6&&x<rx+rw+R*0.6&&y>ry-R*0.6&&y<ry+rh+R*0.6)&&!rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+R*0.6);
+
+// ---- Crystal Rush: a crystal appears at the mine every 6s. A team holding 10+ (and more than the other team) for 15s wins.
+// Destroyed tanks drop everything they carry. At the time limit, the team holding more crystals wins.
+const CRY_GOAL=10,CRY_HOLD=15,CRY_EVERY=6,CRY_MAX=10,CRY_PICK=R+0.45,CRY_MINE_R=3.2;
+let cry=null;   // {mine, loose:[{x,y,l,age}], t: next spawn, cd: {team,t} countdown, cnt: [held by team 0, team 1]}
+function crystalTick(dt){
+ const C=cry;C.t-=dt;
+ if(C.t<=0){C.t=CRY_EVERY;if(C.loose.length<CRY_MAX){const p=freeSpot(C.mine.x,C.mine.y,CRY_MINE_R);if(p)C.loose.push({x:p.x,y:p.y,l:p.l,age:0});}}
+ for(const c of C.loose)c.age+=dt;
+ for(const u of units){
+  if(u.hp<=0)continue;
+  for(let i=C.loose.length-1;i>=0;i--){const c=C.loose[i];
+   if((u.elev||0)!==c.l||Math.hypot(u.x-c.x,u.y-c.y)>CRY_PICK||c.age<0.4)continue;
+   C.loose.splice(i,1);u.cry=(u.cry||0)+1;
+   if(u.isPlayer){if(mstat)mstat.cry++;if(typeof fx==='function')fx('crystal');}
+  }
+ }
+ const n=[0,0];for(const u of units)if(u.hp>0)n[u.team]+=u.cry||0;C.cnt=n;
+ const lead=n[0]>=CRY_GOAL&&n[0]>n[1]?0:n[1]>=CRY_GOAL&&n[1]>n[0]?1:-1;
+ if(lead<0){if(C.cd){pop(C.mine.x,C.mine.y-1.5,'COUNTDOWN STOPPED','#c9d6e3');C.cd=null;}}
+ else if(!C.cd||C.cd.team!==lead){C.cd={team:lead,t:CRY_HOLD};banner={t:2.6,txt:lead===0?'Hold on for 15 seconds to win':'Enemy countdown! Destroy their carriers',c:lead===0?'#5fe3a1':'#ff6b5e'};if(typeof fx==='function')fx('event');}
+ else C.cd.t-=dt;
+ gscore=n;
+}
+function dropCrystals(u){
+ const n=u.cry||0;u.cry=0;if(!n)return;
+ const l=u.elev||0;
+ for(let i=0;i<n;i++){let p=null;
+  for(let k=0;k<10&&!p;k++){const a=Math.random()*6.283,dd=0.5+Math.random()*1.3,x=u.x+Math.cos(a)*dd,y=u.y+Math.sin(a)*dd;if(l===1?upOk(x,y):groundOk(x,y))p={x,y};}
+  cry.loose.push({x:p?p.x:u.x,y:p?p.y:u.y,l,age:0});
+ }
+ pop(u.x,u.y-1.2,n+(n>1?' CRYSTALS DROPPED':' CRYSTAL DROPPED'),'#c79bff');
+}
+function crystalGoal(u,tgt,seen,d){   // where a bot goes in Crystal Rush (null = just fight)
+ const C=cry,mine=C.cd&&C.cd.team===u.team;
+ if(C.cd&&!mine)return null;   // their countdown: botTarget already picked their best carrier
+ if((u.cry||0)>0&&mine){   // our countdown: carriers fall back and stay alive
+  if(seen&&d<4.2)return null;
+  return {x:u.sx,y:u.sy,l:0};
+ }
+ let nc=null,nd=1e9;for(const c of C.loose){const dd=dist2(u,c)+(c.l!==(u.elev||0)?3:0);if(dd<nd){nd=dd;nc=c;}}
+ if(nc&&!(seen&&d<3.5&&nd>2))return {x:nc.x,y:nc.y,l:nc.l};
+ if(!nc&&!(seen&&d<6)){if(!u.ms)u.ms=freeSpot(C.mine.x,C.mine.y,CRY_MINE_R+0.8)||{x:C.mine.x,y:C.mine.y+3.5,l:0};return u.ms;}   // wait at the mine for the next one
+ return null;
+}
+
+// ---- Bounty: every tank starts with a 2-star bounty. A kill pays the killer's team that bounty and raises the killer's by 1 (7 at most).
+// Dying resets yours to 2. Most stars when time runs out wins.
+const BTY_START=2,BTY_MAX=7;
+function bountyKill(r,src){
+ const v=r.bty||BTY_START;r.bty=BTY_START;
+ if(!src||src.team===r.team)return;
+ gscore[src.team]+=v;src.bty=Math.min(BTY_MAX,(src.bty||BTY_START)+1);
+ pop(r.x,r.y-1.6,'+'+v+' STARS',tcol(src.team));
+ if(src.isPlayer&&mstat)mstat.stars+=v;
+ if(src.bty===BTY_MAX&&v<BTY_MAX)feedPush((src.isPlayer?'You have':src.name+' has')+' the top bounty: 7 stars','#ffcf4a');
+}
+// who a bot wants to fight: the nearest enemy, unless the mode gives it a better target
+function botTarget(u){
+ if(cry&&cry.cd&&cry.cd.team!==u.team){let best=null,bc=0;for(const v of units)if(v.team===cry.cd.team&&v.hp>0&&(v.cry||0)>bc){bc=v.cry;best=v;}if(best)return best;}   // stop their countdown: hunt the carrier
+ if(matchG==='bounty'){let best=null,bs=-1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const s=(v.bty||BTY_START)*1.5-dist2(u,v)*0.5;if(s>bs){bs=s;best=v;}}if(best)return best;}   // a big bounty is worth a detour
+ return nearestFoe(u);
+}
+
+// ---- Last Standing: 6 tanks, free for all, no respawns. The ring closes from 15s to 95s; outside it you lose 4% health a second.
+// Every wreck drops a box. Your match ends when you're destroyed; at the time limit, places go by health left.
+const STORM_T0=15,STORM_T1=95,STORM_R0=22,STORM_R1=2.5,STORM_DMG=0.04;
+const ROYALE_SPAWN=[[10,28],[10,4],[4,10],[16,22],[4,22],[16,10]];
+let storm=null;   // {x,y,l,r}
+function royaleSpawns(){return ROYALE_SPAWN.map(([x,y],i)=>i===0?{x,y}:(freeSpot(x,y,2.5,true)||freeSpot(x,y,6,true)||{x:10,y:i%2?5:27}));}
+function stormTick(dt){
+ const S=storm,k=Math.max(0,Math.min(1,(elapsed-STORM_T0)/(STORM_T1-STORM_T0)));
+ S.r=STORM_R0+(STORM_R1-STORM_R0)*k;
+ if(!S.warned&&elapsed>=STORM_T0-3){S.warned=true;banner={t:2.6,txt:'The ring is closing. Stay inside it',c:'#c79bff'};if(typeof fx==='function')fx('event');}
+ S.tk+=dt;
+ if(S.tk>=0.5){S.tk-=0.5;
+  for(const u of units)if(u.hp>0&&Math.hypot(u.x-S.x,u.y-S.y)>S.r){const dm=u.mhp*STORM_DMG*0.5;takeHit(u,dm,null,'storm');nums.push({x:u.x,y:u.y-R,t:0.7,z:0.8,txt:'STORM '+Math.round(dm),c:'#c79bff'});}
+ }
+}
+function royaleGoal(u,tgt,seen,d){   // where a bot goes in Last Standing (null = just fight)
+ const S=storm,dc=Math.hypot(u.x-S.x,u.y-S.y),inner=Math.max(1.2,Math.min(4,S.r-2.5));
+ if(dc>S.r-1.8){   // outside, or the ring is about to pass you: head for the middle
+  if(!u.sg||Math.hypot(u.sg.x-S.x,u.sg.y-S.y)>inner+0.3)u.sg=freeSpot(S.x,S.y,inner)||{x:S.x,y:S.y,l:S.l};
+  return u.sg;
+ }
+ let nb=null,nd=elapsed<STORM_T0?12:6;for(const bx of boxes){const dd=dist2(u,bx);if(dd<nd&&Math.hypot(bx.x-S.x,bx.y-S.y)<S.r-1){nd=dd;nb=bx;}}
+ if(nb&&!(seen&&d<3.5))return nb;
+ return null;
+}
+function royalePlace(){   // 1 = winner
+ const alive=units.filter(u=>u.hp>0);
+ if(me.hp<=0)return Math.min(units.length,alive.length+1);
+ if(alive.length<=1)return 1;
+ const f=me.hp/me.mhp;return 1+alive.filter(u=>u!==me&&u.hp/u.mhp>f).length;
 }
 
 // ---- update ----
@@ -715,6 +876,9 @@ function update(dt){
  for(const c of crates)c.flash=Math.max(0,(c.flash||0)-dt);
  timeLeft-=dt;elapsed+=dt;eventTick(dt);
  if(gzones){zoneTick(dt);respawnTick(dt);if(gscore[0]>=ZONE_WIN||gscore[1]>=ZONE_WIN||timeLeft<=0)endMatch();}
+ else if(cry){crystalTick(dt);respawnTick(dt);if((cry.cd&&cry.cd.t<=0)||timeLeft<=0)endMatch();}
+ else if(matchG==='bounty'){respawnTick(dt);if(timeLeft<=0)endMatch();}
+ else if(storm){stormTick(dt);if(me.hp<=0||units.filter(u=>u.hp>0).length<=1||timeLeft<=0)endMatch();}
  else if(aliveCount(0)===0||aliveCount(1)===0||timeLeft<=0){if(series)endRound();else endMatch();}
 }
 // ---- events ----
@@ -795,30 +959,35 @@ function endMatch(forced){
  let won=a1===0||(timeLeft<=0&&a0>a1)||(timeLeft<=0&&a0===a1&&teamHpFrac(0)>teamHpFrac(1));
  let drawn=!won&&!ko&&timeLeft<=0&&a0===a1&&teamHpFrac(0)===teamHpFrac(1);
  const score=[Math.floor(gscore[0]),Math.floor(gscore[1])];
- if(gzones){drawn=score[0]===score[1];won=!drawn&&gscore[0]>gscore[1];}
+ let place=0;
+ if(gzones||cry||matchG==='bounty'){drawn=score[0]===score[1];won=!drawn&&score[0]>score[1];}
+ if(cry&&cry.cd&&cry.cd.t<=0){won=cry.cd.team===0;drawn=false;}
+ if(storm){place=royalePlace();won=place===1;drawn=false;}
  if(forced){won=forced.won;drawn=forced.drawn;}
- const mk=modeKey(),M=MODES[mk];
- if(won)save.streak=(save.streak||0)+1;else if(!drawn)save.streak=0;
+ const mk=modeKey(),M=MODES[mk],feat=matchG===featuredMode(),top3=!!storm&&place<=3;
+ if(won)save.streak=(save.streak||0)+1;else if(!drawn&&!top3)save.streak=0;   // Last Standing: 2nd and 3rd keep your streak
  const streak=save.streak||0,sb=won?Math.min(streak,5)*20:0;
- const brk=powerBracket(calcPower()),zx=matchG==='zone'?ZONE_X[mk]:series?SERIES_X:1;
- const base=Math.round((won?M.win:drawn?M.draw:M.loss)*zx);
- const pts=Math.round(base*brk.mult)+sb;
- if(won)save.wins=(save.wins||0)+1;else if(!drawn)save.losses=(save.losses||0)+1;
+ const brk=powerBracket(calcPower()),zx=storm?1:matchG==='arena'?(series?SERIES_X:1):GTYPES[matchG].x[mk],fxm=feat?FEATURED_X:1;
+ const base=Math.round(storm?ROYALE_PTS[place-1]:(won?M.win:drawn?M.draw:M.loss)*zx);
+ const pts=Math.round(base*fxm*brk.mult)+sb;
+ if(won)save.wins=(save.wins||0)+1;else if(!drawn&&!top3)save.losses=(save.losses||0)+1;
  save.mp=(save.mp||0)+1;
  const before=save.earned||0;
  const awarded=awardPts(pts)||0;
+ passXP((won?PASS_XP_WIN:drawn||top3?PASS_XP_DRAW:PASS_XP_LOSS)+(feat?PASS_XP_FEAT:0));
  // milestone + daily quest progress
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
  qp('q_win1',won?1:0);qp('q_win3',won?1:0);
  qp('q_dmg',mstat.dmg,true);qp('q_super',mstat.sup,true);qp('q_box',mstat.box,true);
  if(won&&mstat.taken<600)qp('q_clean',1);
  const dqBefore=dailyQuests().filter(q=>q.done).map(q=>q.id);
- dqProgress({wins:won?1:0,plays:1,dmg:Math.round(mstat.dmg),boxes:mstat.box,sups:mstat.sup,kills:mstat.kills,zoneWins:won&&matchG==='zone'?1:0,teamWins:won&&M.n>1?1:0,caps:mstat.caps,overpass:curMap==='overpass'?1:0});
+ dqProgress({wins:won?1:0,plays:1,dmg:Math.round(mstat.dmg),boxes:mstat.box,sups:mstat.sup,kills:mstat.kills,zoneWins:won&&matchG==='zone'?1:0,teamWins:won&&M.n>1&&!storm?1:0,caps:mstat.caps,overpass:curMap==='overpass'?1:0,
+  crystals:mstat.cry,stars:mstat.stars,top3:top3?1:0,featured:feat?1:0});
  const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
- lastResult={won,drawn,mode:mk,gtype:matchG,map:curMap,score,base,zoneX:zx,league:brk,leagueMult:brk.mult,streak,streakBonus:sb,pts,awarded,capped:awarded<pts,
-  before,after:save.earned||0,stats:{dmg:Math.round(mstat.dmg),kills:mstat.kills,boxes:mstat.box,sups:mstat.sup,taken:Math.round(mstat.taken)},
-  quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won,meCls:me.cls,series:series?{w:series.w.slice()}:null};
+ lastResult={won,drawn,mode:mk,gtype:matchG,map:curMap,score,base,modeX:zx,featured:feat,featX:fxm,place,league:brk,leagueMult:brk.mult,streak,streakBonus:sb,pts,awarded,capped:awarded<pts,
+  before,after:save.earned||0,stats:{dmg:Math.round(mstat.dmg),kills:mstat.kills,boxes:mstat.box,sups:mstat.sup,taken:Math.round(mstat.taken),cry:mstat.cry,stars:mstat.stars},
+  quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won&&!storm,meCls:me.cls,series:series?{w:series.w.slice()}:null};
  store();
  if(typeof fx==='function')fx(won?'win':drawn?'draw':'lose');
  if(typeof onMatchEnd==='function')setTimeout(()=>onMatchEnd(lastResult),won?650:900);

@@ -366,6 +366,68 @@ button.q{display:flex;width:100%;text-align:left}
 .rm .rscore i{font-style:normal;color:var(--dim)}
 .rm .swap{display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap}
 
+/* ---- game modes: featured badge, solo team size ---- */
+.mode .feat{position:absolute;top:8px;right:8px;padding:1px 6px;border-radius:6px;background:var(--gold);color:var(--gold-ink);font:700 10px/1.5 var(--disp);letter-spacing:.02em}
+.featchip{display:inline-block;padding:0 6px;border-radius:6px;background:var(--gold);color:var(--gold-ink);font:700 11px/1.55 var(--disp);vertical-align:2px}
+.seg button.solo{width:100%;opacity:1;cursor:default}
+.nudge .gem svg{width:18px;height:18px}
+
+/* ---- Lunar Pass ---- */
+.passcard{display:block;width:100%;text-align:left;margin-top:14px;padding:14px;border-radius:16px;background:radial-gradient(120% 120% at 100% 0%,rgba(255,207,74,.13),transparent 55%),var(--rock2);border:1px solid rgba(255,207,74,.4)}
+.passcard .row{display:flex;align-items:center;gap:10px}
+.passcard .pt{font:700 18px/1.2 var(--disp)}
+.passcard .rdy{flex:none;padding:5px 10px;border-radius:10px;background:var(--gold);color:var(--gold-ink);font:700 13px var(--disp)}
+.passcard .chev{color:var(--gold);font:700 22px var(--disp)}
+.passcard .bar,.pxp .bar{height:8px;border-radius:4px;background:var(--rock4);overflow:hidden;margin:10px 0 6px}
+.passcard .bar i,.pxp .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#ffe08a,var(--gold))}
+.passbuy{position:relative;margin-top:14px;padding:16px;border-radius:16px;border:1px solid rgba(255,207,74,.45);background:radial-gradient(110% 100% at 100% 0%,rgba(255,207,74,.16),transparent 60%),var(--rock2)}
+.passbuy h4{font:700 20px/1.1 var(--disp)}
+.passbuy p{font-size:13px;color:var(--dust);margin:6px 0 12px}
+.passbuy .tag{position:absolute;top:14px;right:14px;padding:3px 9px;border-radius:8px;background:var(--rock4);color:var(--gold);font:700 12px var(--disp)}
+.passbuy .acts{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
+.pxp{display:flex;align-items:center;gap:10px;margin-top:12px}
+.pxp .bar{flex:1;margin:0}
+.pxp b{font:700 16px var(--disp);white-space:nowrap}
+.pxp span{font-size:12px;color:var(--dust);white-space:nowrap}
+.passown{margin-top:12px;color:var(--gold);font:600 14px var(--disp)}
+.phead,.ptier{display:grid;grid-template-columns:34px 1fr 1fr;gap:6px;align-items:stretch}
+.phead{margin-top:16px;font:600 12px var(--disp);color:var(--dust)}
+.phead span:last-child{color:var(--gold)}
+.ptiers{display:grid;gap:6px;margin-top:6px}
+.ptier .pn{display:grid;place-items:center;border-radius:10px;background:var(--rock2);color:var(--dim);font:700 14px var(--disp)}
+.ptier.on .pn{background:var(--rock3);color:var(--gold)}
+.ptier.next .pn{box-shadow:inset 0 0 0 1.5px var(--gold);color:var(--moon)}
+.pcell{display:flex;align-items:center;gap:6px;min-height:46px;padding:6px 8px;border-radius:10px;background:var(--rock2);border:1px solid var(--edge);font-size:12px;line-height:1.25;color:var(--moon)}
+.pcell span{flex:1;min-width:0}
+.pcell .btn.sm{min-height:32px;padding:0 9px;font-size:13px}
+.pcell.got{opacity:.55}
+.pcell.lock{border-style:dashed}
+.pcell .ok{color:var(--ok);font:700 15px var(--disp)}
+.ptier:not(.on) .pcell,.pcell.lock{color:var(--dust)}
+
+/* ---- paints ---- */
+.paints{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.paint{border-radius:14px;background:var(--rock2);border:1px solid var(--edge);padding:6px 6px 9px;text-align:center}
+.paint canvas{width:100%;height:64px}
+.paint b{display:block;font:700 14px/1.2 var(--disp);margin-top:2px}
+.paint .p{display:block;font:600 12px var(--disp);color:var(--gold);margin-top:2px}
+.paint.own .p{color:var(--dust)}
+.paint.on{border-color:var(--moon);box-shadow:inset 0 0 0 1px var(--moon)}
+.paint.on .p{color:var(--ok)}
+
+/* ---- tune-up row under a gear card ---- */
+.gear.hastune{border-bottom-left-radius:6px;border-bottom-right-radius:6px}
+.tunerow{display:flex;align-items:center;gap:10px;margin-top:-1px;padding:8px 12px;border-radius:0 0 14px 14px;background:var(--rock);border:1px solid var(--edge);border-top-style:dashed;font-size:12px;color:var(--dust)}
+.tunerow span{flex:1}
+.tunerow+.gear{margin-top:8px}
+.odds{margin-top:10px}
+
+/* ---- VS screen with 6 tanks ---- */
+.vs .team.many{flex-wrap:wrap;gap:8px;max-width:420px;margin-left:auto;margin-right:auto}
+.vs .team.many .unit{width:72px}
+.vs .team.many .unit canvas{width:64px;height:64px}
+.vs .vsgoal{text-align:center;margin-top:10px}
+
 /* ---- short screens (older iPhones, Telegram with the keyboard bar) ---- */
 @media (max-height:620px){
  .hero{min-height:100px}
@@ -375,6 +437,7 @@ button.q{display:flex;width:100%;text-align:left}
  .setup{padding:6px 10px 6px 6px}.setup canvas{width:38px;height:50px}.setup .dimtxt{display:none}
  .fight{height:58px}.fight .big{font-size:22px}.fight .small{font-size:12px;margin-top:2px}
  .vs .team{margin-top:8px}.vs .unit canvas{width:60px;height:60px}.vs .mark{font-size:26px;margin-top:6px}.vs .match{margin-top:10px;padding:10px}
+ .vs .team.many .unit canvas{width:50px;height:50px}.vs .team.many .unit{width:60px}.vs .vsgoal{display:none}
  .welcome .big{font-size:24px}.welcome .step{margin-top:8px}.wtank{height:84px}
  .res .title{font-size:36px}.res .gain{font-size:32px;margin-top:10px}
 }

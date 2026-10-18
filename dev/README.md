@@ -8,13 +8,14 @@
 | `css/app.css` | Every menu style (design tokens at the top) |
 | `js/core.js` | Telegram setup, save + cloud save, data tables, points, quests, login streak, squad, shop logic |
 | `js/net.js` | Server sync (verified Telegram login), leaderboard file, squad, Stars/TON/SOL payments |
-| `js/game.js` | The simulation: maps (data only), physics, combat, supers, dash, AI, Moon Zone, events, best of 3 |
+| `js/game.js` | The simulation: maps and game modes (both data), physics, combat, supers, dash, AI, events, best of 3 |
 | `js/render.js` | Battle canvas, HUD, battle input, and the menu art (tanks, crates, map thumbnails) |
 | `js/fx.js` | Haptics and synthesized sound |
 | `js/ui.js` | Menus, sheets, start screen, results, between-round screen |
 | `js/main.js` | Boot order and the frame loop |
 | `worker/` | Cloudflare Worker: the referee for every database write, Stars invoices, webhook, reminders, leaderboard cron |
 | `database.rules.json` | Firebase rules (everything locked except the public leaderboard file) |
+| `terms.html` | Terms of service and purchase (linked from the game, the wiki and the bot's /terms) |
 
 Scripts are plain (not modules) and share one global scope, loaded in the order above.
 
@@ -34,7 +35,8 @@ python3 dev/tests/b1test.py            # sync with the local server stand-in, re
 python3 dev/tests/b2test.py            # menus, first-time flow, start screen, results, sheets
 python3 dev/tests/b3test.py            # map objects, crates, events, fast forward, best of 3
 python3 dev/tests/b4test.py            # sound, drag-to-aim supers, dash, bot dodges, reminders
-python3 dev/tests/regress.py 3         # every mode x map: stuck tanks, errors, points per minute
+python3 dev/tests/b6test.py            # salvage ladder, tune-up, Lunar Pass, paints, terms, featured mode, the 3 new modes
+python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons
 ```
@@ -44,6 +46,9 @@ The browser tests start `dev/tests/devserver.mjs`, a local stand-in for the serv
 ## Ready for PvP and 3D
 
 - Maps are plain data (`MAPS` in `game.js`): boxes with a style, round solids, crates, craters. A server or a 3D renderer can load the same layouts.
+- Game modes are data too (`GTYPES`): time limit, respawns, pay multiplier per team size, free-for-all size. Mode rules live in small functions next to them (`crystalTick`, `bountyKill`, `stormTick`), and every mode runs the same way with AI pilots or real players in the seats.
+- Team colors: your team is always blue, everyone else red (`tcol`), so Last Standing's 6 teams render without special cases.
+- Points per minute are kept level across modes: `regress.py` prints them. Current target is about 135 a minute at a 50% win rate in the Rookie league.
 - Player input reaches the sim through three calls: `inputVec()` for driving, `useSuper(unit, angle)` and `useDash(unit, dx, dy)`.
 - `render.js` is the only file that draws a battle. A 3D renderer can replace `drawBattle()` without touching menus or the sim.
 - Random events and bot choices use `Math.random()`. A PvP match needs a shared seed or a server that runs the sim.
