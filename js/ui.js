@@ -118,7 +118,8 @@ function setupPickers(){
   sec('Team size',MODES[mk].n>1?'AI pilots fill your team':'','modes')+
   '<div class="seg c3">'+Object.keys(MODES).map(k=>{const r=winRange(gk,k);return '<button class="'+(mk===k?'on':'')+'" data-act="mode" data-arg="'+k+'">'+k+'<small>win '+(r[0]===r[1]?fmtNum(r[0]):fmtNum(r[0])+'–'+fmtNum(r[1]))+'</small></button>';}).join('')+'</div>'+
   sec('Map')+
-  '<div class="maps">'+['classic','overpass','longshot','random'].map(id=>'<button class="map'+(mp===id?' on':'')+'" data-act="map" data-arg="'+id+'"><canvas data-art="map:'+id+'"></canvas><b>'+(id==='classic'?'Classic':MAPS[id].n)+'</b></button>').join('')+'</div>';
+  '<div class="maps">'+['classic','overpass','longshot','craters','random'].map(id=>'<button class="map'+(mp===id?' on':'')+'" data-act="map" data-arg="'+id+'"><canvas data-art="map:'+id+'"></canvas><b>'+(MAPS[id].short||MAPS[id].n)+'</b></button>').join('')+'</div>'+
+  '<p class="dimtxt" style="margin-top:8px">'+esc(MAPS[mp].d)+'</p>';
 }
 function openSetup(){sheet('setup',()=>'<h3>Battle setup</h3>'+setupPickers()+'<button class="btn btn-go block" style="margin-top:18px" data-act="setupdone">Done</button>');}
 function renderPlay(){
@@ -128,7 +129,7 @@ function renderPlay(){
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
   '<div class="lobby">'+
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+n.gem+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
-  '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+GT_PICK[gk].label+' '+mk+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+GT_DESC[gk]+'</span></span><span class="chg">Change</span></button>'+
+  '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+GT_PICK[gk].label+' '+mk+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
   '</div>';
 }
@@ -233,14 +234,16 @@ function renderRanks(){
  const metric=p=>lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):(p.pts||0);
  let rows='',pin='';
  if(lbCache){
-  const list=lbCache.map(p=>p.id===me?Object.assign({},p,{pts:Math.max(p.pts,e),dailyPts:Math.max(p.dailyPts||0,save.dailyPts||0),weeklyPts:Math.max(p.weeklyPts||0,save.weeklyPts||0),n:p.n}):p).filter(p=>metric(p)>0).sort((a,b)=>metric(b)-metric(a));
+  const all=lbCache.map(p=>p.id===me?Object.assign({},p,{pts:Math.max(p.pts,e),dailyPts:Math.max(p.dailyPts||0,save.dailyPts||0),weeklyPts:Math.max(p.weeklyPts||0,save.weeklyPts||0)}):p);
+  if(IN_TG&&!all.some(p=>p.id===me))all.push({id:me,n:tgName(TG_USER),pts:e,dailyPts:save.dailyPts||0,weeklyPts:save.weeklyPts||0});   // you show up before the next 5-minute refresh
+  const list=all.filter(p=>metric(p)>0).sort((a,b)=>metric(b)-metric(a));
   const shown=list.slice(0,100);let meShown=false;
   rows=shown.map((p,i)=>{const isMe=p.id===me;if(isMe)meShown=true;const ti=tierOfPts(p.pts);
    return '<div class="r'+(isMe?' me':'')+'"><span class="rk'+(i<3?' t3':'')+'">#'+(i+1)+'</span><div class="grow"><div class="nm">'+esc(p.n)+(isMe?' (you)':'')+'</div><div class="tr" style="color:'+TIERC[ti]+'">'+TIERS[ti]+'</div></div><span class="sc">'+fmtNum(metric(p))+'</span></div>';}).join('');
   if(!rows)rows='<p class="mut" style="padding:14px 0">'+(lbScope==='overall'?'No pilots on the board yet. Win a match to be first.':'No points yet '+(lbScope==='daily'?'today':'this week')+'. Win a match to take #1.')+'</p>';
   else if(list.length>100)rows+='<p class="dimtxt" style="padding:8px 0">Showing the top 100 of '+fmtNum(lbMeta.n||list.length)+'</p>';
   if(!meShown&&IN_TG){const mine=lbScope==='daily'?(save.dailyPts||0):lbScope==='weekly'?(save.weeklyPts||0):e,above=list.filter(p=>p.id!==me&&metric(p)>mine).length;
-   pin='<div class="r me mepin"><span class="rk">'+(R&&R.outside&&lbScope==='overall'?'1000+':'#'+(above+1))+'</span><div class="grow"><div class="nm">You</div><div class="tr" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div></div><span class="sc">'+fmtNum(mine)+'</span></div>';}
+   pin='<div class="lb"><div class="r me mepin"><span class="rk">'+(R&&R.outside&&lbScope==='overall'?'1000+':'#'+(above+1))+'</span><div class="grow"><div class="nm">You</div><div class="tr" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div></div><span class="sc">'+fmtNum(mine)+'</span></div></div>';}
  }else rows='<p class="mut" style="padding:14px 0">Loading…</p>';
  return '<div class="panel tierbox"><div class="row"><i class="tierdia" style="background:'+TIERC[t]+'"></i><div class="grow"><div class="tn" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div><div class="mut">'+fmtNum(e)+' lifetime points. '+nextTxt+'.</div></div><button class="info" data-act="info" data-arg="tiers" aria-label="About tiers">?</button></div>'+
   '<div class="ladder">'+TIERS.map(rung).join('')+'</div></div>'+
@@ -322,9 +325,12 @@ const INFO={
   ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button.'],
   ['Crits','Direct hits can crit for double damage. Shots that only clip the edge do less.'],
   ['Counters','Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout. The winning side deals 15% more damage and takes 10% less.'],
+  ['Map objects','Rocks, domes and containers block shots and movement. Orange supply crates break under fire and sometimes drop a box. Craters slow you down.'],
+  ['Events','Team matches and Moon Zone get one surprise: a supply drop, a meteor shower (stay out of the red circles) or a solar flare that charges supers twice as fast.'],
   ['Points','Every match pays points. They rank you on the leaderboard and buy upgrades and crates. Spending never lowers your rank.']]],
  gtypes:()=>['Game types',[
   ['Arena','Destroy the enemy team, or have more health left when time runs out. One life each.'],
+  ['Arena 1v1','Best of 3 rounds: first to 2 wins and the match pays double. Between rounds you see their next chassis and can switch yours.'],
   ['Moon Zone','Stand in the zone to capture it. While your team holds it, you score. First to 100 wins. It pays ×3 in 1v1, ×2 in 2v2 and ×1.5 in 3v3 because matches run longer.'],
   ['The zone moves','Every 20 to 28 seconds it jumps somewhere new. A gold ring shows where, 6 seconds early.'],
   ['Kills and respawns','Each kill adds 5. You respawn after 4 seconds, plus 1.5 for each death after that (9 at most).'],
@@ -491,7 +497,7 @@ function vsBuild(){
  else if(adv&&dis){txt='Mixed matchup: you counter some, some counter you.';}
  else txt='Even matchup. No counters either way.';
  const owned=ownedChassisClasses();
- return '<div class="head"><b>'+(matchG==='zone'?'Moon Zone':'Arena')+' '+modeKey()+'</b><span>'+MAPS[curMap].n+'</span><br><span class="aitag">AI opponents</span></div>'+
+ return '<div class="head"><b>'+(matchG==='zone'?'Moon Zone':'Arena')+' '+modeKey()+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+'</span><br><span class="aitag">AI opponents</span></div>'+
   '<div class="team">'+foes.map(card).join('')+'</div><div class="mark">VS</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+
   '<div class="grow"></div><button class="fight" data-act="vsstart"><span class="big">START</span><span class="small" id="vsCount"></span></button>'+
@@ -519,7 +525,8 @@ const TIPS=['Mystery boxes boost you until you take enough damage. Grab them ear
 function resultsHTML(r){
  const M=MODES[r.mode],title=r.won?'Victory':r.drawn?'Draw':'Defeat',cls=r.won?'win':r.drawn?'draw':'lose';
  const lines=[[(r.won?'Win':r.drawn?'Draw':'Loss')+' in '+r.mode,fmtNum(r.won?M.win:r.drawn?M.draw:M.loss)]];
- if(r.zoneX!==1)lines.push(['Moon Zone','×'+r.zoneX]);
+ if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.zoneX]);
+ else if(r.zoneX!==1)lines.push(['Moon Zone','×'+r.zoneX]);
  if(r.leagueMult!==1)lines.push([r.league.n+' league','×'+r.leagueMult]);
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
@@ -536,7 +543,7 @@ function resultsHTML(r){
  const st=r.stats;
  return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+(i*3.6+Math.random()*3)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
   '<div class="grow"></div><div class="title '+cls+'">'+title+'</div>'+
-  '<div class="sub">'+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
+  '<div class="sub">'+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
   '<div class="chips"><span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span></div>'+
@@ -553,6 +560,31 @@ function onMatchEnd(r){
  uiDirty();
 }
 
+// ---------- between rounds (1v1 best of 3) ----------
+let roundTimer=null;
+function roundHTML(info){
+ const {adv,dis}=matchup(),owned=ownedChassisClasses(),foe=units.find(u=>u.team===1);
+ let tip;
+ if(dis&&!adv){const b=beatenBy(me.cls),fix=beatenBy(b);tip='Their '+CH[b].n+' counters your '+CH[me.cls].n+(owned.includes(fix)?'. Switch to '+CH[fix].n+' to beat it.':'.');}
+ else if(adv&&!dis)tip='Your '+CH[me.cls].n+' counters their '+CH[foe.cls].n+'.';
+ else tip='Next up: their '+CH[foe.cls].n+'.';
+ return '<div class="rt '+(info.won?'win':info.lost?'lose':'')+'">'+(info.won?'Round won':info.lost?'Round lost':'Round drawn')+'</div>'+
+  '<div class="rscore num"><span style="color:var(--ally)">'+info.w[0]+'</span><i>–</i><span style="color:var(--foe)">'+info.w[1]+'</span></div>'+
+  '<p class="mut">First to 2 wins. '+esc(tip)+'</p>'+
+  (owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="rswap" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+
+  '<button class="btn btn-go block" style="margin-top:14px" data-act="nextround">Start round '+info.round+'<span id="rCount" class="dimtxt" style="color:inherit;opacity:.7"></span></button>';
+}
+function onRoundEnd(info){
+ if(state!=='round'||!inBattle())return;
+ let n=5;
+ const ov=openOverlay('modal',roundHTML(info),{key:'round',sticky:true,noBack:true,cls:'rm'});
+ const tick=()=>{const el=$('#rCount',ov.box);if(el)el.textContent=roundTimer?' in '+n:'';};
+ ov.re=()=>{ov.box.innerHTML=roundHTML(info);tick();};
+ clearInterval(roundTimer);roundTimer=setInterval(()=>{n--;if(n<=0){goRound();return;}tick();},1000);tick();
+}
+function goRound(){clearInterval(roundTimer);roundTimer=null;const ov=findOv('round');if(ov){ov.onClose=null;closeOverlay(ov);}startRound();}
+function onRoundStart(){clearInterval(roundTimer);roundTimer=null;const ov=findOv('round');if(ov){ov.onClose=null;closeOverlay(ov);}}
+
 // ---------- match start / leave ----------
 let leaveFn=null,paused=false;
 function onMatchStart(){
@@ -563,14 +595,15 @@ function onMatchStart(){
  leaveFn=()=>confirmLeave();pushBack(leaveFn);
 }
 function confirmLeave(){
- if(state!=='play'||findOv('leave'))return;
+ if((state!=='play'&&state!=='round')||findOv('leave'))return;
  paused=true;
  openOverlay('modal','<h3>Leave this match?</h3><p class="mut">It counts as a loss and pays no points.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="leavecancel">Keep fighting</button><button class="btn btn-ghost" data-act="leaveok">Leave</button></div>',
-  {key:'leave',onClose:()=>{paused=false;if(state==='play'){dropBack(leaveFn);pushBack(leaveFn);}}});
+  {key:'leave',onClose:()=>{paused=false;if(state==='play'||state==='round'){dropBack(leaveFn);pushBack(leaveFn);}}});
 }
 function forfeit(){
  const ov=findOv('leave');if(ov){ov.onClose=null;closeOverlay(ov);}
- if(state!=='play')return;
+ if(state!=='play'&&state!=='round')return;
+ clearInterval(roundTimer);roundTimer=null;
  state='menu';paused=false;
  save.streak=0;save.losses=(save.losses||0)+1;save.mp=(save.mp||0)+1;store();
  exitBattle();
@@ -646,7 +679,9 @@ const ACT={
   if(a==='skin'){save.skin='lunar';}
   store();showToast('Granted on this device (test)');},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
- leaveok:()=>forfeit()};
+ leaveok:()=>forfeit(),
+ rswap:a=>{clearInterval(roundTimer);roundTimer=null;switchChassis(a);fx('tap');},
+ nextround:()=>goRound()};
 function onTap(e){
  const el=e.target.closest('[data-act]');if(!el||el.disabled)return;
  const f=ACT[el.dataset.act];if(!f)return;

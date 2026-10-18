@@ -17,6 +17,7 @@ function fx(name,arg){
   case 'super':haptic('i','rigid');break;
   case 'box':haptic('i','soft');break;
   case 'cap':haptic('n','success');break;
+  case 'event':haptic('n','warning');break;
   case 'win':haptic('n','success');break;
   case 'lose':case 'draw':haptic('n','warning');break;
   case 'buy':case 'claim':haptic('n','success');break;

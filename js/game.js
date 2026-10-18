@@ -22,15 +22,21 @@ function upOk(x,y){   // a tank centre may sit here while on the upper level
 }
 function rampExit(x,y){for(const [rx,ry,rw,rh,o] of BR.ramps)if(x>=rx&&x<=rx+rw&&(o<0?y<ry&&y>ry-R*2:y>ry+rh&&y<ry+rh+R*2))return true;return false;}
 const lvOK=(a,e)=>(a.elev||0)===(e.elev||0)||!(underDeck(a)||underDeck(e));   // cross-level hits are blocked under the deck
-// Map definitions
+// Map definitions. Every layout is point-symmetric, so both sides get the same map.
+// walls: solid boxes [x,y,w,h,style]; rocks: round solids [x,y,r,style]; crates: breakable boxes; craters: [x,y,r] slow you down.
+// (data only, so a 3D renderer or a PvP server can use the same maps)
 const MAPS={
  classic:{
-  n:'Classic Arena',d:'Balanced cover',
-  walls:[[8,14.5,4,3],[3,9,3,2],[14,21,3,2],[12,8,2,3],[6,21,2,3]]
+  n:'Moonbase',d:'Containers, habitat domes, a slow crater on each flank',
+  walls:[[8,14.5,4,3,'cmd'],[3,9,3,2,'ctr'],[14,21,3,2,'ctr'],[12,8,2,3,'ctr'],[6,21,2,3,'ctr']],
+  rocks:[[16,13,1.2,'dome'],[4,19,1.2,'dome'],[5,13.5,0.8,'rock'],[15,18.5,0.8,'rock']],
+  crates:[[9,10.6,1.2,1.2],[9.8,20.2,1.2,1.2]],
+  craters:[[3.5,16,1.5],[16.5,16,1.5]]
  },
  overpass:{
   n:'Overpass',d:'Bridge with ramps and tunnels',
-  walls:[[2,6,2,2],[16,6,2,2],[2,24,2,2],[16,24,2,2]],
+  walls:[[2,6,2,2,'ctr'],[16,6,2,2,'ctr'],[2,24,2,2,'ctr'],[16,24,2,2,'ctr']],
+  rocks:[[10,8.2,0.9,'rock'],[10,23.8,0.9,'rock']],
   // deck [x,y,w,h]; tunnels [x,width] run under it; ramps [x,y,w,h,openEnd(-1 top/+1 bottom)]
   bridge:{deck:[2,13.5,16,5],tunnels:[[5.8,2.4],[11.8,2.4]],
    ramps:[[3,10.5,2.5,3,-1],[14.5,10.5,2.5,3,-1],[3,18.5,2.5,3,1],[14.5,18.5,2.5,3,1]]}
@@ -38,21 +44,33 @@ const MAPS={
  longshot:{
   n:'Longshot',d:'Narrow alley, long sight lines',
   // constricted sides + central energy pylon with gaps
-  walls:[[0,0,4,32],[16,0,4,32],[7,10,6,2],[7,20,6,2],[9,14.5,2,3]],
+  walls:[[0,0,4,32,'cliff'],[16,0,4,32,'cliff'],[7,10,6,2,'ctr'],[7,20,6,2,'ctr'],[9,14.5,2,3,'pylon']],
+  crates:[[4,15.4,1.2,1.2],[14.8,15.4,1.2,1.2]],
   narrow:true
  },
+ craters:{
+  n:'Crater Field',short:'Craters',d:'Open ground, boulders, craters that slow you down',
+  walls:[[8.5,11.2,3,1.2,'lander'],[8.5,19.6,3,1.2,'lander']],
+  rocks:[[6,11,1.1,'rock'],[14,21,1.1,'rock'],[14.5,10,0.9,'rock'],[5.5,22,0.9,'rock'],[3,16,0.8,'rock'],[17,16,0.8,'rock']],
+  crates:[[9.4,7.6,1.2,1.2],[9.4,23.2,1.2,1.2],[12.8,15.4,1.2,1.2],[6,15.4,1.2,1.2]],
+  craters:[[10,16,2.6],[15.5,14.5,1.3],[4.5,17.5,1.3]]
+ },
  random:{
-  n:'Random',d:'Surprise me',
+  n:'Random',d:'A different map every match',
   walls:[],isRandom:true
  }
 };
 let curMap='classic';
-let walls=MAPS.classic.walls;
-const MAP_REAL=['classic','overpass','longshot'];
+let walls=MAPS.classic.walls,rocks=[],craters=[],crates=[];
+const MAP_REAL=['classic','overpass','longshot','craters'];
+const CRATE_HP=320,CRATER_SLOW=0.6;
 const mapKey=()=>(save.map&&MAPS[save.map])?save.map:'classic';   // the player's pick (may be 'random'); the real map is chosen at match start
 function setMap(id){
  if(!MAPS[id]||MAPS[id].isRandom)id=MAP_REAL[(Math.random()*MAP_REAL.length)|0];
- curMap=id;baseWalls=MAPS[id].walls;BR=MAPS[id].bridge||null;walls=baseWalls.slice();
+ const M=MAPS[id];curMap=id;BR=M.bridge||null;
+ rocks=(M.rocks||[]).map(r=>r.slice());craters=(M.craters||[]).map(c=>c.slice());
+ crates=(M.crates||[]).map(([x,y,w,h])=>{const c=[x,y,w,h,'crate'];c.hp=c.mhp=CRATE_HP;c.flash=0;return c;});   // fresh crates every match
+ baseWalls=M.walls.concat(crates);walls=baseWalls.slice();
  if(BR){const [dx,dy,dw,dh]=BR.deck;let x0=dx;
   for(const [tx,tw] of BR.tunnels){walls.push([x0,dy,tx-x0,dh]);x0=tx+tw;}   // solid deck blocks between tunnels
   walls.push([x0,dy,dx+dw-x0,dh]);
@@ -75,7 +93,17 @@ const GTYPES={arena:{label:'Arena',d:'Destroy the enemy team'},zone:{label:'Moon
 const GT_PICK={...GTYPES,random:{label:'Random',d:'Arena or Moon Zone'}};   // what the selector shows; Random resolves at match start
 const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
 let matchG='arena';
-function winPoints(gk,mk){const M=MODES[mk],x=gk==='zone'?ZONE_X[mk]:gk==='random'?1:1;return Math.round(M.win*x*powerBracket(calcPower()).mult);}
+function winPoints(gk,mk){const M=MODES[mk],x=gk==='zone'?ZONE_X[mk]:gk==='arena'&&mk==='1v1'?SERIES_X:1;return Math.round(M.win*x*powerBracket(calcPower()).mult);}
+// ---- 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most) ----
+const SERIES_X=2,ROUND_T=90;
+let series=null;
+const isSeriesMode=()=>matchG==='arena'&&modeKey()==='1v1'&&(save.mp||0)>0;   // the coached first match is a single round
+// ---- one random event per team match or Moon Zone match ----
+const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},meteor:{txt:'Meteor shower! Stay out of the red circles',c:'#ff6b5e'},flare:{txt:'Solar flare: supers charge twice as fast',c:'#ffb347'}};
+const EVT_KEYS=Object.keys(EVENTS),METEOR_DMG=260;
+let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0;
+const flareMult=()=>evt&&evt.k==='flare'?2:1;
+const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+Math.random()*3:15+Math.random()*15;a.push(tt);}return a;};   // first box lands early
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
 // Score while you hold it uncontested, +5 per kill, respawn gets longer each death, tanks repair when out of combat.
 const ZONE_R=2.8,ZONE_WIN=100,CAP_RATE=0.55,RESPAWN_T=4,ZONE_RATE=2.4,KILL_PTS=5,ZONE_WARN=6,REPAIR_DELAY=3.5,REPAIR_RATE=0.07;
@@ -87,6 +115,7 @@ function zoneSpot(avoid){
   if(avoid&&Math.hypot(x-avoid.x,y-avoid.y)<7)continue;
   if(baseWalls.some(([rx,ry,rw,rh])=>x>rx-1.2&&x<rx+rw+1.2&&y>ry-1.2&&y<ry+rh+1.2))continue;
   if(rampAt(x,y))continue;
+  if(rocks.some(([rx,ry,rr2])=>Math.hypot(x-rx,y-ry)<rr2+1.3)||craters.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+0.8))continue;
   if(!inDeck(x,y)&&walls.some(([rx,ry,rw,rh])=>x>rx-1&&x<rx+rw+1&&y>ry-1&&y<ry+rh+1))continue;   // deck tops are fine (reach them by ramp)
   return {x,y};
  }
@@ -130,7 +159,7 @@ function botZoneGoal(u){
  const tgt=z.next&&(!holding||z.t<2.5)?z.next:z;
  const rr=(z.next&&tgt===z.next)?0.3:ZONE_R*0.45;
  let p=clampP(tgt.x+Math.cos(u.zo||0)*rr,tgt.y+Math.sin(u.zo||0)*rr);
- if(baseWalls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R)||rampAt(p.x,p.y)||(!inDeck(p.x,p.y)&&walls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R))){u.zo=Math.random()*6.28;p={x:tgt.x,y:tgt.y};}
+ if(baseWalls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R)||rocks.some(([rx,ry,rr2])=>Math.hypot(p.x-rx,p.y-ry)<rr2+R)||rampAt(p.x,p.y)||(!inDeck(p.x,p.y)&&walls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R))){u.zo=Math.random()*6.28;p={x:tgt.x,y:tgt.y};}
  p.l=ptLevel(p);
  return p;
 }
@@ -180,7 +209,7 @@ function prepareMatch(){
 function switchChassis(cls){
  if(!ownedChassisClasses().includes(cls))return;
  save.chassis=cls;store();
- const keep={x:me.x,y:me.y};me=buildMe();Object.assign(me,keep);units[0]=me;
+ const keep={x:me.x,y:me.y,sx:me.sx,sy:me.sy,deaths:me.deaths||0,zo:me.zo||0};me=buildMe();Object.assign(me,keep);units[0]=me;
 }
 function matchup(){   // how your chassis fares against the enemy lineup
  const foes=units.filter(u=>u.team===1),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
@@ -190,11 +219,14 @@ function startMatch(){
  mstat={dmg:0,sup:0,box:0,taken:0,kills:0,caps:0};
  {const {adv,dis}=matchup();
   banner=null;if(adv||dis)banner={t:3,txt:adv&&!dis?'You counter them: +15% damage':dis&&!adv?'Countered: '+CH[beatenBy(me.cls)].n+' beats '+CH[me.cls].n:'Mixed matchup',c:adv&&!dis?'#5fe3a1':dis&&!adv?'#ff6b5e':'#ffcf4a'};}
- bullets=[];timeLeft=MATCH;state='play';
+ series=isSeriesMode()?{w:[0,0],round:1}:null;
+ if(series&&!banner)banner={t:2.4,txt:'Best of 3: first to 2 rounds wins',c:'#ffcf4a'};
+ bullets=[];timeLeft=series?ROUND_T:MATCH;state='play';elapsed=0;ffwd=false;warns=[];evt=null;
+ evtAt=series?0:(matchG==='zone'?50:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;
  units.forEach(u=>{u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;});
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
- boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+Math.random()*3:15+Math.random()*15;sched.push(tt);}}   // first box lands early so every match has one
+ boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=boxSchedule();
  if(typeof onMatchStart==='function')onMatchStart();
 }
 function newMatch(){prepareMatch();startMatch();}   // tests and quick restarts
@@ -214,10 +246,17 @@ function push(b){
   if(b.elev===1){b.ox=b.x;b.oy=b.y;return;}
  }
  b.elev=0;
- for(const [x,y,w,h] of walls){
-  const cx=Math.max(x,Math.min(b.x,x+w)),cy=Math.max(y,Math.min(b.y,y+h));
-  let dx=b.x-cx,dy=b.y-cy,d=Math.hypot(dx,dy);
-  if(d<R){if(d===0){dx=0;dy=-1;d=1;}b.x+=dx/d*(R-d);b.y+=dy/d*(R-d);}
+ for(let pass=0;pass<2;pass++){
+  for(const [x,y,w,h] of walls){
+   const cx=Math.max(x,Math.min(b.x,x+w)),cy=Math.max(y,Math.min(b.y,y+h));
+   let dx=b.x-cx,dy=b.y-cy,d=Math.hypot(dx,dy);
+   if(d<R){if(d===0){dx=0;dy=-1;d=1;}b.x+=dx/d*(R-d);b.y+=dy/d*(R-d);}
+  }
+  for(const [cx,cy,cr] of rocks){
+   const dx=b.x-cx,dy=b.y-cy,d=Math.hypot(dx,dy),m=cr+R;
+   if(d<m){if(d<1e-6){b.y=cy-m;}else{b.x+=dx/d*(m-d);b.y+=dy/d*(m-d);}}
+  }
+  b.x=Math.max(R,Math.min(W-R,b.x));b.y=Math.max(R,Math.min(H-R,b.y));
  }
  b.ox=b.x;b.oy=b.y;
 }
@@ -228,10 +267,31 @@ function segHitsRect(ax,ay,bx,by,rx,ry,rw,rh){
  if(!clip(-dx,ax-rx)||!clip(dx,rx+rw-ax)||!clip(-dy,ay-ry)||!clip(dy,ry+rh-ay))return false;
  return t1-t0>1e-6;
 }
-function losW(a,b,wl){
+function segHitsCircle(ax,ay,bx,by,cx,cy,r){
+ const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;let t=l2?((cx-ax)*dx+(cy-ay)*dy)/l2:0;t=Math.max(0,Math.min(1,t));
+ const px=ax+dx*t-cx,py=ay+dy*t-cy;return px*px+py*py<r*r;
+}
+function losW(a,b,wl,fat){
  for(const [rx,ry,rw,rh] of wl)if(segHitsRect(a.x,a.y,b.x,b.y,rx,ry,rw,rh))return false;
+ for(const [cx,cy,cr] of rocks)if(segHitsCircle(a.x,a.y,b.x,b.y,cx,cy,cr+(fat||0)))return false;
  return true;
 }
+const inRock=(x,y)=>rocks.some(([cx,cy,cr])=>(x-cx)*(x-cx)+(y-cy)*(y-cy)<cr*cr);
+const slowAt=u=>(u.elev||0)===0&&craters.some(([cx,cy,cr])=>(u.x-cx)*(u.x-cx)+(u.y-cy)*(u.y-cy)<cr*cr)?CRATER_SLOW:1;
+// breakable supply crates: soak up shots and blasts, sometimes drop a mystery box
+function hitCrate(c,dmg){
+ if(!c.mhp||c.hp<=0)return;
+ c.hp-=dmg;c.flash=0.08;
+ if(c.hp>0)return;
+ for(const L of [walls,baseWalls,navWalls]){const i=L.indexOf(c);if(i>=0)L.splice(i,1);}
+ const i=crates.indexOf(c);if(i>=0)crates.splice(i,1);
+ const x=c[0]+c[2]/2,y=c[1]+c[3]/2;
+ blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);
+ if(Math.random()<0.45){boxes.push({x,y,life:20,age:0});pop(x,y-0.8,'MYSTERY BOX','#ffd24a');}
+ else pop(x,y-0.8,'CRATE DESTROYED','#c9d6e3');
+ buildNav();for(const u of units)u.wp=null;   // routes open up through the gap
+}
+function hitCratesNear(x,y,r,dmg){for(const c of crates.slice()){const cx=Math.max(c[0],Math.min(x,c[0]+c[2])),cy=Math.max(c[1],Math.min(y,c[1]+c[3]));if(Math.hypot(x-cx,y-cy)<r)hitCrate(c,dmg);}}
 function los(a,b){   // combat sight, level aware
  const la=a.elev||0,lb=b.elev||0;
  if(!BR||(la===0&&lb===0))return losW(a,b,walls);
@@ -264,14 +324,15 @@ function moveBullets(dt){
  for(const q of bullets){
   for(let k=0;k<2&&q.life>0;k++){
    q.x+=q.vx*dt/2;q.y+=q.vy*dt/2;
-   for(const [rx,ry,rw,rh] of (q.hi?baseWalls:walls))if(q.x>rx&&q.x<rx+rw&&q.y>ry&&q.y<ry+rh)q.life=0;
+   for(const wl of (q.hi?baseWalls:walls))if(q.x>wl[0]&&q.x<wl[0]+wl[2]&&q.y>wl[1]&&q.y<wl[1]+wl[3]){q.life=0;if(wl.mhp)hitCrate(wl,q.dps*q.shot*q.dm);break;}
+   if(q.life>0&&inRock(q.x,q.y))q.life=0;
    if(q.x<0||q.x>W||q.y<0||q.y>H)q.life=0;
    let t=null,bd=1e9;
    for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<R+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t);
-   takeHit(t,dmg,owner);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1));t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1));if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':TC[q.o.team]});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
+   takeHit(t,dmg,owner);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':TC[q.o.team]});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
   }
   q.life-=dt;
  }
@@ -313,6 +374,7 @@ function spawnBox(){
   for(let i=0;i<400;i++){
    const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
    if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
+   if(rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+1.4))continue;
    if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<3.5))continue;      // never spawn on top of a robot
    if(boxes.some(b=>Math.hypot(b.x-x,b.y-y)<4))continue;   // don't stack boxes on each other
    boxes.push({x,y,life:20,age:0});pop(x,y,'MYSTERY BOX','#ffd24a');break;
@@ -329,7 +391,8 @@ let shells=[],blasts=[],novas=[],shakeT=0,shakeM=0;
 function shake(m,t){shakeM=Math.max(shakeM,m);shakeT=Math.max(shakeT,t);}
 function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse pierces)
  for(let d=0.3;d<SUPER_LEN;d+=0.2){const x=a.x+Math.cos(ang)*d,y=a.y+Math.sin(ang)*d;
-  for(const [rx,ry,rw,rh] of ((a.elev||0)===1?baseWalls:walls))if(x>rx&&x<rx+rw&&y>ry&&y<ry+rh)return d;}
+  for(const [rx,ry,rw,rh] of ((a.elev||0)===1?baseWalls:walls))if(x>rx&&x<rx+rw&&y>ry&&y<ry+rh)return d;
+  if(inRock(x,y))return d;}
  return SUPER_LEN;
 }
 function useSuper(r){
@@ -354,6 +417,7 @@ function fireSuper(r,S){
  if(S.kind==='beam'){
   const ang=r.sup.ang;
   beams.push({ax:r.x,ay:r.y,bx:r.x+Math.cos(ang)*S.len,by:r.y+Math.sin(ang)*S.len,t:0.3,c:col,w:S.w});
+  for(const c of crates.slice())if(segHitsRect(r.x,r.y,r.x+Math.cos(ang)*S.len,r.y+Math.sin(ang)*S.len,c[0]-S.w*0.5,c[1]-S.w*0.5,c[2]+S.w,c[3]+S.w))hitCrate(c,S.dmg);
   let hit=false;
   for(const e of foesOf(r)){
    const ex=e.x-r.x,ey=e.y-r.y;
@@ -371,6 +435,7 @@ function fireSuper(r,S){
   shake(4,0.25);
  }else{
   novas.push({x:r.x,y:r.y,r:S.r,t:0.45,t0:0.45,c:col});
+  hitCratesNear(r.x,r.y,S.r,S.dmg*0.6);
   shake(6,0.35);
   let hit=false;
   for(const e of foesOf(r)){
@@ -384,6 +449,7 @@ function explode(s){
  s.dead=true;
  const r=s.owner;
  blasts.push({x:s.x,y:s.y,r:s.r,t:0.5,t0:0.5,c:'#ff9d45'});
+ hitCratesNear(s.x,s.y,s.r,s.dmg);
  blasts.push({x:s.x,y:s.y,r:s.r*0.65,t:0.35,t0:0.35,c:'#ffd24a'});
  shake(9,0.45);
  for(const e of foesOf(r)){
@@ -413,6 +479,7 @@ function superTick(dt){
    s.x+=s.vx*dt/2;s.y+=s.vy*dt/2;
    if(s.x<0||s.x>W||s.y<0||s.y>H)boom=true;
    for(const [rx,ry,rw,rh] of ((s.owner.elev||0)===1?baseWalls:walls))if(s.x>rx&&s.x<rx+rw&&s.y>ry&&s.y<ry+rh)boom=true;
+   if(inRock(s.x,s.y))boom=true;
    if(!boom)for(const v of units){if(v.team===s.owner.team||v.hp<=0)continue;if(Math.hypot(s.x-v.x,s.y-v.y)<R+0.55){boom=true;break;}}
   }
   if(boom)explode(s);
@@ -446,7 +513,7 @@ function boxTick(dt){
  for(const r of units){const rg=bsum(r,'reg')+gsum(r,'reg');   // health regeneration buff
   if(rg>0&&r.hp>0&&r.hp<r.mhp){const h=Math.min(r.mhp-r.hp,r.mhp*rg*dt);r.hp+=h;r.rh=(r.rh||0)+h;
    if(r.rh>=5){nums.push({x:r.x+(Math.random()-0.5)*1.2,y:r.y-R,t:0.9,txt:'+'+Math.round(r.rh),c:'#4be3a0'});r.rh=0;}}}
- if(sidx<sched.length&&MATCH-timeLeft>=sched[sidx]){sidx++;spawnBox();}
+ if(sidx<sched.length&&elapsed>=sched[sidx]){sidx++;spawnBox();}
  for(const bx of boxes){
   bx.life-=dt;bx.age+=dt;
   for(const r of units){
@@ -467,18 +534,19 @@ function boxTick(dt){
 let nav=[],navAdj=[];
 const ptLevel=p=>p.elev!==undefined?p.elev:p.l!==undefined?p.l:(inDeck(p.x,p.y)&&!inTunnel(p.x,p.y))?1:0;
 function visL(a,b,l){
- if(l===0)return losW(a,b,navWalls);
+ if(l===0)return losW(a,b,navWalls,R*0.8);
  const d=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(1,Math.ceil(d/0.3));
  for(let i=0;i<=n;i++){const t=i/n;if(!upOk(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t))return false;}
  return true;
 }
 function buildNav(){
  nav=[];
- const free=(px,py)=>px>R&&px<W-R&&py>R&&py<H-R&&!navWalls.some(([rx,ry,rw,rh])=>px>rx-R&&px<rx+rw+R&&py>ry-R&&py<ry+rh+R);
+ const free=(px,py)=>px>R&&px<W-R&&py>R&&py<H-R&&!navWalls.some(([rx,ry,rw,rh])=>px>rx-R&&px<rx+rw+R&&py>ry-R&&py<ry+rh+R)&&!rocks.some(([cx,cy,cr])=>Math.hypot(px-cx,py-cy)<cr+R);
  for(const [x,y,w,h] of navWalls)for(const sx of [-1,1])for(const sy of [-1,1]){
   const px=(sx<0?x:x+w)+sx*(R+0.45),py=(sy<0?y:y+h)+sy*(R+0.45);
   if(free(px,py))nav.push({x:px,y:py,l:0});
  }
+ for(const [cx,cy,cr] of rocks)for(let k=0;k<6;k++){const a=k/6*Math.PI*2+Math.PI/6,d=cr+R+0.5,px=cx+Math.cos(a)*d,py=cy+Math.sin(a)*d;if(free(px,py))nav.push({x:px,y:py,l:0});}
  const links=[];
  if(BR){const [dx,dy,dw,dh]=BR.deck;
   for(const [tx,tw] of BR.tunnels){nav.push({x:tx+tw/2,y:dy-1.1,l:0});nav.push({x:tx+tw/2,y:dy+dh+1.1,l:0});}
@@ -517,6 +585,11 @@ function coverSpot(from,threat){
   const cx=x+w/2,cy=y+h/2,dx=cx-threat.x,dy=cy-threat.y,d=Math.hypot(dx,dy)||1,off=Math.hypot(w,h)/2+R+0.6;
   const s=clampP(cx+dx/d*off,cy+dy/d*off);
   if(los(s,threat))continue;
+  const t=dist2(from,s);if(t<bd){bd=t;best=s;}
+ }
+ for(const [cx,cy,cr] of rocks){
+  const dx=cx-threat.x,dy=cy-threat.y,d=Math.hypot(dx,dy)||1,s=clampP(cx+dx/d*(cr+R+0.6),cy+dy/d*(cr+R+0.6));
+  if(los(s,threat)||inRock(s.x,s.y))continue;
   const t=dist2(from,s);if(t<bd){bd=t;best=s;}
  }
  return best;
@@ -579,8 +652,9 @@ function botAI(dt,u){
   u.wpT=(u.wpT===undefined?Math.random()*0.25:u.wpT)-dt;
   if((!u.wp||u.wpT<=0||!u.wpG||Math.hypot(u.wpG.x-goal.x,u.wpG.y-goal.y)>1||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<0.6)&&(!u.wp||planBudget>0)){planBudget--;u.wp=waypoint(u,goal);u.wpG={x:goal.x,y:goal.y};u.wpT=0.25;}
   tx=u.wp.x;ty=u.wp.y;}
+ for(const w of warns){const dx=u.x-w.x,dy=u.y-w.y,d=Math.hypot(dx,dy);if(d<w.r+R+0.4){const k=d||1;tx=u.x+(d?dx/k:1)*2;ty=u.y+(d?dy/k:0)*2;break;}}
  const vx=tx-u.x,vy=ty-u.y,vm=Math.hypot(vx,vy);
- if(vm>0.15){u.x+=vx/vm*STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*dt;u.y+=vy/vm*STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*dt;}
+ if(vm>0.15){const k=STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*slowAt(u)*dt;u.x+=vx/vm*k;u.y+=vy/vm*k;}
  push(u);
 }
 
@@ -591,7 +665,7 @@ function update(dt){
  if(state!=='play')return;
  if(me.hp>0){   // dead players spectate their team
   const [ix,iy]=inputVec();
-  me.x+=ix*STAT.speed*spdMult(me)*(me.sup?0.6:1)*dt;me.y+=iy*STAT.speed*spdMult(me)*(me.sup?0.6:1)*dt;push(me);
+  const k=STAT.speed*spdMult(me)*(me.sup?0.6:1)*slowAt(me)*dt;me.x+=ix*k;me.y+=iy*k;push(me);
  }
  planBudget=2;   // at most two bots re-plan their route per frame
  for(const u of units)if(!u.isPlayer&&u.hp>0)botAI(dt,u);
@@ -599,23 +673,95 @@ function update(dt){
  for(const u of units)turret(u,dt);
  moveBullets(dt);
  for(const u of units)u.flash=Math.max(0,u.flash-dt);
- timeLeft-=dt;
+ for(const c of crates)c.flash=Math.max(0,(c.flash||0)-dt);
+ timeLeft-=dt;elapsed+=dt;eventTick(dt);
  if(gzones){zoneTick(dt);respawnTick(dt);if(gscore[0]>=ZONE_WIN||gscore[1]>=ZONE_WIN||timeLeft<=0)endMatch();}
- else if(aliveCount(0)===0||aliveCount(1)===0||timeLeft<=0)endMatch();
+ else if(aliveCount(0)===0||aliveCount(1)===0||timeLeft<=0){if(series)endRound();else endMatch();}
+}
+// ---- events ----
+function eventTick(dt){
+ if(!evt&&evtAt&&elapsed>=evtAt){evtAt=0;startEvent(evtKind);}
+ if(evt){evt.t-=dt;
+  if(evt.k==='meteor'){evt.next-=dt;if(evt.next<=0&&evt.t>1.3){evt.next=0.55+Math.random()*0.35;meteorWarn();}}
+  if(evt.t<=0)evt=null;}
+ for(const w of warns){w.t-=dt;if(w.t<=0)meteorHit(w);}
+ if(warns.length)warns=warns.filter(w=>w.t>0);
+}
+function startEvent(k){
+ const E=EVENTS[k];banner={t:3.2,txt:E.txt,c:E.c};if(typeof fx==='function')fx('event');
+ if(k==='drop'){evt={k,t:3};for(let i=0;i<3;i++)dropBoxNear(10+(Math.random()-0.5)*6,16+(Math.random()-0.5)*7);}
+ else if(k==='meteor')evt={k,t:10,next:0.9};
+ else evt={k,t:20};
+}
+function dropBoxNear(x0,y0){
+ for(let i=0;i<80;i++){
+  const x=Math.max(1.5,Math.min(W-1.5,x0+(Math.random()-0.5)*4)),y=Math.max(1.5,Math.min(H-1.5,y0+(Math.random()-0.5)*4));
+  if(walls.some(([rx,ry,rw,rh])=>x>rx-1&&x<rx+rw+1&&y>ry-1&&y<ry+rh+1)||rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+1)||boxes.some(b=>Math.hypot(b.x-x,b.y-y)<2))continue;
+  boxes.push({x,y,life:22,age:0});pop(x,y,'SUPPLY DROP','#ffd24a');return;
+ }
+}
+function meteorWarn(){
+ const alive=units.filter(u=>u.hp>0);let x,y;
+ if(alive.length&&Math.random()<0.6){const u=alive[(Math.random()*alive.length)|0];x=u.x+(Math.random()-0.5)*4;y=u.y+(Math.random()-0.5)*4;}
+ else{x=2+Math.random()*(W-4);y=4+Math.random()*(H-8);}
+ warns.push({x:Math.max(1,Math.min(W-1,x)),y:Math.max(1,Math.min(H-1,y)),r:1.6,t:1.3,t0:1.3});
+}
+function meteorHit(w){
+ blasts.push({x:w.x,y:w.y,r:w.r*1.25,t:0.5,t0:0.5,c:'#ff8a3d'});blasts.push({x:w.x,y:w.y,r:w.r*0.6,t:0.3,t0:0.3,c:'#ffe08a'});shake(7,0.35);
+ for(const u of units){
+  if(u.hp<=0||underDeck(u))continue;
+  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+R*0.5){const d=METEOR_DMG*(1-armor(u));takeHit(u,d,null);nums.push({x:u.x,y:u.y-R,t:0.9,z:1.6,txt:'METEOR '+Math.round(d),c:'#ff8a3d'});}
+ }
+ hitCratesNear(w.x,w.y,w.r,METEOR_DMG);
+}
+// ---- best-of-3 rounds ----
+function roundWinner(){
+ const a0=aliveCount(0),a1=aliveCount(1);
+ if(a1===0&&a0>0)return 0;if(a0===0&&a1>0)return 1;if(a0===0&&a1===0)return -1;
+ const f0=teamHpFrac(0),f1=teamHpFrac(1);return f0>f1?0:f1>f0?1:-1;
+}
+function rebuildBot(u,cls){   // same pilot, different chassis
+ const f=u.mhp/CH[u.cls].hp;
+ u.cls=cls;u.mhp=Math.round(f*CH[cls].hp);u.hp=u.mhp;u.spdM=CH[cls].spd;u.turnM=CH[cls].turn;u.dscale=CH[cls].ds;
+}
+function endRound(){
+ const w=roundWinner();if(w>=0)series.w[w]++;
+ series.last=w;
+ if(series.w[0]>=2||series.w[1]>=2||series.round>=5){endMatch({won:series.w[0]>series.w[1],drawn:series.w[0]===series.w[1]});return;}
+ series.round++;state='round';ffwd=false;
+ const foe=units.find(u=>u.team===1);
+ // the AI may switch to the chassis that counters yours (never against brand-new pilots); you get to answer before the round starts
+ if(foe&&(save.mp||0)>=10&&Math.random()<0.5){const c=beatenBy(me.cls);if(c&&c!==foe.cls)rebuildBot(foe,c);}
+ if(typeof fx==='function')fx(w===0?'win':w===1?'lose':'draw');
+ const info={won:w===0,lost:w===1,w:series.w.slice(),round:series.round,foe:foe?foe.cls:null};
+ if(typeof onRoundEnd==='function')setTimeout(()=>onRoundEnd(info),700);
+}
+function startRound(){
+ if(!series||state!=='round')return;
+ setMap(curMap);   // fresh crates
+ bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
+ me=units[0];
+ for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
+  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
+ const {adv,dis}=matchup();
+ banner={t:2.4,txt:'Round '+series.round+(adv&&!dis?': you counter them':dis&&!adv?': they counter you':''),c:adv&&!dis?'#5fe3a1':dis&&!adv?'#ff6b5e':'#ffcf4a'};
+ state='play';
+ if(typeof onRoundStart==='function')onRoundStart();
 }
 let lastResult=null;
-function endMatch(){
- state='over';endAt=performance.now();
+function endMatch(forced){
+ state='over';endAt=performance.now();ffwd=false;evt=null;warns=[];
  for(const u of units)u.hp=Math.max(0,u.hp);
  const a0=aliveCount(0),a1=aliveCount(1),ko=a0===0||a1===0;
  let won=a1===0||(timeLeft<=0&&a0>a1)||(timeLeft<=0&&a0===a1&&teamHpFrac(0)>teamHpFrac(1));
  let drawn=!won&&!ko&&timeLeft<=0&&a0===a1&&teamHpFrac(0)===teamHpFrac(1);
  const score=[Math.floor(gscore[0]),Math.floor(gscore[1])];
  if(gzones){drawn=score[0]===score[1];won=!drawn&&gscore[0]>gscore[1];}
+ if(forced){won=forced.won;drawn=forced.drawn;}
  const mk=modeKey(),M=MODES[mk];
  if(won)save.streak=(save.streak||0)+1;else if(!drawn)save.streak=0;
  const streak=save.streak||0,sb=won?Math.min(streak,5)*20:0;
- const brk=powerBracket(calcPower()),zx=matchG==='zone'?ZONE_X[mk]:1;
+ const brk=powerBracket(calcPower()),zx=matchG==='zone'?ZONE_X[mk]:series?SERIES_X:1;
  const base=Math.round((won?M.win:drawn?M.draw:M.loss)*zx);
  const pts=Math.round(base*brk.mult)+sb;
  if(won)save.wins=(save.wins||0)+1;else if(!drawn)save.losses=(save.losses||0)+1;
@@ -633,7 +779,7 @@ function endMatch(){
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
  lastResult={won,drawn,mode:mk,gtype:matchG,map:curMap,score,base,zoneX:zx,league:brk,leagueMult:brk.mult,streak,streakBonus:sb,pts,awarded,capped:awarded<pts,
   before,after:save.earned||0,stats:{dmg:Math.round(mstat.dmg),kills:mstat.kills,boxes:mstat.box,sups:mstat.sup,taken:Math.round(mstat.taken)},
-  quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won,meCls:me.cls};
+  quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won,meCls:me.cls,series:series?{w:series.w.slice()}:null};
  store();
  if(typeof fx==='function')fx(won?'win':drawn?'draw':'lose');
  if(typeof onMatchEnd==='function')setTimeout(()=>onMatchEnd(lastResult),won?650:900);
