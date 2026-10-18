@@ -3,78 +3,19 @@
     ".read": false,
     ".write": false,
     "players": {
-      ".read": true,
-      "$pid": {
-        ".write": "$pid.beginsWith('tg_') && $pid.length <= 24",
-        ".validate": "newData.hasChildren(['pts','dailyPts','weeklyPts','d','w','t','name','days','ld','sk']) && newData.child('t').val() == now && newData.child('d').val() * 86400000 <= now + 120000 && (newData.child('d').val() + 1) * 86400000 > now - 120000 && newData.child('w').val() * 604800000 + 345600000 <= now + 120000 && (newData.child('w').val() + 1) * 604800000 + 345600000 > now - 120000 && newData.child('dailyPts').val() <= 20000 && ((!data.exists() && newData.child('pts').val() <= 1500 && newData.child('dailyPts').val() == newData.child('pts').val() && newData.child('weeklyPts').val() == newData.child('pts').val()) || (data.exists() && now - data.child('t').val() >= 25000 && newData.child('pts').val() >= data.child('pts').val() && newData.child('pts').val() - data.child('pts').val() <= 1500 && newData.child('dailyPts').val() == (newData.child('d').val() == data.child('d').val() ? data.child('dailyPts').val() : 0) + newData.child('pts').val() - data.child('pts').val() && newData.child('weeklyPts').val() == (newData.child('w').val() == data.child('w').val() ? data.child('weeklyPts').val() : 0) + newData.child('pts').val() - data.child('pts').val())) && newData.child('ld').val() == newData.child('d').val() && ((!data.child('ld').exists() && newData.child('days').val() == 1 && newData.child('sk').val() == 1) || (data.child('ld').val() == newData.child('ld').val() && newData.child('days').val() == data.child('days').val() && newData.child('sk').val() == data.child('sk').val()) || (newData.child('ld').val() > data.child('ld').val() && newData.child('days').val() == data.child('days').val() + 1 && newData.child('sk').val() == (newData.child('ld').val() == data.child('ld').val() + 1 ? data.child('sk').val() + 1 : 1)))",
-        "pts": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "dailyPts": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "weeklyPts": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "d": {
-          ".validate": "newData.isNumber()"
-        },
-        "w": {
-          ".validate": "newData.isNumber()"
-        },
-        "t": {
-          ".validate": "newData.isNumber()"
-        },
-        "lastSeen": {
-          ".validate": "newData.isNumber()"
-        },
-        "name": {
-          ".validate": "newData.isString() && newData.val().length <= 20"
-        },
-        "spendGram": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "power": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
-        },
-        "bracket": {
-          ".validate": "newData.isString() && newData.val().length <= 12"
-        },
-        "tier": {
-          ".validate": "newData.isString() && newData.val().length <= 12"
-        },
-        "wins": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "losses": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "days": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "ld": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "sk": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
-        },
-        "ref": {
-          ".validate": "newData.isString() && newData.val().beginsWith('tg_') && newData.val().length <= 24 && newData.val() != $pid && (data.val() == newData.val() || (!data.exists() && (!data.parent().child('days').exists() || data.parent().child('days').val() <= 1)))"
-        },
-        "$other": {
-          ".validate": false
-        }
-      },
-      ".indexOn": [
-        "ref"
-      ]
+      ".indexOn": ["pts", "ref"]
     },
-    "payments": {
-      ".read": false,
-      "$id": {
-        ".write": "!data.exists() && $id.beginsWith('LWM_tg_') && $id.length <= 64",
-        ".validate": "newData.hasChildren(['pid','cur','amt','gram','item','memo','t']) && newData.child('t').val() == now && newData.child('pid').isString() && newData.child('pid').val().beginsWith('tg_') && (newData.child('cur').val() == 'TON' || newData.child('cur').val() == 'SOL') && newData.child('amt').isNumber() && newData.child('amt').val() > 0 && newData.child('amt').val() < 100000 && newData.child('gram').isNumber() && newData.child('item').isString() && newData.child('item').val().length <= 40 && newData.child('memo').isString() && newData.child('memo').val().length <= 64"
-      }
+    "dly": {
+      "$d": { ".indexOn": ["s"] }
+    },
+    "wly": {
+      "$w": { ".indexOn": ["s"] }
+    },
+    "ntf": {
+      ".indexOn": ["last"]
+    },
+    "lb": {
+      ".read": true
     }
   }
 }

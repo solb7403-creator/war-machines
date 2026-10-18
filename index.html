@@ -3,32 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>LUNAR: War Machines</title>
 <script>
 // Auto-update: phones and GitHub's CDN can keep an old copy for ~10 min. version.json is fetched fresh;
 // if it's newer than this page, reload with ?v=<new> (a URL the cache has never seen). Telegram data in the #hash is kept.
-window.BUILD='20261017232554';
+window.BUILD='20261018002320';
 fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
  const q=new URLSearchParams(location.search);
  if(j&&j.v&&j.v!==window.BUILD&&q.get('v')!==j.v){q.set('v',j.v);location.replace(location.pathname+'?'+q.toString()+location.hash);}
 }).catch(()=>{});
 </script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <style>
-:root{--bg:#e9edf1;--fg:#16202a;box-sizing:border-box}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1118;--fg:#e6ebf0}}
-:root[data-theme="dark"]{--bg:#0c1118;--fg:#e6ebf0}
+:root{--bg:#0c1118;--fg:#e6ebf0;box-sizing:border-box;color-scheme:dark}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none;position:fixed;width:100%}
 #wrap{height:100dvh;width:100vw;position:fixed;top:0;left:0}
 canvas{display:block;width:100%;height:100%}
 </style>
 </head>
 <body>
-<div id="wrap"><canvas id="c"></canvas><canvas id="c3d" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%"></canvas></div>
+<div id="wrap"><canvas id="c"></canvas></div>
 <script>
 // ---- Telegram Mini App bootstrap ----
 const TG=(window.Telegram&&window.Telegram.WebApp)||null;
@@ -104,6 +99,7 @@ function loadSave(obj){if(obj!==undefined)save=obj;else{try{save=JSON.parse(loca
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
  if(!save.skin)save.skin='default';
+ if(!save.payCur)save.payCur='stars';
  if(save.moonbeam===undefined)save.moonbeam=false;
  if(save.spendGram===undefined)save.spendGram=0;
  // migrate old TON field names to GRAM (one-time)
@@ -149,7 +145,7 @@ const CHORDER=['scout','vanguard','titan'];
 // chassis counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.
 // The advantaged side deals +25% damage to the line it counters.
 // Counter edge ~1.6x (deals +30%, takes 20% less) so it weighs about the same as a full Epic loadout (~1.7x)
-const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.30,COUNTER_RES=0.20;
+const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.15,COUNTER_RES=0.10;
 const cmult=(a,d)=>{if(!a||!d||!a.cls||!d.cls)return 1;
  if(COUNTER[a.cls]===d.cls)return 1+COUNTER_BONUS;   // attacker counters target
  if(COUNTER[d.cls]===a.cls)return 1-COUNTER_RES;     // target counters attacker
@@ -263,172 +259,17 @@ function awardPts(n){
  if(!n||n<=0)return;
  rollPeriods();
  n=Math.min(n,Math.max(0,DAILY_CAP-(save.dailyPts||0)));
- if(n<=0){showToast('DAILY POINT CAP REACHED');return;}
+ if(n<=0){showToast('DAILY POINT CAP REACHED');return 0;}
  save.pts=(save.pts||0)+n;
  save.earned=(save.earned||0)+n;
  save.dailyPts=(save.dailyPts||0)+n;
  save.weeklyPts=(save.weeklyPts||0)+n;
  store();syncPlayer();
+ return n;
 }
-let mstat=null,lastPts=0,lastTons=0,toast=null,mmT=0;
+let mstat=null,lastPts=0,lastTons=0,toast=null,mmT=0,banner=null;
 function showToast(t){toast={txt:t,t:1.6};}
 const W=20,H=32,HUD=2.6,R=0.7,MATCH=180;
-// point-symmetric cover (rect = x,y,w,h in arena units)
-// 3D Battle with Three.js
-let scene3d=null,camera3d=null,renderer3d=null,tankMe3d=null,tankBot3d=null,walls3d=[],bullets3d=[],bridge3d=null;
-function init3D(){
- const cv3=document.getElementById('c3d');
- cv3.style.display='block';
- document.getElementById('c').style.display='none';
- if(renderer3d){renderer3d.setSize(vw,vh);return;}
- const cv=cv3;
- renderer3d=new THREE.WebGLRenderer({canvas:cv,antialias:true});
- renderer3d.setSize(vw,vh);
- renderer3d.shadowMap.enabled=true;
- scene3d=new THREE.Scene();
- scene3d.background=new THREE.Color(0x0a0e1a);
- scene3d.fog=new THREE.Fog(0x0a0e1a,30,80);
- camera3d=new THREE.PerspectiveCamera(55,vw/vh,0.1,200);
- // angled top-down camera (behind south edge, looking north)
- camera3d.position.set(10,26,44);
- camera3d.lookAt(10,0,14);
- // lights
- scene3d.add(new THREE.AmbientLight(0x8899bb,0.5));
- const sun=new THREE.DirectionalLight(0xffffff,0.9);
- sun.position.set(15,25,10);sun.castShadow=true;
- sun.shadow.mapSize.set(1024,1024);
- scene3d.add(sun);
- const moon=new THREE.PointLight(0xe8f4ff,0.6,60);
- moon.position.set(-5,12,8);scene3d.add(moon);
- // ground (lunar surface)
- const gg=new THREE.PlaneGeometry(24,36);
- const gm=new THREE.MeshStandardMaterial({color:0x232733,roughness:0.9});
- const ground=new THREE.Mesh(gg,gm);
- ground.rotation.x=-Math.PI/2;ground.position.set(10,0,16);
- ground.receiveShadow=true;scene3d.add(ground);
- // stars
- const sg=new THREE.BufferGeometry(),sp=[];
- for(let i=0;i<300;i++)sp.push((Math.random()-0.5)*120,15+Math.random()*40,(Math.random()-0.5)*120);
- sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
- scene3d.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.3})));
-}
-function buildTank3d(color){
- const grp=new THREE.Group();
- const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.6,1.8),
-  new THREE.MeshStandardMaterial({color:color,roughness:0.4,metalness:0.6}));
- body.position.y=0.5;body.castShadow=true;grp.add(body);
- const turret=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.55,0.4,12),
-  new THREE.MeshStandardMaterial({color:0x2a2e40,roughness:0.3,metalness:0.7}));
- turret.position.y=0.95;turret.castShadow=true;grp.add(turret);
- const barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,1.4,8),
-  new THREE.MeshStandardMaterial({color:0x111420,roughness:0.2,metalness:0.8}));
- barrel.rotation.x=Math.PI/2;barrel.position.set(0,0.95,0.9);grp.add(barrel);
- // gems on corners
- for(const [gx,gz] of [[-0.6,-0.7],[0.6,-0.7],[-0.6,0.7],[0.6,0.7]]){
-  const gem=new THREE.Mesh(new THREE.OctahedronGeometry(0.16),
-   new THREE.MeshStandardMaterial({color:0x3fd0c9,emissive:0x3fd0c9,emissiveIntensity:0.8}));
-  gem.position.set(gx,0.85,gz);grp.add(gem);
- }
- return grp;
-}
-function buildArena3d(){
- // clear old
- for(const m of walls3d)scene3d.remove(m);walls3d=[];
- if(bridge3d){scene3d.remove(bridge3d);bridge3d=null;}
- // walls
- for(const [x,y,w,h] of walls){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,1.5,h),
-   new THREE.MeshStandardMaterial({color:0x4a4e5e,roughness:0.8}));
-  m.position.set(x+w/2,0.75,y+h/2);m.castShadow=true;m.receiveShadow=true;
-  scene3d.add(m);walls3d.push(m);
- }
- // bridge (real 3D!)
- try{
- const br=MAPS[curMap]&&MAPS[curMap].bridge;
- if(br&&br.segs){
-  bridge3d=new THREE.Group();
-  for(const [sx,sy,sw,sh] of br.segs){
-   const deck=new THREE.Mesh(new THREE.BoxGeometry(sw,0.5,sh),
-    new THREE.MeshStandardMaterial({color:0x3d4260,roughness:0.7}));
-   deck.position.set(sx+sw/2,2.2,sy+sh/2);deck.castShadow=true;deck.receiveShadow=true;
-   bridge3d.add(deck);
-   // support pillars
-   for(const px of [sx+sw*0.25,sx+sw*0.75]){
-    const pil=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,2.2,8),
-     new THREE.MeshStandardMaterial({color:0x2a2e40}));
-    pil.position.set(px,1.1,sy+sh/2);pil.castShadow=true;bridge3d.add(pil);
-   }
-  }
-  // ramps
-  for(const [rx,ry,rw,rh] of br.ramps){
-   const ramp=new THREE.Mesh(new THREE.BoxGeometry(rw,0.3,rh),
-    new THREE.MeshStandardMaterial({color:0x5a6080,roughness:0.8}));
-   ramp.position.set(rx+rw/2,0.4,ry+rh/2);
-   ramp.rotation.x=(ry<br.y?0.25:-0.25);ramp.castShadow=true;
-   bridge3d.add(ramp);
-  }
-  scene3d.add(bridge3d);
- }
- }catch(e){console.log('bridge 3D error',e);}
- // tanks
- if(tankMe3d)scene3d.remove(tankMe3d);
- if(tankBot3d)scene3d.remove(tankBot3d);
- tankMe3d=buildTank3d(parseInt(C.me.replace('#',''),16));
- tankBot3d=buildTank3d(parseInt(C.bot.replace('#',''),16));
- scene3d.add(tankMe3d);scene3d.add(tankBot3d);
-}
-function update3D(){
- if(!scene3d)return;
- // update tank positions (2D x,y -> 3D x,z)
- if(me&&tankMe3d){
-  tankMe3d.position.set(me.x,(me.elev||0)*2.5+0,me.y);
-  tankMe3d.rotation.y=-me.ang+Math.PI/2;
- }
- if(units.length>1&&tankBot3d){
-  const foe0=units.find(u=>u.team===1);
-  if(foe0){tankBot3d.position.set(foe0.x,(foe0.elev||0)*2.5+0,foe0.y);
-  tankBot3d.rotation.y=-foe0.ang+Math.PI/2;}
- }
- // bullets
- for(const b of bullets3d)scene3d.remove(b);bullets3d=[];
- for(const q of bullets){
-  const m=new THREE.Mesh(new THREE.SphereGeometry(0.14,8,8),
-   new THREE.MeshBasicMaterial({color:q.o==='me'?0x3fd0c9:0xff7a45}));
-  m.position.set(q.x,0.8,q.y);scene3d.add(m);bullets3d.push(m);
- }
- // camera follows player slightly
- if(me){
-  camera3d.position.set(10+(me.x-10)*0.25,26,44-(16-me.y)*0.15);
-  camera3d.lookAt(10,0,14);
- }
- renderer3d.render(scene3d,camera3d);
-}
-// 2D HUD overlay for 3D battle
-function drawHUD3D(){
- g.textAlign='left';g.textBaseline='top';
- // timer
- const mm=Math.floor(timeLeft/60),ss=Math.floor(timeLeft%60);
- g.fillStyle='#e6ebf0';g.font=font(20);g.textAlign='center';
- g.fillText(mm+':'+String(ss).padStart(2,'0'),vw/2,12);
- // health bars
- const bw=vw*0.35;
- g.fillStyle='rgba(0,0,0,.5)';g.fillRect(14,14,bw,14);
- g.fillStyle=C.me;g.fillRect(14,14,bw*(me.hp/me.mhp),14);
- g.fillStyle='#e6ebf0';g.font=font(11);g.textAlign='left';
- g.fillText('YOU',14,32);
- g.fillStyle='rgba(0,0,0,.5)';g.fillRect(vw-14-bw,14,bw,14);
- g.fillStyle=C.bot;g.fillRect(vw-14-bw,14,bw*(bot.hp/bot.mhp),14);
- g.fillStyle='#e6ebf0';g.font=font(11);g.textAlign='right';
- g.fillText('ENEMY',vw-14,32);
- // super meter
- if(me.sp>=SUPER_MAX){
-  g.fillStyle='#ffd24a';g.font=font(14);g.textAlign='center';
-  g.fillText('SUPER READY - TAP!',vw/2,44);
- }else{
-  g.fillStyle='rgba(255,255,255,.2)';g.fillRect(vw/2-60,46,120,8);
-  g.fillStyle='#3fd0c9';g.fillRect(vw/2-60,46,120*(me.sp/SUPER_MAX),8);
- }
-}
 // ---- two-level bridge (Overpass): elev 0 = ground, 1 = on the deck/ramps ----
 // Ground level: the deck is a solid block except the two tunnels; ramps have side rails, so you drive up only from the ramp's open end.
 // Deck level: you can only drive on the deck and ramps. High ground shoots over everything; units in a tunnel are hidden from the deck.
@@ -516,74 +357,61 @@ function powerBracket(pw){
  if(pw<600)return {n:'ELITE',mult:1.75,c:'#ff9d3c'};
  return {n:'LEGEND',mult:2.0,c:'#ff4d6d'};
 }
-// Firebase backend — central player database
-const FIREBASE_CONFIG={
- apiKey:"AIzaSyAbdYxMmtz4cYFGnD2Wu4xG3qqtauiBmJg",
- authDomain:"warmachines-a6034.firebaseapp.com",
- databaseURL:"https://warmachines-a6034-default-rtdb.firebaseio.com",
- projectId:"warmachines-a6034"
-};
-let db=null,playerId=null,srvOff=0,srv=null,syncBusy=false,syncAgain=null,noDays=false,noRef=false;
-// srv = what the server currently holds for this player; points are pushed in steps the rules allow
-function initBackend(){
- try{
-  if(FIREBASE_CONFIG.apiKey.indexOf('REPLACE')===0)return; // not configured yet
-  firebase.initializeApp(FIREBASE_CONFIG);
-  db=firebase.database();
-  if(IN_TG)playerId='tg_'+TG_USER.id;
-  else{playerId=localStorage.getItem('wm_playerId');
-   if(!playerId){playerId='p_'+Math.random().toString(36).slice(2,10);localStorage.setItem('wm_playerId',playerId);}}
-  db.ref('.info/serverTimeOffset').on('value',sn=>{srvOff=sn.val()||0;});
-  if(IN_TG){
-   db.ref('players/'+playerId).once('value',sn=>{
-    const v=sn.val();
-    srv=v?{pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0,ref:v.ref||null}:{pts:0,daily:0,weekly:0,d:null,w:null,t:0,days:0,ld:null,sk:0,ref:null,fresh:true};
-    // server is the floor: never show fewer points than the leaderboard has
-    if(srv.pts>(save.earned||0)){save.pts=(save.pts||0)+srv.pts-(save.earned||0);save.earned=srv.pts;store();}
-    syncPlayer();
-   });
-  }
-  checkPendingPurchase();checkPendingSol();
- }catch(e){}
+// ---- LUNAR server: verified Telegram login; the server is the referee for points, days and referrals ----
+const API='https://lunar-api.solb7403.workers.dev';
+const DB_PUBLIC='https://warmachines-a6034-default-rtdb.firebaseio.com';   // only the public leaderboard file is readable
+let playerId=null,srvOff=0,srv=null,syncBusy=false,syncWant=false,syncTimer=null,lastSyncAt=0,starsAckQ=[],syncFails=0;
+function api(path,body){
+ return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({initData:IN_TG?TG.initData:''},body||{}))})
+  .then(r=>r.json().then(j=>{if(!r.ok)throw new Error(j.error||('http '+r.status));return j;}));
 }
-// Only real Telegram accounts sync to the leaderboard (that's the airdrop population).
+function initBackend(){
+ if(IN_TG)playerId='tg_'+TG_USER.id;
+ else{try{playerId=localStorage.getItem('wm_playerId');if(!playerId){playerId='p_'+Math.random().toString(36).slice(2,10);localStorage.setItem('wm_playerId',playerId);}}catch(e){playerId='p_local';}}
+ if(IN_TG)doSync(true);
+ checkPendingPurchase();checkPendingSol();
+}
+// ask for a sync soon (batched: at most one request every ~8s)
 function syncPlayer(){
- if(!db||!playerId||!IN_TG||!srv)return;
- if(syncBusy){syncAgain=true;return;}
- const now=Date.now()+srvOff;
- if(!srv.fresh&&now-srv.t<SYNC_GAP){if(syncAgain&&syncAgain!==true)return;syncAgain=setTimeout(()=>{syncAgain=null;syncPlayer();},SYNC_GAP-(now-srv.t)+500);return;}
- const d=Math.floor(now/864e5),w=Math.floor((now-4*864e5)/(7*864e5));
- const dBase=srv.d===d?srv.daily:0,wBase=srv.w===w?srv.weekly:0;
- let delta=Math.max(0,(save.earned||0)-srv.pts);
- delta=Math.min(delta,SYNC_STEP,DAILY_CAP-dBase);if(delta<0)delta=0;
- const pw=calcPower(),brk=powerBracket(pw);
- const rec={
-  pts:srv.pts+delta,dailyPts:dBase+delta,weeklyPts:wBase+delta,d:d,w:w,
-  t:firebase.database.ServerValue.TIMESTAMP,
-  spendGram:save.spendGram||0,power:pw,bracket:brk.n,tier:TIERS[tierIdx()],
-  wins:save.wins||0,losses:save.losses||0,lastSeen:firebase.database.ServerValue.TIMESTAMP,
-  name:tgName(TG_USER),
-  // days active (distinct UTC days played) + consecutive-day streak; the rules allow +1 per new day only
-  days:srv.ld===d?srv.days:(srv.days||0)+1,ld:d,sk:srv.ld===d?(srv.sk||1):(srv.ld===d-1?(srv.sk||0)+1:1)
- };
- if(noDays){delete rec.days;delete rec.ld;delete rec.sk;}
+ if(!IN_TG||syncTimer)return;
+ const wait=Math.max(1500,8000-(Date.now()-lastSyncAt));
+ syncTimer=setTimeout(()=>{syncTimer=null;doSync(false);},wait);
+}
+async function doSync(boot){
+ if(!IN_TG)return;
+ if(syncBusy){syncWant=true;return;}
+ syncBusy=true;lastSyncAt=Date.now();
  captureRef();
- // referrer: written once, only while the account is brand new (the rules enforce both)
- if(!noRef){const rf=srv.ref||(save.refBy&&(srv.days||0)<=1?save.refBy:null);if(rf)rec.ref=rf;}
- syncBusy=true;
- db.ref('players/'+playerId).set(rec).then(()=>{
-  syncBusy=false;
-  srv={pts:rec.pts,daily:rec.dailyPts,weekly:rec.weeklyPts,d:d,w:w,t:Date.now()+srvOff,days:rec.days,ld:rec.ld,sk:rec.sk,ref:rec.ref||srv.ref||null};
-  const again=syncAgain===true;if(again)syncAgain=null;
-  if(again||((save.earned||0)>srv.pts&&srv.daily<DAILY_CAP))syncPlayer(); // next step goes out after the gap
- }).catch(()=>{
-  syncBusy=false;
-  if(rec.ref&&!srv.ref&&!noRef)noRef=true;   // referral refused (not a new account): drop it, keep everything else
-  else if(!noDays&&rec.days!==undefined)noDays=true; // older rules without days tracking: keep syncing points without it
-  // rejected (clock skew or another device wrote first): reload server state and retry later
-  db.ref('players/'+playerId).once('value',sn=>{const v=sn.val();if(v)srv={pts:v.pts||0,daily:v.dailyPts||0,weekly:v.weeklyPts||0,d:v.d,w:v.w,t:v.t||0,days:v.days||0,ld:v.ld??null,sk:v.sk||0,ref:v.ref||null};
-   setTimeout(syncPlayer,SYNC_GAP);});
- });
+ const pw=calcPower(),brk=powerBracket(pw),ack=starsAckQ.splice(0);
+ let credited=1;
+ try{
+  const r=await api('/api/sync',{earned:save.earned||0,boot:!!boot,power:pw,league:brk.n,wins:save.wins||0,losses:save.losses||0,mp:save.mp||0,refBy:save.refBy||'',starsAck:ack});
+  srvOff=r.now-Date.now();srv=r.rec;credited=r.credited;syncFails=0;
+  // the server is the floor: never show fewer points than the leaderboard has
+  if(srv.pts>(save.earned||0)){save.pts=(save.pts||0)+srv.pts-(save.earned||0);save.earned=srv.pts;store();}
+  if(r.stars&&r.stars.length)recoverStars(r.stars);
+ }catch(e){starsAckQ.unshift(...ack);syncFails++;}
+ syncBusy=false;
+ if(syncWant){syncWant=false;syncPlayer();return;}
+ const behind=srv&&(save.earned||0)>srv.pts&&srv.dailyPts<DAILY_CAP;
+ if(syncFails&&syncFails<6)setTimeout(syncPlayer,10000*syncFails);
+ else if(behind)setTimeout(syncPlayer,credited>0?0:30000);   // big claims bank in a few steps
+}
+// Stars purchases paid while the game was closed: deliver them now
+function recoverStars(list){
+ save.starsDone=save.starsDone||{};
+ let n=0;
+ for(const it of list){
+  if(!it.n)continue;
+  if(!save.starsDone[it.n]){
+   save.starsDone[it.n]=1;n++;
+   const desc=it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g}:{kind:it.k};
+   grantPurchase(desc);
+  }
+  starsAckQ.push(it.n);
+ }
+ store();if(n)showToast('PURCHASE DELIVERED ⭐');
+ syncPlayer();
 }
 // Visitor tracking (local for now; global needs backend)
 let visitorCount=null,devOpen=false,devTapN=0,devTapT=0;
@@ -614,8 +442,10 @@ function logPayment(rec){
  save.purchases=save.purchases||[];save.purchases.push(rec);
  if(rec.cur==='SOL')save.spendSol=Math.round(((save.spendSol||0)+rec.amt)*1e6)/1e6;
  store();
- if(!db||!IN_TG)return;
- try{db.ref('payments/'+rec.memo.replace(/[.#$\[\]\/|]/g,'_')).set({pid:playerId,name:tgName(TG_USER),cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||'',t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});}catch(e){}
+ if(!IN_TG)return;
+ // the server re-checks the payment on-chain and records it for the books
+ const send=(k)=>api('/api/pay-log',{cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||''}).catch(()=>{if(k<3)setTimeout(()=>send(k+1),20000*(k+1));});
+ send(0);
 }
 // TON text comment as a one-cell BOC (opcode 0 + UTF-8 text), base64 for TON Connect payload
 function tonCommentPayload(txt){
@@ -650,8 +480,8 @@ async function payWithStars(gram,desc){
    starsBusy=false;
    if(status==='paid'){
     save.purchases=save.purchases||[];save.purchases.push({cur:'STARS',amt:d.stars,gram,what:descLabel(desc),memo:'STARS|'+d.nonce,ts:Date.now()});
-    save.spendStars=(save.spendStars||0)+d.stars;store();
-    grantPurchase(desc);showToast('PAID WITH STARS ⭐');
+    save.spendStars=(save.spendStars||0)+d.stars;save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();
+    grantPurchase(desc);showToast('PAID WITH STARS ⭐');syncPlayer();
    }else if(status==='cancelled')showToast('PAYMENT CANCELLED');
    else if(status==='failed')showToast('STARS PAYMENT FAILED');
   });
@@ -747,11 +577,14 @@ function payResume(){if(save&&save.pendingSol){clearTimeout(solWatch);solWatch=n
 try{if(TG&&TG.onEvent)TG.onEvent('activated',payResume);}catch(e){}
 addEventListener('focus',payResume);addEventListener('pageshow',payResume);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(save&&save.pendingSol){clearTimeout(solWatch);solWatch=null;watchSol(600000);}if(save&&save.pendingTx)checkPendingPurchase();}});
+let tonLoading=false;
 function initTonConnect(attempt){
  attempt=attempt||0;
  try{
+  if(tonConnectUI)return;
   if(typeof TON_CONNECT_UI==='undefined'){
-   if(attempt<10)setTimeout(()=>initTonConnect(attempt+1),500);
+   if(!tonLoading){tonLoading=true;const sc=document.createElement('script');sc.src='https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js';document.head.appendChild(sc);}
+   if(attempt<40)setTimeout(()=>initTonConnect(attempt+1),250);
    return;
   }
   tonConnectUI=new TON_CONNECT_UI.TonConnectUI({manifestUrl:TON_MANIFEST_URL});
@@ -767,7 +600,7 @@ async function verifyPurchaseOnChain(gramAmount,sinceTs,timeoutMs,isDone,memo){
  while(Date.now()-t0<timeoutMs){
   if(isDone())return false;
   try{
-   const r=await fetch('https://toncenter.com/api/v2/getTransactions?address='+TON_RECIPIENT+'&limit=20');
+   const r=await fetch('https://toncenter.com/api/v2/getTransactions?address='+TON_RECIPIENT+'&limit=50');
    const d=await r.json();
    for(const t of (d.result||[])){
     if((t.utime*1000)<sinceTs-10000)continue;
@@ -937,18 +770,21 @@ function newMatch(){
  const bc={cls:bcC,hp:CH[bcC].hp*bcm*pScale,spd:CH[bcC].spd,turn:CH[bcC].turn,tier:ct,size:CH[bcC].ds};
  save.lastBracket=brk.n;
  const skinHp=save.skin==='lunar'?1.08:1,skinDmg=save.skin==='lunar'?1.08:1;
- me={x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],gems:(save.cores||[]).filter(Boolean),sp:0,sup:null,
+ me={x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],gems:(save.cores||[]).filter(Boolean),gemM:Object.fromEntries(GORDER.map(k=>[k,gemMult(k)])),sp:0,sup:null,
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skinHp),dmgM:(1+0.08*U.cannon)*skinDmg,spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,
   wtype:W.arch,wdps:W.dps,wshot:W.shot,wpspd:W.pspd,wtier:W.tier,wmult:W.mult,dscale:Cc.size,cls:save.chassis};
  me.hp=me.mhp;
  // AI bot factory (allies and enemies mirror your power tier)
  const mkBot=(team,x,y)=>{
-  const bwA=['pulse','twin','siege'][(Math.random()*3)|0],bcC=['scout','vanguard','titan'][(Math.random()*3)|0];
-  const pScale=0.92+Math.random()*0.16;
+  const bwA=['pulse','twin','siege'][(Math.random()*3)|0];
+  // brand-new pilots (first 10 matches) never face a chassis that counters theirs
+  const cls=team===1&&(save.mp||0)<10?['scout','vanguard','titan'].filter(c=>COUNTER[c]!==me.cls):['scout','vanguard','titan'];
+  const bcC=cls[(Math.random()*cls.length)|0];
+  const pScale=(team===1&&(save.mp||0)<3?0.8:0.92)+Math.random()*0.16;   // first 3 matches: gentler enemies
   const bw={arch:bwA,dps:Math.round(WEAPONS[bwA].dps*bwm*pScale),shot:WEAPONS[bwA].shot,pspd:22,tier:wt};
   const bc={cls:bcC,hp:CH[bcC].hp*bcm*pScale,spd:CH[bcC].spd,turn:CH[bcC].turn,tier:ct,size:CH[bcC].ds};
-  const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:randGems(),sp:0,sup:null,
+  const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:me.gems.slice(),gemM:Object.assign({},me.gemM),sp:0,sup:null,
    mhp:Math.round(STAT.hp*bc.hp*modeN),dmgM:1,spdM:bc.spd,critB:0,fillM:1,turnM:bc.turn,
    wtype:bw.arch,wdps:bw.dps,wshot:bw.shot,wpspd:bw.pspd,wtier:bw.tier,dscale:bc.size,cls:bcC,
    team,isPlayer:false,brain:{mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0},strafe:1,strafeT:1.5};
@@ -964,12 +800,11 @@ function newMatch(){
  for(let i=0;i<n;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6));   // the enemy team
  mstat={dmg:0,sup:0,box:0,taken:0};
  {const foes=units.filter(u=>u.team===1),adv=foes.some(f=>COUNTER[me.cls]===f.cls),dis=foes.some(f=>COUNTER[f.cls]===me.cls);
-  nums=[];if(adv||dis)setTimeout(()=>{if(state==='play')nums.push({x:me.x,y:me.y-R-1,t:2.2,z:1.1,txt:adv&&!dis?'COUNTER ADVANTAGE: +30% DMG, -20% TAKEN':dis&&!adv?'COUNTERED: ENEMY HAS THE EDGE':'MIXED MATCHUP',c:adv&&!dis?'#7be07b':dis&&!adv?'#ff6b5e':'#ffd24a'});},300);}
+  banner=null;if(adv||dis)banner={t:3,txt:adv&&!dis?'YOU COUNTER THEM: +15% DMG':dis&&!adv?'COUNTERED: '+beatenBy(me.cls).toUpperCase()+' BEATS '+me.cls.toUpperCase():'MIXED MATCHUP',c:adv&&!dis?'#7be07b':dis&&!adv?'#ff6b5e':'#ffd24a'};}
  bullets=[];timeLeft=MATCH;state='play';
  gscore=[0,0];gzones=null;
  units.forEach(u=>{u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;});
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
- if(typeof THREE!=='undefined'){init3D();buildArena3d();}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=[];{let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=15+Math.random()*15;sched.push(tt);}}
 }
 function toArena(){state='arena';}
@@ -1054,10 +889,15 @@ function push(b){
  }
  b.ox=b.x;b.oy=b.y;
 }
+// exact segment-vs-box test (slab method): fast and can't skip thin walls like ramp rails
+function segHitsRect(ax,ay,bx,by,rx,ry,rw,rh){
+ let t0=0,t1=1;const dx=bx-ax,dy=by-ay;
+ const clip=(p,q)=>{if(p===0)return q>0;const r=q/p;if(p<0){if(r>t1)return false;if(r>t0)t0=r;}else{if(r<t0)return false;if(r<t1)t1=r;}return true;};
+ if(!clip(-dx,ax-rx)||!clip(dx,rx+rw-ax)||!clip(-dy,ay-ry)||!clip(dy,ry+rh-ay))return false;
+ return t1-t0>1e-6;
+}
 function losW(a,b,wl){
- const d=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(1,Math.ceil(d/0.25));
- for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
-  for(const [rx,ry,rw,rh] of wl)if(x>rx&&x<rx+rw&&y>ry&&y<ry+rh)return false;}
+ for(const [rx,ry,rw,rh] of wl)if(segHitsRect(a.x,a.y,b.x,b.y,rx,ry,rw,rh))return false;
  return true;
 }
 function los(a,b){   // combat sight, level aware
@@ -1099,7 +939,7 @@ function moveBullets(dt){
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const dmg=q.dps*q.shot*q.dm*(1-armor(t))*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t);
-   takeHit(t,dmg);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1));t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1));if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:(isCrit?'CRIT ':'')+dmg.toFixed(1),c:isCrit?'#ffd24a':TC[q.o.team]});q.life=0;}
+   takeHit(t,dmg);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1));t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1));if(owner.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:isCrit?1.6:direct?1:0.75,g:!direct,txt:'',c:isCrit?'#ffd24a':TC[q.o.team]});dmgNum(nums.pop(),t,dmg,isCrit);q.life=0;}
   }
   q.life-=dt;
  }
@@ -1110,7 +950,7 @@ function moveBullets(dt){
 const bsum=(r,k)=>r.buffs.reduce((a,b)=>a+(b.k===k?BUFF[k].amt:0),0);
 const GEM_LV=[1,1.2,1.45,1.8,2.25]; // Lv1..5: +20%, +25%, +35%, +45% per step
 const gemMult=k=>GEM_LV[Math.min(4,Math.max(0,((save.gemLvl&&save.gemLvl[k])||1)-1))];
-const gsum=(r,k)=>{const m=r===me?gemMult(k):1;return r.gems.reduce((a,g)=>a+(g===k?GEM[k].amt*m:0),0);};
+const gsum=(r,k)=>r.gems.reduce((a,g)=>a+(g===k?GEM[k].amt*((r.gemM&&r.gemM[k])||1):0),0);
 function gemTxt(k){
  const v=GEM[k].amt*gemMult(k);
  const pc=k==='reg'?(v*100).toFixed(1):Math.round(v*100);
@@ -1121,6 +961,7 @@ function takeHit(r,amt){
  const wasAlive=r.hp>0;
  r.hp-=amt;r.flash=0.08;r.calm=0;
  if(r.isPlayer&&mstat)mstat.taken+=amt;
+ if(r.isPlayer&&amt>0)fxHit&&fxHit(amt);
  for(const b of r.buffs)b.taken+=amt;
  r.buffs=r.buffs.filter(b=>b.taken<BUFF_LIFE);   // buff wears off after enough damage taken
  if(wasAlive&&r.hp<=0&&gzones){r.deaths=(r.deaths||0)+1;const k=1-r.team;gscore[k]=Math.min(ZONE_WIN,gscore[k]+KILL_PTS);pop(r.x,r.y-1.6,'+'+KILL_PTS+' KILL',TC[k]);}
@@ -1132,6 +973,12 @@ function takeHit(r,amt){
  }
 }
 function pop(x,y,txt,c){pops.push({x,y,txt,c,t:1.4});}
+// one floating number per target for rapid hits (merged inside 0.25s); crits always get their own
+function dmgNum(q,t,dmg,isCrit){
+ if(!isCrit){for(const o of nums)if(o.tg===t&&!o.crit&&o.t>0.65&&o.c===q.c){o.v+=dmg;o.txt=String(Math.round(o.v));o.t=0.9;return;}}
+ q.tg=t;q.v=dmg;q.crit=isCrit;q.txt=(isCrit?'CRIT ':'')+Math.round(dmg);nums.push(q);
+}
+let fxHit=null;
 function spawnBox(){
  const n=MODES[modeKey()].n;   // boxes per spawn event: 1 in 1v1, 2 in 2v2, 3 in 3v3
  for(let s=0;s<n;s++){
@@ -1175,7 +1022,7 @@ function useSuper(r){
 function fireSuper(r,S){
  const col=TC[r.team];
  const hurt=(e,dmg)=>{if(!lvOK(r,e))return;dmg=dmg*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
-  if(r.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});};
+  if(r.isPlayer&&mstat)mstat.dmg+=dmg;nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+Math.round(dmg),c:'#ff4d4d'});};
  if(S.kind==='beam'){
   const ang=r.sup.ang;
   beams.push({ax:r.x,ay:r.y,bx:r.x+Math.cos(ang)*S.len,by:r.y+Math.sin(ang)*S.len,t:0.3,c:col,w:S.w});
@@ -1217,7 +1064,7 @@ function explode(s){
    const fall=1-0.65*(d/(s.r+R));
    const dmg=s.dmg*fall*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*(1-armor(e))*cmult(r,e);takeHit(e,dmg);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
    if(r.isPlayer&&mstat)mstat.dmg+=dmg;
-   nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+dmg.toFixed(0),c:'#ff4d4d'});
+   nums.push({x:e.x,y:e.y-R,t:0.9,z:2,txt:'SUPER '+Math.round(dmg),c:'#ff4d4d'});
   }
  }
 }
@@ -1289,7 +1136,7 @@ function boxTick(dt){
 }
 
 // ---- bot brain: picks a tactic, paths around cover ----
-let nav=[],navAdj=[];
+let nav=[],navAdj=[],planBudget=2;
 const ptLevel=p=>p.elev!==undefined?p.elev:p.l!==undefined?p.l:(inDeck(p.x,p.y)&&!inTunnel(p.x,p.y))?1:0;
 function visL(a,b,l){
  if(l===0)return losW(a,b,navWalls);
@@ -1400,7 +1247,10 @@ function botAI(dt,u){
   mx+=-ny*u.strafe*0.8;my+=nx*u.strafe*0.8;
   if(zin){const zx=zin.x-u.x,zy=zin.y-u.y,zd=Math.hypot(zx,zy)||1;if(zd>zin.r*0.55){mx+=zx/zd*1.4;my+=zy/zd*1.4;}}   // strafe but stay on the point
   const m=Math.hypot(mx,my)||1;tx=u.x+mx/m;ty=u.y+my/m;
- }else{const w=waypoint(u,goal);tx=w.x;ty=w.y;}
+ }else{
+  u.wpT=(u.wpT===undefined?Math.random()*0.25:u.wpT)-dt;
+  if((!u.wp||u.wpT<=0||!u.wpG||Math.hypot(u.wpG.x-goal.x,u.wpG.y-goal.y)>1||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<0.6)&&(!u.wp||planBudget>0)){planBudget--;u.wp=waypoint(u,goal);u.wpG={x:goal.x,y:goal.y};u.wpT=0.25;}
+  tx=u.wp.x;ty=u.wp.y;}
  const vx=tx-u.x,vy=ty-u.y,vm=Math.hypot(vx,vy);
  if(vm>0.15){u.x+=vx/vm*STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*dt;u.y+=vy/vm*STAT.speed*0.85*spdMult(u)*(u.sup?0.6:1)*dt;}
  push(u);
@@ -1409,6 +1259,7 @@ function botAI(dt,u){
 // ---- update ----
 function update(dt){
  if(toast){toast.t-=dt;if(toast.t<=0)toast=null;}
+ if(banner&&state==='play'){banner.t-=dt;if(banner.t<=0)banner=null;}
  if(shakeT>0){shakeT-=dt;if(shakeT<=0)shakeM=0;}
  if(state==='matchmaking'){mmT+=dt;if(mmT>2.8)newMatch();return;}
  if(state!=='play')return;
@@ -1416,6 +1267,7 @@ function update(dt){
   const [ix,iy]=inputVec();
   me.x+=ix*STAT.speed*spdMult(me)*(me.sup?0.6:1)*dt;me.y+=iy*STAT.speed*spdMult(me)*(me.sup?0.6:1)*dt;push(me);
  }
+ planBudget=2;   // at most two bots re-plan their route per frame
  for(const u of units)if(!u.isPlayer&&u.hp>0)botAI(dt,u);
  boxTick(dt);heading(dt);superTick(dt);
  for(const u of units)turret(u,dt);
@@ -1425,7 +1277,7 @@ function update(dt){
  if(gzones){zoneTick(dt);respawnTick(dt);if(gscore[0]>=ZONE_WIN||gscore[1]>=ZONE_WIN||timeLeft<=0)endMatch();}
  else if(aliveCount(0)===0||aliveCount(1)===0||timeLeft<=0)endMatch();
 }
-let lastWon=false,lastDrawn=false,lastStreak=0,lastStreakBonusPts=0,lastQuests=[],lastMode='1v1';
+let lastWon=false,lastDrawn=false,lastStreak=0,lastStreakBonusPts=0,lastQuests=[],lastMode='1v1',lastAwarded=0,lastBracket='';
 function endMatch(){
  state='over';endAt=performance.now();
  for(const u of units)u.hp=Math.max(0,u.hp);
@@ -1440,13 +1292,14 @@ function endMatch(){
  const sb=won?Math.min(lastStreak,5):0;
  const brk=powerBracket(calcPower());
  const M=MODES[lastMode];
- const base=won?M.win:drawn?M.draw:M.loss;
- lastPts=Math.round(base*brk.mult)+sb*20;
+ const zoneX=lastG==='zone'?({'1v1':3,'2v2':2,'3v3':1.5})[lastMode]:1;   // Moon Zone runs ~4x longer, so it pays more per match
+ const base=(won?M.win:drawn?M.draw:M.loss)*zoneX;
+ lastPts=Math.round(base*brk.mult)+sb*20;save.mp=(save.mp||0)+1;
  lastBracket=brk.n;
  if(won)save.wins=(save.wins||0)+1;else if(!drawn)save.losses=(save.losses||0)+1;
  lastTons=0;
  lastStreakBonusPts=won?sb*20:0;
- awardPts(lastPts);
+ lastAwarded=awardPts(lastPts)||0;
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
  qp('q_win1',won?1:0);qp('q_win3',won?1:0);
  qp('q_dmg',mstat.dmg,true);qp('q_super',mstat.sup,true);qp('q_box',mstat.box,true);
@@ -1593,8 +1446,9 @@ function drawLoadout(){
  g.textAlign='center';
  const W=getW(save.weapon),Cc=getC(save.chassis);
  // ---- UNIT SPEC plate ----
- const px=12,pw=vw-24;
+ const px=12,pw=vw-24,compact=vh<700;
  let py=y;const ph=118;
+ if(!compact){
  steelPlate(px,py,pw,ph);
  plateTitle('UNIT SPEC',cx,py+10);
  qmark(px+pw-20,py+18,weaponInfo);
@@ -1675,6 +1529,7 @@ function drawLoadout(){
  g.fillStyle='#5c6b7d';g.font=font(10);g.textAlign='center';
  g.fillText('tap ? to see what each core does · change cores in the GARAGE',cx,py+ch-16);
  py+=ch+12;
+ }
  // ---- BATTLEFIELD plate ----
  const mh=106;
  steelPlate(px,py,pw,mh);
@@ -2069,7 +1924,7 @@ function drawQuests(){
  g.fillText('QUESTS',cx,y);y+=34;
  drawPts(cx,y);y+=46;
  // ---- SQUAD / referral card ----
- loadLB();
+ loadSquad();
  {const sq=squad(),act=sq.filter(r=>refStatus(r)[0]==='ACTIVE').length,pend=refPending(),cw=vw-24,ch=118,x0=12;
   g.fillStyle='#16202b';rr(x0,y,cw,ch,12);g.fill();g.strokeStyle='#ffd24a';g.lineWidth=1.5;rr(x0,y,cw,ch,12);g.stroke();
   g.textAlign='left';g.fillStyle='#ffd24a';g.font=font(15);g.fillText('INVITE PILOTS',x0+14,y+12);
@@ -2184,7 +2039,7 @@ function captureRef(){   // the start_param of the link that opened the game
   save.refBy=rid;store();
  }catch(e){}
 }
-const squad=()=>(lbCache&&playerId)?lbCache.filter(p=>p.ref===playerId&&p.id!==playerId):[];
+const squad=()=>squadCache||[];
 const dayNow=()=>Math.floor((Date.now()+srvOff)/864e5);
 function refStatus(r){const ago=r.ld==null?99:dayNow()-r.ld;return ago<=1?['ACTIVE','#7be07b']:ago<=6?['IDLE '+ago+'D','#ffd24a']:['INACTIVE','#ff6b5e'];}
 function refOwed(r){   // milestones reached + 10% of what they've earned since you last claimed
@@ -2248,18 +2103,28 @@ function visitLinkQuest(id,link){
 }
 let rivals=null;
 const BRKC={BRONZE:'#b08d57',SILVER:'#c0c8d0',GOLD:'#ffd24a',PLATINUM:'#7be3e0',DIAMOND:'#c28bff'};
-let lbCache=null,lbCacheT=0,lbScope='overall',lbBracket='ALL';
+let lbCache=null,lbCacheT=0,lbScope='overall',lbBracket='ALL',lbMeta=null,lbBusy=false;
 function lbMetric(p){return lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):(p.pts||0);}
 function loadLB(){
- if(!db)return;
  const now=Date.now();
- if(lbCache&&now-lbCacheT<60000)return;   // refresh at most once a minute
- db.ref('players').once('value',snap=>{
-  const v=snap.val()||{};
-  const nowS=Date.now()+srvOff,dNow=Math.floor(nowS/864e5),wNow=Math.floor((nowS-4*864e5)/(7*864e5));
-  lbCache=Object.keys(v).filter(k=>k.indexOf('tg_')===0).map(k=>({id:k,n:v[k].name||'Pilot-????',pts:v[k].pts||0,dailyPts:v[k].d===dNow?(v[k].dailyPts||0):0,weeklyPts:v[k].w===wNow?(v[k].weeklyPts||0):0,bracket:v[k].bracket||'BRONZE',ref:v[k].ref||null,days:v[k].days||0,ld:v[k].ld??null}));
-  lbCacheT=Date.now();
- });
+ if(lbBusy||(lbCache&&now-lbCacheT<60000))return;   // refresh at most once a minute
+ lbBusy=true;
+ fetch(DB_PUBLIC+'/lb.json?t='+Math.floor(now/30000)).then(r=>r.json()).then(lb=>{
+  lbBusy=false;lbCacheT=Date.now();
+  if(!lb||!lb.top){lbCache=[];lbMeta=null;return;}
+  const m={};
+  for(const [id,n,pts,days,lg] of lb.top)m[id]={id,n,pts,days,bracket:lg||'',dailyPts:0,weeklyPts:0};
+  for(const [id,n,s2] of (lb.daily||[])){m[id]=m[id]||{id,n,pts:0,days:0,bracket:'',dailyPts:0,weeklyPts:0};m[id].dailyPts=s2;}
+  for(const [id,n,s2] of (lb.weekly||[])){m[id]=m[id]||{id,n,pts:0,days:0,bracket:'',dailyPts:0,weeklyPts:0};m[id].weeklyPts=s2;}
+  lbCache=Object.values(m);lbMeta={n:lb.n,cut:lb.cut,t:lb.t};
+ }).catch(()=>{lbBusy=false;lbCacheT=Date.now()-45000;});
+}
+// your recruits come from the server (only you can see them)
+let squadCache=null,squadT=0,squadBusy=false;
+function loadSquad(){
+ if(!IN_TG||squadBusy||(squadCache&&Date.now()-squadT<60000))return;
+ squadBusy=true;
+ api('/api/squad',{}).then(r=>{squadCache=r.squad||[];squadT=Date.now();squadBusy=false;}).catch(()=>{squadBusy=false;squadT=Date.now()-45000;});
 }
 function msToDailyReset(){const n=new Date();return Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+1)-n.getTime();}
 function msToWeeklyReset(){const n=new Date();const d=(n.getUTCDay()+6)%7;return Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+(6-d)+1)-n.getTime();}
@@ -2336,7 +2201,7 @@ function drawBoard(){
   g.fillStyle='#5c6b7d';g.font=font(13);g.textAlign='center';
   g.fillText('LOADING LEADERBOARD…',cx,y+20);
  }else{
-  let rows=lbCache.filter(p=>lbBracket==='ALL'||TIERS[tierOfPts(p.pts)]===lbBracket);
+  let rows=lbCache.filter(p=>(lbBracket==='ALL'||TIERS[tierOfPts(p.pts)]===lbBracket)&&(lbScope==='overall'||lbMetric(p)>0));
   rows.sort((a,b)=>lbMetric(b)-lbMetric(a)||(a.n<b.n?-1:1));
   const myRank=rows.findIndex(r=>r.id===playerId);
   g.font=font(12);g.textAlign='center';
@@ -2468,7 +2333,7 @@ function shopTap(x,y){
   const now=performance.now();
   if(now-devTapT>4000)devTapN=0;
   devTapT=now;devTapN++;
-  if(devTapN>=5){devTapN=0;devOpen=!devOpen;if(devOpen)getVisitors();}
+  if(devTapN>=5){devTapN=0;devOpen=!devOpen;if(devOpen){getVisitors();loadAdmin();}}
   return;
  }
  if(devOpen&&IS_DEV){
@@ -2485,7 +2350,7 @@ function shopTap(x,y){
   devOpen=false;return;
  }
  for(const c of (ui.curBtns||[]))
-  if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){save.payCur=c.id;store();fetchPrices();showToast(c.id==='sol'?'PAYING IN SOL':c.id==='stars'?'PAYING WITH TELEGRAM STARS':c.id==='pts'?'SPENDING POINTS':'PAYING IN TON');return;}
+  if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h){save.payCur=c.id;store();fetchPrices();if(c.id==='ton')initTonConnect();showToast(c.id==='sol'?'PAYING IN SOL':c.id==='stars'?'PAYING WITH TELEGRAM STARS':c.id==='pts'?'SPENDING POINTS':'PAYING IN TON');return;}
  const wb=ui.walletBtn;
  if(wb&&x>=wb.x&&x<=wb.x+wb.w&&y>=wb.y&&y<=wb.y+wb.h){
   if(save.payCur==='sol'){const i=SOL_ORDER.indexOf(save.solWallet||'phantom');save.solWallet=SOL_ORDER[(i+1)%SOL_ORDER.length];store();showToast('SOL WALLET: '+SOL_WALLETS[save.solWallet].n);return;}
@@ -2748,6 +2613,8 @@ function drawShop(){
  if(devOpen)drawDevPanel();
  drawTabs();drawToast();drawReveal();
 }
+let adminData=null;
+function loadAdmin(){if(!IN_TG)return;adminData={loading:true};api('/api/admin',{}).then(r=>{adminData=r;}).catch(e=>{adminData={error:String(e.message||e)};});}
 function drawDevPanel(){
  const w=Math.min(vw-40,340),h=Math.min(vh-40,420),x=vw/2-w/2,y=vh/2-h/2;
  g.fillStyle='rgba(4,8,12,.92)';g.fillRect(0,0,vw,vh);
@@ -2771,7 +2638,16 @@ function drawDevPanel(){
  g.fillStyle='#8fa3b8';g.font=font(11);
  g.fillText('Visits (this device): '+(visitorCount===null?'...':visitorCount),vw/2,ly);ly+=18;
  g.fillText('Streak: '+(save.streak||0)+'  ·  Moonbeam: '+(save.moonbeam?'YES':'no'),vw/2,ly);ly+=18;
- g.fillText('Skin: '+save.skin,vw/2,ly);ly+=26;
+ g.fillText('Skin: '+save.skin,vw/2,ly);ly+=22;
+ // live stats from the server (Jake only)
+ if(adminData){g.fillStyle='#ffd24a';g.font=font(12);
+  if(adminData.loading)g.fillText('Loading server stats...',vw/2,ly);
+  else if(adminData.error)g.fillText('Server stats: '+adminData.error,vw/2,ly);
+  else{const R=adminData.revenue||{};
+   g.fillText('Players '+fmtNum(adminData.players)+' · active today '+fmtNum(adminData.activeToday),vw/2,ly);ly+=17;
+   g.fillText('Revenue: '+R.STARS+' ⭐ · '+R.TON+' TON · '+R.SOL+' SOL · ~$'+fmtNum(R.USD),vw/2,ly);ly+=17;
+   g.fillStyle='#8fa3b8';g.font=font(10);g.fillText(R.count+' payments'+(R.unverified?' · '+R.unverified+' need checking':''),vw/2,ly);}
+  ly+=20;}
  // test grant buttons
  ui.devGrantChassis={x:x+20,y:y+h-116,w:w-40,h:36};
  g.fillStyle='#6e7490';rr(ui.devGrantChassis.x,ui.devGrantChassis.y,ui.devGrantChassis.w,ui.devGrantChassis.h,8);g.fill();
@@ -2833,9 +2709,12 @@ function drawTank(b,col){
  g.strokeStyle='#e9f1f7';g.lineWidth=Math.max(1,r*0.09);g.stroke();
  g.fillStyle=col;g.beginPath();g.moveTo(0.32*r,0);g.lineTo(0,0.26*r);g.lineTo(-0.32*r,0);g.lineTo(0,-0.26*r);g.closePath();g.fill();   // core crystal
  g.restore();
- const bw=2.6*r,bx=px-bw/2,by=py-2.1*r,f=b.sp/SUPER_MAX;   // super meter above the tank
- g.fillStyle='rgba(0,0,0,.6)';g.fillRect(bx-1.5,by-1.5,bw+3,0.36*r+3);
- g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffd24a';g.fillRect(bx,by,bw*f,0.36*r);
+ if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
+  const bw=2.6*r,bx=px-bw/2,by=py-2.25*r,hh=Math.max(4,0.36*r),sh=Math.max(2,0.16*r),hf=Math.max(0,b.hp/b.mhp),f=b.sp/SUPER_MAX;
+  g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
+  g.fillStyle=b.team===1?'#ff4d5e':b.isPlayer?'#5fe3a1':'#4d9fff';g.fillRect(bx,by,bw*hf,hh);
+  g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffd24a';g.fillRect(bx,by+hh+1,bw*f,sh);
+ }
 }
 // ---- info cards: every ? badge registers a tap target that opens a plain-language explanation ----
 let info=null;
@@ -2898,7 +2777,7 @@ function chassisInfo(){const C=getC(save.chassis);
  return {t:C.name,c:gcol(C),L:[(C.sal?'SALVAGED ':'')+TIER_N[Math.max(0,C.tier)]+' · ROLL '+pct(C.q),'',
   'HP: '+C.hp+'x max health','SPD: '+C.spd+'x driving speed','TRN: '+C.turn+' turning speed','',
   'BEATS '+COUNTER[C.cls].toUpperCase()+' · WEAK TO '+beatenBy(C.cls).toUpperCase(),
-  'Against the class you beat you deal +30% damage and take 20% less. The class that beats you gets the same edge on you.','',
+  'Against the class you beat you deal +15% damage and take 10% less. The class that beats you gets the same edge on you.','',
   'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.']};}
 function howToInfo(){return {t:'HOW TO PLAY',c:'#ff9d3c',L:[
  'DRIVE','Drag anywhere on the screen. Your cannon aims and fires by itself.',
@@ -2925,22 +2804,8 @@ function modeInfo(){const L=['Points per match (before your league multiplier):'
 function coresInfo(){return {t:'CORES',c:'#3fd0c9',L:['Cores are permanent boosts for your tank. You can socket 4 at a time in the Garage.','','Tap the ? on any core to see exactly what it does and its next level.','Level cores up with shards from GEM CACHES in the Shop.']};}
 function draw(){ui.qs=[];drawInner();if(info&&state!=='play')drawInfo();}
 function drawInner(){
- // toggle canvases - 3D DISABLED, using 2D (revert 2026-10-16)
- const in3d=false; // (state==='play');
- const c3=document.getElementById('c3d');
- c3.style.display=in3d?'block':'none';
- c3.style.zIndex='1';
- const c2=document.getElementById('c');
- c2.style.display='block';c2.style.position=in3d?'absolute':'static';c2.style.pointerEvents='auto';
- c2.style.zIndex=in3d?'2':'auto';
  g.setTransform(dpr,0,0,dpr,0,0);
- // in 3D battle mode, keep 2D canvas transparent so 3D shows through
- if(state!=='play'){
-  g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg')||'#0c1118';
-  g.fillRect(0,0,vw,vh);
- } else {
-  g.clearRect(0,0,vw,vh);
- }
+ if(state!=='play'){g.fillStyle='#0c1118';g.fillRect(0,0,vw,vh);}else g.clearRect(0,0,vw,vh);
  if(state==='garage'){drawGarage();return;}
  if(state==='arena'){drawLoadout();drawTabs();return;}
  if(state==='shop'){drawShop();return;}
@@ -2948,20 +2813,6 @@ function drawInner(){
  if(state==='ranks'){drawBoard();return;}
  if(state==='board'){drawBoard();return;}
  if(state==='matchmaking'){drawMatchmaking();return;}
- // 3D battle - DISABLED, using 2D
- if(false && state==='play'){
-  init3D();
-  update3D();
-  // HUD drawn on 2D canvas overlay (transparent, receives input)
-  const cv2=document.getElementById('c');
-  cv2.style.display='block';cv2.style.position='absolute';cv2.style.top='0';cv2.style.left='0';
-  cv2.style.pointerEvents='auto';
-  // draw HUD overlay in 2D
-  g.setTransform(dpr,0,0,dpr,0,0);
-  drawHUD3D();
-  drawToast();
-  return;
- }
  let shx=0,shy=0;
  if(shakeT>0){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
  g.save();g.translate(shx,shy);
@@ -2973,6 +2824,7 @@ function drawInner(){
  g.globalAlpha=1;
  // arena floor + grid (lunar surface)
  g.fillStyle=C.floor;g.fillRect(X(0),Y(0),W*sc,H*sc);
+ g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,H*sc);g.clip();
  // moon craters
  if(!window._craters){window._craters=[];for(let i=0;i<12;i++)window._craters.push({x:2+Math.random()*(W-4),y:2+Math.random()*(H-4),r:0.5+Math.random()*1.2});}
  for(const cr of window._craters){g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.arc(X(cr.x),Y(cr.y),cr.r*sc,0,7);g.fill();g.strokeStyle='rgba(255,255,255,.08)';g.lineWidth=1;g.beginPath();g.arc(X(cr.x),Y(cr.y),cr.r*sc,0,7);g.stroke();}
@@ -2993,6 +2845,7 @@ function drawInner(){
   g.fillStyle='rgba(0,0,0,.35)';g.fillRect(X(dx)+sc*0.35,Y(dy)+sc*0.5,dw*sc,dh*sc);
   for(const [tx,tw] of BR.tunnels)for(const my of [dy-0.7,dy+dh]){g.fillStyle='#07080c';g.fillRect(X(tx),Y(my),tw*sc,0.7*sc);g.strokeStyle='#8a92bd';g.lineWidth=2;g.strokeRect(X(tx),Y(my),tw*sc,0.7*sc);}
  }
+ g.restore();g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,H*sc);g.clip();
  g.strokeStyle=C.wallTop;g.lineWidth=3;g.strokeRect(X(0),Y(0),W*sc,H*sc);
  // range ring (yours)
  g.strokeStyle='rgba(77,159,255,.2)';g.lineWidth=1.5;g.setLineDash([6,6]);
@@ -3115,9 +2968,11 @@ function drawInner(){
   g.fillStyle=BUFF[b.k].c;g.fillRect(x,y,w,h);g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x,y+h-3,w*(1-b.taken/BUFF_LIFE),3);
   g.fillStyle='#10161d';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*0.55));g.fillText(BUFF[b.k].n,x+w/2,y+h/2-1);});g.textBaseline='top';};
  chips(me,X(0)+4,1);
- for(const q of pops){g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.8));g.fillText(q.txt,X(q.x),Y(q.y)-sc*(1.4-q.t)*1.2-sc);g.globalAlpha=1;}
+ const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return Math.max(X(0)+hw,Math.min(X(W)-hw,x));};   // keep labels on screen
+ for(const q of pops){g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.8));g.fillText(q.txt,lx(X(q.x),q.txt),Math.max(Y(0)+4,Y(q.y)-sc*(1.4-q.t)*1.2-sc));g.globalAlpha=1;}
  // damage numbers: shown on the robot that was hit, in the shooter's color
- for(const q of nums){g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.62*(q.z||1)));g.fillText(q.txt,X(q.x),Y(q.y)-sc*(0.9-q.t)*1.6);g.globalAlpha=1;}
+ for(const q of nums){if(!q.txt)continue;g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.62*(q.z||1)));g.fillText(q.txt,lx(X(q.x),q.txt),Math.max(Y(0)+4,Y(q.y)-sc*(0.9-q.t)*1.6));g.globalAlpha=1;}
+ g.restore();
  g.restore();
  // HUD: team health bars + survivors
  const hy=oy-HUD*sc+sc*0.5,bw=sc*7.4,bh=sc*0.8;
@@ -3139,8 +2994,11 @@ function drawInner(){
  bar(X(W)-bw,hy+sc*1.05,bw,bh,teamHpFrac(1),TC[1],true);
  }
  const tl=Math.max(0,Math.ceil(timeLeft)),mm=Math.floor(tl/60),ss=String(tl%60).padStart(2,'0');
- g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--fg')||'#fff';
+ g.fillStyle='#e6ebf0';
  g.textAlign='center';g.font=font(Math.round(sc*1.5));g.fillText(mm+':'+ss,X(W/2),hy-sc*0.1);
+ if(banner){g.globalAlpha=Math.min(1,banner.t*2);g.font=font(Math.round(sc*0.75));const bw2=g.measureText(banner.txt).width+24,bh2=sc*1.3,bx2=X(W/2)-bw2/2,by2=Y(0)+sc*(gzones?1.4:0.5);
+  g.fillStyle='rgba(8,12,18,.85)';rr(bx2,by2,bw2,bh2,bh2/2);g.fill();g.strokeStyle=banner.c;g.lineWidth=1.5;rr(bx2,by2,bw2,bh2,bh2/2);g.stroke();
+  g.fillStyle=banner.c;g.textAlign='center';g.textBaseline='middle';g.fillText(banner.txt,X(W/2),by2+bh2/2+1);g.textBaseline='top';g.globalAlpha=1;}
  // joystick
  if(joy.on){
   g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=2;g.beginPath();g.arc(joy.sx,joy.sy,55,0,7);g.stroke();
@@ -3168,6 +3026,7 @@ function drawOver(){
  let ph=28+38+24+52+12+52+12+40+32;
  if(showStreak)ph+=30;
  if(sb>0)ph+=26;
+ if(lastAwarded<lastPts)ph+=22;
  if(nq>0)ph+=30+nq*24;
  const py=Math.max(30,vh/2-ph/2);
  ui.overAgain=null;ui.overMenu=null;
@@ -3185,7 +3044,8 @@ function drawOver(){
   g.fillText(lastStreak+' WIN STREAK!',cx,y);y+=30;
  }
  g.fillStyle='#e6ebf0';g.font=font(18);
- g.fillText('+'+lastPts+' PTS',cx,y);y+=26;
+ g.fillText('+'+fmtNum(lastAwarded)+' PTS',cx,y);y+=26;
+ if(lastAwarded<lastPts){g.fillStyle='#ffd24a';g.font=font(12);g.fillText('DAILY CAP REACHED (20,000) · RESETS 00:00 UTC',cx,y);y+=22;}
  if(sb>0){
   g.fillStyle='#ff9d3c';g.font=font(13);
   g.fillText('INCLUDES +'+lastStreakBonusPts+' PTS STREAK BONUS',cx,y);y+=26;
@@ -3211,7 +3071,7 @@ function drawOver(){
 
 let last=performance.now();
 function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(loop);}
-initTonConnect();
+if(save.payCur==='ton')setTimeout(initTonConnect,2500);
 trackVisit();
 initBackend();
 // block iOS pull-to-refresh and swipe gestures
