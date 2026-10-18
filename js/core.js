@@ -270,7 +270,7 @@ function buyUp(k){
 
 // ---- milestone quests (one-time) + community links ----
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
-const X_URL='';   // X/Twitter profile: fill in when it exists
+const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile
 const TG_URL='';  // Telegram news channel: fill in when it exists
 const QUESTS=[
  {id:'q_win1',n:'First blood',d:'Win your first match',pts:50,goal:1},
