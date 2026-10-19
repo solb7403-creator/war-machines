@@ -116,7 +116,7 @@ async def main():
          if(cry){me.cry=CRY_GOAL;crystalTick(1/30);cry.cd.t=0.001;}else if(storm)units.slice(1).forEach(u=>u.hp=0);else timeLeft=0;if(gzones)gscore=[50,0];if(matchG==='bounty')gscore=[3,0];update(1/30);
          return {feat:lastResult.featured,x:lastResult.featX,base:lastResult.base,pts:lastResult.pts,lm:lastResult.leagueMult,sb:lastResult.streakBonus};}""",fm)
         print('featured',r)
-        check(r['feat']==True and r['x']==1.25 and r['pts']==round(r['base']*1.25*r['lm'])+r['sb'],'featured bonus wrong '+json.dumps(r))
+        check(r['feat']==True and r['x']==1.25 and r['pts']==int(r['base']*1.25*r['lm']+0.5)+r['sb'],'featured bonus wrong '+json.dumps(r))
         # crystal mechanics: carriers drop everything; countdown wins
         r=await pg.evaluate("""()=>{save.gtype='crystal';save.mode='2v2';save.map='classic';prepareMatch();startMatch();
          const u=units[1];u.cry=4;takeHit(u,1e6,units[2]);const dropped=cry.loose.length,cleared=u.cry;

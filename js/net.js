@@ -12,6 +12,7 @@ function api(path,body){
 function initBackend(){
  if(IN_TG)doSync(true);
  checkPendingPurchase();checkPendingSol();
+ if(SRV_ECO)setTimeout(payResumeQueue,4000);
  if(save.payCur==='ton')setTimeout(initTonConnect,2500);
 }
 // ask for a sync soon (batched: at most one request every ~8s)
@@ -25,23 +26,25 @@ async function doSync(boot){
  if(syncBusy){syncWant=true;return;}
  syncBusy=true;lastSyncAt=Date.now();
  captureRef();
- const pw=calcPower(),brk=powerBracket(pw),ack=starsAckQ.splice(0);
- let credited=1;
+ if(SRV_ECO)await flushMatches();   // results waiting for the server go first, so its record includes them
+ const ack=starsAckQ.splice(0);
+ const body={boot:!!boot,L:myLoadout(),refBy:save.refBy||'',starsAck:ack};
+ // one time, the first time this pilot meets the server that owns the economy: this device's progress moves over
+ // (the server checks it against payments and points on record, and flags what it can't explain)
+ if(SRV_ECO&&!save.migOk)body.mig=ecoCopy();
  try{
-  const r=await api('/api/sync',{earned:save.earned||0,boot:!!boot,power:pw,league:brk.key,wins:save.wins||0,losses:save.losses||0,mp:save.mp||0,refBy:save.refBy||'',starsAck:ack});
-  srvOff=r.now-Date.now();srv=r.rec;credited=r.credited;syncFails=0;lastCredit=r;
-  // the server is the floor: never show fewer points than the leaderboard has
-  if(srv.pts>(save.earned||0)){save.pts=(save.pts||0)+srv.pts-(save.earned||0);save.earned=srv.pts;store();}
+  const r=await api('/api/sync',body);
+  srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
+  if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
-  if(typeof uiDirty==='function')uiDirty();
+  store();
  }catch(e){starsAckQ.unshift(...ack);syncFails++;}
  syncBusy=false;
  if(syncWant){syncWant=false;syncPlayer();return;}
- const behind=srv&&(save.earned||0)>srv.pts&&srv.dailyPts<DAILY_CAP;
  if(syncFails&&syncFails<6)setTimeout(syncPlayer,10000*syncFails);
- else if(behind)setTimeout(syncPlayer,credited>0?0:30000);   // big claims bank in a few steps
 }
-// Stars purchases paid while the game was closed: deliver them now
+// Stars purchases paid while the game was closed. In Telegram the server already added them when Telegram confirmed
+// the payment (it.o: what each gave); outside the server economy the phone grants them itself
 function recoverStars(list){
  save.starsDone=save.starsDone||{};
  let n=0;
@@ -49,7 +52,8 @@ function recoverStars(list){
   if(!it.n)continue;
   if(!save.starsDone[it.n]){
    save.starsDone[it.n]=1;n++;
-   grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g,deal:it.x||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k});
+   if(SRV_ECO)showOuts(it.o||[]);
+   else grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g,deal:it.x||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k});
   }
   starsAckQ.push(it.n);
  }
@@ -90,7 +94,7 @@ function loadSquad(force){
  api('/api/squad',{}).then(r=>{squadCache=r.squad||[];squadT=Date.now();squadBusy=false;if(typeof uiDirty==='function')uiDirty('quests');}).catch(()=>{squadBusy=false;squadT=Date.now()-45000;});
 }
 let adminData=null;
-function loadAdmin(){if(!IN_TG){adminData={error:'Open the game in Telegram to see server stats'};return;}adminData={loading:true};api('/api/admin',{}).then(r=>{adminData=r;uiDirty('admin');}).catch(e=>{adminData={error:String(e.message||e)};uiDirty('admin');});}
+function loadAdmin(extra){if(!IN_TG){adminData={error:'Open the game in Telegram to see server stats'};return;}if(!adminData||adminData.error)adminData={loading:true};api('/api/admin',extra||{}).then(r=>{adminData=r;uiDirty('admin');}).catch(e=>{adminData={error:String(e.message||e)};uiDirty('admin');});}
 
 // ================= payments =================
 const TON_RECIPIENT='UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu';  // Jake's Tonkeeper - receives all TON payments
@@ -105,15 +109,30 @@ function descLabel(d){
  if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
  return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():'Purchase';
 }
-// record a confirmed payment locally and on the server (which re-checks it on-chain)
-function logPayment(rec){
+// record a confirmed payment locally and on the server (which re-checks it on-chain). In Telegram the server also
+// grants it: nothing is unlocked until the server has found the payment itself
+function logPayment(rec,desc){
  save.purchases=save.purchases||[];save.purchases.push(rec);
  if(rec.cur==='SOL')save.spendSol=Math.round(((save.spendSol||0)+rec.amt)*1e6)/1e6;
+ if(SRV_ECO&&desc){save.payQ=(save.payQ||[]).filter(p=>p.memo!==rec.memo).concat({rec,desc,t:Date.now()});}
  store();
  if(!IN_TG)return;
+ if(SRV_ECO&&desc){payGrant(rec.memo,0);return;}
  const send=(k)=>api('/api/pay-log',{cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||''}).catch(()=>{if(k<3)setTimeout(()=>send(k+1),20000*(k+1));});
  send(0);
 }
+// ask the server to verify a TON/SOL payment and grant it; chains can take a minute to show it, so this retries
+function payGrant(memo,k){
+ const p=(save.payQ||[]).find(x=>x.memo===memo||x.rec.memo===memo);if(!p)return;
+ const rec=p.rec,desc=p.desc;
+ api('/api/pay-log',{cur:rec.cur,amt:rec.amt,gram:rec.gram,usd:rec.usd||0,item:rec.what,memo:rec.memo,proof:rec.proof||'',desc}).then(r=>{
+  if(r&&r.E)applyEco(r.E);
+  if(r&&r.verified){save.payQ=(save.payQ||[]).filter(x=>x.rec.memo!==rec.memo);save.pendingTx=null;store();showOuts(r.out||[]);uiDirty('shop');return;}
+  if(r&&r.error&&r.error!=='pending'){save.payQ=(save.payQ||[]).filter(x=>x.rec.memo!==rec.memo);store();showToast('That payment couldn’t be matched. Message @LunarBattle with your Player ID.');return;}
+  if(k<8)setTimeout(()=>payGrant(memo,k+1),15000*(k+1));
+ }).catch(()=>{if(k<8)setTimeout(()=>payGrant(memo,k+1),15000*(k+1));});
+}
+function payResumeQueue(){for(const p of (save.payQ||[]))if(Date.now()-p.t<48*3600*1000)payGrant(p.rec.memo,3);}
 // TON text comment as a one-cell BOC (opcode 0 + UTF-8 text), base64 for TON Connect payload
 function tonCommentPayload(txt){
  const tb=Array.from(new TextEncoder().encode(txt)).slice(0,120),n=4+tb.length;
@@ -153,13 +172,22 @@ async function payWithStars(ton,desc){
    if(status==='paid'){
     save.purchases=save.purchases||[];save.purchases.push({cur:'STARS',amt:d.stars,gram:ton,what:descLabel(desc),memo:'STARS|'+d.nonce,ts:Date.now()});
     save.spendStars=(save.spendStars||0)+d.stars;save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();
-    grantPurchase(desc);syncPlayer();
+    if(SRV_ECO)starsDeliver(d.nonce,0);   // the server adds it once Telegram confirms the payment
+    else{grantPurchase(desc);syncPlayer();}
    }else if(status==='cancelled')showToast('Payment cancelled');
    else if(status==='failed')showToast('Stars payment failed. Nothing was charged.');
   });
  }catch(e){starsBusy=false;
+  if(e&&e.message==='owned'){showToast('You already have this');return;}
   if(e&&e.message==='deal_used'){markDeal(desc.deal);store();if(typeof uiDirty==='function')uiDirty();showToast('You already used this deal. Check the new price.');return;}   // used on another device
   showToast('Stars checkout is unavailable right now. Try again in a minute.');}
+}
+// a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)
+function starsDeliver(nonce,k){
+ api('/api/act',{a:'paid',n:nonce}).then(r=>{
+  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);showOuts(r.out.outs);return;}
+  if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Payment received. Your item arrives in a moment.');
+ }).catch(()=>{if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),2500);});
 }
 // ---- SOL: Solana Pay reference key lets us find exactly this payment on-chain ----
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -227,8 +255,8 @@ function watchSol(ms){
   const p=save.pendingSol;if(!p){solWatch=null;return;}
   try{const sig=await findSolPayment(p);
    if(sig&&save.pendingSol){save.pendingSol=null;
-    logPayment({cur:'SOL',amt:p.sol,gram:p.gram,usd:p.usd,what:descLabel(p.desc),memo:p.memo,proof:sig,ts:Date.now()});
-    grantPurchase(p.desc);solWatch=null;uiDirty('shop');return;}
+    logPayment({cur:'SOL',amt:p.sol,gram:p.gram,usd:p.usd,what:descLabel(p.desc),memo:p.memo,proof:sig,ts:Date.now()},p.desc);
+    if(!SRV_ECO)grantPurchase(p.desc);solWatch=null;uiDirty('shop');return;}
   }catch(e){}
   if(Date.now()-t0>ms){solWatch=null;return;}
   solWatch=setTimeout(tick,2500);
@@ -288,7 +316,7 @@ function checkPendingPurchase(){
  if(!p||!p.desc)return;
  if(Date.now()-p.since>2*3600*1000){save.pendingTx=null;store();return;}
  verifyPurchaseOnChain(p.amount,p.since,60000,()=>false,p.memo).then(ok=>{
-  if(ok&&save.pendingTx){logPayment({cur:'TON',amt:p.amount,gram:p.amount,what:descLabel(p.desc),memo:p.memo||'',proof:typeof ok==='string'?ok:'',ts:Date.now()});grantPurchase(p.desc);}
+  if(ok&&save.pendingTx){logPayment({cur:'TON',amt:p.amount,gram:p.amount,what:descLabel(p.desc),memo:p.memo||'',proof:typeof ok==='string'?ok:'',ts:Date.now()},p.desc);if(!SRV_ECO)grantPurchase(p.desc);}
  });
 }
 async function payWithTon(amount,desc){
@@ -297,8 +325,8 @@ async function payWithTon(amount,desc){
  const sinceTs=Date.now(),memo=newMemo();
  let granted=false;
  const grant=(proof)=>{if(granted)return;granted=true;
-  logPayment({cur:'TON',amt:amount,gram:amount,usd:px.ton?Math.round(amount*px.ton*100)/100:0,what:descLabel(desc),memo,proof:proof||'',ts:Date.now()});
-  grantPurchase(desc);};
+  logPayment({cur:'TON',amt:amount,gram:amount,usd:px.ton?Math.round(amount*px.ton*100)/100:0,what:descLabel(desc),memo,proof:proof||'',ts:Date.now()},desc);
+  if(!SRV_ECO)grantPurchase(desc);};
  // persist so a closed/killed page can still complete the purchase on next launch
  if(desc){save.pendingTx={desc:desc,amount,since:sinceTs,memo};store();}
  verifyPurchaseOnChain(amount,sinceTs,180000,()=>granted,memo).then(ok=>{
@@ -309,11 +337,12 @@ async function payWithTon(amount,desc){
  try{
   const tx=pl=>tonConnectUI.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,
    messages:[Object.assign({address:TON_RECIPIENT,amount:Math.round(amount*1e9).toString()},pl?{payload:pl}:{})]});
+  // the order note (memo) is how the server finds this payment, so a wallet that won't attach it can't be used
   let res;
   try{res=await tx(tonCommentPayload(memo));}
   catch(e1){
    if(e1&&e1.message&&/cancel|reject|declin/i.test(e1.message))throw e1;
-   res=await tx(null); // wallet refused the comment: pay without it (still logged with the memo here)
+   save.pendingTx=null;store();granted=true;showToast('This wallet can’t attach the order note. Try another wallet, or pay with Stars.');return;
   }
   grant(res&&res.boc?'boc':'');
  }catch(e){

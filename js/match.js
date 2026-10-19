@@ -31,6 +31,7 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
   for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6,me,names.pop()));   // the enemy team
  }
  state='vs';
+ matchStart();
 }
 function newMatch(){prepareMatch();startMatch();}   // tests and quick restarts
 // switch chassis on the VS screen or between rounds (counter-pick): the best owned version of that class
@@ -57,37 +58,76 @@ function roundBanner(){
 }
 
 // ---- scoring an AI match (live matches are scored by the server: pvp.js) ----
+// In Telegram the server scores AI matches too: the VS screen asks it for a ticket (mode, map, start time), and the
+// result goes back with that ticket. The server works out the points itself from the shared rules (it never takes a
+// number from the phone), so the phone shows the same formula right away and swaps in the server's numbers when they land.
+let mTicket=null;
+function matchStart(){
+ mTicket=null;if(!SRV_ECO)return;
+ const T={tok:null,g:matchG,m:modeKey()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout()};
+ T.p=flushMatches().then(()=>api('/api/match/start',body)).then(r=>{if(r&&r.tok)T.tok=r.tok;return r;}).catch(()=>null);
+ mTicket=T;
+}
+// results waiting for the server (no connection when the match ended): sent in order, each ticket counts once
+let mqBusy=null;
+function flushMatches(){
+ if(!SRV_ECO||!save.mq||!save.mq.length)return Promise.resolve();
+ if(mqBusy)return mqBusy;
+ mqBusy=(async()=>{
+  while(save.mq&&save.mq.length){
+   const it=save.mq[0];let r;
+   try{r=await api('/api/match/end',{tok:it.tok,r:it.r});}catch(e){break;}   // offline: try again later
+   save.mq.shift();store();
+   if(r&&r.E&&!(save.mq&&save.mq.length))applyEco(r.E);
+   matchScored(it.tok,r);
+  }
+  mqBusy=null;
+  if(save.mq&&save.mq.length)setTimeout(()=>flushMatches(),30000);
+ })();
+ return mqBusy;
+}
+const MATCH_WHY={fast:'the match ended too fast',expired:'the match ticket expired',ticket:'the match ticket was already used',hourly:'too many matches this hour',offline:'no connection at the start'};
+function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
+ const L=lastResult;if(!L||L.tok!==tok)return;
+ if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
+ else{Object.assign(L,{awarded:0,capped:false,note:'Not counted: '+(MATCH_WHY[r&&r.error]||'the server said no')});}
+ if(typeof uiDirty==='function')uiDirty();
+ const ov=typeof findOv==='function'&&findOv('res');if(ov&&ov.box&&typeof resultsHTML==='function'){ov.box.innerHTML=resultsHTML(L);}
+}
+function matchEnd(res){
+ const T=mTicket;mTicket=null;
+ if(!SRV_ECO)return;
+ if(!T){if(!res.quit&&lastResult)matchScored(lastResult.tok,{error:'offline'});return;}
+ const tok='p'+Math.random().toString(36).slice(2);if(lastResult&&!res.quit)lastResult.tok=tok;
+ T.p.then(()=>{
+  if(!T.tok){if(lastResult&&lastResult.tok===tok)matchScored(tok,{error:'offline'});applyEcoSoon();return;}
+  if(lastResult&&lastResult.tok===tok)lastResult.tok=T.tok;
+  save.mq=(save.mq||[]).concat({tok:T.tok,r:res});store();
+  flushMatches();
+ });
+}
+function applyEcoSoon(){if(typeof doSync==='function')setTimeout(()=>doSync(false),300);}   // a result the server won't count: get its record back
 function localEnd(forced){
  const o=outcome(me,forced),{won,drawn,place,score}=o;
- const mk=modeKey(),M=MODES[mk],feat=matchG===featuredMode(),top3=!!storm&&place<=3;
- if(won)save.streak=(save.streak||0)+1;else if(!drawn&&!top3)save.streak=0;   // Last Standing: 2nd and 3rd keep your streak
- const streak=save.streak||0,sb=won?Math.min(streak,5)*20:0;
- const brk=powerBracket(calcPower()),zx=storm?1:matchG==='arena'?(series?SERIES_X:1):GTYPES[matchG].x[mk],fxm=feat?FEATURED_X:1;
- const base=Math.round(storm?ROYALE_PTS[place-1]:(won?M.win:drawn?M.draw:M.loss)*zx);
- const pts=Math.round(base*fxm*brk.mult)+sb;
+ const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=powerBracket(calcPower());
+ const mo={won,drawn,place,top3,g:matchG,m:mk,feat,series:!!series,quick:!!lastQuick,map:curMap};
  const before=save.earned||0;
- const awarded=awardPts(pts)||0;
- afterMatch({won,drawn,place,score,mode:mk,feat,top3,base,modeX:zx,featX:fxm,league:brk,streak,streakBonus:sb,pts,awarded,before,st:mstat});
+ const r=ecoMatchPts(save,mo,brk.mult,ecoX());   // the same rules the server scores with
+ if(!SRV_ECO&&r.pts>0&&!r.awarded)showToast('Daily point cap reached. It resets at 00:00 UTC.');
+ afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
+ const st=mstat||{};
+ matchEnd({won,drawn,place,seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
+ if(!SRV_ECO&&typeof syncPlayer==='function')syncPlayer();
 }
 // everything after the points: wins and losses, pass XP, quests, the results screen. Shared with live matches
 function afterMatch(o){
- const {won,drawn,top3,feat}=o,st=o.st||{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0,low:0},M=MODES[o.mode]||MODES['1v1'];
- const low=typeof st.low==='number'?st.low:0,clean=won&&low>0,sw=o.seriesW||(series&&series.w);   // low: your lowest health all match (0 = destroyed at least once)
+ const {won,drawn,top3,feat}=o,st=o.st||{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0,low:0};
+ const sw=o.seriesW||(series&&series.w);
  endAt=performance.now();
- if(won)save.wins=(save.wins||0)+1;else if(!drawn&&!top3)save.losses=(save.losses||0)+1;
- save.mp=(save.mp||0)+1;
- passXP((won?PASS_XP_WIN:drawn||top3?PASS_XP_DRAW:PASS_XP_LOSS)+(feat?PASS_XP_FEAT:0));
- // milestone + daily quest progress
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
- qp('q_win1',won?1:0);qp('q_win3',won?1:0);
- qp('q_dmg',st.dmg,true);qp('q_super',st.sup,true);qp('q_box',st.box,true);
- if(won&&low>=0.2)qp('q_clean',1);   // never below 20% health
  const dqBefore=dailyQuests().filter(q=>q.done).map(q=>q.id),wqBefore=weeklyQuests().filter(q=>q.done).map(q=>q.id);
- const W=g=>won&&matchG===g?1:0;
- dqProgress({wins:won?1:0,plays:1,dmg:Math.round(st.dmg),boxes:st.box,sups:st.sup,kills:st.kills,zoneWins:W('zone'),teamWins:won&&M.n>1&&!storm?1:0,caps:st.caps,
-  crystals:st.cry,stars:st.stars,top3:top3?1:0,featured:feat?1:0,featWins:won&&feat?1:0,quick:typeof lastQuick!=='undefined'&&lastQuick?1:0,
-  cleanWins:clean?1:0,streak:won?(save.streak||0):0,ovpWins:won&&curMap==='overpass'?1:0,sweeps:won&&sw&&sw[0]>=2&&sw[1]===0?1:0,
-  royaleWins:W('royale'),bountyWins:W('bounty'),crystalWins:W('crystal'),day:dayNum(),winMode:won?matchG:null});
+ // the shared rules (rules.js). In Telegram the server does the same with its own copy, and its record replaces this one
+ ecoAfterMatch(save,{won,drawn,top3,feat,quick:o.quick!==undefined?o.quick:(typeof lastQuick!=='undefined'&&lastQuick),g:matchG,m:o.mode,map:curMap,streak:o.streak!==undefined?o.streak:save.streak,seriesW:sw,st},ecoX());
  const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id)).concat(weeklyQuests().filter(q=>q.done&&!wqBefore.includes(q.id)));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
  lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,

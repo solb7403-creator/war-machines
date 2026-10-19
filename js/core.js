@@ -65,8 +65,8 @@ function msToWeeklyReset(){const n=new Date();const d=(n.getUTCDay()+6)%7;return
 function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d>0?d+'d '+h+'h':h+'h '+m+'m';}
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 
-// ---- combat rules, gear math and paints live in rules.js (shared with the PvP server) ----
-const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a gem from level L to L+1
+// ---- combat rules, gear math, paints and the whole economy (points, quests, crates, pass, squad) live in rules.js:
+// shared with the server, which runs them for every pilot in Telegram ----
 const gemMult=k=>gemLvMult(save.gemLvl&&save.gemLvl[k]);
 const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(Math.round(v*1000)/10))+'%';
 const SUPER_DESC={pulse:'Pierce Lance: a rail beam that goes through cover and hits every enemy in a line.',
@@ -75,35 +75,20 @@ const SUPER_DESC={pulse:'Pierce Lance: a rail beam that goes through cover and h
  moon:'Moonfall: a massive lunar beam, the strongest super in the game.'};
 const TIER_N=['Common','Rare','Epic'];
 const RCOL=['#9fb3c8','#b78bff','#ffcf4a'];
-const TIERS=['Bronze','Silver','Gold','Platinum','Diamond'],TPTS=[0,10000,50000,150000,400000],TDAILY=[25,50,100,200,400];
 const TIERC=['#c08a54','#c3ccd6','#ffcf4a','#7be3e0','#c79bff'];
 // 9 weapons + 9 chassis: each line has one named item per rarity, each drops only from its own rarity's crate
 const WNAMES={pulse:['Pulse Cannon','Arc Pulse','Nova Pulse'],twin:['Twin Repeater','Storm Repeater','Helix Repeater'],siege:['Siege Breaker','Rail Breaker','Titanfall']};
 const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
-const ownW=(k,t)=>!!(save.wOwn&&save.wOwn[k]&&save.wOwn[k].indexOf(t)>=0);
-const ownC=(k,t)=>!!(save.cOwn&&save.cOwn[k]&&save.cOwn[k].indexOf(t)>=0);
+const ownW=(k,t)=>hasW(save,k,t);
+const ownC=(k,t)=>hasC(save,k,t);
 // Power ladder (stat multiplier vs stock gear). Every crate item beats every salvaged item:
 //   stock starter gear 1.00 | Salvaged Rare 1.010-1.030 | Salvaged Epic 1.031-1.044
 //   Common crate 1.050-1.100 | Rare crate 1.155-1.210 | Epic crate 1.386-1.452
-// Crate items roll 105-110% of their rarity; salvage stores its own multiplier.
-const SALV_COL='#c48a5c',SALV_PTS=[0,10000,20000];
-const rollOf=(k,t)=>(save.roll&&save.roll[k+':'+t])||1;
-const salvOf=(k,t)=>{const v=save.salv&&save.salv[k+':'+t];return v?(v<1?SALV_MIN[t]||1.01:v):0;};   // old saves stored a fraction
-const gearMult=(k,tc,sal)=>sal?salvOf(k,tc):TIER_MULT[tc]*rollOf(k,tc);
-// Tune-up: pay points to re-roll an owned crate item (105-110%), you keep the better roll
-const TUNE_PTS=[3000,10000,30000];
+const SALV_COL='#c48a5c';
+const rollOf=(k,t)=>rollIn(save,k,t);
+const salvOf=(k,t)=>salvIn(save,k,t);
+const gearMult=(k,tc,sal)=>gearMultIn(save,k,tc,sal);
 const canTune=(isW,k,t)=>(isW?ownW(k,t):ownC(k,t))&&!!(save.roll&&save.roll[k+':'+t]);   // crate items only: starter gear has no roll to tune
-function tuneItem(isW,k,t){
- if(!canTune(isW,k,t)){showToast('Only crate gear can be tuned');return null;}
- const old=rollOf(k,t),c=TUNE_PTS[t];
- if(old>=ROLL_MAX-0.0001){showToast('Already at the best roll (110%)');return null;}
- if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
- save.pts-=c;save.ptsSpent=(save.ptsSpent||0)+c;save.roll=save.roll||{};
- const roll=Math.round((ROLL_MIN+Math.random()*(ROLL_MAX-ROLL_MIN))*100)/100,better=roll>old;
- if(better){save.roll[k+':'+t]=roll;equipBest(isW,k);}
- store();if(typeof fx==='function')fx(better?'claim':'tap');
- return {better,old,roll};
-}
 function getW(arch,tt,sal){
  if(arch==='moon')return Object.assign(weaponOf('moon'),{id:'moon',name:WEAPONS.moon.n});
  if(sal===undefined)sal=tt===undefined&&!!(save.wSal&&save.wSal[arch]);
@@ -117,30 +102,29 @@ function getC(cls,tt,sal){
 }
 // after any new gear, equip the strongest version of that line (paid or salvaged)
 function equipBest(isW,k){
- const own=(isW?save.wOwn:save.cOwn)[k]||[];let best=null;
- own.forEach(t=>{const m=gearMult(k,t,false);if(!best||m>best.m)best={t,s:false,m};});
- [1,2].forEach(t=>{if(salvOf(k,t)){const m=gearMult(k,t,true);if(!best||m>best.m)best={t,s:true,m};}});
- if(!best)return;
- if(isW){save.wTier[k]=best.t;save.wSal=save.wSal||{};save.wSal[k]=best.s;}
- else{save.cTier[k]=best.t;save.cSal=save.cSal||{};save.cSal[k]=best.s;}
+ const b=bestOf(save,isW,k);if(!b)return;
+ if(isW){save.wTier[k]=b.t;save.wSal=save.wSal||{};save.wSal[k]=b.s;}
+ else{save.cTier[k]=b.t;save.cSal=save.cSal||{};save.cSal[k]=b.s;}
+}
+// what's equipped must be something you own (the server's record can take things away: a refund, or gear it never saw)
+function fixEquip(){
+ save.wTier=save.wTier||{};save.cTier=save.cTier||{};save.wSal=save.wSal||{};save.cSal=save.cSal||{};
+ for(const [isW,keys,T,Sl] of [[true,WORDER,save.wTier,save.wSal],[false,CHORDER,save.cTier,save.cSal]])
+  for(const k of keys){const t=T[k],s=!!Sl[k],ok=t>=0&&(s?salvOf(k,t)>0:(isW?ownW(k,t):ownC(k,t)));
+   if(!ok){const b=bestOf(save,isW,k);T[k]=b?b.t:-1;Sl[k]=b?b.s:false;}}
+ if(save.weapon==='moon'?!save.moonbeam:!WEAPONS[save.weapon]||save.wTier[save.weapon]<0)save.weapon='pulse';
+ if(!CH[save.chassis]||save.cTier[save.chassis]<0)save.chassis='vanguard';
+ if(!save.paints||!save.paints[save.paint])save.paint='stock';
 }
 const tierCol=t=>t<0?'#8a97ab':RCOL[t];
 const tierName=t=>t<0?'Stock':TIER_N[t];
 const gcol=it=>it.premium?'#e8f4ff':it.sal?SALV_COL:tierCol(it.tier);
 const gbadge=it=>it.premium?'Legendary':it.sal?'Salvaged':tierName(it.tier);
 const ownedChassisClasses=()=>CHORDER.filter(c=>(save.cOwn[c]||[]).length||salvOf(c,1)||salvOf(c,2));
-function rollItem(cat,ri){
- const isW=cat==='w',keys=isW?WORDER:CHORDER;
- const cands=keys.filter(k=>!(isW?ownW(k,ri):ownC(k,ri)));
- if(!cands.length)return null;
- return {isW,k:cands[(Math.random()*cands.length)|0],tier:ri};
-}
 // ---- tiers (lifetime points) and leagues (gear power) ----
-const tierOfPts=p=>{let t=0;for(let i=0;i<TPTS.length;i++)if((p||0)>=TPTS[i])t=i;return t;};
 const tierIdx=()=>tierOfPts(save.earned||0);
-const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:30,d:'+8% health, +8% damage'}};
-const MOONBEAM_PRICE=50;
-// everything that sets your tank's stats, in the form the PvP server checks (see rules.js)
+const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:SKIN_PRICE,d:'+8% health, +8% damage'}};
+// everything that sets your tank's stats, in the form the server checks (see ecoLoadout in rules.js)
 function myLoadout(){
  const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
  return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
@@ -163,57 +147,115 @@ function loadSave(obj){
   gemLvl:{dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1},gemShards:{dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0},
   wTier:{pulse:0,twin:-1,siege:-1},cTier:{scout:-1,vanguard:0,titan:-1},wOwn:{pulse:[0],twin:[],siege:[]},cOwn:{scout:[],vanguard:[0],titan:[]},fresh:true};
  if(typeof save.earned!=='number'){let sp=0;for(const k in (save.up||{}))for(let i=0;i<save.up[k];i++)sp+=(UPS[k]?UPS[k].costs[i]:0);save.earned=(save.pts||0)+sp;}
- if(!save.up)save.up={hull:0,cannon:0,engine:0,target:0,reactor:0};
- if(!save.q)save.q={};
- if(!save.gemLvl)save.gemLvl={dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1};
- if(!save.gemShards)save.gemShards={dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0};
  if(save.streak===undefined)save.streak=0;
  if(!save.cores)save.cores=['dmg','rof','arm'];
  {const seen={};save.cores=save.cores.slice(0,3).map(k=>{if(!k||!GEM[k]||seen[k])return null;seen[k]=1;return k;});while(save.cores.length<3)save.cores.push(null);}   // one of each core type
- if(!save.wTier||!save.wOwn){save.wTier={pulse:0,twin:-1,siege:-1};save.cTier={scout:-1,vanguard:0,titan:-1};save.wOwn={pulse:[0],twin:[],siege:[]};save.cOwn={scout:[],vanguard:[0],titan:[]};}
+ if(!save.wTier)save.wTier={pulse:0,twin:-1,siege:-1};if(!save.cTier)save.cTier={scout:-1,vanguard:0,titan:-1};
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
- if(!save.skin)save.skin='default';
- if(save.moonbeam===undefined)save.moonbeam=false;
- if(save.spendGram===undefined)save.spendGram=0;
- if(!save.payCur||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
+ if(save.payCur===undefined||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
  if(save.sound===undefined)save.sound=true;
  if(save.haptics===undefined)save.haptics=true;
  if(save.mp===undefined)save.mp=(save.wins||0)+(save.losses||0);
  if(!save.mode)save.mode='1v1';if(!save.gtype)save.gtype='arena';if(!save.map)save.map='classic';
- if(!save.paints)save.paints={stock:1};if(!save.paint||!save.paints[save.paint])save.paint='stock';
+ ecoNorm(save);
+ if(!save.paint||!save.paints[save.paint])save.paint='stock';
 }
 function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudSave();if(typeof uiDirty==='function')uiDirty();}
 
-// ---- points: every award flows through here so daily/weekly boards and the server stay in step ----
+// ---- the economy: who runs it ----
+// In Telegram the server owns points and gear: every change below is a server call, and the phone copies the server's
+// record from each reply (applyEco). Outside Telegram (or with LUNAR_LOCAL_ECO, used by the older tests) the phone runs
+// the same rules from rules.js on its own save, instantly.
+const SRV_ECO=IN_TG&&!window.LUNAR_LOCAL_ECO;
 function dayId(d){return d.toISOString().slice(0,10);}
 const dayNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0))/864e5);
 const weekNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0)-4*864e5)/(7*864e5));
-function rollPeriods(){
- const d=dayNum(),w=weekNum();
- if(save.dailyDay!==d){save.dailyDay=d;save.dailyPts=0;}
- if(save.weeklyNum!==w){save.weeklyNum=w;save.weeklyPts=0;}
+const playerKey=()=>IN_TG?'tg_'+TG_USER.id:'local';
+const ecoX=()=>({day:dayNum(),week:weekNum(),rnd:Math.random,pk:playerKey()});
+const when=(v,f)=>v&&typeof v.then==='function'?v.then(f):f(v);   // a result now (local) or later (server)
+function rollPeriods(){ecoRoll(save,ecoX());}
+let ecoBusy=0;
+// the server's copy of your points, gear and quests replaces this device's
+function applyEco(E){
+ if(!E||typeof E!=='object')return;
+ if(SRV_ECO&&!save.migOk)return;   // this device's progress hasn't moved to the server yet: keep it until it has (doSync)
+ const S=ecoNorm(JSON.parse(JSON.stringify(E)));
+ for(const k of ECO_KEYS)if(S[k]!==undefined)save[k]=S[k];
+ fixEquip();store();
 }
-const DAILY_CAP=20000;
+const ecoCopy=()=>{const o={};for(const k of ECO_KEYS)if(save[k]!==undefined)o[k]=save[k];return JSON.parse(JSON.stringify(o));};
+// one economy action. local(S, X) runs it on this save; in Telegram the server runs the same thing as action a
+function ecoRun(a,args,local){
+ if(!SRV_ECO){const r=local(save,ecoX());store();return r;}
+ if(!save.migOk)return waitMig().then(ok=>ok?ecoRun(a,args,local):{err:'offline'});   // first launch: the server takes this device's progress first
+ if(ecoBusy)return Promise.resolve({err:'busy'});
+ ecoBusy++;
+ return api('/api/act',Object.assign({a},args||{})).then(r=>{ecoBusy--;if(r&&r.E)applyEco(r.E);return (r&&r.out)||{err:(r&&r.error)||'server'};},
+  e=>{ecoBusy--;return {err:'offline'};});
+}
+function waitMig(){
+ return new Promise(res=>{let n=0;const t=()=>{if(save.migOk)return res(true);if(++n>30)return res(false);if(n%10===1&&typeof doSync==='function')doSync(false);setTimeout(t,200);};t();});
+}
+function ecoErr(r){   // a toast for an action that didn't go through
+ if(!r||!r.err)return false;
+ const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'Epic crates are paid only',
+  offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
+ if(m&&typeof showToast==='function')showToast(r.err==='max'&&r.k?'Already at max level':m);
+ return true;
+}
+// points (local play only: in Telegram the server awards every point)
 function awardPts(n){
- if(!n||n<=0)return 0;
- rollPeriods();
- n=Math.min(Math.round(n),Math.max(0,DAILY_CAP-(save.dailyPts||0)));
- if(n<=0){showToast('Daily point cap reached. It resets at 00:00 UTC.');return 0;}
- save.pts=(save.pts||0)+n;
- save.earned=(save.earned||0)+n;
- save.dailyPts=(save.dailyPts||0)+n;
- save.weeklyPts=(save.weeklyPts||0)+n;
+ if(SRV_ECO)return 0;
+ const a=ecoAward(save,n,ecoX());
+ if(n>0&&!a&&typeof showToast==='function')showToast('Daily point cap reached. It resets at 00:00 UTC.');
  store();if(typeof syncPlayer==='function')syncPlayer();
- return n;
+ return a;
 }
-// points the server already credited (live matches): bank them here too, so the next sync has nothing left to claim
+// points the server already credited (live matches): show them now; the server's record follows
 function bankPts(n){
  if(!n||n<=0)return 0;
  rollPeriods();n=Math.round(n);
  save.pts=(save.pts||0)+n;save.earned=(save.earned||0)+n;save.dailyPts=(save.dailyPts||0)+n;save.weeklyPts=(save.weeklyPts||0)+n;
  store();if(typeof syncPlayer==='function')syncPlayer();
  return n;
+}
+// what a crate, purchase or reward gave, in words for the reveal card (raw: from rules.js ecoOpenBox / ecoGrant / ecoSalvage)
+function revealOf(r){
+ if(!r)return null;
+ if(r.gem){const G=GEM[r.gem],lv=r.lv;return {tk:r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards'),
+  sub:r.up>0?G.name+' core reached level '+lv+'!':G.name+' core: level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:save.gemShards[r.gem])+'/'+SHARD_NEED[lv]+' shards to next)':' (max)')};}
+ if(r.tk==='paint'){const P=PAINTS[r.id]||PAINTS.stock;return r.id==='founder'?{tk:'paint',rar:2,color:P.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'}:
+  {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
+ if(r.tk==='moonbeam')return {tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'};
+ if(r.tk==='skin')return {tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:'+8% health and +8% damage, applied.'};
+ if(r.tk==='pass')return {tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'};
+ const isW=r.isW,k=r.k,t=r.tier;if(!k)return null;
+ const pw=v=>(Math.round(v*1000)/10)+'%';
+ if(r.sal){const nm='Salvaged '+(isW?WNAMES[k][t]:CNAMES[k][t]),item={isW,k,tier:t,sal:true};
+  return r.better?{tk:r.tk,ri:r.ri,rar:t,color:SALV_COL,item,title:nm,sub:(r.old?pw(r.old)+' → ':'')+pw(r.q)+' power. Crate gear starts at 105%.'}:
+   {tk:r.tk,ri:r.ri,rar:t,color:SALV_COL,item,title:'Rolled '+pw(r.q),sub:'You kept your '+pw(r.old)+' '+nm};}
+ const nm=isW?WNAMES[k][t]:CNAMES[k][t],item={isW,k,tier:t};
+ if(r.kind==='new'){const w0=getW(k,t,false),c0=getC(k,t,false);
+  return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,title:'New '+TIER_N[t]+': '+nm,sub:'Roll '+pct(r.roll)+(isW?', '+w0.dps+' damage per second':', '+c0.hp+'× health, '+c0.spd+'× speed')};}
+ if(r.kind==='up')return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,title:'Roll upgraded!',sub:nm+': '+pct(r.old)+' → '+pct(r.roll)};
+ return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,title:'Rolled '+pct(r.roll),sub:'You kept your '+pct(r.old)+' '+nm+' and got +'+(r.pts||0)+' points'};
+}
+// after new gear or a purchase: equip it (the reveal says "Equipped")
+function afterGain(r){
+ if(!r)return;
+ if(r.k&&(r.kind==='new'||r.kind==='up'||(r.sal&&r.better)))equipBest(r.isW,r.k);
+ if(r.tk==='moonbeam')save.weapon='moon';
+ if(r.tk==='paint'&&r.id)save.paint=r.id;
+ if(r.box)afterGain(r.box);
+}
+// what a server-verified purchase gave: equip it and show it
+function showOuts(outs){
+ const list=(outs||[]).filter(Boolean);
+ list.forEach(afterGain);fixEquip();store();
+ if(typeof fx==='function')fx('buy');
+ const rv=list.map(revealOf).filter(Boolean);
+ if(rv.length&&typeof showReveal==='function')showReveal(rv);
 }
 // put core k in socket i; if it's already in another socket, the two swap (each core type fits once)
 function socketCore(i,k){
@@ -223,199 +265,67 @@ function socketCore(i,k){
  if(j>=0)c[j]=c[i];c[i]=k;store();
 }
 function buyUp(k){
- const lvl=save.up[k];
- if(lvl>=4){showToast('Already at max level');return false;}
- const cost=UPS[k].costs[lvl];
- if(save.pts<cost){showToast('Not enough points yet. Win matches to earn more.');return false;}
- save.pts-=cost;save.up[k]++;store();fx('buy');showToast(UPS[k].n+' upgraded to level '+(lvl+1));return true;
+ return when(ecoRun('up',{k},S=>ecoUp(S,k)),r=>{
+  if(ecoErr(r))return false;
+  fx('buy');showToast(UPS[k].n+' upgraded to level '+r.lv);return true;
+ });
+}
+function tuneItem(isW,k,t){
+ if(!canTune(isW,k,t)){showToast('Only crate gear can be tuned');return null;}
+ if(rollOf(k,t)>=ROLL_MAX-0.0001){showToast('Already at the best roll (110%)');return null;}
+ return when(ecoRun('tune',{w:isW?1:0,k,t},(S,X)=>ecoTune(S,isW,k,t,X)),r=>{
+  if(ecoErr(r))return null;
+  if(r.better)equipBest(isW,k);store();
+  if(typeof fx==='function')fx(r.better?'claim':'tap');
+  return {better:r.better,old:r.old,roll:r.roll};
+ });
 }
 
 // ---- milestone quests (one-time) + community links ----
-const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
-const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile
-const TG_URL='';  // Telegram news channel: fill in when it exists
-const QUESTS=[
- {id:'q_win1',n:'First blood',d:'Win your first match',pts:50,goal:1},
- {id:'q_win3',n:'Warmonger',d:'Win 3 matches',pts:150,goal:3},
- {id:'q_dmg',n:'Heavy hitter',d:'Deal 2,500 damage in one match',pts:100,goal:2500},
- {id:'q_super',n:'Overcharged',d:'Fire your super twice in one match',pts:100,goal:2},
- {id:'q_box',n:'Scavenger',d:'Grab 3 mystery boxes in one match',pts:75,goal:3},
- {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 20% health',pts:250,goal:1},
- {id:'q_wiki',n:'Read the wiki',d:'How to play, the airdrop and tokenomics',pts:200,goal:1,link:'wiki'},
- {id:'q_x',n:'Follow on X',d:'Updates and announcements',pts:50,goal:1,link:'x'},
- {id:'q_tg',n:'Join the channel',d:'Airdrop news first',pts:50,goal:1,link:'tg'}].filter(q=>!q.link||({wiki:WIKI_URL,x:X_URL,tg:TG_URL})[q.link]);
-function qp(id,val,isMax){
- const Q=QUESTS.find(q=>q.id===id);if(!Q)return;
- let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
- e.p=isMax?Math.max(e.p,val):e.p+val;
- if(e.p>=Q.goal)e.done=true;
-}
+function qp(id,val,isMax){ecoMsAdd(save,id,val,isMax);}
 function claimQuest(id){
- const Q=QUESTS.find(q=>q.id===id),e=save.q[id];
- if(!Q||!e||!e.done||e.claimed)return 0;
- e.claimed=true;const n=awardPts(Q.pts);if(n)fx('claim');return n;
+ return when(ecoRun('ms',{id},(S,X)=>ecoMsClaim(S,id,X)),r=>{if(!r||r.err)return 0;if(r.pts)fx('claim');return r.pts;});
 }
 function openLink(url){
  try{if(IN_TG&&/^https?:\/\/t\.me\//.test(url))TG.openTelegramLink(url);else if(IN_TG)TG.openLink(url);else window.open(url,'_blank');}catch(e){window.open(url,'_blank');}
 }
 function visitLinkQuest(id){
- const Q=QUESTS.find(q=>q.id===id);if(!Q)return;
- const url=({wiki:WIKI_URL,x:X_URL,tg:TG_URL})[Q.link];if(!url)return;
- openLink(url);
- let e=save.q[id];if(!e)e=save.q[id]={p:0,done:false,claimed:false};
- e.p=Q.goal;e.done=true;store();
+ const Q=MS_BY[id];if(!Q||!LINKS[Q.link])return;
+ openLink(LINKS[Q.link]);
+ return ecoRun('visit',{id},S=>ecoVisit(S,id));
 }
 
-// ---- daily quests: 4 a day (2 easy, 1 medium, 1 hard), picked per player per day; finish all 4 for a bonus.
-// 1 free swap a day (2 with the premium pass). Weekly: 5 quests a week, plus a chest for claiming 20 dailies.
-// Your login streak boosts every quest's points (see questBoost). Stats come from afterMatch (match.js).
-const DQ_POOL=[
- {id:'play4',lv:0,t:'Play 4 matches',goal:4,pts:100,st:'plays'},
- {id:'win2',lv:0,t:'Win 2 matches',goal:2,pts:120,st:'wins'},
- {id:'box3',lv:0,t:'Grab 3 mystery boxes',goal:3,pts:100,st:'boxes'},
- {id:'sup3',lv:0,t:'Fire 3 supers',goal:3,pts:100,st:'sups'},
- {id:'dmg6k',lv:0,t:'Deal 6,000 damage',goal:6000,pts:100,st:'dmg'},
- {id:'kill4',lv:0,t:'Destroy 4 enemy tanks',goal:4,pts:100,st:'kills'},
- {id:'feat1',lv:0,t:'Play a featured-mode match',goal:1,pts:100,st:'featured'},
- {id:'quick1',lv:0,t:'Play a Quick Match',goal:1,pts:100,st:'quick'},
- {id:'win4',lv:1,t:'Win 4 matches',goal:4,pts:180,st:'wins'},
- {id:'kill10',lv:1,t:'Destroy 10 enemy tanks',goal:10,pts:170,st:'kills'},
- {id:'dmg15k',lv:1,t:'Deal 15,000 damage',goal:15000,pts:170,st:'dmg'},
- {id:'kill4m',lv:1,t:'Destroy 4 tanks in one match',goal:4,pts:180,st:'kills',mx:1},
- {id:'nodie',lv:1,t:'Win without being destroyed',goal:1,pts:170,st:'cleanWins'},
- {id:'zwin',lv:1,t:'Win a Moon Zone match',goal:1,pts:160,st:'zoneWins'},
- {id:'cap3',lv:1,t:'Capture the Moon Zone 3 times',goal:3,pts:160,st:'caps'},
- {id:'cry10',lv:1,t:'Collect 10 crystals in Crystal Rush',goal:10,pts:160,st:'crystals'},
- {id:'bnt5',lv:1,t:'Earn 5 bounty stars',goal:5,pts:160,st:'stars'},
- {id:'top3',lv:1,t:'Finish top 3 in Last Standing',goal:1,pts:160,st:'top3'},
- {id:'twin',lv:1,t:'Win a 2v2 or 3v3 match',goal:1,pts:160,st:'teamWins'},
- {id:'ovpw',lv:1,t:'Win a match on Overpass',goal:1,pts:160,st:'ovpWins'},
- {id:'win6',lv:2,t:'Win 6 matches',goal:6,pts:280,st:'wins'},
- {id:'row3',lv:2,t:'Win 3 matches in a row',goal:3,pts:280,st:'streak',mx:1},
- {id:'nodie2',lv:2,t:'Win 2 matches without being destroyed',goal:2,pts:280,st:'cleanWins'},
- {id:'sweep',lv:2,t:'Win a 1v1 Arena match 2-0',goal:1,pts:260,st:'sweeps'},
- {id:'ls1',lv:2,t:'Win a Last Standing match',goal:1,pts:300,st:'royaleWins'},
- {id:'featw3',lv:2,t:'Win 3 featured-mode matches',goal:3,pts:260,st:'featWins'},
- {id:'bntw2',lv:2,t:'Win 2 Bounty matches',goal:2,pts:260,st:'bountyWins'},
- {id:'cryw2',lv:2,t:'Win 2 Crystal Rush matches',goal:2,pts:260,st:'crystalWins'}];
-const DQ_SLOTS=[0,0,1,2],DQ_LV=['Easy','Medium','Hard'],DQ_ALL_BONUS=250,DQ_SWAPS=1;
-// Weekly quests are the same for every pilot: the first WQ_FIXED every week, plus WQ_N-WQ_FIXED picked by the week.
-// u: counts different values (days played, modes won), not a total. mx: best single match (or current win streak).
-// pd: on how many different days you reached pd of it (N a day on M days); goal counts days
-const WQ_POOL=[
- {id:'wdays',t:'Play on 5 different days',goal:5,pts:1500,st:'day',u:1},
- {id:'wquick30',t:'Play 30 Quick Matches',goal:30,pts:3750,st:'quick'},
- {id:'wwin20',t:'Win 20 matches',goal:20,pts:1250,st:'wins'},
- {id:'wplay35',t:'Play 35 matches',goal:35,pts:1000,st:'plays'},
- {id:'wkill50',t:'Destroy 50 enemy tanks',goal:50,pts:1000,st:'kills'},
- {id:'wdmg',t:'Deal 80,000 damage',goal:80000,pts:1000,st:'dmg'},
- {id:'wmodes',t:'Win in 4 different modes',goal:4,pts:1000,st:'winMode',u:1},
- {id:'wzone6',t:'Win 6 Moon Zone matches',goal:6,pts:1000,st:'zoneWins'},
- {id:'wteam8',t:'Win 8 team matches (2v2 or 3v3)',goal:8,pts:1000,st:'teamWins'},
- {id:'wls3d',t:'Win Last Standing on 3 different days',goal:3,pts:2000,st:'royaleWins',pd:1},
- {id:'wrow5',t:'Win 5 matches in a row',goal:5,pts:1250,st:'streak',mx:1},
- {id:'wfeat16',t:'Play 16 featured-mode matches',goal:16,pts:2000,st:'featured'},
- {id:'wsup60',t:'Fire 60 supers',goal:60,pts:1800,st:'sups'},
- {id:'wbox30',t:'Grab 30 mystery boxes',goal:30,pts:750,st:'boxes'},
- {id:'wclean4d',t:'Win 2 matches without being destroyed on 4 different days',goal:4,pts:1600,st:'cleanWins',pd:2},
- {id:'wcap30',t:'Capture the Moon Zone 30 times',goal:30,pts:2000,st:'caps'}];
-const WQ_N=5,WQ_FIXED=2,PASS_XP_WQ=150,WQ_GOAL=20,WQ_PTS=2000;   // WQ_GOAL dailies open the weekly chest
-// weekly quests from before Oct 19, 2026 (per-pilot lists): kept only so a list started that week still shows. Safe to delete after Oct 26
-const WQ_OLD=[{id:'wls2',t:'Win 2 Last Standing matches',goal:2,pts:1250,st:'royaleWins'},{id:'wquick8',t:'Play 8 Quick Matches',goal:8,pts:1000,st:'quick'},
- {id:'wfeat8',t:'Play 8 featured-mode matches',goal:8,pts:1000,st:'featured'},{id:'wsup25',t:'Fire 25 supers',goal:25,pts:750,st:'sups'},
- {id:'wclean5',t:'Win 5 matches without being destroyed',goal:5,pts:1000,st:'cleanWins'},{id:'wcap15',t:'Capture the Moon Zone 15 times',goal:15,pts:1000,st:'caps'}];
-const DQ_BY={},WQ_BY={};DQ_POOL.forEach(q=>DQ_BY[q.id]=q);WQ_POOL.concat(WQ_OLD).forEach(q=>WQ_BY[q.id]=q);
-function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-// login streak bonus on quest points: day 2 of your streak +5%, up to +30% from day 7. Counts once today's daily reward is claimed
-const QB_STEP=0.05,QB_MAX=0.3;
-const streakBoost=n=>Math.min(QB_MAX,QB_STEP*Math.max(0,n-1));
-function questBoost(){const L=loginState();return L.claimedToday?streakBoost(L.streak):0;}
-const qPts=n=>Math.round(n*(1+questBoost()));
-const swapsLeft=()=>{dailyQuests();return Math.max(0,DQ_SWAPS+(passState().prem?1:0)-(save.dq.sw||0));};
-function questRows(ids,p,c,BY,u){return ids.filter(id=>BY[id]).map(id=>{const Q=BY[id],v=p[id]||0,t=Q.pd&&u&&u[id]&&u[id][0]===dayNum()?u[id][1]:0;
- return {...Q,p:Math.min(v,Q.goal),done:v>=Q.goal,claimed:!!c[id],today:Math.min(t,Q.pd||0)};});}
-function dailyQuests(){
- const d=dayNum();
- if(!save.dq||save.dq.d!==d||save.dq.v!==2){
-  const r=rng32(hashStr((playerKey())+':'+d)),ids=[];
-  for(const lv of DQ_SLOTS){const pool=DQ_POOL.filter(q=>q.lv===lv&&!ids.includes(q.id));ids.push(pool[(r()*pool.length)|0].id);}
-  save.dq={v:2,d,ids,p:{},c:{},all:false,sw:0};
- }
- const w=weekNum();
- if(!save.wq||save.wq.w!==w)save.wq={w,n:0,claimed:false};
- if(!save.wk||save.wk.w!==w){
-  save.wk={w,ids:weeklyIds(w),p:{},u:{},c:{}};
- }
- return questRows(save.dq.ids,save.dq.p,save.dq.c,DQ_BY);
-}
-function weeklyIds(w){   // the same list for every pilot that week, so nobody draws an easier or richer set
- const r=rng32(hashStr('wk:'+w)),pool=WQ_POOL.slice(WQ_FIXED),ids=WQ_POOL.slice(0,WQ_FIXED).map(q=>q.id);
- while(ids.length<WQ_N){const i=(r()*pool.length)|0;ids.push(pool.splice(i,1)[0].id);}
- return ids;
-}
-function weeklyQuests(){dailyQuests();return questRows(save.wk.ids,save.wk.p,save.wk.c,WQ_BY,save.wk.u);}
-function qAdd(p,u,Q,stats){   // one match's stats into one quest
- const v=stats[Q.st];
- if(Q.pd){   // u[id] = [day, count that day]; a day counts once it reaches pd
-  if(!v)return;const d=stats.day!==undefined?stats.day:dayNum(),s=u[Q.id]&&u[Q.id][0]===d?u[Q.id]:(u[Q.id]=[d,0]),was=s[1];
-  s[1]+=v;if(was<Q.pd&&s[1]>=Q.pd)p[Q.id]=(p[Q.id]||0)+1;return;}
- if(Q.u){if(v===undefined||v===null||v===false)return;const s=u[Q.id]||(u[Q.id]=[]);if(!s.includes(v))s.push(v);p[Q.id]=s.length;return;}
- if(!v)return;
- p[Q.id]=Q.mx?Math.max(p[Q.id]||0,v):(p[Q.id]||0)+v;
-}
-function dqProgress(stats){   // called after every match with that match's stats
- dailyQuests();
- for(const id of save.dq.ids)if(DQ_BY[id])qAdd(save.dq.p,{},DQ_BY[id],stats);
- for(const id of save.wk.ids)if(WQ_BY[id])qAdd(save.wk.p,save.wk.u,WQ_BY[id],stats);
-}
-// swap one unfinished daily for another of the same difficulty
+// ---- daily and weekly quests (rules.js). Stats come from every finished match ----
+function questBoost(){return ecoBoost(save,ecoX());}
+const qPts=n=>ecoQPts(save,n,ecoX());
+const swapsLeft=()=>ecoSwapsLeft(save,ecoX());
+function dailyQuests(){return ecoDailyRows(save,ecoX());}
+function weeklyQuests(){return ecoWeeklyRows(save,ecoX());}
+function dqProgress(stats){ecoProgress(save,stats,ecoX());}
 function swapDaily(id){
- const qs=dailyQuests(),Q=qs.find(q=>q.id===id);
+ const Q=dailyQuests().find(q=>q.id===id);
  if(!Q||Q.done||Q.claimed||swapsLeft()<1)return null;
- const pool=DQ_POOL.filter(q=>q.lv===Q.lv&&!save.dq.ids.includes(q.id)&&!(save.dq.was||[]).includes(q.id));
- if(!pool.length)return null;
- const N=pool[(Math.random()*pool.length)|0];
- save.dq.ids[save.dq.ids.indexOf(id)]=N.id;delete save.dq.p[id];
- save.dq.was=(save.dq.was||[]).concat(id);save.dq.sw=(save.dq.sw||0)+1;
- store();fx('tap');return N;
+ return when(ecoRun('swap',{id},(S,X)=>{const N=ecoSwap(S,id,X);return N?{id:N.id}:{err:'none'};}),r=>{if(!r||r.err)return null;fx('tap');return DQ_BY[r.id]||null;});
 }
 function claimDaily(id){
- const qs=dailyQuests(),Q=qs.find(q=>q.id===id);
- if(!Q||!Q.done||Q.claimed)return 0;
- save.dq.c[id]=true;save.wq.n=(save.wq.n||0)+1;
- let n=awardPts(qPts(Q.pts));passXP(PASS_XP_QUEST);
- if(!save.dq.all&&qs.every(q=>q.claimed||q.id===id)){save.dq.all=true;n+=awardPts(qPts(DQ_ALL_BONUS));passXP(PASS_XP_ALL);}
- store();fx('claim');return n;
+ return when(ecoRun('daily',{id},(S,X)=>ecoClaimDaily(S,id,X)||{err:'no'}),r=>{if(!r||r.err)return 0;fx('claim');return r.pts;});
 }
 function claimWeeklyQuest(id){
- const Q=weeklyQuests().find(q=>q.id===id);
- if(!Q||!Q.done||Q.claimed)return 0;
- save.wk.c[id]=true;const n=awardPts(qPts(Q.pts));passXP(PASS_XP_WQ);
- store();fx('claim');return n;
+ return when(ecoRun('weekly',{id},(S,X)=>ecoClaimWeekly(S,id,X)||{err:'no'}),r=>{if(!r||r.err)return 0;fx('claim');return r.pts;});
 }
 function claimWeekly(){
  dailyQuests();
  if(save.wq.claimed||(save.wq.n||0)<WQ_GOAL)return null;
- save.wq.claimed=true;const n=awardPts(qPts(WQ_PTS));store();fx('claim');
- return {pts:n,reveal:doOpenBox('gem',1)};
+ return when(ecoRun('chest',{},(S,X)=>ecoChest(S,X)||{err:'no'}),r=>{if(!r||r.err)return null;afterGain(r.box);store();fx('claim');return {pts:r.pts,reveal:revealOf(r.box)};});
 }
-// ---- Lunar Pass: a 28-day season with 30 tiers. Free track for everyone, premium track for pass owners.
-// The premium track never gives points, so buying it can't buy leaderboard rank (the airdrop stays earned).
-const PASS_LEN=28,PASS_TIERS=30,PASS_XP=350,PASS_START=20744,PASS_PRICE={ton:13,stars:799};   // season 1 starts Oct 18, 2026 (UTC day 20744)
-const PASS_XP_WIN=40,PASS_XP_DRAW=25,PASS_XP_LOSS=20,PASS_XP_FEAT=10,PASS_XP_QUEST=50,PASS_XP_ALL=100;
-const seasonNo=()=>Math.max(1,Math.floor((dayNum()-PASS_START)/PASS_LEN)+1);
+// ---- Lunar Pass (rules.js): free track for everyone, premium track for pass owners. The premium track never gives points ----
+const seasonNo=()=>ecoSeason(ecoX());
 const seasonEndMs=()=>(PASS_START+seasonNo()*PASS_LEN)*864e5-(Date.now()+(typeof srvOff==='number'?srvOff:0));
-const PASS_FREE=[null,{k:'pts',n:150},{k:'box',tk:'gem',ri:0},{k:'pts',n:150},{k:'pts',n:200},{k:'box',tk:'weapon',ri:0},{k:'pts',n:200},{k:'box',tk:'gem',ri:0},{k:'pts',n:250},{k:'pts',n:250},{k:'box',tk:'chassis',ri:0},
- {k:'pts',n:250},{k:'box',tk:'gem',ri:0},{k:'pts',n:300},{k:'pts',n:300},{k:'box',tk:'gem',ri:1},{k:'pts',n:300},{k:'box',tk:'gem',ri:0},{k:'pts',n:350},{k:'pts',n:350},{k:'box',tk:'weapon',ri:0},
- {k:'pts',n:350},{k:'box',tk:'gem',ri:0},{k:'pts',n:400},{k:'pts',n:400},{k:'box',tk:'gem',ri:1},{k:'pts',n:400},{k:'box',tk:'gem',ri:0},{k:'pts',n:500},{k:'pts',n:500},{k:'paint',id:'regolith'}];
-const PASS_PREM=[null,{k:'paint',id:'eclipse'},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:1},
- {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'paint',id:'aurora'},
- {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:2}];
-function passState(){const s=seasonNo();if(!save.pass||save.pass.s!==s)save.pass={s,xp:0,prem:false,cf:[],cp:[]};return save.pass;}
-const passTier=()=>Math.min(PASS_TIERS,Math.floor(passState().xp/PASS_XP));
-function passXP(n){
- if(!n)return;const P=passState(),before=passTier();P.xp=Math.min(PASS_TIERS*PASS_XP,P.xp+n);const after=passTier();
- if(after>before&&typeof showToast==='function')setTimeout(()=>showToast('Lunar Pass: tier '+after+' reached'),900);
+function passState(){return ecoPassState(save,ecoX());}
+const passTier=()=>ecoPassTier(save,ecoX());
+function passXP(n){   // local play only (the server adds XP in Telegram)
+ const up=ecoPassXP(save,n,ecoX());
+ if(up>0&&typeof showToast==='function')setTimeout(()=>showToast('Lunar Pass: tier '+passTier()+' reached'),900);
 }
 function rewardLabel(r){
  if(!r)return '';
@@ -425,16 +335,13 @@ function rewardLabel(r){
 }
 const passReady=()=>{const P=passState(),t=passTier();let n=0;for(let i=1;i<=t;i++){if(!P.cf.includes(i))n++;if(P.prem&&!P.cp.includes(i))n++;}return n;};
 function claimPass(track,i){
- const P=passState();i=+i;
- if(i<1||i>passTier())return null;
- const prem=track==='p',list=prem?P.cp:P.cf,r=(prem?PASS_PREM:PASS_FREE)[i];
- if(!r||list.includes(i)||(prem&&!P.prem))return null;
- list.push(i);
- let out;
- if(r.k==='pts'){const n=awardPts(r.n);store();fx('claim');out={pts:n};}
- else if(r.k==='paint'){save.paints[r.id]=1;save.paint=r.id;store();fx('buy');out={reveal:{tk:'paint',rar:2,color:PAINTS[r.id].trim,paint:r.id,title:PAINTS[r.id].n+' paint',sub:'Equipped. Change it in the Garage.'}};}
- else{out={reveal:doOpenBox(r.tk,r.ri)};store();}
- return out;
+ i=+i;
+ return when(ecoRun('pass',{t:track,i},(S,X)=>ecoClaimPass(S,track,i,X)||{err:'no'}),r=>{
+  if(!r||r.err)return null;
+  if(r.pts!==undefined){fx('claim');return {pts:r.pts};}
+  if(r.paint){save.paint=r.paint;store();fx('buy');return {reveal:{tk:'paint',rar:2,color:PAINTS[r.paint].trim,paint:r.paint,title:PAINTS[r.paint].n+' paint',sub:'Equipped. Change it in the Garage.'}};}
+  afterGain(r.box);store();return {reveal:revealOf(r.box)};
+ });
 }
 // ---- paints: looks only, no stats. Your team color still shows on the tracks, turret core and health bar ----
 const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora','founder'];
@@ -442,26 +349,14 @@ const myPaint=()=>PAINTS[save.paint]||PAINTS.stock;
 // ---- featured mode: one mode a day pays +25% and gets a live queue ----
 const featuredMode=()=>featuredOn(dayNum());   // FEATURE_ROT is in rules.js
 // ---- daily login reward: 7-day streak calendar (misses reset it) + tier bonus ----
-const STREAK_PTS=[100,150,200,250,300,400,1000];
-function loginState(){
- const d=dayNum(),L=save.login||{last:-9,n:0};
- const claimedToday=L.last===d,alive=L.last===d||L.last===d-1;
- const next=claimedToday?L.n:(alive?L.n+1:1);   // streak count after today's claim
- return {claimedToday,streak:alive?L.n:0,next,slot:((next-1)%7),reward:STREAK_PTS[(next-1)%7]+TDAILY[tierIdx()]};
-}
+function loginState(){return ecoLoginState(save,ecoX());}
 function claimLogin(){
- const s=loginState();if(s.claimedToday)return null;
- save.login={last:dayNum(),n:s.next};
- const n=awardPts(s.reward);let reveal=null;
- if(s.slot===6)reveal=doOpenBox('gem',0);   // day 7: free gem cache too
- store();fx('claim');return {pts:n,reveal,day:s.slot+1};
+ if(loginState().claimedToday)return null;
+ return when(ecoRun('login',{},(S,X)=>ecoLogin(S,X)||{err:'claimed'}),r=>{if(!r||r.err)return null;afterGain(r.box);store();fx('claim');return {pts:r.pts,reveal:r.box?revealOf(r.box):null,day:r.day};});
 }
 
 // ---- squad (referrals): you get paid when your recruits keep playing ----
 const BOT_PLAY='https://t.me/LunarWarMachinesBot/play';
-const REF_MS=[{days:2,pts:1500,r:500,n:'Comes back the next day'},{days:5,pts:5000,r:2000,n:'5 days active, 5K points'},{days:10,pts:20000,r:5000,n:'10 days active, 20K points'}];
-const REF_PCT=0.05,REF_WELCOME=1000,REF_PCT_CAP=2000;   // 5% of recruits' points, max 2,000/day from the % part
-const playerKey=()=>IN_TG?'tg_'+TG_USER.id:'local';
 const refLink=()=>BOT_PLAY+'?startapp=ref_'+(TG_USER?TG_USER.id:'0');
 function captureRef(){   // the start_param of the link that opened the game
  try{
@@ -473,27 +368,19 @@ function captureRef(){   // the start_param of the link that opened the game
  }catch(e){}
 }
 const squad=()=>(typeof squadCache!=='undefined'&&squadCache)||[];
+const squadHeld=()=>squad().filter(r=>r.held).map(r=>r.id);
 function refStatus(r){const ago=r.ld==null?99:dayNum()-r.ld;return ago<=1?['Active','#5fe3a1']:ago<=6?['Idle '+ago+'d','#ffcf4a']:['Inactive','#ff6b5e'];}
-function refOwed(r){   // milestones reached + 5% of what they've earned since you last claimed
- const c=(save.refC||{})[r.id]||{m:0,seen:0};let m=c.m,ms=0;
- while(m<REF_MS.length&&r.days>=REF_MS[m].days&&r.pts>=REF_MS[m].pts){ms+=REF_MS[m].r;m++;}
- const pc=Math.max(0,Math.floor((r.pts-(c.seen||0))*REF_PCT));
- return {ms,pct:pc,m,tot:ms+pc};
-}
-const welcomeReady=()=>!!(save.refBy&&!save.refWelcome&&typeof srv!=='undefined'&&srv&&srv.ref===save.refBy&&(srv.days||0)>=2);
-const pctRoom=()=>{const d=dayNum();return save.refPD&&save.refPD.d===d?Math.max(0,REF_PCT_CAP-save.refPD.a):REF_PCT_CAP;};
-function refPending(){let t=welcomeReady()?REF_WELCOME:0,pr=pctRoom();for(const r of squad()){const o=refOwed(r);const pp=Math.min(o.pct,pr);pr-=pp;t+=o.ms+pp;}return t;}
+const refOwed=r=>ecoRefOwed(save,r);
+const refMe=()=>({ref:save.refBy&&typeof srv!=='undefined'&&srv&&srv.ref===save.refBy?save.refBy:null,days:(typeof srv!=='undefined'&&srv&&srv.days)||0});
+const welcomeReady=()=>!!(save.refBy&&!save.refWelcome&&refMe().ref&&refMe().days>=2);
+const pctRoom=()=>ecoPctRoom(save,ecoX());
+function refPending(){return ecoSquadPending(save,squad(),ecoX(),refMe(),squadHeld());}
 function claimRefs(){
- rollPeriods();let room=Math.max(0,DAILY_CAP-(save.dailyPts||0)),got=0;
- save.refC=save.refC||{};
- if(welcomeReady()&&room>=REF_WELCOME){save.refWelcome=true;got+=REF_WELCOME;room-=REF_WELCOME;}
- let pr=pctRoom(),pgot=0;
- for(const r of squad()){const o=refOwed(r),pp=Math.min(o.pct,pr),t=o.ms+pp;if(!t)continue;if(t>room)break;
-  const c=save.refC[r.id]||{m:0,seen:0};save.refC[r.id]={m:o.m,seen:(c.seen||0)+Math.round(pp/REF_PCT)};   // unpaid % carries over to tomorrow
-  got+=t;room-=t;pr-=pp;pgot+=pp;}
- if(pgot){const d=dayNum();save.refPD={d,a:(save.refPD&&save.refPD.d===d?save.refPD.a:0)+pgot};}
- if(!got){showToast(refPending()?'Daily cap reached. Claim the rest tomorrow.':'Nothing to claim yet. Rewards arrive as your squad plays.');return 0;}
- const n=awardPts(got);fx('claim');showToast('+'+fmtNum(n)+' squad points');return n;
+ return when(ecoRun('squad',{},(S,X)=>ecoSquad(S,squad(),X,refMe(),squadHeld())),r=>{
+  if(!r||r.err){ecoErr(r);return 0;}
+  if(!r.pts){showToast(refPending()?'Daily cap reached. Claim the rest tomorrow.':'Nothing to claim yet. Rewards arrive as your squad plays.');return 0;}
+  fx('claim');showToast('+'+fmtNum(r.pts)+' squad points');return r.pts;
+ });
 }
 const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles right in Telegram, and the top 1,000 pilots get a guaranteed $LUNAR allocation.';
 function shareRef(text){
@@ -502,22 +389,12 @@ function shareRef(text){
 }
 function copyRef(){try{navigator.clipboard.writeText(refLink()).then(()=>showToast('Invite link copied'),()=>showToast(refLink()));}catch(e){showToast(refLink());}}
 
-// ---- shop logic: crates, salvage, premium, starter pack ----
-const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
-const STARTER={ton:6,stars:399};
-const FOUNDER={ton:19,stars:1199};   // Founder pack (must match the server); FOUNDER_OPEN is in rules.js
-const PSTARS={moonbeam:3300,skin:2000,starter:STARTER.stars}; // premium items in Stars (must match the server)
-function buyKey(tk,ri){return tk==='gem'?'gem'+ri+'|'+dayNum():tk+ri;}
-// gear crates: x1, x2, x3 (only 3 items each). Gem caches: +25% per buy that day, resets daily
-function boxMult(tk,ri){if(ri===0)return 1;const n=(save.buys&&save.buys[buyKey(tk,ri)])||0;return tk==='gem'?1+0.25*n:Math.min(3,1+n);}   // Common crates are always 250 Stars / 4 TON
-// deals (rules.js): your first rare or epic gem cache each day is 30% off ('d'); one epic crate a week is 25% off ('w')
+// ---- shop logic: crates, salvage, premium, starter pack (prices in rules.js; the server charges them) ----
+const PSTARS={moonbeam:PREMIUM.moonbeam.stars,skin:PREMIUM.skin.stars,starter:STARTER.stars}; // premium items in Stars
+const boxMult=(tk,ri)=>ecoBoxMult(save,tk,ri,ecoX());
 const dealDayFree=()=>save.dealD!==dayNum(),dealWeekFree=()=>save.dealW!==weekNum();
-function dealOf(tk,ri){   // the deal this crate gets right now, if any (the better one when both fit)
- if(tk==='gem'&&ri>=1&&dealDayFree())return 'd';
- if(ri===2&&dealWeekFree())return 'w';
- return null;
-}
-const dealX=(tk,ri)=>{const k=dealOf(tk,ri);return k==='d'?1-DEAL_D_OFF:k==='w'?1-DEAL_W_OFF:1;};
+const dealOf=(tk,ri)=>ecoDealOf(save,tk,ri,ecoX());   // the deal this crate gets right now, if any (the better one when both fit)
+const dealX=(tk,ri)=>dealMult(dealOf(tk,ri));
 function markDeal(k){if(k==='d')save.dealD=dayNum();else if(k==='w')save.dealW=weekNum();}
 function boxPrice(tk,ri,full){return Math.round(RPRICE[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri))*100)/100;}   // TON. full: before the deal
 function boxStars(tk,ri,full){return Math.round(RSTARS[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri)));}
@@ -527,88 +404,20 @@ function openBoxWithPoints(tk,ri){
  const c=boxPts(tk,ri);
  if(!c){showToast('Epic crates are paid only');return null;}
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
- save.pts-=c;save.buys=save.buys||{};const bk=buyKey(tk,ri);save.buys[bk]=(save.buys[bk]||0)+1;
- save.ptsSpent=(save.ptsSpent||0)+c;store();return doOpenBox(tk,ri);
+ return when(ecoRun('crate',{tk,ri},(S,X)=>ecoCratePts(S,tk,ri,X)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
 }
-// opens a crate and returns what came out (the UI shows it)
-function doOpenBox(tk,ri){
- if(tk==='gem'){
-  const k=GORDER[(Math.random()*GORDER.length)|0];
-  const n=ri===0?1+((Math.random()*2)|0):ri===1?3+((Math.random()*2)|0):6+((Math.random()*4)|0);
-  save.gemShards[k]+=n;
-  let lv=save.gemLvl[k],up=0;
-  while(lv<5&&save.gemShards[k]>=SHARD_NEED[lv]){save.gemShards[k]-=SHARD_NEED[lv];lv++;up++;}
-  save.gemLvl[k]=lv;store();
-  return {tk,ri,rar:ri,color:GEM[k].c,gem:k,title:'+'+n+' '+GEM[k].name+(n===1?' shard':' shards'),
-   sub:up>0?GEM[k].name+' core reached level '+lv+'!':GEM[k].name+' core: level '+lv+(lv<5?' ('+save.gemShards[k]+'/'+SHARD_NEED[lv]+' shards to next)':' (max)')};
- }
- const isW=tk==='weapon';
- const roll=Math.round((ROLL_MIN+Math.random()*(ROLL_MAX-ROLL_MIN))*100)/100;
- save.roll=save.roll||{};
- const it=rollItem(isW?'w':'c',ri);
- if(it){
-  const own=isW?save.wOwn:save.cOwn;
-  if(!own[it.k])own[it.k]=[];own[it.k].push(it.tier);
-  save.roll[it.k+':'+it.tier]=roll;
-  equipBest(isW,it.k);
-  store();
-  const nm=isW?WNAMES[it.k][it.tier]:CNAMES[it.k][it.tier];
-  const w0=getW(it.k,it.tier,false),c0=getC(it.k,it.tier,false);
-  return {tk,ri,rar:it.tier,color:RCOL[it.tier],item:{isW,k:it.k,tier:it.tier},title:'New '+TIER_N[it.tier]+': '+nm,
-   sub:'Roll '+pct(roll)+(isW?', '+w0.dps+' damage per second':', '+c0.hp+'× health, '+c0.spd+'× speed')};
- }
- // collection complete: re-roll a random item of this rarity, keep the better roll
- const keys=isW?WORDER:CHORDER;
- const k=keys[(Math.random()*3)|0],key=k+':'+ri,old=rollOf(k,ri),nm=isW?WNAMES[k][ri]:CNAMES[k][ri];
- if(roll>old){save.roll[key]=roll;equipBest(isW,k);store();
-  return {tk,ri,rar:ri,color:RCOL[ri],item:{isW,k,tier:ri},title:'Roll upgraded!',sub:nm+': '+pct(old)+' → '+pct(roll)};}
- const pts=ri===0?50:ri===1?150:400;awardPts(pts);
- return {tk,ri,rar:ri,color:RCOL[ri],item:{isW,k,tier:ri},title:'Rolled '+pct(roll),sub:'You kept your '+pct(old)+' '+nm+' and got +'+pts+' points'};
-}
+// opens a crate on this device (local play and tests only: in Telegram every crate is opened by the server)
+function doOpenBox(tk,ri){const r=ecoOpenBox(save,tk,ri,ecoX());afterGain(r);store();return revealOf(r);}
 function buySalvage(tk,ri){
- const c=SALV_PTS[ri],isW=tk==='weapon';
+ const c=SALV_PTS[ri];
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
- const keys=isW?WORDER:CHORDER;
- const k=keys[(Math.random()*3)|0],key=k+':'+ri,old=salvOf(k,ri);
- const q=Math.round((SALV_MIN[ri]+Math.random()*(SALV_MAX[ri]-SALV_MIN[ri]))*1000)/1000;
- save.pts-=c;save.ptsSpent=(save.ptsSpent||0)+c;save.salv=save.salv||{};
- const nm='Salvaged '+(isW?WNAMES[k][ri]:CNAMES[k][ri]),pw=v=>(Math.round(v*1000)/10)+'%';
- if(q>old){save.salv[key]=q;equipBest(isW,k);store();
-  return {tk,ri,rar:ri,color:SALV_COL,item:{isW,k,tier:ri,sal:true},title:nm,sub:(old?pw(old)+' → ':'')+pw(q)+' power. Crate gear starts at 105%.'};}
- store();return {tk,ri,rar:ri,color:SALV_COL,item:{isW,k,tier:ri,sal:true},title:'Rolled '+pw(q),sub:'You kept your '+pw(old)+' '+nm};
+ return when(ecoRun('salvage',{tk,ri},(S,X)=>ecoSalvage(S,tk,ri,X)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
 }
-// Grant a verified purchase. Single path for live purchases and for purchases finished while the game was closed.
+// Grant a verified purchase on this device (local play and the older tests). In Telegram the server grants it (showOuts)
 function grantPurchase(desc){
  if(!desc)return;
- let reveals=[];
- if(desc.kind==='box'){
-  const cost=desc.price||RPRICE[desc.ri]||0;
-  save.buys=save.buys||{};const bk=buyKey(desc.tk,desc.ri);save.buys[bk]=(save.buys[bk]||0)+1;markDeal(desc.deal);
-  save.spendGram=(save.spendGram||0)+cost;reveals.push(doOpenBox(desc.tk,desc.ri));
- }else if(desc.kind==='starter'){
-  if(!save.starter){save.starter=true;save.spendGram=(save.spendGram||0)+STARTER.ton;
-   reveals.push(doOpenBox('weapon',1),doOpenBox('chassis',1),doOpenBox('gem',1));}
- }else if(desc.kind==='founder'){
-  if(!save.founder){save.founder=true;save.spendGram=(save.spendGram||0)+FOUNDER.ton;save.paints=save.paints||{};save.paints.founder=1;save.paint='founder';
-   reveals.push({tk:'paint',rar:2,color:PAINTS.founder.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'},doOpenBox('weapon',2),doOpenBox('gem',1),doOpenBox('gem',1));}
- }else if(desc.kind==='moonbeam'){
-  if(!save.moonbeam){save.moonbeam=true;save.weapon='moon';save.spendGram=(save.spendGram||0)+MOONBEAM_PRICE;
-   reveals.push({tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'});}
- }else if(desc.kind==='paint'){
-  const P=PAINTS[desc.id];
-  if(P&&!save.paints[desc.id]){save.paints[desc.id]=1;save.paint=desc.id;save.spendGram=(save.spendGram||0)+(P.ton||0);
-   reveals.push({tk:'paint',rar:2,color:P.trim,paint:desc.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'});}
- }else if(desc.kind==='pass'){
-  const P=passState();
-  if(!P.prem){P.prem=true;save.spendGram=(save.spendGram||0)+PASS_PRICE.ton;
-   reveals.push({tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'});}
- }else if(desc.kind==='skin'){
-  if(save.skin!=='lunar'){save.skin='lunar';save.spendGram=(save.spendGram||0)+SKINS.lunar.price;
-   reveals.push({tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:'+8% health and +8% damage, applied.'});}
- }
- save.pendingTx=null;store();
+ const outs=ecoGrant(save,{kind:desc.kind,tk:desc.tk,ri:desc.ri,id:desc.id,deal:desc.deal,price:desc.price},ecoX());
+ save.pendingTx=null;
  if(typeof syncPlayer==='function')syncPlayer();
- fx('buy');
- if(reveals.length&&typeof showReveal==='function')showReveal(reveals);
+ showOuts(outs);
 }
-function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

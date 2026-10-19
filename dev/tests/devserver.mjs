@@ -10,11 +10,12 @@ buildSim();
 installWebSocketPair();
 const db = makeDB();
 const tgCalls = [];
+let tonTxs = [];
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   if (String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')) return db.handle(url, init);
   if (String(url).startsWith('https://api.telegram.org/')) { const body = JSON.parse(init.body); tgCalls.push([String(url).split('/').pop(), body]); return new Response(JSON.stringify({ ok: true, result: 'https://t.me/$invoice' })); }
-  if (String(url).startsWith('https://toncenter.com/')) return new Response(JSON.stringify({ result: [] }));
+  if (String(url).startsWith('https://toncenter.com/')) return new Response(JSON.stringify({ result: tonTxs }));
   return new Response('{}', { status: 404 });
 };
 const mod = await import('../../worker/src/index.js');
@@ -40,6 +41,8 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname === '/__cron') { await mod.buildLeaderboard(env); return send(200, { ok: true }); }
     if (u.pathname === '/__dump') return send(200, db.root);
     if (u.pathname === '/__tg') return send(200, tgCalls);
+    if (u.pathname === '/__webhook') { const r = await mod.default.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': await mod.webhookSecret(env) }, body }), env); return send(r.status, { ok: r.status === 200 }); }
+    if (u.pathname === '/__ton') { tonTxs = JSON.parse(body); return send(200, { ok: true }); }
     if (u.pathname === '/__set') { const { path, value } = JSON.parse(body); const r = await db.handle(`https://warmachines-a6034-default-rtdb.firebaseio.com/${path}.json?auth=SECRET`, { method: 'PUT', body: JSON.stringify(value) }); return send(200, { ok: r.ok }); }
     // live matches: reset with a different wait, look at rooms, or poke a room's sim (tests only)
     if (u.pathname === '/__pvpreset') { resetPvp(Number(u.searchParams.get('wait')) || 0, u.searchParams.get('all') === '1'); return send(200, { ok: true }); }

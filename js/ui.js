@@ -576,9 +576,13 @@ function openAdmin(){
    (A.stats?'<div class="kv"><div><b class="num">'+fmtNum(A.stats.newToday)+'</b><span>New today</span></div><div><b class="num">'+A.stats.back2+'%</b><span>Came back day 2</span></div><div><b class="num">'+A.stats.back5of7+'%</b><span>5+ of 7 days</span></div></div>'+
     '<div class="kv"><div><b class="num">'+A.stats.avgMatches+'</b><span>Matches per player</span></div><div><b class="num">'+A.stats.conv+'%</b><span>Paid</span></div><div><b class="num">$'+A.stats.arppu+'</b><span>Per payer</span></div></div>'+
     '<p class="dimtxt" style="margin-top:6px">Retention from the top 1,000 players. Paid = payers out of all players.</p>':''))+
+   (A.flagged?'<h3 style="margin-top:16px;font-size:16px">Flagged for review ('+A.flagged.length+')</h3>'+
+    (A.flagged.length?'<div class="list">'+A.flagged.map(f=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+esc(f.n)+'</b> <span class="dimtxt">'+esc(f.id)+'</span><div class="dimtxt">'+f.why.map(esc).join('<br>')+'</div></div><button class="btn sm btn-quiet" data-act="flagclear" data-arg="'+esc(f.id)+'">Clear</button></div>').join('')+'</div>':'<p class="mut">Nobody flagged.</p>')+
+    '<p class="dimtxt" style="margin-top:6px">Flagged pilots sit out the leaderboard and the airdrop snapshot until you clear them.</p>'+
+    '<button class="btn sm btn-quiet block" style="margin-top:8px" data-act="snapshot">Copy the airdrop snapshot (top 1,000)</button>':'')+
    '<p class="mut" style="margin-top:8px">This device: power '+pw+', '+fmtNum(save.earned)+' lifetime points, '+(save.mp||0)+' matches</p>'+
-   '<h3 style="margin-top:16px;font-size:16px">Test grants (this device only)</h3>'+
-   '<div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn sm btn-quiet" data-act="dev" data-arg="pts">+50K points</button><button class="btn sm btn-quiet" data-act="dev" data-arg="epic">All epic gear</button><button class="btn sm btn-quiet" data-act="dev" data-arg="moon">Moonbeam</button><button class="btn sm btn-quiet" data-act="dev" data-arg="skin">Lunar skin</button><button class="btn sm btn-quiet" data-act="dev" data-arg="passxp">+2,000 pass XP</button><button class="btn sm btn-quiet" data-act="dev" data-arg="pass">Premium pass</button></div>';
+   (SRV_ECO?'':'<h3 style="margin-top:16px;font-size:16px">Test grants (this device only)</h3>'+
+   '<div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn sm btn-quiet" data-act="dev" data-arg="pts">+50K points</button><button class="btn sm btn-quiet" data-act="dev" data-arg="epic">All epic gear</button><button class="btn sm btn-quiet" data-act="dev" data-arg="moon">Moonbeam</button><button class="btn sm btn-quiet" data-act="dev" data-arg="skin">Lunar skin</button><button class="btn sm btn-quiet" data-act="dev" data-arg="passxp">+2,000 pass XP</button><button class="btn sm btn-quiet" data-act="dev" data-arg="pass">Premium pass</button></div>');
  });
 }
 
@@ -671,6 +675,7 @@ function resultsHTML(r){
  if(r.leagueMult!==1)lines.push([r.league.n+' league','×'+r.leagueMult]);
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
+ if(r.note)lines.push([esc(r.note),'0']);   // the server didn't count it (too fast, an expired ticket, no connection at the start)
  const t=tierOfPts(r.after),lo=TPTS[t],hi=TPTS[t+1],f=hi?(r.after-lo)/(hi-lo):1;
  const rb=lbCache?myRank(r.before):null,ra=lbCache?myRank(r.after):null;
  let rank='';
@@ -746,9 +751,11 @@ function forfeit(){
  const ov=findOv('leave');if(ov){ov.onClose=null;closeOverlay(ov);}
  if(state!=='play'&&state!=='round')return;
  clearInterval(roundTimer);roundTimer=null;
- if(pvpOn())pvpLeave();
+ const live=pvpOn();
+ if(live)pvpLeave();
  state='menu';paused=false;
- save.streak=0;save.losses=(save.losses||0)+1;save.mp=(save.mp||0)+1;store();
+ ecoQuit(save);store();   // a loss, no points (the server records the same: the room for a live match, the ticket for an AI one)
+ if(live)applyEcoSoon();else matchEnd({quit:true});
  exitBattle();
 }
 function exitBattle(){
@@ -796,7 +803,7 @@ const ACT={
  gtype:a=>{save.gtype=a;store();fx('tap');},
  feat:()=>{save.gtype=featuredMode();save.featSeen=dayNum();store();fx('tap');showToast(GTYPES[save.gtype].label+' selected: +25% today');},
  pass:()=>openPass(),
- claimpass:a=>{const [tr,i]=a.split(':'),r=claimPass(tr,+i);if(!r)return;if(r.pts)showToast('+'+fmtNum(r.pts)+' points');if(r.reveal)showReveal([r.reveal]);},
+ claimpass:a=>{const [tr,i]=a.split(':');when(claimPass(tr,+i),r=>{if(!r)return;if(r.pts)showToast('+'+fmtNum(r.pts)+' points');if(r.reveal)showReveal([r.reveal]);uiDirty();});},
  buypass:()=>{if(passState().prem)return;pay(PASS_PRICE.ton,{kind:'pass'});},
  paints:()=>openPaints(),
  paint:a=>{const P=PAINTS[a];if(!P)return;
@@ -804,7 +811,7 @@ const ACT={
   if(P.pass){openPass();return;}
   if(P.only){showToast('Only in the Founder pack');if(FOUNDER_OPEN){closeAll();setTab('shop');}return;}
   pay(P.ton,{kind:'paint',id:a});},
- tune:a=>{const [sl,k,t]=a.split('|'),r=tuneItem(sl==='w',k,+t);if(!r)return;showToast(r.better?'New roll '+pct(r.roll)+', up from '+pct(r.old):'Rolled '+pct(r.roll)+'. You kept '+pct(r.old));syncPlayer();},
+ tune:a=>{const [sl,k,t]=a.split('|');when(tuneItem(sl==='w',k,+t),r=>{if(!r)return;showToast(r.better?'New roll '+pct(r.roll)+', up from '+pct(r.old):'Rolled '+pct(r.roll)+'. You kept '+pct(r.old));syncPlayer();uiDirty();});},
  terms:()=>openLink(TERMS_URL),
  termsok:()=>{save.termsOk=Date.now();store();const go=termsGo;termsGo=null;const ov=findOv('terms');if(ov)closeOverlay(ov);if(go)go();},
  termsno:()=>{const ov=findOv('terms');if(ov)closeOverlay(ov);},
@@ -823,17 +830,17 @@ const ACT={
  again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},
  sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
- login:()=>{const r=loginState();if(r.claimedToday)return;const c=claimLogin();if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();},
- claimdq:a=>{const n=claimDaily(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=dailyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
- claimwq:a=>{const n=claimWeeklyQuest(a);if(n)showToast('+'+fmtNum(n)+' points');else{const q=weeklyQuests().find(x=>x.id===a);if(q&&!q.done)showToast(q.t+': '+fmtNum(q.p)+' of '+fmtNum(q.goal));}},
- swapdq:a=>{const N=swapDaily(a);if(N)showToast('New quest: '+N.t);else showToast(swapsLeft()?'No other quest to swap in':'No swaps left today');},
+ login:()=>{const r=loginState();if(r.claimedToday)return;when(claimLogin(),c=>{if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();uiDirty();});},
+ claimdq:a=>{const q0=dailyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimDaily(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
+ claimwq:a=>{const q0=weeklyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimWeeklyQuest(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
+ swapdq:a=>{const left=swapsLeft();when(swapDaily(a),N=>{if(N)showToast('New quest: '+N.t);else showToast(left?'No other quest to swap in':'No swaps left today');uiDirty();});},
  deals:a=>{if(a==='w')save.wdealSeen=weekNum();else save.dealSeen=dayNum();store();openDeals(a==='w'?'w':'d');},
  founder:()=>{if(save.founder||!FOUNDER_OPEN)return;pay(FOUNDER.ton,{kind:'founder'});},
- claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}const n=claimQuest(a);if(n)showToast('+'+n+' points: '+Q.n);},
- visit:a=>{visitLinkQuest(a);uiDirty('quests');},
- weekly:()=>{const r=claimWeekly();if(!r){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);},
- share:()=>shareRef(),copy:()=>copyRef(),claimref:()=>{claimRefs();uiDirty('quests');},
- up:a=>{const lv=save.up[a];if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(buyUp(a))syncPlayer();},
+ claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}when(claimQuest(a),n=>{if(n)showToast('+'+n+' points: '+Q.n);uiDirty();});},
+ visit:a=>{when(visitLinkQuest(a),()=>uiDirty('quests'));},
+ weekly:()=>{const v=claimWeekly();if(!v){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}when(v,r=>{if(!r)return;showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);uiDirty();});},
+ share:()=>shareRef(),copy:()=>copyRef(),claimref:()=>{when(claimRefs(),()=>uiDirty('quests'));},
+ up:a=>{const lv=save.up[a];if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
  gear:a=>openGearPicker(a==='w'),
  equip:a=>{const [s,id]=a.split('|'),isW=s==='w',[k,ts]=id.split(':'),t=ts===undefined?0:parseInt(ts,10),sl=!!ts&&ts.slice(-1)==='s';
   const own=k==='moon'?save.moonbeam:isW?(sl?salvOf(k,t):ownW(k,t)):(sl?salvOf(k,t):ownC(k,t));
@@ -849,8 +856,8 @@ const ACT={
  setsolw:a=>{save.solWallet=a;store();const ov=findOv('solw');if(ov)closeOverlay(ov);},
  crate:a=>{const [tk,ri]=a.split(':');openCrate(tk,+ri);},
  buybox:a=>{const [tk,ri]=a.split(':'),p=boxPrice(tk,+ri);pay(p,{kind:'box',tk,ri:+ri,price:p,deal:dealOf(tk,+ri)});},
- buypts:a=>{const [tk,ri]=a.split(':'),r=openBoxWithPoints(tk,+ri);if(r){const ov=findOv('crate');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}},
- salvage:a=>{const [tk,ri]=a.split(':'),r=buySalvage(tk,+ri);if(r){fx('buy');showReveal([r]);}},
+ buypts:a=>{const [tk,ri]=a.split(':');when(openBoxWithPoints(tk,+ri),r=>{if(r){const ov=findOv('crate');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}uiDirty();});},
+ salvage:a=>{const [tk,ri]=a.split(':');when(buySalvage(tk,+ri),r=>{if(r){fx('buy');showReveal([r]);}uiDirty();});},
  starter:()=>{if(save.starter)return;pay(STARTER.ton,{kind:'starter'});},
  premium:a=>{if(a==='moonbeam'){if(save.moonbeam)return;pay(MOONBEAM_PRICE,{kind:'moonbeam'});}else{if(save.skin==='lunar')return;pay(SKINS.lunar.price,{kind:'skin'});}},
  revealok:()=>{if(revealOv)closeOverlay(revealOv);},
@@ -864,6 +871,7 @@ const ACT={
  copyid:()=>{try{navigator.clipboard.writeText(playerKey()).then(()=>showToast('Player ID copied'),()=>showToast(playerKey()));}catch(e){showToast(playerKey());}},
  devtap:()=>{if(!IS_DEV)return;const now=performance.now();if(now-devTapT>4000)devTapN=0;devTapT=now;if(++devTapN>=5){devTapN=0;openAdmin();}},
  dev:a=>{if(!IS_DEV)return;
+  if(SRV_ECO){showToast('Test grants only work outside Telegram now: the server owns points and gear');return;}
   if(a==='pts'){save.pts=(save.pts||0)+50000;}
   if(a==='epic'){save.cTier={scout:2,vanguard:2,titan:2};save.cOwn={scout:[0,1,2],vanguard:[0,1,2],titan:[0,1,2]};save.wTier={pulse:2,twin:2,siege:2};save.wOwn={pulse:[0,1,2],twin:[0,1,2],siege:[0,1,2]};}
   if(a==='moon'){save.moonbeam=true;}
@@ -871,6 +879,9 @@ const ACT={
   if(a==='passxp'){passXP(2000);}
   if(a==='pass'){passState().prem=true;}
   store();showToast('Granted on this device (test)');},
+ flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
+ snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days\n'+rows.join('\n');
+  try{navigator.clipboard.writeText(txt).then(()=>showToast('Snapshot copied: '+rows.length+' pilots'),()=>showToast(rows.length+' pilots (copy failed)'));}catch(e){showToast(rows.length+' pilots');}}).catch(()=>showToast('Snapshot unavailable'));},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),
  rswap:a=>{if(!pvpOn()){clearInterval(roundTimer);roundTimer=null;}switchChassis(a);fx('tap');},

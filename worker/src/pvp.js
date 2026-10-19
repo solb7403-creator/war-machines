@@ -3,7 +3,8 @@
 // player the world 15 times a second, and decides results and points itself. A pilot who drops gets an AI
 // pilot until they're back; one who leaves (or stays away) loses and earns nothing.
 import { createSim, RULES } from "./sim.gen.js";
-import { dayOf, hex, hmac, dbGet, cleanName, creditMatch } from "./db.js";
+import { dayOf, hex, hmac, cleanName } from "./db.js";
+import { creditMatch, readEco } from "./eco.js";
 
 export const PVP = {
   WAIT_MS: 30000,      // a room looks for live pilots this long, then AI pilots fill the empty seats
@@ -195,7 +196,7 @@ export class RoomCore {
     if (this.phase !== "vs") return;
     for (const s of this.humans()) { const u = this.sim.units[s.idx]; if (s.quit) u.quit = true; if (!s.on || s.quit) this.sim.setCtl(u, "bot"); }
     this.sim.start();
-    this.phase = "play"; this.tick = 0; this.acc = 0; this.lastT = this.io.now();
+    this.phase = "play"; this.tick = 0; this.acc = 0; this.lastT = this.io.now(); this.startedAt = this.io.now();
     this.all({ k: "f", units: this.sim.roster() });
     this.flush();
     this.iv = this.io.setInterval(() => this.tickFn(), this.o.TICK_MS);
@@ -276,10 +277,14 @@ export class RoomCore {
       league: { n: brk.n, key: brk.key, mult: brk.mult, c: brk.c, i: brk.i },
       stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0, low: Math.round((st.low ?? 1) * 1000) / 1000 },
       series: se ? { w: u.team === 0 ? [se.w[0], se.w[1]] : [se.w[1], se.w[0]] } : null, cls: u.cls };
+    // the match as the server saw it: quests, pass XP and stats on the pilot's record come from this (eco.js creditMatch)
+    const mt = quit ? { quit: true } : { won, drawn, top3, feat, quick: !!s.quick, g, m, map: this.sim.map, seriesW: res.series && res.series.w,
+      secs: this.startedAt ? (this.io.now() - this.startedAt) / 1000 : 0,
+      st: { dmg: res.stats.dmg, sup: res.stats.sups, box: res.stats.boxes, kills: res.stats.kills, caps: res.stats.caps, cry: res.stats.cry, stars: res.stats.stars, low: res.stats.low } };
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
       const sb = won ? Math.min(pvs, 5) * 20 : 0;
-      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn };
+      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt };
     };
     const p = Promise.resolve().then(() => this.io.credit(s, calc))
       .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb }))
@@ -368,52 +373,10 @@ async function readToken(env, tok, room, now = Date.now()) {
   return (await sign(env, p.slice(0, 3).join("."))) === p[3] ? p[0] : null;
 }
 
-// ---- the loadout a pilot brings: every value must be one the game can produce. Upgrades must be affordable
-// from the points on the server's record; Moonbeam and the Lunar skin need a purchase on record. ----
-async function paidItems(env, pid) {
-  const [stars, pays] = await Promise.all([
-    dbGet(env, `starsPaid/${pid}`).catch(() => null),
-    dbGet(env, "payments", { orderBy: '"$key"', startAt: `"LWM_LWM_${pid}_"`, endAt: `"LWM_LWM_${pid}_"` }).catch(() => null),
-  ]);
-  const ks = Object.values(stars || {}).map((v) => v && v.k), items = Object.values(pays || {}).map((v) => v && v.item);
-  return { moonbeam: ks.includes("moonbeam") || items.includes("Moonbeam"), skin: ks.includes("skin") || items.includes("Lunar Skin") };
-}
-export async function checkLoadout(env, R, raw, rec, pid) {
-  const L0 = raw && typeof raw === "object" ? raw : {};
-  const int = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
-  const gear = (x, keys, def) => {
-    x = x && typeof x === "object" ? x : {};
-    const k = keys.includes(x.a ?? x.c) ? (x.a ?? x.c) : def, t = int(x.t, -1, 2, 0), s = !!x.s && t >= 1;
-    let q = Number(x.q);
-    if (s) q = Math.max(R.SALV_MIN[t], Math.min(R.SALV_MAX[t], Number.isFinite(q) ? q : R.SALV_MIN[t]));
-    else q = t < 0 || !(q >= R.ROLL_MIN) ? 1 : Math.min(R.ROLL_MAX, q);   // starter gear has no roll; crate gear rolls 105-110%
-    return { k, t, q: Math.round(q * 1000) / 1000, s };
-  };
-  const w = gear(L0.w, Object.keys(R.WEAPONS), "pulse"), c = gear(L0.c, R.CHORDER, "vanguard");
-  const up = {};
-  for (const k of R.UORDER) up[k] = int(L0.up && L0.up[k], 0, 4, 0);
-  // upgrades are bought with points: their total cost can't be more than the points on record (plus a little not yet synced)
-  const cost = () => R.UORDER.reduce((a, k) => a + R.UPS[k].costs.slice(0, up[k]).reduce((x, y) => x + y, 0), 0);
-  const budget = (rec.pts || 0) + 15000;
-  while (cost() > budget) { const k = R.UORDER.reduce((b, x) => (up[x] > up[b] ? x : b), R.UORDER[0]); up[k]--; }
-  const seen = {}, cores = [0, 1, 2].map((i) => { const k = L0.cores && L0.cores[i]; if (!R.GEM[k] || seen[k]) return null; seen[k] = 1; return k; });
-  const gl = {};
-  for (const k of R.GORDER) gl[k] = int(L0.gl && L0.gl[k], 1, 5, 1);
-  let skin = L0.skin === "lunar" ? "lunar" : "default";
-  const paint = R.PAINTS[L0.paint] ? L0.paint : "stock";
-  if (w.k === "moon" || skin === "lunar") {
-    const paid = await paidItems(env, pid);
-    if (w.k === "moon" && !paid.moonbeam) Object.assign(w, { k: "pulse", t: 0, q: 1, s: false });
-    if (skin === "lunar" && !paid.skin) skin = "default";
-  }
-  if (w.k === "moon") Object.assign(w, { t: 2, q: 1, s: false });
-  const chs = [], have = {};
-  for (const x of [{ c: c.k, t: c.t, q: c.q, s: c.s }].concat(Array.isArray(L0.chs) ? L0.chs.slice(0, 3) : [])) {
-    const v = gear(x, R.CHORDER, null);
-    if (!v.k || have[v.k]) continue;
-    have[v.k] = 1; chs.push({ c: v.k, t: v.t, q: v.q, s: v.s });
-  }
-  return { w: { a: w.k, t: w.t, q: w.q, s: w.s }, c: { c: c.k, t: c.t, q: c.q, s: c.s }, up, cores, gl, skin, paint, chs };
+// ---- the loadout a pilot brings: only gear they own on the server's record (eco/<pid>), with the server's rolls, upgrade
+// and core levels. Anything else falls back to the best they own of that line (rules.js ecoLoadout). ----
+export async function checkLoadout(env, R, raw, S) {
+  return R.ecoLoadout(S && typeof S === "object" ? R.ecoNorm(JSON.parse(JSON.stringify(S))) : R.ecoNorm({}), raw);
 }
 
 // ---- routes (called from index.js) ----
@@ -425,8 +388,8 @@ export async function pvpJoin(env, a) {
   const g = String(b.g || ""), m = String(b.m || "");
   if (g !== "quick" && !R.liveModes(dayOf(now)).includes(g) && !(env.PVP_ALL && R.GT_ORDER.includes(g))) return { status: 400, body: { error: "not live" } };   // quick: any live mode, picked when the room starts   // PVP_ALL: local tests of every mode
   if (g === "royale" ? m !== "solo" : !R.MODES[m]) return { status: 400, body: { error: "mode" } };
-  const rec = (await dbGet(env, `players/${a.pid}`).catch(() => null)) || {};
-  const L = await checkLoadout(env, R, b.L, rec, a.pid);
+  const S = await readEco(env, a.pid);
+  const L = await checkLoadout(env, R, b.L, S);
   const power = R.powerOf(L), league = R.powerBracket(power).i, name = cleanName(a.user), q = g + "." + m, lobby = lobbyStub(env);
   for (let i = 0; i < 3; i++) {
     const asg = await (await lobby.fetch("https://lobby/assign", post({ q, league, pid: a.pid, seats: seatsFor(g, m) }))).json();

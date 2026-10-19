@@ -1,4 +1,5 @@
-// Minimal in-memory Firebase Realtime Database REST emulator for worker tests
+// Minimal in-memory Firebase Realtime Database REST emulator for worker tests (ETags and if-match included, like the real one)
+import { createHash } from 'node:crypto';
 export function makeDB() {
   const root = {};
   const parts = (p) => p.split('/').filter(Boolean);
@@ -40,6 +41,8 @@ export function makeDB() {
     return Object.fromEntries(entries);
   };
   const log = [];
+  const etag = (p) => { const v = get(p); return v === null ? 'null_etag' : createHash('sha1').update(JSON.stringify(v)).digest('base64'); };
+  const hdr = (init, k) => { const h = init.headers || {}; if (typeof h.get === 'function') return h.get(k); for (const [a, b] of Object.entries(h)) if (a.toLowerCase() === k.toLowerCase()) return b; return null; };
   async function handle(url, init = {}) {
     const u = new URL(url);
     const path = decodeURIComponent(u.pathname.replace(/\.json$/, ''));
@@ -49,13 +52,17 @@ export function makeDB() {
     log.push(method + ' ' + path + (u.search.replace(/auth=SECRET&?/, '') ? ' ' + u.search.replace(/[?&]?auth=SECRET/, '') : ''));
     if (method === 'GET') {
       const indexed = ['/players:pts', '/players:ref', '/ntf:last'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
-      return new Response(JSON.stringify(query(get(path), { ...q, _indexed: indexed })), { status: 200 });
+      const headers = hdr(init, 'X-Firebase-ETag') === 'true' ? { ETag: etag(path) } : {};
+      return new Response(JSON.stringify(query(get(path), { ...q, _indexed: indexed })), { status: 200, headers });
     }
     const body = init.body ? JSON.parse(init.body) : null;
+    const im = hdr(init, 'if-match');
+    if (im !== null && im !== undefined && method === 'PUT' && im !== etag(path)) { db.conflicts++; return new Response(JSON.stringify(get(path)), { status: 412, headers: { ETag: etag(path) } }); }
     if (method === 'PUT') { set(path, body); return new Response(JSON.stringify(body)); }
     if (method === 'PATCH') { for (const [k, v] of Object.entries(body)) set((path + '/' + k).replace(/\/+/g, '/'), v); return new Response(JSON.stringify(body)); }
     if (method === 'DELETE') { const ks = parts(path); let n = root; for (let i = 0; i < ks.length - 1; i++) { n = n && n[ks[i]]; } if (n) delete n[ks[ks.length - 1]]; return new Response('null'); }
     return new Response('bad', { status: 400 });
   }
-  return { root, get, handle, log };
+  const db = { root, get, handle, log, conflicts: 0 };
+  return db;
 }

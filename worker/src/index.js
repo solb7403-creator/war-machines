@@ -1,29 +1,20 @@
 // LUNAR: War Machines — game server (Cloudflare Worker)
 // Every write to the database goes through here, tied to a verified Telegram login.
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
-import { DAILY_CAP, BUCKET_MAX, DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
+import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows } from "./eco.js";
 export { PvpRoom, PvpLobby };
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
 const WIKI_URL = "https://solb7403-creator.github.io/war-machines/wiki.html";
 const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin stats (lowercase)
 
-// ---- prices (must match the game) ----
-const BOX_TON = [4, 8, 23];
-const BOX_STARS = [250, 500, 1500];
-const PREMIUM_TON = { moonbeam: 50, skin: 30, starter: 6, pass: 13, founder: 19 };
-const PREMIUM_STARS = { moonbeam: 3300, skin: 2000, starter: 399, pass: 799, founder: 1199 };
-// paints are looks only (no stats)
-const PAINT_TON = { nebula: 2.4, ember: 2.4, arctic: 2.4, venom: 2.4, gold: 4.8, void: 4.8 };
-const PAINT_STARS = { nebula: 150, ember: 150, arctic: 150, venom: 150, gold: 300, void: 300 };
+// ---- prices: one table, js/rules.js (RPRICE, RSTARS, PREMIUM, PASS_PRICE, PAINTS); the server charges those ----
 const PAINT_NAMES = { nebula: "Nebula", ember: "Ember", arctic: "Arctic", venom: "Venom", gold: "Gold Plate", void: "Void" };
 const TERMS_URL = "https://solb7403-creator.github.io/war-machines/terms.html";
 const SUPPORT_TEXT = "Need help with a purchase?\n\nMessage @LunarBattle with your Player ID (in the game: Settings, top right) and roughly when you bought. We reply within 48 hours.\n\nTelegram support can't help with purchases made in this bot. Terms: " + TERMS_URL;
-
-// ---- points rules (the server is the referee) ----
-const BUCKET_RATE = 25;           // allowance refill per second
 
 // ---- TON / SOL verification ----
 const TON_RECIPIENT = "UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu";
@@ -69,7 +60,7 @@ async function auth(req, env) {
   if (!b) return { err: json({ error: "bad json" }, 400) };
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
-  return { b, user, pid: "tg_" + user.id };
+  return { b, user, pid: "tg_" + user.id, ip: req.headers.get("CF-Connecting-IP") || "" };
 }
 
 function itemLabel(k, tk, ri) {
@@ -80,56 +71,43 @@ function itemLabel(k, tk, ri) {
 }
 
 // ================= /api/sync =================
-// The game sends its lifetime points total; the server credits the difference within the rules
-// (daily cap, burst allowance), counts active days, sets the referrer once, and returns the official record.
-export async function sync(env, b, user, pid, now = Date.now()) {
-  const rec = (await dbGet(env, `players/${pid}`)) || null;
-  const d = dayOf(now), w = weekOf(now);
-  const r = rec ? { ...rec } : { pts: 0, dailyPts: 0, weeklyPts: 0, d, w, days: 0, sk: 0, t: now, al: BUCKET_MAX, fd: d };
-  const isNew = !rec;
-  if (r.d !== d) { r.d = d; r.dailyPts = 0; }
-  if (r.w !== w) { r.w = w; r.weeklyPts = 0; }
-  // burst allowance refills over time
-  const elapsed = Math.max(0, (now - (Number(r.t) || now)) / 1000);
-  let al = Math.min(BUCKET_MAX, (Number.isFinite(r.al) ? r.al : BUCKET_MAX) + elapsed * BUCKET_RATE);
-  const want = Math.max(0, Math.floor(num(b.earned, 0, 1e9)) - (r.pts || 0));
-  const credit = Math.max(0, Math.min(want, Math.floor(al), DAILY_CAP - (r.dailyPts || 0)));
-  al -= credit;
-  r.pts = (r.pts || 0) + credit;
-  r.dailyPts = (r.dailyPts || 0) + credit;
-  r.weeklyPts = (r.weeklyPts || 0) + credit;
-  // a day counts as active once the player banks points that day
-  let newDay = false;
-  if (credit > 0 && r.ld !== d) {
-    r.sk = r.ld === d - 1 ? (r.sk || 0) + 1 : 1;
-    r.days = (r.days || 0) + 1;
-    r.ld = d;
-    newDay = true;
-  }
+// No points come in here any more: every point comes from a named source the server checks (a scored match, a claim).
+// Sync sets the name, the referrer (once), the loadout the pilot fields (power and league from what they own), the
+// one-time move of an existing pilot's progress from their phone, and returns the server's record.
+export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
+  const name = cleanName(user), d = dayOf(now);
+  const rec = (await dbGet(env, `players/${pid}`).catch(() => null)) || null;
+  const paid = b.mig && typeof b.mig === "object" ? await paidRecords(env, pid) : null;
+  let why = null;
+  const t = await tx(env, pid, (S, X) => {
+    S.nm = name;
+    why = null;
+    if (S.mig === 0 && paid) why = migrate(S, b.mig, paid, X);
+    setLoadout(S, b.L || S.L);
+    return {};
+  }, now);
+  const S = t.S, up = {};
   // referrer: only for a brand-new pilot (first day), never yourself, never changed later
   const rb = String(b.refBy || "");
-  if (!r.ref && /^tg_\d{3,15}$/.test(rb) && rb !== pid && (r.days || 0) <= 1) r.ref = rb;
-  r.name = cleanName(user);
-  r.power = num(b.power, 0, 100000, r.power || 0);
-  r.league = String(b.league || r.league || "ROOKIE").slice(0, 10);
-  r.wins = num(b.wins, 0, 1e7, r.wins || 0);
-  r.losses = num(b.losses, 0, 1e7, r.losses || 0);
-  r.mp = num(b.mp, 0, 1e7, r.mp || 0);
-  r.t = now; r.al = Math.round(al); r.seen = now;
-  delete r.bracket; delete r.tier; delete r.lastSeen;
-  const up = { [`players/${pid}`]: r };
-  if (credit > 0 || isNew) {
-    up[`dly/${d}/${pid}`] = { s: r.dailyPts, n: r.name };
-    up[`wly/${w}/${pid}`] = { s: r.weeklyPts, n: r.name };
-  }
-  if (isNew) up["meta/n"] = { ".sv": { increment: 1 } };
+  let ref = rec && rec.ref;
+  if (!ref && /^tg_\d{3,15}$/.test(rb) && rb !== pid && (S.days || 0) <= 1) { ref = rb; up[`players/${pid}/ref`] = rb; }
+  if (rec && rec.bracket !== undefined) up[`players/${pid}/bracket`] = null;
   // Stars receipts the game confirmed it delivered
   const acks = Array.isArray(b.starsAck) ? b.starsAck.slice(0, 20) : [];
   for (const n of acks) if (/^[a-z0-9]{4,12}$/.test(String(n))) up[`starsAck/${pid}/${n}`] = now;
-  await dbPatch(env, "", up);
-  const out = { ok: true, now, credited: credit, capped: want > credit && r.dailyPts >= DAILY_CAP, newDay,
-    rec: { pts: r.pts, dailyPts: r.dailyPts, weeklyPts: r.weeklyPts, days: r.days || 0, sk: r.sk || 0, ld: r.ld ?? null, ref: r.ref || null, d, w } };
-  // on launch the game asks for Stars purchases that were paid but never delivered (app closed during checkout)
+  // alts: a hashed network address per pilot. A recruit who shares one with their referrer flags both (squad payouts held)
+  const flags = [];
+  if (ip) {
+    const h = hex(await hmac(env.BOT_TOKEN, "ip|" + ip)).slice(0, 16);
+    up[`iph/${pid}/${h}`] = d;
+    if (ref) { const theirs = await dbGet(env, `iph/${ref}`).catch(() => null); if (theirs && theirs[h]) { flags.push([ref, [["alt", "shares a network with recruit " + pid]]]); flags.push([pid, [["alt", "shares a network with referrer " + ref]]]); } }
+  }
+  if (why && Object.keys(why).length) flags.push([pid, Object.entries(why).map(([k, v]) => ["mig_" + k, v])]);
+  if (Object.keys(up).length) await dbPatch(env, "", up);
+  for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
+  const out = { ok: true, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
+    rec: { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
+  // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
   return out;
 }
@@ -139,31 +117,33 @@ async function undeliveredStars(env, pid, now) {
   for (const [charge, p] of Object.entries(paid || {})) {
     if (!p || !p.n || (acked && acked[p.n])) continue;
     if (typeof p.ts === "number" && now - p.ts > 30 * DAY_MS) continue;
-    out.push({ n: p.n, k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: p.stars || 0 });
+    if (p.rf) continue;
+    out.push({ n: p.n, k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: p.stars || 0, o: p.o || [] });
   }
   return out.slice(0, 10);
 }
 
 // ================= /api/squad =================
+// recruits whose payouts are on hold (flagged for review) are marked, so the phone doesn't promise them
 export async function squad(env, pid) {
-  const rows = (await dbGet(env, "players", { orderBy: '"ref"', equalTo: `"${pid}"` })) || {};
-  return Object.entries(rows).slice(0, 300).map(([id, v]) => ({ id, n: v.name || "Pilot", pts: v.pts || 0, days: v.days || 0, ld: v.ld ?? null }));
+  const [rows, fl] = await Promise.all([squadRows(env, pid), dbGet(env, "flags").catch(() => null)]);
+  return rows.map((r) => (isFlagged(fl && fl[r.id]) ? { ...r, held: true } : r));
 }
 
 // ================= /api/pay-log =================
-// TON and SOL purchases are logged here after the game sees them; the server re-checks the chain itself.
-async function verifyTon(memo, amt, proof) {
+// TON and SOL purchases: the phone reports the order, the server finds the payment on-chain itself (TON: the order note
+// and the amount; SOL: the signature and the amount), records each transaction once, checks the price against its own
+// record, and only then grants the item. Nothing is granted on the phone's word.
+async function verifyTon(memo, amt) {
   try {
     const r = await fetch(`https://toncenter.com/api/v2/getTransactions?address=${TON_RECIPIENT}&limit=50`);
     const d = await r.json();
     for (const t of d.result || []) {
       const val = parseInt((t.in_msg || {}).value || "0", 10) / 1e9;
-      const okMemo = memo && String((t.in_msg || {}).message || "") === memo;
-      const okHash = proof && t.transaction_id && t.transaction_id.hash === proof;
-      if ((okMemo || okHash) && val + 1e-9 >= amt * 0.999) return true;
+      if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return (t.transaction_id && t.transaction_id.hash) || null;
     }
   } catch {}
-  return false;
+  return null;
 }
 async function verifySol(sig, amt) {
   if (!/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(String(sig || ""))) return false;
@@ -180,57 +160,82 @@ async function verifySol(sig, amt) {
   }
   return false;
 }
-async function payLog(env, b, user, pid) {
+// SOL is priced off the TON price at live rates; the server checks it's in the right range (skipped if prices are unavailable)
+async function solValueOk(sol, ton) {
+  try {
+    const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json();
+    const t = d["the-open-network"].usd, s = d.solana.usd;
+    if (t > 0 && s > 0) return sol * s >= ton * t * 0.85;
+  } catch {}
+  return true;
+}
+const descOf = (d) => {
+  d = d && typeof d === "object" ? d : {};
+  const kind = String(d.kind || "");
+  if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null } : null;
+  if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
+  return ["starter", "founder", "moonbeam", "skin", "pass"].includes(kind) ? { kind } : null;
+};
+async function payLog(env, b, user, pid, now = Date.now()) {
   const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
   if (!cur) return { error: "cur" };
   const memo = String(b.memo || "").slice(0, 64);
   if (!memo.startsWith("LWM|" + pid + "|")) return { error: "memo" };
-  const amt = num(b.amt, 0, 100000);
-  const key = `payments/LWM_${safeKey(memo)}`;
-  if (await dbGet(env, key)) return { ok: true, dup: true };
-  const verified = cur === "TON" ? await verifyTon(memo, amt, String(b.proof || "")) : await verifySol(String(b.proof || ""), amt);
-  await dbPut(env, key, { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), verified, t: { ".sv": "timestamp" } });
-  return { ok: true, verified };
+  const amt = num(b.amt, 0, 100000), key = `payments/LWM_${safeKey(memo)}`;
+  const have = await dbGet(env, key).catch(() => null);
+  const desc = descOf(b.desc);
+  if (have && (have.granted || !desc)) { const S = await readEco(env, pid); return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) }; }
+  const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
+  if (!desc) {   // an old phone without the order details: logged and checked, not granted here
+    rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : await verifySol(rec.proof, amt);
+    await dbPut(env, key, rec);
+    return { ok: true, verified: rec.verified };
+  }
+  const S0 = await readEco(env, pid), X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
+  if (!price) return { error: "item" };
+  const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
+  if (cur === "TON" && amt + 1e-9 < price.ton * 0.999) return { error: "amount" };
+  if (cur === "SOL" && (rec.gram + 1e-9 < price.ton * 0.999 || !(await solValueOk(amt, price.ton)))) return { error: "amount" };
+  let txid = null;
+  if (cur === "TON") txid = await verifyTon(memo, need);
+  else if (await verifySol(rec.proof, amt)) txid = rec.proof;
+  if (!txid) { if (!have) await dbPut(env, key, { ...rec, verified: false }); return { ok: true, verified: false, error: "pending" }; }
+  // each on-chain transaction pays for one order
+  const once = await claimOnce(env, `${cur === "TON" ? "tonTx" : "solTx"}/${safeKey(txid)}`, { pid, memo, t: now });
+  if (!once.ok && !(once.v && once.v.memo === memo)) return { error: "reused" };
+  const t = await tx(env, pid, (S, X) => {
+    S.gout = S.gout || {};
+    const gk = safeKey(memo);
+    if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
+    const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
+    S.gout[gk] = outs.length ? outs : [{ none: 1 }];
+    const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
+    return { outs };
+  }, now);
+  const outs = (t.outs || []).filter((o) => o && !o.none);
+  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
+  return { ok: true, verified: true, out: outs, E: pub(t.S) };
 }
 
 // ================= /api/stars-invoice =================
-async function starsInvoice(env, b, user, pid) {
+// the price comes from the server's own record: repeat-buy pricing, and a deal only if it's still unused this period
+async function starsInvoice(env, b, user, pid, now = Date.now()) {
   const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0);
-  let base = 0, starBase = 0;
-  if (k === "box") {
-    if (!["gem", "weapon", "chassis"].includes(tk) || ![0, 1, 2].includes(ri)) return { status: 400, body: { error: "item" } };
-    base = BOX_TON[ri]; starBase = BOX_STARS[ri];
-  } else if (k === "paint") {
-    if (!PAINT_TON[tk]) return { status: 400, body: { error: "item" } };
-    base = PAINT_TON[tk]; starBase = PAINT_STARS[tk];
-  } else if (PREMIUM_TON[k]) {
-    if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
-    if (k === "founder" && !RULES.FOUNDER_OPEN) return { status: 400, body: { error: "closed" } };   // sold only until $LUNAR launches
-    base = PREMIUM_TON[k]; starBase = PREMIUM_STARS[k];
-  }
-  else return { status: 400, body: { error: "item" } };
-  // only crates have repeat-buy pricing; everything else is a fixed price
-  if (k !== "box") b.price = base;
-  // the game sends its escalated TON price; never below base, never absurdly above it.
-  // Deals (once per pilot per period, tracked here once paid): d = first rare/epic gem cache of the UTC day 30% off, w = one epic crate a UTC week 25% off
-  const now = Date.now(), dk = k === "box" && (b.deal === "d" || b.deal === "w") ? b.deal : null;
-  let floor = base;
-  if (dk) {
-    if (dk === "d" ? !(tk === "gem" && ri >= 1) : ri !== 2) return { status: 400, body: { error: "deal" } };
-    const used = (await dbGet(env, `deals/${pid}`).catch(() => null)) || {};
-    if (dk === "d" ? used.d === dayOf(now) : used.w === weekOf(now)) return { status: 409, body: { error: "deal_used" } };
-    floor = base * (1 - (dk === "d" ? RULES.DEAL_D_OFF : RULES.DEAL_W_OFF));
-  }
-  let price = Number(b.price || base);
-  if (!(price >= floor - 0.005)) price = base;
-  if (price > base * 10) price = base * 10;
-  const stars = Math.max(1, Math.round(starBase * (price / base)));
+  if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
+  const desc = descOf({ kind: k, tk, ri, id: tk, deal: b.deal });
+  if (!desc) return { status: 400, body: { error: "item" } };
+  if (k === "founder" && !RULES.FOUNDER_OPEN) return { status: 400, body: { error: "closed" } };   // sold only until $LUNAR launches
+  const S = await readEco(env, pid), X = ctxOf(pid, now);
+  if (RULES.ecoOwned(S, desc, X)) return { status: 409, body: { error: "owned" } };
+  const pr = RULES.ecoPrice(S, desc, X);
+  if (!pr) return { status: 400, body: { error: "item" } };
+  if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
   const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: tk || undefined, r: k === "box" ? ri : undefined, g: price, n: nonce, x: dk || undefined });
-  const label = itemLabel(k, tk, ri);
-  const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: stars }] });
+  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" ? tk : k === "box" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
+  const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
-  return { status: 200, body: { link: r.result, stars, nonce } };
+  return { status: 200, body: { link: r.result, stars: pr.stars, nonce } };
 }
 
 // ================= /api/notify-optin =================
@@ -240,8 +245,14 @@ async function notifyOptin(env, pid, user, on) {
 }
 
 // ================= /api/admin (Jake only) =================
-async function admin(env, user) {
+async function admin(env, user, b = {}) {
   if (!ADMINS.includes(String(user.username || "").toLowerCase())) return { status: 403, body: { error: "not admin" } };
+  // clear a flagged pilot (every current reason): they count for the snapshot again
+  if (b.clear && /^tg_\d{3,15}$/.test(String(b.clear))) {
+    const f = await dbGet(env, `flags/${b.clear}`).catch(() => null), up = {};
+    for (const k of flagReasons(f)) up[`flags/${b.clear}/ok/${k}`] = Date.now();
+    if (Object.keys(up).length) await dbPatch(env, "", up);
+  }
   const today = dayOf(Date.now());
   const [n, top, dly, pays, stars] = await Promise.all([
     dbGet(env, "meta/n").catch(() => 0),
@@ -262,7 +273,7 @@ async function admin(env, user) {
   }
   recent.sort((a, b) => (b.t || 0) - (a.t || 0));
   // retention + conversion from up to 1,000 player records
-  const all = Object.values((await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1000 }).catch(() => ({}))) || {});
+  const allRec = (await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1000 }).catch(() => ({}))) || {}, all = Object.values(allRec);
   const payers = new Set(Object.values(pays || {}).filter(Boolean).map((p) => p.pid));
   const old1 = all.filter((p) => (p.fd ?? p.ld ?? today) <= today - 1), old7 = all.filter((p) => (p.fd ?? p.ld ?? today) <= today - 7);
   const stats = {
@@ -273,28 +284,43 @@ async function admin(env, user) {
     payers: payers.size, conv: all.length ? Math.round((payers.size / all.length) * 1000) / 10 : 0,
     arppu: payers.size ? Math.round(rev.USD / payers.size) : 0,
   };
-  return { status: 200, body: { ok: true, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
+  // flagged pilots (anomalies, the one-time move, shared networks): they sit out the snapshot until cleared
+  const fl = (await dbGet(env, "flags").catch(() => null)) || {};
+  const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
+  const body0 = { flagged };
+  // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
+  if (b.snap) body0.snapshot = await snapshot(env, fl);
+  return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
     revenue: { TON: +rev.TON.toFixed(3), SOL: +rev.SOL.toFixed(4), STARS: rev.STARS, USD: Math.round(rev.USD), count: rev.count, unverified: rev.unverified },
     recent: recent.slice(0, 15), top: Object.values(top || {}).sort((a, b) => (b.pts || 0) - (a.pts || 0)).map((p) => ({ name: p.name, pts: p.pts, days: p.days, power: p.power })) } };
+}
+
+export async function snapshot(env, fl) {
+  fl = fl || (await dbGet(env, "flags").catch(() => null)) || {};
+  const top = (await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 2000 }).catch(() => ({}))) || {};
+  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0]).sort((a, b) => b[2] - a[2]).slice(0, 1000);
 }
 
 // ================= leaderboard (cron, every 5 minutes) =================
 // Phones download one small file instead of every player's record.
 export async function buildLeaderboard(env, now = Date.now()) {
   const d = dayOf(now), w = weekOf(now);
-  const [top, daily, weekly, n] = await Promise.all([
-    dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1000 }).catch(() => ({})),
+  const [top, daily, weekly, n, fl] = await Promise.all([
+    dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1100 }).catch(() => ({})),
     dbGet(env, `dly/${d}`, { orderBy: '"s"', limitToLast: 100 }).catch(() => ({})),
     dbGet(env, `wly/${w}`, { orderBy: '"s"', limitToLast: 100 }).catch(() => ({})),
     dbGet(env, "meta/n").catch(() => 0),
+    dbGet(env, "flags").catch(() => null),
   ]);
-  const all = Object.entries(top || {}).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, v.league || ""]).sort((a, b) => b[2] - a[2]);
+  // pilots flagged for review sit out the board (and the snapshot) until Jake clears them
+  const ok = ([id]) => !isFlagged(fl && fl[id]);
+  const all = Object.entries(top || {}).filter(ok).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, v.league || ""]).sort((a, b) => b[2] - a[2]);
   const lb = {
     t: now, d, w, n: Math.max(Number(n) || 0, all.length),
     cut: all.length >= 1000 ? all[999][2] : 0,
     top: all.slice(0, 1000),
-    daily: Object.entries(daily || {}).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
-    weekly: Object.entries(weekly || {}).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    daily: Object.entries(daily || {}).filter(ok).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
   };
   await dbPut(env, "lb", lb);
   // housekeeping once an hour: drop daily/weekly score tables older than a few days/weeks
@@ -339,15 +365,45 @@ async function webhook(req, env) {
   }
   const m = u.message;
   if (m && m.successful_payment) {
+    // Telegram confirmed a Stars payment: the server grants the item now (the phone just shows it)
     const sp = m.successful_payment;
     let p = {};
     try { p = JSON.parse(sp.invoice_payload); } catch {}
-    const pid = "tg_" + m.from.id;
+    const pid = "tg_" + m.from.id, now = Date.now();
     const charge = safeKey(sp.telegram_payment_charge_id);
     const item = itemLabel(p.k, p.t, p.r);
+    const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
+    const t = desc ? await tx(env, pid, (S, X) => {
+      S.gout = S.gout || {};
+      if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
+      const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
+      S.gout[charge] = outs.length ? outs : [{ none: 1 }];
+      const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
+      return { outs };
+    }, now) : { outs: [] };
+    const outs = (t.outs || []).filter((o) => o && !o.none);
     await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", ts: { ".sv": "timestamp" } });
-    if (p.x === "d" || p.x === "w") { const now = Date.now(); await dbPatch(env, `deals/${pid}`, p.x === "d" ? { d: dayOf(now) } : { w: weekOf(now) }); }   // that deal is used for this period
+    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
+    return new Response("ok");
+  }
+  if (m && m.refunded_payment) {
+    // a Stars refund: the server takes back exactly what that purchase gave
+    const rp = m.refunded_payment, pid = "tg_" + m.from.id, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
+    const sp = await dbGet(env, `starsPaid/${pid}/${charge}`).catch(() => null);
+    if (sp && !sp.rf) {
+      let n = 0;
+      const t = await tx(env, pid, (S) => {
+        S.rfd = S.rfd || [];
+        if (S.rfd.includes(charge)) return { abort: true };
+        S.rfd = S.rfd.concat(charge).slice(-40);
+        RULES.ecoRefund(S, sp.k, sp.o || []);
+        n = S.rfd.length;
+        return {};
+      }, now);
+      const pk = `payments/LWM_${pid}_stars_${charge}`.slice(0, 120);
+      await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, [`${pk}/refunded`]: true, [`${pk}/verified`]: false });
+      if (n >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", n + " Stars refunds"]], now).catch(() => {});
+    }
     return new Response("ok");
   }
   if (m && m.text && /^\/start/.test(m.text)) {
@@ -371,12 +427,15 @@ async function webhook(req, env) {
 
 // ================= router =================
 const ROUTES = {
-  "/api/sync": async (env, a) => ({ status: 200, body: await sync(env, a.b, a.user, a.pid) }),
+  "/api/sync": async (env, a) => ({ status: 200, body: await sync(env, a.b, a.user, a.pid, Date.now(), a.ip) }),
+  "/api/act": async (env, a) => act(env, a.b, a.user, a.pid),
+  "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid),
+  "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
   "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
-  "/api/admin": async (env, a) => admin(env, a.user),
+  "/api/admin": async (env, a) => admin(env, a.user, a.b),
   "/api/pvp/join": async (env, a) => pvpJoin(env, a),
 };
 

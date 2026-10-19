@@ -272,26 +272,24 @@ function PVP_BANK() { return 0.6; }
   if (ra) t(ra.r.pts === Math.round(R.ROYALE_PTS[ra.r.place - 1] * (ra.r.featured ? R.FEATURED_X : 1)) + 0, 'Last Standing points by place');
 }
 
-// ================= loadouts =================
+// ================= loadouts: only what the pilot owns on the server's record =================
 {
-  const db = makeDB(); globalThis.fetch = async (url, init) => db.handle(url, init);
-  const env = { FIREBASE_DB_SECRET: 'SECRET', BOT_TOKEN: '123:ABC' };
   const good = L0(); good.up.hull = 2; good.w = { a: 'twin', t: 1, q: 1.07, s: false };
-  let L = await checkLoadout(env, R, good, { pts: 3000 }, 'tg_5');
-  t(L.up.hull === 2 && L.w.a === 'twin' && L.w.q === 1.07, 'valid loadout kept');
-  L = await checkLoadout(env, R, { ...good, up: { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 } }, { pts: 0 }, 'tg_5');
-  const cost = Object.values(L.up).reduce((a, lv) => a + [500, 2000, 5000, 12500].slice(0, lv).reduce((x, y) => x + y, 0), 0);
-  t(cost <= 15000, 'upgrades capped by points on record: ' + JSON.stringify(L.up));
-  L = await checkLoadout(env, R, { w: { a: 'pulse', t: 9, q: 5, s: false }, c: { c: 'mech', t: 2, q: 9, s: true }, cores: ['dmg', 'dmg', 'xx'], gl: { dmg: 99 }, paint: 'nope', skin: 'lunar' }, {}, 'tg_5');
-  t(L.w.t === 2 && L.w.q === R.ROLL_MAX && L.c.c === 'vanguard' && L.c.q === R.SALV_MAX[2] && L.cores[1] === null && L.cores[2] === null && L.gl.dmg === 5 && L.paint === 'stock' && L.skin === 'default', 'out-of-range values clamped ' + JSON.stringify(L));
-  L = await checkLoadout(env, R, { ...good, w: { a: 'moon', t: 2, q: 1, s: false } }, {}, 'tg_5');
-  t(L.w.a === 'pulse', 'Moonbeam without a purchase falls back to stock');
-  db.root.starsPaid = { tg_5: { ch1: { k: 'moonbeam' } } };
-  db.root.payments = { 'LWM_LWM_tg_5_abc': { pid: 'tg_5', item: 'Lunar Skin' } };
-  L = await checkLoadout(env, R, { ...good, w: { a: 'moon', t: 0, q: 1, s: false }, skin: 'lunar' }, {}, 'tg_5');
-  t(L.w.a === 'moon' && L.w.t === 2 && L.skin === 'lunar', 'purchased Moonbeam and skin allowed');
-  L = await checkLoadout(env, R, { ...good, chs: [{ c: 'titan', t: 1, q: 1.06, s: false }, { c: 'titan', t: 2, q: 1.1 }, { c: 'zz' }] }, {}, 'tg_5');
-  t(L.chs.length === 2 && L.chs[0].c === 'vanguard' && L.chs[1].c === 'titan', 'owned chassis list cleaned');
+  const own = { up: { hull: 2 }, wOwn: { pulse: [0], twin: [1] }, roll: { 'twin:1': 1.07 } };
+  let L = await checkLoadout(null, R, good, own);
+  t(L.up.hull === 2 && L.w.a === 'twin' && L.w.q === 1.07, 'owned loadout kept');
+  L = await checkLoadout(null, R, { ...good, w: { a: 'twin', t: 1, q: 1.1 }, up: { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 }, gl: { dmg: 5 } }, own);
+  t(L.w.q === 1.07 && L.up.hull === 2 && L.up.cannon === 0 && L.gl.dmg === 1, 'roll, upgrades and core levels come from the record, not the phone ' + JSON.stringify(L.up));
+  L = await checkLoadout(null, R, { w: { a: 'siege', t: 2, q: 5, s: false }, c: { c: 'mech', t: 2, q: 9, s: true }, cores: ['dmg', 'dmg', 'xx'], gl: { dmg: 99 }, paint: 'gold', skin: 'lunar' }, own);
+  t(L.w.a === 'pulse' && L.w.t === 0 && L.c.c === 'vanguard' && L.c.t === 0 && L.cores[1] === null && L.cores[2] === null && L.paint === 'stock' && L.skin === 'default', 'unowned gear, paint and skin fall back ' + JSON.stringify(L));
+  L = await checkLoadout(null, R, { ...good, w: { a: 'moon', t: 2, q: 1, s: false } }, own);
+  t(L.w.a === 'pulse' && L.w.t === 0, 'Moonbeam without owning it falls back to starter gear');
+  L = await checkLoadout(null, R, { ...good, w: { a: 'moon', t: 0, q: 1, s: false }, skin: 'lunar' }, { ...own, moonbeam: true, skin: 'lunar' });
+  t(L.w.a === 'moon' && L.w.t === 2 && L.skin === 'lunar', 'owned Moonbeam and skin allowed');
+  L = await checkLoadout(null, R, { ...good, chs: [{ c: 'titan', t: 1, q: 1.06, s: false }, { c: 'titan', t: 2, q: 1.1 }, { c: 'zz' }] }, { ...own, cOwn: { vanguard: [0], titan: [1] }, roll: { 'titan:1': 1.06 } });
+  t(L.chs.length === 2 && L.chs[0].c === 'vanguard' && L.chs[1].c === 'titan' && L.chs[1].t === 1, 'owned chassis list from the record');
+  L = await checkLoadout(null, R, { ...good, c: { c: 'titan', t: 2, q: 1.1, s: true } }, { salv: { 'titan:2': 1.04 } });
+  t(L.c.c === 'titan' && L.c.s && L.c.q === 1.04, 'salvaged gear with its recorded value');
 }
 
 // ================= the worker end to end: join, ticket, WebSocket, match, credit =================
@@ -354,8 +352,10 @@ function PVP_BANK() { return 0.6; }
   const day = Math.floor(Date.now() / 864e5);
   t(db.get('/dly/' + day + '/tg_501').s === p1.dailyPts, 'daily board updated');
   // daily cap
-  db.root.players.tg_501.dailyPts = 19990;
-  const { creditMatch } = await import('../../../worker/src/db.js');
+  const e1 = db.get('/eco/tg_501');
+  t(e1 && e1.wins === 1 && e1.mp === 1 && e1.pass && e1.pass.xp >= 40 && e1.dq && Object.keys(e1.dq.p || {}).length >= 0, 'live result also counts for quests, pass XP and stats on the record ' + JSON.stringify({ w: e1 && e1.wins, xp: e1 && e1.pass && e1.pass.xp }));
+  db.root.eco.tg_501.dailyPts = 19990;
+  const { creditMatch } = await import('../../../worker/src/eco.js');
   const c = await creditMatch(env, 'tg_501', 'livea', () => ({ pts: 500, pvs: 2, won: true, drawn: false }));
   t(c.awarded === 10 && c.capped && db.get('/players/tg_501').dailyPts === 20000, 'live points respect the daily cap');
   const h = await worker.fetch(new Request('https://x/pvp/health'), env);
