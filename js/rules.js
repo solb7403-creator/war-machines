@@ -163,7 +163,7 @@ const QUESTS=[
  {id:'q_dmg',n:'Heavy hitter',d:'Deal 2,500 damage in one match',pts:100,goal:2500},
  {id:'q_super',n:'Overcharged',d:'Fire your super twice in one match',pts:100,goal:2},
  {id:'q_box',n:'Scavenger',d:'Grab 3 mystery boxes in one match',pts:75,goal:3},
- {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 20% health',pts:250,goal:1},
+ {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 75% health',pts:250,goal:1},
  {id:'q_wiki',n:'Read the wiki',d:'How to play, the airdrop and tokenomics',pts:200,goal:1,link:'wiki'},
  {id:'q_x',n:'Follow on X',d:'Updates and announcements',pts:50,goal:1,link:'x'},
  {id:'q_tg',n:'Join the channel',d:'Airdrop news first',pts:50,goal:1,link:'tg'}].filter(q=>!q.link||LINKS[q.link]);
@@ -535,7 +535,7 @@ function ecoAfterMatch(S,o,X){
  ecoPassXP(S,(won?PASS_XP_WIN:drawn||top3?PASS_XP_DRAW:PASS_XP_LOSS)+(o.feat?PASS_XP_FEAT:0),X);
  ecoMsAdd(S,'q_win1',won?1:0);ecoMsAdd(S,'q_win3',won?1:0);
  ecoMsAdd(S,'q_dmg',st.dmg||0,true);ecoMsAdd(S,'q_super',st.sup||0,true);ecoMsAdd(S,'q_box',st.box||0,true);
- if(won&&low>=0.2)ecoMsAdd(S,'q_clean',1);   // never below 20% health
+ if(won&&low>=0.75)ecoMsAdd(S,'q_clean',1);   // never below 75% health
  const W=g=>won&&o.g===g?1:0;
  ecoProgress(S,{wins:won?1:0,plays:1,dmg:Math.round(st.dmg||0),boxes:st.box||0,sups:st.sup||0,kills:st.kills||0,zoneWins:W('zone'),teamWins:won&&M.n>1&&!isSolo(o.g)?1:0,caps:st.caps||0,
   crystals:st.cry||0,stars:st.stars||0,top3:top3?1:0,featured:o.feat?1:0,featWins:won&&o.feat?1:0,quick:o.quick?1:0,

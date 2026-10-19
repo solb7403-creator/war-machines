@@ -15,18 +15,18 @@ async def main():
         await pg.add_style_tag(content='#toast{display:none!important}')
         await pg.evaluate("()=>{save.welcomed=true;save.mp=12;store();closeAll();window.syncPlayer=()=>{};window.__onME=onMatchEnd;window.onMatchEnd=()=>{};}")
 
-        # 1) Untouchable: win without dropping below 20% health. 75% lost counts, 85% lost doesn't
+        # 1) Untouchable: win without dropping below 75% health. 20% lost counts, 30% lost doesn't
         async def clean_run(lost):
             return await pg.evaluate("""(lost)=>{save.q.q_clean=undefined;save.gtype='arena';save.mode='2v2';save.map='classic';prepareMatch();startMatch();
              takeHit(me,me.mhp*lost,units[2],null,0,false,true,0);me.hp=me.mhp;
              units.filter(u=>u.team!==me.team).forEach(u=>u.hp=0);update(1/30);
              return {won:lastResult.won,low:mstat.low,done:!!(save.q.q_clean&&save.q.q_clean.done)};}""",lost)
-        r=await clean_run(0.75);print('untouchable 75% lost',r)
-        check(r['won'] and abs(r['low']-0.25)<0.01 and r['done'],'Untouchable should count at 25% health '+json.dumps(r))
-        r=await clean_run(0.85);print('untouchable 85% lost',r)
-        check(r['won'] and not r['done'],'Untouchable counted at 15% health '+json.dumps(r))
+        r=await clean_run(0.2);print('untouchable 20% lost',r)
+        check(r['won'] and abs(r['low']-0.8)<0.01 and r['done'],'Untouchable should count at 80% health '+json.dumps(r))
+        r=await clean_run(0.3);print('untouchable 30% lost',r)
+        check(r['won'] and not r['done'],'Untouchable counted at 70% health '+json.dumps(r))
         r=await pg.evaluate("()=>QUESTS.find(q=>q.id==='q_clean')")
-        check('20%' in r['d'] and r['pts']==250,'Untouchable text/reward '+json.dumps(r))
+        check('75%' in r['d'] and r['pts']==250,'Untouchable text/reward '+json.dumps(r))
 
         # 2) daily quests: 4 a day (easy, easy, medium, hard), same for the same pilot and day; old saves move over
         r=await pg.evaluate("""()=>{save.dq={d:dayNum(),ids:['win3','play5','dmg6k'],p:{win3:2},c:{},all:false};const a=dailyQuests();
