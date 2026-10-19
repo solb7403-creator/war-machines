@@ -97,9 +97,9 @@ function gearMeta(isW,it){
  return 'Health ×'+it.hp+', speed ×'+it.spd+', beats '+CH[COUNTER[it.cls]].n;
 }
 function winRange(gk,mk){
- const sb=Math.min((save.streak||0)+1,5)*20;
- if(gk==='random'){const v=GT_ORDER.map(g=>winPoints(g,mk)+sb);return [Math.min(...v),Math.max(...v)];}
- const v=winPoints(gk,mk)+sb;return [v,v];
+ const st=(save.streak||0)+1;
+ if(gk==='random'){const v=GT_ORDER.map(g=>winPoints(g,mk)+streakPts(g,mk,st));return [Math.min(...v),Math.max(...v)];}
+ const v=winPoints(gk,mk)+streakPts(gk,mk,st);return [v,v];
 }
 const shortNum=n=>n<10000?fmtNum(n):fmtK(Math.round(n/100)*100);
 const rangeTxt=r=>r[0]===r[1]?'+'+fmtNum(r[0]):'+'+fmtNum(r[0])+' to +'+fmtNum(r[1]);

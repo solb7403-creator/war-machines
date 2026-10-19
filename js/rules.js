@@ -76,16 +76,16 @@ const MODES={
  '1v1':{n:1,label:'1v1',win:125,draw:60,loss:30},
  '2v2':{n:2,label:'2v2',win:200,draw:100,loss:50},
  '3v3':{n:3,label:'3v3',win:300,draw:150,loss:75}};
-const ZONE_X={'1v1':3,'2v2':2,'3v3':1.5};   // Moon Zone runs ~4x longer, so it pays more per match
+const ZONE_X={'1v1':3,'2v2':2.4,'3v3':2.1};   // Moon Zone runs ~4x longer, so it pays more per match
 // Game types. The rules are data, so a PvP server or a 3D client can run the same matches.
 // t: time limit (s). respawn: tanks come back after dying. x: pay multiplier per team size (longer matches pay more per match,
 // so points per minute stay level across modes). solo: free for all with that many tanks, no teams.
 // Every mode plays against AI pilots; Arena, Moon Zone and the featured mode also have live queues (real players take the seats).
 const GTYPES={
- arena:{label:'Arena',d:'Destroy the enemy team',t:180},
+ arena:{label:'Arena',d:'Destroy the enemy team',t:180,x:{'1v1':1,'2v2':1.6,'3v3':1.4}},
  zone:{label:'Moon Zone',d:'Hold the moving zone. First to 100.',t:180,respawn:true,x:ZONE_X},
- crystal:{label:'Crystal Rush',d:'Grab crystals from the mine. Hold 10 for 15 seconds to win.',t:180,respawn:true,x:{'1v1':3,'2v2':2,'3v3':1.5}},
- bounty:{label:'Bounty',d:'Kills earn stars. Every kill raises your bounty.',t:120,respawn:true,x:{'1v1':3.5,'2v2':2.25,'3v3':1.5}},
+ crystal:{label:'Crystal Rush',d:'Grab crystals from the mine. Hold 10 for 15 seconds to win.',t:180,respawn:true,x:{'1v1':3,'2v2':2.4,'3v3':2.1}},
+ bounty:{label:'Bounty',d:'Kills earn stars. Every kill raises your bounty.',t:120,respawn:true,x:{'1v1':3.5,'2v2':2.8,'3v3':2.4}},
  royale:{label:'Last Standing',d:'6 tanks, 1 survivor. Stay inside the ring.',t:150,solo:6}};
 const GT_ORDER=['arena','zone','crystal','bounty','royale'];
 const GT_PICK={...GTYPES,random:{label:'Random',d:'A different mode every match'}};   // what the selector shows; Random resolves at match start
@@ -93,7 +93,18 @@ const ROYALE_PTS=[260,200,140,100,60,30],ROYALE_HP=2,BTY_HP=0.5,BTY_RESPAWN=3;  
 const isSolo=gk=>!!(GTYPES[gk]&&GTYPES[gk].solo);
 function winBase(gk,mk){   // points for a win before the league multiplier, featured bonus and streak
  if(isSolo(gk))return ROYALE_PTS[0];
- const M=MODES[mk];return Math.round(M.win*(gk==='arena'?(mk==='1v1'?SERIES_X:1):GTYPES[gk].x[mk]));
+ return Math.round(MODES[mk].win*teamX(gk,mk,true));
+}
+// pay multiplier for a game type and team size. Every step up in team size pays at least 25% more per match, for wins, draws and losses
+function teamX(gk,mk,series){
+ if(isSolo(gk))return 1;
+ return GTYPES[gk].x[mk]*(gk==='arena'&&mk==='1v1'&&series?SERIES_X:1);
+}
+// win streak bonus (+20 a win, up to 5 wins). Scaled like the win pay, so a bigger team still pays at least 25% more with a streak
+function streakPts(gk,mk,streak){
+ const n=Math.min(streak,5)*20;
+ if(isSolo(gk))return n;
+ return Math.round(n*winBase(gk,mk)/winBase(gk,'1v1'));
 }
 // 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most)
 const SERIES_X=2,ROUND_T=90;
@@ -519,8 +530,8 @@ function ecoClaimPass(S,track,i,X){
 // points for a finished match: mode pay, best of 3, featured, league multiplier, win streak (o: won, drawn, place, top3, g, m, feat, series)
 function ecoMatchPts(S,o,mult,X){
  if(o.won)S.streak++;else if(!o.drawn&&!o.top3)S.streak=0;   // Last Standing: 2nd and 3rd keep your streak
- const sb=o.won?Math.min(S.streak,5)*20:0,M=MODES[o.m]||MODES['1v1'],solo=isSolo(o.g);
- const zx=solo?1:o.g==='arena'?(o.series?SERIES_X:1):GTYPES[o.g].x[o.m],fxm=o.feat?FEATURED_X:1;
+ const mk=MODES[o.m]?o.m:'1v1',sb=o.won?streakPts(o.g,mk,S.streak):0,M=MODES[mk],solo=isSolo(o.g);
+ const zx=teamX(o.g,mk,!!o.series),fxm=o.feat?FEATURED_X:1;
  const base=Math.round(solo?ROYALE_PTS[Math.max(1,Math.min(6,o.place||6))-1]:(o.won?M.win:o.drawn?M.draw:M.loss)*zx);
  const pts=Math.round(base*fxm*mult)+sb;
  return {pts,awarded:ecoAward(S,pts,X),base,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};

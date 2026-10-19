@@ -103,7 +103,7 @@ async def main():
             print(g,m,mp,r)
             check(r['state']=='over','%s did not finish'%g)
             if g=='crystal':
-                check(r['modeX']=={'2v2':2,'3v3':1.5}[m] and r['feat']==(fm=='crystal'),'crystal pay multipliers '+json.dumps(r))
+                check(r['modeX']=={'2v2':2.4,'3v3':2.1}[m] and r['feat']==(fm=='crystal'),'crystal pay multipliers '+json.dumps(r))
                 check(r['t']<=181,'crystal ran past its time limit '+str(r['t']))
             if g=='bounty':
                 check(r['t']>=119,'bounty ended early '+str(r['t']))

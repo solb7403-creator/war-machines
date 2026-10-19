@@ -71,10 +71,11 @@ en = await end(A, st.tok, { won: true }, now0 + 60000); t(!en.ok && en.error ===
 st = await start(A, {}, now0 + 1000);
 const e1 = E('tg_111').earned;
 en = await end(A, st.tok, { won: true, pts: 99999, awarded: 99999, stats: { dmg: 1e9, kills: 99, box: 3, sup: 4, low: 0.5 } }, now0 + 61000);
-t(en.ok && en.res.pts === 200 + 20 && en.res.awarded === 220 && E('tg_111').earned === e1 + 220, 'server computes the points (2v2 win 200 + streak 20); the phone\'s number is ignored ' + JSON.stringify(en.res));
+const want2 = Math.round(R.MODES['2v2'].win * R.teamX('arena', '2v2', false)) + R.streakPts('arena', '2v2', 1);
+t(en.ok && en.res.pts === want2 && en.res.awarded === want2 && E('tg_111').earned === e1 + want2, 'server computes the points (2v2 win + streak); the phone\'s number is ignored ' + JSON.stringify(en.res));
 t(E('tg_111').q.q_dmg && E('tg_111').q.q_dmg.p <= 60 * 450 && E('tg_111').wins === 1 && E('tg_111').mp === 1, 'forged damage held to what fits in the time ' + JSON.stringify(E('tg_111').q.q_dmg));
 const again = await end(A, st.tok, { won: true }, now0 + 62000);
-t(again.ok && again.dup && again.res.awarded === 220 && E('tg_111').earned === e1 + 220, 'replaying a ticket returns the same answer, no double credit');
+t(again.ok && again.dup && again.res.awarded === want2 && E('tg_111').earned === e1 + want2, 'replaying a ticket returns the same answer, no double credit');
 st = await start(A, {}, now0 + 70000); const old = st.tok;
 st = await start(A, { g: 'bounty', m: '1v1' }, now0 + 71000);
 en = await end(A, old, { won: true }, now0 + 200000); t(!en.ok && en.error === 'ticket', 'an older ticket dies when a new match starts');

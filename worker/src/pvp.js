@@ -269,7 +269,7 @@ export class RoomCore {
     const R = this.R, g = this.q.g, m = this.q.m, u = this.sim.units[s.idx];
     const feat = g === R.featuredOn(this.io.day()), brk = R.powerBracket(R.powerOf(s.L)), M = R.MODES[m] || R.MODES["1v1"];
     const top3 = g === "royale" && !quit && o.place > 0 && o.place <= 3;
-    const zx = g === "royale" ? 1 : g === "arena" ? (this.series ? R.SERIES_X : 1) : R.GTYPES[g].x[m], fxm = feat ? R.FEATURED_X : 1;
+    const zx = R.teamX(g, m, !!this.series), fxm = feat ? R.FEATURED_X : 1;
     const won = !quit && o.won, drawn = !quit && o.drawn;
     const base = quit ? 0 : Math.round(g === "royale" ? R.ROYALE_PTS[o.place - 1] : (won ? M.win : drawn ? M.draw : M.loss) * zx);
     const st = u.st || {}, se = this.sim.series;
@@ -283,7 +283,7 @@ export class RoomCore {
       st: { dmg: res.stats.dmg, sup: res.stats.sups, box: res.stats.boxes, kills: res.stats.kills, caps: res.stats.caps, cry: res.stats.cry, stars: res.stats.stars, low: res.stats.low } };
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
-      const sb = won ? Math.min(pvs, 5) * 20 : 0;
+      const sb = won ? R.streakPts(g, m, pvs) : 0;
       return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt };
     };
     const p = Promise.resolve().then(() => this.io.credit(s, calc))
