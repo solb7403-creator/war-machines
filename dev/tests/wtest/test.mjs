@@ -144,6 +144,7 @@ setEco('tg_111', (S) => { S.pts = 1000; });
 setEco('tg_111', (S) => { S.pts = 150000; });
 [s, r] = await act(A, 'crate', { tk: 'weapon', ri: 1 }); const got1 = r.out;
 t(got1.kind === 'new' && got1.tier === 1 && r.E.pts === 70000 && r.E.wOwn[got1.k].includes(1) && r.E.roll[got1.k + ':1'] >= 1.05, 'rare weapon cache opened on the server ' + JSON.stringify(got1));
+setEco('tg_111', (S) => { S.roll[got1.k + ':1'] = 1.06; });   // the crate can roll 110%, which can't be tuned
 [s, r] = await act(A, 'tune', { w: 1, k: got1.k, t: 1 }); t(r.ok && typeof r.out.better === 'boolean' && r.E.pts === 60000, 'tune-up on the server');
 [s, r] = await act(A, 'tune', { w: 1, k: 'pulse', t: 0 }); t(r.out.err === 'crate', 'starter gear cannot be tuned');
 [s, r] = await act(A, 'salvage', { tk: 'chassis', ri: 2 }); t(r.out.sal && r.E.pts === 40000, 'salvage on the server');
