@@ -9,6 +9,7 @@ export { PvpRoom, PvpLobby };
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
 const WIKI_URL = "https://solb7403-creator.github.io/war-machines/wiki.html";
+const CHANNEL_URL = RULES.TG_URL || "https://t.me/LUNARmemecoin";
 const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin stats (lowercase)
 
 // ---- prices: one table, js/rules.js (RPRICE, RSTARS, PREMIUM, PASS_PRICE, PAINTS); the server charges those ----
@@ -412,7 +413,7 @@ async function webhook(req, env) {
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
       text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
-      reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "📖 Wiki", url: WIKI_URL }]] },
+      reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "📣 Channel", url: CHANNEL_URL }, { text: "📖 Wiki", url: WIKI_URL }]] },
     });
   } else if (m && m.text && /^\/(paysupport|support)/.test(m.text)) {
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: SUPPORT_TEXT });

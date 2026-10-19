@@ -145,7 +145,7 @@ function tankOf(L,n){
 const DAILY_CAP=20000;   // max points a pilot can bank per UTC day
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
 const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile
-const TG_URL='';   // Telegram news channel: fill in when it exists (its quest stays hidden until then)
+const TG_URL='https://t.me/LUNARmemecoin';   // Telegram news channel
 const LINKS={wiki:WIKI_URL,x:X_URL,tg:TG_URL};
 // tiers (lifetime points) and their daily login bonus
 const TIERS=['Bronze','Silver','Gold','Platinum','Diamond'],TPTS=[0,10000,50000,150000,400000],TDAILY=[25,50,100,200,400];

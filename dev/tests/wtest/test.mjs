@@ -130,7 +130,7 @@ setEco('tg_111', (S) => { S.wq.n = 20; });
 [s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.err === 'no', 'milestone once');
 [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.err === 'no', 'link quest needs the visit first');
 [s, r] = await act(A, 'visit', { id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.pts === 200, 'wiki visited, then claimed');
-[s, r] = await act(A, 'visit', { id: 'q_tg' }); t(r.out.err === 'no', 'no Telegram channel yet: no quest');
+[s, r] = await act(A, 'visit', { id: 'q_tg' }); [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.pts === 50, 'Telegram channel quest: visit, then claim');
 // pass: free track points only up to the tier reached; premium never gives points
 [s, r] = await act(A, 'pass', { t: 'f', i: 30 }); t(r.out.err === 'no', 'pass tier not reached refused');
 const xp = E('tg_111').pass.xp;
