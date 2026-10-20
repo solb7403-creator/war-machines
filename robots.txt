@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://solb7403-creator.github.io/war-machines/sitemap.xml
