@@ -89,6 +89,7 @@ function fx(name,arg){
   case 'warn':sfx('warn');break;
   case 'crate':sfx('crate');break;
   case 'dash':haptic('i','light');sfx('dash');break;
+  case 'shield':haptic('i','medium');sfx('ready');break;
   case 'win':haptic('n','success');sfx('win');break;
   case 'lose':haptic('n','warning');sfx('lose');break;
   case 'draw':haptic('n','warning');sfx('draw');break;

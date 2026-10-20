@@ -287,12 +287,14 @@ function drawUnitArt(ctx,w,h,u){
 // ---- battle input: floating joystick, SUPER button, keyboard ----
 const btn=()=>({x:vw-62,y:vh-96-SAB,r:40});
 const dashBtn=()=>({x:vw-150,y:vh-70-SAB,r:30});
+const shieldBtn=()=>({x:vw-142,y:vh-158-SAB,r:30});
 let aim=null;   // {id,sx,sy,x,y,on}: dragging from SUPER to aim it
 const aimAng=()=>aim&&aim.on?Math.atan2(aim.y-aim.sy,aim.x-aim.sx):null;
 const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
 // your super and dash: straight into the sim in AI matches, to the server in live ones
 const superGo=a=>pvpOn()?pvpSuper(a):useSuper(me,a);
 const dashGo=(x,y)=>pvpOn()?pvpDash(x,y):useDash(me,x,y);
+const shieldGo=()=>pvpOn()?pvpShield():useShield(me);
 const ffBtn=()=>({x:vw/2-80,y:vh-74-SAB,w:160,h:44});
 const joy={on:false,id:null,sx:0,sy:0,x:0,y:0,dx:0,dy:0},keys={};
 const loc=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
@@ -304,6 +306,7 @@ cv.addEventListener('pointerdown',e=>{
   if(me.sp<SUPER_MAX||me.sup){nums.push({x:me.x,y:me.y-1.6,t:0.9,z:1,txt:'Super '+Math.round(me.sp/SUPER_MAX*100)+'%',c:'#ff9d9d'});return;}
   aim={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,on:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}return;}
  const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();dashGo(ix,iy);return;}
+ const H=shieldBtn();if(me.hp>0&&Math.hypot(L.x-H.x,L.y-H.y)<=H.r+12){shieldGo();return;}
  if(joy.on)return;joy.on=true;joy.id=e.pointerId;joy.sx=joy.x=L.x;joy.sy=joy.y=L.y;joy.dx=joy.dy=0;try{cv.setPointerCapture(e.pointerId);}catch(_){}
 });
 cv.addEventListener('pointermove',e=>{
@@ -318,7 +321,7 @@ const joyUp=e=>{
  if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(e.type==='pointercancel'?undefined:a);return;}
  if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}});
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 function inputVec(){
  let x=joy.dx,y=joy.dy;
@@ -445,6 +448,7 @@ function drawBattle(){
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
   if((spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
+  if(b.shieldT>0){const pl=0.75+0.25*Math.sin(performance.now()/90);g.save();g.globalAlpha=0.15*pl;g.fillStyle='#40e0d0';g.beginPath();g.arc(px,py,r*1.5,0,7);g.fill();g.globalAlpha=0.85*pl;g.strokeStyle='#40e0d0';g.lineWidth=2.5;g.stroke();g.restore();}
   drawTank(b,b===me&&b.skin==='lunar'?'#e8f4ff':col);
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
@@ -571,6 +575,11 @@ function drawHUD(){
   g.fillStyle=ready?'rgba(77,159,255,.9)':'rgba(30,42,64,.9)';g.beginPath();g.arc(D.x,D.y,D.r,0,7);g.fill();
   if(!ready){g.strokeStyle='#4d9fff';g.lineWidth=4;g.beginPath();g.arc(D.x,D.y,D.r-3,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-cd));g.stroke();}
   g.fillStyle=ready?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(D.r*0.42));g.fillText('DASH',D.x,D.y+1);}
+ // SHIELD button with a cooldown ring
+ if(state==='play'&&me.hp>0){const H=shieldBtn(),cd=(me.shieldCd||0)/SHIELD_CD,on=(me.shieldT||0)>0,ready=cd<=0;
+  g.fillStyle=on?'rgba(64,224,208,.95)':ready?'rgba(26,94,104,.9)':'rgba(24,38,52,.9)';g.beginPath();g.arc(H.x,H.y,H.r,0,7);g.fill();
+  if(!ready){g.strokeStyle='#40e0d0';g.lineWidth=4;g.beginPath();g.arc(H.x,H.y,H.r-3,-Math.PI/2,-Math.PI*2*(1-cd)-Math.PI/2);g.stroke();}
+  g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1);}
  // SUPER button with a charge ring
  if(state==='play'&&me.hp>0){const B=btn(),f=me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
   g.fillStyle=rdy?'#e0242f':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();

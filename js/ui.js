@@ -430,6 +430,7 @@ const INFO={
   ['Mystery boxes','Drive over the gold box for a random boost. It lasts until you take enough damage; the ring around your tank shows what’s left.'],
   ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button to auto-aim, or drag from it to aim yourself.'],
   ['Dash','The blue Dash button bursts you forward in the direction you’re driving. Use it to dodge supers. It recharges in 4 seconds.'],
+  ['Shield','The teal Shield button raises a plasma shield for 3 seconds that cuts the damage you take by 65%. It recharges in 25 seconds.'],
   ['Crits','Direct hits can crit for double damage. Shots that only clip the edge do less.'],
   ['Counters','Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout. The winning side deals 15% more damage and takes 10% less.'],
   ['Map objects','Rocks, domes and containers block shots and movement. Orange supply crates break under fire and sometimes drop a box. Craters slow you down.'],

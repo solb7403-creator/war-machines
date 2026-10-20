@@ -149,7 +149,7 @@ function respawnTick(dt){
    continue;
   }
   u.dead=(u.dead||0)+dt;
-  if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.flash=0;u.trail=[];u.calm=0;
+  if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;
    u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;   // teleported: live players snap to the spawn
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
    ev('r',u.id);}
@@ -337,6 +337,7 @@ const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+b
 // every hit goes through here. kind: 0 shot, 1 super, 2 storm, 3 meteor (sets the floating number); bid: the shot that hit
 function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const wasAlive=r.hp>0;
+ if(r.shieldT>0&&(kind||0)<2)amt*=SHIELD_MULT;   // shielded: combat damage cut before it lands
  r.hp-=amt;r.flash=0.08;r.calm=0;
  if(r.st){r.st.taken+=amt;const f=Math.max(0,r.hp)/r.mhp;if(f<r.st.low)r.st.low=f;}
  ev('h',r.id,amt,kind||0,crit?1:0,direct?1:0,src?src.id:-1,bid||0);
@@ -410,15 +411,30 @@ function useDash(u,dx,dy){
  return true;
 }
 function dashStep(u,dt){   // returns true while dashing
+ shieldStep(u,dt);
  if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);
  if(!u.dash)return false;
  const k=STAT.speed*DASH_SPD*slowAt(u)*dt;u.x+=u.dash.dx*k;u.y+=u.dash.dy*k;push(u);
  u.dash.t-=dt;if(u.dash.t<=0)u.dash=null;
  return true;
 }
+// ---- plasma shield: 3s of heavy damage reduction (25s cooldown). Same numbers for every pilot, bots included ----
+const SHIELD_CD=25,SHIELD_T=3,SHIELD_MULT=0.35;   // take 35% of combat damage while it holds (shots and supers; storm and meteors ignore it)
+function useShield(u){
+ if(state!=='play'||u.hp<=0||(u.shieldCd||0)>0||(u.shieldT||0)>0)return false;
+ u.shieldT=SHIELD_T;u.shieldCd=SHIELD_CD;
+ if(u===me&&typeof fx==='function')fx('shield');
+ return true;
+}
+function shieldStep(u,dt){
+ if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt);
+ if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0)u.shieldT=0;}
+}
 // bots dash out of a super they see coming (about half the time)
 function botDodge(u){
- if((u.dashCd||0)>0||u.dash)return;
+ if(u.dash)return;
+ const dashOk=(u.dashCd||0)<=0,shieldOk=(u.shieldCd||0)<=0&&(u.shieldT||0)<=0;
+ if(!dashOk&&!shieldOk)return;
  for(const v of units){
   if(v.team===u.team||v.hp<=0||!v.sup||v.sup.dodged&&v.sup.dodged[u.id])continue;
   const S=SUP[v.sup.w];let inDanger=false,px=0,py=0;
@@ -427,7 +443,8 @@ function botDodge(u){
    if(along>0&&along<ln&&Math.abs(side)<wd+R){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
-  if(Math.random()<0.5)useDash(u,px,py);
+  if(dashOk&&Math.random()<0.5)useDash(u,px,py);
+  else if(shieldOk&&Math.random()<0.6)useShield(u);
   return;
  }
 }
@@ -607,6 +624,7 @@ function botAI(dt,u){
  if(!tgt||u.hp<=0)return;
  u.focus=tgt;
  botDodge(u);if(dashStep(u,dt))return;
+ u.brain.shT=(u.brain.shT||0)-dt;if(u.brain.shT<=0&&u.hp/u.mhp<0.35&&u.calm<0.8&&(u.shieldCd||0)<=0&&(u.shieldT||0)<=0){useShield(u);u.brain.shT=2;}
  const b=u.brain,d=dist2(u,tgt),seen=los(u,tgt),hurt=u.hp/u.mhp<0.5&&u.hp<tgt.hp;
  u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=1+Math.random()*1.8;}
  b.t-=dt;b.age+=dt;b.hideCd-=dt;
@@ -811,6 +829,8 @@ function netClaim(u,x,y,k){if(u.ctl!=='net'||k!==(u.tp||0))return;u.claim={x:Mat
 function netMove(u,dt){
  if(u.dash){u.dash.t-=dt;if(u.dash.t<=0)u.dash=null;}
  if(u.dashCd>0)u.dashCd=Math.max(0,u.dashCd-dt);
+ if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt);
+ if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0)u.shieldT=0;}
  if(u.mbxT>0){u.mbxT-=dt;if(u.mbxT<=0)u.mbx=0;}
  const v=STAT.speed*spdMult(u)*(u.sup?0.6:1)*slowAt(u)*NET_TOL*(u.dash?DASH_SPD:1);
  u.mb=Math.min((u.mb||0)+v*dt,v*NET_BANK+(u.mbx||0));
@@ -825,6 +845,7 @@ function netMove(u,dt){
  if(Math.hypot(c.x-u.x,c.y-u.y)>0.6&&moved<go*0.5){u.stuck=(u.stuck||0)+dt;if(u.stuck>0.35)netResync(u);}else u.stuck=0;
 }
 function netResync(u){u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.stuck=0;}   // the phone snaps its tank to the server's spot
+function netShield(u){return useShield(u);}   // a live player raised their shield: same cooldown as everyone
 function netDash(u,dx,dy){   // a live player dashed: same cooldown as everyone; their claims may run ahead for the burst
  if(!useDash(u,dx,dy))return false;
  u.mbx=STAT.speed*DASH_SPD*DASH_T*NET_TOL;u.mbxT=0.6;u.mb=(u.mb||0)+u.mbx;
@@ -924,7 +945,7 @@ function simRound(){
  setMap(curMap);   // fresh crates
  bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
  for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
-  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
+  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  state='play';
 }

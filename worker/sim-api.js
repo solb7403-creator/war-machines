@@ -25,11 +25,11 @@ function liveTank(u,L){Object.assign(u,tankOf(L,hpScale()),{L,pw:powerOf(L)});u.
 function roster(){return units.map(u=>({id:u.id,team:u.team,name:u.name,cls:u.cls,wtype:u.wtype,wtier:u.wtier,gems:u.gems,gemM:u.gemM,dscale:u.dscale,aura:u.aura,
  paint:u.paint,skin:u.skin||'default',mhp:u.mhp,spdM:u.spdM,ai:!u.pid,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
 // the world, ~15 times a second. Units, in id order:
-// [x, y, turret angle, hull angle, hp, super, flags (1 bridge deck, 2 dashing, 4 repairing, 8 human driving, 16 AI driving a live player's tank),
+// [x, y, turret angle, hull angle, hp, super, flags (1 bridge deck, 2 dashing, 4 repairing, 8 human driving, 16 AI driving a live player's tank, 32 shielded),
 //  crystals, bounty, dash cooldown x10, deaths, time dead x10, teleport count, buffs [[key index, damage taken]] or 0, super charging [t, angle] or 0, max hp]
 function snapState(){
  const s={u:units.map(u=>[r2(u.x),r2(u.y),r2(u.ang),r2(u.hd===undefined?u.ang:u.hd),Math.round(Math.max(0,u.hp)),Math.round(u.sp),
-  ((u.elev||0)===1?1:0)|(u.dash?2:0)|(u.rep>0?4:0)|(u.hum?8:0)|(u.pid&&!u.hum?16:0),u.cry||0,u.bty||0,Math.round((u.dashCd||0)*10),u.deaths||0,Math.round((u.dead||0)*10),u.tp||0,
+  ((u.elev||0)===1?1:0)|(u.dash?2:0)|(u.rep>0?4:0)|(u.hum?8:0)|(u.pid&&!u.hum?16:0)|(u.shieldT>0?32:0),u.cry||0,u.bty||0,Math.round((u.dashCd||0)*10),u.deaths||0,Math.round((u.dead||0)*10),u.tp||0,
   u.buffs.length?u.buffs.map(b=>[BUFF_KEYS.indexOf(b.k),Math.round(b.taken)]):0,u.sup?[r2(u.sup.t),r2(u.sup.ang)]:0,u.mhp]),
   tl:r2(timeLeft),el:r2(elapsed),gs:[r2(gscore[0]),r2(gscore[1])],bx:boxes.map(b=>[r2(b.x),r2(b.y)]),cr:crates.map(c=>[c.id,Math.round(c.hp)]),
   sh:shells.map(q=>[q.id,r2(q.x),r2(q.y)])};
@@ -44,6 +44,6 @@ return {
  R:{STOCK_L,PVP_V,UPS,UORDER,CH,CHORDER,WEAPONS,WORDER,TIER_MULT,ROLL_MIN,ROLL_MAX,SALV_MIN,SALV_MAX,GEM,GORDER,PAINTS,LEAGUES,FEATURED_X,
   MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,tankOf,powerBracket,featuredOn,liveModes,isSolo},
  setup:liveSetup,setTank:liveTank,roster,snap:snapState,start:startMatch,startRound,step:update,
- outcome,placeOf,useSuper,netClaim,netDash,setCtl,hit:takeHit,
+ outcome,placeOf,useSuper,netClaim,netDash,netShield,setCtl,hit:takeHit,
  get state(){return state;},get units(){return units;},get series(){return series;},get map(){return curMap;},get g(){return matchG;},get storm(){return storm;}
 };

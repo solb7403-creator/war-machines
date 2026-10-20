@@ -199,7 +199,7 @@ function pvpApply(rt){
   if(u!==me){
    if(b&&!jump){u.x=pvX(lerp(a[0],b[0],k));u.y=pvY(lerp(a[1],b[1],k));u.ang=pvA(lerpA(a[2],b[2],k));u.hd=pvA(lerpA(a[3],b[3],k));}
    else{u.x=pvX(cur[0]);u.y=pvY(cur[1]);u.ang=pvA(cur[2]);u.hd=pvA(cur[3]);}
-   u.elev=cur[6]&1;u.dash=cur[6]&2?{t:0.1,dx:0,dy:0}:null;u.dashCd=cur[9]/10;
+   u.elev=cur[6]&1;u.dash=cur[6]&2?{t:0.1,dx:0,dy:0}:null;u.dashCd=cur[9]/10;u.shieldT=cur[6]&32?0.25:0;
   }else u.ang=pvA(lerpA(a[2],b?b[2]:a[2],k));
   u.hp=cur[4];u.sp=cur[5];u.rep=cur[6]&4?0.3:0;u.away=!!(cur[6]&16);u.cry=cur[7];u.bty=cur[8];u.deaths=cur[10];u.dead=cur[11]/10;u.mhp=cur[15];
   u.buffs=cur[13]?cur[13].map(([ki,tk])=>({k:BUFF_KEYS[ki],taken:tk})):[];
@@ -276,6 +276,7 @@ function pvpSuper(a){
  pvpSend({k:'s',a:a===undefined||a===null?null:Math.round(a*1000)/1000});fx('super');return true;
 }
 function pvpDash(ix,iy){if(!useDash(me,ix,iy))return false;pvpSend({k:'d',x:Math.round(me.dash.dx*100)/100,y:Math.round(me.dash.dy*100)/100});return true;}
+function pvpShield(){if(!useShield(me))return false;pvpSend({k:'h'});return true;}
 
 // ---- rounds and the result ----
 function pvpRound(m){
@@ -292,7 +293,7 @@ function pvpRoundStart(m){
  pvpRoster(m.units);
  bullets=[];shells=[];warns=[];pops=[];nums=[];beams=[];blasts=[];novas=[];feed=[];shakeT=0;shakeM=0;
  for(const u of units){u.trail=[];u.sup=null;u.buffs=[];}
- me.dash=null;me.dashCd=0;me.rdyShown=false;
+ me.dash=null;me.dashCd=0;me.shieldT=0;me.shieldCd=0;me.rdyShown=false;
  P.phase='play';state='play';
  roundBanner();
  onRoundStart();
