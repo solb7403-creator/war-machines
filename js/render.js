@@ -448,8 +448,17 @@ function drawBattle(){
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
   if((spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
-  if(b.shieldT>0){const pl=0.75+0.25*Math.sin(performance.now()/90);g.save();g.globalAlpha=0.15*pl;g.fillStyle='#40e0d0';g.beginPath();g.arc(px,py,r*1.5,0,7);g.fill();g.globalAlpha=0.85*pl;g.strokeStyle='#40e0d0';g.lineWidth=2.5;g.stroke();g.restore();}
   drawTank(b,b===me&&b.skin==='lunar'?'#e8f4ff':col);
+  if(b.shieldT>0){const pl=performance.now()/1000+(b.id||0)*1.7,br=r*4.0*(1+0.04*Math.sin(pl*7));   // plasma ball: a giant crackling blue sphere around the tank while the shield holds
+   g.save();
+   const gr=g.createRadialGradient(px,py,br*0.2,px,py,br);
+   gr.addColorStop(0,'rgba(80,170,255,0.10)');gr.addColorStop(0.7,'rgba(60,150,255,0.16)');gr.addColorStop(0.93,'rgba(130,205,255,0.42)');gr.addColorStop(1,'rgba(130,205,255,0)');
+   g.fillStyle=gr;g.beginPath();g.arc(px,py,br,0,7);g.fill();
+   g.globalAlpha=0.16;g.strokeStyle='#4db2ff';g.lineWidth=10;g.beginPath();g.arc(px,py,br*0.96,0,7);g.stroke();
+   g.globalAlpha=0.95;g.strokeStyle='#8fd0ff';g.lineWidth=3.5;g.beginPath();g.arc(px,py,br*0.97,0,7);g.stroke();
+   g.strokeStyle='#e2f4ff';g.lineWidth=2;
+   for(let i=0;i<3;i++){const a0=pl*(1.3+i*0.43)+i*2.1;g.globalAlpha=0.5+0.4*Math.sin(pl*9+i*2.4);g.beginPath();g.arc(px,py,br*(0.98-0.05*i),a0,a0+0.9+0.3*Math.sin(pl*5+i));g.stroke();}
+   g.restore();}
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));

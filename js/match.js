@@ -121,7 +121,7 @@ function localEnd(forced){
 }
 // everything after the points: wins and losses, pass XP, quests, the results screen. Shared with live matches
 function afterMatch(o){
- const {won,drawn,top3,feat}=o,st=o.st||{dmg:0,sup:0,box:0,taken:0,kills:0,caps:0,cry:0,stars:0,low:0};
+ const {won,drawn,top3,feat}=o,st=o.st||{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:0};
  const sw=o.seriesW||(series&&series.w);
  endAt=performance.now();
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
@@ -131,7 +131,7 @@ function afterMatch(o){
  const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id)).concat(weeklyQuests().filter(q=>q.done&&!wqBefore.includes(q.id)));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
  lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,
-  before:o.before,after:save.earned||0,stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),cry:st.cry,stars:st.stars},
+  before:o.before,after:save.earned||0,stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),arm:Math.round(st.arm||0),shd:Math.round(st.shd||0),best:Math.round(st.best||0),low:typeof st.low==='number'?st.low:1,cry:st.cry,stars:st.stars},
   quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won&&!storm,meCls:me.cls,series:series?{w:o.seriesW||series.w.slice()}:null,
   live:!!o.live,quit:!!o.quit,n:units.length};
  store();
