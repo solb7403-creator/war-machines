@@ -624,11 +624,12 @@ let vsTimer=null;
 function vsBuild(){
  const {adv,dis}=matchup(),foes=units.filter(u=>u.team!==0),mine=units.filter(u=>u.team===0),solo=isSolo(matchG);
  const live=pvpOn(),liveFoes=live&&pvpLiveFoes();
- const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u===me?'You':u.name)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+CH[u.cls].c+'">'+CH[u.cls].n+'</span></div>';};
+ const ctag=u=>{if(u===me||u.team===me.team)return '';if(COUNTER[u.cls]===me.cls)return '<i class="ctag up">▲ BOOSTED</i>';if(COUNTER[me.cls]===u.cls)return '<i class="ctag dn">▼ DISADVANTAGED</i>';return '';};   // every foe card carries its own triangle standing vs you, so it can never go missing from the summary line
+ const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u===me?'You':u.name)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+CH[u.cls].c+'">'+CH[u.cls].n+'</span>'+ctag(u)+'</div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
  else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+'.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
- else if(adv&&dis){txt='Mixed matchup: you counter some, some counter you.';}
+ else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='Mixed matchup: you counter '+wn.join(', ')+'; '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you.';}
  else txt='Even matchup. No counters either way.';
  const owned=ownedChassisClasses();
  return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents')+'</span></div>'+
