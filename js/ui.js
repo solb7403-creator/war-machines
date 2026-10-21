@@ -737,6 +737,7 @@ function onRoundStart(){clearInterval(roundTimer);roundTimer=null;const ov=findO
 let leaveFn=null,paused=false;
 function onMatchStart(){
  closeAll();
+ if(typeof resetTapFocus==='function')resetTapFocus();
  document.body.classList.add('battle');fit();
  tut=(save.mp||0)===0?{step:0,t:0,moved:0}:null;
  if(leaveFn)dropBack(leaveFn);

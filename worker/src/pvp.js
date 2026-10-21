@@ -133,6 +133,7 @@ export class RoomCore {
       case "s": if (live) this.sim.useSuper(u, typeof m.a === "number" && Number.isFinite(m.a) ? m.a + (s.flip ? Math.PI : 0) : undefined); break;
       case "d": if (live) this.sim.netDash(u, fl * (+m.x || 0), fl * (+m.y || 0)); break;
       case "h": if (live) this.sim.netShield(u); break;
+      case "t": if (live) this.sim.netTarget(u, m.v | 0); break;   // tap-to-target lock (unit id, -1 clears)
       case "c": if ((this.phase === "vs" || this.phase === "round") && u && !s.done) {   // chassis swap
         const c = (s.L.chs || []).find((x) => x.c === m.c);
         if (c && c.c !== s.L.c.c) { s.L = { ...s.L, c: { ...c } }; this.sim.setTank(u, s.L); this.all({ k: "u", units: this.sim.roster() }); }

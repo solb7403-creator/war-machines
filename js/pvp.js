@@ -277,6 +277,7 @@ function pvpSuper(a){
 }
 function pvpDash(ix,iy){if(!useDash(me,ix,iy))return false;pvpSend({k:'d',x:Math.round(me.dash.dx*100)/100,y:Math.round(me.dash.dy*100)/100});return true;}
 function pvpShield(){if(!useShield(me))return false;pvpSend({k:'h'});return true;}
+function pvpTarget(id){pvpSend({k:'t',v:id});return true;}
 
 // ---- rounds and the result ----
 function pvpRound(m){

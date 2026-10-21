@@ -289,7 +289,18 @@ const btn=()=>({x:vw-62,y:vh-96-SAB,r:40});
 const dashBtn=()=>({x:vw-150,y:vh-70-SAB,r:30});
 const shieldBtn=()=>({x:vw-142,y:vh-158-SAB,r:30});
 let aim=null;   // {id,sx,sy,x,y,on}: dragging from SUPER to aim it
-const aimAng=()=>aim&&aim.on?Math.atan2(aim.y-aim.sy,aim.x-aim.sx):null;
+let tapFocus=-1,tapCand=null;   // tap-to-target: unit id your cannon is locked onto, and the tap being tracked
+function resetTapFocus(){tapFocus=-1;tapCand=null;}
+function tapTarget(sx,sy){   // a quick tap on the field: lock onto an enemy (tap it again, or tap ground, to clear)
+ if(state!=='play'||!me)return;
+ const wx=(sx-ox)/sc,wy=(sy-oy)/sc;let best=null,bd=1.4;
+ for(const u of units){if(u.team===me.team||u.hp<=0)continue;const d=Math.hypot(u.x-wx,u.y-wy);if(d<bd){bd=d;best=u;}}
+ tapFocus=best&&tapFocus!==best.id?best.id:-1;
+ if(pvpOn()){if(typeof pvpTarget==='function')pvpTarget(tapFocus);}
+ else me.focus=tapFocus>=0?best:null;
+ if(typeof fx==='function')fx('tap');
+}
+const aimAng=()=>{if(!aim||!aim.on||!me)return null;const px=X(me.x),py=Y(me.y),dx=aim.x-px,dy=aim.y-py;return Math.hypot(dx,dy)>24?Math.atan2(dy,dx):null;};   // aim is measured from the tank, not from the finger: the preview line is where the shot really goes
 const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
 // your super and dash: straight into the sim in AI matches, to the server in live ones
 const superGo=a=>pvpOn()?pvpSuper(a):useSuper(me,a);
@@ -307,10 +318,12 @@ cv.addEventListener('pointerdown',e=>{
   aim={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,on:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}return;}
  const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();dashGo(ix,iy);return;}
  const H=shieldBtn();if(me.hp>0&&Math.hypot(L.x-H.x,L.y-H.y)<=H.r+12){shieldGo();return;}
+ tapCand={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,t:performance.now()};   // any non-button touch might be a target tap; joyUp decides
  if(joy.on)return;joy.on=true;joy.id=e.pointerId;joy.sx=joy.x=L.x;joy.sy=joy.y=L.y;joy.dx=joy.dy=0;try{cv.setPointerCapture(e.pointerId);}catch(_){}
 });
 cv.addEventListener('pointermove',e=>{
  if(aim&&e.pointerId===aim.id){const L=loc(e);aim.x=L.x;aim.y=L.y;if(Math.hypot(L.x-aim.sx,L.y-aim.sy)>18)aim.on=true;return;}
+ if(tapCand&&e.pointerId===tapCand.id){const L=loc(e);tapCand.x=L.x;tapCand.y=L.y;}
  if(!joy.on||e.pointerId!==joy.id)return;
  const max=55;const L=loc(e);let dx=L.x-joy.sx,dy=L.y-joy.sy,d=Math.hypot(dx,dy);
  if(d>max){dx=dx/d*max;dy=dy/d*max;d=max;}
@@ -319,6 +332,7 @@ cv.addEventListener('pointermove',e=>{
 });
 const joyUp=e=>{
  if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(e.type==='pointercancel'?undefined:a);return;}
+ if(tapCand&&e.pointerId===tapCand.id){const c=tapCand;tapCand=null;if(e.type!=='pointercancel'&&performance.now()-c.t<300&&Math.hypot(c.x-c.sx,c.y-c.sy)<12)tapTarget(c.x,c.y);}
  if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();});
@@ -486,6 +500,10 @@ function drawBattle(){
  if(cry)cry.loose.forEach((c,i)=>{if(c.l===1)drawCrystal(c,i);});   // crystals on the bridge deck
  for(const u of units)if(u.team!==0&&(u.elev||0)===1&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===1&&u.hp>0)drawOne(u,TC[0]);
+ const fu=tapFocus>=0?units.find(u=>u.id===tapFocus&&u.hp>0):null;   // your locked target wears gold brackets
+ if(fu){const px=X(fu.x),py=Y(fu.y),rr=R*sc*(fu.dscale||1)*1.5,k=rr*0.42;g.save();g.strokeStyle='#ffd24a';g.globalAlpha=0.72+0.28*Math.sin(performance.now()/160);g.lineWidth=3;g.beginPath();
+  for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){g.moveTo(px+cx*rr,py+cy*rr-cy*k);g.lineTo(px+cx*rr,py+cy*rr);g.lineTo(px+cx*rr-cx*k,py+cy*rr);}
+  g.stroke();g.restore();}
  if(storm){   // Last Standing: everything outside the ring is storm
   const sx=X(storm.x),sy=Y(storm.y),srad=Math.max(0,storm.r*sc),t=performance.now()/1000;
   g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,H*sc);g.moveTo(sx+srad,sy);g.arc(sx,sy,srad,0,Math.PI*2,true);g.fillStyle='rgba(104,48,184,.32)';g.fill('evenodd');

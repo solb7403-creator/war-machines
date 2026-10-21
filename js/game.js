@@ -175,7 +175,7 @@ function nearestFoe(u){let best=null,bd=1e9;for(const v of units){if(v.team===u.
 const BOT_NAMES=['Rust','Vex','Kilo','Nyx','Bolt','Ion','Echo','Grit','Onyx','Rook','Volt','Zed','Hex','Juno','Mako','Pike'];
 const BOT_PAINTS=['nebula','ember','arctic','venom','gold','void'];
 // AI pilot factory: mirrors the gear level and cores of ref (on the phone that's you; in a live match, the middle human by power)
-const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0});
+const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0,bx:null});
 function mkBot(team,x,y,ref,name){
  const bwm=ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=ref.chm||1,hs=hpScale(),mp=MM.mp;
  const bwA=WORDER[(Math.random()*3)|0];
@@ -386,7 +386,7 @@ function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse p
 }
 function useSuper(r,aimAng){
  if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0)return false;
- const S=SUP[r.wtype||'pulse'],e=nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;
+ const S=SUP[r.wtype||'pulse'],e=(r.focus&&r.focus.hp>0&&r.focus.team!==r.team)?r.focus:nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;   // a locked target (tap-to-target, a bot's objective) is who the super wants
  if(!aimed){
   if(!e)return false;
   if(S.kind!=='nova'&&!los(r,e)){   // don't burn the charge on a blind auto-fire
@@ -502,7 +502,7 @@ function explode(s){
 function superTick(dt){
  for(const r of units){
   if(!r.sup||r.hp<=0)continue;
-  const S=SUP[r.sup.w],e=nearestFoe(r);
+  const S=SUP[r.sup.w],e=(r.focus&&r.focus.hp>0&&r.focus.team!==r.team)?r.focus:nearestFoe(r);
   if(e&&S.kind!=='nova'&&r.sup.t>0.25&&!r.sup.fixed){   // the aim keeps steering until the last 0.25s, then locks
    if(los(r,e)){const want=Math.atan2(e.y+(e.vy||0)*r.sup.t-r.y,e.x+(e.vx||0)*r.sup.t-r.x);let d=want-r.sup.ang;d=Math.atan2(Math.sin(d),Math.cos(d));const st=1.6*dt;r.sup.ang+=Math.max(-st,Math.min(st,d));}
   }
@@ -664,14 +664,14 @@ function botAI(dt,u){
   if(b.spot&&dist2(u,b.spot)<0.7&&los(u,tgt))b.spot=coverSpot(u,tgt);
  }else if(gzones){
   const z=gzones[0];
-  let zg=botZoneGoal(u),nb=null,nd=4.5;for(const bx of boxes){const dd=dist2(u,bx);if(dd<nd){nd=dd;nb=bx;}}if(nb&&!z.next)zg=nb;
+  let zg=botZoneGoal(u);const nb=boxGoal(u,9);if(nb&&(!z.next||dist2(u,nb)<=5))zg=nb;
   const zt=z.next&&dist2(zg,z.next)<1.5?z.next:z;
   if(zt===z&&dist2(u,z)<z.r-0.4)zin=z;
   if(zg&&!(seen&&d<5.5&&dist2(u,zt)<z.r+3))goal=zg;   // fight only near the objective, otherwise keep moving to it
  }
- else if(cry){const cg=crystalGoal(u,tgt,seen,d);if(cg)goal=cg;}
+ else if(cry){const cg=crystalGoal(u,tgt,seen,d);if(cg)goal=cg;else if(!(u.cry>0)){const nb=boxGoal(u,10);if(nb)goal=nb;}}   // no crystal to chase: take the supply run instead of brawling empty-handed
  else if(storm){const sg=royaleGoal(u,tgt,seen,d);if(sg)goal=sg;}
- else if(boxes.length){let nb=boxes[0],nd=1e9;for(const bx of boxes){const d=dist2(u,bx);if(d<nd){nd=d;nb=bx;}}goal=nb;}   // head for the nearest box
+ else if(boxes.length){const nb=boxGoal(u,1e9);if(nb)goal=nb;}   // head for a box no ally is already fetching
  let tx,ty;
  if(goal===tgt&&seen){            // engaging: hold range and strafe
   let mx=0,my=0;
@@ -782,7 +782,30 @@ function bountyKill(r,src){
 function botTarget(u){
  if(cry&&cry.cd&&cry.cd.team!==u.team){let best=null,bc=0;for(const v of units)if(v.team===cry.cd.team&&v.hp>0&&(v.cry||0)>bc){bc=v.cry;best=v;}if(best)return best;}   // stop their countdown: hunt the carrier
  if(matchG==='bounty'){let best=null,bs=-1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const s=(v.bty||BTY_START)*1.5-dist2(u,v)*0.5;if(s>bs){bs=s;best=v;}}if(best)return best;}   // a big bounty is worth a detour
- return nearestFoe(u);
+ // everyone used to pile onto the nearest foe. Score the field instead: nearer and weaker is better,
+ // a foe costs more for every ally already locked onto it, and the one shooting at me matters
+ let best=null,bs=1e9;
+ for(const v of units){if(v.team===u.team||v.hp<=0)continue;
+  let s=dist2(u,v)+(v.hp/v.mhp)*4;
+  for(const a of units)if(a!==u&&a.team===u.team&&a.hp>0&&a.focus===v)s+=7;
+  if(v.focus===u)s-=2.5;
+  if(u.focus===v)s-=1.5;
+  if(s<bs){bs=s;best=v;}}
+ return best;
+}
+// the supply run: best unclaimed box within reach. A box an ally is already fetching counts as taken
+// unless I'm clearly closer; a hurt bot ranges farther for one (armor and repair live in those boxes)
+function boxGoal(u,maxD){
+ if(u.hp/u.mhp<0.5)maxD+=4;
+ let best=null,bd=maxD;
+ for(const bx of boxes){
+  const d=dist2(u,bx);if(d>=bd)continue;
+  let claimed=false;
+  for(const a of units){if(a!==u&&a.team===u.team&&a.hp>0&&a.brain&&a.brain.bx===bx&&dist2(a,bx)<d+3){claimed=true;break;}}
+  if(claimed)continue;
+  bd=d;best=bx;}
+ if(u.brain)u.brain.bx=best;
+ return best;
 }
 
 // ---- Last Standing: 6 tanks, free for all, no respawns. The ring closes from 15s to 95s; outside it you lose 4% health a second.
@@ -806,8 +829,8 @@ function royaleGoal(u,tgt,seen,d){   // where a bot goes in Last Standing (null 
   if(!u.sg||Math.hypot(u.sg.x-S.x,u.sg.y-S.y)>inner+0.3)u.sg=freeSpot(S.x,S.y,inner)||{x:S.x,y:S.y,l:S.l};
   return u.sg;
  }
- let nb=null,nd=elapsed<STORM_T0?12:6;for(const bx of boxes){const dd=dist2(u,bx);if(dd<nd&&Math.hypot(bx.x-S.x,bx.y-S.y)<S.r-1){nd=dd;nb=bx;}}
- if(nb&&!(seen&&d<3.5))return nb;
+ const nb=boxGoal(u,elapsed<STORM_T0?16:9);
+ if(nb&&Math.hypot(nb.x-S.x,nb.y-S.y)<S.r-1&&!(seen&&d<3.5))return nb;
  return null;
 }
 function placeOf(u){   // Last Standing place, 1 = winner. Set when a tank is destroyed; the survivors rank by health left
