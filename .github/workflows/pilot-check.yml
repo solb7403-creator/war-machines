@@ -21,6 +21,13 @@ jobs:
           P=g('players') or {};now0=time.time()*1000
           act=sorted([[k,v.get('name'),v.get('pts'),round((now0-(v.get('seen') or 0))/60000),v.get('vg'),v.get('wins')] for k,v in P.items() if isinstance(v,dict)],key=lambda r:r[3])[:12]
           print('::notice title=recent::'+json.dumps(act))
+          ago=lambda t:round((now0-(t or 0))/60000)
+          pays=g('payments') or {};pl=sorted([[k[:40],v.get('cur'),v.get('amt'),v.get('verified'),v.get('granted'),v.get('item')] for k,v in pays.items() if isinstance(v,dict)],key=lambda r:r[0])[-6:]
+          sp=g('starsPaid') or {};spl=[[pid2,c,ago(x.get('ts')),x.get('k'),x.get('t')] for pid2,cs in sp.items() for c,x in (cs or {}).items()];spl.sort(key=lambda r:r[2])
+          ws=urllib.request.Request(B+'diag/ping'+A,data=json.dumps({'t':int(now0)}).encode(),method='PUT')
+          try: wr=urllib.request.urlopen(ws).read().decode()[:200]
+          except Exception as e: wr='WRITE FAILED '+str(e)+' '+(e.read().decode()[:300] if hasattr(e,'read') else '')
+          print('::notice title=health::'+json.dumps({'lb_built_min_ago':ago((g('lb') or {}).get('t')),'revc':g('meta/revc'),'starsPaid':spl[:6],'payments':pl,'test_write':wr}))
           lb=g('lb') or {};print('::notice title=board::'+json.dumps({'admin':g('cfg/admin'),'top':[r[:4] for r in lb.get('top',[])[:8]],'n':lb.get('n')}))
           pid=u if u.startswith('tg_') else g('lb')['top'][int(u[4:])-1][0] if u.startswith('rank') else 'tg_'+str(g('cfg/admin/'+u))
           S=g('eco/'+pid) or {}
