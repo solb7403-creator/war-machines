@@ -83,8 +83,8 @@ async def main():
         print('streak bonus',r)
         check(r['before']==0 and abs(r['next']-0.3)<1e-9 and abs(r['after']-0.3)<1e-9,'login unlocks the bonus '+json.dumps(r))
         check(r['d1']==0 and abs(r['d3']-0.1)<1e-9 and abs(r['d20']-0.3)<1e-9 and r['broken']==1,'bonus steps '+json.dumps(r))
-        check(r['c1']==130 and r['c2']==156,'boosted quest points '+json.dumps(r))
-        check(r['c4']==round(280*1.3)+round(250*1.3),'all-4 bonus on the last claim '+json.dumps(r))
+        check(r['c1']==650 and r['c2']==650,'boosted quest points (500 x 1.3) '+json.dumps(r))
+        check(r['c4']==round(500*1.3)+round(250*1.3),'all-4 bonus on the last claim '+json.dumps(r))
 
         # 6) weekly quest claim and the 20-daily chest
         r=await pg.evaluate("""()=>{save.login={last:dayNum(),n:1};save.wk={w:weekNum(),ids:['wdays','wmodes','wrow5','wkill50','wbox30'],p:{wdays:5},u:{},c:{}};

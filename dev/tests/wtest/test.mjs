@@ -116,7 +116,7 @@ const got = [];
 for (const id of ['play4', 'win2', 'kill10', 'win6', 'win6', 'play4']) { [s, r] = await act(A, 'daily', { id }); got.push(r.out.pts || r.out.err); }
 t(got[4] === 'no' && got[5] === 'no' && got.slice(0, 4).every((x) => x > 0), 'each daily claims once ' + JSON.stringify(got));
 const boost = R.ecoBoost(E('tg_111'), { day, week: Math.floor((Date.now() - 4 * 86400000) / (7 * 86400000)) });
-t(E('tg_111').earned - before === [100, 120, 170, 280, 250].reduce((a, x) => a + Math.round(x * (1 + boost)), 0) && E('tg_111').dq.all, 'dailies + all-4 bonus paid once ' + (E('tg_111').earned - before));
+t(E('tg_111').earned - before === [500, 500, 500, 500, 250].reduce((a, x) => a + Math.round(x * (1 + boost)), 0) && E('tg_111').dq.all, 'dailies + all-4 bonus paid once ' + (E('tg_111').earned - before));
 setEco('tg_111', (S) => { S.wk.p = Object.fromEntries(S.wk.ids.map((id) => [id, 999])); });
 const wk = E('tg_111').wk.ids;
 const wgot = [];
