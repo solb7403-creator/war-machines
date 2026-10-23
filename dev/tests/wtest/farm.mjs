@@ -7,6 +7,7 @@ import { fakeRec } from './fakerec.mjs';
 import { buildSim } from '../../../worker/build-sim.mjs';
 buildSim();
 const db = makeDB();
+db.root.cfg = { proof: 'enforce' };   // the forged-result checks below run with the stricter setting (the default is flag only)
 const tgCalls = [], tgFail = {};
 let tonTxs = [];
 globalThis.fetch = async (url, init) => {
@@ -94,6 +95,10 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   const e0 = E(pid).earned;
   r = await play(U, T0 + 16 * MIN, { pf: null });
   t(r.en.ok && E(pid).earned > e0, 'flag-only: a result without a record scores (and still counts as a failed record)');
+  delete db.root.cfg.proof; eco.resetCfg();
+  const e1 = E(pid).earned;
+  r = await play(U, T0 + 18 * MIN, { pf: null });
+  t(r.en.ok && E(pid).earned > e1, 'with no setting, the default is flag only: a real player never loses a match to the check');
   [s, a] = await call('/api/admin', { initData: initData(J), proof: 'enforce' }); eco.resetCfg();
   t(a.proof === 'enforce', 'admin: back to enforce');
   // the admin username is pinned to the account that first used it
@@ -135,8 +140,8 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   await session(B6, T0, 27, { dur: () => 60 });
   t(reasons('tg_5206').includes('steadylen'), 'every match lasts exactly 60 s: flagged "steadylen" ' + JSON.stringify(reasons('tg_5206')));
   const B7 = { id: 5207, username: 'bot7' };
-  for (let d = 0; d < 7; d++) { const s0 = T0 + d * DAY - 3 * H + rnd() * 2 * MIN; await session(B7, s0, 40, { dur: () => 150 + rnd() * 30 }); }
-  t(reasons('tg_5207').includes('clockwork'), 'starts and stops at the same minute 6 days in a row, hours a day: flagged "clockwork" ' + JSON.stringify(reasons('tg_5207')));
+  for (let d = 0; d < 7; d++) { const s0 = T0 + d * DAY - 3 * H + rnd() * 2 * MIN; await session(B7, s0, 48, { dur: () => 160 + rnd() * 4, gap: () => 20 + rnd() * 2 }); }
+  t(reasons('tg_5207').includes('clockwork'), 'starts and stops at the same minute 6 days in a row, hours a day: flagged "clockwork" ' + JSON.stringify(reasons('tg_5207')) + JSON.stringify((E('tg_5207').bp||{}).dy) + ' mp ' + E('tg_5207').mp + ' ' + JSON.stringify(E('tg_5207').mh));
   // a late result on a weak connection (sent right before the next match) doesn't look like "no time in menus"
   const W = { id: 5208, username: 'weaknet' };
   let tm = T0;

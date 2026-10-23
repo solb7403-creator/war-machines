@@ -319,7 +319,7 @@ async function admin(env, user, b = {}) {
   const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
-  const body0 = { flagged, channel: await channelReady(env), proof: conf === "flag" ? "flag" : "enforce", clusters };
+  const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,

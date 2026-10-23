@@ -310,7 +310,9 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
   const [n, sg] = String(b.tok || "").split(".");
   if (!/^[0-9a-f]{16}$/.test(n || "")) return { status: 400, body: { error: "ticket" } };
   const r0 = b.r && typeof b.r === "object" ? b.r : {};
-  const mode = (await cfg(env, now)).proof === "flag" ? "flag" : "enforce";   // Jake can switch it to flag-only from the admin sheet
+  // flag (the default): every result scores, and 3 failed records in a day flag the pilot (held off the airdrop list until
+  // Jake clears them), so a real player never loses a match to the check. enforce (admin sheet): a failed record scores nothing
+  const mode = (await cfg(env, now)).proof === "enforce" ? "enforce" : "flag";
   let flags = [], ih = null;
   const t = await tx(env, pid, async (S, X) => {
     who(S, user);

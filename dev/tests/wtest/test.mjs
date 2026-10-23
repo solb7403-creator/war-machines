@@ -7,6 +7,7 @@ import { fakeRec } from './fakerec.mjs';
 import { buildSim } from '../../../worker/build-sim.mjs';
 buildSim();
 const db = makeDB();
+db.root.cfg = { proof: 'enforce' };   // the forged-result checks below run with the stricter setting (the default is flag only)
 const tgCalls = [];
 let tonTxs = [{ in_msg: { value: '8000000000', message: 'LWM|tg_111|abc' }, transaction_id: { hash: 'h1' } }];
 globalThis.fetch = async (url, init) => {
