@@ -78,7 +78,7 @@ function loadLB(force){
   for(const [id,n,pts,days,lg] of lb.top)m[id]={id,n,pts,days,league:lg||'',dailyPts:0,weeklyPts:0};
   for(const [id,n,s2] of (lb.daily||[])){m[id]=m[id]||{id,n,pts:0,days:0,league:'',dailyPts:0,weeklyPts:0};m[id].dailyPts=s2;}
   for(const [id,n,s2] of (lb.weekly||[])){m[id]=m[id]||{id,n,pts:0,days:0,league:'',dailyPts:0,weeklyPts:0};m[id].weeklyPts=s2;}
-  lbCache=Object.values(m);lbMeta={n:lb.n||0,cut:lb.cut||0,t:lb.t||0,inTop:lb.top.length};
+  lbCache=Object.values(m);lbMeta={n:lb.n||0,cut:lb.cut||0,t:lb.t||0,inTop:lb.top.length,lpf:lb.lpf||0,lps:lb.lps||0.25};
   if(typeof uiDirty==='function')uiDirty('ranks');
  }).catch(()=>{lbBusy=false;lbCacheT=Date.now()-45000;});
 }

@@ -175,6 +175,17 @@ async function verifySol(sig, amt) {
   }
   return false;
 }
+// the launch liquidity fund: LP_SHARE of every verified shop sale goes into the $LUNAR liquidity pool at launch. Sales are
+// counted in US cents (meta/revc) as the server prices them (Stars at Telegram's ~1.3 cents, TON and SOL at the live TON
+// price), never the phone's number; refunds come off. The board file shows the fund (lb.lpf), the Ranks tab and Shop too
+export const LP_SHARE = 0.25;
+let TONUSD = { v: 0, t: 0 };
+async function tonUsd() {
+  if (TONUSD.v && Date.now() - TONUSD.t < 300000) return TONUSD.v;
+  try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd")).json(); const v = Number(d["the-open-network"].usd); if (v > 0) TONUSD = { v, t: Date.now() }; } catch {}
+  return TONUSD.v;
+}
+const revAdd = (env, cents) => (cents ? dbPatch(env, "meta", { revc: { ".sv": { increment: Math.round(cents) } } }).catch(() => {}) : null);
 // SOL is priced off the TON price at live rates; the server checks it's in the right range (skipped if prices are unavailable)
 async function solValueOk(sol, ton) {
   try {
@@ -230,6 +241,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
   }, now);
   const outs = (t.outs || []).filter((o) => o && !o.none);
   await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
+  { const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10); await revAdd(env, usd * 100); }   // the liquidity fund
   // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
   if (src && src !== "payer") {
     const wh = hex(await hmac(env.BOT_TOKEN, "w|" + src)).slice(0, 16);
@@ -338,18 +350,19 @@ export async function snapshot(env, fl) {
 // Phones download one small file instead of every player's record.
 export async function buildLeaderboard(env, now = Date.now()) {
   const d = dayOf(now), w = weekOf(now);
-  const [top, daily, weekly, n, fl] = await Promise.all([
+  const [top, daily, weekly, n, fl, revc] = await Promise.all([
     dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1100 }).catch(() => ({})),
     dbGet(env, `dly/${d}`, { orderBy: '"s"', limitToLast: 100 }).catch(() => ({})),
     dbGet(env, `wly/${w}`, { orderBy: '"s"', limitToLast: 100 }).catch(() => ({})),
     dbGet(env, "meta/n").catch(() => 0),
     dbGet(env, "flags").catch(() => null),
+    dbGet(env, "meta/revc").catch(() => 0),
   ]);
   // pilots flagged for review sit out the board (and the snapshot) until Jake clears them
   const ok = ([id]) => !isFlagged(fl && fl[id]);
   const all = Object.entries(top || {}).filter(ok).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, v.league || ""]).sort((a, b) => b[2] - a[2]);
   const lb = {
-    t: now, d, w, n: Math.max(Number(n) || 0, all.length),
+    t: now, d, w, n: Math.max(Number(n) || 0, all.length), lpf: Math.max(0, Math.round(((Number(revc) || 0) / 100) * LP_SHARE)), lps: LP_SHARE,
     cut: all.length >= 1000 ? all[999][2] : 0,
     top: all.slice(0, 1000),
     daily: Object.entries(daily || {}).filter(ok).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
@@ -444,6 +457,7 @@ async function webhook(req, env) {
     }, now) : { outs: [] };
     const outs = (t.outs || []).filter((o) => o && !o.none);
     await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
+    await revAdd(env, sp.total_amount * 1.3);   // the liquidity fund (Stars at ~1.3 cents each)
     await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
     return new Response("ok");
   }
@@ -464,6 +478,7 @@ async function webhook(req, env) {
       }, now);
       const pk = `payments/LWM_${pid}_stars_${charge}`.slice(0, 120);
       await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, [`${pk}/refunded`]: true, [`${pk}/verified`]: false });
+      await revAdd(env, -(Number(sp.stars) || 0) * 1.3);   // a refunded sale comes off the liquidity fund
       if (n >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", n + " Stars refunds"]], now).catch(() => {});
     }
     return new Response("ok");

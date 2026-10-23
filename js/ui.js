@@ -50,6 +50,7 @@ function setTab(t){
  if(t==='ranks')loadLB();
  if(t==='quests')loadSquad();
  if(t==='shop'&&save.payCur==='sol')fetchPrices();
+ if(t==='shop'&&typeof loadLB==='function')loadLB();   // the liquidity fund total
  stale.add(t);renderUI();
 }
 
@@ -201,6 +202,8 @@ function openDeals(k){
  sheet('deals',()=>'<h3>'+T.n+'</h3><p class="mut">'+T.full+((k==='d'?dealDayFree():dealWeekFree())?'':' You’ve used this one. Prices below are full price.')+'</p>'+
   '<div class="crates'+(list.length===2?' c2':'')+'" style="margin-top:12px">'+list.map(([tk,ri])=>crate(tk,ri)).join('')+'</div>');
 }
+// the launch liquidity fund: a share of every shop sale goes into the $LUNAR liquidity pool (the server counts it)
+function lpfLine(){return '<div class="cutline"><b>$'+fmtNum(lbMeta.lpf)+'</b><span>in the $LUNAR launch liquidity fund. '+Math.round((lbMeta.lps||0.25)*100)+'% of every shop sale goes into the pool.</span></div>';}
 function renderShop(){
  const cur=save.payCur;
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
@@ -209,6 +212,7 @@ function renderShop(){
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
   '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
+  '<p class="dimtxt" style="margin:6px 0 10px">'+Math.round(((lbMeta&&lbMeta.lps)||0.25)*100)+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?': $'+fmtNum(lbMeta.lpf)+' so far.':'.')+'</p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
   (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
@@ -309,6 +313,7 @@ function renderRanks(){
  else if(!lbMeta.inTop||lbMeta.inTop<1000)cut='<div class="cutline"><span class="info" style="border-color:var(--gold);color:var(--gold)">✓</span><span>'+fmtNum(lbMeta.n||0)+' pilots so far, so everyone is inside the top 1,000. Your $LUNAR share grows with your points and days active.</span></div>';
  else if(R&&!R.outside)cut='<div class="cutline"><b>#'+fmtNum(R.rank)+'</b><span>You’re inside the top 1,000. Cutoff right now: '+fmtNum(lbMeta.cut)+' points.</span></div>';
  else cut='<div class="cutline"><b>'+fmtNum(Math.max(1,lbMeta.cut-e+1))+'</b><span>more points to reach the top 1,000 (cutoff '+fmtNum(lbMeta.cut)+')</span></div>';
+ if(lbMeta&&lbMeta.lpf>0)cut+=lpfLine();
  const metric=p=>lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):(p.pts||0);
  let rows='',pin='';
  if(lbCache){

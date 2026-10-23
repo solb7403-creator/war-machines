@@ -246,5 +246,16 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   const lb = await r.json();
   t(r.status === 200 && lb && Array.isArray(lb.top) && /max-age=60/.test(r.headers.get('Cache-Control') || '') && r.headers.get('Access-Control-Allow-Origin') === 'https://solb7403-creator.github.io', 'leaderboard file served by the server with a 60 s edge cache');
 }
+// ======== the launch liquidity fund: 25% of verified sales, priced by the server, refunds off ========
+{
+  const c0 = Number(db.get('/meta/revc')) || 0;
+  const sec = await mod.webhookSecret(env), hk = (body) => worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec }, body: JSON.stringify(body) }), env);
+  await hk({ message: { from: { id: 7301 }, chat: { id: 7301, type: 'private' }, successful_payment: { total_amount: 1000, telegram_payment_charge_id: 'lpf1', invoice_payload: JSON.stringify({ u: 7301, k: 'box', t: 'gem', r: 1, g: 8, n: 'lp1' }) } } });
+  t((Number(db.get('/meta/revc')) || 0) - c0 === 1300, 'a 1,000 Stars sale adds $13 of sales');
+  const lb = await mod.buildLeaderboard(env);
+  t(lb.lpf === Math.round((Number(db.get('/meta/revc')) / 100) * 0.25) && lb.lps === 0.25, 'the board file shows the fund: 25% of verified sales ($' + lb.lpf + ')');
+  await hk({ message: { from: { id: 7301 }, chat: { id: 7301, type: 'private' }, refunded_payment: { total_amount: 1000, telegram_payment_charge_id: 'lpf1', invoice_payload: '{}' } } });
+  t((Number(db.get('/meta/revc')) || 0) === c0, 'a refunded sale comes off the fund');
+}
 console.log('farm: passed', ok, 'failed', bad);
 process.exit(bad ? 1 : 0);
