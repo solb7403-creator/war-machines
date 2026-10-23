@@ -442,6 +442,10 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 3, memo: 'LWM|tg_5555|vt0', desc: { kind: 'vault', tk: 'pouch' } }); t(r.error === 'amount', 'Vault in TON: under the price is refused');
   [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 4, memo: 'LWM|tg_5555|vt1', desc: { kind: 'vault', tk: 'pouch' } });
   t(r.ok && r.verified && E(pv).vg === 1300 && r.out[0].tk === 'vault' && r.out[0].g === 250 && r.E.vg === 1300, 'Vault in TON: Pouch adds 250 Gold ' + JSON.stringify(r.out));
+  for (const [g, m, mp] of [['royale', '1v1', 'longshot'], ['arena', '2v2', 'classic']]) {
+    [s, r] = await call('/api/match/start', { initData: initData(V), g, m, map: mp, pv: 1, L: { paint: 'hyper' } });
+    t(s === 200 && r.tok, 'a Vault pilot gets a match ticket: ' + g + ' ' + s + ' ' + JSON.stringify(r).slice(0, 120));
+  }
   const lbv = await mod.buildLeaderboard(env);
   const vr = (lbv.vault || []).find((x) => x[0] === pv);
   t(vr && vr[2] === 1300 && vr[3] === 2, 'the Vault board ranks by lifetime Gold, with the level ' + JSON.stringify(vr));

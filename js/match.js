@@ -65,10 +65,33 @@ function roundBanner(){
 // result goes back with that ticket. The server works out the points itself from the shared rules (it never takes a
 // number from the phone), so the phone shows the same formula right away and swaps in the server's numbers when they land.
 let mTicket=null;
+// The ticket request is retried for a few seconds (a dropped request, or the phone pausing Telegram in the background,
+// used to cost the whole match). Only within TICKET_RETRY_MS: a ticket that lands much later than the match started
+// wouldn't match the match record's length. A server that says no gives its reason (T.err) instead of "no connection"
+const TICKET_RETRY_MS=4000,TICKET_TRY_MS=3500;
+function apiTimed(path,body,ms){
+ const ac=typeof AbortController==='function'?new AbortController():null,tm=ac?setTimeout(()=>ac.abort(),ms):0;
+ return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({initData:IN_TG?TG.initData:''},body||{})),signal:ac?ac.signal:undefined})
+  .then(r=>r.json().then(j=>({j,st:r.status}),()=>({j:null,st:r.status}))).finally(()=>clearTimeout(tm));
+}
 function matchStart(){
  mTicket=null;if(!SRV_ECO)return;
- const T={tok:null,g:matchG,m:modeKey()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout(),pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
- T.p=flushMatches().then(()=>api('/api/match/start',body)).then(r=>{if(r&&r.tok)T.tok=r.tok;if(r&&Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}).catch(()=>null);
+ const T={tok:null,err:null,g:matchG,m:modeKey(),t0:Date.now()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout(),pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
+ const ask=async()=>{
+  for(let k=0;;k++){
+   if(mTicket!==T&&k>0)return null;   // a newer match replaced this one
+   let out=null;
+   const last=Date.now()-T.t0+TICKET_TRY_MS>TICKET_RETRY_MS+TICKET_TRY_MS;   // the last try waits as long as it takes (a slow network)
+   try{out=await apiTimed('/api/match/start',body,last?20000:TICKET_TRY_MS);}catch(e){out=null;}   // no answer: network
+   const r=out&&out.j;
+   if(r&&r.tok){T.tok=r.tok;T.err=null;if(Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}
+   if(out&&out.st<500&&out.st!==429){T.err=(r&&r.error)||'server';return r;}   // the server said no: retrying won't change it
+   T.err=out?(out.st===429?'rate':'server'):'offline';
+   if(last||Date.now()-T.t0>TICKET_RETRY_MS)return null;
+   await new Promise(res=>setTimeout(res,Math.min(2000,600*(k+1))));
+  }
+ };
+ T.p=flushMatches().then(ask).catch(()=>null);
  mTicket=T;
 }
 // ghosts: offline pilots' real tanks (sent with the ticket) take AI seats, enemies first. The VS screen shows who they are
@@ -95,7 +118,7 @@ function flushMatches(){
  })();
  return mqBusy;
 }
-const MATCH_WHY={proof:'the match couldn’t be verified',update:'update the game to keep scoring',fast:'the match ended too fast',expired:'the match ticket expired',ticket:'the match ticket was already used',hourly:'too many matches this hour',offline:'no connection at the start'};
+const MATCH_WHY={rate:'too many requests, try again in a minute',server:'the server was busy at the start',mode:'this mode isn’t open right now',map:'this map isn’t open right now',proof:'the match couldn’t be verified',update:'update the game to keep scoring',fast:'the match ended too fast',expired:'the match ticket expired',ticket:'the match ticket was already used',hourly:'too many matches this hour',offline:'no connection at the start'};
 function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
  const L=lastResult;if(!L||L.tok!==tok)return;
  if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
@@ -109,7 +132,7 @@ function matchEnd(res){
  if(!T){if(!res.quit&&lastResult)matchScored(lastResult.tok,{error:'offline'});return;}
  const tok='p'+Math.random().toString(36).slice(2);if(lastResult&&!res.quit)lastResult.tok=tok;
  T.p.then(()=>{
-  if(!T.tok){if(lastResult&&lastResult.tok===tok)matchScored(tok,{error:'offline'});applyEcoSoon();return;}
+  if(!T.tok){if(lastResult&&lastResult.tok===tok)matchScored(tok,{error:T.err||'offline'});applyEcoSoon();return;}
   if(lastResult&&lastResult.tok===tok)lastResult.tok=T.tok;
   save.mq=(save.mq||[]).concat({tok:T.tok,r:res});store();
   flushMatches();
