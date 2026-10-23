@@ -25,6 +25,20 @@ jobs:
           out={'pid':pid,'now':int(now),'mt':S.get('mt'),'md':S.get('md'),'mh':S.get('mh'),'rq':S.get('rq'),'bp_le':(S.get('bp') or {}).get('le'),'bp_ls':(S.get('bp') or {}).get('ls'),
                'dy':((S.get('bp') or {}).get('dy') or {}).get(str(day)),'streak':S.get('streak'),'wins':S.get('wins'),'mp':S.get('mp'),'earned':S.get('earned'),'dailyPts':S.get('dailyPts'),'rev':S.get('rev'),'t':S.get('t'),
                'flags':g('flags/'+pid),'cfg':{k:v for k,v in (g('cfg') or {}).items() if k!='admin'}}
+          bad=[];sizes={}
+          def walk(v,path):
+            if isinstance(v,dict):
+              for k,x in v.items():
+                if k=='' or any(c in k for c in '.$#[]/') or len(k.encode())>700 or any(ord(c)<32 or ord(c)==127 for c in k): bad.append(path+'/'+repr(k))
+                walk(x,path+'/'+k)
+            elif isinstance(v,list):
+              for i,x in enumerate(v): walk(x,path+'/'+str(i))
+            elif isinstance(v,float) and (v!=v or v in (float('inf'),float('-inf'))): bad.append(path+' = '+repr(v))
+          walk(S,'')
+          for k,v in S.items(): sizes[k]=len(json.dumps(v))
+          out['vg']=S.get('vg');out['vgg']=S.get('vgg');out['bad_keys']=bad[:20];out['size']=len(json.dumps(S));out['big']=sorted(sizes.items(),key=lambda x:-x[1])[:10]
+          out['bp']={k:(v if k!='g' else len(v)) for k,v in (S.get('bp') or {}).items()} if isinstance(S.get('bp'),dict) else S.get('bp')
+          out.pop('md',None)
           s=json.dumps(out,separators=(',',':'))
           for i in range(0,len(s),900): print('::notice title=pilot %d::'%(i//900)+s[i:i+900])
           PY
