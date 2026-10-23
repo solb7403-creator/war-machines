@@ -563,3 +563,4 @@ button.q{display:flex;width:100%;text-align:left}
 .vgen{margin-top:12px;padding:10px 12px;border-radius:12px;background:linear-gradient(150deg,rgba(255,207,74,.12),rgba(199,155,255,.10));border:1px solid rgba(255,207,74,.35)}
 .vgen b{display:block;font:700 14px var(--disp);color:var(--gold)}
 .vgen span{display:block;font-size:13px;color:var(--moon);margin-top:2px}
+.vfund{margin-top:10px;font-size:13px;color:var(--moon)}

@@ -224,6 +224,7 @@ function vaultCard(){
   '<div class="bar"><i style="width:'+Math.round(P.f*100)+'%"></i></div><div class="dimtxt">'+esc(vaultNextTxt(P))+'</div>'+
   vaultPacks()+
   '<button class="linkbtn" data-act="vault">Every level and reward</button>'+
+  '<p class="vfund">Every deposit backs LUNAR directly: '+lpPct()+'% goes into the $LUNAR launch liquidity pool, the other '+(100-lpPct())+'% funds development.</p>'+
   (GENESIS_OPEN||save.vgg?'<div class="vgen"><b>Genesis Gold'+(save.vgg?': '+fmtNum(save.vgg):'')+'</b><span>'+(GENESIS_OPEN?'Every Gold deposited before $LUNAR launches is recorded as Genesis Gold, kept for good. It may unlock limited-edition Genesis rewards down the road.':'Recorded before $LUNAR launched, kept for good. It may unlock limited-edition Genesis rewards down the road.')+'</span></div>':'')+
   '<p class="fnote">Gold is never spent and never expires: each deposit adds to your lifetime total, which sets your level. Looks only, no stats, power or points.</p></div>';
 }
@@ -721,8 +722,8 @@ function vsBuild(){
  const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+vname(u===me?'You':u.name,u.vl|0)+vbadge(u.vl|0)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+(u.boss?'#ff4d5e':CH[u.cls].c)+'">'+(u.boss?'Boss':CH[u.cls].n)+'</span>'+ctag(u)+'</div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
- else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+'.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
- else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='Mixed matchup: you counter '+wn.join(', ')+'; '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you.';}
+ else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+': they deal you +15% damage and take 10% less from you.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
+ else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='You counter '+wn.join(', ')+': +15% damage to '+(wn.length>1?'them':'it')+', 10% less taken. '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you: the same against you.';}
  else txt='Even matchup. No counters either way.';
  const owned=ownedChassisClasses();
  return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents')+'</span></div>'+
