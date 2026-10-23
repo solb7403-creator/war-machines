@@ -560,3 +560,6 @@ button.q{display:flex;width:100%;text-align:left}
 .lb .vtt{color:#c79bff}
 .lb .sc small{font:600 11px var(--disp);color:var(--dust)}
 .vs .unit .vb{margin-left:3px}
+.vgen{margin-top:12px;padding:10px 12px;border-radius:12px;background:linear-gradient(150deg,rgba(255,207,74,.12),rgba(199,155,255,.10));border:1px solid rgba(255,207,74,.35)}
+.vgen b{display:block;font:700 14px var(--disp);color:var(--gold)}
+.vgen span{display:block;font-size:13px;color:var(--moon);margin-top:2px}

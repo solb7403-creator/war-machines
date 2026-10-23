@@ -197,6 +197,9 @@ const VAULT_REW=[{lv:1,k:'tooth',n:'Vault badge and a gold tooth',d:'Your level 
  {lv:15,k:'keeper',n:'Title: Vault Keeper',d:'Shown under your name on the boards.'},
  {lv:25,k:'legend',n:'Title: Gold Tooth Legend',d:'The top title, plus a hyperspace shimmer over your tank.'}];
 const VAULT_PAINT_LV=7;
+// Genesis Gold: every Gold deposited before $LUNAR launches is also recorded as Genesis Gold (vgg), kept for good. It may
+// unlock limited-edition Genesis rewards down the road. Closes with the Founder pack at launch (FOUNDER_OPEN)
+const GENESIS_OPEN=FOUNDER_OPEN;
 const vaultTitle=l=>l>=25?'Gold Tooth Legend':l>=15?'Vault Keeper':'';
 // the badge's color steps up every 5 levels: bronze, silver, gold, diamond, hyperspace
 const VAULT_TIERS=[{n:'Bronze',c:'#d08c4f'},{n:'Silver',c:'#cfd8e4'},{n:'Gold',c:'#ffcf4a'},{n:'Diamond',c:'#86e8ff'},{n:'Hyperspace',c:'#c79bff'}];
@@ -297,12 +300,13 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg'];
+ 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
- for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
+ if(typeof S.vgg!=='number'&&GENESIS_OPEN)S.vgg=Number(S.vg)||0;   // Gold deposited before Genesis Gold was tracked: all of it was pre-launch
+ for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
  const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
  // over the build budget (levels bought before it existed): the top levels come off, paid back in full
  while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
@@ -461,8 +465,8 @@ function ecoGrant(S,d,X){
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
  else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
- else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
-  if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
+ else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
+  if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
  return outs;
 }
 // a refunded purchase: take back exactly what it gave
@@ -479,7 +483,7 @@ function ecoRefund(S,kind,outs){
   else if(o.tk==='skin')S.skin='default';
   else if(o.tk==='pass'){if(S.pass&&S.pass.s===o.s)S.pass.prem=false;}
   else if(o.tk==='respec'){if(o.credit)S.rsCr=0;else{const p=Math.min(S.pts,o.extra||0);S.pts-=p;S.ptsSpent+=p;}}   // the levels stay cleared; the extra points go back
-  else if(o.tk==='vault'){S.vg=Math.max(0,(S.vg||0)-(o.g||0));if(vaultLevel(S.vg)<VAULT_PAINT_LV&&S.paints)delete S.paints.hyper;}
+  else if(o.tk==='vault'){S.vg=Math.max(0,(S.vg||0)-(o.g||0));S.vgg=Math.max(0,(S.vgg||0)-(o.gg||0));if(vaultLevel(S.vg)<VAULT_PAINT_LV&&S.paints)delete S.paints.hyper;}
  }
 }
 // ---- milestones ----

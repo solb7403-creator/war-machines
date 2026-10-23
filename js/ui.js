@@ -224,6 +224,7 @@ function vaultCard(){
   '<div class="bar"><i style="width:'+Math.round(P.f*100)+'%"></i></div><div class="dimtxt">'+esc(vaultNextTxt(P))+'</div>'+
   vaultPacks()+
   '<button class="linkbtn" data-act="vault">Every level and reward</button>'+
+  (GENESIS_OPEN||save.vgg?'<div class="vgen"><b>Genesis Gold'+(save.vgg?': '+fmtNum(save.vgg):'')+'</b><span>'+(GENESIS_OPEN?'Every Gold deposited before $LUNAR launches is recorded as Genesis Gold, kept for good. It may unlock limited-edition Genesis rewards down the road.':'Recorded before $LUNAR launched, kept for good. It may unlock limited-edition Genesis rewards down the road.')+'</span></div>':'')+
   '<p class="fnote">Gold is never spent and never expires: each deposit adds to your lifetime total, which sets your level. Looks only, no stats, power or points.</p></div>';
 }
 function openVault(){
@@ -237,9 +238,10 @@ function openVault(){
    '<h4 class="vsec">Badge colors</h4><p class="mut">Your badge shows your level on every board and on the VS and results screens. Its color steps up every 5 levels.</p><div class="vtiers">'+tiers+'</div>'+
    '<h4 class="vsec">Good to know</h4><ul class="vnotes">'+
    '<li>Gold is never spent and never expires. It only adds up.</li>'+
+   (GENESIS_OPEN||save.vgg?'<li><b>Genesis Gold.</b> Every Gold deposited before $LUNAR launches is recorded as Genesis Gold'+(save.vgg?' (yours: '+fmtNum(save.vgg)+')':'')+' and kept for good. It may unlock limited-edition Genesis rewards down the road, only for Genesis holders.</li>':'')+
    '<li>Looks only. The Vault never adds stats, power or points, so it can’t buy leaderboard rank.</li>'+
    '<li>Every deposit counts as verified shop spending, which is considered for the airdrop like any other purchase. It isn’t a purchase of $LUNAR and doesn’t guarantee any amount.</li>'+
-   '<li>'+lpPct()+'% of every deposit goes into the $LUNAR launch liquidity pool. The other '+(100-lpPct())+'% funds the game: development, servers, promotion and partnerships.</li>'+
+   '<li>Every deposit backs LUNAR directly: '+lpPct()+'% goes into the $LUNAR launch liquidity pool, and the other '+(100-lpPct())+'% funds development, servers, promotion and partnerships.</li>'+
    '<li>Bigger bundles carry bonus Gold: Chest +5%, Vault +10%, Hyperspace +15%.</li></ul>'+
    '<button class="btn btn-quiet block" style="margin-top:14px" data-act="vaultboard">See the Vault board</button>';
  });
@@ -866,7 +868,7 @@ const TERMS_URL='https://solb7403-creator.github.io/war-machines/terms.html';
 let termsGo=null;
 function askTerms(go){
  termsGo=go;
- openOverlay('modal','<h3>Before your first purchase</h3><p class="mut">You’re buying in-game items for LUNAR: War Machines. They have no cash value and can’t be traded or cashed out. Purchases don’t buy $LUNAR or a set amount of it, and aren’t an investment. Verified spending may be considered in the airdrop, with no guaranteed amount. For refunds or payment problems, send /paysupport to the bot.</p>'+
+ openOverlay('modal','<h3>Before your first purchase</h3><p>Every purchase backs LUNAR directly. 25% goes into the $LUNAR launch liquidity pool, and the other 75% funds development, servers, promotion and partnerships, so the game keeps growing. Verified spending is considered in the airdrop.</p><p class="mut" style="margin-top:8px">Items are for use in the game. They have no cash value, can’t be traded or cashed out, and don’t buy $LUNAR or a set amount of it. Refunds or payment problems: send /paysupport to the bot.</p>'+
   '<button class="linkbtn" data-act="terms">Read the full terms</button><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn btn-ghost" data-act="termsno">Not now</button><button class="btn btn-go" data-act="termsok">I agree</button></div>',{key:'terms',onClose:()=>{termsGo=null;}});
 }
 
@@ -998,7 +1000,7 @@ const ACT={
  flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
  clclear:a=>{loadAdmin({clearCl:a});showToast('Cleared: every account in that group counts again');},
  adminproof:a=>{loadAdmin({proof:a});showToast(a==='flag'?'Match records: flag only':'Match records: enforced');},
- snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit,verified spend (TON value)\n'+rows.join('\n');
+ snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit,verified spend (TON value),genesis gold\n'+rows.join('\n');
   try{navigator.clipboard.writeText(txt).then(()=>showToast('Snapshot copied: '+rows.length+' pilots'),()=>showToast(rows.length+' pilots (copy failed)'));}catch(e){showToast(rows.length+' pilots');}}).catch(()=>showToast('Snapshot unavailable'));},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),

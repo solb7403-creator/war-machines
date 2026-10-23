@@ -430,11 +430,13 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   await vpay('vh1', 'hyper', 400, 25000);
   const S1 = E(pv);
   t(S1.vg === 29800 && R.vaultLevel(S1.vg) === 10 && S1.paints.hyper === 1 && S1.L && S1.L.vl === 10, 'Hyperspace: 28,750 Gold, level 10, Hyperspace paint unlocked, the loadout carries the level ' + S1.vg + ' ' + JSON.stringify(S1.L && S1.L.vl));
+  t(S1.vgg === 29800 && db.get('/players/tg_5555/gg') === 29800, 'before launch, every deposit is also Genesis Gold ' + S1.vgg);
+  t(R.ecoNorm({ vg: 5000 }).vgg === 5000 && R.ecoNorm({ vg: 5000, vgg: 1000 }).vgg === 1000 && R.ecoNorm({}).vgg === 0, 'Gold deposited before tracking counts as Genesis');
   t(S1.pts === pts0 && S1.earned === earned0 && R.powerOf(S1.L) === R.powerOf({ ...S1.L, vl: 0 }), 'looks only: no points, no power');
   const tk = R.tankOf(S1.L, 1); t(tk.vl === 10 && R.tankOf({ ...S1.L, vl: 'x' }, 1).vl === 0, 'the battle tank carries the Vault level (looks)');
   t(R.ecoLoadout(R.ecoNorm({}), { paint: 'hyper' }).paint === 'stock' && R.ecoLoadout(S1, { paint: 'hyper' }).paint === 'hyper', 'the Hyperspace paint only for Vault level 7+');
   await hook({ message: { from: { id: 5555 }, chat: { id: 5555, type: 'private' }, refunded_payment: { total_amount: 25000, telegram_payment_charge_id: 'vh1', invoice_payload: '{}' } } });
-  t(E(pv).vg === 1050 && !E(pv).paints.hyper && Math.abs(E(pv).spendGram - 16) < 1e-9, 'refunded deposit: its Gold, the paint and the spending come off ' + E(pv).vg);
+  t(E(pv).vg === 1050 && E(pv).vgg === 1050 && !E(pv).paints.hyper && Math.abs(E(pv).spendGram - 16) < 1e-9, 'refunded deposit: its Gold, the paint and the spending come off ' + E(pv).vg);
   // TON: the price comes from the server, the Gold from the verified payment
   tonTxs.push({ in_msg: { value: '4000000000', message: 'LWM|tg_5555|vt1' }, transaction_id: { hash: 'hv1' } });
   [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 3, memo: 'LWM|tg_5555|vt0', desc: { kind: 'vault', tk: 'pouch' } }); t(r.error === 'amount', 'Vault in TON: under the price is refused');

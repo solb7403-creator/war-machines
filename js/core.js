@@ -233,7 +233,7 @@ function revealOf(r){
  if(r.tk==='pass')return {tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'};
  if(r.tk==='vault'){const lv=r.lv|0,lv0=r.lv0|0,got=VAULT_REW.filter(x=>x.lv>lv0&&x.lv<=lv).map(x=>x.n),t=r.t||save.vg||0;
   return {tk:'vault',rar:2,color:vaultTier(lv).c,lv,title:'+'+fmtNum(r.g)+' Gold',
-   sub:lv>lv0?'Vault level '+lv+'!'+(got.length?' Unlocked: '+got.join(', ')+'.':' Your badge is brighter on every board.'):'Vault level '+lv+'. '+fmtNum(Math.max(0,vaultNeed(lv+1)-t))+' Gold to level '+(lv+1)+'.'};}
+   sub:(r.gg?'Recorded as Genesis Gold. ':'')+(lv>lv0?'Vault level '+lv+'!'+(got.length?' Unlocked: '+got.join(', ')+'.':' Your badge is brighter on every board.'):'Vault level '+lv+'. '+fmtNum(Math.max(0,vaultNeed(lv+1)-t))+' Gold to level '+(lv+1)+'.')};}
  const isW=r.isW,k=r.k,t=r.tier;if(!k)return null;
  const pw=v=>(Math.round(v*1000)/10)+'%';
  if(r.sal){const nm='Salvaged '+(isW?WNAMES[k][t]:CNAMES[k][t]),item={isW,k,tier:t,sal:true};
