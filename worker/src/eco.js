@@ -11,11 +11,17 @@ export const ECO = {
   // fastest a result can come back, in seconds from the ticket (the VS screen adds ~4 s). Measured with a maxed tank
   // driven by the bot AI (dev/tests: fastest wins 18-36 s Arena, 47-63 s Moon Zone, 72 s Crystal Rush, 120 s Bounty,
   // 35 s Last Standing), then about 60% of that, so no real player is ever cut off
-  MIN_WIN: { arena: { "1v1": 12, "2v2": 10, "3v3": 20 }, zone: { "1v1": 28, "2v2": 28, "3v3": 35 }, crystal: 60, bounty: 110, royale: 25 },
+  MIN_WIN: { arena: { "1v1": 12, "2v2": 10, "3v3": 20 }, zone: { "1v1": 28, "2v2": 28, "3v3": 35 }, crystal: 60, bounty: 110, royale: 25, boss: 40 },   // Survival: fastest bot-driven kill ~70 s
+  BOSS_DRAW: 170,          // Survival draw: the full 180 s clock
+  GHOST_IDLE: 10 * 60000,  // a pilot counts as offline (their ghost can fight) after this long without playing
+  GHOST_BAND: 0.25,        // ghosts come from pilots within 25% of your power
+  GHOST_MAX: 2,            // at most this many ghosts in one match (up to half the AI seats)
+  GHOST_MP: 3,             // a pilot's tank joins the ghost pool after this many matches
   MIN_TOP3: 18,            // Last Standing 2nd or 3rd
   MIN_ANY: 6,              // any other result
-  // anomaly flags (outside human ranges): flagged pilots sit out the snapshot (and the public top 1,000) until Jake clears them
-  WINRATE: 0.9, WINRATE_N: 50, HOURS: 20, MATCHES_DAY: 200, PPM: 650, PPM_SECS: 1800, FAST: 5, REFUNDS: 2,
+  // anomaly flags (outside human ranges): flagged pilots sit out the snapshot (and the public top 1,000) until Jake clears them.
+  // PPM: a Legend winning featured Last Standing on a 5-win streak makes ~2,350 a match, ~1,560 a minute at 90 s a match
+  WINRATE: 0.9, WINRATE_N: 50, HOURS: 20, MATCHES_DAY: 200, PPM: 1600, PPM_SECS: 1800, FAST: 5, REFUNDS: 2,
 };
 let MAPS = null;
 const mapList = () => MAPS || (MAPS = createSim({ ev() {}, end() {}, round() {}, death() {} }).R.MAP_REAL);
@@ -98,7 +104,39 @@ async function mirror(env, pid, S, isNew, before, now) {
   if (S.dailyPts !== before.d || isNew) up[`dly/${S.dailyDay}/${pid}`] = { s: S.dailyPts, n: S.nm || "Pilot" };
   if (S.weeklyPts !== before.w || isNew) up[`wly/${S.weeklyNum}/${pid}`] = { s: S.weeklyPts, n: S.nm || "Pilot" };
   if (isNew) up["meta/n"] = { ".sv": { increment: 1 } };
+  // the ghost pool: your tank as it is now (server-owned loadout), and when you last played
+  if (S.L && (S.mp || 0) >= ECO.GHOST_MP) up[`gh/${pid}`] = { n: S.nm || "Pilot", L: S.L, pw: S.pw || 0, t: now };
   await dbPatch(env, "", up);
+}
+
+// ================= ghosts: offline pilots' tanks, flown by the AI in other people's matches =================
+// The pilot who meets a ghost earns exactly what a common AI tank would pay. The ghost's owner earns nothing;
+// they get a report when they come back (ghr/<pid>: matches, wins, draws, losses, damage, kills).
+export const ghostSeats = (g, m) => {
+  const n = g === "royale" ? 1 : (R.MODES[m] || R.MODES["1v1"]).n;
+  const bots = g === "royale" ? 5 : g === "boss" ? n - 1 : 2 * n - 1;
+  return Math.min(ECO.GHOST_MAX, Math.ceil(bots / 2));
+};
+export async function pickGhosts(env, pid, pw, k, now = Date.now(), skip = []) {
+  if (!(k > 0)) return [];
+  const lo = Math.floor(pw * (1 - ECO.GHOST_BAND)), hi = Math.ceil(pw * (1 + ECO.GHOST_BAND));
+  const rows = (await dbGet(env, "gh", { orderBy: '"pw"', startAt: lo, endAt: hi, limitToFirst: 60 }).catch(() => null)) || {};
+  const pool = Object.entries(rows).filter(([id, g]) => id !== pid && !skip.includes(id) && g && g.L && now - (g.t || 0) > ECO.GHOST_IDLE);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  return pool.slice(0, k).map(([id, g]) => ({ id, n: String(g.n || "Pilot").slice(0, 24), L: g.L }));
+}
+// list: [[owner pid, {won, drawn, dmg, kills}]]
+export async function ghostReport(env, list, now = Date.now()) {
+  const up = {}, inc = (n) => ({ ".sv": { increment: n } });
+  for (const [id, r] of list) {
+    if (!/^tg_\d{3,15}$/.test(String(id))) continue;
+    const P = `ghr/${id}`, k = r.won ? "w" : r.drawn ? "d" : "l";
+    up[`${P}/m`] = inc(1); up[`${P}/${k}`] = inc(1);
+    up[`${P}/dmg`] = inc(Math.max(0, Math.min(200000, Math.round(Number(r.dmg) || 0))));
+    up[`${P}/kills`] = inc(Math.max(0, Math.min(20, Math.round(Number(r.kills) || 0))));
+    up[`${P}/last`] = now;
+  }
+  if (Object.keys(up).length) await dbPatch(env, "", up);
 }
 // what the phone gets: the economy fields only (no anomaly stats, tickets or bookkeeping)
 export function pub(S) { const E = {}; for (const k of R.ECO_KEYS) if (S[k] !== undefined) E[k] = S[k]; return E; }
@@ -144,19 +182,24 @@ export async function matchStart(env, b, user, pid, now = Date.now()) {
   if (g !== "royale" && !R.MODES[m]) return { status: 400, body: { error: "mode" } };
   if (!mapList().includes(map)) return { status: 400, body: { error: "map" } };
   const n = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
+  const pw0 = await dbGet(env, `players/${pid}/power`).catch(() => null);
+  const ghosts = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
   const t = await tx(env, pid, (S, X) => {
     S.nm = cleanName(user);
     const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw);
     // one open ticket per pilot: a new one replaces the last (that match can't be scored any more)
     S.mt = { n, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick,
-      series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw };
+      series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
     return { lg: brk.key, mult: brk.mult, power: S.pw, L };
   }, now);
-  return { status: 200, body: { ok: true, tok: n + "." + (await sign(env, `${pid}|${n}|${now}`)), league: t.lg, mult: t.mult, power: t.power, E: pub(t.S) } };
+  // ghosts go to the phone by seat number only (never the owner's id)
+  return { status: 200, body: { ok: true, tok: n + "." + (await sign(env, `${pid}|${n}|${now}`)), league: t.lg, mult: t.mult, power: t.power, E: pub(t.S),
+    gh: ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
 }
 const lim = (v, hi) => Math.max(0, Math.min(hi, Math.round(Number(v) || 0)));
 export function minSecs(g, m, won, drawn, place) {
   if (g === "royale") return place === 1 ? ECO.MIN_WIN.royale : place > 0 && place <= 3 ? ECO.MIN_TOP3 : ECO.MIN_ANY;
+  if (g === "boss" && drawn && !won) return ECO.BOSS_DRAW;   // Survival: a draw means you lasted the whole clock
   if (!won && !drawn) return ECO.MIN_ANY;
   const v = ECO.MIN_WIN[g];
   return typeof v === "number" ? v : (v && v[m]) || 10;
@@ -192,13 +235,20 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const st = { dmg: lim(s.dmg, el * 450), kills: lim(s.kills, kmax), box: lim(s.box, 30), sup: lim(s.sup, Math.ceil(el / 6) + 2), caps: T.g === "zone" ? lim(s.caps, Math.ceil(el / 5)) : 0,
       cry: T.g === "crystal" ? lim(s.cry, Math.ceil(el / 3)) : 0, stars: T.g === "bounty" ? lim(s.stars, Math.ceil(el / 2) + 7) : 0, low: Math.max(0, Math.min(1, Number(s.low) || 0)) };
     const sw = T.series && Array.isArray(r0.seriesW) ? [lim(r0.seriesW[0], 3), lim(r0.seriesW[1], 3)] : null;
+    // how the ghosts in this match did (seat numbers from the ticket; anything else is ignored)
+    const gIds = Array.isArray(T.gh) ? T.gh : [], gseen = new Set();
+    const ghr = (Array.isArray(r0.gh) ? r0.gh.slice(0, 6) : []).map((x) => {
+      const i = Math.round(Number(x && x.i)); if (!(i >= 0 && i < gIds.length) || gseen.has(i)) return null; gseen.add(i);
+      return [gIds[i], { won: !!x.won, drawn: !x.won && !!x.drawn, dmg: lim(x.dmg, el * 450), kills: lim(x.kills, kmax) }];
+    }).filter(Boolean);
     const o = { won, drawn, place, top3, g: T.g, m: T.m, feat: T.feat, series: T.series, quick: T.quick, map: T.map };
     const p = R.ecoMatchPts(S, o, T.mult, X);
     R.ecoAfterMatch(S, { ...o, streak: S.streak, seriesW: sw, st }, X);
     flags = watch(S, { ai: true, won, secs, pts: p.pts }, X, now);
-    return { res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, base: p.base, modeX: p.modeX, featX: p.featX, mult: T.mult }) };
+    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, base: p.base, modeX: p.modeX, featX: p.featX, mult: T.mult }) };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now);
+  if (t.ghr && t.ghr.length) await ghostReport(env, t.ghr, now).catch(() => {});
   const res = t.dup || t.res;
   if (t.err === "ticket" && !t.dup) return { status: 200, body: { ok: false, error: "ticket", E: pub(t.S) } };
   if (res && res.err) return { status: 200, body: { ok: false, error: res.err, E: pub(t.S) } };
@@ -334,8 +384,40 @@ export async function squadRows(env, pid) {
   const rows = (await dbGet(env, "players", { orderBy: '"ref"', equalTo: `"${pid}"` })) || {};
   return Object.entries(rows).slice(0, 300).map(([id, v]) => ({ id, n: v.name || "Pilot", pts: v.pts || 0, days: v.days || 0, ld: v.ld ?? null }));
 }
+// ---- "Join the channel": Telegram confirms the pilot is a member before the quest pays ----
+// getChatMember on a channel needs the bot to be one of its admins. Until it is, Telegram answers with an error and
+// the quest pays as before (true = member, false = not a member, null = can't tell)
+export async function channelMember(env, user) {
+  const ch = "@" + String(R.TG_URL || "").split("/").pop();
+  if (!user || !user.id || ch === "@") return null;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/getChatMember`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: ch, user_id: Number(user.id) }) });
+    const j = await r.json();
+    const st = j && j.ok && j.result && j.result.status;
+    if (!st) return null;
+    if (st === "left" || st === "kicked") return false;
+    if (st === "restricted") return !!j.result.is_member;
+    return true;
+  } catch (e) { return null; }
+}
+// is the bot an admin of the channel (so the check above works)? Shown on Jake's admin sheet
+export async function channelReady(env) {
+  const ch = "@" + String(R.TG_URL || "").split("/").pop(), bot = String(env.BOT_TOKEN || "").split(":")[0];
+  if (!bot) return false;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/getChatMember`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: ch, user_id: Number(bot) }) });
+    const j = await r.json();
+    return !!(j && j.ok && j.result && (j.result.status === "administrator" || j.result.status === "creator"));
+  } catch (e) { return false; }
+}
 export async function act(env, b, user, pid, now = Date.now()) {
   const a = String(b.a || ""), name = cleanName(user), id = String(b.id || "").slice(0, 20);
+  if (a === "ms" && id === "q_tg" && (await channelMember(env, user)) === false) {
+    const S = await readEco(env, pid);
+    return { status: 200, body: { ok: true, out: { err: "join" }, E: pub(S) } };
+  }
   if (a === "paid") {   // a Stars purchase: granted by the webhook when Telegram confirms it
     const n = String(b.n || "");
     const paid = (await dbGet(env, `starsPaid/${pid}`).catch(() => null)) || {};
@@ -358,6 +440,7 @@ export async function act(env, b, user, pid, now = Date.now()) {
     case "salvage": if (tk !== "weapon" && tk !== "chassis" || !(ri === 1 || ri === 2)) break; F = (S, X) => R.ecoSalvage(S, tk, ri, X); break;
     case "tune": { const isW = !!b.w, k = String(b.k || ""), t = riOf(b.t); if (t === null || !(isW ? R.WORDER : R.CHORDER).includes(k)) break; F = (S, X) => R.ecoTune(S, isW, k, t, X); break; }
     case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k); break; }
+    case "respec": F = (S) => R.ecoRespec(S); break;
     case "squad": {
       // recruits flagged for review (a shared device or network, or anything else) don't pay out until Jake clears them
       const [rows, fl, rec] = await Promise.all([squadRows(env, pid), dbGet(env, "flags").catch(() => null), dbGet(env, `players/${pid}`).catch(() => null)]);
@@ -368,6 +451,7 @@ export async function act(env, b, user, pid, now = Date.now()) {
     }
   }
   if (!F) return { status: 400, body: { error: "action" } };
-  const t = await tx(env, pid, (S, X) => { S.nm = name; return { out: F(S, X) }; }, now);
+  // power and league follow the build and gear right away (upgrades, a reset build, tune-ups, crates)
+  const t = await tx(env, pid, (S, X) => { S.nm = name; const out = F(S, X); if (S.L) setLoadout(S, S.L); return { out }; }, now);
   return { status: 200, body: { ok: true, out: t.out, E: pub(t.S) } };
 }

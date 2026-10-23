@@ -17,7 +17,8 @@ const ICON={
  random:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h3.5l10 10H21M3 17h3.5l3-3M14 10l2.5-3H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>',
  crystal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8 19 9.5 12 21.2 5 9.5z"/><path d="M5 9.5h14M12 2.8 9.3 9.5 12 21.2l2.7-11.7z"/></svg>',
  bounty:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6.6l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z"/></svg>',
- royale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4.2 17.2 3 7.6l5 3.9 4-6 4 6 5-3.9-1.2 9.6z"/><path d="M4.5 20.5h15"/></svg>'};
+ royale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4.2 17.2 3 7.6l5 3.9 4-6 4 6 5-3.9-1.2 9.6z"/><path d="M4.5 20.5h15"/></svg>',
+ boss:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="8.5" width="17" height="11" rx="2.5"/><circle cx="12" cy="14" r="3.2"/><path d="M12 10.8V3M8.5 8.5 7 5.5M15.5 8.5 17 5.5"/></svg>'};
 const TAB_LIST=[['play','Play'],['garage','Garage'],['shop','Shop'],['quests','Quests'],['ranks','Ranks']];
 let uiTab='play',uiReady=false,uiRaf=0,ptrDown=false,heroCv=null,lbScope='overall';
 const stale=new Set(TAB_LIST.map(t=>t[0]));
@@ -61,7 +62,7 @@ function questsAlert(){
  if(QUESTS.some(q=>{const e=save.q[q.id];return e&&e.done&&!e.claimed;}))return true;
  return refPending()>0;
 }
-const nextUp=()=>UORDER.map(k=>({k,lv:save.up[k],c:save.up[k]<4?UPS[k].costs[save.up[k]]:Infinity})).sort((a,b)=>a.c-b.c)[0];
+const nextUp=()=>UORDER.map(k=>({k,lv:save.up[k],c:save.up[k]<4&&upLevels(save.up)<BUILD_MAX?UPS[k].costs[save.up[k]]:Infinity})).sort((a,b)=>a.c-b.c)[0];
 const garageAlert=()=>{const u=nextUp();return u.c<=(save.pts||0);};
 function renderTop(){
  const p=$('#ptsVal');if(!p)return;
@@ -126,11 +127,11 @@ function playNudge(){
  if(IN_TG&&(save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points for each friend who keeps playing',act:'share'};
  return null;
 }
-const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',crystal:'Hold 10 crystals for 15s',bounty:'Kills earn stars',royale:'6 tanks, 1 survivor',random:'A different mode each match'};
+const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',crystal:'Hold 10 crystals for 15s',bounty:'Kills earn stars',royale:'6 tanks, 1 survivor',boss:'Take down a megatank',random:'A different mode each match'};
 function setupPickers(){
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),fm=featuredMode(),solo=isSolo(gk),liveOK=IN_TG&&(save.mp||0)>=1,live=liveOK&&isLiveMode(gk);
  return sec('Game type',liveOK?'Live = real pilots':'','gtypes')+
-  '<div class="modes">'+GT_ORDER.concat('random').map(k=>'<button class="mode'+(gk===k?' on':'')+'" data-act="gtype" data-arg="'+k+'">'+(k===fm?'<span class="feat">+25% today</span>':'')+(liveOK&&isLiveMode(k)?'<span class="live">Live</span>':'')+ICON[k]+'<b>'+GT_PICK[k].label+'</b><small>'+GT_DESC[k]+'</small></button>').join('')+'</div>'+
+  '<div class="modes">'+GT_ORDER.concat('random').map(k=>'<button class="mode'+(gk===k?' on':'')+(k==='random'?' rnd':'')+'" data-act="gtype" data-arg="'+k+'">'+(k===fm?'<span class="feat">+25% today</span>':'')+(liveOK&&isLiveMode(k)?'<span class="live">Live</span>':'')+ICON[k]+'<b>'+GT_PICK[k].label+'</b><small>'+GT_DESC[k]+'</small></button>').join('')+'</div>'+
   sec('Team size',solo?'':live?'Live pilots first, AI fills empty seats':MODES[mk].n>1?'AI pilots fill your team':'','modes')+
   (solo?'<div class="seg"><button class="on solo" disabled>Solo<small>'+(live?'Up to 6 live pilots, AI fills the rest':'You and 5 AI pilots')+', free for all. 1st place pays '+fmtNum(winRange(gk,mk)[0])+'</small></button></div>'
    :'<div class="seg c3">'+Object.keys(MODES).map(k=>{const r=winRange(gk,k);return '<button class="'+(mk===k?'on':'')+'" data-act="mode" data-arg="'+k+'">'+k+'<small>win '+(r[0]===r[1]?fmtNum(r[0]):fmtNum(r[0])+'–'+fmtNum(r[1]))+'</small></button>';}).join('')+'</div>')+
@@ -162,15 +163,18 @@ function renderGarage(){
   if(!k)return '<button class="core empty" data-act="core" data-arg="'+i+'"><div class="gemi" style="border:1.5px dashed var(--dim);box-shadow:none"></div><b>Empty</b><span>Add a core</span></button>';
   const lv=save.gemLvl[k]||1;
   return '<button class="core" data-act="core" data-arg="'+i+'"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div><b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';};
- const upRow=k=>{const U=UPS[k],lv=save.up[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&(save.pts||0)>=c;
+ const used=upLevels(save.up),full=used>=BUILD_MAX,inv=upInvested(save.up);
+ const upRow=k=>{const U=UPS[k],lv=save.up[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&!full&&(save.pts||0)>=c;
   return '<div class="up"><div class="grow"><div class="nm">'+U.n+' <span class="dimtxt">level '+lv+' of 4</span></div><div class="d">'+U.d+'</div><div class="bar4">'+[0,1,2,3].map(i=>'<i class="'+(i<lv?'f':'')+'"></i>').join('')+'</div></div>'+
-   (max?'<span class="mut">Maxed</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="up" data-arg="'+k+'">'+coin()+fmtNum(c)+'</button>')+'</div>';};
+   (max?'<span class="mut">Maxed</span>':full?'<span class="mut">Budget full</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="up" data-arg="'+k+'">'+coin()+fmtNum(c)+'</button>')+'</div>';};
  return '<div class="powerline"><div class="grow"><div class="pw num">Power '+pw+'</div><div class="mut"><span style="color:'+brk.c+'">'+brk.n+' league</span>, points ×'+brk.mult+'</div></div><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button></div>'+
   '<div class="stats">'+stat(fmtNum(st.hp),'Health')+stat(st.dps,'Damage/s')+stat(st.spd,'Speed')+stat(st.armor+'%','Armor')+stat(st.crit+'%','Crit')+'</div>'+
   sec('Gear')+gearRow(true,W0)+gearRow(false,C0)+
   '<button class="gear" data-act="paints"><div class="ico"><canvas data-art="tank:paint:'+esc(save.paint)+'"></canvas></div><div class="grow"><div class="kind">Paint</div><div class="nm">'+esc(myPaint().n)+'</div><div class="meta">Looks only. '+Object.keys(save.paints||{}).length+' of '+PAINT_ORDER.length+' owned</div></div><span class="chev">›</span></button>'+
   sec('Cores','Each type fits once','cores')+'<div class="cores">'+[0,1,2].map(coreCard).join('')+'</div>'+
-  sec('Upgrades','Permanent')+'<div class="ups list">'+UORDER.map(upRow).join('')+'</div>'+
+  sec('Build',used+' of '+BUILD_MAX+' levels','build')+'<div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div>'+
+  '<div class="ups list">'+UORDER.map(upRow).join('')+'</div>'+
+  (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">Every level back to 0. You get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' points back.</div></div><span class="mut">Reset</span></button>':'')+
   (save.skin==='lunar'?'<div class="panel lunar">Lunar skin: +8% health and +8% damage, always on</div>':'');
 }
 
@@ -426,7 +430,7 @@ function infoBody(sections){return '<div class="infobody">'+sections.map(([h,p])
 const INFO={
  howto:()=>['How to play',[
   ['Drive','Drag anywhere on the screen. Your cannon aims and fires on its own.'],
-  ['Win','Every mode has its own goal: Arena, Moon Zone, Crystal Rush, Bounty and Last Standing. The start screen tells you what it is.'],
+  ['Win','Every mode has its own goal: Arena, Moon Zone, Crystal Rush, Bounty, Last Standing and Survival. The start screen tells you what it is.'],
   ['Mystery boxes','Drive over the gold box for a random boost. It lasts until you take enough damage; the ring around your tank shows what’s left.'],
   ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button to auto-aim, or drag from it to aim yourself.'],
   ['Dash','The blue Dash button bursts you forward in the direction you’re driving. Use it to dodge supers. It recharges in 4 seconds.'],
@@ -446,17 +450,23 @@ const INFO={
   ['Crystal Rush','A crystal appears at the mine in the middle every 6 seconds. When your team holds 10 or more, and more than the other team, a 15-second countdown starts. Last it out and you win. Destroyed tanks drop every crystal they carry. Pays ×3 / ×2 / ×1.5.'],
   ['Bounty','Every tank starts worth 2 stars. Destroy one and your team gets its stars, and your own bounty rises by 1, up to 7. Get destroyed and yours drops back to 2. Most stars after 2 minutes wins. Tanks are lighter and respawn in 3 seconds. Pays ×3.5 / ×2.25 / ×1.5.'],
   ['Last Standing','You and 5 AI pilots, every tank for itself, no respawns. The ring closes from 15 seconds in; outside it you lose 4% health a second. Wrecks drop boxes. Pays by place: '+ROYALE_PTS.join(', ')+'. 2nd and 3rd keep your win streak.'],
+  ['Survival','A megatank hunts you. Solo, or with AI wingmen in 2v2 and 3v3. Destroy it to win; alive at the horn is a draw. Get out of the red circles: shell barrages, and a stomp when you get close. Pays like Moon Zone.'],
   ['Featured mode','One mode a day pays +25% points and +'+PASS_XP_FEAT+' pass XP. It changes at 00:00 UTC.'],
   ['Random','Picks any mode when the match starts.']]],
  modes:()=>['Team size',[
   ['Points per match','Before your league multiplier:'],
   ...Object.keys(MODES).map(k=>{const M=MODES[k];return [k,'Win '+M.win+', draw '+M.draw+', loss '+M.loss+'.'];}),
-  ['Win streaks','Each win in a row adds 20 more points, up to +100.'],
+  ['Win streaks','Each win in a row adds 20 more points, up to +100 (more in 2v2 and 3v3).'],
   ['Teammates','In 2v2 and 3v3, AI pilots fight on your side.']]],
  league:()=>['Leagues',[
   ['Your league','Comes from your tank’s power: gear, upgrades and cores. Higher leagues pay more points per match.'],
   ['Multipliers','Rookie ×1 (under 150 power), Pilot ×1.25 (150+), Ace ×1.5 (250+), Elite ×1.75 (400+), Legend ×2 (600+).'],
   ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime points and shows on the leaderboard. Your league comes from gear.']]],
+ build:()=>['Build',[
+  ['Your budget','Each stat has 4 levels, but your tank can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how you fight.'],
+  ['Cost','Each level costs points: '+UPS.hull.costs.map(fmtNum).join(', ')+' for levels 1 to 4.'],
+  ['Reset build','Clears every level so you can build again. You get half the points the levels cost back; the other half is gone.'],
+  ['Power','Your power and league come from the levels in your build.']]],
  cores:()=>['Cores',[
   ['What they do','Cores are permanent boosts. You have 3 sockets and each core type fits once.'],
   ['Leveling','Gem caches in the Shop give shards. Enough shards level a core up, to level 5.'],
@@ -565,6 +575,15 @@ function openSettings(){
   '<button class="q" data-act="copyid"><div class="grow"><div class="t">Player ID</div><div class="p">'+esc(playerKey())+(IN_TG?', '+esc(tgName(TG_USER)):'')+'</div></div><span class="mut">Copy</span></button>'+
   '</div><p class="dimtxt" style="margin-top:12px">Build '+esc(window.BUILD||'dev')+'</p>');
 }
+// the offline report: what your ghost did in other pilots' matches while you were away (no points, just the story)
+function showGhostReport(r){
+ const go=()=>{if(state==='play'||state==='vs'||state==='round'){setTimeout(go,4000);return;}
+  sheet('ghost',()=>'<h3>Your ghost fought while you were away</h3>'+
+   '<p class="mut">While you were offline, the AI flew your tank (your build and gear) in AI seats of other pilots\' matches, labeled "Ghost of '+esc(IN_TG?tgName(TG_USER):'you')+'". Ghost matches pay no points and don\'t touch your rank.</p>'+
+   '<div class="kv"><div><b class="num">'+fmtNum(r.m)+'</b><span>'+(r.m===1?'Match':'Matches')+'</span></div><div><b class="num">'+fmtNum(r.w)+'–'+fmtNum(r.l)+(r.d?'–'+fmtNum(r.d):'')+'</b><span>Won–lost'+(r.d?'–drawn':'')+'</span></div><div><b class="num">'+fmtNum(r.kills)+'</b><span>Tanks destroyed</span></div></div>'+
+   '<p class="mut" style="margin-top:10px">'+fmtNum(r.dmg)+' damage dealt'+(r.m?', '+fmtNum(Math.round(r.dmg/r.m))+' a match':'')+'. '+(r.w>r.l?'Your build holds up.':r.w===r.l?'An even record.':'Tougher out there than it looks. A different build might do better.')+'</p>');};
+ setTimeout(go,1500);
+}
 let devTapN=0,devTapT=0;
 function openAdmin(){
  loadAdmin();
@@ -577,6 +596,7 @@ function openAdmin(){
    (A.stats?'<div class="kv"><div><b class="num">'+fmtNum(A.stats.newToday)+'</b><span>New today</span></div><div><b class="num">'+A.stats.back2+'%</b><span>Came back day 2</span></div><div><b class="num">'+A.stats.back5of7+'%</b><span>5+ of 7 days</span></div></div>'+
     '<div class="kv"><div><b class="num">'+A.stats.avgMatches+'</b><span>Matches per player</span></div><div><b class="num">'+A.stats.conv+'%</b><span>Paid</span></div><div><b class="num">$'+A.stats.arppu+'</b><span>Per payer</span></div></div>'+
     '<p class="dimtxt" style="margin-top:6px">Retention from the top 1,000 players. Paid = payers out of all players.</p>':''))+
+   (A.channel===false?'<p class="mut" style="margin-top:8px"><b>Channel check is off.</b> Add the bot as an admin of '+esc(TG_URL.replace('https://',''))+' (Manage channel, Administrators, Add admin, search the bot). Until then the Join the channel quest pays without checking.</p>':A.channel?'<p class="dimtxt" style="margin-top:8px">Channel check is on: the Join the channel quest pays members only.</p>':'')+
    (A.flagged?'<h3 style="margin-top:16px;font-size:16px">Flagged for review ('+A.flagged.length+')</h3>'+
     (A.flagged.length?'<div class="list">'+A.flagged.map(f=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+esc(f.n)+'</b> <span class="dimtxt">'+esc(f.id)+'</span><div class="dimtxt">'+f.why.map(esc).join('<br>')+'</div></div><button class="btn sm btn-quiet" data-act="flagclear" data-arg="'+esc(f.id)+'">Clear</button></div>').join('')+'</div>':'<p class="mut">Nobody flagged.</p>')+
     '<p class="dimtxt" style="margin-top:6px">Flagged pilots sit out the leaderboard and the airdrop snapshot until you clear them.</p>'+
@@ -624,8 +644,8 @@ let vsTimer=null;
 function vsBuild(){
  const {adv,dis}=matchup(),foes=units.filter(u=>u.team!==0),mine=units.filter(u=>u.team===0),solo=isSolo(matchG);
  const live=pvpOn(),liveFoes=live&&pvpLiveFoes();
- const ctag=u=>{if(u===me||u.team===me.team)return '';if(COUNTER[u.cls]===me.cls)return '<i class="ctag up">▲ BOOSTED</i>';if(COUNTER[me.cls]===u.cls)return '<i class="ctag dn">▼ DISADVANTAGED</i>';return '';};   // every foe card carries its own triangle standing vs you, so it can never go missing from the summary line
- const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u===me?'You':u.name)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+CH[u.cls].c+'">'+CH[u.cls].n+'</span>'+ctag(u)+'</div>';};
+ const ctag=u=>{if(u===me||u.team===me.team||u.boss)return '';if(COUNTER[u.cls]===me.cls)return '<i class="ctag up">▲ BOOSTED</i>';if(COUNTER[me.cls]===u.cls)return '<i class="ctag dn">▼ DISADVANTAGED</i>';return '';};   // every foe card carries its own triangle standing vs you, so it can never go missing from the summary line
+ const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u===me?'You':u.name)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+(u.boss?'#ff4d5e':CH[u.cls].c)+'">'+(u.boss?'Boss':CH[u.cls].n)+'</span>'+ctag(u)+'</div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
  else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+'.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
@@ -669,7 +689,7 @@ const TIPS=['Mystery boxes boost you until you take enough damage. Grab them ear
 const ORD=['1st','2nd','3rd','4th','5th','6th'];
 function resultsHTML(r){
  const M=MODES[r.mode],solo=isSolo(r.gtype),G=GTYPES[r.gtype];
- const title=r.won?'Victory':solo&&r.place<=3?ORD[r.place-1]+' place':r.drawn?'Draw':'Defeat',cls=r.won?'win':r.drawn||(solo&&r.place<=3)?'draw':'lose';
+ const title=r.won?'Victory':solo&&r.place<=3?ORD[r.place-1]+' place':r.drawn?(r.gtype==='boss'?'Survived':'Draw'):'Defeat',cls=r.won?'win':r.drawn||(solo&&r.place<=3)?'draw':'lose';
  const lines=solo?[[ORD[r.place-1]+' of '+units.length,fmtNum(r.base)]]:[[(r.won?'Win':r.drawn?'Draw':'Loss')+' in '+r.mode,fmtNum(r.won?M.win:r.drawn?M.draw:M.loss)]];
  if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.modeX]);
  else if(r.modeX!==1)lines.push([G.label,'×'+r.modeX]);
@@ -691,7 +711,7 @@ function resultsHTML(r){
  const st=r.stats;
  return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+Math.min(96,i*3.5+Math.random()*2)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
   '<div class="grow"></div><div class="title '+cls+'">'+title+'</div>'+
-  '<div class="sub">'+(r.live?'Live ':'')+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
+  '<div class="sub">'+(r.live?'Live ':'')+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':r.gtype==='boss'?'Survival '+r.mode+', megatank '+r.score[0]+'% down':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
   '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+fmtNum(st.taken||0)+'</b>taken</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span>'+(st.best?'<span class="chip"><b>'+fmtNum(st.best)+'</b>best hit</span>':'')+(st.arm?'<span class="chip"><b>'+fmtNum(st.arm)+'</b>armor blocked</span>':'')+(st.shd?'<span class="chip"><b>'+fmtNum(st.shd)+'</b>shield blocked</span>':'')+(r.won&&r.streak>=2?'<span class="chip"><b>'+r.streak+'</b>win streak</span>':'')+(st.low>0&&st.low<=0.25?'<span class="chip"><b>'+Math.round(st.low*100)+'%</b>lowest HP</span>':'')+'</div>'+
@@ -843,7 +863,11 @@ const ACT={
  visit:a=>{when(visitLinkQuest(a),()=>uiDirty('quests'));},
  weekly:()=>{const v=claimWeekly();if(!v){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}when(v,r=>{if(!r)return;showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);uiDirty();});},
  share:()=>shareRef(),copy:()=>copyRef(),claimref:()=>{when(claimRefs(),()=>uiDirty('quests'));},
- up:a=>{const lv=save.up[a];if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
+ respec:()=>{const inv=upInvested(save.up);if(!inv)return;
+  openOverlay('modal','<h3>Reset your build?</h3><p class="mut">All '+upLevels(save.up)+' levels go back to 0. You get <b>'+fmtNum(Math.floor(inv*RESPEC_BACK))+'</b> points back and lose the other '+fmtNum(inv-Math.floor(inv*RESPEC_BACK))+'.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-ghost" data-act="respecok">Reset</button></div>',{key:'respec'});},
+ respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
+ respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
+ up:a=>{const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
  gear:a=>openGearPicker(a==='w'),
  equip:a=>{const [s,id]=a.split('|'),isW=s==='w',[k,ts]=id.split(':'),t=ts===undefined?0:parseInt(ts,10),sl=!!ts&&ts.slice(-1)==='s';
   const own=k==='moon'?save.moonbeam:isW?(sl?salvOf(k,t):ownW(k,t)):(sl?salvOf(k,t):ownC(k,t));

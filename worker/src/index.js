@@ -4,7 +4,7 @@
 import { DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
-import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows } from "./eco.js";
+import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady } from "./eco.js";
 export { PvpRoom, PvpLobby };
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -110,6 +110,10 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
     rec: { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
+  // the ghost report: what your tank did in other pilots' matches while you were away. Cleared once the phone has shown it
+  const gr = b.boot || b.ghAck ? await dbGet(env, `ghr/${pid}`).catch(() => null) : null;
+  if (gr && b.ghAck && Number(b.ghAck) >= (gr.last || 0)) await dbDel(env, `ghr/${pid}`).catch(() => {});
+  else if (gr && gr.m && b.boot) out.ghost = { m: gr.m || 0, w: gr.w || 0, d: gr.d || 0, l: gr.l || 0, dmg: gr.dmg || 0, kills: gr.kills || 0, last: gr.last || 0 };
   return out;
 }
 async function undeliveredStars(env, pid, now) {
@@ -288,7 +292,7 @@ async function admin(env, user, b = {}) {
   // flagged pilots (anomalies, the one-time move, shared networks): they sit out the snapshot until cleared
   const fl = (await dbGet(env, "flags").catch(() => null)) || {};
   const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
-  const body0 = { flagged };
+  const body0 = { flagged, channel: await channelReady(env) };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,

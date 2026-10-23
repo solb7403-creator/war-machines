@@ -4,7 +4,7 @@
 // pilot until they're back; one who leaves (or stays away) loses and earns nothing.
 import { createSim, RULES } from "./sim.gen.js";
 import { dayOf, hex, hmac, cleanName } from "./db.js";
-import { creditMatch, readEco } from "./eco.js";
+import { creditMatch, readEco, pickGhosts, ghostReport, ECO } from "./eco.js";
 
 export const PVP = {
   WAIT_MS: 30000,      // a room looks for live pilots this long, then AI pilots fill the empty seats
@@ -92,6 +92,8 @@ export class RoomCore {
     const idx = this.order.find((i) => !this.seats[i]);
     if (idx === undefined) return { ok: false, err: "full" };
     this.seats[idx] = { pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
+    // offline pilots' tanks for the AI seats, looked up while the room waits (at the first pilot's power)
+    if (!this.ghP && this.io.ghosts) this.ghP = Promise.resolve().then(() => this.io.ghosts(power, [pid])).then((g) => { this.gh = g || []; }).catch(() => { this.gh = []; });
     return { ok: true, seat: idx, wait: this.t0 + this.o.WAIT_MS - now };
   }
   connect(pid, sock) {
@@ -183,7 +185,9 @@ export class RoomCore {
     this.sim = createSim(this.host());
     const maps = this.sim.R.MAP_REAL, map = this.o.MAP || maps[Math.floor(Math.random() * maps.length)];   // live matches pick the map (tests can fix it)
     const seats = Array.from({ length: this.cap }, (_, i) => (this.seats[i] ? { pid: this.seats[i].pid, name: this.seats[i].name, L: this.seats[i].L } : null));
-    this.sim.setup({ map, g: this.q.g, m: this.q.g === "royale" ? "1v1" : this.q.m, series: this.series, seats });
+    const empty = seats.filter((x) => !x).length, hp = this.humans().map((s) => s.pid);
+    const ghosts = (this.gh || []).filter((x) => !hp.includes(x.id)).slice(0, Math.min(ECO.GHOST_MAX, Math.ceil(empty / 2)));
+    this.sim.setup({ map, g: this.q.g, m: this.q.g === "royale" ? "1v1" : this.q.m, series: this.series, seats, ghosts });
     for (const s of this.humans()) { const u = this.sim.units[s.idx]; s.flip = this.q.g === "royale" ? u.y < 16 : u.team === 1; }
     this.vsAt = now + this.o.VS_MS;
     for (const s of this.humans()) this.sendTo(s, this.goMsg(s));
@@ -301,6 +305,9 @@ export class RoomCore {
     if (this.iv) { this.io.clearInterval(this.iv); this.iv = null; }
     this.flush();
     for (const s of this.humans()) if (!s.done) this.finishSeat(s, this.sim.outcome(this.sim.units[s.idx], forced), s.quit || !s.on && this.away(s));
+    // the ghosts' owners get a report (no points)
+    const gl = this.sim.units.filter((u) => u.gh && u.gid).map((u) => { const o = this.sim.outcome(u, forced); return [u.gid, { won: o.won, drawn: o.drawn, dmg: u.st ? u.st.dmg : 0, kills: u.st ? u.st.kills : 0 }]; });
+    if (gl.length && this.io.ghostReport) this.pending.push(Promise.resolve().then(() => this.io.ghostReport(gl)).catch(() => {}));
     this.done = Promise.all(this.pending).then(() => { this.all({ k: "end" }); this.later(4000, () => this.closeAll()); });
   }
   closeAll() {
@@ -341,6 +348,8 @@ export class PvpRoom {
         setTimeout: (f, ms) => setTimeout(f, ms), clearTimeout: (h) => clearTimeout(h),
         setInterval: (f, ms) => setInterval(f, ms), clearInterval: (h) => clearInterval(h),
         credit: (s, calc) => creditMatch(env, s.pid, s.name, calc),
+        ghosts: (pw, skip) => pickGhosts(env, null, pw, ECO.GHOST_MAX, Date.now(), skip),
+        ghostReport: (list) => ghostReport(env, list),
         left: (pid) => lobbyStub(env).fetch("https://lobby/left", post({ room: this.id, pid })).catch(() => {}),
       }, optsOf(env));
     }

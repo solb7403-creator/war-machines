@@ -17,13 +17,16 @@ function liveSetup(cfg){
    team:team(i),name:s.name,pid:s.pid,L:s.L,pw:powerOf(s.L),hum:true,ctl:'net'});
   u.hp=u.mhp;hums.push(u);return u;});
  const ref=hums.slice().sort((a,b)=>a.pw-b.pw)[(hums.length-1)>>1]||tankOf(STOCK_L,hs);   // AI pilots match the middle human's gear
- units=units.map((u,i)=>u||mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop()));
+ const gq=(cfg.ghosts||[]).slice();   // offline pilots' tanks take the first AI seats (enemies first)
+ const order=units.map((u,i)=>i).filter(i=>!units[i]).sort((a,b)=>(team(b)!==0)-(team(a)!==0));
+ const gseat={};for(const i of order){if(!gq.length)break;gseat[i]=gq.shift();}
+ units=units.map((u,i)=>u||(gseat[i]?mkGhost(team(i),pos[i].x,pos[i].y,gseat[i]):mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop())));
  units.forEach((u,i)=>{u.id=i;});
  me=null;series=null;state='vs';
 }
 function liveTank(u,L){Object.assign(u,tankOf(L,hpScale()),{L,pw:powerOf(L)});u.hp=u.mhp;}   // chassis swap on the VS screen or between rounds
 function roster(){return units.map(u=>({id:u.id,team:u.team,name:u.name,cls:u.cls,wtype:u.wtype,wtier:u.wtier,gems:u.gems,gemM:u.gemM,dscale:u.dscale,aura:u.aura,
- paint:u.paint,skin:u.skin||'default',mhp:u.mhp,spdM:u.spdM,ai:!u.pid,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
+ paint:u.paint,skin:u.skin||'default',mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
 // the world, ~15 times a second. Units, in id order:
 // [x, y, turret angle, hull angle, hp, super, flags (1 bridge deck, 2 dashing, 4 repairing, 8 human driving, 16 AI driving a live player's tank, 32 shielded),
 //  crystals, bounty, dash cooldown x10, deaths, time dead x10, teleport count, buffs [[key index, damage taken]] or 0, super charging [t, angle] or 0, max hp]

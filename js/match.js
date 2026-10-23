@@ -23,7 +23,10 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
  me=buildMe();
  const modeN=MM.n,names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  units=[me];
- if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
+ if(matchG==='boss'){   // Survival: you (and AI wingmen in 2v2 and 3v3) against one megatank
+  for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop()));
+  units.push(mkBoss(me,modeN));
+ }else if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
   const sp=royaleSpawns();
   for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y,me,names.pop()));
  }else{
@@ -42,7 +45,7 @@ function switchChassis(cls){
  const keep={x:me.x,y:me.y,sx:me.sx,sy:me.sy,deaths:me.deaths||0,zo:me.zo||0,id:me.id,st:me.st};me=buildMe();Object.assign(me,keep);units[0]=me;
 }
 function matchup(){   // how your chassis fares against the enemy lineup
- const foes=units.filter(u=>u.team!==me.team),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
+ const foes=units.filter(u=>u.team!==me.team&&!u.boss),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
  return {adv,dis,foes};
 }
 function startBanners(){
@@ -65,8 +68,14 @@ let mTicket=null;
 function matchStart(){
  mTicket=null;if(!SRV_ECO)return;
  const T={tok:null,g:matchG,m:modeKey()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout()};
- T.p=flushMatches().then(()=>api('/api/match/start',body)).then(r=>{if(r&&r.tok)T.tok=r.tok;return r;}).catch(()=>null);
+ T.p=flushMatches().then(()=>api('/api/match/start',body)).then(r=>{if(r&&r.tok)T.tok=r.tok;if(r&&Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}).catch(()=>null);
  mTicket=T;
+}
+// ghosts: offline pilots' real tanks (sent with the ticket) take AI seats, enemies first. The VS screen shows who they are
+function placeGhosts(list){
+ const seats=units.map((u,i)=>i).filter(i=>i>0&&!units[i].hum&&!units[i].boss&&!units[i].gh).sort((a,b)=>(units[b].team!==me.team)-(units[a].team!==me.team));
+ list.slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];if(!g||!g.L)return;try{units[i]=mkGhost(o.team,o.x,o.y,g);}catch(e){}});
+ const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
 }
 // results waiting for the server (no connection when the match ended): sent in order, each ticket counts once
 let mqBusy=null;
@@ -116,7 +125,8 @@ function localEnd(forced){
  if(!SRV_ECO&&r.pts>0&&!r.awarded)showToast('Daily point cap reached. It resets at 00:00 UTC.');
  afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
  const st=mstat||{};
- matchEnd({won,drawn,place,seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
+ const gh=units.filter(u=>u.gh&&u.gid!==undefined).map(u=>{const g=outcome(u,forced),s=u.st||{};return {i:u.gid,won:g.won?1:0,drawn:g.drawn?1:0,dmg:Math.round(s.dmg||0),kills:s.kills||0};});
+ matchEnd({won,drawn,place,gh,seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
  if(!SRV_ECO&&typeof syncPlayer==='function')syncPlayer();
 }
 // everything after the points: wins and losses, pass XP, quests, the results screen. Shared with live matches

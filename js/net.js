@@ -28,7 +28,8 @@ async function doSync(boot){
  captureRef();
  if(SRV_ECO)await flushMatches();   // results waiting for the server go first, so its record includes them
  const ack=starsAckQ.splice(0);
- const body={boot:!!boot,L:myLoadout(),refBy:save.refBy||'',starsAck:ack};
+ const body={boot:!!boot,L:myLoadout(),refBy:save.refBy||'',starsAck:ack},ghAck=save.ghAck||0;
+ if(ghAck)body.ghAck=ghAck;   // the ghost report we showed: the server can clear it
  // one time, the first time this pilot meets the server that owns the economy: this device's progress moves over
  // (the server checks it against payments and points on record, and flags what it can't explain)
  if(SRV_ECO&&!save.migOk)body.mig=ecoCopy();
@@ -37,6 +38,8 @@ async function doSync(boot){
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
+  if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
+  if(r.ghost&&r.ghost.m&&typeof showGhostReport==='function'){save.ghAck=r.ghost.last||Date.now();showGhostReport(r.ghost);}
   store();
  }catch(e){starsAckQ.unshift(...ack);syncFails++;}
  syncBusy=false;

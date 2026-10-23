@@ -88,7 +88,7 @@ async def main():
         # 5) setup sheet: 6 game types, featured badge, Last Standing has no team size
         await pg.evaluate("()=>{closeAll();setTab('play');openSetup()}");await pg.wait_for_timeout(400)
         r=await pg.evaluate("()=>({n:document.querySelectorAll('.sheet [data-act=gtype]').length,feat:(document.querySelector('.sheet .mode .feat')||{}).parentElement?document.querySelector('.sheet .mode .feat').parentElement.dataset.arg:null})")
-        check(r['n']==6 and r['feat']==fm,'setup sheet modes '+json.dumps(r))
+        check(r['n']==7 and r['feat']==fm,'setup sheet modes '+json.dumps(r))
         await pg.click('.sheet [data-act=gtype][data-arg=royale]');await pg.wait_for_timeout(250)
         solo=await pg.evaluate("()=>!!document.querySelector('.sheet .seg button.solo')&&!document.querySelector('.sheet [data-act=mode]')")
         check(solo,'Last Standing still shows team sizes')
@@ -109,7 +109,7 @@ async def main():
                 check(r['t']>=119,'bounty ended early '+str(r['t']))
                 check(sum(r['score'])>=4,'bounty: too few kills '+str(r['score']))
             if g=='royale':
-                check(1<=r['place']<=6 and r['base']==[260,200,140,100,60,30][r['place']-1],'royale place pay '+json.dumps(r))
+                check(1<=r['place']<=6 and r['base']==[900,600,400,200,100,50][r['place']-1],'royale place pay '+json.dumps(r))
 
         # featured mode pays x1.25 on top of everything else
         r=await pg.evaluate("""(fm)=>{save.streak=0;save.gtype=fm;save.mode='2v2';save.map='classic';prepareMatch();startMatch();

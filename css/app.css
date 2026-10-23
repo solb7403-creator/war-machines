@@ -131,6 +131,7 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .nudge span{color:var(--dust);font-size:13px}
 .nudge .chev{margin-left:auto;color:var(--gold);font:700 18px var(--disp)}
 .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mode.rnd{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:10px}
 .mode{position:relative;padding:12px 10px 11px;border-radius:14px;background:var(--rock2);border:1px solid var(--edge);text-align:left;color:var(--dust);min-height:96px;display:flex;flex-direction:column;gap:6px}
 .mode svg{width:26px;height:26px;color:var(--dim)}
 .mode b{font:700 16px/1.1 var(--disp);color:var(--moon)}
@@ -168,6 +169,10 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .ups .bar4{display:flex;gap:3px;margin-top:5px}
 .ups .bar4 i{width:16px;height:5px;border-radius:2px;background:var(--rock4)}
 .ups .bar4 i.f{background:var(--ok)}
+.bar14{display:flex;gap:3px;margin:2px 0 10px}
+.bar14 i{flex:1;height:6px;border-radius:2px;background:var(--rock4)}
+.bar14 i.f{background:var(--gold)}
+.q.respec{margin-top:10px;width:100%;text-align:left}
 .ups .nm{font:600 15px var(--disp)}
 .ups .d{font-size:12px;color:var(--dust)}
 

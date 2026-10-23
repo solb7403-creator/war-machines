@@ -257,6 +257,32 @@ function PVP_BANK() { return 0.6; }
   t(io.credits.length === 3 && io.credits.every((c) => c.pts === 0), 'everyone who left gets a loss, no points');
 }
 
+// ================= ghosts: offline pilots' tanks take AI seats in live rooms; owners get a report, no points =================
+{
+  const { room, run, io } = rig();
+  const Lg = L0(); Lg.up.hull = 3; Lg.paint = 'ember';
+  io.ghostAsks = 0; io.reports = [];
+  io.ghosts = async (pw, skip) => { io.ghostAsks++; return [{ id: 'tg_9001', n: 'Sleepy', L: Lg }, { id: 'tg_9002', n: 'Dozer', L: Lg }, { id: 'a', n: 'A', L: Lg }]; };
+  io.ghostReport = async (list) => { io.reports.push(...list); };
+  const S = {};
+  for (const p of ['a', 'b']) { seat(room, p, { g: 'arena', m: '2v2' }); S[p] = sock(p); room.connect(p, S[p]); }
+  await flush(); await flush();   // the ghost lookup lands while the room waits
+  await run(PVP.WAIT_MS + 50);
+  const g = last(S.a, 'go');
+  const gh = g.units.filter((u) => u.gh);
+  t(io.ghostAsks === 1 && gh.length === 1 && gh[0].ai && /^Ghost of (Sleepy|Dozer)$/.test(gh[0].name), 'live room: 1 of 2 AI seats goes to an offline pilot, labeled ' + JSON.stringify(g.units.map((u) => u.name)));
+  const gu = room.sim.units.find((u) => u.gh);
+  t(gu && gu.team === 1 && gu.mhp === R.tankOf(Lg, 2).mhp && gu.paint === 'ember', 'the ghost fights with its owner\'s build and gear (enemy seat first)');
+  t(!g.units.some((u) => u.gid) && !JSON.stringify(g).includes('tg_900'), 'owner ids never reach the phones');
+  await run(PVP.VS_MS + 100);
+  for (const u of room.sim.units) if (u.team === 1) room.sim.hit(u, 1e6, room.sim.units[0]);
+  await run(800);
+  t(room.phase === 'over' && io.reports.length === 1 && io.reports[0][0] === gu.gid && io.reports[0][1].won === false, 'ghost owner gets a report ' + JSON.stringify(io.reports));
+  const ca = io.credits.find((c) => c.pid === 'a');
+  t(ca && ca.won && ca.pts === Math.round(R.winBase('arena', '2v2')) + R.streakPts('arena', '2v2', 1), 'beating a ghost pays exactly the AI rate ' + JSON.stringify(ca));
+  t(io.credits.every((c) => !/^tg_900/.test(c.pid)), 'ghost owners are never credited');
+}
+
 // ================= Last Standing: a live pilot who goes down gets their place at once =================
 {
   const { room, run, io } = rig();

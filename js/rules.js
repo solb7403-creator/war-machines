@@ -25,6 +25,11 @@ const UPS={
  target:{n:'Targeting',d:'+2% crit chance per level',c:'#c28bff',costs:[500,2000,5000,12500]},
  reactor:{n:'Reactor',d:'+10% super charge per level',c:'#ffd24a',costs:[500,2000,5000,12500]}};
 const UORDER=['hull','cannon','engine','target','reactor'];
+// Build budget: 4 levels per stat, at most 14 levels across all five (3.5 stats maxed), spread however you like.
+// Reset build: every level goes back to 0 and you get half the points they cost back (the other half is gone)
+const BUILD_MAX=14,RESPEC_BACK=0.5;
+const upLevels=U=>UORDER.reduce((a,k)=>a+((U&&U[k])|0),0);
+const upInvested=U=>UORDER.reduce((a,k)=>{let s=0;for(let i=0;i<((U&&U[k])|0);i++)s+=UPS[k].costs[i];return a+s;},0);
 // ---- chassis classes & weapons ----
 const CH={
  scout:{n:'Scout',d:'Fast and agile',hp:0.8,spd:1.25,turn:1.15,ds:0.9,c:'#7be07b'},
@@ -33,7 +38,7 @@ const CH={
 const CHORDER=['scout','vanguard','titan'];
 // counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout (+15% damage dealt, 10% less taken)
 const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.15,COUNTER_RES=0.10;
-const cmult=(a,d)=>{if(!a||!d||!a.cls||!d.cls)return 1;
+const cmult=(a,d)=>{if(!a||!d||!a.cls||!d.cls||a.boss||d.boss)return 1;
  if(COUNTER[a.cls]===d.cls)return 1+COUNTER_BONUS;
  if(COUNTER[d.cls]===a.cls)return 1-COUNTER_RES;
  return 1;};
@@ -86,10 +91,11 @@ const GTYPES={
  zone:{label:'Moon Zone',d:'Hold the moving zone. First to 100.',t:180,respawn:true,x:ZONE_X},
  crystal:{label:'Crystal Rush',d:'Grab crystals from the mine. Hold 10 for 15 seconds to win.',t:180,respawn:true,x:{'1v1':3,'2v2':2.4,'3v3':2.1}},
  bounty:{label:'Bounty',d:'Kills earn stars. Every kill raises your bounty.',t:120,respawn:true,x:{'1v1':3.5,'2v2':2.8,'3v3':2.4}},
- royale:{label:'Last Standing',d:'6 tanks, 1 survivor. Stay inside the ring.',t:150,solo:6}};
-const GT_ORDER=['arena','zone','crystal','bounty','royale'];
+ royale:{label:'Last Standing',d:'6 tanks, 1 survivor. Stay inside the ring.',t:150,solo:6},
+ boss:{label:'Survival',d:'A megatank hunts your team. Destroy it to win; survive the clock for a draw.',t:180,boss:true,x:{'1v1':3,'2v2':2.4,'3v3':2.1}}};
+const GT_ORDER=['arena','zone','crystal','bounty','royale','boss'];
 const GT_PICK={...GTYPES,random:{label:'Random',d:'A different mode every match'}};   // what the selector shows; Random resolves at match start
-const ROYALE_PTS=[260,200,140,100,60,30],ROYALE_HP=2,BTY_HP=0.5,BTY_RESPAWN=3;   // Last Standing pays by place, 1st to 6th. Bounty: lighter tanks and quick respawns, so kills keep coming
+const ROYALE_PTS=[900,600,400,200,100,50],ROYALE_HP=2,BTY_HP=0.5,BTY_RESPAWN=3;   // Last Standing pays by place, 1st to 6th. Bounty: lighter tanks and quick respawns, so kills keep coming
 const isSolo=gk=>!!(GTYPES[gk]&&GTYPES[gk].solo);
 function winBase(gk,mk){   // points for a win before the league multiplier, featured bonus and streak
  if(isSolo(gk))return ROYALE_PTS[0];
@@ -269,6 +275,8 @@ function ecoNorm(S){
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
  for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
  const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
+ // over the build budget (levels bought before it existed): the top levels come off, paid back in full
+ while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
  const gl=obj('gemLvl'),gs=obj('gemShards');for(const k of GORDER){gl[k]=Math.max(1,Math.min(5,gl[k]|0||1));gs[k]=Math.max(0,gs[k]|0);}
  const wo=obj('wOwn'),co=obj('cOwn');
  for(const k of WORDER)wo[k]=[...new Set(listOf(wo[k]).map(Number).filter(t=>t>=0&&t<=2))];
@@ -394,8 +402,16 @@ function ecoTune(S,isW,k,t,X){
 function ecoUp(S,k){
  if(!UPS[k])return {err:'item'};
  const lvl=S.up[k];if(lvl>=4)return {err:'max'};
+ if(upLevels(S.up)>=BUILD_MAX)return {err:'budget'};
  const cost=UPS[k].costs[lvl];if(S.pts<cost)return {err:'pts',need:cost-S.pts};
  S.pts-=cost;S.ptsSpent+=cost;S.up[k]++;return {k,lv:S.up[k]};
+}
+function ecoRespec(S){   // clear the build: every level to 0, half the points back
+ const inv=upInvested(S.up);if(!inv)return {err:'empty'};
+ const back=Math.floor(inv*RESPEC_BACK);
+ for(const k of UORDER)S.up[k]=0;
+ S.pts+=back;S.ptsSpent=Math.max(0,S.ptsSpent-back);
+ return {back,lost:inv-back};
 }
 // ---- purchases (only after the payment is verified). Returns what each part gave, so a refund can take it back ----
 function ecoGrant(S,d,X){

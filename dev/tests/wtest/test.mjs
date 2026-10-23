@@ -10,7 +10,7 @@ const tgCalls = [];
 let tonTxs = [{ in_msg: { value: '8000000000', message: 'LWM|tg_111|abc' }, transaction_id: { hash: 'h1' } }];
 globalThis.fetch = async (url, init) => {
   if (url.startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')) return db.handle(url, init);
-  if (url.startsWith('https://api.telegram.org/')) { const body = JSON.parse(init.body); tgCalls.push([url.split('/').pop(), body]); return new Response(JSON.stringify({ ok: true, result: 'https://t.me/$invoice' })); }
+  if (url.startsWith('https://api.telegram.org/')) { const body = JSON.parse(init.body); tgCalls.push([url.split('/').pop(), body]); if (url.endsWith('/getChatMember') && globalThis.tgMember) return new Response(JSON.stringify({ ok: true, result: { status: globalThis.tgMember } })); return new Response(JSON.stringify({ ok: true, result: 'https://t.me/$invoice' })); }
   if (url.startsWith('https://toncenter.com/')) return new Response(JSON.stringify({ result: tonTxs }));
   throw new Error('unexpected fetch ' + url);
 };
@@ -83,7 +83,7 @@ en = await end(A, st.tok, { won: true, stats: { stars: 50 } }, now0 + 71000 + 10
 st = await start(A, { g: 'bounty', m: '1v1' }, now0 + 400000);
 en = await end(A, st.tok, { won: true }, now0 + 400000 + 31 * 60000); t(!en.ok && en.error === 'expired', 'expired ticket refused');
 st = await start(A, { g: 'royale', m: '1v1' }, now0 + 3e6);
-en = await end(A, st.tok, { place: 6 }, now0 + 3e6 + 8000); t(en.ok && en.res.base === 30, 'Last Standing 6th after 8 s is fine (30 points)');
+en = await end(A, st.tok, { place: 6 }, now0 + 3e6 + 8000); t(en.ok && en.res.base === R.ROYALE_PTS[5], 'Last Standing 6th after 8 s is fine (' + R.ROYALE_PTS[5] + ' points)');
 st = await start(A, { g: 'royale', m: '1v1' }, now0 + 3.1e6);
 en = await end(A, st.tok, { place: 1, won: false }, now0 + 3.1e6 + 15000); t(!en.ok && en.error === 'fast', 'Last Standing 1st after 15 s: too fast');
 st = await start(A, { g: 'zone', m: '1v1' }, now0 + 3.2e6);
@@ -131,7 +131,11 @@ setEco('tg_111', (S) => { S.wq.n = 20; });
 [s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.err === 'no', 'milestone once');
 [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.err === 'no', 'link quest needs the visit first');
 [s, r] = await act(A, 'visit', { id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.pts === 200, 'wiki visited, then claimed');
-[s, r] = await act(A, 'visit', { id: 'q_tg' }); [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.pts === 50, 'Telegram channel quest: visit, then claim');
+[s, r] = await act(A, 'visit', { id: 'q_tg' });
+globalThis.tgMember = 'left'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.err === 'join' && !r.E.q.q_tg.claimed, 'channel quest: not a member yet, no pay ' + JSON.stringify(r.out));
+t(tgCalls.filter(c => c[0] === 'getChatMember').pop()[1].chat_id === '@LUNARmemecoin', 'channel quest asks Telegram about @LUNARmemecoin');
+globalThis.tgMember = 'member'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.pts === 50, 'Telegram channel quest: joined, then claim');
+globalThis.tgMember = null;
 // pass: free track points only up to the tier reached; premium never gives points
 [s, r] = await act(A, 'pass', { t: 'f', i: 30 }); t(r.out.err === 'no', 'pass tier not reached refused');
 const xp = E('tg_111').pass.xp;
@@ -311,5 +315,65 @@ out = await cmd('/terms'); t(out.length === 1 && /terms\.html/.test(out[0][1].te
 [s, r] = await call('/api/admin', { initData: initData(J) }); t(s === 200 && r.stats && typeof r.stats.conv === 'number' && r.stats.payers >= 1, 'admin stats ' + JSON.stringify(r.stats));
 t(db.get('/players/tg_111/fd') !== undefined, 'first day stored');
 t(!JSON.stringify(db.root.lb).includes('iph') && !db.get('/players/tg_111/iph'), 'network hashes never reach the public file');
+
+// ---- build budget (14 levels across 5 stats) and reset build (half the points back) ----
+{
+  const D = { id: 4444, username: 'dana' }, pd = 'tg_4444';
+  await call('/api/sync', { initData: initData(D), boot: true });
+  setEco(pd, (S) => { S.pts = 100000; S.earned = 100000; });
+  let n = 0;
+  for (const k of ['hull', 'cannon', 'engine']) for (let i = 0; i < 4; i++) { [s, r] = await act(D, 'up', { k }); if (r.out && r.out.lv) n++; }
+  for (let i = 0; i < 2; i++) { [s, r] = await act(D, 'up', { k: 'target' }); if (r.out && r.out.lv) n++; }
+  t(n === 14 && R.upLevels(E(pd).up) === 14, 'build: 14 levels bought ' + JSON.stringify(E(pd).up));
+  [s, r] = await act(D, 'up', { k: 'reactor' }); t(r.out.err === 'budget' && E(pd).up.reactor === 0 && E(pd).pts === 100000 - 62500, 'build budget full: a 15th level is refused, nothing charged ' + JSON.stringify(r.out));
+  const pw14 = db.get('/players/tg_4444/power');
+  [s, r] = await act(D, 'respec'); t(r.out.back === 31250 && r.out.lost === 31250 && R.upLevels(r.E.up) === 0 && r.E.pts === 100000 - 62500 + 31250, 'reset build: every level to 0, half the points back ' + JSON.stringify(r.out));
+  t(db.get('/players/tg_4444/power') < pw14 && r.E.earned === 100000, 'power drops with the build; lifetime points (rank) untouched');
+  [s, r] = await act(D, 'respec'); t(r.out.err === 'empty', 'nothing to reset');
+  // a pilot who bought more than 14 levels before the budget: the top levels come off, paid back in full
+  setEco(pd, (S) => { S.up = { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 }; S.pts = 0; });
+  [s, r] = await act(D, 'login'); t(R.upLevels(r.E.up) === 14 && r.E.pts - (r.out.pts || 0) === 67500 && r.E.up.hull === 3 && r.E.up.reactor === 2, 'over the budget: trimmed to 14, refunded in full ' + JSON.stringify(r.E.up) + ' ' + r.E.pts);
+}
+
+// ---- Survival (megatank): accepted as an AI mode; a draw means lasting the whole clock ----
+t(R.GT_ORDER.includes('boss') && !R.liveModes(day).includes('boss'), 'Survival is an AI mode');
+t(eco.minSecs('boss', '1v1', false, true, 0) === 170 && eco.minSecs('boss', '2v2', true, false, 0) === 40, 'Survival minimum times');
+t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royale').flatMap((g) => Object.keys(R.MODES).map((m) => R.winBase(g, m)))), 'Last Standing pays the most for a win');
+
+// ---- ghosts: offline pilots' tanks in AI seats; their owners get a report, never points ----
+{
+  const G = { id: 601, username: 'ghosty' }, P = { id: 602, username: 'pia' }, nowG = Date.now();
+  await call('/api/sync', { initData: initData(P), boot: true });
+  const pwP = db.get('/players/tg_602/power');
+  const Lg = JSON.parse(JSON.stringify(R.STOCK_L)); Lg.up.hull = 2;
+  db.root.gh = db.root.gh || {};
+  Object.assign(db.root.gh, {
+    tg_601: { n: 'Ghosty', L: Lg, pw: pwP, t: nowG - 20 * 60000 },        // offline, same power: eligible
+    tg_603: { n: 'Online', L: Lg, pw: pwP, t: nowG - 60000 },              // played a minute ago: still online
+    tg_604: { n: 'Far', L: Lg, pw: pwP * 3, t: nowG - 20 * 60000 },        // much stronger: out of the band
+  });
+  const eG = Object.keys(db.root.eco).length;
+  const stG = await start(P, { g: 'arena', m: '2v2', L: R.STOCK_L }, nowG);
+  t(stG.ok && Array.isArray(stG.gh) && stG.gh.length === 1 && stG.gh[0].n === 'Ghosty' && stG.gh[0].i === 0 && !JSON.stringify(stG.gh).includes('tg_'), 'ticket comes with offline ghosts in your power band, by seat number only ' + JSON.stringify(stG.gh).slice(0, 120));
+  const before = E('tg_602').earned;
+  const enG = await end(P, stG.tok, { won: true, gh: [{ i: 0, won: 0, dmg: 2345, kills: 2 }, { i: 7, won: 1, dmg: 1 }] }, nowG + 70000);
+  const want = Math.round(R.MODES['2v2'].win * R.teamX('arena', '2v2', false)) + R.streakPts('arena', '2v2', 1);
+  t(enG.ok && enG.res.pts === want, 'facing a ghost pays exactly what an AI tank pays ' + JSON.stringify(enG.res));
+  const gr = db.get('/ghr/tg_601');
+  t(gr && gr.m === 1 && gr.l === 1 && !gr.w && gr.dmg === 2345 && gr.kills === 2, 'ghost owner gets a report (unknown seats ignored) ' + JSON.stringify(gr));
+  t(!db.root.eco.tg_601 && Object.keys(db.root.eco).length === eG, 'ghost owner earns nothing (no record touched)');
+  [s, r] = await call('/api/sync', { initData: initData(G), boot: true });
+  t(r.ghost && r.ghost.m === 1 && r.ghost.l === 1 && r.E.earned === 0, 'offline report on return ' + JSON.stringify(r.ghost));
+  [s, r] = await call('/api/sync', { initData: initData(G), ghAck: r.ghost.last });
+  t(!db.get('/ghr/tg_601'), 'report cleared once shown');
+  // your own tank joins the pool once you've played a few matches
+  setEco('tg_602', (S) => { S.mp = 5; });
+  await act(P, 'login');
+  const mine = db.get('/gh/tg_602');
+  t(mine && mine.L && mine.pw === db.get('/players/tg_602/power') && mine.n === 'pia', 'your tank in the ghost pool (server loadout) ' + JSON.stringify(mine).slice(0, 80));
+  const stS = await start(P, { g: 'boss', m: '1v1', L: R.STOCK_L }, nowG + 200000);
+  t(stS.ok && (stS.gh || []).length === 0, 'Survival 1v1 has no AI seats for ghosts');
+  t(eco.ghostSeats('royale', '1v1') === 2 && eco.ghostSeats('arena', '1v1') === 1 && eco.ghostSeats('boss', '3v3') === 1, 'ghost seats per mode');
+}
 console.log(`passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

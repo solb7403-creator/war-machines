@@ -90,7 +90,14 @@ let matchG='arena';
 // match meta: team size, best of 3 or not, and the matches played by the pilot the AI is tuned for (new pilots get gentler AI)
 let MM={n:1,series:false,mp:99};
 const respawns=()=>!!(GTYPES[matchG]&&GTYPES[matchG].respawn);
-const hpScale=()=>isSolo(matchG)?ROYALE_HP:MM.n*(matchG==='bounty'?BTY_HP:1);   // team matches scale health with team size so fights last
+const hpScale=()=>isSolo(matchG)?ROYALE_HP:matchG==='boss'?BOSS_HP:MM.n*(matchG==='bounty'?BTY_HP:1);
+// ---- Survival: your team against one megatank. No respawns. Destroy it to win; still alive at the horn is a draw ----
+const BOSS_HP=1.5;                  // your team's tanks: x1.5 health
+const BOSS_SECS=110,BOSS_TEAM=1.0;   // megatank health: your cannon's damage per second x this many seconds, +100% per extra tank on your side
+const BOSS_KILL=100,BOSS_TEAM_DPS=0.5;   // its cannon alone wrecks a lone tank in about this many seconds of hits (+50% firepower per extra tank on your side)
+const BOSS_SIZE=1.9;                // drawn (and hit) this much bigger than a tank
+const BOSS_STOMP_R=3.4,BOSS_STOMP_DMG=0.18,BOSS_SHELL_DMG=0.08;   // stomp and barrage shells, as a share of your max health
+let boss=null;   // team matches scale health with team size so fights last
 // ---- 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most) ----
 let series=null;
 const isSeriesMode=()=>!!MM.series;   // set when the match is set up (the coached first match is a single round)
@@ -176,6 +183,21 @@ const BOT_NAMES=['Rust','Vex','Kilo','Nyx','Bolt','Ion','Echo','Grit','Onyx','Ro
 const BOT_PAINTS=['nebula','ember','arctic','venom','gold','void'];
 // AI pilot factory: mirrors the gear level and cores of ref (on the phone that's you; in a live match, the middle human by power)
 const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0,bx:null});
+// a ghost: an offline pilot's real tank (their build and gear, from the server) flown by the AI, in an AI seat.
+// g: {n: name, L: loadout, i or id: who it is}. It plays exactly like an AI pilot and changes nobody's points
+function mkGhost(team,x,y,g){
+ const u=Object.assign(tankOf(g.L,hpScale()),{x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],sp:0,sup:null,
+  team,hum:false,ctl:'bot',name:'Ghost of '+String(g.n||'Pilot').slice(0,24),gh:1,gid:g.id!==undefined?g.id:g.i,brain:newBrain(),strafe:1,strafeT:1.5});
+ u.hp=u.mhp;return u;
+}
+function mkBoss(ref,n){   // the megatank, scaled to your tank (ref) and how many tanks are on your side (n)
+ const refDps=(ref.wdps||70)*(ref.dmgM||1),mhp=Math.round(refDps*BOSS_SECS*(1+BOSS_TEAM*(n-1)));
+ const u={x:10,y:5,flash:0,ang:Math.PI/2,cd:1.2,lk:null,buffs:[],gems:[],gemM:{},sp:0,sup:null,mhp,dmgM:1,spdM:0.55,critB:0,fillM:0,turnM:0.6,
+  wtype:'siege',wdps:Math.round(ref.mhp*(1+BOSS_TEAM_DPS*(n-1))/BOSS_KILL),wshot:0.8,wpspd:17,wtier:2,dscale:BOSS_SIZE,hr:R*BOSS_SIZE*0.8,cls:'titan',boss:true,
+  team:1,hum:false,ctl:'bot',name:'Megatank',brain:newBrain(),strafe:1,strafeT:2,aura:3,paint:'eclipse',
+  bt:{bar:5,stomp:3,st:0,enr:0,ref:ref.mhp}};
+ u.hp=u.mhp;return u;
+}
 function mkBot(team,x,y,ref,name){
  const bwm=ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=ref.chm||1,hs=hpScale(),mp=MM.mp;
  const bwA=WORDER[(Math.random()*3)|0];
@@ -209,9 +231,9 @@ function simStart(){
  const G=GTYPES[matchG];
  bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
- gscore=[0,0];gzones=null;cry=null;storm=null;
+ gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
-  u.st=u.hum||u.pid?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
+  u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
  if(matchG==='royale'){const c=freeSpot(10+(Math.random()-0.5)*4,16+(Math.random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
@@ -319,7 +341,7 @@ function moveBullets(dt){
    if(q.life>0&&inRock(q.x,q.y))q.life=0;
    if(q.x<0||q.x>W||q.y<0||q.y>H)q.life=0;
    let t=null,bd=1e9;
-   for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<R+0.12&&d<bd){bd=d;t=v;}}
+   for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<(v.hr||R)+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
@@ -385,7 +407,7 @@ function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse p
  return SUPER_LEN;
 }
 function useSuper(r,aimAng){
- if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0)return false;
+ if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0||r.boss)return false;   // the megatank has its own attacks (bossAI)
  const S=SUP[r.wtype||'pulse'],e=(r.focus&&r.focus.hp>0&&r.focus.team!==r.team)?r.focus:nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;   // a locked target (tap-to-target, a bot's objective) is who the super wants
  if(!aimed){
   if(!e)return false;
@@ -704,8 +726,51 @@ function botAI(dt,u){
  push(u);
 }
 
+// ---- the megatank's brain: hunt the pilots (people first), hold its range, shell them, stomp anyone who gets close ----
+function bossAI(dt,u){
+ const B=u.bt;let tgt=null,bs=1e9;
+ for(const v of units){if(v.team===u.team||v.hp<=0)continue;const s=dist2(u,v)-(v.hum?3:0);if(s<bs){bs=s;tgt=v;}}
+ if(!tgt)return;
+ u.focus=tgt;
+ const fr=u.hp/u.mhp;
+ if(B.enr===0&&fr<0.5){B.enr=1;u.dmgM=1.3;u.spdM=0.68;u.turnM=0.75;ev('p',u.x,u.y-2.2,'ENRAGED','#ff4d4d');}
+ if(B.enr===1&&fr<0.25){B.enr=2;u.dmgM=1.6;u.spdM=0.8;ev('p',u.x,u.y-2.2,'FURY','#ff4d4d');}
+ if(B.st>0){B.st-=dt;return;}   // winding up a stomp: it stands still (that's your window)
+ B.stomp-=dt;B.bar-=dt;
+ if(B.stomp<=0&&units.some(v=>v.team!==u.team&&v.hp>0&&dist2(u,v)<BOSS_STOMP_R-0.4)){
+  B.stomp=B.enr?6:8;B.st=1.1;
+  const w={x:u.x,y:u.y,r:BOSS_STOMP_R,t:1.1,t0:1.1,boss:1,src:u,dmg:B.ref*BOSS_STOMP_DMG*u.dmgM};warns.push(w);ev('w',w.x,w.y,w.r,w.t);ev('p',u.x,u.y-2.2,'STOMP','#ff6b5e');return;
+ }
+ const d=dist2(u,tgt),seen=los(u,tgt);
+ if(B.bar<=0&&d<11){   // barrage: shells rain around the target; the red circles show where
+  B.bar=(B.enr?4.5:6.5)+Math.random()*2;
+  const n=B.enr===2?6:B.enr?5:4;
+  for(let i=0;i<n;i++){const a=Math.random()*6.283,rr=i===0?0.4:1.2+Math.random()*2.2,x=Math.max(1,Math.min(W-1,tgt.x+Math.cos(a)*rr)),y=Math.max(1,Math.min(H-1,tgt.y+Math.sin(a)*rr));
+   const w={x,y,r:1.5,t:1.35+i*0.12,t0:1.35+i*0.12,boss:1,src:u,dmg:B.ref*BOSS_SHELL_DMG*u.dmgM};warns.push(w);ev('w',w.x,w.y,w.r,w.t);}
+  ev('p',tgt.x,tgt.y-1.6,'INCOMING','#ff6b5e');
+ }
+ u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=2+Math.random()*2;}
+ let tx,ty;
+ if(seen&&d<5.5){const nx=(tgt.x-u.x)/(d||1),ny=(tgt.y-u.y)/(d||1);let mx=-ny*u.strafe*0.7,my=nx*u.strafe*0.7;if(d>4)mx+=nx,my+=ny;const m=Math.hypot(mx,my)||1;tx=u.x+mx/m;ty=u.y+my/m;}
+ else{
+  u.wpT=(u.wpT===undefined?0:u.wpT)-dt;
+  if((!u.wp||u.wpT<=0||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<0.6)&&(!u.wp||planBudget>0)){planBudget--;u.wp=waypoint(u,tgt);u.wpT=0.4;}
+  tx=u.wp.x;ty=u.wp.y;}
+ const vx=tx-u.x,vy=ty-u.y,vm=Math.hypot(vx,vy);
+ if(vm>0.15){const k=STAT.speed*0.85*spdMult(u)*dt;u.x+=vx/vm*k;u.y+=vy/vm*k;}
+ push(u);
+}
+function bossHit(w){   // a megatank shell or stomp lands: hits every tank on your side inside the circle (shields work)
+ ev('m',w.x,w.y,w.r);
+ for(const u of units){
+  if(u.hp<=0||u.boss||underDeck(u))continue;
+  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+R*0.5){const a=armor(u);if(u.st)u.st.arm+=w.dmg*a;takeHit(u,w.dmg*(1-a),w.src&&w.src.hp>0?w.src:null,w.r>2?'stomp':'shell',1);}
+ }
+ hitCratesNear(w.x,w.y,w.r,w.dmg);
+}
+
 // ---- shared helpers for the objective modes ----
-const MODE_TIP={crystal:'Grab crystals at the mine. Hold 10 for 15s to win',bounty:'Kills earn stars. Hunt the big bounties',royale:'Last tank standing wins. Stay inside the ring'};
+const MODE_TIP={boss:'Destroy the megatank. Get out of the red circles',crystal:'Grab crystals at the mine. Hold 10 for 15s to win',bounty:'Kills earn stars. Hunt the big bounties',royale:'Last tank standing wins. Stay inside the ring'};
 // a random open spot within rad of (cx,cy): clear of walls, rocks and ramps. Bridge decks count as level 1 unless ground is set
 function freeSpot(cx,cy,rad,ground){
  for(let k=0;k<80;k++){
@@ -885,7 +950,7 @@ function update(dt){
  }
  for(const u of units)if(u.ctl==='net'&&u.hp>0)netMove(u,dt);
  planBudget=2;   // at most two bots re-plan their route per frame
- for(const u of units)if(!u.hum&&u.hp>0)botAI(dt,u);
+ for(const u of units)if(!u.hum&&u.hp>0){if(u.boss)bossAI(dt,u);else botAI(dt,u);}
  boxTick(dt);heading(dt);superTick(dt);
  for(const u of units)turret(u,dt);
  moveBullets(dt);
@@ -896,6 +961,7 @@ function update(dt){
  else if(cry){crystalTick(dt);respawnTick(dt);if((cry.cd&&cry.cd.t<=0)||timeLeft<=0)endMatch();}
  else if(matchG==='bounty'){respawnTick(dt);if(timeLeft<=0)endMatch();}
  else if(storm){stormTick(dt);if(royaleOver())endMatch();}
+ else if(boss){if(boss.hp<=0||aliveCount(0)===0||timeLeft<=0)endMatch();}
  else if(aliveCount(0)===0||aliveCount(1)===0||timeLeft<=0){if(series)endRound();else endMatch();}
 }
 // ---- events ----
@@ -927,6 +993,7 @@ function meteorWarn(){
  const w={x:Math.max(1,Math.min(W-1,x)),y:Math.max(1,Math.min(H-1,y)),r:1.6,t:1.3,t0:1.3};warns.push(w);ev('w',w.x,w.y,w.r,w.t);
 }
 function meteorHit(w){
+ if(w.boss){bossHit(w);return;}
  ev('m',w.x,w.y,w.r);
  for(const u of units){
   if(u.hp<=0||underDeck(u))continue;
@@ -976,6 +1043,8 @@ function simRound(){
 // how the match went for the team of unit u: won, drawn, Last Standing place, score as [theirs, the other side's]
 function outcome(u,forced){
  if(storm){const place=placeOf(u);return {won:place===1,drawn:false,place,score:[0,0]};}
+ if(boss){const down=boss.hp<=0,dealt=Math.round((1-Math.max(0,boss.hp)/boss.mhp)*100);   // score: how much of the megatank you took down, in %
+  return {won:down,drawn:!down&&aliveCount(0)>0,place:0,score:[dealt,0]};}
  const t=u.team,o=1-t,at=aliveCount(t),ao=aliveCount(o),ft=teamHpFrac(t),fo=teamHpFrac(o);
  let won=(ao===0&&at>0)||(timeLeft<=0&&at>0&&(at>ao||(at===ao&&ft>fo)));
  let drawn=(at===0&&ao===0)||(!won&&timeLeft<=0&&at===ao&&ft===fo);   // both last tanks down at once: a draw

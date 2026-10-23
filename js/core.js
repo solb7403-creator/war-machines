@@ -200,7 +200,7 @@ function waitMig(){
 function ecoErr(r){   // a toast for an action that didn't go through
  if(!r||!r.err)return false;
  const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'Epic crates are paid only',
-  offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
+  join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.',empty:'Nothing to reset yet',offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
  if(m&&typeof showToast==='function')showToast(r.err==='max'&&r.k?'Already at max level':m);
  return true;
 }
@@ -264,6 +264,12 @@ function socketCore(i,k){
  const j=c.indexOf(k);if(j===i)return;
  if(j>=0)c[j]=c[i];c[i]=k;store();
 }
+function respecBuild(){
+ return when(ecoRun('respec',{},S=>ecoRespec(S)),r=>{
+  if(ecoErr(r))return false;
+  fx('buy');showToast('Build cleared. +'+fmtNum(r.back)+' points back');return true;
+ });
+}
 function buyUp(k){
  return when(ecoRun('up',{k},S=>ecoUp(S,k)),r=>{
   if(ecoErr(r))return false;
@@ -284,7 +290,7 @@ function tuneItem(isW,k,t){
 // ---- milestone quests (one-time) + community links ----
 function qp(id,val,isMax){ecoMsAdd(save,id,val,isMax);}
 function claimQuest(id){
- return when(ecoRun('ms',{id},(S,X)=>ecoMsClaim(S,id,X)),r=>{if(!r||r.err)return 0;if(r.pts)fx('claim');return r.pts;});
+ return when(ecoRun('ms',{id},(S,X)=>ecoMsClaim(S,id,X)),r=>{if(!r||r.err){ecoErr(r);return 0;}if(r.pts)fx('claim');return r.pts;});
 }
 function openLink(url){
  try{if(IN_TG&&/^https?:\/\/t\.me\//.test(url))TG.openTelegramLink(url);else if(IN_TG)TG.openLink(url);else window.open(url,'_blank');}catch(e){window.open(url,'_blank');}

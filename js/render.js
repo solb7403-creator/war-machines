@@ -279,7 +279,7 @@ function drawGemArt(ctx,w,h,k){
 }
 function drawUnitArt(ctx,w,h,u){
  ctx.clearRect(0,0,w,h);if(!u)return;
- const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*(u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
+ const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*Math.min(1.3,u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(w/2,h/2+r*0.8,r*1.3,r*0.5,0,0,7);ctx.fill();ctx.restore();
  drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint]);
 }
@@ -477,6 +477,8 @@ function drawBattle(){
   {const mine=b===me,bob=mine?Math.sin(performance.now()/300)*sc*0.09:0,fs=Math.round(sc*(mine?0.95:0.48));   // floating team chevron over every tank; yours is gold and bigger, the rest stay small and quiet so the map never looks cluttered
    g.save();g.globalAlpha=mine?1:0.55;g.fillStyle=mine?'#ffd24a':b.team!==0?'#ff4d5e':'#4d9fff';g.font=font(fs);g.textAlign='center';g.textBaseline='middle';
    g.fillText('▼',px,py-r*1.66+bob);g.restore();}
+  if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(sc*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
+  if(b.boss){const fs=Math.max(11,Math.round(sc*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,py-r*2.0-fs*0.6);g.textBaseline='top';}
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
@@ -530,7 +532,7 @@ function drawHUD(){
  const n=MM.n,solo=!!storm,topLine=!!(gzones||cry||storm||matchG==='bounty');
  const side=(t,left)=>{
   const x0=left?pad:vw-pad-bw,col=TC[t];
-  let lbl=(t===0?'You':'Foes')+(n>1&&!solo?' ×'+aliveCount(t):'');
+  let lbl=(t===0?'You':boss?'Megatank':'Foes')+(n>1&&!solo&&!(boss&&t===1)?' ×'+aliveCount(t):'');
   if(solo&&t===1)lbl=units.filter(u=>u!==me&&u.hp>0).length+' left';
   g.font=font(Math.round(sc*0.78));g.fillStyle=col;g.textAlign=left?'left':'right';g.fillText(lbl,left?x0:x0+bw,hy+sc*0.45);
   if(series){const lw=g.measureText(lbl).width,pr=Math.max(3,sc*0.2);for(let i=0;i<2;i++){const cx=left?x0+lw+sc*0.55+i*pr*2.8:x0+bw-lw-sc*0.55-i*pr*2.8;
