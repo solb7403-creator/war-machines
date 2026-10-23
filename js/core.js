@@ -300,11 +300,22 @@ function claimQuest(id){
 function openLink(url){
  try{if(IN_TG&&/^https?:\/\/t\.me\//.test(url))TG.openTelegramLink(url);else if(IN_TG)TG.openLink(url);else window.open(url,'_blank');}catch(e){window.open(url,'_blank');}
 }
+// a link quest: open the link and mark it visited. Telegram can pause the game the moment the link opens (the channel
+// on iOS), cutting the request off, so the visit is remembered and sent again when you come back until it lands
+let visitQ=[];
+function sendVisit(id){
+ return when(ecoRun('visit',{id},S=>ecoVisit(S,id)),r=>{
+  if(r&&(r.ok||r.err==='no'))visitQ=visitQ.filter(x=>x!==id);   // done (or already done)
+  if(typeof uiDirty==='function')uiDirty('quests');return r;});
+}
 function visitLinkQuest(id){
  const Q=MS_BY[id];if(!Q||!LINKS[Q.link])return;
+ if(!visitQ.includes(id))visitQ.push(id);
+ const p=sendVisit(id);
  openLink(LINKS[Q.link]);
- return ecoRun('visit',{id},S=>ecoVisit(S,id));
+ return p;
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&visitQ.length)setTimeout(()=>visitQ.slice().forEach(sendVisit),400);});
 
 // ---- daily and weekly quests (rules.js). Stats come from every finished match ----
 function questBoost(){return ecoBoost(save,ecoX());}
