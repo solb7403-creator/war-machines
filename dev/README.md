@@ -47,7 +47,7 @@ python3 dev/tests/b4test.py            # sound, drag-to-aim supers, dash, bot do
 python3 dev/tests/b6test.py            # salvage ladder, tune-up, Lunar Pass, paints, terms, featured mode, the 3 new modes
 python3 dev/tests/b7test.py            # Untouchable, dailies + swaps, weekly quests (multi-day), streak bonus, chest, daily/weekly deals, Founder pack
 python3 dev/tests/b8test.py            # the server-owned economy in the browser: claims, forged saves, scored/too-fast/offline AI matches, Stars grants, the one-time move, admin flags
-python3 dev/tests/b9test.py            # build budget + reset build, ghosts (VS seat, report, owner's sheet), Survival (megatank), Last Standing pay
+python3 dev/tests/b9test.py            # build budget + reset build (points or paid), ghosts (VS seat, report, owner's sheet), Survival (megatank), Last Standing pay
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons

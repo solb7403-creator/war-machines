@@ -333,6 +333,23 @@ t(!JSON.stringify(db.root.lb).includes('iph') && !db.get('/players/tg_111/iph'),
   // a pilot who bought more than 14 levels before the budget: the top levels come off, paid back in full
   setEco(pd, (S) => { S.up = { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 }; S.pts = 0; });
   [s, r] = await act(D, 'login'); t(R.upLevels(r.E.up) === 14 && r.E.pts - (r.out.pts || 0) === 67500 && r.E.up.hull === 3 && r.E.up.reactor === 2, 'over the budget: trimmed to 14, refunded in full ' + JSON.stringify(r.E.up) + ' ' + r.E.pts);
+  // paid reset: the points fee (half the build) priced at 6,250 points per $1 in $0.50 tiers, $1 to $5; every point comes back
+  t(R.respecTier(16500) === 1.5 && R.respecTier(62500) === 5 && R.respecTier(9375) === 1 && R.respecTier(6250) === 0, 'paid reset tiers: 16,500 → $1.50, full → $5, small builds points only');
+  setEco(pd, (S) => { S.up = { hull: 4, cannon: 4, engine: 4, target: 2, reactor: 0 }; S.pts = 0; S.ptsSpent = 62500; });
+  [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec', price: 0.01 }); t(s === 200 && r.stars === 385 && /Build reset/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'paid reset invoice: full build is $5 = 385 Stars ' + JSON.stringify(r));
+  const rpay = (ch, g) => hook({ message: { from: { id: 4444, username: 'dana' }, chat: { id: 4444, type: 'private' }, successful_payment: { total_amount: 385, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 4444, k: 'respec', g, n: 'rs' + ch }) } } });
+  const pw0 = db.get('/players/tg_4444/power');
+  await rpay('rs1', 6.25);
+  t(R.upLevels(E(pd).up) === 0 && E(pd).pts === 62500 && E(pd).ptsSpent === 0 && db.get('/players/tg_4444/power') < pw0, 'paid reset: levels to 0, all 62,500 points back, power follows ' + E(pd).pts);
+  await rpay('rs1', 6.25); t(E(pd).pts === 62500, 'paid reset granted once');
+  [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); t(s === 400, 'nothing to reset: no invoice');
+  await hook({ message: { from: { id: 4444 }, chat: { id: 4444, type: 'private' }, refunded_payment: { total_amount: 385, telegram_payment_charge_id: 'rs1', invoice_payload: '{}' } } });
+  t(E(pd).pts === 31250 && R.upLevels(E(pd).up) === 0, 'refunded paid reset: the extra half goes back, like a points reset ' + E(pd).pts);
+  // paid with nothing left to clear (reset with points in between): it waits for the next reset
+  await rpay('rs2', 1.25); t(E(pd).rsCr === 1, 'paid reset with an empty build is saved for later');
+  [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); t(s >= 400, 'a saved paid reset is not sold twice');
+  setEco(pd, (S) => { S.up = { hull: 4, cannon: 0, engine: 0, target: 0, reactor: 0 }; S.pts = 0; });
+  [s, r] = await act(D, 'respec'); t(r.out.back === 10000 + 7813 && r.E.rsCr === 0, 'next reset uses it: half back plus $1 of fee covered ' + JSON.stringify(r.out));
 }
 
 // ---- Survival (megatank): accepted as an AI mode; a draw means lasting the whole clock ----

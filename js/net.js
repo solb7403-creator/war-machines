@@ -110,7 +110,7 @@ function descLabel(d){
  if(!d)return 'Purchase';
  if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache');
  if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
- return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():'Purchase';
+ return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():d.kind==='respec'?'Build reset':'Purchase';
 }
 // record a confirmed payment locally and on the server (which re-checks it on-chain). In Telegram the server also
 // grants it: nothing is unlocked until the server has found the payment itself

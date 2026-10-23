@@ -174,7 +174,7 @@ function renderGarage(){
   sec('Cores','Each type fits once','cores')+'<div class="cores">'+[0,1,2].map(coreCard).join('')+'</div>'+
   sec('Build',used+' of '+BUILD_MAX+' levels','build')+'<div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div>'+
   '<div class="ups list">'+UORDER.map(upRow).join('')+'</div>'+
-  (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">Every level back to 0. You get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' points back.</div></div><span class="mut">Reset</span></button>':'')+
+  (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">'+(save.rsCr?'Paid reset ready: every level back to 0 and all '+fmtNum(inv)+' points back.':'Every level back to 0. Pay the fee in points and get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' back'+(respecTier(inv)?', or pay $'+respecTier(inv).toFixed(2)+' and keep all of them.':'.'))+'</div></div><span class="mut">Reset</span></button>':'')+
   (save.skin==='lunar'?'<div class="panel lunar">Lunar skin: +8% health and +8% damage, always on</div>':'');
 }
 
@@ -614,6 +614,7 @@ function itemArt(r){
  if(r.gem)return 'gem:'+r.gem;
  if(r.tk==='moonbeam')return 'gear:w:moon:2:0';
  if(r.tk==='skin')return 'tank:lunar';
+ if(r.tk==='respec')return 'tank:paint:'+esc(save.paint||'stock');
  if(r.tk==='paint'||r.tk==='pass')return 'tank:paint:'+(r.paint||'stock');
  if(r.item)return 'gear:'+(r.item.isW?'w':'c')+':'+r.item.k+':'+r.item.tier+':'+(r.item.sal?1:0);
  return 'crate:'+r.tk+':'+(r.ri||0);
@@ -864,7 +865,18 @@ const ACT={
  weekly:()=>{const v=claimWeekly();if(!v){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}when(v,r=>{if(!r)return;showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);uiDirty();});},
  share:()=>shareRef(),copy:()=>copyRef(),claimref:()=>{when(claimRefs(),()=>uiDirty('quests'));},
  respec:()=>{const inv=upInvested(save.up);if(!inv)return;
-  openOverlay('modal','<h3>Reset your build?</h3><p class="mut">All '+upLevels(save.up)+' levels go back to 0. You get <b>'+fmtNum(Math.floor(inv*RESPEC_BACK))+'</b> points back and lose the other '+fmtNum(inv-Math.floor(inv*RESPEC_BACK))+'.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-ghost" data-act="respecok">Reset</button></div>',{key:'respec'});},
+  const half=Math.floor(inv*RESPEC_BACK),fee=inv-half,pr=ecoPrice(save,{kind:'respec'},ecoX()),cur=save.payCur;
+  const body=save.rsCr?'<p class="mut">All '+upLevels(save.up)+' levels go back to 0. Your paid reset is ready, so all <b>'+fmtNum(inv)+'</b> points come back.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-gold" data-act="respecok">Reset</button></div>':
+   '<p class="mut">All '+upLevels(save.up)+' levels go back to 0. The reset fee is '+fmtNum(fee)+' points.</p>'+
+   '<div style="display:grid;gap:8px;margin-top:14px"><button class="btn btn-ghost block" data-act="respecok">Pay '+fmtNum(fee)+' points · get '+fmtNum(half)+' back</button>'+
+   (pr?'<button class="btn btn-gold block" data-act="respecpay">Pay '+priceLabel(pr.ton,pr.stars)+' · get all '+fmtNum(inv)+' back</button>'+
+    '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':
+    '<p class="mut" style="margin:0">Builds worth under 9,375 points reset with points only.</p>')+
+   '<button class="btn btn-quiet block" data-act="respeccancel">Keep it</button></div>';
+  const ov=findOv('respec');if(ov)closeOverlay(ov);
+  openOverlay('modal','<h3>Reset your build?</h3>'+body,{key:'respec'});},
+ respeccur:a=>{save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec();},
+ respecpay:()=>{const pr=ecoPrice(save,{kind:'respec'},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec'});},
  respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
  respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
  up:a=>{const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},

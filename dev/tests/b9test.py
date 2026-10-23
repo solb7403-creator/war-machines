@@ -40,6 +40,13 @@ async def main():
         await pg.evaluate("()=>ACT.respec()");await pg.wait_for_timeout(300)
         txt=await pg.evaluate("()=>{const o=findOv('respec');return o?o.box.textContent:''}")
         check('31,250' in txt and 'Reset your build' in txt,'reset build asks first, shows the refund: '+txt[:140])
+        check('385 ⭐' in txt and 'get all 62,500 back' in txt,'paid reset offered: $5 in Stars keeps every point: '+txt[:220])
+        await pg.evaluate("()=>ACT.respeccur('ton')");await pg.wait_for_timeout(300)
+        txt=await pg.evaluate("()=>{const o=findOv('respec');return o?o.box.textContent:''}")
+        check('6.25 TON' in txt,'paid reset in TON: '+txt[:220])
+        await pg.evaluate("()=>ACT.respeccur('stars')");await pg.wait_for_timeout(300)
+        g=await pg.evaluate("()=>document.querySelector('#s-garage .q.respec').textContent")
+        check('$5.00' in g,'garage reset row mentions the paid option: '+g)
         await pg.screenshot(path=OUT+'respec_confirm.png')
         await pg.evaluate("()=>ACT.respecok()");await pg.wait_for_timeout(900)
         r=await pg.evaluate("()=>({up:save.up,pts:save.pts,earned:save.earned,pw:calcPower()})");e=dump()['eco'][pid]

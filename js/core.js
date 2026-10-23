@@ -229,6 +229,7 @@ function revealOf(r){
   {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
  if(r.tk==='moonbeam')return {tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'};
  if(r.tk==='skin')return {tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:'+8% health and +8% damage, applied.'};
+ if(r.tk==='respec')return {tk:'respec',rar:2,color:'#ffcf4a',title:r.credit?'Paid reset saved':'Build reset',sub:r.credit?'Your next build reset gives back every point.':'Every level is back to 0 and all '+fmtNum(r.back)+' points are back. Spend them in the Garage.'};
  if(r.tk==='pass')return {tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'};
  const isW=r.isW,k=r.k,t=r.tier;if(!k)return null;
  const pw=v=>(Math.round(v*1000)/10)+'%';

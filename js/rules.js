@@ -28,6 +28,12 @@ const UORDER=['hull','cannon','engine','target','reactor'];
 // Build budget: 4 levels per stat, at most 14 levels across all five (3.5 stats maxed), spread however you like.
 // Reset build: every level goes back to 0 and you get half the points they cost back (the other half is gone)
 const BUILD_MAX=14,RESPEC_BACK=0.5;
+// paid reset: keep every point. The points fee (half the build) is priced at 6,250 points per $1, in $0.50 tiers
+// from $1 to $5 (a smaller build resets with points only). ~77 Stars and 1.25 TON per $1, in line with the shop
+const RESPEC_PTS_USD=6250,RESPEC_USD_MIN=1,RESPEC_USD_MAX=5,RESPEC_STARS_USD=77,RESPEC_TON_USD=1.25;
+const respecFee=inv=>inv-Math.floor(inv*RESPEC_BACK);
+function respecTier(inv){const t=Math.round(respecFee(inv)/RESPEC_PTS_USD*2)/2;return t<RESPEC_USD_MIN?0:Math.min(RESPEC_USD_MAX,t);}
+const respecTierOfTon=ton=>Math.min(RESPEC_USD_MAX,Math.max(RESPEC_USD_MIN,Math.round((Number(ton)||0)/RESPEC_TON_USD*2)/2));
 const upLevels=U=>UORDER.reduce((a,k)=>a+((U&&U[k])|0),0);
 const upInvested=U=>UORDER.reduce((a,k)=>{let s=0;for(let i=0;i<((U&&U[k])|0);i++)s+=UPS[k].costs[i];return a+s;},0);
 // ---- chassis classes & weapons ----
@@ -268,12 +274,12 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram'];
+ 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
- for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
+ for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
  const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
  // over the build budget (levels bought before it existed): the top levels come off, paid back in full
  while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
@@ -345,12 +351,14 @@ function ecoPrice(S,d,X){
   return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m),deal:k};}
  if(d.kind==='paint'){const P=PAINTS[d.id];return P&&P.stars?{ton:P.ton,stars:P.stars}:null;}
  if(d.kind==='pass')return {ton:PASS_PRICE.ton,stars:PASS_PRICE.stars};
+ if(d.kind==='respec'){const t=respecTier(upInvested(S.up));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
  return PREMIUM[d.kind]?{ton:PREMIUM[d.kind].ton,stars:PREMIUM[d.kind].stars}:null;
 }
 // already owned (one-time items): selling it again would charge for nothing
 function ecoOwned(S,d,X){
  if(d.kind==='starter')return S.starter;if(d.kind==='founder')return S.founder||!FOUNDER_OPEN;if(d.kind==='moonbeam')return S.moonbeam;
  if(d.kind==='skin')return S.skin==='lunar';if(d.kind==='paint')return !!(S.paints&&S.paints[d.id]);if(d.kind==='pass')return ecoPassState(S,X).prem;
+ if(d.kind==='respec')return !!S.rsCr;   // a paid reset is already waiting
  return false;
 }
 // open a crate. Returns what came out (the phone words it): gem {gem,n,lv,up}; gear {isW,k,tier,roll,kind: new|up|dup,old,pts}
@@ -406,12 +414,16 @@ function ecoUp(S,k){
  const cost=UPS[k].costs[lvl];if(S.pts<cost)return {err:'pts',need:cost-S.pts};
  S.pts-=cost;S.ptsSpent+=cost;S.up[k]++;return {k,lv:S.up[k]};
 }
-function ecoRespec(S){   // clear the build: every level to 0, half the points back
- const inv=upInvested(S.up);if(!inv)return {err:'empty'};
- const back=Math.floor(inv*RESPEC_BACK);
+// clear the build: every level to 0, half the points back. A paid reset (tier in $) also covers the points fee, so every
+// point comes back; it covers any fee that rounds to that tier. A paid reset with nothing to clear waits for the next one (rsCr)
+function ecoRespec(S,paid){
+ const inv=upInvested(S.up);
+ if(!paid&&S.rsCr){paid=S.rsCr;S.rsCr=0;}
+ if(!inv){if(paid){S.rsCr=paid;return {tk:'respec',credit:paid};}return {err:'empty'};}
+ const half=Math.floor(inv*RESPEC_BACK),back=paid?Math.min(inv,half+Math.ceil((paid+0.25)*RESPEC_PTS_USD)):half;
  for(const k of UORDER)S.up[k]=0;
  S.pts+=back;S.ptsSpent=Math.max(0,S.ptsSpent-back);
- return {back,lost:inv-back};
+ return paid?{tk:'respec',back,lost:inv-back,extra:back-half,usd:paid}:{back,lost:inv-back};
 }
 // ---- purchases (only after the payment is verified). Returns what each part gave, so a refund can take it back ----
 function ecoGrant(S,d,X){
@@ -423,6 +435,7 @@ function ecoGrant(S,d,X){
  else if(d.kind==='moonbeam'){if(!S.moonbeam){S.moonbeam=true;S.spendGram+=MOONBEAM_PRICE;outs.push({tk:'moonbeam'});}}
  else if(d.kind==='skin'){if(S.skin!=='lunar'){S.skin='lunar';S.spendGram+=SKIN_PRICE;outs.push({tk:'skin'});}}
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
+ else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
  return outs;
 }
@@ -439,6 +452,7 @@ function ecoRefund(S,kind,outs){
   else if(o.tk==='moonbeam')S.moonbeam=false;
   else if(o.tk==='skin')S.skin='default';
   else if(o.tk==='pass'){if(S.pass&&S.pass.s===o.s)S.pass.prem=false;}
+  else if(o.tk==='respec'){if(o.credit)S.rsCr=0;else{const p=Math.min(S.pts,o.extra||0);S.pts-=p;S.ptsSpent+=p;}}   // the levels stay cleared; the extra points go back
  }
 }
 // ---- milestones ----

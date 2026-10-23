@@ -68,7 +68,7 @@ function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
   if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
   if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
-  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : "Purchase";
+  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : k === "respec" ? "Build reset (keep all points)" : "Purchase";
 }
 
 // ================= /api/sync =================
@@ -179,7 +179,7 @@ const descOf = (d) => {
   const kind = String(d.kind || "");
   if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null } : null;
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
-  return ["starter", "founder", "moonbeam", "skin", "pass"].includes(kind) ? { kind } : null;
+  return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {
   const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
@@ -213,6 +213,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
     const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
+    if (desc.kind === "respec" && S.L) setLoadout(S, S.L);   // the build changed: power and league follow
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
@@ -382,6 +383,7 @@ async function webhook(req, env) {
       S.gout = S.gout || {};
       if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
       const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
+      if (desc.kind === "respec" && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
       const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
       return { outs };
