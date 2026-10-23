@@ -1,0 +1,29 @@
+name: Pilot check (read-only)
+# Run by hand with a Telegram username: that pilot's last match tickets and results, starts today, rate counter and
+# flags. Reads only; changes nothing. Results come back as job annotations.
+on:
+  workflow_dispatch:
+    inputs:
+      user: { description: 'Telegram username (the admin pin) or tg_<id>', required: true }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          DB: ${{ secrets.FIREBASE_DB_SECRET }}
+          U: ${{ inputs.user }}
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request,time
+          B='https://warmachines-a6034-default-rtdb.firebaseio.com/';A='.json?auth='+os.environ['DB']
+          g=lambda p:json.load(urllib.request.urlopen(B+p+A))
+          u=os.environ['U'].lower().lstrip('@')
+          pid=u if u.startswith('tg_') else 'tg_'+str(g('cfg/admin/'+u))
+          S=g('eco/'+pid) or {}
+          now=time.time()*1000;day=int(now//86400000)
+          out={'pid':pid,'now':int(now),'mt':S.get('mt'),'md':S.get('md'),'mh':S.get('mh'),'rq':S.get('rq'),'bp_le':(S.get('bp') or {}).get('le'),'bp_ls':(S.get('bp') or {}).get('ls'),
+               'dy':((S.get('bp') or {}).get('dy') or {}).get(str(day)),'streak':S.get('streak'),'wins':S.get('wins'),'mp':S.get('mp'),'earned':S.get('earned'),'dailyPts':S.get('dailyPts'),'rev':S.get('rev'),'t':S.get('t'),
+               'flags':g('flags/'+pid),'cfg':{k:v for k,v in (g('cfg') or {}).items() if k!='admin'}}
+          s=json.dumps(out,separators=(',',':'))
+          for i in range(0,len(s),900): print('::notice title=pilot %d::'%(i//900)+s[i:i+900])
+          PY
