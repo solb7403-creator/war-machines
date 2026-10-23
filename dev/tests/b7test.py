@@ -125,7 +125,7 @@ async def main():
           founder:(document.querySelector('.founder')||{}).innerText||''})""")
         print('shop',r)
         check(len(r['deals'])==2 and '30% off' in r['deals'][0] and '25% off' in r['deals'][1] and r['dealf']==4,'deal cards '+json.dumps(r))
-        check('Founder pack' in r['founder'] and '1,199' in r['founder'] and 'no $LUNAR' in r['founder'],'founder card '+json.dumps(r['founder']))
+        check('Founder pack' in r['founder'] and '1,199' in r['founder'] and 'buy $LUNAR' in r['founder'],'founder card '+json.dumps(r['founder']))
         await pg.screenshot(path=OUT+'shop.png')
         await pg.click('.deal[data-arg=w]');await pg.wait_for_timeout(400)
         r=await pg.evaluate("()=>{const ov=document.querySelector('.sheet');return {n:ov.querySelectorAll('.crate').length,off:[...ov.querySelectorAll('.crate .dealf')].map(x=>x.innerText)}}")

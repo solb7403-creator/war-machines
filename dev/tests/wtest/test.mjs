@@ -280,6 +280,7 @@ t(db.get('/lb/top').length === lb.top.length, 'lb stored');
 [s, r] = await call('/api/admin', { initData: initData(J), snap: 1 });
 t(s === 200 && r.flagged.some((f) => f.id === 'tg_444' && f.why.some((w) => /mig_epic/.test(w))), 'admin lists flagged pilots with reasons');
 t(r.snapshot.some((x) => x[0] === 'tg_666' && x[3] === 4) && !r.snapshot.some((x) => x[0] === 'tg_444'), 'snapshot: points and days, flagged left out');
+t(db.get('/players/tg_111/sg') > 0 && r.snapshot.every((x) => typeof x[5] === 'number'), 'verified spending (TON value) on the record and in the snapshot ' + db.get('/players/tg_111/sg'));
 t(r.revenue.STARS >= 500 && r.revenue.TON >= 4 && r.revenue.unverified >= 2, 'admin revenue (unverified orders counted apart) ' + JSON.stringify(r.revenue));
 [s, r] = await call('/api/admin', { initData: initData(J), clear: 'tg_444', snap: 1 });
 t(!r.flagged.some((f) => f.id === 'tg_444') && r.snapshot.some((x) => x[0] === 'tg_444'), 'cleared pilot counts again');

@@ -212,7 +212,7 @@ function renderShop(){
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
   (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
-   '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and no $LUNAR.</p></div>':'')+
+   '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and doesn’t buy $LUNAR.</p></div>':'')+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
   (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches, plus an extra daily quest swap. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
@@ -816,7 +816,7 @@ const TERMS_URL='https://solb7403-creator.github.io/war-machines/terms.html';
 let termsGo=null;
 function askTerms(go){
  termsGo=go;
- openOverlay('modal','<h3>Before your first purchase</h3><p class="mut">You’re buying in-game items for LUNAR: War Machines. They have no cash value and can’t be traded or cashed out. Purchases don’t buy $LUNAR and aren’t an investment. For refunds or payment problems, send /paysupport to the bot.</p>'+
+ openOverlay('modal','<h3>Before your first purchase</h3><p class="mut">You’re buying in-game items for LUNAR: War Machines. They have no cash value and can’t be traded or cashed out. Purchases don’t buy $LUNAR or a set amount of it, and aren’t an investment. Verified spending may be considered in the airdrop, with no guaranteed amount. For refunds or payment problems, send /paysupport to the bot.</p>'+
   '<button class="linkbtn" data-act="terms">Read the full terms</button><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn btn-ghost" data-act="termsno">Not now</button><button class="btn btn-go" data-act="termsok">I agree</button></div>',{key:'terms',onClose:()=>{termsGo=null;}});
 }
 
@@ -943,7 +943,7 @@ const ACT={
  flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
  clclear:a=>{loadAdmin({clearCl:a});showToast('Cleared: every account in that group counts again');},
  adminproof:a=>{loadAdmin({proof:a});showToast(a==='flag'?'Match records: flag only':'Match records: enforced');},
- snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit\n'+rows.join('\n');
+ snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit,verified spend (TON value)\n'+rows.join('\n');
   try{navigator.clipboard.writeText(txt).then(()=>showToast('Snapshot copied: '+rows.length+' pilots'),()=>showToast(rows.length+' pilots (copy failed)'));}catch(e){showToast(rows.length+' pilots');}}).catch(()=>showToast('Snapshot unavailable'));},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),

@@ -331,7 +331,7 @@ export async function snapshot(env, fl) {
   fl = fl || (await dbGet(env, "flags").catch(() => null)) || {};
   const top = (await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 2000 }).catch(() => ({}))) || {};
   // ranked by airdrop credit (lifetime points, with new Telegram accounts' first week at a reduced rate); points shown too
-  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, typeof v.ac === "number" ? v.ac : v.pts || 0]).sort((a, b) => b[4] - a[4]).slice(0, 1000);
+  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, typeof v.ac === "number" ? v.ac : v.pts || 0, v.sg || 0]).sort((a, b) => b[4] - a[4]).slice(0, 1000);   // ..., verified spending (TON value)
 }
 
 // ================= leaderboard (cron, every 5 minutes) =================
@@ -458,6 +458,7 @@ async function webhook(req, env) {
         if (S.rfd.includes(charge)) return { abort: true };
         S.rfd = S.rfd.concat(charge).slice(-40);
         RULES.ecoRefund(S, sp.k, sp.o || []);
+        S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(sp.g) || 0));   // a refunded purchase isn't spending
         n = S.rfd.length;
         return {};
       }, now);
