@@ -27,6 +27,12 @@ jobs:
           ws=urllib.request.Request(B+'diag/ping'+A,data=json.dumps({'t':int(now0)}).encode(),method='PUT')
           try: wr=urllib.request.urlopen(ws).read().decode()[:200]
           except Exception as e: wr='WRITE FAILED '+str(e)+' '+(e.read().decode()[:300] if hasattr(e,'read') else '')
+          def cw(silent):
+            r0=urllib.request.urlopen(urllib.request.Request(B+'diag/cw'+A,headers={'X-Firebase-ETag':'true'}));tag=r0.headers.get('ETag')
+            rq=urllib.request.Request(B+'diag/cw'+A+('&print=silent' if silent else ''),data=json.dumps({'t':int(now0),'s':silent}).encode(),method='PUT',headers={'if-match':tag,'Content-Type':'application/json'})
+            try: r1=urllib.request.urlopen(rq);return [r1.status,r1.read().decode()[:120]]
+            except Exception as e: return ['ERR',str(e),(e.read().decode()[:300] if hasattr(e,'read') else '')]
+          print('::notice title=condwrite::'+json.dumps({'plain':cw(False),'silent':cw(True)}))
           print('::notice title=health::'+json.dumps({'lb_built_min_ago':ago((g('lb') or {}).get('t')),'revc':g('meta/revc'),'starsPaid':spl[:6],'payments':pl,'test_write':wr}))
           lb=g('lb') or {};print('::notice title=board::'+json.dumps({'admin':g('cfg/admin'),'top':[r[:4] for r in lb.get('top',[])[:8]],'n':lb.get('n')}))
           pid=u if u.startswith('tg_') else g('lb')['top'][int(u[4:])-1][0] if u.startswith('rank') else 'tg_'+str(g('cfg/admin/'+u))
