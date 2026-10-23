@@ -341,7 +341,11 @@ function paintArt(root){
   const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
   const a=c.dataset.art.split(':');
   try{
-   if(a[0]==='hero'){heroCv=c;drawHeroScene(ctx,w,h,performance.now()/1000);}
+   if(c.dataset.locked)ctx.globalAlpha=0.45;
+   if(a[0]==='hero')heroCv=c;
+   if(typeof art3D==='function'&&art3D(ctx,w,h,a)){ctx.globalAlpha=1;continue;}   // 3D pictures when the 3D view is on
+   ctx.globalAlpha=1;
+   if(a[0]==='hero'){drawHeroScene(ctx,w,h,performance.now()/1000);}
    else if(a[0]==='map')drawMapThumb(ctx,w,h,a[1]);
    else if(a[0]==='crate'){const cw=Math.min(w*0.78,h*1.3),ch=cw*0.74;drawCrateArt(ctx,(w-cw)/2,(h-ch)/2,cw,ch,a[1],+a[2]);}
    else if(a[0]==='gear'){const isW=a[1]==='w',k=a[2];
@@ -357,7 +361,9 @@ let heroLast=0;
 function tickHero(now){   // the hero tank idles at ~30fps while the Play tab is open
  if(uiTab!=='play'||!heroCv||!heroCv.isConnected||inBattle()||document.hidden||now-heroLast<33)return;
  heroLast=now;const w=heroCv.clientWidth,h=heroCv.clientHeight;if(!w)return;
- const ctx=heroCv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawHeroScene(ctx,w,h,now/1000);
+ const ctx=heroCv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+ if(typeof use3D==='function'&&use3D()){try{heroArt(ctx,w,h,now/1000);return;}catch(e){}}
+ drawHeroScene(ctx,w,h,now/1000);
 }
 
 // ---------- overlays: sheets, modals, full screens ----------
@@ -563,11 +569,20 @@ function openSolWallets(){
 }
 
 // ---------- settings + admin ----------
+function gfxNote(){
+ if(typeof R3==='undefined'||R3.failed||!webglOK())return '3D isn’t supported on this device, so the game uses 2D';
+ const m=gfxMode();
+ if(m==='2d')return 'Classic 2D view';
+ if(m==='auto')return '3D, set for your phone'+(R3.auto==='low'?' (Low for speed)':R3.auto==='2d'?' (2D for speed)':'');
+ return m==='high'?'3D, sharpest picture':'3D, smoothest on older phones';
+}
 function openSettings(){
  sheet('settings',()=>'<h3>Settings</h3>'+
   '<div class="list" style="margin-top:8px">'+
   '<div class="q"><div class="grow"><div class="t">Sound</div><div class="p">Follows your phone’s silent switch</div></div><button class="toggle'+(save.sound!==false?' on':'')+'" data-act="sound" aria-pressed="'+(save.sound!==false)+'"><i></i></button></div>'+
   '<div class="q"><div class="grow"><div class="t">Vibration</div><div class="p">Buzz on hits, kills and rewards</div></div><button class="toggle'+(save.haptics?' on':'')+'" data-act="haptics" aria-pressed="'+(save.haptics?'true':'false')+'"><i></i></button></div>'+
+  '<div class="q gfx"><div class="grow"><div class="t">Graphics</div><div class="p">'+gfxNote()+'</div></div></div>'+
+  '<div class="seg c4" style="margin:-4px 0 6px">'+[['auto','Auto'],['high','High'],['low','Low'],['2d','2D']].map(([k,l])=>'<button class="'+(gfxMode()===k?'on':'')+'" data-act="gfx" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="q"><div class="grow"><div class="t">Daily reminder</div><div class="p">One message when your reward is ready</div></div><button class="toggle'+(save.remind?' on':'')+'" data-act="remind" aria-pressed="'+(!!save.remind)+'"><i></i></button></div>'+
   '<button class="q" data-act="info" data-arg="howto"><div class="grow"><div class="t">How to play</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="wiki"><div class="grow"><div class="t">Wiki and tokenomics</div></div><span class="chev">›</span></button>'+
@@ -823,6 +838,7 @@ const ACT={
  info:a=>showInfo(a),
  coreinfo:a=>{const [t,s]=coreInfo(a);sheet('info',()=>'<h3>'+t+'</h3>'+infoBody(s));},
  settings:()=>openSettings(),
+ gfx:a=>{setGfx(a);fx('tap');const ov=findOv('settings');if(ov&&ov.re)ov.re();else openSettings();},
  points:()=>showInfo('points'),
  gtype:a=>{save.gtype=a;store();fx('tap');},
  feat:()=>{save.gtype=featuredMode();save.featSeen=dayNum();store();fx('tap');showToast(GTYPES[save.gtype].label+' selected: +25% today');},

@@ -18,6 +18,7 @@ function frame(now){
 function boot(){
  loadSave();rollPeriods();captureRef();
  initUI();
+ if(typeof load3D==='function')load3D();   // the 3D view loads in the background; until it's ready (or without WebGL) the game draws in 2D
  const afterCloud=()=>{
   initBackend();loadLB();if(IN_TG)loadSquad();
   if(save.payCur==='sol')fetchPrices();

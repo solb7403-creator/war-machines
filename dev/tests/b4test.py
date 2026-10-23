@@ -39,9 +39,11 @@ async def main():
         B=await pg.evaluate("()=>btn()")
         await pg.mouse.move(B['x'],B['y']);await pg.mouse.down();await pg.mouse.move(B['x']-60,B['y']-90,steps=6);await pg.wait_for_timeout(120)
         await pg.screenshot(path=OUT+'aim_preview.png')
+        # the super goes where the line from your tank to your finger points, on the ground (the 3D view tilts it by GK)
+        exp=await pg.evaluate("(f)=>Math.atan2((f[1]-(Y(me.y)-liftOf(me)))/GK,f[0]-X(me.x))",[B['x']-60,B['y']-90])
         await pg.mouse.up();await pg.wait_for_timeout(50)
         sp=await pg.evaluate("()=>me.sup?{fixed:!!me.sup.fixed,ang:me.sup.ang}:null")
-        check(sp and sp['fixed'] and -2.6<sp['ang']<-1.9,'drag-aimed super wrong '+json.dumps(sp))
+        check(sp and sp['fixed'] and abs(sp['ang']-exp)<0.08,'drag-aimed super wrong '+json.dumps(sp)+' expected '+str(exp))
         # tap = auto aim
         await pg.evaluate("()=>{for(let i=0;i<30;i++)update(1/30);me.sp=SUPER_MAX;me.sup=null;}")
         await pg.mouse.click(B['x'],B['y']);await pg.wait_for_timeout(50)

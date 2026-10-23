@@ -31,6 +31,9 @@ canvas{display:block}
 /* ---- battle canvas sits under the menus; shown only in a match ---- */
 #c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:none;background:var(--void)}
 body.battle #c{display:block}
+#c3{position:fixed;inset:0;width:100%;height:100%;display:none;pointer-events:none;background:var(--void)}
+body.battle.g3d #c3{display:block}
+body.g3d #c{background:transparent}
 body.battle .app{display:none}
 
 /* ---- app frame ---- */

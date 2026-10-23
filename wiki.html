@@ -56,6 +56,14 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th.n{
 .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
 .new{display:inline-block;font:700 11px var(--disp);color:#2a1004;background:var(--gold);border-radius:5px;padding:0 6px;margin-left:6px;vertical-align:2px}
 footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 4px}
+.gal figure{margin:0;background:var(--rock2);border:1px solid var(--edge);border-radius:10px;overflow:hidden;text-align:center}
+.gal img{display:block;width:100%;height:auto;aspect-ratio:4/3}
+.gal figcaption{font-size:12px;padding:5px 4px 7px;color:var(--moon)}
+.gal figcaption i{display:block;font-style:normal;font-size:11px;color:var(--dust)}
+.gal .r{color:#b78bff}.gal .e{color:#ffcf4a}.gal .l{color:#e8f4ff}
+.gal.maps{grid-template-columns:repeat(4,1fr)}.gal.maps img{aspect-ratio:18/25}
+@media(max-width:420px){.gal.maps{grid-template-columns:repeat(2,1fr)}}
 </style>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
@@ -156,6 +164,8 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td><b>Longshot</b></td><td>A narrow canyon with long sight lines. Crates hug the walls.</td></tr>
    <tr><td><b>Crater Field</b><span class="new">New</span></td><td>Open ground, boulders for cover and a big crater dead center.</td></tr>
   </table>
+
+  <div class="gal maps"><figure><img src="img/wiki/map_classic.webp" alt="Moonbase" loading="lazy" width="180" height="250"><figcaption>Moonbase</figcaption></figure><figure><img src="img/wiki/map_overpass.webp" alt="Overpass" loading="lazy" width="180" height="250"><figcaption>Overpass</figcaption></figure><figure><img src="img/wiki/map_longshot.webp" alt="Longshot" loading="lazy" width="180" height="250"><figcaption>Longshot</figcaption></figure><figure><img src="img/wiki/map_craters.webp" alt="Crater Field" loading="lazy" width="180" height="250"><figcaption>Crater Field</figcaption></figure></div>
  </div>
 </section>
 
@@ -325,6 +335,16 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <li><b style="color:var(--violet)">Luck</b> +3% crit &nbsp; <b style="color:#4be3a0">Repair</b> +0.1% HP per second</li>
   </ul>
   <p class="mut">Cores stack with mystery-box buffs. Shards from gem caches level them up (Common 1 to 2 shards, Rare 3 to 4, Epic 6 to 9). Every level hits harder than the last: Lv2 ×1.2, Lv3 ×1.45, Lv4 ×1.8, Lv5 ×2.25.</p>
+ </div>
+ <div class="card">
+  <p><b>The armory</b><span class="new">New</span>. Every weapon and chassis has its own 3D design, and each rarity looks the part: Common is plain metal, Rare adds glowing trim and detail, Epic gets a new shape, moving parts and a glowing trail.</p>
+  <p class="mut">Weapons</p>
+  <div class="gal"><figure><img src="img/wiki/w_pulse_0.webp" alt="Pulse Cannon" loading="lazy" width="200" height="150"><figcaption>Pulse Cannon<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/w_pulse_1.webp" alt="Arc Pulse" loading="lazy" width="200" height="150"><figcaption>Arc Pulse<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/w_pulse_2.webp" alt="Nova Pulse" loading="lazy" width="200" height="150"><figcaption>Nova Pulse<i class="e">Epic</i></figcaption></figure><figure><img src="img/wiki/w_twin_0.webp" alt="Twin Repeater" loading="lazy" width="200" height="150"><figcaption>Twin Repeater<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/w_twin_1.webp" alt="Storm Repeater" loading="lazy" width="200" height="150"><figcaption>Storm Repeater<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/w_twin_2.webp" alt="Helix Repeater" loading="lazy" width="200" height="150"><figcaption>Helix Repeater<i class="e">Epic</i></figcaption></figure><figure><img src="img/wiki/w_siege_0.webp" alt="Siege Breaker" loading="lazy" width="200" height="150"><figcaption>Siege Breaker<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/w_siege_1.webp" alt="Rail Breaker" loading="lazy" width="200" height="150"><figcaption>Rail Breaker<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/w_siege_2.webp" alt="Titanfall" loading="lazy" width="200" height="150"><figcaption>Titanfall<i class="e">Epic</i></figcaption></figure></div>
+  <p class="mut">Chassis</p>
+  <div class="gal"><figure><img src="img/wiki/c_scout_0.webp" alt="Scout" loading="lazy" width="200" height="150"><figcaption>Scout<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/c_scout_1.webp" alt="Strider" loading="lazy" width="200" height="150"><figcaption>Strider<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/c_scout_2.webp" alt="Phantom" loading="lazy" width="200" height="150"><figcaption>Phantom<i class="e">Epic</i></figcaption></figure><figure><img src="img/wiki/c_vanguard_0.webp" alt="Vanguard" loading="lazy" width="200" height="150"><figcaption>Vanguard<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/c_vanguard_1.webp" alt="Sentinel" loading="lazy" width="200" height="150"><figcaption>Sentinel<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/c_vanguard_2.webp" alt="Paladin" loading="lazy" width="200" height="150"><figcaption>Paladin<i class="e">Epic</i></figcaption></figure><figure><img src="img/wiki/c_titan_0.webp" alt="Titan" loading="lazy" width="200" height="150"><figcaption>Titan<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/c_titan_1.webp" alt="Bulwark" loading="lazy" width="200" height="150"><figcaption>Bulwark<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/c_titan_2.webp" alt="Colossus" loading="lazy" width="200" height="150"><figcaption>Colossus<i class="e">Epic</i></figcaption></figure></div>
+  <p class="mut">Legendary (shop only) and the Survival boss</p>
+  <div class="gal"><figure><img src="img/wiki/w_moon.webp" alt="Moonbeam" loading="lazy" width="200" height="150"><figcaption>Moonbeam<i class="l">Legendary weapon</i></figcaption></figure><figure><img src="img/wiki/c_lunar.webp" alt="Lunar skin" loading="lazy" width="200" height="150"><figcaption>Lunar skin<i class="l">Legendary skin</i></figcaption></figure><figure><img src="img/wiki/megatank.webp" alt="Megatank" loading="lazy" width="200" height="150"><figcaption>Megatank<i class="r">Survival boss</i></figcaption></figure></div>
+  <p class="mut">Graphics are set to Auto: 3D on phones that can run it smoothly, with High, Low and classic 2D in Settings.</p>
  </div>
 </section>
 

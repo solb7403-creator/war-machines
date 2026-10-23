@@ -162,6 +162,7 @@ const HIT_TXT=[null,{txt:'SUPER',t:0.9,z:2,c:'#ff4d4d'},{txt:'STORM',t:0.7,z:0.8
 const evColor=c=>typeof c==='number'?tcol(c):c;   // a team number means that team's color
 const sndF=(k,a)=>{if(typeof fx==='function')fx(k,a);};
 function onSimEv(a){
+ if(typeof ev3D==='function')ev3D(a);   // 3D effects: explosions, wrecks, sparks
  const U=i=>i>=0?units[i]:null,live=typeof pvpOn==='function'&&pvpOn();
  switch(a[0]){
   case 'h':{const t=U(a[1]),amt=a[2],kind=a[3],cr=!!a[4],dir=!!a[5],s=U(a[6]);if(!t)return;

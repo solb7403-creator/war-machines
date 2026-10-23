@@ -5,12 +5,16 @@
 const cv=document.getElementById('c'),g=cv.getContext('2d');
 const dpr=Math.min(devicePixelRatio||1,2);
 const HUD=2.6;
-let sc=1,ox=0,oy=0,vw=0,vh=0,SAB=0;
+let sc=1,ox=0,oy=0,vw=0,vh=0,SAB=0,GK=1;   // GK: how much the ground squashes vertically (1 in 2D; the tilted 3D camera's cosine in 3D)
 function fit(){vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=vw*dpr;cv.height=vh*dpr;
  const pr=document.getElementById('sab');SAB=pr?pr.offsetHeight:0;   // home-indicator height (probe element sized by CSS env())
- sc=Math.min(vw/W,vh/(H+HUD));ox=(vw-W*sc)/2;oy=(vh-(H+HUD)*sc)/2+HUD*sc;}
+ sc=Math.min(vw/W,vh/(H*GK+HUD));ox=(vw-W*sc)/2;oy=(vh-(H*GK+HUD)*sc)/2+HUD*sc;
+ if(typeof setPR==='function')setPR();}
 addEventListener('resize',fit);fit();
-const X=x=>ox+x*sc,Y=y=>oy+y*sc;
+const X=x=>ox+x*sc,Y=y=>oy+y*sc*GK;
+const D3on=()=>typeof use3D==='function'&&use3D();
+const liftOf=b=>D3on()?heightAt(b)*GSN*sc:0;   // a tank on the Overpass deck sits higher on screen in 3D
+const gArc=(x,y,r,a0,a1,ccw)=>g.ellipse(X(x),Y(y),Math.max(0,r*sc),Math.max(0,r*sc*GK),0,a0===undefined?0:a0,a1===undefined?Math.PI*2:a1,!!ccw);   // a circle lying on the ground
 const FONT_FAMILY='"Chakra Petch","Arial Narrow",system-ui,sans-serif';
 const font=s=>'600 '+s+'px '+FONT_FAMILY;
 const C={floor:'#1d2330',grid:'#283042',wall:'#4a4e5e',wallTop:'#6e7490',star:'#ffffff'};
@@ -70,9 +74,9 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint){
 }
 function star5(ctx,x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*0.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}
 function drawTank(b,col){
- const px=X(b.x),py=Y(b.y),r=R*sc*(b.dscale||1),hd=b.hd===undefined?b.ang:b.hd;
+ const px=X(b.x),py=Y(b.y)-liftOf(b),r=R*sc*(b.dscale||1),hd=b.hd===undefined?b.ang:b.hd;
  const fl=b.flash>0?(armor(b)>0?BUFF.arm.c:'#ffe27a'):null;
- drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint]);
+ if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint]);
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
   const bw=2.6*r,bx=px-bw/2,by=py-2.25*r,hh=Math.max(4,0.36*r),sh=Math.max(2,0.16*r),hf=Math.max(0,b.hp/b.mhp),f=b.sp/SUPER_MAX;
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
@@ -236,7 +240,7 @@ function drawCrater(ctx,cr,sc,X,Y){
 const HERO_STARS=Array.from({length:26},()=>({x:Math.random(),y:Math.random()*0.55,r:Math.random()*1.1+0.3,p:Math.random()*6.28}));
 const HERO_DUST=Array.from({length:14},()=>({x:Math.random(),y:0.55+Math.random()*0.4,s:0.2+Math.random()*0.6,p:Math.random()*6.28}));
 function myTankColor(){return save.skin==='lunar'?'#e8f4ff':TC[0];}
-function drawHeroScene(ctx,w,h,t){
+function drawHeroScene(ctx,w,h,t,noTank){
  ctx.clearRect(0,0,w,h);
  const room=h-58;   // the name + loadout line sits in the bottom 58px
  for(const s of HERO_STARS){ctx.globalAlpha=0.2+0.5*Math.abs(Math.sin(t*0.7+s.p));ctx.fillStyle='#dfe7f2';ctx.beginPath();ctx.arc(s.x*w,s.y*room*1.1,s.r,0,7);ctx.fill();}
@@ -261,6 +265,7 @@ function drawHeroScene(ctx,w,h,t){
  const col=myTankColor(),hd=-Math.PI/2+0.42,ang=hd-0.25+Math.sin(t*0.55)*0.42;
  ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(cx+r*0.3,cy+r*0.6,r*1.5,r*0.6,0,0,7);ctx.fill();
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(cx,cy+r*0.4,r*1.7,r*0.72,0,0,7);ctx.fill();ctx.restore();
+ if(noTank)return;
  drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint());
 }
 function drawGearIcon(ctx,w,h,isW,it){   // the whole tank; the part this slot is about is lit, the rest is ghosted
@@ -293,14 +298,14 @@ let tapFocus=-1,tapCand=null;   // tap-to-target: unit id your cannon is locked 
 function resetTapFocus(){tapFocus=-1;tapCand=null;}
 function tapTarget(sx,sy){   // a quick tap on the field: lock onto an enemy (tap it again, or tap ground, to clear)
  if(state!=='play'||!me)return;
- const wx=(sx-ox)/sc,wy=(sy-oy)/sc;let best=null,bd=1.4;
+ const wx=(sx-ox)/sc,wy=(sy-oy)/(sc*GK);let best=null,bd=1.4;
  for(const u of units){if(u.team===me.team||u.hp<=0)continue;const d=Math.hypot(u.x-wx,u.y-wy);if(d<bd){bd=d;best=u;}}
  tapFocus=best&&tapFocus!==best.id?best.id:-1;
  if(pvpOn()){if(typeof pvpTarget==='function')pvpTarget(tapFocus);}
  else me.focus=tapFocus>=0?best:null;
  if(typeof fx==='function')fx('tap');
 }
-const aimAng=()=>{if(!aim||!aim.on||!me)return null;const px=X(me.x),py=Y(me.y),dx=aim.x-px,dy=aim.y-py;return Math.hypot(dx,dy)>24?Math.atan2(dy,dx):null;};   // aim is measured from the tank, not from the finger: the preview line is where the shot really goes
+const aimAng=()=>{if(!aim||!aim.on||!me)return null;const px=X(me.x),py=Y(me.y)-liftOf(me),dx=aim.x-px,dy=aim.y-py;return Math.hypot(dx,dy)>24?Math.atan2(dy/GK,dx):null;};   // aim is measured from the tank, not from the finger: the preview line is where the shot really goes
 const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
 // your super and dash: straight into the sim in AI matches, to the server in live ones
 const superGo=a=>pvpOn()?pvpSuper(a):useSuper(me,a);
@@ -339,6 +344,7 @@ addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 function inputVec(){
  let x=joy.dx,y=joy.dy;
+ if(GK!==1&&(x||y)){const m=Math.hypot(x,y),wy=y/GK,n=Math.hypot(x,wy);x=x/n*m;y=wy/n*m;}   // the stick points where your finger points on the tilted ground
  if(keys.a||keys.arrowleft)x-=1;if(keys.d||keys.arrowright)x+=1;
  if(keys.w||keys.arrowup)y-=1;if(keys.s||keys.arrowdown)y+=1;
  const m=Math.hypot(x,y);return m>1?[x/m,y/m]:[x,y];
@@ -369,102 +375,117 @@ function drawBattle(){
  g.setTransform(dpr,0,0,dpr,0,0);
  let shx=0,shy=0;
  if(shakeT>0){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
- g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);
+ const D3=D3on(),AH=Y(H)-Y(0);   // D3: the world is drawn by render3d.js underneath; this canvas adds the overlay
+ if(D3){g.clearRect(0,0,vw,vh);frame3D(shx,shy);}
+ else{g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);}
  g.save();g.translate(shx,shy);
- // deep space background with stars
- if(!window._stars){window._stars=[];for(let i=0;i<70;i++)window._stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4+0.4,tw:Math.random()*6.28});}
  const tnow=performance.now()/1000;
- g.fillStyle=C.star;
- for(const st of window._stars){g.globalAlpha=0.25+0.6*Math.abs(Math.sin(tnow*0.6+st.tw));g.beginPath();g.arc(st.x*vw,st.y*vh,st.r,0,7);g.fill();}
- g.globalAlpha=1;
- // arena floor (lunar surface)
- g.fillStyle=C.floor;g.fillRect(X(0),Y(0),W*sc,H*sc);
- g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,H*sc);g.clip();
- g.strokeStyle=C.grid;g.lineWidth=1;g.beginPath();
- for(let i=0;i<=W;i+=2){g.moveTo(X(i),Y(0));g.lineTo(X(i),Y(H));}
- for(let j=0;j<=H;j+=2){g.moveTo(X(0),Y(j));g.lineTo(X(W),Y(j));}
- g.stroke();
- g.fillStyle='rgba(255,77,94,.07)';g.fillRect(X(0),Y(0),W*sc,5*sc);
- g.fillStyle='rgba(77,159,255,.07)';g.fillRect(X(0),Y(H-5),W*sc,5*sc);
- // ground: craters, the crystal mine, meteor warnings; then every object back to front
- for(const cr of craters)drawCrater(g,cr,sc,X,Y);
- if(cry){const mx=X(cry.mine.x),my=Y(cry.mine.y),t=performance.now()/1000;
-  g.save();g.globalAlpha=0.1;g.fillStyle='#b98cff';g.beginPath();g.arc(mx,my,CRY_MINE_R*sc,0,7);g.fill();g.globalAlpha=0.45;g.strokeStyle='#c79bff';g.lineWidth=2;g.setLineDash([6,8]);g.lineDashOffset=-t*8;g.beginPath();g.arc(mx,my,CRY_MINE_R*sc,0,7);g.stroke();g.restore();}
- for(const wn of warns){const k=1-wn.t/wn.t0,px=X(wn.x),py=Y(wn.y),pr=wn.r*sc;
-  g.fillStyle='rgba(255,77,94,'+(0.08+0.3*k)+')';g.beginPath();g.arc(px,py,pr,0,7);g.fill();
-  g.strokeStyle='rgba(255,107,94,'+(0.5+0.5*Math.abs(Math.sin(performance.now()/90)))+')';g.lineWidth=2;g.setLineDash([5,4]);g.beginPath();g.arc(px,py,pr,0,7);g.stroke();g.setLineDash([]);
-  g.strokeStyle='rgba(255,230,200,.8)';g.lineWidth=1.5;g.beginPath();g.arc(px,py,pr*(1-k),0,7);g.stroke();}
- {const objs=[];for(const wl of baseWalls)objs.push([wl[1]+wl[3],0,wl]);for(const rk of rocks)objs.push([rk[1]+rk[2],1,rk]);
-  objs.sort((a,b)=>a[0]-b[0]);
-  for(const [,k,o] of objs){if(k)drawRock(g,o,sc,X,Y);else drawSolid(g,o,sc,X,Y);}}
- if(BR){   // tunnel floors and ground shadow of the deck
-  const [dx,dy,dw,dh]=BR.deck;
-  g.fillStyle='rgba(0,0,0,.35)';g.fillRect(X(dx)+sc*0.35,Y(dy)+sc*0.5,dw*sc,dh*sc);
-  for(const [tx,tw] of BR.tunnels)for(const my of [dy-0.7,dy+dh]){g.fillStyle='#07080c';g.fillRect(X(tx),Y(my),tw*sc,0.7*sc);g.strokeStyle='#8a92bd';g.lineWidth=2;g.strokeRect(X(tx),Y(my),tw*sc,0.7*sc);}
+ if(!D3){
+  // deep space background with stars
+  if(!window._stars){window._stars=[];for(let i=0;i<70;i++)window._stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4+0.4,tw:Math.random()*6.28});}
+  g.fillStyle=C.star;
+  for(const st of window._stars){g.globalAlpha=0.25+0.6*Math.abs(Math.sin(tnow*0.6+st.tw));g.beginPath();g.arc(st.x*vw,st.y*vh,st.r,0,7);g.fill();}
+  g.globalAlpha=1;
+  // arena floor (lunar surface)
+  g.fillStyle=C.floor;g.fillRect(X(0),Y(0),W*sc,AH);
+ }
+ g.save();g.beginPath();g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
+ if(!D3){
+  g.strokeStyle=C.grid;g.lineWidth=1;g.beginPath();
+  for(let i=0;i<=W;i+=2){g.moveTo(X(i),Y(0));g.lineTo(X(i),Y(H));}
+  for(let j=0;j<=H;j+=2){g.moveTo(X(0),Y(j));g.lineTo(X(W),Y(j));}
+  g.stroke();
+  g.fillStyle='rgba(255,77,94,.07)';g.fillRect(X(0),Y(0),W*sc,5*sc);
+  g.fillStyle='rgba(77,159,255,.07)';g.fillRect(X(0),Y(H-5),W*sc,5*sc);
+  // ground: craters, the crystal mine; then every object back to front
+  for(const cr of craters)drawCrater(g,cr,sc,X,Y);
+  if(cry){const mx=X(cry.mine.x),my=Y(cry.mine.y),t=performance.now()/1000;
+   g.save();g.globalAlpha=0.1;g.fillStyle='#b98cff';g.beginPath();g.arc(mx,my,CRY_MINE_R*sc,0,7);g.fill();g.globalAlpha=0.45;g.strokeStyle='#c79bff';g.lineWidth=2;g.setLineDash([6,8]);g.lineDashOffset=-t*8;g.beginPath();g.arc(mx,my,CRY_MINE_R*sc,0,7);g.stroke();g.restore();}
+ }
+ // meteor / stomp warnings: rings on the ground
+ for(const wn of warns){const k=1-wn.t/wn.t0;
+  g.fillStyle='rgba(255,77,94,'+(0.08+0.3*k)+')';g.beginPath();gArc(wn.x,wn.y,wn.r);g.fill();
+  g.strokeStyle='rgba(255,107,94,'+(0.5+0.5*Math.abs(Math.sin(performance.now()/90)))+')';g.lineWidth=2;g.setLineDash([5,4]);g.beginPath();gArc(wn.x,wn.y,wn.r);g.stroke();g.setLineDash([]);
+  g.strokeStyle='rgba(255,230,200,.8)';g.lineWidth=1.5;g.beginPath();gArc(wn.x,wn.y,wn.r*(1-k));g.stroke();}
+ if(!D3){
+  {const objs=[];for(const wl of baseWalls)objs.push([wl[1]+wl[3],0,wl]);for(const rk of rocks)objs.push([rk[1]+rk[2],1,rk]);
+   objs.sort((a,b)=>a[0]-b[0]);
+   for(const [,k,o] of objs){if(k)drawRock(g,o,sc,X,Y);else drawSolid(g,o,sc,X,Y);}}
+  if(BR){   // tunnel floors and ground shadow of the deck
+   const [dx,dy,dw,dh]=BR.deck;
+   g.fillStyle='rgba(0,0,0,.35)';g.fillRect(X(dx)+sc*0.35,Y(dy)+sc*0.5,dw*sc,dh*sc);
+   for(const [tx,tw] of BR.tunnels)for(const my of [dy-0.7,dy+dh]){g.fillStyle='#07080c';g.fillRect(X(tx),Y(my),tw*sc,0.7*sc);g.strokeStyle='#8a92bd';g.lineWidth=2;g.strokeRect(X(tx),Y(my),tw*sc,0.7*sc);}
+  }
  }
  // your weapon range
- if(me&&me.hp>0){g.strokeStyle='rgba(77,159,255,.18)';g.lineWidth=1.5;g.setLineDash([6,6]);g.beginPath();g.arc(X(me.x),Y(me.y),STAT.range*sc,0,7);g.stroke();g.setLineDash([]);}
+ if(me&&me.hp>0){g.strokeStyle='rgba(77,159,255,'+(D3?0.3:0.18)+')';g.lineWidth=1.5;g.setLineDash([6,6]);g.beginPath();gArc(me.x,me.y,STAT.range);g.stroke();g.setLineDash([]);}
  // Moon Zone (and where it moves next)
  if(gzones&&gzones[0].next){const nz=gzones[0].next,k=Math.max(0,gzones[0].t)/ZONE_WARN,t=performance.now()/300;
-  g.strokeStyle='#ffcf4a';g.globalAlpha=0.5+0.4*Math.sin(t);g.lineWidth=3;g.setLineDash([4,7]);g.beginPath();g.arc(X(nz.x),Y(nz.y),ZONE_R*sc,0,7);g.stroke();g.setLineDash([]);
-  g.globalAlpha=0.9;g.lineWidth=4;g.beginPath();g.arc(X(nz.x),Y(nz.y),ZONE_R*sc+6,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-k));g.stroke();g.globalAlpha=1;
+  g.strokeStyle='#ffcf4a';g.globalAlpha=0.5+0.4*Math.sin(t);g.lineWidth=3;g.setLineDash([4,7]);g.beginPath();gArc(nz.x,nz.y,ZONE_R);g.stroke();g.setLineDash([]);
+  g.globalAlpha=0.9;g.lineWidth=4;g.beginPath();gArc(nz.x,nz.y,ZONE_R+6/sc,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-k));g.stroke();g.globalAlpha=1;
   g.fillStyle='#ffcf4a';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*0.95));g.fillText(Math.ceil(Math.max(0,gzones[0].t))+'',X(nz.x),Y(nz.y));g.textBaseline='top';}
  if(gzones)for(const z of gzones){const zx=X(z.x),zy=Y(z.y),zr=z.r*sc,t=performance.now()/600;
   const col=z.own===0?TC[0]:z.own===1?TC[1]:'#c9d6e3';
-  g.globalAlpha=0.14+0.05*Math.sin(t*2);g.fillStyle=col;g.beginPath();g.arc(zx,zy,zr,0,7);g.fill();g.globalAlpha=1;
-  g.strokeStyle=col;g.lineWidth=2;g.setLineDash([8,6]);g.lineDashOffset=-t*12;g.beginPath();g.arc(zx,zy,zr,0,7);g.stroke();g.setLineDash([]);g.lineDashOffset=0;
-  if(Math.abs(z.cap)>0.01){g.strokeStyle=z.cap<0?TC[0]:TC[1];g.lineWidth=5;g.beginPath();g.arc(zx,zy,zr+4,-Math.PI/2,-Math.PI/2+Math.PI*2*z.cap,z.cap<0);g.stroke();}
-  g.fillStyle=col;g.globalAlpha=0.8;g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*1.1));g.fillText('☾',zx,zy);g.globalAlpha=1;g.textBaseline='top';}
- if(cry)cry.loose.forEach((c,i)=>{if(c.l===0)drawCrystal(c,i);});
- for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
-  g.fillStyle='#ffcf4a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
-  g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
- for(const q of bullets){g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(X(q.x),Y(q.y),Math.max(2.5,sc*0.16)*Math.min(1.8,q.dm),0,7);g.fill();}
- // super telegraphs (lane for beam/shell, danger ring for nova) and super effects
+  if(!D3){g.globalAlpha=0.14+0.05*Math.sin(t*2);g.fillStyle=col;g.beginPath();g.arc(zx,zy,zr,0,7);g.fill();g.globalAlpha=1;
+   g.strokeStyle=col;g.lineWidth=2;g.setLineDash([8,6]);g.lineDashOffset=-t*12;g.beginPath();g.arc(zx,zy,zr,0,7);g.stroke();g.setLineDash([]);g.lineDashOffset=0;}
+  if(Math.abs(z.cap)>0.01){g.strokeStyle=z.cap<0?TC[0]:TC[1];g.lineWidth=5;g.beginPath();gArc(z.x,z.y,z.r+4/sc,-Math.PI/2,-Math.PI/2+Math.PI*2*z.cap,z.cap<0);g.stroke();}
+  if(!D3){g.fillStyle=col;g.globalAlpha=0.8;g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*1.1));g.fillText('☾',zx,zy);g.globalAlpha=1;g.textBaseline='top';}}
+ if(!D3){
+  if(cry)cry.loose.forEach((c,i)=>{if(c.l===0)drawCrystal(c,i);});
+  for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
+   g.fillStyle='#ffcf4a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
+   g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
+  for(const q of bullets){g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(X(q.x),Y(q.y),Math.max(2.5,sc*0.16)*Math.min(1.8,q.dm),0,7);g.fill();}
+ }
+ // super telegraphs (lane for beam/shell, danger ring for nova): on the ground, so they dodge the same in 2D and 3D
  for(const r of units){
   if(!r.sup||r.hp<=0)continue;
   const S=SUP[r.sup.w],k=1-r.sup.t/S.charge;
-  if(S.kind==='nova'){g.globalAlpha=0.15+0.3*k;g.strokeStyle='#ff3b3b';g.lineWidth=3;g.beginPath();g.arc(X(r.x),Y(r.y),S.r*sc,0,7);g.stroke();g.globalAlpha=1;}
+  if(S.kind==='nova'){g.globalAlpha=0.15+0.3*k;g.strokeStyle='#ff3b3b';g.lineWidth=3;g.beginPath();gArc(r.x,r.y,S.r);g.stroke();g.globalAlpha=1;}
   else{const len=S.kind==='beam'?S.len:beamLen(r,r.sup.ang),wdt=S.kind==='beam'?S.w:1.2;
-   g.save();g.translate(X(r.x),Y(r.y));g.rotate(r.sup.ang);g.globalAlpha=0.12+0.28*k;g.fillStyle='#ff3b3b';
+   g.save();g.translate(X(r.x),Y(r.y)-liftOf(r));g.scale(1,GK);g.rotate(r.sup.ang);g.globalAlpha=0.12+0.28*k;g.fillStyle='#ff3b3b';
    g.fillRect(0,-wdt*sc,len*sc,wdt*2*sc);g.globalAlpha=0.5+0.5*k;g.fillStyle='#ffb3b3';g.fillRect(0,-1,len*sc,2);g.restore();g.globalAlpha=1;}
  }
- for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
-  g.beginPath();g.moveTo(X(bm.ax),Y(bm.ay));g.lineTo(X(bm.bx),Y(bm.by));g.stroke();g.strokeStyle='#fff';g.lineWidth=Math.max(2,sc*0.3);g.stroke();g.lineCap='butt';g.globalAlpha=1;}
- for(const sh of shells){const sx=X(sh.x),sy=Y(sh.y),pr=sc*0.5*(1+0.15*Math.sin(performance.now()/60));
-  g.fillStyle='#ff9d45';g.beginPath();g.arc(sx,sy,pr,0,7);g.fill();g.fillStyle='#ffcf4a';g.beginPath();g.arc(sx,sy,pr*0.55,0,7);g.fill();}
- for(const b of blasts){const k=1-b.t/b.t0,bx=X(b.x),by=Y(b.y),brad=b.r*sc*(0.3+0.7*k);
-  g.globalAlpha=Math.max(0,b.t/b.t0);g.fillStyle=b.c;g.beginPath();g.arc(bx,by,brad,0,7);g.fill();
-  g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(bx,by,brad,0,7);g.stroke();g.globalAlpha=1;}
- for(const n of novas){const k=1-n.t/n.t0,nx=X(n.x),ny=Y(n.y);g.globalAlpha=Math.max(0,n.t/n.t0);
-  for(let ring=0;ring<3;ring++){const rr2=n.r*sc*(0.25+0.75*k)*(1-ring*0.22);g.strokeStyle=n.c;g.lineWidth=4-ring;g.beginPath();
-   for(let i=0;i<=26;i++){const a=i/26*Math.PI*2,vib=(Math.random()-0.5)*sc*0.35*(1-k*0.5);const px2=nx+Math.cos(a)*(rr2+vib),py2=ny+Math.sin(a)*(rr2+vib);if(i)g.lineTo(px2,py2);else g.moveTo(px2,py2);}
-   g.stroke();}
-  g.globalAlpha=1;}
- if(aim&&aim.on&&me&&me.hp>0){const S=SUP[me.wtype||'pulse'],a=aimAng(),px=X(me.x),py=Y(me.y);
+ if(!D3){
+  for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
+   g.beginPath();g.moveTo(X(bm.ax),Y(bm.ay));g.lineTo(X(bm.bx),Y(bm.by));g.stroke();g.strokeStyle='#fff';g.lineWidth=Math.max(2,sc*0.3);g.stroke();g.lineCap='butt';g.globalAlpha=1;}
+  for(const sh of shells){const sx=X(sh.x),sy=Y(sh.y),pr=sc*0.5*(1+0.15*Math.sin(performance.now()/60));
+   g.fillStyle='#ff9d45';g.beginPath();g.arc(sx,sy,pr,0,7);g.fill();g.fillStyle='#ffcf4a';g.beginPath();g.arc(sx,sy,pr*0.55,0,7);g.fill();}
+  for(const b of blasts){const k=1-b.t/b.t0,bx=X(b.x),by=Y(b.y),brad=b.r*sc*(0.3+0.7*k);
+   g.globalAlpha=Math.max(0,b.t/b.t0);g.fillStyle=b.c;g.beginPath();g.arc(bx,by,brad,0,7);g.fill();
+   g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.arc(bx,by,brad,0,7);g.stroke();g.globalAlpha=1;}
+  for(const n of novas){const k=1-n.t/n.t0,nx=X(n.x),ny=Y(n.y);g.globalAlpha=Math.max(0,n.t/n.t0);
+   for(let ring=0;ring<3;ring++){const rr2=n.r*sc*(0.25+0.75*k)*(1-ring*0.22);g.strokeStyle=n.c;g.lineWidth=4-ring;g.beginPath();
+    for(let i=0;i<=26;i++){const a=i/26*Math.PI*2,vib=(Math.random()-0.5)*sc*0.35*(1-k*0.5);const px2=nx+Math.cos(a)*(rr2+vib),py2=ny+Math.sin(a)*(rr2+vib);if(i)g.lineTo(px2,py2);else g.moveTo(px2,py2);}
+    g.stroke();}
+   g.globalAlpha=1;}
+ }
+ if(aim&&aim.on&&me&&me.hp>0){const S=SUP[me.wtype||'pulse'],a=aimAng(),px=X(me.x),py=Y(me.y)-liftOf(me);
   g.save();g.globalAlpha=0.5+0.2*Math.sin(performance.now()/100);
-  if(S.kind==='nova'){g.strokeStyle='#ffd24a';g.lineWidth=3;g.setLineDash([6,5]);g.beginPath();g.arc(px,py,S.r*sc,0,7);g.stroke();}
-  else{const len=S.kind==='beam'?S.len:Math.min(S.range,beamLen(me,a)),wd=S.kind==='beam'?S.w:0.5;
-   g.translate(px,py);g.rotate(a);g.fillStyle='rgba(255,210,74,.22)';g.fillRect(0,-wd*sc,len*sc,wd*2*sc);
+  if(S.kind==='nova'){g.strokeStyle='#ffd24a';g.lineWidth=3;g.setLineDash([6,5]);g.beginPath();gArc(me.x,me.y,S.r);g.stroke();}
+  else if(a!==null){const len=S.kind==='beam'?S.len:Math.min(S.range,beamLen(me,a)),wd=S.kind==='beam'?S.w:0.5;
+   g.translate(px,py);g.scale(1,GK);g.rotate(a);g.fillStyle='rgba(255,210,74,.22)';g.fillRect(0,-wd*sc,len*sc,wd*2*sc);
    g.strokeStyle='#ffd24a';g.lineWidth=2;g.setLineDash([8,6]);g.beginPath();g.moveTo(0,0);g.lineTo(len*sc,0);g.stroke();
    if(S.kind==='shell'){g.setLineDash([]);g.beginPath();g.arc(len*sc,0,S.r*sc,0,7);g.stroke();}}
   g.restore();}
  // tanks: ground level first (the bridge covers tanks in its tunnels)
  const drawOne=(b,col)=>{
-  const px=X(b.x),py=Y(b.y),r=R*sc;
-  g.save();g.globalAlpha=0.35;g.fillStyle=col;g.beginPath();g.ellipse(px,py+r*0.95,r*1.2,r*0.5,0,0,7);g.fill();g.restore();   // team underglow
-  if(b===me){const pl=0.7+0.3*Math.sin(performance.now()/280);g.save();g.globalAlpha=pl;g.strokeStyle='#ffd24a';g.lineWidth=3;g.beginPath();g.ellipse(px,py+r*0.35,r*1.62,r*1.22,0,0,7);g.stroke();g.restore();}   // your tank wears a pulsing gold ring: find yourself in any cluster
-  if(b.elev===1){g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(px+6,py+10,r*0.9,r*0.5,0,0,7);g.fill();}
-  if(b.aura>0){const ac=b.aura>=3?'#e8f4ff':RCOL[b.aura],pl=b.aura>=2?0.5+0.5*Math.sin(performance.now()/420):0.5;   // rarity ring: rare, epic, legendary
-   g.save();g.globalAlpha=0.3+0.3*pl;g.strokeStyle=ac;g.lineWidth=b.aura>=2?2.4:1.5;g.beginPath();g.ellipse(px,py+r*0.2,r*1.45,r*1.1,0,0,7);g.stroke();
-   if(b.aura>=2){g.globalAlpha=0.07+0.07*pl;g.fillStyle=ac;g.fill();}g.restore();}
-  if(b.skin==='lunar'){g.strokeStyle='rgba(232,244,255,.6)';g.lineWidth=2;g.beginPath();g.arc(px,py,r*1.3,0,7);g.stroke();}
+  const px=X(b.x),py=Y(b.y)-liftOf(b),r=R*sc;
+  if(!D3){
+   g.save();g.globalAlpha=0.35;g.fillStyle=col;g.beginPath();g.ellipse(px,py+r*0.95,r*1.2,r*0.5,0,0,7);g.fill();g.restore();   // team underglow
+   if(b===me){const pl=0.7+0.3*Math.sin(performance.now()/280);g.save();g.globalAlpha=pl;g.strokeStyle='#ffd24a';g.lineWidth=3;g.beginPath();g.ellipse(px,py+r*0.35,r*1.62,r*1.22,0,0,7);g.stroke();g.restore();}   // your tank wears a pulsing gold ring: find yourself in any cluster
+   if(b.elev===1){g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(px+6,py+10,r*0.9,r*0.5,0,0,7);g.fill();}
+   if(b.aura>0){const ac=b.aura>=3?'#e8f4ff':RCOL[b.aura],pl=b.aura>=2?0.5+0.5*Math.sin(performance.now()/420):0.5;   // rarity ring: rare, epic, legendary
+    g.save();g.globalAlpha=0.3+0.3*pl;g.strokeStyle=ac;g.lineWidth=b.aura>=2?2.4:1.5;g.beginPath();g.ellipse(px,py+r*0.2,r*1.45,r*1.1,0,0,7);g.stroke();
+    if(b.aura>=2){g.globalAlpha=0.07+0.07*pl;g.fillStyle=ac;g.fill();}g.restore();}
+   if(b.skin==='lunar'){g.strokeStyle='rgba(232,244,255,.6)';g.lineWidth=2;g.beginPath();g.arc(px,py,r*1.3,0,7);g.stroke();}
+  }
   b.buffs.forEach((bf,i)=>{const rr2=r*(1.6+0.22*i),left=Math.max(0,1-bf.taken/BUFF_LIFE);g.strokeStyle=BUFF[bf.k].c;g.lineWidth=2.5;
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
-  if((spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
+  if(!D3&&(spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
   drawTank(b,b===me&&b.skin==='lunar'?'#e8f4ff':col);
-  if(b.shieldT>0){const pl=performance.now()/1000+(b.id||0)*1.7,br=r*4.0*(1+0.04*Math.sin(pl*7));   // plasma ball: a giant crackling blue sphere around the tank while the shield holds
+  if(!D3&&b.shieldT>0){const pl=performance.now()/1000+(b.id||0)*1.7,br=r*4.0*(1+0.04*Math.sin(pl*7));   // plasma ball: a giant crackling blue sphere around the tank while the shield holds
    g.save();
    const gr=g.createRadialGradient(px,py,br*0.2,px,py,br);
    gr.addColorStop(0,'rgba(80,170,255,0.10)');gr.addColorStop(0.7,'rgba(60,150,255,0.16)');gr.addColorStop(0.93,'rgba(130,205,255,0.42)');gr.addColorStop(1,'rgba(130,205,255,0)');
@@ -476,15 +497,15 @@ function drawBattle(){
    g.restore();}
   {const mine=b===me,bob=mine?Math.sin(performance.now()/300)*sc*0.09:0,fs=Math.round(sc*(mine?0.95:0.48));   // floating team chevron over every tank; yours is gold and bigger, the rest stay small and quiet so the map never looks cluttered
    g.save();g.globalAlpha=mine?1:0.55;g.fillStyle=mine?'#ffd24a':b.team!==0?'#ff4d5e':'#4d9fff';g.font=font(fs);g.textAlign='center';g.textBaseline='middle';
-   g.fillText('▼',px,py-r*1.66+bob);g.restore();}
+   g.fillText('▼',px,py-r*1.66*(D3&&b.boss?1.6:1)+bob);g.restore();}
   if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(sc*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
-  if(b.boss){const fs=Math.max(11,Math.round(sc*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,py-r*2.0-fs*0.6);g.textBaseline='top';}
+  if(b.boss){const fs=Math.max(11,Math.round(sc*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,py-r*2.0*(D3?1.6:1)-fs*0.6);g.textBaseline='top';}
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);
  // the bridge goes OVER ground tanks; tunnel stretches are see-through so you can track tanks under it
- if(BR){
+ if(BR&&!D3){
   const [dx,dy,dw,dh]=BR.deck,meUnder=me&&underDeck(me);
   let x0=dx;const spans=[];for(const [tx,tw] of BR.tunnels){spans.push([x0,tx-x0,1]);spans.push([tx,tw,0]);x0=tx+tw;}spans.push([x0,dx+dw-x0,1]);
   for(const [sx,sw,solid] of spans){g.globalAlpha=solid?(meUnder?0.8:1):(meUnder?0.35:0.72);g.fillStyle='#454b6c';g.fillRect(X(sx),Y(dy),sw*sc,dh*sc);}
@@ -503,24 +524,25 @@ function drawBattle(){
    g.fillStyle='rgba(255,207,74,.85)';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*0.75));g.fillText(o<0?'▲':'▼',X(rx+rw/2),Y(o<0?ry+0.5:ry+rh-0.5));g.textBaseline='top';
   }
  }
- if(cry)cry.loose.forEach((c,i)=>{if(c.l===1)drawCrystal(c,i);});   // crystals on the bridge deck
+ if(cry&&!D3)cry.loose.forEach((c,i)=>{if(c.l===1)drawCrystal(c,i);});   // crystals on the bridge deck
  for(const u of units)if(u.team!==0&&(u.elev||0)===1&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===1&&u.hp>0)drawOne(u,TC[0]);
  const fu=tapFocus>=0?units.find(u=>u.id===tapFocus&&u.hp>0):null;   // your locked target wears gold brackets
- if(fu){const px=X(fu.x),py=Y(fu.y),rr=R*sc*(fu.dscale||1)*1.5,k=rr*0.42;g.save();g.strokeStyle='#ffd24a';g.globalAlpha=0.72+0.28*Math.sin(performance.now()/160);g.lineWidth=3;g.beginPath();
+ if(fu){const px=X(fu.x),py=Y(fu.y)-liftOf(fu),rr=R*sc*(fu.dscale||1)*1.5,k=rr*0.42;g.save();g.strokeStyle='#ffd24a';g.globalAlpha=0.72+0.28*Math.sin(performance.now()/160);g.lineWidth=3;g.beginPath();
   for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){g.moveTo(px+cx*rr,py+cy*rr-cy*k);g.lineTo(px+cx*rr,py+cy*rr);g.lineTo(px+cx*rr-cx*k,py+cy*rr);}
   g.stroke();g.restore();}
  if(storm){   // Last Standing: everything outside the ring is storm
-  const sx=X(storm.x),sy=Y(storm.y),srad=Math.max(0,storm.r*sc),t=performance.now()/1000;
-  g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,H*sc);g.moveTo(sx+srad,sy);g.arc(sx,sy,srad,0,Math.PI*2,true);g.fillStyle='rgba(104,48,184,.32)';g.fill('evenodd');
-  g.strokeStyle='rgba(199,155,255,.9)';g.lineWidth=3;g.setLineDash([10,7]);g.lineDashOffset=-t*20;g.beginPath();g.arc(sx,sy,srad,0,7);g.stroke();g.setLineDash([]);g.lineDashOffset=0;g.restore();}
+  const t=performance.now()/1000;
+  g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,AH);g.moveTo(X(storm.x)+Math.max(0,storm.r*sc),Y(storm.y));gArc(storm.x,storm.y,storm.r,0,Math.PI*2,true);g.fillStyle='rgba(104,48,184,'+(D3?0.24:0.32)+')';g.fill('evenodd');
+  g.strokeStyle='rgba(199,155,255,.9)';g.lineWidth=3;g.setLineDash([10,7]);g.lineDashOffset=-t*20;g.beginPath();gArc(storm.x,storm.y,storm.r);g.stroke();g.setLineDash([]);g.lineDashOffset=0;g.restore();}
  g.restore();   // end arena clip
- g.strokeStyle='#59607a';g.lineWidth=2;g.strokeRect(X(0),Y(0),W*sc,H*sc);
+ if(!D3){g.strokeStyle='#59607a';g.lineWidth=2;g.strokeRect(X(0),Y(0),W*sc,AH);}
  // floating text: labels stay on screen, damage numbers merge
- g.save();g.beginPath();g.rect(X(0),Y(0),W*sc,H*sc);g.clip();
+ g.save();g.beginPath();g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return Math.max(X(0)+hw,Math.min(X(W)-hw,x));};
- for(const q of pops){g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.8));g.fillText(q.txt,lx(X(q.x),q.txt),Math.max(Y(0)+4,Y(q.y)-sc*(1.4-q.t)*1.2-sc));g.globalAlpha=1;}
- for(const q of nums){if(!q.txt)continue;g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.66*(q.z||1)));g.fillText(q.txt,lx(X(q.x),q.txt),Math.max(Y(0)+4,Y(q.y)-sc*(0.9-q.t)*1.6));g.globalAlpha=1;}
+ const up=D3?sc*0.6:0;   // in 3D, text floats from the top of the tanks
+ for(const q of pops){g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.8));g.fillText(q.txt,lx(X(q.x),q.txt),Math.max(Y(0)+4,Y(q.y)-up-sc*(1.4-q.t)*1.2-sc));g.globalAlpha=1;}
+ for(const q of nums){if(!q.txt)continue;g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(sc*0.66*(q.z||1)));g.fillText(q.txt,lx(X(q.x),q.txt),Math.max(Y(0)+4,Y(q.y)-up-sc*(0.9-q.t)*1.6));g.globalAlpha=1;}
  g.restore();
  g.restore();   // end shake
  drawHUD();

@@ -48,11 +48,18 @@ python3 dev/tests/b6test.py            # salvage ladder, tune-up, Lunar Pass, pa
 python3 dev/tests/b7test.py            # Untouchable, dailies + swaps, weekly quests (multi-day), streak bonus, chest, daily/weekly deals, Founder pack
 python3 dev/tests/b8test.py            # the server-owned economy in the browser: claims, forged saves, scored/too-fast/offline AI matches, Stars grants, the one-time move, admin flags
 python3 dev/tests/b9test.py            # build budget + reset build (points or paid), ghosts (VS seat, report, owner's sheet), Survival (megatank), Last Standing pay
+python3 dev/tests/b10test.py           # the 3D view: every mode x map, draw cost at 4x CPU slowdown, aim/tap on the tilted ground, Graphics setting, Auto step-down, 2D without WebGL or after a lost GPU context, 3D menu pictures
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons
 python3 dev/tests/pvptest.py           # two browser pages play live: matching, VS labels, moves, supers, drops, rounds, quits, AI fill, results
 ```
+
+Screenshots for eyeballing the 3D models (not pass/fail): `python3 dev/tests/sheet3d.py` (every weapon, chassis, paint and crate) and `python3 dev/tests/look3d.py` (a battle per map and mode, the menus). `python3 dev/gallery3d.py` re-renders the wiki's gear and map pictures (`img/wiki/`) after a model changes.
+
+## The 3D view
+
+`js/render3d.js` draws the battlefield with Three.js on `#c3`, under the 2D canvas `#c`, which keeps the HUD, health bars, labels, damage numbers, aim lines and buttons. It only reads game state (units, bullets, effects) and the sim events (`ev3D`, called from `onSimEv`); `js/game.js`, `js/rules.js` and the server don't know it exists. The camera is a tilted orthographic view (`TILT` 0.6 rad), so the ground maps to the screen with one vertical squash: `GK` (1 in 2D). `X()`/`Y()` include it, so every 2D overlay, the tap-to-target, the joystick and drag-to-aim line up with the 3D ground. `js/models3d.js` builds every model from simple shapes and merges each into lit, metallic and glowing meshes (a tank is a handful of draw calls); designs per tier live in `chassisKit`, `weaponKit`, `bossKit`, `crateKit`, maps in `buildMap`. Three.js is a slim custom build in `js/vendor/three.lunar.min.js` (r169, MIT), loaded after the game boots; until it's ready, without WebGL, after a lost GPU context, or with Graphics set to 2D, `render.js` draws everything in 2D as before. Graphics (Settings): Auto (default: High, steps down to Low under 40fps, then to 2D under 24fps), High, Low (pixel ratio 1, fewer particles), 2D. Menu pictures are 3D renders on a small second renderer, cached per size (`art3D`); the Play tab's hero tank renders live.
 
 The older browser tests (b1-b7, regress, perf, qa, pvptest) run the economy on the phone (`LUNAR_LOCAL_ECO`), so they test the shared rules and the screens; `open_game(..., eco='server')` runs it the way Telegram players get it (b8test). The browser tests start `dev/tests/devserver.mjs`, a local stand-in for the server and database, and mock the Telegram SDK. It runs the real worker code with local Durable Objects (`wtest/fakedo.mjs`) and a small WebSocket server, so two pages can play each other. Live matches are off in the older tests (`LUNAR_NO_PVP`); `open_game(..., pvp=True)` turns them on. Screenshots go to `$SHOTS` (default `/tmp/lunar-shots`).
 
