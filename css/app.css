@@ -488,8 +488,8 @@ button.q{display:flex;width:100%;text-align:left}
 .aitag.live{border-color:rgba(95,227,161,.55);color:var(--ok)}
 .vs .unit .ai{font-style:normal;font:700 10px/1 var(--disp);padding:1px 4px;border-radius:5px;border:1px solid var(--edge3);color:var(--dust);vertical-align:2px}
 .vs .unit .ctag{display:block;width:fit-content;font-style:normal;font:700 9px var(--disp);letter-spacing:.05em;margin:4px auto 0;padding:2px 4px;border-radius:5px;white-space:nowrap}
-.vs .unit .ctag.up{color:#ff9d8a;border:1px solid rgba(255,107,94,.55);background:rgba(255,107,94,.10)}
-.vs .unit .ctag.dn{color:#5fe3a1;border:1px solid rgba(95,227,161,.55);background:rgba(95,227,161,.10)}
+.vs .unit .ctag.bad{color:#ff9d8a;border:1px solid rgba(255,107,94,.55);background:rgba(255,107,94,.10)}
+.vs .unit .ctag.good{color:#5fe3a1;border:1px solid rgba(95,227,161,.55);background:rgba(95,227,161,.10)}
 .vs .team.many .unit .ctag{font-size:8px;padding:1px 3px}
 .mode .live{position:absolute;top:8px;left:8px;padding:1px 6px;border-radius:6px;border:1px solid rgba(95,227,161,.6);color:var(--ok);font:700 10px/1.5 var(--disp)}
 .livechip{display:inline-block;padding:0 6px;border-radius:6px;border:1px solid rgba(95,227,161,.6);color:var(--ok);font:700 11px/1.45 var(--disp);vertical-align:2px}

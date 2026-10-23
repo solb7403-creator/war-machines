@@ -717,7 +717,7 @@ let vsTimer=null;
 function vsBuild(){
  const {adv,dis}=matchup(),foes=units.filter(u=>u.team!==0),mine=units.filter(u=>u.team===0),solo=isSolo(matchG);
  const live=pvpOn(),liveFoes=live&&pvpLiveFoes();
- const ctag=u=>{if(u===me||u.team===me.team||u.boss)return '';if(COUNTER[u.cls]===me.cls)return '<i class="ctag up">▲ BOOSTED</i>';if(COUNTER[me.cls]===u.cls)return '<i class="ctag dn">▼ DISADVANTAGED</i>';return '';};   // every foe card carries its own triangle standing vs you, so it can never go missing from the summary line
+ const ctag=u=>{if(u===me||u.team===me.team||u.boss)return '';if(COUNTER[me.cls]===u.cls)return '<i class="ctag good">▲ YOU COUNTER</i>';if(COUNTER[u.cls]===me.cls)return '<i class="ctag bad">▼ COUNTERS YOU</i>';return '';};   // read from your side: green is good for you   // every foe card carries its own triangle standing vs you, so it can never go missing from the summary line
  const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+vname(u===me?'You':u.name,u.vl|0)+vbadge(u.vl|0)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+(u.boss?'#ff4d5e':CH[u.cls].c)+'">'+(u.boss?'Boss':CH[u.cls].n)+'</span>'+ctag(u)+'</div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}

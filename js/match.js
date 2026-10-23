@@ -33,8 +33,23 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
   for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop()));   // your AI teammates
   for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6,me,names.pop()));   // the enemy team
  }
+ fairField(mp);
  state='vs';
  matchStart();
+}
+// AI chassis, dealt fairly against yours (the triangle should cut both ways): in Last Standing as many foes counter you
+// as you counter (2 and 2, plus 1 of your own class); in team modes not every enemy counters you. Pilots in their first
+// 10 matches still never face a counter at all (mkBot)
+function fairField(mp){
+ if(matchG==='boss'||mp<10)return;
+ const foes=units.filter(u=>u!==me&&u.team!==me.team&&!u.hum&&!u.boss&&!u.gh);if(foes.length<2)return;
+ const beats=COUNTER[me.cls],beaten=beatenBy(me.cls);
+ if(isSolo(matchG)){
+  const deal=[];for(let i=0;i<foes.length;i++)deal.push([beats,beaten,me.cls][i%3]);
+  deal.sort(()=>Math.random()-0.5);foes.forEach((u,i)=>{if(u.cls!==deal[i])rebuildBot(u,deal[i]);});
+  return;
+ }
+ if(foes.every(u=>COUNTER[u.cls]===me.cls)){const u=foes[(Math.random()*foes.length)|0];rebuildBot(u,Math.random()<0.5?beats:me.cls);}
 }
 function newMatch(){prepareMatch();startMatch();}   // tests and quick restarts
 // switch chassis on the VS screen or between rounds (counter-pick): the best owned version of that class

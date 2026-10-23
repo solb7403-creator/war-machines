@@ -82,6 +82,11 @@ function drawTank(b,col){
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
   g.fillStyle=b.team!==0?'#ff4d5e':b===me?'#5fe3a1':'#4d9fff';g.fillRect(bx,by,bw*hf,hh);
   g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffcf4a';g.fillRect(bx,by+hh+1,bw*f,sh);
+  // the counter triangle, read from your side: a green ▲ by the bar of a tank you counter, a red ▼ on one that counters you
+  if(me&&b!==me&&b.team!==me.team&&!b.boss&&!me.boss&&me.hp>0){const up=COUNTER[me.cls]===b.cls,dn=COUNTER[b.cls]===me.cls;
+   if(up||dn){const s=Math.max(5,(hh+sh)*0.95),cx=bx-s-4,cy=by+(hh+sh+1)/2;g.beginPath();
+    if(up){g.moveTo(cx,cy-s*0.8);g.lineTo(cx+s,cy+s*0.6);g.lineTo(cx-s,cy+s*0.6);}else{g.moveTo(cx,cy+s*0.8);g.lineTo(cx+s,cy-s*0.6);g.lineTo(cx-s,cy-s*0.6);}
+    g.closePath();g.fillStyle=up?'#5fe3a1':'#ff6b5e';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(0,0,0,.7)';g.stroke();}}
   // what this tank is worth: crystals carried (Crystal Rush) or its bounty (Bounty)
   const n=cry&&b.cry>0?b.cry:matchG==='bounty'&&b.bty?b.bty:0;
   if(n){const isC=!!cry,fs=Math.max(10,Math.round(sc*0.56)),ty=by-fs*0.75;g.font=font(fs);g.textBaseline='middle';
