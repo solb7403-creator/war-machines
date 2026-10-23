@@ -1,0 +1,28 @@
+name: Server health (read-only)
+# Run by hand: request counts by outcome for the last 24 hours (ok, errors, over the CPU limit), per hour, from
+# Cloudflare's analytics. Reads only; changes nothing.
+on: workflow_dispatch
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Worker outcomes, last 24 h
+        env:
+          CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts | python3 -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
+          SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ); NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          Q='{"query":"query($a:String!,$s:Time!,$e:Time!){viewer{accounts(filter:{accountTag:$a}){workersInvocationsAdaptive(limit:500,filter:{datetime_geq:$s,datetime_leq:$e,scriptName:\"lunar-api\"}){sum{requests errors subrequests}quantiles{cpuTimeP50 cpuTimeP99}dimensions{status datetimeHour}}}}}","variables":{"a":"'$ACC'","s":"'$SINCE'","e":"'$NOW'"}}'
+          curl -s -H "Authorization: Bearer $CF" -H "Content-Type: application/json" -d "$Q" https://api.cloudflare.com/client/v4/graphql > out.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('out.json'))
+          if d.get('errors'): print('ERRORS',json.dumps(d['errors'])[:800])
+          rows=(((d.get('data') or {}).get('viewer') or {}).get('accounts') or [{}])[0].get('workersInvocationsAdaptive') or []
+          tot={}
+          for r in rows:
+            s=r['dimensions']['status'];tot[s]=tot.get(s,0)+r['sum']['requests']
+          print('TOTAL by outcome:',json.dumps(tot))
+          for r in sorted(rows,key=lambda r:r['dimensions']['datetimeHour']):
+            print(r['dimensions']['datetimeHour'],r['dimensions']['status'],r['sum']['requests'],'cpu p50/p99 us',r['quantiles']['cpuTimeP50'],r['quantiles']['cpuTimeP99'])
+          PY
