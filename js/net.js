@@ -28,7 +28,7 @@ async function doSync(boot){
  captureRef();
  if(SRV_ECO)await flushMatches();   // results waiting for the server go first, so its record includes them
  const ack=starsAckQ.splice(0);
- const body={boot:!!boot,L:myLoadout(),refBy:save.refBy||'',starsAck:ack},ghAck=save.ghAck||0;
+ const body={boot:!!boot,L:myLoadout(),refBy:save.refBy||'',starsAck:ack,did:deviceId(),dh:deviceHash()},ghAck=save.ghAck||0;
  if(ghAck)body.ghAck=ghAck;   // the ghost report we showed: the server can clear it
  // one time, the first time this pilot meets the server that owns the economy: this device's progress moves over
  // (the server checks it against payments and points on record, and flags what it can't explain)
@@ -70,7 +70,8 @@ function loadLB(force){
  const now=Date.now();
  if(lbBusy||(!force&&lbCache&&now-lbCacheT<60000))return;
  lbBusy=true;
- fetch(DB_PUBLIC+'/lb.json?t='+Math.floor(now/30000)).then(r=>r.json()).then(lb=>{
+ // through the server's edge cache; straight from the database if that fails
+ fetch(API+'/lb.json?t='+Math.floor(now/30000)).then(r=>{if(!r.ok)throw new Error('lb');return r.json();}).catch(()=>fetch(DB_PUBLIC+'/lb.json?t='+Math.floor(now/30000)).then(r=>r.json())).then(lb=>{
   lbBusy=false;lbCacheT=Date.now();
   if(!lb||!lb.top){lbCache=[];lbMeta={n:0,cut:0,t:0};if(typeof uiDirty==='function')uiDirty('ranks');return;}
   const m={};

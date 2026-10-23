@@ -12,7 +12,7 @@
       "$w": { ".indexOn": ["s"] }
     },
     "ntf": {
-      ".indexOn": ["last"]
+      ".indexOn": ["last", "nx"]
     },
     "gh": {
       ".indexOn": ["pw"]

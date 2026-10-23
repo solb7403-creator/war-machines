@@ -3,6 +3,7 @@
 // the one-time move of existing pilots, anomaly and alt flags, the leaderboard, admin, reminders and bot commands.
 import { createHmac } from 'node:crypto';
 import { makeDB } from './fakedb.mjs';
+import { fakeRec } from './fakerec.mjs';
 import { buildSim } from '../../../worker/build-sim.mjs';
 buildSim();
 const db = makeDB();
@@ -60,8 +61,18 @@ t(both.filter(([, x]) => x.out && x.out.pts > 0).length === 1 && E('tg_111').ear
 
 // ---- AI matches: ticket, scoring, replay, too fast, expired, hourly cap, stats limits ----
 const L0 = { w: { a: 'twin', t: 2, q: 1.1 }, c: { c: 'titan', t: 2, q: 1.1 }, up: { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 }, gl: { dmg: 5 }, skin: 'lunar' };
-const start = async (u, o, now) => (await eco.matchStart(env, Object.assign({ g: 'arena', m: '2v2', map: 'classic', L: L0 }, o || {}), u, 'tg_' + u.id, now)).body;
-const end = async (u, tok, res, now) => (await eco.matchEnd(env, { tok, r: res }, u, 'tg_' + u.id, now)).body;
+const start = async (u, o, now) => (await eco.matchStart(env, Object.assign({ g: 'arena', m: '2v2', map: 'classic', L: L0, pv: 1 }, o || {}), u, 'tg_' + u.id, now)).body;
+// a result goes with a match record (proof of play). Unless the test brings its own, a believable one for this ticket:
+// the fight lasts as long as the clock allows, with up to 3,000 damage (what the phone reports above that is a lie)
+const recFor = (pid, res, now, extra) => {
+  const T = (E(pid) || {}).mt; if (!T) return null;
+  const wall = Math.max(4, ((now || Date.now()) - T.t0) / 1000), st = res.stats || {};
+  return fakeRec(Object.assign({ g: T.g, m: T.m, won: !!res.won || (T.g === 'royale' && res.place === 1), drawn: !!res.drawn, place: res.place || 0, dur: Math.max(4, Math.min(wall - 1, 178)), dmg: Math.min(Number(st.dmg) || 0, 3000) }, extra || {}));
+};
+const end = async (u, tok, res, now) => {
+  if (res && res.pf === undefined && !res.quit) res = Object.assign({}, res, { pf: recFor('tg_' + u.id, res, now) });
+  return (await eco.matchEnd(env, { tok, r: res }, u, 'tg_' + u.id, now)).body;
+};
 const now0 = Date.now();
 let st = await start(A, {}, now0);
 t(st.ok && /^[0-9a-f]{16}\.[0-9a-f]{24}$/.test(st.tok) && st.league === 'ROOKIE' && st.mult === 1, 'ticket issued; league from server-owned gear (forged epic loadout = Rookie) ' + JSON.stringify(st).slice(0, 120));
@@ -70,10 +81,13 @@ t(!en.ok && en.error === 'fast' && E('tg_111').earned === 300, 'win reported aft
 en = await end(A, st.tok, { won: true }, now0 + 60000); t(!en.ok && en.error === 'fast' && E('tg_111').earned === 300, 'ticket used once: sending it again gets the same answer');
 st = await start(A, {}, now0 + 1000);
 const e1 = E('tg_111').earned;
-en = await end(A, st.tok, { won: true, pts: 99999, awarded: 99999, stats: { dmg: 1e9, kills: 99, box: 3, sup: 4, low: 0.5 } }, now0 + 61000);
+en = await end(A, st.tok, { won: true, stats: { dmg: 1e9, kills: 99 } }, now0 + 61000);
+t(!en.ok && en.error === 'proof' && E('tg_111').earned === e1, 'forged damage the match record doesn\'t show: not scored ' + JSON.stringify(en));
+st = await start(A, {}, now0 + 1000);
+en = await end(A, st.tok, { won: true, pts: 99999, awarded: 99999, stats: { dmg: 2500, kills: 99, box: 3, sup: 4, low: 0.5 } }, now0 + 61000);
 const want2 = Math.round(R.MODES['2v2'].win * R.teamX('arena', '2v2', false)) + R.streakPts('arena', '2v2', 1);
 t(en.ok && en.res.pts === want2 && en.res.awarded === want2 && E('tg_111').earned === e1 + want2, 'server computes the points (2v2 win + streak); the phone\'s number is ignored ' + JSON.stringify(en.res));
-t(E('tg_111').q.q_dmg && E('tg_111').q.q_dmg.p <= 60 * 450 && E('tg_111').wins === 1 && E('tg_111').mp === 1, 'forged damage held to what fits in the time ' + JSON.stringify(E('tg_111').q.q_dmg));
+t(E('tg_111').q.q_dmg && E('tg_111').q.q_dmg.p === 2500 && E('tg_111').wins === 1 && E('tg_111').mp === 1, 'damage from the record ' + JSON.stringify(E('tg_111').q.q_dmg));
 const again = await end(A, st.tok, { won: true }, now0 + 62000);
 t(again.ok && again.dup && again.res.awarded === want2 && E('tg_111').earned === e1 + want2, 'replaying a ticket returns the same answer, no double credit');
 st = await start(A, {}, now0 + 70000); const old = st.tok;
@@ -274,7 +288,7 @@ lb = await mod.buildLeaderboard(env); t(lb.top.some((x) => x[0] === 'tg_444'), '
 await hook({ message: { from: { id: 222 }, chat: { id: 222, type: 'private' }, text: '/start' } });
 t(db.get('/ntf/tg_222/on') === 1, 'start registers ntf');
 const d0 = new Date(); d0.setUTCHours(16, 1, 0, 0);
-db.root.players.tg_222.ld = Math.floor(d0.getTime() / 86400000) - 1; db.root.players.tg_222.sk = 3;
+db.root.ntf.tg_222.pl = Math.floor(d0.getTime() / 86400000) - 1; db.root.ntf.tg_222.sk = 3;   // last played and streak sit next to the reminder settings (mirrored on every save)
 const n1 = await mod.sendReminders(env, d0.getTime());
 const n2 = await mod.sendReminders(env, d0.getTime() + 300000);
 t(n1 === 1 && n2 === 0, 'reminders once ' + n1 + ' ' + n2);

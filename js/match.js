@@ -67,7 +67,7 @@ function roundBanner(){
 let mTicket=null;
 function matchStart(){
  mTicket=null;if(!SRV_ECO)return;
- const T={tok:null,g:matchG,m:modeKey()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout()};
+ const T={tok:null,g:matchG,m:modeKey()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout(),pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
  T.p=flushMatches().then(()=>api('/api/match/start',body)).then(r=>{if(r&&r.tok)T.tok=r.tok;if(r&&Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}).catch(()=>null);
  mTicket=T;
 }
@@ -95,7 +95,7 @@ function flushMatches(){
  })();
  return mqBusy;
 }
-const MATCH_WHY={fast:'the match ended too fast',expired:'the match ticket expired',ticket:'the match ticket was already used',hourly:'too many matches this hour',offline:'no connection at the start'};
+const MATCH_WHY={proof:'the match couldn’t be verified',update:'update the game to keep scoring',fast:'the match ended too fast',expired:'the match ticket expired',ticket:'the match ticket was already used',hourly:'too many matches this hour',offline:'no connection at the start'};
 function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
  const L=lastResult;if(!L||L.tok!==tok)return;
  if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
@@ -126,7 +126,7 @@ function localEnd(forced){
  afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
  const st=mstat||{};
  const gh=units.filter(u=>u.gh&&u.gid!==undefined).map(u=>{const g=outcome(u,forced),s=u.st||{};return {i:u.gid,won:g.won?1:0,drawn:g.drawn?1:0,dmg:Math.round(s.dmg||0),kills:s.kills||0};});
- matchEnd({won,drawn,place,gh,seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
+ matchEnd({won,drawn,place,gh,pf:proofData(),seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
  if(!SRV_ECO&&typeof syncPlayer==='function')syncPlayer();
 }
 // everything after the points: wins and losses, pass XP, quests, the results screen. Shared with live matches

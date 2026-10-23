@@ -287,10 +287,11 @@ export class RoomCore {
     const mt = quit ? { quit: true } : { won, drawn, top3, feat, quick: !!s.quick, g, m, map: this.sim.map, seriesW: res.series && res.series.w,
       secs: this.startedAt ? (this.io.now() - this.startedAt) / 1000 : 0,
       st: { dmg: res.stats.dmg, sup: res.stats.sups, box: res.stats.boxes, kills: res.stats.kills, caps: res.stats.caps, cry: res.stats.cry, stars: res.stats.stars, low: res.stats.low, taken: res.stats.taken, arm: res.stats.arm, shd: res.stats.shd, best: res.stats.best } };
+    const opp = this.humans().filter((x) => x !== s && x.pid && this.sim.units[x.idx] && (g === "royale" || this.sim.units[x.idx].team !== u.team)).map((x) => x.pid);   // live opponents (win-trading check)
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
       const sb = won ? R.streakPts(g, m, pvs) : 0;
-      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt };
+      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt, opp };
     };
     const p = Promise.resolve().then(() => this.io.credit(s, calc))
       .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb }))

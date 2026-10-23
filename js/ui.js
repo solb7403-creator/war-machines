@@ -616,6 +616,11 @@ function openAdmin(){
     (A.flagged.length?'<div class="list">'+A.flagged.map(f=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+esc(f.n)+'</b> <span class="dimtxt">'+esc(f.id)+'</span><div class="dimtxt">'+f.why.map(esc).join('<br>')+'</div></div><button class="btn sm btn-quiet" data-act="flagclear" data-arg="'+esc(f.id)+'">Clear</button></div>').join('')+'</div>':'<p class="mut">Nobody flagged.</p>')+
     '<p class="dimtxt" style="margin-top:6px">Flagged pilots sit out the leaderboard and the airdrop snapshot until you clear them.</p>'+
     '<button class="btn sm btn-quiet block" style="margin-top:8px" data-act="snapshot">Copy the airdrop snapshot (top 1,000)</button>':'')+
+   (A.clusters?'<h3 style="margin-top:16px;font-size:16px">Linked accounts ('+A.clusters.filter(c=>!c.ok).length+')</h3>'+
+    '<p class="dimtxt" style="margin-top:4px">Accounts that look like one person: the same phone, the same paying wallet, the same controls move for move, starting together on one network, or trading live wins. Only the one with the most points counts for the airdrop until you clear the group.</p>'+
+    (A.clusters.length?'<div class="list">'+A.clusters.map(c=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+c.m.length+' accounts</b> <span class="dimtxt">'+esc(c.why.join(', '))+(c.ok?', cleared':'')+'</span><div class="dimtxt">'+c.m.map(x=>esc(x[1])+' ('+fmtNum(x[2])+')'+(x[0]===c.keep&&!c.ok?' counts':'')).join(', ')+'</div></div>'+(c.ok?'':'<button class="btn sm btn-quiet" data-act="clclear" data-arg="'+esc(c.sig)+'">Clear</button>')+'</div>').join('')+'</div>':'<p class="dimtxt" style="margin-top:6px">None found.</p>'):'')+
+   (A.proof?'<h3 style="margin-top:16px;font-size:16px">Match records</h3><p class="dimtxt" style="margin-top:4px">AI results come with a record of the match. Enforce: a result the record doesn\'t back up scores nothing. Flag only: it scores, and the pilot is still flagged after 3 a day. Use Flag only if real players ever get stopped.</p>'+
+    '<div class="seg" style="grid-template-columns:1fr 1fr;margin-top:8px">'+[['enforce','Enforce'],['flag','Flag only']].map(([k,l])=>'<button class="'+(A.proof===k?'on':'')+'" data-act="adminproof" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':'')+
    '<p class="mut" style="margin-top:8px">This device: power '+pw+', '+fmtNum(save.earned)+' lifetime points, '+(save.mp||0)+' matches</p>'+
    (SRV_ECO?'':'<h3 style="margin-top:16px;font-size:16px">Test grants (this device only)</h3>'+
    '<div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn sm btn-quiet" data-act="dev" data-arg="pts">+50K points</button><button class="btn sm btn-quiet" data-act="dev" data-arg="epic">All epic gear</button><button class="btn sm btn-quiet" data-act="dev" data-arg="moon">Moonbeam</button><button class="btn sm btn-quiet" data-act="dev" data-arg="skin">Lunar skin</button><button class="btn sm btn-quiet" data-act="dev" data-arg="passxp">+2,000 pass XP</button><button class="btn sm btn-quiet" data-act="dev" data-arg="pass">Premium pass</button></div>');
@@ -774,6 +779,7 @@ function onRoundStart(){clearInterval(roundTimer);roundTimer=null;const ov=findO
 let leaveFn=null,paused=false;
 function onMatchStart(){
  closeAll();
+ if(typeof proofBegin==='function')proofBegin();   // AI matches keep a record for the server (proof.js)
  if(typeof resetTapFocus==='function')resetTapFocus();
  document.body.classList.add('battle');fit();
  tut=(save.mp||0)===0?{step:0,t:0,moved:0}:null;
@@ -935,7 +941,9 @@ const ACT={
   if(a==='pass'){passState().prem=true;}
   store();showToast('Granted on this device (test)');},
  flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
- snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days\n'+rows.join('\n');
+ clclear:a=>{loadAdmin({clearCl:a});showToast('Cleared: every account in that group counts again');},
+ adminproof:a=>{loadAdmin({proof:a});showToast(a==='flag'?'Match records: flag only':'Match records: enforced');},
+ snapshot:()=>{api('/api/admin',{snap:1}).then(r=>{const rows=(r.snapshot||[]).map((x,i)=>[i+1].concat(x).join(','));const txt='rank,player,name,points,days,airdrop credit\n'+rows.join('\n');
   try{navigator.clipboard.writeText(txt).then(()=>showToast('Snapshot copied: '+rows.length+' pilots'),()=>showToast(rows.length+' pilots (copy failed)'));}catch(e){showToast(rows.length+' pilots');}}).catch(()=>showToast('Snapshot unavailable'));},
  leavecancel:()=>{const ov=findOv('leave');if(ov)closeOverlay(ov);},
  leaveok:()=>forfeit(),

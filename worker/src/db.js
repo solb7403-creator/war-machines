@@ -22,12 +22,14 @@ export async function dbGet(env, path, q) {
   if (!r.ok) throw new Error("db get " + path + " " + r.status);
   return r.json();
 }
+// writes ask for no reply body (print=silent): otherwise every write downloads a copy of what it just wrote
+export const SILENT = { print: "silent" };
 export async function dbPut(env, path, value) {
-  const r = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
+  const r = await fetch(dbUrl(env, path, SILENT), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
   return r.ok;
 }
 export async function dbPatch(env, path, value) {
-  const r = await fetch(dbUrl(env, path), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
+  const r = await fetch(dbUrl(env, path, SILENT), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
   return r.ok;
 }
 export async function dbDel(env, path) {

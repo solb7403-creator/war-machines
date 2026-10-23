@@ -2,8 +2,9 @@
 // The phone says what happened (a match ticket and its result, a claim, a crate to open); the server runs the shared
 // rules (js/rules.js, bundled as RULES) on its own copy and sends its record back. Points are never taken from the phone.
 // Writes are conditional (Firebase ETags): read, change, write only if nobody else wrote in between, else retry.
-import { RULES as R, createSim } from "./sim.gen.js";
-import { dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName } from "./db.js";
+import { RULES as R, LIM } from "./sim.gen.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName, SILENT } from "./db.js";
+import { checkProof } from "./proof.js";
 
 export const ECO = {
   TICKET_MS: 30 * 60000,   // a match ticket is good this long (the longest match is a 5-round best of 3)
@@ -22,9 +23,47 @@ export const ECO = {
   // anomaly flags (outside human ranges): flagged pilots sit out the snapshot (and the public top 1,000) until Jake clears them.
   // PPM: a Legend winning featured Last Standing on a 5-win streak makes ~2,350 a match, ~1,560 a minute at 90 s a match
   WINRATE: 0.9, WINRATE_N: 50, HOURS: 20, MATCHES_DAY: 200, PPM: 1600, PPM_SECS: 1800, FAST: 5, REFUNDS: 2,
+  // farm defense (bot-pattern flags). Every one only flags: the pilot sits out the airdrop list until Jake clears them
+  PROOF_FAILS: 3,          // AI results that fail the proof-of-play check, in one UTC day
+  NOINPUT: 3,              // matches in a day where the tank drove itself (moved with nobody on the controls)
+  NOINPUT_SHARE: 0.6,      // ... share of moving moments with no input for a match to count
+  REPEAT: 3,               // matches with the exact same controls, start to finish
+  GAPS_N: 25, GAP_CV: 0.06, GAP_MAX: 120, MENU_MIN: 1.5,   // time between matches: never changes / always under 1.5 s
+  LEN_N: 25, LEN_CV: 0.03, // match lengths that never change
+  CLOCK_DAYS: 6, CLOCK_SPREAD: 5, CLOCK_MATCHES: 8, CLOCK_SPAN: 120,   // the same start and stop minute 6 days out of 7, 2+ hours a day
+  TRADE: 8,                // live matches against the same pilot in one day (win trading between your own accounts)
+  SESSION_GAP: 15 * 60000, // a break this long starts a new session
+  // airdrop credit: brand-new Telegram accounts (not Premium) earn it at half rate on their first active day, rising to
+  // full over AC_DAYS active days. Points and the leaderboard don't change. Telegram hands out ids in rising order, so
+  // "brand new" = among the newest NEW_SHARE of the id range seen so far (the newest id any pilot has, tracked in cfg/maxid)
+  NEW_SHARE: 0.03, AC_DAYS: 7,
+  RL_MIN: 90,              // actions per pilot per minute (sync, claims, match tickets and results)
 };
-let MAPS = null;
-const mapList = () => MAPS || (MAPS = createSim({ ev() {}, end() {}, round() {}, death() {} }).R.MAP_REAL);
+// a pilot's account age, from Telegram: new ids and no Premium
+let NEWID = Infinity;   // from cfg/maxid (cfg() below); off until real Telegram ids have been seen
+export const isNewTg = (user) => !!user && Number(user.id) >= NEWID && !user.is_premium;
+const acW = (S) => (S.nw ? Math.min(1, 0.5 + (0.5 * Math.max(0, (S.days || 1) - 1)) / ECO.AC_DAYS) : 1);
+// airdrop credit (ac) follows lifetime points, weighted for new accounts
+function credit(S, e0) { if (typeof S.ac !== "number") S.ac = e0; const de = (S.earned || 0) - e0; if (de > 0) S.ac = Math.round(S.ac + de * acW(S)); S.ac = Math.min(S.ac, S.earned || 0); }
+export function who(S, user) { S.nm = cleanName(user); S.nw = isNewTg(user) ? 1 : 0; }
+// settings Jake changes from the admin sheet (proof of play: "enforce" or "flag"), read at most once a minute
+let CFG = null, CFG_T = 0;
+export async function cfg(env, now = Date.now()) {
+  if (CFG && now - CFG_T < 60000) return CFG;
+  CFG = (await dbGet(env, "cfg").catch(() => null)) || {}; CFG_T = now;
+  const mx = Number(CFG.maxid) || 0;
+  NEWID = mx >= 1e9 ? Math.floor(mx * (1 - ECO.NEW_SHARE)) : Infinity;
+  return CFG;
+}
+export const resetCfg = () => { CFG = null; };
+export const ipHash = async (env, ip) => (ip ? hex(await hmac(env.BOT_TOKEN, "ip|" + ip)).slice(0, 16) : "");
+// two pilots linked as one person's accounts (shown as a cluster in the admin sheet; only one of them counts for the airdrop)
+export async function link(env, a, b, why) {
+  if (!a || !b || a === b || !/^tg_\d{3,15}$/.test(a) || !/^tg_\d{3,15}$/.test(b)) return;
+  await dbPatch(env, "", { [`lk/${a}/${b}`]: why, [`lk/${b}/${a}`]: why });
+}
+
+const mapList = () => LIM.MAP_REAL;   // no sim built just to list the maps
 export const ctxOf = (pid, now) => ({ day: dayOf(now), week: weekOf(now), rnd: Math.random, pk: pid });
 const safeKey = (s) => String(s).replace(/[.#$\[\]\/|]/g, "_").slice(0, 100);
 
@@ -35,7 +74,7 @@ async function readTag(env, path) {
   return { v: await r.json(), tag: r.headers.get("ETag") || "" };
 }
 async function writeIf(env, path, value, tag) {
-  const r = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": tag }, body: JSON.stringify(value) });
+  const r = await fetch(dbUrl(env, path, SILENT), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": tag }, body: JSON.stringify(value) });
   if (r.status === 412) return false;
   if (!r.ok) throw new Error("db put " + path + " " + r.status);
   return true;
@@ -77,16 +116,24 @@ export async function readEco(env, pid) {
 }
 // run fn(S, X) on the pilot's record and save it, all or nothing. fn may run more than once (if another write lands
 // first), so it must only change S. Return {abort: true} to save nothing.
-export async function tx(env, pid, fn, now = Date.now()) {
+export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
+  await cfg(env, now);   // settings, cached a minute (the new-account line, proof-of-play mode)
   for (let i = 0; i < 8; i++) {
     const { v, tag } = await readTag(env, `eco/${pid}`);
     const S = v ? R.ecoNorm(v) : await freshEco(env, pid);
     const isNew = !!S._new; delete S._new;
     const X = ctxOf(pid, now);
     R.ecoRoll(S, X);
-    const before = { d: S.dailyPts, w: S.weeklyPts };
+    if (opt.rl) {   // actions per pilot per minute
+      const mn = Math.floor(now / 60000);
+      S.rq = S.rq && S.rq.m === mn ? S.rq : { m: mn, n: 0 };
+      if (S.rq.n >= ECO.RL_MIN) return { abort: true, rate: true, S, X };
+      S.rq.n++;
+    }
+    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0 };
     const out = (await fn(S, X)) || {};
     if (out.abort) return { ...out, S, X };
+    credit(S, before.e);
     S.rev = (S.rev || 0) + 1; S.t = now;
     if (await writeIf(env, `eco/${pid}`, S, tag)) {
       await mirror(env, pid, S, isNew, before, now).catch(() => {});
@@ -99,11 +146,15 @@ export async function tx(env, pid, fn, now = Date.now()) {
 async function mirror(env, pid, S, isNew, before, now) {
   const P = `players/${pid}`, up = {};
   const f = { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
-    wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs };
+    wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac };
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
   if (S.dailyPts !== before.d || isNew) up[`dly/${S.dailyDay}/${pid}`] = { s: S.dailyPts, n: S.nm || "Pilot" };
   if (S.weeklyPts !== before.w || isNew) up[`wly/${S.weeklyNum}/${pid}`] = { s: S.weeklyPts, n: S.nm || "Pilot" };
   if (isNew) up["meta/n"] = { ".sv": { increment: 1 } };
+  const idn = Number(String(pid).slice(3));
+  if (isNew && idn > (Number((CFG || {}).maxid) || 0)) { up["cfg/maxid"] = idn; if (CFG) CFG.maxid = idn; if (idn >= 1e9) NEWID = Math.floor(idn * (1 - ECO.NEW_SHARE)); }   // the newest Telegram id seen so far
+  // for the daily reminder: the day you last played and your streak, next to your reminder settings (one read finds who's due)
+  if (S.ld !== undefined && S.ld !== null) { up[`ntf/${pid}/pl`] = S.ld; up[`ntf/${pid}/sk`] = S.sk || 0; }
   // the ghost pool: your tank as it is now (server-owned loadout), and when you last played
   if (S.L && (S.mp || 0) >= ECO.GHOST_MP) up[`gh/${pid}`] = { n: S.nm || "Pilot", L: S.L, pw: S.pw || 0, t: now };
   await dbPatch(env, "", up);
@@ -120,7 +171,10 @@ export const ghostSeats = (g, m) => {
 export async function pickGhosts(env, pid, pw, k, now = Date.now(), skip = []) {
   if (!(k > 0)) return [];
   const lo = Math.floor(pw * (1 - ECO.GHOST_BAND)), hi = Math.ceil(pw * (1 + ECO.GHOST_BAND));
-  const rows = (await dbGet(env, "gh", { orderBy: '"pw"', startAt: lo, endAt: hi, limitToFirst: 60 }).catch(() => null)) || {};
+  // a few rows from a random point in your power band (the band can hold thousands of pilots; a match needs two)
+  const at = lo + Math.floor(Math.random() * Math.max(1, hi - lo) * 0.8);
+  let rows = (await dbGet(env, "gh", { orderBy: '"pw"', startAt: at, endAt: hi, limitToFirst: 10 }).catch(() => null)) || {};
+  if (Object.keys(rows).length < 10) rows = Object.assign((await dbGet(env, "gh", { orderBy: '"pw"', startAt: lo, endAt: hi, limitToFirst: 10 }).catch(() => null)) || {}, rows);
   const pool = Object.entries(rows).filter(([id, g]) => id !== pid && !skip.includes(id) && g && g.L && now - (g.t || 0) > ECO.GHOST_IDLE);
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool.slice(0, k).map(([id, g]) => ({ id, n: String(g.n || "Pilot").slice(0, 24), L: g.L }));
@@ -148,17 +202,18 @@ export const flagReasons = (f) => (f && f.r ? Object.keys(f.r).filter((k) => !(f
 export const isFlagged = (f) => flagReasons(f).length > 0;
 export async function addFlags(env, pid, name, list, now = Date.now()) {
   if (!list || !list.length) return;
-  const up = { [`flags/${pid}/n`]: name || "Pilot" };
+  const up = { [`flags/${pid}/n`]: name || "Pilot", [`fh/${pid}`]: 1 };   // fh: the small index of who's held right now (squad payouts read it)
   for (const [k, v] of list) up[`flags/${pid}/r/${safeKey(k)}`] = { t: now, v: v === undefined ? 1 : v };
   await dbPatch(env, "", up);
 }
 // flags raised inside a transaction: each reason once per pilot (clearing it stops it coming back)
 function raise(S, list, k, v) { S.fl = S.fl || {}; if (S.fl[k]) return; S.fl[k] = 1; list.push([k, v]); }
 const bits = (n) => { let c = 0; while (n) { c += n & 1; n >>>= 1; } return c; };
-// per-pilot play stats for the anomaly flags: m = {ai, won, secs, pts, fast}
+// per-pilot play stats for the anomaly flags: m = {ai, won, secs, pts, fast, pf (failed proof), ni (drove itself)}
 function watch(S, m, X, now) {
-  const A = S.an && S.an.d === X.day ? S.an : { ...(S.an || {}), d: X.day, m: 0, h: 0 };
-  if (m.fast) A.fast = (A.fast || 0) + 1;
+  const A = S.an && S.an.d === X.day ? S.an : { ...(S.an || {}), d: X.day, m: 0, h: 0, pf: 0, ni: 0 };
+  if (m.pf) A.pf = (A.pf || 0) + 1;
+  else if (m.fast) A.fast = (A.fast || 0) + 1;
   else {
     A.m++; A.h |= 1 << new Date(now).getUTCHours();
     if (m.ai) { A.ai = (A.ai || 0) + 1; if (m.won) A.aw = (A.aw || 0) + 1; }
@@ -171,27 +226,74 @@ function watch(S, m, X, now) {
   if (A.m > ECO.MATCHES_DAY) raise(S, out, "matches", A.m + " matches in one day");
   if ((A.s || 0) >= ECO.PPM_SECS && A.p / (A.s / 60) > ECO.PPM) raise(S, out, "ppm", Math.round(A.p / (A.s / 60)) + " points a minute");
   if ((A.fast || 0) >= ECO.FAST) raise(S, out, "fast", A.fast + " results faster than possible");
+  if (m.ni) A.ni = (A.ni || 0) + 1;
+  if ((A.pf || 0) >= ECO.PROOF_FAILS) raise(S, out, "proof", A.pf + " AI results failed the match-record check today (" + (m.why || S.pfw || "") + ")");
+  if ((A.ni || 0) >= ECO.NOINPUT) raise(S, out, "noinput", A.ni + " matches today where the tank drove with nobody on the controls");
+  return out;
+}
+// bot patterns across matches (S.bp): the same controls, steady gaps, no time in menus, steady lengths, a clockwork day
+const cvOf = (a) => { const n = a.length, m = a.reduce((x, y) => x + y, 0) / n, v = a.reduce((x, y) => x + (y - m) * (y - m), 0) / n; return { m, cv: m > 0 ? Math.sqrt(v) / m : 0 }; };
+const median = (a) => { const b = a.slice().sort((x, y) => x - y); return b[b.length >> 1]; };
+export function bpFlags(S) {
+  const bp = S.bp || {}, out = [];
+  const ih = bp.ih || [], cnt = {};
+  for (const x of ih) cnt[x] = (cnt[x] || 0) + 1;
+  const top = Math.max(0, ...Object.values(cnt));
+  if (top >= ECO.REPEAT) raise(S, out, "repeat", "the exact same controls in " + top + " matches");
+  const g = bp.g || [];
+  if (g.length >= ECO.GAPS_N) {
+    const { m, cv } = cvOf(g);
+    if (cv < ECO.GAP_CV && m < ECO.GAP_MAX) raise(S, out, "steady", "the next match starts " + m.toFixed(1) + " s after the last, every time (" + g.length + " in a row)");
+    if (median(g) < ECO.MENU_MIN) raise(S, out, "nomenu", "starts the next match " + median(g).toFixed(1) + " s after a result, typically (" + g.length + " matches)");
+  }
+  const by = {};
+  for (const [k, v] of bp.l || []) (by[k] = by[k] || []).push(v);
+  for (const [k, a] of Object.entries(by)) if (a.length >= ECO.LEN_N && cvOf(a).cv < ECO.LEN_CV) raise(S, out, "steadylen", a.length + " " + k + " matches all lasting about " + Math.round(cvOf(a).m) + " s");
+  const days = Object.entries(bp.dy || {}).map(([d, v]) => [Number(d), v]).sort((a, b) => b[0] - a[0]).slice(0, 7).filter(([, v]) => v[2] >= ECO.CLOCK_MATCHES);
+  if (days.length >= ECO.CLOCK_DAYS && days.every(([, v]) => v[1] - v[0] >= ECO.CLOCK_SPAN)) {
+    const sp = (i) => Math.max(...days.map(([, v]) => v[i])) - Math.min(...days.map(([, v]) => v[i]));
+    if (sp(0) <= ECO.CLOCK_SPREAD && sp(1) <= ECO.CLOCK_SPREAD) raise(S, out, "clockwork", "starts and stops at the same minute " + days.length + " days in a row");
+  }
   return out;
 }
 
 // ================= AI matches: a ticket at the start, the result with it at the end =================
 const sign = async (env, s) => hex(await hmac(env.BOT_TOKEN, "match|" + s)).slice(0, 24);
-export async function matchStart(env, b, user, pid, now = Date.now()) {
+export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   const g = String(b.g || ""), m = String(b.m || ""), map = String(b.map || "");
   if (!R.GT_ORDER.includes(g)) return { status: 400, body: { error: "mode" } };
   if (g !== "royale" && !R.MODES[m]) return { status: 400, body: { error: "mode" } };
   if (!mapList().includes(map)) return { status: 400, body: { error: "map" } };
+  // a phone that doesn't send match records is out of date: it reloads to the new version (index.html checks on open)
+  if (!b.pv) return { status: 200, body: { ok: false, error: "update" } };
+  let sess = false;
   const n = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
   const pw0 = await dbGet(env, `players/${pid}/power`).catch(() => null);
   const ghosts = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
   const t = await tx(env, pid, (S, X) => {
-    S.nm = cleanName(user);
+    who(S, user);
     const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw);
     // one open ticket per pilot: a new one replaces the last (that match can't be scored any more)
-    S.mt = { n, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick,
+    S.mt = { n, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
       series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
+    // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
+    const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
+    if (gap < 600) bp.g = (bp.g || []).concat(Math.round(gap * 10) / 10).slice(-30);
+    sess = !bp.ls || now - bp.ls > ECO.SESSION_GAP;
+    bp.ls = now;
+    const dm = Math.floor((now % DAY_MS) / 60000), dy = (bp.dy = bp.dy || {});
+    if (!dy[X.day]) dy[X.day] = [dm, dm, 0];
+    dy[X.day][2]++;
+    for (const k of Object.keys(dy)) if (Number(k) < X.day - 9) delete dy[k];
     return { lg: brk.key, mult: brk.mult, power: S.pw, L };
-  }, now);
+  }, now, { rl: 1 });
+  if (t.rate) return { status: 429, body: { error: "rate" } };
+  // a new session: who started playing this minute, on which network and device (accounts that always start together)
+  if (sess) {
+    const d = dayOf(now), mn = String(Math.floor((now % DAY_MS) / 60000)).padStart(4, "0");
+    const dh = /^[0-9a-f]{1,8}$/.test(String(b.dh || "")) ? b.dh : "", did = /^[0-9a-f]{16}$/.test(String(b.did || "")) ? b.did : "";
+    await dbPatch(env, `ss/${d}/${mn}`, { [pid]: (await ipHash(env, ip)).slice(0, 8) + "." + dh + "." + did.slice(0, 8) }).catch(() => {});
+  }
   // ghosts go to the phone by seat number only (never the owner's id)
   return { status: 200, body: { ok: true, tok: n + "." + (await sign(env, `${pid}|${n}|${now}`)), league: t.lg, mult: t.mult, power: t.power, E: pub(t.S),
     gh: ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
@@ -208,9 +310,10 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
   const [n, sg] = String(b.tok || "").split(".");
   if (!/^[0-9a-f]{16}$/.test(n || "")) return { status: 400, body: { error: "ticket" } };
   const r0 = b.r && typeof b.r === "object" ? b.r : {};
-  let flags = [];
+  const mode = (await cfg(env, now)).proof === "flag" ? "flag" : "enforce";   // Jake can switch it to flag-only from the admin sheet
+  let flags = [], ih = null;
   const t = await tx(env, pid, async (S, X) => {
-    S.nm = cleanName(user);
+    who(S, user);
     S.md = S.md || {};
     if (S.md[n]) return { abort: true, dup: S.md[n] };   // already scored (a retry after a lost reply): the same answer
     const T = S.mt;
@@ -231,6 +334,17 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     if (S.mh.n >= ECO.HOUR_CAP) return { err: "hourly", res: keep({ err: "hourly" }) };
     S.mh.n++;
     const s = r0.stats && typeof r0.stats === "object" ? r0.stats : {}, el = Math.max(1, secs);
+    // proof of play: the match record has to show this fight happened the way the result says
+    let pr = null;
+    if (T.pv) {
+      const me0 = S.L ? R.tankOf(S.L, 1) : null;
+      pr = checkProof(r0.pf, { g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minSecs(T.g, T.m, won, drawn, place), spdM: me0 ? me0.spdM : 1, st: s });
+      if (!pr.ok) {
+        S.pfw = pr.why;
+        flags = watch(S, { pf: true, why: pr.why }, X, now);
+        if (mode !== "flag") return { err: "proof", res: keep({ err: "proof", why: pr.why }) };
+      } else for (const [k, v] of Object.entries(pr.fix)) s[k] = v;   // stats held to what the record shows
+    }
     const kmax = T.g === "arena" ? (T.series ? 5 : R.MODES[T.m].n) : solo ? 5 : Math.ceil(el / 4) + 2;
     const st = { dmg: lim(s.dmg, el * 450), kills: lim(s.kills, kmax), box: lim(s.box, 30), sup: lim(s.sup, Math.ceil(el / 6) + 2), caps: T.g === "zone" ? lim(s.caps, Math.ceil(el / 5)) : 0,
       cry: T.g === "crystal" ? lim(s.cry, Math.ceil(el / 3)) : 0, stars: T.g === "bounty" ? lim(s.stars, Math.ceil(el / 2) + 7) : 0, low: Math.max(0, Math.min(1, Number(s.low) || 0)) };
@@ -244,12 +358,29 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const o = { won, drawn, place, top3, g: T.g, m: T.m, feat: T.feat, series: T.series, quick: T.quick, map: T.map };
     const p = R.ecoMatchPts(S, o, T.mult, X);
     R.ecoAfterMatch(S, { ...o, streak: S.streak, seriesW: sw, st }, X);
-    flags = watch(S, { ai: true, won, secs, pts: p.pts }, X, now);
+    flags = flags.concat(watch(S, { ai: true, won, secs, pts: p.pts, ni: !!(pr && pr.ok && pr.sig.ni > ECO.NOINPUT_SHARE) }, X, now));
+    const bp = (S.bp = S.bp || {});
+    // when this match ended: the ticket plus the fight the record shows and the VS screen (a result that arrives late, on
+    // a weak connection, doesn't look like a pilot who never stops in the menus)
+    bp.le = Math.min(now, T.t0 + ((pr && pr.ok ? pr.sig.simT : secs) + 4) * 1000);
+    bp.l = (bp.l || []).concat([[T.g + " " + T.m, Math.round(secs)]]).slice(-30);
+    if (pr && pr.ok && pr.sig.ih) { bp.ih = (bp.ih || []).concat(pr.sig.ih).slice(-20); ih = pr.sig.ih; }
+    const dy = bp.dy && bp.dy[X.day];
+    if (dy) dy[1] = Math.floor((now % DAY_MS) / 60000);
+    flags = flags.concat(bpFlags(S));
     return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, base: p.base, modeX: p.modeX, featX: p.featX, mult: T.mult }) };
-  }, now);
+  }, now, { rl: 1 });
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now);
   if (t.ghr && t.ghr.length) await ghostReport(env, t.ghr, now).catch(() => {});
+  // the same controls, move for move, on another account: one script playing for both
+  if (ih) {
+    // fingerprints are kept by week (this week and last are checked; older weeks are dropped by the cron)
+    const wk = weekOf(now), [a, b2] = await Promise.all([dbGet(env, `ih/${wk}/${ih}`).catch(() => null), dbGet(env, `ih/${wk - 1}/${ih}`).catch(() => null)]);
+    for (const o of Object.keys(Object.assign({}, b2 || {}, a || {})).slice(0, 10)) if (o !== pid) await link(env, pid, o, "replay").catch(() => {});
+    await dbPatch(env, `ih/${wk}/${ih}`, { [pid]: dayOf(now) }).catch(() => {});
+  }
   const res = t.dup || t.res;
+  if (t.rate) return { status: 429, body: { error: "rate" } };
   if (t.err === "ticket" && !t.dup) return { status: 200, body: { ok: false, error: "ticket", E: pub(t.S) } };
   if (res && res.err) return { status: 200, body: { ok: false, error: res.err, E: pub(t.S) } };
   return { status: 200, body: { ok: true, res, dup: !!t.dup, E: pub(t.S) } };
@@ -259,9 +390,16 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
 // calc(S) gets the record and returns {pts, pvs, sb, won, drawn, m: the match for quests and stats (or m.quit)}
 export async function creditMatch(env, pid, name, calc, now = Date.now()) {
   let flags = [];
+  const trade = [];
   const t = await tx(env, pid, (S, X) => {
     if (name) S.nm = name;
+    trade.length = 0;
     const c = calc(S) || {};
+    // the same opponent over and over in one day: accounts trading wins
+    if (Array.isArray(c.opp) && c.opp.length) {
+      S.op = S.op && S.op.d === X.day ? S.op : { d: X.day, m: {} };
+      for (const o of c.opp.slice(0, 5)) { if (!/^tg_\d{3,15}$/.test(String(o))) continue; S.op.m[o] = (S.op.m[o] || 0) + 1; if (S.op.m[o] === ECO.TRADE) trade.push(o); }
+    }
     const pts = Math.max(0, Math.round(c.pts || 0)), awarded = R.ecoAward(S, pts, X);
     S.pvs = c.pvs || 0; S.pvm = (S.pvm || 0) + 1;
     const k = c.won ? "pvw" : c.drawn ? "pvd" : "pvl"; S[k] = (S[k] || 0) + 1;
@@ -272,6 +410,7 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
     return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
+  for (const o of trade) await link(env, pid, o, "trade").catch(() => {});
   return { pts: t.pts, awarded: t.awarded, capped: t.capped, pvs: t.pvs, sb: t.sb };
 }
 
@@ -443,15 +582,16 @@ export async function act(env, b, user, pid, now = Date.now()) {
     case "respec": F = (S) => R.ecoRespec(S); break;
     case "squad": {
       // recruits flagged for review (a shared device or network, or anything else) don't pay out until Jake clears them
-      const [rows, fl, rec] = await Promise.all([squadRows(env, pid), dbGet(env, "flags").catch(() => null), dbGet(env, `players/${pid}`).catch(() => null)]);
-      const held = rows.filter((r) => isFlagged(fl && fl[r.id])).map((r) => r.id);
-      if (isFlagged(fl && fl[pid])) held.push("me");
+      const [rows, fh, rec] = await Promise.all([squadRows(env, pid), dbGet(env, "fh").catch(() => null), dbGet(env, `players/${pid}`).catch(() => null)]);
+      const held = rows.filter((r) => fh && fh[r.id]).map((r) => r.id);
+      if (fh && fh[pid]) held.push("me");
       F = (S, X) => R.ecoSquad(S, rows, X, { ref: rec && rec.ref, days: S.days }, held);
       break;
     }
   }
   if (!F) return { status: 400, body: { error: "action" } };
   // power and league follow the build and gear right away (upgrades, a reset build, tune-ups, crates)
-  const t = await tx(env, pid, (S, X) => { S.nm = name; const out = F(S, X); if (S.L) setLoadout(S, S.L); return { out }; }, now);
+  const t = await tx(env, pid, (S, X) => { who(S, user); const out = F(S, X); if (S.L) setLoadout(S, S.L); return { out }; }, now, { rl: 1 });
+  if (t.rate) return { status: 429, body: { error: "rate" } };
   return { status: 200, body: { ok: true, out: t.out, E: pub(t.S) } };
 }

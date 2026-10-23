@@ -46,7 +46,8 @@ function snapState(){
 function netTarget(u,id){const v=units[id];u.focus=(v&&v.team!==u.team)?v:null;return !!u.focus;}   // a live player's tap-to-target lock
 return {
  R:{STOCK_L,PVP_V,UPS,UORDER,CH,CHORDER,WEAPONS,WORDER,TIER_MULT,ROLL_MIN,ROLL_MAX,SALV_MIN,SALV_MAX,GEM,GORDER,PAINTS,LEAGUES,FEATURED_X,
-  MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,tankOf,powerBracket,featuredOn,liveModes,isSolo},
+  MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,tankOf,powerBracket,featuredOn,liveModes,isSolo,
+  STAT,DASH_SPD,DASH_T,MAPS,AW:W,AH:H,RAD:R,SUP,GEM},   // the last row: limits the server checks AI match records against (worker/src/proof.js)
  setup:liveSetup,setTank:liveTank,roster,snap:snapState,start:startMatch,startRound,step:update,
  outcome,placeOf,useSuper,netClaim,netDash,netShield,netTarget,setCtl,hit:takeHit,
  get state(){return state;},get units(){return units;},get series(){return series;},get map(){return curMap;},get g(){return matchG;},get storm(){return storm;}

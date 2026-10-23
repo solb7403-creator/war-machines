@@ -26,10 +26,11 @@ jobs:
           [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
       - name: Build the match sim (js/rules.js + js/game.js -> worker/src/sim.gen.js)
         run: node worker/build-sim.mjs
-      - name: Server tests (points, payments, live matches)
+      - name: Server tests (points, payments, live matches, farm defense)
         run: |
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/pvp.mjs
+          node dev/tests/wtest/farm.mjs
       - name: Live-match smoke test in the Workers runtime
         working-directory: worker
         env:

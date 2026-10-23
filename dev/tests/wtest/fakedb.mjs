@@ -51,15 +51,16 @@ export function makeDB() {
     const method = (init.method || 'GET').toUpperCase();
     log.push(method + ' ' + path + (u.search.replace(/auth=SECRET&?/, '') ? ' ' + u.search.replace(/[?&]?auth=SECRET/, '') : ''));
     if (method === 'GET') {
-      const indexed = ['/players:pts', '/players:ref', '/ntf:last', '/gh:pw'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
+      const indexed = ['/players:pts', '/players:ref', '/ntf:last', '/ntf:nx', '/gh:pw'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
       const headers = hdr(init, 'X-Firebase-ETag') === 'true' ? { ETag: etag(path) } : {};
       return new Response(JSON.stringify(query(get(path), { ...q, _indexed: indexed })), { status: 200, headers });
     }
     const body = init.body ? JSON.parse(init.body) : null;
     const im = hdr(init, 'if-match');
     if (im !== null && im !== undefined && method === 'PUT' && im !== etag(path)) { db.conflicts++; return new Response(JSON.stringify(get(path)), { status: 412, headers: { ETag: etag(path) } }); }
-    if (method === 'PUT') { set(path, body); return new Response(JSON.stringify(body)); }
-    if (method === 'PATCH') { for (const [k, v] of Object.entries(body)) set((path + '/' + k).replace(/\/+/g, '/'), v); return new Response(JSON.stringify(body)); }
+    const reply = (b) => q.print === 'silent' ? new Response(null, { status: 204 }) : new Response(JSON.stringify(b));   // print=silent: no body, like Firebase
+    if (method === 'PUT') { set(path, body); return reply(body); }
+    if (method === 'PATCH') { for (const [k, v] of Object.entries(body)) set((path + '/' + k).replace(/\/+/g, '/'), v); return reply(body); }
     if (method === 'DELETE') { const ks = parts(path); let n = root; for (let i = 0; i < ks.length - 1; i++) { n = n && n[ks[i]]; } if (n) delete n[ks[ks.length - 1]]; return new Response('null'); }
     return new Response('bad', { status: 400 });
   }

@@ -4,7 +4,8 @@
 import { DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
-import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady } from "./eco.js";
+import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
+import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -80,13 +81,16 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   const rec = (await dbGet(env, `players/${pid}`).catch(() => null)) || null;
   const paid = b.mig && typeof b.mig === "object" ? await paidRecords(env, pid) : null;
   let why = null;
+  let devCheck = false;
   const t = await tx(env, pid, (S, X) => {
-    S.nm = name;
+    who(S, user);
     why = null;
     if (S.mig === 0 && paid) why = migrate(S, b.mig, paid, X);
     setLoadout(S, b.L || S.L);
+    devCheck = S.dvd !== X.day; S.dvd = X.day;   // once a day: which other accounts use this phone
     return {};
-  }, now);
+  }, now, { rl: 1 });
+  if (t.rate) return { ok: false, error: "rate" };
   const S = t.S, up = {};
   // referrer: only for a brand-new pilot (first day), never yourself, never changed later
   const rb = String(b.refBy || "");
@@ -98,8 +102,14 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   for (const n of acks) if (/^[a-z0-9]{4,12}$/.test(String(n))) up[`starsAck/${pid}/${n}`] = now;
   // alts: a hashed network address per pilot. A recruit who shares one with their referrer flags both (squad payouts held)
   const flags = [];
+  // farms: every Telegram account on one phone shares the device id (kept on the device, not in Telegram's cloud)
+  const did = /^[0-9a-f]{16}$/.test(String(b.did || "")) ? String(b.did) : "";
+  if (did) {
+    up[`dev/${did}/${pid}`] = d;
+    if (devCheck) { const others = (await dbGet(env, `dev/${did}`).catch(() => null)) || {}; for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "device").catch(() => {}); }
+  }
   if (ip) {
-    const h = hex(await hmac(env.BOT_TOKEN, "ip|" + ip)).slice(0, 16);
+    const h = await ipHash(env, ip);
     up[`iph/${pid}/${h}`] = d;
     if (ref) { const theirs = await dbGet(env, `iph/${ref}`).catch(() => null); if (theirs && theirs[h]) { flags.push([ref, [["alt", "shares a network with recruit " + pid]]]); flags.push([pid, [["alt", "shares a network with referrer " + ref]]]); } }
   }
@@ -131,8 +141,8 @@ async function undeliveredStars(env, pid, now) {
 // ================= /api/squad =================
 // recruits whose payouts are on hold (flagged for review) are marked, so the phone doesn't promise them
 export async function squad(env, pid) {
-  const [rows, fl] = await Promise.all([squadRows(env, pid), dbGet(env, "flags").catch(() => null)]);
-  return rows.map((r) => (isFlagged(fl && fl[r.id]) ? { ...r, held: true } : r));
+  const [rows, fh] = await Promise.all([squadRows(env, pid), dbGet(env, "fh").catch(() => null)]);
+  return rows.map((r) => (fh && fh[r.id] ? { ...r, held: true } : r));
 }
 
 // ================= /api/pay-log =================
@@ -145,7 +155,7 @@ async function verifyTon(memo, amt) {
     const d = await r.json();
     for (const t of d.result || []) {
       const val = parseInt((t.in_msg || {}).value || "0", 10) / 1e9;
-      if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return (t.transaction_id && t.transaction_id.hash) || null;
+      if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return t.transaction_id && t.transaction_id.hash ? { hash: t.transaction_id.hash, src: String((t.in_msg || {}).source || "") } : null;
     }
   } catch {}
   return null;
@@ -160,7 +170,7 @@ async function verifySol(sig, amt) {
       if (!tx || !tx.meta || tx.meta.err) continue;
       const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey || k), i = keys.indexOf(SOL_RECIPIENT);
       if (i < 0) return false;
-      return (tx.meta.postBalances[i] - tx.meta.preBalances[i]) / 1e9 + 1e-9 >= amt * 0.999;
+      return (tx.meta.postBalances[i] - tx.meta.preBalances[i]) / 1e9 + 1e-9 >= amt * 0.999 ? String(keys[0] || "payer") : false;   // the payer's wallet
     } catch {}
   }
   return false;
@@ -192,7 +202,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
   if (have && (have.granted || !desc)) { const S = await readEco(env, pid); return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) }; }
   const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
   if (!desc) {   // an old phone without the order details: logged and checked, not granted here
-    rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : await verifySol(rec.proof, amt);
+    rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : !!(await verifySol(rec.proof, amt));
     await dbPut(env, key, rec);
     return { ok: true, verified: rec.verified };
   }
@@ -201,9 +211,9 @@ async function payLog(env, b, user, pid, now = Date.now()) {
   const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
   if (cur === "TON" && amt + 1e-9 < price.ton * 0.999) return { error: "amount" };
   if (cur === "SOL" && (rec.gram + 1e-9 < price.ton * 0.999 || !(await solValueOk(amt, price.ton)))) return { error: "amount" };
-  let txid = null;
-  if (cur === "TON") txid = await verifyTon(memo, need);
-  else if (await verifySol(rec.proof, amt)) txid = rec.proof;
+  let txid = null, src = "";
+  if (cur === "TON") { const tv = await verifyTon(memo, need); if (tv) { txid = tv.hash; src = tv.src; } }
+  else { const payer = await verifySol(rec.proof, amt); if (payer) { txid = rec.proof; src = payer; } }
   if (!txid) { if (!have) await dbPut(env, key, { ...rec, verified: false }); return { ok: true, verified: false, error: "pending" }; }
   // each on-chain transaction pays for one order
   const once = await claimOnce(env, `${cur === "TON" ? "tonTx" : "solTx"}/${safeKey(txid)}`, { pid, memo, t: now });
@@ -220,6 +230,13 @@ async function payLog(env, b, user, pid, now = Date.now()) {
   }, now);
   const outs = (t.outs || []).filter((o) => o && !o.none);
   await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
+  // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
+  if (src && src !== "payer") {
+    const wh = hex(await hmac(env.BOT_TOKEN, "w|" + src)).slice(0, 16);
+    const others = (await dbGet(env, `wal/${wh}`).catch(() => null)) || {};
+    for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "wallet").catch(() => {});
+    await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {});
+  }
   return { ok: true, verified: true, out: outs, E: pub(t.S) };
 }
 
@@ -246,13 +263,20 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
 
 // ================= /api/notify-optin =================
 async function notifyOptin(env, pid, user, on) {
-  await dbPatch(env, `ntf/${pid}`, { on: on ? 1 : 0, last: dayOf(Date.now()) - 1, chat: user.id });
+  await dbPatch(env, `ntf/${pid}`, on ? { on: 1, chat: user.id, nx: dayOf(Date.now()) } : { on: 0, nx: null });
   return { ok: true };
 }
 
 // ================= /api/admin (Jake only) =================
 async function admin(env, user, b = {}) {
-  if (!ADMINS.includes(String(user.username || "").toLowerCase())) return { status: 403, body: { error: "not admin" } };
+  const un = String(user.username || "").toLowerCase();
+  if (!ADMINS.includes(un)) return { status: 403, body: { error: "not admin" } };
+  // the admin username is pinned to the Telegram account that first used it (a username can change hands)
+  const pin = await dbGet(env, `cfg/admin/${un}`).catch(() => null);
+  if (pin && String(pin) !== String(user.id)) return { status: 403, body: { error: "not admin" } };
+  if (!pin) await dbPatch(env, "cfg/admin", { [un]: user.id });
+  if (b.proof === "enforce" || b.proof === "flag") { await dbPatch(env, "cfg", { proof: b.proof }); resetCfg(); }
+  if (b.clearCl && /^[0-9a-f]{1,8}$/.test(String(b.clearCl))) await clearCluster(env, String(b.clearCl));
   // clear a flagged pilot (every current reason): they count for the snapshot again
   if (b.clear && /^tg_\d{3,15}$/.test(String(b.clear))) {
     const f = await dbGet(env, `flags/${b.clear}`).catch(() => null), up = {};
@@ -293,7 +317,9 @@ async function admin(env, user, b = {}) {
   // flagged pilots (anomalies, the one-time move, shared networks): they sit out the snapshot until cleared
   const fl = (await dbGet(env, "flags").catch(() => null)) || {};
   const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
-  const body0 = { flagged, channel: await channelReady(env) };
+  const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
+  const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
+  const body0 = { flagged, channel: await channelReady(env), proof: conf === "flag" ? "flag" : "enforce", clusters };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
@@ -304,7 +330,8 @@ async function admin(env, user, b = {}) {
 export async function snapshot(env, fl) {
   fl = fl || (await dbGet(env, "flags").catch(() => null)) || {};
   const top = (await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 2000 }).catch(() => ({}))) || {};
-  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0]).sort((a, b) => b[2] - a[2]).slice(0, 1000);
+  // ranked by airdrop credit (lifetime points, with new Telegram accounts' first week at a reduced rate); points shown too
+  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, typeof v.ac === "number" ? v.ac : v.pts || 0]).sort((a, b) => b[4] - a[4]).slice(0, 1000);
 }
 
 // ================= leaderboard (cron, every 5 minutes) =================
@@ -329,31 +356,58 @@ export async function buildLeaderboard(env, now = Date.now()) {
     weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
   };
   await dbPut(env, "lb", lb);
+  // fh: who's held right now, kept exact here (a new flag also sets it at once); squad payouts read this small index
+  const fh = (await dbGet(env, "fh").catch(() => null)) || {}, fup = {};
+  for (const [id, f] of Object.entries(fl || {})) { const h = isFlagged(f); if (h && !fh[id]) fup[`fh/${id}`] = 1; if (!h && fh[id]) fup[`fh/${id}`] = null; }
+  for (const id of Object.keys(fh)) if (!(fl || {})[id]) fup[`fh/${id}`] = null;
+  if (Object.keys(fup).length) await dbPatch(env, "", fup);
+  // farm defense: who starts together, then the clusters (their extra accounts sit out the next board)
+  const names = {};
+  for (const [id, v] of Object.entries(top || {})) if (v) names[id] = [v.name || "Pilot", v.pts || 0];
+  await processStarts(env, now).catch((e) => console.log("starts", e && e.message));
+  await buildClusters(env, names, fl || {}, now).catch((e) => console.log("clusters", e && e.message));
   // housekeeping once an hour: drop daily/weekly score tables older than a few days/weeks
   if (new Date(now).getUTCMinutes() < 5) { await dbDel(env, `dly/${d - 3}`); await dbDel(env, `wly/${w - 3}`); }
   return lb;
 }
 
 // ================= daily reminders (cron) =================
+// Who's due: ntf/<pid> has nx (the next day to remind), pl (the day they last played) and sk (streak), so one query finds
+// a batch and nothing else is read. Sent 4 at a time (Telegram allows ~30 messages a second). The batch size is
+// env.NTF_BATCH (wrangler.toml): the Workers Free plan allows 50 outside requests per run, the Paid plan many more.
 const NOTIFY_HOURS = [15, 16, 17, 18]; // UTC: ~10am-1pm US Central
-export async function sendReminders(env, now = Date.now()) {
+let NTF2 = false;
+async function ntfMigrate(env, d) {   // once: reminders set up before nx existed
+  if (NTF2) return;
+  if (await dbGet(env, "meta/ntf2").catch(() => null)) { NTF2 = true; return; }
+  const all = (await dbGet(env, "ntf").catch(() => null)) || {}, up = { "meta/ntf2": 1 };
+  for (const [pid, x] of Object.entries(all)) if (x && x.on && x.chat && !x.nx) up[`ntf/${pid}/nx`] = Math.max(d, (Number(x.last) || 0) + 1);
+  await dbPatch(env, "", up);
+  NTF2 = true;
+}
+export async function sendReminders(env, now = Date.now(), batch = 0) {
   if (!NOTIFY_HOURS.includes(new Date(now).getUTCHours())) return 0;
   const d = dayOf(now);
-  const due = (await dbGet(env, "ntf", { orderBy: '"last"', endAt: d - 1, limitToFirst: 20 }).catch(() => null)) || {};
-  let sent = 0;
-  for (const [pid, v] of Object.entries(due)) {
-    if (!v || !v.on || !v.chat) { await dbPatch(env, `ntf/${pid}`, { last: d }); continue; }
-    const p = await dbGet(env, `players/${pid}`).catch(() => null);
-    if (p && p.ld === d) { await dbPatch(env, `ntf/${pid}`, { last: d }); continue; } // already played today
-    const streak = p && p.ld === d - 1 ? p.sk || 0 : 0;
-    const text = streak >= 2
-      ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
-      : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
-    const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
-    // blocked or deleted chats switch reminders off
-    await dbPatch(env, `ntf/${pid}`, r && r.ok ? { last: d } : { last: d, on: 0 });
-    if (r && r.ok) sent++;
+  await ntfMigrate(env, d);
+  const n = batch || Math.max(1, Math.min(1000, Number(env.NTF_BATCH) || 40));
+  const due = (await dbGet(env, "ntf", { orderBy: '"nx"', startAt: 1, endAt: d, limitToFirst: n }).catch(() => null)) || {};
+  const list = Object.entries(due), up = {};
+  let sent = 0, slow = false;
+  for (let i = 0; i < list.length && !slow; i += 4) {
+    await Promise.all(list.slice(i, i + 4).map(async ([pid, v]) => {
+      if (!v || !v.on || !v.chat) { up[`ntf/${pid}/nx`] = null; return; }
+      if (v.pl === d) { up[`ntf/${pid}/nx`] = d + 1; return; }   // already played today
+      const streak = v.pl === d - 1 ? v.sk || 0 : 0;
+      const text = streak >= 2
+        ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
+        : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
+      const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
+      if (r && r.ok) { up[`ntf/${pid}/nx`] = d + 1; up[`ntf/${pid}/last`] = d; sent++; }
+      else if (r && r.error_code === 429) slow = true;   // Telegram says slow down: the rest wait for the next run
+      else if (r && (r.error_code === 403 || r.error_code === 400)) { up[`ntf/${pid}/on`] = 0; up[`ntf/${pid}/nx`] = null; }   // blocked or deleted chats switch reminders off
+    }));
   }
+  if (Object.keys(up).length) await dbPatch(env, "", up);
   return sent;
 }
 
@@ -415,7 +469,7 @@ async function webhook(req, env) {
   }
   if (m && m.text && /^\/start/.test(m.text)) {
     // anyone who starts the bot can get the daily reminder (they can /stop it)
-    if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 1, chat: m.chat.id, last: dayOf(Date.now()) - 1 }).catch(() => {});
+    if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 1, chat: m.chat.id, nx: dayOf(Date.now()) }).catch(() => {});
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
       text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
@@ -426,7 +480,7 @@ async function webhook(req, env) {
   } else if (m && m.text && /^\/terms/.test(m.text)) {
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: "Terms of service and purchase: " + TERMS_URL, reply_markup: { inline_keyboard: [[{ text: "📄 Read the terms", url: TERMS_URL }]] } });
   } else if (m && m.text && /^\/stop/.test(m.text)) {
-    await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 0 }).catch(() => {});
+    await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 0, nx: null }).catch(() => {});
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: "Daily reminders are off. Send /start to turn them back on." });
   }
   return new Response("ok");
@@ -434,9 +488,9 @@ async function webhook(req, env) {
 
 // ================= router =================
 const ROUTES = {
-  "/api/sync": async (env, a) => ({ status: 200, body: await sync(env, a.b, a.user, a.pid, Date.now(), a.ip) }),
+  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid),
-  "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid),
+  "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
   "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
@@ -446,14 +500,50 @@ const ROUTES = {
   "/api/pvp/join": async (env, a) => pvpJoin(env, a),
 };
 
+// requests per network address per minute, before any database work (a soft cap per server instance; with a Cloudflare
+// rate-limit binding named RL in wrangler.toml it's a hard one). Players behind one carrier address share it, so it's high
+const NET_RL = 1200, NET = new Map();
+async function netLimited(req, env) {
+  const ip = req.headers.get("CF-Connecting-IP") || "";
+  if (!ip) return false;
+  if (env.RL && env.RL.limit) { try { const r = await env.RL.limit({ key: ip }); if (!r.success) return true; } catch (e) {} }
+  const m = Math.floor(Date.now() / 60000);
+  let e = NET.get(ip);
+  if (!e || e.m !== m) { e = { m, n: 0 }; NET.set(ip, e); if (NET.size > 20000) NET.clear(); }
+  return ++e.n > NET_RL;
+}
+// the public leaderboard file, through Cloudflare's cache: each data center reads it from the database at most once a
+// minute however many players open the Ranks tab (straight from Firebase, every open was a 40+ KB download)
+async function lbFile(req, env) {
+  const cache = typeof caches !== "undefined" && caches.default ? caches.default : null, key = new Request("https://lunar-api.cache/lb.json");
+  if (cache) { const hit = await cache.match(key).catch(() => null); if (hit) return cors(new Response(hit.body, hit), req); }
+  const lb = await dbGet(env, "lb").catch(() => null);
+  const res = new Response(JSON.stringify(lb), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" } });
+  if (cache && lb) await cache.put(key, res.clone()).catch(() => {});
+  return cors(res, req);
+}
+// per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
+// a soft cap per server instance, far above what playing ever needs
+const PID_RL = { "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
+function pidLimited(path, pid) {
+  const lim = PID_RL[path];
+  if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
+  const m = Math.floor(Date.now() / 60000), k = path + "|" + pid;
+  let e = PIDS.get(k);
+  if (!e || e.m !== m) { e = { m, n: 0 }; PIDS.set(k, e); if (PIDS.size > 50000) PIDS.clear(); }
+  return ++e.n > lim;
+}
 export default {
   async fetch(req, env) {
     const path = new URL(req.url).pathname;
+    if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
       if (req.method !== "POST") return cors(new Response("method", { status: 405 }), req);
+      if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req);
       const a = await auth(req, env);
       if (a.err) return cors(a.err, req);
+      if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);
         return cors(json(r.body, r.status), req);
@@ -469,8 +559,10 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
+      // two schedules, each its own run with its own budget of outside calls (50 on the Workers Free plan):
+      // every minute 15:00-18:59 UTC, reminders only; every 5 minutes, the board and the farm check
+      if (event && event.cron === "* 15-18 * * *") { await sendReminders(env).catch((e) => console.log("ntf", e && e.message)); return; }
       await buildLeaderboard(env).catch((e) => console.log("lb", e && e.message));
-      await sendReminders(env).catch((e) => console.log("ntf", e && e.message));
     })());
   },
 };
