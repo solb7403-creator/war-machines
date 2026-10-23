@@ -93,6 +93,7 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .fight:active{filter:brightness(.94);transform:translateY(1px)}
 .stickyfoot{position:sticky;bottom:-24px;margin:14px calc(-1 * var(--gut)) -24px;padding:12px var(--gut) 14px;background:linear-gradient(180deg,rgba(10,14,23,0),rgba(10,14,23,.94) 30%)}
 .linkbtn{display:block;min-height:40px;padding:10px 12px;margin:2px auto 0;color:var(--dust);font:600 14px var(--disp);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--edge3)}
+.linkbtn.inl{display:inline;min-height:0;padding:0;margin:0;font-size:inherit;color:var(--moon)}
 
 /* ---- surfaces ---- */
 .panel{background:var(--rock);border:1px solid var(--edge);border-radius:14px;padding:14px}

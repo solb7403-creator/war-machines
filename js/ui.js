@@ -203,7 +203,8 @@ function openDeals(k){
   '<div class="crates'+(list.length===2?' c2':'')+'" style="margin-top:12px">'+list.map(([tk,ri])=>crate(tk,ri)).join('')+'</div>');
 }
 // the launch liquidity fund: a share of every shop sale goes into the $LUNAR liquidity pool (the server counts it)
-function lpfLine(){return '<div class="cutline"><b>$'+fmtNum(lbMeta.lpf)+'</b><span>in the $LUNAR launch liquidity fund. '+Math.round((lbMeta.lps||0.25)*100)+'% of every shop sale goes into the pool.</span></div>';}
+const LP_WALLET='HMEAerCzREnzr5zLwJYydFBhisxpUjBPpCuwVXY8owsK';   // the public liquidity wallet (Solana), topped up weekly to match the fund
+function lpfLine(){return '<div class="cutline"><b>$'+fmtNum(lbMeta.lpf)+'</b><span>in the $LUNAR launch liquidity fund. '+Math.round((lbMeta.lps||0.25)*100)+'% of every shop sale goes into the pool, topped up weekly. <button class="linkbtn inl" data-act="lpwallet">Verify the wallet on-chain</button></span></div>';}
 function renderShop(){
  const cur=save.payCur;
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
@@ -212,7 +213,7 @@ function renderShop(){
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
   '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
-  '<p class="dimtxt" style="margin:6px 0 10px">'+Math.round(((lbMeta&&lbMeta.lps)||0.25)*100)+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?': $'+fmtNum(lbMeta.lpf)+' so far.':'.')+'</p>'+
+  '<p class="dimtxt" style="margin:6px 0 10px">'+Math.round(((lbMeta&&lbMeta.lps)||0.25)*100)+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?': $'+fmtNum(lbMeta.lpf)+' so far.':'.')+' <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
   (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
@@ -929,6 +930,7 @@ const ACT={
  revealok:()=>{if(revealOv)closeOverlay(revealOv);},
  lbscope:a=>{lbScope=a;fx('tap');uiDirty('ranks');},
  wiki:()=>openLink(WIKI_URL),
+ lpwallet:()=>openLink('https://solscan.io/account/'+LP_WALLET),
  haptics:()=>{save.haptics=!save.haptics;store();if(save.haptics)fx('tap');},
  sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}},
  remind:()=>setReminders(!save.remind),
