@@ -75,9 +75,11 @@ function loadLB(force){
   lbBusy=false;lbCacheT=Date.now();
   if(!lb||!lb.top){lbCache=[];lbMeta={n:0,cut:0,t:0};if(typeof uiDirty==='function')uiDirty('ranks');return;}
   const m={};
-  for(const [id,n,pts,days,lg] of lb.top)m[id]={id,n,pts,days,league:lg||'',dailyPts:0,weeklyPts:0};
-  for(const [id,n,s2] of (lb.daily||[])){m[id]=m[id]||{id,n,pts:0,days:0,league:'',dailyPts:0,weeklyPts:0};m[id].dailyPts=s2;}
-  for(const [id,n,s2] of (lb.weekly||[])){m[id]=m[id]||{id,n,pts:0,days:0,league:'',dailyPts:0,weeklyPts:0};m[id].weeklyPts=s2;}
+  const row=(id,n)=>m[id]||(m[id]={id,n,pts:0,days:0,league:'',dailyPts:0,weeklyPts:0,vl:0,vg:0});
+  for(const [id,n,pts,days,lg,vl] of lb.top)m[id]={id,n,pts,days,league:lg||'',dailyPts:0,weeklyPts:0,vl:vl||0,vg:0};
+  for(const [id,n,s2,vl] of (lb.daily||[])){const p=row(id,n);p.dailyPts=s2;p.vl=Math.max(p.vl,vl||0);}
+  for(const [id,n,s2,vl] of (lb.weekly||[])){const p=row(id,n);p.weeklyPts=s2;p.vl=Math.max(p.vl,vl||0);}
+  for(const [id,n,g,vl] of (lb.vault||[])){const p=row(id,n);p.vg=g;p.vl=Math.max(p.vl,vl||0);}   // the Hyperspace Vault board: lifetime Gold
   lbCache=Object.values(m);lbMeta={n:lb.n||0,cut:lb.cut||0,t:lb.t||0,inTop:lb.top.length,lpf:lb.lpf||0,lps:lb.lps||0.25};
   if(typeof uiDirty==='function')uiDirty('ranks');
  }).catch(()=>{lbBusy=false;lbCacheT=Date.now()-45000;});
@@ -111,7 +113,7 @@ function descLabel(d){
  if(!d)return 'Purchase';
  if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache');
  if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
- return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():d.kind==='respec'?'Build reset':'Purchase';
+ return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():d.kind==='respec'?'Build reset':d.kind==='vault'?'Hyperspace Vault: '+((VAULT[d.tk]||{}).n||'Gold'):'Purchase';
 }
 // record a confirmed payment locally and on the server (which re-checks it on-chain). In Telegram the server also
 // grants it: nothing is unlocked until the server has found the payment itself
@@ -184,6 +186,7 @@ async function payWithStars(ton,desc){
  }catch(e){starsBusy=false;
   if(e&&e.message==='owned'){showToast('You already have this');return;}
   if(e&&e.message==='deal_used'){markDeal(desc.deal);store();if(typeof uiDirty==='function')uiDirty();showToast('You already used this deal. Check the new price.');return;}   // used on another device
+  if(desc.kind==='vault'&&e&&/stars|amount|price|invoice_invalid/i.test(e.message||'')){showToast('Telegram didn’t accept a Stars payment this size. Pay with TON or SOL instead.');return;}   // a very large Stars amount
   showToast('Stars checkout is unavailable right now. Try again in a minute.');}
 }
 // a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)

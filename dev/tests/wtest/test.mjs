@@ -408,5 +408,43 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   t(stS.ok && (stS.gh || []).length === 0, 'Survival 1v1 has no AI seats for ghosts');
   t(eco.ghostSeats('royale', '1v1') === 2 && eco.ghostSeats('arena', '1v1') === 1 && eco.ghostSeats('boss', '3v3') === 1, 'ghost seats per mode');
 }
+
+// ---- Hyperspace Vault: endless Gold deposits for looks only (badge, tooth, paint...), priced and granted by the server ----
+{
+  const V = { id: 5555, username: 'vic' }, pv = 'tg_5555';
+  t(R.vaultLevel(249) === 0 && R.vaultLevel(250) === 1 && R.vaultLevel(1500) === 3 && R.vaultLevel(10000) === 7 && R.vaultLevel(14999) === 7 && R.vaultLevel(15000) === 8 && R.vaultLevel(100000) === 25, 'Vault levels: 250, 750, 1,500 ... 10,000, then +5,000 a level');
+  t(R.vaultTier(4).n === 'Bronze' && R.vaultTier(5).n === 'Silver' && R.vaultTier(20).n === 'Hyperspace' && R.vaultTitle(15) === 'Vault Keeper' && R.vaultTitle(25) === 'Gold Tooth Legend', 'badge colors every 5 levels, titles at 15 and 25');
+  await call('/api/sync', { initData: initData(V), boot: true });
+  await act(V, 'login');
+  const pts0 = E(pv).pts, earned0 = E(pv).earned;
+  [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'chest' });
+  t(s === 200 && r.stars === 1000 && /Hyperspace Vault: Chest/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'Vault invoice: the server prices the Chest at 1,000 Stars ' + JSON.stringify(r));
+  [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'mega' }); t(s === 400, 'unknown Vault bundle: no invoice');
+  const vpay = (ch, tk, g, stars) => hook({ message: { from: { id: 5555, username: 'vic' }, chat: { id: 5555, type: 'private' }, successful_payment: { total_amount: stars, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 5555, k: 'vault', t: tk, g, n: 'v' + ch }) } } });
+  const rev0 = db.get('/meta/revc') || 0;
+  await vpay('vc1', 'chest', 16, 1000);
+  t(E(pv).vg === 1050 && Math.abs(E(pv).spendGram - 16) < 1e-9 && db.get('/players/tg_5555/vg') === 1050, 'Chest: 1,050 Gold (5% bonus), counted as verified spending ' + E(pv).vg);
+  t((db.get('/meta/revc') || 0) - rev0 === 1300, 'a Vault deposit feeds the liquidity fund like any sale');
+  await vpay('vc1', 'chest', 16, 1000); t(E(pv).vg === 1050, 'the same payment is granted once');
+  [s, r] = await call('/api/stars-invoice', { initData: initData(V), kind: 'vault', tk: 'chest' }); t(s === 200, 'the Vault never fills: the same bundle can be bought again');
+  await vpay('vh1', 'hyper', 400, 25000);
+  const S1 = E(pv);
+  t(S1.vg === 29800 && R.vaultLevel(S1.vg) === 10 && S1.paints.hyper === 1 && S1.L && S1.L.vl === 10, 'Hyperspace: 28,750 Gold, level 10, Hyperspace paint unlocked, the loadout carries the level ' + S1.vg + ' ' + JSON.stringify(S1.L && S1.L.vl));
+  t(S1.pts === pts0 && S1.earned === earned0 && R.powerOf(S1.L) === R.powerOf({ ...S1.L, vl: 0 }), 'looks only: no points, no power');
+  const tk = R.tankOf(S1.L, 1); t(tk.vl === 10 && R.tankOf({ ...S1.L, vl: 'x' }, 1).vl === 0, 'the battle tank carries the Vault level (looks)');
+  t(R.ecoLoadout(R.ecoNorm({}), { paint: 'hyper' }).paint === 'stock' && R.ecoLoadout(S1, { paint: 'hyper' }).paint === 'hyper', 'the Hyperspace paint only for Vault level 7+');
+  await hook({ message: { from: { id: 5555 }, chat: { id: 5555, type: 'private' }, refunded_payment: { total_amount: 25000, telegram_payment_charge_id: 'vh1', invoice_payload: '{}' } } });
+  t(E(pv).vg === 1050 && !E(pv).paints.hyper && Math.abs(E(pv).spendGram - 16) < 1e-9, 'refunded deposit: its Gold, the paint and the spending come off ' + E(pv).vg);
+  // TON: the price comes from the server, the Gold from the verified payment
+  tonTxs.push({ in_msg: { value: '4000000000', message: 'LWM|tg_5555|vt1' }, transaction_id: { hash: 'hv1' } });
+  [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 3, memo: 'LWM|tg_5555|vt0', desc: { kind: 'vault', tk: 'pouch' } }); t(r.error === 'amount', 'Vault in TON: under the price is refused');
+  [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 4, memo: 'LWM|tg_5555|vt1', desc: { kind: 'vault', tk: 'pouch' } });
+  t(r.ok && r.verified && E(pv).vg === 1300 && r.out[0].tk === 'vault' && r.out[0].g === 250 && r.E.vg === 1300, 'Vault in TON: Pouch adds 250 Gold ' + JSON.stringify(r.out));
+  const lbv = await mod.buildLeaderboard(env);
+  const vr = (lbv.vault || []).find((x) => x[0] === pv);
+  t(vr && vr[2] === 1300 && vr[3] === 2, 'the Vault board ranks by lifetime Gold, with the level ' + JSON.stringify(vr));
+  const tr = lbv.top.find((x) => x[0] === pv); t(!tr || tr[5] === 2, 'the points board carries the Vault level for badges');
+  t((lbv.vault || []).every((x) => x[2] >= 250), 'only Vault pilots on the Vault board');
+}
 console.log(`passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

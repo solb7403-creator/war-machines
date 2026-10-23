@@ -51,7 +51,7 @@ export function makeDB() {
     const method = (init.method || 'GET').toUpperCase();
     log.push(method + ' ' + path + (u.search.replace(/auth=SECRET&?/, '') ? ' ' + u.search.replace(/[?&]?auth=SECRET/, '') : ''));
     if (method === 'GET') {
-      const indexed = ['/players:pts', '/players:ref', '/ntf:last', '/ntf:nx', '/gh:pw'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
+      const indexed = ['/players:pts', '/players:ref', '/players:vg', '/ntf:last', '/ntf:nx', '/gh:pw'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
       const headers = hdr(init, 'X-Firebase-ETag') === 'true' ? { ETag: etag(path) } : {};
       return new Response(JSON.stringify(query(get(path), { ...q, _indexed: indexed })), { status: 200, headers });
     }

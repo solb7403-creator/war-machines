@@ -204,7 +204,46 @@ function openDeals(k){
 }
 // the launch liquidity fund: a share of every shop sale goes into the $LUNAR liquidity pool (the server counts it)
 const LP_WALLET='HMEAerCzREnzr5zLwJYydFBhisxpUjBPpCuwVXY8owsK';   // the public liquidity wallet (Solana), topped up weekly to match the fund
-function lpfLine(){return '<div class="cutline"><b>$'+fmtNum(lbMeta.lpf)+'</b><span>in the $LUNAR launch liquidity fund. '+Math.round((lbMeta.lps||0.25)*100)+'% of every shop sale goes into the pool, topped up weekly. <button class="linkbtn inl" data-act="lpwallet">Verify the wallet on-chain</button></span></div>';}
+const lpPct=()=>Math.round(((lbMeta&&lbMeta.lps)||0.25)*100);
+function lpfLine(){return '<div class="cutline"><b>$'+fmtNum(lbMeta.lpf)+'</b><span>in the $LUNAR launch liquidity fund. '+lpPct()+'% of every shop sale goes into the pool, topped up weekly; the rest funds development. <button class="linkbtn inl" data-act="lpwallet">Verify the wallet on-chain</button></span></div>';}
+// ---------- HYPERSPACE VAULT (rules.js): endless deposits, looks only ----------
+const TOOTH_SVG='<svg viewBox="-0.6 -0.72 1.2 1.48" aria-hidden="true"><path d="M-.46 -.3Q-.5 -.64 -.22 -.6Q0 -.5 .22 -.6Q.5 -.64 .46 -.3Q.42 .05 .3 .55Q.2 .7 .12 .5Q.06 .18 0 .16Q-.06 .18 -.12 .5Q-.2 .7 -.3 .55Q-.42 .05 -.46 -.3Z"/></svg>';
+const vtIdx=lv=>Math.max(0,Math.min(4,Math.floor((lv||0)/5)));
+const vbadge=lv=>lv>0?' <span class="vb t'+vtIdx(lv)+'" title="Hyperspace Vault level '+lv+'">'+TOOTH_SVG+lv+'</span>':'';
+const vname=(n,lv)=>lv>=3?'<span class="gname">'+esc(n)+'</span>':esc(n);   // gold name from Vault level 3
+const myVl=()=>vaultLevel(save.vg);
+function vaultProg(){const g=save.vg||0,lv=vaultLevel(g),lo=vaultNeed(lv),hi=vaultNeed(lv+1),next=VAULT_REW.find(x=>x.lv>lv);
+ return {g,lv,f:Math.max(0,Math.min(1,(g-lo)/(hi-lo))),need:hi-g,next};}
+function vaultPacks(){return '<div class="vpacks">'+VAULT_ORDER.map(id=>{const B=VAULT[id],bon=Math.round((B.g/B.stars-1)*100);
+ return '<button class="vpack'+(id==='hyper'?' hyp':'')+'" data-act="vaultbuy" data-arg="'+id+'"><b>'+B.n+'</b><span class="vgold num">'+fmtNum(B.g)+' Gold</span><span class="bon">'+(bon>0?'+'+bon+'% bonus':'&nbsp;')+'</span><span class="p">'+priceLabel(B.ton,B.stars)+'</span></button>';}).join('')+'</div>';}
+function vaultNextTxt(P){return fmtNum(P.need)+' Gold to level '+(P.lv+1)+(P.next?(P.next.lv===P.lv+1?': '+P.next.n:'. Next unlock, level '+P.next.lv+': '+P.next.n):'. Your badge keeps climbing.');}
+function vaultCard(){
+ const P=vaultProg();
+ return '<div class="vaultbox"><span class="tag">Endless</span><div class="vhead"><canvas data-art="vault:'+P.lv+'"></canvas><div class="grow"><h4>Hyperspace Vault</h4>'+
+  '<div class="mut">'+(P.lv?'Level '+P.lv+vbadge(P.lv)+(vaultTitle(P.lv)?' · '+vaultTitle(P.lv):'')+'<br>'+fmtNum(P.g)+' Gold deposited':'Deposit Gold to unlock looks you can’t get any other way: a gold tooth, a gold name, trails, auras and the Hyperspace paint.')+'</div></div></div>'+
+  '<div class="bar"><i style="width:'+Math.round(P.f*100)+'%"></i></div><div class="dimtxt">'+esc(vaultNextTxt(P))+'</div>'+
+  vaultPacks()+
+  '<button class="linkbtn" data-act="vault">Every level and reward</button>'+
+  '<p class="fnote">Gold is never spent and never expires: each deposit adds to your lifetime total, which sets your level. Looks only, no stats, power or points.</p></div>';
+}
+function openVault(){
+ sheet('vault',()=>{const P=vaultProg();
+  const rew=VAULT_REW.map(x=>{const got=P.lv>=x.lv;return '<div class="vrew'+(got?' got':'')+'"><span class="vlv">'+(got?'✓':'Lv '+x.lv)+'</span><div class="grow"><b>'+esc(x.n)+'</b><div class="mut">'+esc(x.d)+'</div></div></div>';}).join('');
+  const tiers=VAULT_TIERS.map((T,i)=>'<span class="vtier">'+vbadge(i?i*5:1)+'<i>'+T.n+(i<4?' '+(i?i*5:1)+'–'+(i*5+4):' 20+')+'</i></span>').join('');
+  return '<h3>Hyperspace Vault</h3><div class="vhead big"><canvas data-art="vault:'+P.lv+'"></canvas><div class="grow"><div class="vlvl">'+(P.lv?'Level '+P.lv:'Not started')+(vaultTitle(P.lv)?'<small>'+vaultTitle(P.lv)+'</small>':'')+'</div>'+
+   '<div class="mut">'+fmtNum(P.g)+' Gold deposited</div><div class="bar"><i style="width:'+Math.round(P.f*100)+'%"></i></div><div class="dimtxt">'+esc(vaultNextTxt(P))+'</div></div></div>'+
+   vaultPacks()+
+   '<h4 class="vsec">Rewards</h4><div class="vrews">'+rew+'<div class="vrew'+(P.lv>25?' got':'')+'"><span class="vlv">26+</span><div class="grow"><b>Every level after</b><div class="mut">5,000 Gold a level, forever. Your level number and the Vault board keep climbing.</div></div></div></div>'+
+   '<h4 class="vsec">Badge colors</h4><p class="mut">Your badge shows your level on every board and on the VS and results screens. Its color steps up every 5 levels.</p><div class="vtiers">'+tiers+'</div>'+
+   '<h4 class="vsec">Good to know</h4><ul class="vnotes">'+
+   '<li>Gold is never spent and never expires. It only adds up.</li>'+
+   '<li>Looks only. The Vault never adds stats, power or points, so it can’t buy leaderboard rank.</li>'+
+   '<li>Every deposit counts as verified shop spending, which is considered for the airdrop like any other purchase. It isn’t a purchase of $LUNAR and doesn’t guarantee any amount.</li>'+
+   '<li>'+lpPct()+'% of every deposit goes into the $LUNAR launch liquidity pool. The other '+(100-lpPct())+'% funds the game: development, servers, promotion and partnerships.</li>'+
+   '<li>Bigger bundles carry bonus Gold: Chest +5%, Vault +10%, Hyperspace +15%.</li></ul>'+
+   '<button class="btn btn-quiet block" style="margin-top:14px" data-act="vaultboard">See the Vault board</button>';
+ });
+}
 function renderShop(){
  const cur=save.payCur;
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
@@ -213,7 +252,7 @@ function renderShop(){
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
   '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
-  '<p class="dimtxt" style="margin:6px 0 10px">'+Math.round(((lbMeta&&lbMeta.lps)||0.25)*100)+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?': $'+fmtNum(lbMeta.lpf)+' so far.':'.')+' <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
+  '<p class="dimtxt" style="margin:6px 0 10px">'+lpPct()+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?' ($'+fmtNum(lbMeta.lpf)+' so far)':'')+'. The other '+(100-lpPct())+'% funds the game: development, servers and promotion. <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
   (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
@@ -221,6 +260,7 @@ function renderShop(){
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
   (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches, plus an extra daily quest swap. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
+  vaultCard()+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
   sec('Gem caches','Level up your cores')+'<div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
@@ -232,7 +272,7 @@ function renderShop(){
 
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
- const how=on?'Equipped':own?'Owned':P.only==='founder'?'Founder pack':P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
+ const how=on?'Equipped':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
  return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
 
@@ -315,26 +355,28 @@ function renderRanks(){
  else if(R&&!R.outside)cut='<div class="cutline"><b>#'+fmtNum(R.rank)+'</b><span>You’re inside the top 1,000. Cutoff right now: '+fmtNum(lbMeta.cut)+' points.</span></div>';
  else cut='<div class="cutline"><b>'+fmtNum(Math.max(1,lbMeta.cut-e+1))+'</b><span>more points to reach the top 1,000 (cutoff '+fmtNum(lbMeta.cut)+')</span></div>';
  if(lbMeta&&lbMeta.lpf>0)cut+=lpfLine();
- const metric=p=>lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):(p.pts||0);
+ const isV=lbScope==='vault',metric=p=>lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):isV?(p.vg||0):(p.pts||0);
+ const sub=(p,ti)=>{const vl=p.vl||0,tt=vaultTitle(vl);return isV?'<div class="tr" style="color:'+vaultTier(vl).c+'">Level '+vl+(tt?' · '+tt:'')+'</div>':'<div class="tr" style="color:'+TIERC[ti]+'">'+TIERS[ti]+(tt?' <span class="vtt">· '+tt+'</span>':'')+'</div>';};
  let rows='',pin='';
  if(lbCache){
-  const all=lbCache.map(p=>p.id===me?Object.assign({},p,{pts:Math.max(p.pts,e),dailyPts:Math.max(p.dailyPts||0,save.dailyPts||0),weeklyPts:Math.max(p.weeklyPts||0,save.weeklyPts||0)}):p);
-  if(IN_TG&&!all.some(p=>p.id===me))all.push({id:me,n:tgName(TG_USER),pts:e,dailyPts:save.dailyPts||0,weeklyPts:save.weeklyPts||0});   // you show up before the next 5-minute refresh
+  const all=lbCache.map(p=>p.id===me?Object.assign({},p,{pts:Math.max(p.pts,e),dailyPts:Math.max(p.dailyPts||0,save.dailyPts||0),weeklyPts:Math.max(p.weeklyPts||0,save.weeklyPts||0),vg:Math.max(p.vg||0,save.vg||0),vl:myVl()}):p);
+  if(IN_TG&&!all.some(p=>p.id===me))all.push({id:me,n:tgName(TG_USER),pts:e,dailyPts:save.dailyPts||0,weeklyPts:save.weeklyPts||0,vg:save.vg||0,vl:myVl()});   // you show up before the next 5-minute refresh
   const list=all.filter(p=>metric(p)>0).sort((a,b)=>metric(b)-metric(a));
   const shown=list.slice(0,100);let meShown=false;
   rows=shown.map((p,i)=>{const isMe=p.id===me;if(isMe)meShown=true;const ti=tierOfPts(p.pts);
-   return '<div class="r'+(isMe?' me':'')+'"><span class="rk'+(i<3?' t3':'')+'">#'+(i+1)+'</span><div class="grow"><div class="nm">'+esc(p.n)+(isMe?' (you)':'')+'</div><div class="tr" style="color:'+TIERC[ti]+'">'+TIERS[ti]+'</div></div><span class="sc">'+fmtNum(metric(p))+'</span></div>';}).join('');
-  if(!rows)rows='<p class="mut" style="padding:14px 0">'+(lbScope==='overall'?'No pilots on the board yet. Win a match to be first.':'No points yet '+(lbScope==='daily'?'today':'this week')+'. Win a match to take #1.')+'</p>';
+   return '<div class="r'+(isMe?' me':'')+'"><span class="rk'+(i<3?' t3':'')+'">#'+(i+1)+'</span><div class="grow"><div class="nm">'+vname(p.n,p.vl)+(isMe?' (you)':'')+vbadge(p.vl)+'</div>'+sub(p,ti)+'</div><span class="sc">'+fmtNum(metric(p))+(isV?'<small> Gold</small>':'')+'</span></div>';}).join('');
+  if(!rows)rows='<p class="mut" style="padding:14px 0">'+(isV?'No Vault pilots yet. The first deposit takes #1.':lbScope==='overall'?'No pilots on the board yet. Win a match to be first.':'No points yet '+(lbScope==='daily'?'today':'this week')+'. Win a match to take #1.')+'</p>';
   else if(list.length>100)rows+='<p class="dimtxt" style="padding:8px 0">Showing the top 100 of '+fmtNum(lbMeta.n||list.length)+'</p>';
-  if(!meShown&&IN_TG){const mine=lbScope==='daily'?(save.dailyPts||0):lbScope==='weekly'?(save.weeklyPts||0):e,above=list.filter(p=>p.id!==me&&metric(p)>mine).length;
-   pin='<div class="lb"><div class="r me mepin"><span class="rk">'+(R&&R.outside&&lbScope==='overall'?'1000+':'#'+(above+1))+'</span><div class="grow"><div class="nm">You</div><div class="tr" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div></div><span class="sc">'+fmtNum(mine)+'</span></div></div>';}
+  if(!meShown&&IN_TG&&!(isV&&!myVl())){const mine=lbScope==='daily'?(save.dailyPts||0):lbScope==='weekly'?(save.weeklyPts||0):isV?(save.vg||0):e,above=list.filter(p=>p.id!==me&&metric(p)>mine).length;
+   pin='<div class="lb"><div class="r me mepin"><span class="rk">'+(R&&R.outside&&lbScope==='overall'?'1000+':isV&&above>=100?'100+':'#'+(above+1))+'</span><div class="grow"><div class="nm">'+vname('You',myVl())+vbadge(myVl())+'</div>'+sub({vl:myVl()},t)+'</div><span class="sc">'+fmtNum(mine)+(isV?'<small> Gold</small>':'')+'</span></div></div>';}
  }else rows='<p class="mut" style="padding:14px 0">Loading…</p>';
  return '<div class="panel tierbox"><div class="row"><i class="tierdia" style="background:'+TIERC[t]+'"></i><div class="grow"><div class="tn" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div><div class="mut">'+fmtNum(e)+' lifetime points. '+nextTxt+'.</div></div><button class="info" data-act="info" data-arg="tiers" aria-label="About tiers">?</button></div>'+
   '<div class="ladder">'+TIERS.map(rung).join('')+'</div></div>'+
   cut+
   '<button class="linkbtn" data-act="info" data-arg="airdrop">How the airdrop works</button>'+
-  '<div class="seg c3" style="margin-top:14px">'+[['overall','All time'],['daily','Today'],['weekly','This week']].map(([k,l])=>'<button class="'+(lbScope===k?'on':'')+'" data-act="lbscope" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
+  '<div class="seg c4" style="margin-top:14px">'+[['overall','All time'],['daily','Today'],['weekly','This week'],['vault','Vault']].map(([k,l])=>'<button class="'+(lbScope===k?'on':'')+'" data-act="lbscope" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="lb list">'+rows+'</div>'+pin+
+  (isV?'<p class="dimtxt" style="margin-top:10px">Ranked by lifetime Gold in the Hyperspace Vault. Looks only: the Vault never adds points. <button class="linkbtn inl" data-act="vault">Open the Vault</button></p>':'')+
   '<p class="dimtxt" style="margin-top:10px">The board refreshes every 5 minutes.</p>';
 }
 const SCREENS={play:renderPlay,garage:renderGarage,shop:renderShop,quests:renderQuests,ranks:renderRanks};
@@ -358,6 +400,7 @@ function paintArt(root){
     const it=k==='moon'?getW('moon'):a[3]===undefined?(isW?getW(save.weapon):getC(save.chassis)):(isW?getW(k,+a[3],a[4]==='1'):getC(k,+a[3],a[4]==='1'));
     if(c.dataset.locked)ctx.globalAlpha=0.45;drawGearIcon(ctx,w,h,isW,it);ctx.globalAlpha=1;}
    else if(a[0]==='gem')drawGemArt(ctx,w,h,a[1]);
+   else if(a[0]==='vault')drawVaultArt(ctx,w,h,+a[1]||0);
    else if(a[0]==='unit')drawUnitArt(ctx,w,h,units[+a[1]]);
    else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,a[1]==='lunar'?'#e8f4ff':TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'?myPaint():null);}
   }catch(e){}
@@ -635,12 +678,13 @@ function openAdmin(){
 
 // ---------- crate reveal ----------
 let revealQ=[],revealOv=null;
-function showReveal(list){revealQ.push(...(list||[]).filter(Boolean));if(!revealOv)nextReveal();}
+function showReveal(list){revealQ.push(...(list||[]).filter(Boolean));if(revealOv&&!overlays.includes(revealOv))revealOv=null;if(!revealOv)nextReveal();}   // a reveal closed by closeAll() never ran its onClose
 function itemArt(r){
  if(r.gem)return 'gem:'+r.gem;
  if(r.tk==='moonbeam')return 'gear:w:moon:2:0';
  if(r.tk==='skin')return 'tank:lunar';
  if(r.tk==='respec')return 'tank:paint:'+esc(save.paint||'stock');
+ if(r.tk==='vault')return 'vault:'+(r.lv|0);
  if(r.tk==='paint'||r.tk==='pass')return 'tank:paint:'+(r.paint||'stock');
  if(r.item)return 'gear:'+(r.item.isW?'w':'c')+':'+r.item.k+':'+r.item.tier+':'+(r.item.sal?1:0);
  return 'crate:'+r.tk+':'+(r.ri||0);
@@ -672,7 +716,7 @@ function vsBuild(){
  const {adv,dis}=matchup(),foes=units.filter(u=>u.team!==0),mine=units.filter(u=>u.team===0),solo=isSolo(matchG);
  const live=pvpOn(),liveFoes=live&&pvpLiveFoes();
  const ctag=u=>{if(u===me||u.team===me.team||u.boss)return '';if(COUNTER[u.cls]===me.cls)return '<i class="ctag up">▲ BOOSTED</i>';if(COUNTER[me.cls]===u.cls)return '<i class="ctag dn">▼ DISADVANTAGED</i>';return '';};   // every foe card carries its own triangle standing vs you, so it can never go missing from the summary line
- const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+esc(u===me?'You':u.name)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+(u.boss?'#ff4d5e':CH[u.cls].c)+'">'+(u.boss?'Boss':CH[u.cls].n)+'</span>'+ctag(u)+'</div>';};
+ const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+vname(u===me?'You':u.name,u.vl|0)+vbadge(u.vl|0)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+(u.boss?'#ff4d5e':CH[u.cls].c)+'">'+(u.boss?'Boss':CH[u.cls].n)+'</span>'+ctag(u)+'</div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
  else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+'.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
@@ -742,7 +786,7 @@ function resultsHTML(r){
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
   '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+fmtNum(st.taken||0)+'</b>taken</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span>'+(st.best?'<span class="chip"><b>'+fmtNum(st.best)+'</b>best hit</span>':'')+(st.arm?'<span class="chip"><b>'+fmtNum(st.arm)+'</b>armor blocked</span>':'')+(st.shd?'<span class="chip"><b>'+fmtNum(st.shd)+'</b>shield blocked</span>':'')+(r.won&&r.streak>=2?'<span class="chip"><b>'+r.streak+'</b>win streak</span>':'')+(st.low>0&&st.low<=0.25?'<span class="chip"><b>'+Math.round(st.low*100)+'%</b>lowest HP</span>':'')+'</div>'+
-  '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span><span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
+  '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span>'+vbadge(myVl())+'<span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
   '<div class="tip">'+esc(tip)+'</div>'+
   '<div class="grow"></div><div class="acts"><button class="fight" data-act="again"><span class="big">PLAY AGAIN</span><span class="small">'+(lastQuick?'Another quick match':'Win '+rangeTxt(winRange(gtypeKey(),modeKey()))+' points')+'</span></button>'+
   '<div class="two">'+(r.won&&IN_TG?'<button class="btn btn-quiet" data-act="sharewin">Share win</button>':'<button class="btn btn-quiet" data-act="tabmenu" data-arg="garage">Garage</button>')+'<button class="btn btn-ghost" data-act="menu">Menu</button></div></div>';
@@ -861,6 +905,7 @@ const ACT={
  paint:a=>{const P=PAINTS[a];if(!P)return;
   if(save.paints&&save.paints[a]){save.paint=a;store();fx('tap');showToast(P.n+' paint on');return;}
   if(P.pass){openPass();return;}
+  if(P.only==='vault'){showToast('Unlocks at Hyperspace Vault level '+VAULT_PAINT_LV);openVault();return;}
   if(P.only){showToast('Only in the Founder pack');if(FOUNDER_OPEN){closeAll();setTab('shop');}return;}
   pay(P.ton,{kind:'paint',id:a});},
  tune:a=>{const [sl,k,t]=a.split('|');when(tuneItem(sl==='w',k,+t),r=>{if(!r)return;showToast(r.better?'New roll '+pct(r.roll)+', up from '+pct(r.old):'Rolled '+pct(r.roll)+'. You kept '+pct(r.old));syncPlayer();uiDirty();});},
@@ -929,6 +974,9 @@ const ACT={
  premium:a=>{if(a==='moonbeam'){if(save.moonbeam)return;pay(MOONBEAM_PRICE,{kind:'moonbeam'});}else{if(save.skin==='lunar')return;pay(SKINS.lunar.price,{kind:'skin'});}},
  revealok:()=>{if(revealOv)closeOverlay(revealOv);},
  lbscope:a=>{lbScope=a;fx('tap');uiDirty('ranks');},
+ vault:()=>openVault(),
+ vaultbuy:a=>{const B=VAULT[a];if(!B)return;pay(B.ton,{kind:'vault',tk:a});},
+ vaultboard:()=>{closeAll();lbScope='vault';loadLB();setTab('ranks');},
  wiki:()=>openLink(WIKI_URL),
  lpwallet:()=>openLink('https://solscan.io/account/'+LP_WALLET),
  haptics:()=>{save.haptics=!save.haptics;store();if(save.haptics)fx('tap');},

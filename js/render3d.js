@@ -122,6 +122,31 @@ function chassisB(s){return bakedOf(['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s
 function weaponB(s){return bakedOf(['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.cls].join('|'),()=>M3.weaponKit(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
 let BOSSB=null;
 function bossB(){if(!BOSSB){const k=M3.bossKit();BOSSB={hull:bakedOf('bossH',()=>k.hull),gun:bakedOf('bossG',()=>k.gun)};}return BOSSB;}
+// Hyperspace Vault looks (rules.js VAULT_REW): a gold tooth laid on the front deck (it glows from level 10), and where the
+// gold trail leaves the rear. The deck height comes from a ray cast down onto the hull, so it sits right on every chassis
+let TOOTHG=null;const ZT=0.26;   // off the center line, clear of the barrel
+function toothGeo(){
+ if(TOOTHG)return TOOTHG;
+ const sh=new THREE.Shape(),q=(a,b,c,d)=>sh.quadraticCurveTo(a,-b,c,-d);sh.moveTo(-0.46,0.3);
+ q(-0.5,-0.64,-0.22,-0.6);q(0,-0.5,0.22,-0.6);q(0.5,-0.64,0.46,-0.3);q(0.42,0.05,0.3,0.55);q(0.2,0.7,0.12,0.5);q(0.06,0.18,0,0.16);q(-0.06,0.18,-0.12,0.5);q(-0.2,0.7,-0.3,0.55);q(-0.42,0.05,-0.46,-0.3);
+ TOOTHG=new THREE.ExtrudeGeometry(sh,{depth:0.16,bevelEnabled:true,bevelThickness:0.05,bevelSize:0.04,bevelSegments:2,curveSegments:5});return TOOTHG;
+}
+// the hull's top at (x, z): the highest triangle over that point (the hull is merged, non-indexed triangles)
+function deckY(geos,x,z){let best=-1;for(const g of geos){if(!g)continue;const a=g.attributes.position.array;
+ for(let i=0;i<a.length;i+=9){const x0=a[i],z0=a[i+2],x1=a[i+3],z1=a[i+5],x2=a[i+6],z2=a[i+8],d=(z1-z2)*(x0-x2)+(x2-x1)*(z0-z2);if(Math.abs(d)<1e-9)continue;
+  const l0=((z1-z2)*(x-x2)+(x2-x1)*(z-z2))/d,l1=((z2-z0)*(x-x2)+(x0-x2)*(z-z2))/d,l2=1-l0-l1;if(l0<-1e-6||l1<-1e-6||l2<-1e-6)continue;
+  const y=l0*a[i+1]+l1*a[i+4]+l2*a[i+7];if(y>best)best=y;}}return best;}
+function vaultParts(T,H,spec,mats){
+ const geos=[H.b.lit,H.b.shine];let mnx=1e9,mxx=-1e9;
+ for(const g of geos){if(!g)continue;const a=g.attributes.position.array;for(let i=0;i<a.length;i+=3){if(a[i]<mnx)mnx=a[i];if(a[i]>mxx)mxx=a[i];}}
+ if(mxx<mnx)return;
+ let x=mxx-0.22,y=-1;
+ for(let i=0;i<6&&y<0.15;i++){y=deckY(geos,x,ZT);if(y<0.15)x-=0.14;}
+ if(y<0.15)return;
+ const k=M3.kit();M3.put(k,toothGeo().clone(),'#ffcf4a',[x-0.16,y+0.012,ZT],[-Math.PI/2,0,-Math.PI/2],[0.42,0.42,0.42],spec.vt>=2?'glow':'shine');
+ T.body.add(M3.meshOf(M3.bake(k),null,mats));
+ T.tooth=[x-0.16,y+0.08,ZT];T.rear=[[mnx+0.05,0.35,-0.3],[mnx+0.05,0.35,0.3]];
+}
 // the parts of one tank spec, as a group: {g, hull, body, tur, anims, meta, wmeta}
 function buildTank(spec,mats){
  const g=new THREE.Group(),hull=new THREE.Group(),body=new THREE.Group(),tur=new THREE.Group();g.add(hull);hull.add(body);
@@ -132,7 +157,9 @@ function buildTank(spec,mats){
  tur.position.y=H.meta.ty;body.add(tur);
  const tg=new THREE.Group();tur.add(tg);tg.add(M3.meshOf(Wk.b,null,mats));
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);tg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
- return {g,hull,body,tur,tg,anims,meta:H.meta,wmeta:Wk.meta};
+ const T={g,hull,body,tur,tg,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
+ if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
+ return T;
 }
 function stepAnims(anims,dt,t){for(const a of anims){if(a.type==='pulse')a.o.scale.setScalar(1+0.16*Math.sin(t*a.spd));else if(a.axis)a.o.rotation[a.axis]+=a.spd*dt;}}
 
@@ -142,9 +169,10 @@ function unitSpec(u){
  let ct=Math.max(0,Math.min(2,u.aura|0));
  if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,myLoadout().c.t|0);}catch(e){}}
  const lunar=u.skin==='lunar',team=u===me&&lunar?'#e8f4ff':tcol(u.team);
- return {cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh};
+ return {cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl)};
 }
-const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0].join('|');
+const vtOf=vl=>(vl|0)>=10?2:(vl|0)>=1?1:0;   // the tooth: none, gold, glowing
+const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0].join('|');
 function unitMats(ghost){
  const lit=MT.lit.clone(),shine=MT.shine.clone();
  if(ghost){for(const m of [lit,shine]){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(0x3a5a9a);m.depthWrite=false;}return {lit,shine,glow:MT.gglow};}
@@ -154,7 +182,8 @@ let DEC=null;
 function decals(){
  if(DEC)return DEC;
  const flat=g=>{g.rotateX(-Math.PI/2);return g;};
- DEC={blob:flat(new THREE.CircleGeometry(1.35,20)),glowD:flat(new THREE.CircleGeometry(1.4,20)),aura:flat(new THREE.RingGeometry(1.42,1.6,36)),me:flat(new THREE.RingGeometry(1.62,1.8,40)),
+ const arcs=[0,1,2].map(i=>flat(new THREE.RingGeometry(1.92,2.1,16,1,i*Math.PI*2/3,Math.PI*0.45)));
+ DEC={varc:arcs,blob:flat(new THREE.CircleGeometry(1.35,20)),glowD:flat(new THREE.CircleGeometry(1.4,20)),aura:flat(new THREE.RingGeometry(1.42,1.6,36)),me:flat(new THREE.RingGeometry(1.62,1.8,40)),
   shield:new THREE.SphereGeometry(4,20,14),blobM:new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.55,depthWrite:false,alphaMap:radial()})};
  return DEC;
 }
@@ -170,10 +199,11 @@ function unitObj(u){
  let aura=null;const av=spec.boss?3:spec.lunar||spec.arch==='moon'?3:Math.max(spec.ct,spec.wt);
  if(av>0){aura=new THREE.Mesh(D.aura,addMat(av>=3?'#e8f4ff':RCOL[av],0.5));aura.position.y=0.03;aura.renderOrder=3;T.g.add(aura);}
  let ring=null;if(u===me){ring=new THREE.Mesh(D.me,addMat('#ffd24a',0.9));ring.position.y=0.035;ring.renderOrder=4;T.g.add(ring);}
- o=Object.assign(T,{key,spec,mats,aura,av,ring,ug,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
+ let varc=null;if(spec.vl>=10&&!spec.boss){varc=new THREE.Group();const vm=addMat('#ffcf4a',0.65);for(const a of D.varc){const m=new THREE.Mesh(a,vm);m.renderOrder=4;varc.add(m);}varc.position.y=0.04;varc.mat=vm;T.g.add(varc);}   // Vault level 10: a gold aura ring
+ o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
  RS.add(o.g);B3.units.set(u,o);return o;
 }
-function dropUnit(u,o){RS.remove(o.g);o.mats.lit.dispose();o.mats.shine.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
+function dropUnit(u,o){RS.remove(o.g);o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
 function heightAt(u){
  if(!BR||(u.elev||0)!==1)return 0;
  if(inDeck(u.x,u.y))return M3.DECK_H;
@@ -271,6 +301,12 @@ function frame3D(shx,shy){
   o.g.updateMatrixWorld();
   if(mv>0.004&&o.meta.trail.length&&R3.q!=='low')for(const p of o.meta.trail){const w=wpos(o.hull,p);emit(PSA,{x:w.x,y:w.y,z:w.z,life:0.35,s0:0.38,s1:0.05,c:o.meta.tc,a:0.85});}
   if((u.dash||spdMult(u)>1)&&mv>0.01)emit(PSA,{x:u.x,y:hgt+0.35,z:u.y,life:0.3,s0:1.1,s1:0.2,c:o.spec.team,a:0.35});
+  // Hyperspace Vault: gold engine trail (level 5), the glowing tooth and gold aura (10), hyperspace shimmer (25)
+  const vl=o.spec.vl;
+  if(vl>=5&&mv>0.004&&o.rear)for(const p of o.rear){const w=wpos(o.hull,p);emit(PSA,{x:w.x,y:w.y,z:w.z,life:0.55,s0:0.42,s1:0.06,c:Math.random()<0.3?'#fff3c2':'#ffcf4a',a:0.9,vy:0.25});}
+  if(o.tooth&&o.spec.vt>=2){const w=wpos(o.body,o.tooth);once(PSA,w.x,w.y,w.z,(0.9+0.25*Math.sin(now/260))*ds,'#ffcf4a',0.6);}
+  if(o.varc){o.varc.rotation.y=-t*0.9;o.varc.mat.opacity=0.45+0.25*Math.sin(now/380);}
+  if(vl>=25&&Math.random()<dt*(R3.q==='low'?6:14)){const a=Math.random()*6.28,d=Math.random()*1.3*ds;emit(PSA,{x:u.x+Math.cos(a)*d,y:hgt+0.35+Math.random()*0.9*ds,z:u.y+Math.sin(a)*d,vy:0.6,life:0.6,s0:0.08,s1:0.42,c:['#ffffff','#c79bff','#ffcf4a','#ff7ad9'][(Math.random()*4)|0],a:0.95});}
   // soft glows on lights, orbs and cores (a cheap stand-in for bloom)
   for(const h of o.meta.halos){const w=wpos(o.body,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6,h[3],0.55);}
   for(const h of o.wmeta.halos){const w=wpos(o.tg,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6,h[3],0.55);}
@@ -428,7 +464,7 @@ function cachedArt(ctx,w,h,key,fn){
  if(!c){c=document.createElement('canvas');c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);fn(x);artCache.set(k,c);if(artCache.size>120)artCache.delete(artCache.keys().next().value);}
  ctx.drawImage(c,0,0,w,h);
 }
-function haloList(o,parts){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.tg,h).clone(),h[3],h[4]*1.5]);return out;}
+function haloList(o,parts){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);if(o.tooth&&o.spec&&o.spec.vt>=2)out.push([wpos(o.body,o.tooth).clone(),'#ffcf4a',1.1]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.tg,h).clone(),h[3],h[4]*1.5]);return out;}
 // a tank (or part of one) for the menus. parts: 1 = chassis only, 2 = weapon only, 3 = whole tank
 function artTank(ctx,w,h,spec,parts,opt){
  opt=opt||{};const A=artR(),T=buildTank(spec,A.mats);
@@ -441,7 +477,7 @@ function artTank(ctx,w,h,spec,parts,opt){
  artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
- return Object.assign({cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:lunar?'#e8f4ff':TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false},o||{});};
+ return Object.assign({cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:lunar?'#e8f4ff':TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
 // returns true when it drew the picture in 3D
 function art3D(ctx,w,h,a){
  if(!use3D()||!w||!h)return false;

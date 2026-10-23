@@ -117,7 +117,7 @@ const pvX=x=>pvp.flip?W-x:x,pvY=y=>pvp.flip?H-y:y,pvA=a=>pvp.flip?a+Math.PI:a;
 const pvSwap=a=>pvp.team===1&&!isSolo(matchG)?[a[1],a[0]]:a;
 function pvpUnit(r,old){
  const u=old||{buffs:[],sp:0,sup:null,flash:0,elev:0,trail:[],cd:0,lk:null};
- Object.assign(u,{id:r.id,team:pvT(r.team),name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1});
+ Object.assign(u,{id:r.id,team:pvT(r.team),name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1});
  if(!old){u.x=pvX(r.x);u.y=pvY(r.y);u.ang=pvA(r.ang||0);u.hd=u.ang;u.hp=r.mhp;u.ox=u.x;u.oy=u.y;}
  return u;
 }

@@ -71,7 +71,8 @@ const PAINTS={
  venom:{n:'Venom',hull:'#1d3b21',tur:'#28502d',trim:'#7be07b',ton:2.4,stars:150},
  gold:{n:'Gold plate',hull:'#7a5c16',tur:'#9a7720',trim:'#ffe08a',ton:4.8,stars:300,shine:true},
  void:{n:'Void',hull:'#07080d',tur:'#121522',trim:'#4d9fff',ton:4.8,stars:300,shine:true},
- founder:{n:'Founder',hull:'#aab2c0',tur:'#d3d9e3',trim:'#ffcf4a',shine:true,only:'founder'}};   // Founder pack only, never sold on its own
+ founder:{n:'Founder',hull:'#aab2c0',tur:'#d3d9e3',trim:'#ffcf4a',shine:true,only:'founder'},   // Founder pack only, never sold on its own
+ hyper:{n:'Hyperspace',hull:'#171140',tur:'#261c63',trim:'#ffd46a',shine:true,only:'vault'}};   // Hyperspace Vault level 7, never sold
 // ---- featured mode: one mode a day pays +25% and gets a live queue ----
 const FEATURE_ROT=['crystal','royale','bounty','crystal','bounty','royale','zone'],FEATURED_X=1.25;   // by UTC day; season 1 opens with Crystal Rush
 const featuredOn=day=>FEATURE_ROT[((day%7)+7)%7];
@@ -156,7 +157,7 @@ function tankOf(L,n){
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin*n),dmgM:(1+0.08*U.cannon)*skin,spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,
   wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,chm:Cc.mult,dscale:Cc.size,cls:Cc.cls,
-  aura:Math.max(auraOf(W0),auraOf(Cc)),paint:PAINTS[L.paint]?L.paint:'stock',skin:L.skin==='lunar'?'lunar':'default'};
+  aura:Math.max(auraOf(W0),auraOf(Cc)),paint:PAINTS[L.paint]?L.paint:'stock',skin:L.skin==='lunar'?'lunar':'default',vl:Math.max(0,Math.min(999,Math.floor(Number(L.vl)||0)))};
 }
 
 // =====================================================================
@@ -179,6 +180,27 @@ const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
 const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=30;
 const PREMIUM={moonbeam:{ton:50,stars:3300},skin:{ton:30,stars:2000},starter:STARTER,founder:FOUNDER};
+// ---- Hyperspace Vault: an endless deposit for looks only. Gold is never spent and never expires; lifetime Gold sets
+// your Vault level, and each level unlocks a look (badge, gold tooth, gold name, trail, paint, aura, titles). It gives no
+// stats, power or points. Bigger bundles carry bonus Gold. Every deposit is verified shop spending like any other buy
+const VAULT={pouch:{n:'Pouch',stars:250,ton:4,g:250},chest:{n:'Chest',stars:1000,ton:16,g:1050},vault:{n:'Vault',stars:5000,ton:80,g:5500},hyper:{n:'Hyperspace',stars:25000,ton:400,g:28750}};
+const VAULT_ORDER=['pouch','chest','vault','hyper'];
+const VLV=[250,750,1500,3000,5000,7500,10000],VLV_STEP=5000;   // Gold for levels 1-7, then +5,000 a level, forever
+const vaultNeed=l=>l<=0?0:l<=VLV.length?VLV[l-1]:VLV[VLV.length-1]+(l-VLV.length)*VLV_STEP;   // lifetime Gold to reach level l
+function vaultLevel(g){g=Number(g)||0;if(g<VLV[0])return 0;let l=0;while(l<VLV.length&&g>=VLV[l])l++;if(l<VLV.length)return l;return VLV.length+Math.floor((g-VLV[VLV.length-1])/VLV_STEP);}
+// what each level unlocks (the looks read the level, so a level never has to be claimed)
+const VAULT_REW=[{lv:1,k:'tooth',n:'Vault badge and a gold tooth',d:'Your level badge on every board, VS and results screen. A gold tooth on your hull.'},
+ {lv:3,k:'name',n:'Gold name',d:'Your name in gold on the boards and in live matches.'},
+ {lv:5,k:'trail',n:'Gold engine trail',d:'A trail of gold behind your tank as it moves.'},
+ {lv:7,k:'paint',n:'Hyperspace paint',d:'A paint that’s never sold. Only Vault pilots have it.'},
+ {lv:10,k:'aura',n:'Glowing tooth and a gold aura',d:'The tooth glows, and a gold ring circles your tank.'},
+ {lv:15,k:'keeper',n:'Title: Vault Keeper',d:'Shown under your name on the boards.'},
+ {lv:25,k:'legend',n:'Title: Gold Tooth Legend',d:'The top title, plus a hyperspace shimmer over your tank.'}];
+const VAULT_PAINT_LV=7;
+const vaultTitle=l=>l>=25?'Gold Tooth Legend':l>=15?'Vault Keeper':'';
+// the badge's color steps up every 5 levels: bronze, silver, gold, diamond, hyperspace
+const VAULT_TIERS=[{n:'Bronze',c:'#d08c4f'},{n:'Silver',c:'#cfd8e4'},{n:'Gold',c:'#ffcf4a'},{n:'Diamond',c:'#86e8ff'},{n:'Hyperspace',c:'#c79bff'}];
+const vaultTier=l=>VAULT_TIERS[Math.max(0,Math.min(4,Math.floor((l||0)/5)))];
 // milestone quests (one-time)
 const QUESTS=[
  {id:'q_win1',n:'First blood',d:'Win your first match',pts:50,goal:1},
@@ -275,12 +297,12 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr'];
+ 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
- for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
+ for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
  const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
  // over the build budget (levels bought before it existed): the top levels come off, paid back in full
  while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
@@ -290,7 +312,7 @@ function ecoNorm(S){
  for(const k of CHORDER)co[k]=[...new Set(listOf(co[k]).map(Number).filter(t=>t>=0&&t<=2))];
  for(const k in wo)if(!WORDER.includes(k))delete wo[k];for(const k in co)if(!CHORDER.includes(k))delete co[k];
  if(!wo.pulse.includes(0))wo.pulse.unshift(0);if(!co.vanguard.includes(0))co.vanguard.unshift(0);   // starter gear
- obj('roll');obj('salv');obj('q');obj('buys');obj('refC');const pa=obj('paints');pa.stock=1;
+ obj('roll');obj('salv');obj('q');obj('buys');obj('refC');const pa=obj('paints');pa.stock=1;if(vaultLevel(S.vg)>=VAULT_PAINT_LV)pa.hyper=1;else delete pa.hyper;
  if(S.skin!=='lunar')S.skin='default';S.moonbeam=!!S.moonbeam;S.starter=!!S.starter;S.founder=!!S.founder;
  if(S.dq&&typeof S.dq==='object'){S.dq.ids=listOf(S.dq.ids);S.dq.p=S.dq.p||{};S.dq.c=S.dq.c||{};S.dq.was=listOf(S.dq.was);}
  if(S.wk&&typeof S.wk==='object'){S.wk.ids=listOf(S.wk.ids);S.wk.p=S.wk.p||{};S.wk.u=S.wk.u||{};S.wk.c=S.wk.c||{};for(const id in S.wk.u)S.wk.u[id]=listOf(S.wk.u[id]);}
@@ -327,7 +349,7 @@ function ecoLoadout(S,L0){
  const seen={},cores=[0,1,2].map(i=>{const k=L0.cores&&L0.cores[i];if(!GEM[k]||seen[k])return null;seen[k]=1;return k;});
  const chs=CHORDER.filter(k=>bestOf(S,false,k)).map(k=>k===c.c?{...c}:pick(false,{c:k,t:-9}));
  const paint=PAINTS[L0.paint]&&S.paints&&S.paints[L0.paint]?L0.paint:'stock';
- return {w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs};
+ return {w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg)};   // vl: Vault level, looks only
 }
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
@@ -352,6 +374,7 @@ function ecoPrice(S,d,X){
   return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m),deal:k};}
  if(d.kind==='paint'){const P=PAINTS[d.id];return P&&P.stars?{ton:P.ton,stars:P.stars}:null;}
  if(d.kind==='pass')return {ton:PASS_PRICE.ton,stars:PASS_PRICE.stars};
+ if(d.kind==='vault'){const B=VAULT[d.tk];return B?{ton:B.ton,stars:B.stars}:null;}
  if(d.kind==='respec'){const t=respecTier(upInvested(S.up));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
  return PREMIUM[d.kind]?{ton:PREMIUM[d.kind].ton,stars:PREMIUM[d.kind].stars}:null;
 }
@@ -438,6 +461,8 @@ function ecoGrant(S,d,X){
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
  else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
+ else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
+  if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
  return outs;
 }
 // a refunded purchase: take back exactly what it gave
@@ -454,6 +479,7 @@ function ecoRefund(S,kind,outs){
   else if(o.tk==='skin')S.skin='default';
   else if(o.tk==='pass'){if(S.pass&&S.pass.s===o.s)S.pass.prem=false;}
   else if(o.tk==='respec'){if(o.credit)S.rsCr=0;else{const p=Math.min(S.pts,o.extra||0);S.pts-=p;S.ptsSpent+=p;}}   // the levels stay cleared; the extra points go back
+  else if(o.tk==='vault'){S.vg=Math.max(0,(S.vg||0)-(o.g||0));if(vaultLevel(S.vg)<VAULT_PAINT_LV&&S.paints)delete S.paints.hyper;}
  }
 }
 // ---- milestones ----

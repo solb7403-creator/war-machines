@@ -128,7 +128,7 @@ const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f
 function myLoadout(){
  const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
  return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
-  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c)))};
+  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg)};
 }
 const calcPower=()=>powerOf(myLoadout());
 function buildStats(){
@@ -231,6 +231,9 @@ function revealOf(r){
  if(r.tk==='skin')return {tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:'+8% health and +8% damage, applied.'};
  if(r.tk==='respec')return {tk:'respec',rar:2,color:'#ffcf4a',title:r.credit?'Paid reset saved':'Build reset',sub:r.credit?'Your next build reset gives back every point.':'Every level is back to 0 and all '+fmtNum(r.back)+' points are back. Spend them in the Garage.'};
  if(r.tk==='pass')return {tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'};
+ if(r.tk==='vault'){const lv=r.lv|0,lv0=r.lv0|0,got=VAULT_REW.filter(x=>x.lv>lv0&&x.lv<=lv).map(x=>x.n),t=r.t||save.vg||0;
+  return {tk:'vault',rar:2,color:vaultTier(lv).c,lv,title:'+'+fmtNum(r.g)+' Gold',
+   sub:lv>lv0?'Vault level '+lv+'!'+(got.length?' Unlocked: '+got.join(', ')+'.':' Your badge is brighter on every board.'):'Vault level '+lv+'. '+fmtNum(Math.max(0,vaultNeed(lv+1)-t))+' Gold to level '+(lv+1)+'.'};}
  const isW=r.isW,k=r.k,t=r.tier;if(!k)return null;
  const pw=v=>(Math.round(v*1000)/10)+'%';
  if(r.sal){const nm='Salvaged '+(isW?WNAMES[k][t]:CNAMES[k][t]),item={isW,k,tier:t,sal:true};
@@ -248,6 +251,7 @@ function afterGain(r){
  if(r.k&&(r.kind==='new'||r.kind==='up'||(r.sal&&r.better)))equipBest(r.isW,r.k);
  if(r.tk==='moonbeam')save.weapon='moon';
  if(r.tk==='paint'&&r.id)save.paint=r.id;
+ if(r.tk==='vault'&&(r.lv0|0)<VAULT_PAINT_LV&&(r.lv|0)>=VAULT_PAINT_LV){save.paints=save.paints||{};save.paints.hyper=1;save.paint='hyper';}   // the Hyperspace paint goes on the moment it unlocks
  if(r.box)afterGain(r.box);
 }
 // what a server-verified purchase gave: equip it and show it
@@ -351,7 +355,7 @@ function claimPass(track,i){
  });
 }
 // ---- paints: looks only, no stats. Your team color still shows on the tracks, turret core and health bar ----
-const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora','founder'];
+const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora','founder','hyper'];
 const myPaint=()=>PAINTS[save.paint]||PAINTS.stock;
 // ---- featured mode: one mode a day pays +25% and gets a live queue ----
 const featuredMode=()=>featuredOn(dayNum());   // FEATURE_ROT is in rules.js

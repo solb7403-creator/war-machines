@@ -52,6 +52,7 @@ python3 dev/tests/b7test.py            # Untouchable, dailies + swaps, weekly qu
 python3 dev/tests/b8test.py            # the server-owned economy in the browser: claims, forged saves, scored/too-fast/offline AI matches, Stars grants, the one-time move, admin flags
 python3 dev/tests/b9test.py            # build budget + reset build (points or paid), ghosts (VS seat, report, owner's sheet), Survival (megatank), Last Standing pay
 python3 dev/tests/b10test.py           # the 3D view: every mode x map, draw cost at 4x CPU slowdown, aim/tap on the tilted ground, Graphics setting, Auto step-down, 2D without WebGL or after a lost GPU context, 3D menu pictures
+python3 dev/tests/b11test.py           # the Hyperspace Vault: Shop card, server-priced bundles, Stars deposits, levels and unlocks, the Vault board, badges, looks in 3D and 2D
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons

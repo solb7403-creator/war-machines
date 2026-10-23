@@ -3,7 +3,7 @@
     ".read": false,
     ".write": false,
     "players": {
-      ".indexOn": ["pts", "ref"]
+      ".indexOn": ["pts", "ref", "vg"]
     },
     "dly": {
       "$d": { ".indexOn": ["s"] }

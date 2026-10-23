@@ -282,6 +282,30 @@ function drawGemArt(ctx,w,h,k){
  ctx.save();ctx.shadowColor=c;ctx.shadowBlur=s*0.25;diamond(ctx,w/2,h/2,s*0.3,c);ctx.restore();
  ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.moveTo(w/2,h/2-s*0.3);ctx.lineTo(w/2+s*0.21,h/2);ctx.lineTo(w/2,h/2-s*0.04);ctx.closePath();ctx.fill();
 }
+// the gold tooth (LUNAR's mark), centered at x,y, s = height. Used by the Vault art and the 2D tank
+function toothPath(ctx,x,y,s){const k=s/1.3,P=(a,b)=>[x+a*k,y+b*k];ctx.beginPath();ctx.moveTo(...P(-0.46,-0.3));
+ const q=(a,b,c,d)=>ctx.quadraticCurveTo(...P(a,b),...P(c,d));
+ q(-0.5,-0.64,-0.22,-0.6);q(0,-0.5,0.22,-0.6);q(0.5,-0.64,0.46,-0.3);q(0.42,0.05,0.3,0.55);q(0.2,0.7,0.12,0.5);q(0.06,0.18,0,0.16);q(-0.06,0.18,-0.12,0.5);q(-0.2,0.7,-0.3,0.55);q(-0.42,0.05,-0.46,-0.3);ctx.closePath();}
+function goldTooth(ctx,x,y,s,glow){
+ ctx.save();if(glow){ctx.shadowColor='#ffcf4a';ctx.shadowBlur=s*0.9;}
+ const g=ctx.createLinearGradient(x-s*0.4,y-s*0.5,x+s*0.4,y+s*0.5);g.addColorStop(0,'#fff3c2');g.addColorStop(0.45,'#ffcf4a');g.addColorStop(1,'#b8861c');
+ toothPath(ctx,x,y,s);ctx.fillStyle=g;ctx.fill();ctx.shadowBlur=0;ctx.lineWidth=Math.max(1,s*0.05);ctx.strokeStyle='#7a5410';ctx.stroke();
+ ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.ellipse(x-s*0.17,y-s*0.27,s*0.07,s*0.12,-0.4,0,7);ctx.fill();ctx.restore();}
+// the Hyperspace Vault: a badge in the level's color (bronze, silver, gold, diamond, hyperspace) around a gold tooth
+function drawVaultArt(ctx,w,h,lv){
+ const s=Math.min(w,h),cx=w/2,cy=h/2,T=vaultTier(lv),r=s*0.4,t=performance.now()/1000;
+ ctx.save();
+ if(T.n==='Hyperspace'||lv<=0){for(let i=0;i<24;i++){const a=i*2.4,d=r*(0.7+((i*37)%50)/60);ctx.globalAlpha=0.25+0.25*Math.sin(t*2+i);ctx.fillStyle=i%3?'#c79bff':'#ffffff';ctx.beginPath();ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d,s*0.008+(i%4)*s*0.003,0,7);ctx.fill();}ctx.globalAlpha=1;}
+ ctx.shadowColor=T.c;ctx.shadowBlur=s*0.18;
+ ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI/6+i*Math.PI/3;ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}ctx.closePath();
+ const g=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);
+ if(T.n==='Hyperspace'){g.addColorStop(0,'#3a2a8a');g.addColorStop(0.5,'#7b5cff');g.addColorStop(1,'#ff7ad9');}else{g.addColorStop(0,'#1a1f2b');g.addColorStop(1,'#0c0f16');}
+ ctx.fillStyle=g;ctx.fill();ctx.shadowBlur=0;ctx.lineWidth=Math.max(2,s*0.035);ctx.strokeStyle=lv>0?T.c:'#5a6577';ctx.stroke();
+ goldTooth(ctx,cx,cy-s*0.03,s*0.36,lv>=10);
+ if(lv>0){const fs=Math.round(s*0.13);ctx.font=font(fs);ctx.textAlign='center';ctx.textBaseline='middle';
+  const bw=fs*2.3,by=cy+r*0.78;ctx.fillStyle=T.c;rr(ctx,cx-bw/2,by-fs*0.62,bw,fs*1.24,fs*0.62);ctx.fill();ctx.fillStyle='#14100a';ctx.fillText('Lv '+lv,cx,by+1);}
+ ctx.restore();
+}
 function drawUnitArt(ctx,w,h,u){
  ctx.clearRect(0,0,w,h);if(!u)return;
  const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*Math.min(1.3,u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
@@ -479,12 +503,17 @@ function drawBattle(){
     g.save();g.globalAlpha=0.3+0.3*pl;g.strokeStyle=ac;g.lineWidth=b.aura>=2?2.4:1.5;g.beginPath();g.ellipse(px,py+r*0.2,r*1.45,r*1.1,0,0,7);g.stroke();
     if(b.aura>=2){g.globalAlpha=0.07+0.07*pl;g.fillStyle=ac;g.fill();}g.restore();}
    if(b.skin==='lunar'){g.strokeStyle='rgba(232,244,255,.6)';g.lineWidth=2;g.beginPath();g.arc(px,py,r*1.3,0,7);g.stroke();}
+   if(b.vl>=10){const t=performance.now()/1000;g.save();g.globalAlpha=0.5+0.25*Math.sin(t*2.6);g.strokeStyle='#ffcf4a';g.lineWidth=2.5;g.setLineDash([r*0.7,r*0.45]);g.lineDashOffset=-t*r*1.4;   // Vault level 10: a gold aura ring
+    g.beginPath();g.ellipse(px,py+r*0.2,r*1.9,r*1.45,0,0,7);g.stroke();g.restore();}
+   if(b.vl>=5&&b.trail&&b.trail.length>2){const a=b.trail[0],z=b.trail[b.trail.length-1];if(Math.hypot(a.x-z.x,a.y-z.y)>0.25)b.trail.forEach((tp,i)=>{g.globalAlpha=0.12+0.08*i;g.fillStyle=i%2?'#fff3c2':'#ffcf4a';g.beginPath();g.arc(X(tp.x),Y(tp.y),r*(0.18+0.05*i),0,7);g.fill();});g.globalAlpha=1;}   // level 5: gold engine trail
   }
   b.buffs.forEach((bf,i)=>{const rr2=r*(1.6+0.22*i),left=Math.max(0,1-bf.taken/BUFF_LIFE);g.strokeStyle=BUFF[bf.k].c;g.lineWidth=2.5;
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
   if(!D3&&(spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
   drawTank(b,b===me&&b.skin==='lunar'?'#e8f4ff':col);
+  if(!D3&&b.vl>0){const hd=b.hd===undefined?b.ang:b.hd;goldTooth(g,px+Math.cos(hd)*r*0.5,py+Math.sin(hd)*r*0.5*GK,r*0.5,b.vl>=10);   // Vault: the gold tooth on the hull
+   if(b.vl>=25){const t=performance.now()/1000;for(let i=0;i<4;i++){const a=t*1.7+i*1.57,k=0.5+0.5*Math.sin(t*5+i*2);g.globalAlpha=k;star5(g,px+Math.cos(a)*r*1.25,py+Math.sin(a)*r*0.95,r*0.16,i%2?'#c79bff':'#fff3c2');}g.globalAlpha=1;}}   // level 25: hyperspace shimmer
   if(!D3&&b.shieldT>0){const pl=performance.now()/1000+(b.id||0)*1.7,br=r*4.0*(1+0.04*Math.sin(pl*7));   // plasma ball: a giant crackling blue sphere around the tank while the shield holds
    g.save();
    const gr=g.createRadialGradient(px,py,br*0.2,px,py,br);
@@ -498,9 +527,9 @@ function drawBattle(){
   {const mine=b===me,bob=mine?Math.sin(performance.now()/300)*sc*0.09:0,fs=Math.round(sc*(mine?0.95:0.48));   // floating team chevron over every tank; yours is gold and bigger, the rest stay small and quiet so the map never looks cluttered
    g.save();g.globalAlpha=mine?1:0.55;g.fillStyle=mine?'#ffd24a':b.team!==0?'#ff4d5e':'#4d9fff';g.font=font(fs);g.textAlign='center';g.textBaseline='middle';
    g.fillText('▼',px,py-r*1.66*(D3&&b.boss?1.6:1)+bob);g.restore();}
-  if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(sc*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
+  if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(sc*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.vl>=3?'#ffcf4a':'rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
   if(b.boss){const fs=Math.max(11,Math.round(sc*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,py-r*2.0*(D3?1.6:1)-fs*0.6);g.textBaseline='top';}
-  if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
+  if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(sc*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':b.vl>=3?'#ffcf4a':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);

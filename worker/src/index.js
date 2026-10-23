@@ -69,6 +69,7 @@ function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
   if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
   if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
+  if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
   return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : k === "respec" ? "Build reset (keep all points)" : "Purchase";
 }
 
@@ -200,6 +201,7 @@ const descOf = (d) => {
   const kind = String(d.kind || "");
   if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null } : null;
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
+  if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {
@@ -234,7 +236,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
     const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if (desc.kind === "respec" && S.L) setLoadout(S, S.L);   // the build changed: power and league follow
+    if ((desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
@@ -266,7 +268,7 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
   if (!pr) return { status: 400, body: { error: "item" } };
   if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
   const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" ? tk : k === "box" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
   const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
@@ -350,23 +352,27 @@ export async function snapshot(env, fl) {
 // Phones download one small file instead of every player's record.
 export async function buildLeaderboard(env, now = Date.now()) {
   const d = dayOf(now), w = weekOf(now);
-  const [top, daily, weekly, n, fl, revc] = await Promise.all([
+  const [top, daily, weekly, n, fl, revc, vlt] = await Promise.all([
     dbGet(env, "players", { orderBy: '"pts"', limitToLast: 1100 }).catch(() => ({})),
     dbGet(env, `dly/${d}`, { orderBy: '"s"', limitToLast: 100 }).catch(() => ({})),
     dbGet(env, `wly/${w}`, { orderBy: '"s"', limitToLast: 100 }).catch(() => ({})),
     dbGet(env, "meta/n").catch(() => 0),
     dbGet(env, "flags").catch(() => null),
     dbGet(env, "meta/revc").catch(() => 0),
+    dbGet(env, "players", { orderBy: '"vg"', startAt: RULES.VLV[0], limitToLast: 100 }).catch(() => ({})),   // the Vault board: the top 100 by lifetime Gold
   ]);
   // pilots flagged for review sit out the board (and the snapshot) until Jake clears them
   const ok = ([id]) => !isFlagged(fl && fl[id]);
-  const all = Object.entries(top || {}).filter(ok).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, v.league || ""]).sort((a, b) => b[2] - a[2]);
+  const vlOf = (v) => RULES.vaultLevel(v && v.vg);
+  const vrow = (r, lv) => (lv > 0 ? r.concat(lv) : r);   // the Vault level rides along as an extra column (only when there is one)
+  const all = Object.entries(top || {}).filter(ok).map(([id, v]) => vrow([id, v.name || "Pilot", v.pts || 0, v.days || 0, v.league || ""], vlOf(v))).sort((a, b) => b[2] - a[2]);
   const lb = {
     t: now, d, w, n: Math.max(Number(n) || 0, all.length), lpf: Math.max(0, Math.round(((Number(revc) || 0) / 100) * LP_SHARE)), lps: LP_SHARE,
     cut: all.length >= 1000 ? all[999][2] : 0,
     top: all.slice(0, 1000),
-    daily: Object.entries(daily || {}).filter(ok).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
-    weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => [id, v.n || "Pilot", v.s || 0]).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    daily: Object.entries(daily || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    vault: Object.entries(vlt || {}).filter(ok).filter(([, v]) => vlOf(v) > 0).map(([id, v]) => [id, v.name || "Pilot", Math.floor(v.vg || 0), vlOf(v)]).sort((a, b) => b[2] - a[2]).slice(0, 100),
   };
   await dbPut(env, "lb", lb);
   // fh: who's held right now, kept exact here (a new flag also sets it at once); squad payouts read this small index
@@ -450,7 +456,7 @@ async function webhook(req, env) {
       S.gout = S.gout || {};
       if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
       const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
-      if (desc.kind === "respec" && S.L) setLoadout(S, S.L);
+      if ((desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
       const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
       return { outs };
