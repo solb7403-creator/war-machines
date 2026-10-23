@@ -178,7 +178,7 @@ async function verifySol(sig, amt) {
 // the launch liquidity fund: LP_SHARE of every verified shop sale goes into the $LUNAR liquidity pool at launch. Sales are
 // counted in US cents (meta/revc) as the server prices them (Stars at Telegram's ~1.3 cents, TON and SOL at the live TON
 // price), never the phone's number; refunds come off. The board file shows the fund (lb.lpf), the Ranks tab and Shop too
-export const LP_SHARE = 0.25;
+const LP_SHARE = 0.25;   // not exported: the Workers runtime only accepts handlers and classes as exports of the main module
 let TONUSD = { v: 0, t: 0 };
 async function tonUsd() {
   if (TONUSD.v && Date.now() - TONUSD.t < 300000) return TONUSD.v;
