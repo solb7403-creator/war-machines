@@ -3,7 +3,7 @@
 // rules (js/rules.js, bundled as RULES) on its own copy and sends its record back. Points are never taken from the phone.
 // Writes are conditional (Firebase ETags): read, change, write only if nobody else wrote in between, else retry.
 import { RULES as R, LIM } from "./sim.gen.js";
-import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName, SILENT } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName } from "./db.js";
 import { checkProof } from "./proof.js";
 
 export const ECO = {
@@ -74,7 +74,9 @@ async function readTag(env, path) {
   return { v: await r.json(), tag: r.headers.get("ETag") || "" };
 }
 async function writeIf(env, path, value, tag) {
-  const r = await fetch(dbUrl(env, path, SILENT), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": tag }, body: JSON.stringify(value) });
+  // never print=silent here: Firebase refuses it on a conditional (if-match) write with a 400, which made every record
+  // save fail (Oct 23). The reply echoes the record, a few KB, the price of a write that can't silently overwrite another
+  const r = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": tag }, body: JSON.stringify(value) });
   if (r.status === 412) return false;
   if (!r.ok) throw new Error("db put " + path + " " + r.status);
   return true;

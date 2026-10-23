@@ -57,6 +57,8 @@ export function makeDB() {
     }
     const body = init.body ? JSON.parse(init.body) : null;
     const im = hdr(init, 'if-match');
+    // like Firebase: a conditional write can't be combined with print=silent, shallow or query parameters (400)
+    if (im !== null && im !== undefined && (q.print === 'silent' || q.shallow || q.orderBy)) return new Response(JSON.stringify({ error: "Mixing 'shallow', querying parameters or 'print=silent' and if-match or if-none-match requests is not supported" }), { status: 400 });
     if (im !== null && im !== undefined && method === 'PUT' && im !== etag(path)) { db.conflicts++; return new Response(JSON.stringify(get(path)), { status: 412, headers: { ETag: etag(path) } }); }
     const reply = (b) => q.print === 'silent' ? new Response(null, { status: 204 }) : new Response(JSON.stringify(b));   // print=silent: no body, like Firebase
     if (method === 'PUT') { set(path, body); return reply(body); }
