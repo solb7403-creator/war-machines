@@ -17,7 +17,7 @@ def dev(path,data=None):
     req=urllib.request.Request(DEV+path,data=json.dumps(data).encode() if data is not None else None,method='POST' if data is not None else 'GET')
     return json.loads(urllib.request.urlopen(req).read())
 def tg_mock(user,start_param=None,pvp=False,eco='local',autogfx=False):
-    idata=dev('/__initdata?user='+urllib.parse.quote(json.dumps(user)))['initData']
+    idata=dev('/__initdata?user='+urllib.parse.quote(json.dumps(user))+('&sp='+urllib.parse.quote(start_param) if start_param else ''))['initData']
     sp=(",start_param:"+json.dumps(start_param)) if start_param else ''
     # live matches are off unless a test asks for them (pvp=True points the game's socket at the local server)
     live="window.LUNAR_WS_BASE='ws://127.0.0.1:8787';" if pvp else "window.LUNAR_NO_PVP=1;"

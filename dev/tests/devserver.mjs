@@ -23,8 +23,9 @@ const pvp = await import('../../worker/src/pvp.js');
 const env = { BOT_TOKEN: '123:ABC', FIREBASE_DB_SECRET: 'SECRET' };
 const resetPvp = (waitMs, all) => { if (waitMs) env.PVP_WAIT_MS = String(waitMs); else delete env.PVP_WAIT_MS; if (all) env.PVP_ALL = '1'; else delete env.PVP_ALL; env.ROOM = makeNamespace(pvp.PvpRoom, env); env.LOBBY = makeNamespace(pvp.PvpLobby, env); };
 resetPvp(Number(process.env.PVP_WAIT_MS) || 0);
-export function initData(user) {
+export function initData(user, sp) {   // sp: the start_param, signed like Telegram does
   const p = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), query_id: 'q', user: JSON.stringify(user) });
+  if (sp) p.set('start_param', sp);
   const dcs = [...p.entries()].sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v}`).join('\n');
   const secret = createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest();
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
@@ -37,7 +38,7 @@ const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const send = (code, obj, type = 'application/json') => { res.writeHead(code, { 'Content-Type': type, 'Access-Control-Allow-Origin': '*' }); res.end(typeof obj === 'string' ? obj : JSON.stringify(obj)); };
   try {
-    if (u.pathname === '/__initdata') return send(200, { initData: initData(JSON.parse(u.searchParams.get('user'))) });
+    if (u.pathname === '/__initdata') return send(200, { initData: initData(JSON.parse(u.searchParams.get('user')), u.searchParams.get('sp') || '') });
     if (u.pathname === '/__cron') { await mod.buildLeaderboard(env); return send(200, { ok: true }); }
     if (u.pathname === '/__dump') return send(200, db.root);
     if (u.pathname === '/__tg') return send(200, tgCalls);

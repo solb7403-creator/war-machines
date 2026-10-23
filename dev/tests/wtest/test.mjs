@@ -145,7 +145,10 @@ setEco('tg_111', (S) => { S.wq.n = 20; });
 [s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.pts === 500, 'milestone claimed: ' + JSON.stringify(r.out));
 [s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.err === 'no', 'milestone once');
 [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.err === 'no', 'link quest needs the visit first');
-[s, r] = await act(A, 'visit', { id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.pts === 1000, 'wiki visited, then claimed');
+[s, r] = await act(A, 'visit', { id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.err === 'no', 'wiki: tapping Open alone does not count');
+{ const p = new URLSearchParams(initData(A)); p.delete('hash'); p.set('start_param', 'wikiread'); const dcs = [...p.entries()].sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v}`).join('\n');
+  p.set('hash', createHmac('sha256', createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest()).update(dcs).digest('hex'));
+  [s, r] = await call('/api/act', { initData: p.toString(), a: 'visit', id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.pts === 2000, 'wiki: back through the end-of-page button, then claimed ' + JSON.stringify(r.out)); }
 [s, r] = await act(A, 'visit', { id: 'q_tg' });
 globalThis.tgMember = 'left'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.err === 'join' && !r.E.q.q_tg.claimed, 'channel quest: not a member yet, no pay ' + JSON.stringify(r.out));
 t(tgCalls.filter(c => c[0] === 'getChatMember').pop()[1].chat_id === '@LUNARmemecoin', 'channel quest asks Telegram about @LUNARmemecoin');

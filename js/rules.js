@@ -214,7 +214,7 @@ const QUESTS=[
  {id:'q_super',n:'Overcharged',d:'Fire your super twice in one match',pts:500,goal:2},
  {id:'q_box',n:'Scavenger',d:'Grab 3 mystery boxes in one match',pts:500,goal:3},
  {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 75% health',pts:1500,goal:1},
- {id:'q_wiki',n:'Read the wiki',d:'How to play, the airdrop and tokenomics',pts:1000,goal:1,link:'wiki'},
+ {id:'q_wiki',n:'Read the wiki',d:'Read it to the end, then tap Claim at the bottom',pts:2000,goal:1,link:'wiki',read:1},
  {id:'q_x',n:'Follow on X',d:'Updates and announcements',pts:1000,goal:1,link:'x'},
  {id:'q_tg',n:'Join the channel',d:'Airdrop news first',pts:1500,goal:1,link:'tg'}].filter(q=>!q.link||LINKS[q.link]);
 const MS_BY={};QUESTS.forEach(q=>MS_BY[q.id]=q);
@@ -497,7 +497,8 @@ function ecoRefund(S,kind,outs){
 // ---- milestones ----
 function ecoMsAdd(S,id,val,isMax){const Q=MS_BY[id];if(!Q)return;const e=S.q[id]||(S.q[id]={p:0,done:false,claimed:false});e.p=isMax?Math.max(e.p||0,val||0):(e.p||0)+(val||0);if(e.p>=Q.goal)e.done=true;}
 function ecoMsClaim(S,id,X){const Q=MS_BY[id],e=S.q[id];if(!Q||!e||!e.done||e.claimed)return null;e.claimed=true;return {pts:ecoAward(S,Q.pts,X,1)};}
-function ecoVisit(S,id){const Q=MS_BY[id];if(!Q||!Q.link)return false;const e=S.q[id]||(S.q[id]={p:0,done:false,claimed:false});e.p=Q.goal;e.done=true;return true;}
+// read: the quest counts only when the pilot comes back through the wiki's end-of-page button (start_param wikiread)
+function ecoVisit(S,id,read){const Q=MS_BY[id];if(!Q||!Q.link||(Q.read&&!read))return false;const e=S.q[id]||(S.q[id]={p:0,done:false,claimed:false});e.p=Q.goal;e.done=true;return true;}
 // ---- login streak ----
 function ecoLoginState(S,X){
  const d=X.day,L=S.login||{last:-9,n:0};

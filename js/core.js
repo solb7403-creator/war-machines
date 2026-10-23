@@ -304,12 +304,13 @@ function openLink(url){
 // on iOS), cutting the request off, so the visit is remembered and sent again when you come back until it lands
 let visitQ=[];
 function sendVisit(id){
- return when(ecoRun('visit',{id},S=>ecoVisit(S,id)),r=>{
+ return when(ecoRun('visit',{id},S=>ecoVisit(S,id,1)),r=>{
   if(r&&(r.ok||r.err==='no'))visitQ=visitQ.filter(x=>x!==id);   // done (or already done)
   if(typeof uiDirty==='function')uiDirty('quests');return r;});
 }
 function visitLinkQuest(id){
  const Q=MS_BY[id];if(!Q||!LINKS[Q.link])return;
+ if(Q.read){openLink(LINKS[Q.link]);return;}   // the wiki: it counts from the button at the end of the page (wikiDone)
  if(!visitQ.includes(id))visitQ.push(id);
  const p=sendVisit(id);
  openLink(LINKS[Q.link]);
@@ -380,6 +381,15 @@ function claimLogin(){
 // ---- squad (referrals): you get paid when your recruits keep playing ----
 const BOT_PLAY='https://t.me/LunarWarMachinesBot/play';
 const refLink=()=>BOT_PLAY+'?startapp=ref_'+(TG_USER?TG_USER.id:'0');
+// back from the wiki's end-of-page button (t.me/...?startapp=wikiread): the read quest counts, the Quests tab opens
+let wikiBack=false;
+function wikiDone(){
+ const sp=IN_TG&&TG.initDataUnsafe&&TG.initDataUnsafe.start_param;
+ if(sp!=='wikiread'||wikiBack)return;wikiBack=true;
+ const e=save.q&&save.q.q_wiki;if(e&&e.claimed)return;
+ if(!visitQ.includes('q_wiki'))visitQ.push('q_wiki');
+ when(sendVisit('q_wiki'),r=>{if(r&&r.ok){try{closeAll();setTab('quests');}catch(_){}showToast('Wiki read! Claim your +'+fmtNum(MS_BY.q_wiki.pts)+' in Quests');}});
+}
 function captureRef(){   // the start_param of the link that opened the game
  try{
   const sp=IN_TG&&TG.initDataUnsafe&&TG.initDataUnsafe.start_param;

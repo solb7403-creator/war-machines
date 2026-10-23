@@ -62,7 +62,9 @@ async function auth(req, env) {
   if (!b) return { err: json({ error: "bad json" }, 400) };
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
-  return { b, user, pid: "tg_" + user.id, ip: req.headers.get("CF-Connecting-IP") || "" };
+  // start_param: the link that opened the game (part of the signed login, so it can't be made up)
+  let sp = ""; try { sp = String(new URLSearchParams(String(b.initData || "")).get("start_param") || "").slice(0, 64); } catch (e) {}
+  return { b, user, pid: "tg_" + user.id, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
 function itemLabel(k, tk, ri) {
@@ -511,7 +513,7 @@ async function webhook(req, env) {
 // ================= router =================
 const ROUTES = {
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip); return { status: r.error === "rate" ? 429 : 200, body: r }; },
-  "/api/act": async (env, a) => act(env, a.b, a.user, a.pid),
+  "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
   "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),

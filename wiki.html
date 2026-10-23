@@ -420,7 +420,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Overcharged: 2 supers in one match</td><td class="n">500</td></tr>
    <tr><td>Scavenger: 3 boxes in one match</td><td class="n">500</td></tr>
    <tr><td>Untouchable: win without dropping below 75% health</td><td class="n">1,500</td></tr>
-   <tr><td>Read this wiki</td><td class="n">1,000</td></tr>
+   <tr><td>Read this wiki to the end (the claim button is at the bottom)</td><td class="n">2,000</td></tr>
    <tr><td>Join the news channel</td><td class="n">1,500</td></tr>
    <tr><td>Follow on X</td><td class="n">1,000</td></tr>
   </table>
@@ -579,6 +579,13 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
  </div>
 </section>
 
+<section id="claim" style="text-align:center">
+ <h2>You made it to the end</h2>
+ <p class="kick">That's the whole playbook. Go collect.</p>
+ <a class="play" id="claimBtn" href="https://t.me/LunarWarMachinesBot/play?startapp=wikiread">CLAIM +2,000 POINTS</a>
+ <p class="mut" style="margin-top:10px">Opens the game and completes the <b>Read the wiki</b> quest. Claim it in Quests. One time per pilot.</p>
+</section>
+
 <footer>LUNAR: War Machines. Fueled by the players. See you in orbit.<br><a href="https://t.me/LUNARmemecoin" style="color:var(--moon)">Telegram channel</a> · <a href="https://x.com/thelunarmeme" style="color:var(--moon)">@thelunarmeme on X</a></footer>
 </div>
 <script>
@@ -586,8 +593,8 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
 (function(){
  var tg=window.Telegram&&window.Telegram.WebApp;
  if(!tg||!tg.initData)return;
- var pb=document.getElementById('playBtn');
- if(pb)pb.addEventListener('click',function(e){e.preventDefault();try{tg.openTelegramLink(pb.href);}catch(x){location.href=pb.href;}});
+ ['playBtn','claimBtn'].forEach(function(id){var pb=document.getElementById(id);
+  if(pb)pb.addEventListener('click',function(e){e.preventDefault();try{tg.openTelegramLink(pb.href);}catch(x){location.href=pb.href;}});});
  try{tg.ready();tg.expand();if(tg.isVersionAtLeast&&tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#0a0e17');tg.setBackgroundColor('#0a0e17');}}catch(e){}
 })();
 </script>

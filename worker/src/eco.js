@@ -556,7 +556,7 @@ export async function channelReady(env) {
     return !!(j && j.ok && j.result && (j.result.status === "administrator" || j.result.status === "creator"));
   } catch (e) { return false; }
 }
-export async function act(env, b, user, pid, now = Date.now()) {
+export async function act(env, b, user, pid, now = Date.now(), sp = "") {
   const a = String(b.a || ""), name = cleanName(user), id = String(b.id || "").slice(0, 20);
   if (a === "ms" && id === "q_tg" && (await channelMember(env, user)) === false) {
     const S = await readEco(env, pid);
@@ -578,7 +578,7 @@ export async function act(env, b, user, pid, now = Date.now()) {
     case "chest": F = (S, X) => R.ecoChest(S, X) || { err: "no" }; break;
     case "swap": F = (S, X) => { const N = R.ecoSwap(S, id, X); return N ? { id: N.id } : { err: "none" }; }; break;
     case "ms": F = (S, X) => R.ecoMsClaim(S, id, X) || { err: "no" }; break;
-    case "visit": F = (S) => (R.ecoVisit(S, id) ? { ok: 1 } : { err: "no" }); break;
+    case "visit": F = (S) => (R.ecoVisit(S, id, sp === "wikiread") ? { ok: 1 } : { err: "no" }); break;   // the wiki counts only from its end-of-page button
     case "pass": F = (S, X) => R.ecoClaimPass(S, b.t === "p" ? "p" : "f", Number(b.i), X) || { err: "no" }; break;
     case "crate": if (!tk || ri === null) break; F = (S, X) => R.ecoCratePts(S, tk, ri, X); break;
     case "salvage": if (tk !== "weapon" && tk !== "chassis" || !(ri === 1 || ri === 2)) break; F = (S, X) => R.ecoSalvage(S, tk, ri, X); break;

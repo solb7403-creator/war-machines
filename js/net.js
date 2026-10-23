@@ -41,6 +41,7 @@ async function doSync(boot){
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
   if(r.ghost&&r.ghost.m&&typeof showGhostReport==='function'){save.ghAck=r.ghost.last||Date.now();showGhostReport(r.ghost);}
   store();
+  if(typeof wikiDone==='function')setTimeout(wikiDone,300);   // opened from the wiki's end-of-page button
  }catch(e){starsAckQ.unshift(...ack);syncFails++;}
  syncBusy=false;
  if(syncWant){syncWant=false;syncPlayer();return;}
