@@ -18,6 +18,7 @@ jobs:
           B='https://warmachines-a6034-default-rtdb.firebaseio.com/';A='.json?auth='+os.environ['DB']
           g=lambda p:json.load(urllib.request.urlopen(B+p+A))
           u=os.environ['U'].lower().lstrip('@')
+          lb=g('lb') or {};print('::notice title=board::'+json.dumps({'admin':g('cfg/admin'),'top':[r[:4] for r in lb.get('top',[])[:8]],'n':lb.get('n')}))
           pid=u if u.startswith('tg_') else g('lb')['top'][int(u[4:])-1][0] if u.startswith('rank') else 'tg_'+str(g('cfg/admin/'+u))
           S=g('eco/'+pid) or {}
           now=time.time()*1000;day=int(now//86400000)
