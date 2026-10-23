@@ -116,7 +116,7 @@ en = await end(A, st.tok, { quit: true }, now0 + 3.3e6 + 5000); t(en.ok && en.re
 }
 t(eco.minSecs('crystal', '1v1', true) === 60 && eco.minSecs('arena', '3v3', true) === 20 && eco.minSecs('zone', '2v2', false, false) === 6, 'minimum durations per mode');
 // daily cap still applies to match points
-setEco('tg_111', (S) => { S.dailyPts = R.DAILY_CAP - 50; S.dailyDay = day; delete S.mh; });
+setEco('tg_111', (S) => { S.dailyPts = R.DAILY_CAP - 50; S.dailyDay = day; delete S.mh; delete S.fx; });
 st = await start(A, { g: 'arena', m: '2v2' }, Date.now());
 en = await end(A, st.tok, { won: true }, Date.now() + 60000);
 t(en.ok && en.res.awarded === 50 && E('tg_111').dailyPts === R.DAILY_CAP, 'daily cap: only 50 of ' + en.res.pts + ' credited');
@@ -131,7 +131,7 @@ const got = [];
 for (const id of ['play4', 'win2', 'kill10', 'win6', 'win6', 'play4']) { [s, r] = await act(A, 'daily', { id }); got.push(r.out.pts || r.out.err); }
 t(got[4] === 'no' && got[5] === 'no' && got.slice(0, 4).every((x) => x > 0), 'each daily claims once ' + JSON.stringify(got));
 const boost = R.ecoBoost(E('tg_111'), { day, week: Math.floor((Date.now() - 4 * 86400000) / (7 * 86400000)) });
-t(E('tg_111').earned - before === [500, 500, 500, 500, 250].reduce((a, x) => a + Math.round(x * (1 + boost)), 0) && E('tg_111').dq.all, 'dailies + all-4 bonus paid once ' + (E('tg_111').earned - before));
+t(E('tg_111').earned - before === [500, 500, 500, 500, 1000].reduce((a, x) => a + Math.round(x * (1 + boost)), 0) && E('tg_111').dq.all, 'dailies + all-4 bonus paid once ' + (E('tg_111').earned - before));
 setEco('tg_111', (S) => { S.wk.p = Object.fromEntries(S.wk.ids.map((id) => [id, 999])); });
 const wk = E('tg_111').wk.ids;
 const wgot = [];
@@ -142,14 +142,18 @@ setEco('tg_111', (S) => { S.wq.n = 20; });
 [s, r] = await act(A, 'chest'); t(r.out.pts > 0 && r.out.box && r.out.box.gem, 'chest at 20 dailies: points + rare gem cache');
 [s, r] = await act(A, 'chest'); t(r.out.err === 'no', 'chest once a week');
 // milestones and link quests
-[s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.pts === 50, 'milestone claimed: ' + JSON.stringify(r.out));
+[s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.pts === 500, 'milestone claimed: ' + JSON.stringify(r.out));
 [s, r] = await act(A, 'ms', { id: 'q_win1' }); t(r.out.err === 'no', 'milestone once');
 [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.err === 'no', 'link quest needs the visit first');
-[s, r] = await act(A, 'visit', { id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.pts === 200, 'wiki visited, then claimed');
+[s, r] = await act(A, 'visit', { id: 'q_wiki' }); [s, r] = await act(A, 'ms', { id: 'q_wiki' }); t(r.out.pts === 1000, 'wiki visited, then claimed');
 [s, r] = await act(A, 'visit', { id: 'q_tg' });
 globalThis.tgMember = 'left'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.err === 'join' && !r.E.q.q_tg.claimed, 'channel quest: not a member yet, no pay ' + JSON.stringify(r.out));
 t(tgCalls.filter(c => c[0] === 'getChatMember').pop()[1].chat_id === '@LUNARmemecoin', 'channel quest asks Telegram about @LUNARmemecoin');
-globalThis.tgMember = 'member'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.pts === 50, 'Telegram channel quest: joined, then claim');
+globalThis.tgMember = 'member'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r.out.pts === 1500, 'Telegram channel quest: joined, then claim');
+// claimed rewards never hit the daily cap, and don't use up the room matches have
+{ const S = R.ecoNorm({}), X = { day: 900, week: 128, rnd: Math.random }; S.dailyDay = 900; S.dailyPts = R.DAILY_CAP; S.q.q_win1 = { p: 1, done: true, claimed: false };
+  const m = R.ecoMsClaim(S, 'q_win1', X); t(m.pts === 500 && S.dailyPts === R.DAILY_CAP + 500, 'a quest claimed at the cap still pays in full');
+  S.dailyPts = 10000; S.fx = { d: 900, n: 5000 }; t(R.ecoAward(S, 20000, X) === 15000, 'matches keep their full 20,000 room after quest points ' + S.dailyPts); }
 globalThis.tgMember = null;
 // pass: free track points only up to the tier reached; premium never gives points
 [s, r] = await act(A, 'pass', { t: 'f', i: 30 }); t(r.out.err === 'no', 'pass tier not reached refused');

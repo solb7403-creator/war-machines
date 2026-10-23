@@ -26,7 +26,7 @@ async def main():
         r=await clean_run(0.3);print('untouchable 30% lost',r)
         check(r['won'] and not r['done'],'Untouchable counted at 70% health '+json.dumps(r))
         r=await pg.evaluate("()=>QUESTS.find(q=>q.id==='q_clean')")
-        check('75%' in r['d'] and r['pts']==250,'Untouchable text/reward '+json.dumps(r))
+        check('75%' in r['d'] and r['pts']==1500,'Untouchable text/reward '+json.dumps(r))
 
         # 2) daily quests: 4 a day (easy, easy, medium, hard), same for the same pilot and day; old saves move over
         r=await pg.evaluate("""()=>{save.dq={d:dayNum(),ids:['win3','play5','dmg6k'],p:{win3:2},c:{},all:false};const a=dailyQuests();
@@ -70,7 +70,7 @@ async def main():
         print('multi-day weeklies',r)
         check(r['a']=={'wdays':1,'wls3d':1,'wclean4d':1} and r['ls']==[2,1] and r['cl']==[1,1],'per-day progress '+json.dumps(r))
         check(r['sub'][0]=='2 / 3 days. Today done' and r['sub'][1]=='1 / 4 days. Today 1 / 2','per-day progress text '+json.dumps(r['sub']))
-        check(r['pts']==[3750,2000,1600],'weekly rewards scaled '+json.dumps(r['pts']))
+        check(r['pts']==[5000,4000,4000],'weekly rewards scaled '+json.dumps(r['pts']))
 
         # 5) streak bonus: +5% a streak day after the first, max +30%, only once today's reward is claimed
         r=await pg.evaluate("""()=>{const d=dayNum(),out={};
@@ -84,7 +84,7 @@ async def main():
         check(r['before']==0 and abs(r['next']-0.3)<1e-9 and abs(r['after']-0.3)<1e-9,'login unlocks the bonus '+json.dumps(r))
         check(r['d1']==0 and abs(r['d3']-0.1)<1e-9 and abs(r['d20']-0.3)<1e-9 and r['broken']==1,'bonus steps '+json.dumps(r))
         check(r['c1']==650 and r['c2']==650,'boosted quest points (500 x 1.3) '+json.dumps(r))
-        check(r['c4']==round(500*1.3)+round(250*1.3),'all-4 bonus on the last claim '+json.dumps(r))
+        check(r['c4']==round(500*1.3)+round(1000*1.3),'all-4 bonus on the last claim '+json.dumps(r))
 
         # 6) weekly quest claim and the 20-daily chest
         r=await pg.evaluate("""()=>{save.login={last:dayNum(),n:1};save.wk={w:weekNum(),ids:['wdays','wmodes','wrow5','wkill50','wbox30'],p:{wdays:5},u:{},c:{}};
@@ -93,7 +93,7 @@ async def main():
          return {a,b,c,xp,no:no===null,yes:yes&&yes.pts,gem:yes&&yes.reveal&&yes.reveal.tk};}""")
         print('weekly',r)
         check(r['a']==1500 and r['b']==0 and r['c']==0 and r['xp']==150,'weekly quest claim '+json.dumps(r))
-        check(r['no'] and r['yes']==2000 and r['gem']=='gem','weekly chest at 20 '+json.dumps(r))
+        check(r['no'] and r['yes']==5000 and r['gem']=='gem','weekly chest at 20 '+json.dumps(r))
 
         # 7) a real match feeds the weekly list and the results screen names it
         await pg.evaluate("()=>{window.onMatchEnd=window.__onME;}")

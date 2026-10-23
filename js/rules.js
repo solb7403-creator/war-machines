@@ -205,16 +205,18 @@ const vaultTitle=l=>l>=25?'Gold Tooth Legend':l>=15?'Vault Keeper':'';
 const VAULT_TIERS=[{n:'Bronze',c:'#d08c4f'},{n:'Silver',c:'#cfd8e4'},{n:'Gold',c:'#ffcf4a'},{n:'Diamond',c:'#86e8ff'},{n:'Hyperspace',c:'#c79bff'}];
 const vaultTier=l=>VAULT_TIERS[Math.max(0,Math.min(4,Math.floor((l||0)/5)))];
 // milestone quests (one-time)
+// one-time milestones: each worth at least a match (a match pays ~350-1,200); the links pay like a day's quest so
+// they actually get clicked (the channel most: it's checked, and it's where airdrop news lands)
 const QUESTS=[
- {id:'q_win1',n:'First blood',d:'Win your first match',pts:50,goal:1},
- {id:'q_win3',n:'Warmonger',d:'Win 3 matches',pts:150,goal:3},
- {id:'q_dmg',n:'Heavy hitter',d:'Deal 2,500 damage in one match',pts:100,goal:2500},
- {id:'q_super',n:'Overcharged',d:'Fire your super twice in one match',pts:100,goal:2},
- {id:'q_box',n:'Scavenger',d:'Grab 3 mystery boxes in one match',pts:75,goal:3},
- {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 75% health',pts:250,goal:1},
- {id:'q_wiki',n:'Read the wiki',d:'How to play, the airdrop and tokenomics',pts:200,goal:1,link:'wiki'},
- {id:'q_x',n:'Follow on X',d:'Updates and announcements',pts:50,goal:1,link:'x'},
- {id:'q_tg',n:'Join the channel',d:'Airdrop news first',pts:50,goal:1,link:'tg'}].filter(q=>!q.link||LINKS[q.link]);
+ {id:'q_win1',n:'First blood',d:'Win your first match',pts:500,goal:1},
+ {id:'q_win3',n:'Warmonger',d:'Win 3 matches',pts:1000,goal:3},
+ {id:'q_dmg',n:'Heavy hitter',d:'Deal 2,500 damage in one match',pts:500,goal:2500},
+ {id:'q_super',n:'Overcharged',d:'Fire your super twice in one match',pts:500,goal:2},
+ {id:'q_box',n:'Scavenger',d:'Grab 3 mystery boxes in one match',pts:500,goal:3},
+ {id:'q_clean',n:'Untouchable',d:'Win a match without dropping below 75% health',pts:1500,goal:1},
+ {id:'q_wiki',n:'Read the wiki',d:'How to play, the airdrop and tokenomics',pts:1000,goal:1,link:'wiki'},
+ {id:'q_x',n:'Follow on X',d:'Updates and announcements',pts:1000,goal:1,link:'x'},
+ {id:'q_tg',n:'Join the channel',d:'Airdrop news first',pts:1500,goal:1,link:'tg'}].filter(q=>!q.link||LINKS[q.link]);
 const MS_BY={};QUESTS.forEach(q=>MS_BY[q.id]=q);
 // daily quests: 4 a day (2 easy, 1 medium, 1 hard), picked per player per day; finish all 4 for a bonus.
 // 1 free swap a day (2 with the premium pass). Weekly: 5 quests a week, plus a chest for claiming 20 dailies.
@@ -249,28 +251,28 @@ const DQ_POOL=[
  {id:'featw3',lv:2,t:'Win 3 featured-mode matches',goal:3,pts:500,st:'featWins'},
  {id:'bntw2',lv:2,t:'Win 2 Bounty matches',goal:2,pts:500,st:'bountyWins'},
  {id:'cryw2',lv:2,t:'Win 2 Crystal Rush matches',goal:2,pts:500,st:'crystalWins'}];
-const DQ_SLOTS=[0,0,1,2],DQ_LV=['Easy','Medium','Hard'],DQ_ALL_BONUS=250,DQ_SWAPS=1;
+const DQ_SLOTS=[0,0,1,2],DQ_LV=['Easy','Medium','Hard'],DQ_ALL_BONUS=1000,DQ_SWAPS=1;
 // Weekly quests are the same for every pilot: the first WQ_FIXED every week, plus WQ_N-WQ_FIXED picked by the week.
 // u: counts different values (days played, modes won), not a total. mx: best single match (or current win streak).
 // pd: on how many different days you reached pd of it (N a day on M days); goal counts days
 const WQ_POOL=[
- {id:'wdays',t:'Play on 5 different days',goal:5,pts:1500,st:'day',u:1},
- {id:'wquick30',t:'Play 30 Quick Matches',goal:30,pts:3750,st:'quick'},
- {id:'wwin20',t:'Win 20 matches',goal:20,pts:1250,st:'wins'},
- {id:'wplay35',t:'Play 35 matches',goal:35,pts:1000,st:'plays'},
- {id:'wkill50',t:'Destroy 50 enemy tanks',goal:50,pts:1000,st:'kills'},
- {id:'wdmg',t:'Deal 80,000 damage',goal:80000,pts:1000,st:'dmg'},
- {id:'wmodes',t:'Win in 4 different modes',goal:4,pts:1000,st:'winMode',u:1},
- {id:'wzone6',t:'Win 6 Moon Zone matches',goal:6,pts:1000,st:'zoneWins'},
- {id:'wteam8',t:'Win 8 team matches (2v2 or 3v3)',goal:8,pts:1000,st:'teamWins'},
- {id:'wls3d',t:'Win Last Standing on 3 different days',goal:3,pts:2000,st:'royaleWins',pd:1},
- {id:'wrow5',t:'Win 5 matches in a row',goal:5,pts:1250,st:'streak',mx:1},
- {id:'wfeat16',t:'Play 16 featured-mode matches',goal:16,pts:2000,st:'featured'},
- {id:'wsup60',t:'Fire 60 supers',goal:60,pts:1800,st:'sups'},
- {id:'wbox30',t:'Grab 30 mystery boxes',goal:30,pts:750,st:'boxes'},
- {id:'wclean4d',t:'Win 2 matches without being destroyed on 4 different days',goal:4,pts:1600,st:'cleanWins',pd:2},
- {id:'wcap30',t:'Capture the Moon Zone 30 times',goal:30,pts:2000,st:'caps'}];
-const WQ_N=5,WQ_FIXED=2,PASS_XP_WQ=150,WQ_GOAL=20,WQ_PTS=2000;   // WQ_GOAL dailies open the weekly chest
+ {id:'wdays',t:'Play on 5 different days',goal:5,pts:3000,st:'day',u:1},
+ {id:'wquick30',t:'Play 30 Quick Matches',goal:30,pts:5000,st:'quick'},
+ {id:'wwin20',t:'Win 20 matches',goal:20,pts:4000,st:'wins'},
+ {id:'wplay35',t:'Play 35 matches',goal:35,pts:3500,st:'plays'},
+ {id:'wkill50',t:'Destroy 50 enemy tanks',goal:50,pts:3000,st:'kills'},
+ {id:'wdmg',t:'Deal 80,000 damage',goal:80000,pts:3000,st:'dmg'},
+ {id:'wmodes',t:'Win in 4 different modes',goal:4,pts:3000,st:'winMode',u:1},
+ {id:'wzone6',t:'Win 6 Moon Zone matches',goal:6,pts:3000,st:'zoneWins'},
+ {id:'wteam8',t:'Win 8 team matches (2v2 or 3v3)',goal:8,pts:3000,st:'teamWins'},
+ {id:'wls3d',t:'Win Last Standing on 3 different days',goal:3,pts:4000,st:'royaleWins',pd:1},
+ {id:'wrow5',t:'Win 5 matches in a row',goal:5,pts:3000,st:'streak',mx:1},
+ {id:'wfeat16',t:'Play 16 featured-mode matches',goal:16,pts:4000,st:'featured'},
+ {id:'wsup60',t:'Fire 60 supers',goal:60,pts:3500,st:'sups'},
+ {id:'wbox30',t:'Grab 30 mystery boxes',goal:30,pts:2500,st:'boxes'},
+ {id:'wclean4d',t:'Win 2 matches without being destroyed on 4 different days',goal:4,pts:4000,st:'cleanWins',pd:2},
+ {id:'wcap30',t:'Capture the Moon Zone 30 times',goal:30,pts:4000,st:'caps'}];
+const WQ_N=5,WQ_FIXED=2,PASS_XP_WQ=150,WQ_GOAL=20,WQ_PTS=5000;   // WQ_GOAL dailies open the weekly chest
 // weekly quests from before Oct 19, 2026 (per-pilot lists): kept only so a list started that week still shows. Safe to delete after Oct 26
 const WQ_OLD=[{id:'wls2',t:'Win 2 Last Standing matches',goal:2,pts:1250,st:'royaleWins'},{id:'wquick8',t:'Play 8 Quick Matches',goal:8,pts:1000,st:'quick'},
  {id:'wfeat8',t:'Play 8 featured-mode matches',goal:8,pts:1000,st:'featured'},{id:'wsup25',t:'Fire 25 supers',goal:25,pts:750,st:'sups'},
@@ -300,7 +302,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg'];
+ 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
@@ -358,9 +360,15 @@ function ecoLoadout(S,L0){
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
 // every point a pilot earns goes through here: the daily cap, the daily/weekly boards and days active
-function ecoAward(S,n,X){
+// free: a fixed reward you claim (quests, milestones, the daily reward, the pass, the chest). Those never hit the daily
+// cap, which is there for match grinding, and don't use up its room: S.fx counts today's free points so matches still
+// get the full DAILY_CAP. They still count on the daily and weekly boards
+const capRoom=(S,X)=>Math.max(0,DAILY_CAP+(S.fx&&S.fx.d===X.day?S.fx.n:0)-(S.dailyPts||0));
+function ecoAward(S,n,X,free){
  n=Math.round(Number(n)||0);if(n<=0)return 0;
- ecoRoll(S,X);n=Math.min(n,Math.max(0,DAILY_CAP-(S.dailyPts||0)));if(n<=0)return 0;
+ ecoRoll(S,X);
+ if(free)S.fx={d:X.day,n:(S.fx&&S.fx.d===X.day?S.fx.n:0)+n};
+ else{n=Math.min(n,capRoom(S,X));if(n<=0)return 0;}
  S.pts+=n;S.earned+=n;S.dailyPts+=n;S.weeklyPts+=n;
  if(S.ld!==X.day){S.sk=S.ld===X.day-1?(S.sk||0)+1:1;S.days=(S.days||0)+1;S.ld=X.day;if(S.fd===undefined||S.fd===null)S.fd=X.day;}   // a day counts once you bank points that day
  return n;
@@ -488,7 +496,7 @@ function ecoRefund(S,kind,outs){
 }
 // ---- milestones ----
 function ecoMsAdd(S,id,val,isMax){const Q=MS_BY[id];if(!Q)return;const e=S.q[id]||(S.q[id]={p:0,done:false,claimed:false});e.p=isMax?Math.max(e.p||0,val||0):(e.p||0)+(val||0);if(e.p>=Q.goal)e.done=true;}
-function ecoMsClaim(S,id,X){const Q=MS_BY[id],e=S.q[id];if(!Q||!e||!e.done||e.claimed)return null;e.claimed=true;return {pts:ecoAward(S,Q.pts,X)};}
+function ecoMsClaim(S,id,X){const Q=MS_BY[id],e=S.q[id];if(!Q||!e||!e.done||e.claimed)return null;e.claimed=true;return {pts:ecoAward(S,Q.pts,X,1)};}
 function ecoVisit(S,id){const Q=MS_BY[id];if(!Q||!Q.link)return false;const e=S.q[id]||(S.q[id]={p:0,done:false,claimed:false});e.p=Q.goal;e.done=true;return true;}
 // ---- login streak ----
 function ecoLoginState(S,X){
@@ -500,7 +508,7 @@ function ecoLoginState(S,X){
 function ecoLogin(S,X){
  const s=ecoLoginState(S,X);if(s.claimedToday)return null;
  S.login={last:X.day,n:s.next};
- const pts=ecoAward(S,s.reward,X),box=s.slot===6?ecoOpenBox(S,'gem',0,X):null;   // day 7: a free gem cache too
+ const pts=ecoAward(S,s.reward,X,1),box=s.slot===6?ecoOpenBox(S,'gem',0,X):null;   // day 7: a free gem cache too
  return {pts,box,day:s.slot+1};
 }
 // ---- daily and weekly quests ----
@@ -556,20 +564,20 @@ function ecoClaimDaily(S,id,X){
  const qs=ecoDailyRows(S,X),Q=qs.find(q=>q.id===id);
  if(!Q||!Q.done||Q.claimed)return null;
  S.dq.c[id]=true;S.wq.n=(S.wq.n||0)+1;
- let n=ecoAward(S,ecoQPts(S,Q.pts,X),X),all=false;ecoPassXP(S,PASS_XP_QUEST,X);
- if(!S.dq.all&&qs.every(q=>q.claimed||q.id===id)){S.dq.all=true;all=true;n+=ecoAward(S,ecoQPts(S,DQ_ALL_BONUS,X),X);ecoPassXP(S,PASS_XP_ALL,X);}
+ let n=ecoAward(S,ecoQPts(S,Q.pts,X),X,1),all=false;ecoPassXP(S,PASS_XP_QUEST,X);
+ if(!S.dq.all&&qs.every(q=>q.claimed||q.id===id)){S.dq.all=true;all=true;n+=ecoAward(S,ecoQPts(S,DQ_ALL_BONUS,X),X,1);ecoPassXP(S,PASS_XP_ALL,X);}
  return {pts:n,all};
 }
 function ecoClaimWeekly(S,id,X){
  const Q=ecoWeeklyRows(S,X).find(q=>q.id===id);
  if(!Q||!Q.done||Q.claimed)return null;
- S.wk.c[id]=true;const n=ecoAward(S,ecoQPts(S,Q.pts,X),X);ecoPassXP(S,PASS_XP_WQ,X);
+ S.wk.c[id]=true;const n=ecoAward(S,ecoQPts(S,Q.pts,X),X,1);ecoPassXP(S,PASS_XP_WQ,X);
  return {pts:n};
 }
 function ecoChest(S,X){
  ecoQuests(S,X);
  if(S.wq.claimed||(S.wq.n||0)<WQ_GOAL)return null;
- S.wq.claimed=true;const n=ecoAward(S,ecoQPts(S,WQ_PTS,X),X);
+ S.wq.claimed=true;const n=ecoAward(S,ecoQPts(S,WQ_PTS,X),X,1);
  return {pts:n,box:ecoOpenBox(S,'gem',1,X)};
 }
 // ---- Lunar Pass ----
@@ -583,7 +591,7 @@ function ecoClaimPass(S,track,i,X){
  const prem=track==='p',list=prem?P.cp:P.cf,r=(prem?PASS_PREM:PASS_FREE)[i];
  if(!r||list.includes(i)||(prem&&!P.prem))return null;
  list.push(i);
- if(r.k==='pts')return {pts:ecoAward(S,r.n,X)};   // free track only: the premium track never gives points
+ if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1)};   // free track only: the premium track never gives points
  if(r.k==='paint'){S.paints[r.id]=1;return {paint:r.id};}
  return {box:ecoOpenBox(S,r.tk,r.ri,X)};
 }
@@ -625,7 +633,7 @@ const ecoPctRoom=(S,X)=>S.refPD&&S.refPD.d===X.day?Math.max(0,REF_PCT_CAP-S.refP
 // rows: your recruits {id, pts, days}; me: {ref, days} (your own referrer gives you a welcome bonus on day 2); held: ids whose payouts are on hold
 function ecoSquad(S,rows,X,me,held){
  ecoRoll(S,X);held=held||[];
- let room=Math.max(0,DAILY_CAP-(S.dailyPts||0)),got=0,welcome=0;
+ let room=capRoom(S,X),got=0,welcome=0;
  if(me&&me.ref&&(me.days||0)>=2&&!S.refWelcome&&room>=REF_WELCOME&&!held.includes('me')){S.refWelcome=true;got+=REF_WELCOME;room-=REF_WELCOME;welcome=REF_WELCOME;}
  let pr=ecoPctRoom(S,X),pgot=0;
  for(const r of rows||[]){if(held.includes(r.id))continue;const o=ecoRefOwed(S,r),pp=Math.min(o.pct,pr),t=o.ms+pp;if(!t)continue;if(t>room)break;
