@@ -117,3 +117,12 @@ Every point and every piece of gear a Telegram pilot has lives in `eco/<pid>` an
 ## Designs on hold
 
 `dev/designs/legendary-weapons.js` keeps three legendary weapon designs for later updates (Lunar Railgun, Eclipse Cannon, and the Eclipse + Railgun + Tide combination), built with the game's model kit, with their super impacts and sound ideas. Renders are in `dev/designs/img/`. The Tide Engine design shipped as the Moonbeam.
+
+## Trailers (dev/trailer)
+Promo videos rendered from the real game, never shipped.
+- `capture.py RAW [shot ...]` boots the game headless with a virtual clock (`director.js`: scripted camera, staged
+  matchups, forced supers, HUD and damage numbers hideable) and saves every frame of each shot in `shots.py` to `RAW/<shot>/`.
+  Battles render at 540x960 @2x (the 3D view's native 1080x1920), menus at 360x640 @3x. Super shots run at 1/90 s per frame for 3x slow motion.
+- `edit.py RAW OUT [main|short|previews|thumb]` cuts them (`timeline.py`) into 1080x1920 H.264/AAC: titles in Chakra Petch,
+  speed ramps, punch-ins, shake, flashes, letterbox, phone-framed menus, and an original soundtrack synthesized in `music.py`.
+- `sheet.py RAW shot [step]` makes a numbered contact sheet; use it to retune `HIT` (the frame each super lands) after a recapture.
