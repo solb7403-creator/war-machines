@@ -16,7 +16,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json,os,urllib.request,time
-          B='https://warmachines-a6034-default-rtdb.firebaseio.com/';A='.json?auth='+os.environ['DB']
+          B='https://warmachines-a6034-default-rtdb.firebaseio.com/';A='.json?auth='+os.environ['DB'].strip()
           g=lambda p:json.load(urllib.request.urlopen(B+p+A))
           u=os.environ['U'].lower().lstrip('@')
           P=g('players') or {};now0=time.time()*1000
@@ -33,7 +33,7 @@ jobs:
             rq=urllib.request.Request(B+'diag/cw'+A+('&print=silent' if silent else ''),data=json.dumps({'t':int(now0),'s':silent}).encode(),method='PUT',headers={'if-match':tag,'Content-Type':'application/json'})
             try: r1=urllib.request.urlopen(rq);return [r1.status,r1.read().decode()[:120]]
             except Exception as e: return ['ERR',str(e),(e.read().decode()[:300] if hasattr(e,'read') else '')]
-          T='https://api.telegram.org/bot'+os.environ['BOT']+'/'
+          T='https://api.telegram.org/bot'+os.environ['BOT'].strip()+'/'
           tg=lambda m:json.load(urllib.request.urlopen(T+m)).get('result')
           try:
             me=tg('getMe');ph=tg('getUserProfilePhotos?user_id='+str(me['id']))
