@@ -11,6 +11,8 @@ jobs:
           CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           ACC=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts | python3 -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
+          SUB=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts/$ACC/subscriptions | python3 -c "import sys,json;d=json.load(sys.stdin);print(json.dumps([[x.get('rate_plan',{}).get('id'),x.get('state'),x.get('price')] for x in (d.get('result') or [])] or d.get('errors'))[:400])")
+          echo "::notice title=plan::$SUB"
           SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ); NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           Q='{"query":"query($a:String!,$s:Time!,$e:Time!){viewer{accounts(filter:{accountTag:$a}){workersInvocationsAdaptive(limit:500,filter:{datetime_geq:$s,datetime_leq:$e,scriptName:\"lunar-api\"}){sum{requests errors subrequests}quantiles{cpuTimeP50 cpuTimeP99}dimensions{status datetimeHour}}}}}","variables":{"a":"'$ACC'","s":"'$SINCE'","e":"'$NOW'"}}'
           curl -s -H "Authorization: Bearer $CF" -H "Content-Type: application/json" -d "$Q" https://api.cloudflare.com/client/v4/graphql > out.json
