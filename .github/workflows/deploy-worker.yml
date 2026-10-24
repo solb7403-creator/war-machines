@@ -67,6 +67,7 @@ jobs:
           set -o pipefail
           run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
           run npx -y wrangler@4 deploy
+          BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')   # a pasted secret can carry a stray space or newline
           printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
           printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@4 secret put FIREBASE_DB_SECRET
           URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
@@ -77,6 +78,7 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
           [ -n "$WORKER_URL" ] || { echo "::error::worker URL not found (is the workers.dev subdomain set up?)"; exit 1; }
+          export BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')
           SECRET=$(node -e 'const c=require("crypto");process.stdout.write(c.createHmac("sha256",process.env.BOT_TOKEN).update("lunar-webhook").digest("hex").slice(0,48))')
           R=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" -H 'Content-Type: application/json' \
             -d "{\"url\":\"${WORKER_URL}/api/tg-webhook\",\"secret_token\":\"${SECRET}\",\"allowed_updates\":[\"message\",\"pre_checkout_query\"]}")
