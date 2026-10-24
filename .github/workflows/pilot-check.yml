@@ -33,6 +33,12 @@ jobs:
             rq=urllib.request.Request(B+'diag/cw'+A+('&print=silent' if silent else ''),data=json.dumps({'t':int(now0),'s':silent}).encode(),method='PUT',headers={'if-match':tag,'Content-Type':'application/json'})
             try: r1=urllib.request.urlopen(rq);return [r1.status,r1.read().decode()[:120]]
             except Exception as e: return ['ERR',str(e),(e.read().decode()[:300] if hasattr(e,'read') else '')]
+          T='https://api.telegram.org/bot'+os.environ['BOT']+'/'
+          tg=lambda m:json.load(urllib.request.urlopen(T+m)).get('result')
+          try:
+            me=tg('getMe');ph=tg('getUserProfilePhotos?user_id='+str(me['id']))
+            print('::notice title=botprofile::'+json.dumps({'name':me.get('first_name'),'user':me.get('username'),'desc':(tg('getMyDescription') or {}).get('description'),'about':(tg('getMyShortDescription') or {}).get('short_description'),'photos':ph.get('total_count'),'cmds':[c['command'] for c in tg('getMyCommands') or []],'menu':tg('getChatMenuButton')}))
+          except Exception as e: print('::notice title=botprofile::ERR '+str(e)[:200])
           print('::notice title=condwrite::'+json.dumps({'plain':cw(False),'silent':cw(True)}))
           print('::notice title=health::'+json.dumps({'lb_built_min_ago':ago((g('lb') or {}).get('t')),'revc':g('meta/revc'),'starsPaid':spl[:6],'payments':pl,'test_write':wr}))
           lb=g('lb') or {};print('::notice title=board::'+json.dumps({'admin':g('cfg/admin'),'top':[r[:4] for r in lb.get('top',[])[:8]],'n':lb.get('n')}))
