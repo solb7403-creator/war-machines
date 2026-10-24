@@ -485,8 +485,10 @@ function fireSuper(r,S){
    if(along>0&&along<=S.len&&side<S.w){
     hurt(e,S.dmg);hit=true;
     ev('B',e.x,e.y,1.4,0.25,'#ffd24a');   // impact flare
+    ev('I',e.x,e.y,r.sup.w,r.team);   // super impact: an explosion where it lands (looks and sound only)
    }
   }
+  {const ex=Math.max(1,Math.min(W-1,r.x+Math.cos(ang)*S.len)),ey=Math.max(1,Math.min(H-1,r.y+Math.sin(ang)*S.len));ev('I',ex,ey,r.sup.w,r.team);}   // and where the beam ends
   if(!hit)ev('n',r.x+Math.cos(ang)*Math.min(S.len,6),r.y+Math.sin(ang)*Math.min(S.len,6),'MISSED','#c0cad4',1.2);
  }else if(S.kind==='shell'){
   shells.push({id:++bid,x:r.x+Math.cos(r.sup.ang)*1.2,y:r.y+Math.sin(r.sup.ang)*1.2,
@@ -494,7 +496,7 @@ function fireSuper(r,S){
    dmg:S.dmg,r:S.r,life:S.range/S.spd,owner:r});
   ev('S',4,0.25);
  }else{
-  ev('V',r.x,r.y,S.r,r.team);
+  ev('V',r.x,r.y,S.r,r.team);ev('I',r.x,r.y,r.sup.w,r.team);
   hitCratesNear(r.x,r.y,S.r,S.dmg*0.6);
   ev('S',6,0.35);
   let hit=false;
@@ -508,6 +510,7 @@ function fireSuper(r,S){
 function explode(s){
  s.dead=true;
  const r=s.owner;
+ ev('I',s.x,s.y,'siege',r?r.team:0);
  ev('B',s.x,s.y,s.r,0.5,'#ff9d45');
  hitCratesNear(s.x,s.y,s.r,s.dmg);
  ev('B',s.x,s.y,s.r*0.65,0.35,'#ffd24a');

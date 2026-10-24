@@ -385,6 +385,17 @@ function novaRing(g,R,w,k){const P=g.attributes.position.array,N=48;let o=0;cons
   const a=[x0,0,z0],b=[x1,0,z1],c=[x1+x1/n1*w,0,z1+z1/n1*w],d=[x0+x0/n0*w,0,z0+z0/n0*w];
   for(const v of [a,b,c,a,c,d]){P[o++]=v[0];P[o++]=v[1];P[o++]=v[2];}}
  g.attributes.position.needsUpdate=true;g.computeBoundingSphere();}
+// a super landing: a big fireball, a ground shockwave ring of sparks, and each weapon's own touch
+function impact3(x,z,w){
+ const C=(typeof IMPACT!=='undefined'&&IMPACT[w])||{r:2.4,c:'#ffb35a',c2:'#ffe08a'},lo=R3.q==='low';
+ boom3(x,z,C.r*0.9,C.c);
+ const n=lo?14:30;for(let i=0;i<n;i++){const a=i/n*6.28;emit(PSA,{x,y:0.15,z,vx:Math.cos(a)*C.r*4,vz:Math.sin(a)*C.r*4,vy:0.3,drag:2.5,life:0.45,s0:0.5,s1:0.08,c:C.c2,a:0.9});}
+ once(PSA,x,0.8,z,C.r*4.2,C.c2,1);once(PSA,x,0.5,z,C.r*6,C.c,0.6);
+ if(w==='moon')for(let i=0;i<(lo?10:24);i++)emit(PSA,{x:x+(Math.random()-0.5)*0.8,y:0.3,z:z+(Math.random()-0.5)*0.8,vy:7+Math.random()*5,drag:0.6,life:0.7+Math.random()*0.3,s0:0.9,s1:0.2,c:i%3?'#bfe6ff':'#ffffff',a:0.95});   // a pillar of moonlight
+ else if(w==='siege'&&!lo)for(let i=0;i<10;i++){const a=Math.random()*6.28,s=Math.random()*C.r;emit(PSN,{x:x+Math.cos(a)*s*0.3,y:0.6,z:z+Math.sin(a)*s*0.3,vy:1.6,vx:Math.cos(a)*s*0.4,vz:Math.sin(a)*s*0.4,drag:0.8,life:1.6,s0:0.8,s1:2.2,c:'#2a2b30',a:0.55});}   // a smoke column
+ else if(w==='twin')for(let i=0;i<(lo?8:18);i++){const a=Math.random()*6.28,s=2+Math.random()*5;emit(PSA,{x,y:0.6,z,vx:Math.cos(a)*s,vz:Math.sin(a)*s,vy:2+Math.random()*3,g:6,life:0.35,s0:0.25,s1:0.05,c:'#e2f4ff'});}   // electric sparks
+ else for(let i=0;i<(lo?8:16);i++){const a=Math.random()*6.28,s=3+Math.random()*4;emit(PSA,{x,y:0.5,z,vx:Math.cos(a)*s,vz:Math.sin(a)*s,vy:3+Math.random()*4,g:10,life:0.6,s0:0.3,s1:0.1,c:'#ffd24a'});}   // gold shrapnel
+}
 function boom3(x,z,r,c){
  const n=Math.round((R3.q==='low'?6:14)*Math.min(2.5,r));
  for(let i=0;i<n;i++){const a=Math.random()*6.28,s=(1+Math.random()*2.5)*r;emit(PSA,{x,y:0.4,z,vx:Math.cos(a)*s,vz:Math.sin(a)*s,vy:1+Math.random()*3,g:6,drag:1.5,life:0.5+Math.random()*0.4,s0:0.35,s1:0.05,c:Math.random()<0.5?c:'#ffe08a'});}
@@ -402,6 +413,7 @@ function muzzle(u,arch){
 function ev3D(a){
  if(!use3D()||!RS)return;
  const U=i=>i>=0?units[i]:null;
+ if(a[0]==='I'){impact3(a[1],a[2],a[3]);return;}
  if(a[0]==='k'){const r=U(a[1]);if(!r)return;const o=B3.units.get(r);
   if(o){const w=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:0x1a1c22,transparent:true,emissive:0x2a0c00});
    o.body.children.forEach(ch=>{if(ch.isGroup)return;const c=ch.clone();c.traverse(x=>{if(x.isMesh)x.material=mat;});w.add(c);});
@@ -473,7 +485,7 @@ function artTank(ctx,w,h,spec,parts,opt){
  T.hull.rotation.y=opt.hd===undefined?0:opt.hd;T.tur.rotation.y=opt.ta||0;
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
  const hal=haloList(T,parts);
- const r=spec.boss?2.2:parts===2?1.25:1.55;
+ const r=(spec.boss?2.2:parts===2?1.25:1.55)*(spec.arch==='moon'&&parts!==1?1.22:1);   // the Moonbeam (Tide Engine) is long and tall: frame it wider
  artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
@@ -515,5 +527,5 @@ function heroArt(ctx,w,h,t){
  if(!AR||!AR.hero||AR.hero.k!==k){const A=artR();AR.hero={k,T:buildTank(sp,A.mats)};}
  const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);
  T.body.position.y=T.meta.bob?T.meta.bob*Math.sin(t*3):0;
- ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);artShot(ctx,bw,bh,T.g,{r:1.55,el:0.5,az:0.95,cy:0.35},haloList(T,3));ctx.restore();
+ ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);artShot(ctx,bw,bh,T.g,{r:sp.arch==='moon'?1.85:1.55,el:0.5,az:0.95,cy:sp.arch==='moon'?0.5:0.35},haloList(T,3));ctx.restore();
 }

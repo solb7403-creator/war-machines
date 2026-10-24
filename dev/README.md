@@ -113,3 +113,7 @@ Every point and every piece of gear a Telegram pilot has lives in `eco/<pid>` an
 - **Loadout checks.** Only gear the pilot owns on the server's record, with its recorded roll, upgrade and core levels (`ecoLoadout`).
 - **Free plan capacity.** About 93 Durable Object requests per player per match (WebSocket messages count 20 to 1) and ~30 GB-s per match: roughly 400 live matches a day. Past that, joins fail and phones fall back to AI matches.
 - **3D.** `render.js` is still the only file that draws a battle. A 3D renderer can replace `drawBattle()` without touching menus, the sim or the netcode.
+
+## Designs on hold
+
+`dev/designs/legendary-weapons.js` keeps three legendary weapon designs for later updates (Lunar Railgun, Eclipse Cannon, and the Eclipse + Railgun + Tide combination), built with the game's model kit, with their super impacts and sound ideas. Renders are in `dev/designs/img/`. The Tide Engine design shipped as the Moonbeam.

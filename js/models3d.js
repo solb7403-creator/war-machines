@@ -229,18 +229,19 @@ function weaponKit(arch,tier,P,team,lunar,cls){
  const k=kit(),A=[],C=palette(P,team,cls,lunar),rc=TIERC[tier],M={tips:[],halos:[]},pm=PM(C);
  const wc=WEAPONS[arch]?WEAPONS[arch].c:'#3fd0c9';
  const core=(x,y)=>{put(k,OC(0.11),C.team,[x,y,0],null,[1,1.3,1],'glow');M.halos.push([x,y,0,C.team,0.35]);};
- if(arch==='moon'){   // LEGENDARY Moonbeam: crystal spear in gold crescents, a halo, an orbiting moon
-  put(k,CY(0.44,0.5,0.24,12),'#e6ecf5',[0,0.12,0],null,null,'shine');
-  put(k,TO(0.47,0.03,4,24),GOLD,[0,0.24,0],[Math.PI/2,0,0],null,'shine');
-  put(k,CY(0.12,0.16,0.4,8),GOLD,[0.42,0.2,0],[0,0,Math.PI/2],null,'shine');
-  put(k,OC(0.2),'#f4fbff',[1.15,0.2,0],null,[4.6,0.5,0.5],'glow');
-  for(const [x,R0] of [[0.9,0.3],[1.38,0.24]])sym(s=>put(k,TO(R0,0.035,5,16,Math.PI*0.9),GOLD,[x,0.2,0],[s*0.35,Math.PI/2,0],null,'shine'));
-  put(k,crescentGeo(0.22,0.05),GOLD,[-0.1,0.42,0],[0,Math.PI/2,0],null,'shine');
-  const hr=kit();put(hr,TO(0.64,0.025,4,30,Math.PI*1.65),'#bfe6ff',[0,0,0],[Math.PI/2,0,0],null,'glow');for(let i=0;i<4;i++){const a=i/4*Math.PI*2;put(hr,OC(0.05),GOLD,[Math.cos(a)*0.64,0,Math.sin(a)*0.64],null,[1,1.6,1],'glow');}
-  A.push({k:hr,p:[0,0.42,0],axis:'y',spd:1.8});
-  const mo=kit();put(mo,SP(0.07,8,6),'#ffffff',[0,0.3,0],null,null,'glow');
-  A.push({k:mo,p:[1.15,0.2,0],axis:'x',spd:4,orb:1});
-  M.tips.push([2.05,0.2,0]);M.halos.push([2.0,0.2,0,'#e8f4ff',1.1],[1.15,0.2,0,'#e8f4ff',0.8]);
+ if(arch==='moon'){   // LEGENDARY Moonbeam, the Tide Engine: three crystal barrels bound by gold rings, a full moon held above on a gold arm
+  const P0='#e6ecf5',PD='#c9d3e2',ICE='#bfe6ff',WH='#f4fbff';
+  put(k,CY(0.5,0.58,0.28,12),P0,[0,0.14,0],null,null,'shine');put(k,TO(0.54,0.035,4,24),GOLD,[0,0.28,0],[Math.PI/2,0,0],null,'shine');
+  put(k,SP(0.42,14,10),PD,[0,0.6,0],null,[1.25,0.85,1],'shine');
+  for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.PI/2,y=0.6+Math.sin(a)*0.18,z=Math.cos(a)*0.18;
+   put(k,CY(0.08,0.1,1.9,8),P0,[1.15,y,z],[0,0,Math.PI/2],null,'shine');put(k,OC(0.1),ICE,[2.15,y,z],null,[2.2,1,1],'glow');
+   M.tips.push([2.32,y,z]);M.halos.push([2.2,y,z,ICE,0.7]);}
+  put(k,B(0.09,0.5,0.09),GOLD,[-0.18,0.92,0],[0,0,-0.35],null,'shine');
+  // the gold rings turn slowly around the barrels; the moon above pulses and its ring spins
+  for(const x of[0.65,1.2,1.75]){const r=kit();put(r,TO(0.32,0.05,6,20),GOLD,[0,0,0],[0,Math.PI/2,0],null,'shine');for(let q=0;q<3;q++){const a=q/3*Math.PI*2;put(r,OC(0.045),ICE,[0,Math.cos(a)*0.32,Math.sin(a)*0.32],null,null,'glow');}A.push({k:r,p:[x,0.6,0],axis:'x',spd:x===1.2?-1.4:1.4});}
+  const mo=kit();put(mo,SP(0.26,16,12),WH,[0,0,0],null,null,'glow');A.push({k:mo,p:[0,1.2,0],type:'pulse',spd:2.2});
+  const mr=kit();put(mr,TO(0.36,0.03,6,24),GOLD,[0,0,0],[Math.PI/2.4,0,0],null,'shine');A.push({k:mr,p:[0,1.2,0],axis:'y',spd:1.6});
+  M.halos.push([0,1.2,0,'#e8f4ff',1.4]);
   return {k,anims:A,meta:M};
  }
  if(arch==='twin'){

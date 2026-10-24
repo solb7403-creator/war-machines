@@ -197,6 +197,8 @@ function dmgNum(q,t,dmg,isCrit){
  q.tg=t;q.v=dmg;q.crit=isCrit;q.txt=(isCrit?'CRIT ':'')+Math.round(dmg);nums.push(q);
 }
 const HIT_TXT=[null,{txt:'SUPER',t:0.9,z:2,c:'#ff4d4d'},{txt:'STORM',t:0.7,z:0.8,c:'#c79bff'},{txt:'METEOR',t:0.9,z:1.6,c:'#ff8a3d'}];
+// super impacts, per weapon: blast size and colors (match.js 2D overlay; render3d.js adds the 3D explosion)
+const IMPACT={pulse:{r:2.2,c:'#ffb35a',c2:'#ffe08a'},twin:{r:2.6,c:'#7fd4ff',c2:'#e2f4ff'},siege:{r:3.0,c:'#ff7a2f',c2:'#ffd24a'},moon:{r:2.8,c:'#bfe6ff',c2:'#ffffff'}};
 const evColor=c=>typeof c==='number'?tcol(c):c;   // a team number means that team's color
 const sndF=(k,a)=>{if(typeof fx==='function')fx(k,a);};
 function onSimEv(a){
@@ -222,6 +224,9 @@ function onSimEv(a){
   case 'B':blasts.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4],c:a[5]});return;
   case 'M':beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:tcol(a[5]),w:a[6]});return;
   case 'V':novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:tcol(a[4])});return;
+  case 'I':{const C=IMPACT[a[3]]||IMPACT.pulse,x=a[1],y=a[2];   // a super landing: an explosion, a shake and the impact sound
+   blasts.push({x,y,r:C.r,t:0.55,t0:0.55,c:C.c});blasts.push({x,y,r:C.r*0.55,t:0.35,t0:0.35,c:C.c2});
+   shake(a[4]===(me?me.team:0)?7:10,0.4);sndF('impact',a[3]);return;}
   case 'S':shake(a[1],a[2]);return;
   case 'z':if(a[1]==='cap'){if(a[2]===0){pop(a[3],a[4],'ZONE CAPTURED!',TC[0]);sndF('cap');}else pop(a[3],a[4],'ENEMY TOOK THE ZONE',TC[1]);}
    else pop(a[3],a[4],a[2]===0?'ZONE LOST':'ZONE NEUTRAL',a[2]===0?'#ff9d9d':'#c9d6e3');

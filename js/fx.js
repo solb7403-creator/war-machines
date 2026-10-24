@@ -15,7 +15,10 @@ function audioInit(){
  try{
   const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
   try{if(navigator.audioSession)navigator.audioSession.type='ambient';}catch(e){}   // obey the silent switch, don't stop the player's music
-  AC=new C();master=AC.createGain();master.gain.value=0.5;master.connect(AC.destination);
+  AC=new C();master=AC.createGain();master.gain.value=0.5;
+  // a limiter at the end, so stacked explosions get loud without crackling
+  let out=AC.destination;try{const L=AC.createDynamicsCompressor();L.threshold.value=-10;L.knee.value=6;L.ratio.value=12;L.attack.value=0.003;L.release.value=0.2;L.connect(AC.destination);out=L;}catch(e){}
+  master.connect(out);
  }catch(e){AC=null;}
 }
 function audioResume(){if(!save||save.sound===false)return;audioInit();if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});}
@@ -49,7 +52,9 @@ const SND={
  kill:()=>{burst(0.5,0.24,1400);tone(130,40,0.45,'sine',0.17);tone(660,990,0.12,'triangle',0.05,0.1);},
  die:()=>{burst(0.55,0.24,900);tone(280,60,0.65,'sawtooth',0.08);},
  ready:()=>tone(320,1250,0.35,'sawtooth',0.04),
- super:()=>{burst(0.38,0.2,3200);tone(95,45,0.38,'sine',0.17);},
+ // supers: a sharp crack over a deep bass drop when one fires, a heavy boom where it lands
+ super:()=>{burst(0.08,0.32,7000);tone(62,30,0.55,'sine',0.34);tone(190,48,0.28,'sawtooth',0.1);burst(0.45,0.16,1800,0.05);},
+ impact:()=>{tone(78,26,0.7,'sine',0.42);burst(0.1,0.38,5200);burst(0.75,0.24,1300,0.03);tone(260,55,0.2,'square',0.06);},
  box:()=>{tone(880,880,0.07,'triangle',0.07);tone(1320,1320,0.12,'triangle',0.07,0.07);},
  cap:()=>{tone(523,523,0.1,'triangle',0.07);tone(784,784,0.16,'triangle',0.07,0.09);},
  warn:()=>tone(980,980,0.05,'square',0.025),
@@ -64,7 +69,7 @@ const SND={
  claim:()=>{tone(988,988,0.07,'triangle',0.07);tone(1319,1319,0.14,'triangle',0.07,0.06);},
  crystal:()=>{tone(1568,1568,0.06,'sine',0.06);tone(2093,2093,0.1,'sine',0.05,0.05);},
  buy:()=>[659,880,1175].forEach((f,i)=>tone(f,f,0.12,'triangle',0.07,i*0.07))};
-const SND_GAP={crystal:0.05,shot_pulse:0.07,shot_twin:0.06,shot_siege:0.1,shot_moon:0.07,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1};
+const SND_GAP={impact:0.09,crystal:0.05,shot_pulse:0.07,shot_twin:0.06,shot_siege:0.1,shot_moon:0.07,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1};
 function sfx(n){
  if(!save||save.sound===false||!SND[n])return;
  audioInit();if(!AC||AC.state!=='running')return;
@@ -80,6 +85,7 @@ function fx(name,arg){
   case 'die':haptic('n','error');sfx('die');break;
   case 'boom':sfx('boom');break;
   case 'super':haptic('i','rigid');sfx('super');break;
+  case 'impact':haptic('i','heavy');sfx('impact');break;
   case 'ready':haptic('i','light');sfx('ready');break;
   case 'box':haptic('i','soft');sfx('box');break;
   case 'crystal':haptic('i','soft');sfx('crystal');break;

@@ -217,7 +217,7 @@ function pvpApply(rt){
  if(s.se){const w=pvSwap([s.se[0],s.se[1]]);series={w,round:s.se[2]};}
 }
 // events from the server, turned to your side, then drawn by the same code as AI matches (match.js onSimEv)
-const EV_POS={n:[1],p:[1],B:[1],M:[1,3],V:[1],z:[3],g:[3],X:[2],w:[1],m:[1],b:[3]},EV_VEC={b:[5]},EV_TEAM={M:5,V:4,z:2,c:1},EV_KEEP={k:1,X:1,F:1,J:1,T:1,z:1,c:1};
+const EV_POS={n:[1],p:[1],B:[1],I:[1],M:[1,3],V:[1],z:[3],g:[3],X:[2],w:[1],m:[1],b:[3]},EV_VEC={b:[5]},EV_TEAM={I:4,M:5,V:4,z:2,c:1},EV_KEEP={k:1,X:1,F:1,J:1,T:1,z:1,c:1};
 function pvpEv(e){
  const a=e.slice(1),T=a[0];
  for(const i of (EV_POS[T]||[])){a[i]=pvX(a[i]);a[i+1]=pvY(a[i+1]);}
