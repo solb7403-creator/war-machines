@@ -156,7 +156,7 @@ async def main():
         check(r['swap']==0 and r['left']==0,'swap buttons hide when none left '+json.dumps(r))
         await pg.evaluate("()=>{const e=document.querySelector('.view')||document.scrollingElement;}")
         # play tab nudge for the deal (after login, quests and pass)
-        r=await pg.evaluate("()=>{save.dq.c={};save.dq.p={};save.wk.p={};save.dealSeen=0;save.wdealSeen=0;save.featSeen=dayNum();save.gtype=featuredMode();save.pass.xp=0;const a=playNudge();save.wdealSeen=weekNum();const b=playNudge();save.dealSeen=dayNum();const c=playNudge();return [a&&a.act+':'+a.arg,b&&b.act+':'+b.arg,c&&c.act];}")
+        r=await pg.evaluate("()=>{save.dq.c={};save.dq.p={};save.g2=dayNum();save.wk.p={};save.dealSeen=0;save.wdealSeen=0;save.featSeen=dayNum();save.gtype=featuredMode();save.pass.xp=0;const a=playNudge();save.wdealSeen=weekNum();const b=playNudge();save.dealSeen=dayNum();const c=playNudge();return [a&&a.act+':'+a.arg,b&&b.act+':'+b.arg,c&&c.act];}")
         check(r[0]=='deals:w' and r[1]=='deals:d' and r[2]!='deals','deal nudges '+str(r))
         await b.close()
     print('fails:',fails,'errors:',errs)

@@ -157,7 +157,7 @@ async function mirror(env, pid, S, isNew, before, now) {
   const idn = Number(String(pid).slice(3));
   if (isNew && idn > (Number((CFG || {}).maxid) || 0)) { up["cfg/maxid"] = idn; if (CFG) CFG.maxid = idn; if (idn >= 1e9) NEWID = Math.floor(idn * (1 - ECO.NEW_SHARE)); }   // the newest Telegram id seen so far
   // for the daily reminder: the day you last played and your streak, next to your reminder settings (one read finds who's due)
-  if (S.ld !== undefined && S.ld !== null) { up[`ntf/${pid}/pl`] = S.ld; up[`ntf/${pid}/sk`] = S.sk || 0; }
+  if (S.ld !== undefined && S.ld !== null) { up[`ntf/${pid}/pl`] = S.ld; up[`ntf/${pid}/sk`] = S.sk || 0; up[`ntf/${pid}/gf`] = S.g2 ? 1 : 0; }
   // the ghost pool: your tank as it is now (server-owned loadout), and when you last played
   if (S.L && (S.mp || 0) >= ECO.GHOST_MP) up[`gh/${pid}`] = { n: S.nm || "Pilot", L: S.L, pw: S.pw || 0, t: now };
   await dbPatch(env, "", up);
@@ -498,7 +498,7 @@ export function migrate(S, m, P, X) {
   const free = { weapon: [0, 0, 0], chassis: [0, 0, 0] }, gemFree = { n: 0 };
   if (P.starter) { free.weapon[1]++; free.chassis[1]++; gemFree.n += 4; }
   if (P.founder) { free.weapon[2]++; gemFree.n += 8; }
-  for (const [list, tr] of [[pass.cf, R.PASS_FREE], [pass.cp, R.PASS_PREM]]) for (const i of list) { const r = tr[i]; if (r && r.k === "box") { if (r.tk === "gem") gemFree.n += r.ri ? 4 : 2; else free[r.tk][r.ri]++; } }
+  for (const [list, tr] of [[pass.cf, R.PASS_FREE], [pass.cp, R.PASS_PREM]]) for (const i of list) { const r = tr[i]; if (r && r.k === "box") { if (r.tk === "gem") gemFree.n += r.ri === 2 ? 14 : r.ri ? 4 : 2; else free[r.tk][r.ri]++; } }
   let spend = 0, epic = 0;
   for (const [tk, own] of [["weapon", S.wOwn], ["chassis", S.cOwn]]) for (let t = 0; t <= 2; t++) {
     const n = Object.entries(own).filter(([k, ts]) => ts.includes(t) && !(t === 0 && (k === "pulse" || k === "vanguard"))).length;
@@ -511,7 +511,7 @@ export function migrate(S, m, P, X) {
   // cores: shards above what gem caches on record could give are priced as common gem caches bought with points (max 2 shards each)
   let shards = 0;
   for (const k of R.GORDER) { for (let l = 1; l < S.gemLvl[k]; l++) shards += R.SHARD_NEED[l]; shards += S.gemShards[k]; }
-  const gemSrc = (P.box.gem0 || 0) * 2 + (P.box.gem1 || 0) * 4 + (P.box.gem2 || 0) * 9 + gemFree.n + (Math.floor((S.days || 0) / 7) + 1) * 2 + (S.wq && S.wq.claimed ? 4 : 0);
+  const gemSrc = (P.box.gem0 || 0) * 2 + (P.box.gem1 || 0) * 4 + (P.box.gem2 || 0) * 14 + (S.g2 ? 4 : 0) + gemFree.n + (Math.floor((S.days || 0) / 7) + 1) * 2 + (S.wq && S.wq.claimed ? 4 : 0);
   if (shards > gemSrc) spend += Math.ceil((shards - gemSrc) / 2) * R.RPTS[0];
   if (spend > S.earned + 15000) why.spend = "Gear worth about " + spend.toLocaleString("en-US") + " points, " + S.earned.toLocaleString("en-US") + " earned";
   // spendable points: what the phone had, never more than lifetime points minus what that gear cost

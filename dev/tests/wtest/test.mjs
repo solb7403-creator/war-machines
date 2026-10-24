@@ -302,6 +302,9 @@ const n1 = await mod.sendReminders(env, d0.getTime());
 const n2 = await mod.sendReminders(env, d0.getTime() + 300000);
 t(n1 === 1 && n2 === 0, 'reminders once ' + n1 + ' ' + n2);
 t(/3-day streak/.test(tgCalls[tgCalls.length - 1][1].text), 'streak text: ' + tgCalls[tgCalls.length - 1][1].text);
+db.root.ntf.tg_222.sk = 1; db.root.ntf.tg_222.gf = 0; db.root.ntf.tg_222.nx = Math.floor(d0.getTime() / 86400000);
+await mod.sendReminders(env, d0.getTime() + 600000);
+t(/welcome-back gift/.test(tgCalls[tgCalls.length - 1][1].text), 'gift reminder text: ' + tgCalls[tgCalls.length - 1][1].text);
 const d1 = new Date(); d1.setUTCHours(3, 0, 0, 0);
 t((await mod.sendReminders(env, d1.getTime())) === 0, 'no reminders off-hours');
 

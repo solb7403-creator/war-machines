@@ -312,7 +312,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx'];
+ 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
@@ -411,7 +411,7 @@ function ecoOwned(S,d,X){
 function ecoOpenBox(S,tk,ri,X){
  const R=X.rnd;
  if(tk==='gem'){
-  const k=GORDER[(R()*GORDER.length)|0],n=ri===0?1+((R()*2)|0):ri===1?3+((R()*2)|0):6+((R()*4)|0);
+  const k=GORDER[(R()*GORDER.length)|0],n=ri===0?1+((R()*2)|0):ri===1?3+((R()*2)|0):11+((R()*4)|0);
   S.gemShards[k]+=n;let lv=S.gemLvl[k],up=0;
   while(lv<5&&S.gemShards[k]>=SHARD_NEED[lv]){S.gemShards[k]-=SHARD_NEED[lv];lv++;up++;}
   S.gemLvl[k]=lv;return {tk,ri,gem:k,n,lv,up,sh:S.gemShards[k]};
@@ -516,11 +516,16 @@ function ecoLoginState(S,X){
  const next=claimedToday?L.n:(alive?L.n+1:1);   // streak count after today's claim
  return {claimedToday,streak:alive?L.n:0,next,slot:((next-1)%7),reward:STREAK_PTS[(next-1)%7]+TDAILY[tierOfPts(S.earned||0)]};
 }
+// welcome-back gift: a rare gem cache with the first daily reward claimed on any day after your first day (once per pilot)
+const GIFT_RI=1;
+const ecoGiftReady=(S,X)=>!S.g2&&typeof S.fd==='number'&&X.day>S.fd;
+const ecoGiftPending=(S,X)=>!S.g2&&(typeof S.fd!=='number'||X.day<=S.fd);   // still to come: shown as "come back tomorrow"
 function ecoLogin(S,X){
  const s=ecoLoginState(S,X);if(s.claimedToday)return null;
  S.login={last:X.day,n:s.next};
  const pts=ecoAward(S,s.reward,X,1),box=s.slot===6?ecoOpenBox(S,'gem',0,X):null;   // day 7: a free gem cache too
- return {pts,box,day:s.slot+1};
+ const gift=ecoGiftReady(S,X)?(S.g2=X.day,ecoOpenBox(S,'gem',GIFT_RI,X)):null;   // once ever: come back the day after your first day
+ return {pts,box,gift,day:s.slot+1};
 }
 // ---- daily and weekly quests ----
 function weeklyIds(w){   // the same list for every pilot that week, so nobody draws an easier or richer set

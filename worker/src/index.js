@@ -419,7 +419,9 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
       if (!v || !v.on || !v.chat) { up[`ntf/${pid}/nx`] = null; return; }
       if (v.pl === d) { up[`ntf/${pid}/nx`] = d + 1; return; }   // already played today
       const streak = v.pl === d - 1 ? v.sk || 0 : 0;
-      const text = streak >= 2
+      const text = v.gf === 0 && streak < 2   // first day back: the welcome-back gift is waiting
+        ? "☾ Your welcome-back gift is ready, pilot: a free Rare gem cache. Claim it with today's daily reward in Quests."
+        : streak >= 2
         ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
         : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
       const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);

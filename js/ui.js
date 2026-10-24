@@ -114,11 +114,12 @@ const bonusTxt=()=>seasonNo()===1?'Launch season: '+PASS_BONUS+' bonus tiers for
 // ---------- PLAY ----------
 function playNudge(){
  const L=loginState();
- if(!L.claimedToday){const nb=streakBoost(L.next);return {gem:'★',b:'Daily reward ready',s:'+'+fmtNum(L.reward)+' points, day '+(L.slot+1)+' of 7'+(nb?', +'+Math.round(nb*100)+'% quest points':''),act:'login'};}
+ if(!L.claimedToday){const nb=streakBoost(L.next);return {gem:'★',b:giftReady()?'Welcome back: your gift is ready':'Daily reward ready',s:'+'+fmtNum(L.reward)+' points'+(giftReady()?' and a free Rare gem cache':', day '+(L.slot+1)+' of 7')+(nb?', +'+Math.round(nb*100)+'% quest points':''),act:'login'};}
  const dq=dailyQuests().find(q=>q.done&&!q.claimed)||weeklyQuests().find(q=>q.done&&!q.claimed);
  if(dq)return {gem:'✓',b:'Quest complete',s:dq.t+': +'+fmtNum(qPts(dq.pts))+' points',act:'tab',arg:'quests'};
  const pr=passReady();
  if(pr)return {gem:String(passTier()),b:'Lunar Pass reward ready',s:pr+(pr===1?' reward':' rewards')+' to claim',act:'pass'};
+ if(giftPending()&&(save.mp||0)>=1)return {gem:'🎁',b:'Come back tomorrow: a free Rare gem cache',s:'It unlocks in '+fmtDur(msToDailyReset())+'. Claim it with tomorrow’s daily reward.',act:'tab',arg:'quests'};
  const fm=featuredMode();
  if(gtypeKey()!==fm&&save.featSeen!==dayNum()&&(save.mp||0)>=2)return {svg:ICON[fm],b:'Featured today: '+GTYPES[fm].label,s:'+25% points and +10 pass XP a match. Tap to switch.',act:'feat'};
  if((save.mp||0)>=3){   // each deal nudges once per period, while it's unused
@@ -328,7 +329,8 @@ function renderQuests(){
   return qRow({id:Q.id,t:Q.n,goal:Q.goal,p,done:e.done,claimed:e.claimed,pts:Q.pts},'claimq',Q.d+(Q.goal>1&&!e.done?' ('+fmtNum(p)+' / '+fmtNum(Q.goal)+')':''));}).join('');
  return passCard()+sec('Daily reward','Streak: '+L.streak+(L.streak===1?' day':' days'))+
   '<div class="cal">'+cal+'</div>'+
-  (L.claimedToday?'<button class="btn btn-quiet block off">Next reward in '+fmtDur(msToDailyReset())+'</button>':'<button class="btn btn-gold block" data-act="login">Claim day '+(L.slot+1)+': +'+fmtNum(L.reward)+' points'+(L.slot===6?' and a gem cache':'')+'</button>')+
+  (L.claimedToday?'<button class="btn btn-quiet block off">Next reward in '+fmtDur(msToDailyReset())+'</button>':'<button class="btn btn-gold block" data-act="login">'+(giftReady()?'Claim +'+fmtNum(L.reward)+' and a Rare gem cache':'Claim day '+(L.slot+1)+': +'+fmtNum(L.reward)+' points'+(L.slot===6?' and a gem cache':''))+'</button>')+
+  (giftPending()?'<div class="gift"><b>🎁 Come back tomorrow</b><span>A free Rare gem cache unlocks in '+fmtDur(msToDailyReset())+'. One time, for new pilots.</span></div>':'')+
   '<div class="boost'+(qb?' on':'')+'"><b>'+(qb?'+'+Math.round(qb*100)+'% quest points today':L.claimedToday?'Come back tomorrow for +5% quest points':nb?'Claim to get +'+Math.round(nb*100)+'% quest points today':'Log in tomorrow for +5% quest points')+'</b>'+
    '<span>Each streak day adds +5% to every daily and weekly quest, up to +30% from day 7. Missing a day restarts the streak. Higher tiers add +'+TDAILY[t]+' a day to the reward.</span></div>'+
   sec('Today’s quests','New in '+fmtDur(msToDailyReset()))+
@@ -537,7 +539,7 @@ const INFO={
   ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 6 core types, 1 in 6 each.'],
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
-  ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 6 to 9, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
+  ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 11 to 14, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
   ['Salvage','Paid with points: Salvaged Rare 10,000 (101 to 103% power), Salvaged Epic 20,000 (103.1 to 104.4%). Every crate item beats every salvaged item.']]],
  squad:()=>['Squad rewards',[
   ['How it works','Share your invite link. Anyone who opens the game with it for the first time joins your squad.'],
@@ -603,7 +605,7 @@ function openCrate(tk,ri){
   const items=isGem?'':'<div class="list" style="margin-top:10px">'+keys.map(k=>{const own=tk==='weapon'?ownW(k,ri):ownC(k,ri),it=tk==='weapon'?getW(k,ri,false):getC(k,ri,false);
    return '<div class="q"><div class="ico sm"><canvas data-art="gear:'+(tk==='weapon'?'w':'c')+':'+k+':'+ri+':0"'+(own?'':' data-locked="1"')+'></canvas></div><div class="grow"><div class="t">'+esc(it.name)+'</div><div class="p">'+gearMeta(tk==='weapon',it)+'</div></div><span class="nowrap '+(own?'mut':'dimtxt')+'">'+(own?'Owned, '+pct(it.q):'Not found')+'</span></div>';}).join('')+'</div>';
   const found=crateFound(tk,ri),pts=boxPts(tk,ri);
-  const what=isGem?['1 to 2','3 to 4','6 to 9'][ri]+' shards for a random core. Price rises 25% with each buy today and resets at 00:00 UTC.'
+  const what=isGem?['1 to 2','3 to 4','11 to 14'][ri]+' shards for a random core. Price rises 25% with each buy today and resets at 00:00 UTC.'
    :found>=3?'You own all 3. Opening re-rolls one: you keep the better roll, or get '+[50,150,400][ri]+' points.'
    :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
   const odds=isGem?'Odds: each of the 6 core types is 1 in 6, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
@@ -781,6 +783,7 @@ function resultsHTML(r){
  else if(ra&&ra.outside)rank=fmtNum(Math.max(1,lbMeta.cut-r.after+1))+' points to the top 1,000';
  let tip;
  if((save.mp||0)===1)tip=r.won?'Nice first win. Points rank you on the leaderboard and buy upgrades in the Garage.':'Close one. Drag to dodge shots while your cannon fires, and grab the gold box.';
+ else if(giftPending()&&[2,4].includes(save.mp||0))tip='Come back tomorrow: your daily reward comes with a free Rare gem cache, one time.';
  else if(r.countered){const b=beatenBy(r.meCls),fix=beatenBy(b);tip='Their '+CH[b].n+' countered your '+CH[r.meCls].n+'. '+CH[fix].n+' beats '+CH[b].n+(ownedChassisClasses().includes(fix)?': switch on the next start screen.':'. Find one in a chassis crate.');}
  else if(r.quests.length)tip='Quest done: '+r.quests.join(', ')+'. Claim it in Quests.';
  else tip=TIPS[(save.mp||0)%TIPS.length];
@@ -932,7 +935,7 @@ const ACT={
  again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},
  sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
- login:()=>{const r=loginState();if(r.claimedToday)return;when(claimLogin(),c=>{if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));if(c.reveal)showReveal([c.reveal]);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();uiDirty();});},
+ login:()=>{const r=loginState();if(r.claimedToday)return;when(claimLogin(),c=>{if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));const rv=[c.reveal,c.gift].filter(Boolean);if(rv.length)showReveal(rv);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();uiDirty();});},
  claimdq:a=>{const q0=dailyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimDaily(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
  claimwq:a=>{const q0=weeklyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimWeeklyQuest(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
  swapdq:a=>{const left=swapsLeft();when(swapDaily(a),N=>{if(N)showToast('New quest: '+N.t);else showToast(left?'No other quest to swap in':'No swaps left today');uiDirty();});},

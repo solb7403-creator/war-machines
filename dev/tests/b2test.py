@@ -100,7 +100,7 @@ async def run(p,w,h,tag,uid):
     inv=await pg.evaluate("()=>!!window.__invoice")
     check(inv,'Stars invoice did not open for starter pack')
     # 8) Quests + Ranks
-    await pg.click('[data-act=tab][data-arg=quests]');await pg.wait_for_timeout(600);await shot('16_quests')
+    await pg.click('#tabbar [data-act=tab][data-arg=quests]');await pg.wait_for_timeout(600);await shot('16_quests')
     await pg.evaluate("()=>document.querySelector('#s-quests').scrollTop=2000");await pg.wait_for_timeout(200);await shot('17_quests_bottom')
     dev('/__cron');await pg.evaluate("()=>loadLB(true)");await pg.wait_for_timeout(500)
     await pg.click('[data-act=tab][data-arg=ranks]');await pg.wait_for_timeout(600);await shot('18_ranks')

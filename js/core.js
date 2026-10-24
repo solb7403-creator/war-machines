@@ -375,9 +375,10 @@ const myPaint=()=>PAINTS[save.paint]||PAINTS.stock;
 const featuredMode=()=>featuredOn(dayNum());   // FEATURE_ROT is in rules.js
 // ---- daily login reward: 7-day streak calendar (misses reset it) + tier bonus ----
 function loginState(){return ecoLoginState(save,ecoX());}
+const giftReady=()=>ecoGiftReady(save,ecoX()),giftPending=()=>ecoGiftPending(save,ecoX());   // the one-time welcome-back Rare gem cache
 function claimLogin(){
  if(loginState().claimedToday)return null;
- return when(ecoRun('login',{},(S,X)=>ecoLogin(S,X)||{err:'claimed'}),r=>{if(!r||r.err)return null;afterGain(r.box);store();fx('claim');return {pts:r.pts,reveal:r.box?revealOf(r.box):null,day:r.day};});
+ return when(ecoRun('login',{},(S,X)=>ecoLogin(S,X)||{err:'claimed'}),r=>{if(!r||r.err)return null;afterGain(r.box);afterGain(r.gift);store();fx('claim');return {pts:r.pts,reveal:r.box?revealOf(r.box):null,gift:r.gift?revealOf(r.gift):null,day:r.day};});
 }
 
 // ---- squad (referrals): you get paid when your recruits keep playing ----
