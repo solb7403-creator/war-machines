@@ -82,6 +82,13 @@ jobs:
             -d "{\"url\":\"${WORKER_URL}/api/tg-webhook\",\"secret_token\":\"${SECRET}\",\"allowed_updates\":[\"message\",\"pre_checkout_query\"]}")
           echo "::notice::setWebhook: $R"
           echo "$R" | grep -q '"ok":true' || exit 1
+          C=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands" -H 'Content-Type: application/json' -d '{"commands":[
+            {"command":"start","description":"Play LUNAR: War Machines"},
+            {"command":"support","description":"Get help with the game"},
+            {"command":"paysupport","description":"Help with a purchase"},
+            {"command":"terms","description":"Terms of service"},
+            {"command":"stop","description":"Turn off daily reminders"}]}')
+          echo "::notice::setMyCommands: $C"
       - name: Live matches answer
         run: |
           for i in 1 2 3 4 5; do H=$(curl -s "$WORKER_URL/pvp/health"); echo "$H" | grep -q '"ok":true' && break; sleep 5; done
