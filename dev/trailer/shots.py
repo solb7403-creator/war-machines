@@ -64,6 +64,7 @@ MENU={
  'gear_pick':dict(kind='menu',frames=30,setup="closeAll();DIR.load({w:'moon',c:'vanguard',ct:2,paint:'hyper',skin:1,vg:60000});setTab('garage');uiDirty();ACT.gear('w');",wait=1500),
  'vault':dict(kind='menu',frames=60,setup="closeAll();DIR.load({w:'moon',c:'vanguard',ct:2,paint:'hyper',skin:1,vg:60000});setTab('shop');uiDirty();ACT.vault();",wait=1500),
  'paints':dict(kind='menu',frames=30,setup="closeAll();setTab('garage');uiDirty();ACT.paints();",wait=1500),
+ 'quests':dict(kind='menu',frames=4,setup="closeAll();save.login={last:dayNum()-1,n:5};store();setTab('quests');uiDirty();",wait=1500),
  'ranks':dict(kind='menu',frames=20,setup="closeAll();setTab('ranks');uiDirty();",wait=1200),
  'pass':dict(kind='menu',frames=30,setup="closeAll();const P=passState();P.xp=350*33+120;P.prem=true;P.cf=[];P.cp=[];for(let i=1;i<=28;i++){P.cf.push(i);P.cp.push(i);}store();setTab('play');uiDirty();openPass();",
    wait=1500,after="const e=document.querySelector('.pbonus');if(e)e.scrollIntoView({block:'center'});"),
