@@ -107,7 +107,9 @@ const shortNum=n=>n<10000?fmtNum(n):fmtK(Math.round(n/100)*100);
 const rangeTxt=r=>r[0]===r[1]?'+'+fmtNum(r[0]):'+'+fmtNum(r[0])+' to +'+fmtNum(r[1]);
 const pct1=q=>(Math.round(q*1000)/10)+'%';
 const modeName=(gk,mk)=>GT_PICK[gk].label+(isSolo(gk)?'':' '+mk);
-const daysLeft=()=>Math.max(1,Math.ceil(seasonEndMs()/864e5));
+const daysLeft=()=>seasonFrozen()?PASS_LEN:Math.max(1,Math.ceil(seasonEndMs()/864e5));
+const leftTxt=()=>seasonFrozen()?PASS_LEN+' days, clock starts Nov 1':daysLeft()+(daysLeft()===1?' day':' days')+' left';
+const bonusTxt=()=>seasonNo()===1?'Launch season: '+PASS_BONUS+' bonus tiers for early pilots.':'';
 
 // ---------- PLAY ----------
 function playNudge(){
@@ -261,7 +263,7 @@ function renderShop(){
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
    '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and doesn’t buy $LUNAR.</p></div>':'')+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
-  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>30 premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, 2 rare weapon caches, a rare and an epic chassis crate, 24 gem caches, plus an extra daily quest swap. '+daysLeft()+(daysLeft()===1?' day':' days')+' left.</p>'+
+  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
   vaultCard()+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
@@ -281,8 +283,8 @@ function paintCard(id){
 
 // ---------- LUNAR PASS ----------
 function passCard(){
- const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP,ready=passReady(),done=t>=PASS_TIERS;
- return '<button class="passcard" data-act="pass"><div class="row"><div class="grow"><div class="pt">Lunar Pass'+(P.prem?' <span class="rar" style="background:var(--gold)">Premium</span>':'')+'</div><div class="mut">Season '+seasonNo()+', tier '+t+' of '+PASS_TIERS+', '+daysLeft()+(daysLeft()===1?' day':' days')+' left</div></div>'+
+ const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP,ready=passReady(),done=t>=seasonTiers();
+ return '<button class="passcard" data-act="pass"><div class="row"><div class="grow"><div class="pt">Lunar Pass'+(P.prem?' <span class="rar" style="background:var(--gold)">Premium</span>':'')+'</div><div class="mut">Season '+seasonNo()+', tier '+t+' of '+seasonTiers()+', '+leftTxt()+'</div></div>'+
   (ready?'<span class="rdy">'+ready+' to claim</span>':'<span class="chev">›</span>')+'</div>'+
   '<div class="bar"><i style="width:'+(done?100:Math.round(xpIn/PASS_XP*100))+'%"></i></div>'+
   '<div class="dimtxt">'+(done?'Season complete. New season in '+daysLeft()+(daysLeft()===1?' day':' days'):'Next: '+esc(rewardLabel(PASS_FREE[t+1]))+(P.prem?' and '+esc(rewardLabel(PASS_PREM[t+1])):'')+'. '+(PASS_XP-xpIn)+' XP to go')+'</div></button>';
@@ -293,9 +295,9 @@ function openPass(){
   const cell=(r,track,i,claimed,locked)=>{const got=i<=t;
    return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r))+'</span>'+
     (claimed?'<b class="ok">✓</b>':got&&!locked?'<button class="btn sm btn-gold" data-act="claimpass" data-arg="'+track+':'+i+'">Claim</button>':'')+'</div>';};
-  let rows='';for(let i=1;i<=PASS_TIERS;i++)rows+='<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';
-  return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+' ends in '+daysLeft()+(daysLeft()===1?' day':' days')+'. XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all '+DQ_SLOTS.length+' +'+PASS_XP_ALL+', each weekly quest +'+PASS_XP_WQ+'.</p>'+
-   '<div class="pxp"><b class="num">Tier '+t+'</b><div class="bar"><i style="width:'+(t>=PASS_TIERS?100:Math.round(xpIn/PASS_XP*100))+'%"></i></div><span class="num">'+(t>=PASS_TIERS?'Done':xpIn+' / '+PASS_XP+' XP')+'</span></div>'+
+  let rows='';for(let i=1;i<=seasonTiers();i++)rows+=(i===PASS_TIERS+1?'<div class="pbonus">Early pilot bonus · launch season only</div>':'')+'<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';
+  return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+': '+(seasonFrozen()?'30 days, the clock starts Nov 1':'ends in '+daysLeft()+(daysLeft()===1?' day':' days'))+'. '+bonusTxt()+' XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all '+DQ_SLOTS.length+' +'+PASS_XP_ALL+', each weekly quest +'+PASS_XP_WQ+'.</p>'+
+   '<div class="pxp"><b class="num">Tier '+t+'</b><div class="bar"><i style="width:'+(t>=seasonTiers()?100:Math.round(xpIn/PASS_XP*100))+'%"></i></div><span class="num">'+(t>=seasonTiers()?'Done':xpIn+' / '+PASS_XP+' XP')+'</span></div>'+
    (P.prem?'<p class="passown">Premium unlocked for this season</p>':'<button class="btn btn-go block" style="margin-top:12px" data-act="buypass">Unlock premium for '+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><p class="dimtxt" style="margin-top:6px">Premium never gives points, so it can’t buy leaderboard rank. Rewards you’ve already reached unlock right away.</p>')+
    '<div class="phead"><span></span><span>Free</span><span>Premium</span></div><div class="ptiers">'+rows+'</div>';
  });

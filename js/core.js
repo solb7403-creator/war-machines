@@ -343,7 +343,9 @@ function claimWeekly(){
 }
 // ---- Lunar Pass (rules.js): free track for everyone, premium track for pass owners. The premium track never gives points ----
 const seasonNo=()=>ecoSeason(ecoX());
-const seasonEndMs=()=>(PASS_START+seasonNo()*PASS_LEN)*864e5-(Date.now()+(typeof srvOff==='number'?srvOff:0));
+const seasonEndMs=()=>passEnd(seasonNo())*864e5-(Date.now()+(typeof srvOff==='number'?srvOff:0));
+const seasonFrozen=()=>ecoX().day<PASS_CLOCK;   // season 1: the 30-day clock waits for Nov 1
+const seasonTiers=()=>passTiers(seasonNo());
 function passState(){return ecoPassState(save,ecoX());}
 const passTier=()=>ecoPassTier(save,ecoX());
 function passXP(n){   // local play only (the server adds XP in Telegram)

@@ -92,7 +92,7 @@ async def main():
          save.wq={w:weekNum(),n:19,claimed:false};const no=claimWeekly();save.wq.n=20;const yes=claimWeekly();
          return {a,b,c,xp,no:no===null,yes:yes&&yes.pts,gem:yes&&yes.reveal&&yes.reveal.tk};}""")
         print('weekly',r)
-        check(r['a']==1500 and r['b']==0 and r['c']==0 and r['xp']==150,'weekly quest claim '+json.dumps(r))
+        check(r['a']==3000 and r['b']==0 and r['c']==0 and r['xp']==150,'weekly quest claim '+json.dumps(r))
         check(r['no'] and r['yes']==5000 and r['gem']=='gem','weekly chest at 20 '+json.dumps(r))
 
         # 7) a real match feeds the weekly list and the results screen names it

@@ -66,7 +66,7 @@ async def main():
         check(q['mq']==1 and q2['mq']==0 and e1.get('earned')>e0 and q2['earned']==e1.get('earned'),'offline result queued, then counted when back online '+json.dumps([q,q2,e0,e1.get('earned')]))
         # 6) a daily quest finished on the server's record, claimed from the Quests tab
         e=eco('tg_880801');ids=e['dq']['ids']
-        dev('/__set',{'path':'eco/tg_880801/dq/p','value':{ids[0]:999}})
+        dev('/__set',{'path':'eco/tg_880801/dq/p','value':{ids[0]:999999}})
         pts0=await pg.evaluate("()=>save.earned")
         await pg.evaluate("()=>{closeAll();exitBattle();doSync(false);}");await pg.wait_for_timeout(900)
         await pg.evaluate("(id)=>ACT.claimdq(id)",ids[0]);await pg.wait_for_timeout(800)

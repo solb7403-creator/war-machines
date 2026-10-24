@@ -283,14 +283,24 @@ const QB_STEP=0.05,QB_MAX=0.3;
 const streakBoost=n=>Math.min(QB_MAX,QB_STEP*Math.max(0,n-1));
 // Lunar Pass: a 28-day season with 30 tiers. Free track for everyone, premium track for pass owners.
 // The premium track never gives points, so buying it can't buy leaderboard rank (the airdrop stays earned).
-const PASS_LEN=28,PASS_TIERS=30,PASS_XP=350,PASS_START=20744,PASS_PRICE={ton:13,stars:799};   // season 1 starts Oct 18, 2026 (UTC day 20744)
+const PASS_LEN=30,PASS_TIERS=30,PASS_XP=350,PASS_START=20744,PASS_PRICE={ton:13,stars:799};   // season 1 opened Oct 18, 2026 (UTC day 20744)
+// Season 1 is the launch season: its 30-day clock is frozen until Nov 1 (PASS_CLOCK) and it ends Dec 1 (PASS_S2).
+// Early pilots get PASS_BONUS extra tiers (31-38) in season 1 only. Every later season is 30 days and 30 tiers.
+const PASS_CLOCK=20758,PASS_S2=20788,PASS_BONUS=8;
+const passTiers=s=>s===1?PASS_TIERS+PASS_BONUS:PASS_TIERS;
+const passStart=s=>s===1?PASS_START:PASS_S2+(s-2)*PASS_LEN;
+const passEnd=s=>PASS_S2+(s-1)*PASS_LEN;
 const PASS_XP_WIN=40,PASS_XP_DRAW=25,PASS_XP_LOSS=20,PASS_XP_FEAT=10,PASS_XP_QUEST=50,PASS_XP_ALL=100;
 const PASS_FREE=[null,{k:'pts',n:150},{k:'box',tk:'gem',ri:0},{k:'pts',n:150},{k:'pts',n:200},{k:'box',tk:'weapon',ri:0},{k:'pts',n:200},{k:'box',tk:'gem',ri:0},{k:'pts',n:250},{k:'pts',n:250},{k:'box',tk:'chassis',ri:0},
  {k:'pts',n:250},{k:'box',tk:'gem',ri:0},{k:'pts',n:300},{k:'pts',n:300},{k:'box',tk:'gem',ri:1},{k:'pts',n:300},{k:'box',tk:'gem',ri:0},{k:'pts',n:350},{k:'pts',n:350},{k:'box',tk:'weapon',ri:0},
- {k:'pts',n:350},{k:'box',tk:'gem',ri:0},{k:'pts',n:400},{k:'pts',n:400},{k:'box',tk:'gem',ri:1},{k:'pts',n:400},{k:'box',tk:'gem',ri:0},{k:'pts',n:500},{k:'pts',n:500},{k:'paint',id:'regolith'}];
+ {k:'pts',n:350},{k:'box',tk:'gem',ri:0},{k:'pts',n:400},{k:'pts',n:400},{k:'box',tk:'gem',ri:1},{k:'pts',n:400},{k:'box',tk:'gem',ri:0},{k:'pts',n:500},{k:'pts',n:500},{k:'paint',id:'regolith'},
+ // season 1 early bonus tiers 31-38
+ {k:'pts',n:500},{k:'box',tk:'gem',ri:0},{k:'pts',n:600},{k:'box',tk:'weapon',ri:0},{k:'pts',n:600},{k:'box',tk:'gem',ri:1},{k:'pts',n:750},{k:'box',tk:'chassis',ri:0}];
 const PASS_PREM=[null,{k:'paint',id:'eclipse'},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:1},
  {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'paint',id:'aurora'},
- {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:2}];
+ {k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:0},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:2},
+ // season 1 early bonus tiers 31-38
+ {k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:1},{k:'box',tk:'gem',ri:1},{k:'box',tk:'gem',ri:2},{k:'box',tk:'gem',ri:1},{k:'box',tk:'chassis',ri:1},{k:'box',tk:'gem',ri:1},{k:'box',tk:'weapon',ri:2}];
 // daily login reward: 7-day streak calendar (misses reset it) + tier bonus
 const STREAK_PTS=[100,150,200,250,300,400,1000];
 // squad (referrals): you get paid when your recruits keep playing
@@ -582,10 +592,10 @@ function ecoChest(S,X){
  return {pts:n,box:ecoOpenBox(S,'gem',1,X)};
 }
 // ---- Lunar Pass ----
-const ecoSeason=X=>Math.max(1,Math.floor((X.day-PASS_START)/PASS_LEN)+1);
+const ecoSeason=X=>X.day<PASS_S2?1:2+Math.floor((X.day-PASS_S2)/PASS_LEN);
 function ecoPassState(S,X){const s=ecoSeason(X);if(!S.pass||S.pass.s!==s)S.pass={s,xp:0,prem:false,cf:[],cp:[]};S.pass.cf=S.pass.cf||[];S.pass.cp=S.pass.cp||[];return S.pass;}
-const ecoPassTier=(S,X)=>Math.min(PASS_TIERS,Math.floor(ecoPassState(S,X).xp/PASS_XP));
-function ecoPassXP(S,n,X){if(!n)return 0;const P=ecoPassState(S,X),b=ecoPassTier(S,X);P.xp=Math.min(PASS_TIERS*PASS_XP,P.xp+n);return ecoPassTier(S,X)-b;}
+const ecoPassTier=(S,X)=>{const P=ecoPassState(S,X);return Math.min(passTiers(P.s),Math.floor(P.xp/PASS_XP));};
+function ecoPassXP(S,n,X){if(!n)return 0;const P=ecoPassState(S,X),b=ecoPassTier(S,X);P.xp=Math.min(passTiers(P.s)*PASS_XP,P.xp+n);return ecoPassTier(S,X)-b;}
 function ecoClaimPass(S,track,i,X){
  const P=ecoPassState(S,X);i=+i;
  if(!(i>=1&&i<=ecoPassTier(S,X)))return null;

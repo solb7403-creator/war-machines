@@ -474,8 +474,8 @@ export function migrate(S, m, P, X) {
   if (C.wq && C.wq.w === X.week) S.wq = { w: X.week, n: Math.max(0, Math.min(200, Number(C.wq.n) || 0)), claimed: !!C.wq.claimed };
   const pass = R.ecoPassState(S, X);
   if (C.pass && C.pass.s === pass.s) {
-    const daysIn = X.day - (R.PASS_START + (pass.s - 1) * R.PASS_LEN) + 1;
-    Object.assign(pass, { xp: Math.max(0, Math.min(Number(C.pass.xp) || 0, daysIn * 4000)), prem: !!C.pass.prem, cf: C.pass.cf.slice(0, 30), cp: C.pass.cp.slice(0, 30) });
+    const daysIn = X.day - R.passStart(pass.s) + 1, nt = R.passTiers(pass.s);
+    Object.assign(pass, { xp: Math.max(0, Math.min(Number(C.pass.xp) || 0, daysIn * 4000)), prem: !!C.pass.prem, cf: C.pass.cf.slice(0, nt), cp: C.pass.cp.slice(0, nt) });
   }
   S.streak = Math.max(0, Math.min(50, C.streak | 0));
   for (const k of ["refC", "buys"]) S[k] = C[k];
