@@ -33,6 +33,9 @@ def check():
     r = m.get('result') or {}
     ok = r.get('status') in ('administrator', 'creator') and (r.get('can_post_messages') or r.get('status') == 'creator')
     print('::notice title=channel check::' + json.dumps({'bot': me.get('username'), 'status': r.get('status'), 'can_post': r.get('can_post_messages'), 'error': m.get('description')}))
+    ch = (call('getChat', {'chat_id': CHAT}).get('result') or {})
+    pm = ch.get('pinned_message') or {}
+    print('::notice title=channel info::' + json.dumps({'title': ch.get('title'), 'description': ch.get('description'), 'pinned': (pm.get('text') or pm.get('caption') or '')[:900], 'pinned_date': pm.get('date')}, ensure_ascii=False))
     return ok
 
 if not check():
