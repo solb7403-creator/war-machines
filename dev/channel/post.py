@@ -1,5 +1,5 @@
 # Sends due, approved posts from queue.json to the Telegram channel. Used by .github/workflows/channel-post.yml.
-# Queue item: {"id": "unique", "at": "2026-10-26T15:00:00Z", "approved": true, "text": "...", "media": "path/in/repo.jpg|.mp4" (optional)}
+# Queue item: {"id": "unique", "at": "2026-10-26T15:00:00Z", "approved": true, "text": "...", "media": "path/in/repo.jpg|.mp4" (optional), "pin": true (optional)}
 # Text supports Telegram HTML (<b>, <i>, <a href>). With media, text becomes the caption (max 1024 chars).
 import json, os, sys, time, uuid, urllib.request
 from datetime import datetime, timezone
@@ -62,6 +62,9 @@ for p in queue:
     else:
         r = call('sendMessage', {'chat_id': CHAT, 'text': p['text'], 'parse_mode': 'HTML', 'link_preview_options': {'is_disabled': bool(p.get('no_preview'))}})
     if r.get('ok'):
+        if p.get('pin'):
+            pr = call('pinChatMessage', {'chat_id': CHAT, 'message_id': (r.get('result') or {}).get('message_id'), 'disable_notification': True})
+            print('::notice title=pin::' + json.dumps({'id': p['id'], 'ok': pr.get('ok'), 'error': pr.get('description')}))
         sent[p['id']] = {'at': now.isoformat(timespec='seconds'), 'msg': (r.get('result') or {}).get('message_id')}
         print('::notice title=sent::' + p['id'])
         time.sleep(2)
