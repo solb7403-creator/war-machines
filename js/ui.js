@@ -1080,6 +1080,17 @@ function labItemFacts(key,spec){
  }else if(key==='paint'){line('Paint',PAINTS[spec.paint]?.n||spec.paint);line('Stat impact','None');}
  return '<div class="lab-facts">'+details.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('')+'</div>';
 }
+function labDrawSelectedItem(canvas,key,spec){
+ if(!canvas)return;
+ const w=canvas.clientWidth||220,h=canvas.clientHeight||120;
+ canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+ const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.clearRect(0,0,w,h);
+ if(key==='weapon'){const x=spec.w;drawGearIcon(ctx,w,h,true,getW(x.a,x.t,x.s));}
+ else if(key==='chassis'){const x=spec.c;drawGearIcon(ctx,w,h,false,getC(x.c,x.t,x.s));}
+ else if(key.startsWith('core')){const k=spec.cores[Number(key.slice(4))];if(k)drawGemArt(ctx,w,h,k);}
+ else drawMachinePreview(ctx,w,h,{...ecoLoadout(save,spec),mods:spec.mods,looks:spec.looks});
+}
 function labInspect(key){
  if(!labEditor)return;
  const spec=labFormSpec(),ref=labEditor.base||labEditor.spec;
@@ -1091,9 +1102,10 @@ function labInspect(key){
  const note=key.startsWith('look')||key==='paint'?'Appearance only — no performance change.':
  key.startsWith('core')?'Core effects are included in the resulting machine stats.':
  key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
- sheet('labinspect',()=>'<h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
+ sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
  '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
  labItemFacts(key,spec)+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
+ setTimeout(()=>labDrawSelectedItem($('#lab-item-art'),key,spec),0);
 }
 ACT.labinspect=key=>labInspect(key);
 ACT.labinspectclose=()=>{const ov=findOv('labinspect');if(ov)closeOverlay(ov);};
