@@ -1054,14 +1054,25 @@ let labEditor=null;
 // Laboratory inspection: all values are taken from the same loadout calculators as gameplay.
 const labStatRows=(spec)=>{
  const L=ecoLoadout(save,spec),m=machineMetrics(L),fit=fittingStats(spec.mods||{});
- return [['Health',m.hp,Math.max(1,m.hp)],['DPS',m.dps,Math.max(1,m.dps)],['Speed',m.spd,Math.max(1,m.spd)],
- ['Power',powerOf(L),Math.max(1,powerOf(L))],['Fitting weight',fit.weight,3],['Fitting power',fit.power,3]];
+ const high=TIER_MULT[2]*ROLL_MAX,skin=1.08;
+ const hpMax=STAT.hp*1.32*Math.max(...Object.values(CH).map(c=>c.hp))*high*skin*1.06;
+ const dpsMax=Math.max(...Object.values(WEAPONS).map(w=>w.dps))*high*1.32*skin*1.06*
+  (1+GEM.dmg.amt*GEM_LV[GEM_LV.length-1])*(1+GEM.rof.amt*GEM_LV[GEM_LV.length-1]);
+ const spdMax=STAT.speed*1.24*Math.max(...Object.values(CH).map(c=>c.spd))*
+  (1+(high-1)*0.5)*1.06*(1+GEM.spd.amt*GEM_LV[GEM_LV.length-1]);
+ const powerMax=Math.pow(hpMax*dpsMax*(spdMax/STAT.speed),1/3)*1.2*Math.pow(1.25,3);
+ return [['Health',m.hp,hpMax],['DPS',m.dps,dpsMax],['Speed',m.spd,spdMax],
+  ['Power',powerOf(L),powerMax],['Fitting weight',fit.weight,FIT_BUDGET.weight],['Fitting power',fit.power,FIT_BUDGET.power]];
 };
 function labBars(spec,reference){
  const rows=labStatRows(spec),base=reference?labStatRows(reference):rows;
  return '<div class="lab-stats">'+rows.map((r,i)=>{
   const max=Math.max(r[2],r[1],base[i][1],1),pct=Math.max(0,Math.min(100,100*r[1]/max));
-  return '<div class="lab-stat"><div><span>'+esc(r[0])+'</span><strong>'+esc(String(r[1]))+(reference?' <small>('+esc(String(base[i][1]))+' saved)</small>':'')+'</strong></div><div class="lab-track"><i style="width:'+pct+'%"></i></div></div>';
+  const beforePct=Math.max(0,Math.min(100,100*base[i][1]/max));
+  return '<div class="lab-stat"><div><span>'+esc(r[0])+'</span><strong>'+esc(String(r[1]))+
+  (reference?' <small>(saved '+esc(String(base[i][1]))+')</small>':'')+'</strong></div>'+
+  '<div class="lab-track"><i style="width:'+pct+'%"></i>'+(reference?'<em style="left:'+beforePct+'%" title="Saved configuration"></em>':'')+
+  '</div></div>';
  }).join('')+'</div>';
 }
 function labItemFacts(key,spec){
@@ -1102,9 +1113,10 @@ function labInspect(key){
  const note=key.startsWith('look')||key==='paint'?'Appearance only — no performance change.':
  key.startsWith('core')?'Core effects are included in the resulting machine stats.':
  key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
- sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
+ const itemSheet=sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
  '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
  labItemFacts(key,spec)+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
+ itemSheet.re=null; // don't blank the rendered art when global UI becomes dirty
  setTimeout(()=>labDrawSelectedItem($('#lab-item-art'),key,spec),0);
 }
 ACT.labinspect=key=>labInspect(key);
@@ -1137,7 +1149,7 @@ function labCards(){
  if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
  return '<h2 class="title">Your machine bays</h2><p class="mut">Two independent builds, shown side by side. Shared inventory and upgrades.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
   const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
-  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
+  return '<section class="panel labcard"><div class="lab-bay-label">BAY '+esc(String(id).toUpperCase())+'</div><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
  }).join('')+'</div>';
 }
 function openLabEditor(id,draft){
@@ -1147,7 +1159,7 @@ function openLabEditor(id,draft){
  const opts=(items,chosen)=>items.map(([id,n])=>'<option value="'+esc(id)+'"'+(id===chosen?' selected':'')+'>'+esc(n)+'</option>').join('');
  const key=x=>(x.a||x.c)+':'+x.t+(x.s?'s':'');
  const gear=(isW,p)=>opts(ownedList(isW).filter(x=>!x.locked).map(x=>[x.premium?'moon:2':x.id,x.name]),key(p));
- sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
+ const editorSheet=sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
   '<canvas id="lab-preview" class="labpreview" aria-label="Unsaved machine preview"></canvas><p id="lab-metrics" role="status"></p>'+
   '<label>Name<input id="lab-name" maxlength="48" value="'+esc(M.name)+'" autocomplete="off"></label>'+
   '<label>Weapon<select id="lab-weapon">'+gear(true,M.spec.w)+'</select></label>'+
@@ -1156,6 +1168,7 @@ function openLabEditor(id,draft){
   FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
   '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
   '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><div class="range-actions"><button class="btn btn-go block" data-act="labsave">Save machine</button><button class="btn btn-quiet block" data-act="rangedraft">Free Test draft · no rewards</button></div>');
+ editorSheet.re=null; // preserve unsaved selections and injected inspection controls across UI refreshes
  setTimeout(()=>{updateLabPreview();labInspectButtons();},0);
 }
 ACT.labedit=id=>openLabEditor(id);
