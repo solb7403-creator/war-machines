@@ -194,7 +194,7 @@ export class RoomCore {
   }
   goMsg(s) {
     const u = this.sim.units[s.idx];
-    return { k: "go", chs: (s.L.chs || [s.L.c]).map(c => c.c), me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
+    return { k: "go", chs: [s.L.c.c], me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
       units: this.sim.roster(), vs: Math.max(0, (this.vsAt || 0) - this.io.now()), feat: this.q.g === this.R.featuredOn(this.io.day()), t: this.tick };
   }
   startFight() {
