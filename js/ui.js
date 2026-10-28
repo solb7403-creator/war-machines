@@ -1075,13 +1075,40 @@ function labBars(spec,reference){
   '</div></div>';
  }).join('')+'</div>';
 }
+function labItemBars(key,spec){
+ const L=ecoLoadout(save,spec),entries=[];
+ const add=(name,value,max,suffix='')=>entries.push([name,+Number(value).toFixed(3),max,suffix]);
+ if(key==='weapon'){
+  const w=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s);
+  const ceiling=Math.max(...Object.values(WEAPONS).map(x=>x.dps))*TIER_MULT[2]*ROLL_MAX;
+  add('Actual weapon DPS',w.dps,ceiling);add('Shots / sec',1/w.shot,1/0.09);
+  add('Projectile speed',w.pspd,26);
+ }else if(key==='chassis'){
+  const c=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s);
+  const tier=TIER_MULT[2]*ROLL_MAX;
+  add('HP multiplier',c.hp,Math.max(...Object.values(CH).map(x=>x.hp))*tier,'×');
+  add('Speed multiplier',c.spd,Math.max(...Object.values(CH).map(x=>x.spd))*(1+(tier-1)*0.5),'×');
+  add('Turning multiplier',c.turn,Math.max(...Object.values(CH).map(x=>x.turn))+.1,'×');
+ }else if(key.startsWith('core')){
+  const k=spec.cores[Number(key.slice(4))];
+  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
+ }else if(key.startsWith('fit')){
+  const k=key.slice(3),v=fittingSelection(spec.mods)[k],f=FITS[k][v];
+  if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',v*100,6,'%');
+   add('Weight',f.weight,FIT_BUDGET.weight);add('Power',f.power,FIT_BUDGET.power);}
+ }
+ return entries.length?'<h4>Individual item specifications</h4><div class="lab-stats lab-item-stats">'+entries.map(([name,val,max,suffix])=>
+  '<div class="lab-stat"><div><span>'+esc(name)+'</span><strong>'+esc(String(val))+suffix+'</strong></div>'+
+  '<div class="lab-track '+(val<0?'lab-negative':'')+'"><i style="width:'+Math.max(0,Math.min(100,Math.abs(val)*100/max))+'%"></i></div></div>'
+ ).join('')+'</div>':'<p class="mut">Cosmetic item. No independent combat statistics.</p>';
+}
 function labItemFacts(key,spec){
  const details=[];
  const line=(name,value)=>details.push([name,String(value)]);
  if(key==='weapon'){
-  const w=spec.w,base=WEAPONS[w.a];if(base){line('Weapon class',base.n);line('Base DPS',base.dps);line('Shot interval',base.shot+' s');line('Super',base.sup);line('Tier',w.t);line('Salvaged',w.s?'Yes':'No');line('Description',base.d);}
+  const w=spec.w,base=WEAPONS[w.a],live=ecoLoadout(save,spec).w,actual=weaponOf(live.a,live.t,live.q,live.s);if(base){line('Weapon class',base.n);line('Base DPS',base.dps);line('Owned weapon DPS',actual.dps);line('Item quality',live.q+'×');line('Shot interval',base.shot+' s');line('Super',base.sup);line('Tier',w.t);line('Salvaged',w.s?'Yes':'No');line('Description',base.d);}
  }else if(key==='chassis'){
-  const c=spec.c,base=CH[c.c];if(base){line('Chassis',base.n);line('Base HP multiplier',base.hp+'×');line('Base speed multiplier',base.spd+'×');line('Turning multiplier',base.turn+'×');line('Counter advantage','Versus '+CH[COUNTER[c.c]].n);line('Tier',c.t);line('Salvaged',c.s?'Yes':'No');}
+  const c=spec.c,base=CH[c.c],live=ecoLoadout(save,spec).c,actual=chassisOf(live.c,live.t,live.q,live.s);if(base){line('Chassis',base.n);line('Actual HP multiplier',actual.hp+'×');line('Actual speed multiplier',actual.spd+'×');line('Item quality',live.q+'×');line('Base HP multiplier',base.hp+'×');line('Base speed multiplier',base.spd+'×');line('Turning multiplier',base.turn+'×');line('Counter advantage','Versus '+CH[COUNTER[c.c]].n);line('Tier',c.t);line('Salvaged',c.s?'Yes':'No');}
  }else if(key.startsWith('core')){
   const k=spec.cores[Number(key.slice(4))];if(k&&GEM[k]){const level=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',level);line('Effect magnitude',+(coreVal(k,level)*100).toFixed(3)+'%');}else line('Core slot','Empty');
  }else if(key.startsWith('fit')){
@@ -1115,17 +1142,19 @@ function labInspect(key){
  key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
  const itemSheet=sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
  '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
- labItemFacts(key,spec)+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
+ labItemFacts(key,spec)+labItemBars(key,spec)+'<h4>Assembled machine performance</h4>'+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
  itemSheet.re=null; // don't blank the rendered art when global UI becomes dirty
  setTimeout(()=>labDrawSelectedItem($('#lab-item-art'),key,spec),0);
 }
 ACT.labinspect=key=>labInspect(key);
 ACT.labinspectclose=()=>{const ov=findOv('labinspect');if(ov)closeOverlay(ov);};
+let labQuickRefreshers=[];
 function labInspectButtons(){
  if(!labEditor)return;
  const pairs=[['weapon','Weapon'],['chassis','Chassis'],...[0,1,2].map(i=>['core'+i,'Core '+(i+1)]),
  ...FIT_ORDER.flatMap(k=>[['fit'+k,k.toUpperCase()+' fitting'],['look'+k,k.toUpperCase()+' appearance']]),['paint','Paint']];
  const root=$('.labform');if(!root)return;
+ labQuickRefreshers=[];
  pairs.forEach(([key])=>{
   const sel=$('#lab-'+(key==='weapon'||key==='chassis'||key==='paint'?key:
    key.startsWith('core')?'core-'+key.slice(4):key.startsWith('fit')?'fit-'+key.slice(3):'look-'+key.slice(4)));
@@ -1133,15 +1162,18 @@ function labInspectButtons(){
   const b=document.createElement('button');b.type='button';b.className='btn btn-quiet lab-inspect-btn';
   b.dataset.act='labinspect';b.dataset.arg=key;b.textContent='View exact details';
   sel.parentElement.appendChild(b);
-  const preview=document.createElement('div');preview.className='lab-item-quick';preview.setAttribute('aria-live','polite');
+  const preview=document.createElement('div');preview.className='lab-item-quick';
   const refresh=()=>{
    if(!labEditor)return;
    const name=sel.options[sel.selectedIndex]?.textContent||'Empty';
    const next=labFormSpec(),rows=labStatRows(next);
-   preview.innerHTML='<strong>'+esc(name)+'</strong><span>'+esc(rows.slice(0,3).map(r=>r[0]+' '+r[1]).join(' · '))+'</span>';
+   preview.innerHTML='<canvas class="lab-item-thumb" aria-hidden="true"></canvas><div class="lab-quick-data"><strong>'+esc(name)+'</strong>'+
+   rows.slice(0,3).map(r=>'<div class="lab-quick-stat"><span>'+esc(r[0])+' '+esc(String(r[1]))+'</span>'+
+   '<div class="lab-track"><i style="width:'+Math.max(0,Math.min(100,100*r[1]/Math.max(1,r[2])))+'%"></i></div></div>').join('')+'</div>';
+   labDrawSelectedItem(preview.querySelector('canvas'),key,next);
   };
   sel.parentElement.appendChild(preview);
-  sel.addEventListener('focus',refresh);sel.addEventListener('pointerenter',refresh);sel.addEventListener('change',refresh);
+  sel.addEventListener('focus',refresh);sel.addEventListener('pointerenter',refresh);labQuickRefreshers.push(refresh);
   refresh();
  });
 }
@@ -1198,4 +1230,4 @@ function updateLabPreview(){
  $('[data-act="rangedraft"]').disabled=!!err;
  const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
-document.addEventListener('change',e=>{if(e.target.closest('.labform'))updateLabPreview();});
+document.addEventListener('change',e=>{if(e.target.closest('.labform')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
