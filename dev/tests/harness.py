@@ -3,7 +3,7 @@ import asyncio, json, os, subprocess, time, urllib.request, sys
 DEV='http://127.0.0.1:8787'
 REPO=os.environ.get('REPO',os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..'))).replace(os.sep,'/')
 REPO_URL='file://'+REPO+'/'
-GAME=REPO_URL+'index.html'
+GAME='http://127.0.0.1:8899/index.html'
 os.makedirs(os.environ.get('SHOTS','/tmp/lunar-shots'),exist_ok=True)
 def start_dev():
     try: urllib.request.urlopen(DEV+'/__dump',timeout=1);return None
@@ -38,7 +38,7 @@ window.Telegram={WebApp:{initData:%s,initDataUnsafe:{user:%s%s},platform:'ios',v
 import urllib.parse
 async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None, eco='local', init=None, autogfx=False):
     user=user or {'id':777001,'username':'jaketest','first_name':'Jake'}
-    b=browser or await p.chromium.launch()
+    b=browser or await p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
     ctx=await b.new_context(viewport={'width':w,'height':h},device_scale_factor=scale,color_scheme=color_scheme)
     pg=await ctx.new_page()
     errs=[]
@@ -55,6 +55,11 @@ async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=G
             path=u.split('firebaseio.com',1)[1].split('?')[0]
             resp=await r.fetch(url=DEV+'/db'+path)
             return await r.fulfill(response=resp)
+        if u.startswith('http://127.0.0.1:8899/'):
+            import pathlib, mimetypes
+            target=(pathlib.Path(REPO)/u.split(':8899/',1)[1].split('?',1)[0]).resolve()
+            if pathlib.Path(REPO).resolve() not in target.parents or not target.is_file(): return await r.abort()
+            return await r.fulfill(body=target.read_bytes(),content_type=mimetypes.guess_type(str(target))[0] or 'application/octet-stream')
         if u.startswith('file:'): return await r.continue_()
         if 'fonts.googleapis.com' in u or 'fonts.gstatic.com' in u: return await r.abort()
         return await r.abort()

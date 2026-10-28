@@ -171,7 +171,7 @@ function renderGarage(){
  const upRow=k=>{const U=UPS[k],lv=save.up[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&!full&&(save.pts||0)>=c;
   return '<div class="up"><div class="grow"><div class="nm">'+U.n+' <span class="dimtxt">level '+lv+' of 4</span></div><div class="d">'+U.d+'</div><div class="bar4">'+[0,1,2,3].map(i=>'<i class="'+(i<lv?'f':'')+'"></i>').join('')+'</div></div>'+
    (max?'<span class="mut">Maxed</span>':full?'<span class="mut">Budget full</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="up" data-arg="'+k+'">'+coin()+fmtNum(c)+'</button>')+'</div>';};
- return '<div class="powerline"><div class="grow"><div class="pw num">Power '+pw+'</div><div class="mut"><span style="color:'+brk.c+'">'+brk.n+' league</span>, points ×'+brk.mult+'</div></div><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button></div>'+
+ return labCards()+'<div class="powerline"><div class="grow"><div class="pw num">Power '+pw+'</div><div class="mut"><span style="color:'+brk.c+'">'+brk.n+' league</span>, points ×'+brk.mult+'</div></div><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button></div>'+
   '<div class="stats">'+stat(fmtNum(st.hp),'Health')+stat(st.dps,'Damage/s')+stat(st.spd,'Speed')+stat(st.armor+'%','Armor')+stat(st.crit+'%','Crit')+'</div>'+
   sec('Gear')+gearRow(true,W0)+gearRow(false,C0)+
   '<button class="gear" data-act="paints"><div class="ico"><canvas data-art="tank:paint:'+esc(save.paint)+'"></canvas></div><div class="grow"><div class="kind">Paint</div><div class="nm">'+esc(myPaint().n)+'</div><div class="meta">Looks only. '+Object.keys(save.paints||{}).length+' of '+PAINT_ORDER.length+' owned</div></div><span class="chev">›</span></button>'+
@@ -397,6 +397,7 @@ function paintArt(root){
   const a=c.dataset.art.split(':');
   try{
    if(c.dataset.locked)ctx.globalAlpha=0.45;
+   if(a[0]==='lab'){const M=save.lab&&save.lab.machines[a[1]];if(M)drawMachinePreview(ctx,w,h,ecoLoadout(save,M.spec));continue;}
    if(a[0]==='hero')heroCv=c;
    if(typeof art3D==='function'&&art3D(ctx,w,h,a)){ctx.globalAlpha=1;continue;}   // 3D pictures when the 3D view is on
    ctx.globalAlpha=1;
@@ -729,7 +730,7 @@ function vsBuild(){
  else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+': they deal you +15% damage and take 10% less from you.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
  else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='You counter '+wn.join(', ')+': +15% damage to '+(wn.length>1?'them':'it')+', 10% less taken. '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you: the same against you.';}
  else txt='Even matchup. No counters either way.';
- const owned=ownedChassisClasses();
+ const owned=battleChassisClasses();
  return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents')+'</span></div>'+
   '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
@@ -746,7 +747,17 @@ function showVS(o){
  clearInterval(vsTimer);vsTimer=setInterval(()=>{if(live){tick();return;}n--;if(n<=0){vsGo();return;}tick();},live?250:1000);tick();
  ov.re=()=>{ov.box.innerHTML=vsBuild();paintArt(ov.box);tick();};
 }
-function vsGo(){if(pvpOn())return;clearInterval(vsTimer);vsTimer=null;const ov=findOv('vs');if(ov){ov.onClose=null;closeOverlay(ov);}if(state==='vs')startMatch();}
+let vsStarting=false;
+async function vsGo(){
+ if(pvpOn()||vsStarting)return;vsStarting=true;clearInterval(vsTimer);vsTimer=null;
+ try{if(SRV_ECO&&mTicket&&mTicket.p)await mTicket.p;
+  const ov=findOv('vs');if(ov){ov.onClose=null;closeOverlay(ov);}
+  if(state==='vs'){
+   if(mTicket&&['garage_changed','update'].includes(mTicket.err)){state='menu';doSync(false);showToast(mTicket.err==='update'?'Reconnect to update your garage before battle.':'Garage changed on another device. Please start again.');return;}
+   startMatch();
+  }
+ }finally{vsStarting=false;}
+}
 function beginMatch(){
  if(state==='play'||(pvp&&pvp.phase==='find'))return;
  if(pvp)pvpClose();   // anything left from a live match that's over
@@ -911,7 +922,7 @@ const ACT={
  buypass:()=>{if(passState().prem)return;pay(PASS_PRICE.ton,{kind:'pass'});},
  paints:()=>openPaints(),
  paint:a=>{const P=PAINTS[a];if(!P)return;
-  if(save.paints&&save.paints[a]){save.paint=a;store();fx('tap');showToast(P.n+' paint on');return;}
+  if(save.paints&&save.paints[a]){if(save.lab){const p=labSpec(myLoadout());p.paint=a;labQuickSpec(p);return;}save.paint=a;store();fx('tap');showToast(P.n+' paint on');return;}
   if(P.pass){openPass();return;}
   if(P.only==='vault'){showToast('Unlocks at Hyperspace Vault level '+VAULT_PAINT_LV);openVault();return;}
   if(P.only){showToast('Only in the Founder pack');if(FOUNDER_OPEN){closeAll();setTab('shop');}return;}
@@ -962,7 +973,7 @@ const ACT={
  respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
  up:a=>{const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
  gear:a=>openGearPicker(a==='w'),
- equip:a=>{const [s,id]=a.split('|'),isW=s==='w',[k,ts]=id.split(':'),t=ts===undefined?0:parseInt(ts,10),sl=!!ts&&ts.slice(-1)==='s';
+ equip:a=>{if(save.lab){const [sl,id]=a.split('|'),[k,ts='2']=id.split(':'),p=labSpec(myLoadout()),x={t:parseInt(ts,10),s:ts.endsWith('s')};if(sl==='w')p.w={a:k,...x};else p.c={c:k,...x};labQuickSpec(p);return;}const [s,id]=a.split('|'),isW=s==='w',[k,ts]=id.split(':'),t=ts===undefined?0:parseInt(ts,10),sl=!!ts&&ts.slice(-1)==='s';
   const own=k==='moon'?save.moonbeam:isW?(sl?salvOf(k,t):ownW(k,t)):(sl?salvOf(k,t):ownC(k,t));
   if(!own){showToast('Find it in the '+crateName(isW?'weapon':'chassis',t).toLowerCase());return;}
   if(isW){save.weapon=k;if(k!=='moon'){save.wTier[k]=t;save.wSal=save.wSal||{};save.wSal[k]=sl;}}
@@ -1036,3 +1047,59 @@ function initUI(){
  setInterval(()=>{if(!inBattle()&&(uiTab==='quests'||uiTab==='ranks'))uiDirty(uiTab);},30000);   // countdowns + board refresh
  uiReady=true;renderUI();
 }
+
+// Two owned configurations. Engineering is optional; ordinary Play remains unchanged.
+let labEditor=null;
+function labCards(){
+ if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
+ return '<h2 class="title">Your machines</h2><p class="mut">Two free slots. Gear, cores and account upgrades are shared.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
+  const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
+  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
+ }).join('')+'</div>';
+}
+function openLabEditor(id,draft){
+ const original=save.lab&&save.lab.machines[id];if(!original)return;
+ const M=draft?{...original,name:draft.name,spec:draft.spec}:original;
+ labEditor={id,rev:draft?.rev||save.lab.rev,spec:JSON.parse(JSON.stringify(M.spec)),base:JSON.parse(JSON.stringify(draft?.base||M.spec))};
+ const opts=(items,chosen)=>items.map(([id,n])=>'<option value="'+esc(id)+'"'+(id===chosen?' selected':'')+'>'+esc(n)+'</option>').join('');
+ const key=x=>(x.a||x.c)+':'+x.t+(x.s?'s':'');
+ const gear=(isW,p)=>opts(ownedList(isW).filter(x=>!x.locked).map(x=>[x.premium?'moon:2':x.id,x.name]),key(p));
+ sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
+  '<canvas id="lab-preview" class="labpreview" aria-label="Unsaved machine preview"></canvas><p id="lab-metrics" role="status"></p>'+
+  '<label>Name<input id="lab-name" maxlength="48" value="'+esc(M.name)+'" autocomplete="off"></label>'+
+  '<label>Weapon<select id="lab-weapon">'+gear(true,M.spec.w)+'</select></label>'+
+  '<label>Chassis<select id="lab-chassis">'+gear(false,M.spec.c)+'</select></label>'+
+  M.spec.cores.map((k,i)=>'<label>Core '+(i+1)+'<select id="lab-core-'+i+'">'+opts([['-','Empty'],...GORDER.map(k=>[k,GEM[k].name])],k||'-')+'</select></label>').join('')+
+  FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
+  '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
+  '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><div class="range-actions"><button class="btn btn-go block" data-act="labsave">Save machine</button><button class="btn btn-quiet block" data-act="rangedraft">Free Test draft · no rewards</button></div>');
+ setTimeout(updateLabPreview,0);
+}
+ACT.labedit=id=>openLabEditor(id);
+ACT.labequip=async id=>{const r=await labRequest('lab_activate',{id,rev:save.lab.rev});showToast(r.err?labMessage(r.err):'Machine equipped');};
+ACT.labsave=async()=>{
+ if(!labEditor||labBusy)return;
+ const status=$('#lab-status'),button=$('[data-act="labsave"]');
+ const spec=labFormSpec();
+ status.textContent='Saving…';button.disabled=true;
+ const r=await labRequest('lab_save',{id:labEditor.id,rev:labEditor.rev,name:$('#lab-name').value,spec});
+ if(r.err){status.textContent=labMessage(r.err);button.disabled=false;return;}
+ const ov=findOv('labeditor');if(ov)closeOverlay(ov);labEditor=null;showToast('Machine saved');
+};
+
+function fittingLabel(f){const delta=[['HP',f.hp],['speed',f.spd],['ordinary DPS',f.dps]].filter(x=>x[1]).map(([k,v])=>(v>0?'+':'')+Math.round(v*100)+'% '+k).join(', ');return f.n+(delta?' · '+delta:'')+' · W'+f.weight+'/P'+f.power;}
+function labFormSpec(){
+ const parse=v=>{const [k,t]=v.split(':');return {k,t:parseInt(t,10),s:t.endsWith('s')};};
+ const w=parse($('#lab-weapon').value),c=parse($('#lab-chassis').value);
+ return {w:{a:w.k,t:w.t,s:w.s},c:{c:c.k,t:c.t,s:c.s},cores:[0,1,2].map(i=>$('#lab-core-'+i).value).map(k=>k==='-'?null:k),paint:$('#lab-paint').value,catalog:FIT_VERSION,mods:Object.fromEntries(FIT_ORDER.map(k=>[k,$('#lab-fit-'+k).value])),looks:Object.fromEntries(FIT_ORDER.map(k=>[k,$('#lab-look-'+k).value]))};
+}
+function updateLabPreview(){
+ if(!labEditor||!$('#lab-preview'))return;
+ const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.base||labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
+ $('#lab-metrics').textContent='HP '+before.hp+' → '+after.hp+' · DPS '+before.dps+' → '+after.dps+' · Speed '+before.spd+' → '+after.spd+' | Weight '+f.weight+'/3 · Power '+f.power+'/3';
+ $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
+ $('[data-act="labsave"]').disabled=!!err;
+ $('[data-act="rangedraft"]').disabled=!!err;
+ const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
+}
+document.addEventListener('change',e=>{if(e.target.closest('.labform'))updateLabPreview();});

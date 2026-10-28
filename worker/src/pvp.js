@@ -76,6 +76,7 @@ export class RoomCore {
 
   // a seat for a pilot the lobby sent here (the worker has checked their login and loadout)
   seatPlayer({ pid, name, q, L, power, league }) {
+    L = JSON.parse(JSON.stringify(L));
     const now = this.io.now();
     if (this.phase === "new") {
       this.q = { g: q.g, m: q.m }; this.cap = seatsFor(q.g, q.m);
@@ -88,10 +89,10 @@ export class RoomCore {
     if (!queueFits(this.q.g + "." + this.q.m, q.g + "." + q.m)) return { ok: false, err: "queue" };
     if (this.q.g === "quick" && q.g !== "quick") this.q.g = q.g;   // Quick Match room: the first pilot with a mode sets it
     const have = this.humans().find((s) => s.pid === pid);
-    if (have) { Object.assign(have, { name, L, power, league }); return { ok: true, seat: have.idx, wait: this.t0 + this.o.WAIT_MS - now }; }
+    if (have) { Object.assign(have, { name }); return { ok: true, seat: have.idx, wait: this.t0 + this.o.WAIT_MS - now }; }
     const idx = this.order.find((i) => !this.seats[i]);
     if (idx === undefined) return { ok: false, err: "full" };
-    this.seats[idx] = { pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
+    this.seats[idx] = { rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
     // offline pilots' tanks for the AI seats, looked up while the room waits (at the first pilot's power)
     if (!this.ghP && this.io.ghosts) this.ghP = Promise.resolve().then(() => this.io.ghosts(power, [pid])).then((g) => { this.gh = g || []; }).catch(() => { this.gh = []; });
     return { ok: true, seat: idx, wait: this.t0 + this.o.WAIT_MS - now };
@@ -195,7 +196,7 @@ export class RoomCore {
   }
   goMsg(s) {
     const u = this.sim.units[s.idx];
-    return { k: "go", me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
+    return { k: "go", chs: (s.L.chs || [s.L.c]).map(c => c.c), me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
       units: this.sim.roster(), vs: Math.max(0, (this.vsAt || 0) - this.io.now()), feat: this.q.g === this.R.featuredOn(this.io.day()), t: this.tick };
   }
   startFight() {
@@ -388,7 +389,8 @@ async function readToken(env, tok, room, now = Date.now()) {
 // ---- the loadout a pilot brings: only gear they own on the server's record (eco/<pid>), with the server's rolls, upgrade
 // and core levels. Anything else falls back to the best they own of that line (rules.js ecoLoadout). ----
 export async function checkLoadout(env, R, raw, S) {
-  return R.ecoLoadout(S && typeof S === "object" ? R.ecoNorm(JSON.parse(JSON.stringify(S))) : R.ecoNorm({}), raw);
+  const owned = S && typeof S === "object" ? R.ecoNorm(JSON.parse(JSON.stringify(S))) : R.ecoNorm({});
+  return owned.lab ? R.labLoadout(owned) : R.ecoLoadout(owned, raw);
 }
 
 // ---- routes (called from index.js) ----
@@ -401,6 +403,8 @@ export async function pvpJoin(env, a) {
   if (g !== "quick" && !R.liveModes(dayOf(now)).includes(g) && !(env.PVP_ALL && R.GT_ORDER.includes(g))) return { status: 400, body: { error: "not live" } };   // quick: any live mode, picked when the room starts   // PVP_ALL: local tests of every mode
   if (g === "royale" ? m !== "solo" : !R.MODES[m]) return { status: 400, body: { error: "mode" } };
   const S = await readEco(env, a.pid);
+  if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return { status: 409, body: {error:"update"} };
+  if (S.lab && b.labRev !== S.lab.rev) return { status: 409, body: {error:"garage_changed"} };
   const L = await checkLoadout(env, R, b.L, S);
   const power = R.powerOf(L), league = R.powerBracket(power).i, name = cleanName(a.user), q = g + "." + m, lobby = lobbyStub(env);
   for (let i = 0; i < 3; i++) {

@@ -569,3 +569,21 @@ button.q{display:flex;width:100%;text-align:left}
 .gift{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:rgba(255,207,74,.1);border:1px solid rgba(255,207,74,.35);display:flex;flex-direction:column;gap:3px}
 .gift b{color:var(--gold);font:600 14px var(--disp)}
 .gift span{color:var(--mut);font-size:12.5px}
+
+/* Named machine shelf and touch-first equipment editor. */
+.labcards{display:grid;gap:12px;margin:14px 0 24px}.labcard{padding:14px;min-width:0}.labcard>b{display:block;overflow-wrap:anywhere;margin-bottom:8px}.labcard .tag{display:inline-block}.labcard p{margin:8px 0}.labcard .acts{display:flex;gap:8px}.labcard .btn{min-height:44px;flex:1}.labform{display:grid;gap:12px;margin:16px 0}.labform label{display:grid;gap:6px;color:var(--dust)}.labform input,.labform select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid var(--edge);border-radius:10px;background:var(--void);color:var(--moon);padding:10px;font:inherit}.labform input:focus,.labform select:focus{outline:2px solid var(--thrust);outline-offset:2px}#lab-status{margin:12px 0;overflow-wrap:anywhere}
+.labpreview{display:block;width:100%;height:180px;border-radius:12px;background:radial-gradient(ellipse at center,#263143,#0a0e17)}#lab-metrics{font-size:14px;line-height:1.6;overflow-wrap:anywhere}.labform select{max-width:100%;text-overflow:ellipsis}
+
+/* Free range reuses the battle canvas; controls stay clear of its top status strip. */
+.range-note{color:var(--ally);font-weight:700}
+.range-actions{display:grid;gap:10px;margin-top:16px}
+.range-actions .btn,.range-actions .linkbtn{min-height:46px}
+#range-bar{position:fixed;z-index:12;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 4px) 8px 4px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(10,14,23,.95);color:#5fe3a1;font:600 13px var(--disp)}
+#range-bar small{color:#c9d6e3;font-size:11px}
+#range-bar .btn{min-height:44px;padding:7px 12px;font-size:13px}
+.range-running{--range-top:calc(64px + env(safe-area-inset-top,0px))}
+.range-running #c,.range-running #c3{top:var(--range-top);height:calc(100% - var(--range-top))}
+.labcard .acts{display:grid;grid-template-columns:1fr 1fr}.labcard [data-act="rangecard"]{grid-column:1/-1}
+.labform details{border:1px solid rgba(223,231,242,.16);border-radius:10px;padding:10px}
+.labform summary{min-height:36px;cursor:pointer;display:list-item}
+.labform details label{margin-top:10px;display:grid;gap:6px}

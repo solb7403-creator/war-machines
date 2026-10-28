@@ -529,5 +529,19 @@ function crateGeo(){const k=kit();
  for(const [w,h,d,x,y,z] of [[1.04,0.08,0.08,0,0.04,0.48],[1.04,0.08,0.08,0,0.96,0.48],[1.04,0.08,0.08,0,0.04,-0.48],[1.04,0.08,0.08,0,0.96,-0.48],[0.08,1,0.08,0.48,0.5,0.48],[0.08,1,0.08,-0.48,0.5,0.48],[0.08,1,0.08,0.48,0.5,-0.48],[0.08,1,0.08,-0.48,0.5,-0.48],[0.08,0.08,1.04,0.48,0.96,0],[0.08,0.08,1.04,-0.48,0.96,0],[0.08,0.08,1.04,0.48,0.04,0],[0.08,0.08,1.04,-0.48,0.04,0]])put(k,B(w,h,d),'#b08a5a',[x,y,z]);
  put(k,B(1.2,0.06,0.06),'#b08a5a',[0,0.5,0.51],[0,0,0.75]);put(k,B(1.2,0.06,0.06),'#b08a5a',[0,0.5,0.51],[0,0,-0.75]);
  return bake(k);}
-return {kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+// Bounded fitting geometry, merged into the existing material buckets; no collision changes.
+function fittingKit(f,team,part){
+ const k=kit(),steel='#91a1b3';
+ if(part==='body'){
+  if(f.hull==='plates')sym(z=>put(k,B(1.15,.16,.18),steel,[-.1,.55,z*.5]));
+  if(f.hull==='light')for(const x of [-.6,-.3,0])put(k,B(.07,.035,.6),team,[x,.56,0],[0,-.3,0],null,'glow');
+  if(f.mobility==='sprint')sym(z=>put(k,B(.65,.08,.14),team,[-.85,.38,z*.67],null,null,'glow'));
+  if(f.mobility==='stable')sym(z=>{for(const x of [-.65,.65])put(k,CY(.16,.16,.1,8),steel,[x,.24,z*.83],[Math.PI/2,0,0]);});
+ }else{
+  if(f.mount==='hardened')put(k,B(.4,.22,.65),steel,[.4,.18,0]);
+  if(f.mount==='firing')for(const x of [.4,.65,.9])put(k,B(.07,.3,.62),steel,[x,.2,0]);
+ }
+ return {k,anims:[],meta:{}};
+}
+return {fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();

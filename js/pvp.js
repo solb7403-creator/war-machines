@@ -33,7 +33,7 @@ function pvpFind(gk){
  pvp={phase:'find',live:false,q:{g:gk,m},quick:gk==='quick',t0:Date.now(),n:1,cap:gk==='royale'?6:MODES[m].n*2,left:30000,snaps:[],evq:[],off:null,jit:0,delay:110,tp:0,sent:null,lastSnapAt:0,retry:0,id:Math.random()};
  const P=pvp;
  showFind();
- api('/api/pvp/join',{v:PVP_V,g:gk,m,L:myLoadout()}).then(r=>{
+ api('/api/pvp/join',{v:PVP_V,g:gk,m,fv:FIT_VERSION,L:myLoadout(),labRev:save.lab&&save.lab.rev}).then(r=>{
   if(pvp!==P||P.phase!=='find')return;
   if(!r||!r.ok)throw new Error('no seat');
   P.room=r.room;P.tok=r.tok;P.left=r.wait||30000;P.t0=Date.now();
@@ -117,7 +117,7 @@ const pvX=x=>pvp.flip?W-x:x,pvY=y=>pvp.flip?H-y:y,pvA=a=>pvp.flip?a+Math.PI:a;
 const pvSwap=a=>pvp.team===1&&!isSolo(matchG)?[a[1],a[0]]:a;
 function pvpUnit(r,old){
  const u=old||{buffs:[],sp:0,sup:null,flash:0,elev:0,trail:[],cd:0,lk:null};
- Object.assign(u,{id:r.id,team:pvT(r.team),name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1});
+ Object.assign(u,{id:r.id,team:pvT(r.team),fits:r.fits,name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1});
  if(!old){u.x=pvX(r.x);u.y=pvY(r.y);u.ang=pvA(r.ang||0);u.hd=u.ang;u.hp=r.mhp;u.ox=u.x;u.oy=u.y;}
  return u;
 }
@@ -129,7 +129,7 @@ function pvpRoster(list){
 const pvpLiveFoes=()=>units.some(u=>u.team!==0&&!u.ai);   // the VS screen only says "Live opponents" when it's true
 function pvpGo(m){
  const P=pvp,fresh=!P.live;
- Object.assign(P,{live:true,me:m.me,team:m.team,flip:m.flip,g:m.g,m:m.m,feat:m.feat,lostAt:null,phase:m.phase==='vs'?'vs':m.phase==='round'?'round':'play'});
+ Object.assign(P,{chs:Array.isArray(m.chs)?m.chs:ownedChassisClasses(),live:true,me:m.me,team:m.team,flip:m.flip,g:m.g,m:m.m,feat:m.feat,lostAt:null,phase:m.phase==='vs'?'vs':m.phase==='round'?'round':'play'});
  if(fresh||curMap!==m.map){setMap(m.map);P.crates=null;}
  matchG=m.g;MM={n:isSolo(m.g)?1:MODES[m.m].n,series:!!m.series,mp:save.mp||0};
  if(fresh)units=[];

@@ -223,9 +223,18 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
 // ======== reminders reach every opted-in player, in batches, within Telegram's limits ========
 {
   const ids = Array.from({ length: 40 }, (_, i) => 9100 + i);
-  for (const id of ids) await worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': await mod.webhookSecret(env) }, body: JSON.stringify({ message: { from: { id }, chat: { id, type: 'private' }, text: '/start' } }) }), env);
+  const d0 = Date.UTC(2026, 9, 27, 15, 2, 0), realNow = Date.now;
+  // /start schedules nx from Date.now(): register on the same controlled day as delivery,
+  // not the real CI date (which eventually moves beyond this fixture's reminder date).
+  try {
+    Date.now = () => d0;
+    for (const id of ids) await worker.fetch(new Request('https://x/api/tg-webhook', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': await mod.webhookSecret(env) }, body: JSON.stringify({ message: { from: { id }, chat: { id, type: 'private' }, text: '/start' } }) }), env);
+  } finally { Date.now = realNow; }
+  t(ids.every(id => db.get('/ntf/tg_' + id + '/nx') === Math.floor(d0 / DAY)), 'real /start registrations are due on the controlled reminder day');
   tgFail[9105] = 403;   // blocked the bot
-  const d0 = Date.UTC(2026, 9, 27, 15, 2, 0), before = tgCalls.length;
+  const before = tgCalls.length;
+  const early = await mod.sendReminders(env, d0 - 3 * MIN, 15);   // 14:59 UTC
+  t(early === 0 && tgCalls.length === before, 'due reminders wait until the allowed notification window');
   let sent = 0;
   for (let i = 0; i < 4; i++) sent += await mod.sendReminders(env, d0 + i * MIN, 15);
   const to = tgCalls.slice(before).filter(([m]) => m === 'sendMessage').map(([, b]) => b.chat_id).filter((c) => ids.includes(c));

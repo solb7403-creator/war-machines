@@ -9,7 +9,7 @@ function liveSetup(cfg){
  const solo=isSolo(matchG),n=solo?1:MODES[cfg.m].n,team=i=>solo?i:(i<n?0:1);
  MM={n,series:!!cfg.series,mp:99};
  const hs=hpScale(),pos=solo?royaleSpawns():SEAT_XY[0].slice(0,n).concat(SEAT_XY[1].slice(0,n)).map(([x,y])=>({x,y}));
- const taken=cfg.seats.filter(Boolean).map(s=>s.name),names=BOT_NAMES.filter(nm=>!taken.includes(nm)).sort(()=>Math.random()-0.5);
+ const taken=cfg.seats.filter(Boolean).map(s=>s.name),names=BOT_NAMES.filter(nm=>!taken.includes(nm)).sort(()=>random()-0.5);
  const hums=[];
  units=cfg.seats.map((s,i)=>{
   if(!s)return null;
@@ -26,7 +26,7 @@ function liveSetup(cfg){
 }
 function liveTank(u,L){Object.assign(u,tankOf(L,hpScale()),{L,pw:powerOf(L)});u.hp=u.mhp;}   // chassis swap on the VS screen or between rounds
 function roster(){return units.map(u=>({id:u.id,team:u.team,name:u.name,cls:u.cls,wtype:u.wtype,wtier:u.wtier,gems:u.gems,gemM:u.gemM,dscale:u.dscale,aura:u.aura,
- paint:u.paint,skin:u.skin||'default',vl:u.vl|0,mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
+ fits:u.fits,paint:u.paint,skin:u.skin||'default',vl:u.vl|0,mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
 // the world, ~15 times a second. Units, in id order:
 // [x, y, turret angle, hull angle, hp, super, flags (1 bridge deck, 2 dashing, 4 repairing, 8 human driving, 16 AI driving a live player's tank, 32 shielded),
 //  crystals, bounty, dash cooldown x10, deaths, time dead x10, teleport count, buffs [[key index, damage taken]] or 0, super charging [t, angle] or 0, max hp]

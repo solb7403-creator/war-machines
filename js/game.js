@@ -7,6 +7,7 @@
 // =====================================================================
 const SRV=(typeof HOST!=='undefined'&&HOST)||null;   // the live-match server's hooks (createSim(HOST)); null on the phone
 function ev(){const a=Array.prototype.slice.call(arguments);if(SRV)SRV.ev(a);else if(typeof onSimEv==='function')onSimEv(a);}
+const random=(SRV&&(SRV.random||(Number.isInteger(SRV.seed)?rng32(SRV.seed):null)))||Math.random;
 const W=20,H=32,R=0.7,MATCH=180;
 const TC=['#4d9fff','#ff4d5e'];   // team colors in battle: blue (your team) vs red (foes)
 const tcol=t=>t===0?TC[0]:TC[1];   // Last Standing has 6 teams: every tank that isn't on your team is red
@@ -70,7 +71,7 @@ let walls=MAPS.classic.walls,rocks=[],craters=[],crates=[];
 const MAP_REAL=['classic','overpass','longshot','craters'];
 const CRATE_HP=320,CRATER_SLOW=0.6;
 function setMap(id){
- if(!MAPS[id]||MAPS[id].isRandom)id=MAP_REAL[(Math.random()*MAP_REAL.length)|0];
+ if(!MAPS[id]||MAPS[id].isRandom)id=MAP_REAL[(random()*MAP_REAL.length)|0];
  const M=MAPS[id];curMap=id;BR=M.bridge||null;
  rocks=(M.rocks||[]).map(r=>r.slice());craters=(M.craters||[]).map(c=>c.slice());
  crates=(M.crates||[]).map(([x,y,w,h],i)=>{const c=[x,y,w,h,'crate'];c.hp=c.mhp=CRATE_HP;c.flash=0;c.id=i;return c;});   // fresh crates every match
@@ -106,7 +107,7 @@ const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},meteor
 const EVT_KEYS=Object.keys(EVENTS),METEOR_DMG=260;
 let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0,feed=[];
 const flareMult=()=>evt&&evt.k==='flare'?2:1;
-const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+Math.random()*3:15+Math.random()*15;a.push(tt);}return a;};   // first box lands early
+const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+random()*3:15+random()*15;a.push(tt);}return a;};   // first box lands early
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
 // Score while you hold it uncontested, +5 per kill, respawn gets longer each death, tanks repair when out of combat.
 const ZONE_R=2.8,ZONE_WIN=100,CAP_RATE=0.55,RESPAWN_T=4,ZONE_RATE=2.4,KILL_PTS=5,ZONE_WARN=6,REPAIR_DELAY=3.5,REPAIR_RATE=0.07;
@@ -114,7 +115,7 @@ let gzones=null,gscore=[0,0];
 const respawnFor=u=>matchG==='bounty'?BTY_RESPAWN:Math.min(9,RESPAWN_T+1.5*Math.max(0,(u.deaths||1)-1));
 function zoneSpot(avoid){
  for(let k=0;k<80;k++){
-  const x=3+Math.random()*14,y=8.5+Math.random()*15;
+  const x=3+random()*14,y=8.5+random()*15;
   if(avoid&&Math.hypot(x-avoid.x,y-avoid.y)<7)continue;
   if(baseWalls.some(([rx,ry,rw,rh])=>x>rx-1.2&&x<rx+rw+1.2&&y>ry-1.2&&y<ry+rh+1.2))continue;
   if(rampAt(x,y))continue;
@@ -128,7 +129,7 @@ function zoneTick(dt){
  const z=gzones[0];
  z.t-=dt;
  if(!z.next&&z.t<=ZONE_WARN){z.next=zoneSpot(z);ev('p',z.next.x,z.next.y,'ZONE MOVING HERE','#ffd24a');}
- if(z.t<=0){z.x=z.next.x;z.y=z.next.y;z.next=null;z.cap=0;z.own=-1;z.t=20+Math.random()*8;z.moves++;ev('p',z.x,z.y-1.2,'ZONE MOVED!','#ffd24a');}
+ if(z.t<=0){z.x=z.next.x;z.y=z.next.y;z.next=null;z.cap=0;z.own=-1;z.t=20+random()*8;z.moves++;ev('p',z.x,z.y-1.2,'ZONE MOVED!','#ffd24a');}
  let p0=0,p1=0;
  for(const u of units)if(u.hp>0&&Math.hypot(u.x-z.x,u.y-z.y)<z.r){if(u.team===0)p0++;else p1++;}
  z.p0=p0;z.p1=p1;
@@ -169,7 +170,7 @@ function botZoneGoal(u){
  const tgt=z.next&&(!holding||z.t<2.5)?z.next:z;
  const rr=(z.next&&tgt===z.next)?0.3:ZONE_R*0.45;
  let p=clampP(tgt.x+Math.cos(u.zo||0)*rr,tgt.y+Math.sin(u.zo||0)*rr);
- if(baseWalls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R)||rocks.some(([rx,ry,rr2])=>Math.hypot(p.x-rx,p.y-ry)<rr2+R)||rampAt(p.x,p.y)||(!inDeck(p.x,p.y)&&walls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R))){u.zo=Math.random()*6.28;p={x:tgt.x,y:tgt.y};}
+ if(baseWalls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R)||rocks.some(([rx,ry,rr2])=>Math.hypot(p.x-rx,p.y-ry)<rr2+R)||rampAt(p.x,p.y)||(!inDeck(p.x,p.y)&&walls.some(([x,y,w,h])=>p.x>x-R&&p.x<x+w+R&&p.y>y-R&&p.y<y+h+R))){u.zo=random()*6.28;p={x:tgt.x,y:tgt.y};}
  p.l=ptLevel(p);
  return p;
 }
@@ -187,7 +188,7 @@ const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideC
 // g: {n: name, L: loadout, i or id: who it is}. It plays exactly like an AI pilot and changes nobody's points
 function mkGhost(team,x,y,g){
  const u=Object.assign(tankOf(g.L,hpScale()),{x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],sp:0,sup:null,
-  team,hum:false,ctl:'bot',name:'Ghost of '+String(g.n||'Pilot').slice(0,24),gh:1,gid:g.id!==undefined?g.id:g.i,brain:newBrain(),strafe:1,strafeT:1.5});
+  fitSpd:fittingStats(g.L.mods).spd,team,hum:false,ctl:'bot',name:'Ghost of '+String(g.n||'Pilot').slice(0,24),gh:1,gid:g.id!==undefined?g.id:g.i,brain:newBrain(),strafe:1,strafeT:1.5});
  u.hp=u.mhp;return u;
 }
 function mkBoss(ref,n){   // the megatank, scaled to your tank (ref) and how many tanks are on your side (n)
@@ -200,16 +201,16 @@ function mkBoss(ref,n){   // the megatank, scaled to your tank (ref) and how man
 }
 function mkBot(team,x,y,ref,name){
  const bwm=ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=ref.chm||1,hs=hpScale(),mp=MM.mp;
- const bwA=WORDER[(Math.random()*3)|0];
+ const bwA=WORDER[(random()*3)|0];
  // brand-new pilots (first 10 matches) never face a chassis that counters theirs
  const cls=team!==0&&mp<10?CHORDER.filter(c=>COUNTER[c]!==ref.cls):CHORDER;
- const bcC=cls[(Math.random()*cls.length)|0];
- const pScale=(team!==0&&mp<3?0.8:0.92)+Math.random()*0.16;   // first 3 matches: gentler enemies
+ const bcC=cls[(random()*cls.length)|0];
+ const pScale=(team!==0&&mp<3?0.8:0.92)+random()*0.16;   // first 3 matches: gentler enemies
  const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:ref.gems.slice(),gemM:Object.assign({},ref.gemM),sp:0,sup:null,
   mhp:Math.round(STAT.hp*CH[bcC].hp*bcm*pScale*hs),dmgM:1,spdM:CH[bcC].spd,critB:0,fillM:1,turnM:CH[bcC].turn,
   wtype:bwA,wdps:Math.round(WEAPONS[bwA].dps*bwm*pScale),wshot:WEAPONS[bwA].shot,wpspd:22,wtier:ref.wtier,dscale:CH[bcC].ds,cls:bcC,
   team,hum:false,ctl:'bot',name:name||'Bot',brain:newBrain(),strafe:1,strafeT:1.5,
-  aura:Math.min(2,ref.aura),paint:Math.random()<0.35?BOT_PAINTS[(Math.random()*BOT_PAINTS.length)|0]:'stock'};   // about 1 in 3 AI pilots shows off a shop paint
+  aura:Math.min(2,ref.aura),paint:random()<0.35?BOT_PAINTS[(random()*BOT_PAINTS.length)|0]:'stock'};   // about 1 in 3 AI pilots shows off a shop paint
  u.hp=u.mhp;return u;
 }
 // who drives a tank: 'me' (this phone), 'net' (a live player, moves from their claims) or 'bot'.
@@ -230,13 +231,13 @@ function simStart(){
  series=MM.series?{w:[0,0],round:1}:null;
  const G=GTYPES[matchG];
  bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;
- evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+Math.random()*14;evtKind=EVT_KEYS[(Math.random()*EVT_KEYS.length)|0];
+ evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=EVT_KEYS[(random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
- units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=Math.random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
+ units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
   u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
- if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+Math.random()*6,next:null,moves:0}];}
+ if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
- if(matchG==='royale'){const c=freeSpot(10+(Math.random()-0.5)*4,16+(Math.random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
+ if(matchG==='royale'){const c=freeSpot(10+(random()-0.5)*4,16+(random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=boxSchedule();
  if(storm)for(let i=0;i<6;i++)placeBox(true);   // Last Standing: loot is already on the ground
 }
@@ -296,7 +297,7 @@ function hitCrate(c,dmg){
  if(c.hp>0)return;
  for(const L of [walls,baseWalls,navWalls]){const i=L.indexOf(c);if(i>=0)L.splice(i,1);}
  const i=crates.indexOf(c);if(i>=0)crates.splice(i,1);
- const x=c[0]+c[2]/2,y=c[1]+c[3]/2,drop=Math.random()<0.45;
+ const x=c[0]+c[2]/2,y=c[1]+c[3]/2,drop=random()<0.45;
  if(drop)boxes.push({x,y,life:20,age:0});
  ev('X',c.id,x,y,drop?1:0);
  buildNav();for(const u of units)u.wp=null;   // routes open up through the gap
@@ -343,7 +344,7 @@ function moveBullets(dt){
    let t=null,bd=1e9;
    for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<(v.hr||R)+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
-   const owner=q.o,isCrit=direct&&Math.random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
+   const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
    if(t.st)t.st.arm+=gross*aT;
    takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
@@ -379,7 +380,7 @@ function takeHit(r,amt,src,why,kind,crit,direct,bid){
 }
 function placeBox(quiet){   // one box at a random open spot
  for(let i=0;i<400;i++){
-  const x=1.5+Math.random()*(W-3),y=1.5+Math.random()*(H-3);      // anywhere on the map
+  const x=1.5+random()*(W-3),y=1.5+random()*(H-3);      // anywhere on the map
   if(walls.some(([rx,ry,rw,rh])=>x>rx-1.4&&x<rx+rw+1.4&&y>ry-1.4&&y<ry+rh+1.4))continue;   // not in or hugging cover
   if(rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+1.4))continue;
   if(units.some(r=>r.hp>0&&Math.hypot(r.x-x,r.y-y)<(quiet?4.5:3.5)))continue;      // never spawn on top of a robot
@@ -466,8 +467,8 @@ function botDodge(u){
    if(along>0&&along<ln&&Math.abs(side)<wd+R){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
-  if(dashOk&&Math.random()<0.5)useDash(u,px,py);
-  else if(shieldOk&&Math.random()<0.6)useShield(u);
+  if(dashOk&&random()<0.5)useDash(u,px,py);
+  else if(shieldOk&&random()<0.6)useShield(u);
   return;
  }
 }
@@ -565,13 +566,13 @@ function heading(dt){   // hull turns toward the direction of travel; the turret
 function boxTick(dt){
  for(const r of units){const rg=bsum(r,'reg')+gsum(r,'reg');   // health regeneration buff
   if(rg>0&&r.hp>0&&r.hp<r.mhp){const h=Math.min(r.mhp-r.hp,r.mhp*rg*dt);r.hp+=h;r.rh=(r.rh||0)+h;
-   if(r.rh>=5){ev('n',r.x+(Math.random()-0.5)*1.2,r.y-R,'+'+Math.round(r.rh),'#4be3a0');r.rh=0;}}}
+   if(r.rh>=5){ev('n',r.x+(random()-0.5)*1.2,r.y-R,'+'+Math.round(r.rh),'#4be3a0');r.rh=0;}}}
  if(sidx<sched.length&&elapsed>=sched[sidx]){sidx++;spawnBox();}
  for(const bx of boxes){
   bx.life-=dt;bx.age+=dt;
   for(const r of units){
    if(bx.life>0&&r.hp>0&&Math.hypot(r.x-bx.x,r.y-bx.y)<R+0.9){
-    const ks=BUFF_KEYS,k=ks[Math.floor(Math.random()*ks.length)];
+    const ks=BUFF_KEYS,k=ks[Math.floor(random()*ks.length)];
     r.buffs.push({k,taken:0});if(r.st)r.st.box++;ev('g',r.id,k,bx.x,bx.y);bx.life=0;break;
    }
   }
@@ -652,7 +653,7 @@ function botAI(dt,u){
  botDodge(u);if(dashStep(u,dt))return;
  u.brain.shT=(u.brain.shT||0)-dt;if(u.brain.shT<=0&&u.hp/u.mhp<0.35&&u.calm<0.8&&(u.shieldCd||0)<=0&&(u.shieldT||0)<=0){useShield(u);u.brain.shT=2;}
  const b=u.brain,d=dist2(u,tgt),seen=los(u,tgt),hurt=u.hp/u.mhp<0.5&&u.hp<tgt.hp;
- u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=1+Math.random()*1.8;}
+ u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=1+random()*1.8;}
  b.t-=dt;b.age+=dt;b.hideCd-=dt;
  b.chk=(b.chk||0)+dt;   // stuck breaker: barely moved for 0.5s while it should be moving -> flip strafe side and re-plan
  if(b.chk>0.5){const waiting=b.spot&&!b.out&&dist2(u,b.spot)<0.7;
@@ -660,11 +661,11 @@ function botAI(dt,u){
   b.chk=0;b.lx=u.x;b.ly=u.y;}
  const stuck=(b.mode==='peek'||b.mode==='hide')&&!b.out&&b.age>3.2&&dist2(u,b.spot||u)>0.7;
  if(b.t<=0||stuck||(hurt&&b.hideCd<=0&&b.mode!=='hide')){
-  const prev=b.mode,r=Math.random();
+  const prev=b.mode,r=random();
   let m=r<0.35?'press':r<0.65?'flank':'peek';
   if(m===prev)m=m==='press'?'flank':'press';           // never repeat the same tactic
   if(hurt&&b.hideCd<=0){m='hide';b.hideCd=9;}           // retreat is short and on cooldown
-  b.mode=m;b.t=m==='hide'?3:2.5+Math.random()*2.5;b.side=Math.random()<0.5?-1:1;b.spot=null;b.out=false;b.w=0;b.age=0;
+  b.mode=m;b.t=m==='hide'?3:2.5+random()*2.5;b.side=random()<0.5?-1:1;b.spot=null;b.out=false;b.w=0;b.age=0;
  }
  const nx=(tgt.x-u.x)/(d||1),ny=(tgt.y-u.y)/(d||1);
  let goal=tgt;
@@ -705,7 +706,7 @@ function botAI(dt,u){
   if(zin){const zx=zin.x-u.x,zy=zin.y-u.y,zd=Math.hypot(zx,zy)||1;if(zd>zin.r*0.55){mx+=zx/zd*1.4;my+=zy/zd*1.4;}}   // strafe but stay on the point
   const m=Math.hypot(mx,my)||1;tx=u.x+mx/m;ty=u.y+my/m;
  }else{
-  u.wpT=(u.wpT===undefined?Math.random()*0.25:u.wpT)-dt;
+  u.wpT=(u.wpT===undefined?random()*0.25:u.wpT)-dt;
   if((!u.wp||u.wpT<=0||!u.wpG||Math.hypot(u.wpG.x-goal.x,u.wpG.y-goal.y)>1||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<0.6)&&(!u.wp||planBudget>0)){planBudget--;u.wp=waypoint(u,goal);u.wpG={x:goal.x,y:goal.y};u.wpT=0.25;}
   tx=u.wp.x;ty=u.wp.y;}
  for(const w of warns){const dx=u.x-w.x,dy=u.y-w.y,d=Math.hypot(dx,dy);if(d<w.r+R+0.4){const k=d||1;tx=u.x+(d?dx/k:1)*2;ty=u.y+(d?dy/k:0)*2;break;}}
@@ -746,13 +747,13 @@ function bossAI(dt,u){
  }
  const d=dist2(u,tgt),seen=los(u,tgt);
  if(B.bar<=0&&d<11){   // barrage: shells rain around the target; the red circles show where
-  B.bar=(B.enr?4.5:6.5)+Math.random()*2;
+  B.bar=(B.enr?4.5:6.5)+random()*2;
   const n=B.enr===2?6:B.enr?5:4;
-  for(let i=0;i<n;i++){const a=Math.random()*6.283,rr=i===0?0.4:1.2+Math.random()*2.2,x=Math.max(1,Math.min(W-1,tgt.x+Math.cos(a)*rr)),y=Math.max(1,Math.min(H-1,tgt.y+Math.sin(a)*rr));
+  for(let i=0;i<n;i++){const a=random()*6.283,rr=i===0?0.4:1.2+random()*2.2,x=Math.max(1,Math.min(W-1,tgt.x+Math.cos(a)*rr)),y=Math.max(1,Math.min(H-1,tgt.y+Math.sin(a)*rr));
    const w={x,y,r:1.5,t:1.35+i*0.12,t0:1.35+i*0.12,boss:1,src:u,dmg:B.ref*BOSS_SHELL_DMG*u.dmgM};warns.push(w);ev('w',w.x,w.y,w.r,w.t);}
   ev('p',tgt.x,tgt.y-1.6,'INCOMING','#ff6b5e');
  }
- u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=2+Math.random()*2;}
+ u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=2+random()*2;}
  let tx,ty;
  if(seen&&d<5.5){const nx=(tgt.x-u.x)/(d||1),ny=(tgt.y-u.y)/(d||1);let mx=-ny*u.strafe*0.7,my=nx*u.strafe*0.7;if(d>4)mx+=nx,my+=ny;const m=Math.hypot(mx,my)||1;tx=u.x+mx/m;ty=u.y+my/m;}
  else{
@@ -777,7 +778,7 @@ const MODE_TIP={boss:'Destroy the megatank. Get out of the red circles',crystal:
 // a random open spot within rad of (cx,cy): clear of walls, rocks and ramps. Bridge decks count as level 1 unless ground is set
 function freeSpot(cx,cy,rad,ground){
  for(let k=0;k<80;k++){
-  const a=Math.random()*6.283,dd=Math.sqrt(Math.random())*rad,x=cx+Math.cos(a)*dd,y=cy+Math.sin(a)*dd;
+  const a=random()*6.283,dd=Math.sqrt(random())*rad,x=cx+Math.cos(a)*dd,y=cy+Math.sin(a)*dd;
   if(x<R+0.3||x>W-R-0.3||y<R+0.3||y>H-R-0.3||rampAt(x,y))continue;
   const deck=inDeck(x,y)&&!inTunnel(x,y);
   if(deck&&(ground||!upOk(x,y)))continue;
@@ -817,7 +818,7 @@ function dropCrystals(u){
  const n=u.cry||0;u.cry=0;if(!n)return;
  const l=u.elev||0;
  for(let i=0;i<n;i++){let p=null;
-  for(let k=0;k<10&&!p;k++){const a=Math.random()*6.283,dd=0.5+Math.random()*1.3,x=u.x+Math.cos(a)*dd,y=u.y+Math.sin(a)*dd;if(l===1?upOk(x,y):groundOk(x,y))p={x,y};}
+  for(let k=0;k<10&&!p;k++){const a=random()*6.283,dd=0.5+random()*1.3,x=u.x+Math.cos(a)*dd,y=u.y+Math.sin(a)*dd;if(l===1?upOk(x,y):groundOk(x,y))p={x,y};}
   cry.loose.push({x:p?p.x:u.x,y:p?p.y:u.y,l,age:0});
  }
  ev('p',u.x,u.y-1.2,n+(n>1?' CRYSTALS DROPPED':' CRYSTAL DROPPED'),'#c79bff');
@@ -971,28 +972,28 @@ function update(dt){
 function eventTick(dt){
  if(!evt&&evtAt&&elapsed>=evtAt){evtAt=0;startEvent(evtKind);}
  if(evt){evt.t-=dt;
-  if(evt.k==='meteor'){evt.next-=dt;if(evt.next<=0&&evt.t>1.3){evt.next=0.55+Math.random()*0.35;meteorWarn();}}
+  if(evt.k==='meteor'){evt.next-=dt;if(evt.next<=0&&evt.t>1.3){evt.next=0.55+random()*0.35;meteorWarn();}}
   if(evt.t<=0)evt=null;}
  for(const w of warns){w.t-=dt;if(w.t<=0)meteorHit(w);}
  if(warns.length)warns=warns.filter(w=>w.t>0);
 }
 function startEvent(k){
  ev('e',k);
- if(k==='drop'){evt={k,t:3};for(let i=0;i<3;i++)dropBoxNear(10+(Math.random()-0.5)*6,16+(Math.random()-0.5)*7);}
+ if(k==='drop'){evt={k,t:3};for(let i=0;i<3;i++)dropBoxNear(10+(random()-0.5)*6,16+(random()-0.5)*7);}
  else if(k==='meteor')evt={k,t:10,next:0.9};
  else evt={k,t:20};
 }
 function dropBoxNear(x0,y0){
  for(let i=0;i<80;i++){
-  const x=Math.max(1.5,Math.min(W-1.5,x0+(Math.random()-0.5)*4)),y=Math.max(1.5,Math.min(H-1.5,y0+(Math.random()-0.5)*4));
+  const x=Math.max(1.5,Math.min(W-1.5,x0+(random()-0.5)*4)),y=Math.max(1.5,Math.min(H-1.5,y0+(random()-0.5)*4));
   if(walls.some(([rx,ry,rw,rh])=>x>rx-1&&x<rx+rw+1&&y>ry-1&&y<ry+rh+1)||rocks.some(([cx,cy,cr])=>Math.hypot(x-cx,y-cy)<cr+1)||boxes.some(b=>Math.hypot(b.x-x,b.y-y)<2))continue;
   boxes.push({x,y,life:22,age:0});ev('p',x,y,'SUPPLY DROP','#ffd24a');return;
  }
 }
 function meteorWarn(){
  const alive=units.filter(u=>u.hp>0);let x,y;
- if(alive.length&&Math.random()<0.6){const u=alive[(Math.random()*alive.length)|0];x=u.x+(Math.random()-0.5)*4;y=u.y+(Math.random()-0.5)*4;}
- else{x=2+Math.random()*(W-4);y=4+Math.random()*(H-8);}
+ if(alive.length&&random()<0.6){const u=alive[(random()*alive.length)|0];x=u.x+(random()-0.5)*4;y=u.y+(random()-0.5)*4;}
+ else{x=2+random()*(W-4);y=4+random()*(H-8);}
  const w={x:Math.max(1,Math.min(W-1,x)),y:Math.max(1,Math.min(H-1,y)),r:1.6,t:1.3,t0:1.3};warns.push(w);ev('w',w.x,w.y,w.r,w.t);
 }
 function meteorHit(w){
@@ -1012,7 +1013,7 @@ function roundWinner(){
 }
 function rebuildBot(u,cls){   // same pilot, different chassis
  const f=u.mhp/CH[u.cls].hp;
- u.cls=cls;u.mhp=Math.round(f*CH[cls].hp);u.hp=u.mhp;u.spdM=CH[cls].spd;u.turnM=CH[cls].turn;u.dscale=CH[cls].ds;
+ u.cls=cls;u.mhp=Math.round(f*CH[cls].hp);u.hp=u.mhp;u.spdM=CH[cls].spd*(1+(u.fitSpd||0));u.turnM=CH[cls].turn;u.dscale=CH[cls].ds;
 }
 function endRound(){
  const w=roundWinner();if(w>=0)series.w[w]++;
@@ -1020,7 +1021,7 @@ function endRound(){
  if(series.w[0]>=2||series.w[1]>=2||series.round>=5){endMatch({series:true});return;}
  series.round++;state='round';ffwd=false;
  // AI pilots may switch to the chassis that counters their opponent's (never against brand-new pilots); you get to answer before the round starts
- for(const u of units)if(!u.hum&&!u.pid&&MM.mp>=10&&Math.random()<0.5){const o=units.find(v=>v.team!==u.team),c=o&&beatenBy(o.cls);if(c&&c!==u.cls)rebuildBot(u,c);}
+ for(const u of units)if(!u.hum&&!u.pid&&MM.mp>=10&&random()<0.5){const o=units.find(v=>v.team!==u.team),c=o&&beatenBy(o.cls);if(c&&c!==u.cls)rebuildBot(u,c);}
  if(SRV){SRV.round(w);return;}
  const foe=units.find(u=>u.team===1);
  if(typeof fx==='function')fx(w===0?'win':w===1?'lose':'draw');

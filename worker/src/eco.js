@@ -95,7 +95,7 @@ export async function claimOnce(env, path, value) {
 // A pilot the server has never seen gets a fresh record. One who played before this record existed keeps their lifetime
 // points exactly; their gear and spendable points arrive once from their phone (migrate), checked against the server.
 async function freshEco(env, pid) {
-  const rec = await dbGet(env, `players/${pid}`).catch(() => null);
+  const rec = await dbGet(env, `players/${pid}`);
   const S = R.ecoNorm({});
   if (rec) {
     S.earned = Math.max(0, Math.round(Number(rec.pts) || 0));
@@ -111,7 +111,7 @@ async function freshEco(env, pid) {
   return S;
 }
 export async function readEco(env, pid) {
-  const v = await dbGet(env, `eco/${pid}`).catch(() => null);
+  const v = await dbGet(env, `eco/${pid}`);
   const S = v ? R.ecoNorm(v) : await freshEco(env, pid);
   delete S._new;
   return S;
@@ -196,9 +196,9 @@ export async function ghostReport(env, list, now = Date.now()) {
   if (Object.keys(up).length) await dbPatch(env, "", up);
 }
 // what the phone gets: the economy fields only (no anomaly stats, tickets or bookkeeping)
-export function pub(S) { const E = {}; for (const k of R.ECO_KEYS) if (S[k] !== undefined) E[k] = S[k]; return E; }
+export function pub(S) { const E = {}; for (const k of R.ECO_KEYS) if (S[k] !== undefined) E[k] = S[k]; E._rev = S.rev || 0; return E; }
 // the loadout a pilot fields, from what they own; power and league from that
-export function setLoadout(S, raw) { const L = R.ecoLoadout(S, raw); S.L = L; S.pw = R.powerOf(L); S.lg = R.powerBracket(S.pw).key; return L; }
+export function setLoadout(S, raw) { const L = S.lab ? R.labLoadout(S) : R.ecoLoadout(S, raw); S.L = L; S.pw = R.powerOf(L); S.lg = R.powerBracket(S.pw).key; return L; }
 
 // ---- flags ----
 export const flagReasons = (f) => (f && f.r ? Object.keys(f.r).filter((k) => !(f.ok && f.ok[k] >= (f.r[k].t || 0))) : []);
@@ -272,13 +272,16 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   let sess = false;
   const n = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
   const pw0 = await dbGet(env, `players/${pid}/power`).catch(() => null);
-  const ghosts = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
+  const candidates = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
+  const ghosts = b.fv === R.FIT_VERSION ? candidates : candidates.filter(x => !R.FIT_ORDER.some(k => R.fittingSelection(x.L.mods)[k] !== "stock"));
   const t = await tx(env, pid, (S, X) => {
     who(S, user);
+    if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return {abort:true,error:"update"};
+    if (S.lab && b.labRev !== undefined && b.labRev !== S.lab.rev) return {abort:true, error:"garage_changed"};
     const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw);
     // one open ticket per pilot: a new one replaces the last (that match can't be scored any more)
     S.mt = { n, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
-      series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
+      L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
     // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
     const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
     if (gap < 600) bp.g = (bp.g || []).concat(Math.round(gap * 10) / 10).slice(-30);
@@ -291,6 +294,7 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     return { lg: brk.key, mult: brk.mult, power: S.pw, L };
   }, now, { rl: 1 });
   if (t.rate) return { status: 429, body: { error: "rate" } };
+  if (t.error) return { status: 409, body: { error: t.error } };
   // a new session: who started playing this minute, on which network and device (accounts that always start together)
   if (sess) {
     const d = dayOf(now), mn = String(Math.floor((now % DAY_MS) / 60000)).padStart(4, "0");
@@ -298,7 +302,7 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     await dbPatch(env, `ss/${d}/${mn}`, { [pid]: (await ipHash(env, ip)).slice(0, 8) + "." + dh + "." + did.slice(0, 8) }).catch(() => {});
   }
   // ghosts go to the phone by seat number only (never the owner's id)
-  return { status: 200, body: { ok: true, tok: n + "." + (await sign(env, `${pid}|${n}|${now}`)), league: t.lg, mult: t.mult, power: t.power, E: pub(t.S),
+  return { status: 200, body: { ok: true, tok: n + "." + (await sign(env, `${pid}|${n}|${now}`)), league: t.lg, mult: t.mult, power: t.power, L: t.L, E: pub(t.S),
     gh: ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
 }
 const lim = (v, hi) => Math.max(0, Math.min(hi, Math.round(Number(v) || 0)));
@@ -342,8 +346,11 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     // proof of play: the match record has to show this fight happened the way the result says
     let pr = null;
     if (T.pv) {
-      const me0 = S.L ? R.tankOf(S.L, 1) : null;
-      pr = checkProof(r0.pf, { g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minSecs(T.g, T.m, won, drawn, place), spdM: me0 ? me0.spdM : 1, st: s });
+      const proofL = T.L || S.L; // old pending tickets retain their legacy fallback
+      const me0 = proofL ? R.tankOf(proofL, 1) : null;
+      const scale = T.g === "royale" ? R.ROYALE_HP : T.g === "boss" ? 1.5 : R.MODES[T.m].n * (T.g === "bounty" ? R.BTY_HP : 1);
+      const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf({...proofL,c},scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
+      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minSecs(T.g, T.m, won, drawn, place), spdM: me0 ? me0.spdM : 1, st: s });
       if (!pr.ok) {
         S.pfw = pr.why;
         flags = watch(S, { pf: true, why: pr.why }, X, now);
@@ -571,6 +578,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
   }
   const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri);
   let F = null;
+  if (["lab_read", "lab_save", "lab_rename", "lab_activate"].includes(a)) F = (S) => R.labAction(S, a, b);
   switch (a) {
     case "login": F = (S, X) => R.ecoLogin(S, X) || { err: "claimed" }; break;
     case "daily": F = (S, X) => R.ecoClaimDaily(S, id, X) || { err: "no" }; break;

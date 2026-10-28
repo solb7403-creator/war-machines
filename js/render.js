@@ -22,7 +22,7 @@ function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w
 function diamond(ctx,x,y,s,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x+s*0.7,y);ctx.lineTo(x,y+s);ctx.lineTo(x-s*0.7,y);ctx.closePath();ctx.fill();}
 
 // ---- Crystal tank, top-down: hull follows movement, turret + cannon follow the aim ----
-function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint){
+function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits){
  const fl=flash||null,P=paint||PAINTS.stock;parts=parts||3;   // 1 = hull only, 2 = turret only, 3 = whole tank. Paint colors the plates; team color stays on tracks and core
  if(parts&1){
  ctx.save();ctx.translate(px,py);ctx.rotate(hd);
@@ -42,6 +42,12 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint){
   if(gk&&GEM[gk]){ctx.globalAlpha=0.3;ctx.fillStyle=GEM[gk].c;ctx.beginPath();ctx.arc(cx,cy,0.28*r,0,7);ctx.fill();ctx.globalAlpha=1;
    ctx.fillStyle=GEM[gk].c;ctx.beginPath();ctx.moveTo(cx,cy-0.16*r);ctx.lineTo(cx+0.11*r,cy);ctx.lineTo(cx,cy+0.16*r);ctx.lineTo(cx-0.11*r,cy);ctx.closePath();ctx.fill();}
  });
+ if(fits){
+  if(fits.hull==='plates'){ctx.fillStyle='#8f9bad';for(const side of [-1,1])ctx.fillRect(-.75*r,side*.5*r-.09*r,1.1*r,.18*r);}
+  if(fits.hull==='light'){ctx.strokeStyle=col;ctx.lineWidth=r*.07;for(const x of [-.7,-.4,-.1]){ctx.beginPath();ctx.moveTo(x*r,-.38*r);ctx.lineTo((x+.2)*r,.38*r);ctx.stroke();}}
+  if(fits.mobility==='sprint'){ctx.fillStyle=col;for(const side of [-1,1])ctx.fillRect(-1.3*r,side*.72*r-.06*r,.55*r,.12*r);}
+  if(fits.mobility==='stable'){ctx.fillStyle='#99a9ba';for(const side of [-1,1])for(const x of [-.7,.7]){ctx.beginPath();ctx.arc(x*r,side*.83*r,.18*r,0,7);ctx.fill();}}
+ }
  ctx.restore();
  }
  if(!(parts&2))return;
@@ -67,6 +73,7 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint){
   ctx.fillStyle='#e9f1f7';ctx.fillRect(1.5*r,-0.23*r,0.3*r,0.46*r);
   ctx.fillStyle=col;ctx.fillRect(1.74*r,-0.12*r,0.1*r,0.24*r);
  }
+ if(fits&&fits.mount!=='stock'){ctx.fillStyle='#95a7b9';if(fits.mount==='hardened')ctx.fillRect(.35*r,-.38*r,.4*r,.76*r);else for(const x of [.6,.85,1.1])ctx.fillRect(x*r,-.3*r,.09*r,.6*r);}
  ctx.fillStyle=fl||P.tur;ctx.beginPath();ctx.arc(0,0,0.56*r,0,7);ctx.fill();
  ctx.strokeStyle=P===PAINTS.stock?'#e9f1f7':P.trim;ctx.lineWidth=Math.max(1,r*0.09);ctx.stroke();
  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(0.32*r,0);ctx.lineTo(0,0.26*r);ctx.lineTo(-0.32*r,0);ctx.lineTo(0,-0.26*r);ctx.closePath();ctx.fill();   // core crystal
@@ -76,7 +83,7 @@ function star5(ctx,x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++
 function drawTank(b,col){
  const px=X(b.x),py=Y(b.y)-liftOf(b),r=R*sc*(b.dscale||1),hd=b.hd===undefined?b.ang:b.hd;
  const fl=b.flash>0?(armor(b)>0?BUFF.arm.c:'#ffe27a'):null;
- if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint]);
+ if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits);
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
   const bw=2.6*r,bx=px-bw/2,by=py-2.25*r,hh=Math.max(4,0.36*r),sh=Math.max(2,0.16*r),hf=Math.max(0,b.hp/b.mhp),f=b.sp/SUPER_MAX;
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
@@ -271,7 +278,7 @@ function drawHeroScene(ctx,w,h,t,noTank){
  ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(cx+r*0.3,cy+r*0.6,r*1.5,r*0.6,0,0,7);ctx.fill();
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(cx,cy+r*0.4,r*1.7,r*0.72,0,0,7);ctx.fill();ctx.restore();
  if(noTank)return;
- drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint());
+ drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint(),fittingVisuals(myLoadout()));
 }
 function drawGearIcon(ctx,w,h,isW,it){   // the whole tank; the part this slot is about is lit, the rest is ghosted
  ctx.clearRect(0,0,w,h);
@@ -315,7 +322,7 @@ function drawUnitArt(ctx,w,h,u){
  ctx.clearRect(0,0,w,h);if(!u)return;
  const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*Math.min(1.3,u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(w/2,h/2+r*0.8,r*1.3,r*0.5,0,0,7);ctx.fill();ctx.restore();
- drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint]);
+ drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint],u.fits);
 }
 
 // ---- battle input: floating joystick, SUPER button, keyboard ----
@@ -335,15 +342,15 @@ function tapTarget(sx,sy){   // a quick tap on the field: lock onto an enemy (ta
  if(typeof fx==='function')fx('tap');
 }
 const aimAng=()=>{if(!aim||!aim.on||!me)return null;const px=X(me.x),py=Y(me.y)-liftOf(me),dx=aim.x-px,dy=aim.y-py;return Math.hypot(dx,dy)>24?Math.atan2(dy/GK,dx):null;};   // aim is measured from the tank, not from the finger: the preview line is where the shot really goes
-const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
+const ffBtnOn=()=>!(typeof rangeRun!=='undefined'&&rangeRun)&&state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
 // your super and dash: straight into the sim in AI matches, to the server in live ones
-const superGo=a=>pvpOn()?pvpSuper(a):useSuper(me,a);
-const dashGo=(x,y)=>pvpOn()?pvpDash(x,y):useDash(me,x,y);
-const shieldGo=()=>pvpOn()?pvpShield():useShield(me);
+const superGo=a=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('super',a):pvpOn()?pvpSuper(a):useSuper(me,a);
+const dashGo=(x,y)=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('dash',x,y):pvpOn()?pvpDash(x,y):useDash(me,x,y);
+const shieldGo=()=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('shield'):pvpOn()?pvpShield():useShield(me);
 const ffBtn=()=>({x:vw/2-80,y:vh-74-SAB,w:160,h:44});
 const joy={on:false,id:null,sx:0,sy:0,x:0,y:0,dx:0,dy:0},keys={};
 const loc=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
-cv.addEventListener('pointerdown',e=>{
+cv.addEventListener('pointerdown',e=>combatView(()=>{
  if(state!=='play'||!me)return;
  const L=loc(e);
  if(ffBtnOn()){const F=ffBtn();if(L.x>=F.x&&L.x<=F.x+F.w&&L.y>=F.y&&L.y<=F.y+F.h){ffwd=!ffwd;if(typeof fx==='function')fx('tap');return;}}
@@ -354,8 +361,8 @@ cv.addEventListener('pointerdown',e=>{
  const H=shieldBtn();if(me.hp>0&&Math.hypot(L.x-H.x,L.y-H.y)<=H.r+12){shieldGo();return;}
  tapCand={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,t:performance.now()};   // any non-button touch might be a target tap; joyUp decides
  if(joy.on)return;joy.on=true;joy.id=e.pointerId;joy.sx=joy.x=L.x;joy.sy=joy.y=L.y;joy.dx=joy.dy=0;try{cv.setPointerCapture(e.pointerId);}catch(_){}
-});
-cv.addEventListener('pointermove',e=>{
+}));
+cv.addEventListener('pointermove',e=>combatView(()=>{
  if(aim&&e.pointerId===aim.id){const L=loc(e);aim.x=L.x;aim.y=L.y;if(Math.hypot(L.x-aim.sx,L.y-aim.sy)>18)aim.on=true;return;}
  if(tapCand&&e.pointerId===tapCand.id){const L=loc(e);tapCand.x=L.x;tapCand.y=L.y;}
  if(!joy.on||e.pointerId!==joy.id)return;
@@ -363,13 +370,13 @@ cv.addEventListener('pointermove',e=>{
  if(d>max){dx=dx/d*max;dy=dy/d*max;d=max;}
  joy.x=joy.sx+dx;joy.y=joy.sy+dy;joy.dx=dx/max;joy.dy=dy/max;
  if(tut)tut.moved=(tut.moved||0)+d*0.001;
-});
-const joyUp=e=>{
+}));
+const joyUp=e=>combatView(()=>{
  if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(e.type==='pointercancel'?undefined:a);return;}
  if(tapCand&&e.pointerId===tapCand.id){const c=tapCand;tapCand=null;if(e.type!=='pointercancel'&&performance.now()-c.t<300&&Math.hypot(c.x-c.sx,c.y-c.sy)<12)tapTarget(c.x,c.y);}
- if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
+ if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}});
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();});
+addEventListener('keydown',e=>combatView(()=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();}));
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 function inputVec(){
  let x=joy.dx,y=joy.dy;
@@ -678,4 +685,10 @@ function drawHUD(){
   if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-12);}
   if(rdy){g.globalAlpha=0.25+0.25*Math.sin(performance.now()/120);g.strokeStyle='#ff4d4d';g.lineWidth=6;g.beginPath();g.arc(B.x,B.y,B.r+6,0,7);g.stroke();g.globalAlpha=1;}}
  g.textBaseline='top';
+}
+
+function drawMachinePreview(ctx,w,h,L){
+ ctx.clearRect(0,0,w,h);
+ if(typeof machineArt3D==='function'&&machineArt3D(ctx,w,h,L))return;
+ drawTankPx(ctx,w/2,h*.55,Math.min(w/6,h/3.7),-.6,-.8,TC[0],L.cores,L.w.a,null,3,PAINTS[L.paint],fittingVisuals(L));
 }

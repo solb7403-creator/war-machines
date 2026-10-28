@@ -116,6 +116,8 @@ function vgrad(){if(VGT)return VGT;const c=document.createElement('canvas');c.wi
 const addMat=(c,o)=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o===undefined?1:o,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
 
 // ---------- model cache ----------
+const FITCACHE=new Map();
+function fittingB(f,team,part){const key=part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part);FITCACHE.set(key,M3.bake(r.k));}return FITCACHE.get(key);}
 const KC=new Map();
 function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};KC.set(key,v);if(KC.size>160){const f=KC.keys().next().value;KC.delete(f);}return v;}
 function chassisB(s){return bakedOf(['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>M3.chassisKit(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
@@ -157,6 +159,7 @@ function buildTank(spec,mats){
  tur.position.y=H.meta.ty;body.add(tur);
  const tg=new THREE.Group();tur.add(tg);tg.add(M3.meshOf(Wk.b,null,mats));
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);tg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
+ if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body'),null,mats));tg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount'),null,mats));}
  const T={g,hull,body,tur,tg,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
  if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
  return T;
@@ -169,10 +172,10 @@ function unitSpec(u){
  let ct=Math.max(0,Math.min(2,u.aura|0));
  if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,myLoadout().c.t|0);}catch(e){}}
  const lunar=u.skin==='lunar',team=u===me&&lunar?'#e8f4ff':tcol(u.team);
- return {cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl)};
+ return {fits:u.fits,cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl)};
 }
 const vtOf=vl=>(vl|0)>=10?2:(vl|0)>=1?1:0;   // the tooth: none, gold, glowing
-const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0].join('|');
+const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{})].join('|');
 function unitMats(ghost){
  const lit=MT.lit.clone(),shine=MT.shine.clone();
  if(ghost){for(const m of [lit,shine]){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(0x3a5a9a);m.depthWrite=false;}return {lit,shine,glow:MT.gglow};}
@@ -203,7 +206,7 @@ function unitObj(u){
  o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
  RS.add(o.g);B3.units.set(u,o);return o;
 }
-function dropUnit(u,o){RS.remove(o.g);o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
+function dropUnit(u,o){RS.remove(o.g);for(const m of [o.ug,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
 function heightAt(u){
  if(!BR||(u.elev||0)!==1)return 0;
  if(inDeck(u.x,u.y))return M3.DECK_H;
@@ -237,15 +240,15 @@ function geos(){
 }
 function matchObjs(){   // things that live for one match: spawn pads, the crystal mine
  if(B3.uref===units&&B3.dyn)return;
- if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&o.material.dispose)o.material.dispose();});}
+ if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&o.material.dispose)o.material.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});}
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
  for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];PSA.live.length=0;PSN.live.length=0;B3.seen=new WeakSet();
  B3.uref=units;const D=new THREE.Group(),G=geos();
  const done=new Set();
  for(const u of units){if(u.boss||u.sx===undefined)continue;const k=Math.round(u.sx*2)+','+Math.round(u.sy*2);if(done.has(k))continue;done.add(k);
-  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.95,0.06,6),new THREE.MeshLambertMaterial({color:0x2a3242}));pad.position.set(u.sx,0.03,u.sy);D.add(pad);
-  const pr=new THREE.Mesh(new THREE.RingGeometry(0.78,0.9,6).rotateX(-Math.PI/2),addMat(tcol(u.team),0.6));pr.position.set(u.sx,0.065,u.sy);D.add(pr);}
+  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.95,0.06,6),new THREE.MeshLambertMaterial({color:0x2a3242}));pad.userData.rangeOwnedGeometry=true;pad.position.set(u.sx,0.03,u.sy);D.add(pad);
+  const pr=new THREE.Mesh(new THREE.RingGeometry(0.78,0.9,6).rotateX(-Math.PI/2),addMat(tcol(u.team),0.6));pr.userData.rangeOwnedGeometry=true;pr.position.set(u.sx,0.065,u.sy);D.add(pr);}
  if(cry){const m=cry.mine,cl=new THREE.Group();
   for(let i=0;i<7;i++){const a=i/7*6.28,r=i?0.55+(i%2)*0.2:0,h=i?0.6+(i%3)*0.25:1.3,c=new THREE.Mesh(G.oct,G.cryM);c.scale.set(0.22,h,0.22);c.position.set(m.x+Math.cos(a)*r,h*0.5,m.y+Math.sin(a)*r);c.rotation.set((i?0.3:0)*Math.cos(a),0,(i?0.3:0)*Math.sin(a));cl.add(c);}
   const rg=new THREE.Mesh(G.ring,addMat('#c79bff',0.5));rg.scale.setScalar(CRY_MINE_R);rg.position.set(m.x,0.03,m.y);cl.add(rg);
@@ -489,7 +492,7 @@ function artTank(ctx,w,h,spec,parts,opt){
  artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
- return Object.assign({cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:lunar?'#e8f4ff':TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
+ return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:lunar?'#e8f4ff':TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
 // returns true when it drew the picture in 3D
 function art3D(ctx,w,h,a){
  if(!use3D()||!w||!h)return false;
@@ -528,4 +531,19 @@ function heroArt(ctx,w,h,t){
  const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);
  T.body.position.y=T.meta.bob?T.meta.bob*Math.sin(t*3):0;
  ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);artShot(ctx,bw,bh,T.g,{r:sp.arch==='moon'?1.85:1.55,el:0.5,az:0.95,cy:sp.arch==='moon'?0.5:0.35},haloList(T,3));ctx.restore();
+}
+
+function machineArt3D(ctx,w,h,L){
+ if(!R3.ready||R3.failed||gfxMode()==='2d')return false;
+ try{const sp=unitSpec({...tankOf(L,1),team:0});sp.ct=L.c.t;cachedArt(ctx,w,h,'lab|'+specKey(sp),c=>artTank(c,w,h,sp,3,{az:1}));return true;}catch(e){return false;}
+}
+
+// Practice has no active ranked fight to restore. Release its per-trial GPU objects on every exit.
+function clearRange3D(){
+ if(!RS)return;
+ for(const [u,o] of B3.units)dropUnit(u,o);
+ for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
+ if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose)o.material.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
+ for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
+ PSA.live.length=0;PSN.live.length=0;for(const k in B3.pool)for(const o of B3.pool[k].items)o.visible=false;
 }

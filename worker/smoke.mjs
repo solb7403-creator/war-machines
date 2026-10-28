@@ -1,6 +1,6 @@
 // CI smoke test for live matches in the real Workers runtime (wrangler dev, Durable Objects and all):
 // two pilots join a live 1v1 queue, meet in one room over real WebSockets, and the fight streams snapshots.
-// Usage: wrangler dev --var BOT_TOKEN:<t> --var FIREBASE_DB_SECRET:x --var PVP_WAIT_MS:3000, then SMOKE_BOT_TOKEN=<t> node smoke.mjs
+// CI: npm exec --yes --package=wrangler@4 --call='node smoke-runtime.mjs' (isolated Firebase).
 import { createHmac } from 'node:crypto';
 const BASE = process.env.SMOKE_URL || 'http://127.0.0.1:8787', TOKEN = process.env.SMOKE_BOT_TOKEN || 'smoke-token';
 const fail = (m) => { console.error('SMOKE FAIL:', m); process.exit(1); };
@@ -43,7 +43,7 @@ const me = snaps[snaps.length - 1].s.u[a.seat];
 if (Math.abs(me[1] - 27) > 0.3) fail('server did not follow the move: ' + JSON.stringify(me));
 B.ws.send(JSON.stringify({ k: 'q' }));
 await wait(800);
-if (!B.msgs.some((m) => m.k === 'res' && m.r.quit)) console.log('note: quit result not seen (the database is offline in this test)');
+if (!B.msgs.some((m) => m.k === 'res' && m.r.quit)) fail('quit result not received');
 A.ws.close(); B.ws.close();
 console.log('SMOKE OK: matched in one room, VS, fight,', n1, 'snapshots/s, moves followed');
 process.exit(0);

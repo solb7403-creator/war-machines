@@ -146,12 +146,18 @@ const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring und
 function powerOf(L){
  const U=L.up,W=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skinM=L.skin==='lunar'?1.08:1;
  const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*skinM,dps=W.dps*(1+0.08*U.cannon)*skinM,spd=(1+0.06*U.engine)*Cc.spd;
+ const F=fittingStats(L.mods);
  let coreM=1;for(const c of (L.cores||[]))if(c){const lv=(L.gl&&L.gl[c])||1;coreM*=(1+0.05*lv);}
- return Math.round(Math.pow(hp*dps*spd,1/3)*coreM*1.2);   // starter ≈ 72-100
+ return Math.round(Math.pow(hp*dps*spd*(1+F.hp)*(1+F.spd)*(1+F.dps),1/3)*coreM*1.2);   // starter ≈ 72-100
 }
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
 // the stat block a tank fights with (n = health scale for the mode and team size)
 function tankOf(L,n){
+ const T=legacyTankOf(L,n),F=fittingStats(L.mods);
+ if(F.hp)T.mhp=Math.round(T.mhp*(1+F.hp));if(F.spd)T.spdM*=1+F.spd;if(F.dps)T.wdps*=1+F.dps;
+ if(hasFittings(L))T.fits=fittingVisuals(L);return T;
+}
+function legacyTankOf(L,n){
  const U=L.up,W0=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skin=L.skin==='lunar'?1.08:1;
  return {gems:(L.cores||[]).filter(Boolean),gemM:Object.fromEntries(GORDER.map(k=>[k,gemLvMult(L.gl&&L.gl[k])])),
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin*n),dmgM:(1+0.08*U.cannon)*skin,spdM:(1+0.06*U.engine)*Cc.spd,
@@ -312,10 +318,13 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
+ if(S.lab&&S.lab.v===1&&S.lab.machines)for(const M of Object.values(S.lab.machines)){
+  if(M&&M.spec){const c=M.spec.cores;M.spec.cores=[0,1,2].map(i=>c&&GEM[c[i]]?c[i]:null);}
+ }
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
  if(typeof S.vgg!=='number'&&GENESIS_OPEN)S.vgg=Number(S.vg)||0;   // Gold deposited before Genesis Gold was tracked: all of it was pre-launch
  for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
@@ -365,7 +374,9 @@ function ecoLoadout(S,L0){
  const seen={},cores=[0,1,2].map(i=>{const k=L0.cores&&L0.cores[i];if(!GEM[k]||seen[k])return null;seen[k]=1;return k;});
  const chs=CHORDER.filter(k=>bestOf(S,false,k)).map(k=>k===c.c?{...c}:pick(false,{c:k,t:-9}));
  const paint=PAINTS[L0.paint]&&S.paints&&S.paints[L0.paint]?L0.paint:'stock';
- return {w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg)};   // vl: Vault level, looks only
+ const mods=fittingSelection(S.lab?L0.mods:undefined),f=fittingStats(mods);
+ const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
+ return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg)};   // vl: Vault level, looks only
 }
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
@@ -408,7 +419,8 @@ function ecoOwned(S,d,X){
  return false;
 }
 // open a crate. Returns what came out (the phone words it): gem {gem,n,lv,up}; gear {isW,k,tier,roll,kind: new|up|dup,old,pts}
-function ecoOpenBox(S,tk,ri,X){
+function ecoOpenBox(S,tk,ri,X){const r=ecoOpenBoxRaw(S,tk,ri,X);labGain(S,r);return r;}
+function ecoOpenBoxRaw(S,tk,ri,X){
  const R=X.rnd;
  if(tk==='gem'){
   const k=GORDER[(R()*GORDER.length)|0],n=ri===0?1+((R()*2)|0):ri===1?3+((R()*2)|0):11+((R()*4)|0);
@@ -432,7 +444,8 @@ function ecoCratePts(S,tk,ri,X){
  S.pts-=c;const bk=ecoBuyKey(tk,ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.ptsSpent+=c;
  return ecoOpenBox(S,tk,ri,X);
 }
-function ecoSalvage(S,tk,ri,X){
+function ecoSalvage(S,tk,ri,X){const r=ecoSalvageRaw(S,tk,ri,X);labGain(S,r);return r;}
+function ecoSalvageRaw(S,tk,ri,X){
  const c=SALV_PTS[ri],isW=tk==='weapon';
  if(!c)return {err:'item'};
  if(S.pts<c)return {err:'pts',need:c-S.pts};
@@ -485,6 +498,7 @@ function ecoGrant(S,d,X){
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
  else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
   if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
+ for(const r of outs)labGain(S,r);
  return outs;
 }
 // a refunded purchase: take back exactly what it gave
@@ -608,7 +622,7 @@ function ecoClaimPass(S,track,i,X){
  if(!r||list.includes(i)||(prem&&!P.prem))return null;
  list.push(i);
  if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1)};   // free track only: the premium track never gives points
- if(r.k==='paint'){S.paints[r.id]=1;return {paint:r.id};}
+ if(r.k==='paint'){S.paints[r.id]=1;labGain(S,{tk:'paint',id:r.id});return {paint:r.id};}
  return {box:ecoOpenBox(S,r.tk,r.ri,X)};
 }
 // ---- matches ----
@@ -660,3 +674,80 @@ function ecoSquad(S,rows,X,me,held){
 }
 function ecoSquadPending(S,rows,X,me,held){held=held||[];let t=me&&me.ref&&(me.days||0)>=2&&!S.refWelcome&&!held.includes('me')?REF_WELCOME:0,pr=ecoPctRoom(S,X);
  for(const r of rows||[]){if(held.includes(r.id))continue;const o=ecoRefOwed(S,r);const pp=Math.min(o.pct,pr);pr-=pp;t+=o.ms+pp;}return t;}
+
+// Lab v1 stores selections, never inventory, upgrades, prices or public data.
+const LAB_RULES_VERSION='lab-fittings-v1';
+function labSpec(L){return {w:{a:L.w.a,t:L.w.t,s:!!L.w.s},c:{c:L.c.c,t:L.c.t,s:!!L.c.s},cores:L.cores.slice(),paint:L.paint,mods:fittingSelection(L.mods),looks:{...(L.looks||{})},catalog:FIT_VERSION};}
+function labEnsure(S,hint){
+ if(S.lab||S.mig===0)return;
+ const spec=labSpec(ecoLoadout(S,S.L||hint||STOCK_L));
+ S.lab={v:1,rev:1,policy:1,active:'m_legacy',slots:{base_1:'m_legacy',base_2:'m_spare'},machines:{
+  m_legacy:{name:'War Machine MK-I',rev:1,spec:JSON.parse(JSON.stringify(spec))},
+  m_spare:{name:'War Machine MK-II',rev:1,spec:JSON.parse(JSON.stringify(spec))}}};
+}
+function labValidate(S,p){
+ const obj=v=>v&&typeof v==='object'&&!Array.isArray(v);
+ const keys=(v,ks)=>obj(v)&&Object.keys(v).every(k=>ks.includes(k));
+ if(!keys(p,['w','c','cores','paint','mods','looks','catalog'])||!keys(p.w,['a','t','s'])||!keys(p.c,['c','t','s']))return 'shape';
+ if(!fittingValid(p.mods)||!fittingValid(p.looks,true)||(p.catalog!==undefined&&p.catalog!==FIT_VERSION))return 'modules';
+ if(FIT_ORDER.some(k=>fittingSelection(p.mods)[k]!=='stock')&&p.catalog!==FIT_VERSION)return 'modules';
+ const f=fittingStats(p.mods);if(f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power)return 'budget';
+ for(const [isW,x,k] of [[true,p.w,p.w.a],[false,p.c,p.c.c]]){
+  if(!Number.isInteger(x.t)||x.t<0||x.t>2||typeof x.s!=='boolean')return 'gear';
+  if(isW&&k==='moon'){if(!S.moonbeam||x.t!==2||x.s)return 'owned';}
+  else if(!(isW?WORDER:CHORDER).includes(k)||(x.s?!(x.t>=1&&salvIn(S,k,x.t)>0):!(isW?hasW(S,k,x.t):hasC(S,k,x.t))))return 'owned';
+ }
+ if(!Array.isArray(p.cores)||p.cores.length!==3||p.cores.some(k=>k!==null&&!GEM[k])||new Set(p.cores.filter(Boolean)).size!==p.cores.filter(Boolean).length)return 'cores';
+ if(typeof p.paint!=='string'||!PAINTS[p.paint]||!S.paints[p.paint])return 'paint';
+ return null;
+}
+function labAction(S,a,b){
+ if(!S.lab||S.lab.v!==1)return {err:'sync'};
+ if(a==='lab_read')return {ok:true};
+ if(!['lab_save','lab_rename','lab_activate'].includes(a))return {err:'action'};
+ if(!Object.values(S.lab.slots).includes(b.id)||!Object.prototype.hasOwnProperty.call(S.lab.machines,b.id))return {err:'machine'};
+ if(!Number.isInteger(b.rev)||b.rev!==S.lab.rev)return {err:'conflict'};
+ const M=S.lab.machines[b.id];
+ if(a!=='lab_activate'){
+  if(typeof b.name!=='string')return {err:'name'};
+  const name=b.name.normalize('NFC').trim();
+  if(!name||[...name].length>24||!/^[-\p{L}\p{N} ._()]+$/u.test(name))return {err:'name'};
+  if(a==='lab_save'&&FIT_ORDER.some(k=>fittingSelection(M.spec.mods)[k]!=='stock')&&(!b.spec||b.spec.catalog!==FIT_VERSION))return {err:'update'};
+  if(a==='lab_save'){const err=labValidate(S,b.spec);if(err)return {err};M.spec=labSpec(ecoLoadout(S,b.spec));}
+  M.name=name;M.rev++;
+ }else S.lab.active=b.id;
+ S.lab.rev++;return {ok:true};
+}
+function labLoadout(S){const M=S.lab&&S.lab.machines[S.lab.active];return ecoLoadout(S,M?M.spec:S.L);}
+
+// Preserve acquisition auto-equip, on the authoritative account rather than legacy UI fields.
+function labGain(S,r){
+ if(!S.lab||!r)return;
+ const M=S.lab.machines[S.lab.active],before=JSON.stringify(M.spec),p=M.spec;
+ if(r.k&&((r.kind==='new'||r.kind==='up')||(r.sal&&r.better))){
+  const isW=!!r.isW,current=isW?p.w.a:p.c.c;
+  if(current===r.k){const b=bestOf(S,isW,r.k);if(b){if(isW)p.w={a:r.k,t:b.t,s:b.s};else p.c={c:r.k,t:b.t,s:b.s};}}
+ }
+ if(r.tk==='moonbeam'&&S.moonbeam)p.w={a:'moon',t:2,s:false};
+ if(r.tk==='paint'&&S.paints[r.id])p.paint=r.id;
+ if(r.tk==='vault'&&(r.lv0|0)<VAULT_PAINT_LV&&(r.lv|0)>=VAULT_PAINT_LV)p.paint='hyper';
+ if(JSON.stringify(p)!==before){M.rev++;S.lab.rev++;}
+}
+
+// Free functional sidegrades; visual styles never enter stat math.
+const FIT_VERSION=1,FIT_BUDGET={weight:3,power:3};
+const FITS={
+ hull:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},plates:{n:'Reinforced plates',hp:.06,spd:-.04,dps:0,weight:2,power:0},light:{n:'Light frame',hp:-.06,spd:.04,dps:0,weight:0,power:1}},
+ mobility:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},sprint:{n:'Sprint gearing',hp:0,spd:.06,dps:-.06,weight:0,power:2},stable:{n:'Stable gearing',hp:0,spd:-.05,dps:.05,weight:1,power:1}},
+ mount:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},hardened:{n:'Hardened mount',hp:.05,spd:0,dps:-.05,weight:2,power:0},firing:{n:'Firing mount',hp:-.06,spd:0,dps:.06,weight:1,power:2}}
+};
+const FIT_ORDER=['hull','mobility','mount'];
+function fittingValid(v,visual){
+ if(v===undefined)return true;
+ return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>FIT_ORDER.includes(k))&&FIT_ORDER.every(k=>v[k]===undefined||(visual&&v[k]==='auto')||Object.prototype.hasOwnProperty.call(FITS[k],v[k]));
+}
+function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Object.prototype.hasOwnProperty.call(FITS[k],v[k])?v[k]:'stock']));}
+function fittingStats(v){const m=fittingSelection(v),f={hp:0,spd:0,dps:0,weight:0,power:0};for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s];return f;}
+function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
+function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
+function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
