@@ -29,5 +29,5 @@ assert.equal(room.seats[0].L.up.hull,0,'join retry cannot replace queued equipme
 room.startVs();
 assert.deepEqual(room.goMsg(room.seats[0]).chs,['vanguard','scout'],'VS options come from frozen seat');
 const socket={send(){},close(){}};room.connect('tg_1',socket);
-room.onMessage('tg_1',socket,JSON.stringify({k:'c',c:'scout'}));assert.equal(room.sim.units[0].cls,'scout');assert.equal(room.sim.units[0].mhp,1360);
+room.onMessage('tg_1',socket,JSON.stringify({k:'c',c:'scout'}));assert.equal(room.sim.units[0].cls,'scout');assert.equal(room.sim.units[0].mhp,1445); // PR #3 Scout: 1700 × 0.85; frozen counterpick remains authoritative.
 console.log('PASS frozen proof variants and PvP queued/rejoin/counterpick');

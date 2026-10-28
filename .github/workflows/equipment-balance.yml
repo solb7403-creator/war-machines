@@ -8,6 +8,9 @@ on:
       - 'js/ui.js'
       - 'wiki.html'
       - 'dev/tests/gear-balance.mjs'
+      - 'dev/tests/gear-combat.mjs'
+      - 'dev/tests/gear-browser.py'
+      - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
       - '.github/workflows/equipment-balance.yml'
   push:
@@ -20,6 +23,9 @@ on:
       - 'js/core.js'
       - 'js/ui.js'
       - 'dev/tests/gear-balance.mjs'
+      - 'dev/tests/gear-combat.mjs'
+      - 'dev/tests/gear-browser.py'
+      - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
       - '.github/workflows/equipment-balance.yml'
 permissions:
@@ -41,6 +47,7 @@ jobs:
       - name: Equipment balance and Laboratory stat parity
         run: |
           node dev/tests/gear-balance.mjs
+          node dev/tests/gear-combat.mjs
           node dev/tests/lab-ui.mjs
       - name: Build authoritative Workers simulation
         run: node worker/build-sim.mjs
@@ -50,6 +57,10 @@ jobs:
           node dev/tests/wtest/pvp.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/lab.mjs
+          node dev/tests/wtest/lab-battle.mjs
+          node dev/tests/wtest/lab-parity.mjs
+          node dev/tests/wtest/range.mjs
+          node dev/tests/wtest/range-comparison.mjs
       - name: Real Workers runtime smoke (isolated test environment)
         working-directory: worker
         env:

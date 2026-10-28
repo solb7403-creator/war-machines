@@ -1,7 +1,7 @@
 'use strict';
 // Supported browser instance adapter for the ACTUAL rules.js/game.js, loaded in its own realm.
 // Bump this identity whenever combat or this setup/controller policy changes. No backend interface.
-const RANGE_ENGINE_VERSION='lunar-range-s4.1/fits-'+FIT_VERSION;
+const RANGE_ENGINE_VERSION='lunar-range-s4.2-equipment/fits-'+FIT_VERSION;
 let rangeConfig=null,rangeSeconds=0,rangeOpponents=[];
 function rangePreset(k){
  const L=JSON.parse(JSON.stringify(STOCK_L));
