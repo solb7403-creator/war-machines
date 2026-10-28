@@ -612,3 +612,8 @@ button.q{display:flex;width:100%;text-align:left}
 .lab-item-quick strong{font:600 12px var(--disp);color:var(--moon);overflow-wrap:anywhere}
 .lab-item-quick span{color:var(--dust);overflow-wrap:anywhere}
 .labform label:hover .lab-item-quick,.labform label:focus-within .lab-item-quick{border-left-color:var(--gold)}
+
+.lab-facts{display:grid;gap:6px;margin:12px 0;padding:12px;background:var(--rock2);border:1px solid var(--edge);border-radius:12px}
+.lab-facts>div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:12px}
+.lab-facts span{color:var(--dust)}
+.lab-facts b{text-align:right;overflow-wrap:anywhere}
