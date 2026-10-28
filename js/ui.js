@@ -1050,9 +1050,54 @@ function initUI(){
 
 // Two owned configurations. Engineering is optional; ordinary Play remains unchanged.
 let labEditor=null;
+
+// Laboratory inspection: all values are taken from the same loadout calculators as gameplay.
+const labStatRows=(spec)=>{
+ const L=ecoLoadout(save,spec),m=machineMetrics(L),fit=fittingStats(spec.mods||{});
+ return [['Health',m.hp,Math.max(1,m.hp)],['DPS',m.dps,Math.max(1,m.dps)],['Speed',m.spd,Math.max(1,m.spd)],
+ ['Power',powerOf(L),Math.max(1,powerOf(L))],['Fitting weight',fit.weight,3],['Fitting power',fit.power,3]];
+};
+function labBars(spec,reference){
+ const rows=labStatRows(spec),base=reference?labStatRows(reference):rows;
+ return '<div class="lab-stats">'+rows.map((r,i)=>{
+  const max=Math.max(r[2],r[1],base[i][1],1),pct=Math.max(0,Math.min(100,100*r[1]/max));
+  return '<div class="lab-stat"><div><span>'+esc(r[0])+'</span><strong>'+esc(String(r[1]))+(reference?' <small>('+esc(String(base[i][1]))+' saved)</small>':'')+'</strong></div><div class="lab-track"><i style="width:'+pct+'%"></i></div></div>';
+ }).join('')+'</div>';
+}
+function labInspect(key){
+ if(!labEditor)return;
+ const spec=labFormSpec(),ref=labEditor.base||labEditor.spec;
+ const selector=key==='weapon'?'#lab-weapon':key==='chassis'?'#lab-chassis':key==='paint'?'#lab-paint':
+ key.startsWith('core')?'#lab-core-'+key.slice(4):key.startsWith('fit')?'#lab-fit-'+key.slice(3):'#lab-look-'+key.slice(4);
+ const el=$(selector);if(!el)return;
+ const name=el.options[el.selectedIndex]?.textContent||'Empty';
+ const category=key.startsWith('fit')?'Fitting':key.startsWith('look')?'Appearance':key.startsWith('core')?'Core':key;
+ const note=key.startsWith('look')||key==='paint'?'Appearance only — no performance change.':
+ key.startsWith('core')?'Core effects are included in the resulting machine stats.':
+ key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
+ sheet('labinspect',()=>'<h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
+ '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
+ labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
+}
+ACT.labinspect=key=>labInspect(key);
+ACT.labinspectclose=()=>{const ov=findOv('labinspect');if(ov)closeOverlay(ov);};
+function labInspectButtons(){
+ if(!labEditor)return;
+ const pairs=[['weapon','Weapon'],['chassis','Chassis'],...[0,1,2].map(i=>['core'+i,'Core '+(i+1)]),
+ ...FIT_ORDER.flatMap(k=>[['fit'+k,k.toUpperCase()+' fitting'],['look'+k,k.toUpperCase()+' appearance']]),['paint','Paint']];
+ const root=$('.labform');if(!root)return;
+ pairs.forEach(([key])=>{
+  const sel=$('#lab-'+(key==='weapon'||key==='chassis'||key==='paint'?key:
+   key.startsWith('core')?'core-'+key.slice(4):key.startsWith('fit')?'fit-'+key.slice(3):'look-'+key.slice(4)));
+  if(!sel||sel.parentElement.querySelector('.lab-inspect-btn'))return;
+  const b=document.createElement('button');b.type='button';b.className='btn btn-quiet lab-inspect-btn';
+  b.dataset.act='labinspect';b.dataset.arg=key;b.textContent='View exact details';
+  sel.parentElement.appendChild(b);
+ });
+}
 function labCards(){
  if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
- return '<h2 class="title">Your machines</h2><p class="mut">Two free slots. Gear, cores and account upgrades are shared.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
+ return '<h2 class="title">Your machine bays</h2><p class="mut">Two independent builds, shown side by side. Shared inventory and upgrades.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
   const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
   return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
  }).join('')+'</div>';
@@ -1073,7 +1118,7 @@ function openLabEditor(id,draft){
   FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
   '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
   '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><div class="range-actions"><button class="btn btn-go block" data-act="labsave">Save machine</button><button class="btn btn-quiet block" data-act="rangedraft">Free Test draft · no rewards</button></div>');
- setTimeout(updateLabPreview,0);
+ setTimeout(()=>{updateLabPreview();labInspectButtons();},0);
 }
 ACT.labedit=id=>openLabEditor(id);
 ACT.labequip=async id=>{const r=await labRequest('lab_activate',{id,rev:save.lab.rev});showToast(r.err?labMessage(r.err):'Machine equipped');};
@@ -1096,7 +1141,7 @@ function labFormSpec(){
 function updateLabPreview(){
  if(!labEditor||!$('#lab-preview'))return;
  const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.base||labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
- $('#lab-metrics').textContent='HP '+before.hp+' → '+after.hp+' · DPS '+before.dps+' → '+after.dps+' · Speed '+before.spd+' → '+after.spd+' | Weight '+f.weight+'/3 · Power '+f.power+'/3';
+ $('#lab-metrics').innerHTML=labBars(p,labEditor.base||labEditor.spec);
  $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
  $('[data-act="labsave"]').disabled=!!err;
  $('[data-act="rangedraft"]').disabled=!!err;
