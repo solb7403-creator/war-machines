@@ -11,6 +11,7 @@ on:
       - '.github/workflows/lab-ui-check.yml'
   push:
     branches:
+      - main
       - 'feature/lab-item-inspection-dual-bays'
     paths:
       - 'js/ui.js'
