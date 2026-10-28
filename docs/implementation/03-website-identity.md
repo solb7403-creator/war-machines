@@ -1,0 +1,7 @@
+# 03 — Main website as full persistent game
+
+Priority: P0 architecture. Goal: same real game and server-backed progression across Telegram and the primary website; later reuse for Google Play and iOS. Do NOT redesign the game into multiple incompatible copies. Browser users currently have local-only account state; Telegram uses verified signed initData and server-owned account records.
+
+Implementation: design a secure first-party web sign-in flow, account linking with Telegram by authenticated proof from both sides, stable global user identity, migration from local practice without fraudulent grants, a common backend actor and entitlements. Preserve shared js/rules.js simulation, purchases, inventory, Lab, match proofs, protections, leaderboards and referral rules. Keep local guest play sandboxed and unranked. Do not use client-chosen player IDs to retrieve other accounts. Maintain Telegram Stars in Telegram, route web payments through applicable platform-compliant providers. Future native apps require separate store-compliant payment flows.
+
+Acceptance: website sign-in/save/reload works; Telegram-linked pilot sees same two machines; no account takeover through linking; simultaneous edits have revision safeguards; no duplicate migration/purchases; verified ranked matches and points from each platform; account recovery and unlink safety. Separate design/security review before enabling real money.
