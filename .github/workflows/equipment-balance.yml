@@ -1,0 +1,57 @@
+name: Equipment Balance and Runtime Verification
+on:
+  pull_request:
+    paths:
+      - 'js/rules.js'
+      - 'js/game.js'
+      - 'js/core.js'
+      - 'js/ui.js'
+      - 'wiki.html'
+      - 'dev/tests/gear-balance.mjs'
+      - 'dev/tests/lab-ui.mjs'
+      - '.github/workflows/equipment-balance.yml'
+  push:
+    branches:
+      - main
+      - 'feature/equipment-balance-legendary-moonbeam'
+    paths:
+      - 'js/rules.js'
+      - 'js/game.js'
+      - 'js/core.js'
+      - 'js/ui.js'
+      - 'dev/tests/gear-balance.mjs'
+      - 'dev/tests/lab-ui.mjs'
+      - '.github/workflows/equipment-balance.yml'
+permissions:
+  contents: read
+jobs:
+  balance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate source syntax
+        run: |
+          node --check js/rules.js
+          node --check js/game.js
+          node --check js/core.js
+          node --check js/ui.js
+      - name: Equipment balance and Laboratory stat parity
+        run: |
+          node dev/tests/gear-balance.mjs
+          node dev/tests/lab-ui.mjs
+      - name: Build authoritative Workers simulation
+        run: node worker/build-sim.mjs
+      - name: Economy, account, PvP and farm regressions
+        run: |
+          node dev/tests/wtest/test.mjs
+          node dev/tests/wtest/pvp.mjs
+          node dev/tests/wtest/farm.mjs
+          node dev/tests/wtest/lab.mjs
+      - name: Real Workers runtime smoke (isolated test environment)
+        working-directory: worker
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: npx -y --package=wrangler@4 -c 'node smoke-runtime.mjs'
