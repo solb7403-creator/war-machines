@@ -1020,8 +1020,7 @@ function endRound(){
  series.last=w;
  if(series.w[0]>=2||series.w[1]>=2||series.round>=5){endMatch({series:true});return;}
  series.round++;state='round';ffwd=false;
- // AI pilots may switch to the chassis that counters their opponent's (never against brand-new pilots); you get to answer before the round starts
- for(const u of units)if(!u.hum&&!u.pid&&MM.mp>=10&&random()<0.5){const o=units.find(v=>v.team!==u.team),c=o&&beatenBy(o.cls);if(c&&c!==u.cls)rebuildBot(u,c);}
+ // Each AI pilot also keeps its equipped chassis throughout the best-of-three series.
  if(SRV){SRV.round(w);return;}
  const foe=units.find(u=>u.team===1);
  if(typeof fx==='function')fx(w===0?'win':w===1?'lose':'draw');
