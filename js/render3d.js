@@ -206,7 +206,7 @@ function unitObj(u){
  o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
  RS.add(o.g);B3.units.set(u,o);return o;
 }
-function dropUnit(u,o){RS.remove(o.g);o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
+function dropUnit(u,o){RS.remove(o.g);for(const m of [o.ug,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
 function heightAt(u){
  if(!BR||(u.elev||0)!==1)return 0;
  if(inDeck(u.x,u.y))return M3.DECK_H;
@@ -240,15 +240,15 @@ function geos(){
 }
 function matchObjs(){   // things that live for one match: spawn pads, the crystal mine
  if(B3.uref===units&&B3.dyn)return;
- if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&o.material.dispose)o.material.dispose();});}
+ if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&o.material.dispose)o.material.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});}
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
  for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];PSA.live.length=0;PSN.live.length=0;B3.seen=new WeakSet();
  B3.uref=units;const D=new THREE.Group(),G=geos();
  const done=new Set();
  for(const u of units){if(u.boss||u.sx===undefined)continue;const k=Math.round(u.sx*2)+','+Math.round(u.sy*2);if(done.has(k))continue;done.add(k);
-  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.95,0.06,6),new THREE.MeshLambertMaterial({color:0x2a3242}));pad.position.set(u.sx,0.03,u.sy);D.add(pad);
-  const pr=new THREE.Mesh(new THREE.RingGeometry(0.78,0.9,6).rotateX(-Math.PI/2),addMat(tcol(u.team),0.6));pr.position.set(u.sx,0.065,u.sy);D.add(pr);}
+  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.95,0.06,6),new THREE.MeshLambertMaterial({color:0x2a3242}));pad.userData.rangeOwnedGeometry=true;pad.position.set(u.sx,0.03,u.sy);D.add(pad);
+  const pr=new THREE.Mesh(new THREE.RingGeometry(0.78,0.9,6).rotateX(-Math.PI/2),addMat(tcol(u.team),0.6));pr.userData.rangeOwnedGeometry=true;pr.position.set(u.sx,0.065,u.sy);D.add(pr);}
  if(cry){const m=cry.mine,cl=new THREE.Group();
   for(let i=0;i<7;i++){const a=i/7*6.28,r=i?0.55+(i%2)*0.2:0,h=i?0.6+(i%3)*0.25:1.3,c=new THREE.Mesh(G.oct,G.cryM);c.scale.set(0.22,h,0.22);c.position.set(m.x+Math.cos(a)*r,h*0.5,m.y+Math.sin(a)*r);c.rotation.set((i?0.3:0)*Math.cos(a),0,(i?0.3:0)*Math.sin(a));cl.add(c);}
   const rg=new THREE.Mesh(G.ring,addMat('#c79bff',0.5));rg.scale.setScalar(CRY_MINE_R);rg.position.set(m.x,0.03,m.y);cl.add(rg);
@@ -536,4 +536,14 @@ function heroArt(ctx,w,h,t){
 function machineArt3D(ctx,w,h,L){
  if(!R3.ready||R3.failed||gfxMode()==='2d')return false;
  try{const sp=unitSpec({...tankOf(L,1),team:0});sp.ct=L.c.t;cachedArt(ctx,w,h,'lab|'+specKey(sp),c=>artTank(c,w,h,sp,3,{az:1}));return true;}catch(e){return false;}
+}
+
+// Practice has no active ranked fight to restore. Release its per-trial GPU objects on every exit.
+function clearRange3D(){
+ if(!RS)return;
+ for(const [u,o] of B3.units)dropUnit(u,o);
+ for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
+ if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose)o.material.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
+ for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
+ PSA.live.length=0;PSN.live.length=0;for(const k in B3.pool)for(const o of B3.pool[k].items)o.visible=false;
 }

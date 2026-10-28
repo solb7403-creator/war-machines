@@ -1054,12 +1054,13 @@ function labCards(){
  if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
  return '<h2 class="title">Your machines</h2><p class="mut">Two free slots. Gear, cores and account upgrades are shared.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
   const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
-  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button></div></section>';
+  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
  }).join('')+'</div>';
 }
-function openLabEditor(id){
- const M=save.lab&&save.lab.machines[id];if(!M)return;
- labEditor={id,rev:save.lab.rev,spec:JSON.parse(JSON.stringify(M.spec))};
+function openLabEditor(id,draft){
+ const original=save.lab&&save.lab.machines[id];if(!original)return;
+ const M=draft?{...original,name:draft.name,spec:draft.spec}:original;
+ labEditor={id,rev:draft?.rev||save.lab.rev,spec:JSON.parse(JSON.stringify(M.spec)),base:JSON.parse(JSON.stringify(draft?.base||M.spec))};
  const opts=(items,chosen)=>items.map(([id,n])=>'<option value="'+esc(id)+'"'+(id===chosen?' selected':'')+'>'+esc(n)+'</option>').join('');
  const key=x=>(x.a||x.c)+':'+x.t+(x.s?'s':'');
  const gear=(isW,p)=>opts(ownedList(isW).filter(x=>!x.locked).map(x=>[x.premium?'moon:2':x.id,x.name]),key(p));
@@ -1071,7 +1072,7 @@ function openLabEditor(id){
   M.spec.cores.map((k,i)=>'<label>Core '+(i+1)+'<select id="lab-core-'+i+'">'+opts([['-','Empty'],...GORDER.map(k=>[k,GEM[k].name])],k||'-')+'</select></label>').join('')+
   FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
   '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
-  '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><button class="btn btn-go block" data-act="labsave">Save machine</button>');
+  '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><div class="range-actions"><button class="btn btn-go block" data-act="labsave">Save machine</button><button class="btn btn-quiet block" data-act="rangedraft">Free Test draft · no rewards</button></div>');
  setTimeout(updateLabPreview,0);
 }
 ACT.labedit=id=>openLabEditor(id);
@@ -1094,10 +1095,11 @@ function labFormSpec(){
 }
 function updateLabPreview(){
  if(!labEditor||!$('#lab-preview'))return;
- const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
+ const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.base||labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
  $('#lab-metrics').textContent='HP '+before.hp+' → '+after.hp+' · DPS '+before.dps+' → '+after.dps+' · Speed '+before.spd+' → '+after.spd+' | Weight '+f.weight+'/3 · Power '+f.power+'/3';
  $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
  $('[data-act="labsave"]').disabled=!!err;
+ $('[data-act="rangedraft"]').disabled=!!err;
  const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
 document.addEventListener('change',e=>{if(e.target.closest('.labform'))updateLabPreview();});

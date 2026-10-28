@@ -342,15 +342,15 @@ function tapTarget(sx,sy){   // a quick tap on the field: lock onto an enemy (ta
  if(typeof fx==='function')fx('tap');
 }
 const aimAng=()=>{if(!aim||!aim.on||!me)return null;const px=X(me.x),py=Y(me.y)-liftOf(me),dx=aim.x-px,dy=aim.y-py;return Math.hypot(dx,dy)>24?Math.atan2(dy/GK,dx):null;};   // aim is measured from the tank, not from the finger: the preview line is where the shot really goes
-const ffBtnOn=()=>state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
+const ffBtnOn=()=>!(typeof rangeRun!=='undefined'&&rangeRun)&&state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
 // your super and dash: straight into the sim in AI matches, to the server in live ones
-const superGo=a=>pvpOn()?pvpSuper(a):useSuper(me,a);
-const dashGo=(x,y)=>pvpOn()?pvpDash(x,y):useDash(me,x,y);
-const shieldGo=()=>pvpOn()?pvpShield():useShield(me);
+const superGo=a=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('super',a):pvpOn()?pvpSuper(a):useSuper(me,a);
+const dashGo=(x,y)=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('dash',x,y):pvpOn()?pvpDash(x,y):useDash(me,x,y);
+const shieldGo=()=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('shield'):pvpOn()?pvpShield():useShield(me);
 const ffBtn=()=>({x:vw/2-80,y:vh-74-SAB,w:160,h:44});
 const joy={on:false,id:null,sx:0,sy:0,x:0,y:0,dx:0,dy:0},keys={};
 const loc=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
-cv.addEventListener('pointerdown',e=>{
+cv.addEventListener('pointerdown',e=>combatView(()=>{
  if(state!=='play'||!me)return;
  const L=loc(e);
  if(ffBtnOn()){const F=ffBtn();if(L.x>=F.x&&L.x<=F.x+F.w&&L.y>=F.y&&L.y<=F.y+F.h){ffwd=!ffwd;if(typeof fx==='function')fx('tap');return;}}
@@ -361,8 +361,8 @@ cv.addEventListener('pointerdown',e=>{
  const H=shieldBtn();if(me.hp>0&&Math.hypot(L.x-H.x,L.y-H.y)<=H.r+12){shieldGo();return;}
  tapCand={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,t:performance.now()};   // any non-button touch might be a target tap; joyUp decides
  if(joy.on)return;joy.on=true;joy.id=e.pointerId;joy.sx=joy.x=L.x;joy.sy=joy.y=L.y;joy.dx=joy.dy=0;try{cv.setPointerCapture(e.pointerId);}catch(_){}
-});
-cv.addEventListener('pointermove',e=>{
+}));
+cv.addEventListener('pointermove',e=>combatView(()=>{
  if(aim&&e.pointerId===aim.id){const L=loc(e);aim.x=L.x;aim.y=L.y;if(Math.hypot(L.x-aim.sx,L.y-aim.sy)>18)aim.on=true;return;}
  if(tapCand&&e.pointerId===tapCand.id){const L=loc(e);tapCand.x=L.x;tapCand.y=L.y;}
  if(!joy.on||e.pointerId!==joy.id)return;
@@ -370,13 +370,13 @@ cv.addEventListener('pointermove',e=>{
  if(d>max){dx=dx/d*max;dy=dy/d*max;d=max;}
  joy.x=joy.sx+dx;joy.y=joy.sy+dy;joy.dx=dx/max;joy.dy=dy/max;
  if(tut)tut.moved=(tut.moved||0)+d*0.001;
-});
-const joyUp=e=>{
+}));
+const joyUp=e=>combatView(()=>{
  if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(e.type==='pointercancel'?undefined:a);return;}
  if(tapCand&&e.pointerId===tapCand.id){const c=tapCand;tapCand=null;if(e.type!=='pointercancel'&&performance.now()-c.t<300&&Math.hypot(c.x-c.sx,c.y-c.sy)<12)tapTarget(c.x,c.y);}
- if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}};
+ if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}});
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();});
+addEventListener('keydown',e=>combatView(()=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();}));
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 function inputVec(){
  let x=joy.dx,y=joy.dy;

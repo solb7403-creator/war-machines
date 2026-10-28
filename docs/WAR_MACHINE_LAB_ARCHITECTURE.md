@@ -354,3 +354,7 @@ Architecture approved subject to [SESSION_1_APPROVED_AMENDMENTS.md](SESSION_1_AP
 ## Session 3 implementation addendum (2026-10-28)
 
 The user subsequently authorized Session 3 only, including a local commit and verified bundle. [SESSION_3_IMPLEMENTATION_REPORT.md](SESSION_3_IMPLEMENTATION_REPORT.md) records the implemented free catalog, separate visual styles, stat formulas, protocol compatibility, RNG seam and observed tests. Candidate values were retained. Session 4 range UI and later monetization/sharing remain unimplemented; no production activation or push is authorized.
+
+## Session 4 implementation addendum (2026-10-28)
+
+Session 4 is implemented locally as described in [SESSION_4_IMPLEMENTATION_REPORT.md](SESSION_4_IMPLEMENTATION_REPORT.md). A restricted independent browser realm loads the existing combat sources; the parent reuses controls/rendering through a synchronous restored view, without ranked/economy hooks. Owned draft validation, explicit offline cache labeling, six genuine mode arrangements, seeded retries, local bounded comparisons and disposal form the completed slice. No server migration or new economy/social feature is introduced. This supersedes earlier statements that the range remains unimplemented. Session 5 and deployment remain outside this authorization.

@@ -185,6 +185,7 @@ function applyEco(E){
  if(SRV_ECO&&!save.migOk)return;   // this device's progress hasn't moved to the server yet: keep it until it has (doSync)
  if(Number.isFinite(E._rev))ecoSeenRev=E._rev;
  const S=ecoNorm(JSON.parse(JSON.stringify(E)));
+ if(typeof rangeRemember==='function')rangeRemember(S);
  for(const k of ECO_KEYS)if(S[k]!==undefined)save[k]=S[k];
  fixEquip();labApplySelection();store();
 }
