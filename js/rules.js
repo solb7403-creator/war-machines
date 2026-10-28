@@ -38,9 +38,9 @@ const upLevels=U=>UORDER.reduce((a,k)=>a+((U&&U[k])|0),0);
 const upInvested=U=>UORDER.reduce((a,k)=>{let s=0;for(let i=0;i<((U&&U[k])|0);i++)s+=UPS[k].costs[i];return a+s;},0);
 // ---- chassis classes & weapons ----
 const CH={
- scout:{n:'Scout',d:'Fast and agile',hp:0.8,spd:1.25,turn:1.15,ds:0.9,c:'#7be07b'},
+ scout:{n:'Scout',d:'Fast and agile',hp:0.85,spd:1.23,turn:1.18,ds:0.9,c:'#7be07b'},
  vanguard:{n:'Vanguard',d:'Balanced all-rounder',hp:1.0,spd:1.0,turn:1.0,ds:1.0,c:'#3fd0c9'},
- titan:{n:'Titan',d:'Slow, very tanky',hp:1.35,spd:0.85,turn:0.9,ds:1.12,c:'#c28bff'}};
+ titan:{n:'Titan',d:'Slow, very tanky',hp:1.30,spd:0.88,turn:0.9,ds:1.12,c:'#c28bff'}};
 const CHORDER=['scout','vanguard','titan'];
 // counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout (+15% damage dealt, 10% less taken)
 const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.15,COUNTER_RES=0.10;
@@ -53,9 +53,12 @@ const WEAPONS={
  pulse:{n:'Pulse Cannon',d:'Balanced gun',dps:70,shot:0.2,c:'#3fd0c9',sup:'Pierce Lance'},
  twin:{n:'Twin Repeater',d:'Fast, light hits',dps:66,shot:0.09,c:'#ffd24a',sup:'Static Nova'},
  siege:{n:'Siege Breaker',d:'Slow, heavy hits',dps:74,shot:0.45,c:'#ff6b5e',sup:'Siege Blast'},
- moon:{n:'Moonbeam',d:'Lunar precision laser',dps:72,shot:0.12,c:'#e8f4ff',sup:'Moonfall',premium:true}};
+ moon:{n:'Moonbeam',d:'Lunar precision laser',dps:118,shot:0.16,c:'#e8f4ff',sup:'Moonfall',premium:true}};
 const WORDER=['pulse','twin','siege'];
-const TIER_MULT=[1.0,1.10,1.32];
+const TIER_MULT=[1.0,1.14,1.34];
+// Legendary is a distinct, fixed premium power step, not an Epic roll or tuneable quality.
+// Its super scales above the strongest normal Epic roll, while shot cadence limits super farming.
+const LEGENDARY_MULT=1.48;
 // Crate items roll 105-110% of their rarity; salvaged items store their own multiplier.
 const ROLL_MIN=1.05,ROLL_MAX=1.10;
 const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
@@ -134,7 +137,7 @@ function powerBracket(pw){
 // A loadout is everything that sets a tank's stats: {w:{a,t,q,s}, c:{c,t,q,s}, up:{hull..reactor}, cores:[3], gl:{gem levels}, skin, paint}
 // t = rarity (-1 stock, 0 common, 1 rare, 2 epic), q = crate roll (1.05-1.10, 1 for starter gear) or the salvage multiplier, s = salvaged
 function weaponOf(arch,t,q,sal){
- if(arch==='moon'){const b=WEAPONS.moon;return {arch:'moon',tier:2,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:TIER_MULT[2],q:1,sal:false};}
+ if(arch==='moon'){const b=WEAPONS.moon;return {arch:'moon',tier:2,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:LEGENDARY_MULT,q:1,sal:false};}
  const tc=Math.max(0,t|0),b=WEAPONS[arch]||WEAPONS.pulse,mt=sal?q:TIER_MULT[tc]*q;
  return {arch,tier:t,sal:!!sal,q,mult:mt,dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
 }
