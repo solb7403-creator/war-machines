@@ -1054,12 +1054,18 @@ let labEditor=null;
 // Laboratory inspection: all values are taken from the same loadout calculators as gameplay.
 const labStatRows=(spec)=>{
  const L=ecoLoadout(save,spec),m=machineMetrics(L),fit=fittingStats(spec.mods||{});
- const high=TIER_MULT[2]*ROLL_MAX,skin=1.08;
- const hpMax=STAT.hp*1.32*Math.max(...Object.values(CH).map(c=>c.hp))*high*skin*1.06;
- const dpsMax=Math.max(WEAPONS.moon.dps,...WORDER.map(k=>WEAPONS[k].dps*high))*1.32*skin*1.06*
-  (1+GEM.dmg.amt*GEM_LV[GEM_LV.length-1])*(1+GEM.rof.amt*GEM_LV[GEM_LV.length-1]);
- const spdMax=STAT.speed*1.24*Math.max(...Object.values(CH).map(c=>c.spd))*
-  (1+(high-1)*0.5)*1.06*(1+GEM.spd.amt*GEM_LV[GEM_LV.length-1]);
+ const skin=1.08;
+ // Capacity applies to the whole build: legal pairs can exceed a single fitting's 6%.
+ const ceilings={hp:0,spd:0,dps:0};
+ for(const hull of Object.keys(FITS.hull))for(const mobility of Object.keys(FITS.mobility))for(const mount of Object.keys(FITS.mount)){
+  const f=fittingStats({hull,mobility,mount});
+  if(f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power)for(const k of Object.keys(ceilings))ceilings[k]=Math.max(ceilings[k],f[k]);
+ }
+ const topChassis=CHORDER.map(k=>chassisOf(k,2,ROLL_MAX,false));
+ const hpMax=Math.round(Math.round(STAT.hp*1.32*Math.max(...topChassis.map(c=>c.hp))*skin)*(1+ceilings.hp));
+ const dpsMax=Math.round(Math.max(WEAPONS.moon.dps,...WORDER.map(k=>weaponOf(k,2,ROLL_MAX,false).dps))*1.32*skin*(1+ceilings.dps)*
+  (1+GEM.dmg.amt*GEM_LV[GEM_LV.length-1])*(1+GEM.rof.amt*GEM_LV[GEM_LV.length-1]));
+ const spdMax=+(STAT.speed*1.24*Math.max(...topChassis.map(c=>c.spd))*(1+ceilings.spd)*(1+GEM.spd.amt*GEM_LV[GEM_LV.length-1])).toFixed(1);
  const powerMax=Math.pow(hpMax*dpsMax*(spdMax/STAT.speed),1/3)*1.2*Math.pow(1.25,3);
  return [['Health',m.hp,hpMax],['DPS',m.dps,dpsMax],['Speed',m.spd,spdMax],
   ['Power',powerOf(L),powerMax],['Fitting weight',fit.weight,FIT_BUDGET.weight],['Fitting power',fit.power,FIT_BUDGET.power]];
@@ -1113,7 +1119,8 @@ function labItemFacts(key,spec){
  const pct=n=>(+(n*100).toFixed(2))+'%';
  if(key==='weapon'){
   const base=WEAPONS[spec.w.a],live=ecoLoadout(save,spec).w;
-  const actual=weaponOf(live.a,live.t,live.q,live.s);
+  const actual=weaponOf(live.a,live.t,live.q,live.s),T=tankOf(ecoLoadout(save,spec),1);
+  const gem=k=>T.gems.includes(k)?GEM[k].amt*T.gemM[k]:0;
   const supreme=(typeof SUP!=='undefined'&&SUP[actual.arch])||null;
   if(base){
    line('Rarity',actual.premium?'Legendary':(live.s?'Salvaged':['Common','Rare','Epic'][live.t]));
@@ -1123,11 +1130,14 @@ function labItemFacts(key,spec){
    line('Actual weapon DPS',actual.dps);
    line('Hit damage',+(actual.dps*actual.shot).toFixed(2));
    line('Fire rate',+(1/actual.shot).toFixed(2)+' shots/sec');
+   line('Equipped hit damage',+(T.wdps*T.wshot*T.dmgM*(1+gem('dmg'))).toFixed(2));
+   line('Equipped fire rate',+((1+gem('rof'))/T.wshot).toFixed(2)+' shots/sec');
    line('Projectile speed',actual.pspd+' units/sec');
    line('Weapon quality',actual.premium?'Fixed legendary':live.q+'×');
    line('Super ability',base.sup);
-   if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',Math.round(supreme.dmg*actual.mult));
-    line('Super charge time',supreme.charge+' sec');}
+   if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',+(supreme.dmg*actual.mult).toFixed(2));
+    line('Equipped super damage',+(supreme.dmg*T.wmult*T.dmgM*(1+gem('dmg'))).toFixed(2));
+    line('Super wind-up',supreme.charge+' sec');}
   }
  }else if(key==='chassis'){
   const base=CH[spec.c.c],live=ecoLoadout(save,spec).c;
@@ -1214,7 +1224,7 @@ function labCards(){
  if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
  return '<h2 class="title">Your machine bays</h2><p class="mut">Two independent builds, shown side by side. Shared inventory and upgrades.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
   const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
-  return '<section class="panel labcard"><div class="lab-bay-label">BAY '+esc(String(id).toUpperCase())+'</div><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p>'+labBars(M.spec)+'<div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
+  return '<section class="panel labcard"><div class="lab-bay-label">BAY '+esc(String(id).toUpperCase())+'</div><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc((L.c.s?'Salvaged ':'')+CNAMES[L.c.c][L.c.t])+' · '+esc(L.w.a==='moon'?'Moonbeam':(L.w.s?'Salvaged ':'')+WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p>'+labBars(M.spec)+'<div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
  }).join('')+'</div>';
 }
 function openLabEditor(id,draft){
@@ -1263,4 +1273,4 @@ function updateLabPreview(){
  $('[data-act="rangedraft"]').disabled=!!err;
  const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
-document.addEventListener('change',e=>{if(e.target.closest('.labform')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
+document.addEventListener('change',e=>{if(e.target.closest('.labform')?.querySelector('#lab-weapon')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
