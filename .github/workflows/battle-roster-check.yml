@@ -1,0 +1,49 @@
+name: Battle Roster Validation
+on:
+  pull_request:
+    paths:
+      - 'js/battle-roster.js'
+      - 'css/battle-roster.css'
+      - 'js/ui.js'
+      - 'js/match.js'
+      - 'js/game.js'
+      - 'worker/src/pvp.js'
+      - 'index.html'
+      - 'version.json'
+      - 'dev/tests/battle-roster.mjs'
+      - 'dev/tests/wtest/**'
+      - '.github/workflows/battle-roster-check.yml'
+  push:
+    branches: [main, feature/two-machine-locked-battle-roster]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and battle roster
+        run: |
+          node --check js/battle-roster.js
+          node --check js/ui.js
+          node --check js/match.js
+          node --check js/game.js
+          node --check worker/src/pvp.js
+          node dev/tests/battle-roster.mjs
+      - name: Existing Laboratory, economy and combat tests
+        run: |
+          node worker/build-sim.mjs
+          node dev/tests/lab-ui.mjs
+          node dev/tests/wtest/lab.mjs
+          node dev/tests/wtest/lab-battle.mjs
+          node dev/tests/wtest/test.mjs
+          node dev/tests/wtest/pvp.mjs
+          node dev/tests/wtest/farm.mjs
+      - name: Actual Workers runtime smoke
+        working-directory: worker
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: npx -y --package=wrangler@4 -c 'node smoke-runtime.mjs'
