@@ -279,9 +279,11 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return {abort:true,error:"update"};
     if (S.lab && b.labRev !== undefined && b.labRev !== S.lab.rev) return {abort:true, error:"garage_changed"};
     const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw);
+    // Proof-of-play may authorize only the registered starting machine, not the entire owned inventory.
+    const frozenL = { ...L, chs: [{ ...L.c }] };
     // one open ticket per pilot: a new one replaces the last (that match can't be scored any more)
     S.mt = { n, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
-      L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
+      L: JSON.parse(JSON.stringify(frozenL)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
     // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
     const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
     if (gap < 600) bp.g = (bp.g || []).concat(Math.round(gap * 10) / 10).slice(-30);
@@ -291,7 +293,7 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (!dy[X.day]) dy[X.day] = [dm, dm, 0];
     dy[X.day][2]++;
     for (const k of Object.keys(dy)) if (Number(k) < X.day - 9) delete dy[k];
-    return { lg: brk.key, mult: brk.mult, power: S.pw, L };
+    return { lg: brk.key, mult: brk.mult, power: S.pw, L: frozenL };
   }, now, { rl: 1 });
   if (t.rate) return { status: 429, body: { error: "rate" } };
   if (t.error) return { status: 409, body: { error: t.error } };

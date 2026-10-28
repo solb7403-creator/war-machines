@@ -77,6 +77,8 @@ export class RoomCore {
   // a seat for a pilot the lobby sent here (the worker has checked their login and loadout)
   seatPlayer({ pid, name, q, L, power, league }) {
     L = JSON.parse(JSON.stringify(L));
+    // Never let a legacy client's owned-chassis list become a legal match swap list.
+    L.chs = [{ ...L.c }];
     const now = this.io.now();
     if (this.phase === "new") {
       this.q = { g: q.g, m: q.m }; this.cap = seatsFor(q.g, q.m);
@@ -137,10 +139,8 @@ export class RoomCore {
       case "d": if (live) this.sim.netDash(u, fl * (+m.x || 0), fl * (+m.y || 0)); break;
       case "h": if (live) this.sim.netShield(u); break;
       case "t": if (live) this.sim.netTarget(u, m.v | 0); break;   // tap-to-target lock (unit id, -1 clears)
-      case "c": if ((this.phase === "vs" || this.phase === "round") && u && !s.done) {   // chassis swap
-        const c = (s.L.chs || []).find((x) => x.c === m.c);
-        if (c && c.c !== s.L.c.c) { s.L = { ...s.L, c: { ...c } }; this.sim.setTank(u, s.L); this.all({ k: "u", units: this.sim.roster() }); }
-      } break;
+      // Legacy "c" messages are deliberately ignored: no arbitrary owned-inventory switches.
+      // Full machine selection happens before joining from server-owned Laboratory state.
       case "q": this.quit(s); break;
       case "p": this.sendTo(s, { k: "P", i: m.i, t: this.tick }); break;
     }
@@ -196,7 +196,7 @@ export class RoomCore {
   }
   goMsg(s) {
     const u = this.sim.units[s.idx];
-    return { k: "go", chs: (s.L.chs || [s.L.c]).map(c => c.c), me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
+    return { k: "go", chs: [s.L.c.c], me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
       units: this.sim.roster(), vs: Math.max(0, (this.vsAt || 0) - this.io.now()), feat: this.q.g === this.R.featuredOn(this.io.day()), t: this.tick };
   }
   startFight() {

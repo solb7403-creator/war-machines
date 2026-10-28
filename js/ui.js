@@ -149,7 +149,7 @@ function renderPlay(){
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),n=playNudge(),wr=winRange(gk,mk);
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
-  '<div class="lobby">'+
+  battleRosterHtml()+'<div class="lobby">'+
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
@@ -727,14 +727,13 @@ function vsBuild(){
  const card=u=>{const i=units.indexOf(u);return '<div class="unit'+(u===me?' me':'')+'"><canvas data-art="unit:'+i+'"></canvas><b>'+vname(u===me?'You':u.name,u.vl|0)+vbadge(u.vl|0)+(live&&u.ai?' <i class="ai">AI</i>':'')+'</b><span style="color:'+(u.boss?'#ff4d5e':CH[u.cls].c)+'">'+(u.boss?'Boss':CH[u.cls].n)+'</span>'+ctag(u)+'</div>';};
  let cls='',txt='';
  if(adv&&!dis){cls='good';txt='Your '+CH[me.cls].n+' counters their '+CH[COUNTER[me.cls]].n+': +15% damage, 10% less taken.';}
- else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls),fix=beatenBy(b);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+': they deal you +15% damage and take 10% less from you.'+(ownedChassisClasses().includes(fix)?' Switch to '+CH[fix].n+' to beat it.':' '+CH[fix].n+' beats it.');}
+ else if(dis&&!adv){cls='bad';const b=beatenBy(me.cls);txt='Their '+CH[b].n+' counters your '+CH[me.cls].n+': +15% outgoing damage and 10% damage reduction. Your prepared machine is locked for this match.';}
  else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='You counter '+wn.join(', ')+': +15% damage to '+(wn.length>1?'them':'it')+', 10% less taken. '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you: the same against you.';}
- else txt='Even matchup. No counters either way.';
- const owned=battleChassisClasses();
+ else txt='Even matchup. Your prepared machine is locked for this match.';
  return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents')+'</span></div>'+
   '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
-  '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+
+  '<div class="match '+cls+'">'+txt+'</div>'+ 
   '<div class="grow"></div><button class="fight'+(live?' wait':'')+'" data-act="vsstart"'+(live?' disabled':'')+'><span class="big">'+(live?'GET READY':'START')+'</span><span class="small" id="vsCount"></span></button>'+
   '<button class="linkbtn" data-act="vsback">Back to menu</button>';
 }
@@ -759,6 +758,7 @@ async function vsGo(){
  }finally{vsStarting=false;}
 }
 function beginMatch(){
+ if(labBusy){showToast('Your machine is still saving. Try again shortly.');return;}
  if(state==='play'||(pvp&&pvp.phase==='find'))return;
  if(pvp)pvpClose();   // anything left from a live match that's over
  closeAll();
@@ -795,7 +795,7 @@ function resultsHTML(r){
  let tip;
  if((save.mp||0)===1)tip=r.won?'Nice first win. Points rank you on the leaderboard and buy upgrades in the Garage.':'Close one. Drag to dodge shots while your cannon fires, and grab the gold box.';
  else if(giftPending()&&[2,4].includes(save.mp||0))tip='Come back tomorrow: your daily reward comes with a free Rare gem cache, one time.';
- else if(r.countered){const b=beatenBy(r.meCls),fix=beatenBy(b);tip='Their '+CH[b].n+' countered your '+CH[r.meCls].n+'. '+CH[fix].n+' beats '+CH[b].n+(ownedChassisClasses().includes(fix)?': switch on the next start screen.':'. Find one in a chassis crate.');}
+ else if(r.countered){const b=beatenBy(r.meCls),fix=beatenBy(b);tip='Their '+CH[b].n+' countered your '+CH[r.meCls].n+'. Prepare '+CH[fix].n+' as your other battle machine before the next match.';}
  else if(r.quests.length)tip='Quest done: '+r.quests.join(', ')+'. Claim it in Quests.';
  else tip=TIPS[(save.mp||0)%TIPS.length];
  const st=r.stats;
@@ -821,15 +821,15 @@ function onMatchEnd(r){
 // ---------- between rounds (1v1 best of 3) ----------
 let roundTimer=null;
 function roundHTML(info){
- const {adv,dis}=matchup(),owned=ownedChassisClasses(),foe=units.find(u=>u.team===1);
+ const {adv,dis}=matchup(),foe=units.find(u=>u.team===1);
  let tip;
- if(dis&&!adv){const b=beatenBy(me.cls),fix=beatenBy(b);tip='Their '+CH[b].n+' counters your '+CH[me.cls].n+(owned.includes(fix)?'. Switch to '+CH[fix].n+' to beat it.':'.');}
+ if(dis&&!adv){const b=beatenBy(me.cls);tip='Their '+CH[b].n+' counters your '+CH[me.cls].n+'. Your prepared machine is locked.';}
  else if(adv&&!dis)tip='Your '+CH[me.cls].n+' counters their '+CH[foe.cls].n+'.';
  else tip='Next up: their '+CH[foe.cls].n+'.';
  return '<div class="rt '+(info.won?'win':info.lost?'lose':'')+'">'+(info.won?'Round won':info.lost?'Round lost':'Round drawn')+'</div>'+
   '<div class="rscore num"><span style="color:var(--ally)">'+info.w[0]+'</span><i>–</i><span style="color:var(--foe)">'+info.w[1]+'</span></div>'+
   '<p class="mut">First to 2 wins. '+esc(tip)+'</p>'+
-  (owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="rswap" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+
+  '<p class="mut">Your machine stays equipped for the entire match.</p>'+ 
   (info.live?'<button class="btn btn-quiet block" style="margin-top:14px" disabled>Round '+info.round+'<span id="rCount" class="dimtxt" style="color:inherit;opacity:.7"></span></button>'
    :'<button class="btn btn-go block" style="margin-top:14px" data-act="nextround">Start round '+info.round+'<span id="rCount" class="dimtxt" style="color:inherit;opacity:.7"></span></button>');
 }
@@ -934,7 +934,7 @@ const ACT={
  mode:a=>{save.mode=a;store();fx('tap');},
  map:a=>{save.map=a;store();fx('tap');},
  fight:()=>{lastQuick=false;beginMatch();},
- quick:()=>quickMatch(),
+ quick:()=>{if(labBusy){showToast('Finish saving your machine before matchmaking.');return;}quickMatch();},
  setup:()=>openSetup(),
  setupdone:()=>{const ov=findOv('setup');if(ov)closeOverlay(ov);},
  firstfight:()=>{save.welcomed=true;store();closeAll();beginMatch();},

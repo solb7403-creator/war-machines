@@ -11,7 +11,8 @@ function winPoints(gk,mk){return Math.round(winBase(gk,mk)*(gk===featuredMode()?
 
 // ---- your tank and the AI match ----
 let battleLoadout=null,battlePower=null;
-function battleChassisClasses(){if(typeof pvpOn==='function'&&pvpOn())return pvp.chs||ownedChassisClasses();return battleLoadout?(battleLoadout.chs||[battleLoadout.c]).map(c=>c.c):ownedChassisClasses();}
+// The active Laboratory machine is a complete, locked match build.
+function battleChassisClasses(){const L=battleLoadout||myLoadout();return [L.c.c];}
 function buildMe(){
  const m=Object.assign(tankOf(battleLoadout||myLoadout(),hpScale()),{x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:IN_TG?tgName(TG_USER):'You'});
  m.hp=m.mhp;return m;
@@ -60,13 +61,8 @@ function fairField(mp){
 }
 function newMatch(){prepareMatch();startMatch();}   // tests and quick restarts
 // switch chassis on the VS screen or between rounds (counter-pick): the best owned version of that class
-function switchChassis(cls){
- if(typeof pvpOn==='function'&&pvpOn()){pvpSend({k:'c',c:cls});return;}
- if(!battleLoadout||!['vs','round'].includes(state))return;
- const c=(battleLoadout.chs||[battleLoadout.c]).find(c=>c.c===cls);if(!c)return;
- battleLoadout={...battleLoadout,c:{...c}};
- const keep={x:me.x,y:me.y,sx:me.sx,sy:me.sy,deaths:me.deaths||0,zo:me.zo||0,id:me.id,st:me.st};me=buildMe();Object.assign(me,keep);units[0]=me;
-}
+// No mid-match or between-round inventory counterpicks. Choose a full machine on Play.
+function switchChassis(_cls){return false;}
 function matchup(){   // how your chassis fares against the enemy lineup
  const foes=units.filter(u=>u.team!==me.team&&!u.boss),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
  return {adv,dis,foes};
@@ -109,9 +105,7 @@ function matchStart(){
    const r=out&&out.j;
    if(r&&r.tok){T.tok=r.tok;T.err=null;
     if(mTicket===T&&state==='vs'&&r.L){
-     const chosen=battleLoadout&&battleLoadout.c.c;
      battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;
-     const c=(battleLoadout.chs||[]).find(c=>c.c===chosen);if(c)battleLoadout.c={...c};
      if(r.E)applyEco(r.E);populatePreparedMatch();
      const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
     }

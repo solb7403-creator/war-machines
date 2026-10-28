@@ -24,10 +24,14 @@ const room=new RoomCore(io,{MAP:'classic'});
 room.seatPlayer({pid:'tg_1',name:'One',q:{g:'arena',m:'1v1'},L,power:R.powerOf(L),league:0});
 L.up.hull=4;
 assert.equal(room.seats[0].L.up.hull,0,'room owns a detached snapshot');
+assert.deepEqual(room.seats[0].L.chs,[room.seats[0].L.c],'Room contains only registered machine');
 room.seatPlayer({pid:'tg_1',name:'One',q:{g:'arena',m:'1v1'},L,power:999,league:4});
 assert.equal(room.seats[0].L.up.hull,0,'join retry cannot replace queued equipment');
 room.startVs();
-assert.deepEqual(room.goMsg(room.seats[0]).chs,['vanguard','scout'],'VS options come from frozen seat');
+assert.deepEqual(room.goMsg(room.seats[0]).chs,['vanguard'],'Only the selected machine is exposed to PvP');
 const socket={send(){},close(){}};room.connect('tg_1',socket);
-room.onMessage('tg_1',socket,JSON.stringify({k:'c',c:'scout'}));assert.equal(room.sim.units[0].cls,'scout');assert.equal(room.sim.units[0].mhp,1445); // PR #3 Scout: 1700 × 0.85; frozen counterpick remains authoritative.
-console.log('PASS frozen proof variants and PvP queued/rejoin/counterpick');
+room.onMessage('tg_1',socket,JSON.stringify({k:'c',c:'scout'}));
+assert.equal(room.sim.units[0].cls,'vanguard','legacy inventory switch is rejected');
+assert.equal(room.sim.units[0].mhp,1700,'failed switch cannot alter combat stats');
+assert.equal(room.seats[0].L.c.c,'vanguard','seat snapshot is immutable to switch requests');
+console.log('PASS frozen proof variants and locked PvP battle roster');
