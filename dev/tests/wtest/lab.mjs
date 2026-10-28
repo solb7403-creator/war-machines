@@ -53,7 +53,7 @@ failPlayers=true;r=await sync(7005);failPlayers=false;assert.ok(r.status>=500);a
 // Six-mode snapshots must retain start-time gear/upgrades despite editing and sync.
 const oldClient=await eco.matchStart(env,{g:'arena',m:'1v1',map:'classic',pv:1,L:R.STOCK_L},{id:7003},'tg_7003',Date.now());
 assert.equal(oldClient.body.error,'update','old clients must update before a Lab fight, not receive false proof flags');
-for(const g of R.GT_ORDER){const now=Date.now();let start=await eco.matchStart(env,{g,m:'1v1',map:'classic',L:R.STOCK_L,labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',now);assert.ok(start.body.ok);const ticket=structuredClone(S(7003).mt);assert.equal(ticket.rv,'lab-fittings-v1');assert.ok(ticket.L.chs.length);old=S(7003);old.up.engine=4;await sync(7003);assert.deepEqual(S(7003).mt.L,ticket.L);assert.equal(S(7003).mt.mult,ticket.mult);}
+for(const g of R.GT_ORDER){const now=Date.now();let start=await eco.matchStart(env,{g,m:'1v1',map:'classic',L:R.STOCK_L,labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',now);assert.ok(start.body.ok);const ticket=structuredClone(S(7003).mt);assert.equal(ticket.rv,'lab-fittings-v1');assert.deepEqual(ticket.L.chs,[ticket.L.c],'Ticket includes only the selected machine');old=S(7003);old.up.engine=4;await sync(7003);assert.deepEqual(S(7003).mt.L,ticket.L);assert.equal(S(7003).mt.mult,ticket.mult);}
 const canonical=await checkLoadout(env,R,{...R.STOCK_L,w:{a:'moon'}},S(7003));assert.equal(canonical.w.a,S(7003).L.w.a,'PvP fields active machine not raw spoof');
 // Legacy migration awaiting reconciliation must not be marked complete by Lab.
 db.root.players.tg_7006={pts:900,days:3};r=await sync(7006);assert.equal(S(7006).mig,0);assert.equal(r.E.lab,undefined);
