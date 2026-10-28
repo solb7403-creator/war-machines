@@ -24,6 +24,7 @@ const room=new RoomCore(io,{MAP:'classic'});
 room.seatPlayer({pid:'tg_1',name:'One',q:{g:'arena',m:'1v1'},L,power:R.powerOf(L),league:0});
 L.up.hull=4;
 assert.equal(room.seats[0].L.up.hull,0,'room owns a detached snapshot');
+assert.deepEqual(room.seats[0].L.chs,[room.seats[0].L.c],'Room contains only registered machine');
 room.seatPlayer({pid:'tg_1',name:'One',q:{g:'arena',m:'1v1'},L,power:999,league:4});
 assert.equal(room.seats[0].L.up.hull,0,'join retry cannot replace queued equipment');
 room.startVs();
