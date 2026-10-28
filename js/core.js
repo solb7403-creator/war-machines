@@ -83,7 +83,7 @@ const ownW=(k,t)=>hasW(save,k,t);
 const ownC=(k,t)=>hasC(save,k,t);
 // Power ladder (stat multiplier vs stock gear). Every crate item beats every salvaged item:
 //   stock starter gear 1.00 | Salvaged Rare 1.010-1.030 | Salvaged Epic 1.031-1.044
-//   Common crate 1.050-1.100 | Rare crate 1.155-1.210 | Epic crate 1.386-1.452
+//   Common crate 1.050-1.100 | Rare crate 1.197-1.254 | Epic crate 1.407-1.474
 const SALV_COL='#c48a5c';
 const rollOf=(k,t)=>rollIn(save,k,t);
 const salvOf=(k,t)=>salvIn(save,k,t);
