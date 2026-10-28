@@ -536,7 +536,7 @@ const INFO={
   ['Stacking','Cores add on top of mystery-box boosts of the same type.']]],
  crates:()=>['Crates',[
   ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
-  ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 10% stronger than Common, Epic 32%. So power runs 105–110% (Common), 115.5–121% (Rare), 138.6–145.2% (Epic).'],
+  ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 14% stronger than Common stock, Epic 34%. Rolled power is 105–110% (Common), 119.7–125.4% (Rare), 140.7–147.4% (Epic). Legendary Moonbeam is fixed above the strongest Epic weapon.'],
   ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 6 core types, 1 in 6 each.'],
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
@@ -1056,7 +1056,7 @@ const labStatRows=(spec)=>{
  const L=ecoLoadout(save,spec),m=machineMetrics(L),fit=fittingStats(spec.mods||{});
  const high=TIER_MULT[2]*ROLL_MAX,skin=1.08;
  const hpMax=STAT.hp*1.32*Math.max(...Object.values(CH).map(c=>c.hp))*high*skin*1.06;
- const dpsMax=Math.max(...Object.values(WEAPONS).map(w=>w.dps))*high*1.32*skin*1.06*
+ const dpsMax=Math.max(WEAPONS.moon.dps,...WORDER.map(k=>WEAPONS[k].dps*high))*1.32*skin*1.06*
   (1+GEM.dmg.amt*GEM_LV[GEM_LV.length-1])*(1+GEM.rof.amt*GEM_LV[GEM_LV.length-1]);
  const spdMax=STAT.speed*1.24*Math.max(...Object.values(CH).map(c=>c.spd))*
   (1+(high-1)*0.5)*1.06*(1+GEM.spd.amt*GEM_LV[GEM_LV.length-1]);
@@ -1116,7 +1116,7 @@ function labItemFacts(key,spec){
   const actual=weaponOf(live.a,live.t,live.q,live.s);
   const supreme=(typeof SUP!=='undefined'&&SUP[actual.arch])||null;
   if(base){
-   line('Rarity',actual.premium?'Legendary':(live.s?'Salvaged':TIER_N[live.t]));
+   line('Rarity',actual.premium?'Legendary':(live.s?'Salvaged':['Common','Rare','Epic'][live.t]));
    line('Gear level',actual.premium?'4 / 4':(live.t+1)+' / 3');
    line('Weapon class',base.n);
    line('Role',base.d);
@@ -1133,7 +1133,7 @@ function labItemFacts(key,spec){
   const base=CH[spec.c.c],live=ecoLoadout(save,spec).c;
   const actual=chassisOf(live.c,live.t,live.q,live.s);
   if(base){
-   line('Rarity',live.s?'Salvaged':TIER_N[live.t]);
+   line('Rarity',live.s?'Salvaged':['Common','Rare','Epic'][live.t]);
    line('Gear level',(live.t+1)+' / 3');
    line('Chassis class',base.n);line('Role',base.d);
    line('Actual HP multiplier',actual.hp+'×');
