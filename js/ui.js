@@ -1093,6 +1093,16 @@ function labInspectButtons(){
   const b=document.createElement('button');b.type='button';b.className='btn btn-quiet lab-inspect-btn';
   b.dataset.act='labinspect';b.dataset.arg=key;b.textContent='View exact details';
   sel.parentElement.appendChild(b);
+  const preview=document.createElement('div');preview.className='lab-item-quick';preview.setAttribute('aria-live','polite');
+  const refresh=()=>{
+   if(!labEditor)return;
+   const name=sel.options[sel.selectedIndex]?.textContent||'Empty';
+   const next=labFormSpec(),rows=labStatRows(next);
+   preview.innerHTML='<strong>'+esc(name)+'</strong><span>'+esc(rows.slice(0,3).map(r=>r[0]+' '+r[1]).join(' · '))+'</span>';
+  };
+  sel.parentElement.appendChild(preview);
+  sel.addEventListener('focus',refresh);sel.addEventListener('pointerenter',refresh);sel.addEventListener('change',refresh);
+  refresh();
  });
 }
 function labCards(){
