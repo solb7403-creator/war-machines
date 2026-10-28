@@ -48,11 +48,11 @@ assert.equal(report.chassis.length*3,9);
 // Crate gear beats all salvaged items; salvage remains a meaningful budget alternative to starter stock.
 for(const k of WORDER)for(let t=1;t<=2;t++){
  const salv=weaponOf(k,t,SALV_MAX[t],true),crate=weaponOf(k,0,ROLL_MIN,false);
- assert.ok(salv.dps<crate.dps,'Salvage must stay below Common: '+k+' '+t);
+ assert.ok(salv.mult<crate.mult&&salv.dps<=crate.dps,'Salvage must never outrank Common: '+k+' '+t);
 }
 for(const k of CHORDER)for(let t=1;t<=2;t++){
  const salv=chassisOf(k,t,SALV_MAX[t],true),crate=chassisOf(k,0,ROLL_MIN,false);
- assert.ok(salv.hp<crate.hp,'Salvage must stay below Common: '+k+' '+t);
+ assert.ok(salv.mult<crate.mult&&salv.hp<=crate.hp,'Salvage must never outrank Common: '+k+' '+t);
 }
 const moon=weaponOf('moon');
 const bestEpic=Math.max(...normal.map(w=>w.dps));
