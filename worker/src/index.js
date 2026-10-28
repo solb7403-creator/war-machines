@@ -88,7 +88,11 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   const t = await tx(env, pid, (S, X) => {
     who(S, user);
     why = null;
-    if (S.mig === 0 && paid) why = migrate(S, b.mig, paid, X);
+    if (S.mig === 0 && paid) {
+      why = migrate(S, b.mig, paid, X);
+      S.L = RULES.ecoLoadout(S, b.L || S.L); // replace any pre-migration starter placeholder
+    }
+    if (b.lab === 1 && S.mig === 1) RULES.labEnsure(S, b.L);
     setLoadout(S, b.L || S.L);
     devCheck = S.dvd !== X.day; S.dvd = X.day;   // once a day: which other accounts use this phone
     return {};
@@ -238,7 +242,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
     const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
+    if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
@@ -460,7 +464,7 @@ async function webhook(req, env) {
       S.gout = S.gout || {};
       if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
       const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
-      if ((desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
+      if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
       const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
       return { outs };

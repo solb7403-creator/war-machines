@@ -10,16 +10,25 @@ const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
 function winPoints(gk,mk){return Math.round(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1)*powerBracket(calcPower()).mult);}
 
 // ---- your tank and the AI match ----
+let battleLoadout=null,battlePower=null;
+function battleChassisClasses(){if(typeof pvpOn==='function'&&pvpOn())return pvp.chs||ownedChassisClasses();return battleLoadout?(battleLoadout.chs||[battleLoadout.c]).map(c=>c.c):ownedChassisClasses();}
 function buildMe(){
- const m=Object.assign(tankOf(myLoadout(),hpScale()),{x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:IN_TG?tgName(TG_USER):'You'});
+ const m=Object.assign(tankOf(battleLoadout||myLoadout(),hpScale()),{x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:IN_TG?tgName(TG_USER):'You'});
  m.hp=m.mhp;return m;
 }
 // pick the map, mode and bots; the VS screen shows them before the fight starts
 function prepareMatch(gOver){   // gOver: a game type already picked (a live queue that fell back to AI)
  {const pk=mapKey();setMap(pk==='random'?MAP_REAL[(Math.random()*MAP_REAL.length)|0]:pk);}
  {const gk=gOver||gtypeKey();matchG=gk==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk;}
+ battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);
  const mp=save.mp||0;
  MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp};
+ populatePreparedMatch();
+ state='vs';
+ matchStart();
+}
+function populatePreparedMatch(){
+ const mp=MM.mp;
  me=buildMe();
  const modeN=MM.n,names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  units=[me];
@@ -34,8 +43,6 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
   for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6,me,names.pop()));   // the enemy team
  }
  fairField(mp);
- state='vs';
- matchStart();
 }
 // AI chassis, dealt fairly against yours (the triangle should cut both ways): in Last Standing as many foes counter you
 // as you counter (2 and 2, plus 1 of your own class); in team modes not every enemy counters you. Pilots in their first
@@ -54,9 +61,10 @@ function fairField(mp){
 function newMatch(){prepareMatch();startMatch();}   // tests and quick restarts
 // switch chassis on the VS screen or between rounds (counter-pick): the best owned version of that class
 function switchChassis(cls){
- if(!ownedChassisClasses().includes(cls))return;
- save.chassis=cls;store();
- if(typeof pvpOn==='function'&&pvpOn()){pvpSend({k:'c',c:cls});return;}   // live match: the server swaps your tank
+ if(typeof pvpOn==='function'&&pvpOn()){pvpSend({k:'c',c:cls});return;}
+ if(!battleLoadout||!['vs','round'].includes(state))return;
+ const c=(battleLoadout.chs||[battleLoadout.c]).find(c=>c.c===cls);if(!c)return;
+ battleLoadout={...battleLoadout,c:{...c}};
  const keep={x:me.x,y:me.y,sx:me.sx,sy:me.sy,deaths:me.deaths||0,zo:me.zo||0,id:me.id,st:me.st};me=buildMe();Object.assign(me,keep);units[0]=me;
 }
 function matchup(){   // how your chassis fares against the enemy lineup
@@ -91,7 +99,7 @@ function apiTimed(path,body,ms){
 }
 function matchStart(){
  mTicket=null;if(!SRV_ECO)return;
- const T={tok:null,err:null,g:matchG,m:modeKey(),t0:Date.now()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:myLoadout(),pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
+ const T={tok:null,err:null,g:matchG,m:modeKey(),t0:Date.now()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout(),labRev:save.lab&&save.lab.rev,pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
  const ask=async()=>{
   for(let k=0;;k++){
    if(mTicket!==T&&k>0)return null;   // a newer match replaced this one
@@ -99,7 +107,15 @@ function matchStart(){
    const last=Date.now()-T.t0+TICKET_TRY_MS>TICKET_RETRY_MS+TICKET_TRY_MS;   // the last try waits as long as it takes (a slow network)
    try{out=await apiTimed('/api/match/start',body,last?20000:TICKET_TRY_MS);}catch(e){out=null;}   // no answer: network
    const r=out&&out.j;
-   if(r&&r.tok){T.tok=r.tok;T.err=null;if(Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}
+   if(r&&r.tok){T.tok=r.tok;T.err=null;
+    if(mTicket===T&&state==='vs'&&r.L){
+     const chosen=battleLoadout&&battleLoadout.c.c;
+     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;
+     const c=(battleLoadout.chs||[]).find(c=>c.c===chosen);if(c)battleLoadout.c={...c};
+     if(r.E)applyEco(r.E);populatePreparedMatch();
+     const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
+    }
+if(Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}
    if(out&&out.st<500&&out.st!==429){T.err=(r&&r.error)||'server';return r;}   // the server said no: retrying won't change it
    T.err=out?(out.st===429?'rate':'server'):'offline';
    if(last||Date.now()-T.t0>TICKET_RETRY_MS)return null;
@@ -156,7 +172,7 @@ function matchEnd(res){
 function applyEcoSoon(){if(typeof doSync==='function')setTimeout(()=>doSync(false),300);}   // a result the server won't count: get its record back
 function localEnd(forced){
  const o=outcome(me,forced),{won,drawn,place,score}=o;
- const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=powerBracket(calcPower());
+ const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=powerBracket(battlePower===null?calcPower():battlePower);
  const mo={won,drawn,place,top3,g:matchG,m:mk,feat,series:!!series,quick:!!lastQuick,map:curMap};
  const before=save.earned||0;
  const r=ecoMatchPts(save,mo,brk.mult,ecoX());   // the same rules the server scores with

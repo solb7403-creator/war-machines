@@ -569,3 +569,6 @@ button.q{display:flex;width:100%;text-align:left}
 .gift{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:rgba(255,207,74,.1);border:1px solid rgba(255,207,74,.35);display:flex;flex-direction:column;gap:3px}
 .gift b{color:var(--gold);font:600 14px var(--disp)}
 .gift span{color:var(--mut);font-size:12.5px}
+
+/* Named machine shelf and touch-first equipment editor. */
+.labcards{display:grid;gap:12px;margin:14px 0 24px}.labcard{padding:14px;min-width:0}.labcard>b{display:block;overflow-wrap:anywhere;margin-bottom:8px}.labcard .tag{display:inline-block}.labcard p{margin:8px 0}.labcard .acts{display:flex;gap:8px}.labcard .btn{min-height:44px;flex:1}.labform{display:grid;gap:12px;margin:16px 0}.labform label{display:grid;gap:6px;color:var(--dust)}.labform input,.labform select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid var(--edge);border-radius:10px;background:var(--void);color:var(--moon);padding:10px;font:inherit}.labform input:focus,.labform select:focus{outline:2px solid var(--thrust);outline-offset:2px}#lab-status{margin:12px 0;overflow-wrap:anywhere}

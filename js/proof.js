@@ -13,7 +13,7 @@ function proofBegin(){
  if(typeof pvpOn==='function'&&pvpOn())return;
  if(!me||!units.length)return;
  const n=units.length,sz=n*3+6;
- PR={n,sz,buf:new Uint8Array(sz*PROOF_MAX),k:0,t:0,next:PROOF_DT,ix:0,iy:0,w:0,tch:0,fl:0,tc:0,kc:0,dmg:0,sup:0,box:0,round:series?series.round:1,
+ PR={cs:[],cls:me.cls,n,sz,buf:new Uint8Array(sz*PROOF_MAX),k:0,t:0,next:PROOF_DT,ix:0,iy:0,w:0,tch:0,fl:0,tc:0,kc:0,dmg:0,sup:0,box:0,round:series?series.round:1,
   hdr:units.map(u=>[u.team,CHORDER.indexOf(u.cls),Math.round(u.mhp||0),(u.boss?1:0)|(u.gh?2:0)|(u===me?4:0)])};
  const st=me.st||{};PR.dmg=st.dmg||0;PR.sup=st.sup||0;PR.box=st.box||0;
 }
@@ -36,6 +36,7 @@ function proofStep(dt){
 }
 function proofSample(){
  if(PR.k>=PROOF_MAX)return;
+ if(me.cls!==PR.cls){PR.cs.push([PR.k,CHORDER.indexOf(me.cls)]);PR.cls=me.cls;}
  const b=PR.buf,o=PR.k*PR.sz,cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(v)));
  units.forEach((u,i)=>{if(i>=PR.n)return;const j=o+i*3;b[j]=cl(u.x*10,0,255);b[j+1]=cl(u.y*7.5,0,255);b[j+2]=cl(Math.max(0,u.hp)/(u.mhp||1)*100,0,100);});
  const st=me.st||{},w=PR.w||1,p=o+PR.n*3,d=cl((st.dmg||0)-PR.dmg,0,65535);
@@ -52,9 +53,11 @@ function proofData(){
  const raw=PR.buf.subarray(0,PR.k*PR.sz);let s='';
  for(let i=0;i<raw.length;i+=0x8000)s+=String.fromCharCode.apply(null,raw.subarray(i,i+0x8000));
  const fin={gs:[Math.round(gscore[0]||0),Math.round(gscore[1]||0)],cry:cry?cry.cnt.slice():null,low:me.st&&typeof me.st.low==='number'?Math.round(me.st.low*1000)/1000:1};
- const out={v:1,n:PR.n,dt:PROOF_DT,h:PR.hdr,s:btoa(s),f:fin};
+ const out={v:1,cs:PR.cs,n:PR.n,dt:PROOF_DT,h:PR.hdr,s:btoa(s),f:fin};
  PR=null;return out;
 }
+// Capture elimination before endRound can rebuild AI chassis and refill their HP.
+(function(){const finish=endRound;endRound=function(){if(PR&&state==='play')proofSample();finish();};})();
 // every update of the sim feeds the record (game.js stays as it is)
 (function(){const step=update;update=function(dt){step(dt);try{proofStep(dt);}catch(e){}};})();
 // this phone, for spotting farms of accounts on one device: a random id kept on the device (not in Telegram's

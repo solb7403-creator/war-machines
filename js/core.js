@@ -126,6 +126,7 @@ const tierIdx=()=>tierOfPts(save.earned||0);
 const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:SKIN_PRICE,d:'+8% health, +8% damage'}};
 // everything that sets your tank's stats, in the form the server checks (see ecoLoadout in rules.js)
 function myLoadout(){
+ if(save.lab)return labLoadout(save);
  const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
  return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
   skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg)};
@@ -179,10 +180,12 @@ let ecoBusy=0;
 // the server's copy of your points, gear and quests replaces this device's
 function applyEco(E){
  if(!E||typeof E!=='object')return;
+ if(Number.isFinite(E._rev)&&E._rev<ecoSeenRev)return;
  if(SRV_ECO&&!save.migOk)return;   // this device's progress hasn't moved to the server yet: keep it until it has (doSync)
+ if(Number.isFinite(E._rev))ecoSeenRev=E._rev;
  const S=ecoNorm(JSON.parse(JSON.stringify(E)));
  for(const k of ECO_KEYS)if(S[k]!==undefined)save[k]=S[k];
- fixEquip();store();
+ fixEquip();labApplySelection();store();
 }
 const ecoCopy=()=>{const o={};for(const k of ECO_KEYS)if(save[k]!==undefined)o[k]=save[k];return JSON.parse(JSON.stringify(o));};
 // one economy action. local(S, X) runs it on this save; in Telegram the server runs the same thing as action a
@@ -248,6 +251,7 @@ function revealOf(r){
 // after new gear or a purchase: equip it (the reveal says "Equipped")
 function afterGain(r){
  if(!r)return;
+ if(save.lab){labApplySelection();return;}
  if(r.k&&(r.kind==='new'||r.kind==='up'||(r.sal&&r.better)))equipBest(r.isW,r.k);
  if(r.tk==='moonbeam')save.weapon='moon';
  if(r.tk==='paint'&&r.id)save.paint=r.id;
@@ -264,6 +268,7 @@ function showOuts(outs){
 }
 // put core k in socket i; if it's already in another socket, the two swap (each core type fits once)
 function socketCore(i,k){
+ if(save.lab){const p=labSpec(myLoadout()),j=p.cores.indexOf(k);if(i<0||i>2)return;if(k&&j>=0)p.cores[j]=p.cores[i];p.cores[i]=k;return labQuickSpec(p);}
  const c=save.cores;if(i<0||i>2)return;
  if(k===null){c[i]=null;store();return;}
  const j=c.indexOf(k);if(j===i)return;
@@ -456,3 +461,30 @@ function grantPurchase(desc){
  if(typeof syncPlayer==='function')syncPlayer();
  showOuts(outs);
 }
+
+// Lab responses are authoritative; client drafts are never copied into CloudStorage/server economy.
+let labBusy=false,ecoSeenRev=-1;
+function labApplySelection(){
+ if(!save.lab)return;
+ const L=labLoadout(save);
+ save.weapon=L.w.a;save.chassis=L.c.c;save.cores=L.cores.slice();save.paint=L.paint;
+ if(L.w.a!=='moon'){save.wTier[L.w.a]=L.w.t;save.wSal[L.w.a]=L.w.s;}
+ save.cTier[L.c.c]=L.c.t;save.cSal[L.c.c]=L.c.s;
+}
+async function labRequest(a,body){
+ if(labBusy)return {err:'busy'};
+ if(!save.lab)return {err:'sync'};
+ labBusy=true;
+ try{
+  let out;
+  if(SRV_ECO){const r=await api('/api/act',{a,...body});if(r.E)applyEco(r.E);out=r.out||{err:'server'};}
+  else{out=labAction(save,a,body);labApplySelection();store();}
+  return out;
+ }catch(e){return {err:'offline'};}
+ finally{labBusy=false;}
+}
+function labQuickSpec(spec){
+ const id=save.lab.active,M=save.lab.machines[id];
+ return labRequest('lab_save',{id,rev:save.lab.rev,name:M.name,spec}).then(r=>{if(r.err)showToast(labMessage(r.err));else showToast('Machine saved');return r;});
+}
+function labMessage(err){return {conflict:'Changed on another device. Reopen Engineer to load the latest machine.',offline:'Not saved: no connection. Your draft is still here.',owned:'Choose equipment owned by this account.',cores:'Each core can fit only once.',name:'Use 1–24 letters, numbers, spaces or . _ ( ) -',busy:'A machine is still saving.',sync:'Connect to load your machines.'}[err]||'Not saved: invalid machine selection. Reopen Engineer and try again.';}

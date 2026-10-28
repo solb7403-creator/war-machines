@@ -49,6 +49,29 @@ export function checkProof(pf, c) {
   const mine = h.map((u) => u[0] === 0), bossI = h.findIndex((u) => u[3] & 1);
   if (c.g === "boss" && (bossI < 1 || h[bossI][0] !== 1)) return fail("roster");
   if (c.g !== "royale" && mine.filter(Boolean).length !== (c.g === "boss" ? n - 1 : n / 2)) return fail("roster");
+  // Lab tickets bind every permitted class to the equipment frozen at start.
+  let variantAt = null;
+  if (c.variants) {
+    const initial = c.variants.find(v => v.ci === h[0][1] && v.mhp === h[0][2]);
+    if (!initial) return fail("loadout");
+    const changes = pf.cs || [];
+    if (!Array.isArray(changes) || changes.length > 4 || (!c.series && changes.length)) return fail("chassis");
+    let lastRound=0, rounds=1;
+    for(let sample=1;sample<k;sample++)if(b[sample*sz+n*3+2]&64){
+      if(!c.series||c.g!=='arena'||++rounds>5)return fail("chassis");
+      const hp=i=>b[(sample-1)*sz+i*3+2];
+      const down=team=>h.every((u,i)=>u[0]!==team||hp(i)<=PROOF.LAST_HP);
+      if(!down(0)&&!down(1)&&(sample-lastRound)*PROOF.DT<L.ROUND_T-6)return fail("chassis");
+      lastRound=sample;
+    }
+    const points = [[0, initial]]; let prev = 0;
+    for (const x of changes) {
+      if (!Array.isArray(x) || x.length !== 2 || !Number.isInteger(x[0]) || x[0] <= prev || x[0] >= k || !(b[x[0]*sz+n*3+2] & 64)) return fail("chassis");
+      const v = c.variants.find(v => v.ci === x[1]); if (!v) return fail("chassis");
+      points.push([x[0], v]); prev = x[0];
+    }
+    variantAt = sample => { let v=initial; for (const [at,next] of points) { if(at>sample)break; v=next; } return v; };
+  }
   const mhp = h.map((u, i) => Math.max(1, Math.min(i === bossI ? 400000 : L.STAT.hp * 4, u[2] || 1)));
   const X = (k2, i) => b[k2 * sz + i * 3] / 10, Y = (k2, i) => b[k2 * sz + i * 3 + 1] / 7.5, HP = (k2, i) => b[k2 * sz + i * 3 + 2];
   const P = (k2) => k2 * sz + n * 3, FL = (k2) => b[P(k2) + 2], DM = (k2) => (b[P(k2) + 3] << 8) | b[P(k2) + 4];
@@ -71,7 +94,8 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) === 0 || round) continue;   // respawned, or a new round
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
-        const lim0 = vMe + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0);
+        const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
+        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0);
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
       } else { stepsOther++; if (d > vAny + dash) badOther++; }
