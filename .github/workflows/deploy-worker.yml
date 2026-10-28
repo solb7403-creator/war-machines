@@ -36,10 +36,7 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: 'false'
         run: |
-          npx -y wrangler@4 dev --port 8787 --ip 127.0.0.1 --var BOT_TOKEN:smoke-token --var FIREBASE_DB_SECRET:offline --var PVP_WAIT_MS:3000 > dev.log 2>&1 &
-          for i in $(seq 1 90); do curl -s http://127.0.0.1:8787/ >/dev/null 2>&1 && break; sleep 1; done
-          SMOKE_BOT_TOKEN=smoke-token node smoke.mjs || { echo "--- wrangler dev log"; tail -80 dev.log; exit 1; }
-          kill %1 2>/dev/null || true
+          npx -y --package=wrangler@4 -c 'node smoke-runtime.mjs'
       - name: Find account + ensure workers.dev subdomain
         env:
           CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
