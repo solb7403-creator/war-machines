@@ -1064,6 +1064,22 @@ function labBars(spec,reference){
   return '<div class="lab-stat"><div><span>'+esc(r[0])+'</span><strong>'+esc(String(r[1]))+(reference?' <small>('+esc(String(base[i][1]))+' saved)</small>':'')+'</strong></div><div class="lab-track"><i style="width:'+pct+'%"></i></div></div>';
  }).join('')+'</div>';
 }
+function labItemFacts(key,spec){
+ const details=[];
+ const line=(name,value)=>details.push([name,String(value)]);
+ if(key==='weapon'){
+  const w=spec.w,base=WEAPONS[w.a];if(base){line('Weapon class',base.n);line('Base DPS',base.dps);line('Shot interval',base.shot+' s');line('Super',base.sup);line('Tier',w.t);line('Salvaged',w.s?'Yes':'No');line('Description',base.d);}
+ }else if(key==='chassis'){
+  const c=spec.c,base=CH[c.c];if(base){line('Chassis',base.n);line('Base HP multiplier',base.hp+'×');line('Base speed multiplier',base.spd+'×');line('Turning multiplier',base.turn+'×');line('Counter advantage','Versus '+CH[COUNTER[c.c]].n);line('Tier',c.t);line('Salvaged',c.s?'Yes':'No');}
+ }else if(key.startsWith('core')){
+  const k=spec.cores[Number(key.slice(4))];if(k&&GEM[k]){const level=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',level);line('Effect magnitude',+(coreVal(k,level)*100).toFixed(3)+'%');}else line('Core slot','Empty');
+ }else if(key.startsWith('fit')){
+  const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
+  if(fit){line('Fitting',fit.n);line('HP change',+(fit.hp*100).toFixed(1)+'%');line('Speed change',+(fit.spd*100).toFixed(1)+'%');line('DPS change',+(fit.dps*100).toFixed(1)+'%');line('Weight cost',fit.weight+'/3');line('Power cost',fit.power+'/3');}
+ }else if(key.startsWith('look')){line('Appearance','Visual only');line('Stat impact','None');
+ }else if(key==='paint'){line('Paint',PAINTS[spec.paint]?.n||spec.paint);line('Stat impact','None');}
+ return '<div class="lab-facts">'+details.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('')+'</div>';
+}
 function labInspect(key){
  if(!labEditor)return;
  const spec=labFormSpec(),ref=labEditor.base||labEditor.spec;
@@ -1077,7 +1093,7 @@ function labInspect(key){
  key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
  sheet('labinspect',()=>'<h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
  '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
- labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
+ labItemFacts(key,spec)+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
 }
 ACT.labinspect=key=>labInspect(key);
 ACT.labinspectclose=()=>{const ov=findOv('labinspect');if(ov)closeOverlay(ov);};
