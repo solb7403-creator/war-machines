@@ -795,7 +795,7 @@ function resultsHTML(r){
  let tip;
  if((save.mp||0)===1)tip=r.won?'Nice first win. Points rank you on the leaderboard and buy upgrades in the Garage.':'Close one. Drag to dodge shots while your cannon fires, and grab the gold box.';
  else if(giftPending()&&[2,4].includes(save.mp||0))tip='Come back tomorrow: your daily reward comes with a free Rare gem cache, one time.';
- else if(r.countered){const b=beatenBy(r.meCls),fix=beatenBy(b);tip='Their '+CH[b].n+' countered your '+CH[r.meCls].n+'. '+CH[fix].n+' beats '+CH[b].n+(ownedChassisClasses().includes(fix)?': switch on the next start screen.':'. Find one in a chassis crate.');}
+ else if(r.countered){const b=beatenBy(r.meCls),fix=beatenBy(b);tip='Their '+CH[b].n+' countered your '+CH[r.meCls].n+'. Prepare '+CH[fix].n+' as your other battle machine before the next match.';}
  else if(r.quests.length)tip='Quest done: '+r.quests.join(', ')+'. Claim it in Quests.';
  else tip=TIPS[(save.mp||0)%TIPS.length];
  const st=r.stats;
