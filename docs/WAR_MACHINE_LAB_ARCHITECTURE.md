@@ -350,3 +350,7 @@ A fresh read-only builder review identified four planning gaps; this version res
 ## Approved baseline — superseding amendments (2026-10-28)
 
 Architecture approved subject to [SESSION_1_APPROVED_AMENDMENTS.md](SESSION_1_APPROVED_AMENDMENTS.md). That record supersedes the earlier pricing/extra-slot implementation proposals: Session 2 grants exactly two free slots and implements no purchase, earned-slot debit or new entitlement flow. Six-slot policy is future configurable/versioned, not a fixed product ceiling. Future meaningful visual customization and separate cosmetic/functional entitlements are preserved as extension boundaries. Optional public sharing remains Session 5, private by default. Session 2 alone is authorized.
+
+## Session 3 implementation addendum (2026-10-28)
+
+The user subsequently authorized Session 3 only, including a local commit and verified bundle. [SESSION_3_IMPLEMENTATION_REPORT.md](SESSION_3_IMPLEMENTATION_REPORT.md) records the implemented free catalog, separate visual styles, stat formulas, protocol compatibility, RNG seam and observed tests. Candidate values were retained. Session 4 range UI and later monetization/sharing remain unimplemented; no production activation or push is authorized.

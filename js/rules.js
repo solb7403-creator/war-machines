@@ -146,12 +146,18 @@ const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring und
 function powerOf(L){
  const U=L.up,W=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skinM=L.skin==='lunar'?1.08:1;
  const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*skinM,dps=W.dps*(1+0.08*U.cannon)*skinM,spd=(1+0.06*U.engine)*Cc.spd;
+ const F=fittingStats(L.mods);
  let coreM=1;for(const c of (L.cores||[]))if(c){const lv=(L.gl&&L.gl[c])||1;coreM*=(1+0.05*lv);}
- return Math.round(Math.pow(hp*dps*spd,1/3)*coreM*1.2);   // starter ≈ 72-100
+ return Math.round(Math.pow(hp*dps*spd*(1+F.hp)*(1+F.spd)*(1+F.dps),1/3)*coreM*1.2);   // starter ≈ 72-100
 }
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
 // the stat block a tank fights with (n = health scale for the mode and team size)
 function tankOf(L,n){
+ const T=legacyTankOf(L,n),F=fittingStats(L.mods);
+ if(F.hp)T.mhp=Math.round(T.mhp*(1+F.hp));if(F.spd)T.spdM*=1+F.spd;if(F.dps)T.wdps*=1+F.dps;
+ if(hasFittings(L))T.fits=fittingVisuals(L);return T;
+}
+function legacyTankOf(L,n){
  const U=L.up,W0=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skin=L.skin==='lunar'?1.08:1;
  return {gems:(L.cores||[]).filter(Boolean),gemM:Object.fromEntries(GORDER.map(k=>[k,gemLvMult(L.gl&&L.gl[k])])),
   mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin*n),dmgM:(1+0.08*U.cannon)*skin,spdM:(1+0.06*U.engine)*Cc.spd,
@@ -368,7 +374,9 @@ function ecoLoadout(S,L0){
  const seen={},cores=[0,1,2].map(i=>{const k=L0.cores&&L0.cores[i];if(!GEM[k]||seen[k])return null;seen[k]=1;return k;});
  const chs=CHORDER.filter(k=>bestOf(S,false,k)).map(k=>k===c.c?{...c}:pick(false,{c:k,t:-9}));
  const paint=PAINTS[L0.paint]&&S.paints&&S.paints[L0.paint]?L0.paint:'stock';
- return {w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg)};   // vl: Vault level, looks only
+ const mods=fittingSelection(S.lab?L0.mods:undefined),f=fittingStats(mods);
+ const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
+ return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg)};   // vl: Vault level, looks only
 }
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
@@ -668,8 +676,8 @@ function ecoSquadPending(S,rows,X,me,held){held=held||[];let t=me&&me.ref&&(me.d
  for(const r of rows||[]){if(held.includes(r.id))continue;const o=ecoRefOwed(S,r);const pp=Math.min(o.pct,pr);pr-=pp;t+=o.ms+pp;}return t;}
 
 // Lab v1 stores selections, never inventory, upgrades, prices or public data.
-const LAB_RULES_VERSION='lab-loadout-v1';
-function labSpec(L){return {w:{a:L.w.a,t:L.w.t,s:!!L.w.s},c:{c:L.c.c,t:L.c.t,s:!!L.c.s},cores:L.cores.slice(),paint:L.paint};}
+const LAB_RULES_VERSION='lab-fittings-v1';
+function labSpec(L){return {w:{a:L.w.a,t:L.w.t,s:!!L.w.s},c:{c:L.c.c,t:L.c.t,s:!!L.c.s},cores:L.cores.slice(),paint:L.paint,mods:fittingSelection(L.mods),looks:{...(L.looks||{})},catalog:FIT_VERSION};}
 function labEnsure(S,hint){
  if(S.lab||S.mig===0)return;
  const spec=labSpec(ecoLoadout(S,S.L||hint||STOCK_L));
@@ -680,7 +688,10 @@ function labEnsure(S,hint){
 function labValidate(S,p){
  const obj=v=>v&&typeof v==='object'&&!Array.isArray(v);
  const keys=(v,ks)=>obj(v)&&Object.keys(v).every(k=>ks.includes(k));
- if(!keys(p,['w','c','cores','paint'])||!keys(p.w,['a','t','s'])||!keys(p.c,['c','t','s']))return 'shape';
+ if(!keys(p,['w','c','cores','paint','mods','looks','catalog'])||!keys(p.w,['a','t','s'])||!keys(p.c,['c','t','s']))return 'shape';
+ if(!fittingValid(p.mods)||!fittingValid(p.looks,true)||(p.catalog!==undefined&&p.catalog!==FIT_VERSION))return 'modules';
+ if(FIT_ORDER.some(k=>fittingSelection(p.mods)[k]!=='stock')&&p.catalog!==FIT_VERSION)return 'modules';
+ const f=fittingStats(p.mods);if(f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power)return 'budget';
  for(const [isW,x,k] of [[true,p.w,p.w.a],[false,p.c,p.c.c]]){
   if(!Number.isInteger(x.t)||x.t<0||x.t>2||typeof x.s!=='boolean')return 'gear';
   if(isW&&k==='moon'){if(!S.moonbeam||x.t!==2||x.s)return 'owned';}
@@ -701,6 +712,7 @@ function labAction(S,a,b){
   if(typeof b.name!=='string')return {err:'name'};
   const name=b.name.normalize('NFC').trim();
   if(!name||[...name].length>24||!/^[-\p{L}\p{N} ._()]+$/u.test(name))return {err:'name'};
+  if(a==='lab_save'&&FIT_ORDER.some(k=>fittingSelection(M.spec.mods)[k]!=='stock')&&(!b.spec||b.spec.catalog!==FIT_VERSION))return {err:'update'};
   if(a==='lab_save'){const err=labValidate(S,b.spec);if(err)return {err};M.spec=labSpec(ecoLoadout(S,b.spec));}
   M.name=name;M.rev++;
  }else S.lab.active=b.id;
@@ -721,3 +733,21 @@ function labGain(S,r){
  if(r.tk==='vault'&&(r.lv0|0)<VAULT_PAINT_LV&&(r.lv|0)>=VAULT_PAINT_LV)p.paint='hyper';
  if(JSON.stringify(p)!==before){M.rev++;S.lab.rev++;}
 }
+
+// Free functional sidegrades; visual styles never enter stat math.
+const FIT_VERSION=1,FIT_BUDGET={weight:3,power:3};
+const FITS={
+ hull:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},plates:{n:'Reinforced plates',hp:.06,spd:-.04,dps:0,weight:2,power:0},light:{n:'Light frame',hp:-.06,spd:.04,dps:0,weight:0,power:1}},
+ mobility:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},sprint:{n:'Sprint gearing',hp:0,spd:.06,dps:-.06,weight:0,power:2},stable:{n:'Stable gearing',hp:0,spd:-.05,dps:.05,weight:1,power:1}},
+ mount:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},hardened:{n:'Hardened mount',hp:.05,spd:0,dps:-.05,weight:2,power:0},firing:{n:'Firing mount',hp:-.06,spd:0,dps:.06,weight:1,power:2}}
+};
+const FIT_ORDER=['hull','mobility','mount'];
+function fittingValid(v,visual){
+ if(v===undefined)return true;
+ return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>FIT_ORDER.includes(k))&&FIT_ORDER.every(k=>v[k]===undefined||(visual&&v[k]==='auto')||Object.prototype.hasOwnProperty.call(FITS[k],v[k]));
+}
+function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Object.prototype.hasOwnProperty.call(FITS[k],v[k])?v[k]:'stock']));}
+function fittingStats(v){const m=fittingSelection(v),f={hp:0,spd:0,dps:0,weight:0,power:0};for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s];return f;}
+function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
+function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
+function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}

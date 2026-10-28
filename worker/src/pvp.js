@@ -403,7 +403,7 @@ export async function pvpJoin(env, a) {
   if (g !== "quick" && !R.liveModes(dayOf(now)).includes(g) && !(env.PVP_ALL && R.GT_ORDER.includes(g))) return { status: 400, body: { error: "not live" } };   // quick: any live mode, picked when the room starts   // PVP_ALL: local tests of every mode
   if (g === "royale" ? m !== "solo" : !R.MODES[m]) return { status: 400, body: { error: "mode" } };
   const S = await readEco(env, a.pid);
-  if (S.lab && b.labRev === undefined) return { status: 409, body: {error:"update"} };
+  if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return { status: 409, body: {error:"update"} };
   if (S.lab && b.labRev !== S.lab.rev) return { status: 409, body: {error:"garage_changed"} };
   const L = await checkLoadout(env, R, b.L, S);
   const power = R.powerOf(L), league = R.powerBracket(power).i, name = cleanName(a.user), q = g + "." + m, lobby = lobbyStub(env);

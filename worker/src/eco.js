@@ -272,10 +272,11 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   let sess = false;
   const n = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
   const pw0 = await dbGet(env, `players/${pid}/power`).catch(() => null);
-  const ghosts = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
+  const candidates = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
+  const ghosts = b.fv === R.FIT_VERSION ? candidates : candidates.filter(x => !R.FIT_ORDER.some(k => R.fittingSelection(x.L.mods)[k] !== "stock"));
   const t = await tx(env, pid, (S, X) => {
     who(S, user);
-    if (S.lab && b.labRev === undefined) return {abort:true,error:"update"};
+    if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return {abort:true,error:"update"};
     if (S.lab && b.labRev !== undefined && b.labRev !== S.lab.rev) return {abort:true, error:"garage_changed"};
     const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw);
     // one open ticket per pilot: a new one replaces the last (that match can't be scored any more)
@@ -348,7 +349,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       const proofL = T.L || S.L; // old pending tickets retain their legacy fallback
       const me0 = proofL ? R.tankOf(proofL, 1) : null;
       const scale = T.g === "royale" ? R.ROYALE_HP : T.g === "boss" ? 1.5 : R.MODES[T.m].n * (T.g === "bounty" ? R.BTY_HP : 1);
-      const variants = T.rv === R.LAB_RULES_VERSION && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf({...proofL,c},scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
+      const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf({...proofL,c},scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
       pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minSecs(T.g, T.m, won, drawn, place), spdM: me0 ? me0.spdM : 1, st: s });
       if (!pr.ok) {
         S.pfw = pr.why;

@@ -135,8 +135,9 @@ const calcPower=()=>powerOf(myLoadout());
 function buildStats(){
  const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),skin=save.skin==='lunar'?1.08:1;
  const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k):0),0);
- return {hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skin),
+ const out={hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skin),
   spd:+(STAT.speed*(1+0.06*U.engine)*Cc.spd*(1+gb('spd'))).toFixed(1),armor:Math.round(Math.min(0.7,gb('arm'))*100),crit:Math.round((CRIT_BASE+0.02*U.target+gb('lck'))*100)};
+ if(save.lab)Object.assign(out,machineMetrics(myLoadout()));return out;
 }
 
 // ---- save (local + Telegram cloud) ----
@@ -487,4 +488,4 @@ function labQuickSpec(spec){
  const id=save.lab.active,M=save.lab.machines[id];
  return labRequest('lab_save',{id,rev:save.lab.rev,name:M.name,spec}).then(r=>{if(r.err)showToast(labMessage(r.err));else showToast('Machine saved');return r;});
 }
-function labMessage(err){return {conflict:'Changed on another device. Reopen Engineer to load the latest machine.',offline:'Not saved: no connection. Your draft is still here.',owned:'Choose equipment owned by this account.',cores:'Each core can fit only once.',name:'Use 1–24 letters, numbers, spaces or . _ ( ) -',busy:'A machine is still saving.',sync:'Connect to load your machines.'}[err]||'Not saved: invalid machine selection. Reopen Engineer and try again.';}
+function labMessage(err){return {modules:'Choose a fitting from the catalog.',budget:'Build exceeds weight or power budget. Remove a fitting to save.',update:'Update the game before editing this fitted machine.',conflict:'Changed on another device. Reopen Engineer to load the latest machine.',offline:'Not saved: no connection. Your draft is still here.',owned:'Choose equipment owned by this account.',cores:'Each core can fit only once.',name:'Use 1–24 letters, numbers, spaces or . _ ( ) -',busy:'A machine is still saving.',sync:'Connect to load your machines.'}[err]||'Not saved: invalid machine selection. Reopen Engineer and try again.';}

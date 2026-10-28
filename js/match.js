@@ -99,7 +99,7 @@ function apiTimed(path,body,ms){
 }
 function matchStart(){
  mTicket=null;if(!SRV_ECO)return;
- const T={tok:null,err:null,g:matchG,m:modeKey(),t0:Date.now()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout(),labRev:save.lab&&save.lab.rev,pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
+ const T={tok:null,err:null,g:matchG,m:modeKey(),t0:Date.now()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout(),labRev:save.lab&&save.lab.rev,fv:FIT_VERSION,pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
  const ask=async()=>{
   for(let k=0;;k++){
    if(mTicket!==T&&k>0)return null;   // a newer match replaced this one

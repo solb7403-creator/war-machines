@@ -397,6 +397,7 @@ function paintArt(root){
   const a=c.dataset.art.split(':');
   try{
    if(c.dataset.locked)ctx.globalAlpha=0.45;
+   if(a[0]==='lab'){const M=save.lab&&save.lab.machines[a[1]];if(M)drawMachinePreview(ctx,w,h,ecoLoadout(save,M.spec));continue;}
    if(a[0]==='hero')heroCv=c;
    if(typeof art3D==='function'&&art3D(ctx,w,h,a)){ctx.globalAlpha=1;continue;}   // 3D pictures when the 3D view is on
    ctx.globalAlpha=1;
@@ -1053,7 +1054,7 @@ function labCards(){
  if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
  return '<h2 class="title">Your machines</h2><p class="mut">Two free slots. Gear, cores and account upgrades are shared.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
   const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
-  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button></div></section>';
+  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button></div></section>';
  }).join('')+'</div>';
 }
 function openLabEditor(id){
@@ -1063,23 +1064,40 @@ function openLabEditor(id){
  const key=x=>(x.a||x.c)+':'+x.t+(x.s?'s':'');
  const gear=(isW,p)=>opts(ownedList(isW).filter(x=>!x.locked).map(x=>[x.premium?'moon:2':x.id,x.name]),key(p));
  sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
+  '<canvas id="lab-preview" class="labpreview" aria-label="Unsaved machine preview"></canvas><p id="lab-metrics" role="status"></p>'+
   '<label>Name<input id="lab-name" maxlength="48" value="'+esc(M.name)+'" autocomplete="off"></label>'+
   '<label>Weapon<select id="lab-weapon">'+gear(true,M.spec.w)+'</select></label>'+
   '<label>Chassis<select id="lab-chassis">'+gear(false,M.spec.c)+'</select></label>'+
   M.spec.cores.map((k,i)=>'<label>Core '+(i+1)+'<select id="lab-core-'+i+'">'+opts([['-','Empty'],...GORDER.map(k=>[k,GEM[k].name])],k||'-')+'</select></label>').join('')+
+  FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
   '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
   '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><button class="btn btn-go block" data-act="labsave">Save machine</button>');
+ setTimeout(updateLabPreview,0);
 }
 ACT.labedit=id=>openLabEditor(id);
 ACT.labequip=async id=>{const r=await labRequest('lab_activate',{id,rev:save.lab.rev});showToast(r.err?labMessage(r.err):'Machine equipped');};
 ACT.labsave=async()=>{
  if(!labEditor||labBusy)return;
  const status=$('#lab-status'),button=$('[data-act="labsave"]');
- const parse=v=>{const [k,ts]=v.split(':');return {k,t:parseInt(ts,10),s:ts.endsWith('s')};};
- const w=parse($('#lab-weapon').value),c=parse($('#lab-chassis').value);
- const spec={w:{a:w.k,t:w.t,s:w.s},c:{c:c.k,t:c.t,s:c.s},cores:[0,1,2].map(i=>$('#lab-core-'+i).value).map(k=>k==='-'?null:k),paint:$('#lab-paint').value};
+ const spec=labFormSpec();
  status.textContent='Saving…';button.disabled=true;
  const r=await labRequest('lab_save',{id:labEditor.id,rev:labEditor.rev,name:$('#lab-name').value,spec});
  if(r.err){status.textContent=labMessage(r.err);button.disabled=false;return;}
  const ov=findOv('labeditor');if(ov)closeOverlay(ov);labEditor=null;showToast('Machine saved');
 };
+
+function fittingLabel(f){const delta=[['HP',f.hp],['speed',f.spd],['ordinary DPS',f.dps]].filter(x=>x[1]).map(([k,v])=>(v>0?'+':'')+Math.round(v*100)+'% '+k).join(', ');return f.n+(delta?' · '+delta:'')+' · W'+f.weight+'/P'+f.power;}
+function labFormSpec(){
+ const parse=v=>{const [k,t]=v.split(':');return {k,t:parseInt(t,10),s:t.endsWith('s')};};
+ const w=parse($('#lab-weapon').value),c=parse($('#lab-chassis').value);
+ return {w:{a:w.k,t:w.t,s:w.s},c:{c:c.k,t:c.t,s:c.s},cores:[0,1,2].map(i=>$('#lab-core-'+i).value).map(k=>k==='-'?null:k),paint:$('#lab-paint').value,catalog:FIT_VERSION,mods:Object.fromEntries(FIT_ORDER.map(k=>[k,$('#lab-fit-'+k).value])),looks:Object.fromEntries(FIT_ORDER.map(k=>[k,$('#lab-look-'+k).value]))};
+}
+function updateLabPreview(){
+ if(!labEditor||!$('#lab-preview'))return;
+ const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
+ $('#lab-metrics').textContent='HP '+before.hp+' → '+after.hp+' · DPS '+before.dps+' → '+after.dps+' · Speed '+before.spd+' → '+after.spd+' | Weight '+f.weight+'/3 · Power '+f.power+'/3';
+ $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
+ $('[data-act="labsave"]').disabled=!!err;
+ const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
+}
+document.addEventListener('change',e=>{if(e.target.closest('.labform'))updateLabPreview();});
