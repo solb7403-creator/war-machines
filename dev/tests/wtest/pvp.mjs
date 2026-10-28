@@ -112,13 +112,15 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   t(gA.flip === false && gB.flip === true && gA.team === 0 && gB.team === 1, 'team 1 sees the map turned');
   t(gA.units.length === 2 && gA.units.every((u) => !u.ai), 'roster: two live pilots');
   t(gA.series === true, '1v1 arena is best of 3');
-  // chassis swap on the VS screen
+  // The server ignores legacy arbitrary chassis-switch requests, even if a second chassis is owned.
   const Lb = L0(); Lb.chs = [{ c: 'vanguard', t: 0, q: 1, s: false }, { c: 'titan', t: 0, q: 1, s: false }];
   room.seats[1].L = Lb;
+  const updatesBefore = A.msgs.filter(m => m.k === 'u').length;
   say(room, 'b', B, { k: 'c', c: 'titan' });
-  t(room.sim.units[1].cls === 'titan' && last(A, 'u'), 'VS chassis swap reaches everyone');
+  t(room.sim.units[1].cls === 'vanguard', 'owned chassis cannot replace locked machine');
   say(room, 'b', B, { k: 'c', c: 'scout' });
-  t(room.sim.units[1].cls === 'titan', 'chassis you do not own refused');
+  t(room.sim.units[1].cls === 'vanguard', 'unowned chassis remains rejected');
+  t(A.msgs.filter(m => m.k === 'u').length === updatesBefore, 'rejected swap creates no roster update');
   await run(PVP.VS_MS);
   t(room.phase === 'play' && last(A, 'f') && last(B, 's'), 'fight starts with snapshots');
   const n0 = A.msgs.filter((m) => m.k === 's').length;
