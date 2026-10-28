@@ -536,7 +536,7 @@ const INFO={
   ['Stacking','Cores add on top of mystery-box boosts of the same type.']]],
  crates:()=>['Crates',[
   ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
-  ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 10% stronger than Common, Epic 32%. So power runs 105–110% (Common), 115.5–121% (Rare), 138.6–145.2% (Epic).'],
+  ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 14% stronger than Common stock, Epic 34%. Rolled power is 105–110% (Common), 119.7–125.4% (Rare), 140.7–147.4% (Epic). Legendary Moonbeam is fixed above the strongest Epic weapon.'],
   ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 6 core types, 1 in 6 each.'],
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
@@ -1056,7 +1056,7 @@ const labStatRows=(spec)=>{
  const L=ecoLoadout(save,spec),m=machineMetrics(L),fit=fittingStats(spec.mods||{});
  const high=TIER_MULT[2]*ROLL_MAX,skin=1.08;
  const hpMax=STAT.hp*1.32*Math.max(...Object.values(CH).map(c=>c.hp))*high*skin*1.06;
- const dpsMax=Math.max(...Object.values(WEAPONS).map(w=>w.dps))*high*1.32*skin*1.06*
+ const dpsMax=Math.max(WEAPONS.moon.dps,...WORDER.map(k=>WEAPONS[k].dps*high))*1.32*skin*1.06*
   (1+GEM.dmg.amt*GEM_LV[GEM_LV.length-1])*(1+GEM.rof.amt*GEM_LV[GEM_LV.length-1]);
  const spdMax=STAT.speed*1.24*Math.max(...Object.values(CH).map(c=>c.spd))*
   (1+(high-1)*0.5)*1.06*(1+GEM.spd.amt*GEM_LV[GEM_LV.length-1]);
@@ -1080,15 +1080,20 @@ function labItemBars(key,spec){
  const add=(name,value,max,suffix='')=>entries.push([name,+Number(value).toFixed(3),max,suffix]);
  if(key==='weapon'){
   const w=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s);
-  const ceiling=Math.max(...Object.values(WEAPONS).map(x=>x.dps))*TIER_MULT[2]*ROLL_MAX;
-  add('Actual weapon DPS',w.dps,ceiling);add('Shots / sec',1/w.shot,1/0.09);
+  // Legendary is already a complete fixed weapon. Never apply Epic roll scaling to its base DPS.
+  const ceiling=Math.max(WEAPONS.moon.dps,...WORDER.map(k=>WEAPONS[k].dps*TIER_MULT[2]*ROLL_MAX));
+  add('Weapon DPS',w.dps,ceiling);add('Damage per shot',w.dps*w.shot,ceiling*WEAPONS.siege.shot);
+  add('Shots / sec',1/w.shot,1/Math.min(...Object.values(WEAPONS).map(w=>w.shot)));
   add('Projectile speed',w.pspd,26);
+  // Compare genuine rarity levels, not the underlying premium compatibility tier.
+  add('Item level',w.premium?4:w.tier+1,4);
  }else if(key==='chassis'){
   const c=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s);
   const tier=TIER_MULT[2]*ROLL_MAX;
   add('HP multiplier',c.hp,Math.max(...Object.values(CH).map(x=>x.hp))*tier,'×');
   add('Speed multiplier',c.spd,Math.max(...Object.values(CH).map(x=>x.spd))*(1+(tier-1)*0.5),'×');
   add('Turning multiplier',c.turn,Math.max(...Object.values(CH).map(x=>x.turn))+.1,'×');
+  add('Item level',c.tier+1,3);
  }else if(key.startsWith('core')){
   const k=spec.cores[Number(key.slice(4))];
   if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
@@ -1097,23 +1102,53 @@ function labItemBars(key,spec){
   if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',v*100,6,'%');
    add('Weight',f.weight,FIT_BUDGET.weight);add('Power',f.power,FIT_BUDGET.power);}
  }
- return entries.length?'<h4>Individual item specifications</h4><div class="lab-stats lab-item-stats">'+entries.map(([name,val,max,suffix])=>
+ return entries.length?'<div class="lab-stats lab-item-stats">'+entries.map(([name,val,max,suffix])=>
   '<div class="lab-stat"><div><span>'+esc(name)+'</span><strong>'+esc(String(val))+suffix+'</strong></div>'+
   '<div class="lab-track '+(val<0?'lab-negative':'')+'"><i style="width:'+Math.max(0,Math.min(100,Math.abs(val)*100/max))+'%"></i></div></div>'
- ).join('')+'</div>':'<p class="mut">Cosmetic item. No independent combat statistics.</p>';
+ ).join('')+'</div>':'<p class="mut">Cosmetic item. No combat attributes.</p>';
 }
 function labItemFacts(key,spec){
  const details=[];
  const line=(name,value)=>details.push([name,String(value)]);
+ const pct=n=>(+(n*100).toFixed(2))+'%';
  if(key==='weapon'){
-  const w=spec.w,base=WEAPONS[w.a],live=ecoLoadout(save,spec).w,actual=weaponOf(live.a,live.t,live.q,live.s);if(base){line('Weapon class',base.n);line('Base DPS',base.dps);line('Owned weapon DPS',actual.dps);line('Item quality',live.q+'×');line('Shot interval',base.shot+' s');line('Super',base.sup);line('Tier',w.t);line('Salvaged',w.s?'Yes':'No');line('Description',base.d);}
+  const base=WEAPONS[spec.w.a],live=ecoLoadout(save,spec).w;
+  const actual=weaponOf(live.a,live.t,live.q,live.s);
+  const supreme=(typeof SUP!=='undefined'&&SUP[actual.arch])||null;
+  if(base){
+   line('Rarity',actual.premium?'Legendary':(live.s?'Salvaged':['Common','Rare','Epic'][live.t]));
+   line('Gear level',actual.premium?'4 / 4':(live.t+1)+' / 3');
+   line('Weapon class',base.n);
+   line('Role',base.d);
+   line('Actual weapon DPS',actual.dps);
+   line('Hit damage',+(actual.dps*actual.shot).toFixed(2));
+   line('Fire rate',+(1/actual.shot).toFixed(2)+' shots/sec');
+   line('Projectile speed',actual.pspd+' units/sec');
+   line('Weapon quality',actual.premium?'Fixed legendary':live.q+'×');
+   line('Super ability',base.sup);
+   if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',Math.round(supreme.dmg*actual.mult));
+    line('Super charge time',supreme.charge+' sec');}
+  }
  }else if(key==='chassis'){
-  const c=spec.c,base=CH[c.c],live=ecoLoadout(save,spec).c,actual=chassisOf(live.c,live.t,live.q,live.s);if(base){line('Chassis',base.n);line('Actual HP multiplier',actual.hp+'×');line('Actual speed multiplier',actual.spd+'×');line('Item quality',live.q+'×');line('Base HP multiplier',base.hp+'×');line('Base speed multiplier',base.spd+'×');line('Turning multiplier',base.turn+'×');line('Counter advantage','Versus '+CH[COUNTER[c.c]].n);line('Tier',c.t);line('Salvaged',c.s?'Yes':'No');}
+  const base=CH[spec.c.c],live=ecoLoadout(save,spec).c;
+  const actual=chassisOf(live.c,live.t,live.q,live.s);
+  if(base){
+   line('Rarity',live.s?'Salvaged':['Common','Rare','Epic'][live.t]);
+   line('Gear level',(live.t+1)+' / 3');
+   line('Chassis class',base.n);line('Role',base.d);
+   line('Actual HP multiplier',actual.hp+'×');
+   line('Actual speed multiplier',actual.spd+'×');
+   line('Actual turning multiplier',actual.turn+'×');
+   line('Physical size',actual.size+'×');
+   line('Item quality',live.q+'×');
+   line('Counter advantage','Versus '+CH[COUNTER[live.c]].n);
+  }
  }else if(key.startsWith('core')){
-  const k=spec.cores[Number(key.slice(4))];if(k&&GEM[k]){const level=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',level);line('Effect magnitude',+(coreVal(k,level)*100).toFixed(3)+'%');}else line('Core slot','Empty');
+  const k=spec.cores[Number(key.slice(4))];
+  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',pct(coreVal(k,lv)));}else line('Core slot','Empty');
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
-  if(fit){line('Fitting',fit.n);line('HP change',+(fit.hp*100).toFixed(1)+'%');line('Speed change',+(fit.spd*100).toFixed(1)+'%');line('DPS change',+(fit.dps*100).toFixed(1)+'%');line('Weight cost',fit.weight+'/3');line('Power cost',fit.power+'/3');}
+  if(fit){line('Fitting',fit.n);line('HP change',pct(fit.hp));line('Speed change',pct(fit.spd));line('DPS change',pct(fit.dps));line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}
  }else if(key.startsWith('look')){line('Appearance','Visual only');line('Stat impact','None');
  }else if(key==='paint'){line('Paint',PAINTS[spec.paint]?.n||spec.paint);line('Stat impact','None');}
  return '<div class="lab-facts">'+details.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('')+'</div>';
@@ -1166,10 +1201,8 @@ function labInspectButtons(){
   const refresh=()=>{
    if(!labEditor)return;
    const name=sel.options[sel.selectedIndex]?.textContent||'Empty';
-   const next=labFormSpec(),rows=labStatRows(next);
-   preview.innerHTML='<canvas class="lab-item-thumb" aria-hidden="true"></canvas><div class="lab-quick-data"><strong>'+esc(name)+'</strong>'+
-   rows.slice(0,3).map(r=>'<div class="lab-quick-stat"><span>'+esc(r[0])+' '+esc(String(r[1]))+'</span>'+
-   '<div class="lab-track"><i style="width:'+Math.max(0,Math.min(100,100*r[1]/Math.max(1,r[2])))+'%"></i></div></div>').join('')+'</div>';
+   const next=labFormSpec();
+   preview.innerHTML='<canvas class="lab-item-thumb" aria-hidden="true"></canvas><div class="lab-quick-data"><strong>'+esc(name)+'</strong>'+labItemBars(key,next)+'</div>';
    labDrawSelectedItem(preview.querySelector('canvas'),key,next);
   };
   sel.parentElement.appendChild(preview);

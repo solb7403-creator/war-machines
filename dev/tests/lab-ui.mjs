@@ -44,10 +44,12 @@ for(const key of ['weapon','chassis','core0','fithull','lookhull','paint']){
  const p=save.lab.machines.a.spec;
  const facts=labItemFacts(key,p),bars=labItemBars(key,p);
  if(!facts.includes('lab-facts')||facts.includes('undefined')||bars.includes('NaN'))throw Error('Invalid item facts: '+key);
- if(key==='weapon'&&!facts.includes('Owned weapon DPS'))throw Error('Rolled weapon DPS missing');
+ if(key==='weapon'&&!facts.includes('Actual weapon DPS'))throw Error('Rolled weapon DPS missing');
  if(key==='chassis'&&!facts.includes('Actual HP multiplier'))throw Error('Actual chassis HP missing');
  if(key==='core0'&&!bars.includes('Core level'))throw Error('Core level bar missing');
  if(key==='fithull'&&!bars.includes('Weight'))throw Error('Fitting capacity missing');
+ if(key==='weapon'&&!bars.includes('Weapon DPS'))throw Error('Weapon DPS gauge missing');
+ if(key==='weapon'&&!facts.includes('Gear level'))throw Error('Weapon rarity level missing');
  labDrawSelectedItem(canvas,key,p);
 }
 if(calls.join(',')!=='gear,gear,core,machine,machine,machine')throw Error('Wrong equipment artwork');
