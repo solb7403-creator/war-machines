@@ -77,6 +77,8 @@ export class RoomCore {
   // a seat for a pilot the lobby sent here (the worker has checked their login and loadout)
   seatPlayer({ pid, name, q, L, power, league }) {
     L = JSON.parse(JSON.stringify(L));
+    // Never let a legacy client's owned-chassis list become a legal match swap list.
+    L.chs = [{ ...L.c }];
     const now = this.io.now();
     if (this.phase === "new") {
       this.q = { g: q.g, m: q.m }; this.cap = seatsFor(q.g, q.m);
