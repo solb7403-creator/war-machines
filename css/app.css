@@ -587,3 +587,47 @@ button.q{display:flex;width:100%;text-align:left}
 .labform details{border:1px solid rgba(223,231,242,.16);border-radius:10px;padding:10px}
 .labform summary{min-height:36px;cursor:pointer;display:list-item}
 .labform details label{margin-top:10px;display:grid;gap:6px}
+
+/* Laboratory: paired personal machine bays and inspectable engineering telemetry */
+.labcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+.labcard{position:relative;padding:10px;min-width:0;background:linear-gradient(155deg,rgba(90,151,209,.12),transparent 45%),var(--rock2);border:1px solid var(--edge);border-radius:15px}
+.labcard:nth-child(2){background:linear-gradient(155deg,rgba(192,127,244,.12),transparent 45%),var(--rock2)}
+.lab-bay-label{letter-spacing:.12em;font:700 10px var(--disp);color:var(--thrust);margin-bottom:6px}
+.labcard .labpreview{height:115px;max-width:100%;object-fit:contain}
+.labcard .acts{display:grid;grid-template-columns:1fr;gap:6px}
+.labcard .acts .btn{min-width:0;width:100%;padding:8px 3px;font-size:11px;white-space:normal}
+.labcard [data-act="rangecard"]{grid-column:auto}
+.labcard p{font-size:11px;overflow-wrap:anywhere}
+.lab-stat{margin:8px 0}
+.lab-stat>div:first-child{display:flex;justify-content:space-between;gap:5px;align-items:baseline;font-size:12px}
+.lab-stat strong{font:700 12px var(--disp);font-variant-numeric:tabular-nums;text-align:right}
+.lab-stat small{display:block;font:400 10px var(--disp);color:var(--dust)}
+.lab-track{height:7px;background:var(--rock4);border-radius:6px;overflow:hidden;margin-top:4px}
+.lab-track i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--thrust),var(--moon));transition:width .2s}
+.labcard:nth-child(2) .lab-track i{background:linear-gradient(90deg,var(--rare),var(--moon))}
+.lab-inspect-btn{width:100%;min-height:36px;margin-top:5px;text-align:center}
+#lab-metrics{padding:10px;border:1px solid var(--edge);border-radius:12px;background:var(--rock2)}
+
+.lab-item-quick{display:flex;flex-direction:column;gap:3px;padding:7px 10px;border-left:2px solid var(--thrust);background:var(--rock2);border-radius:0 8px 8px 0;font-size:11px}
+.lab-item-quick strong{font:600 12px var(--disp);color:var(--moon);overflow-wrap:anywhere}
+.lab-item-quick span{color:var(--dust);overflow-wrap:anywhere}
+.labform label:hover .lab-item-quick,.labform label:focus-within .lab-item-quick{border-left-color:var(--gold)}
+
+.lab-facts{display:grid;gap:6px;margin:12px 0;padding:12px;background:var(--rock2);border:1px solid var(--edge);border-radius:12px}
+.lab-facts>div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:12px}
+.lab-facts span{color:var(--dust)}
+.lab-facts b{text-align:right;overflow-wrap:anywhere}
+
+.lab-item-art{display:block;width:100%;height:145px;margin:0 0 12px;border-radius:12px;background:radial-gradient(ellipse at center,#263143,#0a0e17)}
+
+/* Selected-part preview: mini render and truthful, independently scaled telemetry. */
+.lab-track{position:relative}
+.lab-track em{position:absolute;z-index:1;top:0;bottom:0;width:2px;transform:translateX(-1px);background:var(--gold);pointer-events:none}
+.lab-item-quick{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:9px;min-height:72px}
+.lab-item-thumb{width:64px;height:64px;display:block;border-radius:10px;background:radial-gradient(ellipse at center,#263143,#0a0e17)}
+.lab-quick-data{min-width:0}
+.lab-quick-stat{font-size:10px;color:var(--dust);margin:4px 0}
+.lab-quick-stat .lab-track{height:4px;margin-top:2px}
+.lab-item-stats{margin:8px 0 14px}
+.lab-negative i{background:linear-gradient(90deg,#b25a64,#eb8790)}
+@media (max-width:360px){.labcards{gap:6px}.labcard{padding:8px}.labcard .labpreview{height:98px}.labcard .lab-stat strong{font-size:10px}}

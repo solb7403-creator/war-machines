@@ -1,0 +1,38 @@
+name: Validate Laboratory UI
+on:
+  pull_request:
+    paths:
+      - 'js/ui.js'
+      - 'css/app.css'
+      - 'js/rules.js'
+      - 'index.html'
+      - 'version.json'
+      - 'dev/tests/lab-ui.mjs'
+      - '.github/workflows/lab-ui-check.yml'
+  push:
+    branches:
+      - main
+      - 'feature/lab-item-inspection-dual-bays'
+    paths:
+      - 'js/ui.js'
+      - 'css/app.css'
+      - 'index.html'
+      - 'version.json'
+      - 'dev/tests/lab-ui.mjs'
+      - '.github/workflows/lab-ui-check.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check js/ui.js
+          node --check js/rules.js
+      - name: Run focused Laboratory regressions
+        run: node dev/tests/lab-ui.mjs

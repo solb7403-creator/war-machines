@@ -1050,11 +1050,138 @@ function initUI(){
 
 // Two owned configurations. Engineering is optional; ordinary Play remains unchanged.
 let labEditor=null;
+
+// Laboratory inspection: all values are taken from the same loadout calculators as gameplay.
+const labStatRows=(spec)=>{
+ const L=ecoLoadout(save,spec),m=machineMetrics(L),fit=fittingStats(spec.mods||{});
+ const high=TIER_MULT[2]*ROLL_MAX,skin=1.08;
+ const hpMax=STAT.hp*1.32*Math.max(...Object.values(CH).map(c=>c.hp))*high*skin*1.06;
+ const dpsMax=Math.max(...Object.values(WEAPONS).map(w=>w.dps))*high*1.32*skin*1.06*
+  (1+GEM.dmg.amt*GEM_LV[GEM_LV.length-1])*(1+GEM.rof.amt*GEM_LV[GEM_LV.length-1]);
+ const spdMax=STAT.speed*1.24*Math.max(...Object.values(CH).map(c=>c.spd))*
+  (1+(high-1)*0.5)*1.06*(1+GEM.spd.amt*GEM_LV[GEM_LV.length-1]);
+ const powerMax=Math.pow(hpMax*dpsMax*(spdMax/STAT.speed),1/3)*1.2*Math.pow(1.25,3);
+ return [['Health',m.hp,hpMax],['DPS',m.dps,dpsMax],['Speed',m.spd,spdMax],
+  ['Power',powerOf(L),powerMax],['Fitting weight',fit.weight,FIT_BUDGET.weight],['Fitting power',fit.power,FIT_BUDGET.power]];
+};
+function labBars(spec,reference){
+ const rows=labStatRows(spec),base=reference?labStatRows(reference):rows;
+ return '<div class="lab-stats">'+rows.map((r,i)=>{
+  const max=Math.max(r[2],r[1],base[i][1],1),pct=Math.max(0,Math.min(100,100*r[1]/max));
+  const beforePct=Math.max(0,Math.min(100,100*base[i][1]/max));
+  return '<div class="lab-stat"><div><span>'+esc(r[0])+'</span><strong>'+esc(String(r[1]))+
+  (reference?' <small>(saved '+esc(String(base[i][1]))+')</small>':'')+'</strong></div>'+
+  '<div class="lab-track"><i style="width:'+pct+'%"></i>'+(reference?'<em style="left:'+beforePct+'%" title="Saved configuration"></em>':'')+
+  '</div></div>';
+ }).join('')+'</div>';
+}
+function labItemBars(key,spec){
+ const L=ecoLoadout(save,spec),entries=[];
+ const add=(name,value,max,suffix='')=>entries.push([name,+Number(value).toFixed(3),max,suffix]);
+ if(key==='weapon'){
+  const w=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s);
+  const ceiling=Math.max(...Object.values(WEAPONS).map(x=>x.dps))*TIER_MULT[2]*ROLL_MAX;
+  add('Actual weapon DPS',w.dps,ceiling);add('Shots / sec',1/w.shot,1/0.09);
+  add('Projectile speed',w.pspd,26);
+ }else if(key==='chassis'){
+  const c=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s);
+  const tier=TIER_MULT[2]*ROLL_MAX;
+  add('HP multiplier',c.hp,Math.max(...Object.values(CH).map(x=>x.hp))*tier,'×');
+  add('Speed multiplier',c.spd,Math.max(...Object.values(CH).map(x=>x.spd))*(1+(tier-1)*0.5),'×');
+  add('Turning multiplier',c.turn,Math.max(...Object.values(CH).map(x=>x.turn))+.1,'×');
+ }else if(key.startsWith('core')){
+  const k=spec.cores[Number(key.slice(4))];
+  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
+ }else if(key.startsWith('fit')){
+  const k=key.slice(3),v=fittingSelection(spec.mods)[k],f=FITS[k][v];
+  if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',v*100,6,'%');
+   add('Weight',f.weight,FIT_BUDGET.weight);add('Power',f.power,FIT_BUDGET.power);}
+ }
+ return entries.length?'<h4>Individual item specifications</h4><div class="lab-stats lab-item-stats">'+entries.map(([name,val,max,suffix])=>
+  '<div class="lab-stat"><div><span>'+esc(name)+'</span><strong>'+esc(String(val))+suffix+'</strong></div>'+
+  '<div class="lab-track '+(val<0?'lab-negative':'')+'"><i style="width:'+Math.max(0,Math.min(100,Math.abs(val)*100/max))+'%"></i></div></div>'
+ ).join('')+'</div>':'<p class="mut">Cosmetic item. No independent combat statistics.</p>';
+}
+function labItemFacts(key,spec){
+ const details=[];
+ const line=(name,value)=>details.push([name,String(value)]);
+ if(key==='weapon'){
+  const w=spec.w,base=WEAPONS[w.a],live=ecoLoadout(save,spec).w,actual=weaponOf(live.a,live.t,live.q,live.s);if(base){line('Weapon class',base.n);line('Base DPS',base.dps);line('Owned weapon DPS',actual.dps);line('Item quality',live.q+'×');line('Shot interval',base.shot+' s');line('Super',base.sup);line('Tier',w.t);line('Salvaged',w.s?'Yes':'No');line('Description',base.d);}
+ }else if(key==='chassis'){
+  const c=spec.c,base=CH[c.c],live=ecoLoadout(save,spec).c,actual=chassisOf(live.c,live.t,live.q,live.s);if(base){line('Chassis',base.n);line('Actual HP multiplier',actual.hp+'×');line('Actual speed multiplier',actual.spd+'×');line('Item quality',live.q+'×');line('Base HP multiplier',base.hp+'×');line('Base speed multiplier',base.spd+'×');line('Turning multiplier',base.turn+'×');line('Counter advantage','Versus '+CH[COUNTER[c.c]].n);line('Tier',c.t);line('Salvaged',c.s?'Yes':'No');}
+ }else if(key.startsWith('core')){
+  const k=spec.cores[Number(key.slice(4))];if(k&&GEM[k]){const level=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',level);line('Effect magnitude',+(coreVal(k,level)*100).toFixed(3)+'%');}else line('Core slot','Empty');
+ }else if(key.startsWith('fit')){
+  const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
+  if(fit){line('Fitting',fit.n);line('HP change',+(fit.hp*100).toFixed(1)+'%');line('Speed change',+(fit.spd*100).toFixed(1)+'%');line('DPS change',+(fit.dps*100).toFixed(1)+'%');line('Weight cost',fit.weight+'/3');line('Power cost',fit.power+'/3');}
+ }else if(key.startsWith('look')){line('Appearance','Visual only');line('Stat impact','None');
+ }else if(key==='paint'){line('Paint',PAINTS[spec.paint]?.n||spec.paint);line('Stat impact','None');}
+ return '<div class="lab-facts">'+details.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('')+'</div>';
+}
+function labDrawSelectedItem(canvas,key,spec){
+ if(!canvas)return;
+ const w=canvas.clientWidth||220,h=canvas.clientHeight||120;
+ canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+ const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.clearRect(0,0,w,h);
+ if(key==='weapon'){const x=spec.w;drawGearIcon(ctx,w,h,true,getW(x.a,x.t,x.s));}
+ else if(key==='chassis'){const x=spec.c;drawGearIcon(ctx,w,h,false,getC(x.c,x.t,x.s));}
+ else if(key.startsWith('core')){const k=spec.cores[Number(key.slice(4))];if(k)drawGemArt(ctx,w,h,k);}
+ else drawMachinePreview(ctx,w,h,{...ecoLoadout(save,spec),mods:spec.mods,looks:spec.looks});
+}
+function labInspect(key){
+ if(!labEditor)return;
+ const spec=labFormSpec(),ref=labEditor.base||labEditor.spec;
+ const selector=key==='weapon'?'#lab-weapon':key==='chassis'?'#lab-chassis':key==='paint'?'#lab-paint':
+ key.startsWith('core')?'#lab-core-'+key.slice(4):key.startsWith('fit')?'#lab-fit-'+key.slice(3):'#lab-look-'+key.slice(4);
+ const el=$(selector);if(!el)return;
+ const name=el.options[el.selectedIndex]?.textContent||'Empty';
+ const category=key.startsWith('fit')?'Fitting':key.startsWith('look')?'Appearance':key.startsWith('core')?'Core':key;
+ const note=key.startsWith('look')||key==='paint'?'Appearance only — no performance change.':
+ key.startsWith('core')?'Core effects are included in the resulting machine stats.':
+ key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
+ const itemSheet=sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
+ '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
+ labItemFacts(key,spec)+labItemBars(key,spec)+'<h4>Assembled machine performance</h4>'+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
+ itemSheet.re=null; // don't blank the rendered art when global UI becomes dirty
+ setTimeout(()=>labDrawSelectedItem($('#lab-item-art'),key,spec),0);
+}
+ACT.labinspect=key=>labInspect(key);
+ACT.labinspectclose=()=>{const ov=findOv('labinspect');if(ov)closeOverlay(ov);};
+let labQuickRefreshers=[];
+function labInspectButtons(){
+ if(!labEditor)return;
+ const pairs=[['weapon','Weapon'],['chassis','Chassis'],...[0,1,2].map(i=>['core'+i,'Core '+(i+1)]),
+ ...FIT_ORDER.flatMap(k=>[['fit'+k,k.toUpperCase()+' fitting'],['look'+k,k.toUpperCase()+' appearance']]),['paint','Paint']];
+ const root=$('.labform');if(!root)return;
+ labQuickRefreshers=[];
+ pairs.forEach(([key])=>{
+  const sel=$('#lab-'+(key==='weapon'||key==='chassis'||key==='paint'?key:
+   key.startsWith('core')?'core-'+key.slice(4):key.startsWith('fit')?'fit-'+key.slice(3):'look-'+key.slice(4)));
+  if(!sel||sel.parentElement.querySelector('.lab-inspect-btn'))return;
+  const b=document.createElement('button');b.type='button';b.className='btn btn-quiet lab-inspect-btn';
+  b.dataset.act='labinspect';b.dataset.arg=key;b.textContent='View exact details';
+  sel.parentElement.appendChild(b);
+  const preview=document.createElement('div');preview.className='lab-item-quick';
+  const refresh=()=>{
+   if(!labEditor)return;
+   const name=sel.options[sel.selectedIndex]?.textContent||'Empty';
+   const next=labFormSpec(),rows=labStatRows(next);
+   preview.innerHTML='<canvas class="lab-item-thumb" aria-hidden="true"></canvas><div class="lab-quick-data"><strong>'+esc(name)+'</strong>'+
+   rows.slice(0,3).map(r=>'<div class="lab-quick-stat"><span>'+esc(r[0])+' '+esc(String(r[1]))+'</span>'+
+   '<div class="lab-track"><i style="width:'+Math.max(0,Math.min(100,100*r[1]/Math.max(1,r[2])))+'%"></i></div></div>').join('')+'</div>';
+   labDrawSelectedItem(preview.querySelector('canvas'),key,next);
+  };
+  sel.parentElement.appendChild(preview);
+  sel.addEventListener('focus',refresh);sel.addEventListener('pointerenter',refresh);labQuickRefreshers.push(refresh);
+  refresh();
+ });
+}
 function labCards(){
  if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
- return '<h2 class="title">Your machines</h2><p class="mut">Two free slots. Gear, cores and account upgrades are shared.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
+ return '<h2 class="title">Your machine bays</h2><p class="mut">Two independent builds, shown side by side. Shared inventory and upgrades.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
   const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
-  return '<section class="panel labcard"><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p><div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
+  return '<section class="panel labcard"><div class="lab-bay-label">BAY '+esc(String(id).toUpperCase())+'</div><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc(CH[L.c.c].n)+' · '+esc(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p>'+labBars(M.spec)+'<div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
  }).join('')+'</div>';
 }
 function openLabEditor(id,draft){
@@ -1064,7 +1191,7 @@ function openLabEditor(id,draft){
  const opts=(items,chosen)=>items.map(([id,n])=>'<option value="'+esc(id)+'"'+(id===chosen?' selected':'')+'>'+esc(n)+'</option>').join('');
  const key=x=>(x.a||x.c)+':'+x.t+(x.s?'s':'');
  const gear=(isW,p)=>opts(ownedList(isW).filter(x=>!x.locked).map(x=>[x.premium?'moon:2':x.id,x.name]),key(p));
- sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
+ const editorSheet=sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
   '<canvas id="lab-preview" class="labpreview" aria-label="Unsaved machine preview"></canvas><p id="lab-metrics" role="status"></p>'+
   '<label>Name<input id="lab-name" maxlength="48" value="'+esc(M.name)+'" autocomplete="off"></label>'+
   '<label>Weapon<select id="lab-weapon">'+gear(true,M.spec.w)+'</select></label>'+
@@ -1073,7 +1200,8 @@ function openLabEditor(id,draft){
   FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
   '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
   '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><div class="range-actions"><button class="btn btn-go block" data-act="labsave">Save machine</button><button class="btn btn-quiet block" data-act="rangedraft">Free Test draft · no rewards</button></div>');
- setTimeout(updateLabPreview,0);
+ editorSheet.re=null; // preserve unsaved selections and injected inspection controls across UI refreshes
+ setTimeout(()=>{updateLabPreview();labInspectButtons();},0);
 }
 ACT.labedit=id=>openLabEditor(id);
 ACT.labequip=async id=>{const r=await labRequest('lab_activate',{id,rev:save.lab.rev});showToast(r.err?labMessage(r.err):'Machine equipped');};
@@ -1096,10 +1224,10 @@ function labFormSpec(){
 function updateLabPreview(){
  if(!labEditor||!$('#lab-preview'))return;
  const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.base||labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
- $('#lab-metrics').textContent='HP '+before.hp+' → '+after.hp+' · DPS '+before.dps+' → '+after.dps+' · Speed '+before.spd+' → '+after.spd+' | Weight '+f.weight+'/3 · Power '+f.power+'/3';
+ $('#lab-metrics').innerHTML=labBars(p,labEditor.base||labEditor.spec);
  $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
  $('[data-act="labsave"]').disabled=!!err;
  $('[data-act="rangedraft"]').disabled=!!err;
  const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
-document.addEventListener('change',e=>{if(e.target.closest('.labform'))updateLabPreview();});
+document.addEventListener('change',e=>{if(e.target.closest('.labform')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
