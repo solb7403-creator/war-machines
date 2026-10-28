@@ -137,10 +137,8 @@ export class RoomCore {
       case "d": if (live) this.sim.netDash(u, fl * (+m.x || 0), fl * (+m.y || 0)); break;
       case "h": if (live) this.sim.netShield(u); break;
       case "t": if (live) this.sim.netTarget(u, m.v | 0); break;   // tap-to-target lock (unit id, -1 clears)
-      case "c": if ((this.phase === "vs" || this.phase === "round") && u && !s.done) {   // chassis swap
-        const c = (s.L.chs || []).find((x) => x.c === m.c);
-        if (c && c.c !== s.L.c.c) { s.L = { ...s.L, c: { ...c } }; this.sim.setTank(u, s.L); this.all({ k: "u", units: this.sim.roster() }); }
-      } break;
+      // Legacy "c" messages are deliberately ignored: no arbitrary owned-inventory switches.
+      // Full machine selection happens before joining from server-owned Laboratory state.
       case "q": this.quit(s); break;
       case "p": this.sendTo(s, { k: "P", i: m.i, t: this.tick }); break;
     }
