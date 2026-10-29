@@ -56,7 +56,7 @@ export async function cfg(env, now = Date.now()) {
   return CFG;
 }
 export const resetCfg = () => { CFG = null; };
-export const ipHash = async (env, ip) => (ip ? hex(await hmac(env.BOT_TOKEN, "ip|" + ip)).slice(0, 16) : "");
+export const ipHash = async (env, ip) => (ip ? hex(await hmac(env.FIREBASE_DB_SECRET||env.BOT_TOKEN, "ip|" + ip)).slice(0, 16) : "");
 // two pilots linked as one person's accounts (shown as a cluster in the admin sheet; only one of them counts for the airdrop)
 export async function link(env, a, b, why) {
   if (!a || !b || a === b || !/^(?:tg|ln)_\d{3,15}$/.test(a) || !/^(?:tg|ln)_\d{3,15}$/.test(b)) return;
