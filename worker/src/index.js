@@ -81,11 +81,15 @@ async function auth(req, env) {
   // A verified Telegram identity joins its first-party Lunar account only when voluntarily linked.
   // Otherwise the Telegram-only edition retains its legacy anonymous Telegram identity.
   const lunarPid=await resolveTelegramAccount(env,user.id);
-  if(lunarPid){
-    const lunarAccount=await dbGet(env,'lunarAccounts/'+lunarPid);
-    if(lunarAccount?.id===lunarPid){user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;}
+  const pid=lunarPid||"tg_"+user.id;
+  // Both website-first linked Telegram players and Telegram-first passkey upgrades have
+  // a Lunar-controlled identity. The latter retain their original economy storage key.
+  const lunarAccount=await dbGet(env,'lunarAccounts/'+pid);
+  if(lunarAccount){
+    if(lunarAccount.id!==pid||lunarAccount.type!=='passkey')return {err:json({error:'invalid account link'},409)};
+    user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;
   }
-  return { b, user, pid: lunarPid||"tg_"+user.id, ip: req.headers.get("CF-Connecting-IP") || "", sp };
+  return { b, user, pid, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
 function itemLabel(k, tk, ri) {
