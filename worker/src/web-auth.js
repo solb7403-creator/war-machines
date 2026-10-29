@@ -8,7 +8,14 @@ const origin=env=>env.WEB_ORIGIN||WEB_ORIGIN;
 const clientId=env=>String(env.TELEGRAM_WEB_CLIENT_ID||String(env.BOT_TOKEN||'').split(':')[0]);
 const ready=env=>env.WEB_LOGIN_ENABLED==='1'&&/^\d{3,16}$/.test(clientId(env))&&!!env.SESSIONS;
 const json=(o,status=200,cookie)=>new Response(JSON.stringify(o),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(cookie?{'Set-Cookie':cookie}:{})}});
-const cookie=(k,v,age)=>`${k}=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
+const cookie=(k,v,age)=>k+'='+v+'; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age='+age;
+const codeReady=env=>ready(env)&&!!String(env.TELEGRAM_OIDC_CLIENT_SECRET||'').trim();
+const callbackURL=env=>origin(env)+'/auth/callback';
+const safeTarget=v=>/^(play|garage|quests|ranks|shop|mode:(arena|zone|crystal|bounty|royale|boss))$/.test(String(v||''))?String(v):'play';
+const oauthRedirect=(where,status=303)=>new Response(null,{status,headers:{Location:where,'Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'}});
+const b64url=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const sha256=async data=>new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(data)));
+const expireLoginCookie=resp=>{resp.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return resp;};
 function getCookie(req,name){const values=(req.headers.get('Cookie')||'').split(';').map(x=>x.trim()).filter(x=>x.startsWith(name+'='));return values.length===1&&/^[a-f0-9]{64}$/.test(values[0].slice(name.length+1))?values[0].slice(name.length+1):'';}
 export const hasWebCookie=req=>!!getCookie(req,SESSION_COOKIE);
 function sameOrigin(req,env){return new URL(req.url).origin===origin(env)&&req.headers.get('Origin')===origin(env)&&!['cross-site'].includes(req.headers.get('Sec-Fetch-Site'));}
@@ -74,9 +81,53 @@ const limits=new Map();
 function limited(req){const k=req.headers.get('CF-Connecting-IP')||'anonymous',m=Math.floor(Date.now()/60000);let v=limits.get(k);if(!v||v.m!==m){v={m,n:0};limits.set(k,v);if(limits.size>10000)limits.clear();}return ++v.n>20;}
 export async function webAuth(req,env){
  const path=new URL(req.url).pathname;
- if(path==='/auth/config'&&req.method==='GET')return json({enabled:ready(env),client_id:ready(env)?clientId(env):null,origin:origin(env),login:'official-telegram-oidc'});
+ if(path==='/auth/config'&&req.method==='GET')return json({enabled:codeReady(env),client_id:ready(env)?clientId(env):null,origin:origin(env),login:'telegram-oidc-code-pkce'});
  if(path==='/auth/session'&&req.method==='GET'){
   const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
+ }
+ if(path==='/auth/start'&&req.method==='GET'){
+  const target=safeTarget(new URL(req.url).searchParams.get('target'));
+  const existing=await webIdentity(req,env,false);
+  if(existing)return oauthRedirect('/web/play.html#'+target);
+  if(!codeReady(env))return oauthRedirect('/web/?login=setup');
+  if(limited(req))return oauthRedirect('/web/?login=rate');
+  const previous=getCookie(req,LOGIN_COOKIE);if(previous)await record(env,previous,'revoke').catch(()=>{});
+  const state=random(),nonce=random(),verifier=b64url(crypto.getRandomValues(new Uint8Array(48))),challenge=b64url(await sha256(verifier));
+  const token=random(),now=Date.now();
+  const issue=await record(env,token,'issue',{kind:'challenge',flow:'code',state,nonce,verifier,target,created:now,expires:now+300000});
+  if(!issue.ok)return oauthRedirect('/web/?login=unavailable');
+  const url=new URL('https://oauth.telegram.org/auth');
+  for(const [k,v] of Object.entries({client_id:clientId(env),redirect_uri:callbackURL(env),response_type:'code',scope:'openid profile',state,code_challenge:challenge,code_challenge_method:'S256',nonce}))url.searchParams.set(k,v);
+  const res=oauthRedirect(url.toString(),302);
+  res.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,token,300));
+  return res;
+ }
+ if(path==='/auth/callback'&&req.method==='GET'){
+  const fail=reason=>expireLoginCookie(oauthRedirect('/web/?login='+reason));
+  if(!codeReady(env))return fail('setup');
+  if(limited(req))return fail('rate');
+  const token=getCookie(req,LOGIN_COOKIE);if(!token)return fail('expired');
+  const attempt=await record(env,token,'attempt');if(!attempt.ok)return fail('expired');
+  const challenge=await attempt.json(),params=new URL(req.url).searchParams;
+  const state=params.get('state')||'',code=params.get('code')||'';
+  if(challenge.flow!=='code'||!state||state!==challenge.state)return fail('invalid');
+  if(params.has('error')){await record(env,token,'consume');return fail('cancelled');}
+  if(!code||code.length>4096)return fail('invalid');
+  const used=await record(env,token,'consume');if(!used.ok)return fail('expired');
+  try{
+   const body=new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:callbackURL(env),client_id:clientId(env),code_verifier:challenge.verifier});
+   const auth=btoa(clientId(env)+':'+String(env.TELEGRAM_OIDC_CLIENT_SECRET));
+   const response=await fetch('https://oauth.telegram.org/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Authorization:'Basic '+auth},body:body.toString(),signal:AbortSignal.timeout(10000)});
+   if(!response.ok)return fail('exchange');
+   const data=await response.json();
+   const user=await verifyWebToken(data.id_token,env,challenge);if(!user)return fail('identity');
+   const sid=random(),csrf=random(),now=Date.now();
+   const issued=await record(env,sid,'issue',{kind:'session',user,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+   if(!issued.ok)return fail('unavailable');
+   const result=oauthRedirect('/web/play.html#'+safeTarget(challenge.target));
+   result.headers.append('Set-Cookie',cookie(SESSION_COOKIE,sid,MAX_AGE));
+   return expireLoginCookie(result);
+  }catch{return fail('exchange');}
  }
  if(!ready(env))return json({error:'login_setup_required'},503);
  if(req.method!=='POST')return json({error:'method'},405);

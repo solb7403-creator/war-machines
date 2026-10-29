@@ -1,6 +1,6 @@
 // Official website auth through real Worker routes. Telegram JWKS/database/DO transport are isolated fixtures.
 import assert from 'node:assert/strict';
-import {createHmac} from 'node:crypto';
+import {createHmac,createHash} from 'node:crypto';
 import {makeDB} from './fakedb.mjs';
 import {makeNamespace,installWebSocketPair} from './fakedo.mjs';
 import {fakeRec} from './fakerec.mjs';
@@ -62,6 +62,65 @@ r=await call('/auth/session',undefined,sid);assert.equal(r.status,200);assert.eq
 assert.equal((await call('/auth/renew',{},sid,identity.csrf)).status,200);
 assert.equal((await call('/auth/logout',{},sid,identity.csrf)).status,200);assert.equal((await call('/auth/session',undefined,sid)).status,401);
 ch=await challenge();const oldNow=Date.now;Date.now=()=>oldNow()+301000;assert.equal((await call('/auth/login',{id_token:await token(ch.nonce)},ch.c)).status,401,'expired challenge');Date.now=oldNow;
+
+// Full-page OAuth authorization-code/PKCE with a mocked Telegram token endpoint and real Worker session routes.
+env.TELEGRAM_OIDC_CLIENT_SECRET='fixture-oidc-secret';
+r=await call('/auth/config');assert.equal((await r.json()).enabled,true);
+let start=await call('/auth/start?target=garage');
+assert.equal(start.status,302);
+let authURL=new URL(start.headers.get('Location'));
+assert.equal(authURL.origin,'https://oauth.telegram.org');
+assert.equal(authURL.pathname,'/auth');
+assert.equal(authURL.searchParams.get('redirect_uri'),env.WEB_ORIGIN+'/auth/callback');
+assert.equal(authURL.searchParams.get('response_type'),'code');
+assert.equal(authURL.searchParams.get('code_challenge_method'),'S256');
+assert.match(authURL.searchParams.get('code_challenge'),/^[A-Za-z0-9_-]+$/);
+const codeCookie=cookieFrom(start,'__Host-lunar-login');
+assert.match(start.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Lax/);
+const tokenHash=createHash('sha256').update(codeCookie.split('=')[1]).digest('hex');
+const challengeRecord=await env.SESSIONS.get(tokenHash).fetch('https://session/attempt',{method:'POST'});
+assert.equal(challengeRecord.status,200);
+const codeChallenge=await challengeRecord.json();
+assert.equal(codeChallenge.flow,'code');
+assert.equal(codeChallenge.nonce,authURL.searchParams.get('nonce'));
+assert.equal(codeChallenge.state,authURL.searchParams.get('state'));
+const expectedPKCE=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(codeChallenge.verifier))).toString('base64url');
+assert.equal(expectedPKCE,authURL.searchParams.get('code_challenge'));
+const oldFetch=globalThis.fetch;let exchanges=0;
+globalThis.fetch=async (url,opts)=>{
+ if(String(url)==='https://oauth.telegram.org/token'){
+  exchanges++;
+  assert.equal(opts.method,'POST');
+  assert.equal(opts.headers.Authorization,'Basic '+Buffer.from('123:fixture-oidc-secret').toString('base64'));
+  const form=new URLSearchParams(opts.body);
+  assert.equal(form.get('code'),'valid-disposable-code');
+  assert.equal(form.get('code_verifier'),codeChallenge.verifier);
+  assert.equal(form.get('redirect_uri'),env.WEB_ORIGIN+'/auth/callback');
+  return Response.json({id_token:await token(codeChallenge.nonce)});
+ }
+ return oldFetch(url,opts);
+};
+const cbPath='/auth/callback?state='+encodeURIComponent(codeChallenge.state)+'&code=valid-disposable-code';
+r=await call(cbPath,undefined,codeCookie);
+assert.equal(r.status,303);
+assert.equal(r.headers.get('Location'),'/web/play.html#garage');
+const codeSession=cookieFrom(r,'__Host-lunar-session');
+assert.ok(codeSession,'first-party signed session issued after verified code exchange');
+assert.equal((await call('/auth/session',undefined,codeSession)).status,200);
+assert.equal(exchanges,1);
+r=await call(cbPath,undefined,codeCookie);
+assert.equal(r.headers.get('Location'),'/web/?login=expired','replayed callback cannot issue session');
+assert.equal(exchanges,1);
+globalThis.fetch=oldFetch;
+const wrongStart=await call('/auth/start?target=garage'),wrongCookie=cookieFrom(wrongStart,'__Host-lunar-login');
+r=await call('/auth/callback?code=forged&state=incorrect',undefined,wrongCookie);
+assert.equal(r.headers.get('Location'),'/web/?login=invalid');
+delete env.TELEGRAM_OIDC_CLIENT_SECRET;
+assert.equal((await call('/auth/config').then(r=>r.json())).enabled,false);
+assert.equal((await call('/auth/start')).headers.get('Location'),'/web/?login=setup');
+assert.equal((await call('/auth/session',undefined,codeSession)).status,200,'existing sessions remain valid when fresh OIDC configuration is absent');
+console.log('PASS redirect OIDC PKCE/state/nonce, confidential code exchange, shared signed sessions, replay, safe setup gating');
+
 env.WEB_LOGIN_ENABLED='0';assert.equal((await call('/auth/config').then(r=>r.json())).enabled,false);assert.equal((await call('/auth/challenge',{})).status,503);
 console.log('PASS official JWT signature/claims/nonce, race/replay/expiry/CSRF, first-party sessions/logout, shared Telegram identity, authoritative inventory/points/referral and private independent bays');
 

@@ -67,6 +67,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+          TELEGRAM_OIDC_CLIENT_SECRET: ${{ secrets.TELEGRAM_OIDC_CLIENT_SECRET }}
           WEB_LOGIN_ENABLED: ${{ vars.WEB_LOGIN_ENABLED }}
         run: |
           set -o pipefail
@@ -76,6 +77,12 @@ jobs:
           printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
           FIREBASE_DB_SECRET=$(printf '%s' "$FIREBASE_DB_SECRET" | tr -d '[:space:]')
           printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@4 secret put FIREBASE_DB_SECRET
+          # Only use the private BotFather OIDC secret in the Worker; never expose it as a public --var.
+          if [ -n "$TELEGRAM_OIDC_CLIENT_SECRET" ]; then
+            printf '%s' "$TELEGRAM_OIDC_CLIENT_SECRET" | run npx -y wrangler@4 secret put TELEGRAM_OIDC_CLIENT_SECRET
+          else
+            echo "::warning::Website redirect login still needs TELEGRAM_OIDC_CLIENT_SECRET in GitHub Actions secrets"
+          fi
           URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
           echo "WORKER_URL=$URL" >> $GITHUB_ENV
           echo "::notice::WORKER_URL=$URL"
