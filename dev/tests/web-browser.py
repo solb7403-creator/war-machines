@@ -23,7 +23,7 @@ async def main():
    await pg.set_viewport_size({'width':width,'height':844});await pg.wait_for_timeout(150)
    assert await pg.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'landing horizontal clipping'
    await pg.screenshot(path=str(OUT/f'landing-{width}.png'),full_page=True)
-  await pg.set_viewport_size({'width':1440,'height':1000});await pg.locator('[data-login]').first.click()
+  await pg.set_viewport_size({'width':1440,'height':1000});await pg.wait_for_function('()=>!!loginContext?.nonce');await pg.locator('[data-login]').first.click()
   await pg.wait_for_url('**/web/play.html#play');await pg.wait_for_function('()=>typeof save!=="undefined"&&!!save?.lab&&typeof webShowroom!=="undefined"&&!!webShowroom',timeout=20000)
   await pg.evaluate('()=>{save.welcomed=true;closeAll();}')
   assert await pg.evaluate('SRV_ECO&&IN_WEB&&!IN_TG&&!IS_DEV')
@@ -69,7 +69,7 @@ async def main():
   fbctx=await b.new_context(viewport={'width':320,'height':844});await fbctx.route('**/*',route)
   await fbctx.add_init_script("const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(t,...args){return String(t).includes('webgl')?null:original.call(this,t,...args);};")
   fp=await fbctx.new_page();fallback_errors=[];fp.on('pageerror',lambda e:fallback_errors.append(str(e)))
-  await fp.goto(BASE+'/web/');await fp.locator('[data-login]').first.click();await fp.wait_for_url('**/web/play.html#play')
+  await fp.goto(BASE+'/web/');await fp.wait_for_function('()=>!!loginContext?.nonce');await fp.locator('[data-login]').first.click();await fp.wait_for_url('**/web/play.html#play')
   await fp.wait_for_function('()=>typeof save!=="undefined"&&!!save?.lab&&typeof webShowroom!=="undefined"&&!!webShowroom')
   await fp.evaluate('()=>{save.welcomed=true;closeAll();setTab("garage");}')
   await fp.wait_for_timeout(200);assert await fp.evaluate('R3.failed')
