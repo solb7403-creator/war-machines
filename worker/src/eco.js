@@ -45,7 +45,7 @@ export const isNewTg = (user) => !!user && Number(user.id) >= NEWID && !user.is_
 const acW = (S) => (S.nw ? Math.min(1, 0.5 + (0.5 * Math.max(0, (S.days || 1) - 1)) / ECO.AC_DAYS) : 1);
 // airdrop credit (ac) follows lifetime points, weighted for new accounts
 function credit(S, e0) { if (typeof S.ac !== "number") S.ac = e0; const de = (S.earned || 0) - e0; if (de > 0) S.ac = Math.round(S.ac + de * acW(S)); S.ac = Math.min(S.ac, S.earned || 0); }
-export function who(S, user) { S.nm = cleanName(user); if(!user.web_auth || S.nw===undefined) S.nw = isNewTg(user) ? 1 : 0; }
+export function who(S, user) { S.nm = cleanName(user); if(user.lunar_account){S.nw=0;}else if(!user.web_auth || S.nw===undefined) S.nw = isNewTg(user) ? 1 : 0; }
 // settings Jake changes from the admin sheet (proof of play: "enforce" or "flag"), read at most once a minute
 let CFG = null, CFG_T = 0;
 export async function cfg(env, now = Date.now()) {
@@ -59,7 +59,7 @@ export const resetCfg = () => { CFG = null; };
 export const ipHash = async (env, ip) => (ip ? hex(await hmac(env.BOT_TOKEN, "ip|" + ip)).slice(0, 16) : "");
 // two pilots linked as one person's accounts (shown as a cluster in the admin sheet; only one of them counts for the airdrop)
 export async function link(env, a, b, why) {
-  if (!a || !b || a === b || !/^tg_\d{3,15}$/.test(a) || !/^tg_\d{3,15}$/.test(b)) return;
+  if (!a || !b || a === b || !/^(?:tg|ln)_\d{3,15}$/.test(a) || !/^(?:tg|ln)_\d{3,15}$/.test(b)) return;
   await dbPatch(env, "", { [`lk/${a}/${b}`]: why, [`lk/${b}/${a}`]: why });
 }
 
@@ -186,7 +186,7 @@ export async function pickGhosts(env, pid, pw, k, now = Date.now(), skip = []) {
 export async function ghostReport(env, list, now = Date.now()) {
   const up = {}, inc = (n) => ({ ".sv": { increment: n } });
   for (const [id, r] of list) {
-    if (!/^tg_\d{3,15}$/.test(String(id))) continue;
+    if (!/^(?:tg|ln)_\d{3,15}$/.test(String(id))) continue;
     const P = `ghr/${id}`, k = r.won ? "w" : r.drawn ? "d" : "l";
     up[`${P}/m`] = inc(1); up[`${P}/${k}`] = inc(1);
     up[`${P}/dmg`] = inc(Math.max(0, Math.min(200000, Math.round(Number(r.dmg) || 0))));
@@ -410,7 +410,7 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
     // the same opponent over and over in one day: accounts trading wins
     if (Array.isArray(c.opp) && c.opp.length) {
       S.op = S.op && S.op.d === X.day ? S.op : { d: X.day, m: {} };
-      for (const o of c.opp.slice(0, 5)) { if (!/^tg_\d{3,15}$/.test(String(o))) continue; S.op.m[o] = (S.op.m[o] || 0) + 1; if (S.op.m[o] === ECO.TRADE) trade.push(o); }
+      for (const o of c.opp.slice(0, 5)) { if (!/^(?:tg|ln)_\d{3,15}$/.test(String(o))) continue; S.op.m[o] = (S.op.m[o] || 0) + 1; if (S.op.m[o] === ECO.TRADE) trade.push(o); }
     }
     const pts = Math.max(0, Math.round(c.pts || 0)), awarded = R.ecoAward(S, pts, X);
     S.pvs = c.pvs || 0; S.pvm = (S.pvm || 0) + 1;
