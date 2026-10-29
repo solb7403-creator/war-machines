@@ -21,8 +21,8 @@ function boot(){
  initUI();
  if(typeof load3D==='function')load3D();   // the 3D view loads in the background; until it's ready (or without WebGL) the game draws in 2D
  const afterCloud=()=>{
-  initBackend();loadLB();if(IN_TG)loadSquad();
-  if(save.payCur==='sol')fetchPrices();
+  initBackend();loadLB();if(ACCOUNT_OK)loadSquad();
+  if(!IN_WEB&&save.payCur==='sol')fetchPrices();
   if(!save.welcomed&&(save.mp||0)===0)showWelcome();
   uiDirty();
  };
@@ -36,4 +36,5 @@ function boot(){
  try{document.fonts.load('600 16px "Chakra Petch"').then(()=>uiDirty()).catch(()=>{});}catch(e){}
  requestAnimationFrame(frame);
 }
-boot();
+// Public browser visitors use verified website accounts; the Mini App entry remains unchanged.
+if(!IN_TG&&!WEB_EDITION&&!window.LUNAR_LOCAL_ECO)location.replace('https://lunar-api.solb7403.workers.dev/web/');else boot();

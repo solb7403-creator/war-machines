@@ -45,7 +45,7 @@ export const isNewTg = (user) => !!user && Number(user.id) >= NEWID && !user.is_
 const acW = (S) => (S.nw ? Math.min(1, 0.5 + (0.5 * Math.max(0, (S.days || 1) - 1)) / ECO.AC_DAYS) : 1);
 // airdrop credit (ac) follows lifetime points, weighted for new accounts
 function credit(S, e0) { if (typeof S.ac !== "number") S.ac = e0; const de = (S.earned || 0) - e0; if (de > 0) S.ac = Math.round(S.ac + de * acW(S)); S.ac = Math.min(S.ac, S.earned || 0); }
-export function who(S, user) { S.nm = cleanName(user); S.nw = isNewTg(user) ? 1 : 0; }
+export function who(S, user) { S.nm = cleanName(user); if(!user.web_auth || S.nw===undefined) S.nw = isNewTg(user) ? 1 : 0; }
 // settings Jake changes from the admin sheet (proof of play: "enforce" or "flag"), read at most once a minute
 let CFG = null, CFG_T = 0;
 export async function cfg(env, now = Date.now()) {

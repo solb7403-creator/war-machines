@@ -12,11 +12,11 @@ const pvpOn=()=>!!pvp&&pvp.live;
 const pvpQueue=gk=>gk==='royale'?'solo':modeKey();
 // live queues: Arena, Moon Zone and today's featured mode; you need Telegram (the server checks your login) and one match played
 const isLiveMode=gk=>liveModes(dayNum()).includes(gk)||(!!window.LUNAR_LIVE_ALL&&GT_ORDER.includes(gk));   // LUNAR_LIVE_ALL: local tests of every mode
-function pvpEligible(gk){return IN_TG&&(save.mp||0)>=1&&typeof WebSocket==='function'&&!window.LUNAR_NO_PVP&&isLiveMode(gk);}   // LUNAR_NO_PVP: the AI-match tests
+function pvpEligible(gk){return ACCOUNT_OK&&(save.mp||0)>=1&&typeof WebSocket==='function'&&!window.LUNAR_NO_PVP&&isLiveMode(gk);}   // LUNAR_NO_PVP: the AI-match tests
 // Quick Match: one live queue per team size. Any live mode, picked when the match starts; it also meets players
 // queued for a specific live mode at your team size, so it's the fastest way to find real pilots
 let lastQuick=false;   // the last match came from Quick Match (Play again repeats it)
-const quickOK=()=>IN_TG&&(save.mp||0)>=1&&typeof WebSocket==='function'&&!window.LUNAR_NO_PVP;
+const quickOK=()=>ACCOUNT_OK&&(save.mp||0)>=1&&typeof WebSocket==='function'&&!window.LUNAR_NO_PVP;
 const quickModes=()=>liveModes(dayNum()).filter(g=>g!=='royale');
 function quickMatch(){
  if(state==='play'||(pvp&&pvp.phase==='find'))return;
