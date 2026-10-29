@@ -1,24 +1,26 @@
-// Browser handoff contract, no live Telegram account or production requests.
+// Redirect login contract: browser navigation only; no Telegram popup or real identity provider.
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
 const source=fs.readFileSync(new URL('../../web/website.js',import.meta.url),'utf8');
-async function trial(accepted){
- const calls=[],events={},notice={hidden:true,append(){}},location={hostname:'lunar.test',origin:'https://lunar.test',search:'',hash:'',assign:u=>calls.push(['navigate',u])};
- let callback;
- // Mock only officially documented Telegram.Login methods; no invented close().
- const Login={auth:(opts,cb)=>{calls.push(['auth',opts]);callback=cb;}};
- const context={location,URLSearchParams,Date,console,Promise,setTimeout,clearTimeout,sessionStorage:{setItem(){}},window:{Telegram:{Login},focus:()=>calls.push(['focus']),addEventListener:(k,fn)=>events[k]=fn},Telegram:{Login},addEventListener:(k,fn)=>events[k]=fn,
- document:{hidden:false,querySelector:s=>s==='#login-status'?notice:null,querySelectorAll:()=>[],createElement:()=>({setAttribute(){}}),addEventListener:(k,fn)=>events[k]=fn},fetch:async(path)=>{calls.push(['fetch',path]);if(path==='/auth/session')return {ok:false};if(path==='/auth/config')return {json:async()=>({enabled:true})};if(path==='/auth/challenge')return {ok:true,json:async()=>({client_id:'123',nonce:'test-nonce',expires:Date.now()+300000})};if(path==='/auth/login')return {ok:accepted,json:async()=>({error:'identity'})};throw Error('Unexpected request '+path);}};
- vm.createContext(context);vm.runInContext(source,context);await vm.runInContext('prepareLogin()',context);
- context.window.lunarLogin('garage');assert.equal(calls.filter(c=>c[0]==='auth').length,1);
- assert.equal(calls.find(c=>c[0]==='auth')[1].nonce,'test-nonce');
- await callback({id_token:'signed-token-fixture'});
- assert.equal(calls.some(c=>c[0]==='close'),false,'Callback must not depend on undocumented SDK methods');
- const navigation=calls.find(c=>c[0]==='navigate');
- if(accepted){assert.equal(navigation?.[1],'/web/play.html#garage');}
- else{assert.equal(navigation,undefined);assert.equal(notice.hidden,false,'verification failure is visible in the original tab');}
- return calls;
+function trial({host='lunar-api.solb7403.workers.dev',origin='https://lunar-api.solb7403.workers.dev',search='',target='garage'}={}){
+ const calls=[],notices=[],notice={hidden:true,textContent:'',append(){}},listeners={};
+ const location={hostname:host,origin,search,hash:'',assign:u=>calls.push(['navigate',u])};
+ const window={history:{replaceState:(...args)=>calls.push(['history',...args])}};
+ const document={querySelector:s=>s==='#login-status'?notice:null,createElement:()=>({setAttribute(){}}),addEventListener:(k,fn)=>listeners[k]=fn};
+ const context={location,URLSearchParams,document,window,sessionStorage:{setItem:(k,v)=>calls.push(['ref',k,v])}};
+ vm.createContext(context);vm.runInContext(source,context);
+ window.lunarLogin(target);
+ return {calls,notice,listeners};
 }
-await trial(true);await trial(false);
-console.log('PASS login success/failure return control from popup; only verified exchange enters game');
+assert.equal(trial().calls[0][1],'/auth/start?target=garage');
+assert.equal(trial({target:'mode:arena'}).calls[0][1],'/auth/start?target=mode%3Aarena');
+assert.equal(trial({target:'https://evil.test'}).calls[0][1],'/auth/start?target=play');
+const gh=trial({host:'solb7403-creator.github.io',origin:'https://solb7403-creator.github.io',search:'?ref=tg_123456'});
+assert.equal(gh.calls.find(c=>c[0]==='navigate')[1],'https://lunar-api.solb7403.workers.dev/web/?ref=tg_123456#garage');
+const failed=trial({search:'?login=exchange'});
+assert.match(failed.notice.textContent,/could not complete/i);
+assert.equal(failed.calls.find(c=>c[0]==='history')[3],'/web/');
+assert.equal(source.includes('Telegram.Login.auth'),false,'must not depend on popup communication');
+assert.equal(source.includes('telegram-login.js'),false,'no popup login SDK loaded');
+console.log('PASS top-level PKCE sign-in navigation, safe targets, GitHub redirect and browser-visible errors');
