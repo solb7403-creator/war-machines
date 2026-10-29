@@ -24,7 +24,7 @@ jobs:
           DB: ${{ secrets.FIREBASE_DB_SECRET }}
         run: |
           [ -n "$CF" ] || { echo "::error::CLOUDFLARE_API_TOKEN secret missing"; exit 1; }
-          [ -n "$BOT" ] || { echo "::error::BOT_TOKEN secret missing"; exit 1; }
+          [ -n "$BOT" ] || echo "::warning::BOT_TOKEN missing: Telegram extras unavailable; independent Lunar website deployment continues"
           [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
       - name: Build the match sim (js/rules.js + js/game.js -> worker/src/sim.gen.js)
         run: node worker/build-sim.mjs
@@ -76,8 +76,12 @@ jobs:
           set -o pipefail
           run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
           run npx -y wrangler@4 deploy --var WEB_LOGIN_ENABLED:"${WEB_LOGIN_ENABLED:-1}"
-          BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')   # a pasted secret can carry a stray space or newline
-          printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
+          if [ -n "$BOT_TOKEN" ]; then
+            BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')   # a pasted secret can carry a stray space or newline
+            printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
+          else
+            echo "::notice::Lunar account service deployed without a Telegram bot token"
+          fi
           FIREBASE_DB_SECRET=$(printf '%s' "$FIREBASE_DB_SECRET" | tr -d '[:space:]')
           printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@4 secret put FIREBASE_DB_SECRET
           # Only use the private BotFather OIDC secret in the Worker; never expose it as a public --var.
