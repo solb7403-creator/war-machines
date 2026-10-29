@@ -67,7 +67,8 @@ async function checkExisting(){
   if(!r.ok)return;
   const s=await r.json();
   $('existing-account').hidden=false;
-  $('existing-message').textContent=s.user?.lunar_account?'You are signed in to your independent LUNAR account.':'You are currently signed in using Telegram. Create a separate Lunar account by signing out first.';
+  $('existing-message').textContent=s.user?.lunar_account?'You are signed in to your independent LUNAR account.':'You are signed in using Telegram. Secure this existing pilot with a Lunar passkey in Account Settings to keep all progress. Do not create a second account.';
+  $('secure-original').hidden=!!s.user?.lunar_account;
   $('continue-game').href='/web/play.html#'+target;
  }catch{}
 }
