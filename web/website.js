@@ -25,9 +25,8 @@ function lunarLogin(target='play'){
  const challenge=loginContext;loginBusy=true;
  // Open directly in the click event. Awaiting network requests here loses popup activation on Safari.
  try{Telegram.Login.auth({client_id:Number(challenge.client_id),scope:['profile'],nonce:challenge.nonce},async data=>{
-  // The official SDK posts the result but does not close its popup. On iPhone
-  // that tab remains foregrounded while the opener navigates out of sight.
-  Telegram.Login.close();window.focus();
+  // Telegram's official SDK owns popup lifecycle; its documented API has no close().
+  // Never let an optional popup action interrupt the signed-token exchange.
   try{
    if(data?.error||!data?.id_token)throw Error('Login was cancelled or declined.');
    loginNotice('Verifying your Telegram identity…');
