@@ -55,6 +55,39 @@ async function linkTelegram(){
  }catch(e){$('link-state').textContent=e.message;}
  finally{working=false;$('link-telegram').disabled=false;}
 }
+// Telegram-first upgrade: credential is tied to the existing pilot's server-owned record.
+// The browser signs a one-use WebAuthn challenge; no item, points, or purchases are copied.
+const to64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const from64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+const registerOptions=o=>({...o,challenge:from64(o.challenge),user:{...o.user,id:from64(o.user.id)},
+ excludeCredentials:(o.excludeCredentials||[]).map(c=>({...c,id:from64(c.id)}))});
+const credentialResponse=cred=>({
+ id:cred.id,rawId:to64(cred.rawId),type:cred.type,
+ authenticatorAttachment:cred.authenticatorAttachment||undefined,
+ response:{clientDataJSON:to64(cred.response.clientDataJSON),
+  attestationObject:to64(cred.response.attestationObject),
+  transports:cred.response.getTransports?.()||[]},
+ clientExtensionResults:cred.getClientExtensionResults?.()||{}
+});
+async function upgradeTelegram(){
+ if(working||!session)return;
+ if(!window.PublicKeyCredential||!navigator.credentials?.create){
+  say('Passkeys are not available in this browser. Open this page in recent Safari or another passkey-compatible browser.');return;
+ }
+ working=true;$('upgrade-telegram').disabled=true;
+ say('Preparing a passkey for your existing Telegram pilot…');
+ try{
+  const options=await post('/auth/lunar/upgrade/options');
+  const credential=await navigator.credentials.create({publicKey:registerOptions(options.options)});
+  if(!credential)throw Error('No passkey was created.');
+  const result=await post('/auth/lunar/upgrade/verify',{credential:credentialResponse(credential)});
+  if(!result.ok)throw Error('Passkey verification failed.');
+  say('Your existing pilot is now secured with a Lunar passkey. Returning to Account Settings…');
+  location.replace('/web/account.html?upgraded=1');
+ }catch(e){
+  say(e.name==='NotAllowedError'?'Passkey creation was cancelled. Nothing was changed.':e.message||'Could not secure your account.');
+ }finally{working=false;$('upgrade-telegram').disabled=false;}
+}
 async function logout(){
  if(!session){location.assign('/web/login.html');return;}
  try{await post('/auth/logout');location.assign('/web/login.html');}
@@ -62,7 +95,7 @@ async function logout(){
 }
 $('link-telegram').addEventListener('click',linkTelegram);
 $('sign-out').addEventListener('click',logout);
-$('switch-lunar').addEventListener('click',logout);
+$('upgrade-telegram').addEventListener('click',upgradeTelegram);
 $('copy-code').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(linkCommand);$('copy-code').textContent='COPIED';}catch{say('Select the command above to copy it.');}});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&linkTimer)checkLink();});
 load();
