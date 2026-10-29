@@ -81,7 +81,10 @@ async function auth(req, env) {
   // A verified Telegram identity joins its first-party Lunar account only when voluntarily linked.
   // Otherwise the Telegram-only edition retains its legacy anonymous Telegram identity.
   const lunarPid=await resolveTelegramAccount(env,user.id);
-  if(lunarPid){user.web_auth=true;user.lunar_account=true;}
+  if(lunarPid){
+    const lunarAccount=await dbGet(env,'lunarAccounts/'+lunarPid);
+    if(lunarAccount?.id===lunarPid){user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;}
+  }
   return { b, user, pid: lunarPid||"tg_"+user.id, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
