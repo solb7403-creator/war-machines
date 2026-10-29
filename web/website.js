@@ -25,8 +25,12 @@ function lunarLogin(target='play'){
  const challenge=loginContext;loginBusy=true;
  // Open directly in the click event. Awaiting network requests here loses popup activation on Safari.
  try{Telegram.Login.auth({client_id:Number(challenge.client_id),scope:['profile'],nonce:challenge.nonce},async data=>{
+  // The official SDK posts the result but does not close its popup. On iPhone
+  // that tab remains foregrounded while the opener navigates out of sight.
+  Telegram.Login.close();window.focus();
   try{
    if(data?.error||!data?.id_token)throw Error('Login was cancelled or declined.');
+   loginNotice('Verifying your Telegram identity…');
    const r=await fetch('/auth/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id_token:data.id_token})});
    if(!r.ok)throw Error('Telegram identity could not be verified. Please sign in again.');
    location.assign('/web/play.html#'+target);
@@ -37,8 +41,3 @@ prepareLogin().catch(()=>{});
 window.lunarLogin=lunarLogin;
 document.addEventListener('click',e=>{const el=e.target.closest('[data-login],[data-enter]');if(el){e.preventDefault();lunarLogin(el.dataset.enter||'play');}});
 if(location.search){const c=new URLSearchParams(location.search).get('ref');if(c&&/^tg_\d{3,16}$/.test(c))try{sessionStorage.setItem('lunar-acquisition-context',c);}catch{} } // Context only. Never forwarded as credited referral.
-if(document.querySelector('#landing-machine')){
- const showroom=new LunarShowroom(document.querySelector('#landing-machine'));const L=structuredClone(STOCK_L);L.w.a='siege';L.looks={hull:'plates',mobility:'stock',mount:'firing'};showroom.setLoadout(L);
- document.addEventListener('click',e=>{const b=e.target.closest('[data-chassis],[data-rotate],[data-zoom]');if(!b)return;if(b.dataset.chassis){L.c.c=b.dataset.chassis;showroom.setLoadout(L);document.querySelector('#hero-class').textContent=L.c.c.toUpperCase();document.querySelectorAll('[data-chassis]').forEach(x=>x.classList.toggle('selected',x===b));}else if(b.dataset.rotate)showroom.rotate(Number(b.dataset.rotate));else showroom.setZoom(showroom.zoom+Number(b.dataset.zoom)*.12);});
- addEventListener('pagehide',()=>showroom.dispose(),{once:true});
-}

@@ -39,7 +39,11 @@ window.addEventListener('lunar-session-expired',()=>{clearInterval(webRenewTimer
 window.lunarWebReady=()=>{
  webStage=$('#web-stage');const start=()=>{if(typeof THREE==='undefined'){if(R3.failed||!want3D()){webShowroom=new LunarShowroom($('#web-machine-scene'));webUpdateMachine();return;}if(!R3.loading)load3D();setTimeout(start,100);return;}webShowroom=new LunarShowroom($('#web-machine-scene'));webUpdateMachine();};
  if(R3.failed||!want3D()){webShowroom=new LunarShowroom($('#web-machine-scene'));webUpdateMachine();}else start();
- const tab=location.hash.slice(1);if(['play','garage','quests','ranks'].includes(tab))setTab(tab);
+ const tab=location.hash.slice(1);
+ if(['play','garage','quests','ranks'].includes(tab))setTab(tab);
+ else if(tab==='engineer'){setTab('garage');ACT.labedit(save.lab.active);}
+ else if(tab==='range'){setTab('garage');openRange(save.lab.active);}
+ else if(tab.startsWith('mode:')&&GT_ORDER.includes(tab.slice(5))){ACT.gtype(tab.slice(5));setTab('play');}
  addEventListener('resize',webUpdateMachine);addEventListener('pagehide',()=>{clearInterval(webRenewTimer);webShowroom?.dispose();},{once:true});
  webRenewTimer=setInterval(async()=>{if(document.hidden)return;const r=await fetch('/auth/renew',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}).catch(()=>null);if(r?.status===401)window.dispatchEvent(new Event('lunar-session-expired'));},20*60000);
 };

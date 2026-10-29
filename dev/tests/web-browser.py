@@ -4,7 +4,7 @@ from playwright.async_api import async_playwright
 OUT=pathlib.Path('/workspace/lunar-website-evidence');OUT.mkdir(exist_ok=True)
 BASE='https://lunar.test';FIX='http://127.0.0.1:8791'
 USER_ID=int(time.time()*1000)%1000000000
-SDK="""window.Telegram={Login:{auth(opts,cb){fetch('/__token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nonce:opts.nonce,id:TEST_USER_ID})}).then(r=>r.json()).then(cb);}}};"""
+SDK="""window.Telegram={Login:{auth(opts,cb){fetch('/__token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nonce:opts.nonce,id:TEST_USER_ID})}).then(r=>r.json()).then(cb);},close(){}}};"""
 async def route(r):
  if r.request.url.startswith('https://oauth.telegram.org/js/telegram-login.js'):return await r.fulfill(body=SDK.replace('TEST_USER_ID',str(USER_ID)),content_type='application/javascript')
  if r.request.url.startswith(BASE):
@@ -17,7 +17,7 @@ async def main():
   await ctx.route('**/*',route);pg=await ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:print('BROWSER',m.type,m.text) if m.type=='error' else None)
   await pg.goto(BASE+'/web/');await pg.wait_for_timeout(1200)
   await pg.screenshot(path=str(OUT/'landing-debug.png'))
-  assert await pg.locator('#landing-machine canvas').count()==1,errs
+  assert await pg.locator('.colony-hero').count()==1 and await pg.locator('canvas').count()==0,errs
   await pg.screenshot(path=str(OUT/'landing-desktop.png'),full_page=True)
   for width in [390,320]:
    await pg.set_viewport_size({'width':width,'height':844});await pg.wait_for_timeout(150)
