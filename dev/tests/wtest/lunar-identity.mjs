@@ -162,6 +162,7 @@ assert.equal(db.get('/eco/tg_888001'),null,'linked Telegram must not create a pa
 
 // A linked pilot who signs into the website through the optional Telegram bot must
 // also enter the independent Lunar ID, never a duplicate tg_<id> account.
+env.WEB_LOGIN_ENABLED='1'; // Only the optional bot authentication flow requires Telegram login configuration.
 const botStart=await call('/auth/bot/start',{});
 assert.equal(botStart.status,200);
 const botBody=await botStart.json(),botCookie=cookie(botStart,'__Host-lunar-login');
