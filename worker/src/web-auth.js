@@ -18,6 +18,17 @@ const sha256=async data=>new Uint8Array(await crypto.subtle.digest('SHA-256',enc
 const expireLoginCookie=resp=>{resp.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return resp;};
 function getCookie(req,name){const values=(req.headers.get('Cookie')||'').split(';').map(x=>x.trim()).filter(x=>x.startsWith(name+'='));return values.length===1&&/^[a-f0-9]{64}$/.test(values[0].slice(name.length+1))?values[0].slice(name.length+1):'';}
 export const hasWebCookie=req=>!!getCookie(req,SESSION_COOKIE);
+// Shared audited primitives for Lunar-owned passkey accounts and optional Telegram linking.
+export {record,getCookie,sameOrigin,limited,origin,json,cookie,random};
+export const WEB_LOGIN_COOKIE=LOGIN_COOKIE;
+export async function issueLunarWebSession(env,user,pid){
+ if(!env.SESSIONS||!/^ln_[0-9]{12,15}$/.test(String(pid||''))||!user?.lunar_account)return json({error:'account'},403);
+ const sid=random(),csrf=random(),now=Date.now();
+ const created=await record(env,sid,'issue',{kind:'session',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+ if(!created.ok)return json({error:'session_store'},503);
+ const result=json({ok:true,user,pid,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
+ result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
+}
 function sameOrigin(req,env){return new URL(req.url).origin===origin(env)&&req.headers.get('Origin')===origin(env)&&!['cross-site'].includes(req.headers.get('Sec-Fetch-Site'));}
 async function record(env,token,op,value){
  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(token))),x=>x.toString(16).padStart(2,'0')).join('');
@@ -91,7 +102,7 @@ export async function webIdentity(req,env,csrf=true){
  const token=getCookie(req,SESSION_COOKIE);if(!token||csrf&&!sameOrigin(req,env))return null;
  const res=await record(env,token,'read');if(!res.ok)return null;const s=await res.json();
  if(s.kind!=='session'||csrf&&req.headers.get('X-Lunar-CSRF')!==s.csrf)return null;
- return {user:s.user,pid:'tg_'+s.user.id,session:s,token};
+ return {user:s.user,pid:s.pid||'tg_'+s.user.id,session:s,token};
 }
 const limits=new Map();
 function limited(req){const k=req.headers.get('CF-Connecting-IP')||'anonymous',m=Math.floor(Date.now()/60000);let v=limits.get(k);if(!v||v.m!==m){v={m,n:0};limits.set(k,v);if(limits.size>10000)limits.clear();}return ++v.n>20;}
@@ -99,7 +110,7 @@ export async function webAuth(req,env){
  const path=new URL(req.url).pathname;
  if(path==='/auth/config'&&req.method==='GET')return json({enabled:codeReady(env),client_id:ready(env)?clientId(env):null,origin:origin(env),login:'telegram-oidc-code-pkce'});
  if(path==='/auth/session'&&req.method==='GET'){
-  const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
+  const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,pid:a.pid,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
  }
  // Browser/bot sign-in avoids cross-app OIDC handoff on iOS. Signed Telegram webhook proves identity.
  if(path==='/auth/bot/start'&&req.method==='POST'){
