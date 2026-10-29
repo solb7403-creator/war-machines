@@ -7,7 +7,7 @@ import { RULES } from "./sim.gen.js";
 import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
 import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
-import {webAuth,webIdentity,hasWebCookie,WebSession} from "./web-auth.js";
+import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from "./web-auth.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -509,6 +509,14 @@ async function webhook(req, env) {
       if (n >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", n + " Stars refunds"]], now).catch(() => {});
     }
     return new Response("ok");
+  }
+  // Website login: only a genuine private-chat message delivered by Telegram's signed webhook
+  // can approve a fresh browser challenge. Never enable reminders for login-only messages.
+  const webLoginCode=typeof m?.text==='string'?m.text.match(/^\/(?:start(?:@LunarWarMachinesBot)?\s+web_|login(?:@LunarWarMachinesBot)?\s+)([a-f0-9]{48})$/i):null;
+  if(webLoginCode&&m.chat?.type==='private'&&Number.isSafeInteger(m.from?.id)&&m.from.id>0&&m.chat.id===m.from.id){
+    const success=await approveBotWebsiteLogin(env,webLoginCode[1].toLowerCase(),m.from);
+    await tg(env,'sendMessage',{chat_id:m.chat.id,text:success?'LUNAR website sign-in verified. Return to your original Safari/browser tab; the game will open automatically. Only approve sign-in requests you initiated.':'This website sign-in code has expired or was already used. Return to the website and request a new code.'});
+    return new Response('ok');
   }
   if (m && m.text && /^\/start/.test(m.text)) {
     // anyone who starts the bot can get the daily reminder (they can /stop it)

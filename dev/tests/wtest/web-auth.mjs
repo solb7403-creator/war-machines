@@ -121,6 +121,50 @@ assert.equal((await call('/auth/start')).headers.get('Location'),'/web/?login=se
 assert.equal((await call('/auth/session',undefined,codeSession)).status,200,'existing sessions remain valid when fresh OIDC configuration is absent');
 console.log('PASS redirect OIDC PKCE/state/nonce, confidential code exchange, shared signed sessions, replay, safe setup gating');
 
+
+// A Telegram-signed private bot command proves account ownership without relying on iOS OAuth handoff.
+// The URL code is independent of the HttpOnly browser session secret and is strictly single-use.
+let botStart=await call('/auth/bot/start',{});
+assert.equal(botStart.status,200);
+const botChallenge=await botStart.json(),browserCookie=cookieFrom(botStart,'__Host-lunar-login');
+assert.match(botChallenge.url,/^https:\/\/t\.me\/LunarWarMachinesBot\?start=web_[a-f0-9]{48}$/);
+assert.match(botChallenge.command,/^\/login [a-f0-9]{48}$/);
+assert.ok(!botChallenge.url.includes(browserCookie.split('=')[1]),'deep link must never expose the browser login secret');
+assert.equal((await call('/auth/bot/finish',{},browserCookie)).status,202,'browser waits for actual Telegram verification');
+const code=botChallenge.command.slice('/login '.length);
+const msg={message:{text:'/start web_'+code,chat:{id:888001,type:'private'},from:{id:888001,first_name:'Verified via bot',username:'realpilot'}}};
+const botWebhook=async(body,secret)=>worker.fetch(new Request(env.WEB_ORIGIN+'/api/tg-webhook',{method:'POST',headers:{'Content-Type':'application/json','x-telegram-bot-api-secret-token':secret},body:JSON.stringify(body)}),env);
+assert.equal((await botWebhook(msg,'forged')).status,403,'unsigned webhook must not authorize a web login');
+assert.equal((await call('/auth/bot/finish',{},browserCookie)).status,202,'forged update cannot authenticate');
+let sent=[];const webhookFetch=globalThis.fetch;
+globalThis.fetch=async(url,opts)=>{
+ if(String(url).includes('api.telegram.org/bot')&&String(url).endsWith('/sendMessage')){
+  sent.push(JSON.parse(opts.body));return Response.json({ok:true,result:{}});
+ }
+ return webhookFetch(url,opts);
+};
+const secret=await mod.webhookSecret(env);
+assert.equal((await botWebhook(msg,secret)).status,200);
+assert.equal(sent.length,1);assert.match(sent[0].text,/verified/i);
+const botLogin=await call('/auth/bot/finish',{},browserCookie);
+assert.equal(botLogin.status,200);
+const botSession=cookieFrom(botLogin,'__Host-lunar-session');
+assert.ok(botSession);
+assert.equal((await call('/auth/session',undefined,botSession)).status,200);
+assert.equal((await call('/auth/bot/finish',{},browserCookie)).status,401,'browser session cannot be claimed twice');
+assert.equal((await botWebhook(msg,secret)).status,200,'replayed signed bot command must be harmless');
+assert.match(sent.at(-1).text,/expired|used/i);
+let second=await call('/auth/bot/start',{}),secondBody=await second.json(),secondCookie=cookieFrom(second,'__Host-lunar-login');
+const crossChat={message:{text:secondBody.command,chat:{id:999003,type:'group'},from:{id:999003}}};
+await botWebhook(crossChat,secret);
+assert.equal((await call('/auth/bot/finish',{},secondCookie)).status,202,'group message cannot approve web identity');
+await botWebhook({message:{text:secondBody.command,chat:{id:888001,type:'private'},from:{id:888001,first_name:'Verified via bot'}}},secret);
+const secondDone=await call('/auth/bot/finish',{},secondCookie);
+assert.equal(secondDone.status,200,'manual /login command is supported when deep link fails');
+assert.equal((await secondDone.json()).user.id,888001,'bot account matches original Telegram Mini App player ID');
+globalThis.fetch=webhookFetch;
+console.log('PASS Telegram bot proof (signed private webhook), independent one-use code, pending/expiry, replay, no shared-secret leakage, browser session identity');
+
 env.WEB_LOGIN_ENABLED='0';assert.equal((await call('/auth/config').then(r=>r.json())).enabled,false);assert.equal((await call('/auth/challenge',{})).status,503);
 console.log('PASS official JWT signature/claims/nonce, race/replay/expiry/CSRF, first-party sessions/logout, shared Telegram identity, authoritative inventory/points/referral and private independent bays');
 

@@ -37,7 +37,15 @@ export class WebSession {
   if(!v||v.expires<=now){await this.state.storage.deleteAll();return json({error:'expired'},401);}
   if(op==='/consume'){
    if(v.kind!=='challenge')return json({error:'invalid'},400);
+   if(v.flow==='bot'&&!v.approved)return json({pending:true},202);
    await this.state.storage.deleteAll();return json(v);
+  }
+  if(op==='/approve'){
+   if(v.kind!=='challenge'||v.flow!=='bot'||v.approved)return json({error:'invalid'},409);
+   let b;try{b=await req.json();}catch{return json({error:'invalid'},400);}
+   if(b.code!==v.code||!b.user||!Number.isSafeInteger(b.user.id)||b.user.id<=0)return json({error:'invalid'},403);
+   v.approved={id:b.user.id,first_name:String(b.user.first_name||'Pilot').slice(0,64),last_name:String(b.user.last_name||'').slice(0,64),username:String(b.user.username||'').slice(0,64),web_auth:true};
+   await this.state.storage.put('record',v);return json({ok:true});
   }
   if(op==='/attempt'){
    if(v.kind!=='challenge'||(v.attempts||0)>=6)return json({error:'attempts'},429);
@@ -70,6 +78,14 @@ export async function verifyWebToken(token,env,challenge,now=Date.now()){
   return {id:p.id,first_name:String(p.given_name||p.name||'Pilot').slice(0,64),last_name:String(p.family_name||'').slice(0,64),username:String(p.preferred_username||'').slice(0,64),web_auth:true};
  }catch{return null;}
 }
+// Approve an independent one-use browser challenge only from the authenticated Telegram webhook.
+// The deep-link code is NOT the browser session cookie; forwarding the link cannot steal the session.
+export async function approveBotWebsiteLogin(env,code,user){
+ if(!ready(env)||typeof code!=='string'||!/^[a-f0-9]{48}$/.test(code)||!Number.isSafeInteger(user?.id)||user.id<=0)return false;
+ const index=await record(env,code,'consume');if(!index.ok)return false;
+ const v=await index.json();if(v.kind!=='challenge'||v.flow!=='bot_index'||typeof v.browser!=='string')return false;
+ const approve=await record(env,v.browser,'approve',{code,user});return approve.ok;
+}
 export async function webIdentity(req,env,csrf=true){
  if(!ready(env)||new URL(req.url).origin!==origin(env))return null;
  const token=getCookie(req,SESSION_COOKIE);if(!token||csrf&&!sameOrigin(req,env))return null;
@@ -84,6 +100,34 @@ export async function webAuth(req,env){
  if(path==='/auth/config'&&req.method==='GET')return json({enabled:codeReady(env),client_id:ready(env)?clientId(env):null,origin:origin(env),login:'telegram-oidc-code-pkce'});
  if(path==='/auth/session'&&req.method==='GET'){
   const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
+ }
+ // Browser/bot sign-in avoids cross-app OIDC handoff on iOS. Signed Telegram webhook proves identity.
+ if(path==='/auth/bot/start'&&req.method==='POST'){
+  if(!ready(env))return json({error:'login_setup_required'},503);
+  if(!sameOrigin(req,env))return json({error:'origin'},403);
+  if(limited(req))return json({error:'rate'},429);
+  const existing=await webIdentity(req,env,false);if(existing)return json({ok:true,signedIn:true});
+  const previous=getCookie(req,LOGIN_COOKIE);if(previous)await record(env,previous,'revoke').catch(()=>{});
+  const browser=random(),code=random().slice(0,48),now=Date.now(),expires=now+600000;
+  const first=await record(env,browser,'issue',{kind:'challenge',flow:'bot',code,created:now,expires});
+  if(!first.ok)return json({error:'session_store'},503);
+  const second=await record(env,code,'issue',{kind:'challenge',flow:'bot_index',browser,created:now,expires});
+  if(!second.ok){await record(env,browser,'revoke');return json({error:'session_store'},503);}
+  return json({ok:true,url:'https://t.me/LunarWarMachinesBot?start=web_'+code,command:'/login '+code,expires},200,cookie(LOGIN_COOKIE,browser,600));
+ }
+ if(path==='/auth/bot/finish'&&req.method==='POST'){
+  if(!ready(env))return json({error:'login_setup_required'},503);
+  if(!sameOrigin(req,env))return json({error:'origin'},403);
+  const browser=getCookie(req,LOGIN_COOKIE);if(!browser)return json({error:'expired'},401);
+  const used=await record(env,browser,'consume');
+  if(used.status===202)return json({pending:true},202);
+  if(!used.ok)return json({error:'expired'},401);
+  const v=await used.json();if(v.flow!=='bot'||!v.approved)return json({error:'identity'},401);
+  const sid=random(),csrf=random(),now=Date.now();
+  const issued=await record(env,sid,'issue',{kind:'session',user:v.approved,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+  if(!issued.ok)return json({error:'session_store'},503);
+  const result=json({ok:true,user:v.approved,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
+  result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
  }
  if(path==='/auth/start'&&req.method==='GET'){
   const target=safeTarget(new URL(req.url).searchParams.get('target'));

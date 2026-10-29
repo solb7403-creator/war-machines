@@ -16,9 +16,8 @@ function lunarLogin(target='play'){
   location.assign(lunarOrigin+'/web/'+context+'#'+t);
   return;
  }
- // The Worker creates a server-side PKCE challenge and redirects the top-level page to Telegram.
- // This works without popup messaging or depending on the Telegram JS SDK in iPhone Safari.
- location.assign('/auth/start?target='+encodeURIComponent(t));
+ // Open the first-party pilot verification screen; the Telegram bot confirms a one-time code.
+ location.assign('/web/login.html#'+t);
 }
 window.lunarLogin=lunarLogin;
 document.addEventListener('click',e=>{
