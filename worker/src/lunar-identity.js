@@ -67,7 +67,7 @@ export async function lunarAuth(req,env){
 
  if(path==='/auth/lunar/register/options'){
   const existing=await webIdentity(req,env,false);
-  if(existing?.user?.lunar_account)return bad('already_signed_in',409);
+  if(existing)return bad('already_signed_in',409);
   let b;try{b=await parse(req);}catch{return bad('bad_json');}
   const name=cleanName({first_name:String(b.name||'').trim()});
   if(!/^[A-Za-z0-9][A-Za-z0-9 ._-]{2,15}$/.test(String(b.name||'')))return bad('Choose a pilot name between 3 and 16 characters (letters, numbers, spaces, . _ -).');
