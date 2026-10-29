@@ -14,6 +14,7 @@ import {
 
 const LINK_COOKIE='__Host-lunar-link',MAX_BODY=20000;
 const idPattern=/^ln_[0-9]{12,15}$/;
+const firstPartyPattern=/^(?:ln_[0-9]{12,15}|tg_[0-9]{3,15})$/;
 const codePattern=/^[a-f0-9]{48}$/;
 const keyPattern=/^[A-Za-z0-9_-]{20,1500}$/;
 const b64u=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -50,6 +51,16 @@ export async function approveTelegramLunarLink(env,code,tgUser){
  if(item.kind!=='challenge'||item.flow!=='lunar_link_index'||!idPattern.test(item.pid)||!item.browser)return {ok:false,error:'invalid'};
  const account=await dbGet(env,'lunarAccounts/'+item.pid);
  if(!account?.id||account.id!==item.pid)return {ok:false,error:'account'};
+ // A pilot who started in Telegram must secure that original account with a passkey.
+ // Never silently point an established Telegram economy at a fresh Lunar account: it would orphan
+ // gear, lifetime credit, payment receipts, quests and referral history under tg_<id>.
+ const legacy='tg_'+tgUser.id;
+ const [secured,progress,profile]=await Promise.all([
+  dbGet(env,'lunarAccounts/'+legacy),
+  dbGet(env,'eco/'+legacy),
+  dbGet(env,'players/'+legacy)
+ ]);
+ if(secured||progress||profile)return {ok:false,error:'telegram_progress_exists'};
  // Firebase ETag transaction: a Telegram identity can bind to exactly one Lunar ID.
  const claimed=await claimOnce(env,'telegramLinks/'+tgUser.id,item.pid);
  if(!claimed.ok&&claimed.v!==item.pid)return {ok:false,error:'already_linked'};
@@ -108,6 +119,62 @@ export async function lunarAuth(req,env){
   }catch{return bad('passkey_verification_failed',401);}
  }
 
+ // Telegram-first upgrade: keep the existing tg_<id> game record and bind a new first-party
+ // passkey to it. This is not a destructive transfer, so every verified point and receipt survives.
+ if(path==='/auth/lunar/upgrade/options'){
+  const identity=await webIdentity(req,env);
+  if(!identity||!/^tg_[0-9]{3,15}$/.test(identity.pid)||identity.user?.lunar_account||identity.pid!=='tg_'+identity.user?.id)return bad('telegram_session_required',403);
+  if(await dbGet(env,'telegramLinks/'+identity.user.id))return bad('already_linked',409);
+  if(await dbGet(env,'lunarAccounts/'+identity.pid))return bad('already_secured',409);
+  const S=await dbGet(env,'eco/'+identity.pid);
+  if(S&&S.mig===0)return bad('complete_telegram_setup_first',409);
+  const profile=await dbGet(env,'players/'+identity.pid);
+  const name=cleanName({lunar_name:profile?.name||cleanName(identity.user)});
+  const options=await generateRegistrationOptions({
+   rpName:'LUNAR: War Machines',rpID:rpID(env),userID:new TextEncoder().encode(identity.pid),
+   userName:identity.pid,userDisplayName:name,attestationType:'none',supportedAlgorithmIDs:[-7,-257],
+   authenticatorSelection:{residentKey:'required',userVerification:'required'}
+  });
+  const prior=getCookie(req,WEB_LOGIN_COOKIE);if(prior)await record(env,prior,'revoke').catch(()=>{});
+  const browser=random(),now=Date.now();
+  const issued=await record(env,browser,'issue',{kind:'challenge',flow:'passkey_upgrade',
+   challenge:options.challenge,pid:identity.pid,name,sessionHash:await sha(identity.token),
+   created:now,expires:now+300000});
+  if(!issued.ok)return bad('session_store',503);
+  return cookieSet(json({ok:true,options}),WEB_LOGIN_COOKIE,browser,300);
+ }
+
+ if(path==='/auth/lunar/upgrade/verify'){
+  const identity=await webIdentity(req,env);
+  if(!identity||!/^tg_[0-9]{3,15}$/.test(identity.pid)||identity.user?.lunar_account||identity.pid!=='tg_'+identity.user?.id)return bad('telegram_session_required',403);
+  const browser=getCookie(req,WEB_LOGIN_COOKIE);if(!browser)return bad('expired',401);
+  const response=await record(env,browser,'consume');if(!response.ok)return bad('expired',401);
+  const stored=await response.json();
+  if(stored.flow!=='passkey_upgrade'||stored.pid!==identity.pid||stored.sessionHash!==await sha(identity.token))return bad('challenge',401);
+  let b;try{b=await parse(req);}catch{return bad('bad_json');}
+  try{
+   if(!b.credential||!keyPattern.test(String(b.credential.id||'')))return bad('credential',400);
+   const verified=await verifyRegistrationResponse({
+    response:b.credential,expectedChallenge:stored.challenge,expectedOrigin:origin(env),
+    expectedRPID:rpID(env),requireUserVerification:true,supportedAlgorithmIDs:[-7,-257]
+   });
+   if(!verified.verified||!verified.registrationInfo?.credential)return bad('identity',401);
+   if(await dbGet(env,'telegramLinks/'+identity.user.id))return bad('already_linked',409);
+   const credential=verified.registrationInfo.credential;
+   const keyPath=await credentialPath(credential.id);
+   if(await dbGet(env,keyPath))return bad('credential_already_registered',409);
+   const account={id:identity.pid,name:stored.name,created:Date.now(),type:'passkey',
+    source:'telegram',telegramId:identity.user.id,credentialIDs:[credential.id]};
+   const owner=await claimOnce(env,'lunarAccounts/'+identity.pid,account);
+   if(!owner.ok)return bad('already_secured',409);
+   const savedKey={pid:identity.pid,id:credential.id,publicKey:b64u(credential.publicKey),
+    counter:credential.counter||0,transports:credential.transports||[],created:Date.now()};
+   const claimed=await claimOnce(env,keyPath,savedKey);
+   if(!claimed.ok)return bad('credential_already_registered',409);
+   return await sessionResult(env,userOf(identity.pid,stored.name),identity.pid);
+  }catch{return bad('passkey_verification_failed',401);}
+ }
+
  if(path==='/auth/lunar/login/options'){
   const existing=await webIdentity(req,env,false);
   if(existing?.user?.lunar_account)return json({ok:true,signedIn:true});
@@ -130,7 +197,7 @@ export async function lunarAuth(req,env){
    const assertion=b.credential;
    if(!assertion||!keyPattern.test(String(assertion.id||'')))return bad('credential',400);
    const keyPath=await credentialPath(assertion.id),saved=await dbGet(env,keyPath);
-   if(!saved||!idPattern.test(saved.pid)||saved.id!==assertion.id)return bad('unknown_passkey',401);
+   if(!saved||!firstPartyPattern.test(saved.pid)||saved.id!==assertion.id)return bad('unknown_passkey',401);
    const checked=await verifyAuthenticationResponse({
     response:assertion,expectedChallenge:stored.challenge,expectedOrigin:origin(env),
     expectedRPID:rpID(env),requireUserVerification:true,
@@ -155,10 +222,11 @@ export async function lunarAuth(req,env){
 
  if(path==='/auth/lunar/link/start'){
   const identity=await webIdentity(req,env);
-  if(!identity?.user?.lunar_account||!idPattern.test(identity.pid))return bad('lunar_account_required',403);
+  if(!identity?.user?.lunar_account||!firstPartyPattern.test(identity.pid))return bad('lunar_account_required',403);
   const account=await dbGet(env,'lunarAccounts/'+identity.pid);
   if(!account||account.id!==identity.pid)return bad('account',403);
   if(account.telegramId)return json({ok:true,linked:true,telegramId:account.telegramId});
+  if(!idPattern.test(identity.pid))return bad('upgrade_account_not_linkable',409);
   const browser=random(),code=random().slice(0,48),now=Date.now(),expires=now+600000;
   const first=await record(env,browser,'issue',{kind:'challenge',flow:'lunar_link',pid:identity.pid,code,created:now,expires});
   if(!first.ok)return bad('session_store',503);
@@ -170,7 +238,7 @@ export async function lunarAuth(req,env){
 
  if(path==='/auth/lunar/link/status'){
   const identity=await webIdentity(req,env);
-  if(!identity?.user?.lunar_account||!idPattern.test(identity.pid))return bad('lunar_account_required',403);
+  if(!identity?.user?.lunar_account||!firstPartyPattern.test(identity.pid))return bad('lunar_account_required',403);
   const account=await dbGet(env,'lunarAccounts/'+identity.pid);
   if(!account)return bad('account',403);
   if(account.telegramId)return json({ok:true,linked:true,telegramId:account.telegramId});
@@ -187,7 +255,7 @@ export async function lunarAuth(req,env){
   const identity=await webIdentity(req,env);
   if(!identity)return bad('signed_out',401);
   const acc=identity.user?.lunar_account?await dbGet(env,'lunarAccounts/'+identity.pid):null;
-  return json({ok:true,pid:identity.pid,kind:identity.user?.lunar_account?'lunar':'telegram',name:acc?.name||cleanName(identity.user),telegramLinked:!!acc?.telegramId,telegramId:acc?.telegramId||null});
+  return json({ok:true,pid:identity.pid,kind:identity.user?.lunar_account?'lunar':'telegram',name:acc?.name||cleanName(identity.user),telegramLinked:!!acc?.telegramId,telegramId:acc?.telegramId||null,telegramOrigin:acc?.source==='telegram',canUpgrade:!identity.user?.lunar_account&&/^tg_[0-9]{3,15}$/.test(identity.pid)});
  }
 
  return bad('not_found',404);
