@@ -63,7 +63,7 @@ export async function lunarAuth(req,env){
  const path=new URL(req.url).pathname;
  if(!env.SESSIONS||!env.FIREBASE_DB_SECRET)return bad('account_service_unavailable',503);
  if(!authorized(req)||!sameOrigin(req,env))return bad('origin',403);
- if(limited(req))return bad('rate',429);
+ if(!['/auth/lunar/link/status','/auth/lunar/account'].includes(path)&&limited(req))return bad('rate',429);
 
  if(path==='/auth/lunar/register/options'){
   const existing=await webIdentity(req,env,false);
