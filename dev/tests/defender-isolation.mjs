@@ -1,4 +1,4 @@
-// Byte-level geometry/color/normal/animation parity for every non-target standard variant and both legends.
+// Phase 2 intentionally replaces standard models; retain byte parity for every Lunar Skin and Moonbeam path.
 import {readFileSync} from 'node:fs';
 import {createContext,runInContext} from 'node:vm';
 import {createHash} from 'node:crypto';
@@ -16,10 +16,11 @@ function hash(raw){
 }
 const results={};
 for(const cls of ['scout','vanguard','titan'])for(let tier=0;tier<3;tier++)for(const lunar of [false,true]){
- if(!(cls==='vanguard'&&tier===0&&!lunar))results['chassis/'+cls+'/'+tier+'/'+lunar]=hash(M.chassisKit(cls,tier,paints.stock,'#4d9fff',['dmg','rof','arm'],lunar));
- for(const w of ['pulse','twin','siege'])if(!(cls==='vanguard'&&w==='pulse'&&tier===0&&!lunar))results['weapon/'+cls+'/'+w+'/'+tier+'/'+lunar]=hash(M.weaponKit(w,tier,paints.stock,'#4d9fff',lunar,cls));
+ if(lunar)results['chassis/'+cls+'/'+tier+'/'+lunar]=hash(M.chassisKit(cls,tier,paints.stock,'#4d9fff',['dmg','rof','arm'],lunar));
+ for(const w of ['pulse','twin','siege'])if(lunar)results['weapon/'+cls+'/'+w+'/'+tier+'/'+lunar]=hash(M.weaponKit(w,tier,paints.stock,'#4d9fff',lunar,cls));
 }
 for(const cls of ['scout','vanguard','titan'])for(const lunar of [false,true])results['legend/moon/'+cls+'/'+lunar]=hash(M.weaponKit('moon',2,paints.stock,'#4d9fff',lunar,cls));
 const fixture=new URL('fixtures/defender-legacy-geometry.json',import.meta.url);
-assert.deepEqual(results,JSON.parse(readFileSync(fixture,'utf8')),'non-target models, Lunar Skin and Moonbeam must remain byte-identical');
-console.log('PASS',Object.keys(results).length,'unchanged chassis/weapon/legend geometry, normals, colors and animations against PR #13');
+const expected=Object.fromEntries(Object.entries(JSON.parse(readFileSync(fixture,'utf8'))).filter(([k])=>k.endsWith('/true')||k.startsWith('legend/')));
+assert.deepEqual(results,expected,'all Lunar Skin and Moonbeam models must remain byte-identical');
+console.log('PASS',Object.keys(results).length,'unchanged Lunar Skin / Moonbeam geometry, normals, colors and animations against PR #13');

@@ -108,28 +108,7 @@ function defenderChassis(k,C,gems,M,pm){
   plate([[.46,side*.055],[.99,side*.045],[1.05,side*.13],[.85,side*.28],[.45,side*.31]],.60,.045,F.plate,.012);
   put(k,B(.50,.026,.025),amber,[.68,.615,side*.34],[0,side*.17,-.08],null,'shine');
   // Independent wide track pod; an open belt reveals the wheel train instead of a solid block.
-  const z=side*.91;
-  put(k,defenderBelt(2.61,.48,.38),F.rubber,[0,.25,z]);
-  // Full stadium tread path, including both rounded noses. Pads have a raised center cleat.
-  const pad=(x,y,a)=>{put(k,B(.092,.041,.395),F.steel,[x,y,z],[0,0,a],null,'shine');put(k,B(.068,.055,.20),F.rubber,[x,y,z],[0,0,a]);};
-  for(let i=0;i<19;i++){const x=-1.065+i*2.13/18;pad(x,.495,0);pad(x,.005,0);}
-  for(const end of [-1,1])for(let i=1;i<8;i++){const a=i*Math.PI/8;pad(end*(1.065+Math.sin(a)*.24),.25+Math.cos(a)*.24,-end*a);}
-  const wheel=(x,r,y)=>{
-   const outer=side*1.115;
-   put(k,defenderCylinder(r,.033,16),F.recess,[x,y,outer],[Math.PI/2,0,0]);
-   put(k,defenderCylinder(r*.79,.04,14),F.steel,[x,y,side*1.134],[Math.PI/2,0,0],null,'shine');
-   put(k,defenderCylinder(r*.57,.045,12),F.body,[x,y,side*1.149],[Math.PI/2,0,0],null,'shine');
-   put(k,defenderCylinder(r*.24,.05,8),F.edge,[x,y,side*1.165],[Math.PI/2,0,0],null,'shine');
-   for(let j=0;j<3;j++){const a=j*Math.PI*2/3;put(k,CY(.012,.012,.016,6),F.edge,[x+Math.cos(a)*r*.64,y+Math.sin(a)*r*.64,side*1.161],[Math.PI/2,0,0],null,'shine');}
-  };
-  wheel(-1.065,.185,.25);wheel(1.065,.185,.25);
-  for(let i=0;i<5;i++)wheel(-.76+i*.38,.157,.215);
-  // Suspension swing arms, dampers and compact amber coil springs; none emit light.
-  for(const x of [-.52,.55]){
-   put(k,B(.28,.04,.028),F.steel,[x,.31,side*1.177],[0,0,.38],null,'shine');
-   put(k,defenderCylinder(.024,.26,10),F.steel,[x-.03,.405,side*1.11],[0,0,Math.PI/2],null,'shine');
-   for(let j=0;j<5;j++)put(k,TO(.045,.009,3,8),amber,[x-.13+j*.033,.405,side*1.11],[0,Math.PI/2,0],null,'shine');
-  }
+  trackAssembly(k,F,{len:2.61,h:.48,w:.38,z:side*.91,y:.25,wheels:7,detail:true});
   // Raised fender leaves wheels and lower suspension exposed. Overlapping sloped plates.
   plate([[-1.13,side*.61],[.88,side*.61],[1.12,side*.77],[.99,side*1.07],[-1.13,side*1.07]],.52,.075,F.body,.018);
   for(let i=0;i<3;i++){
@@ -157,7 +136,7 @@ function defenderChassis(k,C,gems,M,pm){
  sym(side=>put(k,B(.35,.021,.022),amber,[-.94,.69,side*.445],null,null,'shine'));
  put(k,defenderCylinder(.49,.065,28),F.recess,[0,.71,0]);
  put(k,defenderCylinder(.43,.04,28),F.steel,[0,.755,0],null,null,'shine');
- cores(k,C,gems,-.67,.715,[-.25,0,.25]);
+ cores(k,C,gems,-.90,.715,[-.25,0,.25]);
  M.ty=.777;M.tc=amber; // Existing attachment height and weapon interchange contract.
 }
 function defenderPulseTurret(k,C,M,pm){
@@ -202,6 +181,199 @@ function defenderPulseTurret(k,C,M,pm){
  M.tips.push([1.88,.245,0]);M.halos.push([1.87,.245,0,ice,.15]);
 }
 
+// Standard visual catalog v2. IDs/tiers are render selections, never equipment or stat definitions.
+const VISUAL_VERSION=2;
+const CHASSIS_VISUALS={
+ scout:[
+  {len:1.94,trackZ:.64,trackW:.27,h:.36,deck:.47,ring:.56,armor:0,shape:'dart',wheels:4},
+  {len:2.05,trackZ:.69,trackW:.29,h:.38,deck:.49,ring:.59,armor:1,shape:'split',wheels:4},
+  {len:2.16,trackZ:.72,trackW:.30,h:.39,deck:.51,ring:.62,armor:2,shape:'outrigger',wheels:5}],
+ vanguard:[
+  {len:2.61,trackZ:.91,trackW:.38,h:.48,deck:.66,ring:.777,armor:0,shape:'defender',wheels:7},
+  {len:2.55,trackZ:.90,trackW:.36,h:.46,deck:.63,ring:.74,armor:1,shape:'wedge',wheels:6},
+  {len:2.64,trackZ:.94,trackW:.38,h:.48,deck:.68,ring:.80,armor:2,shape:'citadel',wheels:6}],
+ titan:[
+  {len:2.58,trackZ:.98,trackW:.42,h:.55,deck:.68,ring:.82,armor:0,shape:'bulwark',wheels:6},
+  {len:2.68,trackZ:1.01,trackW:.44,h:.56,deck:.72,ring:.86,armor:1,shape:'ram',wheels:6},
+  {len:2.78,trackZ:1.04,trackW:.44,h:.56,deck:.77,ring:.91,armor:2,shape:'four-pod',wheels:6}]
+};
+const WEAPON_VISUALS={
+ pulse:[{tip:1.88,y:.245,bore:.087,kind:'segmented',width:.46},{tip:1.94,y:.25,bore:.10,kind:'capacitor',width:.49},{tip:2.02,y:.26,bore:.12,kind:'accelerator',width:.52}],
+ twin:[{tip:1.74,y:.22,bore:.047,kind:'feed',width:.45},{tip:1.88,y:.23,bore:.055,kind:'drums',width:.50},{tip:1.98,y:.24,bore:.06,kind:'rotary',width:.55}],
+ siege:[{tip:1.88,y:.29,bore:.16,kind:'breech',width:.50},{tip:2.0,y:.31,bore:.18,kind:'recoil',width:.55},{tip:2.12,y:.35,bore:.16,kind:'split-brake',width:.59}]
+};
+const visualTier=t=>Math.max(0,Math.min(2,Number.isFinite(Number(t))?Math.trunc(Number(t)):0));
+function armorPart(k,pts,y,h,col,b=.018){put(k,defenderPlate(pts,h,b),col,[0,y,0],null,null,'shine');}
+function wheelAssembly(k,F,x,y,z,r,detail){
+ const side=Math.sign(z)||1;
+ put(k,defenderCylinder(r,.028,detail?16:12),F.recess,[x,y,z],[Math.PI/2,0,0]);
+ put(k,defenderCylinder(r*.78,.037,detail?14:10),F.steel,[x,y,z+side*.019],[Math.PI/2,0,0],null,'shine');
+ put(k,defenderCylinder(r*.55,.043,detail?12:10),F.body,[x,y,z+side*.034],[Math.PI/2,0,0],null,'shine');
+ put(k,defenderCylinder(r*.24,.05,8),F.edge,[x,y,z+side*.05],[Math.PI/2,0,0],null,'shine');
+ for(let j=0;j<(detail?3:2);j++){const a=j*Math.PI*2/(detail?3:2);put(k,CY(.012,.012,.016,6),F.edge,[x+Math.cos(a)*r*.64,y+Math.sin(a)*r*.64,z+side*.046],[Math.PI/2,0,0],null,'shine');}
+}
+function trackAssembly(k,F,o){
+ const {len,h,w,z,y=h/2+.01,wheels=5,detail=false,center=0}=o,side=Math.sign(z),a=(len-h)/2,r=h/2;
+ put(k,defenderBelt(len,h,w),F.rubber,[center,y,z]);
+ const pad=(x,py,ang)=>{put(k,B(detail?.092:.115,.039,w+.015),F.steel,[center+x,py,z],[0,0,ang],null,'shine');if(detail)put(k,B(.068,.055,w*.53),F.rubber,[center+x,py,z],[0,0,ang]);};
+ const n=detail?19:13;for(let i=0;i<n;i++){const x=-a+i*2*a/(n-1);pad(x,y+r,0);pad(x,y-r,0);}
+ for(const end of [-1,1])for(let i=1;i<7;i++){const q=i*Math.PI/7;pad(end*(a+Math.sin(q)*r),y+Math.cos(q)*r,-end*q);}
+ for(let i=0;i<wheels;i++){const x=center-a+2*a*i/(wheels-1),end=i===0||i===wheels-1;wheelAssembly(k,F,x,end?y:y-.035,z+side*(w/2+.015),r*(end?.77:.66),detail);}
+ for(const x of [-a*.5,a*.5]){
+  put(k,B(.25,.035,.025),F.steel,[center+x,y+.06,z+side*(w/2+.055)],[0,0,.38],null,'shine');
+  put(k,defenderCylinder(.024,.24,8),F.steel,[center+x,y+.155,z+side*w/2],[0,0,Math.PI/2],null,'shine');
+  for(let j=0;j<4;j++)put(k,TO(.039,.009,3,8),F.amber,[center+x-.09+j*.04,y+.155,z+side*w/2],[0,Math.PI/2,0],null,'shine');
+ }
+}
+function ventBank(k,F,x,y,z,n=5,axis='deck'){
+ put(k,B(.34,axis==='deck'?.022:.12,.22),F.recess,[x,y,z]);
+ for(let i=0;i<n;i++)put(k,B(.26,.014,.022),F.steel,[x,y+.019,z-.085+i*.17/(n-1)],null,null,'shine');
+}
+function sensorBlock(k,F,x,y,z,team){
+ put(k,B(.16,.075,.15),F.body,[x,y,z],null,null,'shine');put(k,B(.014,.027,.085),team||F.ice,[x+.086,y+.006,z],null,null,'glow');
+}
+function mountSocket(k,F,y){put(k,defenderCylinder(.48,.06,24),F.recess,[0,y-.055,0]);put(k,defenderCylinder(.43,.035,24),F.steel,[0,y-.0175,0],null,null,'shine');}
+function standardChassis(cls,tier,P,team,gems){
+ const o=CHASSIS_VISUALS[cls][tier],k=kit(),A=[],C=palette(P,team,cls,false),F=defenderFinish(C),M={ty:o.ring,halos:[],trail:[],tc:F.amber,bob:0,visual:VISUAL_VERSION};
+ if(o.shape==='defender'){defenderChassis(k,C,gems,M,PM(C));return {k,anims:A,meta:M};}
+ const scout=cls==='scout',titan=cls==='titan',width=scout?.38:titan?.66:.53,half=o.len/2-.10;
+ const bp=[[-half,-width],[half*.52,-width],[half*.88,-width*.64],[half,0],[half*.88,width*.64],[half*.52,width],[-half,width]];
+ const tp=sc(bp,scout?.88:.89,scout?.73:.82,-.06);
+ put(k,loft(bp,tp,.24,o.deck-.05),F.body,null,null,null,'shine');
+ armorPart(k,sc(tp,.94,.93,-.025),o.deck-.05,.07,F.plate);
+ sym(side=>{
+  if(o.shape==='four-pod'||o.shape==='outrigger')for(const x of (scout?[-.59,.59]:[-.70,.70]))trackAssembly(k,F,{len:scout?1.02:1.26,h:o.h,w:o.trackW,z:side*(o.trackZ+(scout&&x<0?.06:0)),center:x,wheels:3});
+  else trackAssembly(k,F,{len:o.len,h:o.h,w:o.trackW,z:side*o.trackZ,wheels:o.wheels});
+  // Chassis-specific fenders: narrow Scout rails, layered Vanguard scales, deep Titan shoulder armor.
+  const inside=o.trackZ-o.trackW*.42,outside=o.trackZ+o.trackW*.43;
+  armorPart(k,[[-half,side*inside],[half*.79,side*inside],[half*.90,side*(inside+.07)],[half*.74,side*outside],[-half,side*outside]],o.h+.045,titan?.12:.065,F.body);
+  const count=scout?2:3;
+  for(let i=0;i<count;i++){
+   const x=-half*.86+i*(o.len*.68/count),length=o.len*.53/count;
+   armorPart(k,[[x,side*(inside+.035)],[x+length,side*(inside+.01)],[x+length+.09,side*(outside-.02)],[x+.03,side*outside]],o.h+.10,.04,F.plate,.012);
+   put(k,B(length*.57,.014,.023),F.edge,[x+length*.5,o.h+.154,side*(outside-.035)],null,null,'shine');
+  }
+  put(k,B(.22,.02,.036),C.team,[.26,o.h+.17,side*(inside+.06)],null,null,'glow');
+  put(k,B(.035,.065,.17),F.recess,[half*.85,o.h*.8,side*o.trackZ]);
+  put(k,B(.04,.025,.08),F.ice,[half*.87,o.h*.8,side*o.trackZ],null,null,'glow');M.halos.push([half*.87,o.h*.8,side*o.trackZ,F.ice,.14]);
+  ventBank(k,F,-half*.70,o.deck+.04,side*width*.58,scout?4:6);
+  put(k,B(.02,.025,.12),'#b84827',[-half-.02,o.h*.8,side*o.trackZ],null,null,'glow');
+  if(tier){
+   // Explicit silhouette progression: split sensor shoulders, stepped armor and frontal rams.
+   const y=o.deck+.04,xa=scout?-.65:-.45,za=scout?.39:titan?.71:.57;
+   armorPart(k,[[xa,side*za],[xa+.44,side*(za-.06)],[xa+.62,side*(za+.08)],[xa+.02,side*(za+.16)]],y,.05+tier*.015,F.body);
+   put(k,B(.24,.022,.022),TIERC[tier],[xa+.24,y+.12,side*(za+.12)],null,null,'shine');
+   if(scout)sensorBlock(k,F,xa+.10,y+.07,side*za,C.team);
+   else armorPart(k,[[half*.52,side*.24],[half*1.02,side*.33],[half*.96,side*.70],[half*.54,side*.63]],.24,.13+tier*.04,F.plate);
+  }
+  if(tier===2){
+   // Epic Scout: swept rear stabilizer rails; Vanguard: armored cooling banks; Titan: pod bridges.
+   const x=scout?-.85:-.65,z=scout?.58:titan?.91:.72;
+   armorPart(k,[[x-.24,side*(z-.10)],[x+.30,side*(z-.08)],[x+.46,side*(z+.16)],[x-.34,side*(z+.20)]],o.deck+.08,.075,F.plate);
+   ventBank(k,F,x+.02,o.deck+.13,side*z,5);
+   put(k,B(.32,.018,.025),F.amber,[x,o.deck+.20,side*(z+.12)],null,null,'shine');
+  }
+ });
+ // Class/tier authored modules add different silhouettes, not recolored copies.
+ if(scout&&tier===1){
+  sym(s=>armorPart(k,[[-.94,s*.31],[-.42,s*.34],[-.35,s*.66],[-1.01,s*.68]],o.deck+.045,.075,F.body));
+  armorPart(k,[[.10,-.09],[1.00,-.055],[1.08,0],[1.00,.055],[.10,.09]],o.deck+.015,.06,F.plate,.014);
+ }
+ if(scout&&tier===2){
+  sym(s=>{put(k,B(.45,.055,.07),F.steel,[-.39,.35,s*.49],[0,s*.25,0],null,'shine');armorPart(k,[[-.92,s*.35],[-.49,s*.31],[-.38,s*.72],[-1.08,s*.80]],o.deck+.02,.055,F.plate,.014);});
+ }
+ if(cls==='vanguard'&&tier===2){
+  sym(s=>{armorPart(k,[[.38,s*.59],[.83,s*.65],[.91,s*.93],[.33,s*.98]],.58,.16,F.plate);ventBank(k,F,.61,.758,s*.78,5);});
+ }
+ if(titan&&tier===1){
+  put(k,loft([[1.02,-.96],[1.42,-.85],[1.42,.85],[1.02,.96]],[[1.03,-.91],[1.26,-.78],[1.26,.78],[1.03,.91]],.15,.51),F.plate,null,null,null,'shine');
+  put(k,B(.035,.035,1.50),F.edge,[1.35,.27,0],null,null,'shine');
+ }
+ if(titan&&tier===2){
+  sym(s=>{for(const x of [-.68,.67])armorPart(k,[[x-.27,s*.71],[x+.26,s*.72],[x+.32,s*1.16],[x-.32,s*1.16]],.58,.18,F.plate);});
+  armorPart(k,[[-1.12,-.40],[-.78,-.40],[-.78,.40],[-1.12,.40]],.76,.13,F.body);
+ }
+ if(titan){
+  // Broad beveled glacis and functional tow eyes emphasize mass rather than just scaling.
+  armorPart(k,[[.50,-.47],[half,-.36],[half+.08,0],[half,.36],[.50,.47]],.30,.16+tier*.025,F.plate);
+  sym(s=>put(k,TO(.075,.02,4,12),F.steel,[half,.30,s*.46],[0,Math.PI/2,0],null,'shine'));
+ }else if(scout){
+  armorPart(k,[[.10,-.16],[half*.75,-.11],[half*.93,0],[half*.75,.11],[.10,.16]],o.deck,.04,F.body,.012);
+  sensorBlock(k,F,-.76,o.deck+.06,-.16,C.team);
+ }else{
+  sym(s=>armorPart(k,[[.26,s*.055],[half*.92,s*.03],[half*.98,s*.18],[.50,s*.34]],o.deck-.015,.05,F.body,.012));
+ }
+ mountSocket(k,F,o.ring);cores(k,C,gems,-.90,o.deck+.05,[-.25,0,.25]);
+ if(tier===2)sensorBlock(k,F,-.90,o.deck+.10,o.trackZ,C.team);
+ return {k,anims:A,meta:M};
+}
+function turretHousing(k,F,C,o,tier,arch){
+ const w=o.width,back=arch==='siege'?-.66:-.56;
+ const p=[[back,-w],[.14,-w],[.49,-w*.65],[.58,0],[.49,w*.65],[.14,w],[back,w]];
+ put(k,defenderCylinder(.43,.06,24),F.recess,[0,.03,0]);put(k,loft(p,sc(p,.84,.80,-.025),.06,.29),F.tur,null,null,null,'shine');
+ armorPart(k,sc(p,.70,.65,-.08),.285,.055,F.plate);
+ sym(s=>{
+  armorPart(k,[[back+.06,s*w*.75],[.05,s*w*.73],[.38,s*w*.40],[.17,s*(w+.08)],[back+.06,s*(w+.04)]],.16,.09,F.body,.015);
+  put(k,B(.29,.018,.022),F.amber,[-.24,.25,s*(w+.055)],null,null,'shine');
+  if(tier)ventBank(k,F,-.29,.35,s*(w-.05),4+tier);
+  put(k,B(.12,.018,.024),C.team,[.02,.35,s*w*.60],null,null,'glow');
+ });
+ sensorBlock(k,F,-.06,.38,-.16,C.team);
+}
+function barrelUnit(k,F,o,x0,z,r,style){
+ const x1=o.tip,y=o.y,len=x1-x0;
+ put(k,defenderCylinder(r,len,16),F.steel,[(x0+x1)/2,y,z],[0,0,Math.PI/2],null,'shine');
+ // Segmented jacket, collars and recessed cooling slots; muzzle bore is dark geometry.
+ const n=style==='heavy'?2:3;
+ for(let i=0;i<n;i++){
+  const x=x0+.13+(len-.35)*i/Math.max(1,n-1);
+  put(k,defenderCylinder(r*1.35,.15,12),F.body,[x,y,z],[0,0,Math.PI/2],null,'shine');
+  put(k,TO(r*1.36,.010,4,12),F.amber,[x-.067,y,z],[0,Math.PI/2,0],null,'shine');
+  sym(s=>put(k,B(.08,r*.28,.015),F.recess,[x,y,z+s*r*1.34]));
+ }
+ put(k,defenderCylinder(r*1.57,.18,style==='heavy'?8:12),F.plate,[x1-.10,y,z],[0,0,Math.PI/2],null,'shine');
+ put(k,defenderCylinder(r*.98,.014,16),F.edge,[x1-.003,y,z],[0,0,Math.PI/2],null,'shine');
+ put(k,defenderCylinder(r*.77,.018,16),F.recess,[x1+.003,y,z],[0,0,Math.PI/2]);
+}
+function standardWeapon(arch,tier,P,team){
+ const o=WEAPON_VISUALS[arch][tier],C=palette(P,team,'vanguard',false),F=defenderFinish(C),k=kit(),A=[],M={tips:[],halos:[],visual:VISUAL_VERSION};
+ if(arch==='pulse'&&tier===0){defenderPulseTurret(k,C,M,PM(C));return {k,anims:A,meta:M};}
+ turretHousing(k,F,C,o,tier,arch);
+ if(arch==='pulse'){
+  barrelUnit(k,F,o,.53,0,o.bore,'energy');
+  for(let i=0;i<(tier===2?5:3);i++){const x=.64+i*.24;put(k,TO(o.bore*1.55,.020,4,16),i%2?F.steel:F.ice,[x,o.y,0],[0,Math.PI/2,0],null,i%2?'shine':'glow');}
+  if(tier===2){sym(s=>put(k,B(1.2,.07,.08),F.plate,[1.15,o.y,s*.20],null,null,'shine'));const a=kit();put(a,TO(.18,.018,4,16,Math.PI*1.5),F.amber,[0,0,0],[0,Math.PI/2,0],null,'shine');A.push({k:a,p:[.72,o.y,0],axis:'x',spd:3});}
+  else sym(s=>put(k,defenderCylinder(.13,.32,12),F.body,[-.30,.21,s*.52],[Math.PI/2,0,0],null,'shine'));
+  M.tips.push([o.tip+.012,o.y,0]);
+ }else if(arch==='twin'){
+  const z=tier===2?.25:.21;
+  sym(s=>{
+   barrelUnit(k,F,o,.48,s*z,o.bore,'repeater');
+   put(k,B(.44,.17,.17),F.plate,[-.12,.20,s*(tier?.54:.46)],null,null,'shine');
+   if(tier){put(k,defenderCylinder(.16,.15,16),F.body,[-.25,.23,s*.59],[Math.PI/2,0,0],null,'shine');put(k,defenderCylinder(.085,.17,12),F.edge,[-.25,.23,s*.61],[Math.PI/2,0,0],null,'shine');}
+   if(tier===2){put(k,B(.30,.18,.25),F.plate,[-.43,.36,s*.49],null,null,'shine');const r=kit();for(const d of [-1,1])put(r,B(.6,.035,.035),F.steel,[.1,d*.10,0],null,null,'shine');put(r,TO(.115,.018,4,12),F.amber,[.36,0,0],[0,Math.PI/2,0],null,'shine');A.push({k:r,p:[1.10,o.y,s*z],axis:'x',spd:8*s});}
+   else for(let i=0;i<3;i++)put(k,B(.05,.055,.028),F.amber,[-.31+i*.10,.30,s*.47],null,null,'shine');
+   M.tips.push([o.tip+.012,o.y,s*z]);
+  });
+  put(k,B(.45,.06,.17),F.recess,[.46,.10,0]);
+ }else{
+  if(tier===2)sym(s=>barrelUnit(k,F,o,.50,s*.235,o.bore,'heavy'));else barrelUnit(k,F,o,.50,0,o.bore,'heavy');
+  // Broad trunnion and recoil cylinders give artillery a fundamentally different profile.
+  put(k,B(.48,.29,.54),F.body,[.38,.23,0]);
+  sym(s=>{put(k,defenderCylinder(.06,.76,12),F.steel,[.79,.39,s*.30],[0,0,Math.PI/2],null,'shine');put(k,defenderCylinder(.09,.31,12),F.body,[.50,.39,s*.30],[0,0,Math.PI/2],null,'shine');
+   if(tier)armorPart(k,[[.38,s*.22],[1.30,s*.21],[1.48,s*.32],[.50,s*.40]],.08,.10,F.plate);
+   if(tier===2){put(k,B(.27,.24,.075),F.plate,[o.tip-.13,o.y,s*.29],[0,s*.18,0],null,'shine');put(k,B(.13,.08,.018),F.recess,[o.tip-.12,o.y,s*.333]);}
+  });
+  if(tier===2){armorPart(k,[[-.72,-.26],[-.37,-.26],[-.37,.26],[-.72,.26]],.20,.22,F.plate);sym(s=>ventBank(k,F,-.57,.45,s*.24,6));}
+  if(tier===2)sym(s=>M.tips.push([o.tip+.012,o.y,s*.235]));else M.tips.push([o.tip+.012,o.y,0]);
+ }
+ for(const p of M.tips)M.halos.push([...p,F.ice,arch==='siege'?.20:.13]);
+ return {k,anims:A,meta:M};
+}
+// Preserve the public factories, with legendary geometry delegated to the exact old path.
+function chassisKit(cls,tier,P,team,gems,lunar){return !lunar&&CHASSIS_VISUALS[cls]?standardChassis(cls,visualTier(tier),P,team,gems):legacyChassisKit(cls,tier,P,team,gems,lunar);}
+function weaponKit(arch,tier,P,team,lunar,cls){return !lunar&&WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team):legacyWeaponKit(arch,tier,P,team,lunar,cls);}
+
 // ---------- chassis ----------
 // returns {k, anims:[{k,p,axis,spd,type}], meta:{ty, halos:[[x,y,z,col,size]], trail:[[x,y,z]], tc, bob}}
 const SCB=[[-0.95,-0.42],[0.75,-0.42],[1.05,-0.15],[1.05,0.15],[0.75,0.42],[-0.95,0.42]],SCT=[[-0.85,-0.3],[0.52,-0.3],[0.8,-0.1],[0.8,0.1],[0.52,0.3],[-0.85,0.3]];
@@ -218,7 +390,7 @@ function cores(k,C,gems,x,y,zs){   // three core sockets on the rear deck, lit b
  zs.forEach((z,i)=>{put(k,CY(0.1,0.12,0.05,8),'#0b1016',[x,y,z]);const gk=gems&&gems[i];
   if(gk&&GEM[gk])put(k,OC(0.085),GEM[gk].c,[x,y+0.08,z],null,[1,1.3,1],'glow');});
 }
-function chassisKit(cls,tier,P,team,gems,lunar){
+function legacyChassisKit(cls,tier,P,team,gems,lunar){
  const k=kit(),A=[],C=palette(P,team,cls,lunar),rc=TIERC[tier],M={ty:0.55,halos:[],trail:[],tc:C.acc,bob:0},pm=PM(C);
  if(cls==='scout'){
   if(tier<2){
@@ -356,7 +528,7 @@ function chassisKit(cls,tier,P,team,gems,lunar){
 }
 
 // ---------- weapons (the turret): origin = turret ring, barrel along +x ----------
-function weaponKit(arch,tier,P,team,lunar,cls){
+function legacyWeaponKit(arch,tier,P,team,lunar,cls){
  const k=kit(),A=[],C=palette(P,team,cls,lunar),rc=TIERC[tier],M={tips:[],halos:[]},pm=PM(C);
  const wc=WEAPONS[arch]?WEAPONS[arch].c:'#3fd0c9';
  const core=(x,y)=>{put(k,OC(0.11),C.team,[x,y,0],null,[1,1.3,1],'glow');M.halos.push([x,y,0,C.team,0.35]);};
@@ -663,8 +835,22 @@ function crateGeo(){const k=kit();
  put(k,B(1.2,0.06,0.06),'#b08a5a',[0,0.5,0.51],[0,0,0.75]);put(k,B(1.2,0.06,0.06),'#b08a5a',[0,0.5,0.51],[0,0,-0.75]);
  return bake(k);}
 // Bounded fitting geometry, merged into the existing material buckets; no collision changes.
-function fittingKit(f,team,part){
+function fittingKit(f,team,part,context){
  const k=kit(),steel='#91a1b3';
+ if(context&&!context.lunar&&CHASSIS_VISUALS[context.cls]){
+  const o=CHASSIS_VISUALS[context.cls][visualTier(context.ct)],w=WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)];
+  if(part==='body'){
+   if(f.hull==='plates')sym(s=>put(k,B(.85,.08,.14),steel,[-.13,o.h+.22,s*(o.trackZ-.02)]));
+   if(f.hull==='light')for(const x of [-.55,-.30,-.05])put(k,B(.07,.025,.45),team,[x,o.deck+.045,0],null,null,'glow');
+   if(f.mobility==='sprint')sym(s=>put(k,B(.55,.07,.12),team,[-.82,o.h*.65,s*o.trackZ],null,null,'glow'));
+   if(f.mobility==='stable')sym(s=>{for(const x of [-.65,.65])put(k,CY(.14,.14,.035,10),steel,[x,o.h*.5,s*(o.trackZ+o.trackW/2+.075)],[Math.PI/2,0,0],null,'shine');});
+  }else if(w){
+   if(f.mount==='hardened')sym(s=>put(k,B(.34,.16,.07),steel,[.27,.21,s*(w.width+.11)],null,null,'shine'));
+   if(f.mount==='firing')for(const x of [.60,.82,1.04])put(k,B(.05,.09,.35),steel,[x,w.y+.19,0],null,null,'shine');
+  }else return fittingKit(f,team,part); // Moonbeam keeps the original mount fitting attachment.
+  return {k,anims:[],meta:{}};
+ }
+
  if(part==='body'){
   if(f.hull==='plates')sym(z=>put(k,B(1.15,.16,.18),steel,[-.1,.55,z*.5]));
   if(f.hull==='light')for(const x of [-.6,-.3,0])put(k,B(.07,.035,.6),team,[x,.56,0],[0,-.3,0],null,'glow');
@@ -676,5 +862,5 @@ function fittingKit(f,team,part){
  }
  return {k,anims:[],meta:{}};
 }
-return {fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+return {VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();

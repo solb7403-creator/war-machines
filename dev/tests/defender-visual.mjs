@@ -68,4 +68,4 @@ assert.match(rules,/const STOCK_L=\{w:\{a:'pulse',t:0/, 'starter weapon unchange
 assert.match(rules,/c:\{c:'vanguard',t:0/, 'starter chassis and stats unchanged');
 console.log('PASS Defender real THREE geometry, tracks, armor, amber/cyan lighting, modular weapons, bounded cost, legend isolation, unchanged game rules',JSON.stringify({defenderVertices:dc,cannonVertices:wc}));
 
-await import('./defender-isolation.mjs');
+await import('./standard-equipment.mjs');
