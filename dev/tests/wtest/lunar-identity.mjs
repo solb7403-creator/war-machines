@@ -263,8 +263,8 @@ const upgradedAssertion={
 const oldBot=env.BOT_TOKEN;delete env.BOT_TOKEN;
 const upgradedLogin=await call('/auth/lunar/login/verify',{credential:upgradedAssertion},freshCookie);
 assert.equal(upgradedLogin.status,200,JSON.stringify(await upgradedLogin.clone().json()));
-assert.equal((await upgradedLogin.json()).pid,oldPid,'passkey sign-in is the same Telegram-first pilot even with Telegram unavailable');
-const newSession=await upgradedLogin.clone().json();
+const newSession=await upgradedLogin.json();
+assert.equal(newSession.pid,oldPid,'passkey sign-in is the same Telegram-first pilot even with Telegram unavailable');
 const passkeySessionCookie=cookie(upgradedLogin,'__Host-lunar-session');
 assert.equal((await call('/api/sync',{lab:1},passkeySessionCookie,newSession.csrf)).status,200,'independent browser gameplay succeeds with Telegram disabled');
 assert.equal(db.get('/eco/'+oldPid).earned,beforeUpgrade.earned,'verified earned points survive');
