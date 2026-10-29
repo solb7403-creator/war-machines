@@ -23,3 +23,17 @@ class_name = "PvpLobby"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["PvpRoom", "PvpLobby"]
+
+# Website and its account API share the Workers origin: first-party cookies work in Safari.
+[assets]
+directory = "./site-assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "WebSession"
+
+[[migrations]]
+tag = "v2-web-sessions"
+new_sqlite_classes = ["WebSession"]

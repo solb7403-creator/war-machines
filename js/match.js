@@ -94,7 +94,7 @@ let mTicket=null;
 const TICKET_RETRY_MS=4000,TICKET_TRY_MS=3500;
 function apiTimed(path,body,ms){
  const ac=typeof AbortController==='function'?new AbortController():null,tm=ac?setTimeout(()=>ac.abort(),ms):0;
- return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({initData:IN_TG?TG.initData:''},body||{})),signal:ac?ac.signal:undefined})
+ return apiFetch(path,body,ac?ac.signal:undefined)
   .then(r=>r.json().then(j=>({j,st:r.status}),()=>({j:null,st:r.status}))).finally(()=>clearTimeout(tm));
 }
 function matchStart(){
@@ -175,7 +175,8 @@ function localEnd(forced){
  const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=powerBracket(battlePower===null?calcPower():battlePower);
  const mo={won,drawn,place,top3,g:matchG,m:mk,feat,series:!!series,quick:!!lastQuick,map:curMap};
  const before=save.earned||0;
- const r=ecoMatchPts(save,mo,brk.mult,ecoX());   // the same rules the server scores with
+ const r=ecoMatchPts(IN_WEB?JSON.parse(JSON.stringify(save)):save,mo,brk.mult,ecoX());
+ if(IN_WEB){r.pts=0;r.awarded=0;} // Only the scored server response may change website progression.
  if(!SRV_ECO&&r.pts>0&&!r.awarded)showToast('Daily point cap reached. It resets at 00:00 UTC.');
  afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
  const st=mstat||{};
@@ -191,7 +192,7 @@ function afterMatch(o){
  const wasDone={};QUESTS.forEach(q=>wasDone[q.id]=!!(save.q[q.id]&&save.q[q.id].done));
  const dqBefore=dailyQuests().filter(q=>q.done).map(q=>q.id),wqBefore=weeklyQuests().filter(q=>q.done).map(q=>q.id);
  // the shared rules (rules.js). In Telegram the server does the same with its own copy, and its record replaces this one
- ecoAfterMatch(save,{won,drawn,top3,feat,quick:o.quick!==undefined?o.quick:(typeof lastQuick!=='undefined'&&lastQuick),g:matchG,m:o.mode,map:curMap,streak:o.streak!==undefined?o.streak:save.streak,seriesW:sw,st},ecoX());
+ if(!IN_WEB)ecoAfterMatch(save,{won,drawn,top3,feat,quick:o.quick!==undefined?o.quick:(typeof lastQuick!=='undefined'&&lastQuick),g:matchG,m:o.mode,map:curMap,streak:o.streak!==undefined?o.streak:save.streak,seriesW:sw,st},ecoX());
  const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id)).concat(weeklyQuests().filter(q=>q.done&&!wqBefore.includes(q.id)));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
  lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,

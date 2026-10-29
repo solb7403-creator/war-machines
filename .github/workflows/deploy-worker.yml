@@ -5,7 +5,7 @@ name: Deploy Stars server (Cloudflare)
 on:
   push:
     branches: [main]
-    paths: ['worker/**', 'js/game.js', 'js/rules.js', 'dev/tests/wtest/**', '.github/workflows/deploy-worker.yml']
+    paths: ['worker/**', 'js/game.js', 'js/rules.js', 'web/**', 'css/**', 'js/**', 'version.json', 'dev/tests/wtest/**', '.github/workflows/deploy-worker.yml']
   workflow_dispatch:
 jobs:
   deploy:
@@ -26,11 +26,16 @@ jobs:
           [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
       - name: Build the match sim (js/rules.js + js/game.js -> worker/src/sim.gen.js)
         run: node worker/build-sim.mjs
+      - name: Package official website assets
+        run: node worker/build-web.mjs
       - name: Server tests (points, payments, live matches, farm defense)
         run: |
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/pvp.mjs
           node dev/tests/wtest/farm.mjs
+          node dev/tests/wtest/web-auth.mjs
+          node dev/tests/wtest/lab.mjs
+          node dev/tests/wtest/lab-battle.mjs
       - name: Live-match smoke test in the Workers runtime
         working-directory: worker
         env:
@@ -60,10 +65,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+          WEB_LOGIN_ENABLED: ${{ vars.WEB_LOGIN_ENABLED }}
         run: |
           set -o pipefail
           run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
-          run npx -y wrangler@4 deploy
+          run npx -y wrangler@4 deploy --var WEB_LOGIN_ENABLED:"${WEB_LOGIN_ENABLED:-1}"
           BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')   # a pasted secret can carry a stray space or newline
           printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
           FIREBASE_DB_SECRET=$(printf '%s' "$FIREBASE_DB_SECRET" | tr -d '[:space:]')

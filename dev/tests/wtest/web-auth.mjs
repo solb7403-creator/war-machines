@@ -1,0 +1,68 @@
+// Official website auth through real Worker routes. Telegram JWKS/database/DO transport are isolated fixtures.
+import assert from 'node:assert/strict';
+import {createHmac} from 'node:crypto';
+import {makeDB} from './fakedb.mjs';
+import {makeNamespace,installWebSocketPair} from './fakedo.mjs';
+import {fakeRec} from './fakerec.mjs';
+import {buildSim} from '../../../worker/build-sim.mjs';
+buildSim();installWebSocketPair();
+const mod=await import('../../../worker/src/index.js'),worker=mod.default;
+const db=makeDB(),pair=await crypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);
+const jwk=await crypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='test-key';jwk.alg='RS256';jwk.use='sig';
+globalThis.fetch=async (url,opts)=>{if(String(url).includes('firebaseio.com/'))return db.handle(url,opts);if(String(url)==='https://oauth.telegram.org/.well-known/jwks.json')return Response.json({keys:[jwk]});throw Error('No external fallback: '+url);};
+const env={BOT_TOKEN:'123:fixture',FIREBASE_DB_SECRET:'SECRET',WEB_ORIGIN:'https://game.test',WEB_LOGIN_ENABLED:'1'};
+async function call(path,body,cookies='',csrf='',origin=env.WEB_ORIGIN){const headers={Origin:origin,...(body?{'Content-Type':'application/json'}:{}),...(cookies?{Cookie:cookies}:{}),...(csrf?{'X-Lunar-CSRF':csrf}:{})};return worker.fetch(new Request(env.WEB_ORIGIN+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined}),env);}
+let r=await call('/auth/config');assert.equal(r.status,200,'website login configuration route exists');
+console.log('PASS website auth configuration route');
+// Separate disposable per-token DO storage; no production database, cookies or account IDs.
+const objects=new Map();env.SESSIONS={idFromName:n=>n,get(n){if(!objects.has(n)){
+ let q=Promise.resolve();const vals=new Map();const state={storage:{get:async k=>structuredClone(vals.get(k)),put:async(k,v)=>vals.set(k,structuredClone(v)),deleteAll:async()=>vals.clear(),setAlarm:async()=>{}},blockConcurrencyWhile(fn){const r=q.then(fn);q=r.catch(()=>{});return r;}};
+ objects.set(n,new mod.WebSession(state));}return {fetch:(url,opts)=>objects.get(n).fetch(new Request(url,opts))};}};
+const cookieFrom=(r,name)=>r.headers.getSetCookie().find(c=>c.startsWith(name+'='))?.split(';')[0]||'';
+const b64=x=>Buffer.from(typeof x==='string'?x:JSON.stringify(x)).toString('base64url');
+async function token(nonce,patch={},header={}){const now=Math.floor(Date.now()/1000),s=b64({alg:'RS256',kid:'test-key',...header})+'.'+b64({iss:'https://oauth.telegram.org',aud:'123',sub:'different-oidc-subject',id:888001,given_name:'Web Pilot',iat:now,exp:now+300,nonce,...patch});return s+'.'+Buffer.from(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,new TextEncoder().encode(s))).toString('base64url');}
+async function challenge(){const r=await call('/auth/challenge',{});assert.equal(r.status,200);assert.match(r.headers.get('Set-Cookie'),/HttpOnly; Secure; SameSite=Lax/);return {c:cookieFrom(r,'__Host-lunar-login'),...(await r.json())};}
+let ch=await challenge();let jwt=await token(ch.nonce);
+for(const [patch,head] of [[{aud:'evil'},{}],[{iss:'https://evil.test'},{}],[{exp:1},{}],[{nonce:'other'},{}],[{id:'888001'},{}],[{}, {alg:'none'}]]){assert.equal((await call('/auth/login',{id_token:await token(ch.nonce,patch,head)},ch.c)).status,401);}
+// Fresh challenge after its bounded six failures.
+ch=await challenge();jwt=await token(ch.nonce);
+assert.equal((await call('/auth/login',{id_token:jwt},ch.c,'','https://evil.test')).status,403);
+assert.equal((await call('/auth/login',{id_token:jwt},'')).status,401);
+const [one,two]=await Promise.all([call('/auth/login',{id_token:jwt},ch.c),call('/auth/login',{id_token:jwt},ch.c)]);
+assert.equal([one,two].filter(x=>x.status===200).length,1,'nonce consumption is atomic');
+const logged=one.status===200?one:two,sid=cookieFrom(logged,'__Host-lunar-session'),identity=await logged.json();assert.equal(identity.user.id,888001);
+assert.equal((await call('/auth/login',{id_token:jwt},ch.c)).status,401,'replay refused');
+assert.equal((await call('/api/sync',{lab:1},sid)).status,401,'CSRF required');
+assert.equal((await call('/api/sync',{lab:1},sid,identity.csrf,'https://evil.test')).status,401);
+assert.equal((await call('/api/sync',{lab:1,initData:'unsigned'},sid,identity.csrf)).status,401,'mixed identities refused');
+r=await call('/api/sync',{lab:1,mig:{pts:999999},refBy:'tg_999999'},sid,identity.csrf);assert.equal(r.status,200);let S=await r.json();assert.equal(S.E.pts,0);assert.equal(S.E.earned,0);assert.ok(S.E.lab);assert.equal(db.get('/players/tg_888001/ref'),null);
+const tgData=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id:888001,first_name:'Mini App',is_premium:true})});const d=[...tgData].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');tgData.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));
+r=await call('/api/sync',{initData:tgData.toString(),lab:1},'', '', 'https://solb7403-creator.github.io');assert.equal(r.status,200);assert.deepEqual((await r.json()).E.lab,S.E.lab,'same canonical account across platforms');
+const spec=structuredClone(S.E.lab.machines.m_spare.spec);spec.mods={hull:'plates',mobility:'stable',mount:'stock'};spec.catalog=1;
+r=await call('/api/act',{a:'lab_save',id:'m_spare',rev:S.E.lab.rev,name:'Web MK-II',spec,pid:'tg_999999'},sid,identity.csrf);assert.equal(r.status,200);S=await r.json();assert.equal(S.E.lab.machines.m_spare.name,'Web MK-II');assert.equal(db.get('/eco/tg_999999'),null);
+// A valid signed website session enters the same ticket/proof/scoring pipeline as Telegram.
+const beforeEarned=db.get('/eco/tg_888001/earned');
+const startResponse=await call('/api/match/start',{g:'arena',m:'2v2',map:'classic',pv:1,fv:1,labRev:S.E.lab.rev},sid,identity.csrf);
+assert.equal(startResponse.status,200);const ticket=await startResponse.json();assert.ok(ticket.tok);
+const clock=Date.now;Date.now=()=>clock()+70000;
+const scored=await call('/api/match/end',{tok:ticket.tok,r:{won:true,pts:999999,stats:{dmg:2500,kills:1},pf:fakeRec({g:'arena',m:'2v2',won:true,dur:69,dmg:2500})}},sid,identity.csrf);
+const score=await scored.json();assert.equal(score.ok,true,JSON.stringify(score));assert.ok(score.res.awarded>0&&score.res.awarded<1000);assert.equal(score.E.earned,beforeEarned+score.res.awarded);
+const replay=await call('/api/match/end',{tok:ticket.tok,r:{won:true}},sid,identity.csrf);assert.equal((await replay.json()).E.earned,score.E.earned,'proof/ticket credit once');
+Date.now=clock;
+const mini=await call('/api/sync',{initData:tgData.toString(),lab:1},'','','https://solb7403-creator.github.io');assert.equal((await mini.json()).E.earned,score.E.earned,'website battle credit visible to Mini App');
+// Web joins have session-bound tickets; legacy Telegram tickets keep their original format.
+env.ROOM=makeNamespace(mod.PvpRoom,env);env.LOBBY=makeNamespace(mod.PvpLobby,env);
+const joined=await call('/api/pvp/join',{v:1,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:1},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
+const wsReq=(cookies,origin)=>new Request(env.WEB_ORIGIN+'/pvp/ws?r='+seat.room+'&t='+seat.tok,{headers:{Upgrade:'websocket',Cookie:cookies,Origin:origin}});
+assert.equal((await worker.fetch(wsReq('',env.WEB_ORIGIN),env)).status,403);
+assert.equal((await worker.fetch(wsReq(sid,'https://evil.test'),env)).status,403);
+const {who}=await import('../../../worker/src/eco.js');const knownAge={nw:1};who(knownAge,{id:888001,web_auth:true});assert.equal(knownAge.nw,1,'web profile must not reset verified account age weighting');
+assert.equal((await call('/api/stars-invoice',{},sid,identity.csrf)).status,403);
+r=await call('/auth/session',undefined,sid);assert.equal(r.status,200);assert.equal((await r.json()).user.id,888001);
+assert.equal((await call('/auth/renew',{},sid,identity.csrf)).status,200);
+assert.equal((await call('/auth/logout',{},sid,identity.csrf)).status,200);assert.equal((await call('/auth/session',undefined,sid)).status,401);
+ch=await challenge();const oldNow=Date.now;Date.now=()=>oldNow()+301000;assert.equal((await call('/auth/login',{id_token:await token(ch.nonce)},ch.c)).status,401,'expired challenge');Date.now=oldNow;
+env.WEB_LOGIN_ENABLED='0';assert.equal((await call('/auth/config').then(r=>r.json())).enabled,false);assert.equal((await call('/auth/challenge',{})).status,503);
+console.log('PASS official JWT signature/claims/nonce, race/replay/expiry/CSRF, first-party sessions/logout, shared Telegram identity, authoritative inventory/points/referral and private independent bays');
+
+for(const room of env.ROOM.live.values())room.core?.closeAll();

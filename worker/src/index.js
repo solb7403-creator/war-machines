@@ -7,6 +7,8 @@ import { RULES } from "./sim.gen.js";
 import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
 import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
+import {webAuth,webIdentity,hasWebCookie,WebSession} from "./web-auth.js";
+export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
 const WIKI_URL = "https://solb7403-creator.github.io/war-machines/wiki.html";
@@ -60,6 +62,17 @@ async function readBody(req) { try { return await req.json(); } catch { return n
 async function auth(req, env) {
   const b = await readBody(req);
   if (!b) return { err: json({ error: "bad json" }, 400) };
+  if (hasWebCookie(req)) {
+    if (b.initData) return {err:json({error:"ambiguous identity"},401)};
+    const a=await webIdentity(req,env);if(!a)return {err:json({error:"not verified"},401)};
+    const path=new URL(req.url).pathname;
+    if(["/api/pay-log","/api/stars-invoice","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
+    if(path==="/api/sync"){
+      const S=await readEco(env,a.pid);if(S.mig===0)return {err:json({error:"Open Telegram once to finish account migration"},409)};
+      delete b.mig;delete b.refBy;delete b.starsAck; b.boot=false;
+    }
+    return {b,user:a.user,pid:a.pid,ip:req.headers.get("CF-Connecting-IP")||"",sp:"",web:true};
+  }
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
   // start_param: the link that opened the game (part of the signed login, so it can't be made up)
@@ -124,7 +137,7 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   if (Object.keys(up).length) await dbPatch(env, "", up);
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
   const out = { ok: true, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
-    rec: { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
+    rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
   // the ghost report: what your tank did in other pilots' matches while you were away. Cleared once the phone has shown it
@@ -566,12 +579,15 @@ function pidLimited(path, pid) {
 export default {
   async fetch(req, env) {
     const path = new URL(req.url).pathname;
+    if(path.startsWith("/auth/")){
+      try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
+    }
     if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
       if (req.method !== "POST") return cors(new Response("method", { status: 405 }), req);
       if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req);
-      const a = await auth(req, env);
+      let a;try{a=await auth(req,env);}catch{return cors(json({error:"authentication unavailable"},503),req);}
       if (a.err) return cors(a.err, req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
@@ -584,6 +600,11 @@ export default {
     if (path === "/api/tg-webhook" && req.method === "POST") return webhook(req, env);
     if (path === "/pvp/ws") return pvpSocket(req, env);   // live matches (WebSocket into the match room)
     if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
+    if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png"].includes(path))){
+      const res=await env.ASSETS.fetch(req);const out=new Response(res.body,res);out.headers.set("X-Content-Type-Options","nosniff");
+      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");}
+      return out;
+    }
     if (path === "/") return new Response("LUNAR: War Machines API");
     return new Response("not found", { status: 404 });
   },

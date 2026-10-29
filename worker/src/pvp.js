@@ -1,3 +1,4 @@
+import {webIdentity,WEB_ORIGIN} from "./web-auth.js";
 // Live PvP: one lobby that groups pilots into rooms, and one room per match (both Durable Objects).
 // The room runs the game's own sim (js/game.js, bundled by build-sim.mjs) at 30 ticks a second, sends every
 // player the world 15 times a second, and decides results and points itself. A pilot who drops gets an AI
@@ -379,11 +380,11 @@ export class PvpRoom {
 
 // ---- tokens: the WebSocket can't carry the Telegram login, so /api/pvp/join hands out a short-lived signed ticket ----
 async function sign(env, s) { return hex(await hmac(env.BOT_TOKEN, "pvp|" + s)).slice(0, 32); }
-async function makeToken(env, pid, room, now = Date.now()) { const exp = now + PVP.TOKEN_MS, s = `${pid}.${room}.${exp}`; return s + "." + (await sign(env, s)); }
+async function makeToken(env, pid, room, now = Date.now(), web=false) { const exp = now + PVP.TOKEN_MS, s = `${pid}.${room}.${exp}`+(web?".web":""); return s + "." + (await sign(env, s)); }
 async function readToken(env, tok, room, now = Date.now()) {
   const p = String(tok || "").split(".");
-  if (p.length !== 4 || p[1] !== room || !(Number(p[2]) > now)) return null;
-  return (await sign(env, p.slice(0, 3).join("."))) === p[3] ? p[0] : null;
+  if (![4,5].includes(p.length) || (p.length===5&&p[3]!=="web") || p[1] !== room || !(Number(p[2]) > now)) return null;
+  return (await sign(env, p.slice(0, -1).join("."))) === p[p.length-1] ? p[0] : null;
 }
 
 // ---- the loadout a pilot brings: only gear they own on the server's record (eco/<pid>), with the server's rolls, upgrade
@@ -410,7 +411,7 @@ export async function pvpJoin(env, a) {
   for (let i = 0; i < 3; i++) {
     const asg = await (await lobby.fetch("https://lobby/assign", post({ q, league, pid: a.pid, seats: seatsFor(g, m) }))).json();
     const r = await (await roomStub(env, asg.room).fetch("https://room/seat", post({ room: asg.room, pid: a.pid, name, q: { g, m }, L, power, league }))).json();
-    if (r.ok) return { status: 200, body: { ok: true, room: asg.room, tok: await makeToken(env, a.pid, asg.room, now), seat: r.seat, wait: r.wait, power, league: R.LEAGUES[league] } };
+    if (r.ok) return { status: 200, body: { ok: true, room: asg.room, tok: await makeToken(env, a.pid, asg.room, now, a.web), seat: r.seat, wait: r.wait, power, league: R.LEAGUES[league] } };
     await lobby.fetch("https://lobby/close", post({ room: asg.room }));
   }
   return { status: 503, body: { error: "busy" } };
@@ -422,6 +423,10 @@ export async function pvpSocket(req, env) {
   const url = new URL(req.url), room = url.searchParams.get("r") || "";
   const pid = /^[0-9a-f]{16}$/.test(room) ? await readToken(env, url.searchParams.get("t"), room) : null;
   if (!pid) return new Response("bad ticket", { status: 403 });
+  if((url.searchParams.get("t")||"").split(".").length===5){
+    const a=await webIdentity(req,env,false);
+    if(!a||a.pid!==pid||req.headers.get("Origin")!==(env.WEB_ORIGIN||WEB_ORIGIN))return new Response("session required",{status:403});
+  }
   const to = new URL("https://room/ws");
   to.searchParams.set("pid", pid);
   return roomStub(env, room).fetch(new Request(to.toString(), req));

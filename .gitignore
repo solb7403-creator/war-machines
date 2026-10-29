@@ -1,2 +1,3 @@
 __pycache__/
 worker/src/sim.gen.js
+worker/site-assets/

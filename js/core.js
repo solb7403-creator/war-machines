@@ -6,10 +6,13 @@
 // ---- Telegram Mini App bootstrap ----
 const TG=(window.Telegram&&window.Telegram.WebApp)||null;
 const IN_TG=!!(TG&&TG.initData&&TG.initDataUnsafe&&TG.initDataUnsafe.user);
-const TG_USER=IN_TG?TG.initDataUnsafe.user:null;
+const WEB_EDITION=!!window.LUNAR_WEB_EDITION;
+const IN_WEB=WEB_EDITION&&!!window.LUNAR_WEB?.user;
+const ACCOUNT_OK=IN_TG||IN_WEB;
+const TG_USER=IN_TG?TG.initDataUnsafe.user:IN_WEB?window.LUNAR_WEB.user:null;
 const DEV_IDS=[]; // Telegram numeric user IDs allowed to use the dev panel inside Telegram
 const DEV_USERNAMES=['lunarbattle']; // lowercase, no @
-const IS_DEV=!IN_TG||DEV_IDS.indexOf(TG_USER&&TG_USER.id)>=0||DEV_USERNAMES.indexOf(String((TG_USER&&TG_USER.username)||'').toLowerCase())>=0;
+const IS_DEV=!WEB_EDITION&&(!IN_TG||DEV_IDS.indexOf(TG_USER&&TG_USER.id)>=0||DEV_USERNAMES.indexOf(String((TG_USER&&TG_USER.username)||'').toLowerCase())>=0);
 const tgv=v=>!!(TG&&TG.isVersionAtLeast&&TG.isVersionAtLeast(v));
 function tgName(u){
  if(!u)return 'Pilot';
@@ -142,9 +145,16 @@ function buildStats(){
 
 // ---- save (local + Telegram cloud) ----
 let save=null;
-const SAVE_KEY=IN_TG?'wm_save_tg_'+TG_USER.id:'wm_save_v1';
+const SAVE_KEY=IN_WEB?'wm_web_'+TG_USER.id:IN_TG?'wm_save_tg_'+TG_USER.id:'wm_save_v1';
 function loadSave(obj){
  if(obj!==undefined)save=obj;else{try{save=JSON.parse(localStorage.getItem(SAVE_KEY));}catch(e){save=null;}}
+ if(IN_WEB&&obj===undefined){
+  const cached=save||{},E=window.LUNAR_WEB.snapshot?.E;
+  // Browser storage supplies preferences and already-signed pending results only, never equipment or balances.
+  save=E?JSON.parse(JSON.stringify(E)):null;
+  if(save){for(const k of ['gfx','sound','haptics','gtype','mode','map','welcomed'])if(cached[k]!==undefined)save[k]=cached[k];
+   save.mq=Array.isArray(cached.mq)?cached.mq.slice(-20):[];save.migOk=1;}
+ }
  if(!save||typeof save.pts!=='number')save={pts:0,up:{hull:0,cannon:0,engine:0,target:0,reactor:0},q:{},chassis:'vanguard',weapon:'pulse',
   gemLvl:{dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1},gemShards:{dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0},
   wTier:{pulse:0,twin:-1,siege:-1},cTier:{scout:-1,vanguard:0,titan:-1},wOwn:{pulse:[0],twin:[],siege:[]},cOwn:{scout:[],vanguard:[0],titan:[]},fresh:true};
@@ -162,6 +172,7 @@ function loadSave(obj){
  if(!save.mode)save.mode='1v1';if(!save.gtype)save.gtype='arena';if(!save.map)save.map='classic';
  ecoNorm(save);
  if(!save.paint||!save.paints[save.paint])save.paint='stock';
+ if(IN_WEB){fixEquip();labApplySelection();}
 }
 function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudSave();if(typeof uiDirty==='function')uiDirty();}
 
@@ -169,11 +180,11 @@ function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stri
 // In Telegram the server owns points and gear: every change below is a server call, and the phone copies the server's
 // record from each reply (applyEco). Outside Telegram (or with LUNAR_LOCAL_ECO, used by the older tests) the phone runs
 // the same rules from rules.js on its own save, instantly.
-const SRV_ECO=IN_TG&&!window.LUNAR_LOCAL_ECO;
+const SRV_ECO=WEB_EDITION||(IN_TG&&!window.LUNAR_LOCAL_ECO);
 function dayId(d){return d.toISOString().slice(0,10);}
 const dayNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0))/864e5);
 const weekNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0)-4*864e5)/(7*864e5));
-const playerKey=()=>IN_TG?'tg_'+TG_USER.id:'local';
+const playerKey=()=>ACCOUNT_OK?'tg_'+TG_USER.id:'local';
 const ecoX=()=>({day:dayNum(),week:weekNum(),rnd:Math.random,pk:playerKey()});
 const when=(v,f)=>v&&typeof v.then==='function'?v.then(f):f(v);   // a result now (local) or later (server)
 function rollPeriods(){ecoRoll(save,ecoX());}
@@ -457,6 +468,7 @@ function buySalvage(tk,ri){
 }
 // Grant a verified purchase on this device (local play and the older tests). In Telegram the server grants it (showOuts)
 function grantPurchase(desc){
+ if(WEB_EDITION)return; // Website purchases are unavailable; no local grant path.
  if(!desc)return;
  const outs=ecoGrant(save,{kind:desc.kind,tk:desc.tk,ri:desc.ri,id:desc.id,deal:desc.deal,price:desc.price},ecoX());
  save.pendingTx=null;

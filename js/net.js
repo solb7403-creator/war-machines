@@ -2,27 +2,30 @@
 // =====================================================================
 // net: LUNAR server (verified Telegram login), leaderboard file, squad, payments (Stars / TON / SOL)
 // =====================================================================
-const API='https://lunar-api.solb7403.workers.dev';
+const API=IN_WEB?location.origin:'https://lunar-api.solb7403.workers.dev';
 const DB_PUBLIC='https://warmachines-a6034-default-rtdb.firebaseio.com';   // only the public leaderboard file is readable
 let srvOff=0,srv=null,syncBusy=false,syncWant=false,syncTimer=null,lastSyncAt=0,starsAckQ=[],syncFails=0,lastCredit=null;
+function apiFetch(path,body,signal){
+ return fetch(API+path,{method:'POST',credentials:IN_WEB?'same-origin':'omit',headers:{'Content-Type':'application/json',...(IN_WEB?{'X-Lunar-CSRF':window.LUNAR_WEB.csrf}:{})},body:JSON.stringify(Object.assign({initData:IN_TG?TG.initData:''},body||{})),signal});
+}
 function api(path,body){
- return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({initData:IN_TG?TG.initData:''},body||{}))})
-  .then(r=>r.json().then(j=>{if(!r.ok)throw new Error(j.error||('http '+r.status));return j;}));
+ return apiFetch(path,body).then(r=>r.json().then(j=>{if(!r.ok){if(IN_WEB&&r.status===401)window.dispatchEvent(new Event('lunar-session-expired'));throw new Error(j.error||('http '+r.status));}return j;}));
 }
 function initBackend(){
- if(IN_TG)doSync(true);
+ if(ACCOUNT_OK)doSync(true);
+ if(IN_WEB)return;
  checkPendingPurchase();checkPendingSol();
  if(SRV_ECO)setTimeout(payResumeQueue,4000);
  if(save.payCur==='ton')setTimeout(initTonConnect,2500);
 }
 // ask for a sync soon (batched: at most one request every ~8s)
 function syncPlayer(){
- if(!IN_TG||syncTimer)return;
+ if(!ACCOUNT_OK||syncTimer)return;
  const wait=Math.max(1500,8000-(Date.now()-lastSyncAt));
  syncTimer=setTimeout(()=>{syncTimer=null;doSync(false);},wait);
 }
 async function doSync(boot){
- if(!IN_TG)return;
+ if(!ACCOUNT_OK)return;
  if(syncBusy){syncWant=true;return;}
  syncBusy=true;lastSyncAt=Date.now();
  captureRef();
@@ -32,7 +35,7 @@ async function doSync(boot){
  if(ghAck)body.ghAck=ghAck;   // the ghost report we showed: the server can clear it
  // one time, the first time this pilot meets the server that owns the economy: this device's progress moves over
  // (the server checks it against payments and points on record, and flags what it can't explain)
- if(SRV_ECO&&!save.migOk)body.mig=ecoCopy();
+ if(IN_TG&&SRV_ECO&&!save.migOk)body.mig=ecoCopy();
  try{
   const r=await api('/api/sync',body);
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
@@ -96,7 +99,7 @@ function myRank(pts){
 // your recruits come from the server (only you can see them)
 let squadCache=null,squadT=0,squadBusy=false;
 function loadSquad(force){
- if(!IN_TG||squadBusy||(!force&&squadCache&&Date.now()-squadT<60000))return;
+ if(!ACCOUNT_OK||squadBusy||(!force&&squadCache&&Date.now()-squadT<60000))return;
  squadBusy=true;
  api('/api/squad',{}).then(r=>{squadCache=r.squad||[];squadT=Date.now();squadBusy=false;if(typeof uiDirty==='function')uiDirty('quests');}).catch(()=>{squadBusy=false;squadT=Date.now()-45000;});
 }
@@ -162,6 +165,7 @@ function priceLabel(ton,stars){
  return ton+' TON';
 }
 function pay(ton,desc){
+ if(IN_WEB){showToast('Purchases are available in the Telegram edition only.');return;}
  if(save.payCur==='pts')return;
  if(!save.termsOk&&typeof askTerms==='function'){askTerms(()=>pay(ton,desc));return;}   // agree to the terms once, before the first purchase
  if(save.payCur==='stars')payWithStars(ton,desc);else if(save.payCur==='sol')payWithSol(ton,desc);else payWithTon(ton,desc);
@@ -169,6 +173,7 @@ function pay(ton,desc){
 // ---- Telegram Stars: invoice created + payment confirmed by the LUNAR server ----
 let starsBusy=false;
 async function payWithStars(ton,desc){
+ if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  if(!IN_TG||!TG.openInvoice){showToast('Open the game in Telegram to pay with Stars');return;}
  if(starsBusy)return;starsBusy=true;showToast('Opening Stars checkout…');
  try{
@@ -209,6 +214,7 @@ const SOL_WALLETS={
  other:{n:'Keeper / other',ul:null}};
 const SOL_ORDER=['phantom','solflare','backpack','other'];
 function payWithSol(ton,desc){
+ if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  const sol=solFor(ton);
  if(!sol){fetchPrices();showToast('Loading the SOL price. Tap again in a second.');return;}
  const ref=b58(crypto.getRandomValues(new Uint8Array(32))),memo=newMemo();
@@ -328,6 +334,7 @@ function checkPendingPurchase(){
  });
 }
 async function payWithTon(amount,desc){
+ if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  if(!tonConnectUI){showToast('Loading wallets…');initTonConnect();return;}
  if(!tonWallet){tonConnectUI.openModal();showToast('Connect a TON wallet first');return;}
  const sinceTs=Date.now(),memo=newMemo();
