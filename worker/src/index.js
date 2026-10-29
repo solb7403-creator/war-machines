@@ -8,6 +8,7 @@ import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, ma
 import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
 import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from "./web-auth.js";
+import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar-identity.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -77,7 +78,11 @@ async function auth(req, env) {
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
   // start_param: the link that opened the game (part of the signed login, so it can't be made up)
   let sp = ""; try { sp = String(new URLSearchParams(String(b.initData || "")).get("start_param") || "").slice(0, 64); } catch (e) {}
-  return { b, user, pid: "tg_" + user.id, ip: req.headers.get("CF-Connecting-IP") || "", sp };
+  // A verified Telegram identity joins its first-party Lunar account only when voluntarily linked.
+  // Otherwise the Telegram-only edition retains its legacy anonymous Telegram identity.
+  const lunarPid=await resolveTelegramAccount(env,user.id);
+  if(lunarPid){user.web_auth=true;user.lunar_account=true;}
+  return { b, user, pid: lunarPid||"tg_"+user.id, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
 function itemLabel(k, tk, ri) {
@@ -469,7 +474,7 @@ async function webhook(req, env) {
     const sp = m.successful_payment;
     let p = {};
     try { p = JSON.parse(sp.invoice_payload); } catch {}
-    const pid = "tg_" + m.from.id, now = Date.now();
+    const pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, now = Date.now();
     const charge = safeKey(sp.telegram_payment_charge_id);
     const item = itemLabel(p.k, p.t, p.r);
     const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
@@ -490,7 +495,7 @@ async function webhook(req, env) {
   }
   if (m && m.refunded_payment) {
     // a Stars refund: the server takes back exactly what that purchase gave
-    const rp = m.refunded_payment, pid = "tg_" + m.from.id, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
+    const rp = m.refunded_payment, pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
     const sp = await dbGet(env, `starsPaid/${pid}/${charge}`).catch(() => null);
     if (sp && !sp.rf) {
       let n = 0;
@@ -512,6 +517,12 @@ async function webhook(req, env) {
   }
   // Website login: only a genuine private-chat message delivered by Telegram's signed webhook
   // can approve a fresh browser challenge. Never enable reminders for login-only messages.
+  const lunarLinkCode=typeof m?.text==='string'?m.text.match(/^\/(?:start(?:@LunarWarMachinesBot)?\s+link_|link(?:@LunarWarMachinesBot)?\s+)([a-f0-9]{48})$/i):null;
+  if(lunarLinkCode&&m.chat?.type==='private'&&Number.isSafeInteger(m.from?.id)&&m.from.id>0&&m.chat.id===m.from.id){
+    const result=await approveTelegramLunarLink(env,lunarLinkCode[1].toLowerCase(),m.from);
+    await tg(env,'sendMessage',{chat_id:m.chat.id,text:result.ok?'Your Telegram account is now linked to your LUNAR website account. Both platforms use the same machines, inventory, and progress.':'Account linking failed or expired. Return to your Lunar website account to request a new link.'});
+    return new Response('ok');
+  }
   const webLoginCode=typeof m?.text==='string'?m.text.match(/^\/(?:start(?:@LunarWarMachinesBot)?\s+web_|login(?:@LunarWarMachinesBot)?\s+)([a-f0-9]{48})$/i):null;
   if(webLoginCode&&m.chat?.type==='private'&&Number.isSafeInteger(m.from?.id)&&m.from.id>0&&m.chat.id===m.from.id){
     const success=await approveBotWebsiteLogin(env,webLoginCode[1].toLowerCase(),m.from);
@@ -520,7 +531,7 @@ async function webhook(req, env) {
   }
   if (m && m.text && /^\/start/.test(m.text)) {
     // anyone who starts the bot can get the daily reminder (they can /stop it)
-    if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 1, chat: m.chat.id, nx: dayOf(Date.now()) }).catch(() => {});
+    if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/${(await resolveTelegramAccount(env,m.from.id))||"tg_"+m.from.id}`, { on: 1, chat: m.chat.id, nx: dayOf(Date.now()) }).catch(() => {});
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
       text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
@@ -531,7 +542,7 @@ async function webhook(req, env) {
   } else if (m && m.text && /^\/terms/.test(m.text)) {
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: "Terms of service and purchase: " + TERMS_URL, reply_markup: { inline_keyboard: [[{ text: "📄 Read the terms", url: TERMS_URL }]] } });
   } else if (m && m.text && /^\/stop/.test(m.text)) {
-    await dbPatch(env, `ntf/tg_${m.from.id}`, { on: 0, nx: null }).catch(() => {});
+    await dbPatch(env, `ntf/${(await resolveTelegramAccount(env,m.from.id))||"tg_"+m.from.id}`, { on: 0, nx: null }).catch(() => {});
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: "Daily reminders are off. Send /start to turn them back on." });
   }
   return new Response("ok");
@@ -587,6 +598,9 @@ function pidLimited(path, pid) {
 export default {
   async fetch(req, env) {
     const path = new URL(req.url).pathname;
+    if(path.startsWith("/auth/lunar/")){
+      try{return await lunarAuth(req,env);}catch{return json({error:"account service unavailable"},503);}
+    }
     if(path.startsWith("/auth/")){
       try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
     }
