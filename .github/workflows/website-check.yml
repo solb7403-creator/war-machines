@@ -22,6 +22,13 @@ jobs:
           node --check worker/src/lunar-identity.js
           node --check web/game.js
           node worker/build-web.mjs
+      - name: Cloudflare Worker runtime smoke (passkey bundle compatibility)
+        working-directory: worker
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          node build-sim.mjs
+          npx -y --package=wrangler@4 -c 'node smoke-runtime.mjs'
       - name: Login handoff and authoritative session contracts
         run: |
           node dev/tests/web-login.mjs
