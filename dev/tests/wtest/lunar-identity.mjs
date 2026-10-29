@@ -160,6 +160,18 @@ assert.deepEqual(telegramGame.E.lab,game.E.lab,'verified Telegram Mini App uses 
 assert.equal(db.get('/eco/'+pid).nm,'Lunar Ace','linked Telegram must retain the chosen Lunar callsign');
 assert.equal(db.get('/eco/tg_888001'),null,'linked Telegram must not create a parallel account');
 
+// A linked pilot who signs into the website through the optional Telegram bot must
+// also enter the independent Lunar ID, never a duplicate tg_<id> account.
+const botStart=await call('/auth/bot/start',{});
+assert.equal(botStart.status,200);
+const botBody=await botStart.json(),botCookie=cookie(botStart,'__Host-lunar-login');
+const linkLogin=botBody.command.match(/^\/login ([a-f0-9]{48})$/)[1];
+await webhook({message:{text:'/login '+linkLogin,chat:{id:888001,type:'private'},from:tgUser}},secret);
+const botFinish=await call('/auth/bot/finish',{},botCookie);
+assert.equal(botFinish.status,200);
+assert.equal((await botFinish.json()).pid,undefined,'legacy bot callback does not expose player ID in the response');
+const websiteFromBot=await call('/auth/session',undefined,cookie(botFinish,'__Host-lunar-session'));
+assert.equal((await websiteFromBot.json()).pid,pid,'Telegram website login resolves to canonical Lunar identity');
 const existing=await call('/auth/lunar/account',{},assignedCookie,first.csrf);
 assert.equal((await existing.json()).telegramLinked,true);
 console.log('PASS discoverable passkey signature login, counters, anti-replay, signed optional Telegram link, same game economy');
