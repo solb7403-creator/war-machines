@@ -1,4 +1,5 @@
 // Official Telegram Login (OIDC ID token), first-party HttpOnly sessions. No client identity or balances trusted.
+import {dbGet} from './db.js';
 const ISSUER='https://oauth.telegram.org',JWKS=ISSUER+'/.well-known/jwks.json';
 export const WEB_ORIGIN='https://lunar-api.solb7403.workers.dev';
 const LOGIN_COOKIE='__Host-lunar-login',SESSION_COOKIE='__Host-lunar-session',MAX_AGE=8*3600;
@@ -18,6 +19,27 @@ const sha256=async data=>new Uint8Array(await crypto.subtle.digest('SHA-256',enc
 const expireLoginCookie=resp=>{resp.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return resp;};
 function getCookie(req,name){const values=(req.headers.get('Cookie')||'').split(';').map(x=>x.trim()).filter(x=>x.startsWith(name+'='));return values.length===1&&/^[a-f0-9]{64}$/.test(values[0].slice(name.length+1))?values[0].slice(name.length+1):'';}
 export const hasWebCookie=req=>!!getCookie(req,SESSION_COOKIE);
+// Shared audited primitives for Lunar-owned passkey accounts and optional Telegram linking.
+export {record,getCookie,sameOrigin,limited,origin,json,cookie,random};
+export const WEB_LOGIN_COOKIE=LOGIN_COOKIE;
+// Optional linked Telegram identity must resolve to its canonical Lunar account in every website login path.
+async function tgSessionIdentity(env,user){
+ const candidate=await dbGet(env,'telegramLinks/'+user.id);
+ if(typeof candidate==='string'&&/^ln_[0-9]{12,15}$/.test(candidate)){
+  const account=await dbGet(env,'lunarAccounts/'+candidate);
+  if(!account||account.id!==candidate)throw Error('invalid linked account');
+  return {user:{...user,lunar_account:true,lunar_name:account.name},pid:candidate};
+ }
+ return {user,pid:'tg_'+user.id};
+}
+export async function issueLunarWebSession(env,user,pid){
+ if(!env.SESSIONS||!/^ln_[0-9]{12,15}$/.test(String(pid||''))||!user?.lunar_account)return json({error:'account'},403);
+ const sid=random(),csrf=random(),now=Date.now();
+ const created=await record(env,sid,'issue',{kind:'session',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+ if(!created.ok)return json({error:'session_store'},503);
+ const result=json({ok:true,user,pid,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
+ result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
+}
 function sameOrigin(req,env){return new URL(req.url).origin===origin(env)&&req.headers.get('Origin')===origin(env)&&!['cross-site'].includes(req.headers.get('Sec-Fetch-Site'));}
 async function record(env,token,op,value){
  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(token))),x=>x.toString(16).padStart(2,'0')).join('');
@@ -46,6 +68,12 @@ export class WebSession {
    if(b.code!==v.code||!b.user||!Number.isSafeInteger(b.user.id)||b.user.id<=0)return json({error:'invalid'},403);
    v.approved={id:b.user.id,first_name:String(b.user.first_name||'Pilot').slice(0,64),last_name:String(b.user.last_name||'').slice(0,64),username:String(b.user.username||'').slice(0,64),web_auth:true};
    await this.state.storage.put('record',v);return json({ok:true});
+  }
+  if(op==='/link-approve'){
+   if(v.kind!=='challenge'||v.flow!=='lunar_link'||v.approved)return json({error:'invalid'},409);
+   let b;try{b=await req.json();}catch{return json({error:'invalid'},400);}
+   if(b.code!==v.code||b.pid!==v.pid||!Number.isSafeInteger(b.tgId)||b.tgId<=0)return json({error:'invalid'},403);
+   v.approved={telegramId:b.tgId};await this.state.storage.put('record',v);return json({ok:true});
   }
   if(op==='/attempt'){
    if(v.kind!=='challenge'||(v.attempts||0)>=6)return json({error:'attempts'},429);
@@ -87,11 +115,11 @@ export async function approveBotWebsiteLogin(env,code,user){
  const approve=await record(env,v.browser,'approve',{code,user});return approve.ok;
 }
 export async function webIdentity(req,env,csrf=true){
- if(!ready(env)||new URL(req.url).origin!==origin(env))return null;
+ if(!env.SESSIONS||new URL(req.url).origin!==origin(env))return null;
  const token=getCookie(req,SESSION_COOKIE);if(!token||csrf&&!sameOrigin(req,env))return null;
  const res=await record(env,token,'read');if(!res.ok)return null;const s=await res.json();
  if(s.kind!=='session'||csrf&&req.headers.get('X-Lunar-CSRF')!==s.csrf)return null;
- return {user:s.user,pid:'tg_'+s.user.id,session:s,token};
+ return {user:s.user,pid:s.pid||'tg_'+s.user.id,session:s,token};
 }
 const limits=new Map();
 function limited(req){const k=req.headers.get('CF-Connecting-IP')||'anonymous',m=Math.floor(Date.now()/60000);let v=limits.get(k);if(!v||v.m!==m){v={m,n:0};limits.set(k,v);if(limits.size>10000)limits.clear();}return ++v.n>20;}
@@ -99,7 +127,7 @@ export async function webAuth(req,env){
  const path=new URL(req.url).pathname;
  if(path==='/auth/config'&&req.method==='GET')return json({enabled:codeReady(env),client_id:ready(env)?clientId(env):null,origin:origin(env),login:'telegram-oidc-code-pkce'});
  if(path==='/auth/session'&&req.method==='GET'){
-  const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
+  const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,pid:a.pid,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
  }
  // Browser/bot sign-in avoids cross-app OIDC handoff on iOS. Signed Telegram webhook proves identity.
  if(path==='/auth/bot/start'&&req.method==='POST'){
@@ -123,8 +151,8 @@ export async function webAuth(req,env){
   if(used.status===202)return json({pending:true},202);
   if(!used.ok)return json({error:'expired'},401);
   const v=await used.json();if(v.flow!=='bot'||!v.approved)return json({error:'identity'},401);
-  const sid=random(),csrf=random(),now=Date.now();
-  const issued=await record(env,sid,'issue',{kind:'session',user:v.approved,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+  const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,v.approved);
+  const issued=await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
   if(!issued.ok)return json({error:'session_store'},503);
   const result=json({ok:true,user:v.approved,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
   result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
@@ -165,15 +193,15 @@ export async function webAuth(req,env){
    if(!response.ok)return fail('exchange');
    const data=await response.json();
    const user=await verifyWebToken(data.id_token,env,challenge);if(!user)return fail('identity');
-   const sid=random(),csrf=random(),now=Date.now();
-   const issued=await record(env,sid,'issue',{kind:'session',user,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+   const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,user);
+   const issued=await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
    if(!issued.ok)return fail('unavailable');
    const result=oauthRedirect('/web/play.html#'+safeTarget(challenge.target));
    result.headers.append('Set-Cookie',cookie(SESSION_COOKIE,sid,MAX_AGE));
    return expireLoginCookie(result);
   }catch{return fail('exchange');}
  }
- if(!ready(env))return json({error:'login_setup_required'},503);
+ if(!ready(env)&&!['/auth/logout','/auth/renew'].includes(path))return json({error:'login_setup_required'},503);
  if(req.method!=='POST')return json({error:'method'},405);
  if(!sameOrigin(req,env))return json({error:'origin'},403);
  if(limited(req))return json({error:'rate'},429);
@@ -188,8 +216,8 @@ export async function webAuth(req,env){
   let b;try{b=await req.json();}catch{return json({error:'bad_json'},400);}
   const challenge=await r.json(),user=await verifyWebToken(b.id_token,env,challenge);if(!user)return json({error:'identity'},401);
   if(!(await record(env,token,'consume')).ok)return json({error:'replayed'},401);
-  const sid=random(),csrf=random(),now=Date.now();
-  if(!(await record(env,sid,'issue',{kind:'session',user,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000})).ok)return json({error:'session_store'},503);
+  const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,user);
+  if(!(await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000})).ok)return json({error:'session_store'},503);
   const res=json({ok:true,user,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));res.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return res;
  }
  if(path==='/auth/logout'||path==='/auth/renew'){

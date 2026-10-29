@@ -1,0 +1,194 @@
+// First-party LUNAR accounts. Credential keys are passkeys (WebAuthn), not Telegram IDs.
+// The website is the account authority; Telegram is only an optional verified linked client.
+// Do not trust browser-supplied identity, names on login, or credential public keys on login.
+import {
+  generateRegistrationOptions,verifyRegistrationResponse,
+  generateAuthenticationOptions,verifyAuthenticationResponse
+} from '@simplewebauthn/server';
+import {dbGet,dbPut,dbPatch,dbUrl,cleanName,hex} from './db.js';
+import {claimOnce} from './eco.js';
+import {
+  WEB_LOGIN_COOKIE,record,getCookie,sameOrigin,limited,origin,json,cookie,random,
+  webIdentity,issueLunarWebSession
+} from './web-auth.js';
+
+const LINK_COOKIE='__Host-lunar-link',MAX_BODY=20000;
+const idPattern=/^ln_[0-9]{12,15}$/;
+const codePattern=/^[a-f0-9]{48}$/;
+const keyPattern=/^[A-Za-z0-9_-]{20,1500}$/;
+const b64u=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const decodeB64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+const newPilotID=()=>{
+ const raw=crypto.getRandomValues(new Uint8Array(7));
+ const number=Number(BigInt('0x'+hex(raw))%8000000000000n)+1000000000000;
+ return 'ln_'+number;
+};
+const rpID=env=>new URL(origin(env)).hostname;
+const noStore=()=>({'Cache-Control':'no-store'});
+const bad=(message,status=400)=>json({error:message},status);
+const authorized=req=>req.method==='POST';
+const cookieSet=(res,k,val,seconds)=>{res.headers.append('Set-Cookie',cookie(k,val,seconds));return res;};
+async function parse(req){
+ const raw=await req.text();
+ if(raw.length>MAX_BODY)throw Error('Request too large');
+ return JSON.parse(raw);
+}
+const sha=async data=>hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data)));
+const userOf=(pid,name)=>({id:Number(pid.slice(3)),first_name:name,username:name,web_auth:true,lunar_account:true});
+const credentialPath=async id=>'passkeys/'+await sha(id);
+const sessionResult=(env,u,pid)=>issueLunarWebSession(env,u,pid);
+export async function resolveTelegramAccount(env,id){
+ if(!Number.isSafeInteger(id)||id<=0)return null;
+ const link=await dbGet(env,'telegramLinks/'+id);
+ return typeof link==='string'&&idPattern.test(link)?link:null;
+}
+export async function approveTelegramLunarLink(env,code,tgUser){
+ if(!env.SESSIONS||!codePattern.test(code)||!Number.isSafeInteger(tgUser?.id)||tgUser.id<=0)return {ok:false,error:'code'};
+ const response=await record(env,code,'consume');
+ if(!response.ok)return {ok:false,error:'expired'};
+ const item=await response.json();
+ if(item.kind!=='challenge'||item.flow!=='lunar_link_index'||!idPattern.test(item.pid)||!item.browser)return {ok:false,error:'invalid'};
+ const account=await dbGet(env,'lunarAccounts/'+item.pid);
+ if(!account?.id||account.id!==item.pid)return {ok:false,error:'account'};
+ // Firebase ETag transaction: a Telegram identity can bind to exactly one Lunar ID.
+ const claimed=await claimOnce(env,'telegramLinks/'+tgUser.id,item.pid);
+ if(!claimed.ok&&claimed.v!==item.pid)return {ok:false,error:'already_linked'};
+ const approved=await record(env,item.browser,'link-approve',{code,tgId:tgUser.id,pid:item.pid});
+ if(!approved.ok)return {ok:false,error:'expired'};
+ await dbPatch(env,'lunarAccounts/'+item.pid,{telegramId:tgUser.id});
+ return {ok:true,pid:item.pid};
+}
+
+export async function lunarAuth(req,env){
+ const path=new URL(req.url).pathname;
+ if(!env.SESSIONS||!env.FIREBASE_DB_SECRET)return bad('account_service_unavailable',503);
+ if(!authorized(req)||!sameOrigin(req,env))return bad('origin',403);
+ if(!['/auth/lunar/link/status','/auth/lunar/account'].includes(path)&&limited(req))return bad('rate',429);
+
+ if(path==='/auth/lunar/register/options'){
+  const existing=await webIdentity(req,env,false);
+  if(existing)return bad('already_signed_in',409);
+  let b;try{b=await parse(req);}catch{return bad('bad_json');}
+  const name=cleanName({first_name:String(b.name||'').trim()});
+  if(!/^[A-Za-z0-9][A-Za-z0-9 ._-]{2,15}$/.test(String(b.name||'')))return bad('Choose a pilot name between 3 and 16 characters (letters, numbers, spaces, . _ -).');
+  const pid=newPilotID();
+  const options=await generateRegistrationOptions({
+   rpName:'LUNAR: War Machines',rpID:rpID(env),userID:new TextEncoder().encode(pid),userName:pid,
+   userDisplayName:name,attestationType:'none',supportedAlgorithmIDs:[-7,-257],
+   authenticatorSelection:{residentKey:'required',userVerification:'required'}
+  });
+  const prior=getCookie(req,WEB_LOGIN_COOKIE);if(prior)await record(env,prior,'revoke').catch(()=>{});
+  const browser=random(),now=Date.now();
+  const issued=await record(env,browser,'issue',{kind:'challenge',flow:'passkey_register',challenge:options.challenge,pid,name,created:now,expires:now+300000});
+  if(!issued.ok)return bad('session_store',503);
+  return cookieSet(json({ok:true,options}),WEB_LOGIN_COOKIE,browser,300);
+ }
+
+ if(path==='/auth/lunar/register/verify'){
+  const browser=getCookie(req,WEB_LOGIN_COOKIE);if(!browser)return bad('expired',401);
+  const response=await record(env,browser,'consume');if(!response.ok)return bad('expired',401);
+  const stored=await response.json();if(stored.flow!=='passkey_register')return bad('challenge',401);
+  let b;try{b=await parse(req);}catch{return bad('bad_json');}
+  try{
+   if(!b.credential||!keyPattern.test(String(b.credential.id||'')))return bad('credential',400);
+   const verified=await verifyRegistrationResponse({
+    response:b.credential,expectedChallenge:stored.challenge,expectedOrigin:origin(env),
+    expectedRPID:rpID(env),requireUserVerification:true,supportedAlgorithmIDs:[-7,-257]
+   });
+   if(!verified.verified||!verified.registrationInfo?.credential)return bad('identity',401);
+   const credential=verified.registrationInfo.credential;
+   const path=await credentialPath(credential.id);
+   const account={id:stored.pid,name:stored.name,created:Date.now(),type:'passkey',credentialIDs:[credential.id]};
+   const owner=await claimOnce(env,'lunarAccounts/'+stored.pid,account);
+   if(!owner.ok)return bad('account_collision',409);
+   const storedKey={pid:stored.pid,id:credential.id,publicKey:b64u(credential.publicKey),counter:credential.counter||0,transports:credential.transports||[],created:Date.now()};
+   const claimed=await claimOnce(env,path,storedKey);
+   if(!claimed.ok)return bad('credential_already_registered',409);
+   return await sessionResult(env,userOf(stored.pid,stored.name),stored.pid);
+  }catch{return bad('passkey_verification_failed',401);}
+ }
+
+ if(path==='/auth/lunar/login/options'){
+  const existing=await webIdentity(req,env,false);
+  if(existing?.user?.lunar_account)return json({ok:true,signedIn:true});
+  const options=await generateAuthenticationOptions({
+   rpID:rpID(env),userVerification:'required',allowCredentials:[]
+  });
+  const prior=getCookie(req,WEB_LOGIN_COOKIE);if(prior)await record(env,prior,'revoke').catch(()=>{});
+  const browser=random(),now=Date.now();
+  const issued=await record(env,browser,'issue',{kind:'challenge',flow:'passkey_login',challenge:options.challenge,created:now,expires:now+300000});
+  if(!issued.ok)return bad('session_store',503);
+  return cookieSet(json({ok:true,options}),WEB_LOGIN_COOKIE,browser,300);
+ }
+
+ if(path==='/auth/lunar/login/verify'){
+  const browser=getCookie(req,WEB_LOGIN_COOKIE);if(!browser)return bad('expired',401);
+  const response=await record(env,browser,'consume');if(!response.ok)return bad('expired',401);
+  const stored=await response.json();if(stored.flow!=='passkey_login')return bad('challenge',401);
+  let b;try{b=await parse(req);}catch{return bad('bad_json');}
+  try{
+   const assertion=b.credential;
+   if(!assertion||!keyPattern.test(String(assertion.id||'')))return bad('credential',400);
+   const keyPath=await credentialPath(assertion.id),saved=await dbGet(env,keyPath);
+   if(!saved||!idPattern.test(saved.pid)||saved.id!==assertion.id)return bad('unknown_passkey',401);
+   const checked=await verifyAuthenticationResponse({
+    response:assertion,expectedChallenge:stored.challenge,expectedOrigin:origin(env),
+    expectedRPID:rpID(env),requireUserVerification:true,
+    credential:{id:saved.id,publicKey:decodeB64(saved.publicKey),counter:saved.counter||0,transports:saved.transports||[]}
+   });
+   if(!checked.verified)return bad('identity',401);
+   const account=await dbGet(env,'lunarAccounts/'+saved.pid);
+   if(!account||account.id!==saved.pid)return bad('account',401);
+   // Signature counters are not a universal anti-replay mechanism for synced passkeys (often zero).
+   // The unpredictable single-use browser challenge is authoritative; retain observed counter.
+   if(checked.authenticationInfo?.newCounter>Number(saved.counter||0)){
+    const r=await fetch(dbUrl(env,keyPath),{headers:{'X-Firebase-ETag':'true'}});
+    if(r.ok){const latest=await r.json(),tag=r.headers.get('ETag');
+     if(latest&&latest.id===saved.id&&latest.counter<=checked.authenticationInfo.newCounter&&tag)
+      await fetch(dbUrl(env,keyPath),{method:'PUT',headers:{'Content-Type':'application/json','if-match':tag},
+       body:JSON.stringify({...latest,counter:checked.authenticationInfo.newCounter})});
+    }
+   }
+   return await sessionResult(env,userOf(saved.pid,account.name),saved.pid);
+  }catch{return bad('passkey_verification_failed',401);}
+ }
+
+ if(path==='/auth/lunar/link/start'){
+  const identity=await webIdentity(req,env);
+  if(!identity?.user?.lunar_account||!idPattern.test(identity.pid))return bad('lunar_account_required',403);
+  const account=await dbGet(env,'lunarAccounts/'+identity.pid);
+  if(!account||account.id!==identity.pid)return bad('account',403);
+  if(account.telegramId)return json({ok:true,linked:true,telegramId:account.telegramId});
+  const browser=random(),code=random().slice(0,48),now=Date.now(),expires=now+600000;
+  const first=await record(env,browser,'issue',{kind:'challenge',flow:'lunar_link',pid:identity.pid,code,created:now,expires});
+  if(!first.ok)return bad('session_store',503);
+  const second=await record(env,code,'issue',{kind:'challenge',flow:'lunar_link_index',pid:identity.pid,browser,created:now,expires});
+  if(!second.ok){await record(env,browser,'revoke');return bad('session_store',503);}
+  const result=json({ok:true,url:'https://t.me/LunarWarMachinesBot?start=link_'+code,command:'/link '+code,expires});
+  return cookieSet(result,LINK_COOKIE,browser,600);
+ }
+
+ if(path==='/auth/lunar/link/status'){
+  const identity=await webIdentity(req,env);
+  if(!identity?.user?.lunar_account||!idPattern.test(identity.pid))return bad('lunar_account_required',403);
+  const account=await dbGet(env,'lunarAccounts/'+identity.pid);
+  if(!account)return bad('account',403);
+  if(account.telegramId)return json({ok:true,linked:true,telegramId:account.telegramId});
+  const browser=getCookie(req,LINK_COOKIE);
+  if(!browser)return json({ok:true,linked:false});
+  const response=await record(env,browser,'read');
+  if(!response.ok)return json({ok:true,linked:false,expired:true});
+  const item=await response.json();
+  if(item.flow!=='lunar_link'||item.pid!==identity.pid)return bad('link',403);
+  return json({ok:true,linked:!!item.approved,telegramId:item.approved?.telegramId||null});
+ }
+
+ if(path==='/auth/lunar/account'){
+  const identity=await webIdentity(req,env);
+  if(!identity)return bad('signed_out',401);
+  const acc=identity.user?.lunar_account?await dbGet(env,'lunarAccounts/'+identity.pid):null;
+  return json({ok:true,pid:identity.pid,kind:identity.user?.lunar_account?'lunar':'telegram',name:acc?.name||cleanName(identity.user),telegramLinked:!!acc?.telegramId,telegramId:acc?.telegramId||null});
+ }
+
+ return bad('not_found',404);
+}

@@ -38,6 +38,7 @@ async function doSync(boot){
  if(IN_TG&&SRV_ECO&&!save.migOk)body.mig=ecoCopy();
  try{
   const r=await api('/api/sync',body);
+  if(/^(?:tg|ln)_\d{3,15}$/.test(String(r.pid||'')))VERIFIED_PID=r.pid; // Authenticated, server-owned player ID.
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);

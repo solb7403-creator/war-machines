@@ -26,3 +26,26 @@ h1 em{font-style:normal;color:var(--ice)}
 .alternate{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:24px;padding-top:17px;border-top:1px solid #2f5065;font:600 12px Chakra,sans-serif;letter-spacing:.04em;color:#b4d5ea}.alternate a:hover{color:var(--ice)}
 footer{padding:23px 0 8px;font:600 11px Chakra,sans-serif;letter-spacing:.12em;color:#9cbfd4}footer span{color:var(--orange)}
 @media(max-width:680px){body{background:linear-gradient(#040d19de,#020813f5),url(assets/lunar-colony-mobile.webp) center/cover fixed}.viewport{padding:14px}.brand{font-size:21px}.signal{font-size:9px;text-align:right}.access{margin:34px 0;padding:25px 18px}.steps div{padding:9px}.primary{font-size:14px}footer{font-size:9px}.code-row code{font-size:10px}}
+
+
+/* Independent Lunar account and optional platform linking */
+.auth-panel{border:1px solid #285c79;background:linear-gradient(120deg,#0a1a2b,#071522cc);padding:20px;margin:24px 0}
+.auth-panel h2,.optional-telegram h2{font:700 18px Chakra,sans-serif;letter-spacing:.13em;margin:0 0 15px;color:#dff7ff}
+.field-label{display:block;color:var(--ice);font:600 11px Chakra,sans-serif;letter-spacing:.12em;margin-bottom:8px}
+#pilot-name{display:block;width:100%;height:50px;border:1px solid #467591;border-radius:3px;padding:0 14px;background:#020d1b;color:white;font:600 17px Chakra,sans-serif;margin-bottom:14px}
+#pilot-name:focus-visible{outline:2px solid #ffaf65;outline-offset:2px}
+.action-button{width:100%;cursor:pointer}.action-button:disabled{opacity:.6;cursor:wait}
+.secondary-action{background:linear-gradient(110deg,#1d3656,#104d7f);border-color:#3d83a5}
+.auth-divider{display:flex;gap:10px;align-items:center;margin:25px 0 19px;color:#a7cee0;font:600 10px Chakra,sans-serif;letter-spacing:.09em}
+.auth-divider:before,.auth-divider:after{content:"";height:1px;background:#305b73;flex:1}
+.fine-print{color:#a6c0d2;font-size:12px;margin:9px 0 17px}
+.optional-telegram{margin-top:28px;padding:20px;border:1px solid #36546b;background:#081421dd}
+.optional-telegram p{color:#b1c7d8;font-size:13px;margin-bottom:15px}
+.optional-telegram .primary{margin-top:12px}
+.signed-in-box{padding:18px;background:#0c2840;border:1px solid #2cbce0;margin:17px 0}
+.signed-in-box .primary{margin:8px 0}.signed-in-box .retry{margin-top:12px}
+.account-actions{display:grid;gap:12px;margin:22px 0}
+.account-actions .primary{width:100%}
+.link-state{padding:14px;margin:12px 0;color:#c7ecff;background:#082136;border-left:3px solid var(--ice)}
+.account-card .code-row{margin-top:12px}
+@media(max-width:600px){.auth-panel,.optional-telegram{padding:15px}.auth-panel h2{font-size:16px}}

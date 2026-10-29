@@ -37,7 +37,7 @@ export async function dbDel(env, path) {
   return r.ok;
 }
 export const cleanName = (u) => {
-  let n = String((u && (u.username || [u.first_name, u.last_name].filter(Boolean).join(" "))) || "").trim();
+  let n = String((u && (u.lunar_name || u.username || [u.first_name, u.last_name].filter(Boolean).join(" "))) || "").trim();
   n = n.replace(/[^\w .\-]/g, "").slice(0, 16);
   return n || "Pilot-" + String((u && u.id) || "").slice(-4);
 };

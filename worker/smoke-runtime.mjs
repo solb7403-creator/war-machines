@@ -41,8 +41,8 @@ try{
  const d=[...q].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');
  q.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update('smoke-token').digest()).update(d).digest('hex'));
  const rejected=await fetch(base+'/api/pvp/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({initData:q.toString(),v:1,g:'arena',m:'1v1'})});
- assert.equal(rejected.status,500,'unavailable authoritative storage fails closed');
- assert.match((await rejected.json()).detail,/db get eco\/tg_91999 503/,'failure traced to authoritative account read');
+ assert.equal(rejected.status,503,'unavailable account-link storage fails closed before authenticating Telegram');
+ assert.match((await rejected.json()).error,/authentication unavailable/,'mapping-store failure must not create an anonymous identity');
  assert.equal(db.get('/eco/tg_91999'),null,'failed read cannot create a phantom account');
  unavailable=false;
  const code=await new Promise((resolve,reject)=>{

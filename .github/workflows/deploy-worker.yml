@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install independent passkey verifier
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
       - name: Check secrets
         env:
           CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -22,7 +24,7 @@ jobs:
           DB: ${{ secrets.FIREBASE_DB_SECRET }}
         run: |
           [ -n "$CF" ] || { echo "::error::CLOUDFLARE_API_TOKEN secret missing"; exit 1; }
-          [ -n "$BOT" ] || { echo "::error::BOT_TOKEN secret missing"; exit 1; }
+          [ -n "$BOT" ] || echo "::warning::BOT_TOKEN missing: Telegram extras unavailable; independent Lunar website deployment continues"
           [ -n "$DB" ] || { echo "::error::FIREBASE_DB_SECRET secret missing"; exit 1; }
       - name: Build the match sim (js/rules.js + js/game.js -> worker/src/sim.gen.js)
         run: node worker/build-sim.mjs
@@ -36,6 +38,7 @@ jobs:
           node dev/tests/wtest/pvp.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/web-auth.mjs
+          node dev/tests/wtest/lunar-identity.mjs
           node dev/tests/wtest/lab.mjs
           node dev/tests/wtest/lab-battle.mjs
       - name: Live-match smoke test in the Workers runtime
@@ -73,8 +76,12 @@ jobs:
           set -o pipefail
           run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
           run npx -y wrangler@4 deploy --var WEB_LOGIN_ENABLED:"${WEB_LOGIN_ENABLED:-1}"
-          BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')   # a pasted secret can carry a stray space or newline
-          printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
+          if [ -n "$BOT_TOKEN" ]; then
+            BOT_TOKEN=$(printf '%s' "$BOT_TOKEN" | tr -d '[:space:]')   # a pasted secret can carry a stray space or newline
+            printf '%s' "$BOT_TOKEN" | run npx -y wrangler@4 secret put BOT_TOKEN
+          else
+            echo "::notice::Lunar account service deployed without a Telegram bot token"
+          fi
           FIREBASE_DB_SECRET=$(printf '%s' "$FIREBASE_DB_SECRET" | tr -d '[:space:]')
           printf '%s' "$FIREBASE_DB_SECRET" | run npx -y wrangler@4 secret put FIREBASE_DB_SECRET
           # Only use the private BotFather OIDC secret in the Worker; never expose it as a public --var.
@@ -86,7 +93,13 @@ jobs:
           URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
           echo "WORKER_URL=$URL" >> $GITHUB_ENV
           echo "::notice::WORKER_URL=$URL"
+      - name: Optional Telegram bot webhook setup (website works without Telegram)
+        continue-on-error: true
+        env:
+          LUNAR_TELEGRAM_OPTIONAL: '1'
+        run: echo 'Telegram integration is optional; failure to update Telegram cannot block the independent website.'
       - name: Point bot webhook at the worker
+        continue-on-error: true
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
