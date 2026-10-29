@@ -184,7 +184,8 @@ const SRV_ECO=WEB_EDITION||(IN_TG&&!window.LUNAR_LOCAL_ECO);
 function dayId(d){return d.toISOString().slice(0,10);}
 const dayNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0))/864e5);
 const weekNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0)-4*864e5)/(7*864e5));
-const playerKey=()=>IN_WEB?(window.LUNAR_WEB.pid||'tg_'+TG_USER.id):IN_TG?'tg_'+TG_USER.id:'local';
+let VERIFIED_PID=IN_WEB?(window.LUNAR_WEB.pid||'tg_'+TG_USER.id):null;
+const playerKey=()=>VERIFIED_PID||(IN_TG?'tg_'+TG_USER.id:'local');
 const ecoX=()=>({day:dayNum(),week:weekNum(),rnd:Math.random,pk:playerKey()});
 const when=(v,f)=>v&&typeof v.then==='function'?v.then(f):f(v);   // a result now (local) or later (server)
 function rollPeriods(){ecoRoll(save,ecoX());}
