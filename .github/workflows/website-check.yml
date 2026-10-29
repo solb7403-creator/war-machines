@@ -1,7 +1,7 @@
 name: Website layout and login contracts
 on:
   pull_request:
-    paths: ['web/**', 'worker/src/web-auth.js', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', '.github/workflows/website-check.yml']
+    paths: ['web/**', 'worker/src/web-auth.js', 'worker/src/lunar-identity.js', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', '.github/workflows/website-check.yml']
 permissions:
   contents: read
 jobs:
@@ -12,6 +12,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install independent passkey verifier
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
       - name: Website syntax and assets
         run: |
           node --check web/website.js
