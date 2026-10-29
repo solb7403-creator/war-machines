@@ -124,7 +124,8 @@ export async function lunarAuth(req,env){
  if(path==='/auth/lunar/upgrade/options'){
   const identity=await webIdentity(req,env);
   if(!identity||!/^tg_[0-9]{3,15}$/.test(identity.pid)||identity.user?.lunar_account||identity.pid!=='tg_'+identity.user?.id)return bad('telegram_session_required',403);
-  if(await dbGet(env,'telegramLinks/'+identity.user.id))return bad('already_linked',409);
+  const existingLink=await dbGet(env,'telegramLinks/'+identity.user.id);
+  if(existingLink&&existingLink!==identity.pid)return bad('already_linked',409);
   if(await dbGet(env,'lunarAccounts/'+identity.pid))return bad('already_secured',409);
   const S=await dbGet(env,'eco/'+identity.pid);
   if(S&&S.mig===0)return bad('complete_telegram_setup_first',409);
@@ -159,10 +160,15 @@ export async function lunarAuth(req,env){
     expectedRPID:rpID(env),requireUserVerification:true,supportedAlgorithmIDs:[-7,-257]
    });
    if(!verified.verified||!verified.registrationInfo?.credential)return bad('identity',401);
-   if(await dbGet(env,'telegramLinks/'+identity.user.id))return bad('already_linked',409);
+   const existingLink=await dbGet(env,'telegramLinks/'+identity.user.id);
+  if(existingLink&&existingLink!==identity.pid)return bad('already_linked',409);
    const credential=verified.registrationInfo.credential;
    const keyPath=await credentialPath(credential.id);
    if(await dbGet(env,keyPath))return bad('credential_already_registered',409);
+   // Reserve this Telegram identity before creating the first-party credential. A concurrent
+   // website-first link to a different Lunar account must never create two owners.
+   const reserved=await claimOnce(env,'telegramLinks/'+identity.user.id,identity.pid);
+   if(!reserved.ok&&reserved.v!==identity.pid)return bad('already_linked',409);
    const account={id:identity.pid,name:stored.name,created:Date.now(),type:'passkey',
     source:'telegram',telegramId:identity.user.id,credentialIDs:[credential.id]};
    const owner=await claimOnce(env,'lunarAccounts/'+identity.pid,account);
