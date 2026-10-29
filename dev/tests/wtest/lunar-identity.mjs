@@ -125,19 +125,40 @@ assert.ok(dbKey,'credential index saved');
 assert.equal(dbKey.counter,1,'signature counter increases after legitimate authentication');
 
 // Optional Telegram link proof requires signed private webhook, and cannot hijack another Lunar player.
-const linkStart=await call('/auth/lunar/link/start',{},assignedCookie,first.csrf);
+let linkStart=await call('/auth/lunar/link/start',{},assignedCookie,first.csrf);
 assert.equal(linkStart.status,200,JSON.stringify(await linkStart.clone().json()));
-const linkBody=await linkStart.json(),linkCode=linkBody.command.match(/^\/link ([a-f0-9]{48})$/)[1];
+let linkBody=await linkStart.json(),linkCode=linkBody.command.match(/^\/link ([a-f0-9]{48})$/)[1];
 assert.equal(linkBody.url,'https://t.me/LunarWarMachinesBot?start=link_'+linkCode);
 assert.equal((await call('/auth/lunar/link/status',{},assignedCookie,first.csrf)).status,200);
 const tgUser={id:888001,first_name:'Pilot',username:'tgp'};
-const linkMessage={message:{text:'/start link_'+linkCode,chat:{id:888001,type:'private'},from:tgUser}};
+let linkMessage={message:{text:'/start link_'+linkCode,chat:{id:888001,type:'private'},from:tgUser}};
 async function webhook(body,secret){
  return worker.fetch(new Request(origin+'/api/tg-webhook',{method:'POST',headers:{
   'Content-Type':'application/json','x-telegram-bot-api-secret-token':secret
  },body:JSON.stringify(body)}),env);
 }
 const secret=await workerModule.webhookSecret(env);
+// A Telegram-first user with existing game records must NEVER silently lose them by
+// attaching their Telegram identity to an empty independent Lunar account.
+const alreadyPlayed={id:777006,first_name:'Existing Player',username:'existingplayer'};
+const unsafe=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify(alreadyPlayed)});
+const unsafeData=[...unsafe].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
+unsafe.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(unsafeData).digest('hex'));
+let played=await call('/api/sync',{initData:unsafe.toString(),lab:1},'','','https://solb7403-creator.github.io');
+assert.equal(played.status,200);
+const oldEconomy=structuredClone(db.get('/eco/tg_'+alreadyPlayed.id));
+assert.ok(oldEconomy,'Telegram-first player has existing server-owned equipment');
+const attempted=await webhook({message:{text:'/link '+linkCode,chat:{id:alreadyPlayed.id,type:'private'},from:alreadyPlayed}},secret);
+assert.equal(attempted.status,200);
+assert.match(calls.at(-1).text,/failed or expired/);
+assert.equal(db.get('/telegramLinks/'+alreadyPlayed.id),null,'existing Telegram gameplay cannot be discarded by linking');
+assert.deepEqual(db.get('/eco/tg_'+alreadyPlayed.id),oldEconomy,'failed link must not mutate existing player economy');
+calls.length=0;
+// Request a fresh link for a truly unused Telegram identity; ordinary website-first linking still succeeds.
+linkStart=await call('/auth/lunar/link/start',{},assignedCookie,first.csrf);
+assert.equal(linkStart.status,200);
+linkBody=await linkStart.json();linkCode=linkBody.command.match(/^\/link ([a-f0-9]{48})$/)[1];
+linkMessage={message:{text:'/start link_'+linkCode,chat:{id:888001,type:'private'},from:tgUser}};
 assert.equal((await webhook(linkMessage,'not-signed')).status,403);
 let statusResponse=await call('/auth/lunar/link/status',{},assignedCookie,first.csrf);
 assert.equal((await statusResponse.json()).linked,false);
