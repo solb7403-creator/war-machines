@@ -145,7 +145,7 @@ function buildStats(){
 
 // ---- save (local + Telegram cloud) ----
 let save=null;
-const SAVE_KEY=IN_WEB?'wm_web_'+TG_USER.id:IN_TG?'wm_save_tg_'+TG_USER.id:'wm_save_v1';
+const SAVE_KEY=IN_WEB?'wm_web_'+(window.LUNAR_WEB.pid||'tg_'+TG_USER.id):IN_TG?'wm_save_tg_'+TG_USER.id:'wm_save_v1';
 function loadSave(obj){
  if(obj!==undefined)save=obj;else{try{save=JSON.parse(localStorage.getItem(SAVE_KEY));}catch(e){save=null;}}
  if(IN_WEB&&obj===undefined){
@@ -184,7 +184,7 @@ const SRV_ECO=WEB_EDITION||(IN_TG&&!window.LUNAR_LOCAL_ECO);
 function dayId(d){return d.toISOString().slice(0,10);}
 const dayNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0))/864e5);
 const weekNum=()=>Math.floor((Date.now()+(typeof srvOff==='number'?srvOff:0)-4*864e5)/(7*864e5));
-const playerKey=()=>ACCOUNT_OK?'tg_'+TG_USER.id:'local';
+const playerKey=()=>IN_WEB?(window.LUNAR_WEB.pid||'tg_'+TG_USER.id):IN_TG?'tg_'+TG_USER.id:'local';
 const ecoX=()=>({day:dayNum(),week:weekNum(),rnd:Math.random,pk:playerKey()});
 const when=(v,f)=>v&&typeof v.then==='function'?v.then(f):f(v);   // a result now (local) or later (server)
 function rollPeriods(){ecoRoll(save,ecoX());}
