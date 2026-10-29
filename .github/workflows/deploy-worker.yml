@@ -38,6 +38,7 @@ jobs:
           node dev/tests/wtest/pvp.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/web-auth.mjs
+          node dev/tests/wtest/lunar-identity.mjs
           node dev/tests/wtest/lab.mjs
           node dev/tests/wtest/lab-battle.mjs
       - name: Live-match smoke test in the Workers runtime
@@ -88,7 +89,13 @@ jobs:
           URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
           echo "WORKER_URL=$URL" >> $GITHUB_ENV
           echo "::notice::WORKER_URL=$URL"
+      - name: Optional Telegram bot webhook setup (website works without Telegram)
+        continue-on-error: true
+        env:
+          LUNAR_TELEGRAM_OPTIONAL: '1'
+        run: echo 'Telegram integration is optional; failure to update Telegram cannot block the independent website.'
       - name: Point bot webhook at the worker
+        continue-on-error: true
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
