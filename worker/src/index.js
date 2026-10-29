@@ -141,7 +141,7 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   if (why && Object.keys(why).length) flags.push([pid, Object.entries(why).map(([k, v]) => ["mig_" + k, v])]);
   if (Object.keys(up).length) await dbPatch(env, "", up);
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
-  const out = { ok: true, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
+  const out = { ok: true, pid, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
     rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
