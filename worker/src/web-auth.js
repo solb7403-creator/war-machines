@@ -58,6 +58,12 @@ export class WebSession {
    v.approved={id:b.user.id,first_name:String(b.user.first_name||'Pilot').slice(0,64),last_name:String(b.user.last_name||'').slice(0,64),username:String(b.user.username||'').slice(0,64),web_auth:true};
    await this.state.storage.put('record',v);return json({ok:true});
   }
+  if(op==='/link-approve'){
+   if(v.kind!=='challenge'||v.flow!=='lunar_link'||v.approved)return json({error:'invalid'},409);
+   let b;try{b=await req.json();}catch{return json({error:'invalid'},400);}
+   if(b.code!==v.code||b.pid!==v.pid||!Number.isSafeInteger(b.tgId)||b.tgId<=0)return json({error:'invalid'},403);
+   v.approved={telegramId:b.tgId};await this.state.storage.put('record',v);return json({ok:true});
+  }
   if(op==='/attempt'){
    if(v.kind!=='challenge'||(v.attempts||0)>=6)return json({error:'attempts'},429);
    v.attempts=(v.attempts||0)+1;await this.state.storage.put('record',v);return json(v);
@@ -98,7 +104,7 @@ export async function approveBotWebsiteLogin(env,code,user){
  const approve=await record(env,v.browser,'approve',{code,user});return approve.ok;
 }
 export async function webIdentity(req,env,csrf=true){
- if(!ready(env)||new URL(req.url).origin!==origin(env))return null;
+ if(!env.SESSIONS||new URL(req.url).origin!==origin(env))return null;
  const token=getCookie(req,SESSION_COOKIE);if(!token||csrf&&!sameOrigin(req,env))return null;
  const res=await record(env,token,'read');if(!res.ok)return null;const s=await res.json();
  if(s.kind!=='session'||csrf&&req.headers.get('X-Lunar-CSRF')!==s.csrf)return null;
@@ -184,7 +190,7 @@ export async function webAuth(req,env){
    return expireLoginCookie(result);
   }catch{return fail('exchange');}
  }
- if(!ready(env))return json({error:'login_setup_required'},503);
+ if(!ready(env)&&!['/auth/logout','/auth/renew'].includes(path))return json({error:'login_setup_required'},503);
  if(req.method!=='POST')return json({error:'method'},405);
  if(!sameOrigin(req,env))return json({error:'origin'},403);
  if(limited(req))return json({error:'rate'},429);
