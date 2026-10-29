@@ -30,10 +30,17 @@ async function tgSessionIdentity(env,user){
   if(!account||account.id!==candidate)throw Error('invalid linked account');
   return {user:{...user,lunar_account:true,lunar_name:account.name},pid:candidate};
  }
- return {user,pid:'tg_'+user.id};
+ // Telegram-first players may add a Lunar passkey without moving or resetting existing game records.
+ // Their legacy tg_<id> is a stable storage key; the new passkey works without the bot.
+ const legacy='tg_'+user.id,account=await dbGet(env,'lunarAccounts/'+legacy);
+ if(account){
+  if(account.id!==legacy||account.type!=='passkey'||account.telegramId!==user.id)throw Error('invalid upgraded account');
+  return {user:{...user,lunar_account:true,lunar_name:account.name},pid:legacy};
+ }
+ return {user,pid:legacy};
 }
 export async function issueLunarWebSession(env,user,pid){
- if(!env.SESSIONS||!/^ln_[0-9]{12,15}$/.test(String(pid||''))||!user?.lunar_account)return json({error:'account'},403);
+ if(!env.SESSIONS||!(/^(?:ln_[0-9]{12,15}|tg_[0-9]{3,15})$/.test(String(pid||'')))||!user?.lunar_account)return json({error:'account'},403);
  const sid=random(),csrf=random(),now=Date.now();
  const created=await record(env,sid,'issue',{kind:'session',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
  if(!created.ok)return json({error:'session_store'},503);

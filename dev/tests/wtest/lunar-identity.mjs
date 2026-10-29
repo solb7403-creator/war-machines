@@ -125,19 +125,40 @@ assert.ok(dbKey,'credential index saved');
 assert.equal(dbKey.counter,1,'signature counter increases after legitimate authentication');
 
 // Optional Telegram link proof requires signed private webhook, and cannot hijack another Lunar player.
-const linkStart=await call('/auth/lunar/link/start',{},assignedCookie,first.csrf);
+let linkStart=await call('/auth/lunar/link/start',{},assignedCookie,first.csrf);
 assert.equal(linkStart.status,200,JSON.stringify(await linkStart.clone().json()));
-const linkBody=await linkStart.json(),linkCode=linkBody.command.match(/^\/link ([a-f0-9]{48})$/)[1];
+let linkBody=await linkStart.json(),linkCode=linkBody.command.match(/^\/link ([a-f0-9]{48})$/)[1];
 assert.equal(linkBody.url,'https://t.me/LunarWarMachinesBot?start=link_'+linkCode);
 assert.equal((await call('/auth/lunar/link/status',{},assignedCookie,first.csrf)).status,200);
 const tgUser={id:888001,first_name:'Pilot',username:'tgp'};
-const linkMessage={message:{text:'/start link_'+linkCode,chat:{id:888001,type:'private'},from:tgUser}};
+let linkMessage={message:{text:'/start link_'+linkCode,chat:{id:888001,type:'private'},from:tgUser}};
 async function webhook(body,secret){
  return worker.fetch(new Request(origin+'/api/tg-webhook',{method:'POST',headers:{
   'Content-Type':'application/json','x-telegram-bot-api-secret-token':secret
  },body:JSON.stringify(body)}),env);
 }
 const secret=await workerModule.webhookSecret(env);
+// A Telegram-first user with existing game records must NEVER silently lose them by
+// attaching their Telegram identity to an empty independent Lunar account.
+const alreadyPlayed={id:777006,first_name:'Existing Player',username:'existingplayer'};
+const unsafe=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify(alreadyPlayed)});
+const unsafeData=[...unsafe].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
+unsafe.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(unsafeData).digest('hex'));
+let played=await call('/api/sync',{initData:unsafe.toString(),lab:1},'','','https://solb7403-creator.github.io');
+assert.equal(played.status,200);
+const oldEconomy=structuredClone(db.get('/eco/tg_'+alreadyPlayed.id));
+assert.ok(oldEconomy,'Telegram-first player has existing server-owned equipment');
+const attempted=await webhook({message:{text:'/link '+linkCode,chat:{id:alreadyPlayed.id,type:'private'},from:alreadyPlayed}},secret);
+assert.equal(attempted.status,200);
+assert.match(calls.at(-1).text,/failed or expired/);
+assert.equal(db.get('/telegramLinks/'+alreadyPlayed.id),null,'existing Telegram gameplay cannot be discarded by linking');
+assert.deepEqual(db.get('/eco/tg_'+alreadyPlayed.id),oldEconomy,'failed link must not mutate existing player economy');
+calls.length=0;
+// Request a fresh link for a truly unused Telegram identity; ordinary website-first linking still succeeds.
+linkStart=await call('/auth/lunar/link/start',{},assignedCookie,first.csrf);
+assert.equal(linkStart.status,200);
+linkBody=await linkStart.json();linkCode=linkBody.command.match(/^\/link ([a-f0-9]{48})$/)[1];
+linkMessage={message:{text:'/start link_'+linkCode,chat:{id:888001,type:'private'},from:tgUser}};
 assert.equal((await webhook(linkMessage,'not-signed')).status,403);
 let statusResponse=await call('/auth/lunar/link/status',{},assignedCookie,first.csrf);
 assert.equal((await statusResponse.json()).linked,false);
@@ -176,4 +197,108 @@ assert.equal((await websiteFromBot.json()).pid,pid,'Telegram website login resol
 const existing=await call('/auth/lunar/account',{},assignedCookie,first.csrf);
 assert.equal((await existing.json()).telegramLinked,true);
 console.log('PASS discoverable passkey signature login, counters, anti-replay, signed optional Telegram link, same game economy');
+
+// Telegram-first pilot: play in the Mini App, earn real server-confirmed rewards,
+// then attach a valid first-party passkey WITHOUT creating a different game economy.
+const tgFirst={id:777005,first_name:'Original Pilot',username:'originalPilot'};
+function signedInit(u){
+ const p=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify(u)});
+ const d=[...p].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');
+ p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));
+ return p.toString();
+}
+const tgAuth=signedInit(tgFirst),oldPid='tg_'+tgFirst.id;
+response=await call('/api/sync',{initData:tgAuth,lab:1},'','','https://solb7403-creator.github.io');
+assert.equal(response.status,200);
+const initialTG=await response.json();assert.equal(initialTG.pid,oldPid);
+const earned=await call('/api/act',{initData:tgAuth,a:'login'},'','','https://solb7403-creator.github.io');
+assert.equal(earned.status,200);
+const beforeUpgrade=structuredClone(db.get('/eco/'+oldPid));
+assert.ok(beforeUpgrade.earned>0,'original Telegram account contains verified earned points');
+assert.ok(beforeUpgrade.lab?.machines,'Telegram pilot has real independent machine bays');
+
+// Verified Telegram bot login to the independent Lunar website.
+const originalStart=await call('/auth/bot/start',{});
+assert.equal(originalStart.status,200);
+const originalCode=(await originalStart.json()).command.match(/^\/login ([a-f0-9]{48})$/)[1];
+const originalCookie=cookie(originalStart,'__Host-lunar-login');
+assert.equal((await webhook({message:{text:'/login '+originalCode,chat:{id:tgFirst.id,type:'private'},from:tgFirst}},secret)).status,200);
+const originalSigned=await call('/auth/bot/finish',{},originalCookie);
+assert.equal(originalSigned.status,200);
+const telegramBrowserCookie=cookie(originalSigned,'__Host-lunar-session');
+const originalBrowser=await call('/auth/session',undefined,telegramBrowserCookie);
+const originalSession=await originalBrowser.json();
+assert.equal(originalSession.pid,oldPid);
+assert.equal(originalSession.user.lunar_account,undefined,'Telegram-only user has not yet secured a passkey');
+
+// A signed in user cannot register a second Lunar account; upgrade MUST retain old pilot.
+assert.equal((await call('/auth/lunar/register/options',{name:'Another Pilot'},telegramBrowserCookie,originalSession.csrf)).status,409);
+assert.equal((await call('/auth/lunar/upgrade/options',{},telegramBrowserCookie,'wrong')).status,403,'CSRF check protects upgrade');
+const upgradeOptions=await call('/auth/lunar/upgrade/options',{},telegramBrowserCookie,originalSession.csrf);
+assert.equal(upgradeOptions.status,200,JSON.stringify(await upgradeOptions.clone().json()));
+const upgradeCookie=cookie(upgradeOptions,'__Host-lunar-login');
+const upgradeData=await upgradeOptions.json();
+assert.equal(upgradeData.options.rp.id,'game.test');
+assert.equal(upgradeData.options.user.name,oldPid,'existing Telegram player becomes credential owner');
+
+const upgradedCredential=crypto.getRandomValues(new Uint8Array(32));
+const upgradedKP=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+const upgradedJWK=await crypto.subtle.exportKey('jwk',upgradedKP.publicKey);
+const upgradedCOSE=cbor(new Map([[1,2],[3,-7],[-1,1],[-2,un64(upgradedJWK.x)],[-3,un64(upgradedJWK.y)]]));
+const upgradedAuthData=concat(rpHash,Uint8Array.of(0x45,0,0,0,0),new Uint8Array(16),Uint8Array.of(0,upgradedCredential.length),upgradedCredential,upgradedCOSE);
+const upgradedAttObj=cbor({fmt:'none',attStmt:{},authData:upgradedAuthData});
+const upgradeRegistration={
+ id:b64(upgradedCredential),rawId:b64(upgradedCredential),type:'public-key',
+ response:{attestationObject:b64(upgradedAttObj),
+  clientDataJSON:b64(clientData('webauthn.create',upgradeData.options.challenge)),
+  transports:['internal']},clientExtensionResults:{}
+};
+assert.equal((await call('/auth/lunar/upgrade/verify',{credential:upgradeRegistration},upgradeCookie,'bad')).status,403,'cannot verify outside verified Telegram session CSRF');
+const upgraded=await call('/auth/lunar/upgrade/verify',{credential:upgradeRegistration},telegramBrowserCookie+'; '+upgradeCookie,originalSession.csrf);
+assert.equal(upgraded.status,200,JSON.stringify(await upgraded.clone().json()));
+const upgradeSession=await upgraded.json();
+assert.equal(upgradeSession.pid,oldPid,'passkey upgrade retains original game account ID');
+assert.equal(upgradeSession.user.lunar_account,true);
+assert.deepEqual(db.get('/eco/'+oldPid),beforeUpgrade,'verified points and every item remain unchanged by conversion');
+assert.equal(db.get('/telegramLinks/'+tgFirst.id),oldPid,'Telegram identity is reserved to prevent double ownership');
+assert.equal(db.get('/lunarAccounts/'+oldPid).source,'telegram');
+assert.equal((await call('/auth/lunar/upgrade/verify',{credential:upgradeRegistration},telegramBrowserCookie+'; '+upgradeCookie,originalSession.csrf)).status,401,'passkey upgrade cannot be replayed');
+const upgradedSessionCookie=cookie(upgraded,'__Host-lunar-session');
+
+// The resulting passkey authenticates without bot credentials; game and inventory still use the old stored record.
+let freshOptions=await call('/auth/lunar/login/options',{});
+assert.equal(freshOptions.status,200);
+const freshCookie=cookie(freshOptions,'__Host-lunar-login');
+const freshAuth=await freshOptions.json();
+const loginData=concat(rpHash,Uint8Array.of(0x05,0,0,0,2));
+const loginClient=clientData('webauthn.get',freshAuth.options.challenge);
+const signatureBody=concat(loginData,new Uint8Array(await crypto.subtle.digest('SHA-256',loginClient)));
+const signatureRaw=new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},upgradedKP.privateKey,signatureBody));
+const signatureR=derInt(signatureRaw.slice(0,32)),signatureS=derInt(signatureRaw.slice(32));
+const signatureDER=concat(Uint8Array.of(0x30,signatureR.length+signatureS.length),signatureR,signatureS);
+const upgradedAssertion={
+ id:b64(upgradedCredential),rawId:b64(upgradedCredential),type:'public-key',
+ response:{authenticatorData:b64(loginData),clientDataJSON:b64(loginClient),
+ signature:b64(signatureDER),userHandle:null},clientExtensionResults:{}
+};
+const oldBot=env.BOT_TOKEN;delete env.BOT_TOKEN;
+const upgradedLogin=await call('/auth/lunar/login/verify',{credential:upgradedAssertion},freshCookie);
+assert.equal(upgradedLogin.status,200,JSON.stringify(await upgradedLogin.clone().json()));
+const newSession=await upgradedLogin.json();
+assert.equal(newSession.pid,oldPid,'passkey sign-in is the same Telegram-first pilot even with Telegram unavailable');
+const passkeySessionCookie=cookie(upgradedLogin,'__Host-lunar-session');
+assert.equal((await call('/api/sync',{lab:1},passkeySessionCookie,newSession.csrf)).status,200,'independent browser gameplay succeeds with Telegram disabled');
+assert.equal(db.get('/eco/'+oldPid).earned,beforeUpgrade.earned,'verified earned points survive');
+assert.equal(db.get('/eco/ln_'+tgFirst.id),null,'no duplicated economy or new pilot is minted');
+env.BOT_TOKEN=oldBot;
+
+// Existing Telegram Mini App continues using exact same economy and stable name after upgrade.
+response=await call('/api/sync',{initData:tgAuth,lab:1},'','','https://solb7403-creator.github.io');
+assert.equal(response.status,200);
+const afterTelegram=await response.json();
+assert.equal(afterTelegram.pid,oldPid,'original TG player ID stays intact');
+assert.deepEqual(afterTelegram.E.lab,initialTG.E.lab,'original machines remain the same on Telegram and website');
+assert.equal(db.get('/eco/'+oldPid).nm,db.get('/lunarAccounts/'+oldPid).name);
+console.log('PASS Telegram-first pilot upgraded to a Lunar passkey without duplicating or losing economy, independent sign-in after bot outage');
+
 globalThis.fetch=realFetch;

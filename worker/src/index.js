@@ -12,6 +12,7 @@ import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
+const ACCOUNT_URL = "https://lunar-api.solb7403.workers.dev/web/login.html";
 const WIKI_URL = "https://solb7403-creator.github.io/war-machines/wiki.html";
 const CHANNEL_URL = RULES.TG_URL || "https://t.me/LUNARmemecoin";
 const ADMINS = ["lunarbattle"]; // Telegram usernames allowed to see the admin stats (lowercase)
@@ -81,11 +82,15 @@ async function auth(req, env) {
   // A verified Telegram identity joins its first-party Lunar account only when voluntarily linked.
   // Otherwise the Telegram-only edition retains its legacy anonymous Telegram identity.
   const lunarPid=await resolveTelegramAccount(env,user.id);
-  if(lunarPid){
-    const lunarAccount=await dbGet(env,'lunarAccounts/'+lunarPid);
-    if(lunarAccount?.id===lunarPid){user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;}
+  const pid=lunarPid||"tg_"+user.id;
+  // Both website-first linked Telegram players and Telegram-first passkey upgrades have
+  // a Lunar-controlled identity. The latter retain their original economy storage key.
+  const lunarAccount=await dbGet(env,'lunarAccounts/'+pid);
+  if(lunarAccount){
+    if(lunarAccount.id!==pid||lunarAccount.type!=='passkey')return {err:json({error:'invalid account link'},409)};
+    user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;
   }
-  return { b, user, pid: lunarPid||"tg_"+user.id, ip: req.headers.get("CF-Connecting-IP") || "", sp };
+  return { b, user, pid, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
 function itemLabel(k, tk, ri) {
@@ -538,8 +543,12 @@ async function webhook(req, env) {
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
       text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
-      reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "📣 Channel", url: CHANNEL_URL }, { text: "📖 Wiki", url: WIKI_URL }]] },
+      reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "🌐 LUNAR WEBSITE / ACCOUNT", url: ACCOUNT_URL }], [{ text: "📣 Channel", url: CHANNEL_URL }, { text: "📖 Wiki", url: WIKI_URL }]] },
     });
+  } else if (m && m.text && /^\/account(?:\s|$)/.test(m.text)) {
+    await tg(env, "sendMessage", {chat_id:m.chat.id,
+      text:"Keep your LUNAR machines, points, purchases and progression when you move to the official website. Open the website, use optional Telegram sign-in once, and in Account Settings add a permanent Lunar passkey. You can then sign in without Telegram.",
+      reply_markup:{inline_keyboard:[[{text:"🌐 OPEN LUNAR ACCOUNT",url:ACCOUNT_URL}]]}});
   } else if (m && m.text && /^\/(paysupport|support)/.test(m.text)) {
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: SUPPORT_TEXT });
   } else if (m && m.text && /^\/terms/.test(m.text)) {
