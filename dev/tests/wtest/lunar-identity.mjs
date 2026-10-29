@@ -157,7 +157,7 @@ response=await call('/api/sync',{initData:signed.toString(),lab:1},'','','https:
 assert.equal(response.status,200,JSON.stringify(await response.clone().json()));
 const telegramGame=await response.json();
 assert.deepEqual(telegramGame.E.lab,game.E.lab,'verified Telegram Mini App uses independent Lunar account inventory');
-assert.equal(db.get('/eco/'+pid).nm,'tgp','Telegram may update name but does not split progression');
+assert.equal(db.get('/eco/'+pid).nm,'Lunar Ace','linked Telegram must retain the chosen Lunar callsign');
 assert.equal(db.get('/eco/tg_888001'),null,'linked Telegram must not create a parallel account');
 
 const existing=await call('/auth/lunar/account',{},assignedCookie,first.csrf);
