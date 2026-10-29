@@ -117,11 +117,12 @@ const addMat=(c,o)=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacit
 
 // ---------- model cache ----------
 const FITCACHE=new Map();
-function fittingB(f,team,part){const key=part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part);FITCACHE.set(key,M3.bake(r.k));}return FITCACHE.get(key);}
+const MODEL_CACHE_LIMIT=64,FITTING_CACHE_LIMIT=96;
+function fittingB(f,team,part,s){const key=JSON.stringify(s&&(s.lunar?['lunar']:part==='body'?[s.cls,s.ct]:[s.arch,s.wt]))+'|'+part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part,s);FITCACHE.set(key,M3.bake(r.k));if(FITCACHE.size>FITTING_CACHE_LIMIT){const first=FITCACHE.keys().next().value;for(const g of Object.values(FITCACHE.get(first)))g?.dispose();FITCACHE.delete(first);}}return FITCACHE.get(key);}
 const KC=new Map();
-function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};KC.set(key,v);if(KC.size>160){const f=KC.keys().next().value;KC.delete(f);}return v;}
+function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
 function chassisB(s){return bakedOf(['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>M3.chassisKit(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
-function weaponB(s){return bakedOf(['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.cls].join('|'),()=>M3.weaponKit(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
+function weaponB(s){return bakedOf(['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>M3.weaponKit(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
 let BOSSB=null;
 function bossB(){if(!BOSSB){const k=M3.bossKit();BOSSB={hull:bakedOf('bossH',()=>k.hull),gun:bakedOf('bossG',()=>k.gun)};}return BOSSB;}
 // Hyperspace Vault looks (rules.js VAULT_REW): a gold tooth laid on the front deck (it glows from level 10), and where the
@@ -159,7 +160,7 @@ function buildTank(spec,mats){
  tur.position.y=H.meta.ty;body.add(tur);
  const tg=new THREE.Group();tur.add(tg);tg.add(M3.meshOf(Wk.b,null,mats));
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);tg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
- if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body'),null,mats));tg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount'),null,mats));}
+ if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body',spec),null,mats));tg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount',spec),null,mats));}
  const T={g,hull,body,tur,tg,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
  if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
  return T;

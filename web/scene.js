@@ -28,21 +28,21 @@ window.LunarShowroom=class {
   this.onVisibility=()=>this.run();document.addEventListener('visibilitychange',this.onVisibility);this.run();
  }
  size(){if(!this.renderer)return;const w=this.el.clientWidth,h=this.el.clientHeight;if(w&&h){this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.draw();}}
- kit(raw,parent){parent.add(M3.meshOf(M3.bake(raw.k),null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);}}
- setLoadout(L){
-  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks]);if(this.key===next)return;this.key=next;this.L=L;
+ kit(raw,parent){parent.add(M3.meshOf(M3.bake(raw.k),null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);if(a.axis&&this.animations)this.animations.push({m,axis:a.axis,spd:a.spd});}}
+ setLoadout(L,parts=3){
+  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,parts]);if(this.key===next)return;this.key=next;this.L=L;
   if(!this.renderer){this.fallback();return;}
   if(this.model){this.scene.remove(this.model);this.disposeGeometry(this.model);}
   // Keep the existing legendary/other-item rig exactly as before. Only the stock flagship
   // gets lower diffuse fill, restrained specular highlights and a grounded contact patch.
-  this.defender=L.c.c==='vanguard'&&L.c.t===0&&L.skin!=='lunar'&&L.w.a!=='moon';
+  this.defender=L.skin!=='lunar'&&L.w.a!=='moon';this.animations=[];this.parts=parts;
   this.hemi.intensity=this.defender ? .85 : 2.1;this.lights.forEach((l,i)=>l.intensity=(this.defender?[2.5,.65,2.0]:[3,1.25,2.3])[i]);
   this.mats.shine.shininess=this.defender?48:100;this.mats.shine.specular.setHex(this.defender?0x253746:0xc2d9e4);
-  this.contactShadow.visible=this.defender;
+  this.contactShadow.visible=this.defender&&parts!==2;
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);const team='#88cbdc',P=PAINTS[L.paint]||PAINTS.stock;
-  const H=M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');this.kit(H,body);
-  const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);this.kit(M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c),turret);
-  const fits=fittingVisuals(L);body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body').k),null,this.mats));turret.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount').k),null,this.mats));
+  const H=parts===2?{meta:{ty:0}}:M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');if(parts!==2)this.kit(H,body);
+  const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);if(parts!==1)this.kit(M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c),turret);
+  const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};if(parts!==2)body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body',context).k),null,this.mats));if(parts!==1)turret.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount',context).k),null,this.mats));
   root.scale.setScalar(L.w.a==='moon'?1.35:1.65);this.model=root;this.scene.add(root);
   this.bounds=null;
   if(this.defender){
@@ -53,7 +53,7 @@ window.LunarShowroom=class {
   }
   root.rotation.y=this.yaw;this.size();
  }
- draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const d=11.2/this.zoom/narrow;this.camera.position.set(5.5/this.zoom,3.5+this.tilt*5,d);this.camera.lookAt(0,.65,0);
+ draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;if(this.defender&&this.auto)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const d=11.2/this.zoom/narrow;this.camera.position.set(5.5/this.zoom,3.5+this.tilt*5,d);this.camera.lookAt(0,.65,0);
   if(this.bounds){
    const co=Math.cos(this.yaw),si=Math.sin(this.yaw),c=this.center,focus=new THREE.Vector3(c[0]*co+c[2]*si,c[1],-c[0]*si+c[2]*co);
    this.camera.position.add(focus);this.camera.lookAt(focus);this.camera.updateMatrixWorld(true);
@@ -64,7 +64,7 @@ window.LunarShowroom=class {
   this.renderer.render(this.scene,this.camera);}
  run(){cancelAnimationFrame(this.raf);this.raf=0;if(document.hidden||!this.visible||this.disposed)return;const frame=t=>{this.raf=0;if(this.disposed||document.hidden||!this.visible)return;if(!document.body.classList.contains('battle')&&t-this.last>45){if(this.auto)this.yaw+=.0018;this.draw();this.last=t;}this.raf=requestAnimationFrame(frame);};this.raf=requestAnimationFrame(frame);}
  rotate(n){this.auto=false;this.yaw+=n*.32;this.draw();}
- setZoom(v){this.zoom=Math.max(.72,Math.min(1.6,v));this.draw();}
+ setZoom(v){this.zoom=Math.max(.72,Math.min(this.parts===2&&this.defender?2.1:1.6,v));this.draw();}
  fallback(){const panel=this.el.closest('.web-stage,.hero-machine');panel?.querySelectorAll('[data-stage-rotate],[data-stage-zoom],[data-rotate],[data-zoom]').forEach(b=>b.disabled=true);const note=panel?.querySelector('.scene-footnote');if(note)note.textContent='2D preview · 3D inspection is unavailable on this device.';if(this.renderer){this.renderer.dispose();this.renderer.domElement.remove();this.renderer=null;}if(this.L&&typeof drawMachinePreview==='function'){
   this.el.innerHTML='';const c=document.createElement('canvas'),w=this.el.clientWidth||320,h=this.el.clientHeight||260;c.width=w;c.height=h;this.el.append(c);drawMachinePreview(c.getContext('2d'),w,h,this.L);return;
  }const C=this.L?.c.c||'vanguard';this.el.innerHTML=`<div class="scene-fallback"><svg viewBox="0 0 600 390" role="img" aria-label="${C} machine, 2D inspection fallback"><defs><linearGradient id="wm-metal" x2=".7" y2="1"><stop stop-color="#8098a8"/><stop offset=".5" stop-color="#304a5d"/><stop offset="1" stop-color="#102333"/></linearGradient></defs><ellipse cx="300" cy="300" rx="235" ry="55" fill="#0c141c" stroke="#465f70"/><g transform="translate(300 190) rotate(-18)"><path d="M-165-35h330v125h-330z" fill="#101922" stroke="#5d849a" stroke-width="4"/><path d="M-135-100h270v55h-270zM-135 65h270v55h-270z" fill="#14212d" stroke="#467386" stroke-width="5"/><path d="M-100-80h140l90 65v85H-100L-140 30v-65z" fill="url(#wm-metal)" stroke="#7797a8" stroke-width="3"/><path d="M-25-40h72l38 50-38 45h-72l-25-45z" fill="#618092" stroke="#b3d8df" stroke-width="3"/><path d="M40-9h170v28H40z" fill="#263f51" stroke="#a2c2d0" stroke-width="3"/><path d="M-110-65h110M-110 50h100" stroke="#ff9459" stroke-width="4"/></g></svg></div>`;}
