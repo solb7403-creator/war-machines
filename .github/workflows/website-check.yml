@@ -1,7 +1,7 @@
 name: Website layout and login contracts
 on:
   pull_request:
-    paths: ['web/**', 'worker/src/web-auth.js', 'worker/src/lunar-identity.js', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
+    paths: ['web/**', 'js/models3d.js', 'dev/tests/defender-visual.mjs', 'worker/src/web-auth.js', 'worker/src/lunar-identity.js', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
 permissions:
   contents: read
 jobs:
@@ -32,5 +32,6 @@ jobs:
       - name: Login handoff and authoritative session contracts
         run: |
           node dev/tests/web-login.mjs
+          node dev/tests/defender-visual.mjs
           node dev/tests/wtest/web-auth.mjs
           node dev/tests/wtest/lunar-identity.mjs

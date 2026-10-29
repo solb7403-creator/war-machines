@@ -32,6 +32,8 @@ jobs:
         run: node worker/build-web.mjs
       - name: Website login handoff regression
         run: node dev/tests/web-login.mjs
+      - name: Defender flagship 3D geometry verification
+        run: node dev/tests/defender-visual.mjs
       - name: Server tests (points, payments, live matches, farm defense)
         run: |
           node dev/tests/wtest/test.mjs
