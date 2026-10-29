@@ -1,4 +1,5 @@
 // Official Telegram Login (OIDC ID token), first-party HttpOnly sessions. No client identity or balances trusted.
+import {dbGet} from './db.js';
 const ISSUER='https://oauth.telegram.org',JWKS=ISSUER+'/.well-known/jwks.json';
 export const WEB_ORIGIN='https://lunar-api.solb7403.workers.dev';
 const LOGIN_COOKIE='__Host-lunar-login',SESSION_COOKIE='__Host-lunar-session',MAX_AGE=8*3600;
@@ -21,6 +22,16 @@ export const hasWebCookie=req=>!!getCookie(req,SESSION_COOKIE);
 // Shared audited primitives for Lunar-owned passkey accounts and optional Telegram linking.
 export {record,getCookie,sameOrigin,limited,origin,json,cookie,random};
 export const WEB_LOGIN_COOKIE=LOGIN_COOKIE;
+// Optional linked Telegram identity must resolve to its canonical Lunar account in every website login path.
+async function tgSessionIdentity(env,user){
+ const candidate=await dbGet(env,'telegramLinks/'+user.id);
+ if(typeof candidate==='string'&&/^ln_[0-9]{12,15}$/.test(candidate)){
+  const account=await dbGet(env,'lunarAccounts/'+candidate);
+  if(!account||account.id!==candidate)throw Error('invalid linked account');
+  return {user:{...user,lunar_account:true,lunar_name:account.name},pid:candidate};
+ }
+ return {user,pid:'tg_'+user.id};
+}
 export async function issueLunarWebSession(env,user,pid){
  if(!env.SESSIONS||!/^ln_[0-9]{12,15}$/.test(String(pid||''))||!user?.lunar_account)return json({error:'account'},403);
  const sid=random(),csrf=random(),now=Date.now();
@@ -140,8 +151,8 @@ export async function webAuth(req,env){
   if(used.status===202)return json({pending:true},202);
   if(!used.ok)return json({error:'expired'},401);
   const v=await used.json();if(v.flow!=='bot'||!v.approved)return json({error:'identity'},401);
-  const sid=random(),csrf=random(),now=Date.now();
-  const issued=await record(env,sid,'issue',{kind:'session',user:v.approved,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+  const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,v.approved);
+  const issued=await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
   if(!issued.ok)return json({error:'session_store'},503);
   const result=json({ok:true,user:v.approved,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
   result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
@@ -182,8 +193,8 @@ export async function webAuth(req,env){
    if(!response.ok)return fail('exchange');
    const data=await response.json();
    const user=await verifyWebToken(data.id_token,env,challenge);if(!user)return fail('identity');
-   const sid=random(),csrf=random(),now=Date.now();
-   const issued=await record(env,sid,'issue',{kind:'session',user,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+   const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,user);
+   const issued=await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
    if(!issued.ok)return fail('unavailable');
    const result=oauthRedirect('/web/play.html#'+safeTarget(challenge.target));
    result.headers.append('Set-Cookie',cookie(SESSION_COOKIE,sid,MAX_AGE));
@@ -205,8 +216,8 @@ export async function webAuth(req,env){
   let b;try{b=await req.json();}catch{return json({error:'bad_json'},400);}
   const challenge=await r.json(),user=await verifyWebToken(b.id_token,env,challenge);if(!user)return json({error:'identity'},401);
   if(!(await record(env,token,'consume')).ok)return json({error:'replayed'},401);
-  const sid=random(),csrf=random(),now=Date.now();
-  if(!(await record(env,sid,'issue',{kind:'session',user,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000})).ok)return json({error:'session_store'},503);
+  const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,user);
+  if(!(await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000})).ok)return json({error:'session_store'},503);
   const res=json({ok:true,user,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));res.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return res;
  }
  if(path==='/auth/logout'||path==='/auth/renew'){
