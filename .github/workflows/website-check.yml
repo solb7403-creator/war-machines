@@ -1,0 +1,23 @@
+name: Website layout and login contracts
+on:
+  pull_request:
+    paths: ['web/**', 'worker/src/web-auth.js', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', '.github/workflows/website-check.yml']
+permissions:
+  contents: read
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Website syntax and assets
+        run: |
+          node --check web/website.js
+          node --check web/game.js
+          node worker/build-web.mjs
+      - name: Login handoff and authoritative session contracts
+        run: |
+          node dev/tests/web-login.mjs
+          node dev/tests/wtest/web-auth.mjs

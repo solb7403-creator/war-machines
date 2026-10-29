@@ -28,6 +28,8 @@ jobs:
         run: node worker/build-sim.mjs
       - name: Package official website assets
         run: node worker/build-web.mjs
+      - name: Website login handoff regression
+        run: node dev/tests/web-login.mjs
       - name: Server tests (points, payments, live matches, farm defense)
         run: |
           node dev/tests/wtest/test.mjs
