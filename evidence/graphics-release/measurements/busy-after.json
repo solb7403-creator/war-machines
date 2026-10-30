@@ -1,0 +1,114 @@
+{
+  "battle": [
+    {
+      "mode": "royale",
+      "map": "classic",
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 1631,
+        "taken": 682,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "place": 5,
+          "of": 6
+        },
+        "opponents": [
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 2,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 3,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 4,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 5,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 2352.8999999910593,
+      "meanMs": 2.1875,
+      "worstMs": 4.299999997019768,
+      "triangles": 110024,
+      "calls": 109,
+      "memory": {
+        "geometries": 60,
+        "textures": 12
+      },
+      "programs": 19,
+      "glError": 0,
+      "profiles": [
+        {
+          "q": "high",
+          "calls": 109,
+          "triangles": 110024,
+          "meanMs": 3.254999999701977,
+          "worstMs": 30.100000008940697,
+          "memory": {
+            "geometries": 60,
+            "textures": 12
+          },
+          "programs": 19
+        },
+        {
+          "q": "low",
+          "calls": 107,
+          "triangles": 41480,
+          "meanMs": 2.767500000074506,
+          "worstMs": 31.69999998807907,
+          "memory": {
+            "geometries": 79,
+            "textures": 14
+          },
+          "programs": 19
+        }
+      ],
+      "stress": {
+        "live": 1912,
+        "max": 2400,
+        "calls": 109,
+        "triangles": 110024
+      }
+    }
+  ],
+  "errors": [],
+  "mutations": [],
+  "platform": "Chromium/SwiftShader; simulated viewports, local signed fixtures; not physical iPhone"
+}

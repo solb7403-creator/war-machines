@@ -1,0 +1,22 @@
+{
+  "clears": 1,
+  "quiet": false,
+  "hidden": false,
+  "inBattle": false,
+  "WEB_EDITION": false,
+  "ready": true,
+  "rect": {
+    "x": 17,
+    "y": 209.96875,
+    "width": 356,
+    "height": 220,
+    "top": 209.96875,
+    "right": 373,
+    "bottom": 429.96875,
+    "left": 17
+  },
+  "id": "lab-preview",
+  "connected": true,
+  "tick": 18982.7,
+  "errors": []
+}

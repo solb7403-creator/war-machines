@@ -1,0 +1,111 @@
+[
+  {
+    "name": "graphics-motion",
+    "code": 0,
+    "seconds": 3.24
+  },
+  {
+    "name": "graphics-release",
+    "code": 0,
+    "seconds": 0.15
+  },
+  {
+    "name": "hf-foundation",
+    "code": 0,
+    "seconds": 5.0
+  },
+  {
+    "name": "hf-collection",
+    "code": 0,
+    "seconds": 22.1
+  },
+  {
+    "name": "environment",
+    "code": 0,
+    "seconds": 2.67
+  },
+  {
+    "name": "legendary-visual",
+    "code": 0,
+    "seconds": 5.91
+  },
+  {
+    "name": "defender-visual",
+    "code": 0,
+    "seconds": 31.5
+  },
+  {
+    "name": "lab-ui",
+    "code": 0,
+    "seconds": 0.16
+  },
+  {
+    "name": "web-login",
+    "code": 0,
+    "seconds": 0.1
+  },
+  {
+    "name": "gear-balance",
+    "code": 0,
+    "seconds": 0.11
+  },
+  {
+    "name": "gear-combat",
+    "code": 0,
+    "seconds": 261.69
+  },
+  {
+    "name": "wtest/test",
+    "code": 0,
+    "seconds": 1.02
+  },
+  {
+    "name": "wtest/pvp",
+    "code": 0,
+    "seconds": 14.29
+  },
+  {
+    "name": "wtest/farm",
+    "code": 0,
+    "seconds": 3.08
+  },
+  {
+    "name": "wtest/lab",
+    "code": 0,
+    "seconds": 0.41
+  },
+  {
+    "name": "wtest/lab-battle",
+    "code": 0,
+    "seconds": 0.12
+  },
+  {
+    "name": "wtest/lab-parity",
+    "code": 0,
+    "seconds": 0.12
+  },
+  {
+    "name": "wtest/range",
+    "code": 0,
+    "seconds": 8.16
+  },
+  {
+    "name": "wtest/range-comparison",
+    "code": 0,
+    "seconds": 0.1
+  },
+  {
+    "name": "wtest/web-auth",
+    "code": 0,
+    "seconds": 0.92
+  },
+  {
+    "name": "wtest/lunar-identity",
+    "code": 0,
+    "seconds": 0.74
+  },
+  {
+    "name": "real-workers-runtime",
+    "code": 0
+  }
+]

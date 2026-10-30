@@ -48,6 +48,6 @@ window.lunarWebReady=()=>{
  else if(tab==='engineer'){setTab('garage');ACT.labedit(save.lab.active);}
  else if(tab==='range'){setTab('garage');openRange(save.lab.active);}
  else if(tab.startsWith('mode:')&&GT_ORDER.includes(tab.slice(5))){ACT.gtype(tab.slice(5));setTab('play');}
- addEventListener('resize',webUpdateMachine);addEventListener('pagehide',()=>{clearInterval(webRenewTimer);webShowroom?.dispose();},{once:true});
+ addEventListener('resize',webUpdateMachine);addEventListener('lunar-quality-change',webUpdateMachine);addEventListener('pagehide',e=>{if(!e.persisted){clearInterval(webRenewTimer);webShowroom?.dispose();}});addEventListener('pageshow',e=>{if(e.persisted){webShowroom?.run();webUpdateMachine();}});
  webRenewTimer=setInterval(async()=>{if(document.hidden)return;const r=await fetch('/auth/renew',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}).catch(()=>null);if(r?.status===401)window.dispatchEvent(new Event('lunar-session-expired'));},20*60000);
 };

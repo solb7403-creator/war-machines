@@ -414,9 +414,10 @@ function drawCrystal(c,i){   // a floating crystal; new ones grow in
  g.fillStyle='rgba(255,255,255,.6)';g.beginPath();g.moveTo(px,py-s);g.lineTo(px+s*0.42,py-s*0.08);g.lineTo(px,py-s*0.22);g.closePath();g.fill();
 }
 function drawBattle(){
+ if(document.hidden)return;
  g.setTransform(dpr,0,0,dpr,0,0);
  let shx=0,shy=0;
- if(shakeT>0){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
+ if(shakeT>0&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
  const D3=D3on(),AH=Y(H)-Y(0);   // D3: the world is drawn by render3d.js underneath; this canvas adds the overlay
  if(D3){g.clearRect(0,0,vw,vh);frame3D(shx,shy);}
  else{g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);}
@@ -477,7 +478,7 @@ function drawBattle(){
   for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
    g.fillStyle='#ffcf4a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
    g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
-  for(const q of bullets){g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(X(q.x),Y(q.y),Math.max(2.5,sc*0.16)*Math.min(1.8,q.dm),0,7);g.fill();}
+  for(const q of bullets){const px=X(q.x),py=Y(q.y),arch=q.o.wtype||'pulse',r=Math.max(2.5,sc*.16)*Math.min(1.8,q.dm);g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(px,py,r+1,0,7);g.fill();g.fillStyle=arch==='moon'?'#d8f5ff':arch==='siege'?'#ffd29a':arch==='twin'?'#fff4ce':'#b9efff';g.beginPath();g.arc(px,py,r*.50,0,7);g.fill();if(arch==='moon'||arch==='siege'){const v=Math.hypot(q.vx,q.vy)||1;g.strokeStyle=arch==='moon'?'#6ed5ff':'#edac65';g.lineWidth=Math.max(1,sc*.07);g.beginPath();g.moveTo(px,py);g.lineTo(px-q.vx/v*sc*.35,py-q.vy/v*sc*.35);g.stroke();}}
  }
  // super telegraphs (lane for beam/shell, danger ring for nova): on the ground, so they dodge the same in 2D and 3D
  for(const r of units){
@@ -489,7 +490,7 @@ function drawBattle(){
    g.fillRect(0,-wdt*sc,len*sc,wdt*2*sc);g.globalAlpha=0.5+0.5*k;g.fillStyle='#ffb3b3';g.fillRect(0,-1,len*sc,2);g.restore();g.globalAlpha=1;}
  }
  if(!D3){
-  for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
+  for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=(bm.w||1.2)>=1.9?'#75d5ff':bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
    g.beginPath();g.moveTo(X(bm.ax),Y(bm.ay));g.lineTo(X(bm.bx),Y(bm.by));g.stroke();g.strokeStyle='#fff';g.lineWidth=Math.max(2,sc*0.3);g.stroke();g.lineCap='butt';g.globalAlpha=1;}
   for(const sh of shells){const sx=X(sh.x),sy=Y(sh.y),pr=sc*0.5*(1+0.15*Math.sin(performance.now()/60));
    g.fillStyle='#ff9d45';g.beginPath();g.arc(sx,sy,pr,0,7);g.fill();g.fillStyle='#ffcf4a';g.beginPath();g.arc(sx,sy,pr*0.55,0,7);g.fill();}

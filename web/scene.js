@@ -28,7 +28,7 @@ window.LunarShowroom=class {
   this.listen(container,'pointermove',e=>{if(!this.drag)return;this.yaw+=(e.clientX-this.drag.x)*.009;this.tilt=Math.max(.05,Math.min(.7,this.tilt+(e.clientY-this.drag.y)*.004));this.drag.x=e.clientX;this.drag.y=e.clientY;this.draw();});
   const end=()=>this.drag=null;this.listen(container,'pointerup',end);this.listen(container,'pointercancel',end);
   this.listen(container,'wheel',e=>{if(!e.ctrlKey&&Math.abs(e.deltaY)<80){e.preventDefault();this.setZoom(this.zoom-e.deltaY*.002);}},{passive:false});
-  this.observer=new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;this.run();});this.observer.observe(container);
+  this.observer=new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;this.motionLast=0;this.run();});this.observer.observe(container);
   this.listen(window,'lunar-graphics-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});
   this.onVisibility=()=>this.run();this.listen(document,'visibilitychange',this.onVisibility);this.run();
  }
@@ -36,6 +36,7 @@ window.LunarShowroom=class {
  kit(raw,parent){const baked=M3.bake(raw.k);parent.add(M3.meshOf(baked,null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);if(a.axis&&this.animations)this.animations.push({m,axis:a.axis,spd:a.spd});}return baked;}
  setContext(kind){if(this.context!==kind){this.context=kind;if(this.L)this.setLoadout(this.L,this.parts||3);}}
  setEnvironment(){
+  this.renderer?.setPixelRatio(typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'?1:Math.min(devicePixelRatio||1,1.5));
   const on=typeof Environment3D!=='undefined'&&Environment3D.active(),kind=this.context||(this.el.closest('.labform')?'engineer':this.el.closest('.web-game')?'garage':'inspection'),key=on?Environment3D.key()+'|'+kind:'legacy';
   if(this.envKey===key)return;this.envKey=key;
   if(this.envStage){this.scene.remove(this.envStage.group);this.envStage.dispose();this.envStage=null;}
@@ -58,6 +59,7 @@ window.LunarShowroom=class {
   const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);if(parts!==1)this.kit(M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c),turret);
   const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};if(parts!==2)body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body',context).k),null,this.mats));if(parts!==1)turret.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount',context).k),null,this.mats));
   if(parts!==2&&L.vl>0&&typeof vaultParts==='function'){const v={body};vaultParts(v,{b:hullB},{vl:L.vl,vt:typeof vtOf==='function'?vtOf(L.vl):L.vl>=10?2:1},this.mats);root.userData.vaultTooth=v.tooth;}
+  if(typeof GraphicsMotion!=='undefined'&&typeof Equipment3D!=='undefined'&&Equipment3D.active())this.motion=GraphicsMotion.attach(root,H.meta.track);
   root.scale.setScalar(1.65);this.model=root;this.scene.add(root);
   this.bounds=null;
   if(this.defender){
@@ -68,7 +70,7 @@ window.LunarShowroom=class {
   }
   root.rotation.y=this.yaw;this.size();
  }
- draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;if(this.defender&&this.auto)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const viewZoom=this.zoom*(this.legendary?1.15:1),d=11.2/viewZoom/narrow;this.camera.position.set(5.5/viewZoom,(3.5+this.tilt*5)/(this.legendary?Math.sqrt(viewZoom):1),d);this.camera.lookAt(0,.65,0);
+ draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),now=performance.now()/1000,dt=Math.min(.05,Math.max(0,now-(this.motionLast||now)));this.motionLast=now;if(this.motion){this.motion.step(dt,{},quiet);this.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(now*2);}if(this.defender&&!quiet)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const viewZoom=this.zoom*(this.legendary?1.15:1),d=11.2/viewZoom/narrow;this.camera.position.set(5.5/viewZoom,(3.5+this.tilt*5)/(this.legendary?Math.sqrt(viewZoom):1),d);this.camera.lookAt(0,.65,0);
   if(this.bounds){
    const co=Math.cos(this.yaw),si=Math.sin(this.yaw),c=this.center,focus=new THREE.Vector3(c[0]*co+c[2]*si,c[1],-c[0]*si+c[2]*co);
    this.camera.position.add(focus);this.camera.lookAt(focus);this.camera.updateMatrixWorld(true);
@@ -77,7 +79,7 @@ window.LunarShowroom=class {
    if(fit>1)this.camera.position.sub(focus).multiplyScalar(fit).add(focus);
   }
   this.renderer.render(this.scene,this.camera);}
- run(){cancelAnimationFrame(this.raf);this.raf=0;if(document.hidden||!this.visible||this.disposed||!this.renderer)return;const frame=t=>{this.raf=0;if(this.disposed||document.hidden||!this.visible)return;if(!document.body.classList.contains('battle')&&t-this.last>45){if(this.auto)this.yaw+=.0018;this.draw();this.last=t;}this.raf=requestAnimationFrame(frame);};this.raf=requestAnimationFrame(frame);}
+ run(){cancelAnimationFrame(this.raf);this.raf=0;if(document.hidden||!this.visible||this.disposed||!this.renderer)return;const frame=t=>{this.raf=0;if(this.disposed||document.hidden||!this.visible)return;if(!document.body.classList.contains('battle')&&t-this.last>45){if(this.auto&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()))this.yaw+=.0018;this.draw();this.last=t;}this.raf=requestAnimationFrame(frame);};this.raf=requestAnimationFrame(frame);}
  view(kind){const v={front:[-1.02,.14],quarter:[-.20,.20],side:[.55,.12],rear:[1.60,.20]}[kind];if(v){this.userView=true;this.auto=false;this.yaw=v[0];this.tilt=v[1];this.draw();}}
  rotate(n){this.userView=true;this.auto=false;this.yaw+=n*.32;this.draw();}
  setZoom(v){this.userView=true;this.zoom=Math.max(.72,Math.min(this.parts===2&&this.defender?2.1:1.6,v));this.draw();}
