@@ -2,11 +2,12 @@
 // One bounded showroom renderer. Reuses exactly the game's procedural parts; no physics, gear grants or economy.
 window.LunarShowroom=class {
  constructor(container){
+  this.hfRelease=typeof Equipment3D!=='undefined'?Equipment3D.attach():null;
   this.el=container;this.yaw=-.65;this.tilt=.32;this.zoom=1;this.raf=0;this.last=0;this.visible=true;this.key='';this.model=null;this.drag=null;this.auto=!matchMedia('(prefers-reduced-motion: reduce)').matches;
   this.resize=new ResizeObserver(()=>this.size());this.resize.observe(container);
   try{
    if(typeof THREE==='undefined')throw Error('3D unavailable');
-   this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power',stencil:false});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);container.append(this.renderer.domElement);
+   this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power',stencil:false});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);container.append(this.renderer.domElement);
    this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(29,1,.1,80);
    this.hemi=new THREE.HemisphereLight(0xc9e2ec,0x152131,2.1);this.scene.add(this.hemi);this.lights=[];
    for(const [c,i,p] of [[0xe7f1f1,3.0,[3,7,5]],[0xff9559,1.25,[-6,3,-2]],[0x70cce9,2.3,[0,4,-6]]]){const l=new THREE.DirectionalLight(c,i);l.position.set(...p);this.scene.add(l);this.lights.push(l);}
@@ -30,7 +31,7 @@ window.LunarShowroom=class {
  size(){if(!this.renderer)return;const w=this.el.clientWidth,h=this.el.clientHeight;if(w&&h){this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.draw();}}
  kit(raw,parent){parent.add(M3.meshOf(M3.bake(raw.k),null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);if(a.axis&&this.animations)this.animations.push({m,axis:a.axis,spd:a.spd});}}
  setLoadout(L,parts=3){
-  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,parts]);if(this.key===next)return;this.key=next;this.L=L;
+  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,parts,typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.generation:0]);if(this.key===next)return;this.key=next;this.L=L;
   if(!this.renderer){this.fallback();return;}
   if(this.model){this.scene.remove(this.model);this.disposeGeometry(this.model);}
   // All approved kits use restrained lighting, contact and geometry-aware phone framing.
@@ -67,6 +68,6 @@ window.LunarShowroom=class {
  fallback(){const panel=this.el.closest('.web-stage,.hero-machine');panel?.querySelectorAll('[data-stage-rotate],[data-stage-zoom],[data-rotate],[data-zoom]').forEach(b=>b.disabled=true);const note=panel?.querySelector('.scene-footnote');if(note)note.textContent='2D preview · 3D inspection is unavailable on this device.';if(this.renderer){this.renderer.dispose();this.renderer.domElement.remove();this.renderer=null;}if(this.L&&typeof drawMachinePreview==='function'){
   this.el.innerHTML='';const c=document.createElement('canvas'),w=this.el.clientWidth||320,h=this.el.clientHeight||260;c.width=w;c.height=h;this.el.append(c);drawMachinePreview(c.getContext('2d'),w,h,this.L);return;
  }const C=this.L?.c.c||'vanguard';this.el.innerHTML=`<div class="scene-fallback"><svg viewBox="0 0 600 390" role="img" aria-label="${C} machine, 2D inspection fallback"><defs><linearGradient id="wm-metal" x2=".7" y2="1"><stop stop-color="#8098a8"/><stop offset=".5" stop-color="#304a5d"/><stop offset="1" stop-color="#102333"/></linearGradient></defs><ellipse cx="300" cy="300" rx="235" ry="55" fill="#0c141c" stroke="#465f70"/><g transform="translate(300 190) rotate(-18)"><path d="M-165-35h330v125h-330z" fill="#101922" stroke="#5d849a" stroke-width="4"/><path d="M-135-100h270v55h-270zM-135 65h270v55h-270z" fill="#14212d" stroke="#467386" stroke-width="5"/><path d="M-100-80h140l90 65v85H-100L-140 30v-65z" fill="url(#wm-metal)" stroke="#7797a8" stroke-width="3"/><path d="M-25-40h72l38 50-38 45h-72l-25-45z" fill="#618092" stroke="#b3d8df" stroke-width="3"/><path d="M40-9h170v28H40z" fill="#263f51" stroke="#a2c2d0" stroke-width="3"/><path d="M-110-65h110M-110 50h100" stroke="#ff9459" stroke-width="4"/></g></svg></div>`;}
- disposeGeometry(root){const seen=new Set();root.traverse(o=>{if(o.geometry&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose();}});}
- dispose(){this.disposed=true;cancelAnimationFrame(this.raf);this.resize.disconnect();this.observer.disconnect();document.removeEventListener('visibilitychange',this.onVisibility);if(this.scene){this.disposeGeometry(this.scene);this.scene.traverse(o=>{for(const m of [].concat(o.material||[]))m.dispose();});}this.contactTexture?.dispose();this.renderer?.dispose();}
+ disposeGeometry(root){if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(root);const seen=new Set();root.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!seen.has(o.geometry)){seen.add(o.geometry);o.geometry.dispose();}});}
+ dispose(){this.hfRelease?.();this.hfRelease=null;this.disposed=true;cancelAnimationFrame(this.raf);this.resize.disconnect();this.observer.disconnect();document.removeEventListener('visibilitychange',this.onVisibility);if(this.scene){this.disposeGeometry(this.scene);this.scene.traverse(o=>{for(const m of [].concat(o.material||[]))if(!m.userData.hfShared)m.dispose();});}this.contactTexture?.dispose();this.renderer?.dispose();}
 };
