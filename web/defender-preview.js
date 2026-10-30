@@ -7,7 +7,7 @@ const paintPicker=document.querySelector('#preview-paint');
 for(const [id,p] of Object.entries(PAINTS)){const o=document.createElement('option');o.value=id;o.textContent=p.n;paintPicker.append(o);}
 function previewUpdate(){
  defenderPreview.setLoadout(previewLoadout);
- document.querySelector('#preview-title').textContent=previewLoadout.skin==='lunar'?'Legendary Lunar Skin · unchanged':'Stock Defender · visual prototype';
+ document.querySelector('#preview-title').textContent=previewLoadout.skin==='lunar'?'Legendary Lunar Skin · graphite / gold':'Stock Defender · visual prototype';
  document.querySelector('#preview-state').textContent=(previewLoadout.skin==='lunar'?'Legendary skin':'Stock skin')+' · '+PAINTS[previewLoadout.paint].n+' paint swatch · '+(previewLoadout.w.a==='moon'?'Moonbeam':'standard weapon');
  document.querySelectorAll('[data-skin]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.skin===previewLoadout.skin)));
 }

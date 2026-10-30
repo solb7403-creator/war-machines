@@ -12,6 +12,11 @@ if(process.env.LUNAR_STANDARD_VISUAL_FIXTURE==='1'){
  Object.assign(S.lab.machines.m_legacy.spec,{w:{a:'pulse',t:1,s:false},c:{c:'vanguard',t:1,s:false}});
  Object.assign(S.lab.machines.m_spare.spec,{w:{a:'siege',t:2,s:false},c:{c:'titan',t:2,s:false}});S.L=R.labLoadout(S);
  db.root.eco={tg_91002941:S};
+ if(process.env.LUNAR_LEGEND_VISUAL_FIXTURE==='1'){
+  S.skin='lunar';S.moonbeam=true;S.L=R.labLoadout(S);
+  const other=JSON.parse(JSON.stringify(S));other.skin='default';other.lab.machines.m_legacy.spec.w={a:'moon',t:2,s:false};other.L=R.labLoadout(other);
+  db.root.eco.tg_91002942=other;
+ }
 }
 const server=http.createServer(async(req,res)=>{try{
  let body='';for await(const p of req)body+=p;

@@ -9,7 +9,7 @@ function webMoveStage(){
 function webUpdateMachine(){
  if(!save||!webStage)return;webMoveStage();let L=myLoadout(),name=save.lab?.machines[save.lab.active]?.name||'War Machine';
  if(labEditor&&$('#lab-weapon')){const p=labFormSpec();if(!labValidate(save,p)){L=ecoLoadout(save,p);name=$('#lab-name').value||name;}}
- webShowroom?.setLoadout(L);$('#web-machine-name').textContent=name;$('#web-machine-class').textContent=CNAMES[L.c.c][L.c.t]+(L.c.c==='vanguard'&&L.c.t===0&&L.skin!=='lunar'?' · DEFENDER 3D PROTOTYPE':'')+' / '+(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+(L.skin==='lunar'?' · LUNAR SKIN (original design)':'');
+ webShowroom?.setLoadout(L);$('#web-machine-name').textContent=name;$('#web-machine-class').textContent=CNAMES[L.c.c][L.c.t]+(L.c.c==='vanguard'&&L.c.t===0&&L.skin!=='lunar'?' · DEFENDER 3D PROTOTYPE':'')+' / '+(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+(L.skin==='lunar'?' · LUNAR SKIN · GRAPHITE / GOLD':'');
  const m=machineMetrics(L);$('#web-machine-stats').innerHTML='<div>HULL<strong>'+fmtNum(m.hp)+'</strong><small>base HP</small></div><div>FIREPOWER<strong>'+m.dps+'</strong><small>ordinary DPS</small></div><div>MOBILITY<strong>'+m.spd+'</strong><small>driving speed</small></div>';
  $('#web-pilot').textContent=tgName(TG_USER);$('#web-credit').textContent=fmtNum((srv||window.LUNAR_WEB.snapshot.rec).ac||0)+' airdrop credit · server confirmed';
  document.querySelectorAll('[data-web-tab]').forEach(b=>b.classList.toggle('on',b.dataset.webTab===uiTab));

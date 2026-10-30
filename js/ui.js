@@ -410,7 +410,7 @@ function paintArt(root){
    else if(a[0]==='gem')drawGemArt(ctx,w,h,a[1]);
    else if(a[0]==='vault')drawVaultArt(ctx,w,h,+a[1]||0);
    else if(a[0]==='unit')drawUnitArt(ctx,w,h,units[+a[1]]);
-   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,a[1]==='lunar'?'#e8f4ff':TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'?myPaint():null);}
+   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'?myPaint():null,null,a[1]==='lunar'?'lunar':a[1]==='me'?save.skin:'default');}
   }catch(e){}
  }
 }

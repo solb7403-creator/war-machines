@@ -7,7 +7,7 @@ const catalogC=document.querySelector('#catalog-chassis'),catalogW=document.quer
 const catalogOption=(select,value,label)=>{const o=document.createElement('option');o.value=value;o.textContent=label;select.append(o);};
 for(const cls of CHORDER)for(let t=0;t<3;t++)catalogOption(catalogC,cls+':'+t,CH[cls].n+' · T'+t);
 for(const arch of WORDER)for(let t=0;t<3;t++)catalogOption(catalogW,arch+':'+t,WEAPONS[arch].n+' · T'+t);
-catalogOption(catalogW,'moon:2','Moonbeam · Legendary (unchanged)');for(const [id,p] of Object.entries(PAINTS))catalogOption(catalogP,id,p.n);
+catalogOption(catalogW,'moon:2','Moonbeam · Legendary unified cannon');for(const [id,p] of Object.entries(PAINTS))catalogOption(catalogP,id,p.n);
 catalogC.value='vanguard:0';catalogW.value='pulse:0';
 function catalogInspect(){
  const [cls,ct]=catalogC.value.split(':'),[arch,wt]=catalogW.value.split(':');
