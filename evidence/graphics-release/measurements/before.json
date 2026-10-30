@@ -1,0 +1,82 @@
+{
+  "battle": [
+    {
+      "mode": "royale",
+      "map": "classic",
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 1631,
+        "taken": 682,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "place": 5,
+          "of": 6
+        },
+        "opponents": [
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 2,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 3,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 4,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 5,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 1728.2999999970198,
+      "meanMs": 1.7600000001490117,
+      "worstMs": 4.699999988079071,
+      "triangles": 110024,
+      "calls": 109,
+      "memory": {
+        "geometries": 60,
+        "textures": 12
+      },
+      "programs": 16,
+      "glError": 0
+    }
+  ],
+  "errors": [],
+  "mutations": [],
+  "platform": "Chromium/SwiftShader; simulated viewports, local signed fixtures; not physical iPhone"
+}

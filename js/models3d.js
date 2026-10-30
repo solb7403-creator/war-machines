@@ -17,8 +17,9 @@ const LEG='#e8f4ff',GOLD='#ffcf4a';
 const kit=()=>({lit:[],shine:[],glow:[]});
 const V=a=>new THREE.Vector3(a[0],a[1],a[2]);
 function put(k,geo,col,p,r,s,mat){
+ const smooth=!!geo.userData.defenderSmooth;
  let g=geo.index?geo.toNonIndexed():geo;if(g!==geo)geo.dispose();
- if(g.attributes.uv)g.deleteAttribute('uv');if(g.attributes.normal)g.deleteAttribute('normal');
+ if(g.attributes.uv)g.deleteAttribute('uv');if(g.attributes.normal&&!smooth)g.deleteAttribute('normal');
  const m=new THREE.Matrix4().compose(V(p||[0,0,0]),new THREE.Quaternion().setFromEuler(new THREE.Euler((r||[0,0,0])[0],(r||[0,0,0])[1],(r||[0,0,0])[2])),V(s||[1,1,1]));
  g.applyMatrix4(m);
  if(m.determinant()<0){const a=g.attributes.position.array;for(let i=0;i<a.length;i+=9)for(let j=0;j<3;j++){const t=a[i+3+j];a[i+3+j]=a[i+6+j];a[i+6+j]=t;}}
@@ -30,12 +31,12 @@ function put(k,geo,col,p,r,s,mat){
 function merge(list){
  if(!list||!list.length)return null;
  let n=0;for(const g of list)n+=g.attributes.position.count;
- const P=new Float32Array(n*3),C=new Float32Array(n*3);let o=0;
- for(const g of list){P.set(g.attributes.position.array,o);C.set(g.attributes.color.array,o);o+=g.attributes.position.count*3;g.dispose();}
+ const P=new Float32Array(n*3),C=new Float32Array(n*3),N=list.some(g=>g.attributes.normal)?new Float32Array(n*3):null;let o=0;
+ for(const g of list){P.set(g.attributes.position.array,o);C.set(g.attributes.color.array,o);if(N){if(!g.attributes.normal)g.computeVertexNormals();N.set(g.attributes.normal.array,o);}o+=g.attributes.position.count*3;g.dispose();}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('color',new THREE.BufferAttribute(C,3));
- g.computeVertexNormals();g.computeBoundingSphere();return g;
+ if(N)g.setAttribute('normal',new THREE.BufferAttribute(N,3));else g.computeVertexNormals();g.computeBoundingSphere();return g;
 }
-const bake=k=>({lit:merge(k.lit),shine:merge(k.shine),glow:merge(k.glow)});
+const bake=k=>k.hf&&typeof Equipment3D!=='undefined'?Equipment3D.bake(k):({lit:merge(k.lit),shine:merge(k.shine),glow:merge(k.glow)});
 // shapes
 const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
 const CY=(rt,rb,h,s)=>new THREE.CylinderGeometry(rt,rb,h,s||10);
@@ -67,7 +68,7 @@ const sym=f=>{f(-1);f(1);};
 // ---------- colors for one tank ----------
 function palette(P,team,cls,lunar){
  P=P||{hull:'#2c3a49',tur:'#3b4a5b',trim:'#d5dee7'};
- if(lunar)return {hull:'#dfe6f0',hull2:'#c4cedc',tur:'#e9eef6',tur2:'#cdd6e3',trim:'#9fd8ff',dark:'#26303e',metal:'#8f9bad',track:'#1c2430',light:'#ffffff',team:LEG,acc:'#bfe6ff',shine:true,lunar:true};
+ if(lunar)return {hull:'#20252d',hull2:'#363c44',tur:'#272d36',tur2:'#424952',trim:'#bc904b',dark:'#10151c',metal:'#65717c',track:'#101419',light:'#d9eaff',team:team||'#4d9fff',acc:'#c49a54',shine:true,lunar:true};
  const k=P.hull==='#07080d'||P.hull==='#17131f'?2.1:P.hull==='#a9b6c8'||P.hull==='#aab2c0'?1.05:1.7;
  return {hull:hexMul(P.hull,k),hull2:hexMul(P.hull,k*0.82),tur:hexMul(P.tur,k),tur2:hexMul(P.tur,k*0.8),trim:P.trim,dark:'#262f3b',metal:'#76818f',track:'#171d25',light:'#e9f1f7',team:team||'#4d9fff',acc:CH[cls]?CH[cls].c:'#3fd0c9',shine:!!P.shine};
 }
@@ -77,101 +78,404 @@ const PM=C=>C.shine?'shine':'lit';   // metallic paints go on the shiny material
 // The approved tracked flagship is an art-direction prototype for stock Vanguard T0.
 // Other chassis, paint ownership, combat hitboxes, weapons and legendary cosmetics are untouched.
 // All static shapes still bake into the usual three geometry buckets (lit / shine / glow).
-function defenderChassis(k,C,gems,M,pm){
- const amber='#ff9d55',ice='#66c9ff',carbon='#151d27',gasket='#273545';
- const hull=[[-1.1,-0.47],[0.62,-0.5],[1.04,-0.34],[1.2,-0.17],[1.2,0.17],[1.04,0.34],[0.62,0.5],[-1.1,0.47]];
- const upper=[[-.99,-.38],[.45,-.4],[.81,-.28],[.99,-.12],[.99,.12],[.81,.28],[.45,.4],[-.99,.38]];
- put(k,loft(hull,upper,.23,.59),C.hull,null,null,null,pm);
- const roof=[[-.84,-.32],[.36,-.34],[.69,-.2],[.7,-.1],[.7,.1],[.69,.2],[.36,.34],[-.84,.32]];
- put(k,loft(sc(roof,.95,.98,-.08),sc(roof,.84,.84,-.1),.59,.72),C.hull2,null,null,null,pm);
- // Separate armored glacis / ram: the angular central nose is iconic from every camera angle.
- const ram=[ [.72,-.39],[1.16,-.3],[1.28,-.15],[1.28,.15],[1.16,.3],[.72,.39] ];
- const crest=[ [.79,-.33],[1.07,-.23],[1.16,-.1],[1.16,.1],[1.07,.23],[.79,.33] ];
- put(k,loft(ram,crest,.30,.57),C.hull2,null,null,null,'shine');
- put(k,B(.29,.10,.72),carbon,[1.04,.35,0]);
- put(k,B(.10,.05,.28),C.trim,[1.205,.43,0],null,null,'shine');
- // Two functional-looking caterpillar pods, not hover engines. They remain below the armor.
- sym(side=>{
-  const z=side*.77,outer=side*.946;
-  put(k,trackGeo(2.26,.47,.32),C.track,[0,.255,z]);
-  put(k,B(1.76,.07,.018),carbon,[0,.29,outer]);
-  // Recessed wheel train and exposed metallic hubs; track segments are geometric, not decals.
-  for(let i=0;i<6;i++){
-   const x=-.84+i*.335;
-   put(k,CY(.151,.151,.03,10),gasket,[x,.253,side*.964],[Math.PI/2,0,0]);
-   put(k,CY(.108,.108,.034,9),C.metal,[x,.253,side*.982],[Math.PI/2,0,0],null,'shine');
-   put(k,CY(.045,.045,.037,8),amber,[x,.253,side*1.006],[Math.PI/2,0,0],null,'glow');
-  }
-  for(let i=0;i<12;i++){
-   const x=-.95+i*.17;
-   put(k,B(.115,.037,.325),C.metal,[x,.515,z],null,null,pm);
-   put(k,B(.115,.033,.325),C.metal,[x,-.005,z],null,null,pm);
-  }
-  // Sloped heavy fenders, overlapping armor scales, and visible suspension braces.
-  const lower=[[-.96,side*.49],[.79,side*.49],[1.04,side*.63],[.85,side*1.03],[-.96,side*1.03]];
-  const higher=[[-.8,side*.55],[.63,side*.55],[.86,side*.64],[.69,side*.97],[-.8,side*.97]];
-  put(k,loft(lower,higher,.47,.65),C.hull,null,null,null,pm);
-  for(let i=0;i<4;i++){
-   const x=-.64+i*.4;
-   put(k,B(.31,.045,.027),C.hull2,[x,.602,side*.97],[0,0,(i%2?-.09:.09)],null,'shine');
-   put(k,B(.075,.04,.021),amber,[x,.547,side*.987],null,null,'glow');
-  }
-  put(k,B(1.65,.022,.026),C.trim,[-.06,.663,side*.765],null,null,'shine');
-  put(k,B(1.13,.018,.03),amber,[-.15,.648,side*.93],null,null,'glow');
-  put(k,B(.37,.10,.09),carbon,[.94,.40,side*.53]);
-  put(k,B(.25,.042,.065),amber,[1.09,.424,side*.54],null,null,'glow');
-  put(k,B(.25,.04,.08),ice,[1.12,.339,side*.45],null,null,'glow');
-  // Signature crescent crest: a recurring identity cue, not the Lunar legendary skin.
-  put(k,TO(.124,.023,5,15,Math.PI*1.46),amber,[-.53,.734,side*.37],[0,0,.33],null,'glow');
-  put(k,B(.22,.035,.05),C.trim,[-.51,.726,side*.395],null,null,'shine');
-  M.halos.push([1.16,.42,side*.55,amber,.33]);
- });
- // Armored rear cooling deck + removable modular weapon ring.
- put(k,B(.33,.11,.72),carbon,[-.95,.625,0]);
- for(let i=0;i<5;i++)put(k,B(.19,.022,.042),C.metal,[-.98,.692,-.29+i*.145],null,null,'shine');
- put(k,CY(.49,.52,.08,14),carbon,[0,.727,0]);
- put(k,TO(.493,.025,4,22),amber,[0,.777,0],[Math.PI/2,0,0],null,'glow');
- put(k,B(.43,.06,.11),C.dark,[-.78,.64,0]);
- // Preserve the sockets that show the three real equipped game cores.
- cores(k,C,gems,-.72,.735,[-.25,0,.25]);
- M.ty=.777;M.tc=amber;
+// Chamfered convex plates and smooth machined cylinders, used only by the stock flagship.
+// Bevel geometry catches real light; rubber, painted armor and exposed metal stay separate.
+function defenderPlate(points,height,bevel){
+ const s=new THREE.Shape();points.forEach((p,i)=>i?s.lineTo(p[0],-p[1]):s.moveTo(p[0],-p[1]));s.closePath();
+ const g=new THREE.ExtrudeGeometry(s,{depth:height-2*bevel,steps:1,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:1,curveSegments:1});
+ g.rotateX(-Math.PI/2);g.translate(0,bevel,0);return g;
 }
-// Matching Defender pulse turret. Every other weapon stays truly interchangeable.
-function defenderPulseTurret(k,C,M,pm){
- const amber='#ff9d55',ice='#66c9ff',carbon='#151d27';
- const foot=[[-.49,-.47],[.3,-.49],[.62,-.3],[.69,0],[.62,.3],[.3,.49],[-.49,.47]];
- const crown=[[-.38,-.37],[.22,-.4],[.49,-.22],[.56,0],[.49,.22],[.22,.4],[-.38,.37]];
- put(k,CY(.46,.49,.09,14),carbon,[0,.05,0]);
- put(k,loft(foot,crown,.07,.40),C.tur,null,null,null,pm);
- put(k,loft(sc(crown,.76,.8,-.08),sc(crown,.65,.7,-.06),.4,.52),C.tur2,null,null,null,'shine');
+function defenderCylinder(r,h,segments=20){const g=CY(r,r,h,segments);g.userData.defenderSmooth=true;return g;}
+function defenderBelt(len,h,depth){
+ const loop=(s,l,r)=>{s.moveTo(-l,-r);s.lineTo(l,-r);s.absarc(l,0,r,-Math.PI/2,Math.PI/2,false);s.lineTo(-l,r);s.absarc(-l,0,r,Math.PI/2,Math.PI*1.5,false);};
+ const s=new THREE.Shape(),hole=new THREE.Shape(),l=(len-h)/2;loop(s,l,h/2);loop(hole,l,h/2-.065);s.holes.push(hole);return extr(s,depth);
+}
+function defenderFinish(C){
+ if(C.lunar)return {body:C.hull,plate:C.hull2,tur:C.tur,edge:C.trim,steel:C.metal,rubber:C.track,recess:C.dark,amber:'#c49a54',ice:'#ffe1a1'};
+ // Stock gets graphite armor; selected colored/bright paints remain recognizable.
+ const stock=C.hull===hexMul('#2c3a49',1.7),base=stock?hexMul(C.hull,.48):hexMul(C.hull,.87);
+ return {body:base,plate:stock?'#35424d':hexMul(C.hull2,1.02),tur:stock?'#29343e':hexMul(C.tur,.86),edge:hexMix(C.trim,'#45505a',.72),steel:'#697987',rubber:'#10171d',recess:'#0a1118',amber:'#ff9d55',ice:'#66c9ff'};
+}
+function defenderChassis(k,C,gems,M,pm){
+ const F=defenderFinish(C),{amber,ice}=F;
+ const plate=(pts,y,h,c,b=.025)=>put(k,defenderPlate(pts,h,b),c,[0,y,0],null,null,'shine');
+ const deck=[[-1.12,-.55],[.60,-.56],[1.12,-.39],[1.26,-.19],[1.26,.19],[1.12,.39],[.60,.56],[-1.12,.55]];
+ // Long wedge glacis, chamfered armored keel and recessed central seam. No hover slab.
+ put(k,loft(deck,sc(deck,.86,.82,-.08),.24,.58),F.body,null,null,null,'shine');
+ plate([[-1.02,-.46],[.45,-.46],[.91,-.25],[1.04,0],[.91,.25],[.45,.46],[-1.02,.46]],.55,.11,F.plate);
  sym(side=>{
-  // Thick turret cheeks, break-up plating, recessed vents and the recognizable crescent mark.
-  put(k,B(.65,.19,.10),C.tur2,[-.16,.29,side*.46],[0,0,side*.08],null,'shine');
-  put(k,B(.45,.038,.025),amber,[-.17,.40,side*.51],null,null,'glow');
-  put(k,B(.24,.043,.03),ice,[.16,.20,side*.51],null,null,'glow');
-  for(let i=0;i<3;i++)put(k,B(.09,.052,.025),carbon,[-.29+i*.13,.22,side*.523]);
-  put(k,TO(.15,.028,5,16,Math.PI*1.47),amber,[-.27,.32,side*.537],[0,0,.28],null,'glow');
+  const prow=[[.24,side*.055],[1.08,side*.035],[1.18,side*.18],[.94,side*.37],[.32,side*.43]];
+  put(k,loft(prow,sc(prow,.82,.86,-.02),.40,.60),F.body,null,null,null,'shine');
+  plate([[.46,side*.055],[.99,side*.045],[1.05,side*.13],[.85,side*.28],[.45,side*.31]],.60,.045,F.plate,.012);
+  put(k,B(.50,.026,.025),amber,[.68,.615,side*.34],[0,side*.17,-.08],null,'shine');
+  // Independent wide track pod; an open belt reveals the wheel train instead of a solid block.
+  trackAssembly(k,F,{len:2.61,h:.48,w:.38,z:side*.91,y:.25,wheels:7,detail:true});
+  // Raised fender leaves wheels and lower suspension exposed. Overlapping sloped plates.
+  plate([[-1.13,side*.61],[.88,side*.61],[1.12,side*.77],[.99,side*1.07],[-1.13,side*1.07]],.52,.075,F.body,.018);
+  for(let i=0;i<3;i++){
+   const x=-.99+i*.57;
+   plate([[x,side*.68],[x+.46,side*.66],[x+.52,side*.98],[x+.02,side*1.035]],.59,.065,i%2?F.body:F.plate,.014);
+   put(k,B(.31,.012,.018),F.edge,[x+.24,.671,side*.98],null,null,'shine');
+   put(k,B(.10,.022,.025),amber,[x+.08,.664,side*.91],null,null,'shine');
+  }
+  // Headlamps live in dark armored sockets, with tiny lenses rather than emissive white slabs.
+  plate([[.77,side*.59],[1.19,side*.70],[1.10,side*.97],[.79,side*.98]],.43,.105,F.plate,.018);
+  put(k,B(.025,.070,.22),F.recess,[1.15,.49,side*.80],[0,-side*.32,0]);
+  put(k,B(.029,.024,.095),ice,[1.169,.499,side*.80],[0,-side*.32,0],null,'glow');
+  put(k,B(.03,.017,.040),amber,[1.174,.463,side*.87],null,null,'glow');
+  // Deliberate team identification survives paints and warm stock accents.
+  put(k,B(.22,.017,.038),C.team,[.46,.667,side*.70],null,null,'glow');
+  // Tow eyes, rear exhaust lip and service hatches are readable from the back/side.
+  put(k,TO(.065,.018,5,12),F.steel,[1.12,.32,side*.40],[0,Math.PI/2,0],null,'shine');
+  put(k,B(.13,.09,.21),F.recess,[-1.12,.53,side*.72]);
+  put(k,B(.018,.025,.12),'#b84827',[-1.19,.54,side*.72],null,null,'glow');
+  M.halos.push([1.17,.49,side*.80,ice,.18]);
  });
- // Coaxial heavy pulse cannon: segmented thermal collar, armored spine, bright muzzle.
- put(k,B(.39,.27,.36),carbon,[.56,.23,0]);
- put(k,CY(.158,.18,1.30,12),carbon,[1.12,.245,0],[0,0,Math.PI/2]);
- put(k,CY(.115,.115,1.31,12),C.metal,[1.15,.245,0],[0,0,Math.PI/2],null,'shine');
- for(const x of [.67,.92,1.2,1.48]){
-  put(k,CY(.194,.194,.08,12),C.dark,[x,.245,0],[0,0,Math.PI/2]);
-  put(k,TO(.18,.024,5,14),amber,[x+.045,.245,0],[0,Math.PI/2,0],null,'glow');
+ // Rear engine grilles: recessed slats, retaining bolts and armor-lipped cooling channels.
+ plate([[-1.13,-.42],[-.63,-.42],[-.63,.42],[-1.13,.42]],.61,.05,F.recess,.012);
+ for(let i=0;i<7;i++)sym(side=>put(k,B(.27,.014,.035),F.steel,[-.93,.673,side*(.10+i*.040)],[0,0,.09],null,'shine'));
+ sym(side=>put(k,B(.35,.021,.022),amber,[-.94,.69,side*.445],null,null,'shine'));
+ put(k,defenderCylinder(.49,.065,28),F.recess,[0,.71,0]);
+ put(k,defenderCylinder(.43,.04,28),F.steel,[0,.755,0],null,null,'shine');
+ cores(k,C,gems,-.90,.715,[-.25,0,.25]);
+ M.ty=.777;M.tc=amber; // Existing attachment height and weapon interchange contract.
+}
+function defenderPulseTurret(k,C,M,pm){
+ const F=defenderFinish(C),{amber,ice}=F;
+ const plate=(pts,y,h,c,b=.02)=>put(k,defenderPlate(pts,h,b),c,[0,y,0],null,null,'shine');
+ const outline=[[-.64,-.42],[.06,-.49],[.43,-.32],[.57,-.16],[.57,.16],[.43,.32],[.06,.49],[-.64,.42]];
+ put(k,defenderCylinder(.43,.07,28),F.recess,[0,.035,0]);
+ put(k,loft(outline,sc(outline,.84,.8,-.03),.065,.295),F.tur,null,null,null,'shine');
+ plate([[-.52,-.27],[.08,-.31],[.34,-.15],[.34,.15],[.08,.31],[-.52,.27]],.29,.065,F.plate);
+ sym(side=>{
+  // Articulated angular turret cheeks with a dark reveal between separate armor leaves.
+  plate([[-.58,side*.30],[-.04,side*.40],[.53,side*.20],[.42,side*.40],[-.06,side*.56],[-.60,side*.47]],.15,.09,F.body,.018);
+  plate([[-.44,side*.32],[-.08,side*.34],[.28,side*.24],[.04,side*.45],[-.45,side*.44]],.29,.043,F.plate,.012);
+  put(k,B(.40,.021,.018),amber,[-.26,.228,side*.493],[0,side*.12,0],null,'shine');
+  for(let i=0;i<4;i++)put(k,B(.040,.055,.018),F.recess,[-.43+i*.073,.22,side*.498],[0,0,-.24]);
+  // Small surface insignia; never the legendary fins, halo or orbiting ornament.
+  put(k,TO(.067,.011,4,15,Math.PI*1.45),F.edge,[-.39,.225,side*.514],[0,0,.4],null,'shine');
+  put(k,B(.095,.018,.025),C.team,[.07,.35,side*.29],null,null,'glow');
+ });
+ // Armored trunnion, polished exposed barrel and a finite modular thermal jacket.
+ put(k,defenderCylinder(.18,.44,20),F.steel,[.40,.215,0],[Math.PI/2,0,0],null,'shine');
+ put(k,B(.29,.21,.31),F.recess,[.53,.225,0]);
+ put(k,defenderCylinder(.094,1.23,24),F.steel,[1.12,.245,0],[0,0,Math.PI/2],null,'shine');
+ for(const x of [.69,1.05,1.42]){
+  put(k,defenderCylinder(.137,.21,12),F.body,[x,.245,0],[0,0,Math.PI/2],null,'shine');
+  put(k,TO(.138,.010,5,16),amber,[x-.095,.245,0],[0,Math.PI/2,0],null,'shine');
+  sym(side=>put(k,B(.115,.029,.025),F.recess,[x,.25,side*.133]));
  }
- put(k,B(1.05,.036,.055),amber,[1.08,.398,0],null,null,'glow');
- sym(side=>put(k,B(.81,.028,.026),C.trim,[1.11,.245,side*.171],null,null,'shine'));
- put(k,CY(.21,.21,.19,14),C.tur2,[1.74,.245,0],[0,0,Math.PI/2],null,'shine');
- put(k,TO(.161,.032,6,20),amber,[1.854,.245,0],[0,Math.PI/2,0],null,'glow');
- put(k,CY(.115,.115,.014,12),carbon,[1.857,.245,0],[0,0,Math.PI/2]);
- // Targeting optic, armored roof antenna and tertiary blue status diode.
- put(k,B(.32,.17,.21),C.dark,[-.17,.585,-.21],null,null,'shine');
- put(k,B(.105,.075,.024),ice,[.01,.596,-.21],null,null,'glow');
- put(k,CY(.017,.017,.38,5),C.metal,[-.35,.76,.24]);
- put(k,SP(.04,7,5),ice,[-.35,.97,.24],null,null,'glow');
- M.tips.push([1.88,.245,0]);
- M.halos.push([1.86,.245,0,amber,.47]);
+ // Chamfered top spine and muzzle brake, slots and a recessed dark bore.
+ plate([[.56,-.055],[1.53,-.055],[1.63,-.035],[1.63,.035],[1.53,.055],[.56,.055]],.345,.045,F.plate,.010);
+ put(k,B(.64,.011,.023),amber,[.97,.40,0],null,null,'shine');
+ put(k,defenderCylinder(.148,.22,8),F.plate,[1.73,.245,0],[0,0,Math.PI/2],null,'shine');
+ put(k,defenderCylinder(.112,.016,24),F.edge,[1.85,.245,0],[0,0,Math.PI/2],null,'shine');
+ put(k,defenderCylinder(.087,.019,24),F.recess,[1.861,.245,0],[0,0,Math.PI/2]);
+ sym(side=>{put(k,B(.10,.055,.012),F.recess,[1.73,.245,side*.14]);put(k,B(.065,.018,.013),amber,[1.70,.32,side*.105],null,null,'shine');});
+ // Low armored optic and hatch. Roof furniture stays below the cannon's dominant silhouette.
+ plate([[-.44,-.19],[-.23,-.19],[-.20,.04],[-.47,.04]],.35,.026,F.recess,.010);
+ put(k,defenderCylinder(.11,.032,20),F.edge,[-.36,.39,-.07],null,null,'shine');
+ put(k,B(.24,.08,.14),F.body,[-.03,.38,-.14],null,null,'shine');
+ put(k,B(.018,.030,.085),ice,[.095,.391,-.14],null,null,'glow');
+ put(k,CY(.012,.012,.15,6),F.steel,[-.49,.45,.21],null,null,'shine');
+ M.tips.push([1.88,.245,0]);M.halos.push([1.87,.245,0,ice,.15]);
+}
+
+// Standard visual catalog v2. IDs/tiers are render selections, never equipment or stat definitions.
+const VISUAL_VERSION=2;
+const CHASSIS_VISUALS={
+ scout:[
+  {len:1.94,trackZ:.64,trackW:.27,h:.36,deck:.47,ring:.56,armor:0,shape:'dart',wheels:4},
+  {len:2.05,trackZ:.69,trackW:.29,h:.38,deck:.49,ring:.59,armor:1,shape:'split',wheels:4},
+  {len:2.16,trackZ:.72,trackW:.30,h:.39,deck:.51,ring:.62,armor:2,shape:'outrigger',wheels:5}],
+ vanguard:[
+  {len:2.61,trackZ:.91,trackW:.38,h:.48,deck:.66,ring:.777,armor:0,shape:'defender',wheels:7},
+  {len:2.55,trackZ:.90,trackW:.36,h:.46,deck:.63,ring:.74,armor:1,shape:'wedge',wheels:6},
+  {len:2.64,trackZ:.94,trackW:.38,h:.48,deck:.68,ring:.80,armor:2,shape:'citadel',wheels:6}],
+ titan:[
+  {len:2.58,trackZ:.98,trackW:.42,h:.55,deck:.68,ring:.82,armor:0,shape:'bulwark',wheels:6},
+  {len:2.68,trackZ:1.01,trackW:.44,h:.56,deck:.72,ring:.86,armor:1,shape:'ram',wheels:6},
+  {len:2.78,trackZ:1.04,trackW:.44,h:.56,deck:.77,ring:.91,armor:2,shape:'four-pod',wheels:6}]
+};
+const WEAPON_VISUALS={
+ pulse:[{tip:1.88,y:.245,bore:.087,kind:'segmented',width:.46},{tip:1.94,y:.25,bore:.10,kind:'capacitor',width:.49},{tip:2.02,y:.26,bore:.12,kind:'accelerator',width:.52}],
+ twin:[{tip:1.74,y:.22,bore:.047,kind:'feed',width:.45},{tip:1.88,y:.23,bore:.055,kind:'drums',width:.50},{tip:1.98,y:.24,bore:.06,kind:'rotary',width:.55}],
+ siege:[{tip:1.88,y:.29,bore:.16,kind:'breech',width:.50},{tip:2.0,y:.31,bore:.18,kind:'recoil',width:.55},{tip:2.12,y:.35,bore:.16,kind:'split-brake',width:.59}]
+};
+const visualTier=t=>Math.max(0,Math.min(2,Number.isFinite(Number(t))?Math.trunc(Number(t)):0));
+function armorPart(k,pts,y,h,col,b=.018){put(k,defenderPlate(pts,h,b),col,[0,y,0],null,null,'shine');}
+function wheelAssembly(k,F,x,y,z,r,detail){
+ const side=Math.sign(z)||1;
+ put(k,defenderCylinder(r,.028,detail?16:12),F.recess,[x,y,z],[Math.PI/2,0,0]);
+ put(k,defenderCylinder(r*.78,.037,detail?14:10),F.steel,[x,y,z+side*.019],[Math.PI/2,0,0],null,'shine');
+ put(k,defenderCylinder(r*.55,.043,detail?12:10),F.body,[x,y,z+side*.034],[Math.PI/2,0,0],null,'shine');
+ put(k,defenderCylinder(r*.24,.05,8),F.edge,[x,y,z+side*.05],[Math.PI/2,0,0],null,'shine');
+ for(let j=0;j<(detail?3:2);j++){const a=j*Math.PI*2/(detail?3:2);put(k,CY(.012,.012,.016,6),F.edge,[x+Math.cos(a)*r*.64,y+Math.sin(a)*r*.64,z+side*.046],[Math.PI/2,0,0],null,'shine');}
+}
+function trackAssembly(k,F,o){
+ const {len,h,w,z,y=h/2+.01,wheels=5,detail=false,center=0}=o,side=Math.sign(z),a=(len-h)/2,r=h/2;
+ put(k,defenderBelt(len,h,w),F.rubber,[center,y,z]);
+ const pad=(x,py,ang)=>{put(k,B(detail?.092:.115,.039,w+.015),F.steel,[center+x,py,z],[0,0,ang],null,'shine');if(detail)put(k,B(.068,.055,w*.53),F.rubber,[center+x,py,z],[0,0,ang]);};
+ const n=detail?19:13;for(let i=0;i<n;i++){const x=-a+i*2*a/(n-1);pad(x,y+r,0);pad(x,y-r,0);}
+ for(const end of [-1,1])for(let i=1;i<7;i++){const q=i*Math.PI/7;pad(end*(a+Math.sin(q)*r),y+Math.cos(q)*r,-end*q);}
+ for(let i=0;i<wheels;i++){const x=center-a+2*a*i/(wheels-1),end=i===0||i===wheels-1;wheelAssembly(k,F,x,end?y:y-.035,z+side*(w/2+.015),r*(end?.77:.66),detail);}
+ for(const x of [-a*.5,a*.5]){
+  put(k,B(.25,.035,.025),F.steel,[center+x,y+.06,z+side*(w/2+.055)],[0,0,.38],null,'shine');
+  put(k,defenderCylinder(.024,.24,8),F.steel,[center+x,y+.155,z+side*w/2],[0,0,Math.PI/2],null,'shine');
+  for(let j=0;j<4;j++)put(k,TO(.039,.009,3,8),F.amber,[center+x-.09+j*.04,y+.155,z+side*w/2],[0,Math.PI/2,0],null,'shine');
+ }
+}
+function ventBank(k,F,x,y,z,n=5,axis='deck'){
+ put(k,B(.34,axis==='deck'?.022:.12,.22),F.recess,[x,y,z]);
+ for(let i=0;i<n;i++)put(k,B(.26,.014,.022),F.steel,[x,y+.019,z-.085+i*.17/(n-1)],null,null,'shine');
+}
+function sensorBlock(k,F,x,y,z,team){
+ put(k,B(.16,.075,.15),F.body,[x,y,z],null,null,'shine');put(k,B(.014,.027,.085),team||F.ice,[x+.086,y+.006,z],null,null,'glow');
+}
+function mountSocket(k,F,y){put(k,defenderCylinder(.48,.06,24),F.recess,[0,y-.055,0]);put(k,defenderCylinder(.43,.035,24),F.steel,[0,y-.0175,0],null,null,'shine');}
+function standardChassis(cls,tier,P,team,gems,lunar=false){
+ const o=CHASSIS_VISUALS[cls][tier],k=kit(),A=[],C=palette(P,team,cls,lunar),F=defenderFinish(C),M={ty:o.ring,halos:[],trail:[],tc:F.amber,bob:0,visual:VISUAL_VERSION};
+ if(o.shape==='defender'){defenderChassis(k,C,gems,M,PM(C));return {k,anims:A,meta:M};}
+ const scout=cls==='scout',titan=cls==='titan',width=scout?.38:titan?.66:.53,half=o.len/2-.10;
+ const bp=[[-half,-width],[half*.52,-width],[half*.88,-width*.64],[half,0],[half*.88,width*.64],[half*.52,width],[-half,width]];
+ const tp=sc(bp,scout?.88:.89,scout?.73:.82,-.06);
+ put(k,loft(bp,tp,.24,o.deck-.05),F.body,null,null,null,'shine');
+ armorPart(k,sc(tp,.94,.93,-.025),o.deck-.05,.07,F.plate);
+ sym(side=>{
+  if(o.shape==='four-pod'||o.shape==='outrigger')for(const x of (scout?[-.59,.59]:[-.70,.70]))trackAssembly(k,F,{len:scout?1.02:1.26,h:o.h,w:o.trackW,z:side*(o.trackZ+(scout&&x<0?.06:0)),center:x,wheels:3});
+  else trackAssembly(k,F,{len:o.len,h:o.h,w:o.trackW,z:side*o.trackZ,wheels:o.wheels});
+  // Chassis-specific fenders: narrow Scout rails, layered Vanguard scales, deep Titan shoulder armor.
+  const inside=o.trackZ-o.trackW*.42,outside=o.trackZ+o.trackW*.43;
+  armorPart(k,[[-half,side*inside],[half*.79,side*inside],[half*.90,side*(inside+.07)],[half*.74,side*outside],[-half,side*outside]],o.h+.045,titan?.12:.065,F.body);
+  const count=scout?2:3;
+  for(let i=0;i<count;i++){
+   const x=-half*.86+i*(o.len*.68/count),length=o.len*.53/count;
+   armorPart(k,[[x,side*(inside+.035)],[x+length,side*(inside+.01)],[x+length+.09,side*(outside-.02)],[x+.03,side*outside]],o.h+.10,.04,F.plate,.012);
+   put(k,B(length*.57,.014,.023),F.edge,[x+length*.5,o.h+.154,side*(outside-.035)],null,null,'shine');
+  }
+  put(k,B(.22,.02,.036),C.team,[.26,o.h+.17,side*(inside+.06)],null,null,'glow');
+  put(k,B(.035,.065,.17),F.recess,[half*.85,o.h*.8,side*o.trackZ]);
+  put(k,B(.04,.025,.08),F.ice,[half*.87,o.h*.8,side*o.trackZ],null,null,'glow');M.halos.push([half*.87,o.h*.8,side*o.trackZ,F.ice,.14]);
+  ventBank(k,F,-half*.70,o.deck+.04,side*width*.58,scout?4:6);
+  put(k,B(.02,.025,.12),'#b84827',[-half-.02,o.h*.8,side*o.trackZ],null,null,'glow');
+  if(tier){
+   // Explicit silhouette progression: split sensor shoulders, stepped armor and frontal rams.
+   const y=o.deck+.04,xa=scout?-.65:-.45,za=scout?.39:titan?.71:.57;
+   armorPart(k,[[xa,side*za],[xa+.44,side*(za-.06)],[xa+.62,side*(za+.08)],[xa+.02,side*(za+.16)]],y,.05+tier*.015,F.body);
+   put(k,B(.24,.022,.022),lunar?F.edge:TIERC[tier],[xa+.24,y+.12,side*(za+.12)],null,null,'shine');
+   if(scout)sensorBlock(k,F,xa+.10,y+.07,side*za,C.team);
+   else armorPart(k,[[half*.52,side*.24],[half*1.02,side*.33],[half*.96,side*.70],[half*.54,side*.63]],.24,.13+tier*.04,F.plate);
+  }
+  if(tier===2){
+   // Epic Scout: swept rear stabilizer rails; Vanguard: armored cooling banks; Titan: pod bridges.
+   const x=scout?-.85:-.65,z=scout?.58:titan?.91:.72;
+   armorPart(k,[[x-.24,side*(z-.10)],[x+.30,side*(z-.08)],[x+.46,side*(z+.16)],[x-.34,side*(z+.20)]],o.deck+.08,.075,F.plate);
+   ventBank(k,F,x+.02,o.deck+.13,side*z,5);
+   put(k,B(.32,.018,.025),F.amber,[x,o.deck+.20,side*(z+.12)],null,null,'shine');
+  }
+ });
+ // Class/tier authored modules add different silhouettes, not recolored copies.
+ if(scout&&tier===1){
+  sym(s=>armorPart(k,[[-.94,s*.31],[-.42,s*.34],[-.35,s*.66],[-1.01,s*.68]],o.deck+.045,.075,F.body));
+  armorPart(k,[[.10,-.09],[1.00,-.055],[1.08,0],[1.00,.055],[.10,.09]],o.deck+.015,.06,F.plate,.014);
+ }
+ if(scout&&tier===2){
+  sym(s=>{put(k,B(.45,.055,.07),F.steel,[-.39,.35,s*.49],[0,s*.25,0],null,'shine');armorPart(k,[[-.92,s*.35],[-.49,s*.31],[-.38,s*.72],[-1.08,s*.80]],o.deck+.02,.055,F.plate,.014);});
+ }
+ if(cls==='vanguard'&&tier===2){
+  sym(s=>{armorPart(k,[[.38,s*.59],[.83,s*.65],[.91,s*.93],[.33,s*.98]],.58,.16,F.plate);ventBank(k,F,.61,.758,s*.78,5);});
+ }
+ if(titan&&tier===1){
+  put(k,loft([[1.02,-.96],[1.42,-.85],[1.42,.85],[1.02,.96]],[[1.03,-.91],[1.26,-.78],[1.26,.78],[1.03,.91]],.15,.51),F.plate,null,null,null,'shine');
+  put(k,B(.035,.035,1.50),F.edge,[1.35,.27,0],null,null,'shine');
+ }
+ if(titan&&tier===2){
+  sym(s=>{for(const x of [-.68,.67])armorPart(k,[[x-.27,s*.71],[x+.26,s*.72],[x+.32,s*1.16],[x-.32,s*1.16]],.58,.18,F.plate);});
+  armorPart(k,[[-1.12,-.40],[-.78,-.40],[-.78,.40],[-1.12,.40]],.76,.13,F.body);
+ }
+ if(titan){
+  // Broad beveled glacis and functional tow eyes emphasize mass rather than just scaling.
+  armorPart(k,[[.50,-.47],[half,-.36],[half+.08,0],[half,.36],[.50,.47]],.30,.16+tier*.025,F.plate);
+  sym(s=>put(k,TO(.075,.02,4,12),F.steel,[half,.30,s*.46],[0,Math.PI/2,0],null,'shine'));
+ }else if(scout){
+  armorPart(k,[[.10,-.16],[half*.75,-.11],[half*.93,0],[half*.75,.11],[.10,.16]],o.deck,.04,F.body,.012);
+  sensorBlock(k,F,-.76,o.deck+.06,-.16,C.team);
+ }else{
+  sym(s=>armorPart(k,[[.26,s*.055],[half*.92,s*.03],[half*.98,s*.18],[.50,s*.34]],o.deck-.015,.05,F.body,.012));
+ }
+ mountSocket(k,F,o.ring);cores(k,C,gems,-.90,o.deck+.05,[-.25,0,.25]);
+ if(tier===2)sensorBlock(k,F,-.90,o.deck+.10,o.trackZ,C.team);
+ return {k,anims:A,meta:M};
+}
+function turretHousing(k,F,C,o,tier,arch){
+ const w=o.width,back=arch==='siege'?-.66:-.56;
+ const p=[[back,-w],[.14,-w],[.49,-w*.65],[.58,0],[.49,w*.65],[.14,w],[back,w]];
+ put(k,defenderCylinder(.43,.06,24),F.recess,[0,.03,0]);put(k,loft(p,sc(p,.84,.80,-.025),.06,.29),F.tur,null,null,null,'shine');
+ armorPart(k,sc(p,.70,.65,-.08),.285,.055,F.plate);
+ sym(s=>{
+  armorPart(k,[[back+.06,s*w*.75],[.05,s*w*.73],[.38,s*w*.40],[.17,s*(w+.08)],[back+.06,s*(w+.04)]],.16,.09,F.body,.015);
+  put(k,B(.29,.018,.022),F.amber,[-.24,.25,s*(w+.055)],null,null,'shine');
+  if(tier)ventBank(k,F,-.29,.35,s*(w-.05),4+tier);
+  put(k,B(.12,.018,.024),C.team,[.02,.35,s*w*.60],null,null,'glow');
+ });
+ sensorBlock(k,F,-.06,.38,-.16,C.team);
+}
+function barrelUnit(k,F,o,x0,z,r,style){
+ const x1=o.tip,y=o.y,len=x1-x0;
+ put(k,defenderCylinder(r,len,16),F.steel,[(x0+x1)/2,y,z],[0,0,Math.PI/2],null,'shine');
+ // Segmented jacket, collars and recessed cooling slots; muzzle bore is dark geometry.
+ const n=style==='heavy'?2:3;
+ for(let i=0;i<n;i++){
+  const x=x0+.13+(len-.35)*i/Math.max(1,n-1);
+  put(k,defenderCylinder(r*1.35,.15,12),F.body,[x,y,z],[0,0,Math.PI/2],null,'shine');
+  put(k,TO(r*1.36,.010,4,12),F.amber,[x-.067,y,z],[0,Math.PI/2,0],null,'shine');
+  sym(s=>put(k,B(.08,r*.28,.015),F.recess,[x,y,z+s*r*1.34]));
+ }
+ put(k,defenderCylinder(r*1.57,.18,style==='heavy'?8:12),F.plate,[x1-.10,y,z],[0,0,Math.PI/2],null,'shine');
+ put(k,defenderCylinder(r*.98,.014,16),F.edge,[x1-.003,y,z],[0,0,Math.PI/2],null,'shine');
+ put(k,defenderCylinder(r*.77,.018,16),F.recess,[x1+.003,y,z],[0,0,Math.PI/2]);
+}
+function standardWeapon(arch,tier,P,team,lunar=false){
+ const o=WEAPON_VISUALS[arch][tier],C=palette(P,team,'vanguard',lunar),F=defenderFinish(C),k=kit(),A=[],M={tips:[],halos:[],visual:VISUAL_VERSION};
+ if(arch==='pulse'&&tier===0){defenderPulseTurret(k,C,M,PM(C));return {k,anims:A,meta:M};}
+ turretHousing(k,F,C,o,tier,arch);
+ if(arch==='pulse'){
+  barrelUnit(k,F,o,.53,0,o.bore,'energy');
+  for(let i=0;i<(tier===2?5:3);i++){const x=.64+i*.24;put(k,TO(o.bore*1.55,.020,4,16),i%2?F.steel:F.ice,[x,o.y,0],[0,Math.PI/2,0],null,i%2?'shine':'glow');}
+  if(tier===2){sym(s=>put(k,B(1.2,.07,.08),F.plate,[1.15,o.y,s*.20],null,null,'shine'));const a=kit();put(a,TO(.18,.018,4,16,Math.PI*1.5),F.amber,[0,0,0],[0,Math.PI/2,0],null,'shine');A.push({k:a,p:[.72,o.y,0],axis:'x',spd:3});}
+  else sym(s=>put(k,defenderCylinder(.13,.32,12),F.body,[-.30,.21,s*.52],[Math.PI/2,0,0],null,'shine'));
+  M.tips.push([o.tip+.012,o.y,0]);
+ }else if(arch==='twin'){
+  const z=tier===2?.25:.21;
+  sym(s=>{
+   barrelUnit(k,F,o,.48,s*z,o.bore,'repeater');
+   put(k,B(.44,.17,.17),F.plate,[-.12,.20,s*(tier?.54:.46)],null,null,'shine');
+   if(tier){put(k,defenderCylinder(.16,.15,16),F.body,[-.25,.23,s*.59],[Math.PI/2,0,0],null,'shine');put(k,defenderCylinder(.085,.17,12),F.edge,[-.25,.23,s*.61],[Math.PI/2,0,0],null,'shine');}
+   if(tier===2){put(k,B(.30,.18,.25),F.plate,[-.43,.36,s*.49],null,null,'shine');const r=kit();for(const d of [-1,1])put(r,B(.6,.035,.035),F.steel,[.1,d*.10,0],null,null,'shine');put(r,TO(.115,.018,4,12),F.amber,[.36,0,0],[0,Math.PI/2,0],null,'shine');A.push({k:r,p:[1.10,o.y,s*z],axis:'x',spd:8*s});}
+   else for(let i=0;i<3;i++)put(k,B(.05,.055,.028),F.amber,[-.31+i*.10,.30,s*.47],null,null,'shine');
+   M.tips.push([o.tip+.012,o.y,s*z]);
+  });
+  put(k,B(.45,.06,.17),F.recess,[.46,.10,0]);
+ }else{
+  if(tier===2)sym(s=>barrelUnit(k,F,o,.50,s*.235,o.bore,'heavy'));else barrelUnit(k,F,o,.50,0,o.bore,'heavy');
+  // Broad trunnion and recoil cylinders give artillery a fundamentally different profile.
+  put(k,B(.48,.29,.54),F.body,[.38,.23,0]);
+  sym(s=>{put(k,defenderCylinder(.06,.76,12),F.steel,[.79,.39,s*.30],[0,0,Math.PI/2],null,'shine');put(k,defenderCylinder(.09,.31,12),F.body,[.50,.39,s*.30],[0,0,Math.PI/2],null,'shine');
+   if(tier)armorPart(k,[[.38,s*.22],[1.30,s*.21],[1.48,s*.32],[.50,s*.40]],.08,.10,F.plate);
+   if(tier===2){put(k,B(.27,.24,.075),F.plate,[o.tip-.13,o.y,s*.29],[0,s*.18,0],null,'shine');put(k,B(.13,.08,.018),F.recess,[o.tip-.12,o.y,s*.333]);}
+  });
+  if(tier===2){armorPart(k,[[-.72,-.26],[-.37,-.26],[-.37,.26],[-.72,.26]],.20,.22,F.plate);sym(s=>ventBank(k,F,-.57,.45,s*.24,6));}
+  if(tier===2)sym(s=>M.tips.push([o.tip+.012,o.y,s*.235]));else M.tips.push([o.tip+.012,o.y,0]);
+ }
+ for(const p of M.tips)M.halos.push([...p,F.ice,arch==='siege'?.20:.13]);
+ return {k,anims:A,meta:M};
+}
+// Public factories: one final legendary identity, shared by every renderer.
+function chassisKit(cls,tier,P,team,gems,lunar){if(typeof Equipment3D!=='undefined'&&Equipment3D.canChassis(cls,tier))return Equipment3D.chassisKit(cls,tier,P,team,gems,lunar);return CHASSIS_VISUALS[cls]?(lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems)):legacyChassisKit(cls,tier,P,team,gems,false);}
+function weaponKit(arch,tier,P,team,lunar,cls){if(typeof Equipment3D!=='undefined'&&Equipment3D.canWeapon(arch,tier))return Equipment3D.weaponKit(arch,tier,P,team,lunar,cls);return arch==='moon'?unifiedMoonbeam(team):WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team,lunar):legacyWeaponKit(arch,tier,P,team,false,cls);}
+
+// Final approved Lunar Skin: class/tier-specific tracked architecture, never a new item.
+// Palette ignores paint only while this existing skin is equipped; selected paint data is untouched.
+function insetCrescent(R,depth){
+ const r=R*.85,d=R*.38,x=(R*R-r*r+d*d)/(2*d),y=Math.sqrt(R*R-x*x),a=Math.atan2(y,x),b=Math.atan2(y,x-d),s=new THREE.Shape();
+ s.absarc(0,0,R,a,Math.PI*2-a,false);s.absarc(d,0,r,-b,b-Math.PI*2,true);s.closePath();
+ return extr(s,depth);
+}
+function lunarChassis(cls,tier,P,team,gems){
+ const raw=standardChassis(cls,tier,P,team,gems,true),k=raw.k,o=CHASSIS_VISUALS[cls][tier],F=defenderFinish(palette(P,team,cls,true));
+ const z=o.trackZ+o.trackW/2+.085;
+ sym(side=>{
+  // Inset heraldic side shields above the exposed wheel line; not floating fins.
+  const p=new THREE.Shape();[[-.68,0],[-.15,.01],[-.09,.29],[-.57,.33]].forEach((v,i)=>i?p.lineTo(...v):p.moveTo(...v));p.closePath();
+  put(k,extr(p,.032),F.edge,[0,o.h-.11,side*z],null,null,'shine');
+  const inner=new THREE.Shape();[[-.65,.022],[-.18,.029],[-.126,.27],[-.55,.306]].forEach((v,i)=>i?inner.lineTo(...v):inner.moveTo(...v));inner.closePath();
+  put(k,extr(inner,.035),F.body,[0,o.h-.11,side*z],null,null,'shine');
+  put(k,insetCrescent(cls==='scout'?.115:.135,.012),F.edge,[-.38,o.h+.057,side*(z+.032)],null,null,'shine');
+  // Narrow gold inlay, fasteners, deck seams and functional tier-coded hardware.
+  for(const x of [-.83,.50]){
+   armorPart(k,[[x,side*(o.trackZ-.12)],[x+.28,side*(o.trackZ-.10)],[x+.34,side*(o.trackZ+.11)],[x+.02,side*(o.trackZ+.12)]],o.h+.18,.025,F.plate,.009);
+   put(k,B(.24,.011,.016),F.edge,[x+.15,o.h+.218,side*(o.trackZ+.08)],null,null,'shine');
+   for(const d of [0,.24])put(k,defenderCylinder(.014,.013,6),F.edge,[x+d,o.h+.222,side*o.trackZ],null,null,'shine');
+  }
+  put(k,B(.19,.013,.030),team||'#4d9fff',[.42,o.h+.23,side*(o.trackZ-.08)],null,null,'glow');
+  // Articulated side joints retain dark exposed suspension and restrained gold bushings.
+  for(const x of [-.72,.70])put(k,defenderCylinder(.035,.018,8),F.edge,[x,o.h*.55,side*(z-.025)],[Math.PI/2,0,0],null,'shine');
+ });
+ // Layered wedge visor protects the nose while leaving the original turret socket clear.
+ const h=cls==='scout'?.33:cls==='titan'?.48:.40,tip=o.len/2-.08;
+ sym(side=>{
+  const p=[[.48,side*.035],[tip,side*.04],[tip+.03,side*.17],[tip-.18,side*h],[.49,side*(h-.05)]];
+  put(k,loft(p,sc(p,.94,.94,-.015),o.deck-.12,o.deck+.004),F.plate,null,null,null,'shine');
+  put(k,B(.32,.009,.015),F.edge,[tip-.25,o.deck+.012,side*(h-.12)],[0,side*.23,0],null,'shine');
+ });
+ // Hood crest is mounted flush to the inclined prow, ahead of the rotating turret.
+ const emblem=insetCrescent(cls==='scout'?.12:.19,.012);emblem.rotateX(-Math.PI/2);
+ put(k,emblem,F.edge,[cls==='scout'?.65:.81,o.deck+.018,0],null,null,'shine');
+ raw.meta.legend='lunar-black-gold';raw.meta.tc=F.edge;return raw;
+}
+// Annular machined barrel sleeve, through-bore visible from both ends (+X axis).
+function energySleeve(k,x,y,R,inner,depth,col,mat='shine'){
+ const s=new THREE.Shape(),h=new THREE.Shape();s.absarc(0,0,R,0,Math.PI*2,false);h.absarc(0,0,inner,0,Math.PI*2,true);s.holes.push(h);
+ const g=extr(s,depth);g.rotateY(Math.PI/2);put(k,g,col,[x,y,0],null,null,mat);
+}
+function unifiedMoonbeam(team){
+ const k=kit(),A=[],Y=.63,S='#cbd5df',W='#e7eef4',G='#c39a51',D='#1b2430',M='#586879',B0='#167cec',B1='#66cfff',WH='#e5faff';
+ const ring=(x,r,t,c,mat='shine')=>put(k,TO(r,t,6,24),c,[x,Y,0],[0,Math.PI/2,0],null,mat);
+ // A restrained dark rotary mount and cradle, not the reference's display pedestal.
+ put(k,defenderCylinder(.43,.07,24),D,[0,.035,0]);put(k,defenderCylinder(.35,.025,24),G,[0,.082,0],null,null,'shine');
+ armorPart(k,[[-.56,-.31],[.29,-.31],[.46,0],[.29,.31],[-.56,.31]],.10,.13,D);
+ sym(s=>{
+  armorPart(k,[[-.48,s*.22],[.28,s*.24],[.46,s*.40],[-.52,s*.40]],.21,.12,M,.014);
+  put(k,B(.56,.055,.065),G,[-.04,.32,s*.33],[0,0,.22],null,'shine');
+  put(k,defenderCylinder(.14,.07,20),G,[-.20,.48,s*.34],[Math.PI/2,0,0],null,'shine');
+  put(k,defenderCylinder(.09,.076,16),D,[-.20,.48,s*.35],[Math.PI/2,0,0]);
+  put(k,B(.12,.025,.025),team||'#4d9fff',[-.20,.25,s*.405],null,null,'glow');
+ });
+ // Exposed continuous longitudinal blue core runs from the breech to the forward aperture.
+ put(k,defenderCylinder(.092,3.01,24),B0,[.80,Y,0],[0,0,Math.PI/2],null,'glow');
+ put(k,defenderCylinder(.040,3.03,16),B1,[.80,Y+.05,.055],[0,0,Math.PI/2],null,'glow');
+ for(let i=0;i<20;i++){const x=-.66+i*.15,a=i*1.8;put(k,B(.16,.016,.016),i%3?B1:WH,[x,Y+Math.sin(a)*.078,Math.cos(a)*.078],[0,Math.cos(a)*.32,Math.sin(a)*.32],null,'glow');}
+ // Silver layered breech with windows, gold pipes and dark mechanical service hardware.
+ for(const x of [-.64,-.24,.16]){
+  energySleeve(k,x,Y,.25,.16,.16,x===-.24?M:S);ring(x-.08,.252,.014,G);
+  sym(s=>{
+   put(k,B(.28,.09,.055),W,[x,Y+.21,s*.14],[s*.30,0,0],null,'shine');
+   put(k,B(.27,.07,.05),S,[x,Y-.19,s*.14],[-s*.30,0,0],null,'shine');
+   put(k,defenderCylinder(.026,.34,8),G,[x,Y+.12,s*.29],[0,0,Math.PI/2],null,'shine');
+  });
+ }
+ // Beveled silver armor leaves, stepped along the rear housing; small dark reveals stay visible.
+ for(const x of [-.61,-.25,.11])sym(s=>{
+  armorPart(k,[[x-.15,s*.10],[x+.12,s*.10],[x+.16,s*.26],[x-.12,s*.29]],Y+.19,.045,W,.010);
+  put(k,B(.19,.012,.018),D,[x,Y+.247,s*.20],null,null,'shine');
+ });
+ energySleeve(k,-.77,Y,.267,.125,.055,M);ring(-.805,.25,.015,G);
+ // The barrel is open-sided: four narrow machined rails, electrically charged annular coils.
+ for(const a of [Math.PI/4,3*Math.PI/4,5*Math.PI/4,7*Math.PI/4]){
+  const y=Y+Math.sin(a)*.21,z=Math.cos(a)*.21;
+  put(k,B(2.45,.048,.048),S,[1.02,y,z],[a,0,0],null,'shine');
+  put(k,B(2.22,.017,.017),G,[1.02,y+Math.sin(a)*.03,z+Math.cos(a)*.03],null,null,'shine');
+ }
+ for(const x of [.42,1.02,1.64]){
+  energySleeve(k,x,Y,.275,.16,.105,S);ring(x+.065,.237,.025,B0,'glow');ring(x-.067,.27,.020,G);ring(x+.095,.267,.012,WH,'glow');
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;put(k,defenderCylinder(.018,.025,6),G,[x+.065,Y+Math.sin(a)*.285,Math.cos(a)*.285],[0,0,Math.PI/2],null,'shine');}
+ }
+ // Crescents are bolted to paired support cheeks, following the approved unified reference.
+ for(const x of [-.18,.95,2.03])sym(s=>{
+  put(k,B(.13,.055,.24),D,[x,Y-.25,s*.22],null,null,'shine');
+  put(k,insetCrescent(x===2.03?.39:.32,.035),G,[x,Y,s*.26],null,null,'shine');
+  put(k,defenderCylinder(.032,.05,8),W,[x-.16,Y,s*.285],[Math.PI/2,0,0],null,'shine');
+ });
+ // High-detail oversized emitter: silver focusing rings, gold rim, dark aperture and blue-white core.
+ energySleeve(k,2.20,Y,.33,.21,.18,S);ring(2.12,.325,.024,G);ring(2.30,.30,.025,G);ring(2.325,.25,.020,B1,'glow');
+ put(k,defenderCylinder(.208,.014,32),B0,[2.318,Y,0],[0,0,Math.PI/2],null,'glow');
+ put(k,defenderCylinder(.158,.016,28),B1,[2.329,Y,0],[0,0,Math.PI/2],null,'glow');
+ put(k,defenderCylinder(.103,.018,24),WH,[2.340,Y,0],[0,0,Math.PI/2],null,'glow');
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;put(k,B(.18,.045,.055),i%2?M:S,[2.22,Y+Math.sin(a)*.345,Math.cos(a)*.345],[a,0,0],null,'shine');}
+ // Only captive collars rotate. No floating moon, remote ornaments or perpetual firing beam.
+ for(const x of [.43,1.65]){const r=kit();put(r,TO(.291,.011,4,24,Math.PI*1.75),G,[0,0,0],[0,Math.PI/2,0],null,'shine');for(let i=0;i<3;i++){const a=i*Math.PI*2/3;put(r,B(.018,.028,.028),B1,[0,Math.sin(a)*.29,Math.cos(a)*.29],null,null,'glow');}A.push({k:r,p:[x,Y,0],axis:'x',spd:x<1?.65:-.65});}
+ return {k,anims:A,meta:{legend:'moonbeam-unified',tips:[[2.35,Y,0]],halos:[[2.35,Y,0,B1,.22],[1.1,Y,0,B0,.11]]}};
 }
 
 // ---------- chassis ----------
@@ -190,7 +494,7 @@ function cores(k,C,gems,x,y,zs){   // three core sockets on the rear deck, lit b
  zs.forEach((z,i)=>{put(k,CY(0.1,0.12,0.05,8),'#0b1016',[x,y,z]);const gk=gems&&gems[i];
   if(gk&&GEM[gk])put(k,OC(0.085),GEM[gk].c,[x,y+0.08,z],null,[1,1.3,1],'glow');});
 }
-function chassisKit(cls,tier,P,team,gems,lunar){
+function legacyChassisKit(cls,tier,P,team,gems,lunar){
  const k=kit(),A=[],C=palette(P,team,cls,lunar),rc=TIERC[tier],M={ty:0.55,halos:[],trail:[],tc:C.acc,bob:0},pm=PM(C);
  if(cls==='scout'){
   if(tier<2){
@@ -313,40 +617,14 @@ function chassisKit(cls,tier,P,team,gems,lunar){
    M.ty=0.62;
   }
  }
- if(lunar){   // LEGENDARY Lunar skin: pearl armor, crescent fins, hover halo, an orbiting moon
-  sym(s=>{put(k,crescentGeo(0.55,0.05),GOLD,[-0.35,M.ty+0.1,s*(cls==='titan'?0.8:0.64)],[s*0.25,0,0.55],null,'shine');
-   put(k,B(1.2,0.025,0.025),'#9fd8ff',[0,M.ty-0.02,s*0.4],null,null,'glow');});
-  put(k,TO(1.18,0.035,4,28),'#bfe6ff',[0,0.07,0],[Math.PI/2,0,0],null,'glow');
-  put(k,SP(0.13,10,7),'#ffffff',[-0.95,M.ty+0.12,0],null,null,'glow');
-  const mo=kit();put(mo,SP(0.09,8,6),'#ffffff',[1.35,0,0],null,null,'glow');put(mo,TO(0.13,0.012,3,12),GOLD,[1.35,0,0],[Math.PI/2,0,0],null,'glow');
-  A.push({k:mo,p:[0,M.ty+0.35,0],axis:'y',spd:1.4,orb:1});
-  M.halos.push([-0.95,M.ty+0.12,0,'#bfe6ff',0.9],[0,0.07,0,'#9fd8ff',0.4]);
-  M.bob=Math.max(M.bob,0.035);M.tc='#cfeaff';
-  if(!M.trail.length)sym(s=>M.trail.push([-1.05,0.4,s*0.4]));
- }
  return {k,anims:A,meta:M};
 }
 
 // ---------- weapons (the turret): origin = turret ring, barrel along +x ----------
-function weaponKit(arch,tier,P,team,lunar,cls){
+function legacyWeaponKit(arch,tier,P,team,lunar,cls){
  const k=kit(),A=[],C=palette(P,team,cls,lunar),rc=TIERC[tier],M={tips:[],halos:[]},pm=PM(C);
  const wc=WEAPONS[arch]?WEAPONS[arch].c:'#3fd0c9';
  const core=(x,y)=>{put(k,OC(0.11),C.team,[x,y,0],null,[1,1.3,1],'glow');M.halos.push([x,y,0,C.team,0.35]);};
- if(arch==='moon'){   // LEGENDARY Moonbeam, the Tide Engine: three crystal barrels bound by gold rings, a full moon held above on a gold arm
-  const P0='#e6ecf5',PD='#c9d3e2',ICE='#bfe6ff',WH='#f4fbff';
-  put(k,CY(0.5,0.58,0.28,12),P0,[0,0.14,0],null,null,'shine');put(k,TO(0.54,0.035,4,24),GOLD,[0,0.28,0],[Math.PI/2,0,0],null,'shine');
-  put(k,SP(0.42,14,10),PD,[0,0.6,0],null,[1.25,0.85,1],'shine');
-  for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.PI/2,y=0.6+Math.sin(a)*0.18,z=Math.cos(a)*0.18;
-   put(k,CY(0.08,0.1,1.9,8),P0,[1.15,y,z],[0,0,Math.PI/2],null,'shine');put(k,OC(0.1),ICE,[2.15,y,z],null,[2.2,1,1],'glow');
-   M.tips.push([2.32,y,z]);M.halos.push([2.2,y,z,ICE,0.7]);}
-  put(k,B(0.09,0.5,0.09),GOLD,[-0.18,0.92,0],[0,0,-0.35],null,'shine');
-  // the gold rings turn slowly around the barrels; the moon above pulses and its ring spins
-  for(const x of[0.65,1.2,1.75]){const r=kit();put(r,TO(0.32,0.05,6,20),GOLD,[0,0,0],[0,Math.PI/2,0],null,'shine');for(let q=0;q<3;q++){const a=q/3*Math.PI*2;put(r,OC(0.045),ICE,[0,Math.cos(a)*0.32,Math.sin(a)*0.32],null,null,'glow');}A.push({k:r,p:[x,0.6,0],axis:'x',spd:x===1.2?-1.4:1.4});}
-  const mo=kit();put(mo,SP(0.26,16,12),WH,[0,0,0],null,null,'glow');A.push({k:mo,p:[0,1.2,0],type:'pulse',spd:2.2});
-  const mr=kit();put(mr,TO(0.36,0.03,6,24),GOLD,[0,0,0],[Math.PI/2.4,0,0],null,'shine');A.push({k:mr,p:[0,1.2,0],axis:'y',spd:1.6});
-  M.halos.push([0,1.2,0,'#e8f4ff',1.4]);
-  return {k,anims:A,meta:M};
- }
  if(arch==='twin'){
   if(tier<2){
    put(k,loft([[-0.42,-0.38],[0.38,-0.38],[0.48,-0.2],[0.48,0.2],[0.38,0.38],[-0.42,0.38]],[[-0.36,-0.3],[0.3,-0.3],[0.38,-0.15],[0.38,0.15],[0.3,0.3],[-0.36,0.3]],0,0.27),C.tur,null,null,null,pm);
@@ -574,18 +852,9 @@ function groundTex(M,ppu){
  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=2;return t;
 }
 // the whole map: one static mesh per material, the bridge deck on its own (it fades when you drive under it), a few spinning pylons
-function buildMap(id,mats,q){
- const Md=MAPS[id]||MAPS.classic,k=kit(),glow=kit(),pulse=kit(),anims=[];
- const G=new THREE.Group();
- // the arena slab: regolith on top, rock sides, trim lights along the edges
- put(k,B(W+0.6,2.2,H+0.6),'#22262f',[W/2,-1.1,H/2]);
- for(const [x0,z0,w,d] of [[W/2,-0.3,W+0.6,0.04],[W/2,H+0.3,W+0.6,0.04]])put(glow,B(w,0.04,d),z0<0?'#ff4d5e':'#4d9fff',[x0,0.02,z0]);
- sym(s=>put(glow,B(0.04,0.04,H+0.6),'#59607a',[W/2+s*(W/2+0.3),0.02,H/2]));
- for(const wl of Md.walls||[])wallKit(k,glow,pulse,anims,wl);
- for(const rk of Md.rocks||[])rockKit(k,glow,rk);
- for(const cr of Md.craters||[])craterKit(k,cr);
+// Exact existing bridge topology shared by legacy and optional environment skins.
+function bridgeGeometry(k,glow,G,mats,BRd){
  let deck=null;
- const BRd=Md.bridge;
  if(BRd){   // Overpass: deck on supports, tunnels underneath, ramps with rails, lights along the edges
   const [dx,dy,dw,dh]=BRd.deck,dk=kit(),tn=kit();
   let x0=dx;const spans=[];for(const [tx,tw] of BRd.tunnels){spans.push([x0,tx-x0,1]);spans.push([tx,tw,0]);x0=tx+tw;}spans.push([x0,dx+dw-x0,1]);
@@ -614,6 +883,21 @@ function buildMap(id,mats,q){
   deck={solid:new THREE.Mesh(ds.lit,mats.deck),tun:new THREE.Mesh(ts.lit,mats.tun)};
   G.add(deck.solid,deck.tun);
  }
+ return deck;
+}
+function bridgeVisual(BRd,mats){const k=kit(),glow=kit(),G=new THREE.Group(),deck=bridgeGeometry(k,glow,G,mats,BRd);G.add(meshOf(bake(k),mats),meshOf(bake(glow),mats));return {group:G,deck};}
+function buildMap(id,mats,q){
+ if(typeof Environment3D!=='undefined'&&Environment3D.active())return Environment3D.buildMap(id,mats,q);
+ const Md=MAPS[id]||MAPS.classic,k=kit(),glow=kit(),pulse=kit(),anims=[];
+ const G=new THREE.Group();
+ // the arena slab: regolith on top, rock sides, trim lights along the edges
+ put(k,B(W+0.6,2.2,H+0.6),'#22262f',[W/2,-1.1,H/2]);
+ for(const [x0,z0,w,d] of [[W/2,-0.3,W+0.6,0.04],[W/2,H+0.3,W+0.6,0.04]])put(glow,B(w,0.04,d),z0<0?'#ff4d5e':'#4d9fff',[x0,0.02,z0]);
+ sym(s=>put(glow,B(0.04,0.04,H+0.6),'#59607a',[W/2+s*(W/2+0.3),0.02,H/2]));
+ for(const wl of Md.walls||[])wallKit(k,glow,pulse,anims,wl);
+ for(const rk of Md.rocks||[])rockKit(k,glow,rk);
+ for(const cr of Md.craters||[])craterKit(k,cr);
+ const deck=bridgeGeometry(k,glow,G,mats,Md.bridge);
  const S=bake(k),Gw=bake(glow),Pl=bake(pulse);
  if(S.lit)G.add(new THREE.Mesh(S.lit,mats.lit));if(S.shine)G.add(new THREE.Mesh(S.shine,mats.shine));
  for(const gg of [Gw.lit,Gw.glow])if(gg)G.add(new THREE.Mesh(gg,mats.glow));
@@ -626,6 +910,8 @@ function buildMap(id,mats,q){
 // a baked kit as one object (up to three meshes sharing the given materials)
 function meshOf(b,mats,ownMats){
  const g=new THREE.Group(),m=ownMats||mats;
+ for(const [key,geo] of Object.entries(b))if(key.startsWith('hf_')&&geo){const material=Equipment3D.material(key)||m.lit,mesh=new THREE.Mesh(geo,material);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);}
+ if(typeof Equipment3D!=='undefined')Equipment3D.retain(b,g);
  if(b.lit)g.add(new THREE.Mesh(b.lit,m.lit));if(b.shine)g.add(new THREE.Mesh(b.shine,m.shine));if(b.glow)g.add(new THREE.Mesh(b.glow,m.glow));
  return g;
 }
@@ -635,8 +921,25 @@ function crateGeo(){const k=kit();
  put(k,B(1.2,0.06,0.06),'#b08a5a',[0,0.5,0.51],[0,0,0.75]);put(k,B(1.2,0.06,0.06),'#b08a5a',[0,0.5,0.51],[0,0,-0.75]);
  return bake(k);}
 // Bounded fitting geometry, merged into the existing material buckets; no collision changes.
-function fittingKit(f,team,part){
+function fittingKit(f,team,part,context){
  const k=kit(),steel='#91a1b3';
+ if(context&&CHASSIS_VISUALS[context.cls]){
+  const o=CHASSIS_VISUALS[context.cls][visualTier(context.ct)],w=WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)];
+  if(part==='body'){
+   if(f.hull==='plates')sym(s=>put(k,B(.85,.08,.14),steel,[-.13,o.h+.22,s*(o.trackZ-.02)]));
+   if(f.hull==='light')for(const x of [-.55,-.30,-.05])put(k,B(.07,.025,.45),team,[x,o.deck+.045,0],null,null,'glow');
+   if(f.mobility==='sprint')sym(s=>put(k,B(.55,.07,.12),team,[-.82,o.h*.65,s*o.trackZ],null,null,'glow'));
+   if(f.mobility==='stable')sym(s=>{for(const x of [-.65,.65])put(k,CY(.14,.14,.035,10),steel,[x,o.h*.5,s*(o.trackZ+o.trackW/2+.075)],[Math.PI/2,0,0],null,'shine');});
+  }else if(w){
+   if(f.mount==='hardened')sym(s=>put(k,B(.34,.16,.07),steel,[.27,.21,s*(w.width+.11)],null,null,'shine'));
+   if(f.mount==='firing')for(const x of [.60,.82,1.04])put(k,B(.05,.09,.35),steel,[x,w.y+.19,0],null,null,'shine');
+  }else if(context.arch==='moon'){
+   if(f.mount==='hardened')sym(s=>put(k,B(.32,.13,.055),steel,[-.17,.24,s*.45],null,null,'shine'));
+   if(f.mount==='firing')for(const x of [-.54,-.37,-.20])sym(s=>put(k,B(.05,.04,.055),steel,[x,.87,s*.18],null,null,'shine'));
+  }else return fittingKit(f,team,part);
+  return {k,anims:[],meta:{}};
+ }
+
  if(part==='body'){
   if(f.hull==='plates')sym(z=>put(k,B(1.15,.16,.18),steel,[-.1,.55,z*.5]));
   if(f.hull==='light')for(const x of [-.6,-.3,0])put(k,B(.07,.035,.6),team,[x,.56,0],[0,-.3,0],null,'glow');
@@ -648,5 +951,7 @@ function fittingKit(f,team,part){
  }
  return {k,anims:[],meta:{}};
 }
-return {fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+const foundationChassis=(cls,tier,P,team,gems,lunar)=>lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems);
+const foundationWeapon=(arch,tier,P,team,lunar,cls)=>arch==='moon'?unifiedMoonbeam(team):standardWeapon(arch,visualTier(tier),P,team,lunar);
+return {bridgeVisual,foundationChassis,foundationWeapon,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();

@@ -410,7 +410,7 @@ function paintArt(root){
    else if(a[0]==='gem')drawGemArt(ctx,w,h,a[1]);
    else if(a[0]==='vault')drawVaultArt(ctx,w,h,+a[1]||0);
    else if(a[0]==='unit')drawUnitArt(ctx,w,h,units[+a[1]]);
-   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,a[1]==='lunar'?'#e8f4ff':TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'?myPaint():null);}
+   else if(a[0]==='tank'){const r=Math.min(w,h)*0.22;drawTankPx(ctx,w/2,h/2,r,-Math.PI/2+0.35,-Math.PI/2+0.1,TC[0],null,'pulse',null,3,a[1]==='paint'?PAINTS[a[2]]:a[1]==='me'?myPaint():null,null,a[1]==='lunar'?'lunar':a[1]==='me'?save.skin:'default');}
   }catch(e){}
  }
 }
@@ -1271,6 +1271,6 @@ function updateLabPreview(){
  $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
  $('[data-act="labsave"]').disabled=!!err;
  $('[data-act="rangedraft"]').disabled=!!err;
- const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
+ const c=$('#lab-preview'),w=c.clientWidth||260,h=typeof Environment3D!=='undefined'&&Environment3D.active()?220:180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
 document.addEventListener('change',e=>{if(e.target.closest('.labform')?.querySelector('#lab-weapon')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});

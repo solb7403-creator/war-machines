@@ -51,7 +51,7 @@ assert.ok(defender.k.shine.length>12,'track wheels and armored plates are physic
 const dc=checkKit('Defender chassis',defender);
 const cannon=M3.weaponKit('pulse',0,stock,team,false,'vanguard');
 assert.ok(cannon.meta.tips[0][0]>=1.85,'Pulse cannon muzzle aligns with combat shots');
-assert.ok(colored(cannon.k.glow,'#ff9d55'),'pulse cannon thermal rings glow');
+assert.ok(colored(cannon.k.shine,'#ff9d55'),'pulse cannon amber thermal collars are geometric metal');
 const wc=checkKit('Defender pulse',cannon);
 for(const name of ['twin','siege','moon']){
  const w=M3.weaponKit(name,name==='moon'?2:0,stock,team,false,'vanguard');
@@ -67,3 +67,5 @@ for(const [name,tier,paint,lunar] of [['vanguard',1,stock,false],['scout',0,stoc
 assert.match(rules,/const STOCK_L=\{w:\{a:'pulse',t:0/, 'starter weapon unchanged');
 assert.match(rules,/c:\{c:'vanguard',t:0/, 'starter chassis and stats unchanged');
 console.log('PASS Defender real THREE geometry, tracks, armor, amber/cyan lighting, modular weapons, bounded cost, legend isolation, unchanged game rules',JSON.stringify({defenderVertices:dc,cannonVertices:wc}));
+
+await import('./standard-equipment.mjs');

@@ -1,0 +1,27 @@
+# Focused checks after the render-only Vault adapter; actual shared menu and LOW battle renderer.
+import asyncio,json,pathlib,base64
+from playwright.async_api import async_playwright
+ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=pathlib.Path('/workspace/hf-foundation-evidence');BASE='https://lunar.test';FIX='http://127.0.0.1:8797'
+async def main():
+ async with async_playwright() as p:
+  b=await p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']);ctx=await b.new_context(viewport={'width':390,'height':844},reduced_motion='reduce');await ctx.add_init_script('window.LUNAR_HF_SAMPLE=true');errors=[];mutations=[]
+  async def route(r):
+   assert r.request.url.startswith(BASE+'/');res=await r.fetch(url=FIX+r.request.url[len(BASE):]);await r.fulfill(response=res)
+  await ctx.route('**/*',route);pg=await ctx.new_page();pg.on('pageerror',lambda e:errors.append(str(e)))
+  await pg.goto(BASE+'/web/equipment-preview.html');await pg.evaluate('''async()=>{const c=await fetch('/auth/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json());const t=await fetch('/__token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nonce:c.nonce,id:91002941})}).then(r=>r.json());const r=await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(t)});if(!r.ok)throw Error('Fixture login failed');}''')
+  await pg.goto(BASE+'/web/play.html#garage');await pg.wait_for_function('()=>typeof save!=="undefined"&&!!save?.lab&&!!webShowroom?.model');await pg.wait_for_function('()=>Equipment3D.active()');await pg.evaluate('()=>{save.welcomed=true;closeAll();passState();setTab("garage");webShowroom.auto=false;const tick=frame;frame=function(now){if(window.__capturePause){requestAnimationFrame(frame);return;}tick(now);};}')
+  original=await pg.evaluate('JSON.stringify(ecoCopy())')
+  # Same camera, lights, exposure and actual game menu renderer for both material paths.
+  detail=[]
+  for profile in ['baseline','upgraded']:
+   data=await pg.evaluate('''o=>{Equipment3D.enabled=o==='upgraded';const c=document.createElement('canvas');c.width=1000;c.height=700;const s=mySpec({cls:'vanguard',ct:0,arch:'moon',wt:2,lunar:true,vl:20,vt:2,gems:'dmg,rof,arm',fits:{hull:'plates',mobility:'stable',mount:'hardened'}}),A=artR(),T=buildTank(s,A.mats);if(!T.tooth)throw Error('Earned Vault ornament anchor lost');T.hull.rotation.y=-.15;artShot(c.getContext('2d'),1000,700,T.g,{r:1.65,el:.34,az:1.12,cy:.60,cx:.45},[]);const out={png:c.toDataURL('image/png').split(',')[1],tooth:T.tooth,calls:A.r.info.render.calls,triangles:A.r.info.render.triangles,error:A.r.getContext().getError()};Equipment3D.releaseTree(T.g);return out;}''',profile)
+   (OUT/(profile+'-renderer-detail.png')).write_bytes(base64.b64decode(data.pop('png')));assert data['error']==0;detail.append({'profile':profile,**data})
+  await pg.evaluate('()=>{Equipment3D.enabled=true;setGfx("low");}');await pg.wait_for_function('()=>Equipment3D.status("low")==="ready"');await pg.locator('[data-act="labedit"][data-arg="m_spare"]').click();await pg.select_option('#lab-chassis','vanguard:0');await pg.select_option('#lab-weapon','moon:2');await pg.locator('[data-act="rangedraft"]').click();await pg.select_option('#range-mode','royale');await pg.select_option('#range-control','ai')
+  def record(req):
+   if req.method=='POST' and any(s in req.url for s in ['/api/act','/api/match','/api/pay','/api/pvp','/api/ghost']):mutations.append(req.url)
+  pg.on('request',record);await pg.locator('[data-act="rangestart"]').click();await pg.wait_for_function('()=>!!rangeRun?.sim')
+  low=await pg.evaluate('''()=>{window.__capturePause=true;const r=rangeRun;r.sim.setup(r.cfg);for(let i=0;i<600&&r.sim.view().state==='play';i++){r.sim.step(1/60,[0,0]);r.sim.events();}const cold=performance.now();rangeWithView(()=>{ensureMap();matchObjs();drawBattle();});RR.getContext().finish();const coldFrameMs=performance.now()-cold;const time=[];for(let i=0;i<60;i++){const t=performance.now();rangeWithView(()=>{ensureMap();matchObjs();drawBattle();});RR.getContext().finish();time.push(performance.now()-t);}time.sort((a,b)=>a-b);const out=document.createElement('canvas');out.width=cv.width;out.height=cv.height;const c=out.getContext('2d');rangeWithView(()=>{drawBattle();c.drawImage(CV3,0,0,out.width,out.height);c.drawImage(cv,0,0);});return {coldFrameMs,quality:R3.q,profile:Equipment3D.quality,calls:RR.info.render.calls,triangles:RR.info.render.triangles,memory:{...RR.info.memory},meanFrameMs:time.reduce((a,b)=>a+b)/time.length,p95FrameMs:time[57],worstFrameMs:time.at(-1),glError:RR.getContext().getError(),png:out.toDataURL('image/png').split(',')[1]};}''')
+  (OUT/'low-busy-combat-390.png').write_bytes(base64.b64decode(low.pop('png')));assert low['quality']=='low' and low['profile']=='low' and low['glError']==0;assert low['triangles']<70000,low
+  await pg.evaluate('()=>{rangeExit();window.__capturePause=false;}');assert json.loads(await pg.evaluate('JSON.stringify(ecoCopy())'))==json.loads(original);assert not errors and not mutations,(errors,mutations)
+  (OUT/'final-integration.json').write_text(json.dumps({'detail':detail,'low':low,'errors':errors,'mutations':mutations},indent=2));print('PASS earned Vault anchor, core/fitting menu sample, matched game-renderer details and actual LOW six-pilot workload',low,detail);await b.close()
+asyncio.run(main())
