@@ -36,6 +36,7 @@ window.LunarShowroom=class {
  kit(raw,parent){const baked=M3.bake(raw.k);parent.add(M3.meshOf(baked,null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);if(a.axis&&this.animations)this.animations.push({m,axis:a.axis,spd:a.spd});}return baked;}
  setContext(kind){if(this.context!==kind){this.context=kind;if(this.L)this.setLoadout(this.L,this.parts||3);}}
  setEnvironment(){
+  this.renderer?.setPixelRatio(typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'?1:Math.min(devicePixelRatio||1,1.5));
   const on=typeof Environment3D!=='undefined'&&Environment3D.active(),kind=this.context||(this.el.closest('.labform')?'engineer':this.el.closest('.web-game')?'garage':'inspection'),key=on?Environment3D.key()+'|'+kind:'legacy';
   if(this.envKey===key)return;this.envKey=key;
   if(this.envStage){this.scene.remove(this.envStage.group);this.envStage.dispose();this.envStage=null;}

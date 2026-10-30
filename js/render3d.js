@@ -6,6 +6,7 @@
 // 2D overlay lines up exactly. Menu pictures (gear, crates, tanks, maps) are 3D renders, cached.
 // No WebGL, a failed load, or the 2D setting: everything falls back to the 2D renderer in render.js.
 // =====================================================================
+const qualityWatch=typeof GraphicsQuality!=='undefined'?GraphicsQuality.state():null;
 const R3={ready:false,failed:false,loading:false,q:'high',fps:60,ft:[],calls:0,drop:0,auto:''};
 const TILT=0.6,GKC=Math.cos(TILT),GSN=Math.sin(TILT),TANK_VIS=1.12;   // tanks drawn a touch bigger than their hitbox so they read on a phone
 const gfxMode=()=>(typeof save!=='undefined'&&save&&save.gfx)||'auto';   // auto | high | low | 2d
@@ -15,6 +16,7 @@ function webglOK(){try{const c=document.createElement('canvas');return !!(window
 function load3D(){
  if(R3.ready||R3.loading||R3.failed||!want3D())return;
  if(!webglOK()){R3.failed=true;return;}
+ if(typeof THREE!=='undefined'){try{init3D();R3.ready=true;}catch(e){R3.failed=true;}apply3D();return;}
  R3.loading=true;
  const s=document.createElement('script');s.src='js/vendor/three.lunar.min.js?v='+(window.BUILD||'dev');s.async=true;
  s.onload=()=>{R3.loading=false;try{init3D();R3.ready=true;}catch(e){R3.failed=true;try{console.warn('3D unavailable',e);}catch(_){}}apply3D();};
@@ -30,24 +32,32 @@ function apply3D(){
  fit();
  artCache.clear();
  if(typeof uiDirty==='function')uiDirty();
+ if(typeof dispatchEvent==='function')dispatchEvent(new Event('lunar-quality-change'));
 }
 function setGfx(m){
- if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled&&m!=='2d'){Equipment3D.quality=m==='low'?'low':'high';Equipment3D.ensure(Equipment3D.quality).then(()=>apply3D());}
- save.gfx=m;R3.off2d=false;R3.auto='';if(typeof store==='function')store();
- if(m==='2d'){apply3D();return;}
- if(R3.ready){R3.q=m==='low'?'low':'high';apply3D();}else{R3.failed=false;load3D();}
+ if(!['auto','high','low','2d'].includes(m))return;
+ save.gfx=m;R3.off2d=false;R3.auto='';R3.drop=0;if(typeof store==='function')store();
+ if(qualityWatch){qualityWatch.q=m==='low'?'low':'high';GraphicsQuality.reset(qualityWatch,performance.now()/1000);}
+ if(m==='2d'){clearRange3D();apply3D();return;}
+ R3.q=m==='low'||(m==='auto'&&lowEnd())?'low':'high';
+ if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){Equipment3D.quality=R3.q;Equipment3D.ensure(R3.q).then(()=>apply3D());}
+ if(R3.ready&&!R3.failed)apply3D();else{R3.failed=false;load3D();}
 }
+
 const lowEnd=()=>((navigator.hardwareConcurrency||8)<=4&&(navigator.deviceMemory||8)<=3);
 
 // ---------- renderer, camera, lights, shared materials ----------
 let RR=null,RS=null,RC=null,MT=null,PSA=null,PSN=null,STARS=null,CV3=null;
-function setPR(){if(!RR)return;const d=Math.min(window.devicePixelRatio||1,2);RR.setPixelRatio(R3.q==='low'?Math.min(1,d):d);RR.setSize(vw||innerWidth,vh||innerHeight,false);}
+function setPR(){if(!RR)return;const d=Math.min(window.devicePixelRatio||1,1.5);RR.setPixelRatio(R3.q==='low'?Math.min(1,d):d);RR.setSize(vw||innerWidth,vh||innerHeight,false);}
+function disposeBattle3D(){
+ if(!RR)return;clearRange3D();if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}for(const P of Object.values(B3.pool))for(const o of P.items){o.material?.dispose();if(o.geometry?.attributes.position?.count===48*6)o.geometry.dispose();}B3.pool={};for(const p of [PSA,PSN]){p.g.dispose();p.pts.material.dispose();}STARS.geometry.dispose();STARS.material.dispose();for(const m of Object.values(MT))m.dispose();R3.hfRelease?.();R3.hfRelease=null;RR.dispose();CV3?.remove();RR=null;RS=null;R3.ready=false;
+}
 function init3D(){
  CV3=document.createElement('canvas');CV3.id='c3';document.body.insertBefore(CV3,document.getElementById('c'));
- R3.q=gfxMode()==='low'||(gfxMode()==='auto'&&lowEnd())?'low':'high';
+ R3.q=gfxMode()==='low'||(gfxMode()==='auto'&&lowEnd())?'low':'high';if(qualityWatch){qualityWatch.q=R3.q;GraphicsQuality.reset(qualityWatch,performance.now()/1000);}
  RR=new THREE.WebGLRenderer({canvas:CV3,antialias:R3.q==='high',alpha:false,powerPreference:'high-performance',stencil:false});
  RR.setClearColor(0x0a0e17,1);RR.outputColorSpace=THREE.SRGBColorSpace;
- CV3.addEventListener('webglcontextlost',e=>{e.preventDefault();R3.hfRelease?.();R3.hfRelease=null;if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}R3.failed=true;apply3D();});
+ CV3.addEventListener('webglcontextlost',e=>{e.preventDefault();R3.hfRelease?.();R3.hfRelease=null;disposeBattle3D();R3.failed=true;apply3D();});
  RS=new THREE.Scene();
  RC=new THREE.OrthographicCamera(-10,10,10,-10,1,400);
  RC.up.set(0,GSN,-GKC);RC.position.set(0,GKC*150,GSN*150);RC.lookAt(0,0,0);
@@ -230,6 +240,7 @@ function disposeMap3D(map){
 function ensureMap(){
  const key=curMap+'|'+R3.q+'|'+(typeof Environment3D!=='undefined'?Environment3D.key():'legacy');
  if(B3.mapKey===key)return;
+ if(qualityWatch)GraphicsQuality.reset(qualityWatch,performance.now()/1000);
  if(B3.map){RS.remove(B3.map.group);disposeMap3D(B3.map);}
  if(typeof Environment3D!=='undefined')Environment3D.lightRig(RS,Environment3D.active());
  B3.map=M3.buildMap(curMap,MT,R3.q);B3.mapKey=key;RS.add(B3.map.group);
@@ -273,8 +284,8 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
 
 // ---------- the frame ----------
 function frame3D(shx,shy){
- const now=performance.now(),dt=Math.min(0.05,B3.last?(now-B3.last)/1000:0.016);B3.last=now;B3.t+=dt;const t=B3.t;
- perfWatch(dt);
+ const now=performance.now(),rawDt=B3.last?(now-B3.last)/1000:0.016,dt=Math.min(0.05,rawDt);B3.last=now;B3.t+=dt;const t=B3.t;
+ perfWatch(rawDt);
  if(!use3D())return;
  ensureMap();matchObjs();
  const s=sc,ox2=ox+shx,oy2=oy+shy;
@@ -462,14 +473,14 @@ function ev3D(a){
 }
 // frame-rate watch: auto quality steps down to Low, then to 2D, if this phone can't keep up
 function perfWatch(dt){
- if(typeof state==='undefined'||state!=='play'||document.hidden)return;
- R3.ft.push(dt);if(R3.ft.length>90)R3.ft.shift();
- if(R3.ft.length<90)return;
- const avg=R3.ft.reduce((a,b)=>a+b,0)/R3.ft.length;R3.fps=Math.round(1/avg);
- if(gfxMode()!=='auto'||!use3D()||window.LUNAR_NO_AUTOGFX)return;
- if(R3.q==='high'&&R3.fps<40){R3.q='low';R3.auto='low';if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){Equipment3D.quality='low';Equipment3D.ensure('low').then(()=>apply3D());}setPR();R3.ft=[];return;}
- if(R3.q==='low'&&R3.fps<24){R3.drop++;R3.ft=[];if(R3.drop>=2){R3.off2d=true;R3.auto='2d';apply3D();if(typeof showToast==='function')showToast('Switched to 2D graphics so the game runs smoothly. Change it in Settings.');}}
+ if(!qualityWatch||typeof state==='undefined'||state!=='play')return;
+ const now=performance.now()/1000,eq=typeof Equipment3D!=='undefined'?Equipment3D:null;
+ const next=GraphicsQuality.sample(qualityWatch,dt,now,{manual:gfxMode()!=='auto'||!!window.LUNAR_NO_AUTOGFX,hidden:document.hidden,loading:!!(eq?.enabled&&eq.status(eq.quality)==='loading')});
+ if(!next||!use3D())return;
+ R3.auto=next;if(next==='2d'){R3.off2d=true;clearRange3D();apply3D();if(typeof showToast==='function')showToast('Switched to 2D graphics for smoother play. Change it in Settings.');}
+ else{R3.q=next;if(eq?.enabled){eq.quality=next;eq.ensure(next).then(()=>apply3D());}setPR();apply3D();}
 }
+if(typeof document!=='undefined')document.addEventListener('visibilitychange',()=>{B3.last=0;if(qualityWatch)GraphicsQuality.reset(qualityWatch,performance.now()/1000);});
 
 // ---------- menu pictures: 3D renders on a small offscreen renderer, cached ----------
 let AR=null;const artCache=new Map();
@@ -572,6 +583,6 @@ function clearRange3D(){
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
  if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose&&!o.material.userData.hfShared)o.material.dispose();if(o.userData.envOwnedTexture)o.material.map?.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
- for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
+ for(const w of B3.wrecks){RS.remove(w.g);w.mat.dispose();}B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
  PSA.live.length=0;PSN.live.length=0;for(const k in B3.pool)for(const o of B3.pool[k].items)o.visible=false;
 }
