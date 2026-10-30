@@ -32,6 +32,7 @@ function apply3D(){
  if(typeof uiDirty==='function')uiDirty();
 }
 function setGfx(m){
+ if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled&&m!=='2d'){Equipment3D.quality=m==='low'?'low':'high';Equipment3D.ensure(Equipment3D.quality).then(()=>apply3D());}
  save.gfx=m;R3.off2d=false;R3.auto='';if(typeof store==='function')store();
  if(m==='2d'){apply3D();return;}
  if(R3.ready){R3.q=m==='low'?'low':'high';apply3D();}else{R3.failed=false;load3D();}
@@ -46,11 +47,12 @@ function init3D(){
  R3.q=gfxMode()==='low'||(gfxMode()==='auto'&&lowEnd())?'low':'high';
  RR=new THREE.WebGLRenderer({canvas:CV3,antialias:R3.q==='high',alpha:false,powerPreference:'high-performance',stencil:false});
  RR.setClearColor(0x0a0e17,1);RR.outputColorSpace=THREE.SRGBColorSpace;
- CV3.addEventListener('webglcontextlost',e=>{e.preventDefault();R3.failed=true;apply3D();});
+ CV3.addEventListener('webglcontextlost',e=>{e.preventDefault();R3.hfRelease?.();R3.hfRelease=null;R3.failed=true;apply3D();});
  RS=new THREE.Scene();
  RC=new THREE.OrthographicCamera(-10,10,10,-10,1,400);
  RC.up.set(0,GSN,-GKC);RC.position.set(0,GKC*150,GSN*150);RC.lookAt(0,0,0);
  addLights(RS);
+ if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){R3.hfRelease=Equipment3D.attach();Equipment3D.quality=R3.q;Equipment3D.configure(RR,RS);Equipment3D.ensure(R3.q).then(()=>apply3D());}
  MT=mkMats();
  PSA=mkPS(true);PSN=mkPS(false);RS.add(PSA.pts,PSN.pts);
  STARS=mkStars();RS.add(STARS);
@@ -120,9 +122,10 @@ const FITCACHE=new Map();
 const MODEL_CACHE_LIMIT=64,FITTING_CACHE_LIMIT=96;
 function fittingB(f,team,part,s){const key=JSON.stringify(s&&[s.lunar?1:0,...(part==='body'?[s.cls,s.ct]:[s.arch,s.wt])])+'|'+part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part,s);FITCACHE.set(key,M3.bake(r.k));if(FITCACHE.size>FITTING_CACHE_LIMIT){const first=FITCACHE.keys().next().value;for(const g of Object.values(FITCACHE.get(first)))g?.dispose();FITCACHE.delete(first);}}return FITCACHE.get(key);}
 const KC=new Map();
-function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
-function chassisB(s){return bakedOf(['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>M3.chassisKit(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
-function weaponB(s){return bakedOf(['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>M3.weaponKit(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
+function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};if(r.k.hf)return v;KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
+const hfKey=()=>typeof Equipment3D!=='undefined'&&Equipment3D.enabled?'hf:'+Equipment3D.quality+':'+Equipment3D.generation+'|':'';
+function chassisB(s){return bakedOf(hfKey()+['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>(s.ghost?M3.foundationChassis:M3.chassisKit)(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
+function weaponB(s){return bakedOf(hfKey()+['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>(s.ghost?M3.foundationWeapon:M3.weaponKit)(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
 let BOSSB=null;
 function bossB(){if(!BOSSB){const k=M3.bossKit();BOSSB={hull:bakedOf('bossH',()=>k.hull),gun:bakedOf('bossG',()=>k.gun)};}return BOSSB;}
 // Hyperspace Vault looks (rules.js VAULT_REW): a gold tooth laid on the front deck (it glows from level 10), and where the
@@ -140,7 +143,7 @@ function deckY(geos,x,z){let best=-1;for(const g of geos){if(!g)continue;const a
   const l0=((z1-z2)*(x-x2)+(x2-x1)*(z-z2))/d,l1=((z2-z0)*(x-x2)+(x0-x2)*(z-z2))/d,l2=1-l0-l1;if(l0<-1e-6||l1<-1e-6||l2<-1e-6)continue;
   const y=l0*a[i+1]+l1*a[i+4]+l2*a[i+7];if(y>best)best=y;}}return best;}
 function vaultParts(T,H,spec,mats){
- const geos=[H.b.lit,H.b.shine];let mnx=1e9,mxx=-1e9;
+ const geos=Object.entries(H.b).filter(([key,g])=>g&&key!=='glow'&&!key.endsWith('_energy')).map(([,g])=>g);let mnx=1e9,mxx=-1e9;
  for(const g of geos){if(!g)continue;const a=g.attributes.position.array;for(let i=0;i<a.length;i+=3){if(a[i]<mnx)mnx=a[i];if(a[i]>mxx)mxx=a[i];}}
  if(mxx<mnx)return;
  let x=mxx-0.22,y=-1;
@@ -171,12 +174,12 @@ function stepAnims(anims,dt,t){for(const a of anims){if(a.type==='pulse')a.o.sca
 let B3={map:null,mapId:null,mapKey:null,units:new Map(),uref:null,crates:new Map(),pool:{},seen:new WeakSet(),shellL0:new WeakMap(),pads:null,wrecks:[],t:0,last:0,dyn:null};
 function unitSpec(u){
  let ct=Math.max(0,Math.min(2,u.aura|0));
- if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,myLoadout().c.t|0);}catch(e){}}
+ if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,((typeof rangeRun!=='undefined'&&rangeRun?.sim?rangeRun.cfg.L:myLoadout()).c.t)|0);}catch(e){}}
  const lunar=u.skin==='lunar',team=tcol(u.team);
  return {fits:u.fits,cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl)};
 }
 const vtOf=vl=>(vl|0)>=10?2:(vl|0)>=1?1:0;   // the tooth: none, gold, glowing
-const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{})].join('|');
+const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{}),hfKey()].join('|');
 function unitMats(ghost){
  const lit=MT.lit.clone(),shine=MT.shine.clone();
  if(ghost){for(const m of [lit,shine]){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(0x3a5a9a);m.depthWrite=false;}return {lit,shine,glow:MT.gglow};}
@@ -207,7 +210,7 @@ function unitObj(u){
  o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
  RS.add(o.g);B3.units.set(u,o);return o;
 }
-function dropUnit(u,o){RS.remove(o.g);for(const m of [o.ug,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
+function dropUnit(u,o){if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(o.g);RS.remove(o.g);for(const m of [o.ug,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
 function heightAt(u){
  if(!BR||(u.elev||0)!==1)return 0;
  if(inDeck(u.x,u.y))return M3.DECK_H;
@@ -444,7 +447,7 @@ function perfWatch(dt){
  if(R3.ft.length<90)return;
  const avg=R3.ft.reduce((a,b)=>a+b,0)/R3.ft.length;R3.fps=Math.round(1/avg);
  if(gfxMode()!=='auto'||!use3D()||window.LUNAR_NO_AUTOGFX)return;
- if(R3.q==='high'&&R3.fps<40){R3.q='low';R3.auto='low';setPR();R3.ft=[];return;}
+ if(R3.q==='high'&&R3.fps<40){R3.q='low';R3.auto='low';if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){Equipment3D.quality='low';Equipment3D.ensure('low').then(()=>apply3D());}setPR();R3.ft=[];return;}
  if(R3.q==='low'&&R3.fps<24){R3.drop++;R3.ft=[];if(R3.drop>=2){R3.off2d=true;R3.auto='2d';apply3D();if(typeof showToast==='function')showToast('Switched to 2D graphics so the game runs smoothly. Change it in Settings.');}}
 }
 
@@ -455,11 +458,11 @@ function artR(){
  const c=document.createElement('canvas');c.width=c.height=256;
  const r=new THREE.WebGLRenderer({canvas:c,alpha:true,antialias:true,preserveDrawingBuffer:true,stencil:false});
  r.setClearColor(0x000000,0);r.outputColorSpace=THREE.SRGBColorSpace;
- const s=new THREE.Scene();addLights(s);
+ const s=new THREE.Scene();addLights(s);const hfRelease=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.attach():null;
  const cam=new THREE.PerspectiveCamera(26,1,0.1,200);
  const mats=mkMats(),ps=mkPS(true,64);ps.pts.material.uniforms.uP.value=1;s.add(ps.pts);
- c.addEventListener('webglcontextlost',e=>{e.preventDefault();AR=null;artCache.clear();});
- AR={r,c,s,cam,mats,ps,maps:new Map()};return AR;
+ c.addEventListener('webglcontextlost',e=>{e.preventDefault();hfRelease?.();AR=null;artCache.clear();});
+ AR={r,c,s,cam,mats,ps,hfRelease,maps:new Map()};return AR;
 }
 // put a model group in the art scene, aim the camera, render at w x h css px into ctx
 function artShot(ctx,w,h,grp,view,halos){
@@ -471,6 +474,7 @@ function artShot(ctx,w,h,grp,view,halos){
   cam.position.set(Math.sin(az)*Math.cos(el)*dist+(view.cx||0),Math.sin(el)*dist+(view.cy||0),Math.cos(az)*Math.cos(el)*dist+(view.cz||0));cam.up.set(0,1,0);cam.lookAt(view.cx||0,view.cy||0,view.cz||0);cam.updateProjectionMatrix();}
  A.ps.n=0;for(const hl of halos||[]){const v=hl[0];once(A.ps,v.x,v.y,v.z,hl[2],hl[1],0.55);}
  psFlush(A.ps,ph*0.9);
+ if(typeof Equipment3D!=='undefined')Equipment3D.configure(A.r,A.s);
  A.r.render(A.s,cam);
  A.s.remove(grp);
  ctx.drawImage(A.c,0,0,w,h);
@@ -490,7 +494,7 @@ function artTank(ctx,w,h,spec,parts,opt){
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
  const hal=haloList(T,parts);
  const r=(spec.boss?2.2:parts===2?1.25:1.55)*(spec.arch==='moon'&&parts!==1?1.22:1);   // the unified Moonbeam is long: frame it wider
- artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);
+ artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
  return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
@@ -528,7 +532,7 @@ function heroArt(ctx,w,h,t){
  drawHeroScene(ctx,w,h,t,true);
  const room=h-58,r=Math.max(16,Math.min(w*0.12,room*0.2)),cx=w/2,cy=room*0.62,bw=r*5.2,bh=r*3.6;
  const sp=mySpec(),k='hero|'+specKey(sp);
- if(!AR||!AR.hero||AR.hero.k!==k){const A=artR();AR.hero={k,T:buildTank(sp,A.mats)};}
+ if(!AR||!AR.hero||AR.hero.k!==k){if(AR?.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);const A=artR();AR.hero={k,T:buildTank(sp,A.mats)};}
  const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);
  T.body.position.y=T.meta.bob?T.meta.bob*Math.sin(t*3):0;
  ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);artShot(ctx,bw,bh,T.g,{r:sp.arch==='moon'?1.85:1.55,el:0.5,az:0.95,cy:sp.arch==='moon'?0.5:0.35},haloList(T,3));ctx.restore();
