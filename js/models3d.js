@@ -852,18 +852,9 @@ function groundTex(M,ppu){
  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=2;return t;
 }
 // the whole map: one static mesh per material, the bridge deck on its own (it fades when you drive under it), a few spinning pylons
-function buildMap(id,mats,q){
- const Md=MAPS[id]||MAPS.classic,k=kit(),glow=kit(),pulse=kit(),anims=[];
- const G=new THREE.Group();
- // the arena slab: regolith on top, rock sides, trim lights along the edges
- put(k,B(W+0.6,2.2,H+0.6),'#22262f',[W/2,-1.1,H/2]);
- for(const [x0,z0,w,d] of [[W/2,-0.3,W+0.6,0.04],[W/2,H+0.3,W+0.6,0.04]])put(glow,B(w,0.04,d),z0<0?'#ff4d5e':'#4d9fff',[x0,0.02,z0]);
- sym(s=>put(glow,B(0.04,0.04,H+0.6),'#59607a',[W/2+s*(W/2+0.3),0.02,H/2]));
- for(const wl of Md.walls||[])wallKit(k,glow,pulse,anims,wl);
- for(const rk of Md.rocks||[])rockKit(k,glow,rk);
- for(const cr of Md.craters||[])craterKit(k,cr);
+// Exact existing bridge topology shared by legacy and optional environment skins.
+function bridgeGeometry(k,glow,G,mats,BRd){
  let deck=null;
- const BRd=Md.bridge;
  if(BRd){   // Overpass: deck on supports, tunnels underneath, ramps with rails, lights along the edges
   const [dx,dy,dw,dh]=BRd.deck,dk=kit(),tn=kit();
   let x0=dx;const spans=[];for(const [tx,tw] of BRd.tunnels){spans.push([x0,tx-x0,1]);spans.push([tx,tw,0]);x0=tx+tw;}spans.push([x0,dx+dw-x0,1]);
@@ -892,6 +883,21 @@ function buildMap(id,mats,q){
   deck={solid:new THREE.Mesh(ds.lit,mats.deck),tun:new THREE.Mesh(ts.lit,mats.tun)};
   G.add(deck.solid,deck.tun);
  }
+ return deck;
+}
+function bridgeVisual(BRd,mats){const k=kit(),glow=kit(),G=new THREE.Group(),deck=bridgeGeometry(k,glow,G,mats,BRd);G.add(meshOf(bake(k),mats),meshOf(bake(glow),mats));return {group:G,deck};}
+function buildMap(id,mats,q){
+ if(typeof Environment3D!=='undefined'&&Environment3D.active())return Environment3D.buildMap(id,mats,q);
+ const Md=MAPS[id]||MAPS.classic,k=kit(),glow=kit(),pulse=kit(),anims=[];
+ const G=new THREE.Group();
+ // the arena slab: regolith on top, rock sides, trim lights along the edges
+ put(k,B(W+0.6,2.2,H+0.6),'#22262f',[W/2,-1.1,H/2]);
+ for(const [x0,z0,w,d] of [[W/2,-0.3,W+0.6,0.04],[W/2,H+0.3,W+0.6,0.04]])put(glow,B(w,0.04,d),z0<0?'#ff4d5e':'#4d9fff',[x0,0.02,z0]);
+ sym(s=>put(glow,B(0.04,0.04,H+0.6),'#59607a',[W/2+s*(W/2+0.3),0.02,H/2]));
+ for(const wl of Md.walls||[])wallKit(k,glow,pulse,anims,wl);
+ for(const rk of Md.rocks||[])rockKit(k,glow,rk);
+ for(const cr of Md.craters||[])craterKit(k,cr);
+ const deck=bridgeGeometry(k,glow,G,mats,Md.bridge);
  const S=bake(k),Gw=bake(glow),Pl=bake(pulse);
  if(S.lit)G.add(new THREE.Mesh(S.lit,mats.lit));if(S.shine)G.add(new THREE.Mesh(S.shine,mats.shine));
  for(const gg of [Gw.lit,Gw.glow])if(gg)G.add(new THREE.Mesh(gg,mats.glow));
@@ -947,5 +953,5 @@ function fittingKit(f,team,part,context){
 }
 const foundationChassis=(cls,tier,P,team,gems,lunar)=>lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems);
 const foundationWeapon=(arch,tier,P,team,lunar,cls)=>arch==='moon'?unifiedMoonbeam(team):standardWeapon(arch,visualTier(tier),P,team,lunar);
-return {foundationChassis,foundationWeapon,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+return {bridgeVisual,foundationChassis,foundationWeapon,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();

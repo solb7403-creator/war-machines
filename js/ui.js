@@ -1271,6 +1271,6 @@ function updateLabPreview(){
  $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
  $('[data-act="labsave"]').disabled=!!err;
  $('[data-act="rangedraft"]').disabled=!!err;
- const c=$('#lab-preview'),w=c.clientWidth||260,h=180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
+ const c=$('#lab-preview'),w=c.clientWidth||260,h=typeof Environment3D!=='undefined'&&Environment3D.active()?220:180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
 document.addEventListener('change',e=>{if(e.target.closest('.labform')?.querySelector('#lab-weapon')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
