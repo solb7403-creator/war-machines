@@ -19,6 +19,7 @@ async def main():
    await pg.goto(BASE+'/web/play.html#garage');await pg.wait_for_function('()=>typeof save!=="undefined"&&!!save?.lab&&!!webShowroom?.model',timeout=25000);await pg.evaluate('()=>{save.welcomed=true;closeAll();setTab("garage");webShowroom.auto=false;passState();setGfx("high");}')
    await pg.evaluate('()=>{const tick=frame;frame=function captureFrame(now){if(window.__capturePause){requestAnimationFrame(frame);return;}tick(now);};}')
    if phase=='upgraded':await pg.wait_for_function('()=>Equipment3D.status("high")==="ready"')
+   expected_hf=await pg.evaluate('Equipment3D.VERSION')
    original=await pg.evaluate('JSON.stringify(ecoCopy())');bays=await pg.evaluate('JSON.stringify(save.lab)')
    await pg.locator('[data-act="labedit"][data-arg="m_spare"]').click();await pg.select_option('#lab-weapon','moon:2');await pg.select_option('#lab-chassis','vanguard:0');await pg.wait_for_timeout(80)
    if phase=='upgraded':assert await pg.evaluate('webShowroom.model.children[0].children.some(g=>g.children.some(m=>m.material?.isMeshStandardMaterial))'),'Engineer must use real PBR materials'
@@ -32,7 +33,7 @@ async def main():
     await pg.select_option('#range-mode',mode);await pg.select_option('#range-control','ai');await pg.locator('[data-act="rangestart"]').click();await pg.wait_for_function('()=>!!rangeRun?.sim');await pg.wait_for_timeout(100)
     report=await pg.evaluate('''()=>{const r=rangeRun;r.sim.setup(r.cfg);for(let i=0;i<600&&r.sim.view().state==='play';i++){r.sim.step(1/60,[0,0]);if(i<580)r.sim.events();else rangeWithView(()=>{ensureMap();matchObjs();for(const a of r.sim.events())onSimEv(a);fxTick(1/60);drawBattle();});}let user,ct;rangeWithView(()=>{user=B3.units.get(me);ct=unitSpec(me).ct;});const times=[];for(let i=0;i<60;i++){const t=performance.now();rangeWithView(()=>drawBattle());RR.getContext().finish();times.push(performance.now()-t);}times.sort((a,b)=>a-b);return {mode:r.cfg.g,ct,hf:user?.meta.hf,weaponHF:user?.wmeta.hf,result:r.sim.result(),calls:RR.info.render.calls,triangles:RR.info.render.triangles,memory:{...RR.info.memory},meanFrameMs:times.reduce((a,b)=>a+b)/times.length,p95FrameMs:times[57],worstFrameMs:times.at(-1),glError:RR.getContext().getError(),quality:R3.q};}''')
     assert report['glError']==0 and report['quality']=='high',report
-    if phase=='upgraded':assert report.get('hf')=='hf-v1.1' and report.get('weaponHF')=='hf-v1.1' and report['ct']==0,report
+    if phase=='upgraded':assert report.get('hf')==expected_hf and report.get('weaponHF')==expected_hf and report['ct']==0,report
     print(phase,mode,report['calls'],report['triangles'],flush=True)
     reports.append(report);(OUT/(phase+'-battle-checkpoint.json')).write_text(json.dumps(reports,indent=2))
     # Extract the actual live 3D + HUD canvases synchronously. Chromium's full-page
