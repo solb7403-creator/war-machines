@@ -1,7 +1,7 @@
 # Actual shared app + combat; all services intercepted to disposable fixture. No production fallback.
 import asyncio,pathlib,json,base64,subprocess,sys
 from playwright.async_api import async_playwright
-ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=pathlib.Path('/workspace/graphics-session4-evidence');BASE='https://lunar.test';FIX='http://127.0.0.1:8797';OLD='--baseline' in sys.argv
+ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=pathlib.Path('/workspace/graphics-session4-evidence');BASE='https://lunar.test';FIX='http://127.0.0.1:8797';OLD='--baseline' in sys.argv;BUSY='--busy-only' in sys.argv
 OUT.mkdir(exist_ok=True)
 async def main():
  async with async_playwright() as p:
@@ -21,9 +21,22 @@ async def main():
   original=await pg.evaluate('JSON.stringify(ecoCopy())');bays=await pg.evaluate('JSON.stringify(save.lab)')
   pg.on('request',lambda r:mutations.append(r.url) if r.method=='POST' and any(x in r.url for x in ['/api/act','/api/match','/api/pvp','/api/pay','/api/ghost']) else None)
   await pg.locator('[data-act="labedit"][data-arg="m_spare"]').click();await pg.select_option('#lab-chassis','vanguard:0');await pg.select_option('#lab-weapon','moon:2')
-  suffix='before' if OLD else 'after';await pg.screenshot(path=str(OUT/f'{suffix}-engineer-390.png'))
-  if not OLD:
+  suffix='before' if OLD else 'busy-after' if BUSY else 'after';layout=[];coverage=[];await pg.screenshot(path=str(OUT/f'{suffix}-engineer-390.png'))
+  if not OLD and not BUSY:
    assert await pg.evaluate('GraphicsRelease.enabled&&!window.LUNAR_HF_SAMPLE'),'test actual release gate, no sample flag'
+   if '--lifecycle-only' in sys.argv:
+    await pg.select_option('#lab-weapon','pulse:0');await pg.evaluate('()=>{webShowroom.auto=false;webShowroom.view("side");}')
+    frames=[]
+    for phase in [0,.12]:
+     png=await pg.evaluate('''(phase)=>{const s=webShowroom;if(phase)s.motion.step(.05,{dx:phase,dz:0,heading:0,aim:0},false);s.draw();return s.renderer.domElement.toDataURL().split(',')[1];}''',phase);frames.append(png);(OUT/f'motion-drive-{phase}.png').write_bytes(base64.b64decode(png))
+    assert frames[0]!=frames[1],'real drive shader must change rendered pixels'
+    await pg.evaluate('()=>{webShowroom.auto=true;webShowroom.visible=true;webShowroom.run();}')
+    await pg.emulate_media(reduced_motion='reduce');yaw=await pg.evaluate('webShowroom.yaw');await pg.wait_for_timeout(200);assert abs(await pg.evaluate('webShowroom.yaw')-yaw)<1e-8,'live reduced-motion change must stop auto rotation'
+    await pg.evaluate('()=>{Object.defineProperty(navigator,"deviceMemory",{value:undefined,configurable:true});Object.defineProperty(navigator,"hardwareConcurrency",{value:6,configurable:true});setGfx("auto");}')
+    await pg.wait_for_function('()=>R3.q==="low"&&Equipment3D.active()&&Equipment3D.quality==="low"');assert await pg.evaluate('webShowroom.renderer.getPixelRatio()===1')
+    assert not errors,errors;assert not mutations,mutations
+    (OUT/'lifecycle-final.json').write_text(json.dumps({'liveReducedMotion':True,'unknownMobileAutoLow':True,'errors':errors,'mutations':mutations}));await b.close();print('PASS live reduced-motion preference and conservative mobile Auto profile',flush=True);return
+
    layout=[]
    for width,height in [(320,844),(390,844),(430,844),(1280,720)]:
     await pg.set_viewport_size({'width':width,'height':height});await pg.evaluate('()=>{webUpdateMachine();webShowroom.draw();}');assert await pg.evaluate('document.documentElement.scrollWidth<=innerWidth');await pg.screenshot(path=str(OUT/f'engineer-{width}.png'));layout.append([width,height])
@@ -44,7 +57,7 @@ async def main():
    await pg.evaluate('()=>{setGfx("high");webUpdateMachine();}')
   rows=[]
   modes=[('arena','classic'),('zone','overpass'),('crystal','longshot'),('bounty','craters'),('royale','classic'),('boss','craters')]
-  if OLD:modes=[('royale','classic')]
+  if OLD or BUSY:modes=[('royale','classic')]
   for mode,mapid in modes:
    await pg.locator('[data-act="rangedraft"]').click();await pg.select_option('#range-mode',mode);await pg.select_option('#range-control','ai');await pg.locator('#range-map').evaluate('e=>e.closest("details").open=true');await pg.select_option('#range-map',mapid);await pg.locator('[data-act="rangestart"]').click();await pg.wait_for_function('()=>!!rangeRun?.sim');await pg.evaluate('()=>{window.__testPause=true;rangeRun.paused=true;rangeRun.sim.setup(rangeRun.cfg);}')
    row=await pg.evaluate('''()=>{const r=rangeRun;for(let i=0;i<600&&r.sim.view().state==='play';i++){r.sim.step(1/60,[0,0]);r.sim.events();}const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const x=c.getContext('2d');let cold=performance.now();rangeWithView(()=>{ensureMap();matchObjs();drawBattle();});RR.getContext().finish();cold=performance.now()-cold;const times=[];for(let i=0;i<40;i++){const t=performance.now();rangeWithView(()=>drawBattle());RR.getContext().finish();times.push(performance.now()-t);}rangeWithView(()=>{drawBattle();x.drawImage(CV3,0,0,c.width,c.height);x.drawImage(cv,0,0);});return {mode:r.cfg.g,map:r.cfg.map,result:r.sim.result(),coldMs:cold,meanMs:times.reduce((a,b)=>a+b)/40,worstMs:Math.max(...times),triangles:RR.info.render.triangles,calls:RR.info.render.calls,memory:{...RR.info.memory},programs:RR.info.programs.length,glError:RR.getContext().getError(),png:c.toDataURL().split(',')[1]};}''');(OUT/f'{suffix}-{mode}-390.png').write_bytes(base64.b64decode(row.pop('png')));assert row['glError']==0
@@ -56,15 +69,17 @@ async def main():
       await pg.evaluate('(q)=>setGfx(q)',q);await pg.wait_for_function('()=>Equipment3D.active()');z=await pg.evaluate('''()=>{rangeWithView(()=>{ensureMap();matchObjs();drawBattle();});RR.getContext().finish();const a=[];for(let i=0;i<40;i++){let t=performance.now();rangeWithView(()=>drawBattle());RR.getContext().finish();a.push(performance.now()-t);}return {q:R3.q,calls:RR.info.render.calls,triangles:RR.info.render.triangles,meanMs:a.reduce((a,b)=>a+b)/40,worstMs:Math.max(...a),memory:{...RR.info.memory},programs:RR.info.programs.length};}''');qrows.append(z)
      row['profiles']=qrows
      await pg.evaluate('()=>setGfx("high")');await pg.wait_for_function('()=>Equipment3D.active()')
-     stress=await pg.evaluate('''()=>{let data;rangeWithView(()=>{for(let j=0;j<500;j++){impact3(10,20,'moon');boom3(11,19,2,'#ff9933');}drawBattle();data={live:PSA.live.length+PSN.live.length,max:particleCap(PSA)+particleCap(PSN),calls:RR.info.render.calls,triangles:RR.info.render.triangles};});return data;}''');assert stress['live']<=stress['max'];row['stress']=stress
+     stress=await pg.evaluate('''()=>{let data;rangeWithView(()=>{ensureMap();matchObjs();drawBattle();for(let j=0;j<500;j++){impact3(10,20,'moon');boom3(11,19,2,'#ff9933');}drawBattle();data={live:PSA.live.length+PSN.live.length,max:particleCap(PSA)+particleCap(PSN),calls:RR.info.render.calls,triangles:RR.info.render.triangles};});return data;}''');assert 1500<stress['live']<=stress['max'];row['stress']=stress
      await pg.evaluate('()=>{const r=rangeRun;rangeWithView(()=>{for(const u of units)if(u.hp>0){const o=unitObj(u);for(const a of ["pulse","twin","siege","moon"])muzzle(u,a);}impact3(8,21,"moon");drawBattle();});}')
      png=await pg.evaluate('''()=>{const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const x=c.getContext('2d');rangeWithView(()=>{drawBattle();x.drawImage(CV3,0,0,c.width,c.height);x.drawImage(cv,0,0);});return c.toDataURL().split(',')[1];}''');(OUT/'effects-stress-390.png').write_bytes(base64.b64decode(png))
-    end=await pg.evaluate('''()=>{const r=rangeRun;let n=0;for(;n<72000&&r.sim.view().state==='play';n++){r.sim.step(1/60,[0,0]);r.sim.events();}return {steps:n,state:r.sim.view().state,result:r.sim.result()};}''');assert end['state']=='over',end;row['completed']=end
-    await pg.evaluate('()=>rangeFinish()');assert await pg.locator('[data-act="rangerepeat"]').count()>0
-    await pg.evaluate('()=>rangeExit()')
+    if not BUSY:
+     end=await pg.evaluate('''()=>{const r=rangeRun;let n=0;for(;n<72000&&r.sim.view().state==='play';n++){r.sim.step(1/60,[0,0]);r.sim.events();}return {steps:n,state:r.sim.view().state,result:r.sim.result()};}''');assert end['state']=='over',end;row['completed']=end
+     await pg.evaluate('()=>rangeFinish()');assert await pg.locator('[data-act="rangerepeat"]').count()>0
+     await pg.evaluate('()=>rangeExit()')
+    else:await pg.evaluate('()=>rangeExit()')
    else:await pg.evaluate('()=>rangeExit()')
    await pg.evaluate('()=>{window.__testPause=false;closeAll();setTab("garage");ACT.labedit("m_spare");}');await pg.select_option('#lab-chassis','vanguard:0');await pg.select_option('#lab-weapon','moon:2');rows.append(row);print(suffix,mode,row['calls'],row['triangles'],flush=True)
-  if not OLD:
+  if not OLD and not BUSY:
    # Repeated swaps retain stable owned resources; BFCache, reduced motion, context fallback/retry.
    cache=await pg.evaluate('''()=>{const rows=[];for(let j=0;j<2;j++){for(let i=0;i<8;i++){webShowroom.setContext(i%2?'garage':'engineer');webShowroom.draw();}rows.push({...webShowroom.renderer.info.memory,programs:webShowroom.renderer.info.programs.length});}return rows;}''');assert cache[1]['geometries']<=cache[0]['geometries']+2 and cache[1]['textures']==cache[0]['textures'],cache
    await pg.emulate_media(reduced_motion='reduce');quiet=await pg.evaluate('()=>{const s=webShowroom;s.motion.state.kick=1;s.draw();return {kick:s.motion.state.kick,charge:s.motion.uniforms.uCharge.value}}');assert quiet=={'kick':0,'charge':0}

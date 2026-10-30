@@ -45,7 +45,7 @@ function setGfx(m){
  if(R3.ready&&!R3.failed)apply3D();else{R3.failed=false;load3D();}
 }
 
-const lowEnd=()=>((navigator.hardwareConcurrency||8)<=4&&(navigator.deviceMemory||8)<=3);
+const lowEnd=()=>typeof GraphicsQuality!=='undefined'?GraphicsQuality.initial({coarse:typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches,cores:navigator.hardwareConcurrency||8,memory:navigator.deviceMemory||null})==='low':((navigator.hardwareConcurrency||8)<=4&&(navigator.deviceMemory||8)<=3);
 
 // ---------- renderer, camera, lights, shared materials ----------
 let RR=null,RS=null,RC=null,MT=null,PSA=null,PSN=null,STARS=null,CV3=null;
@@ -87,7 +87,7 @@ const PS_VS='attribute float size;attribute vec4 rgba;varying vec4 vC;uniform fl
 const PS_FA='varying vec4 vC;void main(){vec2 d=gl_PointCoord-0.5;float r=length(d)*2.0;if(r>1.0)discard;float a=vC.a*pow(1.0-r,1.7);float k=smoothstep(0.45,0.0,r);gl_FragColor=vec4(mix(vC.rgb,vec3(1.0),k*0.65),a);}';
 const PS_FN='varying vec4 vC;void main(){vec2 d=gl_PointCoord-0.5;float r=length(d)*2.0;if(r>1.0)discard;gl_FragColor=vec4(vC.rgb,vC.a*pow(1.0-r,1.2));}';
 function mkPS(add,max){
- max=max||(R3.q==='low'?700:1600);
+ max=max||1600;   // One fixed bounded backing buffer; quality caps actual emissions without reallocating on switches.
  const g=new THREE.BufferGeometry(),P=new Float32Array(max*3),C=new Float32Array(max*4),S=new Float32Array(max);
  g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('rgba',new THREE.BufferAttribute(C,4));g.setAttribute('size',new THREE.BufferAttribute(S,1));
  for(const k of ['position','rgba','size'])g.attributes[k].setUsage(35048);   // dynamic
@@ -590,6 +590,7 @@ function clearRange3D(){
 
 // One native Engineer preview, updated from the existing idle frame loop; no timers, account writes or model rebuilds per frame.
 function drawEquipmentIdle(ctx,w,h,spec,t){
+ ctx.clearRect(0,0,w,h);
  const A=artR(),key=specKey(spec);if(!A.preview||A.preview.key!==key){if(A.preview)Equipment3D.releaseTree(A.preview.T.g);A.preview={key,T:buildTank(spec,A.mats),canvas:ctx.canvas,last:t};}
  const p=A.preview,T=p.T,dt=Math.min(.05,Math.max(0,t-p.last));p.last=t;p.canvas=ctx.canvas;
  stepAnims(T.anims,dt,t);if(T.motion){const quiet=GraphicsMotion.reduced();T.motion.step(dt,{},quiet);T.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(t*2);}

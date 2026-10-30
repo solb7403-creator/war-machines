@@ -1,0 +1,26 @@
+{
+  "art": {
+    "IN_TG": true,
+    "webEdition": false,
+    "stage": true,
+    "stageKind": "engineer",
+    "calls": 19,
+    "triangles": 29810,
+    "error": 0,
+    "materials": 9,
+    "geometry": {
+      "entries": 7,
+      "bytes": 13828272,
+      "peakBytes": 17972112,
+      "active": 4,
+      "refs": 6,
+      "idleBudget": 14680064
+    },
+    "q": "high",
+    "width": 354,
+    "height": 218,
+    "overflow": false
+  },
+  "errors": [],
+  "fixture": "Signed fake Mini App SDK/identity, local real Worker with fake storage; no physical Telegram/iPhone"
+}

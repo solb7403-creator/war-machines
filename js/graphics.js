@@ -16,7 +16,7 @@ const GraphicsMotion=(()=>{
  // Wheel and tread displacement on the existing baked surfaces; matching normal/tangent rotation.
  const GLSL=`attribute vec4 drive;uniform vec2 uDrive;uniform vec4 uTrack;uniform float uCharge;varying float vCore;
  void trackFrame(float s,float a,float r,out vec2 p,out float angle){float L=4.0*a+6.2831853*r;s=mod(mod(s,L)+L,L);if(s<2.0*a){p=vec2(s-a,r);angle=0.0;}else if(s<2.0*a+3.14159265*r){float t=(s-2.0*a)/r;p=vec2(a+sin(t)*r,cos(t)*r);angle=-t;}else if(s<4.0*a+3.14159265*r){p=vec2(a-(s-2.0*a-3.14159265*r),-r);angle=3.14159265;}else{float t=(s-4.0*a-3.14159265*r)/r;p=vec2(-a-sin(t)*r,-cos(t)*r);angle=3.14159265-t;}}
- void drivePose(out vec2 old,out vec2 dest,out float ang){old=drive.xy;dest=old;ang=0.0;if(drive.z<0.5)return;float travel=drive.w<0.0?uDrive.x:uDrive.y;if(drive.z<1.5){ang=-travel/max(.06,uTrack.y*.68);return;}float center=uTrack.w>0.0?sign(old.x)*uTrack.w:0.0;vec2 c=old-vec2(center,uTrack.z);float a=uTrack.x,r=uTrack.y,s=0.0;if(abs(c.x)<=a+.001){s=c.y>0.0?c.x+a:3.14159265*r+3.0*a-c.x;}else if(c.x>0.0){s=2.0*a+acos(clamp(c.y/r,-1.0,1.0))*r;}else{s=4.0*a+3.14159265*r+acos(clamp(-c.y/r,-1.0,1.0))*r;}vec2 unused;float initial;trackFrame(s,a,r,unused,initial);trackFrame(s+travel,a,r,dest,ang);dest+=vec2(center,uTrack.z);ang-=initial;}
+ void drivePose(out vec2 old,out vec2 dest,out float ang){old=drive.xy;dest=old;ang=0.0;if(drive.z<0.5)return;float travel=drive.w<0.0?uDrive.x:uDrive.y;if(drive.z<1.5){ang=-travel/max(.06,drive.z-1.0);return;}float center=uTrack.w>0.0?sign(old.x)*uTrack.w:0.0;float a=uTrack.x,r=uTrack.y,s=(drive.z-2.0)*(4.0*a+6.2831853*r);float initial=s<2.0*a?0.0:s<2.0*a+3.14159265*r?-(s-2.0*a)/r:s<4.0*a+3.14159265*r?3.14159265:3.14159265-(s-4.0*a-3.14159265*r)/r;trackFrame(s+travel,a,r,dest,ang);dest+=vec2(center,uTrack.z);ang-=initial;}
  vec2 driveRotate(vec2 v,float a){return mat2(cos(a),sin(a),-sin(a),cos(a))*v;}
  `;
  function attach(root,track){
@@ -33,5 +33,7 @@ const GraphicsQuality=(()=>{
   if(manual||hidden||loading||dt<=0||dt>.5){reset(s,now);return null;}if(now-s.since<6)return null;
   s.sum+=dt;s.n++;if(s.sum<3||s.n<45)return null;const fps=s.n/s.sum;s.sum=0;s.n=0;s.bad=fps<(s.q==='high'?35:21)?s.bad+1:0;
   if(s.bad<2)return null;s.q=s.q==='high'?'low':'2d';reset(s,now);return s.q;
- }return {state,reset,sample};
+ }
+ const initial=({mode='auto',coarse=false,cores=8,memory=null}={})=>mode==='high'?'high':mode==='low'?'low':coarse&&(memory===null||memory<6||cores<8)||cores<=4&&(memory===null||memory<4)?'low':'high';
+ return {state,reset,sample,initial};
 })();

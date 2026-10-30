@@ -79,7 +79,7 @@ window.LunarShowroom=class {
    if(fit>1)this.camera.position.sub(focus).multiplyScalar(fit).add(focus);
   }
   this.renderer.render(this.scene,this.camera);}
- run(){cancelAnimationFrame(this.raf);this.raf=0;if(document.hidden||!this.visible||this.disposed||!this.renderer)return;const frame=t=>{this.raf=0;if(this.disposed||document.hidden||!this.visible)return;if(!document.body.classList.contains('battle')&&t-this.last>45){if(this.auto)this.yaw+=.0018;this.draw();this.last=t;}this.raf=requestAnimationFrame(frame);};this.raf=requestAnimationFrame(frame);}
+ run(){cancelAnimationFrame(this.raf);this.raf=0;if(document.hidden||!this.visible||this.disposed||!this.renderer)return;const frame=t=>{this.raf=0;if(this.disposed||document.hidden||!this.visible)return;if(!document.body.classList.contains('battle')&&t-this.last>45){if(this.auto&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()))this.yaw+=.0018;this.draw();this.last=t;}this.raf=requestAnimationFrame(frame);};this.raf=requestAnimationFrame(frame);}
  view(kind){const v={front:[-1.02,.14],quarter:[-.20,.20],side:[.55,.12],rear:[1.60,.20]}[kind];if(v){this.userView=true;this.auto=false;this.yaw=v[0];this.tilt=v[1];this.draw();}}
  rotate(n){this.userView=true;this.auto=false;this.yaw+=n*.32;this.draw();}
  setZoom(v){this.userView=true;this.zoom=Math.max(.72,Math.min(this.parts===2&&this.defender?2.1:1.6,v));this.draw();}

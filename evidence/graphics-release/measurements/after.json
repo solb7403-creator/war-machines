@@ -1,0 +1,838 @@
+{
+  "layout": [
+    [
+      320,
+      844
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      430,
+      844
+    ],
+    [
+      1280,
+      720
+    ]
+  ],
+  "coverage": [
+    {
+      "cls": "scout",
+      "t": 0,
+      "q": "high",
+      "calls": 17,
+      "triangles": 15944,
+      "error": 0
+    },
+    {
+      "cls": "scout",
+      "t": 1,
+      "q": "high",
+      "calls": 17,
+      "triangles": 17632,
+      "error": 0
+    },
+    {
+      "cls": "scout",
+      "t": 2,
+      "q": "high",
+      "calls": 19,
+      "triangles": 25044,
+      "error": 0
+    },
+    {
+      "cls": "vanguard",
+      "t": 0,
+      "q": "high",
+      "calls": 16,
+      "triangles": 17616,
+      "error": 0
+    },
+    {
+      "cls": "vanguard",
+      "t": 1,
+      "q": "high",
+      "calls": 16,
+      "triangles": 19136,
+      "error": 0
+    },
+    {
+      "cls": "vanguard",
+      "t": 2,
+      "q": "high",
+      "calls": 17,
+      "triangles": 21140,
+      "error": 0
+    },
+    {
+      "cls": "titan",
+      "t": 0,
+      "q": "high",
+      "calls": 16,
+      "triangles": 17860,
+      "error": 0
+    },
+    {
+      "cls": "titan",
+      "t": 1,
+      "q": "high",
+      "calls": 16,
+      "triangles": 18576,
+      "error": 0
+    },
+    {
+      "cls": "titan",
+      "t": 2,
+      "q": "high",
+      "calls": 16,
+      "triangles": 24348,
+      "error": 0
+    },
+    {
+      "cls": "scout",
+      "t": 0,
+      "q": "low",
+      "calls": 17,
+      "triangles": 6856,
+      "error": 0
+    },
+    {
+      "cls": "scout",
+      "t": 1,
+      "q": "low",
+      "calls": 17,
+      "triangles": 7496,
+      "error": 0
+    },
+    {
+      "cls": "scout",
+      "t": 2,
+      "q": "low",
+      "calls": 17,
+      "triangles": 9956,
+      "error": 0
+    },
+    {
+      "cls": "vanguard",
+      "t": 0,
+      "q": "low",
+      "calls": 16,
+      "triangles": 7208,
+      "error": 0
+    },
+    {
+      "cls": "vanguard",
+      "t": 1,
+      "q": "low",
+      "calls": 16,
+      "triangles": 7956,
+      "error": 0
+    },
+    {
+      "cls": "vanguard",
+      "t": 2,
+      "q": "low",
+      "calls": 16,
+      "triangles": 8796,
+      "error": 0
+    },
+    {
+      "cls": "titan",
+      "t": 0,
+      "q": "low",
+      "calls": 16,
+      "triangles": 7028,
+      "error": 0
+    },
+    {
+      "cls": "titan",
+      "t": 1,
+      "q": "low",
+      "calls": 16,
+      "triangles": 7600,
+      "error": 0
+    },
+    {
+      "cls": "titan",
+      "t": 2,
+      "q": "low",
+      "calls": 16,
+      "triangles": 9756,
+      "error": 0
+    }
+  ],
+  "cache": [
+    {
+      "geometries": 41,
+      "textures": 9,
+      "programs": 9
+    },
+    {
+      "geometries": 41,
+      "textures": 9,
+      "programs": 9
+    }
+  ],
+  "quiet": {
+    "kick": 0,
+    "charge": 0
+  },
+  "battle": [
+    {
+      "mode": "arena",
+      "map": "classic",
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 688,
+        "taken": 382,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "remaining": [
+            0,
+            1
+          ]
+        },
+        "opponents": [
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 1700,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 2534.7000000029802,
+      "meanMs": 2.9399999998509885,
+      "worstMs": 38.599999994039536,
+      "triangles": 49192,
+      "calls": 47,
+      "memory": {
+        "geometries": 49,
+        "textures": 10
+      },
+      "programs": 16,
+      "glError": 0,
+      "completed": {
+        "steps": 612,
+        "state": "over",
+        "result": {
+          "outcome": "won",
+          "duration": 20.2,
+          "damage": 1946,
+          "taken": 1035,
+          "kills": 1,
+          "deaths": 0,
+          "control": "ai",
+          "objective": {
+            "remaining": [
+              0
+            ]
+          },
+          "opponents": [
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 1700,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "zone",
+      "map": "overpass",
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 1751,
+        "taken": 587,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "score": [
+            0,
+            6
+          ],
+          "captures": 1
+        },
+        "opponents": [
+          {
+            "team": 0,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 2377.2000000029802,
+      "meanMs": 4.734999999776482,
+      "worstMs": 38.70000000298023,
+      "triangles": 77656,
+      "calls": 93,
+      "memory": {
+        "geometries": 73,
+        "textures": 14
+      },
+      "programs": 20,
+      "glError": 0,
+      "completed": {
+        "steps": 2566,
+        "state": "over",
+        "result": {
+          "outcome": "lost",
+          "duration": 52.77,
+          "damage": 4787,
+          "taken": 3653,
+          "kills": 0,
+          "deaths": 0,
+          "control": "ai",
+          "objective": {
+            "score": [
+              0,
+              100
+            ],
+            "captures": 1
+          },
+          "opponents": [
+            {
+              "team": 0,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "crystal",
+      "map": "longshot",
+      "result": {
+        "outcome": "won",
+        "duration": 10,
+        "damage": 657,
+        "taken": 133,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "score": [
+            2,
+            0
+          ],
+          "collected": 1
+        },
+        "opponents": [
+          {
+            "team": 0,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 2081.4000000059605,
+      "meanMs": 3.0524999998509883,
+      "worstMs": 36.6000000089407,
+      "triangles": 83076,
+      "calls": 90,
+      "memory": {
+        "geometries": 71,
+        "textures": 14
+      },
+      "programs": 20,
+      "glError": 0,
+      "completed": {
+        "steps": 4780,
+        "state": "over",
+        "result": {
+          "outcome": "won",
+          "duration": 89.67,
+          "damage": 10681,
+          "taken": 4979,
+          "kills": 1,
+          "deaths": 0,
+          "control": "ai",
+          "objective": {
+            "score": [
+              10,
+              0
+            ],
+            "collected": 7
+          },
+          "opponents": [
+            {
+              "team": 0,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "bounty",
+      "map": "craters",
+      "result": {
+        "outcome": "drawn",
+        "duration": 10,
+        "damage": 541,
+        "taken": 400,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "score": [
+            0,
+            0
+          ],
+          "stars": 0
+        },
+        "opponents": [
+          {
+            "team": 0,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 1700,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 1700,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 1700,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 1997.5999999940395,
+      "meanMs": 5.2949999995529655,
+      "worstMs": 39.5,
+      "triangles": 75968,
+      "calls": 81,
+      "memory": {
+        "geometries": 71,
+        "textures": 14
+      },
+      "programs": 19,
+      "glError": 0,
+      "completed": {
+        "steps": 6601,
+        "state": "over",
+        "result": {
+          "outcome": "won",
+          "duration": 120.02,
+          "damage": 14283,
+          "taken": 5861,
+          "kills": 5,
+          "deaths": 2,
+          "control": "ai",
+          "objective": {
+            "score": [
+              17,
+              15
+            ],
+            "stars": 12
+          },
+          "opponents": [
+            {
+              "team": 0,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 1700,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 1700,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 1700,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "royale",
+      "map": "classic",
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 1631,
+        "taken": 682,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "place": 5,
+          "of": 6
+        },
+        "opponents": [
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 2,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 3,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 4,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 5,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "coldMs": 1773.699999988079,
+      "meanMs": 3.6925000000745056,
+      "worstMs": 38.400000005960464,
+      "triangles": 110024,
+      "calls": 109,
+      "memory": {
+        "geometries": 65,
+        "textures": 14
+      },
+      "programs": 20,
+      "glError": 0,
+      "profiles": [
+        {
+          "q": "high",
+          "calls": 109,
+          "triangles": 110024,
+          "meanMs": 5.032499999925494,
+          "worstMs": 33.70000000298023,
+          "memory": {
+            "geometries": 65,
+            "textures": 14
+          },
+          "programs": 20
+        },
+        {
+          "q": "low",
+          "calls": 107,
+          "triangles": 41480,
+          "meanMs": 2.9149999994784594,
+          "worstMs": 34.599999994039536,
+          "memory": {
+            "geometries": 84,
+            "textures": 14
+          },
+          "programs": 20
+        }
+      ],
+      "stress": {
+        "live": 14,
+        "max": 2400,
+        "calls": 109,
+        "triangles": 110024
+      },
+      "completed": {
+        "steps": 1419,
+        "state": "over",
+        "result": {
+          "outcome": "lost",
+          "duration": 33.65,
+          "damage": 7991,
+          "taken": 3675,
+          "kills": 1,
+          "deaths": 1,
+          "control": "ai",
+          "objective": {
+            "place": 4,
+            "of": 6
+          },
+          "opponents": [
+            {
+              "team": 1,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 2,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 3,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 4,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 5,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 3400,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "mode": "boss",
+      "map": "craters",
+      "result": {
+        "outcome": "drawn",
+        "duration": 10,
+        "damage": 0,
+        "taken": 0,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "bossDown": 1
+        },
+        "opponents": [
+          {
+            "team": 0,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 2550,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 1,
+            "cls": "titan",
+            "w": "siege",
+            "hp": 28037,
+            "dps": 41,
+            "spd": 0.55,
+            "boss": true
+          }
+        ]
+      },
+      "coldMs": 5592.79999999702,
+      "meanMs": 2.094999999925494,
+      "worstMs": 15.5,
+      "triangles": 47344,
+      "calls": 60,
+      "memory": {
+        "geometries": 64,
+        "textures": 15
+      },
+      "programs": 22,
+      "glError": 0,
+      "completed": {
+        "steps": 4099,
+        "state": "over",
+        "result": {
+          "outcome": "won",
+          "duration": 78.32,
+          "damage": 20557,
+          "taken": 977,
+          "kills": 0,
+          "deaths": 0,
+          "control": "ai",
+          "objective": {
+            "bossDown": 100
+          },
+          "opponents": [
+            {
+              "team": 0,
+              "cls": "vanguard",
+              "w": "pulse",
+              "hp": 2550,
+              "dps": 70,
+              "spd": 1,
+              "boss": false
+            },
+            {
+              "team": 1,
+              "cls": "titan",
+              "w": "siege",
+              "hp": 28037,
+              "dps": 41,
+              "spd": 0.55,
+              "boss": true
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "mutations": [],
+  "platform": "Chromium/SwiftShader; simulated viewports, local signed fixtures; not physical iPhone"
+}
