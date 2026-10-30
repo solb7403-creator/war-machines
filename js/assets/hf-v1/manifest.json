@@ -1,5 +1,5 @@
 {
-  "version": "hf-v1.1",
+  "version": "hf-v2.0",
   "license": "Original procedural project artwork; no external assets",
   "tiles": [
     "graphite",
@@ -10,33 +10,33 @@
   "files": [
     {
       "file": "base-high.png",
-      "bytes": 178680,
-      "sha256": "e0b2f9dfeeb3596a0810d70375e32435264d6f4d6a33b75f98ce02bcd837a299"
+      "bytes": 119481,
+      "sha256": "121ba3ba0535f514ca3068eb3eacf30a9dd91b49192ada2cd9cbe0a0f837034c"
     },
     {
       "file": "normal-high.png",
-      "bytes": 165873,
-      "sha256": "0a18f2424bbc6007cf7ca2980e5fecde476f064b667ed8b62c9772c331f84721"
+      "bytes": 14451,
+      "sha256": "c996fe3eb8362332e03d190738471825e0d2c0b2c4bbbf1d2316cc60e1c321cf"
     },
     {
       "file": "orm-high.png",
-      "bytes": 232758,
-      "sha256": "339de6522e548d971044cf417fcf954df850c36e6fd18ef30bbf2f6c50413c43"
+      "bytes": 149128,
+      "sha256": "26f17d2e5929a464e3ddb25840ef9a7fff99dc447744ee276836ef3da29a2dca"
     },
     {
       "file": "base-low.png",
-      "bytes": 7236,
-      "sha256": "027561cb17333e655cbd006cfd2b6db422b75a4f8e60a7fd5e8cd87f0ae306e1"
+      "bytes": 5935,
+      "sha256": "d0016b5fc86f97284252fea491e96f4ba19be5fa755560ad3fb835756ad613cc"
     },
     {
       "file": "normal-low.png",
-      "bytes": 6594,
-      "sha256": "933dbf7c68dd4f3741315ff556b975c875cfd2776f025ac1a0392c5c05263faf"
+      "bytes": 5861,
+      "sha256": "aa5a856202f62a379e6388b6c963d5f7175170bf1c6cf34608966f5098024f69"
     },
     {
       "file": "orm-low.png",
-      "bytes": 11266,
-      "sha256": "96f9643428085b2e23d4edbbf3956429311bf92ba5eba5f589c611507e6234be"
+      "bytes": 8646,
+      "sha256": "d196d2e79cac961669c12cc5b2dac29d90974ffd22d7248741bd1cbf0a18acdc"
     }
   ]
 }

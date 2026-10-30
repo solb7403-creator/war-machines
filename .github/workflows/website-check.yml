@@ -40,5 +40,6 @@ jobs:
           node dev/tests/defender-visual.mjs
           node dev/tests/legendary-visual.mjs
           node dev/tests/hf-foundation.mjs
+          node dev/tests/hf-collection.mjs
           node dev/tests/wtest/web-auth.mjs
           node dev/tests/wtest/lunar-identity.mjs
