@@ -1,0 +1,321 @@
+{
+  "framing": [],
+  "reused36PoseAssertions": true,
+  "shortDesktop": {
+    "bottom": 720,
+    "noteBottom": 1397.296875,
+    "overflow": "auto"
+  },
+  "quality": [
+    {
+      "q": "high",
+      "calls": 16,
+      "triangles": 24348
+    },
+    {
+      "q": "low",
+      "calls": 16,
+      "triangles": 9756
+    }
+  ],
+  "stageCache": [
+    {
+      "memory": {
+        "geometries": 25,
+        "textures": 8
+      },
+      "assets": {
+        "users": 3,
+        "geometry": {
+          "entries": 6,
+          "bytes": 12390960,
+          "peakBytes": 19020960,
+          "active": 2,
+          "refs": 2,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "high",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "memory": {
+        "geometries": 25,
+        "textures": 8
+      },
+      "assets": {
+        "users": 3,
+        "geometry": {
+          "entries": 6,
+          "bytes": 12390960,
+          "peakBytes": 19020960,
+          "active": 2,
+          "refs": 2,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "high",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      }
+    }
+  ],
+  "mapCache": {
+    "rows": [
+      {
+        "gpu": {
+          "geometries": 113,
+          "textures": 11
+        },
+        "terrain": {
+          "version": "env-v1",
+          "terrain": [
+            {
+              "key": "classic|low",
+              "refs": 1,
+              "bytes": 163840
+            },
+            {
+              "key": "overpass|low",
+              "refs": 1,
+              "bytes": 163840
+            },
+            {
+              "key": "longshot|low",
+              "refs": 1,
+              "bytes": 163840
+            },
+            {
+              "key": "craters|low",
+              "refs": 1,
+              "bytes": 163840
+            }
+          ],
+          "bytes": 655360
+        },
+        "maps": 4
+      },
+      {
+        "gpu": {
+          "geometries": 113,
+          "textures": 11
+        },
+        "terrain": {
+          "version": "env-v1",
+          "terrain": [
+            {
+              "key": "classic|low",
+              "refs": 1,
+              "bytes": 163840
+            },
+            {
+              "key": "overpass|low",
+              "refs": 1,
+              "bytes": 163840
+            },
+            {
+              "key": "longshot|low",
+              "refs": 1,
+              "bytes": 163840
+            },
+            {
+              "key": "craters|low",
+              "refs": 1,
+              "bytes": 163840
+            }
+          ],
+          "bytes": 655360
+        },
+        "maps": 4
+      }
+    ],
+    "idle": {
+      "version": "env-v1",
+      "terrain": [
+        {
+          "key": "longshot|low",
+          "refs": 0,
+          "bytes": 163840
+        },
+        {
+          "key": "craters|low",
+          "refs": 0,
+          "bytes": 163840
+        }
+      ],
+      "bytes": 327680
+    },
+    "sharedDisposals": 0
+  },
+  "combat": [
+    {
+      "q": "high",
+      "coldMs": 1742.5,
+      "meanMs": 2.8174999999813735,
+      "worstMs": 35,
+      "calls": 109,
+      "triangles": 110024,
+      "gpu": {
+        "geometries": 60,
+        "textures": 12
+      },
+      "projectionError": 5.684341886080801e-13,
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 1631,
+        "taken": 682,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "place": 5,
+          "of": 6
+        },
+        "opponents": [
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 2,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 3,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 4,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 5,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "glError": 0
+    },
+    {
+      "q": "low",
+      "coldMs": 661.8999999985099,
+      "meanMs": 2.165000000037253,
+      "worstMs": 29.300000000745058,
+      "calls": 107,
+      "triangles": 41480,
+      "gpu": {
+        "geometries": 74,
+        "textures": 14
+      },
+      "projectionError": 5.684341886080801e-13,
+      "result": {
+        "outcome": "lost",
+        "duration": 10,
+        "damage": 1631,
+        "taken": 682,
+        "kills": 0,
+        "deaths": 0,
+        "control": "ai",
+        "objective": {
+          "place": 5,
+          "of": 6
+        },
+        "opponents": [
+          {
+            "team": 1,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 2,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 3,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 4,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          },
+          {
+            "team": 5,
+            "cls": "vanguard",
+            "w": "pulse",
+            "hp": 3400,
+            "dps": 70,
+            "spd": 1,
+            "boss": false
+          }
+        ]
+      },
+      "glError": 0
+    }
+  ],
+  "vaultAnchor": [
+    1.0424531650543214,
+    0.7007978954688394,
+    0.26
+  ],
+  "noWebGLNoMapRequests": true,
+  "errors": [],
+  "mutations": [],
+  "environment": "Chromium SwiftShader / simulated viewports and local fake services; NOT physical iPhone"
+}

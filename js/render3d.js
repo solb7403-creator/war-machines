@@ -47,7 +47,7 @@ function init3D(){
  R3.q=gfxMode()==='low'||(gfxMode()==='auto'&&lowEnd())?'low':'high';
  RR=new THREE.WebGLRenderer({canvas:CV3,antialias:R3.q==='high',alpha:false,powerPreference:'high-performance',stencil:false});
  RR.setClearColor(0x0a0e17,1);RR.outputColorSpace=THREE.SRGBColorSpace;
- CV3.addEventListener('webglcontextlost',e=>{e.preventDefault();R3.hfRelease?.();R3.hfRelease=null;R3.failed=true;apply3D();});
+ CV3.addEventListener('webglcontextlost',e=>{e.preventDefault();R3.hfRelease?.();R3.hfRelease=null;if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}R3.failed=true;apply3D();});
  RS=new THREE.Scene();
  RC=new THREE.OrthographicCamera(-10,10,10,-10,1,400);
  RC.up.set(0,GSN,-GKC);RC.position.set(0,GKC*150,GSN*150);RC.lookAt(0,0,0);
@@ -221,10 +221,15 @@ let _v=null;
 function wpos(obj,p){if(!_v)_v=new THREE.Vector3();_v.set(p[0],p[1],p[2]);obj.localToWorld(_v);return _v;}
 
 // ---------- map and per-match objects ----------
+function disposeMap3D(map){
+ if(map.dispose){map.dispose();return;}
+ map.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o===map.ground){o.material.map?.dispose();o.material.dispose();}});
+}
 function ensureMap(){
- const key=curMap+'|'+R3.q;
+ const key=curMap+'|'+R3.q+'|'+(typeof Environment3D!=='undefined'?Environment3D.key():'legacy');
  if(B3.mapKey===key)return;
- if(B3.map){RS.remove(B3.map.group);B3.map.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.map)o.material.map.dispose();});}
+ if(B3.map){RS.remove(B3.map.group);disposeMap3D(B3.map);}
+ if(typeof Environment3D!=='undefined')Environment3D.lightRig(RS,Environment3D.active());
  B3.map=M3.buildMap(curMap,MT,R3.q);B3.mapKey=key;RS.add(B3.map.group);
 }
 function poolGet(name,mk){const P=B3.pool[name]||(B3.pool[name]={items:[],n:0});if(P.n>=P.items.length){const o=mk();P.items.push(o);RS.add(o);}const o=P.items[P.n++];o.visible=true;return o;}
@@ -243,8 +248,9 @@ function geos(){
  return GEO;
 }
 function matchObjs(){   // things that live for one match: spawn pads, the crystal mine
- if(B3.uref===units&&B3.dyn)return;
- if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&o.material.dispose)o.material.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});}
+ const contextKey=typeof Environment3D!=='undefined'?Environment3D.key()+'|'+matchG:'legacy';
+ if(B3.uref===units&&B3.dyn&&B3.contextKey===contextKey)return;B3.contextKey=contextKey;
+ if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&!o.material.userData.hfShared&&o.material.dispose)o.material.dispose();if(o.userData.envOwnedTexture)o.material.map?.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});}
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
  for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];PSA.live.length=0;PSN.live.length=0;B3.seen=new WeakSet();
@@ -257,6 +263,7 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
   for(let i=0;i<7;i++){const a=i/7*6.28,r=i?0.55+(i%2)*0.2:0,h=i?0.6+(i%3)*0.25:1.3,c=new THREE.Mesh(G.oct,G.cryM);c.scale.set(0.22,h,0.22);c.position.set(m.x+Math.cos(a)*r,h*0.5,m.y+Math.sin(a)*r);c.rotation.set((i?0.3:0)*Math.cos(a),0,(i?0.3:0)*Math.sin(a));cl.add(c);}
   const rg=new THREE.Mesh(G.ring,addMat('#c79bff',0.5));rg.scale.setScalar(CRY_MINE_R);rg.position.set(m.x,0.03,m.y);cl.add(rg);
   const dk=new THREE.Mesh(G.disc,addMat('#b98cff',0.08));dk.scale.setScalar(CRY_MINE_R);dk.position.set(m.x,0.025,m.y);cl.add(dk);D.add(cl);}
+ if(typeof Environment3D!=='undefined'&&Environment3D.active())D.add(Environment3D.modeContext(matchG,curMap,R3.q,cry?.mine));
  B3.dyn=D;RS.add(D);
 }
 
@@ -275,6 +282,7 @@ function frame3D(shx,shy){
  // map: spinning pylons, deck fades while you're under it, pulsing energy
  for(const sp of B3.map.spin)sp.o.rotation[sp.axis]+=sp.spd*dt;
  if(B3.map.deck){MT.tun.opacity=meUnder?0.28:0.62;MT.deck.opacity=meUnder?0.8:1;MT.deck.transparent=meUnder;MT.deck.depthWrite=!meUnder;}
+ if(typeof Environment3D!=='undefined')Environment3D.updateMap(B3.map,meUnder);
  const pl=0.75+0.25*Math.sin(now/350);MT.pulse.color.setRGB(pl,pl,pl);
  // crates
  const live=new Set(crates);
@@ -351,11 +359,11 @@ function frame3D(shx,shy){
   const rg=poolGet('zring',()=>new THREE.Mesh(G.ringT,addMat('#ffffff',0.9)));rg.material.color.set(col);rg.scale.setScalar(z.r);rg.position.set(z.x,0.04,z.y);
   const mk=poolGet('zmoon',()=>new THREE.Mesh(G.moon,addMat('#ffffff',0.85)));mk.material.color.set(col);mk.position.set(z.x,0.05,z.y);mk.rotation.y=now/1500;
   const cl=poolGet('zcol',()=>new THREE.Mesh(G.col,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.3,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:vgrad(),side:THREE.DoubleSide})));
-  cl.material.color.set(col);cl.material.opacity=0.45;cl.scale.set(z.r,2.6,z.r);cl.position.set(z.x,1.2,z.y);cl.rotation.y=now/2000;
+  cl.material.color.set(col);cl.material.opacity=typeof Environment3D!=='undefined'&&Environment3D.active()?.13:.45;cl.scale.set(z.r,2.6,z.r);cl.position.set(z.x,1.2,z.y);cl.rotation.y=now/2000;
   if(Math.random()<dt*6){const a=Math.random()*6.28,r=Math.random()*z.r;emit(PSA,{x:z.x+Math.cos(a)*r,y:0.1,z:z.y+Math.sin(a)*r,vy:1.2,life:1.2,s0:0.3,s1:0.05,c:col,a:0.8});}}
  // Last Standing: the storm wall
  if(storm){const m=poolGet('storm',()=>new THREE.Mesh(G.col,new THREE.MeshBasicMaterial({color:0xa070ff,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:vgrad(),side:THREE.DoubleSide})));
-  m.scale.set(Math.max(0.1,storm.r),1.8,Math.max(0.1,storm.r));m.position.set(storm.x,0.9,storm.y);m.material.opacity=storm.r>14?0.22:0.45;m.rotation.y=now/3000;
+  m.scale.set(Math.max(0.1,storm.r),1.8,Math.max(0.1,storm.r));m.position.set(storm.x,0.9,storm.y);m.material.opacity=typeof Environment3D!=='undefined'&&Environment3D.active()?(storm.r>14?.10:.23):(storm.r>14?.22:.45);m.rotation.y=now/3000;
   for(let i=0;i<(R3.q==='low'?1:3);i++){const a=Math.random()*6.28;emit(PSA,{x:storm.x+Math.cos(a)*storm.r,y:Math.random()*2.5,z:storm.y+Math.sin(a)*storm.r,vy:0.6,life:0.8,s0:0.45,s1:0.1,c:'#c79bff',a:0.7});}}
  // meteors and Megatank shells falling onto their warning rings
  for(const w of warns){if(w.boss&&w.r>2)continue;const k=Math.max(0,w.t/w.t0),m=poolGet('met',()=>new THREE.Mesh(G.ico,G.rock));
@@ -461,13 +469,16 @@ function artR(){
  const s=new THREE.Scene();addLights(s);const hfRelease=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.attach():null;
  const cam=new THREE.PerspectiveCamera(26,1,0.1,200);
  const mats=mkMats(),ps=mkPS(true,64);ps.pts.material.uniforms.uP.value=1;s.add(ps.pts);
- c.addEventListener('webglcontextlost',e=>{e.preventDefault();hfRelease?.();AR=null;artCache.clear();});
+ c.addEventListener('webglcontextlost',e=>{e.preventDefault();hfRelease?.();if(AR?.r===r){AR.envStage?.dispose();for(const map of AR.maps.values())disposeMap3D(map);if(AR.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);AR=null;}artCache.clear();});
  AR={r,c,s,cam,mats,ps,hfRelease,maps:new Map()};return AR;
 }
 // put a model group in the art scene, aim the camera, render at w x h css px into ctx
 function artShot(ctx,w,h,grp,view,halos){
  const A=artR(),pw=Math.max(1,Math.round(w*dpr)),ph=Math.max(1,Math.round(h*dpr));
  if(A.c.width!==pw||A.c.height!==ph)A.r.setSize(pw,ph,false);
+ const envOn=typeof Environment3D!=='undefined'&&Environment3D.active()&&!view.cam;
+ const envKind=view.environment||'inspection',envKey=envOn?Environment3D.key()+'|'+envKind:'legacy';if(A.envKey!==envKey){if(A.envStage){A.s.remove(A.envStage.group);A.envStage.dispose();A.envStage=null;}A.envKey=envKey;if(envOn){A.envStage=Environment3D.buildStage(envKind,Equipment3D.quality);A.envStage.group.scale.setScalar(1/1.65);}}
+ if(A.envStage){A.envStage.group.visible=envOn;A.s.add(A.envStage.group);}
  A.s.add(grp);grp.updateMatrixWorld(true);
  const cam=view.cam||A.cam;
  if(!view.cam){cam.aspect=pw/ph;cam.fov=view.fov||26;const R0=view.r||1.6,el=view.el===undefined?0.55:view.el,az=view.az===undefined?0.9:view.az,dist=R0/Math.sin(cam.fov*Math.PI/360)*(view.z||1)/Math.min(1,cam.aspect);
@@ -494,7 +505,7 @@ function artTank(ctx,w,h,spec,parts,opt){
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
  const hal=haloList(T,parts);
  const r=(spec.boss?2.2:parts===2?1.25:1.55)*(spec.arch==='moon'&&parts!==1?1.22:1);   // the unified Moonbeam is long: frame it wider
- artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
+ artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1,environment:opt.environment},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
  return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
@@ -522,7 +533,7 @@ function art3D(ctx,w,h,a){
  return false;
 }
 function mapArt(ctx,w,h,id){
- const A=artR();let m=A.maps.get(id);if(!m){m=M3.buildMap(id,A.mats,'high');A.maps.set(id,m);}
+ const A=artR(),q=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.quality:'high',key=id+'|'+q+'|'+(typeof Environment3D!=='undefined'?Environment3D.key():'legacy');let m=A.maps.get(key);if(!m){m=M3.buildMap(id,A.mats,q);A.maps.set(key,m);if(A.maps.size>4){const old=A.maps.keys().next().value;disposeMap3D(A.maps.get(old));A.maps.delete(old);}}
  const cam=new THREE.OrthographicCamera(-1,1,1,-1,1,400),s=Math.min(w/W,h/(H*GKC+1.2)),hw=w/2/s,hh=h/2/s;
  cam.left=-hw;cam.right=hw;cam.top=hh;cam.bottom=-hh;cam.up.set(0,GSN,-GKC);cam.position.set(W/2,GKC*150,H/2+GSN*150);cam.lookAt(W/2,0,H/2);cam.updateProjectionMatrix();
  artShot(ctx,w,h,m.group,{cam},[]);
@@ -540,7 +551,7 @@ function heroArt(ctx,w,h,t){
 
 function machineArt3D(ctx,w,h,L){
  if(!R3.ready||R3.failed||gfxMode()==='2d')return false;
- try{const sp=unitSpec({...tankOf(L,1),team:0});sp.ct=L.c.t;cachedArt(ctx,w,h,'lab|'+specKey(sp),c=>artTank(c,w,h,sp,3,{az:1}));return true;}catch(e){return false;}
+ try{const sp=unitSpec({...tankOf(L,1),team:0}),environment=ctx.canvas?.id==='lab-preview'?'engineer':ctx.canvas?.id==='range-preview'?'inspection':'garage';sp.ct=L.c.t;cachedArt(ctx,w,h,'lab|'+environment+'|'+specKey(sp),c=>artTank(c,w,h,sp,3,{az:1,environment}));return true;}catch(e){return false;}
 }
 
 // Practice has no active ranked fight to restore. Release its per-trial GPU objects on every exit.
@@ -548,7 +559,7 @@ function clearRange3D(){
  if(!RS)return;
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
- if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose)o.material.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
+ if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose&&!o.material.userData.hfShared)o.material.dispose();if(o.userData.envOwnedTexture)o.material.map?.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
  for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
  PSA.live.length=0;PSN.live.length=0;for(const k in B3.pool)for(const o of B3.pool[k].items)o.visible=false;
 }

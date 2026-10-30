@@ -1,0 +1,76 @@
+{
+  "maps": [
+    {
+      "id": "classic",
+      "quality": "high",
+      "vertices": 18840
+    },
+    {
+      "id": "overpass",
+      "quality": "high",
+      "vertices": 6924
+    },
+    {
+      "id": "longshot",
+      "quality": "high",
+      "vertices": 28968
+    },
+    {
+      "id": "craters",
+      "quality": "high",
+      "vertices": 7932
+    },
+    {
+      "id": "classic",
+      "quality": "low",
+      "vertices": 9084
+    },
+    {
+      "id": "overpass",
+      "quality": "low",
+      "vertices": 4404
+    },
+    {
+      "id": "longshot",
+      "quality": "low",
+      "vertices": 9048
+    },
+    {
+      "id": "craters",
+      "quality": "low",
+      "vertices": 3432
+    }
+  ],
+  "stages": [
+    {
+      "kind": "garage",
+      "quality": "high",
+      "vertices": 7092
+    },
+    {
+      "kind": "engineer",
+      "quality": "high",
+      "vertices": 8316
+    },
+    {
+      "kind": "inspection",
+      "quality": "high",
+      "vertices": 7092
+    },
+    {
+      "kind": "garage",
+      "quality": "low",
+      "vertices": 4212
+    },
+    {
+      "kind": "engineer",
+      "quality": "low",
+      "vertices": 5052
+    },
+    {
+      "kind": "inspection",
+      "quality": "low",
+      "vertices": 4212
+    }
+  ]
+}

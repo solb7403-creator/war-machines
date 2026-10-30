@@ -1,7 +1,7 @@
 name: Website layout and login contracts
 on:
   pull_request:
-    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/web-auth.js', 'worker/src/lunar-identity.js', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
+    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/web-auth.js', 'worker/src/lunar-identity.js', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
 permissions:
   contents: read
 jobs:
@@ -23,6 +23,7 @@ jobs:
           node --check web/game.js
           node --check js/models3d.js
           node --check js/equipment3d.js
+          node --check js/environment3d.js
           node --check js/render3d.js
           node --check js/render.js
           node --check web/equipment-preview.js
@@ -41,5 +42,6 @@ jobs:
           node dev/tests/legendary-visual.mjs
           node dev/tests/hf-foundation.mjs
           node dev/tests/hf-collection.mjs
+          node dev/tests/environment.mjs
           node dev/tests/wtest/web-auth.mjs
           node dev/tests/wtest/lunar-identity.mjs
