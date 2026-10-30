@@ -86,8 +86,9 @@ function mkPS(add,max){
 }
 const RGBC=new Map();const rgb=h=>{let v=RGBC.get(h);if(!v){const n=parseInt(String(h).slice(1),16);v=[(n>>16)/255,((n>>8)&255)/255,(n&255)/255];RGBC.set(h,v);}return v;};
 // a particle that lives a while: p={x,y,z,vx,vy,vz,life,s0,s1,c,a,drag,g}
-function emit(ps,p){if(ps.live.length>=ps.max*0.8)return;p.t=0;p.life=p.life||0.4;p.drag=p.drag||0;p.g=p.g||0;p.vx=p.vx||0;p.vy=p.vy||0;p.vz=p.vz||0;p.a=p.a===undefined?1:p.a;p.s1=p.s1===undefined?p.s0:p.s1;ps.live.push(p);}
-function once(ps,x,y,z,s,c,a){if(ps.n>=ps.max)return;const i=ps.n++,cc=rgb(c);ps.P[i*3]=x;ps.P[i*3+1]=y;ps.P[i*3+2]=z;ps.C[i*4]=cc[0];ps.C[i*4+1]=cc[1];ps.C[i*4+2]=cc[2];ps.C[i*4+3]=a;ps.S[i]=s;}
+function particleCap(ps){return Math.min(ps.max,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?180:R3.q==='low'?420:1200);}
+function emit(ps,p){if(ps.live.length>=particleCap(ps)*0.8)return;p.t=0;p.life=p.life||0.4;p.drag=p.drag||0;p.g=p.g||0;p.vx=p.vx||0;p.vy=p.vy||0;p.vz=p.vz||0;p.a=p.a===undefined?1:p.a;p.s1=p.s1===undefined?p.s0:p.s1;ps.live.push(p);}
+function once(ps,x,y,z,s,c,a){if(ps.n>=particleCap(ps))return;const i=ps.n++,cc=rgb(c);ps.P[i*3]=x;ps.P[i*3+1]=y;ps.P[i*3+2]=z;ps.C[i*4]=cc[0];ps.C[i*4+1]=cc[1];ps.C[i*4+2]=cc[2];ps.C[i*4+3]=a;ps.S[i]=s;}
 function psStep(ps,dt){
  const L=ps.live;let j=0;
  for(let i=0;i<L.length;i++){const p=L[i];p.t+=dt;if(p.t>=p.life)continue;
@@ -165,10 +166,11 @@ function buildTank(spec,mats){
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);tg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
  if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body',spec),null,mats));tg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount',spec),null,mats));}
  const T={g,hull,body,tur,tg,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
+ if(!spec.boss&&typeof GraphicsMotion!=='undefined'&&typeof Equipment3D!=='undefined'&&Equipment3D.active())T.motion=GraphicsMotion.attach(g,H.meta.track);
  if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
  return T;
 }
-function stepAnims(anims,dt,t){for(const a of anims){if(a.type==='pulse')a.o.scale.setScalar(1+0.16*Math.sin(t*a.spd));else if(a.axis)a.o.rotation[a.axis]+=a.spd*dt;}}
+function stepAnims(anims,dt,t){if(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())return;for(const a of anims){if(a.type==='pulse')a.o.scale.setScalar(1+0.16*Math.sin(t*a.spd));else if(a.axis)a.o.rotation[a.axis]+=a.spd*dt;}}
 
 // ---------- battle state ----------
 let B3={map:null,mapId:null,mapKey:null,units:new Map(),uref:null,crates:new Map(),pool:{},seen:new WeakSet(),shellL0:new WeakMap(),pads:null,wrecks:[],t:0,last:0,dyn:null};
@@ -208,7 +210,7 @@ function unitObj(u){
  let ring=null;if(u===me){ring=new THREE.Mesh(D.me,addMat('#ffd24a',0.9));ring.position.y=0.035;ring.renderOrder=4;T.g.add(ring);}
  let varc=null;if(spec.vl>=10&&!spec.boss){varc=new THREE.Group();const vm=addMat('#ffcf4a',0.65);for(const a of D.varc){const m=new THREE.Mesh(a,vm);m.renderOrder=4;varc.add(m);}varc.position.y=0.04;varc.mat=vm;T.g.add(varc);}   // Vault level 10: a gold aura ring
  o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
- RS.add(o.g);B3.units.set(u,o);return o;
+ if(o.motion)o.motion.state.aim=u.ang;RS.add(o.g);B3.units.set(u,o);return o;
 }
 function dropUnit(u,o){if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(o.g);RS.remove(o.g);for(const m of [o.ug,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
 function heightAt(u){
@@ -232,7 +234,9 @@ function ensureMap(){
  if(typeof Environment3D!=='undefined')Environment3D.lightRig(RS,Environment3D.active());
  B3.map=M3.buildMap(curMap,MT,R3.q);B3.mapKey=key;RS.add(B3.map.group);
 }
-function poolGet(name,mk){const P=B3.pool[name]||(B3.pool[name]={items:[],n:0});if(P.n>=P.items.length){const o=mk();P.items.push(o);RS.add(o);}const o=P.items[P.n++];o.visible=true;return o;}
+const EFFECT_POOL_CAPS=Object.freeze({beam:16,beamc:16,blast:24,bring:24,nova:18,met:32,shell:32,star:12});
+let effectSink=null;
+function poolGet(name,mk){const P=B3.pool[name]||(B3.pool[name]={items:[],n:0});if(P.n>=(EFFECT_POOL_CAPS[name]||64)){if(!effectSink){effectSink=new THREE.Object3D();effectSink.material=new THREE.MeshBasicMaterial();effectSink.geometry=new THREE.BufferGeometry();effectSink.geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(48*6*3),3));}return effectSink;}if(P.n>=P.items.length){const o=mk();P.items.push(o);RS.add(o);}const o=P.items[P.n++];o.visible=true;return o;}
 function poolsBegin(){for(const k in B3.pool)B3.pool[k].n=0;}
 function poolsEnd(){for(const k in B3.pool){const P=B3.pool[k];for(let i=P.n;i<P.items.length;i++)P.items[i].visible=false;}}
 let GEO=null;
@@ -298,11 +302,14 @@ function frame3D(shx,shy){
   const hgt=heightAt(u),hd=u.hd===undefined?u.ang:u.hd,ds=R*(u.dscale||1)*TANK_VIS;
   let lift=0;if(u.boss&&warns.length){for(const w of warns)if(w.boss&&w.src===u&&w.r>2){const k=1-w.t/w.t0;lift=Math.sin(Math.min(1,k*1.15)*Math.PI)*0.9;}}
   o.g.position.set(u.x,hgt,u.y);o.g.scale.setScalar(ds);
-  o.hull.rotation.y=-hd;o.tur.rotation.y=-(u.ang-hd);
+  o.hull.rotation.y=-hd;
+  const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced();
+  if(o.motion){o.motion.step(dt,{dx:(u.x-o.px)/ds,dz:(u.y-o.py)/ds,heading:hd,aim:u.ang},quiet);o.tur.rotation.y=-(o.motion.state.aim-hd);}else o.tur.rotation.y=-(u.ang-hd);
   o.body.position.y=(o.meta.bob?o.meta.bob*Math.sin(t*3+(u.id||0)):0)+lift/ds;
-  o.recoil=Math.max(0,o.recoil-dt*6);o.tg.position.x=-o.recoil*0.14;
+  o.recoil=Math.max(0,o.recoil-dt*6);o.tg.position.x=o.motion?-o.motion.state.kick:-o.recoil*0.14;
+  if(o.motion){const ms=o.motion.state,travel=Math.hypot(u.x-o.px,u.y-o.py);o.body.rotation.z=quiet?0:Math.min(.012,travel*.10)*Math.sin(ms.phase*19)+ms.hit*.018;o.body.position.y+=quiet?0:Math.min(.008,travel*.05)*Math.sin(ms.phase*24);}
   stepAnims(o.anims,dt,t);
-  const fl=u.flash>0;if(fl!==o.fl){o.fl=fl;const e=fl?(armor(u)>0?BUFF.arm.c:'#ffe27a'):'#000000';o.mats.lit.emissive.set(e);o.mats.shine.emissive.set(e);if(!fl&&u.gh){o.mats.lit.emissive.setHex(0x3a5a9a);o.mats.shine.emissive.setHex(0x3a5a9a);}}
+  const fl=u.flash>0;if(fl&&!o.fl&&o.motion)o.motion.state.hit=1;if(fl!==o.fl){o.fl=fl;const e=fl?(armor(u)>0?BUFF.arm.c:'#ffe27a'):'#000000';o.mats.lit.emissive.set(e);o.mats.shine.emissive.set(e);if(!fl&&u.gh){o.mats.lit.emissive.setHex(0x3a5a9a);o.mats.shine.emissive.setHex(0x3a5a9a);}}
   if(o.ring){const k=0.7+0.3*Math.sin(now/280);o.ring.material.opacity=k;}
   if(o.aura&&o.av>=2)o.aura.material.opacity=0.35+0.3*(0.5+0.5*Math.sin(now/420));
   if(u.boss&&u.bt&&u.bt.enr){o.mats.lit.emissive.setRGB(0.25+0.15*Math.sin(now/120),0.02,0);if(Math.random()<dt*20)emit(PSN,{x:u.x+(Math.random()-0.5),y:1.6,z:u.y+(Math.random()-0.5),vy:1.2,vx:(Math.random()-0.5)*0.4,life:1.2,s0:0.5,s1:1.4,c:'#2a1a18',a:0.55});}
@@ -342,10 +349,10 @@ function frame3D(shx,shy){
  for(const q of bullets){
   const own=q.o||{},arch=own.wtype||'pulse',ho=own.hp!==undefined?heightAt(own):0,y=ho+0.52,dm=Math.min(1.8,q.dm||1),tc=tcol(own.team||0);
   if(!B3.seen.has(q)){B3.seen.add(q);muzzle(own,arch);}
-  const wc=arch==='moon'?'#fff6d8':WEAPONS[arch]?WEAPONS[arch].c:'#ffffff';
+  const wc=arch==='moon'?'#8edfff':WEAPONS[arch]?WEAPONS[arch].c:'#ffffff';
   if(arch==='twin'){once(PSA,q.x,y,q.y,0.55*dm,tc,0.55);once(PSA,q.x,y,q.y,0.26*dm,'#fff4c0',1);emit(PSA,{x:q.x,y,z:q.y,life:0.09,s0:0.22,s1:0.05,c:wc,a:0.7});}
   else if(arch==='siege'){once(PSA,q.x,y,q.y,1.1*dm,tc,0.5);once(PSA,q.x,y,q.y,0.5*dm,'#ffb36b',1);emit(PSN,{x:q.x,y,z:q.y,life:0.5,s0:0.25,s1:0.7,c:'#3a3d45',a:0.4,vy:0.3});}
-  else if(arch==='moon'){once(PSA,q.x,y,q.y,0.9*dm,'#bfe6ff',0.6);once(PSA,q.x,y,q.y,0.38*dm,'#ffffff',1);emit(PSA,{x:q.x+(Math.random()-0.5)*0.1,y,z:q.y+(Math.random()-0.5)*0.1,life:0.28,s0:0.22,s1:0.02,c:'#ffe7a0',a:0.9});}
+  else if(arch==='moon'){once(PSA,q.x,y,q.y,0.9*dm,'#bfe6ff',0.6);once(PSA,q.x,y,q.y,0.38*dm,'#ffffff',1);emit(PSA,{x:q.x+(Math.random()-0.5)*0.1,y,z:q.y+(Math.random()-0.5)*0.1,life:0.28,s0:0.22,s1:0.02,c:'#72cfff',a:0.75});}
   else{once(PSA,q.x,y,q.y,0.85*dm,tc,0.55);once(PSA,q.x,y,q.y,0.36*dm,wc,1);emit(PSA,{x:q.x,y,z:q.y,life:0.12,s0:0.3,s1:0.06,c:wc,a:0.7});}
  }
  // power-up boxes, crystals
@@ -376,10 +383,10 @@ function frame3D(shx,shy){
   once(PSA,sh.x,hh,sh.y,2.4,'#ff7a2f',0.75);once(PSA,sh.x,hh,sh.y,1.0,'#ffe08a',1);emit(PSA,{x:sh.x,y:hh,z:sh.y,life:0.3,s0:0.9,s1:0.1,c:'#ff8a3d'});emit(PSN,{x:sh.x,y:hh,z:sh.y,life:0.9,s0:0.6,s1:1.6,c:'#33302e',a:0.5,vy:0.3});}
  // beams (Pierce Lance, Moonfall)
  for(const bm of beams){const big=(bm.w||1.2)>=1.9,dx=bm.bx-bm.ax,dz=bm.by-bm.ay,L=Math.hypot(dx,dz),a=Math.atan2(dz,dx),k=Math.min(1,bm.t/0.15);
-  const o=poolGet('beam',()=>new THREE.Mesh(G.unit,addMat('#ffffff',1)));o.material.color.set(big?'#ffe7a0':bm.c);o.material.opacity=0.75*k;
+  const o=poolGet('beam',()=>new THREE.Mesh(G.unit,addMat('#ffffff',1)));o.material.color.set(big?'#64cfff':bm.c);o.material.opacity=0.75*k;
   o.scale.set(L,0.35,0.9*(bm.w||1.2)*(0.7+0.3*k));o.position.set(bm.ax+dx/2,0.55,bm.ay+dz/2);o.rotation.set(0,-a,0);
   const c=poolGet('beamc',()=>new THREE.Mesh(G.unit,addMat('#ffffff',1)));c.material.opacity=k;c.scale.set(L,0.2,0.28*(bm.w||1.2));c.position.copy(o.position);c.rotation.copy(o.rotation);
-  for(let i=0;i<(big?5:2);i++){const f=Math.random();emit(PSA,{x:bm.ax+dx*f,y:0.55,z:bm.ay+dz*f,vy:big?2:1,vx:(Math.random()-0.5),vz:(Math.random()-0.5),life:0.35,s0:big?0.7:0.4,s1:0.05,c:big?'#fff3c4':bm.c});}}
+  for(let i=0;i<(big?5:2);i++){const f=Math.random();emit(PSA,{x:bm.ax+dx*f,y:0.55,z:bm.ay+dz*f,vy:big?2:1,vx:(Math.random()-0.5),vz:(Math.random()-0.5),life:0.35,s0:big?0.7:0.4,s1:0.05,c:big?'#ccefff':bm.c});}}
  // blasts: a fireball, a ground shockwave, embers and smoke on the first frame
  for(const b of blasts){const k=1-b.t/b.t0;
   if(!B3.seen.has(b)){B3.seen.add(b);boom3(b.x,b.y,b.r,b.c);}
@@ -420,8 +427,13 @@ function boom3(x,z,r,c){
 function muzzle(u,arch){
  const o=B3.units.get(u);if(!o||!o.wmeta.tips.length)return;
  const tp=o.wmeta.tips[o.tipI++%o.wmeta.tips.length],w=wpos(o.tg,tp),c=arch==='moon'?'#e8f4ff':WEAPONS[arch]?WEAPONS[arch].c:'#ffffff';
- o.recoil=arch==='twin'?0.4:1;
- emit(PSA,{x:w.x,y:w.y,z:w.z,life:0.07,s0:arch==='siege'?1.6:0.9,s1:0.3,c,a:1,fade:0});
+ o.recoil=arch==='twin'?0.4:1;if(o.motion)GraphicsMotion.shot(o.motion.state,arch);
+ const F=typeof GraphicsMotion!=='undefined'?GraphicsMotion.PROFILES[arch]:null;
+ // Short directional discharge in the existing additive batch, never a damage beam.
+ const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),n=quiet?1:R3.q==='low'?2:arch==='siege'?4:3;
+ const dir=new THREE.Vector3(1,0,0).transformDirection(o.tg.matrixWorld);
+ for(let i=0;i<n;i++)emit(PSA,{x:w.x+dir.x*i*.13,y:w.y,z:w.z+dir.z*i*.13,vx:dir.x*(arch==='twin'?4:6),vz:dir.z*(arch==='twin'?4:6),life:F?.flash||.06,s0:arch==='moon'?.25:.18,s1:.02,c:arch==='moon'?'#72d5ff':c,a:.8});
+ emit(PSA,{x:w.x,y:w.y,z:w.z,life:F?.flash||.07,s0:arch==='siege'?1.25:arch==='twin'?.60:.82,s1:0.3,c,a:1,fade:0});
  if(arch==='siege'&&R3.q!=='low')emit(PSN,{x:w.x,y:w.y,z:w.z,life:0.6,s0:0.4,s1:1.1,c:'#4a4c55',a:0.45,vy:0.5});
 }
 // game events: kills (explosion + wreck), hits (sparks; counters burn gold, resisted hits flash blue), crates breaking

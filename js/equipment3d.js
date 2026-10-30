@@ -5,7 +5,7 @@ const Equipment3D=(()=>{
  const script=typeof document!=='undefined'?document.currentScript?.src:null;
  const BASE=script?new URL('assets/hf-v1/',script).href:'/js/assets/hf-v1/';
  const GEOMETRY=new Map(),GEOMETRY_BYTES=14*1024*1024;let peakBytes=0;
- let enabled=typeof globalThis!=='undefined'&&globalThis.LUNAR_HF_SAMPLE===true,quality='high',generation=0,environment=null,users=0;
+ let enabled=typeof globalThis!=='undefined'&&(globalThis.LUNAR_HF_SAMPLE===true||(typeof GraphicsRelease!=='undefined'&&GraphicsRelease.enabled)),quality='high',generation=0,environment=null,users=0;
  const status=q=>BANKS.get(q)?.state||'idle',active=()=>enabled&&status(quality)==='ready';
  const color=c=>new THREE.Color(c||'#ffffff');
  const kit=q=>({hf:true,quality:q||quality,surfaces:{}});
@@ -41,13 +41,13 @@ const Equipment3D=(()=>{
  }
  function bake(k){
   const entry=GEOMETRY.get(k.cacheKey);if(entry?.parts[k.part])return entry.parts[k.part];
-  const out={};for(const [id,list] of Object.entries(k.surfaces)){const n=list.reduce((n,g)=>n+g.attributes.position.count,0),g=new THREE.BufferGeometry();for(const [name,size] of Object.entries({position:3,normal:3,color:3,uv:2,uv1:2,tangent:4})){const a=new Float32Array(n*size);let o=0;for(const geo of list){a.set(geo.attributes[name].array,o);o+=geo.attributes[name].array.length;}g.setAttribute(name,new THREE.BufferAttribute(a,size));}g.computeBoundingSphere();if(entry){g.userData.hfShared=true;g.userData.hfAsset=k.cacheKey;}out['hf_'+k.quality+'_'+id]=g;list.forEach(g=>g.dispose());}if(entry){entry.parts[k.part]=out;k.surfaces={};peakBytes=Math.max(peakBytes,geometryBytes());}return out;
+  const out={};for(const [id,list] of Object.entries(k.surfaces)){const n=list.reduce((n,g)=>n+g.attributes.position.count,0),g=new THREE.BufferGeometry();for(const [name,size] of Object.entries({position:3,normal:3,color:3,uv:2,uv1:2,tangent:4,...(list.some(x=>x.attributes.drive)?{drive:4}:{})})){const a=new Float32Array(n*size);let o=0;for(const geo of list){const data=geo.attributes[name]?.array;if(data)a.set(data,o);o+=geo.attributes.position.count*size;}g.setAttribute(name,new THREE.BufferAttribute(a,size));}g.computeBoundingSphere();if(entry){g.userData.hfShared=true;g.userData.hfAsset=k.cacheKey;}out['hf_'+k.quality+'_'+id]=g;list.forEach(g=>g.dispose());}if(entry){entry.parts[k.part]=out;k.surfaces={};peakBytes=Math.max(peakBytes,geometryBytes());}return out;
  }
  function geometryBytes(){let n=0;for(const e of GEOMETRY.values())for(const part of e.parts)for(const g of Object.values(part||{}))for(const a of Object.values(g.attributes))n+=a.array.byteLength;return n;}
  function evict(){const workingPair=new Set([...GEOMETRY.keys()].slice(-2));for(const [key,e] of GEOMETRY){if(geometryBytes()<=GEOMETRY_BYTES&&GEOMETRY.size<=12)break;if(e.refs||workingPair.has(key))continue;for(const p of e.parts)for(const g of Object.values(p||{}))g.dispose();GEOMETRY.delete(key);}}
  function cached(id,build){if(GEOMETRY.has(id)){const e=GEOMETRY.get(id);GEOMETRY.delete(id);GEOMETRY.set(id,e);return e.raw;}const raw=build(),e={raw,parts:[],refs:0};[raw.k,...raw.anims.map(a=>a.k)].forEach((k,i)=>{k.cacheKey=id;k.part=i;});GEOMETRY.set(id,e);return raw;}
  function retain(b,group){const key=Object.values(b).find(g=>g?.userData.hfAsset)?.userData.hfAsset,e=GEOMETRY.get(key);if(!e)return;e.refs++;group.userData.hfRelease=()=>{if(!group.userData.hfRelease)return;delete group.userData.hfRelease;e.refs=Math.max(0,e.refs-1);evict();};evict();}
- function releaseTree(root){root?.traverse(o=>o.userData.hfRelease?.());}
+ function releaseTree(root){root?.traverse(o=>{o.userData.graphicsMotion?.dispose();o.userData.hfRelease?.();});}
  function studioEnvironment(){
   if(environment)return environment;
   const w=256,h=128,a=new Float32Array(w*h*4);
@@ -93,12 +93,13 @@ const Equipment3D=(()=>{
   const high=q==='high',n=high?16:8,s=side,r=height/2,radius=r,half=(length-height)/2,a=half,z=offset,beltY=r+.03;
    // Open dark steel belt with individually articulated raised tread shoes and rubber inserts.
    const shape=new THREE.Shape(),hole=new THREE.Shape(),loop=(sh,l,r)=>{sh.moveTo(-l,-r);sh.lineTo(l,-r);sh.absarc(l,0,r,-Math.PI/2,Math.PI/2);sh.lineTo(-l,r);sh.absarc(-l,0,r,Math.PI/2,Math.PI*1.5);};loop(shape,a,r);loop(hole,a,r-.05);shape.holes.push(hole);const belt=new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:false,curveSegments:high?6:3});put(k,belt,'rubber',F.rubber,[0,beltY,s*z-depth/2]);
-   const pad=(x,y,angle)=>{put(k,box(high?.082:.11,.035,depth+.02),'steel','#626c76',[x,y,s*z],[0,0,angle]);if(high)put(k,box(.066,.022,depth*.67647),'rubber','#171c20',[x,y+.022,s*z],[0,0,angle]);};
+   const mark=(g,x,y,type)=>{const a=new Float32Array(g.attributes.position.count*4);for(let i=0;i<a.length;i+=4){a[i]=x;a[i+1]=y;a[i+2]=type;a[i+3]=s;}g.setAttribute('drive',new THREE.BufferAttribute(a,4));return g;};
+   const pad=(x,y,angle)=>{mark(put(k,box(high?.082:.11,.035,depth+.02),'steel','#626c76',[x,y,s*z],[0,0,angle]),x,y,2);if(high)mark(put(k,box(.066,.022,depth*.67647),'rubber','#171c20',[x,y+.022,s*z],[0,0,angle]),x,y,2);};
    const count=high?17:9;for(let i=0;i<count;i++)for(const side of [-1,1])pad(-a+i*2*a/(count-1),beltY+side*(r+.005),0);
    for(const end of [-1,1])for(let i=1;i<(high?8:4);i++){const a=i*Math.PI/(high?8:4);pad(end*(half+Math.sin(a)*(radius+.005)),beltY+Math.cos(a)*(radius+.005),-end*a);}
    for(let i=0;i<wheels;i++){const x=-half+i*2*half/(wheels-1),r=i===0||i===wheels-1?endRadius:roadRadius,z=s*(offset+depth/2+.02);
-    put(k,cylinder(r,.072,n),'rubber',F.rubber,[x,beltY-.01,z],[Math.PI/2,0,0]);put(k,cylinder(r*.79,.078,n),'steel','#4e5f70',[x,beltY-.01,z+s*.007],[Math.PI/2,0,0]);put(k,cylinder(r*.57,.086,n),'paint',F.paint,[x,beltY-.01,z+s*.014],[Math.PI/2,0,0]);put(k,cylinder(r*.24,.096,high?10:6),'gold',F.gold,[x,beltY-.01,z+s*.025],[Math.PI/2,0,0]);
-    if(high)for(let j=0;j<5;j++){const a=j*Math.PI*2/5;put(k,cylinder(.011,.010,6),'steel','#b4bdc5',[x+Math.cos(a)*r*.66,beltY-.01+Math.sin(a)*r*.66,z+s*.049],[Math.PI/2,0,0]);}
+    mark(put(k,cylinder(r,.072,n),'rubber',F.rubber,[x,beltY-.01,z],[Math.PI/2,0,0]),x,beltY-.01,1);mark(put(k,cylinder(r*.79,.078,n),'steel','#4e5f70',[x,beltY-.01,z+s*.007],[Math.PI/2,0,0]),x,beltY-.01,1);mark(put(k,cylinder(r*.57,.086,n),'paint',F.paint,[x,beltY-.01,z+s*.014],[Math.PI/2,0,0]),x,beltY-.01,1);mark(put(k,cylinder(r*.24,.096,high?10:6),'gold',F.gold,[x,beltY-.01,z+s*.025],[Math.PI/2,0,0]),x,beltY-.01,1);
+    if(high)for(let j=0;j<5;j++){const a=j*Math.PI*2/5;mark(put(k,cylinder(.011,.010,6),'steel','#b4bdc5',[x+Math.cos(a)*r*.66,beltY-.01+Math.sin(a)*r*.66,z+s*.049],[Math.PI/2,0,0]),x,beltY-.01,1);}
     if(high&&i%2===0&&i<wheels-1){put(k,box(.22,.035,.025),'steel','#76818b',[x+.10,beltY+.13,s*(offset+depth/2+.02)],[0,0,.3]);for(let j=0;j<4;j++)put(k,new THREE.TorusGeometry(.026,.007,3,8),'gold',F.gold,[x+.05+j*.033,beltY+.14,s*(offset+depth/2+.01)],[0,Math.PI/2,0]);}
    }
  }
@@ -126,7 +127,7 @@ const Equipment3D=(()=>{
  function tubeRing(k,x,y,z,r,t,c,mat='steel',arc=Math.PI*2){put(k,new THREE.TorusGeometry(r,t,k.quality==='high'?5:3,k.quality==='high'?20:10,arc),mat,c,[x,y,z],[0,Math.PI/2,0]);}
  function trackPod(k,F,o){
   const temp=kit(k.quality);trackedDrive(temp,F,o);
-  for(const [id,list] of Object.entries(temp.surfaces)){for(const g of list)g.translate(o.center||0,0,0);(k.surfaces[id]||=[]).push(...list);}
+  for(const [id,list] of Object.entries(temp.surfaces)){for(const g of list){g.translate(o.center||0,0,0);const d=g.attributes.drive;if(d)for(let i=0;i<d.count;i++)d.setX(i,d.getX(i)+(o.center||0));}(k.surfaces[id]||=[]).push(...list);}
  }
  function slopedArmor(g,start,end,drop,base=.19){
   const p=g.attributes.position;for(let i=0;i<p.count;i++){const f=Math.max(0,Math.min(1,(p.getX(i)-start)/(end-start)));if(p.getY(i)>base)p.setY(i,p.getY(i)-drop*f*Math.min(1,(p.getY(i)-base)/.28));}g.deleteAttribute('normal');return g;
@@ -226,7 +227,7 @@ const Equipment3D=(()=>{
   if(high)for(let i=0;i<8;i++){const a=i*Math.PI/4;bolt(k,Math.cos(a)*ringRadius*.90,o.ring+.005,Math.sin(a)*ringRadius*.90);}
   const coreX=-.90,coreY=cls==='vanguard'&&tier===0?.715:deck+.05;for(let i=0;i<3;i++){const z=(i-1)*.25;put(k,cylinder(.10,.05,8),'rubber',F.dark,[coreX,coreY,z]);if(gems?.[i]&&GEM[gems[i]])put(k,new THREE.OctahedronGeometry(.085),'energy',GEM[gems[i]].c,[coreX,coreY+.08,z],[0,0,0],[1,1.3,1]);}
   if(lunar){const g=crest(scout?.11:.15,.006,high);g.rotateX(-Math.PI/2);g.translate(half*.66,deck+.067,0);put(k,slopedArmor(g,half*.25,half,.19),'gold',F.gold);}
-  return {k,anims:A,meta:{ty:o.ring,bob:0,halos:[-1,1].map(s=>[half+.012,o.h+.062,s*o.trackZ,'#bdeaff',.10]),trail:[],tc:F.edge,hf:VERSION,legend:lunar?'lunar-black-gold':undefined,profile:cls+':'+tier}};
+  return {k,anims:A,meta:{ty:o.ring,bob:0,halos:[-1,1].map(s=>[half+.012,o.h+.062,s*o.trackZ,'#bdeaff',.10]),trail:[],tc:F.edge,hf:VERSION,legend:lunar?'lunar-black-gold':undefined,profile:cls+':'+tier,track:[(((scout&&tier===2)||(titan&&tier===2)?(o.len-.14)/2:o.len)-o.h)/2,o.h/2+.005,o.h/2+.03,(scout&&tier===2)||(titan&&tier===2)?(o.len+.14)/4:0]}};
  }
  function turret(k,F,o,team,arch,tier){
   const high=k.quality==='high',back=arch==='siege'?-.66:-.54,w=o.width,Y=o.y;
