@@ -17,10 +17,11 @@ function load3D(){
  if(R3.ready||R3.loading||R3.failed||!want3D())return;
  if(!webglOK()){R3.failed=true;return;}
  if(typeof THREE!=='undefined'){try{init3D();R3.ready=true;}catch(e){R3.failed=true;}apply3D();return;}
- R3.loading=true;
+ R3.loading=true;const token=R3.loadToken=(R3.loadToken||0)+1;
  const s=document.createElement('script');s.src='js/vendor/three.lunar.min.js?v='+(window.BUILD||'dev');s.async=true;
- s.onload=()=>{R3.loading=false;try{init3D();R3.ready=true;}catch(e){R3.failed=true;try{console.warn('3D unavailable',e);}catch(_){}}apply3D();};
- s.onerror=()=>{R3.loading=false;R3.failed=true;apply3D();};
+ const timeout=setTimeout(()=>{if(R3.loadToken!==token)return;R3.loading=false;R3.failed=true;s.remove();apply3D();},8000);
+ s.onload=()=>{clearTimeout(timeout);if(R3.loadToken!==token||R3.failed)return;R3.loading=false;try{init3D();R3.ready=true;}catch(e){R3.failed=true;try{console.warn('3D unavailable',e);}catch(_){}}apply3D();};
+ s.onerror=()=>{clearTimeout(timeout);if(R3.loadToken!==token)return;R3.loading=false;R3.failed=true;apply3D();};
  document.head.appendChild(s);
 }
 // switch the 2D layer between "everything" and "overlay on the 3D scene"
@@ -38,7 +39,7 @@ function setGfx(m){
  if(!['auto','high','low','2d'].includes(m))return;
  save.gfx=m;R3.off2d=false;R3.auto='';R3.drop=0;if(typeof store==='function')store();
  if(qualityWatch){qualityWatch.q=m==='low'?'low':'high';GraphicsQuality.reset(qualityWatch,performance.now()/1000);}
- if(m==='2d'){clearRange3D();apply3D();return;}
+ if(m==='2d'){if(AR?.preview){Equipment3D.releaseTree(AR.preview.T.g);AR.preview=null;}clearRange3D();apply3D();return;}
  R3.q=m==='low'||(m==='auto'&&lowEnd())?'low':'high';
  if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){Equipment3D.quality=R3.q;Equipment3D.ensure(R3.q).then(()=>apply3D());}
  if(R3.ready&&!R3.failed)apply3D();else{R3.failed=false;load3D();}
@@ -492,7 +493,7 @@ function artR(){
  const s=new THREE.Scene();addLights(s);const hfRelease=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.attach():null;
  const cam=new THREE.PerspectiveCamera(26,1,0.1,200);
  const mats=mkMats(),ps=mkPS(true,64);ps.pts.material.uniforms.uP.value=1;s.add(ps.pts);
- c.addEventListener('webglcontextlost',e=>{e.preventDefault();hfRelease?.();if(AR?.r===r){AR.envStage?.dispose();for(const map of AR.maps.values())disposeMap3D(map);if(AR.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);AR=null;}artCache.clear();});
+ c.addEventListener('webglcontextlost',e=>{e.preventDefault();hfRelease?.();if(AR?.r===r){AR.envStage?.dispose();for(const map of AR.maps.values())disposeMap3D(map);if(AR.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);if(AR.preview)Equipment3D.releaseTree(AR.preview.T.g);AR=null;}artCache.clear();});
  AR={r,c,s,cam,mats,ps,hfRelease,maps:new Map()};return AR;
 }
 // put a model group in the art scene, aim the camera, render at w x h css px into ctx
@@ -574,7 +575,7 @@ function heroArt(ctx,w,h,t){
 
 function machineArt3D(ctx,w,h,L){
  if(!R3.ready||R3.failed||gfxMode()==='2d')return false;
- try{const sp=unitSpec({...tankOf(L,1),team:0}),environment=ctx.canvas?.id==='lab-preview'?'engineer':ctx.canvas?.id==='range-preview'?'inspection':'garage';sp.ct=L.c.t;cachedArt(ctx,w,h,'lab|'+environment+'|'+specKey(sp),c=>artTank(c,w,h,sp,3,{az:1,environment}));return true;}catch(e){return false;}
+ try{const sp=unitSpec({...tankOf(L,1),team:0}),environment=ctx.canvas?.id==='lab-preview'?'engineer':ctx.canvas?.id==='range-preview'?'inspection':'garage';sp.ct=L.c.t;if(environment==='engineer'&&typeof Equipment3D!=='undefined'&&Equipment3D.active()&&typeof GraphicsMotion!=='undefined'){drawEquipmentIdle(ctx,w,h,sp,performance.now()/1000);return true;}cachedArt(ctx,w,h,'lab|'+environment+'|'+specKey(sp),c=>artTank(c,w,h,sp,3,{az:1,environment}));return true;}catch(e){return false;}
 }
 
 // Practice has no active ranked fight to restore. Release its per-trial GPU objects on every exit.
@@ -585,4 +586,19 @@ function clearRange3D(){
  if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose&&!o.material.userData.hfShared)o.material.dispose();if(o.userData.envOwnedTexture)o.material.map?.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
  for(const w of B3.wrecks){RS.remove(w.g);w.mat.dispose();}B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
  PSA.live.length=0;PSN.live.length=0;for(const k in B3.pool)for(const o of B3.pool[k].items)o.visible=false;
+}
+
+// One native Engineer preview, updated from the existing idle frame loop; no timers, account writes or model rebuilds per frame.
+function drawEquipmentIdle(ctx,w,h,spec,t){
+ const A=artR(),key=specKey(spec);if(!A.preview||A.preview.key!==key){if(A.preview)Equipment3D.releaseTree(A.preview.T.g);A.preview={key,T:buildTank(spec,A.mats),canvas:ctx.canvas,last:t};}
+ const p=A.preview,T=p.T,dt=Math.min(.05,Math.max(0,t-p.last));p.last=t;p.canvas=ctx.canvas;
+ stepAnims(T.anims,dt,t);if(T.motion){const quiet=GraphicsMotion.reduced();T.motion.step(dt,{},quiet);T.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(t*2);}
+ artShot(ctx,w,h,T.g,{r:spec.arch==='moon'?1.89:1.55,el:.6,az:1,cy:.35,environment:'engineer'},haloList(T,3));
+}
+function tickEquipmentPreview(now){
+ if(typeof WEB_EDITION!=='undefined'&&WEB_EDITION||!AR?.preview)return;const p=AR.preview,c=p.canvas;
+ if(!c?.isConnected||!use3D()){Equipment3D.releaseTree(p.T.g);AR.preview=null;return;}
+ if(document.hidden||GraphicsMotion.reduced()||now-(p.tick||0)<125)return;
+ const r=c.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight||!r.width)return;p.tick=now;
+ const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawEquipmentIdle(ctx,c.width/dpr,c.height/dpr,p.T.spec,now/1000);
 }

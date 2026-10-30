@@ -30,7 +30,7 @@ const GraphicsQuality=(()=>{
  const state=()=>({since:0,sum:0,n:0,bad:0,q:'high'});
  function reset(s,now){s.since=now;s.sum=0;s.n=0;s.bad=0;}
  function sample(s,dt,now,{manual=false,hidden=false,loading=false}={}){
-  if(manual||hidden||loading||dt<=0||dt>.15){reset(s,now);return null;}if(now-s.since<6)return null;
+  if(manual||hidden||loading||dt<=0||dt>.5){reset(s,now);return null;}if(now-s.since<6)return null;
   s.sum+=dt;s.n++;if(s.sum<3||s.n<45)return null;const fps=s.n/s.sum;s.sum=0;s.n=0;s.bad=fps<(s.q==='high'?35:21)?s.bad+1:0;
   if(s.bad<2)return null;s.q=s.q==='high'?'low':'2d';reset(s,now);return s.q;
  }return {state,reset,sample};

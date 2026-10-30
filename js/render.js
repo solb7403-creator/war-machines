@@ -478,7 +478,7 @@ function drawBattle(){
   for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
    g.fillStyle='#ffcf4a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
    g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
-  for(const q of bullets){g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(X(q.x),Y(q.y),Math.max(2.5,sc*0.16)*Math.min(1.8,q.dm),0,7);g.fill();}
+  for(const q of bullets){const px=X(q.x),py=Y(q.y),arch=q.o.wtype||'pulse',r=Math.max(2.5,sc*.16)*Math.min(1.8,q.dm);g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(px,py,r+1,0,7);g.fill();g.fillStyle=arch==='moon'?'#d8f5ff':arch==='siege'?'#ffd29a':arch==='twin'?'#fff4ce':'#b9efff';g.beginPath();g.arc(px,py,r*.50,0,7);g.fill();if(arch==='moon'||arch==='siege'){const v=Math.hypot(q.vx,q.vy)||1;g.strokeStyle=arch==='moon'?'#6ed5ff':'#edac65';g.lineWidth=Math.max(1,sc*.07);g.beginPath();g.moveTo(px,py);g.lineTo(px-q.vx/v*sc*.35,py-q.vy/v*sc*.35);g.stroke();}}
  }
  // super telegraphs (lane for beam/shell, danger ring for nova): on the ground, so they dodge the same in 2D and 3D
  for(const r of units){

@@ -12,7 +12,7 @@ function frame(now){
    else if(state==='play'){if(!paused){const n=ffwd&&me&&me.hp<=0?3:1;for(let i=0;i<n&&state==='play';i++){update(dt);fxTick(dt);}tutTick(dt);}drawBattle();overDraw=1.2;}
    else if(state==='round')drawBattle();
    else if(overDraw>0){overDraw-=dt;drawBattle();}   // let the last explosions finish behind the results
-  }else tickHero(now);
+  }else{tickHero(now);if(typeof tickEquipmentPreview==='function')tickEquipmentPreview(now);}
  }catch(e){setTimeout(()=>{throw e;});}   // report it, keep the game running
  requestAnimationFrame(frame);
 }
