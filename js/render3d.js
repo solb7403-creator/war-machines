@@ -118,7 +118,7 @@ const addMat=(c,o)=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacit
 // ---------- model cache ----------
 const FITCACHE=new Map();
 const MODEL_CACHE_LIMIT=64,FITTING_CACHE_LIMIT=96;
-function fittingB(f,team,part,s){const key=JSON.stringify(s&&(s.lunar?['lunar']:part==='body'?[s.cls,s.ct]:[s.arch,s.wt]))+'|'+part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part,s);FITCACHE.set(key,M3.bake(r.k));if(FITCACHE.size>FITTING_CACHE_LIMIT){const first=FITCACHE.keys().next().value;for(const g of Object.values(FITCACHE.get(first)))g?.dispose();FITCACHE.delete(first);}}return FITCACHE.get(key);}
+function fittingB(f,team,part,s){const key=JSON.stringify(s&&[s.lunar?1:0,...(part==='body'?[s.cls,s.ct]:[s.arch,s.wt])])+'|'+part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part,s);FITCACHE.set(key,M3.bake(r.k));if(FITCACHE.size>FITTING_CACHE_LIMIT){const first=FITCACHE.keys().next().value;for(const g of Object.values(FITCACHE.get(first)))g?.dispose();FITCACHE.delete(first);}}return FITCACHE.get(key);}
 const KC=new Map();
 function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
 function chassisB(s){return bakedOf(['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>M3.chassisKit(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
@@ -172,7 +172,7 @@ let B3={map:null,mapId:null,mapKey:null,units:new Map(),uref:null,crates:new Map
 function unitSpec(u){
  let ct=Math.max(0,Math.min(2,u.aura|0));
  if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,myLoadout().c.t|0);}catch(e){}}
- const lunar=u.skin==='lunar',team=u===me&&lunar?'#e8f4ff':tcol(u.team);
+ const lunar=u.skin==='lunar',team=tcol(u.team);
  return {fits:u.fits,cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl)};
 }
 const vtOf=vl=>(vl|0)>=10?2:(vl|0)>=1?1:0;   // the tooth: none, gold, glowing
@@ -489,17 +489,17 @@ function artTank(ctx,w,h,spec,parts,opt){
  T.hull.rotation.y=opt.hd===undefined?0:opt.hd;T.tur.rotation.y=opt.ta||0;
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
  const hal=haloList(T,parts);
- const r=(spec.boss?2.2:parts===2?1.25:1.55)*(spec.arch==='moon'&&parts!==1?1.22:1);   // the Moonbeam (Tide Engine) is long and tall: frame it wider
+ const r=(spec.boss?2.2:parts===2?1.25:1.55)*(spec.arch==='moon'&&parts!==1?1.22:1);   // the unified Moonbeam is long: frame it wider
  artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1},hal);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
- return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:lunar?'#e8f4ff':TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
+ return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
 // returns true when it drew the picture in 3D
 function art3D(ctx,w,h,a){
  if(!use3D()||!w||!h)return false;
  try{
   if(a[0]==='hero'){heroArt(ctx,w,h,performance.now()/1000);return true;}
-  if(a[0]==='tank'){const sp=a[1]==='lunar'?mySpec({lunar:true,team:'#e8f4ff',paint:'stock'}):a[1]==='paint'?mySpec({paint:PAINTS[a[2]]?a[2]:'stock',lunar:false,team:TC[0]}):mySpec();
+  if(a[0]==='tank'){const sp=a[1]==='lunar'?mySpec({lunar:true,team:TC[0],paint:'stock'}):a[1]==='paint'?mySpec({paint:PAINTS[a[2]]?a[2]:'stock',lunar:false,team:TC[0]}):mySpec();
    cachedArt(ctx,w,h,'t|'+specKey(sp),x=>artTank(x,w,h,sp,3,{az:0.95}));return true;}
   if(a[0]==='gear'){const isW=a[1]==='w',k=a[2];
    const it=k==='moon'?getW('moon'):a[3]===undefined?(isW?getW(save.weapon):getC(save.chassis)):(isW?getW(k,+a[3],a[4]==='1'):getC(k,+a[3],a[4]==='1'));

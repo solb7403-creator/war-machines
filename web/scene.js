@@ -33,9 +33,8 @@ window.LunarShowroom=class {
   const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,parts]);if(this.key===next)return;this.key=next;this.L=L;
   if(!this.renderer){this.fallback();return;}
   if(this.model){this.scene.remove(this.model);this.disposeGeometry(this.model);}
-  // Keep the existing legendary/other-item rig exactly as before. Only the stock flagship
-  // gets lower diffuse fill, restrained specular highlights and a grounded contact patch.
-  this.defender=L.skin!=='lunar'&&L.w.a!=='moon';this.animations=[];this.parts=parts;
+  // All approved kits use restrained lighting, contact and geometry-aware phone framing.
+  this.defender=true;this.legendary=L.skin==='lunar'||L.w.a==='moon';this.animations=[];this.parts=parts;
   this.hemi.intensity=this.defender ? .85 : 2.1;this.lights.forEach((l,i)=>l.intensity=(this.defender?[2.5,.65,2.0]:[3,1.25,2.3])[i]);
   this.mats.shine.shininess=this.defender?48:100;this.mats.shine.specular.setHex(this.defender?0x253746:0xc2d9e4);
   this.contactShadow.visible=this.defender&&parts!==2;
@@ -43,7 +42,7 @@ window.LunarShowroom=class {
   const H=parts===2?{meta:{ty:0}}:M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');if(parts!==2)this.kit(H,body);
   const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);if(parts!==1)this.kit(M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c),turret);
   const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};if(parts!==2)body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body',context).k),null,this.mats));if(parts!==1)turret.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount',context).k),null,this.mats));
-  root.scale.setScalar(L.w.a==='moon'?1.35:1.65);this.model=root;this.scene.add(root);
+  root.scale.setScalar(1.65);this.model=root;this.scene.add(root);
   this.bounds=null;
   if(this.defender){
    // Compute once per loadout; eight projected corners handle rotation/aspect at draw time.
@@ -53,7 +52,7 @@ window.LunarShowroom=class {
   }
   root.rotation.y=this.yaw;this.size();
  }
- draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;if(this.defender&&this.auto)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const d=11.2/this.zoom/narrow;this.camera.position.set(5.5/this.zoom,3.5+this.tilt*5,d);this.camera.lookAt(0,.65,0);
+ draw(){if(!this.renderer||!this.camera||!this.model)return;this.model.rotation.y=this.yaw;if(this.defender&&this.auto)for(const a of this.animations||[])a.m.rotation[a.axis]=performance.now()/1000*a.spd;const narrow=Math.min(1,Math.max(.65,this.camera.aspect));const viewZoom=this.zoom*(this.legendary?1.15:1),d=11.2/viewZoom/narrow;this.camera.position.set(5.5/viewZoom,(3.5+this.tilt*5)/(this.legendary?Math.sqrt(viewZoom):1),d);this.camera.lookAt(0,.65,0);
   if(this.bounds){
    const co=Math.cos(this.yaw),si=Math.sin(this.yaw),c=this.center,focus=new THREE.Vector3(c[0]*co+c[2]*si,c[1],-c[0]*si+c[2]*co);
    this.camera.position.add(focus);this.camera.lookAt(focus);this.camera.updateMatrixWorld(true);

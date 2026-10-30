@@ -68,7 +68,7 @@ const sym=f=>{f(-1);f(1);};
 // ---------- colors for one tank ----------
 function palette(P,team,cls,lunar){
  P=P||{hull:'#2c3a49',tur:'#3b4a5b',trim:'#d5dee7'};
- if(lunar)return {hull:'#dfe6f0',hull2:'#c4cedc',tur:'#e9eef6',tur2:'#cdd6e3',trim:'#9fd8ff',dark:'#26303e',metal:'#8f9bad',track:'#1c2430',light:'#ffffff',team:LEG,acc:'#bfe6ff',shine:true,lunar:true};
+ if(lunar)return {hull:'#20252d',hull2:'#363c44',tur:'#272d36',tur2:'#424952',trim:'#bc904b',dark:'#10151c',metal:'#65717c',track:'#101419',light:'#d9eaff',team:team||'#4d9fff',acc:'#c49a54',shine:true,lunar:true};
  const k=P.hull==='#07080d'||P.hull==='#17131f'?2.1:P.hull==='#a9b6c8'||P.hull==='#aab2c0'?1.05:1.7;
  return {hull:hexMul(P.hull,k),hull2:hexMul(P.hull,k*0.82),tur:hexMul(P.tur,k),tur2:hexMul(P.tur,k*0.8),trim:P.trim,dark:'#262f3b',metal:'#76818f',track:'#171d25',light:'#e9f1f7',team:team||'#4d9fff',acc:CH[cls]?CH[cls].c:'#3fd0c9',shine:!!P.shine};
 }
@@ -91,6 +91,7 @@ function defenderBelt(len,h,depth){
  const s=new THREE.Shape(),hole=new THREE.Shape(),l=(len-h)/2;loop(s,l,h/2);loop(hole,l,h/2-.065);s.holes.push(hole);return extr(s,depth);
 }
 function defenderFinish(C){
+ if(C.lunar)return {body:C.hull,plate:C.hull2,tur:C.tur,edge:C.trim,steel:C.metal,rubber:C.track,recess:C.dark,amber:'#c49a54',ice:'#ffe1a1'};
  // Stock gets graphite armor; selected colored/bright paints remain recognizable.
  const stock=C.hull===hexMul('#2c3a49',1.7),base=stock?hexMul(C.hull,.48):hexMul(C.hull,.87);
  return {body:base,plate:stock?'#35424d':hexMul(C.hull2,1.02),tur:stock?'#29343e':hexMul(C.tur,.86),edge:hexMix(C.trim,'#45505a',.72),steel:'#697987',rubber:'#10171d',recess:'#0a1118',amber:'#ff9d55',ice:'#66c9ff'};
@@ -233,8 +234,8 @@ function sensorBlock(k,F,x,y,z,team){
  put(k,B(.16,.075,.15),F.body,[x,y,z],null,null,'shine');put(k,B(.014,.027,.085),team||F.ice,[x+.086,y+.006,z],null,null,'glow');
 }
 function mountSocket(k,F,y){put(k,defenderCylinder(.48,.06,24),F.recess,[0,y-.055,0]);put(k,defenderCylinder(.43,.035,24),F.steel,[0,y-.0175,0],null,null,'shine');}
-function standardChassis(cls,tier,P,team,gems){
- const o=CHASSIS_VISUALS[cls][tier],k=kit(),A=[],C=palette(P,team,cls,false),F=defenderFinish(C),M={ty:o.ring,halos:[],trail:[],tc:F.amber,bob:0,visual:VISUAL_VERSION};
+function standardChassis(cls,tier,P,team,gems,lunar=false){
+ const o=CHASSIS_VISUALS[cls][tier],k=kit(),A=[],C=palette(P,team,cls,lunar),F=defenderFinish(C),M={ty:o.ring,halos:[],trail:[],tc:F.amber,bob:0,visual:VISUAL_VERSION};
  if(o.shape==='defender'){defenderChassis(k,C,gems,M,PM(C));return {k,anims:A,meta:M};}
  const scout=cls==='scout',titan=cls==='titan',width=scout?.38:titan?.66:.53,half=o.len/2-.10;
  const bp=[[-half,-width],[half*.52,-width],[half*.88,-width*.64],[half,0],[half*.88,width*.64],[half*.52,width],[-half,width]];
@@ -262,7 +263,7 @@ function standardChassis(cls,tier,P,team,gems){
    // Explicit silhouette progression: split sensor shoulders, stepped armor and frontal rams.
    const y=o.deck+.04,xa=scout?-.65:-.45,za=scout?.39:titan?.71:.57;
    armorPart(k,[[xa,side*za],[xa+.44,side*(za-.06)],[xa+.62,side*(za+.08)],[xa+.02,side*(za+.16)]],y,.05+tier*.015,F.body);
-   put(k,B(.24,.022,.022),TIERC[tier],[xa+.24,y+.12,side*(za+.12)],null,null,'shine');
+   put(k,B(.24,.022,.022),lunar?F.edge:TIERC[tier],[xa+.24,y+.12,side*(za+.12)],null,null,'shine');
    if(scout)sensorBlock(k,F,xa+.10,y+.07,side*za,C.team);
    else armorPart(k,[[half*.52,side*.24],[half*1.02,side*.33],[half*.96,side*.70],[half*.54,side*.63]],.24,.13+tier*.04,F.plate);
   }
@@ -335,8 +336,8 @@ function barrelUnit(k,F,o,x0,z,r,style){
  put(k,defenderCylinder(r*.98,.014,16),F.edge,[x1-.003,y,z],[0,0,Math.PI/2],null,'shine');
  put(k,defenderCylinder(r*.77,.018,16),F.recess,[x1+.003,y,z],[0,0,Math.PI/2]);
 }
-function standardWeapon(arch,tier,P,team){
- const o=WEAPON_VISUALS[arch][tier],C=palette(P,team,'vanguard',false),F=defenderFinish(C),k=kit(),A=[],M={tips:[],halos:[],visual:VISUAL_VERSION};
+function standardWeapon(arch,tier,P,team,lunar=false){
+ const o=WEAPON_VISUALS[arch][tier],C=palette(P,team,'vanguard',lunar),F=defenderFinish(C),k=kit(),A=[],M={tips:[],halos:[],visual:VISUAL_VERSION};
  if(arch==='pulse'&&tier===0){defenderPulseTurret(k,C,M,PM(C));return {k,anims:A,meta:M};}
  turretHousing(k,F,C,o,tier,arch);
  if(arch==='pulse'){
@@ -370,9 +371,112 @@ function standardWeapon(arch,tier,P,team){
  for(const p of M.tips)M.halos.push([...p,F.ice,arch==='siege'?.20:.13]);
  return {k,anims:A,meta:M};
 }
-// Preserve the public factories, with legendary geometry delegated to the exact old path.
-function chassisKit(cls,tier,P,team,gems,lunar){return !lunar&&CHASSIS_VISUALS[cls]?standardChassis(cls,visualTier(tier),P,team,gems):legacyChassisKit(cls,tier,P,team,gems,lunar);}
-function weaponKit(arch,tier,P,team,lunar,cls){return !lunar&&WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team):legacyWeaponKit(arch,tier,P,team,lunar,cls);}
+// Public factories: one final legendary identity, shared by every renderer.
+function chassisKit(cls,tier,P,team,gems,lunar){return CHASSIS_VISUALS[cls]?(lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems)):legacyChassisKit(cls,tier,P,team,gems,false);}
+function weaponKit(arch,tier,P,team,lunar,cls){return arch==='moon'?unifiedMoonbeam(team):WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team,lunar):legacyWeaponKit(arch,tier,P,team,false,cls);}
+
+// Final approved Lunar Skin: class/tier-specific tracked architecture, never a new item.
+// Palette ignores paint only while this existing skin is equipped; selected paint data is untouched.
+function insetCrescent(R,depth){
+ const r=R*.85,d=R*.38,x=(R*R-r*r+d*d)/(2*d),y=Math.sqrt(R*R-x*x),a=Math.atan2(y,x),b=Math.atan2(y,x-d),s=new THREE.Shape();
+ s.absarc(0,0,R,a,Math.PI*2-a,false);s.absarc(d,0,r,-b,b-Math.PI*2,true);s.closePath();
+ return extr(s,depth);
+}
+function lunarChassis(cls,tier,P,team,gems){
+ const raw=standardChassis(cls,tier,P,team,gems,true),k=raw.k,o=CHASSIS_VISUALS[cls][tier],F=defenderFinish(palette(P,team,cls,true));
+ const z=o.trackZ+o.trackW/2+.085;
+ sym(side=>{
+  // Inset heraldic side shields above the exposed wheel line; not floating fins.
+  const p=new THREE.Shape();[[-.68,0],[-.15,.01],[-.09,.29],[-.57,.33]].forEach((v,i)=>i?p.lineTo(...v):p.moveTo(...v));p.closePath();
+  put(k,extr(p,.032),F.edge,[0,o.h-.11,side*z],null,null,'shine');
+  const inner=new THREE.Shape();[[-.65,.022],[-.18,.029],[-.126,.27],[-.55,.306]].forEach((v,i)=>i?inner.lineTo(...v):inner.moveTo(...v));inner.closePath();
+  put(k,extr(inner,.035),F.body,[0,o.h-.11,side*z],null,null,'shine');
+  put(k,insetCrescent(cls==='scout'?.115:.135,.012),F.edge,[-.38,o.h+.057,side*(z+.032)],null,null,'shine');
+  // Narrow gold inlay, fasteners, deck seams and functional tier-coded hardware.
+  for(const x of [-.83,.50]){
+   armorPart(k,[[x,side*(o.trackZ-.12)],[x+.28,side*(o.trackZ-.10)],[x+.34,side*(o.trackZ+.11)],[x+.02,side*(o.trackZ+.12)]],o.h+.18,.025,F.plate,.009);
+   put(k,B(.24,.011,.016),F.edge,[x+.15,o.h+.218,side*(o.trackZ+.08)],null,null,'shine');
+   for(const d of [0,.24])put(k,defenderCylinder(.014,.013,6),F.edge,[x+d,o.h+.222,side*o.trackZ],null,null,'shine');
+  }
+  put(k,B(.19,.013,.030),team||'#4d9fff',[.42,o.h+.23,side*(o.trackZ-.08)],null,null,'glow');
+  // Articulated side joints retain dark exposed suspension and restrained gold bushings.
+  for(const x of [-.72,.70])put(k,defenderCylinder(.035,.018,8),F.edge,[x,o.h*.55,side*(z-.025)],[Math.PI/2,0,0],null,'shine');
+ });
+ // Layered wedge visor protects the nose while leaving the original turret socket clear.
+ const h=cls==='scout'?.33:cls==='titan'?.48:.40,tip=o.len/2-.08;
+ sym(side=>{
+  const p=[[.48,side*.035],[tip,side*.04],[tip+.03,side*.17],[tip-.18,side*h],[.49,side*(h-.05)]];
+  put(k,loft(p,sc(p,.94,.94,-.015),o.deck-.12,o.deck+.004),F.plate,null,null,null,'shine');
+  put(k,B(.32,.009,.015),F.edge,[tip-.25,o.deck+.012,side*(h-.12)],[0,side*.23,0],null,'shine');
+ });
+ // Hood crest is mounted flush to the inclined prow, ahead of the rotating turret.
+ const emblem=insetCrescent(cls==='scout'?.12:.19,.012);emblem.rotateX(-Math.PI/2);
+ put(k,emblem,F.edge,[cls==='scout'?.65:.81,o.deck+.018,0],null,null,'shine');
+ raw.meta.legend='lunar-black-gold';raw.meta.tc=F.edge;return raw;
+}
+// Annular machined barrel sleeve, through-bore visible from both ends (+X axis).
+function energySleeve(k,x,y,R,inner,depth,col,mat='shine'){
+ const s=new THREE.Shape(),h=new THREE.Shape();s.absarc(0,0,R,0,Math.PI*2,false);h.absarc(0,0,inner,0,Math.PI*2,true);s.holes.push(h);
+ const g=extr(s,depth);g.rotateY(Math.PI/2);put(k,g,col,[x,y,0],null,null,mat);
+}
+function unifiedMoonbeam(team){
+ const k=kit(),A=[],Y=.63,S='#cbd5df',W='#e7eef4',G='#c39a51',D='#1b2430',M='#586879',B0='#167cec',B1='#66cfff',WH='#e5faff';
+ const ring=(x,r,t,c,mat='shine')=>put(k,TO(r,t,6,24),c,[x,Y,0],[0,Math.PI/2,0],null,mat);
+ // A restrained dark rotary mount and cradle, not the reference's display pedestal.
+ put(k,defenderCylinder(.43,.07,24),D,[0,.035,0]);put(k,defenderCylinder(.35,.025,24),G,[0,.082,0],null,null,'shine');
+ armorPart(k,[[-.56,-.31],[.29,-.31],[.46,0],[.29,.31],[-.56,.31]],.10,.13,D);
+ sym(s=>{
+  armorPart(k,[[-.48,s*.22],[.28,s*.24],[.46,s*.40],[-.52,s*.40]],.21,.12,M,.014);
+  put(k,B(.56,.055,.065),G,[-.04,.32,s*.33],[0,0,.22],null,'shine');
+  put(k,defenderCylinder(.14,.07,20),G,[-.20,.48,s*.34],[Math.PI/2,0,0],null,'shine');
+  put(k,defenderCylinder(.09,.076,16),D,[-.20,.48,s*.35],[Math.PI/2,0,0]);
+  put(k,B(.12,.025,.025),team||'#4d9fff',[-.20,.25,s*.405],null,null,'glow');
+ });
+ // Exposed continuous longitudinal blue core runs from the breech to the forward aperture.
+ put(k,defenderCylinder(.092,3.01,24),B0,[.80,Y,0],[0,0,Math.PI/2],null,'glow');
+ put(k,defenderCylinder(.040,3.03,16),B1,[.80,Y+.05,.055],[0,0,Math.PI/2],null,'glow');
+ for(let i=0;i<20;i++){const x=-.66+i*.15,a=i*1.8;put(k,B(.16,.016,.016),i%3?B1:WH,[x,Y+Math.sin(a)*.078,Math.cos(a)*.078],[0,Math.cos(a)*.32,Math.sin(a)*.32],null,'glow');}
+ // Silver layered breech with windows, gold pipes and dark mechanical service hardware.
+ for(const x of [-.64,-.24,.16]){
+  energySleeve(k,x,Y,.25,.16,.16,x===-.24?M:S);ring(x-.08,.252,.014,G);
+  sym(s=>{
+   put(k,B(.28,.09,.055),W,[x,Y+.21,s*.14],[s*.30,0,0],null,'shine');
+   put(k,B(.27,.07,.05),S,[x,Y-.19,s*.14],[-s*.30,0,0],null,'shine');
+   put(k,defenderCylinder(.026,.34,8),G,[x,Y+.12,s*.29],[0,0,Math.PI/2],null,'shine');
+  });
+ }
+ // Beveled silver armor leaves, stepped along the rear housing; small dark reveals stay visible.
+ for(const x of [-.61,-.25,.11])sym(s=>{
+  armorPart(k,[[x-.15,s*.10],[x+.12,s*.10],[x+.16,s*.26],[x-.12,s*.29]],Y+.19,.045,W,.010);
+  put(k,B(.19,.012,.018),D,[x,Y+.247,s*.20],null,null,'shine');
+ });
+ energySleeve(k,-.77,Y,.267,.125,.055,M);ring(-.805,.25,.015,G);
+ // The barrel is open-sided: four narrow machined rails, electrically charged annular coils.
+ for(const a of [Math.PI/4,3*Math.PI/4,5*Math.PI/4,7*Math.PI/4]){
+  const y=Y+Math.sin(a)*.21,z=Math.cos(a)*.21;
+  put(k,B(2.45,.048,.048),S,[1.02,y,z],[a,0,0],null,'shine');
+  put(k,B(2.22,.017,.017),G,[1.02,y+Math.sin(a)*.03,z+Math.cos(a)*.03],null,null,'shine');
+ }
+ for(const x of [.42,1.02,1.64]){
+  energySleeve(k,x,Y,.275,.16,.105,S);ring(x+.065,.237,.025,B0,'glow');ring(x-.067,.27,.020,G);ring(x+.095,.267,.012,WH,'glow');
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;put(k,defenderCylinder(.018,.025,6),G,[x+.065,Y+Math.sin(a)*.285,Math.cos(a)*.285],[0,0,Math.PI/2],null,'shine');}
+ }
+ // Crescents are bolted to paired support cheeks, following the approved unified reference.
+ for(const x of [-.18,.95,2.03])sym(s=>{
+  put(k,B(.13,.055,.24),D,[x,Y-.25,s*.22],null,null,'shine');
+  put(k,insetCrescent(x===2.03?.39:.32,.035),G,[x,Y,s*.26],null,null,'shine');
+  put(k,defenderCylinder(.032,.05,8),W,[x-.16,Y,s*.285],[Math.PI/2,0,0],null,'shine');
+ });
+ // High-detail oversized emitter: silver focusing rings, gold rim, dark aperture and blue-white core.
+ energySleeve(k,2.20,Y,.33,.21,.18,S);ring(2.12,.325,.024,G);ring(2.30,.30,.025,G);ring(2.325,.25,.020,B1,'glow');
+ put(k,defenderCylinder(.208,.014,32),B0,[2.318,Y,0],[0,0,Math.PI/2],null,'glow');
+ put(k,defenderCylinder(.158,.016,28),B1,[2.329,Y,0],[0,0,Math.PI/2],null,'glow');
+ put(k,defenderCylinder(.103,.018,24),WH,[2.340,Y,0],[0,0,Math.PI/2],null,'glow');
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;put(k,B(.18,.045,.055),i%2?M:S,[2.22,Y+Math.sin(a)*.345,Math.cos(a)*.345],[a,0,0],null,'shine');}
+ // Only captive collars rotate. No floating moon, remote ornaments or perpetual firing beam.
+ for(const x of [.43,1.65]){const r=kit();put(r,TO(.291,.011,4,24,Math.PI*1.75),G,[0,0,0],[0,Math.PI/2,0],null,'shine');for(let i=0;i<3;i++){const a=i*Math.PI*2/3;put(r,B(.018,.028,.028),B1,[0,Math.sin(a)*.29,Math.cos(a)*.29],null,null,'glow');}A.push({k:r,p:[x,Y,0],axis:'x',spd:x<1?.65:-.65});}
+ return {k,anims:A,meta:{legend:'moonbeam-unified',tips:[[2.35,Y,0]],halos:[[2.35,Y,0,B1,.22],[1.1,Y,0,B0,.11]]}};
+}
 
 // ---------- chassis ----------
 // returns {k, anims:[{k,p,axis,spd,type}], meta:{ty, halos:[[x,y,z,col,size]], trail:[[x,y,z]], tc, bob}}
@@ -513,17 +617,6 @@ function legacyChassisKit(cls,tier,P,team,gems,lunar){
    M.ty=0.62;
   }
  }
- if(lunar){   // LEGENDARY Lunar skin: pearl armor, crescent fins, hover halo, an orbiting moon
-  sym(s=>{put(k,crescentGeo(0.55,0.05),GOLD,[-0.35,M.ty+0.1,s*(cls==='titan'?0.8:0.64)],[s*0.25,0,0.55],null,'shine');
-   put(k,B(1.2,0.025,0.025),'#9fd8ff',[0,M.ty-0.02,s*0.4],null,null,'glow');});
-  put(k,TO(1.18,0.035,4,28),'#bfe6ff',[0,0.07,0],[Math.PI/2,0,0],null,'glow');
-  put(k,SP(0.13,10,7),'#ffffff',[-0.95,M.ty+0.12,0],null,null,'glow');
-  const mo=kit();put(mo,SP(0.09,8,6),'#ffffff',[1.35,0,0],null,null,'glow');put(mo,TO(0.13,0.012,3,12),GOLD,[1.35,0,0],[Math.PI/2,0,0],null,'glow');
-  A.push({k:mo,p:[0,M.ty+0.35,0],axis:'y',spd:1.4,orb:1});
-  M.halos.push([-0.95,M.ty+0.12,0,'#bfe6ff',0.9],[0,0.07,0,'#9fd8ff',0.4]);
-  M.bob=Math.max(M.bob,0.035);M.tc='#cfeaff';
-  if(!M.trail.length)sym(s=>M.trail.push([-1.05,0.4,s*0.4]));
- }
  return {k,anims:A,meta:M};
 }
 
@@ -532,21 +625,6 @@ function legacyWeaponKit(arch,tier,P,team,lunar,cls){
  const k=kit(),A=[],C=palette(P,team,cls,lunar),rc=TIERC[tier],M={tips:[],halos:[]},pm=PM(C);
  const wc=WEAPONS[arch]?WEAPONS[arch].c:'#3fd0c9';
  const core=(x,y)=>{put(k,OC(0.11),C.team,[x,y,0],null,[1,1.3,1],'glow');M.halos.push([x,y,0,C.team,0.35]);};
- if(arch==='moon'){   // LEGENDARY Moonbeam, the Tide Engine: three crystal barrels bound by gold rings, a full moon held above on a gold arm
-  const P0='#e6ecf5',PD='#c9d3e2',ICE='#bfe6ff',WH='#f4fbff';
-  put(k,CY(0.5,0.58,0.28,12),P0,[0,0.14,0],null,null,'shine');put(k,TO(0.54,0.035,4,24),GOLD,[0,0.28,0],[Math.PI/2,0,0],null,'shine');
-  put(k,SP(0.42,14,10),PD,[0,0.6,0],null,[1.25,0.85,1],'shine');
-  for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.PI/2,y=0.6+Math.sin(a)*0.18,z=Math.cos(a)*0.18;
-   put(k,CY(0.08,0.1,1.9,8),P0,[1.15,y,z],[0,0,Math.PI/2],null,'shine');put(k,OC(0.1),ICE,[2.15,y,z],null,[2.2,1,1],'glow');
-   M.tips.push([2.32,y,z]);M.halos.push([2.2,y,z,ICE,0.7]);}
-  put(k,B(0.09,0.5,0.09),GOLD,[-0.18,0.92,0],[0,0,-0.35],null,'shine');
-  // the gold rings turn slowly around the barrels; the moon above pulses and its ring spins
-  for(const x of[0.65,1.2,1.75]){const r=kit();put(r,TO(0.32,0.05,6,20),GOLD,[0,0,0],[0,Math.PI/2,0],null,'shine');for(let q=0;q<3;q++){const a=q/3*Math.PI*2;put(r,OC(0.045),ICE,[0,Math.cos(a)*0.32,Math.sin(a)*0.32],null,null,'glow');}A.push({k:r,p:[x,0.6,0],axis:'x',spd:x===1.2?-1.4:1.4});}
-  const mo=kit();put(mo,SP(0.26,16,12),WH,[0,0,0],null,null,'glow');A.push({k:mo,p:[0,1.2,0],type:'pulse',spd:2.2});
-  const mr=kit();put(mr,TO(0.36,0.03,6,24),GOLD,[0,0,0],[Math.PI/2.4,0,0],null,'shine');A.push({k:mr,p:[0,1.2,0],axis:'y',spd:1.6});
-  M.halos.push([0,1.2,0,'#e8f4ff',1.4]);
-  return {k,anims:A,meta:M};
- }
  if(arch==='twin'){
   if(tier<2){
    put(k,loft([[-0.42,-0.38],[0.38,-0.38],[0.48,-0.2],[0.48,0.2],[0.38,0.38],[-0.42,0.38]],[[-0.36,-0.3],[0.3,-0.3],[0.38,-0.15],[0.38,0.15],[0.3,0.3],[-0.36,0.3]],0,0.27),C.tur,null,null,null,pm);
@@ -837,7 +915,7 @@ function crateGeo(){const k=kit();
 // Bounded fitting geometry, merged into the existing material buckets; no collision changes.
 function fittingKit(f,team,part,context){
  const k=kit(),steel='#91a1b3';
- if(context&&!context.lunar&&CHASSIS_VISUALS[context.cls]){
+ if(context&&CHASSIS_VISUALS[context.cls]){
   const o=CHASSIS_VISUALS[context.cls][visualTier(context.ct)],w=WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)];
   if(part==='body'){
    if(f.hull==='plates')sym(s=>put(k,B(.85,.08,.14),steel,[-.13,o.h+.22,s*(o.trackZ-.02)]));
@@ -847,7 +925,10 @@ function fittingKit(f,team,part,context){
   }else if(w){
    if(f.mount==='hardened')sym(s=>put(k,B(.34,.16,.07),steel,[.27,.21,s*(w.width+.11)],null,null,'shine'));
    if(f.mount==='firing')for(const x of [.60,.82,1.04])put(k,B(.05,.09,.35),steel,[x,w.y+.19,0],null,null,'shine');
-  }else return fittingKit(f,team,part); // Moonbeam keeps the original mount fitting attachment.
+  }else if(context.arch==='moon'){
+   if(f.mount==='hardened')sym(s=>put(k,B(.32,.13,.055),steel,[-.17,.24,s*.45],null,null,'shine'));
+   if(f.mount==='firing')for(const x of [-.54,-.37,-.20])sym(s=>put(k,B(.05,.04,.055),steel,[x,.87,s*.18],null,null,'shine'));
+  }else return fittingKit(f,team,part);
   return {k,anims:[],meta:{}};
  }
 
