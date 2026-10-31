@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createContext,runInContext} from 'node:vm';
 const c=createContext({console,Math,performance:{now:()=>0},globalThis:null});c.globalThis=c;
 const p=new URL('../../js/graphics.js',import.meta.url);assert.ok(readFileSync(p,'utf8').includes('GraphicsMotion'),'shared motion module must exist');runInContext(readFileSync(p,'utf8'),c);runInContext('globalThis.M=GraphicsMotion;globalThis.Q=GraphicsQuality;globalThis.G=GraphicsRelease',c);
-assert.equal(c.G.enabled,false,'public activation must stay deliberate/default-off');
+assert.equal(c.G.enabled,true,'2026-10-31 owner-approved nonpayment gear release activates HF; rollback flips this gate');
 for(const a of ['pulse','twin','siege','moon']){const s=c.M.state();c.M.shot(s,a);assert.ok(s.kick>0);for(let i=0;i<180;i++)c.M.advance(s,1/60,{dx:0,dz:0,heading:0,aim:0},false);assert.ok(Math.abs(s.kick)<.001,a+' recoil settles');}
 assert.ok(c.M.PROFILES.siege.kick>c.M.PROFILES.pulse.kick);assert.ok(c.M.PROFILES.twin.kick<c.M.PROFILES.pulse.kick);
 const s=c.M.state();c.M.advance(s,.02,{dx:.03,dz:0,heading:0,aim:0},false);assert.ok(s.left>0&&s.right>0);const x=s.left;c.M.advance(s,.02,{dx:0,dz:0,heading:0,aim:0},false);assert.equal(s.left,x,'stopped tracks stay still');c.M.advance(s,.02,{dx:0,dz:0,heading:.1,aim:.2},false);assert.notEqual(s.left-s.right,0,'turn drives diverge');const before=JSON.stringify(s);c.M.advance(s,.02,{dx:0,dz:0,heading:.1,aim:.2},true);assert.equal(s.kick,0);assert.ok(Number.isFinite(s.aim));

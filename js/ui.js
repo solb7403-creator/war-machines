@@ -144,12 +144,26 @@ function setupPickers(){
   '<p class="dimtxt" style="margin-top:8px">'+esc(MAPS[mp].d)+'</p>';
 }
 function openSetup(){sheet('setup',()=>'<h3>Battle setup</h3>'+setupPickers()+'<button class="btn btn-go block" style="margin-top:18px" data-act="setupdone">Done</button>');}
+// Play-screen battle roster (presentation only, from PR #5): the two server-owned Laboratory bays.
+// Selecting a bay uses the existing authoritative lab_activate request; the client never grants inventory.
+function battleRosterHtml(){
+ const lab=save&&save.lab;
+ if(!lab||!lab.machines||!lab.slots)return '';
+ const ids=Object.values(lab.slots).filter(id=>lab.machines[id]).slice(0,2);
+ if(ids.length!==2)return '';
+ return '<section class="battle-roster" aria-label="Your battle machines"><div class="battle-roster-title"><b>YOUR BATTLE MACHINES</b><small>Choose which bay deploys in your next match</small></div><div class="battle-roster-grid">'+ids.map((id,i)=>{
+  const M=lab.machines[id],L=ecoLoadout(save,M.spec),active=id===lab.active;
+  const chassis=(L.c.s?'Salvaged ':'')+((CNAMES[L.c.c]||[])[Math.max(0,L.c.t)]||CH[L.c.c].n);
+  const weapon=L.w.a==='moon'?'Moonbeam':(L.w.s?'Salvaged ':'')+((WNAMES[L.w.a]||[])[Math.max(0,L.w.t)]||WEAPONS[L.w.a].n);
+  return '<div class="battle-roster-card'+(active?' selected':'')+'"><div class="battle-roster-bay">BAY '+(i+1)+(active?' · DEPLOYING':' · READY')+'</div><canvas data-art="lab:'+esc(id)+'" aria-label="'+esc(M.name)+' preview"></canvas><b class="battle-roster-name">'+esc(M.name)+'</b><div class="battle-roster-items">'+esc(chassis)+' · '+esc(weapon)+'</div><div class="battle-roster-power">POWER '+powerOf(L)+'</div><button class="btn '+(active?'btn-quiet':'btn-go')+'" data-act="labequip" data-arg="'+esc(id)+'"'+(active?' disabled':'')+'>'+(active?'Selected':'Deploy this machine')+'</button></div>';
+ }).join('')+'</div><p class="battle-roster-rule">Edit either build in Garage › Engineer.</p></section>';
+}
 function renderPlay(){
  const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=powerBracket(pw);
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),n=playNudge(),wr=winRange(gk,mk);
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
-  '<div class="lobby">'+
+  battleRosterHtml()+'<div class="lobby">'+
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+

@@ -1,6 +1,6 @@
 'use strict';
-// Static release gate. Change only enabled for one consolidated, validated release; false restores legacy.
-const GraphicsRelease=Object.freeze({version:'graphics-rc1',enabled:false});
+// Static release gate. LIVE since 2026-10-31 nonpayment gear release. Rollback: flip the boolean below to false, bump version.json + index.html ?v, publish once.
+const GraphicsRelease=Object.freeze({version:'graphics-r1',enabled:true});
 // Cosmetic state only: never reads/writes saves, simulation, inventory or authoritative RNG.
 const GraphicsMotion=(()=>{
  const PROFILES=Object.freeze({pulse:{kick:.075,damp:19,flash:.065},twin:{kick:.035,damp:26,flash:.040},siege:{kick:.14,damp:12,flash:.095},moon:{kick:.060,damp:17,flash:.085}});
