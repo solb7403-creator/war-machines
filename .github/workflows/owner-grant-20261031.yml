@@ -19,5 +19,5 @@ jobs:
       - env:
           FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
           GRANT_PID: ln_6392735208728
-          EXECUTE: 'no'
+          EXECUTE: 'yes'
         run: node worker/ops/owner-grant-20261031.mjs
