@@ -93,7 +93,7 @@ export class RoomCore {
     if (have) { Object.assign(have, { name }); return { ok: true, seat: have.idx, wait: this.t0 + this.o.WAIT_MS - now }; }
     const idx = this.order.find((i) => !this.seats[i]);
     if (idx === undefined) return { ok: false, err: "full" };
-    this.seats[idx] = { rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
+    this.seats[idx] = { resultKey: hex(crypto.getRandomValues(new Uint8Array(16))), rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
     // offline pilots' tanks for the AI seats, looked up while the room waits (at the first pilot's power)
     if (!this.ghP && this.io.ghosts) this.ghP = Promise.resolve().then(() => this.io.ghosts(power, [pid])).then((g) => { this.gh = g || []; }).catch(() => { this.gh = []; });
     return { ok: true, seat: idx, wait: this.t0 + this.o.WAIT_MS - now };
@@ -295,7 +295,13 @@ export class RoomCore {
       const sb = won ? R.streakPts(g, m, pvs) : 0;
       return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt, opp };
     };
-    const p = Promise.resolve().then(() => this.io.credit(s, calc))
+    const settle = async () => {
+      for (let attempt = 0; ; attempt++) {
+        try { return await this.io.credit(s, calc); }
+        catch (e) { if (attempt >= 2) throw e; }
+      }
+    };
+    const p = Promise.resolve().then(settle)
       .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb }))
       .catch(() => Object.assign(res, { pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true }))
       .then(() => { s.res = res; this.sendTo(s, { k: "res", r: res }); });
@@ -350,7 +356,7 @@ export class PvpRoom {
         now: () => Date.now(), day: () => dayOf(Date.now()),
         setTimeout: (f, ms) => setTimeout(f, ms), clearTimeout: (h) => clearTimeout(h),
         setInterval: (f, ms) => setInterval(f, ms), clearInterval: (h) => clearInterval(h),
-        credit: (s, calc) => creditMatch(env, s.pid, s.name, calc),
+        credit: (s, calc) => creditMatch(env, s.pid, s.name, calc, Date.now(), s.resultKey),
         ghosts: (pw, skip) => pickGhosts(env, null, pw, ECO.GHOST_MAX, Date.now(), skip),
         ghostReport: (list) => ghostReport(env, list),
         left: (pid) => lobbyStub(env).fetch("https://lobby/left", post({ room: this.id, pid })).catch(() => {}),

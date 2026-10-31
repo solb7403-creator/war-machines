@@ -5,11 +5,11 @@ import {
   generateRegistrationOptions,verifyRegistrationResponse,
   generateAuthenticationOptions,verifyAuthenticationResponse
 } from '@simplewebauthn/server';
-import {dbGet,dbPut,dbPatch,dbUrl,cleanName,hex} from './db.js';
+import {dbGet,dbPut,dbUrl,cleanName,hex} from './db.js';
 import {claimOnce} from './eco.js';
 import {
   WEB_LOGIN_COOKIE,record,getCookie,sameOrigin,limited,origin,json,cookie,random,
-  webIdentity,issueLunarWebSession
+  webIdentity,issueLunarWebSession,confirmedTelegramLink
 } from './web-auth.js';
 
 const LINK_COOKIE='__Host-lunar-link',MAX_BODY=20000;
@@ -39,9 +39,7 @@ const userOf=(pid,name)=>({id:Number(pid.slice(3)),first_name:name,username:name
 const credentialPath=async id=>'passkeys/'+await sha(id);
 const sessionResult=(env,u,pid)=>issueLunarWebSession(env,u,pid);
 export async function resolveTelegramAccount(env,id){
- if(!Number.isSafeInteger(id)||id<=0)return null;
- const link=await dbGet(env,'telegramLinks/'+id);
- return typeof link==='string'&&idPattern.test(link)?link:null;
+ return (await confirmedTelegramLink(env,id))?.pid||null;
 }
 export async function approveTelegramLunarLink(env,code,tgUser){
  if(!env.SESSIONS||!codePattern.test(code)||!Number.isSafeInteger(tgUser?.id)||tgUser.id<=0)return {ok:false,error:'code'};
@@ -66,7 +64,10 @@ export async function approveTelegramLunarLink(env,code,tgUser){
  if(!claimed.ok&&claimed.v!==item.pid)return {ok:false,error:'already_linked'};
  const approved=await record(env,item.browser,'link-approve',{code,tgId:tgUser.id,pid:item.pid});
  if(!approved.ok)return {ok:false,error:'expired'};
- await dbPatch(env,'lunarAccounts/'+item.pid,{telegramId:tgUser.id});
+ // Only one Telegram identity may confirm ownership of this Lunar account. The forward
+ // claim remains inert until proof and this conditional reverse-owner claim both succeed.
+ const owner=await claimOnce(env,'lunarAccounts/'+item.pid+'/telegramId',tgUser.id);
+ if(!owner.ok&&owner.v!==tgUser.id)return {ok:false,error:'already_linked'};
  return {ok:true,pid:item.pid};
 }
 
@@ -227,11 +228,16 @@ export async function lunarAuth(req,env){
  }
 
  if(path==='/auth/lunar/link/start'){
+  // Optional linking stays on hold until partial-claim recovery has an audited workflow.
+  if(env.WEB_TELEGRAM_LINK_ENABLED!=='1')return bad('telegram_link_unavailable',503);
   const identity=await webIdentity(req,env);
   if(!identity?.user?.lunar_account||!firstPartyPattern.test(identity.pid))return bad('lunar_account_required',403);
   const account=await dbGet(env,'lunarAccounts/'+identity.pid);
   if(!account||account.id!==identity.pid)return bad('account',403);
-  if(account.telegramId)return json({ok:true,linked:true,telegramId:account.telegramId});
+  if(account.telegramId){
+   if(await resolveTelegramAccount(env,account.telegramId)!==identity.pid)return bad('unconfirmed_account_link',409);
+   return json({ok:true,linked:true,telegramId:account.telegramId});
+  }
   if(!idPattern.test(identity.pid))return bad('upgrade_account_not_linkable',409);
   const browser=random(),code=random().slice(0,48),now=Date.now(),expires=now+600000;
   const first=await record(env,browser,'issue',{kind:'challenge',flow:'lunar_link',pid:identity.pid,code,created:now,expires});
@@ -247,14 +253,17 @@ export async function lunarAuth(req,env){
   if(!identity?.user?.lunar_account||!firstPartyPattern.test(identity.pid))return bad('lunar_account_required',403);
   const account=await dbGet(env,'lunarAccounts/'+identity.pid);
   if(!account)return bad('account',403);
-  if(account.telegramId)return json({ok:true,linked:true,telegramId:account.telegramId});
+  if(account.telegramId){
+   if(await resolveTelegramAccount(env,account.telegramId)!==identity.pid)return bad('unconfirmed_account_link',409);
+   return json({ok:true,linked:true,telegramId:account.telegramId});
+  }
   const browser=getCookie(req,LINK_COOKIE);
   if(!browser)return json({ok:true,linked:false});
   const response=await record(env,browser,'read');
   if(!response.ok)return json({ok:true,linked:false,expired:true});
   const item=await response.json();
   if(item.flow!=='lunar_link'||item.pid!==identity.pid)return bad('link',403);
-  return json({ok:true,linked:!!item.approved,telegramId:item.approved?.telegramId||null});
+  return json({ok:true,linked:false,telegramId:null});
  }
 
  if(path==='/auth/lunar/account'){

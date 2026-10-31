@@ -40,6 +40,7 @@ async function doSync(boot){
   const r=await api('/api/sync',body);
   if(/^(?:tg|ln)_\d{3,15}$/.test(String(r.pid||'')))VERIFIED_PID=r.pid; // Authenticated, server-owned player ID.
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
+  save.refBy=srv&&srv.ref||null; // Canonical server binding survives a fresh browser or device.
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
@@ -215,6 +216,7 @@ const SOL_WALLETS={
  other:{n:'Keeper / other',ul:null}};
 const SOL_ORDER=['phantom','solflare','backpack','other'];
 function payWithSol(ton,desc){
+ showToast('SOL purchases are temporarily unavailable. Choose Stars or TON.');return;
  if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  const sol=solFor(ton);
  if(!sol){fetchPrices();showToast('Loading the SOL price. Tap again in a second.');return;}

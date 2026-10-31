@@ -400,10 +400,13 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
 
 // ================= live matches: the room credits the result itself =================
 // calc(S) gets the record and returns {pts, pvs, sb, won, drawn, m: the match for quests and stats (or m.quit)}
-export async function creditMatch(env, pid, name, calc, now = Date.now()) {
+export async function creditMatch(env, pid, name, calc, now = Date.now(), resultKey = "") {
   let flags = [];
   const trade = [];
+  const receiptKey = /^[a-f0-9]{32}$/.test(resultKey) ? resultKey : null;
   const t = await tx(env, pid, (S, X) => {
+    // Room-generated keys let an ambiguous write response retry without awarding twice.
+    if (receiptKey && S.pvpReceipts?.[receiptKey]) return { ...S.pvpReceipts[receiptKey], abort: true };
     if (name) S.nm = name;
     trade.length = 0;
     const c = calc(S) || {};
@@ -419,7 +422,14 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
       if (c.m.quit) R.ecoQuit(S);
       else { R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
     }
-    return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
+    const result = { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
+    if (receiptKey) {
+      S.pvpReceipts = S.pvpReceipts || {}; S.pvpReceipts[receiptKey] = result;
+      // A finished room cannot resettle; retain a bounded window for its immediate retries.
+      const keys = Object.keys(S.pvpReceipts);
+      for (const key of keys.slice(0, Math.max(0, keys.length - 64))) delete S.pvpReceipts[key];
+    }
+    return result;
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
   for (const o of trade) await link(env, pid, o, "trade").catch(() => {});

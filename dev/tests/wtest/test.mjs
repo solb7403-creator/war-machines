@@ -21,8 +21,9 @@ const eco = await import('../../../worker/src/eco.js');
 const { RULES: R } = await import('../../../worker/src/sim.gen.js');
 const worker = mod.default;
 const env = { BOT_TOKEN: '123:ABC', FIREBASE_DB_SECRET: 'SECRET' };
-function initData(user, age = 0) {
+function initData(user, age = 0, start = "") {
   const p = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000) - age), query_id: 'q', user: JSON.stringify(user) });
+  if (start) p.set('start_param', start);
   const dcs = [...p.entries()].sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v}`).join('\n');
   const secret = createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest();
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
@@ -246,10 +247,10 @@ db.root.players.tg_445 = { pts: 1000, name: 'small' };
 t(E('tg_445').pts === 0 && db.get('/flags/tg_445/r/mig_spend'), 'upgrades worth 100K on 1K lifetime points: no spendable points, flagged');
 
 // ---- referrals, squad, alts ----
-[s, r] = await call('/api/sync', { initData: initData(B), refBy: 'tg_111' }, '9.9.9.9'); t(r.rec.ref === 'tg_111', 'ref set');
+[s, r] = await call('/api/sync', { initData: initData(B, 0, 'ref_111'), refBy: 'tg_111' }, '9.9.9.9'); t(r.rec.ref === 'tg_111', 'ref set');
 t(db.get('/players/tg_222/name') === 'Bob script', 'name sanitized from telegram: ' + db.get('/players/tg_222/name'));
-[s, r] = await call('/api/sync', { initData: initData(B), refBy: 'tg_999' }); t(r.rec.ref === 'tg_111', 'ref fixed');
-[s, r] = await call('/api/sync', { initData: initData(J), refBy: 'tg_999' }); t(!r.rec.ref, 'no self ref');
+[s, r] = await call('/api/sync', { initData: initData(B, 0, 'ref_999'), refBy: 'tg_999' }); t(r.rec.ref === 'tg_111', 'ref fixed');
+[s, r] = await call('/api/sync', { initData: initData(J, 0, 'ref_999'), refBy: 'tg_999' }); t(!r.rec.ref, 'no self ref');
 setEco('tg_222', (S) => { S.earned = 6000; S.days = 5; }); db.root.players.tg_222.pts = 6000; db.root.players.tg_222.days = 5;
 [s, r] = await call('/api/squad', { initData: initData(A) }); t(r.squad.length === 1 && r.squad[0].id === 'tg_222' && !r.squad[0].held, 'squad ' + JSON.stringify(r.squad));
 setEco('tg_111', (S) => { S.dailyPts = 0; S.refC = {}; });
@@ -258,7 +259,7 @@ const sq0 = E('tg_111').earned;
 [s, r] = await act(A, 'squad'); t(r.out.pts === 0, 'squad payout once');
 // an alt: the recruit plays from the referrer's network
 [s, r] = await call('/api/sync', { initData: initData(A) }, '7.7.7.7');
-[s, r] = await call('/api/sync', { initData: initData(C), refBy: 'tg_111' }, '7.7.7.7');
+[s, r] = await call('/api/sync', { initData: initData(C, 0, 'ref_111'), refBy: 'tg_111' }, '7.7.7.7');
 t(db.get('/flags/tg_333/r/alt') && db.get('/flags/tg_111/r/alt'), 'recruit on the referrer\'s network: both flagged');
 setEco('tg_333', (S) => { S.earned = 30000; S.days = 12; }); db.root.players.tg_333.pts = 30000; db.root.players.tg_333.days = 12;
 [s, r] = await call('/api/squad', { initData: initData(A) }); t(r.squad.find((x) => x.id === 'tg_333').held, 'flagged recruit shows as held');

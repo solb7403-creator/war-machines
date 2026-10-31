@@ -81,6 +81,8 @@ h1{font:800 22px/1.2 "Arial Narrow","Roboto Condensed",system-ui,sans-serif;lett
 </div>
 <script>
 (function(){
+ // SOL checkout stays paused until the server can bind transaction proofs to an order.
+ document.querySelector('.wrap').innerHTML='<div class="brand">☾ LUNAR: WAR MACHINES</div><h1>SOL TEMPORARILY UNAVAILABLE</h1><div class="card">SOL purchases are temporarily unavailable. Return to the game and choose Stars or TON.<a class="btn back" href="https://t.me/LunarWarMachinesBot/play">BACK TO THE GAME</a></div>';return;
  var RECIPIENT='A37J13iXXA47n4kFKvR9Cao1u8A6v3HP8qMCSCJDi7AE';
  var RPCS=['https://solana-rpc.publicnode.com','https://api.mainnet-beta.solana.com','https://solana.drpc.org'];
  var q=new URLSearchParams(location.search);

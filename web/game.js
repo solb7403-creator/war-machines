@@ -37,7 +37,14 @@ document.addEventListener('click',e=>{
  else if(b.dataset.stageView)webShowroom?.view(b.dataset.stageView);
  else if(b.dataset.stageRotate)webShowroom?.rotate(Number(b.dataset.stageRotate));else webShowroom?.setZoom(webShowroom.zoom+Number(b.dataset.stageZoom)*.12);
 });
-async function webEndSession(){if(rangeRun)rangeExit();if(pvp)pvpClose();clearInterval(webRenewTimer);await fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}).catch(()=>{});location.replace('/web/');}
+async function webEndSession(){
+ const button=$('#web-logout');button.disabled=true;
+ try{
+  const response=await fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'});
+  if(!response.ok)throw Error('Sign out failed');
+  if(rangeRun)rangeExit();if(pvp)pvpClose();clearInterval(webRenewTimer);location.replace('/web/');
+ }catch{showToast('Could not sign out. You are still signed in; please retry.');button.disabled=false;}
+}
 $('#web-logout').addEventListener('click',webEndSession);
 window.addEventListener('lunar-session-expired',()=>{clearInterval(webRenewTimer);if(pvp)pvpClose();if(rangeRun)rangeExit();location.replace('/web/#login');});
 window.lunarWebReady=()=>{

@@ -1,7 +1,7 @@
 // LUNAR: War Machines — game server (Cloudflare Worker)
 // Every write to the database goes through here, tied to a verified Telegram login.
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
-import { DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
 import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
@@ -105,13 +105,22 @@ function itemLabel(k, tk, ri) {
 // No points come in here any more: every point comes from a named source the server checks (a scored match, a claim).
 // Sync sets the name, the referrer (once), the loadout the pilot fields (power and league from what they own), the
 // one-time move of an existing pilot's progress from their phone, and returns the server's record.
-export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
+export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = "") {
   const name = cleanName(user), d = dayOf(now);
   const rec = (await dbGet(env, `players/${pid}`).catch(() => null)) || null;
   const paid = b.mig && typeof b.mig === "object" ? await paidRecords(env, pid) : null;
+  // Only the invitation carried by verified Telegram initData may enroll a recruit.
+  // Resolve a linked Telegram inviter to the same canonical account used by authentication.
+  const invite = /^ref_\d{3,15}$/.test(sp) ? Number(sp.slice(4)) : 0;
+  const inviter = invite > 0 ? (await resolveTelegramAccount(env, invite)) || "tg_" + invite : null;
   let why = null;
   let devCheck = false;
   const t = await tx(env, pid, (S, X) => {
+    // The eligibility window and first binding live in the economy CAS, so concurrent
+    // first syncs cannot choose different inviters. Existing accounts keep legacy bindings.
+    if (!Number.isInteger(S.refDay)) S.refDay = !rec && !S.rev && !S.t ? X.day : -1;
+    if (!S.referrer && rec && rec.ref) S.referrer = rec.ref;
+    if (!S.referrer && inviter && inviter !== pid && S.refDay === X.day && (S.days || 0) <= 1) S.referrer = inviter;
     who(S, user);
     why = null;
     if (S.mig === 0 && paid) {
@@ -125,10 +134,9 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   }, now, { rl: 1 });
   if (t.rate) return { ok: false, error: "rate" };
   const S = t.S, up = {};
-  // referrer: only for a brand-new pilot (first day), never yourself, never changed later
-  const rb = String(b.refBy || "");
-  let ref = rec && rec.ref;
-  if (!ref && /^tg_\d{3,15}$/.test(rb) && rb !== pid && (S.days || 0) <= 1) { ref = rb; up[`players/${pid}/ref`] = rb; }
+  // Repair the public projection from the immutable binding after an interrupted sync.
+  const ref = S.referrer || null;
+  if (ref && (!rec || rec.ref !== ref)) up[`players/${pid}/ref`] = ref;
   if (rec && rec.bracket !== undefined) up[`players/${pid}/bracket`] = null;
   // Stars receipts the game confirmed it delivered
   const acks = Array.isArray(b.starsAck) ? b.starsAck.slice(0, 20) : [];
@@ -218,15 +226,47 @@ async function tonUsd() {
   try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd")).json(); const v = Number(d["the-open-network"].usd); if (v > 0) TONUSD = { v, t: Date.now() }; } catch {}
   return TONUSD.v;
 }
-const revAdd = (env, cents) => (cents ? dbPatch(env, "meta", { revc: { ".sv": { increment: Math.round(cents) } } }).catch(() => {}) : null);
-// SOL is priced off the TON price at live rates; the server checks it's in the right range (skipped if prices are unavailable)
+// The total and its durable event marker commit together. Retries cannot count a sale/refund twice.
+async function revAdd(env, cents, event) {
+  if (!cents) return;
+  for (let i = 0; i < 12; i++) {
+    const r = await fetch(dbUrl(env, "meta"), { headers: { "X-Firebase-ETag": "true" } });
+    if (!r.ok) throw new Error("payment revenue read");
+    const meta = (await r.json()) || {};
+    meta.paymentEvents = meta.paymentEvents || {};
+    if (meta.paymentEvents[event]) return;
+    meta.paymentEvents[event] = 1;
+    meta.revc = (Number(meta.revc) || 0) + Math.round(cents);
+    const w = await fetch(dbUrl(env, "meta"), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": r.headers.get("ETag") || "" }, body: JSON.stringify(meta) });
+    if (w.status === 412) continue;
+    if (!w.ok) throw new Error("payment revenue write");
+    return;
+  }
+  throw new Error("payment revenue busy");
+}
+// Refund markers are terminal even when an older success callback finishes later.
+async function paymentProjection(env, path, value) {
+  for (let i = 0; i < 12; i++) {
+    const r = await fetch(dbUrl(env, path), { headers: { "X-Firebase-ETag": "true" } });
+    if (!r.ok) throw new Error("payment receipt read");
+    const old = (await r.json()) || {}, next = { ...old, ...value };
+    if (old.rf || value.rf) next.rf = old.rf || value.rf;
+    if (old.refunded || value.refunded) { next.refunded = true; next.verified = false; }
+    const w = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": r.headers.get("ETag") || "" }, body: JSON.stringify(next) });
+    if (w.status === 412) continue;
+    if (!w.ok) throw new Error("payment receipt write");
+    return;
+  }
+  throw new Error("payment receipt busy");
+}
+// A future bound SOL order must also have a verified live conversion; price outages fail closed.
 async function solValueOk(sol, ton) {
   try {
     const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json();
     const t = d["the-open-network"].usd, s = d.solana.usd;
     if (t > 0 && s > 0) return sol * s >= ton * t * 0.85;
   } catch {}
-  return true;
+  return false;
 }
 const descOf = (d) => {
   d = d && typeof d === "object" ? d : {};
@@ -239,19 +279,32 @@ const descOf = (d) => {
 async function payLog(env, b, user, pid, now = Date.now()) {
   const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
   if (!cur) return { error: "cur" };
+  // SOL is paused until a server-issued order binds its reference to the authenticated buyer.
+  if (cur === "SOL") return { error: "unavailable" };
   const memo = String(b.memo || "").slice(0, 64);
   if (!memo.startsWith("LWM|" + pid + "|")) return { error: "memo" };
   const amt = num(b.amt, 0, 100000), key = `payments/LWM_${safeKey(memo)}`;
   const have = await dbGet(env, key).catch(() => null);
   const desc = descOf(b.desc);
-  if (have && (have.granted || !desc)) { const S = await readEco(env, pid); return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) }; }
+  if (have && (have.granted || !desc)) {
+    if (have.revEvent) await revAdd(env, have.revc, have.revEvent);
+    const S = await readEco(env, pid);
+    return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) };
+  }
+  const S0 = await readEco(env, pid), gk = safeKey(memo);
+  const previous = S0.chainReceipts && S0.chainReceipts[gk];
+  if (previous) {
+    if (!(await dbPut(env, key, previous))) throw new Error("payment receipt write");
+    await revAdd(env, previous.revc, previous.revEvent);
+    return { ok: true, dup: true, verified: true, out: previous.o || [], E: pub(S0) };
+  }
   const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
   if (!desc) {   // an old phone without the order details: logged and checked, not granted here
     rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : !!(await verifySol(rec.proof, amt));
     await dbPut(env, key, rec);
     return { ok: true, verified: rec.verified };
   }
-  const S0 = await readEco(env, pid), X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
+  const X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
   if (!price) return { error: "item" };
   const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
   if (cur === "TON" && amt + 1e-9 < price.ton * 0.999) return { error: "amount" };
@@ -263,19 +316,20 @@ async function payLog(env, b, user, pid, now = Date.now()) {
   // each on-chain transaction pays for one order
   const once = await claimOnce(env, `${cur === "TON" ? "tonTx" : "solTx"}/${safeKey(txid)}`, { pid, memo, t: now });
   if (!once.ok && !(once.v && once.v.memo === memo)) return { error: "reused" };
+  const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10);
   const t = await tx(env, pid, (S, X) => {
+    S.chainReceipts = S.chainReceipts || {};
+    if (S.chainReceipts[gk]) return { payment: S.chainReceipts[gk], dup: true };
     S.gout = S.gout || {};
-    const gk = safeKey(memo);
-    if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
-    const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
-    S.gout[gk] = outs.length ? outs : [{ none: 1 }];
-    const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
-    return { outs };
+    const outs = S.gout[gk] || RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
+    if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
+    const payment = { ...rec, verified: true, granted: true, tx: txid, o: outs.filter(o => o && !o.none), revc: Math.round(usd * 100), revEvent: "chain_" + gk };
+    S.chainReceipts[gk] = payment;
+    return { payment };
   }, now);
-  const outs = (t.outs || []).filter((o) => o && !o.none);
-  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
-  { const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10); await revAdd(env, usd * 100); }   // the liquidity fund
+  const payment = t.payment, outs = payment.o;
+  if (!(await dbPut(env, key, payment))) throw new Error("payment receipt write");
+  await revAdd(env, payment.revc, payment.revEvent);   // the liquidity fund
   // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
   if (src && src !== "payer") {
     const wh = hex(await hmac(env.BOT_TOKEN, "w|" + src)).slice(0, 16);
@@ -464,6 +518,23 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
   return sent;
 }
 
+// A charge keeps its original economy owner when Telegram later links to a Lunar account.
+async function starsOwner(env, telegramId, charge) {
+  if (!Number.isSafeInteger(telegramId) || telegramId <= 0) throw new Error("payment owner unavailable");
+  const path = `starsChargeOwner/${charge}`;
+  const checked = owner => {
+    if (!owner || typeof owner.pid !== "string" || !/^(?:tg|ln)_\d{3,15}$/.test(owner.pid) || owner.telegramId !== telegramId) throw new Error("payment owner unavailable");
+    return owner.pid;
+  };
+  // Existing receipts must remain refundable even if a later account link is incomplete.
+  const pinned = await dbGet(env, path);
+  if (pinned !== null) return checked(pinned);
+  const legacy = "tg_" + telegramId;
+  const pid = await dbGet(env, `starsPaid/${legacy}/${charge}`) ? legacy : (await resolveTelegramAccount(env, telegramId)) || legacy;
+  const owner = { pid, telegramId }, claim = await claimOnce(env, path, owner);
+  return checked(claim.ok ? owner : claim.v);
+}
+
 // ================= Telegram webhook =================
 async function webhook(req, env) {
   if (req.headers.get("x-telegram-bot-api-secret-token") !== (await webhookSecret(env))) return new Response("forbidden", { status: 403 });
@@ -478,49 +549,61 @@ async function webhook(req, env) {
   }
   const m = u.message;
   if (m && m.successful_payment) {
-    // Telegram confirmed a Stars payment: the server grants the item now (the phone just shows it)
     const sp = m.successful_payment;
     let p = {};
     try { p = JSON.parse(sp.invoice_payload); } catch {}
-    const pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, now = Date.now();
-    const charge = safeKey(sp.telegram_payment_charge_id);
-    const item = itemLabel(p.k, p.t, p.r);
+    const charge = safeKey(sp.telegram_payment_charge_id), item = itemLabel(p.k, p.t, p.r);
+    const pid = await starsOwner(env, m.from.id, charge), now = Date.now();
     const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
-    const t = desc ? await tx(env, pid, (S, X) => {
+    const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
+    const t = await tx(env, pid, (S, X) => {
+      S.starReceipts = S.starReceipts || {};
+      const old = S.starReceipts[charge] || prior;
+      if (old && !old.unmatched) { S.starReceipts[charge] = old; return { receipt: old, dup: true }; }
       S.gout = S.gout || {};
-      if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
-      const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
-      if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
-      S.gout[charge] = outs.length ? outs : [{ none: 1 }];
-      const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
-      return { outs };
-    }, now) : { outs: [] };
-    const outs = (t.outs || []).filter((o) => o && !o.none);
-    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
-    await revAdd(env, sp.total_amount * 1.3);   // the liquidity fund (Stars at ~1.3 cents each)
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
+      const outs = old && old.rf ? [] : S.gout[charge] || (desc ? RULES.ecoGrant(S, { ...desc, price: p.g }, X) : []);
+      if (desc && (S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
+      const receipt = { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs.filter(o => o && !o.none), ts: now, journal: 1, ...(old && old.rf ? { rf: old.rf } : {}) };
+      S.starReceipts[charge] = receipt;
+      return { receipt };
+    }, now);
+    const receipt = t.receipt;
+    await paymentProjection(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: receipt.stars, gram: receipt.g || 0, usd: Math.round(receipt.stars * 1.3) / 100, item, memo: "STARS|" + receipt.n, proof: charge, verified: !receipt.rf, ...(receipt.rf ? { refunded: true } : {}), t: receipt.ts });
+    if (receipt.journal) {
+      await revAdd(env, receipt.stars * 1.3, "stars_sale_" + pid + "_" + charge);
+      if (receipt.rf) await revAdd(env, -receipt.stars * 1.3, "stars_refund_" + pid + "_" + charge);
+    }
+    await paymentProjection(env, `starsPaid/${pid}/${charge}`, receipt);
     return new Response("ok");
   }
   if (m && m.refunded_payment) {
-    // a Stars refund: the server takes back exactly what that purchase gave
-    const rp = m.refunded_payment, pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
-    const sp = await dbGet(env, `starsPaid/${pid}/${charge}`).catch(() => null);
-    if (sp && !sp.rf) {
-      let n = 0;
-      const t = await tx(env, pid, (S) => {
-        S.rfd = S.rfd || [];
-        if (S.rfd.includes(charge)) return { abort: true };
+    const rp = m.refunded_payment, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
+    const pid = await starsOwner(env, m.from.id, charge);
+    const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
+    const t = await tx(env, pid, (S) => {
+      S.starReceipts = S.starReceipts || {};
+      const receipt = S.starReceipts[charge] || prior;
+      if (!receipt) { S.starReceipts[charge] = { rf: now, unmatched: true }; return { receipt: S.starReceipts[charge] }; }
+      if (receipt.rf) return { abort: true, receipt, settledLegacy: !receipt.journal && !receipt.refundJournal };
+      S.rfd = S.rfd || [];
+      if (!S.rfd.includes(charge)) {
+        RULES.ecoRefund(S, receipt.k, receipt.o || []);
+        S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(receipt.g) || 0));
         S.rfd = S.rfd.concat(charge).slice(-40);
-        RULES.ecoRefund(S, sp.k, sp.o || []);
-        S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(sp.g) || 0));   // a refunded purchase isn't spending
-        n = S.rfd.length;
-        return {};
-      }, now);
-      const pk = `payments/LWM_${pid}_stars_${charge}`.slice(0, 120);
-      await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, [`${pk}/refunded`]: true, [`${pk}/verified`]: false });
-      await revAdd(env, -(Number(sp.stars) || 0) * 1.3);   // a refunded sale comes off the liquidity fund
-      if (n >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", n + " Stars refunds"]], now).catch(() => {});
+        if (S.L) setLoadout(S, S.L);
+      }
+      S.starReceipts[charge] = { ...receipt, rf: now, refundJournal: 1 };
+      return { receipt: S.starReceipts[charge], refunds: S.rfd.length };
+    }, now);
+    const receipt = t.receipt;
+    // A receipt not yet seen has no revenue to reverse; a later success settles both events.
+    if (!receipt.unmatched && !t.settledLegacy) {
+      if (receipt.journal) await revAdd(env, (Number(receipt.stars) || 0) * 1.3, "stars_sale_" + pid + "_" + charge);
+      await revAdd(env, -(Number(receipt.stars) || 0) * 1.3, "stars_refund_" + pid + "_" + charge);
     }
+    await paymentProjection(env, `starsPaid/${pid}/${charge}`, receipt);
+    await paymentProjection(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { refunded: true, verified: false });
+    if (t.refunds >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", t.refunds + " Stars refunds"]], now).catch(() => {});
     return new Response("ok");
   }
   // Website login: only a genuine private-chat message delivered by Telegram's signed webhook
@@ -562,7 +645,7 @@ async function webhook(req, env) {
 
 // ================= router =================
 const ROUTES = {
-  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip); return { status: r.error === "rate" ? 429 : 200, body: r }; },
+  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
