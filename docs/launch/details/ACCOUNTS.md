@@ -1,3 +1,5 @@
+> Working domain notes. Owner-policy severity and final integrated verification are normalized in [COMMERCIAL_READINESS.md](../COMMERCIAL_READINESS.md). Local workspace probe paths below are historical; use the committed commercial regression/readiness tests to reproduce.
+
 # Commercial account audit — 2026-10-31
 
 Workspace: `/workspace/lunar-commercial`, `feature/launch-commercial-readiness`; implementation inspected from RC1 `5f4886d8` (HEAD additionally contains documentation commit `f933166`). Scope: identity, passkeys, website login/account entry, their local fixtures. No production traffic, provider sign-ins, deployed changes, or secret reads.

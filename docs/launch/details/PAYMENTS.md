@@ -1,3 +1,5 @@
+> Working domain notes. Owner-policy severity and final integrated verification are normalized in [COMMERCIAL_READINESS.md](../COMMERCIAL_READINESS.md). Local workspace probe paths below are historical; use the committed commercial regression/readiness tests to reproduce.
+
 # Commercial payment audit
 
 Audit base: RC1 `5f4886d8`, working tree `/workspace/lunar-commercial`, 2026-10-31. Only local fixtures; no real payments, provider calls, webhook configuration, secrets, commits or pushes. Implementation changes below were authorized by the parent after reproducing failures.

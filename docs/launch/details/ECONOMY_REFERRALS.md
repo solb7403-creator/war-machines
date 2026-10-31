@@ -1,3 +1,5 @@
+> Working domain notes. Owner-policy severity and final integrated verification are normalized in [COMMERCIAL_READINESS.md](../COMMERCIAL_READINESS.md). Local workspace probe paths below are historical; use the committed commercial regression/readiness tests to reproduce.
+
 # Economy, progression, Engineer and referrals audit
 
 2026-10-31. Scope: `/workspace/lunar-commercial`, commercial readiness branch from RC1 `5f4886d8`. All runtime evidence uses fake credentials, local Node and an in-memory Firebase emulator; external fetches fail closed. No real services, commits, pushes or deployments.
