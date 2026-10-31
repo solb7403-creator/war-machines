@@ -745,7 +745,7 @@ function vsBuild(){
  else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='You counter '+wn.join(', ')+': +15% damage to '+(wn.length>1?'them':'it')+', 10% less taken. '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you: the same against you.';}
  else txt='Even matchup. No counters either way.';
  const owned=battleChassisClasses();
- return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents')+'</span></div>'+
+ return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents'+(!live&&aiLv?' · AI power '+aiLv.p+(battlePower?', yours '+battlePower:''):''))+'</span></div>'+
   '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
   '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+

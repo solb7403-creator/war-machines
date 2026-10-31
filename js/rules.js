@@ -154,6 +154,28 @@ function powerOf(L){
  return Math.round(Math.pow(hp*dps*spd*(1+F.hp)*(1+F.spd)*(1+F.dps),1/3)*coreM*1.2);   // starter ≈ 72-100
 }
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
+// ---- AI difficulty (AI matches). AI pilots never copy your gear, upgrades or cores. They fly an authored loadout (AI_TIERS:
+// t rarity, q roll, h hull and cannon levels, e engine levels, g core levels [dmg,rof,arm]; p its power, checked by
+// dev/tests/combat-balance.mjs): the strongest one at or under the AI power shown on the VS screen, 68 x (your power / 68)^AI_EXP.
+// A starter tank meets starter AI, exactly as before; above that the AI grows slower than you do, so every upgrade, crate and
+// purchase widens your edge. Measured on the real sim: dev/tests/combat-sim.mjs, docs/combat-balance-audit.md
+const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],72],[0,1.05,1,1,[1,1,1],76],[1,1.05,0,0,[1,1,1],80],[1,1.05,1,0,[1,1,1],84],
+ [1,1.05,1,1,[2,1,1],90],[1,1.05,1,1,[2,2,1],94],[1,1.05,1,1,[2,2,2],98],[1,1.05,2,1,[2,2,2],103],[1,1.08,2,2,[2,2,2],107],
+ [2,1.05,1,1,[2,2,2],112],[2,1.05,2,1,[2,2,2],118],[2,1.05,2,1,[3,2,2],123],[2,1.05,2,1,[3,3,2],129],[2,1.05,2,1,[3,3,3],135],
+ [2,1.05,3,1,[3,3,3],141],[2,1.08,3,2,[3,3,3],147],[2,1.08,3,2,[4,3,3],153],[2,1.08,3,2,[4,4,3],160],[2,1.08,3,2,[4,4,4],167],
+ [2,1.08,4,2,[4,4,4],174],[2,1.1,4,2,[4,4,4],177],[2,1.1,4,2,[5,4,4],184],[2,1.1,4,2,[5,5,4],192],[2,1.1,4,2,[5,5,5],200]
+].map(([t,q,h,e,g,p])=>({t,q,h,e,g,p}));
+// AI_BOSS_EXP: the Survival megatank is tuned to a reference tank closer to yours (a boss should be a fight), never above it
+const AI_EXP=0.85,AI_BOSS_EXP=1.0;
+const aiPower=(pw,e)=>{const b=AI_TIERS[0].p,p=Math.max(b,Number(pw)||0);return b*Math.pow(p/b,e===undefined?AI_EXP:e);};
+function aiLevel(pw,e){const a=aiPower(pw,e);let i=0;for(let n=1;n<AI_TIERS.length;n++)if(AI_TIERS[n].p<=a)i=n;return {i,p:AI_TIERS[i].p};}
+function aiLoadout(i,arch,cls){
+ const A=AI_TIERS[Math.max(0,Math.min(AI_TIERS.length-1,i|0))];
+ return {w:{a:WORDER.includes(arch)?arch:'pulse',t:A.t,q:A.q,s:false},c:{c:CH[cls]?cls:'vanguard',t:A.t,q:A.q,s:false},up:{hull:A.h,cannon:A.h,engine:A.e,target:0,reactor:0},
+  cores:['dmg','rof','arm'],gl:{dmg:A.g[0],rof:A.g[1],arm:A.g[2]},skin:'default',paint:'stock'};
+}
+// ghosts in AI matches: only tanks clearly weaker than yours (by power), and never more than one on the enemy team
+const AI_GHOST_LO=0.7,AI_GHOST_HI=0.95;
 // the stat block a tank fights with (n = health scale for the mode and team size)
 function tankOf(L,n){
  const T=legacyTankOf(L,n),F=fittingStats(L.mods);
