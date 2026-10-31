@@ -254,4 +254,8 @@ check('no-return wallet identity projection preserved',()=>assert.equal(db.get('
 const farmJob=new workerMod.PaymentJob(state(new Map([['pid',pid]])),env);
 measure=true;countFetch=0;await farmJob.alarm();measure=false;
 check('shared verified payer still links canonical accounts with bounded requests',()=>{assert.equal(db.get('/lk/'+pid+'/'+httpOrder.order.buyer),'wallet');assert.ok(countFetch<50);});
+check('RPC network binding uses full observed genesis hashes, not shortened CAIP identifiers',()=>{
+ assert.equal(C.SOL_DEV_GENESIS,'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG');
+ assert.equal(C.SOL_MAIN_GENESIS,'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d');
+});
 console.log(JSON.stringify({passed,failed:0,jobFetches,confirmFetches,walletFetches:countFetch,allOutboundMocked:true}));

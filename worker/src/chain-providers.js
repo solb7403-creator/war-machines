@@ -2,8 +2,8 @@
 // not locally verified consensus proofs. Never accept these objects from a client.
 import {Address, Cell} from '@ton/core';
 import {Buffer} from 'node:buffer';
-export const SOL_MAIN_GENESIS='5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
-export const SOL_DEV_GENESIS='EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
+export const SOL_MAIN_GENESIS='5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d';
+export const SOL_DEV_GENESIS='EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
 const SYS='11111111111111111111111111111111', MEMO='MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
 const safeInt=n=>Number.isSafeInteger(n)&&n>=0;
 const address=a=>Address.parse(a).toRawString();

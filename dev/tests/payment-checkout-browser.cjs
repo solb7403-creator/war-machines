@@ -13,7 +13,7 @@ const {chromium}=require('playwright'),fs=require('node:fs'),path=require('node:
    const req=route.request(),u=new URL(req.url());
    if(u.hostname==='unpkg.com'&&u.pathname.includes('web3.js'))return route.fulfill({body:fs.readFileSync('/tmp/lunar-payment-sdks/sol.js'),contentType:'text/javascript',headers:{'Access-Control-Allow-Origin':'*'}});
    if(u.hostname==='api.devnet.solana.com'){
-    const q=req.postDataJSON();const result=q.method==='getGenesisHash'?'EtWTRABZaYq6iMfeYKouRu166VU2xqa1':{context:{slot:10},value:{blockhash:'11111111111111111111111111111111',lastValidBlockHeight:100}};
+    const q=req.postDataJSON();const result=q.method==='getGenesisHash'?'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG':{context:{slot:10},value:{blockhash:'11111111111111111111111111111111',lastValidBlockHeight:100}};
     return route.fulfill({json:{jsonrpc:'2.0',id:q.id,result}});
    }
    assert.equal(u.origin,'https://fixture','unexpected external request');

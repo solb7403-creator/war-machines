@@ -58,7 +58,7 @@
     }
     if(!window.solanaWeb3)await sdk('https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js','sha384-I45YF+S0YGWIolUyTksLk9TNtTqaDgZg8e6T1OoBoJvvFmphqYNIPZw3Kl0TkZNN');
     await provider.connect();const W=solanaWeb3,connection=new W.Connection(order.network==='devnet'?'https://api.devnet.solana.com':'https://api.mainnet-beta.solana.com','finalized');
-    const genesis=await connection.getGenesisHash();if(genesis!==(order.network==='devnet'?'EtWTRABZaYq6iMfeYKouRu166VU2xqa1':'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'))throw Error('Wallet network mismatch');
+    const genesis=await connection.getGenesisHash();if(genesis!==(order.network==='devnet'?'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG':'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d'))throw Error('Wallet network mismatch');
     const transfer=W.SystemProgram.transfer({fromPubkey:provider.publicKey,toPubkey:new W.PublicKey(order.recipient),lamports:Number(order.amountNano)});
     transfer.keys.push({pubkey:new W.PublicKey(order.reference),isWritable:false,isSigner:false});
     const tx=new W.Transaction().add(transfer,new W.TransactionInstruction({programId:new W.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),keys:[],data:new TextEncoder().encode(order.memo)}));
