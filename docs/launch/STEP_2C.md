@@ -1,3 +1,5 @@
+> Superseded for current engineering status by [PAYMENT_COMPLETION.md](PAYMENT_COMPLETION.md). This file preserves the earlier partial checkpoint.
+
 # Step 2C — partial TON order foundation; all-provider launch remains NO-GO
 
 2026-10-31. One serial agent; no delegation. Branch `feature/launch-commercial-readiness`, draft [PR #21](https://github.com/solb7403-creator/war-machines/pull/21). GitHub PR metadata and fresh clone both confirmed starting head `fc6165e9ecc74e159d4c6d1a646568f7a366ab21`; no newer commits were overwritten. Implementation checkpoint: `6f522d513f6b4591aa3e00a46e9723470b581289`; the following documentation commit records this handoff. RC1, main, practice preview and other PRs were not changed.
