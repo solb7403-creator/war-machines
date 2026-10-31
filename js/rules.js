@@ -166,7 +166,7 @@ const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],72],[0,1.05,1,1,[1,1,1],76
  [2,1.08,4,2,[4,4,4],174],[2,1.1,4,2,[4,4,4],177],[2,1.1,4,2,[5,4,4],184],[2,1.1,4,2,[5,5,4],192],[2,1.1,4,2,[5,5,5],200]
 ].map(([t,q,h,e,g,p])=>({t,q,h,e,g,p}));
 // AI_BOSS_EXP: the Survival megatank is tuned to a reference tank closer to yours (a boss should be a fight), never above it
-const AI_EXP=0.85,AI_BOSS_EXP=1.0;
+const AI_EXP=0.8,AI_BOSS_EXP=1.0;
 const aiPower=(pw,e)=>{const b=AI_TIERS[0].p,p=Math.max(b,Number(pw)||0);return b*Math.pow(p/b,e===undefined?AI_EXP:e);};
 function aiLevel(pw,e){const a=aiPower(pw,e);let i=0;for(let n=1;n<AI_TIERS.length;n++)if(AI_TIERS[n].p<=a)i=n;return {i,p:AI_TIERS[i].p};}
 function aiLoadout(i,arch,cls){

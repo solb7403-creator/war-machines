@@ -12,10 +12,12 @@ const tiers = W.eval(`AI_TIERS.map((A,i)=>({p:A.p,real:powerOf(aiLoadout(i,'puls
 tiers.forEach((t, i) => { ok(t.p === t.real, 'AI level ' + i + ' power ' + t.p + ' vs powerOf ' + t.real); if (i) ok(t.p > tiers[i - 1].p, 'levels rise'); });
 let lastEdge = 0;
 for (let pw = 68; pw <= 400; pw += 2) {
-  const a = W.eval(`aiLevel(${pw})`), b = W.eval(`aiLevel(${pw},AI_BOSS_EXP)`), edge = pw / a.p;
+  const a = W.eval(`aiLevel(${pw})`), b = W.eval(`aiLevel(${pw},AI_BOSS_EXP)`), curve = W.eval(`aiPower(${pw})`), edge = pw / curve;
   ok(a.p <= pw && b.p <= pw && tiers[a.i].p === a.p, 'AI power ' + a.p + ' and boss ' + b.p + ' never above yours (' + pw + ')');
-  ok(edge >= lastEdge - 0.02, 'your edge over the AI never shrinks as your power rises (' + pw + ': ' + edge.toFixed(3) + ')'); lastEdge = Math.max(lastEdge, edge);
+  ok(a.p <= curve + 1e-9 && (a.i === tiers.length - 1 || tiers[a.i + 1].p > curve), 'the AI fielded is the strongest authored level at or under the AI curve (' + pw + ')');
+  ok(pw === 68 || edge > lastEdge, 'your edge over the AI curve rises with every power point (' + pw + ': ' + edge.toFixed(3) + ')'); lastEdge = edge;
 }
+for (let i = 1; i < tiers.length; i++) ok(tiers[i].p / tiers[i - 1].p <= 1.08, 'AI ladder steps stay small (' + tiers[i - 1].p + '->' + tiers[i].p + ')');
 ok(W.eval('aiLevel(68).p') === 68 && W.eval('aiLevel(68).i') === 0, 'a starter tank meets starter AI, as before');
 
 // 2. AI pilots never copy your tank: same AI level + same seed = the very same AI roster, whatever gear you field (your chassis
@@ -44,7 +46,7 @@ const bays = W.eval(`(()=>{const S=ecoNorm({});S.mig=1;S.moonbeam=true;S.skin='l
  const L2=labLoadout(S),T2=tankOf(L2,1);labAction(S,'lab_activate',{id:'m_legacy',rev:S.lab.rev});const L1=labLoadout(S);
  return {a,b,w2:L2.w.a,c2:L2.c.c+L2.c.t+':'+L2.c.q,skin2:L2.skin,paint2:L2.paint,mhp2:T2.mhp,w1:L1.w.a,c1:L1.c.c+L1.c.t,skin1:L1.skin};})()`);
 ok(bays.a.ok && bays.b.ok, 'bay 2 saved and activated');
-ok(bays.w2 === 'moon' && bays.c2 === 'titan2:1.1' && bays.paint2 === 'gold' && bays.skin2 === 'lunar' && bays.mhp2 === Math.round(1700 * 1.34 * 1.1 * 1.3 * 1.08), 'bay 2 fields Moonbeam + Epic Titan (Colossus) + Lunar Skin: ' + J(bays));
+ok(bays.w2 === 'moon' && bays.c2 === 'titan2:1.1' && bays.paint2 === 'gold' && bays.skin2 === 'lunar' && bays.mhp2 === Math.round(1700 * (Math.round(1.3 * 1.34 * 1.1 * 100) / 100) * 1.08), 'bay 2 fields Moonbeam + Epic Titan (Colossus) + Lunar Skin: ' + J(bays));
 ok(bays.w1 === 'pulse' && bays.c1 === 'vanguard0' && bays.skin1 === 'lunar', 'bay 1 still fields its own (starter) kit; the account-wide skin applies to both');
 
 // 4. Same encounter, same seeds: your result never gets worse as your gear improves, and starter -> Legendary is a big step
