@@ -168,7 +168,8 @@ function priceLabel(ton,stars){
  return ton+' TON';
 }
 function pay(ton,desc){
- if(IN_WEB){showToast('Purchases are available in the Telegram edition only.');return;}
+ if(IN_WEB){location.href='/web/checkout.html?item='+encodeURIComponent(JSON.stringify(desc));return;}
+ if(IN_TG)save.payCur='stars';
  if(save.payCur==='pts')return;
  if(!save.termsOk&&typeof askTerms==='function'){askTerms(()=>pay(ton,desc));return;}   // agree to the terms once, before the first purchase
  if(save.payCur==='stars')payWithStars(ton,desc);else if(save.payCur==='sol')payWithSol(ton,desc);else payWithTon(ton,desc);
@@ -196,7 +197,7 @@ async function payWithStars(ton,desc){
  }catch(e){starsBusy=false;
   if(e&&e.message==='owned'){showToast('You already have this');return;}
   if(e&&e.message==='deal_used'){markDeal(desc.deal);store();if(typeof uiDirty==='function')uiDirty();showToast('You already used this deal. Check the new price.');return;}   // used on another device
-  if(desc.kind==='vault'&&e&&/stars|amount|price|invoice_invalid/i.test(e.message||'')){showToast('Telegram didn’t accept a Stars payment this size. Pay with TON or SOL instead.');return;}   // a very large Stars amount
+  if(desc.kind==='vault'&&e&&/stars|amount|price|invoice_invalid/i.test(e.message||'')){showToast('Telegram didn’t accept a Stars payment this size. Please contact @LunarBattle for purchase support.');return;}   // a very large Stars amount
   showToast('Stars checkout is unavailable right now. Try again in a minute.');}
 }
 // a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)
@@ -219,6 +220,7 @@ const SOL_WALLETS={
  other:{n:'Keeper / other',ul:null}};
 const SOL_ORDER=['phantom','solflare','backpack','other'];
 function payWithSol(ton,desc){
+ showToast('Crypto checkout is unavailable in Telegram.');return;
  showToast('SOL purchases are temporarily unavailable. Choose Stars or TON.');return;
  if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  const sol=solFor(ton);
@@ -340,6 +342,7 @@ function checkPendingPurchase(){
  });
 }
 async function payWithTon(amount,desc){
+ showToast('Crypto checkout is unavailable in Telegram.');return;
  if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  if(!tonConnectUI){showToast('Loading wallets…');initTonConnect();return;}
  if(!tonWallet){tonConnectUI.openModal();showToast('Connect a TON wallet first');return;}

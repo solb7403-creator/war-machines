@@ -1,6 +1,7 @@
 name = "lunar-api"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [triggers]
@@ -37,3 +38,12 @@ class_name = "WebSession"
 [[migrations]]
 tag = "v2-web-sessions"
 new_sqlite_classes = ["WebSession"]
+
+# Source-only migration. Do not deploy until separately approved.
+[[durable_objects.bindings]]
+name = "PAYMENTS"
+class_name = "PaymentJob"
+
+[[migrations]]
+tag = "v3-payment-recovery"
+new_sqlite_classes = ["PaymentJob"]

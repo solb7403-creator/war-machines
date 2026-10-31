@@ -23,14 +23,14 @@ function eligible(S, desc, X) {
   const price=RULES.ecoPrice(S,desc,X);
   return price && !RULES.ecoOwned(S,desc,X) && Number.isFinite(price.ton) && price.ton>0 && Number.isSafeInteger(Math.round(price.ton*1e9)) ? price : null;
 }
-function unchanged(S, order, X) {
+export function tonOrderEligible(S, order, X) {
   const p=eligible(S,order.desc,X);
   if (!p || p.ton!==order.price.ton || p.stars!==order.price.stars || (p.deal||null)!==(order.price.deal||null)) return false;
   if (order.desc.kind==='pass' && RULES.ecoSeason(X)!==order.season) return false;
   if (order.desc.kind==='box' && (X.day!==order.day || X.week!==order.week)) return false;
   return true;
 }
-export async function issueTonOrder(env, pid, input, now=Date.now()) {
+export async function issueTonOrder(env, pid, input, now=Date.now(), options={}) {
   if (!buyerOk(pid)) return {error:'buyer'};
   if (!keyOk(input?.requestId) || !Number.isSafeInteger(now) || now<0) return {error:'request'};
   const desc=descriptor(input.desc);
@@ -42,12 +42,16 @@ export async function issueTonOrder(env, pid, input, now=Date.now()) {
     const prior=Object.values(orders).find(o=>o.requestId===input.requestId);
     if (prior) return JSON.stringify(prior.desc)===JSON.stringify(desc)
       ? {abort:true,order:prior,duplicate:true} : {abort:true,error:'request_conflict'};
-    if ((S.starCheckout?.until||0)>now || Object.values(orders).some(o=>o.expires>now)) return {abort:true,error:'pending'};
+    if ((S.starCheckout?.until||0)>now || Object.values(orders).some(o=>o.expires>now && !S.chainReceipts?.[o.id])) return {abort:true,error:'pending'};
     if (Object.keys(orders).length>=ORDER_LIMIT || orders[id]) return {abort:true,error:'capacity'};
     const price=eligible(S,desc,X);
     if (!price) return {abort:true,error:'ineligible'};
-    const order={v:1,id,requestId:input.requestId,buyer:pid,currency:'TON',network:'mainnet',
-      recipient:RECIPIENT,amountNano:String(Math.round(price.ton*1e9)),memo:'LWM2|TON|'+id,
+    const currency=options.currency||'TON';
+    const amount=currency==='SOL' ? Math.round((price.ton*options.tonUsd/options.solUsd >= 1 ? Math.round(price.ton*options.tonUsd/options.solUsd*1000)/1000 : Math.round(price.ton*options.tonUsd/options.solUsd*10000)/10000)*1e9) : Math.round(price.ton*1e9);
+    if(!Number.isSafeInteger(amount)||amount<=0)return {abort:true,error:'price'};
+    const order={v:1,id,requestId:input.requestId,buyer:pid,currency,network:options.network||'mainnet',
+      recipient:options.recipient||RECIPIENT,amountNano:String(amount),memo:'LWM2|'+currency+'|'+id,
+      ...(options.reference?{reference:options.reference}:{}),...(options.tonUsd?{revc:Math.round(price.ton*options.tonUsd*100)}:{}),
       desc,price:{ton:price.ton,stars:price.stars,deal:price.deal||''},
       created:now,expires:now+TTL,day:X.day,week:X.week,season:RULES.ecoSeason(X)};
     S.tonOrders={...orders,[id]:order};
@@ -62,6 +66,6 @@ export async function inspectTonOrder(env,pid,id,now=Date.now()) {
   if (!order || order.buyer!==pid) return {error:'not_found'};
   // Read-only quote information, NEVER a successful/paid/delivered state. Expiry
   // cannot erase proof of a later indexed payment; settlement remains unbuilt.
-  const status=!unchanged(S,order,ctxOf(pid,now)) ? 'review' : now>=order.expires ? 'expired' : 'pending';
+  const status=!tonOrderEligible(S,order,ctxOf(pid,now)) ? 'review' : now>=order.expires ? 'expired' : 'pending';
   return {order,status};
 }

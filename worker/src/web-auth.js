@@ -57,7 +57,7 @@ async function tgSessionIdentity(env,user){
 export async function issueLunarWebSession(env,user,pid){
  if(!env.SESSIONS||!(/^(?:ln_[0-9]{12,15}|tg_[0-9]{3,15})$/.test(String(pid||'')))||!user?.lunar_account)return json({error:'account'},403);
  const sid=random(),csrf=random(),now=Date.now();
- const created=await record(env,sid,'issue',{kind:'session',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+ const created=await record(env,sid,'issue',{kind:'session',authMethod:'passkey',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
  if(!created.ok)return json({error:'session_store'},503);
  const result=json({ok:true,user,pid,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
  result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;

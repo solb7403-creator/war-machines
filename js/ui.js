@@ -251,12 +251,12 @@ function openVault(){
  });
 }
 function renderShop(){
- const cur=save.payCur;
+ const cur=IN_TG?'stars':save.payCur;
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
  const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const pend=save.pendingSol||save.pendingTx;
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
-  '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
+  '<div class="seg c3">'+(IN_WEB?[]:[['stars','Stars']]).map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
   '<p class="dimtxt" style="margin:6px 0 10px">'+lpPct()+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?' ($'+fmtNum(lbMeta.lpf)+' so far)':'')+'. The other '+(100-lpPct())+'% funds the game: development, servers and promotion. <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
@@ -963,12 +963,12 @@ const ACT={
    '<p class="mut">All '+upLevels(save.up)+' levels go back to 0. The reset fee is '+fmtNum(fee)+' points.</p>'+
    '<div style="display:grid;gap:8px;margin-top:14px"><button class="btn btn-ghost block" data-act="respecok">Pay '+fmtNum(fee)+' points · get '+fmtNum(half)+' back</button>'+
    (pr?'<button class="btn btn-gold block" data-act="respecpay">Pay '+priceLabel(pr.ton,pr.stars)+' · get all '+fmtNum(inv)+' back</button>'+
-    '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':
+    '<div class="seg c3">'+(IN_WEB?[]:[['stars','Stars']]).map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':
     '<p class="mut" style="margin:0">Builds worth under 9,375 points reset with points only.</p>')+
    '<button class="btn btn-quiet block" data-act="respeccancel">Keep it</button></div>';
   const ov=findOv('respec');if(ov)closeOverlay(ov);
   openOverlay('modal','<h3>Reset your build?</h3>'+body,{key:'respec'});},
- respeccur:a=>{save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec();},
+ respeccur:a=>{if(IN_TG&&a!=='stars')return;save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec();},
  respecpay:()=>{const pr=ecoPrice(save,{kind:'respec'},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec'});},
  respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
  respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
@@ -982,7 +982,7 @@ const ACT={
   store();syncPlayer();fx('tap');showToast('Equipped '+(isW?getW(k):getC(k)).name);},
  core:a=>openCorePicker(+a),
  coreset:a=>{const [i,k]=a.split(':');socketCore(+i,k==='-'?null:k);fx('tap');const ov=findOv('core');if(ov)closeOverlay(ov);showToast(k==='-'?'Socket emptied':GEM[k].name+' core in socket '+(+i+1));},
- paycur:a=>{save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
+ paycur:a=>{if(IN_TG&&a!=='stars')return;save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
  tonwallet:()=>tonWalletButton(),
  solwallet:()=>openSolWallets(),
  setsolw:a=>{save.solWallet=a;store();const ov=findOv('solw');if(ov)closeOverlay(ov);},

@@ -1,3 +1,7 @@
+import {chainActive,cryptoReady,issueChainOrder,inspectChainOrder,settleChainOrder,cancelChainOrder,wakePayments} from "./chain-payments.js";
+import {paymentOps} from "./payment-ops.js";
+export {PaymentJob} from "./payment-jobs.js";
+import {revAdd,paymentPending,projectStars,reconcilePayments,itemLabel} from "./payment-ledger.js";
 // LUNAR: War Machines — game server (Cloudflare Worker)
 // Every write to the database goes through here, tied to a verified Telegram login.
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
@@ -69,6 +73,7 @@ async function auth(req, env) {
     if (b.initData) return {err:json({error:"ambiguous identity"},401)};
     const a=await webIdentity(req,env);if(!a)return {err:json({error:"not verified"},401)};
     const path=new URL(req.url).pathname;
+    if((path.startsWith("/api/chain/")||path==="/api/payment-ops")&&(!a.user.lunar_account||a.session.authMethod!=="passkey"))return {err:json({error:"Independent Lunar account required"},403)};
     if(["/api/pay-log","/api/stars-invoice","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
     if(path==="/api/sync"){
       const S=await readEco(env,a.pid);if(S.mig===0)return {err:json({error:"Open Telegram once to finish account migration"},409)};
@@ -76,6 +81,7 @@ async function auth(req, env) {
     }
     return {b,user:a.user,pid:a.pid,ip:req.headers.get("CF-Connecting-IP")||"",sp:"",web:true};
   }
+  if(new URL(req.url).pathname.startsWith("/api/chain/")||new URL(req.url).pathname==="/api/payment-ops")return {err:json({error:"Independent website session required"},403)};
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
   // start_param: the link that opened the game (part of the signed login, so it can't be made up)
@@ -92,14 +98,6 @@ async function auth(req, env) {
     user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;
   }
   return { b, user, pid, ip: req.headers.get("CF-Connecting-IP") || "", sp };
-}
-
-function itemLabel(k, tk, ri) {
-  if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
-  if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
-  if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
-  if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
-  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : k === "respec" ? "Build reset (keep all points)" : "Purchase";
 }
 
 // ================= /api/sync =================
@@ -192,41 +190,6 @@ export async function squad(env, pid) {
 }
 
 // ================= /api/pay-log =================
-// TON and SOL purchases: the phone reports the order, the server finds the payment on-chain itself (TON: the order note
-// and the amount; SOL: the signature and the amount), records each transaction once, checks the price against its own
-// record, and only then grants the item. Nothing is granted on the phone's word.
-async function verifyTon(memo, amt) {
-  try {
-    const r = await fetch(`https://toncenter.com/api/v2/getTransactions?address=${TON_RECIPIENT}&limit=50`);
-    if (!r.ok) return null;
-    const d = await r.json();
-    if (d.ok === false) return null;
-    for (const t of d.result || []) {
-      // Negative provider status is never delivery evidence. Absence of these fields
-      // is not positive finality certification; that remains a provider release gate.
-      const status = t.description || {};
-      if (t.aborted === true || status.aborted === true || (t.in_msg || {}).bounced === true || (status.compute_ph || {}).success === false || (status.action || {}).success === false) continue;
-      const val = parseInt((t.in_msg || {}).value || "0", 10) / 1e9;
-      if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return t.transaction_id && t.transaction_id.hash ? { hash: t.transaction_id.hash, src: String((t.in_msg || {}).source || "") } : null;
-    }
-  } catch {}
-  return null;
-}
-async function verifySol(sig, amt) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(String(sig || ""))) return false;
-  for (const url of SOL_RPCS) {
-    try {
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransaction", params: [sig, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "confirmed" }] }) });
-      const d = await r.json();
-      const tx = d.result;
-      if (!tx || !tx.meta || tx.meta.err) continue;
-      const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey || k), i = keys.indexOf(SOL_RECIPIENT);
-      if (i < 0) return false;
-      return (tx.meta.postBalances[i] - tx.meta.preBalances[i]) / 1e9 + 1e-9 >= amt * 0.999 ? String(keys[0] || "payer") : false;   // the payer's wallet
-    } catch {}
-  }
-  return false;
-}
 // the launch liquidity fund: LP_SHARE of every verified shop sale goes into the $LUNAR liquidity pool at launch. Sales are
 // counted in US cents (meta/revc) as the server prices them (Stars at Telegram's ~1.3 cents, TON and SOL at the live TON
 // price), never the phone's number; refunds come off. The board file shows the fund (lb.lpf), the Ranks tab and Shop too
@@ -236,72 +199,6 @@ async function tonUsd() {
   if (TONUSD.v && Date.now() - TONUSD.t < 300000) return TONUSD.v;
   try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd")).json(); const v = Number(d["the-open-network"].usd); if (v > 0) TONUSD = { v, t: Date.now() }; } catch {}
   return TONUSD.v;
-}
-// The total and its durable event marker commit together. Retries cannot count a sale/refund twice.
-async function revAdd(env, cents, event) {
-  if (!cents) return;
-  for (let i = 0; i < 12; i++) {
-    const r = await fetch(dbUrl(env, "meta"), { headers: { "X-Firebase-ETag": "true" } });
-    if (!r.ok) throw new Error("payment revenue read");
-    const meta = (await r.json()) || {};
-    meta.paymentEvents = meta.paymentEvents || {};
-    if (meta.paymentEvents[event]) return;
-    meta.paymentEvents[event] = 1;
-    meta.revc = (Number(meta.revc) || 0) + Math.round(cents);
-    const w = await fetch(dbUrl(env, "meta"), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": r.headers.get("ETag") || "" }, body: JSON.stringify(meta) });
-    if (w.status === 412) continue;
-    if (!w.ok) throw new Error("payment revenue write");
-    return;
-  }
-  throw new Error("payment revenue busy");
-}
-// Refund markers are terminal even when an older success callback finishes later.
-async function paymentProjection(env, path, value) {
-  for (let i = 0; i < 12; i++) {
-    const r = await fetch(dbUrl(env, path), { headers: { "X-Firebase-ETag": "true" } });
-    if (!r.ok) throw new Error("payment receipt read");
-    const old = (await r.json()) || {}, next = { ...old, ...value };
-    if (old.rf || value.rf) next.rf = old.rf || value.rf;
-    if (old.refunded || value.refunded) { next.refunded = true; next.verified = false; }
-    const w = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": r.headers.get("ETag") || "" }, body: JSON.stringify(next) });
-    if (w.status === 412) continue;
-    if (!w.ok) throw new Error("payment receipt write");
-    return;
-  }
-  throw new Error("payment receipt busy");
-}
-// A bounded authenticated retry path survives a lost provider retry after the inventory CAS.
-// The pending version commits with the receipt; clearing it cannot erase a concurrent refund.
-function paymentPending(S, type, id, name) {
-  S.paymentPending = S.paymentPending || {};
-  const key = type + "_" + id;
-  S.paymentSeq = (S.paymentSeq || 0) + 1;
-  S.paymentPending[key] = { type, id, name: name || "Pilot", v: S.paymentSeq };
-}
-async function projectStars(env, pid, charge, receipt, name) {
-  await paymentProjection(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name, cur: "STARS", amt: receipt.stars || 0, gram: receipt.g || 0, usd: Math.round((receipt.stars || 0) * 1.3) / 100, item: itemLabel(receipt.k, receipt.t, receipt.r), memo: "STARS|" + (receipt.n || ""), proof: charge, verified: !receipt.rf && !receipt.held && !receipt.unmatched, ...(receipt.held ? { held: receipt.held } : {}), ...(receipt.rf ? { refunded: true } : {}), t: receipt.ts || receipt.rf });
-  if (!receipt.unmatched) {
-    if (receipt.journal) await revAdd(env, (receipt.stars || 0) * 1.3, "stars_sale_" + pid + "_" + charge);
-    if (receipt.rf && (receipt.journal || receipt.refundJournal)) await revAdd(env, -(receipt.stars || 0) * 1.3, "stars_refund_" + pid + "_" + charge);
-  }
-  await paymentProjection(env, `starsPaid/${pid}/${charge}`, receipt);
-}
-async function reconcilePayments(env, pid, S, now = Date.now()) {
-  // Reserve room for authentication, sync, refund projections and cleanup inside
-  // the Workers Free subrequest budget. Each completed receipt advances durably.
-  for (const [key, pending] of Object.entries(S.paymentPending || {}).slice(0, 2)) {
-    const receipt = pending.type === "stars" ? S.starReceipts && S.starReceipts[pending.id] : S.chainReceipts && S.chainReceipts[pending.id];
-    if (!receipt) continue;
-    if (pending.type === "stars") await projectStars(env, pid, pending.id, receipt, pending.name);
-    else {
-      if (!(await dbPut(env, `payments/LWM_${pending.id}`, receipt))) throw new Error("payment receipt write");
-      await revAdd(env, receipt.revc, receipt.revEvent);
-    }
-    await tx(env, pid, current => {
-      if (current.paymentPending && current.paymentPending[key] && current.paymentPending[key].v === pending.v) delete current.paymentPending[key];
-      return {};
-    }, now);
-  }
 }
 // Provider payloads are compared byte-for-byte with immutable server-issued quotes.
 const STAR_QUOTE_MS = 10 * 60000;
@@ -319,15 +216,6 @@ async function starQuote(env, payload, telegramId, amount, currency) {
   return quote && quote.payload === payload && quote.telegramId === telegramId && quote.price.stars === amount ? quote : null;
 }
 
-// A future bound SOL order must also have a verified live conversion; price outages fail closed.
-async function solValueOk(sol, ton) {
-  try {
-    const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json();
-    const t = d["the-open-network"].usd, s = d.solana.usd;
-    if (t > 0 && s > 0) return sol * s >= ton * t * 0.85;
-  } catch {}
-  return false;
-}
 const descOf = (d) => {
   d = d && typeof d === "object" ? d : {};
   const kind = String(d.kind || "");
@@ -336,69 +224,7 @@ const descOf = (d) => {
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind } : null;
 };
-async function payLog(env, b, user, pid, now = Date.now()) {
-  const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
-  if (!cur) return { error: "cur" };
-  // SOL is paused until a server-issued order binds its reference to the authenticated buyer.
-  if (cur === "SOL") return { error: "unavailable" };
-  const memo = String(b.memo || "").slice(0, 64);
-  if (!memo.startsWith("LWM|" + pid + "|")) return { error: "memo" };
-  const amt = num(b.amt, 0, 100000), key = `payments/LWM_${safeKey(memo)}`;
-  const have = await dbGet(env, key).catch(() => null);
-  const desc = descOf(b.desc);
-  if (have && (have.granted || !desc)) {
-    if (have.revEvent) await revAdd(env, have.revc, have.revEvent);
-    const S = await readEco(env, pid);
-    return { ok: true, dup: true, verified: have.verified === true, ...(have.held ? { error: "review" } : {}), out: have.o || [], E: pub(S) };
-  }
-  const S0 = await readEco(env, pid), gk = safeKey(memo);
-  const previous = S0.chainReceipts && S0.chainReceipts[gk];
-  if (previous) {
-    if (!(await dbPut(env, key, previous))) throw new Error("payment receipt write");
-    await revAdd(env, previous.revc, previous.revEvent);
-    return { ok: true, dup: true, verified: previous.verified === true, ...(previous.held ? { error: "review" } : {}), out: previous.o || [], E: pub(S0) };
-  }
-  const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
-  // A client label is not a priced product. Never make a migration-eligible sale from it.
-  if (!desc) return { error: "item" };
-  const X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
-  if (!price) return { error: "item" };
-  const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
-  if (cur === "TON" && amt + 1e-9 < price.ton * 0.999) return { error: "amount" };
-  if (cur === "SOL" && (rec.gram + 1e-9 < price.ton * 0.999 || !(await solValueOk(amt, price.ton)))) return { error: "amount" };
-  let txid = null, src = "";
-  if (cur === "TON") { const tv = await verifyTon(memo, need); if (tv) { txid = tv.hash; src = tv.src; } }
-  else { const payer = await verifySol(rec.proof, amt); if (payer) { txid = rec.proof; src = payer; } }
-  if (!txid) { if (!have) await dbPut(env, key, { ...rec, verified: false }); return { ok: true, verified: false, error: "pending" }; }
-  // each on-chain transaction pays for one order
-  const once = await claimOnce(env, `${cur === "TON" ? "tonTx" : "solTx"}/${safeKey(txid)}`, { pid, memo, t: now });
-  if (!once.ok && !(once.v && once.v.memo === memo)) return { error: "reused" };
-  const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10);
-  const t = await tx(env, pid, (S, X) => {
-    S.chainReceipts = S.chainReceipts || {};
-    if (S.chainReceipts[gk]) return { payment: S.chainReceipts[gk], dup: true };
-    S.gout = S.gout || {};
-    const currentPrice = RULES.ecoPrice(S, desc, X);
-    const held = RULES.ecoOwned(S, desc, X) || !currentPrice || currentPrice.ton !== price.ton || currentPrice.stars !== price.stars || (currentPrice.deal || null) !== (price.deal || null) || X.day !== X0.day ? "eligibility_changed" : null;
-    const outs = held ? [] : S.gout[gk] || RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
-    const payment = { ...rec, verified: !held, granted: true, ...(held ? { held } : {}), tx: txid, o: outs.filter(o => o && !o.none), revc: Math.round(usd * 100), revEvent: "chain_" + gk };
-    S.chainReceipts[gk] = payment;
-    paymentPending(S, "chain", gk, rec.name);
-    return { payment };
-  }, now);
-  const payment = t.payment, outs = payment.o;
-  if (!(await dbPut(env, key, payment))) throw new Error("payment receipt write");
-  await revAdd(env, payment.revc, payment.revEvent);   // the liquidity fund
-  // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
-  if (src && src !== "payer") {
-    const wh = hex(await hmac(env.BOT_TOKEN, "w|" + src)).slice(0, 16);
-    const others = (await dbGet(env, `wal/${wh}`).catch(() => null)) || {};
-    for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "wallet").catch(() => {});
-    await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {});
-  }
-  return { ok: true, verified: payment.verified, ...(payment.held ? { error: "review" } : {}), out: outs, E: pub(t.S) };
-}
+async function payLog() { return {error:"unavailable"}; } // Reject every legacy unbound crypto checkout.
 
 // ================= /api/stars-invoice =================
 // the price comes from the server's own record: repeat-buy pricing, and a deal only if it's still unused this period
@@ -607,7 +433,7 @@ async function webhook(req, env) {
       const n = JSON.parse(quote.payload).n;
       const accepted = await tx(env, quote.pid, (S, X) => {
         const active = S.starCheckout;
-        if (!starQuoteEligible(S, quote, X) || S.starQuoteUse && S.starQuoteUse[n]) return { abort: true };
+        if (chainActive(S,now) || !starQuoteEligible(S, quote, X) || S.starQuoteUse && S.starQuoteUse[n]) return { abort: true };
         if (active && active.until > now && (active.n !== n || active.q !== q.id)) return { abort: true };
         S.starAccepted = S.starAccepted || {};
         if (S.starAccepted[n] && S.starAccepted[n] !== q.id) return { abort: true };
@@ -629,6 +455,7 @@ async function webhook(req, env) {
     const quote = p.q === 1 ? await starQuote(env, sp.invoice_payload, m.from.id, sp.total_amount, sp.currency) : null;
     const pid = await starsOwner(env, m.from.id, charge, quote && quote.pid), now = Date.now();
     const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
+    await wakePayments(env,pid);
     const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
     const t = await tx(env, pid, (S, X) => {
       S.starReceipts = S.starReceipts || {};
@@ -637,7 +464,7 @@ async function webhook(req, env) {
       S.gout = S.gout || {};
       let held = null;
       if (p.q === 1) {
-        if (!quote || !S.starAccepted || !S.starAccepted[p.n] || !starQuoteEligible(S, quote, X)) held = "quote_ineligible";
+        if (!quote || !S.starAccepted || !S.starAccepted[p.n] || !starQuoteEligible(S, quote, X) || now>=quote.expires) held = "quote_ineligible";
         S.starQuoteUse = S.starQuoteUse || {};
         if (S.starQuoteUse[p.n] && S.starQuoteUse[p.n] !== charge) held = "quote_used";
         if (!held) S.starQuoteUse[p.n] = charge;
@@ -657,6 +484,7 @@ async function webhook(req, env) {
   if (m && m.refunded_payment) {
     const rp = m.refunded_payment, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
     const pid = await starsOwner(env, m.from.id, charge);
+    await wakePayments(env,pid);
     const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
     const t = await tx(env, pid, (S) => {
       S.starReceipts = S.starReceipts || {};
@@ -725,6 +553,13 @@ const ROUTES = {
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
   "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),
+  "/api/chain/config": async (env,a) => ({status:200,body:{enabled:cryptoReady(env),network:env.PAYMENT_NETWORK||"disabled"}}),
+  "/api/chain/list": async (env,a) => {if(!cryptoReady(env))return {status:200,body:{error:"unavailable"}};const S=await readEco(env,a.pid);return {status:200,body:{orders:Object.values(S.tonOrders||{}).map(o=>{const r=S.chainReceipts?.[o.id];return {id:o.id,currency:o.currency,expires:o.expires,status:r?(r.refunded?"refunded":r.held?"review":"paid"):S.chainCancelled?.[o.id]?"cancelled":o.expires>Date.now()?"pending":"expired"};})}};},
+  "/api/chain/order": async (env,a) => ({status:200,body:await issueChainOrder(env,a.pid,a.b)}),
+  "/api/chain/status": async (env,a) => ({status:200,body:cryptoReady(env)?await inspectChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
+  "/api/chain/confirm": async (env,a) => ({status:200,body:cryptoReady(env)?await settleChainOrder(env,a.pid,a.b.id,String(a.b.signature||"")):{error:"unavailable"}}),
+  "/api/chain/cancel": async (env,a) => ({status:200,body:cryptoReady(env)?await cancelChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
+  "/api/payment-ops": async (env,a) => ({status:200,body:await paymentOps(env,a.pid,a.b)}),
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
@@ -756,7 +591,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
+const PID_RL = { "/api/chain/order":6,"/api/chain/status":20,"/api/chain/confirm":6,"/api/chain/cancel":6,"/api/payment-ops":6, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -774,6 +609,7 @@ export default {
     if(path.startsWith("/auth/")){
       try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
     }
+    if(path==="/web/tonconnect-manifest.json"&&req.method==="GET")return json({url:env.WEB_ORIGIN||new URL(req.url).origin,name:"LUNAR: War Machines",iconUrl:(env.WEB_ORIGIN||new URL(req.url).origin)+"/icon.png"});
     if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
@@ -794,7 +630,7 @@ export default {
     if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
     if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png"].includes(path))){
       const res=await env.ASSETS.fetch(req);const out=new Response(res.body,res);out.headers.set("X-Content-Type-Options","nosniff");
-      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");}
+      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");if(path==="/web/checkout.html")out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.tonapi.io https://*.tonhubapi.com https://*.tonconnect.org https://*.ton.org https://bridge.tonapi.io https://bridge.ton.space https://api.devnet.solana.com https://api.mainnet-beta.solana.com; img-src 'self' data: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'");}
       return out;
     }
     if (path === "/") return new Response("LUNAR: War Machines API");
