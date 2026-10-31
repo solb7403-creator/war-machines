@@ -9,8 +9,8 @@ Future sessions: read this first, then check true GitHub `main` + the "Deploy St
 | Release branch | `release/nonpayment-live-gear` |
 | Base main | `385356ea4ffac207900d05be6fbdf1965081fa63` (v `20261029-defender1`) |
 | New build version | `20261031-gear1` |
-| Merged to main | see PR / bottom of this file (updated after merge) |
-| Deployed | see bottom of this file (updated after deploy) |
+| Merged to main | YES — PR #22 squash-merged as `9752967ae503ff350cc9c0f1119b27a0c7a25edd` (2026-10-31 07:02 UTC) |
+| Deployed | YES — Deploy Stars server run #52 (41178987514) success; Worker version `151e0894-d011-409a-8fbf-0da6c9916996`; live `/pvp/health` `{"ok":true,...}` from the runner; Telegram webhook ok. GitHub Pages run 41178986930 success. |
 
 ## Source manifest — IN
 
@@ -50,6 +50,18 @@ Owner's earlier physical-iPhone sign-off was on the RC1 preview Site, not this b
 2. **Full:** `git revert <release merge commit>` on main, push once. Restores main `385356e` tree.
 3. Never reset accounts, purchases, DB, secrets or Durable Objects. No data migration is involved in this release.
 
+## Live verification limits
+
+The Claude cloud sandbox's network policy blocks `lunar-api.solb7403.workers.dev` and `solb7403-creator.github.io`, so the only live checks are the ones the GitHub Actions runner made (deploy steps + `/pvp/health`). Nobody has done an in-browser live check on the public site yet. No purchases were made and no live accounts were changed.
+
 ## Next single action
 
-(updated at end of session)
+Owner iPhone smoke on the live game:
+1. Open the bot or https://lunar-api.solb7403.workers.dev/web/ → sign in.
+2. Garage: both bays show new 3D machines → Engineer → rotate/zoom.
+3. Settings → Graphics: Auto / High / Low / 2D all work.
+4. Play tab: "Your battle machines" shows both bays; one AI match; Free Test Range.
+5. Optional: https://lunar-api.solb7403.workers.dev/web/practice-preview.html (no account needed).
+If anything looks broken: apply HF-only rollback (above).
+
+Deferred to later, separate work: PR #5 counterpick-lock rule change; PR #21 payments; audio; more distinct silhouettes; new weapon families.
