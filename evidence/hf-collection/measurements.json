@@ -1,0 +1,2134 @@
+{
+  "environment": "Chromium 154.0.8037.57 built on Debian GNU/Linux 13 (trixie) / headless ANGLE SwiftShader software rendering, simulated CSS viewports. Not physical iPhone FPS.",
+  "base": "c237ea7a1fae81f9fff917606a702d7cd97067a5",
+  "pipelineBytes": {
+    "pr17": {
+      "raw": 19811,
+      "gzip": 7901
+    },
+    "collection": {
+      "raw": 37792,
+      "gzip": 14074
+    }
+  },
+  "selectedImages": [
+    "chassis-3x3.png",
+    "weapons-3x3.png",
+    "lunar-3x3.png",
+    "pairs-3x3.png",
+    "pr17-hero-quarter-390.png",
+    "collection-hero-quarter-390.png",
+    "collection-hero-front-390.png",
+    "collection-hero-side-390.png",
+    "collection-hero-rear-390.png",
+    "pr17-default-pulse-390.png",
+    "collection-default-pulse-390.png",
+    "collection-lunar-pulse-390.png",
+    "collection-default-moon-390.png",
+    "collection-lunar-moon-390.png",
+    "collection-moonbeam-side.png",
+    "collection-moonbeam-quarter.png",
+    "collection-moonbeam-emitter.png",
+    "final-engineer-320.png",
+    "final-engineer-390.png",
+    "final-engineer-430.png",
+    "final-garage-430.png",
+    "shop-premium-cards.png",
+    "upgraded-renderer-detail.png",
+    "final-high-busy-combat-390.png",
+    "final-low-busy-combat-390.png",
+    "upgraded-battle-arena-390.png",
+    "collection-low-390.png",
+    "collection-2d-390.png"
+  ],
+  "selectedImageBytes": 7259064,
+  "geometry": {
+    "standardPairingsPerQuality": 81,
+    "legendaryPairingsPerQuality": 99,
+    "models": [
+      {
+        "label": "scout:0:false",
+        "quality": "high",
+        "vertices": 28176,
+        "hash": "0938fe0643c725e9d0b9fdd34a5ffbd57527c22dff696ac95fe44e8ddfa8f7c2",
+        "bounds": {
+          "min": [
+            -1,
+            0.007224373519420624,
+            -0.8679999709129333
+          ],
+          "max": [
+            1.0004217624664307,
+            0.7105000019073486,
+            0.8679999709129333
+          ]
+        }
+      },
+      {
+        "label": "scout:0:true",
+        "quality": "high",
+        "vertices": 32796,
+        "hash": "25580eefa79bc4afb2fc9208e986c0bd048248ddab0fa6766fa05156e9b51f2f",
+        "bounds": {
+          "min": [
+            -1,
+            0.007224373519420624,
+            -0.8679999709129333
+          ],
+          "max": [
+            1.0004217624664307,
+            0.7105000019073486,
+            0.8679999709129333
+          ]
+        }
+      },
+      {
+        "label": "scout:1:false",
+        "quality": "high",
+        "vertices": 29232,
+        "hash": "5fcb197eec18b1be0767b8b6a5bf11804f20cd64af6dcdf8638d91219e11d1ab",
+        "bounds": {
+          "min": [
+            -1.0475000143051147,
+            0.007499999832361937,
+            -0.9279999732971191
+          ],
+          "max": [
+            1.0543042421340942,
+            0.7304999828338623,
+            0.9279999732971191
+          ]
+        }
+      },
+      {
+        "label": "scout:1:true",
+        "quality": "high",
+        "vertices": 32940,
+        "hash": "880d65de86c51823baf9597eaff7cb20e970c0ecc9eb966711d117fdf401d523",
+        "bounds": {
+          "min": [
+            -1.0475000143051147,
+            0.007499999832361937,
+            -0.9279999732971191
+          ],
+          "max": [
+            1.0543042421340942,
+            0.7304999828338623,
+            0.9279999732971191
+          ]
+        }
+      },
+      {
+        "label": "scout:2:false",
+        "quality": "high",
+        "vertices": 43320,
+        "hash": "c56b8befecd8fab4066ff9730dc0eea5d04c7d016385872ad82ac8ef46298bc4",
+        "bounds": {
+          "min": [
+            -1.1024999618530273,
+            0.007499999832361937,
+            -0.9629999995231628
+          ],
+          "max": [
+            1.1130746603012085,
+            0.7505000233650208,
+            0.9629999995231628
+          ]
+        }
+      },
+      {
+        "label": "scout:2:true",
+        "quality": "high",
+        "vertices": 47028,
+        "hash": "75fe3ec1582d19ca1a16e8e2cdf091ddb64a3e1ee3516fba9b1e8e18ed155228",
+        "bounds": {
+          "min": [
+            -1.1024999618530273,
+            0.007499999832361937,
+            -0.9629999995231628
+          ],
+          "max": [
+            1.1130746603012085,
+            0.7505000233650208,
+            0.9629999995231628
+          ]
+        }
+      },
+      {
+        "label": "vanguard:0:false",
+        "quality": "high",
+        "vertices": 35916,
+        "hash": "6977837c50884dca267839eb4c46a04807b91b6771b6c11eafd1e4e4d3134891",
+        "bounds": {
+          "min": [
+            -1.3274999856948853,
+            0.007499999832361937,
+            -1.1929999589920044
+          ],
+          "max": [
+            1.3352168798446655,
+            0.9054999947547913,
+            1.1929999589920044
+          ]
+        }
+      },
+      {
+        "label": "vanguard:0:true",
+        "quality": "high",
+        "vertices": 40992,
+        "hash": "1365593f7455c1e4b1bf13a7682320ebd50b841cb6620a3835f43646a90b425a",
+        "bounds": {
+          "min": [
+            -1.3274999856948853,
+            0.007499999832361937,
+            -1.1929999589920044
+          ],
+          "max": [
+            1.3352168798446655,
+            0.9054999947547913,
+            1.1929999589920044
+          ]
+        }
+      },
+      {
+        "label": "vanguard:1:false",
+        "quality": "high",
+        "vertices": 35484,
+        "hash": "3d5eb6f16dae0cc46716f0aae2bdd2439be2aaca72cd4532da8db1702bd65dc0",
+        "bounds": {
+          "min": [
+            -1.2975000143051147,
+            0.007499999832361937,
+            -1.1729999780654907
+          ],
+          "max": [
+            1.3056710958480835,
+            0.8705000281333923,
+            1.1729999780654907
+          ]
+        }
+      },
+      {
+        "label": "vanguard:1:true",
+        "quality": "high",
+        "vertices": 39192,
+        "hash": "9dd07ccb498c6e75c95691d5c4514920a26e73e11ebca84074e49928b50537c7",
+        "bounds": {
+          "min": [
+            -1.2975000143051147,
+            0.007499999832361937,
+            -1.1729999780654907
+          ],
+          "max": [
+            1.3056710958480835,
+            0.8705000281333923,
+            1.1729999780654907
+          ]
+        }
+      },
+      {
+        "label": "vanguard:2:false",
+        "quality": "high",
+        "vertices": 38148,
+        "hash": "95c010a5f3578156d29fd677d68adb26ca86aae81cd2156fbc3a6a2c422a4093",
+        "bounds": {
+          "min": [
+            -1.3424999713897705,
+            0.007499999832361937,
+            -1.2230000495910645
+          ],
+          "max": [
+            1.3532650470733643,
+            0.9204999804496765,
+            1.2230000495910645
+          ]
+        }
+      },
+      {
+        "label": "vanguard:2:true",
+        "quality": "high",
+        "vertices": 41856,
+        "hash": "82c546a4de935fac2f5c0701ab5697b2bfb765694a4ac2153af635e6719e4b47",
+        "bounds": {
+          "min": [
+            -1.3424999713897705,
+            0.007499999832361937,
+            -1.2230000495910645
+          ],
+          "max": [
+            1.3532650470733643,
+            0.9204999804496765,
+            1.2230000495910645
+          ]
+        }
+      },
+      {
+        "label": "titan:0:false",
+        "quality": "high",
+        "vertices": 35244,
+        "hash": "9cdb6bf252d36e10642e91fab416833c4605461c8534a3caec6f59f41d6c148e",
+        "bounds": {
+          "min": [
+            -1.3125,
+            0.007499999832361937,
+            -1.2829999923706055
+          ],
+          "max": [
+            1.3201134204864502,
+            0.9204999804496765,
+            1.2829999923706055
+          ]
+        }
+      },
+      {
+        "label": "titan:0:true",
+        "quality": "high",
+        "vertices": 40320,
+        "hash": "7aaf359a454764bc13334357fbdb5d2b4bcb1666adbdd3c24cca326c3cf83f28",
+        "bounds": {
+          "min": [
+            -1.3125,
+            0.007499999832361937,
+            -1.2829999923706055
+          ],
+          "max": [
+            1.3201134204864502,
+            0.9204999804496765,
+            1.2829999923706055
+          ]
+        }
+      },
+      {
+        "label": "titan:1:false",
+        "quality": "high",
+        "vertices": 37152,
+        "hash": "ba9917f2d00e5ec034a6b01fc716da524983a3b51c67a6d3f4e61ca06e8c7947",
+        "bounds": {
+          "min": [
+            -1.3624999523162842,
+            0.007499999832361937,
+            -1.3229999542236328
+          ],
+          "max": [
+            1.3694708347320557,
+            0.9605000019073486,
+            1.3229999542236328
+          ]
+        }
+      },
+      {
+        "label": "titan:1:true",
+        "quality": "high",
+        "vertices": 40860,
+        "hash": "35d71cd0505de7b9517f3dcc16f34060a59c1a6feca2ea2675881ae52fd24bf0",
+        "bounds": {
+          "min": [
+            -1.3624999523162842,
+            0.007499999832361937,
+            -1.3229999542236328
+          ],
+          "max": [
+            1.3694708347320557,
+            0.9605000019073486,
+            1.3229999542236328
+          ]
+        }
+      },
+      {
+        "label": "titan:2:false",
+        "quality": "high",
+        "vertices": 46488,
+        "hash": "5b93bfc8dc951a1c95542e449ba2d47dc880a08903cffc0f826f00ab8ff536cd",
+        "bounds": {
+          "min": [
+            -1.412500023841858,
+            0.007499999832361937,
+            -1.3530000448226929
+          ],
+          "max": [
+            1.4224531650543213,
+            1.0104999542236328,
+            1.3530000448226929
+          ]
+        }
+      },
+      {
+        "label": "titan:2:true",
+        "quality": "high",
+        "vertices": 50196,
+        "hash": "5ca10260b302f93a20d787a513a630f38d7a9b3d975aa897054a53e292584711",
+        "bounds": {
+          "min": [
+            -1.412500023841858,
+            0.007499999832361937,
+            -1.3530000448226929
+          ],
+          "max": [
+            1.4224531650543213,
+            1.0104999542236328,
+            1.3530000448226929
+          ]
+        }
+      },
+      {
+        "label": "pulse:0",
+        "quality": "high",
+        "vertices": 8604,
+        "hash": "a8a583b29924eaeef21bcf0838f6864814491cb50367bd9943e37f61296bc04b",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.5524880290031433
+          ],
+          "max": [
+            1.8930000066757202,
+            0.3824999928474426,
+            0.5524880290031433
+          ]
+        }
+      },
+      {
+        "label": "pulse:1",
+        "quality": "high",
+        "vertices": 13596,
+        "hash": "df0aa14773ed008c436ad8c1cdff8e768c31411b299231b08f9d26575589128b",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.5824945569038391
+          ],
+          "max": [
+            1.965000033378601,
+            0.44200000166893005,
+            0.5824945569038391
+          ]
+        }
+      },
+      {
+        "label": "pulse:2",
+        "quality": "high",
+        "vertices": 13236,
+        "hash": "96c9412b35304b2d2e0f04511cb61ff9eba5ab73e7f4c51d98dd03c03ed58cfd",
+        "bounds": {
+          "min": [
+            -0.5820000171661377,
+            0.000499999092426151,
+            -0.6125005483627319
+          ],
+          "max": [
+            2.0450000762939453,
+            0.45140812754631043,
+            0.6125005483627319
+          ]
+        }
+      },
+      {
+        "label": "twin:0",
+        "quality": "high",
+        "vertices": 11328,
+        "hash": "cba4eab7e6f74d10e41e4f7f9d2d1ab485200a0b8ccdcb2f436f9491bef9722d",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.5899999737739563
+          ],
+          "max": [
+            1.7589999437332153,
+            0.3824999928474426,
+            0.5899999737739563
+          ]
+        }
+      },
+      {
+        "label": "twin:1",
+        "quality": "high",
+        "vertices": 15336,
+        "hash": "8f8b6ef4c553d59ed439d8ca937de97113d2a81c7044529ad97e2cb5449e1613",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.7099999785423279
+          ],
+          "max": [
+            1.8990000486373901,
+            0.4000000059604645,
+            0.7099999785423279
+          ]
+        }
+      },
+      {
+        "label": "twin:2",
+        "quality": "high",
+        "vertices": 19776,
+        "hash": "7370694b7af8fc949e975e3b0f9ab50a6f5f3045d12c5138ccdbd261dd6c3df4",
+        "bounds": {
+          "min": [
+            -0.597000002861023,
+            0.000499999092426151,
+            -0.7099999785423279
+          ],
+          "max": [
+            1.9989999532699585,
+            0.4399999976158142,
+            0.7099999785423279
+          ]
+        }
+      },
+      {
+        "label": "siege:0",
+        "quality": "high",
+        "vertices": 10008,
+        "hash": "19dd4c63b0ad73de6be289d439060fcd97a5069b820d215a9bf0bec85d7ee6db",
+        "bounds": {
+          "min": [
+            -0.6600000262260437,
+            0.000499999092426151,
+            -0.5924277305603027
+          ],
+          "max": [
+            1.8990000486373901,
+            0.5491999983787537,
+            0.5924277305603027
+          ]
+        }
+      },
+      {
+        "label": "siege:1",
+        "quality": "high",
+        "vertices": 10248,
+        "hash": "d7eb78e74480e93dbbfb68072f5f8badcc821f0c3d2166f1870c43bb7e5bb836",
+        "bounds": {
+          "min": [
+            -0.6600000262260437,
+            0.000499999092426151,
+            -0.6424359679222107
+          ],
+          "max": [
+            2.0190000534057617,
+            0.6015999913215637,
+            0.6424359679222107
+          ]
+        }
+      },
+      {
+        "label": "siege:2",
+        "quality": "high",
+        "vertices": 14520,
+        "hash": "efc846f972a353e44f07c2f9b1ad44459f02ef5ff3bc192c054fe5cb4a101d4c",
+        "bounds": {
+          "min": [
+            -0.7450000047683716,
+            0.000499999092426151,
+            -0.6824418306350708
+          ],
+          "max": [
+            2.1389999389648438,
+            0.6092000007629395,
+            0.6824418306350708
+          ]
+        }
+      },
+      {
+        "label": "moon:2",
+        "quality": "high",
+        "vertices": 40116,
+        "hash": "22b99eefd2e3df6bb9480121daac8a55275dd0359c9053a45c68ca1f6d849aac",
+        "bounds": {
+          "min": [
+            -0.7918742895126343,
+            -3.7252903539730653e-10,
+            -0.41999998688697815
+          ],
+          "max": [
+            2.349412679672241,
+            0.9819999933242798,
+            0.41999998688697815
+          ]
+        }
+      },
+      {
+        "label": "scout:0:false",
+        "quality": "low",
+        "vertices": 10248,
+        "hash": "54a1a1699f59f7086732e34da3e38ea072884657b98104a4b3c2d3310ed5e6e7",
+        "bounds": {
+          "min": [
+            -1,
+            0.007499999832361937,
+            -0.8679999709129333
+          ],
+          "max": [
+            0.9926124215126038,
+            0.7105000019073486,
+            0.8679999709129333
+          ]
+        }
+      },
+      {
+        "label": "scout:0:true",
+        "quality": "low",
+        "vertices": 11652,
+        "hash": "6906442b21145c3cc0475683ee0e87dffd519a23bdcfd8e76bdf7da6360da330",
+        "bounds": {
+          "min": [
+            -1,
+            0.007499999832361937,
+            -0.8679999709129333
+          ],
+          "max": [
+            0.9926124215126038,
+            0.7105000019073486,
+            0.8679999709129333
+          ]
+        }
+      },
+      {
+        "label": "scout:1:false",
+        "quality": "low",
+        "vertices": 11040,
+        "hash": "ecb569d0a04208f4a21632200a3b83bb5ae938ef4aaf428716ad7c78292443be",
+        "bounds": {
+          "min": [
+            -1.0475000143051147,
+            0.007499999832361937,
+            -0.9279999732971191
+          ],
+          "max": [
+            1.0475000143051147,
+            0.7304999828338623,
+            0.9279999732971191
+          ]
+        }
+      },
+      {
+        "label": "scout:1:true",
+        "quality": "low",
+        "vertices": 11724,
+        "hash": "fe0cdd0f2b55d19792f8eba81d99d1581b69cc59b1c21aa2b25da5a7ae22ceb9",
+        "bounds": {
+          "min": [
+            -1.0475000143051147,
+            0.007499999832361937,
+            -0.9279999732971191
+          ],
+          "max": [
+            1.0475000143051147,
+            0.7304999828338623,
+            0.9279999732971191
+          ]
+        }
+      },
+      {
+        "label": "scout:2:false",
+        "quality": "low",
+        "vertices": 16128,
+        "hash": "3c8acca4d69dd0a5ccf8e11516b5a9d9592c14905c8fc24d87e8ed3deb1408ea",
+        "bounds": {
+          "min": [
+            -1.1024999618530273,
+            0.007499999832361937,
+            -0.9629999995231628
+          ],
+          "max": [
+            1.1060426235198975,
+            0.7505000233650208,
+            0.9629999995231628
+          ]
+        }
+      },
+      {
+        "label": "scout:2:true",
+        "quality": "low",
+        "vertices": 16812,
+        "hash": "da05e0d7eb33fddb2bbd9d1aa4a28f8cc80a1b8a81e84ab3e9f18c631e752763",
+        "bounds": {
+          "min": [
+            -1.1024999618530273,
+            0.007499999832361937,
+            -0.9629999995231628
+          ],
+          "max": [
+            1.1060426235198975,
+            0.7505000233650208,
+            0.9629999995231628
+          ]
+        }
+      },
+      {
+        "label": "vanguard:0:false",
+        "quality": "low",
+        "vertices": 12300,
+        "hash": "876744ea6436b3fe3a76a86866398c10d27a851f7de485d01df2501329645331",
+        "bounds": {
+          "min": [
+            -1.3274999856948853,
+            0.007499999832361937,
+            -1.1929999589920044
+          ],
+          "max": [
+            1.328123927116394,
+            0.9054999947547913,
+            1.1929999589920044
+          ]
+        }
+      },
+      {
+        "label": "vanguard:0:true",
+        "quality": "low",
+        "vertices": 14064,
+        "hash": "4bb69b28b8bbc4d943f2e5d0a855a817de289e11e2aa3c92637f8adad8dc229b",
+        "bounds": {
+          "min": [
+            -1.3274999856948853,
+            0.007499999832361937,
+            -1.1929999589920044
+          ],
+          "max": [
+            1.328123927116394,
+            0.9054999947547913,
+            1.1929999589920044
+          ]
+        }
+      },
+      {
+        "label": "vanguard:1:false",
+        "quality": "low",
+        "vertices": 12900,
+        "hash": "1c5bb8f4fe0290140a1f49d06b3c4667c3f2ed2183a76f5e43feb61920580775",
+        "bounds": {
+          "min": [
+            -1.2975000143051147,
+            0.007499999832361937,
+            -1.1729999780654907
+          ],
+          "max": [
+            1.2985548973083496,
+            0.8705000281333923,
+            1.1729999780654907
+          ]
+        }
+      },
+      {
+        "label": "vanguard:1:true",
+        "quality": "low",
+        "vertices": 13584,
+        "hash": "ae24b513b5e7e0b998f87ff51df7a906afc514b744f24c9a0612295bd67f1885",
+        "bounds": {
+          "min": [
+            -1.2975000143051147,
+            0.007499999832361937,
+            -1.1729999780654907
+          ],
+          "max": [
+            1.2985548973083496,
+            0.8705000281333923,
+            1.1729999780654907
+          ]
+        }
+      },
+      {
+        "label": "vanguard:2:false",
+        "quality": "low",
+        "vertices": 14100,
+        "hash": "90437460de3237fc9b6a46196b474eb0aae8e8fac5a8c39e1be669673fa8f7a8",
+        "bounds": {
+          "min": [
+            -1.3424999713897705,
+            0.007499999832361937,
+            -1.2230000495910645
+          ],
+          "max": [
+            1.3465514183044434,
+            0.9204999804496765,
+            1.2230000495910645
+          ]
+        }
+      },
+      {
+        "label": "vanguard:2:true",
+        "quality": "low",
+        "vertices": 14784,
+        "hash": "16e34672e3f322785ed70404da868dd98b1308f313b1e9842bb8882d696ff281",
+        "bounds": {
+          "min": [
+            -1.3424999713897705,
+            0.007499999832361937,
+            -1.2230000495910645
+          ],
+          "max": [
+            1.3465514183044434,
+            0.9204999804496765,
+            1.2230000495910645
+          ]
+        }
+      },
+      {
+        "label": "titan:0:false",
+        "quality": "low",
+        "vertices": 11940,
+        "hash": "3f58458e763aeff8f2302c0bff82ba9fa793eb68c7a4f0d086f0bb44a1a24dd0",
+        "bounds": {
+          "min": [
+            -1.3125,
+            0.007499999832361937,
+            -1.2829999923706055
+          ],
+          "max": [
+            1.3131505250930786,
+            0.9204999804496765,
+            1.2829999923706055
+          ]
+        }
+      },
+      {
+        "label": "titan:0:true",
+        "quality": "low",
+        "vertices": 13704,
+        "hash": "dc86e91578d68c11fc9f6e8b79227d332b1c13b700221205725bc91df8384d2b",
+        "bounds": {
+          "min": [
+            -1.3125,
+            0.007499999832361937,
+            -1.2829999923706055
+          ],
+          "max": [
+            1.3131505250930786,
+            0.9204999804496765,
+            1.2829999923706055
+          ]
+        }
+      },
+      {
+        "label": "titan:1:false",
+        "quality": "low",
+        "vertices": 13488,
+        "hash": "a8b83c4a7a4b6a821f1329e9e32a048cec25b95f89225d23a2f3342dd59e775d",
+        "bounds": {
+          "min": [
+            -1.3624999523162842,
+            0.007499999832361937,
+            -1.3229999542236328
+          ],
+          "max": [
+            1.3624999523162842,
+            0.9605000019073486,
+            1.3229999542236328
+          ]
+        }
+      },
+      {
+        "label": "titan:1:true",
+        "quality": "low",
+        "vertices": 14172,
+        "hash": "67a6d2b160be67fb7310bca00b9694d29e691df9c85defe4caaba1b3881d4697",
+        "bounds": {
+          "min": [
+            -1.3624999523162842,
+            0.007499999832361937,
+            -1.3229999542236328
+          ],
+          "max": [
+            1.3624999523162842,
+            0.9605000019073486,
+            1.3229999542236328
+          ]
+        }
+      },
+      {
+        "label": "titan:2:false",
+        "quality": "low",
+        "vertices": 17256,
+        "hash": "9589045cba3fb0a33ef42ba3b5d33f4fcf2194e90078633ee6ccb5e308a0dcbd",
+        "bounds": {
+          "min": [
+            -1.412500023841858,
+            0.007499999832361937,
+            -1.3530000448226929
+          ],
+          "max": [
+            1.4157874584197998,
+            1.0104999542236328,
+            1.3530000448226929
+          ]
+        }
+      },
+      {
+        "label": "titan:2:true",
+        "quality": "low",
+        "vertices": 17940,
+        "hash": "1fcddc25a5a839b23983b0e3ec769626f47c08b8ebb3b353ac2a621128c84620",
+        "bounds": {
+          "min": [
+            -1.412500023841858,
+            0.007499999832361937,
+            -1.3530000448226929
+          ],
+          "max": [
+            1.4157874584197998,
+            1.0104999542236328,
+            1.3530000448226929
+          ]
+        }
+      },
+      {
+        "label": "pulse:0",
+        "quality": "low",
+        "vertices": 4260,
+        "hash": "92b94a974559acfc719862157889c99dcc55b6916c8a24fa35edc95b388a7694",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.5524880290031433
+          ],
+          "max": [
+            1.8930000066757202,
+            0.3824999928474426,
+            0.5524880290031433
+          ]
+        }
+      },
+      {
+        "label": "pulse:1",
+        "quality": "low",
+        "vertices": 5904,
+        "hash": "7be31c0d5f442ceadb695124e159bc28e89104ccce4de1e004447aef3ac4b83f",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.5824945569038391
+          ],
+          "max": [
+            1.965000033378601,
+            0.4326028525829315,
+            0.5824945569038391
+          ]
+        }
+      },
+      {
+        "label": "pulse:2",
+        "quality": "low",
+        "vertices": 6540,
+        "hash": "bb7ffdb3826d946ceb65b03fb73d26e70426f90dea33c80d578e32776dfed0b4",
+        "bounds": {
+          "min": [
+            -0.5820000171661377,
+            0.000499999092426151,
+            -0.6125005483627319
+          ],
+          "max": [
+            2.0450000762939453,
+            0.43119016289711,
+            0.6125005483627319
+          ]
+        }
+      },
+      {
+        "label": "twin:0",
+        "quality": "low",
+        "vertices": 5256,
+        "hash": "7d3a548be5ea709bd0a17c8fd9152fd6d82ee1cfa1f838d96e4d7e259768b44e",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.5899999737739563
+          ],
+          "max": [
+            1.7589999437332153,
+            0.3824999928474426,
+            0.5899999737739563
+          ]
+        }
+      },
+      {
+        "label": "twin:1",
+        "quality": "low",
+        "vertices": 6384,
+        "hash": "050912ff5247daf792328e25e1dd8fa03fd7ffa0047a04af5867adeb6c95775b",
+        "bounds": {
+          "min": [
+            -0.5400000214576721,
+            0.000499999092426151,
+            -0.7099999785423279
+          ],
+          "max": [
+            1.8990000486373901,
+            0.4000000059604645,
+            0.7099999785423279
+          ]
+        }
+      },
+      {
+        "label": "twin:2",
+        "quality": "low",
+        "vertices": 7992,
+        "hash": "21763e3eb5a39776962e07075680d38f473e358ad4a2b6cc5143679073dede1b",
+        "bounds": {
+          "min": [
+            -0.597000002861023,
+            0.000499999092426151,
+            -0.7099999785423279
+          ],
+          "max": [
+            1.9989999532699585,
+            0.4399999976158142,
+            0.7099999785423279
+          ]
+        }
+      },
+      {
+        "label": "siege:0",
+        "quality": "low",
+        "vertices": 4080,
+        "hash": "2b221f75e1408ed6b4f352027dd03c99f03a45ca5c12d686b5f50004111986d7",
+        "bounds": {
+          "min": [
+            -0.6600000262260437,
+            0.000499999092426151,
+            -0.5924277305603027
+          ],
+          "max": [
+            1.8990000486373901,
+            0.5491999983787537,
+            0.5924277305603027
+          ]
+        }
+      },
+      {
+        "label": "siege:1",
+        "quality": "low",
+        "vertices": 4248,
+        "hash": "3bf2005f1c85f93e7ca0015daa5cc507dbac5b3e0e166ce71f7e6918a6736b3f",
+        "bounds": {
+          "min": [
+            -0.6600000262260437,
+            0.000499999092426151,
+            -0.6424359679222107
+          ],
+          "max": [
+            2.0190000534057617,
+            0.6015999913215637,
+            0.6424359679222107
+          ]
+        }
+      },
+      {
+        "label": "siege:2",
+        "quality": "low",
+        "vertices": 6264,
+        "hash": "f9d680fe88e2a4dfbb8ae29ccfeb681d7b263c77ba78485d35645b5dd344deb7",
+        "bounds": {
+          "min": [
+            -0.7450000047683716,
+            0.000499999092426151,
+            -0.6824418306350708
+          ],
+          "max": [
+            2.1389999389648438,
+            0.6092000007629395,
+            0.6824418306350708
+          ]
+        }
+      },
+      {
+        "label": "moon:2",
+        "quality": "low",
+        "vertices": 11256,
+        "hash": "c58c538ee606adfe7a6f52a610568151a71f9177683fd3ddb405e33336cd0432",
+        "bounds": {
+          "min": [
+            -0.7899186015129089,
+            -3.7252903539730653e-10,
+            -0.41999998688697815
+          ],
+          "max": [
+            2.3489999771118164,
+            0.9695970416069031,
+            0.41999998688697815
+          ]
+        }
+      }
+    ],
+    "appearances": 72,
+    "fittings": 243,
+    "cache": {
+      "users": 0,
+      "geometry": {
+        "entries": 80,
+        "bytes": 91914240,
+        "peakBytes": 91914240,
+        "active": 0,
+        "refs": 0,
+        "idleBudget": 14680064
+      },
+      "banks": []
+    }
+  },
+  "showroom": {
+    "pr17": {
+      "startup": {
+        "loadMs": 172.70000000298023,
+        "readyMs": 1439.1000000014901
+      },
+      "high": {
+        "calls": 21,
+        "triangles": 26598,
+        "memory": {
+          "geometries": 42,
+          "textures": 7
+        },
+        "meanMs": 0.7862500000279397,
+        "p95Ms": 3.300000000745058,
+        "worstMs": 28.400000002235174,
+        "glError": 0,
+        "cache": {
+          "users": 1,
+          "geometry": {
+            "entries": 5,
+            "bytes": 9085344,
+            "peakBytes": 9085344,
+            "active": 2,
+            "refs": 4,
+            "idleBudget": 14680064
+          },
+          "banks": [
+            {
+              "quality": "high",
+              "state": "ready",
+              "textures": 3,
+              "materials": 5,
+              "error": null
+            }
+          ]
+        }
+      }
+    },
+    "collection": {
+      "startup": {
+        "loadMs": 181.39999999850988,
+        "readyMs": 1402.300000000745
+      },
+      "high": {
+        "calls": 21,
+        "triangles": 28758,
+        "memory": {
+          "geometries": 40,
+          "textures": 7
+        },
+        "meanMs": 0.30749999997206034,
+        "p95Ms": 0.5,
+        "worstMs": 4.800000000745058,
+        "glError": 0,
+        "cache": {
+          "users": 1,
+          "geometry": {
+            "entries": 5,
+            "bytes": 9127776,
+            "peakBytes": 9127776,
+            "active": 2,
+            "refs": 4,
+            "idleBudget": 14680064
+          },
+          "banks": [
+            {
+              "quality": "high",
+              "state": "ready",
+              "textures": 3,
+              "materials": 5,
+              "error": null
+            }
+          ]
+        }
+      }
+    },
+    "low": {
+      "calls": 19,
+      "triangles": 10162,
+      "cache": {
+        "users": 1,
+        "geometry": {
+          "entries": 7,
+          "bytes": 10849536,
+          "peakBytes": 10849536,
+          "active": 2,
+          "refs": 2,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "high",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          },
+          {
+            "quality": "low",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      }
+    },
+    "churn": [
+      {
+        "gpu": {
+          "geometries": 47,
+          "textures": 7
+        },
+        "cache": {
+          "users": 1,
+          "geometry": {
+            "entries": 7,
+            "bytes": 13592112,
+            "peakBytes": 17273088,
+            "active": 2,
+            "refs": 2,
+            "idleBudget": 14680064
+          },
+          "banks": [
+            {
+              "quality": "high",
+              "state": "ready",
+              "textures": 3,
+              "materials": 5,
+              "error": null
+            }
+          ]
+        },
+        "meanBuildDrawMs": 96.92222222216704,
+        "worstBuildDrawMs": 935.5
+      },
+      {
+        "gpu": {
+          "geometries": 47,
+          "textures": 7
+        },
+        "cache": {
+          "users": 1,
+          "geometry": {
+            "entries": 7,
+            "bytes": 13592112,
+            "peakBytes": 17273088,
+            "active": 2,
+            "refs": 2,
+            "idleBudget": 14680064
+          },
+          "banks": [
+            {
+              "quality": "high",
+              "state": "ready",
+              "textures": 3,
+              "materials": 5,
+              "error": null
+            }
+          ]
+        },
+        "meanBuildDrawMs": 51.56666666669426,
+        "worstBuildDrawMs": 97.10000000149012
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "environment": "Headless Chromium / ANGLE SwiftShader, local intercepted assets only; not iPhone FPS.",
+    "finalGalleryFeedback": true
+  },
+  "app": {
+    "runs": [
+      {
+        "phase": "baseline",
+        "battle": [
+          {
+            "mode": "arena",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 688,
+              "taken": 382,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "remaining": [
+                  0,
+                  1
+                ]
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 39,
+            "triangles": 34220,
+            "memory": {
+              "geometries": 32,
+              "textures": 2
+            },
+            "meanFrameMs": 1.2383333332836628,
+            "p95FrameMs": 2,
+            "worstFrameMs": 12.699999999254942,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "zone",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "won",
+              "duration": 10,
+              "damage": 777,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  20,
+                  0
+                ],
+                "captures": 1
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 75,
+            "triangles": 57796,
+            "memory": {
+              "geometries": 47,
+              "textures": 4
+            },
+            "meanFrameMs": 1.2583333332712452,
+            "p95FrameMs": 3.300000000745058,
+            "worstFrameMs": 16.900000002235174,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "crystal",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 0,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  1,
+                  1
+                ],
+                "collected": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 90,
+            "triangles": 58996,
+            "memory": {
+              "geometries": 50,
+              "textures": 4
+            },
+            "meanFrameMs": 1.461666666654249,
+            "p95FrameMs": 2.5,
+            "worstFrameMs": 12,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "bounty",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 541,
+              "taken": 166,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  0,
+                  0
+                ],
+                "stars": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 64,
+            "triangles": 56912,
+            "memory": {
+              "geometries": 50,
+              "textures": 4
+            },
+            "meanFrameMs": 0.8250000000620882,
+            "p95FrameMs": 1.199999999254942,
+            "worstFrameMs": 6.100000001490116,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "royale",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 1631,
+              "taken": 682,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "place": 5,
+                "of": 6
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 2,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 3,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 4,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 5,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 117,
+            "triangles": 85060,
+            "memory": {
+              "geometries": 55,
+              "textures": 4
+            },
+            "meanFrameMs": 1.6800000000124176,
+            "p95FrameMs": 3.400000002235174,
+            "worstFrameMs": 16.5,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "boss",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 571,
+              "taken": 53,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "bossDown": 2
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 2550,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "titan",
+                  "w": "siege",
+                  "hp": 28037,
+                  "dps": 41,
+                  "spd": 0.55,
+                  "boss": true
+                }
+              ]
+            },
+            "calls": 52,
+            "triangles": 35544,
+            "memory": {
+              "geometries": 54,
+              "textures": 4
+            },
+            "meanFrameMs": 0.8933333333581686,
+            "p95FrameMs": 1.5,
+            "worstFrameMs": 4,
+            "glError": 0,
+            "quality": "high"
+          }
+        ],
+        "cache": null,
+        "ranked_mutations": []
+      },
+      {
+        "phase": "upgraded",
+        "battle": [
+          {
+            "mode": "arena",
+            "ct": 0,
+            "hf": "hf-v2.0",
+            "weaponHF": "hf-v2.0",
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 688,
+              "taken": 382,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "remaining": [
+                  0,
+                  1
+                ]
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 44,
+            "triangles": 45734,
+            "memory": {
+              "geometries": 46,
+              "textures": 8
+            },
+            "meanFrameMs": 0.7916666666045785,
+            "p95FrameMs": 1.7999999970197678,
+            "worstFrameMs": 2.300000000745058,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "zone",
+            "ct": 0,
+            "hf": "hf-v2.0",
+            "weaponHF": "hf-v2.0",
+            "result": {
+              "outcome": "won",
+              "duration": 10,
+              "damage": 777,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  20,
+                  0
+                ],
+                "captures": 1
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 86,
+            "triangles": 76598,
+            "memory": {
+              "geometries": 64,
+              "textures": 10
+            },
+            "meanFrameMs": 2.586666666654249,
+            "p95FrameMs": 7.099999997764826,
+            "worstFrameMs": 35.099999997764826,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "crystal",
+            "ct": 0,
+            "hf": "hf-v2.0",
+            "weaponHF": "hf-v2.0",
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 0,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  1,
+                  1
+                ],
+                "collected": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 101,
+            "triangles": 77798,
+            "memory": {
+              "geometries": 67,
+              "textures": 10
+            },
+            "meanFrameMs": 1.6216666666790842,
+            "p95FrameMs": 3.600000001490116,
+            "worstFrameMs": 8.199999999254942,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "bounty",
+            "ct": 0,
+            "hf": "hf-v2.0",
+            "weaponHF": "hf-v2.0",
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 541,
+              "taken": 166,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  0,
+                  0
+                ],
+                "stars": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 75,
+            "triangles": 75714,
+            "memory": {
+              "geometries": 67,
+              "textures": 10
+            },
+            "meanFrameMs": 1.834999999962747,
+            "p95FrameMs": 5.299999997019768,
+            "worstFrameMs": 28.100000001490116,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "royale",
+            "ct": 0,
+            "hf": "hf-v2.0",
+            "weaponHF": "hf-v2.0",
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 1631,
+              "taken": 682,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "place": 5,
+                "of": 6
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 2,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 3,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 4,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 5,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 134,
+            "triangles": 111150,
+            "memory": {
+              "geometries": 63,
+              "textures": 10
+            },
+            "meanFrameMs": 3.396666666679084,
+            "p95FrameMs": 15.899999998509884,
+            "worstFrameMs": 31.900000002235174,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "boss",
+            "ct": 0,
+            "hf": "hf-v2.0",
+            "weaponHF": "hf-v2.0",
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 571,
+              "taken": 53,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "bossDown": 2
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 2550,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "titan",
+                  "w": "siege",
+                  "hp": 28037,
+                  "dps": 41,
+                  "spd": 0.55,
+                  "boss": true
+                }
+              ]
+            },
+            "calls": 57,
+            "triangles": 47058,
+            "memory": {
+              "geometries": 62,
+              "textures": 10
+            },
+            "meanFrameMs": 1.325,
+            "p95FrameMs": 4.900000002235174,
+            "worstFrameMs": 32.100000001490116,
+            "glError": 0,
+            "quality": "high"
+          }
+        ],
+        "cache": [
+          {
+            "assets": {
+              "users": 3,
+              "geometry": {
+                "entries": 7,
+                "bytes": 13680240,
+                "peakBytes": 20085024,
+                "active": 2,
+                "refs": 2,
+                "idleBudget": 14680064
+              },
+              "banks": [
+                {
+                  "quality": "high",
+                  "state": "ready",
+                  "textures": 3,
+                  "materials": 5,
+                  "error": null
+                }
+              ]
+            },
+            "gpu": {
+              "geometries": 78,
+              "textures": 6
+            },
+            "KC": 16
+          },
+          {
+            "assets": {
+              "users": 3,
+              "geometry": {
+                "entries": 7,
+                "bytes": 13680240,
+                "peakBytes": 20085024,
+                "active": 2,
+                "refs": 2,
+                "idleBudget": 14680064
+              },
+              "banks": [
+                {
+                  "quality": "high",
+                  "state": "ready",
+                  "textures": 3,
+                  "materials": 5,
+                  "error": null
+                }
+              ]
+            },
+            "gpu": {
+              "geometries": 78,
+              "textures": 6
+            },
+            "KC": 16
+          }
+        ],
+        "ranked_mutations": []
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "environment": "Chromium SwiftShader emulation / local fake Worker; real sim/render code, no production accounts"
+  },
+  "finalIntegration": {
+    "detail": [
+      {
+        "profile": "upgraded",
+        "tooth": [
+          0.9552168798446655,
+          0.5686870041387925,
+          0.26
+        ],
+        "calls": 17,
+        "triangles": 27780,
+        "error": 0
+      }
+    ],
+    "high": {
+      "coldFrameMs": 2700.300000000745,
+      "quality": "high",
+      "profile": "high",
+      "calls": 106,
+      "triangles": 106542,
+      "memory": {
+        "geometries": 57,
+        "textures": 10
+      },
+      "meanFrameMs": 1.926666666691502,
+      "p95FrameMs": 4.600000001490116,
+      "worstFrameMs": 14.599999997764826,
+      "glError": 0
+    },
+    "low": {
+      "coldFrameMs": 180.20000000298023,
+      "calls": 104,
+      "triangles": 41346,
+      "memory": {
+        "geometries": 71,
+        "textures": 11
+      },
+      "meanFrameMs": 1.8083333333333333,
+      "p95FrameMs": 8.400000002235174,
+      "worstFrameMs": 22,
+      "glError": 0,
+      "cache": {
+        "users": 3,
+        "geometry": {
+          "entries": 9,
+          "bytes": 12192672,
+          "peakBytes": 20008320,
+          "active": 6,
+          "refs": 14,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "high",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          },
+          {
+            "quality": "low",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      }
+    },
+    "errors": [],
+    "mutations": []
+  },
+  "failurePaths": [
+    {
+      "fault": "missing",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 7
+    },
+    {
+      "fault": "corrupt",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 8
+    },
+    {
+      "fault": "version",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 5
+    },
+    {
+      "fault": "no-webgl",
+      "recovered": false,
+      "errors": [],
+      "material_requests": 0
+    },
+    {
+      "fault": "context-loss",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 8
+    }
+  ]
+}

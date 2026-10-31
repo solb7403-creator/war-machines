@@ -22,8 +22,8 @@ function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w
 function diamond(ctx,x,y,s,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x+s*0.7,y);ctx.lineTo(x,y+s);ctx.lineTo(x-s*0.7,y);ctx.closePath();ctx.fill();}
 
 // ---- Crystal tank, top-down: hull follows movement, turret + cannon follow the aim ----
-function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits){
- const fl=flash||null,P=paint||PAINTS.stock;parts=parts||3;   // 1 = hull only, 2 = turret only, 3 = whole tank. Paint colors the plates; team color stays on tracks and core
+function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,skin){
+ const fl=flash||null,P=skin==='lunar'?{hull:'#252b34',tur:'#333c47',trim:'#bb914e',shine:true}:paint||PAINTS.stock;parts=parts||3;   // 1 = hull only, 2 = turret only, 3 = whole tank. Paint colors the plates; team color stays on tracks and core
  if(parts&1){
  ctx.save();ctx.translate(px,py);ctx.rotate(hd);
  for(const sd of [-1,1]){                           // tracks with a glow stripe
@@ -36,6 +36,10 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits){
   ctx.save();ctx.clip();const k=((performance.now()/1700)%1)*3.4-1.7,gr=ctx.createLinearGradient((k-0.4)*r,-r,(k+0.4)*r,r);
   gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(0.5,'rgba(255,255,255,.34)');gr.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gr;ctx.fillRect(-1.2*r,-0.7*r,2.5*r,1.4*r);ctx.restore();}
  ctx.strokeStyle=P.trim;ctx.lineWidth=Math.max(1,r*0.09);ctx.stroke();
+ if(skin==='lunar'){
+  ctx.strokeStyle='#bd944e';ctx.lineWidth=Math.max(1,r*.035);for(const sd of [-1,1]){ctx.strokeRect(-.7*r,sd*.39*r-.08*r,.58*r,.16*r);for(let i=0;i<8;i++){ctx.fillStyle='#48505a';ctx.fillRect((-1.13+i*.3)*r,sd*.64*r-.29*r,.10*r,.58*r);}}
+  ctx.beginPath();ctx.arc(.78*r,0,.16*r,.7,5.58);ctx.stroke();
+ }
  [[-0.8,-0.36],[-0.8,0],[-0.8,0.36]].forEach(([sx,sy],i)=>{   // 3 core sockets, lit all match
   const gk=gems&&gems[i],cx=sx*r,cy=sy*r;
   ctx.fillStyle='#0f151c';ctx.beginPath();ctx.arc(cx,cy,0.17*r,0,7);ctx.fill();
@@ -63,10 +67,12 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits){
   ctx.fillStyle='#e9f1f7';ctx.fillRect(1.5*r,-0.35*r,0.3*r,0.7*r);
   ctx.fillStyle=col;ctx.fillRect(1.74*r,-0.19*r,0.1*r,0.38*r);
  }else if(wt==='moon'){
-  ctx.fillStyle='#141b24';ctx.fillRect(0.2*r,-0.2*r,1.7*r,0.4*r);
-  const gr=ctx.createLinearGradient(0,-0.2*r,0,0.2*r);gr.addColorStop(0,'#fff8dd');gr.addColorStop(0.5,'#ffcf4a');gr.addColorStop(1,'#c98f1b');
-  ctx.fillStyle=gr;ctx.fillRect(0.25*r,-0.08*r,1.6*r,0.16*r);
-  ctx.fillStyle='#e8f4ff';ctx.beginPath();ctx.arc(1.9*r,0,0.18*r,0,7);ctx.fill();
+  ctx.fillStyle='#182431';ctx.fillRect(-.35*r,-.28*r,2.65*r,.56*r);
+  ctx.fillStyle='#1686f5';ctx.fillRect(-.35*r,-.085*r,2.64*r,.17*r);
+  ctx.fillStyle='#b9edff';ctx.fillRect(-.35*r,-.023*r,2.64*r,.046*r);
+  for(const sd of [-1,1]){ctx.fillStyle='#ced8e4';ctx.fillRect(-.4*r,sd*.22*r-.03*r,2.7*r,.06*r);}
+  for(const x of [-.25,.43,1.04,1.65,2.22]){ctx.fillStyle='#c39a51';ctx.fillRect(x*r,-.28*r,.085*r,.56*r);ctx.fillStyle='#70cfff';ctx.fillRect((x+.09)*r,-.24*r,.036*r,.48*r);}
+  ctx.fillStyle='#e3faff';ctx.fillRect(2.29*r,-.25*r,.065*r,.5*r);
  }else{
   ctx.fillStyle='#141b24';ctx.fillRect(0.2*r,-0.17*r,1.55*r,0.34*r);
   ctx.fillStyle=col;ctx.fillRect(0.25*r,-0.04*r,1.4*r,0.08*r);
@@ -83,7 +89,7 @@ function star5(ctx,x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++
 function drawTank(b,col){
  const px=X(b.x),py=Y(b.y)-liftOf(b),r=R*sc*(b.dscale||1),hd=b.hd===undefined?b.ang:b.hd;
  const fl=b.flash>0?(armor(b)>0?BUFF.arm.c:'#ffe27a'):null;
- if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits);
+ if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits,b.skin);
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
   const bw=2.6*r,bx=px-bw/2,by=py-2.25*r,hh=Math.max(4,0.36*r),sh=Math.max(2,0.16*r),hf=Math.max(0,b.hp/b.mhp),f=b.sp/SUPER_MAX;
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
@@ -251,7 +257,7 @@ function drawCrater(ctx,cr,sc,X,Y){
 // ---- menu art: hero tank on a patch of moon rock, gear icons, cores, VS cards ----
 const HERO_STARS=Array.from({length:26},()=>({x:Math.random(),y:Math.random()*0.55,r:Math.random()*1.1+0.3,p:Math.random()*6.28}));
 const HERO_DUST=Array.from({length:14},()=>({x:Math.random(),y:0.55+Math.random()*0.4,s:0.2+Math.random()*0.6,p:Math.random()*6.28}));
-function myTankColor(){return save.skin==='lunar'?'#e8f4ff':TC[0];}
+function myTankColor(){return TC[0];}
 function drawHeroScene(ctx,w,h,t,noTank){
  ctx.clearRect(0,0,w,h);
  const room=h-58;   // the name + loadout line sits in the bottom 58px
@@ -278,7 +284,7 @@ function drawHeroScene(ctx,w,h,t,noTank){
  ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(cx+r*0.3,cy+r*0.6,r*1.5,r*0.6,0,0,7);ctx.fill();
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(cx,cy+r*0.4,r*1.7,r*0.72,0,0,7);ctx.fill();ctx.restore();
  if(noTank)return;
- drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint(),fittingVisuals(myLoadout()));
+ drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint(),fittingVisuals(myLoadout()),save.skin);
 }
 function drawGearIcon(ctx,w,h,isW,it){   // the whole tank; the part this slot is about is lit, the rest is ghosted
  ctx.clearRect(0,0,w,h);
@@ -322,7 +328,7 @@ function drawUnitArt(ctx,w,h,u){
  ctx.clearRect(0,0,w,h);if(!u)return;
  const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*Math.min(1.3,u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(w/2,h/2+r*0.8,r*1.3,r*0.5,0,0,7);ctx.fill();ctx.restore();
- drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint],u.fits);
+ drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint],u.fits,u.skin);
 }
 
 // ---- battle input: floating joystick, SUPER button, keyboard ----
@@ -408,9 +414,10 @@ function drawCrystal(c,i){   // a floating crystal; new ones grow in
  g.fillStyle='rgba(255,255,255,.6)';g.beginPath();g.moveTo(px,py-s);g.lineTo(px+s*0.42,py-s*0.08);g.lineTo(px,py-s*0.22);g.closePath();g.fill();
 }
 function drawBattle(){
+ if(document.hidden)return;
  g.setTransform(dpr,0,0,dpr,0,0);
  let shx=0,shy=0;
- if(shakeT>0){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
+ if(shakeT>0&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
  const D3=D3on(),AH=Y(H)-Y(0);   // D3: the world is drawn by render3d.js underneath; this canvas adds the overlay
  if(D3){g.clearRect(0,0,vw,vh);frame3D(shx,shy);}
  else{g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);}
@@ -471,7 +478,7 @@ function drawBattle(){
   for(const bxx of boxes){const bx=X(bxx.x),by=Y(bxx.y),sz=sc*0.9*(1+0.08*Math.sin(performance.now()/200));
    g.fillStyle='#ffcf4a';g.fillRect(bx-sz/2,by-sz/2,sz,sz);g.strokeStyle='#7a5a00';g.lineWidth=2;g.strokeRect(bx-sz/2,by-sz/2,sz,sz);
    g.fillStyle='#4a3500';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sz*0.8));g.fillText('?',bx,by+1);g.textBaseline='top';}
-  for(const q of bullets){g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(X(q.x),Y(q.y),Math.max(2.5,sc*0.16)*Math.min(1.8,q.dm),0,7);g.fill();}
+  for(const q of bullets){const px=X(q.x),py=Y(q.y),arch=q.o.wtype||'pulse',r=Math.max(2.5,sc*.16)*Math.min(1.8,q.dm);g.fillStyle=tcol(q.o.team);g.beginPath();g.arc(px,py,r+1,0,7);g.fill();g.fillStyle=arch==='moon'?'#d8f5ff':arch==='siege'?'#ffd29a':arch==='twin'?'#fff4ce':'#b9efff';g.beginPath();g.arc(px,py,r*.50,0,7);g.fill();if(arch==='moon'||arch==='siege'){const v=Math.hypot(q.vx,q.vy)||1;g.strokeStyle=arch==='moon'?'#6ed5ff':'#edac65';g.lineWidth=Math.max(1,sc*.07);g.beginPath();g.moveTo(px,py);g.lineTo(px-q.vx/v*sc*.35,py-q.vy/v*sc*.35);g.stroke();}}
  }
  // super telegraphs (lane for beam/shell, danger ring for nova): on the ground, so they dodge the same in 2D and 3D
  for(const r of units){
@@ -483,7 +490,7 @@ function drawBattle(){
    g.fillRect(0,-wdt*sc,len*sc,wdt*2*sc);g.globalAlpha=0.5+0.5*k;g.fillStyle='#ffb3b3';g.fillRect(0,-1,len*sc,2);g.restore();g.globalAlpha=1;}
  }
  if(!D3){
-  for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
+  for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=(bm.w||1.2)>=1.9?'#75d5ff':bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
    g.beginPath();g.moveTo(X(bm.ax),Y(bm.ay));g.lineTo(X(bm.bx),Y(bm.by));g.stroke();g.strokeStyle='#fff';g.lineWidth=Math.max(2,sc*0.3);g.stroke();g.lineCap='butt';g.globalAlpha=1;}
   for(const sh of shells){const sx=X(sh.x),sy=Y(sh.y),pr=sc*0.5*(1+0.15*Math.sin(performance.now()/60));
    g.fillStyle='#ff9d45';g.beginPath();g.arc(sx,sy,pr,0,7);g.fill();g.fillStyle='#ffcf4a';g.beginPath();g.arc(sx,sy,pr*0.55,0,7);g.fill();}
@@ -514,7 +521,6 @@ function drawBattle(){
    if(b.aura>0){const ac=b.aura>=3?'#e8f4ff':RCOL[b.aura],pl=b.aura>=2?0.5+0.5*Math.sin(performance.now()/420):0.5;   // rarity ring: rare, epic, legendary
     g.save();g.globalAlpha=0.3+0.3*pl;g.strokeStyle=ac;g.lineWidth=b.aura>=2?2.4:1.5;g.beginPath();g.ellipse(px,py+r*0.2,r*1.45,r*1.1,0,0,7);g.stroke();
     if(b.aura>=2){g.globalAlpha=0.07+0.07*pl;g.fillStyle=ac;g.fill();}g.restore();}
-   if(b.skin==='lunar'){g.strokeStyle='rgba(232,244,255,.6)';g.lineWidth=2;g.beginPath();g.arc(px,py,r*1.3,0,7);g.stroke();}
    if(b.vl>=10){const t=performance.now()/1000;g.save();g.globalAlpha=0.5+0.25*Math.sin(t*2.6);g.strokeStyle='#ffcf4a';g.lineWidth=2.5;g.setLineDash([r*0.7,r*0.45]);g.lineDashOffset=-t*r*1.4;   // Vault level 10: a gold aura ring
     g.beginPath();g.ellipse(px,py+r*0.2,r*1.9,r*1.45,0,0,7);g.stroke();g.restore();}
    if(b.vl>=5&&b.trail&&b.trail.length>2){const a=b.trail[0],z=b.trail[b.trail.length-1];if(Math.hypot(a.x-z.x,a.y-z.y)>0.25)b.trail.forEach((tp,i)=>{g.globalAlpha=0.12+0.08*i;g.fillStyle=i%2?'#fff3c2':'#ffcf4a';g.beginPath();g.arc(X(tp.x),Y(tp.y),r*(0.18+0.05*i),0,7);g.fill();});g.globalAlpha=1;}   // level 5: gold engine trail
@@ -523,7 +529,7 @@ function drawBattle(){
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
   if(!D3&&(spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
-  drawTank(b,b===me&&b.skin==='lunar'?'#e8f4ff':col);
+  drawTank(b,col);
   if(!D3&&b.vl>0){const hd=b.hd===undefined?b.ang:b.hd;goldTooth(g,px+Math.cos(hd)*r*0.5,py+Math.sin(hd)*r*0.5*GK,r*0.5,b.vl>=10);   // Vault: the gold tooth on the hull
    if(b.vl>=25){const t=performance.now()/1000;for(let i=0;i<4;i++){const a=t*1.7+i*1.57,k=0.5+0.5*Math.sin(t*5+i*2);g.globalAlpha=k;star5(g,px+Math.cos(a)*r*1.25,py+Math.sin(a)*r*0.95,r*0.16,i%2?'#c79bff':'#fff3c2');}g.globalAlpha=1;}}   // level 25: hyperspace shimmer
   if(!D3&&b.shieldT>0){const pl=performance.now()/1000+(b.id||0)*1.7,br=r*4.0*(1+0.04*Math.sin(pl*7));   // plasma ball: a giant crackling blue sphere around the tank while the shield holds
@@ -690,5 +696,5 @@ function drawHUD(){
 function drawMachinePreview(ctx,w,h,L){
  ctx.clearRect(0,0,w,h);
  if(typeof machineArt3D==='function'&&machineArt3D(ctx,w,h,L))return;
- drawTankPx(ctx,w/2,h*.55,Math.min(w/6,h/3.7),-.6,-.8,TC[0],L.cores,L.w.a,null,3,PAINTS[L.paint],fittingVisuals(L));
+ drawTankPx(ctx,w/2,h*.55,Math.min(w/6,h/3.7),-.6,-.8,TC[0],L.cores,L.w.a,null,3,PAINTS[L.paint],fittingVisuals(L),L.skin);
 }

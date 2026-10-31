@@ -1,0 +1,42 @@
+{
+  "version": "hf-v2.0",
+  "license": "Original procedural project artwork; no external assets",
+  "tiles": [
+    "graphite",
+    "gold",
+    "steel",
+    "rubber"
+  ],
+  "files": [
+    {
+      "file": "base-high.png",
+      "bytes": 119481,
+      "sha256": "121ba3ba0535f514ca3068eb3eacf30a9dd91b49192ada2cd9cbe0a0f837034c"
+    },
+    {
+      "file": "normal-high.png",
+      "bytes": 14451,
+      "sha256": "c996fe3eb8362332e03d190738471825e0d2c0b2c4bbbf1d2316cc60e1c321cf"
+    },
+    {
+      "file": "orm-high.png",
+      "bytes": 149128,
+      "sha256": "26f17d2e5929a464e3ddb25840ef9a7fff99dc447744ee276836ef3da29a2dca"
+    },
+    {
+      "file": "base-low.png",
+      "bytes": 5935,
+      "sha256": "d0016b5fc86f97284252fea491e96f4ba19be5fa755560ad3fb835756ad613cc"
+    },
+    {
+      "file": "normal-low.png",
+      "bytes": 5861,
+      "sha256": "aa5a856202f62a379e6388b6c963d5f7175170bf1c6cf34608966f5098024f69"
+    },
+    {
+      "file": "orm-low.png",
+      "bytes": 8646,
+      "sha256": "d196d2e79cac961669c12cc5b2dac29d90974ffd22d7248741bd1cbf0a18acdc"
+    }
+  ]
+}

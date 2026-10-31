@@ -1,0 +1,32 @@
+[
+  {
+    "fault": "missing",
+    "recovered": true,
+    "errors": [],
+    "material_requests": 7
+  },
+  {
+    "fault": "corrupt",
+    "recovered": true,
+    "errors": [],
+    "material_requests": 8
+  },
+  {
+    "fault": "version",
+    "recovered": true,
+    "errors": [],
+    "material_requests": 5
+  },
+  {
+    "fault": "no-webgl",
+    "recovered": false,
+    "errors": [],
+    "material_requests": 0
+  },
+  {
+    "fault": "context-loss",
+    "recovered": true,
+    "errors": [],
+    "material_requests": 8
+  }
+]

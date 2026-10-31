@@ -1,0 +1,1066 @@
+{
+  "environment": "Headless Chromium, ANGLE SwiftShader software renderer, simulated CSS widths. Local routes/fake services. Not iPhone hardware or live Cloudflare. Render-only warm timings use gl.finish; no FPS inference.",
+  "base": "a1363d37dc6d53104542bac496b2c21b6d3a11c4",
+  "showroom": {
+    "startup": {
+      "status": {
+        "users": 1,
+        "geometry": {
+          "entries": 2,
+          "bytes": 5074704,
+          "peakBytes": 5074704,
+          "active": 2,
+          "refs": 4,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "high",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      },
+      "ready": true,
+      "assetLoadMs": 361.69999999925494,
+      "readySinceNavigationMs": 1936.300000000745,
+      "gl": true
+    },
+    "coldLow": {
+      "assetLoadMs": 1589.800000000745,
+      "readySinceNavigationMs": 10897.60000000149,
+      "quality": "low",
+      "resources": {
+        "users": 1,
+        "geometry": {
+          "entries": 2,
+          "bytes": 1636080,
+          "peakBytes": 1636080,
+          "active": 2,
+          "refs": 2,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "low",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      },
+      "files": [
+        "https://hf.test/js/assets/hf-v1/manifest.json?v=hf-v1.1",
+        "https://hf.test/js/assets/hf-v1/base-low.png?v=hf-v1.1&h=027561cb1733",
+        "https://hf.test/js/assets/hf-v1/normal-low.png?v=hf-v1.1&h=933dbf7c68dd",
+        "https://hf.test/js/assets/hf-v1/orm-low.png?v=hf-v1.1&h=96f964342808"
+      ]
+    },
+    "renders": [
+      {
+        "mode": "baseline",
+        "calls": 19,
+        "triangles": 20888,
+        "memory": {
+          "geometries": 37,
+          "textures": 7
+        },
+        "meanFrameMs": 0.7325000000651926,
+        "p95FrameMs": 1.8999999985098839,
+        "worstFrameMs": 28.300000000745058,
+        "glError": 0
+      },
+      {
+        "mode": "upgraded",
+        "calls": 21,
+        "triangles": 26598,
+        "memory": {
+          "geometries": 27,
+          "textures": 7
+        },
+        "meanFrameMs": 0.40249999999068675,
+        "p95FrameMs": 2.5,
+        "worstFrameMs": 4.800000000745058,
+        "glError": 0
+      }
+    ],
+    "low": {
+      "calls": 19,
+      "triangles": 9742
+    },
+    "cache": {
+      "before": {
+        "geometries": 52,
+        "textures": 8
+      },
+      "after": {
+        "geometries": 52,
+        "textures": 8
+      },
+      "peak": 52,
+      "bank": {
+        "users": 1,
+        "geometry": {
+          "entries": 7,
+          "bytes": 10721424,
+          "peakBytes": 10721424,
+          "active": 2,
+          "refs": 4,
+          "idleBudget": 14680064
+        },
+        "banks": [
+          {
+            "quality": "high",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          },
+          {
+            "quality": "low",
+            "state": "ready",
+            "textures": 3,
+            "materials": 5,
+            "error": null
+          }
+        ]
+      }
+    },
+    "errors": [],
+    "warnings": [],
+    "environment": "Headless Chromium SwiftShader. GPU-fenced software frame cost, NOT iPhone FPS."
+  },
+  "app": {
+    "runs": [
+      {
+        "phase": "baseline",
+        "battle": [
+          {
+            "mode": "arena",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 688,
+              "taken": 382,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "remaining": [
+                  0,
+                  1
+                ]
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 39,
+            "triangles": 34220,
+            "memory": {
+              "geometries": 32,
+              "textures": 2
+            },
+            "meanFrameMs": 1.2383333332836628,
+            "p95FrameMs": 2,
+            "worstFrameMs": 12.699999999254942,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "zone",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "won",
+              "duration": 10,
+              "damage": 777,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  20,
+                  0
+                ],
+                "captures": 1
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 75,
+            "triangles": 57796,
+            "memory": {
+              "geometries": 47,
+              "textures": 4
+            },
+            "meanFrameMs": 1.2583333332712452,
+            "p95FrameMs": 3.300000000745058,
+            "worstFrameMs": 16.900000002235174,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "crystal",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 0,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  1,
+                  1
+                ],
+                "collected": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 90,
+            "triangles": 58996,
+            "memory": {
+              "geometries": 50,
+              "textures": 4
+            },
+            "meanFrameMs": 1.461666666654249,
+            "p95FrameMs": 2.5,
+            "worstFrameMs": 12,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "bounty",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 541,
+              "taken": 166,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  0,
+                  0
+                ],
+                "stars": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 64,
+            "triangles": 56912,
+            "memory": {
+              "geometries": 50,
+              "textures": 4
+            },
+            "meanFrameMs": 0.8250000000620882,
+            "p95FrameMs": 1.199999999254942,
+            "worstFrameMs": 6.100000001490116,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "royale",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 1631,
+              "taken": 682,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "place": 5,
+                "of": 6
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 2,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 3,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 4,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 5,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 117,
+            "triangles": 85060,
+            "memory": {
+              "geometries": 55,
+              "textures": 4
+            },
+            "meanFrameMs": 1.6800000000124176,
+            "p95FrameMs": 3.400000002235174,
+            "worstFrameMs": 16.5,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "boss",
+            "ct": 0,
+            "hf": null,
+            "weaponHF": null,
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 571,
+              "taken": 53,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "bossDown": 2
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 2550,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "titan",
+                  "w": "siege",
+                  "hp": 28037,
+                  "dps": 41,
+                  "spd": 0.55,
+                  "boss": true
+                }
+              ]
+            },
+            "calls": 52,
+            "triangles": 35544,
+            "memory": {
+              "geometries": 54,
+              "textures": 4
+            },
+            "meanFrameMs": 0.8933333333581686,
+            "p95FrameMs": 1.5,
+            "worstFrameMs": 4,
+            "glError": 0,
+            "quality": "high"
+          }
+        ],
+        "cache": null,
+        "ranked_mutations": []
+      },
+      {
+        "phase": "upgraded",
+        "battle": [
+          {
+            "mode": "arena",
+            "ct": 0,
+            "hf": "hf-v1.1",
+            "weaponHF": "hf-v1.1",
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 688,
+              "taken": 382,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "remaining": [
+                  0,
+                  1
+                ]
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 45,
+            "triangles": 46298,
+            "memory": {
+              "geometries": 47,
+              "textures": 8
+            },
+            "meanFrameMs": 0.8616666666542491,
+            "p95FrameMs": 1.9000000022351742,
+            "worstFrameMs": 2.5,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "zone",
+            "ct": 0,
+            "hf": "hf-v1.1",
+            "weaponHF": "hf-v1.1",
+            "result": {
+              "outcome": "won",
+              "duration": 10,
+              "damage": 777,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  20,
+                  0
+                ],
+                "captures": 1
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 89,
+            "triangles": 82610,
+            "memory": {
+              "geometries": 66,
+              "textures": 10
+            },
+            "meanFrameMs": 1.6016666666294137,
+            "p95FrameMs": 3.800000000745058,
+            "worstFrameMs": 28.600000001490116,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "crystal",
+            "ct": 0,
+            "hf": "hf-v1.1",
+            "weaponHF": "hf-v1.1",
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 0,
+              "taken": 0,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  1,
+                  1
+                ],
+                "collected": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 104,
+            "triangles": 83810,
+            "memory": {
+              "geometries": 69,
+              "textures": 10
+            },
+            "meanFrameMs": 1.5199999999875824,
+            "p95FrameMs": 2.5,
+            "worstFrameMs": 17,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "bounty",
+            "ct": 0,
+            "hf": "hf-v1.1",
+            "weaponHF": "hf-v1.1",
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 541,
+              "taken": 166,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "score": [
+                  0,
+                  0
+                ],
+                "stars": 0
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 1700,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 78,
+            "triangles": 81726,
+            "memory": {
+              "geometries": 69,
+              "textures": 10
+            },
+            "meanFrameMs": 1.7633333332836627,
+            "p95FrameMs": 3.800000000745058,
+            "worstFrameMs": 28.400000002235174,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "royale",
+            "ct": 0,
+            "hf": "hf-v1.1",
+            "weaponHF": "hf-v1.1",
+            "result": {
+              "outcome": "lost",
+              "duration": 10,
+              "damage": 1631,
+              "taken": 682,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "place": 5,
+                "of": 6
+              },
+              "opponents": [
+                {
+                  "team": 1,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 2,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 3,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 4,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 5,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 3400,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                }
+              ]
+            },
+            "calls": 139,
+            "triangles": 122610,
+            "memory": {
+              "geometries": 69,
+              "textures": 10
+            },
+            "meanFrameMs": 2.841666666666667,
+            "p95FrameMs": 9.599999997764826,
+            "worstFrameMs": 39.30000000074506,
+            "glError": 0,
+            "quality": "high"
+          },
+          {
+            "mode": "boss",
+            "ct": 0,
+            "hf": "hf-v1.1",
+            "weaponHF": "hf-v1.1",
+            "result": {
+              "outcome": "drawn",
+              "duration": 10,
+              "damage": 571,
+              "taken": 53,
+              "kills": 0,
+              "deaths": 0,
+              "control": "ai",
+              "objective": {
+                "bossDown": 2
+              },
+              "opponents": [
+                {
+                  "team": 0,
+                  "cls": "vanguard",
+                  "w": "pulse",
+                  "hp": 2550,
+                  "dps": 70,
+                  "spd": 1,
+                  "boss": false
+                },
+                {
+                  "team": 1,
+                  "cls": "titan",
+                  "w": "siege",
+                  "hp": 28037,
+                  "dps": 41,
+                  "spd": 0.55,
+                  "boss": true
+                }
+              ]
+            },
+            "calls": 58,
+            "triangles": 47622,
+            "memory": {
+              "geometries": 68,
+              "textures": 10
+            },
+            "meanFrameMs": 1.128333333383004,
+            "p95FrameMs": 2.2000000029802322,
+            "worstFrameMs": 21.300000000745058,
+            "glError": 0,
+            "quality": "high"
+          }
+        ],
+        "cache": [
+          {
+            "assets": {
+              "users": 3,
+              "geometry": {
+                "entries": 6,
+                "bytes": 12320784,
+                "peakBytes": 19154784,
+                "active": 0,
+                "refs": 0,
+                "idleBudget": 14680064
+              },
+              "banks": [
+                {
+                  "quality": "high",
+                  "state": "ready",
+                  "textures": 3,
+                  "materials": 5,
+                  "error": null
+                }
+              ]
+            },
+            "gpu": {
+              "geometries": 103,
+              "textures": 6
+            },
+            "KC": 23
+          },
+          {
+            "assets": {
+              "users": 3,
+              "geometry": {
+                "entries": 6,
+                "bytes": 12320784,
+                "peakBytes": 19154784,
+                "active": 0,
+                "refs": 0,
+                "idleBudget": 14680064
+              },
+              "banks": [
+                {
+                  "quality": "high",
+                  "state": "ready",
+                  "textures": 3,
+                  "materials": 5,
+                  "error": null
+                }
+              ]
+            },
+            "gpu": {
+              "geometries": 103,
+              "textures": 6
+            },
+            "KC": 23
+          }
+        ],
+        "ranked_mutations": []
+      }
+    ],
+    "errors": [],
+    "warnings": [],
+    "environment": "Chromium SwiftShader emulation / local fake Worker; real sim/render code, no production accounts"
+  },
+  "final": {
+    "detail": [
+      {
+        "profile": "baseline",
+        "tooth": [
+          0.953358883857727,
+          0.6940257684267838,
+          0.26
+        ],
+        "calls": 15,
+        "triangles": 19910,
+        "error": 0
+      },
+      {
+        "profile": "upgraded",
+        "tooth": [
+          0.9161457967758179,
+          0.7199999856948852,
+          0.26
+        ],
+        "calls": 14,
+        "triangles": 24888,
+        "error": 0
+      }
+    ],
+    "low": {
+      "coldFrameMs": 1942.5,
+      "quality": "low",
+      "profile": "low",
+      "calls": 109,
+      "triangles": 43506,
+      "memory": {
+        "geometries": 47,
+        "textures": 5
+      },
+      "meanFrameMs": 1.8266666666294138,
+      "p95FrameMs": 5.099999997764826,
+      "worstFrameMs": 5.599999997764826,
+      "glError": 0
+    },
+    "errors": [],
+    "mutations": []
+  },
+  "failures": [
+    {
+      "fault": "missing",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 7
+    },
+    {
+      "fault": "corrupt",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 8
+    },
+    {
+      "fault": "version",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 5
+    },
+    {
+      "fault": "no-webgl",
+      "recovered": false,
+      "errors": [],
+      "material_requests": 0
+    },
+    {
+      "fault": "context-loss",
+      "recovered": true,
+      "errors": [],
+      "material_requests": 8
+    }
+  ],
+  "bytes": {
+    "js/vendor/three.lunar.min.js": {
+      "raw": 537039,
+      "gzip": 136342
+    },
+    "js/equipment3d.js": {
+      "raw": 19811,
+      "gzip": 7901
+    },
+    "web/foundation-preview.js": {
+      "raw": 3677,
+      "gzip": 1513
+    },
+    "web/foundation-preview.css": {
+      "raw": 2263,
+      "gzip": 886
+    },
+    "vendor_PR16": {
+      "raw": 538248,
+      "gzip": 139484
+    }
+  },
+  "atlas": {
+    "version": "hf-v1.1",
+    "license": "Original procedural project artwork; no external assets",
+    "tiles": [
+      "graphite",
+      "gold",
+      "steel",
+      "rubber"
+    ],
+    "files": [
+      {
+        "file": "base-high.png",
+        "bytes": 178680,
+        "sha256": "e0b2f9dfeeb3596a0810d70375e32435264d6f4d6a33b75f98ce02bcd837a299"
+      },
+      {
+        "file": "normal-high.png",
+        "bytes": 165873,
+        "sha256": "0a18f2424bbc6007cf7ca2980e5fecde476f064b667ed8b62c9772c331f84721"
+      },
+      {
+        "file": "orm-high.png",
+        "bytes": 232758,
+        "sha256": "339de6522e548d971044cf417fcf954df850c36e6fd18ef30bbf2f6c50413c43"
+      },
+      {
+        "file": "base-low.png",
+        "bytes": 7236,
+        "sha256": "027561cb17333e655cbd006cfd2b6db422b75a4f8e60a7fd5e8cd87f0ae306e1"
+      },
+      {
+        "file": "normal-low.png",
+        "bytes": 6594,
+        "sha256": "933dbf7c68dd4f3741315ff556b975c875cfd2776f025ac1a0392c5c05263faf"
+      },
+      {
+        "file": "orm-low.png",
+        "bytes": 11266,
+        "sha256": "96f9643428085b2e23d4edbbf3956429311bf92ba5eba5f589c611507e6234be"
+      }
+    ]
+  },
+  "notes": [
+    "Full-page Chromium capture timed out on a busy storm frame. Combat artifacts synchronously extract the actual live CV3+HUD canvases; HTML controls are separate actual UI screenshots.",
+    "Cold LOW context startup was slower in this software driver and is reported; it does not invalidate measured geometry reduction.",
+    "The first LOW benchmark included a 1767ms cold initialization outlier. The final test separates coldFrameMs and 60 warmed render frames."
+  ]
+}
