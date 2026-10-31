@@ -5,7 +5,7 @@ import {revAdd,paymentPending,projectStars,reconcilePayments,itemLabel} from "./
 // LUNAR: War Machines — game server (Cloudflare Worker)
 // Every write to the database goes through here, tied to a verified Telegram login.
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
-import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, dbDel, cleanName, dbBase, stageProblem, PROD_WEB_ORIGIN } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
 import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
@@ -46,7 +46,7 @@ function cors(res, req) {
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
 
 async function tg(env, method, body) {
-  if(env.STARS_TEST_MODE==='1'&&env.PAYMENT_NETWORK!=='testnet')throw Error("Stars test mode requires isolated testnet configuration");
+  if(env.STARS_TEST_MODE==='1'&&(env.PAYMENT_NETWORK!=='testnet'||env.LUNAR_STAGE!=='staging'))throw Error("Stars test mode requires the isolated staging testnet configuration");
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${env.STARS_TEST_MODE==='1'?'test/':''}${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
@@ -622,6 +622,8 @@ function pidLimited(path, pid) {
 }
 export default {
   async fetch(req, env) {
+    const stage = stageProblem(env);
+    if (stage) return new Response("staging misconfigured: " + stage, { status: 503, headers: { "Cache-Control": "no-store" } });
     const path = new URL(req.url).pathname;
     if(path.startsWith("/auth/lunar/")){
       try{return await lunarAuth(req,env);}catch{return json({error:"account service unavailable"},503);}
@@ -650,13 +652,14 @@ export default {
     if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
     if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png"].includes(path))){
       const res=await env.ASSETS.fetch(req);const out=new Response(res.body,res);out.headers.set("X-Content-Type-Options","nosniff");
-      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");if(path==="/web/checkout.html")out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.tonapi.io https://*.tonhubapi.com https://*.tonconnect.org https://*.ton.org https://bridge.tonapi.io https://bridge.ton.space https://*.tonkeeper.com https://raw.githubusercontent.com/ton-blockchain/wallets-list/ https://api.devnet.solana.com https://api.mainnet-beta.solana.com; img-src 'self' data: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'");}
+      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://"+new URL(env.WEB_ORIGIN||PROD_WEB_ORIGIN).host+" "+dbBase(env)+"; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");if(path==="/web/checkout.html")out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.tonapi.io https://*.tonhubapi.com https://*.tonconnect.org https://*.ton.org https://bridge.tonapi.io https://bridge.ton.space https://*.tonkeeper.com https://raw.githubusercontent.com/ton-blockchain/wallets-list/ https://api.devnet.solana.com https://api.mainnet-beta.solana.com; img-src 'self' data: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'");}
       return out;
     }
     if (path === "/") return new Response("LUNAR: War Machines API");
     return new Response("not found", { status: 404 });
   },
   async scheduled(event, env, ctx) {
+    if (stageProblem(env)) return;   // a misconfigured staging Worker never runs jobs
     ctx.waitUntil((async () => {
       // two schedules, each its own run with its own budget of outside calls (50 on the Workers Free plan):
       // every minute 15:00-18:59 UTC, reminders only; every 5 minutes, the board and the farm check

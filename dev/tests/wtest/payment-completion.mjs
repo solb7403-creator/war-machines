@@ -207,9 +207,10 @@ await webhook({message:{from:{id:12348},successful_payment:{currency:'XTR',total
 check('cancelled but actually paid Stars remains review with zero goods',()=>{assert.equal(db.get('/eco/tg_12348/starReceipts/cancel-paid/held'),'cancelled');assert.equal(db.get('/eco/tg_12348/vg')||0,0);});
 const statusResponse=await (await tgApi('/api/stars-status',{nonce:cancelInvoice.nonce})).json();
 check('Stars held status never claims delivered',()=>assert.equal(statusResponse.status,'review'));
-env.STARS_TEST_MODE='1';
+// Stars test mode is staging-only: an isolated database and origin are required.
+Object.assign(env,{STARS_TEST_MODE:'1',LUNAR_STAGE:'staging',FIREBASE_DB_URL:'https://lunar-stage-fixture-default-rtdb.firebaseio.com'});
 await tgApi('/api/stars-invoice',{kind:'vault',tk:'chest'});
-delete env.STARS_TEST_MODE;
+delete env.STARS_TEST_MODE;delete env.LUNAR_STAGE;delete env.FIREBASE_DB_URL;
 check('Stars dedicated test endpoint remains compatible with fixture transport',()=>assert.ok(tgPaths.at(-1).includes('/test/createInvoiceLink')));
 const conflict=await P.issueChainOrder(env,pid,input('SOL','a'),now);
 check('same request key cannot switch immutable order currency',()=>assert.equal(conflict.error,'request_conflict'));
