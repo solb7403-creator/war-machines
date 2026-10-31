@@ -1,3 +1,5 @@
+> Current continuation: [Step 2B results and remaining launch gates](STEP_2B.md). The report below records the historical Step 2 baseline; its snapshot FAIL and immediate-only PvP recovery status are superseded by the targeted Step 2B fixes. Full paid launch remains NO-GO.
+
 # Step 2 commercial launch readiness — NO-GO
 
 Audit date: 2026-10-31. Source: `release/graphics-rc1` at `5f4886d8acabee6f80ae625c1ac18d1d39460c51`. Work: `feature/launch-commercial-readiness`, created directly from RC1. Initial inventory is preserved in commit `f933166`; contained fixes are in `75d4acb` and the final evidence commit. The Step 1 preview branch is not incorporated.

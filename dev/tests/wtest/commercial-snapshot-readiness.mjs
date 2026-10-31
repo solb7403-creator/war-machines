@@ -1,8 +1,8 @@
 // Exact ranking and bounded index paging. No live database or token distribution.
 import assert from 'node:assert/strict';
 import {makeDB} from './fakedb.mjs';
-const db=makeDB();let failRead=false,changeAfterPage=false;
-globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')){if(failRead)return new Response('unavailable',{status:503});const response=await db.handle(url,init);if(changeAfterPage&&String(url).includes('orderBy=%22snapshotRankV1%22')){db.root.snapshotIndex.revision++;changeAfterPage=false;}return response;}throw Error('External fetch forbidden');};
+const db=makeDB();let failRead=false,changeAfterPage=false,finalPublicationRace=false,publicationReads=0;
+globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')){if(failRead)return new Response('unavailable',{status:503});if(finalPublicationRace&&new URL(url).pathname==='/snapshotPublishing.json'&&++publicationReads===2){db.root.snapshotIndex.revision++;finalPublicationRace=false;}const response=await db.handle(url,init);if(changeAfterPage&&String(url).includes('orderBy=%22snapshotRankV1%22')){db.root.snapshotIndex.revision++;changeAfterPage=false;}return response;}throw Error('External fetch forbidden');};
 const {snapshot}=await import('../../../worker/src/index.js');
 const env={BOT_TOKEN:'local-only',FIREBASE_DB_SECRET:'SECRET'};
 db.root.players={};for(let i=0;i<2000;i++)db.root.players['tg_'+(100000+i)]={pts:201,ac:101,days:1};db.root.players.tg_99999={pts:200,ac:200,days:10};
@@ -31,6 +31,7 @@ assert.ok(reads.every(s=>s.includes('orderBy=')&&s.includes('limitToFirst=201'))
 await assert.rejects(snapshot(env,undefined,{maxPages:1}),/snapshot_scan_budget/,'never return truncated results');
 failRead=true;await assert.rejects(snapshot(env),/db|snapshot/);failRead=false;
 changeAfterPage=true;await assert.rejects(snapshot(env),/snapshot_changed_retry/,'concurrent profile revisions must invalidate export');
+finalPublicationRace=true;publicationReads=0;await assert.rejects(snapshot(env),/snapshot_changed_retry/,'completion between final marker and epoch reads must invalidate mixed-page export');
 // A cleared historical flag is not disqualifying unless the held index remains set.
 db.root.flags.tg_100000.ok={alt:2};out=await snapshot(env);assert.equal(out[0][0],'tg_100000');
 console.log('PASS exact top1000, >2000 exclusions, held/flagged, stable ties, independent/legacy policy, bounded paging and fail-closed limits');

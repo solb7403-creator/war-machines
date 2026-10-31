@@ -38,7 +38,8 @@ export async function rankedSnapshot(env,fl,{maxPages=20}={}){
  if(!Number.isInteger(maxPages)||maxPages<1||maxPages>20)throw Error('snapshot_scan_budget');
  const before=await dbGet(env,'snapshotIndex');
  if(before?.version!==VERSION||!before.complete)throw Error('snapshot_index_not_ready');
- const [flags,held]=await Promise.all([tagged(env,'flags'),tagged(env,'fh')]);
+ const [flags,held,publishing]=await Promise.all([tagged(env,'flags'),tagged(env,'fh'),tagged(env,'snapshotPublishing')]);
+ if(Object.keys(publishing.value||{}).length)throw Error('snapshot_publication_pending');
  // Always use current flags, including when the caller previously fetched admin diagnostics.
  fl=flags.value||{};const holds=held.value||{};let cursor='',finished=false;const rows=[];
  for(let page=0;page<maxPages;page++){
@@ -55,7 +56,8 @@ export async function rankedSnapshot(env,fl,{maxPages=20}={}){
   if(finished||Object.keys(raw).length<PAGE+1){finished=true;break;}
  }
  if(!finished)throw Error('snapshot_scan_budget');
+ const endPublishing=await tagged(env,'snapshotPublishing');
  const [after,endFlags,endHeld]=await Promise.all([dbGet(env,'snapshotIndex'),tagged(env,'flags'),tagged(env,'fh')]);
- if(after?.version!==VERSION||!after.complete||after.revision!==before.revision||endFlags.tag!==flags.tag||endHeld.tag!==held.tag)throw Error('snapshot_changed_retry');
+ if(after?.version!==VERSION||!after.complete||after.revision!==before.revision||endFlags.tag!==flags.tag||endHeld.tag!==held.tag||endPublishing.tag!==publishing.tag||Object.keys(endPublishing.value||{}).length)throw Error('snapshot_changed_retry');
  return rows;
 }

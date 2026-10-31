@@ -4,7 +4,7 @@ import {snapshotRank} from "./snapshot-rank.js";
 // rules (js/rules.js, bundled as RULES) on its own copy and sends its record back. Points are never taken from the phone.
 // Writes are conditional (Firebase ETags): read, change, write only if nobody else wrote in between, else retry.
 import { RULES as R, LIM } from "./sim.gen.js";
-import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, cleanName } from "./db.js";
 import { checkProof } from "./proof.js";
 
 export const ECO = {
@@ -163,7 +163,25 @@ async function mirror(env, pid, S, isNew, before, now) {
   if (S.ld !== undefined && S.ld !== null) { up[`ntf/${pid}/pl`] = S.ld; up[`ntf/${pid}/sk`] = S.sk || 0; up[`ntf/${pid}/gf`] = S.g2 ? 1 : 0; }
   // the ghost pool: your tank as it is now (server-owned loadout), and when you last played
   if (S.L && (S.mp || 0) >= ECO.GHOST_MP) up[`gh/${pid}`] = { n: S.nm || "Pilot", L: S.L, pw: S.pw || 0, t: now };
-  await dbPatch(env, "", up);
+  // Conditional profile publication prevents an older successful economy transaction's
+  // delayed mirror from overwriting a later revision (including its rank key).
+  const publication=`snapshotPublishing/${pid}_${S.rev}`;
+  if(!await dbPut(env,publication,{pid,revision:S.rev}))throw Error("profile publication unavailable");
+  up[publication]=null; // Removed atomically with the completed publication revision.
+  const fields={};for(const key of Object.keys(up))if(key.startsWith(P+"/")){fields[key.slice(P.length+1)]=up[key];delete up[key];}
+  let published=false;
+  for(let attempt=0;attempt<8;attempt++){
+    const current=await readTag(env,P);
+    if((current.v?.ecoRev||0)>S.rev){
+      // The first economy creation still owns the existing account-count increment.
+      const metadata=Object.fromEntries(Object.entries(up).filter(([key])=>key.startsWith("meta/")||key.startsWith("cfg/")||key==="snapshotIndex/revision"||key===publication));
+      if(!await dbPatch(env,"",metadata))throw Error("profile metadata mirror failed");
+      return;
+    }
+    if(await writeIf(env,P,{...(current.v||{}),...fields,ecoRev:S.rev},current.tag)){published=true;break;}
+  }
+  if(!published)throw Error("profile mirror busy");
+  if(!await dbPatch(env, "", up))throw Error("profile metadata mirror failed");
 }
 
 // ================= ghosts: offline pilots' tanks, flown by the AI in other people's matches =================
