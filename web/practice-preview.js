@@ -32,6 +32,6 @@ function previewFrame(now){const dt=Math.max(0,Math.min(.05,(now-previewLast)/10
  try{if(rangeRun?.sim&&!document.hidden)rangeTick(dt);}catch(e){rangePause();previewStatus.textContent='Practice paused after a rendering error. Reload to retry.';console.error(e);}
  requestAnimationFrame(previewFrame);
 }
-addEventListener('blur',()=>{if(rangeRun?.sim)rangePause();});
+addEventListener('blur',()=>{if(rangeRun)rangePause();});
 addEventListener('pageshow',()=>{previewLast=performance.now();if(rangeRun?.sim)rangePause();else previewMenu('Practice ready. Start a new local match.');});
 setGfx('auto');requestAnimationFrame(previewFrame);
