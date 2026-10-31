@@ -1,0 +1,30 @@
+{
+  "startingSHA": "1ecf81b323c30fa4e9177c1523b86d0f36d147a2",
+  "snapshot": "PASS after explicit local bounded index preparation",
+  "projectionOrdering": "PASS incl publication-gap guards",
+  "payment": {
+    "passed": 81,
+    "failed": 0,
+    "maxSyncFetches": 36,
+    "allOutboundMocked": true
+  },
+  "core": {
+    "passed": 189,
+    "failed": 0
+  },
+  "pvp": {
+    "passed": 106,
+    "failed": 0
+  },
+  "accountBoundaries": {
+    "passed": 6,
+    "failed": 0
+  },
+  "durablePvPRecovery": "PASS local fixture + real workerd/SQLite restart/alarm",
+  "physicalIPhoneCertification": false,
+  "providerCertification": false,
+  "productionWrites": false,
+  "productionIndexBackfill": false,
+  "monetizedLaunch": "NO-GO",
+  "strictFreeBeta": "conditional only; no launch authorized"
+}

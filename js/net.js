@@ -40,8 +40,10 @@ async function doSync(boot){
   const r=await api('/api/sync',body);
   if(/^(?:tg|ln)_\d{3,15}$/.test(String(r.pid||'')))VERIFIED_PID=r.pid; // Authenticated, server-owned player ID.
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
+  save.refBy=srv&&srv.ref||null; // Canonical server binding survives a fresh browser or device.
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
+  if(r.paymentReview)showToast('A payment needs support review. Message @LunarBattle with your Player ID.');
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
   if(r.ghost&&r.ghost.m&&typeof showGhostReport==='function'){save.ghAck=r.ghost.last||Date.now();showGhostReport(r.ghost);}
   store();
@@ -161,12 +163,13 @@ function fetchPrices(){
 }
 function solFor(ton){if(!px.ton||!px.sol)return 0;const v=ton*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
 function priceLabel(ton,stars){
- if(save.payCur==='stars')return fmtNum(stars)+' ⭐';
+ if(IN_TG||save.payCur==='stars')return fmtNum(stars)+' ⭐';
  if(save.payCur==='sol'){const s=solFor(ton);return s?s+' SOL':'… SOL';}
  return ton+' TON';
 }
 function pay(ton,desc){
- if(IN_WEB){showToast('Purchases are available in the Telegram edition only.');return;}
+ if(IN_WEB){location.href='/web/checkout.html?item='+encodeURIComponent(JSON.stringify(desc));return;}
+ if(IN_TG)save.payCur='stars';
  if(save.payCur==='pts')return;
  if(!save.termsOk&&typeof askTerms==='function'){askTerms(()=>pay(ton,desc));return;}   // agree to the terms once, before the first purchase
  if(save.payCur==='stars')payWithStars(ton,desc);else if(save.payCur==='sol')payWithSol(ton,desc);else payWithTon(ton,desc);
@@ -184,23 +187,25 @@ async function payWithStars(ton,desc){
    starsBusy=false;
    if(status==='paid'){
     save.purchases=save.purchases||[];save.purchases.push({cur:'STARS',amt:d.stars,gram:ton,what:descLabel(desc),memo:'STARS|'+d.nonce,ts:Date.now()});
-    save.spendStars=(save.spendStars||0)+d.stars;save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();
+    save.spendStars=(save.spendStars||0)+d.stars;store();
     if(SRV_ECO)starsDeliver(d.nonce,0);   // the server adds it once Telegram confirms the payment
-    else{grantPurchase(desc);syncPlayer();}
-   }else if(status==='cancelled')showToast('Payment cancelled');
-   else if(status==='failed')showToast('Stars payment failed. Nothing was charged.');
+    else{save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();grantPurchase(desc);syncPlayer();}
+   }else if(status==='pending')showToast('Payment is pending. Your item unlocks after confirmation.');
+   else if(status==='cancelled'){api('/api/stars-cancel',{nonce:d.nonce}).catch(()=>{});showToast('Checkout cancelled. Any completed charge will still be checked.');}
+   else if(status==='failed')showToast('Stars checkout was interrupted. Check your payment history before retrying.');
   });
  }catch(e){starsBusy=false;
   if(e&&e.message==='owned'){showToast('You already have this');return;}
   if(e&&e.message==='deal_used'){markDeal(desc.deal);store();if(typeof uiDirty==='function')uiDirty();showToast('You already used this deal. Check the new price.');return;}   // used on another device
-  if(desc.kind==='vault'&&e&&/stars|amount|price|invoice_invalid/i.test(e.message||'')){showToast('Telegram didn’t accept a Stars payment this size. Pay with TON or SOL instead.');return;}   // a very large Stars amount
+  if(desc.kind==='vault'&&e&&/stars|amount|price|invoice_invalid/i.test(e.message||'')){showToast('Telegram didn’t accept a Stars payment this size. Please contact @LunarBattle for purchase support.');return;}   // a very large Stars amount
   showToast('Stars checkout is unavailable right now. Try again in a minute.');}
 }
 // a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)
 function starsDeliver(nonce,k){
  api('/api/act',{a:'paid',n:nonce}).then(r=>{
-  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);showOuts(r.out.outs);return;}
-  if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Payment received. Your item arrives in a moment.');
+  if(r&&r.out&&r.out.review){showToast('Payment needs support review. Message @LunarBattle with your Player ID.');return;}
+  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);save.starsDone=save.starsDone||{};save.starsDone[nonce]=1;starsAckQ.push(nonce);store();showOuts(r.out.outs);return;}
+  if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Confirmation is delayed. Your saved payment will be checked automatically.');
  }).catch(()=>{if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),2500);});
 }
 // ---- SOL: Solana Pay reference key lets us find exactly this payment on-chain ----
@@ -215,6 +220,8 @@ const SOL_WALLETS={
  other:{n:'Keeper / other',ul:null}};
 const SOL_ORDER=['phantom','solflare','backpack','other'];
 function payWithSol(ton,desc){
+ showToast('Crypto checkout is unavailable in Telegram.');return;
+ showToast('SOL purchases are temporarily unavailable. Choose Stars or TON.');return;
  if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  const sol=solFor(ton);
  if(!sol){fetchPrices();showToast('Loading the SOL price. Tap again in a second.');return;}
@@ -335,6 +342,7 @@ function checkPendingPurchase(){
  });
 }
 async function payWithTon(amount,desc){
+ showToast('Crypto checkout is unavailable in Telegram.');return;
  if(IN_WEB){showToast('Use Telegram for verified purchases.');return;}
  if(!tonConnectUI){showToast('Loading wallets…');initTonConnect();return;}
  if(!tonWallet){tonConnectUI.openModal();showToast('Connect a TON wallet first');return;}

@@ -1,6 +1,19 @@
 // Shared server helpers: Firebase Realtime Database over REST (with the database secret, which bypasses the
 // locked rules), HMAC and names.
-export const DB_URL = "https://warmachines-a6034-default-rtdb.firebaseio.com";
+export const DB_URL = "https://warmachines-a6034-default-rtdb.firebaseio.com";   // production database
+export const PROD_WEB_ORIGIN = "https://lunar-api.solb7403.workers.dev";
+// Production keeps DB_URL. An isolated staging Worker must name its own database (FIREBASE_DB_URL) and can never fall back to production.
+export const dbBase = (env) => (env && env.LUNAR_STAGE === "staging" ? String(env.FIREBASE_DB_URL || "").replace(/\/+$/, "") : DB_URL);
+// Returns null when this Worker's configuration is safe to serve; otherwise a reason. Staging fails closed on any production overlap.
+export function stageProblem(env) {
+  if (!env || env.LUNAR_STAGE !== "staging") return null;   // production behavior is unchanged
+  const db = dbBase(env), web = String(env.WEB_ORIGIN || "").replace(/\/+$/, "");
+  if (!/^https:\/\/[a-z0-9-]+(-default-rtdb)?\.(firebaseio\.com|[a-z0-9-]+\.firebasedatabase\.app)$/.test(db)) return "staging needs its own FIREBASE_DB_URL";
+  if (db === DB_URL) return "staging may not use the production database";
+  if (!/^https:\/\/[a-z0-9.-]+$/.test(web) || web === PROD_WEB_ORIGIN) return "staging needs its own WEB_ORIGIN";
+  if (env.CRYPTO_CHECKOUT_ENABLED === "approved-mainnet" || (env.PAYMENT_NETWORK && env.PAYMENT_NETWORK !== "testnet")) return "staging is testnet-only";
+  return null;
+}
 export const DAILY_CAP = 20000;          // max points a player can bank per UTC day
 export const DAY_MS = 86400000;
 export const dayOf = (ms) => Math.floor(ms / DAY_MS);
@@ -15,7 +28,7 @@ export async function hmac(key, data) {
 
 export function dbUrl(env, path, q) {
   const qs = Object.entries(q || {}).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
-  return `${DB_URL}/${path}.json?auth=${env.FIREBASE_DB_SECRET}${qs ? "&" + qs : ""}`;
+  return `${dbBase(env)}/${path}.json?auth=${env.FIREBASE_DB_SECRET}${qs ? "&" + qs : ""}`;
 }
 export async function dbGet(env, path, q) {
   const r = await fetch(dbUrl(env, path, q));

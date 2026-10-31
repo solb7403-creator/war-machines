@@ -1,0 +1,99 @@
+name: Deploy isolated certification staging (testnet only)
+# Deploys worker/ as the SEPARATE Worker "lunar-api-staging" (wrangler --env staging) for $0 provider certification.
+# Never touches the production Worker, database, bot or webhook. Manual only; refuses main.
+# Required GitHub Actions secrets (staging-only values; never reuse production ones):
+#   CLOUDFLARE_API_TOKEN            existing account token (deploys a different Worker name)
+#   STAGING_FIREBASE_DB_URL         a separate free Firebase Realtime Database URL
+#   STAGING_FIREBASE_DB_SECRET      that database's secret
+#   STAGING_TON_TEST_RECIPIENT      TON testnet merchant wallet address (raw 0:... form)
+#   STAGING_SOL_TEST_RECIPIENT      Solana devnet merchant address
+# Optional:
+#   STAGING_TEST_BOT_TOKEN          Telegram TEST-environment bot token (Stars test mode); never the production token
+#   STAGING_PAYMENT_OPERATOR_PIDS   comma-separated staging passkey account IDs allowed into /web/payment-support.html
+on:
+  workflow_dispatch:
+concurrency: staging-deploy
+jobs:
+  staging:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Refuse any production overlap
+        env:
+          CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SDB: ${{ secrets.STAGING_FIREBASE_DB_URL }}
+          SDBS: ${{ secrets.STAGING_FIREBASE_DB_SECRET }}
+          PDBS: ${{ secrets.FIREBASE_DB_SECRET }}
+          TON: ${{ secrets.STAGING_TON_TEST_RECIPIENT }}
+          SOL: ${{ secrets.STAGING_SOL_TEST_RECIPIENT }}
+          TBOT: ${{ secrets.STAGING_TEST_BOT_TOKEN }}
+          PBOT: ${{ secrets.BOT_TOKEN }}
+        run: |
+          fail(){ echo "::error::$1"; exit 1; }
+          [ -n "$CF" ] || fail "CLOUDFLARE_API_TOKEN missing"
+          [ -n "$SDB" ] && [ -n "$SDBS" ] || fail "STAGING_FIREBASE_DB_URL and STAGING_FIREBASE_DB_SECRET are required"
+          SDB=$(printf '%s' "$SDB" | tr -d '[:space:]' | sed 's:/*$::')
+          [ "$SDB" != "https://warmachines-a6034-default-rtdb.firebaseio.com" ] || fail "staging may not use the production database"
+          [ "$SDBS" != "$PDBS" ] || fail "staging database secret equals the production secret"
+          [ -n "$TON" ] && [ -n "$SOL" ] || fail "STAGING_TON_TEST_RECIPIENT and STAGING_SOL_TEST_RECIPIENT are required"
+          if [ -n "$TBOT" ]; then [ "$TBOT" != "$PBOT" ] || fail "STAGING_TEST_BOT_TOKEN must not be the production bot token"; echo "HAS_TBOT=1" >> $GITHUB_ENV; fi
+          echo "STAGE_DB=$SDB" >> $GITHUB_ENV
+      - name: Install verifier dependencies
+        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - name: Build sim and website assets
+        run: node worker/build-sim.mjs && node worker/build-web.mjs
+      - name: Payment, account and isolation regressions
+        run: |
+          node dev/tests/wtest/staging-isolation.mjs
+          node dev/tests/wtest/payment-completion.mjs
+          node dev/tests/wtest/commercial-payments.mjs
+          node dev/tests/wtest/commercial-ton-orders.mjs
+          node dev/tests/wtest/web-auth.mjs
+          node dev/tests/wtest/lunar-identity.mjs
+      - name: Find workers.dev subdomain (read-only)
+        env:
+          CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts | jq -r '.result[0].id')
+          SUB=$(curl -s -H "Authorization: Bearer $CF" https://api.cloudflare.com/client/v4/accounts/$ACC/workers/subdomain | jq -r '.result.subdomain // empty')
+          [ -n "$ACC" ] && [ "$ACC" != null ] && [ -n "$SUB" ] || { echo "::error::account or workers.dev subdomain not found"; exit 1; }
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACC" >> $GITHUB_ENV
+          echo "STAGE_ORIGIN=https://lunar-api-staging.$SUB.workers.dev" >> $GITHUB_ENV
+      - name: Deploy staging Worker
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SDBS: ${{ secrets.STAGING_FIREBASE_DB_SECRET }}
+          TON: ${{ secrets.STAGING_TON_TEST_RECIPIENT }}
+          SOL: ${{ secrets.STAGING_SOL_TEST_RECIPIENT }}
+          TBOT: ${{ secrets.STAGING_TEST_BOT_TOKEN }}
+          OPS: ${{ secrets.STAGING_PAYMENT_OPERATOR_PIDS }}
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          set -o pipefail
+          W="npx -y wrangler@4"
+          $W deploy --env staging --var WEB_ORIGIN:"$STAGE_ORIGIN" --var FIREBASE_DB_URL:"$STAGE_DB" \
+            --var TON_TEST_RECIPIENT:"$TON" --var SOL_TEST_RECIPIENT:"$SOL" \
+            --var PAYMENT_OPS_ENABLED:"$([ -n "$OPS" ] && echo 1 || echo 0)" --var PAYMENT_OPERATOR_PIDS:"$OPS"
+          printf '%s' "$SDBS" | tr -d '[:space:]' | $W secret put FIREBASE_DB_SECRET --env staging
+          if [ -n "$TBOT" ]; then printf '%s' "$TBOT" | tr -d '[:space:]' | $W secret put BOT_TOKEN --env staging; fi
+          echo "::notice::STAGING URL: $STAGE_ORIGIN/web/play.html"
+      - name: Point the TEST-environment bot at staging (optional)
+        if: env.HAS_TBOT == '1'
+        env:
+          TBOT: ${{ secrets.STAGING_TEST_BOT_TOKEN }}
+        run: |
+          export BOT_TOKEN=$(printf '%s' "$TBOT" | tr -d '[:space:]')
+          SECRET=$(node -e 'const c=require("crypto");process.stdout.write(c.createHmac("sha256",process.env.BOT_TOKEN).update("lunar-webhook").digest("hex").slice(0,48))')
+          R=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/test/setWebhook" -H 'Content-Type: application/json' \
+            -d "{\"url\":\"${STAGE_ORIGIN}/api/tg-webhook\",\"secret_token\":\"${SECRET}\",\"allowed_updates\":[\"message\",\"pre_checkout_query\"]}")
+          echo "$R" | grep -q '"ok":true' || { echo "::error::test bot setWebhook failed"; exit 1; }
+          echo "::notice::test bot webhook set"
+      - name: Staging smoke checks
+        run: |
+          for i in 1 2 3 4 5 6; do H=$(curl -s "$STAGE_ORIGIN/pvp/health"); echo "$H" | grep -q '"ok":true' && break; sleep 5; done
+          echo "::notice::pvp health: $H"; echo "$H" | grep -q '"ok":true' || { echo "::error::staging not healthy: $H"; exit 1; }

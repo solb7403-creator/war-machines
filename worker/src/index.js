@@ -1,10 +1,15 @@
+import {chainActive,cryptoReady,prepareChainOrder,issueChainOrder,inspectChainOrder,settleChainOrder,cancelChainOrder,wakePayments} from "./chain-payments.js";
+import {paymentOps} from "./payment-ops.js";
+export {PaymentJob} from "./payment-jobs.js";
+import {revAdd,paymentPending,projectStars,reconcilePayments,itemLabel} from "./payment-ledger.js";
 // LUNAR: War Machines — game server (Cloudflare Worker)
 // Every write to the database goes through here, tied to a verified Telegram login.
 // Secrets (set by the GitHub Action): BOT_TOKEN, FIREBASE_DB_SECRET
-import { DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, dbDel, cleanName, dbBase, stageProblem, PROD_WEB_ORIGIN } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
 import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
+import {rankedSnapshot} from "./snapshot.js";
 import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
 import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from "./web-auth.js";
@@ -41,7 +46,8 @@ function cors(res, req) {
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
 
 async function tg(env, method, body) {
-  const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if(env.STARS_TEST_MODE==='1'&&(env.PAYMENT_NETWORK!=='testnet'||env.LUNAR_STAGE!=='staging'))throw Error("Stars test mode requires the isolated staging testnet configuration");
+  const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${env.STARS_TEST_MODE==='1'?'test/':''}${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
@@ -68,13 +74,15 @@ async function auth(req, env) {
     if (b.initData) return {err:json({error:"ambiguous identity"},401)};
     const a=await webIdentity(req,env);if(!a)return {err:json({error:"not verified"},401)};
     const path=new URL(req.url).pathname;
-    if(["/api/pay-log","/api/stars-invoice","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
+    if((path.startsWith("/api/chain/")||path==="/api/payment-ops")&&(!a.user.lunar_account||a.session.authMethod!=="passkey"))return {err:json({error:"Independent Lunar account required"},403)};
+    if(["/api/pay-log","/api/stars-invoice","/api/stars-status","/api/stars-cancel","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
     if(path==="/api/sync"){
       const S=await readEco(env,a.pid);if(S.mig===0)return {err:json({error:"Open Telegram once to finish account migration"},409)};
       delete b.mig;delete b.refBy;delete b.starsAck; b.boot=false;
     }
     return {b,user:a.user,pid:a.pid,ip:req.headers.get("CF-Connecting-IP")||"",sp:"",web:true};
   }
+  if(new URL(req.url).pathname.startsWith("/api/chain/")||new URL(req.url).pathname==="/api/payment-ops")return {err:json({error:"Independent website session required"},403)};
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
   // start_param: the link that opened the game (part of the signed login, so it can't be made up)
@@ -93,25 +101,26 @@ async function auth(req, env) {
   return { b, user, pid, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
-function itemLabel(k, tk, ri) {
-  if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
-  if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
-  if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
-  if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
-  return k === "moonbeam" ? "Moonbeam" : k === "skin" ? "Lunar Skin" : k === "starter" ? "Starter Pack" : k === "founder" ? "Founder Pack" : k === "respec" ? "Build reset (keep all points)" : "Purchase";
-}
-
 // ================= /api/sync =================
 // No points come in here any more: every point comes from a named source the server checks (a scored match, a claim).
 // Sync sets the name, the referrer (once), the loadout the pilot fields (power and league from what they own), the
 // one-time move of an existing pilot's progress from their phone, and returns the server's record.
-export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
+export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = "") {
   const name = cleanName(user), d = dayOf(now);
   const rec = (await dbGet(env, `players/${pid}`).catch(() => null)) || null;
   const paid = b.mig && typeof b.mig === "object" ? await paidRecords(env, pid) : null;
+  // Only the invitation carried by verified Telegram initData may enroll a recruit.
+  // Resolve a linked Telegram inviter to the same canonical account used by authentication.
+  const invite = /^ref_\d{3,15}$/.test(sp) ? Number(sp.slice(4)) : 0;
+  const inviter = invite > 0 ? (await resolveTelegramAccount(env, invite)) || "tg_" + invite : null;
   let why = null;
   let devCheck = false;
   const t = await tx(env, pid, (S, X) => {
+    // The eligibility window and first binding live in the economy CAS, so concurrent
+    // first syncs cannot choose different inviters. Existing accounts keep legacy bindings.
+    if (!Number.isInteger(S.refDay)) S.refDay = !rec && !S.rev && !S.t ? X.day : -1;
+    if (!S.referrer && rec && rec.ref) S.referrer = rec.ref;
+    if (!S.referrer && inviter && inviter !== pid && S.refDay === X.day && (S.days || 0) <= 1) S.referrer = inviter;
     who(S, user);
     why = null;
     if (S.mig === 0 && paid) {
@@ -125,10 +134,9 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   }, now, { rl: 1 });
   if (t.rate) return { ok: false, error: "rate" };
   const S = t.S, up = {};
-  // referrer: only for a brand-new pilot (first day), never yourself, never changed later
-  const rb = String(b.refBy || "");
-  let ref = rec && rec.ref;
-  if (!ref && /^tg_\d{3,15}$/.test(rb) && rb !== pid && (S.days || 0) <= 1) { ref = rb; up[`players/${pid}/ref`] = rb; }
+  // Repair the public projection from the immutable binding after an interrupted sync.
+  const ref = S.referrer || null;
+  if (ref && (!rec || rec.ref !== ref)) up[`players/${pid}/ref`] = ref;
   if (rec && rec.bracket !== undefined) up[`players/${pid}/bracket`] = null;
   // Stars receipts the game confirmed it delivered
   const acks = Array.isArray(b.starsAck) ? b.starsAck.slice(0, 20) : [];
@@ -151,8 +159,12 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
   const out = { ok: true, pid, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
     rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
+  await reconcilePayments(env, pid, S, now);
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
-  if (b.boot) out.stars = await undeliveredStars(env, pid, now);
+  if (b.boot) {
+    out.stars = await undeliveredStars(env, pid, now);
+    out.paymentReview = Object.values(S.starReceipts || {}).filter(p => p && p.held && !p.rf).length + Object.values(S.chainReceipts || {}).filter(p => p && p.held && !p.refunded).length;
+  }
   // the ghost report: what your tank did in other pilots' matches while you were away. Cleared once the phone has shown it
   const gr = b.boot || b.ghAck ? await dbGet(env, `ghr/${pid}`).catch(() => null) : null;
   if (gr && b.ghAck && Number(b.ghAck) >= (gr.last || 0)) await dbDel(env, `ghr/${pid}`).catch(() => {});
@@ -165,7 +177,7 @@ async function undeliveredStars(env, pid, now) {
   for (const [charge, p] of Object.entries(paid || {})) {
     if (!p || !p.n || (acked && acked[p.n])) continue;
     if (typeof p.ts === "number" && now - p.ts > 30 * DAY_MS) continue;
-    if (p.rf) continue;
+    if (p.rf || p.held) continue;
     out.push({ n: p.n, k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: p.stars || 0, o: p.o || [] });
   }
   return out.slice(0, 10);
@@ -179,35 +191,6 @@ export async function squad(env, pid) {
 }
 
 // ================= /api/pay-log =================
-// TON and SOL purchases: the phone reports the order, the server finds the payment on-chain itself (TON: the order note
-// and the amount; SOL: the signature and the amount), records each transaction once, checks the price against its own
-// record, and only then grants the item. Nothing is granted on the phone's word.
-async function verifyTon(memo, amt) {
-  try {
-    const r = await fetch(`https://toncenter.com/api/v2/getTransactions?address=${TON_RECIPIENT}&limit=50`);
-    const d = await r.json();
-    for (const t of d.result || []) {
-      const val = parseInt((t.in_msg || {}).value || "0", 10) / 1e9;
-      if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return t.transaction_id && t.transaction_id.hash ? { hash: t.transaction_id.hash, src: String((t.in_msg || {}).source || "") } : null;
-    }
-  } catch {}
-  return null;
-}
-async function verifySol(sig, amt) {
-  if (!/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(String(sig || ""))) return false;
-  for (const url of SOL_RPCS) {
-    try {
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransaction", params: [sig, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0, commitment: "confirmed" }] }) });
-      const d = await r.json();
-      const tx = d.result;
-      if (!tx || !tx.meta || tx.meta.err) continue;
-      const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey || k), i = keys.indexOf(SOL_RECIPIENT);
-      if (i < 0) return false;
-      return (tx.meta.postBalances[i] - tx.meta.preBalances[i]) / 1e9 + 1e-9 >= amt * 0.999 ? String(keys[0] || "payer") : false;   // the payer's wallet
-    } catch {}
-  }
-  return false;
-}
 // the launch liquidity fund: LP_SHARE of every verified shop sale goes into the $LUNAR liquidity pool at launch. Sales are
 // counted in US cents (meta/revc) as the server prices them (Stars at Telegram's ~1.3 cents, TON and SOL at the live TON
 // price), never the phone's number; refunds come off. The board file shows the fund (lb.lpf), the Ranks tab and Shop too
@@ -218,16 +201,22 @@ async function tonUsd() {
   try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd")).json(); const v = Number(d["the-open-network"].usd); if (v > 0) TONUSD = { v, t: Date.now() }; } catch {}
   return TONUSD.v;
 }
-const revAdd = (env, cents) => (cents ? dbPatch(env, "meta", { revc: { ".sv": { increment: Math.round(cents) } } }).catch(() => {}) : null);
-// SOL is priced off the TON price at live rates; the server checks it's in the right range (skipped if prices are unavailable)
-async function solValueOk(sol, ton) {
-  try {
-    const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json();
-    const t = d["the-open-network"].usd, s = d.solana.usd;
-    if (t > 0 && s > 0) return sol * s >= ton * t * 0.85;
-  } catch {}
+// Provider payloads are compared byte-for-byte with immutable server-issued quotes.
+const STAR_QUOTE_MS = 10 * 60000;
+function starQuoteEligible(S, quote, X) {
+  const price = RULES.ecoPrice(S, quote.desc, X);
+  if (RULES.ecoOwned(S, quote.desc, X) || !price || price.stars !== quote.price.stars || price.ton !== quote.price.ton || (price.deal || null) !== (quote.price.deal || null)) return false;
+  if (quote.desc.kind === "pass" && quote.season !== RULES.ecoSeason(X)) return false;
+  if (quote.desc.kind === "box" && (quote.day !== X.day || quote.week !== X.week)) return false;
   return true;
 }
+async function starQuote(env, payload, telegramId, amount, currency) {
+  let p; try { p = JSON.parse(payload); } catch { return null; }
+  if (currency !== "XTR" || p.u !== telegramId || !/^[a-f0-9]{12}$/.test(p.n || "")) return null;
+  const quote = await dbGet(env, `starQuotes/${p.n}`);
+  return quote && quote.payload === payload && quote.telegramId === telegramId && quote.price.stars === amount ? quote : null;
+}
+
 const descOf = (d) => {
   d = d && typeof d === "object" ? d : {};
   const kind = String(d.kind || "");
@@ -236,55 +225,7 @@ const descOf = (d) => {
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind } : null;
 };
-async function payLog(env, b, user, pid, now = Date.now()) {
-  const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
-  if (!cur) return { error: "cur" };
-  const memo = String(b.memo || "").slice(0, 64);
-  if (!memo.startsWith("LWM|" + pid + "|")) return { error: "memo" };
-  const amt = num(b.amt, 0, 100000), key = `payments/LWM_${safeKey(memo)}`;
-  const have = await dbGet(env, key).catch(() => null);
-  const desc = descOf(b.desc);
-  if (have && (have.granted || !desc)) { const S = await readEco(env, pid); return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) }; }
-  const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
-  if (!desc) {   // an old phone without the order details: logged and checked, not granted here
-    rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : !!(await verifySol(rec.proof, amt));
-    await dbPut(env, key, rec);
-    return { ok: true, verified: rec.verified };
-  }
-  const S0 = await readEco(env, pid), X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
-  if (!price) return { error: "item" };
-  const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
-  if (cur === "TON" && amt + 1e-9 < price.ton * 0.999) return { error: "amount" };
-  if (cur === "SOL" && (rec.gram + 1e-9 < price.ton * 0.999 || !(await solValueOk(amt, price.ton)))) return { error: "amount" };
-  let txid = null, src = "";
-  if (cur === "TON") { const tv = await verifyTon(memo, need); if (tv) { txid = tv.hash; src = tv.src; } }
-  else { const payer = await verifySol(rec.proof, amt); if (payer) { txid = rec.proof; src = payer; } }
-  if (!txid) { if (!have) await dbPut(env, key, { ...rec, verified: false }); return { ok: true, verified: false, error: "pending" }; }
-  // each on-chain transaction pays for one order
-  const once = await claimOnce(env, `${cur === "TON" ? "tonTx" : "solTx"}/${safeKey(txid)}`, { pid, memo, t: now });
-  if (!once.ok && !(once.v && once.v.memo === memo)) return { error: "reused" };
-  const t = await tx(env, pid, (S, X) => {
-    S.gout = S.gout || {};
-    const gk = safeKey(memo);
-    if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
-    const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
-    S.gout[gk] = outs.length ? outs : [{ none: 1 }];
-    const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
-    return { outs };
-  }, now);
-  const outs = (t.outs || []).filter((o) => o && !o.none);
-  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
-  { const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10); await revAdd(env, usd * 100); }   // the liquidity fund
-  // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
-  if (src && src !== "payer") {
-    const wh = hex(await hmac(env.BOT_TOKEN, "w|" + src)).slice(0, 16);
-    const others = (await dbGet(env, `wal/${wh}`).catch(() => null)) || {};
-    for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "wallet").catch(() => {});
-    await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {});
-  }
-  return { ok: true, verified: true, out: outs, E: pub(t.S) };
-}
+async function payLog() { return {error:"unavailable"}; } // Reject every legacy unbound crypto checkout.
 
 // ================= /api/stars-invoice =================
 // the price comes from the server's own record: repeat-buy pricing, and a deal only if it's still unused this period
@@ -299,12 +240,26 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
   const pr = RULES.ecoPrice(S, desc, X);
   if (!pr) return { status: 400, body: { error: "item" } };
   if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
-  const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const nonce = hex(crypto.getRandomValues(new Uint8Array(6)));
+  const payload = JSON.stringify({ q: 1, u: user.id, k, t: k === "paint" || k === "box" || k === "vault" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const quote = { pid, telegramId: user.id, desc, price: pr, payload, day: X.day, week: X.week, season: RULES.ecoSeason(X), ts: now, expires: now + STAR_QUOTE_MS };
+  const issued = await claimOnce(env, `starQuotes/${nonce}`, quote);
+  if (!issued.ok) throw new Error("payment quote collision");
   const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
   return { status: 200, body: { link: r.result, stars: pr.stars, nonce } };
+}
+
+// Cancellation never asserts that a charge did not occur or releases an accepted
+// reservation early. A later paid callback remains an audited hold.
+async function starsStatus(env,a,cancel=false){
+ const n=a.b.nonce;if(!/^[a-f0-9]{12}$/.test(n||""))return {status:400,body:{error:"nonce"}};
+ const quote=await dbGet(env,`starQuotes/${n}`);
+ if(!quote||quote.pid!==a.pid||quote.telegramId!==a.user.id)return {status:404,body:{error:"not_found"}};
+ if(cancel)await tx(env,a.pid,S=>{S.starCancelled={...S.starCancelled,[n]:Date.now()};return {};});
+ const S=await readEco(env,a.pid),receipt=Object.values(S.starReceipts||{}).find(r=>r.n===n);
+ return {status:200,body:{nonce:n,status:receipt?(receipt.rf?"refunded":receipt.held?"review":"paid"):S.starCancelled?.[n]?"cancelled":Date.now()>=quote.expires?"expired":"pending"}};
 }
 
 // ================= /api/notify-optin =================
@@ -327,6 +282,7 @@ async function admin(env, user, b = {}) {
   if (b.clear && /^tg_\d{3,15}$/.test(String(b.clear))) {
     const f = await dbGet(env, `flags/${b.clear}`).catch(() => null), up = {};
     for (const k of flagReasons(f)) up[`flags/${b.clear}/ok/${k}`] = Date.now();
+    up[`fh/${b.clear}`] = null; // Clearing all reasons also releases the held eligibility projection.
     if (Object.keys(up).length) await dbPatch(env, "", up);
   }
   const today = dayOf(Date.now());
@@ -366,19 +322,14 @@ async function admin(env, user, b = {}) {
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
   const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters };
-  // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
+  // Research snapshot: existing weighted-credit ranking, not token allocation or distribution.
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
     revenue: { TON: +rev.TON.toFixed(3), SOL: +rev.SOL.toFixed(4), STARS: rev.STARS, USD: Math.round(rev.USD), count: rev.count, unverified: rev.unverified },
     recent: recent.slice(0, 15), top: Object.values(top || {}).sort((a, b) => (b.pts || 0) - (a.pts || 0)).map((p) => ({ name: p.name, pts: p.pts, days: p.days, power: p.power })) } };
 }
 
-export async function snapshot(env, fl) {
-  fl = fl || (await dbGet(env, "flags").catch(() => null)) || {};
-  const top = (await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 2000 }).catch(() => ({}))) || {};
-  // ranked by airdrop credit (lifetime points, with new Telegram accounts' first week at a reduced rate); points shown too
-  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, typeof v.ac === "number" ? v.ac : v.pts || 0, v.sg || 0, v.gg || 0]).sort((a, b) => b[4] - a[4]).slice(0, 1000);   // ..., verified spending (TON value)
-}
+export const snapshot = (env, fl, options) => rankedSnapshot(env, fl, options);
 
 // ================= leaderboard (cron, every 5 minutes) =================
 // Phones download one small file instead of every player's record.
@@ -453,7 +404,7 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
         ? "☾ Your welcome-back gift is ready, pilot: a free Rare gem cache. Claim it with today's daily reward in Quests."
         : streak >= 2
         ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
-        : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
+        : "☾ Your daily reward and 4 new quests are ready, pilot. Points rankings do not guarantee tokens.";
       const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
       if (r && r.ok) { up[`ntf/${pid}/nx`] = d + 1; up[`ntf/${pid}/last`] = d; sent++; }
       else if (r && r.error_code === 429) slow = true;   // Telegram says slow down: the rest wait for the next run
@@ -464,6 +415,23 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
   return sent;
 }
 
+// A charge keeps its original economy owner when Telegram later links to a Lunar account.
+async function starsOwner(env, telegramId, charge, quotedPid = null) {
+  if (!Number.isSafeInteger(telegramId) || telegramId <= 0) throw new Error("payment owner unavailable");
+  const path = `starsChargeOwner/${charge}`;
+  const checked = owner => {
+    if (!owner || typeof owner.pid !== "string" || !/^(?:tg|ln)_\d{3,15}$/.test(owner.pid) || owner.telegramId !== telegramId) throw new Error("payment owner unavailable");
+    return owner.pid;
+  };
+  // Existing receipts must remain refundable even if a later account link is incomplete.
+  const pinned = await dbGet(env, path);
+  if (pinned !== null) return checked(pinned);
+  const legacy = "tg_" + telegramId;
+  const pid = await dbGet(env, `starsPaid/${legacy}/${charge}`) ? legacy : quotedPid || (await resolveTelegramAccount(env, telegramId)) || legacy;
+  const owner = { pid, telegramId }, claim = await claimOnce(env, path, owner);
+  return checked(claim.ok ? owner : claim.v);
+}
+
 // ================= Telegram webhook =================
 async function webhook(req, env) {
   if (req.headers.get("x-telegram-bot-api-secret-token") !== (await webhookSecret(env))) return new Response("forbidden", { status: 403 });
@@ -471,56 +439,91 @@ async function webhook(req, env) {
   try { u = await req.json(); } catch { return new Response("ok"); }
   if (u.pre_checkout_query) {
     const q = u.pre_checkout_query;
-    let ok = q.currency === "XTR";
-    try { ok = ok && JSON.parse(q.invoice_payload).u === q.from.id; } catch { ok = false; }
+    const now = Date.now(), quote = await starQuote(env, q.invoice_payload, q.from.id, q.total_amount, q.currency);
+    let ok = false;
+    if (quote && now < quote.expires) {
+      const n = JSON.parse(quote.payload).n;
+      const accepted = await tx(env, quote.pid, (S, X) => {
+        const active = S.starCheckout;
+        if (S.starCancelled?.[n] || chainActive(S,now) || !starQuoteEligible(S, quote, X) || S.starQuoteUse && S.starQuoteUse[n]) return { abort: true };
+        if (active && active.until > now && (active.n !== n || active.q !== q.id)) return { abort: true };
+        S.starAccepted = S.starAccepted || {};
+        if (S.starAccepted[n] && S.starAccepted[n] !== q.id) return { abort: true };
+        S.starAccepted[n] = q.id;
+        S.starCheckout = { n, q: q.id, until: quote.expires };
+        return { accepted: true };
+      }, now);
+      ok = !!accepted.accepted;
+    }
     await tg(env, "answerPreCheckoutQuery", ok ? { pre_checkout_query_id: q.id, ok: true } : { pre_checkout_query_id: q.id, ok: false, error_message: "This purchase couldn't be verified. Please try again from the game." });
     return new Response("ok");
   }
   const m = u.message;
   if (m && m.successful_payment) {
-    // Telegram confirmed a Stars payment: the server grants the item now (the phone just shows it)
     const sp = m.successful_payment;
     let p = {};
     try { p = JSON.parse(sp.invoice_payload); } catch {}
-    const pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, now = Date.now();
     const charge = safeKey(sp.telegram_payment_charge_id);
-    const item = itemLabel(p.k, p.t, p.r);
+    const quote = p.q === 1 ? await starQuote(env, sp.invoice_payload, m.from.id, sp.total_amount, sp.currency) : null;
+    // Amount/currency mismatch must hold the payment against the original quoted
+    // owner, even if account mapping changed after precheckout.
+    const ownerQuote=p.q===1&&/^[a-f0-9]{12}$/.test(p.n||"")?await dbGet(env,`starQuotes/${p.n}`):null;
+    const originalOwner=ownerQuote&&ownerQuote.payload===sp.invoice_payload&&ownerQuote.telegramId===m.from.id?ownerQuote.pid:null;
+    const pid = await starsOwner(env, m.from.id, charge, originalOwner || quote && quote.pid), now = Date.now();
     const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
-    const t = desc ? await tx(env, pid, (S, X) => {
+    await wakePayments(env,pid);
+    const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
+    const t = await tx(env, pid, (S, X) => {
+      S.starReceipts = S.starReceipts || {};
+      const old = S.starReceipts[charge] || prior;
+      if (old && !old.unmatched) { S.starReceipts[charge] = old; return { receipt: old, dup: true }; }
       S.gout = S.gout || {};
-      if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
-      const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
-      if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
-      S.gout[charge] = outs.length ? outs : [{ none: 1 }];
-      const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
-      return { outs };
-    }, now) : { outs: [] };
-    const outs = (t.outs || []).filter((o) => o && !o.none);
-    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
-    await revAdd(env, sp.total_amount * 1.3);   // the liquidity fund (Stars at ~1.3 cents each)
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
+      let held = null;
+      if (p.q === 1) {
+        if (!quote || !S.starAccepted || !S.starAccepted[p.n] || !starQuoteEligible(S, quote, X) || now>=quote.expires) held = "quote_ineligible";
+        if(S.starCancelled?.[p.n])held="cancelled";
+        S.starQuoteUse = S.starQuoteUse || {};
+        if (S.starQuoteUse[p.n] && S.starQuoteUse[p.n] !== charge) held = "quote_used";
+        if (!held) S.starQuoteUse[p.n] = charge;
+        if (S.starCheckout && S.starCheckout.n === p.n) delete S.starCheckout;
+      }
+      const outs = old && old.rf || held ? [] : S.gout[charge] || (desc ? RULES.ecoGrant(S, { ...desc, price: p.g }, X) : []);
+      if (desc && (S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
+      const receipt = { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs.filter(o => o && !o.none), ts: now, journal: 1, ...(held ? { held } : {}), ...(old && old.rf ? { rf: old.rf } : {}) };
+      S.starReceipts[charge] = receipt;
+      paymentPending(S, "stars", charge, cleanName(m.from));
+      return { receipt };
+    }, now);
+    const receipt = t.receipt;
+    await projectStars(env, pid, charge, receipt, cleanName(m.from));
     return new Response("ok");
   }
   if (m && m.refunded_payment) {
-    // a Stars refund: the server takes back exactly what that purchase gave
-    const rp = m.refunded_payment, pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
-    const sp = await dbGet(env, `starsPaid/${pid}/${charge}`).catch(() => null);
-    if (sp && !sp.rf) {
-      let n = 0;
-      const t = await tx(env, pid, (S) => {
-        S.rfd = S.rfd || [];
-        if (S.rfd.includes(charge)) return { abort: true };
+    const rp = m.refunded_payment, charge = safeKey(rp.telegram_payment_charge_id), now = Date.now();
+    const pid = await starsOwner(env, m.from.id, charge);
+    await wakePayments(env,pid);
+    const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
+    const t = await tx(env, pid, (S) => {
+      S.starReceipts = S.starReceipts || {};
+      const receipt = S.starReceipts[charge] || prior;
+      if (!receipt) { S.starReceipts[charge] = { rf: now, unmatched: true }; paymentPending(S, "stars", charge, cleanName(m.from)); return { receipt: S.starReceipts[charge] }; }
+      if (receipt.rf) return { abort: true, receipt, settledLegacy: !receipt.journal && !receipt.refundJournal };
+      S.rfd = S.rfd || [];
+      if (!S.rfd.includes(charge)) {
+        if (!receipt.held) {
+          RULES.ecoRefund(S, receipt.k, receipt.o || []);
+          S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(receipt.g) || 0));
+        }
         S.rfd = S.rfd.concat(charge).slice(-40);
-        RULES.ecoRefund(S, sp.k, sp.o || []);
-        S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(sp.g) || 0));   // a refunded purchase isn't spending
-        n = S.rfd.length;
-        return {};
-      }, now);
-      const pk = `payments/LWM_${pid}_stars_${charge}`.slice(0, 120);
-      await dbPatch(env, "", { [`starsPaid/${pid}/${charge}/rf`]: now, [`${pk}/refunded`]: true, [`${pk}/verified`]: false });
-      await revAdd(env, -(Number(sp.stars) || 0) * 1.3);   // a refunded sale comes off the liquidity fund
-      if (n >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", n + " Stars refunds"]], now).catch(() => {});
-    }
+        if (S.L) setLoadout(S, S.L);
+      }
+      S.starReceipts[charge] = { ...receipt, rf: now, refundJournal: 1 };
+      paymentPending(S, "stars", charge, cleanName(m.from));
+      return { receipt: S.starReceipts[charge], refunds: S.rfd.length };
+    }, now);
+    const receipt = t.receipt;
+    await projectStars(env, pid, charge, receipt, cleanName(m.from));
+    if (t.refunds >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", t.refunds + " Stars refunds"]], now).catch(() => {});
     return new Response("ok");
   }
   // Website login: only a genuine private-chat message delivered by Telegram's signed webhook
@@ -542,7 +545,7 @@ async function webhook(req, env) {
     if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/${(await resolveTelegramAccount(env,m.from.id))||"tg_"+m.from.id}`, { on: 1, chat: m.chat.id, nx: dayOf(Date.now()) }).catch(() => {});
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
-      text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
+      text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. Token allocation, claims and distribution are not implemented. Rankings do not guarantee tokens.",
       reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "🌐 LUNAR WEBSITE / ACCOUNT", url: ACCOUNT_URL }], [{ text: "📣 Channel", url: CHANNEL_URL }, { text: "📖 Wiki", url: WIKI_URL }]] },
     });
   } else if (m && m.text && /^\/account(?:\s|$)/.test(m.text)) {
@@ -562,12 +565,22 @@ async function webhook(req, env) {
 
 // ================= router =================
 const ROUTES = {
-  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip); return { status: r.error === "rate" ? 429 : 200, body: r }; },
+  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
   "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),
+  "/api/chain/config": async (env,a) => ({status:200,body:{enabled:cryptoReady(env),network:env.PAYMENT_NETWORK||"disabled"}}),
+  "/api/chain/list": async (env,a) => {if(!cryptoReady(env))return {status:200,body:{error:"unavailable"}};const S=await readEco(env,a.pid);return {status:200,body:{orders:Object.values(S.tonOrders||{}).map(o=>{const r=S.chainReceipts?.[o.id];return {id:o.id,currency:o.currency,expires:o.expires,status:r?(r.refunded?"refunded":r.held?"review":"paid"):S.chainCancelled?.[o.id]?"cancelled":o.expires>Date.now()?"pending":"expired"};})}};},
+  "/api/chain/order": async (env,a) => ({status:200,body:await issueChainOrder(env,a.pid,a.b)}),
+  "/api/chain/status": async (env,a) => ({status:200,body:cryptoReady(env)?await inspectChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
+  "/api/chain/confirm": async (env,a) => ({status:200,body:cryptoReady(env)?await settleChainOrder(env,a.pid,a.b.id,String(a.b.signature||"")):{error:"unavailable"}}),
+  "/api/chain/prepare": async (env,a)=>({status:200,body:cryptoReady(env)?await prepareChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
+  "/api/chain/cancel": async (env,a) => ({status:200,body:cryptoReady(env)?await cancelChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
+  "/api/payment-ops": async (env,a) => ({status:200,body:await paymentOps(env,a.pid,a.b)}),
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
+  "/api/stars-status": async (env,a)=>starsStatus(env,a),
+  "/api/stars-cancel": async (env,a)=>starsStatus(env,a,true),
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
   "/api/admin": async (env, a) => admin(env, a.user, a.b),
@@ -598,7 +611,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
+const PID_RL = { "/api/stars-status":20,"/api/stars-cancel":6, "/api/chain/prepare":6,"/api/chain/order":6,"/api/chain/status":20,"/api/chain/confirm":6,"/api/chain/cancel":6,"/api/payment-ops":6, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -609,6 +622,8 @@ function pidLimited(path, pid) {
 }
 export default {
   async fetch(req, env) {
+    const stage = stageProblem(env);
+    if (stage) return new Response("staging misconfigured: " + stage, { status: 503, headers: { "Cache-Control": "no-store" } });
     const path = new URL(req.url).pathname;
     if(path.startsWith("/auth/lunar/")){
       try{return await lunarAuth(req,env);}catch{return json({error:"account service unavailable"},503);}
@@ -616,6 +631,7 @@ export default {
     if(path.startsWith("/auth/")){
       try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
     }
+    if(path==="/web/tonconnect-manifest.json"&&req.method==="GET")return json({url:env.WEB_ORIGIN||new URL(req.url).origin,name:"LUNAR: War Machines",iconUrl:(env.WEB_ORIGIN||new URL(req.url).origin)+"/icon.png"});
     if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
@@ -636,13 +652,14 @@ export default {
     if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
     if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png"].includes(path))){
       const res=await env.ASSETS.fetch(req);const out=new Response(res.body,res);out.headers.set("X-Content-Type-Options","nosniff");
-      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");}
+      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://"+new URL(env.WEB_ORIGIN||PROD_WEB_ORIGIN).host+" "+dbBase(env)+"; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");if(path==="/web/checkout.html")out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.tonapi.io https://*.tonhubapi.com https://*.tonconnect.org https://*.ton.org https://bridge.tonapi.io https://bridge.ton.space https://*.tonkeeper.com https://raw.githubusercontent.com/ton-blockchain/wallets-list/ https://api.devnet.solana.com https://api.mainnet-beta.solana.com; img-src 'self' data: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'");}
       return out;
     }
     if (path === "/") return new Response("LUNAR: War Machines API");
     return new Response("not found", { status: 404 });
   },
   async scheduled(event, env, ctx) {
+    if (stageProblem(env)) return;   // a misconfigured staging Worker never runs jobs
     ctx.waitUntil((async () => {
       // two schedules, each its own run with its own budget of outside calls (50 on the Workers Free plan):
       // every minute 15:00-18:59 UTC, reminders only; every 5 minutes, the board and the farm check

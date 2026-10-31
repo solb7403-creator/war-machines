@@ -1,0 +1,60 @@
+> Working domain notes. Owner-policy severity and final integrated verification are normalized in [COMMERCIAL_READINESS.md](../COMMERCIAL_READINESS.md). Local workspace probe paths below are historical; use the committed commercial regression/readiness tests to reproduce.
+
+# Commercial account audit — 2026-10-31
+
+Workspace: `/workspace/lunar-commercial`, `feature/launch-commercial-readiness`; implementation inspected from RC1 `5f4886d8` (HEAD additionally contains documentation commit `f933166`). Scope: identity, passkeys, website login/account entry, their local fixtures. No production traffic, provider sign-ins, deployed changes, or secret reads.
+
+## Result
+
+Existing account suites pass. **Two P1 identity integrity failures were reproduced before implementation edits**, then contained with reciprocal identity checks, an atomic reverse-owner claim, and **new optional Telegram links disabled by default**. Final new regression suite: 6 tests pass, 0 fail. This is an optional-link **HOLD**, not full commercial GO. All edits remain local and uncommitted.
+
+1. **P1: two Telegram users can own access to one Lunar account through outstanding link challenges.** Call `/auth/lunar/link/start` twice while unlinked, then approve the two distinct codes as two verified Telegram users. Both approvals succeed; both `telegramLinks/<id>` records point to the Lunar account, while `lunarAccounts/<pid>.telegramId` contains only the second user. The hidden first mapping still grants the same game account through Telegram and Telegram website sign-in. Fixture users 880001 and 880002 both retained access. Root cause: `worker/src/lunar-identity.js:46-70` checks only the Telegram-to-Lunar claim, never reserves the Lunar-to-Telegram owner; `:229-242` leaves earlier challenges active. This requires legitimate approval by each Telegram user, not a forged provider identity, but breaks the account ownership/UI contract and leaves an undisclosed access path.
+
+2. **P1: failed/expired link can still authorize access.** Advance the fixture clock beyond the ten-minute browser challenge immediately after `telegramLinks` is persisted. Approval returns `{ok:false,error:'expired'}`, account reverse metadata remains unlinked, but `resolveTelegramAccount` returns the Lunar ID for that Telegram user. Root cause: mapping claim at `lunar-identity.js:65` precedes browser approval at `:67`; error return at `:68` does not roll back or invalidate the authoritative forward mapping. Resolver `:41-44` trusts that mapping alone. This is a deterministic expiry-between-stores reproduction.
+
+**Implemented containment:** `/auth/lunar/link/start` returns 503 unless `WEB_TELEGRAM_LINK_ENABLED === '1'`; no deployment/workflow flag was enabled. The fixture alone opts in. `confirmedTelegramLink` in `web-auth.js` is shared by `resolveTelegramAccount` and website Telegram login; an existing unconfirmed forward mapping throws, preventing authorization of either the Lunar account or a fallback Telegram pilot. A proven link conditionally claims `lunarAccounts/<pid>/telegramId`; competing Telegram owners cannot overwrite it. Status reports linked only after reciprocal ownership confirmation. Existing confirmed mappings and Telegram-first stable-key upgrades remain usable.
+
+**Residual P1/optional-link HOLD:** an expired or losing approval may leave an inert forward claim. Fresh proof by the same Telegram user to the same still-unlinked Lunar account repairs the expired case (tested). A conflicting orphan claim blocks that Telegram user's authentication rather than granting access or silently creating another account; no audited cleanup/recovery workflow exists yet. Do not enable new linking until recovery and concurrent first-gameplay behavior are resolved. No automatic rollback was added because a rollback could erase a concurrent confirmed owner.
+
+## Inventory
+
+| Capability | Status | Code/evidence and practical boundary |
+|---|---|---|
+| Website-owned passkey registration without Telegram | IMPLEMENTED | `lunar-identity.js:79-127`; required resident credential, required user verification, RP origin binding, real CBOR/WebAuthn crypto fixture. Bot token removed during tested gameplay. |
+| Returning passkey login to original account | IMPLEMENTED | `:182-226`; discoverable selection; stored public key and server challenge; authentic ECDSA assertion fixture resolves stable `pid`. |
+| Guest/authenticated storage and economy isolation | IMPLEMENTED | `js/core.js:148-159`: guest `wm_save_v1`, website `wm_web_<pid>`, Telegram `wm_save_tg_<id>`; website replaces equipment/balances from authenticated server snapshot. `web/boot.js` requires session and verified sync before loading game; existing worker fixture rejects client identity/economy overrides. Browser-level guest transition belongs to root's UI audit. |
+| One-use login/registration challenges and replay resistance | IMPLEMENTED | `web-auth.js` durable `WebSession` serializes consume; JWT concurrent/replay, passkey register/login replay, upgrade replay and bot replay tests pass. |
+| First-party session security and CSRF | IMPLEMENTED | HttpOnly/Secure/SameSite=Lax host cookies; same-origin checks and `X-Lunar-CSRF`; mocked worker suites reject wrong origin, missing CSRF and mixed Telegram/browser identity. |
+| Sliding session renewal, absolute expiry, per-device logout | IMPLEMENTED | Eight-hour idle lifetime, 24-hour absolute cap. Added boundary test renews at hours 7/14/21, rejects at hour 24, and confirms logout invalidates current session while second device/session remains valid. No global logout interface. |
+| Optional Telegram OIDC and private bot login | IMPLEMENTED / UNVERIFIED | Local RSA signature/claims/nonce/state/PKCE, confidential exchange and private signed webhook fixtures pass. Actual Telegram provider configuration, iOS handoff, JWKS rollover and live cookie behavior are unverified. |
+| Existing Telegram player's passkey upgrade/account continuity | IMPLEMENTED | `:130-180`; session+CSRF-bound upgrade retains `tg_<id>` economy, purchases, items and earned points in fixture; passkey later works without bot token. Existing profile/progress prevents website-first linking. |
+| Telegram link ownership, failure and expiry integrity | PARTIAL / HOLD | Reproduced access defects now pass regressions with reciprocal checks and atomic reverse-owner claim. New initiation is default-off; partial conflicting-claim recovery and concurrent first-gameplay handling still block enabling it. |
+| Duplicate registration/account creation | PARTIAL | Signed-in registration options return 409; credential index uses conditional claim. Names are display names, not unique account IDs. Account is created before credential claim, so duplicate/key-write failure can leave orphan account; verify does not repeat existing-session guard. Dedicated duplicate-key, persistence-failure and cross-tab sign-in-at-verification tests are absent. |
+| Cross-device passkey access | PARTIAL / UNVERIFIED | Account state is server-owned; second session and discoverable authentication fixtures work. Actual access requires synced passkey or platform cross-device authentication; device-bound credentials do not automatically appear elsewhere. No real Safari/iOS/Android/password manager matrix was exercised. |
+| Account recovery, adding/revoking additional passkeys, account deletion, global session revocation | NOT IMPLEMENTED | One credential is provisioned by registration/upgrade; no lifecycle endpoints/UI found. Login explicitly warns recovery is unavailable (`web/login.html:20`). |
+| Account switching UI and logout feedback | PARTIAL | `web/login.js:75-80` and `web/account.js:91-94` await successful logout. `web/game.js:40` redirects even on rejected/unavailable logout, so a user can believe they signed out while cookie remains usable. Classify as P2 UX/session risk; no browser reproduction performed here. |
+
+## Commands and exact results
+
+From `/workspace/lunar-commercial`:
+
+* `npm install --prefix worker --no-audit --no-fund --package-lock=false` — exit 1: default `/home/agent/.npm/_cacache` unavailable (ENOENT).
+* `npm install --prefix worker --no-audit --no-fund --package-lock=false --cache /tmp/lunar-commercial-npm-cache` — exit 0, installed 25 packages. No tracked dependency manifests or lockfile modified. Package install was the only permitted external network action; all subsequent fetches use in-memory fixtures.
+* `node dev/tests/wtest/web-auth.mjs` — exit 0; config, OIDC PKCE/state/nonce, bot proof, replay/race/expiry/CSRF, logout, shared identity/economy checks pass.
+* `node dev/tests/wtest/lunar-identity.mjs` — exit 0; independent registration, authentic WebAuthn login/counter, replay, optional verified Telegram link, canonical economy and Telegram-first upgrade continuity pass.
+* `node dev/tests/web-login.mjs` — exit 0; website routing and source/DOM contracts pass. This is a VM/source-contract test, not a real browser/WebAuthn interaction test.
+* `node --test dev/tests/wtest/commercial-account-boundaries.mjs` before edits — exit 1; originally 1 pass/2 fail; expanded tests first produced 1 pass/3 fail, including website bot login with an orphan forward claim. Separate default-off test failed as expected before the gate was added.
+* `node --test dev/tests/wtest/commercial-account-boundaries.mjs` after containment — exit 0; 6 pass/0 fail. Covers concurrent reverse-owner contention, no access after partial expiry, same-user fresh-proof retry, orphan mapping rejection during website bot login, default-off/no account mutation, forward-owner conflict preserving both accounts, existing confirmed status while new links held, and session/logout bounds.
+* Existing three suites rerun after containment — all exit 0. Added `lunar-identity.mjs` assertion confirms Telegram-first upgraded linked status remains available; its fixture explicitly opts into new-link testing.
+* `git diff --check` — exit 0.
+
+## Remaining gates and smallest follow-up work
+
+* Keep `WEB_TELEGRAM_LINK_ENABLED` absent/off. Access defects and two-way conflicts are now covered, but the inert-claim recovery limitation above requires a deliberate repair workflow before enabling new linking. The two ownership directions remain separate stores/operations.
+* Verify durable persistence failures during registration and Telegram upgrade. In upgrade, Telegram reservation and account creation precede credential persistence; a credential failure can leave `already_secured` with no working passkey. This is a code-grounded risk, not a reproduced finding here.
+* Verify link-versus-first-Telegram-gameplay concurrency: progress guards run before the link claim, while Telegram gameplay chooses identity before writing economy. A write occurring between those steps may create an orphan legacy record; not reproduced in this audit.
+* Require actual final HTTPS origin/RP configuration and manual real-device passkey create/login/cancel/timeout/return tests before launch. Changing the RP hostname strands existing passkeys. Test a synced credential on a second device and document unsupported recovery; do not claim all devices can access an unsynced passkey.
+* Exercise production-like Cloudflare DO alarms, cookie expiry and Firebase conditional transactions in an isolated staging project. Mocks establish code contracts, not deployed provider readiness.
+* Historical opaque website sessions are not revalidated against link mapping on every request. A session issued through an already-bad historical mapping can survive its existing 8-hour idle/24-hour absolute lifetime. No production state or sessions were inspected here; deployment planning must address affected sessions if any existed.
+
+Repository edits owned by this audit: `worker/src/web-auth.js`, `worker/src/lunar-identity.js`, `dev/tests/wtest/lunar-identity.mjs`, plus new `dev/tests/wtest/commercial-account-boundaries.mjs`. Installed `worker/node_modules/` is untracked and should not be committed. No commit/push performed. Root coordinates broader integration verification.

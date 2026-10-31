@@ -165,7 +165,7 @@ function loadSave(obj){
  if(!save.wTier)save.wTier={pulse:0,twin:-1,siege:-1};if(!save.cTier)save.cTier={scout:-1,vanguard:0,titan:-1};
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
- if(save.payCur===undefined||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
+ if(IN_TG||save.payCur===undefined||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
  if(save.sound===undefined)save.sound=true;
  if(save.haptics===undefined)save.haptics=true;
  if(save.mp===undefined)save.mp=(save.wins||0)+(save.losses||0);
@@ -402,7 +402,7 @@ function claimLogin(){
 
 // ---- squad (referrals): you get paid when your recruits keep playing ----
 const BOT_PLAY='https://t.me/LunarWarMachinesBot/play';
-const refLink=()=>BOT_PLAY+'?startapp=ref_'+(TG_USER?TG_USER.id:'0');
+const refLink=()=>TG_USER&&(IN_TG||(IN_WEB&&!TG_USER.lunar_account))?BOT_PLAY+'?startapp=ref_'+TG_USER.id:null;
 // back from the wiki's end-of-page button (t.me/...?startapp=wikiread): the read quest counts, the Quests tab opens
 let wikiBack=false;
 function wikiDone(){
@@ -436,12 +436,13 @@ function claimRefs(){
   fx('claim');showToast('+'+fmtNum(r.pts)+' squad points');return r.pts;
  });
 }
-const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles right in Telegram, and the top 1,000 pilots get a guaranteed $LUNAR allocation.';
+const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles right in Telegram, and climb the game points leaderboard. Token allocations are not guaranteed.';
 function shareRef(text){
- const u='https://t.me/share/url?url='+encodeURIComponent(refLink())+'&text='+encodeURIComponent(text||SHARE_TXT);
+ const link=refLink();if(!link){showToast('Invitations are available for Telegram accounts. Independent website referrals are not supported.');return;}
+ const u='https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent(text||SHARE_TXT);
  try{if(IN_TG)TG.openTelegramLink(u);else window.open(u,'_blank');}catch(e){copyRef();}
 }
-function copyRef(){try{navigator.clipboard.writeText(refLink()).then(()=>showToast('Invite link copied'),()=>showToast(refLink()));}catch(e){showToast(refLink());}}
+function copyRef(){const link=refLink();if(!link){showToast('Independent website referrals are not supported.');return;}try{navigator.clipboard.writeText(link).then(()=>showToast('Invite link copied'),()=>showToast(link));}catch(e){showToast(link);}}
 
 // ---- shop logic: crates, salvage, premium, starter pack (prices in rules.js; the server charges them) ----
 const PSTARS={moonbeam:PREMIUM.moonbeam.stars,skin:PREMIUM.skin.stars,starter:STARTER.stars}; // premium items in Stars

@@ -1,6 +1,7 @@
 name = "lunar-api"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 [triggers]
@@ -37,3 +38,46 @@ class_name = "WebSession"
 [[migrations]]
 tag = "v2-web-sessions"
 new_sqlite_classes = ["WebSession"]
+
+# Source-only migration. Do not deploy until separately approved.
+[[durable_objects.bindings]]
+name = "PAYMENTS"
+class_name = "PaymentJob"
+
+[[migrations]]
+tag = "v3-payment-recovery"
+new_sqlite_classes = ["PaymentJob"]
+
+# ---------------------------------------------------------------------------------------------------------------
+# ISOLATED $0 CERTIFICATION STAGING. Deployed only by .github/workflows/deploy-staging.yml (manual, never main).
+# Separate Worker name => separate workers.dev host, Durable Object storage and passkey RP. Fails closed (503) unless
+# its own FIREBASE_DB_URL and WEB_ORIGIN are set and differ from production (worker/src/db.js stageProblem).
+# No crons: staging sends no reminders and runs no production jobs. Testnet/devnet only.
+[env.staging]
+name = "lunar-api-staging"
+workers_dev = true
+triggers = { crons = [] }
+
+[env.staging.vars]
+LUNAR_STAGE = "staging"
+NTF_BATCH = "0"
+PAYMENT_NETWORK = "testnet"
+CRYPTO_CHECKOUT_ENABLED = "test"
+STARS_TEST_MODE = "1"
+WEB_LOGIN_ENABLED = "1"
+
+[[env.staging.durable_objects.bindings]]
+name = "ROOM"
+class_name = "PvpRoom"
+
+[[env.staging.durable_objects.bindings]]
+name = "LOBBY"
+class_name = "PvpLobby"
+
+[[env.staging.durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "WebSession"
+
+[[env.staging.durable_objects.bindings]]
+name = "PAYMENTS"
+class_name = "PaymentJob"

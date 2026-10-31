@@ -93,7 +93,7 @@ export class RoomCore {
     if (have) { Object.assign(have, { name }); return { ok: true, seat: have.idx, wait: this.t0 + this.o.WAIT_MS - now }; }
     const idx = this.order.find((i) => !this.seats[i]);
     if (idx === undefined) return { ok: false, err: "full" };
-    this.seats[idx] = { rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
+    this.seats[idx] = { resultKey: hex(crypto.getRandomValues(new Uint8Array(16))), rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
     // offline pilots' tanks for the AI seats, looked up while the room waits (at the first pilot's power)
     if (!this.ghP && this.io.ghosts) this.ghP = Promise.resolve().then(() => this.io.ghosts(power, [pid])).then((g) => { this.gh = g || []; }).catch(() => { this.gh = []; });
     return { ok: true, seat: idx, wait: this.t0 + this.o.WAIT_MS - now };
@@ -290,12 +290,16 @@ export class RoomCore {
       secs: this.startedAt ? (this.io.now() - this.startedAt) / 1000 : 0,
       st: { dmg: res.stats.dmg, sup: res.stats.sups, box: res.stats.boxes, kills: res.stats.kills, caps: res.stats.caps, cry: res.stats.cry, stars: res.stats.stars, low: res.stats.low, taken: res.stats.taken, arm: res.stats.arm, shd: res.stats.shd, best: res.stats.best } };
     const opp = this.humans().filter((x) => x !== s && x.pid && this.sim.units[x.idx] && (g === "royale" || this.sim.units[x.idx].team !== u.team)).map((x) => x.pid);   // live opponents (win-trading check)
-    const calc = (rec) => {
-      const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
-      const sb = won ? R.streakPts(g, m, pvs) : 0;
-      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt, opp };
+    // Persist these server-generated inputs, rather than the simulation or a function closure.
+    const settlement = { g, m, won, drawn, quit, top3, basePts: Math.round(base * fxm * brk.mult), match: mt, opp, res };
+    const calc = (rec) => calculateSettlement(settlement, rec);
+    const settle = async () => {
+      for (let attempt = 0; ; attempt++) {
+        try { return await this.io.credit(s, calc, settlement); }
+        catch (e) { if (attempt >= 2) throw e; }
+      }
     };
-    const p = Promise.resolve().then(() => this.io.credit(s, calc))
+    const p = Promise.resolve().then(settle)
       .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb }))
       .catch(() => Object.assign(res, { pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true }))
       .then(() => { s.res = res; this.sendTo(s, { k: "res", r: res }); });
@@ -330,6 +334,57 @@ const optsOf = (env) => (env.PVP_WAIT_MS ? { WAIT_MS: Number(env.PVP_WAIT_MS) } 
 // a WebSocket upgrade response; outside Cloudflare (local tests) Response can't carry status 101
 const wsResponse = (client) => { try { return new Response(null, { status: 101, webSocket: client }); } catch (e) { return { status: 101, webSocket: client }; } };
 
+function calculateSettlement(d, rec) {
+  const pvs = d.won ? (rec.pvs || 0) + 1 : d.quit || (!d.drawn && !d.top3) ? 0 : rec.pvs || 0;
+  const sb = d.won ? rules().streakPts(d.g, d.m, pvs) : 0;
+  return { pts: d.quit ? 0 : d.basePts + sb, pvs, sb, won: d.won, drawn: d.drawn, m: d.match, opp: d.opp };
+}
+const creditedResult = (res, c) => ({ ...res, pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb });
+
+// One room has at most six human results. Intents and their retry alarm commit together
+// before any economy write; completed records survive restart for result reconnects.
+// The economy's transactional receipt protects a DB commit whose acknowledgement was lost.
+class SettlementOutbox {
+  constructor(storage, env) { this.storage = storage; this.env = env; this.running = new Map(); }
+  async settle(s, input) {
+    const key = 'settlement:' + s.resultKey;
+    await this.storage.transaction(async (tx) => {
+      if (!await tx.get(key)) {
+        await tx.put(key, { status: 'pending', pid: s.pid, name: s.name, resultKey: s.resultKey, input });
+        await tx.setAlarm(Date.now() + 60000);
+      }
+    });
+    return this.attempt(key);
+  }
+  attempt(key) {
+    if (this.running.has(key)) return this.running.get(key);
+    const p = this.run(key).finally(() => this.running.delete(key));
+    this.running.set(key, p); return p;
+  }
+  async run(key) {
+    const entry = await this.storage.get(key);
+    if (entry.status === 'done') return entry.credit;
+    // Also rearm before attempting: interruption or another storage failure cannot
+    // consume the only retry alarm and leave a pending durable intent stranded.
+    await this.storage.setAlarm(Date.now() + 60000);
+    const c = await creditMatch(this.env, entry.pid, entry.name, (rec) => calculateSettlement(entry.input, rec), Date.now(), entry.resultKey);
+    await this.storage.put(key, { ...entry, status: 'done', credit: c });
+    return c;
+  }
+  async alarm() {
+    const entries = await this.storage.list({ prefix: 'settlement:' });
+    const pending = [...entries].filter(([, entry]) => entry.status === 'pending');
+    if (!pending.length) return;
+    await this.storage.setAlarm(Date.now() + 60000);
+    await Promise.allSettled(pending.map(([key]) => this.attempt(key)));
+  }
+  async result(pid) {
+    const entries = await this.storage.list({ prefix: 'settlement:' });
+    return [...entries.values()].find((entry) => entry.pid === pid);
+  }
+  async hasResults() { return (await this.storage.list({ prefix: 'settlement:' })).size > 0; }
+}
+
 export class PvpLobby {
   constructor(ctx, env) { this.core = new LobbyCore(() => Date.now(), optsOf(env).WAIT_MS || PVP.WAIT_MS); }
   async fetch(req) {
@@ -342,7 +397,8 @@ export class PvpLobby {
   }
 }
 export class PvpRoom {
-  constructor(ctx, env) { this.ctx = ctx; this.env = env; this.core = null; this.id = null; }
+  constructor(ctx, env) { this.ctx = ctx; this.env = env; this.core = null; this.id = null; this.outbox = new SettlementOutbox(ctx.storage, env); }
+  async alarm() { await this.outbox.alarm(); }
   room() {
     if (!this.core) {
       const env = this.env;
@@ -350,7 +406,7 @@ export class PvpRoom {
         now: () => Date.now(), day: () => dayOf(Date.now()),
         setTimeout: (f, ms) => setTimeout(f, ms), clearTimeout: (h) => clearTimeout(h),
         setInterval: (f, ms) => setInterval(f, ms), clearInterval: (h) => clearInterval(h),
-        credit: (s, calc) => creditMatch(env, s.pid, s.name, calc),
+        credit: (s, calc, input) => this.outbox.settle(s, input),
         ghosts: (pw, skip) => pickGhosts(env, null, pw, ECO.GHOST_MAX, Date.now(), skip),
         ghostReport: (list) => ghostReport(env, list),
         left: (pid) => lobbyStub(env).fetch("https://lobby/left", post({ room: this.id, pid })).catch(() => {}),
@@ -360,10 +416,25 @@ export class PvpRoom {
   }
   async fetch(req) {
     const url = new URL(req.url), p = url.pathname;
-    if (p === "/seat") { const b = await req.json(); this.id = this.id || b.room; return Response.json(this.room().seatPlayer(b)); }
+    if (p === "/seat") {
+      // A restarted finished room cannot accept a new match over old settlements.
+      if ((!this.core || this.core.phase === 'new') && await this.outbox.hasResults()) return Response.json({ ok: false, err: 'started' });
+      const b = await req.json(); this.id = this.id || b.room; return Response.json(this.room().seatPlayer(b));
+    }
     if (p === "/ws") {
       if ((req.headers.get("Upgrade") || "").toLowerCase() !== "websocket") return new Response("expected websocket", { status: 426 });
-      const pid = url.searchParams.get("pid"), core = this.room();
+      const pid = url.searchParams.get("pid");
+      const seat = this.core?.humans().find((s) => s.pid === pid);
+      // After an object restart a finished result is recoverable without rebuilding
+      // the running match. The Worker already validated the room-bound ticket.
+      const recovered = (!seat || seat.done) && await this.outbox.result(pid);
+      if (recovered) {
+        const [client, server] = Object.values(new WebSocketPair()); server.accept();
+        const r = recovered.status === 'done' ? creditedResult(recovered.input.res, recovered.credit) : { ...recovered.input.res, pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true, pending: true };
+        server.send(JSON.stringify({ k: 'res', r })); server.send(JSON.stringify({ k: 'end' })); server.close(1000, 'over');
+        return wsResponse(client);
+      }
+      const core = this.room();
       const [client, server] = Object.values(new WebSocketPair());
       server.accept();
       const sock = { send: (t) => server.send(t), close: (c, r) => server.close(c, r) };

@@ -23,12 +23,27 @@ export const hasWebCookie=req=>!!getCookie(req,SESSION_COOKIE);
 export {record,getCookie,sameOrigin,limited,origin,json,cookie,random};
 export const WEB_LOGIN_COOKIE=LOGIN_COOKIE;
 // Optional linked Telegram identity must resolve to its canonical Lunar account in every website login path.
-async function tgSessionIdentity(env,user){
- const candidate=await dbGet(env,'telegramLinks/'+user.id);
- if(typeof candidate==='string'&&/^ln_[0-9]{12,15}$/.test(candidate)){
+export async function confirmedTelegramLink(env,id){
+ if(!Number.isSafeInteger(id)||id<=0)return null;
+ const candidate=await dbGet(env,'telegramLinks/'+id);
+ // Telegram-first upgrades retain their existing stable storage key.
+ if(candidate===null||candidate===undefined)return null;
+ if(candidate==='tg_'+id){
   const account=await dbGet(env,'lunarAccounts/'+candidate);
-  if(!account||account.id!==candidate)throw Error('invalid linked account');
-  return {user:{...user,lunar_account:true,lunar_name:account.name},pid:candidate};
+  if(!account)return null; // An upgrade reservation keeps the same existing pilot while being secured.
+  if(account.id!==candidate||account.type!=='passkey'||account.telegramId!==id)throw Error('invalid upgraded account');
+  return {pid:candidate,account};
+ }
+ if(typeof candidate!=='string'||!/^ln_[0-9]{12,15}$/.test(candidate))throw Error('unconfirmed account link');
+ const account=await dbGet(env,'lunarAccounts/'+candidate);
+ // A partially persisted claim must never authorize the Lunar account or fall back to a new pilot.
+ if(!account||account.id!==candidate||account.type!=='passkey'||account.telegramId!==id)throw Error('unconfirmed account link');
+ return {pid:candidate,account};
+}
+async function tgSessionIdentity(env,user){
+ const linked=await confirmedTelegramLink(env,user.id);
+ if(linked){
+  return {user:{...user,lunar_account:true,lunar_name:linked.account.name},pid:linked.pid};
  }
  // Telegram-first players may add a Lunar passkey without moving or resetting existing game records.
  // Their legacy tg_<id> is a stable storage key; the new passkey works without the bot.
@@ -42,7 +57,7 @@ async function tgSessionIdentity(env,user){
 export async function issueLunarWebSession(env,user,pid){
  if(!env.SESSIONS||!(/^(?:ln_[0-9]{12,15}|tg_[0-9]{3,15})$/.test(String(pid||'')))||!user?.lunar_account)return json({error:'account'},403);
  const sid=random(),csrf=random(),now=Date.now();
- const created=await record(env,sid,'issue',{kind:'session',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
+ const created=await record(env,sid,'issue',{kind:'session',authMethod:'passkey',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
  if(!created.ok)return json({error:'session_store'},503);
  const result=json({ok:true,user,pid,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
  result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;

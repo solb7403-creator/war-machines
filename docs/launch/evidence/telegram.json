@@ -1,0 +1,14 @@
+{
+  "telegramSDK": "fixture",
+  "serverAuthoritative": true,
+  "mobileWidths": [
+    320,
+    390,
+    430
+  ],
+  "signedReferral": true,
+  "twoBrowserOnlineMatch": true,
+  "networkedMovement": true,
+  "socketReconnect": true,
+  "errors": []
+}

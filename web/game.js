@@ -22,8 +22,7 @@ const webOriginalRender=renderScreen;renderScreen=function(t){
  // Keep the one showroom alive when a screen's original HTML is refreshed.
  if(webStage&&$('#s-'+t)?.contains(webStage))$('#web-showroom-home').append(webStage);
  webOriginalRender(t);if(t==='shop'){
-  const note=document.createElement('div');note.className='web-shop-note';note.textContent='Website checkout is unavailable. Use the Telegram edition for verified Stars, TON or SOL purchases. Existing owned items remain available here.';$('#s-shop').prepend(note);
-  $('#s-shop').querySelectorAll('[data-act="paycur"],[data-act="premium"],[data-act="founder"],[data-act="starter"],[data-act="tonwallet"],[data-act="solwallet"],[data-act="vaultbuy"]').forEach(b=>{if(b.dataset.act!=='crate'||!b.textContent.includes('points')){b.disabled=true;b.title='Use Telegram for verified purchases';}});
+  const note=document.createElement('div');note.className='web-shop-note';note.textContent='Independent website checkout uses server quotes. Availability remains subject to payment certification.';$('#s-shop').prepend(note);
  }
  webUpdateMachine();
 };
@@ -37,7 +36,14 @@ document.addEventListener('click',e=>{
  else if(b.dataset.stageView)webShowroom?.view(b.dataset.stageView);
  else if(b.dataset.stageRotate)webShowroom?.rotate(Number(b.dataset.stageRotate));else webShowroom?.setZoom(webShowroom.zoom+Number(b.dataset.stageZoom)*.12);
 });
-async function webEndSession(){if(rangeRun)rangeExit();if(pvp)pvpClose();clearInterval(webRenewTimer);await fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}).catch(()=>{});location.replace('/web/');}
+async function webEndSession(){
+ const button=$('#web-logout');button.disabled=true;
+ try{
+  const response=await fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'});
+  if(!response.ok)throw Error('Sign out failed');
+  if(rangeRun)rangeExit();if(pvp)pvpClose();clearInterval(webRenewTimer);location.replace('/web/');
+ }catch{showToast('Could not sign out. You are still signed in; please retry.');button.disabled=false;}
+}
 $('#web-logout').addEventListener('click',webEndSession);
 window.addEventListener('lunar-session-expired',()=>{clearInterval(webRenewTimer);if(pvp)pvpClose();if(rangeRun)rangeExit();location.replace('/web/#login');});
 window.lunarWebReady=()=>{

@@ -9,6 +9,8 @@ on:
   workflow_dispatch:
 jobs:
   deploy:
+    # PRODUCTION ONLY. A manual run from any other branch would ship unreviewed code to the live Worker; refuse it.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

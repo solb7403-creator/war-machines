@@ -21,8 +21,9 @@ const eco = await import('../../../worker/src/eco.js');
 const { RULES: R } = await import('../../../worker/src/sim.gen.js');
 const worker = mod.default;
 const env = { BOT_TOKEN: '123:ABC', FIREBASE_DB_SECRET: 'SECRET' };
-function initData(user, age = 0) {
+function initData(user, age = 0, start = "") {
   const p = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000) - age), query_id: 'q', user: JSON.stringify(user) });
+  if (start) p.set('start_param', start);
   const dcs = [...p.entries()].sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v}`).join('\n');
   const secret = createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest();
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
@@ -214,16 +215,16 @@ t(db.get('/flags/tg_111/r/refunds'), 'two refunds flag the pilot');
 
 // ---- TON: memo AND amount, each transaction once, price from the server ----
 const tonDesc = { kind: 'box', tk: 'weapon', ri: 0 };
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 3, gram: 3, item: 'Common Weapon Cache', memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.error === 'amount', 'TON amount below the price refused');
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|zzz', desc: tonDesc }); t(r.ok && r.verified === false && r.error === 'pending', 'no matching memo on chain: not granted');
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 3, gram: 3, item: 'Common Weapon Cache', memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.error === 'unavailable', 'TON amount below the price refused');
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|zzz', desc: tonDesc }); t(r.error === 'unavailable', 'no matching memo on chain: not granted');
 tonTxs = [{ in_msg: { value: '2000000000', message: 'LWM|tg_111|low' }, transaction_id: { hash: 'h0' } }].concat(tonTxs);
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|low', desc: tonDesc }); t(r.verified === false, 'memo matches but the chain shows 2 TON for a 4 TON item: not granted');
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.ok && r.verified === true && r.out.length === 1 && r.out[0].tier === 0, 'TON verified (memo + amount) and granted by the server ' + JSON.stringify(r).slice(0, 160));
-t(db.get('/tonTx/h1/memo') === 'LWM|tg_111|abc', 'transaction hash recorded');
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.dup === true, 'same order again: nothing new');
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|low', desc: tonDesc }); t(r.error === 'unavailable', 'memo matches but the chain shows 2 TON for a 4 TON item: not granted');
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, gram: 4, item: 'Common Weapon Cache', memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.error === 'unavailable', 'orderless TON with matching memo cannot grant ' + JSON.stringify(r).slice(0, 160));
+t(db.get('/tonTx/h1') === null, 'legacy proof never consumed');
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, memo: 'LWM|tg_111|abc', desc: tonDesc }); t(r.error === 'unavailable', 'same order again: nothing new');
 tonTxs.push({ in_msg: { value: '9000000000', message: 'LWM|tg_111|re' }, transaction_id: { hash: 'h1' } });
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, memo: 'LWM|tg_111|re', desc: tonDesc }); t(r.error === 'reused', 'a transaction hash pays for one order only ' + JSON.stringify(r));
-[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 8, memo: 'LWM|tg_222|zzz' }); t(r.error === 'memo', 'memo must be own');
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 4, memo: 'LWM|tg_111|re', desc: tonDesc }); t(r.error === 'unavailable', 'a transaction hash pays for one order only ' + JSON.stringify(r));
+[s, r] = await call('/api/pay-log', { initData: initData(A), cur: 'TON', amt: 8, memo: 'LWM|tg_222|zzz' }); t(r.error === 'unavailable', 'memo must be own');
 
 // ---- the one-time move for a pilot who played before ----
 db.root.players.tg_444 = { pts: 60000, name: 'oldtimer', days: 9, ld: day - 1, d: day - 1, w: 1, dailyPts: 300 };
@@ -246,10 +247,10 @@ db.root.players.tg_445 = { pts: 1000, name: 'small' };
 t(E('tg_445').pts === 0 && db.get('/flags/tg_445/r/mig_spend'), 'upgrades worth 100K on 1K lifetime points: no spendable points, flagged');
 
 // ---- referrals, squad, alts ----
-[s, r] = await call('/api/sync', { initData: initData(B), refBy: 'tg_111' }, '9.9.9.9'); t(r.rec.ref === 'tg_111', 'ref set');
+[s, r] = await call('/api/sync', { initData: initData(B, 0, 'ref_111'), refBy: 'tg_111' }, '9.9.9.9'); t(r.rec.ref === 'tg_111', 'ref set');
 t(db.get('/players/tg_222/name') === 'Bob script', 'name sanitized from telegram: ' + db.get('/players/tg_222/name'));
-[s, r] = await call('/api/sync', { initData: initData(B), refBy: 'tg_999' }); t(r.rec.ref === 'tg_111', 'ref fixed');
-[s, r] = await call('/api/sync', { initData: initData(J), refBy: 'tg_999' }); t(!r.rec.ref, 'no self ref');
+[s, r] = await call('/api/sync', { initData: initData(B, 0, 'ref_999'), refBy: 'tg_999' }); t(r.rec.ref === 'tg_111', 'ref fixed');
+[s, r] = await call('/api/sync', { initData: initData(J, 0, 'ref_999'), refBy: 'tg_999' }); t(!r.rec.ref, 'no self ref');
 setEco('tg_222', (S) => { S.earned = 6000; S.days = 5; }); db.root.players.tg_222.pts = 6000; db.root.players.tg_222.days = 5;
 [s, r] = await call('/api/squad', { initData: initData(A) }); t(r.squad.length === 1 && r.squad[0].id === 'tg_222' && !r.squad[0].held, 'squad ' + JSON.stringify(r.squad));
 setEco('tg_111', (S) => { S.dailyPts = 0; S.refC = {}; });
@@ -258,7 +259,7 @@ const sq0 = E('tg_111').earned;
 [s, r] = await act(A, 'squad'); t(r.out.pts === 0, 'squad payout once');
 // an alt: the recruit plays from the referrer's network
 [s, r] = await call('/api/sync', { initData: initData(A) }, '7.7.7.7');
-[s, r] = await call('/api/sync', { initData: initData(C), refBy: 'tg_111' }, '7.7.7.7');
+[s, r] = await call('/api/sync', { initData: initData(C, 0, 'ref_111'), refBy: 'tg_111' }, '7.7.7.7');
 t(db.get('/flags/tg_333/r/alt') && db.get('/flags/tg_111/r/alt'), 'recruit on the referrer\'s network: both flagged');
 setEco('tg_333', (S) => { S.earned = 30000; S.days = 12; }); db.root.players.tg_333.pts = 30000; db.root.players.tg_333.days = 12;
 [s, r] = await call('/api/squad', { initData: initData(A) }); t(r.squad.find((x) => x.id === 'tg_333').held, 'flagged recruit shows as held');
@@ -284,11 +285,14 @@ let lb = await mod.buildLeaderboard(env);
 t(lb.top.some((x) => x[0] === 'tg_666') && !lb.top.some((x) => x[0] === 'tg_444') && !lb.top.some((x) => x[0] === 'tg_111'), 'flagged pilots left off the public top ' + JSON.stringify(lb.top.map((x) => x[0])));
 t(db.get('/lb/top').length === lb.top.length, 'lb stored');
 [s, r] = await call('/api/admin', { initData: initData(A) }); t(s === 403, 'non-admin refused');
+// New source index requires an explicit bounded migration; no automatic scan on export.
+const {backfillSnapshotPage}=await import('../../../worker/src/snapshot.js');
+while(!(await backfillSnapshotPage(env)).complete){}
 [s, r] = await call('/api/admin', { initData: initData(J), snap: 1 });
 t(s === 200 && r.flagged.some((f) => f.id === 'tg_444' && f.why.some((w) => /mig_epic/.test(w))), 'admin lists flagged pilots with reasons');
 t(r.snapshot.some((x) => x[0] === 'tg_666' && x[3] === 4) && !r.snapshot.some((x) => x[0] === 'tg_444'), 'snapshot: points and days, flagged left out');
 t(db.get('/players/tg_111/sg') > 0 && r.snapshot.every((x) => typeof x[5] === 'number'), 'verified spending (TON value) on the record and in the snapshot ' + db.get('/players/tg_111/sg'));
-t(r.revenue.STARS >= 500 && r.revenue.TON >= 4 && r.revenue.unverified >= 2, 'admin revenue (unverified orders counted apart) ' + JSON.stringify(r.revenue));
+t(r.revenue.STARS >= 500 && r.revenue.TON === 0 && r.revenue.unverified >= 2, 'admin revenue (unverified orders counted apart) ' + JSON.stringify(r.revenue));
 [s, r] = await call('/api/admin', { initData: initData(J), clear: 'tg_444', snap: 1 });
 t(!r.flagged.some((f) => f.id === 'tg_444') && r.snapshot.some((x) => x[0] === 'tg_444'), 'cleared pilot counts again');
 lb = await mod.buildLeaderboard(env); t(lb.top.some((x) => x[0] === 'tg_444'), 'cleared pilot back on the board');
@@ -449,16 +453,16 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   t(E(pv).vg === 1050 && E(pv).vgg === 1050 && !E(pv).paints.hyper && Math.abs(E(pv).spendGram - 16) < 1e-9, 'refunded deposit: its Gold, the paint and the spending come off ' + E(pv).vg);
   // TON: the price comes from the server, the Gold from the verified payment
   tonTxs.push({ in_msg: { value: '4000000000', message: 'LWM|tg_5555|vt1' }, transaction_id: { hash: 'hv1' } });
-  [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 3, memo: 'LWM|tg_5555|vt0', desc: { kind: 'vault', tk: 'pouch' } }); t(r.error === 'amount', 'Vault in TON: under the price is refused');
+  [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 3, memo: 'LWM|tg_5555|vt0', desc: { kind: 'vault', tk: 'pouch' } }); t(r.error === 'unavailable', 'Vault in TON: under the price is refused');
   [s, r] = await call('/api/pay-log', { initData: initData(V), cur: 'TON', amt: 4, memo: 'LWM|tg_5555|vt1', desc: { kind: 'vault', tk: 'pouch' } });
-  t(r.ok && r.verified && E(pv).vg === 1300 && r.out[0].tk === 'vault' && r.out[0].g === 250 && r.E.vg === 1300, 'Vault in TON: Pouch adds 250 Gold ' + JSON.stringify(r.out));
+  t(r.error === 'unavailable' && E(pv).vg === 1050, 'orderless TON cannot add Vault Gold ' + JSON.stringify(r.out));
   for (const [g, m, mp] of [['royale', '1v1', 'longshot'], ['arena', '2v2', 'classic']]) {
     [s, r] = await call('/api/match/start', { initData: initData(V), g, m, map: mp, pv: 1, L: { paint: 'hyper' } });
     t(s === 200 && r.tok, 'a Vault pilot gets a match ticket: ' + g + ' ' + s + ' ' + JSON.stringify(r).slice(0, 120));
   }
   const lbv = await mod.buildLeaderboard(env);
   const vr = (lbv.vault || []).find((x) => x[0] === pv);
-  t(vr && vr[2] === 1300 && vr[3] === 2, 'the Vault board ranks by lifetime Gold, with the level ' + JSON.stringify(vr));
+  t(vr && vr[2] === 1050 && vr[3] === 2, 'the Vault board ranks by lifetime Gold, with the level ' + JSON.stringify(vr));
   const tr = lbv.top.find((x) => x[0] === pv); t(!tr || tr[5] === 2, 'the points board carries the Vault level for badges');
   t((lbv.vault || []).every((x) => x[2] >= 250), 'only Vault pilots on the Vault board');
 }

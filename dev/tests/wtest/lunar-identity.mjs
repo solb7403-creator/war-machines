@@ -9,7 +9,7 @@ buildSim();installWebSocketPair();
 const workerModule=await import('../../../worker/src/index.js');
 const worker=workerModule.default;
 const db=makeDB();
-const env={BOT_TOKEN:'123:passkey-fixture',FIREBASE_DB_SECRET:'SECRET',WEB_ORIGIN:'https://game.test',WEB_LOGIN_ENABLED:'0'};
+const env={BOT_TOKEN:'123:passkey-fixture',FIREBASE_DB_SECRET:'SECRET',WEB_ORIGIN:'https://game.test',WEB_LOGIN_ENABLED:'0',WEB_TELEGRAM_LINK_ENABLED:'1'};
 const calls=[];
 const realFetch=globalThis.fetch;
 globalThis.fetch=async(url,opts)=>{
@@ -299,6 +299,9 @@ const afterTelegram=await response.json();
 assert.equal(afterTelegram.pid,oldPid,'original TG player ID stays intact');
 assert.deepEqual(afterTelegram.E.lab,initialTG.E.lab,'original machines remain the same on Telegram and website');
 assert.equal(db.get('/eco/'+oldPid).nm,db.get('/lunarAccounts/'+oldPid).name);
+const upgradedLinkStatus=await call('/auth/lunar/link/status',{},passkeySessionCookie,newSession.csrf);
+assert.equal(upgradedLinkStatus.status,200,'Telegram-first passkey account keeps its verified linked status');
+assert.equal((await upgradedLinkStatus.json()).linked,true);
 console.log('PASS Telegram-first pilot upgraded to a Lunar passkey without duplicating or losing economy, independent sign-in after bot outage');
 
 globalThis.fetch=realFetch;

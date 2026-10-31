@@ -1,0 +1,71 @@
+// Server-side order storage shared by TON and SOL. Authenticated routes call
+// issueChainOrder; direct library callers MUST authenticate an independent-website session and pass its
+// canonical economy pid; never accept pid, recipient, price or memo from a body.
+import { readEco, tx, ctxOf } from './eco.js';
+import { RULES } from './sim.gen.js';
+
+const RECIPIENT = 'UQAq3MBfPQ7Wqo5kL7631yEDKf2E9GOmZdhOfLUWhUiACfzu';
+const TTL = 600000;
+// Refuse new issuance instead of deleting late-payment/replay evidence. A future
+// archival/retention policy must preserve permanent receipts and late orders.
+const ORDER_LIMIT = 32;
+const buyerOk = pid => /^(?:tg|ln)_\d{3,15}$/.test(pid);
+const keyOk = value => typeof value === 'string' && /^[a-f0-9]{32}$/.test(value);
+function descriptor(d) {
+  if (!d || typeof d !== 'object') return null;
+  const kind=d.kind;
+  if (kind==='vault') return Object.hasOwn(RULES.VAULT,d.tk) ? {kind,tk:d.tk} : null;
+  if (kind==='paint') return Object.hasOwn(RULES.PAINTS,d.id) && RULES.PAINTS[d.id].stars ? {kind,id:d.id} : null;
+  if (kind==='box') return ['gem','weapon','chassis'].includes(d.tk) && [0,1,2].includes(d.ri) && [undefined,null,'d','w'].includes(d.deal) ? {kind,tk:d.tk,ri:d.ri,deal:d.deal||''} : null;
+  return ['starter','founder','moonbeam','skin','pass','respec'].includes(kind) ? {kind} : null;
+}
+function eligible(S, desc, X) {
+  const price=RULES.ecoPrice(S,desc,X);
+  return price && !RULES.ecoOwned(S,desc,X) && Number.isFinite(price.ton) && price.ton>0 && Number.isSafeInteger(Math.round(price.ton*1e9)) ? price : null;
+}
+export function tonOrderEligible(S, order, X) {
+  const p=eligible(S,order.desc,X);
+  if (!p || p.ton!==order.price.ton || p.stars!==order.price.stars || (p.deal||null)!==(order.price.deal||null)) return false;
+  if (order.desc.kind==='pass' && RULES.ecoSeason(X)!==order.season) return false;
+  if (order.desc.kind==='box' && (X.day!==order.day || X.week!==order.week)) return false;
+  return true;
+}
+export async function issueTonOrder(env, pid, input, now=Date.now(), options={}) {
+  if (!buyerOk(pid)) return {error:'buyer'};
+  if (!keyOk(input?.requestId) || !Number.isSafeInteger(now) || now<0) return {error:'request'};
+  const desc=descriptor(input.desc);
+  if (!desc) return {error:'descriptor'};
+  // Randomness is outside CAS retry; a failed write never returns this candidate.
+  const id=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
+  const result=await tx(env,pid,(S,X)=>{
+    const orders=S.tonOrders||{};
+    const prior=Object.values(orders).find(o=>o.requestId===input.requestId);
+    if (prior) return JSON.stringify(prior.desc)===JSON.stringify(desc) && prior.currency===(options.currency||'TON') && prior.network===(options.network||'mainnet') && prior.recipient===(options.recipient||RECIPIENT)
+      ? {abort:true,order:prior,duplicate:true} : {abort:true,error:'request_conflict'};
+    if ((S.starCheckout?.until||0)>now || Object.values(orders).some(o=>o.expires>now && !S.chainReceipts?.[o.id])) return {abort:true,error:'pending'};
+    if (Object.keys(orders).filter(key=>!S.chainReceipts?.[key]).length>=ORDER_LIMIT || orders[id]) return {abort:true,error:'capacity'};
+    const price=eligible(S,desc,X);
+    if (!price) return {abort:true,error:'ineligible'};
+    const currency=options.currency||'TON';
+    const amount=currency==='SOL' ? Math.round((price.ton*options.tonUsd/options.solUsd >= 1 ? Math.round(price.ton*options.tonUsd/options.solUsd*1000)/1000 : Math.round(price.ton*options.tonUsd/options.solUsd*10000)/10000)*1e9) : Math.round(price.ton*1e9);
+    if(!Number.isSafeInteger(amount)||amount<=0)return {abort:true,error:'price'};
+    const order={v:1,id,requestId:input.requestId,buyer:pid,currency,network:options.network||'mainnet',
+      recipient:options.recipient||RECIPIENT,amountNano:String(amount),memo:'LWM2|'+currency+'|'+id,
+      ...(options.reference?{reference:options.reference}:{}),...(options.tonUsd?{revc:Math.round(price.ton*options.tonUsd*100)}:{}),
+      desc,price:{ton:price.ton,stars:price.stars,deal:price.deal||''},
+      created:now,expires:now+TTL,day:X.day,week:X.week,season:RULES.ecoSeason(X)};
+    S.tonOrders={...orders,[id]:order};
+    return {order};
+  },now);
+  // Never expose the complete economy record or CAS implementation fields.
+  return result.error ? {error:result.error} : {order:result.order,...(result.duplicate?{duplicate:true}:{})};
+}
+export async function inspectTonOrder(env,pid,id,now=Date.now()) {
+  if (!buyerOk(pid) || !keyOk(id)) return {error:'not_found'};
+  const S=await readEco(env,pid), order=S.tonOrders?.[id];
+  if (!order || order.buyer!==pid) return {error:'not_found'};
+  // Read-only quote information, NEVER a successful/paid/delivered state. Expiry
+  // cannot erase proof of a later indexed payment; chain-payments handles settlement.
+  const status=!tonOrderEligible(S,order,ctxOf(pid,now)) ? 'review' : now>=order.expires ? 'expired' : 'pending';
+  return {order,status};
+}

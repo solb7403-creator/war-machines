@@ -1,9 +1,10 @@
+import {snapshotRank} from "./snapshot-rank.js";
 // The economy on the server. Every point and every piece of gear a pilot has lives in eco/<pid> and changes only here.
 // The phone says what happened (a match ticket and its result, a claim, a crate to open); the server runs the shared
 // rules (js/rules.js, bundled as RULES) on its own copy and sends its record back. Points are never taken from the phone.
 // Writes are conditional (Firebase ETags): read, change, write only if nobody else wrote in between, else retry.
 import { RULES as R, LIM } from "./sim.gen.js";
-import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName } from "./db.js";
+import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, cleanName } from "./db.js";
 import { checkProof } from "./proof.js";
 
 export const ECO = {
@@ -147,6 +148,8 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
 // the fields the leaderboard, squad lists, reminders and admin read stay on players/<pid> (a copy of the record)
 async function mirror(env, pid, S, isNew, before, now) {
   const P = `players/${pid}`, up = {};
+  up[`${P}/snapshotRankV1`] = snapshotRank(pid,{pts:S.earned,ac:S.ac});
+  up["snapshotIndex/revision"] = {".sv":{increment:1}};
   const f = { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
     wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
@@ -160,7 +163,25 @@ async function mirror(env, pid, S, isNew, before, now) {
   if (S.ld !== undefined && S.ld !== null) { up[`ntf/${pid}/pl`] = S.ld; up[`ntf/${pid}/sk`] = S.sk || 0; up[`ntf/${pid}/gf`] = S.g2 ? 1 : 0; }
   // the ghost pool: your tank as it is now (server-owned loadout), and when you last played
   if (S.L && (S.mp || 0) >= ECO.GHOST_MP) up[`gh/${pid}`] = { n: S.nm || "Pilot", L: S.L, pw: S.pw || 0, t: now };
-  await dbPatch(env, "", up);
+  // Conditional profile publication prevents an older successful economy transaction's
+  // delayed mirror from overwriting a later revision (including its rank key).
+  const publication=`snapshotPublishing/${pid}_${S.rev}`;
+  if(!await dbPut(env,publication,{pid,revision:S.rev}))throw Error("profile publication unavailable");
+  up[publication]=null; // Removed atomically with the completed publication revision.
+  const fields={};for(const key of Object.keys(up))if(key.startsWith(P+"/")){fields[key.slice(P.length+1)]=up[key];delete up[key];}
+  let published=false;
+  for(let attempt=0;attempt<8;attempt++){
+    const current=await readTag(env,P);
+    if((current.v?.ecoRev||0)>S.rev){
+      // The first economy creation still owns the existing account-count increment.
+      const metadata=Object.fromEntries(Object.entries(up).filter(([key])=>key.startsWith("meta/")||key.startsWith("cfg/")||key==="snapshotIndex/revision"||key===publication));
+      if(!await dbPatch(env,"",metadata))throw Error("profile metadata mirror failed");
+      return;
+    }
+    if(await writeIf(env,P,{...(current.v||{}),...fields,ecoRev:S.rev},current.tag)){published=true;break;}
+  }
+  if(!published)throw Error("profile mirror busy");
+  if(!await dbPatch(env, "", up))throw Error("profile metadata mirror failed");
 }
 
 // ================= ghosts: offline pilots' tanks, flown by the AI in other people's matches =================
@@ -400,10 +421,13 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
 
 // ================= live matches: the room credits the result itself =================
 // calc(S) gets the record and returns {pts, pvs, sb, won, drawn, m: the match for quests and stats (or m.quit)}
-export async function creditMatch(env, pid, name, calc, now = Date.now()) {
+export async function creditMatch(env, pid, name, calc, now = Date.now(), resultKey = "") {
   let flags = [];
   const trade = [];
+  const receiptKey = /^[a-f0-9]{32}$/.test(resultKey) ? resultKey : null;
   const t = await tx(env, pid, (S, X) => {
+    // Room-generated keys let an ambiguous write response retry without awarding twice.
+    if (receiptKey && S.pvpReceipts?.[receiptKey]) return { ...S.pvpReceipts[receiptKey], abort: true };
     if (name) S.nm = name;
     trade.length = 0;
     const c = calc(S) || {};
@@ -419,7 +443,13 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
       if (c.m.quit) R.ecoQuit(S);
       else { R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
     }
-    return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
+    const result = { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
+    if (receiptKey) {
+      S.pvpReceipts = S.pvpReceipts || {}; S.pvpReceipts[receiptKey] = result;
+      // Durable rooms can replay after a prolonged outage and many newer matches.
+      // Keep the transactional receipt until an audited replay-safe compaction exists.
+    }
+    return result;
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
   for (const o of trade) await link(env, pid, o, "trade").catch(() => {});
@@ -574,7 +604,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     const paid = (await dbGet(env, `starsPaid/${pid}`).catch(() => null)) || {};
     const hit = Object.values(paid).find((p) => p && p.n === n && !p.rf);
     const S = await readEco(env, pid);
-    return { status: 200, body: { ok: true, out: hit && hit.o !== undefined ? { outs: hit.o || [] } : { pending: true }, E: pub(S) } };
+    return { status: 200, body: { ok: true, out: hit && hit.held ? { review: true } : hit && hit.o !== undefined ? { outs: hit.o || [] } : { pending: true }, E: pub(S) } };
   }
   const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri);
   let F = null;
