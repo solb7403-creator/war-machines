@@ -22,25 +22,29 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
  {const gk=gOver||gtypeKey();matchG=gk==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk;}
  battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);
  const mp=save.mp||0;
- MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp};
+ MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // cp: you can counter-pick back between rounds
  populatePreparedMatch();
  state='vs';
  matchStart();
 }
+// the AI for this match (aiLevel, rules.js): its power, shown on the VS screen, grows slower than yours, and AI pilots
+// never copy your tank, so a better tank is always a bigger edge
+let aiLv=null;
 function populatePreparedMatch(){
  const mp=MM.mp;
  me=buildMe();
+ const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw);
  const modeN=MM.n,names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  units=[me];
  if(matchG==='boss'){   // Survival: you (and AI wingmen in 2v2 and 3v3) against one megatank
-  for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop()));
-  units.push(mkBoss(me,modeN));
+  for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop(),aiLv));
+  units.push(mkBoss(me,modeN,aiLevel(pw,AI_BOSS_EXP)));
  }else if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
   const sp=royaleSpawns();
-  for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y,me,names.pop()));
+  for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y,me,names.pop(),aiLv));
  }else{
-  for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop()));   // your AI teammates
-  for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6,me,names.pop()));   // the enemy team
+  for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop(),aiLv));   // your AI teammates
+  for(let i=0;i<modeN;i++)units.push(mkBot(1,i===0?10:(i===1?6:14),i===0?4:6,me,names.pop(),aiLv));   // the enemy team
  }
  fairField(mp);
 }
@@ -126,9 +130,14 @@ if(Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh)
  mTicket=T;
 }
 // ghosts: offline pilots' real tanks (sent with the ticket) take AI seats, enemies first. The VS screen shows who they are
+// Only ghosts clearly weaker than your tank (AI_GHOST_HI, rules.js), and at most one on the enemy team: after the first enemy
+// seat they fill your team's seats, so a ghost can't turn an AI match into a hidden fight against stronger pilots
 function placeGhosts(list){
- const seats=units.map((u,i)=>i).filter(i=>i>0&&!units[i].hum&&!units[i].boss&&!units[i].gh).sort((a,b)=>(units[b].team!==me.team)-(units[a].team!==me.team));
- list.slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];if(!g||!g.L)return;try{units[i]=mkGhost(o.team,o.x,o.y,g);}catch(e){}});
+ const cap=(battlePower||powerOf(battleLoadout||myLoadout()))*AI_GHOST_HI;
+ const free=units.map((u,i)=>i).filter(i=>i>0&&!units[i].hum&&!units[i].boss&&!units[i].gh);
+ const foeSeats=free.filter(i=>units[i].team!==me.team),allySeats=free.filter(i=>units[i].team===me.team);
+ const seats=foeSeats.slice(0,1).concat(allySeats);
+ list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g);}catch(e){}});
  const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
 }
 // results waiting for the server (no connection when the match ended): sent in order, each ticket counts once

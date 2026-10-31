@@ -182,7 +182,7 @@ function teamHpFrac(t){const us=units.filter(u=>u.team===t);const m=us.reduce((a
 function nearestFoe(u){let best=null,bd=1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const d=Math.hypot(v.x-u.x,v.y-u.y);if(d<bd){bd=d;best=v;}}return best;}
 const BOT_NAMES=['Rust','Vex','Kilo','Nyx','Bolt','Ion','Echo','Grit','Onyx','Rook','Volt','Zed','Hex','Juno','Mako','Pike'];
 const BOT_PAINTS=['nebula','ember','arctic','venom','gold','void'];
-// AI pilot factory: mirrors the gear level and cores of ref (on the phone that's you; in a live match, the middle human by power)
+// AI pilot factory (mkBot below). AI matches: authored loadouts at the shown difficulty; live-match fill-ins: the middle human's gear level
 const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0,bx:null});
 // a ghost: an offline pilot's real tank (their build and gear, from the server) flown by the AI, in an AI seat.
 // g: {n: name, L: loadout, i or id: who it is}. It plays exactly like an AI pilot and changes nobody's points
@@ -191,26 +191,37 @@ function mkGhost(team,x,y,g){
   fitSpd:fittingStats(g.L.mods).spd,team,hum:false,ctl:'bot',name:'Ghost of '+String(g.n||'Pilot').slice(0,24),gh:1,gid:g.id!==undefined?g.id:g.i,brain:newBrain(),strafe:1,strafeT:1.5});
  u.hp=u.mhp;return u;
 }
-function mkBoss(ref,n){   // the megatank, scaled to your tank (ref) and how many tanks are on your side (n)
+function mkBoss(ref,n,ai){   // the megatank, sized for how many tanks are on your side (n). AI matches pass ai (aiLevel, rules.js):
+ // it is tuned to that level's reference tank (Vanguard + Pulse at the AI power), never to your own tank, so your gear,
+ // upgrades and skin are a real edge. Without ai (older callers) it is tuned to ref, your own tank
+ if(ai)ref=tankOf(aiLoadout(ai.i,'pulse','vanguard'),BOSS_HP);
  const refDps=(ref.wdps||70)*(ref.dmgM||1),mhp=Math.round(refDps*BOSS_SECS*(1+BOSS_TEAM*(n-1)));
  const u={x:10,y:5,flash:0,ang:Math.PI/2,cd:1.2,lk:null,buffs:[],gems:[],gemM:{},sp:0,sup:null,mhp,dmgM:1,spdM:0.55,critB:0,fillM:0,turnM:0.6,
   wtype:'siege',wdps:Math.round(ref.mhp*(1+BOSS_TEAM_DPS*(n-1))/BOSS_KILL),wshot:0.8,wpspd:17,wtier:2,dscale:BOSS_SIZE,hr:R*BOSS_SIZE*0.8,cls:'titan',boss:true,
   team:1,hum:false,ctl:'bot',name:'Megatank',brain:newBrain(),strafe:1,strafeT:2,aura:3,paint:'eclipse',
-  bt:{bar:5,stomp:3,st:0,enr:0,ref:ref.mhp}};
+  bt:{bar:5,stomp:3,st:0,enr:0,ref:ref.mhp}};   // stomps and shells hit for a share of the reference tank's health: more hull means you take them better
  u.hp=u.mhp;return u;
 }
-function mkBot(team,x,y,ref,name){
- const bwm=ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=ref.chm||1,hs=hpScale(),mp=MM.mp;
+// ai: the AI level (aiLevel, rules.js). AI matches always pass one: the pilot flies the authored loadout for that level,
+// whatever you field. Without it (live-match fill-ins only) it mirrors ref's gear level, as live matches always have
+function mkBot(team,x,y,ref,name,ai){
+ const hs=hpScale(),mp=MM.mp,aiT=!!ai;
+ const bwm=aiT?1:ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=aiT?1:ref.chm||1;
  const bwA=WORDER[(random()*3)|0];
  // brand-new pilots (first 10 matches) never face a chassis that counters theirs
  const cls=team!==0&&mp<10?CHORDER.filter(c=>COUNTER[c]!==ref.cls):CHORDER;
  const bcC=cls[(random()*cls.length)|0];
  const pScale=(team!==0&&mp<3?0.8:0.92)+random()*0.16;   // first 3 matches: gentler enemies
- const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:ref.gems.slice(),gemM:Object.assign({},ref.gemM),sp:0,sup:null,
+ const u={x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],gems:aiT?[]:ref.gems.slice(),gemM:aiT?{}:Object.assign({},ref.gemM),sp:0,sup:null,
   mhp:Math.round(STAT.hp*CH[bcC].hp*bcm*pScale*hs),dmgM:1,spdM:CH[bcC].spd,critB:0,fillM:1,turnM:CH[bcC].turn,
-  wtype:bwA,wdps:Math.round(WEAPONS[bwA].dps*bwm*pScale),wshot:WEAPONS[bwA].shot,wpspd:22,wtier:ref.wtier,dscale:CH[bcC].ds,cls:bcC,
+  wtype:bwA,wdps:Math.round(WEAPONS[bwA].dps*bwm*pScale),wshot:WEAPONS[bwA].shot,wpspd:22,wtier:aiT?0:ref.wtier,dscale:CH[bcC].ds,cls:bcC,
   team,hum:false,ctl:'bot',name:name||'Bot',brain:newBrain(),strafe:1,strafeT:1.5,
-  aura:Math.min(2,ref.aura),paint:random()<0.35?BOT_PAINTS[(random()*BOT_PAINTS.length)|0]:'stock'};   // about 1 in 3 AI pilots shows off a shop paint
+  aura:aiT?0:Math.min(2,ref.aura),paint:random()<0.35?BOT_PAINTS[(random()*BOT_PAINTS.length)|0]:'stock'};   // about 1 in 3 AI pilots shows off a shop paint
+ if(aiT){   // the authored loadout, through the same stat math as every pilot's tank (rarity, upgrades, cores, supers)
+  const T=tankOf(aiLoadout(ai.i,bwA,bcC),hs),k=pScale;
+  Object.assign(u,{gems:T.gems,gemM:T.gemM,mhp:Math.round(T.mhp*k),dmgM:T.dmgM,spdM:T.spdM,critB:T.critB,fillM:T.fillM,turnM:T.turnM,
+   wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:ai.i,k}});   // aiL, not ai: live matches use u.ai for "an AI seat"
+ }
  u.hp=u.mhp;return u;
 }
 // who drives a tank: 'me' (this phone), 'net' (a live player, moves from their claims) or 'bot'.
@@ -850,13 +861,16 @@ function bountyKill(r,src){
 // who a bot wants to fight: the nearest enemy, unless the mode gives it a better target
 function botTarget(u){
  if(cry&&cry.cd&&cry.cd.team!==u.team){let best=null,bc=0;for(const v of units)if(v.team===cry.cd.team&&v.hp>0&&(v.cry||0)>bc){bc=v.cry;best=v;}if(best)return best;}   // stop their countdown: hunt the carrier
- if(matchG==='bounty'){let best=null,bs=-1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const s=(v.bty||BTY_START)*1.5-dist2(u,v)*0.5;if(s>bs){bs=s;best=v;}}if(best)return best;}   // a big bounty is worth a detour
+ // a foe already taken costs more: +7 for every ally locked onto it. Bounty used to skip this, so a big bounty drew the whole
+ // team (measured: 2+ AI on you 29-50% of the time in Bounty, 8-16% after). Last Standing has no allies: a spread rule there
+ // halved pile-ons but measured worse places for starter-to-rare pilots, so it stays as it was
+ const taken=v=>{let s=0;for(const a of units)if(a!==u&&a!==v&&a.hp>0&&a.focus===v&&a.team===u.team)s+=7;return s;};
+ if(matchG==='bounty'){let best=null,bs=-1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const s=(v.bty||BTY_START)*1.5-dist2(u,v)*0.5-taken(v)*0.5;if(s>bs){bs=s;best=v;}}if(best)return best;}   // a big bounty is worth a detour
  // everyone used to pile onto the nearest foe. Score the field instead: nearer and weaker is better,
  // a foe costs more for every ally already locked onto it, and the one shooting at me matters
  let best=null,bs=1e9;
  for(const v of units){if(v.team===u.team||v.hp<=0)continue;
-  let s=dist2(u,v)+(v.hp/v.mhp)*4;
-  for(const a of units)if(a!==u&&a.team===u.team&&a.hp>0&&a.focus===v)s+=7;
+  let s=dist2(u,v)+(v.hp/v.mhp)*4+taken(v);
   if(v.focus===u)s-=2.5;
   if(u.focus===v)s-=1.5;
   if(s<bs){bs=s;best=v;}}
@@ -1012,6 +1026,7 @@ function roundWinner(){
  const f0=teamHpFrac(0),f1=teamHpFrac(1);return f0>f1?0:f1>f0?1:-1;
 }
 function rebuildBot(u,cls){   // same pilot, different chassis
+ if(u.aiL){const T=tankOf(aiLoadout(u.aiL.i,u.wtype,cls),hpScale());u.cls=cls;u.mhp=Math.round(T.mhp*u.aiL.k);u.hp=u.mhp;u.spdM=T.spdM;u.turnM=T.turnM;u.dscale=T.dscale;u.chm=T.chm;return;}
  const f=u.mhp/CH[u.cls].hp;
  u.cls=cls;u.mhp=Math.round(f*CH[cls].hp);u.hp=u.mhp;u.spdM=CH[cls].spd*(1+(u.fitSpd||0));u.turnM=CH[cls].turn;u.dscale=CH[cls].ds;
 }
@@ -1020,8 +1035,9 @@ function endRound(){
  series.last=w;
  if(series.w[0]>=2||series.w[1]>=2||series.round>=5){endMatch({series:true});return;}
  series.round++;state='round';ffwd=false;
- // AI pilots may switch to the chassis that counters their opponent's (never against brand-new pilots); you get to answer before the round starts
- for(const u of units)if(!u.hum&&!u.pid&&MM.mp>=10&&random()<0.5){const o=units.find(v=>v.team!==u.team),c=o&&beatenBy(o.cls);if(c&&c!==u.cls)rebuildBot(u,c);}
+ // AI pilots may switch to the chassis that counters their opponent's (never against brand-new pilots); you get to answer before the round starts.
+ // MM.cp false (AI matches, you own only one chassis class): you couldn't answer, so they don't (measured: it cut a stock pilot to 19% in best of 3)
+ for(const u of units)if(!u.hum&&!u.pid&&MM.mp>=10&&MM.cp!==false&&random()<0.5){const o=units.find(v=>v.team!==u.team),c=o&&beatenBy(o.cls);if(c&&c!==u.cls)rebuildBot(u,c);}
  if(SRV){SRV.round(w);return;}
  const foe=units.find(u=>u.team===1);
  if(typeof fx==='function')fx(w===0?'win':w===1?'lose':'draw');

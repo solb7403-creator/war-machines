@@ -4,11 +4,13 @@ on:
     paths:
       - 'js/rules.js'
       - 'js/game.js'
+      - 'js/match.js'
       - 'js/core.js'
       - 'js/ui.js'
       - 'wiki.html'
       - 'dev/tests/gear-balance.mjs'
       - 'dev/tests/gear-combat.mjs'
+      - 'dev/tests/combat-*.mjs'
       - 'dev/tests/gear-browser.py'
       - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
@@ -20,10 +22,12 @@ on:
     paths:
       - 'js/rules.js'
       - 'js/game.js'
+      - 'js/match.js'
       - 'js/core.js'
       - 'js/ui.js'
       - 'dev/tests/gear-balance.mjs'
       - 'dev/tests/gear-combat.mjs'
+      - 'dev/tests/combat-*.mjs'
       - 'dev/tests/gear-browser.py'
       - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
@@ -50,6 +54,7 @@ jobs:
         run: |
           node dev/tests/gear-balance.mjs
           node dev/tests/gear-combat.mjs
+          node dev/tests/combat-balance.mjs
           node dev/tests/lab-ui.mjs
       - name: Build authoritative Workers simulation
         run: node worker/build-sim.mjs

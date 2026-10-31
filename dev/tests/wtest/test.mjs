@@ -391,13 +391,14 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   const Lg = JSON.parse(JSON.stringify(R.STOCK_L)); Lg.up.hull = 2;
   db.root.gh = db.root.gh || {};
   Object.assign(db.root.gh, {
-    tg_601: { n: 'Ghosty', L: Lg, pw: pwP, t: nowG - 20 * 60000 },        // offline, same power: eligible
+    tg_601: { n: 'Ghosty', L: Lg, pw: Math.floor(pwP * 0.85), t: nowG - 20 * 60000 },   // offline, clearly weaker than you: eligible
+    tg_605: { n: 'Even', L: Lg, pw: pwP, t: nowG - 20 * 60000 },          // offline but as strong as you: never in an AI match (R.AI_GHOST_HI)
     tg_603: { n: 'Online', L: Lg, pw: pwP, t: nowG - 60000 },              // played a minute ago: still online
     tg_604: { n: 'Far', L: Lg, pw: pwP * 3, t: nowG - 20 * 60000 },        // much stronger: out of the band
   });
   const eG = Object.keys(db.root.eco).length;
   const stG = await start(P, { g: 'arena', m: '2v2', L: R.STOCK_L }, nowG);
-  t(stG.ok && Array.isArray(stG.gh) && stG.gh.length === 1 && stG.gh[0].n === 'Ghosty' && stG.gh[0].i === 0 && !JSON.stringify(stG.gh).includes('tg_'), 'ticket comes with offline ghosts in your power band, by seat number only ' + JSON.stringify(stG.gh).slice(0, 120));
+  t(stG.ok && Array.isArray(stG.gh) && stG.gh.length === 1 && stG.gh[0].n === 'Ghosty' && stG.gh[0].i === 0 && !JSON.stringify(stG.gh).includes('tg_'), 'ticket comes with offline ghosts clearly weaker than you, by seat number only ' + JSON.stringify(stG.gh).slice(0, 120));
   const before = E('tg_602').earned;
   const enG = await end(P, stG.tok, { won: true, gh: [{ i: 0, won: 0, dmg: 2345, kills: 2 }, { i: 7, won: 1, dmg: 1 }] }, nowG + 70000);
   const want = Math.round(R.MODES['2v2'].win * R.teamX('arena', '2v2', false)) + R.streakPts('arena', '2v2', 1);

@@ -1,7 +1,7 @@
 'use strict';
 // Supported browser instance adapter for the ACTUAL rules.js/game.js, loaded in its own realm.
 // Bump this identity whenever combat or this setup/controller policy changes. No backend interface.
-const RANGE_ENGINE_VERSION='lunar-range-s4.2-equipment/fits-'+FIT_VERSION;
+const RANGE_ENGINE_VERSION='lunar-range-s4.3-equipment/fits-'+FIT_VERSION;
 let rangeConfig=null,rangeSeconds=0,rangeOpponents=[];
 function rangePreset(k){
  const L=JSON.parse(JSON.stringify(STOCK_L));
@@ -20,7 +20,7 @@ function rangeSetup(cfg){
  if(isSolo(matchG)){const sp=royaleSpawns();for(let i=1;i<6;i++)add(i,sp[i].x,sp[i].y,'AI '+i,cfg.preset);}
  else{
   for(let i=1;i<MM.n;i++)add(0,i===1?6:14,26,'Wingman '+i,'standard');
-  if(matchG==='boss')units.push(mkBoss(me,MM.n));
+  if(matchG==='boss')units.push(mkBoss(me,MM.n,aiLevel(powerOf(rangePreset(cfg.preset)),AI_BOSS_EXP)));   // the same fixed megatank as AI matches at that difficulty
   else for(let i=0;i<MM.n;i++)add(1,i?6:10,i?6:4,'Opponent '+(i+1),cfg.preset);
  }
  startMatch();mstat=me.st;
@@ -33,7 +33,7 @@ function rangeResult(){
  const o=outcome(me,rangeForced),s=me.st||{};
  return {outcome:rangeStopped?'stopped':o.won?'won':o.drawn?'drawn':'lost',duration:Math.round(rangeSeconds*100)/100,damage:Math.round(s.dmg||0),taken:Math.round(s.taken||0),kills:s.kills||0,deaths:me.deaths||0,control:rangeConfig.control,
   objective:matchG==='zone'?{score:o.score,captures:s.caps||0}:matchG==='crystal'?{score:cry.cnt.slice(),collected:s.cry||0}:matchG==='bounty'?{score:o.score,stars:s.stars||0}:matchG==='royale'?{place:o.place,of:units.length}:matchG==='boss'?{bossDown:o.score[0]}:{remaining:units.filter(u=>u.hp>0).map(u=>u.team)},
-  // Boss scales with the tested tank under real Survival rules; include its actual baseline in comparisons.
+  // The megatank is the AI-match one for the opponent preset's power, not scaled to the tested tank.
   opponents:rangeOpponents.map(u=>({...u}))};
 }
 globalThis.RangeSim={version:RANGE_ENGINE_VERSION,stock:()=>JSON.stringify(STOCK_L),setup:rangeSetup,view:rangeView,

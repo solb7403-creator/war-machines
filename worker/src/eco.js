@@ -171,9 +171,11 @@ export const ghostSeats = (g, m) => {
   const bots = g === "royale" ? 5 : g === "boss" ? n - 1 : 2 * n - 1;
   return Math.min(ECO.GHOST_MAX, Math.ceil(bots / 2));
 };
-export async function pickGhosts(env, pid, pw, k, now = Date.now(), skip = []) {
+// band: [low, high] as shares of pw. Live rooms use the default (within GHOST_BAND either way); AI matches pass
+// [R.AI_GHOST_LO, R.AI_GHOST_HI], so a ghost is always clearly weaker than the pilot it meets (never hidden max-gear PvP)
+export async function pickGhosts(env, pid, pw, k, now = Date.now(), skip = [], band = [1 - ECO.GHOST_BAND, 1 + ECO.GHOST_BAND]) {
   if (!(k > 0)) return [];
-  const lo = Math.floor(pw * (1 - ECO.GHOST_BAND)), hi = Math.ceil(pw * (1 + ECO.GHOST_BAND));
+  const lo = Math.floor(pw * band[0]), hi = Math.ceil(pw * band[1]);
   // a few rows from a random point in your power band (the band can hold thousands of pilots; a match needs two)
   const at = lo + Math.floor(Math.random() * Math.max(1, hi - lo) * 0.8);
   let rows = (await dbGet(env, "gh", { orderBy: '"pw"', startAt: at, endAt: hi, limitToFirst: 10 }).catch(() => null)) || {};
@@ -272,7 +274,7 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   let sess = false;
   const n = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
   const pw0 = await dbGet(env, `players/${pid}/power`).catch(() => null);
-  const candidates = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now);
+  const candidates = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now, [], [R.AI_GHOST_LO, R.AI_GHOST_HI]);
   const ghosts = b.fv === R.FIT_VERSION ? candidates : candidates.filter(x => !R.FIT_ORDER.some(k => R.fittingSelection(x.L.mods)[k] !== "stock"));
   const t = await tx(env, pid, (S, X) => {
     who(S, user);

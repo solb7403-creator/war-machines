@@ -81,7 +81,7 @@ for(const g of R.GT_ORDER){
 }
 const snap=structuredClone(S(7003).mt.L);await act(7003,'lab_save',{id:'m_spare',rev:S(7003).lab.rev,name:'Now stock',spec:{...fitted,mods:{}}});assert.deepEqual(S(7003).mt.L,snap);
 // Stock old clients cannot simulate fitted ghosts with their old tank formulas.
-const now=Date.now();db.root.gh={tg_7999:{n:'Fitted ghost',pw:S(7003).pw,t:now-700000,L:{...R.STOCK_L,mods:{mobility:'stable'}}}};
+const now=Date.now();db.root.gh={tg_7999:{n:'Fitted ghost',pw:Math.floor(S(7003).pw*0.85),t:now-700000,L:{...R.STOCK_L,mods:{mobility:'stable'}}}};
 const compatible=await eco.matchStart(env,{g:'arena',m:'1v1',map:'craters',labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',now);
 assert.equal(compatible.body.gh.length,0,'old clients must not receive fitted ghost stats');
 const modern=await eco.matchStart(env,{g:'arena',m:'1v1',map:'craters',labRev:S(7003).lab.rev,fv:1,pv:1},{id:7003},'tg_7003',now);assert.equal(modern.body.gh.length,1);
