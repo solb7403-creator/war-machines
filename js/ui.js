@@ -358,7 +358,7 @@ function renderRanks(){
  let cut='';
  const R=lbCache?myRank(e):null;
  if(!lbMeta)cut='<div class="cutline">Loading the leaderboard…</div>';
- else if(!lbMeta.inTop||lbMeta.inTop<1000)cut='<div class="cutline"><span class="info" style="border-color:var(--gold);color:var(--gold)">✓</span><span>'+fmtNum(lbMeta.n||0)+' pilots so far, so everyone is inside the top 1,000. Your $LUNAR share grows with your points and days active.</span></div>';
+ else if(!lbMeta.inTop||lbMeta.inTop<1000)cut='<div class="cutline"><span class="info" style="border-color:var(--gold);color:var(--gold)">✓</span><span>'+fmtNum(lbMeta.n||0)+' pilots so far, so everyone is inside the top 1,000. This is a points rank, not a confirmed token allocation.</span></div>';
  else if(R&&!R.outside)cut='<div class="cutline"><b>#'+fmtNum(R.rank)+'</b><span>You’re inside the top 1,000. Cutoff right now: '+fmtNum(lbMeta.cut)+' points.</span></div>';
  else cut='<div class="cutline"><b>'+fmtNum(Math.max(1,lbMeta.cut-e+1))+'</b><span>more points to reach the top 1,000 (cutoff '+fmtNum(lbMeta.cut)+')</span></div>';
  if(lbMeta&&lbMeta.lpf>0)cut+=lpfLine();
@@ -380,6 +380,7 @@ function renderRanks(){
  return '<div class="panel tierbox"><div class="row"><i class="tierdia" style="background:'+TIERC[t]+'"></i><div class="grow"><div class="tn" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div><div class="mut">'+fmtNum(e)+' lifetime points. '+nextTxt+'.</div></div><button class="info" data-act="info" data-arg="tiers" aria-label="About tiers">?</button></div>'+
   '<div class="ladder">'+TIERS.map(rung).join('')+'</div></div>'+
   cut+
+  '<p class="dimtxt">Points rank is not token eligibility. Allocation, claims and distribution are not implemented.</p>'+
   '<button class="linkbtn" data-act="info" data-arg="airdrop">How the airdrop works</button>'+
   '<div class="seg c4" style="margin-top:14px">'+[['overall','All time'],['daily','Today'],['weekly','This week'],['vault','Vault']].map(([k,l])=>'<button class="'+(lbScope===k?'on':'')+'" data-act="lbscope" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
   '<div class="lb list">'+rows+'</div>'+pin+
@@ -553,8 +554,8 @@ const INFO={
   ['Daily bonus','Higher tiers add to your daily reward: +25, +50, +100, +200, +400.'],
   ['Spending is safe','Tiers and the leaderboard count lifetime points, so buying upgrades never drops you.']]],
  airdrop:()=>['The $LUNAR airdrop',[
-  ['Who gets it','When $LUNAR launches, the top 1,000 pilots on the all-time leaderboard get an allocation.'],
-  ['How big','Your share is weighted by your points and the days you were active.'],
+  ['Current status','Token allocation, claims and distribution are not implemented. No allocation is guaranteed.'],
+  ['Rankings','The public board ranks lifetime points. The separate research snapshot ranks existing weighted credit; final token policy is not confirmed.'],
   ['Fair play','Fake or duplicate accounts are removed before the snapshot.'],
   ['Details','The wiki has the full tokenomics.']]],
  points:()=>['Points',[
@@ -672,7 +673,7 @@ function openAdmin(){
    (A.flagged?'<h3 style="margin-top:16px;font-size:16px">Flagged for review ('+A.flagged.length+')</h3>'+
     (A.flagged.length?'<div class="list">'+A.flagged.map(f=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+esc(f.n)+'</b> <span class="dimtxt">'+esc(f.id)+'</span><div class="dimtxt">'+f.why.map(esc).join('<br>')+'</div></div><button class="btn sm btn-quiet" data-act="flagclear" data-arg="'+esc(f.id)+'">Clear</button></div>').join('')+'</div>':'<p class="mut">Nobody flagged.</p>')+
     '<p class="dimtxt" style="margin-top:6px">Flagged pilots sit out the leaderboard and the airdrop snapshot until you clear them.</p>'+
-    '<button class="btn sm btn-quiet block" style="margin-top:8px" data-act="snapshot">Copy the airdrop snapshot (top 1,000)</button>':'')+
+    '<button class="btn sm btn-quiet block" style="margin-top:8px" data-act="snapshot">Copy research snapshot (top 1,000 by credit)</button>':'')+
    (A.clusters?'<h3 style="margin-top:16px;font-size:16px">Linked accounts ('+A.clusters.filter(c=>!c.ok).length+')</h3>'+
     '<p class="dimtxt" style="margin-top:4px">Accounts that look like one person: the same phone, the same paying wallet, the same controls move for move, starting together on one network, or trading live wins. Only the one with the most points counts for the airdrop until you clear the group.</p>'+
     (A.clusters.length?'<div class="list">'+A.clusters.map(c=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+c.m.length+' accounts</b> <span class="dimtxt">'+esc(c.why.join(', '))+(c.ok?', cleared':'')+'</span><div class="dimtxt">'+c.m.map(x=>esc(x[1])+' ('+fmtNum(x[2])+')'+(x[0]===c.keep&&!c.ok?' counts':'')).join(', ')+'</div></div>'+(c.ok?'':'<button class="btn sm btn-quiet" data-act="clclear" data-arg="'+esc(c.sig)+'">Clear</button>')+'</div>').join('')+'</div>':'<p class="dimtxt" style="margin-top:6px">None found.</p>'):'')+
@@ -712,7 +713,7 @@ function showWelcome(){
   '<div class="big">Fight on the moon.<br>Climb for the airdrop.</div>'+
   '<div class="step"><i>1</i><p><b>Quick tank battles.</b> Drag to drive; your cannon fires itself. Most matches take under a minute.</p></div>'+
   '<div class="step"><i>2</i><p><b>Every match pays points.</b> Points rank you on the leaderboard and buy upgrades.</p></div>'+
-  '<div class="step"><i>3</i><p><b>The top 1,000 pilots get $LUNAR.</b> At launch, weighted by points and days active.</p></div>'+
+  '<div class="step"><i>3</i><p><b>Earn game points.</b> Token allocation, claims and distribution are not implemented.</p></div>'+
   (save.refBy?'<p class="mut" style="margin-top:12px">A friend invited you. Play again tomorrow for a +1,000 welcome bonus.</p>':'')+
   '<div class="grow"></div><button class="fight" data-act="firstfight" style="margin-top:18px"><span class="big">FIGHT</span><span class="small">Your first battle: a quick 1v1</span></button>'+
   '<button class="linkbtn" data-act="info" data-arg="airdrop">How the airdrop works</button>',{cls:'welcome',key:'welcome',noBack:true});
@@ -945,7 +946,7 @@ const ACT={
  swapcls:a=>{if(!pvpOn()){clearInterval(vsTimer);vsTimer=null;}switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},   // live: the server's countdown keeps running
  again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},
- sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
+ sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). Climb the game points leaderboard. Join my squad:');},
  login:()=>{const r=loginState();if(r.claimedToday)return;when(claimLogin(),c=>{if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));const rv=[c.reveal,c.gift].filter(Boolean);if(rv.length)showReveal(rv);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();uiDirty();});},
  claimdq:a=>{const q0=dailyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimDaily(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
  claimwq:a=>{const q0=weeklyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimWeeklyQuest(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},

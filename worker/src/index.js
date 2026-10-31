@@ -5,6 +5,7 @@ import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPut, dbPatch, dbDel, 
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
 import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
+import {rankedSnapshot} from "./snapshot.js";
 import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
 import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from "./web-auth.js";
@@ -159,8 +160,12 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = ""
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
   const out = { ok: true, pid, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
     rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
+  await reconcilePayments(env, pid, S, now);
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
-  if (b.boot) out.stars = await undeliveredStars(env, pid, now);
+  if (b.boot) {
+    out.stars = await undeliveredStars(env, pid, now);
+    out.paymentReview = Object.values(S.starReceipts || {}).filter(p => p && p.held && !p.rf).length + Object.values(S.chainReceipts || {}).filter(p => p && p.held && !p.refunded).length;
+  }
   // the ghost report: what your tank did in other pilots' matches while you were away. Cleared once the phone has shown it
   const gr = b.boot || b.ghAck ? await dbGet(env, `ghr/${pid}`).catch(() => null) : null;
   if (gr && b.ghAck && Number(b.ghAck) >= (gr.last || 0)) await dbDel(env, `ghr/${pid}`).catch(() => {});
@@ -173,7 +178,7 @@ async function undeliveredStars(env, pid, now) {
   for (const [charge, p] of Object.entries(paid || {})) {
     if (!p || !p.n || (acked && acked[p.n])) continue;
     if (typeof p.ts === "number" && now - p.ts > 30 * DAY_MS) continue;
-    if (p.rf) continue;
+    if (p.rf || p.held) continue;
     out.push({ n: p.n, k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: p.stars || 0, o: p.o || [] });
   }
   return out.slice(0, 10);
@@ -193,8 +198,14 @@ export async function squad(env, pid) {
 async function verifyTon(memo, amt) {
   try {
     const r = await fetch(`https://toncenter.com/api/v2/getTransactions?address=${TON_RECIPIENT}&limit=50`);
+    if (!r.ok) return null;
     const d = await r.json();
+    if (d.ok === false) return null;
     for (const t of d.result || []) {
+      // Negative provider status is never delivery evidence. Absence of these fields
+      // is not positive finality certification; that remains a provider release gate.
+      const status = t.description || {};
+      if (t.aborted === true || status.aborted === true || (t.in_msg || {}).bounced === true || (status.compute_ph || {}).success === false || (status.action || {}).success === false) continue;
       const val = parseInt((t.in_msg || {}).value || "0", 10) / 1e9;
       if (memo && String((t.in_msg || {}).message || "") === memo && val + 1e-9 >= amt * 0.999) return t.transaction_id && t.transaction_id.hash ? { hash: t.transaction_id.hash, src: String((t.in_msg || {}).source || "") } : null;
     }
@@ -259,6 +270,55 @@ async function paymentProjection(env, path, value) {
   }
   throw new Error("payment receipt busy");
 }
+// A bounded authenticated retry path survives a lost provider retry after the inventory CAS.
+// The pending version commits with the receipt; clearing it cannot erase a concurrent refund.
+function paymentPending(S, type, id, name) {
+  S.paymentPending = S.paymentPending || {};
+  const key = type + "_" + id;
+  S.paymentSeq = (S.paymentSeq || 0) + 1;
+  S.paymentPending[key] = { type, id, name: name || "Pilot", v: S.paymentSeq };
+}
+async function projectStars(env, pid, charge, receipt, name) {
+  await paymentProjection(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name, cur: "STARS", amt: receipt.stars || 0, gram: receipt.g || 0, usd: Math.round((receipt.stars || 0) * 1.3) / 100, item: itemLabel(receipt.k, receipt.t, receipt.r), memo: "STARS|" + (receipt.n || ""), proof: charge, verified: !receipt.rf && !receipt.held && !receipt.unmatched, ...(receipt.held ? { held: receipt.held } : {}), ...(receipt.rf ? { refunded: true } : {}), t: receipt.ts || receipt.rf });
+  if (!receipt.unmatched) {
+    if (receipt.journal) await revAdd(env, (receipt.stars || 0) * 1.3, "stars_sale_" + pid + "_" + charge);
+    if (receipt.rf && (receipt.journal || receipt.refundJournal)) await revAdd(env, -(receipt.stars || 0) * 1.3, "stars_refund_" + pid + "_" + charge);
+  }
+  await paymentProjection(env, `starsPaid/${pid}/${charge}`, receipt);
+}
+async function reconcilePayments(env, pid, S, now = Date.now()) {
+  // Reserve room for authentication, sync, refund projections and cleanup inside
+  // the Workers Free subrequest budget. Each completed receipt advances durably.
+  for (const [key, pending] of Object.entries(S.paymentPending || {}).slice(0, 2)) {
+    const receipt = pending.type === "stars" ? S.starReceipts && S.starReceipts[pending.id] : S.chainReceipts && S.chainReceipts[pending.id];
+    if (!receipt) continue;
+    if (pending.type === "stars") await projectStars(env, pid, pending.id, receipt, pending.name);
+    else {
+      if (!(await dbPut(env, `payments/LWM_${pending.id}`, receipt))) throw new Error("payment receipt write");
+      await revAdd(env, receipt.revc, receipt.revEvent);
+    }
+    await tx(env, pid, current => {
+      if (current.paymentPending && current.paymentPending[key] && current.paymentPending[key].v === pending.v) delete current.paymentPending[key];
+      return {};
+    }, now);
+  }
+}
+// Provider payloads are compared byte-for-byte with immutable server-issued quotes.
+const STAR_QUOTE_MS = 10 * 60000;
+function starQuoteEligible(S, quote, X) {
+  const price = RULES.ecoPrice(S, quote.desc, X);
+  if (RULES.ecoOwned(S, quote.desc, X) || !price || price.stars !== quote.price.stars || price.ton !== quote.price.ton || (price.deal || null) !== (quote.price.deal || null)) return false;
+  if (quote.desc.kind === "pass" && quote.season !== RULES.ecoSeason(X)) return false;
+  if (quote.desc.kind === "box" && (quote.day !== X.day || quote.week !== X.week)) return false;
+  return true;
+}
+async function starQuote(env, payload, telegramId, amount, currency) {
+  let p; try { p = JSON.parse(payload); } catch { return null; }
+  if (currency !== "XTR" || p.u !== telegramId || !/^[a-f0-9]{12}$/.test(p.n || "")) return null;
+  const quote = await dbGet(env, `starQuotes/${p.n}`);
+  return quote && quote.payload === payload && quote.telegramId === telegramId && quote.price.stars === amount ? quote : null;
+}
+
 // A future bound SOL order must also have a verified live conversion; price outages fail closed.
 async function solValueOk(sol, ton) {
   try {
@@ -289,21 +349,18 @@ async function payLog(env, b, user, pid, now = Date.now()) {
   if (have && (have.granted || !desc)) {
     if (have.revEvent) await revAdd(env, have.revc, have.revEvent);
     const S = await readEco(env, pid);
-    return { ok: true, dup: true, verified: have.verified === true, out: have.o || [], E: pub(S) };
+    return { ok: true, dup: true, verified: have.verified === true, ...(have.held ? { error: "review" } : {}), out: have.o || [], E: pub(S) };
   }
   const S0 = await readEco(env, pid), gk = safeKey(memo);
   const previous = S0.chainReceipts && S0.chainReceipts[gk];
   if (previous) {
     if (!(await dbPut(env, key, previous))) throw new Error("payment receipt write");
     await revAdd(env, previous.revc, previous.revEvent);
-    return { ok: true, dup: true, verified: true, out: previous.o || [], E: pub(S0) };
+    return { ok: true, dup: true, verified: previous.verified === true, ...(previous.held ? { error: "review" } : {}), out: previous.o || [], E: pub(S0) };
   }
   const rec = { pid, name: cleanName(user), cur, amt, gram: num(b.gram, 0, 100000), usd: num(b.usd, 0, 1e6), item: String(b.item || "").slice(0, 40), memo, proof: String(b.proof || "").slice(0, 120), t: { ".sv": "timestamp" } };
-  if (!desc) {   // an old phone without the order details: logged and checked, not granted here
-    rec.verified = cur === "TON" ? !!(await verifyTon(memo, amt)) : !!(await verifySol(rec.proof, amt));
-    await dbPut(env, key, rec);
-    return { ok: true, verified: rec.verified };
-  }
+  // A client label is not a priced product. Never make a migration-eligible sale from it.
+  if (!desc) return { error: "item" };
   const X0 = ctxOf(pid, now), price = RULES.ecoPrice(S0, desc, X0);
   if (!price) return { error: "item" };
   const need = cur === "TON" ? Math.max(amt, price.ton) : amt;
@@ -321,10 +378,13 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     S.chainReceipts = S.chainReceipts || {};
     if (S.chainReceipts[gk]) return { payment: S.chainReceipts[gk], dup: true };
     S.gout = S.gout || {};
-    const outs = S.gout[gk] || RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
+    const currentPrice = RULES.ecoPrice(S, desc, X);
+    const held = RULES.ecoOwned(S, desc, X) || !currentPrice || currentPrice.ton !== price.ton || currentPrice.stars !== price.stars || (currentPrice.deal || null) !== (price.deal || null) || X.day !== X0.day ? "eligibility_changed" : null;
+    const outs = held ? [] : S.gout[gk] || RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
     if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
-    const payment = { ...rec, verified: true, granted: true, tx: txid, o: outs.filter(o => o && !o.none), revc: Math.round(usd * 100), revEvent: "chain_" + gk };
+    const payment = { ...rec, verified: !held, granted: true, ...(held ? { held } : {}), tx: txid, o: outs.filter(o => o && !o.none), revc: Math.round(usd * 100), revEvent: "chain_" + gk };
     S.chainReceipts[gk] = payment;
+    paymentPending(S, "chain", gk, rec.name);
     return { payment };
   }, now);
   const payment = t.payment, outs = payment.o;
@@ -337,7 +397,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "wallet").catch(() => {});
     await dbPatch(env, `wal/${wh}`, { [pid]: dayOf(now) }).catch(() => {});
   }
-  return { ok: true, verified: true, out: outs, E: pub(t.S) };
+  return { ok: true, verified: payment.verified, ...(payment.held ? { error: "review" } : {}), out: outs, E: pub(t.S) };
 }
 
 // ================= /api/stars-invoice =================
@@ -353,8 +413,11 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
   const pr = RULES.ecoPrice(S, desc, X);
   if (!pr) return { status: 400, body: { error: "item" } };
   if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
-  const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const nonce = hex(crypto.getRandomValues(new Uint8Array(6)));
+  const payload = JSON.stringify({ q: 1, u: user.id, k, t: k === "paint" || k === "box" || k === "vault" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const quote = { pid, telegramId: user.id, desc, price: pr, payload, day: X.day, week: X.week, season: RULES.ecoSeason(X), ts: now, expires: now + STAR_QUOTE_MS };
+  const issued = await claimOnce(env, `starQuotes/${nonce}`, quote);
+  if (!issued.ok) throw new Error("payment quote collision");
   const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
@@ -381,6 +444,7 @@ async function admin(env, user, b = {}) {
   if (b.clear && /^tg_\d{3,15}$/.test(String(b.clear))) {
     const f = await dbGet(env, `flags/${b.clear}`).catch(() => null), up = {};
     for (const k of flagReasons(f)) up[`flags/${b.clear}/ok/${k}`] = Date.now();
+    up[`fh/${b.clear}`] = null; // Clearing all reasons also releases the held eligibility projection.
     if (Object.keys(up).length) await dbPatch(env, "", up);
   }
   const today = dayOf(Date.now());
@@ -420,19 +484,14 @@ async function admin(env, user, b = {}) {
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
   const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters };
-  // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
+  // Research snapshot: existing weighted-credit ranking, not token allocation or distribution.
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
     revenue: { TON: +rev.TON.toFixed(3), SOL: +rev.SOL.toFixed(4), STARS: rev.STARS, USD: Math.round(rev.USD), count: rev.count, unverified: rev.unverified },
     recent: recent.slice(0, 15), top: Object.values(top || {}).sort((a, b) => (b.pts || 0) - (a.pts || 0)).map((p) => ({ name: p.name, pts: p.pts, days: p.days, power: p.power })) } };
 }
 
-export async function snapshot(env, fl) {
-  fl = fl || (await dbGet(env, "flags").catch(() => null)) || {};
-  const top = (await dbGet(env, "players", { orderBy: '"pts"', limitToLast: 2000 }).catch(() => ({}))) || {};
-  // ranked by airdrop credit (lifetime points, with new Telegram accounts' first week at a reduced rate); points shown too
-  return Object.entries(top).filter(([id, v]) => v && v.pts > 0 && !isFlagged(fl[id])).map(([id, v]) => [id, v.name || "Pilot", v.pts || 0, v.days || 0, typeof v.ac === "number" ? v.ac : v.pts || 0, v.sg || 0, v.gg || 0]).sort((a, b) => b[4] - a[4]).slice(0, 1000);   // ..., verified spending (TON value)
-}
+export const snapshot = (env, fl, options) => rankedSnapshot(env, fl, options);
 
 // ================= leaderboard (cron, every 5 minutes) =================
 // Phones download one small file instead of every player's record.
@@ -507,7 +566,7 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
         ? "☾ Your welcome-back gift is ready, pilot: a free Rare gem cache. Claim it with today's daily reward in Quests."
         : streak >= 2
         ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
-        : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
+        : "☾ Your daily reward and 4 new quests are ready, pilot. Points rankings do not guarantee tokens.";
       const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
       if (r && r.ok) { up[`ntf/${pid}/nx`] = d + 1; up[`ntf/${pid}/last`] = d; sent++; }
       else if (r && r.error_code === 429) slow = true;   // Telegram says slow down: the rest wait for the next run
@@ -519,7 +578,7 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
 }
 
 // A charge keeps its original economy owner when Telegram later links to a Lunar account.
-async function starsOwner(env, telegramId, charge) {
+async function starsOwner(env, telegramId, charge, quotedPid = null) {
   if (!Number.isSafeInteger(telegramId) || telegramId <= 0) throw new Error("payment owner unavailable");
   const path = `starsChargeOwner/${charge}`;
   const checked = owner => {
@@ -530,7 +589,7 @@ async function starsOwner(env, telegramId, charge) {
   const pinned = await dbGet(env, path);
   if (pinned !== null) return checked(pinned);
   const legacy = "tg_" + telegramId;
-  const pid = await dbGet(env, `starsPaid/${legacy}/${charge}`) ? legacy : (await resolveTelegramAccount(env, telegramId)) || legacy;
+  const pid = await dbGet(env, `starsPaid/${legacy}/${charge}`) ? legacy : quotedPid || (await resolveTelegramAccount(env, telegramId)) || legacy;
   const owner = { pid, telegramId }, claim = await claimOnce(env, path, owner);
   return checked(claim.ok ? owner : claim.v);
 }
@@ -542,8 +601,22 @@ async function webhook(req, env) {
   try { u = await req.json(); } catch { return new Response("ok"); }
   if (u.pre_checkout_query) {
     const q = u.pre_checkout_query;
-    let ok = q.currency === "XTR";
-    try { ok = ok && JSON.parse(q.invoice_payload).u === q.from.id; } catch { ok = false; }
+    const now = Date.now(), quote = await starQuote(env, q.invoice_payload, q.from.id, q.total_amount, q.currency);
+    let ok = false;
+    if (quote && now < quote.expires) {
+      const n = JSON.parse(quote.payload).n;
+      const accepted = await tx(env, quote.pid, (S, X) => {
+        const active = S.starCheckout;
+        if (!starQuoteEligible(S, quote, X) || S.starQuoteUse && S.starQuoteUse[n]) return { abort: true };
+        if (active && active.until > now && (active.n !== n || active.q !== q.id)) return { abort: true };
+        S.starAccepted = S.starAccepted || {};
+        if (S.starAccepted[n] && S.starAccepted[n] !== q.id) return { abort: true };
+        S.starAccepted[n] = q.id;
+        S.starCheckout = { n, q: q.id, until: quote.expires };
+        return { accepted: true };
+      }, now);
+      ok = !!accepted.accepted;
+    }
     await tg(env, "answerPreCheckoutQuery", ok ? { pre_checkout_query_id: q.id, ok: true } : { pre_checkout_query_id: q.id, ok: false, error_message: "This purchase couldn't be verified. Please try again from the game." });
     return new Response("ok");
   }
@@ -552,8 +625,9 @@ async function webhook(req, env) {
     const sp = m.successful_payment;
     let p = {};
     try { p = JSON.parse(sp.invoice_payload); } catch {}
-    const charge = safeKey(sp.telegram_payment_charge_id), item = itemLabel(p.k, p.t, p.r);
-    const pid = await starsOwner(env, m.from.id, charge), now = Date.now();
+    const charge = safeKey(sp.telegram_payment_charge_id);
+    const quote = p.q === 1 ? await starQuote(env, sp.invoice_payload, m.from.id, sp.total_amount, sp.currency) : null;
+    const pid = await starsOwner(env, m.from.id, charge, quote && quote.pid), now = Date.now();
     const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
     const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
     const t = await tx(env, pid, (S, X) => {
@@ -561,19 +635,23 @@ async function webhook(req, env) {
       const old = S.starReceipts[charge] || prior;
       if (old && !old.unmatched) { S.starReceipts[charge] = old; return { receipt: old, dup: true }; }
       S.gout = S.gout || {};
-      const outs = old && old.rf ? [] : S.gout[charge] || (desc ? RULES.ecoGrant(S, { ...desc, price: p.g }, X) : []);
+      let held = null;
+      if (p.q === 1) {
+        if (!quote || !S.starAccepted || !S.starAccepted[p.n] || !starQuoteEligible(S, quote, X)) held = "quote_ineligible";
+        S.starQuoteUse = S.starQuoteUse || {};
+        if (S.starQuoteUse[p.n] && S.starQuoteUse[p.n] !== charge) held = "quote_used";
+        if (!held) S.starQuoteUse[p.n] = charge;
+        if (S.starCheckout && S.starCheckout.n === p.n) delete S.starCheckout;
+      }
+      const outs = old && old.rf || held ? [] : S.gout[charge] || (desc ? RULES.ecoGrant(S, { ...desc, price: p.g }, X) : []);
       if (desc && (S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
-      const receipt = { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs.filter(o => o && !o.none), ts: now, journal: 1, ...(old && old.rf ? { rf: old.rf } : {}) };
+      const receipt = { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs.filter(o => o && !o.none), ts: now, journal: 1, ...(held ? { held } : {}), ...(old && old.rf ? { rf: old.rf } : {}) };
       S.starReceipts[charge] = receipt;
+      paymentPending(S, "stars", charge, cleanName(m.from));
       return { receipt };
     }, now);
     const receipt = t.receipt;
-    await paymentProjection(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: receipt.stars, gram: receipt.g || 0, usd: Math.round(receipt.stars * 1.3) / 100, item, memo: "STARS|" + receipt.n, proof: charge, verified: !receipt.rf, ...(receipt.rf ? { refunded: true } : {}), t: receipt.ts });
-    if (receipt.journal) {
-      await revAdd(env, receipt.stars * 1.3, "stars_sale_" + pid + "_" + charge);
-      if (receipt.rf) await revAdd(env, -receipt.stars * 1.3, "stars_refund_" + pid + "_" + charge);
-    }
-    await paymentProjection(env, `starsPaid/${pid}/${charge}`, receipt);
+    await projectStars(env, pid, charge, receipt, cleanName(m.from));
     return new Response("ok");
   }
   if (m && m.refunded_payment) {
@@ -583,26 +661,23 @@ async function webhook(req, env) {
     const t = await tx(env, pid, (S) => {
       S.starReceipts = S.starReceipts || {};
       const receipt = S.starReceipts[charge] || prior;
-      if (!receipt) { S.starReceipts[charge] = { rf: now, unmatched: true }; return { receipt: S.starReceipts[charge] }; }
+      if (!receipt) { S.starReceipts[charge] = { rf: now, unmatched: true }; paymentPending(S, "stars", charge, cleanName(m.from)); return { receipt: S.starReceipts[charge] }; }
       if (receipt.rf) return { abort: true, receipt, settledLegacy: !receipt.journal && !receipt.refundJournal };
       S.rfd = S.rfd || [];
       if (!S.rfd.includes(charge)) {
-        RULES.ecoRefund(S, receipt.k, receipt.o || []);
-        S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(receipt.g) || 0));
+        if (!receipt.held) {
+          RULES.ecoRefund(S, receipt.k, receipt.o || []);
+          S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(receipt.g) || 0));
+        }
         S.rfd = S.rfd.concat(charge).slice(-40);
         if (S.L) setLoadout(S, S.L);
       }
       S.starReceipts[charge] = { ...receipt, rf: now, refundJournal: 1 };
+      paymentPending(S, "stars", charge, cleanName(m.from));
       return { receipt: S.starReceipts[charge], refunds: S.rfd.length };
     }, now);
     const receipt = t.receipt;
-    // A receipt not yet seen has no revenue to reverse; a later success settles both events.
-    if (!receipt.unmatched && !t.settledLegacy) {
-      if (receipt.journal) await revAdd(env, (Number(receipt.stars) || 0) * 1.3, "stars_sale_" + pid + "_" + charge);
-      await revAdd(env, -(Number(receipt.stars) || 0) * 1.3, "stars_refund_" + pid + "_" + charge);
-    }
-    await paymentProjection(env, `starsPaid/${pid}/${charge}`, receipt);
-    await paymentProjection(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { refunded: true, verified: false });
+    await projectStars(env, pid, charge, receipt, cleanName(m.from));
     if (t.refunds >= 2) await addFlags(env, pid, t.S && t.S.nm, [["refunds", t.refunds + " Stars refunds"]], now).catch(() => {});
     return new Response("ok");
   }
@@ -625,7 +700,7 @@ async function webhook(req, env) {
     if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/${(await resolveTelegramAccount(env,m.from.id))||"tg_"+m.from.id}`, { on: 1, chat: m.chat.id, nx: dayOf(Date.now()) }).catch(() => {});
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
-      text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
+      text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. Token allocation, claims and distribution are not implemented. Rankings do not guarantee tokens.",
       reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "🌐 LUNAR WEBSITE / ACCOUNT", url: ACCOUNT_URL }], [{ text: "📣 Channel", url: CHANNEL_URL }, { text: "📖 Wiki", url: WIKI_URL }]] },
     });
   } else if (m && m.text && /^\/account(?:\s|$)/.test(m.text)) {

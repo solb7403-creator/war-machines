@@ -29,10 +29,9 @@ export function makeDB() {
     if (q.shallow === 'true') return Object.fromEntries(entries.map(([k, v]) => [k, typeof v === 'object' ? true : v]));
     const ob = q.orderBy ? JSON.parse(q.orderBy) : null;
     if (!ob) return node;
-    const keyOf = ([k, v]) => ob === '$key' ? k : ob === '$value' ? v : (v && typeof v === 'object' ? v[ob] : undefined);
+    const keyOf = ([k, v]) => ob === '$key' ? k : ob === '$value' ? v : (v && typeof v === 'object' ? v[ob] ?? null : null);
     if (ob !== '$key' && ob !== '$value' && !q._indexed) throw new Error('Index not defined');
-    entries = entries.filter(e => ob === '$key' || keyOf(e) !== undefined);
-    entries.sort((a, b) => { const x = keyOf(a), y = keyOf(b); return x < y ? -1 : x > y ? 1 : (a[0] < b[0] ? -1 : 1); });
+    entries.sort((a, b) => { const x = keyOf(a), y = keyOf(b); if(x===null&&y!==null)return -1;if(y===null&&x!==null)return 1;return x < y ? -1 : x > y ? 1 : (a[0] < b[0] ? -1 : 1); });
     if (q.equalTo !== undefined) { const v = JSON.parse(q.equalTo); entries = entries.filter(e => keyOf(e) === v); }
     if (q.startAt !== undefined) { const v = JSON.parse(q.startAt); entries = entries.filter(e => keyOf(e) >= v); }
     if (q.endAt !== undefined) { const v = JSON.parse(q.endAt); entries = entries.filter(e => keyOf(e) <= v); }
@@ -51,7 +50,7 @@ export function makeDB() {
     const method = (init.method || 'GET').toUpperCase();
     log.push(method + ' ' + path + (u.search.replace(/auth=SECRET&?/, '') ? ' ' + u.search.replace(/[?&]?auth=SECRET/, '') : ''));
     if (method === 'GET') {
-      const indexed = ['/players:pts', '/players:ref', '/players:vg', '/ntf:last', '/ntf:nx', '/gh:pw'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
+      const indexed = ['/players:pts', '/players:ref', '/players:vg', '/players:snapshotRankV1', '/ntf:last', '/ntf:nx', '/gh:pw'].includes(path + ':' + (q.orderBy ? JSON.parse(q.orderBy) : '')) || /^\/(dly|wly)\/\d+$/.test(path);
       const headers = hdr(init, 'X-Firebase-ETag') === 'true' ? { ETag: etag(path) } : {};
       return new Response(JSON.stringify(query(get(path), { ...q, _indexed: indexed })), { status: 200, headers });
     }

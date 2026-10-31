@@ -1,3 +1,4 @@
+import {snapshotRank} from "./snapshot-rank.js";
 // The economy on the server. Every point and every piece of gear a pilot has lives in eco/<pid> and changes only here.
 // The phone says what happened (a match ticket and its result, a claim, a crate to open); the server runs the shared
 // rules (js/rules.js, bundled as RULES) on its own copy and sends its record back. Points are never taken from the phone.
@@ -147,6 +148,8 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
 // the fields the leaderboard, squad lists, reminders and admin read stay on players/<pid> (a copy of the record)
 async function mirror(env, pid, S, isNew, before, now) {
   const P = `players/${pid}`, up = {};
+  up[`${P}/snapshotRankV1`] = snapshotRank(pid,{pts:S.earned,ac:S.ac});
+  up["snapshotIndex/revision"] = {".sv":{increment:1}};
   const f = { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
     wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
@@ -425,9 +428,8 @@ export async function creditMatch(env, pid, name, calc, now = Date.now(), result
     const result = { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
     if (receiptKey) {
       S.pvpReceipts = S.pvpReceipts || {}; S.pvpReceipts[receiptKey] = result;
-      // A finished room cannot resettle; retain a bounded window for its immediate retries.
-      const keys = Object.keys(S.pvpReceipts);
-      for (const key of keys.slice(0, Math.max(0, keys.length - 64))) delete S.pvpReceipts[key];
+      // Durable rooms can replay after a prolonged outage and many newer matches.
+      // Keep the transactional receipt until an audited replay-safe compaction exists.
     }
     return result;
   }, now);
@@ -584,7 +586,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     const paid = (await dbGet(env, `starsPaid/${pid}`).catch(() => null)) || {};
     const hit = Object.values(paid).find((p) => p && p.n === n && !p.rf);
     const S = await readEco(env, pid);
-    return { status: 200, body: { ok: true, out: hit && hit.o !== undefined ? { outs: hit.o || [] } : { pending: true }, E: pub(S) } };
+    return { status: 200, body: { ok: true, out: hit && hit.held ? { review: true } : hit && hit.o !== undefined ? { outs: hit.o || [] } : { pending: true }, E: pub(S) } };
   }
   const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri);
   let F = null;

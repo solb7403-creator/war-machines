@@ -43,6 +43,7 @@ async function doSync(boot){
   save.refBy=srv&&srv.ref||null; // Canonical server binding survives a fresh browser or device.
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
+  if(r.paymentReview)showToast('A payment needs support review. Message @LunarBattle with your Player ID.');
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
   if(r.ghost&&r.ghost.m&&typeof showGhostReport==='function'){save.ghAck=r.ghost.last||Date.now();showGhostReport(r.ghost);}
   store();
@@ -185,10 +186,11 @@ async function payWithStars(ton,desc){
    starsBusy=false;
    if(status==='paid'){
     save.purchases=save.purchases||[];save.purchases.push({cur:'STARS',amt:d.stars,gram:ton,what:descLabel(desc),memo:'STARS|'+d.nonce,ts:Date.now()});
-    save.spendStars=(save.spendStars||0)+d.stars;save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();
+    save.spendStars=(save.spendStars||0)+d.stars;store();
     if(SRV_ECO)starsDeliver(d.nonce,0);   // the server adds it once Telegram confirms the payment
-    else{grantPurchase(desc);syncPlayer();}
-   }else if(status==='cancelled')showToast('Payment cancelled');
+    else{save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();grantPurchase(desc);syncPlayer();}
+   }else if(status==='pending')showToast('Payment is pending. Your item unlocks after confirmation.');
+   else if(status==='cancelled')showToast('Payment cancelled');
    else if(status==='failed')showToast('Stars payment failed. Nothing was charged.');
   });
  }catch(e){starsBusy=false;
@@ -200,7 +202,8 @@ async function payWithStars(ton,desc){
 // a paid Stars purchase: the server grants it when Telegram's confirmation arrives (usually within a second or two)
 function starsDeliver(nonce,k){
  api('/api/act',{a:'paid',n:nonce}).then(r=>{
-  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);showOuts(r.out.outs);return;}
+  if(r&&r.out&&r.out.review){showToast('Payment needs support review. Message @LunarBattle with your Player ID.');return;}
+  if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);save.starsDone=save.starsDone||{};save.starsDone[nonce]=1;starsAckQ.push(nonce);store();showOuts(r.out.outs);return;}
   if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Payment received. Your item arrives in a moment.');
  }).catch(()=>{if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),2500);});
 }

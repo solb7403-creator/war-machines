@@ -436,7 +436,7 @@ function claimRefs(){
   fx('claim');showToast('+'+fmtNum(r.pts)+' squad points');return r.pts;
  });
 }
-const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles right in Telegram, and the top 1,000 pilots get a guaranteed $LUNAR allocation.';
+const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles right in Telegram, and climb the game points leaderboard. Token allocations are not guaranteed.';
 function shareRef(text){
  const link=refLink();if(!link){showToast('Invitations are available for Telegram accounts. Independent website referrals are not supported.');return;}
  const u='https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent(text||SHARE_TXT);

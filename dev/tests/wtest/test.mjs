@@ -285,6 +285,9 @@ let lb = await mod.buildLeaderboard(env);
 t(lb.top.some((x) => x[0] === 'tg_666') && !lb.top.some((x) => x[0] === 'tg_444') && !lb.top.some((x) => x[0] === 'tg_111'), 'flagged pilots left off the public top ' + JSON.stringify(lb.top.map((x) => x[0])));
 t(db.get('/lb/top').length === lb.top.length, 'lb stored');
 [s, r] = await call('/api/admin', { initData: initData(A) }); t(s === 403, 'non-admin refused');
+// New source index requires an explicit bounded migration; no automatic scan on export.
+const {backfillSnapshotPage}=await import('../../../worker/src/snapshot.js');
+while(!(await backfillSnapshotPage(env)).complete){}
 [s, r] = await call('/api/admin', { initData: initData(J), snap: 1 });
 t(s === 200 && r.flagged.some((f) => f.id === 'tg_444' && f.why.some((w) => /mig_epic/.test(w))), 'admin lists flagged pilots with reasons');
 t(r.snapshot.some((x) => x[0] === 'tg_666' && x[3] === 4) && !r.snapshot.some((x) => x[0] === 'tg_444'), 'snapshot: points and days, flagged left out');
