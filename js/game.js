@@ -861,12 +861,13 @@ function bountyKill(r,src){
 // who a bot wants to fight: the nearest enemy, unless the mode gives it a better target
 function botTarget(u){
  if(cry&&cry.cd&&cry.cd.team!==u.team){let best=null,bc=0;for(const v of units)if(v.team===cry.cd.team&&v.hp>0&&(v.cry||0)>bc){bc=v.cry;best=v;}if(best)return best;}   // stop their countdown: hunt the carrier
- // a foe already taken costs more: +7 for every ally locked onto it, and in Last Standing +4 for every other tank on it,
- // so the field doesn't pile onto one tank (measured: two or more AI on you 52% of the time in Last Standing, 30-67% in Bounty)
- const solo=isSolo(matchG),taken=v=>{let s=0;for(const a of units)if(a!==u&&a!==v&&a.hp>0&&a.focus===v)s+=a.team===u.team?7:solo?4:0;return s;};
+ // a foe already taken costs more: +7 for every ally locked onto it. Bounty used to skip this, so a big bounty drew the whole
+ // team (measured: 2+ AI on you 29-50% of the time in Bounty, 8-16% after). Last Standing has no allies: a spread rule there
+ // halved pile-ons but measured worse places for starter-to-rare pilots, so it stays as it was
+ const taken=v=>{let s=0;for(const a of units)if(a!==u&&a!==v&&a.hp>0&&a.focus===v&&a.team===u.team)s+=7;return s;};
  if(matchG==='bounty'){let best=null,bs=-1e9;for(const v of units){if(v.team===u.team||v.hp<=0)continue;const s=(v.bty||BTY_START)*1.5-dist2(u,v)*0.5-taken(v)*0.5;if(s>bs){bs=s;best=v;}}if(best)return best;}   // a big bounty is worth a detour
  // everyone used to pile onto the nearest foe. Score the field instead: nearer and weaker is better,
- // a foe costs more the more tanks are already on it, and the one shooting at me matters
+ // a foe costs more for every ally already locked onto it, and the one shooting at me matters
  let best=null,bs=1e9;
  for(const v of units){if(v.team===u.team||v.hp<=0)continue;
   let s=dist2(u,v)+(v.hp/v.mhp)*4+taken(v);
