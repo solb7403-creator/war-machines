@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
- let session,order,busy=false,desc,ton,viewStatus='pending';
+ let session,order,busy=false,desc,ton,viewStatus='pending',walletAllowed=true;
  const message=t=>{$('status').textContent=t;};
  async function api(path,body={}){
   const r=await fetch('/api/chain/'+path,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','X-Lunar-CSRF':session.csrf},body:JSON.stringify(body)});
@@ -10,9 +10,9 @@
  const sdk=(src,integrity)=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.integrity=integrity;s.crossOrigin='anonymous';s.onload=resolve;s.onerror=()=>reject(Error('Wallet library unavailable'));document.head.append(s);});
  const key=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
  function render(v){
-  order=v.order;viewStatus=v.status;$('order').hidden=false;
+  order=v.order;viewStatus=v.status;walletAllowed=v.walletAllowed!==false;$('order').hidden=false;
   $('details').textContent=JSON.stringify({id:order.id,goods:order.desc,network:order.network,currency:order.currency,amount:(Number(order.amountNano)/1e9),recipient:order.recipient,expires:new Date(order.expires).toISOString()},null,2);
-  $('wallet').disabled=v.status!=='pending'||Date.now()>=order.expires;
+  $('wallet').disabled=!walletAllowed||v.status!=='pending'||Date.now()>=order.expires;
   const texts={pending:'Waiting for a finalized payment. Approve once, then check here.',paid:'Payment finalized. Your items are saved to your account. Return to the game.',review:'Payment or eligibility needs support review. Do not pay again.',expired:'Quote expired. Do not send funds. Any payment already sent will still be checked.',cancelled:'Checkout cancelled. A wallet may already have sent funds; checking continues. Do not pay again.',refunded:'Refund recorded by support.'};
   message(texts[v.status]||'Quote saved. Review the exact amount and destination.');
  }
@@ -40,12 +40,13 @@
   if(busy||!order)return;busy=true;$('wallet').disabled=true;
   try{
    const latest=await api('status',{id:order.id});render(latest);
-   if(latest.status!=='pending'||Date.now()>=order.expires)throw Error('Order is no longer payable');
+   if(latest.walletAllowed===false||latest.status!=='pending'||Date.now()>=order.expires)throw Error('Order is no longer payable');
    if(order.currency==='TON'){
     if(!window.TON_CONNECT_UI)await sdk('https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js','sha384-ej0rYqvkb978ljOWDi1iAt5spb5B7sRdf1g8Hii30vS72XLjxoCPCmx5seE7s05g');
     ton=ton||new TON_CONNECT_UI.TonConnectUI({manifestUrl:location.origin+'/web/tonconnect-manifest.json'});
     if(!ton.connected){await ton.openModal();message('Connect a wallet, then tap Approve in wallet again.');return;}
     const chain=order.network==='testnet'?'-3':'-239';if(ton.account?.chain!==chain)throw Error('Switch the wallet to '+order.network);
+    if(!(await api('prepare',{id:order.id})).prepared)throw Error('Approval intent not confirmed');walletAllowed=false;
     await ton.sendTransaction({validUntil:Math.floor(order.expires/1000),network:chain,messages:[{address:order.recipient,amount:order.amountNano,payload:comment(order.memo)}]});
     render(await api('confirm',{id:order.id}));
    }else{
@@ -62,11 +63,12 @@
     transfer.keys.push({pubkey:new W.PublicKey(order.reference),isWritable:false,isSigner:false});
     const tx=new W.Transaction().add(transfer,new W.TransactionInstruction({programId:new W.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),keys:[],data:new TextEncoder().encode(order.memo)}));
     tx.feePayer=provider.publicKey;tx.recentBlockhash=(await connection.getLatestBlockhash('finalized')).blockhash;
+    if(!(await api('prepare',{id:order.id})).prepared)throw Error('Approval intent not confirmed');walletAllowed=false;
     const result=await provider.signAndSendTransaction(tx);const signature=typeof result==='string'?result:result.signature;
     render(await api('confirm',{id:order.id,signature}));
    }
   }catch(e){message('Wallet result is not delivery confirmation. '+e.message+' Check your saved order before trying again.');}
-  finally{busy=false;if(order)$('wallet').disabled=viewStatus!=='pending'||Date.now()>=order.expires;}
+  finally{busy=false;if(order)$('wallet').disabled=!walletAllowed||viewStatus!=='pending'||Date.now()>=order.expires;}
  };
  (async()=>{
   try{

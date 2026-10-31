@@ -62,13 +62,14 @@ export async function projectStars(env, pid, charge, receipt, name) {
 export async function reconcilePayments(env, pid, S, now = Date.now()) {
   // Reserve room for authentication, sync, refund projections and cleanup inside
   // the Workers Free subrequest budget. Each completed receipt advances durably.
-  for (const [key, pending] of Object.entries(S.paymentPending || {}).slice(0, 2)) {
+  for (const [key, pending] of Object.entries(S.paymentPending || {}).filter(([,p])=>p.type==='stars'?S.starReceipts?.[p.id]:S.chainReceipts?.[p.id]).slice(0, 2)) {
     const receipt = pending.type === "stars" ? S.starReceipts && S.starReceipts[pending.id] : S.chainReceipts && S.chainReceipts[pending.id];
     if (!receipt) continue;
     if (pending.type === "stars") await projectStars(env, pid, pending.id, receipt, pending.name);
     else {
-      if (!(await dbPut(env, `payments/LWM_${pending.id}`, receipt))) throw new Error("payment receipt write");
+      await paymentProjection(env, `payments/LWM_${pending.id}`, receipt);
       await revAdd(env, receipt.revc, receipt.revEvent);
+      if(receipt.refunded)await revAdd(env,-receipt.revc,receipt.revEvent+"_refund");
     }
     await tx(env, pid, current => {
       if (current.paymentPending && current.paymentPending[key] && current.paymentPending[key].v === pending.v) delete current.paymentPending[key];

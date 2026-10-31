@@ -163,7 +163,7 @@ function fetchPrices(){
 }
 function solFor(ton){if(!px.ton||!px.sol)return 0;const v=ton*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
 function priceLabel(ton,stars){
- if(save.payCur==='stars')return fmtNum(stars)+' ⭐';
+ if(IN_TG||save.payCur==='stars')return fmtNum(stars)+' ⭐';
  if(save.payCur==='sol'){const s=solFor(ton);return s?s+' SOL':'… SOL';}
  return ton+' TON';
 }
@@ -191,8 +191,8 @@ async function payWithStars(ton,desc){
     if(SRV_ECO)starsDeliver(d.nonce,0);   // the server adds it once Telegram confirms the payment
     else{save.starsDone=save.starsDone||{};save.starsDone[d.nonce]=1;starsAckQ.push(d.nonce);store();grantPurchase(desc);syncPlayer();}
    }else if(status==='pending')showToast('Payment is pending. Your item unlocks after confirmation.');
-   else if(status==='cancelled')showToast('Payment cancelled');
-   else if(status==='failed')showToast('Stars payment failed. Nothing was charged.');
+   else if(status==='cancelled'){api('/api/stars-cancel',{nonce:d.nonce}).catch(()=>{});showToast('Checkout cancelled. Any completed charge will still be checked.');}
+   else if(status==='failed')showToast('Stars checkout was interrupted. Check your payment history before retrying.');
   });
  }catch(e){starsBusy=false;
   if(e&&e.message==='owned'){showToast('You already have this');return;}
@@ -205,7 +205,7 @@ function starsDeliver(nonce,k){
  api('/api/act',{a:'paid',n:nonce}).then(r=>{
   if(r&&r.out&&r.out.review){showToast('Payment needs support review. Message @LunarBattle with your Player ID.');return;}
   if(r&&r.out&&r.out.outs){if(r.E)applyEco(r.E);save.starsDone=save.starsDone||{};save.starsDone[nonce]=1;starsAckQ.push(nonce);store();showOuts(r.out.outs);return;}
-  if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Payment received. Your item arrives in a moment.');
+  if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),1500);else showToast('Confirmation is delayed. Your saved payment will be checked automatically.');
  }).catch(()=>{if(k<20)setTimeout(()=>starsDeliver(nonce,k+1),2500);});
 }
 // ---- SOL: Solana Pay reference key lets us find exactly this payment on-chain ----

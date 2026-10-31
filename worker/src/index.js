@@ -1,4 +1,4 @@
-import {chainActive,cryptoReady,issueChainOrder,inspectChainOrder,settleChainOrder,cancelChainOrder,wakePayments} from "./chain-payments.js";
+import {chainActive,cryptoReady,prepareChainOrder,issueChainOrder,inspectChainOrder,settleChainOrder,cancelChainOrder,wakePayments} from "./chain-payments.js";
 import {paymentOps} from "./payment-ops.js";
 export {PaymentJob} from "./payment-jobs.js";
 import {revAdd,paymentPending,projectStars,reconcilePayments,itemLabel} from "./payment-ledger.js";
@@ -46,7 +46,8 @@ function cors(res, req) {
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
 
 async function tg(env, method, body) {
-  const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if(env.STARS_TEST_MODE==='1'&&env.PAYMENT_NETWORK!=='testnet')throw Error("Stars test mode requires isolated testnet configuration");
+  const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${env.STARS_TEST_MODE==='1'?'test/':''}${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
@@ -74,7 +75,7 @@ async function auth(req, env) {
     const a=await webIdentity(req,env);if(!a)return {err:json({error:"not verified"},401)};
     const path=new URL(req.url).pathname;
     if((path.startsWith("/api/chain/")||path==="/api/payment-ops")&&(!a.user.lunar_account||a.session.authMethod!=="passkey"))return {err:json({error:"Independent Lunar account required"},403)};
-    if(["/api/pay-log","/api/stars-invoice","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
+    if(["/api/pay-log","/api/stars-invoice","/api/stars-status","/api/stars-cancel","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
     if(path==="/api/sync"){
       const S=await readEco(env,a.pid);if(S.mig===0)return {err:json({error:"Open Telegram once to finish account migration"},409)};
       delete b.mig;delete b.refBy;delete b.starsAck; b.boot=false;
@@ -248,6 +249,17 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
   return { status: 200, body: { link: r.result, stars: pr.stars, nonce } };
+}
+
+// Cancellation never asserts that a charge did not occur or releases an accepted
+// reservation early. A later paid callback remains an audited hold.
+async function starsStatus(env,a,cancel=false){
+ const n=a.b.nonce;if(!/^[a-f0-9]{12}$/.test(n||""))return {status:400,body:{error:"nonce"}};
+ const quote=await dbGet(env,`starQuotes/${n}`);
+ if(!quote||quote.pid!==a.pid||quote.telegramId!==a.user.id)return {status:404,body:{error:"not_found"}};
+ if(cancel)await tx(env,a.pid,S=>{S.starCancelled={...S.starCancelled,[n]:Date.now()};return {};});
+ const S=await readEco(env,a.pid),receipt=Object.values(S.starReceipts||{}).find(r=>r.n===n);
+ return {status:200,body:{nonce:n,status:receipt?(receipt.rf?"refunded":receipt.held?"review":"paid"):S.starCancelled?.[n]?"cancelled":Date.now()>=quote.expires?"expired":"pending"}};
 }
 
 // ================= /api/notify-optin =================
@@ -433,7 +445,7 @@ async function webhook(req, env) {
       const n = JSON.parse(quote.payload).n;
       const accepted = await tx(env, quote.pid, (S, X) => {
         const active = S.starCheckout;
-        if (chainActive(S,now) || !starQuoteEligible(S, quote, X) || S.starQuoteUse && S.starQuoteUse[n]) return { abort: true };
+        if (S.starCancelled?.[n] || chainActive(S,now) || !starQuoteEligible(S, quote, X) || S.starQuoteUse && S.starQuoteUse[n]) return { abort: true };
         if (active && active.until > now && (active.n !== n || active.q !== q.id)) return { abort: true };
         S.starAccepted = S.starAccepted || {};
         if (S.starAccepted[n] && S.starAccepted[n] !== q.id) return { abort: true };
@@ -453,7 +465,11 @@ async function webhook(req, env) {
     try { p = JSON.parse(sp.invoice_payload); } catch {}
     const charge = safeKey(sp.telegram_payment_charge_id);
     const quote = p.q === 1 ? await starQuote(env, sp.invoice_payload, m.from.id, sp.total_amount, sp.currency) : null;
-    const pid = await starsOwner(env, m.from.id, charge, quote && quote.pid), now = Date.now();
+    // Amount/currency mismatch must hold the payment against the original quoted
+    // owner, even if account mapping changed after precheckout.
+    const ownerQuote=p.q===1&&/^[a-f0-9]{12}$/.test(p.n||"")?await dbGet(env,`starQuotes/${p.n}`):null;
+    const originalOwner=ownerQuote&&ownerQuote.payload===sp.invoice_payload&&ownerQuote.telegramId===m.from.id?ownerQuote.pid:null;
+    const pid = await starsOwner(env, m.from.id, charge, originalOwner || quote && quote.pid), now = Date.now();
     const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
     await wakePayments(env,pid);
     const prior = await dbGet(env, `starsPaid/${pid}/${charge}`);
@@ -465,6 +481,7 @@ async function webhook(req, env) {
       let held = null;
       if (p.q === 1) {
         if (!quote || !S.starAccepted || !S.starAccepted[p.n] || !starQuoteEligible(S, quote, X) || now>=quote.expires) held = "quote_ineligible";
+        if(S.starCancelled?.[p.n])held="cancelled";
         S.starQuoteUse = S.starQuoteUse || {};
         if (S.starQuoteUse[p.n] && S.starQuoteUse[p.n] !== charge) held = "quote_used";
         if (!held) S.starQuoteUse[p.n] = charge;
@@ -558,9 +575,12 @@ const ROUTES = {
   "/api/chain/order": async (env,a) => ({status:200,body:await issueChainOrder(env,a.pid,a.b)}),
   "/api/chain/status": async (env,a) => ({status:200,body:cryptoReady(env)?await inspectChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
   "/api/chain/confirm": async (env,a) => ({status:200,body:cryptoReady(env)?await settleChainOrder(env,a.pid,a.b.id,String(a.b.signature||"")):{error:"unavailable"}}),
+  "/api/chain/prepare": async (env,a)=>({status:200,body:cryptoReady(env)?await prepareChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
   "/api/chain/cancel": async (env,a) => ({status:200,body:cryptoReady(env)?await cancelChainOrder(env,a.pid,a.b.id):{error:"unavailable"}}),
   "/api/payment-ops": async (env,a) => ({status:200,body:await paymentOps(env,a.pid,a.b)}),
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
+  "/api/stars-status": async (env,a)=>starsStatus(env,a),
+  "/api/stars-cancel": async (env,a)=>starsStatus(env,a,true),
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
   "/api/admin": async (env, a) => admin(env, a.user, a.b),
@@ -591,7 +611,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/chain/order":6,"/api/chain/status":20,"/api/chain/confirm":6,"/api/chain/cancel":6,"/api/payment-ops":6, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
+const PID_RL = { "/api/stars-status":20,"/api/stars-cancel":6, "/api/chain/prepare":6,"/api/chain/order":6,"/api/chain/status":20,"/api/chain/confirm":6,"/api/chain/cancel":6,"/api/payment-ops":6, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -630,7 +650,7 @@ export default {
     if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
     if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png"].includes(path))){
       const res=await env.ASSETS.fetch(req);const out=new Response(res.body,res);out.headers.set("X-Content-Type-Options","nosniff");
-      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");if(path==="/web/checkout.html")out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.tonapi.io https://*.tonhubapi.com https://*.tonconnect.org https://*.ton.org https://bridge.tonapi.io https://bridge.ton.space https://api.devnet.solana.com https://api.mainnet-beta.solana.com; img-src 'self' data: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'");}
+      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");if(path==="/web/checkout.html")out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.tonapi.io https://*.tonhubapi.com https://*.tonconnect.org https://*.ton.org https://bridge.tonapi.io https://bridge.ton.space https://*.tonkeeper.com https://raw.githubusercontent.com/ton-blockchain/wallets-list/ https://api.devnet.solana.com https://api.mainnet-beta.solana.com; img-src 'self' data: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'");}
       return out;
     }
     if (path === "/") return new Response("LUNAR: War Machines API");

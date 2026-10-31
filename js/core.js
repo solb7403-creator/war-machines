@@ -165,7 +165,7 @@ function loadSave(obj){
  if(!save.wTier)save.wTier={pulse:0,twin:-1,siege:-1};if(!save.cTier)save.cTier={scout:-1,vanguard:0,titan:-1};
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
- if(save.payCur===undefined||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
+ if(IN_TG||save.payCur===undefined||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
  if(save.sound===undefined)save.sound=true;
  if(save.haptics===undefined)save.haptics=true;
  if(save.mp===undefined)save.mp=(save.wins||0)+(save.losses||0);
