@@ -258,4 +258,14 @@ check('RPC network binding uses full observed genesis hashes, not shortened CAIP
  assert.equal(C.SOL_DEV_GENESIS,'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG');
  assert.equal(C.SOL_MAIN_GENESIS,'5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d');
 });
+const historyBody={buyer:pid,action:'requeue-receipt',rail:'chain',order:sol.id,reason:'Repair historically lost journal from authoritative receipt'};
+const historyGold=db.get('/eco/'+pid+'/vg'),historyRevenue=db.get('/meta/revc');
+const historyDry=await paymentOps(env,'ln_1000000000003',historyBody,now);
+await paymentOps(env,'ln_1000000000003',{...historyBody,dryRun:false,confirm:historyDry.confirm},now);
+await reconcilePayments(env,pid,await readEco(env,pid),now);
+check('explicit historical receipt requeue never regrants goods or recounts revenue',()=>{assert.equal(db.get('/eco/'+pid+'/vg'),historyGold);assert.equal(db.get('/meta/revc'),historyRevenue);});
+const {readFileSync}=await import('node:fs');
+const recorded=JSON.parse(readFileSync(new URL('./fixtures/ton-testnet-observed.json',import.meta.url),'utf8'));
+check('recorded public TON testnet schema confirms positive masterchain metadata',()=>{assert.equal(recorded.block.global_id,-3);assert.equal(recorded.block.seqno,recorded.transaction.mc_block_seqno);assert.ok(recorded.master.last.seqno>recorded.transaction.mc_block_seqno);});
+check('recorded unrelated finalized TON transaction cannot pay a fresh order',()=>assert.equal(C.tonEvidence(ton,recorded.transaction,recorded.master,recorded.block,Date.now()),null));
 console.log(JSON.stringify({passed,failed:0,jobFetches,confirmFetches,walletFetches:countFetch,allOutboundMocked:true}));

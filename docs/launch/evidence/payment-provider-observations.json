@@ -1,0 +1,33 @@
+{
+  "observedAt": "2026-10-31T05:17:44.554592+00:00",
+  "stars": {
+    "testBotAvailable": false,
+    "invoiceIssued": false,
+    "providerPurchaseProven": false
+  },
+  "ton": {
+    "network": "testnet",
+    "schemaRead": true,
+    "recordedUnrelatedTransaction": "yt+7tN9Bm6QX0mMZCncU624bE10o3V7snPNKIpTSu0Q=",
+    "masterchainBlock": 94805681,
+    "laterObservedMasterchainBlock": 94806108,
+    "globalId": -3,
+    "fixture": "dev/tests/wtest/fixtures/ton-testnet-observed.json",
+    "ourTransactionsSent": 0,
+    "providerPurchaseProven": false
+  },
+  "solana": {
+    "devnetGenesis": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+    "mainnetGenesis": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
+    "publicGenesisMetadataObserved": true,
+    "devnetFaucetAttempt": {
+      "httpStatus": 410,
+      "jsonRpcCode": 410,
+      "message": "The RPC faucet is closed on this cluster. Request test SOL at https://faucet.solana.com"
+    },
+    "testFundsReceived": false,
+    "transactionsSent": 0,
+    "providerPurchaseProven": false
+  },
+  "boundaries": "Public read-only chain metadata and one free devnet faucet request only. No keys or credentials retained; no production wallet queried; no chain transfer, Stars invoice or refund initiated."
+}
