@@ -43,7 +43,7 @@ async def main():
         check('385 ⭐' in txt and 'get all 62,500 back' in txt,'paid reset offered: $5 in Stars keeps every point: '+txt[:220])
         await pg.evaluate("()=>ACT.respeccur('ton')");await pg.wait_for_timeout(300)
         txt=await pg.evaluate("()=>{const o=findOv('respec');return o?o.box.textContent:''}")
-        check('6.25 TON' in txt,'paid reset in TON: '+txt[:220])
+        check('TON' not in txt and '385 ⭐' in txt and await pg.evaluate("()=>save.payCur")=='stars','Stars only until crypto checkout is certified: '+txt[:220])
         await pg.evaluate("()=>ACT.respeccur('stars')");await pg.wait_for_timeout(300)
         g=await pg.evaluate("()=>document.querySelector('#s-garage .q.respec').textContent")
         check('$5.00' in g,'garage reset row mentions the paid option: '+g)
@@ -62,9 +62,9 @@ async def main():
         await pg.wait_for_timeout(800)
         await pg.evaluate("()=>{save.welcomed=true;save.mp=5;store();closeAll();}")
         pw=dump()['players'][vid]['power']
-        Lg=await pg.evaluate("()=>{const L=JSON.parse(JSON.stringify(STOCK_L));L.up.hull=3;L.up.cannon=2;L.paint='ember';L.c={c:'titan',t:0,q:1,s:false};return L;}")
+        Lg=await pg.evaluate("()=>{const L=JSON.parse(JSON.stringify(STOCK_L));L.paint='ember';L.c={c:'titan',t:0,q:1,s:false};return L;}")
         dev('/__set',{'path':'gh','value':None})   # only this run's ghost in the pool
-        dev('/__set',{'path':'gh/tg_'+str(RUN+903)+'','value':{'n':'Sleepy','L':Lg,'pw':pw,'t':int(time.time()*1000)-30*60000}})
+        dev('/__set',{'path':'gh/tg_'+str(RUN+903)+'','value':{'n':'Sleepy','L':Lg,'pw':int(pw*0.9),'t':int(time.time()*1000)-30*60000}})
         await pg.evaluate("()=>{window.__ms=onMatchStart;save.gtype='arena';save.mode='2v2';save.map='classic';prepareMatch();showVS();}")
         await pg.wait_for_timeout(1500)
         r=await pg.evaluate("()=>({names:units.map(u=>u.name),gh:units.filter(u=>u.gh).map(u=>({n:u.name,team:u.team,cls:u.cls,paint:u.paint,mhp:u.mhp})),vs:(findOv('vs')||{box:{textContent:''}}).box.textContent})")
