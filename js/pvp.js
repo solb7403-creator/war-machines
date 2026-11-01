@@ -38,7 +38,35 @@ function pvpFind(gk){
   if(!r||!r.ok)throw new Error('no seat');
   P.room=r.room;P.tok=r.tok;P.left=r.wait||30000;P.t0=Date.now();
   pvpConnect();
- }).catch(()=>{if(pvp===P&&P.phase==='find')pvpFallback('Live match unavailable right now. Playing AI pilots.');});
+ }).catch(e=>{if(pvp!==P||P.phase!=='find')return;
+  if(e&&e.message==='update'){pvpUpdate(gk);return;}   // the server runs a newer live version: update and come back to this queue, never an AI match
+  pvpFallback('Live match unavailable right now. Playing AI pilots.');});
+}
+// ---- this phone is older than the live server: load the newest build, then rejoin the same live queue ----
+// The queue rides in sessionStorage across the reload (pvpResume, called at boot). If no newer build can be fetched
+// (offline, or the new build isn't published yet) the player is told to reopen the game, with a Retry button.
+const PVP_RESUME='lunar-pvp-resume';
+function pvpUpdate(gk){
+ pvpClose();closeFind();
+ try{sessionStorage.setItem(PVP_RESUME,JSON.stringify({g:gk,t:Date.now()}));}catch(e){}
+ const old=findOv('pvpupd');if(old)closeOverlay(old);
+ const ov=openOverlay('full','<div class="grow"></div><div class="fhead"><b>Updating to the latest version…</b><span>You\'ll go straight back into the live queue.</span></div><div class="grow"></div>',{cls:'find upd',key:'pvpupd'});
+ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
+  if(!j||!j.v||j.v===window.BUILD)throw new Error('no newer build');
+  if(IN_WEB){location.reload();return;}   // the website's loader always fetches the newest build
+  const q=new URLSearchParams(location.search);if(q.get('v')===j.v)q.set('r',String(Date.now()));q.set('v',j.v);   // a URL the cache has never seen; Telegram data in the #hash is kept
+  location.replace(location.pathname+'?'+q.toString()+location.hash);
+ }).catch(()=>{
+  try{sessionStorage.removeItem(PVP_RESUME);}catch(e){}
+  ov.box.innerHTML='<div class="grow"></div><div class="fhead"><b>Update needed: reopen the game</b><span>Live matches need the latest version, and it couldn\'t be loaded. Check your connection, then retry or close and reopen the game.</span></div><div class="grow"></div>'+
+   '<button class="btn btn-go block" data-act="pvpretry" data-arg="'+esc(gk)+'">Retry</button><button class="linkbtn" data-act="pvpupdclose">Close</button>';
+ });
+}
+function pvpRetry(gk){const ov=findOv('pvpupd');if(ov)closeOverlay(ov);if(gk==='quick'?quickOK():pvpEligible(gk)){lastQuick=gk==='quick';pvpFind(gk);}}
+function pvpResume(){   // after an update reload: straight back into the live queue the player asked for
+ let r=null;try{r=JSON.parse(sessionStorage.getItem(PVP_RESUME)||'null');sessionStorage.removeItem(PVP_RESUME);}catch(e){}
+ if(!r||!r.g||Date.now()-r.t>120000)return;
+ setTimeout(()=>{if(state!=='menu'||pvp)return;closeAll();pvpRetry(r.g);},400);
 }
 function findHTML(){
  const P=pvp,q=P.q,left=Math.max(0,Math.ceil((P.left-(Date.now()-P.t0))/1000)),slots=Array.from({length:P.cap},(_,i)=>'<i class="'+(i<P.n?'on':'')+'"></i>').join('');
@@ -130,6 +158,7 @@ const pvpLiveFoes=()=>units.some(u=>u.team!==0&&!u.ai);   // the VS screen only 
 function pvpGo(m){
  const P=pvp,fresh=!P.live;
  Object.assign(P,{chs:Array.isArray(m.chs)?m.chs:ownedChassisClasses(),live:true,me:m.me,team:m.team,flip:m.flip,g:m.g,m:m.m,feat:m.feat,lostAt:null,phase:m.phase==='vs'?'vs':m.phase==='round'?'round':'play'});
+ if(!MAPS[m.map]||MAPS[m.map].isRandom){pvpUpdate(P.q.g);return;}   // a map this build doesn't have: never guess one, update instead
  if(fresh||curMap!==m.map){setMap(m.map);P.crates=null;}
  matchG=m.g;MM={n:isSolo(m.g)?1:MODES[m.m].n,series:!!m.series,mp:save.mp||0};
  if(fresh)units=[];

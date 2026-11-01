@@ -982,6 +982,8 @@ const ACT={
  vsback:()=>{const ov=findOv('vs');if(ov)closeOverlay(ov);},
  pvpai:()=>{if(!pvp)return;let g=pvp.q.g;if(g==='quick'){const gs=quickModes();g=gs[(Math.random()*gs.length)|0];}pvpCancel();closeFind();prepareMatch(g);showVS();},
  pvpcancel:()=>{pvpCancel();closeFind();},
+ pvpretry:a=>pvpRetry(a),
+ pvpupdclose:()=>{const ov=findOv('pvpupd');if(ov)closeOverlay(ov);},
  swapcls:a=>{if(!pvpOn()){clearInterval(vsTimer);vsTimer=null;}switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},   // live: the server's countdown keeps running
  again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},

@@ -60,6 +60,7 @@ node dev/tests/map-nav.mjs 3           # AI on every map, headless: matches fini
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons
+python3 dev/tests/pvp-update.py        # a phone on an old live version is updated and rejoins the same live queue (no AI match); offline it says "Update needed" with Retry; a current phone joins normally
 python3 dev/tests/pvptest.py           # two browser pages play live: matching, VS labels, moves, supers, drops, rounds, quits, AI fill, results
 ```
 
