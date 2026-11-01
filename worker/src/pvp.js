@@ -13,7 +13,9 @@ export const PVP = {
   ROUND_MS: 5500,      // between best-of-3 rounds
   TICK_MS: 1000 / 30,
   SNAP_EVERY: 2,       // a snapshot every 2 ticks: 15 a second
-  DROP_MS: 20000,      // still offline this long when the match ends = left the match
+  DROP_MS: 20000,      // still offline this long when the match ends = left the match (if also away for most of it: AWAY_SHARE)
+  AWAY_SHARE: 0.5,     // away for more than this share of the fight and gone at the end: left. Less: the real result counts
+  CREDIT_TRIES: 5,     // crediting a live result to the record: tries before giving up (a busy database must not cost the points)
   GONE_MS: 15000,      // every player offline this long: the match ends
   TOKEN_MS: 20 * 60000,
 };
@@ -102,6 +104,7 @@ export class RoomCore {
     const s = this.humans().find((x) => x.pid === pid);
     if (!s || (s.quit && this.phase !== "over")) { try { sock.send(JSON.stringify({ k: "x", m: "no seat" })); sock.close(4000, "no seat"); } catch (e) {} return false; }
     if (s.sock && s.sock !== sock) try { s.sock.close(4001, "replaced"); } catch (e) {}
+    if (s.offAt !== null && this.startedAt) s.offMs = (s.offMs || 0) + Math.max(0, this.io.now() - Math.max(s.offAt, this.startedAt));   // time away during the fight
     s.sock = sock; s.on = true; s.offAt = null;
     if (this.phase === "wait") { this.lobbyAll(); this.checkFull(); return true; }
     if (this.phase === "over") { if (s.res) this.sendTo(s, { k: "res", r: s.res }); this.sendTo(s, { k: "end" }); return true; }
@@ -224,7 +227,7 @@ export class RoomCore {
   afterStep() {
     while (this.deaths.length) {   // Last Standing: a live pilot who goes down gets their place now
       const r = this.deaths.shift(), s = this.humans().find((x) => x.pid === r.pid);
-      if (s && !s.done) this.finishSeat(s, { won: false, drawn: false, place: r.place || this.sim.placeOf(r), score: [0, 0] }, s.quit || this.away(s));
+      if (s && !s.done) this.finishSeat(s, { won: false, drawn: false, place: r.place || this.sim.placeOf(r), score: [0, 0] }, s.quit || this.absent(s));
     }
     if (this.endReq) { const f = this.endReq; this.endReq = null; this.finishMatch(f); return; }
     if (this.roundReq) { const w = this.roundReq.w; this.roundReq = null; this.enterRound(w); }
@@ -246,6 +249,14 @@ export class RoomCore {
     });
   }
   away(s) { return !s.on && s.offAt !== null && this.io.now() - s.offAt > this.o.DROP_MS; }
+  // gone at the end AND away for most of the fight: that's a pilot who left (a loss, no points). A weak connection that
+  // dropped near the end, after you fought most of the match, keeps the real result (the AI held your seat meanwhile)
+  absent(s) {
+    if (!this.away(s)) return false;
+    const now = this.io.now(), t0 = this.startedAt || now, fight = Math.max(1, now - t0);
+    const off = (s.offMs || 0) + (s.offAt !== null ? Math.max(0, now - Math.max(s.offAt, t0)) : 0);
+    return off > fight * this.o.AWAY_SHARE;
+  }
   checkGone() {
     if (this.goneT || !(this.phase === "vs" || this.phase === "play" || this.phase === "round")) return;
     if (this.humans().some((s) => s.on)) return;
@@ -295,7 +306,11 @@ export class RoomCore {
       const sb = won ? R.streakPts(g, m, pvs) : 0;
       return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt, opp };
     };
-    const p = Promise.resolve().then(() => this.io.credit(s, calc))
+    const tryCredit = (k) => Promise.resolve().then(() => this.io.credit(s, calc)).catch((e) => {   // a database hiccup: try again, never drop the points
+      if (k + 1 >= this.o.CREDIT_TRIES) throw e;
+      return new Promise((res) => this.io.setTimeout(res, 500 * 2 ** k)).then(() => tryCredit(k + 1));
+    });
+    const p = tryCredit(0)
       .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb }))
       .catch(() => Object.assign(res, { pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true }))
       .then(() => { s.res = res; this.sendTo(s, { k: "res", r: res }); });
@@ -307,7 +322,7 @@ export class RoomCore {
     this.phase = "over";
     if (this.iv) { this.io.clearInterval(this.iv); this.iv = null; }
     this.flush();
-    for (const s of this.humans()) if (!s.done) this.finishSeat(s, this.sim.outcome(this.sim.units[s.idx], forced), s.quit || !s.on && this.away(s));
+    for (const s of this.humans()) if (!s.done) this.finishSeat(s, this.sim.outcome(this.sim.units[s.idx], forced), s.quit || !s.on && this.absent(s));
     // the ghosts' owners get a report (no points)
     const gl = this.sim.units.filter((u) => u.gh && u.gid).map((u) => { const o = this.sim.outcome(u, forced); return [u.gid, { won: o.won, drawn: o.drawn, dmg: u.st ? u.st.dmg : 0, kills: u.st ? u.st.kills : 0 }]; });
     if (gl.length && this.io.ghostReport) this.pending.push(Promise.resolve().then(() => this.io.ghostReport(gl)).catch(() => {}));

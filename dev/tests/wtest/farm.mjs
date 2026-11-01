@@ -36,6 +36,7 @@ function initData(user, age = 0) {
 const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify(body) }), env); return [r.status, await r.json().catch(() => null)]; };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const E = (pid) => db.get('/eco/' + pid);
+const setEco = (pid, f) => f(db.root.eco[pid]);
 const reasons = (pid) => Object.keys((db.get('/flags/' + pid) || {}).r || {});
 const linked = (a, b) => db.get(`/lk/${a}/${b}`);
 const J = { id: 999, username: 'LunarBattle' };
@@ -81,11 +82,18 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   t(r.en.error === 'proof' && E(pid).pfw === 'walls', 'parked inside the command module: refused (' + E(pid).pfw + ')');
   r = await play(U, T0 + 8 * MIN, { pf: fakeRec({ g: 'arena', m: '2v2', won: false, dur: 50, dmg: 2000 }), won: true });
   t(r.en.error === 'proof' && E(pid).pfw === 'result', 'a win the record shows as a loss: refused (' + E(pid).pfw + ')');
-  r = await play(U, T0 + 10 * MIN, { pf: fakeRec({ g: 'arena', m: '2v2', won: true, dur: 170, dmg: 2000 }), won: true, dur: 60 });
-  t(r.en.error === 'proof' && E(pid).pfw === 'time', 'a 170 s fight sent 60 s after the ticket: refused (' + E(pid).pfw + ')');
   r = await play(U, T0 + 12 * MIN, { pf: fakeRec({ g: 'arena', m: '1v1', won: true, dur: 50, dmg: 2000 }), won: true });
   t(r.en.error === 'proof' && E(pid).pfw === 'roster', 'a 1v1 record for a 2v2 ticket: refused (' + E(pid).pfw + ')');
   t((E(pid).earned || 0) === 0, 'none of the forged results scored');
+  // a fight longer than its ticket's clock is what an honest match whose ticket arrived late looks like: it counts only as a
+  // late result (record verified, LATE_DAY a day, after the last scored match), never as an on-time one
+  setEco(pid, (S) => { S.lt = { d: Math.floor((T0 + 10 * MIN) / 86400000), n: eco.ECO.LATE_DAY }; });
+  r = await play(U, T0 + 10 * MIN, { pf: fakeRec({ g: 'arena', m: '2v2', won: true, dur: 170, dmg: 2000 }), won: true, dur: 60 });
+  t(r.en.error === 'late' && (E(pid).earned || 0) === 0, 'a 170 s fight sent 60 s after the ticket, late allowance used up: refused (' + r.en.error + ')');
+  setEco(pid, (S) => { S.lt.n = 0; });
+  r = await play(U, T0 + 10.5 * MIN, { pf: mutate(fakeRec({ g: 'arena', m: '2v2', won: true, dur: 170, dmg: 2000 }), (b, sz) => { for (let s = 0; s < b.length / sz; s++) b[s * sz] = s % 2 ? 20 : 180; }), won: true, dur: 60 });
+  t(r.en.error === 'proof' && (E(pid).earned || 0) === 0, 'a late result with a forged record: refused even in flag mode (' + E(pid).pfw + ')');
+  setEco(pid, (S) => { delete S.lt; delete S.iv; });
   r = await play(U, T0 + 14 * MIN, { dmg: 2500 });
   t(r.en.ok && r.en.res.pts > 0, 'a believable record scores ' + JSON.stringify(r.en).slice(0, 120));
   // Jake can switch the check to flag-only from the admin sheet (if it ever stopped a real player)

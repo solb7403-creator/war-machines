@@ -92,10 +92,14 @@ function roundBanner(){
 // result goes back with that ticket. The server works out the points itself from the shared rules (it never takes a
 // number from the phone), so the phone shows the same formula right away and swaps in the server's numbers when they land.
 let mTicket=null;
-// The ticket request is retried for a few seconds (a dropped request, or the phone pausing Telegram in the background,
-// used to cost the whole match). Only within TICKET_RETRY_MS: a ticket that lands much later than the match started
-// wouldn't match the match record's length. A server that says no gives its reason (T.err) instead of "no connection"
-const TICKET_RETRY_MS=4000,TICKET_TRY_MS=3500;
+// A real match always counts. The ticket is asked for at the VS screen and keeps being asked for in the background for the
+// whole match (a slow server, a weak signal or Telegram in the background never cost the match). The fight never waits on
+// it: the VS screen waits at most TICKET_VS_WAIT for the server's loadout and ghosts. Each match has its own id (cid): asking
+// again gets the same ticket. A result with no ticket at the end goes to the server anyway, with its match record, and the
+// server checks the record instead (worker/src/eco.js matchEnd). No connection at the end: it waits in save.mq.
+const TICKET_TRY_MS=8000,TICKET_VS_WAIT=2500,TICKET_END_WAIT=4000;
+const newCid=()=>Array.from({length:16},()=>'0123456789abcdef'[(Math.random()*16)|0]).join('');
+const waitMs=ms=>new Promise(res=>setTimeout(res,ms));
 function apiTimed(path,body,ms){
  const ac=typeof AbortController==='function'?new AbortController():null,tm=ac?setTimeout(()=>ac.abort(),ms):0;
  return apiFetch(path,body,ac?ac.signal:undefined)
@@ -103,13 +107,13 @@ function apiTimed(path,body,ms){
 }
 function matchStart(){
  mTicket=null;if(!SRV_ECO)return;
- const T={tok:null,err:null,g:matchG,m:modeKey(),t0:Date.now()},body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout(),labRev:save.lab&&save.lab.rev,fv:FIT_VERSION,pv:1,did:deviceId(),dh:deviceHash()};   // pv: this phone sends a match record
+ const T={tok:null,err:null,hard:null,g:matchG,m:modeKey(),t0:Date.now(),cid:newCid(),done:false};
+ const body={g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout(),labRev:save.lab&&save.lab.rev,fv:FIT_VERSION,pv:1,did:deviceId(),dh:deviceHash(),cid:T.cid};   // pv: this phone sends a match record
  const ask=async()=>{
-  for(let k=0;;k++){
-   if(mTicket!==T&&k>0)return null;   // a newer match replaced this one
+  const live=()=>!T.done&&(T.ending||(mTicket===T&&state!=='menu'));   // until the match is queued, or abandoned on the VS screen
+  for(let k=0;live();k++){
    let out=null;
-   const last=Date.now()-T.t0+TICKET_TRY_MS>TICKET_RETRY_MS+TICKET_TRY_MS;   // the last try waits as long as it takes (a slow network)
-   try{out=await apiTimed('/api/match/start',body,last?20000:TICKET_TRY_MS);}catch(e){out=null;}   // no answer: network
+   try{out=await apiTimed('/api/match/start',body,TICKET_TRY_MS);}catch(e){out=null;}   // no answer: network
    const r=out&&out.j;
    if(r&&r.tok){T.tok=r.tok;T.err=null;
     if(mTicket===T&&state==='vs'&&r.L){
@@ -119,15 +123,18 @@ function matchStart(){
      if(r.E)applyEco(r.E);populatePreparedMatch();
      const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
     }
-if(Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}
-   if(out&&out.st<500&&out.st!==429){T.err=(r&&r.error)||'server';return r;}   // the server said no: retrying won't change it
+    if(Array.isArray(r.gh)&&r.gh.length&&mTicket===T&&state==='vs')placeGhosts(r.gh);return r;}
+   // the server says this match can't start as it is (garage changed on another device, out of date): the VS screen says so
+   if(out&&(out.st===409||(r&&r.error==='update'))){T.hard=T.err=(r&&r.error)||'update';return r;}
+   if(out&&out.st===400){T.err=(r&&r.error)||'server';return r;}   // a mode or map this server doesn't know yet: the result goes without a ticket
    T.err=out?(out.st===429?'rate':'server'):'offline';
-   if(last||Date.now()-T.t0>TICKET_RETRY_MS)return null;
-   await new Promise(res=>setTimeout(res,Math.min(2000,600*(k+1))));
+   if(live())await waitMs(Math.min(10000,1000*Math.pow(1.6,k)));   // and again, for as long as the match lasts
   }
+  return null;
  };
- T.p=flushMatches().then(ask).catch(()=>null);
  mTicket=T;
+ T.p=ask().catch(()=>null);   // never behind flushMatches(): old results go in parallel
+ flushMatches();
 }
 // ghosts: offline pilots' real tanks (sent with the ticket) take AI seats, enemies first. The VS screen shows who they are
 // Only ghosts clearly weaker than your tank (AI_GHOST_HI, rules.js), and at most one on the enemy team: after the first enemy
@@ -140,43 +147,61 @@ function placeGhosts(list){
  list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g);}catch(e){}});
  const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
 }
-// results waiting for the server (no connection when the match ended): sent in order, each ticket counts once
-let mqBusy=null;
+// results waiting for the server: sent in order, each counts once (the server gives a resent one the same answer).
+// No connection, a busy server or the hourly limit: the result waits here and goes again later. Never thrown away
+let mqBusy=null,mqTimer=0;
 function flushMatches(){
  if(!SRV_ECO||!save.mq||!save.mq.length)return Promise.resolve();
  if(mqBusy)return mqBusy;
  mqBusy=(async()=>{
   while(save.mq&&save.mq.length){
-   const it=save.mq[0];let r;
-   try{r=await api('/api/match/end',{tok:it.tok,r:it.r});}catch(e){break;}   // offline: try again later
+   const it=save.mq[0];
+   if(it.hold&&Date.now()<it.hold)break;   // the server asked for it later (hourly limit)
+   const ago=Math.max(0,(Date.now()-(it.endAt||Date.now()))/1000);
+   let out=null;
+   try{out=await apiTimed('/api/match/end',{tok:it.tok||undefined,cid:it.cid,r:Object.assign({},it.r,{cid:it.cid,ago})},60000);}catch(e){out=null;}
+   // no answer, a busy server (5xx) or too many requests (429): it waits and goes again. Any other answer is final
+   if(!out||out.st>=500||out.st===429||!out.j){matchScored(it.lt||it.tok,{error:out?'busy':'pending'});break;}
+   // a result with no ticket refused as "ticket" can only be a server from before this version (a release going out): later
+   if(out.st===400&&!it.tok&&out.j.error==='ticket'){matchScored(it.lt||it.tok,{error:'busy'});break;}
+   const r=out.j;
+   if(r&&r.hold){it.hold=Date.now()+Math.max(60000,Math.min(3600000,(r.retry||600000)+5000));store();matchScored(it.lt||it.tok,r);break;}
    save.mq.shift();store();
    if(r&&r.E&&!(save.mq&&save.mq.length))applyEco(r.E);
-   matchScored(it.tok,r);
+   matchScored(it.lt||it.tok,r);
   }
   mqBusy=null;
-  if(save.mq&&save.mq.length)setTimeout(()=>flushMatches(),30000);
+  clearTimeout(mqTimer);
+  if(save.mq&&save.mq.length){const h=save.mq[0].hold;mqTimer=setTimeout(()=>flushMatches(),h?Math.max(5000,h-Date.now()):20000);}
  })();
  return mqBusy;
 }
-const MATCH_WHY={rate:'too many requests, try again in a minute',server:'the server was busy at the start',mode:'this mode isn’t open right now',map:'this map isn’t open right now',proof:'the match couldn’t be verified',update:'update the game to keep scoring',fast:'the match ended too fast',expired:'the match ticket expired',ticket:'the match ticket was already used',hourly:'too many matches this hour',offline:'no connection at the start'};
+if(typeof addEventListener==='function'){addEventListener('online',()=>flushMatches());}
+if(typeof document!=='undefined')document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushMatches();});
+const MATCH_WHY={mode:'this mode isn’t open right now',map:'this map isn’t open right now',proof:'the match couldn’t be verified',fast:'the match ended too fast',expired:'it was more than a day old',ticket:'the match ticket was already used',overlap:'it overlaps another match on this account',late:'too many matches without a ticket today'};
 function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
  const L=lastResult;if(!L||L.tok!==tok)return;
  if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
+ else if(r&&r.hold&&r.error==='hourly')Object.assign(L,{note:'Saved: this hour’s match limit is reached, so it counts '+(r.retry?'in about '+Math.max(1,Math.ceil(r.retry/60000))+' min':'soon')});
+ else if(r&&(r.hold||r.error==='busy'))Object.assign(L,{note:'Saved: the server is busy, it will count shortly'});
+ else if(r&&r.error==='pending')Object.assign(L,{note:'Saved: it will count when you’re back online'});
+ else if(r&&r.error==='saving')Object.assign(L,{note:'Saving your result…'});
  else{Object.assign(L,{awarded:0,capped:false,note:'Not counted: '+(MATCH_WHY[r&&r.error]||'the server said no')});}
  if(typeof uiDirty==='function')uiDirty();
  const ov=typeof findOv==='function'&&findOv('res');if(ov&&ov.box&&typeof resultsHTML==='function'){ov.box.innerHTML=resultsHTML(L);}
 }
+// the end of a match: the result goes into the queue with this match's id and what was played. If the ticket is still on
+// its way it gets a few more seconds; without one the server checks the match record instead
 function matchEnd(res){
  const T=mTicket;mTicket=null;
  if(!SRV_ECO)return;
- if(!T){if(!res.quit&&lastResult)matchScored(lastResult.tok,{error:'offline'});return;}
- const tok='p'+Math.random().toString(36).slice(2);if(lastResult&&!res.quit)lastResult.tok=tok;
- T.p.then(()=>{
-  if(!T.tok){if(lastResult&&lastResult.tok===tok)matchScored(tok,{error:T.err||'offline'});applyEcoSoon();return;}
-  if(lastResult&&lastResult.tok===tok)lastResult.tok=T.tok;
-  save.mq=(save.mq||[]).concat({tok:T.tok,r:res});store();
-  flushMatches();
- });
+ const lt='p'+Math.random().toString(36).slice(2),endAt=Date.now();if(lastResult&&!res.quit)lastResult.tok=lt;
+ const r=Object.assign({},res,{g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout()});
+ const queue=()=>{if(T)T.done=true;
+  save.mq=(save.mq||[]).concat({tok:(T&&T.tok)||null,cid:T?T.cid:newCid(),lt,r,endAt});store();
+  flushMatches();};
+ if(!res.quit)matchScored(lt,{error:'saving'});
+ if(T&&!T.tok&&!T.hard){T.ending=true;Promise.race([T.p,waitMs(TICKET_END_WAIT)]).then(queue);}else queue();
 }
 function applyEcoSoon(){if(typeof doSync==='function')setTimeout(()=>doSync(false),300);}   // a result the server won't count: get its record back
 function localEnd(forced){
