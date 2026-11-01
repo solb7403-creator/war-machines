@@ -16,5 +16,5 @@ Resume here if a session ends. Owner works from iPhone only: no terminal steps f
 
 ## Status log
 - Phase 1 SHIPPED: PR #25 merged as `3bd77d0` (rollback: revert it, back to `db57253`). Deploy run 41269136466 green; live `/pvp/health` = `{"ok":true}`; build `20261101031510`; Firebase rules (indexes `rfs`, `ads`) deployed.
-- Phase 2 in progress on `fix/prelaunch-qa`: copy fixes, Stars-only checkout gate (`CRYPTO_PAY=false` in js/core.js), results squad-bonus line, VS no-op rebuild guard.
-- Phase 3: this sandbox cannot reach api.telegram.org, testnet.toncenter.com, api.devnet.solana.com, api.cloudflare.com (proxy 403) -> not ready.
+- Phase 2 SHIPPED: PR #26 merged as `6f969df` (rollback: revert it, back to `3bd77d0`). Deploy run 41270977491 green; live `/pvp/health` ok; live version `20261101034744` = repo. Report: `docs/launch/PRELAUNCH_QA.md`. TON/SOL checkout off in the client (`CRYPTO_PAY=false`, js/core.js) until Phase 3 certifies it.
+- Phase 3: this sandbox cannot reach api.telegram.org, testnet.toncenter.com, api.devnet.solana.com, api.cloudflare.com (proxy 403) -> not ready. Skipped. To resume: allow those hosts in the environment's Network access (or run Phase 3 from GitHub Actions), confirm the `STAGING_*` secrets, then follow the Phase 3 section above. PR #21 is untouched.
