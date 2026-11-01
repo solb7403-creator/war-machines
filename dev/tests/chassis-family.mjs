@@ -7,8 +7,8 @@ import {readFileSync} from 'node:fs';
 import {createContext,runInContext} from 'node:vm';
 const root=new URL('../../',import.meta.url),ctx=createContext({console,URL,Float32Array,Uint8Array});
 for(const p of ['js/vendor/three.lunar.min.js','js/rules.js','js/game.js','js/models3d.js','js/equipment3d.js'])runInContext(readFileSync(new URL(p,root),'utf8'),ctx);
-runInContext('globalThis.X={H:Equipment3D,M:M3,P:PAINTS.stock,CH,R,TANK_VIS:1.12,WEAPONS,tankOf,STOCK_L};',ctx);
-const {H,M,P,CH,R,TANK_VIS,WEAPONS,tankOf,STOCK_L}=ctx.X;
+runInContext('globalThis.X={H:Equipment3D,M:M3,P:PAINTS.stock,CH,R,TANK_VIS:1.12,WEAPONS,tankOf,STOCK_L,hitR,bodyR};',ctx);
+const {H,M,P,CH,R,TANK_VIS,WEAPONS,tankOf,STOCK_L,hitR,bodyR}=ctx.X;
 const CLS=['scout','vanguard','titan'],NAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
 const statsBefore=JSON.stringify({CH,W:WEAPONS,R,stock:tankOf(STOCK_L,1)});
 // all triangles of a kit (positions only) for one renderer
@@ -55,8 +55,14 @@ for(const [a,b] of [['scout','vanguard'],['vanguard','titan']])for(const f of ['
 for(const [a,b] of [['scout','vanguard'],['vanguard','titan']]){const ra=by(a).reduce((s,r)=>s+r.area,0)/3,rb=by(b).reduce((s,r)=>s+r.area,0)/3;assert.ok(rb/ra>1.45,`${b} footprint clearly larger than ${a}: x${(rb/ra).toFixed(2)}`);}
 // visual only: no gameplay number moved
 assert.equal(JSON.stringify({CH,W:WEAPONS,R,stock:tankOf(STOCK_L,1)}),statsBefore);assert.equal(R,.7);
+// class hitboxes: one body radius per class for every tier, the boss keeps its own shot radius and R for area effects
+const HB={scout:.9,vanguard:1,titan:1.12};
+for(const cls of CLS){assert.equal(CH[cls].hb,HB[cls]);for(let t=0;t<3;t++){const L={...structuredClone(STOCK_L),c:{c:cls,t,q:1,s:false}},u=tankOf(L,1);u.cls=cls;assert.ok(Math.abs(hitR(u)-R*HB[cls])<1e-12&&hitR(u)===bodyR(u),cls+t+' class hit radius');}}
+assert.equal(hitR({boss:true,hr:1.2,cls:'titan'}),1.2);assert.equal(bodyR({boss:true,hr:1.2,cls:'titan'}),R);
+console.log('hit circles (shot radius incl. 0.12 bullet):',CLS.map(c=>c+' '+(R*HB[c]+.12).toFixed(3)).join(', '));
+for(const r of table){const hc=R*HB[r.cls]+.12;r.sideGap=r.side-hc;r.noseGap=r.nose-hc;}
 assert.deepEqual(JSON.parse(JSON.stringify(M.MOON_SCALE)),{titan:.80,vanguard:.76,scout:.72},'approved Moonbeam class scale untouched');
-console.log('name      model L  W    H    ring | battle L  W    H    nose side  footprint (hit circle r=0.82)');
-for(const r of table)console.log(`${r.name.padEnd(9)} ${r.len.toFixed(2)} ${r.wid.toFixed(2)} ${r.hgt.toFixed(2)} ${r.ty.toFixed(3)} | ${r.wlen.toFixed(2)} ${r.wwid.toFixed(2)} ${r.whgt.toFixed(2)} ${r.nose.toFixed(2)} ${r.side.toFixed(2)} ${r.area.toFixed(2)}`);
+console.log('name      model L  W    H    ring | battle L  W    H    nose side  footprint | side/nose past class hit circle');
+for(const r of table)console.log(`${r.name.padEnd(9)} ${r.len.toFixed(2)} ${r.wid.toFixed(2)} ${r.hgt.toFixed(2)} ${r.ty.toFixed(3)} | ${r.wlen.toFixed(2)} ${r.wwid.toFixed(2)} ${r.whgt.toFixed(2)} ${r.nose.toFixed(2)} ${r.side.toFixed(2)} ${r.area.toFixed(2)} | ${r.sideGap>=0?'+':''}${r.sideGap.toFixed(2)} ${r.noseGap>=0?'+':''}${r.noseGap.toFixed(2)}`);
 const cm=c=>by(c).reduce((s,r)=>s+r.area,0)/3;console.log('mean battle footprint  scout',cm('scout').toFixed(2),' vanguard',cm('vanguard').toFixed(2),' titan',cm('titan').toFixed(2),' ratios',(cm('vanguard')/cm('scout')).toFixed(2),(cm('titan')/cm('vanguard')).toFixed(2));
-console.log('PASS',checked,'chassis builds (HF high/low + foundation, plain + Lunar): class ladder, distinct silhouettes, gun traverse clear, grounded treads, track uniforms, gameplay untouched');
+console.log('PASS',checked,'chassis builds (HF high/low + foundation, plain + Lunar): class ladder, distinct silhouettes, gun traverse clear, grounded treads, track uniforms, class hitboxes, no other gameplay number moved');

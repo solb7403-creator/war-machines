@@ -9,6 +9,10 @@ const SRV=(typeof HOST!=='undefined'&&HOST)||null;   // the live-match server's 
 function ev(){const a=Array.prototype.slice.call(arguments);if(SRV)SRV.ev(a);else if(typeof onSimEv==='function')onSimEv(a);}
 const random=(SRV&&(SRV.random||(Number.isInteger(SRV.seed)?rng32(SRV.seed):null)))||Math.random;
 const W=20,H=32,R=0.7,MATCH=180;
+// the body a hit lands on: the boss keeps its own hr; tanks use their class factor (CH.hb). Movement collisions use R.
+const hitR=v=>v.hr||R*(CH[v.cls]?.hb||1);
+// the same body for supers, shells and hazards; the boss there stays on R exactly as before (its hr is for shots only)
+const bodyR=v=>v.boss?R:R*(CH[v.cls]?.hb||1);
 const TC=['#4d9fff','#ff4d5e'];   // team colors in battle: blue (your team) vs red (foes)
 const tcol=t=>t===0?TC[0]:TC[1];   // Last Standing has 6 teams: every tank that isn't on your team is red
 // ---- two-level bridge (Overpass): elev 0 = ground, 1 = on the deck/ramps ----
@@ -353,7 +357,7 @@ function moveBullets(dt){
    if(q.life>0&&inRock(q.x,q.y))q.life=0;
    if(q.x<0||q.x>W||q.y<0||q.y>H)q.life=0;
    let t=null,bd=1e9;
-   for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<(v.hr||R)+0.12&&d<bd){bd=d;t=v;}}
+   for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<hitR(v)+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
@@ -473,9 +477,9 @@ function botDodge(u){
  for(const v of units){
   if(v.team===u.team||v.hp<=0||!v.sup||v.sup.dodged&&v.sup.dodged[u.id])continue;
   const S=SUP[v.sup.w];let inDanger=false,px=0,py=0;
-  if(S.kind==='nova'){const d=Math.hypot(u.x-v.x,u.y-v.y);if(d<S.r+R){inDanger=true;px=(u.x-v.x)/(d||1);py=(u.y-v.y)/(d||1);}}
+  if(S.kind==='nova'){const d=Math.hypot(u.x-v.x,u.y-v.y);if(d<S.r+bodyR(u)){inDanger=true;px=(u.x-v.x)/(d||1);py=(u.y-v.y)/(d||1);}}
   else{const ca=Math.cos(v.sup.ang),sa=Math.sin(v.sup.ang),ex=u.x-v.x,ey=u.y-v.y,along=ex*ca+ey*sa,side=-ex*sa+ey*ca,wd=S.kind==='beam'?S.w:S.r*0.6,ln=S.kind==='beam'?S.len:S.range;
-   if(along>0&&along<ln&&Math.abs(side)<wd+R){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
+   if(along>0&&along<ln&&Math.abs(side)<wd+bodyR(u)){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
   if(dashOk&&random()<0.5)useDash(u,px,py);
@@ -494,7 +498,7 @@ function fireSuper(r,S){
   for(const e of foesOf(r)){
    const ex=e.x-r.x,ey=e.y-r.y;
    const along=ex*Math.cos(ang)+ey*Math.sin(ang),side=Math.abs(-ex*Math.sin(ang)+ey*Math.cos(ang));
-   if(along>0&&along<=S.len&&side<S.w){
+   if(along>0&&along<=S.len&&side<S.w+bodyR(e)-R){   // beam width is tuned for a Vanguard body
     hurt(e,S.dmg);hit=true;
     ev('B',e.x,e.y,1.4,0.25,'#ffd24a');   // impact flare
     ev('I',e.x,e.y,r.sup.w,r.team);   // super impact: an explosion where it lands (looks and sound only)
@@ -514,7 +518,7 @@ function fireSuper(r,S){
   let hit=false;
   for(const e of foesOf(r)){
    const d=Math.hypot(e.x-r.x,e.y-r.y);
-   if(d<S.r+R){hurt(e,S.dmg*(1-0.4*(d/S.r)));hit=true;}
+   if(d<S.r+bodyR(e)){hurt(e,S.dmg*(1-0.4*(d/S.r)));hit=true;}
   }
   if(!hit)ev('n',r.x,r.y-1.6,'MISSED','#c0cad4',1.2);
  }
@@ -529,8 +533,8 @@ function explode(s){
  ev('S',9,0.45);
  for(const e of foesOf(r)){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
-  if(d<s.r+R&&lvOK(r,e)){
-   const fall=1-0.65*(d/(s.r+R));
+  if(d<s.r+bodyR(e)&&lvOK(r,e)){
+   const fall=1-0.65*(d/(s.r+bodyR(e)));
    const aE=armor(e),pre=s.dmg*fall*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e);if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
    if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}
   }
@@ -554,7 +558,7 @@ function superTick(dt){
    if(s.x<0||s.x>W||s.y<0||s.y>H)boom=true;
    for(const [rx,ry,rw,rh] of ((s.owner.elev||0)===1?baseWalls:walls))if(s.x>rx&&s.x<rx+rw&&s.y>ry&&s.y<ry+rh)boom=true;
    if(inRock(s.x,s.y))boom=true;
-   if(!boom)for(const v of units){if(v.team===s.owner.team||v.hp<=0)continue;if(Math.hypot(s.x-v.x,s.y-v.y)<R+0.55){boom=true;break;}}
+   if(!boom)for(const v of units){if(v.team===s.owner.team||v.hp<=0)continue;if(Math.hypot(s.x-v.x,s.y-v.y)<bodyR(v)+0.55){boom=true;break;}}
   }
   if(boom)explode(s);
  }
@@ -779,7 +783,7 @@ function bossHit(w){   // a megatank shell or stomp lands: hits every tank on yo
  ev('m',w.x,w.y,w.r);
  for(const u of units){
   if(u.hp<=0||u.boss||underDeck(u))continue;
-  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+R*0.5){const a=armor(u);if(u.st)u.st.arm+=w.dmg*a;takeHit(u,w.dmg*(1-a),w.src&&w.src.hp>0?w.src:null,w.r>2?'stomp':'shell',1);}
+  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+bodyR(u)*0.5){const a=armor(u);if(u.st)u.st.arm+=w.dmg*a;takeHit(u,w.dmg*(1-a),w.src&&w.src.hp>0?w.src:null,w.r>2?'stomp':'shell',1);}
  }
  hitCratesNear(w.x,w.y,w.r,w.dmg);
 }
@@ -1015,7 +1019,7 @@ function meteorHit(w){
  ev('m',w.x,w.y,w.r);
  for(const u of units){
   if(u.hp<=0||underDeck(u))continue;
-  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+R*0.5){if(u.st)u.st.arm+=METEOR_DMG*armor(u);takeHit(u,METEOR_DMG*(1-armor(u)),null,'meteor',3);}
+  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+bodyR(u)*0.5){if(u.st)u.st.arm+=METEOR_DMG*armor(u);takeHit(u,METEOR_DMG*(1-armor(u)),null,'meteor',3);}
  }
  hitCratesNear(w.x,w.y,w.r,METEOR_DMG);
 }
