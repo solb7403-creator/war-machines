@@ -2,3 +2,4 @@ __pycache__/
 worker/src/sim.gen.js
 worker/site-assets/
 worker/node_modules/
+worker/package-lock.json
