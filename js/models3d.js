@@ -211,7 +211,7 @@ const CHASSIS_VISUALS={
 };
 // Hull-plate fitting seat [x,y,z] on each family chassis' own fender/shelf surface (the Defender keeps its original seat).
 const FAM_FIT={'scout:0':[-.13,.44,.58],'scout:1':[-.55,.475,.63],'scout:2':[-.06,.425,.58],'vanguard:1':[-.30,.645,.88],'vanguard:2':[-.40,.72,1.12],
- 'titan:0':[-.30,.84,1.0],'titan:1':[-.40,.90,1.08],'titan:2':[-.80,.875,1.06]};
+ 'titan:0':[-.30,.84,1.0],'titan:1':[-.40,.90,1.08],'titan:2':[-.72,.90,1.06]};
 const WEAPON_VISUALS={
  pulse:[{tip:1.88,y:.245,bore:.087,kind:'segmented',width:.46},{tip:1.94,y:.25,bore:.10,kind:'capacitor',width:.49},{tip:2.02,y:.26,bore:.12,kind:'accelerator',width:.52}],
  twin:[{tip:1.74,y:.22,bore:.047,kind:'feed',width:.45},{tip:1.88,y:.23,bore:.055,kind:'drums',width:.50},{tip:1.98,y:.24,bore:.06,kind:'rotary',width:.55}],
@@ -566,53 +566,64 @@ function famChassis(cls,tier,P,team,gems,lunar,S){
   grille(F,-.78,o.deck+.004,0,.32,.50,6);head(1.34,.66,.60,.12);tierBar(-.30,o.deck+.016,.78);
   anchor={hood:[.76,o.deck+.02],side:[-.85,.45,1.318]};coreAt=[-1.24,[-.25,0,.25]];
  }else{
-  // COLOSSUS "Citadel Dreadnought": the flagship. Four pointed armoured nacelles hung on articulated A-frame pylons
-  // with hydraulic rams, a stepped faceted keel with glowing conduits, layered shoulder wings, a low spear prow,
-  // twin stern thrusters and a swept crown of fins: the largest, most complex silhouette in the game.
+  // COLOSSUS "Dreadnought": the Epic flagship. A stepped, angular warship rather than a slab: a dark ram prow under a
+  // three-plate stepped glacis, an octagonal citadel with sloped walls, terraced sponsons over four track pods (the front
+  // pair raked down toward the bow), a deep waist cutaway exposing the pylons and hydraulics, layered skirts, a raised
+  // command bridge and an engine deck with twin exhaust stacks per side. Paint panels / gunmetal frame / trim carry the shape.
   const pc=.80;drive({length:1.42,wheels:4,road:.20,end:.24},[-pc,pc]);
-  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2,glow='#5fd4ff';
-  block([[-1.52,-zi+.03],[1.34,-zi+.03],[1.55,-.55],[1.55,.55],[1.34,zi-.03],[-1.52,zi-.03]],[[-1.50,-zi+.05],[1.30,-zi+.05],[1.46,-.53],[1.46,.53],[1.30,zi-.05],[-1.50,zi-.05]],.18,.67,'paint',F.paint);
-  block([[1.30,-.42],[1.62,0],[1.30,.42]],[[1.30,-.30],[1.52,0],[1.30,.30]],.20,.42,'paint',F.plate);
-  // stepped keel: a raked lower tier and an inset upper citadel, both pointed fore and aft
-  block([[-1.58,-.62],[-1.30,-.96],[1.08,-.96],[1.56,-.36],[1.62,0],[1.56,.36],[1.08,.96],[-1.30,.96],[-1.58,.62]],[[-1.50,-.52],[-1.24,-.84],[.98,-.84],[1.40,-.30],[1.46,0],[1.40,.30],[.98,.84],[-1.24,.84],[-1.50,.52]],tt,.80,'paint',F.plate);
-  block([[-1.40,-.50],[-1.16,-.74],[.86,-.74],[1.20,-.34],[1.26,0],[1.20,.34],[.86,.74],[-1.16,.74],[-1.40,.50]],[[-1.34,-.40],[-1.12,-.62],[.76,-.62],[1.06,-.28],[1.10,0],[1.06,.28],[.76,.62],[-1.12,.62],[-1.34,.40]],.795,o.deck,'paint',F.paint);
-  // layered chevron beak on the lower tier's prow
-  const chev=(xa,w,d,y,t,c)=>{const p=[[xa,0],[xa-.46,w],[xa-.46-d,w],[xa-d,0],[xa-.46-d,-w],[xa-.46,-w]];T.put(T.plate(p,t,.01),'paint',c,[0,y,0]);};
-  chev(1.50,.40,.12,.74,.04,F.edge);chev(1.36,.36,.12,.78,.04,F.plate);
+  const zi=o.trackZ-o.trackW/2,glow='#5fd4ff',gm='#4b5661',gm2='#323b46';
+  const yT=(y1,x0,x1,drop,x)=>y1-drop*Math.max(0,Math.min(1,(x-x0)/(x1-x0)));
+  // gunmetal keel between the pods and a dark faceted ram prow under the glacis
+  block([[-1.50,-zi+.03],[1.28,-zi+.03],[1.48,-.50],[1.48,.50],[1.28,zi-.03],[-1.50,zi-.03]],[[-1.48,-zi+.05],[1.24,-zi+.05],[1.42,-.48],[1.42,.48],[1.24,zi-.05],[-1.48,zi-.05]],.18,.70,'steel',gm);
+  block([[1.18,-.46],[1.58,-.16],[1.66,0],[1.58,.16],[1.18,.46]],[[1.18,-.40],[1.54,-.12],[1.61,0],[1.54,.12],[1.18,.40]],.18,.35,'steel',gm2);
+  // stepped multi-plate glacis: three arrowhead plates, each raked toward the bow and stepped back from the one below
+  const G=[[.62,.74,.34,1.00,1.62,.18,'paint',F.paint,[[.62,.74],[1.24,.66],[1.58,.20],[1.62,0]],[[.62,.70],[1.20,.62],[1.50,.18],[1.54,0]]],
+   [.50,.82,.70,.90,1.44,.12,'paint',F.plate,[[.50,.68],[1.06,.60],[1.40,.18],[1.44,0]],[[.50,.64],[1.02,.56],[1.34,.15],[1.38,0]]],
+   [.36,.90,.80,.75,1.20,.10,'paint',F.paint,[[.36,.64],[.86,.56],[1.16,.16],[1.20,0]],[[.36,.60],[.82,.52],[1.10,.13],[1.14,0]]]];
+  const full=h=>h.concat(h.slice(0,-1).reverse().map(([x,z])=>[x,-z]));
+  for(const [,y1,y0,x0,x1,drop,m,c,bp,tp] of G){block(full(bp),full(tp),y0,y1,m,c,[x0,x1,drop,y0+.04,y1-y0-.04]);
+   const e=tp.slice(1);for(let i=0;i<e.length-1;i++)for(const s of [-1,1])pipe([e[i][0],yT(y1,x0,x1,drop,e[i][0])+.004,s*e[i][1]],[e[i+1][0],yT(y1,x0,x1,drop,e[i+1][0])+.004,s*e[i+1][1]],.007,F.edge);}
+  // octagonal citadel with sloped walls, inset roof plates split by lit seams
+  block([[-1.00,-.78],[-.80,-.86],[.40,-.86],[.70,-.66],[.70,.66],[.40,.86],[-.80,.86],[-1.00,.78]],[[-.96,-.68],[-.76,-.76],[.36,-.76],[.62,-.58],[.62,.58],[.36,.76],[-.76,.76],[-.96,.68]],tt-.005,o.deck,'paint',F.paint);
+  for(const s of [-1,1]){slab(famSide([[-.90,.48],[.26,.48],[.48,.60],[.32,.72],[-.72,.72],[-.90,.62]],s),o.deck-.02,.04,'paint',F.plate,.01);pipe([-.88,o.deck+.005,s*.455],[.26,o.deck+.005,s*.455],.008,glow,'energy');}
+  vents(F,-.60,o.deck+.004,-.58,.26,.12,5);vents(F,-.60,o.deck+.004,.58,.26,.12,5);
+  // raised command bridge behind the turret: sloped front with a vision slit, periscopes on the roof
+  block([[-1.46,-.62],[-1.04,-.62],[-.98,-.50],[-.98,.50],[-1.04,.62],[-1.46,.62]],[[-1.42,-.54],[-1.14,-.54],[-1.10,-.44],[-1.10,.44],[-1.14,.54],[-1.42,.54]],.88,1.02,'paint',F.plate);
+  put(box(.03,.022,.80),'energy',F.ice,[-1.035,.955,0],[0,0,.70]);put(box(.05,.05,.86),'rubber',F.dark,[-1.05,.95,0],[0,0,.70]);
+  for(const z of [-.30,.30]){put(box(.08,.022,.10),'steel',gm,[-1.28,1.031,z]);put(box(.012,.014,.07),'energy',F.ice,[-1.237,1.032,z]);}
+  put(box(.30,.012,.016),'steel',F.edge,[-1.28,1.026,0]);
+  // engine deck and stern: chamfered rear hull, grille, recessed exhaust ports, tail lights
+  block([[-1.66,-.58],[-1.40,-.72],[-.98,-.72],[-.98,.72],[-1.40,.72],[-1.66,.58]],[[-1.62,-.54],[-1.38,-.66],[-.98,-.66],[-.98,.66],[-1.38,.66],[-1.62,.54]],.30,.86,'paint',F.paint);
+  grille(F,-1.55,.86,0,.12,.60,5);
+  for(const s of [-1,1]){put(cyl(.13,.03,high?18:10),'steel',F.steel,[-1.655,.58,s*.34],[0,0,Math.PI/2]);put(cyl(.10,.034,high?16:8),'rubber',F.dark,[-1.658,.58,s*.34],[0,0,Math.PI/2]);put(cyl(.055,.036,high?12:8),'energy','#ff8a3d',[-1.66,.58,s*.34],[0,0,Math.PI/2]);}
+  tails(-1.665,.78,.46);put(box(.02,.05,.30),'steel',gm,[-1.67,.42,0]);
   for(const s of [-1,1]){
-   pipe([-1.10,o.deck+.005,s*.63],[.74,o.deck+.005,s*.63],.009,glow,'energy');pipe([.76,o.deck+.005,s*.62],[1.06,o.deck+.005,s*.29],.009,glow,'energy');
-   pipe([-1.22,.805,s*.86],[.96,.805,s*.86],.008,glow,'energy');
-   for(const c of [-pc,pc]){
-    // a pointed nacelle per pod: faceted roof, angular outer skirt, lit roof strip, pivot joint at the inner end
-    const d=c>0?1:-1,X=x=>c+d*(x-c);
-    const bp=famSide([[X(c-.66),zi-.04],[X(c+.50),zi-.04],[X(c+.80),(zi+zo)/2+.02],[X(c+.50),zo+.16],[X(c-.66),zo+.16]],s),tp=famSide([[X(c-.62),zi],[X(c+.40),zi],[X(c+.62),(zi+zo)/2+.02],[X(c+.40),zo+.06],[X(c-.62),zo+.06]],s);
-    block(bp,tp,tt,tt+.14,'paint',c>0?F.plate:F.paint);
-    const sk=[[c-.66,.42],[c+.48,.42],[c+.68,.56],[c+.68,tt+.02],[c-.66,tt+.02]].map(([x,y])=>[X(x),y]);wall(d>0?sk:sk.slice().reverse(),s*(zo+.125),.05,'paint',c>0?F.paint:F.plate,.01);
-    pipe([X(c-.58),tt+.145,s*(zo+.03)],[X(c+.38),tt+.145,s*(zo+.03)],.009,glow,'energy');
-    put(box(1.0,.014,.02),'steel',F.edge,[c,.66,s*(zo+.152)]);for(const k of [-.30,-.10,.10,.30])put(box(.10,.035,.012),'energy',glow,[c+k,.56,s*(zo+.153)]);if(high)for(const k of [-.45,0,.45])bolt(c+k,.48,s*(zo+.152),'z');
-    put(cyl(.09,.08,12),'gold',F.gold,[X(c-.62),tt+.07,s*(zi-.02)],[Math.PI/2,0,0]);
-   }
-   // articulated A-frame pylon between the pods: two struts, a cross beam, a gold node and two hydraulic rams
-   for(const dx of [-1,1])pipe([dx*.12,.80,s*.66],[0,.42,s*(zo+.10)],.045,F.steel);
-   pipe([0,.42,s*.70],[0,.42,s*(zo+.10)],.06,'#7b8792');put(cyl(.12,.06,12),'gold',F.gold,[0,.42,s*(zo+.10)],[Math.PI/2,0,0]);put(cyl(.05,.05,10),'steel',F.dark,[0,.42,s*(zo+.13)],[Math.PI/2,0,0]);
-   for(const dx of [-1,1]){pipe([0,.44,s*(zo+.10)],[dx*.12,.60,s*(zo+.08)],.03,'#7b8792');pipe([dx*.12,.60,s*(zo+.08)],[dx*.20,.71,s*(zo+.07)],.018,F.edge);}
-   // layered shoulder wings over the front nacelles
-   block(famSide([[.10,.90],[1.00,.90],[1.30,1.04],[1.02,1.30],[.10,1.30]],s),famSide([[.16,.92],[.92,.92],[1.14,1.02],[.94,1.16],[.16,1.16]],s),tt+.12,o.deck-.035,'paint',F.plate);
-   block(famSide([[.30,.92],[.86,.92],[1.02,1.00],[.84,1.10],[.30,1.10]],s),famSide([[.34,.93],[.80,.93],[.94,1.00],[.78,1.06],[.34,1.06]],s),o.deck-.04,o.deck+.01,'paint',F.paint);
-   put(box(.70,.014,.02),'steel',F.edge,[.60,o.deck-.035,s*1.18]);put(box(.30,.022,.03),'energy',team,[-.80,.62,s*(zo+.153)]);
-   put(new THREE.TorusGeometry(.065,.02,4,high?12:8),'steel',F.edge,[1.56,.28,s*.42],[0,Math.PI/2,0]);
-   // twin stern thrusters with lit cores and cooling rings
-   put(cyl(.17,.30,high?20:10),'steel',F.steel,[-1.52,.55,s*.50],[0,0,Math.PI/2]);put(cyl(.12,.31,high?18:10),'rubber',F.dark,[-1.53,.55,s*.50],[0,0,Math.PI/2]);
-   put(cyl(.075,.02,high?16:8),'energy','#ff8a3d',[-1.675,.55,s*.50],[0,0,Math.PI/2]);
-   for(const x of [-1.44,-1.54,-1.64])put(cyl(.19,.018,high?20:10),'steel',F.edge,[x,.55,s*.50],[0,0,Math.PI/2]);
-   put(box(.03,.04,.20),'energy',F.tail,[-1.61,.80,s*.84]);
+   // terraced sponsons over the pods: the front pair rakes down toward the bow, the rear pair stays high at the stern
+   block(famSide([[.30,.86],[1.08,.86],[1.44,1.00],[1.22,1.34],[.30,1.34]],s),famSide([[.33,.90],[1.04,.90],[1.36,1.01],[1.17,1.29],[.33,1.29]],s),tt-.005,.87,'paint',F.paint,[.30,1.44,.15,.72,.15]);
+   block(famSide([[.36,.94],[.98,.94],[1.22,1.03],[1.08,1.18],[.36,1.18]],s),famSide([[.39,.97],[.94,.97],[1.15,1.04],[1.03,1.15],[.39,1.15]],s),.70,.93,'paint',F.plate,[.30,1.44,.15,.72,.15]);
+   pipe([.39,yT(.93,.30,1.44,.15,.39)+.004,s*1.15],[1.03,yT(.93,.30,1.44,.15,1.03)+.004,s*1.15],.007,F.edge);
+   block(famSide([[-.30,.86],[-1.32,.86],[-1.56,1.00],[-1.40,1.34],[-.30,1.34]],s),famSide([[-.33,.90],[-1.28,.90],[-1.50,1.01],[-1.35,1.29],[-.33,1.29]],s),tt-.005,.80,'paint',F.paint);
+   block(famSide([[-.28,.94],[-1.16,.94],[-1.30,1.03],[-1.20,1.18],[-.28,1.18]],s),famSide([[-.31,.97],[-1.13,.97],[-1.25,1.04],[-1.16,1.15],[-.31,1.15]],s),.76,.86,'paint',F.plate);
+   put(box(.82,.012,.016),'steel',F.edge,[-.72,.866,s*1.155]);
+   // twin exhaust stacks on the rear terrace
+   for(const x of [-1.24,-1.38]){put(cyl(.055,.24,high?14:8),'steel',gm,[x,.92,s*1.04]);put(cyl(.068,.024,high?14:8),'steel',F.steel,[x,1.024,s*1.04]);put(cyl(.042,.008,high?12:6),'rubber',F.dark,[x,1.036,s*1.04]);}
+   vp.push([-1.31,1.04,s*1.04]);
+   // layered skirts: a full-length back plate with staggered raked leaves in front over the forward pod, one heavy slab aft
+   wall([[.30,.44],[1.22,.44],[1.34,.56],[1.34,.72],[.30,.72]],s*1.335,.04,'paint',F.plate,.008);
+   for(let i=0;i<3;i++){const a=.34+i*.32;wall([[a,.40],[a+.26,.40],[a+.30,.64],[a+.04,.64]],s*1.375,.035,'paint',F.paint,.007);if(high)for(const y of [.46,.58])bolt(a+.15+(y-.40)*.15,y,s*1.394,'z');if(i<2)put(box(.012,.14,.01),'energy',glow,[a+.30,.53,s*1.357]);}
+   wall([[-1.50,.56],[-1.42,.42],[-.40,.42],[-.34,.50],[-.34,.72],[-1.50,.72]],s*1.375,.035,'paint',F.paint,.008);
+   put(box(1.0,.012,.012),'steel',F.edge,[-.88,.705,s*1.394]);if(high)for(const x of [-1.38,-.42])for(const y of [.48,.64])bolt(x,y,s*1.394,'z');
+   put(box(.18,.022,.012),'energy',team,[-.48,.60,s*1.396]);put(box(.22,.022,.03),'energy',team,[.70,yT(.93,.30,1.44,.15,.70)+.012,s*1.06]);
+   put(box(.03,.04,.16),'energy',F.tail,[-1.56,.80,s*1.10],[0,s*.6,0]);
+   // waist cutaway: gunmetal bulkhead, A-frame pylon with a gold node, hydraulic rams and a sponson-to-sponson ram
+   put(box(.56,.24,.10),'steel',gm,[0,.66,s*.82]);for(const x of [-.18,0,.18])put(box(.03,.20,.012),'steel',gm2,[x,.66,s*.875]);
+   for(const dx of [-1,1])pipe([dx*.14,.80,s*.80],[0,.42,s*1.30],.045,F.steel);
+   pipe([0,.42,s*.82],[0,.42,s*1.30],.06,'#7b8792');put(cyl(.12,.06,12),'gold',F.gold,[0,.42,s*1.30],[Math.PI/2,0,0]);put(cyl(.05,.05,10),'steel',F.dark,[0,.42,s*1.33],[Math.PI/2,0,0]);
+   for(const dx of [-1,1]){pipe([0,.44,s*1.30],[dx*.14,.60,s*1.28],.03,'#7b8792');pipe([dx*.14,.60,s*1.28],[dx*.24,.70,s*1.26],.018,F.edge);}
+   pipe([.31,.80,s*1.10],[.02,.80,s*1.10],.042,gm);pipe([.02,.80,s*1.10],[-.31,.80,s*1.10],.022,F.steel);put(cyl(.055,.03,10),'steel',F.steel,[.31,.80,s*1.10],[0,0,Math.PI/2]);
   }
-  // swept crown fins on the stern, below the gun line, the flagship's side-view signature
-  for(const z of [-.36,-.18,0,.18,.36])wall([[-1.58,.79],[-1.34,.79],[-1.44,o.ring+.075],[-1.58,o.ring+.075]],z,.028,'paint',Math.abs(z)<.1?F.plate:F.paint,.006);
-  pipe([-1.56,o.ring+.077,-.40],[-1.56,o.ring+.077,.40],.012,glow,'energy');
-  vents(F,-.95,o.deck+.004,-.36,.30,.20,6);vents(F,-.95,o.deck+.004,.36,.30,.20,6);
-  head(1.42,.70,.44,.12);tierBar(-.30,o.deck+.012,.50);
-  anchor={hood:[.84,o.deck+.004],side:[.80,.52,zo+.152]};coreAt=[-1.12,[-.24,0,.24]];
+  head(1.42,.38,.30,.09);tierBar(-.30,o.deck+.012,.50);
+  anchor={hood:[.88,o.deck-.04],side:[-.90,.57,1.3935]};coreAt=[-.90,[-.24,0,.24]];
  }
  T.ring(F,o,ringR);
  T.cores(F,gems,coreAt[0],Math.min(o.deck+.05,o.ring-.11),coreAt[1]);
@@ -699,8 +710,10 @@ function standardWeapon(arch,tier,P,team,lunar=false){
 // Public factories: one final legendary identity, shared by every renderer.
 // Moonbeam presentation size per chassis class (visual only; kits stay class-less and unscaled in cache).
 // Renderers apply it once, on a weapon child group: tips/halos/anim pivots stay in the kit's own space.
-const MOON_SCALE=Object.freeze({titan:.80,vanguard:.76,scout:.72});
-const weaponScale=(arch,cls)=>arch==='moon'?MOON_SCALE[cls]||MOON_SCALE.vanguard:1;
+// Moonbeam size per chassis (class x tier), applied once on the renderer's wg group: compact and seated on the light
+// Phantom, biggest and most imposing on the Colossus, never longer than the hull. Visual only.
+const MOON_SCALE=Object.freeze({scout:Object.freeze([.70,.68,.61]),vanguard:Object.freeze([.76,.78,.80]),titan:Object.freeze([.84,.86,.92])});
+const weaponScale=(arch,cls,tier)=>{if(arch!=='moon')return 1;const row=MOON_SCALE[cls]||MOON_SCALE.vanguard;return row[visualTier(tier)];};
 function chassisKit(cls,tier,P,team,gems,lunar){if(typeof Equipment3D!=='undefined'&&Equipment3D.canChassis(cls,tier))return Equipment3D.chassisKit(cls,tier,P,team,gems,lunar);return CHASSIS_VISUALS[cls]?(lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems)):legacyChassisKit(cls,tier,P,team,gems,false);}
 function weaponKit(arch,tier,P,team,lunar,cls){if(typeof Equipment3D!=='undefined'&&Equipment3D.canWeapon(arch,tier))return Equipment3D.weaponKit(arch,tier,P,team,lunar,cls);return arch==='moon'?unifiedMoonbeam(team):WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team,lunar):legacyWeaponKit(arch,tier,P,team,false,cls);}
 

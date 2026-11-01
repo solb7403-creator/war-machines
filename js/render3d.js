@@ -173,9 +173,9 @@ function buildTank(spec,mats){
  body.add(M3.meshOf(H.b,null,mats));
  for(const a of H.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);body.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
  tur.position.y=H.meta.ty;body.add(tur);
- // tg = aim + recoil; wg = the weapon in its own kit space, scaled once per chassis class (Moonbeam only).
+ // tg = aim + recoil; wg = the weapon in its own kit space, scaled once per chassis (class x tier; Moonbeam only).
  // wmeta tips/halos and anim pivots are wg-local, so muzzle FX follow via wpos(o.wg,…) with no second scale.
- const ws=spec.boss?1:M3.weaponScale(spec.arch,spec.cls),tg=new THREE.Group();tur.add(tg);
+ const ws=spec.boss?1:M3.weaponScale(spec.arch,spec.cls,spec.ct),tg=new THREE.Group();tur.add(tg);
  let wg=tg;if(ws!==1){wg=new THREE.Group();wg.scale.setScalar(ws);tg.add(wg);}
  wg.add(M3.meshOf(Wk.b,null,mats));
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);wg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
@@ -538,8 +538,9 @@ function cachedArt(ctx,w,h,key,fn){
 function haloList(o,parts,t){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);
  // Lunar in Garage/Engineer (High, no reduced motion): richer wisps, 5 per emitter, frozen at t in the cached pictures
  if(parts!==2&&o.spec?.lunar&&o.meta.lunar&&lunarFx()){const T=t===undefined?1.3:t;o.meta.lunar.wisps.slice(0,4).forEach((e,i)=>{out.push([wpos(o.body,e).clone(),WISP_C[0],.34,.55]);for(let j=0;j<6;j++){const f=(T*1.4+j/6+i*.23)%1;out.push([wpos(o.body,lunarWisp(e,f,.62)).clone(),WISP_C[j%3],.55*(1-f)+.14,.70*(1-f)*Math.min(1,f*4)]);}});}if(o.tooth&&o.spec&&o.spec.vt>=2)out.push([wpos(o.body,o.tooth).clone(),'#ffcf4a',1.1]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.wg,h).clone(),h[3],h[4]*o.ws*1.5]);return out;}
-// Menu framing for a whole tank with the Moonbeam. At its class scale (0.72-0.80) the muzzle (kit tip 2.35 × ws ≤ 1.88)
-// reaches no further than a standard gun's (≈1.9), so only a small margin for the taller cradle and halo remains.
+// Menu framing for a whole tank with the Moonbeam. At its per-chassis scale (0.61-0.92) the muzzle (kit tip 2.35 × ws) reaches
+// 1.43-2.16; the longest (Colossus, 2.16) sits on the largest hull, which TANK_FRAME already sizes for, so one small margin
+// for the taller cradle and halo still frames every chassis (garage, cards, hero, Engineer).
 const moonFrame=T=>T.spec&&T.spec.arch==='moon'&&!T.spec.boss?1.04:1;
 // One framing for every chassis picture (garage, cards, hero, Engineer), sized so the largest (Colossus, Bulwark's ram)
 // fits. Never per-model zoom: a Scout reads small and a Titan big, exactly as in battle (which adds the class ds).
