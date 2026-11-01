@@ -37,10 +37,12 @@ const respecTierOfTon=ton=>Math.min(RESPEC_USD_MAX,Math.max(RESPEC_USD_MIN,Math.
 const upLevels=U=>UORDER.reduce((a,k)=>a+((U&&U[k])|0),0);
 const upInvested=U=>UORDER.reduce((a,k)=>{let s=0;for(let i=0;i<((U&&U[k])|0);i++)s+=UPS[k].costs[i];return a+s;},0);
 // ---- chassis classes & weapons ----
+// hb: the class's hittable body radius (x R) for shots, supers, shells and hazards; one value for all three tiers.
+// Movement and wall collisions stay on R for every class.
 const CH={
- scout:{n:'Scout',d:'Fast and agile',hp:0.85,spd:1.23,turn:1.18,ds:0.9,c:'#7be07b'},
- vanguard:{n:'Vanguard',d:'Balanced all-rounder',hp:1.0,spd:1.0,turn:1.0,ds:1.0,c:'#3fd0c9'},
- titan:{n:'Titan',d:'Slow, very tanky',hp:1.30,spd:0.88,turn:0.9,ds:1.12,c:'#c28bff'}};
+ scout:{n:'Scout',d:'Fast and agile',hp:0.85,spd:1.23,turn:1.18,ds:0.9,hb:0.9,c:'#7be07b'},
+ vanguard:{n:'Vanguard',d:'Balanced all-rounder',hp:1.0,spd:1.0,turn:1.0,ds:1.0,hb:1.0,c:'#3fd0c9'},
+ titan:{n:'Titan',d:'Slow, very tanky',hp:1.30,spd:0.88,turn:0.9,ds:1.12,hb:1.12,c:'#c28bff'}};
 const CHORDER=['scout','vanguard','titan'];
 // counter triangle: Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout (+15% damage dealt, 10% less taken)
 const COUNTER={scout:'titan',titan:'vanguard',vanguard:'scout'},COUNTER_BONUS=0.15,COUNTER_RES=0.10;

@@ -1,0 +1,174 @@
+{
+ "scout0": {
+  "name": "Scout",
+  "model": {
+   "len": 1.935,
+   "wid": 1.576,
+   "hgt": 0.55,
+   "ring": 0.47
+  },
+  "world": {
+   "len": 1.365,
+   "wid": 1.112,
+   "hgt": 0.388,
+   "noseFromCenter": 0.67,
+   "tailFromCenter": 0.695,
+   "sideFromCenter": 0.556
+  },
+  "hitRadius": 0.75,
+  "hf": true
+ },
+ "scout1": {
+  "name": "Strider",
+  "model": {
+   "len": 2.036,
+   "wid": 1.746,
+   "hgt": 0.571,
+   "ring": 0.49
+  },
+  "world": {
+   "len": 1.437,
+   "wid": 1.232,
+   "hgt": 0.403,
+   "noseFromCenter": 0.713,
+   "tailFromCenter": 0.724,
+   "sideFromCenter": 0.616
+  },
+  "hitRadius": 0.75,
+  "hf": true
+ },
+ "scout2": {
+  "name": "Phantom",
+  "model": {
+   "len": 2.24,
+   "wid": 1.726,
+   "hgt": 0.53,
+   "ring": 0.45
+  },
+  "world": {
+   "len": 1.581,
+   "wid": 1.218,
+   "hgt": 0.374,
+   "noseFromCenter": 0.871,
+   "tailFromCenter": 0.709,
+   "sideFromCenter": 0.609
+  },
+  "hitRadius": 0.75,
+  "hf": true
+ },
+ "vanguard0": {
+  "name": "Vanguard",
+  "model": {
+   "len": 2.663,
+   "wid": 2.386,
+   "hgt": 0.905,
+   "ring": 0.777
+  },
+  "world": {
+   "len": 2.088,
+   "wid": 1.871,
+   "hgt": 0.71,
+   "noseFromCenter": 1.047,
+   "tailFromCenter": 1.041,
+   "sideFromCenter": 0.935
+  },
+  "hitRadius": 0.82,
+  "hf": true
+ },
+ "vanguard1": {
+  "name": "Sentinel",
+  "model": {
+   "len": 2.695,
+   "wid": 2.444,
+   "hgt": 0.86,
+   "ring": 0.78
+  },
+  "world": {
+   "len": 2.113,
+   "wid": 1.916,
+   "hgt": 0.675,
+   "noseFromCenter": 1.062,
+   "tailFromCenter": 1.051,
+   "sideFromCenter": 0.958
+  },
+  "hitRadius": 0.82,
+  "hf": true
+ },
+ "vanguard2": {
+  "name": "Paladin",
+  "model": {
+   "len": 2.793,
+   "wid": 2.43,
+   "hgt": 0.881,
+   "ring": 0.8
+  },
+  "world": {
+   "len": 2.19,
+   "wid": 1.905,
+   "hgt": 0.69,
+   "noseFromCenter": 1.113,
+   "tailFromCenter": 1.076,
+   "sideFromCenter": 0.953
+  },
+  "hitRadius": 0.82,
+  "hf": true
+ },
+ "titan0": {
+  "name": "Titan",
+  "model": {
+   "len": 3.06,
+   "wid": 2.694,
+   "hgt": 0.98,
+   "ring": 0.9
+  },
+  "world": {
+   "len": 2.687,
+   "wid": 2.366,
+   "hgt": 0.861,
+   "noseFromCenter": 1.387,
+   "tailFromCenter": 1.3,
+   "sideFromCenter": 1.183
+  },
+  "hitRadius": 0.904,
+  "hf": true
+ },
+ "titan1": {
+  "name": "Bulwark",
+  "model": {
+   "len": 3.292,
+   "wid": 2.74,
+   "hgt": 1,
+   "ring": 0.92
+  },
+  "world": {
+   "len": 2.891,
+   "wid": 2.406,
+   "hgt": 0.879,
+   "noseFromCenter": 1.504,
+   "tailFromCenter": 1.387,
+   "sideFromCenter": 1.203
+  },
+  "hitRadius": 0.904,
+  "hf": true
+ },
+ "titan2": {
+  "name": "Colossus",
+  "model": {
+   "len": 3.305,
+   "wid": 2.776,
+   "hgt": 1.049,
+   "ring": 0.96
+  },
+  "world": {
+   "len": 2.902,
+   "wid": 2.438,
+   "hgt": 0.921,
+   "noseFromCenter": 1.422,
+   "tailFromCenter": 1.48,
+   "sideFromCenter": 1.219
+  },
+  "hitRadius": 0.904,
+  "hf": true
+ },
+ "_hf": true
+}

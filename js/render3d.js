@@ -528,6 +528,9 @@ function haloList(o,parts){const out=[];o.g.updateMatrixWorld(true);for(const h 
 // Menu framing for a whole tank with the Moonbeam. At its class scale (0.72-0.80) the muzzle (kit tip 2.35 × ws ≤ 1.88)
 // reaches no further than a standard gun's (≈1.9), so only a small margin for the taller cradle and halo remains.
 const moonFrame=T=>T.spec&&T.spec.arch==='moon'&&!T.spec.boss?1.04:1;
+// One framing for every chassis picture (garage, cards, hero, Engineer), sized so the largest (Colossus, Bulwark's ram)
+// fits. Never per-model zoom: a Scout reads small and a Titan big, exactly as in battle (which adds the class ds).
+const TANK_FRAME=1.8,TANK_CY=.40;
 // a tank (or part of one) for the menus. parts: 1 = chassis only, 2 = weapon only, 3 = whole tank
 function artTank(ctx,w,h,spec,parts,opt){
  opt=opt||{};const A=artR(),T=buildTank(spec,A.mats);
@@ -537,8 +540,8 @@ function artTank(ctx,w,h,spec,parts,opt){
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
  const hal=haloList(T,parts);
  // weapon alone: frame and offset scale with ws, so the card shows the approved Moonbeam exactly as before
- const r=spec.boss?2.2:parts===2?1.25*(spec.arch==='moon'?1.22*T.ws:1):parts===3?1.55*moonFrame(T):1.55;
- artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3*T.ws:0.35,z:opt.z||1,environment:opt.environment},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
+ const r=spec.boss?2.2:parts===2?1.25*(spec.arch==='moon'?1.22*T.ws:1):parts===3?TANK_FRAME*moonFrame(T):TANK_FRAME;
+ artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3*T.ws:spec.boss?0.35:TANK_CY,z:opt.z||1,environment:opt.environment},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
  return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
@@ -579,7 +582,7 @@ function heroArt(ctx,w,h,t){
  if(!AR||!AR.hero||AR.hero.k!==k){if(AR?.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);const A=artR();AR.hero={k,T:buildTank(sp,A.mats)};}
  const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);
  T.body.position.y=T.meta.bob?T.meta.bob*Math.sin(t*3):0;
- ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);const mf=moonFrame(T);artShot(ctx,bw,bh,T.g,{r:1.55*mf,el:0.5,az:0.95,cy:0.35+(mf-1)*0.68},haloList(T,3));ctx.restore();
+ ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);const mf=moonFrame(T);artShot(ctx,bw,bh,T.g,{r:TANK_FRAME*mf,el:0.5,az:0.95,cy:TANK_CY+(mf-1)*0.68},haloList(T,3));ctx.restore();
 }
 
 function machineArt3D(ctx,w,h,L){
@@ -603,7 +606,7 @@ function drawEquipmentIdle(ctx,w,h,spec,t){
  const A=artR(),key=specKey(spec);if(!A.preview||A.preview.key!==key){if(A.preview)Equipment3D.releaseTree(A.preview.T.g);A.preview={key,T:buildTank(spec,A.mats),canvas:ctx.canvas,last:t};}
  const p=A.preview,T=p.T,dt=Math.min(.05,Math.max(0,t-p.last));p.last=t;p.canvas=ctx.canvas;
  stepAnims(T.anims,dt,t);if(T.motion){const quiet=GraphicsMotion.reduced();T.motion.step(dt,{},quiet);T.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(t*2);}
- artShot(ctx,w,h,T.g,{r:1.55*moonFrame(T),el:.6,az:1,cy:.35,environment:'engineer'},haloList(T,3));
+ artShot(ctx,w,h,T.g,{r:TANK_FRAME*moonFrame(T),el:.6,az:1,cy:TANK_CY,environment:'engineer'},haloList(T,3));
 }
 function tickEquipmentPreview(now){
  if(typeof WEB_EDITION!=='undefined'&&WEB_EDITION||!AR?.preview)return;const p=AR.preview,c=p.canvas;
