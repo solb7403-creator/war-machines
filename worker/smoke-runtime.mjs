@@ -60,7 +60,7 @@ try{
  const shared=await callWeb('/api/sync',{lab:1,mig:{pts:999999}},sid,who.csrf);assert.equal(shared.status,200);
  const account=await shared.json();assert.equal(account.E.earned,0);assert.equal(Object.keys(account.E.lab.machines).length,2);
  assert.equal((await callWeb('/api/sync',{},sid)).status,401,'SQLite session enforces CSRF');
- const joinedWeb=await callWeb('/api/pvp/join',{v:1,g:'arena',m:'1v1',fv:1,labRev:account.E.lab.rev},sid,who.csrf);assert.equal(joinedWeb.status,200);const seat=await joinedWeb.json();
+ const joinedWeb=await callWeb('/api/pvp/join',{v:2,g:'arena',m:'1v1',fv:1,labRev:account.E.lab.rev},sid,who.csrf);assert.equal(joinedWeb.status,200);const seat=await joinedWeb.json();
  const socket=await mf.dispatchFetch('https://web.smoke.test/pvp/ws?r='+seat.room+'&t='+seat.tok,{headers:{Upgrade:'websocket',Origin:'https://web.smoke.test',Cookie:sid}});assert.equal(socket.status,101);assert.ok(socket.webSocket);socket.webSocket.accept();socket.webSocket.close();
  assert.equal((await callWeb('/auth/logout',{},sid,who.csrf)).status,200);
  assert.equal((await callWeb('/auth/session',undefined,sid)).status,401);
