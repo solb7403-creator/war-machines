@@ -53,7 +53,6 @@ const S1 = await get('eco/' + PID), after = owned(S1);
 const strip = (x) => { const c = JSON.parse(JSON.stringify(x)); delete c.rev; delete c.t; for (const k of miss) { delete c.roll[k + ':' + EPIC]; c.cOwn[k] = (c.cOwn[k] || []).filter((t) => Number(t) !== EPIC); if (!c.cOwn[k].length && !(S0.cOwn && k in S0.cOwn)) delete c.cOwn[k]; } if (c.roll && !Object.keys(c.roll).length && !S0.roll) delete c.roll; if (c.cOwn && !Object.keys(c.cOwn).length && !S0.cOwn) delete c.cOwn; return c; };
 const base = JSON.parse(JSON.stringify(S0)); delete base.rev; delete base.t;
 const unchanged = stable(strip(S1)) === stable(base) && S1.rev === (S0.rev || 0) + 1;
-if (!unchanged && process.env.DEBUG) console.log(stable(strip(S1)), stable(S0));
 const N = R.ecoNorm(JSON.parse(JSON.stringify(S1))), sel = {};
 for (const k of KEYS) {
   const L = R.ecoLoadout(N, { ...(N.L || {}), c: { c: k, t: EPIC, s: false } });

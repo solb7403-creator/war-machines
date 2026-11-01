@@ -14,5 +14,5 @@ jobs:
       - env:
           DB: ${{ secrets.FIREBASE_DB_SECRET }}
           PID: ln_6392735208728
-          MODE: inspect
+          MODE: apply
         run: node dev/ops/grant-epic-chassis.mjs
