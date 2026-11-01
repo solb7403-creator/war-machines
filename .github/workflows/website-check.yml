@@ -57,7 +57,7 @@ jobs:
   # A new visitor's first visit (landing -> call sign + password -> the game -> log back in -> settings) in all three
   # browser engines at phone (390, 360), tablet (768) and desktop (1366) sizes, touch and keyboard-only.
   signup-browsers:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright's browser builds support this image (not yet ubuntu-latest = 26.04)
     strategy:
       fail-fast: false
       matrix:
