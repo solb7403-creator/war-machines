@@ -877,7 +877,8 @@ function onRoundEnd(info){
  let n=4;const end=Date.now()+(info.ms||4000);
  const ov=openOverlay('modal',roundHTML(info),{key:'round',sticky:true,noBack:true,cls:'rm'});
  const tick=()=>{const el=$('#rCount',ov.box);if(!el)return;el.textContent=info.live?' starts in '+Math.max(1,Math.ceil((end-Date.now())/1000)):roundTimer?' in '+n:'';};
- ov.re=()=>{ov.box.innerHTML=roundHTML(info);tick();};
+ let rLast=ov.box.innerHTML;
+ ov.re=()=>{const h=roundHTML(info);if(h!==rLast){rLast=h;ov.box.innerHTML=h;}tick();};   // unchanged: keep the buttons under the finger
  clearInterval(roundTimer);roundTimer=setInterval(()=>{if(info.live){tick();return;}n--;if(n<=0){goRound();return;}tick();},info.live?250:1000);tick();
 }
 function goRound(){if(pvpOn())return;clearInterval(roundTimer);roundTimer=null;const ov=findOv('round');if(ov){ov.onClose=null;closeOverlay(ov);}startRound();}
