@@ -392,7 +392,7 @@ function renderRanks(){
  let cut='';
  const R=lbCache?myRank(e):null;
  if(!lbMeta)cut='<div class="cutline">Loading the leaderboard…</div>';
- else if(!lbMeta.inTop||lbMeta.inTop<1000)cut='<div class="cutline"><span class="info" style="border-color:var(--gold);color:var(--gold)">✓</span><span>'+fmtNum(lbMeta.n||0)+' pilots so far, so everyone is inside the top 1,000. Your $LUNAR share grows with your points and days active.</span></div>';
+ else if(!lbMeta.inTop||lbMeta.inTop<1000)cut='<div class="cutline"><span class="info" style="border-color:var(--gold);color:var(--gold)">✓</span><span>'+fmtNum(lbMeta.n||0)+' pilots so far, so everyone is inside the top 1,000. Your standing for the planned airdrop grows with your points and days active.</span></div>';
  else if(R&&!R.outside)cut='<div class="cutline"><b>#'+fmtNum(R.rank)+'</b><span>You’re inside the top 1,000. Cutoff right now: '+fmtNum(lbMeta.cut)+' points.</span></div>';
  else cut='<div class="cutline"><b>'+fmtNum(Math.max(1,lbMeta.cut-e+1))+'</b><span>more points to reach the top 1,000 (cutoff '+fmtNum(lbMeta.cut)+')</span></div>';
  if(lbMeta&&lbMeta.lpf>0)cut+=lpfLine();
@@ -590,7 +590,7 @@ const INFO={
   ['Daily bonus','Higher tiers add to your daily reward: +25, +50, +100, +200, +400.'],
   ['Spending is safe','Tiers and the leaderboard count lifetime points, so buying upgrades never drops you.']]],
  airdrop:()=>['The $LUNAR airdrop',[
-  ['Who gets it','When $LUNAR launches, the top 1,000 pilots on the all-time leaderboard get an allocation.'],
+  ['Who gets it','When $LUNAR launches, the top 1,000 pilots on the all-time leaderboard are planned to receive an allocation. No amount or price is promised.'],
   ['How big','Your share is weighted by your points and the days you were active.'],
   ['Fair play','Fake or duplicate accounts are removed before the snapshot.'],
   ['Details','The wiki has the full tokenomics.']]],
@@ -782,7 +782,8 @@ function showVS(o){
  // live: the server starts the fight for everyone at once; AI: tap START or wait 4 seconds
  const tick=()=>{const el=$('#vsCount');if(!el)return;if(live)el.textContent='Fight starts in '+Math.max(1,Math.ceil((end-Date.now())/1000));else el.textContent=vsTimer?'Starts in '+n:'Tap to start';};
  clearInterval(vsTimer);vsTimer=setInterval(()=>{if(live){tick();return;}n--;if(n<=0){vsGo();return;}tick();},live?250:1000);tick();
- ov.re=()=>{ov.box.innerHTML=vsBuild();paintArt(ov.box);tick();};
+ let vsLast=ov.box.innerHTML;
+ ov.re=()=>{const h=vsBuild();if(h!==vsLast){vsLast=h;ov.box.innerHTML=h;paintArt(ov.box);}tick();};   // unchanged: keep the buttons (a tap never lands on a replaced one)
 }
 let vsStarting=false;
 async function vsGo(){

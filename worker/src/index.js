@@ -530,7 +530,7 @@ export async function sendReminders(env, now = Date.now(), batch = 0) {
         ? "☾ Your welcome-back gift is ready, pilot: a free Rare gem cache. Claim it with today's daily reward in Quests."
         : streak >= 2
         ? `☾ Your ${streak}-day streak ends at midnight UTC. Keep it going: every streak day adds +5% to your quest points, up to +30%.`
-        : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard get $LUNAR.";
+        : "☾ Your daily reward and 4 new quests are ready, pilot. The top 1,000 on the leaderboard are tracked for the planned $LUNAR airdrop.";
       const r = await tg(env, "sendMessage", { chat_id: v.chat, text, reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }]] } }).catch(() => null);
       if (r && r.ok) { up[`ntf/${pid}/nx`] = d + 1; up[`ntf/${pid}/last`] = d; sent++; }
       else if (r && r.error_code === 429) slow = true;   // Telegram says slow down: the rest wait for the next run
