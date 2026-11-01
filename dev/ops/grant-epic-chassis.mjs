@@ -41,8 +41,8 @@ for (const k of miss) {
   granted.push({ k, t: EPIC, name: NAMES[k], roll });
 }
 S.rev = (S.rev || 0) + 1; S.t = Date.now();   // like every server write (tx): the phone takes the newer record
-const w = await fetch(U('eco/' + PID, '&print=silent'), { method: 'PUT', headers: { 'Content-Type': 'application/json', 'if-match': tag }, body: JSON.stringify(S) });
-if (!w.ok) fail('conditional write refused (' + w.status + '): the record changed meanwhile; nothing written. Re-run.');
+const w = await fetch(U('eco/' + PID), { method: 'PUT', headers: { 'Content-Type': 'application/json', 'if-match': tag }, body: JSON.stringify(S) });
+if (!w.ok) fail(w.status === 412 ? 'record changed meanwhile (412); nothing written. Re-run.' : 'conditional write refused (' + w.status + '); nothing written');
 // audit trail: an authorized administrative grant (not a payment), next to the record it explains
 const ga = await fetch(U('grants/' + PID + '/' + gid, '&print=silent'), { method: 'PUT', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ kind: 'admin', tk: 'chassis', items: granted.map(({ k, t }) => ({ k, t })), by: 'owner', why: 'Owner-authorized unlock of the missing Epic chassis', at: S.t, rev: S.rev }) });
