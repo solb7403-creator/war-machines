@@ -155,7 +155,7 @@ function deckY(geos,x,z){let best=-1;for(const g of geos){if(!g)continue;const a
   const l0=((z1-z2)*(x-x2)+(x2-x1)*(z-z2))/d,l1=((z2-z0)*(x-x2)+(x0-x2)*(z-z2))/d,l2=1-l0-l1;if(l0<-1e-6||l1<-1e-6||l2<-1e-6)continue;
   const y=l0*a[i+1]+l1*a[i+4]+l2*a[i+7];if(y>best)best=y;}}return best;}
 function vaultParts(T,H,spec,mats){
- const geos=Object.entries(H.b).filter(([key,g])=>g&&key!=='glow'&&!key.endsWith('_energy')).map(([,g])=>g);let mnx=1e9,mxx=-1e9;
+ const geos=Object.entries(H.b).filter(([key,g])=>g&&key!=='glow'&&!key.endsWith('_energy')&&!key.endsWith('_lunar')).map(([,g])=>g);let mnx=1e9,mxx=-1e9;
  for(const g of geos){if(!g)continue;const a=g.attributes.position.array;for(let i=0;i<a.length;i+=3){if(a[i]<mnx)mnx=a[i];if(a[i]>mxx)mxx=a[i];}}
  if(mxx<mnx)return;
  let x=mxx-0.22,y=-1;
@@ -187,6 +187,14 @@ function buildTank(spec,mats){
  return T;
 }
 function stepAnims(anims,dt,t){if(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())return;for(const a of anims){if(a.type==='pulse')a.o.scale.setScalar(1+0.16*Math.sin(t*a.spd));else if(a.axis)a.o.rotation[a.axis]+=a.spd*dt;}}
+// ---------- Lunar Skin energy (visual only) ----------
+// Animated only on High quality without reduced motion; otherwise the static premium plating (fixed channel glow, no wisps).
+const lunarFx=()=>R3.q==='high'&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());
+function lunarPulse(t,on){if(typeof Equipment3D!=='undefined'&&Equipment3D.lunarPulse)Equipment3D.lunarPulse(t,on);}
+// Ghost-flame wisps: short blue flames licking up and back from the real seams/vents in meta.lunar.wisps. Analytic, so no
+// particle state and no allocation: each emitter cycles n soft sprites upward while they shrink and fade.
+const WISP=[0,0,0],WISP_C=['#86dcff','#d4f6ff','#4fb8ff'];
+function lunarWisp(e,f,rise){WISP[0]=e[0]-f*rise*.55;WISP[1]=e[1]+f*rise;WISP[2]=e[2]+Math.sign(e[2])*f*rise*.08;return WISP;}
 
 // ---------- battle state ----------
 let B3={map:null,mapId:null,mapKey:null,units:new Map(),uref:null,crates:new Map(),pool:{},seen:new WeakSet(),shellL0:new WeakMap(),pads:null,wrecks:[],t:0,last:0,dyn:null};
@@ -294,6 +302,7 @@ function frame3D(shx,shy){
  perfWatch(rawDt);
  if(!use3D())return;
  ensureMap();matchObjs();
+ const lfx=lunarFx();lunarPulse(t,lfx);
  const s=sc,ox2=ox+shx,oy2=oy+shy;
  RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();
  const pr=RR.getPixelRatio(),pxs=s*pr;
@@ -349,6 +358,8 @@ function frame3D(shx,shy){
   // soft glows on lights, orbs and cores (a cheap stand-in for bloom)
   for(const h of o.meta.halos){const w=wpos(o.body,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6,h[3],0.55);}
   for(const h of o.wmeta.halos){const w=wpos(o.wg,h);once(PSA,w.x,w.y,w.z,h[4]*o.ws*ds*1.6,h[3],0.55);}
+  // Lunar: 3 small, faint wisps per emitter (<=4), riding the hull; never drawn on Low or with reduced motion
+  if(lfx&&o.spec.lunar&&o.meta.lunar){const E=o.meta.lunar.wisps,ph=(u.id||0)*.37;for(let i=0;i<E.length&&i<4;i++)for(let j=0;j<3;j++){const f=(t*1.7+j/3+ph+i*.29)%1,w=wpos(o.body,lunarWisp(E[i],f,.30));once(PSA,w.x,w.y,w.z,(.17*(1-f)+.05)*ds,WISP_C[j],.48*(1-f)*Math.min(1,f*5));}}
   // super charging: light gathers at the muzzle
   if(u.sup&&SUP[u.sup.w]){const S=SUP[u.sup.w],k=1-u.sup.t/S.charge,tp=o.wmeta.tips[0];if(tp){const w=wpos(o.wg,tp);once(PSA,w.x,w.y,w.z,0.6+1.6*k,'#ff5a4a',0.5+0.5*k);once(PSA,w.x,w.y,w.z,0.3+0.6*k,'#ffffff',0.8);}}
   // bounty: a gold star over tanks worth 3+
@@ -512,7 +523,7 @@ function artShot(ctx,w,h,grp,view,halos){
  const cam=view.cam||A.cam;
  if(!view.cam){cam.aspect=pw/ph;cam.fov=view.fov||26;const R0=view.r||1.6,el=view.el===undefined?0.55:view.el,az=view.az===undefined?0.9:view.az,dist=R0/Math.sin(cam.fov*Math.PI/360)*(view.z||1)/Math.min(1,cam.aspect);
   cam.position.set(Math.sin(az)*Math.cos(el)*dist+(view.cx||0),Math.sin(el)*dist+(view.cy||0),Math.cos(az)*Math.cos(el)*dist+(view.cz||0));cam.up.set(0,1,0);cam.lookAt(view.cx||0,view.cy||0,view.cz||0);cam.updateProjectionMatrix();}
- A.ps.n=0;for(const hl of halos||[]){const v=hl[0];once(A.ps,v.x,v.y,v.z,hl[2],hl[1],0.55);}
+ A.ps.n=0;for(const hl of halos||[]){const v=hl[0];once(A.ps,v.x,v.y,v.z,hl[2],hl[1],hl[3]===undefined?0.55:hl[3]);}
  psFlush(A.ps,ph*0.9);
  if(typeof Equipment3D!=='undefined')Equipment3D.configure(A.r,A.s);
  A.r.render(A.s,cam);
@@ -520,11 +531,13 @@ function artShot(ctx,w,h,grp,view,halos){
  ctx.drawImage(A.c,0,0,w,h);
 }
 function cachedArt(ctx,w,h,key,fn){
- const k=key+'@'+w+'x'+h+'x'+dpr;let c=artCache.get(k);
+ const k=key+'@'+w+'x'+h+'x'+dpr+(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?'|rm':'');let c=artCache.get(k);
  if(!c){c=document.createElement('canvas');c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);fn(x);artCache.set(k,c);if(artCache.size>120)artCache.delete(artCache.keys().next().value);}
  ctx.drawImage(c,0,0,w,h);
 }
-function haloList(o,parts){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);if(o.tooth&&o.spec&&o.spec.vt>=2)out.push([wpos(o.body,o.tooth).clone(),'#ffcf4a',1.1]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.wg,h).clone(),h[3],h[4]*o.ws*1.5]);return out;}
+function haloList(o,parts,t){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);
+ // Lunar in Garage/Engineer (High, no reduced motion): richer wisps, 5 per emitter, frozen at t in the cached pictures
+ if(parts!==2&&o.spec?.lunar&&o.meta.lunar&&lunarFx()){const T=t===undefined?1.3:t;o.meta.lunar.wisps.slice(0,4).forEach((e,i)=>{out.push([wpos(o.body,e).clone(),WISP_C[0],.34,.55]);for(let j=0;j<6;j++){const f=(T*1.4+j/6+i*.23)%1;out.push([wpos(o.body,lunarWisp(e,f,.62)).clone(),WISP_C[j%3],.55*(1-f)+.14,.70*(1-f)*Math.min(1,f*4)]);}});}if(o.tooth&&o.spec&&o.spec.vt>=2)out.push([wpos(o.body,o.tooth).clone(),'#ffcf4a',1.1]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.wg,h).clone(),h[3],h[4]*o.ws*1.5]);return out;}
 // Menu framing for a whole tank with the Moonbeam. At its class scale (0.72-0.80) the muzzle (kit tip 2.35 × ws ≤ 1.88)
 // reaches no further than a standard gun's (≈1.9), so only a small margin for the taller cradle and halo remains.
 const moonFrame=T=>T.spec&&T.spec.arch==='moon'&&!T.spec.boss?1.04:1;
@@ -538,7 +551,8 @@ function artTank(ctx,w,h,spec,parts,opt){
  if(parts===2){T.body.children.forEach(c=>{if(c!==T.tur)c.visible=false;});T.tur.position.set(-0.75*T.ws,0,0);}
  T.hull.rotation.y=opt.hd===undefined?0:opt.hd;T.tur.rotation.y=opt.ta||0;
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
- const hal=haloList(T,parts);
+ lunarPulse(opt.t===undefined?1.3:opt.t,lunarFx());
+ const hal=haloList(T,parts,opt.t);
  // weapon alone: frame and offset scale with ws, so the card shows the approved Moonbeam exactly as before
  const r=spec.boss?2.2:parts===2?1.25*(spec.arch==='moon'?1.22*T.ws:1):parts===3?TANK_FRAME*moonFrame(T):TANK_FRAME;
  artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3*T.ws:spec.boss?0.35:TANK_CY,z:opt.z||1,environment:opt.environment},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
@@ -550,7 +564,7 @@ function art3D(ctx,w,h,a){
  if(!use3D()||!w||!h)return false;
  try{
   if(a[0]==='hero'){heroArt(ctx,w,h,performance.now()/1000);return true;}
-  if(a[0]==='tank'){const sp=a[1]==='lunar'?mySpec({lunar:true,team:TC[0],paint:'stock'}):a[1]==='paint'?mySpec({paint:PAINTS[a[2]]?a[2]:'stock',lunar:false,team:TC[0]}):mySpec();
+  if(a[0]==='tank'){const sp=a[1]==='lunar'?mySpec({lunar:true,team:TC[0]}):a[1]==='paint'?mySpec({paint:PAINTS[a[2]]?a[2]:'stock',team:TC[0]}):mySpec();
    cachedArt(ctx,w,h,'t|'+specKey(sp),x=>artTank(x,w,h,sp,3,{az:0.95}));return true;}
   if(a[0]==='gear'){const isW=a[1]==='w',k=a[2];
    const it=k==='moon'?getW('moon'):a[3]===undefined?(isW?getW(save.weapon):getC(save.chassis)):(isW?getW(k,+a[3],a[4]==='1'):getC(k,+a[3],a[4]==='1'));
@@ -580,9 +594,9 @@ function heroArt(ctx,w,h,t){
  const room=h-58,r=Math.max(16,Math.min(w*0.12,room*0.2)),cx=w/2,cy=room*0.62,bw=r*5.2,bh=r*3.6;
  const sp=mySpec(),k='hero|'+specKey(sp);
  if(!AR||!AR.hero||AR.hero.k!==k){if(AR?.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);const A=artR();AR.hero={k,T:buildTank(sp,A.mats)};}
- const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);
+ const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);lunarPulse(t,lunarFx());
  T.body.position.y=T.meta.bob?T.meta.bob*Math.sin(t*3):0;
- ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);const mf=moonFrame(T);artShot(ctx,bw,bh,T.g,{r:TANK_FRAME*mf,el:0.5,az:0.95,cy:TANK_CY+(mf-1)*0.68},haloList(T,3));ctx.restore();
+ ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);const mf=moonFrame(T);artShot(ctx,bw,bh,T.g,{r:TANK_FRAME*mf,el:0.5,az:0.95,cy:TANK_CY+(mf-1)*0.68},haloList(T,3,t));ctx.restore();
 }
 
 function machineArt3D(ctx,w,h,L){
@@ -606,7 +620,7 @@ function drawEquipmentIdle(ctx,w,h,spec,t){
  const A=artR(),key=specKey(spec);if(!A.preview||A.preview.key!==key){if(A.preview)Equipment3D.releaseTree(A.preview.T.g);A.preview={key,T:buildTank(spec,A.mats),canvas:ctx.canvas,last:t};}
  const p=A.preview,T=p.T,dt=Math.min(.05,Math.max(0,t-p.last));p.last=t;p.canvas=ctx.canvas;
  stepAnims(T.anims,dt,t);if(T.motion){const quiet=GraphicsMotion.reduced();T.motion.step(dt,{},quiet);T.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(t*2);}
- artShot(ctx,w,h,T.g,{r:TANK_FRAME*moonFrame(T),el:.6,az:1,cy:TANK_CY,environment:'engineer'},haloList(T,3));
+ lunarPulse(t,lunarFx());artShot(ctx,w,h,T.g,{r:TANK_FRAME*moonFrame(T),el:.6,az:1,cy:TANK_CY,environment:'engineer'},haloList(T,3,t));
 }
 function tickEquipmentPreview(now){
  if(typeof WEB_EDITION!=='undefined'&&WEB_EDITION||!AR?.preview)return;const p=AR.preview,c=p.canvas;

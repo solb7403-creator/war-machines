@@ -25,7 +25,7 @@ const Equipment3D=(()=>{
    }
   }g.setAttribute('tangent',new THREE.BufferAttribute(t,4));
  }
- const TILE={paint:0,gold:1,steel:2,rubber:3,energy:0};
+ const TILE={paint:0,gold:1,steel:2,rubber:3,energy:0,lunar:0};
  function put(k,geo,material,c,p=[0,0,0],r=[0,0,0],scale=[1,1,1]){
   if(!Object.prototype.hasOwnProperty.call(TILE,material))throw Error('HF authoring: unknown material '+material);
   let g=geo.index?geo.toNonIndexed():geo;if(g!==geo)geo.dispose();
@@ -68,10 +68,23 @@ const Equipment3D=(()=>{
    bank.maps=maps;bank.state='ready';generation++;if(typeof dispatchEvent==='function')dispatchEvent(new Event('lunar-graphics-ready'));return true;
   }catch(e){bank.error=e.message;bank.state='error';for(const t of bank.textures){t.dispose();t.userData.hfImage?.close();}bank.textures=[];return false;}finally{if(timer)clearTimeout(timer);bank.promise=null;}})();return bank.promise;
  }
+ // Lunar energy channels: ONE shared unlit material per quality bank whose brightness flows along the hull (+x) from a
+ // single shared uniform pair, updated once per frame by the renderer (lunarPulse). Low quality and reduced motion hold it
+ // at a fixed premium level. Never cloned per tank (GraphicsMotion skips it), so 6 Lunar tanks cost the same as one.
+ const LUNAR_U={uLunarT:{value:0},uLunarA:{value:0}};
+ function lunarMaterial(){
+  const m=new THREE.MeshBasicMaterial({vertexColors:true,toneMapped:false});m.userData.motionSkip=true;
+  m.onBeforeCompile=shader=>{Object.assign(shader.uniforms,LUNAR_U);shader.vertexShader='varying vec3 vLunarP;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvLunarP=position;');
+   shader.fragmentShader='uniform float uLunarT;uniform float uLunarA;varying vec3 vLunarP;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat lunarW=.5+.5*sin(uLunarT*3.1-vLunarP.x*7.0+abs(vLunarP.z)*2.0);diffuseColor.rgb*=1.0+uLunarA*(lunarW*lunarW*1.25-.35);');};
+  m.customProgramCacheKey=()=>'lunar-energy-v1';return m;
+ }
+ // t seconds; animated=false holds the static premium level (low quality, reduced motion, background).
+ function lunarPulse(t,animated){LUNAR_U.uLunarT.value=animated?t%600:0;LUNAR_U.uLunarA.value=animated?1:0;}
  function material(key){
   const [,q,id]=key.split('_'),bank=BANKS.get(q);if(bank?.state!=='ready')return null;if(bank.materials.has(id))return bank.materials.get(id);
   const common={vertexColors:true,map:bank.maps.base};let m;
   if(id==='energy')m=new THREE.MeshBasicMaterial({vertexColors:true,toneMapped:false});
+  else if(id==='lunar')m=lunarMaterial();
   else if(q==='high')m=new THREE.MeshStandardMaterial({...common,metalness:1,roughness:1,metalnessMap:bank.maps.orm,roughnessMap:bank.maps.orm,normalMap:bank.maps.normal,normalScale:new THREE.Vector2(.42,.42),aoMap:bank.maps.orm,aoMapIntensity:.7,envMap:studioEnvironment(),envMapIntensity:1.75});
   else m=new THREE.MeshPhongMaterial({...common,shininess:{paint:25,gold:85,steel:65,rubber:3}[id],specular:id==='rubber'?0x111111:0x666666});
   m.userData.hfShared=true;bank.materials.set(id,m);if(bank.materials.size>MAX_MATERIALS)throw Error('HF material bank cap');return m;
@@ -109,7 +122,8 @@ const Equipment3D=(()=>{
   vanguard:{width:.54,prow:.19,rear:0,skirts:3,road:.16,role:'assault',gold:'#c2a266'},
   titan:{width:.67,prow:.10,rear:.04,skirts:3,road:.19,role:'siege',gold:'#b99962'}
  });
- function finish(P,lunar){return {paint:lunar?'#171d27':P.hull||'#374959',plate:lunar?'#303946':P.tur||P.hull||'#536372',edge:lunar?'#c2a266':P.trim||'#a7b3bc',gold:'#c2a266',steel:'#a2acb8',rubber:'#192028',dark:'#121b25'};}
+ // One colour composition for both renderers (M3.famFinish): with Lunar the paint stays on the armour, trim turns gold.
+ function finish(P,lunar){return M3.famFinish(P,lunar);}
  function panel(k,x,y,z,l,w,h,mat,c,b=.012){
   const cut=Math.min(l,w)*.16,pts=[[-l/2+cut,-w/2],[l/2-cut,-w/2],[l/2,-w/2+cut],[l/2,w/2-cut],[l/2-cut,w/2],[-l/2+cut,w/2],[-l/2,w/2-cut],[-l/2,-w/2+cut]];
   return put(k,plate(pts,h,b),mat,c,[x,y,z]);
@@ -146,7 +160,7 @@ const Equipment3D=(()=>{
   put(k,slopedArmor(M3.loft(bp,tp,.19,deck-.07),half*.25,half,.19),'paint',F.paint);
   // Dark channels are genuine panel recesses between individually bevelled armour leaves.
   panel(k,-.15,deck-.065,0,half*1.48,w*1.64,.045,'rubber',F.dark,.009);
-  const roof=[[-half*.87,-w*.72],[half*.25,-w*.72],[half*.34,-w*.54],[half*.34,w*.54],[half*.25,w*.72],[-half*.87,w*.72]];put(k,plate(roof,.052,high?.016:.008),'paint',F.plate,[0,deck-.035,0]);
+  const roof=[[-half*.87,-w*.72],[half*.25,-w*.72],[half*.34,-w*.54],[half*.34,w*.54],[half*.25,w*.72],[-half*.87,w*.72]];put(k,plate(roof,.052,high?.016:.008),'paint',lunar&&!F.lunarStock?F.plateUp:F.plate,[0,deck-.035,0]);
   for(const s of [-1,1]){
    // Canonical tier identities: split recon pods, reinforced assault, four-pod epic Titan.
    const split=(scout&&tier===2)||(titan&&tier===2),podLen=split?(o.len-.14)/2:o.len,centers=split?[-(o.len+.14)/4,(o.len+.14)/4]:[0];
@@ -155,7 +169,8 @@ const Equipment3D=(()=>{
    for(let i=0;i<segments;i++){
     const x=-half+.11+(i+.5)*step,points=[[x-step*.44,s*inner],[x+step*.36,s*inner],[x+step*.48,s*(outer-.06)],[x+step*.32,s*outer],[x-step*.44,s*outer]];
     put(k,plate(points,.065+tier*.009,high?.014:.008),'paint',i%2?F.paint:F.plate,[0,o.h+.045,0]);
-    put(k,box(step*.66,.013,.022),'steel',F.edge,[x,o.h+.123+tier*.009,s*(outer-.07)]);
+    put(k,box(step*.66,.013,.022),lunar?'gold':'steel',F.edge,[x,o.h+.123+tier*.009,s*(outer-.07)]);
+    if(lunar)put(k,box(step*.62,.010,.018),'lunar',M3.LUNAR.energy,[x,o.h+.110+tier*.009,s*(outer-.07)]);
     if(high)for(const d of [-.29,.29])bolt(k,x+d*step,o.h+.13+tier*.009,s*(inner+.045));
     if(tier||lunar){
      // Angled side escutcheon hangs below fender without occluding road wheels.
@@ -166,7 +181,7 @@ const Equipment3D=(()=>{
    }
    // Long layered glacis with inset lights; lower lip, tow eye and protective corner.
    const front=[[half*.29,s*.045],[half*.94,s*.045],[half,s*w*.38],[half*.69,s*w*.90],[half*.26,s*w*.90]];
-   put(k,slopedArmor(M3.loft(front,front.map(([x,z])=>[x-.035,z*.96]),deck-.06,deck+.02),half*.25,half,.19),'paint',F.plate);
+   put(k,slopedArmor(M3.loft(front,front.map(([x,z])=>[x-.035,z*.96]),deck-.06,deck+.02),half*.25,half,.19),'paint',lunar&&!F.lunarStock?F.plateUp:F.plate);
    pipe(k,[half*.43,deck-.022,s*w*.67],[half*.75,deck-.103,s*w*.55],.008,lunar?F.gold:F.edge,lunar?'gold':'steel');
    panel(k,half-.04,.27,s*(w*.91),.10,.14,.075,'steel',F.steel,.007);
    put(k,new THREE.TorusGeometry(.04,.013,4,high?12:8),'steel',F.edge,[half+.025,.22,s*(w*.81)],[0,Math.PI/2,0]);
@@ -183,17 +198,7 @@ const Equipment3D=(()=>{
     pipe(k,[-half*.72,deck+.06,s*w*.82],[-.35,deck+.06,s*w*.82],.018,lunar?F.gold:'#697988',lunar?'gold':'steel');
     panel(k,-.36,deck+.038,s*w*.51,.15,.18,.024,'steel',F.steel,.005);
    }
-   if(lunar){
-    // Flush, inlaid side crest; zero fins, hover hardware or orbiting components.
-    const x=-half*.25,z=s*(outer+.037),cy=o.h-.015;
-    put(k,crest(scout?.09:.125,.007,high),'gold',F.gold,[x,cy,z]);
-    pipe(k,[x-.20,cy-.06,z],[x+.17,cy-.06,z],.006,F.gold,'gold');
-    if(high){
-     for(const d of [-1,1])pipe(k,[x+d*.19,cy+.025,z],[x+d*.11,cy+.075,z],.005,F.gold,'gold');
-     for(const px of [-half*.63,half*.23])panel(k,px,o.h+.13,s*(outer-.09),.12,.07,.015,'gold',F.gold,.003);
-    }
-
-   }
+   if(lunar&&high)for(const px of [-half*.63,half*.23])panel(k,px,o.h+.13,s*(outer-.09),.12,.07,.015,'gold',F.gold,.003);
   }
   if(scout){
    // Narrow sensor keel; T1 split pods; T2 paired protected outriggers and wing blades.
@@ -223,7 +228,7 @@ const Equipment3D=(()=>{
   // Recessed central service spine and two stepped, sloping prow shields.
   for(const s of [-1,1]){
    const g=plate([[half*.39,s*.065],[half*.82,s*.07],[half*.91,s*w*.29],[half*.69,s*w*.57],[half*.37,s*w*.56]],.027,.008);g.translate(0,deck+.038,0);
-   put(k,slopedArmor(g,half*.25,half,.19),'paint',lunar?'#343a44':F.paint);
+   put(k,slopedArmor(g,half*.25,half,.19),'paint',F.lunarStock?'#343a44':F.paint);
    if(high)for(const d of [.46,.65,.80])bolt(k,half*d,deck+.048-.19*(d-.25)/.75,s*w*.38);
   }
   // Raised rear hatch and locking mechanism remain outside the rotating turret envelope.
@@ -234,8 +239,11 @@ const Equipment3D=(()=>{
   put(k,cylinder(ringRadius+.035,.040,high?24:12),'rubber',F.dark,[0,o.ring-.055,0]);put(k,cylinder(ringRadius,.036,high?24:12),'steel',F.steel,[0,o.ring-.018,0]);
   if(high)for(let i=0;i<8;i++){const a=i*Math.PI/4;bolt(k,Math.cos(a)*ringRadius*.90,o.ring+.005,Math.sin(a)*ringRadius*.90);}
   const coreX=-.90,coreY=cls==='vanguard'&&tier===0?.715:deck+.05;for(let i=0;i<3;i++){const z=(i-1)*.25;put(k,cylinder(.10,.05,8),'rubber',F.dark,[coreX,coreY,z]);if(gems?.[i]&&GEM[gems[i]])put(k,new THREE.OctahedronGeometry(.085),'energy',GEM[gems[i]].c,[coreX,coreY+.08,z],[0,0,0],[1,1.3,1]);}
-  if(lunar){const g=crest(scout?.11:.15,.006,high);g.rotateX(-Math.PI/2);g.translate(half*.66,deck+.067,0);put(k,slopedArmor(g,half*.25,half,.19),'gold',F.gold);}
-  return {k,anims:A,meta:{ty:o.ring,bob:0,halos:[-1,1].map(s=>[half+.012,o.h+.062,s*o.trackZ,'#bdeaff',.10]),trail:[],tc:F.edge,hf:VERSION,legend:lunar?'lunar-black-gold':undefined,profile:cls+':'+tier,track:[(((scout&&tier===2)||(titan&&tier===2)?(o.len-.14)/2:o.len)-o.h)/2,o.h/2+.005,o.h/2+.03,(scout&&tier===2)||(titan&&tier===2)?(o.len+.14)/4:0]}};
+  // Lunar premium layer shared with the nine-chassis family: side medallions where the approved crests sat, hood medallion
+  // seated on the measured glacis, wisps from the real rear louvres.
+  let lunarMeta;if(lunar){const T=M3.famTools({high,put:(g,m,c,p,rot,sc)=>put(k,g,m,c,p,rot,sc||[1,1,1]),mark:()=>{}}),outer=o.trackZ+o.trackW/2+.025;
+   lunarMeta=M3.famLunar(T,F,cls,{side:[-half*.25,o.h-.015,outer+.022],hood:[half*.62,deck+.06],ring:[o.ring-.052,ringRadius]},[-1,1].map(s=>[-half*.65,deck+.048,s*w*.46]),k.surfaces.paint);}
+  return {k,anims:A,meta:{lunar:lunarMeta,ty:o.ring,bob:0,halos:[-1,1].map(s=>[half+.012,o.h+.062,s*o.trackZ,'#bdeaff',.10]),trail:[],tc:F.edge,hf:VERSION,legend:lunar?'lunar-black-gold':undefined,profile:cls+':'+tier,track:[(((scout&&tier===2)||(titan&&tier===2)?(o.len-.14)/2:o.len)-o.h)/2,o.h/2+.005,o.h/2+.03,(scout&&tier===2)||(titan&&tier===2)?(o.len+.14)/4:0]}};
  }
  function turret(k,F,o,team,arch,tier){
   const high=k.quality==='high',back=arch==='siege'?-.66:-.54,w=o.width,Y=o.y;
@@ -257,6 +265,11 @@ const Equipment3D=(()=>{
   }
   panel(k,-.19,.354+tier*.012,0,.23,.20,.027,'steel',F.steel,.006);
   put(k,box(.018,.027,.10),'energy','#83c6df',[-.064,.369+tier*.012,0]);
+  if(F.lunar){
+   // Lunar signature on every turret: a flush gold crescent on the forward roof and two blue channels beside it.
+   const top=.285+tier*.012,g=crest(.075,.008,high);g.rotateX(-Math.PI/2);put(k,g,'gold',F.gold,[.24,top+.002,0]);
+   for(const s of [-1,1]){put(k,box(.28,.008,.014),'lunar',M3.LUNAR.energy,[.16,top+.005,s*w*.40]);if(high)pipe(k,[.02,top+.006,s*w*.47],[.30,top+.006,s*w*.47],.005,F.gold,'gold');}
+  }
   if(tier===2)for(const s of [-1,1])panel(k,-.43,.30,s*w*.74,.28,.20,.10,'paint',F.plate,.012);
  }
  function barrel(k,F,o,z,arch,tier){
@@ -284,6 +297,7 @@ const Equipment3D=(()=>{
  }
  function buildStandardWeapon(arch,tier,P,team,lunar,cls,q=quality){
   const o=M3.WEAPON_VISUALS[arch][tier],k=kit(q),F=finish(P,lunar),A=[],high=q==='high',tips=[];
+  if(lunar&&!F.lunarStock)F.plate=P.tur||P.hull;   // turret plates keep the paint; the hull carries the graphite structure
   turret(k,F,o,team,arch,tier);
   if(arch==='pulse'){
    barrel(k,F,o,0,arch,tier);tips.push([o.tip+(tier===0?0:.012),o.y,0]);
@@ -406,5 +420,5 @@ const Equipment3D=(()=>{
  function chassisKit(cls,tier,P,team,gems,lunar,q=quality){tier=M3.visualTier(tier);const build=BUILDERS['chassis:'+cls+':'+tier];if(!build)throw Error('Unknown visual chassis');return cached(JSON.stringify(['chassis',q,cls,tier,P,team,gems,lunar]),()=>build(cls,tier,P,team,gems,lunar,q));}
  function weaponKit(arch,tier,P,team,lunar,cls,q=quality){tier=M3.visualTier(tier);const build=BUILDERS['weapon:'+arch]||BUILDERS['weapon:'+arch+':'+tier];if(!build)throw Error('Unknown visual weapon');return cached(JSON.stringify(['weapon',q,arch,tier,arch==='moon'?null:P,team,arch==='moon'?false:lunar]),()=>build(arch,tier,P,team,lunar,cls,q));}
  function convert(raw,q){const out=kit(q),walk=(old,target)=>{for(const [bucket,gs] of Object.entries(old))for(const geo of gs){const a=geo.attributes.color.array,c=new THREE.Color().setRGB(a[0],a[1],a[2]),id=bucket==='glow'?'energy':c.r>c.b*1.8&&c.g>c.b*1.2?'gold':Math.max(c.r,c.g,c.b)<.04?'rubber':Math.max(c.r,c.g,c.b)<.18?'paint':'steel';put(target,geo,id,c);}};walk(raw.k,out);return {k:out,meta:raw.meta,anims:raw.anims.map(a=>{const k=kit(q);walk(a.k,k);return {...a,k};})};}
- return {VERSION,MAX_BANKS,get enabled(){return enabled},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++}},get quality(){return quality},set quality(v){if(!['high','low'].includes(v))throw Error('Invalid quality');if(quality!==v){quality=v;generation++}},get generation(){return generation},active,status,ensure,material,configure,attach,dispose,retain,releaseTree,kit,put,bake,chassisKit,weaponKit,convert,builders:BUILDERS,components:{plate,cylinder,crest,trackedDrive,panel,bolt,pipe,vents,trackPod},profiles:CLASSES,canChassis:(cls,t)=>active()&&!!BUILDERS['chassis:'+cls+':'+M3.visualTier(t)],canWeapon:(a,t)=>active()&&!!(BUILDERS['weapon:'+a]||BUILDERS['weapon:'+a+':'+M3.visualTier(t)]),stats:()=>({users,geometry:{entries:GEOMETRY.size,bytes:geometryBytes(),peakBytes,active:[...GEOMETRY.values()].filter(e=>e.refs).length,refs:[...GEOMETRY.values()].reduce((n,e)=>n+e.refs,0),idleBudget:GEOMETRY_BYTES},banks:[...BANKS].map(([q,b])=>({quality:q,state:b.state,textures:b.textures.length,materials:b.materials.size,error:b.error}))})};
+ return {VERSION,MAX_BANKS,get enabled(){return enabled},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++}},get quality(){return quality},set quality(v){if(!['high','low'].includes(v))throw Error('Invalid quality');if(quality!==v){quality=v;generation++}},get generation(){return generation},active,status,ensure,material,configure,attach,dispose,retain,releaseTree,kit,put,bake,chassisKit,weaponKit,convert,lunarPulse,builders:BUILDERS,components:{plate,cylinder,crest,trackedDrive,panel,bolt,pipe,vents,trackPod},profiles:CLASSES,canChassis:(cls,t)=>active()&&!!BUILDERS['chassis:'+cls+':'+M3.visualTier(t)],canWeapon:(a,t)=>active()&&!!(BUILDERS['weapon:'+a]||BUILDERS['weapon:'+a+':'+M3.visualTier(t)]),stats:()=>({users,geometry:{entries:GEOMETRY.size,bytes:geometryBytes(),peakBytes,active:[...GEOMETRY.values()].filter(e=>e.refs).length,refs:[...GEOMETRY.values()].reduce((n,e)=>n+e.refs,0),idleBudget:GEOMETRY_BYTES},banks:[...BANKS].map(([q,b])=>({quality:q,state:b.state,textures:b.textures.length,materials:b.materials.size,error:b.error}))})};
 })();

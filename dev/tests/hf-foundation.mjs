@@ -7,7 +7,7 @@ assert.equal(typeof ctx.THREE.MeshStandardMaterial,'function','real PBR class mu
 runInContext(readFileSync(new URL('js/equipment3d.js',root),'utf8'),ctx);runInContext('globalThis.H=Equipment3D;',ctx);
 const H=ctx.H;assert.equal(H.enabled,false,'safe default: existing collection unchanged');
 runInContext("globalThis.existing=[M3.chassisKit('vanguard',0,PAINTS.stock,'#4d9fff',['dmg','rof','arm'],false),M3.chassisKit('vanguard',0,PAINTS.stock,'#4d9fff',['dmg','rof','arm'],true),M3.weaponKit('moon',2,PAINTS.stock,'#4d9fff',false,'vanguard')];globalThis.oldBake=M3.bake;",ctx);
-assert.deepEqual(Array.from(ctx.existing,r=>[r.k,...r.anims.map(a=>a.k)].reduce((sum,k)=>sum+Object.values(ctx.oldBake(k)).filter(Boolean).reduce((n,g)=>n+g.attributes.position.count,0),0)),[27300,29856,27684],'loading the optional library cannot replace existing default models');
+assert.deepEqual(Array.from(ctx.existing,r=>[r.k,...r.anims.map(a=>a.k)].reduce((sum,k)=>sum+Object.values(ctx.oldBake(k)).filter(Boolean).reduce((n,g)=>n+g.attributes.position.count,0),0)),[27300,29928,27684],'loading the optional library cannot replace existing default models (Lunar 29928: the overlay conduits)');
 for(const quality of ['high','low'])for(const lunar of [false,true]){
  const h=H.chassisKit('vanguard',0,{hull:'#2c3a49',tur:'#3b4a5b',trim:'#d5dee7'},'#4d9fff',['dmg','rof','arm'],lunar,quality),w=H.weaponKit('moon',2,{},'#4d9fff',lunar,'vanguard',quality);
  for(const [kind,r] of [['hull',h],['weapon',w]]){

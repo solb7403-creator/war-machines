@@ -23,7 +23,7 @@ function diamond(ctx,x,y,s,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-s);
 
 // ---- Crystal tank, top-down: hull follows movement, turret + cannon follow the aim ----
 function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,skin){
- const fl=flash||null,P=skin==='lunar'?{hull:'#252b34',tur:'#333c47',trim:'#bb914e',shine:true}:paint||PAINTS.stock;parts=parts||3;   // 1 = hull only, 2 = turret only, 3 = whole tank. Paint colors the plates; team color stays on tracks and core
+ const fl=flash||null,P=skin==='lunar'?(paint&&paint.hull!=='#2c3a49'?{hull:paint.hull,tur:paint.tur,trim:'#bb914e',shine:true}:{hull:'#252b34',tur:'#333c47',trim:'#bb914e',shine:true}):paint||PAINTS.stock;parts=parts||3;   // 1 = hull only, 2 = turret only, 3 = whole tank. Paint colors the plates; team color stays on tracks and core
  if(parts&1){
  ctx.save();ctx.translate(px,py);ctx.rotate(hd);
  for(const sd of [-1,1]){                           // tracks with a glow stripe
