@@ -9,6 +9,13 @@ const OUT=process.env.SHOTS||'/tmp/lunar-shots/signup';fs.mkdirSync(OUT,{recursi
 const SIZES=[['phone-390',390,844,true],['android-360',360,780,true],['tablet-768',768,1024,true],['desktop-1366',1366,900,false]];
 const engines=(process.argv.slice(2).length?process.argv.slice(2):['chromium','webkit','firefox']).filter(n=>{try{return fs.existsSync(pw[n].executablePath());}catch{return false;}});
 const assert=(c,m)=>{if(!c)throw Error('FAIL '+m);};
+let current=null;
+async function explain(){   // on a failure: what the page showed and said
+ if(!current)return;const {pg,label,name,errs,logs}=current;
+ try{await pg.screenshot({path:path.join(OUT,name+'-'+label+'-FAILED.png')});}catch{}
+ try{console.error('URL',pg.url(),'\nLOADING',await pg.evaluate(()=>document.querySelector('#web-loading')?.innerText||'(none)'));}catch{}
+ console.error('ERRORS',errs.join('\n'),'\nCONSOLE',logs.slice(-25).join('\n'));
+}
 (async()=>{
  require('node:child_process').execFileSync('node',['worker/build-web.mjs'],{cwd:ROOT,stdio:'ignore'});
  const srv=spawn('node',['dev/tests/webserver.mjs'],{cwd:ROOT,env:{...process.env,LUNAR_FIXTURE_PORT:String(PORT)},stdio:['ignore','pipe','inherit']});
@@ -24,7 +31,8 @@ const assert=(c,m)=>{if(!c)throw Error('FAIL '+m);};
     await ctx.route('**/*',async r=>{const u=r.request().url();if(u.startsWith(BASE)){const res=await r.fetch({url:FIX+u.slice(BASE.length)});return r.fulfill({response:res});}return r.abort();});
     // any passkey / WebAuthn prompt before playing is a failure
     await ctx.addInitScript(()=>{window.__credCalls=0;try{const c=navigator.credentials;if(c){const wrap=k=>{const f=c[k]&&c[k].bind(c);if(f)c[k]=(...a)=>{window.__credCalls++;return f(...a);};};wrap('create');wrap('get');}}catch{}});
-    const pg=await ctx.newPage(),errs=[];pg.on('pageerror',e=>errs.push(String(e)));
+    const pg=await ctx.newPage(),errs=[],logs=[];pg.on('pageerror',e=>errs.push(String(e)));pg.on('console',m=>{if(['error','warning'].includes(m.type()))logs.push(m.type()+': '+m.text());});pg.on('requestfailed',r=>logs.push('failed: '+r.url()+' '+(r.failure()||{}).errorText));
+    current={pg,label,name,errs,logs};
     const cs=('N'+name[0]+width+Date.now().toString(36)).slice(0,16);
     // 1. landing
     await pg.goto(BASE+'/web/?i=abcd2345');await pg.waitForSelector('.colony-hero');
@@ -93,6 +101,6 @@ const assert=(c,m)=>{if(!c)throw Error('FAIL '+m);};
    }
    await browser.close();
   }
- }finally{srv.kill();}
+ }catch(e){await explain();throw e;}finally{srv.kill();}
  console.log('signup-browser: passed '+pass+' ('+engines.join(', ')+')');
 })().catch(e=>{console.error(e);process.exit(1);});
