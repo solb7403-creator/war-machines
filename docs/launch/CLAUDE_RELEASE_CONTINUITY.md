@@ -15,4 +15,6 @@ Resume here if a session ends. Owner works from iPhone only: no terminal steps f
 - Only if network + `STAGING_*` secrets are ready. Never enable payments in production without the owner's approval.
 
 ## Status log
-- Phase 1 code + tests done; PR pending.
+- Phase 1 SHIPPED: PR #25 merged as `3bd77d0` (rollback: revert it, back to `db57253`). Deploy run 41269136466 green; live `/pvp/health` = `{"ok":true}`; build `20261101031510`; Firebase rules (indexes `rfs`, `ads`) deployed.
+- Phase 2 in progress on `fix/prelaunch-qa`: copy fixes, Stars-only checkout gate (`CRYPTO_PAY=false` in js/core.js), results squad-bonus line, VS no-op rebuild guard.
+- Phase 3: this sandbox cannot reach api.telegram.org, testnet.toncenter.com, api.devnet.solana.com, api.cloudflare.com (proxy 403) -> not ready.
