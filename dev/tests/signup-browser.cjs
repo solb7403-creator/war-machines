@@ -4,7 +4,9 @@
 //   node dev/tests/signup-browser.cjs [chromium|webkit|firefox ...]   (default: every engine that is installed)
 const {spawn}=require('node:child_process'),fs=require('node:fs'),path=require('node:path');
 const pw=require('playwright');
-const ROOT=path.resolve(__dirname,'../..'),BASE='https://lunar.test',PORT=8000+Math.floor(Math.random()*900),FIX='http://127.0.0.1:'+PORT;
+// served over real HTTPS (a throwaway self-signed certificate): every engine stores the Secure __Host- session cookie
+// itself, exactly as on the live site (no request interception, which WebKit doesn't take cookies from)
+const ROOT=path.resolve(__dirname,'../..'),PORT=8000+Math.floor(Math.random()*900),BASE='https://127.0.0.1:'+PORT,FIX=BASE;
 const OUT=process.env.SHOTS||'/tmp/lunar-shots/signup';fs.mkdirSync(OUT,{recursive:true});
 const SIZES=[['phone-390',390,844,true],['android-360',360,780,true],['tablet-768',768,1024,true],['desktop-1366',1366,900,false]];
 const engines=(process.argv.slice(2).length?process.argv.slice(2):['chromium','webkit','firefox']).filter(n=>{try{return fs.existsSync(pw[n].executablePath());}catch{return false;}});
@@ -18,7 +20,9 @@ async function explain(){   // on a failure: what the page showed and said
 }
 (async()=>{
  require('node:child_process').execFileSync('node',['worker/build-web.mjs'],{cwd:ROOT,stdio:'ignore'});
- const srv=spawn('node',['dev/tests/webserver.mjs'],{cwd:ROOT,env:{...process.env,LUNAR_FIXTURE_PORT:String(PORT)},stdio:['ignore','pipe','inherit']});
+ const key=path.join(OUT,'fixture-key.pem'),cert=path.join(OUT,'fixture-cert.pem');
+ require('node:child_process').execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',key,'-out',cert,'-days','1','-subj','/CN=127.0.0.1','-addext','subjectAltName=IP:127.0.0.1'],{stdio:'ignore'});
+ const srv=spawn('node',['dev/tests/webserver.mjs'],{cwd:ROOT,env:{...process.env,LUNAR_FIXTURE_PORT:String(PORT),LUNAR_WEB_ORIGIN:BASE,LUNAR_TLS_KEY:key,LUNAR_TLS_CERT:cert},stdio:['ignore','pipe','inherit']});
  await new Promise((res,rej)=>{srv.stdout.on('data',d=>{if(String(d).includes('ready'))res();});setTimeout(()=>rej(Error('fixture did not start')),60000);});
  let pass=0;const results=[];
  try{
@@ -27,8 +31,8 @@ async function explain(){   // on a failure: what the page showed and said
    const browser=await pw[name].launch(name==='chromium'?{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}:{});
    for(const [label,width,height,touch] of SIZES){
     const opts={viewport:{width,height}};if(touch&&name!=='firefox'){opts.isMobile=width<700;opts.hasTouch=true;}
-    const ctx=await browser.newContext(opts);
-    await ctx.route('**/*',async r=>{const u=r.request().url();if(u.startsWith(BASE)){const res=await r.fetch({url:FIX+u.slice(BASE.length)});return r.fulfill({response:res});}return r.abort();});
+    opts.ignoreHTTPSErrors=true;const ctx=await browser.newContext(opts);
+    await ctx.route('**/*',r=>r.request().url().startsWith(BASE)?r.continue():r.abort());   // nothing leaves the machine
     // any passkey / WebAuthn prompt before playing is a failure
     await ctx.addInitScript(()=>{window.__credCalls=0;try{const c=navigator.credentials;if(c){const wrap=k=>{const f=c[k]&&c[k].bind(c);if(f)c[k]=(...a)=>{window.__credCalls++;return f(...a);};};wrap('create');wrap('get');}}catch{}});
     const pg=await ctx.newPage(),errs=[],logs=[];pg.on('pageerror',e=>errs.push(String(e)));pg.on('console',m=>{if(['error','warning'].includes(m.type()))logs.push(m.type()+': '+m.text());});pg.on('requestfailed',r=>logs.push('failed: '+r.url()+' '+(r.failure()||{}).errorText));
@@ -87,7 +91,7 @@ async function explain(){   // on a failure: what the page showed and said
     if(label==='desktop-1366'||label==='phone-390'){
      // an older account without a call sign is asked for one in the game (prefilled), and it becomes the public name
      const pid=await pg.evaluate(()=>fetch('/auth/session').then(r=>r.json()).then(s=>s.pid));
-     await fetch(FIX+'/__nocs',{method:'POST',body:JSON.stringify({pid})});
+     await new Promise((ok,no)=>{const r=require('node:https').request(FIX+'/__nocs',{method:'POST',ca:fs.readFileSync(path.join(OUT,'fixture-cert.pem'))},res=>{res.resume();res.on('end',ok);});r.on('error',no);r.end(JSON.stringify({pid}));});
      await pg.goto(BASE+'/web/play.html#play');await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab,null,{timeout:45000});
      assert(await pg.locator('#cs-in').count()===0,'not asked before the first match');await pg.evaluate(()=>{save.welcomed=true;save.mp=1;store();closeAll();});
      await pg.waitForSelector('#cs-in',{timeout:20000});
