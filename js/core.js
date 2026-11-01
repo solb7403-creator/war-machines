@@ -8,6 +8,9 @@ const TG=(window.Telegram&&window.Telegram.WebApp)||null;
 const IN_TG=!!(TG&&TG.initData&&TG.initDataUnsafe&&TG.initDataUnsafe.user);
 const WEB_EDITION=!!window.LUNAR_WEB_EDITION;
 const IN_WEB=WEB_EDITION&&!!window.LUNAR_WEB?.user;
+// TON and SOL checkout stay off until they pass test-network certification (docs/launch); Stars only in Telegram.
+// The server still verifies any crypto payment already sent, so nothing in flight is lost.
+const CRYPTO_PAY=false;
 const ACCOUNT_OK=IN_TG||IN_WEB;
 const TG_USER=IN_TG?TG.initDataUnsafe.user:IN_WEB?window.LUNAR_WEB.user:null;
 const DEV_IDS=[]; // Telegram numeric user IDs allowed to use the dev panel inside Telegram
@@ -165,7 +168,7 @@ function loadSave(obj){
  if(!save.wTier)save.wTier={pulse:0,twin:-1,siege:-1};if(!save.cTier)save.cTier={scout:-1,vanguard:0,titan:-1};
  if(!WEAPONS[save.weapon])save.weapon='pulse';
  if(!CH[save.chassis])save.chassis='vanguard';
- if(save.payCur===undefined||save.payCur==='pts')save.payCur='stars';   // points are a separate button on each crate now
+ if(save.payCur===undefined||save.payCur==='pts'||!CRYPTO_PAY)save.payCur='stars';   // points are a separate button on each crate now
  if(save.sound===undefined)save.sound=true;
  if(save.haptics===undefined)save.haptics=true;
  if(save.mp===undefined)save.mp=(save.wins||0)+(save.losses||0);

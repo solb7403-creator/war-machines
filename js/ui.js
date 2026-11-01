@@ -270,7 +270,7 @@ function renderShop(){
  const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const pend=save.pendingSol||save.pendingTx;
  return '<h2 class="title" data-act="devtap">Shop</h2>'+
-  '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
+  (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':'')+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
   '<p class="dimtxt" style="margin:6px 0 10px">'+lpPct()+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?' ($'+fmtNum(lbMeta.lpf)+' so far)':'')+'. The other '+(100-lpPct())+'% funds the game: development, servers and promotion. <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
@@ -823,6 +823,7 @@ function resultsHTML(r){
  if(r.featured)lines.push(['Featured mode','×'+r.featX]);
  if(r.leagueMult!==1)lines.push([r.league.n+' league','×'+r.leagueMult]);
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
+ if(r.sqb>0)lines.push(['Squad match bonus','+'+fmtNum(r.sqb)]);   // verified active recruits (server-set)
  if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
  if(r.note)lines.push([esc(r.note),'0']);   // the server didn't count it (too fast, an expired ticket, no connection at the start)
  const t=tierOfPts(r.after),lo=TPTS[t],hi=TPTS[t+1],f=hi?(r.after-lo)/(hi-lo):1;
@@ -846,7 +847,7 @@ function resultsHTML(r){
   '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span>'+vbadge(myVl())+'<span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
   '<div class="tip">'+esc(tip)+'</div>'+
   '<div class="grow"></div><div class="acts"><button class="fight" data-act="again"><span class="big">PLAY AGAIN</span><span class="small">'+(lastQuick?'Another quick match':'Win '+rangeTxt(winRange(gtypeKey(),modeKey()))+' points')+'</span></button>'+
-  '<div class="two">'+(r.won&&IN_TG?'<button class="btn btn-quiet" data-act="sharewin">Share win</button>':'<button class="btn btn-quiet" data-act="tabmenu" data-arg="garage">Garage</button>')+'<button class="btn btn-ghost" data-act="menu">Menu</button></div></div>';
+  '<div class="two">'+(r.won&&refLink()?'<button class="btn btn-quiet" data-act="sharewin">Share win</button>':'<button class="btn btn-quiet" data-act="tabmenu" data-arg="garage">Garage</button>')+'<button class="btn btn-ghost" data-act="menu">Menu</button></div></div>';
 }
 function onMatchEnd(r){
  if(!r)return;
@@ -1000,12 +1001,12 @@ const ACT={
    '<p class="mut">All '+upLevels(save.up)+' levels go back to 0. The reset fee is '+fmtNum(fee)+' points.</p>'+
    '<div style="display:grid;gap:8px;margin-top:14px"><button class="btn btn-ghost block" data-act="respecok">Pay '+fmtNum(fee)+' points · get '+fmtNum(half)+' back</button>'+
    (pr?'<button class="btn btn-gold block" data-act="respecpay">Pay '+priceLabel(pr.ton,pr.stars)+' · get all '+fmtNum(inv)+' back</button>'+
-    '<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':
+    (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':''):
     '<p class="mut" style="margin:0">Builds worth under 9,375 points reset with points only.</p>')+
    '<button class="btn btn-quiet block" data-act="respeccancel">Keep it</button></div>';
   const ov=findOv('respec');if(ov)closeOverlay(ov);
   openOverlay('modal','<h3>Reset your build?</h3>'+body,{key:'respec'});},
- respeccur:a=>{save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec();},
+ respeccur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec();},
  respecpay:()=>{const pr=ecoPrice(save,{kind:'respec'},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec'});},
  respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
  respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
@@ -1019,7 +1020,7 @@ const ACT={
   store();syncPlayer();fx('tap');showToast('Equipped '+(isW?getW(k):getC(k)).name);},
  core:a=>openCorePicker(+a),
  coreset:a=>{const [i,k]=a.split(':');socketCore(+i,k==='-'?null:k);fx('tap');const ov=findOv('core');if(ov)closeOverlay(ov);showToast(k==='-'?'Socket emptied':GEM[k].name+' core in socket '+(+i+1));},
- paycur:a=>{save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
+ paycur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
  tonwallet:()=>tonWalletButton(),
  solwallet:()=>openSolWallets(),
  setsolw:a=>{save.solWallet=a;store();const ov=findOv('solw');if(ov)closeOverlay(ov);},

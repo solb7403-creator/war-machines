@@ -126,3 +126,4 @@ jobs:
           for i in 1 2 3 4 5; do H=$(curl -s "$WORKER_URL/pvp/health"); echo "$H" | grep -q '"ok":true' && break; sleep 5; done
           echo "::notice::pvp health: $H"
           echo "$H" | grep -q '"ok":true' || { echo "::error::live-match lobby not answering: $H"; exit 1; }
+          V=$(curl -s "$WORKER_URL/version.json"); echo "::notice::live version: $V (repo: $(cat ../version.json 2>/dev/null || cat version.json))"

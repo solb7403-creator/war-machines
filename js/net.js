@@ -12,7 +12,7 @@ function api(path,body){
  return apiFetch(path,body).then(r=>r.json().then(j=>{if(!r.ok){if(IN_WEB&&r.status===401)window.dispatchEvent(new Event('lunar-session-expired'));throw new Error(j.error||('http '+r.status));}return j;}));
 }
 function initBackend(){
- if(ACCOUNT_OK)doSync(true);
+ if(ACCOUNT_OK){doSync(true);setTimeout(()=>loadSquad(),3000);}   // the invite link is ready before the first win
  if(IN_WEB)return;
  checkPendingPurchase();checkPendingSol();
  if(SRV_ECO)setTimeout(payResumeQueue,4000);
