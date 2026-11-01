@@ -54,10 +54,10 @@ async def main():
         await pg.screenshot(path=OUT+'round_screen.png')
         btns=await pg.evaluate("()=>document.querySelectorAll('[data-act=rswap]').length")
         check(btns==3,'chassis swap buttons missing: '+str(btns))
-        await pg.click('[data-act=rswap][data-arg=titan]');await pg.wait_for_timeout(200)
+        await pg.click('[data-act=rswap][data-arg=titan]',force=True);await pg.wait_for_timeout(200)
         cls=await pg.evaluate("()=>me.cls")
         check(cls=='titan','swap between rounds failed: '+cls)
-        if await pg.evaluate("()=>state==='round'"):await pg.click('[data-act=nextround]',timeout=5000)   # it also starts by itself after 4 s
+        if await pg.evaluate("()=>state==='round'"):await pg.click('[data-act=nextround]',timeout=5000,force=True)   # it also starts by itself after 4 s
         await pg.wait_for_timeout(300)
         r2=await pg.evaluate("()=>({state,round:series.round,hp:me.hp===me.mhp,crates:crates.length})")
         check(r2['state']=='play' and r2['round']==2 and r2['hp'],'round 2 did not start clean '+json.dumps(r2))

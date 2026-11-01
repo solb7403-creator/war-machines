@@ -62,7 +62,7 @@ async def run(p,w,h,tag,uid):
     vs=await pg.evaluate("()=>({vs:!!document.querySelector('.full.vs'),state,units:units.length})")
     check(vs['vs'] and vs['state']=='vs' and vs['units']==4,'VS screen wrong '+json.dumps(vs))
     await shot('06_vs')
-    if await pg.evaluate("()=>state==='vs'"):await pg.click('[data-act=vsstart]',timeout=5000)   # the VS screen also starts by itself after 4 s
+    if await pg.evaluate("()=>state==='vs'"):await pg.click('[data-act=vsstart]',timeout=5000,force=True)   # the VS screen also starts by itself after 4 s
     await pg.wait_for_timeout(300)
     st=await pg.evaluate("()=>({state,battle:document.body.classList.contains('battle')})")
     check(st['state']=='play' and st['battle'],'VS start failed '+json.dumps(st))

@@ -61,10 +61,13 @@ async def main():
         await pg.add_style_tag(content='#toast{display:none!important}')
         await pg.wait_for_timeout(800)
         await pg.evaluate("()=>{save.welcomed=true;save.mp=5;store();closeAll();}")
+        # an upgraded visitor (power ~88): since #23 an AI-match ghost must be 70-95% of your power, and no stock tank fits under a stock pilot
+        dev('/__set',{'path':'eco/'+vid+'/up','value':{'hull':4,'cannon':4,'engine':4,'target':2,'reactor':0}})
+        await pg.evaluate("()=>doSync(false)");await pg.wait_for_timeout(1500)
         pw=dump()['players'][vid]['power']
         Lg=await pg.evaluate("()=>{const L=JSON.parse(JSON.stringify(STOCK_L));L.paint='ember';L.c={c:'titan',t:0,q:1,s:false};return L;}")
         dev('/__set',{'path':'gh','value':None})   # only this run's ghost in the pool
-        dev('/__set',{'path':'gh/tg_'+str(RUN+903)+'','value':{'n':'Sleepy','L':Lg,'pw':int(pw*0.9),'t':int(time.time()*1000)-30*60000}})
+        dev('/__set',{'path':'gh/tg_'+str(RUN+903)+'','value':{'n':'Sleepy','L':Lg,'pw':await pg.evaluate("L=>powerOf(L)",Lg),'t':int(time.time()*1000)-30*60000}})
         await pg.evaluate("()=>{window.__ms=onMatchStart;save.gtype='arena';save.mode='2v2';save.map='classic';prepareMatch();showVS();}")
         await pg.wait_for_timeout(1500)
         r=await pg.evaluate("()=>({names:units.map(u=>u.name),gh:units.filter(u=>u.gh).map(u=>({n:u.name,team:u.team,cls:u.cls,paint:u.paint,mhp:u.mhp})),vs:(findOv('vs')||{box:{textContent:''}}).box.textContent})")
