@@ -1,32 +1,45 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#030a15"><meta name="robots" content="noindex,nofollow">
-<title>Account Command · LUNAR WAR MACHINES</title><link rel="icon" href="../favicon-32.png">
-<link rel="stylesheet" href="login.css"><script src="account.js" defer></script></head><body>
+<title>Account Settings · LUNAR</title><link rel="icon" href="../favicon-32.png"><link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="login.css"><script src="account.js" defer></script></head><body class="auth-page">
 <main class="viewport">
-<header class="brand"><a href="./">◈ LUNAR <span>WAR MACHINES</span></a><span class="signal">PILOT IDENTITY // ACCOUNT</span></header>
-<section class="access account-card" aria-labelledby="access-title">
-<div class="kicker">COMMAND // ACCOUNT SETTINGS</div>
-<h1 id="access-title">ONE ACCOUNT. <em>ALL PLATFORMS.</em></h1>
-<p class="intro">LUNAR runs independently of Telegram. You can link your Telegram pilot identity if you want to use the Mini App.</p>
-<p id="account-status" role="status" aria-live="polite">Reading your secure Lunar session…</p>
-<div class="link-state" id="account-identity" hidden></div>
-<section id="lunar-account-details" hidden>
-<h2>OPTIONAL TELEGRAM LINK</h2>
-<p>Link Telegram only if you want to play inside the Telegram Mini App. Your independent Lunar account remains available even if the Telegram bot is removed.</p>
-<p id="link-state" class="link-state" role="status" aria-live="polite">Checking linked platforms…</p>
-<button id="link-telegram" class="primary" type="button">LINK MY TELEGRAM ACCOUNT <span>↗</span></button>
-<a id="open-bot" class="primary" href="#" target="_blank" rel="noopener" hidden>OPEN LUNAR BOT TO CONFIRM <span>↗</span></a>
-<div class="backup" id="manual" hidden><p>If you're already in the bot, send this command:</p><div class="code-row"><code id="link-command"></code><button id="copy-code" type="button">COPY</button></div></div>
-<p class="fine-print">Linking is optional. Each Telegram account can be linked to only one Lunar account. For pilots who already played in Telegram, sign into the website through the bot once and add a passkey to that original account first. Existing progress is never silently discarded.</p>
+<header class="brand"><a href="./">◈ LUNAR <span>WAR MACHINES</span></a><a class="signal" href="play.html">← Back to the game</a></header>
+<section class="access auth-card settings" aria-labelledby="access-title">
+<h1 id="access-title">Settings</h1>
+<p id="account-status" class="status" role="status" aria-live="polite">Loading your account…</p>
+<div id="settings" hidden>
+ <div class="set-block"><div class="set-label">Call sign</div><div class="set-value" id="acct-cs">—</div><p class="fine-print" id="acct-id"></p>
+  <form id="cs-form" class="auth-form" novalidate hidden><label class="field-label" for="cs-new">New call sign</label><input id="cs-new" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16"/><p class="field-msg" id="cs-msg">One free change in your first 7 days.</p><button class="primary action-button" type="submit">Change call sign</button></form>
+ </div>
+
+ <div class="set-block protect" id="protect"><h2>Protect your account</h2>
+  <p class="fine-print" id="protect-state"></p>
+  <div class="other-row">
+   <button type="button" class="other" id="add-passkey" hidden>🔑 Add <span id="passkey-name">a passkey</span></button>
+   <a class="other" id="link-google" href="/auth/google/start?mode=link" hidden>G Link Google</a>
+   <button type="button" class="other" id="link-telegram">✈ Link Telegram</button>
+  </div>
+  <div class="telegram-box" id="tg-box" hidden><p id="link-state" role="status">Open the bot, press Start, then come back here.</p><a id="open-bot" class="primary" href="#" target="_blank" rel="noopener">Open LUNAR bot <span>↗</span></a><div class="backup" id="manual"><p>Already in the bot? Send:</p><div class="code-row"><code id="link-command"></code><button id="copy-code" type="button">COPY</button></div></div></div>
+  <form id="email-form" class="auth-form" novalidate><label class="field-label" for="email">Recovery email <span id="email-soon" class="soon" hidden>coming soon</span></label><input id="email" type="email" autocomplete="email" inputmode="email" maxlength="200"/><p class="fine-print">Used only to reset your password. Without a recovery method, a forgotten password means your account is lost permanently.</p><button class="other" id="email-go" type="submit">Save recovery email</button></form>
+ </div>
+
+ <div class="set-block"><h2 id="pw-title">Change password</h2>
+  <form id="pw-form" class="auth-form" novalidate>
+   <input type="text" name="username" autocomplete="username" id="pw-user" hidden/>
+   <div id="cur-wrap"><label class="field-label" for="pw-cur">Current password</label><div class="pw-row"><input id="pw-cur" type="password" autocomplete="current-password" maxlength="200"/><button type="button" class="eye" data-eye="pw-cur" aria-label="Show password">👁</button></div></div>
+   <label class="field-label" for="pw-new">New password</label><div class="pw-row"><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="200"/><button type="button" class="eye" data-eye="pw-new" aria-label="Show password">👁</button></div>
+   <p class="field-msg" id="pw-msg">At least 8 characters. Changing it logs you out on your other devices.</p>
+   <button class="primary action-button" type="submit" id="pw-go">Save password</button>
+  </form>
+ </div>
+
+ <div class="set-block"><h2>Sessions</h2><div class="other-row"><button type="button" class="other" id="sign-out">Log out</button><button type="button" class="other" id="sign-out-all">Log out everywhere</button></div></div>
+
+ <div class="set-block danger"><h2>Delete account</h2><p class="fine-print">Deletes your call sign login, password, recovery email and gameplay progress. Purchases can't be refunded by deleting. Your call sign stays reserved for 30 days.</p>
+  <form id="del-form" class="auth-form" novalidate><label class="field-label" for="del-cs">Type your call sign to confirm</label><input id="del-cs" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16"/><button class="other danger-btn" type="submit">Delete my account</button></form>
+ </div>
+</div>
+<p class="fine-print legal"><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></p>
 </section>
-<section id="telegram-account-details" hidden>
-<h2>SECURE YOUR TELEGRAM PILOT</h2>
-<p>Started playing on Telegram? Give your existing pilot a permanent Lunar passkey. Keep your current machines, earned points, purchases, quests and battle history.</p>
-<button id="upgrade-telegram" class="primary" type="button">ADD LUNAR PASSKEY TO THIS PILOT <span>↗</span></button>
-<p class="fine-print">Your existing progress stays on the same server-owned account. After upgrading, you can sign into the website with Face ID or a saved passkey, without opening Telegram again.</p>
-<p class="fine-print">Do not create a second account to carry over Telegram progress. Secure this original account instead.</p>
-</section>
-<div class="alternate"><a href="play.html">← RETURN TO GAME</a><button id="sign-out" class="retry" type="button">SIGN OUT</button></div>
-</section><footer>LUNAR ACCOUNT NETWORK // INDEPENDENT BY DESIGN</footer>
 </main></body></html>

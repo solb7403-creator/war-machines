@@ -19,6 +19,7 @@ const IS_DEV=!WEB_EDITION&&(!IN_TG||DEV_IDS.indexOf(TG_USER&&TG_USER.id)>=0||DEV
 const tgv=v=>!!(TG&&TG.isVersionAtLeast&&TG.isVersionAtLeast(v));
 function tgName(u){
  if(!u)return 'Pilot';
+ if(typeof u.callsign==='string'&&/^[A-Za-z0-9@_\-.!#$*+~^?=%:]{3,16}$/.test(u.callsign))return u.callsign;   // the call sign, exactly as chosen
  let n=(u.username?u.username:((u.first_name||'')+(u.last_name?' '+u.last_name:''))).trim();
  n=n.replace(/[^\w .\-]/g,'').slice(0,16);
  return n||('Pilot-'+String(u.id).slice(-4));

@@ -1,7 +1,7 @@
 name: Website layout and login contracts
 on:
   pull_request:
-    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'js/graphics.js', 'dev/tests/graphics*', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/web-auth.js', 'worker/src/lunar-identity.js', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
+    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'js/graphics.js', 'dev/tests/graphics*', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/**', 'privacy.html', 'terms.html', 'js/ui.js', 'js/net.js', 'js/core.js', 'dev/tests/signup-browser.cjs', 'dev/tests/webserver.mjs', 'dev/tests/wtest/accounts.mjs', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
 permissions:
   contents: read
 jobs:
@@ -19,6 +19,9 @@ jobs:
           node --check web/website.js
           node --check web/login.js
           node --check web/account.js
+          node --check web/account-prompts.js
+          node --check worker/src/accounts.js
+          node --check worker/src/callsign.js
           node --check worker/src/lunar-identity.js
           node --check web/game.js
           node --check js/models3d.js
@@ -49,3 +52,32 @@ jobs:
           node dev/tests/graphics-release.mjs
           node dev/tests/wtest/web-auth.mjs
           node dev/tests/wtest/lunar-identity.mjs
+          node dev/tests/wtest/accounts.mjs
+
+  # A new visitor's first visit (landing -> call sign + password -> the game -> log back in -> settings) in all three
+  # browser engines at phone (390, 360), tablet (768) and desktop (1366) sizes, touch and keyboard-only.
+  signup-browsers:
+    runs-on: ubuntu-24.04   # Playwright's browser builds support this image (not yet ubuntu-latest = 26.04)
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit, firefox]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: |
+          npm install --prefix worker --no-audit --no-fund --package-lock=false
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps ${{ matrix.engine }}
+      - name: First visit in ${{ matrix.engine }}
+        env:
+          SHOTS: shots
+        run: node dev/tests/signup-browser.cjs ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: signup-${{ matrix.engine }}
+          path: shots

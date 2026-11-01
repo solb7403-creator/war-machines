@@ -1,15 +1,20 @@
 // Official Telegram Login (OIDC ID token), first-party HttpOnly sessions. No client identity or balances trusted.
 import {dbGet} from './db.js';
+export const ACCOUNT_TYPES=['passkey','password','google'];
 const ISSUER='https://oauth.telegram.org',JWKS=ISSUER+'/.well-known/jwks.json';
 export const WEB_ORIGIN='https://lunar-api.solb7403.workers.dev';
-const LOGIN_COOKIE='__Host-lunar-login',SESSION_COOKIE='__Host-lunar-session',MAX_AGE=8*3600;
+const LOGIN_COOKIE='__Host-lunar-login',SESSION_COOKIE='__Host-lunar-session';
+// Sessions: "Keep me signed in" (the default) lasts 90 days and slides forward on use, up to a year; without it the
+// cookie ends with the browser and the server record after 12 idle hours (7 days at most).
+const DAY=86400000,KEEP_TTL=90*DAY,KEEP_ABS=365*DAY,SHORT_TTL=12*3600000,SHORT_ABS=7*DAY;
+export const ttlOf=v=>v&&v.keep===false?SHORT_TTL:KEEP_TTL;
 const enc=new TextEncoder();
 const random=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
 const origin=env=>env.WEB_ORIGIN||WEB_ORIGIN;
 const clientId=env=>String(env.TELEGRAM_WEB_CLIENT_ID||String(env.BOT_TOKEN||'').split(':')[0]);
 const ready=env=>env.WEB_LOGIN_ENABLED==='1'&&/^\d{3,16}$/.test(clientId(env))&&!!env.SESSIONS;
 const json=(o,status=200,cookie)=>new Response(JSON.stringify(o),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(cookie?{'Set-Cookie':cookie}:{})}});
-const cookie=(k,v,age)=>k+'='+v+'; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age='+age;
+const cookie=(k,v,age)=>k+'='+v+'; Path=/; HttpOnly; Secure; SameSite=Lax'+(age===null?'':'; Max-Age='+age);
 const codeReady=env=>ready(env)&&!!String(env.TELEGRAM_OIDC_CLIENT_SECRET||'').trim();
 const callbackURL=env=>origin(env)+'/auth/callback';
 const safeTarget=v=>/^(play|garage|quests|ranks|shop|mode:(arena|zone|crystal|bounty|royale|boss))$/.test(String(v||''))?String(v):'play';
@@ -34,17 +39,35 @@ async function tgSessionIdentity(env,user){
  // Their legacy tg_<id> is a stable storage key; the new passkey works without the bot.
  const legacy='tg_'+user.id,account=await dbGet(env,'lunarAccounts/'+legacy);
  if(account){
-  if(account.id!==legacy||account.type!=='passkey'||account.telegramId!==user.id)throw Error('invalid upgraded account');
+  if(account.id!==legacy||!ACCOUNT_TYPES.includes(account.type)||account.telegramId!==user.id)throw Error('invalid upgraded account');
   return {user:{...user,lunar_account:true,lunar_name:account.name},pid:legacy};
  }
  return {user,pid:legacy};
 }
-export async function issueLunarWebSession(env,user,pid){
+const sha=async t=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(t))),x=>x.toString(16).padStart(2,'0')).join('');
+// One server record per session; each account also keeps a small index of its sessions so a password change or
+// "Log out everywhere" can end them all. Returns {sid,csrf,expires,cookie} or null.
+export async function newSession(env,user,pid,{keep=true,via='telegram'}={}){
+ const sid=random(),csrf=random(),now=Date.now(),ttl=keep===false?SHORT_TTL:KEEP_TTL;
+ const v={kind:'session',user,pid,csrf,created:now,expires:now+ttl,absolute:now+(keep===false?SHORT_ABS:KEEP_ABS),keep:keep!==false,via};
+ if(!(await record(env,sid,'issue',v)).ok)return null;
+ await record(env,'acct|'+pid,'track',{h:await sha(sid),exp:v.absolute}).catch(()=>{});
+ return {sid,csrf,expires:v.expires,cookie:cookie(SESSION_COOKIE,sid,keep===false?null:Math.floor(ttl/1000))};
+}
+// end every session of an account (optionally all but one token)
+export async function endSessions(env,pid,exceptToken=''){
+ const keepH=exceptToken?await sha(exceptToken):'';
+ const r=await record(env,'acct|'+pid,'untrack-all',{keep:keepH}).catch(()=>null);
+ const list=r&&r.ok?(await r.json()).list||[]:[];
+ await Promise.all(list.map(h=>env.SESSIONS.get(env.SESSIONS.idFromName(h)).fetch('https://session/revoke',{method:'POST',body:'{}'}).catch(()=>{})));
+ return list.length;
+}
+export const sessionCookie=(sid,age)=>cookie(SESSION_COOKIE,sid,age);
+export async function issueLunarWebSession(env,user,pid,opt={}){
  if(!env.SESSIONS||!(/^(?:ln_[0-9]{12,15}|tg_[0-9]{3,15})$/.test(String(pid||'')))||!user?.lunar_account)return json({error:'account'},403);
- const sid=random(),csrf=random(),now=Date.now();
- const created=await record(env,sid,'issue',{kind:'session',user,pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
- if(!created.ok)return json({error:'session_store'},503);
- const result=json({ok:true,user,pid,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
+ const s=await newSession(env,user,pid,{via:'passkey',...opt});
+ if(!s)return json({error:'session_store'},503);
+ const result=json({ok:true,user,pid,csrf:s.csrf,expires:s.expires},200,s.cookie);
  result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
 }
 function sameOrigin(req,env){return new URL(req.url).origin===origin(env)&&req.headers.get('Origin')===origin(env)&&!['cross-site'].includes(req.headers.get('Sec-Fetch-Site'));}
@@ -56,11 +79,38 @@ async function record(env,token,op,value){
 export class WebSession {
  constructor(state){this.state=state;}
  async alarm(){await this.state.storage.deleteAll();}
- async fetch(req){return this.state.blockConcurrencyWhile(async()=>{
-  const op=new URL(req.url).pathname,now=Date.now();let v=await this.state.storage.get('record');
+ async fetch(req){
+  // password key derivation runs here (outside the per-record lock): a Durable Object request has a far larger CPU
+  // budget than a Worker request. Nothing is stored.
+  if(new URL(req.url).pathname==='/kdf'){
+   let b;try{b=await req.json();}catch{return json({error:'invalid'},400);}
+   if(typeof b.pw!=='string'||b.pw.length>400||typeof b.s!=='string'||!(b.it>0&&b.it<=100000)||!(b.len>0&&b.len<=64))return json({error:'invalid'},400);
+   const key=await crypto.subtle.importKey('raw',enc.encode(b.pw.normalize('NFC')),'PBKDF2',false,['deriveBits']);
+   const out=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:Uint8Array.from(atob(b.s),c=>c.charCodeAt(0)),iterations:b.it},key,b.len*8));
+   return json({h:btoa(String.fromCharCode(...out))});
+  }
+  return this.state.blockConcurrencyWhile(async()=>{
+  const op=new URL(req.url).pathname,now=Date.now();
+  let v=await this.state.storage.get('record');
+  // an account's session index: hashes of its session tokens (never the tokens), pruned as they expire
+  if(op==='/track'){
+   let b;try{b=await req.json();}catch{return json({error:'invalid'},400);}
+   if(!/^[a-f0-9]{64}$/.test(String(b.h||''))||!Number.isFinite(b.exp))return json({error:'invalid'},400);
+   const list=(v&&v.kind==='index'?v.list:[]).filter(x=>x.exp>now&&x.h!==b.h).slice(-49);list.push({h:b.h,exp:b.exp});
+   const rec={kind:'index',list,expires:Math.max(...list.map(x=>x.exp))};
+   await this.state.storage.put('record',rec);await this.state.storage.setAlarm(rec.expires);return json({ok:true,n:list.length});
+  }
+  if(op==='/untrack-all'){
+   let b;try{b=await req.json();}catch{b={};}
+   const all=v&&v.kind==='index'?v.list.filter(x=>x.exp>now):[];
+   const kept=all.filter(x=>x.h===b.keep),gone=all.filter(x=>x.h!==b.keep).map(x=>x.h);
+   if(kept.length)await this.state.storage.put('record',{kind:'index',list:kept,expires:kept[0].exp});else await this.state.storage.deleteAll();
+   return json({ok:true,list:gone});
+  }
+  if(v&&v.kind==='index')return json({error:'invalid'},400);
   if(op==='/issue'){
    if(v)return json({error:'exists'},409);v=await req.json();
-   if(!['challenge','session'].includes(v.kind)||!Number.isFinite(v.expires)||v.expires<=now||v.expires>now+24*3600000)return json({error:'invalid'},400);
+   if(!['challenge','session'].includes(v.kind)||!Number.isFinite(v.expires)||v.expires<=now||v.expires>now+(v.kind==='session'?KEEP_ABS+DAY:DAY))return json({error:'invalid'},400);
    await this.state.storage.put('record',v);await this.state.storage.setAlarm(v.expires);return json({ok:true});
   }
   if(!v||v.expires<=now){await this.state.storage.deleteAll();return json({error:'expired'},401);}
@@ -89,7 +139,7 @@ export class WebSession {
   if(op==='/revoke'){await this.state.storage.deleteAll();return json({ok:true});}
   if(op==='/renew'){
    if(v.kind!=='session'||v.absolute<=now)return json({error:'expired'},401);
-   v.expires=Math.min(now+MAX_AGE*1000,v.absolute);await this.state.storage.put('record',v);await this.state.storage.setAlarm(v.expires);
+   v.expires=Math.min(now+ttlOf(v),v.absolute);await this.state.storage.put('record',v);await this.state.storage.setAlarm(v.expires);
   }
   return json(v);
  });}
@@ -134,7 +184,14 @@ export async function webAuth(req,env){
  const path=new URL(req.url).pathname;
  if(path==='/auth/config'&&req.method==='GET')return json({enabled:codeReady(env),client_id:ready(env)?clientId(env):null,origin:origin(env),login:'telegram-oidc-code-pkce'});
  if(path==='/auth/session'&&req.method==='GET'){
-  const a=await webIdentity(req,env,false);return a?json({ok:true,user:a.user,pid:a.pid,csrf:a.session.csrf,expires:a.session.expires}):json({error:'signed_out'},401);
+  const a=await webIdentity(req,env,false);if(!a)return json({error:'signed_out'},401);
+  let exp=a.session.expires,set=null;
+  // sessions refresh on use: opening the site after a day or more pushes the end date forward again
+  if(exp-Date.now()<ttlOf(a.session)-DAY&&a.session.absolute>Date.now()){
+   const r=await record(env,a.token,'renew');
+   if(r.ok){exp=(await r.json()).expires;set=a.session.keep===false?null:cookie(SESSION_COOKIE,a.token,Math.floor((exp-Date.now())/1000));}
+  }
+  return json({ok:true,user:a.user,pid:a.pid,csrf:a.session.csrf,expires:exp,keep:a.session.keep!==false,via:a.session.via||'telegram'},200,set);
  }
  // Browser/bot sign-in avoids cross-app OIDC handoff on iOS. Signed Telegram webhook proves identity.
  if(path==='/auth/bot/start'&&req.method==='POST'){
@@ -158,10 +215,9 @@ export async function webAuth(req,env){
   if(used.status===202)return json({pending:true},202);
   if(!used.ok)return json({error:'expired'},401);
   const v=await used.json();if(v.flow!=='bot'||!v.approved)return json({error:'identity'},401);
-  const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,v.approved);
-  const issued=await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
-  if(!issued.ok)return json({error:'session_store'},503);
-  const result=json({ok:true,user:v.approved,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));
+  const linked=await tgSessionIdentity(env,v.approved),ns=await newSession(env,linked.user,linked.pid,{via:'telegram'});
+  if(!ns)return json({error:'session_store'},503);
+  const result=json({ok:true,user:v.approved,csrf:ns.csrf,expires:ns.expires},200,ns.cookie);
   result.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return result;
  }
  if(path==='/auth/start'&&req.method==='GET'){
@@ -200,11 +256,10 @@ export async function webAuth(req,env){
    if(!response.ok)return fail('exchange');
    const data=await response.json();
    const user=await verifyWebToken(data.id_token,env,challenge);if(!user)return fail('identity');
-   const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,user);
-   const issued=await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000});
-   if(!issued.ok)return fail('unavailable');
+   const linked=await tgSessionIdentity(env,user),ns=await newSession(env,linked.user,linked.pid,{via:'telegram'});
+   if(!ns)return fail('unavailable');
    const result=oauthRedirect('/web/play.html#'+safeTarget(challenge.target));
-   result.headers.append('Set-Cookie',cookie(SESSION_COOKIE,sid,MAX_AGE));
+   result.headers.append('Set-Cookie',ns.cookie);
    return expireLoginCookie(result);
   }catch{return fail('exchange');}
  }
@@ -223,15 +278,15 @@ export async function webAuth(req,env){
   let b;try{b=await req.json();}catch{return json({error:'bad_json'},400);}
   const challenge=await r.json(),user=await verifyWebToken(b.id_token,env,challenge);if(!user)return json({error:'identity'},401);
   if(!(await record(env,token,'consume')).ok)return json({error:'replayed'},401);
-  const sid=random(),csrf=random(),now=Date.now(),linked=await tgSessionIdentity(env,user);
-  if(!(await record(env,sid,'issue',{kind:'session',user:linked.user,pid:linked.pid,csrf,created:now,expires:now+MAX_AGE*1000,absolute:now+24*3600000})).ok)return json({error:'session_store'},503);
-  const res=json({ok:true,user,csrf,expires:now+MAX_AGE*1000},200,cookie(SESSION_COOKIE,sid,MAX_AGE));res.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return res;
+  const linked=await tgSessionIdentity(env,user),ns=await newSession(env,linked.user,linked.pid,{via:'telegram'});
+  if(!ns)return json({error:'session_store'},503);
+  const res=json({ok:true,user,csrf:ns.csrf,expires:ns.expires},200,ns.cookie);res.headers.append('Set-Cookie',cookie(LOGIN_COOKIE,'',0));return res;
  }
  if(path==='/auth/logout'||path==='/auth/renew'){
   const a=await webIdentity(req,env);if(!a)return json({error:'signed_out'},401);
   const r=await record(env,a.token,path.endsWith('logout')?'revoke':'renew');if(!r.ok)return json({error:'signed_out'},401);
   if(path.endsWith('logout'))return json({ok:true},200,cookie(SESSION_COOKIE,'',0));
-  const v=await r.json();return json({ok:true,expires:v.expires},200,cookie(SESSION_COOKIE,a.token,Math.floor((v.expires-Date.now())/1000)));
+  const v=await r.json();return json({ok:true,expires:v.expires},200,v.keep===false?null:cookie(SESSION_COOKIE,a.token,Math.floor((v.expires-Date.now())/1000)));
  }
  return json({error:'not_found'},404);
 }

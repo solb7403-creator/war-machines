@@ -660,3 +660,8 @@ button.q{display:flex;width:100%;text-align:left}
 .squad .pips{display:inline-flex;gap:3px;vertical-align:middle}.squad .pip{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18)}.squad .pip.on{background:var(--gold)}
 .squad .sqhd{margin-top:14px;font:700 14px var(--disp)}.squad .sqhd small{font:400 11px var(--body,inherit);color:var(--dust);margin-left:6px}
 .squad .rboard .q{gap:10px}.squad .rboard .q.me{background:rgba(95,227,161,.08)}
+/* call sign picker and Telegram "log in with your call sign" */
+.csform input{display:block;width:100%;min-height:48px;margin:10px 0 4px;padding:0 12px;border-radius:10px;border:1px solid rgba(223,231,242,.25);background:#0b1220;color:#fff;font:600 17px/1.2 system-ui,sans-serif}
+.csform input:focus-visible{outline:2px solid #ffcf4a;outline-offset:1px}
+.cs-good{color:#5fe3a1!important}.cs-bad{color:#ffb38a!important}
+.cs-ideas{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}

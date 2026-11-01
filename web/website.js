@@ -33,4 +33,6 @@ if(loginError){
  const notices={setup:'Telegram website sign-in awaits secure server setup.',rate:'Too many attempts. Please try again shortly.',expired:'Sign-in expired. Please try again.',invalid:'Telegram sign-in could not be verified. Please try again.',cancelled:'Telegram sign-in was cancelled.',exchange:'Telegram login could not complete. Please try again.',identity:'Telegram identity verification failed. Please try again.',unavailable:'Sign-in is temporarily unavailable.'};
  loginNotice(notices[loginError]||'Sign-in could not complete. Please try again.');
  if(window.history?.replaceState)window.history.replaceState(null,'','/web/'+location.hash);
-}
+}// signup funnel: one landing visit per browser session (a plain count, nothing personal)
+try{if(!sessionStorage.getItem('lunar-land')){sessionStorage.setItem('lunar-land','1');const b=JSON.stringify({e:'land'});if(!(navigator.sendBeacon&&navigator.sendBeacon('/auth/acct/ping',new Blob([b],{type:'application/json'}))))fetch('/auth/acct/ping',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:b}).catch(()=>{});}}catch{}
+if(parameters.get('deleted'))loginNotice('Your account was deleted.');

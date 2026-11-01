@@ -40,6 +40,7 @@ async function doSync(boot){
  try{
   const r=await api('/api/sync',body);
   if(/^(?:tg|ln)_\d{3,15}$/.test(String(r.pid||'')))VERIFIED_PID=r.pid; // Authenticated, server-owned player ID.
+  if('cs' in r&&typeof setCallsign==='function'){setCallsign(r.cs);if(!r.cs&&boot)setTimeout(()=>askCallsign(false),1200);}
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
   if(r.rec){save.refBy=r.rec.ref||null;if(r.rec.ref||(r.rec.days||0)>1)inviteDone();}   // the server's binding is the only one
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}

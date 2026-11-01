@@ -16,7 +16,7 @@ def start_dev():
 def dev(path,data=None):
     req=urllib.request.Request(DEV+path,data=json.dumps(data).encode() if data is not None else None,method='POST' if data is not None else 'GET')
     return json.loads(urllib.request.urlopen(req).read())
-def tg_mock(user,start_param=None,pvp=False,eco='local',autogfx=False):
+def tg_mock(user,start_param=None,pvp=False,eco='local',autogfx=False,cs=False):
     idata=dev('/__initdata?user='+urllib.parse.quote(json.dumps(user))+('&sp='+urllib.parse.quote(start_param) if start_param else ''))['initData']
     sp=(",start_param:"+json.dumps(start_param)) if start_param else ''
     # live matches are off unless a test asks for them (pvp=True points the game's socket at the local server)
@@ -24,6 +24,7 @@ def tg_mock(user,start_param=None,pvp=False,eco='local',autogfx=False):
     # the economy: 'local' (the phone runs the shared rules on its own save, for the rule and UI tests) or 'server'
     # (Telegram as shipped: the server owns points and gear; b8test)
     if eco!='server': live+="window.LUNAR_LOCAL_ECO=1;"
+    if not cs: live+="window.LUNAR_NO_CS=1;"   # the call sign prompt has its own test (cs-telegram.py)
     # the test browser draws 3D in software (no GPU), so the automatic graphics step-down stays off unless a test asks for it
     if not autogfx: live+="window.LUNAR_NO_AUTOGFX=1;"
     return live+"""
@@ -36,7 +37,7 @@ window.Telegram={WebApp:{initData:%s,initDataUnsafe:{user:%s%s},platform:'ios',v
  CloudStorage:{setItem(k,v,cb){__cs[k]=v;cb&&cb(null,true)},getItem(k,cb){cb(null,__cs[k]||'')},getItems(ks,cb){const o={};ks.forEach(k=>o[k]=__cs[k]||'');cb(null,o)}}}};
 """ % (json.dumps(idata), json.dumps(user), sp)
 import urllib.parse
-async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None, eco='local', init=None, autogfx=False, override=None):
+async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None, eco='local', init=None, autogfx=False, override=None, cs=False):
     # override: async fn(url) -> None (serve normally), 'abort', or (bytes, content type): lets a test play an old build or go offline
     user=user or {'id':777001,'username':'jaketest','first_name':'Jake'}
     b=browser or await p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
@@ -44,7 +45,7 @@ async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=G
     pg=await ctx.new_page()
     errs=[]
     pg.on('pageerror',lambda e:errs.append(str(e)))
-    mock=tg_mock(user,start_param,pvp,eco,autogfx)
+    mock=tg_mock(user,start_param,pvp,eco,autogfx,cs)
     async def route(r):
         u=r.request.url
         if 'telegram-web-app' in u: return await r.fulfill(body=mock,content_type='application/javascript')

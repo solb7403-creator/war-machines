@@ -19,6 +19,8 @@
 | `worker/` | Cloudflare Worker: the referee for every database write, Stars invoices, webhook, reminders, leaderboard cron |
 | `worker/src/pvp.js` | Live PvP: the lobby and match-room Durable Objects, join and WebSocket routes, loadout checks, server-side results and points |
 | `worker/src/db.js` | Firebase helpers, HMAC, names |
+| `worker/src/accounts.js` | Accounts: call sign + password signup and login (lockout, no enumeration), the call sign index (`csk/`, `cs/`), settings (password, log out everywhere, delete, recovery email), Google sign-in, the signup gate (limits, Turnstile on bursts), the signup funnel (`fn/<day>`), Telegram "log in with your call sign" |
+| `worker/src/callsign.js` | Call sign rules (3-16 ASCII, no spaces, exact case-insensitive duplicates only, reserved names, profanity), password rules and PBKDF2-SHA256 hashing (versioned) |
 | `worker/src/eco.js` | The server-owned economy: `eco/<pid>` records changed only through `tx()` (conditional writes), AI match tickets, claims, the live-match credit, the one-time move for existing pilots, anomaly flags |
 | `worker/build-sim.mjs` | Bundles `js/rules.js` + `js/game.js` + `worker/sim-api.js` into `worker/src/sim.gen.js` (not committed; CI and the tests build it) |
 | `worker/smoke.mjs` | CI smoke test: two pilots meet in a live room inside `wrangler dev` |
@@ -40,6 +42,9 @@ Needs Node, Python 3 and Playwright with Chromium.
 ```
 node dev/tests/wtest/test.mjs          # server: auth, every point source, match tickets, claim maximums, crates, gear and power, Stars/TON, refunds, the move, flags, leaderboard, reminders
 node dev/tests/wtest/pvp.mjs           # live PvP server: lobby, rooms, claims, supers, drops, quits, rounds, results, credits, loadout checks
+node dev/tests/wtest/accounts.mjs      # accounts: call sign + password signup/login, duplicates, lockout, sessions, Turnstile gate, referral at signup, Telegram call signs, same account web + Telegram, Google, recovery email, delete, funnel
+node dev/tests/signup-browser.cjs [chromium|webkit|firefox]   # a new visitor's first visit at 390/360/768/1366 px, touch and keyboard-only (CI runs all three engines)
+python3 dev/tests/cs-telegram.py       # Mini App: the call sign prompt (prefilled, after the first match) and "Log in with your call sign"
 node dev/tests/wtest/farm.mjs          # farm defense: forged and scripted results, bot-pattern flags, linked-account clusters, new-account credit, rate limits, admin pin, reminders at scale; a heavy human trips nothing
 node dev/tests/wtest/load.mjs 3000 300 # load: a spike of new pilots, a burst of results, the 5-minute cron and reminders at that size (requests, CPU, database calls and bytes)
 python3 dev/tests/proofreal.py 3       # proof of play vs real matches: every mode x size x map, driven through the joystick; every record must pass
@@ -129,3 +134,11 @@ Promo videos rendered from the real game, never shipped.
 - `edit.py RAW OUT [main|short|previews|thumb]` cuts them (`timeline.py`) into 1080x1920 H.264/AAC: titles in Chakra Petch,
   speed ramps, punch-ins, shake, flashes, letterbox, phone-framed menus, and an original soundtrack synthesized in `music.py`.
 - `sheet.py RAW shot [step]` makes a numbered contact sheet; use it to retune `HIT` (the frame each super lands) after a recapture.
+
+## Accounts
+
+The website's main way in is a **call sign + password** (`web/login.html`): one short screen, no email, no captcha. Telegram, Google (once `GOOGLE_OAUTH_CLIENT_*` is set) and passkeys (only where the device can make one) are small alternatives under the form; each still picks a unique call sign. The call sign is the public name everywhere: `auth()` reads `cs/<pid>` on every API call and `cleanName` prefers it. Uniqueness is exact and case-insensitive (`csk/<hex of lowercase>`); look-alikes are not folded. One free change in the first 7 days; a released name stays held for its owner 30 days.
+
+Passwords: PBKDF2-SHA256, 100,000 iterations (the Workers cap), 16-byte salt, stored `{v, it, s, h}` so the cost can rise later; the work runs in the `WebSession` Durable Object (`/kdf`) for its larger CPU budget. Sessions: 90 days ("keep me signed in", the default), refreshed on use; each account keeps a session index (`acct|<pid>` in `WebSession`) so a password change or "Log out everywhere" ends them all.
+
+Optional extras turn on by themselves when their GitHub Actions secret exists: `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` (Google sign-in), `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET` (a bot check shown only when signups from one network or device look automated), `RESEND_API_KEY` (+ `RESEND_FROM`, a sender on a domain verified in Resend) for the recovery email. Until then the recovery email shows "coming soon".

@@ -60,7 +60,7 @@ const authDataCreate=concat(rpHash,Uint8Array.of(0x45,0,0,0,0),new Uint8Array(16
 const attObj=cbor({fmt:'none',attStmt:{},authData:authDataCreate});
 const clientData=(type,challenge)=>new TextEncoder().encode(JSON.stringify({type,challenge,origin,crossOrigin:false}));
 const now=Date.now();
-let registered=await call('/auth/lunar/register/options',{name:'Lunar Ace'});
+let registered=await call('/auth/lunar/register/options',{name:'Lunar_Ace'});
 assert.equal(registered.status,200);
 
 const pendingCookie=cookie(registered,'__Host-lunar-login'),reg=await registered.json();
@@ -178,7 +178,7 @@ response=await call('/api/sync',{initData:signed.toString(),lab:1},'','','https:
 assert.equal(response.status,200,JSON.stringify(await response.clone().json()));
 const telegramGame=await response.json();
 assert.deepEqual(telegramGame.E.lab,game.E.lab,'verified Telegram Mini App uses independent Lunar account inventory');
-assert.equal(db.get('/eco/'+pid).nm,'Lunar Ace','linked Telegram must retain the chosen Lunar callsign');
+assert.equal(db.get('/eco/'+pid).nm,'Lunar_Ace','linked Telegram must retain the chosen Lunar callsign');
 assert.equal(db.get('/eco/tg_888001'),null,'linked Telegram must not create a parallel account');
 
 // A linked pilot who signs into the website through the optional Telegram bot must
@@ -232,7 +232,7 @@ assert.equal(originalSession.pid,oldPid);
 assert.equal(originalSession.user.lunar_account,undefined,'Telegram-only user has not yet secured a passkey');
 
 // A signed in user cannot register a second Lunar account; upgrade MUST retain old pilot.
-assert.equal((await call('/auth/lunar/register/options',{name:'Another Pilot'},telegramBrowserCookie,originalSession.csrf)).status,409);
+assert.equal((await call('/auth/lunar/register/options',{name:'Another_Pilot'},telegramBrowserCookie,originalSession.csrf)).status,409);
 assert.equal((await call('/auth/lunar/upgrade/options',{},telegramBrowserCookie,'wrong')).status,403,'CSRF check protects upgrade');
 const upgradeOptions=await call('/auth/lunar/upgrade/options',{},telegramBrowserCookie,originalSession.csrf);
 assert.equal(upgradeOptions.status,200,JSON.stringify(await upgradeOptions.clone().json()));
