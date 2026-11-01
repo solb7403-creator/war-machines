@@ -73,9 +73,17 @@ for(const cls of CLS){assert.equal(CH[cls].hb,HB[cls]);for(let t=0;t<3;t++){cons
 assert.equal(hitR({boss:true,hr:1.2,cls:'titan'}),1.2);assert.equal(bodyR({boss:true,hr:1.2,cls:'titan'}),R);
 console.log('hit circles (shot radius incl. 0.12 bullet):',CLS.map(c=>c+' '+(R*HB[c]+.12).toFixed(3)).join(', '));
 for(const r of table){const hc=R*HB[r.cls]+.12;r.sideGap=r.side-hc;r.noseGap=r.nose-hc;}
-assert.deepEqual(JSON.parse(JSON.stringify(M.MOON_SCALE)),{titan:.80,vanguard:.76,scout:.72},'approved Moonbeam class scale untouched');
-console.log('name      model L  W    H    ring | battle L  W    H    nose side  footprint | side/nose past class hit circle');
-for(const r of table)console.log(`${r.name.padEnd(9)} ${r.len.toFixed(2)} ${r.wid.toFixed(2)} ${r.hgt.toFixed(2)} ${r.ty.toFixed(3)} | ${r.wlen.toFixed(2)} ${r.wwid.toFixed(2)} ${r.whgt.toFixed(2)} ${r.nose.toFixed(2)} ${r.side.toFixed(2)} ${r.area.toFixed(2)} | ${r.sideGap>=0?'+':''}${r.sideGap.toFixed(2)} ${r.noseGap>=0?'+':''}${r.noseGap.toFixed(2)}`);
+// Moonbeam per-chassis size (class x tier), applied once on wg: compact on the Phantom, largest on the Colossus, and on
+// every Titan-class hull (Colossus included) the scaled gun stays shorter than the hull. Other weapons never scale.
+const MS={scout:[.70,.68,.61],vanguard:[.76,.78,.80],titan:[.84,.86,.92]};
+assert.deepEqual(JSON.parse(JSON.stringify(M.MOON_SCALE)),MS,'approved Moonbeam per-chassis scale');
+for(const cls of CLS)for(let t=0;t<3;t++){assert.equal(M.weaponScale('moon',cls,t),MS[cls][t]);for(const a of ['pulse','twin','siege'])assert.equal(M.weaponScale(a,cls,t),1);}
+assert.equal(M.weaponScale('moon','scout',-1),MS.scout[0]);assert.equal(M.weaponScale('moon','scout',9),MS.scout[2]);
+const all=CLS.flatMap(c=>MS[c]);assert.equal(Math.min(...all),M.weaponScale('moon','scout',2),'Phantom carries the smallest Moonbeam');assert.equal(Math.max(...all),M.weaponScale('moon','titan',2),'Colossus carries the largest Moonbeam');
+{const mk=H.weaponKit('moon',2,P,'#4d9fff',false,'titan','high'),ma=tris(mk,'high');let x0=1e9,x1=-1e9;for(let i=0;i<ma.length;i+=3){x0=Math.min(x0,ma[i]);x1=Math.max(x1,ma[i]);}
+ for(const r of table){const ws=M.weaponScale('moon',r.cls,r.t);if(r.cls==='titan')assert.ok((x1-x0)*ws<r.len,`${r.name} Moonbeam ${((x1-x0)*ws).toFixed(2)} shorter than its hull ${r.len.toFixed(2)}`);r.moon=[(x1-x0)*ws,x1*ws];}}
+console.log('name      Moonbeam scale/len/muzzle      | model L  W    H    ring | battle L  W    H    nose side  footprint | side/nose past class hit circle');
+for(const r of table)console.log(`${r.name.padEnd(9)} moon ${M.weaponScale('moon',r.cls,r.t).toFixed(2)} len ${r.moon[0].toFixed(2)} muzzle ${r.moon[1].toFixed(2)} | ${r.len.toFixed(2)} ${r.wid.toFixed(2)} ${r.hgt.toFixed(2)} ${r.ty.toFixed(3)} | ${r.wlen.toFixed(2)} ${r.wwid.toFixed(2)} ${r.whgt.toFixed(2)} ${r.nose.toFixed(2)} ${r.side.toFixed(2)} ${r.area.toFixed(2)} | ${r.sideGap>=0?'+':''}${r.sideGap.toFixed(2)} ${r.noseGap>=0?'+':''}${r.noseGap.toFixed(2)}`);
 console.log('closest pair by top-view surface shape:',minH.pair,minH.v.toFixed(3));
 const cm=c=>by(c).reduce((s,r)=>s+r.area,0)/3;console.log('mean battle footprint  scout',cm('scout').toFixed(2),' vanguard',cm('vanguard').toFixed(2),' titan',cm('titan').toFixed(2),' ratios',(cm('vanguard')/cm('scout')).toFixed(2),(cm('titan')/cm('vanguard')).toFixed(2));
 console.log('PASS',checked,'chassis builds (HF high/low + foundation, plain + Lunar): class ladder, distinct silhouettes, gun traverse clear, grounded treads, track uniforms, class hitboxes, no other gameplay number moved');
