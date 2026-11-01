@@ -1,0 +1,18 @@
+# Release continuity (pre-launch session, Nov 1 2026)
+
+Resume here if a session ends. Owner works from iPhone only: no terminal steps for him.
+
+## Phase 1 — Referrals + squads
+- Branch `feat/referral-squads`. Rules: `docs/launch/REFERRAL_SQUADS.md`. Airdrop boards: `docs/launch/AIRDROP_POOLS.md`.
+- Tests: `node dev/tests/wtest/referrals.mjs` (29), `referral-sim.mjs` (verdict: match bonus ON), `airdrop-sim.mjs`, `python3 dev/tests/squad-browser.py` (needs `pip install playwright` and `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`).
+- Release: merge to main auto-deploys the Worker (`deploy-worker.yml`) and DB rules (`deploy-rules.yml`, new indexes `rfs/s`, `ads/.value`). Rollback point: main before merge = `db57253`.
+- Status: see the bottom of this file.
+
+## Phase 2 — Pre-launch QA (branch `fix/prelaunch-qa`)
+- Known pre-existing: `dev/tests/b2test.py` times out clicking `[data-act=vsstart]` (VS screen button re-rendered continuously) on unmodified main too.
+
+## Phase 3 — Payments certification
+- Only if network + `STAGING_*` secrets are ready. Never enable payments in production without the owner's approval.
+
+## Status log
+- Phase 1 code + tests done; PR pending.

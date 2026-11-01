@@ -401,8 +401,15 @@ function claimLogin(){
 }
 
 // ---- squad (referrals): you get paid when your recruits keep playing ----
-const BOT_PLAY='https://t.me/LunarWarMachinesBot/play';
-const refLink=()=>BOT_PLAY+'?startapp=ref_'+(TG_USER?TG_USER.id:'0');
+const BOT_PLAY='https://t.me/LunarWarMachinesBot/play',SITE_URL='https://lunar-api.solb7403.workers.dev';
+// Telegram pilots share the bot link (startapp=ref_<their Telegram id>, signed by Telegram when it opens). Website pilots
+// share the site with their server-issued invite code; a website-only account never gets a made-up bot link
+const sqInfo=()=>(typeof squadInfo!=='undefined'&&squadInfo)||{};
+const webLink=()=>sqInfo().code?(IN_WEB?location.origin:SITE_URL)+'/web/?i='+sqInfo().code:null;
+const refLink=()=>IN_TG&&TG_USER?BOT_PLAY+'?startapp=ref_'+TG_USER.id:IN_WEB?webLink():null;
+// a website invite code from the link that brought this browser here (kept 14 days: survives redirects and reopening)
+function inviteCode(){try{const v=JSON.parse(localStorage.getItem('lunar-invite')||'null');if(v&&/^[a-hjkmnp-z2-9]{8}$/.test(v.c)&&Date.now()-v.t<14*864e5)return v.c;}catch(e){}return '';}
+function inviteDone(){try{localStorage.removeItem('lunar-invite');}catch(e){}}
 // back from the wiki's end-of-page button (t.me/...?startapp=wikiread): the read quest counts, the Quests tab opens
 let wikiBack=false;
 function wikiDone(){
@@ -412,21 +419,15 @@ function wikiDone(){
  if(!visitQ.includes('q_wiki'))visitQ.push('q_wiki');
  when(sendVisit('q_wiki'),r=>{if(r&&r.ok){try{closeAll();setTab('quests');}catch(_){}showToast('Wiki read! Claim your +'+fmtNum(MS_BY.q_wiki.pts)+' in Quests');}});
 }
-function captureRef(){   // the start_param of the link that opened the game
- try{
-  const sp=IN_TG&&TG.initDataUnsafe&&TG.initDataUnsafe.start_param;
-  if(!sp||!/^ref_\d{3,15}$/.test(sp)||save.refBy)return;
-  const rid='tg_'+sp.slice(4);
-  if(rid===playerKey()||(save.earned||0)>5000)return;   // can't recruit yourself or an existing player
-  save.refBy=rid;store();
- }catch(e){}
+function captureRef(){   // the server reads the signed start_param itself; this only keeps a website invite code
+ try{const m=/[?&]i=([a-z0-9]{8})(?:&|$)/i.exec(location.search);if(m&&!inviteCode())localStorage.setItem('lunar-invite',JSON.stringify({c:m[1].toLowerCase(),t:Date.now()}));}catch(e){}
 }
 const squad=()=>(typeof squadCache!=='undefined'&&squadCache)||[];
 const squadHeld=()=>squad().filter(r=>r.held).map(r=>r.id);
 function refStatus(r){const ago=r.ld==null?99:dayNum()-r.ld;return ago<=1?['Active','#5fe3a1']:ago<=6?['Idle '+ago+'d','#ffcf4a']:['Inactive','#ff6b5e'];}
 const refOwed=r=>ecoRefOwed(save,r);
-const refMe=()=>({ref:save.refBy&&typeof srv!=='undefined'&&srv&&srv.ref===save.refBy?save.refBy:null,days:(typeof srv!=='undefined'&&srv&&srv.days)||0});
-const welcomeReady=()=>!!(save.refBy&&!save.refWelcome&&refMe().ref&&refMe().days>=2);
+const refMe=()=>({ref:typeof srv!=='undefined'&&srv&&srv.ref||null});
+const welcomeReady=()=>refWelcomeDue(save,refMe(),squadHeld());
 const pctRoom=()=>ecoPctRoom(save,ecoX());
 function refPending(){return ecoSquadPending(save,squad(),ecoX(),refMe(),squadHeld());}
 function claimRefs(){
@@ -436,12 +437,15 @@ function claimRefs(){
   fx('claim');showToast('+'+fmtNum(r.pts)+' squad points');return r.pts;
  });
 }
-const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles right in Telegram, and the top 1,000 pilots get a guaranteed $LUNAR allocation.';
+const SHARE_TXT='Join my squad in LUNAR: War Machines. Fast robot-tank battles, free to play. Real matches earn points toward the planned $LUNAR airdrop (nothing is guaranteed).';
 function shareRef(text){
- const u='https://t.me/share/url?url='+encodeURIComponent(refLink())+'&text='+encodeURIComponent(text||SHARE_TXT);
+ const link=refLink();if(!link){if(typeof loadSquad==='function')loadSquad(true);showToast('Getting your invite link… try again in a moment.');return;}
+ if(!IN_TG&&navigator.share){navigator.share({title:'LUNAR: War Machines',text:text||SHARE_TXT,url:link}).catch(()=>{});return;}
+ const u='https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent(text||SHARE_TXT);
  try{if(IN_TG)TG.openTelegramLink(u);else window.open(u,'_blank');}catch(e){copyRef();}
 }
-function copyRef(){try{navigator.clipboard.writeText(refLink()).then(()=>showToast('Invite link copied'),()=>showToast(refLink()));}catch(e){showToast(refLink());}}
+function copyRef(){const link=refLink();if(!link){if(typeof loadSquad==='function')loadSquad(true);showToast('Getting your invite link… try again in a moment.');return;}
+ try{navigator.clipboard.writeText(link).then(()=>showToast('Invite link copied'),()=>showToast(link));}catch(e){showToast(link);}}
 
 // ---- shop logic: crates, salvage, premium, starter pack (prices in rules.js; the server charges them) ----
 const PSTARS={moonbeam:PREMIUM.moonbeam.stars,skin:PREMIUM.skin.stars,starter:STARTER.stars}; // premium items in Stars

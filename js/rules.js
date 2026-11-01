@@ -339,13 +339,59 @@ const STREAK_PTS=[100,150,200,250,300,400,1000];
 // squad (referrals): you get paid when your recruits keep playing
 const REF_MS=[{days:2,pts:1500,r:500,n:'Comes back the next day'},{days:5,pts:5000,r:2000,n:'5 days active, 5K points'},{days:10,pts:20000,r:5000,n:'10 days active, 20K points'}];
 const REF_PCT=0.05,REF_WELCOME=1000,REF_PCT_CAP=2000;   // 5% of recruits' points, max 2,000/day from the % part
+// One level only: you earn from your direct recruits' own play, never from their recruits (referral points, rfe, are
+// kept apart from play points and never feed anyone's 5%). Days below are verified match days (vd): a day counts once,
+// and only when the server settles a real match that day (an AI match ticket it scored, or a live room's result).
+// Launch multiplier on milestones and the 5% (never on the welcome bonus or the match bonus): 3x until 10,000 active
+// pilots, 2x until 25,000, 1.5x until 50,000, then 1x. The phase only moves forward (cfg/rph, set by the cron from the
+// meta/ap counter) and is pinned on the recruit's record when each point or milestone is earned (rb, rms).
+const REF_PHASES=[{n:10000,x:3},{n:25000,x:2},{n:50000,x:1.5},{n:Infinity,x:1}];
+const refPhaseOf=(active,prev)=>{let i=0;while(i<REF_PHASES.length-1&&(Number(active)||0)>=REF_PHASES[i].n)i++;return Math.max(i,Math.max(0,Math.min(REF_PHASES.length-1,prev|0)));};
+const refPhaseX=i=>REF_PHASES[Math.max(0,Math.min(REF_PHASES.length-1,i|0))].x;
+const REF_ACTIVE_DAYS=2;   // a pilot counts toward the launch phase (meta/ap) once they have this many verified match days
+// verified active recruit: verified matches on 5+ distinct days, the latest within the last 7 days, not held for review
+const REF_VERIFY_DAYS=5,REF_RECENT=7;
+const refVerified=(r,day)=>!!r&&!r.held&&(r.vd|0)>=REF_VERIFY_DAYS&&typeof r.vdl==='number'&&day-r.vdl<REF_RECENT;
+// match bonus for each verified active recruit (server config only; S.mbx is set by the server, the phone just shows it)
+const REF_BONUS={on:true,tiers:[[10,0.03],[50,0.01],[100,0.005]],per:5,step:0.01,squadMax:0.15,cap:1};
+function refBonusOf(n,C){
+ C=C||REF_BONUS;n=Math.max(0,n|0);let b=0,lo=0;
+ for(const [hi,x] of C.tiers){b+=Math.max(0,Math.min(n,hi)-lo)*x;lo=hi;}
+ b+=Math.min(C.squadMax,Math.floor(n/C.per)*C.step);
+ return Math.round(Math.min(C.cap,b)*10000)/10000;
+}
+// ---- airdrop research boards (tracking only: distribution is off, nothing is promised) ----
+// Points pool: the top 1,000 by play score (play points + 7.5% of referral points). Referral pool: the top 250
+// recruiters by quality (each verified active recruit's own verified days, capped at 30), square-root dampened, 10+
+// verified active recruits to qualify, no recruiter above 2% of the pool. Pool split 90/10 of the player airdrop.
+const AIRDROP={dist:false,ptsTop:1000,refTop:250,refShare:0.10,refW:0.075,refWMin:0.05,refWMax:0.10,refMin:10,qCap:30,refCap:0.02,expand:{on:false,at:50000,top:500},walletCapPct:2.5};
+const adCfg=c=>{c=Object.assign({},AIRDROP,c||{});c.refW=Math.max(AIRDROP.refWMin,Math.min(AIRDROP.refWMax,Number(c.refW)||AIRDROP.refW));return c;};
+const airdropScore=(ac,rfe,w)=>Math.max(0,Math.round((Number(ac)||0)-(Number(rfe)||0)))+Math.round((Number(rfe)||0)*(w===undefined?AIRDROP.refW:w));
+function refPoolScore(rows,day,C){
+ C=adCfg(C);let n=0,q=0;
+ for(const r of rows||[])if(refVerified(r,day)){n++;q+=Math.min(C.qCap,r.vd|0);}
+ return {n,q,s:Math.round(Math.sqrt(q)*100)/100,ok:n>=C.refMin};
+}
+// shares of a pool proportional to score, nobody above cap; what a capped entry can't take goes to the others
+function poolShares(scores,cap){
+ const n=scores.length,out=new Array(n).fill(0);if(!n)return out;
+ cap=cap>0?cap:1;let left=1,open=scores.map((s,i)=>s>0?i:-1).filter(i=>i>=0);
+ for(let k=0;k<n+1&&open.length&&left>1e-12;k++){
+  const tot=open.reduce((a,i)=>a+scores[i],0);if(tot<=0)break;
+  const over=open.filter(i=>out[i]+left*scores[i]/tot>cap+1e-12);
+  if(!over.length){for(const i of open)out[i]+=left*scores[i]/tot;left=0;break;}
+  for(const i of over){left-=cap-out[i];out[i]=cap;}
+  open=open.filter(i=>!over.includes(i));
+ }
+ return out;
+}
 
 function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
@@ -354,7 +400,7 @@ function ecoNorm(S){
  }
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
  if(typeof S.vgg!=='number'&&GENESIS_OPEN)S.vgg=Number(S.vg)||0;   // Gold deposited before Genesis Gold was tracked: all of it was pre-launch
- for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
+ for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg','vd','rfe'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
  const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
  // over the build budget (levels bought before it existed): the top levels come off, paid back in full
  while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
@@ -659,8 +705,8 @@ function ecoMatchPts(S,o,mult,X){
  const mk=MODES[o.m]?o.m:'1v1',sb=o.won?streakPts(o.g,mk,S.streak):0,M=MODES[mk],solo=isSolo(o.g);
  const zx=teamX(o.g,mk,!!o.series),fxm=o.feat?FEATURED_X:1;
  const base=Math.round(solo?ROYALE_PTS[Math.max(1,Math.min(6,o.place||6))-1]:(o.won?M.win:o.drawn?M.draw:M.loss)*zx);
- const pts=Math.round(base*fxm*mult)+sb;
- return {pts,awarded:ecoAward(S,pts,X),base,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
+ const pts=Math.round(base*fxm*mult)+sb,b=ecoBonusAward(S,pts,X);
+ return {pts,awarded:b.awarded,bonus:b.bonus,base,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
 }
 function ecoQuit(S){S.streak=0;S.losses++;S.mp++;}   // left mid-match: a loss, no points
 // everything else a finished match changes: wins and losses, pass XP, milestone and quest progress
@@ -668,7 +714,7 @@ function ecoQuit(S){S.streak=0;S.losses++;S.mp++;}   // left mid-match: a loss, 
 function ecoAfterMatch(S,o,X){
  const st=o.st||{},won=!!o.won,drawn=!!o.drawn,top3=!!o.top3,low=typeof st.low==='number'?st.low:0,clean=won&&low>0,M=MODES[o.m]||MODES['1v1'],sw=o.seriesW;
  if(won)S.wins++;else if(!drawn&&!top3)S.losses++;
- S.mp++;
+ S.mp++;ecoPlayDay(S,X);
  ecoPassXP(S,(won?PASS_XP_WIN:drawn||top3?PASS_XP_DRAW:PASS_XP_LOSS)+(o.feat?PASS_XP_FEAT:0),X);
  ecoMsAdd(S,'q_win1',won?1:0);ecoMsAdd(S,'q_win3',won?1:0);
  ecoMsAdd(S,'q_dmg',st.dmg||0,true);ecoMsAdd(S,'q_super',st.sup||0,true);ecoMsAdd(S,'q_box',st.box||0,true);
@@ -680,27 +726,57 @@ function ecoAfterMatch(S,o,X){
   royaleWins:W('royale'),bountyWins:W('bounty'),crystalWins:W('crystal'),day:X.day,winMode:won?o.g:null},X);
 }
 // ---- squad payouts: milestones your recruits reach + 5% of what they earn (max 2,000 a day from the 5%; the rest carries over) ----
+// a verified match day: the server settled a real match today (counted once a day)
+function ecoPlayDay(S,X){if(S.vdl!==X.day){S.vd=(S.vd|0)+1;S.vdl=X.day;}}
+// match points plus the squad match bonus (S.mbx, set by the server). The bonus is referral points (rfe) and takes the
+// 20,000 daily cap's hit first; it is never multiplied by the launch phase
+function ecoBonusAward(S,pts,X){
+ const bx=Math.max(0,Math.min(REF_BONUS.cap,Number(S.mbx)||0)),bonus=pts>0?Math.round(pts*bx):0;
+ const awarded=ecoAward(S,pts+bonus,X),extra=Math.max(0,awarded-pts);
+ if(extra)S.rfe=(S.rfe||0)+extra;
+ return {awarded,bonus:extra};
+}
+// after every change to a pilot's record (the server runs this inside the same write): the play points they just earned,
+// times the launch phase right now (rb, what the 5% pays from), and each milestone stamped with the phase when reached
+function ecoRefTrack(S,X,e0,f0){
+ const x=X&&X.rx>0?X.rx:1,ep=Math.max(0,(S.earned||0)-(S.rfe||0));
+ if(typeof S.rb!=='number')S.rb=Math.max(0,(e0||0)-(f0||0));
+ const play=Math.max(0,((S.earned||0)-(e0||0))-((S.rfe||0)-(f0||0)));
+ if(play>0)S.rb=Math.round(S.rb+play*x);
+ const rms=Array.isArray(S.rms)?S.rms.filter(v=>typeof v==='number'):[];
+ while(rms.length<REF_MS.length&&(S.vd|0)>=REF_MS[rms.length].days&&ep>=REF_MS[rms.length].pts)rms.push(x);
+ S.rms=rms;
+}
+// what a recruit's row owes you. r: {id, rb (phase-weighted play points), rms (phase pinned per milestone reached)}.
+// Milestone points are owed as an amount (mp = paid so far), so a big one pays in parts when the day's room is short
+const refMsTotal=rms=>{let t=0;for(let i=0;i<Math.min(REF_MS.length,rms.length);i++)t+=Math.round(REF_MS[i].r*(Number(rms[i])||1));return t;};
 function ecoRefOwed(S,r){
- const c=(S.refC||{})[r.id]||{m:0,seen:0};let m=c.m||0,ms=0;
- while(m<REF_MS.length&&r.days>=REF_MS[m].days&&r.pts>=REF_MS[m].pts){ms+=REF_MS[m].r;m++;}
- const pc=Math.max(0,Math.floor((r.pts-(c.seen||0))*REF_PCT));
- return {ms,pct:pc,m,tot:ms+pc};
+ const c=(S.refC||{})[r.id]||{m:0,seen:0};const rms=Array.isArray(r.rms)?r.rms:[];
+ const paid=typeof c.mp==='number'?c.mp:REF_MS.slice(0,c.m||0).reduce((t,M)=>t+M.r,0);   // older records: count milestones paid at 1x
+ const ms=Math.max(0,refMsTotal(rms)-paid),base=typeof r.rb==='number'?r.rb:0;
+ const pc=Math.max(0,Math.floor((base-(c.seen||0))*REF_PCT));
+ return {ms,pct:pc,m:Math.max(c.m||0,Math.min(REF_MS.length,rms.length)),paid,tot:ms+pc};
 }
 const ecoPctRoom=(S,X)=>S.refPD&&S.refPD.d===X.day?Math.max(0,REF_PCT_CAP-S.refPD.a):REF_PCT_CAP;
-// rows: your recruits {id, pts, days}; me: {ref, days} (your own referrer gives you a welcome bonus on day 2); held: ids whose payouts are on hold
+// your own welcome bonus: your referrer is on record and you have 2 verified match days
+const refWelcomeDue=(S,me,held)=>!!(me&&me.ref&&(S.vd|0)>=2&&!S.refWelcome&&!(held||[]).includes('me'));
+// rows: your recruits; me: {ref} (your own referrer: a welcome bonus on your 2nd verified day); held: ids on hold
 function ecoSquad(S,rows,X,me,held){
  ecoRoll(S,X);held=held||[];
  let room=capRoom(S,X),got=0,welcome=0;
- if(me&&me.ref&&(me.days||0)>=2&&!S.refWelcome&&room>=REF_WELCOME&&!held.includes('me')){S.refWelcome=true;got+=REF_WELCOME;room-=REF_WELCOME;welcome=REF_WELCOME;}
+ if(refWelcomeDue(S,me,held)&&room>=REF_WELCOME){S.refWelcome=true;got+=REF_WELCOME;room-=REF_WELCOME;welcome=REF_WELCOME;}
  let pr=ecoPctRoom(S,X),pgot=0;
- for(const r of rows||[]){if(held.includes(r.id))continue;const o=ecoRefOwed(S,r),pp=Math.min(o.pct,pr),t=o.ms+pp;if(!t)continue;if(t>room)break;
-  const c=S.refC[r.id]||{m:0,seen:0};S.refC[r.id]={m:o.m,seen:(c.seen||0)+Math.round(pp/REF_PCT)};   // unpaid % carries over to tomorrow
+ for(const r of rows||[]){if(room<=0)break;if(r.held||held.includes(r.id))continue;const o=ecoRefOwed(S,r);if(!o.tot)continue;
+  const pm=Math.min(o.ms,room),pp=Math.min(o.pct,pr,room-pm),t=pm+pp;if(!t)continue;
+  const c=S.refC[r.id]||{m:0,seen:0};S.refC[r.id]={m:o.m,mp:o.paid+pm,seen:(c.seen||0)+Math.round(pp/REF_PCT)};   // what doesn't fit today carries over
   got+=t;room-=t;pr-=pp;pgot+=pp;}
  if(pgot)S.refPD={d:X.day,a:(S.refPD&&S.refPD.d===X.day?S.refPD.a:0)+pgot};
- return {pts:got?ecoAward(S,got,X):0,welcome};
+ const pts=got?ecoAward(S,got,X):0;
+ if(pts)S.rfe=(S.rfe||0)+pts;
+ return {pts,welcome};
 }
-function ecoSquadPending(S,rows,X,me,held){held=held||[];let t=me&&me.ref&&(me.days||0)>=2&&!S.refWelcome&&!held.includes('me')?REF_WELCOME:0,pr=ecoPctRoom(S,X);
- for(const r of rows||[]){if(held.includes(r.id))continue;const o=ecoRefOwed(S,r);const pp=Math.min(o.pct,pr);pr-=pp;t+=o.ms+pp;}return t;}
+function ecoSquadPending(S,rows,X,me,held){held=held||[];let t=refWelcomeDue(S,me,held)?REF_WELCOME:0,pr=ecoPctRoom(S,X);
+ for(const r of rows||[]){if(r.held||held.includes(r.id))continue;const o=ecoRefOwed(S,r);const pp=Math.min(o.pct,pr);pr-=pp;t+=o.ms+pp;}return t;}
 
 // Lab v1 stores selections, never inventory, upgrades, prices or public data.
 const LAB_RULES_VERSION='lab-fittings-v1';

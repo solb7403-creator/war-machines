@@ -37,6 +37,7 @@ jobs:
       - name: Server tests (points, payments, live matches, farm defense)
         run: |
           node dev/tests/wtest/test.mjs
+          node dev/tests/wtest/referrals.mjs
           node dev/tests/wtest/pvp.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/web-auth.mjs

@@ -11,8 +11,8 @@ function loginNotice(message){
 function lunarLogin(target='play'){
  const t=safeLoginTarget(target);
  if(location.origin!==lunarOrigin){
-  const ref=new URLSearchParams(location.search).get('ref');
-  const context=ref&&/^tg_\d{3,16}$/.test(ref)?'?ref='+encodeURIComponent(ref):'';
+  const ref=new URLSearchParams(location.search).get('i');
+  const context=ref&&/^[a-z0-9]{8}$/i.test(ref)?'?i='+encodeURIComponent(ref.toLowerCase()):'';
   location.assign(lunarOrigin+'/web/'+context+'#'+t);
   return;
  }
@@ -25,8 +25,9 @@ document.addEventListener('click',e=>{
  if(el){e.preventDefault();lunarLogin(el.dataset.enter||'play');}
 });
 const parameters=new URLSearchParams(location.search);
-const ref=parameters.get('ref');
-if(ref&&/^tg_\d{3,16}$/.test(ref))try{sessionStorage.setItem('lunar-acquisition-context',ref);}catch{}
+// a squad invite (?i=<code>): kept 14 days on this site so it survives the sign-in redirects and closing Safari
+const ref=parameters.get('i');
+if(ref&&/^[a-hjkmnp-z2-9]{8}$/i.test(ref))try{const v=JSON.parse(localStorage.getItem('lunar-invite')||'null');if(!v||Date.now()-v.t>14*864e5)localStorage.setItem('lunar-invite',JSON.stringify({c:ref.toLowerCase(),t:Date.now()}));}catch{}
 const loginError=parameters.get('login');
 if(loginError){
  const notices={setup:'Telegram website sign-in awaits secure server setup.',rate:'Too many attempts. Please try again shortly.',expired:'Sign-in expired. Please try again.',invalid:'Telegram sign-in could not be verified. Please try again.',cancelled:'Telegram sign-in was cancelled.',exchange:'Telegram login could not complete. Please try again.',identity:'Telegram identity verification failed. Please try again.',unavailable:'Sign-in is temporarily unavailable.'};

@@ -128,7 +128,7 @@ function playNudge(){
  }
  const u=nextUp();
  if(u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
- if(IN_TG&&(save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points for each friend who keeps playing',act:'share'};
+ if((save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points (×'+squadPhaseX()+' at launch) for each friend who keeps playing',act:'share'};
  return null;
 }
 const GT_DESC={arena:'Destroy the enemy team',zone:'Hold the zone, first to 100',crystal:'Hold 10 crystals for 15s',bounty:'Kills earn stars',royale:'6 tanks, 1 survivor',boss:'Take down a megatank',random:'A different mode each match'};
@@ -334,9 +334,7 @@ function renderQuests(){
    (swap&&!q.done&&!q.claimed?'<button class="btn sm btn-quiet swap" data-act="swapdq" data-arg="'+q.id+'" aria-label="Swap for another quest"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5"/></svg></button>':'')+
    (q.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+(q.done?'btn-gold':'btn-quiet')+'" data-act="'+act+'" data-arg="'+q.id+'">+'+fmtNum(pts||q.pts)+'</button>')+'</div>';};
  const allDone=save.dq&&save.dq.all,lvTag=q=>'<span class="lv l'+q.lv+'">'+DQ_LV[q.lv]+'</span>';
- const sq=squad(),active=sq.filter(r=>refStatus(r)[0]==='Active').length,pend=refPending();
- const recruits=sq.slice().sort((a,b)=>b.pts-a.pts).slice(0,5).map(r=>{const st=refStatus(r),o=refOwed(r),nx=REF_MS[o.m];
-  return '<div class="q"><div class="grow"><div class="t">'+esc(r.n)+' <span class="dimtxt" style="color:'+st[1]+'">'+st[0]+'</span></div><div class="p">Day '+r.days+', '+fmtNum(r.pts)+' points'+(nx?'. Next: '+nx.n.toLowerCase():'')+'</div></div>'+(o.tot?'<span class="num" style="color:var(--gold)">+'+fmtNum(o.tot)+'</span>':'')+'</div>';}).join('');
+ const sqHtml=squadPlate();
  const ms=QUESTS.map(Q=>{const e=save.q[Q.id]||{p:0,done:false,claimed:false};
   if(Q.link&&!e.done)return '<div class="q"><div class="grow"><div class="t">'+Q.n+'</div><div class="p">'+Q.d+'</div></div><button class="btn sm btn-quiet" data-act="visit" data-arg="'+Q.id+'">Open</button></div>';
   const p=Math.min(e.p||0,Q.goal);
@@ -354,13 +352,35 @@ function renderQuests(){
   '<div class="panel list">'+wk.map(q=>qRow(q,'claimwq',wkSub(q),qPts(q.pts))).join('')+
    '<div class="q'+(wq.claimed?' done':'')+'"><div class="grow"><div class="t">Weekly chest: claim '+WQ_GOAL+' daily quests</div><div class="bar"><i style="width:'+Math.round(Math.min(1,(wq.n||0)/WQ_GOAL)*100)+'%;background:var(--gold)"></i></div><div class="p">'+Math.min(wq.n||0,WQ_GOAL)+' / '+WQ_GOAL+'. '+fmtNum(qPts(WQ_PTS))+' points and a rare gem cache</div></div>'+
   (wq.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+((wq.n||0)>=WQ_GOAL?'btn-gold':'btn-quiet')+'" data-act="weekly">Open</button>')+'</div></div>'+
-  sec('Your squad','','squad')+
-  '<div class="plate squad"><div class="t big">Earn when friends you invite keep playing</div><p class="mut">Sign-ups alone pay nothing. Active recruits pay up to +7,500 each, plus 5% of what they earn.</p>'+
-  '<div class="kv"><div><b class="num">'+sq.length+'</b><span>Recruits</span></div><div><b class="num">'+active+'</b><span>Active</span></div><div><b class="num" style="color:var(--gold)">'+fmtNum(pend)+'</b><span>Ready to claim</span></div></div>'+
-  (IN_TG?'<div class="acts"><button class="btn btn-go" data-act="share">Share invite</button><button class="btn btn-quiet" data-act="copy">Copy link</button></div>':'<p class="mut" style="margin-top:10px">Open the game in Telegram to get your invite link.</p>')+
-  (pend?'<button class="btn btn-gold block" style="margin-top:8px" data-act="claimref">Claim +'+fmtNum(pend)+' points</button>':'')+
-  (recruits?'<div class="list" style="margin-top:8px">'+recruits+'</div>':'')+'</div>'+
+  sec('Your squad','','squad')+sqHtml+
   sec('Milestones','One time')+'<div class="panel list">'+ms+'</div>';
+}
+
+// ---------- SQUAD (invites) ----------
+const squadPhaseX=()=>{const p=sqInfo().phase||(lbMeta&&lbMeta.ref);return p&&p.x?p.x:3;};
+function squadPlate(){
+ const sq=squad(),I=sqInfo(),me=I.me||{},ph=I.phase||null,day=dayNum(),pend=refPending();
+ const ver=sq.filter(r=>refVerified(r,day)).length,held=sq.filter(r=>r.held).length,link=refLink();
+ const bonus=Math.round((Number(me.mbx!==undefined?me.mbx:save.mbx)||0)*1000)/10,cap=I.cap||REF_PCT_CAP,pd=save.refPD&&save.refPD.d===day?save.refPD.a:0;
+ const carry=sq.reduce((t,r)=>t+(r.held?0:refOwed(r).pct),0),carryOver=Math.max(0,carry-(cap-pd));
+ const pips=r=>{const m=(r.rms||[]).length;return REF_MS.map((M,i)=>'<i class="pip'+(i<m?' on':'')+'" title="'+esc(M.n)+'"></i>').join('');};
+ const rows=sq.slice().sort((a,b)=>(b.vd|0)-(a.vd|0)||b.pts-a.pts).slice(0,8).map(r=>{const st=refStatus(r),o=refOwed(r),nx=REF_MS[(r.rms||[]).length],v=refVerified(r,day);
+  const sub=r.held?'<span class="held">On hold: '+esc(r.why||'under review')+'</span>':'Verified days: '+(r.vd|0)+(v?' · <b class="ok">verified active</b>':(r.vd|0)<REF_VERIFY_DAYS?' · '+(REF_VERIFY_DAYS-(r.vd|0))+' more to verify':' · play this week to stay verified')+(nx?'. Next: '+esc(nx.n.toLowerCase()):'');
+  return '<div class="q"><div class="grow"><div class="t">'+esc(r.n)+' <span class="dimtxt" style="color:'+st[1]+'">'+st[0]+'</span> <span class="pips">'+pips(r)+'</span></div><div class="p">'+sub+'</div></div>'+(o.tot&&!r.held?'<span class="num" style="color:var(--gold)">+'+fmtNum(o.tot)+'</span>':'')+'</div>';}).join('');
+ const phTxt=ph?(ph.x>1?'<b>×'+ph.x+' launch bonus</b> on milestones and the 5% share'+(ph.next?' until '+fmtNum(ph.next)+' active pilots ('+fmtNum(ph.ap)+' now)':''):'Launch bonus finished: standard rewards'):'Launch bonus: ×3 until 10,000 active pilots';
+ const lr=lbMeta&&lbMeta.ref,board=lr&&lr.top&&lr.top.length?'<div class="list rboard">'+lr.top.slice(0,10).map((r,i)=>'<div class="q'+(r[0]===playerKey()?' me':'')+'"><span class="num">'+(i+1)+'</span><div class="grow"><div class="t">'+esc(r[1])+'</div><div class="p">'+r[3]+' verified recruits</div></div><span class="num">'+r[2]+'</span></div>').join('')+'</div>':'<p class="mut">No recruiter has '+((lr&&lr.min)||10)+' verified active recruits yet.</p>';
+ return '<div class="plate squad"><div class="t big">Invite friends who really play</div>'+
+  '<p class="mut">Sign-ups alone pay nothing. A recruit counts once the server verifies real matches on '+REF_VERIFY_DAYS+' different days. Bots, alts and shared devices are held for review.</p>'+
+  '<div class="phase">'+phTxt+'</div>'+
+  (me.held?'<div class="held box">Your squad rewards are on hold for review: '+esc(me.held)+'</div>':'')+
+  '<div class="kv"><div><b class="num">'+sq.length+'</b><span>Recruits</span></div><div><b class="num">'+ver+'</b><span>Verified active</span></div><div><b class="num">+'+bonus+'%</b><span>Match bonus</span></div><div><b class="num" style="color:var(--gold)">'+fmtNum(pend)+'</b><span>Ready</span></div></div>'+
+  (link?'<div class="invlink num">'+esc(link.replace(/^https:\/\//,''))+'</div><div class="acts"><button class="btn btn-go" data-act="share">Share invite</button><button class="btn btn-quiet" data-act="copy">Copy link</button></div>':'<p class="mut" style="margin-top:10px">'+(ACCOUNT_OK?'Loading your invite link…':'Sign in to get your invite link.')+'</p>')+
+  (pend?'<button class="btn btn-gold block" style="margin-top:8px" data-act="claimref">Claim +'+fmtNum(pend)+' points</button>':'')+
+  '<div class="sqline"><span>5% share today</span><b class="num">'+fmtNum(pd)+' / '+fmtNum(cap)+'</b></div>'+
+  (carryOver>0?'<div class="sqline"><span>Carries over to tomorrow</span><b class="num">'+fmtNum(carryOver)+'</b></div>':'')+
+  (held?'<div class="sqline"><span>Recruits on hold</span><b class="num">'+held+'</b></div>':'')+
+  (rows?'<div class="list" style="margin-top:8px">'+rows+'</div>':'')+
+  '<div class="sqhd">Top recruiters <small>research ranking, not a guarantee</small></div>'+board+'</div>';
 }
 
 // ---------- RANKS ----------
@@ -557,11 +577,14 @@ const INFO={
   ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 11 to 14, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
   ['Salvage','Paid with points: Salvaged Rare 10,000 (101 to 103% power), Salvaged Epic 20,000 (103.1 to 104.4%). Every crate item beats every salvaged item.']]],
  squad:()=>['Squad rewards',[
-  ['How it works','Share your invite link. Anyone who opens the game with it for the first time joins your squad.'],
-  ['You get paid when they stick around','+500 when they come back for a 2nd day with 1,500 points. +2,000 at 5 days and 5,000 points. +5,000 at 10 days and 20,000 points.'],
-  ['5% ongoing','You also get 5% of the points your squad earns, up to 2,000 a day. Anything over carries to the next day. They lose nothing.'],
-  ['They get +1,000','Your recruit gets a 1,000 point welcome bonus when they come back for day 2.'],
-  ['Rules','Days active means separate days played. Squad points count toward the 20,000 daily cap and the leaderboard. Fake or alt accounts are removed from the airdrop.']]],
+  ['How it works','Share your invite link (Telegram or website, both count the same). A brand-new pilot who opens the game with it on their first day joins your squad. It can never change later.'],
+  ['You get paid when they stick around','+500 when they play matches on 2 days with 1,500 points. +2,000 at 5 days and 5,000 points. +5,000 at 10 days and 20,000 points. Days are days with a server-verified match.'],
+  ['Launch bonus','Milestones and the 5% share pay ×3 until 10,000 active pilots, ×2 until 25,000, ×1.5 until 50,000. The rate is locked in when your recruit earns it.'],
+  ['5% ongoing','You also get 5% of the points your recruits earn by playing, up to 2,000 a day. Anything over carries to the next day. They lose nothing. Only direct recruits count, never their recruits.'],
+  ['Match bonus','Each verified active recruit (matches on 5+ days, played in the last 7) adds to your match points: +3% each for 1-10, +1% for 11-50, +0.5% for 51-100, plus +1% per 5 recruits (max +15%). Max +100% total; the 20,000 daily cap stays.'],
+  ['They get +1,000','Your recruit gets a 1,000 point welcome bonus once they play on 2 different days.'],
+  ['Fair play','Recruits on your device or network, or flagged for review, are held (you see the reason) until reviewed. Nobody can clear their own hold.'],
+  ['Airdrop','Referral points count at 7.5% in the points ranking. Top recruiters are tracked for a separate referral pool. Both are research rankings: no token amount, price or allocation is promised.']]],
  tiers:()=>['Tiers',[
   ['Lifetime points','Bronze from 0, Silver 10K, Gold 50K, Platinum 150K, Diamond 400K.'],
   ['Daily bonus','Higher tiers add to your daily reward: +25, +50, +100, +200, +400.'],
@@ -726,8 +749,8 @@ function showWelcome(){
   '<div class="big">Fight on the moon.<br>Climb for the airdrop.</div>'+
   '<div class="step"><i>1</i><p><b>Quick tank battles.</b> Drag to drive; your cannon fires itself. Most matches take under a minute.</p></div>'+
   '<div class="step"><i>2</i><p><b>Every match pays points.</b> Points rank you on the leaderboard and buy upgrades.</p></div>'+
-  '<div class="step"><i>3</i><p><b>The top 1,000 pilots get $LUNAR.</b> At launch, weighted by points and days active.</p></div>'+
-  (save.refBy?'<p class="mut" style="margin-top:12px">A friend invited you. Play again tomorrow for a +1,000 welcome bonus.</p>':'')+
+  '<div class="step"><i>3</i><p><b>A $LUNAR airdrop is planned.</b> The top pilots by points and days active are tracked for it. Nothing is guaranteed.</p></div>'+
+  (save.refBy?'<p class="mut" style="margin-top:12px">A friend invited you. Play matches on 2 different days for a +1,000 welcome bonus.</p>':'')+
   '<div class="grow"></div><button class="fight" data-act="firstfight" style="margin-top:18px"><span class="big">FIGHT</span><span class="small">Your first battle: a quick 1v1</span></button>'+
   '<button class="linkbtn" data-act="info" data-arg="airdrop">How the airdrop works</button>',{cls:'welcome',key:'welcome',noBack:true});
 }
@@ -959,7 +982,7 @@ const ACT={
  swapcls:a=>{if(!pvpOn()){clearInterval(vsTimer);vsTimer=null;}switchChassis(a);fx('tap');const ov=findOv('vs');if(ov)ov.re();},   // live: the server's countdown keeps running
  again:()=>{closeAll();exitBattle();if(lastQuick)quickMatch();else beginMatch();},   // Play again repeats Quick Match if that's what you played
  menu:()=>{exitBattle();setTab('play');},
- sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). The top 1,000 pilots get $LUNAR at launch. Join my squad:');},
+ sharewin:()=>{const r=lastResult;shareRef('I just won '+(isSolo(r.gtype)?(r.live?'live ':'')+'Last Standing':'a '+(r.live?'live ':'')+GTYPES[r.gtype].label+' '+r.mode)+' in LUNAR: War Machines (+'+fmtNum(r.awarded)+' points). Join my squad:');},
  login:()=>{const r=loginState();if(r.claimedToday)return;when(claimLogin(),c=>{if(!c)return;const qb=questBoost();showToast('+'+fmtNum(c.pts)+' points, day '+c.day+' of your streak'+(qb?'. Quest points +'+Math.round(qb*100)+'% today':''));const rv=[c.reveal,c.gift].filter(Boolean);if(rv.length)showReveal(rv);else if(IN_TG&&!save.remindAsked&&!save.remind)askReminder();uiDirty();});},
  claimdq:a=>{const q0=dailyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimDaily(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
  claimwq:a=>{const q0=weeklyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimWeeklyQuest(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},

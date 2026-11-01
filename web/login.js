@@ -14,6 +14,8 @@ const post=async(path,body={},csrf)=>{
  return data;
 };
 const redirect=()=>location.assign('/web/play.html#'+target);
+// a squad invite that came straight to the sign-in page (?i=<code>): kept for the first sync after sign-up
+try{const m=/[?&]i=([a-hjkmnp-z2-9]{8})(?:&|$)/i.exec(location.search);if(m&&!localStorage.getItem('lunar-invite'))localStorage.setItem('lunar-invite',JSON.stringify({c:m[1].toLowerCase(),t:Date.now()}));}catch{}
 function createResponse(credential){
  return {id:credential.id,rawId:to64(credential.rawId),type:credential.type,
   authenticatorAttachment:credential.authenticatorAttachment||undefined,
