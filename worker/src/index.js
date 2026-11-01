@@ -4,7 +4,7 @@
 import { DAY_MS, dayOf, weekOf, hex, hmac, dbGet, dbPut, dbPatch, dbDel, cleanName } from "./db.js";
 import { PvpRoom, PvpLobby, pvpJoin, pvpSocket, pvpHealth } from "./pvp.js";
 import { RULES } from "./sim.gen.js";
-import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
+import { tx, pub, readEco, setLoadout, migrate, paidRecords, act, matchStart, matchEnd, claimOnce, addFlags, isFlagged, flagReasons, ctxOf, squadRows, squadRefresh, channelReady, who, link, ipHash, cfg, resetCfg } from "./eco.js";
 import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
 import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from "./web-auth.js";
@@ -105,13 +105,23 @@ function itemLabel(k, tk, ri) {
 // No points come in here any more: every point comes from a named source the server checks (a scored match, a claim).
 // Sync sets the name, the referrer (once), the loadout the pilot fields (power and league from what they own), the
 // one-time move of an existing pilot's progress from their phone, and returns the server's record.
-export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
+export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = "") {
   const name = cleanName(user), d = dayOf(now);
   const rec = (await dbGet(env, `players/${pid}`).catch(() => null)) || null;
   const paid = b.mig && typeof b.mig === "object" ? await paidRecords(env, pid) : null;
+  // The inviter comes only from the signed Telegram start_param (ref_<telegram id> or ri_<invite code>) or a
+  // server-issued website invite code; a pilot id in the body (refBy) is ignored. Linked Telegram + passkey accounts
+  // resolve to one canonical pilot, so nobody can recruit themselves through an alias. Looked up only while the pilot
+  // could still be recruited (no referrer yet, brand new).
+  const inviter = !(rec && rec.ref) && (!rec || (rec.days || 0) <= 1) ? await inviterOf(env, sp, b.inv) : null;
   let why = null;
-  let devCheck = false;
+  let devCheck = false, squadCheck = false;
   const t = await tx(env, pid, (S, X) => {
+    // first binding, inside the record's conditional write: concurrent first syncs can't pick different inviters, and
+    // once set it never changes. Only on the pilot's first day on the server (refDay), never for existing pilots
+    if (!Number.isInteger(S.refDay)) S.refDay = !rec && !S.rev && !S.t ? X.day : -1;
+    if (!S.referrer && rec && rec.ref) S.referrer = rec.ref;
+    if (!S.referrer && inviter && inviter !== pid && S.refDay === X.day && (S.days || 0) <= 1 && (S.vd | 0) === 0) S.referrer = inviter;
     who(S, user);
     why = null;
     if (S.mig === 0 && paid) {
@@ -121,14 +131,14 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
     if (b.lab === 1 && S.mig === 1) RULES.labEnsure(S, b.L);
     setLoadout(S, b.L || S.L);
     devCheck = S.dvd !== X.day; S.dvd = X.day;   // once a day: which other accounts use this phone
+    squadCheck = S.vqd !== X.day;   // once a day: verified recruits and the match bonus (squadRefresh sets vqd)
     return {};
   }, now, { rl: 1 });
   if (t.rate) return { ok: false, error: "rate" };
   const S = t.S, up = {};
-  // referrer: only for a brand-new pilot (first day), never yourself, never changed later
-  const rb = String(b.refBy || "");
-  let ref = rec && rec.ref;
-  if (!ref && /^tg_\d{3,15}$/.test(rb) && rb !== pid && (S.days || 0) <= 1) { ref = rb; up[`players/${pid}/ref`] = rb; }
+  // the public copy of the binding (squad lists query it); repaired here if an earlier write was lost
+  const ref = S.referrer || null;
+  if (ref && (!rec || rec.ref !== ref)) up[`players/${pid}/ref`] = ref;
   if (rec && rec.bracket !== undefined) up[`players/${pid}/bracket`] = null;
   // Stars receipts the game confirmed it delivered
   const acks = Array.isArray(b.starsAck) ? b.starsAck.slice(0, 20) : [];
@@ -137,18 +147,23 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "") {
   const flags = [];
   // farms: every Telegram account on one phone shares the device id (kept on the device, not in Telegram's cloud)
   const did = /^[0-9a-f]{16}$/.test(String(b.did || "")) ? String(b.did) : "";
+  // a recruit on the same phone or network as their referrer: both are held for review (with the reason), not banned.
+  // Raised once per pair (rfx), so an admin clearing it sticks
+  const held = ref && devCheck ? await dbGet(env, `rfx/${pid}`).catch(() => null) : 1;
+  const hold = (why2) => { if (held) return; flags.push([ref, [["alt", why2 + " recruit " + pid]]]); flags.push([pid, [["alt", why2 + " referrer " + ref]]]); up[`rfx/${pid}`] = d; };
   if (did) {
     up[`dev/${did}/${pid}`] = d;
-    if (devCheck) { const others = (await dbGet(env, `dev/${did}`).catch(() => null)) || {}; for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) await link(env, pid, o, "device").catch(() => {}); }
+    if (devCheck) { const others = (await dbGet(env, `dev/${did}`).catch(() => null)) || {}; for (const o of Object.keys(others).slice(0, 20)) if (o !== pid) { await link(env, pid, o, "device").catch(() => {}); if (o === ref) hold("shares a device with"); } }
   }
   if (ip) {
     const h = await ipHash(env, ip);
     up[`iph/${pid}/${h}`] = d;
-    if (ref) { const theirs = await dbGet(env, `iph/${ref}`).catch(() => null); if (theirs && theirs[h]) { flags.push([ref, [["alt", "shares a network with recruit " + pid]]]); flags.push([pid, [["alt", "shares a network with referrer " + ref]]]); } }
+    if (ref && devCheck && !held && !up[`rfx/${pid}`]) { const theirs = await dbGet(env, `iph/${ref}`).catch(() => null); if (theirs && theirs[h]) hold("shares a network with"); }
   }
   if (why && Object.keys(why).length) flags.push([pid, Object.entries(why).map(([k, v]) => ["mig_" + k, v])]);
   if (Object.keys(up).length) await dbPatch(env, "", up);
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
+  if (squadCheck) await squad(env, pid, now, S).catch(() => {});   // daily: verified recruits, match bonus, pool row
   const out = { ok: true, pid, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
     rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
@@ -173,9 +188,45 @@ async function undeliveredStars(env, pid, now) {
 
 // ================= /api/squad =================
 // recruits whose payouts are on hold (flagged for review) are marked, so the phone doesn't promise them
-export async function squad(env, pid) {
+const HOLD_WHY = { alt: "Same device or network as their referrer", device: "Shares a device with another account", replay: "Identical inputs to another account",
+  trade: "Repeated matches against the same pilot", winrate: "Unusual win rate", hours: "Played around the clock", matches: "Unusual number of matches",
+  ppm: "Unusual points per minute", proof: "Match records failed verification", noinput: "Tank moved with nobody on the controls", cluster: "Linked to other accounts" };
+const holdWhy = (keys) => [...new Set(keys.map((k) => HOLD_WHY[String(k).replace(/^mig_.*/, "mig")] || (String(k).startsWith("mig") ? "Progress move under review" : "Under review")))].join("; ");
+export async function squad(env, pid, now = Date.now(), S0 = null) {
   const [rows, fh] = await Promise.all([squadRows(env, pid), dbGet(env, "fh").catch(() => null)]);
-  return rows.map((r) => (fh && fh[r.id] ? { ...r, held: true } : r));
+  const heldIds = rows.filter((r) => fh && fh[r.id]).slice(0, 20).map((r) => r.id);
+  const reasons = {};
+  await Promise.all(heldIds.concat(fh && fh[pid] ? [pid] : []).map(async (id) => { const f = await dbGet(env, `flags/${id}`).catch(() => null); reasons[id] = holdWhy(flagReasons(f)); }));
+  const list = rows.map((r) => (fh && fh[r.id] ? { ...r, held: true, why: reasons[r.id] || "Under review" } : r));
+  if (!rows.length && !(S0 && ((S0.vac | 0) || S0.mbx))) {   // nobody invited yet: nothing to refresh, just today's mark
+    if (S0 && S0.vqd !== dayOf(now)) await tx(env, pid, (S) => { if (S.vqd === dayOf(now)) return { abort: true }; S.vqd = dayOf(now); return {}; }, now).catch(() => {});
+    return { list, me: { n: 0, s: 0, q: 0, mbx: 0 }, held: fh && fh[pid] ? reasons[pid] || "Under review" : null };
+  }
+  const me = await squadRefresh(env, pid, list, now);
+  return { list, me, held: fh && fh[pid] ? reasons[pid] || "Under review" : null };
+}
+// invite codes: server-issued, one per pilot (refCode/<pid>), resolved through inv/<code>. Website links carry them
+const CODE_ABC = "abcdefghjkmnpqrstuvwxyz23456789", CODE_RE = /^[a-hjkmnp-z2-9]{8}$/;
+export async function inviteCode(env, pid) {
+  const have = await dbGet(env, `refCode/${pid}`).catch(() => null);
+  if (typeof have === "string" && CODE_RE.test(have)) return have;
+  for (let i = 0; i < 4; i++) {
+    const raw = crypto.getRandomValues(new Uint8Array(8)), code = [...raw].map((x) => CODE_ABC[x % CODE_ABC.length]).join("");
+    if (!(await claimOnce(env, `inv/${code}`, pid)).ok) continue;
+    const mine = await claimOnce(env, `refCode/${pid}`, code);
+    if (mine.ok) return code;
+    await dbPatch(env, "", { [`inv/${code}`]: null }).catch(() => {});   // another request issued one first: use theirs
+    if (typeof mine.v === "string") return mine.v;
+  }
+  return null;
+}
+async function inviterOf(env, sp, code) {
+  sp = String(sp || ""); code = String(code || "").toLowerCase();
+  if (/^ref_\d{3,15}$/.test(sp)) { const n = Number(sp.slice(4)); return n > 0 ? (await resolveTelegramAccount(env, n)) || "tg_" + n : null; }
+  if (/^ri_[a-z0-9]{8}$/.test(sp)) code = sp.slice(3);
+  if (!CODE_RE.test(code)) return null;
+  const owner = await dbGet(env, `inv/${code}`).catch(() => null);
+  return typeof owner === "string" && /^(?:tg|ln)_\d{3,15}$/.test(owner) ? owner : null;
 }
 
 // ================= /api/pay-log =================
@@ -406,6 +457,9 @@ export async function buildLeaderboard(env, now = Date.now()) {
     weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
     vault: Object.entries(vlt || {}).filter(ok).filter(([, v]) => vlOf(v) > 0).map(([id, v]) => [id, v.name || "Pilot", Math.floor(v.vg || 0), vlOf(v)]).sort((a, b) => b[2] - a[2]).slice(0, 100),
   };
+  // launch phase (forward only) and the airdrop research boards. Tracking only: distribution is off, nothing is promised
+  const ad = await airdropBoards(env, now, fl, ok).catch((e) => { console.log("adb", e && e.message); return null; });
+  if (ad) { lb.ref = ad.pub; }
   await dbPut(env, "lb", lb);
   // fh: who's held right now, kept exact here (a new flag also sets it at once); squad payouts read this small index
   const fh = (await dbGet(env, "fh").catch(() => null)) || {}, fup = {};
@@ -420,6 +474,30 @@ export async function buildLeaderboard(env, now = Date.now()) {
   // housekeeping once an hour: drop daily/weekly score tables older than a few days/weeks
   if (new Date(now).getUTCMinutes() < 5) { await dbDel(env, `dly/${d - 3}`); await dbDel(env, `wly/${w - 3}`); }
   return lb;
+}
+
+// Points pool: top 1,000 by play score (ads/<pid>, written with each record change). Referral pool: top 250 (500 only
+// if the owner turns the expansion on and active pilots reach 50,000) by the dampened quality score (rfs/<pid>, refreshed
+// when the recruiter opens the game or the Squad screen; rows older than 8 days sit out), 10+ verified active recruits,
+// nobody above 2% of the pool. Both boards are kept at adb (admin) with the config they were built with.
+export async function airdropBoards(env, now = Date.now(), fl = null, ok = () => true) {
+  const d = dayOf(now);
+  const [C, ap, pts, rfs] = await Promise.all([
+    cfg(env, now), dbGet(env, "meta/ap").catch(() => 0),
+    dbGet(env, "ads", { orderBy: '"$value"', limitToLast: RULES.AIRDROP.ptsTop + 100 }).catch(() => ({})),
+    dbGet(env, "rfs", { orderBy: '"s"', limitToLast: RULES.AIRDROP.expand.top + 50 }).catch(() => ({})),
+  ]);
+  const A = RULES.adCfg(C.ad), ph = RULES.refPhaseOf(ap, C.rph);
+  if (ph > (C.rph | 0)) { await dbPatch(env, "cfg", { rph: ph }); C.rph = ph; }   // the phase never moves back
+  const refTop = A.expand && A.expand.on && (Number(ap) || 0) >= A.expand.at ? A.expand.top : A.refTop;
+  const P = Object.entries(pts || {}).filter((e) => ok(e) && Number(e[1]) > 0).sort((a, b) => b[1] - a[1]).slice(0, A.ptsTop);
+  const Rr = Object.entries(rfs || {}).filter((e) => ok(e) && e[1] && e[1].n >= A.refMin && d - (e[1].t | 0) <= 8).sort((a, b) => b[1].s - a[1].s).slice(0, refTop);
+  const pSh = RULES.poolShares(P.map((e) => e[1]), 1), rSh = RULES.poolShares(Rr.map((e) => e[1].s), A.refCap);
+  const adb = { t: now, d, ap: Number(ap) || 0, ph, dist: false, cfg: { refShare: A.refShare, refW: A.refW, refMin: A.refMin, qCap: A.qCap, refCap: A.refCap, ptsTop: A.ptsTop, refTop, expand: A.expand, walletCapPct: A.walletCapPct },
+    pts: P.map((e, i) => [e[0], e[1], Math.round(pSh[i] * 1e6) / 1e6]), ref: Rr.map((e, i) => [e[0], e[1].nm || "Pilot", e[1].s, e[1].n, e[1].q, Math.round(rSh[i] * 1e6) / 1e6]) };
+  await dbPut(env, "adb", adb);
+  // what the Squad screen shows: the phase and the top 25 recruiters (a research ranking, not a guarantee)
+  return { adb, pub: { ap: adb.ap, ph, x: RULES.refPhaseX(ph), top: adb.ref.slice(0, 25).map((r) => [r[0], r[1], r[2], r[3]]), n: adb.ref.length, min: A.refMin } };
 }
 
 // ================= daily reminders (cron) =================
@@ -542,7 +620,7 @@ async function webhook(req, env) {
     if (m.chat && m.chat.type === "private") await dbPatch(env, `ntf/${(await resolveTelegramAccount(env,m.from.id))||"tg_"+m.from.id}`, { on: 1, chat: m.chat.id, nx: dayOf(Date.now()) }).catch(() => {});
     await tg(env, "sendMessage", {
       chat_id: m.chat.id,
-      text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. The top 1,000 pilots get a guaranteed $LUNAR allocation.",
+      text: "☾ LUNAR: War Machines\n\nFast robot-tank battles right here in Telegram. Win matches, climb the leaderboard, and build your squad. A $LUNAR airdrop is planned for active pilots; nothing is guaranteed.",
       reply_markup: { inline_keyboard: [[{ text: "⚔ PLAY", web_app: { url: GAME_URL } }], [{ text: "🌐 LUNAR WEBSITE / ACCOUNT", url: ACCOUNT_URL }], [{ text: "📣 Channel", url: CHANNEL_URL }, { text: "📖 Wiki", url: WIKI_URL }]] },
     });
   } else if (m && m.text && /^\/account(?:\s|$)/.test(m.text)) {
@@ -562,11 +640,16 @@ async function webhook(req, env) {
 
 // ================= router =================
 const ROUTES = {
-  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip); return { status: r.error === "rate" ? 429 : 200, body: r }; },
+  "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
   "/api/match/end": async (env, a) => matchEnd(env, a.b, a.user, a.pid),
-  "/api/squad": async (env, a) => ({ status: 200, body: { ok: true, squad: await squad(env, a.pid) } }),
+  "/api/squad": async (env, a) => {
+    const now = Date.now(), [q, code, C, ap, rec] = await Promise.all([squad(env, a.pid, now), inviteCode(env, a.pid).catch(() => null), cfg(env, now), dbGet(env, "meta/ap").catch(() => 0), dbGet(env, `players/${a.pid}/ref`).catch(() => null)]);
+    const ph = RULES.refPhaseOf(ap, C.rph), nx = RULES.REF_PHASES[ph];
+    return { status: 200, body: { ok: true, squad: q.list, me: { ...q.me, held: q.held, ref: rec || null }, code,
+      phase: { i: ph, x: nx.x, ap: Number(ap) || 0, next: Number.isFinite(nx.n) ? nx.n : null }, cap: RULES.REF_PCT_CAP } };
+  },
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),

@@ -3,22 +3,47 @@
     ".read": false,
     ".write": false,
     "players": {
-      ".indexOn": ["pts", "ref", "vg"]
+      ".indexOn": [
+        "pts",
+        "ref",
+        "vg"
+      ]
     },
     "dly": {
-      "$d": { ".indexOn": ["s"] }
+      "$d": {
+        ".indexOn": [
+          "s"
+        ]
+      }
     },
     "wly": {
-      "$w": { ".indexOn": ["s"] }
+      "$w": {
+        ".indexOn": [
+          "s"
+        ]
+      }
     },
     "ntf": {
-      ".indexOn": ["last", "nx"]
+      ".indexOn": [
+        "last",
+        "nx"
+      ]
     },
     "gh": {
-      ".indexOn": ["pw"]
+      ".indexOn": [
+        "pw"
+      ]
     },
     "lb": {
       ".read": true
+    },
+    "rfs": {
+      ".indexOn": [
+        "s"
+      ]
+    },
+    "ads": {
+      ".indexOn": ".value"
     }
   }
 }

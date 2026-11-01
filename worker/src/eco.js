@@ -133,6 +133,7 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
     const S = v ? R.ecoNorm(v) : await freshEco(env, pid);
     const isNew = !!S._new; delete S._new;
     const X = ctxOf(pid, now);
+    X.rx = R.refPhaseX((CFG || {}).rph);   // the launch phase right now (pinned on what's earned in this write)
     R.ecoRoll(S, X);
     if (opt.rl) {   // actions per pilot per minute
       const mn = Math.floor(now / 60000);
@@ -140,10 +141,12 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
       if (S.rq.n >= ECO.RL_MIN) return { abort: true, rate: true, S, X };
       S.rq.n++;
     }
-    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0 };
+    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as };
     const out = (await fn(S, X)) || {};
     if (out.abort) return { ...out, S, X };
     credit(S, before.e);
+    R.ecoRefTrack(S, X, before.e, before.f);
+    S.as = R.airdropScore(S.ac, S.rfe, R.adCfg((CFG || {}).ad).refW);   // the points-pool score (research board only)
     S.rev = (S.rev || 0) + 1; S.t = now;
     if (await writeIf(env, `eco/${pid}`, S, tag)) {
       await mirror(env, pid, S, isNew, before, now).catch(() => {});
@@ -156,12 +159,15 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
 async function mirror(env, pid, S, isNew, before, now) {
   const P = `players/${pid}`, up = {};
   const f = { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
-    wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
+    wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, vd: S.vd, vdl: S.vdl, rfe: S.rfe, rb: S.rb, rms: S.rms && S.rms.length ? S.rms : null, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
   const vl = R.vaultLevel(S.vg), vx = vl ? { v: vl } : {};   // the Vault badge shows on the daily and weekly boards too
   if (S.dailyPts !== before.d || isNew) up[`dly/${S.dailyDay}/${pid}`] = { s: S.dailyPts, n: S.nm || "Pilot", ...vx };
   if (S.weeklyPts !== before.w || isNew) up[`wly/${S.weeklyNum}/${pid}`] = { s: S.weeklyPts, n: S.nm || "Pilot", ...vx };
   if (isNew) up["meta/n"] = { ".sv": { increment: 1 } };
+  // active pilots for the launch phase: counted once, the day a pilot reaches 2 verified match days (no scans)
+  if ((before.vd | 0) < R.REF_ACTIVE_DAYS && (S.vd | 0) >= R.REF_ACTIVE_DAYS) up["meta/ap"] = { ".sv": { increment: 1 } };
+  if (S.as !== before.as) up[`ads/${pid}`] = S.as || null;   // the points-pool board reads this small index
   const idn = Number(String(pid).slice(3));
   if (isNew && idn > (Number((CFG || {}).maxid) || 0)) { up["cfg/maxid"] = idn; if (CFG) CFG.maxid = idn; if (idn >= 1e9) NEWID = Math.floor(idn * (1 - ECO.NEW_SHARE)); }   // the newest Telegram id seen so far
   // for the daily reminder: the day you last played and your streak, next to your reminder settings (one read finds who's due)
@@ -445,7 +451,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const dy = bp.dy && bp.dy[X.day];
     if (dy) dy[1] = Math.floor((now % DAY_MS) / 60000);
     flags = flags.concat(bpFlags(S));
-    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, base: p.base, modeX: p.modeX, featX: p.featX, mult: T.mult }) };
+    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, bonus: p.bonus || 0, base: p.base, modeX: p.modeX, featX: p.featX, mult: T.mult }) };
   }, now, { rl: 1 });
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now);
   if (t.ghr && t.ghr.length) await ghostReport(env, t.ghr, now).catch(() => {});
@@ -478,7 +484,7 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
       S.op = S.op && S.op.d === X.day ? S.op : { d: X.day, m: {} };
       for (const o of c.opp.slice(0, 5)) { if (!/^(?:tg|ln)_\d{3,15}$/.test(String(o))) continue; S.op.m[o] = (S.op.m[o] || 0) + 1; if (S.op.m[o] === ECO.TRADE) trade.push(o); }
     }
-    const pts = Math.max(0, Math.round(c.pts || 0)), awarded = R.ecoAward(S, pts, X);
+    const pts = Math.max(0, Math.round(c.pts || 0)), awarded = R.ecoBonusAward(S, pts, X).awarded;
     S.pvs = c.pvs || 0; S.pvm = (S.pvm || 0) + 1;
     const k = c.won ? "pvw" : c.drawn ? "pvd" : "pvl"; S[k] = (S[k] || 0) + 1;
     if (c.m) {
@@ -599,7 +605,22 @@ const TKS = ["gem", "weapon", "chassis"];
 const riOf = (v) => ([0, 1, 2].includes(Number(v)) ? Number(v) : null);
 export async function squadRows(env, pid) {
   const rows = (await dbGet(env, "players", { orderBy: '"ref"', equalTo: `"${pid}"` })) || {};
-  return Object.entries(rows).slice(0, 300).map(([id, v]) => ({ id, n: v.name || "Pilot", pts: v.pts || 0, days: v.days || 0, ld: v.ld ?? null }));
+  return Object.entries(rows).slice(0, 300).map(([id, v]) => ({ id, n: v.name || "Pilot", pts: Math.max(0, (v.pts || 0) - (v.rfe || 0)), days: v.days || 0, ld: v.ld ?? null,
+    vd: v.vd | 0, vdl: typeof v.vdl === "number" ? v.vdl : null, rb: typeof v.rb === "number" ? v.rb : 0, rms: Array.isArray(v.rms) ? v.rms : [] }));
+}
+// the referrer's side, from their recruits' rows (held rows marked): verified active count, the match bonus the server
+// pays on their matches (config: cfg/refb), and their referral-pool row (rfs/<pid>, the research board reads it)
+export async function squadRefresh(env, pid, rows, now = Date.now(), name = "") {
+  const C = await cfg(env, now), day = dayOf(now), ad = R.adCfg(C.ad), bc = Object.assign({}, R.REF_BONUS, C.refb || {});
+  const sc = R.refPoolScore(rows, day, ad), mbx = bc.on ? R.refBonusOf(sc.n, bc) : 0;
+  const t = await tx(env, pid, (S) => {
+    if ((S.vac | 0) === sc.n && (Number(S.mbx) || 0) === mbx && S.vqd === day) return { abort: true };
+    S.vac = sc.n; S.mbx = mbx; S.vqd = day;
+    return {};
+  }, now);
+  if (sc.n > 0) await dbPatch(env, `rfs/${pid}`, { s: sc.s, n: sc.n, q: sc.q, t: day, nm: (t.S && t.S.nm) || name || "Pilot" }).catch(() => {});
+  else await dbPatch(env, "", { [`rfs/${pid}`]: null }).catch(() => {});
+  return { ...sc, mbx, bonusOn: !!bc.on };
 }
 // ---- "Join the channel": Telegram confirms the pilot is a member before the quest pays ----
 // getChatMember on a channel needs the bot to be one of its admins. Until it is, Telegram answers with an error and
@@ -664,7 +685,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
       const [rows, fh, rec] = await Promise.all([squadRows(env, pid), dbGet(env, "fh").catch(() => null), dbGet(env, `players/${pid}`).catch(() => null)]);
       const held = rows.filter((r) => fh && fh[r.id]).map((r) => r.id);
       if (fh && fh[pid]) held.push("me");
-      F = (S, X) => R.ecoSquad(S, rows, X, { ref: rec && rec.ref, days: S.days }, held);
+      F = (S, X) => R.ecoSquad(S, rows, X, { ref: S.referrer || (rec && rec.ref) }, held);
       break;
     }
   }

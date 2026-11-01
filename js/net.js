@@ -31,7 +31,8 @@ async function doSync(boot){
  captureRef();
  if(SRV_ECO)await flushMatches();   // results waiting for the server go first, so its record includes them
  const ack=starsAckQ.splice(0);
- const body={lab:1,boot:!!boot,L:myLoadout(),refBy:save.refBy||'',starsAck:ack,did:deviceId(),dh:deviceHash()},ghAck=save.ghAck||0;
+ const body={lab:1,boot:!!boot,L:myLoadout(),starsAck:ack,did:deviceId(),dh:deviceHash()},ghAck=save.ghAck||0,inv=inviteCode();
+ if(inv)body.inv=inv;   // a website invite code (server-issued); the server decides if this pilot can still be recruited
  if(ghAck)body.ghAck=ghAck;   // the ghost report we showed: the server can clear it
  // one time, the first time this pilot meets the server that owns the economy: this device's progress moves over
  // (the server checks it against payments and points on record, and flags what it can't explain)
@@ -40,6 +41,7 @@ async function doSync(boot){
   const r=await api('/api/sync',body);
   if(/^(?:tg|ln)_\d{3,15}$/.test(String(r.pid||'')))VERIFIED_PID=r.pid; // Authenticated, server-owned player ID.
   srvOff=r.now-Date.now();srv=r.rec;syncFails=0;lastCredit=r;
+  if(r.rec){save.refBy=r.rec.ref||null;if(r.rec.ref||(r.rec.days||0)>1)inviteDone();}   // the server's binding is the only one
   if(SRV_ECO){if(r.migOk)save.migOk=1;if(r.E&&!ecoBusy&&!(save.mq&&save.mq.length))applyEco(r.E);}
   if(r.stars&&r.stars.length)recoverStars(r.stars);
   if(ghAck&&save.ghAck===ghAck)save.ghAck=0;
@@ -85,7 +87,7 @@ function loadLB(force){
   for(const [id,n,s2,vl] of (lb.daily||[])){const p=row(id,n);p.dailyPts=s2;p.vl=Math.max(p.vl,vl||0);}
   for(const [id,n,s2,vl] of (lb.weekly||[])){const p=row(id,n);p.weeklyPts=s2;p.vl=Math.max(p.vl,vl||0);}
   for(const [id,n,g,vl] of (lb.vault||[])){const p=row(id,n);p.vg=g;p.vl=Math.max(p.vl,vl||0);}   // the Hyperspace Vault board: lifetime Gold
-  lbCache=Object.values(m);lbMeta={n:lb.n||0,cut:lb.cut||0,t:lb.t||0,inTop:lb.top.length,lpf:lb.lpf||0,lps:lb.lps||0.25};
+  lbCache=Object.values(m);lbMeta={n:lb.n||0,cut:lb.cut||0,t:lb.t||0,inTop:lb.top.length,lpf:lb.lpf||0,lps:lb.lps||0.25,ref:lb.ref||null};
   if(typeof uiDirty==='function')uiDirty('ranks');
  }).catch(()=>{lbBusy=false;lbCacheT=Date.now()-45000;});
 }
@@ -98,11 +100,11 @@ function myRank(pts){
  return inList?{rank:null,outside:true}:{rank:above+1,outside:false};
 }
 // your recruits come from the server (only you can see them)
-let squadCache=null,squadT=0,squadBusy=false;
+let squadCache=null,squadInfo=null,squadT=0,squadBusy=false;
 function loadSquad(force){
  if(!ACCOUNT_OK||squadBusy||(!force&&squadCache&&Date.now()-squadT<60000))return;
  squadBusy=true;
- api('/api/squad',{}).then(r=>{squadCache=r.squad||[];squadT=Date.now();squadBusy=false;if(typeof uiDirty==='function')uiDirty('quests');}).catch(()=>{squadBusy=false;squadT=Date.now()-45000;});
+ api('/api/squad',{}).then(r=>{squadCache=r.squad||[];squadInfo={me:r.me||{},code:r.code||null,phase:r.phase||null,cap:r.cap||REF_PCT_CAP};squadT=Date.now();squadBusy=false;if(typeof uiDirty==='function')uiDirty('quests');}).catch(()=>{squadBusy=false;squadT=Date.now()-45000;});
 }
 let adminData=null;
 function loadAdmin(extra){if(!IN_TG){adminData={error:'Open the game in Telegram to see server stats'};return;}if(!adminData||adminData.error)adminData={loading:true};api('/api/admin',extra||{}).then(r=>{adminData=r;uiDirty('admin');}).catch(e=>{adminData={error:String(e.message||e)};uiDirty('admin');});}

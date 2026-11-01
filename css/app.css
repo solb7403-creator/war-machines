@@ -648,3 +648,15 @@ button.q{display:flex;width:100%;text-align:left}
 .battle-roster-card .btn{margin-top:auto;min-height:36px;width:100%;white-space:normal;padding:6px 3px;font-size:10px}
 .battle-roster-rule{font-size:11px;color:var(--dust);margin:9px 2px 0}
 @media(max-width:350px){.battle-roster{padding:7px}.battle-roster-grid{gap:5px}.battle-roster-card{padding:6px}.battle-roster-card canvas{height:75px}}
+/* squad (invites) */
+.squad .kv{gap:8px}.squad .kv b{font-size:18px}
+.squad .phase{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,207,74,.1);color:var(--gold);font-size:13px}
+.squad .phase b{color:var(--gold)}
+.squad .held{color:#ffb86b}.squad .held.box{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,107,94,.12);font-size:13px}
+.squad .ok{color:#5fe3a1;font-weight:600}
+.squad .invlink{margin-top:12px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06);font-size:12px;overflow-wrap:anywhere;word-break:break-all;user-select:all}
+.squad .sqline{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:13px;color:var(--dust)}
+.squad .sqline b{color:inherit}
+.squad .pips{display:inline-flex;gap:3px;vertical-align:middle}.squad .pip{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18)}.squad .pip.on{background:var(--gold)}
+.squad .sqhd{margin-top:14px;font:700 14px var(--disp)}.squad .sqhd small{font:400 11px var(--body,inherit);color:var(--dust);margin-left:6px}
+.squad .rboard .q{gap:10px}.squad .rboard .q.me{background:rgba(95,227,161,.08)}
