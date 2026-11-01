@@ -7,6 +7,8 @@ const root=new URL('../../',import.meta.url),ctx=createContext({console});
 runInContext(readFileSync(new URL('js/vendor/three.lunar.min.js',root),'utf8'),ctx);
 runInContext(readFileSync(new URL('js/rules.js',root),'utf8'),ctx);
 // Fixture recorded from merged PR #13, commit 385356ea4ffac207900d05be6fbdf1965081fa63.
+// Re-recorded for the nine-chassis size/silhouette redesign: only the eight redesigned chassis (all chassis except
+// Vanguard T0) changed; every weapon kit and the Vanguard starter stay byte identical to PR15.
 const source=readFileSync(new URL('js/models3d.js',root),'utf8');
 runInContext(source+'\nglobalThis.models=M3;globalThis.paints=PAINTS;',ctx);const {models:M,paints}=ctx;
 function hash(raw){

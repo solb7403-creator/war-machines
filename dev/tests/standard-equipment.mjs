@@ -12,7 +12,7 @@ function check(raw,label,budget){
  return {n,lo,hi,hash:hash.digest('hex')};
 }
 for(const cls of CHORDER)for(let t=0;t<3;t++){
- const raw=M.chassisKit(cls,t,PAINTS.stock,'#4d9fff',GORDER.slice(0,3),false),meta=raw.meta;for(const g of Object.values(raw.k).flat()){const a=g.attributes.position.array;for(let i=0;i<a.length;i+=3)if(Math.hypot(a[i],a[i+2])<.43)assert.ok(a[i+1]<=meta.ty+.04,cls+t+' clear central mounting socket');}const c=check(raw,cls+t,30000);assert.equal(meta.bob,0,'all standard chassis tracked');assert.ok(meta.ty>.5&&meta.ty<1);assert.ok(meta.ty>c.lo[1]);assert.ok(meta.halos.length>=2);metrics.push({kind:'chassis',id:cls,tier:t,vertices:c.n,mount:meta.ty,bounds:[c.lo,c.hi]});hashes.c.push(c.hash);
+ const raw=M.chassisKit(cls,t,PAINTS.stock,'#4d9fff',GORDER.slice(0,3),false),meta=raw.meta;for(const g of Object.values(raw.k).flat()){const a=g.attributes.position.array;for(let i=0;i<a.length;i+=3)if(Math.hypot(a[i],a[i+2])<.43)assert.ok(a[i+1]<=meta.ty+.04,cls+t+' clear central mounting socket');}const c=check(raw,cls+t,30000);assert.equal(meta.bob,0,'all standard chassis tracked');assert.ok(meta.ty>.4&&meta.ty<1,'socket height inside the class ladder (Scout .45 to Colossus .96)');assert.ok(meta.ty>c.lo[1]);assert.ok(meta.halos.length>=2);metrics.push({kind:'chassis',id:cls,tier:t,vertices:c.n,mount:meta.ty,bounds:[c.lo,c.hi]});hashes.c.push(c.hash);
 }
 for(const arch of WORDER)for(let t=0;t<3;t++){
  const raw=M.weaponKit(arch,t,PAINTS.stock,'#4d9fff',false,'vanguard'),meta=raw.meta,w=check(raw,arch+t,16000);assert.equal(meta.tips.length,arch==='twin'||arch==='siege'&&t===2?2:1);assert.ok(w.lo[1]>=-.001,arch+t+' weapon sits above socket plane '+w.lo[1]);for(const tip of meta.tips){assert.ok(tip.every(Number.isFinite)&&tip[0]>1.3);assert.ok(Math.abs(tip[0]-w.hi[0])<.05,'tip tracks actual bore end');}metrics.push({kind:'weapon',id:arch,tier:t,vertices:w.n,tips:meta.tips,bounds:[w.lo,w.hi]});hashes.w.push(w.hash);
@@ -21,7 +21,7 @@ assert.equal(new Set(hashes.c).size,9,'nine geometrically distinct chassis');ass
 let pairings=0;
 for(const cls of CHORDER)for(let ct=0;ct<3;ct++)for(const arch of WORDER)for(let wt=0;wt<3;wt++){
  const h=M.chassisKit(cls,ct,PAINTS.stock,'#f85a75',[],false),w=M.weaponKit(arch,wt,PAINTS.stock,'#f85a75',false,cls);
- assert.ok(h.meta.ty+w.meta.tips[0][1]>.7);check(h,cls+ct+' '+arch+wt,30000);check(w,arch+wt,16000);pairings++;
+ assert.ok(w.meta.tips[0][1]>.2&&h.meta.ty+w.meta.tips[0][1]>.6,'muzzle clears the hull (the low Scout sockets sit at .45-.49)');check(h,cls+ct+' '+arch+wt,30000);check(w,arch+wt,16000);pairings++;
 }
 let appearances=0;
 for(const paint of Object.values(PAINTS))for(const cls of CHORDER)for(const team of ['#4d9fff','#ff536d']){

@@ -132,7 +132,15 @@ const Equipment3D=(()=>{
  function slopedArmor(g,start,end,drop,base=.19){
   const p=g.attributes.position;for(let i=0;i<p.count;i++){const f=Math.max(0,Math.min(1,(p.getX(i)-start)/(end-start)));if(p.getY(i)>base)p.setY(i,p.getY(i)-drop*f*Math.min(1,(p.getY(i)-base)/.28));}g.deleteAttribute('normal');return g;
  }
+ // The nine-chassis family (M3.famChassis) authored once, written here into HF surfaces with track drive markers.
+ // Vanguard T0 keeps its approved starter build below.
+ function familyKit(cls,tier,P,team,gems,lunar,q){
+  const k=kit(q),r=M3.famChassis(cls,tier,P,team,gems,lunar,{high:q==='high',put:(g,m,c,p,rot,s)=>put(k,g,m,c,p,rot,s||[1,1,1]),
+   mark:(g,x,y,type,s)=>{const a=new Float32Array(g.attributes.position.count*4);for(let i=0;i<a.length;i+=4){a[i]=x;a[i+1]=y;a[i+2]=type;a[i+3]=s;}g.setAttribute('drive',new THREE.BufferAttribute(a,4));}});
+  r.k=k;r.meta.hf=VERSION;return r;
+ }
  function buildChassisKit(cls,tier,P,team,gems,lunar,q=quality){
+  if(!(cls==='vanguard'&&tier===0))return familyKit(cls,tier,P,team,gems,lunar,q);
   const o=M3.CHASSIS_VISUALS[cls][tier],v=CLASSES[cls],high=q==='high',scout=cls==='scout',titan=cls==='titan',k=kit(q),F=finish(P,lunar),A=[],half=o.len/2-.08,w=v.width,deck=o.deck;
   const bp=[[-half,-w*.91],[-half+.13,-w],[half-v.prow,-w],[half,-w*.50],[half+.035,0],[half,w*.50],[half-v.prow,w],[-half+.13,w],[-half,w*.91]],tp=bp.map(([x,z])=>[x*.91-.035,z*.84]);
   put(k,slopedArmor(M3.loft(bp,tp,.19,deck-.07),half*.25,half,.19),'paint',F.paint);
