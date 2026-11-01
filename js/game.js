@@ -33,8 +33,12 @@ function upOk(x,y){   // a tank centre may sit here while on the upper level
 function rampExit(x,y){for(const [rx,ry,rw,rh,o] of BR.ramps)if(x>=rx&&x<=rx+rw&&(o<0?y<ry&&y>ry-R*2:y>ry+rh&&y<ry+rh+R*2))return true;return false;}
 const lvOK=(a,e)=>(a.elev||0)===(e.elev||0)||!(underDeck(a)||underDeck(e));   // cross-level hits are blocked under the deck
 // Map definitions. Every layout is point-symmetric, so both sides get the same map.
-// walls: solid boxes [x,y,w,h,style]; rocks: round solids [x,y,r,style]; crates: breakable boxes; craters: [x,y,r] slow you down.
+// walls: solid boxes [x,y,w,h,style]; rocks: round solids [x,y,r,style]; crates: breakable boxes; craters: [x,y,r(,look)] slow you down
+// (a look only changes the art: Canyon's scree, Bunker's coolant). bridge.look 'mesa' draws Overpass's bridge rules as a rock plateau.
 // (data only, so a 3D renderer or a PvP server can use the same maps)
+// symW/symP add each piece's point mirror (x,y) -> (W-x,H-y), so a map lists one half and both sides match exactly
+const mirW=w=>[W-w[0]-w[2],H-w[1]-w[3],w[2],w[3]].concat(w.slice(4)),mirP=p=>[W-p[0],H-p[1]].concat(p.slice(2));
+const symW=a=>a.concat(a.map(mirW)),symP=a=>a.concat(a.map(mirP));
 const MAPS={
  classic:{
   n:'Moonbase',d:'Containers, habitat domes, a slow crater on each flank',
@@ -65,6 +69,22 @@ const MAPS={
   crates:[[9.4,7.6,1.2,1.2],[9.4,23.2,1.2,1.2],[12.8,15.4,1.2,1.2],[6,15.4,1.2,1.2]],
   craters:[[10,16,2.6],[15.5,14.5,1.3],[4.5,17.5,1.3]]
  },
+ canyon:{
+  n:'Canyon',d:'Winding rille, a central mesa with one ramp per side, scree that slows you',
+  walls:symW([[0,0,2,6,'canyon'],[0,6,4.5,3.5,'canyon'],[0,9.5,2.5,9.5,'canyon'],[0,19,1.5,13,'canyon'],[15,3.2,3.5,1.3,'fin']]),
+  rocks:symP([[8,9.3,0.85,'boulder'],[18.3,8,1.0,'spire'],[2.4,3,0.8,'spire']]),
+  crates:symW([[17.3,11.8,1.2,1.2],[5.6,12.3,1.2,1.2]]),
+  craters:symP([[3.9,16,1.1,'scree']]),
+  bridge:{deck:[5.25,13.5,9.5,5],tunnels:[[8.8,2.4]],ramps:[[11.2,10.5,2.4,3,-1],[6.4,18.5,2.4,3,1]],look:'mesa'}
+ },
+ bunker:{
+  n:'Underground Bunker',short:'Bunker',d:'Blast doors, side corridors, a reactor hall ringed by pillars',
+  walls:symW([[0,8.5,3,1,'bulk'],[5.4,8.5,2.8,1,'door'],[11.8,8.5,2.8,1,'door'],[17,8.5,3,1,'bulk'],[3.5,12,1,8,'bulk'],
+   [4.5,14.6,1.4,2.8,'turbine'],[7.6,12,1.2,1.2,'pillar'],[11.2,12,1.2,1.2,'pillar'],[7,0,6,1.4,'lift'],[0,4.6,1.4,1.6,'console'],[18.6,4.6,1.4,1.6,'console']]),
+  rocks:symP([[1.1,1.1,1.1,'tank'],[18.9,1.1,1.1,'tank']]),
+  crates:symW([[0,12,1.2,1.2],[18.8,12,1.2,1.2]]),
+  craters:symP([[1.75,16,1.2,'coolant']])
+ },
  random:{
   n:'Random',d:'A different map every match',
   walls:[],isRandom:true
@@ -72,7 +92,7 @@ const MAPS={
 };
 let curMap='classic';
 let walls=MAPS.classic.walls,rocks=[],craters=[],crates=[];
-const MAP_REAL=['classic','overpass','longshot','craters'];
+const MAP_REAL=['classic','overpass','longshot','craters','canyon','bunker'];
 const CRATE_HP=320,CRATER_SLOW=0.6;
 function setMap(id){
  if(!MAPS[id]||MAPS[id].isRandom)id=MAP_REAL[(random()*MAP_REAL.length)|0];
@@ -274,7 +294,9 @@ function push(b){
  }
  b.elev=0;
  for(let pass=0;pass<2;pass++){
-  for(const [x,y,w,h] of walls){
+  for(let i=0;i<walls.length;i++){
+   const wl=walls[i],x=wl[0],y=wl[1],w=wl[2],h=wl[3];
+   if(b.x<=x-R||b.x>=x+w+R||b.y<=y-R||b.y>=y+h+R)continue;   // out of reach (exact: the push below needs d<R)
    const cx=Math.max(x,Math.min(b.x,x+w)),cy=Math.max(y,Math.min(b.y,y+h));
    let dx=b.x-cx,dy=b.y-cy,d=Math.hypot(dx,dy);
    if(d<R){if(d===0){dx=0;dy=-1;d=1;}b.x+=dx/d*(R-d);b.y+=dy/d*(R-d);}
@@ -299,8 +321,13 @@ function segHitsCircle(ax,ay,bx,by,cx,cy,r){
  const px=ax+dx*t-cx,py=ay+dy*t-cy;return px*px+py*py<r*r;
 }
 function losW(a,b,wl,fat){
- for(const [rx,ry,rw,rh] of wl)if(segHitsRect(a.x,a.y,b.x,b.y,rx,ry,rw,rh))return false;
- for(const [cx,cy,cr] of rocks)if(segHitsCircle(a.x,a.y,b.x,b.y,cx,cy,cr+(fat||0)))return false;
+ const ax=a.x,ay=a.y,bx=b.x,by=b.y,x0=Math.min(ax,bx),x1=Math.max(ax,bx),y0=Math.min(ay,by),y1=Math.max(ay,by),f=fat||0;
+ for(let i=0;i<wl.length;i++){const r=wl[i];   // boxes clear of the segment's bounding box can't block it (same answer, less work: maps have many walls)
+  if(r[0]>x1||r[0]+r[2]<x0||r[1]>y1||r[1]+r[3]<y0)continue;
+  if(segHitsRect(ax,ay,bx,by,r[0],r[1],r[2],r[3]))return false;}
+ for(let i=0;i<rocks.length;i++){const c=rocks[i],cr=c[2]+f;
+  if(c[0]-cr>x1||c[0]+cr<x0||c[1]-cr>y1||c[1]+cr<y0)continue;
+  if(segHitsCircle(ax,ay,bx,by,c[0],c[1],cr))return false;}
  return true;
 }
 const inRock=(x,y)=>rocks.some(([cx,cy,cr])=>(x-cx)*(x-cx)+(y-cy)*(y-cy)<cr*cr);
@@ -737,7 +764,7 @@ function botAI(dt,u){
  }
  if(onRamp){
   if(!u.rc||u.rc.rp!==onRamp)u.rc={rp:onRamp,up:ptLevel(goal)===1};
-  const [rx,ry,rw,rh,o]=onRamp,cx=rx+rw/2,deckY=o<0?ry+rh+0.9:ry-0.9,footY=o<0?ry-1.1:ry+rh+1.1;
+  const [rx,ry,rw,rh,o]=onRamp,cx=rx+rw/2,deckY=o<0?ry+rh+0.9:ry-0.9,footY=o<0?ry-1.8:ry+rh+1.8;   // the foot target sits past the 1.6 mouth, or a bot that rolled off parks in it for good
   tx=cx;ty=u.rc.up?deckY:footY;
  }else u.rc=null;
  const vx=tx-u.x,vy=ty-u.y,vm=Math.hypot(vx,vy);

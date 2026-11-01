@@ -3,7 +3,7 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=1;   // live-match protocol version: the phone and the server must agree
+const PVP_V=2;   // live-match protocol version: the phone and the server must agree (2: Canyon and Bunker joined the live map pool)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack

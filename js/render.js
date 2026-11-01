@@ -158,27 +158,53 @@ function drawCrateArt(ctx,x,y,w,h,tk,ri){
  }
  ctx.restore();
 }
+// Canyon's mesa: the same deck, ramps and arch as the Overpass bridge (same rules), drawn as a rock plateau
+function drawMesa2D(meUnder){
+ const [dx,dy,dw,dh]=BR.deck,sd=91;
+ let x0=dx;const spans=[];for(const [tx,tw] of BR.tunnels){spans.push([x0,tx-x0,1]);spans.push([tx,tw,0]);x0=tx+tw;}spans.push([x0,dx+dw-x0,1]);
+ g.save();g.globalAlpha=meUnder?0.8:1;
+ g.fillStyle='#3c322b';g.fillRect(X(dx),Y(dy+dh),dw*sc,Math.max(4,sc*0.45));   // cliff face below the plateau's south rim
+ const gr=g.createLinearGradient(X(dx+dw),Y(dy),X(dx),Y(dy+dh));gr.addColorStop(0,'#8a735f');gr.addColorStop(1,'#5c4c40');
+ for(const [sx,sw,solid] of spans){g.globalAlpha=solid?(meUnder?0.8:1):(meUnder?0.35:0.72);g.fillStyle=solid?gr:'#6a584a';g.fillRect(X(sx),Y(dy),sw*sc,dh*sc);}
+ g.globalAlpha=meUnder?0.8:1;g.save();g.beginPath();g.rect(X(dx),Y(dy),dw*sc,dh*sc);g.clip();
+ g.strokeStyle='rgba(30,22,16,.35)';g.lineWidth=Math.max(1,sc*0.06);for(let k=0;k<12;k++){const yy=dy+hsh(k,sd)*dh,xx=dx+hsh(sd,k)*dw,l=0.8+hsh(k,3)*1.4;g.beginPath();g.moveTo(X(xx-l),Y(yy));g.quadraticCurveTo(X(xx),Y(yy+0.2),X(xx+l),Y(yy));g.stroke();}
+ g.restore();
+ g.strokeStyle='rgba(255,220,180,.35)';g.lineWidth=Math.max(1.5,sc*0.09);g.strokeRect(X(dx),Y(dy),dw*sc,dh*sc);
+ for(const [tx,tw] of BR.tunnels){g.strokeStyle='rgba(255,220,180,.4)';g.lineWidth=1.5;g.setLineDash([5,5]);g.strokeRect(X(tx),Y(dy),tw*sc,dh*sc);g.setLineDash([]);
+  g.fillStyle='rgba(255,226,190,.6)';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*0.5));g.fillText('ARCH',X(tx+tw/2),Y(dy+dh*0.25));g.textBaseline='top';}
+ for(const [rx,ry,rw,rh,o] of BR.ramps){   // a rock-cut ramp with rubble walls
+  const grd=g.createLinearGradient(0,Y(o<0?ry:ry+rh),0,Y(o<0?ry+rh:ry));grd.addColorStop(0,'#4a3e35');grd.addColorStop(1,'#7a6553');
+  g.fillStyle=grd;g.fillRect(X(rx),Y(ry),rw*sc,rh*sc);
+  g.strokeStyle='rgba(255,220,180,.25)';g.lineWidth=1.5;for(let i=1;i<6;i++){const yy=Y(ry+rh*i/6);g.beginPath();g.moveTo(X(rx)+3,yy);g.lineTo(X(rx+rw)-3,yy);g.stroke();}
+  g.fillStyle='#5a4a3e';g.fillRect(X(rx-0.2),Y(ry),0.2*sc,rh*sc);g.fillRect(X(rx+rw),Y(ry),0.2*sc,rh*sc);
+  g.fillStyle='rgba(255,207,74,.8)';g.textAlign='center';g.textBaseline='middle';g.font=font(Math.round(sc*0.75));g.fillText(o<0?'▲':'▼',X(rx+rw/2),Y(o<0?ry+0.5:ry+rh-0.5));g.textBaseline='top';}
+ g.restore();
+}
 // ---- small top-down picture of a map, for the map picker ----
 function drawMapThumb(ctx,w,h,id){
  const m=MAPS[id],s=Math.min(w/W,h/H),x0=(w-W*s)/2,y0=(h-H*s)/2;
  ctx.clearRect(0,0,w,h);
  ctx.fillStyle='#1d2330';ctx.fillRect(x0,y0,W*s,H*s);
+ if(MAP_THEME[id]){ctx.fillStyle=MAP_THEME[id].floor;ctx.fillRect(x0,y0,W*s,H*s);}
  if(m.isRandom){ctx.fillStyle='rgba(223,231,242,.75)';ctx.font=font(Math.round(h*0.32));ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',w/2,h/2+1);return;}
  ctx.fillStyle='rgba(255,77,94,.16)';ctx.fillRect(x0,y0,W*s,5*s);
  ctx.fillStyle='rgba(77,159,255,.16)';ctx.fillRect(x0,y0+(H-5)*s,W*s,5*s);
- if(m.bridge){const [dx,dy,dw,dh]=m.bridge.deck;ctx.fillStyle='#596088';ctx.fillRect(x0+dx*s,y0+dy*s,dw*s,dh*s);
-  ctx.fillStyle='#3a405c';for(const [rx,ry,rw,rh] of m.bridge.ramps)ctx.fillRect(x0+rx*s,y0+ry*s,rw*s,rh*s);}
- for(const [x,y,r] of (m.craters||[])){ctx.fillStyle='#121722';ctx.beginPath();ctx.arc(x0+x*s,y0+y*s,r*s,0,7);ctx.fill();ctx.strokeStyle='rgba(223,231,242,.18)';ctx.lineWidth=1;ctx.stroke();}
+ if(m.bridge){const [dx,dy,dw,dh]=m.bridge.deck,mesa=m.bridge.look==='mesa';ctx.fillStyle=mesa?'#7a6553':'#596088';ctx.fillRect(x0+dx*s,y0+dy*s,dw*s,dh*s);
+  ctx.fillStyle=mesa?'#4a3e35':'#3a405c';for(const [rx,ry,rw,rh] of m.bridge.ramps)ctx.fillRect(x0+rx*s,y0+ry*s,rw*s,rh*s);
+  if(mesa){ctx.fillStyle='#2a221d';for(const [tx,tw] of m.bridge.tunnels)ctx.fillRect(x0+tx*s,y0+dy*s,tw*s,dh*s);}}
+ for(const [x,y,r,st] of (m.craters||[])){ctx.fillStyle=st==='coolant'?'#2a8fb0':st==='scree'?'#4d3f33':'#121722';ctx.beginPath();ctx.arc(x0+x*s,y0+y*s,r*s,0,7);ctx.fill();ctx.strokeStyle='rgba(223,231,242,.18)';ctx.lineWidth=1;ctx.stroke();}
  for(const [x,y,ww,hh,st] of m.walls){ctx.fillStyle=THUMB_COL[st]||'#7d859f';ctx.fillRect(x0+x*s,y0+y*s,ww*s,hh*s);}
  ctx.fillStyle=THUMB_COL.crate;for(const [x,y,ww,hh] of (m.crates||[]))ctx.fillRect(x0+x*s,y0+y*s,ww*s,hh*s);
  for(const [x,y,r,st] of (m.rocks||[])){ctx.fillStyle=THUMB_COL[st]||'#6b7385';ctx.beginPath();ctx.arc(x0+x*s,y0+y*s,r*s,0,7);ctx.fill();}
 }
-const THUMB_COL={ctr:'#7d859f',cmd:'#9aa4bb',cliff:'#3a4152',pylon:'#3fd0c9',lander:'#b8963e',crate:'#b07a3a',rock:'#6b7385',dome:'#b9c3d3'};
+const THUMB_COL={ctr:'#7d859f',cmd:'#9aa4bb',cliff:'#3a4152',pylon:'#3fd0c9',lander:'#b8963e',crate:'#b07a3a',rock:'#6b7385',dome:'#b9c3d3',
+ canyon:'#5c4c40',fin:'#6e5b4c',spire:'#8a735f',boulder:'#7a6553',bulk:'#5a6068',door:'#c9a03a',pillar:'#8a9199',turbine:'#4fa8c8',lift:'#b8963e',console:'#46607a',tank:'#9aa3ad'};
 // ---- map objects, drawn with a little height (2.5D): top face lifted, front face below, shadow to the lower right ----
 const ELEV=0.38,CTR_COLS=['#3d4c61','#5b4637','#40564c','#4b4f63'];
 const hash2=(x,y)=>{const v=Math.sin(x*12.9898+y*78.233)*43758.5453;return v-Math.floor(v);};
 function shade(hex,k){const n=parseInt(hex.slice(1),16),f=c=>Math.max(0,Math.min(255,Math.round(c*k)));return 'rgb('+f(n>>16)+','+f((n>>8)&255)+','+f(n&255)+')';}
 function drawSolid(ctx,wl,sc,X,Y){
+ if(ART2D[wl[4]]){ART2D[wl[4]](ctx,wl,sc,X,Y);return;}
  const [x,y,w,h,st]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc;
  if(st==='cliff'){   // canyon wall: rough rock face along the inside edge
   ctx.fillStyle='#1f2531';ctx.fillRect(px,py,pw,ph);
@@ -227,8 +253,168 @@ function drawSolid(ctx,wl,sc,X,Y){
   if(f<1){const bw=pw,bh=Math.max(3,sc*0.16);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(px,ty-bh-3,bw,bh);ctx.fillStyle='#ffb347';ctx.fillRect(px,ty-bh-3,bw*Math.max(0,f),bh);}
  }
 }
+// ---- Canyon and Underground Bunker: their own 2D art (2D view, and the map picker without 3D). Looks only: every piece
+// is drawn on the footprint the sim collides with ----
+const MAP_THEME={
+ canyon:{floor:'#2c2824',grid:null,space:null},
+ bunker:{floor:'#24272c',grid:null,space:'#0b0d10'}
+};
+const hsh=(a,b)=>hash2(a*1.37+3.1,b*2.11-1.7);
+function jagRect(ctx,x,y,w,h,X,Y,sc,amp,seed){   // a rock outline on [x,y,w,h]: edges inside the arena are ragged, edges on the arena border stay straight
+ const pts=[],step=0.55,edge=(ax,ay,bx,by,nx,ny,open)=>{const L=Math.hypot(bx-ax,by-ay),n=Math.max(1,Math.round(L/step));
+  for(let i=0;i<n;i++){const t=i/n,j=open&&i>0?hsh(ax+bx*t+seed,ay+by*t)*amp:0;pts.push([ax+(bx-ax)*t+nx*j,ay+(by-ay)*t+ny*j]);}};
+ edge(x,y,x+w,y,0,1,y>0.01);edge(x+w,y,x+w,y+h,-1,0,x+w<W-0.01);edge(x+w,y+h,x,y+h,0,-1,y+h<H-0.01);edge(x,y+h,x,y,1,0,x>0.01);
+ ctx.beginPath();pts.forEach(([px,py],i)=>{if(i)ctx.lineTo(X(px),Y(py));else ctx.moveTo(X(px),Y(py));});ctx.closePath();
+}
+function hazard(ctx,px,py,pw,ph,k,a){   // yellow/black chevron band
+ ctx.save();ctx.beginPath();ctx.rect(px,py,pw,ph);ctx.clip();ctx.fillStyle='rgba(20,18,12,'+(a||0.9)+')';ctx.fillRect(px,py,pw,ph);ctx.fillStyle='rgba(240,190,50,'+(a||0.9)+')';
+ for(let q=-ph;q<pw+ph;q+=k*2){ctx.beginPath();ctx.moveTo(px+q,py+ph);ctx.lineTo(px+q+k,py+ph);ctx.lineTo(px+q+k+ph,py);ctx.lineTo(px+q+ph,py);ctx.closePath();ctx.fill();}
+ ctx.restore();
+}
+const ART2D={
+ canyon(ctx,wl,sc,X,Y,fin){   // canyon wall: a lifted rock mass with ragged rims, strata lines and a sunlit lip
+  const [x,y,w,h]=wl,e=ELEV*sc*(fin?1.5:2.2),sd=x*7+y;
+  ctx.fillStyle='rgba(0,0,0,.42)';ctx.save();ctx.translate(e*0.9,e*0.35);jagRect(ctx,x,y,w,h,X,Y,sc,0.3,sd);ctx.fill();ctx.restore();
+  ctx.fillStyle=fin?'#4a3e35':'#3c322b';jagRect(ctx,x,y,w,h,X,Y,sc,0.3,sd);ctx.fill();   // cliff face (seen below the lifted top)
+  ctx.save();ctx.translate(0,-e);
+  const gr=ctx.createLinearGradient(X(x+w),Y(y),X(x),Y(y+h));gr.addColorStop(0,fin?'#8a735f':'#7a6553');gr.addColorStop(1,fin?'#5c4c40':'#54453a');
+  ctx.fillStyle=gr;jagRect(ctx,x,y,w,h,X,Y,sc,0.3,sd);ctx.fill();
+  ctx.save();ctx.clip();ctx.strokeStyle='rgba(30,22,16,.38)';ctx.lineWidth=Math.max(1,sc*0.06);
+  for(let k=0;k<Math.max(2,(w+h)*0.9);k++){const yy=y+hsh(k,sd)*h,xx=x+hsh(sd,k)*w,l=0.6+hsh(k+3,sd)*1.6;ctx.beginPath();ctx.moveTo(X(xx-l),Y(yy));ctx.quadraticCurveTo(X(xx),Y(yy+0.18),X(xx+l),Y(yy-0.05));ctx.stroke();}
+  ctx.fillStyle='rgba(255,226,190,.07)';for(let k=0;k<(w*h)/1.5;k++){ctx.beginPath();ctx.arc(X(x+hsh(k,sd+1)*w),Y(y+hsh(sd+2,k)*h),Math.max(1,sc*0.12*hsh(k,k)),0,7);ctx.fill();}
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,220,180,.28)';ctx.lineWidth=Math.max(1.5,sc*0.08);jagRect(ctx,x,y,w,h,X,Y,sc,0.3,sd);ctx.stroke();
+  ctx.restore();
+ },
+ fin(ctx,wl,sc,X,Y){ART2D.canyon(ctx,wl,sc,X,Y,true);},
+ bulk(ctx,wl,sc,X,Y){   // reinforced bulkhead: concrete core, steel cap, hazard band on its front face
+  const [x,y,w,h]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc*1.5;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(px+e*0.7,py+e*0.3,pw,ph);
+  ctx.fillStyle='#2e3238';ctx.fillRect(px,py+ph-e,pw,e);hazard(ctx,px,py+ph-e*0.55,pw,e*0.32,Math.max(4,sc*0.3),0.75);
+  ctx.fillStyle='#565b63';ctx.fillRect(px,py-e,pw,ph);
+  ctx.fillStyle='#6e747c';ctx.fillRect(px+sc*0.12,py-e+sc*0.12,pw-sc*0.24,ph-sc*0.24);
+  ctx.strokeStyle='rgba(20,22,26,.5)';ctx.lineWidth=1;ctx.beginPath();
+  const long=w>=h,n=Math.max(1,Math.round((long?w:h)/1.6));for(let i=1;i<n;i++){const t=i/n;if(long){ctx.moveTo(px+pw*t,py-e);ctx.lineTo(px+pw*t,py-e+ph);}else{ctx.moveTo(px,py-e+ph*t);ctx.lineTo(px+pw,py-e+ph*t);}}ctx.stroke();
+  ctx.fillStyle='rgba(205,215,225,.5)';for(let i=0;i<n;i++){const t=(i+0.5)/n;for(const s of [0.22,0.78]){const bx=long?px+pw*t:px+pw*s,by=long?py-e+ph*s:py-e+ph*t;ctx.beginPath();ctx.arc(bx,by,Math.max(1,sc*0.06),0,7);ctx.fill();}}
+  ctx.fillStyle='rgba(255,255,255,.14)';ctx.fillRect(px,py-e,pw,Math.max(1.5,sc*0.08));
+ },
+ door(ctx,wl,sc,X,Y){   // blast door, rolled back into its frame: thick frame posts, the slab with chevrons, status lamps
+  const [x,y,w,h]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc*1.5,t=performance.now()/1000;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(px+e*0.7,py+e*0.3,pw,ph);
+  ctx.fillStyle='#2b2f35';ctx.fillRect(px,py+ph-e,pw,e);
+  ctx.fillStyle='#4a5058';ctx.fillRect(px,py-e,pw,ph);
+  const fw=Math.min(pw*0.16,sc*0.45);ctx.fillStyle='#7b828b';ctx.fillRect(px,py-e,fw,ph);ctx.fillRect(px+pw-fw,py-e,fw,ph);
+  hazard(ctx,px+fw+sc*0.08,py-e+ph*0.18,pw-2*fw-sc*0.16,ph*0.64,Math.max(4,sc*0.32),0.95);
+  ctx.strokeStyle='rgba(15,16,20,.8)';ctx.lineWidth=Math.max(1,sc*0.07);ctx.strokeRect(px+fw+sc*0.08,py-e+ph*0.18,pw-2*fw-sc*0.16,ph*0.64);
+  const on=0.55+0.45*Math.sin(t*4+x);ctx.fillStyle='rgba(255,90,70,'+on+')';ctx.beginPath();ctx.arc(px+fw/2,py-e+ph*0.5,Math.max(1.5,sc*0.1),0,7);ctx.fill();
+  ctx.fillStyle='rgba(90,255,150,'+(1.1-on)+')';ctx.beginPath();ctx.arc(px+pw-fw/2,py-e+ph*0.5,Math.max(1.5,sc*0.1),0,7);ctx.fill();
+ },
+ pillar(ctx,wl,sc,X,Y){   // structural column: concrete, steel corner guards, hazard collar
+  const [x,y,w,h]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc*2.4;
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(px+e*0.6,py+e*0.3,pw,ph);
+  ctx.fillStyle='#3a3f46';ctx.fillRect(px,py+ph-e,pw,e);hazard(ctx,px,py+ph-e*0.3,pw,e*0.24,Math.max(3,sc*0.22));
+  ctx.fillStyle='#7d838b';ctx.fillRect(px,py-e,pw,ph);ctx.fillStyle='#646a72';ctx.fillRect(px+pw*0.2,py-e+ph*0.2,pw*0.6,ph*0.6);
+  ctx.fillStyle='#b4bcc5';const c=sc*0.16;for(const [cx,cy] of [[0,0],[1,0],[0,1],[1,1]])ctx.fillRect(px+cx*(pw-c),py-e+cy*(ph-c),c,c);
+ },
+ turbine(ctx,wl,sc,X,Y){   // turbine bank: housing, spinning rotors, glowing intake grilles
+  const [x,y,w,h]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc*1.6,t=performance.now()/1000;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(px+e*0.7,py+e*0.3,pw,ph);
+  ctx.fillStyle='#262b31';ctx.fillRect(px,py+ph-e,pw,e);
+  ctx.fillStyle='#3f464f';ctx.fillRect(px,py-e,pw,ph);
+  const n=Math.max(1,Math.round(h/1.4)),r=Math.min(pw,ph/n)*0.38;
+  for(let i=0;i<n;i++){const cx=px+pw/2,cy=py-e+ph*(i+0.5)/n;
+   ctx.fillStyle='#1a1e23';ctx.beginPath();ctx.arc(cx,cy,r*1.12,0,7);ctx.fill();ctx.strokeStyle='#8a929b';ctx.lineWidth=Math.max(1,sc*0.07);ctx.stroke();
+   ctx.save();ctx.translate(cx,cy);ctx.rotate(t*(i%2?-5:5));ctx.fillStyle='#6f7882';for(let b=0;b<5;b++){ctx.rotate(Math.PI*2/5);ctx.beginPath();ctx.ellipse(r*0.5,0,r*0.5,r*0.16,0.4,0,7);ctx.fill();}ctx.restore();
+   ctx.fillStyle='#4fd8ff';ctx.beginPath();ctx.arc(cx,cy,r*0.18,0,7);ctx.fill();}
+  ctx.fillStyle='rgba(79,216,255,'+(0.35+0.25*Math.sin(t*3))+')';ctx.fillRect(px+pw-sc*0.18,py-e+sc*0.2,sc*0.1,ph-sc*0.4);
+ },
+ lift(ctx,wl,sc,X,Y){   // cargo lift platform against the back wall: hazard rim, chevrons, hydraulic rams
+  const [x,y,w,h]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(px+e*0.7,py+e*0.3,pw,ph);
+  ctx.fillStyle='#30353b';ctx.fillRect(px,py+ph-e,pw,e);
+  hazard(ctx,px,py-e,pw,ph,Math.max(5,sc*0.4));
+  ctx.fillStyle='#5a6068';ctx.fillRect(px+sc*0.25,py-e+sc*0.2,pw-sc*0.5,ph-sc*0.4);
+  ctx.fillStyle='#8f969e';for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(px+pw*(i+0.5)/4,py-e+ph*0.5,Math.max(2,sc*0.22),0,7);ctx.fill();}
+ },
+ console(ctx,wl,sc,X,Y){   // control console: dark cabinet, flickering screens
+  const [x,y,w,h]=wl,px=X(x),py=Y(y),pw=w*sc,ph=h*sc,e=ELEV*sc*1.2,t=performance.now()/1000;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(px+e*0.7,py+e*0.3,pw,ph);
+  ctx.fillStyle='#22262c';ctx.fillRect(px,py+ph-e,pw,e);ctx.fillStyle='#363c44';ctx.fillRect(px,py-e,pw,ph);
+  for(let i=0;i<3;i++){const a=0.45+0.35*Math.abs(Math.sin(t*(1.3+i*0.7)+x+i));ctx.fillStyle=i===1?'rgba(255,200,80,'+a+')':'rgba(80,220,255,'+a+')';ctx.fillRect(px+pw*0.2,py-e+ph*(0.12+i*0.29),pw*0.6,ph*0.18);}
+ }
+};
+const ROCK2D={
+ spire(ctx,rk,sc,X,Y){   // a tall rock spire: wide shadow, stacked lumps lit from the upper right
+  const [x,y,r]=rk,px=X(x),py=Y(y),pr=r*sc,e=ELEV*sc*2.2;
+  ctx.fillStyle='rgba(0,0,0,.42)';ctx.beginPath();ctx.ellipse(px+e*0.9,py+e*0.4,pr*1.1,pr*0.85,0,0,7);ctx.fill();
+  for(let k=0;k<3;k++){const kk=1-k*0.28,yy=py-e*k*0.55,gr=ctx.createLinearGradient(px+pr,yy-pr,px-pr,yy+pr);gr.addColorStop(0,'#9a8068');gr.addColorStop(0.55,'#5f4e41');gr.addColorStop(1,'#2f2620');
+   ctx.fillStyle=gr;ctx.beginPath();for(let i=0;i<9;i++){const a=i/9*Math.PI*2,q=pr*kk*(0.82+hsh(x+i,y+k)*0.3);if(i)ctx.lineTo(px+Math.cos(a)*q,yy+Math.sin(a)*q*0.9);else ctx.moveTo(px+Math.cos(a)*q,yy+Math.sin(a)*q*0.9);}ctx.closePath();ctx.fill();
+   ctx.strokeStyle='rgba(25,18,12,.55)';ctx.lineWidth=1.2;ctx.stroke();}
+ },
+ boulder(ctx,rk,sc,X,Y){
+  const [x,y,r]=rk,px=X(x),py=Y(y),pr=r*sc,e=ELEV*sc*0.8;
+  ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(px+e*0.8,py+e*0.5,pr*1.02,pr*0.9,0,0,7);ctx.fill();
+  const gr=ctx.createLinearGradient(px+pr,py-pr,px-pr,py+pr);gr.addColorStop(0,'#8f7864');gr.addColorStop(0.5,'#5a4a3e');gr.addColorStop(1,'#2c241e');ctx.fillStyle=gr;
+  ctx.beginPath();for(let i=0;i<10;i++){const a=i/10*Math.PI*2,q=pr*(0.84+hsh(x-i,y+i)*0.28);if(i)ctx.lineTo(px+Math.cos(a)*q,py-e*0.6+Math.sin(a)*q*0.92);else ctx.moveTo(px+Math.cos(a)*q,py-e*0.6+Math.sin(a)*q*0.92);}ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(25,18,12,.6)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.strokeStyle='rgba(30,20,14,.5)';ctx.beginPath();ctx.moveTo(px-pr*0.3,py-e*0.6-pr*0.4);ctx.lineTo(px+pr*0.05,py-e*0.6);ctx.lineTo(px-pr*0.1,py-e*0.6+pr*0.45);ctx.stroke();
+ },
+ tank(ctx,rk,sc,X,Y){   // fuel tank seen from above: steel drum, rings, a glowing level gauge
+  const [x,y,r]=rk,px=X(x),py=Y(y),pr=r*sc,e=ELEV*sc*2;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(px+e*0.7,py+e*0.35,pr,pr*0.95,0,0,7);ctx.fill();
+  ctx.fillStyle='#3b4148';ctx.beginPath();ctx.arc(px,py,pr,0,7);ctx.fill();
+  const gr=ctx.createRadialGradient(px+pr*0.3,py-e-pr*0.35,pr*0.1,px,py-e,pr);gr.addColorStop(0,'#c9cfd5');gr.addColorStop(0.6,'#7d858e');gr.addColorStop(1,'#4b525a');
+  ctx.fillStyle=gr;ctx.beginPath();ctx.arc(px,py-e,pr*0.96,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(20,22,26,.5)';ctx.lineWidth=Math.max(1,sc*0.06);for(const k of [0.72,0.45]){ctx.beginPath();ctx.arc(px,py-e,pr*k,0,7);ctx.stroke();}
+  ctx.fillStyle='rgba(240,190,50,.85)';ctx.beginPath();ctx.arc(px,py-e,pr*0.2,0,7);ctx.fill();
+ }
+};
+const CRATER2D={
+ scree(ctx,cr,sc,X,Y){   // a scree slope of loose rubble: tracks bog down in it
+  const [x,y,r]=cr,px=X(x),py=Y(y),pr=r*sc;
+  const gr=ctx.createRadialGradient(px,py,pr*0.2,px,py,pr);gr.addColorStop(0,'rgba(120,98,78,.55)');gr.addColorStop(1,'rgba(120,98,78,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(px,py,pr*1.1,0,7);ctx.fill();
+  for(let i=0;i<22;i++){const a=hsh(i,x)*6.283,d=Math.sqrt(hsh(y,i))*r,q=Math.max(1,sc*(0.06+hsh(i,i+x)*0.12));ctx.fillStyle=i%3?'#6d5948':'#9a8270';ctx.beginPath();ctx.arc(X(x+Math.cos(a)*d),Y(y+Math.sin(a)*d),q,0,7);ctx.fill();}
+  ctx.strokeStyle='rgba(200,170,140,.18)';ctx.setLineDash([3,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py,pr,0,7);ctx.stroke();ctx.setLineDash([]);
+ },
+ coolant(ctx,cr,sc,X,Y){   // a spilled coolant pool: slows tanks, glows and ripples
+  const [x,y,r]=cr,px=X(x),py=Y(y),pr=r*sc,t=performance.now()/1000;
+  const gr=ctx.createRadialGradient(px,py,pr*0.1,px,py,pr);gr.addColorStop(0,'rgba(90,240,255,.55)');gr.addColorStop(0.7,'rgba(40,170,210,.38)');gr.addColorStop(1,'rgba(40,170,210,.08)');
+  ctx.fillStyle=gr;ctx.beginPath();for(let i=0;i<12;i++){const a=i/12*Math.PI*2,q=pr*(0.88+hsh(x+i,y)*0.2);if(i)ctx.lineTo(px+Math.cos(a)*q,py+Math.sin(a)*q);else ctx.moveTo(px+Math.cos(a)*q,py+Math.sin(a)*q);}ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(170,250,255,.35)';ctx.lineWidth=1.2;for(let k=0;k<2;k++){const f=((t*0.4+k*0.5)%1);ctx.globalAlpha=1-f;ctx.beginPath();ctx.arc(px,py,pr*(0.2+0.75*f),0,7);ctx.stroke();}ctx.globalAlpha=1;
+ }
+};
+// the floor under Canyon and Bunker, painted once per size (the 2D view draws it every frame as one image)
+const FLOOR2D={};
+function floorPaint(c,id,u,w,h){   // u: px per unit
+ let s0=id==='canyon'?913:271;const rnd=()=>{s0=(s0*16807)%2147483647;return s0/2147483647;};
+ if(id==='canyon'){
+  const gr=c.createLinearGradient(0,0,w,0);gr.addColorStop(0,'#3a322b');gr.addColorStop(0.5,'#2f2a25');gr.addColorStop(1,'#3a322b');c.fillStyle=gr;c.fillRect(0,0,w,h);
+  for(let i=0;i<W*H*1.6;i++){const x=rnd()*w,y=rnd()*h,r=(0.04+rnd()*0.2)*u;c.fillStyle=rnd()<0.5?'rgba(15,11,8,.22)':'rgba(220,190,160,.07)';c.beginPath();c.arc(x,y,r,0,7);c.fill();}
+  c.strokeStyle='rgba(200,165,130,.08)';c.lineWidth=Math.max(1,u*0.18);   // old lava flow lines down the rille
+  for(let k=0;k<9;k++){const x0=(2.5+k*1.9)*u;c.beginPath();c.moveTo(x0,0);for(let y=0;y<=H;y+=2)c.lineTo(x0+Math.sin(y*0.35+k)*u*0.9,y*u);c.stroke();}
+  for(let i=0;i<14;i++){const x=rnd()*w,y=rnd()*h,r=(0.3+rnd()*0.7)*u;c.strokeStyle='rgba(10,8,6,.35)';c.lineWidth=Math.max(1,u*0.07);c.beginPath();c.arc(x,y,r,0,7);c.stroke();c.strokeStyle='rgba(230,200,170,.1)';c.beginPath();c.arc(x-u*0.05,y-u*0.05,r,Math.PI,Math.PI*1.6);c.stroke();}
+ }else{
+  c.fillStyle='#2a2e34';c.fillRect(0,0,w,h);
+  for(let j=0;j<H;j+=2)for(let i=0;i<W;i+=2){c.fillStyle='rgba('+(rnd()<0.5?'255,255,255,.025':'0,0,0,.08')+')';c.fillRect(i*u+1,j*u+1,2*u-2,2*u-2);}
+  c.strokeStyle='rgba(10,12,15,.6)';c.lineWidth=Math.max(1,u*0.05);c.beginPath();for(let i=0;i<=W;i+=2){c.moveTo(i*u,0);c.lineTo(i*u,h);}for(let j=0;j<=H;j+=2){c.moveTo(0,j*u);c.lineTo(w,j*u);}c.stroke();
+  for(let i=0;i<70;i++){c.fillStyle='rgba(0,0,0,'+(0.08+rnd()*0.12)+')';c.beginPath();c.ellipse(rnd()*w,rnd()*h,(0.2+rnd()*0.8)*u,(0.1+rnd()*0.4)*u,rnd()*3,0,7);c.fill();}   // oil stains
+  c.setLineDash([u*0.6,u*0.4]);c.strokeStyle='rgba(240,190,50,.35)';c.lineWidth=Math.max(1,u*0.08);   // painted lanes down the side corridors and the hall
+  c.beginPath();for(const x of [1.75,18.25,7,13]){c.moveTo(x*u,10*u);c.lineTo(x*u,22*u);}c.stroke();c.setLineDash([]);
+  c.save();c.translate(10*u,16*u);   // reactor floor hatch under the hall's centre
+  for(const [r,a] of [[3.4,'rgba(79,216,255,.10)'],[2.4,'rgba(79,216,255,.14)']]){c.fillStyle=a;c.beginPath();c.arc(0,0,r*u,0,7);c.fill();}
+  c.strokeStyle='rgba(140,150,160,.35)';c.lineWidth=Math.max(1,u*0.08);for(const r of [3.4,2.4,1.2]){c.beginPath();c.arc(0,0,r*u,0,7);c.stroke();}
+  for(let i=0;i<12;i++){c.rotate(Math.PI/6);c.beginPath();c.moveTo(1.2*u,0);c.lineTo(2.4*u,0);c.stroke();}c.restore();
+  c.fillStyle='rgba(255,230,170,.05)';for(const [x,y] of [[10,4],[10,28],[2,16],[18,16],[10,11],[10,21]]){const g2=c.createRadialGradient(x*u,y*u,0,x*u,y*u,4*u);g2.addColorStop(0,'rgba(255,230,170,.10)');g2.addColorStop(1,'rgba(255,230,170,0)');c.fillStyle=g2;c.fillRect((x-4)*u,(y-4)*u,8*u,8*u);}   // pools of ceiling light
+ }
+}
+function floorImage(id,pw,ph){
+ const k=id+'|'+Math.round(pw)+'x'+Math.round(ph);let f=FLOOR2D[id];
+ if(!f||f.k!==k){const cv2=document.createElement('canvas');cv2.width=Math.max(1,Math.round(pw));cv2.height=Math.max(1,Math.round(ph));floorPaint(cv2.getContext('2d'),id,cv2.width/W,cv2.width,cv2.height);f=FLOOR2D[id]={k,cv:cv2};}
+ return f.cv;
+}
 const ROCK_SHAPE={};
 function drawRock(ctx,rk,sc,X,Y){
+ if(ROCK2D[rk[3]]){ROCK2D[rk[3]](ctx,rk,sc,X,Y);return;}
  const [x,y,r,st]=rk,px=X(x),py=Y(y),pr=r*sc,e=ELEV*sc*0.7;
  ctx.fillStyle='rgba(0,0,0,.36)';ctx.beginPath();ctx.ellipse(px+e*0.8,py+e*0.5,pr*1.02,pr*0.92,0,0,7);ctx.fill();
  if(st==='dome'){   // habitat dome: base ring, lit dome, window band
@@ -248,6 +434,7 @@ function drawRock(ctx,rk,sc,X,Y){
  ctx.fillStyle='rgba(10,14,23,.28)';ctx.beginPath();ctx.ellipse(px-pr*0.25,py+pr*0.15,pr*0.22,pr*0.14,0.4,0,7);ctx.fill();
 }
 function drawCrater(ctx,cr,sc,X,Y){
+ if(CRATER2D[cr[3]]){CRATER2D[cr[3]](ctx,cr,sc,X,Y);return;}
  const [x,y,r]=cr,px=X(x),py=Y(y),pr=r*sc;
  const gr=ctx.createRadialGradient(px-pr*0.2,py+pr*0.2,pr*0.1,px,py,pr);gr.addColorStop(0,'#10141c');gr.addColorStop(0.75,'#161b25');gr.addColorStop(1,'#232a37');
  ctx.fillStyle=gr;ctx.beginPath();ctx.arc(px,py,pr,0,7);ctx.fill();
@@ -423,7 +610,9 @@ function drawBattle(){
  else{g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);}
  g.save();g.translate(shx,shy);
  const tnow=performance.now()/1000;
- if(!D3){
+ const TH=MAP_THEME[curMap];
+ if(!D3&&TH&&TH.space){g.fillStyle=TH.space;g.fillRect(0,0,vw,vh);}   // underground: rock all round, no sky
+ else if(!D3){
   // deep space background with stars
   if(!window._stars){window._stars=[];for(let i=0;i<70;i++)window._stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4+0.4,tw:Math.random()*6.28});}
   g.fillStyle=C.star;
@@ -432,12 +621,13 @@ function drawBattle(){
   // arena floor (lunar surface)
   g.fillStyle=C.floor;g.fillRect(X(0),Y(0),W*sc,AH);
  }
+ if(!D3&&TH)g.drawImage(floorImage(curMap,W*sc*dpr,AH*dpr),X(0),Y(0),W*sc,AH);
  g.save();g.beginPath();g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
  if(!D3){
-  g.strokeStyle=C.grid;g.lineWidth=1;g.beginPath();
+  if(!TH){g.strokeStyle=C.grid;g.lineWidth=1;g.beginPath();
   for(let i=0;i<=W;i+=2){g.moveTo(X(i),Y(0));g.lineTo(X(i),Y(H));}
   for(let j=0;j<=H;j+=2){g.moveTo(X(0),Y(j));g.lineTo(X(W),Y(j));}
-  g.stroke();
+  g.stroke();}
   g.fillStyle='rgba(255,77,94,.07)';g.fillRect(X(0),Y(0),W*sc,5*sc);
   g.fillStyle='rgba(77,159,255,.07)';g.fillRect(X(0),Y(H-5),W*sc,5*sc);
   // ground: craters, the crystal mine; then every object back to front
@@ -457,7 +647,7 @@ function drawBattle(){
   if(BR){   // tunnel floors and ground shadow of the deck
    const [dx,dy,dw,dh]=BR.deck;
    g.fillStyle='rgba(0,0,0,.35)';g.fillRect(X(dx)+sc*0.35,Y(dy)+sc*0.5,dw*sc,dh*sc);
-   for(const [tx,tw] of BR.tunnels)for(const my of [dy-0.7,dy+dh]){g.fillStyle='#07080c';g.fillRect(X(tx),Y(my),tw*sc,0.7*sc);g.strokeStyle='#8a92bd';g.lineWidth=2;g.strokeRect(X(tx),Y(my),tw*sc,0.7*sc);}
+   for(const [tx,tw] of BR.tunnels)for(const my of [dy-0.7,dy+dh]){g.fillStyle='#07080c';g.fillRect(X(tx),Y(my),tw*sc,0.7*sc);g.strokeStyle=BR.look==='mesa'?'#8a735f':'#8a92bd';g.lineWidth=2;g.strokeRect(X(tx),Y(my),tw*sc,0.7*sc);}
   }
  }
  // your weapon range
@@ -552,7 +742,8 @@ function drawBattle(){
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);
  // the bridge goes OVER ground tanks; tunnel stretches are see-through so you can track tanks under it
- if(BR&&!D3){
+ if(BR&&!D3&&BR.look==='mesa')drawMesa2D(me&&underDeck(me));
+ else if(BR&&!D3){
   const [dx,dy,dw,dh]=BR.deck,meUnder=me&&underDeck(me);
   let x0=dx;const spans=[];for(const [tx,tw] of BR.tunnels){spans.push([x0,tx-x0,1]);spans.push([tx,tw,0]);x0=tx+tw;}spans.push([x0,dx+dw-x0,1]);
   for(const [sx,sw,solid] of spans){g.globalAlpha=solid?(meUnder?0.8:1):(meUnder?0.35:0.72);g.fillStyle='#454b6c';g.fillRect(X(sx),Y(dy),sw*sc,dh*sc);}

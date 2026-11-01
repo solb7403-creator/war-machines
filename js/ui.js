@@ -140,7 +140,7 @@ function setupPickers(){
   (solo?'<div class="seg"><button class="on solo" disabled>Solo<small>'+(live?'Up to 6 live pilots, AI fills the rest':'You and 5 AI pilots')+', free for all. 1st place pays '+fmtNum(winRange(gk,mk)[0])+'</small></button></div>'
    :'<div class="seg c3">'+Object.keys(MODES).map(k=>{const r=winRange(gk,k);return '<button class="'+(mk===k?'on':'')+'" data-act="mode" data-arg="'+k+'">'+k+'<small>win '+(r[0]===r[1]?fmtNum(r[0]):fmtNum(r[0])+'–'+fmtNum(r[1]))+'</small></button>';}).join('')+'</div>')+
   sec('Map',live?'Live matches pick one at random':'')+
-  '<div class="maps">'+['classic','overpass','longshot','craters','random'].map(id=>'<button class="map'+(mp===id?' on':'')+'" data-act="map" data-arg="'+id+'"><canvas data-art="map:'+id+'"></canvas><b>'+(MAPS[id].short||MAPS[id].n)+'</b></button>').join('')+'</div>'+
+  '<div class="maps">'+MAP_REAL.concat('random').map(id=>'<button class="map'+(mp===id?' on':'')+'" data-act="map" data-arg="'+id+'"><canvas data-art="map:'+id+'"></canvas><b>'+(MAPS[id].short||MAPS[id].n)+'</b></button>').join('')+'</div>'+
   '<p class="dimtxt" style="margin-top:8px">'+esc(MAPS[mp].d)+'</p>';
 }
 function openSetup(){sheet('setup',()=>'<h3>Battle setup</h3>'+setupPickers()+'<button class="btn btn-go block" style="margin-top:18px" data-act="setupdone">Done</button>');}

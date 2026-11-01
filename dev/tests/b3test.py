@@ -15,7 +15,7 @@ async def main():
         await pg.evaluate("()=>{save.welcomed=true;save.mp=12;store();closeAll();}")
         await pg.wait_for_timeout(300)
         # 1) every map renders with its objects (2v2 arena, 7s in)
-        for mp in ['classic','overpass','longshot','craters']:
+        for mp in ['classic','overpass','longshot','craters','canyon','bunker']:
             await pg.evaluate("(mp)=>{exitBattle();save.gtype='arena';save.mode='2v2';save.map=mp;store();prepareMatch();startMatch();for(let i=0;i<30*7;i++)update(1/30);}",mp)
             await pg.wait_for_timeout(350)
             await pg.screenshot(path=OUT+'map_'+mp+'.png')

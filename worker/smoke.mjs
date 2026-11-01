@@ -12,7 +12,7 @@ const initData = (user) => {
 };
 const L = { w: { a: 'pulse', t: 0, q: 1, s: false }, c: { c: 'vanguard', t: 0, q: 1, s: false }, up: { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }, cores: ['dmg', 'rof', 'arm'], gl: {}, skin: 'default', paint: 'stock', chs: [] };
 const join = async (u) => {
-  const r = await fetch(BASE + '/api/pvp/join', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://solb7403-creator.github.io' }, body: JSON.stringify({ initData: initData(u), v: 1, g: 'arena', m: '1v1', L }) });
+  const r = await fetch(BASE + '/api/pvp/join', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://solb7403-creator.github.io' }, body: JSON.stringify({ initData: initData(u), v: 2, g: 'arena', m: '1v1', L }) });
   const j = await r.json().catch(() => ({}));
   if (r.status !== 200 || !j.ok) fail('join ' + r.status + ' ' + JSON.stringify(j));
   return j;

@@ -1099,11 +1099,12 @@ function crateKit(tk,ri){
 function gemKit(gk){const k=kit(),c=GEM[gk]?GEM[gk].c:'#8a97ab';put(k,OC(0.62),c,[0,0,0],null,[1,1.35,1],'shine');put(k,OC(0.34),hexMix(c,'#ffffff',0.55),[0,0,0],null,[1,1.35,1],'glow');return {k,anims:[],meta:{halos:[[0,0,0,c,2.4]]}};}
 
 // ---------- maps ----------
-const DECK_H=1.0,WALL_H={ctr:1.05,cmd:0.85,pylon:1.0,lander:0.75,cliff:1.8,crate:0.85};
+const DECK_H=1.0,WALL_H={ctr:1.05,cmd:0.85,pylon:1.0,lander:0.75,cliff:1.8,crate:0.85,canyon:1.45,fin:1.1,bulk:1.35,door:1.45,pillar:2.1,turbine:1.15,lift:0.4,console:0.9};
 const h2=(x,y)=>{const v=Math.sin(x*12.9898+y*78.233)*43758.5453;return v-Math.floor(v);};
 const CTRC=['#4a5c75','#6d5543','#4e6a5d','#5b5f78'];
 function wallKit(k,glow,pulse,anims,wl){
  const [x,y,w,h,st]=wl,cx=x+w/2,cz=y+h/2,H=WALL_H[st]||1;
+ if(MapArt.WALLS[st]){MapArt.wall(legacyArt(k,glow),wl,true);return;}
  if(st==='cliff'){   // canyon wall: a rough rock mass, taller along the arena side
   put(k,B(w,H*0.75,h),'#1d222c',[cx,H*0.375,cz]);
   const inner=x<10?x+w:x,dir=x<10?-1:1;
@@ -1148,6 +1149,7 @@ function wallKit(k,glow,pulse,anims,wl){
 }
 function rockKit(k,glow,rk){
  const [x,y,r,st]=rk;
+ if(MapArt.ROCKS[st]){MapArt.rock(legacyArt(k,glow),rk,true);return;}
  if(st==='dome'){   // habitat dome: base ring, lit dome, window band, airlock
   put(k,CY(r,r*1.05,0.22,16),'#2f3848',[x,0.11,y]);
   const g=new THREE.SphereGeometry(r*0.9,16,8,0,Math.PI*2,0,Math.PI/2);put(k,g,'#b8c4d6',[x,0.2,y],null,null,'shine');
@@ -1159,18 +1161,181 @@ function rockKit(k,glow,rk){
  for(let i=0;i<p.count;i++){const v=new THREE.Vector3().fromBufferAttribute(p,i),n=0.82+h2(v.x*3+x,v.z*3+y)*0.32;p.setXYZ(i,v.x*n,Math.max(-0.1,v.y*n*0.72),v.z*n);}
  put(k,g,hexMix('#4c5466','#6f788b',j),[x,r*0.32,y],[0,j*6,0]);
 }
-function craterKit(k,cr){
+function craterKit(k,cr,glow){
+ if(MapArt.CRATERS[cr[3]]){MapArt.crater(legacyArt(k,glow||k),cr,true);return;}
  const [x,y,r]=cr,pts=[];for(const [a,b] of [[0.78,0],[0.9,0.12],[1.02,0.18],[1.14,0.08],[1.28,0]])pts.push(new THREE.Vector2(r*a,b));
  put(k,new THREE.LatheGeometry(pts,18),'#3b4250',[x,0,y]);
 }
+// ---------- Canyon and Underground Bunker: shared 3D art ----------
+// One set of pieces for both renderers: A is an adapter, A.geo(geometry,color,pos,rot,scale,material) with material one of
+// paint | steel | gold | rubber | energy. Every raised piece stands on its collision footprint or outside the arena;
+// floor pieces (scree, coolant) stay flat, so nothing hides a tank that isn't behind real cover.
+const MapArt=(()=>{
+ const hz=(a,b)=>h2(a*1.31+0.7,b*0.77-2.3);
+ const bx=(A,sz,p,c,m,r)=>A.geo(B(Math.max(0.01,sz[0]),Math.max(0.01,sz[1]),Math.max(0.01,sz[2])),c,p,r||null,null,m||'paint');
+ function rockG(r,hgt,detail,sd){   // a lump of rock r wide and hgt tall, base on the ground
+  const g=new THREE.IcosahedronGeometry(r,detail),p=g.attributes.position;
+  for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),n=0.8+hz(x*3+sd,z*3-sd)*0.36;p.setXYZ(i,x*n,Math.max(0,(y+r)/(2*r))*hgt,z*n);}
+  g.deleteAttribute('normal');if(g.attributes.uv)g.deleteAttribute('uv');return g;}
+ const rock=(A,x,z,r,hgt,detail,sd,col,y)=>A.geo(rockG(r,hgt,detail,sd),col,[x,y||0,z],[0,hz(x+sd,z)*6.28,0],null,'paint');
+ const STRATA=['#2b231d','#3a2f27','#4a3c31','#332a22'],ROCKC=['#3b3028','#4a3c31','#56473a','#30271f'];
+ function canyon(A,wl,high,fin){   // layered basalt cliff: strata, ragged buttresses on the faces that look into the arena, towering mass beyond the border
+  const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,sd=x*3.1+z*1.7,Hc=fin?1.2:1.7;
+  const inner={W:x>0.01,E:x+w<W-0.01,N:z>0.01,S:z+d<H-0.01};
+  const layers=fin?2:3;for(let i=0;i<layers;i++){const hh=Hc/layers,ins=0.07*i;bx(A,[w-2*ins,hh,d-2*ins],[X,i*hh+hh/2,Z],STRATA[(i+Math.floor(hz(x,z)*4))%4]);}
+  const step=high?1.0:1.6,col=t=>ROCKC[Math.floor(hz(t,sd)*4)%4];
+  const face=(len,at)=>{for(let t=step*0.5;t<len;t+=step){const r=0.3+hz(t,sd)*0.22,h=Hc*(0.55+hz(sd,t)*0.6);at(t,r,h);}};   // buttresses: lower than the rim, so the wall reads as a wall
+  if(inner.E)face(d,(t,r,h)=>rock(A,x+w-r*0.7,z+t,r,h,0,sd+t,col(t)));
+  if(inner.W)face(d,(t,r,h)=>rock(A,x+r*0.7,z+t,r,h,0,sd-t,col(t+1)));
+  if(inner.N)face(w,(t,r,h)=>rock(A,x+t,z+r*0.7,r,h,0,sd+t*2,col(t+2)));
+  if(inner.S)face(w,(t,r,h)=>rock(A,x+t,z+d-r*0.7,r,h,0,sd-t*2,col(t+3)));
+  const tops=Math.max(1,Math.round(w*d/(high?3.5:7)));   // loose rocks and ridges on top
+  for(let i=0;i<tops;i++){const r=0.25+hz(i,sd)*0.35;rock(A,x+r+hz(sd,i)*Math.max(0.01,w-2*r),z+r+hz(i+5,sd)*Math.max(0.01,d-2*r),r,0.25+hz(i,i+sd)*0.55,0,sd+i,ROCKC[i%4],Hc-0.05);}
+  const out=(len,at)=>{for(let t=0.6;t<len;t+=high?1.15:1.9){const r=0.9+hz(t,sd+9)*0.6,h=2.4+hz(sd+9,t)*2.2;at(t,r,h);}};   // the canyon wall rises beyond the arena
+  if(!fin){
+   if(x<0.01)out(d,(t,r,h)=>rock(A,-0.55-hz(t,1)*0.5,z+t,r,h,0,sd+t*3,'#251e19'));
+   if(x+w>W-0.01)out(d,(t,r,h)=>rock(A,W+0.55+hz(t,2)*0.5,z+t,r,h,0,sd+t*3,'#251e19'));
+  }
+ }
+ function spire(A,x,z,r,high){const sd=x*7+z;rock(A,x,z,r,r*1.25,high?1:0,sd,'#3a2f27');rock(A,x+r*0.1,z-r*0.05,r*0.68,r*1.15,0,sd+1,'#4a3c31',r*1.05);rock(A,x-r*0.05,z+r*0.05,r*0.4,r*0.9,0,sd+2,'#5a4a3c',r*2.0);}
+ function boulder(A,x,z,r,high){rock(A,x,z,r,r*1.15,high?1:0,x*5+z,'#4a3c31');rock(A,x+r*0.75,z+r*0.45,r*0.38,r*0.5,0,x+z*3,'#3b3028');}
+ function scree(A,x,z,r,high){
+  A.geo(new THREE.CylinderGeometry(r,r*1.05,0.012,high?20:10),'#4a3c31',[x,0.006,z],null,null,'paint');
+  const n=high?18:8;for(let i=0;i<n;i++){const a=hz(i,x)*6.28,dd=Math.sqrt(hz(z,i))*r*0.92,q=0.06+hz(i,i+z)*0.1;rock(A,x+Math.cos(a)*dd,z+Math.sin(a)*dd,q,q*0.9,0,i+x,ROCKC[i%4]);}
+ }
+ // ---- bunker ----
+ const CON='#5f646b',CON2='#50555c',STEEL='#8c949c',DARK='#24292f',HAZ='#d9a92e',HAZK='#1b1d20';
+ function band(A,x0,x1,y,zf,ht,dz){   // hazard stripes along x on the face at z=zf (dz: which way the face looks)
+  const n=Math.max(2,Math.round((x1-x0)/0.45));for(let i=0;i<n;i++)if(i%2)bx(A,[(x1-x0)/n,ht,0.02],[x0+(i+0.5)*(x1-x0)/n,y,zf+dz*0.01],HAZ);bx(A,[x1-x0,ht,0.015],[(x0+x1)/2,y,zf+dz*0.004],HAZK);}
+ function bandZ(A,z0,z1,y,xf,ht,dx){const n=Math.max(2,Math.round((z1-z0)/0.45));for(let i=0;i<n;i++)if(i%2)bx(A,[0.02,ht,(z1-z0)/n],[xf+dx*0.01,y,z0+(i+0.5)*(z1-z0)/n],HAZ);bx(A,[0.015,ht,z1-z0],[xf+dx*0.004,y,(z0+z1)/2],HAZK);}
+ function faces(A,x,z,w,d,f){if(z>0.01)f(x,x+w,z,-1,true);if(z+d<H-0.01)f(x,x+w,z+d,1,true);if(x>0.01)f(z,z+d,x,-1,false);if(x+w<W-0.01)f(z,z+d,x+w,1,false);}   // faces on the arena border are never seen   // (a0,a1,at,dir,alongX)
+ function bulk(A,wl,high){   // reinforced bulkhead: concrete core, steel cap and ribs, hazard skirt, light strips
+  const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,Hb=1.35;
+  bx(A,[w,Hb,d],[X,Hb/2,Z],CON);bx(A,[w,0.07,d],[X,Hb+0.035,Z],STEEL,'steel');
+  bx(A,[w*0.7,0.03,d*0.5],[X,Hb+0.085,Z],CON2);
+  faces(A,x,z,w,d,(a0,a1,at,dir,ax)=>{const L=a1-a0;if(L<0.9)return;
+   if(high)if(ax)band(A,a0,a1,0.13,at,0.16,dir);else bandZ(A,a0,a1,0.13,at,0.16,dir);
+   const n=Math.max(1,Math.round(L/1.6));for(let i=0;i<=n;i+=high?1:n){const t=a0+L*i/n;bx(A,ax?[0.09,Hb,0.05]:[0.05,Hb,0.09],ax?[Math.min(a1-0.05,Math.max(a0+0.05,t)),Hb/2,at-dir*0.025]:[at-dir*0.025,Hb/2,Math.min(a1-0.05,Math.max(a0+0.05,t))],STEEL,'steel');}
+   if(high)for(let i=0;i<n;i++){const t=a0+L*(i+0.5)/n;bx(A,ax?[Math.min(0.8,L/n*0.6),0.05,0.02]:[0.02,0.05,Math.min(0.8,L/n*0.6)],ax?[t,1.05,at+dir*0.012]:[at+dir*0.012,1.05,t],'#ffd9a0','energy');}
+  });
+ }
+ function door(A,wl,high){   // blast door rolled back into its frame: posts, the slab with chevrons, track beam, status lamps
+  const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,long=w>=d,L=long?w:d,D=long?d:w,Hd=1.45;
+  const at=(u,y,v)=>long?[x+u,y,Z+v]:[X+v,y,z+u],sz=(a,b,c)=>long?[a,b,c]:[c,b,a];
+  for(const u of [0.15,L-0.15])bx(A,sz(0.3,Hd+0.18,D),at(u,(Hd+0.18)/2,0),STEEL,'steel');
+  bx(A,sz(L-0.6,Hd,D*0.62),at(L/2,Hd/2,0),'#6d7177');
+  bx(A,sz(L,0.14,D),at(L/2,Hd+0.11,0),'#3d4248','steel');
+  const n=Math.max(3,Math.round((L-0.7)/(high?0.26:0.4)));for(const v of [-1,1])for(let i=0;i<n;i++){const u=0.38+(i+0.5)*(L-0.76)/n;bx(A,sz((L-0.76)/n*0.9,0.95,0.02),at(u,0.72,v*(D*0.31+0.012)),i%2?HAZ:HAZK,'paint',long?[0,0,0.5]:[0.5,0,0]);}
+  for(const v of [-1,1]){bx(A,sz(0.12,0.12,0.03),at(0.15,1.25,v*(D/2+0.015)),'#ff5a46','energy');bx(A,sz(0.12,0.12,0.03),at(L-0.15,1.25,v*(D/2+0.015)),'#5aff96','energy');}
+  if(high)for(const v of [-1,1])bx(A,sz(L-0.7,0.05,0.02),at(L/2,1.32,v*(D*0.31+0.012)),'#ffd9a0','energy');
+ }
+ function pillar(A,wl,high){   // structural column: concrete, steel corner guards, hazard collar, capital
+  const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,Hp=2.1;
+  bx(A,[w-0.08,Hp,d-0.08],[X,Hp/2,Z],CON2);bx(A,[w,0.2,d],[X,Hp-0.1,Z],STEEL,'steel');bx(A,[w,0.12,d],[X,0.06,Z],'#3a3f45');
+  for(const sx of [-1,1])for(const sz of [-1,1])bx(A,[0.1,Hp-0.2,0.1],[X+sx*(w/2-0.05),Hp/2-0.1,Z+sz*(d/2-0.05)],STEEL,'steel');
+  if(high)faces(A,x+0.04,z+0.04,w-0.08,d-0.08,(a0,a1,at2,dir,ax)=>{if(ax)band(A,a0,a1,0.42,at2,0.22,dir);else bandZ(A,a0,a1,0.42,at2,0.22,dir);});
+  bx(A,[w*0.5,0.05,0.02],[X,1.6,z+d+0.012],'#ffd9a0','energy');
+ }
+ function turbine(A,wl,high){   // turbine bank: base, drums lying along it, glowing rings, pipework
+  const [x,z,w,d]=wl,X=x+w/2,n=Math.max(1,Math.round(d/1.4)),r=Math.min(w*0.46,d/n*0.4);
+  bx(A,[w,0.25,d],[X,0.125,z+d/2],DARK);
+  for(let i=0;i<n;i++){const Z=z+d*(i+0.5)/n;
+   A.geo(new THREE.CylinderGeometry(r,r,w*0.92,high?14:8,1,true),'#7a838c',[X,0.25+r,Z],[0,0,Math.PI/2],null,'steel');
+   for(const s of [-1,1])A.geo(new THREE.TorusGeometry(r*1.02,0.04,3,high?14:8),'#4fd8ff',[X+s*w*0.3,0.25+r,Z],[0,Math.PI/2,0],null,'energy');
+   A.geo(new THREE.CylinderGeometry(r*0.55,r*0.55,0.05,high?12:6),'#2d3339',[X+w*0.47,0.25+r,Z],[0,0,Math.PI/2],null,'steel');}
+  bx(A,[0.16,0.16,d*0.9],[X-w*0.18,0.25+2*r+0.05,z+d/2],'#5d666f','steel');
+  bx(A,[0.06,0.5,d*0.8],[x+w-0.04,0.6,z+d/2],'#4fd8ff','energy');
+ }
+ function lift(A,wl,high){   // cargo lift platform; its shaft rises beyond the arena wall
+  const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,back=z<0.01?-1:1,face=back<0?z+d:z;
+  bx(A,[w,0.32,d],[X,0.16,Z],'#565c63');bx(A,[w-0.4,0.04,d-0.3],[X,0.34,Z],'#6b727a','steel');
+  band(A,x,x+w,0.2,face,0.24,-back);
+  for(let i=0;i<4;i++)A.geo(new THREE.CylinderGeometry(0.13,0.13,0.9,high?10:6),STEEL,[x+w*(i+0.5)/4,0.75,Z+back*d*0.2],null,null,'steel');
+  const zo=back<0?-0.45:H+0.45;   // outside the arena
+  for(const s of [-1,1])bx(A,[0.3,3.4,0.3],[X+s*(w/2-0.2),1.7,zo],STEEL,'steel');
+  bx(A,[w,0.3,0.35],[X,3.3,zo],'#4a5058','steel');bx(A,[w-0.6,2.6,0.08],[X,1.6,zo+back*0.2],'#2b3036');
+  for(let i=0;i<5;i++)bx(A,[w-0.7,0.06,0.05],[X,0.6+i*0.55,zo-back*0.05],i%2?HAZ:HAZK);
+  for(const s of [-1,1])bx(A,[0.14,0.14,0.05],[X+s*(w/2-0.2),3.1,zo-back*0.18],'#ff8a3a','energy');
+ }
+ function consoleArt(A,wl,high){
+  const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,s=x<W/2?1:-1;   // screens face into the arena
+  bx(A,[w,0.85,d],[X,0.425,Z],'#2f353c');bx(A,[w*0.9,0.06,d*0.9],[X,0.88,Z],'#4a525b','steel');
+  for(let i=0;i<3;i++)bx(A,[0.03,0.22,d*0.25],[X+s*(w/2+0.012),0.6,z+d*(0.2+i*0.3)],i===1?'#ffc85a':'#56d8ff','energy');
+  if(high)for(let i=0;i<4;i++)bx(A,[0.05,0.05,0.05],[X+s*w*0.25,0.93,z+0.3+i*(d-0.6)/3],i%2?'#ff5a46':'#5aff96','energy');
+ }
+ function fuelTank(A,x,z,r,high){   // fuel tank: drum, dome, bands, hazard ring, ladder
+  const Ht=1.7,seg=high?14:8;
+  A.geo(new THREE.CylinderGeometry(r*0.94,r*0.98,Ht,seg),'#8a929a',[x,Ht/2,z],null,null,'steel');
+  A.geo(new THREE.SphereGeometry(r*0.94,seg,high?4:2,0,Math.PI*2,0,Math.PI/2),'#9aa3ab',[x,Ht,z],null,[1,0.35,1],'steel');
+  for(const y of high?[0.35,1.2]:[1.2])A.geo(new THREE.TorusGeometry(r*0.96,0.05,3,seg),'#4a5058',[x,y,z],[Math.PI/2,0,0],null,'steel');
+  A.geo(new THREE.CylinderGeometry(r*0.955,r*0.955,0.22,seg),HAZ,[x,0.78,z],null,null,'paint');
+  const a=Math.atan2(16-z,10-x);for(let i=0;i<6;i++)bx(A,[0.22,0.03,0.05],[x+Math.cos(a)*(r*0.98+0.03),0.25+i*0.25,z+Math.sin(a)*(r*0.98+0.03)],'#c9ced3','steel',[0,-a,0]);
+  bx(A,[0.12,0.12,0.04],[x+Math.cos(a)*r*0.99,1.5,z+Math.sin(a)*r*0.99],'#ff8a3a','energy',[0,-a,0]);
+ }
+ function coolant(A,x,z,r,high){
+  A.geo(new THREE.CylinderGeometry(r*0.95,r*0.95,0.012,high?16:10),'#1f8aa8',[x,0.008,z],null,null,'energy');
+  A.geo(new THREE.CylinderGeometry(r*0.5,r*0.5,0.014,high?12:6),'#5fe6ff',[x+r*0.15,0.012,z-r*0.1],null,null,'energy');
+  A.geo(new THREE.TorusGeometry(r,0.035,3,high?16:10),'#26333b',[x,0.02,z],[Math.PI/2,0,0],null,'rubber');
+ }
+ // beyond the arena: the bunker's concrete walls with conduits and lamps; the canyon's floor runs on north and south
+ function scenery(A,id,high){
+  if(id==='bunker'){
+   for(const s of [-1,1]){const xo=s<0?-0.6:W+0.6;
+    bx(A,[1.2,2.5,H+2.4],[xo,1.25,H/2],'#3b4047');
+    for(let z=1;z<H;z+=high?2:4)bx(A,[0.12,2.4,0.14],[xo-s*0.62,1.2,z],'#555b62','steel');
+    for(const y of [1.25,1.6])A.geo(new THREE.CylinderGeometry(0.1,0.1,H,8),y<1.4?'#6f7880':'#8a6a3a',[xo-s*0.5,y,H/2],[Math.PI/2,0,0],null,'steel');
+    for(let z=3;z<H;z+=4)bx(A,[0.05,0.08,0.6],[xo-s*0.63,2.1,z],'#ffe0b0','energy');}
+   for(const s of [-1,1]){const zo=s<0?-0.6:H+0.6;bx(A,[W+2.4,2.5,1.2],[W/2,1.25,zo],'#3b4047');
+    for(let x=1;x<W;x+=high?2:4)bx(A,[0.14,2.4,0.12],[x,1.2,zo-s*0.62],'#555b62','steel');}
+  }
+ }
+ const WALLS={canyon:(A,wl,q)=>canyon(A,wl,q,false),fin:(A,wl,q)=>canyon(A,wl,q,true),bulk,door,pillar,turbine,lift,console:consoleArt};
+ const ROCKS={spire,boulder,tank:fuelTank},CRATERS={scree,coolant},HEIGHT={canyon:1.7,fin:1.2,bulk:1.35,door:1.45,pillar:2.1,turbine:1.15,lift:0.4,console:0.9};
+ return {WALLS,ROCKS,CRATERS,HEIGHT,scenery,
+  wall:(A,wl,high)=>WALLS[wl[4]](A,wl,high),rock:(A,rk,high)=>ROCKS[rk[3]](A,rk[0],rk[1],rk[2],high),crater:(A,cr,high)=>CRATERS[cr[3]](A,cr[0],cr[1],cr[2],high)};
+})();
+// the legacy kit as a MapArt adapter: matte pieces lit, metal shiny, energy into the glow kit
+const legacyArt=(k,glow)=>({geo:(g,c,p,r,s,m)=>put(m==='energy'?glow:k,g,c,p,r,s,m==='steel'||m==='gold'?'shine':undefined)});
+// Canyon's mesa: the Overpass bridge's exact rules (deck, arch tunnel, ramps), built as a rock plateau. Top surfaces go in the
+// deck / tunnel meshes so they fade while you drive underneath, like the bridge.
+function mesaGeometry(k,glow,G,mats,BRd){
+ const [dx,dy,dw,dh]=BRd.deck,dk=kit(),tn=kit(),A=legacyArt(k,glow);
+ let x0=dx;const spans=[];for(const [tx,tw] of BRd.tunnels){spans.push([x0,tx-x0,1]);spans.push([tx,tw,0]);x0=tx+tw;}spans.push([x0,dx+dw-x0,1]);
+ for(const [sx,sw,solid] of spans){
+  if(solid){
+   const L=['#2b231d','#3a2f27','#332a22'];for(let i=0;i<3;i++){const hh=(DECK_H-0.2)/3,ins=0.05*i;put(k,B(sw-ins*2,hh,dh-ins*2),L[i],[sx+sw/2,i*hh+hh/2,dy+dh/2]);}
+   put(dk,B(sw,0.2,dh),'#5c4a3c',[sx+sw/2,DECK_H-0.1,dy+dh/2]);
+   for(let i=0;i<Math.round(sw*dh/3);i++){const a=h2(sx+i,dy),b=h2(i,sx);put(dk,B(0.6+a*0.9,0.012,0.05),'#3a2f27',[sx+0.4+a*(sw-0.8),DECK_H+0.006,dy+0.4+b*(dh-0.8)],[0,a*3,0]);}   // cracks in the cap rock
+   for(const z of [dy,dy+dh])for(let t=0.4;t<sw;t+=0.85){const r=0.28+h2(t,z)*0.18;put(k,rockGeoPublic(r,DECK_H*(0.7+h2(z,t)*0.25),sx+t+z),'#4a3c31',[sx+t,0,z+(z===dy?r*0.7:-r*0.7)],[0,h2(t,z)*6,0]);}
+  }else{
+   put(tn,B(sw,0.24,dh),'#4f4034',[sx+sw/2,DECK_H-0.12,dy+dh/2]);
+   sym(s=>put(glow,B(0.05,0.05,dh),'#ffb066',[sx+(s<0?0.06:sw-0.06),DECK_H-0.3,dy+dh/2]));   // work lamps strung inside the arch
+  }
+ }
+ for(const [rx,ry,rw,rh,o] of BRd.ramps){   // a rock-cut ramp with rubble banks (the same slope as the bridge's)
+  const lo=o<0?ry:ry+rh,hi=o<0?ry+rh:ry,pos=[],v=(x,z)=>[x,(z-lo)/(hi-lo)*DECK_H,z],tri=(a,b,c)=>pos.push(...a,...b,...c);
+  const A0=[rx,0,lo],B0=[rx+rw,0,lo],C0=[rx+rw,0,hi],D0=[rx,0,hi],C1=v(rx+rw,hi),D1=v(rx,hi);
+  for(const [a,b,c] of [[A0,B0,C1],[A0,C1,D1],[B0,C0,C1],[A0,D1,D0],[D0,D1,C1],[D0,C1,C0]]){tri(a,b,c);tri(a,c,b);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));put(k,g,'#4a3c31');
+  for(let i=1;i<6;i++){const z=lo+(hi-lo)*i/6;put(k,B(rw-0.2,0.03,0.06),'#6b5645',[rx+rw/2,i/6*DECK_H+0.015,z],[(o<0?-1:1)*Math.atan2(DECK_H,rh),0,0]);}
+  sym(s=>{const zx=s<0?rx-0.1:rx+rw+0.1;for(let t=0.25;t<rh;t+=0.5){const z=ry+t,f=Math.abs(z-lo)/rh,r=0.16+h2(t,zx)*0.06;put(k,rockGeoPublic(r,DECK_H*f+0.3,zx+t),'#5a4838',[zx,0,z]);}});
+ }
+ const ds=bake(dk),ts=bake(tn);
+ const deck={solid:new THREE.Mesh(ds.lit,mats.deck),tun:new THREE.Mesh(ts.lit,mats.tun)};G.add(deck.solid,deck.tun);
+ return deck;
+}
+function rockGeoPublic(r,hgt,sd){const g=new THREE.IcosahedronGeometry(r,0),p=g.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),n=0.8+h2(x*3+sd,z*3-sd)*0.36;p.setXYZ(i,x*n,Math.max(0,(y+r)/(2*r))*hgt,z*n);}return g;}
 // ground: the lunar surface painted once per map (regolith, team pads, crater bowls, soft shadows under everything)
-function groundTex(M,ppu){
+function groundTex(M,ppu,id){
  const cv=document.createElement('canvas');cv.width=W*ppu;cv.height=H*ppu;const c=cv.getContext('2d'),u=ppu;
+ const themed=typeof MAP_THEME!=='undefined'&&MAP_THEME[id]&&typeof floorPaint==='function';
+ if(themed)floorPaint(c,id,u,cv.width,cv.height);else{
  const gr=c.createLinearGradient(0,0,0,cv.height);gr.addColorStop(0,'#363b47');gr.addColorStop(0.5,'#3c414d');gr.addColorStop(1,'#363b47');c.fillStyle=gr;c.fillRect(0,0,cv.width,cv.height);
  let s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};
  for(let i=0;i<W*H*3;i++){const x=rnd()*cv.width,y=rnd()*cv.height,rr=(0.04+rnd()*0.22)*u,l=rnd();c.fillStyle=l<0.5?'rgba(20,24,32,'+(0.12+rnd()*0.18)+')':'rgba(190,200,215,'+(0.04+rnd()*0.08)+')';c.beginPath();c.arc(x,y,rr,0,7);c.fill();}
  for(let i=0;i<26;i++){const x=rnd()*cv.width,y=rnd()*cv.height,rr=(0.25+rnd()*0.6)*u;c.strokeStyle='rgba(15,18,25,.35)';c.lineWidth=Math.max(1,u*0.06);c.beginPath();c.arc(x,y,rr,0,7);c.stroke();c.strokeStyle='rgba(210,220,235,.12)';c.beginPath();c.arc(x-u*0.04,y-u*0.04,rr,Math.PI,Math.PI*1.6);c.stroke();}
  c.strokeStyle='rgba(120,135,160,.10)';c.lineWidth=1;c.beginPath();for(let i=0;i<=W;i+=2){c.moveTo(i*u,0);c.lineTo(i*u,cv.height);}for(let j=0;j<=H;j+=2){c.moveTo(0,j*u);c.lineTo(cv.width,j*u);}c.stroke();
+ }
  const pad=(y0,col)=>{c.fillStyle=col.replace('A','0.06');c.fillRect(0,y0*u,cv.width,5*u);c.strokeStyle=col.replace('A','0.3');c.lineWidth=Math.max(2,u*0.08);c.beginPath();c.moveTo(0,(y0?y0:5)*u);c.lineTo(cv.width,(y0?y0:5)*u);c.stroke();
   c.strokeStyle=col.replace('A','0.16');c.lineWidth=Math.max(1,u*0.04);for(let x=0.5;x<W;x+=1.5){c.beginPath();c.moveTo(x*u,(y0+1)*u);c.lineTo((x+0.6)*u,(y0+4)*u);c.stroke();}};
  pad(0,'rgba(255,77,94,A)');pad(H-5,'rgba(77,159,255,A)');
@@ -1180,12 +1345,13 @@ function groundTex(M,ppu){
  for(const [x,y,r] of M.rocks||[]){c.beginPath();c.ellipse((x+0.3)*u,(y+0.4)*u,r*1.05*u,r*0.95*u,0,0,7);c.fill();}
  if(M.bridge){const [dx,dy,dw,dh]=M.bridge.deck;c.fillRect((dx+0.3)*u,(dy+0.6)*u,dw*u,dh*u);}
  c.restore();
- for(const [x,y,r] of M.craters||[]){const g=c.createRadialGradient((x-r*0.2)*u,(y+r*0.2)*u,r*0.1*u,x*u,y*u,r*u);g.addColorStop(0,'#14181f');g.addColorStop(0.7,'#1c212a');g.addColorStop(1,'#2a303b');c.fillStyle=g;c.beginPath();c.arc(x*u,y*u,r*0.8*u,0,7);c.fill();}
+ for(const [x,y,r,st] of M.craters||[]){if(st)continue;const g=c.createRadialGradient((x-r*0.2)*u,(y+r*0.2)*u,r*0.1*u,x*u,y*u,r*u);g.addColorStop(0,'#14181f');g.addColorStop(0.7,'#1c212a');g.addColorStop(1,'#2a303b');c.fillStyle=g;c.beginPath();c.arc(x*u,y*u,r*0.8*u,0,7);c.fill();}
  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=2;return t;
 }
 // the whole map: one static mesh per material, the bridge deck on its own (it fades when you drive under it), a few spinning pylons
 // Exact existing bridge topology shared by legacy and optional environment skins.
 function bridgeGeometry(k,glow,G,mats,BRd){
+ if(BRd&&BRd.look==='mesa')return mesaGeometry(k,glow,G,mats,BRd);
  let deck=null;
  if(BRd){   // Overpass: deck on supports, tunnels underneath, ramps with rails, lights along the edges
   const [dx,dy,dw,dh]=BRd.deck,dk=kit(),tn=kit();
@@ -1228,13 +1394,14 @@ function buildMap(id,mats,q){
  sym(s=>put(glow,B(0.04,0.04,H+0.6),'#59607a',[W/2+s*(W/2+0.3),0.02,H/2]));
  for(const wl of Md.walls||[])wallKit(k,glow,pulse,anims,wl);
  for(const rk of Md.rocks||[])rockKit(k,glow,rk);
- for(const cr of Md.craters||[])craterKit(k,cr);
+ for(const cr of Md.craters||[])craterKit(k,cr,glow);
+ MapArt.scenery(legacyArt(k,glow),id,q!=='low');
  const deck=bridgeGeometry(k,glow,G,mats,Md.bridge);
  const S=bake(k),Gw=bake(glow),Pl=bake(pulse);
  if(S.lit)G.add(new THREE.Mesh(S.lit,mats.lit));if(S.shine)G.add(new THREE.Mesh(S.shine,mats.shine));
  for(const gg of [Gw.lit,Gw.glow])if(gg)G.add(new THREE.Mesh(gg,mats.glow));
  let pulseMesh=null;if(Pl.lit){pulseMesh=new THREE.Mesh(Pl.lit,mats.pulse);G.add(pulseMesh);}
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshLambertMaterial({map:groundTex(Md,q==='low'?20:32)}));
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshLambertMaterial({map:groundTex(Md,q==='low'?20:32,MAPS[id]?id:'classic')}));
  ground.rotation.x=-Math.PI/2;ground.position.set(W/2,0.001,H/2);G.add(ground);
  const spin=[];for(const a of anims){const m=meshOf(bake(a.k),mats);m.position.set(a.p[0],a.p[1],a.p[2]);G.add(m);spin.push({o:m,axis:a.axis,spd:a.spd});}
  return {group:G,deck,spin,ground};
@@ -1285,5 +1452,5 @@ function fittingKit(f,team,part,context){
 }
 const foundationChassis=(cls,tier,P,team,gems,lunar)=>lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems);
 const foundationWeapon=(arch,tier,P,team,lunar,cls)=>arch==='moon'?unifiedMoonbeam(team):standardWeapon(arch,visualTier(tier),P,team,lunar);
-return {famChassis,famTools,famFinish,famLunar,famSurfaceY,LUNAR,lunarStock,bridgeVisual,foundationChassis,foundationWeapon,MOON_SCALE,weaponScale,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+return {MapArt,famChassis,famTools,famFinish,famLunar,famSurfaceY,LUNAR,lunarStock,bridgeVisual,foundationChassis,foundationWeapon,MOON_SCALE,weaponScale,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();

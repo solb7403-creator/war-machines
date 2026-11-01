@@ -42,7 +42,7 @@ async def main():
         combos=[]
         for g in ['arena','zone','crystal','bounty','royale','boss']:
             for m in (['1v1'] if g=='royale' else ['1v1','2v2','3v3']):
-                for mp in ['classic','overpass','longshot','craters']:
+                for mp in ['classic','overpass','longshot','craters','canyon','bunker']:
                     combos.append((g,m,mp))
         i=0
         for rep in range(N):
