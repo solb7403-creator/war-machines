@@ -131,7 +131,7 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = ""
     if (b.lab === 1 && S.mig === 1) RULES.labEnsure(S, b.L);
     setLoadout(S, b.L || S.L);
     devCheck = S.dvd !== X.day; S.dvd = X.day;   // once a day: which other accounts use this phone
-    squadCheck = S.vqd !== X.day;   // once a day: verified recruits and the match bonus (squadRefresh sets vqd)
+    squadCheck = S.vqd !== X.day; S.vqd = X.day;   // once a day: verified recruits and the match bonus (squad() below)
     return {};
   }, now, { rl: 1 });
   if (t.rate) return { ok: false, error: "rate" };
@@ -198,8 +198,7 @@ export async function squad(env, pid, now = Date.now(), S0 = null) {
   const reasons = {};
   await Promise.all(heldIds.concat(fh && fh[pid] ? [pid] : []).map(async (id) => { const f = await dbGet(env, `flags/${id}`).catch(() => null); reasons[id] = holdWhy(flagReasons(f)); }));
   const list = rows.map((r) => (fh && fh[r.id] ? { ...r, held: true, why: reasons[r.id] || "Under review" } : r));
-  if (!rows.length && !(S0 && ((S0.vac | 0) || S0.mbx))) {   // nobody invited yet: nothing to refresh, just today's mark
-    if (S0 && S0.vqd !== dayOf(now)) await tx(env, pid, (S) => { if (S.vqd === dayOf(now)) return { abort: true }; S.vqd = dayOf(now); return {}; }, now).catch(() => {});
+  if (!rows.length && !(S0 && ((S0.vac | 0) || S0.mbx))) {   // nobody invited yet: nothing to refresh or write
     return { list, me: { n: 0, s: 0, q: 0, mbx: 0 }, held: fh && fh[pid] ? reasons[pid] || "Under review" : null };
   }
   const me = await squadRefresh(env, pid, list, now);
