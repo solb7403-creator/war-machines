@@ -31,7 +31,7 @@ async def main():
         await pg.evaluate("()=>{window.syncPlayer=()=>{};window.onMatchEnd=()=>{};window.onMatchStart=()=>{};window.onRoundEnd=()=>{};window.onRoundStart=()=>{};save.mp=50;}")
         for g in ['arena','zone','crystal','bounty','royale']:
             for m in (['1v1'] if g=='royale' else ['1v1','2v2','3v3']):
-                for mp in ['classic','overpass','longshot','craters']:
+                for mp in ['classic','overpass','longshot','craters','canyon','bunker']:
                     r=await pg.evaluate(SIM,{'g':g,'m':m,'map':mp,'n':n})
                     print(g,m,mp,json.dumps(r),flush=True)
         print('errors',errs)

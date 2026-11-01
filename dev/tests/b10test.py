@@ -24,7 +24,7 @@ async def main():
         check(r['ready'] and not r['failed'] and abs(r['GK']-math.cos(0.6))<1e-6 and r['g3d'] and r['mode']=='auto','3D view loads by default (Auto) '+json.dumps(r))
         bad=[]
         for g in ['arena','zone','crystal','bounty','royale','boss']:
-            for mp in ['classic','overpass','longshot','craters']:
+            for mp in ['classic','overpass','longshot','craters','canyon','bunker']:
                 md='1v1' if g in ('royale',) else '2v2'
                 r=await pg.evaluate("(c)=>{closeAll();save.gtype=c[0];save.mode=c[1];save.map=c[2];store();prepareMatch();startMatch();document.body.classList.add('battle');fit();"+BOT+"let mx=0;for(let i=0;i<150;i++){if(me.hp>0)botAI(1/30,me);update(1/30);fxTick(1/30);if(i%3===0){drawBattle();mx=Math.max(mx,R3.calls);}}const n=B3.units.size;state='menu';document.body.classList.remove('battle');return {calls:mx,units:n};}",[g,md,mp])
                 if r['calls']>160 or r['units']<2: bad.append([g,mp,r])
@@ -34,7 +34,7 @@ async def main():
         cdp=await pg.context.new_cdp_session(pg)
         await cdp.send('Emulation.setCPUThrottlingRate',{'rate':4})
         worst=[]
-        for st in ['arena:3v3:overpass','zone:3v3:classic','royale:1v1:craters','boss:2v2:classic']:
+        for st in ['arena:3v3:overpass','zone:3v3:classic','royale:1v1:craters','boss:2v2:classic','zone:3v3:canyon','crystal:3v3:bunker']:
             r=await pg.evaluate("""(st)=>{const [g,m,mp]=st.split(':');save.gtype=g;save.mode=m;save.map=mp;prepareMatch();startMatch();document.body.classList.add('battle');fit();"""+BOT+"""
               for(let i=0;i<200;i++){if(me.hp>0)botAI(1/60,me);update(1/60);fxTick(1/60);}
               const td=[];for(let i=0;i<90;i++){if(me.hp>0)botAI(1/60,me);update(1/60);fxTick(1/60);const a=performance.now();drawBattle();td.push(performance.now()-a);}

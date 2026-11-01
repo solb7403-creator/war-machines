@@ -44,6 +44,7 @@ jobs:
           node dev/tests/hf-foundation.mjs
           node dev/tests/hf-collection.mjs
           node dev/tests/environment.mjs
+          node dev/tests/map-layout.mjs
           node dev/tests/graphics-motion.mjs
           node dev/tests/graphics-release.mjs
           node dev/tests/wtest/web-auth.mjs

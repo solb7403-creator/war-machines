@@ -24,6 +24,7 @@ function boot(){
   initBackend();loadLB();if(ACCOUNT_OK)loadSquad();
   if(!IN_WEB&&save.payCur==='sol')fetchPrices();
   if(!save.welcomed&&(save.mp||0)===0)showWelcome();
+  if(typeof pvpResume==='function')pvpResume();   // back from an update reload: rejoin the live queue
   uiDirty();
  };
  cloudLoad(cs=>{

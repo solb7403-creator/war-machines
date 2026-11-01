@@ -1,4 +1,5 @@
-# renders the wiki's gear and map pictures from the game's own 3D models: python3 dev/gallery3d.py (writes img/wiki/*.webp)
+# renders the wiki's gear and map pictures from the game's own 3D models: python3 dev/gallery3d.py [name...] (writes img/wiki/*.webp;
+# names, e.g. map_canyon, re-render only those pictures)
 import os, asyncio, sys, base64
 sys.path.insert(0,os.path.join(os.path.dirname(os.path.abspath(__file__)),'tests'))
 from harness import open_game, start_dev
@@ -23,7 +24,8 @@ async def main():
             for t in range(3): jobs.append(('c_%s_%d'%(c,t),{'s':{'cls':c,'ct':t},'p':1,'z':0.9,'w':200,'h':150}))
         jobs.append(('c_lunar',{'s':{'cls':'vanguard','ct':2,'arch':'moon','wt':2,'lunar':True,'team':'#e8f4ff'},'w':200,'h':150}))
         jobs.append(('megatank',{'s':{'boss':True},'az':0.9,'w':200,'h':150}))
-        for m in ['classic','overpass','longshot','craters']: jobs.append(('map_'+m,{'map':m,'w':180,'h':250}))
+        for m in ['classic','overpass','longshot','craters','canyon','bunker']: jobs.append(('map_'+m,{'map':m,'w':180,'h':250}))
+        if sys.argv[1:]: jobs=[j for j in jobs if j[0] in sys.argv[1:]]
         for name,o in jobs:
             url=await pg.evaluate(JS,o)
             open(os.path.join(OUT,name+'.webp'),'wb').write(base64.b64decode(url.split(',',1)[1]))

@@ -5,7 +5,7 @@ const root=new URL('../../',import.meta.url),ctx=createContext({console,URL,Floa
 for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/game.js','js/models3d.js','js/equipment3d.js','js/environment3d.js'])runInContext(readFileSync(new URL(f,root),'utf8'),ctx);
 runInContext('globalThis.E=Environment3D;globalThis.M=M3;globalThis.maps=MAPS;globalThis.snap=JSON.stringify(MAPS);',ctx);
 assert.equal(ctx.E.active(),false,'safe legacy public default');
-for(const q of ['high','low'])for(const id of ['classic','overpass','longshot','craters']){
+for(const q of ['high','low'])for(const id of ['classic','overpass','longshot','craters','canyon','bunker']){
  const raw=ctx.E.mapKit(id,q);assert.equal(raw.id,id);assert.equal(raw.quality,q);let n=0;
  for(const k of [raw.k,raw.glow])for(const g of Object.values(ctx.E.bake(k))){n+=g.attributes.position.count;for(const name of ['position','normal','uv','tangent'])assert.ok(g.attributes[name].array.every(Number.isFinite),id+' finite '+name);}
  assert.ok(n>400&&n<(q==='high'?50000:20000),id+' bounded map '+n);metrics.maps.push({id,quality:q,vertices:n});
@@ -14,7 +14,7 @@ for(const q of ['high','low'])for(const id of ['classic','overpass','longshot','
 }
 for(const q of ['high','low'])for(const kind of ['garage','engineer','inspection']){const r=ctx.E.stageKit(kind,q);let n=0;for(const g of Object.values(ctx.E.bake(r.k)))n+=g.attributes.position.count;assert.ok(n>400&&n<25000);metrics.stages.push({kind,quality:q,vertices:n});}
 assert.equal(runInContext('JSON.stringify(MAPS)',ctx),ctx.snap);
-console.log('PASS environment real kit, four canonical maps, HIGH/LOW, finite UV/material geometry, three stages, exact bridge data, no authoritative RNG/layout mutation');
+console.log('PASS environment real kit, six canonical maps, HIGH/LOW, finite UV/material geometry, three stages, exact bridge data, no authoritative RNG/layout mutation');
 
 for(const h of metrics.maps.filter(x=>x.quality==='high'))assert.ok(metrics.maps.find(x=>x.id===h.id&&x.quality==='low').vertices<h.vertices*.8,h.id+' real LOW workload');
 for(const h of metrics.stages.filter(x=>x.quality==='high'))assert.ok(metrics.stages.find(x=>x.kind===h.kind&&x.quality==='low').vertices<h.vertices,h.kind+' real LOW stage');

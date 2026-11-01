@@ -36,7 +36,8 @@ window.Telegram={WebApp:{initData:%s,initDataUnsafe:{user:%s%s},platform:'ios',v
  CloudStorage:{setItem(k,v,cb){__cs[k]=v;cb&&cb(null,true)},getItem(k,cb){cb(null,__cs[k]||'')},getItems(ks,cb){const o={};ks.forEach(k=>o[k]=__cs[k]||'');cb(null,o)}}}};
 """ % (json.dumps(idata), json.dumps(user), sp)
 import urllib.parse
-async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None, eco='local', init=None, autogfx=False):
+async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None, eco='local', init=None, autogfx=False, override=None):
+    # override: async fn(url) -> None (serve normally), 'abort', or (bytes, content type): lets a test play an old build or go offline
     user=user or {'id':777001,'username':'jaketest','first_name':'Jake'}
     b=browser or await p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
     ctx=await b.new_context(viewport={'width':w,'height':h},device_scale_factor=scale,color_scheme=color_scheme)
@@ -55,6 +56,10 @@ async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=G
             path=u.split('firebaseio.com',1)[1].split('?')[0]
             resp=await r.fetch(url=DEV+'/db'+path)
             return await r.fulfill(response=resp)
+        if override and u.startswith('http://127.0.0.1:8899/'):
+            o=await override(u)
+            if o=='abort': return await r.abort()
+            if o: return await r.fulfill(body=o[0],content_type=o[1])
         if u.startswith('http://127.0.0.1:8899/'):
             import pathlib, mimetypes
             target=(pathlib.Path(REPO)/u.split(':8899/',1)[1].split('?',1)[0]).resolve()

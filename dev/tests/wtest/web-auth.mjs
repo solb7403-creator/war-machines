@@ -52,7 +52,7 @@ Date.now=clock;
 const mini=await call('/api/sync',{initData:tgData.toString(),lab:1},'','','https://solb7403-creator.github.io');assert.equal((await mini.json()).E.earned,score.E.earned,'website battle credit visible to Mini App');
 // Web joins have session-bound tickets; legacy Telegram tickets keep their original format.
 env.ROOM=makeNamespace(mod.PvpRoom,env);env.LOBBY=makeNamespace(mod.PvpLobby,env);
-const joined=await call('/api/pvp/join',{v:1,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:1},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
+const joined=await call('/api/pvp/join',{v:2,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:1},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
 const wsReq=(cookies,origin)=>new Request(env.WEB_ORIGIN+'/pvp/ws?r='+seat.room+'&t='+seat.tok,{headers:{Upgrade:'websocket',Cookie:cookies,Origin:origin}});
 assert.equal((await worker.fetch(wsReq('',env.WEB_ORIGIN),env)).status,403);
 assert.equal((await worker.fetch(wsReq(sid,'https://evil.test'),env)).status,403);

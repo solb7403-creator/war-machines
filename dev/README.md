@@ -55,9 +55,12 @@ python3 dev/tests/b10test.py           # the 3D view: every mode x map, draw cos
 python3 dev/tests/b11test.py           # the Hyperspace Vault: Shop card, server-priced bundles, Stars deposits, levels and unlocks, the Vault board, badges, looks in 3D and 2D
 python3 dev/tests/b12test.py           # the match ticket: dropped requests retried, a refusal shows its real reason, no answer still says no connection
 python3 dev/tests/b13test.py           # link quests (news channel, X, wiki): right links, visits that survive Telegram switching away, claims
+node dev/tests/map-layout.mjs          # every map: point symmetry, clear spawns, no bot traps (gaps a sight line fits but a tank doesn't), no unreachable pockets, room for objectives, nav graph size
+node dev/tests/map-nav.mjs 3           # AI on every map, headless: matches finish, no tank inside a solid, stuck seconds, high-ground use, sim cost
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons
+python3 dev/tests/pvp-update.py        # a phone on an old live version is updated and rejoins the same live queue (no AI match); offline it says "Update needed" with Retry; a current phone joins normally
 python3 dev/tests/pvptest.py           # two browser pages play live: matching, VS labels, moves, supers, drops, rounds, quits, AI fill, results
 ```
 

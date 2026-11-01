@@ -142,7 +142,7 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .mode small{font-size:12px;line-height:1.3}
 .mode.on{background:var(--rock3);border-color:var(--moon);box-shadow:inset 0 0 0 1px var(--moon)}
 .mode.on svg{color:var(--thrust)}
-.maps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.maps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .map{border-radius:12px;background:var(--rock2);border:1px solid var(--edge);padding:5px;text-align:center;min-width:0}
 .map canvas{width:100%;height:auto;aspect-ratio:3/4;border-radius:8px}
 .map b{display:block;font:600 11px/1.2 var(--disp);margin-top:5px;color:var(--dust);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

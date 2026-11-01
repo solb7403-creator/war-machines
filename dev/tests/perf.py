@@ -16,7 +16,7 @@ async def main():
         await pg.evaluate("()=>{window.onMatchEnd=()=>{};document.body.classList.add('battle');fit();}")
         cdp=await pg.context.new_cdp_session(pg)
         await cdp.send('Emulation.setCPUThrottlingRate',{'rate':4})
-        for st in sys.argv[1:] or ['arena:1v1:classic','arena:3v3:overpass','zone:3v3:overpass','zone:3v3:classic','arena:3v3:longshot','crystal:3v3:overpass','bounty:3v3:craters','royale:1v1:classic']:
+        for st in sys.argv[1:] or ['arena:1v1:classic','arena:3v3:overpass','zone:3v3:overpass','zone:3v3:classic','arena:3v3:longshot','crystal:3v3:overpass','bounty:3v3:craters','royale:1v1:classic','zone:3v3:canyon','arena:3v3:bunker']:
             print(json.dumps(await pg.evaluate(JS,st)))
         print('errors',errs)
         await b.close()
