@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>LUNAR: War Machines privacy</title>
+<meta name="description" content="What LUNAR: War Machines stores about you and why.">
+<style>
+@font-face{font-family:"Chakra Petch";src:url(fonts/chakra-petch-700.woff) format("woff");font-weight:700;font-display:swap}
+:root{--void:#0a0e17;--rock:#141c2a;--moon:#dfe7f2;--dust:#8a97ab;--gold:#ffcf4a;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--void);color:var(--moon);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:0 16px 48px}
+.wrap{max-width:680px;margin:0 auto}header{padding:30px 0 10px}
+h1{font:700 28px/1.1 "Chakra Petch","Arial Narrow",sans-serif}h1 span{color:var(--gold)}
+h2{font:700 18px/1.25 "Chakra Petch","Arial Narrow",sans-serif;margin:24px 0 6px}
+p{margin-bottom:10px}ul{padding-left:20px}li{margin-bottom:6px}a{color:#9fe7ff}
+.sum{background:var(--rock);border:1px solid rgba(255,207,74,.35);border-radius:14px;padding:14px;margin:16px 0 6px}
+.tag{color:var(--dust);font-size:14px;margin-top:6px}
+</style>
+</head>
+<body><div class="wrap">
+<header><h1>LUNAR <span>Privacy</span></h1><p class="tag">Short and plain. Last updated November 1, 2026.</p></header>
+<div class="sum"><ul>
+<li>We store only what the game needs: your call sign, a scrambled (hashed) password, an optional recovery email, and your gameplay data.</li>
+<li>Your recovery email is used <b>only</b> to reset your password. No newsletters, no selling, no sharing.</li>
+<li>You can delete your account any time in Settings.</li>
+</ul></div>
+<h2>What we store</h2>
+<ul>
+<li><b>Call sign</b>: your public player name, shown on leaderboards, in battles and squads.</li>
+<li><b>Password</b>: never stored as you typed it. We keep only a one-way hash (PBKDF2-SHA256 with a random salt) that can check a password but can't be turned back into it.</li>
+<li><b>Recovery email</b> (optional): used only to send you a password reset link.</li>
+<li><b>Linked sign-ins</b> (optional): your Telegram account number, Google account identifier, or passkey public key, if you choose to link them.</li>
+<li><b>Gameplay data</b>: your machines, points, quests, match results and purchases, so the game works on every device you log in on.</li>
+<li><b>Fair-play signals</b>: a scrambled network address and a random device id, used only to spot fake accounts farming rewards. They are not used for advertising.</li>
+</ul>
+<h2>Cookies</h2>
+<p>One first-party cookie keeps you logged in. No advertising or tracking cookies.</p>
+<h2>Counting visits</h2>
+<p>We count how many people visit, sign up, finish a first match and come back, as plain daily totals with nothing that identifies you.</p>
+<h2>Deleting your account</h2>
+<p>Settings → Delete account removes your call sign login, password hash, recovery email and gameplay data. Payment receipts are kept as required by law, and the call sign stays reserved for 30 days so nobody can take it over to impersonate you.</p>
+<h2>Contact</h2>
+<p>Questions: message <a href="https://t.me/LunarBattle">@LunarBattle</a> on Telegram or send /support to the bot. See also the <a href="terms.html">Terms</a>.</p>
+</div></body></html>

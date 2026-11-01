@@ -36,7 +36,10 @@ export async function dbDel(env, path) {
   const r = await fetch(dbUrl(env, path), { method: "DELETE" });
   return r.ok;
 }
+// the call sign (validated when it was chosen, shown exactly as typed) wins over any other name
+const CALLSIGN = /^[A-Za-z0-9@_\-.!#$*+~^?=%:]{3,16}$/;
 export const cleanName = (u) => {
+  if (u && typeof u.callsign === "string" && CALLSIGN.test(u.callsign)) return u.callsign;
   let n = String((u && (u.lunar_name || u.username || [u.first_name, u.last_name].filter(Boolean).join(" "))) || "").trim();
   n = n.replace(/[^\w .\-]/g, "").slice(0, 16);
   return n || "Pilot-" + String((u && u.id) || "").slice(-4);

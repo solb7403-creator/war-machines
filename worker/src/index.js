@@ -9,6 +9,8 @@ import { processStarts, buildClusters, clearCluster } from "./farm.js";
 export { PvpRoom, PvpLobby };
 import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from "./web-auth.js";
 import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar-identity.js";
+import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from "./accounts.js";
+import {ACCOUNT_TYPES} from "./web-auth.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -69,11 +71,13 @@ async function auth(req, env) {
     const a=await webIdentity(req,env);if(!a)return {err:json({error:"not verified"},401)};
     const path=new URL(req.url).pathname;
     if(["/api/pay-log","/api/stars-invoice","/api/admin","/api/notify-optin"].includes(path))return {err:json({error:"Use Telegram for this action"},403)};
+    const cs=await csOf(env,a.pid);   // the call sign is the public name everywhere (read fresh: it may have just changed)
+    const user={...a.user,callsign:cs?cs.n:undefined};
     if(path==="/api/sync"){
       const S=await readEco(env,a.pid);if(S.mig===0)return {err:json({error:"Open Telegram once to finish account migration"},409)};
       delete b.mig;delete b.refBy;delete b.starsAck; b.boot=false;
     }
-    return {b,user:a.user,pid:a.pid,ip:req.headers.get("CF-Connecting-IP")||"",sp:"",web:true};
+    return {b,user,pid:a.pid,ip:req.headers.get("CF-Connecting-IP")||"",sp:"",web:true};
   }
   const user = await verifyInitData(env, String(b.initData || ""));
   if (!user || !user.id) return { err: json({ error: "not verified" }, 401) };
@@ -85,11 +89,13 @@ async function auth(req, env) {
   const pid=lunarPid||"tg_"+user.id;
   // Both website-first linked Telegram players and Telegram-first passkey upgrades have
   // a Lunar-controlled identity. The latter retain their original economy storage key.
-  const lunarAccount=await dbGet(env,'lunarAccounts/'+pid);
+  const [lunarAccount,cs]=await Promise.all([dbGet(env,'lunarAccounts/'+pid),csOf(env,pid)]);
+  user.tgUsername=user.username;
   if(lunarAccount){
-    if(lunarAccount.id!==pid||lunarAccount.type!=='passkey')return {err:json({error:'invalid account link'},409)};
+    if(lunarAccount.id!==pid||!ACCOUNT_TYPES.includes(lunarAccount.type))return {err:json({error:'invalid account link'},409)};
     user.web_auth=true;user.lunar_account=true;user.lunar_name=lunarAccount.name;
   }
+  if(cs)user.callsign=cs.n;
   return { b, user, pid, ip: req.headers.get("CF-Connecting-IP") || "", sp };
 }
 
@@ -113,7 +119,7 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = ""
   // server-issued website invite code; a pilot id in the body (refBy) is ignored. Linked Telegram + passkey accounts
   // resolve to one canonical pilot, so nobody can recruit themselves through an alias. Looked up only while the pilot
   // could still be recruited (no referrer yet, brand new).
-  const inviter = !(rec && rec.ref) && (!rec || (rec.days || 0) <= 1) ? await inviterOf(env, sp, b.inv) : null;
+  const inviter = !(rec && rec.ref) && (!rec || (rec.days || 0) <= 1) ? await inviterOf(env, sp, b.inv || user.inv) : null;
   let why = null;
   let devCheck = false, squadCheck = false;
   const t = await tx(env, pid, (S, X) => {
@@ -164,7 +170,7 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = ""
   if (Object.keys(up).length) await dbPatch(env, "", up);
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
   if (squadCheck) await squad(env, pid, now, S).catch(() => {});   // daily: verified recruits, match bonus, pool row
-  const out = { ok: true, pid, now, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
+  const out = { ok: true, pid, now, cs: user.callsign || null, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
     rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
@@ -374,7 +380,7 @@ async function admin(env, user, b = {}) {
   if (b.proof === "enforce" || b.proof === "flag") { await dbPatch(env, "cfg", { proof: b.proof }); resetCfg(); }
   if (b.clearCl && /^[0-9a-f]{1,8}$/.test(String(b.clearCl))) await clearCluster(env, String(b.clearCl));
   // clear a flagged pilot (every current reason): they count for the snapshot again
-  if (b.clear && /^tg_\d{3,15}$/.test(String(b.clear))) {
+  if (b.clear && /^(?:tg|ln)_\d{3,15}$/.test(String(b.clear))) {
     const f = await dbGet(env, `flags/${b.clear}`).catch(() => null), up = {};
     for (const k of flagReasons(f)) up[`flags/${b.clear}/ok/${k}`] = Date.now();
     if (Object.keys(up).length) await dbPatch(env, "", up);
@@ -415,7 +421,7 @@ async function admin(env, user, b = {}) {
   const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
-  const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters };
+  const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []) };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
@@ -624,7 +630,7 @@ async function webhook(req, env) {
     });
   } else if (m && m.text && /^\/account(?:\s|$)/.test(m.text)) {
     await tg(env, "sendMessage", {chat_id:m.chat.id,
-      text:"Keep your LUNAR machines, points, purchases and progression when you move to the official website. Open the website, use optional Telegram sign-in once, and in Account Settings add a permanent Lunar passkey. You can then sign in without Telegram.",
+      text:"Play LUNAR on any phone or computer with the same machines, points and purchases. Open the website, tap Log in, then Continue with Telegram once. In Settings, add a password: after that you can log in anywhere with your call sign and password.",
       reply_markup:{inline_keyboard:[[{text:"🌐 OPEN LUNAR ACCOUNT",url:ACCOUNT_URL}]]}});
   } else if (m && m.text && /^\/(paysupport|support)/.test(m.text)) {
     await tg(env, "sendMessage", { chat_id: m.chat.id, text: SUPPORT_TEXT });
@@ -654,6 +660,8 @@ const ROUTES = {
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
   "/api/admin": async (env, a) => admin(env, a.user, a.b),
   "/api/pvp/join": async (env, a) => pvpJoin(env, a),
+  "/api/callsign": async (env, a) => apiCallsign(env, a),
+  "/api/tglink": async (env, a) => apiTelegramLink(env, a, a.ip),
 };
 
 // requests per network address per minute, before any database work (a soft cap per server instance; with a Cloudflare
@@ -680,7 +688,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
+const PID_RL = { "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -692,6 +700,12 @@ function pidLimited(path, pid) {
 export default {
   async fetch(req, env) {
     const path = new URL(req.url).pathname;
+    if(path.startsWith("/auth/acct/")){
+      try{return await accountAuth(req,env);}catch{return json({error:"account service unavailable",msg:"The account service is busy. Please try again."},503);}
+    }
+    if(path.startsWith("/auth/google/")){
+      try{return await googleAuth(req,env);}catch{return new Response(null,{status:302,headers:{Location:"/web/login.html?login=unavailable"}});}
+    }
     if(path.startsWith("/auth/lunar/")){
       try{return await lunarAuth(req,env);}catch{return json({error:"account service unavailable"},503);}
     }
@@ -716,9 +730,9 @@ export default {
     if (path === "/api/tg-webhook" && req.method === "POST") return webhook(req, env);
     if (path === "/pvp/ws") return pvpSocket(req, env);   // live matches (WebSocket into the match room)
     if (path === "/pvp/health") return cors(await pvpHealth(env).catch((e) => json({ ok: false, error: String(e && e.message || e).slice(0, 200) }, 500)), req);
-    if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png"].includes(path))){
+    if(env.ASSETS&&["GET","HEAD"].includes(req.method)&&(/^\/(web|js|css|fonts)\//.test(path)||["/range-engine.html","/version.json","/icon.png","/favicon-32.png","/icon-180.png","/terms.html","/privacy.html"].includes(path))){
       const res=await env.ASSETS.fetch(req);const out=new Response(res.body,res);out.headers.set("X-Content-Type-Options","nosniff");
-      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");}
+      if(path.startsWith("/web/")){out.headers.set("Referrer-Policy","same-origin");out.headers.set("Cross-Origin-Opener-Policy","same-origin-allow-popups");out.headers.set("Content-Security-Policy","default-src 'self'; script-src 'self' https://oauth.telegram.org https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://oauth.telegram.org wss://lunar-api.solb7403.workers.dev https://warmachines-a6034-default-rtdb.firebaseio.com; frame-src 'self' https://oauth.telegram.org https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");out.headers.set("Cache-Control","no-cache");}
       return out;
     }
     if (path === "/") return new Response("LUNAR: War Machines API");
@@ -730,6 +744,7 @@ export default {
       // every minute 15:00-18:59 UTC, reminders only; every 5 minutes, the board and the farm check
       if (event && event.cron === "* 15-18 * * *") { await sendReminders(env).catch((e) => console.log("ntf", e && e.message)); return; }
       await buildLeaderboard(env).catch((e) => console.log("lb", e && e.message));
+      await dbDel(env, `sgn/${dayOf(Date.now()) - 2}`).catch(() => {});   // signup counters are only needed for a day
     })());
   },
 };

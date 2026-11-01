@@ -1,34 +1,82 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#030a15"><meta name="robots" content="noindex,nofollow">
-<title>Pilot Access · LUNAR WAR MACHINES</title><link rel="icon" href="../favicon-32.png">
-<link rel="stylesheet" href="login.css"><script src="login.js" defer></script></head><body>
+<title>Play LUNAR · Create account or log in</title><link rel="icon" href="../favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="stylesheet" href="login.css"><script src="login.js" defer></script></head><body class="auth-page">
 <main class="viewport">
-<header class="brand"><a href="./">◈ LUNAR <span>WAR MACHINES</span></a><span class="signal">INDEPENDENT PILOT ACCESS</span></header>
-<section class="access" aria-labelledby="access-title">
-<div class="kicker">LUNAR ACCOUNT // INDEPENDENT</div>
-<h1 id="access-title">YOUR MACHINE. <em>YOUR ACCOUNT.</em></h1>
-<p class="intro">Create a permanent LUNAR identity and play on the website without Telegram. Your progress is stored on Lunar's game servers.</p>
-<section class="auth-panel" aria-label="Lunar account access">
-<h2>NEW PILOT</h2>
-<label class="field-label" for="pilot-name">Pilot name</label>
-<input id="pilot-name" type="text" inputmode="text" autocomplete="nickname" maxlength="16" placeholder="Choose your callsign" aria-label="Pilot name"/>
-<button id="create-passkey" class="primary action-button" type="button">CREATE LUNAR ACCOUNT <span>＋</span></button>
-<p class="fine-print">Uses a passkey (Face ID, Touch ID, or a compatible password manager). No Telegram account required.</p>
-<div class="auth-divider"><span>ALREADY HAVE A LUNAR ACCOUNT?</span></div>
-<button id="sign-in-passkey" class="primary action-button secondary-action" type="button">SIGN IN WITH PASSKEY <span>↗</span></button>
-<p class="fine-print">Your passkey is tied to this website address. Keep your passkeys synced or backed up—account recovery is not yet available.</p>
+<header class="brand"><a href="./">◈ LUNAR <span>WAR MACHINES</span></a><a class="signal" href="./">← Home</a></header>
+<section class="access auth-card" aria-labelledby="auth-title">
+<p class="invited" id="invited" hidden>🤝 You were invited by <b id="invited-by"></b></p>
+<h1 id="auth-title">Pick a call sign. <em>Start playing.</em></h1>
+<div class="mode-tabs" role="tablist" aria-label="Account">
+ <button type="button" role="tab" id="tab-signup" aria-selected="true" aria-controls="signup-form">Create account</button>
+ <button type="button" role="tab" id="tab-login" aria-selected="false" aria-controls="login-form">Log in</button>
+</div>
+
+<form id="signup-form" class="auth-form" novalidate autocomplete="on">
+ <label class="field-label" for="su-cs">Call sign</label>
+ <input id="su-cs" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16" inputmode="text" enterkeyhint="next" required aria-describedby="su-cs-msg"/>
+ <p class="field-msg" id="su-cs-msg" aria-live="polite">Your name on the leaderboard. 3–16 characters, no spaces.</p>
+ <div class="ideas" id="su-ideas" hidden></div>
+ <label class="field-label" for="su-pw">Password</label>
+ <div class="pw-row"><input id="su-pw" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="200" enterkeyhint="go" required aria-describedby="su-pw-msg"/><button type="button" class="eye" data-eye="su-pw" aria-label="Show password" aria-pressed="false">👁</button></div>
+ <p class="field-msg" id="su-pw-msg" aria-live="polite">At least 8 characters. A short phrase is easy to remember.</p>
+ <div id="su-turnstile" class="turnstile" hidden></div>
+ <button id="su-go" class="primary action-button go" type="submit">Start playing <span>▶</span></button>
+ <p class="fine-print legal">By playing you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+</form>
+
+<form id="login-form" class="auth-form" novalidate autocomplete="on" hidden>
+ <label class="field-label" for="li-cs">Call sign</label>
+ <input id="li-cs" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16" enterkeyhint="next" required/>
+ <label class="field-label" for="li-pw">Password</label>
+ <div class="pw-row"><input id="li-pw" name="password" type="password" autocomplete="current-password" maxlength="200" enterkeyhint="go" required/><button type="button" class="eye" data-eye="li-pw" aria-label="Show password" aria-pressed="false">👁</button></div>
+ <label class="keep"><input id="li-keep" type="checkbox" checked/> Keep me signed in</label>
+ <button id="li-go" class="primary action-button go" type="submit">Log in <span>▶</span></button>
+ <button type="button" class="linkish" id="forgot-open">Forgot password?</button>
+</form>
+
+<form id="forgot-form" class="auth-form" novalidate hidden>
+ <h2>Forgot your password?</h2>
+ <p class="fine-print">If you added a way back in, use it to get in, then set a new password in Settings:</p>
+ <ul class="ways"><li><b>Face ID, fingerprint or passkey</b>: use the Passkey button below.</li><li><b>Telegram</b> or <b>Google</b>: use those buttons below.</li><li id="forgot-email-li"><b>Recovery email</b>: we'll email you a reset link.</li></ul>
+ <div id="forgot-email-box">
+  <label class="field-label" for="fp-cs">Call sign</label>
+  <input id="fp-cs" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="16"/>
+  <button id="fp-go" class="primary action-button" type="submit">Email me a reset link <span>✉</span></button>
+ </div>
+ <p class="fine-print">No recovery method? A lost password can't be recovered automatically. Message <a href="https://t.me/LunarBattle" target="_blank" rel="noopener">support</a> with your call sign (send <b>/support</b> to the bot) and we'll help if we can.</p>
+ <button type="button" class="linkish" id="forgot-back">← Back to log in</button>
+</form>
+
+<form id="reset-form" class="auth-form" novalidate hidden>
+ <h2>Set a new password</h2>
+ <label class="field-label" for="rs-pw">New password</label>
+ <div class="pw-row"><input id="rs-pw" type="password" autocomplete="new-password" minlength="8" maxlength="200" required/><button type="button" class="eye" data-eye="rs-pw" aria-label="Show password" aria-pressed="false">👁</button></div>
+ <button id="rs-go" class="primary action-button" type="submit">Save and play <span>▶</span></button>
+</form>
+
+<p id="login-status" class="status" role="status" aria-live="polite"></p>
+
+<div class="others" id="others">
+ <div class="auth-divider"><span>or</span></div>
+ <div class="other-row">
+  <button type="button" class="other" id="start-telegram">✈ Continue with Telegram</button>
+  <a class="other" id="start-google" href="/auth/google/start" hidden>G Continue with Google</a>
+  <button type="button" class="other" id="passkey-btn" hidden>🔑 <span id="passkey-label">Passkey</span></button>
+ </div>
+ <p class="fine-print" id="passkey-note" hidden></p>
+</div>
+
+<section class="telegram-box" id="telegram-box" hidden aria-label="Telegram sign-in">
+ <p>Open the LUNAR bot in Telegram and press <b>Start</b>, then come back here. This page continues by itself.</p>
+ <a id="open-bot" class="primary" href="#" target="_blank" rel="noopener">Open LUNAR bot <span>↗</span></a>
+ <div class="backup" id="manual"><p>Already in the bot? Send this one-time command:</p><div class="code-row"><code id="login-command"></code><button id="copy-code" type="button">COPY</button></div></div>
+ <button id="retry-login" class="retry" type="button" hidden>Get a new Telegram code</button>
 </section>
-<p id="login-status" role="status" aria-live="polite">Ready for independent website access.</p>
-<div class="signed-in-box" id="existing-account" hidden><p id="existing-message"></p><a id="continue-game" class="primary" href="play.html#play">CONTINUE TO THE GAME <span>↗</span></a><a id="secure-original" class="primary" href="account.html" hidden>SECURE EXISTING TELEGRAM PILOT <span>↗</span></a><button id="switch-account" class="retry" type="button">SIGN OUT / CREATE A DIFFERENT ACCOUNT</button></div>
-<section class="optional-telegram" aria-label="Optional Telegram sign-in">
-<h2>TELEGRAM (OPTIONAL)</h2>
-<p>Prefer Telegram? You can still sign in through the bot. A Lunar account does not require it, and you can link Telegram later from Account Settings.</p>
-<button id="start-telegram" class="retry" type="button">USE TELEGRAM SIGN-IN</button>
-<a id="open-bot" class="primary" href="#" target="_blank" rel="noopener" hidden>OPEN LUNAR BOT <span>↗</span></a>
-<div class="backup" id="manual" hidden><p>Already chatting with @LunarWarMachinesBot? Send this one-time command:</p><div class="code-row"><code id="login-command"></code><button id="copy-code" type="button">COPY</button></div></div>
-<button id="retry-login" class="retry" type="button" hidden>GENERATE NEW TELEGRAM SIGN-IN</button>
+
+<div class="signed-in-box" id="existing-account" hidden><p id="existing-message"></p><a id="continue-game" class="primary" href="play.html#play">Continue playing <span>▶</span></a><button id="switch-account" class="retry" type="button">Log out / use another account</button></div>
 </section>
-<div class="alternate"><a href="./">← BACK TO LUNAR</a><a href="account.html">ACCOUNT SETTINGS</a></div>
-</section><footer>THE MOON IS JUST THE BEGINNING <span>// LUNAR WAR MACHINES</span></footer>
+<footer>THE MOON IS JUST THE BEGINNING <span>// LUNAR WAR MACHINES</span> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></footer>
 </main></body></html>

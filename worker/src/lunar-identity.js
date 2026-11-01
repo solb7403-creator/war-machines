@@ -7,6 +7,8 @@ import {
 } from '@simplewebauthn/server';
 import {dbGet,dbPut,dbPatch,dbUrl,cleanName,hex} from './db.js';
 import {claimOnce} from './eco.js';
+import {csProblem,csKey} from './callsign.js';
+import {csAvailable,claimKey,csOf,signupGate,signupDone} from './accounts.js';
 import {
   WEB_LOGIN_COOKIE,record,getCookie,sameOrigin,limited,origin,json,cookie,random,
   webIdentity,issueLunarWebSession
@@ -35,7 +37,7 @@ async function parse(req){
  return JSON.parse(raw);
 }
 const sha=async data=>hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data)));
-const userOf=(pid,name)=>({id:Number(pid.slice(3)),first_name:name,username:name,web_auth:true,lunar_account:true});
+const userOf=(pid,name,cs)=>({id:Number(pid.slice(3)),first_name:name,username:name,callsign:cs||undefined,web_auth:true,lunar_account:true});
 const credentialPath=async id=>'passkeys/'+await sha(id);
 const sessionResult=(env,u,pid)=>issueLunarWebSession(env,u,pid);
 export async function resolveTelegramAccount(env,id){
@@ -80,8 +82,11 @@ export async function lunarAuth(req,env){
   const existing=await webIdentity(req,env,false);
   if(existing)return bad('already_signed_in',409);
   let b;try{b=await parse(req);}catch{return bad('bad_json');}
-  const name=cleanName({first_name:String(b.name||'').trim()});
-  if(!/^[A-Za-z0-9][A-Za-z0-9 ._-]{2,15}$/.test(String(b.name||'')))return bad('Choose a pilot name between 3 and 16 characters (letters, numbers, spaces, . _ -).');
+  // a passkey account picks a unique call sign too (same rules as call sign + password)
+  const name=String(b.name||'');
+  const problem=csProblem(name);if(problem)return json({error:'callsign',field:'cs',msg:problem.msg},400);
+  if(!await csAvailable(env,name))return json({error:'taken',field:'cs',msg:'That call sign is taken.'},409);
+  const gate=await signupGate(env,req,b,Date.now());if(gate.stop)return gate.stop;
   const pid=newPilotID();
   const options=await generateRegistrationOptions({
    rpName:'LUNAR: War Machines',rpID:rpID(env),userID:new TextEncoder().encode(pid),userName:pid,
@@ -90,7 +95,7 @@ export async function lunarAuth(req,env){
   });
   const prior=getCookie(req,WEB_LOGIN_COOKIE);if(prior)await record(env,prior,'revoke').catch(()=>{});
   const browser=random(),now=Date.now();
-  const issued=await record(env,browser,'issue',{kind:'challenge',flow:'passkey_register',challenge:options.challenge,pid,name,created:now,expires:now+300000});
+  const issued=await record(env,browser,'issue',{kind:'challenge',flow:'passkey_register',challenge:options.challenge,pid,name,gate:{iph:gate.iph,did:gate.did,ipN:gate.ipN,devN:gate.devN,day:gate.day,prev:gate.prev},inv:/^[a-hjkmnp-z2-9]{8}$/.test(String(b.inv||''))?b.inv:null,created:now,expires:now+300000});
   if(!issued.ok)return bad('session_store',503);
   return cookieSet(json({ok:true,options}),WEB_LOGIN_COOKIE,browser,300);
  }
@@ -109,13 +114,18 @@ export async function lunarAuth(req,env){
    if(!verified.verified||!verified.registrationInfo?.credential)return bad('identity',401);
    const credential=verified.registrationInfo.credential;
    const path=await credentialPath(credential.id);
-   const account={id:stored.pid,name:stored.name,created:Date.now(),type:'passkey',credentialIDs:[credential.id]};
+   const now=Date.now();
+   if(!await claimKey(env,stored.name,stored.pid,now))return json({error:'taken',field:'cs',msg:'That call sign was just taken. Pick another and try again.'},409);
+   const account={id:stored.pid,name:stored.name,created:now,type:'passkey',credentialIDs:[credential.id]};
    const owner=await claimOnce(env,'lunarAccounts/'+stored.pid,account);
    if(!owner.ok)return bad('account_collision',409);
-   const storedKey={pid:stored.pid,id:credential.id,publicKey:b64u(credential.publicKey),counter:credential.counter||0,transports:credential.transports||[],created:Date.now()};
+   const storedKey={pid:stored.pid,id:credential.id,publicKey:b64u(credential.publicKey),counter:credential.counter||0,transports:credential.transports||[],created:now};
    const claimed=await claimOnce(env,path,storedKey);
    if(!claimed.ok)return bad('credential_already_registered',409);
-   return await sessionResult(env,userOf(stored.pid,stored.name),stored.pid);
+   await dbPut(env,'cs/'+stored.pid,{n:stored.name,k:csKey(stored.name),t:now,c:0});
+   if(stored.gate)await signupDone(env,stored.gate,stored.pid,stored.name,now).catch(()=>{});
+   const u=userOf(stored.pid,stored.name,stored.name);if(stored.inv)u.inv=stored.inv;
+   return await sessionResult(env,u,stored.pid);
   }catch{return bad('passkey_verification_failed',401);}
  }
 
@@ -222,7 +232,48 @@ export async function lunarAuth(req,env){
        body:JSON.stringify({...latest,counter:checked.authenticationInfo.newCounter})});
     }
    }
-   return await sessionResult(env,userOf(saved.pid,account.name),saved.pid);
+   const cs=await csOf(env,saved.pid);
+   return await sessionResult(env,userOf(saved.pid,cs?cs.n:account.name,cs?cs.n:null),saved.pid);
+  }catch{return bad('passkey_verification_failed',401);}
+ }
+
+ // add Face ID / fingerprint / Windows Hello to an account that already has a password (optional extra security)
+ if(path==='/auth/lunar/addkey/options'){
+  const identity=await webIdentity(req,env);
+  if(!identity?.user?.lunar_account)return bad('lunar_account_required',403);
+  const account=await dbGet(env,'lunarAccounts/'+identity.pid);
+  if(!account||account.id!==identity.pid)return bad('account',403);
+  if((account.credentialIDs||[]).length>=10)return bad('too_many_passkeys',409);
+  const cs=await csOf(env,identity.pid),name=cs?cs.n:account.name;
+  const options=await generateRegistrationOptions({
+   rpName:'LUNAR: War Machines',rpID:rpID(env),userID:new TextEncoder().encode(identity.pid),userName:name,userDisplayName:name,
+   attestationType:'none',supportedAlgorithmIDs:[-7,-257],excludeCredentials:(account.credentialIDs||[]).map(id=>({id})),
+   authenticatorSelection:{residentKey:'required',userVerification:'required'}
+  });
+  const browser=random(),now=Date.now();
+  const issued=await record(env,browser,'issue',{kind:'challenge',flow:'passkey_add',challenge:options.challenge,pid:identity.pid,sessionHash:await sha(identity.token),created:now,expires:now+300000});
+  if(!issued.ok)return bad('session_store',503);
+  return cookieSet(json({ok:true,options}),WEB_LOGIN_COOKIE,browser,300);
+ }
+ if(path==='/auth/lunar/addkey/verify'){
+  const identity=await webIdentity(req,env);
+  if(!identity?.user?.lunar_account)return bad('lunar_account_required',403);
+  const browser=getCookie(req,WEB_LOGIN_COOKIE);if(!browser)return bad('expired',401);
+  const response=await record(env,browser,'consume');if(!response.ok)return bad('expired',401);
+  const stored=await response.json();
+  if(stored.flow!=='passkey_add'||stored.pid!==identity.pid||stored.sessionHash!==await sha(identity.token))return bad('challenge',401);
+  let b;try{b=await parse(req);}catch{return bad('bad_json');}
+  try{
+   if(!b.credential||!keyPattern.test(String(b.credential.id||'')))return bad('credential',400);
+   const verified=await verifyRegistrationResponse({response:b.credential,expectedChallenge:stored.challenge,expectedOrigin:origin(env),
+    expectedRPID:rpID(env),requireUserVerification:true,supportedAlgorithmIDs:[-7,-257]});
+   if(!verified.verified||!verified.registrationInfo?.credential)return bad('identity',401);
+   const credential=verified.registrationInfo.credential,keyPath=await credentialPath(credential.id);
+   const claimed=await claimOnce(env,keyPath,{pid:identity.pid,id:credential.id,publicKey:b64u(credential.publicKey),counter:credential.counter||0,transports:credential.transports||[],created:Date.now()});
+   if(!claimed.ok)return bad('credential_already_registered',409);
+   const account=await dbGet(env,'lunarAccounts/'+identity.pid);
+   await dbPatch(env,'lunarAccounts/'+identity.pid,{credentialIDs:[...(account?.credentialIDs||[]),credential.id].slice(-10)});
+   return json({ok:true});
   }catch{return bad('passkey_verification_failed',401);}
  }
 
@@ -261,7 +312,8 @@ export async function lunarAuth(req,env){
   const identity=await webIdentity(req,env);
   if(!identity)return bad('signed_out',401);
   const acc=identity.user?.lunar_account?await dbGet(env,'lunarAccounts/'+identity.pid):null;
-  return json({ok:true,pid:identity.pid,kind:identity.user?.lunar_account?'lunar':'telegram',name:acc?.name||cleanName(identity.user),telegramLinked:!!acc?.telegramId,telegramId:acc?.telegramId||null,telegramOrigin:acc?.source==='telegram',canUpgrade:!identity.user?.lunar_account&&/^tg_[0-9]{3,15}$/.test(identity.pid)});
+  const cs=await csOf(env,identity.pid);
+  return json({ok:true,pid:identity.pid,kind:identity.user?.lunar_account?'lunar':'telegram',name:cs?cs.n:acc?.name||cleanName(identity.user),callsign:cs?cs.n:null,telegramLinked:!!acc?.telegramId,telegramId:acc?.telegramId||null,telegramOrigin:acc?.source==='telegram',canUpgrade:!identity.user?.lunar_account&&/^tg_[0-9]{3,15}$/.test(identity.pid)});
  }
 
  return bad('not_found',404);

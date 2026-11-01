@@ -42,6 +42,7 @@ jobs:
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/web-auth.mjs
           node dev/tests/wtest/lunar-identity.mjs
+          node dev/tests/wtest/accounts.mjs
           node dev/tests/wtest/lab.mjs
           node dev/tests/wtest/lab-battle.mjs
           node dev/tests/wtest/ticket-reliability.mjs
@@ -76,6 +77,13 @@ jobs:
           FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
           TELEGRAM_OIDC_CLIENT_SECRET: ${{ secrets.TELEGRAM_OIDC_CLIENT_SECRET }}
           WEB_LOGIN_ENABLED: ${{ vars.WEB_LOGIN_ENABLED }}
+          # optional extras: each switches itself on once its secret exists (Google sign-in, bot check, recovery email)
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
         run: |
           set -o pipefail
           run() { "$@" 2>&1 | tee -a out.txt || { m=$(tail -c 2500 out.txt | sed 's/\x1b\[[0-9;]*m//g' | tr '\n' ' '); echo "::error::$m"; exit 1; }; }
@@ -94,6 +102,11 @@ jobs:
           else
             echo "::warning::Website redirect login still needs TELEGRAM_OIDC_CLIENT_SECRET in GitHub Actions secrets"
           fi
+          # Optional extras. A missing secret just leaves that option off (the game says "coming soon" or hides it).
+          for NAME in GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET TURNSTILE_SITE_KEY TURNSTILE_SECRET RESEND_API_KEY RESEND_FROM; do
+            VAL=$(printenv "$NAME" | tr -d '\r\n')
+            if [ -n "$VAL" ]; then printf '%s' "$VAL" | run npx -y wrangler@4 secret put "$NAME"; echo "::notice::$NAME set (option on)"; else echo "::notice::$NAME not set (that option stays off)"; fi
+          done
           URL=$(grep -oE 'https://lunar-api\.[a-z0-9-]+\.workers\.dev' out.txt | head -1)
           echo "WORKER_URL=$URL" >> $GITHUB_ENV
           echo "::notice::WORKER_URL=$URL"

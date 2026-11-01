@@ -681,6 +681,8 @@ function openSettings(){
   '<button class="q" data-act="info" data-arg="howto"><div class="grow"><div class="t">How to play</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="wiki"><div class="grow"><div class="t">Wiki and tokenomics</div></div><span class="chev">›</span></button>'+
   '<button class="q" data-act="terms"><div class="grow"><div class="t">Terms and purchase help</div><div class="p">Refunds and payment problems: send /paysupport to the bot</div></div><span class="chev">›</span></button>'+
+  (ACCOUNT_OK?'<button class="q" data-act="cschange"><div class="grow"><div class="t">Call sign</div><div class="p">'+(CALLSIGN?esc(CALLSIGN):'Not chosen yet')+'</div></div><span class="chev">›</span></button>':'')+
+  (IN_WEB?'<a class="q" href="web/account.html"><div class="grow"><div class="t">Account and security</div><div class="p">Password, Face ID / passkey, recovery, log out</div></div><span class="chev">›</span></a>':'')+
   '<button class="q" data-act="copyid"><div class="grow"><div class="t">Player ID</div><div class="p">'+esc(playerKey())+(IN_TG?', '+esc(tgName(TG_USER)):'')+'</div></div><span class="mut">Copy</span></button>'+
   '</div><p class="dimtxt" style="margin-top:12px">Build '+esc(window.BUILD||'dev')+'</p>');
 }
@@ -705,6 +707,9 @@ function openAdmin(){
    (A.stats?'<div class="kv"><div><b class="num">'+fmtNum(A.stats.newToday)+'</b><span>New today</span></div><div><b class="num">'+A.stats.back2+'%</b><span>Came back day 2</span></div><div><b class="num">'+A.stats.back5of7+'%</b><span>5+ of 7 days</span></div></div>'+
     '<div class="kv"><div><b class="num">'+A.stats.avgMatches+'</b><span>Matches per player</span></div><div><b class="num">'+A.stats.conv+'%</b><span>Paid</span></div><div><b class="num">$'+A.stats.arppu+'</b><span>Per payer</span></div></div>'+
     '<p class="dimtxt" style="margin-top:6px">Retention from the top 1,000 players. Paid = payers out of all players.</p>':''))+
+   (A.funnel&&A.funnel.length?'<h3 style="margin-top:16px;font-size:16px">Signup funnel (last 7 days)</h3><div class="list" style="font-size:13px"><div class="row" style="gap:6px"><b class="grow">Day</b><b>Visits</b><b>Signup page</b><b>Accounts</b><b>1st match</b><b>Day 2</b></div>'+
+    A.funnel.map(f=>'<div class="row" style="gap:6px"><span class="grow">'+new Date(f.day*864e5).toISOString().slice(5,10)+'</span><span class="num">'+fmtNum(f.land)+'</span><span class="num">'+fmtNum(f.view)+'</span><span class="num">'+fmtNum(f.made)+'</span><span class="num">'+fmtNum(f.first)+'</span><span class="num">'+fmtNum(f.ret2)+'</span></div>').join('')+
+    '</div><p class="dimtxt" style="margin-top:6px">Plain daily counts, no personal data. Day 2 = players who came back on a second day.</p>':'')+
    (A.channel===false?'<p class="mut" style="margin-top:8px"><b>Channel check is off.</b> Add the bot as an admin of '+esc(TG_URL.replace('https://',''))+' (Manage channel, Administrators, Add admin, search the bot). Until then the Join the channel quest pays without checking.</p>':A.channel?'<p class="dimtxt" style="margin-top:8px">Channel check is on: the Join the channel quest pays members only.</p>':'')+
    (A.flagged?'<h3 style="margin-top:16px;font-size:16px">Flagged for review ('+A.flagged.length+')</h3>'+
     (A.flagged.length?'<div class="list">'+A.flagged.map(f=>'<div class="row" style="gap:8px;align-items:flex-start;margin-top:8px"><div class="grow"><b>'+esc(f.n)+'</b> <span class="dimtxt">'+esc(f.id)+'</span><div class="dimtxt">'+f.why.map(esc).join('<br>')+'</div></div><button class="btn sm btn-quiet" data-act="flagclear" data-arg="'+esc(f.id)+'">Clear</button></div>').join('')+'</div>':'<p class="mut">Nobody flagged.</p>')+
@@ -1316,3 +1321,76 @@ function updateLabPreview(){
  const c=$('#lab-preview'),w=c.clientWidth||260,h=typeof Environment3D!=='undefined'&&Environment3D.active()?220:180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
 }
 document.addEventListener('change',e=>{if(e.target.closest('.labform')?.querySelector('#lab-weapon')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
+
+// ---------- call sign: the public name everywhere (leaderboard, battles, squads) ----------
+// Players without one (Telegram pilots, new Google/Telegram website accounts, older passkey accounts) pick one on open.
+let CALLSIGN=null,csInfo=null,csTimer=null,csSeq=0;
+const CS_OK=/^[A-Za-z0-9@_\-.!#$*+~^?=%:]{3,16}$/;
+function csLocalMsg(v){
+ if(/\s/.test(v))return 'No spaces, please. Try '+v.replace(/\s+/g,'_').slice(0,16)+'.';
+ if(/[^\x21-\x7e]/.test(v))return 'Plain keyboard letters, numbers and symbols only (no emoji or accents).';
+ if(v.length<3)return 'At least 3 characters.';
+ if(!CS_OK.test(v))return 'Letters, numbers and @ _ - . ! # $ * + ~ ^ ? = % : only.';
+ return '';
+}
+function setCallsign(cs){CALLSIGN=cs||null;if(TG_USER){if(cs)TG_USER.callsign=cs;else delete TG_USER.callsign;}if(IN_WEB&&window.LUNAR_WEB?.user){window.LUNAR_WEB.user.callsign=cs||undefined;const p=document.querySelector('#web-pilot');if(p&&cs)p.textContent=cs;}}
+async function askCallsign(force){
+ if(!ACCOUNT_OK||findOv('callsign'))return;
+ if(!force){
+  if(window.LUNAR_NO_CS)return;   // the older screen tests: they test other flows
+  // never during a battle, and a brand-new pilot fights their coached first match before naming themselves
+  const fresh=typeof save!=='undefined'&&save&&!save.welcomed&&(save.mp||0)===0;
+  if(['play','vs','round'].includes(state)||fresh||findOv('welcome')){setTimeout(()=>askCallsign(false),5000);return;}
+ }
+ let info=null;try{info=await api('/api/callsign',{op:'info'});}catch(e){return;}
+ csInfo=info;if(info.cs&&!force){setCallsign(info.cs);return;}
+ const first=!info.cs,start=first?(info.suggest||(info.ideas||[])[0]||''):info.cs;
+ openOverlay('sheet','<h3>'+(first?'Choose your call sign':'Change your call sign')+'</h3>'+
+  '<p class="mut">'+(first?'Your name on the leaderboard, in battles and squads.':'You can change it once in your first 7 days.')+' 3–16 characters, no spaces. Shown exactly as you type it.</p>'+
+  '<form class="csform" id="cs-form" autocomplete="on"><input id="cs-in" maxlength="16" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" value="'+esc(start)+'" aria-label="Call sign" aria-describedby="cs-note"><p id="cs-note" class="dimtxt" aria-live="polite"></p><div id="cs-ideas" class="cs-ideas"></div></form>'+
+  '<button class="btn btn-go block" data-act="cssave" style="margin-top:10px">Save call sign</button>'+
+  (first&&IN_TG?'<button class="btn btn-quiet block" data-act="cslogin" style="margin-top:8px">Signed up on the website? Log in with your call sign</button>':''),{key:'callsign',sticky:first});
+ setTimeout(()=>{const i=$('#cs-in');if(i){csCheck(true);}},50);
+}
+function csIdeasHtml(list){const box=$('#cs-ideas');if(!box)return;box.innerHTML=(list||[]).map(s=>'<button class="btn sm btn-quiet" data-act="cspick" data-arg="'+esc(s)+'">'+esc(s)+'</button>').join('');}
+async function csCheck(now){
+ const i=$('#cs-in');if(!i)return;const v=i.value,local=csLocalMsg(v),seq=++csSeq,note=$('#cs-note');
+ clearTimeout(csTimer);
+ if(local){note.textContent=local;note.className='dimtxt cs-bad';csIdeasHtml([]);return;}
+ if(csInfo&&csInfo.cs===v){note.textContent='This is your call sign.';note.className='dimtxt';return;}
+ note.textContent='Checking…';note.className='dimtxt';
+ csTimer=setTimeout(async()=>{
+  try{const r=await api('/api/callsign',{op:'check',cs:v});if(seq!==csSeq)return;
+   if(r.available){note.textContent='✓ '+v+' is available';note.className='dimtxt cs-good';csIdeasHtml([]);}
+   else{note.textContent='✗ '+(r.msg||'Taken.')+(r.ideas&&r.ideas.length?' Try:':'');note.className='dimtxt cs-bad';csIdeasHtml(r.ideas);}
+  }catch(e){if(seq===csSeq){note.textContent=e.message==='rate'?'Slow down a little.':'Could not check right now.';}}
+ },now?0:450);
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='cs-in')csCheck(false);});
+document.addEventListener('submit',e=>{const f=e.target;if(f&&(f.id==='cs-form'||f.id==='tl-form')){e.preventDefault();(f.id==='cs-form'?ACT.cssave:ACT.tglinkgo)();}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='cs-in'){e.preventDefault();ACT.cssave();}if(e.key==='Enter'&&e.target&&(e.target.id==='tl-pw'||e.target.id==='tl-cs')){e.preventDefault();ACT.tglinkgo();}});
+ACT.cspick=s=>{const i=$('#cs-in');if(i){i.value=s;csCheck(true);}};
+ACT.cssave=async()=>{
+ const i=$('#cs-in');if(!i)return;const v=i.value,local=csLocalMsg(v);if(local){showToast(local);return;}
+ try{
+  const r=await apiFetch('/api/callsign',{op:'set',cs:v}).then(x=>x.json());
+  if(!r.ok){const note=$('#cs-note');if(note){note.textContent='✗ '+(r.msg||'Could not save.');note.className='dimtxt cs-bad';}csIdeasHtml(r.ideas);return;}
+  setCallsign(r.cs);const ov=findOv('callsign');if(ov)closeOverlay(ov);showToast('Call sign saved: '+r.cs);syncPlayer();
+  if(IN_WEB&&typeof window.lunarAfterCallsign==='function')window.lunarAfterCallsign();
+ }catch(e){showToast('Could not save right now. Try again.');}
+};
+ACT.cschange=()=>askCallsign(true);
+// inside Telegram: join this Telegram account to an account made on the website (only while this one has no progress)
+ACT.cslogin=()=>openOverlay('sheet','<h3>Log in with your call sign</h3><p class="mut">Use the call sign and password you made on the website. Your progress there comes here, and both stay in sync.</p>'+
+ '<form class="csform" id="tl-form" autocomplete="on"><input id="tl-cs" name="username" maxlength="16" placeholder="Call sign" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Call sign">'+
+ '<input id="tl-pw" name="password" type="password" maxlength="200" placeholder="Password" autocomplete="current-password" aria-label="Password"><p id="tl-note" class="dimtxt" aria-live="polite"></p></form>'+
+ '<button class="btn btn-go block" data-act="tglinkgo" style="margin-top:10px">Log in</button>',{key:'tglink'});
+ACT.tglinkgo=async()=>{
+ const cs=($('#tl-cs')||{}).value||'',pw=($('#tl-pw')||{}).value||'',note=$('#tl-note');
+ if(!cs||!pw){if(note)note.textContent='Enter your call sign and password.';return;}
+ if(note)note.textContent='Logging in…';
+ try{const r=await apiFetch('/api/tglink',{cs,pw}).then(x=>x.json());
+  if(!r.ok){if(note){note.textContent=r.msg||'Could not log in.';note.className='dimtxt cs-bad';}return;}
+  showToast('Logged in as '+r.cs+'. Loading your account…');try{localStorage.removeItem(SAVE_KEY);}catch(e){}setTimeout(()=>location.reload(),600);
+ }catch(e){if(note)note.textContent='No connection. Try again.';}
+};

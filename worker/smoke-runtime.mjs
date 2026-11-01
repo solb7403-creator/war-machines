@@ -66,6 +66,17 @@ try{
  assert.equal((await callWeb('/auth/session',undefined,sid)).status,401);
  console.log('WEB RUNTIME OK: real SQLite sessions/nonce replay/logout, RS256 identity, shared authoritative account and authenticated WebSocket');
 
+ // call sign + password in the real runtime: PBKDF2 (100k) in a SQLite Durable Object, session index, lockout writes
+ const made=await callWeb('/auth/acct/signup',{cs:'Smoke@Ace',pw:'moon tank 42'});assert.equal(made.status,200,await made.clone().text());
+ const mc=made.headers.getSetCookie().find(c=>c.startsWith('__Host-lunar-session=')).split(';')[0];
+ assert.equal((await (await callWeb('/auth/session',undefined,mc)).json()).user.callsign,'Smoke@Ace');
+ assert.equal((await callWeb('/auth/acct/login',{cs:'smoke@ace',pw:'wrong one 1'})).status,401);
+ const back=await callWeb('/auth/acct/login',{cs:'smoke@ace',pw:'moon tank 42'});assert.equal(back.status,200);
+ const bc=back.headers.getSetCookie().find(c=>c.startsWith('__Host-lunar-session=')).split(';')[0],bk=(await back.json()).csrf;
+ assert.equal((await callWeb('/auth/acct/password',{cur:'moon tank 42',pw:'new moon 77'},bc,bk)).status,200);
+ assert.equal((await callWeb('/auth/session',undefined,mc)).status,401,'password change ends other sessions (session index DO)');
+ console.log('ACCOUNTS RUNTIME OK: call sign signup/login, PBKDF2 in workerd Durable Object, sessions ended on password change');
+
  assert.ok(db.log.some(x=>x.startsWith('GET /eco/')),'join exercised actual authoritative reads');
  console.log('RUNTIME FIXTURE OK: account-read outage rejected; isolated Firebase only; real workerd/DO/WebSockets');
 }finally{await mf.dispose();}

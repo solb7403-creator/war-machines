@@ -76,12 +76,12 @@ export const ctxOf = (pid, now) => ({ day: dayOf(now), week: weekOf(now), rnd: M
 const safeKey = (s) => String(s).replace(/[.#$\[\]\/|]/g, "_").slice(0, 100);
 
 // ---- conditional reads and writes ----
-async function readTag(env, path) {
+export async function readTag(env, path) {
   const r = await fetch(dbUrl(env, path), { headers: { "X-Firebase-ETag": "true" } });
   if (!r.ok) throw new Error("db get " + path + " " + r.status);
   return { v: await r.json(), tag: r.headers.get("ETag") || "" };
 }
-async function writeIf(env, path, value, tag) {
+export async function writeIf(env, path, value, tag) {
   // never print=silent here: Firebase refuses it on a conditional (if-match) write with a 400, which made every record
   // save fail (Oct 23). The reply echoes the record, a few KB, the price of a write that can't silently overwrite another
   const r = await fetch(dbUrl(env, path), { method: "PUT", headers: { "Content-Type": "application/json", "if-match": tag }, body: JSON.stringify(value) });
@@ -141,7 +141,7 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
       if (S.rq.n >= ECO.RL_MIN) return { abort: true, rate: true, S, X };
       S.rq.n++;
     }
-    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as };
+    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as, mp: S.mp | 0, days: S.days | 0 };
     const out = (await fn(S, X)) || {};
     if (out.abort) return { ...out, S, X };
     credit(S, before.e);
@@ -165,6 +165,9 @@ async function mirror(env, pid, S, isNew, before, now) {
   if (S.dailyPts !== before.d || isNew) up[`dly/${S.dailyDay}/${pid}`] = { s: S.dailyPts, n: S.nm || "Pilot", ...vx };
   if (S.weeklyPts !== before.w || isNew) up[`wly/${S.weeklyNum}/${pid}`] = { s: S.weeklyPts, n: S.nm || "Pilot", ...vx };
   if (isNew) up["meta/n"] = { ".sv": { increment: 1 } };
+  // the signup funnel (counts only): first match finished, came back on a second day
+  if (before.mp === 0 && (S.mp | 0) >= 1) up[`fn/${dayOf(now)}/first`] = { ".sv": { increment: 1 } };
+  if (before.days < 2 && (S.days | 0) >= 2) up[`fn/${dayOf(now)}/ret2`] = { ".sv": { increment: 1 } };
   // active pilots for the launch phase: counted once, the day a pilot reaches 2 verified match days (no scans)
   if ((before.vd | 0) < R.REF_ACTIVE_DAYS && (S.vd | 0) >= R.REF_ACTIVE_DAYS) up["meta/ap"] = { ".sv": { increment: 1 } };
   if (S.as !== before.as) up[`ads/${pid}`] = S.as || null;   // the points-pool board reads this small index
