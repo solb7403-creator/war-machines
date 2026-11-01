@@ -747,13 +747,15 @@ function ecoRefTrack(S,X,e0,f0){
  while(rms.length<REF_MS.length&&(S.vd|0)>=REF_MS[rms.length].days&&ep>=REF_MS[rms.length].pts)rms.push(x);
  S.rms=rms;
 }
-// what a recruit's row owes you. r: {id, rb (phase-weighted play points), rms (phase pinned per milestone reached)}
+// what a recruit's row owes you. r: {id, rb (phase-weighted play points), rms (phase pinned per milestone reached)}.
+// Milestone points are owed as an amount (mp = paid so far), so a big one pays in parts when the day's room is short
+const refMsTotal=rms=>{let t=0;for(let i=0;i<Math.min(REF_MS.length,rms.length);i++)t+=Math.round(REF_MS[i].r*(Number(rms[i])||1));return t;};
 function ecoRefOwed(S,r){
- const c=(S.refC||{})[r.id]||{m:0,seen:0};let m=c.m||0,ms=0;const rms=Array.isArray(r.rms)?r.rms:[];
- while(m<REF_MS.length&&m<rms.length){ms+=Math.round(REF_MS[m].r*(Number(rms[m])||1));m++;}
- const base=typeof r.rb==='number'?r.rb:0;
+ const c=(S.refC||{})[r.id]||{m:0,seen:0};const rms=Array.isArray(r.rms)?r.rms:[];
+ const paid=typeof c.mp==='number'?c.mp:REF_MS.slice(0,c.m||0).reduce((t,M)=>t+M.r,0);   // older records: count milestones paid at 1x
+ const ms=Math.max(0,refMsTotal(rms)-paid),base=typeof r.rb==='number'?r.rb:0;
  const pc=Math.max(0,Math.floor((base-(c.seen||0))*REF_PCT));
- return {ms,pct:pc,m,tot:ms+pc};
+ return {ms,pct:pc,m:Math.max(c.m||0,Math.min(REF_MS.length,rms.length)),paid,tot:ms+pc};
 }
 const ecoPctRoom=(S,X)=>S.refPD&&S.refPD.d===X.day?Math.max(0,REF_PCT_CAP-S.refPD.a):REF_PCT_CAP;
 // your own welcome bonus: your referrer is on record and you have 2 verified match days
@@ -764,8 +766,9 @@ function ecoSquad(S,rows,X,me,held){
  let room=capRoom(S,X),got=0,welcome=0;
  if(refWelcomeDue(S,me,held)&&room>=REF_WELCOME){S.refWelcome=true;got+=REF_WELCOME;room-=REF_WELCOME;welcome=REF_WELCOME;}
  let pr=ecoPctRoom(S,X),pgot=0;
- for(const r of rows||[]){if(r.held||held.includes(r.id))continue;const o=ecoRefOwed(S,r),pp=Math.min(o.pct,pr),t=o.ms+pp;if(!t)continue;if(t>room)break;
-  const c=S.refC[r.id]||{m:0,seen:0};S.refC[r.id]={m:o.m,seen:(c.seen||0)+Math.round(pp/REF_PCT)};   // unpaid % carries over to tomorrow
+ for(const r of rows||[]){if(room<=0)break;if(r.held||held.includes(r.id))continue;const o=ecoRefOwed(S,r);if(!o.tot)continue;
+  const pm=Math.min(o.ms,room),pp=Math.min(o.pct,pr,room-pm),t=pm+pp;if(!t)continue;
+  const c=S.refC[r.id]||{m:0,seen:0};S.refC[r.id]={m:o.m,mp:o.paid+pm,seen:(c.seen||0)+Math.round(pp/REF_PCT)};   // what doesn't fit today carries over
   got+=t;room-=t;pr-=pp;pgot+=pp;}
  if(pgot)S.refPD={d:X.day,a:(S.refPD&&S.refPD.d===X.day?S.refPD.a:0)+pgot};
  const pts=got?ecoAward(S,got,X):0;

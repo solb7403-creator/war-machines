@@ -209,5 +209,12 @@ await check('points-pool score: referral points at 7.5% (config range 5-10%)', (
   assert.equal(R.airdropScore(10000, 4000), 6000 + 300);
   assert.equal(R.adCfg({ refW: 0.5 }).refW, 0.1); assert.equal(R.adCfg({ refW: 0.01 }).refW, 0.05);
 });
+await check('a milestone bigger than today\'s room pays in parts and never blocks other recruits', () => {
+  const X = { day: 23000, week: 3286, rnd: () => 0.5, pk: 'tg_1' }, S = R.ecoNorm({}); R.ecoAward(S, 10000, X);   // 10,000 room left
+  const rows = [{ id: 'big', rb: 0, rms: [3, 3, 3] }, { id: 'small', rb: 0, rms: [1] }];   // 22,500 owed, then 500
+  assert.equal(R.ecoSquad(S, rows, X).pts, 10000); assert.equal(S.refC.big.mp, 10000);
+  assert.equal(R.ecoSquad(S, rows, { ...X, day: X.day + 1 }).pts, 13000, 'rest of big (12,500) + small (500)');
+  assert.equal(R.ecoSquad(S, rows, { ...X, day: X.day + 2 }).pts, 0);
+});
 console.log(`referrals: passed ${passed}, failed ${failed}`);
 if (failed) process.exitCode = 1;
