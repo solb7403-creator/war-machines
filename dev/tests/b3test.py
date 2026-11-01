@@ -51,6 +51,7 @@ async def main():
         await pg.wait_for_timeout(1100)
         rm=await pg.evaluate("()=>({state,modal:!!document.querySelector('.modal.rm'),w:series.w})")
         check(rm['state']=='round' and rm['modal'] and rm['w']==[1,0],'round screen missing '+json.dumps(rm))
+        await pg.evaluate("()=>{clearInterval(roundTimer);roundTimer=null;}")   # hold the 4 s auto-start while the swap is checked (slow CI screenshots)
         await pg.screenshot(path=OUT+'round_screen.png')
         btns=await pg.evaluate("()=>document.querySelectorAll('[data-act=rswap]').length")
         check(btns==3,'chassis swap buttons missing: '+str(btns))
