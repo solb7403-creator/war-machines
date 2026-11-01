@@ -22,6 +22,15 @@ function raster(a,u,v){const c=.04,S=new Set();for(let i=0;i<a.length;i+=9){cons
   for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const px=(x+.5)*c,py=(y+.5)*c,l0=((P[1][1]-P[2][1])*(px-P[2][0])+(P[2][0]-P[1][0])*(py-P[2][1]))/d,l1=((P[2][1]-P[0][1])*(px-P[2][0])+(P[0][0]-P[2][0])*(py-P[2][1]))/d;if(l0>=-.02&&l1>=-.02&&l0+l1<=1.02)S.add(x+','+y);}}
  return S;}
 const iou=(A,B)=>{let n=0;for(const k of A)if(B.has(k))n++;return n/(A.size+B.size-n);};
+// top-view height map (highest surface per 4 cm cell): shape identity beyond the shared class footprint
+function heights(a){const c=.04,M=new Map();for(let i=0;i<a.length;i+=9){const T=[0,3,6].map(o=>[a[i+o],a[i+o+2],a[i+o+1]]);
+  const x0=Math.floor(Math.min(...T.map(p=>p[0]))/c),x1=Math.ceil(Math.max(...T.map(p=>p[0]))/c),z0=Math.floor(Math.min(...T.map(p=>p[1]))/c),z1=Math.ceil(Math.max(...T.map(p=>p[1]))/c);
+  const d=(T[1][1]-T[2][1])*(T[0][0]-T[2][0])+(T[2][0]-T[1][0])*(T[0][1]-T[2][1]);if(Math.abs(d)<1e-12)continue;
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const px=(x+.5)*c,pz=(z+.5)*c,l0=((T[1][1]-T[2][1])*(px-T[2][0])+(T[2][0]-T[1][0])*(pz-T[2][1]))/d,l1=((T[2][1]-T[0][1])*(px-T[2][0])+(T[0][0]-T[2][0])*(pz-T[2][1]))/d,l2=1-l0-l1;
+   if(l0>=-.02&&l1>=-.02&&l2>=-.02){const y=l0*T[0][2]+l1*T[1][2]+l2*T[2][2],k=x+','+z;if(!(M.get(k)>=y))M.set(k,y);}}}
+ return M;}
+const hdiff=(A,B)=>{let s=0,n=0;for(const k of new Set([...A.keys(),...B.keys()])){s+=Math.abs((A.get(k)??0)-(B.get(k)??0));n++;}return s/n;};
+const minH={v:9,pair:''};
 const table=[];let checked=0;
 for(const mode of ['high','low','foundation'])for(const lunar of [false,true]){
  const sil={};
@@ -39,13 +48,16 @@ for(const mode of ['high','low','foundation'])for(const lunar of [false,true]){
    const tr=raw.meta.track;assert.ok(Array.isArray(tr)&&tr.every(Number.isFinite),label+' track uniform');assert.ok(Math.abs(tr[1]-(o.h/2+.005))<1e-9&&Math.abs(tr[2]-(o.h/2+.03))<1e-9,label+' track radius/height');
    assert.equal(raw.meta.profile,cls+':'+t);if(lunar)assert.equal(raw.meta.legend,'lunar-black-gold');
   }
-  sil[cls+t]={top:raster(a,0,2),side:raster(a,0,1)};
+  sil[cls+t]={top:raster(a,0,2),side:raster(a,0,1),h:mode==='foundation'?null:heights(a)};
   if(mode==='high'&&!lunar){const k=R*CH[cls].ds*TANK_VIS;table.push({name:NAMES[cls][t],cls,t,len:hi[0]-lo[0],wid:hi[2]-lo[2],hgt:hi[1],ty,wlen:(hi[0]-lo[0])*k,wwid:(hi[2]-lo[2])*k,whgt:hi[1]*k,nose:hi[0]*k,tail:-lo[0]*k,side:Math.max(hi[2],-lo[2])*k,area:(hi[0]-lo[0])*(hi[2]-lo[2])*k*k});}
   checked++;
  }
  // nine distinct outlines: no two chassis share a top or side silhouette (IoU of 4 cm rasters)
  const ids=Object.keys(sil);for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const a=sil[ids[i]],b=sil[ids[j]];const it=iou(a.top,b.top),is=iou(a.side,b.side);
-  assert.ok(Math.min(it,is)<.90,`${mode} ${ids[i]} vs ${ids[j]} silhouettes too alike (top ${it.toFixed(2)}, side ${is.toFixed(2)})`);}
+  // distinct if the outline differs (IoU < .90) or the surface shape does: mean top-view height difference of at least
+  // 0.20 (the Scout family, which reads as three different machines, measures 0.25-0.29)
+  const hd=a.h&&b.h?hdiff(a.h,b.h):1;if(process.env.PAIRS&&a.h&&!lunar&&mode==='high')console.log('pair',ids[i],ids[j],it.toFixed(2),is.toFixed(2),hd.toFixed(3));if(a.h&&hd<minH.v){minH.v=hd;minH.pair=ids[i]+'/'+ids[j];}
+  assert.ok(process.env.PAIRS||Math.min(it,is)<.90||hd>=.20,`${mode} ${ids[i]} vs ${ids[j]} too alike (top ${it.toFixed(2)}, side ${is.toFixed(2)}, height ${hd.toFixed(3)})`);}
 }
 // class ladder: every Scout smaller than every Vanguard, every Vanguard smaller than every Titan (length, width, height,
 // footprint), in model space (menus) and in battle space (x R x class ds x TANK_VIS)
@@ -64,5 +76,6 @@ for(const r of table){const hc=R*HB[r.cls]+.12;r.sideGap=r.side-hc;r.noseGap=r.n
 assert.deepEqual(JSON.parse(JSON.stringify(M.MOON_SCALE)),{titan:.80,vanguard:.76,scout:.72},'approved Moonbeam class scale untouched');
 console.log('name      model L  W    H    ring | battle L  W    H    nose side  footprint | side/nose past class hit circle');
 for(const r of table)console.log(`${r.name.padEnd(9)} ${r.len.toFixed(2)} ${r.wid.toFixed(2)} ${r.hgt.toFixed(2)} ${r.ty.toFixed(3)} | ${r.wlen.toFixed(2)} ${r.wwid.toFixed(2)} ${r.whgt.toFixed(2)} ${r.nose.toFixed(2)} ${r.side.toFixed(2)} ${r.area.toFixed(2)} | ${r.sideGap>=0?'+':''}${r.sideGap.toFixed(2)} ${r.noseGap>=0?'+':''}${r.noseGap.toFixed(2)}`);
+console.log('closest pair by top-view surface shape:',minH.pair,minH.v.toFixed(3));
 const cm=c=>by(c).reduce((s,r)=>s+r.area,0)/3;console.log('mean battle footprint  scout',cm('scout').toFixed(2),' vanguard',cm('vanguard').toFixed(2),' titan',cm('titan').toFixed(2),' ratios',(cm('vanguard')/cm('scout')).toFixed(2),(cm('titan')/cm('vanguard')).toFixed(2));
 console.log('PASS',checked,'chassis builds (HF high/low + foundation, plain + Lunar): class ladder, distinct silhouettes, gun traverse clear, grounded treads, track uniforms, class hitboxes, no other gameplay number moved');

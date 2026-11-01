@@ -202,7 +202,7 @@ const CHASSIS_VISUALS={
 };
 // Hull-plate fitting seat [x,y,z] on each family chassis' own fender/shelf surface (the Defender keeps its original seat).
 const FAM_FIT={'scout:0':[-.13,.44,.58],'scout:1':[-.55,.475,.63],'scout:2':[-.06,.425,.58],'vanguard:1':[-.30,.645,.88],'vanguard:2':[-.40,.72,1.12],
- 'titan:0':[-.20,.78,1.0],'titan:1':[-.40,.90,1.08],'titan:2':[-.80,.835,1.06]};
+ 'titan:0':[-.30,.84,1.0],'titan:1':[-.40,.90,1.08],'titan:2':[-.80,.875,1.06]};
 const WEAPON_VISUALS={
  pulse:[{tip:1.88,y:.245,bore:.087,kind:'segmented',width:.46},{tip:1.94,y:.25,bore:.10,kind:'capacitor',width:.49},{tip:2.02,y:.26,bore:.12,kind:'accelerator',width:.52}],
  twin:[{tip:1.74,y:.22,bore:.047,kind:'feed',width:.45},{tip:1.88,y:.23,bore:.055,kind:'drums',width:.50},{tip:1.98,y:.24,bore:.06,kind:'rotary',width:.55}],
@@ -414,83 +414,135 @@ function famChassis(cls,tier,P,team,gems,lunar,S){
   head(1.22,.58,.90,.10);tails(-1.33,.40,.72);tierBar(-.50,o.deck+.012,.55);
   anchor={hood:[.80,o.deck+.01],side:[-.56,.495,zo+.082]};coreAt=[-1.18,[-.24,0,.24]];
  }else if(key==='titan:0'){
-  // TITAN: heavy siege hull. Broad slab hull overhanging the widest seven-wheel tracks, a flat low-angle glacis,
-  // four deep bolted skirt plates per side and a long rear engine deck.
-  drive({road:.19,end:.225});
-  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2;
-  block([[-1.44,-zi+.03],[1.24,-zi+.03],[1.42,-zi+.16],[1.42,zi-.16],[1.24,zi-.03],[-1.44,zi-.03]],[[-1.42,-zi+.05],[1.22,-zi+.05],[1.36,-zi+.16],[1.36,zi-.16],[1.22,zi-.05],[-1.42,zi-.05]],.18,.65,'paint',F.paint);
-  // broad superstructure with raked sides on thick sponson fenders that span the full track width
-  block([[-1.48,-zi-.10],[1.16,-zi-.10],[1.32,-zi+.04],[1.32,zi-.04],[1.16,zi+.10],[-1.48,zi+.10]],[[-1.46,-zi+.06],[1.08,-zi+.06],[1.22,-zi+.14],[1.22,zi-.14],[1.08,zi-.06],[-1.46,zi-.06]],tt,o.deck,'paint',F.paint);
-  for(const s of [-1,1]){block(famSide([[-1.50,zi-.06],[1.20,zi-.06],[1.34,zi+.08],[1.34,zo+.04],[-1.50,zo+.04]],s),famSide([[-1.48,zi-.06],[1.16,zi-.06],[1.28,zi+.08],[1.28,zo+.01],[-1.48,zo+.01]],s),tt,tt+.085,'paint',F.plate);
-   put(box(2.5,.014,.018),'steel',F.edge,[-.15,tt+.09,s*(zo-.02)]);if(high)for(let i=0;i<7;i++)bolt(-1.32+i*.40,tt+.088,s*(zi+.04));}
-  block([[-1.46,-.62],[-.70,-.62],[-.62,-.54],[-.62,.54],[-.70,.62],[-1.46,.62]],[[-1.44,-.56],[-.74,-.56],[-.68,-.50],[-.68,.50],[-.74,.56],[-1.44,.56]],o.deck-.01,o.ring-.02,'paint',F.plate);
-  put(box(.24,.035,.30),'paint',F.plate,[.70,o.deck,-.34]);put(cyl(.09,.04,high?14:8),'steel',F.steel,[.40,o.deck+.01,.40]);
-  block([[.62,-1.0],[1.47,-.92],[1.47,.92],[.62,1.0]],[[.62,-.98],[1.40,-.90],[1.40,.90],[.62,.98]],.30,o.deck+.012,'paint',F.plate,[.62,1.47,.42,.30,.56]);
-  put(box(.16,.16,1.50),'paint',F.plate,[1.44,.26,0]);put(box(.05,.05,1.70),'steel',F.steel,[1.53,.22,0]);
-  for(const s of [-1,1])put(new THREE.TorusGeometry(.06,.02,4,high?12:8),'steel',F.edge,[1.52,.30,s*.62],[0,Math.PI/2,0]);
+  // TITAN "Siege Warden": a faceted arrowhead hull whose flanks rake down over the widest tracks, layered slope armour
+  // split by energy seams, overlapping skirt scales above exposed suspension struts, pointed track horns, an undercut
+  // beak and twin radiator stacks at the stern.
+  drive({length:2.70,road:.19,end:.225});   // a shorter run: the arrowhead nose and tapered stern project beyond the tracks
+  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2,glow='#5fd4ff',a=Math.atan2(o.deck-tt,.36);
+  block([[-1.40,-zi+.04],[1.02,-zi+.04],[1.44,-.30],[1.44,.30],[1.02,zi-.04],[-1.40,zi-.04]],[[-1.38,-zi+.06],[1.0,-zi+.06],[1.38,-.28],[1.38,.28],[1.0,zi-.06],[-1.38,zi-.06]],.18,.66,'paint',F.paint);
+  block([[1.0,-.62],[1.50,-.18],[1.58,0],[1.50,.18],[1.0,.62]],[[1.0,-.50],[1.40,-.12],[1.46,0],[1.40,.12],[1.0,.50]],.16,.46,'paint',F.plate);
+  put(box(.05,.05,.40),'steel',F.edge,[1.52,.20,0]);
+  const up=[[-1.48,-.98],[-1.24,-1.20],[.62,-1.20],[1.38,-.52],[1.50,0],[1.38,.52],[.62,1.20],[-1.24,1.20],[-1.48,.98]];
+  const top=[[-1.40,-.70],[-1.20,-.84],[.50,-.84],[1.06,-.40],[1.16,0],[1.06,.40],[.50,.84],[-1.20,.84],[-1.40,.70]];
+  block(up,top,tt,o.deck,'paint',F.paint);
+  // raised armoured roof with recessed seams
+  slab([[-1.30,-.62],[-1.10,-.74],[.42,-.74],[.86,-.34],[.86,.34],[.42,.74],[-1.10,.74],[-1.30,.62]],o.deck-.02,.04,'paint',F.plate,.012);
   for(const s of [-1,1]){
-   // deep layered side armour: four thick bolted plates over the tread run, the massive wheel train left visible
-   for(let i=0;i<4;i++){const x=-1.42+i*.70;wall([[x,.545],[x+.62,.545],[x+.64,tt+.13],[x-.02,tt+.13]],s*(zo+.05),.08,'paint',i%2?F.plate:F.paint,.014);
-    if(high)for(const d of [.10,.31,.52])bolt(x+d,.62,s*(zo+.092),'z');put(box(.40,.012,.016),'steel',F.edge,[x+.31,tt+.10,s*(zo+.094)]);}
-   slab(famSide([[1.20,zo-.30],[1.46,zo-.24],[1.40,zo+.10],[1.20,zo+.10]],s),tt,.06,'paint',F.plate,.012);
-   put(box(.26,.022,.028),'energy',team,[.40,o.deck+.004,s*(zo-.12)]);
-   put(box(.18,.10,.28),'rubber',F.dark,[-1.49,.58,s*.80]);put(box(.03,.04,.18),'energy',F.tail,[-1.585,.58,s*.80]);
-   put(box(.10,.16,.30),'steel',F.steel,[-1.52,.52,s*.42]);put(box(.02,.10,.22),'rubber',F.dark,[-1.575,.52,s*.42]);
-   vents(F,-.94,o.ring-.02,s*.36,.36,.16,6);
+   // three layered plates on each raked flank, seams lit between them
+   for(const [x0,x1] of [[-1.18,-.64],[-.58,-.04],[.02,.46]]){const w=.30,g=T.plate([[x0,-w/2],[x1,-w/2],[x1-.05,w/2],[x0+.05,w/2]],.032,.01);put(g,'paint',x0<-1?F.plate:x0<0?F.paint:F.plate,[0,(o.deck+tt)/2+.02*Math.cos(a),s*(1.02+.02*Math.sin(a))],[s*a,0,0]);}
+   for(const x of [-.61,-.01,.49])pipe([x,o.deck+.004,s*.84],[x,tt+.004,s*1.20],.009,glow,'energy');
+   pipe([.50,o.deck+.005,s*.84],[1.06,o.deck+.005,s*.40],.009,glow,'energy');
+   // overlapping skirt scales over the tread run; suspension struts stand exposed between the road wheels
+   for(let i=0;i<5;i++){const x=-1.12+i*.42;wall([[x,.545],[x+.42,.545],[x+.46,tt+.045],[x-.02,tt+.045]],s*(zo+(i%2?.085:.055)),.045,'paint',i%2?F.plate:F.paint,.01);put(box(.30,.012,.014),'steel',F.edge,[x+.22,.60,s*(zo+(i%2?.11:.08))]);}
+   for(let i=0;i<6;i++){const x=-1.06+(i+.5)*2.12/6;pipe([x,.14,s*1.27],[x,.36,s*1.27],.026,'#7b8792');pipe([x,.36,s*1.27],[x,.54,s*1.27],.015,F.edge);put(cyl(.034,.03,10),'gold',F.gold,[x,.36,s*1.27]);}
+   // pointed horns over the track fronts, each carrying a headlamp
+   block(famSide([[.90,zi],[1.24,zi+.05],[1.40,(zi+zo)/2],[1.24,zo+.02],[.90,zo+.02]],s),famSide([[.90,zi+.03],[1.16,zi+.07],[1.28,(zi+zo)/2],[1.16,zo-.02],[.90,zo-.02]],s),tt,tt+.10,'paint',F.plate);
+   pipe([.92,tt+.105,s*(zo-.05)],[1.30,tt+.06,s*(zi+.14)],.008,glow,'energy');
+   // stern radiator stacks: thin heat-sink fins in an armoured frame, clear of the core sockets and below the gun line
+   // radiator banks recessed into the stern hump: heat-sink fins flush with its roof
+   panel(-1.30,o.ring+.04,s*.38,.26,.40,.012,'rubber',F.dark,.004);
+   for(let i=0;i<6;i++)put(box(.016,.03,.36),'steel',i%2?'#7d8994':F.steel,[-1.41+i*.045,o.ring+.065,s*.38]);
+   pipe([-1.12,o.ring+.058,s*.62],[-1.44,o.ring+.058,s*.62],.009,glow,'energy');
+   put(box(.03,.07,.20),'energy','#ff7a3a',[-1.455,.55,s*.46]);put(box(.06,.12,.28),'rubber',F.dark,[-1.425,.55,s*.46]);
+   put(box(.26,.022,.028),'energy',team,[.20,o.deck+.004,s*.79]);
   }
-  head(1.33,.70,.88,.14);tierBar(-.30,o.deck+.016,.80);
-  anchor={hood:[.86,o.deck-.08],side:[-1.07,.63,zo+.095]};coreAt=[-1.30,[-.22,0,.22]];
+  // the raked stern hump: the hull rises toward the rear like a crouched predator, below the gun line
+  block([[-1.47,-.74],[-.92,-.74],[-.92,.74],[-1.47,.74]],[[-1.44,-.66],[-1.12,-.66],[-1.12,.66],[-1.44,.66]],o.deck-.01,o.ring+.055,'paint',F.plate);
+  put(box(.03,.03,1.30),'steel',F.edge,[-1.115,o.ring+.058,0]);
+  // armoured spine ridge running down the glacis, team chevron either side
+  block([[.55,-.07],[1.48,-.02],[1.48,.02],[.55,.07]],[[.55,-.03],[1.36,-.008],[1.36,.008],[.55,.03]],.60,o.deck+.035,'paint',F.plate,[1.0,1.48,.22,.62,.25]);
+  for(const s of [-1,1])pipe([1.06,o.deck-.008,s*.30],[1.34,.75,s*.06],.011,team,'energy');
+  head(1.36,tt+.05,1.0,.09);tierBar(-.30,o.deck+.016,.60);
+  anchor={hood:[.74,o.deck+.02],side:[-.30,.625,zo+.11]};coreAt=[-.80,[-.24,0,.24]];
  }else if(key==='titan:1'){
-  // BULWARK: fortress ram. A full-width raked ram slab in front, armour walls covering the whole track side,
-  // huge forward shoulder blocks, slab deck. The widest, most enclosed silhouette.
+  // BULWARK "Bastion Ram": a moving fortress. Battered (inward-leaning) bastion walls in three segments with glowing
+  // slits and buttresses, a raked V-plow with ribbed faces, corner battlement towers at the stern, a recessed deck.
   drive({road:.19,end:.225});
-  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2,zw=zo+.14;
+  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2,glow='#5fd4ff',top=o.ring-.01;
   block([[-1.42,-zi+.03],[1.30,-zi+.03],[1.42,-zi+.12],[1.42,zi-.12],[1.30,zi-.03],[-1.42,zi-.03]],[[-1.40,-zi+.05],[1.28,-zi+.05],[1.38,-zi+.12],[1.38,zi-.12],[1.28,zi-.05],[-1.40,zi-.05]],.18,.65,'paint',F.paint);
-  block([[-1.46,-zo],[1.30,-zo],[1.42,-zo+.12],[1.42,zo-.12],[1.30,zo],[-1.46,zo]],[[-1.44,-zo+.02],[1.22,-zo+.02],[1.32,-zo+.12],[1.32,zo-.12],[1.22,zo-.02],[-1.44,zo-.02]],tt,o.deck,'paint',F.paint,[1.0,1.42,.08,.7,.14]);
-  block([[1.34,-1.20],[1.72,-1.08],[1.72,1.08],[1.34,1.20]],[[1.30,-1.14],[1.50,-1.02],[1.50,1.02],[1.30,1.14]],.07,.72,'paint',F.plate);
-  for(const y of [.22,.42,.60]){const x=1.72-(y-.07)/.65*.22;put(box(.05,.05,1.86),'steel',y===.42?F.edge:F.steel,[x+.02,y,0],[0,0,.32]);}
+  block([[-1.46,-1.04],[-1.30,-1.14],[1.22,-1.14],[1.40,-.98],[1.40,.98],[1.22,1.14],[-1.30,1.14],[-1.46,1.04]],[[-1.42,-.94],[-1.28,-1.02],[1.10,-1.02],[1.26,-.88],[1.26,.88],[1.10,1.02],[-1.28,1.02],[-1.42,.94]],tt,o.deck,'paint',F.paint);
+  // the plow: two raked wings meeting in a prow, faces ribbed, a dark throat behind
   for(const s of [-1,1]){
-   block(famSide([[1.28,1.10],[1.66,1.06],[1.44,zw+.05],[1.08,zw+.05]],s),famSide([[1.26,1.08],[1.48,1.04],[1.34,zw+.02],[1.10,zw+.02]],s),.10,.70,'paint',F.paint);
-   // three fortress wall slabs with chamfered toes rise above the deck as a protective lip
-   for(const [x0,x1] of [[-1.47,-.62],[-.58,.28],[.32,1.12]]){wall([[x0,.20],[x0+.10,.11],[x1-.10,.11],[x1,.20],[x1,o.ring-.01],[x0,o.ring-.01]],s*zw,.09,'paint',x0<0&&x0>-1?F.paint:F.plate,.014);
-    put(box(x1-x0-.16,.016,.012),'rubber',F.dark,[(x0+x1)/2,.50,s*(zw+.047)]);if(high)for(const d of [.12,.5,.88])for(const y of [.24,.80])bolt(x0+(x1-x0)*d,y,s*(zw+.048),'z');}
-   block(famSide([[.50,zo-.20],[1.16,zo-.20],[1.32,zo-.04],[1.24,zw+.06],[.50,zw+.06]],s),famSide([[.54,zo-.16],[1.08,zo-.16],[1.18,zo-.04],[1.12,zw+.01],[.54,zw+.01]],s),o.deck-.02,o.ring-.005,'paint',F.plate,[.9,1.32,.06,o.deck,.08]);
-   put(box(.50,.014,.02),'steel',F.edge,[.80,o.ring-.002,s*(zw-.08)]);put(box(.30,.022,.03),'energy',team,[-.15,.70,s*(zw+.05)]);
-   put(box(.16,.10,.26),'rubber',F.dark,[-1.48,.62,s*.72]);put(box(.03,.04,.18),'energy',F.tail,[-1.565,.62,s*.72]);
+   const bw=famSide([[1.12,1.30],[1.30,1.30],[1.66,0],[1.52,0]],s),tw=famSide([[.96,1.24],[1.12,1.24],[1.50,0],[1.36,0]],s);block(bw,tw,.06,.74,'paint',F.plate);
+   // a second, layered armour band across the upper plow face, trimmed along its lower edge
+   const fl=k=>[[1.30-.18*k,1.30-.06*k],[1.66-.16*k,0]],band=(k,dx)=>{const [o2,t2]=fl(k);return famSide([[o2[0]+dx,o2[1]],[t2[0]+dx,0],[t2[0]+dx-.10,0],[o2[0]+dx-.10,o2[1]]],s);};
+   block(band(.52,.035),band(.92,.035),.06+.68*.52,.06+.68*.92,'paint',F.paint);
+   {const [o2,t2]=fl(.52);pipe([t2[0]+.04,.06+.68*.52,0],[o2[0]+.04,.06+.68*.52,s*o2[1]],.014,F.edge);}
   }
-  for(const s of [-1,1]){slab(famSide([[-.55,.62],[.10,.62],[.10,1.0],[-.55,1.0]],s),o.deck-.015,.04,'paint',F.plate,.01);if(high)for(const x of [-.45,-.05])bolt(x,o.deck+.026,s*.80);}put(box(.34,.03,.34),'paint',F.plate,[.72,o.deck,.40]);
-  grille(F,-1.04,o.deck+.012,0,.62,.70,9);head(1.46,.62,.66,.16);tierBar(-.30,o.deck+.016,.78);
-  anchor={hood:[.80,o.deck-.01],side:[-.62,.50,zw+.05]};coreAt=[-1.28,[-.25,0,.25]];
- }else{
-  // COLOSSUS: flagship behemoth. Four separately housed track pods with exposed gold suspension nodes, a stepped
-  // three-tier citadel hull, broad raked shoulders and a full-width rear power housing with twin exhaust ports.
-  const pc=.80;drive({length:1.42,wheels:4,road:.20,end:.24},[-pc,pc]);
-  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2;
-  block([[-1.52,-zi+.03],[1.34,-zi+.03],[1.55,-.55],[1.55,.55],[1.34,zi-.03],[-1.52,zi-.03]],[[-1.50,-zi+.05],[1.30,-zi+.05],[1.46,-.53],[1.46,.53],[1.30,zi-.05],[-1.50,zi-.05]],.18,.67,'paint',F.paint);
-  // stepped citadel: raked lower tier, then an inset upper casemate
-  block([[-1.56,-1.0],[1.28,-1.0],[1.50,-.74],[1.50,.74],[1.28,1.0],[-1.56,1.0]],[[-1.52,-.90],[1.16,-.90],[1.36,-.68],[1.36,.68],[1.16,.90],[-1.52,.90]],tt,.78,'paint',F.plate,[1.0,1.5,.06,.7,.10]);
-  block([[-1.40,-.76],[.86,-.76],[1.16,-.46],[1.16,.46],[.86,.76],[-1.40,.76]],[[-1.36,-.66],[.78,-.66],[1.02,-.42],[1.02,.42],[.78,.66],[-1.36,.66]],.775,o.deck,'paint',F.paint,[.85,1.16,.06,.78,.10]);
-  for(const s of [-1,1]){put(box(1.9,.016,.018),'steel',F.edge,[-.30,.785,s*.82]);if(high)for(let i=0;i<6;i++)bolt(-1.25+i*.40,.785,s*.86);}
-  block([[1.40,-.62],[1.62,-.40],[1.62,.40],[1.40,.62]],[[1.40,-.58],[1.52,-.38],[1.52,.38],[1.40,.58]],.24,.62,'paint',F.plate,[1.4,1.62,.10,.3,.32]);
-  put(box(.06,.05,.96),'steel',F.edge,[1.585,.40,0],[0,0,.40]);
+  put(box(.06,.70,.06),'paint',F.plate,[1.60,.40,0],[0,0,.24]);put(box(.16,.40,.50),'rubber',F.dark,[1.40,.30,0]);
   for(const s of [-1,1]){
-   for(const c of [-pc,pc]){
-    // each pod in its own armoured housing: a roof over the tread and an outer wall clear of the wheels
-    block(famSide([[c-.66,zi-.02],[c+.62,zi-.02],[c+.72,zo-.10],[c+.64,zo+.15],[c-.66,zo+.15]],s),famSide([[c-.62,zi],[c+.56,zi],[c+.64,zo-.10],[c+.56,zo+.12],[c-.62,zo+.12]],s),tt,tt+.10,'paint',c>0?F.plate:F.paint);
-    wall([[c-.66,.40],[c+.60,.40],[c+.70,.50],[c+.70,tt+.02],[c-.66,tt+.02]],s*(zo+.125),.05,'paint',c>0?F.paint:F.plate,.01);
-    put(box(1.0,.014,.02),'steel',F.edge,[c-.02,.66,s*(zo+.152)]);if(high)for(const d of [-.45,0,.45])bolt(c+d,.48,s*(zo+.152),'z');
+   // three battered wall segments with slits between them and buttresses on the outer face
+   // wall heads lean further in toward bow and stern, so the fortress reads as an elongated hexagon from above
+   const lean=x=>x>.30?-(x-.30)/.84*.10:x<-.66?-(-.66-x)/.82*.08:0;
+   for(const [x0,x1] of [[-1.48,-.66],[-.60,.24],[.30,1.14]]){
+    block(famSide([[x0,1.28],[x1,1.28],[x1,1.33],[x0,1.33]],s),famSide([[x0+.03,1.22+lean(x0+.03)],[x1-.03,1.22+lean(x1-.03)],[x1-.03,1.29+lean(x1-.03)],[x0+.03,1.29+lean(x0+.03)]],s),.12,top,'paint',x0<-1||x0>0?F.plate:F.paint);
+    put(box(x1-x0-.12,.014,.012),'rubber',F.dark,[(x0+x1)/2,.50,s*1.32]);if(high)for(const d of [.15,.5,.85])bolt(x0+(x1-x0)*d,.40,s*1.33,'z');
+    const xb=(x0+x1)/2;block(famSide([[xb-.08,1.32],[xb+.08,1.32],[xb+.08,1.37],[xb-.08,1.37]],s),famSide([[xb-.05,1.28+lean(xb)],[xb+.05,1.28+lean(xb)],[xb+.05,1.30+lean(xb)],[xb-.05,1.30+lean(xb)]],s),.12,.78,'paint',F.paint);
+    pipe([x0+.03,top+.004,s*(1.255+lean(x0+.03))],[x1-.03,top+.004,s*(1.255+lean(x1-.03))],.010,F.edge);
    }
-   pipe([0,.40,s*(zi-.06)],[0,.40,s*(zo+.10)],.075,F.steel);put(cyl(.11,.07,12),'gold',F.gold,[0,.40,s*(zo+.12)],[Math.PI/2,0,0]);put(cyl(.05,.08,10),'steel',F.dark,[0,.40,s*(zo+.14)],[Math.PI/2,0,0]);
-   pipe([-.22,.24,s*(zo-.06)],[.22,.24,s*(zo-.06)],.04,'#7b8792');
-   block(famSide([[.12,.95],[1.06,.95],[1.30,1.08],[1.04,zo+.10],[.12,zo+.10]],s),famSide([[.16,.97],[.98,.97],[1.16,1.07],[.96,zo+.02],[.16,zo+.02]],s),tt+.09,o.deck-.01,'paint',F.plate,[.9,1.3,.08,tt+.09,.12]);
-   put(box(.70,.014,.02),'steel',F.edge,[.60,o.deck-.005,s*1.04]);put(box(.30,.022,.03),'energy',team,[-.80,.62,s*(zo+.153)]);
-   put(new THREE.TorusGeometry(.065,.02,4,high?12:8),'steel',F.edge,[1.56,.28,s*.42],[0,Math.PI/2,0]);
+   for(const x of [-.63,.27])put(box(.03,.55,.03),'energy',glow,[x,.50,s*1.29]);
+   slab(famSide([[-1.46,1.06],[1.18,1.06],[1.18,1.24],[-1.46,1.24]],s),o.deck-.03,.03,'paint',F.dark,.006);
+   // forward shoulder towers on the wall heads
+   block(famSide([[.52,.98],[1.16,.98],[1.28,1.08],[1.20,1.20],[.52,1.24]],s),famSide([[.58,1.03],[1.08,1.03],[1.16,1.08],[1.10,1.15],[.58,1.20]],s),o.deck-.02,top,'paint',F.plate,[.9,1.30,.06,o.deck,.08]);
+   pipe([.62,top+.004,s*1.04],[1.10,top+.004,s*1.04],.008,glow,'energy');
+   // stern battlement towers (crenellated) beside the core sockets
+   block(famSide([[-1.46,.52],[-1.02,.52],[-1.02,1.0],[-1.46,1.0]],s),famSide([[-1.42,.56],[-1.06,.56],[-1.06,.96],[-1.42,.96]],s),o.deck-.01,o.ring+.03,'paint',F.plate);
+   for(const z of [.60,.78,.94])put(box(.30,.035,.08),'paint',F.paint,[-1.24,o.ring+.045,s*z]);
+   put(box(.24,.02,.03),'energy',team,[-1.24,o.ring-.02,s*1.005]);
+   put(box(.16,.10,.26),'rubber',F.dark,[-1.48,.62,s*.72]);put(box(.03,.04,.18),'energy',F.tail,[-1.565,.62,s*.72]);
+   put(box(.30,.022,.03),'energy',team,[-.15,.70,s*1.335]);
   }
-  block([[-1.62,-.98],[-1.50,-.98],[-1.50,.98],[-1.62,.98]],[[-1.60,-.94],[-1.50,-.94],[-1.50,.94],[-1.60,.94]],.30,.86,'paint',F.plate);
-  for(const s of [-1,1]){put(cyl(.15,.06,high?18:10),'steel',F.steel,[-1.63,.56,s*.52],[0,0,Math.PI/2]);put(cyl(.11,.07,high?18:10),'rubber',F.dark,[-1.635,.56,s*.52],[0,0,Math.PI/2]);put(box(.03,.04,.20),'energy',F.tail,[-1.625,.78,s*.80]);}
-  vents(F,-1.0,o.deck+.004,-.36,.42,.30,8);vents(F,-1.0,o.deck+.004,.36,.42,.30,8);
-  head(1.50,.62,.46,.12);tierBar(-.30,o.deck+.012,.66);
-  anchor={hood:[.88,o.deck-.04],side:[.80,.52,zo+.152]};coreAt=[-1.24,[-.24,0,.24]];
+  slab([[-.20,-.86],[.60,-.86],[.60,.86],[-.20,.86]],o.deck-.015,.035,'paint',F.plate,.01);
+  grille(F,-.78,o.deck+.004,0,.32,.50,6);head(1.34,.66,.60,.12);tierBar(-.30,o.deck+.016,.78);
+  anchor={hood:[.76,o.deck+.02],side:[-.85,.45,1.318]};coreAt=[-1.24,[-.25,0,.25]];
+ }else{
+  // COLOSSUS "Citadel Dreadnought": the flagship. Four pointed armoured nacelles hung on articulated A-frame pylons
+  // with hydraulic rams, a stepped faceted keel with glowing conduits, layered shoulder wings, a low spear prow,
+  // twin stern thrusters and a swept crown of fins: the largest, most complex silhouette in the game.
+  const pc=.80;drive({length:1.42,wheels:4,road:.20,end:.24},[-pc,pc]);
+  const zi=o.trackZ-o.trackW/2,zo=o.trackZ+o.trackW/2,glow='#5fd4ff';
+  block([[-1.52,-zi+.03],[1.34,-zi+.03],[1.55,-.55],[1.55,.55],[1.34,zi-.03],[-1.52,zi-.03]],[[-1.50,-zi+.05],[1.30,-zi+.05],[1.46,-.53],[1.46,.53],[1.30,zi-.05],[-1.50,zi-.05]],.18,.67,'paint',F.paint);
+  block([[1.30,-.42],[1.62,0],[1.30,.42]],[[1.30,-.30],[1.52,0],[1.30,.30]],.20,.42,'paint',F.plate);
+  // stepped keel: a raked lower tier and an inset upper citadel, both pointed fore and aft
+  block([[-1.58,-.62],[-1.30,-.96],[1.08,-.96],[1.56,-.36],[1.62,0],[1.56,.36],[1.08,.96],[-1.30,.96],[-1.58,.62]],[[-1.50,-.52],[-1.24,-.84],[.98,-.84],[1.40,-.30],[1.46,0],[1.40,.30],[.98,.84],[-1.24,.84],[-1.50,.52]],tt,.80,'paint',F.plate);
+  block([[-1.40,-.50],[-1.16,-.74],[.86,-.74],[1.20,-.34],[1.26,0],[1.20,.34],[.86,.74],[-1.16,.74],[-1.40,.50]],[[-1.34,-.40],[-1.12,-.62],[.76,-.62],[1.06,-.28],[1.10,0],[1.06,.28],[.76,.62],[-1.12,.62],[-1.34,.40]],.795,o.deck,'paint',F.paint);
+  // layered chevron beak on the lower tier's prow
+  const chev=(xa,w,d,y,t,c)=>{const p=[[xa,0],[xa-.46,w],[xa-.46-d,w],[xa-d,0],[xa-.46-d,-w],[xa-.46,-w]];T.put(T.plate(p,t,.01),'paint',c,[0,y,0]);};
+  chev(1.50,.40,.12,.74,.04,F.edge);chev(1.36,.36,.12,.78,.04,F.plate);
+  for(const s of [-1,1]){
+   pipe([-1.10,o.deck+.005,s*.63],[.74,o.deck+.005,s*.63],.009,glow,'energy');pipe([.76,o.deck+.005,s*.62],[1.06,o.deck+.005,s*.29],.009,glow,'energy');
+   pipe([-1.22,.805,s*.86],[.96,.805,s*.86],.008,glow,'energy');
+   for(const c of [-pc,pc]){
+    // a pointed nacelle per pod: faceted roof, angular outer skirt, lit roof strip, pivot joint at the inner end
+    const d=c>0?1:-1,X=x=>c+d*(x-c);
+    const bp=famSide([[X(c-.66),zi-.04],[X(c+.50),zi-.04],[X(c+.80),(zi+zo)/2+.02],[X(c+.50),zo+.16],[X(c-.66),zo+.16]],s),tp=famSide([[X(c-.62),zi],[X(c+.40),zi],[X(c+.62),(zi+zo)/2+.02],[X(c+.40),zo+.06],[X(c-.62),zo+.06]],s);
+    block(bp,tp,tt,tt+.14,'paint',c>0?F.plate:F.paint);
+    const sk=[[c-.66,.42],[c+.48,.42],[c+.68,.56],[c+.68,tt+.02],[c-.66,tt+.02]].map(([x,y])=>[X(x),y]);wall(d>0?sk:sk.slice().reverse(),s*(zo+.125),.05,'paint',c>0?F.paint:F.plate,.01);
+    pipe([X(c-.58),tt+.145,s*(zo+.03)],[X(c+.38),tt+.145,s*(zo+.03)],.009,glow,'energy');
+    put(box(1.0,.014,.02),'steel',F.edge,[c,.66,s*(zo+.152)]);for(const k of [-.30,-.10,.10,.30])put(box(.10,.035,.012),'energy',glow,[c+k,.56,s*(zo+.153)]);if(high)for(const k of [-.45,0,.45])bolt(c+k,.48,s*(zo+.152),'z');
+    put(cyl(.09,.08,12),'gold',F.gold,[X(c-.62),tt+.07,s*(zi-.02)],[Math.PI/2,0,0]);
+   }
+   // articulated A-frame pylon between the pods: two struts, a cross beam, a gold node and two hydraulic rams
+   for(const dx of [-1,1])pipe([dx*.12,.80,s*.66],[0,.42,s*(zo+.10)],.045,F.steel);
+   pipe([0,.42,s*.70],[0,.42,s*(zo+.10)],.06,'#7b8792');put(cyl(.12,.06,12),'gold',F.gold,[0,.42,s*(zo+.10)],[Math.PI/2,0,0]);put(cyl(.05,.05,10),'steel',F.dark,[0,.42,s*(zo+.13)],[Math.PI/2,0,0]);
+   for(const dx of [-1,1]){pipe([0,.44,s*(zo+.10)],[dx*.12,.60,s*(zo+.08)],.03,'#7b8792');pipe([dx*.12,.60,s*(zo+.08)],[dx*.20,.71,s*(zo+.07)],.018,F.edge);}
+   // layered shoulder wings over the front nacelles
+   block(famSide([[.10,.90],[1.00,.90],[1.30,1.04],[1.02,1.30],[.10,1.30]],s),famSide([[.16,.92],[.92,.92],[1.14,1.02],[.94,1.16],[.16,1.16]],s),tt+.12,o.deck-.035,'paint',F.plate);
+   block(famSide([[.30,.92],[.86,.92],[1.02,1.00],[.84,1.10],[.30,1.10]],s),famSide([[.34,.93],[.80,.93],[.94,1.00],[.78,1.06],[.34,1.06]],s),o.deck-.04,o.deck+.01,'paint',F.paint);
+   put(box(.70,.014,.02),'steel',F.edge,[.60,o.deck-.035,s*1.18]);put(box(.30,.022,.03),'energy',team,[-.80,.62,s*(zo+.153)]);
+   put(new THREE.TorusGeometry(.065,.02,4,high?12:8),'steel',F.edge,[1.56,.28,s*.42],[0,Math.PI/2,0]);
+   // twin stern thrusters with lit cores and cooling rings
+   put(cyl(.17,.30,high?20:10),'steel',F.steel,[-1.52,.55,s*.50],[0,0,Math.PI/2]);put(cyl(.12,.31,high?18:10),'rubber',F.dark,[-1.53,.55,s*.50],[0,0,Math.PI/2]);
+   put(cyl(.075,.02,high?16:8),'energy','#ff8a3d',[-1.675,.55,s*.50],[0,0,Math.PI/2]);
+   for(const x of [-1.44,-1.54,-1.64])put(cyl(.19,.018,high?20:10),'steel',F.edge,[x,.55,s*.50],[0,0,Math.PI/2]);
+   put(box(.03,.04,.20),'energy',F.tail,[-1.61,.80,s*.84]);
+  }
+  // swept crown fins on the stern, below the gun line, the flagship's side-view signature
+  for(const z of [-.36,-.18,0,.18,.36])wall([[-1.58,.79],[-1.34,.79],[-1.44,o.ring+.075],[-1.58,o.ring+.075]],z,.028,'paint',Math.abs(z)<.1?F.plate:F.paint,.006);
+  pipe([-1.56,o.ring+.077,-.40],[-1.56,o.ring+.077,.40],.012,glow,'energy');
+  vents(F,-.95,o.deck+.004,-.36,.30,.20,6);vents(F,-.95,o.deck+.004,.36,.30,.20,6);
+  head(1.42,.70,.44,.12);tierBar(-.30,o.deck+.012,.50);
+  anchor={hood:[.84,o.deck+.004],side:[.80,.52,zo+.152]};coreAt=[-1.12,[-.24,0,.24]];
  }
  T.ring(F,o,ringR);
  T.cores(F,gems,coreAt[0],Math.min(o.deck+.05,o.ring-.11),coreAt[1]);
