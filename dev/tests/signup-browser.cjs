@@ -99,7 +99,10 @@ async function explain(){   // on a failure: what the page showed and said
      await pg.screenshot({path:path.join(OUT,name+'-'+label+'-callsign.png')});
      await pg.locator('[data-act="cssave"]').click();await pg.waitForFunction(c=>tgName(TG_USER)===c,cs.slice(0,12)+'_v2',{timeout:10000});
     }
-    assert(!errs.length,'page errors: '+errs.join(' | '));
+    // WebKit reports a fetch that a page navigation cancels as "cannot load ... due to access control checks"; the test
+    // navigates away while the game is still loading, so only that exact WebKit message is not an error here
+    const real=errs.filter(e=>!(name==='webkit'&&/^Fetch API cannot load .* due to access control checks\.?$/.test(e)));
+    assert(!real.length,'page errors: '+real.join(' | '));
     pass++;results.push(name+' '+label+' ok');console.log('PASS',name,label);
     await ctx.close();
    }
