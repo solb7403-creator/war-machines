@@ -16,8 +16,11 @@ function trial({host='lunar-api.solb7403.workers.dev',origin='https://lunar-api.
 assert.equal(trial().calls[0][1],'/web/login.html#garage');
 assert.equal(trial({target:'mode:arena'}).calls[0][1],'/web/login.html#mode:arena');
 assert.equal(trial({target:'https://evil.test'}).calls[0][1],'/web/login.html#play');
-const gh=trial({host:'solb7403-creator.github.io',origin:'https://solb7403-creator.github.io',search:'?ref=tg_123456'});
-assert.equal(gh.calls.find(c=>c[0]==='navigate')[1],'https://lunar-api.solb7403.workers.dev/web/?ref=tg_123456#garage');
+// a squad invite code (?i=, server-issued) is forwarded to the official origin; a bare pilot id (?ref=) is not
+const gh=trial({host:'solb7403-creator.github.io',origin:'https://solb7403-creator.github.io',search:'?i=ABCD2345'});
+assert.equal(gh.calls.find(c=>c[0]==='navigate')[1],'https://lunar-api.solb7403.workers.dev/web/?i=abcd2345#garage');
+const old=trial({host:'solb7403-creator.github.io',origin:'https://solb7403-creator.github.io',search:'?ref=tg_123456'});
+assert.equal(old.calls.find(c=>c[0]==='navigate')[1],'https://lunar-api.solb7403.workers.dev/web/#garage');
 const failed=trial({search:'?login=exchange'});
 assert.match(failed.notice.textContent,/could not complete/i);
 assert.equal(failed.calls.find(c=>c[0]==='history')[3],'/web/');

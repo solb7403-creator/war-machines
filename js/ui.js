@@ -361,7 +361,7 @@ const squadPhaseX=()=>{const p=sqInfo().phase||(lbMeta&&lbMeta.ref);return p&&p.
 function squadPlate(){
  const sq=squad(),I=sqInfo(),me=I.me||{},ph=I.phase||null,day=dayNum(),pend=refPending();
  const ver=sq.filter(r=>refVerified(r,day)).length,held=sq.filter(r=>r.held).length,link=refLink();
- const bonus=Math.round((Number(save.mbx)||0)*1000)/10,cap=I.cap||REF_PCT_CAP,pd=save.refPD&&save.refPD.d===day?save.refPD.a:0;
+ const bonus=Math.round((Number(me.mbx!==undefined?me.mbx:save.mbx)||0)*1000)/10,cap=I.cap||REF_PCT_CAP,pd=save.refPD&&save.refPD.d===day?save.refPD.a:0;
  const carry=sq.reduce((t,r)=>t+(r.held?0:refOwed(r).pct),0),carryOver=Math.max(0,carry-(cap-pd));
  const pips=r=>{const m=(r.rms||[]).length;return REF_MS.map((M,i)=>'<i class="pip'+(i<m?' on':'')+'" title="'+esc(M.n)+'"></i>').join('');};
  const rows=sq.slice().sort((a,b)=>(b.vd|0)-(a.vd|0)||b.pts-a.pts).slice(0,8).map(r=>{const st=refStatus(r),o=refOwed(r),nx=REF_MS[(r.rms||[]).length],v=refVerified(r,day);
