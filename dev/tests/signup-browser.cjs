@@ -12,6 +12,8 @@ const SIZES=[['phone-390',390,844,true],['android-360',360,780,true],['tablet-76
 const engines=(process.argv.slice(2).length?process.argv.slice(2):['chromium','webkit','firefox']).filter(n=>{try{return fs.existsSync(pw[n].executablePath());}catch{return false;}});
 const assert=(c,m)=>{if(!c)throw Error('FAIL '+m);};
 let current=null;
+// leaving the game page: software-rendered 3D (CI's WebKit at desktop size) can hold the old page busy for a while
+const LEAVE={waitUntil:'domcontentloaded',timeout:90000};
 async function explain(){   // on a failure: what the page showed and said
  if(!current)return;const {pg,label,name,errs,logs}=current;
  try{await pg.screenshot({path:path.join(OUT,name+'-'+label+'-FAILED.png')});}catch{}
@@ -76,7 +78,7 @@ async function explain(){   // on a failure: what the page showed and said
     await pg.waitForTimeout(600);await pg.screenshot({path:path.join(OUT,name+'-'+label+'-game.png')});
     // 4. log out, log back in with call sign + password
     await pg.evaluate(()=>fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}));
-    await pg.goto(BASE+'/web/login.html');await pg.waitForSelector('#login-form:not([hidden])');   // returning visitor: Log in tab
+    await pg.goto(BASE+'/web/login.html',LEAVE);await pg.waitForSelector('#login-form:not([hidden])');   // returning visitor: Log in tab
     await pg.locator('#li-cs').fill(cs.toLowerCase());await pg.locator('#li-pw').fill('wrong password');await pg.locator('#li-go').click();
     await pg.waitForFunction(()=>document.querySelector('#login-status').textContent.includes('Wrong call sign or password'));
     await pg.locator('#li-pw').fill('moon tank 42');
@@ -84,7 +86,7 @@ async function explain(){   // on a failure: what the page showed and said
     await pg.waitForURL('**/web/play.html#play',{timeout:20000});
     await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab,null,{timeout:45000});
     // 5. settings page fits and works
-    await pg.goto(BASE+'/web/account.html');await pg.waitForSelector('#settings:not([hidden])');
+    await pg.goto(BASE+'/web/account.html',LEAVE);await pg.waitForSelector('#settings:not([hidden])');
     assert(await pg.locator('#acct-cs').textContent()===cs,'settings shows the call sign');
     assert(await pg.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),label+' settings fits');
     await pg.screenshot({path:path.join(OUT,name+'-'+label+'-settings.png'),fullPage:true});
@@ -92,7 +94,7 @@ async function explain(){   // on a failure: what the page showed and said
      // an older account without a call sign is asked for one in the game (prefilled), and it becomes the public name
      const pid=await pg.evaluate(()=>fetch('/auth/session').then(r=>r.json()).then(s=>s.pid));
      await new Promise((ok,no)=>{const r=require('node:https').request(FIX+'/__nocs',{method:'POST',ca:fs.readFileSync(path.join(OUT,'fixture-cert.pem'))},res=>{res.resume();res.on('end',ok);});r.on('error',no);r.end(JSON.stringify({pid}));});
-     await pg.goto(BASE+'/web/play.html#play');await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab,null,{timeout:45000});
+     await pg.goto(BASE+'/web/play.html#play',LEAVE);await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab,null,{timeout:45000});
      assert(await pg.locator('#cs-in').count()===0,'not asked before the first match');await pg.evaluate(()=>{save.welcomed=true;save.mp=1;store();closeAll();});
      await pg.waitForSelector('#cs-in',{timeout:20000});
      await pg.locator('#cs-in').fill(cs.slice(0,12)+'_v2');await pg.waitForFunction(c=>document.querySelector('#cs-note').textContent.includes(c+' is available'),cs.slice(0,12)+'_v2',{timeout:10000});await pg.waitForFunction(()=>/available/.test(document.querySelector('#cs-note').textContent),null,{timeout:10000});
