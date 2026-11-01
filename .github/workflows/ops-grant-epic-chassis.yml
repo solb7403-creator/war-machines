@@ -1,0 +1,18 @@
+name: One-time admin grant (Epic chassis) — temporary
+# Owner-authorized one-off. Runs only on pushes to the ops/grant-epic-chassis branch; removed after use.
+on:
+  push:
+    branches: [ops/grant-epic-chassis]
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - env:
+          DB: ${{ secrets.FIREBASE_DB_SECRET }}
+          PID: ln_6392735208728
+          MODE: inspect
+        run: node dev/ops/grant-epic-chassis.mjs
