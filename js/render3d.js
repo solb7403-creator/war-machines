@@ -173,10 +173,15 @@ function buildTank(spec,mats){
  body.add(M3.meshOf(H.b,null,mats));
  for(const a of H.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);body.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
  tur.position.y=H.meta.ty;body.add(tur);
- const tg=new THREE.Group();tur.add(tg);tg.add(M3.meshOf(Wk.b,null,mats));
- for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);tg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
- if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body',spec),null,mats));tg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount',spec),null,mats));}
- const T={g,hull,body,tur,tg,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
+ // tg = aim + recoil; wg = the weapon in its own kit space, scaled once per chassis class (Moonbeam only).
+ // wmeta tips/halos and anim pivots are wg-local, so muzzle FX follow via wpos(o.wg,…) with no second scale.
+ const ws=spec.boss?1:M3.weaponScale(spec.arch,spec.cls),tg=new THREE.Group();tur.add(tg);
+ let wg=tg;if(ws!==1){wg=new THREE.Group();wg.scale.setScalar(ws);tg.add(wg);}
+ wg.add(M3.meshOf(Wk.b,null,mats));
+ for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);wg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
+ // the Moonbeam's mount fitting is drawn against its cradle, so it rides in wg; standard mounts are unchanged (wg===tg)
+ if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body',spec),null,mats));wg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount',spec),null,mats));}
+ const T={g,hull,body,tur,tg,wg,ws,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
  if(!spec.boss&&typeof GraphicsMotion!=='undefined'&&typeof Equipment3D!=='undefined'&&Equipment3D.active())T.motion=GraphicsMotion.attach(g,H.meta.track);
  if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
  return T;
@@ -318,7 +323,7 @@ function frame3D(shx,shy){
   const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced();
   if(o.motion){o.motion.step(dt,{dx:(u.x-o.px)/ds,dz:(u.y-o.py)/ds,heading:hd,aim:u.ang},quiet);o.tur.rotation.y=-(o.motion.state.aim-hd);}else o.tur.rotation.y=-(u.ang-hd);
   o.body.position.y=(o.meta.bob?o.meta.bob*Math.sin(t*3+(u.id||0)):0)+lift/ds;
-  o.recoil=Math.max(0,o.recoil-dt*6);o.tg.position.x=o.motion?-o.motion.state.kick:-o.recoil*0.14;
+  o.recoil=Math.max(0,o.recoil-dt*6);o.tg.position.x=-(o.motion?o.motion.state.kick:o.recoil*0.14)*o.ws;
   if(o.motion){const ms=o.motion.state,travel=Math.hypot(u.x-o.px,u.y-o.py);o.body.rotation.z=quiet?0:Math.min(.012,travel*.10)*Math.sin(ms.phase*19)+ms.hit*.018;o.body.position.y+=quiet?0:Math.min(.008,travel*.05)*Math.sin(ms.phase*24);}
   stepAnims(o.anims,dt,t);
   const fl=u.flash>0;if(fl&&!o.fl&&o.motion)o.motion.state.hit=1;if(fl!==o.fl){o.fl=fl;const e=fl?(armor(u)>0?BUFF.arm.c:'#ffe27a'):'#000000';o.mats.lit.emissive.set(e);o.mats.shine.emissive.set(e);if(!fl&&u.gh){o.mats.lit.emissive.setHex(0x3a5a9a);o.mats.shine.emissive.setHex(0x3a5a9a);}}
@@ -343,9 +348,9 @@ function frame3D(shx,shy){
   if(vl>=25&&Math.random()<dt*(R3.q==='low'?6:14)){const a=Math.random()*6.28,d=Math.random()*1.3*ds;emit(PSA,{x:u.x+Math.cos(a)*d,y:hgt+0.35+Math.random()*0.9*ds,z:u.y+Math.sin(a)*d,vy:0.6,life:0.6,s0:0.08,s1:0.42,c:['#ffffff','#c79bff','#ffcf4a','#ff7ad9'][(Math.random()*4)|0],a:0.95});}
   // soft glows on lights, orbs and cores (a cheap stand-in for bloom)
   for(const h of o.meta.halos){const w=wpos(o.body,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6,h[3],0.55);}
-  for(const h of o.wmeta.halos){const w=wpos(o.tg,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6,h[3],0.55);}
+  for(const h of o.wmeta.halos){const w=wpos(o.wg,h);once(PSA,w.x,w.y,w.z,h[4]*o.ws*ds*1.6,h[3],0.55);}
   // super charging: light gathers at the muzzle
-  if(u.sup&&SUP[u.sup.w]){const S=SUP[u.sup.w],k=1-u.sup.t/S.charge,tp=o.wmeta.tips[0];if(tp){const w=wpos(o.tg,tp);once(PSA,w.x,w.y,w.z,0.6+1.6*k,'#ff5a4a',0.5+0.5*k);once(PSA,w.x,w.y,w.z,0.3+0.6*k,'#ffffff',0.8);}}
+  if(u.sup&&SUP[u.sup.w]){const S=SUP[u.sup.w],k=1-u.sup.t/S.charge,tp=o.wmeta.tips[0];if(tp){const w=wpos(o.wg,tp);once(PSA,w.x,w.y,w.z,0.6+1.6*k,'#ff5a4a',0.5+0.5*k);once(PSA,w.x,w.y,w.z,0.3+0.6*k,'#ffffff',0.8);}}
   // bounty: a gold star over tanks worth 3+
   if(matchG==='bounty'&&(u.bty||0)>=3){const st=poolGet('star',()=>{const m=new THREE.Group();m.add(new THREE.Mesh(G.star.shine,MT.shine));return m;});
    st.position.set(u.x,hgt+1.9*ds/R*0.7+0.4*Math.sin(t*3),u.y);st.rotation.y=t*2.2;st.scale.setScalar(0.7+Math.min(0.8,(u.bty-3)*0.08));}
@@ -438,13 +443,13 @@ function boom3(x,z,r,c){
 }
 function muzzle(u,arch){
  const o=B3.units.get(u);if(!o||!o.wmeta.tips.length)return;
- const tp=o.wmeta.tips[o.tipI++%o.wmeta.tips.length],w=wpos(o.tg,tp),c=arch==='moon'?'#e8f4ff':WEAPONS[arch]?WEAPONS[arch].c:'#ffffff';
+ const tp=o.wmeta.tips[o.tipI++%o.wmeta.tips.length],w=wpos(o.wg,tp),c=arch==='moon'?'#e8f4ff':WEAPONS[arch]?WEAPONS[arch].c:'#ffffff';
  o.recoil=arch==='twin'?0.4:1;if(o.motion)GraphicsMotion.shot(o.motion.state,arch);
  const F=typeof GraphicsMotion!=='undefined'?GraphicsMotion.PROFILES[arch]:null;
  // Short directional discharge in the existing additive batch, never a damage beam.
  const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),n=quiet?1:R3.q==='low'?2:arch==='siege'?4:3;
  const dir=new THREE.Vector3(1,0,0).transformDirection(o.tg.matrixWorld);
- for(let i=0;i<n;i++)emit(PSA,{x:w.x+dir.x*i*.13,y:w.y,z:w.z+dir.z*i*.13,vx:dir.x*(arch==='twin'?4:6),vz:dir.z*(arch==='twin'?4:6),life:F?.flash||.06,s0:arch==='moon'?.25:.18,s1:.02,c:arch==='moon'?'#72d5ff':c,a:.8});
+ for(let i=0;i<n;i++)emit(PSA,{x:w.x+dir.x*i*.13,y:w.y,z:w.z+dir.z*i*.13,vx:dir.x*(arch==='twin'?4:6),vz:dir.z*(arch==='twin'?4:6),life:F?.flash||.06,s0:arch==='moon'?.25*o.ws:.18,s1:.02,c:arch==='moon'?'#72d5ff':c,a:.8});
  emit(PSA,{x:w.x,y:w.y,z:w.z,life:F?.flash||.07,s0:arch==='siege'?1.25:arch==='twin'?.60:.82,s1:0.3,c,a:1,fade:0});
  if(arch==='siege'&&R3.q!=='low')emit(PSN,{x:w.x,y:w.y,z:w.z,life:0.6,s0:0.4,s1:1.1,c:'#4a4c55',a:0.45,vy:0.5});
 }
@@ -519,17 +524,21 @@ function cachedArt(ctx,w,h,key,fn){
  if(!c){c=document.createElement('canvas');c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);fn(x);artCache.set(k,c);if(artCache.size>120)artCache.delete(artCache.keys().next().value);}
  ctx.drawImage(c,0,0,w,h);
 }
-function haloList(o,parts){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);if(o.tooth&&o.spec&&o.spec.vt>=2)out.push([wpos(o.body,o.tooth).clone(),'#ffcf4a',1.1]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.tg,h).clone(),h[3],h[4]*1.5]);return out;}
+function haloList(o,parts){const out=[];o.g.updateMatrixWorld(true);for(const h of o.meta.halos||[])out.push([wpos(o.body,h).clone(),h[3],h[4]*1.5]);if(o.tooth&&o.spec&&o.spec.vt>=2)out.push([wpos(o.body,o.tooth).clone(),'#ffcf4a',1.1]);if(parts!==1)for(const h of o.wmeta.halos||[])out.push([wpos(o.wg,h).clone(),h[3],h[4]*o.ws*1.5]);return out;}
+// Menu framing for a whole tank with the Moonbeam. At its class scale (0.72-0.80) the muzzle (kit tip 2.35 × ws ≤ 1.88)
+// reaches no further than a standard gun's (≈1.9), so only a small margin for the taller cradle and halo remains.
+const moonFrame=T=>T.spec&&T.spec.arch==='moon'&&!T.spec.boss?1.04:1;
 // a tank (or part of one) for the menus. parts: 1 = chassis only, 2 = weapon only, 3 = whole tank
 function artTank(ctx,w,h,spec,parts,opt){
  opt=opt||{};const A=artR(),T=buildTank(spec,A.mats);
  if(parts===1)T.tur.visible=false;
- if(parts===2){T.body.children.forEach(c=>{if(c!==T.tur)c.visible=false;});T.tur.position.set(-0.75,0,0);}
+ if(parts===2){T.body.children.forEach(c=>{if(c!==T.tur)c.visible=false;});T.tur.position.set(-0.75*T.ws,0,0);}
  T.hull.rotation.y=opt.hd===undefined?0:opt.hd;T.tur.rotation.y=opt.ta||0;
  if(opt.t!==undefined)stepAnims(T.anims,0,opt.t);
  const hal=haloList(T,parts);
- const r=(spec.boss?2.2:parts===2?1.25:1.55)*(spec.arch==='moon'&&parts!==1?1.22:1);   // the unified Moonbeam is long: frame it wider
- artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3:0.35,z:opt.z||1,environment:opt.environment},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
+ // weapon alone: frame and offset scale with ws, so the card shows the approved Moonbeam exactly as before
+ const r=spec.boss?2.2:parts===2?1.25*(spec.arch==='moon'?1.22*T.ws:1):parts===3?1.55*moonFrame(T):1.55;
+ artShot(ctx,w,h,T.g,{r,el:opt.el===undefined?0.6:opt.el,az:opt.az===undefined?0.95:opt.az,cy:parts===2?0.3*T.ws:0.35,z:opt.z||1,environment:opt.environment},hal);if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);
 }
 const mySpec=(o)=>{let L=null;try{L=myLoadout();}catch(e){}const lunar=save.skin==='lunar';
  return Object.assign({fits:L?fittingVisuals(L):undefined,cls:L?L.c.c:'vanguard',ct:L?Math.max(0,L.c.t|0):0,arch:L?L.w.a:'pulse',wt:L?Math.max(0,L.w.t|0):0,paint:save.paint||'stock',lunar,team:TC[0],gems:(save.cores||[]).filter(Boolean).join(','),boss:false,ghost:false,vl:vaultLevel(save.vg),vt:vtOf(vaultLevel(save.vg))},o||{});};
@@ -570,7 +579,7 @@ function heroArt(ctx,w,h,t){
  if(!AR||!AR.hero||AR.hero.k!==k){if(AR?.hero&&typeof Equipment3D!=='undefined')Equipment3D.releaseTree(AR.hero.T.g);const A=artR();AR.hero={k,T:buildTank(sp,A.mats)};}
  const T=AR.hero.T;T.hull.rotation.y=0.25;T.tur.rotation.y=Math.sin(t*0.55)*0.42;stepAnims(T.anims,0.033,t);
  T.body.position.y=T.meta.bob?T.meta.bob*Math.sin(t*3):0;
- ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);artShot(ctx,bw,bh,T.g,{r:sp.arch==='moon'?1.85:1.55,el:0.5,az:0.95,cy:sp.arch==='moon'?0.5:0.35},haloList(T,3));ctx.restore();
+ ctx.save();ctx.translate(cx-bw/2,cy-bh*0.62);const mf=moonFrame(T);artShot(ctx,bw,bh,T.g,{r:1.55*mf,el:0.5,az:0.95,cy:0.35+(mf-1)*0.68},haloList(T,3));ctx.restore();
 }
 
 function machineArt3D(ctx,w,h,L){
@@ -594,7 +603,7 @@ function drawEquipmentIdle(ctx,w,h,spec,t){
  const A=artR(),key=specKey(spec);if(!A.preview||A.preview.key!==key){if(A.preview)Equipment3D.releaseTree(A.preview.T.g);A.preview={key,T:buildTank(spec,A.mats),canvas:ctx.canvas,last:t};}
  const p=A.preview,T=p.T,dt=Math.min(.05,Math.max(0,t-p.last));p.last=t;p.canvas=ctx.canvas;
  stepAnims(T.anims,dt,t);if(T.motion){const quiet=GraphicsMotion.reduced();T.motion.step(dt,{},quiet);T.motion.uniforms.uCharge.value=quiet?0:.12+.10*Math.sin(t*2);}
- artShot(ctx,w,h,T.g,{r:spec.arch==='moon'?1.89:1.55,el:.6,az:1,cy:.35,environment:'engineer'},haloList(T,3));
+ artShot(ctx,w,h,T.g,{r:1.55*moonFrame(T),el:.6,az:1,cy:.35,environment:'engineer'},haloList(T,3));
 }
 function tickEquipmentPreview(now){
  if(typeof WEB_EDITION!=='undefined'&&WEB_EDITION||!AR?.preview)return;const p=AR.preview,c=p.canvas;
