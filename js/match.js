@@ -181,7 +181,7 @@ if(typeof document!=='undefined')document.addEventListener('visibilitychange',()
 const MATCH_WHY={mode:'this mode isn’t open right now',map:'this map isn’t open right now',proof:'the match couldn’t be verified',fast:'the match ended too fast',expired:'it was more than a day old',ticket:'the match ticket was already used',overlap:'it overlaps another match on this account',late:'too many matches without a ticket today'};
 function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
  const L=lastResult;if(!L||L.tok!==tok)return;
- if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
+ if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,sqb:r.res.bonus||0,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
  else if(r&&r.hold&&r.error==='hourly')Object.assign(L,{note:'Saved: this hour’s match limit is reached, so it counts '+(r.retry?'in about '+Math.max(1,Math.ceil(r.retry/60000))+' min':'soon')});
  else if(r&&(r.hold||r.error==='busy'))Object.assign(L,{note:'Saved: the server is busy, it will count shortly'});
  else if(r&&r.error==='pending')Object.assign(L,{note:'Saved: it will count when you’re back online'});
