@@ -40,6 +40,15 @@ function decode(pf) {
 const unitsFor = (L, g, m) => (g === "royale" ? 6 : g === "boss" ? (L.MODES[m] || L.MODES["1v1"]).n + 1 : 2 * (L.MODES[m] || L.MODES["1v1"]).n);
 // c: {g, m, map, secs (ticket to result, wall clock), won, drawn, place, series, min (fastest believable win, s),
 //     spdM (your chassis and engine), st: {dmg, kills, sup, box, low} as reported}
+// how long the recorded fight lasted (match seconds) and whether fast forward ran (x3 while you're down), or null for no
+// usable record. The server uses it to place a result in time when the ticket came late or never arrived (eco.matchEnd)
+export function proofSpan(pf) {
+  const D = decode(pf);
+  if (!D) return null;
+  let ffw = false;
+  for (let s = 0; s < D.k; s++) if (D.b[s * D.sz + D.n * 3 + 2] & 128) { ffw = true; break; }
+  return { simT: D.k * PROOF.DT, ffw };
+}
 export function checkProof(pf, c) {
   const L = lim(), D = decode(pf), fail = (why, extra) => ({ ok: false, why, fix: {}, sig: extra || {} });
   if (!D) return fail("norec");

@@ -764,10 +764,10 @@ function showVS(o){
 let vsStarting=false;
 async function vsGo(){
  if(pvpOn()||vsStarting)return;vsStarting=true;clearInterval(vsTimer);vsTimer=null;
- try{if(SRV_ECO&&mTicket&&mTicket.p)await mTicket.p;
+ try{if(SRV_ECO&&mTicket&&mTicket.p)await Promise.race([mTicket.p,new Promise(res=>setTimeout(res,TICKET_VS_WAIT))]);   // the fight never waits long on the server
   const ov=findOv('vs');if(ov){ov.onClose=null;closeOverlay(ov);}
   if(state==='vs'){
-   if(mTicket&&['garage_changed','update'].includes(mTicket.err)){state='menu';doSync(false);showToast(mTicket.err==='update'?'Reconnect to update your garage before battle.':'Garage changed on another device. Please start again.');return;}
+   if(mTicket&&['garage_changed','update'].includes(mTicket.hard)){state='menu';doSync(false);showToast(mTicket.err==='update'?'Reconnect to update your garage before battle.':'Garage changed on another device. Please start again.');return;}
    startMatch();
   }
  }finally{vsStarting=false;}

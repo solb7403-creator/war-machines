@@ -43,6 +43,7 @@ jobs:
           node dev/tests/wtest/lunar-identity.mjs
           node dev/tests/wtest/lab.mjs
           node dev/tests/wtest/lab-battle.mjs
+          node dev/tests/wtest/ticket-reliability.mjs
       - name: Live-match smoke test in the Workers runtime
         working-directory: worker
         env:

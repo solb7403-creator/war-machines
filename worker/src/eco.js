@@ -4,10 +4,18 @@
 // Writes are conditional (Firebase ETags): read, change, write only if nobody else wrote in between, else retry.
 import { RULES as R, LIM } from "./sim.gen.js";
 import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName } from "./db.js";
-import { checkProof } from "./proof.js";
+import { checkProof, proofSpan } from "./proof.js";
 
 export const ECO = {
-  TICKET_MS: 30 * 60000,   // a match ticket is good this long (the longest match is a 5-round best of 3)
+  // A real match must never lose its points to timing or a weak connection. A result can come back up to a day late (it
+  // waits on the phone until there's a connection), with a ticket that arrived late or never (verified by its match record)
+  TICKET_MS: 24 * 3600000, // a match ticket is good this long: a result held on a phone with no signal still counts
+  LATE_SLACK: 20000,       // a ticket issued this long after the recorded fight began still counts as on time (ms)
+  LATE_DAY: 12,            // results per UTC day whose start the server didn't see (no ticket in time): the record must verify
+  CLOCK_SLACK: 20000,      // overlap allowed between two matches' time spans (phone clock rounding), ms
+  GHOST_WAIT_MS: 1200,     // ghosts never hold up a ticket: whatever the lookup found by then (else none)
+  MD_KEEP: 40,             // answers kept per pilot, so a resent result (lost reply, retry) gets the same answer
+  IV_KEEP: 100,            // time spans of the latest scored matches (no two matches can overlap)
   HOUR_CAP: 40,            // scored matches per UTC hour
   // fastest a result can come back, in seconds from the ticket (the VS screen adds ~4 s). Measured with a maxed tank
   // driven by the bot AI (dev/tests: fastest wins 18-36 s Arena, 47-63 s Moon Zone, 72 s Crystal Rush, 120 s Bounty,
@@ -271,18 +279,28 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   if (!mapList().includes(map)) return { status: 400, body: { error: "map" } };
   // a phone that doesn't send match records is out of date: it reloads to the new version (index.html checks on open)
   if (!b.pv) return { status: 200, body: { ok: false, error: "update" } };
+  // cid: the phone's id for this match. Asking again with the same one (a reply that never arrived) gets the same ticket
+  const cid = /^[0-9a-f]{16}$/.test(String(b.cid || "")) ? b.cid : "";
   let sess = false;
   const n = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
-  const pw0 = await dbGet(env, `players/${pid}/power`).catch(() => null);
-  const candidates = await pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now, [], [R.AI_GHOST_LO, R.AI_GHOST_HI]);
-  const ghosts = b.fv === R.FIT_VERSION ? candidates : candidates.filter(x => !R.FIT_ORDER.some(k => R.fittingSelection(x.L.mods)[k] !== "stock"));
-  const t = await tx(env, pid, (S, X) => {
+  // ghosts never hold up the ticket: looked up alongside it, and whatever the lookup has found after GHOST_WAIT_MS is used
+  const ghostP = dbGet(env, `players/${pid}/power`).catch(() => null)
+    .then((pw0) => pickGhosts(env, pid, Number(pw0) || 0, Number(pw0) > 0 ? ghostSeats(g, m) : 0, now, [], [R.AI_GHOST_LO, R.AI_GHOST_HI]))
+    .then((c) => (b.fv === R.FIT_VERSION ? c : c.filter((x) => !R.FIT_ORDER.some((k) => R.fittingSelection(x.L.mods)[k] !== "stock"))))
+    .catch(() => []);
+  const ghostBox = Promise.race([ghostP, new Promise((res) => setTimeout(() => res([]), ECO.GHOST_WAIT_MS))]);
+  const t = await tx(env, pid, async (S, X) => {
     who(S, user);
     if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return {abort:true,error:"update"};
     if (S.lab && b.labRev !== undefined && b.labRev !== S.lab.rev) return {abort:true, error:"garage_changed"};
-    const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw);
-    // one open ticket per pilot: a new one replaces the last (that match can't be scored any more)
-    S.mt = { n, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
+    if (cid) { const same = openTickets(S).find((T) => T.cid === cid && now - T.t0 < ECO.TICKET_MS); if (same) return { abort: true, same }; }
+    const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw), ghosts = await ghostBox;
+    // a newer match doesn't kill the last ticket: its result may still be on its way (held on a phone with no signal).
+    // It only has to show a fight that ended before this one started (nx)
+    if (S.mt) { const o = (S.mto = S.mto || {}); o[S.mt.n] = { ...S.mt, nx: now };
+      for (const k of Object.keys(o)) if (now - o[k].t0 > ECO.TICKET_MS) delete o[k];
+      const ks = Object.keys(o).sort((a, c) => o[a].t0 - o[c].t0); for (const k of ks.slice(0, Math.max(0, ks.length - 6))) delete o[k]; }
+    S.mt = { n, cid, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
       L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
     // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
     const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
@@ -293,20 +311,27 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (!dy[X.day]) dy[X.day] = [dm, dm, 0];
     dy[X.day][2]++;
     for (const k of Object.keys(dy)) if (Number(k) < X.day - 9) delete dy[k];
-    return { lg: brk.key, mult: brk.mult, power: S.pw, L };
+    return { lg: brk.key, mult: brk.mult, power: S.pw, L, ghosts };
   }, now, { rl: 1 });
   if (t.rate) return { status: 429, body: { error: "rate" } };
   if (t.error) return { status: 409, body: { error: t.error } };
+  if (t.same) {   // the same match asking again: the same ticket (no ghosts this time; they're optional)
+    const T = t.same, brk = R.powerBracket(T.pw);
+    return { status: 200, body: { ok: true, tok: T.n + "." + (await sign(env, `${pid}|${T.n}|${T.t0}`)), league: brk.key, mult: T.mult, power: T.pw, L: T.L, E: pub(t.S), gh: [], same: true } };
+  }
   // a new session: who started playing this minute, on which network and device (accounts that always start together)
-  if (sess) {
+  const sessP = sess ? (async () => {
     const d = dayOf(now), mn = String(Math.floor((now % DAY_MS) / 60000)).padStart(4, "0");
     const dh = /^[0-9a-f]{1,8}$/.test(String(b.dh || "")) ? b.dh : "", did = /^[0-9a-f]{16}$/.test(String(b.did || "")) ? b.did : "";
-    await dbPatch(env, `ss/${d}/${mn}`, { [pid]: (await ipHash(env, ip)).slice(0, 8) + "." + dh + "." + did.slice(0, 8) }).catch(() => {});
-  }
+    await dbPatch(env, `ss/${d}/${mn}`, { [pid]: (await ipHash(env, ip)).slice(0, 8) + "." + dh + "." + did.slice(0, 8) });
+  })().catch(() => {}) : null;
+  const [tok] = await Promise.all([sign(env, `${pid}|${n}|${now}`), sessP]);
   // ghosts go to the phone by seat number only (never the owner's id)
-  return { status: 200, body: { ok: true, tok: n + "." + (await sign(env, `${pid}|${n}|${now}`)), league: t.lg, mult: t.mult, power: t.power, L: t.L, E: pub(t.S),
-    gh: ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
+  return { status: 200, body: { ok: true, tok: n + "." + tok, league: t.lg, mult: t.mult, power: t.power, L: t.L, E: pub(t.S),
+    gh: t.ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
 }
+// the pilot's open tickets: the latest, and older ones whose results may still be on their way
+const openTickets = (S) => [S.mt, ...Object.values(S.mto || {})].filter((T) => T && T.n);
 const lim = (v, hi) => Math.max(0, Math.min(hi, Math.round(Number(v) || 0)));
 export function minSecs(g, m, won, drawn, place) {
   if (g === "royale") return place === 1 ? ECO.MIN_WIN.royale : place > 0 && place <= 3 ? ECO.MIN_TOP3 : ECO.MIN_ANY;
@@ -315,36 +340,70 @@ export function minSecs(g, m, won, drawn, place) {
   const v = ECO.MIN_WIN[g];
   return typeof v === "number" ? v : (v && v[m]) || 10;
 }
+// A result: with the ticket from the VS screen (tok), or, when the phone never got one, with its own id for the match (cid)
+// and what was played (g, m, map, L). r.ago: seconds since the match ended on the phone (a held result comes back later).
+// Connection and timing never cost an honest match its points; what's checked is the match itself:
+// - on time (ticket issued before the recorded fight): the ticket's clock (too fast?) and the match record (proof of play)
+// - late or no ticket: the record must verify (whatever the proof mode), at most LATE_DAY a day, loadout = gear you own
+// - every result: inside a day, once only (same answer if resent), and no two matches' time spans overlap (iv)
+// - the hourly cap holds a result (the phone sends it again later) instead of throwing it away; the daily cap still applies
 export async function matchEnd(env, b, user, pid, now = Date.now()) {
-  const [n, sg] = String(b.tok || "").split(".");
-  if (!/^[0-9a-f]{16}$/.test(n || "")) return { status: 400, body: { error: "ticket" } };
+  const [n0, sg] = String(b.tok || "").split(".");
   const r0 = b.r && typeof b.r === "object" ? b.r : {};
+  const nOk = /^[0-9a-f]{16}$/.test(n0 || ""), cid = /^[0-9a-f]{16}$/.test(String(b.cid || r0.cid || "")) ? String(b.cid || r0.cid) : "";
+  if (!nOk && !cid) return { status: 400, body: { error: "ticket" } };
+  const ago = Math.max(0, Math.min(ECO.TICKET_MS / 1000, Number(r0.ago) || 0)), end = now - ago * 1000;
   // flag (the default): every result scores, and 3 failed records in a day flag the pilot (held off the airdrop list until
   // Jake clears them), so a real player never loses a match to the check. enforce (admin sheet): a failed record scores nothing
   const mode = (await cfg(env, now)).proof === "enforce" ? "enforce" : "flag";
+  const span = r0.quit ? null : proofSpan(r0.pf);
   let flags = [], ih = null;
   const t = await tx(env, pid, async (S, X) => {
     who(S, user);
     S.md = S.md || {};
-    if (S.md[n]) return { abort: true, dup: S.md[n] };   // already scored (a retry after a lost reply): the same answer
-    const T = S.mt;
-    if (!T || T.n !== n || sg !== (await sign(env, `${pid}|${n}|${T.t0}`))) return { abort: true, err: "ticket" };
-    delete S.mt;
-    const secs = (now - T.t0) / 1000;
-    const keep = (res) => { S.md[n] = res; const ks = Object.keys(S.md); if (ks.length > 6) for (const k of ks.slice(0, ks.length - 6)) delete S.md[k]; return res; };
-    if (now - T.t0 > ECO.TICKET_MS) return { err: "expired", res: keep({ err: "expired" }) };
-    if (r0.quit) { R.ecoQuit(S); return { res: keep({ pts: 0, awarded: 0, quit: true }) }; }
+    const key = nOk ? n0 : "c" + cid;
+    const prev = S.md[key] || (cid && S.md["c" + cid]);
+    if (prev) return { abort: true, dup: prev };   // already scored (a retry after a lost reply): the same answer
+    let T = nOk ? openTickets(S).find((x) => x.n === n0) : null;
+    if (T && sg !== (await sign(env, `${pid}|${T.n}|${T.t0}`))) return { abort: true, err: "ticket" };
+    if (!T && cid) T = openTickets(S).find((x) => x.cid === cid) || null;   // the ticket was issued but its reply never reached the phone
+    if (!T && nOk && !cid) return { abort: true, err: "ticket" };
+    if (T && S.md[T.n]) return { abort: true, dup: S.md[T.n] };
+    const tooOld = Number(r0.ago) > ECO.TICKET_MS / 1000;   // held on the phone for more than a day
+    const keep = (res) => { S.md[T && T.n ? T.n : key] = res; if (cid) S.md["c" + cid] = res; const ks = Object.keys(S.md); if (ks.length > ECO.MD_KEEP) for (const k of ks.slice(0, ks.length - ECO.MD_KEEP)) delete S.md[k]; return res; };
+    const used = () => { if (!T || !T.n) return; if (S.mt && S.mt.n === T.n) delete S.mt; else if (S.mto) delete S.mto[T.n]; };
+    if (!T && tooOld) return { err: "expired", res: keep({ err: "expired" }) };
+    if (!T) {   // no ticket at all: the result says what was played; the loadout is what the pilot really owns
+      const g = String(r0.g || ""), m = g === "royale" ? "1v1" : String(r0.m || ""), map = String(r0.map || "");
+      // a mode or map this server doesn't know (a phone on the next version while a release goes out): held, not refused
+      if (!R.GT_ORDER.includes(g) || !R.MODES[m] || !mapList().includes(map)) return { abort: true, hold: "update", retry: 600000 };
+      const L = R.ecoLoadout(S, r0.L), pw = R.powerOf(L), brk = R.powerBracket(pw);
+      T = { n: null, g, m, map, t0: null, feat: g === R.featuredOn(dayOf(end)), quick: !!r0.quick, pv: 1, L, rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1",
+        series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw, gh: [] };
+    }
+    if (tooOld || (T.t0 && now - T.t0 > ECO.TICKET_MS)) { used(); return { err: "expired", res: keep({ err: "expired" }) }; }
+    // when the fight happened: it ended `ago` seconds before now and lasted as long as its record (fast forward runs x3)
+    const wallD = span ? (span.ffw ? span.simT / 3 : span.simT) : 0, start = end - wallD * 1000;
+    if (T.nx && end > T.nx + ECO.CLOCK_SLACK) return { abort: true, err: "ticket" };   // an older ticket: its match ended before the next began
+    const onTime = !!T.t0 && T.t0 <= start + ECO.LATE_SLACK;
+    const secs = onTime ? (now - T.t0) / 1000 : (now - start) / 1000;
+    if (r0.quit) { used(); R.ecoQuit(S); return { res: keep({ pts: 0, awarded: 0, quit: true }) }; }
     // the result as the phone reports it, held to what's possible in that time
     const solo = T.g === "royale";
     let won = !!r0.won, drawn = !won && !!r0.drawn, place = solo ? Math.max(1, Math.min(6, Math.round(Number(r0.place) || 6))) : 0;
     if (solo) { won = place === 1; drawn = false; }
     const top3 = solo && place <= 3;
-    if (secs < minSecs(T.g, T.m, won, drawn, place)) { flags = watch(S, { fast: true }, X, now); return { err: "fast", res: keep({ err: "fast" }) }; }
+    const minS = minSecs(T.g, T.m, won, drawn, place);
+    if ((onTime ? secs : wallD) < (onTime ? minS : minS * 0.75)) { used(); flags = watch(S, { fast: true }, X, now); return { err: "fast", res: keep({ err: "fast" }) }; }
+    // no two matches at once: this fight's time span can't overlap one already scored (results may arrive in any order)
+    const ivs = (S.iv || []).filter((x) => Array.isArray(x) && x[1] * 1000 > now - ECO.TICKET_MS - 3600000);
+    if (ivs.some(([a, z]) => a * 1000 < end - ECO.CLOCK_SLACK && z * 1000 > start + ECO.CLOCK_SLACK)) { used(); return { err: "overlap", res: keep({ err: "overlap" }) }; }
+    if (!onTime) { const lt = (S.lt = S.lt && S.lt.d === X.day ? S.lt : { d: X.day, n: 0 }); if (lt.n >= ECO.LATE_DAY) { used(); return { err: "late", res: keep({ err: "late" }) }; } }
     const hr = Math.floor(now / 3600000);
     S.mh = S.mh && S.mh.h === hr ? S.mh : { h: hr, n: 0 };
-    if (S.mh.n >= ECO.HOUR_CAP) return { err: "hourly", res: keep({ err: "hourly" }) };
+    if (S.mh.n >= ECO.HOUR_CAP) return { abort: true, hold: "hourly", retry: (hr + 1) * 3600000 - now };   // held: sent again next hour
     S.mh.n++;
-    const s = r0.stats && typeof r0.stats === "object" ? r0.stats : {}, el = Math.max(1, secs);
+    const s = r0.stats && typeof r0.stats === "object" ? r0.stats : {}, el = Math.max(1, onTime ? (span ? Math.min(secs, wallD + 30) : secs) : wallD + 8);   // match length (a held result doesn't count its wait)
     // proof of play: the match record has to show this fight happened the way the result says
     let pr = null;
     if (T.pv) {
@@ -352,13 +411,17 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       const me0 = proofL ? R.tankOf(proofL, 1) : null;
       const scale = T.g === "royale" ? R.ROYALE_HP : T.g === "boss" ? 1.5 : R.MODES[T.m].n * (T.g === "bounty" ? R.BTY_HP : 1);
       const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf({...proofL,c},scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
-      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minSecs(T.g, T.m, won, drawn, place), spdM: me0 ? me0.spdM : 1, st: s });
+      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minS, spdM: me0 ? me0.spdM : 1, st: s });
       if (!pr.ok) {
         S.pfw = pr.why;
         flags = watch(S, { pf: true, why: pr.why }, X, now);
-        if (mode !== "flag") return { err: "proof", res: keep({ err: "proof", why: pr.why }) };
+        // a result the server didn't see start has only its record to go on: it must verify, whatever the proof mode
+        if (mode !== "flag" || !onTime) { used(); return { err: "proof", res: keep({ err: "proof", why: pr.why }) }; }
       } else for (const [k, v] of Object.entries(pr.fix)) s[k] = v;   // stats held to what the record shows
     }
+    used();
+    if (!onTime) S.lt.n++;
+    S.iv = ivs.concat([[Math.round(start / 1000), Math.round(end / 1000)]]).slice(-ECO.IV_KEEP);   // this match's time span
     const kmax = T.g === "arena" ? (T.series ? 5 : R.MODES[T.m].n) : solo ? 5 : Math.ceil(el / 4) + 2;
     const st = { dmg: lim(s.dmg, el * 450), kills: lim(s.kills, kmax), box: lim(s.box, 30), sup: lim(s.sup, Math.ceil(el / 6) + 2), caps: T.g === "zone" ? lim(s.caps, Math.ceil(el / 5)) : 0,
       cry: T.g === "crystal" ? lim(s.cry, Math.ceil(el / 3)) : 0, stars: T.g === "bounty" ? lim(s.stars, Math.ceil(el / 2) + 7) : 0, low: Math.max(0, Math.min(1, Number(s.low) || 0)) };
@@ -372,12 +435,12 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const o = { won, drawn, place, top3, g: T.g, m: T.m, feat: T.feat, series: T.series, quick: T.quick, map: T.map };
     const p = R.ecoMatchPts(S, o, T.mult, X);
     R.ecoAfterMatch(S, { ...o, streak: S.streak, seriesW: sw, st }, X);
-    flags = flags.concat(watch(S, { ai: true, won, secs, pts: p.pts, ni: !!(pr && pr.ok && pr.sig.ni > ECO.NOINPUT_SHARE) }, X, now));
+    flags = flags.concat(watch(S, { ai: true, won, secs: el, pts: p.pts, ni: !!(pr && pr.ok && pr.sig.ni > ECO.NOINPUT_SHARE) }, X, now));
     const bp = (S.bp = S.bp || {});
     // when this match ended: the ticket plus the fight the record shows and the VS screen (a result that arrives late, on
     // a weak connection, doesn't look like a pilot who never stops in the menus)
-    bp.le = Math.min(now, T.t0 + ((pr && pr.ok ? pr.sig.simT : secs) + 4) * 1000);
-    bp.l = (bp.l || []).concat([[T.g + " " + T.m, Math.round(secs)]]).slice(-30);
+    bp.le = Math.min(now, (onTime ? T.t0 : start) + ((pr && pr.ok ? pr.sig.simT : el) + 4) * 1000);
+    bp.l = (bp.l || []).concat([[T.g + " " + T.m, Math.round(el)]]).slice(-30);
     if (pr && pr.ok && pr.sig.ih) { bp.ih = (bp.ih || []).concat(pr.sig.ih).slice(-20); ih = pr.sig.ih; }
     const dy = bp.dy && bp.dy[X.day];
     if (dy) dy[1] = Math.floor((now % DAY_MS) / 60000);
@@ -395,6 +458,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
   }
   const res = t.dup || t.res;
   if (t.rate) return { status: 429, body: { error: "rate" } };
+  if (t.hold) return { status: 200, body: { ok: false, error: t.hold, hold: true, retry: t.retry, E: pub(t.S) } };   // not lost: the phone sends it again later
   if (t.err === "ticket" && !t.dup) return { status: 200, body: { ok: false, error: "ticket", E: pub(t.S) } };
   if (res && res.err) return { status: 200, body: { ok: false, error: res.err, E: pub(t.S) } };
   return { status: 200, body: { ok: true, res, dup: !!t.dup, E: pub(t.S) } };

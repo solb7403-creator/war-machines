@@ -96,7 +96,7 @@ st = await start(A, { g: 'bounty', m: '1v1' }, now0 + 71000);
 en = await end(A, old, { won: true }, now0 + 200000); t(!en.ok && en.error === 'ticket', 'an older ticket dies when a new match starts');
 en = await end(A, st.tok, { won: true, stats: { stars: 50 } }, now0 + 71000 + 100000); t(!en.ok && en.error === 'fast', 'Bounty win before 110 s: too fast');
 st = await start(A, { g: 'bounty', m: '1v1' }, now0 + 400000);
-en = await end(A, st.tok, { won: true }, now0 + 400000 + 31 * 60000); t(!en.ok && en.error === 'expired', 'expired ticket refused');
+en = await end(A, st.tok, { won: true }, now0 + 400000 + 25 * 3600000); t(!en.ok && en.error === 'expired', 'a ticket older than a day is refused (a held result has 24 h)');
 st = await start(A, { g: 'royale', m: '1v1' }, now0 + 3e6);
 en = await end(A, st.tok, { place: 6 }, now0 + 3e6 + 8000); t(en.ok && en.res.base === R.ROYALE_PTS[5], 'Last Standing 6th after 8 s is fine (' + R.ROYALE_PTS[5] + ' points)');
 st = await start(A, { g: 'royale', m: '1v1' }, now0 + 3.1e6);
@@ -116,7 +116,7 @@ en = await end(A, st.tok, { quit: true }, now0 + 3.3e6 + 5000); t(en.ok && en.re
 }
 t(eco.minSecs('crystal', '1v1', true) === 60 && eco.minSecs('arena', '3v3', true) === 20 && eco.minSecs('zone', '2v2', false, false) === 6, 'minimum durations per mode');
 // daily cap still applies to match points
-setEco('tg_111', (S) => { S.dailyPts = R.DAILY_CAP - 50; S.dailyDay = day; delete S.mh; delete S.fx; });
+setEco('tg_111', (S) => { S.dailyPts = R.DAILY_CAP - 50; S.dailyDay = day; delete S.mh; delete S.fx; delete S.iv; });   // iv: the synthetic match times above would overlap
 st = await start(A, { g: 'arena', m: '2v2' }, Date.now());
 en = await end(A, st.tok, { won: true }, Date.now() + 60000);
 t(en.ok && en.res.awarded === 50 && E('tg_111').dailyPts === R.DAILY_CAP, 'daily cap: only 50 of ' + en.res.pts + ' credited');
@@ -270,7 +270,7 @@ setEco('tg_222', (S) => { S.an = { d: day, m: 3, h: 0, ai: 55, aw: 54, s: 3000, 
 st = await start(B, { g: 'arena', m: '1v1' }, Date.now()); en = await end(B, st.tok, { won: true }, Date.now() + 30000);
 t(en.ok && db.get('/flags/tg_222/r/winrate'), 'AI win rate over 90% across 50+ matches flagged');
 setEco('tg_222', (S) => { S.an.h = (1 << 22) - 1; S.an.d = day; S.mh = null; });
-st = await start(B, { g: 'arena', m: '1v1' }, Date.now()); en = await end(B, st.tok, { won: false }, Date.now() + 30000);
+st = await start(B, { g: 'arena', m: '1v1' }, Date.now() + 40000); en = await end(B, st.tok, { won: false }, Date.now() + 70000);   // after the last match (no overlap)
 t(db.get('/flags/tg_222/r/hours'), 'play spread over 20+ hours of one day flagged');
 {
   const u = { id: 555 }; await call('/api/sync', { initData: initData(u) });
