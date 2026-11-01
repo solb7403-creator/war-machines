@@ -12,6 +12,12 @@ function hexMix(a,b,t){const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16)
  return '#'+f(A>>16,B>>16)+f((A>>8)&255,(B>>8)&255)+f(A&255,B&255);}
 const TIERC=['#9fb3c8','#b78bff','#ffcf4a'];   // rarity trim: common, rare, epic (RCOL)
 const LEG='#e8f4ff',GOLD='#ffcf4a';
+// Lunar Skin is an OVERLAY on the equipped paint, shared by the HF collection and the fallback renderer: the paint stays on the
+// big armour panels, Lunar adds dark graphite structure, gold trim/crests and blue energy channels. Stock paint keeps the
+// approved black/graphite/gold look. Visual only: no stats, sizes or sockets read this.
+const LUNAR=Object.freeze({body:'#171d27',plate:'#303946',gold:'#c2a266',graphite:'#1c222b',frame:'#2b323c',energy:'#45c2ff',core:'#b5f0ff',wisp:'#86dcff'});
+const LUNAR_CHANNELS=new Set(['#5fd4ff','#6bcde5','#83c6df']);   // existing cyan seams in the designs; Lunar runs its energy through them
+const lunarStock=P=>!P||!P.hull||P.hull==='#2c3a49';
 
 // ---------- the kit: shapes go into buckets, then merge ----------
 const kit=()=>({lit:[],shine:[],glow:[]});
@@ -68,9 +74,11 @@ const sym=f=>{f(-1);f(1);};
 // ---------- colors for one tank ----------
 function palette(P,team,cls,lunar){
  P=P||{hull:'#2c3a49',tur:'#3b4a5b',trim:'#d5dee7'};
- if(lunar)return {hull:'#20252d',hull2:'#363c44',tur:'#272d36',tur2:'#424952',trim:'#bc904b',dark:'#10151c',metal:'#65717c',track:'#101419',light:'#d9eaff',team:team||'#4d9fff',acc:'#c49a54',shine:true,lunar:true};
+ if(lunar&&lunarStock(P))return {hull:'#20252d',hull2:'#363c44',tur:'#272d36',tur2:'#424952',trim:'#bc904b',dark:'#10151c',metal:'#65717c',track:'#101419',light:'#d9eaff',team:team||'#4d9fff',acc:'#c49a54',shine:true,lunar:true};
  const k=P.hull==='#07080d'||P.hull==='#17131f'?2.1:P.hull==='#a9b6c8'||P.hull==='#aab2c0'?1.05:1.7;
- return {hull:hexMul(P.hull,k),hull2:hexMul(P.hull,k*0.82),tur:hexMul(P.tur,k),tur2:hexMul(P.tur,k*0.8),trim:P.trim,dark:'#262f3b',metal:'#76818f',track:'#171d25',light:'#e9f1f7',team:team||'#4d9fff',acc:CH[cls]?CH[cls].c:'#3fd0c9',shine:!!P.shine};
+ const C={hull:hexMul(P.hull,k),hull2:hexMul(P.hull,k*0.82),tur:hexMul(P.tur,k),tur2:hexMul(P.tur,k*0.8),trim:P.trim,dark:'#262f3b',metal:'#76818f',track:'#171d25',light:'#e9f1f7',team:team||'#4d9fff',acc:CH[cls]?CH[cls].c:'#3fd0c9',shine:!!P.shine};
+ // Lunar over a paint: the paint's armour colours stay; trim, accents and running gear take the Lunar graphite/gold.
+ return lunar?Object.assign(C,{trim:'#bc904b',dark:'#10151c',metal:'#65717c',track:'#101419',acc:'#c49a54',shine:true,lunar:true,overlay:true}):C;
 }
 const PM=C=>C.shine?'shine':'lit';   // metallic paints go on the shiny material
 
@@ -91,7 +99,8 @@ function defenderBelt(len,h,depth){
  const s=new THREE.Shape(),hole=new THREE.Shape(),l=(len-h)/2;loop(s,l,h/2);loop(hole,l,h/2-.065);s.holes.push(hole);return extr(s,depth);
 }
 function defenderFinish(C){
- if(C.lunar)return {body:C.hull,plate:C.hull2,tur:C.tur,edge:C.trim,steel:C.metal,rubber:C.track,recess:C.dark,amber:'#c49a54',ice:'#ffe1a1'};
+ if(C.lunar&&!C.overlay)return {body:C.hull,plate:C.hull2,tur:C.tur,edge:C.trim,steel:C.metal,rubber:C.track,recess:C.dark,amber:'#c49a54',ice:'#ffe1a1'};
+ if(C.lunar)return {body:hexMul(C.hull,.87),plate:'#363c44',tur:hexMul(C.tur,.86),edge:C.trim,steel:C.metal,rubber:C.track,recess:C.dark,amber:'#c49a54',ice:'#ffe1a1'};
  // Stock gets graphite armor; selected colored/bright paints remain recognizable.
  const stock=C.hull===hexMul('#2c3a49',1.7),base=stock?hexMul(C.hull,.48):hexMul(C.hull,.87);
  return {body:base,plate:stock?'#35424d':hexMul(C.hull2,1.02),tur:stock?'#29343e':hexMul(C.tur,.86),edge:hexMix(C.trim,'#45505a',.72),steel:'#697987',rubber:'#10171d',recess:'#0a1118',amber:'#ff9d55',ice:'#66c9ff'};
@@ -244,7 +253,9 @@ function mountSocket(k,F,y){put(k,defenderCylinder(.48,.06,24),F.recess,[0,y-.05
 // silhouettes: S={high, put(geo,mat,color,p,r,scale), mark(geo,x,y,type,side)}; mat is an HF surface id
 // (paint|steel|gold|rubber|energy). Class sizes come from CHASSIS_VISUALS. Everything above the deck stays at or below
 // the turret ring (meta.ty), so any gun can traverse a full circle without touching armour. Visual only.
-function famFinish(P,lunar){P=P||{};return {paint:lunar?'#171d27':P.hull||'#374959',plate:lunar?'#303946':P.tur||P.hull||'#536372',edge:lunar?'#c2a266':P.trim||'#a7b3bc',gold:'#c2a266',steel:'#a2acb8',rubber:'#192028',dark:'#121b25',ice:'#c0eaff',tail:'#b94528'};}
+function famFinish(P,lunar){P=P||{};const stock=!!lunar&&lunarStock(P);
+ // Lunar keeps the approved stock composition (body / graphite plate / gold) and swaps the black body for the paint.
+ return {paint:stock?LUNAR.body:P.hull||'#374959',plate:lunar?LUNAR.plate:P.tur||P.hull||'#536372',edge:lunar?LUNAR.gold:P.trim||'#a7b3bc',gold:'#c2a266',steel:'#a2acb8',rubber:'#192028',dark:'#121b25',ice:'#c0eaff',tail:'#b94528',lunar:!!lunar,lunarStock:stock,plateUp:P.tur||P.hull||'#536372'};}
 function famTools(S){
  const high=!!S.high,seg=high?16:8;
  const put=(g,m,c,p,r,s)=>S.put(g,m,c,p||[0,0,0],r||[0,0,0],s);
@@ -293,11 +304,70 @@ function famTools(S){
  function ring(F,o,R){if(o.ring-o.deck>.085)put(cyl(R+.05,o.ring-.07-o.deck+.02,high?24:12),'paint',F.plate,[0,(o.ring-.07+o.deck-.02)/2,0]);put(cyl(R+.035,.040,high?24:12),'rubber',F.dark,[0,o.ring-.055,0]);put(cyl(R,.036,high?24:12),'steel',F.steel,[0,o.ring-.018,0]);if(high)for(let i=0;i<8;i++){const a=i*Math.PI/4;bolt(Math.cos(a)*R*.9,o.ring+.005,Math.sin(a)*R*.9);}}
  return {high,put,box,cyl,plate,slab,panel,wall,slope,block,pipe,bolt,vents,grille,crest,lamp,track,cores,ring};
 }
+// the highest armour surface over (x,z): non-indexed triangles, same test the Vault tooth uses on the baked hull
+function famSurfaceY(geos,x,z){let best=-1;for(const g of geos){const a=g.attributes.position.array;
+ for(let i=0;i<a.length;i+=9){const x0=a[i],z0=a[i+2],x1=a[i+3],z1=a[i+5],x2=a[i+6],z2=a[i+8],d=(z1-z2)*(x0-x2)+(x2-x1)*(z0-z2);if(Math.abs(d)<1e-9)continue;
+  const l0=((z1-z2)*(x-x2)+(x2-x1)*(z-z2))/d,l1=((z2-z0)*(x-x2)+(x0-x2)*(z-z2))/d,l2=1-l0-l1;if(l0<-1e-6||l1<-1e-6||l2<-1e-6)continue;const y=l0*a[i+1]+l1*a[i+4]+l2*a[i+7];if(y>best)best=y;}}return best;}
+// Lunar Skin premium layer, authored once for all nine family chassis (and reused by the Vanguard T0 starter):
+// graphite inlay plates with fine gold frame piping, crisp crescents, blue energy conduits ('lunar' surface: the one material
+// that pulses) and a moon core in the hood crescent. Everything is attached flush to existing armour faces; no fins, no
+// floating parts. Returns the real seams/vents the ghost-flame wisps rise from (renderer effect anchors, visual only).
+function famLunar(T,F,cls,anchor,vp,hull){
+ const {put,box,cyl,pipe,slab,wall,crest,high}=T,G=LUNAR.graphite,gold=F.gold,wisps=[];
+ const [sx,sy,sz,flat]=anchor.side,cr=cls==='scout'?.085:cls==='titan'?.14:.12,L=cr*2.25,Rf=cr*1.75,top=cr*.80,bot=cr*.82,c=cr*.36;
+ const outline=[[-L,0],[-L+c,top],[Rf-c,top],[Rf,0],[Rf-c,-bot],[-L+c,-bot]];
+ for(const s of [-1,1]){
+  if(flat){
+   // the medallion lies on a flat shoulder: [x, z] outline, raised along +y
+   const pts=outline.map(([u,v])=>[sx+u,s*sz+v]),y=sy+.009;
+   slab(pts,sy-.002,.010,'steel',G,.003);
+   const edges=high?pts.map((p,i)=>[p,pts[(i+1)%pts.length]]):[[pts[1],pts[2]],[pts[4],pts[5]]];for(const [a,b] of edges)pipe([a[0],y,a[1]],[b[0],y,b[1]],.0055,gold,'gold');
+   const g=crest(cr,.008);g.rotateX(-Math.PI/2);put(g,'gold',gold,[sx,y,s*sz]);
+   put(box(L-c*.6-cr*.95,.008,.016),'lunar',LUNAR.energy,[sx-(L-c*.6+cr*.95)/2,y+.002,s*sz]);
+   put(box(Rf-c*.6-cr*.85,.008,.012),'lunar',LUNAR.energy,[sx+(Rf-c*.6+cr*.85)/2,y+.002,s*sz]);
+   wisps.push([sx-L+c*.6,y+.006,s*sz]);continue;
+  }
+  // vertical side face at z = s*sz, outward +s*z
+  const pts=outline.map(([u,v])=>[sx+u,sy+v]),z=d=>s*(sz+d);
+  wall(pts,z(.003),.010,'steel',G,.003);
+  const edges=high?pts.map((p,i)=>[p,pts[(i+1)%pts.length]]):[[pts[1],pts[2]],[pts[4],pts[5]]];for(const [a,b] of edges)pipe([a[0],a[1],z(.009)],[b[0],b[1],z(.009)],.0055,gold,'gold');
+  put(crest(cr,.008),'gold',gold,[sx,sy,s>0?sz+.009:-(sz+.013)]);
+  put(box(L-c*.6-cr*.95,.016,.008),'lunar',LUNAR.energy,[sx-(L-c*.6+cr*.95)/2,sy,z(.011)]);
+  put(box(Rf-c*.6-cr*.85,.012,.008),'lunar',LUNAR.energy,[sx+(Rf-c*.6+cr*.85)/2,sy,z(.011)]);
+  wisps.push([sx-L+c*.6,sy,z(.014)]);
+ }
+ // gold crown around the turret ring base, on the deck/collar under the rotating turret
+ if(anchor.ring)T.put(new THREE.TorusGeometry(anchor.ring[1]+.045,.016,high?6:4,high?40:20),'gold',gold,[0,anchor.ring[0],0],[Math.PI/2,0,0]);
+ // Hood: graphite lozenge inlay seated on the measured armour surface (follows the glacis pitch), gold frame, crest, moon core.
+ const r=cls==='scout'?.10:.15,hx=anchor.hood[0],at=x=>Math.max(...[0,-.6*r,.6*r].map(zz=>famSurfaceY(hull,x,zz)));
+ let y0=at(hx);if(y0<0)y0=anchor.hood[1];const ya=at(hx-r*1.3),yb=at(hx+r*1.3),pitch=ya>0&&yb>0?Math.max(-.6,Math.min(.6,Math.atan2(yb-ya,r*2.6))):0;
+ const seat=(g,lift)=>{g.translate(0,lift,0);g.rotateZ(pitch);g.translate(hx,y0,0);return g;};
+ const H=[[-r*1.45,0],[-r*.95,r*1.05],[r*1.05,r*1.05],[r*1.5,0],[r*1.05,-r*1.05],[-r*.95,-r*1.05]];
+ put(seat(T.plate(H,.010,.003),-.002),'steel',G);
+ const he=high?H.map((p,i)=>[p,H[(i+1)%H.length]]):[[H[1],H[2]],[H[4],H[5]]];
+ for(const [a,b] of he){const A=new THREE.Vector3(a[0],.009,a[1]),B=new THREE.Vector3(b[0],.009,b[1]),v=B.clone().sub(A),g=cyl(.0055,v.length(),high?8:6);g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize()));g.translate((A.x+B.x)/2,.009,(A.z+B.z)/2);put(seat(g,0),'gold',gold);}
+ const hc=crest(r,.008);hc.rotateX(-Math.PI/2);put(seat(hc,.009),'gold',gold);
+ put(seat(cyl(r*.30,.008,high?16:8),.013),'lunar',LUNAR.core);
+ for(const s of [-1,1])put(seat(box(r*1.5,.006,.014),.012),'lunar',LUNAR.energy,[0,0,s*r*.80]);
+ return {wisps:wisps.concat(vp.slice(0,2)),hood:[hx,y0+.02,0]};
+}
 // mirror a top-view outline [x,z] to the other side (z -> -z)
 const famSide=(pts,s)=>pts.map(([x,z])=>[x,z*s]);
 function famChassis(cls,tier,P,team,gems,lunar,S){
- const o=CHASSIS_VISUALS[cls][tier],T=famTools(S),F=famFinish(P,lunar),high=T.high,halos=[];
- const {put,box,cyl,slab,panel,wall,block,pipe,bolt,vents,grille,lamp}=T;
+ const o=CHASSIS_VISUALS[cls][tier],F=famFinish(P,lunar),halos=[],vp=[],hull=[];
+ // Lunar: every existing trim line becomes real gold piping and the designs' cyan seams carry the pulsing Lunar energy.
+ if(lunar){const sink=S,ch=(m,c)=>m==='energy'&&LUNAR_CHANNELS.has(c);
+  S=Object.assign({},sink,{put:(g,m,c,p,r,s)=>{const trim=m==='steel'&&c===F.edge,q=g.parameters;
+   // a long, thin trim box: gold piping on top, a blue channel laid just beneath it on the same face
+   if(trim&&p&&g.type==='BoxGeometry'&&q.height<=.016&&Math.max(q.width,q.depth)>=.28)sink.put(new THREE.BoxGeometry(q.width*.94,.010,q.depth*.82),'lunar',LUNAR.energy,[p[0],p[1]-q.height/2-.007,p[2]],r,s);
+   // over a paint, secondary plates below the deck line (fenders, skirts, lower shields) are the graphite structure; at roof
+   // level they keep the paint (its turret colour), so glacis, roof and upper side armour read as the player's paint
+   if(m==='paint'&&c===F.plate&&!F.lunarStock){if(!g.boundingBox)g.computeBoundingBox();if(g.boundingBox.max.y+(p?p[1]:0)>o.deck-.03)c=F.plateUp;}
+   const out=sink.put(g,trim?'gold':ch(m,c)?'lunar':m,ch(m,c)?LUNAR.energy:c,p,r,s);if(m==='paint'&&out)hull.push(out);return out;}});}
+ const T=famTools(S),high=T.high;
+ const {put,box,cyl,slab,panel,wall,block,pipe,bolt,lamp}=T;
+ // real vent / radiator positions: the Lunar ghost-flame wisps rise from these
+ const vents=(F,x,y,z,l,w,n)=>{T.vents(F,x,y,z,l,w,n);vp.push([x,y+.03,z]);},grille=(F,x,y,z,l,w,n)=>{T.grille(F,x,y,z,l,w,n);vp.push([x,y+.03,z]);};
  // every pod on one tank shares one length/height and sits at +-center, so one track uniform drives them all
  let run=null;const tt=o.h+.075;   // tt: top of the tread shoes; fenders and hull overhangs start above it
  const drive=(extra,centers=[0])=>{const t=Object.assign({length:o.len,height:o.h,depth:o.trackW,offset:o.trackZ,wheels:o.wheels,road:Math.min(.20,o.h*.32),end:o.h*.39},extra||{});for(const s of [-1,1])for(const c of centers)T.track(F,Object.assign({},t,{center:c}),s);run={len:t.length,c:centers.length>1?Math.abs(centers[0]):0};};
@@ -440,7 +510,7 @@ function famChassis(cls,tier,P,team,gems,lunar,S){
    pipe([.92,tt+.105,s*(zo-.05)],[1.30,tt+.06,s*(zi+.14)],.008,glow,'energy');
    // stern radiator stacks: thin heat-sink fins in an armoured frame, clear of the core sockets and below the gun line
    // radiator banks recessed into the stern hump: heat-sink fins flush with its roof
-   panel(-1.30,o.ring+.04,s*.38,.26,.40,.012,'rubber',F.dark,.004);
+   panel(-1.30,o.ring+.04,s*.38,.26,.40,.012,'rubber',F.dark,.004);vp.push([-1.30,o.ring+.08,s*.38]);
    for(let i=0;i<6;i++)put(box(.016,.03,.36),'steel',i%2?'#7d8994':F.steel,[-1.41+i*.045,o.ring+.065,s*.38]);
    pipe([-1.12,o.ring+.058,s*.62],[-1.44,o.ring+.058,s*.62],.009,glow,'energy');
    put(box(.03,.07,.20),'energy','#ff7a3a',[-1.455,.55,s*.46]);put(box(.06,.12,.28),'rubber',F.dark,[-1.425,.55,s*.46]);
@@ -546,17 +616,12 @@ function famChassis(cls,tier,P,team,gems,lunar,S){
  }
  T.ring(F,o,ringR);
  T.cores(F,gems,coreAt[0],Math.min(o.deck+.05,o.ring-.11),coreAt[1]);
- if(lunar){
-  // Existing Lunar Skin language (black, gold edges): inlaid side crests and a flush hood crest. No new effects.
-  const [sx,sy,sz,flat]=anchor.side,cr=cls==='scout'?.085:cls==='titan'?.14:.12;
-  for(const s of [-1,1]){if(flat){const g=T.crest(cr,.008);g.rotateX(-Math.PI/2);put(g,'gold',F.gold,[sx,sy,s*sz]);continue;}put(T.crest(cr,.008),'gold',F.gold,[sx,sy,s*sz]);pipe([sx-cr*1.6,sy-cr*.5,s*sz],[sx+cr*1.4,sy-cr*.5,s*sz],.006,F.gold,'gold');}
-  const g=T.crest(cls==='scout'?.10:.15,.008);g.rotateX(-Math.PI/2);put(g,'gold',F.gold,[anchor.hood[0],anchor.hood[1]+.012,0]);
- }
- return {k:null,anims:[],meta:{ty:o.ring,bob:0,halos,trail:[],tc:F.edge,profile:key,legend:lunar?'lunar-black-gold':undefined,track:[(run.len-o.h)/2,o.h/2+.005,o.h/2+.03,run.c]}};
+ const lunarMeta=lunar?famLunar(T,F,cls,Object.assign({ring:[o.ring-.052,ringR]},anchor),vp,hull):undefined;
+ return {k:null,anims:[],meta:{ty:o.ring,bob:0,halos,trail:[],tc:F.edge,profile:key,legend:lunar?'lunar-black-gold':undefined,lunar:lunarMeta,track:[(run.len-o.h)/2,o.h/2+.005,o.h/2+.03,run.c]}};
 }
 // Foundation sink: the same designs in the classic lit/shine/glow buckets (no textures needed).
 function famFoundation(cls,tier,P,team,gems,lunar){
- const k=kit(),bucket={energy:'glow',rubber:'lit',paint:'shine',steel:'shine',gold:'shine'};
+ const k=kit(),bucket={energy:'glow',lunar:'glow',rubber:'lit',paint:'shine',steel:'shine',gold:'shine'};
  const r=famChassis(cls,tier,P,team,gems,lunar,{high:false,put:(g,m,c,p,rot,s)=>put(k,g,c,p,rot,s,bucket[m]||'lit'),mark:()=>{}});
  r.k=k;r.meta.visual=VISUAL_VERSION;return r;
 }
@@ -596,8 +661,10 @@ function barrelUnit(k,F,o,x0,z,r,style){
 }
 function standardWeapon(arch,tier,P,team,lunar=false){
  const o=WEAPON_VISUALS[arch][tier],C=palette(P,team,'vanguard',lunar),F=defenderFinish(C),k=kit(),A=[],M={tips:[],halos:[],visual:VISUAL_VERSION};
+ if(C.overlay)F.plate=hexMul(C.hull2,1.02);   // turret plates keep the paint under Lunar
  if(arch==='pulse'&&tier===0){defenderPulseTurret(k,C,M,PM(C));return {k,anims:A,meta:M};}
  turretHousing(k,F,C,o,tier,arch);
+ if(C.lunar)sym(s=>put(k,B(.28,.012,.016),LUNAR.energy,[.16,.30,s*o.width*.40],null,null,'glow'));   // Lunar blue channels on the roof
  if(arch==='pulse'){
   barrelUnit(k,F,o,.53,0,o.bore,'energy');
   for(let i=0;i<(tier===2?5:3);i++){const x=.64+i*.24;put(k,TO(o.bore*1.55,.020,4,16),i%2?F.steel:F.ice,[x,o.y,0],[0,Math.PI/2,0],null,i%2?'shine':'glow');}
@@ -655,6 +722,8 @@ function lunarChassis(cls,tier,P,team,gems){
   const inner=new THREE.Shape();[[-.65,.022],[-.18,.029],[-.126,.27],[-.55,.306]].forEach((v,i)=>i?inner.lineTo(...v):inner.moveTo(...v));inner.closePath();
   put(k,extr(inner,.035),F.body,[0,o.h-.11,side*z],null,null,'shine');
   put(k,insetCrescent(cls==='scout'?.115:.135,.012),F.edge,[-.38,o.h+.057,side*(z+.032)],null,null,'shine');
+  // Lunar energy conduit across the shield (static glow in this fallback renderer).
+  put(k,B(.36,.016,.008),LUNAR.energy,[-.43,o.h-.035,side*(z+.036)],null,null,'glow');
   // Narrow gold inlay, fasteners, deck seams and functional tier-coded hardware.
   for(const x of [-.83,.50]){
    armorPart(k,[[x,side*(o.trackZ-.12)],[x+.28,side*(o.trackZ-.10)],[x+.34,side*(o.trackZ+.11)],[x+.02,side*(o.trackZ+.12)]],o.h+.18,.025,F.plate,.009);
@@ -675,7 +744,7 @@ function lunarChassis(cls,tier,P,team,gems){
  // Hood crest is mounted flush to the inclined prow, ahead of the rotating turret.
  const emblem=insetCrescent(cls==='scout'?.12:.19,.012);emblem.rotateX(-Math.PI/2);
  put(k,emblem,F.edge,[cls==='scout'?.65:.81,o.deck+.018,0],null,null,'shine');
- raw.meta.legend='lunar-black-gold';raw.meta.tc=F.edge;return raw;
+ raw.meta.legend='lunar-black-gold';raw.meta.tc=F.edge;raw.meta.lunar={wisps:[-1,1].map(s=>[-.62,o.h-.035,s*(z+.04)])};return raw;
 }
 // Annular machined barrel sleeve, through-bore visible from both ends (+X axis).
 function energySleeve(k,x,y,R,inner,depth,col,mat='shine'){
@@ -1216,5 +1285,5 @@ function fittingKit(f,team,part,context){
 }
 const foundationChassis=(cls,tier,P,team,gems,lunar)=>lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems);
 const foundationWeapon=(arch,tier,P,team,lunar,cls)=>arch==='moon'?unifiedMoonbeam(team):standardWeapon(arch,visualTier(tier),P,team,lunar);
-return {famChassis,famTools,bridgeVisual,foundationChassis,foundationWeapon,MOON_SCALE,weaponScale,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+return {famChassis,famTools,famFinish,famLunar,famSurfaceY,LUNAR,lunarStock,bridgeVisual,foundationChassis,foundationWeapon,MOON_SCALE,weaponScale,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();
