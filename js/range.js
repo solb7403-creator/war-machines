@@ -26,18 +26,13 @@ function rangeWriteHistory(id,result){
  out[id]=result?out[id].concat(result).slice(-20):[];
  try{localStorage.setItem(rangeLocalKey('results'),JSON.stringify(out));return true;}catch(e){return false;}
 }
-function rangeDraft(){
- if(!labEditor)return;
- return {spec:labFormSpec(),name:$('#lab-name').value,rev:labEditor.rev,base:labEditor.base||labEditor.spec};
-}
-function openRange(id,draft){
+function openRange(id){   // Free Test: the bay exactly as saved
  if(rangeRun||inBattle()||pvpOn()||state==='vs'||state==='play'||labBusy){showToast('Finish your current match or save first.');return;}
  const M=save.lab?.machines[id],O=rangeOwned();
  if(!M||!Object.values(save.lab.slots).includes(id)||!O){showToast('Connect once to load your owned machines.');return;}
- const spec=rangeCopy(draft?.spec||M.spec),err=labValidate(O.owned,spec);
+ const spec=rangeCopy(M.spec),err=labValidate(O.owned,spec);
  if(err){showToast(labMessage(err));return;}
- rangeSource={id,name:draft?.name||M.name,spec,rev:draft?.rev||save.lab.rev,base:rangeCopy(draft?.base||M.spec),fromEditor:!!draft};
- const ed=findOv('labeditor');if(ed)closeOverlay(ed);
+ rangeSource={id,name:M.name,spec,rev:save.lab.rev};
  rangeSetupScreen();
 }
 function rangeModeNote(g){return {arena:'Quick Arena: single-round 1v1 elimination.',zone:'2v2 Moon Zone: capture and hold the moving zone.',crystal:'2v2 Crystal Rush: carry 10 crystals and hold for 15 seconds.',bounty:'2v2 Bounty: earn stars from eliminations; respawns are on.',royale:'Last Standing: six pilots, separate teams, closing storm.',boss:'Survival: you + a standard AI wingman vs the real scaled megatank. The boss scales with your build; opponent preset does not apply.'}[g];}
@@ -45,7 +40,7 @@ function rangeSetupScreen(){
  const old=findOv('rangesetup');if(old)closeOverlay(old);
  const s=rangeSource,O=rangeOwned();if(!s||!O)return;
  const L=ecoLoadout(O.owned,s.spec),T=machineMetrics(L),opts=(items,val)=>items.map(([k,n])=>'<option value="'+k+'"'+(val===k?' selected':'')+'>'+esc(n)+'</option>').join('');
- openOverlay('sheet','<h3>Free Test Range</h3><p class="range-note">Practice / No rewards</p><p class="mut" id="range-connection">'+esc(rangeStatus())+'</p><b>'+esc(s.name)+(s.fromEditor?' · unsaved draft':'')+'</b><canvas id="range-preview" class="labpreview" aria-label="Test machine preview"></canvas><p class="mut">Base HP '+T.hp+' · ordinary DPS '+T.dps+' · driving speed '+T.spd+'. Mode health scaling still applies.</p><div class="labform"><label>Mode<select id="range-mode">'+opts(GT_ORDER.map(k=>[k,GTYPES[k].label]),rangeOptions.g)+'</select></label><p class="mut" id="range-mode-note">'+rangeModeNote(rangeOptions.g)+'</p><label>Control<select id="range-control">'+opts([['player','Drive myself'],['ai','Watch AI drive my build']],rangeOptions.control)+'</select></label><details><summary>Trial conditions</summary><label>Opponent<select id="range-opponent">'+opts([['standard','Standard · Stock Vanguard / Pulse'],['equipped','Equipped · Rare gear + 3 upgrades']],rangeOptions.preset)+'</select></label><p class="mut">Fixed presets, no gear grants. AI wingmen stay Standard.</p><label>Map<select id="range-map">'+opts(MAP_REAL.map(k=>[k,MAPS[k].n]),rangeOptions.map)+'</select></label><label>Seed<input id="range-seed" type="number" min="1" max="4294967295" inputmode="numeric" value="'+rangeOptions.seed+'"></label><p class="mut">Same seed repeats engine randomness in this version. Player inputs may differ; cross-browser identical replays are not promised.</p></details></div><p id="range-error" role="status" class="mut"></p><div class="range-actions"><button class="btn btn-go block" data-act="rangestart">Start free trial</button><button class="btn btn-quiet" data-act="rangeadjust">Adjust in Engineer</button><button class="btn btn-ghost" data-act="rangeclose">Garage</button><button class="linkbtn" data-act="rangehistory">Recent local results ('+rangeHistory(s.id).length+'/20)</button></div>',{key:'rangesetup',onClose:()=>{if(rangeRun&&!rangeRun.sim)rangeDispose();}});
+ openOverlay('sheet','<h3>Free Test Range</h3><p class="range-note">Practice / No rewards</p><p class="mut" id="range-connection">'+esc(rangeStatus())+'</p><b>'+esc(s.name)+(s.fromEditor?' · unsaved draft':'')+'</b><canvas id="range-preview" class="labpreview" aria-label="Test machine preview"></canvas><p class="mut">Base HP '+T.hp+' · ordinary DPS '+T.dps+' · driving speed '+T.spd+'. Mode health scaling still applies.</p><div class="labform"><label>Mode<select id="range-mode">'+opts(GT_ORDER.map(k=>[k,GTYPES[k].label]),rangeOptions.g)+'</select></label><p class="mut" id="range-mode-note">'+rangeModeNote(rangeOptions.g)+'</p><label>Control<select id="range-control">'+opts([['player','Drive myself'],['ai','Watch AI drive my build']],rangeOptions.control)+'</select></label><details><summary>Trial conditions</summary><label>Opponent<select id="range-opponent">'+opts([['standard','Standard · Stock Vanguard / Pulse'],['equipped','Equipped · Rare gear + 3 upgrades']],rangeOptions.preset)+'</select></label><p class="mut">Fixed presets, no gear grants. AI wingmen stay Standard.</p><label>Map<select id="range-map">'+opts(MAP_REAL.map(k=>[k,MAPS[k].n]),rangeOptions.map)+'</select></label><label>Seed<input id="range-seed" type="number" min="1" max="4294967295" inputmode="numeric" value="'+rangeOptions.seed+'"></label><p class="mut">Same seed repeats engine randomness in this version. Player inputs may differ; cross-browser identical replays are not promised.</p></details></div><p id="range-error" role="status" class="mut"></p><div class="range-actions"><button class="btn btn-go block" data-act="rangestart">Start free trial</button><button class="btn btn-quiet" data-act="rangeadjust">Adjust in the Garage</button><button class="btn btn-ghost" data-act="rangeclose">Garage</button><button class="linkbtn" data-act="rangehistory">Recent local results ('+rangeHistory(s.id).length+'/20)</button></div>',{key:'rangesetup',onClose:()=>{if(rangeRun&&!rangeRun.sim)rangeDispose();}});
  const c=$('#range-preview'),w=c.clientWidth||260;c.width=w*dpr;c.height=150*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,150,L);
  rangeUpdateMode();
 }
@@ -94,7 +89,7 @@ async function rangeStart(repeat){
 }
 function rangeFrame(dt){
  try{rangeTick(dt);}catch(e){
-  rangeDispose();closeAll();rangeSetupScreen();showToast('Practice stopped safely. Your draft is still available.');
+  rangeDispose();closeAll();rangeSetupScreen();showToast('Practice stopped safely. Your bay is unchanged.');
   console.warn('Practice stopped:',e.message);
  }
 }
@@ -111,7 +106,7 @@ function rangeTick(dt){
 function rangePause(){
  const r=rangeRun;if(!r?.sim||r.done||findOv('rangepause'))return;
  r.paused=true;rangeResetInput();
- openOverlay('modal','<h3>Practice paused</h3><p class="mut">No rewards, losses or account changes. Resume, stop this trial, or return to Engineer.</p><div class="range-actions"><button class="btn btn-go" data-act="rangeresume">Resume trial</button><button class="btn btn-quiet" data-act="rangestop">Stop and see results</button><button class="btn btn-ghost" data-act="rangeadjust">Adjust in Engineer</button><button class="btn btn-ghost" data-act="rangeexit">Garage</button></div>',{key:'rangepause',sticky:true,onClose:()=>{if(rangeRun===r)r.paused=false;}});
+ openOverlay('modal','<h3>Practice paused</h3><p class="mut">No rewards, losses or account changes. Resume, stop this trial, or go back to the Garage.</p><div class="range-actions"><button class="btn btn-go" data-act="rangeresume">Resume trial</button><button class="btn btn-quiet" data-act="rangestop">Stop and see results</button><button class="btn btn-ghost" data-act="rangeadjust">Adjust in the Garage</button><button class="btn btn-ghost" data-act="rangeexit">Garage</button></div>',{key:'rangepause',sticky:true,onClose:()=>{if(rangeRun===r)r.paused=false;}});
 }
 function rangeFinish(){
  const r=rangeRun;if(!r?.sim||r.done)return;r.done=true;rangeResetInput();
@@ -130,14 +125,11 @@ function rangeObjective(r){const o=r.objective;return r.conditions.g==='zone'?'T
 function rangeResultRow(r){return '<p><b>'+esc(r.name)+' · '+r.outcome+'</b><br>'+r.duration+'s · '+fmtNum(r.damage)+' dealt / '+fmtNum(r.taken)+' taken · '+r.kills+' kills / '+r.deaths+' deaths<br><span class="mut">'+esc(rangeObjective(r))+'<br>'+GTYPES[r.conditions.g].label+' · '+MAPS[r.conditions.map].n+' · seed '+r.conditions.seed+' · '+(r.control==='ai'?'AI-controlled':'Player-controlled')+'<br>'+esc(r.conditions.version)+' · '+(r.conditions.preset==='scaled-boss'?'Scaled megatank':r.conditions.preset)+'<br>Base HP '+r.stats.hp+' / DPS '+r.stats.dps+' / speed '+r.stats.spd+'</span></p>';}
 function rangeResultsScreen(r,stored){
  const rows=rangeHistory(rangeSource.id),prev=rows.slice(0,-1).reverse().find(x=>x.key===r.key)||rows[rows.length-2];
- openOverlay('sheet','<h3>Trial '+r.outcome+'</h3><p class="range-note">Practice / No rewards · local only</p>'+rangeResultRow(r)+'<p>'+esc(rangeCompare(r,prev))+'</p>'+(prev?'<details><summary>Compare previous trial</summary>'+rangeResultRow(prev)+'</details>':'')+(!stored?'<p class="mut">Device storage unavailable; this result was not retained.</p>':'')+'<div class="range-actions"><button class="btn btn-go" data-act="rangerepeat">Repeat same trial</button><button class="btn btn-quiet" data-act="rangeadjust">Adjust in Engineer</button><button class="btn btn-quiet" data-act="rangeoptions">Change conditions</button><button class="btn btn-ghost" data-act="rangeclose">Garage</button></div>',{key:'rangeresults'});
+ openOverlay('sheet','<h3>Trial '+r.outcome+'</h3><p class="range-note">Practice / No rewards · local only</p>'+rangeResultRow(r)+'<p>'+esc(rangeCompare(r,prev))+'</p>'+(prev?'<details><summary>Compare previous trial</summary>'+rangeResultRow(prev)+'</details>':'')+(!stored?'<p class="mut">Device storage unavailable; this result was not retained.</p>':'')+'<div class="range-actions"><button class="btn btn-go" data-act="rangerepeat">Repeat same trial</button><button class="btn btn-quiet" data-act="rangeadjust">Adjust in the Garage</button><button class="btn btn-quiet" data-act="rangeoptions">Change conditions</button><button class="btn btn-ghost" data-act="rangeclose">Garage</button></div>',{key:'rangeresults'});
 }
-function rangeAdjust(){
- rangeDispose();closeAll();const s=rangeSource;if(!s)return;setTab('garage');openLabEditor(s.id,{spec:s.spec,name:s.name,rev:s.rev,base:s.base});
-}
+function rangeAdjust(){rangeDispose();closeAll();const s=rangeSource;if(s)gSelect(s.id);setTab('garage');}
 function rangeExit(){rangeDispose();closeAll();setTab('garage');}
-ACT.rangecard=id=>openRange(id);
-ACT.rangedraft=()=>{if(labEditor)openRange(labEditor.id,rangeDraft());};
+ACT.rangecard=id=>{gIdle().then(()=>openRange(id));};   // after any change still saving
 ACT.rangestart=()=>rangeStart(false);
 ACT.rangerepeat=()=>rangeStart(true);
 ACT.rangeoptions=()=>{closeAll();rangeSetupScreen();};

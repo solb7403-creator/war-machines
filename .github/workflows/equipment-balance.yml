@@ -56,6 +56,7 @@ jobs:
           node dev/tests/gear-combat.mjs
           node dev/tests/combat-balance.mjs
           node dev/tests/lab-ui.mjs
+          node dev/tests/garage-rules.mjs
       - name: Build authoritative Workers simulation
         run: node worker/build-sim.mjs
       - name: Economy, account, PvP and farm regressions

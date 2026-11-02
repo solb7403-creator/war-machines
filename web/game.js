@@ -1,23 +1,30 @@
 'use strict';
 // Website presentation adapter; all buttons still use the existing game, account and match contracts.
 let webStage=null,webShowroom=null,webSceneKey='',webRenewTimer=null;
+// The garage's live 3D spot: on phones and small tablets the website's one showroom moves into it; on wide screens the
+// showroom beside the garage already shows the selected bay, so the spot stays empty. One live 3D canvas either way.
+function webMountStage(slot){
+ if(!webStage)return;const narrow=innerWidth<900;slot.hidden=!narrow;
+ if(narrow){if(!slot.contains(webStage)){slot.append(webStage);webStage.classList.add('mobile-stage');webShowroom?.size();}}
+ else if(!$('#web-showroom-home').contains(webStage)){$('#web-showroom-home').append(webStage);webStage.classList.remove('mobile-stage');webShowroom?.size();}
+}
 function webMoveStage(){
- if(!webStage)return;const editor=document.querySelector('#lab-weapon')?.closest('.labform');
- const target=editor||(innerWidth<900&&uiTab==='garage'?$('#s-garage'):$('#web-showroom-home'));
- if(target&&!target.contains(webStage)){target.prepend(webStage);webStage.classList.toggle('mobile-stage',target.id==='s-garage');editor?.classList.add('web-engineer-form');webShowroom?.size();}
+ if(!webStage)return;const slot=uiTab==='garage'&&$('#g-stage-slot');
+ if(slot)webMountStage(slot);else if(!$('#web-showroom-home').contains(webStage)){$('#web-showroom-home').append(webStage);webStage.classList.remove('mobile-stage');webShowroom?.size();}
 }
 function webUpdateMachine(){
  if(!save||!webStage)return;webMoveStage();
  if(webShowroom?.renderer&&!want3D())webShowroom.fallback();
  else if(want3D()&&typeof THREE!=='undefined'&&!R3.failed&&webShowroom&&!webShowroom.renderer){webShowroom.dispose();$('#web-machine-scene').replaceChildren();webShowroom=new LunarShowroom($('#web-machine-scene'));}
- let L=myLoadout(),name=save.lab?.machines[save.lab.active]?.name||'War Machine';
- if(labEditor&&$('#lab-weapon')){const p=labFormSpec();if(!labValidate(save,p)){L=ecoLoadout(save,p);name=$('#lab-name').value||name;}}
- webShowroom?.setContext(labEditor&&$('#lab-weapon')?'engineer':'garage');webShowroom?.setLoadout(L);$('#web-machine-name').textContent=name;$('#web-machine-class').textContent=CNAMES[L.c.c][L.c.t]+(L.c.c==='vanguard'&&L.c.t===0&&L.skin!=='lunar'?' · DEFENDER 3D PROTOTYPE':'')+' / '+(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+(L.skin==='lunar'?' · LUNAR SKIN · GRAPHITE / GOLD':'');
- const m=machineMetrics(L);$('#web-machine-stats').innerHTML='<div>HULL<strong>'+fmtNum(m.hp)+'</strong><small>base HP</small></div><div>FIREPOWER<strong>'+m.dps+'</strong><small>ordinary DPS</small></div><div>MOBILITY<strong>'+m.spd+'</strong><small>driving speed</small></div>';
+ // the garage shows the bay you picked there; every other screen shows the bay that deploys next
+ const id=uiTab==='garage'&&typeof gBayId==='function'?gBayId():save.lab?.active,M=save.lab?.machines[id];
+ const L=M?{...ecoLoadout(save,M.spec),vl:vaultLevel(save.vg)}:myLoadout(),name=M?.name||'War Machine';
+ webShowroom?.setContext('garage');webShowroom?.setLoadout(L);$('#web-machine-name').textContent=name;$('#web-machine-class').textContent=CNAMES[L.c.c][L.c.t]+' / '+(L.w.a==='moon'?'Moonbeam':WNAMES[L.w.a][L.w.t])+(L.skin==='lunar'?' · LUNAR SKIN':'')+' · '+buildTag(L).n.toUpperCase();
+ const m=machineView(L);$('#web-machine-stats').innerHTML='<div>TOUGHNESS<strong>'+fmtNum(m.tough)+'</strong><small>health</small></div><div>FIREPOWER<strong>'+m.fire+'</strong><small>damage per second</small></div><div>SPEED<strong>'+m.speed+'</strong><small>driving speed</small></div>';
  $('#web-pilot').textContent=tgName(TG_USER);$('#web-credit').textContent=fmtNum((srv||window.LUNAR_WEB.snapshot.rec).ac||0)+' airdrop credit · server confirmed';
  document.querySelectorAll('[data-web-tab]').forEach(b=>b.classList.toggle('on',b.dataset.webTab===uiTab));
 }
-const webCloseOverlay=closeOverlay;closeOverlay=function(ov){if(webStage&&ov?.box?.contains(webStage))$('#web-showroom-home').append(webStage);const r=webCloseOverlay(ov);if(webStage)setTimeout(webUpdateMachine,0);return r;};
+const webCloseOverlay=closeOverlay;closeOverlay=function(ov){const r=webCloseOverlay(ov);if(webStage)setTimeout(webUpdateMachine,0);return r;};
 const webOriginalRender=renderScreen;renderScreen=function(t){
  // Keep the one showroom alive when a screen's original HTML is refreshed.
  if(webStage&&$('#s-'+t)?.contains(webStage))$('#web-showroom-home').append(webStage);
@@ -27,13 +34,10 @@ const webOriginalRender=renderScreen;renderScreen=function(t){
  }
  webUpdateMachine();
 };
-const webEdit=ACT.labedit;ACT.labedit=(...a)=>{webEdit(...a);setTimeout(webUpdateMachine,30);};
-const webInspectClose=ACT.labinspectclose;ACT.labinspectclose=(...a)=>{webInspectClose(...a);setTimeout(webUpdateMachine,30);};
-document.addEventListener('change',e=>{if(e.target.closest('.labform')?.querySelector('#lab-weapon'))webUpdateMachine();});
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-web-tab],[data-web-range],[data-stage-rotate],[data-stage-zoom],[data-stage-view]');if(!b)return;
  if(b.dataset.webTab){closeAll();setTab(b.dataset.webTab);webUpdateMachine();}
- else if(b.hasAttribute('data-web-range')){closeAll();openRange(save.lab.active);}
+ else if(b.hasAttribute('data-web-range')){closeAll();ACT.rangecard(uiTab==='garage'?gBayId():save.lab.active);}
  else if(b.dataset.stageView)webShowroom?.view(b.dataset.stageView);
  else if(b.dataset.stageRotate)webShowroom?.rotate(Number(b.dataset.stageRotate));else webShowroom?.setZoom(webShowroom.zoom+Number(b.dataset.stageZoom)*.12);
 });
@@ -45,7 +49,7 @@ window.lunarWebReady=()=>{
  if(R3.failed||!want3D()){webShowroom=new LunarShowroom($('#web-machine-scene'));webUpdateMachine();}else start();
  const tab=location.hash.slice(1);
  if(['play','garage','quests','ranks'].includes(tab))setTab(tab);
- else if(tab==='engineer'){setTab('garage');ACT.labedit(save.lab.active);}
+ else if(tab==='engineer')ACT.labedit(save.lab.active);   // old Engineer links: the garage, at the bay that deploys
  else if(tab==='range'){setTab('garage');openRange(save.lab.active);}
  else if(tab.startsWith('mode:')&&GT_ORDER.includes(tab.slice(5))){ACT.gtype(tab.slice(5));setTab('play');}
  addEventListener('resize',webUpdateMachine);addEventListener('lunar-quality-change',webUpdateMachine);addEventListener('pagehide',e=>{if(!e.persisted){clearInterval(webRenewTimer);webShowroom?.dispose();}});addEventListener('pageshow',e=>{if(e.persisted){webShowroom?.run();webUpdateMachine();}});

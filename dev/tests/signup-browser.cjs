@@ -20,6 +20,40 @@ async function explain(){   // on a failure: what the page showed and said
  try{console.error('URL',pg.url(),'\nLOADING',await pg.evaluate(()=>document.querySelector('#web-loading')?.innerText||'(none)'));}catch{}
  console.error('ERRORS',errs.join('\n'),'\nCONSOLE',logs.slice(-25).join('\n'));
 }
+
+// The garage on the website (the same code as the Telegram Mini App): every section fits with no sideways scroll, no
+// clipped text and tap targets of at least 44 px; touch taps or keyboard only (focus + Enter); one change compared,
+// then saved through the server; the showroom follows the selected bay; old #engineer links open the garage.
+async function garageCheck(pg,label,name,touch,ctx){
+ const press=async loc=>{if(touch)await loc.click();else{await loc.focus();await pg.keyboard.press('Enter');}};
+ await pg.evaluate(()=>{save.welcomed=true;closeAll();save.mp=Math.max(save.mp|0,5);setTab('garage');});   // gating is UI only: open every section
+ await pg.waitForSelector('.gbay');
+ const audit=()=>pg.evaluate(()=>{const out=[],W=innerWidth;if(document.documentElement.scrollWidth>W+1)out.push('sideways scroll '+document.documentElement.scrollWidth);
+  for(const e of document.querySelectorAll('#s-garage button,#s-garage input,#s-garage a,.sheet button,.sheet a')){const r=e.getBoundingClientRect();if(!r.width||!r.height||e.classList.contains('info')||getComputedStyle(e).visibility==='hidden')continue;if(r.height<43.5||r.width<43.5)out.push('small target "'+(e.textContent.trim().slice(0,20)||e.className)+'" '+Math.round(r.width)+'x'+Math.round(r.height));}
+  for(const e of document.querySelectorAll('#s-garage *,.sheet *')){const cs=getComputedStyle(e);if(!e.children.length&&e.textContent.trim()&&e.scrollWidth>e.clientWidth+2&&cs.overflow!=='visible'&&cs.textOverflow!=='ellipsis')out.push('clipped "'+e.textContent.trim().slice(0,24)+'"');}
+  return out;});
+ for(const k of ['loadout','cores','up','fit','style']){
+  const shut=!(await pg.locator('#gs-'+k+' .gsec-b').count());if(shut)await press(pg.locator('#gs-'+k+' .gsec-h'));
+  await pg.waitForSelector('#gs-'+k+' .gsec-b');
+  if(!touch&&shut)assert(await pg.evaluate(k=>document.activeElement&&document.activeElement.closest('#gs-'+k)!==null,k),label+' keyboard focus stays on '+k);
+  const bad=await audit();assert(!bad.length,label+' garage '+k+': '+bad.join('; '));
+  await pg.screenshot({path:path.join(OUT,name+'-'+label+'-garage-'+k+'.png')});
+ }
+ // pick Bay B, compare a core, commit it: saved by the server to Bay B only, and the showroom shows Bay B
+ await press(pg.locator('.gbay-pick').nth(1));await pg.waitForFunction(()=>gBayId()==='m_spare');
+ if(!(await pg.locator('#gs-cores .gsec-b').count()))await press(pg.locator('#gs-cores .gsec-h'));   // phones keep one section open
+ await press(pg.locator('#gs-cores [data-act="core"][data-arg="0"]'));await pg.waitForSelector('.sheet [data-act="gcmp"][data-arg="core|0|spd"]');
+ await press(pg.locator('.sheet [data-act="gcmp"][data-arg="core|0|spd"]'));await pg.waitForSelector('.sheet .gcmp .gd');
+ const bad=await audit();assert(!bad.length,label+' compare sheet: '+bad.join('; '));
+ await pg.screenshot({path:path.join(OUT,name+'-'+label+'-garage-compare.png')});
+ await press(pg.locator('.sheet .gcmp [data-act="gcore"]'));
+ await pg.waitForFunction(()=>save.lab.machines.m_spare.spec.cores[0]==='spd'&&!gJobs.length&&webShowroom&&webShowroom.L&&webShowroom.L.cores[0]==='spd',null,{timeout:20000});
+ const st=await pg.evaluate(()=>({a:save.lab.machines.m_legacy.spec.cores[0],shown:webShowroom&&webShowroom.L&&webShowroom.L.cores[0],name:document.querySelector('#web-machine-name').textContent,b:save.lab.machines.m_spare.name}));
+ assert(st.a==='dmg'&&st.shown==='spd'&&st.name===st.b,label+' bay B saved alone and shown: '+JSON.stringify(st));
+ if(label==='desktop-1366'){   // an old Engineer link opens the garage at the bay that deploys
+  await pg.goto(BASE+'/web/play.html#engineer',LEAVE);await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab&&uiTab==='garage'&&!!document.querySelector('.gbay'),null,{timeout:45000});
+ }
+}
 (async()=>{
  require('node:child_process').execFileSync('node',['worker/build-web.mjs'],{cwd:ROOT,stdio:'ignore'});
  const key=path.join(OUT,'fixture-key.pem'),cert=path.join(OUT,'fixture-cert.pem');
@@ -76,6 +110,7 @@ async function explain(){   // on a failure: what the page showed and said
     const cookies=await ctx.cookies(BASE);assert(cookies.some(c=>c.name==='__Host-lunar-session'&&c.httpOnly&&c.secure&&c.sameSite==='Lax'),'first-party HttpOnly session');
     assert(await pg.evaluate(()=>{try{return JSON.parse(localStorage.getItem('lunar-invite')).c==='abcd2345';}catch{return false;}}),'invite kept through signup');
     await pg.waitForTimeout(600);await pg.screenshot({path:path.join(OUT,name+'-'+label+'-game.png')});
+    await garageCheck(pg,label,name,touch,ctx);
     // 4. log out, log back in with call sign + password
     await pg.evaluate(()=>fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}));
     await pg.goto(BASE+'/web/login.html',LEAVE);await pg.waitForSelector('#login-form:not([hidden])');   // returning visitor: Log in tab

@@ -27,3 +27,4 @@
 .lw-go,.lw-skip{min-height:50px;border-radius:10px;font:700 16px Chakra,"Arial Narrow",sans-serif;letter-spacing:.05em;cursor:pointer}
 .lw-go{border:1px solid #83edff;background:linear-gradient(110deg,#00badc,#087dd7);color:#fff}.lw-skip{border:1px solid #3d6f8b;background:transparent;color:#cfe3ef}
 .lw-go:focus-visible,.lw-skip:focus-visible,.lw-prompt input:focus-visible{outline:2px solid #ffad68;outline-offset:2px}
+.web-stage .scene-footnote a{display:inline-block;min-height:44px;line-height:44px}
