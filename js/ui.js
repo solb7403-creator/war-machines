@@ -372,12 +372,29 @@ function gHint(k){return save.gHint&&save.gHint[k]?'':'<p class="ghint"><span>'+
 function gGearRow(isW,it){
  return '<button class="gear" data-act="gear" data-arg="'+(isW?'w':'c')+'"><div class="ico"><canvas data-art="gear:'+(isW?'w':'c')+':'+gearKey(it)+'"></canvas></div><div class="grow"><div class="kind">'+(isW?'Weapon: what you shoot with':'Chassis: what you drive')+'</div><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div></div><span class="chev">›</span></button>';
 }
+function gemIcon(k){
+ return '<span class="gem-crystal" style="--gem:'+GEM[k].c+'" aria-hidden="true"><svg viewBox="0 0 40 48"><path fill="currentColor" d="M20 1 36 13 32 34 20 47 8 34 4 13Z"/><path fill="#fff" opacity=".45" d="m20 1-6 15 6 7 6-7Z"/><path fill="#fff" opacity=".2" d="M4 13 14 16 20 47 8 34Z"/><path fill="#000" opacity=".25" d="m26 16 10-3-4 21-12 13Z"/><path fill="none" stroke="#fff" opacity=".45" d="m4 13 16 10 16-10M20 23v24"/></svg></span>';
+}
+function gemProgress(k){
+ const lv=save.gemLvl[k]||1,sh=save.gemShards[k]||0,max=lv>=5,need=SHARD_NEED[lv];
+ return '<div class="gem-progress'+(max?' is-max':'')+'">'+(max?'<b class="gem-max">MAXED</b><div class="gem-track"><i style="width:100%"></i></div><span>Surplus: '+sh+' shards</span>':
+  '<span>'+sh+' / '+need+' shards · next: Lv '+(lv+1)+'</span><div class="gem-track" role="progressbar" aria-label="'+GEM[k].name+' shards to level '+(lv+1)+'" aria-valuemin="0" aria-valuemax="'+need+'" aria-valuenow="'+Math.min(sh,need)+'"><i style="width:'+Math.min(100,sh/need*100)+'%"></i></div>')+'</div>';
+}
+function gemCollection(spec){
+ return '<div class="gem-collection" aria-label="All six cores">'+GORDER.map(k=>{
+  const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k);
+  return '<button class="gem-card'+(lv>=5?' is-max':'')+(j>=0?' equipped':'')+'" style="--gem:'+GEM[k].c+'" data-act="core" data-arg="'+(j>=0?j:Math.max(0,spec.cores.indexOf(null)))+'">'+
+   '<div class="gem-heading">'+gemIcon(k)+'<div><b>'+GEM[k].name+'</b><span>Lv '+lv+' / 5</span></div></div>'+
+   '<div class="gem-bonus">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+'</div>'+
+   '<span class="gem-equipped">'+(j>=0?'Equipped · Socket '+(j+1):'Not equipped')+'</span>'+gemProgress(k)+'</button>';
+ }).join('')+'</div>';
+}
 const G_BODY={
  loadout:(spec)=>gGearRow(true,gItem(true,spec.w))+(spec.w.a==='moon'?gEdgeLine('moon',spec):'')+gGearRow(false,gItem(false,spec.c))+'<p class="gnote">Tap either one to compare and swap. Only gear you own fits; the list shows where to find the rest.</p>',
  cores:(spec)=>'<div class="cores">'+[0,1,2].map(i=>{const k=spec.cores[i];
    if(!k)return '<button class="core empty" data-act="core" data-arg="'+i+'"><div class="gemi" style="border:1.5px dashed var(--dim);box-shadow:none"></div><b>Empty</b><span>Add a core</span></button>';
-   const lv=save.gemLvl[k]||1;return '<button class="core" data-act="core" data-arg="'+i+'"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div><b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';}).join('')+
-   '</div><p class="gnote">Each core type fits once. Core levels count for both bays; shards from gem caches level them up.</p><button class="linkbtn" data-act="info" data-arg="cores">What does each core do?</button>',
+   const lv=save.gemLvl[k]||1;return '<button class="core'+(lv>=5?' is-max':'')+'" data-act="core" data-arg="'+i+'">'+gemIcon(k)+'<b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';}).join('')+
+   '</div>'+gemCollection(spec)+'<p class="gnote">Each core type fits once. Core levels count for both bays; shards from gem caches level them up.</p><button class="linkbtn" data-act="info" data-arg="cores">What does each core do?</button>',
  up:(spec,L)=>{
   const used=upLevels(save.up),full=used>=BUILD_MAX,inv=upInvested(save.up);
   return '<p class="gshared">Shared by both bays</p><div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div><p class="mut gnote">'+used+' of '+BUILD_MAX+' levels used <button class="info" data-act="info" data-arg="build" aria-label="About the build budget">?</button></p>'+
@@ -450,9 +467,9 @@ function gGearSheet(isW){
 function gCoreSheet(i){
  const id=gBayId(),M=gM();if(!M)return '<h3>Loading…</h3>';
  const spec=M.spec,L=gL(spec);
- const rows=GORDER.map(k=>{const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k),sh=save.gemShards[k]||0,on=j===i,sel=gCmp==='core|'+i+'|'+k;
-  return '<button class="gear'+(on?' equipped':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="core|'+i+'|'+k+'" aria-pressed="'+(on||sel)+'"><div class="ico"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div></div>'+
-   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+(lv<5?'. Next level: '+sh+'/'+SHARD_NEED[lv]+' shards':'. Max level')+'</div></div>'+
+ const rows=GORDER.map(k=>{const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k),on=j===i,sel=gCmp==='core|'+i+'|'+k;
+  return '<button style="--gem:'+GEM[k].c+'" class="gear gem-row'+(lv>=5?' is-max':'')+(on?' equipped':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="core|'+i+'|'+k+'" aria-pressed="'+(on||sel)+'"><div class="ico">'+gemIcon(k)+'</div>'+
+   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+'</div>'+gemProgress(k)+'</div>'+
    (on?'<span class="eq">In this socket</span>':j>=0?'<span class="eq dim">Socket '+(j+1)+', swaps</span>':'')+'</button>'+
    (sel?gCmpCard(L,gL(gCoreCand(spec,i,k)),'gcore',i+':'+k,'Put in socket '+(i+1),'','core'+i):'');}).join('');
  return '<h3>Socket '+(i+1)+' · Bay '+gLetter(id)+'</h3><p class="mut">Tap a core to see what it changes. Picking one from another socket swaps the two.</p><div class="glist">'+rows+'</div>'+
@@ -1055,10 +1072,10 @@ function itemArt(r){
 function nextReveal(){
  const r=revealQ.shift();if(!r){revealOv=null;uiDirty();return;}
  const isCrate=r.tk==='weapon'||r.tk==='chassis'||r.tk==='gem';
- revealOv=openOverlay('modal','<div class="reveal"><canvas data-art="'+(isCrate?'crate:'+r.tk+':'+(r.ri||0):itemArt(r))+'" class="'+(isCrate?'shake':'pop')+'"></canvas>'+
-  '<div class="rtext'+(isCrate?' wait':'')+'"><div class="ttl" style="color:'+(r.color||'var(--moon)')+'">'+esc(r.title)+'</div><div class="sub">'+esc(r.sub||'')+'</div></div>'+
+ revealOv=openOverlay('modal','<div class="reveal" style="--gem:'+(r.color||'var(--moon)')+'"><canvas data-art="'+(isCrate?'crate:'+r.tk+':'+(r.ri||0):itemArt(r))+'" class="'+(isCrate?'shake':'pop')+'"></canvas>'+
+  '<div class="rtext'+(isCrate?' wait':'')+'">'+(r.gem&&r.up>0?'<div class="gem-levelup" role="status">CORE LEVEL UP · Lv '+r.lv+'</div>':'')+'<div class="ttl" style="color:'+(r.color||'var(--moon)')+'">'+esc(r.title)+'</div><div class="sub">'+esc(r.sub||'')+'</div></div>'+
   '<button class="btn btn-go block" style="margin-top:16px" data-act="revealok">'+(revealQ.length?'Next':'Nice')+'</button></div>',{cls:'rv',onClose:()=>setTimeout(nextReveal,140)});
- if(isCrate){const box=revealOv.box;setTimeout(()=>{const c=$('canvas',box);if(!c)return;c.dataset.art=itemArt(r);c.classList.remove('shake');void c.offsetWidth;c.classList.add('pop');paintArt(box);const t=$('.rtext',box);if(t)t.classList.remove('wait');fx('box');},620);}
+ if(isCrate){const box=revealOv.box;setTimeout(()=>{const c=$('canvas',box);if(!c)return;c.dataset.art=itemArt(r);c.classList.remove('shake');void c.offsetWidth;c.classList.add('pop');paintArt(box);const t=$('.rtext',box);if(t)t.classList.remove('wait');if(r.gem&&r.up>0)box.querySelector('.reveal').classList.add('gem-celebrate');fx('box');},620);}
 }
 
 // ---------- first open ----------
@@ -1675,3 +1692,4 @@ ACT.tglinkgo=async()=>{
   showToast('Logged in as '+r.cs+'. Loading your account…');try{localStorage.removeItem(SAVE_KEY);}catch(e){}setTimeout(()=>location.reload(),600);
  }catch(e){if(note)note.textContent='No connection. Try again.';}
 };
+
