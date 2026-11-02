@@ -1,0 +1,18 @@
+name: Owner identity check (read-only)
+# Operator-only, runs only on pushes to this ops branch (never main). Reads four paths, writes nothing, logs booleans only.
+on:
+  push:
+    branches: ['ops/owner-identity-check-20261102']
+permissions:
+  contents: read
+jobs:
+  check:
+    if: github.repository == 'solb7403-creator/war-machines' && github.ref == 'refs/heads/ops/owner-identity-check-20261102'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - env:
+          FIREBASE_DB_SECRET: ${{ secrets.FIREBASE_DB_SECRET }}
+        run: node worker/ops/owner-identity-check.mjs
