@@ -4,7 +4,10 @@
 // A human pilot: tracks targets with a reaction lag, aims with a slow wobble, misses or is late on some super dodges,
 // sometimes drifts out of position, sometimes picks a poor target, and has good and bad matches (a per-match form draw
 // scales all of it). Calibrated ONLY on equal-gear matchups (Titan vs Vanguard, mirrors), then locked (HUMAN below).
-export const HUMAN = { react: 0.30, wobble: 0.20, wobbleT: 0.8, dodgeMiss: 0.5, drift: 0.12, driftT: 0.9, badTarget: 0.25, formSd: 0.30, formPow: 1 };
+// LOCKED Nov 2, 2026 (dev/tests/s2/human-calib.mjs, 120 duels each, Epic Pulse, 14 levels, Lv5 cores, equal gear):
+//   Titan vs Vanguard 63.3% (bot profile 97.9%), Scout vs Titan 52.5%, Vanguard vs Scout 60.0%, Titan mirror 50.0%; hit rate ~30%
+// (bots hit ~96%). Not tuned after this point: every legendary and equal-spend number is measured with these values.
+export const HUMAN = { react: 0.35, wobble: 0.7, wobbleT: 0.8, dodgeMiss: 0.5, drift: 0.15, driftT: 0.9, badTarget: 0.25, formSd: 0.75, formPow: 2 };
 export const humanPatch = (H = HUMAN) => `
 const __H=${JSON.stringify(H)};
 function __hu(u){if(!u.hu)return null;if(!u.hu.ok){const z=Math.sqrt(-2*Math.log(1-random()))*Math.cos(6.283*random());u.hu={ok:1,s:Math.max(0.45,Math.min(1.8,1+__H.formSd*z)),w:0,p:{},drift:0,dx:0,dy:0,tg:null,tgT:0};}return u.hu;}

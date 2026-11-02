@@ -1,0 +1,5 @@
+human {"react":0.35,"wobble":0.7,"wobbleT":0.8,"dodgeMiss":0.5,"drift":0.15,"driftT":0.9,"badTarget":0.25,"formSd":0.75,"formPow":2}
+  titan vs vanguard    63.3% n=120 secs 69.6 hit rate 0.30
+  scout vs titan       52.5% n=120 secs 73.7 hit rate 0.34
+  vanguard vs scout    60.0% n=120 secs 67.6 hit rate 0.26
+  titan mirror         50.0% n=120 secs 73.5 hit rate 0.33
