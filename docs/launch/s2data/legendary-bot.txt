@@ -1,0 +1,13 @@
+epic pulse vs epic twin (Titan)              63.3% n=120
+epic pulse vs epic siege (Titan)             57.5% n=120
+epic siege vs epic twin (Titan)              73.3% n=120
+full kit vs maxed Epic scout                 96.7% n=120
+full kit vs maxed Epic vanguard              100.0% n=120
+full kit vs maxed Epic titan                 95.8% n=120
+full kit vs maxed Epic, class average        97.5% n=360
+Moonbeam alone vs best Epic weapon           83.1% n=360
+Lunar Skin alone vs none                     72.8% n=360
+full kit vs average-roll Epic (class avg)    97.9% n=360
+full kit vs rare-geared (class avg)          100.0% n=360
+full kit vs equal spend on caches (Titan, base Lv2 -> avg 2.83/2.67/2.92) 90.7% n=864
+DONE

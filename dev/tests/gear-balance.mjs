@@ -78,7 +78,10 @@ const all=report.weapons.flatMap(w=>w.tiers.map(t=>t.max));
 assert.ok(all.every(Number.isFinite));
 const base=powerOf(STOCK_L);
 const legendaryPower=powerOf({...STOCK_L,w:{a:'moon',t:2,q:1,s:false}});
-assert.ok(legendaryPower>base&&legendaryPower<base*1.3,'Legendary should improve matchmaking power without huge jumps');
+// power is fitted to measured duels (Session 2): Moonbeam must score above the best Epic weapon on the same tank and stay
+// within 15% of it (the same bound as its DPS lead)
+const bestEpicPower=Math.max(...WORDER.map(k=>powerOf({...STOCK_L,w:{a:k,t:2,q:ROLL_MAX,s:false}})));
+assert.ok(legendaryPower>bestEpicPower&&legendaryPower<bestEpicPower*1.15,'Legendary should improve matchmaking power without huge jumps ('+legendaryPower+' vs best Epic '+bestEpicPower+')');
 report.moonbeam={dps:moon.dps,shot:moon.shot,mult:moon.mult,superDamage:legendarySuper,epicMaxDPS:bestEpic,epicMaxSuper:bestEpicSuper,starterPower:base,legendaryPower};
 console.log('Equipment balance: PASS — 9 weapons, 9 chassis, Moonbeam, salvage, supers and class roles');
 console.log(JSON.stringify(report,null,2));

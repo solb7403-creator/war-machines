@@ -143,7 +143,7 @@ const LEAGUES=LEAGUE.map(L=>L.key);
 // base pay per league: what a match pays in BASE points (the airdrop, the boards and the daily cap count these), so a higher
 // league earns more airdrop points a minute even against its harder AI (measured: docs/launch/LEAGUES.md). The cap stays 20,000
 // base points a day in every league: a higher league reaches it sooner, nobody banks more a day
-const LG_BASE_PAY=[1,1.10,1.20,1.30,1.40,1.50,1.60];
+const LG_BASE_PAY=[1,1.09,1.18,1.28,1.39,1.50,1.60];   // front-loaded: the first steps are where the AI hardens most for the kits that play there
 const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplier per league, on top of base pay (spendable points only)
 const LG_FIRST=84,LG_RATIO=1.21;   // league rating lines: Pilot from 84, then each line 21% above the last (Lunar Legend from ~218)
 const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*10)/10);

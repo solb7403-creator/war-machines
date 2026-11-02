@@ -87,4 +87,36 @@ Release integration must use passing checks and the existing Pages workflow. The
 
 ## Session 2 (Nov 2, 2026): legendary results
 
-(filled in below)
+Shipped stats (owner decision, fixed): **Moonbeam 118 DPS, LEGENDARY_MULT 1.48, Moonfall 400 (592 after scaling, 2.0 wide),
+Precision on (edge hits deal 100%)**; **Lunar Skin +8% health, +8% damage**. The 2% Moonbeam DPS exception was not used.
+
+Method: `dev/tests/s2/legend.mjs`, server sim, Arena 1v1 single round, all 6 maps, both spawn directions, 20 seeds (human)
+or 10 seeds (bot) per pairing. Reference = fully maxed Epic: perfect rolls (1.10), 14 levels (hull 4, cannon 4, engine 2,
+targeting 2, reactor 2), Lv5 dmg/rof/arm cores, Reinforced plates + Sprint gearing on both sides. Both sides fly the same profile.
+
+**Human pilot profile** (`dev/tests/s2/human.mjs`): reaction lag, aim wobble, missed super dodges, positioning drift, poor
+target picks, and a per-match form draw. Calibrated only on equal-gear matchups and locked before any legendary run
+(commit 3de29e4): Titan vs an equal-gear Vanguard **63.3%** (bot profile 97.9%), Scout vs Titan 52.5%, Vanguard vs Scout
+60.0%, mirror 50.0%; humans hit ~30% of shots (bots ~96%). Best Epic weapon under this profile: Siege (Siege beats Pulse 53.7%, Twin 60.8%).
+
+| Test | Target | Human profile | n | Bot profile (old measurement) | n |
+|---|---|---:|---:|---:|---:|
+| Full kit vs maxed Epic, class average | 72-75% (~74) | **74.6%** | 720 | 97.5% | 360 |
+| ... vs Epic Scout | 60-66% | **65.8%** | 240 | 96.7% | 120 |
+| ... vs Epic Vanguard | 76-84% | 87.1% | 240 | 100.0% | 120 |
+| ... vs Epic Titan | 76-84% | 70.8% | 240 | 95.8% | 120 |
+| Moonbeam alone vs best Epic weapon | 61-65% | **62.0%** | 720 | 83.1% | 360 |
+| Lunar Skin alone vs none | 61-65% | 59.3% | 720 | 72.8% | 360 |
+| Full kit vs equal spend on gem caches (6,600 Stars, from Lv2 cores) | 55-60% | 69.2% | 1,440 | 90.7% | 864 |
+| ... same, from Lv3 cores (Pulse reference) | 55-60% | 66.0% | 1,440 | - | |
+| Full kit vs average-roll Epic (1.075), class average | report | 78.2% | 720 | 97.9% | 360 |
+| Full kit vs rare-geared (1.075), class average | report | 86.7% | 720 | 100.0% | 360 |
+
+Precision, measured (`dev/tests/s2/precision.mjs`, human pilots, Moonbeam vs Epic Siege, 240 duels each): shot damage per
+shot fired **11.35 with Precision vs 9.90 without: +14.6%**. 118 DPS was kept, since the targets didn't call for the 2% exception.
+
+Gaps (not fixed; legendary stats are fixed): vs Titan is 5 points under its band and vs Vanguard 3 over, the counter triangle
+(+15% damage, 10% less taken) still leans on the Titan pairings. Lunar Skin alone is 1.7 points under its band. Equal spend is
+9-14 points above its band because 6,600 Stars of gem caches add only ~0.8 levels to each core. Options for the owner, not
+implemented: soften the counter triangle (e.g. +10%/-5%), make gem caches better value per Star (more shards, or a
+choose-your-core Epic cache), or a cheaper Epic cache. See docs/launch/PRICING_REVIEW.md.

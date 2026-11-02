@@ -185,7 +185,7 @@ const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
 const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
  cores:'Tap a socket, then a core, to see what it changes before you fit it.',
  up:'Levels cost points and count for both bays: '+BUILD_MAX+' levels in all, spread them how you like.',
- fit:'Mods are free. Each one trades one stat for another; mix them within the weight and power budget.',
+ fit:'Mods are free. Each one trades one stat for another and adds one effect that changes how you fight; mix them within the weight and power budget.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
 const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
 const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second'],['super','Super damage',''],['edge','Edge-hit damage','%']];
@@ -825,7 +825,7 @@ const INFO={
   ['Your league','You’re in '+L.n+'. Your league comes from your league rating: your tank’s power (gear, upgrades, cores, mods) times your form. Form is how your last 20 or so matches went (a win counts 1, a draw or a top-3 Last Standing finish 0.5, a loss or a quit 0); it starts counting at your 10th match.'],
   ['The ladder',LEAGUE.map((x,i)=>x.n+(i?' from '+fmtNum(Math.round(LG_AT[i-1])):'')+' (×'+LG_MULT[i]+')').join(', ')+'. Each line is 21% above the last. You move up at the line and drop only 4% below it.'],
   ['Tougher AI','Every league up, AI pilots field a stronger loadout: the full step in 1v1, part of it in 2v2 and Last Standing, a little in 3v3. Inside a league the AI never changes with your results. The VS screen shows the league it’s set for.'],
-  ['Points','Higher leagues pay a bonus on your spendable points (the multiplier above). The airdrop ranking, the leaderboards and the 20,000 daily cap count your base points (league ×1), so a higher league never slows your airdrop progress.'],
+  ['Points','Higher leagues pay more. Base points, the ones the airdrop ranking, the leaderboards and the daily cap count, grow with league pay: '+LEAGUE.map((x,i)=>x.n+' ×'+LG_BASE_PAY[i].toFixed(2)).join(', ')+'. On top, a bonus on your spendable points only (the multiplier above). The daily cap is 20,000 base points in every league: a higher league reaches it sooner.'],
   ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime base points and shows on the leaderboard. Your league comes from power and form.']]];},
  build:()=>['Build',[
   ['Your budget','Each stat has 4 levels, but your tank can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how you fight.'],
