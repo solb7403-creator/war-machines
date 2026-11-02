@@ -8,6 +8,7 @@ on:
       - 'index.html'
       - 'version.json'
       - 'dev/tests/lab-ui.mjs'
+      - 'dev/tests/gem-ui.mjs'
       - 'dev/tests/garage-rules.mjs'
       - '.github/workflows/lab-ui-check.yml'
   push:
@@ -20,6 +21,7 @@ on:
       - 'index.html'
       - 'version.json'
       - 'dev/tests/lab-ui.mjs'
+      - 'dev/tests/gem-ui.mjs'
       - '.github/workflows/lab-ui-check.yml'
 permissions:
   contents: read
@@ -37,5 +39,7 @@ jobs:
           node --check js/rules.js
       - name: Run focused garage regressions
         run: |
+          node dev/tests/gem-ui.mjs
           node dev/tests/lab-ui.mjs
           node dev/tests/garage-rules.mjs
+

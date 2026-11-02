@@ -801,3 +801,37 @@ button.q{display:flex;width:100%;text-align:left}
 .lgchg{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px auto 10px;padding:7px 14px;border-radius:12px;font:700 16px var(--disp);color:var(--lc);background:color-mix(in srgb,var(--lc) 14%,transparent);border:1px solid color-mix(in srgb,var(--lc) 45%,transparent)}
 .lgchg .lgsh{width:18px;height:20px}
 @media (max-width:350px){.lgx{width:38px}.lgrung{gap:7px;padding:8px}}
+
+
+/* Core collection: presentation only; colors and progress use account/rules data. */
+.gem-collection{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.gem-card{min-width:0;padding:12px;border:1px solid var(--edge);border-radius:14px;background:linear-gradient(145deg,var(--rock2),var(--void2));text-align:left}
+.gem-heading{display:flex;align-items:center;gap:10px}
+.gem-heading>div{min-width:0}
+.gem-heading b{display:block;font:600 15px var(--disp)}
+.gem-heading span,.gem-equipped{display:block;font-size:11px;color:var(--dust)}
+.gem-crystal{display:inline-flex;flex:none;width:32px;height:40px;color:var(--gem);filter:drop-shadow(0 0 5px var(--gem))}
+.gem-crystal svg{width:100%;height:100%}
+.core .gem-crystal{display:inline-flex;margin:0 auto 4px;color:var(--gem)}
+.gem-bonus{font-size:12px;line-height:1.4;margin-top:8px}
+.gem-equipped{margin:4px 0 8px;line-height:1.4}
+.gem-card.equipped{border-color:var(--moon)}
+.gem-card.equipped .gem-equipped{color:var(--ok)}
+.gem-progress{overflow-wrap:anywhere;font-size:11px;line-height:1.5;color:var(--dust);font-variant-numeric:tabular-nums}
+.gem-track{height:6px;border-radius:8px;background:var(--void);border:1px solid var(--edge);overflow:hidden;margin:5px 0}
+.gem-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--gem),#e8f4ff);box-shadow:0 0 8px var(--gem);transition:width .35s ease}
+.gem-max{font:700 11px var(--disp);letter-spacing:1.5px;color:var(--moon);text-shadow:0 0 9px var(--gem)}
+.gem-card.is-max,.gem-row.is-max{box-shadow:inset 0 0 18px color-mix(in srgb,var(--gem) 12%,transparent)}
+.is-max .gem-crystal{filter:drop-shadow(0 0 8px var(--gem)) brightness(1.15)}
+.gem-row .grow{min-width:0}
+.gem-row{flex-wrap:wrap}
+.gem-row .eq{white-space:normal}
+.gem-row .gem-progress{margin-top:5px}
+.gem-levelup{font:700 14px var(--disp);letter-spacing:1px;color:var(--gem);margin-bottom:8px}
+.gem-celebrate canvas{animation:gem-bloom .9s ease-out both}
+.gem-celebrate .gem-levelup{animation:gem-label .7s ease-out both}
+@keyframes gem-bloom{0%{filter:drop-shadow(0 0 0 transparent);transform:scale(.96)}35%{filter:drop-shadow(0 0 18px var(--gem));transform:scale(1.05)}100%{filter:drop-shadow(0 0 5px var(--gem));transform:scale(1)}}
+@keyframes gem-label{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:600px){.gem-collection{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:359px){.gem-card{padding:9px}.gem-heading{gap:6px}.gem-heading b{font-size:14px}.gem-crystal{width:26px;height:34px}}
+@media(prefers-reduced-motion:reduce){.gem-celebrate canvas,.gem-celebrate .gem-levelup{animation:none}.gem-track i{transition:none}}

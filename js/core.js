@@ -247,7 +247,7 @@ function bankPts(n){
 // what a crate, purchase or reward gave, in words for the reveal card (raw: from rules.js ecoOpenBox / ecoGrant / ecoSalvage)
 function revealOf(r){
  if(!r)return null;
- if(r.gem){const G=GEM[r.gem],lv=r.lv;return {tk:r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards'),
+ if(r.gem){const G=GEM[r.gem],lv=r.lv;return {tk:r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,lv:r.lv,up:r.up||0,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards'),
   sub:r.up>0?G.name+' core reached level '+lv+'!':G.name+' core: level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:save.gemShards[r.gem])+'/'+SHARD_NEED[lv]+' shards to next)':' (max)')};}
  if(r.tk==='paint'){const P=PAINTS[r.id]||PAINTS.stock;return r.id==='founder'?{tk:'paint',rar:2,color:P.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'}:
   {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
@@ -502,3 +502,4 @@ async function labRequest(a,body){
  finally{labBusy=false;}
 }
 function labMessage(err){return {modules:'Choose a mod from the list.',budget:'Over the weight or power budget. Take another mod off first.',update:'Update the game before changing this bay.',conflict:'This bay changed on another device. Loaded the latest; try again.',offline:'Not saved: no connection. Try again in a moment.',owned:'Choose gear this account owns.',cores:'Each core type fits once.',paint:'Choose a paint you own.',name:'Use 1–24 letters, numbers, spaces or . _ ( ) -',busy:'Still saving the last change.',sync:'Connect to load your machine bays.'}[err]||'Not saved: that choice isn’t allowed for this bay.';}
+
