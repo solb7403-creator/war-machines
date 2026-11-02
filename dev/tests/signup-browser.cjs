@@ -42,6 +42,7 @@ async function garageCheck(pg,label,name,touch,ctx){
  // pick Bay B, compare a core, commit it: saved by the server to Bay B only, and the showroom shows Bay B
  await press(pg.locator('.gbay-pick').nth(1));await pg.waitForFunction(()=>gBayId()==='m_spare');
  if(!(await pg.locator('#gs-cores .gsec-b').count()))await press(pg.locator('#gs-cores .gsec-h'));   // phones keep one section open
+ await pg.waitForSelector('#gs-cores .gem-card[data-act="gemcore"]');
  // Collection cards have a separate action; existing socket selectors stay unambiguous.
  assert((await pg.locator('#gs-cores [data-act="core"]').count())===3,label+' three socket actions');
  for(let i=0;i<3;i++)assert((await pg.locator('#gs-cores [data-act="core"][data-arg="'+i+'"]').count())===1,label+' unique socket '+i);
