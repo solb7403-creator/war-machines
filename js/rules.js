@@ -153,29 +153,41 @@ function chassisOf(cls,t,q,sal){
  return {cls,tier:t,sal:!!sal,q,mult:mt,hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:Math.round((b.turn+0.05*tc)*100)/100,size:b.ds};
 }
 const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring under the tank: none, rare, epic, legendary
-function powerOf(L){
- const U=L.up,W=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),lun=L.skin==='lunar';
- const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*(lun?SKIN_HP:1),dps=W.dps*(1+0.08*U.cannon)*(lun?SKIN_DMG:1),spd=(1+0.06*U.engine)*Cc.spd;
- const F=fittingStats(L.mods);
- let coreM=1;for(const c of (L.cores||[]))if(c){const lv=(L.gl&&L.gl[c])||1;coreM*=(1+0.05*lv);}
- return Math.round(Math.pow(hp*dps*spd*(1+F.hp)*(1+F.spd)*(1+F.dps),1/3)*coreM*1.2);   // starter ≈ 72-100
+// Power (gear score): one number for how hard a tank hits in a fight, fitted to measured duels on the real sim
+// (dev/tests/s2/power-pairs.mjs + docs/launch/LEAGUES.md: 500 random kit pairs, stock to full Legendary, 240 duels each).
+// Every stat the fight uses counts: health, armor, damage, crits, super strength and charge, speed, turret turn, shot speed,
+// mods, cores, upgrades, Lunar Skin and the chassis class. Two tanks' powers give the gear-predicted win chance (powerWin):
+// P = 1 / (1 + (pB/pA)^POWER_K), plus COUNTER_EDGE when one chassis counters the other. Starter tank = 68.
+const POWER_W={h:6.61,a:6.95,d:5.80,c:6.31,su:1.50,fi:1.84,s:3.59,r:1.27,hc:1.61,tu:1.20,ps:1.49,sc:0.29,ti:-0.03,hh:0.49,ss:0.87,dd:-0.33,hd:0.27,hs:-0.51,ds:-1.17};
+const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:0.22};   // weapon type (its super's base damage included: Siege Blast and Moonfall 375, the others 350)
+const POWER_BASE=68,POWER_K=13.75,COUNTER_EDGE=1.72;
+function powerZ(L){
+ const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log;
+ const h=ln(t.mhp/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))/STAT.dps),s=ln(t.spdM*(1+g('spd')));
+ return W.h*h+W.a*-ln(1-Math.min(0.7,g('arm')))+W.d*d+W.c*ln(1+CRIT_BASE+t.critB+g('lck'))+W.su*ln((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg')))
+  +W.fi*ln(t.fillM)+W.s*s+W.r*g('reg')*100+W.hc*ln(t.hitChg||1)+W.tu*ln(t.turnM)+W.ps*ln(t.wpspd/22)+(t.cls==='scout'?W.sc:t.cls==='titan'?W.ti:0)
+  +(POWER_WPN[t.wtype]||0)+W.hh*h*h+W.ss*s*s+W.dd*d*d+W.hd*h*d+W.hs*h*s+W.ds*d*s;
 }
+let POWER_Z0=null;
+function powerOf(L){if(POWER_Z0===null)POWER_Z0=powerZ(STOCK_L);return Math.round(POWER_BASE*Math.exp((powerZ(L)-POWER_Z0)/POWER_K));}
+// gear-predicted chance that A beats B (pA, pB: powers; ctr +1 if A's chassis counters B's, -1 the other way, 0 same class)
+function powerWin(pA,pB,ctr){return 1/(1+Math.exp(-(POWER_K*Math.log(Math.max(1,pA)/Math.max(1,pB))+COUNTER_EDGE*(ctr||0))));}
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
 // ---- AI difficulty (AI matches). AI pilots never copy your gear, upgrades or cores. They fly an authored loadout (AI_TIERS:
 // t rarity, q roll, h hull and cannon levels, e engine levels, g core levels [dmg,rof,arm]; p its power, checked by
 // dev/tests/combat-balance.mjs): the strongest one at or under the AI power shown on the VS screen, 68 x (your power / 68)^AI_EXP.
 // A starter tank meets starter AI, exactly as before; above that the AI grows slower than you do, so every upgrade, crate and
 // purchase widens your edge. Measured on the real sim: dev/tests/combat-sim.mjs, docs/combat-balance-audit.md
-const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],72],[0,1.05,1,1,[1,1,1],76],[1,1.05,0,0,[1,1,1],80],[1,1.05,1,0,[1,1,1],84],
- [1,1.05,1,1,[2,1,1],90],[1,1.05,1,1,[2,2,1],94],[1,1.05,1,1,[2,2,2],98],[1,1.05,2,1,[2,2,2],103],[1,1.08,2,2,[2,2,2],107],
- [2,1.05,1,1,[2,2,2],112],[2,1.05,2,1,[2,2,2],118],[2,1.05,2,1,[3,2,2],123],[2,1.05,2,1,[3,3,2],129],[2,1.05,2,1,[3,3,3],135],
- [2,1.05,3,1,[3,3,3],141],[2,1.08,3,2,[3,3,3],147],[2,1.08,3,2,[4,3,3],153],[2,1.08,3,2,[4,4,3],160],[2,1.08,3,2,[4,4,4],167],
- [2,1.08,4,2,[4,4,4],174],[2,1.1,4,2,[4,4,4],177],[2,1.1,4,2,[5,4,4],184],[2,1.1,4,2,[5,5,4],192],[2,1.1,4,2,[5,5,5],200]
+const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],73],[0,1,1,0,[2,2,2],76],[0,1.05,1,1,[1,1,1],79],[1,1.05,0,0,[1,1,1],85],[1,1.05,0,1,[2,2,2],88],[1,1.05,1,0,[1,1,1],92],
+ [1,1.05,1,1,[2,1,1],94],[1,1.05,1,1,[2,2,2],95],[1,1.05,2,1,[2,2,2],102],[1,1.08,2,2,[2,2,2],107],
+ [2,1.05,1,1,[2,2,2],115],[2,1.05,2,1,[2,2,2],124],[2,1.05,2,1,[3,2,2],125],[2,1.05,2,1,[3,3,2],126],[2,1.05,2,1,[3,3,3],128],
+ [2,1.05,3,1,[3,3,3],137],[2,1.08,3,2,[3,3,3],143],[2,1.08,3,2,[4,3,3],145],[2,1.08,3,2,[4,4,3],147],[2,1.08,3,2,[4,4,4],149],
+ [2,1.08,4,2,[4,4,4],159],[2,1.1,4,2,[4,4,4],162],[2,1.1,4,2,[5,4,4],165],[2,1.1,4,2,[5,5,4],168],[2,1.1,4,2,[5,5,5],171]
 ].map(([t,q,h,e,g,p])=>({t,q,h,e,g,p}));
 // AI_EXP 0.75 (measured, 24 seeds x 11 mode/sizes): average win 58/61/68/80/92% starter->common->rare->Epic->Legendary kit; 1.0
 // (AI = your power) cancels progression again, 0.8 and 0.7 each left one mode where Epic trailed Rare by 17-21 points.
 // AI_BOSS_EXP: the Survival megatank is tuned to a reference tank closer to yours (a boss should be a fight), never above it
-const AI_EXP=0.75,AI_BOSS_EXP=1.0;
+const AI_EXP=0.70,AI_BOSS_EXP=1.0;
 const aiPower=(pw,e)=>{const b=AI_TIERS[0].p,p=Math.max(b,Number(pw)||0);return b*Math.pow(p/b,e===undefined?AI_EXP:e);};
 function aiLevel(pw,e){const a=aiPower(pw,e);let i=0;for(let n=1;n<AI_TIERS.length;n++)if(AI_TIERS[n].p<=a)i=n;return {i,p:AI_TIERS[i].p};}
 function aiLoadout(i,arch,cls){

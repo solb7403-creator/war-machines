@@ -4,7 +4,7 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 
 - [x] 1. Mods rework
 - [x] 2. Legendary balance
-- [ ] 3. Gear score accuracy
+- [x] 3. Gear score accuracy
 - [ ] 4. Leagues + AI
 - [ ] 5. PvP matchmaking
 - [ ] 6. Airdrop + daily cap on base points
@@ -33,3 +33,13 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - Results in docs/EQUIPMENT_BALANCE_VALIDATION.md (Session 2 section) and docs/launch/s2data/legendary-final.txt.
 - Owner decisions: counter triangle makes "vs Vanguard 76-84%" unreachable (Titan beats Vanguard 99% at equal gear); equal spend 66-68% (caches weak per Star).
 - Garage: machineView gains `super` and `edge` (G_MORE), so the Moonbeam edge line shows Precision.
+
+### 3. Gear score (done, target missed: 86.7% vs 90%)
+- powerOf refit (POWER_W, POWER_WPN, POWER_K 13.75, COUNTER_EDGE 1.72; powerWin(pA,pB,ctr) gives the gear-predicted win chance).
+  Fit: 500 random kit pairs x 240 duels (docs/launch/s2data/power-train.json); held out: 120 pairs x 480 duels (power-holdout.json).
+  `node dev/tests/s2/power-check.mjs`: holdout 86.7% within 7 points (mean error 3.5); old powerOf at its best scaling 52.5%.
+  Repeat measurements agree within 7 for 95.8% of pairs, so the gap is the bot brain's thresholds, not noise.
+- Scale kept: stock 68, common 80, rare 106, Epic 164, full Legendary 204 (old 68/77/105/154/194).
+- AI: AI_TIERS powers recomputed (26 tiers, 68..171; one duplicate removed, two steps added so no step > 8%); AI_EXP 0.75 -> 0.70 so each
+  ladder kit meets the same AI tier (+/-1). Standard-pilot averages vs post-item-2: stock .580/.580 common .659/.659 rare .689/.687
+  epic .864/.860 legend .867/.898 (n=264 each). Data: s2data/ai-post2.json, ai-item3.json.

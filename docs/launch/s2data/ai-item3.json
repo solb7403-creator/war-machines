@@ -1,0 +1,411 @@
+{
+ "standard": {
+  "arena 1v1": {
+   "stock": {
+    "n": 24,
+    "w": 18,
+    "place": 0,
+    "secs": 62,
+    "win": 0.75
+   },
+   "common": {
+    "n": 24,
+    "w": 23,
+    "place": 0,
+    "secs": 52,
+    "win": 0.958
+   },
+   "rare": {
+    "n": 24,
+    "w": 23,
+    "place": 0,
+    "secs": 47,
+    "win": 0.958
+   },
+   "epic": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 43,
+    "win": 1
+   },
+   "legend": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 38,
+    "win": 1
+   }
+  },
+  "arena 2v2": {
+   "stock": {
+    "n": 24,
+    "w": 6,
+    "place": 0,
+    "secs": 54,
+    "win": 0.25
+   },
+   "common": {
+    "n": 24,
+    "w": 11,
+    "place": 0,
+    "secs": 53,
+    "win": 0.458
+   },
+   "rare": {
+    "n": 24,
+    "w": 17,
+    "place": 0,
+    "secs": 52,
+    "win": 0.708
+   },
+   "epic": {
+    "n": 24,
+    "w": 23,
+    "place": 0,
+    "secs": 43,
+    "win": 0.958
+   },
+   "legend": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 39,
+    "win": 1
+   }
+  },
+  "arena 3v3": {
+   "stock": {
+    "n": 24,
+    "w": 14,
+    "place": 0,
+    "secs": 69,
+    "win": 0.583
+   },
+   "common": {
+    "n": 24,
+    "w": 12,
+    "place": 0,
+    "secs": 72,
+    "win": 0.5
+   },
+   "rare": {
+    "n": 24,
+    "w": 13,
+    "place": 0,
+    "secs": 64,
+    "win": 0.542
+   },
+   "epic": {
+    "n": 24,
+    "w": 23,
+    "place": 0,
+    "secs": 62,
+    "win": 0.958
+   },
+   "legend": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 52,
+    "win": 1
+   }
+  },
+  "zone 2v2": {
+   "stock": {
+    "n": 24,
+    "w": 8,
+    "place": 0,
+    "secs": 117,
+    "win": 0.333
+   },
+   "common": {
+    "n": 24,
+    "w": 14,
+    "place": 0,
+    "secs": 126,
+    "win": 0.583
+   },
+   "rare": {
+    "n": 24,
+    "w": 8,
+    "place": 0,
+    "secs": 129,
+    "win": 0.333
+   },
+   "epic": {
+    "n": 24,
+    "w": 15,
+    "place": 0,
+    "secs": 139,
+    "win": 0.625
+   },
+   "legend": {
+    "n": 24,
+    "w": 17,
+    "place": 0,
+    "secs": 119,
+    "win": 0.708
+   }
+  },
+  "zone 3v3": {
+   "stock": {
+    "n": 24,
+    "w": 14,
+    "place": 0,
+    "secs": 149,
+    "win": 0.583
+   },
+   "common": {
+    "n": 24,
+    "w": 13,
+    "place": 0,
+    "secs": 146,
+    "win": 0.542
+   },
+   "rare": {
+    "n": 24,
+    "w": 17,
+    "place": 0,
+    "secs": 151,
+    "win": 0.708
+   },
+   "epic": {
+    "n": 24,
+    "w": 22,
+    "place": 0,
+    "secs": 134,
+    "win": 0.917
+   },
+   "legend": {
+    "n": 24,
+    "w": 21,
+    "place": 0,
+    "secs": 126,
+    "win": 0.875
+   }
+  },
+  "crystal 2v2": {
+   "stock": {
+    "n": 24,
+    "w": 13,
+    "place": 0,
+    "secs": 106,
+    "win": 0.542
+   },
+   "common": {
+    "n": 24,
+    "w": 14,
+    "place": 0,
+    "secs": 104,
+    "win": 0.583
+   },
+   "rare": {
+    "n": 24,
+    "w": 14,
+    "place": 0,
+    "secs": 107,
+    "win": 0.583
+   },
+   "epic": {
+    "n": 24,
+    "w": 19,
+    "place": 0,
+    "secs": 96,
+    "win": 0.792
+   },
+   "legend": {
+    "n": 24,
+    "w": 20,
+    "place": 0,
+    "secs": 103,
+    "win": 0.833
+   }
+  },
+  "bounty 2v2": {
+   "stock": {
+    "n": 24,
+    "w": 6,
+    "place": 0,
+    "secs": 120,
+    "win": 0.25
+   },
+   "common": {
+    "n": 24,
+    "w": 16,
+    "place": 0,
+    "secs": 120,
+    "win": 0.667
+   },
+   "rare": {
+    "n": 24,
+    "w": 15.5,
+    "place": 0,
+    "secs": 120,
+    "win": 0.646
+   },
+   "epic": {
+    "n": 24,
+    "w": 19,
+    "place": 0,
+    "secs": 120,
+    "win": 0.792
+   },
+   "legend": {
+    "n": 24,
+    "w": 20,
+    "place": 0,
+    "secs": 120,
+    "win": 0.833
+   }
+  },
+  "royale 1v1": {
+   "stock": {
+    "n": 24,
+    "w": 4,
+    "place": 3.71,
+    "secs": 45,
+    "win": 0.167
+   },
+   "common": {
+    "n": 24,
+    "w": 1,
+    "place": 3.92,
+    "secs": 43,
+    "win": 0.042
+   },
+   "rare": {
+    "n": 24,
+    "w": 5,
+    "place": 3.46,
+    "secs": 37,
+    "win": 0.208
+   },
+   "epic": {
+    "n": 24,
+    "w": 11,
+    "place": 2,
+    "secs": 47,
+    "win": 0.458
+   },
+   "legend": {
+    "n": 24,
+    "w": 15,
+    "place": 1.67,
+    "secs": 41,
+    "win": 0.625
+   }
+  },
+  "boss 1v1": {
+   "stock": {
+    "n": 24,
+    "w": 22,
+    "place": 0,
+    "secs": 65,
+    "win": 0.917
+   },
+   "common": {
+    "n": 24,
+    "w": 22,
+    "place": 0,
+    "secs": 63,
+    "win": 0.917
+   },
+   "rare": {
+    "n": 24,
+    "w": 22,
+    "place": 0,
+    "secs": 60,
+    "win": 0.917
+   },
+   "epic": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 58,
+    "win": 1
+   },
+   "legend": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 43,
+    "win": 1
+   }
+  },
+  "boss 2v2": {
+   "stock": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 78,
+    "win": 1
+   },
+   "common": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 82,
+    "win": 1
+   },
+   "rare": {
+    "n": 24,
+    "w": 23,
+    "place": 0,
+    "secs": 73,
+    "win": 0.958
+   },
+   "epic": {
+    "n": 24,
+    "w": 23,
+    "place": 0,
+    "secs": 72,
+    "win": 0.958
+   },
+   "legend": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 53,
+    "win": 1
+   }
+  },
+  "boss 3v3": {
+   "stock": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 83,
+    "win": 1
+   },
+   "common": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 82,
+    "win": 1
+   },
+   "rare": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 75,
+    "win": 1
+   },
+   "epic": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 74,
+    "win": 1
+   },
+   "legend": {
+    "n": 24,
+    "w": 24,
+    "place": 0,
+    "secs": 60,
+    "win": 1
+   }
+  }
+ }
+}
