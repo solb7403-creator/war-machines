@@ -46,7 +46,7 @@ async function garageCheck(pg,label,name,touch,ctx){
  // Collection cards have a separate action; existing socket selectors stay unambiguous.
  assert((await pg.locator('#gs-cores [data-act="core"]').count())===3,label+' three socket actions');
  for(let i=0;i<3;i++)assert((await pg.locator('#gs-cores [data-act="core"][data-arg="'+i+'"]').count())===1,label+' unique socket '+i);
- assert((await pg.locator('#gs-cores .gem-card[data-act="gemcore"]').count())===6,label+' six collection actions');
+ assert((await pg.locator('#gs-cores .gem-card[data-act="gemcore"]').count())===7,label+' seven collection actions');
  await press(pg.locator('#gs-cores .gem-card[data-act="gemcore"]').first());
  await pg.waitForSelector('.sheet [data-act="gcmp"][data-arg="core|0|spd"]');
  await pg.evaluate(()=>closeAll());
