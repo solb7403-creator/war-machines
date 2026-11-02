@@ -220,5 +220,5 @@ try{if(!sessionStorage.getItem('lunar-view')){sessionStorage.setItem('lunar-view
 // warm the game while the player types: same URLs the game page loads, so they come from the cache
 (window.requestIdleCallback||(f=>setTimeout(f,1200)))(async()=>{try{const v=(await fetch('/version.json',{cache:'no-store'}).then(r=>r.json())).v;
  for(const s of ['rules','core','net','game','match','pvp','render','models3d','graphics','equipment3d','environment3d','proof','render3d','fx','ui','range']){const l=document.createElement('link');l.rel='prefetch';l.href='/js/'+s+'.js?v='+encodeURIComponent(v);document.head.append(l);}
- for(const s of ['/web/scene.js','/web/game.js','/web/account-prompts.js']){const l=document.createElement('link');l.rel='prefetch';l.href=s+'?v='+encodeURIComponent(v);document.head.append(l);}
+ for(const s of ['/js/showroom.js','/web/game.js','/web/account-prompts.js']){const l=document.createElement('link');l.rel='prefetch';l.href=s+'?v='+encodeURIComponent(v);document.head.append(l);}
 }catch{}});

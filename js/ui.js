@@ -38,9 +38,15 @@ function renderUI(){
 }
 function renderScreen(t){
  const el=$('#s-'+t);if(!el)return;
+ const a=document.activeElement,keep=a&&a.id&&a.tagName==='INPUT'&&el.contains(a)?{id:a.id,v:a.value,s:a.selectionStart,e:a.selectionEnd}:null;   // typing survives a refresh
+ const kb=a&&!keep&&a.dataset&&a.dataset.act&&el.contains(a)?'[data-act="'+a.dataset.act+'"]'+(a.dataset.arg!==undefined?'[data-arg="'+CSS.escape(a.dataset.arg)+'"]':''):null;   // so does keyboard focus
+ if(t==='garage'&&gStageEl)gStageEl.remove();   // the live 3D stage is kept, not rebuilt
  const html=SCREENS[t]();
  el.innerHTML=html;
+ if(keep){const n=document.getElementById(keep.id);if(n){n.value=keep.v;n.focus({preventScroll:true});try{n.setSelectionRange(keep.s,keep.e);}catch(e){}}}
+ if(kb){const n=el.querySelector(kb);if(n)n.focus({preventScroll:true});}
  paintArt(el);
+ if(t==='garage')gMountStage();
 }
 function setTab(t){
  if(!SCREENS[t])return;
@@ -64,7 +70,7 @@ function questsAlert(){
  return refPending()>0;
 }
 const nextUp=()=>UORDER.map(k=>({k,lv:save.up[k],c:save.up[k]<4&&upLevels(save.up)<BUILD_MAX?UPS[k].costs[save.up[k]]:Infinity})).sort((a,b)=>a.c-b.c)[0];
-const garageAlert=()=>{const u=nextUp();return u.c<=(save.pts||0);};
+const garageAlert=()=>{if(garageNew())return true;if(!garageOpen(save,'up'))return false;const u=nextUp();return u.c<=(save.pts||0);};   // a newly opened section, or an upgrade you can afford
 function renderTop(){
  const p=$('#ptsVal');if(!p)return;
  p.textContent=fmtNum(save.pts);
@@ -78,18 +84,13 @@ function renderTop(){
 const rarBadge=it=>'<span class="rar" style="background:'+gcol(it)+'">'+gbadge(it)+'</span>';
 const sec=(t,aside,info)=>'<h3 class="sec">'+t+(info?' <button class="info" data-act="info" data-arg="'+info+'" aria-label="About '+esc(t)+'">?</button>':'')+(aside?'<span class="aside">'+aside+'</span>':'')+'</h3>';
 const coin=()=>'<span class="coin sm"></span>';
-function eqId(isW){
- if(isW)return save.weapon==='moon'?'moon':save.weapon+':'+Math.max(0,save.wTier[save.weapon]||0)+((save.wSal&&save.wSal[save.weapon])?'s':'');
- return save.chassis+':'+Math.max(0,save.cTier[save.chassis]||0)+((save.cSal&&save.cSal[save.chassis])?'s':'');
-}
-function ownedList(isW){   // everything in this slot: owned first (best first), then what is still to find
+function ownedList(isW,eq){   // everything in this slot: owned first (best first), then what is still to find; eq = the bay's equipped id
  const keys=isW?WORDER:CHORDER,items=[];
  if(isW&&save.moonbeam)items.push(getW('moon'));
  for(let t=2;t>=0;t--)keys.forEach(k=>{
   const own=isW?ownW(k,t):ownC(k,t),it=isW?getW(k,t,false):getC(k,t,false);it.locked=!own;items.push(it);
   if(t>0&&salvOf(k,t))items.push(isW?getW(k,t,true):getC(k,t,true));
  });
- const eq=eqId(isW);
  items.sort((a,b)=>(a.id===eq?-1:b.id===eq?1:0)||((a.locked?1:0)-(b.locked?1:0))||(b.mult-a.mult));
  return items;
 }
@@ -127,7 +128,7 @@ function playNudge(){
   if(dealDayFree()&&save.dealSeen!==dayNum())return {gem:'%',b:'Daily gem deal: 30% off',s:DEAL_TXT.d.on,act:'deals',arg:'d'};
  }
  const u=nextUp();
- if(u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
+ if(garageOpen(save,'up')&&u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
  if((save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points (×'+squadPhaseX()+' at launch) for each friend who keeps playing',act:'share'};
  return null;
 }
@@ -156,45 +157,307 @@ function battleRosterHtml(){
   const chassis=(L.c.s?'Salvaged ':'')+((CNAMES[L.c.c]||[])[Math.max(0,L.c.t)]||CH[L.c.c].n);
   const weapon=L.w.a==='moon'?'Moonbeam':(L.w.s?'Salvaged ':'')+((WNAMES[L.w.a]||[])[Math.max(0,L.w.t)]||WEAPONS[L.w.a].n);
   return '<div class="battle-roster-card'+(active?' selected':'')+'"><div class="battle-roster-bay">BAY '+(i+1)+(active?' · DEPLOYING':' · READY')+'</div><canvas data-art="lab:'+esc(id)+'" aria-label="'+esc(M.name)+' preview"></canvas><b class="battle-roster-name">'+esc(M.name)+'</b><div class="battle-roster-items">'+esc(chassis)+' · '+esc(weapon)+'</div><div class="battle-roster-power">POWER '+powerOf(L)+'</div><button class="btn '+(active?'btn-quiet':'btn-go')+'" data-act="labequip" data-arg="'+esc(id)+'"'+(active?' disabled':'')+'>'+(active?'Selected':'Deploy this machine')+'</button></div>';
- }).join('')+'</div><p class="battle-roster-rule">Edit either build in Garage › Engineer.</p></section>';
+ }).join('')+'</div><p class="battle-roster-rule">Edit either build in the Garage.</p></section>';
 }
 function renderPlay(){
  const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=powerBracket(pw);
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),n=playNudge(),wr=winRange(gk,mk);
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
-  battleRosterHtml()+'<div class="lobby">'+
+  '<div class="lobby">'+
   (n?'<button class="nudge" data-act="'+n.act+'" data-arg="'+(n.arg||'')+'"><span class="gem">'+(n.svg||n.gem)+'</span><span><b>'+n.b+'</b><br><span>'+esc(n.s)+'</span></span><span class="chev">›</span></button>':'')+
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
   (quickOK()?'<button class="quick" data-act="quick"><b>QUICK MATCH</b><span>Live pilots, any mode, random map</span></button>':'')+
-  '</div>';
+  '</div>'+battleRosterHtml();   // the bay picker sits under FIGHT, so FIGHT stays on the first screen
 }
 
 // ---------- GARAGE ----------
-function renderGarage(){
- const st=buildStats(),pw=calcPower(),brk=powerBracket(pw),W0=getW(save.weapon),C0=getC(save.chassis);
- const stat=(v,l)=>'<div class="stat"><b>'+v+'</b><span>'+l+'</span></div>';
- const gearRow=(isW,it)=>'<button class="gear" data-act="gear" data-arg="'+(isW?'w':'c')+'"><div class="ico"><canvas data-art="gear:'+(isW?'w':'c')+':'+gearKey(it)+'"></canvas></div>'+
-  '<div class="grow"><div class="kind">'+(isW?'Weapon':'Chassis')+'</div><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div></div><span class="chev">›</span></button>';
- const coreCard=i=>{const k=save.cores[i];
-  if(!k)return '<button class="core empty" data-act="core" data-arg="'+i+'"><div class="gemi" style="border:1.5px dashed var(--dim);box-shadow:none"></div><b>Empty</b><span>Add a core</span></button>';
-  const lv=save.gemLvl[k]||1;
-  return '<button class="core" data-act="core" data-arg="'+i+'"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div><b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';};
- const used=upLevels(save.up),full=used>=BUILD_MAX,inv=upInvested(save.up);
- const upRow=k=>{const U=UPS[k],lv=save.up[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&!full&&(save.pts||0)>=c;
-  return '<div class="up"><div class="grow"><div class="nm">'+U.n+' <span class="dimtxt">level '+lv+' of 4</span></div><div class="d">'+U.d+'</div><div class="bar4">'+[0,1,2,3].map(i=>'<i class="'+(i<lv?'f':'')+'"></i>').join('')+'</div></div>'+
-   (max?'<span class="mut">Maxed</span>':full?'<span class="mut">Budget full</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="up" data-arg="'+k+'">'+coin()+fmtNum(c)+'</button>')+'</div>';};
- return labCards()+'<div class="powerline"><div class="grow"><div class="pw num">Power '+pw+'</div><div class="mut"><span style="color:'+brk.c+'">'+brk.n+' league</span>, points ×'+brk.mult+'</div></div><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button></div>'+
-  '<div class="stats">'+stat(fmtNum(st.hp),'Health')+stat(st.dps,'Damage/s')+stat(st.spd,'Speed')+stat(st.armor+'%','Armor')+stat(st.crit+'%','Crit')+'</div>'+
-  sec('Gear')+gearRow(true,W0)+gearRow(false,C0)+
-  '<button class="gear" data-act="paints"><div class="ico"><canvas data-art="tank:paint:'+esc(save.paint)+'"></canvas></div><div class="grow"><div class="kind">Paint</div><div class="nm">'+esc(myPaint().n)+'</div><div class="meta">Looks only. '+Object.keys(save.paints||{}).length+' of '+PAINT_ORDER.length+' owned</div></div><span class="chev">›</span></button>'+
-  sec('Cores','Each type fits once','cores')+'<div class="cores">'+[0,1,2].map(coreCard).join('')+'</div>'+
-  sec('Build',used+' of '+BUILD_MAX+' levels','build')+'<div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div>'+
-  '<div class="ups list">'+UORDER.map(upRow).join('')+'</div>'+
-  (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">'+(save.rsCr?'Paid reset ready: every level back to 0 and all '+fmtNum(inv)+' points back.':'Every level back to 0. Pay the fee in points and get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' back'+(respecTier(inv)?', or pay $'+respecTier(inv).toFixed(2)+' and keep all of them.':'.'))+'</div></div><span class="mut">Reset</span></button>':'')+
-  (save.skin==='lunar'?'<div class="panel lunar">Lunar skin: +8% health and +8% damage, always on</div>':'');
+// One garage for Telegram and the website. Every choice edits the selected bay's spec (save.lab.machines[id].spec) and is
+// saved at once through the server-checked lab save (lab_save, rev-checked); the legacy save.weapon/chassis/cores/paint
+// fields are only a mirror of the active bay (labApplySelection). Upgrades stay account-wide: both bays share them.
+// Every number on this screen comes from the rules tables (machineView, machineDelta, legendaryEdge, buildTag, FITS).
+let gBay=null,gCmp=null,gMore=false,gShowroom=null,gStageEl=null,gStaticKey='',gShare=null;
+const gOpen=new Set(['loadout']);
+const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Shared by both bays'],
+ ['fit','Mods','Free trade-offs within a budget'],['style','Style','Looks only, except Lunar Skin']];
+const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
+const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
+ cores:'Tap a socket, then a core, to see what it changes before you fit it.',
+ up:'Levels cost points and count for both bays: '+BUILD_MAX+' levels in all, spread them how you like.',
+ fit:'Mods are free. Each one trades one stat for another; mix them within the weight and power budget.',
+ style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
+const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
+const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second']];
+const FIT_SLOT_N={hull:'Hull mod',mobility:'Mobility mod',mount:'Mount mod'},LOOK_N={hull:'Hull look',mobility:'Mobility look',mount:'Mount look'};
+const gNum=v=>Number.isInteger(v)?fmtNum(v):String(+(+v).toFixed(2));
+const gIds=()=>{const lab=save&&save.lab;return lab&&lab.slots&&lab.machines?Object.values(lab.slots).filter(id=>lab.machines[id]).slice(0,2):[];};
+function gBayId(){const ids=gIds();if(!ids.includes(gBay))gBay=save.lab&&ids.includes(save.lab.active)?save.lab.active:ids[0]||null;return gBay;}
+const gM=()=>{const id=gBayId();return id?save.lab.machines[id]:null;};
+const gL=spec=>ecoLoadout(save,spec||gM().spec);
+const gLetter=id=>'AB'.charAt(Math.max(0,gIds().indexOf(id)));
+const gNarrow=()=>innerWidth<768;
+function gSelect(id){if(gIds().includes(id)){gBay=id;gCmp=null;}}
+const gItem=(isW,x)=>isW?(x.a==='moon'?getW('moon'):getW(x.a,x.t,!!x.s)):getC(x.c,x.t,!!x.s);
+const gEqId=(isW,spec)=>{const x=isW?spec.w:spec.c,k=isW?x.a:x.c;return k==='moon'?'moon':k+':'+x.t+(x.s?'s':'');};
+function gCand(spec,slot,iid){   // the spec with one weapon or chassis swapped in
+ const p=JSON.parse(JSON.stringify(spec)),[k,ts]=iid==='moon'?['moon','2']:iid.split(':'),x={t:parseInt(ts,10),s:ts.endsWith('s')};
+ if(slot==='w')p.w={a:k,...x};else p.c={c:k,...x};return p;
 }
+function gCoreCand(spec,i,k){const p=JSON.parse(JSON.stringify(spec)),j=p.cores.indexOf(k);if(k&&j>=0)p.cores[j]=p.cores[i];p.cores[i]=k;return p;}   // a core already in another socket swaps
+function gFitCand(spec,slot,v){return {...JSON.parse(JSON.stringify(spec)),mods:{...fittingSelection(spec.mods),[slot]:v}};}
+const gSeen=k=>!!(save.gSeen&&save.gSeen[k]);
+const gIsNew=k=>!!G_LOCK[k]&&garageOpen(save,k)&&!gSeen(k);
+const garageNew=()=>Object.keys(G_LOCK).some(gIsNew);
+
+// ---- saving: one change = one save, in order. The screen shows it at once; a refusal rolls it back and says why ----
+const gJobs=[],gBase={},gIdleQ=[];let gWorking=false;
+const gIdle=()=>gJobs.length||gWorking?new Promise(r=>gIdleQ.push(r)):Promise.resolve();
+const gClone=o=>JSON.parse(JSON.stringify(o));
+function gOptimistic(j,M){if(j.kind==='save'){const p=labSpec(ecoLoadout(save,M.spec));j.mutate(p);p.catalog=FIT_VERSION;M.spec=p;}else if(j.kind==='rename')M.name=j.name;}
+function gRedo(id){   // the bay as the server has it, plus the changes still waiting
+ const B=gBase[id],M=save.lab&&save.lab.machines[id];if(!B||!M)return;
+ M.spec=gClone(B.spec);M.name=B.name;const rest=gJobs.filter(j=>j.id===id);rest.forEach(j=>gOptimistic(j,M));
+ if(!rest.length)delete gBase[id];
+}
+function gEnqueue(j){
+ const M=save.lab&&save.lab.machines[j.id];if(!M)return false;
+ if(j.kind!=='activate'&&!gBase[j.id])gBase[j.id]={spec:gClone(M.spec),name:M.name};
+ if(j.kind==='activate'){j.prev=save.lab.active;save.lab.active=j.id;}else gOptimistic(j,M);
+ gJobs.push(j);uiDirty();gPump();return true;
+}
+async function gSend(j){
+ const B=gBase[j.id];
+ if(j.kind==='activate')return labRequest('lab_activate',{id:j.id,rev:save.lab.rev});
+ if(j.kind==='rename')return labRequest('lab_rename',{id:j.id,rev:save.lab.rev,name:j.name});
+ const p=labSpec(ecoLoadout(save,B.spec));j.mutate(p);p.catalog=FIT_VERSION;
+ return labRequest('lab_save',{id:j.id,rev:save.lab.rev,name:B.name,spec:p});
+}
+async function gPump(){
+ if(gWorking)return;gWorking=true;
+ try{
+  while(gJobs.length){
+   const j=gJobs.shift();let r=await gSend(j);
+   if(r&&r.err==='conflict'){   // changed somewhere else: load the latest bay, then apply this one change to it
+    if(typeof doSync==='function'&&SRV_ECO)await doSync(false);
+    const M=save.lab&&save.lab.machines[j.id];if(M&&gBase[j.id])gBase[j.id]={spec:gClone(M.spec),name:M.name};
+    r=await gSend(j);
+   }
+   const M=save.lab&&save.lab.machines[j.id];
+   if(r&&r.err){
+    if(j.kind==='activate'&&save.lab.active===j.id&&j.prev)save.lab.active=j.prev;
+    showToast(labMessage(r.err));
+   }else{
+    if(gBase[j.id]&&M)gBase[j.id]={spec:gClone(M.spec),name:M.name};
+    if(j.ok)showToast(j.ok);
+   }
+   gRedo(j.id);uiDirty();
+  }
+ }finally{gWorking=false;gIdleQ.splice(0).forEach(f=>f());}
+}
+function baySave(id,mutate,ok){
+ const M=save.lab&&save.lab.machines[id];if(!M)return false;
+ const trial=labSpec(ecoLoadout(save,M.spec));mutate(trial);trial.catalog=FIT_VERSION;
+ const err=labValidate(save,trial);if(err){showToast(labMessage(err));return false;}
+ gCmp=null;fx('tap');return gEnqueue({kind:'save',id,mutate,ok});
+}
+function gRename(v){
+ const id=gBayId(),M=gM();if(!M)return;const name=String(v||'').normalize('NFC').trim();if(name===M.name)return;
+ if(!name||[...name].length>24||!/^[-\p{L}\p{N} ._()]+$/u.test(name)){showToast(labMessage('name'));uiDirty('garage');return;}
+ gEnqueue({kind:'rename',id,name,ok:'Bay '+gLetter(id)+' renamed'});
+}
+
+// ---- the parts of the screen ----
+let gCeil=null;
+function gCeilings(){if(!gCeil){const r=labStatRows(gM().spec);gCeil={tough:r[0][2],fire:r[1][2],speed:r[2][2]};}return gCeil;}
+function gDeltaCells(d){
+ const cell=([k,n,u])=>{const v=d[k],c=v>0?'up':v<0?'down':'same';
+  return '<div class="gd '+c+'"><span>'+n+'</span><b>'+(v===0?'No change':(v>0?'▲ +':'▼ −')+gNum(Math.abs(v))+(u&&u.startsWith('%')?u.slice(0,1):''))+'</b></div>';};
+ return G_STATS.map(cell).join('')+G_MORE.filter(([k])=>d[k]).map(cell).join('');
+}
+function gCmpCard(A,B,act,arg,label,extra,inspect){
+ return '<div class="gcmp" role="status"><p class="gcmp-t">If you make this change:</p><div class="gcmp-grid">'+gDeltaCells(machineDelta(A,B))+'</div>'+(extra||'')+
+  '<div class="gcmp-acts"><button class="btn btn-go" data-act="'+act+'" data-arg="'+esc(arg)+'">'+esc(label)+'</button><button class="btn btn-quiet" data-act="gcmpx">Cancel</button></div>'+
+  (inspect?'<button class="linkbtn" data-act="labinspect" data-arg="'+inspect+'">Exact stats</button>':'')+'</div>';
+}
+function gEdgeLine(kind,spec){
+ const e=legendaryEdge(save,spec,kind),vs=kind==='moon'?((WNAMES[e.vs]||[])[2]||WEAPONS[e.vs].n)+', the best Epic at a top roll':'the Standard skin';
+ const parts=G_STATS.concat(G_MORE).filter(([k])=>e.d[k]).map(([k,n,u])=>(e.d[k]>0?'+':'−')+gNum(Math.abs(e.d[k]))+(u&&u.startsWith('%')?'%':'')+' '+n.toLowerCase());
+ return '<p class="gedge"><span class="rar leg">Legendary</span> On this build, vs '+esc(vs)+': '+(parts.join(', ')||'no stat difference')+'.</p>';
+}
+const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second'},MOD_SKIP=new Set(['n','weight','power']);
+function modText(F){   // a mod's full trade-off in plain words, straight from its FITS entry (new fields show up on their own)
+ const out=[];
+ for(const [k,v] of Object.entries(F)){if(MOD_SKIP.has(k))continue;
+  if(typeof v==='number'&&v)out.push([v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
+  else if(typeof v==='string'&&v)out.push([0,v]);}
+ out.sort((a,b)=>(b[0]>0)-(a[0]>0));
+ return out.map(x=>x[1]).join(', ')||'No change: the standard part';
+}
+function gBays(){
+ const sel=gBayId();
+ return '<div class="gbays" role="tablist" aria-label="Machine bays">'+gIds().map((id,i)=>{
+  const M=save.lab.machines[id],L=ecoLoadout(save,M.spec),act=id===save.lab.active,on=id===sel;
+  return '<div class="gbay'+(on?' on':'')+'"><button class="gbay-pick" role="tab" aria-selected="'+on+'" data-act="gbay" data-arg="'+esc(id)+'"><span class="lbl">BAY '+'AB'[i]+(act?' · DEPLOYS':'')+'</span>'+
+   '<canvas data-art="lab:'+esc(id)+'" aria-hidden="true"></canvas><b class="nm">'+esc(M.name)+'</b><span class="tagc">'+esc(buildTag(L).n)+'</span><span class="pw">Power '+powerOf(L)+'</span></button>'+
+   '<div class="gbay-acts">'+(act?'<span class="gdeploy">Deploys next match</span>':'<button class="btn sm btn-go" data-act="labequip" data-arg="'+esc(id)+'">Equip</button>')+
+   '<button class="btn sm btn-quiet" data-act="rangecard" data-arg="'+esc(id)+'">Free Test</button></div></div>';}).join('')+'</div>';
+}
+function gHead(id,M,v,tag){
+ const brk=powerBracket(v.power),C=gCeilings();
+ const bar=([k,n])=>'<div class="gbar"><div><span>'+n+'</span><b class="num">'+gNum(v[k])+'</b></div><i><em style="width:'+Math.max(3,Math.min(100,100*v[k]/Math.max(1,C[k],v[k])))+'%"></em></i></div>';
+ return '<div class="ghead"><div id="g-stage-slot" class="g-stage-slot"></div>'+
+  '<div class="gname"><input id="g-name" maxlength="24" value="'+esc(M.name)+'" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Bay '+gLetter(id)+' name (tap to rename)"><button class="btn sm btn-quiet" data-act="gshare">Share my tank</button></div>'+
+  '<div class="gpower"><b class="num">Power '+v.power+'</b><span style="color:'+brk.c+'">'+brk.n+' league</span><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button><span class="gtag">'+esc(tag.n)+'</span></div>'+
+  '<p class="gtagd">'+esc(tag.d)+'</p><div class="gbars">'+G_STATS.slice(0,3).map(bar).join('')+'</div>'+
+  '<button class="linkbtn gmore" data-act="gmore" aria-expanded="'+gMore+'">'+(gMore?'Fewer stats':'More stats')+'</button>'+
+  (gMore?'<div class="gmorerow">'+G_MORE.filter(([k])=>k!=='repair'||v[k]).map(([k,n,u])=>'<div><span>'+n+'</span><b>'+(k==='charge'?'+':'')+gNum(v[k])+u+'</b></div>').join('')+'</div>':'')+'</div>';
+}
+function gHint(k){return save.gHint&&save.gHint[k]?'':'<p class="ghint"><span>'+esc(G_HINT[k])+'</span><button data-act="ghint" data-arg="'+k+'" aria-label="Dismiss tip">×</button></p>';}
+function gGearRow(isW,it){
+ return '<button class="gear" data-act="gear" data-arg="'+(isW?'w':'c')+'"><div class="ico"><canvas data-art="gear:'+(isW?'w':'c')+':'+gearKey(it)+'"></canvas></div><div class="grow"><div class="kind">'+(isW?'Weapon: what you shoot with':'Chassis: what you drive')+'</div><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div></div><span class="chev">›</span></button>';
+}
+const G_BODY={
+ loadout:(spec)=>gGearRow(true,gItem(true,spec.w))+(spec.w.a==='moon'?gEdgeLine('moon',spec):'')+gGearRow(false,gItem(false,spec.c))+'<p class="gnote">Tap either one to compare and swap. Only gear you own fits; the list shows where to find the rest.</p>',
+ cores:(spec)=>'<div class="cores">'+[0,1,2].map(i=>{const k=spec.cores[i];
+   if(!k)return '<button class="core empty" data-act="core" data-arg="'+i+'"><div class="gemi" style="border:1.5px dashed var(--dim);box-shadow:none"></div><b>Empty</b><span>Add a core</span></button>';
+   const lv=save.gemLvl[k]||1;return '<button class="core" data-act="core" data-arg="'+i+'"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div><b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';}).join('')+
+   '</div><p class="gnote">Each core type fits once. Core levels count for both bays; shards from gem caches level them up.</p><button class="linkbtn" data-act="info" data-arg="cores">What does each core do?</button>',
+ up:(spec,L)=>{
+  const used=upLevels(save.up),full=used>=BUILD_MAX,inv=upInvested(save.up);
+  return '<p class="gshared">Shared by both bays</p><div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div><p class="mut gnote">'+used+' of '+BUILD_MAX+' levels used <button class="info" data-act="info" data-arg="build" aria-label="About the build budget">?</button></p>'+
+   '<div class="ups list">'+UORDER.map(k=>{const U=UPS[k],lv=save.up[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&!full&&(save.pts||0)>=c,sel=gCmp==='up|'+k;
+    return '<div class="up'+(sel?' picked':'')+'"><div class="grow"><div class="nm">'+U.n+' <span class="dimtxt">level '+lv+' of 4</span></div><div class="d">'+U.d+'</div><div class="bar4">'+[0,1,2,3].map(i=>'<i class="'+(i<lv?'f':'')+'"></i>').join('')+'</div></div>'+
+     (max?'<span class="mut">Maxed</span>':full?'<span class="mut">Budget full</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="gupc" data-arg="'+k+'" aria-label="'+U.n+' level '+(lv+1)+', '+fmtNum(c)+' points: compare first">'+coin()+fmtNum(c)+'</button>')+'</div>'+
+     (sel&&!max&&!full?gCmpCard(L,{...L,up:{...L.up,[k]:lv+1}},'up',k,'Buy level '+(lv+1)+' for '+fmtNum(c)+' points','<p class="gnote">Applies to both bays.</p>'):'');}).join('')+'</div>'+
+   (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">'+(save.rsCr?'Paid reset ready: every level back to 0 and all '+fmtNum(inv)+' points back.':'Every level back to 0. Pay the fee in points and get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' back'+(respecTier(inv)?', or pay $'+respecTier(inv).toFixed(2)+' and keep all of them.':'.'))+'</div></div><span class="mut">Reset</span></button>':'');
+ },
+ fit:(spec,L)=>{
+  const cur=fittingSelection(spec.mods),f=fittingStats(cur);
+  const bud=(n,k)=>'<div class="gbud"><span>'+n+'</span><div class="gbud-t">'+Array.from({length:FIT_BUDGET[k]},(_,i)=>'<i class="'+(i<f[k]?'f':'')+'"></i>').join('')+'</div><b>'+f[k]+' of '+FIT_BUDGET[k]+'</b></div>';
+  return '<div class="gbuds" aria-label="Mod budget">'+bud('Weight','weight')+bud('Power','power')+'</div>'+FIT_ORDER.map(slot=>'<h4 class="gsub">'+FIT_SLOT_N[slot]+'</h4><div class="gopts">'+Object.entries(FITS[slot]).map(([vid,F])=>{
+   const on=cur[slot]===vid,tf=fittingStats({...cur,[slot]:vid}),sel=gCmp==='fit|'+slot+'|'+vid,base=FITS[slot][cur[slot]];
+   const need=[['weight','weight'],['power','power']].filter(([k])=>tf[k]>FIT_BUDGET[k]).map(([k,n])=>'needs '+F[k]+' '+n+', '+(FIT_BUDGET[k]-(f[k]-base[k]))+' free');
+   const cost=F.weight||F.power?'Weight '+F.weight+' · Power '+F.power:'Free: no weight or power';
+   return '<button class="gopt'+(on?' on':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="fit|'+slot+'|'+vid+'"'+(need.length?' disabled':'')+' aria-pressed="'+on+'"><b>'+esc(F.n)+(on?' <span class="eq">Fitted</span>':'')+'</b><span>'+esc(modText(F))+'</span><small>'+cost+(need.length?'. Doesn’t fit: '+need.join(' and '):'')+'</small></button>'+
+    (sel?gCmpCard(L,gL(gFitCand(spec,slot,vid)),'gfit',slot+'|'+vid,'Fit '+F.n,'','fit'+slot):'');}).join('')+'</div>').join('')+'<p class="gnote">Speed means driving speed. Dash and supers stay the same.</p>';
+ },
+ style:(spec)=>{
+  const own=save.skin==='lunar',looks=spec.looks||{};
+  return '<p class="gshared">Looks only: paint and looks never change stats</p><h4 class="gsub">Paint</h4><div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id]&&(id!=='founder'||FOUNDER_OPEN||(save.paints&&save.paints.founder))).map(id=>gPaintCard(id,spec.paint)).join('')+'</div>'+
+   '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="goshop">In the Shop</button>')+'</div>'+
+   FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
+ }};
+function gPaintCard(id,cur){
+ const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=cur===id;
+ const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'In the Shop';
+ return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="'+(own||P.only||P.pass?'paint':'goshop')+'" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
+}
+function gSum(k,spec){
+ if(k==='loadout')return esc(gItem(true,spec.w).name)+' · '+esc(gItem(false,spec.c).name);
+ if(k==='cores')return spec.cores.map(c=>c?GEM[c].name:'Empty').join(' · ');
+ if(k==='up')return upLevels(save.up)+' of '+BUILD_MAX+' levels used';
+ if(k==='fit'){const m=fittingSelection(spec.mods),n=FIT_ORDER.filter(s=>m[s]!=='stock').map(s=>FITS[s][m[s]].n);return n.length?esc(n.join(' · ')):'All standard parts';}
+ return esc((PAINTS[spec.paint]||PAINTS.stock).n)+' paint'+(save.skin==='lunar'?' · Lunar Skin':'');
+}
+function gSection([k,t,sub],spec,L){
+ const open=garageOpen(save,k),isNew=gIsNew(k),on=open&&gOpen.has(k);
+ const sum=open?gSum(k,spec):'Unlocks after '+G_LOCK[k]+' matches ('+Math.min(save.mp|0,G_LOCK[k])+' of '+G_LOCK[k]+' played)';
+ return '<section class="gsec'+(on?' open':'')+(isNew?' new':'')+(open?'':' locked')+'" id="gs-'+k+'"><button class="gsec-h" data-act="gsec" data-arg="'+k+'" aria-expanded="'+on+'"'+(on?' aria-controls="gb-'+k+'"':'')+'>'+
+  '<span class="gt"><b>'+t+'</b>'+(isNew?'<span class="newchip">New: unlocked</span>':'')+'<small>'+esc(sub)+'</small><span class="gs">'+sum+'</span></span><span class="chev" aria-hidden="true">'+(open?(on?'−':'+'):'<svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M4 7V5a4 4 0 0 1 8 0v2h1v8H3V7zm2 0h4V5a2 2 0 0 0-4 0z"/></svg>')+'</span></button>'+
+  (on?'<div class="gsec-b" id="gb-'+k+'">'+gHint(k)+G_BODY[k](spec,L)+'</div>':'')+'</section>';
+}
+function renderGarage(){
+ const id=gBayId();
+ if(!id)return '<div class="panel gwait"><b>Loading your two machine bays…</b><p class="mut">They come with your account. If this takes long, check your connection.</p></div>';
+ const M=gM(),spec=M.spec,L=gL(spec),v=machineView(L),tag=buildTag(L);
+ return '<div class="garage">'+gBays()+gHead(id,M,v,tag)+G_SECS.map(s=>gSection(s,spec,L)).join('')+'</div>';
+}
+// the picker sheets (weapon, chassis, a core socket): tap to compare, then commit
+function gGearSheet(isW){
+ const id=gBayId(),M=gM();if(!M)return '<h3>Loading…</h3>';
+ const spec=M.spec,eq=gEqId(isW,spec),L=gL(spec),slot=isW?'w':'c',key=isW?'weapon':'chassis';
+ const rows=ownedList(isW,eq).map(it=>{
+  const iid=it.premium?'moon':(it.arch||it.cls)+':'+Math.max(0,it.tier)+(it.sal?'s':''),on=iid===eq,k=it.arch||it.cls,t=Math.max(0,it.tier),sel=gCmp===slot+'|'+iid;
+  const tunable=!it.locked&&!it.premium&&!it.sal&&canTune(isW,k,t);
+  const where=it.locked?'Not found yet':it.premium?'Legendary: fixed, no rolls':it.sal?'Power '+pct1(it.mult)+'. Crate gear starts at 105%':tunable?'Power '+pct1(it.mult)+', roll '+pct(it.q):'Starter gear, power '+pct1(it.mult);
+  const tune=tunable&&it.q<ROLL_MAX-0.0001?'<div class="tunerow"><span>Tune-up: re-roll 105 to 110%, keep the better</span><button class="btn sm '+((save.pts||0)>=TUNE_PTS[t]?'btn-gold':'btn-quiet')+'" data-act="tune" data-arg="'+slot+'|'+k+'|'+t+'">'+coin()+fmtK(TUNE_PTS[t])+'</button></div>':'';
+  const ico='<div class="ico"><canvas data-art="gear:'+slot+':'+gearKey(it)+'"'+(it.locked?' data-locked="1"':'')+'></canvas></div>';
+  const body='<div class="grow"><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div><div class="meta">'+where+'</div></div>';
+  if(it.locked)return '<div class="gear locked">'+ico+body+'<button class="btn sm btn-quiet gwhere" data-act="crate" data-arg="'+key+':'+t+'" aria-label="Get '+esc(it.name)+' from the '+esc(crateName(key,t))+'">'+TIER_N[t]+' crate ›</button></div>';
+  return '<button class="gear'+(on?' equipped':'')+(sel?' picked':'')+(tune?' hastune':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="'+slot+'|'+iid+'" aria-pressed="'+(on||sel)+'">'+ico+body+(on?'<span class="eq">Equipped</span>':'')+'</button>'+tune+
+   (sel?gCmpCard(L,gL(gCand(spec,slot,iid)),'gequip',slot+'|'+iid,'Equip to Bay '+gLetter(id),iid==='moon'?gEdgeLine('moon',gCand(spec,slot,iid)):'',key):'');
+ }).join('');
+ const moon=isW&&!save.moonbeam?'<div class="gear locked"><div class="ico"><canvas data-art="gear:w:moon" data-locked="1"></canvas></div><div class="grow"><div class="nm">Moonbeam '+rarBadge(getW('moon'))+'</div><div class="meta">'+gearMeta(true,getW('moon'))+'</div>'+gEdgeLine('moon',gCand(spec,'w','moon'))+'</div><button class="btn sm btn-quiet gwhere" data-act="goshop">Shop ›</button></div>':'';
+ return '<h3>'+(isW?'Weapon':'Chassis')+' · Bay '+gLetter(id)+'</h3><p class="mut">'+(isW?'Each weapon has its own super.':'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.')+' Tap one to see what changes.</p>'+
+  '<button class="linkbtn" data-act="labinspect" data-arg="'+key+'">Exact stats of your '+key+'</button><div class="glist">'+rows+moon+'</div>';
+}
+function gCoreSheet(i){
+ const id=gBayId(),M=gM();if(!M)return '<h3>Loading…</h3>';
+ const spec=M.spec,L=gL(spec);
+ const rows=GORDER.map(k=>{const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k),sh=save.gemShards[k]||0,on=j===i,sel=gCmp==='core|'+i+'|'+k;
+  return '<button class="gear'+(on?' equipped':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="core|'+i+'|'+k+'" aria-pressed="'+(on||sel)+'"><div class="ico"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div></div>'+
+   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+(lv<5?'. Next level: '+sh+'/'+SHARD_NEED[lv]+' shards':'. Max level')+'</div></div>'+
+   (on?'<span class="eq">In this socket</span>':j>=0?'<span class="eq dim">Socket '+(j+1)+', swaps</span>':'')+'</button>'+
+   (sel?gCmpCard(L,gL(gCoreCand(spec,i,k)),'gcore',i+':'+k,'Put in socket '+(i+1),'','core'+i):'');}).join('');
+ return '<h3>Socket '+(i+1)+' · Bay '+gLetter(id)+'</h3><p class="mut">Tap a core to see what it changes. Picking one from another socket swaps the two.</p><div class="glist">'+rows+'</div>'+
+  (spec.cores[i]?'<button class="btn btn-ghost block" style="margin-top:10px" data-act="gcore" data-arg="'+i+':-">Empty this socket</button>':'')+
+  '<button class="btn btn-quiet block" style="margin-top:8px" data-act="goshop">Level up cores: gem caches in the Shop</button><button class="linkbtn" data-act="coreinfo" data-arg="'+(spec.cores[i]||'dmg')+'">What does each core do?</button>';
+}
+function openBayGear(isW){gCmp=null;sheet('gear',()=>gGearSheet(isW),{onClose:()=>{gCmp=null;uiDirty('garage');}});}
+function openBayCore(i){gCmp=null;sheet('core',()=>gCoreSheet(i),{onClose:()=>{gCmp=null;uiDirty('garage');}});}
+const openGearPicker=isW=>openBayGear(isW),openCorePicker=i=>openBayCore(i);
+
+// ---- the live 3D stage: one canvas, the selected bay only; the static picture on 2D, Low, reduced motion or no WebGL ----
+const gLiveOK=()=>typeof LunarShowroom==='function'&&typeof use3D==='function'&&use3D()&&R3.q==='high'&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());
+function gStageRelease(){if(gShowroom){gShowroom.dispose();gShowroom=null;}gStaticKey='';}
+function gMountStage(){
+ const slot=$('#g-stage-slot'),M=gM();if(!slot||!M)return;
+ if(typeof webMountStage==='function'){webMountStage(slot);return;}   // the website's showroom fills this spot
+ if(!gStageEl){
+  gStageEl=document.createElement('div');gStageEl.className='g-stage';
+  gStageEl.innerHTML='<div class="machine-scene g-scene" tabindex="0" role="img"></div><div class="g-ctl" role="group" aria-label="Viewing angle and zoom">'+[['front','Front'],['quarter','¾ view'],['side','Side'],['rear','Rear']].map(([k,n])=>'<button data-gview="'+k+'">'+n+'</button>').join('')+'<button data-gzoom="-1" aria-label="Zoom out">−</button><button data-gzoom="1" aria-label="Zoom in">+</button></div>';
+  gStageEl.addEventListener('click',e=>{const b=e.target.closest('[data-gview],[data-gzoom]');if(!b||!gShowroom)return;if(b.dataset.gview)gShowroom.view(b.dataset.gview);else gShowroom.setZoom(gShowroom.zoom+Number(b.dataset.gzoom)*.12);});
+ }
+ slot.append(gStageEl);
+ const scene=gStageEl.querySelector('.g-scene'),L={...gL(),vl:vaultLevel(save.vg)},live=gLiveOK();
+ scene.setAttribute('aria-label',M.name+(live?', live 3D view. Drag sideways or use the arrow keys to turn it; pinch or + and − to zoom.':', picture.'));
+ if(live){
+  if(!gShowroom||!gShowroom.renderer||!scene.contains(gShowroom.renderer.domElement)){gStageRelease();scene.replaceChildren();gShowroom=new LunarShowroom(scene,{maxPR:1.25,idleMs:66,settleMs:8000});}
+  gShowroom.setContext('garage');gShowroom.setLoadout(L);
+ }else{
+  if(gShowroom)gStageRelease();
+  const key=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,gfxMode(),typeof R3!=='undefined'&&R3.ready]);
+  if(key!==gStaticKey||!scene.querySelector('canvas')){gStaticKey=key;const c=document.createElement('canvas');scene.replaceChildren(c);
+   const w=scene.clientWidth||320,h=scene.clientHeight||220;c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);try{drawMachinePreview(ctx,w,h,L);}catch(e){}}
+ }
+ gStageEl.classList.toggle('static',!(gShowroom&&gShowroom.renderer));
+}
+
+// ---- share my tank: a picture card + the pilot's own invite link ----
+function gCardCanvas(M,L,v,tag,brk){
+ const W=720,H=900,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+ const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#16203a');g.addColorStop(1,'#0a0e17');x.fillStyle=g;x.fillRect(0,0,W,H);
+ const r=x.createRadialGradient(W*.78,40,10,W*.78,40,420);r.addColorStop(0,'rgba(223,231,242,.22)');r.addColorStop(1,'rgba(223,231,242,0)');x.fillStyle=r;x.fillRect(0,0,W,H);
+ x.fillStyle='#ff9a55';x.font='700 30px "Chakra Petch",Arial,sans-serif';x.textBaseline='top';x.fillText('LUNAR: WAR MACHINES',40,36);
+ const ix=40,iy=96,iw=640,ih=420;x.fillStyle='rgba(10,14,23,.55)';x.fillRect(ix,iy,iw,ih);
+ const live=(gShowroom&&gShowroom.renderer&&gShowroom)||(typeof webShowroom!=='undefined'&&webShowroom&&webShowroom.renderer&&webShowroom)||null;
+ try{
+  if(live){live.draw();const s=live.renderer.domElement,k=Math.min(iw/s.width,ih/s.height),dw=s.width*k,dh=s.height*k;x.drawImage(s,ix+(iw-dw)/2,iy+(ih-dh)/2,dw,dh);}
+  else{const t=document.createElement('canvas');t.width=iw;t.height=ih;drawMachinePreview(t.getContext('2d'),iw,ih,L);x.drawImage(t,ix,iy);}
+ }catch(e){}
+ const pilot=(typeof CALLSIGN!=='undefined'&&CALLSIGN)||(typeof TG_USER!=='undefined'&&TG_USER&&tgName(TG_USER))||'Pilot';
+ x.fillStyle='#dfe7f2';x.font='700 54px "Chakra Petch",Arial,sans-serif';x.fillText(String(pilot).slice(0,18),40,540);
+ x.fillStyle='#8a97ab';x.font='600 26px "Chakra Petch",Arial,sans-serif';x.fillText(String(M.name).slice(0,28),40,606);
+ x.fillStyle='#ffcf4a';x.font='700 40px "Chakra Petch",Arial,sans-serif';x.fillText('Power '+v.power,40,660);
+ x.fillStyle=brk.c;x.font='700 30px "Chakra Petch",Arial,sans-serif';x.fillText(brk.n+' league',360,668);
+ x.fillStyle='#ff7a2f';const tw=Math.min(600,x.measureText(tag.n).width+44);x.beginPath();if(x.roundRect)x.roundRect(40,724,tw,54,14);else x.rect(40,724,tw,54);x.fill();
+ x.fillStyle='#2a1004';x.font='700 30px "Chakra Petch",Arial,sans-serif';x.fillText(tag.n,62,736);
+ x.fillStyle='#dfe7f2';x.font='500 24px system-ui,sans-serif';x.fillText(tag.d,40,794);
+ const link=refLink();x.fillStyle='#8a97ab';x.font='500 20px system-ui,sans-serif';x.fillText(link?link.replace(/^https?:\/\//,''):'Free to play in Telegram and on the web',40,846);
+ return c;
+}
+function gShareText(tag,v,brk){return 'My '+tag.n+' war machine in LUNAR: War Machines: power '+v.power+', '+brk.n+' league. Build yours and join my squad:';}
 
 // ---------- SHOP ----------
 const CRATE_N={weapon:'weapon cache',chassis:'chassis crate',gem:'gem cache'};
@@ -469,7 +732,8 @@ function openOverlay(kind,html,opt){
  box.setAttribute('role','dialog');
  wrap.appendChild(box);$('#layer').appendChild(wrap);
  const ov={kind,wrap,box,onClose:opt.onClose||null,re:null,key:opt.key||''};
- const fill=h=>{box.innerHTML=(kind==='sheet'?'<div class="grab"></div>':'')+h;paintArt(box);};
+ const fill=h=>{const a=document.activeElement,kb=a&&a.dataset&&a.dataset.act&&box.contains(a)?'[data-act="'+a.dataset.act+'"]'+(a.dataset.arg!==undefined?'[data-arg="'+CSS.escape(a.dataset.arg)+'"]':''):null;
+  box.innerHTML=(kind==='sheet'?'<div class="grab"></div>':'')+h;paintArt(box);if(kb){const n=box.querySelector(kb);if(n)n.focus({preventScroll:true});}};   // keyboard focus survives a refresh
  box.innerHTML=(kind==='sheet'?'<div class="grab"></div>':'')+html;
  if(opt.build)ov.re=()=>fill(opt.build());
  ov.close=()=>closeOverlay(ov);
@@ -610,32 +874,8 @@ function showInfo(id){
  sheet('info',()=>'<h3>'+t+'</h3>'+infoBody(s)+(id==='airdrop'?'<button class="btn btn-quiet block" style="margin-top:14px" data-act="wiki">Open the wiki</button>':''));
 }
 
-// ---------- garage sheets ----------
-function openGearPicker(isW){
- sheet('gear',()=>{
-  const eq=eqId(isW);
-  const rows=ownedList(isW).map(it=>{const id=it.premium?'moon':(it.arch||it.cls)+':'+Math.max(0,it.tier)+(it.sal?'s':''),on=id===eq;
-   const k=it.arch||it.cls,t=Math.max(0,it.tier),tunable=!it.locked&&!it.premium&&!it.sal&&canTune(isW,k,t);
-   const where=it.locked?'In the '+crateName(isW?'weapon':'chassis',t).toLowerCase():it.premium?'Legendary':it.sal?'Power '+pct1(it.mult)+'. Crate gear starts at 105%':tunable?'Power '+pct1(it.mult)+', roll '+pct(it.q):'Starter gear, power '+pct1(it.mult);
-   const tune=tunable&&it.q<ROLL_MAX-0.0001?'<div class="tunerow"><span>Tune-up: re-roll 105 to 110%, keep the better</span><button class="btn sm '+((save.pts||0)>=TUNE_PTS[t]?'btn-gold':'btn-quiet')+'" data-act="tune" data-arg="'+(isW?'w':'c')+'|'+k+'|'+t+'">'+coin()+fmtK(TUNE_PTS[t])+'</button></div>':'';
-   return '<button class="gear'+(it.locked?' locked':'')+(on?' equipped':'')+(tune?' hastune':'')+'" data-act="equip" data-arg="'+(isW?'w':'c')+'|'+id+'"><div class="ico"><canvas data-art="gear:'+(isW?'w':'c')+':'+gearKey(it)+'"'+(it.locked?' data-locked="1"':'')+'></canvas></div>'+
-    '<div class="grow"><div class="nm">'+esc(it.name)+' '+rarBadge(it)+'</div><div class="meta">'+gearMeta(isW,it)+'</div><div class="meta">'+where+'</div></div>'+(on?'<span class="eq">Equipped</span>':'')+'</button>'+tune;}).join('');
-  return '<h3>'+(isW?'Weapons':'Chassis')+'</h3><p class="mut">'+(isW?'Each weapon has its own super.':'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.')+'</p><div style="margin-top:12px">'+rows+'</div>';
- });
-}
+// ---------- garage sheets: see the GARAGE section (openBayGear, openBayCore) ----------
 const CORE_UNIT={dmg:'damage',rof:'fire rate',arm:'armor',spd:'speed',lck:'crit chance',reg:'repair per second'};
-function openCorePicker(i){
- sheet('core',()=>{
-  const rows=GORDER.map(k=>{const lv=save.gemLvl[k]||1,j=save.cores.indexOf(k),sh=save.gemShards[k]||0;
-   return '<button class="gear'+(j===i?' equipped':'')+'" data-act="coreset" data-arg="'+i+':'+k+'"><div class="ico"><div class="gemi" style="background:'+GEM[k].c+';color:'+GEM[k].c+'"></div></div>'+
-    '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+(lv<5?'. Next level: '+sh+'/'+SHARD_NEED[lv]+' shards':'. Max level')+'</div></div>'+
-    (j===i?'<span class="eq">In this socket</span>':j>=0?'<span class="eq dim">Socket '+(j+1)+'</span>':'')+'</button>';}).join('');
-  return '<h3>Socket '+(i+1)+'</h3><p class="mut">Picking a core from another socket swaps the two.</p><div style="margin-top:12px">'+rows+'</div>'+
-   (save.cores[i]?'<button class="btn btn-ghost block" style="margin-top:10px" data-act="coreset" data-arg="'+i+':-">Empty this socket</button>':'')+
-   '<button class="linkbtn" data-act="coreinfo" data-arg="'+(save.cores[i]||'dmg')+'">What does each core do?</button>';
- });
-}
-
 // ---------- shop sheets ----------
 function openCrate(tk,ri){
  sheet('crate',()=>{
@@ -893,6 +1133,7 @@ function onRoundStart(){clearInterval(roundTimer);roundTimer=null;const ov=findO
 let leaveFn=null,paused=false;
 function onMatchStart(){
  closeAll();
+ gStageRelease();   // the garage's 3D canvas gives its GPU memory back to the battle
  if(typeof proofBegin==='function')proofBegin();   // AI matches keep a record for the server (proof.js)
  if(typeof resetTapFocus==='function')resetTapFocus();
  document.body.classList.add('battle');fit();
@@ -967,7 +1208,7 @@ const ACT={
  buypass:()=>{if(passState().prem)return;pay(PASS_PRICE.ton,{kind:'pass'});},
  paints:()=>openPaints(),
  paint:a=>{const P=PAINTS[a];if(!P)return;
-  if(save.paints&&save.paints[a]){if(save.lab){const p=labSpec(myLoadout());p.paint=a;labQuickSpec(p);return;}save.paint=a;store();fx('tap');showToast(P.n+' paint on');return;}
+  if(save.paints&&save.paints[a]){const id=gBayId();if(id)baySave(id,p=>{p.paint=a;},P.n+' paint on Bay '+gLetter(id));return;}
   if(P.pass){openPass();return;}
   if(P.only==='vault'){showToast('Unlocks at Hyperspace Vault level '+VAULT_PAINT_LV);openVault();return;}
   if(P.only){showToast('Only in the Founder pack');if(FOUNDER_OPEN){closeAll();setTab('shop');}return;}
@@ -1018,16 +1259,9 @@ const ACT={
  respecpay:()=>{const pr=ecoPrice(save,{kind:'respec'},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec'});},
  respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
  respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
- up:a=>{const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
- gear:a=>openGearPicker(a==='w'),
- equip:a=>{if(save.lab){const [sl,id]=a.split('|'),[k,ts='2']=id.split(':'),p=labSpec(myLoadout()),x={t:parseInt(ts,10),s:ts.endsWith('s')};if(sl==='w')p.w={a:k,...x};else p.c={c:k,...x};labQuickSpec(p);return;}const [s,id]=a.split('|'),isW=s==='w',[k,ts]=id.split(':'),t=ts===undefined?0:parseInt(ts,10),sl=!!ts&&ts.slice(-1)==='s';
-  const own=k==='moon'?save.moonbeam:isW?(sl?salvOf(k,t):ownW(k,t)):(sl?salvOf(k,t):ownC(k,t));
-  if(!own){showToast('Find it in the '+crateName(isW?'weapon':'chassis',t).toLowerCase());return;}
-  if(isW){save.weapon=k;if(k!=='moon'){save.wTier[k]=t;save.wSal=save.wSal||{};save.wSal[k]=sl;}}
-  else{save.chassis=k;save.cTier[k]=t;save.cSal=save.cSal||{};save.cSal[k]=sl;}
-  store();syncPlayer();fx('tap');showToast('Equipped '+(isW?getW(k):getC(k)).name);},
- core:a=>openCorePicker(+a),
- coreset:a=>{const [i,k]=a.split(':');socketCore(+i,k==='-'?null:k);fx('tap');const ov=findOv('core');if(ov)closeOverlay(ov);showToast(k==='-'?'Socket emptied':GEM[k].name+' core in socket '+(+i+1));},
+ up:a=>{gCmp=null;const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
+ gear:a=>openBayGear(a==='w'),
+ core:a=>openBayCore(+a),
  paycur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
  tonwallet:()=>tonWalletButton(),
  solwallet:()=>openSolWallets(),
@@ -1095,8 +1329,7 @@ function initUI(){
  uiReady=true;renderUI();
 }
 
-// Two owned configurations. Engineering is optional; ordinary Play remains unchanged.
-let labEditor=null;
+// Exact stats for the garage: every value comes from the same loadout calculators as gameplay.
 
 // Laboratory inspection: all values are taken from the same loadout calculators as gameplay.
 const labStatRows=(spec)=>{
@@ -1221,106 +1454,66 @@ function labDrawSelectedItem(canvas,key,spec){
  else if(key.startsWith('core')){const k=spec.cores[Number(key.slice(4))];if(k)drawGemArt(ctx,w,h,k);}
  else drawMachinePreview(ctx,w,h,{...ecoLoadout(save,spec),mods:spec.mods,looks:spec.looks});
 }
-function labInspect(key){
- if(!labEditor)return;
- const spec=labFormSpec(),ref=labEditor.base||labEditor.spec;
- const selector=key==='weapon'?'#lab-weapon':key==='chassis'?'#lab-chassis':key==='paint'?'#lab-paint':
- key.startsWith('core')?'#lab-core-'+key.slice(4):key.startsWith('fit')?'#lab-fit-'+key.slice(3):'#lab-look-'+key.slice(4);
- const el=$(selector);if(!el)return;
- const name=el.options[el.selectedIndex]?.textContent||'Empty';
- const category=key.startsWith('fit')?'Fitting':key.startsWith('look')?'Appearance':key.startsWith('core')?'Core':key;
- const note=key.startsWith('look')||key==='paint'?'Appearance only — no performance change.':
- key.startsWith('core')?'Core effects are included in the resulting machine stats.':
- key.startsWith('fit')?'Fitting effects and capacity are reflected below.':'This item is reflected in the resulting machine stats.';
- const itemSheet=sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+'</p>'+
- '<p class="mut">Live machine performance with this exact selection, compared with the saved configuration. Bars are relative within each stat, not fictional item levels.</p>'+
- labItemFacts(key,spec)+labItemBars(key,spec)+'<h4>Assembled machine performance</h4>'+labBars(spec,ref)+'<button class="btn btn-go block" data-act="labinspectclose">Back to Engineer</button>');
- itemSheet.re=null; // don't blank the rendered art when global UI becomes dirty
+function labInspect(key){   // the exact stats sheet: the selected bay's item, or the one being compared
+ const M=gM();if(!M)return;const base=M.spec;let spec=base;
+ if(gCmp){const p=gCmp.split('|');
+  if((p[0]==='w'&&key==='weapon')||(p[0]==='c'&&key==='chassis'))spec=gCand(base,p[0],p[1]);
+  else if(p[0]==='core'&&key==='core'+p[1])spec=gCoreCand(base,+p[1],p[2]);
+  else if(p[0]==='fit'&&key==='fit'+p[1])spec=gFitCand(base,p[1],p[2]);}
+ const name=key==='weapon'?gItem(true,spec.w).name:key==='chassis'?gItem(false,spec.c).name:key.startsWith('core')?(GEM[spec.cores[+key.slice(4)]]||{name:'Empty'}).name:
+  key.startsWith('fit')?FITS[key.slice(3)][fittingSelection(spec.mods)[key.slice(3)]].n:key==='paint'?(PAINTS[spec.paint]||PAINTS.stock).n:'Look';
+ const category=key.startsWith('fit')?'Mod':key.startsWith('look')?'Look':key.startsWith('core')?'Core':key;
+ const note=key.startsWith('look')||key==='paint'?'Looks only: no stat change.':spec===base?'Your bay as it is now.':'Compared with your bay as it is now.';
+ const itemSheet=sheet('labinspect',()=>'<canvas id="lab-item-art" class="lab-item-art" aria-label="Selected equipment preview"></canvas><h3>'+esc(category.toUpperCase())+' · '+esc(name)+'</h3><p class="mut">'+esc(note)+' Bars are relative within each stat.</p>'+
+  labItemFacts(key,spec)+labItemBars(key,spec)+'<h4>Whole machine</h4>'+labBars(spec,spec===base?null:base)+'<button class="btn btn-go block" data-act="labinspectclose">Back to the Garage</button>');
+ itemSheet.re=null; // keep the drawn art when the rest of the UI refreshes
  setTimeout(()=>labDrawSelectedItem($('#lab-item-art'),key,spec),0);
 }
 ACT.labinspect=key=>labInspect(key);
 ACT.labinspectclose=()=>{const ov=findOv('labinspect');if(ov)closeOverlay(ov);};
-let labQuickRefreshers=[];
-function labInspectButtons(){
- if(!labEditor)return;
- const pairs=[['weapon','Weapon'],['chassis','Chassis'],...[0,1,2].map(i=>['core'+i,'Core '+(i+1)]),
- ...FIT_ORDER.flatMap(k=>[['fit'+k,k.toUpperCase()+' fitting'],['look'+k,k.toUpperCase()+' appearance']]),['paint','Paint']];
- const root=$('.labform');if(!root)return;
- labQuickRefreshers=[];
- pairs.forEach(([key])=>{
-  const sel=$('#lab-'+(key==='weapon'||key==='chassis'||key==='paint'?key:
-   key.startsWith('core')?'core-'+key.slice(4):key.startsWith('fit')?'fit-'+key.slice(3):'look-'+key.slice(4)));
-  if(!sel||sel.parentElement.querySelector('.lab-inspect-btn'))return;
-  const b=document.createElement('button');b.type='button';b.className='btn btn-quiet lab-inspect-btn';
-  b.dataset.act='labinspect';b.dataset.arg=key;b.textContent='View exact details';
-  sel.parentElement.appendChild(b);
-  const preview=document.createElement('div');preview.className='lab-item-quick';
-  const refresh=()=>{
-   if(!labEditor)return;
-   const name=sel.options[sel.selectedIndex]?.textContent||'Empty';
-   const next=labFormSpec();
-   preview.innerHTML='<canvas class="lab-item-thumb" aria-hidden="true"></canvas><div class="lab-quick-data"><strong>'+esc(name)+'</strong>'+labItemBars(key,next)+'</div>';
-   labDrawSelectedItem(preview.querySelector('canvas'),key,next);
-  };
-  sel.parentElement.appendChild(preview);
-  sel.addEventListener('focus',refresh);sel.addEventListener('pointerenter',refresh);labQuickRefreshers.push(refresh);
-  refresh();
- });
-}
-function labCards(){
- if(!save.lab)return '<p class="mut">Connect in Telegram to load your two saved machines.</p>';
- return '<h2 class="title">Your machine bays</h2><p class="mut">Two independent builds, shown side by side. Shared inventory and upgrades.</p><div class="labcards">'+Object.entries(save.lab.machines).map(([id,M])=>{
-  const L=ecoLoadout(save,M.spec),T=tankOf(L,1),active=id===save.lab.active;
-  return '<section class="panel labcard"><div class="lab-bay-label">BAY '+esc(String(id).toUpperCase())+'</div><b>'+esc(M.name)+'</b><canvas class="labpreview" data-art="lab:'+id+'" aria-label="Machine appearance"></canvas><span class="tag">'+(active?'Active':'Ready')+'</span><p>'+esc((L.c.s?'Salvaged ':'')+CNAMES[L.c.c][L.c.t])+' · '+esc(L.w.a==='moon'?'Moonbeam':(L.w.s?'Salvaged ':'')+WNAMES[L.w.a][L.w.t])+'</p><p class="mut">Power '+powerOf(L)+' · '+fmtNum(T.mhp)+' HP</p>'+labBars(M.spec)+'<div class="acts"><button class="btn btn-quiet" data-act="labequip" data-arg="'+id+'"'+(active?' disabled':'')+'>Equip</button><button class="btn btn-go" data-act="labedit" data-arg="'+id+'">Engineer</button><button class="btn btn-quiet block" data-act="rangecard" data-arg="'+id+'">Free Test</button></div></section>';
- }).join('')+'</div>';
-}
-function openLabEditor(id,draft){
- const original=save.lab&&save.lab.machines[id];if(!original)return;
- const M=draft?{...original,name:draft.name,spec:draft.spec}:original;
- labEditor={id,rev:draft?.rev||save.lab.rev,spec:JSON.parse(JSON.stringify(M.spec)),base:JSON.parse(JSON.stringify(draft?.base||M.spec))};
- const opts=(items,chosen)=>items.map(([id,n])=>'<option value="'+esc(id)+'"'+(id===chosen?' selected':'')+'>'+esc(n)+'</option>').join('');
- const key=x=>(x.a||x.c)+':'+x.t+(x.s?'s':'');
- const gear=(isW,p)=>opts(ownedList(isW).filter(x=>!x.locked).map(x=>[x.premium?'moon:2':x.id,x.name]),key(p));
- const editorSheet=sheet('labeditor',()=>'<h3>Engineer</h3><p class="mut">Edit this machine’s owned equipment. Account upgrades apply to both machines.</p><div class="labform">'+
-  '<canvas id="lab-preview" class="labpreview" aria-label="Unsaved machine preview"></canvas><p id="lab-metrics" role="status"></p>'+
-  '<label>Name<input id="lab-name" maxlength="48" value="'+esc(M.name)+'" autocomplete="off"></label>'+
-  '<label>Weapon<select id="lab-weapon">'+gear(true,M.spec.w)+'</select></label>'+
-  '<label>Chassis<select id="lab-chassis">'+gear(false,M.spec.c)+'</select></label>'+
-  M.spec.cores.map((k,i)=>'<label>Core '+(i+1)+'<select id="lab-core-'+i+'">'+opts([['-','Empty'],...GORDER.map(k=>[k,GEM[k].name])],k||'-')+'</select></label>').join('')+
-  FIT_ORDER.map(k=>'<label>'+k.toUpperCase()+' fitting<select id="lab-fit-'+k+'">'+opts(Object.entries(FITS[k]).map(([id,f])=>[id,fittingLabel(f)]),fittingSelection(M.spec.mods)[k])+'</select></label><label>'+k+' appearance (visual only)<select id="lab-look-'+k+'">'+opts([['auto','Follow fitting'],...Object.entries(FITS[k]).map(([id,f])=>[id,f.n])],(M.spec.looks||{})[k]||'auto')+'</select></label>').join('')+
-  '<label>Paint<select id="lab-paint">'+opts(Object.keys(save.paints).filter(k=>PAINTS[k]).map(k=>[k,PAINTS[k].n]),M.spec.paint)+'</select></label></div>'+
-  '<p id="lab-status" role="status" class="mut">Private configuration. Saving does not change the active slot.</p><div class="range-actions"><button class="btn btn-go block" data-act="labsave">Save machine</button><button class="btn btn-quiet block" data-act="rangedraft">Free Test draft · no rewards</button></div>');
- editorSheet.re=null; // preserve unsaved selections and injected inspection controls across UI refreshes
- setTimeout(()=>{updateLabPreview();labInspectButtons();},0);
-}
-ACT.labedit=id=>openLabEditor(id);
-ACT.labequip=async id=>{const r=await labRequest('lab_activate',{id,rev:save.lab.rev});showToast(r.err?labMessage(r.err):'Machine equipped');};
-ACT.labsave=async()=>{
- if(!labEditor||labBusy)return;
- const status=$('#lab-status'),button=$('[data-act="labsave"]');
- const spec=labFormSpec();
- status.textContent='Saving…';button.disabled=true;
- const r=await labRequest('lab_save',{id:labEditor.id,rev:labEditor.rev,name:$('#lab-name').value,spec});
- if(r.err){status.textContent=labMessage(r.err);button.disabled=false;return;}
- const ov=findOv('labeditor');if(ov)closeOverlay(ov);labEditor=null;showToast('Machine saved');
+// garage actions (one tap = one change, saved at once to the selected bay)
+ACT.labedit=id=>{closeAll();gSelect(id||save.lab&&save.lab.active);gOpen.add('loadout');setTab('garage');};   // old links: open the garage at that bay
+ACT.labequip=id=>{if(!save.lab||save.lab.active===id)return;fx('tap');gEnqueue({kind:'activate',id,ok:'Bay '+gLetter(id)+' deploys next match'});};
+ACT.gbay=id=>{if(id===gBay)return;gSelect(id);fx('tap');};
+ACT.gsec=k=>{
+ if(!garageOpen(save,k)){showToast('Unlocks after '+G_LOCK[k]+' matches. '+Math.max(0,G_LOCK[k]-(save.mp|0))+' to go.');return;}
+ const was=gOpen.has(k);gCmp=null;if(gNarrow())gOpen.clear();if(was)gOpen.delete(k);else gOpen.add(k);
+ if(!was&&G_LOCK[k]&&!gSeen(k)){save.gSeen={...(save.gSeen||{}),[k]:1};store();}
+ if(!was)requestAnimationFrame(()=>requestAnimationFrame(()=>{const el=$('#gs-'+k);if(el&&el.getBoundingClientRect().top<0)el.scrollIntoView({block:'start'});}));
 };
-
-function fittingLabel(f){const delta=[['HP',f.hp],['speed',f.spd],['ordinary DPS',f.dps]].filter(x=>x[1]).map(([k,v])=>(v>0?'+':'')+Math.round(v*100)+'% '+k).join(', ');return f.n+(delta?' · '+delta:'')+' · W'+f.weight+'/P'+f.power;}
-function labFormSpec(){
- const parse=v=>{const [k,t]=v.split(':');return {k,t:parseInt(t,10),s:t.endsWith('s')};};
- const w=parse($('#lab-weapon').value),c=parse($('#lab-chassis').value);
- return {w:{a:w.k,t:w.t,s:w.s},c:{c:c.k,t:c.t,s:c.s},cores:[0,1,2].map(i=>$('#lab-core-'+i).value).map(k=>k==='-'?null:k),paint:$('#lab-paint').value,catalog:FIT_VERSION,mods:Object.fromEntries(FIT_ORDER.map(k=>[k,$('#lab-fit-'+k).value])),looks:Object.fromEntries(FIT_ORDER.map(k=>[k,$('#lab-look-'+k).value]))};
-}
-function updateLabPreview(){
- if(!labEditor||!$('#lab-preview'))return;
- const p=labFormSpec(),L={...ecoLoadout(save,p),mods:p.mods,looks:p.looks},before=machineMetrics(ecoLoadout(save,labEditor.base||labEditor.spec)),after=machineMetrics(L),f=fittingStats(p.mods),err=labValidate(save,p);
- $('#lab-metrics').innerHTML=labBars(p,labEditor.base||labEditor.spec);
- $('#lab-status').textContent=err?labMessage(err):'Private draft. All fittings are free. Speed means driving; dash and supers stay unchanged.';
- $('[data-act="labsave"]').disabled=!!err;
- $('[data-act="rangedraft"]').disabled=!!err;
- const c=$('#lab-preview'),w=c.clientWidth||260,h=typeof Environment3D!=='undefined'&&Environment3D.active()?220:180;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMachinePreview(ctx,w,h,L);
-}
-document.addEventListener('change',e=>{if(e.target.closest('.labform')?.querySelector('#lab-weapon')){updateLabPreview();labQuickRefreshers.forEach(fn=>fn());}});
+ACT.gnop=()=>{};
+const gShowCmp=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const c=document.querySelector('.gcmp');if(c)c.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}));
+ACT.gcmp=a=>{gCmp=gCmp===a?null:a;fx('tap');if(gCmp)gShowCmp();};
+ACT.gcmpx=()=>{gCmp=null;};
+ACT.gupc=k=>{gCmp=gCmp==='up|'+k?null:'up|'+k;fx('tap');if(gCmp)gShowCmp();};
+ACT.gmore=()=>{gMore=!gMore;};
+ACT.ghint=k=>{save.gHint={...(save.gHint||{}),[k]:1};store();};
+ACT.goshop=()=>{closeAll();setTab('shop');};
+ACT.gequip=a=>{const id=gBayId(),[slot,iid]=a.split('|'),isW=slot==='w',spec=gCand(gM().spec,slot,iid),it=gItem(isW,isW?spec.w:spec.c);
+ if(baySave(id,p=>{if(isW)p.w=spec.w;else p.c=spec.c;},it.name+' equipped on Bay '+gLetter(id))){const ov=findOv('gear');if(ov)closeOverlay(ov);}};
+ACT.gcore=a=>{const id=gBayId(),[i,k0]=a.split(':'),k=k0==='-'?null:k0;
+ if(baySave(id,p=>{p.cores=gCoreCand(p,+i,k).cores;},k?GEM[k].name+' core in socket '+(+i+1):'Socket '+(+i+1)+' emptied')){const ov=findOv('core');if(ov)closeOverlay(ov);}};
+ACT.gfit=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.mods={...fittingSelection(p.mods),[slot]:v};},FITS[slot][v].n+' fitted on Bay '+gLetter(id));};
+ACT.glook=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.looks={...(p.looks||{}),[slot]:v};});};
+document.addEventListener('change',e=>{if(e.target.id==='g-name')gRename(e.target.value);});
+document.addEventListener('keydown',e=>{if(e.target.id==='g-name'&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
+ACT.gshare=()=>{
+ const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=powerBracket(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();
+ gShare={text:gShareText(tag,v,brk),url:link,file:null};
+ try{cv.toBlob(b=>{if(b&&gShare)try{gShare.file=new File([b],'lunar-tank.png',{type:'image/png'});}catch(e){}},'image/png');}catch(e){}
+ const ov=sheet('share',()=>'<h3>Share my tank</h3><img class="gshare-img" src="'+url+'" alt="'+esc(M.name)+': power '+v.power+', '+esc(brk.n)+' league, '+esc(tag.n)+'">'+
+  (link?'<p class="mut">Your invite link is on the card. Friends who join through it land in your squad.</p>':'<p class="mut">Your invite link is still loading. You can share the picture now and the link in a moment.</p>')+
+  '<div class="gshare-acts">'+(IN_TG?'<button class="btn btn-go block" data-act="gsharego">Share in Telegram</button>':(navigator.share?'<button class="btn btn-go block" data-act="gsharego">Share</button>':'')+'<a class="btn btn-quiet block" href="'+url+'" download="lunar-tank.png">Download image</a>')+
+  '<button class="btn btn-quiet block" data-act="copy">Copy invite link</button></div>');
+ ov.re=null;
+};
+ACT.gsharego=()=>{
+ const S=gShare;if(!S)return;
+ if(IN_TG){shareRef(S.text);return;}
+ const data={title:'LUNAR: War Machines',text:S.text};if(S.url)data.url=S.url;
+ try{if(S.file&&navigator.canShare&&navigator.canShare({files:[S.file]}))data.files=[S.file];}catch(e){}
+ if(navigator.share)navigator.share(data).catch(()=>{});else copyRef();
+};
 
 // ---------- call sign: the public name everywhere (leaderboard, battles, squads) ----------
 // Players without one (Telegram pilots, new Google/Telegram website accounts, older passkey accounts) pick one on open.

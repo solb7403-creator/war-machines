@@ -156,7 +156,7 @@ function loadSave(obj){
   const cached=save||{},E=window.LUNAR_WEB.snapshot?.E;
   // Browser storage supplies preferences and already-signed pending results only, never equipment or balances.
   save=E?JSON.parse(JSON.stringify(E)):null;
-  if(save){for(const k of ['gfx','sound','haptics','gtype','mode','map','welcomed'])if(cached[k]!==undefined)save[k]=cached[k];
+  if(save){for(const k of ['gfx','sound','haptics','gtype','mode','map','welcomed','gSeen','gHint'])if(cached[k]!==undefined)save[k]=cached[k];
    save.mq=Array.isArray(cached.mq)?cached.mq.slice(-20):[];save.migOk=1;}
  }
  if(!save||typeof save.pts!=='number')save={pts:0,up:{hull:0,cannon:0,engine:0,target:0,reactor:0},q:{},chassis:'vanguard',weapon:'pulse',
@@ -176,7 +176,8 @@ function loadSave(obj){
  if(!save.mode)save.mode='1v1';if(!save.gtype)save.gtype='arena';if(!save.map)save.map='classic';
  ecoNorm(save);
  if(!save.paint||!save.paints[save.paint])save.paint='stock';
- if(IN_WEB){fixEquip();labApplySelection();}
+ if(!SRV_ECO&&!save.lab)labEnsure(save,myLoadout());   // the phone runs the economy (tests, dev): the same two bays as the server
+ if(IN_WEB||save.lab){fixEquip();labApplySelection();}
 }
 function store(){save._ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudSave();if(typeof uiDirty==='function')uiDirty();}
 
@@ -283,14 +284,6 @@ function showOuts(outs){
  if(typeof fx==='function')fx('buy');
  const rv=list.map(revealOf).filter(Boolean);
  if(rv.length&&typeof showReveal==='function')showReveal(rv);
-}
-// put core k in socket i; if it's already in another socket, the two swap (each core type fits once)
-function socketCore(i,k){
- if(save.lab){const p=labSpec(myLoadout()),j=p.cores.indexOf(k);if(i<0||i>2)return;if(k&&j>=0)p.cores[j]=p.cores[i];p.cores[i]=k;return labQuickSpec(p);}
- const c=save.cores;if(i<0||i>2)return;
- if(k===null){c[i]=null;store();return;}
- const j=c.indexOf(k);if(j===i)return;
- if(j>=0)c[j]=c[i];c[i]=k;store();
 }
 function respecBuild(){
  return when(ecoRun('respec',{},S=>ecoRespec(S)),r=>{
@@ -506,8 +499,4 @@ async function labRequest(a,body){
  }catch(e){return {err:'offline'};}
  finally{labBusy=false;}
 }
-function labQuickSpec(spec){
- const id=save.lab.active,M=save.lab.machines[id];
- return labRequest('lab_save',{id,rev:save.lab.rev,name:M.name,spec}).then(r=>{if(r.err)showToast(labMessage(r.err));else showToast('Machine saved');return r;});
-}
-function labMessage(err){return {modules:'Choose a fitting from the catalog.',budget:'Build exceeds weight or power budget. Remove a fitting to save.',update:'Update the game before editing this fitted machine.',conflict:'Changed on another device. Reopen Engineer to load the latest machine.',offline:'Not saved: no connection. Your draft is still here.',owned:'Choose equipment owned by this account.',cores:'Each core can fit only once.',name:'Use 1–24 letters, numbers, spaces or . _ ( ) -',busy:'A machine is still saving.',sync:'Connect to load your machines.'}[err]||'Not saved: invalid machine selection. Reopen Engineer and try again.';}
+function labMessage(err){return {modules:'Choose a mod from the list.',budget:'Over the weight or power budget. Take another mod off first.',update:'Update the game before changing this bay.',conflict:'This bay changed on another device. Loaded the latest; try again.',offline:'Not saved: no connection. Try again in a moment.',owned:'Choose gear this account owns.',cores:'Each core type fits once.',paint:'Choose a paint you own.',name:'Use 1–24 letters, numbers, spaces or . _ ( ) -',busy:'Still saving the last change.',sync:'Connect to load your machine bays.'}[err]||'Not saved: that choice isn’t allowed for this bay.';}

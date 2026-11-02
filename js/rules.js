@@ -856,3 +856,68 @@ function fittingStats(v){const m=fittingSelection(v),f={hp:0,spd:0,dps:0,weight:
 function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
 function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
+
+// ---- garage presentation (UI only): reads the tables above, adds no stat math of its own ----
+// Progressive garage: matches played (server-tracked mp) before a section opens. UI gating only: the server accepts every
+// legal loadout, and anything already bought or set (upgrade levels, a paid reset, fitted mods) keeps its section open.
+const GARAGE_UP_AT=2,GARAGE_FIT_AT=5;
+function garageOpen(S,sec){
+ if(sec==='up')return (S.mp|0)>=GARAGE_UP_AT||upLevels(S.up)>0||(S.rsCr|0)>0;
+ if(sec==='fit')return (S.mp|0)>=GARAGE_FIT_AT||!!(S.lab&&S.lab.machines&&Object.values(S.lab.machines).some(M=>M&&M.spec&&FIT_ORDER.some(k=>fittingSelection(M.spec.mods)[k]!=='stock')));
+ return true;
+}
+// What the garage shows for a loadout: Toughness (health), Firepower (ordinary DPS), Speed (driving), power, and the extras.
+function machineView(L){
+ const m=machineMetrics(L),t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;
+ return {tough:m.hp,fire:m.dps,speed:m.spd,power:powerOf(L),armor:Math.round(Math.min(0.7,g('arm'))*100),
+  crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2)};
+}
+// B minus A for every machineView field (speed to 0.1, repair to 0.01)
+function machineDelta(A,B){const a=machineView(A),b=machineView(B),o={};for(const k in a)o[k]=k==='speed'?+(b[k]-a[k]).toFixed(1):k==='repair'?+(b[k]-a[k]).toFixed(2):b[k]-a[k];return o;}
+// Legendary showcase: the edge of Moonbeam over the best Epic weapon (top roll), or of Lunar Skin over Standard,
+// on this exact build. Both sides are built from the tables, so new numbers show up on their own.
+function legendaryEdge(S,spec,kind){
+ const L=ecoLoadout(S,spec);
+ if(kind==='skin')return {vs:'default',d:machineDelta({...L,skin:'default'},{...L,skin:'lunar'})};
+ let best=null;
+ for(const k of WORDER){const X={...L,w:{a:k,t:2,q:ROLL_MAX,s:false}},p=powerOf(X);if(!best||p>best.p)best={k,p,L:X};}
+ return {vs:best.k,d:machineDelta(best.L,{...L,w:{a:'moon',t:2,q:1,s:false}})};
+}
+// Build tag: a name for the shape of a build. It reads only choices (chassis class, weapon type, upgrade spread, mods,
+// core types), never rarity, rolls, core levels, paint or looks, so gear upgrades never change it. Axes: T toughness,
+// F firepower, S speed, C crits, R super charge.
+const BUILD_TAGS={
+ crit:{n:'Crit Hunter',d:'Built around critical hits'},
+ charger:{n:'Overcharger',d:'Fills its super fast'},
+ jugg:{n:'Juggernaut',d:'Tough and hard-hitting, but slow'},
+ skirm:{n:'Skirmisher',d:'Fast and punchy: hit, then slip away'},
+ glass:{n:'Glass Cannon',d:'Hits hard, breaks fast'},
+ wall:{n:'Iron Wall',d:'Soaks up hits and holds ground'},
+ intercept:{n:'Interceptor',d:'Built for pure speed'},
+ sniper:{n:'Sniper',d:'Heavy shots from a steady platform'},
+ brawler:{n:'Brawler',d:'Rapid fire, built to trade hits up close'},
+ balanced:{n:'Balanced',d:'No weak spot and no extreme'}};
+const TAG_UP={hull:'T',cannon:'F',engine:'S',target:'C',reactor:'R'},TAG_CORE={dmg:'F',rof:'F',arm:'T',reg:'T',spd:'S',lck:'C'};
+function buildAxes(L){
+ const a={T:0,F:0,S:0,C:0,R:0},C=CH[L.c&&L.c.c]||CH.vanguard,W=WEAPONS[L.w&&L.w.a]||WEAPONS.pulse,sg=v=>v>0?1:v<0?-1:0;
+ if(C.hp>=1.15)a.T+=2;else if(C.hp<1)a.T-=1;
+ if(C.spd>=1.15)a.S+=2;else if(C.spd<1)a.S-=1;
+ if(W.premium)a.F+=2;else if(W.shot>=0.4)a.F+=1;
+ for(const k of UORDER)if(TAG_UP[k])a[TAG_UP[k]]+=(L.up&&L.up[k])|0;
+ const m=fittingSelection(L.mods);for(const k of FIT_ORDER){const f=FITS[k][m[k]];a.T+=sg(f.hp);a.S+=sg(f.spd);a.F+=sg(f.dps);}
+ for(const g of (L.cores||[]))if(g&&TAG_CORE[g])a[TAG_CORE[g]]+=TAG_CORE[g]==='C'?2:1;
+ return a;
+}
+function buildTag(L){
+ const {T,F,S,C,R}=buildAxes(L),W=WEAPONS[L.w&&L.w.a]||WEAPONS.pulse,top=Math.max(T,F,S);let id='balanced';
+ if(C>=4&&C>=top)id='crit';
+ else if(R>=4&&R>=top)id='charger';
+ else if(T>=4&&F>=4&&S<=1)id='jugg';
+ else if(F>=4&&S>=4)id='skirm';
+ else if(F>=4&&T<=0)id='glass';
+ else if(T>=4&&T>=F+2&&T>=S+2)id='wall';
+ else if(S>=4&&S>=F+2&&S>=T+2)id='intercept';
+ else if((W.premium||W.shot>=0.4)&&F>=3&&S<=1)id='sniper';
+ else if(W.shot<=0.1&&T>=3)id='brawler';
+ return {id,n:BUILD_TAGS[id].n,d:BUILD_TAGS[id].d};
+}

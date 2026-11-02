@@ -1,4 +1,5 @@
-// Focused Laboratory UI regression: use the production rules and actual UI helpers.
+// Focused garage UI regression: the production rules and the actual UI helpers (exact stats, mod text), plus the
+// garage's structure (five sections, one editor, every change through the server-checked lab save).
 // Run with node dev/tests/lab-ui.mjs. No network, account writes, or purchases.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -13,10 +14,19 @@ assert.ok(index.includes('js/ui.js?v='+version.v),'UI asset must be cache-busted
 
 const begin=ui.indexOf('const labStatRows=');
 const end=ui.indexOf('function labInspect(key)',begin);
-const cardsStart=ui.indexOf('function labCards(){',end);
-const cardsEnd=ui.indexOf('function openLabEditor(',cardsStart);
-assert.ok(begin>0&&end>begin&&cardsStart>end&&cardsEnd>cardsStart,'UI helper anchors');
-const funcs=ui.slice(begin,end)+ui.slice(cardsStart,cardsEnd);
+assert.ok(begin>0&&end>begin,'UI helper anchors');
+const funcs=ui.slice(begin,end);
+// the garage: one editor (the sections), saved through the server-checked lab save; the Engineer sheet is gone
+for(const gone of ['openLabEditor','labFormSpec','labeditor','labsave','rangedraft','Engineer'])assert.ok(!ui.includes(gone),'removed: '+gone);
+assert.ok(/function baySave\(/.test(ui)&&ui.includes("labRequest('lab_save'")&&ui.includes("labRequest('lab_rename'")&&ui.includes("labRequest('lab_activate'"),'every change goes through the lab save');
+assert.ok(ui.includes("G_SECS=[['loadout','Loadout'")&&ui.indexOf("['cores','Cores'")<ui.indexOf("['up','Upgrades'")&&ui.indexOf("['up','Upgrades'")<ui.indexOf("['fit','Mods'")&&ui.indexOf("['fit','Mods'")<ui.indexOf("['style','Style'"),'five sections in order');
+assert.ok(ui.includes('Back to the Garage'),'inspect sheet points back to the garage');
+// a mod's trade-off text comes from its FITS entry, including fields added later (generic)
+const mt=ui.slice(ui.indexOf('const MOD_WORD='),ui.indexOf('function gBays('));
+const modText=new Function('gNum','fmtNum',mt+'\nreturn modText;')(v=>String(v),v=>String(v));
+assert.equal(modText({n:'Reinforced plates',hp:.06,spd:-.04,dps:0,weight:2,power:0}),'+6% health, −4% speed');
+assert.equal(modText({n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0}),'No change: the standard part');
+assert.equal(modText({n:'X',hp:-.05,dashCd:-.2,ramDamage:40,fx:'Shrugs off the first hit',weight:1,power:1}),'+40 ram damage, −5% health, −20% dash cd, Shrugs off the first hit');
 const test=`
 const SUP={pulse:{dmg:350,charge:.7},twin:{dmg:350,charge:.55},siege:{dmg:375,charge:.7},moon:{dmg:400,charge:.8}};
 const spec=(a,c)=>({w:{a,t:0,s:false},c:{c,t:0,s:false},
@@ -29,11 +39,6 @@ const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel
 const fmtNum=n=>String(n),WNAMES={pulse:['Pulse'],siege:['Siege'],twin:['Twin']};
 ecoLoadout=(_,p)=>({...STOCK_L,w:{...p.w,q:1.06},c:{...p.c,q:1.07},
  cores:p.cores,mods:p.mods,looks:p.looks,gl:save.gemLvl});
-const html=labCards();
-const count=term=>(html.split(term).length-1);
-if(count('class="panel labcard"')!==2||count('class="lab-stats"')!==2)throw Error('Need two bays with independent stat panels');
-if(!html.includes('BAY A')||!html.includes('BAY B'))throw Error('Bay labels missing');
-if(count('data-act="labedit"')!==2||count('data-art="lab:')!==2)throw Error('Each bay needs its own editor and visual');
 const rowsA=labStatRows(save.lab.machines.a.spec),rowsB=labStatRows(save.lab.machines.b.spec);
 if(rowsA[0][1]===rowsB[0][1])throw Error('Different chassis produced identical HP');
 if(rowsA.some(r=>!Number.isFinite(r[1])||!Number.isFinite(r[2])||r[2]<=0))throw Error('Invalid telemetry');
@@ -47,9 +52,6 @@ const wf=labItemFacts('weapon',save.lab.machines.a.spec);
 if(!wf.includes('Super wind-up')||wf.includes('Super charge time'))throw Error('Super wind-up mislabeled as meter charge time');
 if(!wf.includes('17.38'))throw Error('Equipped hit damage omitted the actual core level');
 if(!wf.includes('Equipped hit damage')||!wf.includes('Equipped fire rate'))throw Error('Missing upgraded weapon stats');
-save.lab.machines.b.spec.c.t=2;
-if(!labCards().includes('Colossus'))throw Error('Bay shows chassis family instead of equipped item name');
-if(count('style="width:100%"')>4)throw Error('Telemetry falsely appears maxed out');
 const canvas={clientWidth:160,clientHeight:120,getContext:()=>({setTransform(){},clearRect(){}})};
 const calls=[],dpr=1,drawGearIcon=()=>calls.push('gear'),
  drawGemArt=()=>calls.push('core'),drawMachinePreview=()=>calls.push('machine');
@@ -67,10 +69,8 @@ for(const key of ['weapon','chassis','core0','fithull','lookhull','paint']){
  labDrawSelectedItem(canvas,key,p);
 }
 if(calls.join(',')!=='gear,gear,core,machine,machine,machine')throw Error('Wrong equipment artwork');
-return {cards:2,stats:2,inspected:6,actualHealth:[rowsA[0][1],rowsB[0][1]]};
+return {inspected:6,actualHealth:[rowsA[0][1],rowsB[0][1]]};
 `;
 const result=new Function(rules+'\n'+funcs+'\n'+test)();
-assert.ok(ui.includes('editorSheet.re=null'),'Draft must survive UI refresh');
 assert.ok(ui.includes('itemSheet.re=null'),'Artwork must survive UI refresh');
-assert.ok(ui.includes('labQuickRefreshers.forEach'),'All live item previews must update on change');
-console.log('LUNAR Laboratory UI: PASS',result);
+console.log('LUNAR garage UI: PASS',result);

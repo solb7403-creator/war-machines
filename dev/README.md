@@ -14,7 +14,8 @@
 | `js/pvp.js` | Live matches on the phone: finding pilots, the WebSocket, snapshots, your own tank's prediction, rounds, results |
 | `js/render.js` | Battle canvas, HUD, battle input, and the menu art (tanks, crates, map thumbnails) |
 | `js/fx.js` | Haptics and synthesized sound |
-| `js/ui.js` | Menus, sheets, start screen, results, between-round screen |
+| `js/ui.js` | Menus, sheets, start screen, results, between-round screen, and the garage (see below) |
+| `js/showroom.js` | `LunarShowroom`: the live 3D stage (drag to spin, pinch/wheel zoom, preset views, auto-rotate) used by the garage on Telegram and the website, and by the website's preview pages |
 | `js/main.js` | Boot order and the frame loop |
 | `worker/` | Cloudflare Worker: the referee for every database write, Stars invoices, webhook, reminders, leaderboard cron |
 | `worker/src/pvp.js` | Live PvP: the lobby and match-room Durable Objects, join and WebSocket routes, loadout checks, server-side results and points |
@@ -64,6 +65,12 @@ node dev/tests/map-layout.mjs          # every map: point symmetry, clear spawns
 node dev/tests/map-nav.mjs 3           # AI on every map, headless: matches finish, no tank inside a solid, stuck seconds, high-ground use, sim cost
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
+python3 dev/tests/perf.py garage       # the garage's live 3D stage: frame times while it spins and once it settles
+node dev/tests/garage-rules.mjs        # build tags (all reachable, stable), unlock gating, compare deltas, Legendary showcase
+node dev/tests/lab-ui.mjs              # exact-stats helpers, mod text from FITS, the garage's structure (one editor, lab save)
+python3 dev/tests/lab-browser.py       # the garage end to end on the server economy: compare + commit, rename, equip, unlocks, conflict, offline, ticket = bay, Free Test, share, fallbacks
+python3 dev/tests/gear-browser.py      # every weapon and chassis: compare, exact stats, Moonbeam, save/reload, no WebGL
+python3 dev/tests/garage-layout.py     # garage layout at 360/390/768/1366: no sideways scroll, no clipped text, 44 px targets, keyboard
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons
 python3 dev/tests/pvp-update.py        # a phone on an old live version is updated and rejoins the same live queue (no AI match); offline it says "Update needed" with Retry; a current phone joins normally
 python3 dev/tests/pvptest.py           # two browser pages play live: matching, VS labels, moves, supers, drops, rounds, quits, AI fill, results
@@ -76,6 +83,22 @@ Screenshots for eyeballing the 3D models (not pass/fail): `python3 dev/tests/she
 `js/render3d.js` draws the battlefield with Three.js on `#c3`, under the 2D canvas `#c`, which keeps the HUD, health bars, labels, damage numbers, aim lines and buttons. It only reads game state (units, bullets, effects) and the sim events (`ev3D`, called from `onSimEv`); `js/game.js`, `js/rules.js` and the server don't know it exists. The camera is a tilted orthographic view (`TILT` 0.6 rad), so the ground maps to the screen with one vertical squash: `GK` (1 in 2D). `X()`/`Y()` include it, so every 2D overlay, the tap-to-target, the joystick and drag-to-aim line up with the 3D ground. `js/models3d.js` builds every model from simple shapes and merges each into lit, metallic and glowing meshes (a tank is a handful of draw calls); designs per tier live in `chassisKit`, `weaponKit`, `bossKit`, `crateKit`, maps in `buildMap`. Three.js is a slim custom build in `js/vendor/three.lunar.min.js` (r169, MIT), loaded after the game boots; until it's ready, without WebGL, after a lost GPU context, or with Graphics set to 2D, `render.js` draws everything in 2D as before. Graphics (Settings): Auto (default: High, steps down to Low under 40fps, then to 2D under 24fps), High, Low (pixel ratio 1, fewer particles), 2D. Menu pictures are 3D renders on a small second renderer, cached per size (`art3D`); the Play tab's hero tank renders live.
 
 The older browser tests (b1-b7, regress, perf, qa, pvptest) run the economy on the phone (`LUNAR_LOCAL_ECO`), so they test the shared rules and the screens; `open_game(..., eco='server')` runs it the way Telegram players get it (b8test). The browser tests start `dev/tests/devserver.mjs`, a local stand-in for the server and database, and mock the Telegram SDK. It runs the real worker code with local Durable Objects (`wtest/fakedo.mjs`) and a small WebSocket server, so two pages can play each other. Live matches are off in the older tests (`LUNAR_NO_PVP`); `open_game(..., pvp=True)` turns them on. Screenshots go to `$SHOTS` (default `/tmp/lunar-shots`).
+
+## The garage
+
+One garage for Telegram and the website (`renderGarage` in `js/ui.js`). The single source of truth is the selected bay's
+spec, `save.lab.machines[id].spec`; every tap that changes something is one `lab_save` (or `lab_rename`, `lab_activate`)
+through the server's rev-checked lab path, shown at once and rolled back with the reason if the server says no (a rev
+conflict reloads the bay and re-applies that one change). `save.weapon/chassis/cores/paint` are only a mirror of the
+active bay (`labApplySelection`); the match ticket and live PvP read the active bay (`labLoadout` -> `setLoadout`).
+Upgrades are account-wide. Five sections: Loadout, Cores, Upgrades (after `GARAGE_UP_AT` matches), Mods (after
+`GARAGE_FIT_AT`), Style; gating is UI only (`garageOpen` in `js/rules.js`). Every number comes from the rules:
+`machineView`/`machineDelta` (compare), `legendaryEdge` (Moonbeam vs the best Epic, Lunar Skin vs Standard), `buildTag`
+(the build's name), and mod text is generated from each `FITS` entry, so new fields show up without UI changes.
+The live 3D stage is `LunarShowroom` (`js/showroom.js`), one canvas for the selected bay; it settles (stops drawing)
+8 s after the last touch, pauses offscreen and when the app is hidden, and is a static picture on 2D, Low, reduced
+motion or without WebGL. On the website the page's own showroom fills the stage spot on narrow screens and shows the
+selected bay beside the garage on wide ones.
 
 ## Farm defense
 

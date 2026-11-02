@@ -8,6 +8,7 @@ on:
       - 'index.html'
       - 'version.json'
       - 'dev/tests/lab-ui.mjs'
+      - 'dev/tests/garage-rules.mjs'
       - '.github/workflows/lab-ui-check.yml'
   push:
     branches:
@@ -34,5 +35,7 @@ jobs:
         run: |
           node --check js/ui.js
           node --check js/rules.js
-      - name: Run focused Laboratory regressions
-        run: node dev/tests/lab-ui.mjs
+      - name: Run focused garage regressions
+        run: |
+          node dev/tests/lab-ui.mjs
+          node dev/tests/garage-rules.mjs
