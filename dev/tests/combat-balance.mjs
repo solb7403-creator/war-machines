@@ -31,11 +31,12 @@ for (const [g, m] of [['arena', '3v3'], ['royale', '1v1'], ['boss', '3v3'], ['zo
 const boss = L => W.eval(`(()=>{MM={n:1,series:false,mp:50};matchG='boss';const me=Object.assign(tankOf(${J(L)},hpScale()),{});const b=mkBoss(me,1,aiLevel(120));return [b.mhp,b.wdps,b.bt.ref];})()`);
 ok(J(boss(GEAR.stock)) === J(boss(GEAR.legend)), 'megatank independent of your tank');
 
-// 3. Advertised gear is in the tank you field: Moonbeam DPS + Legendary super scale, Lunar Skin +8% HP and damage, chassis tiers; Gold Plate is looks only
+// 3. Advertised gear is in the tank you field: Moonbeam DPS + Legendary super scale + Precision, Lunar Skin health and damage bonus, chassis tiers; Gold Plate is looks only
 const T = L => W.eval(`tankOf(${J(L)},1)`);
 const moon = T(GEAR.legend), noSkin = T({ ...GEAR.legend, skin: 'default' }), noGold = T({ ...GEAR.legend, paint: 'stock' });
-ok(moon.wtype === 'moon' && moon.wdps === 118 && moon.wmult === W.eval('LEGENDARY_MULT'), 'Moonbeam fields 118 DPS and the Legendary super multiplier');
-ok(Math.abs(moon.mhp / noSkin.mhp - 1.08) < 0.002 && Math.abs(moon.dmgM / noSkin.dmgM - 1.08) < 1e-9, 'Lunar Skin: +8% health and damage');
+ok(moon.wtype === 'moon' && moon.wdps === W.eval('WEAPONS.moon.dps') && moon.wmult === W.eval('LEGENDARY_MULT') && moon.wedge === W.eval('MOON_EDGE'), 'Moonbeam fields its DPS, the Legendary super multiplier and Precision');
+ok(T(GEAR.epic).wedge === W.eval('GRAZE'), 'every other weapon grazes');
+ok(Math.abs(moon.mhp / noSkin.mhp - W.eval('SKIN_HP')) < 0.002 && Math.abs(moon.dmgM / noSkin.dmgM - W.eval('SKIN_DMG')) < 1e-9, 'Lunar Skin: its health and damage bonus');
 ok(J({ ...moon, paint: 0 }) === J({ ...noGold, paint: 0 }) && W.eval(`powerOf(${J(GEAR.legend)})===powerOf(${J({ ...GEAR.legend, paint: 'stock' })})`), 'Gold Plate changes nothing but looks');
 for (const c of ['scout', 'vanguard', 'titan']) { const hp = [0, 1, 2].map(t => T({ ...GEAR.stock, c: { c, t, q: 1, s: false } }).mhp); ok(hp[0] < hp[1] && hp[1] < hp[2], c + ' rarity raises health'); }
 
@@ -46,7 +47,7 @@ const bays = W.eval(`(()=>{const S=ecoNorm({});S.mig=1;S.moonbeam=true;S.skin='l
  const L2=labLoadout(S),T2=tankOf(L2,1);labAction(S,'lab_activate',{id:'m_legacy',rev:S.lab.rev});const L1=labLoadout(S);
  return {a,b,w2:L2.w.a,c2:L2.c.c+L2.c.t+':'+L2.c.q,skin2:L2.skin,paint2:L2.paint,mhp2:T2.mhp,w1:L1.w.a,c1:L1.c.c+L1.c.t,skin1:L1.skin};})()`);
 ok(bays.a.ok && bays.b.ok, 'bay 2 saved and activated');
-ok(bays.w2 === 'moon' && bays.c2 === 'titan2:1.1' && bays.paint2 === 'gold' && bays.skin2 === 'lunar' && bays.mhp2 === Math.round(1700 * (Math.round(1.3 * 1.34 * 1.1 * 100) / 100) * 1.08), 'bay 2 fields Moonbeam + Epic Titan (Colossus) + Lunar Skin: ' + J(bays));
+ok(bays.w2 === 'moon' && bays.c2 === 'titan2:1.1' && bays.paint2 === 'gold' && bays.skin2 === 'lunar' && bays.mhp2 === Math.round(1700 * (Math.round(1.3 * 1.34 * 1.1 * 100) / 100) * W.eval('SKIN_HP')), 'bay 2 fields Moonbeam + Epic Titan (Colossus) + Lunar Skin: ' + J(bays));
 ok(bays.w1 === 'pulse' && bays.c1 === 'vanguard0' && bays.skin1 === 'lunar', 'bay 1 still fields its own (starter) kit; the account-wide skin applies to both');
 
 // 4. Same encounter, same seeds: your result never gets worse as your gear improves, and starter -> Legendary is a big step

@@ -3,7 +3,7 @@
 Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Resume from the first unchecked item.
 
 - [x] 1. Mods rework
-- [ ] 2. Legendary balance
+- [x] 2. Legendary balance
 - [ ] 3. Gear score accuracy
 - [ ] 4. Leagues + AI
 - [ ] 5. PvP matchmaking
@@ -27,3 +27,9 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - Today's baseline AI table (origin/main, 24 runs per cell): docs/launch/s2data/ai-today.json. Standard pilot average: stock .580 common .659 rare .689 epic .864 legend .919.
 - Expert pilot profile added to combat-sim (leads moving targets, always reacts to telegraphed supers). Before this, PILOT=expert was the standard brain.
 - Build tag: super-charge mods count toward Overcharger; flip rate 21.5% (today 21.4%).
+
+### 2. Legendary (done)
+- Moonbeam 110 DPS, MOON_EDGE 1.0 (Precision), Moonfall SUP.moon dmg 375 hw 1.2 (w 2.0 drawn), LEGENDARY_MULT 1.48. Lunar Skin SKIN_HP 1.04, SKIN_DMG 1.03.
+- Results in docs/EQUIPMENT_BALANCE_VALIDATION.md (Session 2 section) and docs/launch/s2data/legendary-final.txt.
+- Owner decisions: counter triangle makes "vs Vanguard 76-84%" unreachable (Titan beats Vanguard 99% at equal gear); equal spend 66-68% (caches weak per Star).
+- Garage: machineView gains `super` and `edge` (G_MORE), so the Moonbeam edge line shows Precision.

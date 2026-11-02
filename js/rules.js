@@ -55,7 +55,7 @@ const WEAPONS={
  pulse:{n:'Pulse Cannon',d:'Balanced gun',dps:70,shot:0.2,c:'#3fd0c9',sup:'Pierce Lance'},
  twin:{n:'Twin Repeater',d:'Fast, light hits',dps:66,shot:0.09,c:'#ffd24a',sup:'Static Nova'},
  siege:{n:'Siege Breaker',d:'Slow, heavy hits',dps:74,shot:0.45,c:'#ff6b5e',sup:'Siege Blast'},
- moon:{n:'Moonbeam',d:'Lunar precision laser',dps:118,shot:0.16,c:'#e8f4ff',sup:'Moonfall',premium:true}};
+ moon:{n:'Moonbeam',d:'Lunar precision laser',dps:110,shot:0.16,c:'#e8f4ff',sup:'Moonfall',premium:true}};
 const WORDER=['pulse','twin','siege'];
 const TIER_MULT=[1.0,1.14,1.34];
 // Legendary is a distinct, fixed premium power step, not an Epic roll or tuneable quality.
@@ -65,7 +65,7 @@ const LEGENDARY_MULT=1.48;
 // for every other weapon) deals MOON_EDGE of a full hit. Crits still need a direct hit.
 const MOON_EDGE=1.0;
 // Lunar Skin: one always-on bonus to health and to damage (shots and supers)
-const SKIN_HP=1.08,SKIN_DMG=1.08;
+const SKIN_HP=1.04,SKIN_DMG=1.03;
 // Crate items roll 105-110% of their rarity; salvaged items store their own multiplier.
 const ROLL_MIN=1.05,ROLL_MAX=1.10;
 const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
@@ -889,8 +889,10 @@ function garageOpen(S,sec){
 // What the garage shows for a loadout: Toughness (health), Firepower (ordinary DPS), Speed (driving), power, and the extras.
 function machineView(L){
  const m=machineMetrics(L),t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;
+ const sup=typeof SUP!=='undefined'&&SUP[t.wtype]?Math.round(SUP[t.wtype].dmg*(t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))):0;   // super damage (game.js SUP; 0 where the sim isn't loaded)
  return {tough:m.hp,fire:m.dps,speed:m.spd,power:powerOf(L),armor:Math.round(Math.min(0.7,g('arm'))*100),
-  crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2)};
+  crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2),
+  edge:Math.round((t.wedge||GRAZE)*100),super:sup};
 }
 // B minus A for every machineView field (speed to 0.1, repair to 0.01)
 function machineDelta(A,B){const a=machineView(A),b=machineView(B),o={};for(const k in a)o[k]=k==='speed'?+(b[k]-a[k]).toFixed(1):k==='repair'?+(b[k]-a[k]).toFixed(2):b[k]-a[k];return o;}

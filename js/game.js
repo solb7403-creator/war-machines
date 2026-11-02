@@ -441,7 +441,7 @@ const SUP={
  pulse:{kind:'beam',dmg:350,charge:0.7,w:1.2,len:16},          // PIERCE LANCE: railbeam that goes through cover
  siege:{kind:'shell',dmg:375,charge:0.7,r:3.2,spd:11,range:13},  // SIEGE BLAST: huge shell, big AoE explosion
  twin:{kind:'nova',dmg:350,charge:0.55,r:4.6},                 // STATIC NOVA: vibrating electric shockwave
- moon:{kind:'beam',dmg:400,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
+ moon:{kind:'beam',dmg:375,charge:0.8,w:2.0,hw:1.2,len:20}};  // MOONFALL: massive lunar beam (drawn 2.0 wide; hits like a Pierce Lance, 1.2)
 let shells=[],blasts=[],novas=[],shakeT=0,shakeM=0;   // shells are sim objects; blasts, novas and shake are visuals (phone only)
 function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse pierces)
  for(let d=0.3;d<SUPER_LEN;d+=0.2){const x=a.x+Math.cos(ang)*d,y=a.y+Math.sin(ang)*d;
@@ -505,7 +505,7 @@ function botDodge(u){
   if(v.team===u.team||v.hp<=0||!v.sup||v.sup.dodged&&v.sup.dodged[u.id])continue;
   const S=SUP[v.sup.w];let inDanger=false,px=0,py=0;
   if(S.kind==='nova'){const d=Math.hypot(u.x-v.x,u.y-v.y);if(d<S.r+bodyR(u)){inDanger=true;px=(u.x-v.x)/(d||1);py=(u.y-v.y)/(d||1);}}
-  else{const ca=Math.cos(v.sup.ang),sa=Math.sin(v.sup.ang),ex=u.x-v.x,ey=u.y-v.y,along=ex*ca+ey*sa,side=-ex*sa+ey*ca,wd=S.kind==='beam'?S.w:S.r*0.6,ln=S.kind==='beam'?S.len:S.range;
+  else{const ca=Math.cos(v.sup.ang),sa=Math.sin(v.sup.ang),ex=u.x-v.x,ey=u.y-v.y,along=ex*ca+ey*sa,side=-ex*sa+ey*ca,wd=S.kind==='beam'?(S.hw||S.w):S.r*0.6,ln=S.kind==='beam'?S.len:S.range;
    if(along>0&&along<ln&&Math.abs(side)<wd+bodyR(u)){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
@@ -526,7 +526,7 @@ function fireSuper(r,S){
   for(const e of foesOf(r)){
    const ex=e.x-r.x,ey=e.y-r.y;
    const along=ex*Math.cos(ang)+ey*Math.sin(ang),side=Math.abs(-ex*Math.sin(ang)+ey*Math.cos(ang));
-   if(along>0&&along<=S.len&&side<S.w+bodyR(e)-R){   // beam width is tuned for a Vanguard body
+   if(along>0&&along<=S.len&&side<(S.hw||S.w)+bodyR(e)-R){   // beam width is tuned for a Vanguard body; hw: a hit width narrower than the drawn beam
     hurt(e,S.dmg);hit=true;
     ev('B',e.x,e.y,1.4,0.25,'#ffd24a');   // impact flare
     ev('I',e.x,e.y,r.sup.w,r.team);   // super impact: an explosion where it lands (looks and sound only)

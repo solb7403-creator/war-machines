@@ -188,7 +188,7 @@ const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets heal
  fit:'Mods are free. Each one trades one stat for another; mix them within the weight and power budget.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
 const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
-const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second']];
+const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second'],['super','Super damage',''],['edge','Edge-hit damage','%']];
 const FIT_SLOT_N={hull:'Hull mod',mobility:'Mobility mod',mount:'Mount mod'},LOOK_N={hull:'Hull look',mobility:'Mobility look',mount:'Mount look'};
 const gNum=v=>Number.isInteger(v)?fmtNum(v):String(+(+v).toFixed(2));
 const gIds=()=>{const lab=save&&save.lab;return lab&&lab.slots&&lab.machines?Object.values(lab.slots).filter(id=>lab.machines[id]).slice(0,2):[];};
@@ -550,7 +550,7 @@ function renderShop(){
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
   sec('Gem caches','Level up your cores')+'<div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
-  sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon, Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
+  sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
