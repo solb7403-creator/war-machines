@@ -4,7 +4,7 @@ Base: PR #3, merge `49074c4be443645aec7bf594c89b0d93acb691b9`; inspected main `f
 
 ## Findings and retained balance
 
-Rarity multipliers remain 1.00 / 1.14 / 1.34, with crate quality 1.05–1.10. Starter quality is 1.00; salvage is a separate, deliberately weaker acquisition path. Moonbeam remains fixed at 118 DPS, 0.16 seconds per shot, projectile speed 26, and 1.48 super scaling. No prices, grants, rewards, account ownership, token/referral rules, or combat mechanics changed in this release.
+Rarity multipliers remain 1.00 / 1.14 / 1.34, with crate quality 1.05–1.10. Starter quality is 1.00; salvage is a separate, deliberately weaker acquisition path. Moonbeam remains fixed at 118 DPS, 0.16 seconds per shot, projectile speed 26, and 1.48 super scaling (Moonfall 400 -> 592, 2.0 wide). Session 2 adds its Precision trait: edge hits deal full damage instead of 75%. Lunar Skin: +8% health, +8% damage. Owner decision: these stats are fixed. See the Session 2 section at the end.
 
 ### All ten weapons
 
@@ -21,9 +21,9 @@ Ranges below are actual calculator outputs for crate quality endpoints, before u
 | Siege Breaker | Common / 1 | 78–81 | 35.10–36.45 | 0.45 s / 2.22 | 22 | 393.75–412.50 |
 | Rail Breaker | Rare / 2 | 89–93 | 40.05–41.85 | 0.45 s / 2.22 | 24 | 448.87–470.25 |
 | Titanfall | Epic / 3 | 104–109 | 46.80–49.05 | 0.45 s / 2.22 | 26 | 527.63–552.75 |
-| Moonbeam | Legendary / 4 | 118 | 18.88 | 0.16 s / 6.25 | 26 | 592.00 |
+| Moonbeam | Legendary / 4 | 118 | 18.88 (never grazes) | 0.16 s / 6.25 | 26 | 592.00 |
 
-Moonfall exceeds the strongest unbuffed standard single super (perfect Epic Siege Blast: 552.75) by 7.10%; Moonbeam exceeds perfect Epic Siege DPS (109) by 8.26%. Twin retains the fastest cadence and smallest individual hits; Siege the slowest and heaviest; Pulse stays between them. Nova is radial, Lance/Moonfall are penetrating beams, and Siege Blast is a traveling AoE shell. Area, wind-up, line of sight, movement and counterplay prevent DPS alone from determining outcomes.
+Moonfall exceeds the strongest unbuffed standard single super (perfect Epic Siege Blast: 552.75) by 7.10%; Moonbeam exceeds perfect Epic Siege DPS (109) by 8.26% and, with Precision, deals full damage on edge hits (every other weapon: 75%). Twin retains the fastest cadence and smallest individual hits; Siege the slowest and heaviest; Pulse stays between them. Nova is radial, Lance/Moonfall are penetrating beams, and Siege Blast is a traveling AoE shell. Area, wind-up, line of sight, movement and counterplay prevent DPS alone from determining outcomes.
 
 ### All nine chassis
 
@@ -83,3 +83,40 @@ PvE results include boss scaling: more raw damage raises boss HP, and higher pla
 - Physical iPhone/Telegram authentication, human tactics, population matchmaking quality and long-term paid competitive fairness remain unmeasured. No new purchases or production account mutations were performed. There is no claim of mathematically optimal human tactics or exhaustive gameplay coverage.
 
 Release integration must use passing checks and the existing Pages workflow. The backend combat code is unchanged from the already successful PR #3 deployment. The existing Worker workflow also watches the corrected PvP test fixture and will republish the unchanged backend on merge; no additional manual deployment is needed.
+
+
+## Session 2 (Nov 2, 2026): legendary results
+
+Shipped stats (owner decision, fixed): **Moonbeam 118 DPS, LEGENDARY_MULT 1.48, Moonfall 400 (592 after scaling, 2.0 wide),
+Precision on (edge hits deal 100%)**; **Lunar Skin +8% health, +8% damage**. The 2% Moonbeam DPS exception was not used.
+
+Method: `dev/tests/s2/legend.mjs`, server sim, Arena 1v1 single round, all 6 maps, both spawn directions, 20 seeds (human)
+or 10 seeds (bot) per pairing. Reference = fully maxed Epic: perfect rolls (1.10), 14 levels (hull 4, cannon 4, engine 2,
+targeting 2, reactor 2), Lv5 dmg/rof/arm cores, Reinforced plates + Sprint gearing on both sides. Both sides fly the same profile.
+
+**Human pilot profile** (`dev/tests/s2/human.mjs`): reaction lag, aim wobble, missed super dodges, positioning drift, poor
+target picks, and a per-match form draw. Calibrated only on equal-gear matchups and locked before any legendary run
+(commit 3de29e4): Titan vs an equal-gear Vanguard **63.3%** (bot profile 97.9%), Scout vs Titan 52.5%, Vanguard vs Scout
+60.0%, mirror 50.0%; humans hit ~30% of shots (bots ~96%). Best Epic weapon under this profile: Siege (Siege beats Pulse 53.7%, Twin 60.8%).
+
+| Test | Target | Human profile | n | Bot profile (old measurement) | n |
+|---|---|---:|---:|---:|---:|
+| Full kit vs maxed Epic, class average | 72-75% (~74) | **74.6%** | 720 | 97.5% | 360 |
+| ... vs Epic Scout | 60-66% | **65.8%** | 240 | 96.7% | 120 |
+| ... vs Epic Vanguard | 76-84% | 87.1% | 240 | 100.0% | 120 |
+| ... vs Epic Titan | 76-84% | 70.8% | 240 | 95.8% | 120 |
+| Moonbeam alone vs best Epic weapon | 61-65% | **62.0%** | 720 | 83.1% | 360 |
+| Lunar Skin alone vs none | 61-65% | 59.3% | 720 | 72.8% | 360 |
+| Full kit vs equal spend on gem caches (6,600 Stars, from Lv2 cores) | 55-60% | 69.2% | 1,440 | 90.7% | 864 |
+| ... same, from Lv3 cores (Pulse reference) | 55-60% | 66.0% | 1,440 | - | |
+| Full kit vs average-roll Epic (1.075), class average | report | 78.2% | 720 | 97.9% | 360 |
+| Full kit vs rare-geared (1.075), class average | report | 86.7% | 720 | 100.0% | 360 |
+
+Precision, measured (`dev/tests/s2/precision.mjs`, human pilots, Moonbeam vs Epic Siege, 240 duels each): shot damage per
+shot fired **11.35 with Precision vs 9.90 without: +14.6%**. 118 DPS was kept, since the targets didn't call for the 2% exception.
+
+Gaps (not fixed; legendary stats are fixed): vs Titan is 5 points under its band and vs Vanguard 3 over, the counter triangle
+(+15% damage, 10% less taken) still leans on the Titan pairings. Lunar Skin alone is 1.7 points under its band. Equal spend is
+9-14 points above its band because 6,600 Stars of gem caches add only ~0.8 levels to each core. Options for the owner, not
+implemented: soften the counter triangle (e.g. +10%/-5%), make gem caches better value per Star (more shards, or a
+choose-your-core Epic cache), or a cheaper Epic cache. See docs/launch/PRICING_REVIEW.md.

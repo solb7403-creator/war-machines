@@ -189,16 +189,18 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Bounty</td><td class="n">438</td><td class="n">560</td><td class="n">720</td></tr>
    <tr><td>Last Standing (by place)</td><td class="n" colspan="3">900 / 600 / 400 / 200 / 100 / 50</td></tr>
   </table>
-  <p class="mut" style="margin-top:10px">A draw pays about half, a loss about a quarter. On top: your league multiplier, +25% in the featured mode, and up to +100 for a win streak.</p>
+  <p class="mut" style="margin-top:10px">A draw pays about half, a loss about a quarter. On top: +25% in the featured mode, up to +100 for a win streak, and your league bonus on spendable points.</p>
   <table>
-   <tr><th>League (by power)</th><th class="n">Power</th><th class="n">Multiplier</th></tr>
-   <tr><td style="color:#9fb0c2">Rookie</td><td class="n">0–149</td><td class="n">1.0×</td></tr>
-   <tr><td style="color:#6fcf97">Pilot</td><td class="n">150–249</td><td class="n">1.25×</td></tr>
-   <tr><td style="color:#4d9fff">Ace</td><td class="n">250–399</td><td class="n">1.5×</td></tr>
-   <tr><td style="color:#ff9d3c">Elite</td><td class="n">400–599</td><td class="n">1.75×</td></tr>
-   <tr><td style="color:#ff4d6d">Legend</td><td class="n">600+</td><td class="n">2.0×</td></tr>
+   <tr><th>League</th><th class="n">League rating</th><th class="n">Base pay</th><th class="n">Spendable</th></tr>
+   <tr><td style="color:#9fb0c2">Rookie</td><td class="n">under 84</td><td class="n">1.00×</td><td class="n">1.00×</td></tr>
+   <tr><td style="color:#6fcf97">Pilot</td><td class="n">84</td><td class="n">1.09×</td><td class="n">1.15×</td></tr>
+   <tr><td style="color:#3fd0c9">Veteran</td><td class="n">102</td><td class="n">1.18×</td><td class="n">1.30×</td></tr>
+   <tr><td style="color:#4d9fff">Ace</td><td class="n">123</td><td class="n">1.28×</td><td class="n">1.45×</td></tr>
+   <tr><td style="color:#ff9d3c">Elite</td><td class="n">149</td><td class="n">1.39×</td><td class="n">1.60×</td></tr>
+   <tr><td style="color:#c28bff">Master</td><td class="n">180</td><td class="n">1.50×</td><td class="n">1.80×</td></tr>
+   <tr><td style="color:#ff4d6d">Lunar Legend</td><td class="n">218</td><td class="n">1.60×</td><td class="n">2.00×</td></tr>
   </table>
-  <p class="mut" style="margin-top:10px">Power is the strength of your tank. Higher power means tougher opponents and bigger rewards.</p>
+  <p class="mut" style="margin-top:10px">Your league rating is your power (the strength of your tank) times your form: 0.8 for a pilot who loses every match, 1.2 for one who wins every match, 1.0 for an even record (your last ~20 matches; it counts from your 10th). Each league line is 21% above the last; you move up at the line and drop only 4% below it. Every league up, AI pilots field a stronger loadout (the full step in 1v1, part in 2v2 and Last Standing, a little in 3v3), never stronger than your own tank. Higher leagues pay more base points (league pay ×1.00 Rookie to ×1.60 Lunar Legend; these count for the leaderboard, the airdrop ranking and the daily cap) plus the spendable bonus above, on spendable points only. The daily cap is 20,000 base points in every league.</p>
  </div>
  <div class="card">
   <p><b>Tiers</b> show how far you've climbed, by lifetime points: Bronze, Silver (10K), Gold (50K), Platinum (150K), Diamond (400K). Higher tiers add to your daily reward.</p>
@@ -213,7 +215,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
  <p class="kick">Where scrap metal turns into a war machine.</p>
  <div class="card">
   <p><b>Two bays:</b> keep two different machines, Bay A and Bay B, and pick the one that deploys next. Each bay has its own weapon, chassis, cores, mods and looks; upgrades are shared by both. The garage has five sections: <b>Loadout</b>, <b>Cores</b>, <b>Upgrades</b> (opens after 2 matches), <b>Mods</b> (opens after 5 matches) and <b>Style</b>. Tap anything to see what it changes to Toughness, Firepower, Speed and power before you commit; every change saves at once. Each bay gets a build tag from its shape, like Glass Cannon, Iron Wall or Skirmisher, and you can share a picture card of your tank with your invite link.</p>
-  <p><b>Mods:</b> free hull, mobility and mount parts. Each trades one stat for another (Reinforced plates: more health, less speed), within a weight and power budget. Looks (paint and part styles) never change stats; Lunar Skin is the one exception.</p>
+  <p><b>Mods:</b> free hull, mobility and mount parts. Each trades one stat for another and adds one effect that changes how you fight (Reinforced plates: more health, less speed, the shield recharges faster; Light frame: faster, less health, dash recharges faster), within a weight and power budget. Mix three to build a brawler, a runner or a gunline. Looks (paint and part styles) never change stats; Lunar Skin is the one exception.</p>
   <p><b>Build:</b> 5 stats, up to 14 levels in total. Hull (+8% HP), Cannon (+8% damage), Engine (+6% speed), Targeting (+2% crit) and Reactor (+10% super charge) per level. <b>Reset</b> any time: half your points back, or pay a small fee in Stars, TON or SOL to get all of them back.</p>
   <p><b>Weapons and chassis:</b> 3 lines each, in Common, Rare (+14%) and Epic (+34%). Every crate item rolls 105–110% of its stats. Re-roll one you own with <b>Tune-up</b>, or buy cheaper <b>Salvaged</b> gear with points.</p>
   <table>
@@ -230,7 +232,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
   <p class="mut">Chassis</p>
   <div class="gal"><figure><img src="img/wiki/c_scout_0.webp" alt="Scout" loading="lazy" width="200" height="150"><figcaption>Scout<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/c_scout_1.webp" alt="Strider" loading="lazy" width="200" height="150"><figcaption>Strider<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/c_scout_2.webp" alt="Phantom" loading="lazy" width="200" height="150"><figcaption>Phantom<i class="e">Epic</i></figcaption></figure><figure><img src="img/wiki/c_vanguard_0.webp" alt="Vanguard" loading="lazy" width="200" height="150"><figcaption>Vanguard<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/c_vanguard_1.webp" alt="Sentinel" loading="lazy" width="200" height="150"><figcaption>Sentinel<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/c_vanguard_2.webp" alt="Paladin" loading="lazy" width="200" height="150"><figcaption>Paladin<i class="e">Epic</i></figcaption></figure><figure><img src="img/wiki/c_titan_0.webp" alt="Titan" loading="lazy" width="200" height="150"><figcaption>Titan<i class="">Common</i></figcaption></figure><figure><img src="img/wiki/c_titan_1.webp" alt="Bulwark" loading="lazy" width="200" height="150"><figcaption>Bulwark<i class="r">Rare</i></figcaption></figure><figure><img src="img/wiki/c_titan_2.webp" alt="Colossus" loading="lazy" width="200" height="150"><figcaption>Colossus<i class="e">Epic</i></figcaption></figure></div>
   <p class="mut">Legendary (shop only) and the Survival boss</p>
-  <div class="gal"><figure><img src="img/wiki/w_moon.webp" alt="Moonbeam" loading="lazy" width="200" height="150"><figcaption>Moonbeam<i class="l">Legendary weapon · 118 DPS</i></figcaption></figure><figure><img src="img/wiki/c_lunar.webp" alt="Lunar skin" loading="lazy" width="200" height="150"><figcaption>Lunar skin<i class="l">Legendary skin</i></figcaption></figure><figure><img src="img/wiki/megatank.webp" alt="Megatank" loading="lazy" width="200" height="150"><figcaption>Megatank<i class="r">Survival boss</i></figcaption></figure></div>
+  <div class="gal"><figure><img src="img/wiki/w_moon.webp" alt="Moonbeam" loading="lazy" width="200" height="150"><figcaption>Moonbeam<i class="l">Legendary weapon · 118 DPS, Precision</i></figcaption></figure><figure><img src="img/wiki/c_lunar.webp" alt="Lunar skin" loading="lazy" width="200" height="150"><figcaption>Lunar skin<i class="l">Legendary skin</i></figcaption></figure><figure><img src="img/wiki/megatank.webp" alt="Megatank" loading="lazy" width="200" height="150"><figcaption>Megatank<i class="r">Survival boss</i></figcaption></figure></div>
  </div>
 </section>
 
@@ -271,7 +273,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Starter pack (once): rare weapon, rare chassis, rare gem cache</td><td class="n">399 ⭐</td><td class="n">6</td></tr>
    <tr><td>Founder pack (until launch): Founder paint, an epic weapon, 2 rare gem caches</td><td class="n">1,199 ⭐</td><td class="n">19</td></tr>
    <tr><td>Common / Rare / Epic crate</td><td class="n">250 / 500 / 1,500 ⭐</td><td class="n">4 / 8 / 23</td></tr>
-   <tr><td>Lunar skin (+8% HP, +8% damage)</td><td class="n">2,000 ⭐</td><td class="n">30</td></tr>
+   <tr><td>Lunar skin (+8% HP, +8% damage)</td><td class="n">3,000 ⭐</td><td class="n">45</td></tr>
    <tr><td>Moonbeam (legendary weapon)</td><td class="n">3,300 ⭐</td><td class="n">50</td></tr>
    <tr><td>Lunar Pass premium (one season)</td><td class="n">799 ⭐</td><td class="n">13</td></tr>
    <tr><td>Paints (looks only)</td><td class="n">150–300 ⭐</td><td class="n">2.4–4.8</td></tr>

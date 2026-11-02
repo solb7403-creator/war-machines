@@ -160,7 +160,7 @@ function battleRosterHtml(){
  }).join('')+'</div><p class="battle-roster-rule">Edit either build in the Garage.</p></section>';
 }
 function renderPlay(){
- const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=powerBracket(pw);
+ const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=myLeague(pw);
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),n=playNudge(),wr=winRange(gk,mk);
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
@@ -185,10 +185,10 @@ const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
 const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
  cores:'Tap a socket, then a core, to see what it changes before you fit it.',
  up:'Levels cost points and count for both bays: '+BUILD_MAX+' levels in all, spread them how you like.',
- fit:'Mods are free. Each one trades one stat for another; mix them within the weight and power budget.',
+ fit:'Mods are free. Each one trades one stat for another and adds one effect that changes how you fight; mix them within the weight and power budget.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
 const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
-const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second']];
+const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second'],['super','Super damage',''],['edge','Edge-hit damage','%']];
 const FIT_SLOT_N={hull:'Hull mod',mobility:'Mobility mod',mount:'Mount mod'},LOOK_N={hull:'Hull look',mobility:'Mobility look',mount:'Mount look'};
 const gNum=v=>Number.isInteger(v)?fmtNum(v):String(+(+v).toFixed(2));
 const gIds=()=>{const lab=save&&save.lab;return lab&&lab.slots&&lab.machines?Object.values(lab.slots).filter(id=>lab.machines[id]).slice(0,2):[];};
@@ -285,11 +285,13 @@ function gEdgeLine(kind,spec){
  const parts=G_STATS.concat(G_MORE).filter(([k])=>e.d[k]).map(([k,n,u])=>(e.d[k]>0?'+':'−')+gNum(Math.abs(e.d[k]))+(u&&u.startsWith('%')?'%':'')+' '+n.toLowerCase());
  return '<p class="gedge"><span class="rar leg">Legendary</span> On this build, vs '+esc(vs)+': '+(parts.join(', ')||'no stat difference')+'.</p>';
 }
-const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second'},MOD_SKIP=new Set(['n','weight','power']);
+const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second',supTaken:'damage taken from supers',dashCd:'dash cooldown',turn:'turret turn speed',shotSpd:'shot speed',shieldCd:'shield cooldown',charge:'super charge',hitCharge:'super charge from hits taken'},MOD_SKIP=new Set(['n','weight','power']);
+// effects where a smaller number is the upside (shown first with the other upsides)
+const MOD_LOWGOOD=new Set(['supTaken','dashCd','shieldCd']);
 function modText(F){   // a mod's full trade-off in plain words, straight from its FITS entry (new fields show up on their own)
  const out=[];
  for(const [k,v] of Object.entries(F)){if(MOD_SKIP.has(k))continue;
-  if(typeof v==='number'&&v)out.push([v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
+  if(typeof v==='number'&&v)out.push([MOD_LOWGOOD.has(k)?-v:v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
   else if(typeof v==='string'&&v)out.push([0,v]);}
  out.sort((a,b)=>(b[0]>0)-(a[0]>0));
  return out.map(x=>x[1]).join(', ')||'No change: the standard part';
@@ -304,7 +306,7 @@ function gBays(){
    '<button class="btn sm btn-quiet" data-act="rangecard" data-arg="'+esc(id)+'">Free Test</button></div></div>';}).join('')+'</div>';
 }
 function gHead(id,M,v,tag){
- const brk=powerBracket(v.power),C=gCeilings();
+ const brk=myLeague(v.power),C=gCeilings();
  const bar=([k,n])=>'<div class="gbar"><div><span>'+n+'</span><b class="num">'+gNum(v[k])+'</b></div><i><em style="width:'+Math.max(3,Math.min(100,100*v[k]/Math.max(1,C[k],v[k])))+'%"></em></i></div>';
  return '<div class="ghead"><div id="g-stage-slot" class="g-stage-slot"></div>'+
   '<div class="gname"><input id="g-name" maxlength="24" value="'+esc(M.name)+'" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Bay '+gLetter(id)+' name (tap to rename)"><button class="btn sm btn-quiet" data-act="gshare">Share my tank</button></div>'+
@@ -345,13 +347,13 @@ const G_BODY={
  style:(spec)=>{
   const own=save.skin==='lunar',looks=spec.looks||{};
   return '<p class="gshared">Looks only: paint and looks never change stats</p><h4 class="gsub">Paint</h4><div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id]&&(id!=='founder'||FOUNDER_OPEN||(save.paints&&save.paints.founder))).map(id=>gPaintCard(id,spec.paint)).join('')+'</div>'+
-   '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="goshop">In the Shop</button>')+'</div>'+
+   '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="premium" data-arg="skin">Buy · '+fmtNum(PSTARS.skin)+' ⭐</button>')+'</div>'+
    FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
  }};
 function gPaintCard(id,cur){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=cur===id;
- const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'In the Shop';
- return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="'+(own||P.only||P.pass?'paint':'goshop')+'" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
+ const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'Buy · '+fmtNum(P.stars)+' ⭐';
+ return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
 function gSum(k,spec){
  if(k==='loadout')return esc(gItem(true,spec.w).name)+' · '+esc(gItem(false,spec.c).name);
@@ -388,7 +390,7 @@ function gGearSheet(isW){
   return '<button class="gear'+(on?' equipped':'')+(sel?' picked':'')+(tune?' hastune':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="'+slot+'|'+iid+'" aria-pressed="'+(on||sel)+'">'+ico+body+(on?'<span class="eq">Equipped</span>':'')+'</button>'+tune+
    (sel?gCmpCard(L,gL(gCand(spec,slot,iid)),'gequip',slot+'|'+iid,'Equip to Bay '+gLetter(id),iid==='moon'?gEdgeLine('moon',gCand(spec,slot,iid)):'',key):'');
  }).join('');
- const moon=isW&&!save.moonbeam?'<div class="gear locked"><div class="ico"><canvas data-art="gear:w:moon" data-locked="1"></canvas></div><div class="grow"><div class="nm">Moonbeam '+rarBadge(getW('moon'))+'</div><div class="meta">'+gearMeta(true,getW('moon'))+'</div>'+gEdgeLine('moon',gCand(spec,'w','moon'))+'</div><button class="btn sm btn-quiet gwhere" data-act="goshop">Shop ›</button></div>':'';
+ const moon=isW&&!save.moonbeam?'<div class="gear locked"><div class="ico"><canvas data-art="gear:w:moon" data-locked="1"></canvas></div><div class="grow"><div class="nm">Moonbeam '+rarBadge(getW('moon'))+'</div><div class="meta">'+gearMeta(true,getW('moon'))+'</div>'+gEdgeLine('moon',gCand(spec,'w','moon'))+'</div><button class="btn sm btn-quiet gwhere" data-act="premium" data-arg="moonbeam">Buy · '+fmtNum(PSTARS.moonbeam)+' ⭐</button></div>':'';
  return '<h3>'+(isW?'Weapon':'Chassis')+' · Bay '+gLetter(id)+'</h3><p class="mut">'+(isW?'Each weapon has its own super.':'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.')+' Tap one to see what changes.</p>'+
   '<button class="linkbtn" data-act="labinspect" data-arg="'+key+'">Exact stats of your '+key+'</button><div class="glist">'+rows+moon+'</div>';
 }
@@ -548,7 +550,7 @@ function renderShop(){
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
   sec('Gem caches','Level up your cores')+'<div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
-  sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon, Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin','+8% health, +8% damage',SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
+  sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
@@ -648,7 +650,7 @@ function squadPlate(){
 
 // ---------- RANKS ----------
 function renderRanks(){
- const t=tierIdx(),e=save.earned||0,me=playerKey();
+ const t=tierIdx(),e=ecoBase(save),me=playerKey();   // base points: what the boards and the airdrop count
  const rung=(n,i)=>{const lo=TPTS[i],hi=TPTS[i+1]||lo*2,f=e>=hi?1:e<=lo?0:(e-lo)/(hi-lo);
   return '<div class="rung">'+(i===t?'<span class="you" style="left:'+Math.round(f*100)+'%"></span>':'')+'<div class="track"><i style="width:'+Math.round(f*100)+'%;background:'+TIERC[i]+'"></i></div><b style="color:'+(i<=t?TIERC[i]:'var(--dust)')+'">'+n+'</b><span>'+fmtK(TPTS[i])+'</span></div>';};
  const nextTxt=t<4?fmtNum(TPTS[t+1]-e)+' points to '+TIERS[t+1]:'Top tier reached';
@@ -819,10 +821,12 @@ const INFO={
   ...Object.keys(MODES).map(k=>{const M=MODES[k];return [k,'Win '+M.win+', draw '+M.draw+', loss '+M.loss+'.'];}),
   ['Win streaks','Each win in a row adds 20 more points, up to +100 (more in 2v2 and 3v3).'],
   ['Teammates','In 2v2 and 3v3, AI pilots fight on your side.']]],
- league:()=>['Leagues',[
-  ['Your league','Comes from your tank’s power: gear, upgrades and cores. Higher leagues pay more points per match.'],
-  ['Multipliers','Rookie ×1 (under 150 power), Pilot ×1.25 (150+), Ace ×1.5 (250+), Elite ×1.75 (400+), Legend ×2 (600+).'],
-  ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime points and shows on the leaderboard. Your league comes from gear.']]],
+ league:()=>{const L=myLeague();return ['Leagues',[
+  ['Your league','You’re in '+L.n+'. Your league comes from your league rating: your tank’s power (gear, upgrades, cores, mods) times your form. Form is how your last 20 or so matches went (a win counts 1, a draw or a top-3 Last Standing finish 0.5, a loss or a quit 0); it starts counting at your 10th match.'],
+  ['The ladder',LEAGUE.map((x,i)=>x.n+(i?' from '+fmtNum(Math.round(LG_AT[i-1])):'')+' (×'+LG_MULT[i]+')').join(', ')+'. Each line is 21% above the last. You move up at the line and drop only 4% below it.'],
+  ['Tougher AI','Every league up, AI pilots field a stronger loadout: the full step in 1v1, part of it in 2v2 and Last Standing, a little in 3v3. Inside a league the AI never changes with your results. The VS screen shows the league it’s set for.'],
+  ['Points','Higher leagues pay more. Base points, the ones the airdrop ranking, the leaderboards and the daily cap count, grow with league pay: '+LEAGUE.map((x,i)=>x.n+' ×'+LG_BASE_PAY[i].toFixed(2)).join(', ')+'. On top, a bonus on your spendable points only (the multiplier above). The daily cap is 20,000 base points in every league: a higher league reaches it sooner.'],
+  ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime base points and shows on the leaderboard. Your league comes from power and form.']]];},
  build:()=>['Build',[
   ['Your budget','Each stat has 4 levels, but your tank can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how you fight.'],
   ['Cost','Each level costs points: '+UPS.hull.costs.map(fmtNum).join(', ')+' for levels 1 to 4.'],
@@ -1013,7 +1017,7 @@ function vsBuild(){
  else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='You counter '+wn.join(', ')+': +15% damage to '+(wn.length>1?'them':'it')+', 10% less taken. '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you: the same against you.';}
  else txt='Even matchup. No counters either way.';
  const owned=battleChassisClasses();
- return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents'+(!live&&aiLv?' · AI power '+aiLv.p+(battlePower?', yours '+battlePower:''):''))+'</span></div>'+
+ return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents'+(!live&&aiLv?' · set for '+leagueInfo(battleLg).n+' league · AI power '+aiLv.p+(battlePower?', yours '+battlePower:''):''))+'</span></div>'+
   '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
   '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+
@@ -1066,7 +1070,8 @@ function resultsHTML(r){
  if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.modeX]);
  else if(r.modeX!==1)lines.push([G.label,'×'+r.modeX]);
  if(r.featured)lines.push(['Featured mode','×'+r.featX]);
- if(r.leagueMult!==1)lines.push([r.league.n+' league','×'+r.leagueMult]);
+ if(r.league&&r.league.pay&&r.league.pay!==1)lines.push([r.league.n+' league pay (airdrop points)','×'+r.league.pay]);
+ if(r.leagueMult!==1)lines.push([r.league.n+' league bonus'+(r.lgBonus?': +'+fmtNum(r.lgBonus)+' to spend':''),'×'+r.leagueMult]);   // spendable only: the airdrop and the daily cap count base points
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.sqb>0)lines.push(['Squad match bonus','+'+fmtNum(r.sqb)]);   // verified active recruits (server-set)
  if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
@@ -1154,7 +1159,7 @@ function forfeit(){
  const live=pvpOn();
  if(live)pvpLeave();
  state='menu';paused=false;
- ecoQuit(save);store();   // a loss, no points (the server records the same: the room for a live match, the ticket for an AI one)
+ ecoQuit(save);ecoLeague(save,battlePower||calcPower());store();   // a loss, no points (the server records the same: the room for a live match, the ticket for an AI one)
  if(live)applyEcoSoon();else matchEnd({quit:true});
  exitBattle();
 }
@@ -1385,7 +1390,8 @@ function labItemBars(key,spec){
   if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],f=FITS[k][v];
-  if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',v*100,6,'%');
+  if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',+((v||0)*100).toFixed(1),20,'%');
+   for(const x of FIT_FIELDS)if(f[x]&&!['hp','spd','dps'].includes(x)){const w=(typeof MOD_WORD!=='undefined'&&MOD_WORD[x])||x;add(w[0].toUpperCase()+w.slice(1),+(f[x]*100).toFixed(1),50,'%');}
    add('Weight',f.weight,FIT_BUDGET.weight);add('Power',f.power,FIT_BUDGET.power);}
  }
  return entries.length?'<div class="lab-stats lab-item-stats">'+entries.map(([name,val,max,suffix])=>
@@ -1413,6 +1419,7 @@ function labItemFacts(key,spec){
    line('Equipped hit damage',+(T.wdps*T.wshot*T.dmgM*(1+gem('dmg'))).toFixed(2));
    line('Equipped fire rate',+((1+gem('rof'))/T.wshot).toFixed(2)+' shots/sec');
    line('Projectile speed',actual.pspd+' units/sec');
+   line('Edge hits',actual.edge?'Precision: '+Math.round(actual.edge*100)+'% of a full hit':Math.round(GRAZE*100)+'% of a full hit');
    line('Weapon quality',actual.premium?'Fixed legendary':live.q+'×');
    line('Super ability',base.sup);
    if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',+(supreme.dmg*actual.mult).toFixed(2));
@@ -1438,7 +1445,7 @@ function labItemFacts(key,spec){
   if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',pct(coreVal(k,lv)));}else line('Core slot','Empty');
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
-  if(fit){line('Fitting',fit.n);line('HP change',pct(fit.hp));line('Speed change',pct(fit.spd));line('DPS change',pct(fit.dps));line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}
+  if(fit){line('Fitting',fit.n);for(const f of FIT_FIELDS)if(fit[f]||['hp','spd','dps'].includes(f)){const w=(typeof MOD_WORD!=='undefined'&&MOD_WORD[f])||f;line(w[0].toUpperCase()+w.slice(1),(fit[f]>0?'+':'')+pct(fit[f]||0));}line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}
  }else if(key.startsWith('look')){line('Appearance','Visual only');line('Stat impact','None');
  }else if(key==='paint'){line('Paint',PAINTS[spec.paint]?.n||spec.paint);line('Stat impact','None');}
  return '<div class="lab-facts">'+details.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('')+'</div>';
@@ -1498,7 +1505,7 @@ ACT.glook=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.looks={..
 document.addEventListener('change',e=>{if(e.target.id==='g-name')gRename(e.target.value);});
 document.addEventListener('keydown',e=>{if(e.target.id==='g-name'&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
 ACT.gshare=()=>{
- const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=powerBracket(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();
+ const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=myLeague(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();
  gShare={text:gShareText(tag,v,brk),url:link,file:null};
  try{cv.toBlob(b=>{if(b&&gShare)try{gShare.file=new File([b],'lunar-tank.png',{type:'image/png'});}catch(e){}},'image/png');}catch(e){}
  const ov=sheet('share',()=>'<h3>Share my tank</h3><img class="gshare-img" src="'+url+'" alt="'+esc(M.name)+': power '+v.power+', '+esc(brk.n)+' league, '+esc(tag.n)+'">'+

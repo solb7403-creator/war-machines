@@ -32,7 +32,7 @@ await Promise.all([sync(7002),sync(7002)]);assert.equal(Object.keys(S(7002).lab.
 // Existing canonical gear wins over stale device selection; global assets stay global.
 await call(7003,'/api/sync');
 let old=S(7003);old.pts=12345;old.earned=54321;old.wOwn.twin=[1];old.cOwn.scout=[1];old.roll['twin:1']=1.08;old.roll['scout:1']=1.06;old.up.engine=2;old.spendGram=9;old.refC={tg_99:{m:1}};old.L=R.ecoLoadout(old,{w:{a:'twin',t:1},c:{c:'scout',t:1},cores:['spd','reg','dmg'],paint:'stock'});
-const protectedKeys=R.ECO_KEYS.filter(k=>k!=='lab');const before=Object.fromEntries(protectedKeys.map(k=>[k,old[k]]));
+const protectedKeys=R.ECO_KEYS.filter(k=>!['lab','lg','lgi'].includes(k));/* lg, lgi: the league, derived from power and form */const before=Object.fromEntries(protectedKeys.map(k=>[k,old[k]]));
 r=await sync(7003,{L:R.STOCK_L});
 assert.equal(r.E.lab.machines.m_legacy.spec.w.a,'twin');assert.equal(r.E.lab.machines.m_spare.spec.w.a,'twin');
 assert.deepEqual(Object.fromEntries(protectedKeys.map(k=>[k,S(7003)[k]])),before,'migration preserves normalized account assets');
@@ -71,11 +71,11 @@ const gain=structuredClone(S(7003));const X={day:Math.floor(Date.now()/86400000)
 R.ecoGrant(gain,{kind:'moonbeam'},X);assert.equal(R.labLoadout(gain).w.a,'moon','purchase auto-equip stays authoritative');
 gain.paints.ember=1;R.ecoGrant(gain,{kind:'paint',id:'nebula'},X);assert.equal(R.labLoadout(gain).paint,'nebula');
 // Fittings travel through the real owner action and immutable AI start pathway.
-const fitted={...S(7003).lab.machines.m_spare.spec,mods:{hull:'plates',mobility:'stable',mount:'stock'},catalog:1};
+const fitted={...S(7003).lab.machines.m_spare.spec,mods:{hull:'plates',mobility:'stable',mount:'stock'},catalog:R.FIT_VERSION};
 r=await act(7003,'lab_save',{id:'m_spare',rev:S(7003).lab.rev,name:'Fitted',spec:fitted});assert.ok(!r.out.err);
 await act(7003,'lab_activate',{id:'m_spare',rev:S(7003).lab.rev});
 for(const g of R.GT_ORDER){
- const st=await eco.matchStart(env,{g,m:'1v1',map:'craters',labRev:S(7003).lab.rev,fv:1,pv:1},{id:7003},'tg_7003',Date.now());
+ const st=await eco.matchStart(env,{g,m:'1v1',map:'craters',labRev:S(7003).lab.rev,fv:R.FIT_VERSION,pv:1},{id:7003},'tg_7003',Date.now());
  assert.ok(st.body.ok);const snap=structuredClone(S(7003).mt.L);assert.equal(snap.mods.hull,'plates');
  const rejected=await eco.matchStart(env,{g,m:'1v1',map:'craters',labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',Date.now());assert.equal(rejected.body.error,'update');assert.deepEqual(S(7003).mt.L,snap);
 }
@@ -84,5 +84,5 @@ const snap=structuredClone(S(7003).mt.L);await act(7003,'lab_save',{id:'m_spare'
 const now=Date.now();db.root.gh={tg_7999:{n:'Fitted ghost',pw:Math.floor(S(7003).pw*0.85),t:now-700000,L:{...R.STOCK_L,mods:{mobility:'stable'}}}};
 const compatible=await eco.matchStart(env,{g:'arena',m:'1v1',map:'craters',labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',now);
 assert.equal(compatible.body.gh.length,0,'old clients must not receive fitted ghost stats');
-const modern=await eco.matchStart(env,{g:'arena',m:'1v1',map:'craters',labRev:S(7003).lab.rev,fv:1,pv:1},{id:7003},'tg_7003',now);assert.equal(modern.body.gh.length,1);
+const modern=await eco.matchStart(env,{g:'arena',m:'1v1',map:'craters',labRev:S(7003).lab.rev,fv:R.FIT_VERSION,pv:1},{id:7003},'tg_7003',now);assert.equal(modern.body.gh.length,1);
 console.log('PASS Lab migration, isolation, ownership, revisions, six-mode snapshots and PvP resolution');

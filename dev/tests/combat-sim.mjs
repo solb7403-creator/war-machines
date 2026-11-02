@@ -18,8 +18,27 @@ const inputVec=()=>[0,0];
 var save={mp:50},IN_TG=false,SRV_ECO=false,lastQuick=false;
 `;
 const RUN = `
-var __casual=false,__aiLevel;
-{const bd=botDodge;botDodge=function(u){if(__casual&&u===me)return;return bd(u);};}   // a casual pilot never reflex-dodges a super
+var __casual=false,__expert=false,__aiLevel;
+{const bd=botDodge;botDodge=function(u){if(__casual&&u===me)return;if(__expert&&u===me)return __expertDodge(u);return bd(u);};}   // a casual pilot never reflex-dodges a super
+// expert pilot (the player's stand-in only, never an AI pilot): leads moving targets with the turret (it aims where the
+// enemy will be when the shot arrives, as a skilled thumb does) and always reacts to a telegraphed super (dash, else shield)
+function __expertDodge(u){
+ if(u.dash)return;const dashOk=(u.dashCd||0)<=0,shieldOk=(u.shieldCd||0)<=0&&(u.shieldT||0)<=0;if(!dashOk&&!shieldOk)return;
+ for(const v of units){if(v.team===u.team||v.hp<=0||!v.sup||(v.sup.dodged&&v.sup.dodged[u.id]))continue;
+  const S=SUP[v.sup.w];let inD=false,px=0,py=0;
+  if(S.kind==='nova'){const d=Math.hypot(u.x-v.x,u.y-v.y);if(d<S.r+bodyR(u)){inD=true;px=(u.x-v.x)/(d||1);py=(u.y-v.y)/(d||1);}}
+  else{const ca=Math.cos(v.sup.ang),sa=Math.sin(v.sup.ang),ex=u.x-v.x,ey=u.y-v.y,al=ex*ca+ey*sa,sd=-ex*sa+ey*ca,wd=S.kind==='beam'?S.w:S.r*0.6,ln=S.kind==='beam'?S.len:S.range;
+   if(al>0&&al<ln&&Math.abs(sd)<wd+bodyR(u)){inD=true;const sg=sd>=0?1:-1;px=-sa*sg;py=ca*sg;}}
+  if(!inD)continue;v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
+  if(dashOk&&v.sup.t<0.45)useDash(u,px,py);else if(dashOk){v.sup.dodged[u.id]=0;}else if(shieldOk)useShield(u);return;}
+}
+{const bt=botTarget;botTarget=function(u){   // expert: finish the weakest foe in sight and range, else the usual pick
+ if(!(__expert&&u===me))return bt(u);let best=null,bh=1e9;for(const v of units){if(v.team===u.team||v.hp<=0||v.boss)continue;if(Math.hypot(v.x-u.x,v.y-u.y)<=STAT.range+0.5&&los(u,v)&&v.hp<bh){bh=v.hp;best=v;}}return best||bt(u);};}
+{const tu=turret;turret=function(a,dt){
+ if(!(__expert&&a===me))return tu(a,dt);
+ const b=nearestFoe(a);if(!b||a.hp<=0)return tu(a,dt);
+ const d=Math.hypot(b.x-a.x,b.y-a.y),tt=d/(a.wpspd||22),lx=b.x+(b.vx||0)*tt,ly=b.y+(b.vy||0)*tt;
+ const bx=b.x,by=b.y;b.x=lx;b.y=ly;try{return tu(a,dt);}finally{b.x=bx;b.y=by;}};}
 function __seed(s){__rng=rng32(s);Math.random=rng32((s*2654435761)>>>0);}
 function __run(cfg){
  __seed(cfg.seed);__events=[];__ended=null;__round=0;
@@ -29,11 +48,12 @@ function __run(cfg){
  MM={n:MODES[mk].n,series:cfg.g==='arena'&&mk==='1v1'&&cfg.mp>0,mp:cfg.mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // as prepareMatch sets it (older code ignores cp)
  save.mp=cfg.mp;
  if(typeof aiLevel==='function'){if(!__aiLevel)__aiLevel=aiLevel;   // exploration only: pin the AI (an authored level, or another AI_EXP for the bots)
-  aiLevel=cfg.forceTier!==undefined?()=>({i:cfg.forceTier,p:AI_TIERS[cfg.forceTier].p}):cfg.aiExp!==undefined?(pw,e)=>__aiLevel(pw,e===undefined?cfg.aiExp:e):__aiLevel;}
- __casual=cfg.pilot==='casual';
+  aiLevel=cfg.forceTier!==undefined?()=>({i:cfg.forceTier,p:AI_TIERS[cfg.forceTier].p}):cfg.aiExp!==undefined?(pw,e,lg,n)=>__aiLevel(pw,e===undefined?cfg.aiExp:e,lg,n):__aiLevel;}
+ if(typeof battleLg!=='undefined')battleLg=cfg.lg|0;   // the league the AI is set for (0 Rookie: no step)
+ __casual=cfg.pilot==='casual';__expert=cfg.pilot==='expert';
  populatePreparedMatch();
  if(cfg.ghosts&&cfg.ghosts.length)placeGhosts(cfg.ghosts.map((L,i)=>({i,n:'G'+i,L})));
- me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;
+ me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
  const roster=units.map(u=>({team:u.team,cls:u.cls,w:u.wtype,mhp:u.mhp,dps:Math.round(u.wdps*dmgMult(u)*rofMult(u)),gh:!!u.gh,boss:!!u.boss,ai:u!==me}));
  startMatch();
  const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0;
@@ -42,7 +62,7 @@ function __run(cfg){
   if(state==='round'){   // between rounds a sensible pilot answers a counter with the chassis that beats it, if they own it
    const foe=units.find(u=>u.team!==me.team),fix=foe&&beatenBy(foe.cls);
    if(fix&&fix!==me.cls&&(battleLoadout.chs||[]).some(c=>c.c===fix)&&typeof switchChassis==='function'){switchChassis(fix);me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;}
-   startRound();me=units[0];continue;}
+   startRound();me=units[0];if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];continue;}
   if(state!=='play'||(cfg.maxSteps&&steps>cfg.maxSteps))break;
   if(me.hp>0){if(__casual){me.brain.mode='press';me.brain.t=99;me.brain.hideCd=99;}   // casual: drives at the target, no peeking or cover play
    botAI(DT,me);
@@ -130,7 +150,7 @@ export function summarize(rows) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   // usage: [PILOT=casual|expert] [ONLY=modes] [TIER=n] node dev/tests/combat-sim.mjs [seeds=12] [ladder=GEAR|GEAR_ONLY] [out.json]
-  const pilot = process.env.PILOT || 'expert', ft = process.env.TIER !== undefined ? +process.env.TIER : undefined, aiExp = process.env.AI_EXP ? +process.env.AI_EXP : undefined, dt = process.env.DT ? 1 / +process.env.DT : undefined;
+  const pilot = process.env.PILOT || 'standard', ft = process.env.TIER !== undefined ? +process.env.TIER : undefined, aiExp = process.env.AI_EXP ? +process.env.AI_EXP : undefined, dt = process.env.DT ? 1 / +process.env.DT : undefined;
   const seeds = +(process.argv[2] || 12), ladder = process.argv[3] === 'GEAR_ONLY' ? GEAR_ONLY : GEAR, out = process.argv[4];
   const W = makeWorld(), table = {}, t0 = Date.now();
   const only = process.env.ONLY ? process.env.ONLY.split(',') : null;

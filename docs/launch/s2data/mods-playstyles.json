@@ -1,0 +1,578 @@
+{
+ "scout": {
+  "stock/stock/stock": {
+   "win": 0.5,
+   "secs": 20.4,
+   "range": 4.68,
+   "moved": 5.17,
+   "dash": 4.33,
+   "shield": 3.03,
+   "sups": 11.28,
+   "taken": 122
+  },
+  "stock/stock/hardened": {
+   "win": 0.431,
+   "secs": 20.5,
+   "range": 4.61,
+   "moved": 5.22,
+   "dash": 3.89,
+   "shield": 2.92,
+   "sups": 11.88,
+   "taken": 131
+  },
+  "stock/stock/firing": {
+   "win": 0.444,
+   "secs": 18,
+   "range": 4.74,
+   "moved": 5.2,
+   "dash": 4.24,
+   "shield": 3.38,
+   "sups": 13.1,
+   "taken": 131
+  },
+  "stock/sprint/stock": {
+   "win": 0.486,
+   "secs": 19.8,
+   "range": 4.48,
+   "moved": 5.71,
+   "dash": 4.11,
+   "shield": 3.07,
+   "sups": 11.69,
+   "taken": 129
+  },
+  "stock/sprint/hardened": {
+   "win": 0.583,
+   "secs": 21,
+   "range": 4.43,
+   "moved": 5.77,
+   "dash": 3.68,
+   "shield": 2.88,
+   "sups": 11.88,
+   "taken": 120
+  },
+  "stock/stable/stock": {
+   "win": 0.507,
+   "secs": 18.4,
+   "range": 4.85,
+   "moved": 4.55,
+   "dash": 4.19,
+   "shield": 3.37,
+   "sups": 12.16,
+   "taken": 139
+  },
+  "stock/stable/hardened": {
+   "win": 0.5,
+   "secs": 19.6,
+   "range": 4.78,
+   "moved": 4.53,
+   "dash": 4.01,
+   "shield": 3.18,
+   "sups": 12.66,
+   "taken": 140
+  },
+  "stock/stable/firing": {
+   "win": 0.431,
+   "secs": 17.7,
+   "range": 4.79,
+   "moved": 4.5,
+   "dash": 4.33,
+   "shield": 3.31,
+   "sups": 13.16,
+   "taken": 130
+  },
+  "plates/stock/stock": {
+   "win": 0.403,
+   "secs": 20.1,
+   "range": 4.69,
+   "moved": 4.49,
+   "dash": 4.21,
+   "shield": 3.24,
+   "sups": 11.36,
+   "taken": 132
+  },
+  "plates/stock/firing": {
+   "win": 0.486,
+   "secs": 18.9,
+   "range": 4.73,
+   "moved": 4.43,
+   "dash": 4.04,
+   "shield": 3.27,
+   "sups": 12.29,
+   "taken": 128
+  },
+  "plates/sprint/stock": {
+   "win": 0.528,
+   "secs": 20,
+   "range": 4.67,
+   "moved": 4.91,
+   "dash": 4.27,
+   "shield": 3.21,
+   "sups": 12.13,
+   "taken": 132
+  },
+  "plates/stable/stock": {
+   "win": 0.5,
+   "secs": 18.8,
+   "range": 4.8,
+   "moved": 3.75,
+   "dash": 4.56,
+   "shield": 3.41,
+   "sups": 12.66,
+   "taken": 145
+  },
+  "light/stock/stock": {
+   "win": 0.5,
+   "secs": 19.8,
+   "range": 4.54,
+   "moved": 5.77,
+   "dash": 3.88,
+   "shield": 3.09,
+   "sups": 11.33,
+   "taken": 120
+  },
+  "light/stock/hardened": {
+   "win": 0.472,
+   "secs": 21.1,
+   "range": 4.44,
+   "moved": 5.82,
+   "dash": 4.13,
+   "shield": 2.88,
+   "sups": 11.77,
+   "taken": 121
+  },
+  "light/stock/firing": {
+   "win": 0.556,
+   "secs": 18.7,
+   "range": 4.7,
+   "moved": 5.76,
+   "dash": 4.93,
+   "shield": 3.09,
+   "sups": 12.09,
+   "taken": 116
+  },
+  "light/sprint/stock": {
+   "win": 0.583,
+   "secs": 20.5,
+   "range": 4.36,
+   "moved": 6.56,
+   "dash": 4.52,
+   "shield": 2.93,
+   "sups": 11.38,
+   "taken": 113
+  },
+  "light/sprint/hardened": {
+   "win": 0.556,
+   "secs": 22,
+   "range": 4.33,
+   "moved": 6.42,
+   "dash": 4.63,
+   "shield": 2.82,
+   "sups": 11.6,
+   "taken": 117
+  },
+  "light/stable/stock": {
+   "win": 0.569,
+   "secs": 18.3,
+   "range": 4.79,
+   "moved": 5.2,
+   "dash": 4.67,
+   "shield": 3.24,
+   "sups": 12.41,
+   "taken": 130
+  },
+  "light/stable/hardened": {
+   "win": 0.514,
+   "secs": 20.2,
+   "range": 4.64,
+   "moved": 5.22,
+   "dash": 5.15,
+   "shield": 3.05,
+   "sups": 12.68,
+   "taken": 126
+  }
+ },
+ "vanguard": {
+  "stock/stock/stock": {
+   "win": 0.5,
+   "secs": 21.6,
+   "range": 5.06,
+   "moved": 4.35,
+   "dash": 4.47,
+   "shield": 2.85,
+   "sups": 11.85,
+   "taken": 137
+  },
+  "stock/stock/hardened": {
+   "win": 0.458,
+   "secs": 22.1,
+   "range": 4.93,
+   "moved": 4.43,
+   "dash": 4.49,
+   "shield": 2.8,
+   "sups": 12.72,
+   "taken": 141
+  },
+  "stock/stock/firing": {
+   "win": 0.382,
+   "secs": 19.9,
+   "range": 4.99,
+   "moved": 4.33,
+   "dash": 4.16,
+   "shield": 3.12,
+   "sups": 13.29,
+   "taken": 144
+  },
+  "stock/sprint/stock": {
+   "win": 0.444,
+   "secs": 21.1,
+   "range": 4.71,
+   "moved": 4.73,
+   "dash": 4.35,
+   "shield": 2.93,
+   "sups": 12.41,
+   "taken": 142
+  },
+  "stock/sprint/hardened": {
+   "win": 0.514,
+   "secs": 22.5,
+   "range": 4.67,
+   "moved": 4.75,
+   "dash": 4.27,
+   "shield": 2.74,
+   "sups": 12.84,
+   "taken": 143
+  },
+  "stock/stable/stock": {
+   "win": 0.486,
+   "secs": 21.1,
+   "range": 5.11,
+   "moved": 3.79,
+   "dash": 4.67,
+   "shield": 2.91,
+   "sups": 12.49,
+   "taken": 140
+  },
+  "stock/stable/hardened": {
+   "win": 0.556,
+   "secs": 21.8,
+   "range": 4.98,
+   "moved": 3.77,
+   "dash": 4.5,
+   "shield": 2.88,
+   "sups": 13.56,
+   "taken": 146
+  },
+  "stock/stable/firing": {
+   "win": 0.403,
+   "secs": 19,
+   "range": 5.21,
+   "moved": 3.68,
+   "dash": 3.81,
+   "shield": 3.31,
+   "sups": 13.99,
+   "taken": 150
+  },
+  "plates/stock/stock": {
+   "win": 0.431,
+   "secs": 21.4,
+   "range": 5.08,
+   "moved": 3.78,
+   "dash": 4.77,
+   "shield": 3,
+   "sups": 12.23,
+   "taken": 148
+  },
+  "plates/stock/firing": {
+   "win": 0.486,
+   "secs": 21.1,
+   "range": 5.16,
+   "moved": 3.78,
+   "dash": 4.3,
+   "shield": 3.2,
+   "sups": 13.05,
+   "taken": 141
+  },
+  "plates/sprint/stock": {
+   "win": 0.528,
+   "secs": 22,
+   "range": 4.82,
+   "moved": 4.16,
+   "dash": 4.26,
+   "shield": 3.01,
+   "sups": 12.37,
+   "taken": 138
+  },
+  "plates/stable/stock": {
+   "win": 0.41,
+   "secs": 20.7,
+   "range": 5.27,
+   "moved": 3.19,
+   "dash": 4.18,
+   "shield": 3.11,
+   "sups": 12.58,
+   "taken": 155
+  },
+  "light/stock/stock": {
+   "win": 0.417,
+   "secs": 20.6,
+   "range": 4.58,
+   "moved": 4.81,
+   "dash": 4.7,
+   "shield": 3.03,
+   "sups": 12.59,
+   "taken": 143
+  },
+  "light/stock/hardened": {
+   "win": 0.493,
+   "secs": 22,
+   "range": 4.65,
+   "moved": 4.92,
+   "dash": 5.07,
+   "shield": 2.83,
+   "sups": 12.69,
+   "taken": 140
+  },
+  "light/stock/firing": {
+   "win": 0.458,
+   "secs": 19.2,
+   "range": 4.87,
+   "moved": 4.95,
+   "dash": 5.34,
+   "shield": 3.18,
+   "sups": 13.37,
+   "taken": 132
+  },
+  "light/sprint/stock": {
+   "win": 0.465,
+   "secs": 21.5,
+   "range": 4.62,
+   "moved": 5.27,
+   "dash": 4.44,
+   "shield": 2.86,
+   "sups": 12.09,
+   "taken": 133
+  },
+  "light/sprint/hardened": {
+   "win": 0.583,
+   "secs": 23.6,
+   "range": 4.51,
+   "moved": 5.27,
+   "dash": 4.56,
+   "shield": 2.53,
+   "sups": 12.69,
+   "taken": 124
+  },
+  "light/stable/stock": {
+   "win": 0.465,
+   "secs": 20,
+   "range": 5.07,
+   "moved": 4.38,
+   "dash": 4.85,
+   "shield": 3.02,
+   "sups": 12.74,
+   "taken": 141
+  },
+  "light/stable/hardened": {
+   "win": 0.444,
+   "secs": 20,
+   "range": 4.97,
+   "moved": 4.32,
+   "dash": 4.8,
+   "shield": 3.04,
+   "sups": 13.65,
+   "taken": 151
+  }
+ },
+ "titan": {
+  "stock/stock/stock": {
+   "win": 0.5,
+   "secs": 25.1,
+   "range": 5.09,
+   "moved": 3.86,
+   "dash": 4.45,
+   "shield": 2.46,
+   "sups": 13.45,
+   "taken": 156
+  },
+  "stock/stock/hardened": {
+   "win": 0.479,
+   "secs": 25.4,
+   "range": 5.01,
+   "moved": 3.89,
+   "dash": 4.33,
+   "shield": 2.47,
+   "sups": 14.33,
+   "taken": 162
+  },
+  "stock/stock/firing": {
+   "win": 0.542,
+   "secs": 22.5,
+   "range": 5.14,
+   "moved": 3.89,
+   "dash": 4.93,
+   "shield": 2.77,
+   "sups": 15.23,
+   "taken": 163
+  },
+  "stock/sprint/stock": {
+   "win": 0.597,
+   "secs": 25.2,
+   "range": 4.74,
+   "moved": 4.35,
+   "dash": 5.05,
+   "shield": 2.44,
+   "sups": 13.62,
+   "taken": 153
+  },
+  "stock/sprint/hardened": {
+   "win": 0.514,
+   "secs": 26.4,
+   "range": 4.71,
+   "moved": 4.25,
+   "dash": 4.72,
+   "shield": 2.39,
+   "sups": 14.15,
+   "taken": 161
+  },
+  "stock/stable/stock": {
+   "win": 0.472,
+   "secs": 24.3,
+   "range": 5.18,
+   "moved": 3.41,
+   "dash": 4.75,
+   "shield": 2.56,
+   "sups": 13.79,
+   "taken": 163
+  },
+  "stock/stable/hardened": {
+   "win": 0.514,
+   "secs": 25.4,
+   "range": 5.07,
+   "moved": 3.42,
+   "dash": 4.48,
+   "shield": 2.44,
+   "sups": 13.74,
+   "taken": 162
+  },
+  "stock/stable/firing": {
+   "win": 0.611,
+   "secs": 22.9,
+   "range": 5.21,
+   "moved": 3.39,
+   "dash": 4.78,
+   "shield": 2.71,
+   "sups": 14.52,
+   "taken": 154
+  },
+  "plates/stock/stock": {
+   "win": 0.361,
+   "secs": 26,
+   "range": 5.01,
+   "moved": 3.38,
+   "dash": 4.78,
+   "shield": 2.93,
+   "sups": 13.46,
+   "taken": 166
+  },
+  "plates/stock/firing": {
+   "win": 0.583,
+   "secs": 24.1,
+   "range": 5.17,
+   "moved": 3.35,
+   "dash": 4.83,
+   "shield": 3.06,
+   "sups": 14.35,
+   "taken": 153
+  },
+  "plates/sprint/stock": {
+   "win": 0.542,
+   "secs": 25.3,
+   "range": 4.99,
+   "moved": 3.73,
+   "dash": 4.4,
+   "shield": 3.11,
+   "sups": 13.89,
+   "taken": 159
+  },
+  "plates/stable/stock": {
+   "win": 0.556,
+   "secs": 25.1,
+   "range": 5.28,
+   "moved": 2.86,
+   "dash": 5.03,
+   "shield": 3.07,
+   "sups": 13.73,
+   "taken": 167
+  },
+  "light/stock/stock": {
+   "win": 0.472,
+   "secs": 25.1,
+   "range": 4.85,
+   "moved": 4.45,
+   "dash": 4.94,
+   "shield": 2.49,
+   "sups": 13.29,
+   "taken": 147
+  },
+  "light/stock/hardened": {
+   "win": 0.569,
+   "secs": 27.1,
+   "range": 4.78,
+   "moved": 4.49,
+   "dash": 5.49,
+   "shield": 2.35,
+   "sups": 13.77,
+   "taken": 143
+  },
+  "light/stock/firing": {
+   "win": 0.444,
+   "secs": 22.7,
+   "range": 5.03,
+   "moved": 4.41,
+   "dash": 4.94,
+   "shield": 2.73,
+   "sups": 14.29,
+   "taken": 147
+  },
+  "light/sprint/stock": {
+   "win": 0.486,
+   "secs": 25.4,
+   "range": 4.67,
+   "moved": 4.84,
+   "dash": 6.02,
+   "shield": 2.4,
+   "sups": 13.06,
+   "taken": 140
+  },
+  "light/sprint/hardened": {
+   "win": 0.604,
+   "secs": 27.7,
+   "range": 4.67,
+   "moved": 4.9,
+   "dash": 5.39,
+   "shield": 2.23,
+   "sups": 13.1,
+   "taken": 136
+  },
+  "light/stable/stock": {
+   "win": 0.542,
+   "secs": 23.6,
+   "range": 5.11,
+   "moved": 3.92,
+   "dash": 5.37,
+   "shield": 2.67,
+   "sups": 14.24,
+   "taken": 158
+  },
+  "light/stable/hardened": {
+   "win": 0.597,
+   "secs": 24.2,
+   "range": 5.05,
+   "moved": 3.96,
+   "dash": 5.46,
+   "shield": 2.62,
+   "sups": 14.82,
+   "taken": 156
+  }
+ }
+}

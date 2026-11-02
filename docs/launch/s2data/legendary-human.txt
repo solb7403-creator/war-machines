@@ -1,0 +1,17 @@
+full kit vs maxed Epic scout                 65.8% n=240
+full kit vs maxed Epic vanguard              87.1% n=240
+full kit vs maxed Epic titan                 70.8% n=240
+full kit vs maxed Epic, class average        74.6% n=720
+Moonbeam alone vs best Epic weapon           62.0% n=720
+Lunar Skin alone vs none                     59.3% n=720
+full kit vs average-roll Epic (class avg)    78.2% n=720
+full kit vs rare-geared (class avg)          86.7% n=720
+full kit vs equal spend on caches (Titan, base Lv2 -> avg 2.83/2.67/2.92) 69.2% n=1440
+DONE
+full kit vs maxed Epic scout                 65.8% n=240
+full kit vs maxed Epic vanguard              87.1% n=240
+full kit vs maxed Epic titan                 70.8% n=240
+full kit vs maxed Epic, class average        74.6% n=720
+with Precision     shot damage per shot fired 11.35  win 62.3%  n=240
+without Precision  shot damage per shot fired 9.90  win 60.8%  n=240
+Precision gain on shot damage: +14.6%

@@ -3,7 +3,7 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=2;   // live-match protocol version: the phone and the server must agree (2: Canyon and Bunker joined the live map pool)
+const PVP_V=3;   // live-match protocol version: the phone and the server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
@@ -61,6 +61,11 @@ const TIER_MULT=[1.0,1.14,1.34];
 // Legendary is a distinct, fixed premium power step, not an Epic roll or tuneable quality.
 // Its super scales above the strongest normal Epic roll, while shot cadence limits super farming.
 const LEGENDARY_MULT=1.48;
+// Moonbeam's signature trait, Precision: its shots never graze. An edge hit (a shot that clips the hull, which deals GRAZE
+// for every other weapon) deals MOON_EDGE of a full hit. Crits still need a direct hit.
+const MOON_EDGE=1.0;
+// Lunar Skin: one always-on bonus to health and to damage (shots and supers)
+const SKIN_HP=1.08,SKIN_DMG=1.08;
 // Crate items roll 105-110% of their rarity; salvaged items store their own multiplier.
 const ROLL_MIN=1.05,ROLL_MAX=1.10;
 const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
@@ -126,20 +131,45 @@ function streakPts(gk,mk,streak){
 }
 // 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most)
 const SERIES_X=2,ROUND_T=90;
-// LEAGUE (by gear power): who you get matched against + point multiplier. Not the same as your TIER (lifetime points).
-const LEAGUES=['ROOKIE','PILOT','ACE','ELITE','LEGEND'];
-function powerBracket(pw){
- if(pw<150)return {n:'Rookie',key:'ROOKIE',mult:1.0,c:'#9fb0c2',i:0};
- if(pw<250)return {n:'Pilot',key:'PILOT',mult:1.25,c:'#6fcf97',i:1};
- if(pw<400)return {n:'Ace',key:'ACE',mult:1.5,c:'#4d9fff',i:2};
- if(pw<600)return {n:'Elite',key:'ELITE',mult:1.75,c:'#ff9d3c',i:3};
- return {n:'Legend',key:'LEGEND',mult:2.0,c:'#ff4d6d',i:4};
+// LEAGUES: 7 steps from Rookie to Lunar Legend, set by your league rating = power x (0.8 + 0.4 x form). Form (S.lwr) is a
+// moving average of your results (win 1, draw or Last Standing top 3 0.5, loss or quit 0, over about the last 20 matches); it
+// counts from your 10th match (0.5 before). The steps are equal percentages (power is multiplicative), so every league is the
+// same step harder than the one below: the AI you meet in AI matches gets a fixed step stronger each league (LG_AI), and each
+// league pays more spendable points (mult; the airdrop and the daily cap count base points only). Promote at the line, drop
+// LG_DEMOTE below it. Not the same as your TIER (lifetime points). Measured and explained in docs/launch/LEAGUES.md
+const LEAGUE=[{n:'Rookie',key:'ROOKIE',c:'#9fb0c2'},{n:'Pilot',key:'PILOT',c:'#6fcf97'},{n:'Veteran',key:'VETERAN',c:'#3fd0c9'},{n:'Ace',key:'ACE',c:'#4d9fff'},
+ {n:'Elite',key:'ELITE',c:'#ff9d3c'},{n:'Master',key:'MASTER',c:'#c28bff'},{n:'Lunar Legend',key:'LUNAR',c:'#ff4d6d'}];
+const LEAGUES=LEAGUE.map(L=>L.key);
+// base pay per league: what a match pays in BASE points (the airdrop, the boards and the daily cap count these), so a higher
+// league earns more airdrop points a minute even against its harder AI (measured: docs/launch/LEAGUES.md). The cap stays 20,000
+// base points a day in every league: a higher league reaches it sooner, nobody banks more a day
+const LG_BASE_PAY=[1,1.09,1.18,1.28,1.39,1.50,1.60];   // front-loaded: the first steps are where the AI hardens most for the kits that play there
+const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplier per league, on top of base pay (spendable points only)
+const LG_FIRST=84,LG_RATIO=1.21;   // league rating lines: Pilot from 84, then each line 21% above the last (Lunar Legend from ~218)
+const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*10)/10);
+const LG_DEMOTE=0.04,LG_FORM_N=20,LG_FORM_MIN=10,LG_FORM_W=0.4;
+// AI step per league (x the base AI power), and how much of it applies by team size: full in 1v1, part in 2v2 and Last
+// Standing, none in 3v3: five other tanks dilute a pilot's gear edge there, so 3v3 is already a fight, and even a one-tier AI
+// step moved measured 3v3 results by 7-12 points (docs/launch/LEAGUES.md); 3v3 keeps today's difficulty in every league
+const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
+const leagueRating=(pw,lwr,mp)=>(Number(pw)||0)*(1-LG_FORM_W/2+LG_FORM_W*((mp|0)<LG_FORM_MIN?0.5:Math.max(0,Math.min(1,Number(lwr)))));
+function leagueIdx(rating,prev){
+ prev=Math.max(0,Math.min(LEAGUE.length-1,prev|0));
+ let up=0,keep=0;for(let k=0;k<LG_AT.length;k++){if(rating>=LG_AT[k])up=k+1;if(rating>=LG_AT[k]*(1-LG_DEMOTE))keep=k+1;}
+ return up>=prev?up:Math.max(up,Math.min(prev,keep));
 }
+const leagueInfo=i=>{i=Math.max(0,Math.min(LEAGUE.length-1,i|0));return {...LEAGUE[i],i,pay:LG_BASE_PAY[i],mult:LG_MULT[i],ai:LG_AI[i],at:i?LG_AT[i-1]:0,next:LG_AT[i]||null};};
+// a match's points in a league: base = the match's pay x league base pay (counts for the airdrop and the cap); pts = base x the
+// spendable multiplier (what you can spend). raw: the mode's pay with featured and streak, before the league
+const leaguePay=(raw,lg)=>{const L=leagueInfo(lg),base=Math.round(Math.max(0,raw)*L.pay);return {base,pts:Math.round(base*L.mult)};};
+// a pilot's league now (the server keeps it on the record as lgi, so a gear change or a run of results moves it there)
+function ecoLeague(S,pw){S.lgi=leagueIdx(leagueRating(pw,S.lwr,S.mp),S.lgi);S.lg=LEAGUE[S.lgi].key;return leagueInfo(S.lgi);}
+function ecoForm(S,r){const f=typeof S.lwr==='number'&&Number.isFinite(S.lwr)?S.lwr:0.5;S.lwr=Math.round((f+(r-f)/LG_FORM_N)*10000)/10000;}
 // ---- gear and tank stats from a loadout ----
 // A loadout is everything that sets a tank's stats: {w:{a,t,q,s}, c:{c,t,q,s}, up:{hull..reactor}, cores:[3], gl:{gem levels}, skin, paint}
 // t = rarity (-1 stock, 0 common, 1 rare, 2 epic), q = crate roll (1.05-1.10, 1 for starter gear) or the salvage multiplier, s = salvaged
 function weaponOf(arch,t,q,sal){
- if(arch==='moon'){const b=WEAPONS.moon;return {arch:'moon',tier:2,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:LEGENDARY_MULT,q:1,sal:false};}
+ if(arch==='moon'){const b=WEAPONS.moon;return {arch:'moon',tier:2,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:LEGENDARY_MULT,edge:MOON_EDGE,q:1,sal:false};}
  const tc=Math.max(0,t|0),b=WEAPONS[arch]||WEAPONS.pulse,mt=sal?q:TIER_MULT[tc]*q;
  return {arch,tier:t,sal:!!sal,q,mult:mt,dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
 }
@@ -148,35 +178,54 @@ function chassisOf(cls,t,q,sal){
  return {cls,tier:t,sal:!!sal,q,mult:mt,hp:Math.round(b.hp*mt*100)/100,spd:Math.round(b.spd*(1+(mt-1)*0.5)*100)/100,turn:Math.round((b.turn+0.05*tc)*100)/100,size:b.ds};
 }
 const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring under the tank: none, rare, epic, legendary
-function powerOf(L){
- const U=L.up,W=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skinM=L.skin==='lunar'?1.08:1;
- const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*skinM,dps=W.dps*(1+0.08*U.cannon)*skinM,spd=(1+0.06*U.engine)*Cc.spd;
- const F=fittingStats(L.mods);
- let coreM=1;for(const c of (L.cores||[]))if(c){const lv=(L.gl&&L.gl[c])||1;coreM*=(1+0.05*lv);}
- return Math.round(Math.pow(hp*dps*spd*(1+F.hp)*(1+F.spd)*(1+F.dps),1/3)*coreM*1.2);   // starter ≈ 72-100
+// Power (gear score): one number for how hard a tank hits in a fight, fitted to measured duels on the real sim
+// (dev/tests/s2/power-pairs.mjs + docs/launch/LEAGUES.md: 500 random kit pairs, stock to full Legendary, 240 duels each).
+// Every stat the fight uses counts: health, armor, damage, crits, super strength and charge, speed, turret turn, shot speed,
+// mods, cores, upgrades, Lunar Skin and the chassis class. Two tanks' powers give the gear-predicted win chance (powerWin):
+// P = 1 / (1 + (pB/pA)^POWER_K), plus COUNTER_EDGE when one chassis counters the other. Starter tank = 68.
+const POWER_W={h:6.61,a:6.95,d:5.80,c:6.31,su:1.50,fi:1.84,s:3.59,r:1.27,hc:1.61,tu:1.20,ps:1.49,sc:0.29,ti:-0.03,hh:0.49,ss:0.87,dd:-0.33,hd:0.27,hs:-0.51,ds:-1.17};
+const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:1.20};   // weapon type (its super's base damage included: Siege Blast 375, Moonfall 400 at full width, the others 350; Moonbeam refit on 90 pairs)
+const POWER_BASE=68,POWER_K=13.75,COUNTER_EDGE=1.72;
+function powerZ(L){
+ const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log;
+ const h=ln(t.mhp/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))/STAT.dps),s=ln(t.spdM*(1+g('spd')));
+ return W.h*h+W.a*-ln(1-Math.min(0.7,g('arm')))+W.d*d+W.c*ln(1+CRIT_BASE+t.critB+g('lck'))+W.su*ln((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg')))
+  +W.fi*ln(t.fillM)+W.s*s+W.r*g('reg')*100+W.hc*ln(t.hitChg||1)+W.tu*ln(t.turnM)+W.ps*ln(t.wpspd/22)+(t.cls==='scout'?W.sc:t.cls==='titan'?W.ti:0)
+  +(POWER_WPN[t.wtype]||0)+W.hh*h*h+W.ss*s*s+W.dd*d*d+W.hd*h*d+W.hs*h*s+W.ds*d*s;
 }
+let POWER_Z0=null;
+function powerOf(L){if(POWER_Z0===null)POWER_Z0=powerZ(STOCK_L);return Math.round(POWER_BASE*Math.exp((powerZ(L)-POWER_Z0)/POWER_K));}
+// gear-predicted chance that A beats B (pA, pB: powers; ctr +1 if A's chassis counters B's, -1 the other way, 0 same class).
+// live: between people (the live lobby's mismatch cap). Bot duels turn small edges into near-certain wins (bots hit ~96% of
+// shots); POWER_K_LIVE / COUNTER_EDGE_LIVE are fitted on the same kit pairs flown by the human pilot profile (dev/tests/s2/live-slope.mjs)
+const POWER_K_LIVE=3.10,COUNTER_EDGE_LIVE=0.46;   // fitted: 60 held-out kit pairs x 96 human-profile duels (bots: 13.75 / 1.72)
+function powerWin(pA,pB,ctr,live){return 1/(1+Math.exp(-((live?POWER_K_LIVE:POWER_K)*Math.log(Math.max(1,pA)/Math.max(1,pB))+(live?COUNTER_EDGE_LIVE:COUNTER_EDGE)*(ctr||0))));}
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
 // ---- AI difficulty (AI matches). AI pilots never copy your gear, upgrades or cores. They fly an authored loadout (AI_TIERS:
 // t rarity, q roll, h hull and cannon levels, e engine levels, g core levels [dmg,rof,arm]; p its power, checked by
 // dev/tests/combat-balance.mjs): the strongest one at or under the AI power shown on the VS screen, 68 x (your power / 68)^AI_EXP.
 // A starter tank meets starter AI, exactly as before; above that the AI grows slower than you do, so every upgrade, crate and
 // purchase widens your edge. Measured on the real sim: dev/tests/combat-sim.mjs, docs/combat-balance-audit.md
-const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],72],[0,1.05,1,1,[1,1,1],76],[1,1.05,0,0,[1,1,1],80],[1,1.05,1,0,[1,1,1],84],
- [1,1.05,1,1,[2,1,1],90],[1,1.05,1,1,[2,2,1],94],[1,1.05,1,1,[2,2,2],98],[1,1.05,2,1,[2,2,2],103],[1,1.08,2,2,[2,2,2],107],
- [2,1.05,1,1,[2,2,2],112],[2,1.05,2,1,[2,2,2],118],[2,1.05,2,1,[3,2,2],123],[2,1.05,2,1,[3,3,2],129],[2,1.05,2,1,[3,3,3],135],
- [2,1.05,3,1,[3,3,3],141],[2,1.08,3,2,[3,3,3],147],[2,1.08,3,2,[4,3,3],153],[2,1.08,3,2,[4,4,3],160],[2,1.08,3,2,[4,4,4],167],
- [2,1.08,4,2,[4,4,4],174],[2,1.1,4,2,[4,4,4],177],[2,1.1,4,2,[5,4,4],184],[2,1.1,4,2,[5,5,4],192],[2,1.1,4,2,[5,5,5],200]
-].map(([t,q,h,e,g,p])=>({t,q,h,e,g,p}));
+const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],73],[0,1,1,1,[2,2,2],77],[0,1.05,1,1,[1,1,1],79],[1,1.05,0,0,[1,1,1],85],[1,1.05,0,1,[2,2,2],88],[1,1.05,1,0,[1,1,1],92],
+ [1,1.05,1,1,[2,1,1],94],[1,1.05,1,1,[2,2,2],95],[1,1.08,1,1,[2,2,2],98],[1,1.05,2,1,[2,2,2],102],[1,1.08,2,2,[2,2,2],107],[1,1.05,3,2,[2,2,2],111],
+ [2,1.05,1,1,[2,2,2],115],[1,1.05,4,2,[3,2,2],119],[2,1.05,2,1,[2,2,2],124],[2,1.05,2,1,[3,2,2],125],[2,1.05,2,1,[3,3,2],126],[2,1.05,2,1,[3,3,3],128],[1,1.1,4,1,[4,4,4],132],
+ [2,1.05,3,1,[3,3,3],137],[2,1.08,3,2,[3,3,3],143],[2,1.08,3,2,[4,3,3],145],[2,1.08,3,2,[4,4,3],147],[2,1.08,3,2,[4,4,4],149],[2,1.05,4,2,[4,4,4],154],
+ [2,1.08,4,2,[4,4,4],159],[2,1.1,4,2,[4,4,4],162],[2,1.1,4,2,[5,4,4],165],[2,1.1,4,2,[5,5,4],168],[2,1.1,4,2,[5,5,5],171],
+ [2,1.1,4,2,[5,5,5],175,{rc:1,m:{mobility:'sprint'}}],[2,1.1,4,2,[5,5,5],181,{rc:4,m:{mobility:'sprint'}}]   // the top two: a full 14-level build and a mod, still Epic gear
+].map(([t,q,h,e,g,p,x])=>({t,q,h,e,g,p,x:x||{}}));
 // AI_EXP 0.75 (measured, 24 seeds x 11 mode/sizes): average win 58/61/68/80/92% starter->common->rare->Epic->Legendary kit; 1.0
 // (AI = your power) cancels progression again, 0.8 and 0.7 each left one mode where Epic trailed Rare by 17-21 points.
 // AI_BOSS_EXP: the Survival megatank is tuned to a reference tank closer to yours (a boss should be a fight), never above it
-const AI_EXP=0.75,AI_BOSS_EXP=1.0;
+const AI_EXP=0.70,AI_BOSS_EXP=1.0;
 const aiPower=(pw,e)=>{const b=AI_TIERS[0].p,p=Math.max(b,Number(pw)||0);return b*Math.pow(p/b,e===undefined?AI_EXP:e);};
-function aiLevel(pw,e){const a=aiPower(pw,e);let i=0;for(let n=1;n<AI_TIERS.length;n++)if(AI_TIERS[n].p<=a)i=n;return {i,p:AI_TIERS[i].p};}
+// the league step on top (lg: league index, n: team size; Survival's megatank uses AI_BOSS_EXP, already at your power, so the
+// step can't raise it). Never above your own power; the same at every result inside a league (no rubber-banding)
+const aiStep=(lg,n)=>1+(LG_AI[Math.max(0,Math.min(LG_AI.length-1,lg|0))]-1)*(LG_TEAM_W[n]!==undefined?LG_TEAM_W[n]:1);
+function aiLevel(pw,e,lg,n){const a=Math.min(Math.max(AI_TIERS[0].p,Number(pw)||0),aiPower(pw,e)*aiStep(lg,n));let i=0;for(let k=1;k<AI_TIERS.length;k++)if(AI_TIERS[k].p<=a)i=k;return {i,p:AI_TIERS[i].p,lg:lg|0};}
 function aiLoadout(i,arch,cls){
  const A=AI_TIERS[Math.max(0,Math.min(AI_TIERS.length-1,i|0))];
- return {w:{a:WORDER.includes(arch)?arch:'pulse',t:A.t,q:A.q,s:false},c:{c:CH[cls]?cls:'vanguard',t:A.t,q:A.q,s:false},up:{hull:A.h,cannon:A.h,engine:A.e,target:0,reactor:0},
-  cores:['dmg','rof','arm'],gl:{dmg:A.g[0],rof:A.g[1],arm:A.g[2]},skin:'default',paint:'stock'};
+ return {w:{a:WORDER.includes(arch)?arch:'pulse',t:A.t,q:A.q,s:false},c:{c:CH[cls]?cls:'vanguard',t:A.t,q:A.q,s:false},up:{hull:A.h,cannon:A.h,engine:A.e,target:A.x.tg|0,reactor:A.x.rc|0},
+  cores:['dmg','rof','arm'],gl:{dmg:A.g[0],rof:A.g[1],arm:A.g[2]},skin:'default',paint:'stock',...(A.x.m?{mods:{...A.x.m}}:{})};
 }
 // ghosts in AI matches: only tanks clearly weaker than yours (by power), and never more than one on the enemy team
 const AI_GHOST_LO=0.7,AI_GHOST_HI=0.95;
@@ -184,14 +233,17 @@ const AI_GHOST_LO=0.7,AI_GHOST_HI=0.95;
 function tankOf(L,n){
  const T=legacyTankOf(L,n),F=fittingStats(L.mods);
  if(F.hp)T.mhp=Math.round(T.mhp*(1+F.hp));if(F.spd)T.spdM*=1+F.spd;if(F.dps)T.wdps*=1+F.dps;
+ // mod behavior effects (game.js reads them; 1 = standard)
+ if(F.turn)T.turnM*=1+F.turn;if(F.shotSpd)T.wpspd=Math.round(T.wpspd*(1+F.shotSpd)*100)/100;if(F.charge)T.fillM*=1+F.charge;
+ if(F.supTaken)T.supTk=1+F.supTaken;if(F.hitCharge)T.hitChg=1+F.hitCharge;if(F.dashCd)T.dashCdM=1+F.dashCd;if(F.shieldCd)T.shieldCdM=1+F.shieldCd;
  if(hasFittings(L))T.fits=fittingVisuals(L);return T;
 }
 function legacyTankOf(L,n){
- const U=L.up,W0=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skin=L.skin==='lunar'?1.08:1;
+ const U=L.up,W0=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),lun=L.skin==='lunar';
  return {gems:(L.cores||[]).filter(Boolean),gemM:Object.fromEntries(GORDER.map(k=>[k,gemLvMult(L.gl&&L.gl[k])])),
-  mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin*n),dmgM:(1+0.08*U.cannon)*skin,spdM:(1+0.06*U.engine)*Cc.spd,
+  mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*(lun?SKIN_HP:1)*n),dmgM:(1+0.08*U.cannon)*(lun?SKIN_DMG:1),spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,
-  wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,chm:Cc.mult,dscale:Cc.size,cls:Cc.cls,
+  wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wedge:W0.edge||GRAZE,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,chm:Cc.mult,dscale:Cc.size,cls:Cc.cls,
   aura:Math.max(auraOf(W0),auraOf(Cc)),paint:PAINTS[L.paint]?L.paint:'stock',skin:L.skin==='lunar'?'lunar':'default',vl:Math.max(0,Math.min(999,Math.floor(Number(L.vl)||0)))};
 }
 
@@ -213,8 +265,10 @@ const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a core from level L to
 const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];   // DUP_PTS: a crate roll that doesn't beat what you have
 // shop prices (the server charges these; TON, Stars, points)
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
-const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=30;
-const PREMIUM={moonbeam:{ton:50,stars:3300},skin:{ton:30,stars:2000},starter:STARTER,founder:FOUNDER};
+// Lunar Skin: owner-set price (Nov 2, 2026), just under Moonbeam's: measured with human pilots its edge alone (59.3%) is a
+// little below Moonbeam's alone (62.0%) (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
+const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=45;
+const PREMIUM={moonbeam:{ton:MOONBEAM_PRICE,stars:3300},skin:{ton:SKIN_PRICE,stars:3000},starter:STARTER,founder:FOUNDER};
 // ---- Hyperspace Vault: an endless deposit for looks only. Gold is never spent and never expires; lifetime Gold sets
 // your Vault level, and each level unlocks a look (badge, gold tooth, gold name, trail, paint, aura, titles). It gives no
 // stats, power or points. Bigger bundles carry bonus Gold. Every deposit is verified shop spending like any other buy
@@ -393,7 +447,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
@@ -402,7 +456,8 @@ function ecoNorm(S){
  }
  const obj=k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={};return S[k];};
  if(typeof S.vgg!=='number'&&GENESIS_OPEN)S.vgg=Number(S.vg)||0;   // Gold deposited before Genesis Gold was tracked: all of it was pre-launch
- for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg','vd','rfe'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
+ if(typeof S.lwr!=='number'||!Number.isFinite(S.lwr))S.lwr=0.5;S.lgi=Math.max(0,Math.min(LEAGUE.length-1,S.lgi|0));S.lg=LEAGUE[S.lgi].key;
+ for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg','vd','rfe','lgb'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
  const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
  // over the build budget (levels bought before it existed): the top levels come off, paid back in full
  while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
@@ -603,7 +658,7 @@ function ecoLoginState(S,X){
  const d=X.day,L=S.login||{last:-9,n:0};
  const claimedToday=L.last===d,alive=L.last===d||L.last===d-1;
  const next=claimedToday?L.n:(alive?L.n+1:1);   // streak count after today's claim
- return {claimedToday,streak:alive?L.n:0,next,slot:((next-1)%7),reward:STREAK_PTS[(next-1)%7]+TDAILY[tierOfPts(S.earned||0)]};
+ return {claimedToday,streak:alive?L.n:0,next,slot:((next-1)%7),reward:STREAK_PTS[(next-1)%7]+TDAILY[tierOfPts(ecoBase(S))]};
 }
 // welcome-back gift: a rare gem cache with the first daily reward claimed on any day after your first day (once per pilot)
 const GIFT_RI=1;
@@ -701,22 +756,39 @@ function ecoClaimPass(S,track,i,X){
  return {box:ecoOpenBox(S,r.tk,r.ri,X)};
 }
 // ---- matches ----
-// points for a finished match: mode pay, best of 3, featured, league multiplier, win streak (o: won, drawn, place, top3, g, m, feat, series)
-function ecoMatchPts(S,o,mult,X){
+// points for a finished match: mode pay, best of 3, featured, win streak, then the league: base pay and the spendable multiplier
+// (o: won, drawn, place, top3, g, m, feat, series; lg: league index, as on the ticket)
+function ecoMatchPts(S,o,lg,X){
  if(o.won)S.streak++;else if(!o.drawn&&!o.top3)S.streak=0;   // Last Standing: 2nd and 3rd keep your streak
  const mk=MODES[o.m]?o.m:'1v1',sb=o.won?streakPts(o.g,mk,S.streak):0,M=MODES[mk],solo=isSolo(o.g);
  const zx=teamX(o.g,mk,!!o.series),fxm=o.feat?FEATURED_X:1;
  const base=Math.round(solo?ROYALE_PTS[Math.max(1,Math.min(6,o.place||6))-1]:(o.won?M.win:o.drawn?M.draw:M.loss)*zx);
- const pts=Math.round(base*fxm*mult)+sb,b=ecoBonusAward(S,pts,X);
- return {pts,awarded:b.awarded,bonus:b.bonus,base,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
+ const P=leaguePay(base*fxm+sb,lg),b=ecoPlayAward(S,P.base,P.pts,X);
+ return {pts:P.pts,awarded:b.awarded,bonus:b.bonus,base,basePts:P.base,lgBonus:b.lb,lgPay:leagueInfo(lg).pay,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
 }
-function ecoQuit(S){S.streak=0;S.losses++;S.mp++;}   // left mid-match: a loss, no points
+// A match's points, split in two. Base points (b1: the match with featured, streak and league base pay) are what the daily
+// cap, the daily/weekly boards, the leaderboard and the airdrop count. The league bonus (pts - b1) is paid on top, to spendable
+// points only (pts and earned; S.lgb keeps the lifetime total), so climbing leagues never shrinks airdrop progress. A capped
+// day pays the bonus on the base that fit. The squad match bonus (referral points, S.mbx) is on pts as it always was, and
+// takes the cap's hit first. AI tickets (eco.js matchEnd) and live rooms (eco.js creditMatch) both come through here
+function ecoPlayAward(S,b1,pts,X){
+ b1=Math.max(0,Math.round(b1||0));pts=Math.max(b1,Math.round(pts||0));
+ const bx=Math.max(0,Math.min(REF_BONUS.cap,Number(S.mbx)||0)),sq=pts>0?Math.round(pts*bx):0;
+ const got=ecoAward(S,b1+sq,X),play=Math.min(got,b1),extra=got-play;
+ if(extra)S.rfe=(S.rfe||0)+extra;
+ const lb=b1>0?Math.round((pts-b1)*play/b1):0;
+ if(lb>0){S.pts+=lb;S.earned+=lb;S.lgb=(S.lgb||0)+lb;}
+ return {awarded:got+lb,bonus:extra,base:play,lb};
+}
+// lifetime base points: what the leaderboard shows and the airdrop counts (lifetime points minus the league bonus)
+const ecoBase=S=>Math.max(0,(S.earned||0)-(S.lgb||0));
+function ecoQuit(S){S.streak=0;S.losses++;S.mp++;ecoForm(S,0);}   // left mid-match: a loss, no points, and a loss for your form
 // everything else a finished match changes: wins and losses, pass XP, milestone and quest progress
 // (o: won, drawn, top3, feat, quick, g, m, map, streak, seriesW, st: {dmg, sup, box, kills, caps, cry, stars, low})
 function ecoAfterMatch(S,o,X){
  const st=o.st||{},won=!!o.won,drawn=!!o.drawn,top3=!!o.top3,low=typeof st.low==='number'?st.low:0,clean=won&&low>0,M=MODES[o.m]||MODES['1v1'],sw=o.seriesW;
  if(won)S.wins++;else if(!drawn&&!top3)S.losses++;
- S.mp++;ecoPlayDay(S,X);
+ S.mp++;ecoPlayDay(S,X);ecoForm(S,won?1:drawn||top3?0.5:0);
  ecoPassXP(S,(won?PASS_XP_WIN:drawn||top3?PASS_XP_DRAW:PASS_XP_LOSS)+(o.feat?PASS_XP_FEAT:0),X);
  ecoMsAdd(S,'q_win1',won?1:0);ecoMsAdd(S,'q_win3',won?1:0);
  ecoMsAdd(S,'q_dmg',st.dmg||0,true);ecoMsAdd(S,'q_super',st.sup||0,true);ecoMsAdd(S,'q_box',st.box||0,true);
@@ -730,14 +802,6 @@ function ecoAfterMatch(S,o,X){
 // ---- squad payouts: milestones your recruits reach + 5% of what they earn (max 2,000 a day from the 5%; the rest carries over) ----
 // a verified match day: the server settled a real match today (counted once a day)
 function ecoPlayDay(S,X){if(S.vdl!==X.day){S.vd=(S.vd|0)+1;S.vdl=X.day;}}
-// match points plus the squad match bonus (S.mbx, set by the server). The bonus is referral points (rfe) and takes the
-// 20,000 daily cap's hit first; it is never multiplied by the launch phase
-function ecoBonusAward(S,pts,X){
- const bx=Math.max(0,Math.min(REF_BONUS.cap,Number(S.mbx)||0)),bonus=pts>0?Math.round(pts*bx):0;
- const awarded=ecoAward(S,pts+bonus,X),extra=Math.max(0,awarded-pts);
- if(extra)S.rfe=(S.rfe||0)+extra;
- return {awarded,bonus:extra};
-}
 // after every change to a pilot's record (the server runs this inside the same write): the play points they just earned,
 // times the launch phase right now (rb, what the 5% pays from), and each milestone stamped with the phase when reached
 function ecoRefTrack(S,X,e0,f0){
@@ -839,12 +903,24 @@ function labGain(S,r){
  if(JSON.stringify(p)!==before){M.rev++;S.lab.rev++;}
 }
 
-// Free functional sidegrades; visual styles never enter stat math.
-const FIT_VERSION=1,FIT_BUDGET={weight:3,power:3};
+// Free functional sidegrades; visual styles never enter stat math. Each non-stock mod trades two stats (about 10-12% on
+// average; health counts for more on the field, so it moves less) and carries ONE behavior effect, so a set of three changes how the machine plays, not just its numbers.
+// Fields (all shares, 0.1 = 10%): hp health, spd driving speed, dps damage per second; effects: supTaken damage taken from
+// supers, dashCd dash cooldown, turn turret turn rate, shotSpd shot speed, shieldCd shield cooldown, charge super charge,
+// hitCharge super charge from hits taken.
+// Measured on the real sim (dev/tests/s2/mods.mjs): every legal set wins 42-58% against the field on its chassis and weapon.
+const FIT_VERSION=2,FIT_BUDGET={weight:3,power:3};
+const FIT_FIELDS=['hp','spd','dps','supTaken','dashCd','turn','shotSpd','shieldCd','charge','hitCharge'];
 const FITS={
- hull:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},plates:{n:'Reinforced plates',hp:.06,spd:-.04,dps:0,weight:2,power:0},light:{n:'Light frame',hp:-.06,spd:.04,dps:0,weight:0,power:1}},
- mobility:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},sprint:{n:'Sprint gearing',hp:0,spd:.06,dps:-.06,weight:0,power:2},stable:{n:'Stable gearing',hp:0,spd:-.05,dps:.05,weight:1,power:1}},
- mount:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},hardened:{n:'Hardened mount',hp:.05,spd:0,dps:-.05,weight:2,power:0},firing:{n:'Firing mount',hp:-.06,spd:0,dps:.06,weight:1,power:2}}
+ hull:{stock:{n:'Stock',weight:0,power:0},
+  plates:{n:'Reinforced plates',hp:.05,spd:-.16,shieldCd:-.40,weight:2,power:0},
+  light:{n:'Light frame',hp:-.05,spd:.15,dashCd:-.40,weight:0,power:1}},
+ mobility:{stock:{n:'Stock',weight:0,power:0},
+  sprint:{n:'Sprint gearing',spd:.11,dps:-.09,turn:.30,weight:0,power:2},
+  stable:{n:'Stable gearing',spd:-.15,dps:.07,shotSpd:.10,weight:1,power:1}},
+ mount:{stock:{n:'Stock',weight:0,power:0},
+  hardened:{n:'Hardened mount',hp:.06,dps:-.14,hitCharge:.20,weight:2,power:0},
+  firing:{n:'Firing mount',hp:-.08,dps:.12,charge:.08,weight:1,power:2}}
 };
 const FIT_ORDER=['hull','mobility','mount'];
 function fittingValid(v,visual){
@@ -852,7 +928,7 @@ function fittingValid(v,visual){
  return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>FIT_ORDER.includes(k))&&FIT_ORDER.every(k=>v[k]===undefined||(visual&&v[k]==='auto')||Object.prototype.hasOwnProperty.call(FITS[k],v[k]));
 }
 function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Object.prototype.hasOwnProperty.call(FITS[k],v[k])?v[k]:'stock']));}
-function fittingStats(v){const m=fittingSelection(v),f={hp:0,spd:0,dps:0,weight:0,power:0};for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s];return f;}
+function fittingStats(v){const m=fittingSelection(v),f={weight:0,power:0};for(const s of FIT_FIELDS)f[s]=0;for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s]||0;for(const s of FIT_FIELDS)f[s]=Math.round(f[s]*1000)/1000;return f;}
 function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
 function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
@@ -869,8 +945,10 @@ function garageOpen(S,sec){
 // What the garage shows for a loadout: Toughness (health), Firepower (ordinary DPS), Speed (driving), power, and the extras.
 function machineView(L){
  const m=machineMetrics(L),t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;
+ const sup=typeof SUP!=='undefined'&&SUP[t.wtype]?Math.round(SUP[t.wtype].dmg*(t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))):0;   // super damage (game.js SUP; 0 where the sim isn't loaded)
  return {tough:m.hp,fire:m.dps,speed:m.spd,power:powerOf(L),armor:Math.round(Math.min(0.7,g('arm'))*100),
-  crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2)};
+  crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2),
+  edge:Math.round((t.wedge||GRAZE)*100),super:sup};
 }
 // B minus A for every machineView field (speed to 0.1, repair to 0.01)
 function machineDelta(A,B){const a=machineView(A),b=machineView(B),o={};for(const k in a)o[k]=k==='speed'?+(b[k]-a[k]).toFixed(1):k==='repair'?+(b[k]-a[k]).toFixed(2):b[k]-a[k];return o;}
@@ -904,7 +982,7 @@ function buildAxes(L){
  if(C.spd>=1.15)a.S+=2;else if(C.spd<1)a.S-=1;
  if(W.premium)a.F+=2;else if(W.shot>=0.4)a.F+=1;
  for(const k of UORDER)if(TAG_UP[k])a[TAG_UP[k]]+=(L.up&&L.up[k])|0;
- const m=fittingSelection(L.mods);for(const k of FIT_ORDER){const f=FITS[k][m[k]];a.T+=sg(f.hp);a.S+=sg(f.spd);a.F+=sg(f.dps);}
+ const m=fittingSelection(L.mods);for(const k of FIT_ORDER){const f=FITS[k][m[k]];a.T+=sg(f.hp);a.S+=sg(f.spd);a.F+=sg(f.dps);a.R+=sg(f.charge);}   // super charge (Firing mount) counts toward Overcharger; the other effects ride with their stat trade
  for(const g of (L.cores||[]))if(g&&TAG_CORE[g])a[TAG_CORE[g]]+=TAG_CORE[g]==='C'?2:1;
  return a;
 }

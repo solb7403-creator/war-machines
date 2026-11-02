@@ -1,0 +1,898 @@
+{
+ "sets": [
+  "stock/stock/stock",
+  "stock/stock/hardened",
+  "stock/stock/firing",
+  "stock/sprint/stock",
+  "stock/sprint/hardened",
+  "stock/stable/stock",
+  "stock/stable/hardened",
+  "stock/stable/firing",
+  "plates/stock/stock",
+  "plates/stock/firing",
+  "plates/sprint/stock",
+  "plates/stable/stock",
+  "light/stock/stock",
+  "light/stock/hardened",
+  "light/stock/firing",
+  "light/sprint/stock",
+  "light/sprint/hardened",
+  "light/stable/stock",
+  "light/stable/hardened"
+ ],
+ "out": {
+  "scout/pulse": {
+   "stock/stock/stock": {
+    "win": 0.505,
+    "n": 1080,
+    "secs": 20.8
+   },
+   "stock/stock/hardened": {
+    "win": 0.493,
+    "n": 1080,
+    "secs": 21.8
+   },
+   "stock/stock/firing": {
+    "win": 0.519,
+    "n": 1080,
+    "secs": 19.3
+   },
+   "stock/sprint/stock": {
+    "win": 0.549,
+    "n": 1080,
+    "secs": 21.6
+   },
+   "stock/sprint/hardened": {
+    "win": 0.471,
+    "n": 1080,
+    "secs": 23.1
+   },
+   "stock/stable/stock": {
+    "win": 0.485,
+    "n": 1080,
+    "secs": 19.6
+   },
+   "stock/stable/hardened": {
+    "win": 0.476,
+    "n": 1080,
+    "secs": 20.5
+   },
+   "stock/stable/firing": {
+    "win": 0.502,
+    "n": 1080,
+    "secs": 18.1
+   },
+   "plates/stock/stock": {
+    "win": 0.466,
+    "n": 1080,
+    "secs": 20.5
+   },
+   "plates/stock/firing": {
+    "win": 0.471,
+    "n": 1080,
+    "secs": 19.2
+   },
+   "plates/sprint/stock": {
+    "win": 0.469,
+    "n": 1080,
+    "secs": 21.2
+   },
+   "plates/stable/stock": {
+    "win": 0.473,
+    "n": 1080,
+    "secs": 19.4
+   },
+   "light/stock/stock": {
+    "win": 0.553,
+    "n": 1080,
+    "secs": 21.1
+   },
+   "light/stock/hardened": {
+    "win": 0.462,
+    "n": 1080,
+    "secs": 22.6
+   },
+   "light/stock/firing": {
+    "win": 0.514,
+    "n": 1080,
+    "secs": 19.8
+   },
+   "light/sprint/stock": {
+    "win": 0.529,
+    "n": 1080,
+    "secs": 22.1
+   },
+   "light/sprint/hardened": {
+    "win": 0.516,
+    "n": 1080,
+    "secs": 24.1
+   },
+   "light/stable/stock": {
+    "win": 0.535,
+    "n": 1080,
+    "secs": 19.9
+   },
+   "light/stable/hardened": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 20.8
+   }
+  },
+  "scout/twin": {
+   "stock/stock/stock": {
+    "win": 0.487,
+    "n": 1080,
+    "secs": 19.9
+   },
+   "stock/stock/hardened": {
+    "win": 0.481,
+    "n": 1080,
+    "secs": 20.7
+   },
+   "stock/stock/firing": {
+    "win": 0.483,
+    "n": 1080,
+    "secs": 18.7
+   },
+   "stock/sprint/stock": {
+    "win": 0.494,
+    "n": 1080,
+    "secs": 20.4
+   },
+   "stock/sprint/hardened": {
+    "win": 0.539,
+    "n": 1080,
+    "secs": 21.4
+   },
+   "stock/stable/stock": {
+    "win": 0.494,
+    "n": 1080,
+    "secs": 19.5
+   },
+   "stock/stable/hardened": {
+    "win": 0.496,
+    "n": 1080,
+    "secs": 20.2
+   },
+   "stock/stable/firing": {
+    "win": 0.459,
+    "n": 1080,
+    "secs": 18.4
+   },
+   "plates/stock/stock": {
+    "win": 0.463,
+    "n": 1080,
+    "secs": 20.2
+   },
+   "plates/stock/firing": {
+    "win": 0.477,
+    "n": 1080,
+    "secs": 19
+   },
+   "plates/sprint/stock": {
+    "win": 0.495,
+    "n": 1080,
+    "secs": 20.3
+   },
+   "plates/stable/stock": {
+    "win": 0.46,
+    "n": 1080,
+    "secs": 19.7
+   },
+   "light/stock/stock": {
+    "win": 0.459,
+    "n": 1080,
+    "secs": 20.1
+   },
+   "light/stock/hardened": {
+    "win": 0.506,
+    "n": 1080,
+    "secs": 20.9
+   },
+   "light/stock/firing": {
+    "win": 0.507,
+    "n": 1080,
+    "secs": 18.8
+   },
+   "light/sprint/stock": {
+    "win": 0.581,
+    "n": 1080,
+    "secs": 20.1
+   },
+   "light/sprint/hardened": {
+    "win": 0.58,
+    "n": 1080,
+    "secs": 21.2
+   },
+   "light/stable/stock": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 19.2
+   },
+   "light/stable/hardened": {
+    "win": 0.524,
+    "n": 1080,
+    "secs": 19.8
+   }
+  },
+  "scout/siege": {
+   "stock/stock/stock": {
+    "win": 0.493,
+    "n": 1080,
+    "secs": 18.6
+   },
+   "stock/stock/hardened": {
+    "win": 0.476,
+    "n": 1080,
+    "secs": 20
+   },
+   "stock/stock/firing": {
+    "win": 0.485,
+    "n": 1080,
+    "secs": 17.6
+   },
+   "stock/sprint/stock": {
+    "win": 0.543,
+    "n": 1080,
+    "secs": 19.6
+   },
+   "stock/sprint/hardened": {
+    "win": 0.487,
+    "n": 1080,
+    "secs": 20.8
+   },
+   "stock/stable/stock": {
+    "win": 0.498,
+    "n": 1080,
+    "secs": 18.1
+   },
+   "stock/stable/hardened": {
+    "win": 0.505,
+    "n": 1080,
+    "secs": 19.2
+   },
+   "stock/stable/firing": {
+    "win": 0.499,
+    "n": 1080,
+    "secs": 17.2
+   },
+   "plates/stock/stock": {
+    "win": 0.433,
+    "n": 1080,
+    "secs": 19.3
+   },
+   "plates/stock/firing": {
+    "win": 0.489,
+    "n": 1080,
+    "secs": 18.2
+   },
+   "plates/sprint/stock": {
+    "win": 0.502,
+    "n": 1080,
+    "secs": 19.4
+   },
+   "plates/stable/stock": {
+    "win": 0.447,
+    "n": 1080,
+    "secs": 18.4
+   },
+   "light/stock/stock": {
+    "win": 0.5,
+    "n": 1080,
+    "secs": 19.1
+   },
+   "light/stock/hardened": {
+    "win": 0.516,
+    "n": 1080,
+    "secs": 20.4
+   },
+   "light/stock/firing": {
+    "win": 0.508,
+    "n": 1080,
+    "secs": 18
+   },
+   "light/sprint/stock": {
+    "win": 0.553,
+    "n": 1080,
+    "secs": 19.9
+   },
+   "light/sprint/hardened": {
+    "win": 0.504,
+    "n": 1080,
+    "secs": 21.2
+   },
+   "light/stable/stock": {
+    "win": 0.527,
+    "n": 1080,
+    "secs": 18.3
+   },
+   "light/stable/hardened": {
+    "win": 0.536,
+    "n": 1080,
+    "secs": 18.9
+   }
+  },
+  "vanguard/pulse": {
+   "stock/stock/stock": {
+    "win": 0.528,
+    "n": 1080,
+    "secs": 21.3
+   },
+   "stock/stock/hardened": {
+    "win": 0.47,
+    "n": 1080,
+    "secs": 22.4
+   },
+   "stock/stock/firing": {
+    "win": 0.479,
+    "n": 1080,
+    "secs": 20.2
+   },
+   "stock/sprint/stock": {
+    "win": 0.511,
+    "n": 1080,
+    "secs": 22.2
+   },
+   "stock/sprint/hardened": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 23.3
+   },
+   "stock/stable/stock": {
+    "win": 0.471,
+    "n": 1080,
+    "secs": 20.4
+   },
+   "stock/stable/hardened": {
+    "win": 0.469,
+    "n": 1080,
+    "secs": 21.3
+   },
+   "stock/stable/firing": {
+    "win": 0.474,
+    "n": 1080,
+    "secs": 19.1
+   },
+   "plates/stock/stock": {
+    "win": 0.489,
+    "n": 1080,
+    "secs": 21.7
+   },
+   "plates/stock/firing": {
+    "win": 0.483,
+    "n": 1080,
+    "secs": 20.2
+   },
+   "plates/sprint/stock": {
+    "win": 0.539,
+    "n": 1080,
+    "secs": 22.1
+   },
+   "plates/stable/stock": {
+    "win": 0.456,
+    "n": 1080,
+    "secs": 20.9
+   },
+   "light/stock/stock": {
+    "win": 0.5,
+    "n": 1080,
+    "secs": 21.4
+   },
+   "light/stock/hardened": {
+    "win": 0.494,
+    "n": 1080,
+    "secs": 22.8
+   },
+   "light/stock/firing": {
+    "win": 0.505,
+    "n": 1080,
+    "secs": 19.8
+   },
+   "light/sprint/stock": {
+    "win": 0.544,
+    "n": 1080,
+    "secs": 22.3
+   },
+   "light/sprint/hardened": {
+    "win": 0.546,
+    "n": 1080,
+    "secs": 23.9
+   },
+   "light/stable/stock": {
+    "win": 0.518,
+    "n": 1080,
+    "secs": 20.7
+   },
+   "light/stable/hardened": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 21.9
+   }
+  },
+  "vanguard/twin": {
+   "stock/stock/stock": {
+    "win": 0.485,
+    "n": 1080,
+    "secs": 22.1
+   },
+   "stock/stock/hardened": {
+    "win": 0.499,
+    "n": 1080,
+    "secs": 23.3
+   },
+   "stock/stock/firing": {
+    "win": 0.459,
+    "n": 1080,
+    "secs": 20.9
+   },
+   "stock/sprint/stock": {
+    "win": 0.505,
+    "n": 1080,
+    "secs": 22.3
+   },
+   "stock/sprint/hardened": {
+    "win": 0.533,
+    "n": 1080,
+    "secs": 23.5
+   },
+   "stock/stable/stock": {
+    "win": 0.485,
+    "n": 1080,
+    "secs": 21.9
+   },
+   "stock/stable/hardened": {
+    "win": 0.515,
+    "n": 1080,
+    "secs": 22.6
+   },
+   "stock/stable/firing": {
+    "win": 0.502,
+    "n": 1080,
+    "secs": 20.5
+   },
+   "plates/stock/stock": {
+    "win": 0.477,
+    "n": 1080,
+    "secs": 23.1
+   },
+   "plates/stock/firing": {
+    "win": 0.481,
+    "n": 1080,
+    "secs": 21.7
+   },
+   "plates/sprint/stock": {
+    "win": 0.519,
+    "n": 1080,
+    "secs": 22.9
+   },
+   "plates/stable/stock": {
+    "win": 0.517,
+    "n": 1080,
+    "secs": 22.9
+   },
+   "light/stock/stock": {
+    "win": 0.473,
+    "n": 1080,
+    "secs": 22.3
+   },
+   "light/stock/hardened": {
+    "win": 0.479,
+    "n": 1080,
+    "secs": 23.2
+   },
+   "light/stock/firing": {
+    "win": 0.488,
+    "n": 1080,
+    "secs": 20.5
+   },
+   "light/sprint/stock": {
+    "win": 0.517,
+    "n": 1080,
+    "secs": 21.9
+   },
+   "light/sprint/hardened": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 23.3
+   },
+   "light/stable/stock": {
+    "win": 0.524,
+    "n": 1080,
+    "secs": 21.7
+   },
+   "light/stable/hardened": {
+    "win": 0.531,
+    "n": 1080,
+    "secs": 22.4
+   }
+  },
+  "vanguard/siege": {
+   "stock/stock/stock": {
+    "win": 0.503,
+    "n": 1080,
+    "secs": 20.4
+   },
+   "stock/stock/hardened": {
+    "win": 0.485,
+    "n": 1080,
+    "secs": 21.3
+   },
+   "stock/stock/firing": {
+    "win": 0.521,
+    "n": 1080,
+    "secs": 18.9
+   },
+   "stock/sprint/stock": {
+    "win": 0.522,
+    "n": 1080,
+    "secs": 20.9
+   },
+   "stock/sprint/hardened": {
+    "win": 0.465,
+    "n": 1080,
+    "secs": 22
+   },
+   "stock/stable/stock": {
+    "win": 0.493,
+    "n": 1080,
+    "secs": 19.6
+   },
+   "stock/stable/hardened": {
+    "win": 0.487,
+    "n": 1080,
+    "secs": 20.6
+   },
+   "stock/stable/firing": {
+    "win": 0.498,
+    "n": 1080,
+    "secs": 18.5
+   },
+   "plates/stock/stock": {
+    "win": 0.545,
+    "n": 1080,
+    "secs": 20.6
+   },
+   "plates/stock/firing": {
+    "win": 0.498,
+    "n": 1080,
+    "secs": 19.5
+   },
+   "plates/sprint/stock": {
+    "win": 0.519,
+    "n": 1080,
+    "secs": 21.3
+   },
+   "plates/stable/stock": {
+    "win": 0.499,
+    "n": 1080,
+    "secs": 20.4
+   },
+   "light/stock/stock": {
+    "win": 0.479,
+    "n": 1080,
+    "secs": 20
+   },
+   "light/stock/hardened": {
+    "win": 0.443,
+    "n": 1080,
+    "secs": 21.2
+   },
+   "light/stock/firing": {
+    "win": 0.511,
+    "n": 1080,
+    "secs": 18.8
+   },
+   "light/sprint/stock": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 20.7
+   },
+   "light/sprint/hardened": {
+    "win": 0.479,
+    "n": 1080,
+    "secs": 22.1
+   },
+   "light/stable/stock": {
+    "win": 0.539,
+    "n": 1080,
+    "secs": 19.4
+   },
+   "light/stable/hardened": {
+    "win": 0.502,
+    "n": 1080,
+    "secs": 20.3
+   }
+  },
+  "titan/pulse": {
+   "stock/stock/stock": {
+    "win": 0.505,
+    "n": 1080,
+    "secs": 25
+   },
+   "stock/stock/hardened": {
+    "win": 0.501,
+    "n": 1080,
+    "secs": 26.2
+   },
+   "stock/stock/firing": {
+    "win": 0.503,
+    "n": 1080,
+    "secs": 23
+   },
+   "stock/sprint/stock": {
+    "win": 0.513,
+    "n": 1080,
+    "secs": 25.7
+   },
+   "stock/sprint/hardened": {
+    "win": 0.476,
+    "n": 1080,
+    "secs": 27.3
+   },
+   "stock/stable/stock": {
+    "win": 0.479,
+    "n": 1080,
+    "secs": 24.5
+   },
+   "stock/stable/hardened": {
+    "win": 0.459,
+    "n": 1080,
+    "secs": 25.3
+   },
+   "stock/stable/firing": {
+    "win": 0.444,
+    "n": 1080,
+    "secs": 22.6
+   },
+   "plates/stock/stock": {
+    "win": 0.532,
+    "n": 1080,
+    "secs": 25.2
+   },
+   "plates/stock/firing": {
+    "win": 0.512,
+    "n": 1080,
+    "secs": 23.6
+   },
+   "plates/sprint/stock": {
+    "win": 0.532,
+    "n": 1080,
+    "secs": 25.9
+   },
+   "plates/stable/stock": {
+    "win": 0.536,
+    "n": 1080,
+    "secs": 24.6
+   },
+   "light/stock/stock": {
+    "win": 0.497,
+    "n": 1080,
+    "secs": 25
+   },
+   "light/stock/hardened": {
+    "win": 0.517,
+    "n": 1080,
+    "secs": 26.5
+   },
+   "light/stock/firing": {
+    "win": 0.485,
+    "n": 1080,
+    "secs": 23.1
+   },
+   "light/sprint/stock": {
+    "win": 0.525,
+    "n": 1080,
+    "secs": 25.5
+   },
+   "light/sprint/hardened": {
+    "win": 0.505,
+    "n": 1080,
+    "secs": 27.4
+   },
+   "light/stable/stock": {
+    "win": 0.502,
+    "n": 1080,
+    "secs": 24
+   },
+   "light/stable/hardened": {
+    "win": 0.477,
+    "n": 1080,
+    "secs": 25.1
+   }
+  },
+  "titan/twin": {
+   "stock/stock/stock": {
+    "win": 0.449,
+    "n": 1080,
+    "secs": 27
+   },
+   "stock/stock/hardened": {
+    "win": 0.458,
+    "n": 1080,
+    "secs": 28
+   },
+   "stock/stock/firing": {
+    "win": 0.478,
+    "n": 1080,
+    "secs": 24.9
+   },
+   "stock/sprint/stock": {
+    "win": 0.481,
+    "n": 1080,
+    "secs": 27.2
+   },
+   "stock/sprint/hardened": {
+    "win": 0.503,
+    "n": 1080,
+    "secs": 28.2
+   },
+   "stock/stable/stock": {
+    "win": 0.498,
+    "n": 1080,
+    "secs": 27.1
+   },
+   "stock/stable/hardened": {
+    "win": 0.526,
+    "n": 1080,
+    "secs": 28.4
+   },
+   "stock/stable/firing": {
+    "win": 0.499,
+    "n": 1080,
+    "secs": 25.4
+   },
+   "plates/stock/stock": {
+    "win": 0.553,
+    "n": 1080,
+    "secs": 28.2
+   },
+   "plates/stock/firing": {
+    "win": 0.555,
+    "n": 1080,
+    "secs": 26.2
+   },
+   "plates/sprint/stock": {
+    "win": 0.574,
+    "n": 1080,
+    "secs": 28.2
+   },
+   "plates/stable/stock": {
+    "win": 0.566,
+    "n": 1080,
+    "secs": 28.1
+   },
+   "light/stock/stock": {
+    "win": 0.495,
+    "n": 1080,
+    "secs": 26.7
+   },
+   "light/stock/hardened": {
+    "win": 0.45,
+    "n": 1080,
+    "secs": 27.8
+   },
+   "light/stock/firing": {
+    "win": 0.45,
+    "n": 1080,
+    "secs": 24.6
+   },
+   "light/sprint/stock": {
+    "win": 0.493,
+    "n": 1080,
+    "secs": 26.7
+   },
+   "light/sprint/hardened": {
+    "win": 0.496,
+    "n": 1080,
+    "secs": 28
+   },
+   "light/stable/stock": {
+    "win": 0.496,
+    "n": 1080,
+    "secs": 26.2
+   },
+   "light/stable/hardened": {
+    "win": 0.479,
+    "n": 1080,
+    "secs": 27.5
+   }
+  },
+  "titan/siege": {
+   "stock/stock/stock": {
+    "win": 0.487,
+    "n": 1080,
+    "secs": 24
+   },
+   "stock/stock/hardened": {
+    "win": 0.489,
+    "n": 1080,
+    "secs": 25.1
+   },
+   "stock/stock/firing": {
+    "win": 0.44,
+    "n": 1080,
+    "secs": 22.5
+   },
+   "stock/sprint/stock": {
+    "win": 0.497,
+    "n": 1080,
+    "secs": 24.8
+   },
+   "stock/sprint/hardened": {
+    "win": 0.503,
+    "n": 1080,
+    "secs": 26.1
+   },
+   "stock/stable/stock": {
+    "win": 0.531,
+    "n": 1080,
+    "secs": 23.8
+   },
+   "stock/stable/hardened": {
+    "win": 0.522,
+    "n": 1080,
+    "secs": 24.8
+   },
+   "stock/stable/firing": {
+    "win": 0.521,
+    "n": 1080,
+    "secs": 22.1
+   },
+   "plates/stock/stock": {
+    "win": 0.532,
+    "n": 1080,
+    "secs": 24.9
+   },
+   "plates/stock/firing": {
+    "win": 0.554,
+    "n": 1080,
+    "secs": 23.1
+   },
+   "plates/sprint/stock": {
+    "win": 0.571,
+    "n": 1080,
+    "secs": 25.2
+   },
+   "plates/stable/stock": {
+    "win": 0.563,
+    "n": 1080,
+    "secs": 24.6
+   },
+   "light/stock/stock": {
+    "win": 0.462,
+    "n": 1080,
+    "secs": 24.1
+   },
+   "light/stock/hardened": {
+    "win": 0.45,
+    "n": 1080,
+    "secs": 25.5
+   },
+   "light/stock/firing": {
+    "win": 0.497,
+    "n": 1080,
+    "secs": 22.1
+   },
+   "light/sprint/stock": {
+    "win": 0.491,
+    "n": 1080,
+    "secs": 24.4
+   },
+   "light/sprint/hardened": {
+    "win": 0.442,
+    "n": 1080,
+    "secs": 25.9
+   },
+   "light/stable/stock": {
+    "win": 0.475,
+    "n": 1080,
+    "secs": 23.2
+   },
+   "light/stable/hardened": {
+    "win": 0.472,
+    "n": 1080,
+    "secs": 24.5
+   }
+  }
+ }
+}

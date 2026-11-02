@@ -165,9 +165,9 @@ await check('match bonus tiers, squad bonus, +100% cap', () => {
 });
 await check('match bonus is referral points, never phase-multiplied, inside the 20,000 cap', async () => {
   const X = { day: 22000, week: 3143, rnd: () => 0.5, pk: 'tg_1', rx: 3 }, S = R.ecoNorm({ mbx: 0.5 });
-  const e0 = S.earned, f0 = S.rfe; const r = R.ecoBonusAward(S, 1000, X); R.ecoRefTrack(S, X, e0, f0);
+  const e0 = S.earned, f0 = S.rfe; const r = R.ecoPlayAward(S, 1000, 1000, X); R.ecoRefTrack(S, X, e0, f0);   // a 1,000-point match at league x1
   assert.equal(r.awarded, 1500); assert.equal(S.rfe, 500); assert.equal(S.rb, 3000, 'only the 1,000 play points, at 3x');
-  S.dailyPts = 19800; assert.equal(R.ecoBonusAward(S, 1000, X).awarded, 200, 'cap stays');
+  S.dailyPts = 19800; assert.equal(R.ecoPlayAward(S, 1000, 1000, X).awarded, 200, 'cap stays');
 });
 await check('server sets the match bonus from verified recruits; held recruits count 0', async () => {
   const REC = 'tg_9200'; await tgSync(9200);

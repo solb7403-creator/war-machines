@@ -51,8 +51,8 @@ export const ECO = {
 let NEWID = Infinity;   // from cfg/maxid (cfg() below); off until real Telegram ids have been seen
 export const isNewTg = (user) => !!user && Number(user.id) >= NEWID && !user.is_premium;
 const acW = (S) => (S.nw ? Math.min(1, 0.5 + (0.5 * Math.max(0, (S.days || 1) - 1)) / ECO.AC_DAYS) : 1);
-// airdrop credit (ac) follows lifetime points, weighted for new accounts
-function credit(S, e0) { if (typeof S.ac !== "number") S.ac = e0; const de = (S.earned || 0) - e0; if (de > 0) S.ac = Math.round(S.ac + de * acW(S)); S.ac = Math.min(S.ac, S.earned || 0); }
+// airdrop credit (ac) follows lifetime BASE points (the league bonus never counts: R.ecoPlayAward), weighted for new accounts
+function credit(S, e0, g0 = 0) { const b0 = Math.max(0, e0 - g0), b = R.ecoBase(S); if (typeof S.ac !== "number") S.ac = b0; const de = b - b0; if (de > 0) S.ac = Math.round(S.ac + de * acW(S)); S.ac = Math.min(S.ac, b); }
 export function who(S, user) { S.nm = cleanName(user); if(user.lunar_account){S.nw=0;}else if(!user.web_auth || S.nw===undefined) S.nw = isNewTg(user) ? 1 : 0; }
 // settings Jake changes from the admin sheet (proof of play: "enforce" or "flag"), read at most once a minute
 let CFG = null, CFG_T = 0;
@@ -141,10 +141,10 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
       if (S.rq.n >= ECO.RL_MIN) return { abort: true, rate: true, S, X };
       S.rq.n++;
     }
-    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as, mp: S.mp | 0, days: S.days | 0 };
+    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0, g: S.lgb || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as, mp: S.mp | 0, days: S.days | 0 };
     const out = (await fn(S, X)) || {};
     if (out.abort) return { ...out, S, X };
-    credit(S, before.e);
+    credit(S, before.e, before.g);
     R.ecoRefTrack(S, X, before.e, before.f);
     S.as = R.airdropScore(S.ac, S.rfe, R.adCfg((CFG || {}).ad).refW);   // the points-pool score (research board only)
     S.rev = (S.rev || 0) + 1; S.t = now;
@@ -158,7 +158,7 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
 // the fields the leaderboard, squad lists, reminders and admin read stay on players/<pid> (a copy of the record)
 async function mirror(env, pid, S, isNew, before, now) {
   const P = `players/${pid}`, up = {};
-  const f = { pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
+  const f = { pts: R.ecoBase(S), dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, d: S.dailyDay, w: S.weeklyNum, days: S.days, sk: S.sk, ld: S.ld, fd: S.fd,
     wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, vd: S.vd, vdl: S.vdl, rfe: S.rfe, rb: S.rb, rms: S.rms && S.rms.length ? S.rms : null, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
   const vl = R.vaultLevel(S.vg), vx = vl ? { v: vl } : {};   // the Vault badge shows on the daily and weekly boards too
@@ -217,7 +217,7 @@ export async function ghostReport(env, list, now = Date.now()) {
 // what the phone gets: the economy fields only (no anomaly stats, tickets or bookkeeping)
 export function pub(S) { const E = {}; for (const k of R.ECO_KEYS) if (S[k] !== undefined) E[k] = S[k]; E._rev = S.rev || 0; return E; }
 // the loadout a pilot fields, from what they own; power and league from that
-export function setLoadout(S, raw) { const L = S.lab ? R.labLoadout(S) : R.ecoLoadout(S, raw); S.L = L; S.pw = R.powerOf(L); S.lg = R.powerBracket(S.pw).key; return L; }
+export function setLoadout(S, raw) { const L = S.lab ? R.labLoadout(S) : R.ecoLoadout(S, raw); S.L = L; S.pw = R.powerOf(L); R.ecoLeague(S, S.pw); return L; }   // power, then the league from power and form
 
 // ---- flags ----
 export const flagReasons = (f) => (f && f.r ? Object.keys(f.r).filter((k) => !(f.ok && f.ok[k] >= (f.r[k].t || 0))) : []);
@@ -303,14 +303,14 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return {abort:true,error:"update"};
     if (S.lab && b.labRev !== undefined && b.labRev !== S.lab.rev) return {abort:true, error:"garage_changed"};
     if (cid) { const same = openTickets(S).find((T) => T.cid === cid && now - T.t0 < ECO.TICKET_MS); if (same) return { abort: true, same }; }
-    const L = setLoadout(S, b.L), brk = R.powerBracket(S.pw), ghosts = await ghostBox;
+    const L = setLoadout(S, b.L), brk = R.leagueInfo(S.lgi), ghosts = await ghostBox;
     // a newer match doesn't kill the last ticket: its result may still be on its way (held on a phone with no signal).
     // It only has to show a fight that ended before this one started (nx)
     if (S.mt) { const o = (S.mto = S.mto || {}); o[S.mt.n] = { ...S.mt, nx: now };
       for (const k of Object.keys(o)) if (now - o[k].t0 > ECO.TICKET_MS) delete o[k];
       const ks = Object.keys(o).sort((a, c) => o[a].t0 - o[c].t0); for (const k of ks.slice(0, Math.max(0, ks.length - 6))) delete o[k]; }
     S.mt = { n, cid, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
-      L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw: S.pw, gh: ghosts.map((x) => x.id) };
+      L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, lgi: brk.i, pw: S.pw, gh: ghosts.map((x) => x.id) };
     // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
     const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
     if (gap < 600) bp.g = (bp.g || []).concat(Math.round(gap * 10) / 10).slice(-30);
@@ -320,13 +320,13 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (!dy[X.day]) dy[X.day] = [dm, dm, 0];
     dy[X.day][2]++;
     for (const k of Object.keys(dy)) if (Number(k) < X.day - 9) delete dy[k];
-    return { lg: brk.key, mult: brk.mult, power: S.pw, L, ghosts };
+    return { lg: brk.key, lgi: brk.i, mult: brk.mult, power: S.pw, L, ghosts };
   }, now, { rl: 1 });
   if (t.rate) return { status: 429, body: { error: "rate" } };
   if (t.error) return { status: 409, body: { error: t.error } };
   if (t.same) {   // the same match asking again: the same ticket (no ghosts this time; they're optional)
-    const T = t.same, brk = R.powerBracket(T.pw);
-    return { status: 200, body: { ok: true, tok: T.n + "." + (await sign(env, `${pid}|${T.n}|${T.t0}`)), league: brk.key, mult: T.mult, power: T.pw, L: T.L, E: pub(t.S), gh: [], same: true } };
+    const T = t.same, brk = R.leagueInfo(T.lgi);
+    return { status: 200, body: { ok: true, tok: T.n + "." + (await sign(env, `${pid}|${T.n}|${T.t0}`)), league: brk.key, lgi: brk.i, mult: T.mult, power: T.pw, L: T.L, E: pub(t.S), gh: [], same: true } };
   }
   // a new session: who started playing this minute, on which network and device (accounts that always start together)
   const sessP = sess ? (async () => {
@@ -336,7 +336,7 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   })().catch(() => {}) : null;
   const [tok] = await Promise.all([sign(env, `${pid}|${n}|${now}`), sessP]);
   // ghosts go to the phone by seat number only (never the owner's id)
-  return { status: 200, body: { ok: true, tok: n + "." + tok, league: t.lg, mult: t.mult, power: t.power, L: t.L, E: pub(t.S),
+  return { status: 200, body: { ok: true, tok: n + "." + tok, league: t.lg, lgi: t.lgi, mult: t.mult, power: t.power, L: t.L, E: pub(t.S),
     gh: t.ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
 }
 // the pilot's open tickets: the latest, and older ones whose results may still be on their way
@@ -386,9 +386,9 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       const g = String(r0.g || ""), m = g === "royale" ? "1v1" : String(r0.m || ""), map = String(r0.map || "");
       // a mode or map this server doesn't know (a phone on the next version while a release goes out): held, not refused
       if (!R.GT_ORDER.includes(g) || !R.MODES[m] || !mapList().includes(map)) return { abort: true, hold: "update", retry: 600000 };
-      const L = R.ecoLoadout(S, r0.L), pw = R.powerOf(L), brk = R.powerBracket(pw);
+      const L = R.ecoLoadout(S, r0.L), pw = R.powerOf(L), brk = R.leagueInfo(R.leagueIdx(R.leagueRating(pw, S.lwr, S.mp), S.lgi));
       T = { n: null, g, m, map, t0: null, feat: g === R.featuredOn(dayOf(end)), quick: !!r0.quick, pv: 1, L, rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1",
-        series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, pw, gh: [] };
+        series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, lgi: brk.i, pw, gh: [] };
     }
     if (tooOld || (T.t0 && now - T.t0 > ECO.TICKET_MS)) { used(); return { err: "expired", res: keep({ err: "expired" }) }; }
     // when the fight happened: it ended `ago` seconds before now and lasted as long as its record (fast forward runs x3)
@@ -396,7 +396,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     if (T.nx && end > T.nx + ECO.CLOCK_SLACK) return { abort: true, err: "ticket" };   // an older ticket: its match ended before the next began
     const onTime = !!T.t0 && T.t0 <= start + ECO.LATE_SLACK;
     const secs = onTime ? (now - T.t0) / 1000 : (now - start) / 1000;
-    if (r0.quit) { used(); R.ecoQuit(S); return { res: keep({ pts: 0, awarded: 0, quit: true }) }; }
+    if (r0.quit) { used(); R.ecoQuit(S); R.ecoLeague(S, T.pw || S.pw); return { res: keep({ pts: 0, awarded: 0, quit: true }) }; }
     // the result as the phone reports it, held to what's possible in that time
     const solo = T.g === "royale";
     let won = !!r0.won, drawn = !won && !!r0.drawn, place = solo ? Math.max(1, Math.min(6, Math.round(Number(r0.place) || 6))) : 0;
@@ -442,8 +442,9 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       return [gIds[i], { won: !!x.won, drawn: !x.won && !!x.drawn, dmg: lim(x.dmg, el * 450), kills: lim(x.kills, kmax) }];
     }).filter(Boolean);
     const o = { won, drawn, place, top3, g: T.g, m: T.m, feat: T.feat, series: T.series, quick: T.quick, map: T.map };
-    const p = R.ecoMatchPts(S, o, T.mult, X);
+    const p = R.ecoMatchPts(S, o, T.lgi | 0, X);   // the league on the ticket: base pay (airdrop) and the spendable multiplier
     R.ecoAfterMatch(S, { ...o, streak: S.streak, seriesW: sw, st }, X);
+    R.ecoLeague(S, T.pw || S.pw);   // the result moved your form: your league (next match's AI and multiplier) follows
     flags = flags.concat(watch(S, { ai: true, won, secs: el, pts: p.pts, ni: !!(pr && pr.ok && pr.sig.ni > ECO.NOINPUT_SHARE) }, X, now));
     const bp = (S.bp = S.bp || {});
     // when this match ended: the ticket plus the fight the record shows and the VS screen (a result that arrives late, on
@@ -454,7 +455,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const dy = bp.dy && bp.dy[X.day];
     if (dy) dy[1] = Math.floor((now % DAY_MS) / 60000);
     flags = flags.concat(bpFlags(S));
-    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, bonus: p.bonus || 0, base: p.base, modeX: p.modeX, featX: p.featX, mult: T.mult }) };
+    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, bonus: p.bonus || 0, base: p.base, basePts: p.basePts, lgBonus: p.lgBonus, modeX: p.modeX, featX: p.featX, mult: T.mult, lg: T.lg, lgi: S.lgi }) };
   }, now, { rl: 1 });
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now);
   if (t.ghr && t.ghr.length) await ghostReport(env, t.ghr, now).catch(() => {});
@@ -487,18 +488,19 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
       S.op = S.op && S.op.d === X.day ? S.op : { d: X.day, m: {} };
       for (const o of c.opp.slice(0, 5)) { if (!/^(?:tg|ln)_\d{3,15}$/.test(String(o))) continue; S.op.m[o] = (S.op.m[o] || 0) + 1; if (S.op.m[o] === ECO.TRADE) trade.push(o); }
     }
-    const pts = Math.max(0, Math.round(c.pts || 0)), awarded = R.ecoBonusAward(S, pts, X).awarded;
+    const pts = Math.max(0, Math.round(c.pts || 0)), aw = R.ecoPlayAward(S, c.base === undefined ? pts : c.base, pts, X), awarded = aw.awarded;
     S.pvs = c.pvs || 0; S.pvm = (S.pvm || 0) + 1;
     const k = c.won ? "pvw" : c.drawn ? "pvd" : "pvl"; S[k] = (S[k] || 0) + 1;
     if (c.m) {
       if (c.m.quit) R.ecoQuit(S);
       else { R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
+      if (c.pw) R.ecoLeague(S, c.pw);   // live results move your form and league the same way
     }
-    return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0 };
+    return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0, lgBonus: aw.lb, lgi: S.lgi };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
   for (const o of trade) await link(env, pid, o, "trade").catch(() => {});
-  return { pts: t.pts, awarded: t.awarded, capped: t.capped, pvs: t.pvs, sb: t.sb };
+  return { pts: t.pts, awarded: t.awarded, capped: t.capped, pvs: t.pvs, sb: t.sb, lgBonus: t.lgBonus, lgi: t.lgi };
 }
 
 // ================= payments on record (for the one-time move and the loadout) =================

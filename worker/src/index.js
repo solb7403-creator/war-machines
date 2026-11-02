@@ -171,7 +171,7 @@ export async function sync(env, b, user, pid, now = Date.now(), ip = "", sp = ""
   for (const [id, list] of flags) await addFlags(env, id, id === pid ? name : null, list, now).catch(() => {});
   if (squadCheck) await squad(env, pid, now, S).catch(() => {});   // daily: verified recruits, match bonus, pool row
   const out = { ok: true, pid, now, cs: user.callsign || null, migOk: S.mig === 1, E: pub(S), power: S.pw, league: S.lg,
-    rec: { ac: S.ac || 0, pts: S.earned, dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
+    rec: { ac: S.ac || 0, pts: RULES.ecoBase(S), dailyPts: S.dailyPts, weeklyPts: S.weeklyPts, days: S.days || 0, sk: S.sk || 0, ld: S.ld ?? null, ref: ref || null, d, w: weekOf(now) } };
   // on launch the game asks for Stars purchases that were paid but never shown (app closed during checkout)
   if (b.boot) out.stars = await undeliveredStars(env, pid, now);
   // the ghost report: what your tank did in other pilots' matches while you were away. Cleared once the phone has shown it
@@ -508,7 +508,7 @@ export async function airdropBoards(env, now = Date.now(), fl = null, ok = () =>
 // ================= daily reminders (cron) =================
 // Who's due: ntf/<pid> has nx (the next day to remind), pl (the day they last played) and sk (streak), so one query finds
 // a batch and nothing else is read. Sent 4 at a time (Telegram allows ~30 messages a second). The batch size is
-// env.NTF_BATCH (wrangler.toml): the Workers Free plan allows 50 outside requests per run, the Paid plan many more.
+// env.NTF_BATCH (wrangler.toml): 200 on Workers Paid (1,000 outside requests per run); the Free plan allows only 50.
 const NOTIFY_HOURS = [15, 16, 17, 18]; // UTC: ~10am-1pm US Central
 let NTF2 = false;
 async function ntfMigrate(env, d) {   // once: reminders set up before nx existed

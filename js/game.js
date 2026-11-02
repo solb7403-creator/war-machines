@@ -371,7 +371,7 @@ function turret(a,dt){
  const dist=Math.hypot(b.x-a.x,b.y-a.y);
  if(a.cd<=0&&seen&&Math.abs(r)<0.14&&dist<=STAT.range){
   a.cd=a.wshot/rofMult(a);if(a===me&&typeof fx==='function')fx('shot',a.wtype);
-  const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a),life:(STAT.range+1)/a.wpspd};
+  const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a),eg:a.wedge||GRAZE,life:(STAT.range+1)/a.wpspd};
   bullets.push(q);
   if(SRV)SRV.ev(['b',q.id,a.id,q.x,q.y,q.vx,q.vy,q.hi?1:0,q.dm,q.life]);   // live players draw the shot themselves
  }
@@ -387,9 +387,9 @@ function moveBullets(dt){
    for(const v of units){if(v.team===q.o.team||v.hp<=0)continue;if(q.hi?underDeck(v):(v.elev||0)!==0)continue;const d=Math.hypot(q.x-v.x,q.y-v.y);if(d<hitR(v)+0.12&&d<bd){bd=d;t=v;}}
    if(q.life>0&&t){const sp=Math.hypot(q.vx,q.vy)||1,off=Math.abs((t.x-q.x)*q.vy-(t.y-q.y)*q.vx)/sp,direct=off<DIRECT;
    const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
-   const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
+   const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
    if(t.st)t.st.arm+=gross*aT;
-   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
+   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*(t.hitChg||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
   }
   q.life-=dt;
  }
@@ -472,7 +472,7 @@ function useDash(u,dx,dy){
  if(state!=='play'||u.hp<=0||(u.dashCd||0)>0||u.dash)return false;
  let m=Math.hypot(dx||0,dy||0);
  if(m<0.2){const a=u.hd===undefined?u.ang:u.hd;dx=Math.cos(a);dy=Math.sin(a);m=1;}
- u.dash={t:DASH_T,dx:dx/m,dy:dy/m};u.dashCd=DASH_CD;
+ u.dash={t:DASH_T,dx:dx/m,dy:dy/m};u.dashCd=DASH_CD*(u.dashCdM||1);   // Light frame: shorter cooldown
  if(u===me&&typeof fx==='function')fx('dash');
  return true;
 }
@@ -488,7 +488,7 @@ function dashStep(u,dt){   // returns true while dashing
 const SHIELD_CD=25,SHIELD_T=3,SHIELD_MULT=0.35;   // take 35% of combat damage while it holds (shots and supers; storm and meteors ignore it)
 function useShield(u){
  if(state!=='play'||u.hp<=0||(u.shieldCd||0)>0||(u.shieldT||0)>0)return false;
- u.shieldT=SHIELD_T;u.shieldCd=SHIELD_CD;
+ u.shieldT=SHIELD_T;u.shieldCd=SHIELD_CD*(u.shieldCdM||1);   // Hardened mount: shorter cooldown
  if(u===me&&typeof fx==='function')fx('shield');
  return true;
 }
@@ -515,7 +515,8 @@ function botDodge(u){
  }
 }
 function fireSuper(r,S){
- const hurt=(e,dmg)=>{if(!lvOK(r,e))return;const aE=armor(e),pre=dmg*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e);if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
+ const hurt=(e,dmg)=>{if(!lvOK(r,e))return;const aE=armor(e),pre=dmg*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e)*(e.supTk||1);   // supTk: Reinforced plates take less from supers
+ if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1)*(e.hitChg||1));
   if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}};
  if(S.kind==='beam'){
   const ang=r.sup.ang;
@@ -562,7 +563,7 @@ function explode(s){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
   if(d<s.r+bodyR(e)&&lvOK(r,e)){
    const fall=1-0.65*(d/(s.r+bodyR(e)));
-   const aE=armor(e),pre=s.dmg*fall*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e);if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1));
+   const aE=armor(e),pre=s.dmg*fall*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e)*(e.supTk||1);if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1)*(e.hitChg||1));
    if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}
   }
  }
@@ -743,7 +744,8 @@ function botAI(dt,u){
  let tx,ty;
  if(goal===tgt&&seen){            // engaging: hold range and strafe
   let mx=0,my=0;
-  if(d>4.8){mx=nx;my=ny;}else if(d<3.2){mx=-nx;my=-ny;}
+  const kf=u.kite?u.kite[1]:4.8,kn=u.kite?u.kite[0]:3.2;   // the range a pilot holds (kite: a test pilot's own band; every AI pilot holds 3.2-4.8)
+  if(d>kf){mx=nx;my=ny;}else if(d<kn){mx=-nx;my=-ny;}
   mx+=-ny*u.strafe*0.8;my+=nx*u.strafe*0.8;
   if(zin){const zx=zin.x-u.x,zy=zin.y-u.y,zd=Math.hypot(zx,zy)||1;if(zd>zin.r*0.55){mx+=zx/zd*1.4;my+=zy/zd*1.4;}}   // strafe but stay on the point
   const m=Math.hypot(mx,my)||1;tx=u.x+mx/m;ty=u.y+my/m;

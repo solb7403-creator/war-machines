@@ -465,5 +465,37 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   const tr = lbv.top.find((x) => x[0] === pv); t(!tr || tr[5] === 2, 'the points board carries the Vault level for badges');
   t((lbv.vault || []).every((x) => x[2] >= 250), 'only Vault pilots on the Vault board');
 }
+// ---- Session 2: league base pay (airdrop points) and the spendable multiplier on top; the cap is 20,000 base everywhere ----
+{
+  const X = { day: day + 400, week: Math.floor((day + 400 - 4) / 7), rnd: () => 0.5, pk: 'x' };
+  const mkS = () => R.ecoNorm({});
+  const o = { won: true, drawn: false, g: 'arena', m: '2v2', feat: false, series: false };
+  const SR = mkS(), SL = mkS();
+  const pr = R.ecoMatchPts(SR, o, 0, X), pl = R.ecoMatchPts(SL, o, 6, X);
+  t(pl.basePts === Math.round(pr.basePts * R.LG_BASE_PAY[6]) && SL.dailyPts === pl.basePts && R.ecoBase(SL) === pl.basePts && R.ecoBase(SR) === pr.basePts, 'same result: Lunar Legend banks x' + R.LG_BASE_PAY[6] + ' base points (' + pr.basePts + ' -> ' + pl.basePts + '), counted on the daily board');
+  t(SL.lgb === pl.pts - pl.basePts && pl.pts === Math.round(pl.basePts * R.LG_MULT[6]) && SR.lgb === 0 && SL.earned === pl.pts, 'spendable = base x' + R.LG_MULT[6] + ' (+' + SL.lgb + ' league bonus, spendable only)');
+  // a capped day: 100 base points of room left in both leagues; nobody banks more than 20,000 base a day
+  const CR = mkS(), CL = mkS(); for (const S of [CR, CL]) { R.ecoRoll(S, X); S.dailyPts = R.DAILY_CAP - 100; }
+  const cr = R.ecoMatchPts(CR, o, 0, X), cl = R.ecoMatchPts(CL, o, 6, X);
+  t(CR.dailyPts === R.DAILY_CAP && CL.dailyPts === R.DAILY_CAP && R.ecoBase(CR) === 100 && R.ecoBase(CL) === 100, 'capped day: both leagues bank exactly the 100 base points left (20,000 a day in every league)');
+  t(CL.lgb === Math.round((cl.pts - cl.basePts) * 100 / cl.basePts) && cl.awarded === 100 + CL.lgb && cr.awarded === 100, 'capped day: the spendable bonus is paid on the 100 that fit (+' + CL.lgb + ')');
+  // through the server: an AI ticket and a live room, Rookie (league 0) and Lunar Legend (league 6)
+  const U1 = { id: 5101, username: 'rook' }, U2 = { id: 5102, username: 'legend' }, U3 = { id: 5103, username: 'rooklive' }, U4 = { id: 5104, username: 'legendlive' };
+  const nowL = Date.now() + 5 * 3600000;
+  for (const [u, lg] of [[U1, 0], [U2, 6]]) {
+    const tk = await start(u, { g: 'arena', m: '2v2', L: R.STOCK_L }, nowL);
+    setEco('tg_' + u.id, (S) => { S.mt.lgi = lg; S.mt.mult = R.LG_MULT[lg]; });
+    await end(u, tk.tok, { won: true, drawn: false, stats: { dmg: 1500, kills: 2 } }, nowL + 120000);
+  }
+  // live: the same base points at both leagues (what a room credits after leaguePay), different spendable
+  for (const [u, lg] of [[U3, 0], [U4, 6]]) { const base = 346, pts = Math.round(base * R.LG_MULT[lg]);
+    await eco.creditMatch(env, 'tg_' + u.id, u.username, () => ({ pts, base, pw: 68, won: true, drawn: false, pvs: 1, sb: 26, m: { won: true, drawn: false, g: 'arena', m: '2v2', map: 'classic', st: { dmg: 1500 }, secs: 120 } }), nowL + 300000); }
+  const e = (u) => E('tg_' + u.id), p = (u) => db.get('/players/tg_' + u.id + '/pts');
+  t(e(U2).ac === Math.round(e(U1).ac * R.LG_BASE_PAY[6]) && p(U2) === e(U2).ac && e(U2).dailyPts === e(U2).ac, 'AI path: Lunar Legend earns x' + R.LG_BASE_PAY[6] + ' airdrop credit for the same result (' + e(U1).ac + ' -> ' + e(U2).ac + '), board points match');
+  t(e(U2).lgb === e(U2).earned - e(U2).ac && e(U1).lgb === 0, 'AI path: the spendable bonus stays out of the airdrop credit (+' + e(U2).lgb + ')');
+  t(e(U3).ac === e(U4).ac && e(U3).ac === 346 && p(U3) === p(U4) && e(U4).pts - e(U3).pts === Math.round(346 * R.LG_MULT[6]) - 346 && e(U4).lgb === e(U4).pts - 346, 'identical base points (live): identical airdrop credit, rank and cap use; spendable differs by the multiplier');
+  t(e(U1).ac === e(U3).ac && e(U1).dailyPts === e(U3).dailyPts, 'AI and live paths agree for the same base result (' + e(U1).ac + ' vs ' + e(U3).ac + ')');
+  t(typeof e(U1).lwr === 'number' && e(U1).lwr > 0.5 && Number.isInteger(e(U1).lgi), 'a win moves form on the record (lwr ' + e(U1).lwr + ', league ' + e(U1).lgi + ')');
+}
 console.log(`passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

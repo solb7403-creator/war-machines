@@ -48,14 +48,14 @@ for(const [id,c,up,cores] of [
  assert.equal(R.upLevels(up),14);
  const L={...load('moon',2,c),up,cores,gl:Object.fromEntries(R.GORDER.map(k=>[k,5])),skin:'lunar',mods:{hull:'stock',mobility:'stable',mount:'firing'}};
  assert.ok(R.fittingStats(L.mods).weight<=3&&R.fittingStats(L.mods).power<=3);
- strongest.push({id,L,stats:R.tankOf(L,1),metrics:R.machineMetrics(L),power:R.powerOf(L),league:R.powerBracket(R.powerOf(L)).n});
+ strongest.push({id,L,stats:R.tankOf(L,1),metrics:R.machineMetrics(L),power:R.powerOf(L),league:R.leagueInfo(R.leagueIdx(R.leagueRating(R.powerOf(L),0.5,0),0)).n});
  for(const seed of seeds)for(const flip of [false,true]){
   duel('max/'+id+'/stock',L,base,seed,flip);
   duel('max/'+id+'/epic',L,{...clone(L),w:{a:'siege',t:2,q:1.1,s:false}},seed,flip);
  }
 }
 // Also fight the exact enumerated power ceiling, rather than treating a hand-picked build as maximal.
-strongest.push({...maxPower,stats:R.tankOf(maxPower.L,1),metrics:R.machineMetrics(maxPower.L),league:R.powerBracket(maxPower.power).n});
+strongest.push({...maxPower,stats:R.tankOf(maxPower.L,1),metrics:R.machineMetrics(maxPower.L),league:R.leagueInfo(R.leagueIdx(R.leagueRating(maxPower.power,0.5,0),0)).n});
 for(const seed of seeds)for(const flip of [false,true]){
  duel('max/power-ceiling/stock',maxPower.L,base,seed,flip);
  duel('max/power-ceiling/epic',maxPower.L,{...clone(maxPower.L),w:{a:'siege',t:2,q:1.1,s:false}},seed,flip);

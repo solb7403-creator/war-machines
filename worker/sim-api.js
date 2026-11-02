@@ -26,7 +26,7 @@ function liveSetup(cfg){
 }
 function liveTank(u,L){Object.assign(u,tankOf(L,hpScale()),{L,pw:powerOf(L)});u.hp=u.mhp;}   // chassis swap on the VS screen or between rounds
 function roster(){return units.map(u=>({id:u.id,team:u.team,name:u.name,cls:u.cls,wtype:u.wtype,wtier:u.wtier,gems:u.gems,gemM:u.gemM,dscale:u.dscale,aura:u.aura,
- fits:u.fits,paint:u.paint,skin:u.skin||'default',vl:u.vl|0,mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
+ fits:u.fits,dashCdM:u.dashCdM||1,shieldCdM:u.shieldCdM||1,paint:u.paint,skin:u.skin||'default',vl:u.vl|0,mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
 // the world, ~15 times a second. Units, in id order:
 // [x, y, turret angle, hull angle, hp, super, flags (1 bridge deck, 2 dashing, 4 repairing, 8 human driving, 16 AI driving a live player's tank, 32 shielded),
 //  crystals, bounty, dash cooldown x10, deaths, time dead x10, teleport count, buffs [[key index, damage taken]] or 0, super charging [t, angle] or 0, max hp]
@@ -46,7 +46,7 @@ function snapState(){
 function netTarget(u,id){const v=units[id];u.focus=(v&&v.team!==u.team)?v:null;return !!u.focus;}   // a live player's tap-to-target lock
 return {
  R:{STOCK_L,PVP_V,UPS,UORDER,CH,CHORDER,WEAPONS,WORDER,TIER_MULT,ROLL_MIN,ROLL_MAX,SALV_MIN,SALV_MAX,GEM,GORDER,PAINTS,LEAGUES,FEATURED_X,
-  MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,tankOf,powerBracket,featuredOn,liveModes,isSolo,
+  MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,powerWin,tankOf,leagueInfo,leaguePay,leagueIdx,leagueRating,LEAGUE,featuredOn,liveModes,isSolo,
   STAT,DASH_SPD,DASH_T,MAPS,AW:W,AH:H,RAD:R,SUP,GEM},   // the last row: limits the server checks AI match records against (worker/src/proof.js)
  setup:liveSetup,setTank:liveTank,roster,snap:snapState,start:startMatch,startRound,step:update,
  outcome,placeOf,useSuper,netClaim,netDash,netShield,netTarget,setCtl,hit:takeHit,

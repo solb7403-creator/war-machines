@@ -26,7 +26,7 @@ const mt=ui.slice(ui.indexOf('const MOD_WORD='),ui.indexOf('function gBays('));
 const modText=new Function('gNum','fmtNum',mt+'\nreturn modText;')(v=>String(v),v=>String(v));
 assert.equal(modText({n:'Reinforced plates',hp:.06,spd:-.04,dps:0,weight:2,power:0}),'+6% health, −4% speed');
 assert.equal(modText({n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0}),'No change: the standard part');
-assert.equal(modText({n:'X',hp:-.05,dashCd:-.2,ramDamage:40,fx:'Shrugs off the first hit',weight:1,power:1}),'+40 ram damage, −5% health, −20% dash cd, Shrugs off the first hit');
+assert.equal(modText({n:'X',hp:-.05,dashCd:-.2,ramDamage:40,fx:'Shrugs off the first hit',weight:1,power:1}),'−20% dash cooldown, +40 ram damage, −5% health, Shrugs off the first hit');   // a shorter cooldown is an upside: listed with the upsides
 const test=`
 const SUP={pulse:{dmg:350,charge:.7},twin:{dmg:350,charge:.55},siege:{dmg:375,charge:.7},moon:{dmg:400,charge:.8}};
 const spec=(a,c)=>({w:{a,t:0,s:false},c:{c,t:0,s:false},

@@ -7,10 +7,10 @@
 const mapKey=()=>(save.map&&MAPS[save.map])?save.map:'classic';   // the player's pick (may be 'random'); the real map is chosen at match start
 const modeKey=()=>(save.mode&&MODES[save.mode])?save.mode:'1v1';
 const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
-function winPoints(gk,mk){return Math.round(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1)*powerBracket(calcPower()).mult);}
+function winPoints(gk,mk){return leaguePay(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1),myLeague().i).pts;}   // with league base pay and the league bonus (spendable points)
 
 // ---- your tank and the AI match ----
-let battleLoadout=null,battlePower=null;
+let battleLoadout=null,battlePower=null,battleLg=0;   // battleLg: the league the AI is set for (leagueIdx, rules.js)
 function battleChassisClasses(){if(typeof pvpOn==='function'&&pvpOn())return pvp.chs||ownedChassisClasses();return battleLoadout?(battleLoadout.chs||[battleLoadout.c]).map(c=>c.c):ownedChassisClasses();}
 function buildMe(){
  const m=Object.assign(tankOf(battleLoadout||myLoadout(),hpScale()),{x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:IN_TG?tgName(TG_USER):'You'});
@@ -20,7 +20,7 @@ function buildMe(){
 function prepareMatch(gOver){   // gOver: a game type already picked (a live queue that fell back to AI)
  {const pk=mapKey();setMap(pk==='random'?MAP_REAL[(Math.random()*MAP_REAL.length)|0]:pk);}
  {const gk=gOver||gtypeKey();matchG=gk==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk;}
- battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);
+ battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;
  const mp=save.mp||0;
  MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // cp: you can counter-pick back between rounds
  populatePreparedMatch();
@@ -33,7 +33,7 @@ let aiLv=null;
 function populatePreparedMatch(){
  const mp=MM.mp;
  me=buildMe();
- const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw);
+ const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n);   // the league step is on top of the base AI curve
  const modeN=MM.n,names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  units=[me];
  if(matchG==='boss'){   // Survival: you (and AI wingmen in 2v2 and 3v3) against one megatank
@@ -118,7 +118,7 @@ function matchStart(){
    if(r&&r.tok){T.tok=r.tok;T.err=null;
     if(mTicket===T&&state==='vs'&&r.L){
      const chosen=battleLoadout&&battleLoadout.c.c;
-     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;
+     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;if(Number.isInteger(r.lgi))battleLg=r.lgi;   // the server's league sets this match's AI
      const c=(battleLoadout.chs||[]).find(c=>c.c===chosen);if(c)battleLoadout.c={...c};
      if(r.E)applyEco(r.E);populatePreparedMatch();
      const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
@@ -181,7 +181,7 @@ if(typeof document!=='undefined')document.addEventListener('visibilitychange',()
 const MATCH_WHY={mode:'this mode isn’t open right now',map:'this map isn’t open right now',proof:'the match couldn’t be verified',fast:'the match ended too fast',expired:'it was more than a day old',ticket:'the match ticket was already used',overlap:'it overlaps another match on this account',late:'too many matches without a ticket today'};
 function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
  const L=lastResult;if(!L||L.tok!==tok)return;
- if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,sqb:r.res.bonus||0,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,after:save.earned||L.after,note:null});}
+ if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,sqb:r.res.bonus||0,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,basePts:r.res.basePts,lgBonus:r.res.lgBonus,after:ecoBase(save)||L.after,note:null});}
  else if(r&&r.hold&&r.error==='hourly')Object.assign(L,{note:'Saved: this hour’s match limit is reached, so it counts '+(r.retry?'in about '+Math.max(1,Math.ceil(r.retry/60000))+' min':'soon')});
  else if(r&&(r.hold||r.error==='busy'))Object.assign(L,{note:'Saved: the server is busy, it will count shortly'});
  else if(r&&r.error==='pending')Object.assign(L,{note:'Saved: it will count when you’re back online'});
@@ -206,13 +206,13 @@ function matchEnd(res){
 function applyEcoSoon(){if(typeof doSync==='function')setTimeout(()=>doSync(false),300);}   // a result the server won't count: get its record back
 function localEnd(forced){
  const o=outcome(me,forced),{won,drawn,place,score}=o;
- const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=powerBracket(battlePower===null?calcPower():battlePower);
+ const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=leagueInfo(battleLg);
  const mo={won,drawn,place,top3,g:matchG,m:mk,feat,series:!!series,quick:!!lastQuick,map:curMap};
- const before=save.earned||0;
- const r=ecoMatchPts(IN_WEB?JSON.parse(JSON.stringify(save)):save,mo,brk.mult,ecoX());
+ const before=ecoBase(save);
+ const r=ecoMatchPts(IN_WEB?JSON.parse(JSON.stringify(save)):save,mo,battleLg,ecoX());
  if(IN_WEB){r.pts=0;r.awarded=0;} // Only the scored server response may change website progression.
  if(!SRV_ECO&&r.pts>0&&!r.awarded)showToast('Daily point cap reached. It resets at 00:00 UTC.');
- afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
+ afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,basePts:r.basePts,lgBonus:r.lgBonus,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
  const st=mstat||{};
  const gh=units.filter(u=>u.gh&&u.gid!==undefined).map(u=>{const g=outcome(u,forced),s=u.st||{};return {i:u.gid,won:g.won?1:0,drawn:g.drawn?1:0,dmg:Math.round(s.dmg||0),kills:s.kills||0};});
  matchEnd({won,drawn,place,gh,pf:proofData(),seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
@@ -227,10 +227,11 @@ function afterMatch(o){
  const dqBefore=dailyQuests().filter(q=>q.done).map(q=>q.id),wqBefore=weeklyQuests().filter(q=>q.done).map(q=>q.id);
  // the shared rules (rules.js). In Telegram the server does the same with its own copy, and its record replaces this one
  if(!IN_WEB)ecoAfterMatch(save,{won,drawn,top3,feat,quick:o.quick!==undefined?o.quick:(typeof lastQuick!=='undefined'&&lastQuick),g:matchG,m:o.mode,map:curMap,streak:o.streak!==undefined?o.streak:save.streak,seriesW:sw,st},ecoX());
+ if(!IN_WEB)ecoLeague(save,battlePower||calcPower());   // your form moved: your league follows (the server's record replaces this in Telegram)
  const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id)).concat(weeklyQuests().filter(q=>q.done&&!wqBefore.includes(q.id)));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
- lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,
-  before:o.before,after:save.earned||0,stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),arm:Math.round(st.arm||0),shd:Math.round(st.shd||0),best:Math.round(st.best||0),low:typeof st.low==='number'?st.low:1,cry:st.cry,stars:st.stars},
+ lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,basePts:o.basePts,lgBonus:o.lgBonus,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,
+  before:o.before,after:ecoBase(save),stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),arm:Math.round(st.arm||0),shd:Math.round(st.shd||0),best:Math.round(st.best||0),low:typeof st.low==='number'?st.low:1,cry:st.cry,stars:st.stars},
   quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won&&!storm,meCls:me.cls,series:series?{w:o.seriesW||series.w.slice()}:null,
   live:!!o.live,quit:!!o.quit,n:units.length};
  store();
