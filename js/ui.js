@@ -285,11 +285,13 @@ function gEdgeLine(kind,spec){
  const parts=G_STATS.concat(G_MORE).filter(([k])=>e.d[k]).map(([k,n,u])=>(e.d[k]>0?'+':'−')+gNum(Math.abs(e.d[k]))+(u&&u.startsWith('%')?'%':'')+' '+n.toLowerCase());
  return '<p class="gedge"><span class="rar leg">Legendary</span> On this build, vs '+esc(vs)+': '+(parts.join(', ')||'no stat difference')+'.</p>';
 }
-const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second'},MOD_SKIP=new Set(['n','weight','power']);
+const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second',supTaken:'damage taken from supers',dashCd:'dash cooldown',turn:'turret turn speed',shotSpd:'shot speed',shieldCd:'shield cooldown',charge:'super charge',hitCharge:'super charge from hits taken'},MOD_SKIP=new Set(['n','weight','power']);
+// effects where a smaller number is the upside (shown first with the other upsides)
+const MOD_LOWGOOD=new Set(['supTaken','dashCd','shieldCd']);
 function modText(F){   // a mod's full trade-off in plain words, straight from its FITS entry (new fields show up on their own)
  const out=[];
  for(const [k,v] of Object.entries(F)){if(MOD_SKIP.has(k))continue;
-  if(typeof v==='number'&&v)out.push([v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
+  if(typeof v==='number'&&v)out.push([MOD_LOWGOOD.has(k)?-v:v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
   else if(typeof v==='string'&&v)out.push([0,v]);}
  out.sort((a,b)=>(b[0]>0)-(a[0]>0));
  return out.map(x=>x[1]).join(', ')||'No change: the standard part';
@@ -548,7 +550,7 @@ function renderShop(){
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
   sec('Gem caches','Level up your cores')+'<div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
-  sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon, Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin','+8% health, +8% damage',SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
+  sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon, Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
@@ -1385,7 +1387,8 @@ function labItemBars(key,spec){
   if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],f=FITS[k][v];
-  if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',v*100,6,'%');
+  if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',+((v||0)*100).toFixed(1),20,'%');
+   for(const x of FIT_FIELDS)if(f[x]&&!['hp','spd','dps'].includes(x)){const w=(typeof MOD_WORD!=='undefined'&&MOD_WORD[x])||x;add(w[0].toUpperCase()+w.slice(1),+(f[x]*100).toFixed(1),50,'%');}
    add('Weight',f.weight,FIT_BUDGET.weight);add('Power',f.power,FIT_BUDGET.power);}
  }
  return entries.length?'<div class="lab-stats lab-item-stats">'+entries.map(([name,val,max,suffix])=>
@@ -1413,6 +1416,7 @@ function labItemFacts(key,spec){
    line('Equipped hit damage',+(T.wdps*T.wshot*T.dmgM*(1+gem('dmg'))).toFixed(2));
    line('Equipped fire rate',+((1+gem('rof'))/T.wshot).toFixed(2)+' shots/sec');
    line('Projectile speed',actual.pspd+' units/sec');
+   line('Edge hits',actual.edge?'Precision: '+Math.round(actual.edge*100)+'% of a full hit':Math.round(GRAZE*100)+'% of a full hit');
    line('Weapon quality',actual.premium?'Fixed legendary':live.q+'×');
    line('Super ability',base.sup);
    if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',+(supreme.dmg*actual.mult).toFixed(2));
@@ -1438,7 +1442,7 @@ function labItemFacts(key,spec){
   if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',pct(coreVal(k,lv)));}else line('Core slot','Empty');
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
-  if(fit){line('Fitting',fit.n);line('HP change',pct(fit.hp));line('Speed change',pct(fit.spd));line('DPS change',pct(fit.dps));line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}
+  if(fit){line('Fitting',fit.n);for(const f of FIT_FIELDS)if(fit[f]||['hp','spd','dps'].includes(f)){const w=(typeof MOD_WORD!=='undefined'&&MOD_WORD[f])||f;line(w[0].toUpperCase()+w.slice(1),(fit[f]>0?'+':'')+pct(fit[f]||0));}line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}
  }else if(key.startsWith('look')){line('Appearance','Visual only');line('Stat impact','None');
  }else if(key==='paint'){line('Paint',PAINTS[spec.paint]?.n||spec.paint);line('Stat impact','None');}
  return '<div class="lab-facts">'+details.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('')+'</div>';

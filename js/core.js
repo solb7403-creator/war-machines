@@ -130,7 +130,7 @@ const gbadge=it=>it.premium?'Legendary':it.sal?'Salvaged':tierName(it.tier);
 const ownedChassisClasses=()=>CHORDER.filter(c=>(save.cOwn[c]||[]).length||salvOf(c,1)||salvOf(c,2));
 // ---- tiers (lifetime points) and leagues (gear power) ----
 const tierIdx=()=>tierOfPts(save.earned||0);
-const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:SKIN_PRICE,d:'+8% health, +8% damage'}};
+const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:SKIN_PRICE,d:'+'+Math.round((SKIN_HP-1)*100)+'% health, +'+Math.round((SKIN_DMG-1)*100)+'% damage'}};
 // everything that sets your tank's stats, in the form the server checks (see ecoLoadout in rules.js)
 function myLoadout(){
  if(save.lab)return labLoadout(save);
@@ -140,9 +140,9 @@ function myLoadout(){
 }
 const calcPower=()=>powerOf(myLoadout());
 function buildStats(){
- const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),skin=save.skin==='lunar'?1.08:1;
+ const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),lun=save.skin==='lunar',skin=lun?SKIN_HP:1,skinD=lun?SKIN_DMG:1;
  const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k):0),0);
- const out={hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skin),
+ const out={hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skinD),
   spd:+(STAT.speed*(1+0.06*U.engine)*Cc.spd*(1+gb('spd'))).toFixed(1),armor:Math.round(Math.min(0.7,gb('arm'))*100),crit:Math.round((CRIT_BASE+0.02*U.target+gb('lck'))*100)};
  if(save.lab)Object.assign(out,machineMetrics(myLoadout()));return out;
 }
@@ -250,7 +250,7 @@ function revealOf(r){
  if(r.tk==='paint'){const P=PAINTS[r.id]||PAINTS.stock;return r.id==='founder'?{tk:'paint',rar:2,color:P.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'}:
   {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
  if(r.tk==='moonbeam')return {tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'};
- if(r.tk==='skin')return {tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:'+8% health and +8% damage, applied.'};
+ if(r.tk==='skin')return {tk:'skin',rar:2,color:'#e8f4ff',title:'Lunar skin unlocked',sub:SKINS.lunar.d+', applied.'};
  if(r.tk==='respec')return {tk:'respec',rar:2,color:'#ffcf4a',title:r.credit?'Paid reset saved':'Build reset',sub:r.credit?'Your next build reset gives back every point.':'Every level is back to 0 and all '+fmtNum(r.back)+' points are back. Spend them in the Garage.'};
  if(r.tk==='pass')return {tk:'pass',rar:2,color:'#ffcf4a',paint:'eclipse',title:'Lunar Pass unlocked',sub:'Claim your premium rewards in Quests.'};
  if(r.tk==='vault'){const lv=r.lv|0,lv0=r.lv0|0,got=VAULT_REW.filter(x=>x.lv>lv0&&x.lv<=lv).map(x=>x.n),t=r.t||save.vg||0;

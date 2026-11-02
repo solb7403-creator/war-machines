@@ -864,12 +864,12 @@ function drawHUD(){
  if(feed.length){g.textAlign='left';g.font=font(Math.round(Math.max(11,sc*0.6)));feed.forEach((f,i)=>{g.globalAlpha=Math.min(1,f.t);g.fillStyle='rgba(10,14,23,.75)';const tw3=g.measureText(f.txt).width+14,yy=Y(0)+sc*(topLine?3.0:2.0)+i*(sc*1.05+4);
   rr(g,X(0)+6,yy,tw3,sc*1.05,6);g.fill();g.fillStyle=f.c;g.fillText(f.txt,X(0)+13,yy+sc*0.53);});g.globalAlpha=1;}
  // DASH button with a cooldown ring
- if(state==='play'&&me.hp>0){const D=dashBtn(),cd=(me.dashCd||0)/DASH_CD,ready=cd<=0;
+ if(state==='play'&&me.hp>0){const D=dashBtn(),cd=(me.dashCd||0)/(DASH_CD*(me.dashCdM||1)),ready=cd<=0;
   g.fillStyle=ready?'rgba(77,159,255,.9)':'rgba(30,42,64,.9)';g.beginPath();g.arc(D.x,D.y,D.r,0,7);g.fill();
   if(!ready){g.strokeStyle='#4d9fff';g.lineWidth=4;g.beginPath();g.arc(D.x,D.y,D.r-3,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-cd));g.stroke();}
   g.fillStyle=ready?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(D.r*0.42));g.fillText('DASH',D.x,D.y+1);}
  // SHIELD button with a cooldown ring
- if(state==='play'&&me.hp>0){const H=shieldBtn(),cd=(me.shieldCd||0)/SHIELD_CD,on=(me.shieldT||0)>0,ready=cd<=0;
+ if(state==='play'&&me.hp>0){const H=shieldBtn(),cd=(me.shieldCd||0)/(SHIELD_CD*(me.shieldCdM||1)),on=(me.shieldT||0)>0,ready=cd<=0;
   g.fillStyle=on?'rgba(64,224,208,.95)':ready?'rgba(26,94,104,.9)':'rgba(24,38,52,.9)';g.beginPath();g.arc(H.x,H.y,H.r,0,7);g.fill();
   if(!ready){g.strokeStyle='#40e0d0';g.lineWidth=4;g.beginPath();g.arc(H.x,H.y,H.r-3,-Math.PI/2,-Math.PI*2*(1-cd)-Math.PI/2);g.stroke();}
   g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1);}

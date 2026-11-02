@@ -61,6 +61,11 @@ const TIER_MULT=[1.0,1.14,1.34];
 // Legendary is a distinct, fixed premium power step, not an Epic roll or tuneable quality.
 // Its super scales above the strongest normal Epic roll, while shot cadence limits super farming.
 const LEGENDARY_MULT=1.48;
+// Moonbeam's signature trait, Precision: its shots never graze. An edge hit (a shot that clips the hull, which deals GRAZE
+// for every other weapon) deals MOON_EDGE of a full hit. Crits still need a direct hit.
+const MOON_EDGE=1.0;
+// Lunar Skin: one always-on bonus to health and to damage (shots and supers)
+const SKIN_HP=1.08,SKIN_DMG=1.08;
 // Crate items roll 105-110% of their rarity; salvaged items store their own multiplier.
 const ROLL_MIN=1.05,ROLL_MAX=1.10;
 const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
@@ -139,7 +144,7 @@ function powerBracket(pw){
 // A loadout is everything that sets a tank's stats: {w:{a,t,q,s}, c:{c,t,q,s}, up:{hull..reactor}, cores:[3], gl:{gem levels}, skin, paint}
 // t = rarity (-1 stock, 0 common, 1 rare, 2 epic), q = crate roll (1.05-1.10, 1 for starter gear) or the salvage multiplier, s = salvaged
 function weaponOf(arch,t,q,sal){
- if(arch==='moon'){const b=WEAPONS.moon;return {arch:'moon',tier:2,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:LEGENDARY_MULT,q:1,sal:false};}
+ if(arch==='moon'){const b=WEAPONS.moon;return {arch:'moon',tier:2,dps:b.dps,shot:b.shot,pspd:26,premium:true,mult:LEGENDARY_MULT,edge:MOON_EDGE,q:1,sal:false};}
  const tc=Math.max(0,t|0),b=WEAPONS[arch]||WEAPONS.pulse,mt=sal?q:TIER_MULT[tc]*q;
  return {arch,tier:t,sal:!!sal,q,mult:mt,dps:Math.round(b.dps*mt),shot:b.shot,pspd:22+2*tc};
 }
@@ -149,8 +154,8 @@ function chassisOf(cls,t,q,sal){
 }
 const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring under the tank: none, rare, epic, legendary
 function powerOf(L){
- const U=L.up,W=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skinM=L.skin==='lunar'?1.08:1;
- const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*skinM,dps=W.dps*(1+0.08*U.cannon)*skinM,spd=(1+0.06*U.engine)*Cc.spd;
+ const U=L.up,W=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),lun=L.skin==='lunar';
+ const hp=STAT.hp*(1+0.08*U.hull)*Cc.hp*(lun?SKIN_HP:1),dps=W.dps*(1+0.08*U.cannon)*(lun?SKIN_DMG:1),spd=(1+0.06*U.engine)*Cc.spd;
  const F=fittingStats(L.mods);
  let coreM=1;for(const c of (L.cores||[]))if(c){const lv=(L.gl&&L.gl[c])||1;coreM*=(1+0.05*lv);}
  return Math.round(Math.pow(hp*dps*spd*(1+F.hp)*(1+F.spd)*(1+F.dps),1/3)*coreM*1.2);   // starter ≈ 72-100
@@ -184,14 +189,17 @@ const AI_GHOST_LO=0.7,AI_GHOST_HI=0.95;
 function tankOf(L,n){
  const T=legacyTankOf(L,n),F=fittingStats(L.mods);
  if(F.hp)T.mhp=Math.round(T.mhp*(1+F.hp));if(F.spd)T.spdM*=1+F.spd;if(F.dps)T.wdps*=1+F.dps;
+ // mod behavior effects (game.js reads them; 1 = standard)
+ if(F.turn)T.turnM*=1+F.turn;if(F.shotSpd)T.wpspd=Math.round(T.wpspd*(1+F.shotSpd)*100)/100;if(F.charge)T.fillM*=1+F.charge;
+ if(F.supTaken)T.supTk=1+F.supTaken;if(F.hitCharge)T.hitChg=1+F.hitCharge;if(F.dashCd)T.dashCdM=1+F.dashCd;if(F.shieldCd)T.shieldCdM=1+F.shieldCd;
  if(hasFittings(L))T.fits=fittingVisuals(L);return T;
 }
 function legacyTankOf(L,n){
- const U=L.up,W0=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),skin=L.skin==='lunar'?1.08:1;
+ const U=L.up,W0=weaponOf(L.w.a,L.w.t,L.w.q,L.w.s),Cc=chassisOf(L.c.c,L.c.t,L.c.q,L.c.s),lun=L.skin==='lunar';
  return {gems:(L.cores||[]).filter(Boolean),gemM:Object.fromEntries(GORDER.map(k=>[k,gemLvMult(L.gl&&L.gl[k])])),
-  mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin*n),dmgM:(1+0.08*U.cannon)*skin,spdM:(1+0.06*U.engine)*Cc.spd,
+  mhp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*(lun?SKIN_HP:1)*n),dmgM:(1+0.08*U.cannon)*(lun?SKIN_DMG:1),spdM:(1+0.06*U.engine)*Cc.spd,
   critB:0.02*U.target,fillM:1+0.10*U.reactor,turnM:Cc.turn,
-  wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,chm:Cc.mult,dscale:Cc.size,cls:Cc.cls,
+  wtype:W0.arch,wdps:W0.dps,wshot:W0.shot,wedge:W0.edge||GRAZE,wpspd:W0.pspd,wtier:W0.tier,wmult:W0.mult,chm:Cc.mult,dscale:Cc.size,cls:Cc.cls,
   aura:Math.max(auraOf(W0),auraOf(Cc)),paint:PAINTS[L.paint]?L.paint:'stock',skin:L.skin==='lunar'?'lunar':'default',vl:Math.max(0,Math.min(999,Math.floor(Number(L.vl)||0)))};
 }
 
@@ -839,12 +847,24 @@ function labGain(S,r){
  if(JSON.stringify(p)!==before){M.rev++;S.lab.rev++;}
 }
 
-// Free functional sidegrades; visual styles never enter stat math.
-const FIT_VERSION=1,FIT_BUDGET={weight:3,power:3};
+// Free functional sidegrades; visual styles never enter stat math. Each non-stock mod trades two stats (about 10-12% on
+// average; health counts for more on the field, so it moves less) and carries ONE behavior effect, so a set of three changes how the machine plays, not just its numbers.
+// Fields (all shares, 0.1 = 10%): hp health, spd driving speed, dps damage per second; effects: supTaken damage taken from
+// supers, dashCd dash cooldown, turn turret turn rate, shotSpd shot speed, shieldCd shield cooldown, charge super charge,
+// hitCharge super charge from hits taken.
+// Measured on the real sim (dev/tests/s2/mods.mjs): every legal set wins 42-58% against the field on its chassis and weapon.
+const FIT_VERSION=2,FIT_BUDGET={weight:3,power:3};
+const FIT_FIELDS=['hp','spd','dps','supTaken','dashCd','turn','shotSpd','shieldCd','charge','hitCharge'];
 const FITS={
- hull:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},plates:{n:'Reinforced plates',hp:.06,spd:-.04,dps:0,weight:2,power:0},light:{n:'Light frame',hp:-.06,spd:.04,dps:0,weight:0,power:1}},
- mobility:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},sprint:{n:'Sprint gearing',hp:0,spd:.06,dps:-.06,weight:0,power:2},stable:{n:'Stable gearing',hp:0,spd:-.05,dps:.05,weight:1,power:1}},
- mount:{stock:{n:'Stock',hp:0,spd:0,dps:0,weight:0,power:0},hardened:{n:'Hardened mount',hp:.05,spd:0,dps:-.05,weight:2,power:0},firing:{n:'Firing mount',hp:-.06,spd:0,dps:.06,weight:1,power:2}}
+ hull:{stock:{n:'Stock',weight:0,power:0},
+  plates:{n:'Reinforced plates',hp:.05,spd:-.16,shieldCd:-.40,weight:2,power:0},
+  light:{n:'Light frame',hp:-.05,spd:.15,dashCd:-.40,weight:0,power:1}},
+ mobility:{stock:{n:'Stock',weight:0,power:0},
+  sprint:{n:'Sprint gearing',spd:.11,dps:-.09,turn:.30,weight:0,power:2},
+  stable:{n:'Stable gearing',spd:-.15,dps:.07,shotSpd:.10,weight:1,power:1}},
+ mount:{stock:{n:'Stock',weight:0,power:0},
+  hardened:{n:'Hardened mount',hp:.06,dps:-.14,hitCharge:.20,weight:2,power:0},
+  firing:{n:'Firing mount',hp:-.08,dps:.12,charge:.08,weight:1,power:2}}
 };
 const FIT_ORDER=['hull','mobility','mount'];
 function fittingValid(v,visual){
@@ -852,7 +872,7 @@ function fittingValid(v,visual){
  return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>FIT_ORDER.includes(k))&&FIT_ORDER.every(k=>v[k]===undefined||(visual&&v[k]==='auto')||Object.prototype.hasOwnProperty.call(FITS[k],v[k]));
 }
 function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Object.prototype.hasOwnProperty.call(FITS[k],v[k])?v[k]:'stock']));}
-function fittingStats(v){const m=fittingSelection(v),f={hp:0,spd:0,dps:0,weight:0,power:0};for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s];return f;}
+function fittingStats(v){const m=fittingSelection(v),f={weight:0,power:0};for(const s of FIT_FIELDS)f[s]=0;for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s]||0;for(const s of FIT_FIELDS)f[s]=Math.round(f[s]*1000)/1000;return f;}
 function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
 function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
@@ -904,7 +924,7 @@ function buildAxes(L){
  if(C.spd>=1.15)a.S+=2;else if(C.spd<1)a.S-=1;
  if(W.premium)a.F+=2;else if(W.shot>=0.4)a.F+=1;
  for(const k of UORDER)if(TAG_UP[k])a[TAG_UP[k]]+=(L.up&&L.up[k])|0;
- const m=fittingSelection(L.mods);for(const k of FIT_ORDER){const f=FITS[k][m[k]];a.T+=sg(f.hp);a.S+=sg(f.spd);a.F+=sg(f.dps);}
+ const m=fittingSelection(L.mods);for(const k of FIT_ORDER){const f=FITS[k][m[k]];a.T+=sg(f.hp);a.S+=sg(f.spd);a.F+=sg(f.dps);a.R+=sg(f.charge);}   // super charge (Firing mount) counts toward Overcharger; the other effects ride with their stat trade
  for(const g of (L.cores||[]))if(g&&TAG_CORE[g])a[TAG_CORE[g]]+=TAG_CORE[g]==='C'?2:1;
  return a;
 }
