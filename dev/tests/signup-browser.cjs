@@ -50,6 +50,7 @@ async function garageCheck(pg,label,name,touch,ctx){
  await press(pg.locator('#gs-cores .gem-card[data-act="gemcore"]').first());
  await pg.waitForSelector('.sheet [data-act="gcmp"][data-arg="core|0|spd"]');
  await pg.evaluate(()=>closeAll());
+ await pg.waitForSelector('.sheet',{state:'detached'});
  await press(pg.locator('#gs-cores [data-act="core"][data-arg="0"]'));await pg.waitForSelector('.sheet [data-act="gcmp"][data-arg="core|0|spd"]');
  await press(pg.locator('.sheet [data-act="gcmp"][data-arg="core|0|spd"]'));await pg.waitForSelector('.sheet .gcmp .gd');
  const bad=await audit();assert(!bad.length,label+' compare sheet: '+bad.join('; '));
