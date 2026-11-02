@@ -16,3 +16,31 @@ const revealOf=new Function('save',rules+'\n'+reveal+'\nreturn revealOf;')(state
 assert.equal(revealOf({gem:'dmg',lv:2,n:3,up:1}).up,1);
 assert.equal(revealOf({gem:'dmg',lv:2,n:1,up:0}).up,0);
 console.log('PASS gem UI: six cores, exact progress, max surplus, bonuses, equipment, level-up metadata');
+
+// The legacy socket locator must remain unique alongside the six collection cards.
+const coresSource=ui.slice(ui.indexOf('cores:(spec)=>'),ui.indexOf('\n up:(spec,L)=>'));
+const renderCores=new Function('save',rules+'\nconst fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+"; const CORE_UNIT={};\n"+helpers+'\nreturn '+coresSource.slice('cores:'.length).replace(/,\s*$/,'' )+';')(state);
+const openBayCoreCalls=[];
+const actions=Object.fromEntries(['core','gemcore'].map(action=>{
+ const source=ui.match(new RegExp(' '+action+':([^,]+),'));
+ assert.ok(source,'action handler exists: '+action);
+ return [action,new Function('openBayCore','return '+source[1])(i=>openBayCoreCalls.push(i))];
+}));
+for(const cores of [['dmg',null,'reg'],['dmg','rof','arm'],[null,null,null]]){
+ const html=renderCores({cores});
+ const buttons=[...html.matchAll(/<button\b[^>]*>/g)].map(m=>m[0]);
+ const sockets=buttons.filter(b=>b.includes('data-act="core"'));
+ const cards=buttons.filter(b=>b.includes('class="gem-card'));
+ assert.equal(sockets.length,3,'only sockets use the legacy core action');
+ for(let i=0;i<3;i++)assert.equal(sockets.filter(b=>b.includes('data-arg="'+i+'"')).length,1,'unique socket '+i);
+ assert.equal(cards.length,6);
+ for(const [i,card] of cards.entries()){
+  assert.ok(card.includes('data-act="gemcore"'),'collection has its own action');
+  const arg=card.match(/data-arg="(\d+)"/)[1];
+  const key=['dmg','rof','arm','spd','lck','reg'][i],slot=cores.indexOf(key);
+  assert.equal(+arg,slot>=0?slot:Math.max(0,cores.indexOf(null)),'preserve picker target');
+  actions.gemcore(arg);assert.equal(openBayCoreCalls.at(-1),+arg);
+ }
+ for(let i=0;i<3;i++){actions.core(String(i));assert.equal(openBayCoreCalls.at(-1),i);}
+}
+console.log('PASS gem/socket selectors and shared picker routing for empty, partial and full loadouts');

@@ -383,7 +383,7 @@ function gemProgress(k){
 function gemCollection(spec){
  return '<div class="gem-collection" aria-label="All six cores">'+GORDER.map(k=>{
   const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k);
-  return '<button class="gem-card'+(lv>=5?' is-max':'')+(j>=0?' equipped':'')+'" style="--gem:'+GEM[k].c+'" data-act="core" data-arg="'+(j>=0?j:Math.max(0,spec.cores.indexOf(null)))+'">'+
+  return '<button class="gem-card'+(lv>=5?' is-max':'')+(j>=0?' equipped':'')+'" style="--gem:'+GEM[k].c+'" data-act="gemcore" data-arg="'+(j>=0?j:Math.max(0,spec.cores.indexOf(null)))+'">'+
    '<div class="gem-heading">'+gemIcon(k)+'<div><b>'+GEM[k].name+'</b><span>Lv '+lv+' / 5</span></div></div>'+
    '<div class="gem-bonus">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+'</div>'+
    '<span class="gem-equipped">'+(j>=0?'Equipped · Socket '+(j+1):'Not equipped')+'</span>'+gemProgress(k)+'</button>';
@@ -1363,6 +1363,7 @@ const ACT={
  up:a=>{gCmp=null;const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
  gear:a=>openBayGear(a==='w'),
  core:a=>openBayCore(+a),
+ gemcore:a=>openBayCore(+a),
  paycur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');},
  tonwallet:()=>tonWalletButton(),
  solwallet:()=>openSolWallets(),
