@@ -54,6 +54,28 @@ async function garageCheck(pg,label,name,touch,ctx){
   await pg.goto(BASE+'/web/play.html#engineer',LEAVE);await pg.waitForFunction(()=>typeof save!=='undefined'&&!!save&&!!save.lab&&uiTab==='garage'&&!!document.querySelector('.gbay'),null,{timeout:45000});
  }
 }
+// Leagues on the website (the same js/ui.js as Telegram): the top-bar chip names your league (the server's record) and
+// never pushes points or settings off; tap or Enter opens the ladder of 7; the Ranks league card; no sideways scroll, no
+// clipped text, 44 px targets
+async function leagueCheck(pg,label,name,touch){
+ const press=async loc=>{if(touch)await loc.click();else{await loc.focus();await pg.keyboard.press('Enter');}};
+ await pg.evaluate(()=>{closeAll();setTab('ranks');renderUI();});await pg.waitForSelector('#s-ranks .lgcard');
+ const v=await pg.evaluate(()=>{const L=myLeague(),c=document.querySelector('#lgChip'),bar=document.querySelector('.topbar').getBoundingClientRect(),r=e=>document.querySelector(e).getBoundingClientRect();
+  return {n:L.n,i:L.i,lgi:save.lgi,chip:c.textContent,card:document.querySelector('#s-ranks .lgcard .ln').textContent,inBar:r('#btnSettings').right<=bar.right+1&&r('.topbar .pts').left>=bar.left-1};});
+ assert(v.i===v.lgi&&(v.chip===v.n||v.chip===v.n.split(' ').pop())&&v.card===v.n+' league'&&v.inBar,label+' league chip and card: '+JSON.stringify(v));
+ const audit=()=>pg.evaluate(()=>{const out=[],W=innerWidth;if(document.documentElement.scrollWidth>W+1)out.push('sideways scroll');
+  for(const e of document.querySelectorAll('.topbar button,#s-ranks .lgcard button,.sheet .btn')){const r=e.getBoundingClientRect();if(!r.width||getComputedStyle(e).visibility==='hidden')continue;if(r.height<43.5||r.width<43.5)out.push('small target '+(e.id||e.className)+' '+Math.round(r.width)+'x'+Math.round(r.height));}
+  for(const e of document.querySelectorAll('.topbar *,#s-ranks .lgcard *,.sheet *')){const cs=getComputedStyle(e);if(!e.children.length&&e.textContent.trim()&&e.scrollWidth>e.clientWidth+2&&cs.overflow!=='visible'&&cs.textOverflow!=='ellipsis')out.push('clipped "'+e.textContent.trim().slice(0,24)+'"');}
+  return out;});
+ let bad=await audit();assert(!bad.length,label+' ranks league card: '+bad.join('; '));
+ await pg.screenshot({path:path.join(OUT,name+'-'+label+'-league-card.png')});
+ await press(pg.locator('#lgChip'));await pg.waitForSelector('.sheet .lgladder');
+ const lad=await pg.evaluate(()=>[...document.querySelectorAll('.sheet .lgrung')].map(r=>[r.querySelector('.ln').firstChild.textContent.trim(),r.classList.contains('you')]));
+ assert(lad.length===7&&lad[0][0]==='Lunar Legend'&&lad[6][0]==='Rookie'&&lad.filter(x=>x[1]).length===1&&lad.find(x=>x[1])[0]===v.n,label+' ladder: '+JSON.stringify(lad));
+ bad=await audit();assert(!bad.length,label+' ladder: '+bad.join('; '));
+ await pg.screenshot({path:path.join(OUT,name+'-'+label+'-league-ladder.png')});
+ await pg.evaluate(()=>closeAll());
+}
 (async()=>{
  require('node:child_process').execFileSync('node',['worker/build-web.mjs'],{cwd:ROOT,stdio:'ignore'});
  const key=path.join(OUT,'fixture-key.pem'),cert=path.join(OUT,'fixture-cert.pem');
@@ -111,6 +133,7 @@ async function garageCheck(pg,label,name,touch,ctx){
     assert(await pg.evaluate(()=>{try{return JSON.parse(localStorage.getItem('lunar-invite')).c==='abcd2345';}catch{return false;}}),'invite kept through signup');
     await pg.waitForTimeout(600);await pg.screenshot({path:path.join(OUT,name+'-'+label+'-game.png')});
     await garageCheck(pg,label,name,touch,ctx);
+    await leagueCheck(pg,label,name,touch);
     // 4. log out, log back in with call sign + password
     await pg.evaluate(()=>fetch('/auth/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Lunar-CSRF':window.LUNAR_WEB.csrf},body:'{}'}));
     await pg.goto(BASE+'/web/login.html',LEAVE);await pg.waitForSelector('#login-form:not([hidden])');   // returning visitor: Log in tab

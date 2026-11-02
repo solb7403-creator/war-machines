@@ -453,13 +453,15 @@ export async function buildLeaderboard(env, now = Date.now()) {
   const ok = ([id]) => !isFlagged(fl && fl[id]);
   const vlOf = (v) => RULES.vaultLevel(v && v.vg);
   const vrow = (r, lv) => (lv > 0 ? r.concat(lv) : r);   // the Vault level rides along as an extra column (only when there is one)
-  const all = Object.entries(top || {}).filter(ok).map(([id, v]) => vrow([id, v.name || "Pilot", v.pts || 0, v.days || 0, v.league || ""], vlOf(v))).sort((a, b) => b[2] - a[2]);
+  // the league as its short key ("" until a pilot has one): the pilot's record when it's in the top read, else the score row's copy
+  const lgOf = (id, v) => { const k = (top && top[id] && top[id].league) || (v && v.l) || ""; return RULES.LEAGUES.includes(k) ? k : ""; };
+  const all = Object.entries(top || {}).filter(ok).map(([id, v]) => vrow([id, v.name || "Pilot", v.pts || 0, v.days || 0, lgOf(id, v)], vlOf(v))).sort((a, b) => b[2] - a[2]);
   const lb = {
     t: now, d, w, n: Math.max(Number(n) || 0, all.length), lpf: Math.max(0, Math.round(((Number(revc) || 0) / 100) * LP_SHARE)), lps: LP_SHARE,
     cut: all.length >= 1000 ? all[999][2] : 0,
     top: all.slice(0, 1000),
-    daily: Object.entries(daily || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
-    weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    daily: Object.entries(daily || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0, lgOf(id, v)], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
+    weekly: Object.entries(weekly || {}).filter(ok).map(([id, v]) => vrow([id, v.n || "Pilot", v.s || 0, lgOf(id, v)], v.v | 0)).sort((a, b) => b[2] - a[2]).slice(0, 100),
     vault: Object.entries(vlt || {}).filter(ok).filter(([, v]) => vlOf(v) > 0).map(([id, v]) => [id, v.name || "Pilot", Math.floor(v.vg || 0), vlOf(v)]).sort((a, b) => b[2] - a[2]).slice(0, 100),
   };
   // launch phase (forward only) and the airdrop research boards. Tracking only: distribution is off, nothing is promised

@@ -85,8 +85,8 @@ function loadLB(force){
   const m={};
   const row=(id,n)=>m[id]||(m[id]={id,n,pts:0,days:0,league:'',dailyPts:0,weeklyPts:0,vl:0,vg:0});
   for(const [id,n,pts,days,lg,vl] of lb.top)m[id]={id,n,pts,days,league:lg||'',dailyPts:0,weeklyPts:0,vl:vl||0,vg:0};
-  for(const [id,n,s2,vl] of (lb.daily||[])){const p=row(id,n);p.dailyPts=s2;p.vl=Math.max(p.vl,vl||0);}
-  for(const [id,n,s2,vl] of (lb.weekly||[])){const p=row(id,n);p.weeklyPts=s2;p.vl=Math.max(p.vl,vl||0);}
+  for(const [id,n,s2,lg,vl] of (lb.daily||[])){const p=row(id,n);p.dailyPts=s2;p.league=p.league||lg||'';p.vl=Math.max(p.vl,vl||0);}   // rows carry the league key ('' until a pilot has one)
+  for(const [id,n,s2,lg,vl] of (lb.weekly||[])){const p=row(id,n);p.weeklyPts=s2;p.league=p.league||lg||'';p.vl=Math.max(p.vl,vl||0);}
   for(const [id,n,g,vl] of (lb.vault||[])){const p=row(id,n);p.vg=g;p.vl=Math.max(p.vl,vl||0);}   // the Hyperspace Vault board: lifetime Gold
   lbCache=Object.values(m);lbMeta={n:lb.n||0,cut:lb.cut||0,t:lb.t||0,inTop:lb.top.length,lpf:lb.lpf||0,lps:lb.lps||0.25,ref:lb.ref||null};
   if(typeof uiDirty==='function')uiDirty('ranks');
