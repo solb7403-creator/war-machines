@@ -141,7 +141,7 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
       if (S.rq.n >= ECO.RL_MIN) return { abort: true, rate: true, S, X };
       S.rq.n++;
     }
-    const before = { d: S.dailyPts, w: S.weeklyPts, e: S.earned || 0, g: S.lgb || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as, mp: S.mp | 0, days: S.days | 0 };
+    const before = { d: S.dailyPts, w: S.weeklyPts, lg: S.lg, e: S.earned || 0, g: S.lgb || 0, f: S.rfe || 0, vd: S.vd | 0, as: S.as, mp: S.mp | 0, days: S.days | 0 };
     const out = (await fn(S, X)) || {};
     if (out.abort) return { ...out, S, X };
     credit(S, before.e, before.g);
@@ -162,8 +162,9 @@ async function mirror(env, pid, S, isNew, before, now) {
     wins: S.wins, losses: S.losses, mp: S.mp, power: S.pw, league: S.lg, name: S.nm, seen: now, pvm: S.pvm, pvw: S.pvw, pvd: S.pvd, pvl: S.pvl, pvs: S.pvs, ac: S.ac, vd: S.vd, vdl: S.vdl, rfe: S.rfe, rb: S.rb, rms: S.rms && S.rms.length ? S.rms : null, sg: Math.round((S.spendGram || 0) * 100) / 100, vg: S.vg || 0, gg: S.vgg || 0 };   // gg: Genesis Gold (deposited before $LUNAR launches)   // sg: verified spending (TON value of what was bought), for the snapshot
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== null) up[`${P}/${k}`] = v;
   const vl = R.vaultLevel(S.vg), vx = vl ? { v: vl } : {};   // the Vault badge shows on the daily and weekly boards too
-  if (S.dailyPts !== before.d || isNew) up[`dly/${S.dailyDay}/${pid}`] = { s: S.dailyPts, n: S.nm || "Pilot", ...vx };
-  if (S.weeklyPts !== before.w || isNew) up[`wly/${S.weeklyNum}/${pid}`] = { s: S.weeklyPts, n: S.nm || "Pilot", ...vx };
+  const lx = S.lg ? { l: S.lg } : {}, lgMoved = S.lg !== before.lg;   // and the league (its key), rewritten when it moves
+  if (S.dailyPts !== before.d || isNew || (lgMoved && S.dailyPts > 0)) up[`dly/${S.dailyDay}/${pid}`] = { s: S.dailyPts, n: S.nm || "Pilot", ...vx, ...lx };
+  if (S.weeklyPts !== before.w || isNew || (lgMoved && S.weeklyPts > 0)) up[`wly/${S.weeklyNum}/${pid}`] = { s: S.weeklyPts, n: S.nm || "Pilot", ...vx, ...lx };
   if (isNew) up["meta/n"] = { ".sv": { increment: 1 } };
   // the signup funnel (counts only): first match finished, came back on a second day
   if (before.mp === 0 && (S.mp | 0) >= 1) up[`fn/${dayOf(now)}/first`] = { ".sv": { increment: 1 } };

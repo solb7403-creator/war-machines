@@ -71,15 +71,68 @@ function questsAlert(){
 }
 const nextUp=()=>UORDER.map(k=>({k,lv:save.up[k],c:save.up[k]<4&&upLevels(save.up)<BUILD_MAX?UPS[k].costs[save.up[k]]:Infinity})).sort((a,b)=>a.c-b.c)[0];
 const garageAlert=()=>{if(garageNew())return true;if(!garageOpen(save,'up'))return false;const u=nextUp();return u.c<=(save.pts||0);};   // a newly opened section, or an upgrade you can afford
+let topFit='';
 function renderTop(){
- const p=$('#ptsVal');if(!p)return;
+ const p=$('#ptsVal');if(!p||!save)return;
  p.textContent=fmtNum(save.pts);
  const t=tierIdx(),tc=$('#tierChip');
  tc.innerHTML='<i style="background:'+TIERC[t]+'"></i><span>'+TIERS[t]+'</span>';
+ const L=myLeague(),lc=$('#lgChip');
+ if(lc){
+  lc.style.setProperty('--lc',L.c);lc.setAttribute('aria-label','Your league: '+L.n+'. See all leagues');
+  // the full name always fits: "Lunar Legend" shortens to "Legend" only when the bar can't hold it, then (huge point totals
+  // on the narrowest phones) the tier chip shows its diamond alone, and only past that the league its shield alone
+  const key=L.key+'|'+t+'|'+p.textContent+'|'+innerWidth;
+  if(key!==topFit){topFit=lc.parentNode.clientWidth?key:'';lc.innerHTML=lgShield(L.c)+'<span class="lgn">'+L.n+'</span>';lc.className='lgchip';tc.classList.remove('ico');
+   const bar=lc.parentNode,st=$('#btnSettings'),over=()=>!!st&&st.getBoundingClientRect().right>bar.getBoundingClientRect().right-parseFloat(getComputedStyle(bar).paddingRight)+0.5;
+   if(topFit&&over()&&lgShort(L)!==L.n)lc.lastChild.textContent=lgShort(L);
+   if(topFit&&over())tc.classList.add('ico');
+   if(topFit&&over())lc.classList.add('ico');}
+  tc.setAttribute('aria-label','Your tier: '+TIERS[t]);
+ }
  const al={quests:questsAlert(),garage:garageAlert()};
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('alert',!!al[b.dataset.arg]));
 }
 
+// ---------- leagues (display only: every number is the rules' and the record's: myLeague, leagueRating, leagueInfo) ----------
+const lgByKey=k=>{const i=LEAGUES.indexOf(k);return i<0?null:leagueInfo(i);};
+const lgShield=c=>'<svg class="lgsh" viewBox="0 0 16 18" aria-hidden="true"><path d="M8 1 15 3.6V9c0 4-3 7-7 8.2C4 16 1 13 1 9V3.6Z" fill="'+c+'"/><path d="M8 4.2 12 5.7V9c0 2.4-1.7 4.3-4 5.2Z" fill="rgba(255,255,255,.28)"/></svg>';
+const lgShort=L=>L.n.split(' ').pop();   // Lunar Legend -> Legend
+const lgPill=k=>{const L=lgByKey(k);return L?'<span class="lgpill" style="--lc:'+L.c+'">'+L.n+'</span>':'';};   // nothing for a pilot with no league yet
+const r1=x=>(Math.round(x*10)/10).toFixed(1);
+function myLeagueView(){   // your league card: the rating, the lines around you and your form, from the same rule the server applies
+ const pw=calcPower(),L=myLeague(pw),mp=save.mp|0,rt=leagueRating(pw,save.lwr,mp);
+ const counts=mp>=LG_FORM_MIN,form=counts?Math.max(0,Math.min(1,Number(save.lwr)||0)):0.5;
+ const drop=L.i?L.at*(1-LG_DEMOTE):null,lo=drop!==null?Math.min(drop,L.at):0,hi=L.next;
+ return {L,pw,rt,form,counts,mp,drop,f:hi?Math.max(0,Math.min(1,(rt-lo)/(hi-lo))):1,
+  toNext:hi?Math.max(0.1,Math.ceil((hi-rt)*10)/10):0,aboveDrop:drop!==null?Math.max(0,Math.floor((rt-drop)*10)/10):null};
+}
+function leagueCard(){
+ const v=myLeagueView(),L=v.L,N=L.next?leagueInfo(L.i+1):null;
+ const formTxt=v.counts?'Form '+Math.round(v.form*100)+'%: recent results':'Form 50% until your 10th match ('+(LG_FORM_MIN-v.mp)+' to go)';
+ return '<div class="panel lgcard" style="--lc:'+L.c+'"><div class="row">'+lgShield(L.c)+'<div class="grow"><div class="ln">'+L.n+' league</div><div class="mut">League rating <b class="num">'+r1(v.rt)+'</b></div></div></div>'+
+  '<div class="lgbar" role="img" aria-label="'+(N?r1(v.toNext)+' rating to '+N.n:'Top league')+'">'+(v.drop!==null&&L.next?'<span class="lnmk" style="left:'+Math.round((L.at-v.drop)/(L.next-v.drop)*100)+'%"></span>':'')+'<i style="width:'+Math.round(v.f*100)+'%"></i></div>'+
+  '<div class="lgmeta"><span>'+(N?'<b class="num">'+r1(v.toNext)+'</b> to <b style="color:'+N.c+'">'+N.n+'</b> (line '+r1(L.next)+')':'Top league reached')+'</span><span>'+(v.drop!==null?'<b class="num">'+r1(v.aboveDrop)+'</b> above the drop line ('+r1(v.drop)+')':'No drop line')+'</span></div>'+
+  '<div class="mut lgform">'+formTxt+'</div>'+
+  '<button class="btn btn-quiet block" data-act="leagues">All leagues</button></div>';
+}
+function openLeagues(){
+ sheet('leagues',()=>{const v=myLeagueView(),me=v.L.i;
+  const rung=i=>{const L=leagueInfo(i),you=i===me,ai=Math.round((L.ai-1)*100);
+   return '<li class="lgrung'+(you?' you':'')+'" style="--lc:'+L.c+'">'+lgShield(L.c)+'<div class="grow"><div class="ln">'+L.n+(you?' <span class="youtag">You</span>':'')+'</div><div class="mut">'+(i?'From '+r1(L.at):'Where everyone starts')+'</div></div>'+
+    '<div class="lgx"><b>×'+L.pay.toFixed(2)+'</b><span>pay</span></div><div class="lgx"><b>×'+L.mult.toFixed(2)+'</b><span>bonus</span></div><div class="lgx"><b>'+(ai?'+'+ai+'%':'Base')+'</b><span>AI</span></div></li>';};
+  return '<h3>Leagues</h3><p class="mut">League = tank power × form. You move up at the line and drop 4% below it.</p>'+
+   '<ol class="lgladder" reversed>'+LEAGUE.map((_,i)=>rung(LEAGUE.length-1-i)).join('')+'</ol>'+
+   '<p class="dimtxt">Pay: base points (airdrop, boards, daily cap). Bonus: spendable points only. AI: how much stronger AI loadouts get, in full in 1v1.</p>'+
+   infoBody(LEAGUE_INFO());});
+}
+const LEAGUE_INFO=()=>[
+  ['Your league','Your league comes from your league rating: your tank’s power (gear, upgrades, cores, mods) times your form. Form is how your last 20 or so matches went (a win counts 1, a draw or a top-3 Last Standing finish 0.5, a loss or a quit 0); it starts counting at your 10th match.'],
+  ['Tougher AI','Every league up, AI pilots field a stronger loadout: the full step in 1v1, part of it in 2v2 and Last Standing, a little in 3v3. Inside a league the AI never changes with your results. The VS screen shows the league it’s set for.'],
+  ['Points','Higher leagues pay more. Base points, the ones the airdrop ranking, the leaderboards and the daily cap count, grow with league pay. On top, a bonus on your spendable points only. The daily cap is 20,000 base points in every league: a higher league reaches it sooner.'],
+  ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime base points. Your league comes from power and form. Both show on the leaderboard.']];
+
+if(typeof document!=='undefined'&&document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{topFit='';renderTop();});   // re-fit once the display font is in
 // ---------- shared pieces ----------
 const rarBadge=it=>'<span class="rar" style="background:'+gcol(it)+'">'+gbadge(it)+'</span>';
 const sec=(t,aside,info)=>'<h3 class="sec">'+t+(info?' <button class="info" data-act="info" data-arg="'+info+'" aria-label="About '+esc(t)+'">?</button>':'')+(aside?'<span class="aside">'+aside+'</span>':'')+'</h3>';
@@ -310,7 +363,7 @@ function gHead(id,M,v,tag){
  const bar=([k,n])=>'<div class="gbar"><div><span>'+n+'</span><b class="num">'+gNum(v[k])+'</b></div><i><em style="width:'+Math.max(3,Math.min(100,100*v[k]/Math.max(1,C[k],v[k])))+'%"></em></i></div>';
  return '<div class="ghead"><div id="g-stage-slot" class="g-stage-slot"></div>'+
   '<div class="gname"><input id="g-name" maxlength="24" value="'+esc(M.name)+'" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Bay '+gLetter(id)+' name (tap to rename)"><button class="btn sm btn-quiet" data-act="gshare">Share my tank</button></div>'+
-  '<div class="gpower"><b class="num">Power '+v.power+'</b><span style="color:'+brk.c+'">'+brk.n+' league</span><button class="info" data-act="info" data-arg="league" aria-label="About leagues">?</button><span class="gtag">'+esc(tag.n)+'</span></div>'+
+  '<div class="gpower"><b class="num">Power '+v.power+'</b><span style="color:'+brk.c+'">'+brk.n+' league</span><button class="info" data-act="leagues" aria-label="All leagues">?</button><span class="gtag">'+esc(tag.n)+'</span></div>'+
   '<p class="gtagd">'+esc(tag.d)+'</p><div class="gbars">'+G_STATS.slice(0,3).map(bar).join('')+'</div>'+
   '<button class="linkbtn gmore" data-act="gmore" aria-expanded="'+gMore+'">'+(gMore?'Fewer stats':'More stats')+'</button>'+
   (gMore?'<div class="gmorerow">'+G_MORE.filter(([k])=>k!=='repair'||v[k]).map(([k,n,u])=>'<div><span>'+n+'</span><b>'+(k==='charge'?'+':'')+gNum(v[k])+u+'</b></div>').join('')+'</div>':'')+'</div>';
@@ -662,11 +715,12 @@ function renderRanks(){
  else cut='<div class="cutline"><b>'+fmtNum(Math.max(1,lbMeta.cut-e+1))+'</b><span>more points to reach the top 1,000 (cutoff '+fmtNum(lbMeta.cut)+')</span></div>';
  if(lbMeta&&lbMeta.lpf>0)cut+=lpfLine();
  const isV=lbScope==='vault',metric=p=>lbScope==='daily'?(p.dailyPts||0):lbScope==='weekly'?(p.weeklyPts||0):isV?(p.vg||0):(p.pts||0);
- const sub=(p,ti)=>{const vl=p.vl||0,tt=vaultTitle(vl);return isV?'<div class="tr" style="color:'+vaultTier(vl).c+'">Level '+vl+(tt?' · '+tt:'')+'</div>':'<div class="tr" style="color:'+TIERC[ti]+'">'+TIERS[ti]+(tt?' <span class="vtt">· '+tt+'</span>':'')+'</div>';};
+ const sub=(p,ti)=>{const vl=p.vl||0,tt=vaultTitle(vl);return isV?'<div class="tr" style="color:'+vaultTier(vl).c+'">Level '+vl+(tt?' · '+tt:'')+'</div>':'<div class="tr"><span style="color:'+TIERC[ti]+'">'+TIERS[ti]+'</span>'+lgPill(p.league)+(tt?'<span class="vtt">· '+tt+'</span>':'')+'</div>';};
  let rows='',pin='';
  if(lbCache){
-  const all=lbCache.map(p=>p.id===me?Object.assign({},p,{pts:Math.max(p.pts,e),dailyPts:Math.max(p.dailyPts||0,save.dailyPts||0),weeklyPts:Math.max(p.weeklyPts||0,save.weeklyPts||0),vg:Math.max(p.vg||0,save.vg||0),vl:myVl()}):p);
-  if(IN_TG&&!all.some(p=>p.id===me))all.push({id:me,n:tgName(TG_USER),pts:e,dailyPts:save.dailyPts||0,weeklyPts:save.weeklyPts||0,vg:save.vg||0,vl:myVl()});   // you show up before the next 5-minute refresh
+  const myLg=myLeague().key;   // your own row shows your league now, not the one from the last board build
+  const all=lbCache.map(p=>p.id===me?Object.assign({},p,{league:myLg,pts:Math.max(p.pts,e),dailyPts:Math.max(p.dailyPts||0,save.dailyPts||0),weeklyPts:Math.max(p.weeklyPts||0,save.weeklyPts||0),vg:Math.max(p.vg||0,save.vg||0),vl:myVl()}):p);
+  if(IN_TG&&!all.some(p=>p.id===me))all.push({id:me,n:tgName(TG_USER),league:myLg,pts:e,dailyPts:save.dailyPts||0,weeklyPts:save.weeklyPts||0,vg:save.vg||0,vl:myVl()});   // you show up before the next 5-minute refresh
   const list=all.filter(p=>metric(p)>0).sort((a,b)=>metric(b)-metric(a));
   const shown=list.slice(0,100);let meShown=false;
   rows=shown.map((p,i)=>{const isMe=p.id===me;if(isMe)meShown=true;const ti=tierOfPts(p.pts);
@@ -674,10 +728,11 @@ function renderRanks(){
   if(!rows)rows='<p class="mut" style="padding:14px 0">'+(isV?'No Vault pilots yet. The first deposit takes #1.':lbScope==='overall'?'No pilots on the board yet. Win a match to be first.':'No points yet '+(lbScope==='daily'?'today':'this week')+'. Win a match to take #1.')+'</p>';
   else if(list.length>100)rows+='<p class="dimtxt" style="padding:8px 0">Showing the top 100 of '+fmtNum(lbMeta.n||list.length)+'</p>';
   if(!meShown&&IN_TG&&!(isV&&!myVl())){const mine=lbScope==='daily'?(save.dailyPts||0):lbScope==='weekly'?(save.weeklyPts||0):isV?(save.vg||0):e,above=list.filter(p=>p.id!==me&&metric(p)>mine).length;
-   pin='<div class="lb"><div class="r me mepin"><span class="rk">'+(R&&R.outside&&lbScope==='overall'?'1000+':isV&&above>=100?'100+':'#'+(above+1))+'</span><div class="grow"><div class="nm">'+vname('You',myVl())+vbadge(myVl())+'</div>'+sub({vl:myVl()},t)+'</div><span class="sc">'+fmtNum(mine)+(isV?'<small> Gold</small>':'')+'</span></div></div>';}
+   pin='<div class="lb"><div class="r me mepin"><span class="rk">'+(R&&R.outside&&lbScope==='overall'?'1000+':isV&&above>=100?'100+':'#'+(above+1))+'</span><div class="grow"><div class="nm">'+vname('You',myVl())+vbadge(myVl())+'</div>'+sub({vl:myVl(),league:myLg},t)+'</div><span class="sc">'+fmtNum(mine)+(isV?'<small> Gold</small>':'')+'</span></div></div>';}
  }else rows='<p class="mut" style="padding:14px 0">Loading…</p>';
  return '<div class="panel tierbox"><div class="row"><i class="tierdia" style="background:'+TIERC[t]+'"></i><div class="grow"><div class="tn" style="color:'+TIERC[t]+'">'+TIERS[t]+'</div><div class="mut">'+fmtNum(e)+' lifetime points. '+nextTxt+'.</div></div><button class="info" data-act="info" data-arg="tiers" aria-label="About tiers">?</button></div>'+
   '<div class="ladder">'+TIERS.map(rung).join('')+'</div></div>'+
+  leagueCard()+
   cut+
   '<button class="linkbtn" data-act="info" data-arg="airdrop">How the airdrop works</button>'+
   '<div class="seg c4" style="margin-top:14px">'+[['overall','All time'],['daily','Today'],['weekly','This week'],['vault','Vault']].map(([k,l])=>'<button class="'+(lbScope===k?'on':'')+'" data-act="lbscope" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
@@ -821,12 +876,6 @@ const INFO={
   ...Object.keys(MODES).map(k=>{const M=MODES[k];return [k,'Win '+M.win+', draw '+M.draw+', loss '+M.loss+'.'];}),
   ['Win streaks','Each win in a row adds 20 more points, up to +100 (more in 2v2 and 3v3).'],
   ['Teammates','In 2v2 and 3v3, AI pilots fight on your side.']]],
- league:()=>{const L=myLeague();return ['Leagues',[
-  ['Your league','You’re in '+L.n+'. Your league comes from your league rating: your tank’s power (gear, upgrades, cores, mods) times your form. Form is how your last 20 or so matches went (a win counts 1, a draw or a top-3 Last Standing finish 0.5, a loss or a quit 0); it starts counting at your 10th match.'],
-  ['The ladder',LEAGUE.map((x,i)=>x.n+(i?' from '+fmtNum(Math.round(LG_AT[i-1])):'')+' (×'+LG_MULT[i]+')').join(', ')+'. Each line is 21% above the last. You move up at the line and drop only 4% below it.'],
-  ['Tougher AI','Every league up, AI pilots field a stronger loadout: the full step in 1v1, part of it in 2v2 and Last Standing, a little in 3v3. Inside a league the AI never changes with your results. The VS screen shows the league it’s set for.'],
-  ['Points','Higher leagues pay more. Base points, the ones the airdrop ranking, the leaderboards and the daily cap count, grow with league pay: '+LEAGUE.map((x,i)=>x.n+' ×'+LG_BASE_PAY[i].toFixed(2)).join(', ')+'. On top, a bonus on your spendable points only (the multiplier above). The daily cap is 20,000 base points in every league: a higher league reaches it sooner.'],
-  ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime base points and shows on the leaderboard. Your league comes from power and form.']]];},
  build:()=>['Build',[
   ['Your budget','Each stat has 4 levels, but your tank can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how you fight.'],
   ['Cost','Each level costs points: '+UPS.hull.costs.map(fmtNum).join(', ')+' for levels 1 to 4.'],
@@ -1063,6 +1112,15 @@ const TIPS=['Mystery boxes boost you until you take enough damage. Grab them ear
  'Upgrades in the Garage are permanent and cheap at first.','Moon Zone pays ×3 in 1v1.','Back off to repair in Moon Zone: 3.5 seconds out of fire and you start healing.',
  'Your login streak adds up to +30% to every quest. Check Quests every day.','Friends you invite pay you when they keep playing.'];
 const ORD=['1st','2nd','3rd','4th','5th','6th'];
+// a match that moved your league: one line on its results ("Promoted to Veteran" / "Dropped to Pilot"). The league the
+// match was played in (r.league) against your league now (the server's record once the result is scored, which redraws
+// this screen). The next match is played in the new league, so each change shows once
+function lgChangeLine(r){
+ if(!r.league||!Number.isInteger(r.league.i))return '';
+ const to=myLeague().i;if(to===r.league.i)return '';
+ const N=leagueInfo(to),up=to>r.league.i;
+ return '<div class="lgchg '+(up?'up':'down')+'" style="--lc:'+N.c+'" role="status">'+lgShield(N.c)+'<span>'+(up?'Promoted to ':'Dropped to ')+N.n+'</span></div>';
+}
 function resultsHTML(r){
  const M=MODES[r.mode],solo=isSolo(r.gtype),G=GTYPES[r.gtype];
  const title=r.won?'Victory':solo&&r.place<=3?ORD[r.place-1]+' place':r.drawn?(r.gtype==='boss'?'Survived':'Draw'):'Defeat',cls=r.won?'win':r.drawn||(solo&&r.place<=3)?'draw':'lose';
@@ -1091,7 +1149,7 @@ function resultsHTML(r){
  return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+Math.min(96,i*3.5+Math.random()*2)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+
   '<div class="grow"></div><div class="title '+cls+'">'+title+'</div>'+
   '<div class="sub">'+(r.live?'Live ':'')+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':r.gtype==='boss'?'Survival '+r.mode+', megatank '+r.score[0]+'% down':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
-  '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+
+  '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+lgChangeLine(r)+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
   '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+fmtNum(st.taken||0)+'</b>taken</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span>'+(st.best?'<span class="chip"><b>'+fmtNum(st.best)+'</b>best hit</span>':'')+(st.arm?'<span class="chip"><b>'+fmtNum(st.arm)+'</b>armor blocked</span>':'')+(st.shd?'<span class="chip"><b>'+fmtNum(st.shd)+'</b>shield blocked</span>':'')+(r.won&&r.streak>=2?'<span class="chip"><b>'+r.streak+'</b>win streak</span>':'')+(st.low>0&&st.low<=0.25?'<span class="chip"><b>'+Math.round(st.low*100)+'%</b>lowest HP</span>':'')+'</div>'+
   '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span>'+vbadge(myVl())+'<span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
@@ -1202,6 +1260,7 @@ const ACT={
  tab:a=>setTab(a),
  tabmenu:a=>{exitBattle();setTab(a);},
  info:a=>showInfo(a),
+ leagues:()=>openLeagues(),
  coreinfo:a=>{const [t,s]=coreInfo(a);sheet('info',()=>'<h3>'+t+'</h3>'+infoBody(s));},
  settings:()=>openSettings(),
  gfx:a=>{setGfx(a);fx('tap');const ov=findOv('settings');if(ov&&ov.re)ov.re();else openSettings();},

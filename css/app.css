@@ -45,8 +45,20 @@ body.battle .app{display:none}
 .pts b{font:700 17px var(--disp);color:var(--gold);letter-spacing:.01em}
 .tierchip{height:34px;padding:0 12px;border-radius:17px;display:flex;align-items:center;gap:6px;font:600 14px var(--disp);background:var(--rock2);border:1px solid var(--edge)}
 .tierchip i{width:10px;height:10px;border-radius:3px;transform:rotate(45deg);display:block}
-.topbar .grow{flex:1}
+.topbar .grow{flex:1;min-width:0}
 .iconbtn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--rock2);border:1px solid var(--edge);color:var(--dust)}
+/* top bar: every button is a 44 px tap target; the pill you see is drawn inside it (::before), so the bar looks as before */
+.app{grid-template-columns:minmax(0,1fr)}   /* nothing in a row can widen the app past the screen */
+.topbar{min-width:0;gap:5px;padding-top:calc(5px + var(--sat));padding-bottom:3px}
+.topbar .grow{display:none}.topbar>.iconbtn{margin-left:auto}
+.topbar>.tierchip{padding:0 10px}.topbar>.pts{padding-right:10px}.topbar>.tierchip.ico{padding:0;width:44px;justify-content:center}.tierchip.ico span{display:none}
+.topbar>button{flex:none;position:relative;isolation:isolate;height:44px;background:none;border:0;border-radius:17px}
+.topbar>button::before{content:"";position:absolute;inset:5px 0;z-index:-1;border-radius:17px;background:var(--rock2);border:1px solid var(--edge)}
+.topbar>.iconbtn{width:44px}.topbar>.iconbtn::before{inset:3px;border-radius:12px}
+.lgchip{display:flex;align-items:center;gap:5px;padding:0 9px 0 7px;font:600 14px var(--disp);color:var(--lc,var(--moon));white-space:nowrap}
+.lgchip::before{border-color:color-mix(in srgb,var(--lc,#fff) 38%,transparent)!important}
+.lgchip.ico{padding:0 10px}.lgchip.ico .lgn{display:none}
+.lgsh{width:15px;height:17px;flex:none;display:block}
 .iconbtn svg{width:20px;height:20px}
 
 #screens{position:relative;overflow:hidden}
@@ -761,3 +773,31 @@ button.q{display:flex;width:100%;text-align:left}
 .garage .btn.sm,.glist .btn.sm,.garage .linkbtn,.sheet .linkbtn{min-height:44px}
 .garage .info,.sheet .info{position:relative}
 .garage .info::after,.sheet .info::after{content:'';position:absolute;inset:-10px}
+
+/* ---- leagues: your league card (Ranks), the ladder sheet, leaderboard pills, the promotion line on results ---- */
+.lgcard{margin-top:10px;border-color:color-mix(in srgb,var(--lc) 30%,var(--edge))}
+.lgcard .row{display:flex;align-items:center;gap:12px}
+.lgcard .lgsh{width:24px;height:27px;margin:0 2px}
+.lgcard .ln,.lgrung .ln{font:700 19px/1.15 var(--disp);color:var(--lc)}
+.lgcard .mut b{color:var(--moon)}
+.lgbar{position:relative;height:8px;border-radius:4px;background:var(--rock4);margin:14px 0 8px}
+.lgbar i{display:block;height:100%;border-radius:4px;background:var(--lc)}
+.lgbar .lnmk{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--moon);opacity:.55;border-radius:1px}
+.lgmeta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;font-size:13px;color:var(--dust)}
+.lgmeta b{color:var(--moon)}
+.lgform{margin:6px 0 12px}
+.lgladder{list-style:none;margin:12px 0 10px;padding:0;display:grid;gap:6px}
+.lgrung{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;background:var(--rock2);border:1px solid var(--edge);border-left:3px solid var(--lc)}
+.lgrung .ln{font-size:15px}
+.lgrung .mut{font-size:12px}
+.lgrung .grow{min-width:0}
+.lgrung.you{background:color-mix(in srgb,var(--lc) 14%,var(--rock2));border-color:color-mix(in srgb,var(--lc) 55%,transparent);border-left-color:var(--lc)}
+.lgrung .youtag{display:inline-block;vertical-align:2px;margin-left:4px;padding:1px 6px;border-radius:6px;background:var(--lc);color:#0a0e17;font:700 11px var(--disp)}
+.lgx{flex:none;width:44px;text-align:center;line-height:1.15}
+.lgx b{display:block;font:700 13px var(--disp);color:var(--moon);font-variant-numeric:tabular-nums}
+.lgx span{font-size:11px;color:var(--dust)}
+.lb .tr{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
+.lgpill{display:inline-block;padding:0 6px;border-radius:6px;font:600 11px/17px var(--disp);color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,transparent);border:1px solid color-mix(in srgb,var(--lc) 40%,transparent);white-space:nowrap}
+.lgchg{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px auto 10px;padding:7px 14px;border-radius:12px;font:700 16px var(--disp);color:var(--lc);background:color-mix(in srgb,var(--lc) 14%,transparent);border:1px solid color-mix(in srgb,var(--lc) 45%,transparent)}
+.lgchg .lgsh{width:18px;height:20px}
+@media (max-width:350px){.lgx{width:38px}.lgrung{gap:7px;padding:8px}}

@@ -294,6 +294,23 @@ t(r.revenue.STARS >= 500 && r.revenue.TON >= 4 && r.revenue.unverified >= 2, 'ad
 [s, r] = await call('/api/admin', { initData: initData(J), clear: 'tg_444', snap: 1 });
 t(!r.flagged.some((f) => f.id === 'tg_444') && r.snapshot.some((x) => x[0] === 'tg_444'), 'cleared pilot counts again');
 lb = await mod.buildLeaderboard(env); t(lb.top.some((x) => x[0] === 'tg_444'), 'cleared pilot back on the board');
+// every board row carries the pilot's league as its short key: the record's own when the pilot's in the top read, else the
+// copy kept on the score row (written with every score and whenever the league moves); "" when there is none
+{
+  const lgs = new Set(['ROOKIE', 'PILOT', 'VETERAN', 'ACE', 'ELITE', 'MASTER', 'LUNAR', '']);
+  const recLg = (id) => (db.get('/players/' + id) || {}).league || '';
+  t(lb.top.length && lb.top.every((x) => lgs.has(x[4]) && x[4] === (R.LEAGUES.includes(recLg(x[0])) ? recLg(x[0]) : '')), 'top rows: league key from the record ' + JSON.stringify(lb.top.slice(0, 3)));
+  t(lb.daily.length && lb.daily.every((x) => lgs.has(x[3])) && lb.daily.some((x) => x[3]), 'daily rows: league key ' + JSON.stringify(lb.daily.slice(0, 3)));
+  const d = lb.d, w = lb.w, dr = db.get('/dly/' + d) || {};
+  t(Object.values(dr).some((v) => typeof v.l === 'string' && R.LEAGUES.includes(v.l)), 'score rows keep a copy of the league');
+  db.root.dly[d].tg_8801 = { s: 777, n: 'outside', l: 'ELITE' }; db.root.dly[d].tg_8802 = { s: 776, n: 'none' }; db.root.dly[d].tg_8803 = { s: 775, n: 'junk', l: '<b>' };
+  db.root.wly = db.root.wly || {}; db.root.wly[w] = db.root.wly[w] || {}; db.root.wly[w].tg_666 = { s: 55, n: 'clean', l: 'ROOKIE' }; db.root.players.tg_666.league = 'MASTER';
+  lb = await mod.buildLeaderboard(env);
+  const row = (a, id) => a.find((x) => x[0] === id) || [];
+  t(row(lb.daily, 'tg_8801')[3] === 'ELITE' && row(lb.daily, 'tg_8802')[3] === '' && row(lb.daily, 'tg_8803')[3] === '', 'daily: outside the top read uses the row copy, nothing or junk gives ""');
+  t(row(lb.weekly, 'tg_666')[3] === 'MASTER', 'weekly: the record wins over an older row copy');
+  delete db.root.dly[d].tg_8801; delete db.root.dly[d].tg_8802; delete db.root.dly[d].tg_8803; delete db.root.wly[w].tg_666; delete db.root.players.tg_666.league;
+}
 
 // ---- reminders ----
 await hook({ message: { from: { id: 222 }, chat: { id: 222, type: 'private' }, text: '/start' } });

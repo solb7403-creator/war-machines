@@ -279,3 +279,10 @@ Base points a minute rise with the league for every kit and pilot; Lunar Legend 
 steps clear +6%; the exceptions are steps where the AI tier jumps (e.g. Rare at Ace -> Elite, +2%) or within the noise of
 264 matches a cell. A strictly >= 6% step everywhere would need pay steps of ~+10% (Lunar Legend ~x1.77, above the
 +40-60% band for kits whose AI doesn't change).
+
+## On screen (display only)
+- **Top bar, every tab**: a chip with the league's shield and name (`#lgChip`, `renderTop`); it shortens "Lunar Legend" to "Legend" only when the bar can't fit it (then the tier chip shows its diamond alone first). Tap or Enter opens the ladder.
+- **Ranks**: "Your league" card under the tier box: league rating, a bar from the drop line to the next line (a tick marks this league's line), distance to the next league and above the drop line, form as a percentage. "All leagues" opens the ladder: 7 rungs, Lunar Legend on top, You marked, each with its line, base pay, spendable bonus and AI step (`openLeagues`).
+- **Leaderboard**: every All time / Today / This week row and your pinned row shows a league pill. The public `lb` file carries the league key (`top`: 5th field; `daily`/`weekly`: 4th field, `[id, name, score, league, vault level?]`), from `players/<pid>/league`, else the score row's copy (`dly`/`wly` `l`, rewritten when the league moves); `""` when there is none.
+- **Results**: one line, "Promoted to Ace" / "Dropped to Pilot", when the match moved your league (the league the match was played in vs your league now, the server's record once the result is scored).
+- Every number comes from `myLeague`, `leagueRating`, `leagueInfo` (`dev/tests/league-ui.py`).

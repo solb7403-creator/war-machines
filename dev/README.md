@@ -72,6 +72,7 @@ python3 dev/tests/lab-browser.py       # the garage end to end on the server eco
 python3 dev/tests/gear-browser.py      # every weapon and chassis: compare, exact stats, Moonbeam, save/reload, no WebGL
 python3 dev/tests/garage-layout.py     # garage layout at 360/390/768/1366: no sideways scroll, no clipped text, 44 px targets, keyboard
 python3 dev/tests/qa.py                # every screen at 5 sizes: overflow, clipped text, hidden buttons
+python3 dev/tests/league-ui.py         # leagues on screen: top-bar chip on every tab, Ranks league card, the ladder sheet, league pills on every board row (worker rows too), promoted/dropped line; every league + a demotion edge, at 360/390/768/1366
 python3 dev/tests/pvp-update.py        # a phone on an old live version is updated and rejoins the same live queue (no AI match); offline it says "Update needed" with Retry; a current phone joins normally
 python3 dev/tests/pvptest.py           # two browser pages play live: matching, VS labels, moves, supers, drops, rounds, quits, AI fill, results
 ```
