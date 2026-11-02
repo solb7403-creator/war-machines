@@ -723,6 +723,10 @@ export default {
       if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req);
       let a;try{a=await auth(req,env);}catch{return cors(json({error:"authentication unavailable"},503),req);}
       if (a.err) return cors(a.err, req);
+      // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
+      // before any game state/reward is returned; payment callbacks remain independent of clients.
+      if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
+        return cors(json({error:"update",build:"20261102210000"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

@@ -25,7 +25,7 @@ function initData(id, sp, extra = {}) {
   p.set('hash', createHmac('sha256', createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));
   return p.toString();
 }
-const call = async (path, body, ip) => { const h = { 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify(body) }), env); return [r.status, await r.json()]; };
+const call = async (path, body, ip) => { const h = { 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:4,...body}) }), env); return [r.status, await r.json()]; };
 const tgSync = async (id, sp, body = {}, ip) => (await call('/api/sync', { initData: initData(id, sp), ...body }, ip))[1];
 const webSync = (pid, body = {}, now = Date.now()) => mod.sync(env, body, { id: Number(pid.slice(3)), first_name: 'Web' + pid.slice(-3), web_auth: true, lunar_account: true }, pid, now);
 const E = (pid) => db.get('/eco/' + pid);

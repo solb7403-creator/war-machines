@@ -371,15 +371,16 @@ function turret(a,dt){
  const dist=Math.hypot(b.x-a.x,b.y-a.y);
  if(a.cd<=0&&seen&&Math.abs(r)<0.14&&dist<=STAT.range){
   a.cd=a.wshot/rofMult(a);if(a===me&&typeof fx==='function')fx('shot',a.wtype);
-  const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a),eg:a.wedge||GRAZE,life:(STAT.range+1)/a.wpspd};
+  const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a)*projectileImpactMult(a),eg:a.wedge||GRAZE,life:(STAT.range+1)/a.wpspd};
   bullets.push(q);
   if(SRV)SRV.ev(['b',q.id,a.id,q.x,q.y,q.vx,q.vy,q.hi?1:0,q.dm,q.life]);   // live players draw the shot themselves
  }
 }
 function moveBullets(dt){
  for(const q of bullets){
-  for(let k=0;k<2&&q.life>0;k++){
-   q.x+=q.vx*dt/2;q.y+=q.vy*dt/2;
+  const travel=Math.min(dt,q.life),steps=Math.max(2,Math.ceil(Math.hypot(q.vx,q.vy)*travel/0.12));
+  for(let k=0;k<steps&&q.life>0;k++){
+   q.x+=q.vx*travel/steps;q.y+=q.vy*travel/steps;
    for(const wl of (q.hi?baseWalls:walls))if(q.x>wl[0]&&q.x<wl[0]+wl[2]&&q.y>wl[1]&&q.y<wl[1]+wl[3]){q.life=0;if(wl.mhp)hitCrate(wl,q.dps*q.shot*q.dm);break;}
    if(q.life>0&&inRock(q.x,q.y))q.life=0;
    if(q.x<0||q.x>W||q.y<0||q.y>H)q.life=0;
@@ -535,9 +536,10 @@ function fireSuper(r,S){
   {const ex=Math.max(1,Math.min(W-1,r.x+Math.cos(ang)*S.len)),ey=Math.max(1,Math.min(H-1,r.y+Math.sin(ang)*S.len));ev('I',ex,ey,r.sup.w,r.team);}   // and where the beam ends
   if(!hit)ev('n',r.x+Math.cos(ang)*Math.min(S.len,6),r.y+Math.sin(ang)*Math.min(S.len,6),'MISSED','#c0cad4',1.2);
  }else if(S.kind==='shell'){
+  const speed=S.spd*(1+gsum(r,'vel'));
   shells.push({id:++bid,x:r.x+Math.cos(r.sup.ang)*1.2,y:r.y+Math.sin(r.sup.ang)*1.2,
-   vx:Math.cos(r.sup.ang)*S.spd,vy:Math.sin(r.sup.ang)*S.spd,
-   dmg:S.dmg,r:S.r,life:S.range/S.spd,owner:r});
+   vx:Math.cos(r.sup.ang)*speed,vy:Math.sin(r.sup.ang)*speed,
+   dmg:S.dmg*projectileImpactMult(r),r:S.r,life:S.range/speed,owner:r});
   ev('S',4,0.25);
  }else{
   ev('V',r.x,r.y,S.r,r.team);ev('I',r.x,r.y,r.sup.w,r.team);
@@ -579,16 +581,17 @@ function superTick(dt){
   if(r.sup.t<=0){fireSuper(r,S);r.sup=null;}
  }
  for(const s of shells){   // siege shells fly until they hit an enemy, a wall, or max range
-  s.life-=dt;
-  let boom=s.life<=0;
-  for(let k=0;k<2&&!boom;k++){
-   s.x+=s.vx*dt/2;s.y+=s.vy*dt/2;
+  const travel=Math.min(dt,s.life),steps=Math.max(2,Math.ceil(Math.hypot(s.vx,s.vy)*travel/0.12));
+  let boom=false;
+  for(let k=0;k<steps&&!boom;k++){
+   s.x+=s.vx*travel/steps;s.y+=s.vy*travel/steps;
    if(s.x<0||s.x>W||s.y<0||s.y>H)boom=true;
    for(const [rx,ry,rw,rh] of ((s.owner.elev||0)===1?baseWalls:walls))if(s.x>rx&&s.x<rx+rw&&s.y>ry&&s.y<ry+rh)boom=true;
    if(inRock(s.x,s.y))boom=true;
    if(!boom)for(const v of units){if(v.team===s.owner.team||v.hp<=0)continue;if(Math.hypot(s.x-v.x,s.y-v.y)<bodyR(v)+0.55){boom=true;break;}}
   }
-  if(boom)explode(s);
+  s.life-=dt;
+  if(boom||s.life<=0)explode(s);
  }
  shells=shells.filter(s=>s.life>0&&!s.dead);
  for(const u of units){   // AI units fire their super when ready, with sight and in range

@@ -75,7 +75,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 // ---- combat rules, gear math, paints and the whole economy (points, quests, crates, pass, squad) live in rules.js:
 // shared with the server, which runs them for every pilot in Telegram ----
 const gemMult=k=>gemLvMult(save.gemLvl&&save.gemLvl[k]);
-const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(Math.round(v*1000)/10))+'%';
+const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(k==='vel'?Math.round(v*10000)/100:Math.round(v*1000)/10))+'%';
 const SUPER_DESC={pulse:'Pierce Lance: a rail beam that goes through cover and hits every enemy in a line.',
  twin:'Static Nova: an electric shockwave that hits every enemy near you.',
  siege:'Siege Blast: a heavy shell with a big blast radius.',
@@ -144,7 +144,7 @@ const myLeague=pw=>leagueInfo(leagueIdx(leagueRating(pw===undefined?calcPower():
 function buildStats(){
  const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),lun=save.skin==='lunar',skin=lun?SKIN_HP:1,skinD=lun?SKIN_DMG:1;
  const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k):0),0);
- const out={hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skinD),
+ const out={hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skinD*((save.cores||[]).includes('vel')?1+GEM.vel.impact*gemMult('vel'):1)),
   spd:+(STAT.speed*(1+0.06*U.engine)*Cc.spd*(1+gb('spd'))).toFixed(1),armor:Math.round(Math.min(0.7,gb('arm'))*100),crit:Math.round((CRIT_BASE+0.02*U.target+gb('lck'))*100)};
  if(save.lab)Object.assign(out,machineMetrics(myLoadout()));return out;
 }
@@ -162,7 +162,7 @@ function loadSave(obj){
    save.mq=Array.isArray(cached.mq)?cached.mq.slice(-20):[];save.migOk=1;}
  }
  if(!save||typeof save.pts!=='number')save={pts:0,up:{hull:0,cannon:0,engine:0,target:0,reactor:0},q:{},chassis:'vanguard',weapon:'pulse',
-  gemLvl:{dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1},gemShards:{dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0},
+  gemLvl:{dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1,vel:1},gemShards:{dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0,vel:0},
   wTier:{pulse:0,twin:-1,siege:-1},cTier:{scout:-1,vanguard:0,titan:-1},wOwn:{pulse:[0],twin:[],siege:[]},cOwn:{scout:[],vanguard:[0],titan:[]},fresh:true};
  if(typeof save.earned!=='number'){let sp=0;for(const k in (save.up||{}))for(let i=0;i<save.up[k];i++)sp+=(UPS[k]?UPS[k].costs[i]:0);save.earned=(save.pts||0)+sp;}
  if(save.streak===undefined)save.streak=0;
