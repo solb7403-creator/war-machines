@@ -9,7 +9,7 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - [x] 5. PvP matchmaking
 - [x] 6. Airdrop + daily cap on base points (+ LG_BASE_PAY)
 - [x] 7. Reminder cap
-- [x] 8. Pricing (Lunar Skin stays 2,000 Stars)
+- [x] 8. Pricing (owner set Lunar Skin to 3,000 Stars / 45 TON; stats unchanged)
 - [ ] Release
 
 ## Tools

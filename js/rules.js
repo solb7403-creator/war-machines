@@ -265,10 +265,10 @@ const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a core from level L to
 const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];   // DUP_PTS: a crate roll that doesn't beat what you have
 // shop prices (the server charges these; TON, Stars, points)
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
-// Lunar Skin stays below Moonbeam's price: measured with human pilots its edge alone (59.3%) is smaller than Moonbeam's
-// alone (62.0%), so it doesn't take Moonbeam's price (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
-const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=30;
-const PREMIUM={moonbeam:{ton:MOONBEAM_PRICE,stars:3300},skin:{ton:SKIN_PRICE,stars:2000},starter:STARTER,founder:FOUNDER};
+// Lunar Skin: owner-set price (Nov 2, 2026), just under Moonbeam's: measured with human pilots its edge alone (59.3%) is a
+// little below Moonbeam's alone (62.0%) (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
+const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=45;
+const PREMIUM={moonbeam:{ton:MOONBEAM_PRICE,stars:3300},skin:{ton:SKIN_PRICE,stars:3000},starter:STARTER,founder:FOUNDER};
 // ---- Hyperspace Vault: an endless deposit for looks only. Gold is never spent and never expires; lifetime Gold sets
 // your Vault level, and each level unlocks a look (badge, gold tooth, gold name, trail, paint, aura, titles). It gives no
 // stats, power or points. Bigger bundles carry bonus Gold. Every deposit is verified shop spending like any other buy

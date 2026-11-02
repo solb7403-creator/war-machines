@@ -5,12 +5,11 @@ USD uses **~$0.02 per Star** (the Session 2 brief's rate). TON prices imply abou
 (4 TON = 250 Stars, 50 TON = 3,300 Stars). No external price comparisons are used in this review.
 Nothing here is a promise about $LUNAR amounts, prices or returns.
 
-## Lunar Skin price: stays 2,000 Stars / 30 TON (no change)
+## Lunar Skin price: 2,000 -> 3,000 Stars, 30 -> 45 TON (owner decision, Nov 2, 2026)
 
-Rule from the brief: Lunar Skin costs what Moonbeam costs if its measured edge is equal or larger, more only if clearly larger.
 Measured with the human pilot profile (720 duels each, fully maxed Epic Titan build, stats as shipped): **Lunar Skin alone
-59.3%, Moonbeam alone 62.0%**. The skin's edge is smaller, so it keeps its lower price (`SKIN_PRICE = 30`, 2,000 Stars).
-(Bot duels say the same: 72.8% vs 83.1%.)
+59.3%, Moonbeam alone 62.0%** (bot duels: 72.8% vs 83.1%). The owner set the skin just under Moonbeam's price:
+`SKIN_PRICE = 45` TON, 3,000 Stars (`PREMIUM.skin`); `spendGram` follows `SKIN_PRICE`. Stats unchanged (+8% health, +8% damage).
 
 ## Every price
 
@@ -22,7 +21,7 @@ Measured with the human pilot profile (720 duels each, fully maxed Epic Titan bu
 | Starter pack (once) | 399 | $8 | 6 | - | Rare weapon + Rare chassis + Rare gem cache |
 | Founder pack (until launch) | 1,199 | $24 | 19 | - | Epic weapon + Founder paint + 2 Rare gem caches |
 | Moonbeam (Legendary weapon) | 3,300 | $66 | 50 | - | 118 DPS, Precision, Moonfall 592 |
-| Lunar Skin (Legendary) | 2,000 | $40 | 30 | - | +8% health, +8% damage |
+| Lunar Skin (Legendary) | 3,000 | $60 | 45 | - | +8% health, +8% damage (was 2,000 / 30) |
 | Lunar Pass premium | 799 | $16 | 13 | - | premium track never gives points |
 | Paint (shop) | 150 / 300 | $3 / $6 | 2.4 / 4.8 | - | looks only |
 | Hyperspace Vault | 250 / 1,000 / 5,000 / 25,000 | $5-$500 | 4-400 | - | Gold, looks only |
@@ -42,7 +41,7 @@ Measured with the human pilot profile (720 duels each, fully maxed Epic Titan bu
   cache, or a lower Epic cache price.
 - **What a buyer gets** (human pilot profile): Moonbeam alone 62.0%, Lunar Skin alone 59.3% against the same build
   without it; both together 74.6% against a fully maxed Epic (class average); 78.2% against an average-roll Epic; 86.7%
-  against a rare-geared pilot. Per Star the skin (2,000) is the better buy of the two.
+  against a rare-geared pilot. Per Star the two are now close (skin 3,000, Moonbeam 3,300).
 
 ## Weekly earn: free players vs payers
 
@@ -71,7 +70,7 @@ which nudges points a minute up a little (a win pays about 4x a loss) and the le
 - **Gem caches (Epic especially): overpriced for their combat value** (equal-spend result above).
 - **Starter pack: deliberately cheap** (a rare cache alone is 500 Stars; the pack is 399 with two rare items too). Fine for onboarding.
 - **Founder pack: very cheap for an Epic weapon** (an Epic crate is 1,500 alone). Time-limited until launch; keep as the early-supporter reward.
-- **Lunar Skin at 2,000: fair** for an edge a little below Moonbeam's (59.3% vs 62.0%).
+- **Lunar Skin at 3,000** (owner-set): just under Moonbeam for an edge a little below Moonbeam's (59.3% vs 62.0%).
 - Not a price, but it moves value: **Survival pays the most points a minute** (won ~92-100% at every kit and league) and
   Last Standing pays well per minute when you place high. Worth watching in beta.
 
