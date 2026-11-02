@@ -4,7 +4,7 @@ Base: PR #3, merge `49074c4be443645aec7bf594c89b0d93acb691b9`; inspected main `f
 
 ## Findings and retained balance
 
-Rarity multipliers remain 1.00 / 1.14 / 1.34, with crate quality 1.05–1.10. Starter quality is 1.00; salvage is a separate, deliberately weaker acquisition path. Moonbeam (Session 2, Nov 2026): 110 DPS, 0.16 seconds per shot, projectile speed 26, 1.48 super scaling, and the Precision trait (edge hits deal full damage instead of 75%). Moonfall: base 375 (555 after scaling), drawn 2.0 wide, hits 1.2 wide like a Pierce Lance. See the Session 2 section at the end.
+Rarity multipliers remain 1.00 / 1.14 / 1.34, with crate quality 1.05–1.10. Starter quality is 1.00; salvage is a separate, deliberately weaker acquisition path. Moonbeam remains fixed at 118 DPS, 0.16 seconds per shot, projectile speed 26, and 1.48 super scaling (Moonfall 400 -> 592, 2.0 wide). Session 2 adds its Precision trait: edge hits deal full damage instead of 75%. Lunar Skin: +8% health, +8% damage. Owner decision: these stats are fixed. See the Session 2 section at the end.
 
 ### All ten weapons
 
@@ -21,9 +21,9 @@ Ranges below are actual calculator outputs for crate quality endpoints, before u
 | Siege Breaker | Common / 1 | 78–81 | 35.10–36.45 | 0.45 s / 2.22 | 22 | 393.75–412.50 |
 | Rail Breaker | Rare / 2 | 89–93 | 40.05–41.85 | 0.45 s / 2.22 | 24 | 448.87–470.25 |
 | Titanfall | Epic / 3 | 104–109 | 46.80–49.05 | 0.45 s / 2.22 | 26 | 527.63–552.75 |
-| Moonbeam | Legendary / 4 | 110 | 17.60 (never grazes) | 0.16 s / 6.25 | 26 | 555.00 |
+| Moonbeam | Legendary / 4 | 118 | 18.88 (never grazes) | 0.16 s / 6.25 | 26 | 592.00 |
 
-Moonfall exceeds the strongest unbuffed standard single super (perfect Epic Siege Blast: 552.75) by 0.4%; Moonbeam exceeds perfect Epic Siege DPS (109.07) by 0.9% and, with Precision, deals full damage on edge hits (every other weapon: 75%). Twin retains the fastest cadence and smallest individual hits; Siege the slowest and heaviest; Pulse stays between them. Nova is radial, Lance/Moonfall are penetrating beams, and Siege Blast is a traveling AoE shell. Area, wind-up, line of sight, movement and counterplay prevent DPS alone from determining outcomes.
+Moonfall exceeds the strongest unbuffed standard single super (perfect Epic Siege Blast: 552.75) by 7.10%; Moonbeam exceeds perfect Epic Siege DPS (109) by 8.26% and, with Precision, deals full damage on edge hits (every other weapon: 75%). Twin retains the fastest cadence and smallest individual hits; Siege the slowest and heaviest; Pulse stays between them. Nova is radial, Lance/Moonfall are penetrating beams, and Siege Blast is a traveling AoE shell. Area, wind-up, line of sight, movement and counterplay prevent DPS alone from determining outcomes.
 
 ### All nine chassis
 
@@ -85,37 +85,6 @@ PvE results include boss scaling: more raw damage raises boss HP, and higher pla
 Release integration must use passing checks and the existing Pages workflow. The backend combat code is unchanged from the already successful PR #3 deployment. The existing Worker workflow also watches the corrected PvP test fixture and will republish the unchanged backend on merge; no additional manual deployment is needed.
 
 
-## Session 2 (Nov 2, 2026): legendary balance on the real sim
+## Session 2 (Nov 2, 2026): legendary results
 
-Method: `dev/tests/s2/legend.mjs`, server sim (`worker/src/sim.gen.js`), standard bot pilot on both sides, Arena 1v1 single round,
-all 6 maps, both spawn directions, 20 seeds per pairing unless noted. Reference = fully maxed Epic: perfect rolls (1.10), the
-14-level build hull 4 / cannon 4 / engine 2 / targeting 2 / reactor 2, Lv5 dmg/rof/arm cores, the measured best mod set for an
-Epic Titan (Reinforced plates + Sprint gearing). Best Epic weapon on that build: Pulse (Pulse vs Siege 49.6%, Pulse vs Twin 66.7%).
-Bot duels are a proxy for live play.
-
-Final values: Moonbeam 110 DPS, Precision (edge hits 100%), Moonfall base 375 x 1.48 = 555, hit width 1.2 (drawn 2.0);
-Lunar Skin +4% health, +3% damage.
-
-| Test | Target | Measured | n |
-|---|---|---:|---:|
-| Full kit vs maxed Epic, class average | 72-75% | 81.8% | 720 |
-| ... vs Epic Scout (counters Titan) | 60-66% | 73.8% | 240 |
-| ... vs Epic Vanguard (Titan counters it) | 76-84% | 99.6% | 240 |
-| ... vs Epic Titan (mirror) | 76-84% | 72.1% | 240 |
-| Moonbeam alone vs best Epic weapon | 61-65% | 61.9% | 720 |
-| Lunar Skin alone vs none | 61-65% | 62.9% | 720 |
-| Full kit vs equal spend on gem caches (6,600 Stars, from Lv2 cores) | 55-60% | 68.0% | 1,440 |
-| ... same, from Lv3 cores | 55-60% | 66.6% | 1,440 |
-| Full kit vs average-roll Epic (1.075), class average | report | 86.6% | 720 |
-| Full kit vs rare-geared (1.075), class average (proxy for a 30-day free player) | report | 99.3% | 720 |
-
-Why two rows miss: with equal Epic gear and no legendaries, Epic Titan beats Epic Vanguard 99.2% and loses to Epic Scout 55.8%
-in bot duels (n=120 each). The counter triangle (+15% damage dealt, 10% less taken) decides the Vanguard pairing, so the class
-average can't reach 72-75% unless the kit is made weaker than plain Epic. The two pairings the counter doesn't decide are
-72.1% (mirror) and 73.8% (vs Scout). Equal spend: 6,600 Stars of gem caches (bought at the best price each day) raises dmg/rof/arm
-by only ~0.8 levels each, so cores are the weaker buy per Star (see docs/launch/PRICING_REVIEW.md).
-
-What changed and why: Moonbeam's old edge (79-87% vs a perfect Epic) came mostly from Moonfall's 2.0-wide hit area and its damage,
-not its DPS (at 60 DPS it still won 42%). Moonfall now hits like a Pierce Lance (1.2) while keeping its look and staying the
-strongest super; DPS went 118 -> 110 (still above every Epic); Precision added. Lunar Skin went +8%/+8% -> +4%/+3%: any health
-edge flips the bot's hide-or-press decision, so +8% was worth 78%.
+(filled in below)

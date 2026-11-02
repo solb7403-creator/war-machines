@@ -311,7 +311,7 @@ export class RoomCore {
     const base = quit ? 0 : Math.round(g === "royale" ? R.ROYALE_PTS[o.place - 1] : (won ? M.win : drawn ? M.draw : M.loss) * zx);
     const st = u.st || {}, se = this.sim.series;
     const res = { live: true, quick: !!s.quick, won, drawn, quit, place: o.place, top3, score: o.score, g, m, base, modeX: zx, featured: feat, featX: fxm,
-      league: { n: brk.n, key: brk.key, mult: brk.mult, c: brk.c, i: brk.i },
+      league: { n: brk.n, key: brk.key, mult: brk.mult, pay: brk.pay, c: brk.c, i: brk.i },
       stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), arm: Math.round(st.arm || 0), shd: Math.round(st.shd || 0), best: Math.round(st.best || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0, low: Math.round((st.low ?? 1) * 1000) / 1000 },
       series: se ? { w: u.team === 0 ? [se.w[0], se.w[1]] : [se.w[1], se.w[0]] } : null, cls: u.cls };
     // the match as the server saw it: quests, pass XP and stats on the pilot's record come from this (eco.js creditMatch)
@@ -322,7 +322,8 @@ export class RoomCore {
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
       const sb = won ? R.streakPts(g, m, pvs) : 0;
-      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, base: quit ? 0 : Math.round(base * fxm) + sb, pw: R.powerOf(s.L), pvs, sb, won, drawn, m: mt, opp };   // base: at league x1 (eco.js ecoPlayAward)
+      const P = R.leaguePay(base * fxm + sb, s.league);   // base pay (airdrop points) and the spendable multiplier, as in AI matches
+      return { pts: quit ? 0 : P.pts, base: quit ? 0 : P.base, pw: R.powerOf(s.L), pvs, sb, won, drawn, m: mt, opp };
     };
     const tryCredit = (k) => Promise.resolve().then(() => this.io.credit(s, calc)).catch((e) => {   // a database hiccup: try again, never drop the points
       if (k + 1 >= this.o.CREDIT_TRIES) throw e;

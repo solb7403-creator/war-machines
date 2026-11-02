@@ -33,7 +33,9 @@ export function features(L) {   // everything powerOf may use, from the shared s
 }
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
   const N = +(process.env.PAIRS || 160), seeds = [71, 419, 2027, 9803, 65537, 1201, 3307, 7919, 104729, 5381, 7, 13, 17, 23, 29, 31, 37, 41, 43, 47].slice(0, +(process.env.SEEDS || 8)), pairs = [];
-  while (pairs.length < N) { const s1 = rng(), A = randKit(s1), B = randKit(rng() < 0.7 ? s1 + (rng() - 0.5) * 0.3 : rng()), d = Math.abs(Math.log(R.powerOf(A) / R.powerOf(B)));
+  while (pairs.length < N) { const s1 = process.env.MOON ? 0.75 + rng() * 0.25 : rng(), A = randKit(s1);   // MOON=1: every A side fields Moonbeam (refit of its weapon term)
+    if (process.env.MOON) A.w = { a: 'moon', t: 2, q: 1, s: false };
+    const B = randKit(rng() < 0.7 ? s1 + (rng() - 0.5) * 0.3 : rng()), d = Math.abs(Math.log(R.powerOf(A) / R.powerOf(B)));
     if (d < 0.45 || rng() < 0.25) pairs.push([A, B]); }
   const jobs = [], meta = [];
   pairs.forEach(([A, B], k) => { for (const map of MAPS6) for (const seed of seeds) for (const flip of [false, true]) { jobs.push({ A, B, seed, map, flip }); meta.push(k); } });

@@ -140,7 +140,11 @@ const SERIES_X=2,ROUND_T=90;
 const LEAGUE=[{n:'Rookie',key:'ROOKIE',c:'#9fb0c2'},{n:'Pilot',key:'PILOT',c:'#6fcf97'},{n:'Veteran',key:'VETERAN',c:'#3fd0c9'},{n:'Ace',key:'ACE',c:'#4d9fff'},
  {n:'Elite',key:'ELITE',c:'#ff9d3c'},{n:'Master',key:'MASTER',c:'#c28bff'},{n:'Lunar Legend',key:'LUNAR',c:'#ff4d6d'}];
 const LEAGUES=LEAGUE.map(L=>L.key);
-const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplier per league
+// base pay per league: what a match pays in BASE points (the airdrop, the boards and the daily cap count these), so a higher
+// league earns more airdrop points a minute even against its harder AI (measured: docs/launch/LEAGUES.md). The cap stays 20,000
+// base points a day in every league: a higher league reaches it sooner, nobody banks more a day
+const LG_BASE_PAY=[1,1.10,1.20,1.30,1.40,1.50,1.60];
+const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplier per league, on top of base pay (spendable points only)
 const LG_FIRST=84,LG_RATIO=1.21;   // league rating lines: Pilot from 84, then each line 21% above the last (Lunar Legend from ~218)
 const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*10)/10);
 const LG_DEMOTE=0.04,LG_FORM_N=20,LG_FORM_MIN=10,LG_FORM_W=0.4;
@@ -153,7 +157,10 @@ function leagueIdx(rating,prev){
  let up=0,keep=0;for(let k=0;k<LG_AT.length;k++){if(rating>=LG_AT[k])up=k+1;if(rating>=LG_AT[k]*(1-LG_DEMOTE))keep=k+1;}
  return up>=prev?up:Math.max(up,Math.min(prev,keep));
 }
-const leagueInfo=i=>{i=Math.max(0,Math.min(LEAGUE.length-1,i|0));return {...LEAGUE[i],i,mult:LG_MULT[i],ai:LG_AI[i],at:i?LG_AT[i-1]:0,next:LG_AT[i]||null};};
+const leagueInfo=i=>{i=Math.max(0,Math.min(LEAGUE.length-1,i|0));return {...LEAGUE[i],i,pay:LG_BASE_PAY[i],mult:LG_MULT[i],ai:LG_AI[i],at:i?LG_AT[i-1]:0,next:LG_AT[i]||null};};
+// a match's points in a league: base = the match's pay x league base pay (counts for the airdrop and the cap); pts = base x the
+// spendable multiplier (what you can spend). raw: the mode's pay with featured and streak, before the league
+const leaguePay=(raw,lg)=>{const L=leagueInfo(lg),base=Math.round(Math.max(0,raw)*L.pay);return {base,pts:Math.round(base*L.mult)};};
 // a pilot's league now (the server keeps it on the record as lgi, so a gear change or a run of results moves it there)
 function ecoLeague(S,pw){S.lgi=leagueIdx(leagueRating(pw,S.lwr,S.mp),S.lgi);S.lg=LEAGUE[S.lgi].key;return leagueInfo(S.lgi);}
 function ecoForm(S,r){const f=typeof S.lwr==='number'&&Number.isFinite(S.lwr)?S.lwr:0.5;S.lwr=Math.round((f+(r-f)/LG_FORM_N)*10000)/10000;}
@@ -176,7 +183,7 @@ const auraOf=it=>it.premium?3:it.sal?0:Math.max(0,it.tier);   // rarity ring und
 // mods, cores, upgrades, Lunar Skin and the chassis class. Two tanks' powers give the gear-predicted win chance (powerWin):
 // P = 1 / (1 + (pB/pA)^POWER_K), plus COUNTER_EDGE when one chassis counters the other. Starter tank = 68.
 const POWER_W={h:6.61,a:6.95,d:5.80,c:6.31,su:1.50,fi:1.84,s:3.59,r:1.27,hc:1.61,tu:1.20,ps:1.49,sc:0.29,ti:-0.03,hh:0.49,ss:0.87,dd:-0.33,hd:0.27,hs:-0.51,ds:-1.17};
-const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:0.22};   // weapon type (its super's base damage included: Siege Blast and Moonfall 375, the others 350)
+const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:1.20};   // weapon type (its super's base damage included: Siege Blast 375, Moonfall 400 at full width, the others 350; Moonbeam refit on 90 pairs)
 const POWER_BASE=68,POWER_K=13.75,COUNTER_EDGE=1.72;
 function powerZ(L){
  const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log;
@@ -196,9 +203,9 @@ const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up
 // A starter tank meets starter AI, exactly as before; above that the AI grows slower than you do, so every upgrade, crate and
 // purchase widens your edge. Measured on the real sim: dev/tests/combat-sim.mjs, docs/combat-balance-audit.md
 const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],73],[0,1,1,1,[2,2,2],77],[0,1.05,1,1,[1,1,1],79],[1,1.05,0,0,[1,1,1],85],[1,1.05,0,1,[2,2,2],88],[1,1.05,1,0,[1,1,1],92],
- [1,1.05,1,1,[2,1,1],94],[1,1.05,1,1,[2,2,2],95],[1,1.05,2,1,[2,2,2],102],[1,1.08,2,2,[2,2,2],107],
- [2,1.05,1,1,[2,2,2],115],[2,1.05,2,1,[2,2,2],124],[2,1.05,2,1,[3,2,2],125],[2,1.05,2,1,[3,3,2],126],[2,1.05,2,1,[3,3,3],128],
- [2,1.05,3,1,[3,3,3],137],[2,1.08,3,2,[3,3,3],143],[2,1.08,3,2,[4,3,3],145],[2,1.08,3,2,[4,4,3],147],[2,1.08,3,2,[4,4,4],149],
+ [1,1.05,1,1,[2,1,1],94],[1,1.05,1,1,[2,2,2],95],[1,1.08,1,1,[2,2,2],98],[1,1.05,2,1,[2,2,2],102],[1,1.08,2,2,[2,2,2],107],[1,1.05,3,2,[2,2,2],111],
+ [2,1.05,1,1,[2,2,2],115],[1,1.05,4,2,[3,2,2],119],[2,1.05,2,1,[2,2,2],124],[2,1.05,2,1,[3,2,2],125],[2,1.05,2,1,[3,3,2],126],[2,1.05,2,1,[3,3,3],128],[1,1.1,4,1,[4,4,4],132],
+ [2,1.05,3,1,[3,3,3],137],[2,1.08,3,2,[3,3,3],143],[2,1.08,3,2,[4,3,3],145],[2,1.08,3,2,[4,4,3],147],[2,1.08,3,2,[4,4,4],149],[2,1.05,4,2,[4,4,4],154],
  [2,1.08,4,2,[4,4,4],159],[2,1.1,4,2,[4,4,4],162],[2,1.1,4,2,[5,4,4],165],[2,1.1,4,2,[5,5,4],168],[2,1.1,4,2,[5,5,5],171],
  [2,1.1,4,2,[5,5,5],175,{rc:1,m:{mobility:'sprint'}}],[2,1.1,4,2,[5,5,5],181,{rc:4,m:{mobility:'sprint'}}]   // the top two: a full 14-level build and a mod, still Epic gear
 ].map(([t,q,h,e,g,p,x])=>({t,q,h,e,g,p,x:x||{}}));
@@ -254,10 +261,10 @@ const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a core from level L to
 const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];   // DUP_PTS: a crate roll that doesn't beat what you have
 // shop prices (the server charges these; TON, Stars, points)
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
-// Lunar Skin costs what Moonbeam costs: on the real sim each alone wins about 62-63% against the same build without it
-// (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2), so neither is the cheaper way to the same edge
-const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=50;
-const PREMIUM={moonbeam:{ton:MOONBEAM_PRICE,stars:3300},skin:{ton:SKIN_PRICE,stars:3300},starter:STARTER,founder:FOUNDER};
+// Lunar Skin stays below Moonbeam's price: measured with human pilots its edge alone (59.3%) is smaller than Moonbeam's
+// alone (62.0%), so it doesn't take Moonbeam's price (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
+const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=30;
+const PREMIUM={moonbeam:{ton:MOONBEAM_PRICE,stars:3300},skin:{ton:SKIN_PRICE,stars:2000},starter:STARTER,founder:FOUNDER};
 // ---- Hyperspace Vault: an endless deposit for looks only. Gold is never spent and never expires; lifetime Gold sets
 // your Vault level, and each level unlocks a look (badge, gold tooth, gold name, trail, paint, aura, titles). It gives no
 // stats, power or points. Bigger bundles carry bonus Gold. Every deposit is verified shop spending like any other buy
@@ -745,16 +752,17 @@ function ecoClaimPass(S,track,i,X){
  return {box:ecoOpenBox(S,r.tk,r.ri,X)};
 }
 // ---- matches ----
-// points for a finished match: mode pay, best of 3, featured, league multiplier, win streak (o: won, drawn, place, top3, g, m, feat, series)
-function ecoMatchPts(S,o,mult,X){
+// points for a finished match: mode pay, best of 3, featured, win streak, then the league: base pay and the spendable multiplier
+// (o: won, drawn, place, top3, g, m, feat, series; lg: league index, as on the ticket)
+function ecoMatchPts(S,o,lg,X){
  if(o.won)S.streak++;else if(!o.drawn&&!o.top3)S.streak=0;   // Last Standing: 2nd and 3rd keep your streak
  const mk=MODES[o.m]?o.m:'1v1',sb=o.won?streakPts(o.g,mk,S.streak):0,M=MODES[mk],solo=isSolo(o.g);
  const zx=teamX(o.g,mk,!!o.series),fxm=o.feat?FEATURED_X:1;
  const base=Math.round(solo?ROYALE_PTS[Math.max(1,Math.min(6,o.place||6))-1]:(o.won?M.win:o.drawn?M.draw:M.loss)*zx);
- const b1=Math.round(base*fxm)+sb,pts=Math.round(base*fxm*mult)+sb,b=ecoPlayAward(S,b1,pts,X);
- return {pts,awarded:b.awarded,bonus:b.bonus,base,basePts:b1,lgBonus:b.lb,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
+ const P=leaguePay(base*fxm+sb,lg),b=ecoPlayAward(S,P.base,P.pts,X);
+ return {pts:P.pts,awarded:b.awarded,bonus:b.bonus,base,basePts:P.base,lgBonus:b.lb,lgPay:leagueInfo(lg).pay,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
 }
-// A match's points, split in two. Base points (b1: the match at league x1, featured and streak included) are what the daily
+// A match's points, split in two. Base points (b1: the match with featured, streak and league base pay) are what the daily
 // cap, the daily/weekly boards, the leaderboard and the airdrop count. The league bonus (pts - b1) is paid on top, to spendable
 // points only (pts and earned; S.lgb keeps the lifetime total), so climbing leagues never shrinks airdrop progress. A capped
 // day pays the bonus on the base that fit. The squad match bonus (referral points, S.mbx) is on pts as it always was, and

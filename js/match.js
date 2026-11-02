@@ -7,7 +7,7 @@
 const mapKey=()=>(save.map&&MAPS[save.map])?save.map:'classic';   // the player's pick (may be 'random'); the real map is chosen at match start
 const modeKey=()=>(save.mode&&MODES[save.mode])?save.mode:'1v1';
 const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
-function winPoints(gk,mk){return Math.round(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1)*myLeague().mult);}   // with the league bonus (spendable points)
+function winPoints(gk,mk){return leaguePay(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1),myLeague().i).pts;}   // with league base pay and the league bonus (spendable points)
 
 // ---- your tank and the AI match ----
 let battleLoadout=null,battlePower=null,battleLg=0;   // battleLg: the league the AI is set for (leagueIdx, rules.js)
@@ -209,7 +209,7 @@ function localEnd(forced){
  const mk=modeKey(),feat=matchG===featuredMode(),top3=!!storm&&place<=3,brk=leagueInfo(battleLg);
  const mo={won,drawn,place,top3,g:matchG,m:mk,feat,series:!!series,quick:!!lastQuick,map:curMap};
  const before=ecoBase(save);
- const r=ecoMatchPts(IN_WEB?JSON.parse(JSON.stringify(save)):save,mo,brk.mult,ecoX());
+ const r=ecoMatchPts(IN_WEB?JSON.parse(JSON.stringify(save)):save,mo,battleLg,ecoX());
  if(IN_WEB){r.pts=0;r.awarded=0;} // Only the scored server response may change website progression.
  if(!SRV_ECO&&r.pts>0&&!r.awarded)showToast('Daily point cap reached. It resets at 00:00 UTC.');
  afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,basePts:r.basePts,lgBonus:r.lgBonus,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});

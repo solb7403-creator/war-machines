@@ -1070,6 +1070,7 @@ function resultsHTML(r){
  if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.modeX]);
  else if(r.modeX!==1)lines.push([G.label,'×'+r.modeX]);
  if(r.featured)lines.push(['Featured mode','×'+r.featX]);
+ if(r.league&&r.league.pay&&r.league.pay!==1)lines.push([r.league.n+' league pay (airdrop points)','×'+r.league.pay]);
  if(r.leagueMult!==1)lines.push([r.league.n+' league bonus'+(r.lgBonus?': +'+fmtNum(r.lgBonus)+' to spend':''),'×'+r.leagueMult]);   // spendable only: the airdrop and the daily cap count base points
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.sqb>0)lines.push(['Squad match bonus','+'+fmtNum(r.sqb)]);   // verified active recruits (server-set)

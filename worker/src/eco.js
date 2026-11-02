@@ -442,7 +442,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       return [gIds[i], { won: !!x.won, drawn: !x.won && !!x.drawn, dmg: lim(x.dmg, el * 450), kills: lim(x.kills, kmax) }];
     }).filter(Boolean);
     const o = { won, drawn, place, top3, g: T.g, m: T.m, feat: T.feat, series: T.series, quick: T.quick, map: T.map };
-    const p = R.ecoMatchPts(S, o, T.mult, X);
+    const p = R.ecoMatchPts(S, o, T.lgi | 0, X);   // the league on the ticket: base pay (airdrop) and the spendable multiplier
     R.ecoAfterMatch(S, { ...o, streak: S.streak, seriesW: sw, st }, X);
     R.ecoLeague(S, T.pw || S.pw);   // the result moved your form: your league (next match's AI and multiplier) follows
     flags = flags.concat(watch(S, { ai: true, won, secs: el, pts: p.pts, ni: !!(pr && pr.ok && pr.sig.ni > ECO.NOINPUT_SHARE) }, X, now));
