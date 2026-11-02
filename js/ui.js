@@ -375,17 +375,18 @@ function gGearRow(isW,it){
 function gemIcon(k){
  return '<span class="gem-crystal" style="--gem:'+GEM[k].c+'" aria-hidden="true"><svg viewBox="0 0 40 48"><path fill="currentColor" d="M20 1 36 13 32 34 20 47 8 34 4 13Z"/><path fill="#fff" opacity=".45" d="m20 1-6 15 6 7 6-7Z"/><path fill="#fff" opacity=".2" d="M4 13 14 16 20 47 8 34Z"/><path fill="#000" opacity=".25" d="m26 16 10-3-4 21-12 13Z"/><path fill="none" stroke="#fff" opacity=".45" d="m4 13 16 10 16-10M20 23v24"/></svg></span>';
 }
+function coreBonus(k,lv){return fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+(k==='vel'?' · '+fmtCore(k,GEM.vel.impact*gemLvMult(lv))+' projectile impact damage':'');}
 function gemProgress(k){
  const lv=save.gemLvl[k]||1,sh=save.gemShards[k]||0,max=lv>=5,need=SHARD_NEED[lv];
  return '<div class="gem-progress'+(max?' is-max':'')+'">'+(max?'<b class="gem-max">MAXED</b><div class="gem-track"><i style="width:100%"></i></div><span>Surplus: '+sh+' shards</span>':
   '<span>'+sh+' / '+need+' shards · next: Lv '+(lv+1)+'</span><div class="gem-track" role="progressbar" aria-label="'+GEM[k].name+' shards to level '+(lv+1)+'" aria-valuemin="0" aria-valuemax="'+need+'" aria-valuenow="'+Math.min(sh,need)+'"><i style="width:'+Math.min(100,sh/need*100)+'%"></i></div>')+'</div>';
 }
 function gemCollection(spec){
- return '<div class="gem-collection" aria-label="All six cores">'+GORDER.map(k=>{
+ return '<div class="gem-collection" aria-label="All seven cores">'+GORDER.map(k=>{
   const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k);
   return '<button class="gem-card'+(lv>=5?' is-max':'')+(j>=0?' equipped':'')+'" style="--gem:'+GEM[k].c+'" data-act="gemcore" data-arg="'+(j>=0?j:Math.max(0,spec.cores.indexOf(null)))+'">'+
    '<div class="gem-heading">'+gemIcon(k)+'<div><b>'+GEM[k].name+'</b><span>Lv '+lv+' / 5</span></div></div>'+
-   '<div class="gem-bonus">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+'</div>'+
+   '<div class="gem-bonus">'+coreBonus(k,lv)+'</div>'+
    '<span class="gem-equipped">'+(j>=0?'Equipped · Socket '+(j+1):'Not equipped')+'</span>'+gemProgress(k)+'</button>';
  }).join('')+'</div>';
 }
@@ -469,7 +470,7 @@ function gCoreSheet(i){
  const spec=M.spec,L=gL(spec);
  const rows=GORDER.map(k=>{const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k),on=j===i,sel=gCmp==='core|'+i+'|'+k;
   return '<button style="--gem:'+GEM[k].c+'" class="gear gem-row'+(lv>=5?' is-max':'')+(on?' equipped':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="core|'+i+'|'+k+'" aria-pressed="'+(on||sel)+'"><div class="ico">'+gemIcon(k)+'</div>'+
-   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+'</div>'+gemProgress(k)+'</div>'+
+   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+coreBonus(k,lv)+'</div>'+gemProgress(k)+'</div>'+
    (on?'<span class="eq">In this socket</span>':j>=0?'<span class="eq dim">Socket '+(j+1)+', swaps</span>':'')+'</button>'+
    (sel?gCmpCard(L,gL(gCoreCand(spec,i,k)),'gcore',i+':'+k,'Put in socket '+(i+1),'','core'+i):'');}).join('');
  return '<h3>Socket '+(i+1)+' · Bay '+gLetter(id)+'</h3><p class="mut">Tap a core to see what it changes. Picking one from another socket swaps the two.</p><div class="glist">'+rows+'</div>'+
@@ -933,9 +934,10 @@ const INFO={
   ['Spending','Upgrades, crates and salvage. Spending never lowers your rank: the leaderboard counts lifetime points.']]]};
 function coreInfo(k){
  const I={dmg:['Every shot hits harder, your super too.','damage'],rof:['Your cannon fires faster.','fire rate'],arm:['You take less damage from every hit. Armor from cores and boxes adds up, to 70% at most.','less damage taken'],
-  spd:['Your tank drives faster: dodge more, reach boxes first.','speed'],lck:['More critical hits. Crits need a direct hit and deal double damage.','crit chance'],reg:['Slowly repairs your tank during every fight.','health repaired per second']}[k];
+  spd:['Your tank drives faster: dodge more, reach boxes first.','speed'],lck:['More critical hits. Crits need a direct hit and deal double damage.','crit chance'],reg:['Slowly repairs your tank during every fight.','health repaired per second'],vel:['Shots and physical Siege Blast shells travel faster with the same maximum range and deal more impact damage. Instant beams and unrelated AoE are unchanged. Travel speed stacks multiplicatively with shot speed fittings.','projectile travel speed']}[k];
  const lv=save.gemLvl[k]||1,sh=save.gemShards[k]||0;
  const s=[['What it does',I[0]],['Level '+lv,fmtCore(k,coreVal(k,lv))+' '+I[1]+'.']];
+ if(k==='vel')s.push(['Impact damage',fmtCore(k,GEM.vel.impact*gemLvMult(lv))+' to normal projectile hits and traveling Siege Blast shells only.']);
  if(lv<5)s.push(['Next level',fmtCore(k,coreVal(k,lv+1))+' '+I[1]+'. Shards: '+sh+' of '+SHARD_NEED[lv]+'.']);
  return [GEM[k].name+' core',s];
 }
@@ -945,7 +947,7 @@ function showInfo(id){
 }
 
 // ---------- garage sheets: see the GARAGE section (openBayGear, openBayCore) ----------
-const CORE_UNIT={dmg:'damage',rof:'fire rate',arm:'armor',spd:'speed',lck:'crit chance',reg:'repair per second'};
+const CORE_UNIT={dmg:'damage',rof:'fire rate',arm:'armor',spd:'speed',lck:'crit chance',reg:'repair per second',vel:'projectile travel speed'};
 // ---------- shop sheets ----------
 function openCrate(tk,ri){
  sheet('crate',()=>{
@@ -956,7 +958,7 @@ function openCrate(tk,ri){
   const what=isGem?['1 to 2','3 to 4','11 to 14'][ri]+' shards for a random core. Price rises 25% with each buy today and resets at 00:00 UTC.'
    :found>=3?'You own all 3. Opening re-rolls one: you keep the better roll, or get '+[50,150,400][ri]+' points.'
    :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
-  const odds=isGem?'Odds: each of the 6 core types is 1 in 6, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
+  const odds=isGem?'Odds: each of the 7 core types is 1 in 7, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
   return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+'</h3><p class="mut">'+what+'</p></div></div>'+items+
    (dealOf(tk,ri)?'<p class="dealnote">'+DEAL_TXT[dealOf(tk,ri)].n+': '+DEAL_TXT[dealOf(tk,ri)].off+'. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
    '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
@@ -1515,14 +1517,14 @@ function labItemFacts(key,spec){
    line('Actual weapon DPS',actual.dps);
    line('Hit damage',+(actual.dps*actual.shot).toFixed(2));
    line('Fire rate',+(1/actual.shot).toFixed(2)+' shots/sec');
-   line('Equipped hit damage',+(T.wdps*T.wshot*T.dmgM*(1+gem('dmg'))).toFixed(2));
+   line('Equipped hit damage',+(T.wdps*T.wshot*T.dmgM*(1+gem('dmg'))*projectileImpactMult(T)).toFixed(2));
    line('Equipped fire rate',+((1+gem('rof'))/T.wshot).toFixed(2)+' shots/sec');
-   line('Projectile speed',actual.pspd+' units/sec');
+   line('Projectile speed',T.wpspd+' units/sec');
    line('Edge hits',actual.edge?'Precision: '+Math.round(actual.edge*100)+'% of a full hit':Math.round(GRAZE*100)+'% of a full hit');
    line('Weapon quality',actual.premium?'Fixed legendary':live.q+'×');
    line('Super ability',base.sup);
    if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',+(supreme.dmg*actual.mult).toFixed(2));
-    line('Equipped super damage',+(supreme.dmg*T.wmult*T.dmgM*(1+gem('dmg'))).toFixed(2));
+    line('Equipped super damage',+(supreme.dmg*T.wmult*T.dmgM*(1+gem('dmg'))*(supreme.kind==='shell'?projectileImpactMult(T):1)).toFixed(2));
     line('Super wind-up',supreme.charge+' sec');}
   }
  }else if(key==='chassis'){
@@ -1541,7 +1543,7 @@ function labItemFacts(key,spec){
   }
  }else if(key.startsWith('core')){
   const k=spec.cores[Number(key.slice(4))];
-  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',pct(coreVal(k,lv)));}else line('Core slot','Empty');
+  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',coreBonus(k,lv));}else line('Core slot','Empty');
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
   if(fit){line('Fitting',fit.n);for(const f of FIT_FIELDS)if(fit[f]||['hp','spd','dps'].includes(f)){const w=(typeof MOD_WORD!=='undefined'&&MOD_WORD[f])||f;line(w[0].toUpperCase()+w.slice(1),(fit[f]>0?'+':'')+pct(fit[f]||0));}line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}

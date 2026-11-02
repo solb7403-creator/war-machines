@@ -347,7 +347,7 @@ function PVP_BANK() { return 0.6; }
     p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
     return p.toString();
   };
-  const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), env); return [r.status, await r.json()]; };
+  const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:4,...body}) }), env); return [r.status, await r.json()]; };
   const U1 = { id: 501, username: 'livea' }, U2 = { id: 502, username: 'liveb' };
   db.root.players = { tg_501: { pts: 900, dailyPts: 100, weeklyPts: 100, d: Math.floor(Date.now() / 864e5), w: Math.floor((Date.now() - 4 * 864e5) / (7 * 864e5)), days: 1, ld: Math.floor(Date.now() / 864e5), sk: 1, name: 'livea' } };
   let [s, r] = await call('/api/pvp/join', { initData: 'bad', v: R.PVP_V, g: 'arena', m: '1v1', L: L0() });

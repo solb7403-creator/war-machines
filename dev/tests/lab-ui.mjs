@@ -15,7 +15,8 @@ assert.ok(index.includes('js/ui.js?v='+version.v),'UI asset must be cache-busted
 const begin=ui.indexOf('const labStatRows=');
 const end=ui.indexOf('function labInspect(key)',begin);
 assert.ok(begin>0&&end>begin,'UI helper anchors');
-const funcs=ui.slice(begin,end);
+const core=readFileSync('js/core.js','utf8');
+const funcs='const fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+';\n'+ui.match(/const CORE_UNIT=([^;]+);/)[0]+'\n'+ui.slice(ui.indexOf('function coreBonus('),ui.indexOf('function gemProgress('))+'\n'+ui.slice(begin,end);
 // the garage: one editor (the sections), saved through the server-checked lab save; the Engineer sheet is gone
 for(const gone of ['openLabEditor','labFormSpec','labeditor','labsave','rangedraft','Engineer'])assert.ok(!ui.includes(gone),'removed: '+gone);
 assert.ok(/function baySave\(/.test(ui)&&ui.includes("labRequest('lab_save'")&&ui.includes("labRequest('lab_rename'")&&ui.includes("labRequest('lab_activate'"),'every change goes through the lab save');

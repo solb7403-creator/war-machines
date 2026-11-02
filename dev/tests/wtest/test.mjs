@@ -29,7 +29,7 @@ function initData(user, age = 0, sp = '') {
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
   return p.toString();
 }
-const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify(body) }), env); return [r.status, await r.json()]; };
+const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:4,...body}) }), env); return [r.status, await r.json()]; };
 const A = { id: 111, username: 'alice' }, B = { id: 222, first_name: 'Bob <script>' }, J = { id: 999, username: 'LunarBattle' }, C = { id: 333, username: 'carol' };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const sec = await mod.webhookSecret(env);

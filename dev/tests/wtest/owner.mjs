@@ -35,8 +35,8 @@ function initData(user) {
   p.set('hash', createHmac('sha256', createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest()).update(dcs).digest('hex'));
   return p.toString();
 }
-const tg = async (path, user, body = {}) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ initData: initData(user), ...body }) }), env); return [r.status, await r.json()]; };
-const web = async (path, sess, body = {}) => { const r = await worker.fetch(new Request(env.WEB_ORIGIN + path, { method: 'POST', headers: { Origin: env.WEB_ORIGIN, 'Content-Type': 'application/json', Cookie: sess.cookie.split(';')[0], 'X-Lunar-CSRF': sess.csrf }, body: JSON.stringify(body) }), env); return [r.status, await r.json()]; };
+const tg = async (path, user, body = {}) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ gv:4, initData: initData(user), ...body }) }), env); return [r.status, await r.json()]; };
+const web = async (path, sess, body = {}) => { const r = await worker.fetch(new Request(env.WEB_ORIGIN + path, { method: 'POST', headers: { Origin: env.WEB_ORIGIN, 'Content-Type': 'application/json', Cookie: sess.cookie.split(';')[0], 'X-Lunar-CSRF': sess.csrf }, body: JSON.stringify({gv:4,...body}) }), env); return [r.status, await r.json()]; };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const E = () => JSON.parse(JSON.stringify(db.get('/eco/' + OWNER_PID)));
 const OPEN = { a: 'owner_gem_epic' };
@@ -47,6 +47,7 @@ db.root.cfg = { admin: { lunarbattle: 999 } };
 db.root.telegramLinks = { 999: OWNER_PID };
 db.root.lunarAccounts = { [OWNER_PID]: { id: OWNER_PID, type: 'password', name: 'Lunar', telegramId: 999 } };
 let [s, r] = await tg('/api/sync', J, { boot: true, lab: 1 });
+{const before=JSON.stringify(E());const [st,result]=await tg('/api/owner',J,{a:'owner_gem_epic',gv:undefined});t(st===409&&result.error==='update','stale client rejected before unknown gem reward');t(JSON.stringify(E())===before,'stale client cannot mutate account');}
 t(s === 200 && r.pid === OWNER_PID, 'owner Telegram identity resolves to the linked record ' + s + ' ' + r.pid);
 // a real-looking owner record: some points, purchases, spend, a prior grant
 { const S = db.root.eco[OWNER_PID]; S.pts = 4321; S.earned = 9000; S.spendGram = 12.5; S.ptsSpent = 300; S.buys = { 'gem:2': 3, 'weapon:1': 1 }; S.starter = true; S.grants = { 'owner-four-gear-20261031': { kind: 'owner_promo', paid: 0 } }; }
@@ -62,12 +63,14 @@ function replay(S0, outs) {
 const SAME = ['pts', 'earned', 'spendGram', 'ptsSpent', 'buys', 'starter', 'founder', 'ac', 'dailyPts', 'weeklyPts', 'wOwn', 'cOwn', 'roll', 'up', 'paints', 'moonbeam', 'skin', 'pass', 'rsCr', 'vg', 'mp'];
 async function openAndCheck(label, call, n) {
   const S0 = E();
-  const [st, res] = await call();
+  const randomBefore=Math.random; let st,res;
+  try { Math.random=()=>0.999; [st,res]=await call(); } finally { Math.random=randomBefore; }
   const S1 = E();
   t(st === 200 && res.ok && res.out.outs.length === n, label + ': ' + n + ' caches opened ' + st + ' ' + JSON.stringify(res).slice(0, 200));
   if (st !== 200) return;
   const outs = res.out.outs;
   t(outs.every((o) => o.tk === 'gem' && o.ri === 2 && R.GORDER.includes(o.gem) && o.n >= 11 && o.n <= 14), label + ': every result an Epic gem cache roll (11-14 shards)');
+  t(outs.every(o=>o.gem==='vel'),label+': owner caches support Velocity');
   const rp = replay(S0, outs);
   t(JSON.stringify(rp.gl) === JSON.stringify(S1.gemLvl) && JSON.stringify(rp.gs) === JSON.stringify(S1.gemShards), label + ': core levels and shards exactly as ecoOpenBox gives ' + JSON.stringify(S1.gemLvl));
   t(SAME.every((k) => JSON.stringify(S0[k]) === JSON.stringify(S1[k])), label + ': no points, payment, spend, buys or gear fields changed ' + SAME.filter((k) => JSON.stringify(S0[k]) !== JSON.stringify(S1[k])).join(','));

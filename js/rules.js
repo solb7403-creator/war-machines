@@ -3,7 +3,7 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=3;   // live-match protocol version: the phone and the server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
+const PVP_V=4;   // game/reward and live-match protocol version: 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
@@ -13,11 +13,13 @@ const CRIT_BASE=0.1,CRIT_MULT=2,GRAZE=0.75,DIRECT=0.4;
 const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;
 const BUFF_LIFE=780;
 // core gems: socketed in the garage, permanent all game. Weaker than box buffs; they multiply with them.
-const GEM={dmg:{n:'DMG',name:'Damage',c:'#ff6b5e',amt:0.12},rof:{n:'ROF',name:'Fire rate',c:'#ffd24a',amt:0.10},arm:{n:'ARM',name:'Armor',c:'#5aa9ff',amt:0.08},spd:{n:'SPD',name:'Speed',c:'#7be07b',amt:0.08},lck:{n:'LCK',name:'Luck',c:'#c28bff',amt:0.03},reg:{n:'REG',name:'Repair',c:'#4be3a0',amt:0.001}};
-const GORDER=['dmg','rof','arm','spd','lck','reg'];
+const GEM={dmg:{n:'DMG',name:'Damage',c:'#ff6b5e',amt:0.12},rof:{n:'ROF',name:'Fire rate',c:'#ffd24a',amt:0.10},arm:{n:'ARM',name:'Armor',c:'#5aa9ff',amt:0.08},spd:{n:'SPD',name:'Speed',c:'#7be07b',amt:0.08},lck:{n:'LCK',name:'Luck',c:'#c28bff',amt:0.03},reg:{n:'REG',name:'Repair',c:'#4be3a0',amt:0.001},vel:{n:'VEL',name:'Velocity',c:'#42d9ff',amt:0.15,impact:0.05}};
+const GORDER=['dmg','rof','arm','spd','lck','reg','vel'];
 const GEM_LV=[1,1.2,1.45,1.8,2.25]; // Lv1..5
 const gemLvMult=lv=>GEM_LV[Math.min(4,Math.max(0,(lv||1)-1))];
 const coreVal=(k,lv)=>GEM[k].amt*gemLvMult(lv);
+// Physical projectiles only: speed and impact are independent, each applied once.
+const projectileImpactMult=t=>1+(t.gems.includes('vel')?GEM.vel.impact*((t.gemM&&t.gemM.vel)||1):0);
 const UPS={
  hull:{n:'Hull',d:'+8% max health per level',c:'#5aa9ff',costs:[500,2000,5000,12500]},
  cannon:{n:'Cannon',d:'+8% damage per level',c:'#ff6b5e',costs:[500,2000,5000,12500]},
@@ -188,8 +190,8 @@ const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:1.20};   // weapon type (its 
 const POWER_BASE=68,POWER_K=13.75,COUNTER_EDGE=1.72;
 function powerZ(L){
  const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log;
- const h=ln(t.mhp/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))/STAT.dps),s=ln(t.spdM*(1+g('spd')));
- return W.h*h+W.a*-ln(1-Math.min(0.7,g('arm')))+W.d*d+W.c*ln(1+CRIT_BASE+t.critB+g('lck'))+W.su*ln((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg')))
+ const h=ln(t.mhp/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)/STAT.dps),s=ln(t.spdM*(1+g('spd')));
+ return W.h*h+W.a*-ln(1-Math.min(0.7,g('arm')))+W.d*d+W.c*ln(1+CRIT_BASE+t.critB+g('lck'))+W.su*ln((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))*(t.wtype==='siege'?projectileImpactMult(t):1))
   +W.fi*ln(t.fillM)+W.s*s+W.r*g('reg')*100+W.hc*ln(t.hitChg||1)+W.tu*ln(t.turnM)+W.ps*ln(t.wpspd/22)+(t.cls==='scout'?W.sc:t.cls==='titan'?W.ti:0)
   +(POWER_WPN[t.wtype]||0)+W.hh*h*h+W.ss*s*s+W.dd*d*d+W.hd*h*d+W.hs*h*s+W.ds*d*s;
 }
@@ -236,6 +238,8 @@ function tankOf(L,n){
  // mod behavior effects (game.js reads them; 1 = standard)
  if(F.turn)T.turnM*=1+F.turn;if(F.shotSpd)T.wpspd=Math.round(T.wpspd*(1+F.shotSpd)*100)/100;if(F.charge)T.fillM*=1+F.charge;
  if(F.supTaken)T.supTk=1+F.supTaken;if(F.hitCharge)T.hitChg=1+F.hitCharge;if(F.dashCd)T.dashCdM=1+F.dashCd;if(F.shieldCd)T.shieldCdM=1+F.shieldCd;
+ // Apply Velocity once to the actual shot speed, after the existing fitting calculation.
+ if(T.gems.includes('vel'))T.wpspd*=1+coreVal('vel',L.gl&&L.gl.vel);
  if(hasFittings(L))T.fits=fittingVisuals(L);return T;
 }
 function legacyTankOf(L,n){
@@ -931,7 +935,7 @@ function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Ob
 function fittingStats(v){const m=fittingSelection(v),f={weight:0,power:0};for(const s of FIT_FIELDS)f[s]=0;for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s]||0;for(const s of FIT_FIELDS)f[s]=Math.round(f[s]*1000)/1000;return f;}
 function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
-function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
+function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
 
 // ---- garage presentation (UI only): reads the tables above, adds no stat math of its own ----
 // Progressive garage: matches played (server-tracked mp) before a section opens. UI gating only: the server accepts every
@@ -945,7 +949,7 @@ function garageOpen(S,sec){
 // What the garage shows for a loadout: Toughness (health), Firepower (ordinary DPS), Speed (driving), power, and the extras.
 function machineView(L){
  const m=machineMetrics(L),t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;
- const sup=typeof SUP!=='undefined'&&SUP[t.wtype]?Math.round(SUP[t.wtype].dmg*(t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))):0;   // super damage (game.js SUP; 0 where the sim isn't loaded)
+ const sup=typeof SUP!=='undefined'&&SUP[t.wtype]?Math.round(SUP[t.wtype].dmg*(t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))*(SUP[t.wtype].kind==='shell'?projectileImpactMult(t):1)):0;   // super damage (game.js SUP; 0 where the sim isn't loaded)
  return {tough:m.hp,fire:m.dps,speed:m.spd,power:powerOf(L),armor:Math.round(Math.min(0.7,g('arm'))*100),
   crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2),
   edge:Math.round((t.wedge||GRAZE)*100),super:sup};
@@ -975,7 +979,7 @@ const BUILD_TAGS={
  sniper:{n:'Sniper',d:'Heavy shots from a steady platform'},
  brawler:{n:'Brawler',d:'Rapid fire, built to trade hits up close'},
  balanced:{n:'Balanced',d:'No weak spot and no extreme'}};
-const TAG_UP={hull:'T',cannon:'F',engine:'S',target:'C',reactor:'R'},TAG_CORE={dmg:'F',rof:'F',arm:'T',reg:'T',spd:'S',lck:'C'};
+const TAG_UP={hull:'T',cannon:'F',engine:'S',target:'C',reactor:'R'},TAG_CORE={dmg:'F',rof:'F',arm:'T',reg:'T',spd:'S',lck:'C',vel:'F'};
 function buildAxes(L){
  const a={T:0,F:0,S:0,C:0,R:0},C=CH[L.c&&L.c.c]||CH.vanguard,W=WEAPONS[L.w&&L.w.a]||WEAPONS.pulse,sg=v=>v>0?1:v<0?-1:0;
  if(C.hp>=1.15)a.T+=2;else if(C.hp<1)a.T-=1;

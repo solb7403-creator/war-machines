@@ -265,9 +265,13 @@ function pvpShot(a){
 function pvpBulletHit(id){const i=bullets.findIndex(q=>q.id===id);if(i>=0)bullets.splice(i,1);}
 function pvpShots(dt){
  for(const q of bullets){
-  q.x+=q.vx*dt;q.y+=q.vy*dt;q.life-=dt;
+  const travel=Math.min(dt,q.life),steps=Math.max(2,Math.ceil(Math.hypot(q.vx,q.vy)*travel/0.12));
+  for(let k=0;k<steps&&q.life>0;k++){
+  q.x+=q.vx*travel/steps;q.y+=q.vy*travel/steps;
   if(q.x<0||q.x>W||q.y<0||q.y>H||inRock(q.x,q.y))q.life=0;
   else for(const wl of (q.hi?baseWalls:walls))if(q.x>wl[0]&&q.x<wl[0]+wl[2]&&q.y>wl[1]&&q.y<wl[1]+wl[3]){q.life=0;break;}
+  }
+  q.life-=dt;
  }
  bullets=bullets.filter(q=>q.life>0);
 }
