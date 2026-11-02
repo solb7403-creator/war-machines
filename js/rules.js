@@ -148,9 +148,10 @@ const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplie
 const LG_FIRST=84,LG_RATIO=1.21;   // league rating lines: Pilot from 84, then each line 21% above the last (Lunar Legend from ~218)
 const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*10)/10);
 const LG_DEMOTE=0.04,LG_FORM_N=20,LG_FORM_MIN=10,LG_FORM_W=0.4;
-// AI step per league (x the base AI power), and how much of it applies by team size: full in 1v1 (and Last Standing), part in
-// 2v2, little in 3v3 (five other tanks dilute a pilot's gear edge there, so 3v3 is already a fight)
-const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0.1,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
+// AI step per league (x the base AI power), and how much of it applies by team size: full in 1v1, part in 2v2 and Last
+// Standing, none in 3v3: five other tanks dilute a pilot's gear edge there, so 3v3 is already a fight, and even a one-tier AI
+// step moved measured 3v3 results by 7-12 points (docs/launch/LEAGUES.md); 3v3 keeps today's difficulty in every league
+const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
 const leagueRating=(pw,lwr,mp)=>(Number(pw)||0)*(1-LG_FORM_W/2+LG_FORM_W*((mp|0)<LG_FORM_MIN?0.5:Math.max(0,Math.min(1,Number(lwr)))));
 function leagueIdx(rating,prev){
  prev=Math.max(0,Math.min(LEAGUE.length-1,prev|0));
@@ -194,8 +195,11 @@ function powerZ(L){
 }
 let POWER_Z0=null;
 function powerOf(L){if(POWER_Z0===null)POWER_Z0=powerZ(STOCK_L);return Math.round(POWER_BASE*Math.exp((powerZ(L)-POWER_Z0)/POWER_K));}
-// gear-predicted chance that A beats B (pA, pB: powers; ctr +1 if A's chassis counters B's, -1 the other way, 0 same class)
-function powerWin(pA,pB,ctr){return 1/(1+Math.exp(-(POWER_K*Math.log(Math.max(1,pA)/Math.max(1,pB))+COUNTER_EDGE*(ctr||0))));}
+// gear-predicted chance that A beats B (pA, pB: powers; ctr +1 if A's chassis counters B's, -1 the other way, 0 same class).
+// live: between people (the live lobby's mismatch cap). Bot duels turn small edges into near-certain wins (bots hit ~96% of
+// shots); POWER_K_LIVE / COUNTER_EDGE_LIVE are fitted on the same kit pairs flown by the human pilot profile (dev/tests/s2/live-slope.mjs)
+const POWER_K_LIVE=3.10,COUNTER_EDGE_LIVE=0.46;   // fitted: 60 held-out kit pairs x 96 human-profile duels (bots: 13.75 / 1.72)
+function powerWin(pA,pB,ctr,live){return 1/(1+Math.exp(-((live?POWER_K_LIVE:POWER_K)*Math.log(Math.max(1,pA)/Math.max(1,pB))+(live?COUNTER_EDGE_LIVE:COUNTER_EDGE)*(ctr||0))));}
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
 // ---- AI difficulty (AI matches). AI pilots never copy your gear, upgrades or cores. They fly an authored loadout (AI_TIERS:
 // t rarity, q roll, h hull and cannon levels, e engine levels, g core levels [dmg,rof,arm]; p its power, checked by

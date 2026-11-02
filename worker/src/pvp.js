@@ -42,13 +42,13 @@ export const queueFits = (rq, q) => {
 // the gear-predicted chance for the stronger side if this pilot joins (seats alternate teams in join order; Last Standing: any two pilots)
 export function roomOdds(R, pw, seats, solo, power) {
   const all = pw.concat(power);
-  if (solo) { let w = 0.5; for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) w = Math.max(w, R.powerWin(all[i], all[j], 0), R.powerWin(all[j], all[i], 0)); return w; }
+  if (solo) { let w = 0.5; for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) w = Math.max(w, R.powerWin(all[i], all[j], 0, true), R.powerWin(all[j], all[i], 0, true)); return w; }
   const mid = all.slice().sort((x, y) => x - y)[(all.length - 1) >> 1], n = seats / 2, side = [[], []];
   all.forEach((p, k) => side[k % 2].push(p));
   const avg = (t) => (t.reduce((x, y) => x + y, 0) + mid * (n - t.length)) / n;
   if (!side[1].length) return 0.5;   // nobody on the other side yet: no live opponent
   const a = avg(side[0]), b = avg(side[1]);
-  return Math.max(R.powerWin(a, b, 0), R.powerWin(b, a, 0));
+  return Math.max(R.powerWin(a, b, 0, true), R.powerWin(b, a, 0, true));   // between people: the live curve
 }
 export class LobbyCore {
   constructor(now = () => Date.now(), waitMs = PVP.WAIT_MS) { this.rooms = []; this.now = now; this.waitMs = waitMs; this.R = rules(); }

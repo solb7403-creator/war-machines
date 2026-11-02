@@ -1,0 +1,3 @@
+human-profile pairs 60 x 96 duels: POWER_K_LIVE 3.10 COUNTER_EDGE_LIVE 0.46 | within 7 points 55.0% mean error 6.87
+mean |measured - 50%|: human 15.9 vs bot 34.1 points
+DONE

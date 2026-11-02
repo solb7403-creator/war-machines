@@ -32,7 +32,7 @@ await Promise.all([sync(7002),sync(7002)]);assert.equal(Object.keys(S(7002).lab.
 // Existing canonical gear wins over stale device selection; global assets stay global.
 await call(7003,'/api/sync');
 let old=S(7003);old.pts=12345;old.earned=54321;old.wOwn.twin=[1];old.cOwn.scout=[1];old.roll['twin:1']=1.08;old.roll['scout:1']=1.06;old.up.engine=2;old.spendGram=9;old.refC={tg_99:{m:1}};old.L=R.ecoLoadout(old,{w:{a:'twin',t:1},c:{c:'scout',t:1},cores:['spd','reg','dmg'],paint:'stock'});
-const protectedKeys=R.ECO_KEYS.filter(k=>k!=='lab');const before=Object.fromEntries(protectedKeys.map(k=>[k,old[k]]));
+const protectedKeys=R.ECO_KEYS.filter(k=>!['lab','lg','lgi'].includes(k));/* lg, lgi: the league, derived from power and form */const before=Object.fromEntries(protectedKeys.map(k=>[k,old[k]]));
 r=await sync(7003,{L:R.STOCK_L});
 assert.equal(r.E.lab.machines.m_legacy.spec.w.a,'twin');assert.equal(r.E.lab.machines.m_spare.spec.w.a,'twin');
 assert.deepEqual(Object.fromEntries(protectedKeys.map(k=>[k,S(7003)[k]])),before,'migration preserves normalized account assets');

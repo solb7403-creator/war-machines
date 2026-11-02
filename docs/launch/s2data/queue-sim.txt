@@ -1,0 +1,14 @@
+queue        arrivals/min  live matches  >80%  median  p90   max   <=60%   wait median  wait p90  AI-filled seats
+arena.1v1         2            75     0     54%   60%   65%     88%       30.0 s    30.0 s        40%
+arena.1v1        10           925     0     54%   61%   67%     88%        7.3 s    30.0 s        15%
+arena.1v1        60          7167     0     53%   57%   67%     97%        0.0 s    11.8 s         0%
+arena.2v2         2            56     0     52%   56%   59%    100%       30.0 s    30.0 s        71%
+arena.2v2        10           521     0     52%   56%   60%    100%       25.8 s    30.0 s        51%
+arena.2v2        60          3201     0     52%   56%   65%     99%        5.8 s    20.8 s         1%
+arena.3v3         2            70     0     52%   55%   56%    100%       30.0 s    30.0 s        80%
+arena.3v3        10           449     0     52%   54%   57%    100%       30.0 s    30.0 s        70%
+arena.3v3        60          1431     0     52%   55%   61%    100%        8.0 s    22.8 s         4%
+royale.solo       2            57     0     54%   60%   66%     91%       30.0 s    30.0 s        80%
+royale.solo      10           459     0     56%   63%   67%     78%       30.0 s    30.0 s        69%
+royale.solo      60          1396     0     59%   64%   67%     60%        8.0 s    22.8 s         3%
+PASS: no formed live match above 80%

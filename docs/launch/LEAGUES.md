@@ -15,7 +15,8 @@ All numbers live in `js/rules.js` as one-line constants so beta data can retune 
   Pilot 84, Veteran 101.6, Ace 123, Elite 148.8, Master 180.1, Lunar Legend 217.9. Promote at the line, drop `LG_DEMOTE` 4% below it (`S.lgi`).
   Power range after items 1-3: stock 68, common 80, rare 106, Epic 164, max free-to-play 213, full Legendary ladder kit 235.
 - **AI step**: `AI power = min(your power, aiPower(power) x aiStep(league, team size))`, `aiStep = 1 + (LG_AI[league] - 1) x LG_TEAM_W`,
-  `LG_AI = 1.04^league` (1.00 Rookie ... 1.265 Lunar Legend). Team weights `LG_TEAM_W`: 1v1 1.0, 2v2 0.6, 3v3 0.1, Last Standing 0.3.
+  `LG_AI = 1.04^league` (1.00 Rookie ... 1.265 Lunar Legend). Team weights `LG_TEAM_W`: 1v1 1.0, 2v2 0.6, Last Standing 0.3, **3v3 0** (with 0.1 a single AI tier step, e.g. Epic's AI 125 -> 126, moved
+  3v3 win rates 7-12 points at 72 matches and failed the +/-4 check; at 0, 3v3 plays exactly today's AI in every league).
   The base curve `aiPower` is today's (68 x (power/68)^AI_EXP; AI_EXP refit to 0.70 for the new power scale so each ladder kit meets
   the same AI tier as before, +/-1); the 10% base allowance was **not** used. Survival keeps `AI_BOSS_EXP` (already at your power).
   AI pilots fly authored loadouts (`AI_TIERS`, 33 tiers, 68 -> 181; the top two are full 14-level Epic builds with a mod; never
