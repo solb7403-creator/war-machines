@@ -4,6 +4,8 @@
 // usage: SEEDS=10 [TESTS=kit,moon,skin,...] node dev/tests/s2/legend.mjs [out.json]
 import fs from 'node:fs';
 import { runJobs } from './pool.mjs';
+import { humanPatch } from './human.mjs';
+export const PILOT = process.env.PILOT || 'human';   // human (default: the equipment comparisons) or standard (the old bot duels)
 import { buildSim } from '../../../worker/build-sim.mjs';
 buildSim();
 const { RULES: R } = await import('../../../worker/src/sim.gen.js?' + Date.now());
@@ -16,8 +18,8 @@ export const kit = ({ w = 'siege', wq = 1.1, wt = 2, c = 'titan', ct = 2, cq = 1
   ({ ...structuredClone(R.STOCK_L), w: { a: w, t: w === 'moon' ? 2 : wt, q: w === 'moon' ? 1 : wq, s: false }, c: { c, t: ct, q: cq, s: false }, up: { ...up }, cores: ['dmg', 'rof', 'arm'], gl: glv || gl(lv), skin: skin ? 'lunar' : 'default', mods });
 export async function compare(pairs, seeds) {
   const jobs = [], meta = [];
-  pairs.forEach(([A, B], k) => { for (const map of MAPS6) for (const seed of seedList(seeds)) for (const flip of [false, true]) { jobs.push({ A, B, seed, map, flip }); meta.push(k); } });
-  const r = await runJobs(jobs, { patch: process.env.PATCH || '' }), out = pairs.map(() => ({ n: 0, w: 0 }));
+  pairs.forEach(([A, B], k) => { for (const map of MAPS6) for (const seed of seedList(seeds)) for (const flip of [false, true]) { jobs.push({ A, B, seed, map, flip, pilot: PILOT }); meta.push(k); } });
+  const r = await runJobs(jobs, { patch: (PILOT === 'human' ? humanPatch() : '') + (process.env.PATCH || '') }), out = pairs.map(() => ({ n: 0, w: 0 }));
   r.forEach((x, i) => { out[meta[i]].n++; out[meta[i]].w += x.out; });
   return out.map((o) => ({ n: o.n, win: +(o.w / o.n).toFixed(3) }));
 }

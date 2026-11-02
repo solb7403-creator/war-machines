@@ -51,3 +51,14 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - Item 6: ecoPlayAward/ecoBase; credit() on base; players/pts = base; tests in wtest/test.mjs (198 pass).
 - Item 7: NTF_BATCH 200 + farm.mjs timing/429 test (55 pass).
 - Calibration grid: dev/tests/s2/league-grid.mjs (standard pilot) -> scratch grid-std.json.
+
+### OWNER CHANGES (Nov 2, mid-session) - these override item 2
+- Legendary stats fixed: Moonbeam 118 DPS, LEGENDARY_MULT 1.48, Moonfall 400 at full 2.0 width, Lunar Skin +8%/+8%, Precision 100%.
+  Reverted in js/rules.js + js/game.js. Only exception: Moonbeam DPS may drop to >=115.6 if Precision's measured gain covers it.
+- Legendary + equal-spend comparisons use the new HUMAN pilot profile (dev/tests/s2/human.mjs), calibrated ONLY on
+  equal-gear matchups (Titan vs Vanguard target 60-70%) and locked before any legendary measurement. Report bot results too.
+- LG_BASE_PAY per league (start 1.0..1.6) counts in BASE points (airdrop); base pts/min must rise >=6% per league, LL +40-60%.
+  Spendable multiplier stays on top. Cap stays 20,000 base. Report minutes-to-cap + base/spendable pts/min per league x kit.
+- Merge rule: merge automatically if CI green AND floors, 3v3 and points-per-minute checks pass with restored stats; else stop
+  and send the tables. Final report: all tables, today vs new AI win rates (every gear level, mode, league), legendary results.
+- Lunar Skin price: Skin now has its original +8%/+8%; price decision must be re-measured (human profile).

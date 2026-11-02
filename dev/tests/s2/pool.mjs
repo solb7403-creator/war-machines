@@ -40,7 +40,7 @@ if (!isMainThread) {
     for (let i = 0; i < n; i++) seats.push({ pid: 'b' + i, name: 'B' + i, L: B[i % B.length] });
     if (j.flip) seats = seats.slice(n).concat(seats.slice(0, n));
     sim.setup({ g: j.g || 'arena', m: j.m || '1v1', map: j.map || 'classic', series: false, seats });
-    sim.start(); sim.units.forEach((u) => sim.setCtl(u, 'bot'));
+    sim.start(); sim.units.forEach((u) => { sim.setCtl(u, 'bot'); if (j.pilot === 'human' || (j.pilotA === 'human' && u.team === sim.units[j.flip ? n : 0].team) || (j.pilotB === 'human' && u.team !== sim.units[j.flip ? n : 0].team)) u.hu = {}; });   // human profile (s2/human.mjs patch)
     let steps = 0; const DT = 1 / 60, st = { shots: 0, hits: 0, sups: 0, supDmg: 0, dash: 0, shield: 0, range: 0, moved: 0, alive: 0 };
     const myIdx = j.flip ? n : 0;
     let wasD = false, wasS = false, px = null, py = null;

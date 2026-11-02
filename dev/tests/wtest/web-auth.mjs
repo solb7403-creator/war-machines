@@ -38,11 +38,11 @@ assert.equal((await call('/api/sync',{lab:1,initData:'unsigned'},sid,identity.cs
 r=await call('/api/sync',{lab:1,mig:{pts:999999},refBy:'tg_999999'},sid,identity.csrf);assert.equal(r.status,200);let S=await r.json();assert.equal(S.E.pts,0);assert.equal(S.E.earned,0);assert.ok(S.E.lab);assert.equal(db.get('/players/tg_888001/ref'),null);
 const tgData=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id:888001,first_name:'Mini App',is_premium:true})});const d=[...tgData].sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>k+'='+v).join('\n');tgData.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));
 r=await call('/api/sync',{initData:tgData.toString(),lab:1},'', '', 'https://solb7403-creator.github.io');assert.equal(r.status,200);assert.deepEqual((await r.json()).E.lab,S.E.lab,'same canonical account across platforms');
-const spec=structuredClone(S.E.lab.machines.m_spare.spec);spec.mods={hull:'plates',mobility:'stable',mount:'stock'};spec.catalog=1;
+const spec=structuredClone(S.E.lab.machines.m_spare.spec);spec.mods={hull:'plates',mobility:'stable',mount:'stock'};spec.catalog=2;   // FIT_VERSION
 r=await call('/api/act',{a:'lab_save',id:'m_spare',rev:S.E.lab.rev,name:'Web MK-II',spec,pid:'tg_999999'},sid,identity.csrf);assert.equal(r.status,200);S=await r.json();assert.equal(S.E.lab.machines.m_spare.name,'Web MK-II');assert.equal(db.get('/eco/tg_999999'),null);
 // A valid signed website session enters the same ticket/proof/scoring pipeline as Telegram.
 const beforeEarned=db.get('/eco/tg_888001/earned');
-const startResponse=await call('/api/match/start',{g:'arena',m:'2v2',map:'classic',pv:1,fv:1,labRev:S.E.lab.rev},sid,identity.csrf);
+const startResponse=await call('/api/match/start',{g:'arena',m:'2v2',map:'classic',pv:1,fv:2,labRev:S.E.lab.rev},sid,identity.csrf);
 assert.equal(startResponse.status,200);const ticket=await startResponse.json();assert.ok(ticket.tok);
 const clock=Date.now;Date.now=()=>clock()+70000;
 const scored=await call('/api/match/end',{tok:ticket.tok,r:{won:true,pts:999999,stats:{dmg:2500,kills:1},pf:fakeRec({g:'arena',m:'2v2',won:true,dur:69,dmg:2500})}},sid,identity.csrf);
@@ -52,7 +52,7 @@ Date.now=clock;
 const mini=await call('/api/sync',{initData:tgData.toString(),lab:1},'','','https://solb7403-creator.github.io');assert.equal((await mini.json()).E.earned,score.E.earned,'website battle credit visible to Mini App');
 // Web joins have session-bound tickets; legacy Telegram tickets keep their original format.
 env.ROOM=makeNamespace(mod.PvpRoom,env);env.LOBBY=makeNamespace(mod.PvpLobby,env);
-const joined=await call('/api/pvp/join',{v:2,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:1},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
+const joined=await call('/api/pvp/join',{v:3,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:2},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
 const wsReq=(cookies,origin)=>new Request(env.WEB_ORIGIN+'/pvp/ws?r='+seat.room+'&t='+seat.tok,{headers:{Upgrade:'websocket',Cookie:cookies,Origin:origin}});
 assert.equal((await worker.fetch(wsReq('',env.WEB_ORIGIN),env)).status,403);
 assert.equal((await worker.fetch(wsReq(sid,'https://evil.test'),env)).status,403);

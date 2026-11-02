@@ -347,13 +347,13 @@ const G_BODY={
  style:(spec)=>{
   const own=save.skin==='lunar',looks=spec.looks||{};
   return '<p class="gshared">Looks only: paint and looks never change stats</p><h4 class="gsub">Paint</h4><div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id]&&(id!=='founder'||FOUNDER_OPEN||(save.paints&&save.paints.founder))).map(id=>gPaintCard(id,spec.paint)).join('')+'</div>'+
-   '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="goshop">In the Shop</button>')+'</div>'+
+   '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="premium" data-arg="skin">Buy · '+fmtNum(PSTARS.skin)+' ⭐</button>')+'</div>'+
    FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
  }};
 function gPaintCard(id,cur){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=cur===id;
- const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'In the Shop';
- return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="'+(own||P.only||P.pass?'paint':'goshop')+'" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
+ const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'Buy · '+fmtNum(P.stars)+' ⭐';
+ return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
 function gSum(k,spec){
  if(k==='loadout')return esc(gItem(true,spec.w).name)+' · '+esc(gItem(false,spec.c).name);
@@ -390,7 +390,7 @@ function gGearSheet(isW){
   return '<button class="gear'+(on?' equipped':'')+(sel?' picked':'')+(tune?' hastune':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="'+slot+'|'+iid+'" aria-pressed="'+(on||sel)+'">'+ico+body+(on?'<span class="eq">Equipped</span>':'')+'</button>'+tune+
    (sel?gCmpCard(L,gL(gCand(spec,slot,iid)),'gequip',slot+'|'+iid,'Equip to Bay '+gLetter(id),iid==='moon'?gEdgeLine('moon',gCand(spec,slot,iid)):'',key):'');
  }).join('');
- const moon=isW&&!save.moonbeam?'<div class="gear locked"><div class="ico"><canvas data-art="gear:w:moon" data-locked="1"></canvas></div><div class="grow"><div class="nm">Moonbeam '+rarBadge(getW('moon'))+'</div><div class="meta">'+gearMeta(true,getW('moon'))+'</div>'+gEdgeLine('moon',gCand(spec,'w','moon'))+'</div><button class="btn sm btn-quiet gwhere" data-act="goshop">Shop ›</button></div>':'';
+ const moon=isW&&!save.moonbeam?'<div class="gear locked"><div class="ico"><canvas data-art="gear:w:moon" data-locked="1"></canvas></div><div class="grow"><div class="nm">Moonbeam '+rarBadge(getW('moon'))+'</div><div class="meta">'+gearMeta(true,getW('moon'))+'</div>'+gEdgeLine('moon',gCand(spec,'w','moon'))+'</div><button class="btn sm btn-quiet gwhere" data-act="premium" data-arg="moonbeam">Buy · '+fmtNum(PSTARS.moonbeam)+' ⭐</button></div>':'';
  return '<h3>'+(isW?'Weapon':'Chassis')+' · Bay '+gLetter(id)+'</h3><p class="mut">'+(isW?'Each weapon has its own super.':'Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout.')+' Tap one to see what changes.</p>'+
   '<button class="linkbtn" data-act="labinspect" data-arg="'+key+'">Exact stats of your '+key+'</button><div class="glist">'+rows+moon+'</div>';
 }

@@ -3,7 +3,7 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=2;   // live-match protocol version: the phone and the server must agree (2: Canyon and Bunker joined the live map pool)
+const PVP_V=3;   // live-match protocol version: the phone and the server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
@@ -55,7 +55,7 @@ const WEAPONS={
  pulse:{n:'Pulse Cannon',d:'Balanced gun',dps:70,shot:0.2,c:'#3fd0c9',sup:'Pierce Lance'},
  twin:{n:'Twin Repeater',d:'Fast, light hits',dps:66,shot:0.09,c:'#ffd24a',sup:'Static Nova'},
  siege:{n:'Siege Breaker',d:'Slow, heavy hits',dps:74,shot:0.45,c:'#ff6b5e',sup:'Siege Blast'},
- moon:{n:'Moonbeam',d:'Lunar precision laser',dps:110,shot:0.16,c:'#e8f4ff',sup:'Moonfall',premium:true}};
+ moon:{n:'Moonbeam',d:'Lunar precision laser',dps:118,shot:0.16,c:'#e8f4ff',sup:'Moonfall',premium:true}};
 const WORDER=['pulse','twin','siege'];
 const TIER_MULT=[1.0,1.14,1.34];
 // Legendary is a distinct, fixed premium power step, not an Epic roll or tuneable quality.
@@ -65,7 +65,7 @@ const LEGENDARY_MULT=1.48;
 // for every other weapon) deals MOON_EDGE of a full hit. Crits still need a direct hit.
 const MOON_EDGE=1.0;
 // Lunar Skin: one always-on bonus to health and to damage (shots and supers)
-const SKIN_HP=1.04,SKIN_DMG=1.03;
+const SKIN_HP=1.08,SKIN_DMG=1.08;
 // Crate items roll 105-110% of their rarity; salvaged items store their own multiplier.
 const ROLL_MIN=1.05,ROLL_MAX=1.10;
 const SALV_MIN={1:1.010,2:1.031},SALV_MAX={1:1.030,2:1.044};
@@ -146,7 +146,7 @@ const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*
 const LG_DEMOTE=0.04,LG_FORM_N=20,LG_FORM_MIN=10,LG_FORM_W=0.4;
 // AI step per league (x the base AI power), and how much of it applies by team size: full in 1v1 (and Last Standing), part in
 // 2v2, little in 3v3 (five other tanks dilute a pilot's gear edge there, so 3v3 is already a fight)
-const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0.15,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
+const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0.1,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
 const leagueRating=(pw,lwr,mp)=>(Number(pw)||0)*(1-LG_FORM_W/2+LG_FORM_W*((mp|0)<LG_FORM_MIN?0.5:Math.max(0,Math.min(1,Number(lwr)))));
 function leagueIdx(rating,prev){
  prev=Math.max(0,Math.min(LEAGUE.length-1,prev|0));
@@ -254,8 +254,10 @@ const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a core from level L to
 const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];   // DUP_PTS: a crate roll that doesn't beat what you have
 // shop prices (the server charges these; TON, Stars, points)
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
-const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=30;
-const PREMIUM={moonbeam:{ton:50,stars:3300},skin:{ton:30,stars:2000},starter:STARTER,founder:FOUNDER};
+// Lunar Skin costs what Moonbeam costs: on the real sim each alone wins about 62-63% against the same build without it
+// (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2), so neither is the cheaper way to the same edge
+const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=50;
+const PREMIUM={moonbeam:{ton:MOONBEAM_PRICE,stars:3300},skin:{ton:SKIN_PRICE,stars:3300},starter:STARTER,founder:FOUNDER};
 // ---- Hyperspace Vault: an endless deposit for looks only. Gold is never spent and never expires; lifetime Gold sets
 // your Vault level, and each level unlocks a look (badge, gold tooth, gold name, trail, paint, aura, titles). It gives no
 // stats, power or points. Bigger bundles carry bonus Gold. Every deposit is verified shop spending like any other buy
