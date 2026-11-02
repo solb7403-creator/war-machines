@@ -465,5 +465,35 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   const tr = lbv.top.find((x) => x[0] === pv); t(!tr || tr[5] === 2, 'the points board carries the Vault level for badges');
   t((lbv.vault || []).every((x) => x[2] >= 250), 'only Vault pilots on the Vault board');
 }
+// ---- Session 2: the league bonus is spendable only; the airdrop, the boards and the daily cap count base points ----
+{
+  const X = { day: day + 400, week: Math.floor((day + 400 - 4) / 7), rnd: () => 0.5, pk: 'x' };
+  const mkS = () => R.ecoNorm({});
+  const o = { won: true, drawn: false, g: 'arena', m: '2v2', feat: false, series: false };
+  const SR = mkS(), SL = mkS();
+  const pr = R.ecoMatchPts(SR, o, R.LG_MULT[0], X), pl = R.ecoMatchPts(SL, o, R.LG_MULT[6], X);
+  t(pr.basePts === pl.basePts && SR.dailyPts === SL.dailyPts && SR.weeklyPts === SL.weeklyPts && R.ecoBase(SR) === R.ecoBase(SL), 'Rookie and Lunar Legend, same result: same base, daily and weekly points ' + pr.basePts);
+  t(SL.pts - SR.pts === pl.pts - pr.pts && SL.lgb === pl.pts - pl.basePts && SR.lgb === 0 && SL.earned === SR.earned + SL.lgb, 'spendable differs by the league bonus (x2.0): +' + SL.lgb);
+  // a capped day: only 100 base points of room left; the league bonus pays on the base that fit
+  const CR = mkS(), CL = mkS(); for (const S of [CR, CL]) { R.ecoRoll(S, X); S.dailyPts = R.DAILY_CAP - 100; }
+  const cr = R.ecoMatchPts(CR, o, 1, X), cl = R.ecoMatchPts(CL, o, 2, X);
+  t(CR.dailyPts === R.DAILY_CAP && CL.dailyPts === R.DAILY_CAP && R.ecoBase(CR) === 100 && R.ecoBase(CL) === 100, 'capped day: both bank exactly the 100 base points left');
+  t(CL.lgb === Math.round((cl.pts - cl.basePts) * 100 / cl.basePts) && cl.awarded === 100 + CL.lgb && cr.awarded === 100, 'capped day: the bonus is paid on the 100 that fit (+' + CL.lgb + ')');
+  // through the server: an AI ticket and a live room, Rookie (x1) and Lunar Legend (x2), the same base results
+  const U1 = { id: 5101, username: 'rook' }, U2 = { id: 5102, username: 'legend' }, U3 = { id: 5103, username: 'rooklive' }, U4 = { id: 5104, username: 'legendlive' };
+  const nowL = Date.now() + 5 * 3600000;
+  for (const [u, mult] of [[U1, 1], [U2, 2]]) {
+    const tk = await start(u, { g: 'arena', m: '2v2', L: R.STOCK_L }, nowL);
+    setEco('tg_' + u.id, (S) => { S.mt.mult = mult; });
+    await end(u, tk.tok, { won: true, drawn: false, stats: { dmg: 1500, kills: 2 } }, nowL + 120000);
+  }
+  for (const [u, mult] of [[U3, 1], [U4, 2]]) await eco.creditMatch(env, 'tg_' + u.id, u.username, () => ({ pts: Math.round(320 * mult) + 26, base: 346, pw: 68, won: true, drawn: false, pvs: 1, sb: 26, m: { won: true, drawn: false, g: 'arena', m: '2v2', map: 'classic', st: { dmg: 1500 }, secs: 120 } }), nowL + 300000);
+  const e = (u) => E('tg_' + u.id), p = (u) => db.get('/players/tg_' + u.id + '/pts');
+  t(e(U1).ac === e(U2).ac && e(U1).ac > 0 && p(U1) === p(U2) && e(U1).dailyPts === e(U2).dailyPts, 'AI path: same airdrop credit, leaderboard points and daily points at x1 and x2 (' + e(U1).ac + ')');
+  t(e(U2).pts > e(U1).pts && e(U2).lgb === e(U2).earned - e(U1).earned, 'AI path: spendable differs by the league bonus (+' + e(U2).lgb + ')');
+  t(e(U3).ac === e(U4).ac && e(U3).ac === 346 && p(U3) === p(U4) && e(U4).pts - e(U3).pts === 320 && e(U4).lgb === 320, 'live path: same credit and board points, +320 spendable at x2 (a 346-point base result incl. its +26 streak)');
+  t(e(U1).ac === e(U3).ac && e(U1).dailyPts === e(U3).dailyPts, 'AI and live paths agree for the same base result (' + e(U1).ac + ' vs ' + e(U3).ac + ')');
+  t(typeof e(U1).lwr === 'number' && e(U1).lwr > 0.5 && Number.isInteger(e(U1).lgi), 'a win moves form on the record (lwr ' + e(U1).lwr + ', league ' + e(U1).lgi + ')');
+}
 console.log(`passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

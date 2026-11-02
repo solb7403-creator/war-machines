@@ -7,9 +7,11 @@ workers_dev = true
 crons = ["*/5 * * * *", "* 15-18 * * *"]   # the board and farm check every 5 min; reminders every minute 15:00-18:59 UTC
 
 [vars]
-# reminders per run (one run a minute, 15:00-18:59 UTC: 240 runs a day). Workers Free allows 50 outside calls per run,
-# so 40 reminders + 3 database calls fit: up to 9,600 players a day. On Workers Paid, raise it to 200 (48,000 a day)
-NTF_BATCH = "40"
+# reminders per run (one run a minute, 15:00-18:59 UTC: 240 runs a day). On Workers Paid (1,000 outside calls per run):
+# 200 reminders + 3 database calls a run, up to 48,000 players a day. Sent 4 at a time, a run takes ~50 Telegram round
+# trips (~5-10 s of waiting, almost no CPU), well inside the cron limit; a Telegram 429 stops the run and the rest wait for
+# the next minute. Back to "40" if the account ever moves to Workers Free (50 outside calls per run)
+NTF_BATCH = "200"
 
 # Live PvP: one room per match plus the matchmaking lobby. SQLite-backed classes, so they run on the Workers Free plan.
 [[durable_objects.bindings]]

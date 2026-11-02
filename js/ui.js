@@ -160,7 +160,7 @@ function battleRosterHtml(){
  }).join('')+'</div><p class="battle-roster-rule">Edit either build in the Garage.</p></section>';
 }
 function renderPlay(){
- const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=powerBracket(pw);
+ const W0=getW(save.weapon),C0=getC(save.chassis),pw=calcPower(),brk=myLeague(pw);
  const gk=gtypeKey(),mk=modeKey(),mp=mapKey(),n=playNudge(),wr=winRange(gk,mk);
  return '<div class="hero"><canvas data-art="hero"></canvas>'+
    '<button class="loadline" data-act="tab" data-arg="garage"><span class="nm">'+esc(C0.name)+'</span><span class="sub">'+esc(W0.name)+', power <b>'+pw+'</b>, '+brk.n+' league</span></button></div>'+
@@ -306,7 +306,7 @@ function gBays(){
    '<button class="btn sm btn-quiet" data-act="rangecard" data-arg="'+esc(id)+'">Free Test</button></div></div>';}).join('')+'</div>';
 }
 function gHead(id,M,v,tag){
- const brk=powerBracket(v.power),C=gCeilings();
+ const brk=myLeague(v.power),C=gCeilings();
  const bar=([k,n])=>'<div class="gbar"><div><span>'+n+'</span><b class="num">'+gNum(v[k])+'</b></div><i><em style="width:'+Math.max(3,Math.min(100,100*v[k]/Math.max(1,C[k],v[k])))+'%"></em></i></div>';
  return '<div class="ghead"><div id="g-stage-slot" class="g-stage-slot"></div>'+
   '<div class="gname"><input id="g-name" maxlength="24" value="'+esc(M.name)+'" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Bay '+gLetter(id)+' name (tap to rename)"><button class="btn sm btn-quiet" data-act="gshare">Share my tank</button></div>'+
@@ -650,7 +650,7 @@ function squadPlate(){
 
 // ---------- RANKS ----------
 function renderRanks(){
- const t=tierIdx(),e=save.earned||0,me=playerKey();
+ const t=tierIdx(),e=ecoBase(save),me=playerKey();   // base points: what the boards and the airdrop count
  const rung=(n,i)=>{const lo=TPTS[i],hi=TPTS[i+1]||lo*2,f=e>=hi?1:e<=lo?0:(e-lo)/(hi-lo);
   return '<div class="rung">'+(i===t?'<span class="you" style="left:'+Math.round(f*100)+'%"></span>':'')+'<div class="track"><i style="width:'+Math.round(f*100)+'%;background:'+TIERC[i]+'"></i></div><b style="color:'+(i<=t?TIERC[i]:'var(--dust)')+'">'+n+'</b><span>'+fmtK(TPTS[i])+'</span></div>';};
  const nextTxt=t<4?fmtNum(TPTS[t+1]-e)+' points to '+TIERS[t+1]:'Top tier reached';
@@ -821,10 +821,12 @@ const INFO={
   ...Object.keys(MODES).map(k=>{const M=MODES[k];return [k,'Win '+M.win+', draw '+M.draw+', loss '+M.loss+'.'];}),
   ['Win streaks','Each win in a row adds 20 more points, up to +100 (more in 2v2 and 3v3).'],
   ['Teammates','In 2v2 and 3v3, AI pilots fight on your side.']]],
- league:()=>['Leagues',[
-  ['Your league','Comes from your tank’s power: gear, upgrades and cores. Higher leagues pay more points per match.'],
-  ['Multipliers','Rookie ×1 (under 150 power), Pilot ×1.25 (150+), Ace ×1.5 (250+), Elite ×1.75 (400+), Legend ×2 (600+).'],
-  ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime points and shows on the leaderboard. Your league comes from gear.']]],
+ league:()=>{const L=myLeague();return ['Leagues',[
+  ['Your league','You’re in '+L.n+'. Your league comes from your league rating: your tank’s power (gear, upgrades, cores, mods) times your form. Form is how your last 20 or so matches went (a win counts 1, a draw or a top-3 Last Standing finish 0.5, a loss or a quit 0); it starts counting at your 10th match.'],
+  ['The ladder',LEAGUE.map((x,i)=>x.n+(i?' from '+fmtNum(Math.round(LG_AT[i-1])):'')+' (×'+LG_MULT[i]+')').join(', ')+'. Each line is 21% above the last. You move up at the line and drop only 4% below it.'],
+  ['Tougher AI','Every league up, AI pilots field a stronger loadout: the full step in 1v1, part of it in 2v2 and Last Standing, a little in 3v3. Inside a league the AI never changes with your results. The VS screen shows the league it’s set for.'],
+  ['Points','Higher leagues pay a bonus on your spendable points (the multiplier above). The airdrop ranking, the leaderboards and the 20,000 daily cap count your base points (league ×1), so a higher league never slows your airdrop progress.'],
+  ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime base points and shows on the leaderboard. Your league comes from power and form.']]];},
  build:()=>['Build',[
   ['Your budget','Each stat has 4 levels, but your tank can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how you fight.'],
   ['Cost','Each level costs points: '+UPS.hull.costs.map(fmtNum).join(', ')+' for levels 1 to 4.'],
@@ -1015,7 +1017,7 @@ function vsBuild(){
  else if(adv&&dis){const wn=foes.filter(f=>COUNTER[me.cls]===f.cls).map(f=>esc(f.name)),ln=foes.filter(f=>COUNTER[f.cls]===me.cls).map(f=>esc(f.name));txt='You counter '+wn.join(', ')+': +15% damage to '+(wn.length>1?'them':'it')+', 10% less taken. '+ln.join(', ')+' '+(ln.length>1?'counter':'counters')+' you: the same against you.';}
  else txt='Even matchup. No counters either way.';
  const owned=battleChassisClasses();
- return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents'+(!live&&aiLv?' · AI power '+aiLv.p+(battlePower?', yours '+battlePower:''):''))+'</span></div>'+
+ return '<div class="head"><b>'+modeName(matchG,modeKey())+(isSeriesMode()?', best of 3':'')+'</b><span>'+MAPS[curMap].n+(matchG===featuredMode()?', featured +25%':'')+'</span><br><span class="aitag'+(liveFoes?' live':'')+'">'+(liveFoes?'Live opponents':'AI opponents'+(!live&&aiLv?' · set for '+leagueInfo(battleLg).n+' league · AI power '+aiLv.p+(battlePower?', yours '+battlePower:''):''))+'</span></div>'+
   '<div class="team'+(solo?' many':'')+'">'+foes.map(card).join('')+'</div><div class="mark">'+(solo?'FREE FOR ALL':'VS')+'</div><div class="team">'+mine.map(card).join('')+'</div>'+
   '<p class="mut vsgoal">'+esc(GTYPES[matchG].d)+'</p>'+
   '<div class="match '+cls+'">'+txt+(owned.length>1?'<div class="swap">'+owned.map(c=>'<button class="btn sm '+(c===me.cls?'btn-quiet on':'btn-ghost')+'" data-act="swapcls" data-arg="'+c+'">'+CH[c].n+'</button>').join('')+'</div>':'')+'</div>'+
@@ -1068,7 +1070,7 @@ function resultsHTML(r){
  if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.modeX]);
  else if(r.modeX!==1)lines.push([G.label,'×'+r.modeX]);
  if(r.featured)lines.push(['Featured mode','×'+r.featX]);
- if(r.leagueMult!==1)lines.push([r.league.n+' league','×'+r.leagueMult]);
+ if(r.leagueMult!==1)lines.push([r.league.n+' league bonus'+(r.lgBonus?': +'+fmtNum(r.lgBonus)+' to spend':''),'×'+r.leagueMult]);   // spendable only: the airdrop and the daily cap count base points
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.sqb>0)lines.push(['Squad match bonus','+'+fmtNum(r.sqb)]);   // verified active recruits (server-set)
  if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
@@ -1156,7 +1158,7 @@ function forfeit(){
  const live=pvpOn();
  if(live)pvpLeave();
  state='menu';paused=false;
- ecoQuit(save);store();   // a loss, no points (the server records the same: the room for a live match, the ticket for an AI one)
+ ecoQuit(save);ecoLeague(save,battlePower||calcPower());store();   // a loss, no points (the server records the same: the room for a live match, the ticket for an AI one)
  if(live)applyEcoSoon();else matchEnd({quit:true});
  exitBattle();
 }
@@ -1502,7 +1504,7 @@ ACT.glook=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.looks={..
 document.addEventListener('change',e=>{if(e.target.id==='g-name')gRename(e.target.value);});
 document.addEventListener('keydown',e=>{if(e.target.id==='g-name'&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
 ACT.gshare=()=>{
- const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=powerBracket(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();
+ const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=myLeague(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();
  gShare={text:gShareText(tag,v,brk),url:link,file:null};
  try{cv.toBlob(b=>{if(b&&gShare)try{gShare.file=new File([b],'lunar-tank.png',{type:'image/png'});}catch(e){}},'image/png');}catch(e){}
  const ov=sheet('share',()=>'<h3>Share my tank</h3><img class="gshare-img" src="'+url+'" alt="'+esc(M.name)+': power '+v.power+', '+esc(brk.n)+' league, '+esc(tag.n)+'">'+

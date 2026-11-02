@@ -26,36 +26,54 @@ const rid = () => [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.to
 export const seatsFor = (g, m) => (g === "royale" ? 6 : rules().MODES[m].n * 2);
 
 // ================= lobby =================
-// Rooms open for pilots in the same queue (mode + team size) and league. The league band widens while a room
-// waits: same league for 10 s, then one league either side, then two.
+// Rooms open for pilots in the same queue (mode + team size), matched on gear score (power, rules.js powerOf). The power
+// window widens while a room waits: within MM_WIN[0] (8%) of every pilot already there for the first 10 s, then 15%, then
+// 25%. On top, the mismatch cap: a pilot is never seated against live opponents when the gear-predicted win chance for the
+// stronger side would top MM_CAP (80%; team modes compare the teams' average power, AI seats counted at the room's middle
+// power, the way they are filled). Past the window the room fills with AI pilots as before. League only breaks ties; your
+// form never pairs you against harder winners (no forced 50%).
 // Quick Match pilots ("quick.<size>") fit any live room of their team size, and a mode pilot fits a Quick Match room
 // (which then becomes that mode), so everyone looking for a live match at one team size can meet.
+export const MM_WIN = [0.08, 0.15, 0.25], MM_STEP = 10000, MM_CAP = 0.8;
 export const queueFits = (rq, q) => {
   const [rg, rm] = rq.split("."), [g, m] = q.split(".");
   return rm === m && (rg === g || (rg === "quick" && g !== "royale") || (g === "quick" && rg !== "royale"));
 };
+// the gear-predicted chance for the stronger side if this pilot joins (seats alternate teams in join order; Last Standing: any two pilots)
+export function roomOdds(R, pw, seats, solo, power) {
+  const all = pw.concat(power);
+  if (solo) { let w = 0.5; for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) w = Math.max(w, R.powerWin(all[i], all[j], 0), R.powerWin(all[j], all[i], 0)); return w; }
+  const mid = all.slice().sort((x, y) => x - y)[(all.length - 1) >> 1], n = seats / 2, side = [[], []];
+  all.forEach((p, k) => side[k % 2].push(p));
+  const avg = (t) => (t.reduce((x, y) => x + y, 0) + mid * (n - t.length)) / n;
+  if (!side[1].length) return 0.5;   // nobody on the other side yet: no live opponent
+  const a = avg(side[0]), b = avg(side[1]);
+  return Math.max(R.powerWin(a, b, 0), R.powerWin(b, a, 0));
+}
 export class LobbyCore {
-  constructor(now = () => Date.now(), waitMs = PVP.WAIT_MS) { this.rooms = []; this.now = now; this.waitMs = waitMs; }
-  assign({ q, league, pid, seats }) {
-    const t = this.now();
+  constructor(now = () => Date.now(), waitMs = PVP.WAIT_MS) { this.rooms = []; this.now = now; this.waitMs = waitMs; this.R = rules(); }
+  assign({ q, league, power, pid, seats }) {
+    const t = this.now(), pw0 = Math.max(1, Number(power) || 0);
     const openFor = this.waitMs > 5000 ? this.waitMs - 2500 : this.waitMs * 0.8;   // stop filling a room just before it starts
     this.rooms = this.rooms.filter((r) => !r.closed && t - r.t0 < openFor);
     const mine = this.rooms.find((r) => r.pids.includes(pid));
     if (mine) return { room: mine.id, n: mine.pids.length };   // already waiting somewhere (a double tap, or a retry): same room, same seat
-    let best = null;
+    let best = null, bestKey = null;
     for (const r of this.rooms) {
       if (!queueFits(r.q, q) || r.pids.length >= r.seats) continue;
-      const age = t - r.t0, band = age < 10000 ? 0 : age < 20000 ? 1 : 2;
-      if (Math.abs(r.league - league) > band) continue;
-      if (!best || r.pids.length > best.pids.length || (r.pids.length === best.pids.length && r.t0 < best.t0)) best = r;
+      const age = t - r.t0, win = MM_WIN[Math.min(MM_WIN.length - 1, Math.floor(age / MM_STEP))];
+      if (r.pw.some((p) => Math.abs(Math.log(pw0 / p)) > Math.log(1 + win))) continue;   // outside the power window
+      if (roomOdds(this.R, r.pw, r.seats, r.q.startsWith("royale"), pw0) > MM_CAP) continue;   // would be a mismatch
+      const key = [r.pids.length, -Math.abs((r.league | 0) - (league | 0)), -r.t0];   // fuller first, then nearer league, then older
+      if (!best || key[0] > bestKey[0] || (key[0] === bestKey[0] && (key[1] > bestKey[1] || (key[1] === bestKey[1] && key[2] > bestKey[2])))) { best = r; bestKey = key; }
     }
-    if (!best) { best = { id: rid(), q, league, seats, t0: t, pids: [] }; this.rooms.push(best); }
+    if (!best) { best = { id: rid(), q, league, seats, t0: t, pids: [], pw: [] }; this.rooms.push(best); }
     if (best.q.startsWith("quick.") && !q.startsWith("quick.")) best.q = q;   // a Quick Match room takes the mode of the first pilot who picked one
-    best.pids.push(pid);
+    best.pids.push(pid); best.pw.push(pw0);
     return { room: best.id, n: best.pids.length };
   }
   close(room) { const r = this.rooms.find((x) => x.id === room); if (r) r.closed = true; }
-  left({ room, pid }) { const r = this.rooms.find((x) => x.id === room); if (r) r.pids = r.pids.filter((p) => p !== pid); }
+  left({ room, pid }) { const r = this.rooms.find((x) => x.id === room); if (r) { const i = r.pids.indexOf(pid); if (i >= 0) { r.pids.splice(i, 1); r.pw.splice(i, 1); } } }
   stats() {
     const t = this.now(), open = this.rooms.filter((r) => !r.closed && t - r.t0 < this.waitMs);
     return { open: open.length, waiting: open.reduce((a, r) => a + r.pids.length, 0), queues: [...new Set(open.map((r) => r.q))] };
@@ -286,7 +304,7 @@ export class RoomCore {
     if (s.done) return;
     s.done = true;
     const R = this.R, g = this.q.g, m = this.q.m, u = this.sim.units[s.idx];
-    const feat = g === R.featuredOn(this.io.day()), brk = R.powerBracket(R.powerOf(s.L)), M = R.MODES[m] || R.MODES["1v1"];
+    const feat = g === R.featuredOn(this.io.day()), brk = R.leagueInfo(s.league), M = R.MODES[m] || R.MODES["1v1"];   // the league on your record when you joined
     const top3 = g === "royale" && !quit && o.place > 0 && o.place <= 3;
     const zx = R.teamX(g, m, !!this.series), fxm = feat ? R.FEATURED_X : 1;
     const won = !quit && o.won, drawn = !quit && o.drawn;
@@ -304,14 +322,14 @@ export class RoomCore {
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
       const sb = won ? R.streakPts(g, m, pvs) : 0;
-      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, pvs, sb, won, drawn, m: mt, opp };
+      return { pts: quit ? 0 : Math.round(base * fxm * brk.mult) + sb, base: quit ? 0 : Math.round(base * fxm) + sb, pw: R.powerOf(s.L), pvs, sb, won, drawn, m: mt, opp };   // base: at league x1 (eco.js ecoPlayAward)
     };
     const tryCredit = (k) => Promise.resolve().then(() => this.io.credit(s, calc)).catch((e) => {   // a database hiccup: try again, never drop the points
       if (k + 1 >= this.o.CREDIT_TRIES) throw e;
       return new Promise((res) => this.io.setTimeout(res, 500 * 2 ** k)).then(() => tryCredit(k + 1));
     });
     const p = tryCredit(0)
-      .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb }))
+      .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb, lgBonus: c.lgBonus || 0 }))
       .catch(() => Object.assign(res, { pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true }))
       .then(() => { s.res = res; this.sendTo(s, { k: "res", r: res }); });
     this.pending.push(p);
@@ -422,11 +440,11 @@ export async function pvpJoin(env, a) {
   if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return { status: 409, body: {error:"update"} };
   if (S.lab && b.labRev !== S.lab.rev) return { status: 409, body: {error:"garage_changed"} };
   const L = await checkLoadout(env, R, b.L, S);
-  const power = R.powerOf(L), league = R.powerBracket(power).i, name = cleanName(a.user), q = g + "." + m, lobby = lobbyStub(env);
+  const power = R.powerOf(L), league = R.leagueIdx(R.leagueRating(power, S.lwr, S.mp), S.lgi), name = cleanName(a.user), q = g + "." + m, lobby = lobbyStub(env);
   for (let i = 0; i < 3; i++) {
-    const asg = await (await lobby.fetch("https://lobby/assign", post({ q, league, pid: a.pid, seats: seatsFor(g, m) }))).json();
+    const asg = await (await lobby.fetch("https://lobby/assign", post({ q, league, power, pid: a.pid, seats: seatsFor(g, m) }))).json();
     const r = await (await roomStub(env, asg.room).fetch("https://room/seat", post({ room: asg.room, pid: a.pid, name, q: { g, m }, L, power, league }))).json();
-    if (r.ok) return { status: 200, body: { ok: true, room: asg.room, tok: await makeToken(env, a.pid, asg.room, now, a.web), seat: r.seat, wait: r.wait, power, league: R.LEAGUES[league] } };
+    if (r.ok) return { status: 200, body: { ok: true, room: asg.room, tok: await makeToken(env, a.pid, asg.room, now, a.web), seat: r.seat, wait: r.wait, power, league: R.LEAGUES[league], lgi: league } };
     await lobby.fetch("https://lobby/close", post({ room: asg.room }));
   }
   return { status: 503, body: { error: "busy" } };

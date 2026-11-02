@@ -43,3 +43,11 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - AI: AI_TIERS powers recomputed (26 tiers, 68..171; one duplicate removed, two steps added so no step > 8%); AI_EXP 0.75 -> 0.70 so each
   ladder kit meets the same AI tier (+/-1). Standard-pilot averages vs post-item-2: stock .580/.580 common .659/.659 rare .689/.687
   epic .864/.860 legend .867/.898 (n=264 each). Data: s2data/ai-post2.json, ai-item3.json.
+
+### 4-7 in progress (code in, item 4 calibration running)
+- Leagues (rules.js LEAGUE, LG_*, leagueRating/leagueIdx/ecoLeague/ecoForm, aiLevel(pw,e,lg,n), aiStep). Form on every record path:
+  ecoAfterMatch/ecoQuit (rules), eco.js matchEnd/creditMatch call R.ecoLeague after the result; ECO_KEYS lwr/lgi/lg/lgb.
+- Item 5: LobbyCore power windows (MM_WIN 8/15/25%, MM_STEP 10 s, MM_CAP 80%, roomOdds). dev/tests/s2/queue-sim.mjs: 0 above cap.
+- Item 6: ecoPlayAward/ecoBase; credit() on base; players/pts = base; tests in wtest/test.mjs (198 pass).
+- Item 7: NTF_BATCH 200 + farm.mjs timing/429 test (55 pass).
+- Calibration grid: dev/tests/s2/league-grid.mjs (standard pilot) -> scratch grid-std.json.

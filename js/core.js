@@ -129,7 +129,7 @@ const gcol=it=>it.premium?'#e8f4ff':it.sal?SALV_COL:tierCol(it.tier);
 const gbadge=it=>it.premium?'Legendary':it.sal?'Salvaged':tierName(it.tier);
 const ownedChassisClasses=()=>CHORDER.filter(c=>(save.cOwn[c]||[]).length||salvOf(c,1)||salvOf(c,2));
 // ---- tiers (lifetime points) and leagues (gear power) ----
-const tierIdx=()=>tierOfPts(save.earned||0);
+const tierIdx=()=>tierOfPts(ecoBase(save));
 const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f4ff',price:SKIN_PRICE,d:'+'+Math.round((SKIN_HP-1)*100)+'% health, +'+Math.round((SKIN_DMG-1)*100)+'% damage'}};
 // everything that sets your tank's stats, in the form the server checks (see ecoLoadout in rules.js)
 function myLoadout(){
@@ -139,6 +139,8 @@ function myLoadout(){
   skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg)};
 }
 const calcPower=()=>powerOf(myLoadout());
+// your league right now: the server's record (lgi, form lwr) with the tank you'd field, the same rule the server applies (rules.js)
+const myLeague=pw=>leagueInfo(leagueIdx(leagueRating(pw===undefined?calcPower():pw,save.lwr,save.mp),save.lgi));
 function buildStats(){
  const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),lun=save.skin==='lunar',skin=lun?SKIN_HP:1,skinD=lun?SKIN_DMG:1;
  const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k):0),0);

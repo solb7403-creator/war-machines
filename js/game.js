@@ -744,7 +744,8 @@ function botAI(dt,u){
  let tx,ty;
  if(goal===tgt&&seen){            // engaging: hold range and strafe
   let mx=0,my=0;
-  if(d>4.8){mx=nx;my=ny;}else if(d<3.2){mx=-nx;my=-ny;}
+  const kf=u.kite?u.kite[1]:4.8,kn=u.kite?u.kite[0]:3.2;   // the range a pilot holds (kite: a test pilot's own band; every AI pilot holds 3.2-4.8)
+  if(d>kf){mx=nx;my=ny;}else if(d<kn){mx=-nx;my=-ny;}
   mx+=-ny*u.strafe*0.8;my+=nx*u.strafe*0.8;
   if(zin){const zx=zin.x-u.x,zy=zin.y-u.y,zd=Math.hypot(zx,zy)||1;if(zd>zin.r*0.55){mx+=zx/zd*1.4;my+=zy/zd*1.4;}}   // strafe but stay on the point
   const m=Math.hypot(mx,my)||1;tx=u.x+mx/m;ty=u.y+my/m;

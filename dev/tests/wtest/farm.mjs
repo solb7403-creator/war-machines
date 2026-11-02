@@ -9,11 +9,13 @@ buildSim();
 const db = makeDB();
 db.root.cfg = { proof: 'enforce' };   // the forged-result checks below run with the stricter setting (the default is flag only)
 const tgCalls = [], tgFail = {};
+let tgDelay = 0;   // simulated Telegram round trip (ms) for the reminder-run timing check
 let tonTxs = [];
 globalThis.fetch = async (url, init) => {
   if (url.startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/')) return db.handle(url, init);
   if (url.startsWith('https://api.telegram.org/')) {
     const body = JSON.parse(init.body); tgCalls.push([url.split('/').pop(), body]);
+    if (tgDelay) await new Promise((r) => setTimeout(r, tgDelay));
     const f = tgFail[body.chat_id];
     if (f) return new Response(JSON.stringify({ ok: false, error_code: f, description: 'x' }));
     return new Response(JSON.stringify({ ok: true, result: url.endsWith('/getChatMember') ? { status: 'left' } : { message_id: 1 } }));
@@ -255,6 +257,32 @@ const mutate = (pf, fn) => { const b = Buffer.from(pf.s, 'base64'); fn(b, pf.n *
   delete tgFail[9110];
   let n3 = 0; for (let i = 1; i < 4; i++) n3 += await mod.sendReminders(env, d0 + DAY + i * MIN, 40);
   t(n2 + n3 === 39, 'the next runs finish the day ' + (n2 + n3));
+}
+// ======== Workers Paid: 200 reminders a run (wrangler.toml NTF_BATCH), well inside the cron limit; a 429 still stops the run ========
+{
+  const toml = (await import('node:fs')).readFileSync(new URL('../../../worker/wrangler.toml', import.meta.url), 'utf8');
+  const nb = Number((toml.match(/^NTF_BATCH\s*=\s*"(\d+)"/m) || [])[1]);
+  t(nb === 200, 'wrangler.toml sends 200 reminders a run (240 runs a day: 48,000 players)');
+  const d1 = Date.UTC(2026, 9, 29, 15, 2, 0), day = Math.floor(d1 / DAY), up = {};
+  for (let i = 0; i < 230; i++) up['ntf/tg_' + (9300 + i)] = { on: 1, chat: 9300 + i, nx: day, pl: day - 5, sk: 0, gf: 1 };
+  await (await import('../../../worker/src/db.js')).dbPatch(env, '', up);
+  const benv = { ...env, NTF_BATCH: String(nb) }, b0 = tgCalls.length;
+  tgDelay = 120;   // a slow Telegram: 120 ms a call
+  const t0 = Date.now(), sent = await mod.sendReminders(benv, d1);
+  const secs = (Date.now() - t0) / 1000;
+  t(sent === 200 && tgCalls.length - b0 === 200, 'one run sends exactly the batch: ' + sent);
+  t(secs < 15, 'a 200 run at 120 ms a Telegram call takes ' + secs.toFixed(1) + ' s (cron runs may take minutes; CPU is near zero)');
+  const mine = (from) => tgCalls.slice(from).filter(([m, b]) => m === 'sendMessage' && b.chat_id >= 9300 && b.chat_id < 9530 && !tgFail[b.chat_id]).map(([, b]) => b.chat_id);
+  const left = Array.from({ length: 230 }, (_, i) => 9300 + i).filter((c) => !mine(b0).includes(c));
+  tgFail[left[5]] = 429;   // Telegram slows us down on the 6th of the 30 still due
+  const b1 = tgCalls.length; await mod.sendReminders(benv, d1 + MIN);
+  const got1 = mine(b1).filter((c) => left.includes(c));
+  t(got1.length < left.length - 4, 'a 429 inside a 200 run stops it (' + got1.length + ' of ' + left.length + ' sent before the stop)');
+  delete tgFail[left[5]]; tgDelay = 0;
+  const b2 = tgCalls.length; await mod.sendReminders(benv, d1 + 2 * MIN);
+  const all = new Set(mine(b0).filter((c) => c !== left[5]).concat(mine(b2)));
+  const sends = mine(b0), dup = sends.length - new Set(sends).size;   // the one 429'd chat is tried twice (once refused)
+  t(all.size === 230 && dup <= 1, 'the next run finishes the rest: all 230 reached, nobody twice (' + all.size + ', ' + dup + ' retry)');
 }
 // ======== the public leaderboard file comes through the server (edge-cached), not straight from the database ========
 {
