@@ -45,3 +45,20 @@ Model: most pilots play a few days, some grind; ~6% invite 1–6 friends, ~0.5% 
 Shares are of the player airdrop. Referral pool = 10%, Points pool = 90%; nobody above 2% of the Referral pool (0.2% of the player airdrop).
 
 Read-out: at 50k players the Referral pool fills (250) and the average referral share (0.040%) is ≈0.44× the average points share (0.090%) — as intended. At 1k–10k only 5–57 recruiters qualify, so the 2% cap binds and most of the Referral pool is unallocated. Farms that slip through stay under 6% of qualifiers and under the 2% cap.
+
+## Session 2: league base pay, the daily cap and minutes to cap
+
+Base points per match = mode pay (featured, streak) x league base pay (`LG_BASE_PAY` x1.00 Rookie ... x1.60 Lunar Legend). They
+count for the airdrop credit, the play score and every board. The spendable multiplier (x1.00 ... x2.00) is on top, for
+spendable points only. `DAILY_CAP` stays 20,000 base points in every league, so higher leagues reach it sooner and nobody banks more a day.
+
+Minutes to the cap (standard pilot, mode average, measured; docs/launch/LEAGUES.md has every kit x pilot):
+Rookie (Starter) 90 min, Pilot (Common) 76, Veteran (Rare) 63, Master (Epic) 40, Lunar Legend (full Legendary) 28.
+The fastest single setups (Survival, Last Standing when placing high) cap in ~20-35 minutes.
+
+Per week, matches only: a 24/7 bot caps every day: 140,000 base. A 1-hour-a-day pilot banks ~94,000 (Rookie, Starter) to
+140,000 (Master and up: capped inside the hour). A 3-hour pilot caps daily in every league: 140,000.
+
+**Recommended cap (to set from beta data):** the daily match play of the top ~10% of real pilots. With today's pay a 1-hour
+pilot in Master or above already caps, so if the top 10% play 2-3 hours a day the cap should be ~40,000-60,000 base points
+to keep their extra hours counting. Keep 20,000 until beta shows the real distribution.

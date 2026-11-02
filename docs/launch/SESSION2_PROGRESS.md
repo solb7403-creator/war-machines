@@ -5,11 +5,11 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - [x] 1. Mods rework
 - [x] 2. Legendary balance
 - [x] 3. Gear score accuracy
-- [ ] 4. Leagues + AI
-- [ ] 5. PvP matchmaking
-- [ ] 6. Airdrop + daily cap on base points
-- [ ] 7. Reminder cap
-- [ ] 8. Pricing
+- [x] 4. Leagues + AI (targets partly missed, see LEAGUES.md checks)
+- [x] 5. PvP matchmaking
+- [x] 6. Airdrop + daily cap on base points (+ LG_BASE_PAY)
+- [x] 7. Reminder cap
+- [x] 8. Pricing (Lunar Skin stays 2,000 Stars)
 - [ ] Release
 
 ## Tools
@@ -62,3 +62,8 @@ Branch: `session2-leagues-economy` (from `main` 8df6500). One PR at the end. Res
 - Merge rule: merge automatically if CI green AND floors, 3v3 and points-per-minute checks pass with restored stats; else stop
   and send the tables. Final report: all tables, today vs new AI win rates (every gear level, mode, league), legendary results.
 - Lunar Skin price: Skin now has its original +8%/+8%; price decision must be re-measured (human profile).
+
+### Final state (Nov 2)
+- PR #34 open, CI green. NOT merged: per the owner's merge rule, the hard floors (7 casual cells), the Lunar Legend 70-75% target
+  and some points-per-minute steps miss -> stop and send the tables (docs/launch/LEAGUES.md, EQUIPMENT_BALANCE_VALIDATION.md).
+- Shipped stats in the branch: Moonbeam 118 DPS, x1.48, Moonfall 400 full width, Precision 100%; Lunar Skin +8%/+8%.
