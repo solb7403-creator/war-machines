@@ -988,12 +988,32 @@ function showGhostReport(r){
    '<p class="mut" style="margin-top:10px">'+fmtNum(r.dmg)+' damage dealt'+(r.m?', '+fmtNum(Math.round(r.dmg/r.m))+' a match':'')+'. '+(r.w>r.l?'Your build holds up.':r.w===r.l?'An even record.':'Tougher out there than it looks. A different build might do better.')+'</p>');};
  setTimeout(go,1500);
 }
-let devTapN=0,devTapT=0;
+let devTapN=0,devTapT=0,ownerGemN=1,ownerGemBusy=false;
+// the owner's own account only (the server checks it again and refuses everyone else): free Epic gem caches for testing
+const OWNER_PID='ln_6392735208728';
+const isOwnerUI=()=>SRV_ECO&&ACCOUNT_OK&&playerKey()===OWNER_PID;
+function ownerGemHtml(){
+ if(!isOwnerUI())return '';
+ return '<h3 style="margin-top:4px;font-size:16px">Owner test tools</h3>'+
+  '<div class="seg" style="grid-template-columns:1fr 1fr 1fr;margin-top:8px">'+[1,5,10].map(k=>'<button class="'+(ownerGemN===k?'on':'')+'" data-act="ownergemn" data-arg="'+k+'">'+k+'</button>').join('')+'</div>'+
+  '<button class="btn sm btn-go block" style="margin-top:8px" data-act="ownergem"'+(ownerGemBusy?' disabled':'')+'>Open Epic gem cache (owner)'+(ownerGemN>1?' ×'+ownerGemN:'')+'</button>'+
+  '<p class="dimtxt" style="margin-top:6px">Free, real rolls on your own account only. No points, no purchases counted.</p>';
+}
+function ownerGemOpen(){
+ if(!isOwnerUI()||ownerGemBusy)return;
+ ownerGemBusy=true;uiDirty('admin');
+ api(IN_TG?'/api/admin':'/api/owner',{a:'owner_gem_epic',n:ownerGemN}).then(r=>{
+  ownerGemBusy=false;if(r&&r.E)applyEco(r.E);
+  const outs=r&&r.out&&r.out.outs;if(outs&&outs.length)showOuts(outs);else showToast('Nothing opened');
+  uiDirty();
+ }).catch(e=>{ownerGemBusy=false;uiDirty('admin');showToast('Owner cache: '+String(e.message||e));});
+}
 function openAdmin(){
+ if(!IS_DEV){if(isOwnerUI())sheet('admin',()=>'<h3>Admin</h3>'+ownerGemHtml());return;}   // the website: the owner's tools only
  loadAdmin();
  sheet('admin',()=>{
   const A=adminData||{loading:true},R=A.revenue||{},pw=calcPower();
-  return '<h3>Admin</h3>'+
+  return '<h3>Admin</h3>'+ownerGemHtml()+
    (A.loading?'<p class="mut">Loading server stats…</p>':A.error?'<p class="mut">Server stats: '+esc(A.error)+'</p>':
    '<div class="kv"><div><b class="num">'+fmtNum(A.players)+'</b><span>Players</span></div><div><b class="num">'+fmtNum(A.activeToday)+'</b><span>Active today</span></div><div><b class="num">$'+fmtNum(R.USD)+'</b><span>Revenue</span></div></div>'+
    '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.unverified?'. '+R.unverified+' need checking':'')+'</p>'+
@@ -1349,7 +1369,7 @@ const ACT={
  remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
  remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},
  copyid:()=>{try{navigator.clipboard.writeText(playerKey()).then(()=>showToast('Player ID copied'),()=>showToast(playerKey()));}catch(e){showToast(playerKey());}},
- devtap:()=>{if(!IS_DEV)return;const now=performance.now();if(now-devTapT>4000)devTapN=0;devTapT=now;if(++devTapN>=5){devTapN=0;openAdmin();}},
+ devtap:()=>{if(!IS_DEV&&!isOwnerUI())return;const now=performance.now();if(now-devTapT>4000)devTapN=0;devTapT=now;if(++devTapN>=5){devTapN=0;openAdmin();}},
  dev:a=>{if(!IS_DEV)return;
   if(SRV_ECO){showToast('Test grants only work outside Telegram now: the server owns points and gear');return;}
   if(a==='pts'){save.pts=(save.pts||0)+50000;}
@@ -1359,6 +1379,8 @@ const ACT={
   if(a==='passxp'){passXP(2000);}
   if(a==='pass'){passState().prem=true;}
   store();showToast('Granted on this device (test)');},
+ ownergemn:a=>{ownerGemN=[1,5,10].includes(+a)?+a:1;uiDirty('admin');},
+ ownergem:()=>ownerGemOpen(),
  flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
  clclear:a=>{loadAdmin({clearCl:a});showToast('Cleared: every account in that group counts again');},
  adminproof:a=>{loadAdmin({proof:a});showToast(a==='flag'?'Match records: flag only':'Match records: enforced');},
