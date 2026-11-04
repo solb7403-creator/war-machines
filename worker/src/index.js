@@ -12,6 +12,7 @@ import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar
 import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from "./accounts.js";
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic } from "./owner.js";
+import {conquestSession,conquestInput,conquestAction} from "./conquest.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -648,6 +649,9 @@ async function webhook(req, env) {
 
 // ================= router =================
 const ROUTES = {
+  "/api/conquest/session": conquestSession,
+  "/api/conquest/input": conquestInput,
+  "/api/conquest/action": conquestAction,
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
@@ -725,8 +729,8 @@ export default {
       if (a.err) return cors(a.err, req);
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
-      if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261102210000"},409),req);
+      if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
+        return cors(json({error:"update",build:"20261104210305"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

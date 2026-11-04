@@ -1,0 +1,92 @@
+{
+  "proposalOnly": true,
+  "recipe": {
+    "cp": 650,
+    "alloy": 90,
+    "biomass": 55,
+    "helium": 12
+  },
+  "reachedMinutes": 56,
+  "events": [
+    {
+      "minute": 10,
+      "name": "Oxygen first clear + physically collected seven wave caches",
+      "amount": {
+        "cp": 403,
+        "alloy": 48,
+        "biomass": 32,
+        "helium": 7
+      },
+      "balance": {
+        "cp": 403,
+        "alloy": 48,
+        "biomass": 32,
+        "helium": 7
+      }
+    },
+    {
+      "minute": 16,
+      "name": "First patrol pair, both caches collected",
+      "amount": {
+        "cp": 52,
+        "alloy": 8,
+        "biomass": 5,
+        "helium": 1
+      },
+      "balance": {
+        "cp": 455,
+        "alloy": 56,
+        "biomass": 37,
+        "helium": 8
+      }
+    },
+    {
+      "minute": 25,
+      "name": "Both defended installations cleared and collected",
+      "amount": {
+        "cp": 126,
+        "alloy": 18,
+        "biomass": 12,
+        "helium": 2
+      },
+      "balance": {
+        "cp": 581,
+        "alloy": 74,
+        "biomass": 49,
+        "helium": 10
+      }
+    },
+    {
+      "minute": 36,
+      "name": "Patrols reinforced after20minutes out of view, cleared/collected",
+      "amount": {
+        "cp": 52,
+        "alloy": 8,
+        "biomass": 5,
+        "helium": 1
+      },
+      "balance": {
+        "cp": 633,
+        "alloy": 82,
+        "biomass": 54,
+        "helium": 11
+      }
+    },
+    {
+      "minute": 56,
+      "name": "Third qualified patrol circuit and supply return",
+      "amount": {
+        "cp": 52,
+        "alloy": 8,
+        "biomass": 5,
+        "helium": 1
+      },
+      "balance": {
+        "cp": 685,
+        "alloy": 90,
+        "biomass": 59,
+        "helium": 12
+      }
+    }
+  ]
+}

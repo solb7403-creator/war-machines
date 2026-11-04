@@ -1,0 +1,58 @@
+{
+  "environment": "390x844 Chromium SwiftShader; software browser, not physical iPhone or Cloudflare billing",
+  "sampleCount": 1000,
+  "heapBytes": 35589044,
+  "battle": {
+    "state": "victory",
+    "kills": 7,
+    "hp": 1382.5954000000002,
+    "ledger": {
+      "cp": 250,
+      "banked": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "cargo": {
+        "alloy": 24,
+        "biomass": 16,
+        "helium": 6
+      }
+    },
+    "settlement": {
+      "kind": "first-clear",
+      "cp": 250,
+      "alloy": 24,
+      "biomass": 16,
+      "helium": 6
+    }
+  },
+  "movementVectors": 12,
+  "requests": 188,
+  "requestErrors": [],
+  "frame": {
+    "p50": 87.19999999925494,
+    "p95": 148.19999999925494,
+    "max": 1043.1000000014901
+  },
+  "cpu": {
+    "p50": 3.5,
+    "p95": 16.300000000745058,
+    "max": 154.60000000149012
+  },
+  "sim": {
+    "p50": 0.8000000007450581,
+    "p95": 10.300000000745058,
+    "max": 67.50000000372529
+  },
+  "calls": {
+    "p50": 214.0,
+    "p95": 220,
+    "max": 222
+  },
+  "geometry": {
+    "p50": 129.0,
+    "p95": 129,
+    "max": 129
+  }
+}

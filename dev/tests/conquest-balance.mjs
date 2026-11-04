@@ -1,0 +1,6 @@
+// Proposed Session4 recipe only; no Base feature, purchase or debit exists.
+import assert from 'node:assert/strict';import {POLICY} from '../../worker/src/conquest-economy.js';
+const recipe={cp:650,alloy:90,biomass:55,helium:12},sum={cp:0,alloy:0,biomass:0,helium:0};
+const events=[{minute:10,name:'Oxygen first clear + physically collected seven wave caches',amount:{cp:250+6*18+45,alloy:24+6*3+6,biomass:16+6*2+4,helium:6+1}},{minute:16,name:'First patrol pair, both caches collected',amount:{cp:52,alloy:8,biomass:5,helium:1}},{minute:25,name:'Both defended installations cleared and collected',amount:{cp:126,alloy:18,biomass:12,helium:2}},{minute:36,name:'Patrols reinforced after20minutes out of view, cleared/collected',amount:{cp:52,alloy:8,biomass:5,helium:1}},{minute:56,name:'Third qualified patrol circuit and supply return',amount:{cp:52,alloy:8,biomass:5,helium:1}}];let reached;
+for(const e of events){for(const k in sum)sum[k]+=e.amount[k];e.balance={...sum};if(!reached&&Object.keys(recipe).every(k=>sum[k]>=recipe[k]))reached=e.minute;}
+assert(reached>=45&&reached<=75);assert(sum.cp<POLICY.daily.cp);console.log(JSON.stringify({proposalOnly:true,recipe,reachedMinutes:reached,events},null,2));

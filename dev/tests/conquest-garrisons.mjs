@@ -5,7 +5,7 @@ const stock=vm.runInContext('STOCK_L',c),C=c.ConquestCombat,W=c.ConquestWorld;
 const point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'}),cleared={};
 assert.equal(C.installations.length,2);assert(C.installations.some(b=>b.kind==='staging'));
 const p=point(1240,875),a=new C.Encounter(stock,p,cleared);
-assert.equal(a.enemies.length,4);for(const e of a.enemies){assert(!W.solidAt(e.x,e.z));assert(Number.isFinite(e.hp));}
+assert.equal(a.enemies.length,6);for(const e of a.enemies){assert(!W.solidAt(e.x,e.z));assert(Number.isFinite(e.hp));}
 const far=point(15000,8000),before=a.enemies.map(e=>[e.x,e.z,e.cd]);for(let i=0;i<10;i++)a.tick(.1,far,{});
 assert.deepEqual(a.enemies.map(e=>[e.x,e.z,e.cd]),before,'remote units do not run AI');
 const e=a.enemies[0];let fired=false;for(let i=0;i<1200&&e.hp>0;i++){

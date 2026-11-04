@@ -1,0 +1,1 @@
+{"environment":"Node24 local, not Cloudflare billing/runtime","batch":"20x50ms fixed input; one request/second","cpuP50":0.748,"cpuP95":48.8,"p50":0.73930399999972,"p95":106.35519900000003,"max":150.54810899999995,"stateBytes":16418,"state":"victory","kills":7}

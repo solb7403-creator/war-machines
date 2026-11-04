@@ -38,7 +38,7 @@ async def main():
   await page.screenshot(path=str(OUT/'assigned-map.png'))
   await page.get_by_role('button',name='CLOSE MAP',exact=True).click()
   assert before==await page.evaluate('Conquest.view.discovery.version'),'mission intel must not reveal terrain'
-  await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
+  await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
   await page.get_by_role('heading',name='THE LAST AIR WE BREATHE').wait_for();await page.keyboard.press('Escape')
   assert await page.evaluate('localStorage.getItem("lunar-conquest-onboarding-v1")==="1"')
   await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000)
