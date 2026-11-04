@@ -222,6 +222,7 @@ function renderPlay(){
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
   (quickOK()?'<button class="quick" data-act="quick"><b>QUICK MATCH</b><span>Live pilots, any mode, random map</span></button>':'')+
+  '<button class="quick" data-act="conquest"><b>CONQUEST ↗</b><span>Explore the Moon · World foundation preview</span></button>'+
   '</div>'+battleRosterHtml();   // the bay picker sits under FIGHT, so FIGHT stays on the first screen
 }
 
@@ -1296,6 +1297,7 @@ function askReminder(){
 
 // ---------- taps ----------
 const ACT={
+ conquest:()=>Conquest.open(),
  tab:a=>setTab(a),
  tabmenu:a=>{exitBattle();setTab(a);},
  info:a=>showInfo(a),
