@@ -2,8 +2,10 @@
 (function(root){
 'use strict';
 const W=root.ConquestWorld,C=root.ConquestCombat,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// Match the existing3D primary projectile conversion; Arcade rules remain unchanged.
+const SUPER_WORLD_SCALE=3;
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-const CONFIG=Object.freeze({dashTime:DASH_T,dashSpeed:DASH_SPD,dashCooldown:DASH_CD,shieldTime:SHIELD_T,shieldCooldown:SHIELD_CD,shieldDamage:SHIELD_MULT,superMax:SUPER_MAX});
+const CONFIG=Object.freeze({dashTime:DASH_T,dashSpeed:DASH_SPD,dashCooldown:DASH_CD,shieldTime:SHIELD_T,shieldCooldown:SHIELD_CD,shieldDamage:SHIELD_MULT,superMax:SUPER_MAX,superWorldScale:SUPER_WORLD_SCALE});
 function ensure(B){for(const [k,v] of Object.entries({charge:0,turretYaw:0,dashCd:0,shieldCd:0,shieldT:0}))if(!Number.isFinite(B[k]))B[k]=v;B.superShells=B.superShells||[];}
 function visible(B,p,e,range=100){return e&&e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<=range&&C.lineClear({x:p.x,y:p.y+2.2,z:p.z},{x:e.x,y:e.y+2.2,z:e.z});}
 function aim(B,p,input,dt){
@@ -17,7 +19,7 @@ function aim(B,p,input,dt){
 function hurt(B,e,amount){const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
 function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
 function fireSuper(B,s){
- const spec=SUP[s.weapon],p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
+ const raw=SUP[s.weapon],spec={...raw};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
  if(spec.kind==='shell'){
   const speed=spec.spd*(1+gsum(B.playerStats,'vel'));
   B.superShells.push({x:p.x,y:p.y+2.2,z:p.z,vx:dx*speed,vz:dz*speed,vy:Math.tan(s.pitch)*speed,life:spec.range/speed,range:spec.r,damage:spec.dmg*projectileImpactMult(B.playerStats)});return;

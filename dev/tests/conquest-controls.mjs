@@ -17,3 +17,6 @@ B=bare();B.playerStats.dashCdM=.8;B.playerStats.shieldCdM=.85;K.advance(B,p,{...
 // Identical authored threats hurt the starter while legal armor remains meaningful.
 B=bare();B.playerHp=1;const hostile=structuredClone(new C.Encounter(R.STOCK_L,p).enemies[0]);B.player={x:p.x,y:p.y+2.2,z:p.z};B.hit({...B.player,vx:1,vy:0,vz:0,team:'enemy',kind:'twin',stats:hostile.stats},B.player,2.5);assert.equal(B.playerHp,0,'incoming combat can actually defeat pilot');
 console.log('PASS all four Supers produce real kills, legal cooldown fittings and genuine hull defeat');
+assert.equal(K.CONFIG.superWorldScale,3,'Super distances use the established3D projectile conversion');
+B=bare();B.playerStats.wtype='twin';B.charge=1000;B.enemies=[-5,5].map((dx,i)=>{const e=structuredClone(new C.Encounter(R.STOCK_L,p).enemies[0]);return Object.assign(e,{id:i+1,x:p.x+dx,z:p.z+2,y:W.groundAt(p.x+dx,p.z+2),hp:180,maxHp:180,decision:999,cd:999,vx:0,vz:0});});for(let i=0;i<30;i++)K.advance(B,p,{...input,super:i===0},.05,true);assert(B.enemies.every(e=>e.hp===0),'Static Nova damages multiple real hulls');
+console.log('PASS3D spatial conversion and multi-hull Static Nova');
