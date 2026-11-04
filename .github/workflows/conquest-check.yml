@@ -1,0 +1,30 @@
+name: Conquest regression
+on:
+  pull_request:
+    paths: ['js/conquest/**', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml']
+  workflow_dispatch:
+jobs:
+  conquest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conquest and shared gameplay regressions
+        run: bash dev/tests/conquest-regression.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser dependencies
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Portrait player journey
+        run: python dev/tests/conquest-session-031.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conquest-gameplay-evidence
+          path: docs/conquest-session-031
