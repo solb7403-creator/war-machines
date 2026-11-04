@@ -2,17 +2,18 @@
 (function(root){
 'use strict';
 const W=root.ConquestWorld;
-const mission=Object.freeze({id:'oxygen-line',x:1160,z:1048,name:'HOLD THE OXYGEN LINE'});
+const mission=Object.freeze({id:'oxygen-line',x:1160,z:1048,name:'HOLD THE OXYGEN LINE',activationRadius:150});
 // Authored constants, deliberately independent of the pilot's equipment and performance.
 const archetypes=Object.freeze({
  raider:Object.freeze({name:'Parasite interceptor',cls:'scout',arch:'twin',hp:180,dps:18,shot:.45,speed:2.8,range:43,role:'player'}),
  breacher:Object.freeze({name:'Parasite oxygen saboteur',cls:'vanguard',arch:'siege',hp:230,dps:24,shot:1.15,speed:2.1,range:40,role:'facility'}),
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
+const installations=W.installations;
 const formations=Object.freeze([
- Object.freeze([['raider',1182,995],['breacher',1225,1038]]),
- Object.freeze([['raider',1130,990],['breacher',1228,1048]]),
- Object.freeze([['raider',1188,992],['breacher',1230,1040],['command',1222,1010]])
+ Object.freeze([['raider',1218,995],['breacher',1230,995]]),
+ Object.freeze([['raider',1218,995],['breacher',1230,995]]),
+ Object.freeze([['raider',1218,995],['breacher',1230,995],['command',1240,995]])
 ]);
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}
@@ -33,7 +34,7 @@ class Battle {
  constructor(loadout,playerPosition){
  this.snapshot=freeze(JSON.parse(JSON.stringify(loadout)));this.playerStats={...tankOf(this.snapshot,1),buffs:[]};this.combatSpeed=machineSpeed(this.snapshot,this.playerStats);
  this.playerMax=this.playerStats.mhp;this.playerHp=this.playerMax;this.objectiveMax=1800;this.objectiveHp=this.objectiveMax;
- this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.spawnWave();
+ this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.approachGrace=Math.hypot(playerPosition.x-mission.x,playerPosition.z-mission.z)>65?60:0;this.spawnWave();
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
  spawnWave(){if(this.wave>=formations.length)return;for(const [kind,x,z] of formations[this.wave]){const a=archetypes[kind];this.enemies.push({id:++this.id,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
@@ -62,7 +63,7 @@ class Battle {
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  const damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
  if(q.team==='player'){t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
- else if(t===this.player)this.playerHp=Math.max(0,this.playerHp-damage);else this.objectiveHp=Math.max(0,this.objectiveHp-damage);
+ else if(t===this.player)this.playerHp=Math.max(0,this.playerHp-damage);else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage);
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15});
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
  if(q.kind==='siege'&&q.team==='player')for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
@@ -99,5 +100,32 @@ class Battle {
  }
  dispose(){this.projectiles=[];this.enemies=[];this.effects=[];}
 }
-root.ConquestCombat=Object.freeze({mission,archetypes,formations,Battle,lineClear,blocked});
+// A small local theater uses the same projectiles, damage, models and steering as missions.
+// Defeated guards are personal client state, never rewards or territorial ownership.
+class Encounter extends Battle {
+ constructor(loadout,p,cleared={}){
+  super(loadout,p);this.enemies=[];this.wave=formations.length;this.id=10000;this.objectiveHp=this.objectiveMax=1e9;this.cleared=cleared=cleared&&typeof cleared==='object'&&!Array.isArray(cleared)?cleared:{};
+  for(const base of installations)for(let i=0;i<2;i++){
+   const kind=i?'command':'raider',a=archetypes[kind],x=base.x+(i?10:-10),z=base.z-12;
+   this.enemies.push({id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});
+  }
+ }
+ spawnWave(){} // guard lifecycle is independent of mission waves
+ choose(e){
+  const d=Math.hypot(this.player.x-e.x,this.player.z-e.z),homeDistance=Math.hypot(this.player.x-e.home.x,this.player.z-e.home.z);
+  const alerted=d<65||e.hp<e.maxHp;
+  if(alerted&&homeDistance<100){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
+  else {e.target=e.home;const dx=e.home.x-e.x,dz=e.home.z-e.z,l=Math.hypot(dx,dz);e.vx=l>2?dx/l*archetypes[e.kind].speed:0;e.vz=l>2?dz/l*archetypes[e.kind].speed:0;}
+  const q=W.advance(e,e.vx,e.vz);if(Math.hypot(q.x-e.home.x,q.z-e.home.z)>65)e.vx=e.vz=0;
+ }
+ shoot(from,to,stats,team,kind,owner){if(team==='enemy'&&this.enemies.some(e=>e.id===owner&&e.target===e.home))return false;return super.shoot(from,to,stats,team,kind,owner);}
+ step(dt,fire){
+  // Only nearby installations run AI, and only while exploration is active.
+  const all=this.enemies,near=all.filter(e=>Math.hypot(e.x-this.player.x,e.z-this.player.z)<240);
+  this.enemies=near;super.step(dt,fire);this.enemies=all;
+  for(const e of all)if(e.hp<=0)this.cleared[e.key]=true;
+  if(this.playerHp>0){this.state='active';this.reason=null;}
+ }
+}
+root.ConquestCombat=Object.freeze({mission,installations,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

@@ -13,7 +13,7 @@ runInContext(`const save={};ecoNorm(save);labEnsure(save,STOCK_L);${loadoutFunct
 const W=ctx.ConquestWorld,T=ctx.THREE,S=ctx.account;
 function fixture(){
  const v=Object.create(ctx.ConquestView.prototype);
- Object.assign(v,{T,disposed:false,vehicle:new T.Group(),chunks:new Map(),keys:{},stick:{x:0,z:0},yaw:-Math.PI/2,pitch:.42,distance:23,frames:0,elapsed:0,origin:{x:0,z:0},props:new T.Group(),horizon:new T.Group(),camera:new T.PerspectiveCamera(55,1,.2,1600),scene:new T.Scene(),renderer:{render(){}},p:{x:980,z:1024,y:24,surface:'bridge'}});
+ Object.assign(v,{T,safeHistory:[],recoveryClock:0,stuckSeconds:0,recoveryReadyAt:0,disposed:false,vehicle:new T.Group(),chunks:new Map(),keys:{},stick:{x:0,z:0},yaw:-Math.PI/2,pitch:.42,distance:23,frames:0,elapsed:0,origin:{x:0,z:0},props:new T.Group(),horizon:new T.Group(),camera:new T.PerspectiveCamera(55,1,.2,1600),scene:new T.Scene(),renderer:{render(){}},p:{x:980,z:1024,y:24,surface:'bridge'}});
  // Streaming and GPU draw are covered by the browser suite; this fixture tests the unchanged tick movement path.
  v.stream=()=>{};
  v.syncLoadout();
@@ -123,3 +123,14 @@ const ramp=fixture();ramp.p={x:925,z:1024,y:W.deckAt(925,1024),surface:'bridge'}
 assert(Math.abs(ramp.motion.state.left-Math.hypot(ramp.p.x-start.x,ramp.p.y-start.y,ramp.p.z-start.z)/1.65)<1e-8,'ramp belts include vertical surface displacement');
 ramp.motion.dispose();ramp.vehicle.traverse(o=>o.geometry?.dispose());Object.values(ramp.modelMats).forEach(m=>m.dispose());
 console.log('PASS proportional treads at 8.8/17.6/26.4 units/s, differential accepted turns and actual 3D ramp distance');
+
+// Recovery only after a genuine rejected drive, to verified local breadcrumbs.
+v.safeHistory=[];v.p={x:1130,z:1080,y:W.groundAt(1130,1080),surface:'ground'};v.keys={KeyW:true};v.yaw=-Math.PI/2;v.resume=false;
+for(let i=0;i<300;i++)v.tick(.1);
+assert(v.stuckSeconds>1.5);const blocked={...v.p};assert(v.recover());assert(Math.hypot(v.p.x-blocked.x,v.p.z-blocked.z)>=6);assert(!v.recover(),'cooldown and stuck gating');
+console.log('PASS actual blocked tower recovery, verified breadcrumb and cooldown');
+// A fresh saved-position entry can be disabled before it has any breadcrumbs.
+const fresh=fixture();fresh.safeHistory=[];fresh.p={x:1240,z:893,y:W.groundAt(1240,893),surface:'ground'};fresh.encounter={state:'defeat',playerMax:1700,playerHp:0,projectiles:[]};const checkpointFrom={...fresh.p};
+assert(fresh.recover(),'fresh disabled vehicle needs a verified reachable local checkpoint');
+assert(Math.hypot(fresh.p.x-checkpointFrom.x,fresh.p.z-checkpointFrom.z)>=6);assert(!W.solidAt(fresh.p.x,fresh.p.z));assert.equal(fresh.encounter.state,'active');
+console.log('PASS disabled fresh-entry recovery without breadcrumb history');

@@ -1,0 +1,1 @@
+{"status": "PASS", "viewports": ["390x844", "360x640"], "checks": ["first entry story", "dismiss/replay/persistence", "waypoint follows yaw", "map preserves fog", "reported position briefing", "explicit start", "control hit zones"], "errors": []}
