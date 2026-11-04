@@ -44,3 +44,5 @@ let seconds=0;while(sortie.battle.state==='active'&&seconds<150){const e=sortie.
 assert.equal(sortie.battle.state,'victory','server computes the full three-wave victory');assert.equal(sortie.battle.kills,7);
 const completed=applyAction(sortie,{seq:sortie.seq+1,action:'return-exploration'},now+(seconds+1)*1000);assert(completed.completed['oxygen-line']);assert.equal(completed.hp,sortie.hp);
 console.log('PASS authoritative mission activation, HP continuity, retreat rejection and real three-wave victory:',seconds,'seconds');
+// Arrival jitter consumes previously earned reserve; it never creates movement time.
+let jitter=createState(L,now),elapsed=1500;for(let i=0;i<8;i++){if(i)elapsed+=i%2?970:1030;jitter=applyCommands(jitter,{seq:jitter.seq+1,commands:Array(20).fill({x:1,z:0})},now+elapsed);}assert(jitter.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*elapsed/1000+1e-6);assert(jitter.creditMs<=1250);console.log('PASS bounded earned timing reserve handles ordinary HTTP arrival jitter');

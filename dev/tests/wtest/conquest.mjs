@@ -33,7 +33,7 @@ assert.equal((await call(8101,'/api/conquest/action',{seq:3,action:'return-explo
 const active=db.get('conquest/tg_8101');active.hp=11;active.battle.playerHp=11;
 r=await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration'});assert.equal(r.status,200);assert.equal(r.state.hp,11);assert.equal(r.state.battle.playerHp,11);assert(!r.state.completed?.['oxygen-line']);
 const again=await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration'});assert.equal(again.status,200);assert(again.replayed);assert.equal(again.state.hp,11);
-Date.now=clock;console.log('PASS authenticated Conquest state, finite movement, wall budget, concurrent idempotency, HP reload, identity isolation and economy preservation');
+console.log('PASS authenticated Conquest state, finite movement, wall budget, concurrent idempotency, HP reload, identity isolation and economy preservation');
 // Only test-owned Firebase fixtures are seeded; production requests never accept these values.
 const vault=db.get('conquest/tg_8101');vault.position={x:1174,z:1168,y:0,surface:'ground'};vault.drops=[{id:'test-corpse',...vault.position,amount:{cp:18,alloy:11,biomass:7,helium:3},expires:now+300000}];now+=100;
 const pickup={seq:4,commands:[{x:0,z:0}]};const pickups=await Promise.all([call(8101,'/api/conquest/input',pickup),call(8101,'/api/conquest/input',pickup)]);assert(pickups.every(x=>x.status===200));assert.equal(pickups[0].state.ledger.cp,18);assert.equal(pickups[1].state.ledger.cargo.alloy,11);
@@ -43,3 +43,5 @@ assert.deepEqual(db.get('eco/tg_8101'),protectedBefore,'all legacy economy/paid/
 // Trusted server legacy state migration is supported, never localStorage wins.
 await call(8103,'/api/sync');db.get('eco/tg_8103').cqState={...structuredClone(start),hp:77,battle:{...structuredClone(start.battle),playerHp:77}};const migrated=await call(8103,'/api/conquest/session');assert.equal(migrated.state.hp,77);
 console.log('PASS atomic concurrent pickup/banking, canonical account ownership, complete legacy economy isolation and trusted-state migration');
+
+Date.now=clock;

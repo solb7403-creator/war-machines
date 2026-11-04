@@ -36,6 +36,11 @@ jobs:
         run: node dev/tests/defender-visual.mjs
       - name: Server tests (points, payments, live matches, farm defense)
         run: |
+          node dev/tests/wtest/conquest.mjs
+          node dev/tests/conquest-authority.mjs
+          node dev/tests/conquest-controls.mjs
+          node dev/tests/conquest-economy.mjs
+          node dev/tests/conquest-session.mjs
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/referrals.mjs
           node dev/tests/wtest/pvp.mjs

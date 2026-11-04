@@ -26,9 +26,9 @@ function fireSuper(B,s){
   for(const e of B.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y,e.z-p.z);if(e.hp>0&&d<spec.r+2&&visible(B,p,e,spec.r+2))hurt(B,e,superDamage(B,e,spec.dmg*(1-.4*d/(spec.r+2))));}
   B.effects.push({kind:'nova',x:p.x,y:p.y+2,z:p.z,r:spec.r,life:.45});return;
  }
- // Beams honor 3D terrain/structures while piercing every exposed hull along their path.
+ // Pulse retains Arcade cover penetration; elevation blocks beams at the ground. Moonfall also stops at structures.
  const start={x:p.x,y:p.y+2.2,z:p.z};let length=spec.len;
- for(let d=.3;d<length;d+=.3)if(C.blocked(start.x+dx*d,start.y+Math.tan(s.pitch)*d,start.z+dz*d)){length=d;break;}
+ for(let d=.3;d<length;d+=.3)if(s.weapon==='pulse'?start.y+Math.tan(s.pitch)*d<=W.groundAt(start.x+dx*d,start.z+dz*d)+.08:C.blocked(start.x+dx*d,start.y+Math.tan(s.pitch)*d,start.z+dz*d)){length=d;break;}
  for(const e of B.enemies){const ex=e.x-p.x,ez=e.z-p.z,along=ex*dx+ez*dz,side=Math.abs(ex*dz-ez*dx),ey=p.y+Math.tan(s.pitch)*along;
  if(e.hp>0&&along>0&&along<=length&&side<spec.w+1.2&&Math.abs(e.y-ey)<3)hurt(B,e,superDamage(B,e,spec.dmg));}
  B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon});

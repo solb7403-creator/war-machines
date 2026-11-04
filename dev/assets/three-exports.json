@@ -59,6 +59,7 @@
   "Quaternion",
   "REVISION",
   "RGBAFormat",
+  "Raycaster",
   "RepeatWrapping",
   "RingGeometry",
   "SRGBColorSpace",

@@ -1,0 +1,37 @@
+# Conquest Session3.2
+
+Continues `feat/conquest-session-032` through `676c485`; the complete owner-approved continuation/specification was supplied November4. Existing foundation was reused, not restarted. This release leaves Arcade scoring/caps, payments, account identities, permanent inventory and world geometry unchanged.
+
+## Verification and persistence
+
+Authenticated `/api/conquest/session`, `/input` and `/action` resolve the existing Telegram/first-party website canonical pilot. Canonical equipped loadout comes from the existing account record. Per-pilot `conquest/<pid>` schema `v:1` contains the entire checkpoint, HP, ability clocks, sequence/digest, spawn generations, drops, cargo/bank, CP and mission claims in one Firebase ETag CAS. All valuable events are computed by replaying shared terrain/combat/controls. Posted position, stats, kills, HP, outcomes, amounts and timestamps are rejected. Maximum20 commands at50ms each; at most1250ms banked elapsed server time (a250ms reserve tolerates HTTP arrival jitter; each request still executes at most1000ms). One input request/second, one in flight, identical sequence/digest retries, bounded queues and10s request abort. CAS retries8;90 committed requests/minute/pilot. No reward endpoints accept client kill claims. Two competing tabs reconcile rather than simulate twice.
+
+Trusted old server `eco/<pid>.cqState` is copied on first Conquest-record initialization without changing the legacy record. Old local victories/guard flags never earn retroactive currency. Discovery/onboarding storage remains unchanged. Old local position is backed up as `lunar-conquest-legacy-position-v1`; new verified pilots start at the authored refuge approach because an unsigned local position cannot establish economic arrival. Existing verified positions/HP survive. Legal loadout updates occur outside missions at the Refuge/starting checkpoint; absolute HP is clamped, never topped up. Explicit safe-terminal repair restores HP. Cooldowns/charge carry across mission transitions, reload and reconnect. Defeat respawns at the previously known starting checkpoint; recovery assigns only a verified nearby endpoint and never feeds the displacement into the exploration atlas.
+
+## Economy
+
+All rates are centralized in `worker/src/conquest-economy.js`. CP is entirely separate from Arcade/base/airdrop/TON/SOL/Stars. Normal patrol7CP/2Alloy/1Biomass; garrison18CP/3Alloy/2Biomass; authored commander or heavy sentinel45CP/6Alloy/4Biomass/1Helium-3. A single cache appears at the server-computed hull death location and expires after300s; pickup requires actual verified distance≤6 and compatible elevation. CP is secured on pickup; materials enter carried cargo. Once-per-UTC-day mission enemy slots prevent abort/restart farming. Each world spawn generation can produce loot only once, independently of cache lifetime, reload or mission transitions.
+
+First verified oxygen victory250CP/24Alloy/16Biomass/6Helium-3; later eligible daily victory75CP/8Alloy/5Biomass/2Helium-3. First-clear day consumes that day's replay eligibility. Daily encounter pickup limits3000CP/300Alloy/240Biomass/60Helium-3; guaranteed eligible mission bundle is not truncated by those limits and is separately bounded by its once/day/lifetime claim. Maximum48 live ordinary caches; oldest overflow expires. Bank action at existing Refuge supply terminal(1174,1168), radius12, atomically secures all materials. No currency is charged for repair.
+
+Verified destruction drops `floor(carried/2)` of each material into an owner-only wreck for exactly600 server seconds. Remaining cargo, all banked material and CP remain safe. Recovery adds existing cargo, not new daily income. Maximum3 live wrecks; a fourth death permanently retires the oldest. The loss panel explains the amounts/time; the atlas marks wrecks only on known terrain. Expired or already claimed identities cannot be recovered again.
+
+Garrisons reinforce on a later UTC day only when the pilot is more than350units away. Patrols refresh20minutes after verified destruction, also out of view. Both are account-personal PvE state, not global/server-authoritative territory or multiplayer warfare. Only nearby entities run AI/render; no Moon-wide simulation.
+
+## Controls and equipment
+
+FIRE is manual tap/hold with authentic cadence; no implicit target selection. Actual hostile mesh picking distinguishes a short physical tap from drag/multitouch. Turret turn uses equipped turn multiplier, shots respect terrain/structures. Selected target shows anchored outline, HP/distance, and hides under occlusion. No transfer to another target on death.
+
+Shared controls adapt all Arcade Supers: Pulse Pierce Lance(350 baseline, cover penetration but terrain/elevation bound), Twin Static Nova(350 radial falloff), Siege Blast(375 shell/AoE with Velocity), Moonfall(400 beam, wider/longer). Canonical equipment multipliers and charge contribution apply. Dash0.2s×3.4combat movement,4s base cooldown; shared terrain collision. Shield3s×35% incoming ordinary combat damage,25s base cooldown; legal fittings modify cooldowns. Neither Dash nor mission movement gets the2×exploration multiplier twice.
+
+The HUD keeps HULL numerical/progress always visible, O2/wave only during missions. Fixed joystick/action clusters stay in place. More contains Help/replay, supply drawer and zoom. Story narrative/footer behavior from PR44 remains intact. Dynamic VisualViewport/Telegram height and safe insets apply to controls.
+
+## Proposed Session4 affordability calibration — no Base feature
+
+Proposed first-base recipe650CP/90Alloy/55Biomass/12Helium-3. `node dev/tests/conquest-balance.mjs` models active, qualified play: first mission and seven physically collected wave caches at10min; first patrol pair16min; both installations25min; out-of-view patrol circuits36/56min; banking at Refuge. Balances reach685CP/90Alloy/59Biomass/12Helium-3 at56min, within the approved45–75min target. This is an explicit pacing model, not measured human completion time or an implemented base purchase. Idle time alone grants nothing; missed caches, defeats and travel affect results.
+
+## Test evidence
+
+See committed tests and browser-generated JSON/screenshots here. `conquest-session-032.py` uses the actual client, authenticated Worker, Firebase CAS emulator and real bounded reducer with test-owned accounts. Scenario placements/cargo fixtures are explicit and separate from the continuous spawn-to-facility route. It does not alter enemy HP, award client-reported kills, or accelerate combat beyond server time. Native Chromium multi-touch exercises actual controls; WebKit covers portrait layout/raw taps. Existing transmission tests cover native Chromium scroll and WebKit keyboard plus uncancelled touch dispatch.
+
+Browser automation and software rendering do not prove performance or usability on physical iPhone Telegram. Production smoke is read-only/account-safe and must not mint rewards on a real account. Release links/results will be recorded after CI/deployment.

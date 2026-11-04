@@ -1,7 +1,7 @@
 // Server-owned deterministic input replay; never accepts client outcomes or positions.
 import {CONQUEST} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
-const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=20,MAX_CREDIT_MS=1000;
+const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=20,MAX_CREDIT_MS=1250;
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k),copy=v=>JSON.parse(JSON.stringify(v));
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),fail=m=>{throw Error('conquest: '+m);};
 const list=v=>Array.isArray(v)?v:v&&typeof v==='object'?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[];
