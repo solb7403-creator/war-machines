@@ -1,0 +1,63 @@
+/* Shared Conquest controls: physical movement, manual target/fire and Arcade-derived abilities. */
+(function(root){
+'use strict';
+const W=root.ConquestWorld,C=root.ConquestCombat,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+const CONFIG=Object.freeze({dashTime:DASH_T,dashSpeed:DASH_SPD,dashCooldown:DASH_CD,shieldTime:SHIELD_T,shieldCooldown:SHIELD_CD,shieldDamage:SHIELD_MULT,superMax:SUPER_MAX});
+function ensure(B){for(const [k,v] of Object.entries({charge:0,turretYaw:0,dashCd:0,shieldCd:0,shieldT:0}))if(!Number.isFinite(B[k]))B[k]=v;B.superShells=B.superShells||[];}
+function visible(B,p,e,range=100){return e&&e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<=range&&C.lineClear({x:p.x,y:p.y+2.2,z:p.z},{x:e.x,y:e.y+2.2,z:e.z});}
+function aim(B,p,input,dt){
+ ensure(B);const locked=B.enemies.find(e=>e.id===input.lockId);
+ B.lockId=visible(B,p,locked)?locked.id:null;
+ const want=B.lockId!==null?Math.atan2(locked.x-p.x,locked.z-p.z):input.aimYaw||0;
+ const turn=STAT.turn*(B.playerStats.turnM||1)*dt;B.turretYaw=wrap(B.turretYaw+clamp(wrap(want-B.turretYaw),-turn,turn));
+ const pitch=B.lockId!==null?Math.atan2(locked.y-p.y,Math.hypot(locked.x-p.x,locked.z-p.z)):input.aimPitch||0;
+ return {x:p.x+Math.sin(B.turretYaw)*160,y:p.y+2.2+Math.tan(clamp(pitch,-1.2,1.2))*160,z:p.z+Math.cos(B.turretYaw)*160};
+}
+function hurt(B,e,amount){const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
+function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
+function fireSuper(B,s){
+ const spec=SUP[s.weapon],p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
+ if(spec.kind==='shell'){
+  const speed=spec.spd*(1+gsum(B.playerStats,'vel'));
+  B.superShells.push({x:p.x,y:p.y+2.2,z:p.z,vx:dx*speed,vz:dz*speed,vy:Math.tan(s.pitch)*speed,life:spec.range/speed,range:spec.r,damage:spec.dmg*projectileImpactMult(B.playerStats)});return;
+ }
+ if(spec.kind==='nova'){
+  for(const e of B.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y,e.z-p.z);if(e.hp>0&&d<spec.r+2&&visible(B,p,e,spec.r+2))hurt(B,e,superDamage(B,e,spec.dmg*(1-.4*d/(spec.r+2))));}
+  B.effects.push({kind:'nova',x:p.x,y:p.y+2,z:p.z,r:spec.r,life:.45});return;
+ }
+ // Beams honor 3D terrain/structures while piercing every exposed hull along their path.
+ const start={x:p.x,y:p.y+2.2,z:p.z};let length=spec.len;
+ for(let d=.3;d<length;d+=.3)if(C.blocked(start.x+dx*d,start.y+Math.tan(s.pitch)*d,start.z+dz*d)){length=d;break;}
+ for(const e of B.enemies){const ex=e.x-p.x,ez=e.z-p.z,along=ex*dx+ez*dz,side=Math.abs(ex*dz-ez*dx),ey=p.y+Math.tan(s.pitch)*along;
+ if(e.hp>0&&along>0&&along<=length&&side<spec.w+1.2&&Math.abs(e.y-ey)<3)hurt(B,e,superDamage(B,e,spec.dmg));}
+ B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon});
+}
+C.Battle.prototype.abilityStep=function(dt){
+ ensure(this);this.dashCd=Math.max(0,this.dashCd-dt);this.shieldCd=Math.max(0,this.shieldCd-dt);this.shieldT=Math.max(0,this.shieldT-dt);
+ if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=0)this.dashState=null;}
+ if(this.superAttack){this.superAttack.t-=dt;if(this.superAttack.t<=0){this.superAttack.origin={x:this.player.x,y:this.player.y-2.2,z:this.player.z};fireSuper(this,this.superAttack);this.superAttack=null;}}
+ for(const q of this.superShells){const n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vz)*dt/.3));for(let i=0;i<n&&q.life>0;i++){q.x+=q.vx*dt/n;q.z+=q.vz*dt/n;q.y+=q.vy*dt/n;
+ const hit=this.enemies.some(e=>e.hp>0&&Math.hypot(e.x-q.x,e.z-q.z)<2.5&&Math.abs(e.y+2.2-q.y)<3);
+ if(hit||C.blocked(q.x,q.y,q.z)||q.life<=dt){for(const e of this.enemies){const d=Math.hypot(e.x-q.x,e.y+2.2-q.y,e.z-q.z);if(e.hp>0&&d<q.range+2&&C.lineClear(q,{x:e.x,y:e.y+2.2,z:e.z}))hurt(this,e,superDamage(this,e,q.damage*(1-.65*d/(q.range+2))));}this.effects.push({kind:'destroy',x:q.x,y:q.y,z:q.z,life:.5});q.life=0;}}
+ q.life-=dt;}
+ this.superShells=this.superShells.filter(q=>q.life>0).slice(-4);
+};
+function advance(B,p,input,dt,exploration){
+ ensure(B);dt=clamp(dt,0,.25);if(B.playerHp<=0)return p;
+ if(input.shield&&B.shieldCd<=0){B.shieldT=SHIELD_T;B.shieldCd=SHIELD_CD*(B.playerStats.shieldCdM||1);}
+ let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;
+ if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:DASH_T,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=DASH_CD*(B.playerStats.dashCdM||1);}
+ let left=dt,first=true;while(left>1e-8){const h=Math.min(left,1/60);left-=h;const old=p,speed=B.dashState?B.combatSpeed*DASH_SPD:exploration?B.combatSpeed*2:B.combatSpeed;
+ const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
+ if(!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
+ if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
+ const target=aim(B,p,input,h);
+ if(input.super&&B.charge>=SUPER_MAX&&!B.superAttack){B.charge=0;const weapon=B.playerStats.wtype;B.superAttack={weapon,t:SUP[weapon].charge,yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}
+ B.tick(h,p,{aim:target,fire:(!!input.fire||first&&!!input.tapFire)&&!B.superAttack});first=false;
+ }
+ return p;
+}
+function carry(from,to){ensure(from);for(const k of ['charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
+root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,CONFIG});
+})(globalThis);

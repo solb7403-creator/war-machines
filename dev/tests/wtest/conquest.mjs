@@ -20,17 +20,26 @@ assert(both.every(x=>x.status===200));assert.equal(both[0].state.seq,1);assert.e
 r=await call(8101,'/api/conquest/input',{seq:1,commands:[{x:-1,z:0}]});assert.equal(r.status,409,'same sequence changed payload rejected');
 assert.equal((await call(8101,'/api/conquest/input',{seq:2,commands:[{x:0,z:0}],hp:999999})).status,400);
 assert.equal((await call(8101,'/api/conquest/input',{...body,pid:'tg_8102'})).status,400);
-assert.equal(db.get('eco/tg_8102').cqState,undefined,'cannot mutate another account');
-const stored=db.get('eco/tg_8101').cqState;stored.hp=87;stored.battle.playerHp=87;
+assert.equal(db.get('conquest/tg_8102'),null,'cannot mutate another account');
+const stored=db.get('conquest/tg_8101');stored.hp=87;stored.battle.playerHp=87;
 r=await call(8101,'/api/conquest/session');assert.equal(r.state.hp,87,'re-entering does not reset HP');
 assert.equal(r.state.position.x,stored.position.x);assert.equal(r.state.seq,1);
 for(const key of ['pts','earned','up','buys','wOwn','cOwn','gemLvl','gemShards'])assert.deepEqual(db.get('eco/tg_8101')[key],protectedBefore[key],key+' unchanged');
 assert.equal((await call(null,'/api/conquest/action',{seq:1,action:'start-mission'})).status,401);
 assert.equal((await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'})).status,409,'server position controls activation');
-const near=db.get('eco/tg_8101').cqState;near.position={x:1163,z:1132,y:0,surface:'ground'};
+const near=db.get('conquest/tg_8101');near.position={x:1163,z:1132,y:0,surface:'ground'};
 r=await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'});assert.equal(r.status,200);assert.equal(r.state.hp,87);assert.equal(r.state.battle.playerHp,87);
 assert.equal((await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration',victory:true})).status,400);
-const active=db.get('eco/tg_8101').cqState;active.hp=11;active.battle.playerHp=11;
+const active=db.get('conquest/tg_8101');active.hp=11;active.battle.playerHp=11;
 r=await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration'});assert.equal(r.status,200);assert.equal(r.state.hp,11);assert.equal(r.state.battle.playerHp,11);assert(!r.state.completed?.['oxygen-line']);
 const again=await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration'});assert.equal(again.status,200);assert(again.replayed);assert.equal(again.state.hp,11);
 Date.now=clock;console.log('PASS authenticated Conquest state, finite movement, wall budget, concurrent idempotency, HP reload, identity isolation and economy preservation');
+// Only test-owned Firebase fixtures are seeded; production requests never accept these values.
+const vault=db.get('conquest/tg_8101');vault.position={x:1174,z:1168,y:0,surface:'ground'};vault.drops=[{id:'test-corpse',...vault.position,amount:{cp:18,alloy:11,biomass:7,helium:3},expires:now+300000}];now+=100;
+const pickup={seq:4,commands:[{x:0,z:0}]};const pickups=await Promise.all([call(8101,'/api/conquest/input',pickup),call(8101,'/api/conquest/input',pickup)]);assert(pickups.every(x=>x.status===200));assert.equal(pickups[0].state.ledger.cp,18);assert.equal(pickups[1].state.ledger.cargo.alloy,11);
+const banked=await Promise.all([call(8101,'/api/conquest/action',{seq:5,action:'bank'}),call(8101,'/api/conquest/action',{seq:5,action:'bank'})]);assert(banked.every(x=>x.status===200));assert.equal(banked[0].state.ledger.banked.alloy,11);assert.equal(banked[1].state.ledger.cargo.alloy,0);assert.equal(db.get('conquest/tg_8101').ledger.cp,18);
+const other=await call(8102,'/api/conquest/session');assert.equal(other.state.ledger.cp,0);assert.equal(other.state.ledger.banked.alloy,0);assert.equal((await call(8102,'/api/conquest/action',{seq:1,action:'bank',position:vault.position})).status,400);
+assert.deepEqual(db.get('eco/tg_8101'),protectedBefore,'all legacy economy/paid/account fields unchanged');
+// Trusted server legacy state migration is supported, never localStorage wins.
+await call(8103,'/api/sync');db.get('eco/tg_8103').cqState={...structuredClone(start),hp:77,battle:{...structuredClone(start.battle),playerHp:77}};const migrated=await call(8103,'/api/conquest/session');assert.equal(migrated.state.hp,77);
+console.log('PASS atomic concurrent pickup/banking, canonical account ownership, complete legacy economy isolation and trusted-state migration');

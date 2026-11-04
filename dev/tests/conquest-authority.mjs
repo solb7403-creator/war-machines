@@ -26,7 +26,7 @@ assert.throws(()=>applyCommands(idle,{seq:2,commands:Array(20).fill({x:1,z:0})},
 // Production server replay performs the hit/kill, including terrain-aware vertical aim assist.
 let fight=createState(L,now);fight.position={x:1240,z:893,y:CONQUEST.World.groundAt(1240,893),surface:'ground'};
 fight.battle=JSON.parse(JSON.stringify(new CONQUEST.Combat.Encounter(L,fight.position)));
-let ticks=0;while(fight.battle.enemies[0].hp>0&&ticks<20){const e=fight.battle.enemies[0],yaw=Math.atan2(e.x-fight.position.x,e.z-fight.position.z);fight=applyCommands(fight,{seq:fight.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,fire:true})},now+(++ticks)*1000);}
+let ticks=0;while(fight.battle.enemies[0].hp>0&&ticks<20){const e=fight.battle.enemies[0],yaw=Math.atan2(e.x-fight.position.x,e.z-fight.position.z);fight=applyCommands(fight,{seq:fight.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,lockId:e.id,fire:true})},now+(++ticks)*1000);}
 assert.equal(fight.battle.enemies[0].hp,0,'server computes actual projectile kill');assert(fight.battle.cleared['redoubt-01:0']);
 assert(fight.hp<=fight.battle.playerMax);console.log('PASS idle-credit cap and server-computed projectile damage/destruction');
 // Firebase removes empty arrays/maps rather than preserving the JSON wire shape.
@@ -40,7 +40,7 @@ const mission=applyAction(missionStart,{seq:1,action:'start-mission'},now+100);a
 const retreatState=applyAction(mission,{seq:2,action:'return-exploration'},now+200);assert.equal(retreatState.hp,456);assert(!retreatState.completed?.['oxygen-line'],'retreat cannot complete mission');
 assert.throws(()=>applyAction(mission,{seq:2,action:'return-exploration',victory:true},now+200),'client cannot report mission outcome');
 let sortie=createState(L,now);sortie.position={x:1160,z:1048,y:CONQUEST.World.groundAt(1160,1048),surface:'ground'};sortie=applyAction(sortie,{seq:1,action:'start-mission'},now);
-let seconds=0;while(sortie.battle.state==='active'&&seconds<150){const e=sortie.battle.enemies.find(e=>e.hp>0),yaw=e?Math.atan2(e.x-sortie.position.x,e.z-sortie.position.z):0;sortie=applyCommands(sortie,{seq:sortie.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,fire:!!e})},now+(++seconds)*1000);}
+let seconds=0;while(sortie.battle.state==='active'&&seconds<150){const e=sortie.battle.enemies.find(e=>!e.resident&&e.hp>0),yaw=e?Math.atan2(e.x-sortie.position.x,e.z-sortie.position.z):0;sortie=applyCommands(sortie,{seq:sortie.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,lockId:e?.id,fire:!!e})},now+(++seconds)*1000);}
 assert.equal(sortie.battle.state,'victory','server computes the full three-wave victory');assert.equal(sortie.battle.kills,7);
 const completed=applyAction(sortie,{seq:sortie.seq+1,action:'return-exploration'},now+(seconds+1)*1000);assert(completed.completed['oxygen-line']);assert.equal(completed.hp,sortie.hp);
 console.log('PASS authoritative mission activation, HP continuity, retreat rejection and real three-wave victory:',seconds,'seconds');
