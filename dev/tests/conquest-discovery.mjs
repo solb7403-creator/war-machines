@@ -75,3 +75,8 @@ console.log('PASS boot cloud reconciliation preserves local economy winner and u
 runInContext(`cs._ts=1000;cs.marker='new cloud winner';delete cs.conquestDiscovery;`,bootCtx);runInContext(callback,bootCtx);
 runInContext(`globalThis.newWinner=save.marker;globalThis.accountKeepsLocal=!!save.conquestDiscovery;`,bootCtx);
 assert.equal(bootCtx.newWinner,'new cloud winner');assert(bootCtx.accountKeepsLocal,'newer economy snapshot without exploration receives merged local discoveries');
+// The independent website must load the same exploration ledger before its consumers.
+const webBoot=readFileSync('web/boot.js','utf8'),modules=webBoot.match(/for\(const src of (\[[^\]]+\])/)[1];
+const ordered=runInContext(modules,createContext());
+assert(ordered.indexOf('conquest/discovery')>ordered.indexOf('conquest/world')&&ordered.indexOf('conquest/discovery')<ordered.indexOf('conquest/view'),'website boots discovery before view and map');
+console.log('PASS independent website discovery dependency order');
