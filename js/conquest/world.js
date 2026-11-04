@@ -2,6 +2,10 @@
 (function(root){
 'use strict';
 const WIDTH=31680,LENGTH=47520,SPEED=4.4,CHUNK=128,STEP=4,SEED=0x4c554e41;
+const installations=Object.freeze([
+ Object.freeze({id:'redoubt-01',name:'PARASITE / ASH REDOUBT',kind:'outpost',x:1240,z:920}),
+ Object.freeze({id:'staging-01',name:'PARASITE / OXYGEN SPEAR',kind:'staging',x:1230,z:995})
+]);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t,smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function hash(x,z){let n=Math.imul(x^SEED,374761393)^Math.imul(z,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n>>>0)/4294967295;}
 function noise(x,z,s){x/=s;z/=s;let i=Math.floor(x),j=Math.floor(z),u=smooth(x-i),v=smooth(z-j);return mix(mix(hash(i,j),hash(i+1,j),u),mix(hash(i,j+1),hash(i+1,j+1),u),v);}
@@ -26,9 +30,14 @@ function normalAt(x,z){const dx=(heightAt(x+.5,z)-heightAt(x-.5,z)),dz=(heightAt
 function biomeAt(x,z){if(Math.hypot(x-1150,z-1080)<130||noise(x,z,3400)>.65)return 'terraformed';return noise(x,z,1500)>.54?'massif':'wasteland';}
 function deckAt(x,z){if(x<900||x>1140||Math.abs(z-1024)>9)return null;return x<960?mix(groundAt(900,z),24,(x-900)/60):x>1080?mix(24,groundAt(1140,z),(x-1080)/60):24;}
 function surfacesAt(x,z){const a=[{id:'ground',y:groundAt(x,z)}],y=deckAt(x,z);if(y!==null)a.push({id:'bridge',y});return a;}
-function solidAt(x,z){for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;return false;}
+function structureSolidAt(x,z){if(installations.some(b=>Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2))return true;for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;return false;}
+// Match the deterministic rendered boulders. Cache bounded chunk descriptors, not meshes.
+const rockCache=new Map();
+function rocksNear(x,z){const out=[],cx=Math.floor(x/128),cz=Math.floor(z/128);for(let j=Math.floor((z-8)/128);j<=Math.floor((z+8)/128);j++)for(let i=Math.floor((x-8)/128);i<=Math.floor((x+8)/128);i++){const key=i+':'+j;let rocks=rockCache.get(key);if(!rocks){rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45);if(rockCache.size>=128)rockCache.delete(rockCache.keys().next().value);rockCache.set(key,rocks);}out.push(...rocks);}return out;}
+function rockSolid(x,z,y=null){return rocksNear(x,z).some(p=>Math.hypot((x-p.x)/(p.size*1.6+1),(z-p.z)/(p.size+1))<1&&(y===null||y<p.y+p.size*(.8+p.variant)));}
+function solidAt(x,z){return structureSolidAt(x,z)||rockSolid(x,z);}
 // Shared physical shot occlusion; structure footprints have finite heights, bridge has real underside.
-function blockedAt(x,y,z){if(y<=groundAt(x,z))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
+function blockedAt(x,y,z){if(installations.some(b=>Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6&&y<groundAt(b.x,b.z)+12))return true;if(y<=groundAt(x,z)||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
  for(let i=0;i<3;i++){const a=1150+i*30;if(Math.hypot(x-a,z-1080)<12&&y<groundAt(a,1080)+108+i%2*38)return true;}
  for(let i=0;i<9;i++){const a=1110+i%3*22,b=1148+Math.floor(i/3)*25;if(Math.hypot(x-a,z-b)<8&&y<groundAt(a,b)+9)return true;}
  return [970,1070].some(a=>[1018,1030].some(b=>Math.abs(x-a)<1.5&&Math.abs(z-b)<1.5&&y<24));}
@@ -42,9 +51,13 @@ function move(p,dx,dz){
  // Pillars are solid on the lower route, away from its clear centerline.
  if(surface==='ground'&&[970,1070].some(a=>Math.abs(x-a)<3.5)&&[1018,1030].some(b=>Math.abs(z-b)<3.5))return p;
  if(surface==='ground'){
-  const n=surfaceNormal((p.x+x)/2,(p.z+z)/2),grade=Math.hypot(n[0],n[2])/n[1],along=(y-p.y)/d;
-  // Directional limits are independent of microstep size. Steep faces admit only safe contour travel.
-  if(along>.95||along< -1.2||grade>1.7&&Math.abs(along)>.45)return p;
+  // Evaluate support over the six-unit track footprint, rather than vetoing a
+  // microstep from a single triangle normal. Ascending and descending share
+  // the same traction envelope; sharp cliff faces still reject fall-line motion.
+  const ux=(x-p.x)/d,uz=(z-p.z)/d,cx=(p.x+x)/2,cz=(p.z+z)/2;
+  const support=(groundAt(cx+ux*3,cz+uz*3)-groundAt(cx-ux*3,cz-uz*3))/6;
+  const along=(y-p.y)/d;
+  if(Math.abs(support)>1.55||Math.abs(along)>1.7)return p;
  }else if(Math.abs(y-p.y)>d*.65+.001)return p;
  return {x,z,y,surface};
 }
@@ -75,7 +88,7 @@ function horizon(x,z){const positions=[],normals=[],colors=[],indices=[],cx=Math
  if(ring===5||ring===11)for(let side=0;side<4;side++){const ni=i+(side===0?-1:side===1?1:0),nj=j+(side===2?-1:side===3?1:0),neighbor=Math.max(Math.abs(ni),Math.abs(nj));if(!(ring===5&&neighbor===4||ring===11&&neighbor===12))continue;for(let t=0;t<128;t+=step){const ax=a*128+(side===0?0:side===1?128:t),az=b*128+(side===2?0:side===3?128:t),bx=ax+(side<2?0:step),bz=az+(side<2?step:0),k=positions.length/3,ay=sample(ax,az).y,by=sample(bx,bz).y;positions.push(ax,ay,az,ax,ay-64,az,bx,by,bz,bx,by-64,bz);normals.push(0,1,0,0,1,0,0,1,0,0,1,0);colors.push(...Array(4).fill([.32,.33,.36]).flat());indices.push(k,k+1,k+2,k+2,k+1,k+3);}}
  }return {positions,normals,colors,indices,radius:2560};
 }
-function scenery(cx,cz){const out=[];for(let i=0;i<48;i++){const x=cx*128+hash(cx*53+i,cz)*128,z=cz*128+hash(cz*71+i,cx)*128;if(x<0||z<0||x>WIDTH||z>LENGTH||Math.hypot(x-1024,z-1024)<115)continue;if(solidAt(x,z)||Math.hypot(x-1180,z-1080)<55||x>1095&&x<1170&&z>1130&&z<1240)continue;const b=biomeAt(x,z);out.push({x,z,y:groundAt(x,z),kind:b==='terraformed'?'tree':i===0&&hash(cx,cz)>.85?'relay':'rock',size:1+hash(cx+i,cz+8)*2.8,variant:hash(cx+i,cz+77)});}return out;}
+function scenery(cx,cz){const out=[];for(let i=0;i<48;i++){const x=cx*128+hash(cx*53+i,cz)*128,z=cz*128+hash(cz*71+i,cx)*128;if(x<0||z<0||x>WIDTH||z>LENGTH||Math.hypot(x-1024,z-1024)<115)continue;if(structureSolidAt(x,z)||installations.some(b=>Math.hypot(x-b.x,z-b.z)<25)||Math.hypot(x-1180,z-1080)<55||x>1095&&x<1170&&z>1130&&z<1240)continue;const b=biomeAt(x,z);out.push({x,z,y:groundAt(x,z),kind:b==='terraformed'?'tree':i===0&&hash(cx,cz)>.85?'relay':'rock',size:1+hash(cx+i,cz+8)*2.8,variant:hash(cx+i,cz+77)});}return out;}
 const landmarks=Object.freeze([{id:'bridge-01',x:1024,z:1024,name:'Refuge viaduct'},{id:'oxygen-01',x:1160,z:1080,name:'Oxygen complex'},{id:'refuge-01',x:1140,z:1160,name:'Refuge outpost'},{id:'crater-01',x:1210,z:1130,name:'Refuge ridge'},{id:'massif-01',x:14000,z:8000,name:'Highland overlook'}].map(Object.freeze));
-root.ConquestWorld=Object.freeze({id:'moon',version:1,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,surfaceNormal,solidAt,blockedAt,horizon,scenery,travelSpeed,frameSeconds,advance,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
+root.ConquestWorld=Object.freeze({id:'moon',version:1,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,horizon,scenery,travelSpeed,frameSeconds,advance,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
 })(globalThis);
