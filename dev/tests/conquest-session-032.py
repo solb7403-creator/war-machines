@@ -54,7 +54,7 @@ async def main(engine,journey_only=False):
     await tap('.cq-top button:nth-child(3)');await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click();await tap('.cq-story-start')
     if width==390 and engine=='chromium':
      # Continuous default-spawn approach, real keyboard directional controls (normal fixed-step loop).
-     await fixture();await page.evaluate('()=>{window.accountBefore=JSON.stringify({pts:save.pts,buys:save.buys,up:save.up});window.cqPerf=[];const v=Conquest.view,original=v.tick.bind(v);v.tick=function(dt){const t=performance.now();original(dt);cqPerf.push({frame:dt*1000,cpu:performance.now()-t,sim:this.simMs,calls:this.renderer.info.render.calls,geometry:this.renderer.info.memory.geometries});if(cqPerf.length>1000)cqPerf.shift();};}')
+     await fixture();await page.evaluate('()=>{window.accountBefore=JSON.stringify({pts:save.pts,buys:save.buys,up:save.up});window.cqPerf=[];const v=Conquest.view,original=v.tick.bind(v);v.tick=function(dt){const t=performance.now();original(dt);cqPerf.push({frame:t-(window.cqPrev||t),cpu:performance.now()-t,sim:this.simMs,calls:this.renderer.info.render.calls,geometry:this.renderer.info.memory.geometries});window.cqPrev=t;if(cqPerf.length>1000)cqPerf.shift();};}')
      async def drive(key,condition,timeout=90000):
       if os.getenv('CQ_COMBAT_ONLY') and condition!='Conquest.view.authority.state.stuckMs>=1500':return
       await page.keyboard.down(key)
@@ -84,17 +84,17 @@ async def main(engine,journey_only=False):
       await page.screenshot(path=str(OUT/'failed-target.png'));print('TARGET DEBUG',await page.evaluate('''()=>{const v=Conquest.view,B=v.battle;return {selected:v.selectedId,errors:window.onerror,enemies:B.enemies.map(e=>{const p=new THREE.Vector3(e.x-v.origin.x,e.y+2.2,e.z-v.origin.z).project(v.camera),x=(p.x+1)*v.host.clientWidth/2,y=(1-p.y)*v.host.clientHeight/2,ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(p.x,p.y),v.camera);const g=v.enemyMeshes.get(e.id),hits=g?ray.intersectObject(g,true):[];return {id:e.id,x,y,visible:ConquestControl.visible(B,v.p,e),hit:hits.map(h=>({point:h.point,distance:h.distance})),node:document.elementFromPoint(x,y)?.className};})};}'''),flush=True)
      assert selected,('no physical target',await page.evaluate('Conquest.view.battle.enemies.map(e=>({x:e.x,z:e.z,hp:e.hp}))'))
      pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null'),'same hull toggle';pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
-     stick=await rect('.cq-stick');drive_contact={'id':1,'x':stick['x']+stick['w']/2,'y':stick['y']+stick['h']/2};start=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await touch('touchStart',[contact,drive_contact]);drive_contact['y']-=36;await touch('touchMove',[contact,drive_contact]);await page.wait_for_timeout(350);await touch('touchEnd',[contact]);assert await page.evaluate('Conquest.view.firing'),'releasing joystick preserves held Fire';end=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');assert math.dist(start,end)>.3,'simultaneous drive/fire moves';await page.wait_for_timeout(1600);await page.screenshot(path=str(OUT/'active-combat.png'))
+     stick=await rect('.cq-stick');drive_contact={'id':1,'x':stick['x']+stick['w']/2,'y':stick['y']+stick['h']/2};start=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await touch('touchStart',[contact,drive_contact]);drive_contact['y']-=36;await touch('touchMove',[contact,drive_contact]);await page.wait_for_timeout(350);await touch('touchEnd',[drive_contact]);assert await page.evaluate('Conquest.view.firing'),'releasing joystick preserves held Fire';end=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');assert math.dist(start,end)>.3,'simultaneous drive/fire moves';await page.wait_for_timeout(1600);await page.screenshot(path=str(OUT/'active-combat.png'))
      # Hold FIRE while precisely tapping each later living hostile. No HP/outcome/tick mutation.
      for i in range(90):
       if await page.evaluate('Conquest.view.authority.state.battle.state!=="active"'):break
       if not await page.evaluate('Conquest.view.selectedId'):
        pt=await target_point()
        if pt:
-        t={'id':3,'x':pt['x'],'y':pt['y']};await touch('touchStart',[contact,t]);await touch('touchEnd',[contact])
+        t={'id':3,'x':pt['x'],'y':pt['y']};await touch('touchStart',[contact,t]);await touch('touchEnd',[t])
       for selector,condition in [('#cq-shield','Conquest.view.battle.shieldCd<=0'),('#cq-super','Conquest.view.battle.charge>=1000')]:
        if await page.evaluate(condition):
-        r=await rect(selector);t={'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2};await touch('touchStart',[contact,t]);await touch('touchEnd',[contact])
+        r=await rect(selector);t={'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2};await touch('touchStart',[contact,t]);await touch('touchEnd',[t])
       await page.wait_for_timeout(1000)
      await touch('touchEnd',[])
      battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement})');assert battle['state']=='victory',battle;assert battle['settlement']['cp']==250,battle
