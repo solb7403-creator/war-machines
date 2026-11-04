@@ -111,13 +111,21 @@ class View {
  const c=this.renderer.domElement;let drag=null;
  on(c,'pointerdown',e=>{drag={id:e.pointerId,x:e.clientX,y:e.clientY};c.setPointerCapture(e.pointerId);});on(c,'pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;this.yaw-=(e.clientX-drag.x)*.008;this.pitch=Math.max(.08,Math.min(1.25,this.pitch+(e.clientY-drag.y)*.006));drag.x=e.clientX;drag.y=e.clientY;});on(c,'pointerup',()=>drag=null);on(c,'pointercancel',()=>drag=null);on(c,'wheel',e=>{e.preventDefault();this.zoom(e.deltaY*.03);});
  }
+ safeFooting(p){
+ if(p.surface==='ground'&&W.solidAt(p.x,p.z))return false;
+ if(((this.battle||this.encounter)?.enemies||[]).some(e=>e.hp>0&&Math.hypot(p.x-e.x,p.z-e.z)<4&&Math.abs(p.y-e.y)<4))return false;
+ return [[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const q=W.advance(p,dx,dz);return Math.hypot(q.x-p.x-dx,q.z-p.z-dz)<.1;});
+ }
  recover(){
  if(this.recoveryClock<this.recoveryReadyAt||this.stuckSeconds<1.5&&this.encounter?.state!=='defeat')return false;
- const safe=[...this.safeHistory].reverse().find(p=>Math.hypot(p.x-this.p.x,p.z-this.p.z)>=6&&Math.hypot(p.x-this.p.x,p.z-this.p.z)<=80);
+ let safe=[...this.safeHistory].reverse().find(p=>Math.hypot(p.x-this.p.x,p.z-this.p.z)>=6&&Math.hypot(p.x-this.p.x,p.z-this.p.z)<=80&&this.safeFooting(p));
+ // Fresh saved-position entries may have no breadcrumb yet. Validate a short
+ // continuous physical route to a local checkpoint; never warp through an obstacle.
+ if(!safe)for(const radius of [8,12,20,32]){for(let i=0;i<16;i++){const a=i*Math.PI/8,q=W.advance(this.p,Math.cos(a)*radius,Math.sin(a)*radius);if(Math.hypot(q.x-this.p.x,q.z-this.p.z)>=6&&this.safeFooting(q)){safe=q;break;}}if(safe)break;}
  if(!safe)return false;
  // Assign the endpoint directly: never feed a recovery displacement to atlas.accept.
  this.p={...safe};this.reset();this.stuckSeconds=0;this.recoveryReadyAt=this.recoveryClock+30;
- if(this.encounter){this.encounter.playerHp=this.encounter.playerMax;this.encounter.state='active';this.encounter.projectiles=[];}
+ if(this.encounter?.state==='defeat'){this.encounter.playerHp=this.encounter.playerMax;this.encounter.state='active';this.encounter.projectiles=[];}
  return true;
  }
  recordSafe(dt,attempted,moved){
@@ -125,7 +133,7 @@ class View {
  this.stuckSeconds=attempted>.001&&moved<attempted*.2?this.stuckSeconds+dt:attempted>.001?0:this.stuckSeconds;
  const last=this.safeHistory.at(-1);
  if(this.p.surface==='ground'&&!W.solidAt(this.p.x,this.p.z)&&(!last||Math.hypot(last.x-this.p.x,last.z-this.p.z)>8)){
- const free=[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const q=W.advance(this.p,dx,dz);return Math.hypot(q.x-this.p.x-dx,q.z-this.p.z-dz)<.1;});
+ const free=this.safeFooting(this.p);
  if(free){this.safeHistory.push({...this.p});if(this.safeHistory.length>10)this.safeHistory.shift();}
  }
  }

@@ -22,7 +22,9 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
       - name: Portrait player journey
-        run: python dev/tests/conquest-session-031.py
+        run: |
+          python dev/tests/conquest-onboarding.py
+          python dev/tests/conquest-session-031.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

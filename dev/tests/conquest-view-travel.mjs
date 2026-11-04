@@ -129,3 +129,8 @@ v.safeHistory=[];v.p={x:1130,z:1080,y:W.groundAt(1130,1080),surface:'ground'};v.
 for(let i=0;i<300;i++)v.tick(.1);
 assert(v.stuckSeconds>1.5);const blocked={...v.p};assert(v.recover());assert(Math.hypot(v.p.x-blocked.x,v.p.z-blocked.z)>=6);assert(!v.recover(),'cooldown and stuck gating');
 console.log('PASS actual blocked tower recovery, verified breadcrumb and cooldown');
+// A fresh saved-position entry can be disabled before it has any breadcrumbs.
+const fresh=fixture();fresh.safeHistory=[];fresh.p={x:1240,z:893,y:W.groundAt(1240,893),surface:'ground'};fresh.encounter={state:'defeat',playerMax:1700,playerHp:0,projectiles:[]};const checkpointFrom={...fresh.p};
+assert(fresh.recover(),'fresh disabled vehicle needs a verified reachable local checkpoint');
+assert(Math.hypot(fresh.p.x-checkpointFrom.x,fresh.p.z-checkpointFrom.z)>=6);assert(!W.solidAt(fresh.p.x,fresh.p.z));assert.equal(fresh.encounter.state,'active');
+console.log('PASS disabled fresh-entry recovery without breadcrumb history');

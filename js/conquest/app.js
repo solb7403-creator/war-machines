@@ -55,7 +55,7 @@ function guidance(){
  if(!view)return;const m=root.ConquestCombat?.mission,nav=panel.querySelector('#cq-navigation');if(!m||!nav)return;
  const p=view.p,distance=Math.hypot(p.x-m.x,p.z-m.z),completed=view.progress?.completed(m.id),active=view.battle?.state==='active';let target=m,route='Follow the gold mission beacon';
  // The viaduct's only upper entrances are its east/west ramps. Never point through a deck rail.
- if(distance>150&&p.x<1136){
+ if(p.surface==='bridge'&&p.x<1140||distance>150&&p.x<1136){
   if(p.x<900){target={x:898,z:1024};route='VIADUCT WEST RAMP · cross east to oxygen';}
   else if(p.surface==='bridge'){target={x:1140,z:1024};route='VIADUCT EAST EXIT · stay on the deck';}
   else{target={x:p.x<1024?898:1144,z:1024};route='Use the marked east/west bridge ramp';}

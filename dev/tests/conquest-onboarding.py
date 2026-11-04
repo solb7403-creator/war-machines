@@ -30,6 +30,7 @@ async def main():
   first=await page.locator('.cq-nav-arrow').evaluate('(e)=>e.style.transform')
   await page.evaluate('Conquest.view.yaw+=Math.PI/2');await page.wait_for_timeout(100)
   second=await page.locator('.cq-nav-arrow').evaluate('(e)=>e.style.transform');assert first!=second,'direction must follow camera yaw'
+  await page.evaluate("Conquest.view.p={x:1020,z:1024,y:24,surface:'bridge'}");await page.wait_for_function("document.querySelector('.cq-nav-route').textContent.includes('VIADUCT EAST EXIT')")
   before=await page.evaluate('Conquest.view.discovery.version')
   await page.get_by_role('button',name='OPEN MAP',exact=True).click()
   assert 'ASSIGNED' in await page.locator('.cq-map-mission').inner_text()

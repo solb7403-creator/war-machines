@@ -18,3 +18,5 @@ const oldObjective=a.objectiveHp;assert(oldObjective>1e8);assert.equal(a.state,'
 for(const [x,z] of [[1163,1132],[1160,1197],[1011,1048]]){const B=new C.Battle(stock,point(x,z));assert.equal(B.approachGrace,60);for(let i=0;i<30;i++)B.tick(.25,point(x,z),{});assert.equal(B.objectiveHp,B.objectiveMax,'far activation protects approach');}
 for(const f of C.formations)for(const [,x,z] of f){assert(Math.hypot(x-1230,z-995)<25,'waves originate at staging');assert(!W.solidAt(x,z));}
 console.log('PASS guards: authored placement, remote dormancy, bounded defense, real kill, coherent reload, safe mission approach and staging deployment');
+for(const invalid of [true,'broken',4,[],null]){const normalized=new C.Encounter(stock,p,invalid);assert.equal(typeof normalized.cleared,'object','malformed local cleared data normalizes');assert(!Array.isArray(normalized.cleared));normalized.enemies[0].hp=0;normalized.tick(.016,p,{});assert(normalized.cleared[normalized.enemies[0].key]);}
+console.log('PASS malformed local guard state normalization');

@@ -104,7 +104,7 @@ class Battle {
 // Defeated guards are personal client state, never rewards or territorial ownership.
 class Encounter extends Battle {
  constructor(loadout,p,cleared={}){
-  super(loadout,p);this.enemies=[];this.wave=formations.length;this.id=10000;this.objectiveHp=this.objectiveMax=1e9;this.cleared=cleared;
+  super(loadout,p);this.enemies=[];this.wave=formations.length;this.id=10000;this.objectiveHp=this.objectiveMax=1e9;this.cleared=cleared=cleared&&typeof cleared==='object'&&!Array.isArray(cleared)?cleared:{};
   for(const base of installations)for(let i=0;i<2;i++){
    const kind=i?'command':'raider',a=archetypes[kind],x=base.x+(i?10:-10),z=base.z-12;
    this.enemies.push({id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});
