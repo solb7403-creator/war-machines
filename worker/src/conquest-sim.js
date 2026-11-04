@@ -61,3 +61,23 @@ export function applyCommands(previous,request,now){
  s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);
  return s;
 }
+
+export function applyAction(previous,request,now){
+ if(!record(request)||Object.keys(request).some(k=>!['seq','action'].includes(k))||!['start-mission','return-exploration'].includes(request.action))fail('invalid action');
+ if(previous?.v!==1||!Number.isSafeInteger(request.seq)||request.seq!==previous.seq+1)fail('stale sequence');
+ if(!Number.isSafeInteger(now)||now<previous.lastWall)fail('invalid server clock');
+ const s=copy(previous);
+ if(request.action==='start-mission'){
+  if(s.mission||s.hp<=0||Math.hypot(s.position.x-C.mission.x,s.position.z-C.mission.z)>C.mission.activationRadius)fail('mission unavailable');
+  s.explorationBattle=s.battle;s.attempt=(s.attempt||0)+1;s.mission=C.mission.id;
+  const B=new C.Battle(s.loadout,s.position);B.playerHp=Math.min(B.playerMax,s.hp);s.battle=copy(B);
+ }else{
+  if(!s.mission)fail('no active mission');
+  const outcome=s.battle.state==='active'?'retreated':s.battle.state;
+  s.lastMission={id:s.mission,attempt:s.attempt,outcome,at:now};
+  if(outcome==='victory'){s.completed=s.completed||{};s.completed[s.mission]=s.completed[s.mission]||{at:now,attempt:s.attempt};}
+  const B=new C.Encounter(s.loadout,s.position);Object.assign(B,s.explorationBattle||{});B.playerHp=Math.min(B.playerMax,s.hp);B.state=s.hp>0?'active':'defeat';B.projectiles=[];
+  s.battle=copy(B);delete s.explorationBattle;s.mission=null;
+ }
+ s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
+}

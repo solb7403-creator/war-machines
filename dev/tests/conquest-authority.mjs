@@ -33,3 +33,14 @@ assert(fight.hp<=fight.battle.playerMax);console.log('PASS idle-credit cap and s
 const firebase=JSON.parse(JSON.stringify(a));delete firebase.battle.projectiles;delete firebase.battle.effects;delete firebase.battle.playerStats.gems;delete firebase.battle.playerStats.buffs;
 for(const e of firebase.battle.enemies){delete e.stats.gems;delete e.stats.buffs;}
 assert.doesNotThrow(()=>applyCommands(firebase,{seq:2,commands:[{x:0,z:0}]},now+100),'Firebase empty collection normalization');
+const {applyAction}=await import('../../worker/src/conquest-sim.js');
+assert.throws(()=>applyAction(s,{seq:1,action:'start-mission'},now+100),'activation uses server position');
+const missionStart=JSON.parse(JSON.stringify(s));missionStart.position={x:1163,z:1132,y:CONQUEST.World.groundAt(1163,1132),surface:'ground'};missionStart.hp=456;missionStart.battle.playerHp=456;
+const mission=applyAction(missionStart,{seq:1,action:'start-mission'},now+100);assert.equal(mission.hp,456);assert.equal(mission.battle.playerHp,456);assert.equal(mission.mission,'oxygen-line');
+const retreatState=applyAction(mission,{seq:2,action:'return-exploration'},now+200);assert.equal(retreatState.hp,456);assert(!retreatState.completed?.['oxygen-line'],'retreat cannot complete mission');
+assert.throws(()=>applyAction(mission,{seq:2,action:'return-exploration',victory:true},now+200),'client cannot report mission outcome');
+let sortie=createState(L,now);sortie.position={x:1160,z:1048,y:CONQUEST.World.groundAt(1160,1048),surface:'ground'};sortie=applyAction(sortie,{seq:1,action:'start-mission'},now);
+let seconds=0;while(sortie.battle.state==='active'&&seconds<150){const e=sortie.battle.enemies.find(e=>e.hp>0),yaw=e?Math.atan2(e.x-sortie.position.x,e.z-sortie.position.z):0;sortie=applyCommands(sortie,{seq:sortie.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,fire:!!e})},now+(++seconds)*1000);}
+assert.equal(sortie.battle.state,'victory','server computes the full three-wave victory');assert.equal(sortie.battle.kills,7);
+const completed=applyAction(sortie,{seq:sortie.seq+1,action:'return-exploration'},now+(seconds+1)*1000);assert(completed.completed['oxygen-line']);assert.equal(completed.hp,sortie.hp);
+console.log('PASS authoritative mission activation, HP continuity, retreat rejection and real three-wave victory:',seconds,'seconds');

@@ -134,3 +134,12 @@ const fresh=fixture();fresh.safeHistory=[];fresh.p={x:1240,z:893,y:W.groundAt(12
 assert(fresh.recover(),'fresh disabled vehicle needs a verified reachable local checkpoint');
 assert(Math.hypot(fresh.p.x-checkpointFrom.x,fresh.p.z-checkpointFrom.z)>=6);assert(!W.solidAt(fresh.p.x,fresh.p.z));assert.equal(fresh.encounter.state,'active');
 console.log('PASS disabled fresh-entry recovery without breadcrumb history');
+// Conquest damage survives mission/exploration transitions and local re-entry.
+runInContext(readFileSync('js/conquest/combat.js','utf8'),ctx);
+const hpData=new Map();ctx.localStorage={getItem:k=>hpData.get(k)||null,setItem:(k,v)=>hpData.set(k,v)};ctx.SAVE_KEY='conquest-health-account-a';
+const hpView=fixture();hpView.p={x:1160,z:1048,y:W.groundAt(1160,1048),surface:'ground'};hpView.encounter=new ctx.ConquestCombat.Encounter(hpView.loadout,hpView.p);hpView.encounter.playerHp=777;
+assert(hpView.startMission());assert.equal(hpView.battle.playerHp,777,'starting a mission cannot refill HP');
+hpView.battle.playerHp=321;hpView.clearBattle();assert.equal(hpView.encounter.playerHp,321,'leaving mission cannot refill HP');hpView.flushHealth();
+const hpReload=fixture();hpReload.encounter=new ctx.ConquestCombat.Encounter(hpReload.loadout,hpReload.p);hpReload.restoreHealth();assert.equal(hpReload.encounter.playerHp,321,'damage persists across local reload');
+ctx.SAVE_KEY='conquest-health-account-b';const hpOther=fixture();hpOther.encounter=new ctx.ConquestCombat.Encounter(hpOther.loadout,hpOther.p);hpOther.restoreHealth();assert.equal(hpOther.encounter.playerHp,hpOther.encounter.playerMax,'other account does not inherit HP');
+console.log('PASS mission/exploration/re-entry HP continuity and local account separation');
