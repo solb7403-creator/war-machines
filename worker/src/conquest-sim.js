@@ -56,7 +56,7 @@ export function applyAction(previous,request,now){
  }else if(request.action==='respawn'){
  if(s.hp>0||!s.death?.active)fail('no verified defeat');const old=B;B=new C.Encounter(s.loadout,s.checkpoint||{x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'});Object.assign(B,s.explorationBattle||s.battle);mergeResidents(old,B);K.carry(old,B);s.position={...(s.checkpoint||{x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'})};s.hp=B.playerHp=B.playerMax;B.state='active';B.projectiles=[];B.superShells=[];B.superAttack=null;B.shieldT=0;B.lockId=null;s.mission=null;delete s.explorationBattle;s.death.active=false;s.notice={kind:'respawned'};
  }else{
- if(s.hp<=0||(s.stuckMs||0)<1500||now<(s.recoveryAt||0))fail('recovery unavailable');let p=[...s.safe].reverse().find(p=>{const d=Math.hypot(p.x-s.position.x,p.z-s.position.z);return d>=6&&d<=80&&footing(s,p);});
+ if(s.hp<=0||B.state!=='active'||(s.stuckMs||0)<1500||now<(s.recoveryAt||0))fail('recovery unavailable');let p=[...s.safe].reverse().find(p=>{const d=Math.hypot(p.x-s.position.x,p.z-s.position.z);return d>=6&&d<=80&&footing(s,p);});
  if(!p)for(const r of [8,12,20,32]){for(let i=0;i<16;i++){const q=W.advance(s.position,Math.cos(i*Math.PI/8)*r,Math.sin(i*Math.PI/8)*r);if(Math.hypot(q.x-s.position.x,q.z-s.position.z)>=6&&footing(s,q)){p=q;break;}}if(p)break;}
  if(!p)fail('no reachable safe position');s.position={...p};s.recoveryAt=now+30000;s.stuckMs=0;
  }
