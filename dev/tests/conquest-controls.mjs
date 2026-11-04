@@ -20,3 +20,5 @@ console.log('PASS all four Supers produce real kills, legal cooldown fittings an
 assert.equal(K.CONFIG.superWorldScale,3,'Super distances use the established3D projectile conversion');
 B=bare();B.playerStats.wtype='twin';B.charge=1000;B.enemies=[-5,5].map((dx,i)=>{const e=structuredClone(new C.Encounter(R.STOCK_L,p).enemies[0]);return Object.assign(e,{id:i+1,x:p.x+dx,z:p.z+2,y:W.groundAt(p.x+dx,p.z+2),hp:180,maxHp:180,decision:999,cd:999,vx:0,vz:0});});for(let i=0;i<30;i++)K.advance(B,p,{...input,super:i===0},.05,true);assert(B.enemies.every(e=>e.hp===0),'Static Nova damages multiple real hulls');
 console.log('PASS3D spatial conversion and multi-hull Static Nova');
+for(const state of ['victory','defeat']){B=bare();B.state=state;B.dashState={t:.01,x:1,z:0};B.charge=1000;const stopped=K.advance(B,p,{...input,x:1,fire:true,dash:true,shield:true,super:true},.25,false);assert.deepEqual(stopped,p);assert.equal(B.shieldCd,0);assert.equal(B.shots,0);assert.equal(B.charge,1000,'ended battle cannot activate abilities');}
+console.log('PASS ended mission cannot move, extend Dash or activate invulnerable combat');

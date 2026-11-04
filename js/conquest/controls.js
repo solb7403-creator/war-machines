@@ -46,11 +46,11 @@ C.Battle.prototype.abilityStep=function(dt){
  this.superShells=this.superShells.filter(q=>q.life>0).slice(-4);
 };
 function advance(B,p,input,dt,exploration){
- ensure(B);dt=clamp(dt,0,.25);if(B.playerHp<=0)return p;
+ ensure(B);dt=clamp(dt,0,.25);if(B.playerHp<=0||B.state!=='active')return p;
  if(input.shield&&B.shieldCd<=0){B.shieldT=SHIELD_T;B.shieldCd=SHIELD_CD*(B.playerStats.shieldCdM||1);}
  let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;
  if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:DASH_T,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=DASH_CD*(B.playerStats.dashCdM||1);}
- let left=dt,first=true;while(left>1e-8){const h=Math.min(left,1/60);left-=h;const old=p,speed=B.dashState?B.combatSpeed*DASH_SPD:exploration?B.combatSpeed*2:B.combatSpeed;
+ let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60);left-=h;const old=p,speed=B.dashState?B.combatSpeed*DASH_SPD:exploration?B.combatSpeed*2:B.combatSpeed;
  const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
  if(!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
