@@ -33,7 +33,7 @@ jobs:
 
   transmission:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -45,7 +45,7 @@ jobs:
           python-version: '3.12'
       - name: Install browser engine
         run: |
-          pip install playwright
+          pip install playwright==1.55.0
           python -m playwright install --with-deps ${{ matrix.engine }}
       - name: Visible acknowledgement and independent story scrolling
         env:
