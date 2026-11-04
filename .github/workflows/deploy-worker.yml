@@ -39,6 +39,7 @@ jobs:
           node dev/tests/wtest/conquest.mjs
           node dev/tests/conquest-authority.mjs
           node dev/tests/conquest-controls.mjs
+          node dev/tests/conquest-threat.mjs
           node dev/tests/conquest-economy.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/wtest/test.mjs
