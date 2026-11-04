@@ -6,7 +6,7 @@ let lastFrame=performance.now(),overDraw=0;
 function frame(now){
  const dt=Math.min(0.05,(now-lastFrame)/1000);lastFrame=now;
  try{
-  if(typeof Conquest!=='undefined'&&Conquest.active){Conquest.tick(dt);}
+  if(typeof Conquest!=='undefined'&&Conquest.active){Conquest.tick(now);}
   else if(typeof rangeRun!=='undefined'&&rangeRun){rangeFrame(dt);}
   else if(inBattle()){
    if(typeof pvpOn==='function'&&pvpOn()){pvpFrame(dt);drawBattle();overDraw=1.2;}   // live match: the server runs the fight
