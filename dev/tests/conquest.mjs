@@ -24,3 +24,11 @@ let side={x:1024,z:1015,y:24,surface:'bridge'};assert.equal(C.move(side,0,-1).z,
 assert.deepEqual(C.mapPoint(31680,47520),{u:1,v:0});assert.deepEqual(C.mapPoint(0,0),{u:0,v:1});
 assert(C.move({x:1,z:1,y:C.groundAt(1,1),surface:'ground'},-10,-10).x>=1);
 console.log('Conquest: dimensions 31680 × 47520; crossings 2h / 3h; area 1505433600 (2352240× arena). Determinism, seams, 500 streaming moves, far meshes, bridge upper/lower routes, ledges and map bounds PASS.');
+// The far ring is actual geometry, at least twice the old 530-unit visibility.
+const horizon=C.horizon(15840,23760);assert(horizon.positions.length>0);assert(horizon.positions.every(Number.isFinite));assert(horizon.radius>=1060+110);assert(horizon.positions.length/3<20000);assert.deepEqual(horizon,C.horizon(15840,23760));
+assert.deepEqual(C.scenery(220,330),C.scenery(220,330));assert(C.scenery(220,330).length<=64);
+console.log('PASS deterministic bounded horizon geometry and remote seeded scenery');
+let tower={x:1138,z:1080,y:C.groundAt(1138,1080),surface:'ground'};tower=C.advance(tower,30,0);assert(tower.x<1141,'oxygen tower footprint is solid even at high speed');
+// Sample long wilderness corridors: check footing and bounds, report blocks rather than claiming global traversability.
+const corridors=[];for(const [x,z,dx,dz] of [[14000,8000,.2,0],[28000,42000,0,.2],[15840,23760,.2,.1],[1024,995,0,.2]]){let p={x,z,y:C.groundAt(x,z),surface:'ground'},blocked=0;for(let i=0;i<2000;i++){const q=C.advance(p,dx,dz);if(q===p)blocked++;p=q;assert(Number.isFinite(p.y));assert(Math.abs(p.y-(p.surface==='bridge'?C.deckAt(p.x,p.z):C.groundAt(p.x,p.z)))<1e-8);}corridors.push({start:[x,z],end:[+p.x.toFixed(1),+p.z.toFixed(1)],blocked});}console.log('Sampled corridors (not global passability):',JSON.stringify(corridors));
+assert.equal(C.chunkKeys(15840,23760,4,1).filter(c=>c.step===4).length,9,'phone near ring keeps fine collision-matching terrain around vehicle');

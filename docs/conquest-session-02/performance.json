@@ -1,0 +1,43 @@
+{
+  "before": {
+    "viewport": "390x844",
+    "fogNear": 220,
+    "fogFar": 530,
+    "cameraFar": 700,
+    "chunks": 81,
+    "geometries": 42,
+    "textures": 0,
+    "calls": 38,
+    "triangles": 20280,
+    "pending": 0,
+    "builds": 119,
+    "buildBudget": 2,
+    "fineTerrainRadius": 2,
+    "cpuTickMs": 4.107499999948777,
+    "observedRafFPS": 33.91304347826087
+  },
+  "beforeErrors": [],
+  "after": {
+    "viewport": "390x844",
+    "fogNear": 650,
+    "fogFar": 1280,
+    "cameraFar": 1600,
+    "chunks": 81,
+    "geometries": 53,
+    "textures": 2,
+    "calls": 53,
+    "triangles": 33802,
+    "pending": 0,
+    "builds": 111,
+    "buildBudget": 2,
+    "fineTerrainRadius": 1,
+    "cpuTickMs": 2.042500000039581,
+    "observedRafFPS": 19.66518757563534
+  },
+  "activeBay": {
+    "active": "m_spare",
+    "speed": 6.71088,
+    "expected": 6.7
+  },
+  "afterErrors": []
+}

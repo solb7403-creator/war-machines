@@ -935,7 +935,9 @@ function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Ob
 function fittingStats(v){const m=fittingSelection(v),f={weight:0,power:0};for(const s of FIT_FIELDS)f[s]=0;for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s]||0;for(const s of FIT_FIELDS)f[s]=Math.round(f[s]*1000)/1000;return f;}
 function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
-function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)),spd:+(STAT.speed*t.spdM*(1+g('spd'))).toFixed(1)};}
+// Unrounded permanent travel speed, shared by Garage metrics and Conquest physics.
+function machineSpeed(L,t=tankOf(L,1)){return STAT.speed*t.spdM*(1+(t.gems.includes('spd')?GEM.spd.amt*t.gemM.spd:0));}
+function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;return {hp:t.mhp,dps:Math.round(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)),spd:+machineSpeed(L,t).toFixed(1)};}
 
 // ---- garage presentation (UI only): reads the tables above, adds no stat math of its own ----
 // Progressive garage: matches played (server-tracked mp) before a section opens. UI gating only: the server accepts every
