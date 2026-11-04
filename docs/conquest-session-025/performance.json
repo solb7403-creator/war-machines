@@ -1,0 +1,66 @@
+{
+  "before": {
+    "viewport": "390x844",
+    "frameP95Ms": 100.10000000000036,
+    "cpuP95Ms": 4.800000000046566,
+    "fogNear": 650,
+    "fogFar": 1280,
+    "cameraFar": 1600,
+    "chunks": 81,
+    "geometries": 53,
+    "textures": 2,
+    "calls": 53,
+    "triangles": 33802,
+    "horizonVertices": 13899,
+    "horizonTriangles": 8136,
+    "horizonBytes": 660372,
+    "pending": 0,
+    "builds": 111,
+    "buildBudget": 2,
+    "fineTerrainRadius": 1,
+    "cpuTickMs": 1.8624999999825378,
+    "observedRafFPS": 16.178247424791632
+  },
+  "beforeErrors": [],
+  "after": {
+    "viewport": "390x844",
+    "frameP95Ms": 100.10000000000036,
+    "cpuP95Ms": 4.900000000139698,
+    "fogNear": 1100,
+    "fogFar": 2560,
+    "cameraFar": 3000,
+    "chunks": 81,
+    "geometries": 53,
+    "textures": 2,
+    "calls": 53,
+    "triangles": 29830,
+    "horizonVertices": 5955,
+    "horizonTriangles": 4164,
+    "horizonBytes": 287004,
+    "pending": 0,
+    "builds": 111,
+    "buildBudget": 2,
+    "fineTerrainRadius": 1,
+    "cpuTickMs": 1.6450000000011642,
+    "observedRafFPS": 17.955361607345786
+  },
+  "discovery": {
+    "version": 7,
+    "regions": 4,
+    "discovered": true,
+    "unknown": true,
+    "saved": "{\"v\":1,\"cell\":32,\"regions\":{\"0:0\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAAPw=\",\"0:1\":\"AAAA/AAAAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"1:0\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAA8AAAA=\",\"1:1\":\"DwAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}}"
+  },
+  "activeBay": {
+    "active": "m_spare",
+    "speed": 13.42176,
+    "expected": 6.7
+  },
+  "streamingStress": {
+    "maxChunks": 81,
+    "finalChunks": 81,
+    "geometries": 43,
+    "pending": 0
+  },
+  "afterErrors": []
+}

@@ -1,0 +1,63 @@
+22 regression suites: node dev/tests/<name>.mjs. Final runs listed below passed.
+Reproduce with bash dev/tests/conquest-regression.sh. No root package test runner exists.
+Optional combat-grid calibration characterization was stopped after partial output; no pass/fail assertions, excluded from regression runner.
+
+conquest: Conquest: dimensions 31680 × 47520; reference exploration crossings 60 / 90 minutes; area 1505433600 (2352240× arena). Determinism, seams, 500 streaming moves, far meshes, bridge upper/lower routes, ledges and map bounds PASS.
+PASS deterministic bounded horizon geometry and remote seeded scenery
+Sampled corridors (not global passability): [{"start":[14000,8000],"end":[14400,8000],"blocked":0},{"start":[28000,42000],"end":[28000,42400],"blocked":0},{"start":[15840,23760],"end":[16240,23960],"blocked":0},{"start":[1024,995],"end":[1024,1252],"blocked":715}]
+conquest-travel: PASS 216 builds: exact tankOf speed, rounded machineMetrics tolerance, 10/15/20/60 FPS, bounded resume, rails, current account upgrades/bays. Obstacle-free ramp displacement; terrain/obstacles excluded from speed parity.
+conquest-view-travel: PASS production ConquestView tick: active legal bays/models, Engine/core refresh, re-entry, 10/15/20/60 FPS, normalized keyboard/joystick, resume reset, bridge footing, owned Moonbeam/Lunar Skin/paint/mod geometry and deterministic re-entry. GPU/streaming covered separately.
+PASS real foundation tread tags, actual scaled displacement, stopped and blocked tread phases, reverse shared drive
+conquest-discovery: PASS discovery: blank start, spawn, accepted path continuity, blocked/overspeed/invalid rejection, read-only map queries, persistence, account isolation, no teleport corridor
+PASS production strategic map: unknown biomes never sampled, zoom/whole-world/locate cannot discover; distant horizon generation cannot discover
+PASS account-save persistence survives localStorage failure; spawn ledger under1KB
+PASS late Telegram account snapshot cannot erase local or remote exploration
+PASS long-travel whole-world map coarse samples: 726
+PASS boot cloud reconciliation preserves local economy winner and unions older cloud exploration
+graphics-motion: PASS cosmetic family recoil, movement/stop/turn/reduced motion, release default and quality hysteresis
+PASS 9 HIGH/LOW real hull drive tags and independent material ownership/disposal
+garage-rules: PASS garage rules: {"tags":10,"reach":{"wall":4475,"balanced":11385,"jugg":2931,"intercept":3780,"sniper":3042,"skirm":4301,"charger":1400,"glass":1890,"crit":5209,"brawler":1587},"flipRate":0.218,"upgradePath":{"avg":2.38,"max":6},"moonEdge":{"vs":"siege","d":{"tough":0,"fire":12,"speed":0,"power":10,"armor":0,"crit":0,"charge":0,"repair":0,"edge":25,"super":0}},"skinEdge":{"tough":136,"fire":12,"speed":0,"power":8,"armor":0,"crit":0,"charge":0,"repair":0,"edge":0,"super":0}}
+gear-balance:     "legendaryPower": 97
+  }
+}
+gear-combat: PASS actual combat: 656 paired duels, 180 six-mode practice trials, 19 legal fitting combinations, 3420 client/server parity cases
+standard-equipment: PASS 9 chassis, 9 weapons, 81 pairings, 243 fitting combinations, 72 paint/team/core combinations, distinct tiers, bounded meshes/normals/mounts/muzzle tips/animations and legacy stock parity {"maxChassis":27300,"maxWeapon":7488}
+PASS 432 unchanged standard kits, paints, normals, colors, metadata and animations against PR15
+hf-foundation: PASS real PBR exports, UV/tangent/material batching, modular metadata, bounded HIGH/LOW sample, safe default
+PASS weighted geometry LRU, active mesh leases, pending working pair, release/disposal
+PASS packaged atlas PNG dimensions/checksums/transfer cap and pinned Three r169 303502
+hf-collection: PASS 9+9 HIGH/LOW, nine adaptive skins, one Moonbeam, 81+99 pairings per quality, exact sockets/tips, 72 paint/team/core and 243 fittings, UV/normals/tangents, distinct geometry, LOW budgets, leases, legacy stock
+chassis-family: closest pair by top-view surface shape: titan0/titan1 0.101
+mean battle footprint  scout 1.74  vanguard 4.04  titan 6.84  ratios 2.33 1.69
+PASS 54 chassis builds (HF high/low + foundation, plain + Lunar): class ladder, distinct silhouettes, gun traverse clear, grounded treads, track uniforms, class hitboxes, no other gameplay number moved
+defender-isolation: PASS 432 unchanged standard kits, paints, normals, colors, metadata and animations against PR15
+defender-visual: PASS Defender real THREE geometry, tracks, armor, amber/cyan lighting, modular weapons, bounded cost, legend isolation, unchanged game rules {"defenderVertices":27300,"cannonVertices":6288}
+PASS 9 chassis, 9 weapons, 81 pairings, 243 fitting combinations, 72 paint/team/core combinations, distinct tiers, bounded meshes/normals/mounts/muzzle tips/animations and legacy stock parity {"maxChassis":27300,"maxWeapon":7488}
+PASS 432 unchanged standard kits, paints, normals, colors, metadata and animations against PR15
+legendary-visual: PASS final legendary geometry, 9 chassis, 99 legend/standard mounts, single emitter, normals/bounds/batching and the Lunar Skin bonuses from the rules table
+graphics-release: PASS static activation/rollback on both entries; actual renderer particle and effect pool bounds
+map-layout: ok   canyon    walls 20 rocks  6 nav  70 open 290 sq
+ok   bunker    walls 26 rocks  4 nav  72 open 357 sq
+map layouts ok
+map-nav: canyon    {"matches":24,"finished":24,"stuckPct":2.8,"insideSolid":0,"highGroundPct":14.9,"msPerSimSec":7.23}
+bunker    {"matches":24,"finished":24,"stuckPct":2.43,"insideSolid":0,"highGroundPct":0,"msPerSimSec":6.94}
+map navigation ok
+combat-balance:   'arena 2v2 @L6': '0.17 0.17 0.50 1.00 1.00'
+}
+PASS combat balance: 772 checks
+gem-ui: PASS gem UI: seven cores, exact progress, max surplus, bonuses, equipment, level-up metadata
+PASS gem/socket selectors and shared picker routing for empty, partial and full loadouts
+PASS all seven core descriptions and Velocity bonus
+lab-ui: LUNAR garage UI: PASS { inspected: 6, actualHealth: [ 1547, 2363 ] }
+velocity: PASS Velocity balance, seven-way caches, migration, three sockets, base weapon stats, fitting stacking
+PASS actual shot/Siege speeds, range, collision, impact damage, AI/PvP/practice parity and refund
+PASS impact levels, unchanged beams/Nova, actual impact DPS and no artificial velocity DPS
+
+Fresh extended-track check:
+PASS production ConquestView tick: active legal bays/models, Engine/core refresh, re-entry, 10/15/20/60 FPS, normalized keyboard/joystick, resume reset, bridge footing, owned Moonbeam/Lunar Skin/paint/mod geometry and deterministic re-entry. GPU/streaming covered separately.
+PASS real foundation tread tags, actual scaled displacement, stopped and blocked tread phases, reverse shared drive
+PASS proportional treads at 8.8/17.6/26.4 units/s, differential accepted turns and actual 3D ramp distance
+
+
+Browser: python dev/tests/conquest-session-025.py -> exit 0; beforeErrors=[]; afterErrors=[]; actual WEBGL_lose_context and re-entry passed; map pinch/persistence/discovery tests passed.
+Stress: {"maxChunks": 81, "finalChunks": 81, "geometries": 43, "pending": 0}
