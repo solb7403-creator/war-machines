@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createContext,runInContext} from 'node:vm';
 import {createHash} from 'node:crypto';
 const ctx=createContext({console,document:{hidden:false}});
-for(const file of ['js/vendor/three.lunar.min.js','js/rules.js','js/models3d.js','js/conquest/world.js','js/conquest/view.js'])runInContext(readFileSync(file,'utf8'),ctx,{filename:file});
+for(const file of ['js/vendor/three.lunar.min.js','js/rules.js','js/graphics.js','js/models3d.js','js/conquest/world.js','js/conquest/view.js'])runInContext(readFileSync(file,'utf8'),ctx,{filename:file});
 // Use the actual core helper, with a normalized two-bay account fixture. Its lab path resolves ownership.
 const core=readFileSync('js/core.js','utf8');
 const loadoutFunction=core.slice(core.indexOf('function myLoadout(){'),core.indexOf('const calcPower='));
@@ -27,7 +27,7 @@ assert(v.vehicle.children[0].children.some(c=>c.isGroup),'real Garage chassis an
 S.up.engine=4;v.syncLoadout();assert(v.speed>stock,'permanent upgrades refresh live');
 S.cOwn.scout=[0];S.lab.machines[second].spec.c={c:'scout',t:0,s:false};S.lab.active=second;
 v.syncLoadout();assert.equal(v.loadout.c.c,'scout');assert.notEqual(v.vehicle.children[0],firstModel,'active bay refreshes actual model');
-assert.equal(v.speed,ctx.R.machineSpeed(v.loadout));
+assert.equal(v.speed,2*ctx.R.machineSpeed(v.loadout));
 S.lab.machines[second].spec.cores=['spd'];S.gemLvl.spd=5;
 v.syncLoadout();const coreSpeed=v.speed;
 S.lab.machines[second].spec.cores=[];v.syncLoadout();assert(coreSpeed>v.speed,'equipped core removal refreshes speed');
@@ -98,3 +98,28 @@ v.pending=0;v.jump(1140,1235);assert.notEqual(v.pending,0,'jump invalidates prev
 
 for(const model of models){model.vehicle.traverse(o=>o.geometry?.dispose());Object.values(model.modelMats).forEach(m=>m.dispose());}
 console.log('PASS production ConquestView tick: active legal bays/models, Engine/core refresh, re-entry, 10/15/20/60 FPS, normalized keyboard/joystick, resume reset, bridge footing, owned Moonbeam/Lunar Skin/paint/mod geometry and deterministic re-entry. GPU/streaming covered separately.');
+// Real tread links must be driven, including the foundation renderer, without new meshes.
+for(const cls of ['scout','vanguard','titan'])for(let tier=0;tier<3;tier++)for(const lunar of [false,true]){
+ const raw=M.chassisKit(cls,tier,ctx.R.PAINTS.stock,team,[],lunar),baked=M.bake(raw.k);
+ assert(raw.meta.track||cls==='vanguard'&&tier===0,'canonical starter has an explicit Conquest belt adapter');
+ assert(Object.values(baked).some(g=>Array.from(g?.attributes.drive?.array||[]).some((v,i)=>i%4===2&&v>=2)),'actual tread links carry GPU drive metadata');
+ Object.values(baked).forEach(g=>g?.dispose());
+}
+const moving=fixture();moving.keys={KeyW:true};moving.tick(.1);
+assert(moving.motion,'Conquest attaches shared GPU tread animation');
+const phase=moving.motion.state.left;assert(Math.abs(phase-moving.speed*.1/1.65)<1e-9,'belt distance accounts for rendered chassis scale');
+moving.keys={};moving.tick(.1);assert.equal(moving.motion.state.left,phase,'stationary tracks stop');
+moving.p={x:1024,z:1015,y:24,surface:'bridge'};moving.keys={KeyA:true};moving.tick(.1);assert.equal(moving.motion.state.left,phase,'blocked tracks stop');
+const state=ctx.GraphicsMotion; // lexical global accessed inside context below
+runInContext(`{const s=GraphicsMotion.state();GraphicsMotion.advance(s,.1,{dx:1,heading:0},false);const a=s.left;GraphicsMotion.advance(s,.1,{dx:-.5,heading:0},false);if(Math.abs(s.left-a+.5)>1e-10)throw Error('reverse tread direction');}`,ctx);
+console.log('PASS real foundation tread tags, actual scaled displacement, stopped and blocked tread phases, reverse shared drive');
+for(const speed of [8.8,17.6,26.4]){
+ const test=fixture();test.speed=speed;test.keys={KeyW:true};test.tick(.1);
+ assert(Math.abs(test.motion.state.left-speed*.1/1.65)<1e-8,'faster actual displacement drives proportionally faster shoes');
+ test.keys={KeyD:true};test.tick(.1);assert.notEqual(test.motion.state.left,test.motion.state.right,'accepted turn drives differential belts');
+ test.motion.dispose();test.vehicle.traverse(o=>o.geometry?.dispose());Object.values(test.modelMats).forEach(m=>m.dispose());
+}
+const ramp=fixture();ramp.p={x:925,z:1024,y:W.deckAt(925,1024),surface:'bridge'};ramp.keys={KeyW:true};const start={...ramp.p};ramp.tick(.1);
+assert(Math.abs(ramp.motion.state.left-Math.hypot(ramp.p.x-start.x,ramp.p.y-start.y,ramp.p.z-start.z)/1.65)<1e-8,'ramp belts include vertical surface displacement');
+ramp.motion.dispose();ramp.vehicle.traverse(o=>o.geometry?.dispose());Object.values(ramp.modelMats).forEach(m=>m.dispose());
+console.log('PASS proportional treads at 8.8/17.6/26.4 units/s, differential accepted turns and actual 3D ramp distance');

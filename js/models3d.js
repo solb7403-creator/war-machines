@@ -37,11 +37,14 @@ function put(k,geo,col,p,r,s,mat){
 function merge(list){
  if(!list||!list.length)return null;
  let n=0;for(const g of list)n+=g.attributes.position.count;
+ const D=list.some(g=>g.attributes.drive)?new Float32Array(n*4):null;
  const P=new Float32Array(n*3),C=new Float32Array(n*3),N=list.some(g=>g.attributes.normal)?new Float32Array(n*3):null;let o=0;
- for(const g of list){P.set(g.attributes.position.array,o);C.set(g.attributes.color.array,o);if(N){if(!g.attributes.normal)g.computeVertexNormals();N.set(g.attributes.normal.array,o);}o+=g.attributes.position.count*3;g.dispose();}
+ for(const g of list){if(D&&g.attributes.drive)D.set(g.attributes.drive.array,o/3*4);P.set(g.attributes.position.array,o);C.set(g.attributes.color.array,o);if(N){if(!g.attributes.normal)g.computeVertexNormals();N.set(g.attributes.normal.array,o);}o+=g.attributes.position.count*3;g.dispose();}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('color',new THREE.BufferAttribute(C,3));
+ if(D)g.setAttribute('drive',new THREE.BufferAttribute(D,4));
  if(N)g.setAttribute('normal',new THREE.BufferAttribute(N,3));else g.computeVertexNormals();g.computeBoundingSphere();return g;
 }
+function driveMark(g,x,y,type,side){const a=new Float32Array(g.attributes.position.count*4);for(let i=0;i<a.length;i+=4)a.set([x,y,type,side],i);g.setAttribute('drive',new THREE.BufferAttribute(a,4));}
 const bake=k=>k.hf&&typeof Equipment3D!=='undefined'?Equipment3D.bake(k):({lit:merge(k.lit),shine:merge(k.shine),glow:merge(k.glow)});
 // shapes
 const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
@@ -230,7 +233,9 @@ function wheelAssembly(k,F,x,y,z,r,detail){
 function trackAssembly(k,F,o){
  const {len,h,w,z,y=h/2+.01,wheels=5,detail=false,center=0}=o,side=Math.sign(z),a=(len-h)/2,r=h/2;
  put(k,defenderBelt(len,h,w),F.rubber,[center,y,z]);
- const pad=(x,py,ang)=>{put(k,B(detail?.092:.115,.039,w+.015),F.steel,[center+x,py,z],[0,0,ang],null,'shine');if(detail)put(k,B(.068,.055,w*.53),F.rubber,[center+x,py,z],[0,0,ang]);};
+ const pad=(x,py,ang)=>{const cy=py-y,L=4*a+2*Math.PI*r,ph=Math.abs(x)<=a+.001?(cy>0?x+a:Math.PI*r+3*a-x):x>0?2*a+Math.acos(Math.max(-1,Math.min(1,cy/r)))*r:4*a+Math.PI*r+Math.acos(Math.max(-1,Math.min(1,-cy/r)))*r;
+ const mark=g=>driveMark(g,center+x,py,2+ph/L,side);
+ mark(put(k,B(detail?.092:.115,.039,w+.015),F.steel,[center+x,py,z],[0,0,ang],null,'shine'));if(detail)mark(put(k,B(.068,.055,w*.53),F.rubber,[center+x,py,z],[0,0,ang]));};
  const n=detail?19:13;for(let i=0;i<n;i++){const x=-a+i*2*a/(n-1);pad(x,y+r,0);pad(x,y-r,0);}
  for(const end of [-1,1])for(let i=1;i<7;i++){const q=i*Math.PI/7;pad(end*(a+Math.sin(q)*r),y+Math.cos(q)*r,-end*q);}
  for(let i=0;i<wheels;i++){const x=center-a+2*a*i/(wheels-1),end=i===0||i===wheels-1;wheelAssembly(k,F,x,end?y:y-.035,z+side*(w/2+.015),r*(end?.77:.66),detail);}
@@ -633,7 +638,7 @@ function famChassis(cls,tier,P,team,gems,lunar,S){
 // Foundation sink: the same designs in the classic lit/shine/glow buckets (no textures needed).
 function famFoundation(cls,tier,P,team,gems,lunar){
  const k=kit(),bucket={energy:'glow',lunar:'glow',rubber:'lit',paint:'shine',steel:'shine',gold:'shine'};
- const r=famChassis(cls,tier,P,team,gems,lunar,{high:false,put:(g,m,c,p,rot,s)=>put(k,g,c,p,rot,s,bucket[m]||'lit'),mark:()=>{}});
+ const r=famChassis(cls,tier,P,team,gems,lunar,{high:false,put:(g,m,c,p,rot,s)=>put(k,g,c,p,rot,s,bucket[m]||'lit'),mark:driveMark});
  r.k=k;r.meta.visual=VISUAL_VERSION;return r;
 }
 function standardChassis(cls,tier,P,team,gems,lunar=false){

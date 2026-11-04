@@ -29,9 +29,14 @@ function boot(){
   uiDirty();
  };
  cloudLoad(cs=>{
+  if(typeof ConquestDiscovery!=='undefined')ConquestDiscovery.markReady();
+  // Exploration is monotonic even when the older economy snapshot contains newly visited regions.
+  const discovery=typeof ConquestDiscovery!=='undefined'?ConquestDiscovery.create():null;
+  discovery?.merge(cs?.conquestDiscovery);
   // the newer copy wins: Telegram cloud (follows the account) or this device
   if(cs&&typeof cs.pts==='number'&&((cs._ts||0)>(save._ts||0)||(cs.earned||cs.pts)>(save.earned||0))){loadSave(cs);rollPeriods();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
   else cloudSave();
+  discovery?.flush();
   afterCloud();
  });
  // canvas text uses the menu font: repaint once it has loaded
