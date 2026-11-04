@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {buildSim} from '../../worker/build-sim.mjs';
+buildSim();
+const {CONQUEST,RULES}=await import('../../worker/src/sim.gen.js');
+const {validateCommands,createState,applyCommands}=await import('../../worker/src/conquest-sim.js');
+assert(CONQUEST.World&&CONQUEST.Combat,'server uses canonical terrain and combat');
+for(const value of [null,{},[],[{x:102,z:0}], [{x:0,z:NaN}], [{x:0,z:0,position:{x:9999,z:0}}],Array(21).fill({x:0,z:0})])assert.throws(()=>validateCommands(value));
+const commands=validateCommands([{x:1,z:0,aimYaw:0,fire:false}]);assert.equal(commands.length,1);
+const now=100000,L=RULES.STOCK_L,s=createState(L,now);
+const initial=JSON.stringify(s);
+assert.throws(()=>applyCommands(s,{seq:1,commands:Array(20).fill({x:1,z:0})},now),'102-meter exploit cannot buy simulation time');
+assert.equal(JSON.stringify(s),initial,'invalid input changes nothing');
+const a=applyCommands(s,{seq:1,commands:[{x:1,z:0}]},now+50);
+assert(a.position.x>s.position.x);assert(a.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*.05+1e-6);
+assert.throws(()=>applyCommands(a,{seq:1,commands:[{x:1,z:0}]},now+100),'sequence cannot replay movement');
+assert.throws(()=>applyCommands(a,{seq:3,commands:[{x:1,z:0}]},now+100),'out of order command rejected');
+assert.throws(()=>applyCommands(a,{seq:2,commands:[{x:1,z:0}],hp:999999},now+100),'client HP never accepted');
+const damaged=JSON.parse(JSON.stringify(a));damaged.hp=123;damaged.battle.playerHp=123;
+const restored=applyCommands(JSON.parse(JSON.stringify(damaged)),{seq:2,commands:[{x:0,z:0}]},now+100);
+assert.equal(restored.hp,123,'serialized reload preserves health');
+console.log('PASS authoritative command schema, elapsed-time budget, replay/order rejection, canonical movement and persistent HP');
+
+// Idle time cannot be banked and spent as a burst of movement.
+const idle=applyCommands(s,{seq:1,commands:Array(20).fill({x:1,z:0})},now+3600000);
+assert.throws(()=>applyCommands(idle,{seq:2,commands:Array(20).fill({x:1,z:0})},now+3600000));
+// Production server replay performs the hit/kill, including terrain-aware vertical aim assist.
+let fight=createState(L,now);fight.position={x:1240,z:893,y:CONQUEST.World.groundAt(1240,893),surface:'ground'};
+fight.battle=JSON.parse(JSON.stringify(new CONQUEST.Combat.Encounter(L,fight.position)));
+let ticks=0;while(fight.battle.enemies[0].hp>0&&ticks<20){const e=fight.battle.enemies[0],yaw=Math.atan2(e.x-fight.position.x,e.z-fight.position.z);fight=applyCommands(fight,{seq:fight.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,fire:true})},now+(++ticks)*1000);}
+assert.equal(fight.battle.enemies[0].hp,0,'server computes actual projectile kill');assert(fight.battle.cleared['redoubt-01:0']);
+assert(fight.hp<=fight.battle.playerMax);console.log('PASS idle-credit cap and server-computed projectile damage/destruction');
+// Firebase removes empty arrays/maps rather than preserving the JSON wire shape.
+const firebase=JSON.parse(JSON.stringify(a));delete firebase.battle.projectiles;delete firebase.battle.effects;delete firebase.battle.playerStats.gems;delete firebase.battle.playerStats.buffs;
+for(const e of firebase.battle.enemies){delete e.stats.gems;delete e.stats.buffs;}
+assert.doesNotThrow(()=>applyCommands(firebase,{seq:2,commands:[{x:0,z:0}]},now+100),'Firebase empty collection normalization');
