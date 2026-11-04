@@ -25,4 +25,12 @@ const stored=db.get('eco/tg_8101').cqState;stored.hp=87;stored.battle.playerHp=8
 r=await call(8101,'/api/conquest/session');assert.equal(r.state.hp,87,'re-entering does not reset HP');
 assert.equal(r.state.position.x,stored.position.x);assert.equal(r.state.seq,1);
 for(const key of ['pts','earned','up','buys','wOwn','cOwn','gemLvl','gemShards'])assert.deepEqual(db.get('eco/tg_8101')[key],protectedBefore[key],key+' unchanged');
+assert.equal((await call(null,'/api/conquest/action',{seq:1,action:'start-mission'})).status,401);
+assert.equal((await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'})).status,409,'server position controls activation');
+const near=db.get('eco/tg_8101').cqState;near.position={x:1163,z:1132,y:0,surface:'ground'};
+r=await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'});assert.equal(r.status,200);assert.equal(r.state.hp,87);assert.equal(r.state.battle.playerHp,87);
+assert.equal((await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration',victory:true})).status,400);
+const active=db.get('eco/tg_8101').cqState;active.hp=11;active.battle.playerHp=11;
+r=await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration'});assert.equal(r.status,200);assert.equal(r.state.hp,11);assert.equal(r.state.battle.playerHp,11);assert(!r.state.completed?.['oxygen-line']);
+const again=await call(8101,'/api/conquest/action',{seq:3,action:'return-exploration'});assert.equal(again.status,200);assert(again.replayed);assert.equal(again.state.hp,11);
 Date.now=clock;console.log('PASS authenticated Conquest state, finite movement, wall budget, concurrent idempotency, HP reload, identity isolation and economy preservation');
