@@ -1,0 +1,2 @@
+Starter encounter: {"seconds":26.8,"shots":116,"playerHp":1700,"objectiveHp":1800}
+PASS Conquest combat: shared stats, frozen loadout, fixed enemies, four primaries, low/high FPS swept hits, hill/tower occlusion, AI movement/fire, three waves, victory/defeat/retreat/retry, bounded cleanup. Trials: [{"arch":"pulse","time":7.83,"shots":44},{"arch":"twin","time":8.62,"shots":106},{"arch":"siege","time":7.97,"shots":20},{"arch":"moon","time":4.82,"shots":34}]

@@ -56,7 +56,7 @@ v.keys={};v.p={x:925,z:1024,y:W.deckAt(925,1024),surface:'bridge'};v.tick(0);
 const up=new T.Vector3(0,1,0).applyQuaternion(v.vehicle.quaternion),deckSlope=(W.deckAt(925.1,1024)-W.deckAt(924.9,1024))/.2;
 const expectedUp=new T.Vector3(-deckSlope,1,0).normalize();assert(up.distanceTo(expectedUp)<1e-10,'machine tilts to the actual bridge ramp');
 v.p={x:15840,z:23760,y:W.groundAt(15840,23760),surface:'ground'};v.tick(0);
-assert(new T.Vector3(0,1,0).applyQuaternion(v.vehicle.quaternion).distanceTo(new T.Vector3(...W.normalAt(v.p.x,v.p.z)))<1e-10,'machine tilts to terrain normal');
+assert(new T.Vector3(0,1,0).applyQuaternion(v.vehicle.quaternion).distanceTo(new T.Vector3(...W.surfaceNormal(v.p.x,v.p.z)))<1e-10,'machine tilts to terrain normal');
 assert.equal(v.vehicle.position.y,v.p.y,'remote ground footing remains authoritative');
 let crossing={x:1023,z:1024,y:24,surface:'bridge'};crossing=W.advance(crossing,20,0);assert(Math.abs(crossing.x-1043)<1e-8&&crossing.y===24,'high speed across a streaming seam retains deck');
 let rail={x:1024,z:1024,y:24,surface:'bridge'};rail=W.advance(rail,0,-100);assert(rail.z>=1015&&rail.z<1015.21,'high speed from the deck interior stops at its rail');

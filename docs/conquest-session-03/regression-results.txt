@@ -1,0 +1,266 @@
+Conquest: dimensions 31680 × 47520; reference exploration crossings 60 / 90 minutes; area 1505433600 (2352240× arena). Determinism, seams, 500 streaming moves, far meshes, bridge upper/lower routes, ledges and map bounds PASS.
+PASS deterministic bounded horizon geometry and remote seeded scenery
+Sampled corridors (not global passability): [{"start":[14000,8000],"end":[14400,8000],"blocked":0},{"start":[28000,42000],"end":[28000,42400],"blocked":0},{"start":[15840,23760],"end":[16240,23960],"blocked":0},{"start":[1024,995],"end":[1024,1395],"blocked":0}]
+PASS 216 builds: exact tankOf speed, rounded machineMetrics tolerance, 10/15/20/60 FPS, bounded resume, rails, current account upgrades/bays. Obstacle-free ramp displacement; terrain/obstacles excluded from speed parity.
+PASS production ConquestView tick: active legal bays/models, Engine/core refresh, re-entry, 10/15/20/60 FPS, normalized keyboard/joystick, resume reset, bridge footing, owned Moonbeam/Lunar Skin/paint/mod geometry and deterministic re-entry. GPU/streaming covered separately.
+PASS real foundation tread tags, actual scaled displacement, stopped and blocked tread phases, reverse shared drive
+PASS proportional treads at 8.8/17.6/26.4 units/s, differential accepted turns and actual 3D ramp distance
+PASS discovery: blank start, spawn, accepted path continuity, blocked/overspeed/invalid rejection, read-only map queries, persistence, account isolation, no teleport corridor
+PASS production strategic map: unknown biomes never sampled, zoom/whole-world/locate cannot discover; distant horizon generation cannot discover
+PASS account-save persistence survives localStorage failure; spawn ledger under1KB
+PASS late Telegram account snapshot cannot erase local or remote exploration
+PASS long-travel whole-world map coarse samples: 726
+PASS boot cloud reconciliation preserves local economy winner and unions older cloud exploration
+PASS independent website discovery dependency order
+remote corridor 14000 8000 end 14200.000000000728 8100.000000000364
+remote corridor 28000 42000 end 28199.99999999709 42100.00000000582
+remote corridor 15840 23760 end 16040.000000000728 23859.999999998545
+PASS geometric normals, reported contour, slopes at 10/20/60 FPS and three speeds, towers, rails, footing
+route PASS 898 1024 → [ 1160, 1048 ] visited 4374
+route PASS 1160 1048 → [ 1140, 1128 ] visited 1184
+route PASS 1160 1048 → [ 1210, 1130 ] visited 2040
+route PASS 1160 1048 → [ 1283, 1104 ] visited 3332
+PASS sampled extreme cliff remains impassable
+PASS account-specific reload, readiness, first completion preserved on replay, economy/discovery untouched
+Starter encounter: {"seconds":26.8,"shots":116,"playerHp":1700,"objectiveHp":1800}
+PASS Conquest combat: shared stats, frozen loadout, fixed enemies, four primaries, low/high FPS swept hits, hill/tower occlusion, AI movement/fire, three waves, victory/defeat/retreat/retry, bounded cleanup. Trials: [{"arch":"pulse","time":7.83,"shots":44},{"arch":"twin","time":8.62,"shots":106},{"arch":"siege","time":7.97,"shots":20},{"arch":"moon","time":4.82,"shots":34}]
+PASS cosmetic family recoil, movement/stop/turn/reduced motion, release default and quality hysteresis
+PASS 9 HIGH/LOW real hull drive tags and independent material ownership/disposal
+PASS garage rules: {"tags":10,"reach":{"wall":4475,"balanced":11385,"jugg":2931,"intercept":3780,"sniper":3042,"skirm":4301,"charger":1400,"glass":1890,"crit":5209,"brawler":1587},"flipRate":0.218,"upgradePath":{"avg":2.38,"max":6},"moonEdge":{"vs":"siege","d":{"tough":0,"fire":12,"speed":0,"power":10,"armor":0,"crit":0,"charge":0,"repair":0,"edge":25,"super":0}},"skinEdge":{"tough":136,"fire":12,"speed":0,"power":8,"armor":0,"crit":0,"charge":0,"repair":0,"edge":0,"super":0}}
+Equipment balance: PASS — 9 weapons, 9 chassis, Moonbeam, salvage, supers and class roles
+{
+  "weapons": [
+    {
+      "class": "pulse",
+      "tiers": [
+        {
+          "level": 1,
+          "min": 74,
+          "max": 77,
+          "shot": 0.2,
+          "projectileSpeed": 22
+        },
+        {
+          "level": 2,
+          "min": 84,
+          "max": 88,
+          "shot": 0.2,
+          "projectileSpeed": 24
+        },
+        {
+          "level": 3,
+          "min": 98,
+          "max": 103,
+          "shot": 0.2,
+          "projectileSpeed": 26
+        }
+      ]
+    },
+    {
+      "class": "twin",
+      "tiers": [
+        {
+          "level": 1,
+          "min": 69,
+          "max": 73,
+          "shot": 0.09,
+          "projectileSpeed": 22
+        },
+        {
+          "level": 2,
+          "min": 79,
+          "max": 83,
+          "shot": 0.09,
+          "projectileSpeed": 24
+        },
+        {
+          "level": 3,
+          "min": 93,
+          "max": 97,
+          "shot": 0.09,
+          "projectileSpeed": 26
+        }
+      ]
+    },
+    {
+      "class": "siege",
+      "tiers": [
+        {
+          "level": 1,
+          "min": 78,
+          "max": 81,
+          "shot": 0.45,
+          "projectileSpeed": 22
+        },
+        {
+          "level": 2,
+          "min": 89,
+          "max": 93,
+          "shot": 0.45,
+          "projectileSpeed": 24
+        },
+        {
+          "level": 3,
+          "min": 104,
+          "max": 109,
+          "shot": 0.45,
+          "projectileSpeed": 26
+        }
+      ]
+    }
+  ],
+  "chassis": [
+    {
+      "class": "scout",
+      "tiers": [
+        {
+          "level": 1,
+          "minHP": 0.89,
+          "maxHP": 0.94,
+          "minSpeed": 1.26,
+          "maxSpeed": 1.29,
+          "turn": 1.18
+        },
+        {
+          "level": 2,
+          "minHP": 1.02,
+          "maxHP": 1.07,
+          "minSpeed": 1.35,
+          "maxSpeed": 1.39,
+          "turn": 1.23
+        },
+        {
+          "level": 3,
+          "minHP": 1.2,
+          "maxHP": 1.25,
+          "minSpeed": 1.48,
+          "maxSpeed": 1.52,
+          "turn": 1.28
+        }
+      ]
+    },
+    {
+      "class": "vanguard",
+      "tiers": [
+        {
+          "level": 1,
+          "minHP": 1.05,
+          "maxHP": 1.1,
+          "minSpeed": 1.02,
+          "maxSpeed": 1.05,
+          "turn": 1
+        },
+        {
+          "level": 2,
+          "minHP": 1.2,
+          "maxHP": 1.25,
+          "minSpeed": 1.1,
+          "maxSpeed": 1.13,
+          "turn": 1.05
+        },
+        {
+          "level": 3,
+          "minHP": 1.41,
+          "maxHP": 1.47,
+          "minSpeed": 1.2,
+          "maxSpeed": 1.24,
+          "turn": 1.1
+        }
+      ]
+    },
+    {
+      "class": "titan",
+      "tiers": [
+        {
+          "level": 1,
+          "minHP": 1.37,
+          "maxHP": 1.43,
+          "minSpeed": 0.9,
+          "maxSpeed": 0.92,
+          "turn": 0.9
+        },
+        {
+          "level": 2,
+          "minHP": 1.56,
+          "maxHP": 1.63,
+          "minSpeed": 0.97,
+          "maxSpeed": 0.99,
+          "turn": 0.95
+        },
+        {
+          "level": 3,
+          "minHP": 1.83,
+          "maxHP": 1.92,
+          "minSpeed": 1.06,
+          "maxSpeed": 1.09,
+          "turn": 1
+        }
+      ]
+    }
+  ],
+  "moonbeam": {
+    "dps": 118,
+    "shot": 0.16,
+    "mult": 1.48,
+    "superDamage": 592,
+    "epicMaxDPS": 109,
+    "epicMaxSuper": 552.7500000000001,
+    "starterPower": 68,
+    "legendaryPower": 97
+  }
+}
+PASS actual combat: 656 paired duels, 180 six-mode practice trials, 19 legal fitting combinations, 3420 client/server parity cases
+PASS 9 chassis, 9 weapons, 81 pairings, 243 fitting combinations, 72 paint/team/core combinations, distinct tiers, bounded meshes/normals/mounts/muzzle tips/animations and legacy stock parity {"maxChassis":27300,"maxWeapon":7488}
+PASS 432 unchanged standard kits, paints, normals, colors, metadata and animations against PR15
+PASS real PBR exports, UV/tangent/material batching, modular metadata, bounded HIGH/LOW sample, safe default
+PASS weighted geometry LRU, active mesh leases, pending working pair, release/disposal
+PASS packaged atlas PNG dimensions/checksums/transfer cap and pinned Three r169 303502
+PASS 9+9 HIGH/LOW, nine adaptive skins, one Moonbeam, 81+99 pairings per quality, exact sockets/tips, 72 paint/team/core and 243 fittings, UV/normals/tangents, distinct geometry, LOW budgets, leases, legacy stock
+hit circles (shot radius incl. 0.12 bullet): scout 0.750, vanguard 0.820, titan 0.904
+name      Moonbeam scale/len/muzzle      | model L  W    H    ring | battle L  W    H    nose side  footprint | side/nose past class hit circle
+Scout     moon 0.70 len 2.20 muzzle 1.64 | 1.94 1.58 0.55 0.470 | 1.37 1.11 0.39 0.67 0.56 1.52 | -0.19 -0.08
+Strider   moon 0.68 len 2.14 muzzle 1.60 | 2.04 1.75 0.57 0.490 | 1.44 1.23 0.40 0.71 0.62 1.77 | -0.13 -0.04
+Phantom   moon 0.61 len 1.92 muzzle 1.43 | 2.24 1.73 0.53 0.450 | 1.58 1.22 0.37 0.87 0.61 1.93 | -0.14 +0.12
+Vanguard  moon 0.76 len 2.39 muzzle 1.79 | 2.66 2.39 0.91 0.777 | 2.09 1.87 0.71 1.05 0.94 3.91 | +0.12 +0.23
+Sentinel  moon 0.78 len 2.45 muzzle 1.83 | 2.70 2.44 0.86 0.780 | 2.11 1.92 0.67 1.06 0.96 4.05 | +0.14 +0.24
+Paladin   moon 0.80 len 2.51 muzzle 1.88 | 2.79 2.43 0.88 0.800 | 2.19 1.91 0.69 1.11 0.95 4.17 | +0.13 +0.29
+Titan     moon 0.84 len 2.64 muzzle 1.97 | 3.06 2.69 0.98 0.900 | 2.69 2.37 0.86 1.39 1.18 6.36 | +0.28 +0.48
+Bulwark   moon 0.86 len 2.70 muzzle 2.02 | 3.29 2.74 1.00 0.920 | 2.89 2.41 0.88 1.50 1.20 6.96 | +0.30 +0.60
+Colossus  moon 0.92 len 2.89 muzzle 2.16 | 3.34 2.80 1.04 0.960 | 2.93 2.46 0.91 1.46 1.23 7.22 | +0.33 +0.55
+closest pair by top-view surface shape: titan0/titan1 0.101
+mean battle footprint  scout 1.74  vanguard 4.04  titan 6.84  ratios 2.33 1.69
+PASS 54 chassis builds (HF high/low + foundation, plain + Lunar): class ladder, distinct silhouettes, gun traverse clear, grounded treads, track uniforms, class hitboxes, no other gameplay number moved
+PASS 432 unchanged standard kits, paints, normals, colors, metadata and animations against PR15
+PASS Defender real THREE geometry, tracks, armor, amber/cyan lighting, modular weapons, bounded cost, legend isolation, unchanged game rules {"defenderVertices":27300,"cannonVertices":6288}
+PASS 9 chassis, 9 weapons, 81 pairings, 243 fitting combinations, 72 paint/team/core combinations, distinct tiers, bounded meshes/normals/mounts/muzzle tips/animations and legacy stock parity {"maxChassis":27300,"maxWeapon":7488}
+PASS 432 unchanged standard kits, paints, normals, colors, metadata and animations against PR15
+PASS final legendary geometry, 9 chassis, 99 legend/standard mounts, single emitter, normals/bounds/batching and the Lunar Skin bonuses from the rules table
+PASS static activation/rollback on both entries; actual renderer particle and effect pool bounds
+ok   classic   walls  7 rocks  4 nav  44 open 438 sq
+ok   overpass  walls 15 rocks  2 nav  84 open 374 sq
+ok   longshot  walls  7 rocks  0 nav  16 open 254 sq
+ok   craters   walls  6 rocks  6 nav  56 open 471 sq
+ok   canyon    walls 20 rocks  6 nav  70 open 290 sq
+ok   bunker    walls 26 rocks  4 nav  72 open 357 sq
+map layouts ok
+classic   {"matches":24,"finished":24,"stuckPct":3.7,"insideSolid":0,"highGroundPct":0,"msPerSimSec":5.28}
+overpass  {"matches":24,"finished":24,"stuckPct":2.99,"insideSolid":0,"highGroundPct":16.5,"msPerSimSec":6.08}
+longshot  {"matches":24,"finished":24,"stuckPct":3.24,"insideSolid":0,"highGroundPct":0,"msPerSimSec":3.54}
+craters   {"matches":24,"finished":24,"stuckPct":2.15,"insideSolid":0,"highGroundPct":0,"msPerSimSec":5.4}
+canyon    {"matches":24,"finished":24,"stuckPct":2.8,"insideSolid":0,"highGroundPct":14.9,"msPerSimSec":9.17}
+bunker    {"matches":24,"finished":24,"stuckPct":2.43,"insideSolid":0,"highGroundPct":0,"msPerSimSec":6.46}
+map navigation ok
+same-encounter win rates (casual pilot, stock common rare epic legend): {
+  'arena 3v3 @L4': '0.17 0.50 1.00 1.00 1.00',
+  'royale 1v1 @L4': '0.00 0.00 0.33 1.00 1.00',
+  'boss 1v1 @L5': '0.33 0.50 1.00 1.00 1.00',
+  'arena 2v2 @L6': '0.17 0.17 0.50 1.00 1.00'
+}
+PASS combat balance: 772 checks
+PASS gem UI: seven cores, exact progress, max surplus, bonuses, equipment, level-up metadata
+PASS gem/socket selectors and shared picker routing for empty, partial and full loadouts
+PASS all seven core descriptions and Velocity bonus
+LUNAR garage UI: PASS { inspected: 6, actualHealth: [ 1547, 2363 ] }
+PASS Velocity balance, seven-way caches, migration, three sockets, base weapon stats, fitting stacking
+PASS actual shot/Siege speeds, range, collision, impact damage, AI/PvP/practice parity and refund
+PASS impact levels, unchanged beams/Nova, actual impact DPS and no artificial velocity DPS
