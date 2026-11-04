@@ -18,7 +18,7 @@ Built from current integrated `main` (`b1218ca`, Session 1 PR #39), on `codex/co
 | `js/conquest/world.js` | Deterministic world, uplift, horizon/scenery, travel timing/substeps, landmark footprints |
 | `js/conquest/view.js` | Equipped Garage kits, movement/camera, instancing/LOD/batching, procedural texture, resource lifecycle |
 | `js/conquest/app.js`, `css/conquest.css` | Hub, measured Conquest clock, map/input/UI and diagnostics |
-| `img/conquest/command-horizon.svg` | Locally authored hub artwork; no external asset service |
+| `js/assets/conquest/command-horizon.svg` | Locally authored hub artwork; no external asset service |
 | `js/rules.js` | Extract existing unrounded permanent speed into shared helper |
 | `js/main.js` | Pass frame timestamp to Conquest only; Arcade/PvP dt unchanged |
 | `dev/tests/conquest.mjs` | Terrain, horizon, dimensions, seams, collisions and sampled corridors |
