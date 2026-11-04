@@ -1,9 +1,10 @@
 (function(root){
 'use strict';
+let transmissionCleanup=null;
 const W=root.ConquestWorld;let panel=null,view=null,loading=0,lastFocus=null,background=[];let dev=new URLSearchParams(location.search).get('conquestDev')==='1',mapOpen=false,diag=false;let showroomVisible=null,lastTick=null;
 function button(label,fn,cls=''){const b=document.createElement('button');b.textContent=label;b.className=cls;b.onclick=fn;return b;}
 function el(tag,cls,text,parent){const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;if(parent)parent.append(e);return e;}
-function closeWorld(){lastTick=null;loading++;if(view){view.dispose();view=null;}mapOpen=false;}
+function closeWorld(){transmissionCleanup?.();transmissionCleanup=null;lastTick=null;loading++;if(view){view.dispose();view=null;}mapOpen=false;}
 function clear(){if(panel)panel.replaceChildren();}
 function hub(){closeWorld();clear();panel.className='cq cq-hub';const top=el('div','cq-top',null,panel);top.append(button('← RETURN TO ARCADE',exit));
  const content=el('div','cq-hero',null,panel);el('p','cq-kicker','LUNAR / MOON THEATER · 03.1',content);el('p','cq-overline','HUMANITY’S LAST STRONGHOLD',content);el('h1','','CONQUEST',content);el('p','cq-premise','EARTH HAS FALLEN.\nWE HOLD THE MOON.',content);el('p','cq-copy','Beyond the refuge lights: silent craters, oxygen cathedrals and the high roads of our last free world.',content);
@@ -24,19 +25,29 @@ async function enter(){const token=++loading;clear();panel.className='cq cq-worl
 function onboardingSeen(){try{return localStorage.getItem('lunar-conquest-onboarding-v1')==='1';}catch(_){return false;}}
 function transmission(){
  if(!panel||panel.querySelector('.cq-dialog'))return;if(view)view.reset();
- const d=dialog();d.classList.add('cq-transmission');
- el('p','cq-kicker','PRIORITY TRANSMISSION / REFUGE COMMAND',d);
- el('p','cq-transmission-status','ENCRYPTED CHANNEL · LUNAR DAWN',d);
- el('h2','','THE LAST AIR WE BREATHE',d);
- el('p','cq-story-lead','Earth did not fall to an army from the stars. It fell through our blood.',d);
- el('p','','The Parasite infection took our cities, then our world. The infected kept every memory, every technical skill, every strategic advantage. They can still build, negotiate and plan a war. What they lost was empathy. What remains is ruthless selfishness and greed.',d);
- el('p','','We escaped to the Moon. Behind the refuge lights lives humanity’s last major sanctuary. Outside them, the oxygen towers turn barren dust into another day of life.',d);
- el('p','','Now Parasite armor is advancing toward our oxygen production network. They know exactly what those towers mean to us.',d);
- el('blockquote','cq-story-order','Your first assignment: hold the oxygen line. Keep the facility alive. Give the refuge another dawn.',d);
- const done=()=>{try{localStorage.setItem('lunar-conquest-onboarding-v1','1');}catch(_){}d.remove();};
- d.append(button('ACKNOWLEDGE · BEGIN EXPLORATION',done,'cq-story-start'));
+ const d=dialog();d.classList.add('cq-transmission');d.setAttribute('aria-labelledby','cq-transmission-title');
+ const story=el('div','cq-transmission-scroll',null,d);story.tabIndex=0;story.setAttribute('role','region');story.setAttribute('aria-label','Opening transmission story');
+ // The app-wide touchmove guard blocks native scrolling outside its menu lists.
+ // Keep this native scroll region local, without disabling that guard in other modes.
+ story.addEventListener('touchmove',e=>e.stopPropagation(),{passive:true});
+ story.addEventListener('gesturestart',e=>e.stopPropagation(),{passive:true});
+ const footer=el('div','cq-transmission-actions',null,d);
+ const viewport=root.visualViewport,tg=root.Telegram?.WebApp,events=new AbortController();
+ const fit=()=>{const available=viewport?.height||root.innerHeight,tgHeight=Number(tg?.viewportHeight);d.style.setProperty('--cq-transmission-height',Math.min(available,tgHeight>0?tgHeight:available)+'px');d.style.setProperty('--cq-transmission-top',(viewport?.offsetTop||0)+'px');};
+ root.addEventListener('resize',fit,{signal:events.signal});viewport?.addEventListener('resize',fit,{signal:events.signal});viewport?.addEventListener('scroll',fit,{signal:events.signal});tg?.onEvent?.('viewportChanged',fit);fit();
+ transmissionCleanup=()=>{events.abort();tg?.offEvent?.('viewportChanged',fit);};
+ el('p','cq-kicker','PRIORITY TRANSMISSION / REFUGE COMMAND',story);
+ el('p','cq-transmission-status','ENCRYPTED CHANNEL · LUNAR DAWN',story);
+ el('h2','','THE LAST AIR WE BREATHE',story).id='cq-transmission-title';
+ el('p','cq-story-lead','Earth did not fall to an army from the stars. It fell through our blood.',story);
+ el('p','','The Parasite infection took our cities, then our world. The infected kept every memory, every technical skill, every strategic advantage. They can still build, negotiate and plan a war. What they lost was empathy. What remains is ruthless selfishness and greed.',story);
+ el('p','','We escaped to the Moon. Behind the refuge lights lives humanity’s last major sanctuary. Outside them, the oxygen towers turn barren dust into another day of life.',story);
+ el('p','','Now Parasite armor is advancing toward our oxygen production network. They know exactly what those towers mean to us.',story);
+ el('blockquote','cq-story-order','Your first assignment: hold the oxygen line. Keep the facility alive. Give the refuge another dawn.',story);
+ const done=()=>{try{localStorage.setItem('lunar-conquest-onboarding-v1','1');}catch(_){}transmissionCleanup?.();transmissionCleanup=null;d.remove();};
+ const acknowledge=button('ACKNOWLEDGE · BEGIN EXPLORATION',done,'cq-story-start');footer.append(acknowledge);
  // Escape is a dismissal too; replay remains available in HELP.
- const keydown=d.onkeydown;d.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();done();return;}keydown(e);};
+ const keydown=d.onkeydown;d.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();done();return;}if(e.key==='Tab'){e.preventDefault();const current=document.activeElement; (current===story?acknowledge:current===acknowledge?story:e.shiftKey?acknowledge:story).focus({preventScroll:true});return;}keydown(e);};
 }
 function missionControls(){
  const nav=el('div','cq-navigation','',panel);nav.id='cq-navigation';nav.setAttribute('aria-label','Mission guidance');

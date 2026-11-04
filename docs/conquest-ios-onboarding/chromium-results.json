@@ -1,0 +1,75 @@
+{
+  "engine": "chromium",
+  "status": "PASS",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "viewport": "320x568",
+      "initialButton": {
+        "x": 31,
+        "y": 481,
+        "w": 258,
+        "h": 56,
+        "top": 0,
+        "bottom": 568,
+        "hit": true
+      },
+      "scroll": "native touch",
+      "keyboard": "Tab/ArrowDown/PageDown/Enter/Escape",
+      "largeText": true,
+      "reducedViewportHeight": 420,
+      "errors": []
+    },
+    {
+      "viewport": "360x640",
+      "initialButton": {
+        "x": 31,
+        "y": 565,
+        "w": 298,
+        "h": 44,
+        "top": 0,
+        "bottom": 640,
+        "hit": true
+      },
+      "scroll": "native touch",
+      "keyboard": "Tab/ArrowDown/PageDown/Enter/Escape",
+      "largeText": true,
+      "reducedViewportHeight": 420,
+      "errors": []
+    },
+    {
+      "viewport": "390x844",
+      "initialButton": {
+        "x": 37,
+        "y": 767,
+        "w": 316,
+        "h": 44,
+        "top": 0,
+        "bottom": 844,
+        "hit": true
+      },
+      "scroll": "native touch",
+      "keyboard": "Tab/ArrowDown/PageDown/Enter/Escape",
+      "largeText": true,
+      "reducedViewportHeight": 420,
+      "errors": []
+    },
+    {
+      "viewport": "393x852",
+      "initialButton": {
+        "x": 37,
+        "y": 775,
+        "w": 319,
+        "h": 44,
+        "top": 0,
+        "bottom": 852,
+        "hit": true
+      },
+      "scroll": "native touch",
+      "keyboard": "Tab/ArrowDown/PageDown/Enter/Escape",
+      "largeText": true,
+      "reducedViewportHeight": 420,
+      "errors": []
+    }
+  ]
+}
