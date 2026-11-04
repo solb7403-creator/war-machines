@@ -38,7 +38,7 @@ async def main(engine):
    assert await page.evaluate('localStorage.getItem("lunar-conquest-onboarding-v1")==="1"')
    before=await page.evaluate('Conquest.view.p.x');await page.keyboard.down('w');await page.wait_for_timeout(400);await page.keyboard.up('w');assert await page.evaluate('Conquest.view.p.x')>before,'dismissal must enter responsive exploration'
    await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000);assert await page.locator('.cq-transmission').count()==0,'dismissal must persist across reload'
-   await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
+   await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
    body=page.locator('.cq-transmission-scroll');await body.wait_for()
    assert await body.evaluate('e=>e.scrollTop')==0
    # Confirm the surrounding app's document touchmove guard no longer cancels this region.
@@ -67,7 +67,7 @@ async def main(engine):
    await page.keyboard.press('Tab');assert await page.get_by_role('button',name=LABEL,exact=True).evaluate('e=>document.activeElement===e')
    await page.screenshot(path=str(OUT/f'{engine}-{width}x{height}-large-text.png'))
    await page.keyboard.press('Enter');await page.wait_for_function('!document.querySelector(".cq-transmission")')
-   await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click();await page.keyboard.press('Escape');assert await page.locator('.cq-transmission').count()==0
+   await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click();await page.keyboard.press('Escape');assert await page.locator('.cq-transmission').count()==0
    assert not errors,errors;results.append({'viewport':f'{width}x{height}','initialButton':first,'scroll':'native touch' if engine=='chromium' else 'native keyboard + uncancelled touchmove event','keyboard':'Tab/ArrowDown/PageDown/Enter/Escape','largeText':True,'reducedViewportHeight':min(height,420),'errors':errors});await context.close()
   await browser.close();result={'engine':engine,'status':'PASS','physicalTelegramVerified':False,'cases':results};(OUT/f'{engine}-results.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 if __name__=='__main__':
