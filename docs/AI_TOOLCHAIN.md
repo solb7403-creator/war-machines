@@ -48,3 +48,11 @@ Status: repository-side **foundation**, not a claim that external cloud accounts
 - The owner works from an iPhone; all required owner steps must work in mobile browser/chat or via a hosted agent. Do not require local Blender, Node, Linux, npm, Python or a computer.
 - Open-source **software** does not mean free hosting, GPU, generation credits or unlimited automation. Avoid surprise paid charges and don't ask the owner to buy hardware.
 - Do not auto-merge or deploy. The owner approves shipping decisions.
+
+## Free GitHub-hosted local Graphify index (without Cloud onboarding)
+`.github/workflows/graphify-code-index.yml` runs the official open-source `graphifyy` code indexer on GitHub's hosted Linux runner. A successful run uploads `graphify-out/graph.json` and `graphify-out/graph.html` as a downloadable GitHub Actions artifact, with no production credentials, paid API keys or model calls. The `.graphifyignore` file excludes binary artwork, vendored build outputs and prose from this **code-only** pass.
+
+- On meaningful source pushes to `main`, a fresh isolated graph is generated; use the workflow's **Run workflow** control for an on-demand rebuild.
+- The graph is downloadable from GitHub Actions. It is **not** automatically accessible through the hosted Graphify ChatGPT plugin or to a separate Claude/Codex environment; those agents would have to download/use the graph or run local Graphify from their own environments.
+- For cloud-hosted Graphify MCP querying across Claude, Codex and ChatGPT, an authorized user must sign in at https://app.graphify.com, create/select a workspace, grant it GitHub repository access and wait for Indexed status. The connected Graphify plugin then needs access to that workspace. The current plugin reports no available workspaces. A repo workflow cannot grant an external SaaS app OAuth permissions.
+- Before using index results, check the graph's indexed commit against the PR or checkout you are examining; graphs cannot see uncommitted work, and static relationships are not runtime proof.

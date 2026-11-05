@@ -1,0 +1,27 @@
+# Keep the free GitHub index deterministic and AST-focused; no image/doc LLM passes.
+# The hosted Graphify workspace can independently ingest additional content when authorized.
+*.md
+*.txt
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.mp4
+*.webm
+*.glb
+*.gltf
+*.bin
+*.map
+js/vendor/
+worker/node_modules/
+worker/site-assets/
+dev/tests/fixtures/
+evidence/
+graphify-out/
