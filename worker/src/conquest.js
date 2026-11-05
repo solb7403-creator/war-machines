@@ -1,5 +1,5 @@
 // Conquest has its own versioned Firebase record and CAS boundary, separate from eco/airdrop.
-import {syncWarfront} from './conquest-warfront.js';
+import {syncWarfront,persistWarfront,applyWarfront} from './conquest-warfront.js';
 import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
 import {readEco,readTag,writeIf} from './eco.js';
@@ -17,7 +17,10 @@ async function transaction(env,pid,fn,now){
  throw Error('conquest busy');
 }
 async function canonical(env,pid){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null};}
-async function projected(env,pid,r,now){if(r.state&&!r.error){try{r.state.warfront=await syncWarfront(env,pid,r.state.campaignScore||0,now);}catch{r.state.warfront={...r.state.warfront,pending:true};}}return result(r);}
+async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
+ if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}
+ applyWarfront(r.state,war,now);
+ }catch{r.state.warfront={...r.state.warfront,pending:true};}}return result(r);}
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
@@ -38,7 +41,7 @@ export async function conquestInput(env,a,now=Date.now()){
  return submit(env,a,{seq:a.b.seq,commands},applyCommands,now);
 }
 export async function conquestAction(env,a,now=Date.now()){
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,'start-defense'].includes(a.b.action))return response(400,'invalid conquest action');
- if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config',...COSMETIC_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,'start-defense','start-sector-defense'].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense',...COSMETIC_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];return submit(env,a,request,applyAction,now);
 }

@@ -4,9 +4,9 @@ const D=CONQUEST.Combat.baseDefinition,DAY=86400000;
 export const BASE_ACTIONS=['build-base','upgrade-base','base-module','base-claim','repair-base','defense-config'];
 export function campaign(s,now){
  s.campaignVersion=2;s.campaignScore=Math.max(0,Number.isSafeInteger(s.campaignScore)?s.campaignScore:0);s.raidProgress=s.raidProgress||{shards:0,clears:0,blueprint:false,eliteBlueprint:false};s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
- for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites'};
+ for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites',...(sector.id==='refuge'?{defenseAt:now+1800000}:{})};
  for(const t of Object.values(s.territory)){t.status=t.status||(t.owner==='humanity'?'secured':'active-parasites');if(t.capturedAt&&!t.defenseAt)t.defenseAt=t.capturedAt+1200000;}
- const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
+ const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'&&!CONQUEST.Combat.operations[id].defense),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
  s.base=s.base||{tier:0,modules:{},builtAt:0,claimedAt:0};
  // Firebase drops empty maps: reconstruct this even when the base record already exists.
  s.base.modules=s.base.modules||{};s.base.pvpAvailable=false;
@@ -41,3 +41,13 @@ export function defenseOutcome(s,outcome,now){
 }
 export function contest(s,site){if(!site)return;s.territory[site]={...s.territory[site],owner:s.territory[site]?.owner||'parasites',status:'contested'};}
 export function failedContest(s,site,now){const t=s.territory[site];if(!t||t.status!=='contested')return;t.owner='parasites';t.status='recaptured';t.lostAt=now;t.awaitingReinforcements=true;for(const e of Object.values(s.battle.enemies||{}))if(e.base?.id===site&&s.spawns[e.key])s.spawns[e.key].generation=Math.floor(now/DAY)-1;}
+// Offensive sorties never hand an owned sector to an enemy merely for retreating.
+export function beginContest(s,ids){s.contestPrevious={};for(const id of ids.filter(Boolean)){s.contestPrevious[id]=s.territory[id]?JSON.parse(JSON.stringify(s.territory[id])):{absent:true};contest(s,id);}}
+export function restoreContest(s){for(const [id,t] of Object.entries(s.contestPrevious||{})){if(t&&!t.absent)s.territory[id]=t;else delete s.territory[id];}delete s.contestPrevious;}
+export function sectorDefenseOutcome(s,outcome,now){
+ const active=s.sectorDefense;if(!active?.active)return s.territory[active?.sector]?.defenseReport;active.active=false;
+ const sector=active.sector,t=s.territory[sector],won=outcome==='victory',reward=CONQUEST.Combat.operations['sector-defense-'+sector].reward;
+ if(won){capture(s,sector,now);s.territory[sector].defenseWins=(t.defenseWins||0)+1;s.ledger.cp+=reward.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=reward[k]||0;s.reputation+=40;s.campaignScore+=12;s.achievements['defended-'+sector]=s.achievements['defended-'+sector]||now;}
+ else failedContest(s,sector,now);
+ const receipt={kind:'sector-defense',sector,outcome,at:now,cp:won?reward.cp:0,alloy:won?reward.alloy:0,biomass:won?reward.biomass:0,helium:won?reward.helium:0,reputation:won?40:0,stolen:0};s.territory[sector].defenseReport=receipt;s.notice=receipt;return receipt;
+}
