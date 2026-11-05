@@ -5,9 +5,9 @@ const W=root.ConquestWorld,C=root.ConquestCombat,clamp=(v,a,b)=>Math.max(a,Math.
 // Match the existing3D primary projectile conversion; Arcade rules remain unchanged.
 const SUPER_WORLD_SCALE=3;
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
-const CONFIG=Object.freeze({dashTime:DASH_T,dashSpeed:DASH_SPD,dashCooldown:DASH_CD,shieldTime:SHIELD_T,shieldCooldown:SHIELD_CD,shieldDamage:SHIELD_MULT,superMax:SUPER_MAX,superWorldScale:SUPER_WORLD_SCALE});
+const CONFIG=Object.freeze({dashTime:.4,dashSpeed:5.1,dashCooldown:DASH_CD,shieldTime:SHIELD_T,shieldCooldown:SHIELD_CD,shieldDamage:SHIELD_MULT,superMax:SUPER_MAX,superWorldScale:SUPER_WORLD_SCALE});
 function ensure(B){for(const [k,v] of Object.entries({charge:0,turretYaw:0,dashCd:0,shieldCd:0,shieldT:0}))if(!Number.isFinite(B[k]))B[k]=v;B.superShells=B.superShells||[];}
-function visible(B,p,e,range=100){return e&&e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<=range&&C.lineClear({x:p.x,y:p.y+2.2,z:p.z},{x:e.x,y:e.y+2.2,z:e.z});}
+function visible(B,p,e,range=C.engineeringValues(B.playerStats,B.engineering).range){return e&&e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<=range&&C.lineClear({x:p.x,y:p.y+2.2,z:p.z},{x:e.x,y:e.y+2.2,z:e.z});}
 function aim(B,p,input,dt){
  ensure(B);const locked=B.enemies.find(e=>e.id===input.lockId);
  B.lockId=visible(B,p,locked)?locked.id:null;
@@ -47,10 +47,10 @@ C.Battle.prototype.abilityStep=function(dt){
 };
 function advance(B,p,input,dt,exploration){
  ensure(B);dt=clamp(dt,0,.25);if(B.playerHp<=0||B.state!=='active')return p;
- if(input.shield&&B.shieldCd<=0){B.shieldT=SHIELD_T;B.shieldCd=SHIELD_CD*(B.playerStats.shieldCdM||1);}
+ const values=C.engineeringValues(B.playerStats,B.engineering);if(input.shield&&B.shieldCd<=0){B.shieldT=values.shieldDuration;B.shieldCd=values.shieldCooldown;}
  let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;
- if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:DASH_T,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=DASH_CD*(B.playerStats.dashCdM||1);}
- let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60);left-=h;const old=p,speed=B.dashState?B.combatSpeed*DASH_SPD:exploration?B.combatSpeed*2:B.combatSpeed;
+ if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:values.dashTime,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=values.dashCooldown;}
+ let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed));left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
  const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
  if(!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
@@ -60,6 +60,6 @@ function advance(B,p,input,dt,exploration){
  }
  return p;
 }
-function carry(from,to){ensure(from);for(const k of ['charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
+function carry(from,to){ensure(from);for(const k of ['engineering','heat','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
 root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,CONFIG});
 })(globalThis);
