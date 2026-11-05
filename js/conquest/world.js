@@ -4,7 +4,9 @@
 const WIDTH=31680,LENGTH=47520,SPEED=4.4,CHUNK=128,STEP=4,SEED=0x4c554e41;
 const installations=Object.freeze([
  Object.freeze({id:'redoubt-01',name:'PARASITE / ASH REDOUBT',kind:'outpost',x:1240,z:920}),
- Object.freeze({id:'staging-01',name:'PARASITE / OXYGEN SPEAR',kind:'staging',x:1230,z:995})
+ Object.freeze({id:'staging-01',name:'PARASITE / OXYGEN SPEAR',kind:'staging',x:1230,z:995}),
+ Object.freeze({id:'west-depot',name:'WESTERN SALVAGE DEPOT',kind:'outpost',x:994,z:944}),
+ Object.freeze({id:'crossroads',name:'DUST CROSSROADS',kind:'staging',x:1100,z:954})
 ]);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t,smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function hash(x,z){let n=Math.imul(x^SEED,374761393)^Math.imul(z,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n>>>0)/4294967295;}
@@ -77,15 +79,15 @@ function chunk(cx,cz,step=STEP){const n=CHUNK/step,positions=[],normals=[],color
 }
 function chunkKeys(x,z,radius=4,fineRadius=2){const a=[],cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK);for(let j=-radius;j<=radius;j++)for(let i=-radius;i<=radius;i++){const aX=cx+i,aZ=cz+j;if(aX>=0&&aZ>=0&&aX*CHUNK<WIDTH&&aZ*CHUNK<LENGTH)a.push({key:aX+':'+aZ,cx:aX,cz:aZ,step:Math.max(Math.abs(i),Math.abs(j))<=fineRadius?4:16});}return a;}
 // Coarse outer ring merged into one draw; near chunk coordinates and stable terrain remain unchanged.
-function horizon(x,z){const positions=[],normals=[],colors=[],indices=[],cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK),samples=new Map();
+function horizon(x,z,innerRadius=4){const positions=[],normals=[],colors=[],indices=[],cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK),samples=new Map();
  // Sample once per shared vertex. Distant lighting uses an up normal: relief is physical geometry.
  const sample=(x,z)=>{const key=x+':'+z;if(samples.has(key))return samples.get(key);const y=heightAt(x,z),b=biomeAt(x,z),c=b==='terraformed'?[.22,.34,.23]:b==='massif'?[.38,.39,.43]:[.48,.44,.39],v=.9+noise(x,z,110)*.1;const out={y,c:c.map(c=>c*v)};samples.set(key,out);return out;};
- for(let j=-22;j<=22;j++)for(let i=-22;i<=22;i++){const ring=Math.max(Math.abs(i),Math.abs(j));if(ring<=4)continue;const a=cx+i,b=cz+j;if(a<0||b<0||a*CHUNK>=WIDTH||b*CHUNK>=LENGTH)continue;
+ for(let j=-22;j<=22;j++)for(let i=-22;i<=22;i++){const ring=Math.max(Math.abs(i),Math.abs(j));if(ring<=innerRadius)continue;const a=cx+i,b=cz+j;if(a<0||b<0||a*CHUNK>=WIDTH||b*CHUNK>=LENGTH)continue;
  const step=ring<=11?64:128,n=128/step,offset=positions.length/3;
  for(let z=0;z<=128;z+=step)for(let x=0;x<=128;x+=step){const ax=a*128+x,az=b*128+z,d=sample(ax,az);positions.push(ax,d.y,az);normals.push(0,1,0);colors.push(...d.c);}
  for(let z=0;z<n;z++)for(let x=0;x<n;x++){const k=offset+z*(n+1)+x;indices.push(k,k+n+1,k+1,k+1,k+n+1,k+n+2);}
  // Only LOD boundaries need skirts. Equal-resolution neighboring edges already coincide exactly.
- if(ring===5||ring===11)for(let side=0;side<4;side++){const ni=i+(side===0?-1:side===1?1:0),nj=j+(side===2?-1:side===3?1:0),neighbor=Math.max(Math.abs(ni),Math.abs(nj));if(!(ring===5&&neighbor===4||ring===11&&neighbor===12))continue;for(let t=0;t<128;t+=step){const ax=a*128+(side===0?0:side===1?128:t),az=b*128+(side===2?0:side===3?128:t),bx=ax+(side<2?0:step),bz=az+(side<2?step:0),k=positions.length/3,ay=sample(ax,az).y,by=sample(bx,bz).y;positions.push(ax,ay,az,ax,ay-64,az,bx,by,bz,bx,by-64,bz);normals.push(0,1,0,0,1,0,0,1,0,0,1,0);colors.push(...Array(4).fill([.32,.33,.36]).flat());indices.push(k,k+1,k+2,k+2,k+1,k+3);}}
+ if(ring===innerRadius+1||ring===11)for(let side=0;side<4;side++){const ni=i+(side===0?-1:side===1?1:0),nj=j+(side===2?-1:side===3?1:0),neighbor=Math.max(Math.abs(ni),Math.abs(nj));if(!(ring===innerRadius+1&&neighbor===innerRadius||ring===11&&neighbor===12))continue;for(let t=0;t<128;t+=step){const ax=a*128+(side===0?0:side===1?128:t),az=b*128+(side===2?0:side===3?128:t),bx=ax+(side<2?0:step),bz=az+(side<2?step:0),k=positions.length/3,ay=sample(ax,az).y,by=sample(bx,bz).y;positions.push(ax,ay,az,ax,ay-64,az,bx,by,bz,bx,by-64,bz);normals.push(0,1,0,0,1,0,0,1,0,0,1,0);colors.push(...Array(4).fill([.32,.33,.36]).flat());indices.push(k,k+1,k+2,k+2,k+1,k+3);}}
  }return {positions,normals,colors,indices,radius:2560};
 }
 function scenery(cx,cz){const out=[];for(let i=0;i<48;i++){const x=cx*128+hash(cx*53+i,cz)*128,z=cz*128+hash(cz*71+i,cx)*128;if(x<0||z<0||x>WIDTH||z>LENGTH||Math.hypot(x-1024,z-1024)<115)continue;if(structureSolidAt(x,z)||installations.some(b=>Math.hypot(x-b.x,z-b.z)<25)||Math.hypot(x-1180,z-1080)<55||x>1095&&x<1170&&z>1130&&z<1240)continue;const b=biomeAt(x,z);out.push({x,z,y:groundAt(x,z),kind:b==='terraformed'?'tree':i===0&&hash(cx,cz)>.85?'relay':'rock',size:1+hash(cx+i,cz+8)*2.8,variant:hash(cx+i,cz+77)});}return out;}

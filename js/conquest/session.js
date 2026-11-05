@@ -5,7 +5,7 @@ const list=v=>Array.isArray(v)?v:v&&typeof v==='object'?Object.keys(v).sort((a,b
 class Session{
  constructor(view,transport){this.view=view;this.transport=transport;this.queue=[];this.elapsed=0;this.connected=false;this.disposed=false;this.busy=false;this.edges={};this.status='CONNECTING';this.serial=Promise.resolve();this.lastSend=0;this.nextConnect=0;this.pumpAt=performance.now();}
  async connect(){this.nextConnect=performance.now()+5000;try{const r=await this.transport('/api/conquest/session',{});if(this.disposed)return false;this.queue=[];this.elapsed=0;this.apply(r.state);this.connected=true;this.pumpAt=performance.now()+150;this.status='SECURED';return true;}catch(e){this.connected=false;this.status='ONLINE REQUIRED FOR SECURE REWARDS';this.error=String(e.message);return false;}}
- apply(s){if(this.disposed||this.state&&s.seq<this.state.seq)return;const v=this.view,oldPosition={...v.p},oldPhase=this.phase;this.phase=(s.mission||'roam')+':'+(s.attempt||0);this.state=s;this.loadout=s.loadout;
+ apply(s){if(this.disposed||this.state&&s.seq<this.state.seq)return;const v=this.view,oldPosition={...v.p},oldPhase=this.phase;this.phase=(s.mission||'roam')+':'+(s.attempt||0);this.state=s;this.ackAt=performance.now();this.loadout=s.loadout;
  const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);Object.assign(B,clone(s.battle));B.enemies=list(B.enemies);B.effects=list(B.effects);B.projectiles=list(B.projectiles);B.superShells=list(B.superShells);B.playerStats.gems=list(B.playerStats.gems);B.playerStats.buffs=list(B.playerStats.buffs);B.playerHp=s.hp;K.ensure(B);
  for(const e of B.enemies){e.stats.gems=list(e.stats.gems);e.stats.buffs=list(e.stats.buffs);if(e.target&&e.home&&e.target.x===e.home.x&&e.target.z===e.home.z)e.target=e.home;if(e.target&&e.navGoal&&e.target.x===e.navGoal.x&&e.target.z===e.navGoal.z)e.target=e.navGoal;if(e.target&&e.target.x===B.objective.x&&e.target.z===B.objective.z)e.target=B.objective;}
  for(const p of B.projectiles){p.stats.gems=list(p.stats.gems);p.stats.buffs=list(p.stats.buffs);}
@@ -22,14 +22,14 @@ class Session{
  while(this.elapsed>=.05){this.elapsed-=.05;this.queue.push({...input,tapFire:false,super:false,dash:false,shield:false,...this.edges});this.edges={};}
  if(this.queue.length>40){this.queue=[];this.status='RECONNECTING';this.connected=false;if(!this.busy){this.busy=true;this.connect().finally(()=>this.busy=false);}return;}
  }
- async flush(){if(this.busy||!this.connected||!this.queue.length||this.disposed)return;this.busy=true;const commands=this.queue.splice(0,20),request={seq:this.state.seq+1,commands};
+ async flush(){if(this.busy||!this.connected||!this.queue.length||this.disposed)return;const count=Math.min(20,this.queue.length,Math.floor(Math.max(0,(this.state.creditMs||0)+performance.now()-(this.ackAt||0))/50));if(!count)return;this.busy=true;const commands=this.queue.splice(0,count),request={seq:this.state.seq+1,commands};
  try{let r;try{r=await this.transport('/api/conquest/input',request);}catch(first){if(String(first.message).includes('elapsed time'))await new Promise(r=>setTimeout(r,250));r=await this.transport('/api/conquest/input',request);}if(!this.disposed){this.apply(r.state);this.status='SECURED';}}
  catch(e){this.queue=[];this.connected=false;this.status='RECONNECTING';await this.connect();}finally{this.busy=false;}
  }
  async action(action,parameters={}){if(this.disposed)return false;if(!this.connected&&!await this.connect())return false;
  // Serialize actions and movement; conflicting tabs receive a canonical resync, never duplicate credit.
  if(this.actionBusy)return false;this.actionBusy=true;
- try{while(this.busy)await new Promise(r=>setTimeout(r,20));while(this.queue.length)await this.flush();this.busy=true;
+ try{while(this.busy)await new Promise(r=>setTimeout(r,20));while(this.queue.length){await this.flush();if(this.queue.length)await new Promise(r=>setTimeout(r,25));}this.busy=true;
  const body={seq:this.state.seq+1,action,...parameters};let r;try{r=await this.transport('/api/conquest/action',body);}catch(first){r=await this.transport('/api/conquest/action',body);}this.apply(r.state);this.status='SECURED';return true;
  }catch(e){this.error=String(e.message);this.status='ACTION UNAVAILABLE';await this.connect();return false;}finally{this.busy=false;this.actionBusy=false;}}
  dispose(){this.disposed=true;this.queue=[];this.connected=false;}

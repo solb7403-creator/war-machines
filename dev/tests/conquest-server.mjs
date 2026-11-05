@@ -7,7 +7,7 @@ const p=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:
 await worker.fetch(new Request('https://test/api/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:4,initData})}),env);
 const measurements=[];
 const server=http.createServer(async(req,res)=>{try{let raw='';for await(const chunk of req)raw+=chunk;const b=raw?JSON.parse(raw):{};if(req.url==='/fixture'){
- const loadout=structuredClone(R.STOCK_L);if(b.weapon==='moon')loadout.w={a:'moon',t:0,q:0,s:1};const s=createState(loadout,Date.now()),point=(x,z)=>({x,z,y:C.World.groundAt(x,z),surface:'ground'});if(b.position)s.position=point(...b.position);
+ const loadout=structuredClone(R.STOCK_L);if(b.weapon==='moon')loadout.w={a:'moon',t:0,q:0,s:1};if(b.veteranLoadout){loadout.w={a:'moon',t:2,q:1,s:false};loadout.c={c:'titan',t:2,q:1,s:false};}const s=createState(loadout,Date.now()),point=(x,z)=>({x,z,y:C.World.groundAt(x,z),surface:'ground'});if(b.position)s.position=point(...b.position);
  s.battle=JSON.parse(JSON.stringify(new C.Combat.Encounter(s.loadout,s.position)));if(b.hp){s.hp=s.battle.playerHp=b.hp;}
  if(b.superReady)s.battle.charge=1000;if(b.engineering){s.ledger.cp=1000;s.ledger.banked={alloy:100,biomass:100,helium:10};s.battle.enemies=[];}if(b.baseFunds){s.ledger.cp=100000;s.ledger.banked={alloy:10000,biomass:10000,helium:10000};s.battle.enemies=[];}if(b.cargo)s.ledger.cargo=b.cargo;db.root.conquest=db.root.conquest||{};db.root.conquest[pid]=s;res.end(JSON.stringify({ok:true}));return;
  }if(req.url==='/inspect'){res.end(JSON.stringify({state:db.get('conquest/'+pid),measurements}));return;}

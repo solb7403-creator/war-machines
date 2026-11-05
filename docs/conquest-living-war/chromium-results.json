@@ -5,46 +5,31 @@
     {
       "scenario": "relay mission with resident garrisons",
       "performance": {
-        "samples": 196,
-        "frameMedian": 48.4000000001397,
-        "frameP95": 83.80000000004657,
-        "worstFrame": 172,
-        "hitches": 2,
-        "drawCalls": 61,
-        "triangles": 64818,
-        "geometries": 58,
+        "samples": 162,
+        "percentBelow50fps": 92.5925925925926,
+        "percentBelow40fps": 90.74074074074075,
+        "percentBelow30fps": 82.71604938271605,
+        "simulationMs": 0.900000000372529,
+        "renderSubmissionMs": 1.7999999998137355,
+        "heapBytes": 49159144,
+        "textures": 2,
+        "frameMedian": 66.39999999990687,
+        "frameP95": 109.90000000037253,
+        "worstFrame": 162.60000000009313,
+        "hitches": 14,
+        "drawCalls": 50,
+        "triangles": 55314,
+        "geometries": 50,
         "chunks": 25,
         "enemies": 17,
-        "projectiles": 5,
+        "projectiles": 7,
         "autoLow": true,
         "physicalDeviceVerified": false
       }
     },
     {
-      "viewport": [
-        320,
-        568
-      ],
-      "multiPointer": "native three-touch",
-      "errors": []
-    },
-    {
-      "scenario": "relay mission with resident garrisons",
-      "performance": {
-        "samples": 177,
-        "frameMedian": 62.800000000046566,
-        "frameP95": 85.10000000009313,
-        "worstFrame": 124.69999999995343,
-        "hitches": 2,
-        "drawCalls": 57,
-        "triangles": 57920,
-        "geometries": 54,
-        "chunks": 25,
-        "enemies": 17,
-        "projectiles": 5,
-        "autoLow": true,
-        "physicalDeviceVerified": false
-      }
+      "scenario": "two complete missions + physical travel + bank",
+      "automatedInput": "real keyboard DRIVE/FIRE + projected visible-hull clicks; initial epic test loadout/site fixture; no outcome/position/loot claims"
     },
     {
       "viewport": [

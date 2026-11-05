@@ -29,9 +29,7 @@ const archetypes=Object.freeze({
  sentinel:Object.freeze({name:'Parasite heavy sentinel',cls:'titan',arch:'siege',hp:1100,dps:72,shot:1.15,speed:1.8,range:54,role:'player'}),
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
-const installations=Object.freeze([...W.installations,
- Object.freeze({id:'west-depot',name:'WESTERN SALVAGE DEPOT',kind:'outpost',x:994,z:944}),
- Object.freeze({id:'crossroads',name:'DUST CROSSROADS',kind:'staging',x:1100,z:954})]);
+const installations=W.installations;
 const operations=Object.freeze(Object.fromEntries([
  {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
  {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'crossroads',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
