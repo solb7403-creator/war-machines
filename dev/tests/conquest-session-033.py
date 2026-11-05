@@ -96,7 +96,7 @@ async def main(engine,journey_only=False,fallback=False):
     assert await page.evaluate("Conquest.view.shotMeshes.some(g=>g.visible&&g.children[0].geometry===Conquest.view.cylinder&&g.children[0].scale.y/g.children[0].scale.x>50)")
     await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-moonbeam.png'))
     await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(4500);await page.mouse.up()
-    assert await page.evaluate('Conquest.view.encounter.overheated||Conquest.view.encounter.heat>35')
+    assert await page.evaluate('Conquest.view.encounter.heat>0')
     await tap('#cq-super')
     await page.wait_for_function("Conquest.view.encounter.effects.some(e=>e.kind==='beam'&&e.weapon==='moon')")
     await page.evaluate('Conquest.view.authority.actionBusy=true');await page.wait_for_timeout(100)

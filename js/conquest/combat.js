@@ -4,8 +4,8 @@
 const W=root.ConquestWorld;
 // Conquest-only registry. Owned wpspd already includes the canonical Velocity Core/mods.
 const profiles=Object.freeze(Object.fromEntries(Object.entries({
- twin:{interval:.22,range:82,heat:8,cooling:16},pulse:{interval:.50,range:92,heat:17,cooling:13},
- moon:{interval:.95,range:125,heat:36,cooling:10},siege:{interval:1.20,range:100,heat:30,cooling:9}
+ twin:{interval:.22,range:82,heat:4.8,cooling:16},pulse:{interval:.50,range:92,heat:9,cooling:13},
+ moon:{interval:.95,range:125,heat:10.8,cooling:8},siege:{interval:1.20,range:100,heat:16,cooling:9}
 }).map(([k,v])=>[k,Object.freeze(v)])));
 const tracks=Object.freeze({heatCapacity:.09,heatCooling:.09,bulletVelocity:.10,bulletRange:.09,dashDistance:.10,dashCooldown:-.04,shieldDuration:.08,shieldCooldown:-.04});
 const costs=Object.freeze([{cp:100,alloy:4,biomass:2,helium:0},{cp:250,alloy:12,biomass:6,helium:0},{cp:600,alloy:25,biomass:15,helium:2}].map(Object.freeze));
@@ -15,7 +15,7 @@ function setHeat(B,total,capacity){total=Math.max(0,total);B.heat=Math.min(capac
 function engineeringValues(stats,e){
  const {ranks:r,tuning:t}=engineeringDefaults(e),p=profiles[stats.wtype]||profiles.pulse;
  const bonus=k=>r[k]*tracks[k],benefit=v=>Math.max(0,v)*.05-Math.max(0,-v)*.035,cost=v=>Math.max(0,v)*.035-Math.max(0,-v)*.05;
- return {capacity:100*(1+bonus('heatCapacity')+benefit(t.thermal)),cooling:p.cooling*(1+bonus('heatCooling')+benefit(-t.thermal)),heatPerShot:p.heat,
+ return {capacity:100*(1+bonus('heatCapacity')+benefit(t.thermal)),cooling:p.cooling*(1+bonus('heatCooling')+benefit(-t.thermal)),heatPerShot:stats.wtype==='moon'?Math.min(p.heat,3.8+p.cooling*p.interval/rofMult(stats)):p.heat,
  velocity:stats.wpspd*3*(1+bonus('bulletVelocity')+benefit(-t.ballistics)),range:p.range*(1+bonus('bulletRange')+benefit(t.ballistics)),
  dashTime:.4,dashSpeed:5.1*(1+bonus('dashDistance')+benefit(t.mobility)),dashCooldown:Math.max(1,4*(stats.dashCdM||1)*(1+bonus('dashCooldown')+cost(t.mobility))),
  shieldDuration:3*(1+bonus('shieldDuration')+benefit(t.shield)),shieldCooldown:Math.max(5,25*(stats.shieldCdM||1)*(1+bonus('shieldCooldown')+cost(t.shield)))};
@@ -108,7 +108,7 @@ class Battle {
  }
  step(dt,fire){
  this.time+=dt;this.abilityStep?.(dt);this.cooldown=Math.max(-dt,this.cooldown-dt);this.effects.forEach(e=>e.life-=dt);this.effects=this.effects.filter(e=>e.life>0).slice(-32);
- const thermal=engineeringValues(this.playerStats,this.engineering);setHeat(this,(this.heat||0)+(this.heatOverflow||0)-thermal.cooling*dt,thermal.capacity);
+ const thermal=engineeringValues(this.playerStats,this.engineering);setHeat(this,(this.heat||0)+(this.heatOverflow||0)-(this.overheated?Math.max(thermal.cooling,thermal.capacity*.13):thermal.cooling)*dt,thermal.capacity);
  if(this.overheated&&this.heat+(this.heatOverflow||0)<=thermal.capacity*.35)this.overheated=false;
  if(fire&&!this.overheated&&this.cooldown<=1e-9){if(this.shoot(this.player,this.aim,this.playerStats,'player',this.playerStats.wtype,0)){
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
