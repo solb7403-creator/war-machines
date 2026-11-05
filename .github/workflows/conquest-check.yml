@@ -45,6 +45,8 @@ jobs:
         run: |
           python dev/tests/conquest-onboarding.py
           python dev/tests/conquest-earned-browser.py
+          python dev/tests/conquest-preview.py
+          CQ_EARNED_SAVE=/tmp/lunar-earned-journey.json python dev/tests/conquest-preview.py
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -1,6 +1,11 @@
 {
   "engine": "chromium",
   "physicalTelegramVerified": false,
+  "runMode": {
+    "journeyOnly": true,
+    "combatOnly": true,
+    "wreckOnly": false
+  },
   "cases": [
     {
       "viewport": [
@@ -81,10 +86,5 @@
       },
       "errors": []
     }
-  ],
-  "runMode": {
-    "journeyOnly": true,
-    "combatOnly": true,
-    "wreckOnly": false
-  }
+  ]
 }

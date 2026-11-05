@@ -97,7 +97,7 @@ function engineeringCards(d,s){
 }
 function Bactive(v){return v.battle?.state==='active';}
 function guidance(){
- if(!view)return;const m=view.battle?.operation||view.routeTarget||view.nearOperation||root.ConquestCombat?.mission,nav=panel.querySelector('#cq-navigation');if(!m||!nav)return;
+ if(!view)return;const m=view.battle?(view.battle.operation||root.ConquestCombat?.mission):(view.routeTarget||view.nearOperation||root.ConquestCombat?.mission),nav=panel.querySelector('#cq-navigation');if(!m||!nav)return;
  const p=view.p,distance=Math.hypot(p.x-m.x,p.z-m.z),completed=!!view.authority?.state?.completed?.[m.id]||view.progress?.completed(m.id),active=view.battle?.state==='active',radius=m.activationRadius||m.radius||45,isBase=m.name==='PERSONAL COMMAND BASE';let target=m,route=isBase?'Approach the Command Base through its open gate':'Follow the objective beacon';
  // The viaduct's only upper entrances are its east/west ramps. Never point through a deck rail.
  if(p.surface==='bridge'&&p.x<1140||distance>150&&p.x<1136){

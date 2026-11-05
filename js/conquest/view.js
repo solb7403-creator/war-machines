@@ -87,7 +87,7 @@ class View {
  if(!root.ConquestControl.visible(this.battle||this.encounter,this.p,e)||!root.ConquestCombat.lineClear(origin,point)){this.selectedId=null;return;}
  this.selectedId=this.selectedId===id?null:id;
  }
- combatRender(){if(this.renderer.isConquestCanvas)return;const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
+ combatRender(){if(this.renderer.isConquestCanvas)return;const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||this.nearOperation||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
  const B=this.battle||this.encounter;if(!B)return;
  if(!this.reticle){const geo=new this.T.RingGeometry(.65,.85,16);this.shared.push(geo);this.reticle=new this.T.Mesh(geo,this.mat(0xf4cf77));this.scene.add(this.reticle);}this.reticle.visible=B.state==='active';if(this.aimPoint){this.reticle.position.set(this.aimPoint.x-ox,this.aimPoint.y,this.aimPoint.z-oz);this.reticle.quaternion.copy(this.camera.quaternion);}
  const visible=new Set(B.enemies.filter(e=>Math.hypot(e.x-this.p.x,e.z-this.p.z)<240).map(e=>e.id));
