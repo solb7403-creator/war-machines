@@ -1,0 +1,22 @@
+{
+  "engine": "chromium",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "multiPointer": "native three-touch",
+      "errors": []
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "multiPointer": "native three-touch",
+      "errors": []
+    }
+  ]
+}

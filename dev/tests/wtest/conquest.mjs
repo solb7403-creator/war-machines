@@ -44,4 +44,15 @@ assert.deepEqual(db.get('eco/tg_8101'),protectedBefore,'all legacy economy/paid/
 await call(8103,'/api/sync');db.get('eco/tg_8103').cqState={...structuredClone(start),hp:77,battle:{...structuredClone(start.battle),playerHp:77}};const migrated=await call(8103,'/api/conquest/session');assert.equal(migrated.state.hp,77);
 console.log('PASS atomic concurrent pickup/banking, canonical account ownership, complete legacy economy isolation and trusted-state migration');
 
+// Two tabs compete on the same CAS sequence, retry commits once.
+const eng=db.get('conquest/tg_8101');eng.mission=null;eng.battle.enemies=[];eng.position={x:1174,z:1168,y:0,surface:'ground'};eng.ledger.cp=100;eng.ledger.banked={alloy:4,biomass:2,helium:0};eng.battle.heat=80;eng.battle.dashCd=2;
+const seq=eng.seq+1,buy={seq,action:'buy-upgrade',upgrade:'heatCapacity'};
+const race=await Promise.all([call(8101,'/api/conquest/action',buy),call(8101,'/api/conquest/action',{...buy,upgrade:'heatCooling'})]);
+assert.equal(race.filter(x=>x.status===200).length,1);assert.equal(race.filter(x=>x.status===409).length,1);
+const won=race.find(x=>x.status===200).state;assert.equal(won.ledger.cp,0);assert.equal(won.ledger.banked.alloy,0);assert.equal(won.battle.heat,80);assert.equal(won.battle.dashCd,2);
+const winner=won.engineering.ranks.heatCapacity?'heatCapacity':'heatCooling';const retry=await call(8101,'/api/conquest/action',{...buy,upgrade:winner});assert(retry.replayed);assert.equal(retry.state.ledger.cp,0);
+assert.equal((await call(8101,'/api/conquest/action',{seq:seq+1,action:'buy-upgrade',upgrade:'heatCapacity',price:0})).status,400);
+assert.equal((await call(8101,'/api/conquest/action',{seq:seq+1,action:'buy-upgrade',upgrade:'bulletRange'})).status,409);
+assert.deepEqual(db.get('eco/tg_8101'),protectedBefore);console.log('PASS engineering CAS race, duplicate response, insufficient banked funds and price forgery');
+
 Date.now=clock;
