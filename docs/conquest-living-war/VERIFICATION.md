@@ -5,7 +5,7 @@ All measurements below are browser/software-renderer evidence, not physical iPho
 | Scenario | Median frame ms | p95 ms | Worst ms | Draws | Geometries | Living actors | Status |
 |---|---:|---:|---:|---:|---:|---:|---|
 | chromium-results.json (checkpoint8) |35.0|72.6|112.9|40|46|15|Functional PASS;60FPS FAIL in software environment|
-| webkit-results.json (checkpoint8) |18.0|42.0|61.0|39|46|15|Functional PASS;60FPS NOT CERTIFIED|
+| webkit-results.json (checkpoint10) |16.0|22.0|45.0|39|47|15|Functional PASS; physical60FPS NOT CERTIFIED|
 | chromium-fallback-results.json (checkpoint6) |35.6|75.8|100.5|0|0|17|Functional PASS; historical software sample|
 
 Current15actors are all14world actors plus the Relay core; duplicate mission squads were removed so occupation requires the real world defenders. Profiling overlapped some CPU-heavy testing; final CI artifacts provide independent runs.

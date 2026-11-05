@@ -45,6 +45,7 @@ const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,b
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
+function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=modules.radar||0;return {radius:Math.max(18+6*defense,tier>=5?30:tier>=4?24:0),mitigation:Math.min(.5,defense*.1+(tier>=4?.1:0)+(tier>=5?.05:0)),radar:Math.max(radar,tier>=5?1:0),radarRange:120+100*Math.max(radar,tier>=5?1:0)+(tier>=5?100:0)};}
 const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1080,z:945,route:[[1080,945],[1115,945],[1130,970],[1100,975]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
 const formations=Object.freeze([
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
@@ -98,7 +99,7 @@ class Battle {
  const owner=q.stats,direct=off<r*.4,isCrit=direct&&this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
- if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;if(this.baseModules&&Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<18+6*this.baseModules.defense)damage*=1-.1*(this.baseModules.defense||0);}
+ if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
  if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
  else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage);
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
@@ -201,5 +202,5 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({spawnIds,operations,baseDefinition,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({spawnIds,operations,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

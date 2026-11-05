@@ -159,6 +159,7 @@ async def main(engine,journey_only=False,fallback=False):
       await tap('#cq-base-access');await page.get_by_role('button',name='BUILD TIER '+str(tier),exact=False).click()
       await page.wait_for_function('(tier)=>Conquest.view.authority.state.base.tier===tier',arg=tier)
       await page.get_by_role('button',name='CLOSE BASE',exact=True).click();await page.wait_for_timeout(200)
+      if tier>=4:await page.wait_for_function('Conquest.view.baseField?.visible&&Conquest.view.baseField.scale.x===ConquestCombat.baseBenefits(Conquest.view.authority.state.base.tier,Conquest.view.authority.state.base.modules).radius')
       await page.screenshot(path=str(OUT/f'{engine}-{width}-base-{tier}.png'))
      await page.wait_for_function('Conquest.view.authority.state.base.modules.reactor===1',timeout=65000)
      await page.screenshot(path=str(OUT/f'{engine}-{width}-reactor-complete.png'))

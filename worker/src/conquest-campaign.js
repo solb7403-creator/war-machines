@@ -8,8 +8,8 @@ export function campaign(s,now){
  s.base=s.base||{tier:0,modules:{},builtAt:0,claimedAt:0};
  // Firebase drops empty maps: reconstruct this even when the base record already exists.
  s.base.modules=s.base.modules||{};
- const radar=s.base.modules.radar||0;s.radarContacts=radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<120+radar*100).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
  if(s.base.pending&&now>=s.base.pending.readyAt){const p=s.base.pending;s.base.modules[p.module]=p.tier;delete s.base.pending;}
+ const intel=CONQUEST.Combat.baseBenefits(s.base.tier,s.base.modules);s.radarContacts=intel.radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<intel.radarRange).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
 }
 export function production(s){const b=s.base;return b.tier?Math.min(800,40*b.tier+35*(b.modules.reactor||0)+Math.floor(Math.sqrt(s.reputation||0))*3)*(1+.1*(b.modules.uplink||0)):0;}
 function debit(s,price){for(const [k,n] of Object.entries(price)){if(!Number.isSafeInteger(n)||n<0)throw Error('conquest: invalid recipe');if((k==='cp'?s.ledger.cp:s.ledger.banked[k])<n)throw Error('conquest: insufficient banked '+k+': need '+n);}for(const [k,n] of Object.entries(price))if(k==='cp')s.ledger.cp-=n;else s.ledger.banked[k]-=n;}
