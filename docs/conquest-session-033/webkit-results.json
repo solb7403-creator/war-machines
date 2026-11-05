@@ -1,0 +1,22 @@
+{
+  "engine": "webkit",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "multiPointer": "mouse DRIVE plus native touch abilities",
+      "errors": []
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "multiPointer": "mouse DRIVE plus native touch abilities",
+      "errors": []
+    }
+  ]
+}
