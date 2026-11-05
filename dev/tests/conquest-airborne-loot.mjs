@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
+const {RULES:R,CONQUEST:{World:W}}=await import('../../worker/src/sim.gen.js');const {createState}=await import('../../worker/src/conquest-sim.js');const {killLoot,pickups}=await import('../../worker/src/conquest-economy.js');
+const now=1800000000000,s=createState(R.STOCK_L,now),x=1200,z=900,ground=W.groundAt(x,z);s.position={x,z,y:ground,surface:'ground'};
+const drone={id:999,key:'test-airborne-drone',kind:'raider',x,z,y:ground+15,drone:true,hp:0};killLoot(s,drone,now);assert.equal(s.drops.length,1);assert.equal(s.drops[0].y,ground,'destroyed airborne support drone settles salvage to actual ground');const before=s.ledger.cp;pickups(s,now);assert.equal(s.drops.length,0);assert(s.ledger.cp>before,'grounded pilot can collect actual airborne kill reward');assert(s.ledger.cargo.alloy>0);const after=s.ledger.cp;killLoot(s,drone,now);pickups(s,now);assert.equal(s.ledger.cp,after,'same drone cannot grant twice');
+const bridge={id:998,key:'test-bridge-actor',kind:'raider',x:1000,z:1024,y:24,hp:0};killLoot(s,bridge,now);assert.equal(s.drops[0].y,24,'non-drone salvage retains canonical bridge surface height');
+console.log('PASS real airborne enemy salvage drops to ground, is collectible exactly once and preserves non-drone bridge drops');
