@@ -1,0 +1,32 @@
+{
+  "engine": "chromium",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "scenario": "relay mission with resident garrisons",
+      "performance": {
+        "samples": 342,
+        "frameMedian": 17.899999999906868,
+        "frameP95": 100.89999999990687,
+        "worstFrame": 848.1999999999534,
+        "hitches": 19,
+        "drawCalls": 0,
+        "triangles": 0,
+        "geometries": 0,
+        "chunks": 25,
+        "enemies": 17,
+        "projectiles": 5,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "multiPointer": "native three-touch",
+      "errors": []
+    }
+  ]
+}

@@ -17,7 +17,7 @@ export function death(s,now){ledger(s,now);if(s.death?.active)return;s.deathSeri
 export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.missionClaims[id];
  if(claim&&now-(claim.lastAt||claim.firstAt)<180000)return {kind:'cooldown',cp:0,alloy:0,biomass:0,helium:0};
  const first=!claim,daily=claim?.day!==s.daily.day,amount=first?{...POLICY.first,cp:({convoy:140,relay:130,recon:100,rescue:150,redoubt:220})[id]||250}:daily?POLICY.replay:{cp:45,alloy:6,biomass:4,helium:1};
- const awarded=grant(s,amount,true);s.missionClaims[id]={firstAt:claim?.firstAt||now,lastAt:now,day:s.daily.day,count:(claim?.count||0)+1};
+ const awarded=grant(s,{...amount,cp:amount.cp+(s.featuredMission?20:0)},true);s.missionClaims[id]={firstAt:claim?.firstAt||now,lastAt:now,day:s.daily.day,count:(claim?.count||0)+1};
  s.orders=s.orders?.day===s.daily.day?s.orders:{day:s.daily.day,completed:0};s.orders.completed++;
  if(s.orders.completed===3){s.ledger.cp+=100;s.reputation+=50;s.achievements=s.achievements||{};s.achievements['field-veteran']=s.achievements['field-veteran']||now;awarded.cp+=100;}
  return {kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:Math.floor(awarded.cp/3),...awarded};}

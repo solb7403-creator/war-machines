@@ -24,6 +24,11 @@ jobs:
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-balance.mjs
           node dev/tests/conquest-session-033.mjs
+          node dev/tests/conquest-living-war.mjs
+          node dev/tests/conquest-frontline.mjs
+          node dev/tests/conquest-operations.mjs
+          node dev/tests/conquest-base.mjs
+          node dev/tests/conquest-earning-model.mjs
           node dev/tests/wtest/conquest.mjs
       - uses: actions/setup-python@v5
         with:
@@ -71,6 +76,8 @@ jobs:
           python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback
+          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }}
+          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --fallback
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -79,3 +86,4 @@ jobs:
             docs/conquest-ios-onboarding
             docs/conquest-session-032
             docs/conquest-session-033
+            docs/conquest-living-war

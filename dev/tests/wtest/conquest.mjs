@@ -56,3 +56,20 @@ assert.equal((await call(8101,'/api/conquest/action',{seq:seq+1,action:'buy-upgr
 assert.deepEqual(db.get('eco/tg_8101'),protectedBefore);console.log('PASS engineering CAS race, duplicate response, insufficient banked funds and price forgery');
 
 Date.now=clock;
+
+Date.now=()=>now;
+// Personal base construction, competing tabs and production claims share the same account CAS.
+const {CONQUEST:{Combat:C}}=await import('../../../worker/src/sim.gen.js');
+const bs=db.get('conquest/tg_8101'),D=C.baseDefinition;bs.mission=null;bs.battle.enemies=[];bs.position={x:D.x,z:D.z,y:0,surface:'ground'};bs.ledger.cp=100000;bs.ledger.banked={alloy:10000,biomass:10000,helium:10000};
+const priorCP=bs.ledger.cp,baseSeq=bs.seq+1,build={seq:baseSeq,action:'build-base'};
+const builds=await Promise.all([call(8101,'/api/conquest/action',build),call(8101,'/api/conquest/action',build)]);
+assert(builds.every(r=>r.status===200),JSON.stringify(builds.map(r=>({status:r.status,error:r.error}))));assert.equal(db.get('conquest/tg_8101').ledger.cp,priorCP-D.recipe.cp);assert.equal(db.get('conquest/tg_8101').base.tier,1);
+assert.equal((await call(8101,'/api/conquest/action',{seq:baseSeq+1,action:'upgrade-base',price:0})).status,400);
+assert.equal((await call(8102,'/api/conquest/action',{seq:other.state.seq+1,action:'base-claim'})).status,409);
+// Advance only the disposable fixture's production clock; no public API permits this.
+const built=db.get('conquest/tg_8101');built.base.claimedAt=now-86400001;const beforeClaim=built.ledger.cp,claim={seq:built.seq+1,action:'base-claim'};
+const claims=await Promise.all([call(8101,'/api/conquest/action',claim),call(8101,'/api/conquest/action',claim)]);assert(claims.every(r=>r.status===200));assert.equal(claims.filter(r=>r.replayed).length,1);assert.equal(claims[0].state.ledger.cp,claims[1].state.ledger.cp);assert(claims[0].state.ledger.cp>beforeClaim);
+assert.equal((await call(8101,'/api/conquest/action',{seq:claim.seq+1,action:'base-claim'})).status,409);assert.deepEqual(db.get('eco/tg_8101'),protectedBefore);
+console.log('PASS base construction/production CAS duplicate requests, physical ownership, forged prices and unchanged legacy economy');
+
+Date.now=clock;
