@@ -30,11 +30,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install official free Graphify package
-        run: python -m pip install --disable-pip-version-check graphifyy
+        run: python -m pip install --disable-pip-version-check graphifyy==0.9.102
       - name: Index repository source without LLM calls
         run: |
           graphify --version
-          graphify extract . --out .
+          graphify extract . --out . --code-only
       - name: Produce browseable interactive graph
         run: |
           graphify cluster-only . --no-label
