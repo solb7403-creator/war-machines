@@ -6,7 +6,7 @@ import asyncio,argparse,json,pathlib,shutil,math,statistics,os
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest-session-033';OUT.mkdir(exist_ok=True)
-async def main(engine,journey_only=False):
+async def main(engine,journey_only=False,fallback=False):
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
  try:
@@ -14,7 +14,7 @@ async def main(engine,journey_only=False):
    opts={'headless':True}
    if engine=='chromium':opts.update(executable_path=shutil.which('chromium'),args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
    browser=await getattr(pw,engine).launch(**opts);results=[]
-   for width,height in ([(390,844)] if journey_only else [(320,568),(390,844)]):
+   for width,height in ([(390,844)] if journey_only or fallback else [(320,568),(390,844)]):
     context=await browser.new_context(viewport={'width':width,'height':height},has_touch=True,is_mobile=True,reduced_motion='reduce');page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.request.post(base+'/fixture',data={})
     await page.add_init_script('''window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
@@ -33,7 +33,7 @@ async def main(engine,journey_only=False):
      await r.abort()
     await page.route('**/*',route)
     async def enter():
-     await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"');await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
+     await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"');await page.evaluate('closeAll();save.welcomed=true;uiDirty();'+('save.gfx=\"2d\";' if fallback else '')+'');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
      if await page.locator('.cq-transmission').count():await tap('.cq-story-start')
      await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=60000)
     async def rect(selector):
@@ -43,6 +43,7 @@ async def main(engine,journey_only=False):
     async def fixture(position=None,**kw):
      await page.evaluate('Conquest.view.reset()');await page.wait_for_function('!Conquest.view.authority.busy');await page.request.post(base+'/fixture',data={**kw,**({'position':position} if position else {})});await page.evaluate('Conquest.view.authority.state=null;Conquest.view.authority.queue=[];Conquest.view.authority.phase=null;Conquest.view.authority.connect()');await page.wait_for_function('Conquest.view.authority.state?.seq===0&&Conquest.view.authority.connected');await page.wait_for_timeout(250)
     await enter()
+    if fallback:assert await page.evaluate('Conquest.view.renderer.isConquestCanvas')
     await fixture([1500,1500])
     drive=await rect('.cq-stick');dash=await rect('#cq-dash');fire=await rect('#cq-fire');shield=await rect('#cq-shield')
     if engine=='chromium':
@@ -74,7 +75,7 @@ async def main(engine,journey_only=False):
      await page.wait_for_timeout(1200);await page.mouse.up()
     await page.wait_for_timeout(1500)
     canonical=await page.evaluate('Conquest.view.authority.state.battle');assert canonical['dashCd']>0 and canonical['shieldCd']>0
-    await page.screenshot(path=str(OUT/f'{engine}-{width}-moving-controls.png'))
+    await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-moving-controls.png'))
     await fixture([1174,1168],engineering=True)
     await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='INVENTORY / SUPPLY',exact=True).click()
     await page.get_by_text('Thermal Systems',exact=True).click()
@@ -84,7 +85,7 @@ async def main(engine,journey_only=False):
     await page.get_by_label('Thermal Systems specialization').fill('3')
     await page.get_by_role('button',name='SAVE SPECIALIZATION',exact=True).first.click()
     await page.wait_for_function('Conquest.view.authority.state.engineering.tuning.thermal===3')
-    await page.screenshot(path=str(OUT/f'{engine}-{width}-engineering.png'))
+    await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-engineering.png'))
     await page.get_by_role('button',name='CLOSE SUPPLY').click()
     await fixture([1500,1500],weapon='moon',superReady=True)
     await page.evaluate('Conquest.view.aimYaw=Conquest.view.yaw+Math.PI;Conquest.view.aimPitch=.3')
@@ -93,18 +94,22 @@ async def main(engine,journey_only=False):
     await page.evaluate('Conquest.view.authority.actionBusy=true')
     await page.wait_for_timeout(100)
     assert await page.evaluate("Conquest.view.shotMeshes.some(g=>g.visible&&g.children[0].geometry===Conquest.view.cylinder&&g.children[0].scale.y/g.children[0].scale.x>50)")
-    await page.screenshot(path=str(OUT/f'{engine}-{width}-moonbeam.png'))
+    await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-moonbeam.png'))
     await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(4500);await page.mouse.up()
     assert await page.evaluate('Conquest.view.encounter.overheated||Conquest.view.encounter.heat>35')
     await tap('#cq-super')
     await page.wait_for_function("Conquest.view.encounter.effects.some(e=>e.kind==='beam'&&e.weapon==='moon')")
     await page.evaluate('Conquest.view.authority.actionBusy=true');await page.wait_for_timeout(100)
-    await page.screenshot(path=str(OUT/f'{engine}-{width}-moonfall.png'))
+    await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-moonfall.png'))
     await page.evaluate('Conquest.view.authority.actionBusy=false')
+    if width==390 and not fallback:
+     await page.evaluate('window.preLoss=Conquest.view.authority.state.hp;Conquest.view.renderer.forceContextLoss()')
+     await page.wait_for_function('Conquest.view.renderer.isConquestCanvas')
+     assert await page.evaluate('Conquest.view.authority.state.hp===preLoss&&Conquest.view.authority.connected')
     assert not errors,errors
     results.append({'viewport':[width,height],'multiPointer':'native three-touch' if engine=='chromium' else 'mouse DRIVE plus native touch abilities','errors':errors})
     await page.evaluate('Conquest.view?.authority?.dispose()');await page.unroute_all(behavior='ignoreErrors');await context.close();print('PASS',engine,width,height,flush=True)
-   await browser.close();(OUT/f'{engine}-results.json').write_text(json.dumps({'engine':engine,'physicalTelegramVerified':False,'cases':results},indent=2))
+   await browser.close();(OUT/f'{engine}{"-fallback" if fallback else ""}-results.json').write_text(json.dumps({'engine':engine,'physicalTelegramVerified':False,'cases':results},indent=2))
  finally:server.terminate();await server.wait()
 if __name__=='__main__':
- a=argparse.ArgumentParser();a.add_argument('--engine',choices=['chromium','webkit'],default='chromium');args=a.parse_args();asyncio.run(main(args.engine))
+ a=argparse.ArgumentParser();a.add_argument('--engine',choices=['chromium','webkit'],default='chromium');a.add_argument('--fallback',action='store_true');args=a.parse_args();asyncio.run(main(args.engine,fallback=args.fallback))

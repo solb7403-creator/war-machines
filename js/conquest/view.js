@@ -2,6 +2,23 @@
 (function(root){
 'use strict';
 const W=root.ConquestWorld;
+// Canvas fallback reads the same camera, world positions and canonical hull radii. No second simulation.
+function canvasRenderer(v){
+ const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),T=v.T,point=new T.Vector3();let width=1,height=1;
+ const project=(x,y,z)=>{point.set(x-v.origin.x,y,z-v.origin.z).project(v.camera);return {x:(point.x+1)*width/2,y:(1-point.y)*height/2,visible:point.z<1&&point.z>-1};};
+ const line=(a,b,color,w=1)=>{if(!a.visible||!b.visible)return;ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();};
+ const circle=(p,r,color,fill=true)=>{const a=project(p.x,p.y,p.z),b=project(p.x+r,p.y,p.z),c=project(p.x,p.y,p.z+r),radius=Math.max(2,Math.hypot(a.x-b.x,a.y-b.y),Math.hypot(a.x-c.x,a.y-c.y));if(!a.visible)return;ctx.beginPath();ctx.ellipse(a.x,a.y,radius,radius*.65,0,0,Math.PI*2);ctx.fillStyle=color;ctx.strokeStyle=color;if(fill)ctx.fill();else ctx.stroke();};
+ return {domElement:canvas,isConquestCanvas:true,setPixelRatio(){},setSize(w,h){width=w;height=h;canvas.width=w;canvas.height=h;canvas.style.width=w+'px';canvas.style.height=h+'px';},dispose(){},forceContextLoss(){},render(){
+ v.camera.updateMatrixWorld();ctx.fillStyle='#18242d';ctx.fillRect(0,0,width,height);const B=v.battle||v.encounter,p=v.p;
+ for(let x=-48;x<=48;x+=8)for(let z=-48;z<=48;z+=8){const a={x:p.x+x,z:p.z+z};line(project(a.x,W.groundAt(a.x,a.z),a.z),project(a.x+8,W.groundAt(a.x+8,a.z),a.z),'#41505a');line(project(a.x,W.groundAt(a.x,a.z),a.z),project(a.x,W.groundAt(a.x,a.z+8),a.z+8),'#41505a');}
+ const sites=[...W.installations,...W.landmarks];for(const site of sites)if(Math.hypot(site.x-p.x,site.z-p.z)<180){const y=W.groundAt(site.x,site.z);circle({x:site.x,y,z:site.z},7,'#5d6d78');const a=project(site.x,y+8,site.z);if(a.visible){ctx.fillStyle='#d1bf8a';ctx.font='10px sans-serif';ctx.fillText(site.name||'STRUCTURE',a.x,a.y);}}
+ if(!B)return;for(const e of B.enemies)if(e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<180){circle({x:e.x,y:e.y+2.2,z:e.z},2.7,e.id===v.selectedId?'#efcf78':'#bd605c');line(project(e.x,e.y+2.2,e.z),project(e.x+Math.sin(e.turret)*4,e.y+2.2,e.z+Math.cos(e.turret)*4),'#edb2a5',2);}
+ circle({x:p.x,y:p.y+2.2,z:p.z},2.5,'#8dbfc9');line(project(p.x,p.y+2.2,p.z),project(p.x+Math.sin(B.turretYaw)*4,p.y+2.2,p.z+Math.cos(B.turretYaw)*4),'#e6f6ff',3);if(B.shieldT>0)circle({x:p.x,y:p.y+2.2,z:p.z},4.5,'#72dcff',false);
+ for(const q of B.projectiles){const speed=Math.hypot(q.vx,q.vy,q.vz),length=q.kind==='moon'?6:1,a=project(q.x,q.y,q.z),b=project(q.x-q.vx/speed*length,q.y-q.vy/speed*length,q.z-q.vz/speed*length);line(a,b,q.kind==='moon'?'#61daff':q.team==='player'?'#d8faff':'#ff9079',q.kind==='moon'?4:2);if(q.kind==='moon')line(a,b,'#f5ffff',1);}
+ for(const e of B.effects){if(e.kind==='beam'){const a=project(e.x,e.y,e.z),b=project(e.ex,e.ey,e.ez);line(a,b,e.weapon==='moon'?'#ac9cff':'#66d9ec',8);line(a,b,'#f2ffff',2);}else circle(e,e.kind==='destroy'?2:.4,e.weapon==='moon'?'#d1b5ff':'#ffda9b');}
+ if(B.overheated){ctx.fillStyle='#ffb37d';const a=project(p.x,p.y+5,p.z);ctx.fillText('VENT',a.x,a.y);} }
+ };
+}
 class View {
  constructor(host,onError){
  const T=root.THREE;this.T=T;this.host=host;this.onError=onError;this.chunks=new Map();this.keys={};this.stick={x:0,z:0};this.yaw=-Math.PI/2;this.pitch=.42;this.distance=23;this.frames=0;this.fps=0;this.elapsed=0;this.builds=0;this.disposed=false;
@@ -9,7 +26,7 @@ class View {
  try{const p=JSON.parse(localStorage.getItem('lunar-conquest-position-v1'));if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z)){this.jump(p.x,p.z);if(p.surface==='bridge'){const deck=W.deckAt(this.p.x,this.p.z);if(deck!==null){this.p.surface='bridge';this.p.y=deck;}}}}catch(_){}
  this.discovery=root.ConquestDiscovery?.create();
  if(this.p.x===898&&this.p.z===1024)this.discovery?.spawn(this.p);
- this.renderer=new T.WebGLRenderer({antialias:false,powerPreference:'low-power'});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));host.append(this.renderer.domElement);
+ try{if(typeof gfxMode==='function'&&gfxMode()==='2d')throw Error('2d selected');this.renderer=new T.WebGLRenderer({antialias:false,powerPreference:'low-power'});}catch(_){this.renderer=canvasRenderer(this);}this.renderer.setPixelRatio(typeof gfxMode==='function'&&gfxMode()==='low'?1:Math.min(devicePixelRatio,1.5));host.append(this.renderer.domElement);
  this.hfRelease=typeof Equipment3D!=='undefined'?Equipment3D.attach():null;if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);
  this.scene=new T.Scene();this.scene.background=new T.Color(0x101b29);this.scene.fog=new T.Fog(0x101b29,1100,2560);
  this.camera=new T.PerspectiveCamera(55,1,.2,3000);this.scene.add(new T.HemisphereLight(0xc4ddff,0x353025,.85));const sun=new T.DirectionalLight(0xffe5ba,2.8);sun.position.set(-100,180,-70);this.scene.add(sun);
@@ -59,7 +76,8 @@ class View {
  }
  requestAction(action,parameters){if(this.authority)return this.authority.action(action,parameters);if(action==='return-exploration'){this.clearBattle();return Promise.resolve(true);}return Promise.resolve(false);}
  selected(){const B=this.battle||this.encounter,e=B?.enemies.find(e=>e.id===this.selectedId);if(!root.ConquestControl?.visible(B,this.p,e))return null;const c=this.camera?.position;if(c&&this.origin&&!root.ConquestCombat.lineClear({x:c.x+this.origin.x,y:c.y,z:c.z+this.origin.z},{x:e.x,y:e.y+2.2,z:e.z}))return null;return e;}
- pick(clientX,clientY){const rect=this.renderer.domElement.getBoundingClientRect(),ray=new this.T.Raycaster();ray.setFromCamera(new this.T.Vector2((clientX-rect.x)/rect.width*2-1,-(clientY-rect.y)/rect.height*2+1),this.camera);
+ useCanvasFallback(){if(this.renderer.isConquestCanvas)return;const old=this.renderer;this.abort.abort();this.renderer=canvasRenderer(this);this.host.replaceChildren(this.renderer.domElement);old.dispose();this.bind();this.resize();}
+ pick(clientX,clientY){if(this.renderer.isConquestCanvas){const r=this.renderer.domElement.getBoundingClientRect(),B=this.battle||this.encounter;let picked=null,best=Infinity;this.camera.updateMatrixWorld();for(const e of B.enemies){if(!root.ConquestControl.visible(B,this.p,e))continue;const a=new this.T.Vector3(e.x-this.origin.x,e.y+2.2,e.z-this.origin.z).project(this.camera),b=new this.T.Vector3(e.x+2.7-this.origin.x,e.y+2.2,e.z-this.origin.z).project(this.camera),c=new this.T.Vector3(e.x-this.origin.x,e.y+2.2,e.z+2.7-this.origin.z).project(this.camera),x=(a.x+1)*r.width/2,y=(1-a.y)*r.height/2,d=Math.hypot(clientX-r.x-x,(clientY-r.y-y)/.65),radius=Math.max(2,Math.hypot((b.x-a.x)*r.width/2,(b.y-a.y)*r.height/2),Math.hypot((c.x-a.x)*r.width/2,(c.y-a.y)*r.height/2));if(a.z<1&&d<radius&&d<best){picked=e.id;best=d;}}this.selectedId=this.selectedId===picked?null:picked;return;}const rect=this.renderer.domElement.getBoundingClientRect(),ray=new this.T.Raycaster();ray.setFromCamera(new this.T.Vector2((clientX-rect.x)/rect.width*2-1,-(clientY-rect.y)/rect.height*2+1),this.camera);
  const meshes=[];for(const [id,g] of this.enemyMeshes){const e=(this.battle||this.encounter)?.enemies.find(e=>e.id===id);if(e?.hp>0&&g.visible)g.traverse(m=>{if(m.isMesh&&m!==g.userData.marker){m.userData.hostileId=id;meshes.push(m);}});}
  const hit=ray.intersectObjects(meshes,false)[0];if(!hit){this.selectedId=null;return;}const id=hit.object.userData.hostileId,e=(this.battle||this.encounter).enemies.find(e=>e.id===id);
  // Picking must hit the hull; ray occlusion and tank line of sight both apply.

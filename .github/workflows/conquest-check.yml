@@ -70,6 +70,7 @@ jobs:
           python dev/tests/conquest-transmission.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
+          python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback
       - uses: actions/upload-artifact@v4
         if: always()
         with:
