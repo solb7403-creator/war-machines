@@ -1,0 +1,30 @@
+{
+  "source": "authoritative input replay; banked build-cost and canonical Legendary gear fixtures",
+  "seconds": 9.65,
+  "kills": 6,
+  "hp": 2827.3105499999983,
+  "reactorHp": 1625.5500000000002,
+  "report": {
+    "outcome": "victory",
+    "at": 1800000009650,
+    "cp": 160,
+    "alloy": 15,
+    "biomass": 10,
+    "helium": 2,
+    "reputation": 60,
+    "stolen": 0,
+    "damage": 0
+  },
+  "settlement": {
+    "kind": "defense",
+    "outcome": "victory",
+    "at": 1800000009650,
+    "cp": 160,
+    "alloy": 15,
+    "biomass": 10,
+    "helium": 2,
+    "reputation": 60,
+    "stolen": 0,
+    "damage": 0
+  }
+}

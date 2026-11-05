@@ -8,6 +8,30 @@ const installations=Object.freeze([
  Object.freeze({id:'west-depot',name:'WESTERN SALVAGE DEPOT',kind:'outpost',x:994,z:944}),
  Object.freeze({id:'crossroads',name:'DUST CROSSROADS',kind:'staging',x:1100,z:954})
 ]);
+// Small, authored cover footprints create five different raid approaches. Their exact
+// boxes are shared by vehicle collision, shot occlusion and the client art pass.
+const raidObstacles=Object.freeze([
+ {id:'dust-long',layout:'dust-switchback',x:915,z:942,width:18,depth:3,height:5},
+ {id:'dust-hook',layout:'dust-switchback',x:925,z:948,width:3,depth:15,height:5},
+ {id:'basin-west',layout:'basin-crescent',x:1054,z:840,width:5,depth:12,height:5},
+ {id:'basin-east',layout:'basin-crescent',x:1094,z:858,width:6,depth:12,height:5},
+ {id:'ash-bunker',layout:'ash-approach',x:1274,z:850,width:9,depth:9,height:8},
+ {id:'spear-wall',layout:'spear-flank',x:1335,z:1008,width:3,depth:25,height:6},
+ {id:'ridge-west',layout:'ridge-hook',x:1270,z:1208,width:6,depth:8,height:5},
+ {id:'ridge-north',layout:'ridge-hook',x:1290,z:1190,width:6,depth:8,height:5},
+ {id:'ridge-east',layout:'ridge-hook',x:1312,z:1228,width:6,depth:8,height:5}
+].map(Object.freeze));
+function raidSolidAt(x,z,y=null){return raidObstacles.some(o=>Math.abs(x-o.x)<o.width/2&&Math.abs(z-o.z)<o.depth/2&&(y===null||y<groundAt(o.x,o.z)+o.height));}
+// Authored frontier geography; the wider Moon and legacy grid sectors stay intact.
+const sectors=Object.freeze([
+ {id:'refuge',name:'REFUGE CORRIDOR',x:1010,z:1100,radius:115,threat:'interceptor patrols',architecture:'viaduct and supply bastions',reward:'safe banking approaches'},
+ {id:'ash',name:'ASH REDOUBT',x:1250,z:900,radius:120,threat:'shielded command armor',architecture:'armored siege gates',reward:'siege command blueprints'},
+ {id:'oxygen',name:'OXYGEN SPEAR',x:1230,z:1020,radius:100,threat:'mixed saboteur assaults',architecture:'reactor towers and air defense',reward:'oxygen defense reputation'},
+ {id:'western',name:'WESTERN SALVAGE REACH',x:920,z:925,radius:120,threat:'fast flanking interceptors',architecture:'depot gantries',reward:'alloy recovery operations'},
+ {id:'helium',name:'HELIUM BASIN',x:1080,z:835,radius:110,threat:'artillery and plasma batteries',architecture:'paired gun emplacements',reward:'helium extraction routes'},
+ {id:'ridge',name:'REFUGE RIDGE',x:1270,z:1175,radius:130,threat:'drone carriers and hunter armor',architecture:'ridge signal arrays',reward:'commander telemetry'}
+].map(Object.freeze));
+function frontierSectorAt(x,z){return sectors.reduce((a,b)=>Math.hypot(x-a.x,z-a.z)<Math.hypot(x-b.x,z-b.z)?a:b);}
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),mix=(a,b,t)=>a+(b-a)*t,smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 function hash(x,z){let n=Math.imul(x^SEED,374761393)^Math.imul(z,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n>>>0)/4294967295;}
 function noise(x,z,s){x/=s;z/=s;let i=Math.floor(x),j=Math.floor(z),u=smooth(x-i),v=smooth(z-j);return mix(mix(hash(i,j),hash(i+1,j),u),mix(hash(i,j+1),hash(i+1,j+1),u),v);}
@@ -33,15 +57,16 @@ function normalAt(x,z){const dx=(heightAt(x+.5,z)-heightAt(x-.5,z)),dz=(heightAt
 function biomeAt(x,z){if(Math.hypot(x-1150,z-1080)<130||noise(x,z,3400)>.65)return 'terraformed';return noise(x,z,1500)>.54?'massif':'wasteland';}
 function deckAt(x,z){if(x<900||x>1140||Math.abs(z-1024)>9)return null;return x<960?mix(groundAt(900,z),24,(x-900)/60):x>1080?mix(24,groundAt(1140,z),(x-1080)/60):24;}
 function surfacesAt(x,z){const a=[{id:'ground',y:groundAt(x,z)}],y=deckAt(x,z);if(y!==null)a.push({id:'bridge',y});return a;}
-function structureSolidAt(x,z){if(installations.some(b=>Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2))return true;for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;return false;}
+function structureSolidAt(x,z){if(raidSolidAt(x,z))return true;if(installations.some(b=>Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2))return true;for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;return false;}
 // Match the deterministic rendered boulders. Cache bounded chunk descriptors, not meshes.
 const rockCache=new Map();
 function rockSolid(x,z,y=null){for(let j=Math.floor((z-8)/128);j<=Math.floor((z+8)/128);j++)for(let i=Math.floor((x-8)/128);i<=Math.floor((x+8)/128);i++){const key=i+':'+j;let rocks=rockCache.get(key);if(!rocks){rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45).map(p=>({...p,rx:p.size*1.6+1,rz:p.size+1,top:p.y+p.size*(.8+p.variant)}));if(rockCache.size>=128)rockCache.delete(rockCache.keys().next().value);rockCache.set(key,rocks);}for(const p of rocks){if(Math.abs(x-p.x)>=p.rx||Math.abs(z-p.z)>=p.rz||y!==null&&!(y<p.top))continue;if(Math.hypot((x-p.x)/p.rx,(z-p.z)/p.rz)<1)return true;}}return false;}
 function solidAt(x,z){return structureSolidAt(x,z)||rockSolid(x,z);}
 // Exact slab intersection avoids a sampling gap at thin bunker corners.
-function installationOccludes(a,b){return installations.some(site=>{let lo=0,hi=1;for(const [axis,min,max] of [['x',site.x-9,site.x+9],['z',site.z+2,site.z+14],['y',-Infinity,groundAt(site.x,site.z)+12]]){const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-10){if(a[axis]<=min||a[axis]>=max)return false;continue;}const t0=(min-a[axis])/delta,t1=(max-a[axis])/delta;lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));if(lo>=hi)return false;}return hi>1e-6&&lo<1-1e-6;});}
+let coverOccluders;
+function installationOccludes(a,b){coverOccluders=coverOccluders||[...installations.map(site=>({x:site.x,z:site.z+8,width:18,depth:12,height:12,baseY:groundAt(site.x,site.z)})),...raidObstacles.map(site=>({...site,baseY:groundAt(site.x,site.z)}))];return coverOccluders.some(site=>{let lo=0,hi=1;for(const [axis,min,max] of [['x',site.x-site.width/2,site.x+site.width/2],['z',site.z-site.depth/2,site.z+site.depth/2],['y',-Infinity,(site.baseY??groundAt(site.x,site.z))+site.height]]){const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-10){if(a[axis]<=min||a[axis]>=max)return false;continue;}const t0=(min-a[axis])/delta,t1=(max-a[axis])/delta;lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));if(lo>=hi)return false;}return hi>1e-6&&lo<1-1e-6;});}
 // Shared physical shot occlusion; structure footprints have finite heights, bridge has real underside.
-function blockedAt(x,y,z){if(installations.some(b=>Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6&&y<groundAt(b.x,b.z)+12))return true;if(y<=groundAt(x,z)||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
+function blockedAt(x,y,z){if(raidSolidAt(x,z,y))return true;if(installations.some(b=>Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6&&y<groundAt(b.x,b.z)+12))return true;if(y<=groundAt(x,z)||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
  if(z>1068&&z<1092&&x>1138&&x<1222)for(let i=0;i<3;i++){const a=1150+i*30;if(Math.hypot(x-a,z-1080)<12&&y<groundAt(a,1080)+108+i%2*38)return true;}
  if(x>1102&&x<1162&&z>1140&&z<1206)for(let i=0;i<9;i++){const a=1110+i%3*22,b=1148+Math.floor(i/3)*25;if(Math.hypot(x-a,z-b)<8&&y<groundAt(a,b)+9)return true;}
  return [970,1070].some(a=>[1018,1030].some(b=>Math.abs(x-a)<1.5&&Math.abs(z-b)<1.5&&y<24));}
@@ -94,5 +119,5 @@ function horizon(x,z,innerRadius=4){const positions=[],normals=[],colors=[],indi
 }
 function scenery(cx,cz){const out=[];for(let i=0;i<48;i++){const x=cx*128+hash(cx*53+i,cz)*128,z=cz*128+hash(cz*71+i,cx)*128;if(x<0||z<0||x>WIDTH||z>LENGTH||Math.hypot(x-1024,z-1024)<115)continue;if(structureSolidAt(x,z)||installations.some(b=>Math.hypot(x-b.x,z-b.z)<25)||Math.hypot(x-1180,z-1080)<55||x>1095&&x<1170&&z>1130&&z<1240)continue;const b=biomeAt(x,z);out.push({x,z,y:groundAt(x,z),kind:b==='terraformed'?'tree':i===0&&hash(cx,cz)>.85?'relay':'rock',size:1+hash(cx+i,cz+8)*2.8,variant:hash(cx+i,cz+77)});}return out;}
 const landmarks=Object.freeze([{id:'bridge-01',x:1024,z:1024,name:'Refuge viaduct'},{id:'oxygen-01',x:1160,z:1080,name:'Oxygen complex'},{id:'refuge-01',x:1140,z:1160,name:'Refuge outpost'},{id:'crater-01',x:1210,z:1130,name:'Refuge ridge'},{id:'massif-01',x:14000,z:8000,name:'Highland overlook'}].map(Object.freeze));
-root.ConquestWorld=Object.freeze({id:'moon',version:1,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
+root.ConquestWorld=Object.freeze({id:'moon',version:1,raidObstacles,sectors,frontierSectorAt,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
 })(globalThis);

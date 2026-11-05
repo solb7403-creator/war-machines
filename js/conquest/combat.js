@@ -32,14 +32,33 @@ const archetypes=Object.freeze({
 const installations=W.installations;
 // Stable authored identities preserve production v1 locks and spawn keys as the region expands.
 const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
-const operations=Object.freeze(Object.fromEntries([
+const legacyOperations=[
  {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
  {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
  {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
  {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
  {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
  {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
-].map(o=>[o.id,Object.freeze({activationRadius:45,...o})])));
+ ];
+// Five spatial layouts with different approach angles, routes and objective order.
+const raidLayouts=freeze([
+ {id:'dust-switchback',name:'Dust Switchback',x:910,z:930,sector:'western',entry:[890,945],route:[[900,920],[930,908],[943,938]],offsets:[[-2,-20],[24,-22],[34,8]],hazard:'drone'},
+ {id:'basin-crescent',name:'Basin Crescent',x:1070,z:850,sector:'helium',entry:[1048,862],route:[[1060,834],[1082,828],[1098,850]],offsets:[[-8,-20],[18,-24],[32,0]],hazard:'orbital'},
+ {id:'ash-approach',name:'Ash Approach',x:1260,z:845,sector:'ash',entry:[1238,857],route:[[1250,824],[1280,822],[1292,844]],offsets:[[0,-24],[24,-18],[34,14]],hazard:'plasma'},
+ {id:'spear-flank',name:'Spear Flank',x:1320,z:1010,sector:'oxygen',entry:[1298,1022],route:[[1310,990],[1334,988],[1350,1010]],offsets:[[-4,-22],[24,-20],[35,8]],hazard:'orbital'},
+ {id:'ridge-hook',name:'Ridge Hook',x:1290,z:1210,sector:'ridge',entry:[1268,1222],route:[[1280,1192],[1304,1188],[1320,1210]],offsets:[[-2,-20],[20,-24],[32,10]],hazard:'plasma'}
+]);
+const raidFamilies=freeze([
+ {id:'intercept',name:'ARMORED INTERCEPTION',commander:'ambush',brief:'Cut off the armored carrier before its escape. Eliminate its flanking escorts, then recover its route telemetry at the marked command point.'},
+ {id:'sabotage',name:'COMMAND UPLINK SABOTAGE',commander:'shield',brief:'Destroy the command relay and its shield commander, then occupy the vulnerable uplink for six uninterrupted seconds.'},
+ {id:'battery',name:'ANTI-AIR BATTERY KNOCKOUT',commander:'artillery',brief:'Knock out both fixed anti-air batteries and their artillery coordinator. Sweep the two separated launch-control points to complete the shutdown.'},
+ {id:'extraction',name:'HELIUM DEPOT EXTRACTION',commander:'carrier',brief:'Clear the drone-carrier escort guarding the depot, recover three separated helium canisters, then return to the marked extraction point.'},
+ {id:'siege',name:'PLASMA FORTRESS BREACH',commander:'plasma',brief:'Breach the outer mixed garrison. Defeat the plasma siege general in the second phase, then occupy its command platform while avoiding marked plasma impacts.'}
+]);
+function raidPoint(x,z){for(const r of [0,5,10,15,20,25])for(let i=0;i<(r?16:1);i++){const p={x:x+Math.cos(i*Math.PI/8)*r,z:z+Math.sin(i*Math.PI/8)*r,surface:'ground'};p.y=W.groundAt(p.x,p.z);if(!W.solidAt(p.x,p.z)&&[[4,0],[-4,0],[0,4],[0,-4]].every(([a,b])=>{const q=W.advance(p,a,b);return Math.hypot(q.x-p.x-a,q.z-p.z-b)<.2;}))return [p.x,p.z];}throw Error('conquest: no clear raid approach');}
+const raidOperations=raidFamilies.flatMap((f,fi)=>raidLayouts.map((l,i)=>({id:'raid-'+f.id+'-'+(i+1),raid:true,family:f.id,name:f.name+' / '+l.name.toUpperCase(),site:'raid-site-'+f.id+'-'+(i+1),sector:l.sector,layout:l.id,x:l.x+fi*3,z:l.z+fi*4,entry:raidPoint(l.entry[0]+fi*3,l.entry[1]+fi*4),route:l.route.map(([x,z])=>raidPoint(x+fi*3,z+fi*4)),offsets:l.offsets,hazard:l.hazard,commander:f.commander,danger:i<2?'HARD':'VETERAN',brief:f.brief+' '+l.name+' uses '+l.hazard+' targeting across a distinct '+l.sector+' approach.',reward:{cp:180+i*20+fi*15,alloy:18+i*2,biomass:12+fi,helium:3+i}})));
+const raidIds=Object.freeze(raidOperations.map(o=>o.id)),sectors=W.sectors;
+const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
@@ -100,8 +119,9 @@ class Battle {
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
  if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
+ if(q.team==='player'&&t.pattern==='shield'&&this.time%8<3)damage*=.35;
  if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
- else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage);
+ else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
  if(q.kind==='siege'&&q.team==='player')for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){const dealt=Math.min(e.hp,damage*.3);this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
@@ -137,7 +157,7 @@ class Battle {
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
  }
  this.moveShots(dt);
- if(this.playerHp<=0||this.objectiveHp<=0){this.state='defeat';this.reason=this.playerHp<=0?'War Machine disabled':'Oxygen infrastructure destroyed';this.projectiles=[];return;}
+ if(this.playerHp<=0||this.objectiveHp<=0){this.state='defeat';this.reason=this.playerHp<=0?'War Machine disabled':this.operation?.defense?'Sector command beacon destroyed':'Oxygen infrastructure destroyed';this.projectiles=[];return;}
  if(!this.localEncounter&&!this.enemies.some(e=>!e.resident&&e.hp>0)){if(this.wave===formations.length){this.state='victory';this.projectiles=[];}else{this.nextWave+=dt;if(this.nextWave>=3)this.spawnWave();}}
  if(!this.localEncounter&&Math.hypot(this.player.x-mission.x,this.player.z-mission.z)>240){this.state='defeat';this.reason='Retreated beyond the defense perimeter';this.projectiles=[];}
  }
@@ -178,21 +198,45 @@ class Operation extends Battle {
  constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
  this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
  // Installation missions fight the persistent world garrison attached by the session.
- const team=id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
+ const team=o.raid||o.defense||id==='base-defense'?[]:id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
  team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
  if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
+ if(o.raid)this.setupRaid();if(id==='base-defense'||o.defense){this.objectiveDamageable=true;this.objectiveHp=this.objectiveMax=1800;this.defenseWave=0;this.deployDefense();}
  if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
  }
  spawnWave(){}
- deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8]].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:a.role});}
+ setupRaid(){const o=this.operation;this.hazards=[];this.nextHazard=6;this.objectiveDamageable=false;this.nodes=o.route.map(p=>p.slice());this.extracting=false;
+  const [a,b,c]=o.offsets;this.deploy('raider',o.x+a[0],o.z+a[1],'flanker');this.deploy(o.layout==='ash-approach'?'sentinel':'command',o.x+b[0],o.z+b[1],'support');
+  if(o.family==='sabotage'||o.family==='battery'){for(let i=0;i<(o.family==='battery'?2:1);i++){this.deploy('command',o.x+(i?22:0),o.z+(i?-12:0),'battery:'+i);const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=o.family==='battery'?240:360;e.objectiveTarget=true;}this.relayId=this.enemies.at(-1).id;}
+  if(o.family==='intercept'){this.deploy('command',o.x+c[0],o.z+c[1],'carrier');const e=this.enemies.at(-1);e.hp=e.maxHp=420;this.carrierId=e.id;this.escapeStart={x:e.x,z:e.z};}
+  if(o.family!=='siege')this.deployCommander();
+ }
+ deployCommander(){const o=this.operation;this.deploy(o.commander==='ambush'?'raider':o.commander==='carrier'?'command':'sentinel',o.x+12,o.z-38,'commander');const e=this.enemies.at(-1);e.commander=true;e.pattern=o.commander;e.hp=e.maxHp=o.commander==='ambush'?460:680;e.nextPattern=this.time+4;e.drones=0;this.commanderId=e.id;}
+ defenseStep(dt){if(this.defenseConfig==='drone')this.objectiveHp=Math.min(this.objectiveMax,this.objectiveHp+12*dt);if(this.defenseConfig!=='turret')return;this.turretClock=(this.turretClock||0)-dt;if(this.turretClock>0)return;this.turretClock=.6;const from={x:this.operation.x,y:W.groundAt(this.operation.x,this.operation.z)+6,z:this.operation.z},e=this.enemies.find(e=>!e.resident&&e.hp>0&&Math.hypot(e.x-from.x,e.z-from.z)<65&&lineClear(from,center(e)));if(!e)return;const damage=18+3*(this.baseTier||0);e.hp=Math.max(0,e.hp-damage);this.effects.push({kind:'beam',weapon:'pulse',x:from.x,y:from.y,z:from.z,ex:e.x,ey:e.y+2.2,ez:e.z,life:.15});if(!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
+ deployDefense(){this.defenseWave++;for(let i=0;i<3;i++){this.deploy(i===2?'breacher':'raider',this.operation.x-30+i*20,this.operation.z-40,'defense:'+this.defenseWave+':'+i);this.enemies.at(-1).role=i===2?'facility':'player';}this.objectiveDamageable=true;}
+ hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
+  for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;e.nextPattern=this.time+(e.pattern==='artillery'?6:8);e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<2&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);this.enemies.at(-1).drone=true;e.drones++;}}}
+  if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+11;this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
+ }
+ markStrike(kind,x,z,source){if(this.hazards.length>=8)return;this.hazards.push({kind,x,z,y:W.groundAt(x,z),radius:kind==='plasma'?9:6,remaining:kind==='drone'?2.6:2.2,damage:kind==='plasma'?75:55,source});}
+ raidStep(dt){const o=this.operation,living=this.enemies.filter(e=>e.hp>0&&!e.resident),d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z);
+  if(o.family==='intercept'){const c=this.enemies.find(e=>e.id===this.carrierId);if(c.hp>0&&Math.hypot(c.x-this.escapeStart.x,c.z-this.escapeStart.z)>120){this.state='defeat';this.reason='Armored carrier escaped with the telemetry';return;}if(!living.length&&d<12)this.work+=dt;if(this.work>=3)this.state='victory';}
+  if(o.family==='sabotage'){if(!living.length&&d<12)this.work+=dt;else this.work=0;this.stage=this.enemies.filter(e=>e.objectiveTarget&&e.hp<=0).length;if(this.work>=6)this.state='victory';}
+  if(o.family==='battery'||o.family==='extraction'){const count=o.family==='battery'?2:3;if(!living.length){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<10){this.work+=dt;if(this.work>=2){this.scans++;this.work=0;}}if(this.scans>=count&&(o.family==='battery'||d<12))this.state='victory';}this.stage=this.scans;}
+  if(o.family==='siege'){if(!living.length&&this.stage===0){this.stage=1;this.deployCommander();}else if(!living.length&&this.stage===1&&d<14){this.work+=dt;if(this.work>=5){this.stage=2;this.state='victory';}}}
+ }
+ deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8],...Array.from({length:32},(_,i)=>[Math.cos(i*Math.PI/8)*(16+Math.floor(i/16)*8),Math.sin(i*Math.PI/8)*(16+Math.floor(i/16)*8)])].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:a.role});}
  choose(e){
- if(e.id===this.carrierId){const q=W.advance(e,0,-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
+ if(e.id===this.carrierId){const q=W.advance(e,0,this.operation.raid?-1.5:-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
  if(e.immobile){e.vx=e.vz=0;e.target=this.player;return;}
- const objective=this.objective;if(this.operation.id!=='rescue')this.objective=this.player;super.choose(e);this.objective=objective;
+ const objective=this.objective;if(this.operation.id!=='rescue'&&this.operation.family!=='base-defense'&&!this.operation.defense)this.objective=this.player;super.choose(e);this.objective=objective;
+ if(e.pattern==='shield'){e.shielded=this.time%8<3;e.telegraph=e.shielded;if(e.shielded)e.vx=e.vz=0;return;}
  // The commander pauses before each aimed salvo: visible, avoidable attack tell.
+ if(e.pattern==='ambush'){const cycle=this.time%8;if(cycle<2){e.vx=e.vz=0;e.cd=Math.max(e.cd,.3);e.telegraph=true;}else if(cycle<3){const a=Math.atan2(this.player.x-e.x,this.player.z-e.z)+.7;e.vx=Math.sin(a)*6;e.vz=Math.cos(a)*6;}return;}
  if(e.commander&&this.time%6<1.5){e.vx=e.vz=0;e.cd=Math.max(e.cd,.4);e.telegraph=true;}else e.telegraph=false;
  }
- step(dt,fire){super.step(dt,fire);if(this.state!=='active')return;const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(o.id)&&e.base?.id===o.site)));
+ step(dt,fire){if(this.operation.family==='base-defense')this.defenseStep(dt);super.step(dt,fire);if(this.state!=='active')return;this.hazardStep(dt);if(this.playerHp<=0){this.state='defeat';this.reason='War Machine disabled by a telegraphed strike';return;}const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(o.id)&&e.base?.id===o.site)));
+ if(o.raid)this.raidStep(dt);if((o.family==='base-defense'||o.defense)&&!living.some(e=>!e.resident)){if(this.defenseWave<2)this.deployDefense();else this.state='victory';}
  if(o.id==='convoy'){const c=this.enemies.find(e=>e.id===this.carrierId);this.stage=c.hp<=0?1:0;if(c.hp>0&&c.z<o.z-135){this.state='defeat';this.reason='Armored carrier escaped';}else if(!living.length)this.state='victory';}
  if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&!living.length&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
  if(o.id==='recon'){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<9){this.work+=dt;if(this.work>=3){this.scans++;this.work=0;}}this.stage=this.scans;if(this.scans===3)this.state='victory';}
@@ -202,5 +246,5 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({spawnIds,operations,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({spawnIds,operations,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

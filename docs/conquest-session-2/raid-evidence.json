@@ -1,0 +1,733 @@
+{
+  "source": "accelerated authoritative command replay; canonical Legendary gear fixture; initial position placed at each authored entry; subsequent movement/combat/objectives and settlement server-simulated",
+  "results": [
+    {
+      "id": "raid-intercept-1",
+      "family": "intercept",
+      "layout": "dust-switchback",
+      "commander": "ambush",
+      "outcome": "victory",
+      "seconds": 27.25,
+      "hp": 2608.6127029477175,
+      "kills": 4,
+      "stage": 0,
+      "scans": 0,
+      "position": {
+        "x": 908.0198757233024,
+        "z": 926.318669152532,
+        "y": -0.006346763804214553,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 60,
+        "cp": 180,
+        "alloy": 18,
+        "biomass": 12,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-intercept-2",
+      "family": "intercept",
+      "layout": "basin-crescent",
+      "commander": "ambush",
+      "outcome": "victory",
+      "seconds": 15.7,
+      "hp": 2650.4980500000006,
+      "kills": 4,
+      "stage": 0,
+      "scans": 0,
+      "position": {
+        "x": 1071.1210580623651,
+        "z": 845.442330429129,
+        "y": -10.826556068096238,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 66,
+        "cp": 200,
+        "alloy": 20,
+        "biomass": 12,
+        "helium": 4,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-intercept-3",
+      "family": "intercept",
+      "layout": "ash-approach",
+      "commander": "ambush",
+      "outcome": "victory",
+      "seconds": 26.55,
+      "hp": 1951.0284900000015,
+      "kills": 4,
+      "stage": 0,
+      "scans": 0,
+      "position": {
+        "x": 1263.0810301827357,
+        "z": 842.4824717098327,
+        "y": -72.21725325737656,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 73,
+        "cp": 220,
+        "alloy": 22,
+        "biomass": 12,
+        "helium": 5,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-intercept-4",
+      "family": "intercept",
+      "layout": "spear-flank",
+      "commander": "ambush",
+      "outcome": "victory",
+      "seconds": 46.9,
+      "hp": 2418.1336499999948,
+      "kills": 4,
+      "stage": 0,
+      "scans": 0,
+      "position": {
+        "x": 1322.23752852023,
+        "z": 1006.9006498925878,
+        "y": -61.390049678051966,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 80,
+        "cp": 240,
+        "alloy": 24,
+        "biomass": 12,
+        "helium": 6,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-intercept-5",
+      "family": "intercept",
+      "layout": "ridge-hook",
+      "commander": "ambush",
+      "outcome": "victory",
+      "seconds": 17,
+      "hp": 2833.829899999999,
+      "kills": 4,
+      "stage": 0,
+      "scans": 0,
+      "position": {
+        "x": 1292.6434320040635,
+        "z": 1207.03090597865,
+        "y": -187.1970934738966,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 86,
+        "cp": 260,
+        "alloy": 26,
+        "biomass": 12,
+        "helium": 7,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-sabotage-1",
+      "family": "sabotage",
+      "layout": "dust-switchback",
+      "commander": "shield",
+      "outcome": "victory",
+      "seconds": 36.75,
+      "hp": 2200.658205895432,
+      "kills": 4,
+      "stage": 1,
+      "scans": 0,
+      "position": {
+        "x": 916.1908269231205,
+        "z": 931.7532365989925,
+        "y": -0.017983980096564108,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 65,
+        "cp": 195,
+        "alloy": 18,
+        "biomass": 13,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-sabotage-2",
+      "family": "sabotage",
+      "layout": "basin-crescent",
+      "commander": "shield",
+      "outcome": "victory",
+      "seconds": 28.35,
+      "hp": 2290.7699999999995,
+      "kills": 4,
+      "stage": 1,
+      "scans": 0,
+      "position": {
+        "x": 1078.264745264829,
+        "z": 853.2862665747137,
+        "y": -7.42091496637116,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 71,
+        "cp": 215,
+        "alloy": 20,
+        "biomass": 13,
+        "helium": 4,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-sabotage-3",
+      "family": "sabotage",
+      "layout": "ash-approach",
+      "commander": "shield",
+      "outcome": "victory",
+      "seconds": 25.75,
+      "hp": 1382.71505,
+      "kills": 4,
+      "stage": 1,
+      "scans": 0,
+      "position": {
+        "x": 1266.468372406171,
+        "z": 847.1440273802743,
+        "y": -72.07546061071274,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 78,
+        "cp": 235,
+        "alloy": 22,
+        "biomass": 13,
+        "helium": 5,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-sabotage-4",
+      "family": "sabotage",
+      "layout": "spear-flank",
+      "commander": "shield",
+      "outcome": "victory",
+      "seconds": 27.05,
+      "hp": 2408.6116500000003,
+      "kills": 4,
+      "stage": 1,
+      "scans": 0,
+      "position": {
+        "x": 1324.9096686341047,
+        "z": 1010.6868268461753,
+        "y": -65.70136375363386,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 85,
+        "cp": 255,
+        "alloy": 24,
+        "biomass": 13,
+        "helium": 6,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-sabotage-5",
+      "family": "sabotage",
+      "layout": "ridge-hook",
+      "commander": "shield",
+      "outcome": "victory",
+      "seconds": 15.15,
+      "hp": 2747.9823999999994,
+      "kills": 4,
+      "stage": 1,
+      "scans": 0,
+      "position": {
+        "x": 1295.0585428389898,
+        "z": 1210.6065194131083,
+        "y": -194.1192331400401,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 91,
+        "cp": 275,
+        "alloy": 26,
+        "biomass": 13,
+        "helium": 7,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-battery-1",
+      "family": "battery",
+      "layout": "dust-switchback",
+      "commander": "artillery",
+      "outcome": "victory",
+      "seconds": 49.85,
+      "hp": 1990.8027175621035,
+      "kills": 5,
+      "stage": 2,
+      "scans": 2,
+      "position": {
+        "x": 932.8739667967225,
+        "z": 918.27338078088,
+        "y": -0.11898495064305303,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 70,
+        "cp": 210,
+        "alloy": 18,
+        "biomass": 14,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-battery-2",
+      "family": "battery",
+      "layout": "basin-crescent",
+      "commander": "artillery",
+      "outcome": "victory",
+      "seconds": 24.65,
+      "hp": 2491.9325999999996,
+      "kills": 5,
+      "stage": 2,
+      "scans": 2,
+      "position": {
+        "x": 1084.258708420836,
+        "z": 837.2296085501857,
+        "y": -13.793487431731375,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 76,
+        "cp": 230,
+        "alloy": 20,
+        "biomass": 14,
+        "helium": 4,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-battery-3",
+      "family": "battery",
+      "layout": "ash-approach",
+      "commander": "artillery",
+      "outcome": "victory",
+      "seconds": 32.75,
+      "hp": 2051.5434163843693,
+      "kills": 5,
+      "stage": 2,
+      "scans": 2,
+      "position": {
+        "x": 1282.0886837662322,
+        "z": 829.8431457436594,
+        "y": -87.44941992756154,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 83,
+        "cp": 250,
+        "alloy": 22,
+        "biomass": 14,
+        "helium": 5,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-battery-4",
+      "family": "battery",
+      "layout": "spear-flank",
+      "commander": "artillery",
+      "outcome": "victory",
+      "seconds": 33.5,
+      "hp": 2205.8815999999993,
+      "kills": 5,
+      "stage": 2,
+      "scans": 2,
+      "position": {
+        "x": 1341.205335501777,
+        "z": 995.7737184892907,
+        "y": -72.26714997203116,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 90,
+        "cp": 270,
+        "alloy": 24,
+        "biomass": 14,
+        "helium": 6,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-battery-5",
+      "family": "battery",
+      "layout": "ridge-hook",
+      "commander": "artillery",
+      "outcome": "victory",
+      "seconds": 21.1,
+      "hp": 2390.8498999999997,
+      "kills": 5,
+      "stage": 2,
+      "scans": 2,
+      "position": {
+        "x": 1307.1462193695406,
+        "z": 1198.5383558166427,
+        "y": -192.9943882333767,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 96,
+        "cp": 290,
+        "alloy": 26,
+        "biomass": 14,
+        "helium": 7,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-extraction-1",
+      "family": "extraction",
+      "layout": "dust-switchback",
+      "commander": "carrier",
+      "outcome": "victory",
+      "seconds": 61,
+      "hp": 1955.113800885615,
+      "kills": 5,
+      "stage": 3,
+      "scans": 3,
+      "position": {
+        "x": 930.8781405072555,
+        "z": 943.6796370612825,
+        "y": -0.09674750821909328,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 75,
+        "cp": 225,
+        "alloy": 18,
+        "biomass": 15,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-extraction-2",
+      "family": "extraction",
+      "layout": "basin-crescent",
+      "commander": "carrier",
+      "outcome": "victory",
+      "seconds": 44.3,
+      "hp": 2423.419543514455,
+      "kills": 5,
+      "stage": 3,
+      "scans": 3,
+      "position": {
+        "x": 1090.8241110642382,
+        "z": 864.0006917212686,
+        "y": -3.7893265439193686,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 81,
+        "cp": 245,
+        "alloy": 20,
+        "biomass": 15,
+        "helium": 4,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-extraction-3",
+      "family": "extraction",
+      "layout": "ash-approach",
+      "commander": "carrier",
+      "outcome": "victory",
+      "seconds": 41.85,
+      "hp": 2013.7197027892992,
+      "kills": 4,
+      "stage": 3,
+      "scans": 3,
+      "position": {
+        "x": 1280.8513470655853,
+        "z": 855.3765809230683,
+        "y": -77.08862357272582,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 88,
+        "cp": 265,
+        "alloy": 22,
+        "biomass": 15,
+        "helium": 5,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-extraction-4",
+      "family": "extraction",
+      "layout": "spear-flank",
+      "commander": "carrier",
+      "outcome": "victory",
+      "seconds": 56.25,
+      "hp": 2522.4586960784286,
+      "kills": 4,
+      "stage": 3,
+      "scans": 3,
+      "position": {
+        "x": 1340.9131865239167,
+        "z": 1022.8442970704297,
+        "y": -88.31907625138913,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 95,
+        "cp": 285,
+        "alloy": 24,
+        "biomass": 15,
+        "helium": 6,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-extraction-5",
+      "family": "extraction",
+      "layout": "ridge-hook",
+      "commander": "carrier",
+      "outcome": "victory",
+      "seconds": 27.7,
+      "hp": 2789.1754,
+      "kills": 4,
+      "stage": 3,
+      "scans": 3,
+      "position": {
+        "x": 1310.8844746798063,
+        "z": 1220.616799624655,
+        "y": -219.9392302179516,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 101,
+        "cp": 305,
+        "alloy": 26,
+        "biomass": 15,
+        "helium": 7,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-siege-1",
+      "family": "siege",
+      "layout": "dust-switchback",
+      "commander": "plasma",
+      "outcome": "victory",
+      "seconds": 29.6,
+      "hp": 2572.152,
+      "kills": 3,
+      "stage": 2,
+      "scans": 0,
+      "position": {
+        "x": 929.8290130737305,
+        "z": 940.0264882048995,
+        "y": -0.0869904674914839,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 80,
+        "cp": 240,
+        "alloy": 18,
+        "biomass": 16,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-siege-2",
+      "family": "siege",
+      "layout": "basin-crescent",
+      "commander": "plasma",
+      "outcome": "victory",
+      "seconds": 29.35,
+      "hp": 2757.8171999999995,
+      "kills": 3,
+      "stage": 2,
+      "scans": 0,
+      "position": {
+        "x": 1090.2550367868969,
+        "z": 862.6540527178631,
+        "y": -4.181092442061717,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 86,
+        "cp": 260,
+        "alloy": 20,
+        "biomass": 16,
+        "helium": 4,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-siege-3",
+      "family": "siege",
+      "layout": "ash-approach",
+      "commander": "plasma",
+      "outcome": "victory",
+      "seconds": 30.35,
+      "hp": 2216.3372274999992,
+      "kills": 3,
+      "stage": 2,
+      "scans": 0,
+      "position": {
+        "x": 1285.0405387810777,
+        "z": 858.834753683046,
+        "y": -78.12969501953643,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 93,
+        "cp": 280,
+        "alloy": 22,
+        "biomass": 16,
+        "helium": 5,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-siege-4",
+      "family": "siege",
+      "layout": "spear-flank",
+      "commander": "plasma",
+      "outcome": "victory",
+      "seconds": 22.6,
+      "hp": 2686.7150000000006,
+      "kills": 3,
+      "stage": 2,
+      "scans": 0,
+      "position": {
+        "x": 1335.4271496100591,
+        "z": 1024.0803827997433,
+        "y": -83.31548201377693,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 100,
+        "cp": 300,
+        "alloy": 24,
+        "biomass": 16,
+        "helium": 6,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      }
+    },
+    {
+      "id": "raid-siege-5",
+      "family": "siege",
+      "layout": "ridge-hook",
+      "commander": "plasma",
+      "outcome": "victory",
+      "seconds": 17.45,
+      "hp": 2785.9956500000003,
+      "kills": 3,
+      "stage": 2,
+      "scans": 0,
+      "position": {
+        "x": 1305.4876918461916,
+        "z": 1222.3669965046438,
+        "y": -216.93689637823516,
+        "surface": "ground"
+      },
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 106,
+        "cp": 320,
+        "alloy": 26,
+        "biomass": 16,
+        "helium": 7,
+        "shards": 1,
+        "eliteBlueprint": true,
+        "rareChance": 0.035
+      }
+    }
+  ],
+  "test": "node dev/tests/conquest-raids.mjs",
+  "coverLayouts": 5,
+  "authoredCoverObjects": 9
+}
