@@ -97,23 +97,23 @@ function engineeringCards(d,s){
 }
 function Bactive(v){return v.battle?.state==='active';}
 function guidance(){
- if(!view)return;const m=view.battle?.operation||view.routeTarget||root.ConquestCombat?.mission,nav=panel.querySelector('#cq-navigation');if(!m||!nav)return;
- const p=view.p,distance=Math.hypot(p.x-m.x,p.z-m.z),completed=view.progress?.completed(m.id),active=view.battle?.state==='active';let target=m,route='Follow the gold mission beacon';
+ if(!view)return;const m=view.battle?.operation||view.routeTarget||view.nearOperation||root.ConquestCombat?.mission,nav=panel.querySelector('#cq-navigation');if(!m||!nav)return;
+ const p=view.p,distance=Math.hypot(p.x-m.x,p.z-m.z),completed=!!view.authority?.state?.completed?.[m.id]||view.progress?.completed(m.id),active=view.battle?.state==='active',radius=m.activationRadius||m.radius||45,isBase=m.name==='PERSONAL COMMAND BASE';let target=m,route=isBase?'Approach the Command Base through its open gate':'Follow the objective beacon';
  // The viaduct's only upper entrances are its east/west ramps. Never point through a deck rail.
  if(p.surface==='bridge'&&p.x<1140||distance>150&&p.x<1136){
   if(p.x<900){target={x:898,z:1024};route='VIADUCT WEST RAMP · cross east to oxygen';}
   else if(p.surface==='bridge'){target={x:1140,z:1024};route='VIADUCT EAST EXIT · stay on the deck';}
   else{target={x:p.x<1024?898:1144,z:1024};route='Use the marked east/west bridge ramp';}
  }else if(p.z>1066&&p.x>1125&&p.x<1230){target={x:1240,z:p.z};route='Towers block direct travel · circle east, then north to Z1048';}
- if(distance<=(m.activationRadius||45)&&!active)route=(target!==m?route+' · ':'')+'IN RANGE · START DEFENSE for briefing';
- if(active)route=view.battle.time<view.battle.approachGrace?'RADIO · Oxygen blast shutters holding · close on the facility':'Defend the processor · engage deployed Parasite armor';
+ if(distance<=radius&&!active)route=(target!==m?route+' · ':'')+(isBase?'BASE TERMINAL IN RANGE':'IN RANGE · ACT for mission briefing');
+ if(active)route=view.battle.operation?view.battle.operation.brief:view.battle.time<view.battle.approachGrace?'RADIO · Oxygen blast shutters holding · close on the facility':'Defend the processor · engage deployed Parasite armor';
  if(view.encounter?.state==='defeat'&&!Bactive(view))route='MACHINE DISABLED · respawn at Refuge, then retrieve your wreck';
- if(completed&&!active)route='OXYGEN SECURED · personal completion · replay available';
+ if(completed&&!active)route='SITE SECURED · choose another contract or return here for a replay';
  if(view.blocked&&!active)route='Obstacle ahead · circle towers or use bridge ramps';
  const dx=target.x-p.x,dz=target.z-p.z,right=Math.cos(view.yaw)*dx-Math.sin(view.yaw)*dz,forward=-Math.sin(view.yaw)*dx-Math.cos(view.yaw)*dz;
  nav.querySelector('.cq-nav-arrow').style.transform='rotate('+Math.atan2(right,forward)+'rad)';
  nav.querySelector('.cq-nav-title').textContent=(completed&&!active?'✓ ':'')+m.name;
- nav.querySelector('.cq-nav-distance').textContent=Math.round(distance)+' m · '+(active?'DEFENSE ACTIVE':completed?'SECURED':distance<=150?'BRIEFING AVAILABLE':'OXYGEN FACILITY');
+ nav.querySelector('.cq-nav-distance').textContent=Math.round(distance)+' m · '+(active?'OPERATION ACTIVE':completed?'SECURED':distance<=radius?isBase?'BASE TERMINAL':'BRIEFING AVAILABLE':isBase?'COMMAND BASE':'OBJECTIVE');
  nav.querySelector('.cq-nav-route').textContent=route;
 }
 function operationProgress(B){const id=B.operation.id,alive=B.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(id)&&e.base?.id===B.operation.site)));
@@ -131,7 +131,7 @@ function combatHUD(){if(!view)return;guidance();const B=view.battle||view.encoun
  net.textContent=view.authority?(view.authority.connected?view.authority.busy?'PENDING VERIFICATION':'':'ONLINE REQUIRED FOR SECURE REWARDS'):'PRACTICE · ONLINE REQUIRED FOR SECURE REWARDS';
  const v=root.ConquestCombat.engineeringValues(B.playerStats,B.engineering);const meter=panel.querySelector('#cq-heat');const percent=Math.max(0,Math.min(100,(B.heat||0)/v.capacity*100));meter.querySelector('.cq-heat-fill').style.transform='scaleX('+percent/100+')';meter.querySelector('.cq-heat-label').textContent=(B.overheated?'VENTING ':'HEAT ')+Math.round(percent)+'%';meter.classList.toggle('cq-hot',!!B.overheated||percent>=80);meter.classList.toggle('cq-warm',percent>=60&&percent<80);meter.setAttribute('aria-valuenow',Math.round(percent));meter.setAttribute('aria-valuetext',(B.overheated?'Venting · ':'')+Math.round(percent)+' percent');const ready={fire:1-Math.max(0,B.cooldown)/(B.playerStats.wshot/rofMult(B.playerStats)),super:(B.charge||0)/1000,dash:1-(B.dashCd||0)/v.dashCooldown,shield:B.shieldT>0?B.shieldT/v.shieldDuration:1-(B.shieldCd||0)/v.shieldCooldown};
  for(const key of ['fire','super','dash','shield']){const b=panel.querySelector('#cq-'+key),value=b.querySelector('small');b.hidden=false;b.disabled=B.playerHp<=0||!!view.authority&&!view.authority.connected;b.style.setProperty('--charge',Math.max(0,Math.min(1,ready[key]))*100+'%');b.classList.toggle('cq-active',key==='shield'&&B.shieldT>0);value.textContent=key==='fire'&&B.overheated?'OVERHEATED':key==='super'?(ready.super>=1?'READY':Math.floor(ready.super*100)+'%'):key==='shield'&&B.shieldT>0?'ACTIVE '+B.shieldT.toFixed(1):key==='dash'&&B.dashCd>0?B.dashCd.toFixed(1):key==='shield'&&B.shieldCd>0?Math.ceil(B.shieldCd)+'s':key==='fire'&&B.cooldown>0?B.cooldown.toFixed(1):'';}
- const operations=Object.values(root.ConquestCombat.operations),nearest=operations.filter(o=>Math.hypot(view.p.x-o.x,view.p.z-o.z)<=o.activationRadius).sort((a,b)=>Math.hypot(view.p.x-a.x,view.p.z-a.z)-Math.hypot(view.p.x-b.x,view.p.z-b.z))[0];view.nearOperation=nearest;const claim=state?.missionClaims?.[nearest?.id],contractWait=claim?Math.max(0,180000-Date.now()+(claim.lastAt||claim.firstAt)):0;const access=panel.querySelector('#cq-mission-access');access.hidden=!!view.battle||B.playerHp<=0||!nearest;access.disabled=contractWait>0;access.textContent=contractWait?'CONTRACT RESET · '+Math.ceil(contractWait/1000)+'s':nearest?.id==='oxygen-line'?state?.completed?.['oxygen-line']?'REPLAY DEFENSE':'START DEFENSE':'ACT · '+(nearest?.name||'OPERATION');
+ const operations=Object.values(root.ConquestCombat.operations),nearest=operations.filter(o=>Math.hypot(view.p.x-o.x,view.p.z-o.z)<=o.activationRadius).sort((a,b)=>Math.hypot(view.p.x-a.x,view.p.z-a.z)-Math.hypot(view.p.x-b.x,view.p.z-b.z))[0];view.nearOperation=nearest;const claim=state?.missionClaims?.[nearest?.id],contractWait=claim?Math.max(0,180000-Date.now()+(claim.lastAt||claim.firstAt)):0;const access=panel.querySelector('#cq-mission-access');access.hidden=!!view.battle||B.playerHp<=0||!nearest;access.disabled=contractWait>0;access.textContent=contractWait?'CONTRACT RESET · '+Math.ceil(contractWait/1000)+'s':nearest?.id==='oxygen-line'?state?.completed?.['oxygen-line']?'REPLAY DEFENSE':'START DEFENSE':'ACT · '+(nearest?.name||'OPERATION');if(nearest)access.setAttribute('aria-label',access.textContent+' — '+nearest.name);
  const D=root.ConquestCombat.baseDefinition;panel.querySelector('#cq-base-access').hidden=!!view.battle||Math.hypot(view.p.x-D.x,view.p.z-D.z)>D.radius;panel.querySelector('.cq-base-goal').textContent=baseProgress(state);
  panel.querySelector('#cq-supply-access').hidden=!!view.battle||Math.hypot(view.p.x-1174,view.p.z-1168)>12;
  panel.querySelector('#cq-recover').hidden=B.playerHp<=0||B.state!=='active'||((state?.stuckMs||view.stuckSeconds*1000||0)<1500);
@@ -175,6 +175,8 @@ function map(v){if(panel.querySelector('.cq-dialog'))return;mapOpen=true;if(view
  if(v?.authority?.state?.mission==='convoy'){const a=W.mapPoint(1090,944),b=W.mapPoint(1090,809);ctx.beginPath();ctx.moveTo(40+px+a.u*280*scale,py+a.v*420*scale);ctx.lineTo(40+px+b.u*280*scale,py+b.v*420*scale);ctx.strokeStyle='#e6b36c';ctx.lineWidth=2;ctx.stroke();}
  if(mission)marker(mission,root.ConquestProgress.create().completed(mission.id)?'✓':'◆','#f1cd7e');
  for(const site of root.ConquestCombat?.installations||[])if(discovery.has(site.x,site.z))marker(site,v?.authority?.state?.territory?.[site.id]?.owner==='humanity'?'⚑':'▲',v?.authority?.state?.territory?.[site.id]?.owner==='humanity'?'#82e8ce':'#ff7972');
+ for(const o of Object.values(root.ConquestCombat?.operations||{})){if(o.id==='oxygen-line'||root.ConquestCombat.installations.some(site=>site.id===o.site))continue;const secured=v?.authority?.state?.territory?.[o.site]?.owner==='humanity';marker(o,secured?'⚑':'◆',secured?'#82e8ce':'#f1cd7e');}
+ const base=root.ConquestCombat?.baseDefinition;if(base)marker({...base,name:'COMMAND BASE '+(v?.authority?.state?.base?.tier||'SITE')},'⌂','#79dce8');
  for(const wreck of v?.authority?.state?.wrecks||[])if(discovery.has(wreck.x,wreck.z))marker({...wreck,name:'PERSONAL WRECK'},'◇','#8ee6ef');
  if(discovery.has(1174,1168))marker({x:1174,z:1168,name:'REFUGE SUPPLY'},'●','#79dce8');
 

@@ -6,7 +6,7 @@ import {hex} from './db.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState} from './conquest-sim.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
-function publicState(s){const {lastDigest,rate,...out}=s;return out;}
+function publicState(s){const {lastDigest,rate,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
 async function transaction(env,pid,fn,now){
  const path='conquest/'+pid;
  for(let i=0;i<8;i++){const {v,tag}=await readTag(env,path);const s=v?structuredClone(v):null;const r=await fn(s);if(r.abort)return r;

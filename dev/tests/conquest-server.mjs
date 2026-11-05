@@ -1,6 +1,6 @@
 // Local-only browser harness: real Worker/auth/CAS/reducer, disposable Firebase emulator.
 import http from 'node:http';import {readFileSync} from 'node:fs';import {createHmac} from 'node:crypto';import {makeDB} from './wtest/fakedb.mjs';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
-const db=makeDB(),env={BOT_TOKEN:'conquest-browser-only',FIREBASE_DB_SECRET:'SECRET'},pid='tg_8301';
+const db=makeDB({pruneEmptyUnder:['conquest']}),env={BOT_TOKEN:'conquest-browser-only',FIREBASE_DB_SECRET:'SECRET'},pid='tg_8301';
 globalThis.fetch=async(u,i)=>{if(String(u).includes('warmachines-a6034-default-rtdb.firebaseio.com'))return db.handle(u,i);throw Error('test harness external fetch blocked');};
 const {default:worker}=await import('../../worker/src/index.js');const {createState}=await import('../../worker/src/conquest-sim.js');const {CONQUEST:C,RULES:R}=await import('../../worker/src/sim.gen.js');
 // Optional continuation of the *earned* reducer journey in this disposable local DB.
@@ -16,4 +16,4 @@ const server=http.createServer(async(req,res)=>{try{let raw='';for await(const c
  }if(req.url==='/inspect'){res.end(JSON.stringify({state:db.get('conquest/'+pid),measurements}));return;}
  const t=performance.now(),r=await worker.fetch(new Request('https://test'+req.url,{method:'POST',headers:{'Content-Type':'application/json'},body:raw}),env);const text=await r.text();measurements.push({path:req.url,ms:performance.now()-t,bytes:Buffer.byteLength(text),status:r.status});if(measurements.length>1000)measurements.shift();res.writeHead(r.status,{'Content-Type':'application/json'});res.end(text);
  }catch(e){res.writeHead(500);res.end(JSON.stringify({error:String(e.stack)}));}});
-server.listen(0,'127.0.0.1',()=>process.stdout.write(JSON.stringify({port:server.address().port,initData})+'\n'));
+server.listen(0,'127.0.0.1',()=>process.stdout.write(JSON.stringify({port:server.address().port,initData,serverTime:Date.now()})+'\n'));

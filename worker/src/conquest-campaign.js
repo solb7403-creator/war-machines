@@ -6,6 +6,8 @@ export function campaign(s,now){
  s.campaignVersion=1;s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
  const ids=Object.keys(CONQUEST.Combat.operations),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
  s.base=s.base||{tier:0,modules:{},builtAt:0,claimedAt:0};
+ // Firebase drops empty maps: reconstruct this even when the base record already exists.
+ s.base.modules=s.base.modules||{};
  const radar=s.base.modules.radar||0;s.radarContacts=radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<120+radar*100).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
  if(s.base.pending&&now>=s.base.pending.readyAt){const p=s.base.pending;s.base.modules[p.module]=p.tier;delete s.base.pending;}
 }

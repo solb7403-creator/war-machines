@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/build-sim.mjs';
-buildSim();const db=makeDB();
+buildSim();const db=makeDB({pruneEmptyUnder:['conquest']});
 globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/'))return db.handle(url,init);throw Error('Unexpected external request');};
 const {default:worker}=await import('../../../worker/src/index.js');
 const env={BOT_TOKEN:'conquest-test',FIREBASE_DB_SECRET:'SECRET'};
@@ -11,12 +11,14 @@ async function call(id,path,body={}){const r=await worker.fetch(new Request('htt
 assert.equal((await call(null,'/api/conquest/session')).status,401);
 await call(8101,'/api/sync');await call(8102,'/api/sync');
 let r=await call(8101,'/api/conquest/session');assert.equal(r.status,200);assert(r.state,'authenticated server state created');
+assert.equal(db.get('conquest/tg_8101').base.modules,undefined,'Firebase omits the empty module map');assert.equal((await call(8101,'/api/conquest/session')).status,200,'next authenticated request hydrates the persisted Firebase shape');
 const start=structuredClone(r.state),protectedBefore=structuredClone(db.get('eco/tg_8101'));
 assert.equal((await call(8101,'/api/conquest/input',{seq:1,commands:[{x:102,z:0}]})).status,400);
 assert.equal((await call(8101,'/api/conquest/input',{seq:1,commands:[{x:1,z:0}]})).status,409,'no elapsed budget');
 now+=100;
 const body={seq:1,commands:[{x:1,z:0}]};const both=await Promise.all([call(8101,'/api/conquest/input',body),call(8101,'/api/conquest/input',body)]);
 assert(both.every(x=>x.status===200));assert.equal(both[0].state.seq,1);assert.equal(both[1].state.position.x,both[0].state.position.x,'lost reply/concurrent retry never repeats movement');
+assert(both.every(x=>x.state.base.modules&&typeof x.state.base.modules==='object'),'a cached Firebase replay must restore the public empty module map too');
 r=await call(8101,'/api/conquest/input',{seq:1,commands:[{x:-1,z:0}]});assert.equal(r.status,409,'same sequence changed payload rejected');
 assert.equal((await call(8101,'/api/conquest/input',{seq:2,commands:[{x:0,z:0}],hp:999999})).status,400);
 assert.equal((await call(8101,'/api/conquest/input',{...body,pid:'tg_8102'})).status,400);
