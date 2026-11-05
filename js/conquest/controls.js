@@ -16,7 +16,7 @@ function aim(B,p,input,dt){
  const pitch=B.lockId!==null?Math.atan2(locked.y-p.y,Math.hypot(locked.x-p.x,locked.z-p.z)):input.aimPitch||0;
  return {x:p.x+Math.sin(B.turretYaw)*160,y:p.y+2.2+Math.tan(clamp(pitch,-1.2,1.2))*160,z:p.z+Math.cos(B.turretYaw)*160};
 }
-function hurt(B,e,amount){const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
+function hurt(B,e,amount){B.alert?.(e);const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
 function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
 function fireSuper(B,s){
  const raw=SUP[s.weapon],spec={...raw};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);

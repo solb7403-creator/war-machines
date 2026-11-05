@@ -13,3 +13,12 @@ console.log('PASS mission activation never spawns an overlapping hostile hull');
 for(const id of ['west-depot','crossroads']){const site=C.installations.find(s=>s.id===id);assert(W.solidAt(site.x,site.z+8),'new bunker shares real movement collision');assert(W.blockedAt(site.x,W.groundAt(site.x,site.z)+4,site.z+8),'new bunker blocks real fire');}
 const far=W.horizon(994,944,2);assert(far.positions.some((v,i)=>i%3===0&&v===1280&&far.positions[i+2]===896),'mobile horizon fills the gap beyond detailed terrain');
 console.log('PASS added installation collision and continuous mobile horizon');
+let decisions=0;class Staggered extends C.Encounter{choose(e){decisions++;return super.choose(e);}}
+const theater=new Staggered(R.STOCK_L,{x:994,z:980,y:W.groundAt(994,980),surface:'ground'});theater.tick(1/60,{x:994,z:980,y:W.groundAt(994,980),surface:'ground'},{});
+assert(decisions<=2,'nearby AI decisions must not all spike on the same frame');
+for(let i=0;i<30;i++)theater.tick(1/60,{x:994,z:980,y:W.groundAt(994,980),surface:'ground'},{});assert(decisions>=6,'staggering retains real AI activity');
+console.log('PASS staggered real AI decisions without disabling nearby encounters');
+const radio=new C.Encounter(R.STOCK_L,{x:994,z:1010,y:W.groundAt(994,1010),surface:'ground'}),guard=radio.enemies.find(e=>e.key==='west-depot:0'),ally=radio.enemies.find(e=>e.key==='west-depot:1'),count=radio.enemies.length;
+radio.hit({x:guard.x,y:guard.y+2.2,z:guard.z,vx:0,vy:0,vz:1,team:'player',kind:'pulse',stats:radio.playerStats},guard,2.7);
+assert(ally.radioUntil>radio.time,'a genuine hit calls an already deployed reinforcement squad');assert.equal(radio.enemies.length,count,'radio never fabricates reward-bearing actors');
+radio.tick(.25,{x:994,z:1010,y:W.groundAt(994,1010),surface:'ground'},{});assert.equal(ally.target,radio.player,'radio responder acquires the actual pilot');console.log('PASS physical squad radio reinforcement with fixed existing actors');

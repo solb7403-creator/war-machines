@@ -47,7 +47,7 @@ async def main(engine,journey_only=False,fallback=False):
      nonlocal held
      p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,yaw:Conquest.view.yaw})')
      dx,dz=target['x']-p['x'],target['z']-p['z'];d=math.hypot(dx,dz);want=set()
-     if d>5:
+     if d>6:
       x=(math.cos(p['yaw'])*dx-math.sin(p['yaw'])*dz)/d;z=(-math.sin(p['yaw'])*dx-math.cos(p['yaw'])*dz)/d
       if abs(x)>.3:want.add('d' if x>0 else 'a')
       if abs(z)>.3:want.add('w' if z>0 else 's')
@@ -83,8 +83,8 @@ async def main(engine,journey_only=False,fallback=False):
      await win_operation('perimeter')
     async def travel(x,z):
      for step in range(700):
-      p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,hp:Conquest.view.authority.state.hp})');assert p['hp']>0,p
-      if math.hypot(p['x']-x,p['z']-z)<6:break
+      p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,hp:Conquest.view.authority.state.hp,verified:Conquest.view.authority.state.position})');assert p['hp']>0,p
+      if math.hypot(p['x']-x,p['z']-z)<=6 and math.hypot(p['verified']['x']-x,p['verified']['z']-z)<8:break
       await steer({'x':x,'z':z})
       if step%40==0:await page.keyboard.press('f')
       await page.wait_for_timeout(100)
@@ -173,7 +173,7 @@ async def main(engine,journey_only=False,fallback=False):
      await win_operation('convoy')
      assert await page.evaluate('Conquest.view.authority.state.completed.relay&&Conquest.view.authority.state.completed.convoy')
      for x,z in [(1145,934),(1145,995),(1240,1048),(1240,1128),(1174,1128),(1174,1168)]:await travel(x,z)
-     await tap('#cq-supply-access');await page.get_by_role('button',name='BANK SALVAGE',exact=True).click()
+     await page.wait_for_function('!document.querySelector("#cq-supply-access").hidden');await tap('#cq-supply-access');await page.get_by_role('button',name='BANK SALVAGE',exact=True).click()
      await page.wait_for_function('Conquest.view.authority.state.ledger.cargo.alloy===0')
      assert await page.evaluate('Conquest.view.authority.state.ledger.banked.alloy>0')
      await page.screenshot(path=str(OUT/f'{engine}-{width}-verified-two-missions-banked.png'))

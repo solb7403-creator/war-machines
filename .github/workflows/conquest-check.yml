@@ -26,6 +26,7 @@ jobs:
           node dev/tests/conquest-session-033.mjs
           node dev/tests/conquest-living-war.mjs
           node dev/tests/conquest-frontline.mjs
+          node dev/tests/conquest-adaptive.mjs
           node dev/tests/conquest-opening.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs

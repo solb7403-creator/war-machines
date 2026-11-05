@@ -5,39 +5,20 @@
     {
       "scenario": "relay mission with resident garrisons",
       "performance": {
-        "samples": 380,
-        "frameMedian": 21,
-        "frameP95": 48,
-        "worstFrame": 191,
-        "hitches": 1,
-        "drawCalls": 61,
-        "triangles": 64818,
-        "geometries": 53,
-        "chunks": 25,
-        "enemies": 17,
-        "projectiles": 4,
-        "autoLow": true,
-        "physicalDeviceVerified": false
-      }
-    },
-    {
-      "viewport": [
-        320,
-        568
-      ],
-      "multiPointer": "mouse DRIVE plus native touch abilities",
-      "errors": []
-    },
-    {
-      "scenario": "relay mission with resident garrisons",
-      "performance": {
-        "samples": 285,
-        "frameMedian": 30,
-        "frameP95": 62,
-        "worstFrame": 181,
-        "hitches": 1,
-        "drawCalls": 58,
-        "triangles": 58000,
+        "samples": 530,
+        "percentBelow50fps": 23.962264150943398,
+        "percentBelow40fps": 5.09433962264151,
+        "percentBelow30fps": 0.5660377358490566,
+        "simulationMs": 0,
+        "renderSubmissionMs": 7,
+        "heapBytes": null,
+        "textures": 2,
+        "frameMedian": 18,
+        "frameP95": 26,
+        "worstFrame": 46,
+        "hitches": 0,
+        "drawCalls": 50,
+        "triangles": 55314,
         "geometries": 50,
         "chunks": 25,
         "enemies": 17,
@@ -45,6 +26,10 @@
         "autoLow": true,
         "physicalDeviceVerified": false
       }
+    },
+    {
+      "scenario": "two complete missions + physical travel + bank",
+      "automatedInput": "real keyboard DRIVE/FIRE + projected visible-hull clicks; initial epic test loadout/site fixture; no outcome/position/loot claims"
     },
     {
       "viewport": [

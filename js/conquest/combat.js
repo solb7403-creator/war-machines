@@ -71,7 +71,7 @@ class Battle {
  this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.approachGrace=Math.hypot(playerPosition.x-mission.x,playerPosition.z-mission.z)>65?60:0;this.spawnWave();
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
- spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
+ spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
  shoot(from,to,stats,team,kind,owner){
  if(this.projectiles.length>=96)return false;if(team==='enemy'&&this.enemies.some(e=>e.id===owner&&e.resident&&(e.target===e.home||e.target===e.navGoal)))return false;let d=dist(from,to);if(d<.01)return false;const values=engineeringValues(stats,this.engineering),speed=team==='player'?values.velocity:stats.wpspd;
  if(kind==='twin'){const side=this.shots%2?1:-1,ax=(to.z-from.z)/d*.55*side,az=-(to.x-from.x)/d*.55*side;from={x:from.x+ax,y:from.y,z:from.z+az};}
@@ -97,13 +97,14 @@ class Battle {
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
  if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;if(this.baseModules&&Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<18+6*this.baseModules.defense)damage*=1-.1*(this.baseModules.defense||0);}
- if(q.team==='player'){this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
+ if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
  else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage);
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
  if(q.kind==='siege'&&q.team==='player')for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){const dealt=Math.min(e.hp,damage*.3);this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
  return true;
  }
+ alert(e){if(!e.key||e.radioCalled)return;e.radioCalled=true;for(const ally of this.enemies)if(ally!==e&&ally.hp>0&&Math.hypot(ally.x-e.x,ally.z-e.z)<80)ally.radioUntil=this.time+12;this.effects.push({kind:'radio',x:e.x,y:e.y+5,z:e.z,life:.5});}
  moveShots(dt){
  for(const q of this.projectiles){const start={x:q.x,y:q.y,z:q.z};const travel=Math.min(dt,q.life),n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vy,q.vz)*travel/.35));for(let i=0;i<n&&q.life>0;i++){
  q.x+=q.vx*travel/n;q.y+=q.vy*travel/n;q.z+=q.vz*travel/n;
@@ -146,14 +147,15 @@ class Encounter extends Battle {
   super(loadout,p);this.localEncounter=true;this.enemies=[];this.wave=formations.length;this.id=10000;this.objectiveHp=this.objectiveMax=1e9;this.cleared=cleared=cleared&&typeof cleared==='object'&&!Array.isArray(cleared)?cleared:{};
   for(const base of installations)for(let i=0;i<(base.id==='redoubt-01'?4:2);i++){
    const kind=base.id==='redoubt-01'&&i===3?'sentinel':i?'command':'raider',a=archetypes[kind],x=base.x+(i%2?10:-10),z=base.z-12-Math.floor(i/2)*10;
-   this.enemies.push({route:base.kind==='staging'?[[x,z],[x-30,z-8],[x-40,z+20],[x,z]]:null,id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});
+   this.enemies.push({route:base.kind==='staging'?[[x,z],[x-30,z-8],[x-40,z+20],[x,z]]:null,id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:'guard'});
   }
-  for(const site of patrols){const a=archetypes[site.kind],x=site.x,z=site.z;this.enemies.push({id:++this.id,key:site.id,base:{...site,kind:'patrol'},route:site.route,home:{x,z,y:W.groundAt(x,z)+2.2},kind:site.kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[site.id]?0:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});}
+  for(const site of patrols){const a=archetypes[site.kind],x=site.x,z=site.z;this.enemies.push({id:++this.id,key:site.id,base:{...site,kind:'patrol'},route:site.route,home:{x,z,y:W.groundAt(x,z)+2.2},kind:site.kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[site.id]?0:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:'guard'});}
  }
  spawnWave(){} // guard lifecycle is independent of mission waves
  choose(e){
   const d=Math.hypot(this.player.x-e.x,this.player.z-e.z),homeDistance=Math.hypot(this.player.x-e.home.x,this.player.z-e.home.z);
-  const alerted=d<65||e.hp<e.maxHp;
+  const alerted=d<65||e.hp<e.maxHp||(e.radioUntil||0)>this.time;
+  if(e.hp<e.maxHp*.2&&d<40&&homeDistance>30){e.guardReturning=true;e.navGoal=e.home;super.choose(e);e.guardReturning=false;return;}
   if(alerted&&homeDistance<100){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
   else {e.guardReturning=true;if(e.route){e.routeIndex=e.routeIndex||0;if(Math.hypot(e.x-e.route[e.routeIndex][0],e.z-e.route[e.routeIndex][1])<3)e.routeIndex=(e.routeIndex+1)%e.route.length;const [x,z]=e.route[e.routeIndex];e.navGoal={x,z,y:W.groundAt(x,z)+2.2};}super.choose(e);e.guardReturning=false;}
   const q=W.advance(e,e.vx,e.vz);if(Math.hypot(q.x-e.home.x,q.z-e.home.z)>65)e.vx=e.vz=0;
@@ -177,7 +179,7 @@ class Operation extends Battle {
  if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
  }
  spawnWave(){}
- deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8]].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:a.role});}
+ deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8]].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:a.role});}
  choose(e){
  if(e.id===this.carrierId){const q=W.advance(e,0,-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
  if(e.immobile){e.vx=e.vz=0;e.target=this.player;return;}
