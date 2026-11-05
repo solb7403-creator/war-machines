@@ -5,17 +5,17 @@
     {
       "scenario": "relay mission with resident garrisons",
       "performance": {
-        "samples": 342,
-        "frameMedian": 17.899999999906868,
-        "frameP95": 100.89999999990687,
-        "worstFrame": 848.1999999999534,
-        "hitches": 19,
+        "samples": 493,
+        "frameMedian": 16.600000000093132,
+        "frameP95": 44.10000000009313,
+        "worstFrame": 100.4000000001397,
+        "hitches": 1,
         "drawCalls": 0,
         "triangles": 0,
         "geometries": 0,
-        "chunks": 25,
+        "chunks": 0,
         "enemies": 17,
-        "projectiles": 5,
+        "projectiles": 6,
         "autoLow": false,
         "physicalDeviceVerified": false
       }

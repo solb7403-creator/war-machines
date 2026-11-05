@@ -10,3 +10,12 @@ assert.throws(()=>applyAction(a,{seq:4,action:'base-module',module:'forged'},now
 const b=structuredClone(a);b.position.x+=100;assert.throws(()=>applyAction(b,{seq:4,action:'upgrade-base'},now+86400001),/terminal/);
 const legacy=createState(R.STOCK_L,now);delete legacy.base;legacy.reputation=731;const cp=legacy.ledger.cp;refreshState(legacy,now);assert.equal(legacy.reputation,731);assert.equal(legacy.ledger.cp,cp);
 console.log('PASS atomic base ownership, immutable costs, physical terminal, construction clock, passive claim and additive migration');
+// Personal fortress collision must be instance-local; it cannot change the shared Moon geometry.
+const {Control:K}= (await import('../../worker/src/sim.gen.js')).CONQUEST;
+const start={x:d.x-22,z:d.z,y:W.groundAt(d.x-22,d.z),surface:'ground'};
+const builtBattle=new C.Encounter(R.STOCK_L,start);builtBattle.enemies=[];builtBattle.baseTier=2;
+let blocked=start;for(let i=0;i<60;i++)blocked=K.advance(builtBattle,blocked,{x:1,z:0},1/60,true);
+assert(blocked.x<=d.x-19,'personal wall stops the canonical hull');
+const emptyBattle=new C.Encounter(R.STOCK_L,start);emptyBattle.enemies=[];let empty=start;for(let i=0;i<60;i++)empty=K.advance(emptyBattle,empty,{x:1,z:0},1/60,true);
+assert(empty.x>blocked.x+2,'another personal instance has no phantom wall');
+console.log('PASS per-player base collision and independent unbuilt instances');

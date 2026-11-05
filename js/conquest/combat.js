@@ -179,7 +179,7 @@ class Operation extends Battle {
  if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
  }
  spawnWave(){}
- deploy(kind,x,z,key){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:a.role});}
+ deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8]].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:a.role});}
  choose(e){
  if(e.id===this.carrierId){const q=W.advance(e,0,-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
  if(e.immobile){e.vx=e.vz=0;e.target=this.player;return;}

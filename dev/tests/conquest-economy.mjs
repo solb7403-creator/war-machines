@@ -18,3 +18,5 @@ s.hp=42;s.battle.playerHp=42;refitState(s,{...R.STOCK_L,paint:'stock'});assert.e
 // Legitimate generation-gated combat keeps paying after historical daily caps.
 s=fresh();s.daily.cp=P.daily.cp;s.daily.alloy=P.daily.alloy;s.position=point(s.battle.enemies[0].x,s.battle.enemies[0].z);e=s.battle.enemies[0];e.hp=0;killLoot(s,e,now);pickups(s,now);assert.equal(s.ledger.cp,18);assert.equal(s.ledger.cargo.alloy,3);s.mission='oxygen-line';assert.equal(missionReward(s,now).cp,250);
 console.log('PASS server loot generations, stable mission kill eligibility, exact-half death,600s expiry, banking, first/daily settlement, refresh visibility, persistent residents and limits');
+
+s=fresh();s.mission='oxygen-line';s.featuredMission=true;assert.equal(missionReward(s,now).cp,270);const bonusCP=s.ledger.cp;assert.equal(missionReward(s,now+1).cp,0);assert.equal(s.ledger.cp,bonusCP,'featured bonus is exactly once with settlement');console.log('PASS featured bonus and settlement idempotency');

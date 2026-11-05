@@ -1,6 +1,6 @@
 # LUNAR: War Machines — Conquest flagship execution handoff
 
-**Status: SPECS ARCHIVED; IMPLEMENTATION NOT STARTED UNDER THIS HANDOFF.**
+**Status: SESSION 1 IMPLEMENTATION IN PROGRESS — draft PR #53, branch feat/conquest-living-war-v1. Read IMPLEMENTATION_CHECKPOINT.md before continuing. Production not changed.**
 **Last verified game release at preparation:** main `d592146dfca5ea389507ec8cd51b8cc28e1eb2f5`, Conquest 3.3 / version `20261105034106`. Always query GitHub for the NEW latest state first. Do not treat this snapshot as live status after development starts.
 
 ## Complete owner-approved specifications

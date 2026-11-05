@@ -1,0 +1,58 @@
+{
+  "engine": "webkit",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "scenario": "relay mission with resident garrisons",
+      "performance": {
+        "samples": 380,
+        "frameMedian": 21,
+        "frameP95": 48,
+        "worstFrame": 191,
+        "hitches": 1,
+        "drawCalls": 61,
+        "triangles": 64818,
+        "geometries": 53,
+        "chunks": 25,
+        "enemies": 17,
+        "projectiles": 4,
+        "autoLow": true,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "multiPointer": "mouse DRIVE plus native touch abilities",
+      "errors": []
+    },
+    {
+      "scenario": "relay mission with resident garrisons",
+      "performance": {
+        "samples": 285,
+        "frameMedian": 30,
+        "frameP95": 62,
+        "worstFrame": 181,
+        "hitches": 1,
+        "drawCalls": 58,
+        "triangles": 58000,
+        "geometries": 50,
+        "chunks": 25,
+        "enemies": 17,
+        "projectiles": 5,
+        "autoLow": true,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "multiPointer": "mouse DRIVE plus native touch abilities",
+      "errors": []
+    }
+  ]
+}
