@@ -22,3 +22,17 @@ assert.throws(()=>applyAction(state,{seq:state.seq+1,action:'bank',upgrade:'heat
 state.position=p;assert.throws(()=>applyAction(state,{seq:state.seq+1,action:'set-tuning',tuning:'thermal',position:0},now),/terminal/);
 let old=createState(R.STOCK_L,now);delete old.engineering;old.battle.playerStats.wshot=.2;assert.equal(hydrate(old).playerStats.wshot,.5);assert.equal(hydrate(old).engineering.ranks.heatCapacity,0);
 console.log('PASS all eight ranks, four sliders, precise debits, state preservation, terminal/sequence/schema rejection and v1 migration');
+const benchmarks=[];
+for(const weapon of Object.keys(C.profiles)){
+ const L=structuredClone(R.STOCK_L);L.w.a=weapon;L.cores=[];const base=new C.Encounter(L,p);base.enemies=[];
+ assert.equal(base.playerStats.wshot,C.profiles[weapon].interval);assert.equal(base.playerStats.wdps,R.tankOf(L,1).wdps);
+ let results=[];for(const fps of [15,30,60]){const B=new C.Encounter(L,p);B.enemies=[];let first=null;for(let i=0;i<fps*30;i++){K.advance(B,p,{x:0,z:0,fire:true},1/fps,false);if(first===null&&B.overheated)first={shots:B.shots,seconds:(i+1)/fps};}results.push(B.shots);if(fps===60)benchmarks.push({weapon,...first,shots30s:B.shots,unheatedDps:B.playerStats.wdps});}assert.equal(new Set(results).size,1,weapon+' cadence frame independent');
+ const B=new C.Encounter(L,p);B.enemies=[];const start={x:1500,y:1000,z:1500},end={x:1700,y:1000,z:1500};
+ B.shoot(start,end,B.playerStats,'player',weapon,0);let q=B.projectiles[0],v=Math.hypot(q.vx,q.vy,q.vz);assert(Math.abs(v*q.life-C.profiles[weapon].range)<.01);
+ B.engineering=C.engineeringDefaults({ranks:{bulletVelocity:3}});B.shoot(start,end,B.playerStats,'player',weapon,0);let fast=B.projectiles.at(-1);assert(Math.abs(Math.hypot(fast.vx,fast.vy,fast.vz)*fast.life-C.profiles[weapon].range)<.01);assert(Math.abs(Math.hypot(fast.vx,fast.vy,fast.vz)/v-1.3)<.001);
+ B.engineering=C.engineeringDefaults({ranks:{bulletRange:3}});B.shoot(start,end,B.playerStats,'player',weapon,0);let far=B.projectiles.at(-1);assert(Math.abs(Math.hypot(far.vx,far.vy,far.vz)/v-1)<.001);assert(Math.abs(v*far.life/C.profiles[weapon].range-1.27)<.001);
+}
+console.log(JSON.stringify(benchmarks,null,2));
+// Hysteresis and heat debt survive every state handoff, including death and equipment.
+for(const weapon of Object.keys(C.profiles)){const L=structuredClone(R.STOCK_L);L.w.a=weapon;L.cores=[];let B=new C.Encounter(L,p);B.enemies=[];let first=0;while(!B.overheated&&B.time<20){K.advance(B,p,{x:0,z:0,fire:true},.05,false);first=B.shots;}assert(first>0);const n=B.shots;while(B.heat>35){K.advance(B,p,{x:0,z:0},.05,false);assert.equal(B.shots,n);}assert.equal(B.overheated,false);const fresh=new C.Encounter(L,p);K.carry(B,fresh);assert.equal(fresh.heat,B.heat);assert.equal(fresh.cooldown,B.cooldown);}
+console.log('PASS thermal hysteresis and carry for all four archetypes');
