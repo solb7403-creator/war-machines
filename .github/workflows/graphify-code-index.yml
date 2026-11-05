@@ -1,0 +1,61 @@
+name: Free Graphify code index
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'js/**'
+      - 'web/**'
+      - 'worker/src/**'
+      - 'worker/*.mjs'
+      - 'dev/tests/**'
+      - 'dev/tools/**'
+      - '.graphifyignore'
+      - '.github/workflows/graphify-code-index.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: graphify-main
+  cancel-in-progress: true
+
+jobs:
+  code-graph:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official free Graphify package
+        run: python -m pip install --disable-pip-version-check graphifyy
+      - name: Index repository source without LLM calls
+        run: |
+          graphify --version
+          graphify extract . --out .
+      - name: Produce browseable interactive graph
+        run: |
+          graphify cluster-only . --no-label
+          graphify export html --graph graphify-out/graph.json
+      - name: Verify graph artifact
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          p=pathlib.Path("graphify-out/graph.json")
+          assert p.is_file() and p.stat().st_size>100, "graph missing or empty"
+          data=json.loads(p.read_text())
+          print("Graph exported:", p.stat().st_size, "bytes, root keys:", list(data)[:10])
+          assert pathlib.Path("graphify-out/graph.html").is_file()
+          PY
+      - name: Upload code graph for GitHub/Codex/Claude handoffs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunar-graphify-code-index
+          path: |
+            graphify-out/graph.json
+            graphify-out/graph.html
+            graphify-out/GRAPH_REPORT.md
+          retention-days: 14
+          if-no-files-found: error
