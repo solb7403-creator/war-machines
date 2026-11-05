@@ -21,3 +21,8 @@
 .cq-target progress{display:block;width:100%;height:3px;margin-top:3px;accent-color:#d68879}.cq-world{overscroll-behavior:none}.cq-world .cq-top button{touch-action:manipulation}
 
 .cq-large-text .cq-vital-label,.cq-large-text .cq-vital-value{font-size:14px}.cq-large-text .cq-nav-title,.cq-large-text .cq-nav-distance{font-size:11px}.cq-large-text .cq-action,.cq-large-text .cq-action small{font-size:10px!important}.cq-large-text .cq-target{font-size:12px;max-width:180px}
+
+/* Compact thermal status; engineering stays in Supply. */
+.cq-heat{position:absolute;right:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:90px;height:9px;accent-color:#73e7e8;pointer-events:none;z-index:5}.cq-heat.cq-hot{accent-color:#ff8065;animation:cq-vent .6s infinite alternate}@keyframes cq-vent{to{filter:brightness(1.6)}}
+.cq-engineering{border:1px solid #466475;border-radius:8px;margin:10px 0;padding:10px}.cq-engineering summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:bold}.cq-engineering input{width:100%;min-height:44px}.cq-engineering button{min-height:44px;width:100%;margin:5px 0}.cq-engineering-track{border-top:1px solid #466475;margin-top:12px;padding-top:12px}.cq-engineering p{font-size:13px}.cq-engineering button:disabled{opacity:.45}
+@media(prefers-reduced-motion:reduce){.cq-heat.cq-hot{animation:none}}

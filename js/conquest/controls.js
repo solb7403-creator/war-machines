@@ -60,6 +60,6 @@ function advance(B,p,input,dt,exploration){
  }
  return p;
 }
-function carry(from,to){ensure(from);for(const k of ['engineering','heat','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
+function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
 root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,CONFIG});
 })(globalThis);
