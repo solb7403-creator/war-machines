@@ -3,12 +3,12 @@ import fs from 'node:fs';import vm from 'node:vm';
 const c=vm.createContext({console});for(const f of ['js/range-host.js','js/rules.js','js/game.js','js/conquest/world.js','js/conquest/combat.js'])vm.runInContext(fs.readFileSync(f,'utf8'),c);
 const stock=vm.runInContext('STOCK_L',c),C=c.ConquestCombat,W=c.ConquestWorld;
 const point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'}),cleared={};
-assert.equal(C.installations.length,2);assert(C.installations.some(b=>b.kind==='staging'));
-const p=point(1240,875),a=new C.Encounter(stock,p,cleared);
-assert.equal(a.enemies.length,6);for(const e of a.enemies){assert(!W.solidAt(e.x,e.z));assert(Number.isFinite(e.hp));}
+assert.equal(C.installations.length,4);assert(C.installations.some(b=>b.kind==='staging'));
+const p=point(1210,910),a=new C.Encounter(stock,p,cleared);
+assert.equal(a.enemies.length,14);for(const e of a.enemies){assert(!W.solidAt(e.x,e.z));assert(Number.isFinite(e.hp));}
 const far=point(15000,8000),before=a.enemies.map(e=>[e.x,e.z,e.cd]);for(let i=0;i<10;i++)a.tick(.1,far,{});
 assert.deepEqual(a.enemies.map(e=>[e.x,e.z,e.cd]),before,'remote units do not run AI');
-const e=a.enemies[0];let fired=false;for(let i=0;i<1200&&e.hp>0;i++){
+const e=a.enemies[0];let fired=false;for(let i=0;i<120;i++){a.tick(1/30,p,{});if(a.projectiles.some(q=>q.team==='enemy'))fired=true;}for(let i=0;i<1200&&e.hp>0;i++){
  a.tick(1/30,p,{fire:true,aim:{x:e.x,y:e.y+2.2,z:e.z}});if(a.projectiles.some(q=>q.team==='enemy'))fired=true;
  assert(a.enemies.every(e=>Math.hypot(e.x-e.home.x,e.z-e.home.z)<66),'bounded guard movement');
 }

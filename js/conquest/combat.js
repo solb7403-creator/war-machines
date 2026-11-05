@@ -8,9 +8,9 @@ const profiles=Object.freeze(Object.fromEntries(Object.entries({
  moon:{interval:.95,range:125,heat:10.8,cooling:8},siege:{interval:1.20,range:100,heat:16,cooling:9}
 }).map(([k,v])=>[k,Object.freeze(v)])));
 const tracks=Object.freeze({heatCapacity:.09,heatCooling:.09,bulletVelocity:.10,bulletRange:.09,dashDistance:.10,dashCooldown:-.04,shieldDuration:.08,shieldCooldown:-.04});
-const costs=Object.freeze([{cp:100,alloy:4,biomass:2,helium:0},{cp:250,alloy:12,biomass:6,helium:0},{cp:600,alloy:25,biomass:15,helium:2}].map(Object.freeze));
+const costs=Object.freeze([{cp:100,alloy:4,biomass:2,helium:0},{cp:250,alloy:12,biomass:6,helium:0},{cp:600,alloy:25,biomass:15,helium:2},{cp:1100,alloy:45,biomass:28,helium:4},{cp:1900,alloy:75,biomass:45,helium:7},{cp:3200,alloy:120,biomass:75,helium:12}].map(Object.freeze));
 const tuningKeys=Object.freeze(['thermal','ballistics','mobility','shield']);
-function engineeringDefaults(e={}){return {ranks:Object.fromEntries(Object.keys(tracks).map(k=>[k,Number.isInteger(e.ranks?.[k])?clamp(e.ranks[k],0,3):0])),tuning:Object.fromEntries(tuningKeys.map(k=>[k,Number.isInteger(e.tuning?.[k])?clamp(e.tuning[k],-3,3):0]))};}
+function engineeringDefaults(e={}){return {ranks:Object.fromEntries(Object.keys(tracks).map(k=>[k,Number.isInteger(e.ranks?.[k])?clamp(e.ranks[k],0,6):0])),tuning:Object.fromEntries(tuningKeys.map(k=>[k,Number.isInteger(e.tuning?.[k])?clamp(e.tuning[k],-3,3):0]))};}
 function setHeat(B,total,capacity){total=Math.max(0,total);B.heat=Math.min(capacity,total);B.heatOverflow=Math.max(0,total-capacity);}
 function engineeringValues(stats,e){
  const {ranks:r,tuning:t}=engineeringDefaults(e),p=profiles[stats.wtype]||profiles.pulse;
@@ -29,8 +29,23 @@ const archetypes=Object.freeze({
  sentinel:Object.freeze({name:'Parasite heavy sentinel',cls:'titan',arch:'siege',hp:1100,dps:72,shot:1.15,speed:1.8,range:54,role:'player'}),
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
-const installations=W.installations;
-const patrols=Object.freeze([{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+const installations=Object.freeze([...W.installations,
+ Object.freeze({id:'west-depot',name:'WESTERN SALVAGE DEPOT',kind:'outpost',x:994,z:944}),
+ Object.freeze({id:'crossroads',name:'DUST CROSSROADS',kind:'staging',x:1100,z:954})]);
+const operations=Object.freeze(Object.fromEntries([
+ {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
+ {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'crossroads',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
+ {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
+ {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
+ {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
+ {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
+].map(o=>[o.id,Object.freeze({activationRadius:45,...o})])));
+// Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
+const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:1800,alloy:110,biomass:65,helium:8},
+ tiers:[{cp:1800,alloy:110,biomass:65,helium:8},{cp:2500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
+ modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
+ moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
+const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1080,z:945,route:[[1080,945],[1115,945],[1130,970],[1100,975]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
 const formations=Object.freeze([
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
@@ -83,7 +98,7 @@ class Battle {
  const owner=q.stats,direct=off<r*.4,isCrit=direct&&this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
- if(q.team!=='player'&&t===this.player&&this.shieldT>0)damage*=SHIELD_MULT;
+ if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;if(this.baseModules&&Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<18+6*this.baseModules.defense)damage*=1-.1*(this.baseModules.defense||0);}
  if(q.team==='player'){this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
  else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage);
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
@@ -95,7 +110,7 @@ class Battle {
  for(const q of this.projectiles){const start={x:q.x,y:q.y,z:q.z};const travel=Math.min(dt,q.life),n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vy,q.vz)*travel/.35));for(let i=0;i<n&&q.life>0;i++){
  q.x+=q.vx*travel/n;q.y+=q.vy*travel/n;q.z+=q.vz*travel/n;
  if(q.x<0||q.z<0||q.x>W.WIDTH||q.z>W.LENGTH||q.y<=W.groundAt(q.x,q.z)){q.life=0;break;}
- let hit=false;if(q.team==='player'){for(const e of this.enemies)if(e.hp>0&&this.hit(q,e,2.7)){hit=true;break;}}else hit=this.hit(q,this.player,2.5)||this.hit(q,this.objective,14);
+ let hit=false;if(q.team==='player'){for(const e of this.enemies)if(e.hp>0&&this.hit(q,e,2.7)){hit=true;break;}}else hit=this.hit(q,this.player,2.5)||(this.objectiveDamageable!==false&&this.hit(q,this.objective,14));
  if(hit||blocked(q.x,q.y,q.z)){q.life=0;break;}}
  
  q.life-=dt;}
@@ -114,7 +129,7 @@ class Battle {
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
- for(const e of this.enemies){if(e.hp<=0)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
+ for(const e of this.enemies){if(e.hp<=0||e.dormant)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
  const p=W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
  const target=e.target||this.objective,ec=center(e),want=Math.atan2(target.x-e.x,target.z-e.z),delta=Math.atan2(Math.sin(want-e.turret),Math.cos(want-e.turret));e.turret+=clamp(delta,-2*dt,2*dt);
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
@@ -131,9 +146,9 @@ class Battle {
 class Encounter extends Battle {
  constructor(loadout,p,cleared={}){
   super(loadout,p);this.localEncounter=true;this.enemies=[];this.wave=formations.length;this.id=10000;this.objectiveHp=this.objectiveMax=1e9;this.cleared=cleared=cleared&&typeof cleared==='object'&&!Array.isArray(cleared)?cleared:{};
-  for(const base of installations)for(let i=0;i<2;i++){
-   const kind=i?'command':'raider',a=archetypes[kind],x=base.x+(i?10:-10),z=base.z-12;
-   this.enemies.push({id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});
+  for(const base of installations)for(let i=0;i<(base.id==='redoubt-01'?4:2);i++){
+   const kind=base.id==='redoubt-01'&&i===3?'sentinel':i?'command':'raider',a=archetypes[kind],x=base.x+(i%2?10:-10),z=base.z-12-Math.floor(i/2)*10;
+   this.enemies.push({route:base.kind==='staging'?[[x,z],[x-30,z-8],[x-40,z+20],[x,z]]:null,id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});
   }
   for(const site of patrols){const a=archetypes[site.kind],x=site.x,z=site.z;this.enemies.push({id:++this.id,key:site.id,base:{...site,kind:'patrol'},route:site.route,home:{x,z,y:W.groundAt(x,z)+2.2},kind:site.kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[site.id]?0:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});}
  }
@@ -154,5 +169,33 @@ class Encounter extends Battle {
   if(this.playerHp>0){this.state='active';this.reason=null;}
  }
 }
-root.ConquestCombat=Object.freeze({profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+// All operation progression is physical and replayed by the Worker; no client objective claims.
+class Operation extends Battle {
+ constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
+ this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
+ const team=id==='redoubt'?['command','breacher','raider']:id==='rescue'?['raider','breacher','command']:['raider','raider'];
+ team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
+ if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
+ if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
+ }
+ spawnWave(){}
+ deploy(kind,x,z,key){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:a.role});}
+ choose(e){
+ if(e.id===this.carrierId){const q=W.advance(e,0,-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
+ if(e.immobile){e.vx=e.vz=0;e.target=this.player;return;}
+ const objective=this.objective;if(this.operation.id!=='rescue')this.objective=this.player;super.choose(e);this.objective=objective;
+ // The commander pauses before each aimed salvo: visible, avoidable attack tell.
+ if(e.commander&&this.time%6<1.5){e.vx=e.vz=0;e.cd=Math.max(e.cd,.4);e.telegraph=true;}else e.telegraph=false;
+ }
+ step(dt,fire){super.step(dt,fire);if(this.state!=='active')return;const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>!e.resident&&e.hp>0);
+ if(o.id==='convoy'){const c=this.enemies.find(e=>e.id===this.carrierId);this.stage=c.hp<=0?1:0;if(c.hp>0&&c.z<o.z-135){this.state='defeat';this.reason='Armored carrier escaped';}else if(!living.length)this.state='victory';}
+ if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
+ if(o.id==='recon'){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<9){this.work+=dt;if(this.work>=3){this.scans++;this.work=0;}}this.stage=this.scans;if(this.scans===3)this.state='victory';}
+ if(o.id==='rescue'){if(d<28){const q=W.advance({x:this.objective.x,z:this.objective.z,y:this.objective.y-2.2,surface:'ground'},0,dt*2);Object.assign(this.objective,{x:q.x,y:q.y+2.2,z:q.z});}this.stage=Math.min(100,Math.floor((this.objective.z-o.z)/.8));if(this.stage>=100)this.state='victory';}
+ if(o.id==='redoubt'){if(!living.length&&this.stage===0){this.stage=1;this.deploy('sentinel',o.x+12,o.z-8,'commander');this.enemies.at(-1).commander=true;}else if(!living.length&&this.stage===1&&d<18){this.work+=dt;if(this.work>=6){this.stage=2;this.state='victory';}}}
+ if(Math.hypot(this.player.x-o.x,this.player.z-o.z)>260||this.time>600){this.state='defeat';this.reason='Operation perimeter abandoned or time expired';}
+ if(this.state!=='active')this.projectiles=[];
+ }
+}
+root.ConquestCombat=Object.freeze({operations,baseDefinition,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

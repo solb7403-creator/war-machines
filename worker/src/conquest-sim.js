@@ -1,4 +1,5 @@
 // Server-owned deterministic input replay; never accepts client outcomes or positions.
+import {campaign,baseAction,BASE_ACTIONS,capture} from './conquest-campaign.js';
 import {CONQUEST} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=20,MAX_CREDIT_MS=1250;
@@ -19,12 +20,13 @@ export function createState(loadout,now){
  const s={v:1,seq:0,lastWall:now,creditMs:0,position,hp:B.playerHp,loadout:copy(B.snapshot),mission:null,battle:copy(B),checkpoint:{...position},safe:[{...position}],stuckMs:0,recoveryAt:0};refreshState(s,now);return s;
 }
 function stats(v){v.gems=list(v.gems);v.buffs=list(v.buffs);return v;}
-export function hydrate(s){const B=s.mission?new C.Battle(s.loadout,s.position):new C.Encounter(s.loadout,s.position);const canonicalStats=B.playerStats;Object.assign(B,copy(s.battle));B.playerHp=s.hp;B.playerStats=canonicalStats;B.engineering=C.engineeringDefaults(s.engineering);B.enemies=list(B.enemies);B.projectiles=list(B.projectiles);B.effects=list(B.effects);B.superShells=list(B.superShells);stats(B.playerStats);K.ensure(B);
+export function hydrate(s){const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);const canonicalStats=B.playerStats;Object.assign(B,copy(s.battle));B.playerHp=s.hp;B.playerStats=canonicalStats;B.engineering=C.engineeringDefaults(s.engineering);B.baseModules=copy(s.base?.modules||{});B.enemies=list(B.enemies);B.projectiles=list(B.projectiles);B.effects=list(B.effects);B.superShells=list(B.superShells);stats(B.playerStats);K.ensure(B);
  for(const q of B.projectiles)stats(q.stats);for(const e of B.enemies){stats(e.stats);const t=e.target;if(t&&e.home&&t.x===e.home.x&&t.z===e.home.z)e.target=e.home;else if(t&&e.navGoal&&t.x===e.navGoal.x&&t.z===e.navGoal.z)e.target=e.navGoal;else if(t&&t.x===B.objective.x&&t.z===B.objective.z)e.target=B.objective;}return B;}
-export function refreshState(s,now){s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+export function refreshState(s,now){campaign(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
  for(const e of s.battle.enemies){const m=s.spawns[e.key]||(s.spawns[e.key]={generation:day});if(e.hp>0||Math.hypot(e.home.x-s.position.x,e.home.z-s.position.z)<=POLICY.visibleRadius)continue;
+ if(s.territory[e.base?.id]?.owner==='humanity')continue;
  const patrol=e.base?.kind==='patrol',ready=patrol?now-(m.deadAt||now)>=POLICY.patrolRefresh:m.generation<day;
  if(ready){const replacement=fresh.enemies.find(x=>x.key===e.key);if(replacement){for(const key of Object.keys(e))delete e[key];Object.assign(e,copy(replacement));s.spawns[e.key]={generation:patrol?m.generation+1:day};if(s.battle.cleared)delete s.battle.cleared[e.key];}}}
 }
@@ -36,30 +38,34 @@ export function applyCommands(previous,request,now){
  const credit=Math.min(MAX_CREDIT_MS,previous.creditMs+now-previous.lastWall),cost=commands.length*STEP_MS;if(cost>credit)fail('simulation exceeds elapsed time');
  const s=copy(previous);refreshState(s,now);const B=hydrate(s);
  for(const input of commands){const running=B.state==='active',old=s.position;s.position=K.advance(B,s.position,input,STEP_MS/1000,!s.mission);s.hp=B.playerHp;
+ if(!s.mission&&s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<18){const hangar=s.base.modules.hangar||0;if(hangar&&B.playerHp>0)B.playerHp=Math.min(B.playerMax,B.playerHp+B.playerMax*.002*hangar);s.hp=B.playerHp;}
  const wanted=running?Math.hypot(input.x,input.z):0,moved=Math.hypot(old.x-s.position.x,old.z-s.position.z);s.stuckMs=wanted>.1&&moved<B.combatSpeed*.05*.15?(s.stuckMs||0)+STEP_MS:wanted>.1?0:s.stuckMs||0;
  if(s.hp>0){const last=s.safe.at(-1);if((!last||Math.hypot(last.x-s.position.x,last.z-s.position.z)>=8)&&footing(s,s.position)){s.safe.push({...s.position});s.safe=s.safe.slice(-10);}for(const e of B.enemies)if(e.hp<=0)killLoot(s,e,now);pickups(s,now);}
  if(s.hp<=0){death(s,now);break;}
  }
- if(s.mission&&B.state==='victory'&&!s.settlement){s.settlement=missionReward(s,now);s.completed=s.completed||{};s.completed[s.mission]=s.completed[s.mission]||{at:now,attempt:s.attempt};}
+ if(!s.mission)for(const site of C.installations){const guards=B.enemies.filter(e=>e.base?.id===site.id);if(guards.length&&guards.every(e=>e.hp<=0)&&!s.territory[site.id]){capture(s,site.id,now);s.reputation+=50;}}
+ if(s.mission&&B.state==='victory'&&!s.settlement){s.settlement=missionReward(s,now);s.completed=s.completed||{};s.completed[s.mission]=s.completed[s.mission]||{at:now,attempt:s.attempt};capture(s,C.operations[s.mission].site,now);}
  s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);return s;
 }
 function mergeResidents(from,to){for(const e of from.enemies.filter(e=>e.resident)){const old=to.enemies.find(x=>x.key===e.key);if(old){const id=old.id;Object.assign(old,copy(e),{id,resident:false});if(old.hp<=0){to.cleared=to.cleared||{};to.cleared[old.key]=true;}}}}
 export function applyAction(previous,request,now){
- if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning'].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning'].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
+ if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module'].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
  if(request.action==='start-mission'){
- if(s.mission||s.hp<=0||Math.hypot(s.position.x-C.mission.x,s.position.z-C.mission.z)>C.mission.activationRadius)fail('mission unavailable');s.explorationBattle=copy(B);s.attempt=(s.attempt||0)+1;s.mission=C.mission.id;s.settlement=null;const fresh=new C.Battle(s.loadout,s.position);K.carry(B,fresh);B=fresh;B.enemies.push(...s.explorationBattle.enemies.map(e=>({...copy(e),id:100000000+e.id,resident:true})));B.playerHp=Math.min(B.playerMax,s.hp);B.lockId=null;
+ const op=C.operations[request.mission||'oxygen-line'];if(!own(C.operations,request.mission||'oxygen-line')||!op||Object.keys(request).some(k=>!['seq','action','mission'].includes(k)))fail('invalid mission');
+ if(s.mission||s.hp<=0||Math.hypot(s.position.x-op.x,s.position.z-op.z)>op.activationRadius)fail('mission unavailable');s.explorationBattle=copy(B);s.attempt=(s.attempt||0)+1;s.mission=op.id;s.settlement=null;const fresh=op.id==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,op.id);K.carry(B,fresh);B=fresh;B.enemies.push(...s.explorationBattle.enemies.map(e=>({...copy(e),id:100000000+e.id,resident:true})));B.playerHp=Math.min(B.playerMax,s.hp);B.lockId=null;
  }else if(request.action==='return-exploration'){
  if(!s.mission)fail('no active mission');s.lastMission={id:s.mission,attempt:s.attempt,outcome:B.state==='active'?'retreated':B.state,at:now,settlement:s.settlement||null};const fresh=new C.Encounter(s.loadout,s.position);Object.assign(fresh,s.explorationBattle||{});mergeResidents(B,fresh);K.carry(B,fresh);B=fresh;B.playerHp=s.hp;B.state=s.hp>0?'active':'defeat';B.projectiles=[];B.lockId=null;delete s.explorationBattle;s.mission=null;
+ }else if(BASE_ACTIONS.includes(request.action)){if(Object.keys(request).some(k=>!['seq','action',...(request.action==='base-module'?['module']:[])].includes(k)))fail('invalid base fields');baseAction(s,request,now);
  }else if(request.action==='buy-upgrade'||request.action==='set-tuning'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('engineering requires safe Refuge terminal');
  if(request.action==='buy-upgrade'){
- if(!own(C.tracks,request.upgrade)||own(request,'tuning')||own(request,'position'))fail('invalid upgrade');
- const rank=s.engineering.ranks[request.upgrade];if(rank>=3)fail('maximum rank');const price=C.costs[rank];
+ if(Object.keys(request).some(k=>!['seq','action','upgrade'].includes(k))||!own(C.tracks,request.upgrade)||own(request,'tuning')||own(request,'position'))fail('invalid upgrade');
+ const rank=s.engineering.ranks[request.upgrade];if(rank>=C.costs.length)fail('maximum rank');const price=C.costs[rank];
  for(const [k,n] of Object.entries(price))if((k==='cp'?s.ledger.cp:s.ledger.banked[k])<n)fail('insufficient banked '+k+': need '+n);
  for(const [k,n] of Object.entries(price))if(k==='cp')s.ledger.cp-=n;else s.ledger.banked[k]-=n;
  s.engineering.ranks[request.upgrade]++;
  }else{
- if(!C.tuningKeys.includes(request.tuning)||!Number.isInteger(request.position)||Math.abs(request.position)>3||own(request,'upgrade'))fail('invalid tuning');
+ if(Object.keys(request).some(k=>!['seq','action','tuning','position'].includes(k))||!C.tuningKeys.includes(request.tuning)||!Number.isInteger(request.position)||Math.abs(request.position)>3||own(request,'upgrade'))fail('invalid tuning');
  s.engineering.tuning[request.tuning]=request.position;
  }
  // Capacity changes preserve the absolute heat debt and latch. Never refill HP or abilities.

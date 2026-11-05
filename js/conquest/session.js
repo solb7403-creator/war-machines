@@ -5,8 +5,8 @@ const list=v=>Array.isArray(v)?v:v&&typeof v==='object'?Object.keys(v).sort((a,b
 class Session{
  constructor(view,transport){this.view=view;this.transport=transport;this.queue=[];this.elapsed=0;this.connected=false;this.disposed=false;this.busy=false;this.edges={};this.status='CONNECTING';this.serial=Promise.resolve();this.lastSend=0;this.nextConnect=0;this.pumpAt=performance.now();}
  async connect(){this.nextConnect=performance.now()+5000;try{const r=await this.transport('/api/conquest/session',{});if(this.disposed)return false;this.queue=[];this.elapsed=0;this.apply(r.state);this.connected=true;this.pumpAt=performance.now()+150;this.status='SECURED';return true;}catch(e){this.connected=false;this.status='ONLINE REQUIRED FOR SECURE REWARDS';this.error=String(e.message);return false;}}
- apply(s){if(this.disposed||this.state&&s.seq<this.state.seq)return;const v=this.view,oldPhase=this.phase;this.phase=(s.mission||'roam')+':'+(s.attempt||0);this.state=s;this.loadout=s.loadout;
- const B=s.mission?new C.Battle(s.loadout,s.position):new C.Encounter(s.loadout,s.position);Object.assign(B,clone(s.battle));B.enemies=list(B.enemies);B.effects=list(B.effects);B.projectiles=list(B.projectiles);B.superShells=list(B.superShells);B.playerStats.gems=list(B.playerStats.gems);B.playerStats.buffs=list(B.playerStats.buffs);B.playerHp=s.hp;K.ensure(B);
+ apply(s){if(this.disposed||this.state&&s.seq<this.state.seq)return;const v=this.view,oldPosition={...v.p},oldPhase=this.phase;this.phase=(s.mission||'roam')+':'+(s.attempt||0);this.state=s;this.loadout=s.loadout;
+ const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);Object.assign(B,clone(s.battle));B.enemies=list(B.enemies);B.effects=list(B.effects);B.projectiles=list(B.projectiles);B.superShells=list(B.superShells);B.playerStats.gems=list(B.playerStats.gems);B.playerStats.buffs=list(B.playerStats.buffs);B.playerHp=s.hp;K.ensure(B);
  for(const e of B.enemies){e.stats.gems=list(e.stats.gems);e.stats.buffs=list(e.stats.buffs);if(e.target&&e.home&&e.target.x===e.home.x&&e.target.z===e.home.z)e.target=e.home;if(e.target&&e.navGoal&&e.target.x===e.navGoal.x&&e.target.z===e.navGoal.z)e.target=e.navGoal;if(e.target&&e.target.x===B.objective.x&&e.target.z===B.objective.z)e.target=B.objective;}
  for(const p of B.projectiles){p.stats.gems=list(p.stats.gems);p.stats.buffs=list(p.stats.buffs);}
  // Reconcile to a verified endpoint without passing correction displacement to discovery.
@@ -14,6 +14,7 @@ class Session{
  if(v.selectedId&&!B.enemies.some(e=>e.id===v.selectedId&&e.hp>0))v.selectedId=null;
  // Retain inputs created while the request was in flight, then replay prediction only.
  for(const i of this.queue)v.p=K.advance(B,v.p,i,.05,!s.mission);
+ const correction={x:oldPosition.x-v.p.x,z:oldPosition.z-v.p.z};if(oldPhase===this.phase&&Math.hypot(correction.x,correction.z)<12)v.renderCorrection=correction;else v.renderCorrection={x:0,z:0};
  if(s.completed?.['oxygen-line'])v.progress?.complete('oxygen-line');v.syncLoadout();v.flushHealth();
  }
  pump(){if(this.disposed)return;const now=performance.now();if(!this.connected){if(!this.busy&&now>=this.nextConnect){this.busy=true;this.connect().finally(()=>this.busy=false);}return;}if(now-this.pumpAt>=1000){this.pumpAt=now;if(!this.busy&&!this.actionBusy&&this.queue.length)this.flush();}}

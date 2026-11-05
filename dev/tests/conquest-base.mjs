@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
+const {RULES:R,CONQUEST:{World:W,Combat:C}}=await import('../../worker/src/sim.gen.js');
+const {createState,applyAction,refreshState}=await import('../../worker/src/conquest-sim.js');
+const now=1800000000000,s=createState(R.STOCK_L,now),d=C.baseDefinition;
+s.position={x:d.x,z:d.z,y:W.groundAt(d.x,d.z),surface:'ground'};s.battle.enemies=[];s.ledger.cp=100000;s.ledger.banked={alloy:10000,biomass:10000,helium:10000};
+let a=applyAction(s,{seq:1,action:'build-base'},now);assert.equal(a.base.tier,1);assert.equal(a.ledger.cp,s.ledger.cp-d.recipe.cp);assert.throws(()=>applyAction(a,{seq:2,action:'build-base'},now),/built/);
+a=applyAction(a,{seq:2,action:'base-module',module:'reactor'},now);assert(a.base.pending);refreshState(a,now+60000);assert.equal(a.base.modules.reactor,1);
+const before=a.ledger.cp;a=applyAction(a,{seq:3,action:'base-claim'},now+86400000);assert(a.ledger.cp>before);assert.throws(()=>applyAction(a,{seq:4,action:'base-claim'},now+86400001),/production/);
+assert.throws(()=>applyAction(a,{seq:4,action:'base-module',module:'forged'},now+86400001),/module/);
+const b=structuredClone(a);b.position.x+=100;assert.throws(()=>applyAction(b,{seq:4,action:'upgrade-base'},now+86400001),/terminal/);
+const legacy=createState(R.STOCK_L,now);delete legacy.base;legacy.reputation=731;const cp=legacy.ledger.cp;refreshState(legacy,now);assert.equal(legacy.reputation,731);assert.equal(legacy.ledger.cp,cp);
+console.log('PASS atomic base ownership, immutable costs, physical terminal, construction clock, passive claim and additive migration');

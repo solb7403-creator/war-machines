@@ -1,4 +1,5 @@
 // Conquest has its own versioned Firebase record and CAS boundary, separate from eco/airdrop.
+import {BASE_ACTIONS} from './conquest-campaign.js';
 import {readEco,readTag,writeIf} from './eco.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
@@ -34,7 +35,7 @@ export async function conquestInput(env,a,now=Date.now()){
  return submit(env,a,{seq:a.b.seq,commands},applyCommands,now);
 }
 export async function conquestAction(env,a,now=Date.now()){
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning'].includes(a.b.action))return response(400,'invalid conquest action');
- if(a.b.action!=='buy-upgrade'&&a.b.action!=='set-tuning'&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];return submit(env,a,request,applyAction,now);
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module'].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];return submit(env,a,request,applyAction,now);
 }

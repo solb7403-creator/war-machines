@@ -12,8 +12,8 @@ const derived=C.engineeringValues(b.playerStats,{ranks:{bulletRange:3,bulletVelo
 console.log('PASS Session 3.3 Dash/cadence/heat and independent ballistics');
 const {createState,applyAction,hydrate}=await import('../../worker/src/conquest-sim.js');
 const now=100000,terminal=s=>{s.position={x:1174,z:1168,y:W.groundAt(1174,1168),surface:'ground'};s.battle.enemies=[];return s;};
-let state=terminal(createState(R.STOCK_L,now));state.hp=90;state.battle.heat=87;state.battle.dashCd=2;state.ledger.cp=10000;state.ledger.banked={alloy:1000,biomass:1000,helium:100};
-for(const upgrade of Object.keys(C.tracks))for(let rank=1;rank<=3;rank++){const prev=structuredClone(state),price=C.costs[rank-1];state=applyAction(state,{seq:state.seq+1,action:'buy-upgrade',upgrade},now);assert.equal(state.engineering.ranks[upgrade],rank);assert.equal(state.ledger.cp,prev.ledger.cp-price.cp);assert.equal(state.battle.heat,87);assert.equal(state.hp,90);assert.equal(state.battle.dashCd,2);}
+let state=terminal(createState(R.STOCK_L,now));state.hp=90;state.battle.heat=87;state.battle.dashCd=2;state.ledger.cp=100000;state.ledger.banked={alloy:10000,biomass:10000,helium:1000};
+for(const upgrade of Object.keys(C.tracks))for(let rank=1;rank<=C.costs.length;rank++){const prev=structuredClone(state),price=C.costs[rank-1];state=applyAction(state,{seq:state.seq+1,action:'buy-upgrade',upgrade},now);assert.equal(state.engineering.ranks[upgrade],rank);assert.equal(state.ledger.cp,prev.ledger.cp-price.cp);assert.equal(state.battle.heat,87);assert.equal(state.hp,90);assert.equal(state.battle.dashCd,2);}
 assert.throws(()=>applyAction(state,{seq:state.seq+1,action:'buy-upgrade',upgrade:'heatCapacity'},now),/maximum/);
 for(const tuning of C.tuningKeys)for(const position of [-3,0,3]){state=applyAction(state,{seq:state.seq+1,action:'set-tuning',tuning,position},now);assert.equal(state.engineering.tuning[tuning],position);}
 assert.throws(()=>applyAction(state,{seq:state.seq,action:'set-tuning',tuning:'thermal',position:0},now),/stale/);
