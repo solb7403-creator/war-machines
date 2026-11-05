@@ -1,5 +1,5 @@
 {
-  "source": "accelerated authoritative command replay; canonical Legendary gear fixture; initial position placed at each authored entry; subsequent movement/combat/objectives and settlement server-simulated",
+  "source": "authoritative physical command replay; canonical Legendary gear fixture; initial position placed at authored entry; subsequent movement/combat/objectives/settlement replayed authoritatively",
   "results": [
     {
       "id": "raid-intercept-1",
@@ -287,7 +287,7 @@
         "biomass": 13,
         "helium": 7,
         "shards": 1,
-        "eliteBlueprint": false,
+        "eliteBlueprint": true,
         "rareChance": 0.035
       }
     },
@@ -442,15 +442,15 @@
       "layout": "dust-switchback",
       "commander": "carrier",
       "outcome": "victory",
-      "seconds": 61,
-      "hp": 1955.113800885615,
+      "seconds": 47.55,
+      "hp": 2479.5670498692884,
       "kills": 5,
       "stage": 3,
       "scans": 3,
       "position": {
-        "x": 930.8781405072555,
-        "z": 943.6796370612825,
-        "y": -0.09674750821909328,
+        "x": 930.8853114958965,
+        "z": 943.580756510117,
+        "y": -0.09681419947770767,
         "surface": "ground"
       },
       "settlement": {
@@ -471,15 +471,15 @@
       "layout": "basin-crescent",
       "commander": "carrier",
       "outcome": "victory",
-      "seconds": 44.3,
-      "hp": 2423.419543514455,
+      "seconds": 46.6,
+      "hp": 2676.2114888216265,
       "kills": 5,
       "stage": 3,
       "scans": 3,
       "position": {
-        "x": 1090.8241110642382,
-        "z": 864.0006917212686,
-        "y": -3.7893265439193686,
+        "x": 1090.8000739154986,
+        "z": 863.9677294393504,
+        "y": -3.7989433499397545,
         "surface": "ground"
       },
       "settlement": {
@@ -500,15 +500,15 @@
       "layout": "ash-approach",
       "commander": "carrier",
       "outcome": "victory",
-      "seconds": 41.85,
-      "hp": 2013.7197027892992,
+      "seconds": 40.35,
+      "hp": 1912.5884727892985,
       "kills": 4,
       "stage": 3,
       "scans": 3,
       "position": {
-        "x": 1280.8513470655853,
-        "z": 855.3765809230683,
-        "y": -77.08862357272582,
+        "x": 1280.8724323706608,
+        "z": 855.3743137190993,
+        "y": -77.10281497303994,
         "surface": "ground"
       },
       "settlement": {
@@ -529,15 +529,15 @@
       "layout": "spear-flank",
       "commander": "carrier",
       "outcome": "victory",
-      "seconds": 56.25,
-      "hp": 2522.4586960784286,
+      "seconds": 89.4,
+      "hp": 2540.990574158528,
       "kills": 4,
       "stage": 3,
       "scans": 3,
       "position": {
-        "x": 1340.9131865239167,
-        "z": 1022.8442970704297,
-        "y": -88.31907625138913,
+        "x": 1340.8999410696679,
+        "z": 1020.5884683024949,
+        "y": -86.9720593772105,
         "surface": "ground"
       },
       "settlement": {
@@ -558,15 +558,15 @@
       "layout": "ridge-hook",
       "commander": "carrier",
       "outcome": "victory",
-      "seconds": 27.7,
-      "hp": 2789.1754,
+      "seconds": 27.75,
+      "hp": 2822.5058500000005,
       "kills": 4,
       "stage": 3,
       "scans": 3,
       "position": {
-        "x": 1310.8844746798063,
-        "z": 1220.616799624655,
-        "y": -219.9392302179516,
+        "x": 1310.8905138172997,
+        "z": 1220.6059629573124,
+        "y": -219.9343513782839,
         "surface": "ground"
       },
       "settlement": {
@@ -635,7 +635,7 @@
         "biomass": 16,
         "helium": 4,
         "shards": 1,
-        "eliteBlueprint": false,
+        "eliteBlueprint": true,
         "rareChance": 0.035
       }
     },
@@ -722,12 +722,9 @@
         "biomass": 16,
         "helium": 7,
         "shards": 1,
-        "eliteBlueprint": true,
+        "eliteBlueprint": false,
         "rareChance": 0.035
       }
     }
-  ],
-  "test": "node dev/tests/conquest-raids.mjs",
-  "coverLayouts": 5,
-  "authoredCoverObjects": 9
+  ]
 }

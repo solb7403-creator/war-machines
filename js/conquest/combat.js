@@ -29,6 +29,7 @@ const archetypes=Object.freeze({
  sentinel:Object.freeze({name:'Parasite heavy sentinel',cls:'titan',arch:'siege',hp:1100,dps:72,shot:1.15,speed:1.8,range:54,role:'player'}),
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
+const droneDefinition=Object.freeze({altitude:15,takeoffSeconds:1.2,speed:4.2,maxPerCarrier:2,tellSeconds:1.1,burstSeconds:2,cycleSeconds:6});
 const installations=W.installations;
 // Stable authored identities preserve production v1 locks and spawn keys as the region expands.
 const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
@@ -152,7 +153,7 @@ class Battle {
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
  for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
- const p=W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
+ const p=this.enemyAdvance?this.enemyAdvance(e,dt):W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
  const target=e.target||this.objective,ec=center(e),want=Math.atan2(target.x-e.x,target.z-e.z),delta=Math.atan2(Math.sin(want-e.turret),Math.cos(want-e.turret));e.turret+=clamp(delta,-2*dt,2*dt);
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
  }
@@ -215,7 +216,7 @@ class Operation extends Battle {
  defenseStep(dt){if(this.defenseConfig==='drone')this.objectiveHp=Math.min(this.objectiveMax,this.objectiveHp+12*dt);if(this.defenseConfig!=='turret')return;this.turretClock=(this.turretClock||0)-dt;if(this.turretClock>0)return;this.turretClock=.6;const from={x:this.operation.x,y:W.groundAt(this.operation.x,this.operation.z)+6,z:this.operation.z},e=this.enemies.find(e=>!e.resident&&e.hp>0&&Math.hypot(e.x-from.x,e.z-from.z)<65&&lineClear(from,center(e)));if(!e)return;const damage=18+3*(this.baseTier||0);e.hp=Math.max(0,e.hp-damage);this.effects.push({kind:'beam',weapon:'pulse',x:from.x,y:from.y,z:from.z,ex:e.x,ey:e.y+2.2,ez:e.z,life:.15});if(!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
  deployDefense(){this.defenseWave++;for(let i=0;i<3;i++){this.deploy(i===2?'breacher':'raider',this.operation.x-30+i*20,this.operation.z-40,'defense:'+this.defenseWave+':'+i);this.enemies.at(-1).role=i===2?'facility':'player';}this.objectiveDamageable=true;}
  hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
-  for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;e.nextPattern=this.time+(e.pattern==='artillery'?6:8);e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<2&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);this.enemies.at(-1).drone=true;e.drones++;}}}
+  for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;e.nextPattern=this.time+(e.pattern==='artillery'?6:8);e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<droneDefinition.maxPerCarrier&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);const drone=this.enemies.at(-1);drone.drone=true;drone.launchedAt=this.time;drone.surface='air';drone.cd=droneDefinition.takeoffSeconds;drone.telegraph=true;e.drones++;}}}
   if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+11;this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
  }
  markStrike(kind,x,z,source){if(this.hazards.length>=8)return;this.hazards.push({kind,x,z,y:W.groundAt(x,z),radius:kind==='plasma'?9:6,remaining:kind==='drone'?2.6:2.2,damage:kind==='plasma'?75:55,source});}
@@ -226,7 +227,14 @@ class Operation extends Battle {
   if(o.family==='siege'){if(!living.length&&this.stage===0){this.stage=1;this.deployCommander();}else if(!living.length&&this.stage===1&&d<14){this.work+=dt;if(this.work>=5){this.stage=2;this.state='victory';}}}
  }
  deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8],...Array.from({length:32},(_,i)=>[Math.cos(i*Math.PI/8)*(16+Math.floor(i/16)*8),Math.sin(i*Math.PI/8)*(16+Math.floor(i/16)*8)])].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:a.role});}
+ enemyAdvance(e,dt){if(!e.drone)return W.advance(e,e.vx*dt,e.vz*dt);if(!Number.isFinite(e.launchedAt))e.launchedAt=this.time;const progress=clamp((this.time-(e.launchedAt||0))/droneDefinition.takeoffSeconds,0,1),x=clamp(e.x+e.vx*dt,1,W.WIDTH-1),z=clamp(e.z+e.vz*dt,1,W.LENGTH-1),y=W.groundAt(x,z)+droneDefinition.altitude*progress;
+ // Hovercraft clear low military cover but cannot cross tall physical structures.
+ if(W.blockedAt(x,y+2.2,z))return {x:e.x,z:e.z,y:W.groundAt(e.x,e.z)+droneDefinition.altitude*progress,surface:'air'};return {x,y,z,surface:'air'};
+ }
  choose(e){
+ if(e.drone){if(!Number.isFinite(e.launchedAt))e.launchedAt=this.time;const elapsed=this.time-(e.launchedAt||0),launch=elapsed<droneDefinition.takeoffSeconds,phase=((elapsed-droneDefinition.takeoffSeconds)%droneDefinition.cycleSeconds+droneDefinition.cycleSeconds)%droneDefinition.cycleSeconds,dx=this.player.x-e.x,dz=this.player.z-e.z,d=Math.hypot(dx,dz)||1;
+ e.target=this.player;e.telegraph=launch||phase<droneDefinition.tellSeconds;e.vx=e.vz=0;if(!launch){if(d>34||d<24){const speed=d>34?droneDefinition.speed:-droneDefinition.speed;e.vx=dx/d*speed;e.vz=dz/d*speed;}else{e.vx=-dz/d*1.4;e.vz=dx/d*1.4;}}
+ if(launch||phase<droneDefinition.tellSeconds||phase>=droneDefinition.tellSeconds+droneDefinition.burstSeconds)e.cd=Math.max(e.cd,.4);return;}
  if(e.id===this.carrierId){const q=W.advance(e,0,this.operation.raid?-1.5:-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
  if(e.immobile){e.vx=e.vz=0;e.target=this.player;return;}
  const objective=this.objective;if(this.operation.id!=='rescue'&&this.operation.family!=='base-defense'&&!this.operation.defense)this.objective=this.player;super.choose(e);this.objective=objective;
@@ -246,5 +254,5 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({spawnIds,operations,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);
