@@ -7,3 +7,7 @@ Use the existing repository and current branch as the source of truth. Do not in
 ## Hosted Graphify MCP (project-scoped)
 
 The repository's `.mcp.json` declares the hosted Graphify MCP endpoint (`https://api.graphify.com/mcp`). On first use, authorize Graphify via the Claude Code OAuth prompt if requested; configuration does **not** bypass user sign-in. Check `list_repositories`/`graph_stats` to confirm `solb7403-creator/war-machines` is indexed and to compare the indexed commit with your working branch. For substantial code changes, use the graph to identify relevant files, callers, dependencies and linked tests before expensive whole-file reads. Fall back to current source if Graphify tools are unavailable; treat static graph relationships as guidance, not runtime verification. Never commit tokens or OAuth credentials.
+
+## Conquest flagship continuation (Codex ↔ Claude)
+
+When working on Conquest flagship completion, open [docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md](docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md) **before** coding. Both complete owner-approved briefs are stored under `docs/conquest/`; don't rely on attachment URLs or previous chats. Read and update `docs/conquest/IMPLEMENTATION_CHECKPOINT.md` when present, commit and push each tested vertical slice, and never claim to recover another agent's unpushed work. Do not shorten scope due to a prior agent running out of quota. Never enable unverified payments.

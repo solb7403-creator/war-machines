@@ -44,3 +44,7 @@ This file is the common engineering contract for Codex, Claude Code and other au
 - Existing browser tests use Playwright and may require browsers/Worker dependencies; inspect the CI workflow first.
 
 When a task is documentation/tooling-only, do not bump the deployed game version or alter live gameplay files.
+
+## Conquest flagship-specific agent protocol
+
+For Conquest flagship development, the durable cross-agent source of truth is `docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md` plus both complete briefs in `docs/conquest/`. Read these before modifying Conquest; maintain `docs/conquest/IMPLEMENTATION_CHECKPOINT.md` on the coding branch and commit/push coherent progress after each vertical slice so Claude/Codex can take over without repeating work. In absence of the checkpoint, check the actual existing branch and PR history, never assume completed work or unpushed changes. These instructions do not grant access to uncertified payments or paid infrastructure.
