@@ -30,6 +30,7 @@ jobs:
           node dev/tests/conquest-opening.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs
+          node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs
@@ -52,7 +53,9 @@ jobs:
         if: always()
         with:
           name: conquest-gameplay-evidence
-          path: docs/conquest-session-031
+          path: |
+            docs/conquest-session-031
+            docs/conquest-living-war/replay-current.json
 
   transmission:
     runs-on: ubuntu-24.04

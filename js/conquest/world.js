@@ -22,9 +22,10 @@ function heightAt(x,z){
  const local=-13*Math.exp(-Math.pow((x-1024)/42,2)) + 26*Math.exp(-Math.pow((x-1210)/65,2)-Math.pow((z-1130)/65,2));
  return mix(h,local,blend);
 }
-// Bounded fine-grid cache amortizes collision/AI ray samples; canonical terrain remains unchanged.
+// Bounded fine-grid cache; numeric in-world keys avoid hot-path strings. The stride exceeds
+// the padded Z range; out-of-region queries retain collision-free string keys.
 const gridCache=new Map();
-function gridHeight(x,z){const k=x+':'+z;if(gridCache.has(k))return gridCache.get(k);const h=heightAt(x,z);if(gridCache.size>=16384)gridCache.delete(gridCache.keys().next().value);gridCache.set(k,h);return h;}
+function gridHeight(x,z){const k=x>=-4&&x<=WIDTH+4&&z>=-4&&z<=LENGTH+4?(x+4)*(LENGTH+12)+z+4:x+':'+z;const cached=gridCache.get(k);if(cached!==undefined)return cached;const h=heightAt(x,z);if(gridCache.size>=16384)gridCache.delete(gridCache.keys().next().value);gridCache.set(k,h);return h;}
 // Exact piecewise triangle interpolation matches the fine rendered ground, including at edges.
 function groundAt(x,z){const a=Math.floor(x/STEP)*STEP,b=Math.floor(z/STEP)*STEP,u=(x-a)/STEP,v=(z-b)/STEP,h=gridHeight(a,b),e=gridHeight(a+STEP,b),n=gridHeight(a,b+STEP),ne=gridHeight(a+STEP,b+STEP);return u+v<=1?h+(e-h)*u+(n-h)*v:ne+(n-ne)*(1-u)+(e-ne)*(1-v);}
 function surfaceNormal(x,z){const a=Math.floor(x/STEP)*STEP,b=Math.floor(z/STEP)*STEP,u=(x-a)/STEP,v=(z-b)/STEP,h=gridHeight(a,b),e=gridHeight(a+STEP,b),n=gridHeight(a,b+STEP),ne=gridHeight(a+STEP,b+STEP);const dx=(u+v<=1?e-h:ne-n)/STEP,dz=(u+v<=1?n-h:ne-e)/STEP,l=Math.hypot(dx,1,dz);return [-dx/l,1/l,-dz/l];}
@@ -35,15 +36,14 @@ function surfacesAt(x,z){const a=[{id:'ground',y:groundAt(x,z)}],y=deckAt(x,z);i
 function structureSolidAt(x,z){if(installations.some(b=>Math.abs(x-b.x)<11&&Math.abs(z-b.z-8)<8||Math.hypot(x-b.x-14,z-b.z-10)<2))return true;for(let i=0;i<3;i++)if(Math.hypot(x-(1150+i*30),z-1080)<12)return true;for(let i=0;i<9;i++)if(Math.hypot(x-(1110+i%3*22),z-(1148+Math.floor(i/3)*25))<7.8)return true;return false;}
 // Match the deterministic rendered boulders. Cache bounded chunk descriptors, not meshes.
 const rockCache=new Map();
-function rocksNear(x,z){const out=[],cx=Math.floor(x/128),cz=Math.floor(z/128);for(let j=Math.floor((z-8)/128);j<=Math.floor((z+8)/128);j++)for(let i=Math.floor((x-8)/128);i<=Math.floor((x+8)/128);i++){const key=i+':'+j;let rocks=rockCache.get(key);if(!rocks){rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45);if(rockCache.size>=128)rockCache.delete(rockCache.keys().next().value);rockCache.set(key,rocks);}out.push(...rocks);}return out;}
-function rockSolid(x,z,y=null){return rocksNear(x,z).some(p=>Math.hypot((x-p.x)/(p.size*1.6+1),(z-p.z)/(p.size+1))<1&&(y===null||y<p.y+p.size*(.8+p.variant)));}
+function rockSolid(x,z,y=null){for(let j=Math.floor((z-8)/128);j<=Math.floor((z+8)/128);j++)for(let i=Math.floor((x-8)/128);i<=Math.floor((x+8)/128);i++){const key=i+':'+j;let rocks=rockCache.get(key);if(!rocks){rocks=scenery(i,j).filter(p=>p.kind==='rock'&&p.variant>.45).map(p=>({...p,rx:p.size*1.6+1,rz:p.size+1,top:p.y+p.size*(.8+p.variant)}));if(rockCache.size>=128)rockCache.delete(rockCache.keys().next().value);rockCache.set(key,rocks);}for(const p of rocks){if(Math.abs(x-p.x)>=p.rx||Math.abs(z-p.z)>=p.rz||y!==null&&!(y<p.top))continue;if(Math.hypot((x-p.x)/p.rx,(z-p.z)/p.rz)<1)return true;}}return false;}
 function solidAt(x,z){return structureSolidAt(x,z)||rockSolid(x,z);}
 // Exact slab intersection avoids a sampling gap at thin bunker corners.
 function installationOccludes(a,b){return installations.some(site=>{let lo=0,hi=1;for(const [axis,min,max] of [['x',site.x-9,site.x+9],['z',site.z+2,site.z+14],['y',-Infinity,groundAt(site.x,site.z)+12]]){const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-10){if(a[axis]<=min||a[axis]>=max)return false;continue;}const t0=(min-a[axis])/delta,t1=(max-a[axis])/delta;lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));if(lo>=hi)return false;}return hi>1e-6&&lo<1-1e-6;});}
 // Shared physical shot occlusion; structure footprints have finite heights, bridge has real underside.
 function blockedAt(x,y,z){if(installations.some(b=>Math.abs(x-b.x)<9&&Math.abs(z-b.z-8)<6&&y<groundAt(b.x,b.z)+12))return true;if(y<=groundAt(x,z)||rockSolid(x,z,y))return true;const deck=deckAt(x,z);if(deck!==null&&y>=deck-1.3&&y<=deck+.25)return true;
- for(let i=0;i<3;i++){const a=1150+i*30;if(Math.hypot(x-a,z-1080)<12&&y<groundAt(a,1080)+108+i%2*38)return true;}
- for(let i=0;i<9;i++){const a=1110+i%3*22,b=1148+Math.floor(i/3)*25;if(Math.hypot(x-a,z-b)<8&&y<groundAt(a,b)+9)return true;}
+ if(z>1068&&z<1092&&x>1138&&x<1222)for(let i=0;i<3;i++){const a=1150+i*30;if(Math.hypot(x-a,z-1080)<12&&y<groundAt(a,1080)+108+i%2*38)return true;}
+ if(x>1102&&x<1162&&z>1140&&z<1206)for(let i=0;i<9;i++){const a=1110+i%3*22,b=1148+Math.floor(i/3)*25;if(Math.hypot(x-a,z-b)<8&&y<groundAt(a,b)+9)return true;}
  return [970,1070].some(a=>[1018,1030].some(b=>Math.abs(x-a)<1.5&&Math.abs(z-b)<1.5&&y<24));}
 function move(p,dx,dz){
  let x=clamp(p.x+dx,1,WIDTH-1),z=clamp(p.z+dz,1,LENGTH-1),d=Math.hypot(x-p.x,z-p.z),surface=p.surface||'ground';if(!d)return p;

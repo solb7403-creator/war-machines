@@ -188,3 +188,26 @@ Final local Chromium extended run PASS after fortress effects/Firebase fix: actu
 **Remaining acceptance:** final-head CI; capable-iPhone/Telegram dense60FPS and30minute travel/fighting+20minute dense memory/stutter soak, plus actual manual first-hour feel review. PHYSICAL_IPHONE_NOT_TESTED. No exposed hardware GPU/device is available here (`/dev/dri` absent; no DRM devices). The local preview now makes the device review concrete without risking live accounts. No merge/deploy; live Worker/Pages remain20261105034106, Worker latest successful deploy SHA d592146dfca5ea389507ec8cd51b8cc28e1eb2f5.
 
 Exact continuation: `Continue Session1 on feat/conquest-living-war-v1 / PR53 from docs/conquest/IMPLEMENTATION_CHECKPOINT.md; preserve all tested systems, finish the explicit device/performance/manual acceptance gates, and begin Session2 only after Session1 is accepted.` Do not restart completed work.
+
+## Checkpoint 12 — lower replay CPU with equivalent terrain and collision
+
+Previous implementation **b9258b43ae9e2c20a6cf5b92413078d725d61715** completed ALL CI checks GREEN, including the actual HTTP preview tests and native navigation/mission regression. Conquest run: [42000739230](https://github.com/solb7403-creator/war-machines/actions/runs/42000739230). The next head includes the measured performance optimization below and requires its own CI.
+
+A local Node CPU profile of dense command replay identified `blockedAt`, terrain-key allocation, rock-query arrays and garbage collection as hot paths. Optimized shared World queries without changing game rules: collision-free numeric keys for padded in-world grid samples (string fallback for out-of-region queries), one cache lookup per hit, cached rock dimensions/top heights, no temporary combined rock arrays, and exact broad-phase rejection around existing oxygen/habitat shot volumes. Caches retain their existing 16,384-height/128-rock-chunk bounds. World dimensions, terrain equations, colliders, actors, AI, cadence, rewards and input/network timing are unchanged.
+
+**Matched replay proof:** `conquest-replay-budget.mjs` uses the same genuine active Oxygen+world state after12s:16 living enemies/1 active projectile;20 canonical commands represent one game second. Separate before/after module snapshots,40 warm measured requests on local Node24: median CPU **31.105 →14.772ms** (**52.51% reduction**); median wall **29.999 →13.991ms**; CPU p95 **42.678 →29.886ms**, wall p95 **37.484 →20.368ms**. This is local replay cost, NOT per-rendered-frame time, actual Cloudflare production CPU, or phone telemetry. The earlier~57ms diagnostic used a different3s state and is not used as the matched baseline. `replay-budget.json` records exact source hashes, scenario and limits. CI now uploads `replay-current.json`; there is no flaky hardware-time threshold.
+
+**Behavior preservation:** `conquest-world-equivalence.mjs` compared historical b925 World with current code in independent VM contexts:15,504points /93,024 shot-blocking checks, zero differences in heights/solids/occlusion. Includes first region, whole Moon, exact bunker/rock boundaries, NaN heights and out-of-region cache-key pairs. A permanent terrain-cache canary guards cross-region aliasing. The single read-only reviewer independently checked another1,362points/13,620checks, found no Critical/Important issue and verified key injectivity and predicate equivalence.
+
+Reproduce after checking out this branch:
+
+```sh
+git show b9258b43ae9e2c20a6cf5b92413078d725d61715:js/conquest/world.js > /tmp/world-before.js
+node dev/tests/conquest-world-equivalence.mjs /tmp/world-before.js
+node worker/build-sim.mjs
+node dev/tests/conquest-replay-budget.mjs
+```
+
+PASS after optimization: terrain/routes/cliffs, opening (unchanged28.2s visible /36.75s hostile fire /73.2s real kill-loot-bank), frontline, base/local field fairness, authority, all six actual operation victories, historical-v1/Firebase omission migration, Worker auth/CAS, production view travel, engineering/Dash/Shield/Supers, legal Moonbeam thermal matrix and actual HTTP preview. Full local extended WebKit390 PASS: physical tiersI–V, real60s Reactor, Relay/Convoy outcomes and physical verified banking, engineering/heat/laser/context loss. Latest isolated software sample:600frames, median16ms/p9520ms/worst28ms, zero>100ms; below50/40/30FPS4/.83/0%,39draws/46,310triangles/46geometries/2textures/25chunks/15living actors. No opponents were hidden or removed for these optimizations.
+
+**Release still BLOCKED:** observe final-head CI; certify dense capable-iPhone/Telegram60FPS and30mtravel/fighting+20mdense memory/stutter on actual mobile-class hardware, plus manual first-hour feel review. PHYSICAL_IPHONE_NOT_TESTED. The old Chromium software sample is not silently relabeled as improved. No merge/deploy or production account/payment/infra changes. Main remains a668e30; live build20261105034106. Use the local preview from PLAYTEST.md for safe review; resume this branch and these exact gates without redoing finished systems.
