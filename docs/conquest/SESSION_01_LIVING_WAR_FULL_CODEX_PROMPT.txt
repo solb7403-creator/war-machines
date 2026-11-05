@@ -83,3 +83,6 @@ H. DELIVERY / CONTINUATION RULE
 - Do not rework Session 2 items yet: it will finish 25+ raid operations, meaningful endgame, protected-base raids and Vault, shared campaign/community, real verified cosmetic/instant-upgrade purchase catalog, premium VFX/presentation and full release balancing. Session 1 must nevertheless already be genuinely enjoyable, complete, persistent and playable solo.
 
 START CODING NOW. NO ADDITIONAL REQUIREMENTS OR CLARIFICATION REQUESTS. USE YOUR JUDGMENT IN SERVICE OF VISIBLE, MEANINGFUL GAMEPLAY. PRIORITIZE THE PLAYER EXPERIENCE OVER CODE VOLUME.
+
+MANDATORY NEW OWNER ACCEPTANCE CONTRACT — IMMENSELY SMOOTH GAMEPLAY:
+Before changing code, read docs/conquest/SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md on main. It is binding for this session, in addition to every requirement above. Target stable 60 FPS on capable iPhone during representative dense active combat, first-frame joystick/Dash/FIRE/Shield feedback, smooth streaming and server reconciliation, bounded VFX/memory, real multi-touch, and high/low/2D adaptive quality. Include actual performance profiling and stress test evidence; do not claim physical iPhone results from desktop emulation. Session 1 must already be smooth; don't postpone to Session 2.
