@@ -1,0 +1,226 @@
+{
+  "scope": "Rich-bank fixture; real authenticated build/upgrade/equip/reconnect actions and real in-game GLB; not earned combat or phone hardware proof",
+  "viewports": [
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "render": {
+        "samples": 98,
+        "pixelRatio": 1,
+        "percentBelow50fps": 82.65306122448979,
+        "percentBelow40fps": 82.65306122448979,
+        "percentBelow30fps": 81.63265306122449,
+        "simulationMs": 2,
+        "renderSubmissionMs": 0.900000000372529,
+        "heapBytes": 32917113,
+        "textures": 2,
+        "frameMedian": 117.59999999962747,
+        "frameP95": 494,
+        "worstFrame": 1517.2999999988824,
+        "hitches": 56,
+        "drawCalls": 37,
+        "triangles": 31126,
+        "geometries": 34,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      },
+      "assets": {
+        "command-high": {
+          "bytes": 105744,
+          "triangles": 1440,
+          "draws": 3,
+          "textures": 0
+        },
+        "command-low": {
+          "bytes": 20512,
+          "triangles": 252,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-high": {
+          "bytes": 79564,
+          "triangles": 1080,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-low": {
+          "bytes": 18472,
+          "triangles": 224,
+          "draws": 3,
+          "textures": 0
+        }
+      }
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "render": {
+        "samples": 107,
+        "pixelRatio": 1,
+        "percentBelow50fps": 83.17757009345794,
+        "percentBelow40fps": 83.17757009345794,
+        "percentBelow30fps": 82.24299065420561,
+        "simulationMs": 1.5,
+        "renderSubmissionMs": 5.399999998509884,
+        "heapBytes": 31509458,
+        "textures": 2,
+        "frameMedian": 117.59999999962747,
+        "frameP95": 493.7999999988824,
+        "worstFrame": 1517.2999999988824,
+        "hitches": 63,
+        "drawCalls": 36,
+        "triangles": 30934,
+        "geometries": 34,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      },
+      "assets": {
+        "command-high": {
+          "bytes": 105744,
+          "triangles": 1440,
+          "draws": 3,
+          "textures": 0
+        },
+        "command-low": {
+          "bytes": 20512,
+          "triangles": 252,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-high": {
+          "bytes": 79564,
+          "triangles": 1080,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-low": {
+          "bytes": 18472,
+          "triangles": 224,
+          "draws": 3,
+          "textures": 0
+        }
+      }
+    },
+    {
+      "viewport": [
+        430,
+        932
+      ],
+      "render": {
+        "samples": 116,
+        "pixelRatio": 1,
+        "percentBelow50fps": 83.62068965517241,
+        "percentBelow40fps": 83.62068965517241,
+        "percentBelow30fps": 82.75862068965517,
+        "simulationMs": 0.09999999962747097,
+        "renderSubmissionMs": 0.6000000014901161,
+        "heapBytes": 31783917,
+        "textures": 2,
+        "frameMedian": 131.69999999925494,
+        "frameP95": 494,
+        "worstFrame": 1517.2999999988824,
+        "hitches": 71,
+        "drawCalls": 36,
+        "triangles": 30934,
+        "geometries": 34,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      },
+      "assets": {
+        "command-high": {
+          "bytes": 105744,
+          "triangles": 1440,
+          "draws": 3,
+          "textures": 0
+        },
+        "command-low": {
+          "bytes": 20512,
+          "triangles": 252,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-high": {
+          "bytes": 79564,
+          "triangles": 1080,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-low": {
+          "bytes": 18472,
+          "triangles": 224,
+          "draws": 3,
+          "textures": 0
+        }
+      }
+    },
+    {
+      "viewport": [
+        1280,
+        800
+      ],
+      "render": {
+        "samples": 125,
+        "pixelRatio": 1,
+        "percentBelow50fps": 84.8,
+        "percentBelow40fps": 84.8,
+        "percentBelow30fps": 84,
+        "simulationMs": 0,
+        "renderSubmissionMs": 6.899999998509884,
+        "heapBytes": 28219722,
+        "textures": 2,
+        "frameMedian": 136.69999999925494,
+        "frameP95": 540.4000000003725,
+        "worstFrame": 1517.2999999988824,
+        "hitches": 79,
+        "drawCalls": 68,
+        "triangles": 57472,
+        "geometries": 36,
+        "chunks": 18,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      },
+      "assets": {
+        "command-high": {
+          "bytes": 105744,
+          "triangles": 1440,
+          "draws": 3,
+          "textures": 0
+        },
+        "command-low": {
+          "bytes": 20512,
+          "triangles": 252,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-high": {
+          "bytes": 79564,
+          "triangles": 1080,
+          "draws": 3,
+          "textures": 0
+        },
+        "raid-low": {
+          "bytes": 18472,
+          "triangles": 224,
+          "draws": 3,
+          "textures": 0
+        }
+      }
+    }
+  ],
+  "errors": []
+}

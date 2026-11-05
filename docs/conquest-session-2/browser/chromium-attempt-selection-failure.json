@@ -1,0 +1,9 @@
+{
+  "engine": "chromium",
+  "fixture": "Disposable local legal epic Moon/Titan starting loadout and safe raid-entry placement; separate rich banked base-build fixture. No forged combat, health, outcome, ownership or settlement.",
+  "environment": "Automated browser; Chromium uses SwiftShader software rendering. PHYSICAL_IPHONE_NOT_TESTED.",
+  "cases": [],
+  "errors": [
+    "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"button\", name=\"MAP\", exact=True)\n"
+  ]
+}

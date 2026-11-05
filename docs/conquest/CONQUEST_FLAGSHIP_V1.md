@@ -5,6 +5,8 @@ The unabridged owner-approved Session 1 and Session 2 briefs and performance con
 
 ---
 
+> **Owner update, November 5 Session 2:** The performance refinement in [SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md](SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md#owner-approved-acceptance-refinement--november-5-2026-session-2) supersedes legacy 60-FPS/software-renderer release gates and the instruction to postpone Session 2 for inaccessible hardware. Historical briefs/evidence remain intact. Continue on verified Session 1 code; physical iPhone certification stays explicitly unverified. All other scope remains binding.
+
 ## SESSION_01_LIVING_WAR_FULL_CODEX_PROMPT.txt
 
 LUNAR: WAR MACHINES — CONQUEST FLAGSHIP COMPLETION

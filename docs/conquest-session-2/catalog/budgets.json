@@ -1,0 +1,150 @@
+{
+  "results": [
+    {
+      "id": "base-bastion",
+      "calls": 12,
+      "triangles": 144,
+      "geometries": 12,
+      "glError": 0
+    },
+    {
+      "id": "base-lancer",
+      "calls": 10,
+      "triangles": 156,
+      "geometries": 10,
+      "glError": 0
+    },
+    {
+      "id": "base-cathedral",
+      "calls": 13,
+      "triangles": 252,
+      "geometries": 13,
+      "glError": 0
+    },
+    {
+      "id": "base-orbital",
+      "calls": 11,
+      "triangles": 300,
+      "geometries": 11,
+      "glError": 0
+    },
+    {
+      "id": "base-monolith",
+      "calls": 11,
+      "triangles": 168,
+      "geometries": 11,
+      "glError": 0
+    },
+    {
+      "id": "fire-sunlance",
+      "calls": 4,
+      "triangles": 120,
+      "geometries": 4,
+      "glError": 0
+    },
+    {
+      "id": "fire-ionwake",
+      "calls": 4,
+      "triangles": 48,
+      "geometries": 4,
+      "glError": 0
+    },
+    {
+      "id": "fire-prism",
+      "calls": 4,
+      "triangles": 84,
+      "geometries": 4,
+      "glError": 0
+    },
+    {
+      "id": "fire-siege",
+      "calls": 6,
+      "triangles": 216,
+      "geometries": 6,
+      "glError": 0
+    },
+    {
+      "id": "fire-twin",
+      "calls": 6,
+      "triangles": 144,
+      "geometries": 6,
+      "glError": 0
+    },
+    {
+      "id": "armor-brass",
+      "calls": 4,
+      "triangles": 48,
+      "geometries": 4,
+      "glError": 0
+    },
+    {
+      "id": "armor-ceramic",
+      "calls": 4,
+      "triangles": 48,
+      "geometries": 4,
+      "glError": 0
+    },
+    {
+      "id": "armor-radiant",
+      "calls": 8,
+      "triangles": 96,
+      "geometries": 8,
+      "glError": 0
+    },
+    {
+      "id": "armor-vector",
+      "calls": 6,
+      "triangles": 72,
+      "geometries": 6,
+      "glError": 0
+    },
+    {
+      "id": "armor-obsidian",
+      "calls": 7,
+      "triangles": 120,
+      "geometries": 7,
+      "glError": 0
+    },
+    {
+      "id": "command-standard",
+      "calls": 5,
+      "triangles": 60,
+      "geometries": 5,
+      "glError": 0
+    },
+    {
+      "id": "command-wings",
+      "calls": 9,
+      "triangles": 120,
+      "geometries": 9,
+      "glError": 0
+    },
+    {
+      "id": "command-orrery",
+      "calls": 6,
+      "triangles": 204,
+      "geometries": 6,
+      "glError": 0
+    },
+    {
+      "id": "command-beacon",
+      "calls": 7,
+      "triangles": 132,
+      "geometries": 7,
+      "glError": 0
+    },
+    {
+      "id": "command-parasite",
+      "calls": 8,
+      "triangles": 132,
+      "geometries": 8,
+      "glError": 0
+    }
+  ],
+  "after": {
+    "geometries": 0,
+    "textures": 0
+  },
+  "environment": "Headless Chromium SwiftShader software renderer; NOT physical iPhone performance or in-game gameplay proof",
+  "errors": []
+}

@@ -6,7 +6,7 @@ on:
 jobs:
   conquest:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,6 +30,21 @@ jobs:
           node dev/tests/conquest-opening.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs
+          node dev/tests/conquest-raid-layouts.mjs
+          node dev/tests/conquest-raids.mjs
+          node dev/tests/conquest-drones.mjs
+          node dev/tests/conquest-airborne-loot.mjs
+          node dev/tests/conquest-defense-config.mjs
+          node dev/tests/conquest-defense-victory.mjs
+          node dev/tests/conquest-sector-authority.mjs
+          node dev/tests/conquest-sector-victory.mjs
+          node dev/tests/conquest-war-authority.mjs
+          node dev/tests/conquest-warfront.mjs
+          node dev/tests/conquest-cosmetics.mjs
+          node dev/tests/conquest-cosmetics-authority.mjs
+          node dev/tests/conquest-assets.mjs
+          node dev/tests/conquest-flagship-ui.mjs
+          node dev/tests/wtest/conquest-war.mjs
           node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
@@ -59,7 +74,7 @@ jobs:
 
   transmission:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -88,6 +103,8 @@ jobs:
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback
           python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --fallback
+          python dev/tests/conquest-flagship-browser.py --engine ${{ matrix.engine }} --width 390
+          python dev/tests/conquest-flagship-browser.py --engine ${{ matrix.engine }} --width 320 --family siege --no-defense
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -97,3 +114,4 @@ jobs:
             docs/conquest-session-032
             docs/conquest-session-033
             docs/conquest-living-war
+            docs/conquest-session-2

@@ -1,0 +1,68 @@
+[
+  {
+    "viewport": 390,
+    "asset": "command",
+    "renderer": "Chromium SwiftShader software",
+    "stats": {
+      "draws": 4,
+      "triangles": 1452,
+      "geometries": 4,
+      "textures": 0
+    }
+  },
+  {
+    "viewport": 390,
+    "asset": "raid",
+    "renderer": "Chromium SwiftShader software",
+    "stats": {
+      "draws": 4,
+      "triangles": 1092,
+      "geometries": 7,
+      "textures": 0
+    }
+  },
+  {
+    "viewport": 390,
+    "asset": "smoke",
+    "renderer": "Chromium SwiftShader software",
+    "stats": {
+      "draws": 2,
+      "triangles": 24,
+      "geometries": 8,
+      "textures": 0
+    }
+  },
+  {
+    "viewport": 1280,
+    "asset": "command",
+    "renderer": "Chromium SwiftShader software",
+    "stats": {
+      "draws": 4,
+      "triangles": 1452,
+      "geometries": 4,
+      "textures": 0
+    }
+  },
+  {
+    "viewport": 1280,
+    "asset": "raid",
+    "renderer": "Chromium SwiftShader software",
+    "stats": {
+      "draws": 4,
+      "triangles": 1092,
+      "geometries": 7,
+      "textures": 0
+    }
+  },
+  {
+    "viewport": 1280,
+    "asset": "smoke",
+    "renderer": "Chromium SwiftShader software",
+    "stats": {
+      "draws": 2,
+      "triangles": 24,
+      "geometries": 8,
+      "textures": 0
+    }
+  }
+]
