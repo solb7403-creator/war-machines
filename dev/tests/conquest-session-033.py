@@ -18,12 +18,17 @@ async def main(engine,journey_only=False,fallback=False):
     context=await browser.new_context(viewport={'width':width,'height':height},has_touch=True,is_mobile=True,reduced_motion='reduce');page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.request.post(base+'/fixture',data={})
     await page.add_init_script('''window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
+    verified_abilities={'dash':False,'shield':False}
     async def route(r):
      u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
      if u.path.startswith('/api/conquest/'):
       response=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));
       if response.status>=400:print('API ERROR',u.path,response.status,(await response.text())[:250],flush=True)
-      return await r.fulfill(status=response.status,body=await response.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+      payload=await response.body()
+      if response.status==200:
+       canonical=json.loads(payload).get('state',{}).get('battle',{})
+       verified_abilities['dash']|=canonical.get('dashCd',0)>0;verified_abilities['shield']|=canonical.get('shieldCd',0)>0
+      return await r.fulfill(status=response.status,body=payload,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
      if u.path.startswith('/api/'):
       if u.path=='/api/sync':
        response=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));return await r.fulfill(status=response.status,body=await response.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
@@ -41,7 +46,7 @@ async def main(engine,journey_only=False,fallback=False):
     async def tap(selector):
      r=await rect(selector);assert r['x']>=0 and r['y']>=0 and r['x']+r['w']<=width+1 and r['y']+r['h']<=page.viewport_size['height']+1 and r['hit'],(engine,width,selector,r);await page.touchscreen.tap(r['x']+r['w']/2,r['y']+r['h']/2)
     async def fixture(position=None,**kw):
-     await page.evaluate('Conquest.view.reset();Conquest.view.authority.actionBusy=true');await page.wait_for_function('!Conquest.view.authority.busy');await page.request.post(base+'/fixture',data={**kw,**({'position':position} if position else {})});await page.evaluate('Conquest.view.authority.state=null;Conquest.view.authority.queue=[];Conquest.view.authority.phase=null;Conquest.view.authority.connect()');await page.wait_for_function('Conquest.view.authority.state?.seq===0&&Conquest.view.authority.connected');await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(250)
+     await page.evaluate('Conquest.view.reset();Conquest.view.authority.actionBusy=true');await page.wait_for_function('!Conquest.view.authority.busy');await page.request.post(base+'/fixture',data={**kw,**({'position':position} if position else {})});await page.evaluate('Conquest.view.authority.state=null;Conquest.view.authority.queue=[];Conquest.view.authority.phase=null;Conquest.view.authority.connect()');await page.wait_for_function('Conquest.view.authority.state?.seq===0&&Conquest.view.authority.connected');await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(250);verified_abilities.update(dash=False,shield=False)
     await enter()
     if fallback:assert await page.evaluate('Conquest.view.renderer.isConquestCanvas')
     await fixture([1500,1500])
@@ -74,7 +79,7 @@ async def main(engine,journey_only=False,fallback=False):
      assert await page.evaluate('Conquest.view.encounter.shieldT>0')
      await page.wait_for_timeout(1200);await page.mouse.up()
     await page.wait_for_timeout(1500)
-    canonical=await page.evaluate('Conquest.view.authority.state.battle');assert canonical['dashCd']>0 and canonical['shieldCd']>0
+    canonical=await page.evaluate('Conquest.view.authority.state.battle');assert verified_abilities['dash'] and verified_abilities['shield'],('abilities must be seen in verified snapshots, even if cooldown expires before capture',verified_abilities,canonical)
     await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-moving-controls.png'))
     await fixture([1174,1168],engineering=True)
     await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='INVENTORY / SUPPLY',exact=True).click()

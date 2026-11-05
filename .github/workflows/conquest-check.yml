@@ -30,6 +30,7 @@ jobs:
           node dev/tests/conquest-opening.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs
+          node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/wtest/conquest.mjs
       - uses: actions/setup-python@v5

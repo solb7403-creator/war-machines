@@ -1,0 +1,37 @@
+{
+  "scope": "actual shared-simulation cold Moonbeam calibration at 60Hz, no cores or ranks; not browser pixel evidence",
+  "shots": [
+    {
+      "shot": 1,
+      "heatPercent": 10.79,
+      "seconds": 0.017
+    },
+    {
+      "shot": 5,
+      "heatPercent": 23.72,
+      "seconds": 3.8
+    },
+    {
+      "shot": 10,
+      "heatPercent": 39.72,
+      "seconds": 8.55
+    },
+    {
+      "shot": 15,
+      "heatPercent": 55.72,
+      "seconds": 13.3
+    },
+    {
+      "shot": 20,
+      "heatPercent": 71.72,
+      "seconds": 18.05
+    }
+  ],
+  "firstVent": {
+    "shot": 29,
+    "heatPercent": 100,
+    "seconds": 26.6
+  },
+  "ventSeconds": 5,
+  "afterVentHeatPercent": 35
+}

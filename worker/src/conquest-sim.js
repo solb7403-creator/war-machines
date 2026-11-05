@@ -20,11 +20,26 @@ export function createState(loadout,now){
  const s={v:1,seq:0,lastWall:now,creditMs:0,position,hp:B.playerHp,loadout:copy(B.snapshot),mission:null,battle:copy(B),checkpoint:{...position},safe:[{...position}],stuckMs:0,recoveryAt:0};refreshState(s,now);return s;
 }
 function stats(v){v.gems=list(v.gems);v.buffs=list(v.buffs);return v;}
-export function hydrate(s){const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);const canonicalStats=B.playerStats;Object.assign(B,copy(s.battle));B.playerHp=s.hp;B.playerStats=canonicalStats;B.engineering=C.engineeringDefaults(s.engineering);B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.enemies=list(B.enemies);B.projectiles=list(B.projectiles);B.effects=list(B.effects);B.superShells=list(B.superShells);stats(B.playerStats);K.ensure(B);
+export function hydrate(s){const B=s.mission?(s.mission==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,s.mission)):new C.Encounter(s.loadout,s.position);const canonicalStats=B.playerStats;Object.assign(B,copy(s.battle));B.playerHp=s.hp;B.playerStats=canonicalStats;B.engineering=C.engineeringDefaults(s.engineering);B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.enemies=list(B.enemies);B.projectiles=list(B.projectiles);B.effects=list(B.effects);B.superShells=list(B.superShells);B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));stats(B.playerStats);K.ensure(B);
  for(const q of B.projectiles)stats(q.stats);for(const e of B.enemies){stats(e.stats);const t=e.target;if(t&&e.home&&t.x===e.home.x&&t.z===e.home.z)e.target=e.home;else if(t&&e.navGoal&&t.x===e.navGoal.x&&t.z===e.navGoal.z)e.target=e.navGoal;else if(t&&t.x===B.objective.x&&t.z===B.objective.z)e.target=B.objective;}return B;}
-export function refreshState(s,now){campaign(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+// One-time server migration for pilots/salvage standing inside newly constructed frontier bunkers.
+// Never exposed as a client action; existing HP, thermal debt, materials and expiries are unchanged.
+function migrateRegion(s,now){
+ if((s.regionRevision||0)>=1)return;
+ const sites=C.installations.filter(b=>b.id==='west-depot'||b.id==='crossroads'),embedded=p=>p&&p.surface!=='bridge'&&sites.some(b=>Math.abs(p.x-b.x)<11&&Math.abs(p.z-b.z-8)<8||Math.hypot(p.x-b.x-14,p.z-b.z-10)<2);
+ let actors=null,changed=false;
+ const repair=p=>{if(!embedded(p))return p;actors=actors||new C.Encounter(s.loadout,s.position).enemies;
+ for(const radius of [4,8,12,16,20,24,32])for(let i=0;i<16;i++){const x=p.x+Math.cos(i*Math.PI/8)*radius,z=p.z+Math.sin(i*Math.PI/8)*radius,q={x,z,y:W.groundAt(x,z),surface:'ground'};
+ if(footing(s,q)&&!actors.some(e=>e.hp>0&&Math.hypot(e.x-x,e.z-z)<6)){changed=true;return {...p,...q};}}
+ fail('no safe construction apron');};
+ s.position=repair(s.position);s.checkpoint=repair(s.checkpoint);s.wrecks=s.wrecks.map(repair);s.drops=s.drops.map(repair);
+ if(s.death?.position&&embedded(s.death.position))s.death.position=repair(s.death.position);
+ s.regionRevision=1;if(changed)s.notice={kind:'world-migration',at:now};
+}
+export function refreshState(s,now){campaign(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
+ s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));
  for(const e of s.battle.enemies){const m=s.spawns[e.key]||(s.spawns[e.key]={generation:day});if(e.hp>0||Math.hypot(e.home.x-s.position.x,e.home.z-s.position.z)<=POLICY.visibleRadius)continue;
  if(s.territory[e.base?.id]?.owner==='humanity')continue;
  const patrol=e.base?.kind==='patrol',ready=patrol?now-(m.deadAt||now)>=POLICY.patrolRefresh:m.generation<day;
@@ -82,5 +97,5 @@ export function applyAction(previous,request,now){
  if(!p)for(const r of [8,12,20,32]){for(let i=0;i<16;i++){const q=W.advance(s.position,Math.cos(i*Math.PI/8)*r,Math.sin(i*Math.PI/8)*r);if(Math.hypot(q.x-s.position.x,q.z-s.position.z)>=6&&footing(s,q)){p=q;break;}}if(p)break;}
  if(!p)fail('no reachable safe position');s.position={...p};s.recoveryAt=now+30000;s.stuckMs=0;
  }
- B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;s.battle=copy(B);s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
+ B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));s.battle=copy(B);s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
 }

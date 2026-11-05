@@ -1,0 +1,61 @@
+{
+  "scope": "60Hz shared-simulation benchmark, not human/game-feel or browser performance proof",
+  "initialRange": 35,
+  "controls": "explicit hull lock + FIRE + legal Shield; stationary stock chassis; moving/firing authored AI; only weapon differs",
+  "rows": [
+    {
+      "kind": "raider",
+      "weapon": "pulse",
+      "authoredHp": 180,
+      "seconds": 1.85,
+      "actualShots": 5,
+      "hpRemaining": 1700,
+      "killed": true
+    },
+    {
+      "kind": "raider",
+      "weapon": "moon",
+      "authoredHp": 180,
+      "seconds": 1.267,
+      "actualShots": 2,
+      "hpRemaining": 1700,
+      "killed": true
+    },
+    {
+      "kind": "command",
+      "weapon": "pulse",
+      "authoredHp": 330,
+      "seconds": 4.133,
+      "actualShots": 10,
+      "hpRemaining": 1658,
+      "killed": true
+    },
+    {
+      "kind": "command",
+      "weapon": "moon",
+      "authoredHp": 330,
+      "seconds": 2.15,
+      "actualShots": 3,
+      "hpRemaining": 1700,
+      "killed": true
+    },
+    {
+      "kind": "sentinel",
+      "weapon": "pulse",
+      "authoredHp": 1100,
+      "seconds": 12.317,
+      "actualShots": 28,
+      "hpRemaining": 968.5,
+      "killed": true
+    },
+    {
+      "kind": "sentinel",
+      "weapon": "moon",
+      "authoredHp": 1100,
+      "seconds": 7.333,
+      "actualShots": 9,
+      "hpRemaining": 1406.5,
+      "killed": true
+    }
+  ]
+}

@@ -30,9 +30,11 @@ const archetypes=Object.freeze({
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
 const installations=W.installations;
+// Stable authored identities preserve production v1 locks and spawn keys as the region expands.
+const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
 const operations=Object.freeze(Object.fromEntries([
  {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
- {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'crossroads',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
+ {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
  {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
  {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
  {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
@@ -62,7 +64,7 @@ function blocked(x,y,z){
  for(const a of [970,1070])for(const b of [1018,1030])if(Math.abs(x-a)<1.7&&Math.abs(z-b)<1.7&&y<24&&y>W.groundAt(x,z))return true;
  return false;
 }
-function lineClear(a,b,allowObjective=false){const d=dist(a,b),n=Math.max(1,Math.ceil(d/.5));for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(allowObjective&&Math.hypot(x-1150,z-1080)<12)continue;if(blocked(x,y,z))return false;}return true;}
+function lineClear(a,b,allowObjective=false){if(W.installationOccludes?.(a,b))return false;const d=dist(a,b),n=Math.max(1,Math.ceil(d/.5));for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(allowObjective&&Math.hypot(x-1150,z-1080)<12)continue;if(blocked(x,y,z))return false;}return true;}
 function enemyStats(a){return {cls:a.cls,gems:[],gemM:{},buffs:[],dmgM:1,critB:0,wdps:a.dps,wshot:a.shot,wpspd:42,wedge:.75};}
 class Battle {
  constructor(loadout,playerPosition){
@@ -128,7 +130,7 @@ class Battle {
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
- for(const e of this.enemies){if(e.hp<=0||e.dormant)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
+ for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
  const p=W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
  const target=e.target||this.objective,ec=center(e),want=Math.atan2(target.x-e.x,target.z-e.z),delta=Math.atan2(Math.sin(want-e.turret),Math.cos(want-e.turret));e.turret+=clamp(delta,-2*dt,2*dt);
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
@@ -150,6 +152,7 @@ class Encounter extends Battle {
    this.enemies.push({route:base.kind==='staging'?[[x,z],[x-30,z-8],[x-40,z+20],[x,z]]:null,id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:'guard'});
   }
   for(const site of patrols){const a=archetypes[site.kind],x=site.x,z=site.z;this.enemies.push({id:++this.id,key:site.id,base:{...site,kind:'patrol'},route:site.route,home:{x,z,y:W.groundAt(x,z)+2.2},kind:site.kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[site.id]?0:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:'guard'});}
+  for(const e of this.enemies){e.id=spawnIds[e.key];e.decision=(e.id%10)*.03;}this.id=Math.max(this.id,...this.enemies.map(e=>e.id));
  }
  spawnWave(){} // guard lifecycle is independent of mission waves
  choose(e){
@@ -173,7 +176,8 @@ class Encounter extends Battle {
 class Operation extends Battle {
  constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
  this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
- const team=id==='redoubt'?['command','breacher','raider']:id==='rescue'?['raider','breacher','command']:['raider','raider'];
+ // Installation missions fight the persistent world garrison attached by the session.
+ const team=id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
  team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
  if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
  if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
@@ -187,9 +191,9 @@ class Operation extends Battle {
  // The commander pauses before each aimed salvo: visible, avoidable attack tell.
  if(e.commander&&this.time%6<1.5){e.vx=e.vz=0;e.cd=Math.max(e.cd,.4);e.telegraph=true;}else e.telegraph=false;
  }
- step(dt,fire){super.step(dt,fire);if(this.state!=='active')return;const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>!e.resident&&e.hp>0);
+ step(dt,fire){super.step(dt,fire);if(this.state!=='active')return;const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(o.id)&&e.base?.id===o.site)));
  if(o.id==='convoy'){const c=this.enemies.find(e=>e.id===this.carrierId);this.stage=c.hp<=0?1:0;if(c.hp>0&&c.z<o.z-135){this.state='defeat';this.reason='Armored carrier escaped';}else if(!living.length)this.state='victory';}
- if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
+ if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&!living.length&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
  if(o.id==='recon'){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<9){this.work+=dt;if(this.work>=3){this.scans++;this.work=0;}}this.stage=this.scans;if(this.scans===3)this.state='victory';}
  if(o.id==='rescue'){if(d<28){const q=W.advance({x:this.objective.x,z:this.objective.z,y:this.objective.y-2.2,surface:'ground'},0,dt*2);Object.assign(this.objective,{x:q.x,y:q.y+2.2,z:q.z});}this.stage=Math.min(100,Math.floor((this.objective.z-o.z)/.8));if(this.stage>=100)this.state='victory';}
  if(o.id==='redoubt'){if(!living.length&&this.stage===0){this.stage=1;this.deploy('sentinel',o.x+12,o.z-8,'commander');this.enemies.at(-1).commander=true;}else if(!living.length&&this.stage===1&&d<18){this.work+=dt;if(this.work>=6){this.stage=2;this.state='victory';}}}
@@ -197,5 +201,5 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({operations,baseDefinition,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({spawnIds,operations,baseDefinition,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

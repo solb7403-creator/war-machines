@@ -18,12 +18,17 @@ async def main(engine,journey_only=False,fallback=False):
     context=await browser.new_context(viewport={'width':width,'height':height},has_touch=True,is_mobile=True,reduced_motion='reduce');page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.request.post(base+'/fixture',data={})
     await page.add_init_script('''window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
+    verified_abilities={'dash':False,'shield':False}
     async def route(r):
      u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
      if u.path.startswith('/api/conquest/'):
       response=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));
       if response.status>=400:print('API ERROR',u.path,response.status,(await response.text())[:250],flush=True)
-      return await r.fulfill(status=response.status,body=await response.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+      payload=await response.body()
+      if response.status==200:
+       canonical=json.loads(payload).get('state',{}).get('battle',{})
+       verified_abilities['dash']|=canonical.get('dashCd',0)>0;verified_abilities['shield']|=canonical.get('shieldCd',0)>0
+      return await r.fulfill(status=response.status,body=payload,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
      if u.path.startswith('/api/'):
       if u.path=='/api/sync':
        response=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));return await r.fulfill(status=response.status,body=await response.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
@@ -41,13 +46,13 @@ async def main(engine,journey_only=False,fallback=False):
     async def tap(selector):
      r=await rect(selector);assert r['x']>=0 and r['y']>=0 and r['x']+r['w']<=width+1 and r['y']+r['h']<=page.viewport_size['height']+1 and r['hit'],(engine,width,selector,r);await page.touchscreen.tap(r['x']+r['w']/2,r['y']+r['h']/2)
     async def fixture(position=None,**kw):
-     await page.evaluate('Conquest.view.reset();Conquest.view.authority.actionBusy=true');await page.wait_for_function('!Conquest.view.authority.busy');await page.request.post(base+'/fixture',data={**kw,**({'position':position} if position else {})});await page.evaluate('Conquest.view.authority.state=null;Conquest.view.authority.queue=[];Conquest.view.authority.phase=null;Conquest.view.authority.connect()');await page.wait_for_function('Conquest.view.authority.state?.seq===0&&Conquest.view.authority.connected');await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(250)
+     await page.evaluate('Conquest.view.reset();Conquest.view.authority.actionBusy=true');await page.wait_for_function('!Conquest.view.authority.busy');await page.request.post(base+'/fixture',data={**kw,**({'position':position} if position else {})});await page.evaluate('Conquest.view.authority.state=null;Conquest.view.authority.queue=[];Conquest.view.authority.phase=null;Conquest.view.authority.connect()');await page.wait_for_function('Conquest.view.authority.state?.seq===0&&Conquest.view.authority.connected');await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(250);verified_abilities.update(dash=False,shield=False)
     held=set()
-    async def steer(target,fire=False):
+    async def steer(target,fire=False,stop=6):
      nonlocal held
      p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,yaw:Conquest.view.yaw})')
      dx,dz=target['x']-p['x'],target['z']-p['z'];d=math.hypot(dx,dz);want=set()
-     if d>6:
+     if d>stop:
       x=(math.cos(p['yaw'])*dx-math.sin(p['yaw'])*dz)/d;z=(-math.sin(p['yaw'])*dx-math.cos(p['yaw'])*dz)/d
       if abs(x)>.3:want.add('d' if x>0 else 'a')
       if abs(z)>.3:want.add('w' if z>0 else 's')
@@ -61,14 +66,16 @@ async def main(engine,journey_only=False,fallback=False):
      held=set()
     async def win_operation(id):
      for step in range(700):
-      info=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.authority.state;if(!B)return {missing:true};const living=B.enemies.filter(e=>e.hp>0&&(!e.resident||!v.battle)&&(v.battle||Math.hypot(e.x-v.p.x,e.z-v.p.z)<75)),e=living.find(e=>e.id===B.carrierId)||living.sort((a,b)=>Math.hypot(a.x-v.p.x,a.z-v.p.z)-Math.hypot(b.x-v.p.x,b.z-v.p.z))[0];let pick=null;if(e&&ConquestControl.visible(B,v.p,e)){let hull=null;v.enemyMeshes.get(e.id)?.traverse(m=>{if(!hull&&m.isMesh&&m!==v.enemyMeshes.get(e.id).userData.marker)hull=m;});if(hull&&!hull.geometry.boundingBox)hull.geometry.computeBoundingBox();const center=hull?hull.geometry.boundingBox.getCenter(new v.T.Vector3()).applyMatrix4(hull.matrixWorld):new v.T.Vector3(e.x-v.origin.x,e.y+1,e.z-v.origin.z);const q=center.project(v.camera),r=v.host.getBoundingClientRect();const meshes=[];v.enemyMeshes.get(e.id)?.traverse(m=>{if(m.isMesh&&m!==v.enemyMeshes.get(e.id).userData.marker)meshes.push(m);});for(const [dx,dy] of [[0,0],[0,3],[0,-3],[3,0],[-3,0],[0,6]]){const x=(q.x+1)*r.width/2+dx,y=(1-q.y)*r.height/2+dy;if(document.elementFromPoint(x,y)!==v.renderer.domElement)continue;const ray=new v.T.Raycaster();ray.setFromCamera(new v.T.Vector2(x/r.width*2-1,1-y/r.height*2),v.camera);const hit=ray.intersectObjects(meshes,false)[0];if(hit&&ConquestCombat.lineClear({x:ray.ray.origin.x+v.origin.x,y:ray.ray.origin.y,z:ray.ray.origin.z+v.origin.z},{x:hit.point.x+v.origin.x,y:hit.point.y,z:hit.point.z+v.origin.z})){pick={id:e.id,x,y,visible:q.z<1};break;}}}return {state:s.battle.state,hp:s.hp,target:e?{x:e.x,z:e.z}:B.objective,selected:v.selectedId,pick,live:living.length};}''')
+      info=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.authority.state;if(!B)return {missing:true};const living=B.enemies.filter(e=>e.hp>0&&(!e.resident||!v.battle||(['relay','redoubt'].includes(B.operation?.id)&&e.base?.id===B.operation.site))&&(v.battle||Math.hypot(e.x-v.p.x,e.z-v.p.z)<75)),e=living.find(e=>e.id===B.carrierId)||living.sort((a,b)=>Math.hypot(a.x-v.p.x,a.z-v.p.z)-Math.hypot(b.x-v.p.x,b.z-v.p.z))[0];let pick=null;if(e&&ConquestControl.visible(B,v.p,e)){let hull=null;v.enemyMeshes.get(e.id)?.traverse(m=>{if(!hull&&m.isMesh&&m!==v.enemyMeshes.get(e.id).userData.marker)hull=m;});if(hull&&!hull.geometry.boundingBox)hull.geometry.computeBoundingBox();const center=hull?hull.geometry.boundingBox.getCenter(new v.T.Vector3()).applyMatrix4(hull.matrixWorld):new v.T.Vector3(e.x-v.origin.x,e.y+1,e.z-v.origin.z);const q=center.project(v.camera),r=v.host.getBoundingClientRect();const meshes=[];v.enemyMeshes.get(e.id)?.traverse(m=>{if(m.isMesh&&m!==v.enemyMeshes.get(e.id).userData.marker)meshes.push(m);});for(const [dx,dy] of [[0,0],[0,3],[0,-3],[3,0],[-3,0],[0,6]]){const x=(q.x+1)*r.width/2+dx,y=(1-q.y)*r.height/2+dy;if(document.elementFromPoint(x,y)!==v.renderer.domElement)continue;const ray=new v.T.Raycaster();ray.setFromCamera(new v.T.Vector2(x/r.width*2-1,1-y/r.height*2),v.camera);const hit=ray.intersectObjects(meshes,false)[0];if(hit&&ConquestCombat.lineClear({x:ray.ray.origin.x+v.origin.x,y:ray.ray.origin.y,z:ray.ray.origin.z+v.origin.z},{x:hit.point.x+v.origin.x,y:hit.point.y,z:hit.point.z+v.origin.z})){pick={id:e.id,x,y,visible:q.z<1};break;}}}return {state:s.battle.state,hp:s.hp,target:e?{x:e.x,z:e.z}:B.objective,selected:v.selectedId,pick,live:living.length,canHit:!!e&&ConquestControl.visible(B,v.p,e),site:B.operation};}''')
       if info.get('missing') or info['hp']<=0:
        await page.screenshot(path=str(OUT/f'{engine}-{width}-{id}-failure.png'));raise AssertionError((id,info))
       if (id!='perimeter' and info['state']=='victory') or (id=='perimeter' and not info['live']):break
       assert info['state']=='active',(id,info)
       pick=info.get('pick')
       if pick and pick['visible'] and pick['id']!=info['selected'] and 130<pick['y']<height-230 and 10<pick['x']<width-10:await page.mouse.click(pick['x'],pick['y'])
-      target=info['target'];p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})');distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
+      target=info['target'];p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})')
+      if id=='relay' and not info['canHit'] and p['z']>info['site']['z']-14:target={'x':info['site']['x']-25,'z':info['site']['z']-20}
+      distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
       await steer(target if not info['live'] or distance>28 or not info['selected'] else p,fire=bool(info['live']))
       if step%20==0:await page.keyboard.press('f')
       await page.wait_for_timeout(150)
@@ -82,13 +89,20 @@ async def main(engine,journey_only=False,fallback=False):
      await page.evaluate('Conquest.view.distance=100;Conquest.view.pitch=.95;Conquest.view.yaw=-.8')
      await win_operation('perimeter')
     async def travel(x,z):
-     for step in range(700):
+     # Test-only A* reads canonical collision to route ordinary keyboard inputs around rocks/bunkers.
+     # It never assigns a position, reveals exploration cells, or changes production navigation.
+     async def path():
+      return await page.evaluate('''target=>{const v=Conquest.view,W=ConquestWorld,K=ConquestControl,B=v.battle||v.encounter,start={...v.p},step=4,gx=Math.round((target.x-start.x)/step),gz=Math.round((target.z-start.z)/step),key=(x,z)=>x+':'+z,open=[{x:0,z:0,g:0,f:Math.hypot(gx,gz)}],best=new Map([[key(0,0),0]]),parent=new Map(),points=new Map([[key(0,0),start]]),closed=new Set();let end=null;for(let n=0;open.length&&n<4000;n++){open.sort((a,b)=>b.f-a.f);const c=open.pop(),ck=key(c.x,c.z);if(closed.has(ck))continue;closed.add(ck);if(Math.hypot(c.x-gx,c.z-gz)<1.5){end=ck;break;}const p=points.get(ck);for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const nx=c.x+dx,nz=c.z+dz,nk=key(nx,nz);if(closed.has(nk)||nx<Math.min(0,gx)-16||nx>Math.max(0,gx)+16||nz<Math.min(0,gz)-16||nz>Math.max(0,gz)+16)continue;const q=W.advance(p,dx*step,dz*step),x=start.x+nx*step,z=start.z+nz*step;if(Math.hypot(q.x-x,q.z-z)>.2||K.baseBlocked(B,q)||[[2,0],[-2,0],[0,2],[0,-2]].some(([a,b])=>W.solidAt(x+a,z+b)))continue;const g=c.g+Math.hypot(dx,dz);if(g>=(best.get(nk)??Infinity))continue;best.set(nk,g);parent.set(nk,ck);points.set(nk,q);open.push({x:nx,z:nz,g,f:g+Math.hypot(nx-gx,nz-gz)});}}if(!end)return [target];const out=[];for(let at=end;at;at=parent.get(at))out.push(points.get(at));out.reverse();out.push(target);return out;}''',{'x':x,'z':z})
+     route=await path();index=1 if len(route)>1 else 0
+     for step in range(1000):
       p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,hp:Conquest.view.authority.state.hp,verified:Conquest.view.authority.state.position})');assert p['hp']>0,p
       if math.hypot(p['x']-x,p['z']-z)<=6 and math.hypot(p['verified']['x']-x,p['verified']['z']-z)<8:break
-      await steer({'x':x,'z':z})
+      while index<len(route)-1 and math.hypot(p['x']-route[index]['x'],p['z']-route[index]['z'])<2.8:index+=1
+      goal={'x':x,'z':z} if math.hypot(p['x']-x,p['z']-z)<=6 else route[index]
+      await steer(goal,stop=6 if goal['x']==x and goal['z']==z else 2)
       if step%40==0:await page.keyboard.press('f')
       await page.wait_for_timeout(100)
-     else:raise AssertionError(('travel blocked',x,z,p))
+     else:raise AssertionError(('travel blocked',x,z,p,route[index]))
      await release_keys();await page.wait_for_timeout(1100)
     await enter()
     if fallback:assert await page.evaluate('Conquest.view.renderer.isConquestCanvas')
@@ -122,7 +136,7 @@ async def main(engine,journey_only=False,fallback=False):
      assert await page.evaluate('Conquest.view.encounter.shieldT>0')
      await page.wait_for_timeout(1200);await page.mouse.up()
     await page.wait_for_timeout(1500)
-    canonical=await page.evaluate('Conquest.view.authority.state.battle');assert canonical['dashCd']>0 and canonical['shieldCd']>0
+    canonical=await page.evaluate('Conquest.view.authority.state.battle');assert verified_abilities['dash'] and verified_abilities['shield'],('abilities must be seen in verified snapshots, even if cooldown expires before capture',verified_abilities,canonical)
     await page.screenshot(path=str(OUT/f'{engine}{'-fallback' if fallback else ''}-{width}-moving-controls.png'))
     await fixture([1080,1160],baseFunds=True)
     await tap('#cq-base-access')
