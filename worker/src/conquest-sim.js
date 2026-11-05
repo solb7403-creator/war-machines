@@ -63,7 +63,7 @@ export function applyAction(previous,request,now){
  s.engineering.tuning[request.tuning]=request.position;
  }
  // Capacity changes preserve the absolute heat debt and latch. Never refill HP or abilities.
- B.engineering=copy(s.engineering);if(B.heat>=C.engineeringValues(B.playerStats,B.engineering).capacity)B.overheated=true;
+ B.engineering=copy(s.engineering);const capacity=C.engineeringValues(B.playerStats,B.engineering).capacity,total=(B.heat||0)+(B.heatOverflow||0);C.setHeat(B,total,capacity);if(total>=capacity)B.overheated=true;
  s.notice={kind:'engineering-saved'};
  }else if(request.action==='bank'){bank(s,now);
  }else if(request.action==='repair'){

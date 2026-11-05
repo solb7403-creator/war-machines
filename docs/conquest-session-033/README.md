@@ -7,10 +7,10 @@ Implementation on fresh branch from b5a01350dc2a41c7b84a1809050910a007dc2194.
 
 Use existing vanilla JS, deterministic shared simulation, Three.js and authenticated ETag transaction. Keep combat profiles and engineering math together in combat.js to preserve existing explicit browser/server load order. Rendering remains independent.
 
-- [ ] Controls: reproduce multi-pointer activation; pointer-down ability edges, pointer-specific joystick release; measure 0.40s × 5.1 Dash, collision and frame rates.
-- [ ] Combat: canonical archetype cadence/damage, independent speed/range, persistent heat and lockout; migration and transition tests.
-- [ ] Engineering: bounded saved ranks/tuning, safe terminal actions, atomic banked costs and UI previews; forgery/replay/concurrency tests.
-- [ ] Visuals: reusable pooled bolt/beam/vent/Dash routines; compact heat meter, fallback verification and mobile screenshots.
+- [x] Controls: reproduce multi-pointer activation; pointer-down ability edges, pointer-specific joystick release; measure 0.40s × 5.1 Dash, collision and frame rates.
+- [x] Combat: canonical archetype cadence/damage, independent speed/range, persistent heat and lockout; migration and transition tests.
+- [x] Engineering: bounded saved ranks/tuning, safe terminal actions, atomic banked costs and UI previews; forgery/replay/concurrency tests.
+- [x] Visuals: reusable pooled bolt/beam/vent/Dash routines; compact heat meter, fallback verification and mobile screenshots.
 - [ ] Validation/release: focused tests then existing gates at final SHA; PR review, merge only if scope and gates pass; verify Worker/Pages merge-SHA releases.
 
 Review focus: active projectiles during upgrades; hot weapon swaps; short edges during network requests; terminal race with movement; previous v1 records without engineering.
@@ -26,7 +26,7 @@ Baseline: authority, controls, economy and balance scripts passed before editing
 | Moonbeam | .95 | 125 | 36 | 10 | 4 shots / 2.85s | 13 |
 | Siege | 1.20 | 100 | 30 | 9 | 5 shots / 4.80s | 11 |
 
-Capacity 100; vent latch releases at <=35% of current capacity. Cooling runs continuously during simulation. Paused mission/navigation time does not forgive heat debt. Absolute heat, vent latch, standard cooldown and ability cooldowns carry across mission/respawn/refit. Hot weapon swaps inherit heat, rather than providing another free reservoir. Cooling follows the active gun's profile. Existing v1 records default missing heat/engineering to stock without resetting account progression.
+Capacity 100; vent latch releases at <=35% of current capacity. Cooling runs continuously during simulation. Paused mission/navigation time does not forgive heat debt. Absolute heat debt (including overflow when specialization reduces capacity), vent latch, standard cooldown and ability cooldowns carry across mission/respawn/refit. Hot weapon swaps inherit heat, rather than providing another free reservoir. Cooling follows the active gun's profile. Existing v1 records default missing heat/engineering to stock without resetting account progression.
 
 Unheated damage remains `canonical wdps × Conquest interval × existing damage/impact/armor/critical modifiers`; cadence is interval / existing RoF multiplier. Thus unheated stat-derived DPS is unchanged algebraically, across tiers and cores. The 30s benchmark uses common stock archetypes without cores, at 15/30/60 FPS (identical shot totals). The existing starter build includes RoF/damage/armor cores; its authority mission test changed from 34s baseline to 54s with heat. This is a focused automated scenario, not a player population TTK study.
 
@@ -60,3 +60,7 @@ Baseline: `conquest-authority`, `conquest-controls`, `conquest-economy`, `conque
 Screenshots/results in this directory: 320×568 and 390×844 Chromium/WebKit. Laser captures briefly pause the test-owned scene after a real simulated projectile/Super is emitted so geometry can be inspected; this is not a latency measurement. No physical-device verification or new frame-time benchmark is claimed. Local WebKit dependencies were extracted into a temporary browser runtime; host library preflight was skipped only after resolving actual linker dependencies. CI uses standard installed browser dependencies.
 
 Conquest now uses a lightweight Canvas fallback when Settings selects 2D, WebGL construction fails or its context is lost. It reuses the same deterministic battle, authenticated session, world heights, camera projection and canonical hull radii; it renders discrete bolt trails and elongated Supers without a second engine or simulation. LOW caps pixel ratio at 1. A dedicated fallback journey passed at 390×844 Chromium, including moving abilities, purchases, heat and both laser silhouettes. Context-loss continuity is included in the final CI browser journey. Arcade fallback remains untouched.
+
+Capacity-reduction regression: the visible heat remains bounded by current capacity; separately retained overflow cools before the meter falls. Toggling thermal specialization cannot delete heat debt or clear the overheat latch.
+
+Independent review at 9ae1168 found two issues, both fixed with regression coverage: split physics steps at exact Dash expiry (full-second traversal now matches at 15/20/30/60 FPS), and retain lifecycle viewport/Telegram subscriptions across renderer context-loss fallback. No blocking CAS, migration, projectile preservation or heat continuity issue was found.

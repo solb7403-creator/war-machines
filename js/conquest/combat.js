@@ -11,6 +11,7 @@ const tracks=Object.freeze({heatCapacity:.09,heatCooling:.09,bulletVelocity:.10,
 const costs=Object.freeze([{cp:100,alloy:4,biomass:2,helium:0},{cp:250,alloy:12,biomass:6,helium:0},{cp:600,alloy:25,biomass:15,helium:2}].map(Object.freeze));
 const tuningKeys=Object.freeze(['thermal','ballistics','mobility','shield']);
 function engineeringDefaults(e={}){return {ranks:Object.fromEntries(Object.keys(tracks).map(k=>[k,Number.isInteger(e.ranks?.[k])?clamp(e.ranks[k],0,3):0])),tuning:Object.fromEntries(tuningKeys.map(k=>[k,Number.isInteger(e.tuning?.[k])?clamp(e.tuning[k],-3,3):0]))};}
+function setHeat(B,total,capacity){total=Math.max(0,total);B.heat=Math.min(capacity,total);B.heatOverflow=Math.max(0,total-capacity);}
 function engineeringValues(stats,e){
  const {ranks:r,tuning:t}=engineeringDefaults(e),p=profiles[stats.wtype]||profiles.pulse;
  const bonus=k=>r[k]*tracks[k],benefit=v=>Math.max(0,v)*.05-Math.max(0,-v)*.035,cost=v=>Math.max(0,v)*.035-Math.max(0,-v)*.05;
@@ -107,8 +108,8 @@ class Battle {
  }
  step(dt,fire){
  this.time+=dt;this.abilityStep?.(dt);this.cooldown=Math.max(-dt,this.cooldown-dt);this.effects.forEach(e=>e.life-=dt);this.effects=this.effects.filter(e=>e.life>0).slice(-32);
- const thermal=engineeringValues(this.playerStats,this.engineering);this.heat=Math.max(0,(this.heat||0)-thermal.cooling*dt);
- if(this.overheated&&this.heat<=thermal.capacity*.35)this.overheated=false;
+ const thermal=engineeringValues(this.playerStats,this.engineering);setHeat(this,(this.heat||0)+(this.heatOverflow||0)-thermal.cooling*dt,thermal.capacity);
+ if(this.overheated&&this.heat+(this.heatOverflow||0)<=thermal.capacity*.35)this.overheated=false;
  if(fire&&!this.overheated&&this.cooldown<=1e-9){if(this.shoot(this.player,this.aim,this.playerStats,'player',this.playerStats.wtype,0)){
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
@@ -153,5 +154,5 @@ class Encounter extends Battle {
   if(this.playerHp>0){this.state='active';this.reason=null;}
  }
 }
-root.ConquestCombat=Object.freeze({profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

@@ -37,7 +37,7 @@ function fireSuper(B,s){
 }
 C.Battle.prototype.abilityStep=function(dt){
  ensure(this);this.dashCd=Math.max(0,this.dashCd-dt);this.shieldCd=Math.max(0,this.shieldCd-dt);this.shieldT=Math.max(0,this.shieldT-dt);
- if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=0)this.dashState=null;}
+ if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=1e-8)this.dashState=null;}
  if(this.superAttack){this.superAttack.t-=dt;if(this.superAttack.t<=0){this.superAttack.origin={x:this.player.x,y:this.player.y-2.2,z:this.player.z};fireSuper(this,this.superAttack);this.superAttack=null;}}
  for(const q of this.superShells){const n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vz)*dt/.3));for(let i=0;i<n&&q.life>0;i++){q.x+=q.vx*dt/n;q.z+=q.vz*dt/n;q.y+=q.vy*dt/n;
  const hit=this.enemies.some(e=>e.hp>0&&Math.hypot(e.x-q.x,e.z-q.z)<2.5&&Math.abs(e.y+2.2-q.y)<3);
@@ -50,7 +50,7 @@ function advance(B,p,input,dt,exploration){
  const values=C.engineeringValues(B.playerStats,B.engineering);if(input.shield&&B.shieldCd<=0){B.shieldT=values.shieldDuration;B.shieldCd=values.shieldCooldown;}
  let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;
  if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:values.dashTime,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=values.dashCooldown;}
- let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed));left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
+ let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),B.dashState?.t??Infinity);left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
  const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
  if(!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
@@ -60,6 +60,6 @@ function advance(B,p,input,dt,exploration){
  }
  return p;
 }
-function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
+function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
 root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,CONFIG});
 })(globalThis);

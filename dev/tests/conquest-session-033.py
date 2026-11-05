@@ -106,6 +106,9 @@ async def main(engine,journey_only=False,fallback=False):
      await page.evaluate('window.preLoss=Conquest.view.authority.state.hp;Conquest.view.renderer.forceContextLoss()')
      await page.wait_for_function('Conquest.view.renderer.isConquestCanvas')
      assert await page.evaluate('Conquest.view.authority.state.hp===preLoss&&Conquest.view.authority.connected')
+     await page.set_viewport_size({'width':width,'height':height-100});await page.wait_for_timeout(100)
+     assert await page.locator('.cq-world').evaluate('(e)=>e.getBoundingClientRect().height<=innerHeight')
+     await page.set_viewport_size({'width':width,'height':height})
     assert not errors,errors
     results.append({'viewport':[width,height],'multiPointer':'native three-touch' if engine=='chromium' else 'mouse DRIVE plus native touch abilities','errors':errors})
     await page.evaluate('Conquest.view?.authority?.dispose()');await page.unroute_all(behavior='ignoreErrors');await context.close();print('PASS',engine,width,height,flush=True)

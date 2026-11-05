@@ -40,3 +40,10 @@ console.log('PASS thermal hysteresis and carry for all four archetypes');
 b=bare();let blocker=structuredClone(new C.Encounter(R.STOCK_L,p).enemies[0]);Object.assign(blocker,{x:p.x+7,z:p.z,y:p.y,decision:999,cd:999,vx:0,vz:0});b.enemies=[blocker];let stopped=K.advance(b,p,{x:1,z:0,dash:true},.25,false);assert(stopped.x<=blocker.x-3.7);assert(Math.hypot(stopped.x-blocker.x,stopped.z-blocker.z)>=3.8);
 for(const [track,field] of Object.entries({heatCapacity:'capacity',heatCooling:'cooling',bulletVelocity:'velocity',bulletRange:'range',dashDistance:'dashSpeed',dashCooldown:'dashCooldown',shieldDuration:'shieldDuration',shieldCooldown:'shieldCooldown'})){const base=C.engineeringValues(b.playerStats),up=C.engineeringValues(b.playerStats,{ranks:{[track]:3}});for(const k of Object.keys(base))assert.equal(up[k]!==base[k],k===field,track+' affects only '+field);}
 console.log('PASS collision-safe burst and isolated effects of eight upgrade tracks');
+// Reducing capacity cannot discard heat or create a free vent through repeated tuning.
+let hot=terminal(createState(R.STOCK_L,now));hot.battle.heat=99;
+hot=applyAction(hot,{seq:1,action:'set-tuning',tuning:'thermal',position:-3},now);
+assert(hot.battle.heat<=89.5);assert.equal(hot.battle.heat+(hot.battle.heatOverflow||0),99);
+hot=applyAction(hot,{seq:2,action:'set-tuning',tuning:'thermal',position:3},now);
+assert.equal(hot.battle.heat+(hot.battle.heatOverflow||0),99);assert(hot.battle.overheated);
+for(const fps of [15,20,30,60]){let B=bare(),q=p;for(let i=0;i<fps;i++)q=K.advance(B,q,{x:1,z:0,dash:i===0},1/fps,false);assert(Math.abs(q.x-p.x-B.combatSpeed*(.4*5.1+.6))<1e-6,'Dash expiry exact at '+fps+'fps');}
