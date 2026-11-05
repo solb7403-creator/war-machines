@@ -1,0 +1,37 @@
+name: AI tooling and graphics asset integrity
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'docs/AI_TOOLCHAIN.md'
+      - 'dev/tools/**'
+      - 'js/assets/**'
+      - 'web/assets/**'
+      - 'img/**'
+      - '.github/ISSUE_TEMPLATE/agent-task.md'
+      - '.github/pull_request_template.md'
+      - '.github/workflows/ai-tooling-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ai-tooling-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  asset-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate self-contained tool syntax
+        run: |
+          node --check dev/tools/asset-audit.mjs
+          node --check dev/tools/asset-audit.test.mjs
+      - name: Run asset auditor unit tests
+        run: node --test dev/tools/asset-audit.test.mjs
+      - name: Verify shipped PBR atlas hashes and inventory
+        run: node dev/tools/asset-audit.mjs
