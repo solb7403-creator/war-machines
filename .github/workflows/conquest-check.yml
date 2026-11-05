@@ -44,11 +44,14 @@ jobs:
           node dev/tests/conquest-cosmetics-authority.mjs
           node dev/tests/conquest-assets.mjs
           node dev/tests/conquest-flagship-ui.mjs
+          node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs
           node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
           node dev/tests/conquest-earned-journey.mjs
+          node dev/tests/conquest-earned-defense.mjs
+          node dev/tests/conquest-long-progression.mjs
           node dev/tests/wtest/conquest.mjs
       - uses: actions/setup-python@v5
         with:
@@ -61,6 +64,7 @@ jobs:
         run: |
           python dev/tests/conquest-onboarding.py
           python dev/tests/conquest-earned-browser.py
+          python dev/tests/conquest-earned-end-to-end.py
           python dev/tests/conquest-preview.py
           CQ_EARNED_SAVE=/tmp/lunar-earned-journey.json python dev/tests/conquest-preview.py
 
@@ -70,6 +74,7 @@ jobs:
           name: conquest-gameplay-evidence
           path: |
             docs/conquest-session-031
+            docs/conquest-session-2
             docs/conquest-living-war/replay-current.json
 
   transmission:

@@ -1,0 +1,77 @@
+{
+  "scope": "Continue exact legitimate starter earning+defense save through real HTTP/Worker.\nNo bank/position/equipment/health fixtures. Earlier combat was authoritative input\nreplay; this continuation uses native keys/UI, bank/equip, concurrent HTTP and reload.\n",
+  "initialSource": "conquest-earned-journey -> conquest-earned-defense exact save; no direct resource/loadout/position grant",
+  "baseMinute": 73.66,
+  "nativeMovementAndUI": true,
+  "realHTTPAuthWorker": true,
+  "concurrentIdenticalActionsExactlyOnce": true,
+  "persistent": {
+    "cp": 197,
+    "banked": {
+      "alloy": 234,
+      "biomass": 164,
+      "helium": 53
+    },
+    "owned": {
+      "armor-brass": {
+        "at": 1800000131700,
+        "source": "earned",
+        "milestone": "Earn 100 Conquest reputation"
+      },
+      "armor-ceramic": {
+        "at": 1800001168300,
+        "source": "earned",
+        "milestone": "Earn 500 Conquest reputation"
+      },
+      "base-bastion": {
+        "at": 1800004420050,
+        "source": "earned",
+        "milestone": "Build Command Base I"
+      },
+      "command-standard": {
+        "at": 1800004991150,
+        "source": "earned",
+        "milestone": "Win one real base defense"
+      }
+    },
+    "completed": {
+      "oxygen-line": {
+        "at": 1800000131700,
+        "attempt": 1
+      },
+      "relay": {
+        "at": 1800000236750,
+        "attempt": 2
+      },
+      "recon": {
+        "at": 1800000374700,
+        "attempt": 3
+      },
+      "base-defense": {
+        "at": 1800004991150,
+        "attempt": 43
+      }
+    },
+    "defense": {
+      "config": "turret",
+      "damage": 0,
+      "wins": 1,
+      "alertAt": 0,
+      "nextAt": 1800006191150,
+      "active": false,
+      "report": {
+        "outcome": "victory",
+        "at": 1800004991150,
+        "cp": 160,
+        "alloy": 15,
+        "biomass": 10,
+        "helium": 2,
+        "reputation": 60,
+        "stolen": 0,
+        "damage": 0
+      }
+    }
+  },
+  "errors": [],
+  "physicalIPhoneVerified": false
+}

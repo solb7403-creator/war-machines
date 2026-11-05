@@ -226,7 +226,7 @@
       "evidence": {
         "code": [
           "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
-          "worker/src/conquest-sim.js:start-defense actions",
+          "worker/src/conquest-sim.js:applyAction",
           "js/conquest/combat.js:deployDefense/defenseStep",
           "js/conquest/app.js:baseTerminal"
         ],
@@ -235,12 +235,15 @@
           "dev/tests/conquest-defense-victory.mjs",
           "dev/tests/conquest-defense-config.mjs",
           "dev/tests/wtest/conquest-war.mjs",
-          "dev/tests/conquest-earned-journey.mjs"
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
         ],
         "artifacts": [
           "docs/conquest-session-2/base-defense-evidence.json",
           "docs/conquest-session-2/earned-journey.json",
-          "docs/conquest-session-2/presentation"
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
         ],
         "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
       }
@@ -253,7 +256,7 @@
       "evidence": {
         "code": [
           "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
-          "worker/src/conquest-sim.js:start-defense actions",
+          "worker/src/conquest-sim.js:applyAction",
           "js/conquest/combat.js:deployDefense/defenseStep",
           "js/conquest/app.js:baseTerminal"
         ],
@@ -262,12 +265,15 @@
           "dev/tests/conquest-defense-victory.mjs",
           "dev/tests/conquest-defense-config.mjs",
           "dev/tests/wtest/conquest-war.mjs",
-          "dev/tests/conquest-earned-journey.mjs"
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
         ],
         "artifacts": [
           "docs/conquest-session-2/base-defense-evidence.json",
           "docs/conquest-session-2/earned-journey.json",
-          "docs/conquest-session-2/presentation"
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
         ],
         "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
       }
@@ -280,7 +286,7 @@
       "evidence": {
         "code": [
           "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
-          "worker/src/conquest-sim.js:start-defense actions",
+          "worker/src/conquest-sim.js:applyAction",
           "js/conquest/combat.js:deployDefense/defenseStep",
           "js/conquest/app.js:baseTerminal"
         ],
@@ -289,12 +295,15 @@
           "dev/tests/conquest-defense-victory.mjs",
           "dev/tests/conquest-defense-config.mjs",
           "dev/tests/wtest/conquest-war.mjs",
-          "dev/tests/conquest-earned-journey.mjs"
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
         ],
         "artifacts": [
           "docs/conquest-session-2/base-defense-evidence.json",
           "docs/conquest-session-2/earned-journey.json",
-          "docs/conquest-session-2/presentation"
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
         ],
         "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
       }
@@ -307,7 +316,7 @@
       "evidence": {
         "code": [
           "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
-          "worker/src/conquest-sim.js:start-defense actions",
+          "worker/src/conquest-sim.js:applyAction",
           "js/conquest/combat.js:deployDefense/defenseStep",
           "js/conquest/app.js:baseTerminal"
         ],
@@ -316,12 +325,15 @@
           "dev/tests/conquest-defense-victory.mjs",
           "dev/tests/conquest-defense-config.mjs",
           "dev/tests/wtest/conquest-war.mjs",
-          "dev/tests/conquest-earned-journey.mjs"
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
         ],
         "artifacts": [
           "docs/conquest-session-2/base-defense-evidence.json",
           "docs/conquest-session-2/earned-journey.json",
-          "docs/conquest-session-2/presentation"
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
         ],
         "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
       }
@@ -334,7 +346,7 @@
       "evidence": {
         "code": [
           "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
-          "worker/src/conquest-sim.js:start-defense actions",
+          "worker/src/conquest-sim.js:applyAction",
           "js/conquest/combat.js:deployDefense/defenseStep",
           "js/conquest/app.js:baseTerminal"
         ],
@@ -343,12 +355,15 @@
           "dev/tests/conquest-defense-victory.mjs",
           "dev/tests/conquest-defense-config.mjs",
           "dev/tests/wtest/conquest-war.mjs",
-          "dev/tests/conquest-earned-journey.mjs"
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
         ],
         "artifacts": [
           "docs/conquest-session-2/base-defense-evidence.json",
           "docs/conquest-session-2/earned-journey.json",
-          "docs/conquest-session-2/presentation"
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
         ],
         "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
       }
@@ -360,7 +375,7 @@
       "status": "AUTOMATED_ONLY",
       "evidence": {
         "code": [
-          "worker/src/conquest-warfront.js:syncWarfront/recordMilestone",
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
           "worker/src/conquest-campaign.js:campaign",
           "js/conquest/app.js:warfront/frontline",
           "js/conquest/view.js:warMonument"
@@ -384,7 +399,7 @@
       "status": "AUTOMATED_ONLY",
       "evidence": {
         "code": [
-          "worker/src/conquest-warfront.js:syncWarfront/recordMilestone",
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
           "worker/src/conquest-campaign.js:campaign",
           "js/conquest/app.js:warfront/frontline",
           "js/conquest/view.js:warMonument"
@@ -408,7 +423,7 @@
       "status": "AUTOMATED_ONLY",
       "evidence": {
         "code": [
-          "worker/src/conquest-warfront.js:syncWarfront/recordMilestone",
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
           "worker/src/conquest-campaign.js:campaign",
           "js/conquest/app.js:warfront/frontline",
           "js/conquest/view.js:warMonument"
@@ -432,7 +447,7 @@
       "status": "AUTOMATED_ONLY",
       "evidence": {
         "code": [
-          "worker/src/conquest-warfront.js:syncWarfront/recordMilestone",
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
           "worker/src/conquest-campaign.js:campaign",
           "js/conquest/app.js:warfront/frontline",
           "js/conquest/view.js:warMonument"
@@ -1048,5 +1063,7 @@
       "title": "FINAL SHIPPING AND REQUIRED SUMMARY",
       "full_text": "- Merge only after applicable tests pass and gameplay journey and security checks meet the above. Owner authorization to merge/deploy is explicit. Use existing GitHub Actions and Cloudflare+Pages deployment; confirm SHAs, versions, published files and health/auth checks on origins. Never fake successes, grant real owner gear without separate explicit instruction, or alter production wallets/payments/LP.\n- Update docs/conquest/CONQUEST_FLAGSHIP_V1.md to mark every committed requirement with proof, list real pending blockers (particularly payment certification, any unavailable live PvP), exact player journey + fair-purchase inventory, loot table, raid matrix, anti-cheat, screenshots and cross-mode invariants. No unchecked must-have section portrayed as complete.\n- Final report must state: exact PR and merge SHA, deployed version(s), 25+ raid operational count tested, six mission results, physical command-base tiers & screenshots, PvE defense and optional async player raid status, premium product count actually rendered and equipped, payments LIVE or DISABLED with precise reason, mobile/fallback evidence, known limitations and 0/30m/75m/4h/20h gameplay milestones. Avoid victory speeches if visible gameplay is empty.\n- If task is interrupted by Codex service limits, preserve one branch and precise checkpoint, resume SAME Codex conversation when available\u2014never instruct owner to run all the prompts again or start extra sessions. Never rewrite working code just to look busy.\n\nDO THE IMPLEMENTATION, NOT ANOTHER PLAN. PRIORITIZE PLAYABLE AND ATTRACTIVE ACTUAL CONTENT + VERIFIED PERMANENT PROGRESSION, THEN SECURE MONETIZATION. NO NEW SESSION UNLESS THERE IS A GENUINE BLOCKER OUTSIDE CODING.\n\nMANDATORY NEW OWNER ACCEPTANCE CONTRACT \u2014 IMMENSELY SMOOTH GAMEPLAY:\nBefore changing code, read docs/conquest/SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md on main. It is binding for this session, in addition to every requirement above. Optimize complete developed bases, dense 25+ raids, squad warfare, laser VFX and UI together for target stable 60 FPS on capable iPhone and responsive controls. Use adaptive graphics and bounded streaming, server-authoritative but non-jarring reconciliation, stress-test enemy-rich real scenarios, memory and stutters, with honest actual vs simulated hardware measurements. Do not call the endgame complete if it visibly stutters or freezes.\n\n---"
     }
-  ]
+  ],
+  "pr": "https://github.com/solb7403-creator/war-machines/pull/54",
+  "commitIdentityRepair": "docs/conquest-session-2/commit-map.json"
 }
