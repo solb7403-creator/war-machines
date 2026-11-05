@@ -57,7 +57,7 @@ class View {
  if(this.gun)this.gun.rotation.y=(B.turretYaw??this.aimYaw)-(this.heading||0);
  if(!this.authority&&this.battle&&B.state==='victory'&&!this.resultHandled){this.progress?.complete(root.ConquestCombat.mission.id);this.resultHandled=true;}
  }
- requestAction(action){if(this.authority)return this.authority.action(action);if(action==='return-exploration'){this.clearBattle();return Promise.resolve(true);}return Promise.resolve(false);}
+ requestAction(action,parameters){if(this.authority)return this.authority.action(action,parameters);if(action==='return-exploration'){this.clearBattle();return Promise.resolve(true);}return Promise.resolve(false);}
  selected(){const B=this.battle||this.encounter,e=B?.enemies.find(e=>e.id===this.selectedId);if(!root.ConquestControl?.visible(B,this.p,e))return null;const c=this.camera?.position;if(c&&this.origin&&!root.ConquestCombat.lineClear({x:c.x+this.origin.x,y:c.y,z:c.z+this.origin.z},{x:e.x,y:e.y+2.2,z:e.z}))return null;return e;}
  pick(clientX,clientY){const rect=this.renderer.domElement.getBoundingClientRect(),ray=new this.T.Raycaster();ray.setFromCamera(new this.T.Vector2((clientX-rect.x)/rect.width*2-1,-(clientY-rect.y)/rect.height*2+1),this.camera);
  const meshes=[];for(const [id,g] of this.enemyMeshes){const e=(this.battle||this.encounter)?.enemies.find(e=>e.id===id);if(e?.hp>0&&g.visible)g.traverse(m=>{if(m.isMesh&&m!==g.userData.marker){m.userData.hostileId=id;meshes.push(m);}});}
