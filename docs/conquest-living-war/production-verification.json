@@ -1,0 +1,23 @@
+[
+  {
+    "target": "Worker",
+    "status": 200,
+    "body": {
+      "v": "20261105034106"
+    }
+  },
+  {
+    "target": "Pages",
+    "status": 200,
+    "body": {
+      "v": "20261105034106"
+    }
+  },
+  {
+    "target": "anonymous Conquest guard",
+    "status": 401,
+    "body": {
+      "error": "not verified"
+    }
+  }
+]
