@@ -84,3 +84,6 @@ Economy / commerce specifics:
 - If task is interrupted by Codex service limits, preserve one branch and precise checkpoint, resume SAME Codex conversation when available—never instruct owner to run all the prompts again or start extra sessions. Never rewrite working code just to look busy.
 
 DO THE IMPLEMENTATION, NOT ANOTHER PLAN. PRIORITIZE PLAYABLE AND ATTRACTIVE ACTUAL CONTENT + VERIFIED PERMANENT PROGRESSION, THEN SECURE MONETIZATION. NO NEW SESSION UNLESS THERE IS A GENUINE BLOCKER OUTSIDE CODING.
+
+MANDATORY NEW OWNER ACCEPTANCE CONTRACT — IMMENSELY SMOOTH GAMEPLAY:
+Before changing code, read docs/conquest/SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md on main. It is binding for this session, in addition to every requirement above. Optimize complete developed bases, dense 25+ raids, squad warfare, laser VFX and UI together for target stable 60 FPS on capable iPhone and responsive controls. Use adaptive graphics and bounded streaming, server-authoritative but non-jarring reconciliation, stress-test enemy-rich real scenarios, memory and stutters, with honest actual vs simulated hardware measurements. Do not call the endgame complete if it visibly stutters or freezes.
