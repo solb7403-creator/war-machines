@@ -14,12 +14,12 @@ export function killLoot(s,e,now){
 }
 export function pickups(s,now){ledger(s,now);for(const d of [...s.drops])if(Math.hypot(d.x-s.position.x,d.z-s.position.z)<=POLICY.pickupRadius&&Math.abs(d.y-s.position.y)<6){grant(s,d.amount);s.drops=s.drops.filter(x=>x.id!==d.id);}for(const w of [...s.wrecks])if(Math.hypot(w.x-s.position.x,w.z-s.position.z)<=POLICY.pickupRadius&&Math.abs(w.y-s.position.y)<6){for(const k of MATERIALS)s.ledger.cargo[k]+=w.amount[k];s.wrecks=s.wrecks.filter(x=>x.id!==w.id);s.notice={kind:'wreck-recovered',...w.amount};}}
 export function death(s,now){ledger(s,now);if(s.death?.active)return;s.deathSerial=(s.deathSerial||0)+1;const amount=empty();for(const k of MATERIALS){amount[k]=Math.floor(s.ledger.cargo[k]/2);s.ledger.cargo[k]-=amount[k];}const id='wreck:'+s.deathSerial;s.wrecks.push({id,...s.position,amount,expires:now+POLICY.wreckLife});s.wrecks=s.wrecks.slice(-POLICY.maxWrecks);s.death={active:true,id,at:now,expires:now+POLICY.wreckLife,position:{...s.position},amount};s.notice={kind:'defeat'};}
-export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.missionClaims[id];
+export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.missionClaims[id],reputationBefore=s.reputation||0;
  if(claim&&now-(claim.lastAt||claim.firstAt)<POLICY.missionRepeat)return {kind:'cooldown',cp:0,alloy:0,biomass:0,helium:0};
  const first=!claim,daily=claim?.day!==s.daily.day,amount=first?{...POLICY.first,cp:({convoy:140,relay:130,recon:100,rescue:150,redoubt:220})[id]||250}:daily?POLICY.replay:{cp:45,alloy:6,biomass:4,helium:1};
  const awarded=grant(s,{...amount,cp:amount.cp+(s.featuredMission?20:0)},true);s.missionClaims[id]={firstAt:claim?.firstAt||now,lastAt:now,day:s.daily.day,count:(claim?.count||0)+1};
  s.orders=s.orders?.day===s.daily.day?s.orders:{day:s.daily.day,completed:0};s.orders.completed++;
  if(s.orders.completed===3){s.ledger.cp+=100;s.reputation+=50;s.achievements=s.achievements||{};s.achievements['field-veteran']=s.achievements['field-veteran']||now;awarded.cp+=100;}
- return {kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:Math.floor(awarded.cp/3),...awarded};}
+ return {kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:(s.reputation||0)-reputationBefore,...awarded};}
 export function atTerminal(s){return !s.mission&&s.hp>0&&(Math.hypot(s.position.x-POLICY.terminal.x,s.position.z-POLICY.terminal.z)<=POLICY.terminal.r||s.base?.modules?.vault&&Math.hypot(s.position.x-CONQUEST.Combat.baseDefinition.x,s.position.z-CONQUEST.Combat.baseDefinition.z)<=18);}
 export function bank(s,now){ledger(s,now);if(!atTerminal(s))throw Error('conquest: approach Refuge supply terminal');for(const k of MATERIALS){s.ledger.banked[k]+=s.ledger.cargo[k];s.ledger.cargo[k]=0;}s.notice={kind:'banked'};}

@@ -41,8 +41,8 @@ const operations=Object.freeze(Object.fromEntries([
  {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
 ].map(o=>[o.id,Object.freeze({activationRadius:45,...o})])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
-const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2700,alloy:110,biomass:65,helium:8},
- tiers:[{cp:2700,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
+const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
+ tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
 const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1080,z:945,route:[[1080,945],[1115,945],[1130,970],[1100,975]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);

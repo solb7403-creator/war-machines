@@ -20,3 +20,5 @@ s=fresh();s.daily.cp=P.daily.cp;s.daily.alloy=P.daily.alloy;s.position=point(s.b
 console.log('PASS server loot generations, stable mission kill eligibility, exact-half death,600s expiry, banking, first/daily settlement, refresh visibility, persistent residents and limits');
 
 s=fresh();s.mission='oxygen-line';s.featuredMission=true;assert.equal(missionReward(s,now).cp,270);const bonusCP=s.ledger.cp;assert.equal(missionReward(s,now+1).cp,0);assert.equal(s.ledger.cp,bonusCP,'featured bonus is exactly once with settlement');console.log('PASS featured bonus and settlement idempotency');
+
+s=fresh();for(const [i,id] of ['oxygen-line','relay','recon'].entries()){s.mission=id;const before=s.reputation,award=missionReward(s,now+i*1000);assert.equal(award.reputation,s.reputation-before,'after-action reputation must equal actual earned change, including Field Veteran');}assert(s.achievements['field-veteran']);console.log('PASS exact after-action reputation including daily field-order recognition');

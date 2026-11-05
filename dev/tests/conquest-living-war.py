@@ -74,7 +74,7 @@ async def main(engine,journey_only=False,fallback=False):
       pick=info.get('pick')
       if pick and pick['visible'] and pick['id']!=info['selected'] and 130<pick['y']<height-230 and 10<pick['x']<width-10:await page.mouse.click(pick['x'],pick['y'])
       target=info['target'];p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})')
-      if id=='relay' and not info['canHit'] and p['z']>info['site']['z']-14:target={'x':info['site']['x']-25,'z':info['site']['z']-20}
+      if id=='relay' and info['live'] and not info['canHit'] and p['z']>info['site']['z']-14:target={'x':info['site']['x']-25,'z':info['site']['z']-20}
       distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
       await steer(target if not info['live'] or distance>28 or not info['selected'] else p,fire=bool(info['live']))
       if step%20==0:await page.keyboard.press('f')

@@ -32,6 +32,7 @@ jobs:
           node dev/tests/conquest-base.mjs
           node dev/tests/conquest-v1-migration.mjs
           node dev/tests/conquest-earning-model.mjs
+          node dev/tests/conquest-earned-journey.mjs
           node dev/tests/wtest/conquest.mjs
       - uses: actions/setup-python@v5
         with:
@@ -43,6 +44,7 @@ jobs:
       - name: Portrait player journey
         run: |
           python dev/tests/conquest-onboarding.py
+          python dev/tests/conquest-earned-browser.py
 
       - uses: actions/upload-artifact@v4
         if: always()
