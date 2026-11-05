@@ -56,3 +56,7 @@ Continue LUNAR: War Machines Conquest from GitHub, not chat memory. Repository s
 - [ ] Full flagship acceptance, end-to-end authenticated playtests, and release verification passed.
 
 **Update this ledger with grounded GitHub links and test evidence as work progresses.** Never check an item solely because a model reports it without code, tests and real gameplay proof.
+
+## Non-negotiable final gameplay smoothness
+
+The owner requires **immensely smooth** Conquest gameplay. Read and satisfy [SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md](SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md) in both sessions. This adds real-time touch responsiveness, target 60-FPS smoothness on modern iPhones, dense raid stress tests, authoritative non-jarring prediction/reconciliation, mobile frame/memory profiling and honest physical-device verification. A 30-FPS stability fallback for older devices is not permission to ship stuttery experiences on capable phones. Do not defer all performance to an optional third polish session.
