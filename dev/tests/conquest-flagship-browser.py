@@ -157,7 +157,7 @@ async def run(args):
                 await item.get_by_role('button',name='PREVIEW · Sunlance Muzzle Halo',exact=True).click()
                 await item.get_by_role('button',name='EQUIP',exact=True).click()
                 await page.wait_for_function('Conquest.view.authority.state.cosmetics.equipped.trail==="fire-sunlance"')
-                assert await page.get_by_role('button',name='CHECKOUT DISABLED',exact=True).count()==20
+                assert await page.locator('.cq-product button').filter(has_text='CHECKOUT DISABLED').evaluate_all('buttons=>buttons.length===20&&buttons.every(b=>b.disabled)')
                 assert await page.get_by_role('button',name='CHECKOUT DISABLED',exact=True).first.is_disabled()
                 for width,height in [(320,568),(390,844),(430,932),(1280,800)]:
                     await page.set_viewport_size({'width':width,'height':height});await page.wait_for_timeout(150)
