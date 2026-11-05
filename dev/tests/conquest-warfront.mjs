@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {makeDB} from './wtest/fakedb.mjs';
+import {syncWarfront} from '../../worker/src/conquest-warfront.js';
+const db=makeDB({pruneEmptyUnder:['conquestWarfront']});
+globalThis.fetch=async(url,init)=>{assert(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/'));return db.handle(url,init);};
+const env={FIREBASE_DB_SECRET:'SECRET'};
+let v=await syncWarfront(env,'tg_test1',0,1000);assert.equal(v.participants,0);assert.equal(v.score,0);
+const replies=await Promise.all(Array.from({length:8},(_,i)=>syncWarfront(env,'tg_test1',10,1001+i)));assert(replies.every(r=>r.score===10));assert.equal(db.get('conquestWarfront/frontier-v1').score,10);assert.equal(db.get('conquestWarfront/frontier-v1').participants,1);
+await Promise.all(Array.from({length:8},(_,i)=>syncWarfront(env,'tg_other'+i,20,2000+i)));v=await syncWarfront(env,'tg_test1',10,3000);assert.equal(v.score,170);assert.equal(v.participants,9);
+v=await syncWarfront(env,'tg_test1',1010,4000);assert.equal(v.score,1170);assert.equal(v.stage,1);assert.equal(v.participants,9);assert.equal(v.worldBossAvailable,false);
+v=await syncWarfront(env,'tg_test1',10,5000);assert.equal(v.score,1170,'historical retry never subtracts');
+await assert.rejects(syncWarfront(env,'tg_test1',-1,5000),/invalid/);assert(!('contributions' in v),'public view omits player identifiers');
+console.log('PASS real Firebase-shaped shared CAS: eight-way same-pilot replay, eight distinct pilots, exact monotonic totals, truthful participants and private contribution ledger');

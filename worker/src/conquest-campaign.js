@@ -1,13 +1,18 @@
 // Additive per-pilot campaign ledger. Called inside the existing ETag/CAS transaction.
 import {CONQUEST} from './sim.gen.js';
 const D=CONQUEST.Combat.baseDefinition,DAY=86400000;
-export const BASE_ACTIONS=['build-base','upgrade-base','base-module','base-claim'];
+export const BASE_ACTIONS=['build-base','upgrade-base','base-module','base-claim','repair-base','defense-config'];
 export function campaign(s,now){
- s.campaignVersion=1;s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
- const ids=Object.keys(CONQUEST.Combat.operations),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
+ s.campaignVersion=2;s.campaignScore=Math.max(0,Number.isSafeInteger(s.campaignScore)?s.campaignScore:0);s.raidProgress=s.raidProgress||{shards:0,clears:0,blueprint:false,eliteBlueprint:false};s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
+ for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites'};
+ for(const t of Object.values(s.territory)){t.status=t.status||(t.owner==='humanity'?'secured':'active-parasites');if(t.capturedAt&&!t.defenseAt)t.defenseAt=t.capturedAt+1200000;}
+ const ids=Object.keys(CONQUEST.Combat.operations).filter(id=>id!=='base-defense'),rotation=Math.floor(now/1800000);s.contracts={ids:[ids[rotation%ids.length],ids[(rotation+3)%ids.length]],until:(rotation+1)*1800000};
  s.base=s.base||{tier:0,modules:{},builtAt:0,claimedAt:0};
  // Firebase drops empty maps: reconstruct this even when the base record already exists.
- s.base.modules=s.base.modules||{};
+ s.base.modules=s.base.modules||{};s.base.pvpAvailable=false;
+ s.base.defense=s.base.defense||{config:'turret',damage:0,wins:0,alertAt:s.base.tier?now:0,nextAt:0,active:false};
+ if(s.base.tier&&!s.base.defense.active&&now>=s.base.defense.nextAt&&!s.base.defense.alertAt)s.base.defense.alertAt=now;
+ for(const t of Object.values(s.territory))if(t.owner==='humanity'&&t.defenseAt&&now>=t.defenseAt&&t.status!=='contested')t.status='defense-alert';
  if(s.base.pending&&now>=s.base.pending.readyAt){const p=s.base.pending;s.base.modules[p.module]=p.tier;delete s.base.pending;}
  const intel=CONQUEST.Combat.baseBenefits(s.base.tier,s.base.modules);s.radarContacts=intel.radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<intel.radarRange).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
 }
@@ -17,11 +22,22 @@ export function baseAction(s,r,now){
  campaign(s,now);if(s.mission||s.hp<=0||Math.hypot(s.position.x-D.x,s.position.z-D.z)>D.radius)throw Error('conquest: approach physical Command Base terminal');
  if(s.battle.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))throw Error('conquest: secure base perimeter');
  const b=s.base;
- if(r.action==='build-base'){if(b.tier)throw Error('conquest: base already built');debit(s,D.recipe);b.tier=1;b.builtAt=now;b.claimedAt=now;s.achievements['first-command']=now;}
+ if(r.action==='build-base'){if(b.tier)throw Error('conquest: base already built');debit(s,D.recipe);b.tier=1;b.builtAt=now;b.claimedAt=now;b.defense.alertAt=now;s.achievements['first-command']=now;}
  else if(!b.tier)throw Error('conquest: build base first');
+ else if(r.action==='defense-config'){if(!['turret','shield','drone'].includes(r.module))throw Error('conquest: invalid defense configuration');b.defense.config=r.module;}
+ else if(r.action==='repair-base'){if(!b.defense.damage)throw Error('conquest: base needs no repair');debit(s,{cp:Math.ceil(b.defense.damage*.5),alloy:Math.ceil(b.defense.damage*.05)});b.defense.damage=0;}
  else if(r.action==='upgrade-base'){if(b.tier>=D.maxTier)throw Error('conquest: maximum base tier');debit(s,D.tiers[b.tier]);b.tier++;}
  else if(r.action==='base-module'){if(!Object.prototype.hasOwnProperty.call(D.modules,r.module))throw Error('conquest: invalid module');const tier=b.modules[r.module]||0;if(b.pending||tier>=Math.min(3,b.tier))throw Error('conquest: module busy or tier locked');debit(s,D.moduleCosts[tier]);b.pending={module:r.module,tier:tier+1,readyAt:now+D.buildSeconds[tier]*1000};}
  else if(r.action==='base-claim'){if(now-b.claimedAt<DAY)throw Error('conquest: production available once per 24 hours');const cp=Math.floor(production(s));s.ledger.cp+=cp;b.claimedAt=now;s.notice={kind:'base-production',cp};return;}
  s.notice={kind:'base-updated'};
 }
-export function capture(s,site,now){campaign(s,now);s.territory[site]={owner:'humanity',capturedAt:s.territory[site]?.capturedAt||now};s.achievements['secured-'+site]=s.achievements['secured-'+site]||now;}
+export function capture(s,site,now){campaign(s,now);s.territory[site]={...s.territory[site],owner:'humanity',status:'secured',capturedAt:s.territory[site]?.capturedAt||now,defenseAt:now+1200000,awaitingReinforcements:false};s.achievements['secured-'+site]=s.achievements['secured-'+site]||now;}
+
+export function defenseOutcome(s,outcome,now){
+ const d=s.base.defense;if(!d.active)return;d.active=false;d.alertAt=0;d.nextAt=now+1200000;
+ const won=outcome==='victory',reward=CONQUEST.Combat.operations['base-defense'].reward;if(won){d.wins++;s.ledger.cp+=reward.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=reward[k]||0;s.reputation+=60;s.campaignScore+=15;s.achievements['base-defender']=s.achievements['base-defender']||now;d.damage=Math.max(0,d.damage-20);}
+ else d.damage=Math.min(100,d.damage+25);
+ d.report={outcome,at:now,cp:won?reward.cp:0,alloy:won?reward.alloy:0,biomass:won?reward.biomass:0,helium:won?reward.helium:0,reputation:won?60:0,stolen:0,damage:d.damage};s.notice={kind:won?'base-defended':'base-damaged',...d.report};
+}
+export function contest(s,site){if(!site)return;s.territory[site]={...s.territory[site],owner:s.territory[site]?.owner||'parasites',status:'contested'};}
+export function failedContest(s,site,now){const t=s.territory[site];if(!t||t.status!=='contested')return;t.owner='parasites';t.status='recaptured';t.lostAt=now;t.awaitingReinforcements=true;for(const e of Object.values(s.battle.enemies||{}))if(e.base?.id===site&&s.spawns[e.key])s.spawns[e.key].generation=Math.floor(now/DAY)-1;}
