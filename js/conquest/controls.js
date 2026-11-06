@@ -67,6 +67,23 @@ function advance(B,p,input,dt,exploration){
  }
  return p;
 }
+// Fixed simulation quantum shared with the Worker (STEP_MS). The client predicts in exactly these steps with exactly the
+// normalized command the Worker replays, so reconciliation reproduces the prediction instead of correcting it.
+const STEP=.05;
+function command(c){let x=Number(c.x)||0,z=Number(c.z)||0;const l=Math.hypot(x,z);if(l>1){x/=l;z/=l;}const yaw=Number.isFinite(c.aimYaw)?c.aimYaw:0,pitch=Number.isFinite(c.aimPitch)?clamp(c.aimPitch,-.4,.5):0;
+ return {x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield};}
+// The Worker's validateCommands mapping, verbatim. Predict and replay with validated(sent) so both sides compute bit-identical
+// steps (re-wrapping an angle is not always idempotent in floating point).
+function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield};}
+// Presentation only: where the hull will be after a partial step with the current input. Never mutates the battle.
+function preview(B,p,input,dt,exploration){
+ if(!(dt>0)||B.playerHp<=0||B.state!=='active')return p;const values=C.engineeringValues(B.playerStats,B.engineering);
+ let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;let left=Math.min(dt,STEP),dash=B.dashState?{...B.dashState}:null;
+ while(left>1e-8){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),dash?.t??Infinity);left-=h;const speed=dash?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
+ const q=W.advance(p,(dash?.x??x)*speed*h,(dash?.z??z)*speed*h);if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
+ if(dash){dash.t-=h;if(dash.t<=1e-8)dash=null;}}
+ return p;
+}
 function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
-root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,CONFIG});
+root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,command,validated,preview,STEP,CONFIG});
 })(globalThis);

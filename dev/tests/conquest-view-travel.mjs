@@ -49,7 +49,8 @@ v.keys={KeyW:true};const before=v.p.x;v.tick(.2);assert.equal(v.p.x,before);v.ti
 const enteredAgain=fixture();assert.equal(enteredAgain.speed,v.speed);assert.equal(enteredAgain.loadout.c.c,v.loadout.c.c);
 assert(v.vehicle.position.y===v.p.y,'rendered machine origin agrees with authoritative bridge footing');
 // Chassis forward is +X in Garage model space; Conquest converts it to local +Z then points along travel.
-v.p={x:980,z:1024,y:24,surface:'bridge'};v.resume=false;v.keys={KeyW:true};v.stick={x:0,z:0};v.tick(.1);
+// Hull heading eases toward travel (no per-frame flip on contact); after a few frames it faces travel exactly.
+v.p={x:980,z:1024,y:24,surface:'bridge'};v.resume=false;v.keys={KeyW:true};v.stick={x:0,z:0};for(let i=0;i<8;i++)v.tick(.1);
 const forward=new T.Vector3(1,0,0).applyQuaternion(v.vehicle.children[0].quaternion).applyQuaternion(v.vehicle.quaternion);
 assert(forward.x>.999&&Math.abs(forward.z)<1e-8,'reused chassis faces its movement heading');
 v.keys={};v.p={x:925,z:1024,y:W.deckAt(925,1024),surface:'bridge'};v.tick(0);

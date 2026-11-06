@@ -3,7 +3,9 @@ import {campaign,baseAction,BASE_ACTIONS,capture,defenseOutcome,contest,failedCo
 import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {CONQUEST} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
-const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=20,MAX_CREDIT_MS=1250;
+const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
+// Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
+// catch up instead of discarding earned time and diverging; 40 steps per request drains that backlog at the normal 1 Hz cadence.
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k),copy=v=>JSON.parse(JSON.stringify(v));
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),fail=m=>{throw Error('conquest: '+m);};
 const list=v=>Array.isArray(v)?v:v&&typeof v==='object'?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[];
