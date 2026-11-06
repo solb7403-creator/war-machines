@@ -1,0 +1,65 @@
+{
+  "generatedBy": "dev/tests/conquest-first-base.mjs",
+  "recipe": {
+    "cp": 2550,
+    "alloy": 110,
+    "biomass": 65,
+    "helium": 8
+  },
+  "rows": [
+    {
+      "pace": "brisk",
+      "assumptions": {
+        "fieldCycle": 90,
+        "raidCycle": 150,
+        "failedRaidCycle": 120,
+        "oldRaidCycle": 120,
+        "raidWins": {
+          "old": 10,
+          "new": 7
+        }
+      },
+      "old": {
+        "rule": "old",
+        "baseMinute": 24.5,
+        "raidsAttempted": 7,
+        "fieldMissionsCleared": 6
+      },
+      "new": {
+        "rule": "new",
+        "baseMinute": 33,
+        "raidsAttempted": 6,
+        "fieldMissionsCleared": 6
+      }
+    },
+    {
+      "pace": "ordinary",
+      "assumptions": {
+        "fieldCycle": 120,
+        "raidCycle": 200,
+        "failedRaidCycle": 160,
+        "oldRaidCycle": 160,
+        "raidWins": {
+          "old": 10,
+          "new": 7
+        }
+      },
+      "old": {
+        "rule": "old",
+        "baseMinute": 32.67,
+        "raidsAttempted": 7,
+        "fieldMissionsCleared": 6
+      },
+      "new": {
+        "rule": "new",
+        "baseMinute": 44,
+        "raidsAttempted": 6,
+        "fieldMissionsCleared": 6
+      }
+    }
+  ],
+  "target": "45-75 min",
+  "note": "Raid rewards unchanged by owner decision; kill salvage, featured bonuses and production excluded (slower than real).",
+  "modeled": true,
+  "physicalHumanPlaytest": false
+}

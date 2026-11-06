@@ -39,9 +39,9 @@ class Session{
  while(this.elapsed>=.05){this.elapsed-=.05;this.queue.push({...input,tapFire:false,super:false,dash:false,shield:false,...this.edges});this.pushed++;this.edges={};}
  if(this.queue.length>40){this.resync();return;}
  }
- async flush(limit=Infinity){if(this.busy||!this.connected||!this.queue.length||this.disposed)return;const count=Math.min(SEND,limit,this.queue.length,Math.floor(this.credit()/STEP_MS));if(count<1)return;this.busy=true;const commands=this.queue.splice(0,count),request={seq:this.state.seq+1,commands};this.sent+=count;
+ async flush(limit=Infinity){if(this.busy||!this.connected||!this.queue.length||this.disposed)return;const count=Math.min(SEND,limit,this.queue.length,Math.floor(this.credit()/STEP_MS));if(count<1)return;this.busy=true;const commands=this.queue.splice(0,count),request={seq:this.state.seq+1,commands};this.sent+=count;this.inflight=count;
  try{let r;try{r=await this.transport('/api/conquest/input',request);}catch(first){if(rejected(first)&&!String(first.message).includes('elapsed time'))throw first;if(retryWait(first))await sleep(retryWait(first));r=await this.transport('/api/conquest/input',request);}if(!this.disposed){this.apply(r.state);this.status='SECURED';}}
- catch(e){this.error=String(e.message);this.queue=[];this.sent=this.pushed;this.connected=false;this.status='RECONNECTING';await this.connect();}finally{this.busy=false;}
+ catch(e){this.error=String(e.message);this.queue=[];this.sent=this.pushed;this.connected=false;this.status='RECONNECTING';await this.connect();}finally{this.busy=false;this.inflight=0;}
  }
  async action(action,parameters={}){if(this.disposed)return false;if(!this.connected&&!await this.connect())return false;
  // Serialize actions after every command recorded before the tap; later driving keeps predicting and is replayed after it.

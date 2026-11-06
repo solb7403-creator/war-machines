@@ -18,10 +18,11 @@ function planRoute(p,target,b,enemy){const step=4,origin={x:p.x,z:p.z},key=(x,z)
  for(let n=0;open.length&&n<2500;n++){open.sort((a,b)=>b.f-a.f);const a=open.pop(),ap=point(a);if(Math.hypot(ap.x-target.x,ap.z-target.z)<(enemy?17:6)&&(!enemy||K.visible(b,ap,target))){end=a;break;}for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const i=a.i+di,j=a.j+dj;if(Math.abs(i)>36||Math.abs(j)>36)continue;const g=a.g+Math.hypot(di,dj)*step,k=key(i,j);if(g>=(best.get(k)??Infinity))continue;const q=W.advance(ap,di*step,dj*step);if(Math.hypot(q.x-(origin.x+i*step),q.z-(origin.z+j*step))>.3)continue;best.set(k,g);parent.set(k,a);open.push({i,j,g,f:g+Math.hypot(target.x-q.x,target.z-q.z)});}}
  if(!end)return [];const route=[];while(end.i||end.j){route.push(point(end));end=parent.get(key(end.i,end.j));}return route.reverse();}
 const results=[];
-for(const id of (process.env.CQ_RAID_IDS?process.env.CQ_RAID_IDS.split(','):C.raidIds)){
- const o=C.operations[id];let now=1800000000000,s=createState(L,now);s.completed=Object.fromEntries(C.fieldMissionIds.map(id=>[id,{at:now,attempt:0}]));const q=o.entry;s.position={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'};s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0,stuck=0,planned=[],bestGap=Infinity,sinceBest=0,goalKey='';
+// One physical-input controller run: real commands replayed by the Worker; gear and engineering are legal fixtures only.
+function runRaid(id,L,engineered){
+ const o=C.operations[id];let now=1800000000000,s=createState(L,now);if(engineered)for(const k of Object.keys(C.tracks))s.engineering.ranks[k]=C.costs.length;s.completed=Object.fromEntries(C.fieldMissionIds.map(id=>[id,{at:now,attempt:0}]));const q=o.entry;s.position={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'};s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0,stuck=0,planned=[],bestGap=Infinity,sinceBest=0,goalKey='';
  while(s.battle.state==='active'&&steps<10000){
-  const b=hydrate(s),p=s.position,alive=b.enemies.filter(e=>e.hp>0&&!e.resident),visible=alive.filter(e=>K.visible(b,p,e));
+  const b=hydrate(s),p=s.position,alive=b.enemies.filter(e=>e.hp>0&&!e.resident),threats=b.enemies.filter(e=>e.hp>0&&(!e.resident||Math.hypot(e.x-p.x,e.z-p.z)<45)),visible=threats.filter(e=>K.visible(b,p,e));
   const priority=visible.find(e=>e.id===b.carrierId)||visible.find(e=>e.immobile)||visible[0]||alive[0];
   let target=priority||b.objective;
   if(!priority&&['battery','extraction'].includes(o.family)&&b.scans<(o.family==='battery'?2:3)&&b.nodes[b.scans])target={x:b.nodes[b.scans][0],z:b.nodes[b.scans][1]};
@@ -35,9 +36,15 @@ for(const id of (process.env.CQ_RAID_IDS?process.env.CQ_RAID_IDS.split(','):C.ra
   const input={x:mx,z:mz,fire:!!priority,lockId:priority?.id||null,aimYaw:Math.atan2(priority?priority.x-p.x:dx,priority?priority.z-p.z:dz),shield:b.playerHp<b.playerMax*.8,super:b.charge>=1000};
   const before={...p};now+=50;s=applyCommands(s,{seq:s.seq+1,commands:[input]},now);steps++;stuck=move&&Math.hypot(s.position.x-before.x,s.position.z-before.z)<.03?stuck+1:0;
  }
- const r={id,family:o.family,layout:o.layout,commander:o.commander,outcome:s.battle.state,seconds:steps/20,hp:s.hp,kills:s.battle.kills,stage:s.battle.stage,scans:s.battle.scans,position:s.position,settlement:s.settlement};results.push(r);console.log(JSON.stringify(r));if(s.battle.state!=='victory')console.log(JSON.stringify(s.battle.enemies.filter(e=>e.hp>0&&!e.resident))); 
- assert.equal(s.battle.state,'victory',id+' real command-driven completion');assert(s.settlement.cp>0);assert(s.completed[id]);
- const cp=s.ledger.cp;s=applyCommands(structuredClone(s),{seq:s.seq+1,commands:[{x:0,z:0}]},now+50);assert.equal(s.ledger.cp,cp,'reconnect cannot double reward');
-}
-writeFileSync(process.env.CQ_RAID_IDS?'/tmp/lunar-raid-partial.json':'/tmp/lunar-raid-evidence.json',JSON.stringify({source:'authoritative physical command replay; canonical Legendary gear fixture; initial position placed at authored entry; subsequent movement/combat/objectives/settlement replayed authoritatively',results},null,2));
-console.log('PASS '+results.length+' raids: real damage/movement/objectives/settlement/reconnect');
+ const r={id,danger:o.danger,family:o.family,layout:o.layout,commander:o.commander,gear:L===STARTER?'starter':'epic',engineered:!!engineered,outcome:s.battle.state,seconds:steps/20,hp:Math.max(0,s.hp),hullLeft:Math.round(100*Math.max(0,s.hp)/hydrate(s).playerMax),kills:s.battle.kills,stage:s.battle.stage,scans:s.battle.scans};
+ if(r.outcome==='victory'){assert(s.settlement.cp>0);assert(s.completed[id]);const cp=s.ledger.cp;s=applyCommands(structuredClone(s),{seq:s.seq+1,commands:[{x:0,z:0}]},now+50);assert.equal(s.ledger.cp,cp,'reconnect cannot double reward');}
+ return r;}
+const STARTER=structuredClone(R.STOCK_L),ids=process.env.CQ_RAID_IDS?process.env.CQ_RAID_IDS.split(','):C.raidIds;
+// 1. Every raid is completable with legal upgrades: top-tier Epic gear, then Epic gear with maxed engineering.
+for(const id of ids){let r=runRaid(id,L,false);results.push(r);if(r.outcome!=='victory'){r=runRaid(id,L,true);results.push(r);}console.log(JSON.stringify(r));assert.equal(r.outcome,'victory',id+' real command-driven completion with legal upgrades');}
+// 2. Difficulty is real: HARD is a genuine fight for starter gear; VETERAN usually beats starter gear.
+const starter=ids.map(id=>runRaid(id,STARTER,false));results.push(...starter);const band=d=>starter.filter(r=>r.danger===d),wins=d=>band(d).filter(r=>r.outcome==='victory').length,epicVeteran=results.filter(r=>r.gear==='epic'&&!r.engineered&&r.danger==='VETERAN');
+const summary={starterHard:wins('HARD')+'/'+band('HARD').length,starterVeteran:wins('VETERAN')+'/'+band('VETERAN').length,epicVeteran:epicVeteran.filter(r=>r.outcome==='victory').length+'/'+epicVeteran.length,starterHardHullLeft:band('HARD').filter(r=>r.outcome==='victory').map(r=>r.hullLeft)};console.log('DIFFICULTY',JSON.stringify(summary));
+if(!process.env.CQ_RAID_IDS){assert(wins('HARD')>=3&&wins('HARD')<band('HARD').length,'HARD: winnable but a real fight for starter gear');assert(wins('VETERAN')<=Math.floor(band('VETERAN').length*.3),'VETERAN usually beats starter gear');assert(epicVeteran.filter(r=>r.outcome==='victory').length>=Math.ceil(epicVeteran.length*.6),'VETERAN rewards upgrades');
+ writeFileSync('docs/conquest-session-2/raid-difficulty.json',JSON.stringify({generatedBy:'dev/tests/conquest-raids.mjs',source:'authoritative physical command replay by a scripted controller (shield below 80%, super when charged, steps out of telegraphed zones, no Dash); legal gear fixtures; entry placement only',summary,results},null,2)+'\n');}
+console.log('PASS '+ids.length+' raids completable with legal upgrades; starter HARD '+summary.starterHard+', starter VETERAN '+summary.starterVeteran+', Epic VETERAN '+summary.epicVeteran+'; real damage/movement/objectives/settlement/reconnect');

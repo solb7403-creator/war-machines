@@ -16,6 +16,8 @@ async function transaction(env,pid,fn,now){
  if(await writeIf(env,path,state,tag))return r;}
  throw Error('conquest busy');
 }
+export function passPremium(S,now){return S?.pass?.prem===true&&S.pass.s===RULES.ecoSeason({day:Math.floor(now/86400000)});}
+async function premiumPass(env,pid,now){try{return passPremium(await readEco(env,pid),now);}catch{return false;}}
 async function canonical(env,pid){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null};}
 async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
  if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}
@@ -43,5 +45,7 @@ export async function conquestInput(env,a,now=Date.now()){
 export async function conquestAction(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
  if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel',...COSMETIC_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];return submit(env,a,request,applyAction,now);
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
+ const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:{};return submit(env,a,request,(p,r,n)=>applyAction(p,r,n,ctx),now);
 }
