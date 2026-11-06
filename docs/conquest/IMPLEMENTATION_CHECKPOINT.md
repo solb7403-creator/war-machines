@@ -275,3 +275,18 @@ Branch `feat/conquest-territory-endgame-v1` / PR #54, continuing verified Codex 
 - Tests this checkpoint: full Node Conquest list 37/37 PASS (pre-final-tuning run) and focused doctrine/authority/drones/loot/sector/defense/economy/canvas/UI/earned-journey/wtest PASS on final code. Pending before push of next checkpoint: full regression rerun, flagship Chromium 390 + WebKit 320 siege browser journeys on final code, observe PR CI.
 
 PHYSICAL_IPHONE_UNVERIFIED. Checkout DISABLED. No merge/deploy at this checkpoint.
+
+
+## Checkpoint 17 — CI follow-ups, spawn hitch removal, hull readiness and software soak
+
+Commits after Checkpoint 16: `ec12b86` and the commit containing this entry. Build stamped by `dev/bump.sh` in that commit.
+
+- PR CI on `f497008`: `conquest`, `transmission (webkit)` and all other checks green; `transmission (chromium)` passed 032/033 and then failed `conquest-living-war.py:186` — the new site chooser grouped the Convoy with the Oxygen Line's 150m activation radius. Fixed: the chooser only groups ready operations within 20m of the nearest (the co-located raid families). Local `conquest-living-war.py --engine chromium`: PASS.
+- PR CI on `ec12b86`: all green except `transmission (chromium)` at `conquest-flagship-browser.py` raid 3 (battery-1): hull carries over between operations and the bot chained three raids without repairing, entering at 40% and dying when the wave landed. Real fix on both sides: players now see `HULL n%` readiness with a repair warning below 60% in the site chooser and every briefing; the bot takes the genuine Refuge route and REPAIR HULL when below 60% (no HP fixture). Local flagship Chromium 390: PASS, 4 native victories, one real Refuge repair before battery-1 (1670/2958).
+- Enemy hull/weapon geometry cached per silhouette (view-owned, disposed at teardown; Canvas fallback skips) and the four raid archetypes prewarmed in exploration: repeat spawn build 9–62ms → ~0ms. Base-cost overlay hidden during operations.
+- Software soaks (Chromium SwiftShader 390, one long-lived page): 21 raids/18.3 min and 13 raids/10.7 min, all victories, zero page errors, bounded heap/geometry/texture/DOM. Hitches attributed to the test bot's in-page A* plus the briefing-to-battle transition; zero over-100ms combat frames without bot input. Evidence: `docs/conquest-session-2/hitch-attribution.json`, `soak-raid-chromium390-*.json`, VERIFICATION.md addendum.
+- Re-verified locally: full Conquest Node list, doctrine test, 25/25 authoritative raids, economy/payments 203/0, PvP 113/0, accounts 18; Chromium 032 / living-war / flagship journeys. WebKit unavailable in this container (download blocked) — covered by PR CI.
+
+**Release decision recorded:** not merged or deployed. The owner authorized validated release subject to the repository's gates; the documented gates (Checkpoint 13, feature-matrix 8.x/9.x `BLOCKED_RELEASE`, SMOOTHNESS addendum) still require physical capable-iPhone Safari + Telegram dense-combat acceptance and owner hands-on first-hour feel, which cannot be exercised from this cloud container. PHYSICAL_IPHONE_UNVERIFIED. Checkout DISABLED. Production remains on its existing build.
+
+**Exact next steps:** (1) owner plays the preview (`node dev/tests/conquest-server.mjs --preview`, Safari on the same Wi-Fi via `CQ_PREVIEW_HOST=0.0.0.0`; see docs/conquest-living-war/PLAYTEST.md) or a staging build on a physical iPhone/Telegram, sampling `Conquest.view.performanceReport()` during a VETERAN raid; (2) fix any device defects on this branch; (3) with acceptance recorded, merge PR #54 with the existing workflows and verify `/pvp/health`, `version.json` and the Worker deployment. Do not enable uncertified payments.

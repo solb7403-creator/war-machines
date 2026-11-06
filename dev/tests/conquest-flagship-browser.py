@@ -18,6 +18,8 @@ PATH = r'''target=>{const v=Conquest.view,W=ConquestWorld,K=ConquestControl,B=v.
 # Project actual visible hostile geometry and ray-test a click through the canvas.
 INFO = r'''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.authority.state,living=B.enemies.filter(e=>e.hp>0&&!e.resident),visible=living.filter(e=>ConquestControl.visible(B,v.p,e)),e=visible.find(e=>e.id===B.carrierId)||visible.find(e=>e.immobile)||visible.sort((a,b)=>Math.hypot(a.x-v.p.x,a.z-v.p.z)-Math.hypot(b.x-v.p.x,b.z-v.p.z))[0]||living[0];let pick=null;if(e&&visible.includes(e)){let hull=null;const group=v.enemyMeshes.get(e.id),meshes=[];group?.traverse(m=>{if(m.isMesh&&m!==group.userData.marker){meshes.push(m);if(!hull)hull=m;}});if(hull&&!hull.geometry.boundingBox)hull.geometry.computeBoundingBox();const center=hull?hull.geometry.boundingBox.getCenter(new v.T.Vector3()).applyMatrix4(hull.matrixWorld):new v.T.Vector3(e.x-v.origin.x,e.y+1,e.z-v.origin.z),q=center.project(v.camera),r=v.host.getBoundingClientRect();for(const [dx,dy] of [[0,0],[0,3],[0,-3],[3,0],[-3,0],[0,6],[6,0],[-6,0]]){const x=(q.x+1)*r.width/2+dx,y=(1-q.y)*r.height/2+dy;if(document.elementFromPoint(x,y)!==v.renderer.domElement)continue;const ray=new v.T.Raycaster();ray.setFromCamera(new v.T.Vector2(x/r.width*2-1,1-y/r.height*2),v.camera);const hit=ray.intersectObjects(meshes,false)[0];if(hit&&ConquestCombat.lineClear({x:ray.ray.origin.x+v.origin.x,y:ray.ray.origin.y,z:ray.ray.origin.z+v.origin.z},{x:hit.point.x+v.origin.x,y:hit.point.y,z:hit.point.z+v.origin.z})){pick={id:e.id,x,y,visible:q.z<1};break;}}}let target=e?{x:e.x,z:e.z}:B.objective;if(!e&&['battery','extraction'].includes(B.operation?.family)&&B.nodes[B.scans])target={x:B.nodes[B.scans][0],z:B.nodes[B.scans][1]};const h=B.hazards?.find(h=>Math.hypot(h.x-v.p.x,h.z-v.p.z)<h.radius+3);return {state:s.battle.state,hp:s.hp,maxHp:B.playerMax,target,selected:v.selectedId,pick,live:living.length,canHit:!!e&&ConquestControl.visible(B,v.p,e),enemy:e?{id:e.id,hp:e.hp}:null,p:{x:v.p.x,z:v.p.z,yaw:v.yaw},hazard:h,charge:B.charge,scans:B.scans,stage:B.stage,work:B.work,time:B.time,kills:B.kills,shots:B.playerShots,operation:B.operation?.id,serverTime:s.battle.time};}'''
 
+REFUGE_ROUTE=[(994,944),(1090,944),(1145,934),(1145,995),(1240,1048),(1240,1128),(1174,1128),(1174,1168)]
+
 class Journey:
     def __init__(self, page, base, width, height, name):
         self.page, self.base, self.width, self.height, self.name = page, base, width, height, name
@@ -58,6 +60,16 @@ class Journey:
             await self.page.wait_for_timeout(125)
         else: raise AssertionError(('travel blocked',target,p))
         await self.keys(set()); await self.page.wait_for_timeout(1100)
+
+    async def repair_at_refuge(self):
+        # Genuine player path between chained raids: drive the proven Refuge route and use REPAIR HULL (no HP fixture).
+        for x,z in REFUGE_ROUTE: await self.travel({'x':x,'z':z},stop=4)
+        await self.page.wait_for_function('!document.querySelector("#cq-supply-access").hidden')
+        await self.page.locator('#cq-supply-access').click()
+        await self.page.get_by_role('button',name='REPAIR HULL',exact=True).click()
+        await self.page.wait_for_function('Conquest.view.authority.state.hp>=Conquest.view.authority.state.battle.playerMax-1')
+        await self.page.get_by_role('button',name='CLOSE SUPPLY',exact=True).click()
+        for x,z in reversed(REFUGE_ROUTE[:-1]): await self.travel({'x':x,'z':z},stop=4)
 
     async def shot(self, label):
         await self.page.screenshot(path=str(OUT/f'{self.name}-{label}.png'))
@@ -148,6 +160,9 @@ async def run(args):
             if args.defense_only: ids=[]
             for operation in ids:
                 o=definitions[operation]
+                hull=await page.evaluate('[Conquest.view.authority.state.hp,Conquest.view.authority.state.battle.playerMax]')
+                if hull[0]<hull[1]*.6:
+                    await j.repair_at_refuge();result.setdefault('refugeRepairs',[]).append({'before':operation,'hull':hull})
                 await j.travel({'x':o['x'],'z':o['z']},stop=o['activationRadius']-8)
                 # Natural arrival path: the HUD action opens the site chooser when several raid families are ready here.
                 access=page.locator('#cq-mission-access');await page.wait_for_function('!document.querySelector("#cq-mission-access").hidden&&!document.querySelector("#cq-mission-access").disabled')

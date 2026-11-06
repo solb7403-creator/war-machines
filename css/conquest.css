@@ -59,3 +59,4 @@
 .cq-aar-elite{color:#ffd98a!important;font-weight:700}.cq-aar-roll,.cq-aar-note{font-size:12px!important}.cq-aar-progress{font-size:12px!important;border-top:1px solid #395363;padding-top:8px}
 @keyframes cq-aar-pop{from{opacity:0;transform:translateY(8px) scale(.85)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.cq-aar-tile{animation:none}}
+.cq-hull-warning{color:#ffb08f!important;border-left:3px solid #ff7a5c;padding-left:8px;font-size:12px!important}.cq-hull-ready{color:#9fd9e2!important;font-size:12px!important}
