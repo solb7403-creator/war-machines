@@ -112,18 +112,21 @@
         "code": [
           "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
           "worker/src/conquest-sim.js:applyAction/applyCommands",
-          "worker/src/conquest-economy.js:missionReward"
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
         ],
         "tests": [
           "dev/tests/conquest-raids.mjs",
           "dev/tests/conquest-operations.mjs",
-          "dev/tests/wtest/conquest-war.mjs"
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
         ],
         "artifacts": [
           "docs/conquest-session-2/raid-evidence.json",
           "docs/conquest-session-2/browser"
         ],
-        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation."
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
       }
     },
     {
@@ -135,18 +138,21 @@
         "code": [
           "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
           "worker/src/conquest-sim.js:applyAction/applyCommands",
-          "worker/src/conquest-economy.js:missionReward"
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
         ],
         "tests": [
           "dev/tests/conquest-raids.mjs",
           "dev/tests/conquest-operations.mjs",
-          "dev/tests/wtest/conquest-war.mjs"
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
         ],
         "artifacts": [
           "docs/conquest-session-2/raid-evidence.json",
           "docs/conquest-session-2/browser"
         ],
-        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation."
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
       }
     },
     {
@@ -158,18 +164,21 @@
         "code": [
           "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
           "worker/src/conquest-sim.js:applyAction/applyCommands",
-          "worker/src/conquest-economy.js:missionReward"
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
         ],
         "tests": [
           "dev/tests/conquest-raids.mjs",
           "dev/tests/conquest-operations.mjs",
-          "dev/tests/wtest/conquest-war.mjs"
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
         ],
         "artifacts": [
           "docs/conquest-session-2/raid-evidence.json",
           "docs/conquest-session-2/browser"
         ],
-        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation."
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
       }
     },
     {
@@ -181,18 +190,21 @@
         "code": [
           "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
           "worker/src/conquest-sim.js:applyAction/applyCommands",
-          "worker/src/conquest-economy.js:missionReward"
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
         ],
         "tests": [
           "dev/tests/conquest-raids.mjs",
           "dev/tests/conquest-operations.mjs",
-          "dev/tests/wtest/conquest-war.mjs"
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
         ],
         "artifacts": [
           "docs/conquest-session-2/raid-evidence.json",
           "docs/conquest-session-2/browser"
         ],
-        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation."
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
       }
     },
     {
@@ -204,18 +216,21 @@
         "code": [
           "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
           "worker/src/conquest-sim.js:applyAction/applyCommands",
-          "worker/src/conquest-economy.js:missionReward"
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
         ],
         "tests": [
           "dev/tests/conquest-raids.mjs",
           "dev/tests/conquest-operations.mjs",
-          "dev/tests/wtest/conquest-war.mjs"
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
         ],
         "artifacts": [
           "docs/conquest-session-2/raid-evidence.json",
           "docs/conquest-session-2/browser"
         ],
-        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation."
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
       }
     },
     {
@@ -1016,7 +1031,7 @@
       "scope": "No completed30minute exploration plus20minute dense physical/mobile-class soak; short softwareprofiles report exact durations/counters separately."
     }
   ],
-  "notes": "StatusAUTOMATED_ONLY means code and listed automated proof exist within declaredlimits; it never means every subjective/hardware clause passed. No optionalfeature is represented as live.",
+  "notes": "StatusAUTOMATED_ONLY means code and listed automated proof exist within declaredlimits; it never means every subjective/hardware clause passed. No optionalfeature is represented as live. 2026-11-06 Claude Code continuation: CI relay navigation defect fixed at UX cause (field missions visible, map-first frontline, sector-grouped raid board, site chooser). See IMPLEMENTATION_CHECKPOINT.md Checkpoint 16.",
   "full_section_contracts": [
     {
       "section": 1,
