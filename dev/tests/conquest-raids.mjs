@@ -19,13 +19,15 @@ function planRoute(p,target,b,enemy){const step=4,origin={x:p.x,z:p.z},key=(x,z)
  if(!end)return [];const route=[];while(end.i||end.j){route.push(point(end));end=parent.get(key(end.i,end.j));}return route.reverse();}
 const results=[];
 for(const id of (process.env.CQ_RAID_IDS?process.env.CQ_RAID_IDS.split(','):C.raidIds)){
- const o=C.operations[id];let now=1800000000000,s=createState(L,now);const q=o.entry;s.position={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'};s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0,stuck=0,planned=[];
+ const o=C.operations[id];let now=1800000000000,s=createState(L,now);const q=o.entry;s.position={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'};s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0,stuck=0,planned=[],bestGap=Infinity,sinceBest=0,goalKey='';
  while(s.battle.state==='active'&&steps<10000){
   const b=hydrate(s),p=s.position,alive=b.enemies.filter(e=>e.hp>0&&!e.resident),visible=alive.filter(e=>K.visible(b,p,e));
   const priority=visible.find(e=>e.id===b.carrierId)||visible.find(e=>e.immobile)||visible[0]||alive[0];
   let target=priority||b.objective;
   if(!priority&&['battery','extraction'].includes(o.family)&&b.scans<(o.family==='battery'?2:3)&&b.nodes[b.scans])target={x:b.nodes[b.scans][0],z:b.nodes[b.scans][1]};
-  if(planned.length&&Math.hypot(planned[0].x-p.x,planned[0].z-p.z)<2)planned.shift();if(stuck>5||!planned.length&&priority&&!K.visible(b,p,priority)){planned=planRoute(p,target,b,!!priority);stuck=0;}const steering=planned[0]||target;
+  // Progress watchdog: oscillating against a slope or cover without closing distance forces a fresh physical route.
+  const key=(priority?'e'+priority.id:'n'+b.scans)+':'+b.stage,gap=Math.hypot(target.x-p.x,target.z-p.z);if(key!==goalKey){goalKey=key;bestGap=gap;sinceBest=0;}else if(gap<bestGap-.5){bestGap=gap;sinceBest=0;}else sinceBest++;
+  if(planned.length&&Math.hypot(planned[0].x-p.x,planned[0].z-p.z)<2)planned.shift();if(stuck>5||sinceBest>60&&!planned.length||!planned.length&&priority&&!K.visible(b,p,priority)){planned=planRoute(p,target,b,!!priority);stuck=0;if(sinceBest>60){sinceBest=0;bestGap=gap;}}const steering=planned[0]||target;
   const dx=steering.x-p.x,dz=steering.z-p.z,d=Math.hypot(dx,dz),move=planned.length?d>1:priority?d>18||!K.visible(b,p,priority):d>4;
   let mx=move?dx/(d||1):0,mz=move?dz/(d||1):0;
   const hazard=b.hazards?.find(h=>Math.hypot(h.x-p.x,h.z-p.z)<h.radius+2);if(hazard){const ax=p.x-hazard.x,az=p.z-hazard.z,n=Math.hypot(ax,az)||1;mx=Math.hypot(ax,az)<.01?1:ax/n;mz=Math.hypot(ax,az)<.01?0:az/n;}

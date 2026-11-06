@@ -73,8 +73,12 @@ class Journey:
             if info['state']=='victory': break
             assert info['state']=='active' and info['hp']>0, (operation,info)
             pick=info.get('pick')
-            if pick and pick['visible'] and pick['id']!=info['selected'] and 8<pick['x']<self.width-8 and 120<pick['y']<self.height-190:
+            onscreen=pick and pick['visible'] and 8<pick['x']<self.width-8 and 120<pick['y']<self.height-190
+            if onscreen and pick['id']!=info['selected']:
                 await self.page.mouse.click(pick['x'],pick['y']);clicked+=1
+            elif info['enemy'] and info['canHit'] and info['selected']!=info['enemy']['id'] and not onscreen and step%6==0:
+                # Presentation-only orbit, as a player drags the terrain: face a hittable hostile that is off the usable screen band.
+                await self.page.evaluate('([x,z])=>{const v=Conquest.view;v.yaw=Math.atan2(-(x-v.p.x),-(z-v.p.z));}',[info['target']['x'],info['target']['z']])
             target=info['target']; p=info['p']; distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
             locked=info['enemy'] and info['selected']==info['enemy']['id']
             # Keep normal firing while closing; only actual hull clicks can establish lock.
@@ -92,9 +96,12 @@ class Journey:
         else: raise AssertionError(('operation timeout',operation,info))
         await self.keys(set())
         await self.page.wait_for_selector('.cq-result')
+        # The after-action report must present the authoritative settlement, never a bare victory overlay.
+        await self.page.wait_for_function('document.querySelectorAll(".cq-aar-tile").length>=4&&!document.querySelector(".cq-aar[data-pending]")',timeout=20000)
         await self.shot(operation+'-victory')
         state=await self.page.evaluate('Conquest.view.authority.state')
         assert state['settlement']['cp']>0 and state['completed'].get(operation),state
+        shown=await self.page.locator('.cq-aar-cp strong').inner_text();assert shown=='+'+str(state['settlement']['cp']),(shown,state['settlement'])
         report={'operation':operation,'secondsWall':time.monotonic()-started,'physicalHullClicks':clicked,'settlement':state['settlement'],'kills':state['battle']['kills'],'hp':state['hp'],'position':state['position'],'raidProgress':state.get('raidProgress'),'territory':state.get('territory'),'performance':await self.page.evaluate('Conquest.view.performanceReport()')}
         assert clicked>0, report
         print('VICTORY',json.dumps(report),flush=True)
@@ -142,7 +149,12 @@ async def run(args):
             for operation in ids:
                 o=definitions[operation]
                 await j.travel({'x':o['x'],'z':o['z']},stop=o['activationRadius']-8)
-                await page.get_by_role('button',name='OPEN MAP',exact=True).click();await page.locator('.cq-operation-board summary').click();await page.get_by_role('button',name='BRIEF · '+o['name'],exact=True).click()
+                # Natural arrival path: the HUD action opens the site chooser when several raid families are ready here.
+                access=page.locator('#cq-mission-access');await page.wait_for_function('!document.querySelector("#cq-mission-access").hidden&&!document.querySelector("#cq-mission-access").disabled')
+                if 'CHOOSE OPERATION' in await access.inner_text():
+                    await access.click();await page.wait_for_selector('.cq-site-operations');await page.get_by_role('button',name='BRIEF · '+o['name'],exact=True).click()
+                else:
+                    await page.get_by_role('button',name='OPEN MAP',exact=True).click();await page.locator('.cq-operation-board summary').click();await page.get_by_role('button',name='BRIEF · '+o['name'],exact=True).click()
                 await j.shot(operation+'-approach')
                 await page.get_by_role('button',name='START MISSION',exact=True).click()
                 await page.wait_for_function('(id)=>Conquest.view.authority.state.mission===id',arg=operation)

@@ -6,6 +6,8 @@ export function ledger(s,now){s.ledger=s.ledger||{cp:0,banked:empty(),cargo:empt
 function grant(s,amount,mission=false){const awarded={};for(const k of ['cp',...MATERIALS]){const n=Math.max(0,mission?(amount[k]||0):amount[k]||0);s.daily[k]+=n;awarded[k]=n;if(k==='cp')s.ledger.cp+=n;else s.ledger.cargo[k]+=n;}s.reputation=(s.reputation||0)+Math.floor((awarded.cp||0)/3);s.notice={kind:'reward',...awarded};return awarded;}
 export function killLoot(s,e,now){
  ledger(s,now);if(e.lootCreated)return;e.lootCreated=true;
+ // Raid reinforcement waves are combat pressure only; they never add salvage beyond the authored raid economy.
+ if(e.noLoot)return;
  let id;if(s.mission&&!e.resident){const key=e.rewardKey;if(!key||s.daily.missionKills.includes(key))return;s.daily.missionKills.push(key);id='m:'+s.daily.day+':'+key;}
  else {const meta=s.spawns[e.key]||(s.spawns[e.key]={generation:Math.floor(now/POLICY.day)});if(meta.lootGeneration===meta.generation)return;meta.lootGeneration=meta.generation;meta.deadAt=now;id='e:'+e.key+':'+meta.generation;}
  const heavy=e.kind==='command'||e.kind==='sentinel',patrol=e.base?.kind==='patrol';

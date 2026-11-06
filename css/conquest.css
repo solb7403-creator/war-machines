@@ -33,3 +33,29 @@
 
 /* Session 2 boards remain scrollable and keep touch targets readable on 320px phones. */
 .cq-operation-board,.cq-product-section{border-top:1px solid #527082;margin:12px 0;padding-top:8px}.cq-operation-board summary,.cq-product-section summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}.cq-operation-board button,.cq-product button{min-height:44px;white-space:normal;max-width:100%}.cq-product{padding:10px 0;border-bottom:1px solid #395363}.cq-product h3{margin:4px 0}.cq-product p{font-size:12px}.cq-product-preview{width:100%;height:auto;aspect-ratio:16/9;background:#10202e;border:1px solid #688595;border-radius:6px}.cq-collection-status{min-height:48px;color:#f0dca2}.cq-collection button:disabled{opacity:.55}.cq-dialog{overflow-wrap:anywhere}
+
+/* Region map leads the frontline dialog; accordions show an explicit, tappable disclosure state. */
+.cq-map canvas{display:block;margin:4px auto;width:min(100%,calc(min(50vh,420px)*.857));height:auto;touch-action:none}
+.cq-operation-board summary,.cq-product-section summary{list-style:none;gap:10px;padding:0 12px;border:1px solid #5d7f91;border-radius:6px;background:#10283a;color:#f3ddb0}
+.cq-operation-board summary::-webkit-details-marker,.cq-product-section summary::-webkit-details-marker{display:none}
+.cq-operation-board summary::before,.cq-product-section summary::before{content:'▸';font-size:14px;color:#79dce8}
+.cq-operation-board[open] summary::before,.cq-product-section[open] summary::before{content:'▾'}
+.cq-operation-board h4{margin:14px 0 2px;font-size:12px;letter-spacing:1px;color:#ffb56b}
+.cq-field-missions{border-top:1px solid #527082;margin:12px 0;padding-top:4px}.cq-field-missions h3{margin:6px 0}.cq-field-missions button,.cq-site-op button{min-height:44px;white-space:normal;max-width:100%}
+.cq-site-op{padding:8px 0;border-bottom:1px solid #395363}.cq-site-op h3{margin:4px 0;font-size:14px}.cq-site-op p{font-size:12px;margin:2px 0 6px}
+
+/* After-action report: authoritative settlement presented as reward tiles, sized to its content. */
+.cq-dialog.cq-result{height:fit-content;max-height:calc(100% - 24px)}
+.cq-aar-victory{border-color:#e0c27a!important;box-shadow:0 0 0 1px #e0c27a55,0 16px 80px #000b}
+.cq-aar-defeat{border-color:#c86a5d!important}
+.cq-aar-stats{font-size:12px!important;letter-spacing:1px;color:#9fd9e2!important}
+.cq-aar-kicker{font-size:11px!important;letter-spacing:2px;color:#e0c27a!important;margin:8px 0 6px}
+.cq-aar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin:4px 0 10px}
+.cq-aar-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:62px;padding:6px 4px;border:1px solid #4d6e80;border-radius:8px;background:linear-gradient(160deg,#173248,#0d1c2b);animation:cq-aar-pop .42s cubic-bezier(.2,1.4,.4,1) both}
+.cq-aar-tile strong{font-size:20px;line-height:1.1;color:#f3f7fa}.cq-aar-tile span{font-size:9px;letter-spacing:1.5px;color:#9cb3c4;text-align:center}
+.cq-aar-cp{border-color:#e0c27a;background:linear-gradient(160deg,#3a3220,#14202b)}.cq-aar-cp strong{color:#ffd98a}
+.cq-aar-shard{border-color:#79dce8;background:linear-gradient(160deg,#14404a,#0d1c2b)}.cq-aar-shard strong{color:#9ff2fb}
+.cq-aar-bar{height:8px;border-radius:4px;background:#22323f;overflow:hidden;margin:6px 0 2px}.cq-aar-bar span{display:block;height:100%;background:linear-gradient(90deg,#4fc7d6,#9ff2fb)}
+.cq-aar-elite{color:#ffd98a!important;font-weight:700}.cq-aar-roll,.cq-aar-note{font-size:12px!important}.cq-aar-progress{font-size:12px!important;border-top:1px solid #395363;padding-top:8px}
+@keyframes cq-aar-pop{from{opacity:0;transform:translateY(8px) scale(.85)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.cq-aar-tile{animation:none}}

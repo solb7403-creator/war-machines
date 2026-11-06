@@ -32,6 +32,7 @@ jobs:
           node dev/tests/conquest-base.mjs
           node dev/tests/conquest-raid-layouts.mjs
           node dev/tests/conquest-raids.mjs
+          node dev/tests/conquest-raid-doctrine.mjs
           node dev/tests/conquest-drones.mjs
           node dev/tests/conquest-airborne-loot.mjs
           node dev/tests/conquest-defense-config.mjs
