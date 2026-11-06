@@ -925,7 +925,7 @@
       "id": "9.1",
       "section": "FINAL SHIPPING AND REQUIRED SUMMARY",
       "canonical_requirement": "Merge only after applicable tests pass and gameplay journey and security checks meet the above. Owner authorization to merge/deploy is explicit. Use existing GitHub Actions and Cloudflare+Pages deployment; confirm SHAs, versions, published files and health/auth checks on origins. Never fake successes, grant real owner gear without separate explicit instruction, or alter production wallets/payments/LP.",
-      "status": "BLOCKED_RELEASE",
+      "status": "RELEASED",
       "evidence": {
         "code": [
           "docs/conquest/IMPLEMENTATION_CHECKPOINT.md",
@@ -935,7 +935,7 @@
         "artifacts": [
           "docs/conquest-session-2/feature-matrix.json"
         ],
-        "limits": "No merge/deployment certified by this matrix. Reviewable branch/PR and live build status must be stated separately; no new live checkout."
+        "limits": "Released 2026-11-06 with owner approval: PR #53 merge f6305ab, PR #54 merge 185e316 at CI-green head 80698a3; Worker deploy run 42175258409 (live /pvp/health ok, live version.json 20261106055908 = repo); GitHub Pages run 42175257429 success. Payments remain disabled. Physical-device acceptance follows in production."
       }
     },
     {
@@ -1081,5 +1081,13 @@
     }
   ],
   "pr": "https://github.com/solb7403-creator/war-machines/pull/54",
-  "commitIdentityRepair": "docs/conquest-session-2/commit-map.json"
+  "commitIdentityRepair": "docs/conquest-session-2/commit-map.json",
+  "released": {
+    "date": "2026-11-06",
+    "merge": "185e3169c42b58c8f53fa778588e5708afdf7ffb",
+    "build": "20261106055908",
+    "deployRun": 42175258409,
+    "pagesRun": 42175257429,
+    "physicalIPhone": "PHYSICAL_IPHONE_UNVERIFIED"
+  }
 }
