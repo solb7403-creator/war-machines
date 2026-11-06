@@ -1,6 +1,6 @@
 # LUNAR: War Machines — Conquest flagship execution handoff
 
-**Status (2026-11-06): SESSIONS 1+2 INTEGRATED IN DRAFT PR #54, branch feat/conquest-territory-endgame-v1 (supersedes #53 as the review workstream). Read Checkpoints 16–17 in IMPLEMENTATION_CHECKPOINT.md and docs/conquest-session-2/VERIFICATION.md before continuing. Release is HELD on physical iPhone Safari/Telegram acceptance and owner hands-on first-hour feel; checkout DISABLED; no merge/deployment. Historical Session 1 status: tested code 1b9a7dc / build 20261105164144.**
+**Status (2026-11-06): RELEASED. Session 1 (PR #53, merge `f6305ab`) and Session 2 (PR #54, merge `185e316`) are on `main` and deployed: Worker build `20261106055908` (live `/pvp/health` ok, live version = repo), GitHub Pages client from `185e316`. Payments DISABLED. Physical iPhone/Telegram and owner hands-on acceptance happen now in production (owner playtest environment, no live players yet). Read Checkpoint 19 in IMPLEMENTATION_CHECKPOINT.md before continuing; new work starts on a fresh branch from `main`.**
 **Last verified game release at preparation:** main `d592146dfca5ea389507ec8cd51b8cc28e1eb2f5`, Conquest 3.3 / version `20261105034106`. Always query GitHub for the NEW latest state first. Do not treat this snapshot as live status after development starts.
 
 ## Complete owner-approved specifications
@@ -50,10 +50,10 @@ Continue LUNAR: War Machines Conquest from GitHub, not chat memory. Repository s
 
 - [x] Both complete flagship briefs archived in GitHub.
 - [x] Cross-agent continuation and checkpoint protocol added.
-- [ ] Session 1 code implemented, tested and safe to deploy.
-- [ ] Session 1 documented in `IMPLEMENTATION_CHECKPOINT.md` and merged/deployed.
-- [ ] Session 2 code implemented, tested and safe to deploy.
-- [ ] Full flagship acceptance, end-to-end authenticated playtests, and release verification passed.
+- [x] Session 1 code implemented, tested and deployed (PR #53, merge `f6305ab`, live build `20261105164144` at merge time; superseded by `20261106055908`).
+- [x] Session 1 documented in `IMPLEMENTATION_CHECKPOINT.md` and merged/deployed.
+- [x] Session 2 code implemented, tested and deployed (PR #54, merge `185e316`, live build `20261106055908`, deploy run 42175258409; Pages run 42175257429).
+- [ ] Full flagship acceptance: release verification passed (CI, deploy health/version, Pages); physical iPhone/Telegram and owner hands-on acceptance still pending in production.
 
 **Update this ledger with grounded GitHub links and test evidence as work progresses.** Never check an item solely because a model reports it without code, tests and real gameplay proof.
 
