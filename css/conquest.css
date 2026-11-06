@@ -62,3 +62,4 @@
 .cq-hull-warning{color:#ffb08f!important;border-left:3px solid #ff7a5c;padding-left:8px;font-size:12px!important}.cq-hull-ready{color:#9fd9e2!important;font-size:12px!important}
 .cq-recommend{font-size:12px!important;color:#e0c27a!important}
 .cq-aar-error{color:#ffb08f!important;font-size:12px!important}
+.cq-home-routes{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.cq-home-routes button{flex:1 1 130px;min-height:44px;font-size:11px;letter-spacing:.5px}.cq .cq-nav-refuge{border-color:#79dce8;color:#c8f6fb}.cq .cq-nav-base{border-color:#ffc96b;color:#ffe5b5}.cq-more-panel .cq-home-routes{margin:0;display:grid;gap:6px}

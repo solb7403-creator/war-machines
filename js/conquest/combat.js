@@ -65,6 +65,8 @@ const retakeSectors=new Set(sectors.map(s=>s.id).filter(id=>!raidOperations.some
 function sectorDefenseOpen(t,sector){return !!t&&(t.owner==='humanity'&&t.status==='defense-alert'||retakeSectors.has(sector)&&t.owner==='parasites'&&t.status==='recaptured');}
 const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
+// The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
+const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
 const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
@@ -268,5 +270,5 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({refuge,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);
