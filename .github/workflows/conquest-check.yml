@@ -39,6 +39,7 @@ jobs:
           node dev/tests/conquest-defense-victory.mjs
           node dev/tests/conquest-sector-authority.mjs
           node dev/tests/conquest-sector-victory.mjs
+          node dev/tests/conquest-frontier-recovery.mjs
           node dev/tests/conquest-war-authority.mjs
           node dev/tests/conquest-warfront.mjs
           node dev/tests/conquest-cosmetics.mjs

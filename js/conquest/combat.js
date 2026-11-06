@@ -59,6 +59,10 @@ const raidFamilies=freeze([
 function raidPoint(x,z){for(const r of [0,5,10,15,20,25])for(let i=0;i<(r?16:1);i++){const p={x:x+Math.cos(i*Math.PI/8)*r,z:z+Math.sin(i*Math.PI/8)*r,surface:'ground'};p.y=W.groundAt(p.x,p.z);if(!W.solidAt(p.x,p.z)&&[[4,0],[-4,0],[0,4],[0,-4]].every(([a,b])=>{const q=W.advance(p,a,b);return Math.hypot(q.x-p.x-a,q.z-p.z-b)<.2;}))return [p.x,p.z];}throw Error('conquest: no clear raid approach');}
 const raidOperations=raidFamilies.flatMap((f,fi)=>raidLayouts.map((l,i)=>({id:'raid-'+f.id+'-'+(i+1),raid:true,family:f.id,name:f.name+' / '+l.name.toUpperCase(),site:'raid-site-'+f.id+'-'+(i+1),sector:l.sector,layout:l.id,x:l.x+fi*3,z:l.z+fi*4,entry:raidPoint(l.entry[0]+fi*3,l.entry[1]+fi*4),route:l.route.map(([x,z])=>raidPoint(x+fi*3,z+fi*4)),drops:[raidPoint(l.x+fi*3-26,l.z+fi*4-30),raidPoint(l.x+fi*3+30,l.z+fi*4+18)],offsets:l.offsets,hazard:l.hazard,commander:f.commander,danger:i<2?'HARD':'VETERAN',brief:f.brief+' '+l.name+' uses '+l.hazard+' targeting across a distinct '+l.sector+' approach.',reward:{cp:180+i*20+fi*15,alloy:18+i*2,biomass:12+fi,helium:3+i}})));
 const raidIds=Object.freeze(raidOperations.map(o=>o.id)),sectors=W.sectors;
+// A sector defense opens during a real invasion alert. Sectors with no raid objective (the Refuge home sector) can also be
+// retaken through the same physical defense after an invasion is lost, so no sector is ever permanently unrecoverable.
+const retakeSectors=new Set(sectors.map(s=>s.id).filter(id=>!raidOperations.some(o=>o.sector===id)));
+function sectorDefenseOpen(t,sector){return !!t&&(t.owner==='humanity'&&t.status==='defense-alert'||retakeSectors.has(sector)&&t.owner==='parasites'&&t.status==='recaptured');}
 const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
@@ -264,5 +268,5 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

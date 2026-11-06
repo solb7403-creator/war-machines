@@ -64,7 +64,8 @@
         "code": [
           "js/conquest/world.js:sectors/raidSolidAt/installationOccludes",
           "js/conquest/combat.js:Operation/hazardStep/markStrike",
-          "worker/src/conquest-campaign.js:campaign/capture/sectorDefenseOutcome"
+          "worker/src/conquest-campaign.js:campaign/capture/sectorDefenseOutcome",
+          "js/conquest/app.js:briefing/recommendedStrength"
         ],
         "tests": [
           "dev/tests/conquest-raid-layouts.mjs",
@@ -76,7 +77,7 @@
           "docs/conquest-session-2/sector-defense-evidence.json",
           "docs/conquest-session-2/drone-evidence.json"
         ],
-        "limits": "Six named frontier sectors. Personal territory persists; shared global campaign is a separate CAS total. Two incoming waves at sector beacons. Physical iPhone not tested."
+        "limits": "Six named frontier sectors. Personal territory persists; shared global campaign is a separate CAS total. Two incoming waves at sector beacons. Physical iPhone not tested. Briefings show the danger tier plus RECOMMENDED STRENGTH (tested evidence: starter loadout clears HARD raids; Epic Moonbeam/Titan clears every VETERAN raid) and current hull readiness."
       }
     },
     {
@@ -357,7 +358,7 @@
       "id": "3.5",
       "section": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
       "canonical_requirement": "Referrals link bases optionally: verified invited friends' Command Bases can appear as allied contacts/visitable silhouettes/assistance callouts with limited earned bonuses, not an entry requirement or a paid recruit scheme. Use existing verified one-level referral links and 5+ active-day protections; DO NOT alter referral airdrop bonuses, wallet allocations, Arcade daily caps or pretend fake social presence.",
-      "status": "AUTOMATED_ONLY",
+      "status": "NOT_IMPLEMENTED_SAFE",
       "evidence": {
         "code": [
           "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
@@ -380,7 +381,7 @@
           "docs/conquest-session-2/presentation",
           "docs/conquest-session-2/earned-browser/evidence.json"
         ],
-        "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
+        "limits": "Not implemented: Conquest contains no referral-linked allied bases, contacts or assistance. No fake social presence is shown, and existing referral/airdrop logic is untouched. Corrected 2026-11-06 after independent pre-merge review (previously mislabelled AUTOMATED_ONLY)."
       }
     },
     {
@@ -435,7 +436,7 @@
       "id": "4.3",
       "section": "COMMUNITY WAR, SOCIAL PURPOSE, AND NEVER-ENDING CONTENT CHOICES",
       "canonical_requirement": "Progression arc: 0\u201310min visible Parasite skirmish and loot, 10\u201330min upgrade and missions, 45\u201375min first actual Command Base, 1\u20134h upgraded visually distinct fortress and conquered outpost, 5\u201320h multiple raid strategies/elite gear and unlocked territory, beyond 20h campaign contribution, base mastery and prestige recognition. These are design/time estimates to substantiate with real models and browser tests, not marketing guarantees. Use visible 'NEXT MEANINGFUL MILESTONE' with one-click map guidance, not cluttered quest menu spam.",
-      "status": "AUTOMATED_ONLY",
+      "status": "OWNER_DECISION_PENDING",
       "evidence": {
         "code": [
           "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
@@ -452,7 +453,7 @@
         "artifacts": [
           "docs/conquest-session-2/progression-model.json"
         ],
-        "limits": "Real cumulative contributions and distinct contributing accounts. At1000 score unlock world monument plus immutable stage history. Projection bounded10000 contributors, pending thereafter. Coordinated human world-boss multiplayer unavailable. Long-term table is economic modeling, not a20-hour human recording."
+        "limits": "Real cumulative contributions and distinct contributing accounts. At1000 score unlock world monument plus immutable stage history. Projection bounded10000 contributors, pending thereafter. Coordinated human world-boss multiplayer unavailable. Long-term table is economic modeling, not a20-hour human recording. Independent review 2026-11-06: raids are available from minute 0 and the starter loadout wins HARD raids, so first-clear raid payouts alone (10 western/helium raids about 2,200 CP and 190 alloy before kill salvage, against Base I at 2,550 CP / 110 alloy / 65 biomass / 8 helium) suggest Base I in roughly 15-25 minutes for a pilot who raids immediately. This is a reward-table estimate, not a scripted run. The 73.66-minute continuous journey models missions and patrols without raids. Retuning (e.g. gating raids behind Base I or adjusting first-clear payouts) is an economy/progression decision reserved for the owner."
       }
     },
     {
@@ -746,7 +747,7 @@
       "id": "7.4",
       "section": "SECURITY / PERFORMANCE / BACKWARD COMPATIBILITY",
       "canonical_requirement": "Maintain first Command Base 45\u201375m and genuine recurring earned progress for legitimate users. Calibrate drop rates (<5% best-gear probability per eligible nonpaid raid), CP/material values, base cost/upgrade time and purchase alternatives by deterministic simulation; provide tables and a readable source of truth. No nontransparent lottery disguised as guaranteed loot.",
-      "status": "AUTOMATED_ONLY",
+      "status": "OWNER_DECISION_PENDING",
       "evidence": {
         "code": [
           "worker/src/conquest.js:transaction/submit/publicState",
@@ -767,7 +768,7 @@
         "artifacts": [
           "docs/conquest-session-2/earned-journey.json"
         ],
-        "limits": "All writes stay authenticated and per-pilot CAS; shared projection watermark CAS; no client money/position/kill/ownership claims. Paid rails, referrals, two-machine gear and Arcade rules unmodified. Shared projection has explicit launch bound, not claimed1000-player real-time capacity certification."
+        "limits": "All writes stay authenticated and per-pilot CAS; shared projection watermark CAS; no client money/position/kill/ownership claims. Paid rails, referrals, two-machine gear and Arcade rules unmodified. Shared projection has explicit launch bound, not claimed1000-player real-time capacity certification. Independent review 2026-11-06: raids are available from minute 0 and the starter loadout wins HARD raids, so first-clear raid payouts alone (10 western/helium raids about 2,200 CP and 190 alloy before kill salvage, against Base I at 2,550 CP / 110 alloy / 65 biomass / 8 helium) suggest Base I in roughly 15-25 minutes for a pilot who raids immediately. This is a reward-table estimate, not a scripted run. The 73.66-minute continuous journey models missions and patrols without raids. Retuning (e.g. gating raids behind Base I or adjusting first-clear payouts) is an economy/progression decision reserved for the owner."
       }
     },
     {
