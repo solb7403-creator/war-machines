@@ -24,6 +24,18 @@ This file is the common engineering contract for Codex, Claude Code and other au
 6. Run the smallest relevant checks first and existing broader CI when warranted. Report exact commands/results; never claim a test passed without executing it or observing its CI result.
 7. Provide a short outcome: implemented, pending, tests, known limitations, changed branch/PR, and owner decisions required.
 
+## Agent rule — quality first, usage justified (owner rule, Nov 5 2026)
+Applies to Codex, Claude Code and every other agent, including how many subagents a session runs. The owner-control and safety gates above still apply.
+1. One **LEAD** agent owns the branch. Only the lead edits shared code, commits, pushes, merges and deploys.
+2. Use parallel agents **only** for these, because they measurably raise quality:
+   - **Independent review:** before every merge, 1 read-only reviewer that is NOT given the lead's conclusions, only the branch, head SHA, briefs and checkpoint. For economy, payments, entitlements, rewards or combat balance changes, use 2 reviewers: one on security/economy, one on gameplay/performance.
+   - **Visual options:** for any new look (3D models, UI screens, VFX, maps, HUD), 2–3 agents each build a distinct option in separate files. The lead compares screenshots at 320/390/430 portrait plus desktop and picks the best or combines the best parts. Unused options are deleted.
+   - **Independent workstreams:** tasks with zero file overlap (e.g. Blender assets, test harnesses, docs/evidence) may run in parallel. Each agent is told exactly which files it owns and may not touch others.
+   - **Verification fan-out:** Chromium/WebKit journeys, viewport matrices, long regression suites and soak runs may run in parallel.
+3. **Never parallelize:** work in the same files or tightly coupled systems (combat sim, economy reducers, server authority, shared state), sequential steps (fix → test → merge → deploy), or any task one agent finishes in under ~15 minutes.
+4. **Limits:** max 4 agents active at once. Give each a tight brief (goal, files, acceptance test, output format) so it doesn't re-explore the repo. Subagents report back; they never redo the lead's finished work.
+5. At the end of every session, report: agents used, what each delivered, and whether it changed the result (e.g. "reviewer found 2 blockers", "option B chosen"). Agent types that don't change results get dropped next time.
+
 ## Graphics contract
 - Preferred 3D authoring integrates with existing Three.js/EQUIPMENT3D and material/asset ownership conventions; do not add a parallel engine.
 - Model space: +X forward, +Y up, +Z right. Keep canonical hitboxes, chassis socket positions and weapon muzzle endpoints intact. Render and simulation must remain independent.
