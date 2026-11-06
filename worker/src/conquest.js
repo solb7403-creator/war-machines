@@ -17,7 +17,9 @@ async function transaction(env,pid,fn,now){
  throw Error('conquest busy');
 }
 export function passPremium(S,now){return S?.pass?.prem===true&&S.pass.s===RULES.ecoSeason({day:Math.floor(now/86400000)});}
-async function premiumPass(env,pid,now){try{return passPremium(await readEco(env,pid),now);}catch{return false;}}
+// Bounded per-isolate cache so repeated recall taps cost no extra account reads; read errors fail closed and are not cached.
+const premiumCaches=new WeakMap();
+async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
 async function canonical(env,pid){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null};}
 async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
  if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}

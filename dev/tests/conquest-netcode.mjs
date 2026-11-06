@@ -28,11 +28,13 @@ async function drive({rtt,jitter,seconds=40,stall=0,act=false}){
  }
  for(let i=0;i<120&&(S.queue.length||S.busy||pending.length);i++){env.clock+=50;await drain();S.pump();}
  const corrections=S.corrections.slice(1),max=Math.max(0,...corrections);
- return {rtt,jitter,frozen,reconnects,requests,maxCorrection:max,finalGap:Math.hypot(view.p.x-server.position.x,view.p.z-server.position.z),queue:S.queue.length,actionResult,status:S.status,error:S.error};}
+ return {rtt,jitter,frozen,reconnects,requests,maxCorrection:max,finalGap:Math.hypot(view.p.x-server.position.x,view.p.z-server.position.z),queue:S.queue.length,stalled:S.stalled,actionResult,status:S.status,error:S.error};}
 for(const [rtt,jitter] of [[120,60],[400,150],[800,250]]){const r=await drive({rtt,jitter});
  assert.equal(r.reconnects,0,JSON.stringify(r));assert.equal(r.frozen,0,'no frozen frames: '+JSON.stringify(r));assert(r.maxCorrection<1e-6,'prediction is reproduced, not corrected: '+JSON.stringify(r));assert(r.finalGap<1e-6,'client and Worker agree after seven dashes: '+JSON.stringify(r));
  assert(r.requests<=r.rtt/1000+45,'about one input request per second: '+JSON.stringify(r));console.log('PASS '+rtt+'ms RTT ±'+jitter+': 7 dashes, 0 reconnects, 0 frozen frames, max correction '+r.maxCorrection.toExponential(1)+' m, '+r.requests+' requests');}
 // 3. A 2.5s network stall is absorbed by the Worker's real-time credit reserve: no snap, no discarded inputs.
 {const r=await drive({rtt:300,jitter:100,stall:2500});assert.equal(r.reconnects,0,JSON.stringify(r));assert(r.maxCorrection<1e-6&&r.finalGap<1e-6,JSON.stringify(r));console.log('PASS 2.5s stall: caught up without reconnect or correction, '+r.frozen+' paused frames');}
+// 3b. Longer stalls (6.5 s, 8 s) pause simulation instead of discarding input, then resume once the backlog drains.
+for(const stall of [6500,8000]){const r=await drive({rtt:300,jitter:100,stall});assert.equal(r.stalled,false,'stall clears after the backlog drains: '+JSON.stringify(r));assert.equal(r.reconnects,0,JSON.stringify(r));assert(r.maxCorrection<1e-6&&r.finalGap<1e-6,JSON.stringify(r));assert(r.frozen<60*stall/1000,'pause bounded by the stall: '+JSON.stringify(r));console.log('PASS '+stall/1000+'s stall: paused '+r.frozen+' frames, resumed, no reconnect or correction');}
 // 4. A server-rejected action mid-drive (repair away from the Refuge) neither freezes driving nor resyncs/snaps it.
 {const r=await drive({rtt:300,jitter:100,act:true});assert.equal(r.actionResult,false);assert.equal(r.reconnects,0,JSON.stringify(r));assert.equal(r.frozen,0,JSON.stringify(r));assert(r.maxCorrection<1e-6,JSON.stringify(r));console.log('PASS rejected action during driving: no freeze, no resync, no correction');}

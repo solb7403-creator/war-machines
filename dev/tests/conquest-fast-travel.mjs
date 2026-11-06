@@ -17,10 +17,12 @@ fail(s,'fast-travel',{destination:7},/invalid travel/);fail(s,'fast-travel',{des
 fail(at(structuredClone(s),1160,1030),'fast-travel',{destination:'refuge'},/departs from the Refuge/);
 // 4. Not mid-combat: a live hostile within 60 m, or damage in the last 10 s, blocks departure.
 {const t=structuredClone(s),e=t.battle.enemies.find(e=>e.hp>0);e.x=t.position.x+20;e.z=t.position.z;fail(t,'fast-travel',{destination:'refuge'},/Hostiles within 60 m/);}
-{const t=structuredClone(s);t.lastHitAt=now+500;fail(t,'fast-travel',{destination:'refuge'},/Under fire/);}
+{const t=structuredClone(s);t.lastHitAt=now;t.quietMs=9950;fail(t,'fast-travel',{destination:'refuge'},/Under fire/);}
 // A real hit recorded by the Worker's own replay sets the timer.
 {let t=structuredClone(s);const e=t.battle.enemies.find(e=>e.hp>0&&e.kind==='raider');Object.assign(e,{x:t.position.x+14,z:t.position.z,y:t.position.y,home:{x:t.position.x+14,z:t.position.z,y:t.position.y+2.2},route:null});t.creditMs=4000;let hit=false;for(let i=0;i<12&&!hit;i++){t=applyCommands(t,{seq:t.seq+1,commands:Array(20).fill({x:0,z:0})},now+=1000);hit=!!t.lastHitAt;}
- assert(hit,'hostile fire records lastHitAt');for(const x of t.battle.enemies)x.hp=0;fail(t,'fast-travel',{destination:'refuge'},/Under fire/);now+=10001;assert.doesNotThrow(()=>act(structuredClone(t),'fast-travel',{destination:'refuge'}));}
+ assert(hit,'hostile fire records lastHitAt');for(const x of t.battle.enemies)x.hp=0;fail(t,'fast-travel',{destination:'refuge'},/Under fire/);
+ // Pausing (no simulated play) never earns quiet time; 10 s of simulated play without damage does.
+ now+=60000;fail(t,'fast-travel',{destination:'refuge'},/Under fire/);for(let i=0;i<6;i++){t.creditMs=4000;t=applyCommands(t,{seq:t.seq+1,commands:Array(40).fill({x:0,z:0})},now+=2000);}assert(t.quietMs>=10000,"quiet "+t.quietMs);assert.doesNotThrow(()=>act(structuredClone(t),'fast-travel',{destination:'refuge'}));}
 // 5. Not during an operation.
 {const t=structuredClone(s);t.mission='convoy';fail(t,'fast-travel',{destination:'refuge'},/Finish or leave the operation/);}
 // 6. Every captured sector joins the network; arrival avoids live hostiles; base joins once built and stays outside its walls.

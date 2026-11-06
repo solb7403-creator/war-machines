@@ -125,7 +125,7 @@ class View {
  }
  combatTick(dt){const B=this.battle||this.encounter;if(!B)return;const before=performance.now();
  if(root.ConquestControl){if(!this.controlStepped){const i=this.controlInput(dt);this.p=root.ConquestControl.advance(B,this.p,i,dt,!this.battle);}this.controlStepped=false;
- this.aimPoint=root.ConquestControl.aim(B,this.renderP||this.p,this.controlInput(0),0);if(this.selectedId&&!B.lockId)this.selectedId=null;
+ {const yaw=B.turretYaw,lock=B.lockId;this.aimPoint=root.ConquestControl.aim(B,this.renderP||this.p,this.controlInput(0),0);this.shownLock=B.lockId;B.turretYaw=yaw;B.lockId=lock;}if(this.selectedId&&!this.shownLock)this.selectedId=null;
  }else{this.aimPoint={x:this.p.x+Math.sin(this.aimYaw)*160,y:this.p.y+2.2,z:this.p.z+Math.cos(this.aimYaw)*160};B.tick(dt,this.p,{aim:this.aimPoint,fire:this.firing||!!this.keys.Space});}
  if(Number.isFinite(this.audioShots)&&(B.playerShots||0)>this.audioShots&&typeof fx==='function')fx('shot',B.playerStats.wtype);this.audioShots=Math.max(this.audioShots||0,B.playerShots||0);this.simMs=(this.controlSimMs||0)+performance.now()-before;this.controlSimMs=0;this.fireTap=false;this.pendingAbilities={};this.flushHealth();
  if(this.gun){const a=Number.isFinite(this.alpha)?this.alpha:1,from=Number.isFinite(this.shownTurret)?this.shownTurret:B.turretYaw,to=B.turretYaw??this.aimYaw,yaw=Number.isFinite(from)&&Number.isFinite(to)?from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*a:to;this.gun.rotation.y=yaw-(this.heading||0);}
@@ -343,7 +343,7 @@ class View {
  this.pending=wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length+(this.horizonJob?1:0);this.streamMs=clock()-start;
  }
  dropChunk(key,o){this.scene.remove(o.group);o.group.traverse(m=>{if(m.geometry&&!this.shared.includes(m.geometry))m.geometry.dispose();if(m.isInstancedMesh)m.dispose();});this.chunks.delete(key);}
- tick(dt){if(this.disposed||document.hidden)return;this.profileFrame();this.prewarmEnemyGeometry();this.warmPrograms();if(this.resume){dt=0;this.resume=false;}dt=Math.min(.25,Math.max(0,dt));if(this.authority&&(!this.authority.connected||this.authority.stalled))dt=0;this.loadoutElapsed=(this.loadoutElapsed||0)+dt;if(this.loadoutElapsed>=.5){this.syncLoadout();this.loadoutElapsed=0;}this.elapsed+=dt;this.frames++;if(this.elapsed>.5){this.fps=this.frames/this.elapsed;this.elapsed=0;this.frames=0;}
+ tick(dt){if(this.disposed||document.hidden)return;this.profileFrame();this.prewarmEnemyGeometry();this.warmPrograms();if(this.resume){dt=0;this.resume=false;}dt=Math.min(.25,Math.max(0,dt));if(this.authority&&(!this.authority.connected||this.authority.stalled)){dt=0;this.edgeLatch={};}this.loadoutElapsed=(this.loadoutElapsed||0)+dt;if(this.loadoutElapsed>=.5){this.syncLoadout();this.loadoutElapsed=0;}this.elapsed+=dt;this.frames++;if(this.elapsed>.5){this.fps=this.frames/this.elapsed;this.elapsed=0;this.frames=0;}
  let sx=this.stick.x+(this.keys.KeyD||this.keys.ArrowRight?1:0)-(this.keys.KeyA||this.keys.ArrowLeft?1:0),sz=this.stick.z+(this.keys.KeyW||this.keys.ArrowUp?1:0)-(this.keys.KeyS||this.keys.ArrowDown?1:0),n=Math.max(1,Math.hypot(sx,sz));sx/=n;sz/=n;
  const dx=(Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz)*this.speed*dt,dz=(-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz)*this.speed*dt;
  const K=root.ConquestControl,board=this.battle||this.encounter,frameStart=this.p;let shown;
@@ -359,11 +359,13 @@ class View {
  // Reconciliation is folded into renderCorrection, so the visible hull is continuous. A jump faster than any Dash is a
  // teleport, respawn or phase change: snap the presentation instead of spinning treads or sweeping the camera across it.
  this.renderP=shown;const correction=this.renderCorrection||(this.renderCorrection={x:0,z:0}),decay=Math.exp(-dt*9);correction.x*=decay;correction.z*=decay;
- const hull={x:shown.x+correction.x,y:shown.y,z:shown.z+correction.z,surface:shown.surface},last=this.shownHull||{x:frameStart.x,y:frameStart.y,z:frameStart.z};if(Math.hypot(hull.x-last.x,hull.z-last.z)>(this.speed||10)*3*dt+.5)this.camSnap=true;this.shownHull=hull;
- const mx=this.camSnap?0:hull.x-last.x,mz=this.camSnap?0:hull.z-last.z,moved=Math.hypot(mx,mz),blend=k=>this.camSnap?1:1-Math.exp(-dt*k),wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+ const hull={x:shown.x+correction.x,y:shown.y,z:shown.z+correction.z,surface:shown.surface},last=this.shownHull||{x:frameStart.x,y:frameStart.y,z:frameStart.z},from=this.lastShown||frameStart,added=this.correctionAdded||{x:0,z:0};this.correctionAdded={x:0,z:0};this.lastShown=shown;
+ // Treads/heading follow real travel (shown delta plus any reconciliation jump), never the correction easing back.
+ if(Math.hypot(hull.x-last.x,hull.z-last.z)>(this.speed||10)*6*dt+1)this.camSnap=true;this.shownHull=hull;
+ const mx=this.camSnap?0:shown.x-from.x+added.x,mz=this.camSnap?0:shown.z-from.z+added.z,moved=Math.hypot(mx,mz),blend=k=>this.camSnap?1:1-Math.exp(-dt*k),wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
  this.recordSafe(dt,Math.hypot(dx,dz),moved);
  if(moved>1e-4){const want=Math.atan2(mx,mz),turn=Number.isFinite(this.heading)?wrap(want-this.heading):0;this.heading=Number.isFinite(this.heading)&&Math.abs(turn)>1e-3?this.heading+turn*blend(18):want;}
- if(this.motion){const h=this.heading||0,pathScale=moved?Math.hypot(mx,hull.y-last.y,mz)/moved:1;this.motion.step(dt,{dx:mx*pathScale/1.65,dz:mz*pathScale/1.65,heading:Math.PI/2-h,trackHalfWidth:M3.CHASSIS_VISUALS[this.loadout.c.c][M3.visualTier(this.loadout.c.t)].trackZ},false);}
+ if(this.motion){const h=this.heading||0,pathScale=moved?Math.hypot(mx,shown.y-from.y,mz)/moved:1;this.motion.step(dt,{dx:mx*pathScale/1.65,dz:mz*pathScale/1.65,heading:Math.PI/2-h,trackHalfWidth:M3.CHASSIS_VISUALS[this.loadout.c.c][M3.visualTier(this.loadout.c.t)].trackZ},false);}
  const T=this.T,up=this.scratchUp||(this.scratchUp=new T.Vector3()),forward=this.scratchForward||(this.scratchForward=new T.Vector3()),right=this.scratchRight||(this.scratchRight=new T.Vector3()),basis=this.scratchBasis||(this.scratchBasis=new T.Matrix4());up.set(...W.surfaceNormal(shown.x,shown.z));if(shown.surface==='bridge'){const a=W.deckAt(shown.x-.1,shown.z),b=W.deckAt(shown.x+.1,shown.z);up.set(a!==null&&b!==null?-(b-a)/.2:0,1,0).normalize();}
  // Ease hull attitude across terrain facets instead of flipping between them every frame.
  this.shownUp=this.shownUp&&!this.camSnap?this.shownUp.lerp(up,blend(12)).normalize():up.clone();forward.set(Math.sin(this.heading||0),0,Math.cos(this.heading||0));forward.addScaledVector(this.shownUp,-forward.dot(this.shownUp)).normalize();right.crossVectors(this.shownUp,forward).normalize();this.vehicle.quaternion.setFromRotationMatrix(basis.makeBasis(right,this.shownUp,forward));
@@ -376,7 +378,7 @@ class View {
  // Pull camera in front of opaque structures rather than looking through processor walls.
  let reach=1;for(let i=1;i<=96;i++){const t=i/96,x=px+(cx-px)*t,z=pz+(cz-pz)*t,y=cy+(hy-cy)*t;if(W.blockedAt(x,y,z)){reach=Math.max(.03,(i-2)/96);break;}}
  // Pull in quickly, ease back out, and rise faster than the camera settles so the frame never bobs with each terrain facet.
- this.camReach=Number.isFinite(this.camReach)?this.camReach+(reach-this.camReach)*blend(reach<this.camReach?22:3):reach;this.camHy=Number.isFinite(this.camHy)?this.camHy+(hy-this.camHy)*blend(hy>this.camHy?22:6):hy;
+ this.camReach=Number.isFinite(this.camReach)&&reach>this.camReach?this.camReach+(reach-this.camReach)*blend(3):reach;this.camHy=Number.isFinite(this.camHy)?this.camHy+(hy-this.camHy)*blend(hy>this.camHy?22:6):hy;
  cx=px+(cx-px)*this.camReach;cz=pz+(cz-pz)*this.camReach;hy=cy+(Math.max(hy,this.camHy)-cy)*this.camReach;hy=Math.max(hy,W.groundAt(cx,cz)+1.5);
  // A close obstruction must not push the camera inside our own hull.
  if(Math.hypot(cx-px,cz-pz)<7){cx=px;cz=pz+.1;hy=Math.max(hy,shown.y+Math.max(18,d*.8));}

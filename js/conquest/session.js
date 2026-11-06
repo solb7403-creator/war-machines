@@ -23,15 +23,17 @@ class Session{
  // fixed steps, so this replay is the same computation the Worker performs next.
  for(const i of this.queue)v.p=K.advance(B,v.p,K.validated(i),STEP_MS/1000,!s.mission);
  const correction={x:oldPosition.x-v.p.x,z:oldPosition.z-v.p.z},size=Math.hypot(correction.x,correction.z);this.corrections.push(size);if(this.corrections.length>64)this.corrections.shift();
- if(oldPhase===this.phase&&size<12)v.renderCorrection={x:(v.renderCorrection?.x||0)+correction.x,z:(v.renderCorrection?.z||0)+correction.z};else v.renderCorrection={x:0,z:0};
+ if(oldPhase===this.phase&&size<12){v.renderCorrection={x:(v.renderCorrection?.x||0)+correction.x,z:(v.renderCorrection?.z||0)+correction.z};v.correctionAdded={x:(v.correctionAdded?.x||0)+correction.x,z:(v.correctionAdded?.z||0)+correction.z};}else v.renderCorrection={x:0,z:0};
  if(s.completed?.['oxygen-line'])v.progress?.complete('oxygen-line');v.syncLoadout();v.flushHealth();
  }
  // Accept one already-normalized fixed-step command that the view has just predicted.
  enqueue(command){if(!this.connected||this.disposed)return false;this.queue.push(command);this.pushed++;this.stalled=this.queue.length>=STALL||this.stalled&&this.queue.length>RESUME;
  if(this.queue.length>RESYNC)this.resync();return true;}
+ // A stall pauses local simulation until the Worker catches up; it must clear as soon as the backlog drains.
+ unstall(){if(this.stalled&&this.queue.length<=RESUME)this.stalled=false;}
  resync(){this.queue=[];this.sent=this.pushed;this.status='RECONNECTING';this.connected=false;if(!this.busy){this.busy=true;this.connect().finally(()=>this.busy=false);}}
  credit(){return Math.min(CREDIT_MS,Math.max(0,(this.state?.creditMs||0)+performance.now()-(this.ackAt||0)));}
- pump(){if(this.disposed)return;const now=performance.now();if(!this.connected){if(!this.busy&&now>=this.nextConnect){this.busy=true;this.connect().finally(()=>this.busy=false);}return;}
+ pump(){if(this.disposed)return;const now=performance.now();this.unstall();if(!this.connected){if(!this.busy&&now>=this.nextConnect){this.busy=true;this.connect().finally(()=>this.busy=false);}return;}
  // Send about once per second; send at once while a backlog exists. A skipped beat stays due instead of waiting a second.
  if(!this.busy&&!this.actionBusy&&this.queue.length&&(now-this.pumpAt>=PUMP_MS||this.queue.length>=SEND)&&this.credit()>=STEP_MS){this.pumpAt=now;this.flush();}}
  // Legacy variable-frame sampler (kept for tools/tests): accumulates real frame time into fixed commands.
@@ -41,7 +43,7 @@ class Session{
  }
  async flush(limit=Infinity){if(this.busy||!this.connected||!this.queue.length||this.disposed)return;const count=Math.min(SEND,limit,this.queue.length,Math.floor(this.credit()/STEP_MS));if(count<1)return;this.busy=true;const commands=this.queue.splice(0,count),request={seq:this.state.seq+1,commands};this.sent+=count;this.inflight=count;
  try{let r;try{r=await this.transport('/api/conquest/input',request);}catch(first){if(rejected(first)&&!String(first.message).includes('elapsed time'))throw first;if(retryWait(first))await sleep(retryWait(first));r=await this.transport('/api/conquest/input',request);}if(!this.disposed){this.apply(r.state);this.status='SECURED';}}
- catch(e){this.error=String(e.message);this.queue=[];this.sent=this.pushed;this.connected=false;this.status='RECONNECTING';await this.connect();}finally{this.busy=false;this.inflight=0;}
+ catch(e){this.error=String(e.message);this.queue=[];this.sent=this.pushed;this.connected=false;this.status='RECONNECTING';await this.connect();}finally{this.busy=false;this.inflight=0;this.unstall();}
  }
  async action(action,parameters={}){if(this.disposed)return false;if(!this.connected&&!await this.connect())return false;
  // Serialize actions after every command recorded before the tap; later driving keeps predicting and is replayed after it.

@@ -315,7 +315,7 @@ function travelArrival(node,enemies,blocked){return node?.arrivals?.find(p=>!blo
 function travelNodeAt(state,p){return travelNodes(state?.territory,state?.base?.tier||0).find(n=>Math.hypot(p.x-n.x,p.z-n.z)<=n.radius)||null;}
 function travelBlock(state,p,enemies,now){if(!state)return 'Online connection required';if(state.mission)return 'Finish or leave the operation first';if(!(state.hp>0))return 'Machine disabled';
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
- if(now-(state.lastHitAt||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
+ if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
 root.ConquestCombat=Object.freeze({waveKinds,baseProduction,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import {buildSim} from '../../worker/build-sim.mjs';buildSim();
 const {CONQUEST:{Combat:C,World:W},RULES:R}=await import('../../worker/src/sim.gen.js');
 const {killLoot}=await import('../../worker/src/conquest-economy.js');
+const {createState,applyAction}=await import('../../worker/src/conquest-sim.js');
+// Owner rule: raids unlock only after verified clears of all six field missions (Worker-enforced).
+{assert.deepEqual([...C.fieldMissionIds],['oxygen-line','convoy','relay','recon','rescue','redoubt']);const o=C.operations[C.raidIds[0]],now=1800000000000,s=createState(R.STOCK_L,now);s.position={x:o.entry[0],z:o.entry[1],y:W.groundAt(...o.entry),surface:'ground'};
+ for(let n=0;n<6;n++){s.completed=Object.fromEntries(C.fieldMissionIds.slice(0,n).map(id=>[id,{at:now}]));assert.throws(()=>applyAction(structuredClone(s),{seq:1,action:'start-mission',mission:o.id},now),new RegExp('raids unlock after all six field missions \\('+n+'/6'),n+'/6 refused');}
+ s.completed=Object.fromEntries(C.fieldMissionIds.map(id=>[id,{at:now}]));assert.equal(applyAction(structuredClone(s),{seq:1,action:'start-mission',mission:o.id},now).mission,o.id,'6/6 starts');
+ for(const id of C.fieldMissionIds)assert(!C.operations[id].raid,'field missions stay open');}
 const L=structuredClone(R.STOCK_L);L.w={a:'moon',t:2,q:1,s:false};L.c={c:'titan',t:2,q:1,s:false};
 
 function start(id){const o=C.operations[id],p={x:o.entry[0],z:o.entry[1],y:W.groundAt(o.entry[0],o.entry[1]),surface:'ground'},b=new C.Operation(L,p,id);return {o,p,b};}
