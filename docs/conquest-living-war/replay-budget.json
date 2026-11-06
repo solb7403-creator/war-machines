@@ -1,0 +1,37 @@
+{
+  "baselineCommit": "b9258b43ae9e2c20a6cf5b92413078d725d61715",
+  "worldBeforeSHA256": "fc462830061148301223faaa09b4ebd940193d81d88573ac10507fa4dfae17bf",
+  "worldAfterSHA256": "c30a7652cef4c693796f9590fa6c8b97edb8b52b2cbb87f979ac69a259abb603",
+  "scope": "paired local Node24 replay comparison with independent module snapshots; same authored16enemy/1projectile encounter,40warm samples; not Cloudflare or iPhone evidence",
+  "before": {
+    "scope": "local warm Node Worker replay; 20 canonical commands / one game second; genuine oxygen + world actor state after12s, reset load-test fixture each sample; not Cloudflare production CPU or physical phone evidence",
+    "node": "v24.22.1",
+    "samples": 40,
+    "wallMedianMs": 29.9990600000001,
+    "wallP95Ms": 37.4836929999999,
+    "cpuMedianMs": 31.105,
+    "cpuP95Ms": 42.678,
+    "enemies": 16,
+    "projectiles": 1
+  },
+  "after": {
+    "scope": "local warm Node Worker replay; 20 canonical commands / one game second; genuine oxygen + world actor state after12s, reset load-test fixture each sample; not Cloudflare production CPU or physical phone evidence",
+    "node": "v24.22.1",
+    "samples": 40,
+    "wallMedianMs": 13.991295000000036,
+    "wallP95Ms": 20.36770899999999,
+    "cpuMedianMs": 14.772,
+    "cpuP95Ms": 29.886,
+    "enemies": 16,
+    "projectiles": 1
+  },
+  "medianCPUPercentReduction": 52.51,
+  "collisionOracle": {
+    "scope": "deterministic old/new terrain and collision equivalence: war region, whole world, exact building/rock boundaries, out-of-region cache-key pairs",
+    "seed": 593023,
+    "points": 15504,
+    "blockedChecks": 93024,
+    "differences": 0
+  },
+  "review": "independent read-only review: no Critical/Important issue; additional1362points/13620checks passed"
+}

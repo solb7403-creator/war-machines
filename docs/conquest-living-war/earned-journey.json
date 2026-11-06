@@ -1,0 +1,1932 @@
+{
+  "scope": "continuous shared-reducer journey with accelerated trusted test clock and automated target/routing controller; no resource/equipment/position/outcome fixtures; not a rendered native-input or human playthrough",
+  "sourceBase": "working-tree",
+  "baseMinute": 73.66,
+  "completed": 41,
+  "trace": [
+    {
+      "event": "first-contact",
+      "minute": 0.65,
+      "hp": 1700,
+      "cp": 0,
+      "banked": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1195.0000000000925,
+        "z": 1024,
+        "y": 1.7242787767689571,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "first-kill-salvage-bank",
+      "minute": 1.23,
+      "hp": 1700,
+      "cp": 18,
+      "banked": {
+        "alloy": 3,
+        "biomass": 2,
+        "helium": 0
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.902764494489,
+        "z": 1165.1311722477647,
+        "y": -5.85390845204293,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 2.19,
+      "hp": 1620,
+      "cp": 304,
+      "banked": {
+        "alloy": 3,
+        "biomass": 2,
+        "helium": 0
+      },
+      "cargo": {
+        "alloy": 30,
+        "biomass": 20,
+        "helium": 6
+      },
+      "position": {
+        "x": 1212.2927447954785,
+        "z": 1000.4348362637799,
+        "y": 0.43411611413548684,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-1",
+      "minute": 2.74,
+      "hp": 1700,
+      "cp": 304,
+      "banked": {
+        "alloy": 33,
+        "biomass": 22,
+        "helium": 6
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.8018225351216,
+        "z": 1166.2294085512901,
+        "y": -6.958414326796502,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 3.95,
+      "hp": 1413,
+      "cp": 497,
+      "banked": {
+        "alloy": 33,
+        "biomass": 22,
+        "helium": 6
+      },
+      "cargo": {
+        "alloy": 33,
+        "biomass": 22,
+        "helium": 7
+      },
+      "position": {
+        "x": 989.34972136345,
+        "z": 938.0870503577379,
+        "y": -6.5862616045072135,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-2",
+      "minute": 4.83,
+      "hp": 1700,
+      "cp": 612,
+      "banked": {
+        "alloy": 83,
+        "biomass": 55,
+        "helium": 15
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.6113800786666,
+        "z": 1164.6386283756117,
+        "y": -5.22796158773779,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 6.25,
+      "hp": 1700,
+      "cp": 812,
+      "banked": {
+        "alloy": 83,
+        "biomass": 55,
+        "helium": 15
+      },
+      "cargo": {
+        "alloy": 24,
+        "biomass": 16,
+        "helium": 6
+      },
+      "position": {
+        "x": 1004.1100965191572,
+        "z": 1103.5553844093938,
+        "y": -10.385775108256865,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-3",
+      "minute": 7.05,
+      "hp": 1700,
+      "cp": 812,
+      "banked": {
+        "alloy": 107,
+        "biomass": 71,
+        "helium": 21
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.9194170750384,
+        "z": 1163.999735737506,
+        "y": -3.9687331336703484,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 8.03,
+      "hp": 1557,
+      "cp": 857,
+      "banked": {
+        "alloy": 107,
+        "biomass": 71,
+        "helium": 21
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1213.0783324075755,
+        "z": 999.5804594144813,
+        "y": 0.36162510296439004,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-4",
+      "minute": 8.48,
+      "hp": 1700,
+      "cp": 857,
+      "banked": {
+        "alloy": 113,
+        "biomass": 75,
+        "helium": 22
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.9603186859815,
+        "z": 1165.4003695522372,
+        "y": -5.387201325441483,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 9.66,
+      "hp": 1611,
+      "cp": 902,
+      "banked": {
+        "alloy": 113,
+        "biomass": 75,
+        "helium": 22
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.7360362443466,
+        "z": 939.6242398753941,
+        "y": -6.426769581112456,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-5",
+      "minute": 10.55,
+      "hp": 1700,
+      "cp": 902,
+      "banked": {
+        "alloy": 119,
+        "biomass": 79,
+        "helium": 23
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.2729438328133,
+        "z": 1164.9758673609872,
+        "y": -4.721483376777834,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 11.95,
+      "hp": 1700,
+      "cp": 947,
+      "banked": {
+        "alloy": 119,
+        "biomass": 79,
+        "helium": 23
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1001.7175209249573,
+        "z": 1102.450545972547,
+        "y": -9.800233002621361,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-6",
+      "minute": 12.76,
+      "hp": 1700,
+      "cp": 947,
+      "banked": {
+        "alloy": 125,
+        "biomass": 83,
+        "helium": 24
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.3155714913212,
+        "z": 1165.330332026907,
+        "y": -4.756250878591685,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 13.74,
+      "hp": 1561,
+      "cp": 992,
+      "banked": {
+        "alloy": 125,
+        "biomass": 83,
+        "helium": 24
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1210.3037637062798,
+        "z": 1000.8368825242076,
+        "y": 0.478349258867808,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-7",
+      "minute": 14.19,
+      "hp": 1700,
+      "cp": 992,
+      "banked": {
+        "alloy": 131,
+        "biomass": 87,
+        "helium": 25
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.6121459853591,
+        "z": 1164.9008771301574,
+        "y": -5.501354685917142,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 15.39,
+      "hp": 1575,
+      "cp": 1037,
+      "banked": {
+        "alloy": 131,
+        "biomass": 87,
+        "helium": 25
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 989.266360855664,
+        "z": 939.2740563042613,
+        "y": -6.564596848186752,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-8",
+      "minute": 16.28,
+      "hp": 1700,
+      "cp": 1037,
+      "banked": {
+        "alloy": 137,
+        "biomass": 91,
+        "helium": 26
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.9753884815088,
+        "z": 1165.2880001392032,
+        "y": -4.932197482625047,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 17.69,
+      "hp": 1700,
+      "cp": 1082,
+      "banked": {
+        "alloy": 137,
+        "biomass": 91,
+        "helium": 26
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1002.097008679497,
+        "z": 1101.6888050493333,
+        "y": -9.893565324285149,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-9",
+      "minute": 18.49,
+      "hp": 1700,
+      "cp": 1082,
+      "banked": {
+        "alloy": 143,
+        "biomass": 95,
+        "helium": 27
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.7709597400456,
+        "z": 1164.412362455468,
+        "y": -4.32814025150192,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 19.47,
+      "hp": 1579,
+      "cp": 1127,
+      "banked": {
+        "alloy": 143,
+        "biomass": 95,
+        "helium": 27
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1212.6744418621804,
+        "z": 999.6864637166005,
+        "y": 0.386303063655758,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-10",
+      "minute": 19.92,
+      "hp": 1700,
+      "cp": 1127,
+      "banked": {
+        "alloy": 149,
+        "biomass": 99,
+        "helium": 28
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.4795124139812,
+        "z": 1165.4044003082226,
+        "y": -5.2138564692160445,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 21.09,
+      "hp": 1628,
+      "cp": 1172,
+      "banked": {
+        "alloy": 149,
+        "biomass": 99,
+        "helium": 28
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.2556901506414,
+        "z": 939.6210466014988,
+        "y": -6.30193134583051,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-11",
+      "minute": 21.98,
+      "hp": 1700,
+      "cp": 1172,
+      "banked": {
+        "alloy": 155,
+        "biomass": 103,
+        "helium": 29
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.8631976837562,
+        "z": 1165.0200348242151,
+        "y": -4.62991799930736,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 23.39,
+      "hp": 1700,
+      "cp": 1217,
+      "banked": {
+        "alloy": 155,
+        "biomass": 103,
+        "helium": 29
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1001.3610488409547,
+        "z": 1103.4036514198056,
+        "y": -9.712557456127627,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-12",
+      "minute": 24.21,
+      "hp": 1700,
+      "cp": 1217,
+      "banked": {
+        "alloy": 161,
+        "biomass": 107,
+        "helium": 30
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.5471945183474,
+        "z": 1165.8681480704092,
+        "y": -5.716637349328854,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 25.18,
+      "hp": 1615,
+      "cp": 1262,
+      "banked": {
+        "alloy": 161,
+        "biomass": 107,
+        "helium": 30
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1210.639608511464,
+        "z": 1001.0712618343082,
+        "y": 0.4823931270563126,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-13",
+      "minute": 25.63,
+      "hp": 1700,
+      "cp": 1262,
+      "banked": {
+        "alloy": 167,
+        "biomass": 111,
+        "helium": 31
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.5623531414449,
+        "z": 1165.0014256668737,
+        "y": -4.512170264311221,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 26.85,
+      "hp": 1575,
+      "cp": 1307,
+      "banked": {
+        "alloy": 167,
+        "biomass": 111,
+        "helium": 31
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 989.2814890752519,
+        "z": 940.4723893016384,
+        "y": -6.568528549623844,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-14",
+      "minute": 27.73,
+      "hp": 1700,
+      "cp": 1307,
+      "banked": {
+        "alloy": 173,
+        "biomass": 115,
+        "helium": 32
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.920446963438,
+        "z": 1165.5501746510906,
+        "y": -6.297100969583242,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 29.15,
+      "hp": 1700,
+      "cp": 1352,
+      "banked": {
+        "alloy": 173,
+        "biomass": 115,
+        "helium": 32
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1003.9088581992926,
+        "z": 1103.02132333249,
+        "y": -10.339120117274648,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-15",
+      "minute": 29.97,
+      "hp": 1700,
+      "cp": 1352,
+      "banked": {
+        "alloy": 179,
+        "biomass": 119,
+        "helium": 33
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.7914158997846,
+        "z": 1165.3871078332968,
+        "y": -5.308920283296155,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 30.87,
+      "hp": 1700,
+      "cp": 1397,
+      "banked": {
+        "alloy": 179,
+        "biomass": 119,
+        "helium": 33
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1196.4928298647665,
+        "z": 1002.4179505521665,
+        "y": 0.5312767422654302,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-16",
+      "minute": 31.32,
+      "hp": 1700,
+      "cp": 1397,
+      "banked": {
+        "alloy": 185,
+        "biomass": 123,
+        "helium": 34
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.7920057646188,
+        "z": 1164.9145893832406,
+        "y": -4.8322044901228605,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 32.52,
+      "hp": 1575,
+      "cp": 1462,
+      "banked": {
+        "alloy": 185,
+        "biomass": 123,
+        "helium": 34
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.6770197556076,
+        "z": 940.3370676350216,
+        "y": -6.4114316486279375,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-17",
+      "minute": 33.41,
+      "hp": 1700,
+      "cp": 1462,
+      "banked": {
+        "alloy": 191,
+        "biomass": 127,
+        "helium": 35
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.4865739112397,
+        "z": 1164.968442432133,
+        "y": -5.523004308819182,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 34.83,
+      "hp": 1700,
+      "cp": 1507,
+      "banked": {
+        "alloy": 191,
+        "biomass": 127,
+        "helium": 35
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1002.6046476497125,
+        "z": 1104.1294223696639,
+        "y": -10.01837519752904,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-18",
+      "minute": 35.64,
+      "hp": 1700,
+      "cp": 1507,
+      "banked": {
+        "alloy": 197,
+        "biomass": 131,
+        "helium": 36
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.494524281653,
+        "z": 1164.8029525409693,
+        "y": -4.623486203050097,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 36.62,
+      "hp": 1557,
+      "cp": 1552,
+      "banked": {
+        "alloy": 197,
+        "biomass": 131,
+        "helium": 36
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1213.2402949381267,
+        "z": 999.7970845218688,
+        "y": 0.36187835963131276,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-19",
+      "minute": 37.07,
+      "hp": 1700,
+      "cp": 1552,
+      "banked": {
+        "alloy": 203,
+        "biomass": 135,
+        "helium": 37
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.241149081761,
+        "z": 1164.3243052367902,
+        "y": -4.0660549336900305,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 38.25,
+      "hp": 1611,
+      "cp": 1617,
+      "banked": {
+        "alloy": 203,
+        "biomass": 135,
+        "helium": 37
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.0902297111857,
+        "z": 939.7425665343209,
+        "y": -6.258929456487661,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-20",
+      "minute": 39.13,
+      "hp": 1700,
+      "cp": 1617,
+      "banked": {
+        "alloy": 209,
+        "biomass": 139,
+        "helium": 38
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.7950724693328,
+        "z": 1164.635381965597,
+        "y": -4.556851170435761,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 40.54,
+      "hp": 1700,
+      "cp": 1662,
+      "banked": {
+        "alloy": 209,
+        "biomass": 139,
+        "helium": 38
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1004.1711579907069,
+        "z": 1103.0449420934378,
+        "y": -10.399229826490009,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-21",
+      "minute": 41.36,
+      "hp": 1700,
+      "cp": 1662,
+      "banked": {
+        "alloy": 215,
+        "biomass": 143,
+        "helium": 39
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.7621964634445,
+        "z": 1165.5415822018997,
+        "y": -5.45863092394283,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 42.31,
+      "hp": 1628,
+      "cp": 1707,
+      "banked": {
+        "alloy": 215,
+        "biomass": 143,
+        "helium": 39
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1209.6988553020083,
+        "z": 999.9652384909301,
+        "y": 0.45639059475904825,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-22",
+      "minute": 42.76,
+      "hp": 1700,
+      "cp": 1707,
+      "banked": {
+        "alloy": 221,
+        "biomass": 147,
+        "helium": 40
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.8123155976166,
+        "z": 1166.0148799218541,
+        "y": -6.73908261156374,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 43.98,
+      "hp": 1575,
+      "cp": 1772,
+      "banked": {
+        "alloy": 221,
+        "biomass": 147,
+        "helium": 40
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.7929270769108,
+        "z": 941.2079839094902,
+        "y": -6.441555061039883,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-23",
+      "minute": 44.87,
+      "hp": 1700,
+      "cp": 1772,
+      "banked": {
+        "alloy": 227,
+        "biomass": 151,
+        "helium": 41
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.5761234822899,
+        "z": 1165.7090465800875,
+        "y": -5.56199732368475,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 46.26,
+      "hp": 1700,
+      "cp": 1817,
+      "banked": {
+        "alloy": 227,
+        "biomass": 151,
+        "helium": 41
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1001.6890628384507,
+        "z": 1103.0824712739577,
+        "y": -9.793226730787595,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-24",
+      "minute": 47.08,
+      "hp": 1700,
+      "cp": 1817,
+      "banked": {
+        "alloy": 233,
+        "biomass": 155,
+        "helium": 42
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.8752085158435,
+        "z": 1165.5469679245614,
+        "y": -5.507376510256599,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 47.97,
+      "hp": 1700,
+      "cp": 1862,
+      "banked": {
+        "alloy": 233,
+        "biomass": 155,
+        "helium": 42
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1194.872334767214,
+        "z": 1003.2703982298044,
+        "y": 0.5516874140813088,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-25",
+      "minute": 48.42,
+      "hp": 1700,
+      "cp": 1862,
+      "banked": {
+        "alloy": 239,
+        "biomass": 159,
+        "helium": 43
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.4656045533716,
+        "z": 1163.9436680160757,
+        "y": -4.448802675494685,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 49.62,
+      "hp": 1575,
+      "cp": 1927,
+      "banked": {
+        "alloy": 239,
+        "biomass": 159,
+        "helium": 43
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 989.0874181750668,
+        "z": 939.4631615703622,
+        "y": -6.518091028369284,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-26",
+      "minute": 50.51,
+      "hp": 1700,
+      "cp": 1927,
+      "banked": {
+        "alloy": 245,
+        "biomass": 163,
+        "helium": 44
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.7964458009083,
+        "z": 1165.4771054053012,
+        "y": -5.060297773495658,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 51.92,
+      "hp": 1700,
+      "cp": 1972,
+      "banked": {
+        "alloy": 245,
+        "biomass": 163,
+        "helium": 44
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1004.1811834981662,
+        "z": 1103.2796233287393,
+        "y": -10.401434960533843,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-27",
+      "minute": 52.73,
+      "hp": 1700,
+      "cp": 1972,
+      "banked": {
+        "alloy": 251,
+        "biomass": 167,
+        "helium": 45
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.3504905516813,
+        "z": 1165.9573030734202,
+        "y": -6.4999788684039785,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 53.71,
+      "hp": 1557,
+      "cp": 2017,
+      "banked": {
+        "alloy": 251,
+        "biomass": 167,
+        "helium": 45
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1212.907052197763,
+        "z": 999.5536326381443,
+        "y": 0.3692790561063837,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-28",
+      "minute": 54.16,
+      "hp": 1700,
+      "cp": 2017,
+      "banked": {
+        "alloy": 257,
+        "biomass": 171,
+        "helium": 46
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.789038476169,
+        "z": 1165.3735427759002,
+        "y": -5.293886671379228,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 55.34,
+      "hp": 1611,
+      "cp": 2082,
+      "banked": {
+        "alloy": 257,
+        "biomass": 171,
+        "helium": 46
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.5647560345341,
+        "z": 939.5974130990571,
+        "y": -6.382255179280554,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-29",
+      "minute": 56.23,
+      "hp": 1700,
+      "cp": 2082,
+      "banked": {
+        "alloy": 263,
+        "biomass": 175,
+        "helium": 47
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.1016636230006,
+        "z": 1164.9490405846473,
+        "y": -4.638379104906793,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 57.64,
+      "hp": 1700,
+      "cp": 2127,
+      "banked": {
+        "alloy": 263,
+        "biomass": 175,
+        "helium": 47
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1002.833384062984,
+        "z": 1102.7142356310983,
+        "y": -10.07464306624294,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-30",
+      "minute": 58.44,
+      "hp": 1700,
+      "cp": 2127,
+      "banked": {
+        "alloy": 269,
+        "biomass": 179,
+        "helium": 48
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1175.1127359671043,
+        "z": 1164.2376017822287,
+        "y": -4.2680003019559924,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 59.44,
+      "hp": 1566,
+      "cp": 2172,
+      "banked": {
+        "alloy": 269,
+        "biomass": 179,
+        "helium": 48
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1211.1619198978403,
+        "z": 1000.4102817207172,
+        "y": 0.4552303038404216,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-31",
+      "minute": 59.89,
+      "hp": 1700,
+      "cp": 2172,
+      "banked": {
+        "alloy": 275,
+        "biomass": 183,
+        "helium": 49
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.6099353403556,
+        "z": 1165.040887659575,
+        "y": -4.5669405579877145,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 61.1,
+      "hp": 1575,
+      "cp": 2217,
+      "banked": {
+        "alloy": 275,
+        "biomass": 183,
+        "helium": 49
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 989.3290712741626,
+        "z": 940.5118512943392,
+        "y": -6.580894794969299,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-32",
+      "minute": 61.99,
+      "hp": 1700,
+      "cp": 2217,
+      "banked": {
+        "alloy": 281,
+        "biomass": 187,
+        "helium": 50
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.4790132925725,
+        "z": 1165.438652513566,
+        "y": -5.247595287107123,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 63.4,
+      "hp": 1700,
+      "cp": 2282,
+      "banked": {
+        "alloy": 281,
+        "biomass": 187,
+        "helium": 50
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1002.5307085800612,
+        "z": 1102.8034882222983,
+        "y": -10.000207927250258,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-33",
+      "minute": 64.21,
+      "hp": 1700,
+      "cp": 2282,
+      "banked": {
+        "alloy": 287,
+        "biomass": 191,
+        "helium": 51
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.0323848554679,
+        "z": 1165.3009138462012,
+        "y": -4.963797900538148,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 65.18,
+      "hp": 1620,
+      "cp": 2347,
+      "banked": {
+        "alloy": 287,
+        "biomass": 191,
+        "helium": 51
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1212.6633603160474,
+        "z": 998.8083567288014,
+        "y": 0.3557426875982225,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-34",
+      "minute": 65.63,
+      "hp": 1700,
+      "cp": 2347,
+      "banked": {
+        "alloy": 293,
+        "biomass": 195,
+        "helium": 52
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.496161039978,
+        "z": 1165.4113317641684,
+        "y": -5.2262141546830225,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 66.84,
+      "hp": 1575,
+      "cp": 2392,
+      "banked": {
+        "alloy": 293,
+        "biomass": 195,
+        "helium": 52
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.2723387766382,
+        "z": 939.6279780574446,
+        "y": -6.306258194983575,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-35",
+      "minute": 67.73,
+      "hp": 1700,
+      "cp": 2392,
+      "banked": {
+        "alloy": 299,
+        "biomass": 199,
+        "helium": 53
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.879846309753,
+        "z": 1165.0269662801609,
+        "y": -4.642275684774338,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 69.14,
+      "hp": 1700,
+      "cp": 2457,
+      "banked": {
+        "alloy": 299,
+        "biomass": 199,
+        "helium": 53
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1002.8118221554482,
+        "z": 1102.5570638999368,
+        "y": -10.069342509556874,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-36",
+      "minute": 69.95,
+      "hp": 1700,
+      "cp": 2457,
+      "banked": {
+        "alloy": 305,
+        "biomass": 203,
+        "helium": 54
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1175.1762441710473,
+        "z": 1164.1830265785222,
+        "y": -4.234948635739656,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 70.93,
+      "hp": 1593,
+      "cp": 2522,
+      "banked": {
+        "alloy": 305,
+        "biomass": 203,
+        "helium": 54
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1212.8790856024073,
+        "z": 999.3489693809864,
+        "y": 0.3626844733006232,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-37",
+      "minute": 71.37,
+      "hp": 1700,
+      "cp": 2522,
+      "banked": {
+        "alloy": 311,
+        "biomass": 207,
+        "helium": 55
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.178658639253,
+        "z": 1165.0094054852093,
+        "y": -4.723550617598298,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 72.56,
+      "hp": 1628,
+      "cp": 2567,
+      "banked": {
+        "alloy": 311,
+        "biomass": 207,
+        "helium": 55
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.3029890051153,
+        "z": 939.2857093722033,
+        "y": -6.314223953523186,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-38",
+      "minute": 73.44,
+      "hp": 1700,
+      "cp": 2567,
+      "banked": {
+        "alloy": 317,
+        "biomass": 211,
+        "helium": 56
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1173.057683490438,
+        "z": 1165.3282814605075,
+        "y": -4.669075906230898,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "earned-command-base-I",
+      "minute": 73.66,
+      "hp": 1700,
+      "cp": 17,
+      "banked": {
+        "alloy": 207,
+        "biomass": 146,
+        "helium": 48
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1082.6466121644862,
+        "z": 1158.2213185560818,
+        "y": -1.3943833881088805,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "recon-victory",
+      "minute": 75.22,
+      "hp": 1700,
+      "cp": 82,
+      "banked": {
+        "alloy": 207,
+        "biomass": 146,
+        "helium": 48
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1002.991318285876,
+        "z": 1103.2096784135524,
+        "y": -10.113476133342507,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-39",
+      "minute": 76.04,
+      "hp": 1700,
+      "cp": 82,
+      "banked": {
+        "alloy": 213,
+        "biomass": 150,
+        "helium": 49
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.6964322247782,
+        "z": 1165.5905534429646,
+        "y": -5.484525293202871,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "oxygen-line-victory",
+      "minute": 76.99,
+      "hp": 1628,
+      "cp": 147,
+      "banked": {
+        "alloy": 213,
+        "biomass": 150,
+        "helium": 49
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 1209.633091063342,
+        "z": 1000.0142097319949,
+        "y": 0.45870579533578304,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-40",
+      "minute": 77.44,
+      "hp": 1700,
+      "cp": 147,
+      "banked": {
+        "alloy": 219,
+        "biomass": 154,
+        "helium": 50
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1176.7465513589502,
+        "z": 1166.0638511629188,
+        "y": -6.764568983311793,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "relay-victory",
+      "minute": 78.65,
+      "hp": 1575,
+      "cp": 192,
+      "banked": {
+        "alloy": 219,
+        "biomass": 154,
+        "helium": 50
+      },
+      "cargo": {
+        "alloy": 6,
+        "biomass": 4,
+        "helium": 1
+      },
+      "position": {
+        "x": 988.7630961998115,
+        "z": 941.261172104803,
+        "y": -6.433802246526126,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "bank-41",
+      "minute": 79.55,
+      "hp": 1700,
+      "cp": 192,
+      "banked": {
+        "alloy": 225,
+        "biomass": 158,
+        "helium": 51
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1174.6512737932735,
+        "z": 1165.9550588774562,
+        "y": -5.846870422160665,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "earned-reactor-construction",
+      "minute": 79.78,
+      "hp": 1700,
+      "cp": 12,
+      "banked": {
+        "alloy": 213,
+        "biomass": 150,
+        "helium": 50
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1082.0767994420682,
+        "z": 1155.681043924322,
+        "y": -1.4678290144152732,
+        "surface": "ground"
+      }
+    },
+    {
+      "event": "earned-reactor-complete",
+      "minute": 80.78,
+      "hp": 1700,
+      "cp": 12,
+      "banked": {
+        "alloy": 213,
+        "biomass": 150,
+        "helium": 50
+      },
+      "cargo": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "position": {
+        "x": 1082.0767994420682,
+        "z": 1155.681043924322,
+        "y": -1.4678290144152732,
+        "surface": "ground"
+      }
+    }
+  ],
+  "retainedClient": {
+    "engine": "chromium",
+    "viewport": "390x844",
+    "realWorkerAndAuth": true,
+    "resourceFixture": false,
+    "nativeKeyboardBaseExitAndEntry": true,
+    "browserReload": true,
+    "physicalDeviceVerified": false,
+    "errors": []
+  }
+}

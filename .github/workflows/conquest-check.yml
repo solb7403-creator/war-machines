@@ -24,6 +24,16 @@ jobs:
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-balance.mjs
           node dev/tests/conquest-session-033.mjs
+          node dev/tests/conquest-living-war.mjs
+          node dev/tests/conquest-frontline.mjs
+          node dev/tests/conquest-adaptive.mjs
+          node dev/tests/conquest-opening.mjs
+          node dev/tests/conquest-operations.mjs
+          node dev/tests/conquest-base.mjs
+          node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
+          node dev/tests/conquest-v1-migration.mjs
+          node dev/tests/conquest-earning-model.mjs
+          node dev/tests/conquest-earned-journey.mjs
           node dev/tests/wtest/conquest.mjs
       - uses: actions/setup-python@v5
         with:
@@ -35,12 +45,17 @@ jobs:
       - name: Portrait player journey
         run: |
           python dev/tests/conquest-onboarding.py
+          python dev/tests/conquest-earned-browser.py
+          python dev/tests/conquest-preview.py
+          CQ_EARNED_SAVE=/tmp/lunar-earned-journey.json python dev/tests/conquest-preview.py
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: conquest-gameplay-evidence
-          path: docs/conquest-session-031
+          path: |
+            docs/conquest-session-031
+            docs/conquest-living-war/replay-current.json
 
   transmission:
     runs-on: ubuntu-24.04
@@ -71,6 +86,8 @@ jobs:
           python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback
+          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }}
+          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --fallback
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -79,3 +96,4 @@ jobs:
             docs/conquest-ios-onboarding
             docs/conquest-session-032
             docs/conquest-session-033
+            docs/conquest-living-war

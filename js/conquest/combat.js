@@ -4,18 +4,18 @@
 const W=root.ConquestWorld;
 // Conquest-only registry. Owned wpspd already includes the canonical Velocity Core/mods.
 const profiles=Object.freeze(Object.fromEntries(Object.entries({
- twin:{interval:.22,range:82,heat:8,cooling:16},pulse:{interval:.50,range:92,heat:17,cooling:13},
- moon:{interval:.95,range:125,heat:36,cooling:10},siege:{interval:1.20,range:100,heat:30,cooling:9}
+ twin:{interval:.22,range:82,heat:4.8,cooling:16},pulse:{interval:.50,range:92,heat:9,cooling:13},
+ moon:{interval:.95,range:125,heat:10.8,cooling:8},siege:{interval:1.20,range:100,heat:16,cooling:9}
 }).map(([k,v])=>[k,Object.freeze(v)])));
 const tracks=Object.freeze({heatCapacity:.09,heatCooling:.09,bulletVelocity:.10,bulletRange:.09,dashDistance:.10,dashCooldown:-.04,shieldDuration:.08,shieldCooldown:-.04});
-const costs=Object.freeze([{cp:100,alloy:4,biomass:2,helium:0},{cp:250,alloy:12,biomass:6,helium:0},{cp:600,alloy:25,biomass:15,helium:2}].map(Object.freeze));
+const costs=Object.freeze([{cp:100,alloy:4,biomass:2,helium:0},{cp:250,alloy:12,biomass:6,helium:0},{cp:600,alloy:25,biomass:15,helium:2},{cp:1100,alloy:45,biomass:28,helium:4},{cp:1900,alloy:75,biomass:45,helium:7},{cp:3200,alloy:120,biomass:75,helium:12}].map(Object.freeze));
 const tuningKeys=Object.freeze(['thermal','ballistics','mobility','shield']);
-function engineeringDefaults(e={}){return {ranks:Object.fromEntries(Object.keys(tracks).map(k=>[k,Number.isInteger(e.ranks?.[k])?clamp(e.ranks[k],0,3):0])),tuning:Object.fromEntries(tuningKeys.map(k=>[k,Number.isInteger(e.tuning?.[k])?clamp(e.tuning[k],-3,3):0]))};}
+function engineeringDefaults(e={}){return {ranks:Object.fromEntries(Object.keys(tracks).map(k=>[k,Number.isInteger(e.ranks?.[k])?clamp(e.ranks[k],0,6):0])),tuning:Object.fromEntries(tuningKeys.map(k=>[k,Number.isInteger(e.tuning?.[k])?clamp(e.tuning[k],-3,3):0]))};}
 function setHeat(B,total,capacity){total=Math.max(0,total);B.heat=Math.min(capacity,total);B.heatOverflow=Math.max(0,total-capacity);}
 function engineeringValues(stats,e){
  const {ranks:r,tuning:t}=engineeringDefaults(e),p=profiles[stats.wtype]||profiles.pulse;
  const bonus=k=>r[k]*tracks[k],benefit=v=>Math.max(0,v)*.05-Math.max(0,-v)*.035,cost=v=>Math.max(0,v)*.035-Math.max(0,-v)*.05;
- return {capacity:100*(1+bonus('heatCapacity')+benefit(t.thermal)),cooling:p.cooling*(1+bonus('heatCooling')+benefit(-t.thermal)),heatPerShot:p.heat,
+ return {capacity:100*(1+bonus('heatCapacity')+benefit(t.thermal)),cooling:p.cooling*(1+bonus('heatCooling')+benefit(-t.thermal)),heatPerShot:stats.wtype==='moon'?Math.min(p.heat,3.8+p.cooling*p.interval/rofMult(stats)):p.heat,
  velocity:stats.wpspd*3*(1+bonus('bulletVelocity')+benefit(-t.ballistics)),range:p.range*(1+bonus('bulletRange')+benefit(t.ballistics)),
  dashTime:.4,dashSpeed:5.1*(1+bonus('dashDistance')+benefit(t.mobility)),dashCooldown:Math.max(1,4*(stats.dashCdM||1)*(1+bonus('dashCooldown')+cost(t.mobility))),
  shieldDuration:3*(1+bonus('shieldDuration')+benefit(t.shield)),shieldCooldown:Math.max(5,25*(stats.shieldCdM||1)*(1+bonus('shieldCooldown')+cost(t.shield)))};
@@ -30,7 +30,23 @@ const archetypes=Object.freeze({
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
 const installations=W.installations;
-const patrols=Object.freeze([{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+// Stable authored identities preserve production v1 locks and spawn keys as the region expands.
+const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
+const operations=Object.freeze(Object.fromEntries([
+ {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
+ {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
+ {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
+ {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
+ {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
+ {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
+].map(o=>[o.id,Object.freeze({activationRadius:45,...o})])));
+// Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
+const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
+ tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
+ modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
+ moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
+function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=modules.radar||0;return {radius:Math.max(18+6*defense,tier>=5?30:tier>=4?24:0),mitigation:Math.min(.5,defense*.1+(tier>=4?.1:0)+(tier>=5?.05:0)),radar:Math.max(radar,tier>=5?1:0),radarRange:120+100*Math.max(radar,tier>=5?1:0)+(tier>=5?100:0)};}
+const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1080,z:945,route:[[1080,945],[1115,945],[1130,970],[1100,975]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
 const formations=Object.freeze([
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
@@ -49,7 +65,7 @@ function blocked(x,y,z){
  for(const a of [970,1070])for(const b of [1018,1030])if(Math.abs(x-a)<1.7&&Math.abs(z-b)<1.7&&y<24&&y>W.groundAt(x,z))return true;
  return false;
 }
-function lineClear(a,b,allowObjective=false){const d=dist(a,b),n=Math.max(1,Math.ceil(d/.5));for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(allowObjective&&Math.hypot(x-1150,z-1080)<12)continue;if(blocked(x,y,z))return false;}return true;}
+function lineClear(a,b,allowObjective=false){if(W.installationOccludes?.(a,b))return false;const d=dist(a,b),n=Math.max(1,Math.ceil(d/.5));for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(allowObjective&&Math.hypot(x-1150,z-1080)<12)continue;if(blocked(x,y,z))return false;}return true;}
 function enemyStats(a){return {cls:a.cls,gems:[],gemM:{},buffs:[],dmgM:1,critB:0,wdps:a.dps,wshot:a.shot,wpspd:42,wedge:.75};}
 class Battle {
  constructor(loadout,playerPosition){
@@ -58,7 +74,7 @@ class Battle {
  this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.approachGrace=Math.hypot(playerPosition.x-mission.x,playerPosition.z-mission.z)>65?60:0;this.spawnWave();
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
- spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
+ spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
  shoot(from,to,stats,team,kind,owner){
  if(this.projectiles.length>=96)return false;if(team==='enemy'&&this.enemies.some(e=>e.id===owner&&e.resident&&(e.target===e.home||e.target===e.navGoal)))return false;let d=dist(from,to);if(d<.01)return false;const values=engineeringValues(stats,this.engineering),speed=team==='player'?values.velocity:stats.wpspd;
  if(kind==='twin'){const side=this.shots%2?1:-1,ax=(to.z-from.z)/d*.55*side,az=-(to.x-from.x)/d*.55*side;from={x:from.x+ax,y:from.y,z:from.z+az};}
@@ -83,19 +99,20 @@ class Battle {
  const owner=q.stats,direct=off<r*.4,isCrit=direct&&this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
- if(q.team!=='player'&&t===this.player&&this.shieldT>0)damage*=SHIELD_MULT;
- if(q.team==='player'){this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
+ if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
+ if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
  else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage);
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
  if(q.kind==='siege'&&q.team==='player')for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){const dealt=Math.min(e.hp,damage*.3);this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
  return true;
  }
+ alert(e){if(!e.key||e.radioCalled)return;e.radioCalled=true;for(const ally of this.enemies)if(ally!==e&&ally.hp>0&&Math.hypot(ally.x-e.x,ally.z-e.z)<80)ally.radioUntil=this.time+12;this.effects.push({kind:'radio',x:e.x,y:e.y+5,z:e.z,life:.5});}
  moveShots(dt){
  for(const q of this.projectiles){const start={x:q.x,y:q.y,z:q.z};const travel=Math.min(dt,q.life),n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vy,q.vz)*travel/.35));for(let i=0;i<n&&q.life>0;i++){
  q.x+=q.vx*travel/n;q.y+=q.vy*travel/n;q.z+=q.vz*travel/n;
  if(q.x<0||q.z<0||q.x>W.WIDTH||q.z>W.LENGTH||q.y<=W.groundAt(q.x,q.z)){q.life=0;break;}
- let hit=false;if(q.team==='player'){for(const e of this.enemies)if(e.hp>0&&this.hit(q,e,2.7)){hit=true;break;}}else hit=this.hit(q,this.player,2.5)||this.hit(q,this.objective,14);
+ let hit=false;if(q.team==='player'){for(const e of this.enemies)if(e.hp>0&&this.hit(q,e,2.7)){hit=true;break;}}else hit=this.hit(q,this.player,2.5)||(this.objectiveDamageable!==false&&this.hit(q,this.objective,14));
  if(hit||blocked(q.x,q.y,q.z)){q.life=0;break;}}
  
  q.life-=dt;}
@@ -108,13 +125,13 @@ class Battle {
  }
  step(dt,fire){
  this.time+=dt;this.abilityStep?.(dt);this.cooldown=Math.max(-dt,this.cooldown-dt);this.effects.forEach(e=>e.life-=dt);this.effects=this.effects.filter(e=>e.life>0).slice(-32);
- const thermal=engineeringValues(this.playerStats,this.engineering);setHeat(this,(this.heat||0)+(this.heatOverflow||0)-thermal.cooling*dt,thermal.capacity);
+ const thermal=engineeringValues(this.playerStats,this.engineering);setHeat(this,(this.heat||0)+(this.heatOverflow||0)-(this.overheated?Math.max(thermal.cooling,thermal.capacity*.13):thermal.cooling)*dt,thermal.capacity);
  if(this.overheated&&this.heat+(this.heatOverflow||0)<=thermal.capacity*.35)this.overheated=false;
  if(fire&&!this.overheated&&this.cooldown<=1e-9){if(this.shoot(this.player,this.aim,this.playerStats,'player',this.playerStats.wtype,0)){
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
- for(const e of this.enemies){if(e.hp<=0)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
+ for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
  const p=W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
  const target=e.target||this.objective,ec=center(e),want=Math.atan2(target.x-e.x,target.z-e.z),delta=Math.atan2(Math.sin(want-e.turret),Math.cos(want-e.turret));e.turret+=clamp(delta,-2*dt,2*dt);
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
@@ -131,16 +148,18 @@ class Battle {
 class Encounter extends Battle {
  constructor(loadout,p,cleared={}){
   super(loadout,p);this.localEncounter=true;this.enemies=[];this.wave=formations.length;this.id=10000;this.objectiveHp=this.objectiveMax=1e9;this.cleared=cleared=cleared&&typeof cleared==='object'&&!Array.isArray(cleared)?cleared:{};
-  for(const base of installations)for(let i=0;i<2;i++){
-   const kind=i?'command':'raider',a=archetypes[kind],x=base.x+(i?10:-10),z=base.z-12;
-   this.enemies.push({id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});
+  for(const base of installations)for(let i=0;i<(base.id==='redoubt-01'?4:2);i++){
+   const kind=base.id==='redoubt-01'&&i===3?'sentinel':i?'command':'raider',a=archetypes[kind],x=base.x+(i%2?10:-10),z=base.z-12-Math.floor(i/2)*10;
+   this.enemies.push({route:base.kind==='staging'?[[x,z],[x-30,z-8],[x-40,z+20],[x,z]]:null,id:++this.id,key:base.id+':'+i,base,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[base.id+':'+i]?0:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:'guard'});
   }
-  for(const site of patrols){const a=archetypes[site.kind],x=site.x,z=site.z;this.enemies.push({id:++this.id,key:site.id,base:{...site,kind:'patrol'},route:site.route,home:{x,z,y:W.groundAt(x,z)+2.2},kind:site.kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[site.id]?0:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:0,cd:2,vx:0,vz:0,role:'guard'});}
+  for(const site of patrols){const a=archetypes[site.kind],x=site.x,z=site.z;this.enemies.push({id:++this.id,key:site.id,base:{...site,kind:'patrol'},route:site.route,home:{x,z,y:W.groundAt(x,z)+2.2},kind:site.kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:cleared[site.id]?0:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:'guard'});}
+  for(const e of this.enemies){e.id=spawnIds[e.key];e.decision=(e.id%10)*.03;}this.id=Math.max(this.id,...this.enemies.map(e=>e.id));
  }
  spawnWave(){} // guard lifecycle is independent of mission waves
  choose(e){
   const d=Math.hypot(this.player.x-e.x,this.player.z-e.z),homeDistance=Math.hypot(this.player.x-e.home.x,this.player.z-e.home.z);
-  const alerted=d<65||e.hp<e.maxHp;
+  const alerted=d<65||e.hp<e.maxHp||(e.radioUntil||0)>this.time;
+  if(e.hp<e.maxHp*.2&&d<40&&homeDistance>30){e.guardReturning=true;e.navGoal=e.home;super.choose(e);e.guardReturning=false;return;}
   if(alerted&&homeDistance<100){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
   else {e.guardReturning=true;if(e.route){e.routeIndex=e.routeIndex||0;if(Math.hypot(e.x-e.route[e.routeIndex][0],e.z-e.route[e.routeIndex][1])<3)e.routeIndex=(e.routeIndex+1)%e.route.length;const [x,z]=e.route[e.routeIndex];e.navGoal={x,z,y:W.groundAt(x,z)+2.2};}super.choose(e);e.guardReturning=false;}
   const q=W.advance(e,e.vx,e.vz);if(Math.hypot(q.x-e.home.x,q.z-e.home.z)>65)e.vx=e.vz=0;
@@ -154,5 +173,34 @@ class Encounter extends Battle {
   if(this.playerHp>0){this.state='active';this.reason=null;}
  }
 }
-root.ConquestCombat=Object.freeze({profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+// All operation progression is physical and replayed by the Worker; no client objective claims.
+class Operation extends Battle {
+ constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
+ this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
+ // Installation missions fight the persistent world garrison attached by the session.
+ const team=id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
+ team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
+ if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
+ if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
+ }
+ spawnWave(){}
+ deploy(kind,x,z,key){const a=archetypes[kind];const pad=[[0,0],[8,0],[-8,0],[0,8],[0,-8],[12,8],[-12,-8]].map(([dx,dz])=>({x:x+dx,z:z+dz})).find(p=>Math.hypot(p.x-this.player.x,p.z-this.player.z)>=8&&!W.solidAt(p.x,p.z)&&!this.enemies.some(e=>Math.hypot(e.x-p.x,e.z-p.z)<6));if(!pad)throw Error('conquest: clear the deployment apron');x=pad.x;z=pad.z;this.enemies.push({id:++this.id,rewardKey:this.operation.id+':'+key,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(this.id%10)*.03,cd:2,vx:0,vz:0,role:a.role});}
+ choose(e){
+ if(e.id===this.carrierId){const q=W.advance(e,0,-4);e.vx=q.x-e.x;e.vz=q.z-e.z;e.target=this.player;return;}
+ if(e.immobile){e.vx=e.vz=0;e.target=this.player;return;}
+ const objective=this.objective;if(this.operation.id!=='rescue')this.objective=this.player;super.choose(e);this.objective=objective;
+ // The commander pauses before each aimed salvo: visible, avoidable attack tell.
+ if(e.commander&&this.time%6<1.5){e.vx=e.vz=0;e.cd=Math.max(e.cd,.4);e.telegraph=true;}else e.telegraph=false;
+ }
+ step(dt,fire){super.step(dt,fire);if(this.state!=='active')return;const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(o.id)&&e.base?.id===o.site)));
+ if(o.id==='convoy'){const c=this.enemies.find(e=>e.id===this.carrierId);this.stage=c.hp<=0?1:0;if(c.hp>0&&c.z<o.z-135){this.state='defeat';this.reason='Armored carrier escaped';}else if(!living.length)this.state='victory';}
+ if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&!living.length&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
+ if(o.id==='recon'){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<9){this.work+=dt;if(this.work>=3){this.scans++;this.work=0;}}this.stage=this.scans;if(this.scans===3)this.state='victory';}
+ if(o.id==='rescue'){if(d<28){const q=W.advance({x:this.objective.x,z:this.objective.z,y:this.objective.y-2.2,surface:'ground'},0,dt*2);Object.assign(this.objective,{x:q.x,y:q.y+2.2,z:q.z});}this.stage=Math.min(100,Math.floor((this.objective.z-o.z)/.8));if(this.stage>=100)this.state='victory';}
+ if(o.id==='redoubt'){if(!living.length&&this.stage===0){this.stage=1;this.deploy('sentinel',o.x+12,o.z-8,'commander');this.enemies.at(-1).commander=true;}else if(!living.length&&this.stage===1&&d<18){this.work+=dt;if(this.work>=6){this.stage=2;this.state='victory';}}}
+ if(Math.hypot(this.player.x-o.x,this.player.z-o.z)>260||this.time>600){this.state='defeat';this.reason='Operation perimeter abandoned or time expired';}
+ if(this.state!=='active')this.projectiles=[];
+ }
+}
+root.ConquestCombat=Object.freeze({spawnIds,operations,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

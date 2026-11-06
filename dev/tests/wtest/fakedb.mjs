@@ -1,16 +1,16 @@
 // Minimal in-memory Firebase Realtime Database REST emulator for worker tests (ETags and if-match included, like the real one)
 import { createHash } from 'node:crypto';
-export function makeDB() {
+export function makeDB({pruneEmptyUnder=[]}={}) {
   const root = {};
   const parts = (p) => p.split('/').filter(Boolean);
   const get = (p) => { let n = root; for (const k of parts(p)) { if (n == null || typeof n !== 'object') return null; n = n[k]; } return n === undefined ? null : n; };
-  const resolve = (v, cur) => {
+  const resolve = (v, cur, prune=false) => {
     if (v && typeof v === 'object') {
       if (v['.sv'] === 'timestamp') return Date.now();
       if (v['.sv'] && v['.sv'].increment !== undefined) return (typeof cur === 'number' ? cur : 0) + v['.sv'].increment;
       const o = Array.isArray(v) ? [] : {};
-      for (const [k, x] of Object.entries(v)) { const r = resolve(x, cur && cur[k]); if (r !== null && r !== undefined) o[k] = r; }
-      return o;
+      for (const [k, x] of Object.entries(v)) { const r = resolve(x, cur && cur[k], prune); if (r !== null && r !== undefined) o[k] = r; }
+      return prune&&!Object.keys(o).length?null:o;
     }
     return v;
   };
@@ -20,7 +20,7 @@ export function makeDB() {
     let n = root;
     for (let i = 0; i < ks.length - 1; i++) { if (n[ks[i]] == null || typeof n[ks[i]] !== 'object') n[ks[i]] = {}; n = n[ks[i]]; }
     const last = ks[ks.length - 1];
-    const val = resolve(v, n[last]);
+    const val = resolve(v, n[last], pruneEmptyUnder.includes(ks[0]));
     if (val === null || val === undefined) delete n[last]; else n[last] = val;
   };
   const query = (node, q) => {

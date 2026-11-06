@@ -12,8 +12,8 @@ const derived=C.engineeringValues(b.playerStats,{ranks:{bulletRange:3,bulletVelo
 console.log('PASS Session 3.3 Dash/cadence/heat and independent ballistics');
 const {createState,applyAction,hydrate}=await import('../../worker/src/conquest-sim.js');
 const now=100000,terminal=s=>{s.position={x:1174,z:1168,y:W.groundAt(1174,1168),surface:'ground'};s.battle.enemies=[];return s;};
-let state=terminal(createState(R.STOCK_L,now));state.hp=90;state.battle.heat=87;state.battle.dashCd=2;state.ledger.cp=10000;state.ledger.banked={alloy:1000,biomass:1000,helium:100};
-for(const upgrade of Object.keys(C.tracks))for(let rank=1;rank<=3;rank++){const prev=structuredClone(state),price=C.costs[rank-1];state=applyAction(state,{seq:state.seq+1,action:'buy-upgrade',upgrade},now);assert.equal(state.engineering.ranks[upgrade],rank);assert.equal(state.ledger.cp,prev.ledger.cp-price.cp);assert.equal(state.battle.heat,87);assert.equal(state.hp,90);assert.equal(state.battle.dashCd,2);}
+let state=terminal(createState(R.STOCK_L,now));state.hp=90;state.battle.heat=87;state.battle.dashCd=2;state.ledger.cp=100000;state.ledger.banked={alloy:10000,biomass:10000,helium:1000};
+for(const upgrade of Object.keys(C.tracks))for(let rank=1;rank<=C.costs.length;rank++){const prev=structuredClone(state),price=C.costs[rank-1];state=applyAction(state,{seq:state.seq+1,action:'buy-upgrade',upgrade},now);assert.equal(state.engineering.ranks[upgrade],rank);assert.equal(state.ledger.cp,prev.ledger.cp-price.cp);assert.equal(state.battle.heat,87);assert.equal(state.hp,90);assert.equal(state.battle.dashCd,2);}
 assert.throws(()=>applyAction(state,{seq:state.seq+1,action:'buy-upgrade',upgrade:'heatCapacity'},now),/maximum/);
 for(const tuning of C.tuningKeys)for(const position of [-3,0,3]){state=applyAction(state,{seq:state.seq+1,action:'set-tuning',tuning,position},now);assert.equal(state.engineering.tuning[tuning],position);}
 assert.throws(()=>applyAction(state,{seq:state.seq,action:'set-tuning',tuning:'thermal',position:0},now),/stale/);
@@ -34,7 +34,7 @@ for(const weapon of Object.keys(C.profiles)){
 }
 console.log(JSON.stringify(benchmarks,null,2));
 // Hysteresis and heat debt survive every state handoff, including death and equipment.
-for(const weapon of Object.keys(C.profiles)){const L=structuredClone(R.STOCK_L);L.w.a=weapon;L.cores=[];let B=new C.Encounter(L,p);B.enemies=[];let first=0;while(!B.overheated&&B.time<20){K.advance(B,p,{x:0,z:0,fire:true},.05,false);first=B.shots;}assert(first>0);const n=B.shots;while(B.heat>35){K.advance(B,p,{x:0,z:0},.05,false);assert.equal(B.shots,n);}assert.equal(B.overheated,false);const fresh=new C.Encounter(L,p);K.carry(B,fresh);assert.equal(fresh.heat,B.heat);assert.equal(fresh.cooldown,B.cooldown);}
+for(const weapon of Object.keys(C.profiles)){const L=structuredClone(R.STOCK_L);L.w.a=weapon;L.cores=[];let B=new C.Encounter(L,p);B.enemies=[];let first=0;while(!B.overheated&&B.time<90){K.advance(B,p,{x:0,z:0,fire:true},.05,false);first=B.shots;}assert(first>0);const n=B.shots;while(B.heat>35){K.advance(B,p,{x:0,z:0},.05,false);assert.equal(B.shots,n);}assert.equal(B.overheated,false);const fresh=new C.Encounter(L,p);K.carry(B,fresh);assert.equal(fresh.heat,B.heat);assert.equal(fresh.cooldown,B.cooldown);}
 console.log('PASS thermal hysteresis and carry for all four archetypes');
 // A boosted burst cannot tunnel through a real enemy hull.
 b=bare();let blocker=structuredClone(new C.Encounter(R.STOCK_L,p).enemies[0]);Object.assign(blocker,{x:p.x+7,z:p.z,y:p.y,decision:999,cd:999,vx:0,vz:0});b.enemies=[blocker];let stopped=K.advance(b,p,{x:1,z:0,dash:true},.25,false);assert(stopped.x<=blocker.x-3.7);assert(Math.hypot(stopped.x-blocker.x,stopped.z-blocker.z)>=3.8);

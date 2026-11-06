@@ -48,7 +48,7 @@ async def main():
   await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});assert await page.evaluate('Conquest.view.p.x')>start+1
   # Start from the owner's reported position. No fake mission discovery needed.
   await page.evaluate('Conquest.view.jump(1163,1132)');await page.wait_for_timeout(200)
-  await page.get_by_role('button',name='OXYGEN FACILITY UNDER THREAT — START DEFENSE',exact=True).click();await page.get_by_role('button',name='START MISSION',exact=True).click()
+  await page.locator('#cq-mission-access').click();await page.get_by_role('button',name='START MISSION',exact=True).click()
   assert await page.evaluate('Conquest.view.battle.approachGrace===60')
   # Physically circle west of the processor tower, then enter the north firing approach.
   await page.evaluate('Conquest.view.yaw=-Math.PI/2')

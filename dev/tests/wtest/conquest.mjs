@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/build-sim.mjs';
-buildSim();const db=makeDB();
+buildSim();const db=makeDB({pruneEmptyUnder:['conquest']});
 globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/'))return db.handle(url,init);throw Error('Unexpected external request');};
 const {default:worker}=await import('../../../worker/src/index.js');
 const env={BOT_TOKEN:'conquest-test',FIREBASE_DB_SECRET:'SECRET'};
@@ -11,12 +11,14 @@ async function call(id,path,body={}){const r=await worker.fetch(new Request('htt
 assert.equal((await call(null,'/api/conquest/session')).status,401);
 await call(8101,'/api/sync');await call(8102,'/api/sync');
 let r=await call(8101,'/api/conquest/session');assert.equal(r.status,200);assert(r.state,'authenticated server state created');
+assert.equal(db.get('conquest/tg_8101').base.modules,undefined,'Firebase omits the empty module map');assert.equal((await call(8101,'/api/conquest/session')).status,200,'next authenticated request hydrates the persisted Firebase shape');
 const start=structuredClone(r.state),protectedBefore=structuredClone(db.get('eco/tg_8101'));
 assert.equal((await call(8101,'/api/conquest/input',{seq:1,commands:[{x:102,z:0}]})).status,400);
 assert.equal((await call(8101,'/api/conquest/input',{seq:1,commands:[{x:1,z:0}]})).status,409,'no elapsed budget');
 now+=100;
 const body={seq:1,commands:[{x:1,z:0}]};const both=await Promise.all([call(8101,'/api/conquest/input',body),call(8101,'/api/conquest/input',body)]);
 assert(both.every(x=>x.status===200));assert.equal(both[0].state.seq,1);assert.equal(both[1].state.position.x,both[0].state.position.x,'lost reply/concurrent retry never repeats movement');
+assert(both.every(x=>x.state.base.modules&&typeof x.state.base.modules==='object'),'a cached Firebase replay must restore the public empty module map too');
 r=await call(8101,'/api/conquest/input',{seq:1,commands:[{x:-1,z:0}]});assert.equal(r.status,409,'same sequence changed payload rejected');
 assert.equal((await call(8101,'/api/conquest/input',{seq:2,commands:[{x:0,z:0}],hp:999999})).status,400);
 assert.equal((await call(8101,'/api/conquest/input',{...body,pid:'tg_8102'})).status,400);
@@ -54,5 +56,22 @@ const winner=won.engineering.ranks.heatCapacity?'heatCapacity':'heatCooling';con
 assert.equal((await call(8101,'/api/conquest/action',{seq:seq+1,action:'buy-upgrade',upgrade:'heatCapacity',price:0})).status,400);
 assert.equal((await call(8101,'/api/conquest/action',{seq:seq+1,action:'buy-upgrade',upgrade:'bulletRange'})).status,409);
 assert.deepEqual(db.get('eco/tg_8101'),protectedBefore);console.log('PASS engineering CAS race, duplicate response, insufficient banked funds and price forgery');
+
+Date.now=clock;
+
+Date.now=()=>now;
+// Personal base construction, competing tabs and production claims share the same account CAS.
+const {CONQUEST:{Combat:C}}=await import('../../../worker/src/sim.gen.js');
+const bs=db.get('conquest/tg_8101'),D=C.baseDefinition;bs.mission=null;bs.battle.enemies=[];bs.position={x:D.x,z:D.z,y:0,surface:'ground'};bs.ledger.cp=100000;bs.ledger.banked={alloy:10000,biomass:10000,helium:10000};
+const priorCP=bs.ledger.cp,baseSeq=bs.seq+1,build={seq:baseSeq,action:'build-base'};
+const builds=await Promise.all([call(8101,'/api/conquest/action',build),call(8101,'/api/conquest/action',build)]);
+assert(builds.every(r=>r.status===200),JSON.stringify(builds.map(r=>({status:r.status,error:r.error}))));assert.equal(db.get('conquest/tg_8101').ledger.cp,priorCP-D.recipe.cp);assert.equal(db.get('conquest/tg_8101').base.tier,1);
+assert.equal((await call(8101,'/api/conquest/action',{seq:baseSeq+1,action:'upgrade-base',price:0})).status,400);
+assert.equal((await call(8102,'/api/conquest/action',{seq:other.state.seq+1,action:'base-claim'})).status,409);
+// Advance only the disposable fixture's production clock; no public API permits this.
+const built=db.get('conquest/tg_8101');built.base.claimedAt=now-86400001;const beforeClaim=built.ledger.cp,claim={seq:built.seq+1,action:'base-claim'};
+const claims=await Promise.all([call(8101,'/api/conquest/action',claim),call(8101,'/api/conquest/action',claim)]);assert(claims.every(r=>r.status===200));assert.equal(claims.filter(r=>r.replayed).length,1);assert.equal(claims[0].state.ledger.cp,claims[1].state.ledger.cp);assert(claims[0].state.ledger.cp>beforeClaim);
+assert.equal((await call(8101,'/api/conquest/action',{seq:claim.seq+1,action:'base-claim'})).status,409);assert.deepEqual(db.get('eco/tg_8101'),protectedBefore);
+console.log('PASS base construction/production CAS duplicate requests, physical ownership, forged prices and unchanged legacy economy');
 
 Date.now=clock;

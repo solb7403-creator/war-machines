@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import '../../js/conquest/world.js';
 const W=ConquestWorld,point=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
+// A padded in-world tile and a distant query must never alias in the bounded cache.
+const cacheCanary=W.groundAt(4,0),outside=W.groundAt(0,4*(W.LENGTH+12));assert.notEqual(cacheCanary,outside);assert.equal(W.groundAt(4,0),cacheCanary,'out-of-region queries preserve in-world terrain');
 // Actual triangle normal must match finite differences of the collision surface.
 for(const [x,z] of [[1283,1104],[1201.2,1042.1],[14001.1,8002.2]]){
  const n=W.surfaceNormal(x,z),dx=(W.groundAt(x+.001,z)-W.groundAt(x-.001,z))/.002;

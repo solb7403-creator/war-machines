@@ -1,0 +1,39 @@
+{
+  "engine": "chromium",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "scenario": "relay mission with resident garrisons",
+      "performance": {
+        "samples": 255,
+        "percentBelow50fps": 77.6470588235294,
+        "percentBelow40fps": 67.45098039215686,
+        "percentBelow30fps": 54.11764705882353,
+        "simulationMs": 12.399999999906868,
+        "renderSubmissionMs": 0.5,
+        "heapBytes": 24025431,
+        "textures": 0,
+        "frameMedian": 35.60000000009313,
+        "frameP95": 75.8000000002794,
+        "worstFrame": 100.5,
+        "hitches": 1,
+        "drawCalls": 0,
+        "triangles": 0,
+        "geometries": 0,
+        "chunks": 0,
+        "enemies": 17,
+        "projectiles": 6,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "multiPointer": "native three-touch",
+      "errors": []
+    }
+  ]
+}

@@ -16,7 +16,7 @@ function aim(B,p,input,dt){
  const pitch=B.lockId!==null?Math.atan2(locked.y-p.y,Math.hypot(locked.x-p.x,locked.z-p.z)):input.aimPitch||0;
  return {x:p.x+Math.sin(B.turretYaw)*160,y:p.y+2.2+Math.tan(clamp(pitch,-1.2,1.2))*160,z:p.z+Math.cos(B.turretYaw)*160};
 }
-function hurt(B,e,amount){const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
+function hurt(B,e,amount){B.alert?.(e);const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
 function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
 function fireSuper(B,s){
  const raw=SUP[s.weapon],spec={...raw};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
@@ -45,6 +45,13 @@ C.Battle.prototype.abilityStep=function(dt){
  q.life-=dt;}
  this.superShells=this.superShells.filter(q=>q.life>0).slice(-4);
 };
+function baseBlocked(B,p){if(!B.baseTier)return false;const D=C.baseDefinition,x=p.x-D.x,z=p.z-D.z;
+ if(Math.abs(x)>22||Math.abs(z)>21)return false;
+ if(Math.abs(Math.abs(x)-17)<3&&Math.abs(z)<18||Math.abs(z-16)<3&&Math.abs(x)<18)return true;
+ if(B.baseTier>=2&&(x>1&&x<17&&z>1&&z<17||Math.hypot(x+7,z-8)<8))return true;
+ if(B.baseTier>=3&&[-15,15].some(a=>Math.abs(x-a)<4&&Math.abs(z+13)<4))return true;
+ return false;
+}
 function advance(B,p,input,dt,exploration){
  ensure(B);dt=clamp(dt,0,.25);if(B.playerHp<=0||B.state!=='active')return p;
  const values=C.engineeringValues(B.playerStats,B.engineering);if(input.shield&&B.shieldCd<=0){B.shieldT=values.shieldDuration;B.shieldCd=values.shieldCooldown;}
@@ -52,7 +59,7 @@ function advance(B,p,input,dt,exploration){
  if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:values.dashTime,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=values.dashCooldown;}
  let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),B.dashState?.t??Infinity);left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
  const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
- if(!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
+ if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
  const target=aim(B,p,input,h);
  if(input.super&&B.charge>=SUPER_MAX&&!B.superAttack){B.charge=0;const weapon=B.playerStats.wtype;B.superAttack={weapon,t:SUP[weapon].charge,yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}
@@ -61,5 +68,5 @@ function advance(B,p,input,dt,exploration){
  return p;
 }
 function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
-root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,CONFIG});
+root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,CONFIG});
 })(globalThis);

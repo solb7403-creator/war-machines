@@ -44,7 +44,7 @@ async def main():
   await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000)
   assert await page.locator('.cq-transmission').count()==0,'completed onboarding must not repeat'
   await page.evaluate('Conquest.view.jump(1163,1132)');await page.wait_for_timeout(200)
-  access=page.get_by_role('button',name='OXYGEN FACILITY UNDER THREAT — START DEFENSE',exact=True)
+  access=page.locator('#cq-mission-access')
   await access.wait_for(state='visible',timeout=15000)
   assert await page.evaluate('!Conquest.view.battle'),'entering radius must not start battle'
   await page.screenshot(path=str(OUT/'mission-interaction.png'))

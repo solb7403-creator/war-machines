@@ -15,6 +15,10 @@ s=fresh();e=s.battle.enemies.find(e=>e.base.kind==='patrol');e.hp=0;killLoot(s,e
 // A real mission resident death must survive mission death/respawn, with no duplicate credit.
 s=fresh();s.position=point(1163,1132);s=applyAction(s,{seq:1,action:'start-mission'},now);e=s.battle.enemies.find(e=>e.resident);e.hp=0;killLoot(s,e,now);s.position=point(e.x,e.z);pickups(s,now);s.hp=s.battle.playerHp=0;death(s,now);const killed=e.key;s=applyAction(s,{seq:2,action:'respawn'},now+100);assert.equal(s.battle.enemies.find(e=>e.key===killed).hp,0);assert.equal(s.position.x,898);assert(s.hp>0);assert.equal(s.mission,null);
 s.hp=42;s.battle.playerHp=42;refitState(s,{...R.STOCK_L,paint:'stock'});assert.equal(s.hp,42);assert.throws(()=>applyAction(s,{seq:3,action:'respawn'},now+200),'living pilot cannot teleport');
-// Maximum daily encounter values are enforced server-side; mission rewards stay full.
-s=fresh();s.daily.cp=P.daily.cp;s.daily.alloy=P.daily.alloy;s.position=point(s.battle.enemies[0].x,s.battle.enemies[0].z);e=s.battle.enemies[0];e.hp=0;killLoot(s,e,now);pickups(s,now);assert.equal(s.ledger.cp,0);assert.equal(s.ledger.cargo.alloy,0);s.mission='oxygen-line';assert.equal(missionReward(s,now).cp,250);
+// Legitimate generation-gated combat keeps paying after historical daily caps.
+s=fresh();s.daily.cp=P.daily.cp;s.daily.alloy=P.daily.alloy;s.position=point(s.battle.enemies[0].x,s.battle.enemies[0].z);e=s.battle.enemies[0];e.hp=0;killLoot(s,e,now);pickups(s,now);assert.equal(s.ledger.cp,18);assert.equal(s.ledger.cargo.alloy,3);s.mission='oxygen-line';assert.equal(missionReward(s,now).cp,250);
 console.log('PASS server loot generations, stable mission kill eligibility, exact-half death,600s expiry, banking, first/daily settlement, refresh visibility, persistent residents and limits');
+
+s=fresh();s.mission='oxygen-line';s.featuredMission=true;assert.equal(missionReward(s,now).cp,270);const bonusCP=s.ledger.cp;assert.equal(missionReward(s,now+1).cp,0);assert.equal(s.ledger.cp,bonusCP,'featured bonus is exactly once with settlement');console.log('PASS featured bonus and settlement idempotency');
+
+s=fresh();for(const [i,id] of ['oxygen-line','relay','recon'].entries()){s.mission=id;const before=s.reputation,award=missionReward(s,now+i*1000);assert.equal(award.reputation,s.reputation-before,'after-action reputation must equal actual earned change, including Field Veteran');}assert(s.achievements['field-veteran']);console.log('PASS exact after-action reputation including daily field-order recognition');
