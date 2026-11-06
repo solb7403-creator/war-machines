@@ -58,7 +58,7 @@ async def main(args):
             page.on('pageerror', lambda e: result['errors'].append(str(e)))
             await page.route('**/js/__cq_harness_planner.js', lambda r: r.fulfill(body=WORKER, content_type='application/javascript'))
             async def fixture(**kw):
-                r = await page.request.post(base + '/fixture', data=kw); assert r.ok, await r.text()
+                r = await page.request.post(base + '/fixture', data={'fieldMissions': True, **kw}); assert r.ok, await r.text()
             async def reconnect():
                 await page.evaluate('Conquest.view.reset();Conquest.view.authority.actionBusy=true')
                 await page.wait_for_function('!Conquest.view.authority.busy')
