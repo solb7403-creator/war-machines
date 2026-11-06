@@ -1,0 +1,17 @@
+{
+  "scope": "Headless Chromium SwiftShader 390x844, disposable local preview server, veteran fixture. Software rendering diagnostics only; NOT physical iPhone/Telegram evidence (PHYSICAL_IPHONE_UNVERIFIED).",
+  "enemyModelBuildMs": {
+    "beforeCache": {"raider": 41.3, "breacher": 62.6, "command": 26.3, "sentinel": 14.3, "repeatBuilds": [9.1, 9.5, 14.1]},
+    "afterCacheAndPrewarm": {"repeatBuilds": [0.2, 0.0, 0.1, 0.0, 0.0], "firstBuildNotPrewarmedBreacher": 57.7},
+    "note": "Measured inside the page while another browser test ran (contended). The cache removes per-spawn kit baking; prewarm moves first builds into calm exploration."
+  },
+  "soaks": {
+    "beforeCache": {"file": "soak-raid-chromium390-precache.json", "raids": 21, "minutes": 18.33, "victories": 21, "pageErrors": 0, "heapMB": [31.3, 39.0], "geometries": [39, 54], "textures": 2, "domNodes": 224, "frameMedianMs": 27.3, "frameP95Ms": 48.9, "framesOver100msPerRaid": 2.33},
+    "afterCache": {"file": "soak-raid-chromium390-cached.json", "raids": 13, "minutes": 10.73, "victories": 13, "pageErrors": 0, "heapMB": [32.0, 37.9], "geometries": [46, 60], "textures": 2, "domNodes": 224, "frameMedianMs": 27.0, "frameP95Ms": 49.6, "framesOver100msPerRaid": 2.08}
+  },
+  "attribution": {
+    "withTestBot": "Frames over 100ms clustered at mission start (battle time 0-1s) and at the first hazard (about 6s), when the bot's in-page A* pathfinding runs on the page main thread.",
+    "withoutBotInput": "Two raids (sabotage-2, battery-3) holding FIRE only for 20s through hazard cycles: zero frames over 100ms during combat; one 120-230ms frame at the briefing-to-battle transition.",
+    "conclusion": "Software soak memory is bounded (no heap, geometry, texture or DOM growth trend over 21 raids). Soak hitch counts are dominated by harness pathfinding plus the mission-start transition, not mid-combat game work. Physical-device frame pacing remains unverified."
+  }
+}

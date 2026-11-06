@@ -1,0 +1,100 @@
+{
+  "engine": "webkit",
+  "fixture": "Disposable local legal epic Moon/Titan starting loadout and safe raid-entry placement; separate rich banked base-build fixture. No forged combat, health, outcome, ownership or settlement.",
+  "environment": "Automated browser; Chromium uses SwiftShader software rendering. PHYSICAL_IPHONE_NOT_TESTED.",
+  "cases": [
+    {
+      "operation": "raid-siege-1",
+      "secondsWall": 44.0962508040011,
+      "physicalHullClicks": 4,
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 80,
+        "cp": 240,
+        "alloy": 18,
+        "biomass": 16,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      },
+      "kills": 3,
+      "hp": 1934.5605121731912,
+      "position": {
+        "x": 912.1318900202234,
+        "z": 945.1696129241382,
+        "y": -0.010834089771162576,
+        "surface": "ground"
+      },
+      "raidProgress": {
+        "shards": 1,
+        "clears": 1,
+        "blueprint": false,
+        "eliteBlueprint": false
+      },
+      "territory": {
+        "refuge": {
+          "owner": "humanity",
+          "status": "secured",
+          "defenseAt": 1793917178147
+        },
+        "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "oxygen": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "western": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915444831,
+          "defenseAt": 1793916644831,
+          "awaitingReinforcements": false
+        },
+        "helium": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "ridge": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "raid-site-siege-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915444831,
+          "defenseAt": 1793916644831,
+          "awaitingReinforcements": false
+        }
+      },
+      "performance": {
+        "samples": 600,
+        "pixelRatio": 1,
+        "percentBelow50fps": 99.83333333333333,
+        "percentBelow40fps": 95.16666666666667,
+        "percentBelow30fps": 78.66666666666667,
+        "simulationMs": 0,
+        "renderSubmissionMs": 7,
+        "heapBytes": null,
+        "textures": 2,
+        "frameMedian": 59,
+        "frameP95": 95,
+        "worstFrame": 438,
+        "hitches": 32,
+        "drawCalls": 56,
+        "triangles": 65868,
+        "geometries": 45,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      }
+    }
+  ],
+  "errors": [
+    ""
+  ]
+}

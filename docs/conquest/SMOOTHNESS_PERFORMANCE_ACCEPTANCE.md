@@ -2,6 +2,16 @@
 
 **Purpose:** The owner specifically requires Conquest to feel immensely smooth in the final game. This contract is **mandatory** for both complete flagship briefs and every Codex/Claude continuation. It does not approve reducing content or hiding missing simulation behind visuals; perform end-to-end performance engineering while delivering the whole game.
 
+## Owner-approved acceptance refinement — November 5, 2026, Session 2
+
+This addendum supersedes legacy wording requiring a measured 60 FPS on every phone or a software renderer, and the legacy instruction to delay Session 2 until inaccessible physical-device certification. Preserve the historical measurements and release holds below as records of their original scope. Session 2 implementation proceeds on the verified Session 1 head without claiming that it was released or hardware-certified.
+
+Priority: correct input and authoritative simulation; no hangs, crashes or serious sustained stutter; readable responsive combat; 60 FPS where supported; optional detail. A responsive stable approximately 30 FPS on a supported **physical** mobile device during representative dense combat is a defensible minimum target, including p50/p95, input latency, thermal behavior and bounded long-session memory. It is not permission to retain severe hitches. A capable device still targets 60 FPS with adaptive resolution, LOD and effects. Keep live armies, AI, hitboxes, reach and rewards unchanged by quality settings.
+
+Headless Chromium/WebKit and SwiftShader are regression diagnostics, not iPhone measurements or standalone mobile release certificates. Historical 15–18 FPS software results never establish physical iPhone FPS. No physical phone is exposed to this cloud task: **PHYSICAL_IPHONE_UNVERIFIED** (historical alias `PHYSICAL_IPHONE_NOT_TESTED`). Complete code and available browser/Worker checks; retain exact actual soak durations and missing hardware evidence. The owner judges their iPhone playability; software results alone cannot override that observation. Do not micro-optimize indefinitely to force software rendering to 60 FPS.
+
+Broken multi-touch, frozen combat, invalid movement/damage/rewards, repeatable severe stutter, crashes, unbounded memory, major hitbox mismatch, corruption or exploits remain release blockers. Missing hardware proof is recorded separately and does not stop development. The 30-minute exploration +20-minute dense-raid soak remains a measurement target; report partial duration honestly when unavailable. This update does not certify any physical device or erase the original evidence.
+
 ## Experience standard (test, not merely claim)
 
 - On representative modern iPhone Safari and Telegram Mini App, **target stable 60 FPS** during ordinary exploration, steering, multi-touch FIRE/Dash/Shield, AI engagement, camera orbit, mission combat, physically growing bases and dense raids. The actual full game must be playable and responsive, not only a blank synthetic benchmark. Record measured median/p95 frame times and time spent below 50/40/30 FPS for each scenario. A typical 60 FPS frame budget is 16.7 ms.

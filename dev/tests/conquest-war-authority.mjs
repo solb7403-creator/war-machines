@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {buildSim} from '../../worker/build-sim.mjs';buildSim();
+const {RULES:R,CONQUEST:{Combat:C,World:W}}=await import('../../worker/src/sim.gen.js');
+const {createState,applyAction,refreshState}=await import('../../worker/src/conquest-sim.js');
+const {missionReward}=await import('../../worker/src/conquest-economy.js');
+const now=1800000000000,s=createState(R.STOCK_L,now);
+assert.deepEqual(s.raidProgress,{shards:0,clears:0,blueprint:false,eliteBlueprint:false},'additive durable raid shard ledger');
+assert.equal(s.campaignScore,0);assert.equal(s.base.defense.damage,0);assert.equal(s.base.pvpAvailable,false);
+const d=C.baseDefinition;s.position={x:d.x,z:d.z,y:W.groundAt(d.x,d.z),surface:'ground'};s.battle.enemies=[];s.ledger.cp=100000;s.ledger.banked={alloy:10000,biomass:10000,helium:10000};
+let a=applyAction(s,{seq:1,action:'build-base'},now);assert(a.base.defense.alertAt>=now,'new base offers physical defense alert');
+assert.throws(()=>applyAction(a,{seq:2,action:'defense-config',module:'forged'},now),/configuration/);
+a=applyAction(a,{seq:2,action:'defense-config',module:'turret'},now);assert.equal(a.base.defense.config,'turret');
+a=applyAction(a,{seq:3,action:'start-defense'},now);assert.equal(a.mission,'base-defense');assert(a.base.defense.active);assert.equal(a.battle.defenseConfig,'turret');
+assert.throws(()=>applyAction(a,{seq:4,action:'start-defense'},now),/unavailable/);
+a=applyAction(a,{seq:4,action:'return-exploration'},now);assert.equal(a.base.tier,1);assert(a.base.defense.damage>0,'retreat leaves fair repairable damage');assert.equal(a.base.defense.report.stolen,0);
+const cp=a.ledger.cp;a=applyAction(a,{seq:5,action:'repair-base'},now);assert.equal(a.base.defense.damage,0);assert(a.ledger.cp<cp);assert.equal(a.base.defense.report.stolen,0);
+const old=structuredClone(a);delete old.raidProgress;delete old.base.defense;old.campaignScore=78;old.ledger.cp=771;refreshState(old,now+1000);assert.equal(old.ledger.cp,771);assert.equal(old.campaignScore,78);assert.equal(old.base.tier,1);
+console.log('PASS defense physical activation/configuration/retreat/repair, zero theft and additive migration');
+if(C.raidIds?.length){const r=createState(R.STOCK_L,now);r.mission=C.raidIds[0];r.attempt=1;r.raidRoll={attempt:1,value:9999};let reward=missionReward(r,now);assert(reward.cp>0);assert(reward.alloy>0);assert.equal(r.raidProgress.shards,1);assert.equal(r.campaignScore,10);const before=r.ledger.cp;missionReward(r,now);assert.equal(r.ledger.cp,before);assert.equal(r.raidProgress.shards,1);
+ for(let i=2;i<=25;i++){r.attempt=i;r.raidRoll={attempt:i,value:9999};missionReward(r,now+i*180001);}assert.equal(r.raidProgress.blueprint,true);assert.equal(r.raidProgress.shards,25);assert.equal(r.raidProgress.eliteBlueprint,false);
+ r.attempt=26;r.raidRoll={attempt:26,value:349};reward=missionReward(r,now+26*180001);assert.equal(reward.eliteBlueprint,true);assert.equal(r.raidProgress.eliteBlueprint,true);assert.equal(r.raidProgress.clears,26);
+ console.log('PASS guaranteed raid rewards, duplicate settlement protection, deterministic25 shards and3.5% precommitted rare threshold');}
+const {capture,contest,failedContest}=await import('../../worker/src/conquest-campaign.js');const {applyCommands}=await import('../../worker/src/conquest-sim.js');
+const territorial=createState(R.STOCK_L,now);capture(territorial,'ash',now);const history=territorial.territory.ash.capturedAt;refreshState(territorial,now+1200001);assert.equal(territorial.territory.ash.status,'defense-alert');contest(territorial,'ash');failedContest(territorial,'ash',now+1200002);assert.equal(territorial.territory.ash.owner,'parasites');assert.equal(territorial.territory.ash.capturedAt,history);capture(territorial,'ash',now+1200010);assert.equal(territorial.territory.ash.capturedAt,history,'recapture retains first clear');assert.equal(territorial.territory.ash.status,'secured');
+capture(territorial,'redoubt-01',now);for(const e of territorial.battle.enemies)if(e.base?.id==='redoubt-01')e.hp=0;contest(territorial,'redoubt-01');failedContest(territorial,'redoubt-01',now+1);const priorRep=territorial.reputation,priorScore=territorial.campaignScore;const t=applyCommands(territorial,{seq:1,commands:[{x:0,z:0}]},now+100);assert.equal(t.territory['redoubt-01'].owner,'parasites','old dead guards do not count as fresh capture');assert.equal(t.reputation,priorRep);assert.equal(t.campaignScore,priorScore);
+console.log('PASS real sector alert/contest/recapture state machine, permanent first-clear history and no dead-garrison reputation farming');

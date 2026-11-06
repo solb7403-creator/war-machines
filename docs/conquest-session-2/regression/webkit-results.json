@@ -1,0 +1,44 @@
+{
+  "engine": "webkit",
+  "physicalTelegramVerified": false,
+  "cases": [
+    {
+      "scenario": "relay mission with resident garrisons",
+      "performance": {
+        "samples": 598,
+        "pixelRatio": 0.75,
+        "percentBelow50fps": 6.354515050167224,
+        "percentBelow40fps": 2.0066889632107023,
+        "percentBelow30fps": 0.8361204013377926,
+        "simulationMs": 0,
+        "renderSubmissionMs": 3,
+        "heapBytes": null,
+        "textures": 2,
+        "frameMedian": 16,
+        "frameP95": 22,
+        "worstFrame": 51,
+        "hitches": 0,
+        "drawCalls": 39,
+        "triangles": 46526,
+        "geometries": 49,
+        "chunks": 25,
+        "enemies": 15,
+        "projectiles": 2,
+        "autoLow": true,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "scenario": "two complete missions + physical travel + bank",
+      "automatedInput": "real keyboard DRIVE/FIRE + projected visible-hull clicks; initial epic test loadout/site fixture; no outcome/position/loot claims"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "multiPointer": "mouse DRIVE plus native touch abilities",
+      "errors": []
+    }
+  ]
+}

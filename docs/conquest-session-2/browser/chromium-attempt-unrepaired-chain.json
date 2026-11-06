@@ -1,0 +1,301 @@
+{
+  "engine": "chromium",
+  "fixture": "Disposable local legal epic Moon/Titan starting loadout and safe raid-entry placement; separate rich banked base-build fixture. No forged combat, health, outcome, ownership or settlement.",
+  "environment": "Automated browser; Chromium uses SwiftShader software rendering. PHYSICAL_IPHONE_NOT_TESTED.",
+  "cases": [
+    {
+      "operation": "raid-intercept-1",
+      "secondsWall": 26.99159179399976,
+      "physicalHullClicks": 4,
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 60,
+        "cp": 180,
+        "alloy": 18,
+        "biomass": 12,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      },
+      "kills": 4,
+      "hp": 2658.2030499999987,
+      "position": {
+        "x": 907.5193209227484,
+        "z": 928.335476851634,
+        "y": -0.006010473392368115,
+        "surface": "ground"
+      },
+      "raidProgress": {
+        "shards": 1,
+        "clears": 1,
+        "blueprint": false,
+        "eliteBlueprint": false
+      },
+      "territory": {
+        "refuge": {
+          "owner": "humanity",
+          "status": "secured",
+          "defenseAt": 1793916835549
+        },
+        "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "oxygen": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "western": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915077273,
+          "defenseAt": 1793916277273,
+          "awaitingReinforcements": false
+        },
+        "helium": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "ridge": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "raid-site-intercept-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915077273,
+          "defenseAt": 1793916277273,
+          "awaitingReinforcements": false
+        }
+      },
+      "performance": {
+        "samples": 407,
+        "pixelRatio": 1,
+        "percentBelow50fps": 90.17199017199017,
+        "percentBelow40fps": 89.68058968058968,
+        "percentBelow30fps": 83.78378378378379,
+        "simulationMs": 0.10000000055879354,
+        "renderSubmissionMs": 3.7000000001862645,
+        "heapBytes": 33731220,
+        "textures": 2,
+        "frameMedian": 71.30000000074506,
+        "frameP95": 110.90000000037253,
+        "worstFrame": 191.29999999981374,
+        "hitches": 42,
+        "drawCalls": 74,
+        "triangles": 60290,
+        "geometries": 43,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "operation": "raid-sabotage-1",
+      "secondsWall": 35.74992018900048,
+      "physicalHullClicks": 4,
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 65,
+        "cp": 195,
+        "alloy": 18,
+        "biomass": 13,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      },
+      "kills": 4,
+      "hp": 1974.1580139957032,
+      "position": {
+        "x": 909.2043322393404,
+        "z": 933.980133090645,
+        "y": -0.007614830153056942,
+        "surface": "ground"
+      },
+      "raidProgress": {
+        "shards": 2,
+        "clears": 2,
+        "blueprint": false,
+        "eliteBlueprint": false
+      },
+      "territory": {
+        "refuge": {
+          "owner": "humanity",
+          "status": "secured",
+          "defenseAt": 1793916835549
+        },
+        "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "oxygen": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "western": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915077273,
+          "defenseAt": 1793916317430,
+          "awaitingReinforcements": false
+        },
+        "helium": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "ridge": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "raid-site-intercept-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915077273,
+          "defenseAt": 1793916277273,
+          "awaitingReinforcements": false
+        },
+        "raid-site-sabotage-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915117430,
+          "defenseAt": 1793916317430,
+          "awaitingReinforcements": false
+        }
+      },
+      "performance": {
+        "samples": 565,
+        "pixelRatio": 1,
+        "percentBelow50fps": 94.69026548672566,
+        "percentBelow40fps": 94.69026548672566,
+        "percentBelow30fps": 86.3716814159292,
+        "simulationMs": 0,
+        "renderSubmissionMs": 0.7999999998137355,
+        "heapBytes": 33873982,
+        "textures": 2,
+        "frameMedian": 67.79999999981374,
+        "frameP95": 101.90000000037253,
+        "worstFrame": 337.79999999981374,
+        "hitches": 33,
+        "drawCalls": 91,
+        "triangles": 59042,
+        "geometries": 41,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      }
+    },
+    {
+      "operation": "raid-battery-1",
+      "secondsWall": 59.39037193400145,
+      "physicalHullClicks": 10,
+      "settlement": {
+        "kind": "first-clear",
+        "reputation": 120,
+        "cp": 310,
+        "alloy": 18,
+        "biomass": 14,
+        "helium": 3,
+        "shards": 1,
+        "eliteBlueprint": false,
+        "rareChance": 0.035
+      },
+      "kills": 5,
+      "hp": 731.74104594341,
+      "position": {
+        "x": 939.8208467580777,
+        "z": 917.5831772008313,
+        "y": -0.23465919727170373,
+        "surface": "ground"
+      },
+      "raidProgress": {
+        "shards": 3,
+        "clears": 3,
+        "blueprint": false,
+        "eliteBlueprint": false
+      },
+      "territory": {
+        "refuge": {
+          "owner": "humanity",
+          "status": "secured",
+          "defenseAt": 1793916835549
+        },
+        "ash": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "oxygen": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "western": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915077273,
+          "defenseAt": 1793916380147,
+          "awaitingReinforcements": false
+        },
+        "helium": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "ridge": {
+          "owner": "parasites",
+          "status": "active-parasites"
+        },
+        "raid-site-intercept-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915077273,
+          "defenseAt": 1793916277273,
+          "awaitingReinforcements": false
+        },
+        "raid-site-sabotage-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915117430,
+          "defenseAt": 1793916317430,
+          "awaitingReinforcements": false
+        },
+        "raid-site-battery-1": {
+          "owner": "humanity",
+          "status": "secured",
+          "capturedAt": 1793915180147,
+          "defenseAt": 1793916380147,
+          "awaitingReinforcements": false
+        }
+      },
+      "performance": {
+        "samples": 600,
+        "pixelRatio": 1,
+        "percentBelow50fps": 94.33333333333333,
+        "percentBelow40fps": 94.33333333333333,
+        "percentBelow30fps": 87.66666666666667,
+        "simulationMs": 0,
+        "renderSubmissionMs": 178.7999999988824,
+        "heapBytes": 56209198,
+        "textures": 2,
+        "frameMedian": 70.20000000111759,
+        "frameP95": 105.09999999962747,
+        "worstFrame": 197.09999999962747,
+        "hitches": 63,
+        "drawCalls": 100,
+        "triangles": 67548,
+        "geometries": 43,
+        "chunks": 25,
+        "enemies": 14,
+        "projectiles": 0,
+        "autoLow": false,
+        "physicalDeviceVerified": false
+      }
+    }
+  ],
+  "errors": [
+    "{'x': 936.441604453581, 'z': 920.8651466660949, 'hp': 0, 'verified': {'x': 936.441604453581, 'z': 920.8651466660949, 'y': -0.16969539188690677, 'surface': 'ground'}}"
+  ]
+}

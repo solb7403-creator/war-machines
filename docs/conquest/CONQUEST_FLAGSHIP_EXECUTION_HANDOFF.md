@@ -1,6 +1,6 @@
 # LUNAR: War Machines — Conquest flagship execution handoff
 
-**Status: SESSION 1 PLAYABLE IMPLEMENTATION CHECKPOINTED — draft PR #53, branch feat/conquest-living-war-v1. Tested code 1b9a7dc75e26e95261206ac4a233022c2d801066 / build 20261105164144: all 8 CI checks green. Read checkpoint 13 in IMPLEMENTATION_CHECKPOINT.md before continuing. Physical-device/long-soak/manual acceptance remains unverified; no production merge/deployment.**
+**Status (2026-11-06): SESSIONS 1+2 INTEGRATED IN DRAFT PR #54, branch feat/conquest-territory-endgame-v1 (supersedes #53 as the review workstream). Read Checkpoints 16–17 in IMPLEMENTATION_CHECKPOINT.md and docs/conquest-session-2/VERIFICATION.md before continuing. Release is HELD on physical iPhone Safari/Telegram acceptance and owner hands-on first-hour feel; checkout DISABLED; no merge/deployment. Historical Session 1 status: tested code 1b9a7dc / build 20261105164144.**
 **Last verified game release at preparation:** main `d592146dfca5ea389507ec8cd51b8cc28e1eb2f5`, Conquest 3.3 / version `20261105034106`. Always query GitHub for the NEW latest state first. Do not treat this snapshot as live status after development starts.
 
 ## Complete owner-approved specifications

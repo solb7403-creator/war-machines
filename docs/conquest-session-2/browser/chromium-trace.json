@@ -1,0 +1,2304 @@
+[
+  {
+    "step": 0,
+    "state": "active",
+    "hp": 2958,
+    "maxHp": 2958,
+    "target": {
+      "x": 916,
+      "z": 910
+    },
+    "selected": null,
+    "pick": null,
+    "live": 4,
+    "canHit": false,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 890,
+      "z": 945,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 0,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 0.01669999999999891,
+    "kills": 0,
+    "shots": null,
+    "operation": "raid-intercept-1",
+    "serverTime": 0
+  },
+  {
+    "step": 12,
+    "state": "active",
+    "hp": 2958,
+    "maxHp": 2958,
+    "target": {
+      "x": 914.3187682185709,
+      "z": 914.8338937216433
+    },
+    "selected": null,
+    "pick": null,
+    "live": 4,
+    "canHit": false,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 894.5845675115012,
+      "z": 938.3137768372882,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 0,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 1.9500000000000015,
+    "kills": 0,
+    "shots": 3,
+    "operation": "raid-intercept-1",
+    "serverTime": 0.9000000000000007
+  },
+  {
+    "step": 24,
+    "state": "active",
+    "hp": 2958,
+    "maxHp": 2958,
+    "target": {
+      "x": 944,
+      "z": 932.070478586258
+    },
+    "selected": 20003,
+    "pick": {
+      "id": 20003,
+      "x": 321.43117753241523,
+      "y": 309.2834497364725,
+      "visible": true
+    },
+    "live": 4,
+    "canHit": true,
+    "enemy": {
+      "id": 20003,
+      "hp": 420
+    },
+    "p": {
+      "x": 901.5446293421517,
+      "z": 934.5323777513778,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 16.882460000000002,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 4.033299999999979,
+    "kills": 0,
+    "shots": 5,
+    "operation": "raid-intercept-1",
+    "serverTime": 2.89999999999999
+  },
+  {
+    "step": 36,
+    "state": "active",
+    "hp": 2922.2212,
+    "maxHp": 2958,
+    "target": {
+      "x": 911.6964980511323,
+      "z": 917.7578510978899
+    },
+    "selected": 20001,
+    "pick": {
+      "id": 20001,
+      "x": 173.06663902100746,
+      "y": 369.86065589366467,
+      "visible": true
+    },
+    "live": 4,
+    "canHit": true,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 904.1998628383044,
+      "z": 931.2088858842008,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 904.1998628383044,
+      "z": 931.2088858842008,
+      "y": -0.0038350759020514893,
+      "radius": 6,
+      "remaining": 2.333300000000004,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 276.14916,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 6.266700000000007,
+    "kills": 0,
+    "shots": 8,
+    "operation": "raid-intercept-1",
+    "serverTime": 5.900000000000003
+  },
+  {
+    "step": 48,
+    "state": "active",
+    "hp": 2922.2212,
+    "maxHp": 2958,
+    "target": {
+      "x": 907.7955778788315,
+      "z": 918.7538851558047
+    },
+    "selected": null,
+    "pick": null,
+    "live": 4,
+    "canHit": false,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 910.34476147412,
+      "z": 931.6726366853765,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 904.1998628383044,
+      "z": 931.2088858842008,
+      "y": -0.0038350759020514893,
+      "radius": 6,
+      "remaining": 0.2500000000000061,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 276.14916,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 8.350000000000039,
+    "kills": 0,
+    "shots": 10,
+    "operation": "raid-intercept-1",
+    "serverTime": 7.900000000000031
+  },
+  {
+    "step": 60,
+    "state": "active",
+    "hp": 2922.2212,
+    "maxHp": 2958,
+    "target": {
+      "x": 902.7226344492691,
+      "z": 917.2526057135202
+    },
+    "selected": 20001,
+    "pick": {
+      "id": 20001,
+      "x": 120.2388347384357,
+      "y": 410.61293494086607,
+      "visible": true
+    },
+    "live": 4,
+    "canHit": true,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 909.4204655344888,
+      "z": 930.6441317708336,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 288.14688,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 10.316700000000063,
+    "kills": 0,
+    "shots": 12,
+    "operation": "raid-intercept-1",
+    "serverTime": 9.900000000000059
+  },
+  {
+    "step": 72,
+    "state": "active",
+    "hp": 2887.9419999999996,
+    "maxHp": 2958,
+    "target": {
+      "x": 934.5238846249998,
+      "z": 907.7606946382317
+    },
+    "selected": null,
+    "pick": null,
+    "live": 3,
+    "canHit": false,
+    "enemy": {
+      "id": 20002,
+      "hp": 330
+    },
+    "p": {
+      "x": 908.0721836522939,
+      "z": 927.8759933644308,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 480.14459999999997,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 12.233300000000096,
+    "kills": 1,
+    "shots": 15,
+    "operation": "raid-intercept-1",
+    "serverTime": 11.900000000000087
+  },
+  {
+    "step": 84,
+    "state": "active",
+    "hp": 2879.3721999999993,
+    "maxHp": 2958,
+    "target": {
+      "x": 923.7480662123598,
+      "z": 905.4584919468257
+    },
+    "selected": 20004,
+    "pick": {
+      "id": 20004,
+      "x": 188.6015167616587,
+      "y": 318.69659967276635,
+      "visible": true
+    },
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 20004,
+      "hp": 347.0032
+    },
+    "p": {
+      "x": 905.8191474340749,
+      "z": 924.8662327063596,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 616.0227199999999,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 14.249900000000123,
+    "kills": 1,
+    "shots": 17,
+    "operation": "raid-intercept-1",
+    "serverTime": 13.900000000000116
+  },
+  {
+    "step": 96,
+    "state": "active",
+    "hp": 2839.706399999999,
+    "maxHp": 2958,
+    "target": {
+      "x": 923.7480662123598,
+      "z": 905.4584919468257
+    },
+    "selected": 20004,
+    "pick": {
+      "id": 20004,
+      "x": 188.6015167616587,
+      "y": 318.69659967276635,
+      "visible": true
+    },
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 20004,
+      "hp": 121.00959999999998
+    },
+    "p": {
+      "x": 905.8191474340749,
+      "z": 924.8662327063596,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 880.66598,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 16.216500000000153,
+    "kills": 1,
+    "shots": 19,
+    "operation": "raid-intercept-1",
+    "serverTime": 14.90000000000013
+  },
+  {
+    "step": 108,
+    "state": "active",
+    "hp": 2784.4925999999996,
+    "maxHp": 2958,
+    "target": {
+      "x": 934.4817171212917,
+      "z": 906.805949352293
+    },
+    "selected": 20002,
+    "pick": {
+      "id": 20002,
+      "x": 229.5386509218581,
+      "y": 307.63949559547865,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 20002,
+      "hp": 204.44799999999998
+    },
+    "p": {
+      "x": 905.8323820684584,
+      "z": 923.9599293330614,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 905.8290734098625,
+      "z": 924.1865051763859,
+      "y": -0.004902774453807347,
+      "radius": 6,
+      "remaining": 1.416700000000005,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 18.183300000000166,
+    "kills": 2,
+    "shots": 21,
+    "operation": "raid-intercept-1",
+    "serverTime": 16.90000000000016
+  },
+  {
+    "step": 120,
+    "state": "active",
+    "hp": 2722.3005999999996,
+    "maxHp": 2958,
+    "target": {
+      "x": 944,
+      "z": 907.8705285862435
+    },
+    "selected": 20003,
+    "pick": {
+      "id": 20003,
+      "x": 273.9582485910228,
+      "y": 289.6056299222198,
+      "visible": true
+    },
+    "live": 1,
+    "canHit": true,
+    "enemy": {
+      "id": 20003,
+      "hp": 43.34399999999995
+    },
+    "p": {
+      "x": 903.8327532733364,
+      "z": 921.9010344258141,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 20.166600000000194,
+    "kills": 3,
+    "shots": 24,
+    "operation": "raid-intercept-1",
+    "serverTime": 18.900000000000187
+  },
+  {
+    "step": 132,
+    "state": "active",
+    "hp": 2643.128792519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 910,
+      "y": 2.191533336538062,
+      "z": 930
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 906.5458603307043,
+      "z": 926.3044320219968,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 1.7333000000000034,
+    "time": 22.133300000000247,
+    "kills": 4,
+    "shots": 24,
+    "operation": "raid-intercept-1",
+    "serverTime": 20.900000000000215
+  },
+  {
+    "step": 144,
+    "state": "active",
+    "hp": 2639.047442519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 910,
+      "y": 2.191533336538062,
+      "z": 930
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 907.3879588616685,
+      "z": 927.1714891383128,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 3.015142862087454,
+    "time": 23.415142862087716,
+    "kills": 4,
+    "shots": 24,
+    "operation": "raid-intercept-1",
+    "serverTime": 22.900000000000244
+  },
+  {
+    "step": 0,
+    "state": "active",
+    "hp": 2639.047442519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "z": 934
+    },
+    "selected": null,
+    "pick": {
+      "id": 20003,
+      "x": 243.12698982582683,
+      "y": 429.55177340801794,
+      "visible": true
+    },
+    "live": 4,
+    "canHit": true,
+    "enemy": {
+      "id": 20003,
+      "hp": 360
+    },
+    "p": {
+      "x": 907.3879588616685,
+      "z": 927.1714891383128,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 0,
+    "kills": 0,
+    "shots": 24,
+    "operation": "raid-sabotage-1",
+    "serverTime": 0
+  },
+  {
+    "step": 12,
+    "state": "active",
+    "hp": 2639.047442519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "z": 934
+    },
+    "selected": 20003,
+    "pick": {
+      "id": 20003,
+      "x": 243.12698982582683,
+      "y": 429.55177340801794,
+      "visible": true
+    },
+    "live": 4,
+    "canHit": true,
+    "enemy": {
+      "id": 20003,
+      "hp": 108.89599999999997
+    },
+    "p": {
+      "x": 907.3879588616685,
+      "z": 927.1714891383128,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 1.9666999999999983,
+    "kills": 0,
+    "shots": 27,
+    "operation": "raid-sabotage-1",
+    "serverTime": 1.0000000000000007
+  },
+  {
+    "step": 24,
+    "state": "active",
+    "hp": 2592.4034425195136,
+    "maxHp": 2958,
+    "target": {
+      "x": 923.8316012316448,
+      "z": 907.2634961607915
+    },
+    "selected": 20001,
+    "pick": {
+      "id": 20001,
+      "x": 191.9250503422737,
+      "y": 332.7567672866644,
+      "visible": true
+    },
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 20001,
+      "hp": 67.00319999999999
+    },
+    "p": {
+      "x": 906.2400388258164,
+      "z": 925.2995987116274,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 3.999999999999976,
+    "kills": 1,
+    "shots": 29,
+    "operation": "raid-sabotage-1",
+    "serverTime": 2.999999999999989
+  },
+  {
+    "step": 36,
+    "state": "active",
+    "hp": 2566.694042519513,
+    "maxHp": 2958,
+    "target": {
+      "x": 936.5631388006524,
+      "z": 909.3088079213568
+    },
+    "selected": null,
+    "pick": null,
+    "live": 2,
+    "canHit": false,
+    "enemy": {
+      "id": 20002,
+      "hp": 330
+    },
+    "p": {
+      "x": 902.9017383768058,
+      "z": 919.7925127622232,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 903.6386929967041,
+      "z": 920.5513096536672,
+      "y": -0.003561918996463205,
+      "radius": 6,
+      "remaining": 2.3666000000000014,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 6.233400000000009,
+    "kills": 2,
+    "shots": 32,
+    "operation": "raid-sabotage-1",
+    "serverTime": 6.000000000000004
+  },
+  {
+    "step": 48,
+    "state": "active",
+    "hp": 2566.694042519513,
+    "maxHp": 2958,
+    "target": {
+      "x": 930.1988879140138,
+      "z": 894.7927638072712
+    },
+    "selected": 20004,
+    "pick": {
+      "id": 20004,
+      "x": 232.18298190329347,
+      "y": 282.02399946924953,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 20004,
+      "hp": 680
+    },
+    "p": {
+      "x": 897.7449505224017,
+      "z": 914.4828851567972,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 903.6386929967041,
+      "z": 920.5513096536672,
+      "y": -0.003561918996463205,
+      "radius": 6,
+      "remaining": 0.41670000000000373,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 8.183300000000036,
+    "kills": 2,
+    "shots": 33,
+    "operation": "raid-sabotage-1",
+    "serverTime": 7.000000000000019
+  },
+  {
+    "step": 60,
+    "state": "active",
+    "hp": 2490.518042519513,
+    "maxHp": 2958,
+    "target": {
+      "x": 933.8209024778921,
+      "z": 909.7601059961994
+    },
+    "selected": 20004,
+    "pick": {
+      "id": 20002,
+      "x": 298.51363476074204,
+      "y": 341.0680188606483,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 20002,
+      "hp": 330
+    },
+    "p": {
+      "x": 902.6742764159126,
+      "z": 909.8003247587192,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 10.150100000000057,
+    "kills": 2,
+    "shots": 33,
+    "operation": "raid-sabotage-1",
+    "serverTime": 9.000000000000046
+  },
+  {
+    "step": 72,
+    "state": "active",
+    "hp": 2322.6180425195134,
+    "maxHp": 2958,
+    "target": {
+      "x": 929.620240227885,
+      "z": 893.9338616999967
+    },
+    "selected": 20004,
+    "pick": {
+      "id": 20004,
+      "x": 231.34189008417061,
+      "y": 307.56174401761496,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 20004,
+      "hp": 680
+    },
+    "p": {
+      "x": 903.6492686513202,
+      "z": 908.8533980641705,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 12.13320000000009,
+    "kills": 2,
+    "shots": 34,
+    "operation": "raid-sabotage-1",
+    "serverTime": 11.000000000000075
+  },
+  {
+    "step": 84,
+    "state": "active",
+    "hp": 2199.7980425195137,
+    "maxHp": 2958,
+    "target": {
+      "x": 934.2546499910802,
+      "z": 910.9237419585745
+    },
+    "selected": 20002,
+    "pick": {
+      "id": 20002,
+      "x": 305.98911963423126,
+      "y": 352.42796343877313,
+      "visible": true
+    },
+    "live": 1,
+    "canHit": true,
+    "enemy": {
+      "id": 20002,
+      "hp": 330
+    },
+    "p": {
+      "x": 904.6245859925078,
+      "z": 907.906155622142,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 72.3695,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 14.099900000000122,
+    "kills": 3,
+    "shots": 36,
+    "operation": "raid-sabotage-1",
+    "serverTime": 13.000000000000103
+  },
+  {
+    "step": 96,
+    "state": "active",
+    "hp": 2065.317042519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 902.0780324146672,
+      "z": 910.3794056382781,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 505.9039,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 16.033300000000146,
+    "kills": 4,
+    "shots": 37,
+    "operation": "raid-sabotage-1",
+    "serverTime": 15.000000000000131
+  },
+  {
+    "step": 108,
+    "state": "active",
+    "hp": 2049.769042519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 897.3852046782935,
+      "z": 917.1707727120566,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 900.5276771516003,
+      "z": 914.1187575638403,
+      "y": -0.002337707974173861,
+      "radius": 6,
+      "remaining": 1.6334000000000009,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 505.9039,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 17.966600000000177,
+    "kills": 4,
+    "shots": 37,
+    "operation": "raid-sabotage-1",
+    "serverTime": 17.00000000000016
+  },
+  {
+    "step": 120,
+    "state": "active",
+    "hp": 2049.769042519514,
+    "maxHp": 2958,
+    "target": {
+      "x": 887.4229374879213,
+      "z": 902.6511129965262
+    },
+    "selected": 100010049,
+    "pick": {
+      "id": 100010049,
+      "x": 106.81533089649616,
+      "y": 404.3191346271439,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 100010049,
+      "hp": 180
+    },
+    "p": {
+      "x": 894.3551113348096,
+      "z": 919.8136353155612,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 505.9039,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 19.9666000000002,
+    "kills": 4,
+    "shots": 38,
+    "operation": "raid-sabotage-1",
+    "serverTime": 19.00000000000019
+  },
+  {
+    "step": 132,
+    "state": "active",
+    "hp": 2032.6294425195142,
+    "maxHp": 2958,
+    "target": {
+      "x": 879.8997660148411,
+      "z": 902.7305820660761
+    },
+    "selected": 100010048,
+    "pick": {
+      "id": 100010048,
+      "x": 79.58011853897071,
+      "y": 432.3292984372628,
+      "visible": true
+    },
+    "live": 1,
+    "canHit": true,
+    "enemy": {
+      "id": 100010048,
+      "hp": 67.00319999999999
+    },
+    "p": {
+      "x": 894.4734898802583,
+      "z": 919.0155921671349,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 888.8950000000001,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 21.93340000000023,
+    "kills": 5,
+    "shots": 41,
+    "operation": "raid-sabotage-1",
+    "serverTime": 21.000000000000217
+  },
+  {
+    "step": 144,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 899.4727197418048,
+      "z": 924.1629919881433,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 1,
+    "work": 0,
+    "time": 23.81660000000026,
+    "kills": 6,
+    "shots": 41,
+    "operation": "raid-sabotage-1",
+    "serverTime": 23.000000000000245
+  },
+  {
+    "step": 156,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 905.5249674514071,
+      "z": 930.3946195867723,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 1,
+    "work": 0.8531142758250643,
+    "time": 25.73340000000028,
+    "kills": 6,
+    "shots": 41,
+    "operation": "raid-sabotage-1",
+    "serverTime": 25.000000000000274
+  },
+  {
+    "step": 168,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 909.3254122325839,
+      "z": 933.3877738042647,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 1,
+    "work": 2.7530142758250644,
+    "time": 27.633300000000315,
+    "kills": 6,
+    "shots": 41,
+    "operation": "raid-sabotage-1",
+    "serverTime": 27.000000000000302
+  },
+  {
+    "step": 180,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 915.8961116889959,
+      "z": 933.483724903545,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 909.3254122325839,
+      "z": 933.3877738042647,
+      "y": -0.007744457085773531,
+      "radius": 6,
+      "remaining": 1.0500000000000067,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 1,
+    "work": 4.669714275825055,
+    "time": 29.550000000000338,
+    "kills": 6,
+    "shots": 41,
+    "operation": "raid-sabotage-1",
+    "serverTime": 29.00000000000033
+  },
+  {
+    "step": 192,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 913,
+      "y": 2.1876767294810735,
+      "z": 934
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 918.0175736556148,
+      "z": 933.5147043463164,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 1,
+    "work": 6.0015571379125365,
+    "time": 30.88184286208782,
+    "kills": 6,
+    "shots": 41,
+    "operation": "raid-sabotage-1",
+    "serverTime": 30.000000000000345
+  },
+  {
+    "step": 0,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 914,
+      "z": 918
+    },
+    "selected": null,
+    "pick": null,
+    "live": 5,
+    "canHit": false,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 918.0246298523289,
+      "z": 933.5148073870712,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 0,
+    "kills": 0,
+    "shots": 41,
+    "operation": "raid-battery-1",
+    "serverTime": 0
+  },
+  {
+    "step": 12,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 915.2075800304564,
+      "z": 912.7624891059346
+    },
+    "selected": null,
+    "pick": null,
+    "live": 5,
+    "canHit": false,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 910.409290694401,
+      "z": 930.73291704724,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 1.9831999999999983,
+    "kills": 0,
+    "shots": 44,
+    "operation": "raid-battery-1",
+    "serverTime": 1.0500000000000007
+  },
+  {
+    "step": 24,
+    "state": "active",
+    "hp": 1998.3502425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 918.3289062932932,
+      "z": 908.8568457215912
+    },
+    "selected": null,
+    "pick": null,
+    "live": 5,
+    "canHit": false,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 905.1520417792888,
+      "z": 924.0172296076107,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 961.8970600000001,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 3.9666999999999737,
+    "kills": 0,
+    "shots": 46,
+    "operation": "raid-battery-1",
+    "serverTime": 3.0499999999999883
+  },
+  {
+    "step": 36,
+    "state": "active",
+    "hp": 1982.8022425195143,
+    "maxHp": 2958,
+    "target": {
+      "x": 923.8033352230175,
+      "z": 910.0346667006853
+    },
+    "selected": 20001,
+    "pick": {
+      "id": 20001,
+      "x": 215.54916202207278,
+      "y": 345.1134556864512,
+      "visible": true
+    },
+    "live": 5,
+    "canHit": true,
+    "enemy": {
+      "id": 20001,
+      "hp": 180
+    },
+    "p": {
+      "x": 905.2883844571684,
+      "z": 922.0109560166713,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "orbital",
+      "x": 905.2629172396177,
+      "z": 923.7549426283115,
+      "y": -0.004531745604979431,
+      "radius": 6,
+      "remaining": 0.08174286208747217,
+      "damage": 55,
+      "source": 20005
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 6.133400000000002,
+    "kills": 0,
+    "shots": 49,
+    "operation": "raid-battery-1",
+    "serverTime": 5.049999999999991
+  },
+  {
+    "step": 48,
+    "state": "active",
+    "hp": 1873.5668584933674,
+    "maxHp": 2958,
+    "target": {
+      "x": 938.869815735773,
+      "z": 912.4761804589541
+    },
+    "selected": 20002,
+    "pick": {
+      "id": 20002,
+      "x": 270.6598661214105,
+      "y": 313.5651056049383,
+      "visible": true
+    },
+    "live": 4,
+    "canHit": true,
+    "enemy": {
+      "id": 20002,
+      "hp": 204.44799999999998
+    },
+    "p": {
+      "x": 905.2883844571684,
+      "z": 922.0109560166713,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 905.2883844571684,
+      "z": 922.0109560166713,
+      "y": -0.004548435474207482,
+      "radius": 6,
+      "remaining": 0.45000000000000656,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 8.150000000000038,
+    "kills": 1,
+    "shots": 51,
+    "operation": "raid-battery-1",
+    "serverTime": 7.050000000000019
+  },
+  {
+    "step": 60,
+    "state": "active",
+    "hp": 1771.6400584933674,
+    "maxHp": 2958,
+    "target": {
+      "x": 916,
+      "z": 946
+    },
+    "selected": null,
+    "pick": null,
+    "live": 3,
+    "canHit": false,
+    "enemy": {
+      "id": 20003,
+      "hp": 240
+    },
+    "p": {
+      "x": 903.6456774484948,
+      "z": 924.7660444695285,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "orbital",
+      "x": 903.6522947656865,
+      "z": 924.3128927828794,
+      "y": -0.0035672714073977803,
+      "radius": 6,
+      "remaining": 2.100000000000002,
+      "damage": 55,
+      "source": 20005
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 10.116700000000067,
+    "kills": 2,
+    "shots": 53,
+    "operation": "raid-battery-1",
+    "serverTime": 9.050000000000047
+  },
+  {
+    "step": 72,
+    "state": "active",
+    "hp": 1756.0920584933674,
+    "maxHp": 2958,
+    "target": {
+      "x": 933.6514402833511,
+      "z": 897.8370484437346
+    },
+    "selected": 20005,
+    "pick": {
+      "id": 20005,
+      "x": 195.99377798492668,
+      "y": 265.9002219978433,
+      "visible": true
+    },
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 20005,
+      "hp": 554.448
+    },
+    "p": {
+      "x": 903.6236219302946,
+      "z": 926.2763990411302,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "orbital",
+      "x": 903.6523978064412,
+      "z": 924.3058365861655,
+      "y": -0.003567311954805528,
+      "radius": 6,
+      "remaining": 0.11514286208746641,
+      "damage": 55,
+      "source": 20005
+    },
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 12.10000000000009,
+    "kills": 2,
+    "shots": 55,
+    "operation": "raid-battery-1",
+    "serverTime": 11.050000000000075
+  },
+  {
+    "step": 84,
+    "state": "active",
+    "hp": 1558.9571221338867,
+    "maxHp": 2958,
+    "target": {
+      "x": 916,
+      "z": 946
+    },
+    "selected": null,
+    "pick": null,
+    "live": 2,
+    "canHit": false,
+    "enemy": {
+      "id": 20003,
+      "hp": 240
+    },
+    "p": {
+      "x": 903.5739986686737,
+      "z": 929.6745835393119,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 178.8752,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 14.099900000000137,
+    "kills": 3,
+    "shots": 58,
+    "operation": "raid-battery-1",
+    "serverTime": 13.050000000000104
+  },
+  {
+    "step": 96,
+    "state": "active",
+    "hp": 1558.9571221338867,
+    "maxHp": 2958,
+    "target": {
+      "x": 916,
+      "z": 946
+    },
+    "selected": null,
+    "pick": null,
+    "live": 2,
+    "canHit": false,
+    "enemy": {
+      "id": 20003,
+      "hp": 240
+    },
+    "p": {
+      "x": 901.4312755872414,
+      "z": 937.4147379009053,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 178.8752,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 16.000000000000146,
+    "kills": 3,
+    "shots": 60,
+    "operation": "raid-battery-1",
+    "serverTime": 15.050000000000132
+  },
+  {
+    "step": 108,
+    "state": "active",
+    "hp": 1558.9571221338867,
+    "maxHp": 2958,
+    "target": {
+      "x": 916,
+      "z": 946
+    },
+    "selected": 20003,
+    "pick": {
+      "id": 20003,
+      "x": 252.5247313289992,
+      "y": 395.54621710109063,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 20003,
+      "hp": 240
+    },
+    "p": {
+      "x": 903.1642441569616,
+      "z": 943.117475838362,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 901.1642996143582,
+      "z": 941.0582558253343,
+      "y": -0.0025882242917444876,
+      "radius": 6,
+      "remaining": 1.6500000000000072,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 178.8752,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 17.950000000000173,
+    "kills": 3,
+    "shots": 62,
+    "operation": "raid-battery-1",
+    "serverTime": 17.05000000000016
+  },
+  {
+    "step": 120,
+    "state": "active",
+    "hp": 1512.3131221338867,
+    "maxHp": 2958,
+    "target": {
+      "x": 946,
+      "z": 926
+    },
+    "selected": null,
+    "pick": null,
+    "live": 1,
+    "canHit": false,
+    "enemy": {
+      "id": 20004,
+      "hp": 240
+    },
+    "p": {
+      "x": 903.6375496304953,
+      "z": 943.6048094031755,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 522.4096,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 19.883300000000197,
+    "kills": 4,
+    "shots": 64,
+    "operation": "raid-battery-1",
+    "serverTime": 19.05000000000019
+  },
+  {
+    "step": 132,
+    "state": "active",
+    "hp": 1458.4069454933706,
+    "maxHp": 2958,
+    "target": {
+      "x": 946,
+      "z": 926
+    },
+    "selected": null,
+    "pick": null,
+    "live": 1,
+    "canHit": false,
+    "enemy": {
+      "id": 20004,
+      "hp": 240
+    },
+    "p": {
+      "x": 901.225461099476,
+      "z": 936.8699376088724,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 522.4096,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 21.800000000000228,
+    "kills": 4,
+    "shots": 66,
+    "operation": "raid-battery-1",
+    "serverTime": 21.050000000000217
+  },
+  {
+    "step": 144,
+    "state": "active",
+    "hp": 1458.4069454933706,
+    "maxHp": 2958,
+    "target": {
+      "x": 946,
+      "z": 926
+    },
+    "selected": null,
+    "pick": null,
+    "live": 1,
+    "canHit": false,
+    "enemy": {
+      "id": 20004,
+      "hp": 240
+    },
+    "p": {
+      "x": 909.1655976453612,
+      "z": 934.7424217090354,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 522.4096,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 23.750000000000256,
+    "kills": 4,
+    "shots": 66,
+    "operation": "raid-battery-1",
+    "serverTime": 23.050000000000246
+  },
+  {
+    "step": 156,
+    "state": "active",
+    "hp": 1458.4069454933706,
+    "maxHp": 2958,
+    "target": {
+      "x": 946,
+      "z": 926
+    },
+    "selected": null,
+    "pick": null,
+    "live": 1,
+    "canHit": false,
+    "enemy": {
+      "id": 20004,
+      "hp": 240
+    },
+    "p": {
+      "x": 917.103811100503,
+      "z": 932.9888953443686,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 522.4096,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 25.666600000000265,
+    "kills": 4,
+    "shots": 66,
+    "operation": "raid-battery-1",
+    "serverTime": 24.05000000000026
+  },
+  {
+    "step": 168,
+    "state": "active",
+    "hp": 1458.4069454933706,
+    "maxHp": 2958,
+    "target": {
+      "x": 946,
+      "z": 926
+    },
+    "selected": null,
+    "pick": null,
+    "live": 1,
+    "canHit": false,
+    "enemy": {
+      "id": 20004,
+      "hp": 240
+    },
+    "p": {
+      "x": 925.843662143833,
+      "z": 933.0629996337095,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 522.4096,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 27.60000000000031,
+    "kills": 4,
+    "shots": 69,
+    "operation": "raid-battery-1",
+    "serverTime": 26.05000000000029
+  },
+  {
+    "step": 180,
+    "state": "active",
+    "hp": 1458.4069454933706,
+    "maxHp": 2958,
+    "target": {
+      "x": 907.9134171618255,
+      "z": 932.6193976625565
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 927.7659100621461,
+      "z": 933.8923073776787,
+      "yaw": -0.8
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 927.312758375497,
+      "z": 933.8856900604869,
+      "y": -0.06566615848604763,
+      "radius": 6,
+      "remaining": 1.050000000000007,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 795.0604,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 29.550000000000335,
+    "kills": 5,
+    "shots": 71,
+    "operation": "raid-battery-1",
+    "serverTime": 28.050000000000317
+  },
+  {
+    "step": 192,
+    "state": "active",
+    "hp": 1396.2149454933706,
+    "maxHp": 2958,
+    "target": {
+      "x": 907.9134171618255,
+      "z": 932.6193976625565
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 929.4276172970883,
+      "z": 933.9165730798208,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 823.94058,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 31.48330000000037,
+    "kills": 5,
+    "shots": 71,
+    "operation": "raid-battery-1",
+    "serverTime": 30.050000000000345
+  },
+  {
+    "step": 204,
+    "state": "active",
+    "hp": 1326.9218071861715,
+    "maxHp": 2958,
+    "target": {
+      "x": 907.9134171618255,
+      "z": 932.6193976625565
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 920.4402598957766,
+      "z": 933.7853318279571,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 853.93488,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 33.46660000000031,
+    "kills": 5,
+    "shots": 71,
+    "operation": "raid-battery-1",
+    "serverTime": 32.05000000000037
+  },
+  {
+    "step": 216,
+    "state": "active",
+    "hp": 1284.0728071861715,
+    "maxHp": 2958,
+    "target": {
+      "x": 891.7533270406168,
+      "z": 910.5352064174904
+    },
+    "selected": 100010074,
+    "pick": {
+      "id": 100010074,
+      "x": 223.27400122003775,
+      "y": 319.5702905310547,
+      "visible": true
+    },
+    "live": 2,
+    "canHit": true,
+    "enemy": {
+      "id": 100010074,
+      "hp": 180
+    },
+    "p": {
+      "x": 911.8518828005456,
+      "z": 932.6963875414214,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 35.46670000000021,
+    "kills": 6,
+    "shots": 74,
+    "operation": "raid-battery-1",
+    "serverTime": 34.05000000000025
+  },
+  {
+    "step": 228,
+    "state": "active",
+    "hp": 1226.2266571861717,
+    "maxHp": 2958,
+    "target": {
+      "x": 884.1977703692553,
+      "z": 912.8713020668654
+    },
+    "selected": 100010073,
+    "pick": {
+      "id": 100010073,
+      "x": 194.03737536283327,
+      "y": 315.70716334583267,
+      "visible": true
+    },
+    "live": 1,
+    "canHit": true,
+    "enemy": {
+      "id": 100010073,
+      "hp": 180
+    },
+    "p": {
+      "x": 909.1645490770468,
+      "z": 930.741994544121,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 1000,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 37.34990000000008,
+    "kills": 7,
+    "shots": 76,
+    "operation": "raid-battery-1",
+    "serverTime": 36.05000000000014
+  },
+  {
+    "step": 240,
+    "state": "active",
+    "hp": 1166.2380571861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 907.9134171618255,
+      "z": 932.6193976625565
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 908.8588703638173,
+      "z": 930.5196863390279,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 908.2478794585975,
+      "z": 930.0753364854406,
+      "y": -0.006590862139680342,
+      "radius": 6,
+      "remaining": 2.2817428620874756,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 136.99224000000004,
+    "scans": 0,
+    "stage": 0,
+    "work": 1.087971413737599,
+    "time": 39.33339999999997,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 38.050000000000026
+  },
+  {
+    "step": 252,
+    "state": "active",
+    "hp": 1140.5286571861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 916.9995466049354,
+      "z": 931.2888755373053,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 908.2478794585975,
+      "z": 930.0753364854406,
+      "y": -0.006590862139680342,
+      "radius": 6,
+      "remaining": 0.3151428620874713,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 136.99224000000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 0,
+    "time": 41.29999999999986,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 40.04999999999991
+  },
+  {
+    "step": 264,
+    "state": "active",
+    "hp": 1140.5286571861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 924.7954169393062,
+      "z": 933.1941642998164,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 136.99224000000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 0,
+    "time": 43.21669999999974,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 42.0499999999998
+  },
+  {
+    "step": 276,
+    "state": "active",
+    "hp": 1140.5286571861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 932.739636431736,
+      "z": 934.4810214169756,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 136.99224000000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 0,
+    "time": 45.13329999999963,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 44.049999999999685
+  },
+  {
+    "step": 288,
+    "state": "active",
+    "hp": 1140.5286571861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 939.6132159087633,
+      "z": 930.20520834173,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 145.15494000000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 0,
+    "time": 47.06659999999959,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 45.04999999999963
+  },
+  {
+    "step": 300,
+    "state": "active",
+    "hp": 1140.5286571861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 939.0345167967465,
+      "z": 930.7290533042119,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 145.15494000000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 0,
+    "time": 46.883399999999554,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 46.04999999999957
+  },
+  {
+    "step": 312,
+    "state": "active",
+    "hp": 1124.7863071861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 943.6012764524246,
+      "z": 923.9048094756916,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": null,
+    "charge": 148.01188500000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 0,
+    "time": 48.85009999999943,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 48.04999999999946
+  },
+  {
+    "step": 324,
+    "state": "active",
+    "hp": 1124.7863071861718,
+    "maxHp": 2958,
+    "target": {
+      "x": 936,
+      "z": 916
+    },
+    "selected": null,
+    "pick": null,
+    "live": 0,
+    "canHit": false,
+    "enemy": null,
+    "p": {
+      "x": 937.8724543077833,
+      "z": 917.4161963012513,
+      "yaw": 0.9420077140476737
+    },
+    "hazard": {
+      "kind": "drone",
+      "x": 940.9377237525024,
+      "z": 919.6454472071641,
+      "y": -0.26324754212956347,
+      "radius": 6,
+      "remaining": 1.7636857241749466,
+      "damage": 55,
+      "source": 0
+    },
+    "charge": 148.01188500000004,
+    "scans": 1,
+    "stage": 1,
+    "work": 1.7863142758250623,
+    "time": 50.866599999999316,
+    "kills": 8,
+    "shots": 77,
+    "operation": "raid-battery-1",
+    "serverTime": 50.04999999999934
+  },
+  {
+    "step": 0,
+    "state": "active",
+    "hp": 2958,
+    "maxHp": 2958,
+    "target": {
+      "x": 1070,
+      "z": 1120
+    },
+    "selected": null,
+    "pick": null,
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 20002,
+      "hp": 180
+    },
+    "p": {
+      "x": 1080,
+      "z": 1160,
+      "yaw": -0.8
+    },
+    "hazard": null,
+    "charge": 0,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 0,
+    "kills": 0,
+    "shots": null,
+    "operation": "base-defense",
+    "serverTime": 0
+  },
+  {
+    "step": 12,
+    "state": "active",
+    "hp": 2958,
+    "maxHp": 2958,
+    "target": {
+      "x": 1089.0222418862675,
+      "z": 1123.9110324549388
+    },
+    "selected": 20003,
+    "pick": {
+      "id": 20003,
+      "x": 297.5061579034575,
+      "y": 294.97574692488786,
+      "visible": true
+    },
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 20003,
+      "hp": 230
+    },
+    "p": {
+      "x": 1080.260215825246,
+      "z": 1151.5724726512838,
+      "yaw": 0.24497866312686414
+    },
+    "hazard": null,
+    "charge": 112.99680000000001,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 2.0000000000000013,
+    "kills": 0,
+    "shots": 3,
+    "operation": "base-defense",
+    "serverTime": 1.2000000000000008
+  },
+  {
+    "step": 24,
+    "state": "active",
+    "hp": 2958,
+    "maxHp": 2958,
+    "target": {
+      "x": 1056.1162788881738,
+      "z": 1126.911060191946
+    },
+    "selected": 20001,
+    "pick": {
+      "id": 20001,
+      "x": 89.37743291730885,
+      "y": 314.4473195541539,
+      "visible": true
+    },
+    "live": 1,
+    "canHit": true,
+    "enemy": {
+      "id": 20001,
+      "hp": 33
+    },
+    "p": {
+      "x": 1079.4650156864172,
+      "z": 1150.3736126450258,
+      "yaw": 0.24497866312686414
+    },
+    "hazard": null,
+    "charge": 410,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 3.949999999999978,
+    "kills": 2,
+    "shots": 5,
+    "operation": "base-defense",
+    "serverTime": 3.1999999999999864
+  },
+  {
+    "step": 36,
+    "state": "active",
+    "hp": 2949.4302,
+    "maxHp": 2958,
+    "target": {
+      "x": 1078,
+      "z": 1120
+    },
+    "selected": 100010034,
+    "pick": {
+      "id": 100010034,
+      "x": 250.09938143258063,
+      "y": 294.2543866262173,
+      "visible": true
+    },
+    "live": 3,
+    "canHit": true,
+    "enemy": {
+      "id": 100010034,
+      "hp": 67.00319999999999
+    },
+    "p": {
+      "x": 1076.2660527195926,
+      "z": 1147.7067982771246,
+      "yaw": 0.24497866312686414
+    },
+    "hazard": null,
+    "charge": 540.99566,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 6.183300000000008,
+    "kills": 3,
+    "shots": 8,
+    "operation": "base-defense",
+    "serverTime": 5.199999999999993
+  },
+  {
+    "step": 48,
+    "state": "active",
+    "hp": 2949.4302,
+    "maxHp": 2958,
+    "target": {
+      "x": 1052.3081926955974,
+      "z": 1122.4416727620019
+    },
+    "selected": null,
+    "pick": {
+      "id": 100010033,
+      "x": 82.71243245655604,
+      "y": 314.27629721071617,
+      "visible": true
+    },
+    "live": 1,
+    "canHit": true,
+    "enemy": {
+      "id": 100010033,
+      "hp": 54
+    },
+    "p": {
+      "x": 1077.0821458868502,
+      "z": 1146.3466429983582,
+      "yaw": 0.24497866312686414
+    },
+    "hazard": null,
+    "charge": 848.4968650000001,
+    "scans": 0,
+    "stage": 0,
+    "work": 0,
+    "time": 8.083300000000037,
+    "kills": 5,
+    "shots": 10,
+    "operation": "base-defense",
+    "serverTime": 7.2000000000000215
+  }
+]

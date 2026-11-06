@@ -1,0 +1,39 @@
+{
+  "source": "authoritative input replay; captured-sector and canonical Legendary gear fixtures; real incoming waves and physical movement",
+  "seconds": 11.55,
+  "kills": 6,
+  "hp": 2898.0113999999994,
+  "beaconHp": 1551.6000000000004,
+  "settlement": {
+    "kind": "sector-defense",
+    "sector": "western",
+    "outcome": "victory",
+    "at": 1800001211551,
+    "cp": 160,
+    "alloy": 15,
+    "biomass": 10,
+    "helium": 2,
+    "reputation": 40,
+    "stolen": 0
+  },
+  "territory": {
+    "owner": "humanity",
+    "status": "secured",
+    "capturedAt": 1800000000000,
+    "defenseAt": 1800002411551,
+    "awaitingReinforcements": false,
+    "defenseWins": 1,
+    "defenseReport": {
+      "kind": "sector-defense",
+      "sector": "western",
+      "outcome": "victory",
+      "at": 1800001211551,
+      "cp": 160,
+      "alloy": 15,
+      "biomass": 10,
+      "helium": 2,
+      "reputation": 40,
+      "stolen": 0
+    }
+  }
+}

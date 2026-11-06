@@ -1,0 +1,13 @@
+{
+  "reason": "GitHub GH007 private-email rejection; metadata-only repair of unpublished Session2 commits. Trees unchanged, Session1 ancestry untouched. Old commits preserved in local backup ref.",
+  "commits": {
+    "fc11baccdc35a721c3724c995a73954432aad2fb": "b61220e137cbdb4afe7126cdebe21e6270f1d7fd",
+    "2eb6e24a32d663ab56d368a2077623b4d0a11bf9": "eadd0d078c30b3e74d089f2d8332988356bdc2bc",
+    "16ee92a96299f4e5368625702b6b9fe8486b26c8": "791b24cc95317695f67fb2c3fd5ab3fb3e4081fc",
+    "ac689adab8c4df440b4f9fbd1467c9e1c20a13a9": "b662d485a27419b670e14eee7768c85b63f79581",
+    "57d7ef3414d8742fd3eec384cca2a24dfaa0aacb": "214ac231b8d73dbdf602a9594016a49a6338b70d",
+    "aeb5f6debc0f153cc5515261ba8173e7348f483e": "1822edf53cba47115d90520d49a5fe036aea2a4d",
+    "3d2963e3aabe601b00a70aac324c752697f4e798": "ec7d3a2e4a6147eeb6e669a388a383f71a3f4ce5",
+    "1582044839fe38fdc19e988973a71c90e6e79d9c": "df0210600f55993b5a423f1d30ea3ba6eac064ff"
+  }
+}

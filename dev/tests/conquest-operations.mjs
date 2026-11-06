@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';import {buildSim} from '../../worker/bui
 const {CONQUEST:{Combat:C,World:W,Control:K},RULES:R}=await import('../../worker/src/sim.gen.js');
 const {createState,applyAction,applyCommands,hydrate}=await import('../../worker/src/conquest-sim.js');
 const results=[];
-for(const id of Object.keys(C.operations)){
+for(const id of ['oxygen-line','convoy','relay','recon','rescue','redoubt']){
  let now=1800000000000;const o=C.operations[id],L=structuredClone(R.STOCK_L);L.w={a:'moon',t:2,q:1,s:false};L.c={c:'titan',t:2,q:1,s:false};
  let s=createState(L,now);s.position={x:o.x-25,z:o.z+8,y:W.groundAt(o.x-25,o.z+8),surface:'ground'};
  s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0;

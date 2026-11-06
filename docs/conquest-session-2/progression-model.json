@@ -1,0 +1,126 @@
+{
+  "scope": "Economic settlement/construction model only. Assumes one genuine completed sortie every90s including travel/combat/bank, no kill loot or paid/referral rewards. Uses real reward/bank/base functions; initial/relocation fixtures are model bookkeeping. Actual combat/first-base earning independently tested by conquest-earned-journey and conquest-raids. Not a human playtime promise.",
+  "snapshots": [
+    {
+      "minute": 0,
+      "base": 0,
+      "modules": {},
+      "cp": 0,
+      "banked": {
+        "alloy": 0,
+        "biomass": 0,
+        "helium": 0
+      },
+      "raidClears": 0,
+      "shards": 0,
+      "blueprint": false,
+      "reputation": 0,
+      "campaignScore": 0,
+      "choices": [
+        "Hold Oxygen Line",
+        "Patrol and bank salvage",
+        "Pursue a field contract and engineering"
+      ]
+    },
+    {
+      "minute": 30,
+      "base": 0,
+      "modules": {},
+      "cp": 1395,
+      "banked": {
+        "alloy": 186,
+        "biomass": 124,
+        "helium": 39
+      },
+      "raidClears": 0,
+      "shards": 0,
+      "blueprint": false,
+      "reputation": 480,
+      "campaignScore": 57,
+      "choices": [
+        "Hold Oxygen Line",
+        "Patrol and bank salvage",
+        "Pursue a field contract and engineering"
+      ]
+    },
+    {
+      "minute": 75,
+      "base": 1,
+      "modules": {
+        "reactor": 1
+      },
+      "cp": 15,
+      "banked": {
+        "alloy": 244,
+        "biomass": 171,
+        "helium": 60
+      },
+      "raidClears": 0,
+      "shards": 0,
+      "blueprint": false,
+      "reputation": 930,
+      "campaignScore": 147,
+      "choices": [
+        "Choose another authored raid family/layout",
+        "Respond to real sector or base invasion",
+        "Build a module or equip an earned permanent cosmetic"
+      ]
+    },
+    {
+      "minute": 240,
+      "base": 3,
+      "modules": {
+        "reactor": 3,
+        "hangar": 3,
+        "defense": 3,
+        "vault": 3,
+        "radar": 2,
+        "uplink": 2
+      },
+      "cp": 321,
+      "banked": {
+        "alloy": 1844,
+        "biomass": 1198,
+        "helium": 531
+      },
+      "raidClears": 110,
+      "shards": 110,
+      "blueprint": true,
+      "reputation": 6142,
+      "campaignScore": 1247,
+      "choices": [
+        "Choose another authored raid family/layout",
+        "Respond to real sector or base invasion",
+        "Build a module or equip an earned permanent cosmetic"
+      ]
+    },
+    {
+      "minute": 1200,
+      "base": 5,
+      "modules": {
+        "reactor": 3,
+        "hangar": 3,
+        "defense": 3,
+        "vault": 3,
+        "radar": 3,
+        "uplink": 3
+      },
+      "cp": 55674,
+      "banked": {
+        "alloy": 14894,
+        "biomass": 9520,
+        "helium": 3637
+      },
+      "raidClears": 750,
+      "shards": 750,
+      "blueprint": true,
+      "reputation": 30543,
+      "campaignScore": 7647,
+      "choices": [
+        "Choose another authored raid family/layout",
+        "Respond to real sector or base invasion",
+        "Build a module or equip an earned permanent cosmetic"
+      ]
+    }
+  ]
+}

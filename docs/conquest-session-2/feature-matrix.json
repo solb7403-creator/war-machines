@@ -1,0 +1,1085 @@
+{
+  "schema": 1,
+  "source": "docs/conquest/CONQUEST_FLAGSHIP_V1.md#session_02_territory_endgame_commerce_full_codex_prompttxt",
+  "session1Base": "1ce9135c9855f5784fc6175cb5f4e075dd039315",
+  "branch": "feat/conquest-territory-endgame-v1",
+  "releaseCertified": false,
+  "payments": "DISABLED",
+  "physicalIPhone": "PHYSICAL_IPHONE_UNVERIFIED",
+  "requirements": [
+    {
+      "id": "1.1",
+      "section": "MULTI-PHASE TERRITORIAL WAR \u2014 PHYSICALLY VISIBLE, PERSISTENT",
+      "canonical_requirement": "Divide the populated Moon frontier into 5\u20137 distinctive named sectors around Refuge, oxygen station, Ash Redoubt, Oxygen Spear, crater/ridge and new tactical sites. Every sector has a clear dominant threat, visual architecture, terrain-based approaches, capture objectives and strategic reward, while the gigantic existing Moon map remains intact. Capture/control status is real: physical banners/beacons/turrets/patrol compositions change after verified victory; a changing warfront map matches actual structures and dangerous regions. Avoid pure tint changes with no mechanical impact.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/world.js:sectors/raidSolidAt/installationOccludes",
+          "js/conquest/combat.js:Operation/hazardStep/markStrike",
+          "worker/src/conquest-campaign.js:campaign/capture/sectorDefenseOutcome"
+        ],
+        "tests": [
+          "dev/tests/conquest-raid-layouts.mjs",
+          "dev/tests/conquest-sector-authority.mjs",
+          "dev/tests/conquest-sector-victory.mjs",
+          "dev/tests/conquest-drones.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/sector-defense-evidence.json",
+          "docs/conquest-session-2/drone-evidence.json"
+        ],
+        "limits": "Six named frontier sectors. Personal territory persists; shared global campaign is a separate CAS total. Two incoming waves at sector beacons. Physical iPhone not tested."
+      }
+    },
+    {
+      "id": "1.2",
+      "section": "MULTI-PHASE TERRITORIAL WAR \u2014 PHYSICALLY VISIBLE, PERSISTENT",
+      "canonical_requirement": "Sites cycle through ACTIVE PARASITE control -> CONTESTED -> PLAYER SECURED -> DEFENSE ALERT -> successful defense / recaptured. Successful capture is permanently in personal campaign history even if the physical frontline later changes. Persistent history, reputation, upgrades and earned unlocks are NEVER season-reset. Defenses have actionable prep and a genuine outcome, not arbitrary wallet loss from waiting overnight. Respawn enemy reinforcements only by bounded believable authored rules; cannot claim same first-clear repeatedly.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/world.js:sectors/raidSolidAt/installationOccludes",
+          "js/conquest/combat.js:Operation/hazardStep/markStrike",
+          "worker/src/conquest-campaign.js:campaign/capture/sectorDefenseOutcome"
+        ],
+        "tests": [
+          "dev/tests/conquest-raid-layouts.mjs",
+          "dev/tests/conquest-sector-authority.mjs",
+          "dev/tests/conquest-sector-victory.mjs",
+          "dev/tests/conquest-drones.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/sector-defense-evidence.json",
+          "docs/conquest-session-2/drone-evidence.json"
+        ],
+        "limits": "Six named frontier sectors. Personal territory persists; shared global campaign is a separate CAS total. Two incoming waves at sector beacons. Physical iPhone not tested."
+      }
+    },
+    {
+      "id": "1.3",
+      "section": "MULTI-PHASE TERRITORIAL WAR \u2014 PHYSICALLY VISIBLE, PERSISTENT",
+      "canonical_requirement": "Implement at least three broad tactical enemy formations: small mobile fast interceptors; medium mixed assault squads with flankers/cover; large heavy armor + command support + drones and area artillery. Fixed authored class/sector stats (NO enemy matching to your exact gear power). More advanced players choose tougher territories for higher rewards. Show danger and recommended effective strength, not opaque losses. High-end owned gear genuinely cuts combat time vs a starter.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/world.js:sectors/raidSolidAt/installationOccludes",
+          "js/conquest/combat.js:Operation/hazardStep/markStrike",
+          "worker/src/conquest-campaign.js:campaign/capture/sectorDefenseOutcome",
+          "js/conquest/app.js:briefing/recommendedStrength"
+        ],
+        "tests": [
+          "dev/tests/conquest-raid-layouts.mjs",
+          "dev/tests/conquest-sector-authority.mjs",
+          "dev/tests/conquest-sector-victory.mjs",
+          "dev/tests/conquest-drones.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/sector-defense-evidence.json",
+          "docs/conquest-session-2/drone-evidence.json"
+        ],
+        "limits": "Six named frontier sectors. Personal territory persists; shared global campaign is a separate CAS total. Two incoming waves at sector beacons. Physical iPhone not tested. Briefings show the danger tier plus RECOMMENDED STRENGTH (tested evidence: starter loadout clears HARD raids; Epic Moonbeam/Titan clears every VETERAN raid) and current hull readiness."
+      }
+    },
+    {
+      "id": "1.4",
+      "section": "MULTI-PHASE TERRITORIAL WAR \u2014 PHYSICALLY VISIBLE, PERSISTENT",
+      "canonical_requirement": "Drones, orbital missile strikes and plasma bombardment MUST BE REAL TELEGRAPHED EVENTS, not decorations. Authored targeting, launch/approach indicators, countdown to impact, physical area splash, client/Worker shared damage, shield/dash counterplay and capped effect budgets. Don't spawn dozens of particles that destroy iPhone FPS. Add convincing reusable 3D turret/air-defense silhouettes, armor/scars, changing garrison visuals and satisfying destruction. Conquest has to LOOK like a conflict.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/world.js:sectors/raidSolidAt/installationOccludes",
+          "js/conquest/combat.js:Operation/hazardStep/markStrike",
+          "worker/src/conquest-campaign.js:campaign/capture/sectorDefenseOutcome"
+        ],
+        "tests": [
+          "dev/tests/conquest-raid-layouts.mjs",
+          "dev/tests/conquest-sector-authority.mjs",
+          "dev/tests/conquest-sector-victory.mjs",
+          "dev/tests/conquest-drones.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/sector-defense-evidence.json",
+          "docs/conquest-session-2/drone-evidence.json"
+        ],
+        "limits": "Six named frontier sectors. Personal territory persists; shared global campaign is a separate CAS total. Two incoming waves at sector beacons. Physical iPhone not tested."
+      }
+    },
+    {
+      "id": "2.1",
+      "section": "AT LEAST 25 DISTINCT RAID OPERATIONS WITH REAL IN-GAME PLAY",
+      "canonical_requirement": "Provide >=25 actually playable server-authoritative RAID/ASSAULT encounters spread across the first region/adjacent warfront; not just 25 static labels or one renamed escort mission. Can build from 5 genuinely different raid families x >=5 physically distinct layouts/route hazards/tactical variations, yielding >=25 objectives that differ in multiple meaningful dimensions (composition/terrain/target/time/defense mechanics), with durable unique IDs. Examples: armored caravan intercepts; command beacon infiltration/sabotage; anti-air battery knockout; Helium depot breach and extraction; fortress siege/relay-jammer; stranded escort; underground entrance defense; artillery convoy; highland hunter. Mission variants must require appropriately different movement/tactics and not only increased enemy HP.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
+          "worker/src/conquest-sim.js:applyAction/applyCommands",
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
+        ],
+        "tests": [
+          "dev/tests/conquest-raids.mjs",
+          "dev/tests/conquest-operations.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/raid-evidence.json",
+          "docs/conquest-session-2/browser"
+        ],
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
+      }
+    },
+    {
+      "id": "2.2",
+      "section": "AT LEAST 25 DISTINCT RAID OPERATIONS WITH REAL IN-GAME PLAY",
+      "canonical_requirement": "Every completed raid gives a GUARANTEED VERIFIED REWARD (CP and/or salvage plus visible appropriate drop); rarer premium gameplay-earned gear/blueprints have explicitly published <5% chance PER ELIGIBLE RAID for the best tier (starting suggestion 3\u20134%), based on server random keyed claim so reload/spam doesn't reroll. Do NOT sell chance-based loot boxes. No confusing guaranteed standard reward with guaranteed best gear. Avoid making best gear impossible: also provide a long but deterministic earned shard/fragment progression route with milestones around 25+ meaningful completed eligible raids; no permanent failures or resets. Rare item must never silently exceed existing Legendary superiority in unrelated Arcade/PvP; Conquest-only combat tech/visual blueprints unless full cross-mode balance is verified.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
+          "worker/src/conquest-sim.js:applyAction/applyCommands",
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
+        ],
+        "tests": [
+          "dev/tests/conquest-raids.mjs",
+          "dev/tests/conquest-operations.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/raid-evidence.json",
+          "docs/conquest-session-2/browser"
+        ],
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
+      }
+    },
+    {
+      "id": "2.3",
+      "section": "AT LEAST 25 DISTINCT RAID OPERATIONS WITH REAL IN-GAME PLAY",
+      "canonical_requirement": "Include difficulty levels with distinct authored encounters and attractive REWARDS, but do not scale enemy stats to match the player's equipment. Reward distribution must remain exciting for both occasional and dedicated players; true superior equipment progresses from struggle -> mastery, not moving goalposts. Visible loot drop/flyout and after-action grant, no empty 'victory' overlay. Avoid repetitive long scripted waits, forced party requirements and black-screen loading.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
+          "worker/src/conquest-sim.js:applyAction/applyCommands",
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
+        ],
+        "tests": [
+          "dev/tests/conquest-raids.mjs",
+          "dev/tests/conquest-operations.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/raid-evidence.json",
+          "docs/conquest-session-2/browser"
+        ],
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
+      }
+    },
+    {
+      "id": "2.4",
+      "section": "AT LEAST 25 DISTINCT RAID OPERATIONS WITH REAL IN-GAME PLAY",
+      "canonical_requirement": "Guarantee raid start/finish/victory/failure/death works in both exploration and mission phase, including interrupted sessions, network reconnect and repeated command replay. Use canonical economy and exactly-once reward transactions. Raid completion must be linked to actually simulated verified objectives and time/distance constraints; no trusting client kill lists/outcome/position.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
+          "worker/src/conquest-sim.js:applyAction/applyCommands",
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
+        ],
+        "tests": [
+          "dev/tests/conquest-raids.mjs",
+          "dev/tests/conquest-operations.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/raid-evidence.json",
+          "docs/conquest-session-2/browser"
+        ],
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
+      }
+    },
+    {
+      "id": "2.5",
+      "section": "AT LEAST 25 DISTINCT RAID OPERATIONS WITH REAL IN-GAME PLAY",
+      "canonical_requirement": "Build at least five distinct Raid Commander / mini-boss patterns with learnable tells, meaningful counterplay and unique physical signatures: shielded command heavy, ambushing fast scout leader, artillery coordinator, drone carrier, plasma siege general. Multiple telegraphed patterns and exposed weak/priority targets, without one-shot unfairness or impenetrable shields.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/combat.js:raidOperations/raidLayouts/Operation/raidStep/deployCommander",
+          "worker/src/conquest-sim.js:applyAction/applyCommands",
+          "worker/src/conquest-economy.js:missionReward",
+          "js/conquest/combat.js:reinforceStep/landReinforcements/hazardStep(drop)",
+          "js/conquest/app.js:afterAction/siteOperations/frontline"
+        ],
+        "tests": [
+          "dev/tests/conquest-raids.mjs",
+          "dev/tests/conquest-operations.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-raid-doctrine.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/raid-evidence.json",
+          "docs/conquest-session-2/browser"
+        ],
+        "limits": "25 raids: five objective families across five physical cover/route layouts. Five commander patterns. Published3.5% elite cosmetic blueprint with hidden cryptographic per-attempt roll; 25-shard deterministic blueprint. First/daily/repeat CP disclosed. Browser proof is additional to full authoritative simulation. Raid doctrine (2026-11-06): HARD sites one telegraphed reinforcement wave, VETERAN up to two (second only if the objective is open 25s after the first landing) at validated authored drop zones once the site is clear; VETERAN commander enrage below 40% hull. Reinforcements carry no salvage; payouts unchanged. Replay: 25/25 victories, median 38.95s / 6 kills / worst 884 HP remaining (previously ~28s / 4 kills / 1382). After-action report shows the authoritative settlement as reward tiles."
+      }
+    },
+    {
+      "id": "3.1",
+      "section": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
+      "canonical_requirement": "Complete existing earned personal Command Base system from Session 1, not a disconnected new War Base menu. Visible upgrading modules, defenses, passive CP output/claims, reputation, Radar, Hangar, Reactor, Uplink and Vault. First base remains available solo after roughly 45\u201375min. More tiers and modular combinations should create dramatically visible construction differences (fortification layers, launch platforms, towers, drones, shield, energy spine, expanding hangars), not unrecognizable cubes. Upgrades permanently owned, no periodic destructive reset. Existing war-machine original paint/skin overlays remain preserved.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
+          "worker/src/conquest-sim.js:applyAction",
+          "js/conquest/combat.js:deployDefense/defenseStep",
+          "js/conquest/app.js:baseTerminal"
+        ],
+        "tests": [
+          "dev/tests/conquest-base.mjs",
+          "dev/tests/conquest-defense-victory.mjs",
+          "dev/tests/conquest-defense-config.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/base-defense-evidence.json",
+          "docs/conquest-session-2/earned-journey.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
+        ],
+        "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
+      }
+    },
+    {
+      "id": "3.2",
+      "section": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
+      "canonical_requirement": "Implement viable PvE base-defense attacks in physical world where player deploys/tunes defensive turrets, shields and support drones, physically fights incoming Parasite teams, then earns justified CP/material/rep and tangible repair/defense unlocks. Treat failure fairly; visible repairable damage, not base deletion. Defense rewards exactly once per legitimate alert.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
+          "worker/src/conquest-sim.js:applyAction",
+          "js/conquest/combat.js:deployDefense/defenseStep",
+          "js/conquest/app.js:baseTerminal"
+        ],
+        "tests": [
+          "dev/tests/conquest-base.mjs",
+          "dev/tests/conquest-defense-victory.mjs",
+          "dev/tests/conquest-defense-config.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/base-defense-evidence.json",
+          "docs/conquest-session-2/earned-journey.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
+        ],
+        "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
+      }
+    },
+    {
+      "id": "3.3",
+      "section": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
+      "canonical_requirement": "Implement controlled, opt-in ASYNCHRONOUS player-base raid challenges if the existing verified account/authorization backend supports a truly safe contest. Do NOT fabricate opponents. If no safe real opponent is available, provide fully playable PvE base raids, and display actual player matchmaking as unavailable rather than fake human NPCs. Async PvP may only select suitable opted-in vulnerable opponents within a power band based on base defenses, never the arcade bot-matching gimmick. Any PvP results must use server-verified simulated defense outcome, no client victory claim or read/write to victim records without secure CAS protections. Full end-to-end tests with two disposable accounts before enabling real player targets.",
+      "status": "SAFE_DISABLED_OPTION",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
+          "worker/src/conquest-sim.js:applyAction",
+          "js/conquest/combat.js:deployDefense/defenseStep",
+          "js/conquest/app.js:baseTerminal"
+        ],
+        "tests": [
+          "dev/tests/conquest-base.mjs",
+          "dev/tests/conquest-defense-victory.mjs",
+          "dev/tests/conquest-defense-config.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/base-defense-evidence.json",
+          "docs/conquest-session-2/earned-journey.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
+        ],
+        "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
+      }
+    },
+    {
+      "id": "3.4",
+      "section": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
+      "canonical_requirement": "Max steal on an actually successful player raid: 5\u201315% of EXPOSED, attackable production/resources only, chosen by explicitly advertised defense tier (e.g. 5/10/15%); fully protected Vault contents and permanent inventory/CP/airdrop/paid cosmetics cannot be stolen. A FAILED BREACH steals EXACTLY ZERO. No raid target can be looted multiple times in a short window. Vault tiers protect meaningful amounts and are earned as well as, if monetized, obtainable without spending. Show clear defense report, loss type, receipts, anti-farm constraints, cooldowns and victim recovery. Do not infer all 'banked' materials are exposed simply because they exist: use explicit separate raid-exposed store and auditable transfer rules; existing banked material safe from death remains. Never steal from nonparticipants or abuse a player's offline time to force an unrecoverable setback.",
+      "status": "SAFE_DISABLED_OPTION",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
+          "worker/src/conquest-sim.js:applyAction",
+          "js/conquest/combat.js:deployDefense/defenseStep",
+          "js/conquest/app.js:baseTerminal"
+        ],
+        "tests": [
+          "dev/tests/conquest-base.mjs",
+          "dev/tests/conquest-defense-victory.mjs",
+          "dev/tests/conquest-defense-config.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/base-defense-evidence.json",
+          "docs/conquest-session-2/earned-journey.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
+        ],
+        "limits": "BaseI-V, six modules, real turret/shield/support-drone configurations, visible repairable scars and safe resources. PvP base raids unavailable; no fake accounts or exposed-resource theft implementation enabled. No paid acceleration/referral assistance."
+      }
+    },
+    {
+      "id": "3.5",
+      "section": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
+      "canonical_requirement": "Referrals link bases optionally: verified invited friends' Command Bases can appear as allied contacts/visitable silhouettes/assistance callouts with limited earned bonuses, not an entry requirement or a paid recruit scheme. Use existing verified one-level referral links and 5+ active-day protections; DO NOT alter referral airdrop bonuses, wallet allocations, Arcade daily caps or pretend fake social presence.",
+      "status": "NOT_IMPLEMENTED_SAFE",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-campaign.js:baseAction/defenseOutcome/production",
+          "worker/src/conquest-sim.js:applyAction",
+          "js/conquest/combat.js:deployDefense/defenseStep",
+          "js/conquest/app.js:baseTerminal"
+        ],
+        "tests": [
+          "dev/tests/conquest-base.mjs",
+          "dev/tests/conquest-defense-victory.mjs",
+          "dev/tests/conquest-defense-config.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-earned-journey.mjs",
+          "dev/tests/conquest-earned-defense.mjs",
+          "dev/tests/conquest-earned-end-to-end.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/base-defense-evidence.json",
+          "docs/conquest-session-2/earned-journey.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/earned-browser/evidence.json"
+        ],
+        "limits": "Not implemented: Conquest contains no referral-linked allied bases, contacts or assistance. No fake social presence is shown, and existing referral/airdrop logic is untouched. Corrected 2026-11-06 after independent pre-merge review (previously mislabelled AUTOMATED_ONLY)."
+      }
+    },
+    {
+      "id": "4.1",
+      "section": "COMMUNITY WAR, SOCIAL PURPOSE, AND NEVER-ENDING CONTENT CHOICES",
+      "canonical_requirement": "Add one SHARED server-authoritative HUMANITY VS PARASITES warfront campaign accessible even with few players. Players contribute verified raid/objective/defense score; shared goals unlock world-visible monuments/temporary operations and permanent campaign-history achievements, not perpetual fake leaderboards. Show accurate current participation and progress without simulating nonexistent players. Contribute via solo missions; allies/verified referrals may coordinate or gift limited aid if safe. Repeatable global campaigns can open fresh objectives without deleting previous earned gear/base/territory history; no premium seasonal track, mandatory 7-day streak, faction-prestige spending sink, or destructive season resets.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
+          "worker/src/conquest-campaign.js:campaign",
+          "js/conquest/app.js:warfront/frontline",
+          "js/conquest/view.js:warMonument"
+        ],
+        "tests": [
+          "dev/tests/conquest-warfront.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-long-progression.mjs",
+          "dev/tests/conquest-earning-model.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/progression-model.json"
+        ],
+        "limits": "Real cumulative contributions and distinct contributing accounts. At1000 score unlock world monument plus immutable stage history. Projection bounded10000 contributors, pending thereafter. Coordinated human world-boss multiplayer unavailable. Long-term table is economic modeling, not a20-hour human recording."
+      }
+    },
+    {
+      "id": "4.2",
+      "section": "COMMUNITY WAR, SOCIAL PURPOSE, AND NEVER-ENDING CONTENT CHOICES",
+      "canonical_requirement": "Give always-available engaging choices at player return: patrols and interceptions, contracts, fortification upgrades, raid variants, base defense, exploration intel and challenging raid boss. A new player sees near-term attainable goals; an established player sees >=3 meaningful different active choices after 1h, after 5h and after 20h of total play. Avoid one daily cap causing a dead game, avoid grinding trivial identical minibots for 3 hours. Use a non-forced rotating operations board with clear actual availability, physically navigable activity, transparent payouts, minimum 15\u201330min rotation for some encounters and 24h reset for higher payouts, always some uncapped but anti-abuse legitimate activity. Mission scheduling is authoritative and persists across devices.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
+          "worker/src/conquest-campaign.js:campaign",
+          "js/conquest/app.js:warfront/frontline",
+          "js/conquest/view.js:warMonument"
+        ],
+        "tests": [
+          "dev/tests/conquest-warfront.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-long-progression.mjs",
+          "dev/tests/conquest-earning-model.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/progression-model.json"
+        ],
+        "limits": "Real cumulative contributions and distinct contributing accounts. At1000 score unlock world monument plus immutable stage history. Projection bounded10000 contributors, pending thereafter. Coordinated human world-boss multiplayer unavailable. Long-term table is economic modeling, not a20-hour human recording."
+      }
+    },
+    {
+      "id": "4.3",
+      "section": "COMMUNITY WAR, SOCIAL PURPOSE, AND NEVER-ENDING CONTENT CHOICES",
+      "canonical_requirement": "Progression arc: 0\u201310min visible Parasite skirmish and loot, 10\u201330min upgrade and missions, 45\u201375min first actual Command Base, 1\u20134h upgraded visually distinct fortress and conquered outpost, 5\u201320h multiple raid strategies/elite gear and unlocked territory, beyond 20h campaign contribution, base mastery and prestige recognition. These are design/time estimates to substantiate with real models and browser tests, not marketing guarantees. Use visible 'NEXT MEANINGFUL MILESTONE' with one-click map guidance, not cluttered quest menu spam.",
+      "status": "OWNER_DECISION_PENDING",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
+          "worker/src/conquest-campaign.js:campaign",
+          "js/conquest/app.js:warfront/frontline",
+          "js/conquest/view.js:warMonument"
+        ],
+        "tests": [
+          "dev/tests/conquest-warfront.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-long-progression.mjs",
+          "dev/tests/conquest-earning-model.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/progression-model.json"
+        ],
+        "limits": "Real cumulative contributions and distinct contributing accounts. At1000 score unlock world monument plus immutable stage history. Projection bounded10000 contributors, pending thereafter. Coordinated human world-boss multiplayer unavailable. Long-term table is economic modeling, not a20-hour human recording. Independent review 2026-11-06: raids are available from minute 0 and the starter loadout wins HARD raids, so first-clear raid payouts alone (10 western/helium raids about 2,200 CP and 190 alloy before kill salvage, against Base I at 2,550 CP / 110 alloy / 65 biomass / 8 helium) suggest Base I in roughly 15-25 minutes for a pilot who raids immediately. This is a reward-table estimate, not a scripted run. The 73.66-minute continuous journey models missions and patrols without raids. Retuning (e.g. gating raids behind Base I or adjusting first-clear payouts) is an economy/progression decision reserved for the owner."
+      }
+    },
+    {
+      "id": "4.4",
+      "section": "COMMUNITY WAR, SOCIAL PURPOSE, AND NEVER-ENDING CONTENT CHOICES",
+      "canonical_requirement": "Human vs parasite narrative retains original premise and doesn't create artificial competing political factions or currencies. The six original Arcade modes remain functioning. The existing referral/airdrop systems remain separate; never suggest in UI that playing, paying, or referrals guarantee financial returns or future token eligibility.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest-warfront.js:syncWarfront/applyWarfront/persistWarfront",
+          "worker/src/conquest-campaign.js:campaign",
+          "js/conquest/app.js:warfront/frontline",
+          "js/conquest/view.js:warMonument"
+        ],
+        "tests": [
+          "dev/tests/conquest-warfront.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-long-progression.mjs",
+          "dev/tests/conquest-earning-model.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/progression-model.json"
+        ],
+        "limits": "Real cumulative contributions and distinct contributing accounts. At1000 score unlock world monument plus immutable stage history. Projection bounded10000 contributors, pending thereafter. Coordinated human world-boss multiplayer unavailable. Long-term table is economic modeling, not a20-hour human recording."
+      }
+    },
+    {
+      "id": "5.1",
+      "section": "REAL REASONS TO SPEND \u2014 PREMIUM, PERMANENT, ATTRACTIVE",
+      "canonical_requirement": "Use existing Stars, TON and SOL integration only if a fully verified, safe checkout flow (server-side provider verification, signed webhook or equivalent on-chain finality checks, idempotency, authenticated identity binding, price/currency checks, replay/duplicate/refund handling) is genuinely ready and allowed. Inspect draft PR #21 payment certification separately: it is not automatically safe to merge. Never silently turn on live purchasing with unverified receipts, accept client 'paid' flags, expose private keys, or require user to spend real money to test. Use approved sandbox/integration fixtures and live feature flags. If no certified end-to-end rail available, DEPLOY all actual preview/catalog/equip/entitlement/UI mechanics in a clearly 'COMMERCE NOT YET AVAILABLE' disabled checkout state, and report exact certification blocker, not a fabricated success. Do not hold up the remainder of Conquest gameplay for payment integration.",
+      "status": "CHECKOUT_DISABLED",
+      "evidence": {
+        "code": [
+          "js/conquest/catalog.js:items/eligible/build/draw2D",
+          "worker/src/conquest-cosmetics.js:cosmetics/cosmeticAction",
+          "js/conquest/app.js:collection",
+          "js/conquest/view.js:syncLoadout/campaignRender/fireSignature"
+        ],
+        "tests": [
+          "dev/tests/conquest-cosmetics.mjs",
+          "dev/tests/conquest-cosmetics-authority.mjs",
+          "dev/tests/conquest-catalog-browser.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/catalog/budgets.json",
+          "docs/conquest-session-2/catalog/twenty-threejs-previews.png",
+          "docs/conquest-session-2/presentation"
+        ],
+        "limits": "20 distinct actual3D/Canvas products with permanent server-earned entitlement and equip paths. Prices are illustrative proposals, checkout disabled. No certified Conquest SKU price/receipt/refund/cross-device payment rail. No gifting, founder bundles or acceleration enabled. Original Lunar Skin/Moonbeam remain canonical."
+      }
+    },
+    {
+      "id": "5.2",
+      "section": "REAL REASONS TO SPEND \u2014 PREMIUM, PERMANENT, ATTRACTIVE",
+      "canonical_requirement": "Product catalog and entitlements server owned, atomic per pilot, persistent across accounts and devices, exact SKU and payment amount/currency/provider and order number, double-spend protection, refunds safe. Surface honest pricing, permanently owned cosmetic state, owned products hidden from purchase or clearly marked. Never invent a product purchase confirmation in UI. Free awarded cosmetics and premium items must share a safe renderer and noncompetitive boundaries.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/catalog.js:items/eligible/build/draw2D",
+          "worker/src/conquest-cosmetics.js:cosmetics/cosmeticAction",
+          "js/conquest/app.js:collection",
+          "js/conquest/view.js:syncLoadout/campaignRender/fireSignature"
+        ],
+        "tests": [
+          "dev/tests/conquest-cosmetics.mjs",
+          "dev/tests/conquest-cosmetics-authority.mjs",
+          "dev/tests/conquest-catalog-browser.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/catalog/budgets.json",
+          "docs/conquest-session-2/catalog/twenty-threejs-previews.png",
+          "docs/conquest-session-2/presentation"
+        ],
+        "limits": "20 distinct actual3D/Canvas products with permanent server-earned entitlement and equip paths. Prices are illustrative proposals, checkout disabled. No certified Conquest SKU price/receipt/refund/cross-device payment rail. No gifting, founder bundles or acceleration enabled. Original Lunar Skin/Moonbeam remain canonical."
+      }
+    },
+    {
+      "id": "5.3",
+      "section": "REAL REASONS TO SPEND \u2014 PREMIUM, PERMANENT, ATTRACTIVE",
+      "canonical_requirement": "Retain existing 75% development/operations + 25% intended public LP allocation as a BUSINESS POLICY only; do not build automated LP transfers or token mechanics in this session without actual validated deployment and compliance review. Do not modify airdrop caps, wallet linking or reward logic.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/catalog.js:items/eligible/build/draw2D",
+          "worker/src/conquest-cosmetics.js:cosmetics/cosmeticAction",
+          "js/conquest/app.js:collection",
+          "js/conquest/view.js:syncLoadout/campaignRender/fireSignature"
+        ],
+        "tests": [
+          "dev/tests/conquest-cosmetics.mjs",
+          "dev/tests/conquest-cosmetics-authority.mjs",
+          "dev/tests/conquest-catalog-browser.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/catalog/budgets.json",
+          "docs/conquest-session-2/catalog/twenty-threejs-previews.png",
+          "docs/conquest-session-2/presentation"
+        ],
+        "limits": "20 distinct actual3D/Canvas products with permanent server-earned entitlement and equip paths. Prices are illustrative proposals, checkout disabled. No certified Conquest SKU price/receipt/refund/cross-device payment rail. No gifting, founder bundles or acceleration enabled. Original Lunar Skin/Moonbeam remain canonical."
+      }
+    },
+    {
+      "id": "6.1",
+      "section": "VISUAL COMPLETENESS \u2014 PREMIUM MOON SCI-FI WITH CLEAR COMBAT",
+      "canonical_requirement": "This is the flagSHIP 3D mobile-first anime-inspired mecha war. Strong high-contrast art direction, directional lighting and dust under treads, gun recoil, projectiles that look like weapon class rather than identical tiny spheres, Moonfall dramatic distinct beam not an enormous blue ball, visible launch drones, artillery trajectories, plasma shockwaves, base construction phases and gorgeous but performant command silhouettes. Preserve existing equipment/lunar skin originals and original paint color.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/view.js:campaignRender/hazardRender/raidArchitecture/fireSignature/enemyModel",
+          "js/conquest/assets.js:parse/load/make",
+          "dev/assets/conquest/build.py"
+        ],
+        "tests": [
+          "dev/tests/conquest-assets.mjs",
+          "dev/tests/conquest-assets-browser.py",
+          "dev/tests/conquest-flagship-captures.py",
+          "dev/tests/conquest-flagship-ui.mjs",
+          "dev/tests/conquest-living-war.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2-assets/browser-proof.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression/webkit-results.json"
+        ],
+        "limits": "Real cloud Blender4.3.2 and GLB export/import. HIGH/LOW original command and raid meshes; procedural fallback and same-state Canvas. Hardware/thermal/mobile-class long soak unverified. Artistic approval belongs to owner; runtime captures are not promotional renders."
+      }
+    },
+    {
+      "id": "6.2",
+      "section": "VISUAL COMPLETENESS \u2014 PREMIUM MOON SCI-FI WITH CLEAR COMBAT",
+      "canonical_requirement": "Build with existing Three.js custom procedural/owned pipeline; no parallel engine, no silent GLB support assumption, no imported copyrighted art. Optimize draw calls, instancing, pooled particles, detailLOD, materials, colliders independent of art. HIGH/LOW/2D fallback; adaptive mobile cap, WebGL context loss and Telegram viewport support. On mobile, prioritize a clean uncluttered HUD and readable enemy hull selected health.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/view.js:campaignRender/hazardRender/raidArchitecture/fireSignature/enemyModel",
+          "js/conquest/assets.js:parse/load/make",
+          "dev/assets/conquest/build.py"
+        ],
+        "tests": [
+          "dev/tests/conquest-assets.mjs",
+          "dev/tests/conquest-assets-browser.py",
+          "dev/tests/conquest-flagship-captures.py",
+          "dev/tests/conquest-flagship-ui.mjs",
+          "dev/tests/conquest-living-war.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2-assets/browser-proof.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression/webkit-results.json"
+        ],
+        "limits": "Real cloud Blender4.3.2 and GLB export/import. HIGH/LOW original command and raid meshes; procedural fallback and same-state Canvas. Hardware/thermal/mobile-class long soak unverified. Artistic approval belongs to owner; runtime captures are not promotional renders."
+      }
+    },
+    {
+      "id": "6.3",
+      "section": "VISUAL COMPLETENESS \u2014 PREMIUM MOON SCI-FI WITH CLEAR COMBAT",
+      "canonical_requirement": "Each new base tier and conquest objective completion visibly changes something meaningful in the scene and map immediately. Add at least 12 key screenshot reference states at 320x568, 390x844 and desktop, plus frame-time/draw-call data on compatible automated browsers. On actual iPhone physical testing, report NOT tested unless physically tested. Do not assert 'legendary graphics' from code tests.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/view.js:campaignRender/hazardRender/raidArchitecture/fireSignature/enemyModel",
+          "js/conquest/assets.js:parse/load/make",
+          "dev/assets/conquest/build.py"
+        ],
+        "tests": [
+          "dev/tests/conquest-assets.mjs",
+          "dev/tests/conquest-assets-browser.py",
+          "dev/tests/conquest-flagship-captures.py",
+          "dev/tests/conquest-flagship-ui.mjs",
+          "dev/tests/conquest-living-war.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2-assets/browser-proof.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression/webkit-results.json"
+        ],
+        "limits": "Real cloud Blender4.3.2 and GLB export/import. HIGH/LOW original command and raid meshes; procedural fallback and same-state Canvas. Hardware/thermal/mobile-class long soak unverified. Artistic approval belongs to owner; runtime captures are not promotional renders."
+      }
+    },
+    {
+      "id": "6.4",
+      "section": "VISUAL COMPLETENESS \u2014 PREMIUM MOON SCI-FI WITH CLEAR COMBAT",
+      "canonical_requirement": "Distinct audible combat feedback, optional reduced-motion and muted sound respect, readable text contrast and no prompts blocking joystick on small screens. Do not add enormous blocking startup story every reconnect.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "js/conquest/view.js:campaignRender/hazardRender/raidArchitecture/fireSignature/enemyModel",
+          "js/conquest/assets.js:parse/load/make",
+          "dev/assets/conquest/build.py"
+        ],
+        "tests": [
+          "dev/tests/conquest-assets.mjs",
+          "dev/tests/conquest-assets-browser.py",
+          "dev/tests/conquest-flagship-captures.py",
+          "dev/tests/conquest-flagship-ui.mjs",
+          "dev/tests/conquest-living-war.py"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2-assets/browser-proof.json",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression/webkit-results.json"
+        ],
+        "limits": "Real cloud Blender4.3.2 and GLB export/import. HIGH/LOW original command and raid meshes; procedural fallback and same-state Canvas. Hardware/thermal/mobile-class long soak unverified. Artistic approval belongs to owner; runtime captures are not promotional renders."
+      }
+    },
+    {
+      "id": "7.1",
+      "section": "SECURITY / PERFORMANCE / BACKWARD COMPATIBILITY",
+      "canonical_requirement": "Reuse account authentication and per-pilot ETag CAS. Multiplayer shared war counters must be safe against concurrent writes and reward inflation. Use server's canonical combat/time/collision authority; client never submits won/loot/positions/resource amounts or ownership. Implement per-player idempotent events and exactly-once secure credit, immutable first-clear achievements, raids do not materialize stolen materials on attacker without equally verified victim debits. Lock concurrent raid settlement. Prevent replay abuse, same-IP/alt-farming as reasonable, self-raiding, fake referrals, fake time, cooldown spoofing, wallet receipts reuse. Public campaign counters from verified data only.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest.js:transaction/submit/publicState",
+          "worker/src/conquest-sim.js:validateCommands/hydrate/applyCommands/applyAction",
+          "worker/src/conquest-warfront.js:syncWarfront",
+          "worker/src/conquest-economy.js:death/missionReward"
+        ],
+        "tests": [
+          "dev/tests/wtest/conquest.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-v1-migration.mjs",
+          "dev/tests/conquest-authority.mjs",
+          "dev/tests/conquest-airborne-loot.mjs",
+          "dev/tests/wtest/test.mjs",
+          "dev/tests/wtest/pvp.mjs",
+          "dev/tests/wtest/accounts.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/earned-journey.json"
+        ],
+        "limits": "All writes stay authenticated and per-pilot CAS; shared projection watermark CAS; no client money/position/kill/ownership claims. Paid rails, referrals, two-machine gear and Arcade rules unmodified. Shared projection has explicit launch bound, not claimed1000-player real-time capacity certification."
+      }
+    },
+    {
+      "id": "7.2",
+      "section": "SECURITY / PERFORMANCE / BACKWARD COMPATIBILITY",
+      "canonical_requirement": "Keep bounded memory/draw/CPU/DB access for thousand-player goals; do not clone whole Moon or materialize 25 mission NPC arrays globally for each player. Move/simulate only nearby objects and active raids. Use seeded sector and existing streaming world terrain. Define caps e.g. active nearby AI, projectiles, world VFX, pending secure actions; verify performance and correct physical coordinate traversal.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest.js:transaction/submit/publicState",
+          "worker/src/conquest-sim.js:validateCommands/hydrate/applyCommands/applyAction",
+          "worker/src/conquest-warfront.js:syncWarfront",
+          "worker/src/conquest-economy.js:death/missionReward"
+        ],
+        "tests": [
+          "dev/tests/wtest/conquest.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-v1-migration.mjs",
+          "dev/tests/conquest-authority.mjs",
+          "dev/tests/conquest-airborne-loot.mjs",
+          "dev/tests/wtest/test.mjs",
+          "dev/tests/wtest/pvp.mjs",
+          "dev/tests/wtest/accounts.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/earned-journey.json"
+        ],
+        "limits": "All writes stay authenticated and per-pilot CAS; shared projection watermark CAS; no client money/position/kill/ownership claims. Paid rails, referrals, two-machine gear and Arcade rules unmodified. Shared projection has explicit launch bound, not claimed1000-player real-time capacity certification."
+      }
+    },
+    {
+      "id": "7.3",
+      "section": "SECURITY / PERFORMANCE / BACKWARD COMPATIBILITY",
+      "canonical_requirement": "Existing purchases, account identities, shared gear inventory, 50k Arcade cap (if existing), referral/airdrop economy and all six modes MUST remain untouched and pass tests. New raid gear cannot silently buff shared PvP or leak to other modes; server canonical entitlement separation, with deliberate feature flags for Conquest-only upgrades.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "worker/src/conquest.js:transaction/submit/publicState",
+          "worker/src/conquest-sim.js:validateCommands/hydrate/applyCommands/applyAction",
+          "worker/src/conquest-warfront.js:syncWarfront",
+          "worker/src/conquest-economy.js:death/missionReward"
+        ],
+        "tests": [
+          "dev/tests/wtest/conquest.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-v1-migration.mjs",
+          "dev/tests/conquest-authority.mjs",
+          "dev/tests/conquest-airborne-loot.mjs",
+          "dev/tests/wtest/test.mjs",
+          "dev/tests/wtest/pvp.mjs",
+          "dev/tests/wtest/accounts.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/earned-journey.json"
+        ],
+        "limits": "All writes stay authenticated and per-pilot CAS; shared projection watermark CAS; no client money/position/kill/ownership claims. Paid rails, referrals, two-machine gear and Arcade rules unmodified. Shared projection has explicit launch bound, not claimed1000-player real-time capacity certification."
+      }
+    },
+    {
+      "id": "7.4",
+      "section": "SECURITY / PERFORMANCE / BACKWARD COMPATIBILITY",
+      "canonical_requirement": "Maintain first Command Base 45\u201375m and genuine recurring earned progress for legitimate users. Calibrate drop rates (<5% best-gear probability per eligible nonpaid raid), CP/material values, base cost/upgrade time and purchase alternatives by deterministic simulation; provide tables and a readable source of truth. No nontransparent lottery disguised as guaranteed loot.",
+      "status": "OWNER_DECISION_PENDING",
+      "evidence": {
+        "code": [
+          "worker/src/conquest.js:transaction/submit/publicState",
+          "worker/src/conquest-sim.js:validateCommands/hydrate/applyCommands/applyAction",
+          "worker/src/conquest-warfront.js:syncWarfront",
+          "worker/src/conquest-economy.js:death/missionReward"
+        ],
+        "tests": [
+          "dev/tests/wtest/conquest.mjs",
+          "dev/tests/wtest/conquest-war.mjs",
+          "dev/tests/conquest-v1-migration.mjs",
+          "dev/tests/conquest-authority.mjs",
+          "dev/tests/conquest-airborne-loot.mjs",
+          "dev/tests/wtest/test.mjs",
+          "dev/tests/wtest/pvp.mjs",
+          "dev/tests/wtest/accounts.mjs"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/earned-journey.json"
+        ],
+        "limits": "All writes stay authenticated and per-pilot CAS; shared projection watermark CAS; no client money/position/kill/ownership claims. Paid rails, referrals, two-machine gear and Arcade rules unmodified. Shared projection has explicit launch bound, not claimed1000-player real-time capacity certification. Independent review 2026-11-06: raids are available from minute 0 and the starter loadout wins HARD raids, so first-clear raid payouts alone (10 western/helium raids about 2,200 CP and 190 alloy before kill salvage, against Base I at 2,550 CP / 110 alloy / 65 biomass / 8 helium) suggest Base I in roughly 15-25 minutes for a pilot who raids immediately. This is a reward-table estimate, not a scripted run. The 73.66-minute continuous journey models missions and patrols without raids. Retuning (e.g. gating raids behind Base I or adjusting first-clear payouts) is an economy/progression decision reserved for the owner."
+      }
+    },
+    {
+      "id": "8.1",
+      "section": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "canonical_requirement": "Test with disposable authenticated accounts, never actual owner production records or live payments. End-to-end REAL browser/Worker play journey: initial visible world fight -> mission+rewards -> first Command Base -> raid selection -> actually travel, fight and complete three DIFFERENT raid families -> guaranteed loot/claimed ownership -> base grows physically -> protected Vault and forced failed/successful raids (0 stolen on failure, <=15% attackable on success) -> passive CP claim once/24h -> shared campaign contribution -> preview/equip permanent cosmetic -> refresh, new device, concurrent tab, retain ownership and valid receipts. Test 320x568/390x844 Chrome+WebKit, 2D fallback, low/high, desktop, scoped Telegram viewport mocks. Real iPhone Telegram testing must not be claimed unless performed.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "dev/tests/conquest-flagship-browser.py:Journey.win/travel/run",
+          "dev/tests/conquest-flagship-captures.py:main",
+          ".github/workflows/conquest-check.yml"
+        ],
+        "tests": [
+          "dev/tests/conquest-flagship-browser.py",
+          "dev/tests/conquest-preview.py",
+          "dev/tests/conquest-earned-browser.py",
+          "bash dev/tests/conquest-regression.sh"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/browser",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression"
+        ],
+        "limits": "Available browser/Worker evidence only. Failed controller attempts are preserved. Physical iPhone/Telegram, thermal and30+20minute physical/mobile soak unverified. Hands-on first-hour player judgment not fabricated. Final-head CI must be observed."
+      }
+    },
+    {
+      "id": "8.2",
+      "section": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "canonical_requirement": "25 unique raids asserted runnable, not just defined. Run deterministic test with each at least once and browser screenshot capture for representative five families. All six main mission archetypes work and issue real rewards, not empty victory states. Include multiple mini-boss types. Enemies are visibly present without pressing START MISSION. Map changes, distinct rewards, constantly available activities and actual base visuals check must be automated to the extent possible.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "dev/tests/conquest-flagship-browser.py:Journey.win/travel/run",
+          "dev/tests/conquest-flagship-captures.py:main",
+          ".github/workflows/conquest-check.yml"
+        ],
+        "tests": [
+          "dev/tests/conquest-flagship-browser.py",
+          "dev/tests/conquest-preview.py",
+          "dev/tests/conquest-earned-browser.py",
+          "bash dev/tests/conquest-regression.sh"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/browser",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression"
+        ],
+        "limits": "Available browser/Worker evidence only. Failed controller attempts are preserved. Physical iPhone/Telegram, thermal and30+20minute physical/mobile soak unverified. Hands-on first-hour player judgment not fabricated. Final-head CI must be observed."
+      }
+    },
+    {
+      "id": "8.3",
+      "section": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "canonical_requirement": "Moonbeam stays >=20 shots before first vent for typical legal loadouts; thermal fill continuously visually matches real heat, cools within reasonable time; no three-shot vent regressions. Three simultaneous touch Dash/FIRE/DRIVE and SHIELD works on WebKit/mobile simulation. Projectile velocity/range both affect actual travel. Owned gear and engineering significantly enhance outcomes compared to stock, without enemy power matching.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "dev/tests/conquest-flagship-browser.py:Journey.win/travel/run",
+          "dev/tests/conquest-flagship-captures.py:main",
+          ".github/workflows/conquest-check.yml"
+        ],
+        "tests": [
+          "dev/tests/conquest-flagship-browser.py",
+          "dev/tests/conquest-preview.py",
+          "dev/tests/conquest-earned-browser.py",
+          "bash dev/tests/conquest-regression.sh"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/browser",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression"
+        ],
+        "limits": "Available browser/Worker evidence only. Failed controller attempts are preserved. Physical iPhone/Telegram, thermal and30+20minute physical/mobile soak unverified. Hands-on first-hour player judgment not fabricated. Final-head CI must be observed."
+      }
+    },
+    {
+      "id": "8.4",
+      "section": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "canonical_requirement": "Run existing Conquest / economics / shared gameplay / payment-safety / Arcade / PvP / graphics suites, browser/WebKit/Chromium, secure worker unit and integration tests. Verify referral and airdrop invariants. Add concurrency tests for raid victims, passive claim and orders; pricing purchase entitlement tests with fake provider signatures and real server rejection of unsigned claims; tests for refunded entitlement and service outage without lost player inventory. No making up passing checks.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "dev/tests/conquest-flagship-browser.py:Journey.win/travel/run",
+          "dev/tests/conquest-flagship-captures.py:main",
+          ".github/workflows/conquest-check.yml"
+        ],
+        "tests": [
+          "dev/tests/conquest-flagship-browser.py",
+          "dev/tests/conquest-preview.py",
+          "dev/tests/conquest-earned-browser.py",
+          "bash dev/tests/conquest-regression.sh"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/browser",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression"
+        ],
+        "limits": "Available browser/Worker evidence only. Failed controller attempts are preserved. Physical iPhone/Telegram, thermal and30+20minute physical/mobile soak unverified. Hands-on first-hour player judgment not fabricated. Final-head CI must be observed."
+      }
+    },
+    {
+      "id": "8.5",
+      "section": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "canonical_requirement": "Run 5-part synthetic game walkthrough documented at 0, 30min, 75min, 4h, 20h player progress using generated deterministic verified fixtures and explain the real world upgrades/choices for each, not just earned numeric CP. Screenshots should show the evolving fortress, battle effects and base statuses; trace actual actions, not merely mock overlay screenshots.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "dev/tests/conquest-flagship-browser.py:Journey.win/travel/run",
+          "dev/tests/conquest-flagship-captures.py:main",
+          ".github/workflows/conquest-check.yml"
+        ],
+        "tests": [
+          "dev/tests/conquest-flagship-browser.py",
+          "dev/tests/conquest-preview.py",
+          "dev/tests/conquest-earned-browser.py",
+          "bash dev/tests/conquest-regression.sh"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/browser",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression"
+        ],
+        "limits": "Available browser/Worker evidence only. Failed controller attempts are preserved. Physical iPhone/Telegram, thermal and30+20minute physical/mobile soak unverified. Hands-on first-hour player judgment not fabricated. Final-head CI must be observed."
+      }
+    },
+    {
+      "id": "8.6",
+      "section": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "canonical_requirement": "If a genuine P0 release blocker is discovered, resolve it within the same agent session where possible. If no safe certification for paid orders, hide checkout behind honest feature flag, ship rest, report explicitly. Never claim unreleased payment method is ready. Avoid bloated P1+ speculative improvements if gameplay gates are not met. Prioritize observable improvements.",
+      "status": "AUTOMATED_ONLY",
+      "evidence": {
+        "code": [
+          "dev/tests/conquest-flagship-browser.py:Journey.win/travel/run",
+          "dev/tests/conquest-flagship-captures.py:main",
+          ".github/workflows/conquest-check.yml"
+        ],
+        "tests": [
+          "dev/tests/conquest-flagship-browser.py",
+          "dev/tests/conquest-preview.py",
+          "dev/tests/conquest-earned-browser.py",
+          "bash dev/tests/conquest-regression.sh"
+        ],
+        "artifacts": [
+          "docs/conquest-session-2/browser",
+          "docs/conquest-session-2/presentation",
+          "docs/conquest-session-2/regression"
+        ],
+        "limits": "Available browser/Worker evidence only. Failed controller attempts are preserved. Physical iPhone/Telegram, thermal and30+20minute physical/mobile soak unverified. Hands-on first-hour player judgment not fabricated. Final-head CI must be observed."
+      }
+    },
+    {
+      "id": "9.1",
+      "section": "FINAL SHIPPING AND REQUIRED SUMMARY",
+      "canonical_requirement": "Merge only after applicable tests pass and gameplay journey and security checks meet the above. Owner authorization to merge/deploy is explicit. Use existing GitHub Actions and Cloudflare+Pages deployment; confirm SHAs, versions, published files and health/auth checks on origins. Never fake successes, grant real owner gear without separate explicit instruction, or alter production wallets/payments/LP.",
+      "status": "BLOCKED_RELEASE",
+      "evidence": {
+        "code": [
+          "docs/conquest/IMPLEMENTATION_CHECKPOINT.md",
+          "docs/conquest-session-2/VERIFICATION.md"
+        ],
+        "tests": [],
+        "artifacts": [
+          "docs/conquest-session-2/feature-matrix.json"
+        ],
+        "limits": "No merge/deployment certified by this matrix. Reviewable branch/PR and live build status must be stated separately; no new live checkout."
+      }
+    },
+    {
+      "id": "9.2",
+      "section": "FINAL SHIPPING AND REQUIRED SUMMARY",
+      "canonical_requirement": "Update docs/conquest/CONQUEST_FLAGSHIP_V1.md to mark every committed requirement with proof, list real pending blockers (particularly payment certification, any unavailable live PvP), exact player journey + fair-purchase inventory, loot table, raid matrix, anti-cheat, screenshots and cross-mode invariants. No unchecked must-have section portrayed as complete.",
+      "status": "BLOCKED_RELEASE",
+      "evidence": {
+        "code": [
+          "docs/conquest/IMPLEMENTATION_CHECKPOINT.md",
+          "docs/conquest-session-2/VERIFICATION.md"
+        ],
+        "tests": [],
+        "artifacts": [
+          "docs/conquest-session-2/feature-matrix.json"
+        ],
+        "limits": "No merge/deployment certified by this matrix. Reviewable branch/PR and live build status must be stated separately; no new live checkout."
+      }
+    },
+    {
+      "id": "9.3",
+      "section": "FINAL SHIPPING AND REQUIRED SUMMARY",
+      "canonical_requirement": "Final report must state: exact PR and merge SHA, deployed version(s), 25+ raid operational count tested, six mission results, physical command-base tiers & screenshots, PvE defense and optional async player raid status, premium product count actually rendered and equipped, payments LIVE or DISABLED with precise reason, mobile/fallback evidence, known limitations and 0/30m/75m/4h/20h gameplay milestones. Avoid victory speeches if visible gameplay is empty.",
+      "status": "SAFE_DISABLED_OPTION",
+      "evidence": {
+        "code": [
+          "docs/conquest/IMPLEMENTATION_CHECKPOINT.md",
+          "docs/conquest-session-2/VERIFICATION.md"
+        ],
+        "tests": [],
+        "artifacts": [
+          "docs/conquest-session-2/feature-matrix.json"
+        ],
+        "limits": "No merge/deployment certified by this matrix. Reviewable branch/PR and live build status must be stated separately; no new live checkout."
+      }
+    },
+    {
+      "id": "9.4",
+      "section": "FINAL SHIPPING AND REQUIRED SUMMARY",
+      "canonical_requirement": "If task is interrupted by Codex service limits, preserve one branch and precise checkpoint, resume SAME Codex conversation when available\u2014never instruct owner to run all the prompts again or start extra sessions. Never rewrite working code just to look busy.",
+      "status": "BLOCKED_RELEASE",
+      "evidence": {
+        "code": [
+          "docs/conquest/IMPLEMENTATION_CHECKPOINT.md",
+          "docs/conquest-session-2/VERIFICATION.md"
+        ],
+        "tests": [],
+        "artifacts": [
+          "docs/conquest-session-2/feature-matrix.json"
+        ],
+        "limits": "No merge/deployment certified by this matrix. Reviewable branch/PR and live build status must be stated separately; no new live checkout."
+      }
+    },
+    {
+      "id": "OWNER.PERFORMANCE",
+      "status": "PHYSICAL_IPHONE_UNVERIFIED",
+      "evidence": [
+        "docs/conquest/SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md",
+        "docs/conquest-session-2/regression"
+      ],
+      "scope": "60FPS aspirational; responsive physical30FPS defensible minimum target; software numbers never certify/deny iPhone performance. Actual hitches/latency remain material."
+    },
+    {
+      "id": "OWNER.BLENDER",
+      "status": "VERIFIED_CLOUD_TOOL_AND_RUNTIME_IMPORT",
+      "evidence": [
+        "dev/assets/conquest/build.py",
+        "dev/assets/conquest/lunar-command-and-battery.blend",
+        "dev/assets/conquest/smoke.glb",
+        "docs/conquest-session-2-assets/browser-proof.json",
+        "docs/conquest-session-2/presentation/evidence.json"
+      ],
+      "version": "Blender4.3.2; Debian package4.3.2+dfsg-2",
+      "smoke": {
+        "path": "/tmp/lunar_blender_smoke.glb",
+        "committedCopy": "dev/assets/conquest/smoke.glb",
+        "bytes": 1732,
+        "triangles": 12,
+        "materials": 0
+      }
+    },
+    {
+      "id": "OWNER.GAUNTLET",
+      "status": "INDEPENDENT_CODE_CRITIQUE_PLUS_LEAD_RENDER_REVIEW",
+      "evidence": [
+        "docs/conquest-session-2/CRITIC.md"
+      ],
+      "scope": "Independent source/test critic identified and verified targeted corrections. Independent final screenshot judgment unfinished; lead opens actual renders and compares baseline. No numeric self-awarded score."
+    },
+    {
+      "id": "OWNER.SOAK",
+      "status": "UNTESTED_FULL_DURATION",
+      "evidence": [],
+      "scope": "No completed30minute exploration plus20minute dense physical/mobile-class soak; short softwareprofiles report exact durations/counters separately."
+    }
+  ],
+  "notes": "StatusAUTOMATED_ONLY means code and listed automated proof exist within declaredlimits; it never means every subjective/hardware clause passed. No optionalfeature is represented as live. 2026-11-06 Claude Code continuation: CI relay navigation defect fixed at UX cause (field missions visible, map-first frontline, sector-grouped raid board, site chooser). See IMPLEMENTATION_CHECKPOINT.md Checkpoint 16.",
+  "full_section_contracts": [
+    {
+      "section": 1,
+      "title": "MULTI-PHASE TERRITORIAL WAR \u2014 PHYSICALLY VISIBLE, PERSISTENT",
+      "full_text": "- Divide the populated Moon frontier into 5\u20137 distinctive named sectors around Refuge, oxygen station, Ash Redoubt, Oxygen Spear, crater/ridge and new tactical sites. Every sector has a clear dominant threat, visual architecture, terrain-based approaches, capture objectives and strategic reward, while the gigantic existing Moon map remains intact. Capture/control status is real: physical banners/beacons/turrets/patrol compositions change after verified victory; a changing warfront map matches actual structures and dangerous regions. Avoid pure tint changes with no mechanical impact.\n- Sites cycle through ACTIVE PARASITE control -> CONTESTED -> PLAYER SECURED -> DEFENSE ALERT -> successful defense / recaptured. Successful capture is permanently in personal campaign history even if the physical frontline later changes. Persistent history, reputation, upgrades and earned unlocks are NEVER season-reset. Defenses have actionable prep and a genuine outcome, not arbitrary wallet loss from waiting overnight. Respawn enemy reinforcements only by bounded believable authored rules; cannot claim same first-clear repeatedly.\n- Implement at least three broad tactical enemy formations: small mobile fast interceptors; medium mixed assault squads with flankers/cover; large heavy armor + command support + drones and area artillery. Fixed authored class/sector stats (NO enemy matching to your exact gear power). More advanced players choose tougher territories for higher rewards. Show danger and recommended effective strength, not opaque losses. High-end owned gear genuinely cuts combat time vs a starter.\n- Drones, orbital missile strikes and plasma bombardment MUST BE REAL TELEGRAPHED EVENTS, not decorations. Authored targeting, launch/approach indicators, countdown to impact, physical area splash, client/Worker shared damage, shield/dash counterplay and capped effect budgets. Don't spawn dozens of particles that destroy iPhone FPS. Add convincing reusable 3D turret/air-defense silhouettes, armor/scars, changing garrison visuals and satisfying destruction. Conquest has to LOOK like a conflict."
+    },
+    {
+      "section": 2,
+      "title": "AT LEAST 25 DISTINCT RAID OPERATIONS WITH REAL IN-GAME PLAY",
+      "full_text": "- Provide >=25 actually playable server-authoritative RAID/ASSAULT encounters spread across the first region/adjacent warfront; not just 25 static labels or one renamed escort mission. Can build from 5 genuinely different raid families x >=5 physically distinct layouts/route hazards/tactical variations, yielding >=25 objectives that differ in multiple meaningful dimensions (composition/terrain/target/time/defense mechanics), with durable unique IDs. Examples: armored caravan intercepts; command beacon infiltration/sabotage; anti-air battery knockout; Helium depot breach and extraction; fortress siege/relay-jammer; stranded escort; underground entrance defense; artillery convoy; highland hunter. Mission variants must require appropriately different movement/tactics and not only increased enemy HP.\n- Every completed raid gives a GUARANTEED VERIFIED REWARD (CP and/or salvage plus visible appropriate drop); rarer premium gameplay-earned gear/blueprints have explicitly published <5% chance PER ELIGIBLE RAID for the best tier (starting suggestion 3\u20134%), based on server random keyed claim so reload/spam doesn't reroll. Do NOT sell chance-based loot boxes. No confusing guaranteed standard reward with guaranteed best gear. Avoid making best gear impossible: also provide a long but deterministic earned shard/fragment progression route with milestones around 25+ meaningful completed eligible raids; no permanent failures or resets. Rare item must never silently exceed existing Legendary superiority in unrelated Arcade/PvP; Conquest-only combat tech/visual blueprints unless full cross-mode balance is verified.\n- Include difficulty levels with distinct authored encounters and attractive REWARDS, but do not scale enemy stats to match the player's equipment. Reward distribution must remain exciting for both occasional and dedicated players; true superior equipment progresses from struggle -> mastery, not moving goalposts. Visible loot drop/flyout and after-action grant, no empty 'victory' overlay. Avoid repetitive long scripted waits, forced party requirements and black-screen loading.\n- Guarantee raid start/finish/victory/failure/death works in both exploration and mission phase, including interrupted sessions, network reconnect and repeated command replay. Use canonical economy and exactly-once reward transactions. Raid completion must be linked to actually simulated verified objectives and time/distance constraints; no trusting client kill lists/outcome/position.\n- Build at least five distinct Raid Commander / mini-boss patterns with learnable tells, meaningful counterplay and unique physical signatures: shielded command heavy, ambushing fast scout leader, artillery coordinator, drone carrier, plasma siege general. Multiple telegraphed patterns and exposed weak/priority targets, without one-shot unfairness or impenetrable shields."
+    },
+    {
+      "section": 3,
+      "title": "COMMAND BASE AND RAID DEFENSES WITH REAL CONSEQUENCES",
+      "full_text": "- Complete existing earned personal Command Base system from Session 1, not a disconnected new War Base menu. Visible upgrading modules, defenses, passive CP output/claims, reputation, Radar, Hangar, Reactor, Uplink and Vault. First base remains available solo after roughly 45\u201375min. More tiers and modular combinations should create dramatically visible construction differences (fortification layers, launch platforms, towers, drones, shield, energy spine, expanding hangars), not unrecognizable cubes. Upgrades permanently owned, no periodic destructive reset. Existing war-machine original paint/skin overlays remain preserved.\n- Implement viable PvE base-defense attacks in physical world where player deploys/tunes defensive turrets, shields and support drones, physically fights incoming Parasite teams, then earns justified CP/material/rep and tangible repair/defense unlocks. Treat failure fairly; visible repairable damage, not base deletion. Defense rewards exactly once per legitimate alert.\n- Implement controlled, opt-in ASYNCHRONOUS player-base raid challenges if the existing verified account/authorization backend supports a truly safe contest. Do NOT fabricate opponents. If no safe real opponent is available, provide fully playable PvE base raids, and display actual player matchmaking as unavailable rather than fake human NPCs. Async PvP may only select suitable opted-in vulnerable opponents within a power band based on base defenses, never the arcade bot-matching gimmick. Any PvP results must use server-verified simulated defense outcome, no client victory claim or read/write to victim records without secure CAS protections. Full end-to-end tests with two disposable accounts before enabling real player targets.\n- Max steal on an actually successful player raid: 5\u201315% of EXPOSED, attackable production/resources only, chosen by explicitly advertised defense tier (e.g. 5/10/15%); fully protected Vault contents and permanent inventory/CP/airdrop/paid cosmetics cannot be stolen. A FAILED BREACH steals EXACTLY ZERO. No raid target can be looted multiple times in a short window. Vault tiers protect meaningful amounts and are earned as well as, if monetized, obtainable without spending. Show clear defense report, loss type, receipts, anti-farm constraints, cooldowns and victim recovery. Do not infer all 'banked' materials are exposed simply because they exist: use explicit separate raid-exposed store and auditable transfer rules; existing banked material safe from death remains. Never steal from nonparticipants or abuse a player's offline time to force an unrecoverable setback.\n- Referrals link bases optionally: verified invited friends' Command Bases can appear as allied contacts/visitable silhouettes/assistance callouts with limited earned bonuses, not an entry requirement or a paid recruit scheme. Use existing verified one-level referral links and 5+ active-day protections; DO NOT alter referral airdrop bonuses, wallet allocations, Arcade daily caps or pretend fake social presence."
+    },
+    {
+      "section": 4,
+      "title": "COMMUNITY WAR, SOCIAL PURPOSE, AND NEVER-ENDING CONTENT CHOICES",
+      "full_text": "- Add one SHARED server-authoritative HUMANITY VS PARASITES warfront campaign accessible even with few players. Players contribute verified raid/objective/defense score; shared goals unlock world-visible monuments/temporary operations and permanent campaign-history achievements, not perpetual fake leaderboards. Show accurate current participation and progress without simulating nonexistent players. Contribute via solo missions; allies/verified referrals may coordinate or gift limited aid if safe. Repeatable global campaigns can open fresh objectives without deleting previous earned gear/base/territory history; no premium seasonal track, mandatory 7-day streak, faction-prestige spending sink, or destructive season resets.\n- Give always-available engaging choices at player return: patrols and interceptions, contracts, fortification upgrades, raid variants, base defense, exploration intel and challenging raid boss. A new player sees near-term attainable goals; an established player sees >=3 meaningful different active choices after 1h, after 5h and after 20h of total play. Avoid one daily cap causing a dead game, avoid grinding trivial identical minibots for 3 hours. Use a non-forced rotating operations board with clear actual availability, physically navigable activity, transparent payouts, minimum 15\u201330min rotation for some encounters and 24h reset for higher payouts, always some uncapped but anti-abuse legitimate activity. Mission scheduling is authoritative and persists across devices.\n- Progression arc: 0\u201310min visible Parasite skirmish and loot, 10\u201330min upgrade and missions, 45\u201375min first actual Command Base, 1\u20134h upgraded visually distinct fortress and conquered outpost, 5\u201320h multiple raid strategies/elite gear and unlocked territory, beyond 20h campaign contribution, base mastery and prestige recognition. These are design/time estimates to substantiate with real models and browser tests, not marketing guarantees. Use visible 'NEXT MEANINGFUL MILESTONE' with one-click map guidance, not cluttered quest menu spam.\n- Human vs parasite narrative retains original premise and doesn't create artificial competing political factions or currencies. The six original Arcade modes remain functioning. The existing referral/airdrop systems remain separate; never suggest in UI that playing, paying, or referrals guarantee financial returns or future token eligibility."
+    },
+    {
+      "section": 5,
+      "title": "REAL REASONS TO SPEND \u2014 PREMIUM, PERMANENT, ATTRACTIVE",
+      "full_text": "The business objective is to fund the company and eventually its airdrop ecosystem through a legitimate, loved game. Build a visually desirable permanent premium catalog with substantial breadth. Do NOT offer pay-to-win raid theft advantages, deceptive urgent purchase pressure, hidden lotteries, fake supply scarcity, crypto investment promises, or a recycled seasonal premium track. Do not implement the speculative future 'Lunar Forge' cosmetic crafting system: it was only a possible future proposal, not approved.\n\nDesign 20+ ACTUALLY distinct market-ready premium SKU entries and implement as many with actual representative art/VFX and working previews/entitlements as possible (not 20 placeholder labels). Release blocker: at least 12 polished distinctly rendered, giftable-if-supported permanent products with functional preview, ownership and equip paths across categories, and the remaining clearly separated as unreleased proposals if not implemented. Suggested market positions and illustrative USD prices (verify platforms before finalizing; never invent live pricing):\n  - COMMAND BASE ARCHITECTURE COLLECTIONS: premium silhouette/theme facades, shield dome hues, hangar animation packages, holographic troop banners, command spire transformations; 4-6 SKUs $7.99\u2013$29.99. Preserve functional hitboxes/visibility. These are major transformative cosmetics, not a single recolored cube.\n  - WEAPON FIRE SIGNATURE COLLECTIONS: distinctive Moonbeam/Pulse/Twin/Siege bolt materials, muzzle flashes, paid premium sounds and hit trails with readable game physics; 4-6 SKUs $3.99\u2013$14.99. Cosmetic VFX never makes enemies harder to see, never changes damage/velocity/range or target detection. Genuine in-game demonstration video/try before purchase.\n  - MECH AURA/ARMOR FINISH COLLECTIBLES: original paint stays visible, Lunar Skin remains an ADDITIVE visual overlay, detailed premium themed trim, holograms, engine exhaust, death-free wreck decals; 4-6 SKUs $4.99\u2013$19.99. Keep original visual identity, not a replacement model.\n  - COMMANDER PRESTIGE/CAMPAIGN COSMETICS: permanent personal hangar ornaments, victory animation, cross-platform callsign plaques/warfront holographic flag, noncompetitive player page/base recognition; 3-5 SKUs $2.99\u2013$9.99; no mandatory leaderboard purchasing.\n  - PERMANENT 'FOUNDERS COMMAND' PREMIUM SETS: one or two bundles $24.99\u2013$49.99, with multiple visual changes that can be separately previewed. A tangible permanent cosmetic ownership benefit. Avoid fake scarcity/lifelong promised financial reward.\n  - OPTIONAL INSTANT UPGRADE / BUILD ACCELERATION: if existing certified payment rails and balance/security permit, offer instant completion of strictly earnable **PvE-focused** module upgrades for transparent fixed prices; all same content achievable through play in reasonable time and nothing influences airdrop ranking/Arcade PvP, raid victim theft, or unfair opponent matching. Show earning alternative, cap competitive impact. Sell clear SKUs rather than paid random roll. The owner earlier approved earn-with-CP or instant real-money upgrades; implement fairly without effectively locking core gameplay behind payment.\n\nEconomy / commerce specifics:\n- Use existing Stars, TON and SOL integration only if a fully verified, safe checkout flow (server-side provider verification, signed webhook or equivalent on-chain finality checks, idempotency, authenticated identity binding, price/currency checks, replay/duplicate/refund handling) is genuinely ready and allowed. Inspect draft PR #21 payment certification separately: it is not automatically safe to merge. Never silently turn on live purchasing with unverified receipts, accept client 'paid' flags, expose private keys, or require user to spend real money to test. Use approved sandbox/integration fixtures and live feature flags. If no certified end-to-end rail available, DEPLOY all actual preview/catalog/equip/entitlement/UI mechanics in a clearly 'COMMERCE NOT YET AVAILABLE' disabled checkout state, and report exact certification blocker, not a fabricated success. Do not hold up the remainder of Conquest gameplay for payment integration.\n- Product catalog and entitlements server owned, atomic per pilot, persistent across accounts and devices, exact SKU and payment amount/currency/provider and order number, double-spend protection, refunds safe. Surface honest pricing, permanently owned cosmetic state, owned products hidden from purchase or clearly marked. Never invent a product purchase confirmation in UI. Free awarded cosmetics and premium items must share a safe renderer and noncompetitive boundaries.\n- Retain existing 75% development/operations + 25% intended public LP allocation as a BUSINESS POLICY only; do not build automated LP transfers or token mechanics in this session without actual validated deployment and compliance review. Do not modify airdrop caps, wallet linking or reward logic."
+    },
+    {
+      "section": 6,
+      "title": "VISUAL COMPLETENESS \u2014 PREMIUM MOON SCI-FI WITH CLEAR COMBAT",
+      "full_text": "- This is the flagSHIP 3D mobile-first anime-inspired mecha war. Strong high-contrast art direction, directional lighting and dust under treads, gun recoil, projectiles that look like weapon class rather than identical tiny spheres, Moonfall dramatic distinct beam not an enormous blue ball, visible launch drones, artillery trajectories, plasma shockwaves, base construction phases and gorgeous but performant command silhouettes. Preserve existing equipment/lunar skin originals and original paint color.\n- Build with existing Three.js custom procedural/owned pipeline; no parallel engine, no silent GLB support assumption, no imported copyrighted art. Optimize draw calls, instancing, pooled particles, detailLOD, materials, colliders independent of art. HIGH/LOW/2D fallback; adaptive mobile cap, WebGL context loss and Telegram viewport support. On mobile, prioritize a clean uncluttered HUD and readable enemy hull selected health.\n- Each new base tier and conquest objective completion visibly changes something meaningful in the scene and map immediately. Add at least 12 key screenshot reference states at 320x568, 390x844 and desktop, plus frame-time/draw-call data on compatible automated browsers. On actual iPhone physical testing, report NOT tested unless physically tested. Do not assert 'legendary graphics' from code tests.\n- Distinct audible combat feedback, optional reduced-motion and muted sound respect, readable text contrast and no prompts blocking joystick on small screens. Do not add enormous blocking startup story every reconnect."
+    },
+    {
+      "section": 7,
+      "title": "SECURITY / PERFORMANCE / BACKWARD COMPATIBILITY",
+      "full_text": "- Reuse account authentication and per-pilot ETag CAS. Multiplayer shared war counters must be safe against concurrent writes and reward inflation. Use server's canonical combat/time/collision authority; client never submits won/loot/positions/resource amounts or ownership. Implement per-player idempotent events and exactly-once secure credit, immutable first-clear achievements, raids do not materialize stolen materials on attacker without equally verified victim debits. Lock concurrent raid settlement. Prevent replay abuse, same-IP/alt-farming as reasonable, self-raiding, fake referrals, fake time, cooldown spoofing, wallet receipts reuse. Public campaign counters from verified data only.\n- Keep bounded memory/draw/CPU/DB access for thousand-player goals; do not clone whole Moon or materialize 25 mission NPC arrays globally for each player. Move/simulate only nearby objects and active raids. Use seeded sector and existing streaming world terrain. Define caps e.g. active nearby AI, projectiles, world VFX, pending secure actions; verify performance and correct physical coordinate traversal.\n- Existing purchases, account identities, shared gear inventory, 50k Arcade cap (if existing), referral/airdrop economy and all six modes MUST remain untouched and pass tests. New raid gear cannot silently buff shared PvP or leak to other modes; server canonical entitlement separation, with deliberate feature flags for Conquest-only upgrades.\n- Maintain first Command Base 45\u201375m and genuine recurring earned progress for legitimate users. Calibrate drop rates (<5% best-gear probability per eligible nonpaid raid), CP/material values, base cost/upgrade time and purchase alternatives by deterministic simulation; provide tables and a readable source of truth. No nontransparent lottery disguised as guaranteed loot."
+    },
+    {
+      "section": 8,
+      "title": "RELEASE ACCEPTANCE \u2014 'DONE' ONLY WHEN PLAYABLE AND VALIDATED",
+      "full_text": "- Test with disposable authenticated accounts, never actual owner production records or live payments. End-to-end REAL browser/Worker play journey: initial visible world fight -> mission+rewards -> first Command Base -> raid selection -> actually travel, fight and complete three DIFFERENT raid families -> guaranteed loot/claimed ownership -> base grows physically -> protected Vault and forced failed/successful raids (0 stolen on failure, <=15% attackable on success) -> passive CP claim once/24h -> shared campaign contribution -> preview/equip permanent cosmetic -> refresh, new device, concurrent tab, retain ownership and valid receipts. Test 320x568/390x844 Chrome+WebKit, 2D fallback, low/high, desktop, scoped Telegram viewport mocks. Real iPhone Telegram testing must not be claimed unless performed.\n- 25 unique raids asserted runnable, not just defined. Run deterministic test with each at least once and browser screenshot capture for representative five families. All six main mission archetypes work and issue real rewards, not empty victory states. Include multiple mini-boss types. Enemies are visibly present without pressing START MISSION. Map changes, distinct rewards, constantly available activities and actual base visuals check must be automated to the extent possible.\n- Moonbeam stays >=20 shots before first vent for typical legal loadouts; thermal fill continuously visually matches real heat, cools within reasonable time; no three-shot vent regressions. Three simultaneous touch Dash/FIRE/DRIVE and SHIELD works on WebKit/mobile simulation. Projectile velocity/range both affect actual travel. Owned gear and engineering significantly enhance outcomes compared to stock, without enemy power matching.\n- Run existing Conquest / economics / shared gameplay / payment-safety / Arcade / PvP / graphics suites, browser/WebKit/Chromium, secure worker unit and integration tests. Verify referral and airdrop invariants. Add concurrency tests for raid victims, passive claim and orders; pricing purchase entitlement tests with fake provider signatures and real server rejection of unsigned claims; tests for refunded entitlement and service outage without lost player inventory. No making up passing checks.\n- Run 5-part synthetic game walkthrough documented at 0, 30min, 75min, 4h, 20h player progress using generated deterministic verified fixtures and explain the real world upgrades/choices for each, not just earned numeric CP. Screenshots should show the evolving fortress, battle effects and base statuses; trace actual actions, not merely mock overlay screenshots.\n- If a genuine P0 release blocker is discovered, resolve it within the same agent session where possible. If no safe certification for paid orders, hide checkout behind honest feature flag, ship rest, report explicitly. Never claim unreleased payment method is ready. Avoid bloated P1+ speculative improvements if gameplay gates are not met. Prioritize observable improvements."
+    },
+    {
+      "section": 9,
+      "title": "FINAL SHIPPING AND REQUIRED SUMMARY",
+      "full_text": "- Merge only after applicable tests pass and gameplay journey and security checks meet the above. Owner authorization to merge/deploy is explicit. Use existing GitHub Actions and Cloudflare+Pages deployment; confirm SHAs, versions, published files and health/auth checks on origins. Never fake successes, grant real owner gear without separate explicit instruction, or alter production wallets/payments/LP.\n- Update docs/conquest/CONQUEST_FLAGSHIP_V1.md to mark every committed requirement with proof, list real pending blockers (particularly payment certification, any unavailable live PvP), exact player journey + fair-purchase inventory, loot table, raid matrix, anti-cheat, screenshots and cross-mode invariants. No unchecked must-have section portrayed as complete.\n- Final report must state: exact PR and merge SHA, deployed version(s), 25+ raid operational count tested, six mission results, physical command-base tiers & screenshots, PvE defense and optional async player raid status, premium product count actually rendered and equipped, payments LIVE or DISABLED with precise reason, mobile/fallback evidence, known limitations and 0/30m/75m/4h/20h gameplay milestones. Avoid victory speeches if visible gameplay is empty.\n- If task is interrupted by Codex service limits, preserve one branch and precise checkpoint, resume SAME Codex conversation when available\u2014never instruct owner to run all the prompts again or start extra sessions. Never rewrite working code just to look busy.\n\nDO THE IMPLEMENTATION, NOT ANOTHER PLAN. PRIORITIZE PLAYABLE AND ATTRACTIVE ACTUAL CONTENT + VERIFIED PERMANENT PROGRESSION, THEN SECURE MONETIZATION. NO NEW SESSION UNLESS THERE IS A GENUINE BLOCKER OUTSIDE CODING.\n\nMANDATORY NEW OWNER ACCEPTANCE CONTRACT \u2014 IMMENSELY SMOOTH GAMEPLAY:\nBefore changing code, read docs/conquest/SMOOTHNESS_PERFORMANCE_ACCEPTANCE.md on main. It is binding for this session, in addition to every requirement above. Optimize complete developed bases, dense 25+ raids, squad warfare, laser VFX and UI together for target stable 60 FPS on capable iPhone and responsive controls. Use adaptive graphics and bounded streaming, server-authoritative but non-jarring reconciliation, stress-test enemy-rich real scenarios, memory and stutters, with honest actual vs simulated hardware measurements. Do not call the endgame complete if it visibly stutters or freezes.\n\n---"
+    }
+  ],
+  "pr": "https://github.com/solb7403-creator/war-machines/pull/54",
+  "commitIdentityRepair": "docs/conquest-session-2/commit-map.json"
+}

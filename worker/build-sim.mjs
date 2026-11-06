@@ -32,8 +32,9 @@ export function buildSim(out = join(here, 'src', 'sim.gen.js')) {
     'const conquestRoot = {};\n' +
     read('js/conquest/world.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/combat.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
+    read('js/conquest/catalog.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
     read('js/conquest/controls.js').replace(/\}\)\(globalThis\);/g, '})(conquestRoot);') +
-    'return {Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,tankOf,machineSpeed};\n})();\n';
+    'return {Catalog:conquestRoot.ConquestCatalog,Control:conquestRoot.ConquestControl,World:conquestRoot.ConquestWorld,Combat:conquestRoot.ConquestCombat,tankOf,machineSpeed};\n})();\n';
   writeFileSync(out, src);
   return out;
 }
