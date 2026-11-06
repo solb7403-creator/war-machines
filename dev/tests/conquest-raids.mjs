@@ -19,7 +19,7 @@ function planRoute(p,target,b,enemy){const step=4,origin={x:p.x,z:p.z},key=(x,z)
  if(!end)return [];const route=[];while(end.i||end.j){route.push(point(end));end=parent.get(key(end.i,end.j));}return route.reverse();}
 const results=[];
 for(const id of (process.env.CQ_RAID_IDS?process.env.CQ_RAID_IDS.split(','):C.raidIds)){
- const o=C.operations[id];let now=1800000000000,s=createState(L,now);const q=o.entry;s.position={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'};s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0,stuck=0,planned=[],bestGap=Infinity,sinceBest=0,goalKey='';
+ const o=C.operations[id];let now=1800000000000,s=createState(L,now);s.completed=Object.fromEntries(C.fieldMissionIds.map(id=>[id,{at:now,attempt:0}]));const q=o.entry;s.position={x:q[0],z:q[1],y:W.groundAt(q[0],q[1]),surface:'ground'};s=applyAction(s,{seq:1,action:'start-mission',mission:id},now);let steps=0,stuck=0,planned=[],bestGap=Infinity,sinceBest=0,goalKey='';
  while(s.battle.state==='active'&&steps<10000){
   const b=hydrate(s),p=s.position,alive=b.enemies.filter(e=>e.hp>0&&!e.resident),visible=alive.filter(e=>K.visible(b,p,e));
   const priority=visible.find(e=>e.id===b.carrierId)||visible.find(e=>e.immobile)||visible[0]||alive[0];

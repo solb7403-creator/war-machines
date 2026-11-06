@@ -72,7 +72,9 @@ const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,b
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
 function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=modules.radar||0;return {radius:Math.max(18+6*defense,tier>=5?30:tier>=4?24:0),mitigation:Math.min(.5,defense*.1+(tier>=4?.1:0)+(tier>=5?.05:0)),radar:Math.max(radar,tier>=5?1:0),radarRange:120+100*Math.max(radar,tier>=5?1:0)+(tier>=5?100:0)};}
-const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1080,z:945,route:[[1080,945],[1115,945],[1130,970],[1100,975]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+// road-intercept patrols the south road just outside the home perimeter, where the Helium, Ash and Crossroads routes leave
+// home (it previously doubled up on the Crossroads garrison camp). It stays >=150 m from the base and Refuge terminal.
+const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
 const formations=Object.freeze([
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
@@ -270,5 +272,32 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({refuge,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+// Owner rule: raids unlock only after the six opening field missions each have a verified clear.
+const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&id!=='base-defense'));
+function fieldProgress(completed){return fieldMissionIds.filter(id=>completed?.[id]).length;}
+function raidsUnlocked(completed){return fieldProgress(completed)>=fieldMissionIds.length;}
+// Fast travel network, shared by client and Worker: the Refuge, the Command Base once built, and every frontier sector
+// humanity holds. Departure needs a quiet spot inside one of those nodes; travel changes position only (cargo stays unbanked).
+const TRAVEL={safeRadius:60,quietMs:10000},arrivals=new Map();
+// Candidate arrival points per node: the authored spot first, then two rings inside the node, each on open, level footing.
+function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(id);const open=p=>!W.solidAt(p.x,p.z)&&[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const n=W.advance(p,dx,dz);return Math.hypot(n.x-p.x-dx,n.z-p.z-dz)<.1;});
+ const near=(cx,cz)=>{for(let r=0;r<=12;r+=4)for(let i=0;i<(r?8:1);i++){const a=i*Math.PI/4,qx=cx+Math.cos(a)*r,qz=cz+Math.sin(a)*r,p={x:qx,z:qz,y:W.groundAt(qx,qz),surface:'ground'};if(open(p))return freeze(p);}return null;};
+ const out=[near(x,z)];for(const ring of [Math.min(40,radius*.4),Math.min(80,radius*.75)])for(let i=0;i<8;i++){const a=i*Math.PI/4;out.push(near(x+Math.cos(a)*ring,z+Math.sin(a)*ring));}
+ const list=freeze(out.filter(Boolean));arrivals.set(id,list);return list;}
+function travelNodes(territory={},baseTier=0){const nodes=[{id:'refuge',name:'REFUGE SUPPLY',x:refuge.x,z:refuge.z,radius:45,arrivals:travelArrivals('refuge',refuge.x-6,refuge.z-8,24)}];
+ if(baseTier>0)nodes.push({id:'base',name:'COMMAND BASE',x:baseDefinition.x,z:baseDefinition.z,radius:45,arrivals:travelArrivals('base',baseDefinition.x,baseDefinition.z-10,24)});
+ for(const s of sectors)if(s.id!=='refuge'&&territory?.[s.id]?.owner==='humanity')nodes.push({id:s.id,name:s.name,x:s.x,z:s.z,radius:s.radius,arrivals:travelArrivals(s.id,s.x,s.z,s.radius)});
+ // The Refuge corridor is humanity's home sector: departing anywhere inside it counts as the Refuge network.
+ const home=sectors.find(s=>s.id==='refuge');if(home)nodes.push({id:'refuge-corridor',name:home.name,x:home.x,z:home.z,radius:home.radius,departOnly:true});
+ // The respawn point at the viaduct west ramp is the Refuge's front door: a freshly respawned pilot can depart from it.
+ nodes.push({id:'refuge-viaduct',name:'REFUGE VIADUCT',x:898,z:1024,radius:45,departOnly:true});
+ return nodes;}
+// First candidate arrival with no live hostile within the safe radius (and outside the Command Base walls); null if none.
+function travelArrival(node,enemies,blocked){return node?.arrivals?.find(p=>!blocked?.(p)&&!(enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))||null;}
+function travelNodeAt(state,p){return travelNodes(state?.territory,state?.base?.tier||0).find(n=>Math.hypot(p.x-n.x,p.z-n.z)<=n.radius)||null;}
+function travelBlock(state,p,enemies,now){if(!state)return 'Online connection required';if(state.mission)return 'Finish or leave the operation first';if(!(state.hp>0))return 'Machine disabled';
+ if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
+ if(now-(state.lastHitAt||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
+ if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
+root.ConquestCombat=Object.freeze({refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

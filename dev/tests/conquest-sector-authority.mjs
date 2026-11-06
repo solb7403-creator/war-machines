@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';import {buildSim} from '../../worker/bui
 const {RULES:R,CONQUEST:{World:W,Combat:C}}=await import('../../worker/src/sim.gen.js');
 const {createState,applyAction,refreshState}=await import('../../worker/src/conquest-sim.js');
 const {capture}=await import('../../worker/src/conquest-campaign.js');const now=1800000000000,s=createState(R.STOCK_L,now);
-const raid=C.operations['raid-intercept-1'];s.battle.enemies=[];s.position={x:raid.x,z:raid.z,y:W.groundAt(raid.x,raid.z),surface:'ground'};capture(s,raid.sector,now);refreshState(s,now+1200001);const first=s.territory[raid.sector].capturedAt;
+const raid=C.operations['raid-intercept-1'];s.completed=Object.fromEntries(C.fieldMissionIds.map(id=>[id,{at:now,attempt:0}]));s.battle.enemies=[];s.position={x:raid.x,z:raid.z,y:W.groundAt(raid.x,raid.z),surface:'ground'};capture(s,raid.sector,now);refreshState(s,now+1200001);const first=s.territory[raid.sector].capturedAt;
 let a=applyAction(s,{seq:1,action:'start-mission',mission:raid.id},now+1200001);a=applyAction(a,{seq:2,action:'return-exploration'},now+1200001);assert.equal(a.territory[raid.sector].owner,'humanity','ordinary offensive raid retreat cannot lose owned territory');assert.equal(a.territory[raid.sector].status,'defense-alert');
 const op=C.operations['sector-defense-western'];assert(op?.defense,'real sector defense operation exists');a.position={x:op.x,z:op.z,y:W.groundAt(op.x,op.z),surface:'ground'};a.battle.enemies=[];
 const cp=a.ledger.cp;a=applyAction(a,{seq:3,action:'start-sector-defense',mission:op.id},now+1200001);assert.equal(a.mission,op.id);assert.equal(a.territory.western.status,'contested');assert(a.battle.enemies.some(e=>!e.resident&&e.hp>0));assert.equal(a.battle.objectiveDamageable,true);

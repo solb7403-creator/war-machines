@@ -23,6 +23,7 @@ jobs:
           node dev/tests/conquest-economy.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-netcode.mjs
+          node dev/tests/conquest-fast-travel.mjs
           node dev/tests/conquest-balance.mjs
           node dev/tests/conquest-session-033.mjs
           node dev/tests/conquest-living-war.mjs
