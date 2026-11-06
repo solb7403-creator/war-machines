@@ -174,7 +174,14 @@ async def run(args):
                 await page.get_by_role('button',name='START MISSION',exact=True).click()
                 await page.wait_for_function('(id)=>Conquest.view.authority.state.mission===id',arg=operation)
                 result['cases'].append(await j.win(operation))
-                await page.get_by_role('button',name='RETURN TO EXPLORATION',exact=True).click()
+                # Return like a player: the result must actually close; on a transient command-link error, tap again.
+                for attempt in range(4):
+                    ret=page.get_by_role('button',name='RETURN TO EXPLORATION',exact=True)
+                    if not await ret.count(): break
+                    await ret.click()
+                    try: await page.wait_for_selector('.cq-result',state='detached',timeout=6000); break
+                    except Exception: print('RETURN retry',attempt,await page.locator('.cq-aar-error').all_inner_texts(),flush=True)
+                assert not await page.locator('.cq-result').count(),'result dialog must close after returning to exploration'
                 await page.wait_for_function('!Conquest.view.battle&&!Conquest.view.authority.actionBusy&&!Conquest.view.authority.state.mission')
                 (OUT/f'{name}-results.json').write_text(json.dumps(result,indent=2))
             if ids:

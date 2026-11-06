@@ -61,3 +61,4 @@
 @media (prefers-reduced-motion:reduce){.cq-aar-tile{animation:none}}
 .cq-hull-warning{color:#ffb08f!important;border-left:3px solid #ff7a5c;padding-left:8px;font-size:12px!important}.cq-hull-ready{color:#9fd9e2!important;font-size:12px!important}
 .cq-recommend{font-size:12px!important;color:#e0c27a!important}
+.cq-aar-error{color:#ffb08f!important;font-size:12px!important}
