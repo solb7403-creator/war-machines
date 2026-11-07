@@ -1,0 +1,68 @@
+{
+ "option": "a",
+ "generated": "2026-11-07T09:46:43.287Z",
+ "renderer": "Chromium SwiftShader (software) in a cloud container; relative cost only, never iPhone FPS",
+ "results": [
+  {
+   "option": "a",
+   "subject": "refuge",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 31,
+   "triangles": 70464,
+   "geometries": 22,
+   "textures": 4,
+   "programs": 9,
+   "textureMB": 0.35,
+   "shadowMap": true,
+   "frameMedianMs": 1.3,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/a/refuge-390-high.jpg",
+   "ms": 10464,
+   "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+   ]
+  },
+  {
+   "option": "a",
+   "subject": "raid",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 73,
+   "triangles": 88838,
+   "geometries": 68,
+   "textures": 10,
+   "programs": 13,
+   "textureMB": 4.85,
+   "shadowMap": true,
+   "frameMedianMs": 2.9,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/a/raid-390-high.jpg",
+   "ms": 14106,
+   "errors": []
+  },
+  {
+   "option": "a",
+   "subject": "map",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "mapFirstPaintMs": 292.9,
+   "mapRepaintMs": 1.2,
+   "note": "desktop CPU timing; a pan/zoom repaint must stay cheap on phones",
+   "file": "docs/conquest-graphics/phase1/a/map-390-high.jpg",
+   "ms": 934,
+   "errors": []
+  }
+ ]
+}
