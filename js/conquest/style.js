@@ -217,6 +217,10 @@ function makeEarth(T,w,h){const cv=document.createElement('canvas');cv.width=w;c
   if(Math.abs(py)>.94){r=g=b=215;}const c=clamp01((cl-.52)*2.8);r+=(240-r)*c;g+=(246-g)*c;b+=(255-b)*c;const o=(j*w+i)*4;D[o]=r;D[o+1]=g;D[o+2]=b;D[o+3]=255;}}
  x.putImageData(img,0,0);const t=new T.CanvasTexture(cv);t.colorSpace=T.SRGBColorSpace;t.wrapS=T.RepeatWrapping;t.wrapT=T.ClampToEdgeWrapping;t.generateMipmaps=false;t.minFilter=T.LinearFilter;return t;}
 
+// Texture sources are generated once per session; every view gets its own Texture over the same image data (its renderer
+// uploads it; dispose() frees only that GPU copy).
+const TEXSRC={T:null,map:new Map()};
+function texMemo(T,key,make){if(TEXSRC.T!==T){TEXSRC.T=T;TEXSRC.map.clear();}let t=TEXSRC.map.get(key);if(!t)TEXSRC.map.set(key,t=make());const c=t.clone();c.needsUpdate=true;return c;}
 function create(T,opts={}){
  // software: a CPU rasterizer (SwiftShader/llvmpipe) was detected; it takes the LOW shading path at runtime.
  const W=root.ConquestWorld,C=root.ConquestCombat,software=!!opts.software,low=!!opts.low||software,high=!low,F=footprints(W,C),ground=(x,z)=>W.groundAt(x,z);
@@ -252,15 +256,17 @@ function create(T,opts={}){
   dome:new T.SphereGeometry(1,high?28:18,high?14:9,0,TAU,0,Math.PI/2)};
  const fr={};G.hexF=r=>fr['h'+r]||(fr['h'+r]=flat(new T.CylinderGeometry(r,1,1,6,1,false,Math.PI/6)).translate(0,.5,0));
  G.octF=r=>fr['o'+r]||(fr['o'+r]=flat(new T.CylinderGeometry(r,1,1,8,1,false,Math.PI/8)).translate(0,.5,0));G.cylF=r=>fr['c'+r]||(fr['c'+r]=new T.CylinderGeometry(r,1,1,20,1).translate(0,.5,0));
- const tex={atlas:makeAtlas(T,high?512:256),earth:makeEarth(T,high?256:128,high?128:64),detail:makeDetail(T,high?256:128)};
+ const tex={atlas:texMemo(T,'atlas'+high,()=>makeAtlas(T,high?512:256)),earth:texMemo(T,'earth'+high,()=>makeEarth(T,high?256:128,high?128:64)),detail:texMemo(T,'detail'+high,()=>makeDetail(T,high?256:128))};
  const mk=(vs,fs,extra,o)=>{const m=new T.ShaderMaterial(Object.assign({uniforms:Object.assign({},U,extra||{}),vertexShader:vs,fragmentShader:fs,fog:true},o||{}));m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
  const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS),
   fx:mk(FX_VS,FX_FS,{uMap:{value:tex.atlas},uKind:{value:[V3(.1,.68,1).multiplyScalar(.6),V3(.3,1,.5).multiplyScalar(.5),V3(.6,.95,1).multiplyScalar(.9),V3(1,.1,.7).multiplyScalar(.7)]}},
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
   sky:mk(SKY_VS,SKY_FS,{uEarth:{value:tex.earth},uEarthDir:{value:V3(.86,.15,.48).normalize()},uEarthSize:{value:.068},uEarthL:{value:V3(-.62,.34,.7).normalize()},uSpin:{value:2.2},
    uZenith:{value:V3(.0002,.0003,.0009)},uBandA:{value:V3(0,.2,.19)},uBandB:{value:V3(.045,.012,.11)},uFogC:{value:V3(.0018,.0021,.0048)}},{fog:false,depthWrite:false,side:T.DoubleSide})};
- const shieldMat=(color,opacity,hexK=1)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
- MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12);
+ const shieldMat=(color,opacity,hexK=1,side=T.DoubleSide)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
+ MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12,T.FrontSide);
+ // Additive glow/decal draws are never tap targets (view pick() and the browser bots skip userData.noPick).
+ const fxMesh=(geo,order=2)=>{const m=new T.Mesh(geo,MAT.fx);m.renderOrder=order;m.userData.noPick=true;return m;};
  const S={id:'neon-frontline',version:1,low,high,software,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
  const keep=g=>{g.userData.hfShared=true;S.shared.push(g);return g;};
  for(const g of Object.values(G))if(g&&g.isBufferGeometry)keep(g);
@@ -291,8 +297,9 @@ function create(T,opts={}){
    for(let k=0;k<seg;k++){const a=base+k*2;this.q4(a,a+2,a+3,a+1);}}
   ringGlow(x,z,y,R,h,e,seg){const z0=[0,0,0];this.band(x,z,y-h/2,R,R,h/2,z0,e,seg);this.band(x,z,y,R,R,h/2,e,z0,seg);}
   geometry(){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(this.P,3));g.setAttribute('uv',new T.Float32BufferAttribute(this.U,2));
-   g.setAttribute('aCol',new T.Float32BufferAttribute(this.A,4));g.setAttribute('aBill',new T.Float32BufferAttribute(this.B,3));g.setIndex(this.I);g.computeBoundingSphere();return g;}
-  mesh(){if(!this.n)return new T.Group();const m=new T.Mesh(this.geometry(),MAT.fx);m.renderOrder=2;return m;}}
+   g.setAttribute('aCol',new T.Float32BufferAttribute(this.A,4));g.setAttribute('aBill',new T.Float32BufferAttribute(this.B,3));g.setIndex(this.I);g.computeBoundingSphere();
+   let bb=0;for(let i=0;i<this.B.length;i+=3)if(this.B[i+2])bb=Math.max(bb,Math.hypot(this.B[i],this.B[i+1]));if(bb)g.boundingSphere.radius+=bb*1.2;return g;}
+  mesh(){return this.n?fxMesh(this.geometry()):new T.Group();}}
  S.Bld=Bld;S.Fx=Fx;
  const pair=(Sb,X)=>{const g=new T.Group();g.add(Sb.mesh(),X.mesh());return g;};
 
@@ -378,10 +385,14 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   Sb.add(G.box,new T.Matrix4().multiplyMatrices(m,M(0,.16,-d/2,0,0,0,w,.08,.08)),K.cyan,1);
   X.quad([at(-w*.48,.15,d*.48),at(w*.48,.15,d*.48),at(w*.48,.15,-d*.48),at(-w*.48,.15,-d*.48)],AT.GRID,E(0x22e6ff,.42));
   for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){const c=at(sx*(w/2-.6),0,sz*(d/2-.6)),gy=ground(c.x,c.z);if(c.y>gy)Sb.box(c.x,(c.y+gy-.5)/2,c.z,.25,c.y-gy+.5,.25,K.mid);}}
- function pylon(Sb,X,px,pz){const g=ground(px,pz);Sb.box(px,g+3.4,pz,.24,7.2,.24,K.mid);Sb.box(px,g+.2,pz,.7,.5,.7,K.dark);Sb.box(px,g+7.05,pz+.35,.22,.18,.9,K.dark2);Sb.box(px,g+6.92,pz+.75,.7,.12,.38,K.ice,1);Sb.box(px,g+3.4,pz+.13,.06,6.2,.04,K.cyan,1);
-  X.bill(px,g+6.8,pz+.75,1.7,AT.BLOB,E(0xa8f8ff,.8));X.decal(px,pz+.6,5.5,5.5,0,AT.BLOB,E(0x22e6ff,.3),0,low?4:6,.15);}
+ // Light pylons stand on a habitat plinth inside its solid r7.8 (never a 7 m mast in a drive lane); arm + light pool face the lane.
+ const pylonAt=([px,pz])=>{const h=F.habitats.reduce((a,b)=>Math.hypot(b.x-px,b.z-pz)<Math.hypot(a.x-px,a.z-pz)?b:a),d=Math.hypot(px-h.x,pz-h.z),ux=(px-h.x)/d,uz=(pz-h.z)/d;return [h.x+ux*7.35,h.z+uz*7.35,Math.atan2(ux,uz)];};
+ S.pylons=()=>PYLONS.slice(0,low?6:10).map(pylonAt);
+ function pylon(Sb,X,px,pz,a){const g=ground(px,pz),sx=Math.sin(a),sz=Math.cos(a),o=d=>[px+sx*d,pz+sz*d];Sb.box(px,g+3.4,pz,.24,7.2,.24,K.mid,0,a);Sb.box(px,g+.2,pz,.7,.5,.7,K.dark,0,a);
+  let [ax,az]=o(.35);Sb.box(ax,g+7.05,az,.22,.18,.9,K.dark2,0,a);[ax,az]=o(.75);Sb.box(ax,g+6.92,az,.7,.12,.38,K.ice,1,a);X.bill(ax,g+6.8,az,1.7,AT.BLOB,E(0xa8f8ff,.8));
+  [ax,az]=o(.13);Sb.box(ax,g+3.4,az,.06,6.2,.04,K.cyan,1,a);[ax,az]=o(3.2);X.decal(ax,az,5.5,5.5,a,AT.BLOB,E(0x22e6ff,.3),0,low?4:6,.15);}
  S.refuge=()=>{const Sb=new Bld(),X=new Fx();F.habitats.forEach((h,i)=>habitat(Sb,X,h,i));F.processors.forEach((p,i,a)=>processor(Sb,X,p,i,a));terminal(Sb,X,F.terminal);
-  F.solar.forEach(p=>solar(Sb,X,p));for(const [x,z] of PYLONS.slice(0,low?6:10))pylon(Sb,X,x,z);const g=pair(Sb,X);g.name='cq-style-refuge';g.userData.site={x:1150,z:1150,range:1600};return g;};
+  F.solar.forEach(p=>solar(Sb,X,p));for(const [x,z,a] of S.pylons())pylon(Sb,X,x,z,a);const g=pair(Sb,X);g.name='cq-style-refuge';g.userData.site={x:1150,z:1150,range:1600};return g;};
 
  // ---------- Refuge viaduct: the deck surface follows W.deckAt exactly (it is the drivable upper route) ----------
  S.viaduct=()=>{const Sb=new Bld(),X=new Fx(),zA=1015,zB=1033,deck=x=>W.deckAt(x,1024);
@@ -479,7 +490,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    Sb.box(x,y+10.6,z,4.2,1.8,4.2,K.dark2);for(const t of [-.55,.55])Sb.add(G.cylC,MDc(V3(x+t,y+10.7,z-1.6),V3(x+t,y+10.9,z-6.4),.34),K.mid);Sb.box(x,y+11.6,z+1.2,.5,.5,.5,K.red,1);
    X.bill(x,y+11.6,z+1.2,1.2,AT.BLOB,E(0xff3048,1));X.quadV(x,y+7.6,z-2.86,3.6,.9,0,AT[SIGN.DEFENSE],E(0x22e6ff,1.3));}
   if(tier>=4){Sb.box(12,y+10,10,.5,5.6,.5,K.mid);Sb.box(12,y+12.9,10,.8,.4,.8,K.cyan,1);X.quadV(12,y+8.8,15.9,3.4,.85,0,AT[SIGN.RADAR],E(0x22e6ff,1.2));}
-  if(tier>=5){const x=0,z=16;// on the solid back-wall line (sim |z-16|<3), so tanks never drive through the towerSb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
+  if(tier>=5){const x=0,z=16;/* on the solid back-wall line (sim |z-16|<3), so tanks never drive through the tower */Sb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
    Sb.add(G.cone6,M(x,y+26,z,0,0,0,1.3,6,1.3),K.panelA);Sb.add(G.ico,M(x,y+32.6,z,0,0,0,.8,.8,.8),K.ice,1);X.bill(x,y+32.6,z,4.2,AT.BLOB,E(0x22e6ff,1.2));X.quadV(x,y+6.2,z-2.7,4.6,1.15,0,AT[SIGN.COMMAND],E(0x22e6ff,1.6));}
   // Modules along the inner face of the back wall: colour = function, height = level.
   const MOD={reactor:[K.teal,0x2dffc4],hangar:[K.cyan,0x22e6ff],defense:[K.red,0xff3048],vault:[K.gold,0xffd36b],radar:[K.ice,0xa8f8ff],uplink:[K.violet,0xa07bff]};
@@ -499,8 +510,13 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    if(b>.85&&g>.5&&r<.6)o=[1,.12,.45,1];else if(r>.95&&g<.3)o=[1,.1,.6,1];else if(r>.7&&g<.3&&b<.3)o=[1,.08,.75,1.85];else if(r>.4&&g<.1&&b<.1)o=[.6,.02,.35,.7];
    else if(r>.45&&g>.25&&g<.45&&b<.2)o=[.16,.022,.07,0];else if(l>.6)o=[.36,.28,.4,0];else{const k=clamp01((l-.03)/.45);o=[.02+.19*k,.01+.085*k,.032+.23*k,0];}
    a.set(o,i*4);}geo.setAttribute('aCol',new T.BufferAttribute(a,4));return geo;};
+ // position/normal/aCol of two solid geometries in one indexed geometry (the hull's own attributes may be indexed or not).
+ const join=(a,b)=>{const g=new T.BufferGeometry(),na=a.attributes.position.count,nb=b.attributes.position.count,get=['getX','getY','getZ','getW'];
+  for(const k of ['position','normal','aCol']){const A=a.attributes[k],B=b.attributes[k],n=A.itemSize,arr=new Float32Array((na+nb)*n);
+   for(let i=0;i<na;i++)for(let j=0;j<n;j++)arr[i*n+j]=A[get[j]](i);for(let i=0;i<nb;i++)for(let j=0;j<n;j++)arr[(na+i)*n+j]=B[get[j]](i);g.setAttribute(k,new T.BufferAttribute(arr,n));}
+  const ia=a.index?Array.from(a.index.array):Array.from({length:na},(_,i)=>i),ib=b.index?Array.from(b.index.array,i=>i+na):Array.from({length:nb},(_,i)=>i+na);g.setIndex(ia.concat(ib));g.computeBoundingSphere();return g;};
  const PATTERN={shield:[K.cyan,0x48d8ff],ambush:[K.amber,0xffb347],artillery:[K.red,0xff5a3c],carrier:[K.teal,0x2dffc4],plasma:[K.violet,0xb07bff],command:[K.magHot,0xff7ae8]};
- const markers=()=>{const g=new T.Group(),a=new Bld(),b=new Bld();a.add(G.octa,M(0,0,0,0,0,0,.36,.5,.36),K.mag,1);b.add(G.octa,M(0,0,0,0,0,0,.44,.6,.44),K.amber,1);const n=a.mesh(),t=b.mesh();t.visible=false;g.add(n,t);g.userData.states=[n,t];return g;};
+ const markers=()=>{const g=new T.Group(),a=new Bld(),b=new Bld();a.add(G.octa,M(0,0,0,0,0,0,.36,.5,.36),K.mag,1);b.add(G.octa,M(0,0,0,0,0,0,.44,.6,.44),K.amber,1);const n=a.mesh(),t=b.mesh();t.visible=false;n.userData.noPick=t.userData.noPick=true;g.add(n,t);g.userData.states=[n,t];return g;};
  // Hull: cached per silhouette by the view (merged body/gun geometry with vertex colours) -> painted + dressed once.
  S.parasiteHull=(cached,e)=>{if(cached.style)return cached.style;const body=paint(cached.body),gun=paint(cached.gun),p=body.attributes.position;let x0=1e9,x1=-1e9,y1=-1e9,zw=0;
   for(let i=0;i<p.count;i++){x0=Math.min(x0,p.getX(i));x1=Math.max(x1,p.getX(i));y1=Math.max(y1,p.getY(i));zw=Math.max(zw,Math.abs(p.getZ(i)));}const L=x1-x0;
@@ -511,8 +527,8 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   if(fy1>fy0)for(const s of [-1,1])D.add(G.ico,M(x1+.01,(fy0+fy1)/2,s*.2*zw,0,0,0,.045*zw+.02,.045*zw+.02,.045*zw+.02),K.mag,.85);
   if(e.commander){const c=PATTERN[e.pattern]||PATTERN.command;D.spike(V3(-L*.12,y1,0),V3(-L*.2,y1+.9,0),.18,K.chitinD);D.add(G.octa,M(-L*.16,y1+1.05,0,0,0,0,.2,.32,.2),c[0],1);for(const s of [-1,1])D.box(-L*.1,y1*.8,s*(zw+.03),L*.5,.06,.04,c[0],1.6);}
   const X=new Fx();X.flat(0,.05,0,zw*1.7,L*.75,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,zw*2.2,L*.95,AT.BLOB,e.commander?E((PATTERN[e.pattern]||PATTERN.command)[1],.55):E(0xff2bd6,.5),0);
-  cached.style={dress:keep(D.geometry()),fx:keep(X.geometry())};return cached.style;};
- S.hullMeshes=(cached,e)=>{const st=S.parasiteHull(cached,e);return {body:new T.Mesh(cached.body,MAT.solid),gun:new T.Mesh(cached.gun,MAT.solid),dress:software?null:new T.Mesh(st.dress,MAT.solid),fx:low?null:Object.assign(new T.Mesh(st.fx,MAT.fx),{renderOrder:2}),marker:markers()};};
+  const dress=D.geometry();cached.style={body:keep(join(body,dress)),dress:keep(dress),fx:keep(X.geometry())};return cached.style;};
+ S.hullMeshes=(cached,e)=>{const st=S.parasiteHull(cached,e);return {body:new T.Mesh(software?cached.body:st.body,MAT.solid),gun:new T.Mesh(cached.gun,MAT.solid),dress:null,fx:low?null:fxMesh(st.fx),marker:markers()};};
  // Immobile plasma battery / relay (objective turret): ~7 x 6 m base, ~11 m tall like the live build.
  let batteryCache=null;
  S.battery=()=>{if(!batteryCache){const Sb=new Bld(),X=new Fx(),Gn=new Bld();
@@ -526,14 +542,14 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    Gn.spike(V3(0,.2,-.5),V3(0,1.3,-2.4),.38,K.chitinD);
    X.bill(0,6.8,0,4.2,AT.BLOB,E(0xff2bd6,.62));X.bill(0,6.8,0,1.9,AT.BLOB,E(0xffd0f6,.7));X.flat(0,.06,0,5.2,4.6,AT.BLOB,E(0xff2bd6,.45),0);X.flat(0,.05,0,4.6,4.2,AT.BLOB,[0,0,0],.7);
    batteryCache={base:keep(Sb.geometry()),gun:keep(Gn.geometry()),fx:keep(X.geometry())};}
-  const g=new T.Group(),gun=new T.Group();gun.position.y=6.6;gun.add(new T.Mesh(batteryCache.gun,MAT.solid));g.add(new T.Mesh(batteryCache.base,MAT.solid),gun,Object.assign(new T.Mesh(batteryCache.fx,MAT.fx),{renderOrder:2}));
+  const g=new T.Group(),gun=new T.Group();gun.position.y=6.6;gun.add(new T.Mesh(batteryCache.gun,MAT.solid));g.add(new T.Mesh(batteryCache.base,MAT.solid),gun,fxMesh(batteryCache.fx));
   const mk=markers();mk.position.y=11;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;return g;};
  // Airborne drone: chitin body, four glowing rotor rings, eye; same ~1.8 m footprint as the live drone.
  let droneCache=null;
  S.drone=()=>{if(!droneCache){const Sb=new Bld(),X=new Fx();Sb.add(G.blob1,M(0,1.35,0,0,0,0,1.05,.42,.75),K.chitin);Sb.add(G.ico,M(.95,1.32,0,0,0,0,.22,.18,.22),K.magHot,1.9);
    for(const x of [-1,1])for(const z of [-1,1]){Sb.box(x*.8,1.22,z*.7,.28,.18,.9,K.chitinD);Sb.add(G.torus,M(x,1.5,z*.9,Math.PI/2,0,0,.46,.46,.46),K.mag,1.8);}
    X.bill(.95,1.32,0,.8,AT.BLOB,E(0xff2bd6,.9));X.flat(0,-1.2,0,1.8,1.5,AT.BLOB,E(0xff2bd6,.35),0);droneCache={body:keep(Sb.geometry()),fx:keep(X.geometry())};}
-  const g=new T.Group(),body=new T.Group();body.rotation.y=-Math.PI/2;body.add(new T.Mesh(droneCache.body,MAT.solid),Object.assign(new T.Mesh(droneCache.fx,MAT.fx),{renderOrder:2}));g.add(body);
+  const g=new T.Group(),body=new T.Group();body.rotation.y=-Math.PI/2;body.add(new T.Mesh(droneCache.body,MAT.solid),fxMesh(droneCache.fx));g.add(body);
   const gun=new T.Group();g.add(gun);const mk=markers();mk.position.y=3;g.add(mk);g.userData.gun=gun;g.userData.marker=mk;return g;};
 
  // ---------- player tank dressing (canonical geometry untouched): cyan fender strips, contact shadow, ring underglow ----------
@@ -547,16 +563,16 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
 
  // ---------- effects: pooled glow billboards, ground rings, holo markers ----------
  const glowCache=new Map();
- S.glow=(color,region='BLOB')=>{const k=color+region;let g=glowCache.get(k);if(!g){g=billGeo(AT[region],E(color,1));glowCache.set(k,g);}const m=new T.Mesh(g,MAT.fx);m.renderOrder=3;m.frustumCulled=false;return m;};
+ S.glow=(color,region='BLOB')=>{const k=color+region;let g=glowCache.get(k);if(!g){g=billGeo(AT[region],E(color,1));glowCache.set(k,g);}return fxMesh(g,3);};
  const ringCache=new Map();
- S.groundRing=(color,region='RING')=>{const k=color+region;let g=ringCache.get(k);if(!g){const X=new Fx();X.flat(0,0,0,1,1,AT[region],E(color,1),0);g=keep(X.geometry());ringCache.set(k,g);}const m=new T.Mesh(g,MAT.fx);m.renderOrder=2;return m;};
+ S.groundRing=(color,region='RING')=>{const k=color+region;let g=ringCache.get(k);if(!g){const X=new Fx();X.flat(0,0,0,1,1,AT[region],E(color,1),0);g=keep(X.geometry());ringCache.set(k,g);}return fxMesh(g);};
  // Holo pillar marker (mission beacon, objectives, caches): ground hex + light band + icon.
  S.holoMarker=(color,{height=10,radius=1.4,icon=true}={})=>{const X=new Fx();X.flat(0,.15,0,radius*2.2,radius*2.2,AT.HEX,E(color,.9),0);X.band(0,0,.2,radius,radius*.55,height,E(color,.55),[0,0,0],12);if(icon){X.quadV(0,height+1.6,0,2.6,2.6,0,AT.ICON,E(color,1.2));X.quadV(0,height+1.6,0,2.6,2.6,Math.PI/2,AT.ICON,E(color,.8));}
   const m=X.mesh();m.renderOrder=2;return m;};
  const cacheGeo={};
  S.cache=(wreck)=>{const key=wreck?'w':'l';if(!cacheGeo[key]){const Sb=new Bld(),X=new Fx(),c=wreck?K.cyan:K.amber,col=wreck?0x8ee6ef:0xffd58a;Sb.box(0,.7,0,2,1.4,2,K.dark2);Sb.box(0,1.45,0,2.1,.12,2.1,c,1);for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x*1.02,.7,z*1.02,.1,1.4,.1,c,1);
   X.band(0,0,1.5,.5,.2,5,E(col,.6),[0,0,0],10);X.bill(0,2.2,0,1.6,AT.BLOB,E(col,.8));X.flat(0,.06,0,2.4,2.4,AT.BLOB,E(col,.4),0);cacheGeo[key]={s:keep(Sb.geometry()),f:keep(X.geometry())};}
-  const g=new T.Group();g.add(new T.Mesh(cacheGeo[key].s,MAT.solid),Object.assign(new T.Mesh(cacheGeo[key].f,MAT.fx),{renderOrder:2}));return g;};
+  const g=new T.Group();g.add(new T.Mesh(cacheGeo[key].s,MAT.solid),fxMesh(cacheGeo[key].f));return g;};
  S.flag=(owned,friendly)=>{const Sb=new Bld(),X=new Fx(),c=owned?K.teal:friendly?K.cyan:K.mag,col=owned?0x2dffc4:friendly?0x22e6ff:0xff2bd6;Sb.box(0,7,0,.2,14,.2,K.mid);Sb.box(0,.3,0,.9,.6,.9,K.dark);
   Sb.box(2.1,12,0,3.8,1.9,.12,K.dark2);Sb.box(2.1,12,.07,3.5,1.6,.02,c,.85);X.bill(.1,14.2,0,1.1,AT.BLOB,E(col,.9));X.quadV(2.1,12,.1,3.6,.9,0,AT[owned||friendly?SIGN.SECURED:SIGN.HOSTILE],E(col,1.3));return pair(Sb,X);};
 
@@ -566,6 +582,8 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
+ // HIGH shading can drop to the LOW branch at runtime (adaptive quality, LOW setting): same programs, no recompile.
+ S.setHigh=on=>{U.uHigh.value=high&&on?1:0;};
  // Static groups are culled by distance (they are far apart); cheap per-frame loop.
  S.cull=(groups,p)=>{const k=software?.4:1;for(const g of groups){const s=g.userData.site;if(s)g.visible=Math.hypot(s.x-p.x,s.z-p.z)<s.range*k;}};
  // Compile every program variant once (static + instanced solid/fx, sky, terrain, shields) before play.
@@ -582,24 +600,24 @@ const MFONT="600 10px 'Chakra Petch','Segoe UI',system-ui,sans-serif",GFONT="bol
 const colName=i=>{i=Math.max(0,i);return String.fromCharCode(65+Math.floor(i/26)%26)+String.fromCharCode(65+i%26);};
 // The relief is rendered at a power-of-two resolution level and reused across pan and pinch steps within that level.
 function relief(m,unit,vis){const Wd=m.W,d=m.discovery,c=MAPC.relief,level=Math.max(-6,Math.min(3,Math.ceil(Math.log2(unit*2)))),ppu=Math.pow(2,level);
- if(c&&c.level===level&&c.low===m.low&&c.version===(d.version??0)&&vis.x0>=c.x0&&vis.x1<=c.x1&&vis.z0>=c.z0&&vis.z1<=c.z1)return c;
+ const fp=m.scale>=32&&!!m.footprints;if(c&&c.d===d&&c.fp===fp&&c.level===level&&c.low===m.low&&c.version===(d.version??0)&&vis.x0>=c.x0&&vis.x1<=c.x1&&vis.z0>=c.z0&&vis.z1<=c.z1)return c;
  const pad=Math.max(64,(vis.x1-vis.x0)*.25),x0=Math.max(0,Math.floor((vis.x0-pad)/32)*32),x1=Math.min(Wd.WIDTH,Math.ceil((vis.x1+pad)/32)*32),z0=Math.max(0,Math.floor((vis.z0-pad)/32)*32),z1=Math.min(Wd.LENGTH,Math.ceil((vis.z1+pad)/32)*32);
  const cells=d.cellsIn({x:x0,z:z0,width:x1-x0,height:z1-z0}),scale=Math.min(ppu,2048/(x1-x0),2048/(z1-z0)),cw=Math.max(1,Math.ceil((x1-x0)*scale)),ch=Math.max(1,Math.ceil((z1-z0)*scale));
- const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d'),out={canvas:cv,x0,x1,z0,z1,ppu:scale,level,low:m.low,version:d.version??0,n:cells.length};MAPC.relief=out;if(!cells.length)return out;
+ const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d'),out={canvas:cv,x0,x1,z0,z1,ppu:scale,level,low:m.low,version:d.version??0,n:cells.length,d,fp};if(c)c.canvas.width=c.canvas.height=0;MAPC.relief=out;if(!cells.length)return out;
  const s=Math.max(m.low?8:4,Math.min(32,Math.round(1/scale/4)*4||4)),nx=Math.round((x1-x0)/s)+1,nz=Math.round((z1-z0)/s)+1,H=new Float32Array(nx*nz).fill(NaN),B=new Uint8Array(nx*nz),Y=j=>(nz-1-j)*s*scale;
  for(const cell of cells){const i0=Math.round((cell.x-x0)/s),j0=Math.round((cell.z-z0)/s),n=Math.max(1,Math.round(cell.size/s));for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){const k=(j0+j)*nx+i0+i;if(k<0||k>=H.length||H[k]===H[k])continue;const wx=x0+(i0+i)*s,wz=z0+(j0+j)*s;H[k]=Wd.heightAt(wx,wz);const b=Wd.biomeAt(wx,wz);B[k]=b==='terraformed'?1:b==='massif'?2:0;}}
  const img=new ImageData(nx,nz),Dd=img.data,ok=k=>H[k]===H[k];
  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const k=j*nx+i,h=H[k];if(h!==h)continue;const hl=i>0&&ok(k-1)?H[k-1]:h,hr=i<nx-1&&ok(k+1)?H[k+1]:h,hd=j>0&&ok(k-nx)?H[k-nx]:h,hu=j<nz-1&&ok(k+nx)?H[k+nx]:h,hx=(hr-hl)/(2*s),hz=(hu-hd)/(2*s);
   const sh=clamp01(.5+(.7*hx-.7*hz)*1.15),ht=clamp01((h+140)/170);let r=3+sh*15+ht*6,g=13+sh*50+ht*16,bb=22+sh*60+ht*18;if(B[k]===1){r*=.6;g=g*1.08+12;bb=bb*.9+4;}else if(B[k]===2){r+=4;g*=.85;bb=bb*1.1+8;}
   const o=((nz-1-j)*nx+i)*4;Dd[o]=r;Dd[o+1]=g;Dd[o+2]=bb;Dd[o+3]=255;}
- const sm=document.createElement('canvas');sm.width=nx;sm.height=nz;sm.getContext('2d').putImageData(img,0,0);x.imageSmoothingEnabled=true;x.drawImage(sm,-.5*s*scale,-.5*s*scale,nx*s*scale,nz*s*scale);
+ const sm=document.createElement('canvas');sm.width=nx;sm.height=nz;sm.getContext('2d').putImageData(img,0,0);x.imageSmoothingEnabled=true;x.drawImage(sm,-.5*s*scale,-.5*s*scale,nx*s*scale,nz*s*scale);sm.width=sm.height=0;
  const step=s>=16?25:m.low?10:5,minor=new Path2D(),major=new Path2D();
  for(const cell of cells){const i0=Math.round((cell.x-x0)/s),j0=Math.round((cell.z-z0)/s),n=Math.max(1,Math.round(cell.size/s));for(let j=j0;j<j0+n;j++)for(let i=i0;i<i0+n;i++){const a=H[j*nx+i],b=H[j*nx+i+1],c2=H[(j+1)*nx+i+1],dd=H[(j+1)*nx+i];if(a!==a||b!==b||c2!==c2||dd!==dd)continue;
   const lo=Math.min(a,b,c2,dd),hi=Math.max(a,b,c2,dd);for(let L=Math.ceil(lo/step)*step;L<hi;L+=step){const q=[];if((a<L)!==(b<L))q.push(i+(L-a)/(b-a),j);if((b<L)!==(c2<L))q.push(i+1,j+(L-b)/(c2-b));if((dd<L)!==(c2<L))q.push(i+(L-dd)/(c2-dd),j+1);if((a<L)!==(dd<L))q.push(i,j+(L-a)/(dd-a));
    const path=Math.round(L)%(step*5)===0?major:minor;for(let t=0;t+3<q.length;t+=4){path.moveTo(q[t]*s*scale,Y(q[t+1]));path.lineTo(q[t+2]*s*scale,Y(q[t+3]));}}}}
  x.lineCap='round';x.strokeStyle='rgba(20,200,255,.28)';x.lineWidth=1;x.stroke(minor);x.strokeStyle='rgba(0,229,255,.16)';x.lineWidth=3.2;x.stroke(major);x.strokeStyle='rgba(130,248,255,.8)';x.lineWidth=1.2;x.stroke(major);
  const P=(wx,wz)=>[(wx-x0)*scale,(z1-wz)*scale],F=m.footprints;
- if(m.scale>=32&&F){for(let cxk=Math.floor(x0/128);cxk<=Math.floor((x1-1)/128);cxk++)for(let czk=Math.floor(z0/128);czk<=Math.floor((z1-1)/128);czk++)for(const it of Wd.scenery(cxk,czk)){if(!d.has(it.x,it.z))continue;const [X0,Y0]=P(it.x,it.z);
+ if(fp){for(let cxk=Math.floor(x0/128);cxk<=Math.floor((x1-1)/128);cxk++)for(let czk=Math.floor(z0/128);czk<=Math.floor((z1-1)/128);czk++)for(const it of Wd.scenery(cxk,czk)){if(!d.has(it.x,it.z))continue;const [X0,Y0]=P(it.x,it.z);
    if(it.kind==='tree'){x.fillStyle='rgba(60,255,205,.8)';x.fillRect(X0-1,Y0-1,2,2);}else if(it.kind==='relay'){x.fillStyle='rgba(170,245,255,.95)';x.fillRect(X0-2,Y0-.5,4,1);x.fillRect(X0-.5,Y0-2,1,4);}
    else if(it.variant>.45){x.fillStyle='rgba(130,150,180,.45)';x.beginPath();x.arc(X0,Y0,Math.max(1,it.size*scale*.9),0,TAU);x.fill();}}
   const hexP=(wx,wz,r)=>{x.beginPath();for(let k=0;k<6;k++){const a=Math.PI/6+k*Math.PI/3,[X0,Y0]=P(wx+Math.sin(a)*r,wz+Math.cos(a)*r);k?x.lineTo(X0,Y0):x.moveTo(X0,Y0);}x.closePath();};
@@ -678,5 +696,5 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  const sb=100*unit;if(sb>8&&sb<200){ctx.strokeStyle='#5fd8e8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(350-sb,411);ctx.lineTo(350,411);ctx.moveTo(350-sb,407);ctx.lineTo(350-sb,414);ctx.moveTo(350,407);ctx.lineTo(350,414);ctx.stroke();ctx.textAlign='right';ctx.fillText('100 m',350,404);ctx.textAlign='left';}}
 const MAP_LEGEND='<span class="cq-holo-key">HOLO RELIEF · explored ground only.</span> <b style="color:#ffd36b">◆</b> Mission · <b style="color:#ffb347">✦</b> Raid site (<b style="color:#5effd0">✓</b> cleared · grey locked) · <b style="color:#ff4060">!</b> Defense alert · <b style="color:#3fe9ff">●</b> Refuge · <b style="color:#ffc45a">⌂</b> Command Base · <b style="color:#ff4fd8">▲</b> Parasite installation (when discovered; <b style="color:#5effd0">⚑</b> captured) · <b style="color:#8ee6ef">◇</b> Wreck. Grid letters + numbers call out positions. Drag to pan · pinch or + / − to zoom · north ↑.';
 
-root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){MAPC.relief=null;}});
+root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){if(MAPC.relief)MAPC.relief.canvas.width=MAPC.relief.canvas.height=0;MAPC.relief=null;}});
 })(typeof window!=='undefined'?window:globalThis);

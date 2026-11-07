@@ -113,7 +113,7 @@ jobs:
           python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback
-          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }}
+          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --quality high
           python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --fallback
           python dev/tests/conquest-flagship-browser.py --engine ${{ matrix.engine }} --width 390
           python dev/tests/conquest-flagship-browser.py --engine ${{ matrix.engine }} --width 320 --family siege --no-defense
