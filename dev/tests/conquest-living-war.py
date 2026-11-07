@@ -8,7 +8,8 @@ from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest-living-war';OUT.mkdir(exist_ok=True)
 # --quality high forces the HIGH art path phones take (CI's software GL would otherwise pick the LOW path): every HIGH-only
 # effect then runs in a real browser, and the relay fight must stay inside the HIGH budget (README: <= 90 draws at 390, <= 16
-# programs). Measured 2026-11-07 in Chromium SwiftShader: peak 54 draws, 15 programs with 15 enemies at 320 and 390.
+# material programs; three's PMREM helper programs for the HF tank environment are not counted). Measured 2026-11-07 in
+# Chromium SwiftShader: peak 54 draws, 15 programs with 15 enemies at 320 and 390.
 HIGH_DRAWS={320:80,390:80};HIGH_PROGRAMS=16
 async def main(engine,journey_only=False,fallback=False,quality='auto'):
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -181,7 +182,7 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
     print('PERFORMANCE software-rendered',json.dumps(perf),flush=True)
     if quality=='high' and not fallback:
      assert perf['styleQuality']=='high' and perf['styleShading']=='high',('forced HIGH art path',perf)
-     assert perf['maxDrawCalls']<=HIGH_DRAWS[width] and perf['programs']<=HIGH_PROGRAMS,('HIGH budget',width,perf)
+     assert perf['maxDrawCalls']<=HIGH_DRAWS[width] and perf['materialPrograms']<=HIGH_PROGRAMS,('HIGH budget',width,perf)
     results.append({'scenario':'relay mission with resident garrisons','performance':perf})
     if width==390 and not fallback:
      # Begin the outcome journey fresh; the preceding idle stress profile is a separate scenario.
