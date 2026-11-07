@@ -52,43 +52,36 @@ void main(){vW=uv*24.;vN=normal;vC=color;vY=position.y;vec4 mvPosition=modelView
 }`;
 // Regolith detail comes from one tileable texture (R crater height, G/B its gradient, A value noise) sampled at 2-3
 // rotated scales: ~3 fetches instead of hundreds of hash ops per pixel (measured ~5x cheaper in software GL).
-const TERRAIN_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uRimCol,uAmbUp,uAmbDn;uniform vec4 uSite[8];uniform float uTime;uniform sampler2D uDetail;
+const TERRAIN_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uRimCol,uAmbUp,uAmbDn;uniform float uTime,uHigh;uniform sampler2D uDetail;
 varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;varying vec4 vSite;
 #include <common>
 #include <fog_pars_fragment>
 float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 float hexEdge(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r)-h;vec2 b=mod(p-h,r)-h;vec2 g=dot(a,a)<dot(b,b)?a:b;vec2 q=abs(g);return .5-max(dot(q,vec2(.5,.8660254)),q.x);}
-void main(){vec3 c=vC;float terra=smoothstep(.03,.08,c.g-max(c.r,c.b));float massif=smoothstep(.0,.06,c.b-c.r);
+// Quality is a uniform (one program for HIGH and LOW, so every branch is compiled everywhere). Texture lookups stay in
+// uniform control flow (no implicit-derivative fetches inside per-pixel branches).
+void main(){vec3 c=vC;float terra=smoothstep(.03,.08,c.g-max(c.r,c.b));float massif=smoothstep(.0,.06,c.b-c.r);bool hi=uHigh>.5;
  float lod=clamp(1.-vD/320.,0.,1.),lod2=clamp(1.-vD/1500.,0.,1.);
- vec4 d1=texture2D(uDetail,vW*(1./96.));vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./29.)+.31);
- float h1=d1.r-.5,h2=(d2.r-.5)*lod2;vec2 grad=(d1.gb-.5)*.9+vec2(-(d2.b-.5),d2.g-.5)*1.25*lod2;
- float rim=max(h1,0.)*1.6+max(h2,0.)*1.8,bowl=max(-h1,0.)*1.5+max(-h2,0.)*1.3;float tone=.7+.42*d1.a+.24*(d2.a-.5);
-#ifdef HIGH
- if(lod>0.){vec4 d3=texture2D(uDetail,vW*(1./8.7)+.67);float h3=(d3.r-.5)*lod;grad+=(d3.gb-.5)*1.4*lod;rim+=max(h3,0.)*1.6;bowl+=max(-h3,0.)*1.2;tone+=.16*(d3.a-.5)*lod;}
-#endif
+ vec4 d1=texture2D(uDetail,vW*(1./96.));float h1=d1.r-.5;vec2 grad=(d1.gb-.5)*.9;float rim=max(h1,0.)*1.6,bowl=max(-h1,0.)*1.5,tone=.7+.42*d1.a,na=d1.a,va=d1.a,vb=.5,st=.5;
+ if(hi){vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./29.)+.31),d3=texture2D(uDetail,vW*(1./8.7)+.67);float h2=(d2.r-.5)*lod2,h3=(d3.r-.5)*lod;
+  grad+=vec2(-(d2.b-.5),d2.g-.5)*1.25*lod2+(d3.gb-.5)*1.4*lod;rim+=max(h2,0.)*1.8+max(h3,0.)*1.6;bowl+=max(-h2,0.)*1.3+max(-h3,0.)*1.2;tone+=.24*(d2.a-.5)+.16*(d3.a-.5)*lod;na=d2.a*.62+d1.a*.38;
+  va=texture2D(uDetail,vW*(1./73.)+.13).a;vb=texture2D(uDetail,vW*(1./24.)+.71).a;st=texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a;}
  vec3 rego=mix(vec3(.074,.078,.088),vec3(.055,.064,.082),massif)*tone;
  vec3 N=normalize(vN+vec3(-grad.x,0.,-grad.y));float steep=smoothstep(.3,.62,1.-N.y);
- if(steep>0.)rego=mix(rego,rego*(.55+.5*texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));rego*=1.-.38*terra;
- vec3 em=vec3(0.);if(terra>0.){float lp=smoothstep(.5,.74,d2.a*.62+d1.a*.38)*terra;float speck=step(.84,h12(floor(vW*1.6)))*lp*(1.-smoothstep(.14,.3,length(fract(vW*1.6)-.5)));
-  em=vec3(.0,.62,.5)*(lp*.12+speck*.45)*(.45+.55*lod);}float blight=0.;
- if(vSite.x>.002){float line=0.;
-#ifdef HIGH
-  float he=hexEdge(vW/6.);line=1.-smoothstep(0.,fwidth(he)*1.2+.02,he);
-#endif
+ if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));rego*=1.-.38*terra;
+ vec3 em=vec3(0.);if(terra>0.){float lp=smoothstep(.5,.74,na)*terra,speck=0.;if(hi)speck=step(.84,h12(floor(vW*1.6)))*lp*(1.-smoothstep(.14,.3,length(fract(vW*1.6)-.5)));em=vec3(.0,.62,.5)*(lp*.12+speck*.45)*(.45+.55*lod);}
+ if(vSite.x>.002){float line=0.;if(hi){float he=hexEdge(vW/6.);line=1.-smoothstep(0.,.02+.12*(1.-lod),he);}
   float ring=smoothstep(.93,1.,fract(vSite.z/22.-uTime*.08));em+=vec3(.05,.72,1.)*(line*.15*vSite.x+ring*.13*vSite.y+.035*vSite.x);}
- blight=vSite.w;
- if(blight>0.){float v=abs(texture2D(uDetail,vW*(1./73.)+.13).a*2.-1.);float vein=1.-smoothstep(0.,.08,v);
-#ifdef HIGH
-  vein+=(1.-smoothstep(0.,.06,abs(texture2D(uDetail,vW*(1./24.)+.71).a*2.-1.)))*.5;
-#endif
+ float blight=vSite.w;
+ if(blight>0.){float vein=1.-smoothstep(0.,.08,abs(va*2.-1.));if(hi)vein+=(1.-smoothstep(0.,.06,abs(vb*2.-1.)))*.5;
   rego=mix(rego,rego*vec3(.75,.45,.85),blight);em+=vec3(1.,.08,.62)*vein*blight*.5*(.7+.3*sin(uTime*2.3-dot(vW,vec2(.05))));}
  float ndl=max(dot(N,uSunDir),0.);vec3 light=uSunCol*ndl+mix(uAmbDn,uAmbUp,N.y*.5+.5)+uRimCol*max(dot(N,uRimDir),0.)*.7;
- vec3 col=rego*light+em+uRimCol*min(rim,1.)*.03;col+=(h12(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(col,1.);
+ vec3 col=rego*light+em+uRimCol*min(rim,1.)*.03;if(hi)col+=(h12(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(col,1.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 #include <fog_fragment>
 }`;
-const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin;uniform vec3 uRimCol;
+const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin;uniform vec3 uRimCol;uniform float uHigh;
 varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;
 #include <common>
 #include <fog_pars_vertex>
@@ -103,19 +96,17 @@ void main(){
 #ifdef USE_INSTANCING
  wp=instanceMatrix*wp;vec2 io=(modelMatrix*vec4(instanceMatrix[3].xyz,1.)).xz+uOrigin;vCol.rgb*=.75+.5*hv(floor(io*4.));
 #endif
- wp=modelMatrix*wp;vWP=wp.xyz;vec2 w=wp.xz+uOrigin;vec3 rc=uRimCol*2.2;float best=0.;
- for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}
+ wp=modelMatrix*wp;vWP=wp.xyz;vec3 rc=uRimCol*2.2;
+ // HIGH tints each vertex's rim by the nearest friendly / Parasite site; LOW keeps the neutral rim (no per-vertex loop).
+ if(uHigh>.5){vec2 w=wp.xz+uOrigin;float best=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}}
  vRim=rc;}`;
-const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV;uniform float uTime,uGlow;
+const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV;uniform float uTime,uGlow,uHigh;
 varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;
 #include <common>
 #include <fog_pars_fragment>
-void main(){vec3 N=normalize(vN),V=normalize(vV),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
- vec3 base=vCol.rgb;float ndl=max(dot(N,L),0.);vec3 lit=base*(uSunCol*ndl+mix(uAmbDn,uAmbUp,dot(N,UP)*.5+.5));
- float rl=max(dot(N,R),0.);lit+=base*vRim*rl*.5;float fr=pow(1.-max(dot(N,V),0.),3.);lit+=vRim*fr*(.25+.75*rl)*.45;
-#ifdef HIGH
- vec3 H=normalize(L+V);lit+=uSunCol*pow(max(dot(N,H),0.),56.)*.16;
-#endif
+void main(){vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
+ vec3 base=vCol.rgb;float ndl=max(dot(N,L),0.);vec3 lit=base*(uSunCol*ndl+mix(uAmbDn,uAmbUp,dot(N,UP)*.5+.5));float rl=max(dot(N,R),0.);lit+=base*vRim*rl*.5;
+ if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=vRim*fr*(.25+.75*rl)*.45;vec3 H=normalize(L+V);lit+=uSunCol*pow(max(dot(N,H),0.),56.)*.16;}
  float a=vCol.a,em=clamp(a>1.?a-1.:a,0.,1.);float pulse=a>1.?.5+.5*sin(uTime*3.+dot(vWP,vec3(.37,.61,.23))):1.;
  vec3 col=mix(lit,base*uGlow*(.45+.55*pulse),em);gl_FragColor=vec4(col,1.);
 #include <tonemapping_fragment>
@@ -218,7 +209,7 @@ function makeDetail(T,N){const H=new Float32Array(N*N),A=new Float32Array(N*N);l
  const n1=lat(8),n2=lat(24);for(let z=0;z<N;z++)for(let x=0;x<N;x++)A[z*N+x]=n1(x,z)*.65+n2(x,z)*.35;
  const D=new Uint8Array(N*N*4),q=v=>Math.max(0,Math.min(255,Math.round(v*255)));
  for(let z=0;z<N;z++)for(let x=0;x<N;x++){const k=z*N+x,h=H[k],gx=(H[z*N+(x+1)%N]-H[z*N+(x+N-1)%N])*N/32,gz=(H[((z+1)%N)*N+x]-H[((z+N-1)%N)*N+x])*N/32;D[k*4]=q(.5+h*.42);D[k*4+1]=q(.5+gx*.5);D[k*4+2]=q(.5+gz*.5);D[k*4+3]=q(A[k]);}
- const t=new T.DataTexture(D,N,N,T.RGBAFormat);t.wrapS=t.wrapT=T.RepeatWrapping;t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.needsUpdate=true;return t;}
+ const t=new T.DataTexture(D,N,N,T.RGBAFormat);t.wrapS=t.wrapT=T.RepeatWrapping;t.magFilter=T.LinearFilter;t.minFilter=N>128?T.LinearMipmapLinearFilter:T.LinearMipmapNearestFilter;t.generateMipmaps=true;t.needsUpdate=true;return t;}
 function makeEarth(T,w,h){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d'),img=x.createImageData(w,h),D=img.data;
  for(let j=0;j<h;j++){const lat=(.5-j/(h-1))*Math.PI;for(let i=0;i<w;i++){const lon=i/w*TAU-Math.PI,px=Math.cos(lat)*Math.sin(lon),py=Math.sin(lat),pz=Math.cos(lat)*Math.cos(lon);
   const n=fbm3(px*1.7+5,py*1.7,pz*1.7,5),cl=fbm3(px*3.1+9,py*3.6,pz*3.1,4);let r,g,b;
@@ -227,7 +218,8 @@ function makeEarth(T,w,h){const cv=document.createElement('canvas');cv.width=w;c
  x.putImageData(img,0,0);const t=new T.CanvasTexture(cv);t.colorSpace=T.SRGBColorSpace;t.wrapS=T.RepeatWrapping;t.wrapT=T.ClampToEdgeWrapping;t.generateMipmaps=false;t.minFilter=T.LinearFilter;return t;}
 
 function create(T,opts={}){
- const W=root.ConquestWorld,C=root.ConquestCombat,low=!!opts.low,high=!low,F=footprints(W,C),ground=(x,z)=>W.groundAt(x,z);
+ // software: a CPU rasterizer (SwiftShader/llvmpipe) was detected; it takes the LOW shading path at runtime.
+ const W=root.ConquestWorld,C=root.ConquestCombat,software=!!opts.software,low=!!opts.low||software,high=!low,F=footprints(W,C),ground=(x,z)=>W.groundAt(x,z);
  const lin=h=>new T.Color(h),E=(h,i=1)=>{const c=new T.Color(h);return [c.r*i,c.g*i,c.b*i];},V3=(x,y,z)=>new T.Vector3(x,y,z);
  const _v=new T.Vector3(),_w=new T.Vector3(),_p=new T.Vector3(),_s=new T.Vector3(),_q=new T.Quaternion(),_e=new T.Euler(),_nm=new T.Matrix4(),_t=new T.Matrix4();
  const M=(x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{_e.set(rx,ry,rz);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(sx,sy,sz));};
@@ -247,10 +239,10 @@ function create(T,opts={}){
  const CYC=[[.008,.045,.06],[.03,.4,.55],[.5,1,1]],MAGC=[[.03,.005,.035],[.5,.02,.4],[1,.5,.95]];
 
  // ---------- shared state: uniforms, geometry, textures, the fixed material set ----------
- const DEF=high?{HIGH:''}:{},sunDir=V3(-.55,.5,.67).normalize(),rimDir=V3(.62,.32,-.72).normalize();
+ const sunDir=V3(-.55,.5,.67).normalize(),rimDir=V3(.62,.32,-.72).normalize();
  const U={uTime:{value:0},uSunDir:{value:sunDir},uSunCol:{value:lin(0xe4ecff).multiplyScalar(2.9/Math.PI)},uRimDir:{value:rimDir},uRimCol:{value:lin(0x52c6ff).multiplyScalar(1.15/Math.PI)},
   uAmbUp:{value:lin(0x3a5a9c).multiplyScalar(1.5/Math.PI)},uAmbDn:{value:lin(0x16131f).multiplyScalar(1.5/Math.PI)},uSite:{value:Array.from({length:8},()=>new T.Vector4(0,0,0,0))},
-  uOrigin:{value:new T.Vector2()},uGlow:{value:2.3},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
+  uOrigin:{value:new T.Vector2()},uGlow:{value:2.3},uHigh:{value:high?1:0},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
   fogColor:{value:new T.Color(0x06070f)},fogNear:{value:900},fogFar:{value:2600},fogDensity:{value:.00025}};
  const G={box:new T.BoxGeometry(1,1,1),hex:flat(new T.CylinderGeometry(1,1,1,6,1,false,Math.PI/6)).translate(0,.5,0),oct:flat(new T.CylinderGeometry(1,1,1,8,1,false,Math.PI/8)).translate(0,.5,0),
   cyl:new T.CylinderGeometry(1,1,1,16,1).translate(0,.5,0),cylC:new T.CylinderGeometry(1,1,1,10,1),cone5:flat(new T.ConeGeometry(1,1,5)).translate(0,.5,0),cone6:flat(new T.ConeGeometry(1,1,6)).translate(0,.5,0),
@@ -261,7 +253,7 @@ function create(T,opts={}){
  const fr={};G.hexF=r=>fr['h'+r]||(fr['h'+r]=flat(new T.CylinderGeometry(r,1,1,6,1,false,Math.PI/6)).translate(0,.5,0));
  G.octF=r=>fr['o'+r]||(fr['o'+r]=flat(new T.CylinderGeometry(r,1,1,8,1,false,Math.PI/8)).translate(0,.5,0));G.cylF=r=>fr['c'+r]||(fr['c'+r]=new T.CylinderGeometry(r,1,1,20,1).translate(0,.5,0));
  const tex={atlas:makeAtlas(T,high?512:256),earth:makeEarth(T,high?256:128,high?128:64),detail:makeDetail(T,high?256:128)};
- const mk=(vs,fs,extra,o)=>{const m=new T.ShaderMaterial(Object.assign({uniforms:Object.assign({},U,extra||{}),vertexShader:vs,fragmentShader:fs,defines:Object.assign({},DEF),fog:true},o||{}));m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
+ const mk=(vs,fs,extra,o)=>{const m=new T.ShaderMaterial(Object.assign({uniforms:Object.assign({},U,extra||{}),vertexShader:vs,fragmentShader:fs,fog:true},o||{}));m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
  const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS),
   fx:mk(FX_VS,FX_FS,{uMap:{value:tex.atlas},uKind:{value:[V3(.1,.68,1).multiplyScalar(.6),V3(.3,1,.5).multiplyScalar(.5),V3(.6,.95,1).multiplyScalar(.9),V3(1,.1,.7).multiplyScalar(.7)]}},
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
@@ -269,7 +261,7 @@ function create(T,opts={}){
    uZenith:{value:V3(.0002,.0003,.0009)},uBandA:{value:V3(0,.2,.19)},uBandB:{value:V3(.045,.012,.11)},uFogC:{value:V3(.0018,.0021,.0048)}},{fog:false,depthWrite:false,side:T.DoubleSide})};
  const shieldMat=(color,opacity,hexK=1)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
  MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12);
- const S={id:'neon-frontline',version:1,low,high,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
+ const S={id:'neon-frontline',version:1,low,high,software,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
  const keep=g=>{g.userData.hfShared=true;S.shared.push(g);return g;};
  for(const g of Object.values(G))if(g&&g.isBufferGeometry)keep(g);
 
@@ -288,11 +280,11 @@ function create(T,opts={}){
  class Fx{constructor(){this.P=[];this.U=[];this.A=[];this.B=[];this.I=[];this.n=0;}
   v(x,y,z,u,v,e,o,bx=0,by=0,bz=0){this.P.push(x,y,z);this.U.push(u,v);this.A.push(e[0],e[1],e[2],o);this.B.push(bx,by,bz);return this.n++;}
   q4(a,b,c,d){this.I.push(a,b,c,a,c,d);}
-  bill(x,y,z,s,r,e,o=0){const a=this.v(x,y,z,r[0],r[1],e,o,-s,-s,1),b=this.v(x,y,z,r[2],r[1],e,o,s,-s,1),c=this.v(x,y,z,r[2],r[3],e,o,s,s,1),d=this.v(x,y,z,r[0],r[3],e,o,-s,s,1);this.q4(a,b,c,d);}
+  bill(x,y,z,s,r,e,o=0){if(software&&!this.keep)return;const a=this.v(x,y,z,r[0],r[1],e,o,-s,-s,1),b=this.v(x,y,z,r[2],r[1],e,o,s,-s,1),c=this.v(x,y,z,r[2],r[3],e,o,s,s,1),d=this.v(x,y,z,r[0],r[3],e,o,-s,s,1);this.q4(a,b,c,d);}
   quadV(x,y,z,w,h,ry,r,e,o=0){const cx=Math.cos(ry)*w/2,cz=-Math.sin(ry)*w/2;this.q4(this.v(x-cx,y-h/2,z-cz,r[0],r[1],e,o),this.v(x+cx,y-h/2,z+cz,r[2],r[1],e,o),this.v(x+cx,y+h/2,z+cz,r[2],r[3],e,o),this.v(x-cx,y+h/2,z-cz,r[0],r[3],e,o));}
   quad(p,r,e,o=0){this.q4(this.v(p[0].x,p[0].y,p[0].z,r[0],r[1],e,o),this.v(p[1].x,p[1].y,p[1].z,r[2],r[1],e,o),this.v(p[2].x,p[2].y,p[2].z,r[2],r[3],e,o),this.v(p[3].x,p[3].y,p[3].z,r[0],r[3],e,o));}
   flat(x,y,z,hw,hd,r,e,o=0){this.q4(this.v(x-hw,y,z-hd,r[0],r[1],e,o),this.v(x+hw,y,z-hd,r[2],r[1],e,o),this.v(x+hw,y,z+hd,r[2],r[3],e,o),this.v(x-hw,y,z+hd,r[0],r[3],e,o));}
-  decal(cx,cz,hw,hd,rot,r,e,o,seg,lift){const cs=Math.cos(rot),sn=Math.sin(rot),base=this.n;
+  decal(cx,cz,hw,hd,rot,r,e,o,seg,lift){if(software)return;const cs=Math.cos(rot),sn=Math.sin(rot),base=this.n;
    for(let j=0;j<=seg;j++)for(let i=0;i<=seg;i++){const u=i/seg,v=j/seg,lx=(u*2-1)*hw,lz=(v*2-1)*hd,x=cx+lx*cs+lz*sn,z=cz-lx*sn+lz*cs;this.v(x,ground(x,z)+lift,z,r[0]+(r[2]-r[0])*u,r[1]+(r[3]-r[1])*v,e,o);}
    for(let j=0;j<seg;j++)for(let i=0;i<seg;i++){const a=base+j*(seg+1)+i;this.q4(a,a+1,a+seg+2,a+seg+1);}}
   band(x,z,y0,r0,r1,h,e0,e1,seg=16){const base=this.n,Sg=AT.SOLID,u=(Sg[0]+Sg[2])/2,v=(Sg[1]+Sg[3])/2;for(let k=0;k<=seg;k++){const a=k/seg*TAU,c=Math.cos(a),s=Math.sin(a);this.v(x+c*r0,y0,z+s*r0,u,v,e0,0);this.v(x+c*r1,y0+h,z+s*r1,u,v,e1,0);}
@@ -309,7 +301,7 @@ function create(T,opts={}){
  const fu=new Bld();for(const [x,z,s] of [[0,0,1],[.5,.2,.72],[-.45,.3,.6],[.15,-.5,.66],[-.35,-.4,.45]])fu.add(G.pod,M(x,0,z,0,x*3,0,s,s,s),null,0,null,(v,lx,ly)=>ly<.3?[.012,.02,.03,0]:ly<.72?[.02,.015,.07,.15]:[.08,.9,.35,.75]);
  const rk=new Bld();rk.add(G.rock,new T.Matrix4(),null,0,null,v=>{const k=clamp01(v.y*.5+.5);return [.022+.042*k,.024+.045*k,.03+.052*k,0];});
  const rl=new Bld();rl.box(0,4.6,0,.22,9.2,.22,K.mid);rl.box(0,.25,0,.9,.5,.9,K.dark);for(const y of [3,6])rl.box(0,y,0,1.3,.08,.08,K.dark2);rl.add(G.cone6,M(.35,8.4,0,0,0,-1.1,.9,.35,.9),K.panelB);rl.box(0,9.35,0,.32,.32,.32,K.ice,1);rl.box(0,4.6,.12,.05,8.4,.03,K.cyan,1);
- const billGeo=(r,col,o=0)=>{const X=new Fx();X.bill(0,0,0,1,r,col,o);return keep(X.geometry());};
+const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o);return keep(X.geometry());};
  const P={crystal:keep(cr.geometry()),fungus:keep(fu.geometry()),rock:keep(rk.geometry()),relay:keep(rl.geometry()),bill:billGeo(AT.BLOB,[1,1,1])};
  S.P=P;
 
@@ -321,7 +313,7 @@ function create(T,opts={}){
   const Pp=[],B=[],A=[],I=[],dome=new T.SphereGeometry(1,high?48:32,high?24:16),dp=dome.attributes.position;
   for(let i=0;i<dp.count;i++){const x=dp.getX(i),y=dp.getY(i),z=dp.getZ(i);Pp.push(x,y,z);B.push(0,0,0);const gal=Math.exp(-Math.pow(x*.35+y*.55-z*.76,2)*7),nb=Math.max(0,fbm3(x*2.3+3,y*2.3,z*2.3,4)-.44),up=clamp01(y*3+.1);
    A.push((.02*nb+.0035*gal)*up,(.006*nb+.003*gal)*up,(.05*nb+.007*gal)*up,0);}
-  for(let k=0;k<dome.index.count;k++)I.push(dome.index.getX(k));dome.dispose();let n=dp.count,seed=1337;const rnd=()=>(seed=(Math.imul(seed,1664525)+1013904223)|0,(seed>>>0)/4294967296);
+  if(!software)for(let k=0;k<dome.index.count;k++)I.push(dome.index.getX(k));dome.dispose();let n=dp.count,seed=1337;const rnd=()=>(seed=(Math.imul(seed,1664525)+1013904223)|0,(seed>>>0)/4294967296);
   for(let s=0,count=high?950:380;s<count;s++){let x,y,z,l;do{x=rnd()*2-1;y=rnd()*2-1;z=rnd()*2-1;l=x*x+y*y+z*z;}while(l>1||l<.01);l=Math.sqrt(l);x/=l;y/=l;z/=l;if(y<.04){y=.04+Math.abs(y)*.9;const k=Math.hypot(x,y,z);x/=k;y/=k;z/=k;}
    const big=rnd()<.035,sz=big?4.6+rnd()*2.6:1.05+rnd()*rnd()*2.3,b=big?1.7:.3+rnd()*rnd()*1.35,t=rnd(),c=t<.2?[.72,.86,1.25]:t<.3?[1.2,.92,.72]:[1,1,1];
    for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(x,y,z);B.push(cx,cy,1);A.push(c[0]*b,c[1]*b,c[2]*b,sz);}I.push(n,n+1,n+2,n,n+2,n+3);n+=4;}
@@ -520,7 +512,7 @@ function create(T,opts={}){
   if(e.commander){const c=PATTERN[e.pattern]||PATTERN.command;D.spike(V3(-L*.12,y1,0),V3(-L*.2,y1+.9,0),.18,K.chitinD);D.add(G.octa,M(-L*.16,y1+1.05,0,0,0,0,.2,.32,.2),c[0],1);for(const s of [-1,1])D.box(-L*.1,y1*.8,s*(zw+.03),L*.5,.06,.04,c[0],1.6);}
   const X=new Fx();X.flat(0,.05,0,zw*1.7,L*.75,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,zw*2.2,L*.95,AT.BLOB,e.commander?E((PATTERN[e.pattern]||PATTERN.command)[1],.55):E(0xff2bd6,.5),0);
   cached.style={dress:keep(D.geometry()),fx:keep(X.geometry())};return cached.style;};
- S.hullMeshes=(cached,e)=>{const st=S.parasiteHull(cached,e);return {body:new T.Mesh(cached.body,MAT.solid),gun:new T.Mesh(cached.gun,MAT.solid),dress:new T.Mesh(st.dress,MAT.solid),fx:Object.assign(new T.Mesh(st.fx,MAT.fx),{renderOrder:2}),marker:markers()};};
+ S.hullMeshes=(cached,e)=>{const st=S.parasiteHull(cached,e);return {body:new T.Mesh(cached.body,MAT.solid),gun:new T.Mesh(cached.gun,MAT.solid),dress:new T.Mesh(st.dress,MAT.solid),fx:low?null:Object.assign(new T.Mesh(st.fx,MAT.fx),{renderOrder:2}),marker:markers()};};
  // Immobile plasma battery / relay (objective turret): ~7 x 6 m base, ~11 m tall like the live build.
  let batteryCache=null;
  S.battery=()=>{if(!batteryCache){const Sb=new Bld(),X=new Fx(),Gn=new Bld();

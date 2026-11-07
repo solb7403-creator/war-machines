@@ -61,3 +61,10 @@ for(const low of [false,true]){
  S.dispose();
  console.log('PASS',q,'refuge',tris(parts.refuge),'viaduct',tris(parts.viaduct),'hive',tris(parts.installs[0]),'base T5',tris(parts.base[5]),'battery',tris(parts.battery),'chunks',chunks.length);
 }
+// Software rasterizer path (CI, GPU-blocklisted browsers): same programs, LOW shading uniform, no ground decals/halos/dome.
+{const H=CS.create(T,{low:false}),SW=CS.create(T,{software:true}),fxTris=g=>{let n=0;g.traverse(m=>{if(m.isMesh&&m.material===m.material&&m.material.transparent)n+=m.geometry.index?m.geometry.index.count/3:0;});return n;};
+ assert.equal(SW.U.uHigh.value,0,'software takes the LOW shading path');assert.equal(H.U.uHigh.value,1,'HIGH shading path on GPUs');
+ assert.equal(SW.MAT.terrain.fragmentShader,H.MAT.terrain.fragmentShader,'one terrain program for every quality (all branches compiled everywhere)');
+ const hr=H.refuge(),sr=SW.refuge();assert.ok(fxTris(sr)<fxTris(hr)*.5,'software Refuge drops ground decals and halos: '+fxTris(sr)+' vs '+fxTris(hr));
+ const hs=new T.Scene(),ss=new T.Scene();H.environment(hs,null);SW.environment(ss,null);const skyTris=sc=>sc.children.find(o=>o.name==='cq-style-sky').geometry.index.count/3;assert.ok(skyTris(ss)<skyTris(hs),'software sky skips the dome');
+ assert.ok(SW.glow(0xffffff).geometry.index.count===6,'pooled shot glows still exist in software mode');H.dispose();SW.dispose();console.log('PASS software path: refuge fx',fxTris(sr),'vs',fxTris(hr));}
