@@ -451,3 +451,12 @@ Local reproduction at 390 (`conquest-flagship-browser.py --engine chromium --wid
 - **Agents used (AGENTS.md rule 5):**
   - Three visual-option agents (A, B, C). They changed the result: B chosen, plus C's map grid.
   - One independent read-only reviewer on `f323751`. It delivered 1 blocker, 5 should-fix and 5 nits, and changed the result: all were fixed before merge. Its re-check was stopped at the owner's request.
+
+**RELEASED (owner-approved: green CI → merge → deploy → verify, 2026-11-07):**
+- PR #59 merged as `b59ae99` at CI-green head `2a258fa`. All 9 checks green: conquest, transmission chromium + webkit (the forced-HIGH living-war journey included), signup-browsers chromium/webkit/firefox, website, verify, asset-integrity.
+- Worker deploy run 42412566891 SUCCESS: server tests, Workers-runtime live-match smoke test, deploy.
+- Live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`; live `version.json` **`20261107151435`** = repo. Both were checked by the deploy job itself: this cloud container's network policy blocks the live hosts.
+- GitHub Pages run 42412565867 SUCCESS for `b59ae99`.
+- No revert required. Payments/checkout remain DISABLED; no production accounts, payments, token, airdrop or referral data changed.
+
+**Next:** the owner's phone playtest of the new look (Safari + Telegram, HIGH and LOW). Fix on a new branch from `main`; the FX_VS billboard-origin fix and real-device frame-time sampling are the first candidates.
