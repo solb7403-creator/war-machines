@@ -352,8 +352,9 @@ function create(T,opts={}){
   Sb.add(G.octF(.62),M(x,y1,z,0,0,0,rt+.6,5,rt+.6),K.panelA);Sb.add(G.torus,M(x,y1+.4,z,Math.PI/2,0,0,rt+.9,rt+.9,rt+.9),K.cyan,1);
   Sb.add(G.cone6,M(x,y1+5,z,0,0,0,2.4,11,2.4),K.panelB);Sb.box(x,y1+16.2,z,.5,.5,.5,K.red,1);X.bill(x,y1+16.2,z,3.2,AT.BLOB,E(0xff3048,1.2));
   const tilt=Math.atan((rb-rt)/(y1-y0));for(let k=0;k<4;k++)Sb.add(G.box,MR(x,z,k*Math.PI/2,(y0+y1)/2,(rb+rt)/2+.03,-tilt,.28,y1-y0-4,.28),K.cyan,1);
-  if(i<all.length-1){const q=all[i+1],g2=ground(q.x,q.z);Sb.add(G.cylC,MDc(V3(x+12.4,g+4.2,z),V3(q.x-12.4,g2+4.2,q.z),1.1),K.mid);
-   for(const t of [.25,.5,.75])Sb.add(G.cylC,MDc(V3(x+12.4+(q.x-x-24.8)*t-.15,g+4.2+(g2-g)*t,z),V3(x+12.4+(q.x-x-24.8)*t+.15,g+4.2+(g2-g)*t,z),1.35),K.cyan,1);}
+  if(i<all.length-1){const q=all[i+1],g2=ground(q.x,q.z);// Overhead pipe bridge (8+ m clearance): the 6 m gap between the solid r12 towers stays drivable.
+   Sb.add(G.cylC,MDc(V3(x+12.4,g+9.6,z),V3(q.x-12.4,g2+9.6,q.z),1.1),K.mid);
+   for(const t of [.25,.5,.75])Sb.add(G.cylC,MDc(V3(x+12.4+(q.x-x-24.8)*t-.15,g+9.6+(g2-g)*t,z),V3(x+12.4+(q.x-x-24.8)*t+.15,g+9.6+(g2-g)*t,z),1.35),K.cyan,1);}
   X.quadV(x,g+11.5,z-12.9,3.6,.95,Math.PI,AT['S'+(10+i)],E(0x22e6ff,1.5));
   X.decal(x,z,16,16,0,AT.BLOB,[0,0,0],.5,low?6:9,.12);X.decal(x,z,18,18,0,AT.BLOB,E(0x22e6ff,.28),0,low?6:9,.16);}
  function terminal(Sb,X,t){const {x,z}=t,g=ground(x,z);
@@ -469,12 +470,12 @@ function create(T,opts={}){
    Sb.box(x,y+10.6,z,4.2,1.8,4.2,K.dark2);for(const t of [-.55,.55])Sb.add(G.cylC,MDc(V3(x+t,y+10.7,z-1.6),V3(x+t,y+10.9,z-6.4),.34),K.mid);Sb.box(x,y+11.6,z+1.2,.5,.5,.5,K.red,1);
    X.bill(x,y+11.6,z+1.2,1.2,AT.BLOB,E(0xff3048,1));X.quadV(x,y+7.6,z-2.86,3.6,.9,0,AT[SIGN.DEFENSE],E(0x22e6ff,1.3));}
   if(tier>=4){Sb.box(12,y+10,10,.5,5.6,.5,K.mid);Sb.box(12,y+12.9,10,.8,.4,.8,K.cyan,1);X.quadV(12,y+8.8,15.9,3.4,.85,0,AT[SIGN.RADAR],E(0x22e6ff,1.2));}
-  if(tier>=5){const x=0,z=12;Sb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
-   Sb.add(G.cone6,M(x,y+26,z,0,0,0,1.3,6,1.3),K.panelA);Sb.add(G.ico,M(x,y+32.6,z,0,0,0,.8,.8,.8),K.ice,1);X.bill(x,y+32.6,z,4.2,AT.BLOB,E(0x22e6ff,1.2));X.quadV(x,y+3.4,z-2.6,4.6,1.15,0,AT[SIGN.COMMAND],E(0x22e6ff,1.6));}
+  if(tier>=5){const x=0,z=16;// on the solid back-wall line (sim |z-16|<3), so tanks never drive through the towerSb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
+   Sb.add(G.cone6,M(x,y+26,z,0,0,0,1.3,6,1.3),K.panelA);Sb.add(G.ico,M(x,y+32.6,z,0,0,0,.8,.8,.8),K.ice,1);X.bill(x,y+32.6,z,4.2,AT.BLOB,E(0x22e6ff,1.2));X.quadV(x,y+6.2,z-2.7,4.6,1.15,0,AT[SIGN.COMMAND],E(0x22e6ff,1.6));}
   // Modules along the inner face of the back wall: colour = function, height = level.
   const MOD={reactor:[K.teal,0x2dffc4],hangar:[K.cyan,0x22e6ff],defense:[K.red,0xff3048],vault:[K.gold,0xffd36b],radar:[K.ice,0xa8f8ff],uplink:[K.violet,0xa07bff]};
-  Object.keys(C.baseDefinition.modules).forEach((m,i)=>{const level=base.modules?.[m]||0;if(!level)return;const x=-12+i*4,h=1.2+level*1.1,c=MOD[m]||MOD.hangar;Sb.add(G.hex,M(x,y,12.8,0,0,0,1.5,h,1.5),K.dark2);Sb.add(G.hex,M(x,y+h,12.8,0,0,0,1.6,.3,1.6),c[0],1);
-   for(let k=1;k<=level;k++)Sb.add(G.hex,M(x,y+h*k/(level+1),12.8,0,0,0,1.56,.12,1.56),c[0],.9);X.bill(x,y+h+.6,12.8,1.3,AT.BLOB,E(c[1],.8));});
+  Object.keys(C.baseDefinition.modules).forEach((m,i)=>{const level=base.modules?.[m]||0;if(!level)return;const x=-12+i*4,h=1.2+level*1.1,c=MOD[m]||MOD.hangar,mz=13.6;Sb.add(G.hex,M(x,y,mz,0,0,0,1.5,h,1.5),K.dark2);Sb.add(G.hex,M(x,y+h,mz,0,0,0,1.6,.3,1.6),c[0],1);
+   for(let k=1;k<=level;k++)Sb.add(G.hex,M(x,y+h*k/(level+1),mz,0,0,0,1.56,.12,1.56),c[0],.9);X.bill(x,y+h+.6,mz,1.3,AT.BLOB,E(c[1],.8));});
   // Defense damage reads as scorch and wreckage at the gate.
   for(let i=0;i<Math.ceil((base.defense?.damage||0)/20);i++){decal(-12+i*5,-15,2.6,2.2,AT.BLOB,[0,0,0],.75,3,.4);Sb.box(-12+i*5,y+.5,-15,1.6,.5,.9,K.chitinD,0,i);}
   const solidMesh=Sb.mesh(),fxMesh=X.mesh();
@@ -543,8 +544,10 @@ function create(T,opts={}){
  // Holo pillar marker (mission beacon, objectives, caches): ground hex + light band + icon.
  S.holoMarker=(color,{height=10,radius=1.4,icon=true}={})=>{const X=new Fx();X.flat(0,.15,0,radius*2.2,radius*2.2,AT.HEX,E(color,.9),0);X.band(0,0,.2,radius,radius*.55,height,E(color,.55),[0,0,0],12);if(icon){X.quadV(0,height+1.6,0,2.6,2.6,0,AT.ICON,E(color,1.2));X.quadV(0,height+1.6,0,2.6,2.6,Math.PI/2,AT.ICON,E(color,.8));}
   const m=X.mesh();m.renderOrder=2;return m;};
- S.cache=(wreck)=>{const Sb=new Bld(),X=new Fx(),c=wreck?K.cyan:K.amber,col=wreck?0x8ee6ef:0xffd58a;Sb.box(0,.7,0,2,1.4,2,K.dark2);Sb.box(0,1.45,0,2.1,.12,2.1,c,1);for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x*1.02,.7,z*1.02,.1,1.4,.1,c,1);
-  X.band(0,0,1.5,.5,.2,5,E(col,.6),[0,0,0],10);X.bill(0,2.2,0,1.6,AT.BLOB,E(col,.8));X.flat(0,.06,0,2.4,2.4,AT.BLOB,E(col,.4),0);return pair(Sb,X);};
+ const cacheGeo={};
+ S.cache=(wreck)=>{const key=wreck?'w':'l';if(!cacheGeo[key]){const Sb=new Bld(),X=new Fx(),c=wreck?K.cyan:K.amber,col=wreck?0x8ee6ef:0xffd58a;Sb.box(0,.7,0,2,1.4,2,K.dark2);Sb.box(0,1.45,0,2.1,.12,2.1,c,1);for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x*1.02,.7,z*1.02,.1,1.4,.1,c,1);
+  X.band(0,0,1.5,.5,.2,5,E(col,.6),[0,0,0],10);X.bill(0,2.2,0,1.6,AT.BLOB,E(col,.8));X.flat(0,.06,0,2.4,2.4,AT.BLOB,E(col,.4),0);cacheGeo[key]={s:keep(Sb.geometry()),f:keep(X.geometry())};}
+  const g=new T.Group();g.add(new T.Mesh(cacheGeo[key].s,MAT.solid),Object.assign(new T.Mesh(cacheGeo[key].f,MAT.fx),{renderOrder:2}));return g;};
  S.flag=(owned,friendly)=>{const Sb=new Bld(),X=new Fx(),c=owned?K.teal:friendly?K.cyan:K.mag,col=owned?0x2dffc4:friendly?0x22e6ff:0xff2bd6;Sb.box(0,7,0,.2,14,.2,K.mid);Sb.box(0,.3,0,.9,.6,.9,K.dark);
   Sb.box(2.1,12,0,3.8,1.9,.12,K.dark2);Sb.box(2.1,12,.07,3.5,1.6,.02,c,.85);X.bill(.1,14.2,0,1.1,AT.BLOB,E(col,.9));X.quadV(2.1,12,.1,3.6,.9,0,AT[owned||friendly?SIGN.SECURED:SIGN.HOSTILE],E(col,1.3));return pair(Sb,X);};
 
@@ -627,7 +630,7 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  const ringL=[];for(const sec of Cb.sectors){const p=m.toScreen(sec.x,sec.z),r=sec.radius*unit;if(p.x+r<0||p.x-r>360||p.y+r<0||p.y-r>420)continue;const own=S.territory?.[sec.id]?.owner==='humanity',rgb=own?'0,229,255':'255,60,214';
   ctx.beginPath();ctx.arc(p.x,p.y,r,0,TAU);ctx.lineWidth=4;ctx.strokeStyle='rgba('+rgb+',.08)';ctx.stroke();ctx.setLineDash([6,4]);ctx.lineWidth=1;ctx.strokeStyle='rgba('+rgb+',.55)';ctx.stroke();ctx.setLineDash([]);
   ctx.strokeStyle='rgba('+rgb+',.85)';ctx.lineWidth=1.4;ctx.beginPath();for(let k=0;k<4;k++){const a=k*Math.PI/2;ctx.moveTo(p.x+Math.cos(a)*(r-4),p.y+Math.sin(a)*(r-4));ctx.lineTo(p.x+Math.cos(a)*(r+4),p.y+Math.sin(a)*(r+4));}ctx.stroke();if(r>16)ringL.push({sec,p,r,own});}
- const you=m.toScreen(m.player.x,m.player.z),t=m.routeTarget;if(t){const q=m.toScreen(t.x,t.z);ctx.save();ctx.lineCap='round';ctx.strokeStyle='rgba(255,196,90,.2)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(you.x,you.y);ctx.lineTo(q.x,q.y);ctx.stroke();
+ const player=m.player||{x:Cb.refuge.x,z:Cb.refuge.z,heading:0,none:true},you=m.toScreen(player.x,player.z),t=m.player?m.routeTarget:null;if(t){const q=m.toScreen(t.x,t.z);ctx.save();ctx.lineCap='round';ctx.strokeStyle='rgba(255,196,90,.2)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(you.x,you.y);ctx.lineTo(q.x,q.y);ctx.stroke();
   ctx.setLineDash([5,4]);ctx.strokeStyle='#ffc45a';ctx.lineWidth=1.6;ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(q.x,q.y,7,0,TAU);ctx.moveTo(q.x-11,q.y);ctx.lineTo(q.x-4,q.y);ctx.moveTo(q.x+4,q.y);ctx.lineTo(q.x+11,q.y);ctx.moveTo(q.x,q.y-11);ctx.lineTo(q.x,q.y-4);ctx.moveTo(q.x,q.y+4);ctx.lineTo(q.x,q.y+11);ctx.stroke();ctx.restore();}
  const marks=[],add=(wx,wz,g,c,txt,pri,o)=>marks.push(Object.assign({p:m.toScreen(wx,wz),g,c,t:txt,pri},o||{}));
  if(scale>=16)for(const l of Wd.landmarks)if(d.has(l.x,l.z))add(l.x,l.z,'·','#7fd3e0',l.name,1,{dim:true,dot:true});
@@ -654,16 +657,16 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  for(const it of items){if(!it.at)continue;const r=it.at.r;if(it.at.lead){const nx=Math.max(r.x,Math.min(it.p.x,r.x+r.w)),ny=Math.max(r.y,Math.min(it.p.y,r.y+r.h)),dx=nx-it.p.x,dy=ny-it.p.y,l=Math.hypot(dx,dy)||1;
    ctx.globalAlpha=.65;ctx.strokeStyle=it.c;ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(it.p.x+dx/l*8,it.p.y+dy/l*8);ctx.lineTo(nx,ny);ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle=it.c;ctx.fillRect(nx-1.2,ny-1.2,2.4,2.4);}
   ctx.drawImage(it.s.cv,r.x,r.y,it.s.w,it.s.h);}
- ctx.save();ctx.translate(you.x,you.y);ctx.fillStyle='rgba(0,229,255,.16)';ctx.beginPath();ctx.arc(0,0,14,0,TAU);ctx.fill();ctx.strokeStyle='rgba(170,250,255,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,11,0,TAU);ctx.stroke();
- ctx.rotate(m.player.heading||0);ctx.shadowColor='#00e5ff';ctx.shadowBlur=8;ctx.fillStyle='#3fe9ff';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(6.5,6.5);ctx.lineTo(0,3);ctx.lineTo(-6.5,6.5);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.restore();
- ctx.drawImage(ys.cv,you.x-ys.w/2,you.y-16-ys.h,ys.w,ys.h);ctx.drawImage(overlay(),0,0,360,420);
+ if(!player.none){ctx.save();ctx.translate(you.x,you.y);ctx.fillStyle='rgba(0,229,255,.16)';ctx.beginPath();ctx.arc(0,0,14,0,TAU);ctx.fill();ctx.strokeStyle='rgba(170,250,255,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,11,0,TAU);ctx.stroke();
+ ctx.rotate(player.heading||0);ctx.shadowColor='#00e5ff';ctx.shadowBlur=8;ctx.fillStyle='#3fe9ff';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(6.5,6.5);ctx.lineTo(0,3);ctx.lineTo(-6.5,6.5);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.restore();
+ ctx.drawImage(ys.cv,you.x-ys.w/2,you.y-16-ys.h,ys.w,ys.h);}ctx.drawImage(overlay(),0,0,360,420);
  // Grid margins: column letters along the top, row numbers down the left.
  ctx.fillStyle='rgba(1,8,14,.9)';ctx.fillRect(0,0,360,12);ctx.fillRect(0,12,12,391);ctx.strokeStyle='rgba(0,229,255,.45)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(12,12.5);ctx.lineTo(360,12.5);ctx.moveTo(12.5,12);ctx.lineTo(12.5,403);ctx.stroke();
  ctx.font=MFONT;ctx.fillStyle='#6fe3f0';ctx.textAlign='center';ctx.textBaseline='middle';for(let i=gx0;i<gx1;i++){const x=m.toScreen((i+.5)*gs,0).x;if(x>22&&x<350)ctx.fillText(colName(i),x,6.5);}
  for(let j=gz0;j<gz1;j++){const y=m.toScreen(0,(j+.5)*gs).y;if(y>20&&y<398){ctx.save();ctx.translate(6.5,y);ctx.rotate(-Math.PI/2);ctx.fillText(String(j).padStart(2,'0'),0,0);ctx.restore();}}
  ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='#5fd8e8';ctx.fillText('GRID '+gs+' M · N ↑ · '+Math.round(Wd.WIDTH/scale)+' M ACROSS',10,414);
  const sb=100*unit;if(sb>8&&sb<200){ctx.strokeStyle='#5fd8e8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(350-sb,411);ctx.lineTo(350,411);ctx.moveTo(350-sb,407);ctx.lineTo(350-sb,414);ctx.moveTo(350,407);ctx.lineTo(350,414);ctx.stroke();ctx.textAlign='right';ctx.fillText('100 m',350,404);ctx.textAlign='left';}}
-const MAP_LEGEND='<span class="cq-holo-key">HOLO RELIEF · explored ground only.</span> <b style="color:#ffd36b">◆</b> Mission · <b style="color:#ffb347">✦</b> Raid site (<b style="color:#5effd0">✓</b> cleared · grey locked) · <b style="color:#ff4060">!</b> Defense alert · <b style="color:#3fe9ff">●</b> Refuge · <b style="color:#ffc45a">⌂</b> Command Base · <b style="color:#ff4fd8">▲</b> Parasite / <b style="color:#5effd0">⚑</b> captured · <b style="color:#8ee6ef">◇</b> Wreck. Grid letters + numbers call out positions. Drag to pan · pinch or + / − to zoom · north ↑.';
+const MAP_LEGEND='<span class="cq-holo-key">HOLO RELIEF · explored ground only.</span> <b style="color:#ffd36b">◆</b> Mission · <b style="color:#ffb347">✦</b> Raid site (<b style="color:#5effd0">✓</b> cleared · grey locked) · <b style="color:#ff4060">!</b> Defense alert · <b style="color:#3fe9ff">●</b> Refuge · <b style="color:#ffc45a">⌂</b> Command Base · <b style="color:#ff4fd8">▲</b> Parasite installation (when discovered; <b style="color:#5effd0">⚑</b> captured) · <b style="color:#8ee6ef">◇</b> Wreck. Grid letters + numbers call out positions. Drag to pan · pinch or + / − to zoom · north ↑.';
 
 root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){MAPC.relief=null;}});
 })(typeof window!=='undefined'?window:globalThis);
