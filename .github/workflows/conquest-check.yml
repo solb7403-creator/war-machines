@@ -49,6 +49,7 @@ jobs:
           node dev/tests/conquest-cosmetics.mjs
           node dev/tests/conquest-cosmetics-authority.mjs
           node dev/tests/conquest-assets.mjs
+          node dev/tests/conquest-style.mjs
           node dev/tests/conquest-flagship-ui.mjs
           node dev/tests/conquest-canvas-contract.mjs
           node dev/tests/wtest/conquest-war.mjs

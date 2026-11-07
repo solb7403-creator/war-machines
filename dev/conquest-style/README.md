@@ -1,5 +1,9 @@
 # Conquest style lab (dev-only, Phase 1 visual options)
 
+> Phase 1 picked option B (Neon Frontline) + C's map grid. The shipped art direction lives in `js/conquest/style.js`
+> (`ConquestStyle`, wired into `js/conquest/view.js` and the region map in `js/conquest/app.js`); `options/b/` stays as
+> the Phase 1 sample. See docs/conquest/IMPLEMENTATION_CHECKPOINT.md, Checkpoint 21.
+
 `lab.html` renders one Conquest **subject** with one **style option** so options can be compared shot-for-shot.
 It is never loaded by the game. Terrain heights, scenery placement, collision footprints, the player tank kit,
 renderer settings (no MSAA, HIGH pixel ratio ≤ 1.5, LOW 1, ACES + sRGB from `Equipment3D.configure`) and camera
