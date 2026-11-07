@@ -4,7 +4,7 @@ buildSim();
 const {CONQUEST,RULES}=await import('../../worker/src/sim.gen.js');
 const {validateCommands,createState,applyCommands}=await import('../../worker/src/conquest-sim.js');
 assert(CONQUEST.World&&CONQUEST.Combat,'server uses canonical terrain and combat');
-for(const value of [null,{},[],[{x:102,z:0}], [{x:0,z:NaN}], [{x:0,z:0,position:{x:9999,z:0}}],Array(21).fill({x:0,z:0})])assert.throws(()=>validateCommands(value));
+for(const value of [null,{},[],[{x:102,z:0}], [{x:0,z:NaN}], [{x:0,z:0,position:{x:9999,z:0}}],Array(41).fill({x:0,z:0})])assert.throws(()=>validateCommands(value));
 const commands=validateCommands([{x:1,z:0,aimYaw:0,fire:false}]);assert.equal(commands.length,1);
 const now=100000,L=RULES.STOCK_L,s=createState(L,now);
 const initial=JSON.stringify(s);
@@ -20,9 +20,9 @@ const restored=applyCommands(JSON.parse(JSON.stringify(damaged)),{seq:2,commands
 assert.equal(restored.hp,123,'serialized reload preserves health');
 console.log('PASS authoritative command schema, elapsed-time budget, replay/order rejection, canonical movement and persistent HP');
 
-// Idle time cannot be banked and spent as a burst of movement.
-const idle=applyCommands(s,{seq:1,commands:Array(20).fill({x:1,z:0})},now+3600000);
-assert.throws(()=>applyCommands(idle,{seq:2,commands:Array(20).fill({x:1,z:0})},now+3600000));
+// Idle time cannot be banked beyond the 4 s real-time reserve (which absorbs phone network stalls) and spent as a burst.
+const idle=applyCommands(s,{seq:1,commands:Array(40).fill({x:1,z:0})},now+3600000),idle2=applyCommands(idle,{seq:2,commands:Array(40).fill({x:1,z:0})},now+3600000);
+assert.equal(idle2.creditMs,0);assert.throws(()=>applyCommands(idle2,{seq:3,commands:[{x:1,z:0}]},now+3600000));
 // Production server replay performs the hit/kill, including terrain-aware vertical aim assist.
 let fight=createState(L,now);fight.position={x:1240,z:893,y:CONQUEST.World.groundAt(1240,893),surface:'ground'};
 fight.battle=JSON.parse(JSON.stringify(new CONQUEST.Combat.Encounter(L,fight.position)));
@@ -45,7 +45,7 @@ assert.equal(sortie.battle.state,'victory','server computes the full three-wave 
 const completed=applyAction(sortie,{seq:sortie.seq+1,action:'return-exploration'},now+(seconds+1)*1000);assert(completed.completed['oxygen-line']);assert.equal(completed.hp,sortie.hp);
 console.log('PASS authoritative mission activation, HP continuity, retreat rejection and real three-wave victory:',seconds,'seconds');
 // Arrival jitter consumes previously earned reserve; it never creates movement time.
-let jitter=createState(L,now),elapsed=1500;for(let i=0;i<8;i++){if(i)elapsed+=i%2?970:1030;jitter=applyCommands(jitter,{seq:jitter.seq+1,commands:Array(20).fill({x:1,z:0})},now+elapsed);}assert(jitter.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*elapsed/1000+1e-6);assert(jitter.creditMs<=1250);console.log('PASS bounded earned timing reserve handles ordinary HTTP arrival jitter');
+let jitter=createState(L,now),elapsed=1500;for(let i=0;i<8;i++){if(i)elapsed+=i%2?970:1030;jitter=applyCommands(jitter,{seq:jitter.seq+1,commands:Array(20).fill({x:1,z:0})},now+elapsed);}assert(jitter.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*elapsed/1000+1e-6);assert(jitter.creditMs<=4000);console.log('PASS bounded earned timing reserve handles ordinary HTTP arrival jitter');
 const wonPosition=structuredClone(sortie.position);const afterVictory=applyCommands(sortie,{seq:sortie.seq+1,commands:Array(20).fill({x:1,z:0,dash:true,shield:true,fire:true})},now+(seconds+1)*1000);assert.deepEqual(afterVictory.position,wonPosition,'real verified victory freezes movement until returning to exploration');assert.equal(afterVictory.ledger.cp,sortie.ledger.cp,'ended-state inputs cannot duplicate mission credit, including a latched featured bonus');console.log('PASS authoritative terminal mission state freezes traversal without reward duplication');
 const stuckWon=structuredClone(afterVictory);stuckWon.stuckMs=2000;assert.throws(()=>applyAction(stuckWon,{seq:stuckWon.seq+1,action:'recover'},now+(seconds+2)*1000),'recovery cannot bypass terminal mission freeze');console.log('PASS terminal mission cannot recover into invulnerable exploration');
 assert.equal(afterVictory.stuckMs,sortie.stuckMs,'terminal inputs cannot manufacture stuck history');const wonRoam=applyAction(afterVictory,{seq:afterVictory.seq+1,action:'return-exploration'},now+(seconds+2)*1000);assert.throws(()=>applyAction(wonRoam,{seq:wonRoam.seq+1,action:'recover'},now+(seconds+3)*1000),'returning cannot turn terminal inputs into a recovery teleport');console.log('PASS terminal inputs cannot synthesize recovery eligibility across transitions');

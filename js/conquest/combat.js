@@ -65,12 +65,16 @@ const retakeSectors=new Set(sectors.map(s=>s.id).filter(id=>!raidOperations.some
 function sectorDefenseOpen(t,sector){return !!t&&(t.owner==='humanity'&&t.status==='defense-alert'||retakeSectors.has(sector)&&t.owner==='parasites'&&t.status==='recaptured');}
 const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
+// The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
+const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
 const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
 function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=modules.radar||0;return {radius:Math.max(18+6*defense,tier>=5?30:tier>=4?24:0),mitigation:Math.min(.5,defense*.1+(tier>=4?.1:0)+(tier>=5?.05:0)),radar:Math.max(radar,tier>=5?1:0),radarRange:120+100*Math.max(radar,tier>=5?1:0)+(tier>=5?100:0)};}
-const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1080,z:945,route:[[1080,945],[1115,945],[1130,970],[1100,975]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+// road-intercept patrols the south road just outside the home perimeter, where the Helium, Ash and Crossroads routes leave
+// home (it previously doubled up on the Crossroads garrison camp). It stays >=150 m from the base and Refuge terminal.
+const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
 const formations=Object.freeze([
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
  Object.freeze([['raider',1218,995],['breacher',1230,995]]),
@@ -199,6 +203,15 @@ class Encounter extends Battle {
  }
 }
 // All operation progression is physical and replayed by the Worker; no client objective claims.
+// Raid doctrine by danger. Enemy-side only: it never reads the player's loadout, gear, Moonbeam or Lunar Skin. HARD is a real
+// fight for starter gear; VETERAN usually beats starter gear and needs upgrades or skill. Added units carry no salvage, so
+// verified raid payouts are unchanged.
+const raidDoctrine=freeze({
+ HARD:freeze({hull:1.15,objectiveHull:1.1,damage:1.15,garrison:freeze(['raider']),waves:freeze([freeze(['raider','raider']),freeze(['raider','breacher'])]),engageAt:0,breather:22,hazardEvery:10,enrageAt:.35,enrageCadence:.8,cadence:1}),
+ VETERAN:freeze({hull:1.55,objectiveHull:1.3,damage:1.5,garrison:freeze(['raider','command']),waves:freeze([freeze(['raider','raider','breacher']),freeze(['raider','command','raider']),freeze(['sentinel','raider'])]),engageAt:1,breather:18,hazardEvery:7.5,enrageAt:.5,enrageCadence:.6,cadence:.85})});
+// At most one heavy sentinel per raid: a layout that already fields one (Ash Approach) gets a breacher in its place.
+function waveKinds(D,n,heavyFielded){const kinds=D.waves[Math.min(n,D.waves.length)-1];return heavyFielded?kinds.map(k=>k==='sentinel'?'breacher':k):[...kinds];}
+function doctrineOf(o){return o?.raid?raidDoctrine[o.danger]||raidDoctrine.HARD:null;}
 class Operation extends Battle {
  constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
  this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
@@ -214,26 +227,30 @@ class Operation extends Battle {
   const [a,b,c]=o.offsets;this.deploy('raider',o.x+a[0],o.z+a[1],'flanker');this.deploy(o.layout==='ash-approach'?'sentinel':'command',o.x+b[0],o.z+b[1],'support');
   if(o.family==='sabotage'||o.family==='battery'){for(let i=0;i<(o.family==='battery'?2:1);i++){this.deploy('command',o.x+(i?22:0),o.z+(i?-12:0),'battery:'+i);const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=o.family==='battery'?240:360;e.objectiveTarget=true;}this.relayId=this.enemies.at(-1).id;}
   if(o.family==='intercept'){this.deploy('command',o.x+c[0],o.z+c[1],'carrier');const e=this.enemies.at(-1);e.hp=e.maxHp=420;this.carrierId=e.id;this.escapeStart={x:e.x,z:e.z};}
-  if(o.family!=='siege')this.deployCommander();
+  // The doctrine garrison holds the far side of the objective (away from the authored entry), never the entry itself.
+  const D=doctrineOf(o),ex=o.x-o.entry[0],ez=o.z-o.entry[1],el=Math.hypot(ex,ez)||1,ux=ex/el,uz=ez/el;D.garrison.forEach((kind,i)=>{const side=(i%2?-1:1)*(10+Math.floor(i/2)*8);try{this.deploy(kind,o.x+ux*18-uz*side,o.z+uz*18+ux*side,'doctrine:'+i);}catch(error){return;}const e=this.enemies.at(-1);e.noLoot=true;e.doctrine=true;});
+  if(o.family!=='siege')this.deployCommander();for(const e of this.enemies)this.harden(e);
  }
- deployCommander(){const o=this.operation;this.deploy(o.commander==='ambush'?'raider':o.commander==='carrier'?'command':'sentinel',o.x+12,o.z-38,'commander');const e=this.enemies.at(-1);e.commander=true;e.pattern=o.commander;e.hp=e.maxHp=o.commander==='ambush'?460:680;e.nextPattern=this.time+4;e.drones=0;this.commanderId=e.id;}
+ harden(e){const D=doctrineOf(this.operation);if(!D||!e||e.hardened||e.resident)return;// Heavy sentinels already hit hardest (72 dps at 54 m): they take half the hull bonus and no damage bonus.
+  const heavy=e.kind==='sentinel',k=e.objectiveTarget||e.id===this.carrierId?D.objectiveHull:heavy?1+(D.hull-1)/2:D.hull;e.hp=e.maxHp=Math.round(e.maxHp*k);e.stats.dmgM=(e.stats.dmgM||1)*(heavy?1:D.damage);e.hardened=true;}
+ deployCommander(){const o=this.operation;this.deploy(o.commander==='ambush'?'raider':o.commander==='carrier'?'command':'sentinel',o.x+12,o.z-38,'commander');const e=this.enemies.at(-1);e.commander=true;e.pattern=o.commander;e.hp=e.maxHp=o.commander==='ambush'?460:680;e.nextPattern=this.time+4;e.drones=0;this.commanderId=e.id;this.harden(e);}
  defenseStep(dt){if(this.defenseConfig==='drone')this.objectiveHp=Math.min(this.objectiveMax,this.objectiveHp+12*dt);if(this.defenseConfig!=='turret')return;this.turretClock=(this.turretClock||0)-dt;if(this.turretClock>0)return;this.turretClock=.6;const from={x:this.operation.x,y:W.groundAt(this.operation.x,this.operation.z)+6,z:this.operation.z},e=this.enemies.find(e=>!e.resident&&e.hp>0&&Math.hypot(e.x-from.x,e.z-from.z)<65&&lineClear(from,center(e)));if(!e)return;const damage=18+3*(this.baseTier||0);e.hp=Math.max(0,e.hp-damage);this.effects.push({kind:'beam',weapon:'pulse',x:from.x,y:from.y,z:from.z,ex:e.x,ey:e.y+2.2,ez:e.z,life:.15});if(!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
  deployDefense(){this.defenseWave++;for(let i=0;i<3;i++){this.deploy(i===2?'breacher':'raider',this.operation.x-30+i*20,this.operation.z-40,'defense:'+this.defenseWave+':'+i);this.enemies.at(-1).role=i===2?'facility':'player';}this.objectiveDamageable=true;}
  hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
-  for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;e.nextPattern=this.time+(e.pattern==='artillery'?6:8)*(e.enraged?.65:1);e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<droneDefinition.maxPerCarrier&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);const drone=this.enemies.at(-1);drone.drone=true;drone.launchedAt=this.time;drone.surface='air';drone.cd=droneDefinition.takeoffSeconds;drone.telegraph=true;e.drones++;}}}
-  if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+11;this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
+  for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;{const D=doctrineOf(this.operation);e.nextPattern=this.time+(e.pattern==='artillery'?6:8)*(D?D.cadence*(e.enraged?D.enrageCadence:1):e.enraged?.65:1);}e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<droneDefinition.maxPerCarrier&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);const drone=this.enemies.at(-1);this.harden(drone);drone.drone=true;drone.launchedAt=this.time;drone.surface='air';drone.cd=droneDefinition.takeoffSeconds;drone.telegraph=true;e.drones++;}}}
+  if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+(doctrineOf(this.operation)?.hazardEvery||11);this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
  }
- markStrike(kind,x,z,source){if(this.hazards.length>=8)return;this.hazards.push({kind,x,z,y:W.groundAt(x,z),radius:kind==='plasma'?9:6,remaining:kind==='drone'?2.6:2.2,damage:kind==='plasma'?75:55,source});}
+ markStrike(kind,x,z,source){if(this.hazards.length>=8)return;this.hazards.push({kind,x,z,y:W.groundAt(x,z),radius:kind==='plasma'?9:6,remaining:kind==='drone'?2.6:2.2,damage:(kind==='plasma'?75:55)*(doctrineOf(this.operation)?.damage||1),source});}
  // Authored raid doctrine: HARD sites call one telegraphed reinforcement wave, VETERAN sites two, and VETERAN commanders
  // shorten their telegraphed cadence below 40% hull. Reinforcements carry no salvage, so verified raid payouts are unchanged.
- reinforceStep(){const o=this.operation,waves=o.danger==='VETERAN'?2:1,living=this.enemies.filter(e=>e.hp>0&&!e.resident);
-  for(const e of living)if(e.commander&&!e.enraged&&o.danger==='VETERAN'&&e.hp<e.maxHp*.4){e.enraged=true;e.nextPattern=Math.min(e.nextPattern||0,this.time+1.5);}
+ reinforceStep(){const o=this.operation,D=doctrineOf(o),waves=D.waves.length,living=this.enemies.filter(e=>e.hp>0&&!e.resident);
+  for(const e of living)if(e.commander&&!e.enraged&&e.hp<e.maxHp*D.enrageAt){e.enraged=true;e.nextPattern=Math.min(e.nextPattern||0,this.time+1.5);}
   // A breather follows each wave: the next is called only if the objective is still open 25s after the last landing.
   // Waves land once the site is clear and the objective hold begins (sieges: after the general falls), never on top of a commander fight.
-  if(this.reinforcing||(this.reinforcements||0)>=waves||!o.drops||this.time<8||living.length||o.family==='siege'&&this.stage<1||Number.isFinite(this.lastLanding)&&this.time<this.lastLanding+25)return;
-  const [x,z]=o.drops[(this.reinforcements||0)%o.drops.length];this.reinforcing=true;this.hazards=Array.isArray(this.hazards)?this.hazards:[];this.hazards.push({kind:'drop',x,z,y:W.groundAt(x,z),radius:7,remaining:4,damage:40,source:-1,wave:(this.reinforcements||0)+1});}
- landReinforcements(h){const o=this.operation,n=this.reinforcements=(this.reinforcements||0)+1,kinds=n===1?['raider','raider']:['raider','breacher'];this.reinforcing=false;this.lastLanding=this.time;
-  kinds.forEach((kind,i)=>{try{this.deploy(kind,h.x+(i-1)*6,h.z,'reinforce:'+n+':'+i);}catch(error){return;}const e=this.enemies.at(-1);e.noLoot=true;e.reinforcement=n;e.cd=1.2;});}
+  if(this.reinforcing||(this.reinforcements||0)>=waves||!o.drops||this.time<8||living.length>D.engageAt||living.some(e=>e.commander)||o.family==='siege'&&this.stage<1||Number.isFinite(this.lastLanding)&&this.time<this.lastLanding+D.breather)return;
+  const [x,z]=o.drops[(this.reinforcements||0)%o.drops.length];this.reinforcing=true;this.hazards=Array.isArray(this.hazards)?this.hazards:[];this.hazards.push({kind:'drop',x,z,y:W.groundAt(x,z),radius:7,remaining:4,damage:40*D.damage,source:-1,wave:(this.reinforcements||0)+1});}
+ landReinforcements(h){const o=this.operation,D=doctrineOf(o),n=this.reinforcements=(this.reinforcements||0)+1,kinds=waveKinds(D,n,this.enemies.some(e=>e.kind==='sentinel'&&!e.resident));this.reinforcing=false;this.lastLanding=this.time;
+  kinds.forEach((kind,i)=>{try{this.deploy(kind,h.x+(i-1)*6,h.z,'reinforce:'+n+':'+i);}catch(error){return;}const e=this.enemies.at(-1);e.noLoot=true;e.reinforcement=n;e.cd=1.2;this.harden(e);});}
  raidStep(dt){const o=this.operation,living=this.enemies.filter(e=>e.hp>0&&!e.resident),d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z);this.reinforceStep();
   if(o.family==='intercept'){const c=this.enemies.find(e=>e.id===this.carrierId);if(c.hp>0&&Math.hypot(c.x-this.escapeStart.x,c.z-this.escapeStart.z)>120){this.state='defeat';this.reason='Armored carrier escaped with the telemetry';return;}if(!living.length&&d<12)this.work+=dt;if(this.work>=3)this.state='victory';}
   if(o.family==='sabotage'){if(!living.length&&d<12)this.work+=dt;else this.work=0;this.stage=this.enemies.filter(e=>e.objectiveTarget&&e.hp<=0).length;if(this.work>=6)this.state='victory';}
@@ -268,5 +285,37 @@ class Operation extends Battle {
  if(this.state!=='active')this.projectiles=[];
  }
 }
-root.ConquestCombat=Object.freeze({sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+// Daily Command Base CP batch (shared so the MAP shows the Worker's exact figure).
+function baseProduction(base,reputation=0){const b=base||{},m=b.modules||{};return b.tier?Math.min(800,40*b.tier+35*(m.reactor||0)+Math.floor(Math.sqrt(reputation||0))*3)*(1+.1*(m.uplink||0)):0;}
+// RECALL to the Command Base: a 15 s channel of simulated play that any damage breaks; 10 min cooldown, 5 min for
+// premium Lunar Pass owners (entitlement read by the Worker from the account, never from the client).
+const RECALL=freeze({channelMs:15000,cooldownMs:600000,premiumCooldownMs:300000});
+// Owner rule: raids unlock only after the six opening field missions each have a verified clear.
+const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&id!=='base-defense'));
+function fieldProgress(completed){return fieldMissionIds.filter(id=>completed?.[id]).length;}
+function raidsUnlocked(completed){return fieldProgress(completed)>=fieldMissionIds.length;}
+// Fast travel network, shared by client and Worker: the Refuge, the Command Base once built, and every frontier sector
+// humanity holds. Departure needs a quiet spot inside one of those nodes; travel changes position only (cargo stays unbanked).
+const TRAVEL={safeRadius:60,quietMs:10000},arrivals=new Map();
+// Candidate arrival points per node: the authored spot first, then two rings inside the node, each on open, level footing.
+function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(id);const open=p=>!W.solidAt(p.x,p.z)&&[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const n=W.advance(p,dx,dz);return Math.hypot(n.x-p.x-dx,n.z-p.z-dz)<.1;});
+ const near=(cx,cz)=>{for(let r=0;r<=12;r+=4)for(let i=0;i<(r?8:1);i++){const a=i*Math.PI/4,qx=cx+Math.cos(a)*r,qz=cz+Math.sin(a)*r,p={x:qx,z:qz,y:W.groundAt(qx,qz),surface:'ground'};if(open(p))return freeze(p);}return null;};
+ const out=[near(x,z)];for(const ring of [Math.min(40,radius*.4),Math.min(80,radius*.75)])for(let i=0;i<8;i++){const a=i*Math.PI/4;out.push(near(x+Math.cos(a)*ring,z+Math.sin(a)*ring));}
+ const list=freeze(out.filter(Boolean));arrivals.set(id,list);return list;}
+function travelNodes(territory={},baseTier=0){const nodes=[{id:'refuge',name:'REFUGE SUPPLY',x:refuge.x,z:refuge.z,radius:45,arrivals:travelArrivals('refuge',refuge.x-6,refuge.z-8,24)}];
+ if(baseTier>0)nodes.push({id:'base',name:'COMMAND BASE',x:baseDefinition.x,z:baseDefinition.z,radius:45,arrivals:travelArrivals('base',baseDefinition.x,baseDefinition.z-10,24)});
+ for(const s of sectors)if(s.id!=='refuge'&&territory?.[s.id]?.owner==='humanity')nodes.push({id:s.id,name:s.name,x:s.x,z:s.z,radius:s.radius,arrivals:travelArrivals(s.id,s.x,s.z,s.radius)});
+ // The Refuge corridor is humanity's home sector: departing anywhere inside it counts as the Refuge network.
+ const home=sectors.find(s=>s.id==='refuge');if(home)nodes.push({id:'refuge-corridor',name:home.name,x:home.x,z:home.z,radius:home.radius,departOnly:true});
+ // The respawn point at the viaduct west ramp is the Refuge's front door: a freshly respawned pilot can depart from it.
+ nodes.push({id:'refuge-viaduct',name:'REFUGE VIADUCT',x:898,z:1024,radius:45,departOnly:true});
+ return nodes;}
+// First candidate arrival with no live hostile within the safe radius (and outside the Command Base walls); null if none.
+function travelArrival(node,enemies,blocked){return node?.arrivals?.find(p=>!blocked?.(p)&&!(enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))||null;}
+function travelNodeAt(state,p){return travelNodes(state?.territory,state?.base?.tier||0).find(n=>Math.hypot(p.x-n.x,p.z-n.z)<=n.radius)||null;}
+function travelBlock(state,p,enemies,now){if(!state)return 'Online connection required';if(state.mission)return 'Finish or leave the operation first';if(!(state.hp>0))return 'Machine disabled';
+ if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
+ if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
+ if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
+root.ConquestCombat=Object.freeze({waveKinds,baseProduction,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

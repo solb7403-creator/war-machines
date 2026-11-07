@@ -5,7 +5,7 @@ import {BASE_ACTIONS} from './conquest-campaign.js';
 import {readEco,readTag,writeIf} from './eco.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
-import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState} from './conquest-sim.js';
+import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS} from './conquest-sim.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
 function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};return out;}
@@ -16,6 +16,10 @@ async function transaction(env,pid,fn,now){
  if(await writeIf(env,path,state,tag))return r;}
  throw Error('conquest busy');
 }
+export function passPremium(S,now){return S?.pass?.prem===true&&S.pass.s===RULES.ecoSeason({day:Math.floor(now/86400000)});}
+// Bounded per-isolate cache so repeated recall taps cost no extra account reads; read errors fail closed and are not cached.
+const premiumCaches=new WeakMap();
+async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
 async function canonical(env,pid){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null};}
 async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
  if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}
@@ -41,7 +45,9 @@ export async function conquestInput(env,a,now=Date.now()){
  return submit(env,a,{seq:a.b.seq,commands},applyCommands,now);
 }
 export async function conquestAction(env,a,now=Date.now()){
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,'start-defense','start-sector-defense'].includes(a.b.action))return response(400,'invalid conquest action');
- if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense',...COSMETIC_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];return submit(env,a,request,applyAction,now);
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel',...COSMETIC_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
+ const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:{};return submit(env,a,request,(p,r,n)=>applyAction(p,r,n,ctx),now);
 }

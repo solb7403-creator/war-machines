@@ -2,6 +2,7 @@
 import {CONQUEST} from './sim.gen.js';
 const D=CONQUEST.Combat.baseDefinition,DAY=86400000;
 export const BASE_ACTIONS=['build-base','upgrade-base','base-module','base-claim','repair-base','defense-config'];
+export const REMOTE_BASE_ACTIONS=['upgrade-base','base-module'];
 export function campaign(s,now){
  s.campaignVersion=2;s.campaignScore=Math.max(0,Number.isSafeInteger(s.campaignScore)?s.campaignScore:0);s.raidProgress=s.raidProgress||{shards:0,clears:0,blueprint:false,eliteBlueprint:false};s.territory=s.territory||{};s.reputation=Math.max(0,Number.isSafeInteger(s.reputation)?s.reputation:0);s.achievements=s.achievements||{};
  for(const sector of CONQUEST.Combat.sectors||[])if(!s.territory[sector.id])s.territory[sector.id]={owner:sector.id==='refuge'?'humanity':'parasites',status:sector.id==='refuge'?'secured':'active-parasites',...(sector.id==='refuge'?{defenseAt:now+1800000}:{})};
@@ -16,11 +17,14 @@ export function campaign(s,now){
  if(s.base.pending&&now>=s.base.pending.readyAt){const p=s.base.pending;s.base.modules[p.module]=p.tier;delete s.base.pending;}
  const intel=CONQUEST.Combat.baseBenefits(s.base.tier,s.base.modules);s.radarContacts=intel.radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<intel.radarRange).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
 }
-export function production(s){const b=s.base;return b.tier?Math.min(800,40*b.tier+35*(b.modules.reactor||0)+Math.floor(Math.sqrt(s.reputation||0))*3)*(1+.1*(b.modules.uplink||0)):0;}
+export function production(s){return CONQUEST.Combat.baseProduction(s.base,s.reputation);}
 function debit(s,price){for(const [k,n] of Object.entries(price)){if(!Number.isSafeInteger(n)||n<0)throw Error('conquest: invalid recipe');if((k==='cp'?s.ledger.cp:s.ledger.banked[k])<n)throw Error('conquest: insufficient banked '+k+': need '+n);}for(const [k,n] of Object.entries(price))if(k==='cp')s.ledger.cp-=n;else s.ledger.banked[k]-=n;}
 export function baseAction(s,r,now){
- campaign(s,now);if(s.mission||s.hp<=0||Math.hypot(s.position.x-D.x,s.position.z-D.z)>D.radius)throw Error('conquest: approach physical Command Base terminal');
- if(s.battle.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))throw Error('conquest: secure base perimeter');
+ // Remote command (from the MAP): tier upgrades and module construction spend already-banked resources only. Collecting
+ // production, banking salvage, first construction, repair and defense deployment still need the physical base.
+ const remote=REMOTE_BASE_ACTIONS.includes(r.action)&&s.base?.tier>0;campaign(s,now);if(s.mission||s.hp<=0)throw Error('conquest: approach physical Command Base terminal');
+ if(!remote&&Math.hypot(s.position.x-D.x,s.position.z-D.z)>D.radius)throw Error('conquest: approach physical Command Base terminal');
+ if(!remote&&s.battle.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))throw Error('conquest: secure base perimeter');
  const b=s.base;
  if(r.action==='build-base'){if(b.tier)throw Error('conquest: base already built');debit(s,D.recipe);b.tier=1;b.builtAt=now;b.claimedAt=now;b.defense.alertAt=now;s.achievements['first-command']=now;}
  else if(!b.tier)throw Error('conquest: build base first');

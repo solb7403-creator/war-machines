@@ -153,7 +153,7 @@ async def run(args):
                 await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=60000)
                 # Explicit presentation-only camera framing, no simulation mutation.
                 await page.evaluate('Conquest.view.distance=90;Conquest.view.pitch=.95;Conquest.view.yaw=-.8')
-            await page.request.post(base+'/fixture',data={'veteranLoadout':True,'engineering':True,'position':[890,945]})
+            await page.request.post(base+'/fixture',data={'veteranLoadout':True,'engineering':True,'fieldMissions':True,'position':[890,945]})
             await enter()
             definitions=await page.evaluate('ConquestCombat.operations')
             ids=['raid-'+f+'-1' for f in (args.family.split(',') if args.family else ['intercept','sabotage','battery'])]
