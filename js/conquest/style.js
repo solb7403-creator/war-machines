@@ -40,44 +40,50 @@ const PYLONS=[[1121,1160.5],[1143,1160.5],[1121,1185.5],[1143,1185.5],[1099,1160
 const HASH=`float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 vec2 h22(vec2 p){vec3 p3=fract(vec3(p.xyx)*vec3(.1031,.1030,.0973));p3+=dot(p3,p3.yzx+33.33);return fract((p3.xx+p3.yz)*p3.zy);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);return mix(mix(h12(i),h12(i+vec2(1,0)),u.x),mix(h12(i+vec2(0,1)),h12(i+vec2(1,1)),u.x),u.y);}`;
-const TERRAIN_VS=`varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;
+// Site influence (friendly glow / Parasite creep) is evaluated per vertex (4 m apart near the player) and interpolated,
+// so the fragment shader never loops over the site table.
+const TERRAIN_VS=`uniform vec4 uSite[8];varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;varying vec4 vSite;
 #include <common>
 #include <fog_pars_vertex>
 void main(){vW=uv*24.;vN=normal;vC=color;vY=position.y;vec4 mvPosition=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mvPosition;vD=-mvPosition.z;
+ float ff=0.,fs=0.,fd=1e4,bl=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float d=length(vW-s.xy);if(d>s.z)continue;float f=1.-d/s.z;f*=f;if(s.w>0.){ff+=f*s.w;if(f>fs){fs=f;fd=d;}}else bl=max(bl,f);}
+ vSite=vec4(ff,fs,fd,bl);
 #include <fog_vertex>
 }`;
-const TERRAIN_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uRimCol,uAmbUp,uAmbDn;uniform vec4 uSite[8];uniform float uTime;
-varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;
+// Regolith detail comes from one tileable texture (R crater height, G/B its gradient, A value noise) sampled at 2-3
+// rotated scales: ~3 fetches instead of hundreds of hash ops per pixel (measured ~5x cheaper in software GL).
+const TERRAIN_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uRimCol,uAmbUp,uAmbDn;uniform vec4 uSite[8];uniform float uTime;uniform sampler2D uDetail;
+varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;varying vec4 vSite;
 #include <common>
 #include <fog_pars_fragment>
-${HASH}
+float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 float hexEdge(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r)-h;vec2 b=mod(p-h,r)-h;vec2 g=dot(a,a)<dot(b,b)?a:b;vec2 q=abs(g);return .5-max(dot(q,vec2(.5,.8660254)),q.x);}
-vec2 crater(vec2 p,float cell,float seed,float dens,float k,inout vec2 grad){vec2 g=p/cell+seed;vec2 id=floor(g);vec2 f=fract(g)-.5;vec2 r=h22(id);
- if(r.x>dens)return vec2(0.);float rad=.2+.2*r.y;vec2 c=(h22(id+7.31)-.5)*(.9-2.*rad);vec2 d=(f-c)/rad;float q=length(d);if(q>1.7)return vec2(0.);
- float rim=exp(-(q-1.)*(q-1.)*22.);float dh=(q<1.?1.2*q:0.)-15.4*(q-1.)*rim;grad+=k*dh*d/max(q,.001);return vec2(rim,q<1.?1.-q*q:0.);}
 void main(){vec3 c=vC;float terra=smoothstep(.03,.08,c.g-max(c.r,c.b));float massif=smoothstep(.0,.06,c.b-c.r);
- float lod=clamp(1.-vD/320.,0.,1.),lod2=clamp(1.-vD/1500.,0.,1.);vec2 grad=vec2(0.),gm=vec2(0.);
- vec2 k1=crater(vW,118.,0.,.62,.2,grad);vec2 k2=crater(vW,37.,3.7,.55,.3,gm);grad+=gm*lod2;k2*=lod2;vec2 k3=vec2(0.);
+ float lod=clamp(1.-vD/320.,0.,1.),lod2=clamp(1.-vD/1500.,0.,1.);
+ vec4 d1=texture2D(uDetail,vW*(1./96.));vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./29.)+.31);
+ float h1=d1.r-.5,h2=(d2.r-.5)*lod2;vec2 grad=(d1.gb-.5)*.9+vec2(-(d2.b-.5),d2.g-.5)*1.25*lod2;
+ float rim=max(h1,0.)*1.6+max(h2,0.)*1.8,bowl=max(-h1,0.)*1.5+max(-h2,0.)*1.3;float tone=.7+.42*d1.a+.24*(d2.a-.5);
 #ifdef HIGH
- vec2 gs=vec2(0.);k3=crater(vW,11.5,9.1,.5,.34,gs)*lod;grad+=gs*lod;
-#endif
- float rim=k1.x+k2.x+k3.x,bowl=max(max(k1.y,k2.y),k3.y);
- float tone=.7+.42*vn(vW*.021)+.24*(vn(vW*.093+3.1)-.5);
-#ifdef HIGH
- tone+=.16*(vn(vW*.41+7.7)-.5)*lod;
+ if(lod>0.){vec4 d3=texture2D(uDetail,vW*(1./8.7)+.67);float h3=(d3.r-.5)*lod;grad+=(d3.gb-.5)*1.4*lod;rim+=max(h3,0.)*1.6;bowl+=max(-h3,0.)*1.2;tone+=.16*(d3.a-.5)*lod;}
 #endif
  vec3 rego=mix(vec3(.074,.078,.088),vec3(.055,.064,.082),massif)*tone;
  vec3 N=normalize(vN+vec3(-grad.x,0.,-grad.y));float steep=smoothstep(.3,.62,1.-N.y);
- rego=mix(rego,rego*(.55+.5*vn(vec2(vY*.32,(vW.x+vW.y)*.018))),steep);rego*=(1.-.32*bowl)*(1.+.6*rim);rego*=1.-.38*terra;
- float lp=smoothstep(.5,.74,vn(vW*.055+11.)*.62+vn(vW*.21)*.38)*terra;float speck=step(.84,h12(floor(vW*1.6)))*lp*(1.-smoothstep(.14,.3,length(fract(vW*1.6)-.5)));
- vec3 em=vec3(.0,.62,.5)*(lp*.12+speck*.45)*(.45+.55*lod);float blight=0.;
- for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float dist=length(vW-s.xy);if(dist>s.z)continue;float fall=1.-dist/s.z;fall*=fall;
-  if(s.w>0.){float he=hexEdge(vW/6.);float line=1.-smoothstep(0.,fwidth(he)*1.2+.02,he);float ring=smoothstep(.93,1.,fract(dist/22.-uTime*.08));
-   em+=vec3(.05,.72,1.)*(line*.15*fall*s.w+ring*.13*fall+.035*fall*s.w);}else blight=max(blight,fall);}
- if(blight>0.){float v=abs(vn(vW*.14)*2.-1.),v2=abs(vn(vW*.42+5.)*2.-1.);float vein=(1.-smoothstep(0.,.08,v))+(1.-smoothstep(0.,.06,v2))*.5;
+ if(steep>0.)rego=mix(rego,rego*(.55+.5*texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));rego*=1.-.38*terra;
+ vec3 em=vec3(0.);if(terra>0.){float lp=smoothstep(.5,.74,d2.a*.62+d1.a*.38)*terra;float speck=step(.84,h12(floor(vW*1.6)))*lp*(1.-smoothstep(.14,.3,length(fract(vW*1.6)-.5)));
+  em=vec3(.0,.62,.5)*(lp*.12+speck*.45)*(.45+.55*lod);}float blight=0.;
+ if(vSite.x>.002){float line=0.;
+#ifdef HIGH
+  float he=hexEdge(vW/6.);line=1.-smoothstep(0.,fwidth(he)*1.2+.02,he);
+#endif
+  float ring=smoothstep(.93,1.,fract(vSite.z/22.-uTime*.08));em+=vec3(.05,.72,1.)*(line*.15*vSite.x+ring*.13*vSite.y+.035*vSite.x);}
+ blight=vSite.w;
+ if(blight>0.){float v=abs(texture2D(uDetail,vW*(1./73.)+.13).a*2.-1.);float vein=1.-smoothstep(0.,.08,v);
+#ifdef HIGH
+  vein+=(1.-smoothstep(0.,.06,abs(texture2D(uDetail,vW*(1./24.)+.71).a*2.-1.)))*.5;
+#endif
   rego=mix(rego,rego*vec3(.75,.45,.85),blight);em+=vec3(1.,.08,.62)*vein*blight*.5*(.7+.3*sin(uTime*2.3-dot(vW,vec2(.05))));}
  float ndl=max(dot(N,uSunDir),0.);vec3 light=uSunCol*ndl+mix(uAmbDn,uAmbUp,N.y*.5+.5)+uRimCol*max(dot(N,uRimDir),0.)*.7;
- vec3 col=rego*light+em+uRimCol*rim*.03;col+=(h12(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(col,1.);
+ vec3 col=rego*light+em+uRimCol*min(rim,1.)*.03;col+=(h12(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(col,1.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 #include <fog_fragment>
@@ -100,11 +106,11 @@ void main(){
  wp=modelMatrix*wp;vWP=wp.xyz;vec2 w=wp.xz+uOrigin;vec3 rc=uRimCol*2.2;float best=0.;
  for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}
  vRim=rc;}`;
-const SOLID_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uAmbUp,uAmbDn;uniform float uTime,uGlow;
+const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV;uniform float uTime,uGlow;
 varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;
 #include <common>
 #include <fog_pars_fragment>
-void main(){vec3 N=normalize(vN),V=normalize(vV);vec3 L=normalize((viewMatrix*vec4(uSunDir,0.)).xyz),R=normalize((viewMatrix*vec4(uRimDir,0.)).xyz),UP=normalize((viewMatrix*vec4(0.,1.,0.,0.)).xyz);
+void main(){vec3 N=normalize(vN),V=normalize(vV),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
  vec3 base=vCol.rgb;float ndl=max(dot(N,L),0.);vec3 lit=base*(uSunCol*ndl+mix(uAmbDn,uAmbUp,dot(N,UP)*.5+.5));
  float rl=max(dot(N,R),0.);lit+=base*vRim*rl*.5;float fr=pow(1.-max(dot(N,V),0.),3.);lit+=vRim*fr*(.25+.75*rl)*.45;
 #ifdef HIGH
@@ -202,6 +208,17 @@ function makeAtlas(T,size){const cv=document.createElement('canvas');cv.width=cv
  x.textAlign='center';x.textBaseline='middle';SIGNS.forEach((s,i)=>{const cx=(i%4)*128,cy=256+Math.floor(i/4)*32;x.strokeStyle='rgb(150,0,0)';x.lineWidth=2;x.strokeRect(cx+5,cy+4,118,24);x.fillStyle='#ff0000';x.fillRect(cx+5,cy+4,5,24);x.fillRect(cx+118,cy+4,5,24);
   x.font="700 "+(s.length>8?16:19)+"px 'Chakra Petch',sans-serif";x.fillText(s,cx+64,cy+17);});
  const t=new T.CanvasTexture(cv);t.wrapS=t.wrapT=T.ClampToEdgeWrapping;t.generateMipmaps=false;t.minFilter=T.LinearFilter;return t;}
+function makeDetail(T,N){const H=new Float32Array(N*N),A=new Float32Array(N*N);let seed=7403;const rnd=()=>(seed=(Math.imul(seed,1664525)+1013904223)|0,(seed>>>0)/4294967296);
+ // Tileable crater field: bowls with raised rims, wrapped across the tile edges.
+ for(let k=0;k<34;k++){const cx=rnd()*N,cz=rnd()*N,r=N*(.018+.085*Math.pow(rnd(),1.7)),depth=.55+.45*rnd(),R=Math.ceil(r*1.6);
+  for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++){const d=Math.hypot(i,j)/r;if(d>1.6)continue;const x=((Math.floor(cx+i)%N)+N)%N,z=((Math.floor(cz+j)%N)+N)%N,bowl=d<1?-(1-d*d)*depth:0,rim=.42*depth*Math.exp(-Math.pow((d-1)/.2,2));H[z*N+x]+=bowl+rim;}}
+ // Tileable value noise (two periodic octaves) for tone, strata, lichen and veins.
+ const lat=(P,s)=>{const g=Array.from({length:P*P},()=>rnd());return (x,z)=>{const fx=x/N*P,fz=z/N*P,ix=Math.floor(fx),iz=Math.floor(fz),u=fx-ix,v=fz-iz,su=u*u*(3-2*u),sv=v*v*(3-2*v),G=(a,b)=>g[((b%P+P)%P)*P+((a%P+P)%P)];
+  return (G(ix,iz)*(1-su)+G(ix+1,iz)*su)*(1-sv)+(G(ix,iz+1)*(1-su)+G(ix+1,iz+1)*su)*sv;};};
+ const n1=lat(8),n2=lat(24);for(let z=0;z<N;z++)for(let x=0;x<N;x++)A[z*N+x]=n1(x,z)*.65+n2(x,z)*.35;
+ const D=new Uint8Array(N*N*4),q=v=>Math.max(0,Math.min(255,Math.round(v*255)));
+ for(let z=0;z<N;z++)for(let x=0;x<N;x++){const k=z*N+x,h=H[k],gx=(H[z*N+(x+1)%N]-H[z*N+(x+N-1)%N])*N/32,gz=(H[((z+1)%N)*N+x]-H[((z+N-1)%N)*N+x])*N/32;D[k*4]=q(.5+h*.42);D[k*4+1]=q(.5+gx*.5);D[k*4+2]=q(.5+gz*.5);D[k*4+3]=q(A[k]);}
+ const t=new T.DataTexture(D,N,N,T.RGBAFormat);t.wrapS=t.wrapT=T.RepeatWrapping;t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.needsUpdate=true;return t;}
 function makeEarth(T,w,h){const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d'),img=x.createImageData(w,h),D=img.data;
  for(let j=0;j<h;j++){const lat=(.5-j/(h-1))*Math.PI;for(let i=0;i<w;i++){const lon=i/w*TAU-Math.PI,px=Math.cos(lat)*Math.sin(lon),py=Math.sin(lat),pz=Math.cos(lat)*Math.cos(lon);
   const n=fbm3(px*1.7+5,py*1.7,pz*1.7,5),cl=fbm3(px*3.1+9,py*3.6,pz*3.1,4);let r,g,b;
@@ -233,7 +250,7 @@ function create(T,opts={}){
  const DEF=high?{HIGH:''}:{},sunDir=V3(-.55,.5,.67).normalize(),rimDir=V3(.62,.32,-.72).normalize();
  const U={uTime:{value:0},uSunDir:{value:sunDir},uSunCol:{value:lin(0xe4ecff).multiplyScalar(2.9/Math.PI)},uRimDir:{value:rimDir},uRimCol:{value:lin(0x52c6ff).multiplyScalar(1.15/Math.PI)},
   uAmbUp:{value:lin(0x3a5a9c).multiplyScalar(1.5/Math.PI)},uAmbDn:{value:lin(0x16131f).multiplyScalar(1.5/Math.PI)},uSite:{value:Array.from({length:8},()=>new T.Vector4(0,0,0,0))},
-  uOrigin:{value:new T.Vector2()},uGlow:{value:2.3},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
+  uOrigin:{value:new T.Vector2()},uGlow:{value:2.3},uSunV:{value:sunDir.clone()},uRimV:{value:rimDir.clone()},uUpV:{value:V3(0,1,0)},uViewport:{value:new T.Vector2(800,800)},uFade:{value:1},
   fogColor:{value:new T.Color(0x06070f)},fogNear:{value:900},fogFar:{value:2600},fogDensity:{value:.00025}};
  const G={box:new T.BoxGeometry(1,1,1),hex:flat(new T.CylinderGeometry(1,1,1,6,1,false,Math.PI/6)).translate(0,.5,0),oct:flat(new T.CylinderGeometry(1,1,1,8,1,false,Math.PI/8)).translate(0,.5,0),
   cyl:new T.CylinderGeometry(1,1,1,16,1).translate(0,.5,0),cylC:new T.CylinderGeometry(1,1,1,10,1),cone5:flat(new T.ConeGeometry(1,1,5)).translate(0,.5,0),cone6:flat(new T.ConeGeometry(1,1,6)).translate(0,.5,0),
@@ -243,9 +260,9 @@ function create(T,opts={}){
   dome:new T.SphereGeometry(1,high?28:18,high?14:9,0,TAU,0,Math.PI/2)};
  const fr={};G.hexF=r=>fr['h'+r]||(fr['h'+r]=flat(new T.CylinderGeometry(r,1,1,6,1,false,Math.PI/6)).translate(0,.5,0));
  G.octF=r=>fr['o'+r]||(fr['o'+r]=flat(new T.CylinderGeometry(r,1,1,8,1,false,Math.PI/8)).translate(0,.5,0));G.cylF=r=>fr['c'+r]||(fr['c'+r]=new T.CylinderGeometry(r,1,1,20,1).translate(0,.5,0));
- const tex={atlas:makeAtlas(T,high?512:256),earth:makeEarth(T,high?256:128,high?128:64)};
+ const tex={atlas:makeAtlas(T,high?512:256),earth:makeEarth(T,high?256:128,high?128:64),detail:makeDetail(T,high?256:128)};
  const mk=(vs,fs,extra,o)=>{const m=new T.ShaderMaterial(Object.assign({uniforms:Object.assign({},U,extra||{}),vertexShader:vs,fragmentShader:fs,defines:Object.assign({},DEF),fog:true},o||{}));m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
- const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,null,{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS),
+ const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS),
   fx:mk(FX_VS,FX_FS,{uMap:{value:tex.atlas},uKind:{value:[V3(.1,.68,1).multiplyScalar(.6),V3(.3,1,.5).multiplyScalar(.5),V3(.6,.95,1).multiplyScalar(.9),V3(1,.1,.7).multiplyScalar(.7)]}},
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
   sky:mk(SKY_VS,SKY_FS,{uEarth:{value:tex.earth},uEarthDir:{value:V3(.86,.15,.48).normalize()},uEarthSize:{value:.068},uEarthL:{value:V3(-.62,.34,.7).normalize()},uSpin:{value:2.2},
@@ -310,7 +327,7 @@ function create(T,opts={}){
    for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(x,y,z);B.push(cx,cy,1);A.push(c[0]*b,c[1]*b,c[2]*b,sz);}I.push(n,n+1,n+2,n,n+2,n+3);n+=4;}
   for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(0,1,0);B.push(cx,cy,2);A.push(0,0,0,0);}I.push(n,n+1,n+2,n,n+2,n+3);
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g.setAttribute('aBill',new T.Float32BufferAttribute(B,3));g.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g.setIndex(I);keep(g);
-  const sky=new T.Mesh(g,MAT.sky);sky.frustumCulled=false;sky.renderOrder=-1000;sky.name='cq-style-sky';scene.add(sky);return {sky,lights:[hemi,sun,rim]};};
+  const sky=new T.Mesh(g,MAT.sky);sky.frustumCulled=false;sky.renderOrder=1000;/* after opaque terrain/structures: the depth test culls covered sky pixels */sky.name='cq-style-sky';scene.add(sky);return {sky,lights:[hemi,sun,rim]};};
 
  // ---------- props (per fine terrain chunk; InstancedMesh, chunk-local positions) ----------
  S.props=(items,cx,cz)=>{const ox=cx*128,oz=cz*128,g=new T.Group(),trees=items.filter(p=>p.kind==='tree'),rocks=items.filter(p=>p.kind==='rock'&&p.variant>.45),relays=items.filter(p=>p.kind==='relay');
@@ -435,7 +452,7 @@ function create(T,opts={}){
  S.commandBase=(base,opt={})=>{const D=F.base,tier=base.tier||0,Sb=new Bld(),X=new Fx(),gy=(x,z)=>ground(D.x+x,D.z+z),y=gy(0,0);
   const decal=(x,z,hw,hd,r,e,o,seg,lift)=>{X.decal(D.x+x,D.z+z,hw,hd,0,r,e,o,seg,lift);};
   // World-space decals are rebased to the base-local frame after building (the group sits at the base centre).
-  Sb.box(0,y+.12,0,38,.3,34,K.dark,0,0);Sb.box(0,y+.29,-17.05,38,.06,.12,K.cyan,1);Sb.box(0,y+.29,17.05,38,.06,.12,K.cyan,.6);for(const s of [-1,1])Sb.box(s*19.05,y+.29,0,.12,.06,34,K.cyan,.6);
+  Sb.box(0,y-.9,0,38,2.4,34,K.dark,0,0,[y-2,2.4]);Sb.box(0,y+.2,0,37.4,.2,33.4,K.dark2);Sb.box(0,y+.29,-17.05,38,.06,.12,K.cyan,1);Sb.box(0,y+.29,17.05,38,.06,.12,K.cyan,.6);for(const s of [-1,1])Sb.box(s*19.05,y+.29,0,.12,.06,34,K.cyan,.6);
   Sb.add(G.hex,M(0,y+.27,0,0,0,0,4.2,.16,4.2),K.dark2);Sb.add(G.hex,M(0,y+.35,0,0,0,0,3.4,.06,3.4),K.cyan,tier?.9:.4);
   const paint=new T.Color(opt.paint||'#2c3a49');Sb.box(0,y+.31,0,10,.04,8,paint,0);
   decal(0,0,5.6,5.6,AT.HEX,E(tier?0x22e6ff:0xffb347,.9),0,low?8:10,.38);
@@ -553,6 +570,7 @@ function create(T,opts={}){
 
  // ---------- per-frame: time, viewport, origin, nearest light/creep sites ----------
  const siteKey={};
+ S.viewLights=camera=>{camera.updateMatrixWorld();const m=camera.matrixWorldInverse;U.uSunV.value.copy(sunDir).transformDirection(m);U.uRimV.value.copy(rimDir).transformDirection(m);U.uUpV.value.set(0,1,0).transformDirection(m);};
  S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)+':'+Math.round(p.z/32)+':'+JSON.stringify(terr||null);if(siteKey.k===k)return;siteKey.k=k;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
@@ -562,7 +580,7 @@ function create(T,opts={}){
  S.warmObjects=()=>{const objs=[new T.Mesh(G.box,MAT.solid),new T.InstancedMesh(G.box,MAT.solid,1),new T.Mesh(P.bill,MAT.fx),new T.InstancedMesh(P.bill,MAT.fx,1),new T.Mesh(G.ico,MAT.shield),new T.Mesh(G.ico,MAT.field)];
   for(const o of objs)if(o.isInstancedMesh){o.setMatrixAt(0,new T.Matrix4());o.instanceMatrix.needsUpdate=true;}return objs;};
  S.canvas={bg:'#03060c',grid:'#12303d',cover:'#3c2a46',coverEdge:'#ff4fd8',site:'#8ff6ff',hostile:'#ff4fd8',friend:'#3fe9ff',beacon:['#3fe9ff','#ffc45a'],shot:'#d8faff',enemyShot:'#ff6bd6'};
- S.dispose=()=>{for(const g of S.shared)g.dispose();for(const m of Object.values(MAT))m.dispose();tex.atlas.dispose();tex.earth.dispose();glowCache.clear();ringCache.clear();batteryCache=droneCache=null;S.shared.length=0;};
+ S.dispose=()=>{for(const g of S.shared)g.dispose();for(const m of Object.values(MAT))m.dispose();tex.atlas.dispose();tex.earth.dispose();tex.detail.dispose();glowCache.clear();ringCache.clear();batteryCache=droneCache=null;S.shared.length=0;};
  return S;
 }
 

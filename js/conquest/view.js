@@ -392,7 +392,7 @@ class View {
  cx=px+(cx-px)*this.camReach;cz=pz+(cz-pz)*this.camReach;hy=cy+(Math.max(hy,this.camHy)-cy)*this.camReach;hy=Math.max(hy,W.groundAt(cx,cz)+1.5);
  // A close obstruction must not push the camera inside our own hull.
  if(Math.hypot(cx-px,cz-pz)<7){cx=px;cz=pz+.1;hy=Math.max(hy,shown.y+Math.max(18,d*.8));}
- this.camera.position.set(cx-ox,hy,cz-oz);this.camera.lookAt(px-ox,cy,pz-oz);this.camSnap=false;this.withShownActors(()=>{this.combatRender();const renderStart=root.performance?root.performance.now():Date.now();this.renderer.render(this.scene,this.camera);this.renderCpuMs=(root.performance?root.performance.now():Date.now())-renderStart;});
+ this.camera.position.set(cx-ox,hy,cz-oz);this.camera.lookAt(px-ox,cy,pz-oz);this.camSnap=false;this.style?.viewLights(this.camera);this.withShownActors(()=>{this.combatRender();const renderStart=root.performance?root.performance.now():Date.now();this.renderer.render(this.scene,this.camera);this.renderCpuMs=(root.performance?root.performance.now():Date.now())-renderStart;});
  }
  // Interpolate other actors between the last two fixed steps for presentation only, then restore the simulated values.
  rememberActors(B){const from=this.shownFrom||(this.shownFrom=new Map());from.clear();for(const e of B.enemies)from.set(e.id,{x:e.x,y:e.y,z:e.z,heading:e.heading,turret:e.turret});this.shownTurret=B.turretYaw;}
