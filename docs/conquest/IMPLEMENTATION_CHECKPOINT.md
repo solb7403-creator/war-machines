@@ -431,3 +431,23 @@ Local reproduction at 390 (`conquest-flagship-browser.py --engine chromium --wid
   - Refuge light pylons moved onto habitat plinths inside the solid r7.8 (tanks no longer drive through 7 m masts; lamp arm and light pool face the lane; tested with `W.solidAt`).
 - **Verified visually at forced HIGH, 390:** the Base V tower stands (ringed shaft + beacon behind the citadel). All 10 Refuge pylons are on solid ground at 7.14 m (6 on LOW). No page or shader errors.
 - **Not changed:** frame time is reported but not asserted in CI (software GL timing is machine-dependent; draw calls and programs are deterministic). The map's one-off relief builds (software canvas: open ~0.27 s vs 0.12 s on `main`, zoom-level crossing ~0.1 s; pan 5–6 ms vs 27–50 ms on `main`). They are bounded, cached per level, and the canvases are now released.
+
+**Owner wrap-up (2026-11-07, weekly usage nearly spent):**
+- The reviewer's re-check of the fix commits was stopped before it reported; the owner's phone playtest replaces it (presentation-only change).
+- The flagship test's local `--quality` option was discarded (never run). The forced-HIGH living-war CI step and its budget were kept: finished, and passing locally at 320 + 390.
+- No further measurement work.
+
+**Still unverified at release:**
+- **PHYSICAL_IPHONE_UNVERIFIED:** GPU cost, thermal and input feel of the new shaders on Metal-backed WebGL (Safari/Telegram); owner hands-on look.
+- **Frame time is higher than the old look on every rig we measured** (all numbers are software rasterizers, relative only, never iPhone FPS):
+  - Chromium SwiftShader exploration at HIGH: median 61–76 ms vs ~39 ms for the live look (≈1.6–1.9×). Forced HIGH ≈2.5× the live look.
+  - The software/LOW path that CI and GPU-blocklisted browsers take: ≈1.5×.
+  - CI flagship raids: ~85–97 ms on `59180e9`/`cd29867` vs 22–27 ms on `main`. `f323751` trimmed the software path further, but no same-rig `main` comparison was re-measured.
+  - Local `f323751` flagship journey: median 38–48 ms, p95 70–98 ms at pixel ratio 0.75. Forced-HIGH relay fight: median 36 ms (320) / 49 ms (390).
+  - Adaptive quality now also drops shading to LOW under sustained slow frames. How that behaves on a phone is unmeasured.
+- **WebKit HIGH path:** covered only by PR CI (the forced-HIGH living-war journey); never run locally.
+- **Known visual issue (not fixed, presentation only):** `FX_VS` multiplies `position` by `(1 − aBill.z)`. Every billboard inside a merged fx geometry is therefore drawn at that mesh's origin, not at its authored position. Affected: pylon lamps, habitat mast lights, base and tower beacons, battery orb glows, cache and drone eye glows. Pooled shot/explosion glows and instanced halos sit at the origin and are unaffected. The issue has existed since the first style commit `04219ed` (and in the Phase 1 sample). Likely fix: use `position` as the billboard centre, then re-check captures; not done at the owner's wrap-up request.
+- **Map:** relief rebuild on open (~0.27 s vs 0.12 s on `main`) and per zoom-level crossing (~0.1 s), measured in software canvas; iOS canvas memory not measured.
+- **Agents used (AGENTS.md rule 5):**
+  - Three visual-option agents (A, B, C). They changed the result: B chosen, plus C's map grid.
+  - One independent read-only reviewer on `f323751`. It delivered 1 blocker, 5 should-fix and 5 nits, and changed the result: all were fixed before merge. Its re-check was stopped at the owner's request.

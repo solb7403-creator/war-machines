@@ -132,7 +132,7 @@ async def run(args):
             browser=await getattr(pw,args.engine).launch(**opts)
             context=await browser.new_context(viewport={'width':args.width,'height':args.height},has_touch=True,is_mobile=True,reduced_motion='reduce')
             page=await context.new_page();j=Journey(page,base,args.width,args.height,name)
-            await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'+json.dumps(ready['initData'])+',initDataUnsafe:{user:{id:8301,first_name:"BrowserPilot"}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};'+(f'window.LUNAR_STYLE_QUALITY={json.dumps(args.quality)};' if args.quality else ''))
+            await page.add_init_script('window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'+json.dumps(ready['initData'])+',initDataUnsafe:{user:{id:8301,first_name:"BrowserPilot"}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};')
             async def route(r):
                 u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
                 if u.path.startswith('/api/conquest/') or u.path=='/api/sync':
@@ -237,5 +237,5 @@ async def run(args):
     print('PASS',name,len(result['cases']),'actual victories; persisted earned cosmetic; software/browser evidence only',flush=True)
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--engine',choices=['chromium','webkit'],default='chromium');p.add_argument('--fallback',action='store_true');p.add_argument('--width',type=int,default=390);p.add_argument('--height',type=int,default=844);p.add_argument('--family');p.add_argument('--no-defense',action='store_true');p.add_argument('--defense-only',action='store_true');p.add_argument('--quality',choices=['high','low'],help='force the Conquest art path (local measurement; CI uses the auto/software path)')
+    p=argparse.ArgumentParser();p.add_argument('--engine',choices=['chromium','webkit'],default='chromium');p.add_argument('--fallback',action='store_true');p.add_argument('--width',type=int,default=390);p.add_argument('--height',type=int,default=844);p.add_argument('--family');p.add_argument('--no-defense',action='store_true');p.add_argument('--defense-only',action='store_true')
     asyncio.run(run(p.parse_args()))
