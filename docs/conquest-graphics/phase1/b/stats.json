@@ -1,0 +1,509 @@
+{
+ "option": "b",
+ "generated": "2026-11-07T10:06:16.908Z",
+ "renderer": "Chromium SwiftShader (software) in a cloud container; relative cost only, never iPhone FPS",
+ "results": [
+  {
+   "option": "b",
+   "subject": "refuge",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 22,
+   "triangles": 58300,
+   "geometries": 16,
+   "textures": 2,
+   "programs": 6,
+   "textureMB": 1.13,
+   "shadowMap": false,
+   "frameMedianMs": 0.9,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/refuge-390-high.jpg",
+   "ms": 5356,
+   "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+   ]
+  },
+  {
+   "option": "b",
+   "subject": "raid",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 48,
+   "triangles": 76444,
+   "geometries": 53,
+   "textures": 8,
+   "programs": 10,
+   "textureMB": 5.62,
+   "shadowMap": false,
+   "frameMedianMs": 1.6,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/raid-390-high.jpg",
+   "ms": 6935,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "tank",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 27,
+   "triangles": 45312,
+   "geometries": 33,
+   "textures": 8,
+   "programs": 10,
+   "textureMB": 5.62,
+   "shadowMap": false,
+   "frameMedianMs": 1.3,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/tank-390-high.jpg",
+   "ms": 8919,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "enemy",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 17,
+   "triangles": 37340,
+   "geometries": 14,
+   "textures": 2,
+   "programs": 6,
+   "textureMB": 1.13,
+   "shadowMap": false,
+   "frameMedianMs": 1.2,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/enemy-390-high.jpg",
+   "ms": 11393,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "props",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 23,
+   "triangles": 41110,
+   "geometries": 14,
+   "textures": 2,
+   "programs": 4,
+   "textureMB": 1.13,
+   "shadowMap": false,
+   "frameMedianMs": 0.9,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/props-390-high.jpg",
+   "ms": 9130,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "map",
+   "quality": "high",
+   "viewport": [
+    390,
+    844
+   ],
+   "mapFirstPaintMs": 130.7,
+   "mapRepaintMs": 0.7,
+   "note": "desktop CPU timing; a pan/zoom repaint must stay cheap on phones",
+   "file": "docs/conquest-graphics/phase1/b/map-390-high.jpg",
+   "ms": 2391,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "refuge",
+   "quality": "low",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 17,
+   "triangles": 45774,
+   "geometries": 14,
+   "textures": 2,
+   "programs": 5,
+   "textureMB": 0.28,
+   "shadowMap": false,
+   "frameMedianMs": 1.2,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/refuge-390-low.jpg",
+   "ms": 4761,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "raid",
+   "quality": "low",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 47,
+   "triangles": 50420,
+   "geometries": 43,
+   "textures": 3,
+   "programs": 7,
+   "textureMB": 0.36,
+   "shadowMap": false,
+   "frameMedianMs": 1.2,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/raid-390-low.jpg",
+   "ms": 6075,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "tank",
+   "quality": "low",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 24,
+   "triangles": 30116,
+   "geometries": 22,
+   "textures": 3,
+   "programs": 7,
+   "textureMB": 0.36,
+   "shadowMap": false,
+   "frameMedianMs": 1.3,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/tank-390-low.jpg",
+   "ms": 5074,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "enemy",
+   "quality": "low",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 17,
+   "triangles": 29240,
+   "geometries": 14,
+   "textures": 2,
+   "programs": 5,
+   "textureMB": 0.28,
+   "shadowMap": false,
+   "frameMedianMs": 0.8,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/enemy-390-low.jpg",
+   "ms": 5321,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "props",
+   "quality": "low",
+   "viewport": [
+    390,
+    844
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 18,
+   "triangles": 32792,
+   "geometries": 12,
+   "textures": 1,
+   "programs": 3,
+   "textureMB": 0.03,
+   "shadowMap": false,
+   "frameMedianMs": 0.9,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/props-390-low.jpg",
+   "ms": 4575,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "map",
+   "quality": "low",
+   "viewport": [
+    390,
+    844
+   ],
+   "mapFirstPaintMs": 86.5,
+   "mapRepaintMs": 0.6,
+   "note": "desktop CPU timing; a pan/zoom repaint must stay cheap on phones",
+   "file": "docs/conquest-graphics/phase1/b/map-390-low.jpg",
+   "ms": 1323,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "refuge",
+   "quality": "high",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 61,
+   "triangles": 98404,
+   "geometries": 41,
+   "textures": 2,
+   "programs": 6,
+   "textureMB": 1.13,
+   "shadowMap": false,
+   "frameMedianMs": 1,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/refuge-1280-high.jpg",
+   "ms": 22597,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "raid",
+   "quality": "high",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 94,
+   "triangles": 132542,
+   "geometries": 80,
+   "textures": 8,
+   "programs": 10,
+   "textureMB": 5.62,
+   "shadowMap": false,
+   "frameMedianMs": 2.5,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/raid-1280-high.jpg",
+   "ms": 31362,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "tank",
+   "quality": "high",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 56,
+   "triangles": 71950,
+   "geometries": 52,
+   "textures": 8,
+   "programs": 10,
+   "textureMB": 5.62,
+   "shadowMap": false,
+   "frameMedianMs": 1.6,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/tank-1280-high.jpg",
+   "ms": 31651,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "enemy",
+   "quality": "high",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 40,
+   "triangles": 61394,
+   "geometries": 32,
+   "textures": 2,
+   "programs": 6,
+   "textureMB": 1.13,
+   "shadowMap": false,
+   "frameMedianMs": 2.1,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/enemy-1280-high.jpg",
+   "ms": 29445,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "props",
+   "quality": "high",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1.5,
+   "drawCalls": 62,
+   "triangles": 85200,
+   "geometries": 41,
+   "textures": 2,
+   "programs": 4,
+   "textureMB": 1.13,
+   "shadowMap": false,
+   "frameMedianMs": 1.2,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/props-1280-high.jpg",
+   "ms": 27862,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "map",
+   "quality": "high",
+   "viewport": [
+    1280,
+    800
+   ],
+   "mapFirstPaintMs": 179.4,
+   "mapRepaintMs": 0.7,
+   "note": "desktop CPU timing; a pan/zoom repaint must stay cheap on phones",
+   "file": "docs/conquest-graphics/phase1/b/map-1280-high.jpg",
+   "ms": 1932,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "refuge",
+   "quality": "low",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 53,
+   "triangles": 82394,
+   "geometries": 39,
+   "textures": 2,
+   "programs": 5,
+   "textureMB": 0.28,
+   "shadowMap": false,
+   "frameMedianMs": 1.2,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/refuge-1280-low.jpg",
+   "ms": 10878,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "raid",
+   "quality": "low",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 86,
+   "triangles": 100180,
+   "geometries": 69,
+   "textures": 3,
+   "programs": 7,
+   "textureMB": 0.36,
+   "shadowMap": false,
+   "frameMedianMs": 1.3,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/raid-1280-low.jpg",
+   "ms": 14658,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "tank",
+   "quality": "low",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 50,
+   "triangles": 55016,
+   "geometries": 41,
+   "textures": 3,
+   "programs": 7,
+   "textureMB": 0.36,
+   "shadowMap": false,
+   "frameMedianMs": 1.5,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/tank-1280-low.jpg",
+   "ms": 13540,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "enemy",
+   "quality": "low",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 39,
+   "triangles": 53292,
+   "geometries": 31,
+   "textures": 2,
+   "programs": 5,
+   "textureMB": 0.28,
+   "shadowMap": false,
+   "frameMedianMs": 1.8,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/enemy-1280-low.jpg",
+   "ms": 13874,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "props",
+   "quality": "low",
+   "viewport": [
+    1280,
+    800
+   ],
+   "pixelRatio": 1,
+   "drawCalls": 55,
+   "triangles": 76188,
+   "geometries": 39,
+   "textures": 1,
+   "programs": 3,
+   "textureMB": 0.03,
+   "shadowMap": false,
+   "frameMedianMs": 1,
+   "note": "SwiftShader software GL in a cloud container: relative cost only, not iPhone FPS",
+   "file": "docs/conquest-graphics/phase1/b/props-1280-low.jpg",
+   "ms": 13305,
+   "errors": []
+  },
+  {
+   "option": "b",
+   "subject": "map",
+   "quality": "low",
+   "viewport": [
+    1280,
+    800
+   ],
+   "mapFirstPaintMs": 82.9,
+   "mapRepaintMs": 0.7,
+   "note": "desktop CPU timing; a pan/zoom repaint must stay cheap on phones",
+   "file": "docs/conquest-graphics/phase1/b/map-1280-low.jpg",
+   "ms": 2140,
+   "errors": []
+  }
+ ]
+}
