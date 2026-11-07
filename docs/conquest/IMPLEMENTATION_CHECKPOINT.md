@@ -358,3 +358,36 @@ Owner playtest of live build 20261106055908 reported five problems; all five are
 **Agents used (AGENTS.md rule 5):** two independent read-only pre-merge reviewers on `a9527c1`, given only branch/SHA/briefs/checkpoint. Gameplay/performance reviewer: 1 blocker (permanent freeze after a >6 s stall) + 3 should-fix + notes — changed the result (all fixed before merge). Security/economy reviewer: 0 blockers, 3 should-fix (wall-clock fast-travel quiet window exploitable by pausing; missing raid-gate refusal test; first-base model caveat) + notes — changed the result (fixed or recorded). No other subagents.
 
 **Next:** owner plays the live build on iPhone Safari + Telegram: driving/Dash feel at real latency, NAVIGATE + beacons, fast travel, RECALL, remote base command, raid lock after the six field missions and the new HARD/VETERAN difficulty. Owner decision still pending: first Command Base modeled at 33–44 min vs the 45–75 min target with raid rewards unchanged. Fix device defects on a new branch from `main`. Map/world graphics remain a separate later session.
+
+
+## Checkpoint 21 — Conquest graphics overhaul (branch `claude/lunar-conquest-graphics-431xgv`, from main `20ecbe1`) — Phase 1 decision
+
+Owner brief (2026-11-07): significantly better graphics everywhere in Conquest (terrain, sky/lighting, props, Refuge, Command Base I–V, enemy bases/turrets, player tanks, enemies, VFX, region MAP) with a true LUNAR identity — grey regolith, craters, black sky with Earth on the horizon, neon base lighting, glowing Parasite structures; trees, cabins and the map rebuilt or replaced. No gameplay, economy or hitbox changes. Payments stay disabled.
+
+**Phase 1 (visual options, AGENTS.md 2b).** Dev-only harness `dev/conquest-style/` (lab.html/lab.js, capture.mjs, contact-sheet.py, README contract): every option renders the same canonical subjects — real `ConquestWorld` terrain and scenery placement, collision footprints, the stock HF tank kit, fixed cameras and the in-game map dialog — at 390×844 and 1280×800, HIGH and LOW (Chromium SwiftShader, relative cost only). `current` is a 1:1 port of the live look. Three agents each built one option in its own folder: A "Tranquility · hard-sci realism", B "Neon Frontline · stylized sci-fi", C "Iron Siege · war-torn front". All three agents hit the account's 5-hour usage limit once and were resumed from their saved state; each finished with 24/24 captures and no page errors.
+
+Contact sheet (live build vs A vs B vs C, every subject, 390 HIGH large + 390 LOW + desktop HIGH/LOW): [`docs/conquest-graphics/phase1/contact-sheet.jpg`](../conquest-graphics/phase1/contact-sheet.jpg).
+
+| option | HIGH draws 390 / 1280 | HIGH tris | HIGH tex | HIGH programs | LOW draws 390 / 1280 | LOW tris | LOW tex | LOW programs | map first paint / repaint |
+|---|---|---|---|---|---|---|---|---|---|
+| live build | 43 / 94 | 92k | 4.6 MB | 9 | 43 / 94 | 68k | 0.2 MB | 7 | 54–61 / 9.8 ms |
+| A Tranquility | 65 / 108 | 170k | 6.2 MB | 13 | 52 / 93 | 118k | 0.6 MB | 9 | 141–423 / 1.4 ms |
+| **B Neon Frontline** | **48 / 94** | **132k** | **5.6 MB** | **10** | **47 / 86** | **100k** | **0.4 MB** | **7** | **83–179 / 0.7 ms** |
+| C Iron Siege | 51 / 92 | 164k | 6.8 MB | 12 | 49 / 88 | 140k | 0.9 MB | 10 | 99–134 / 0.9 ms |
+
+(4.5 MB of every HIGH texture figure is the existing HF tank atlas/environment the live build already loads.)
+
+**Owner change:** the lead picks the winner itself (theme fit, phone combat readability, wow factor, mobile performance), records it here, deletes the unused options and continues straight to Phase 2.
+
+**Decision: B "Neon Frontline" is the base style, plus C's lettered map grid.** Reasons:
+1. *Theme fit* — B reads literally as the owner's identity line: black sky with a large Earth and atmosphere halo on the horizon, cratered grey-charcoal regolith, neon cyan human bases (hex pods with edge strips, ringed oxygen towers, glowing supply pad), glowing magenta Parasite hives/batteries. A is the most physically faithful Moon but its neon/glow is restrained and the Parasites read as dark slabs; C is the best "war zone" but its Earth is a small dot and the base lighting is warm floodlight rather than neon.
+2. *Phone combat readability* — B's colour coding is unambiguous at 390 px: player hull on a cyan underglow ring, hostiles magenta-veined with magenta underglow, objectives as bright plasma orbs, all on a calm dark ground. C's dense crater/scorch ground and A's low-key lighting both make small hulls harder to pick out mid-fight.
+3. *Wow factor* — B's establishing shots (ringed towers over neon pods, glowing hive beyond the cover wall, Earth over the horizon band) are the most striking; A has the most cinematic shadows, C the grittiest texture.
+4. *Mobile performance* — B has the lowest worst-case triangles, programs and LOW texture memory of the three (LOW 7 programs, 0.36 MB) and the cheapest map repaint; A needs a HIGH shadow map over a 330 m frustum and the slowest map first paint; C's terrain shader loops over 10 light pools and 6 creep stains per pixel and is at the LOW program limit.
+5. *Combination* — B's map lacks an orientation reference, so Phase 2 adds C's adaptive grid with lettered columns / numbered rows and a scale bar, drawn in B's hologram palette. Kept from B's risk list for Phase 2: per-pixel terrain cost (simplify on LOW), additive halo overdraw, map relief cache built incrementally.
+
+Unused options A and C (code + raw captures) are deleted from the branch per AGENTS.md; their images remain in the contact sheet and in git history (`f3fafee`, `eacc199`). The B sample stays in `dev/conquest-style/options/b/` as the Phase 2 source and regression reference.
+
+**Agents used so far (AGENTS.md rule 5):** three visual-option agents (one per style, separate folders, no commits) — delivered A, B, C; changed the result (B chosen, C's map grid merged). Next: one independent read-only gameplay/performance reviewer before merge.
+
+**Phase 2 next:** port B into the game as `js/conquest/style.js` (`ConquestStyle`), wire it into `view.js` (environment, terrain material, chunk props, landmarks, Command Base I–V, installations/raid cover/raid art, enemies incl. batteries/drones/commanders, tank dressing, VFX, beacons/flags/loot/hazards, Canvas fallback palette, shader warm-up) and `app.js` (map painter), with Blender-authored GLB architecture through the constrained loader, HIGH/LOW/2D and context-loss intact; rerun affected tests + one short browser journey at 390; reviewer; release.
