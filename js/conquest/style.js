@@ -169,11 +169,11 @@ void main(){vec3 d=normalize(vDir);vec3 col;
 // Energy shell: additive fresnel rim + moving hex scan, transparent, never writes depth.
 const SHIELD_VS=`varying vec3 vN;varying vec3 vV;varying vec3 vP;
 void main(){vP=position;vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=-mv.xyz;gl_Position=projectionMatrix*mv;}`;
-const SHIELD_FS=`uniform vec3 uColor;uniform float uTime,uOpacity;varying vec3 vN;varying vec3 vV;varying vec3 vP;
+const SHIELD_FS=`uniform vec3 uColor;uniform float uTime,uOpacity,uHex;varying vec3 vN;varying vec3 vV;varying vec3 vP;
 void main(){float fr=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.4);vec2 p=vec2(atan(vP.z,vP.x)*3.2,vP.y*5.5);
  vec2 r=vec2(1.,1.7320508),h=r*.5,a=mod(p,r)-h,b=mod(p-h,r)-h,g=dot(a,a)<dot(b,b)?a:b,q=abs(g);float edge=.5-max(dot(q,vec2(.5,.8660254)),q.x);
  float hex=1.-smoothstep(0.,.06,edge);float scan=smoothstep(.85,1.,fract(vP.y*.6-uTime*.6));
- vec3 col=uColor*(fr*.9+hex*(.12+.5*fr)+scan*.25*fr)*uOpacity;gl_FragColor=vec4(col,0.);
+ vec3 col=uColor*(fr*.9+hex*(.12*uHex+.5*fr)+scan*.25*fr)*uOpacity;gl_FragColor=vec4(col,0.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`;
@@ -267,8 +267,8 @@ function create(T,opts={}){
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
   sky:mk(SKY_VS,SKY_FS,{uEarth:{value:tex.earth},uEarthDir:{value:V3(.86,.15,.48).normalize()},uEarthSize:{value:.068},uEarthL:{value:V3(-.62,.34,.7).normalize()},uSpin:{value:2.2},
    uZenith:{value:V3(.0002,.0003,.0009)},uBandA:{value:V3(0,.2,.19)},uBandB:{value:V3(.045,.012,.11)},uFogC:{value:V3(.0018,.0021,.0048)}},{fog:false,depthWrite:false,side:T.DoubleSide})};
- const shieldMat=(color,opacity)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
- MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.55);
+ const shieldMat=(color,opacity,hexK=1)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
+ MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12);
  const S={id:'neon-frontline',version:1,low,high,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
  const keep=g=>{g.userData.hfShared=true;S.shared.push(g);return g;};
  for(const g of Object.values(G))if(g&&g.isBufferGeometry)keep(g);
