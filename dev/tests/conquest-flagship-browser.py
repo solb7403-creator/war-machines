@@ -163,7 +163,12 @@ async def run(args):
                 hull=await page.evaluate('[Conquest.view.authority.state.hp,Conquest.view.authority.state.battle.playerMax]')
                 if hull[0]<hull[1]*.6:
                     await j.repair_at_refuge();result.setdefault('refugeRepairs',[]).append({'before':operation,'hull':hull})
-                await j.travel({'x':o['x'],'z':o['z']},stop=o['activationRadius']-8)
+                # Approach from the raid's authored entry (layouts hold the garrison on the far side of it), so a Refuge repair
+                # detour never starts the next raid inside the far-side defenses (previously the start point depended on the
+                # direction the bot came back from).
+                entry=o.get('entry')
+                if entry: await j.travel({'x':entry[0],'z':entry[1]},stop=3)
+                else: await j.travel({'x':o['x'],'z':o['z']},stop=o['activationRadius']-8)
                 # Natural arrival path: the HUD action opens the site chooser when several raid families are ready here.
                 access=page.locator('#cq-mission-access');await page.wait_for_function('!document.querySelector("#cq-mission-access").hidden&&!document.querySelector("#cq-mission-access").disabled')
                 if 'CHOOSE OPERATION' in await access.inner_text():

@@ -512,7 +512,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   if(e.commander){const c=PATTERN[e.pattern]||PATTERN.command;D.spike(V3(-L*.12,y1,0),V3(-L*.2,y1+.9,0),.18,K.chitinD);D.add(G.octa,M(-L*.16,y1+1.05,0,0,0,0,.2,.32,.2),c[0],1);for(const s of [-1,1])D.box(-L*.1,y1*.8,s*(zw+.03),L*.5,.06,.04,c[0],1.6);}
   const X=new Fx();X.flat(0,.05,0,zw*1.7,L*.75,AT.BLOB,[0,0,0],.7);X.flat(0,.06,0,zw*2.2,L*.95,AT.BLOB,e.commander?E((PATTERN[e.pattern]||PATTERN.command)[1],.55):E(0xff2bd6,.5),0);
   cached.style={dress:keep(D.geometry()),fx:keep(X.geometry())};return cached.style;};
- S.hullMeshes=(cached,e)=>{const st=S.parasiteHull(cached,e);return {body:new T.Mesh(cached.body,MAT.solid),gun:new T.Mesh(cached.gun,MAT.solid),dress:new T.Mesh(st.dress,MAT.solid),fx:low?null:Object.assign(new T.Mesh(st.fx,MAT.fx),{renderOrder:2}),marker:markers()};};
+ S.hullMeshes=(cached,e)=>{const st=S.parasiteHull(cached,e);return {body:new T.Mesh(cached.body,MAT.solid),gun:new T.Mesh(cached.gun,MAT.solid),dress:software?null:new T.Mesh(st.dress,MAT.solid),fx:low?null:Object.assign(new T.Mesh(st.fx,MAT.fx),{renderOrder:2}),marker:markers()};};
  // Immobile plasma battery / relay (objective turret): ~7 x 6 m base, ~11 m tall like the live build.
  let batteryCache=null;
  S.battery=()=>{if(!batteryCache){const Sb=new Bld(),X=new Fx(),Gn=new Bld();
@@ -564,10 +564,10 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  const siteKey={};
  S.viewLights=camera=>{camera.updateMatrixWorld();const m=camera.matrixWorldInverse;U.uSunV.value.copy(sunDir).transformDirection(m);U.uRimV.value.copy(rimDir).transformDirection(m);U.uUpV.value.set(0,1,0).transformDirection(m);};
  S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);
-  const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)+':'+Math.round(p.z/32)+':'+JSON.stringify(terr||null);if(siteKey.k===k)return;siteKey.k=k;
+  const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
  // Static groups are culled by distance (they are far apart); cheap per-frame loop.
- S.cull=(groups,p)=>{for(const g of groups){const s=g.userData.site;if(s)g.visible=Math.hypot(s.x-p.x,s.z-p.z)<s.range;}};
+ S.cull=(groups,p)=>{const k=software?.4:1;for(const g of groups){const s=g.userData.site;if(s)g.visible=Math.hypot(s.x-p.x,s.z-p.z)<s.range*k;}};
  // Compile every program variant once (static + instanced solid/fx, sky, terrain, shields) before play.
  S.warmObjects=()=>{const objs=[new T.Mesh(G.box,MAT.solid),new T.InstancedMesh(G.box,MAT.solid,1),new T.Mesh(P.bill,MAT.fx),new T.InstancedMesh(P.bill,MAT.fx,1),new T.Mesh(G.ico,MAT.shield),new T.Mesh(G.ico,MAT.field)];
   for(const o of objs)if(o.isInstancedMesh){o.setMatrixAt(0,new T.Matrix4());o.instanceMatrix.needsUpdate=true;}return objs;};
