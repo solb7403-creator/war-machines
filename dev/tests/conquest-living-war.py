@@ -6,7 +6,12 @@ import asyncio,argparse,json,pathlib,shutil,math,statistics,os
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest-living-war';OUT.mkdir(exist_ok=True)
-async def main(engine,journey_only=False,fallback=False):
+# --quality high forces the HIGH art path phones take (CI's software GL would otherwise pick the LOW path): every HIGH-only
+# effect then runs in a real browser, and the relay fight must stay inside the HIGH budget (README: <= 90 draws at 390, <= 16
+# material programs; three's PMREM helper programs for the HF tank environment are not counted). Measured 2026-11-07 in
+# Chromium SwiftShader: peak 54 draws, 15 programs with 15 enemies at 320 and 390.
+HIGH_DRAWS={320:80,390:80};HIGH_PROGRAMS=16
+async def main(engine,journey_only=False,fallback=False,quality='auto'):
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
  try:
@@ -17,7 +22,7 @@ async def main(engine,journey_only=False,fallback=False):
    for width,height in ([(390,844)] if journey_only or fallback else [(320,568),(390,844)]):
     context=await browser.new_context(viewport={'width':width,'height':height},has_touch=True,is_mobile=True,reduced_motion='reduce');page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     await page.request.post(base+'/fixture',data={})
-    await page.add_init_script('''window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};''')
+    await page.add_init_script('''window.LUNAR_LOCAL_ECO=1;window.LUNAR_NO_CS=1;window.LUNAR_NO_PVP=1;window.LUNAR_NO_AUTOGFX=1;window.Telegram={WebApp:{initData:'''+json.dumps(ready['initData'])+''',initDataUnsafe:{user:{id:8301,first_name:'BrowserPilot'}},isVersionAtLeast:()=>false,ready(){},expand(){},onEvent(){},offEvent(){},BackButton:{show(){},hide(){},onClick(){}},HapticFeedback:{impactOccurred(){},notificationOccurred(){}}}};'''+(f'window.LUNAR_STYLE_QUALITY={json.dumps(quality)};' if quality!='auto' else ''))
     verified_abilities={'dash':False,'shield':False}
     async def route(r):
      u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
@@ -66,7 +71,7 @@ async def main(engine,journey_only=False,fallback=False):
      held=set()
     async def win_operation(id):
      for step in range(700):
-      info=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.authority.state;if(!B)return {missing:true};const living=B.enemies.filter(e=>e.hp>0&&(!e.resident||!v.battle||(['relay','redoubt'].includes(B.operation?.id)&&e.base?.id===B.operation.site))&&(v.battle||Math.hypot(e.x-v.p.x,e.z-v.p.z)<75)),e=living.find(e=>e.id===B.carrierId)||living.sort((a,b)=>Math.hypot(a.x-v.p.x,a.z-v.p.z)-Math.hypot(b.x-v.p.x,b.z-v.p.z))[0];let pick=null;if(e&&ConquestControl.visible(B,v.p,e)){let hull=null;v.enemyMeshes.get(e.id)?.traverse(m=>{if(!hull&&m.isMesh&&m!==v.enemyMeshes.get(e.id).userData.marker)hull=m;});if(hull&&!hull.geometry.boundingBox)hull.geometry.computeBoundingBox();const center=hull?hull.geometry.boundingBox.getCenter(new v.T.Vector3()).applyMatrix4(hull.matrixWorld):new v.T.Vector3(e.x-v.origin.x,e.y+1,e.z-v.origin.z);const q=center.project(v.camera),r=v.host.getBoundingClientRect();const meshes=[];v.enemyMeshes.get(e.id)?.traverse(m=>{if(m.isMesh&&m!==v.enemyMeshes.get(e.id).userData.marker)meshes.push(m);});for(const [dx,dy] of [[0,0],[0,3],[0,-3],[3,0],[-3,0],[0,6]]){const x=(q.x+1)*r.width/2+dx,y=(1-q.y)*r.height/2+dy;if(document.elementFromPoint(x,y)!==v.renderer.domElement)continue;const ray=new v.T.Raycaster();ray.setFromCamera(new v.T.Vector2(x/r.width*2-1,1-y/r.height*2),v.camera);const hit=ray.intersectObjects(meshes,false)[0];if(hit&&ConquestCombat.lineClear({x:ray.ray.origin.x+v.origin.x,y:ray.ray.origin.y,z:ray.ray.origin.z+v.origin.z},{x:hit.point.x+v.origin.x,y:hit.point.y,z:hit.point.z+v.origin.z})){pick={id:e.id,x,y,visible:q.z<1};break;}}}return {state:s.battle.state,hp:s.hp,target:e?{x:e.x,z:e.z}:B.objective,selected:v.selectedId,pick,live:living.length,canHit:!!e&&ConquestControl.visible(B,v.p,e),site:B.operation};}''')
+      info=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.authority.state;if(!B)return {missing:true};const living=B.enemies.filter(e=>e.hp>0&&(!e.resident||!v.battle||(['relay','redoubt'].includes(B.operation?.id)&&e.base?.id===B.operation.site))&&(v.battle||Math.hypot(e.x-v.p.x,e.z-v.p.z)<75)),e=living.find(e=>e.id===B.carrierId)||living.sort((a,b)=>Math.hypot(a.x-v.p.x,a.z-v.p.z)-Math.hypot(b.x-v.p.x,b.z-v.p.z))[0];let pick=null;if(e&&ConquestControl.visible(B,v.p,e)){let hull=null;v.enemyMeshes.get(e.id)?.traverse(m=>{if(!hull&&m.isMesh&&!m.userData.noPick&&m!==v.enemyMeshes.get(e.id).userData.marker)hull=m;});if(hull&&!hull.geometry.boundingBox)hull.geometry.computeBoundingBox();const center=hull?hull.geometry.boundingBox.getCenter(new v.T.Vector3()).applyMatrix4(hull.matrixWorld):new v.T.Vector3(e.x-v.origin.x,e.y+1,e.z-v.origin.z);const q=center.project(v.camera),r=v.host.getBoundingClientRect();const meshes=[];v.enemyMeshes.get(e.id)?.traverse(m=>{if(m.isMesh&&!m.userData.noPick&&m!==v.enemyMeshes.get(e.id).userData.marker)meshes.push(m);});for(const [dx,dy] of [[0,0],[0,3],[0,-3],[3,0],[-3,0],[0,6]]){const x=(q.x+1)*r.width/2+dx,y=(1-q.y)*r.height/2+dy;if(document.elementFromPoint(x,y)!==v.renderer.domElement)continue;const ray=new v.T.Raycaster();ray.setFromCamera(new v.T.Vector2(x/r.width*2-1,1-y/r.height*2),v.camera);const hit=ray.intersectObjects(meshes,false)[0];if(hit&&ConquestCombat.lineClear({x:ray.ray.origin.x+v.origin.x,y:ray.ray.origin.y,z:ray.ray.origin.z+v.origin.z},{x:hit.point.x+v.origin.x,y:hit.point.y,z:hit.point.z+v.origin.z})){pick={id:e.id,x,y,visible:q.z<1};break;}}}return {state:s.battle.state,hp:s.hp,target:e?{x:e.x,z:e.z}:B.objective,selected:v.selectedId,pick,live:living.length,canHit:!!e&&ConquestControl.visible(B,v.p,e),site:B.operation};}''')
       if info.get('missing') or info['hp']<=0:
        await page.screenshot(path=str(OUT/f'{engine}-{width}-{id}-failure.png'));raise AssertionError((id,info))
       if (id!='perimeter' and info['state']=='victory') or (id=='perimeter' and not info['live']):break
@@ -171,10 +176,13 @@ async def main(engine,journey_only=False,fallback=False):
     await page.wait_for_function('Conquest.view.battle?.projectiles.some(q=>q.team==="enemy")',timeout=20000)
     await page.screenshot(path=str(OUT/f'{engine}-{width}-relay-active.png'))
     await page.wait_for_function('Conquest.view.pending===0');await page.wait_for_timeout(1000)
-    await page.evaluate('Conquest.view.frameSamples=[];Conquest.view.worstFrame=0;Conquest.view.hitches=0;Conquest.view.profileLast=performance.now()')
+    await page.evaluate('Conquest.view.frameSamples=[];Conquest.view.worstFrame=0;Conquest.view.hitches=0;Conquest.view.maxDrawCalls=0;Conquest.view.profileLast=performance.now()')
     await page.wait_for_timeout(10000)
     perf=await page.evaluate('Conquest.view.performanceReport()')
     print('PERFORMANCE software-rendered',json.dumps(perf),flush=True)
+    if quality=='high' and not fallback:
+     assert perf['styleQuality']=='high' and perf['styleShading']=='high',('forced HIGH art path',perf)
+     assert perf['maxDrawCalls']<=HIGH_DRAWS[width] and perf['materialPrograms']<=HIGH_PROGRAMS,('HIGH budget',width,perf)
     results.append({'scenario':'relay mission with resident garrisons','performance':perf})
     if width==390 and not fallback:
      # Begin the outcome journey fresh; the preceding idle stress profile is a separate scenario.
@@ -233,4 +241,4 @@ async def main(engine,journey_only=False,fallback=False):
    await browser.close();(OUT/f'{engine}{"-fallback" if fallback else ""}-results.json').write_text(json.dumps({'engine':engine,'physicalTelegramVerified':False,'cases':results},indent=2))
  finally:server.terminate();await server.wait()
 if __name__=='__main__':
- a=argparse.ArgumentParser();a.add_argument('--engine',choices=['chromium','webkit'],default='chromium');a.add_argument('--fallback',action='store_true');a.add_argument('--journey-only',action='store_true');args=a.parse_args();asyncio.run(main(args.engine,journey_only=args.journey_only,fallback=args.fallback))
+ a=argparse.ArgumentParser();a.add_argument('--engine',choices=['chromium','webkit'],default='chromium');a.add_argument('--fallback',action='store_true');a.add_argument('--journey-only',action='store_true');a.add_argument('--quality',choices=['auto','high','low'],default='auto');args=a.parse_args();asyncio.run(main(args.engine,journey_only=args.journey_only,fallback=args.fallback,quality=args.quality))
