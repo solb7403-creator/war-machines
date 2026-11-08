@@ -1,0 +1,39 @@
+{
+ "quality": "high",
+ "gather": null,
+ "viewport": "390x844",
+ "renderer": "Chromium SwiftShader (relative only)",
+ "shots": {
+  "core-town": {
+   "draws": 74,
+   "tris": 193378,
+   "programs": 17
+  },
+  "farm-ring": {
+   "draws": 61,
+   "tris": 181896,
+   "programs": 17
+  },
+  "frontier-wall": {
+   "draws": 68,
+   "tris": 153042,
+   "programs": 17
+  },
+  "river-bridge": {
+   "draws": 58,
+   "tris": 217450,
+   "programs": 17
+  },
+  "wild-meadow": {
+   "draws": 57,
+   "tris": 178690,
+   "programs": 17
+  },
+  "boundary-crossing": {
+   "draws": 79,
+   "tris": 194402,
+   "programs": 17
+  }
+ },
+ "pageErrors": []
+}

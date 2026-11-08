@@ -81,7 +81,7 @@ for(const low of [false,true]){
  const sites=CS.allSites(F,{'west-depot':{owner:'humanity'}});assert.ok(sites.length>=13&&sites.some(s=>s[3]>0&&Math.abs(s[0]-994)<1),'captured installations switch to friendly glow');
  S.update(0,1,{p:{x:1100,z:1100},origin:{x:1024,z:1024},renderer:null});assert.ok(S.U.uSite.value.filter(v=>v.z>0).length===8,'nearest 8 sites selected');
  // Terraformed south (Phase 2): low-poly flora, per-stand far LOD, fixed materials and a bounded worst case.
- {const TP=S.TP,tri=g=>(g.index?g.index.count:g.attributes.position.count)/3,cap={tree:low?260:520,treeFar:60,plant:low?60:170,lichen:low?30:60,stump:80,node:200,nodeDim:200,tuft:24};
+ {const TP=S.TP,tri=g=>(g.index?g.index.count:g.attributes.position.count)/3,cap={tree:low?260:520,treeFar:60,plant:low?60:170,lichen:low?30:60,stump:80,node:200,nodeDim:200,tuft:low?24:48};
   for(const [k,max] of Object.entries(cap))assert.ok(tri(TP[k])<=max,q+' flora '+k+' triangles '+tri(TP[k])+' <= '+max);
   const tw=S.terraWorld(),trees=W.forests.reduce((n,f)=>n+W.forestTrees(f).length,0);
   tw.traverse(m=>{if(m.isMesh)assert.ok(allowed.has(m.material),q+' terraform only style materials: '+(m.name||m.parent?.name));});

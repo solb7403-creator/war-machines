@@ -781,3 +781,52 @@ The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt
 - Meteor Strike difficulty against a starter tank is not measured. The waves use fixed authored archetypes; the HARD tier is not tuned by a scripted pilot.
 - Daily mineral income by player type (§5.6) is modeled, not measured.
 - The Selenite sheen and Moonheart pulse are static.
+
+### Checkpoint 22 — Terraformed zones: owner art direction (rugged war-torn frontier colony) — AWAITING OWNER LOOK APPROVAL
+
+**Owner direction (Nov 8, final override):**
+- A rugged, war-torn frontier the colonists clawed out of the Moon: gritty military sci-fi, not a park.
+- About 30% of the zones built (core town, farm ring, frontier wall, roads); about 70% wild.
+- A dusty amber/steel sky inside the zones; the black lunar sky outside.
+- Nothing merges or deploys until the owner approves the look.
+
+**Built (presentation in `js/conquest/style.js` / `view.js`; collision and road speed in the shared `js/conquest/world.js`):**
+- **Atmosphere:**
+  - a per-vertex zone map: inside, a low warm sun (about 15°) with cool steel shade; outside, the unchanged Moon light;
+  - a dusty sky: hazy amber horizon to dusky steel blue overhead, broken clouds with dark bellies and sunlit rims, distant dust haze;
+  - dust fog;
+  - a shimmering atmosphere veil along the zone contour.
+- **Ground:**
+  - organic grass patches in olive / dry straw / dark green, with a fine grain (the LOW grass texture);
+  - bare dirt and gravel, and grey regolith with its craters showing through only in bare patches;
+  - rock faces with strata and moss on steep ground;
+  - shell craters with scorched centres and mud rings, and tank-track ruts;
+  - grit grows with distance from the core; no hex lines on zone ground.
+- **Flora:**
+  - instanced grass clumps (mixed colours, varied height);
+  - scrub and thornbushes, ferns by the creek, rare crystal sprouts, small flower patches only near the core;
+  - wind-bent conifers, muted broadleaf and dead/burnt trees (forest stands keep their LOS canopy);
+  - mossy boulders inside the zones (same collision).
+- **Water:** dark slate blue (#3C5568) reflecting the dusty sky, muddy banks, wet rocks in the stream.
+- **Colony** (authored by `dev/tools/colony-gen.mjs`, frozen in `ConquestWorld.COLONY`; all 57 operations, travel nodes and bases, 24 flora nodes, 70 deposits and 8 strike cores still reachable):
+  - **Buildings:** a core town of 41 Neon Frontline buildings (hex habitat pods, blocks, shopfronts, a hangar, ringed oxygen towers) around the existing Refuge, plus a landing pad.
+  - **Streets:** lit paved streets with neon edges and lane marks.
+  - **Movement:** rovers on the streets, crew at the plaza, a monorail with a moving train.
+  - **Farm ring:** 6 crop fields on the west plains with fences, a greenhouse and silos, and canals fed by the creek.
+  - **Frontier wall:** 6 wall runs and 6 watchtowers on the hive-facing edge, with open lanes and gates.
+  - **Roads and power:** rutted dirt tracks toward the frontier; a power line.
+- **Frontier dressing:** half-overgrown tank wrecks, burnt stumps, sandbag lines and trenches behind the wall, barbed wire beyond it, a rusted pipeline from the ice-mining crater, and abandoned machinery.
+- **Gameplay (shared sim):**
+  - colony buildings, wall runs, watchtowers, gates and monorail pylons collide and block sight up to their height;
+  - colony ground is cleared of loose rocks;
+  - paved roads are 15% faster (`ConquestWorld.advance`); dirt tracks are not.
+
+**Shots** (390 portrait, HIGH; `docs/economy/colony/`): core town, farm ring, frontier wall, river/bridge, wild meadow, boundary crossing. Contact sheet: `docs/economy/colony/contact-sheet-390-high.jpg`.
+
+**Measured** (Chromium SwiftShader at 390, the six spots; relative numbers only): HIGH 57–80 draws, 151k–217k triangles, 17 programs (the veil adds one). LOW numbers are in `stats-low.json`.
+
+**Not done yet (for owner review):**
+- No cast shadows. Long hard shadows would need shadow maps on the custom materials; not built for the mobile budget.
+- "Colony walls/gates are the safe zone edge" and "Parasite invasions hit the frontier wall first" are not yet wired into AI and invasion targeting. The walls are physical only.
+- Tank wrecks and the pipeline are decorative (no collision).
+- PHYSICAL_IPHONE_UNVERIFIED.
