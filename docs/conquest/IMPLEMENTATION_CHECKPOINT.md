@@ -526,3 +526,74 @@ Owner instructions override older docs and code comments. Payments stay disabled
 Then the tests in §10, then commit and push. Phase 2 (terraform) and Phase 3 (minerals and plating) follow, each committed and pushed.
 
 **Agents used so far:** none. Phase 0 was done by the lead alone.
+
+### Checkpoint 22 — Phase 0 sign-off and Phase 1: Conquest airdrop points, Command Base multiplier, Daily Base Yield, 50,000 shared cap
+
+**Owner sign-off on Phase 0 (2026-11-08):**
+1. Yield points count inside the cap.
+2. Moonbeam is exempt from Selenite.
+3. Moonheart stays at about +12%.
+4. The mineral store is approved; checkout stays off.
+5. Guardrail: no direct airdrop points or rare+ minerals from paid features. Indirect gains through power or base level are allowed.
+6. A Conquest operation day counts as a referral active day.
+7. The Arcade-only rare set takes about 3 months. The model now gives 3.1 months: Arcade wins drop Armalcolite 6%; weekly Veteran/Ace rewards are 2/4.
+
+The defaults are approved too. `docs/economy/RESOURCE_ECONOMY.md` records all of this (commit `2ebad69`).
+
+**Phase 1 delivered (server-authoritative):**
+- **Shared cap.**
+  - `DAILY_CAP` is 50,000 in `js/rules.js` and `worker/src/db.js`, one cap for Arcade, PvP and Conquest.
+  - Every Conquest point flows through the same `ecoPlayAward`: cap, daily/weekly boards, airdrop credit `ac`, squad bonus, league spendable bonus.
+- **Conquest points.** `CQ_PTS` per verified outcome × `CQ_BASE_MULT` (Base I..V ×1.05..×1.25), then × the account's `LG_BASE_PAY` at credit.
+  - World kills pay at once. They are gated by spawn generation like their salvage.
+  - Kills inside an operation are held. A win pays the completion instead; a fail, retreat, respawn or new attempt pays the held kills.
+  - Missions and raids pay by authored danger. Base and sector defenses pay 675.
+  - Cooldown receipts, replayed raid receipts and raid reinforcement waves pay nothing.
+- **Exactly once.** Each Conquest request seals its outcomes into one immutable outbox entry (monotonic id; 64 max plus a spill).
+  - `creditConquest()` credits entries above `eco.cqw` and writes the watermark in the same account CAS.
+  - The Conquest record is then pruned with its own CAS loop, outside the pilot's request rate limit.
+  - Credit runs at once for operations, after 20 s or 8 entries for kills, and on session open.
+- **Bot resistance.**
+  - At most 120 paying outcomes per hour.
+  - The `cqppm` flag: over 1,200 base points a minute across 30+ simulated minutes.
+  - Combined `hours` flag.
+  - Yield points need a verified operation that day.
+  - Deferred to a later session: command-sequence fingerprints.
+- **Referral days.** A credited operation runs `ecoPlayDay`, so it counts as a verified play day (owner decision 6).
+- **Daily Base Yield.**
+  - `base-claim` (same action name) is now two 24 h clocks: `claimedAt` for CP + materials, `pointsAt` for points. `ConquestCombat.baseYield()` holds the shared math.
+  - Collect at the physical terminal from 10%. Each clock stops at full.
+  - Materials are banked straight into the base.
+  - The points part is held, and keeps filling, until the day's first operation.
+  - Existing bases migrate with `pointsAt = claimedAt`.
+- **UI.**
+  - HUD status line: "AIRDROP TODAY n / 50,000 · +n PENDING". The numbers come from the account on session open and after every credit.
+  - "+n AIRDROP POINTS SECURED" ticker; AIRDROP PTS after-action tile.
+  - Base terminal yield panel with a fill bar and exact amounts; MAP base card meter; HUD base line "YIELD n%".
+  - In-world ring of ten orbs over the base (shared sphere, cached basic materials, no new shader program); 2D fallback label.
+- **Copy.**
+  - Conquest briefing: "CP is separate from Arcade and airdrop points" is removed; operations now state their airdrop points.
+  - Base terminal and MAP text.
+  - `js/ui.js`: leagues help, Earning help, squad help, the capped-result line.
+  - Wiki: the 50,000 cap and a new Conquest points + Daily Base Yield card; referral days now include Conquest operations.
+  - Terms: one sentence on Conquest points and the shared cap; date set to November 8, 2026.
+
+**Tests (local, all PASS):**
+- New:
+  - `dev/tests/conquest-airdrop.mjs`: 30 checks.
+  - `dev/tests/wtest/conquest-airdrop.mjs`: 20 checks, through the real Worker and the ETag fake DB. They cover two tabs racing a victory, a resent request, an account write failure then recovery, a stale watermark, the shared cap, league pay, referral days, the flags and the session-open HUD numbers.
+  - `dev/tests/conquest-airdrop-browser.py`: Chromium 390×844. A real Moonbeam kill of the Refuge scout patrol (camera turned and hull tapped like a player) shows "+35 PENDING", then "AIRDROP TODAY 35 / 50,000". A base at 50% shows 5/10 lit orbs, the terminal bar at 0.5 and HUD "YIELD 50%". Collecting banks 40 CP and holds the points part; the meter resets once the dialog closes. No page errors, no horizontal overflow.
+- Updated for the 50,000 cap (they used `R.DAILY_CAP` or hard-coded 20,000): `wtest/test.mjs` (203/0), `wtest/referrals.mjs` (29/0), `wtest/pvp.mjs` (113/0).
+- Also PASS:
+  - all 41 Conquest CI suites, plus `conquest-regression.sh` and `conquest-replay-budget`;
+  - `wtest/conquest`, `conquest-war`, `farm` (55/0), `web-auth`, `lunar-identity`, `accounts` (18), `lab`, `lab-battle`, `ticket-reliability` (37/0), `owner` (68/0).
+- **CI:** the new tests are added to `conquest-check.yml` (Conquest triggers now include `worker/src/eco.js`, `js/rules.js` and `dev/tests/wtest/conquest*`) and to the server tests in `deploy-worker.yml`.
+
+**Found while testing:** the committed `docs/conquest-session-2/earned-defense.json` was already stale on `main`. A clean `main` worktree regenerates the same numbers as this branch; the only addition is the new `ptsRaw` field. The tracked file is left unchanged.
+
+**Still unverified:**
+- Points a minute against Arcade is modeled (§3.3), not measured with the scripted pilot.
+- PHYSICAL_IPHONE_UNVERIFIED for the new HUD line and orb ring.
+- No WebKit run of the new journey; CI runs it in Chromium only.
+
+**Next:** Phase 2 (terraform rework), then Phase 3 (minerals and plating), each committed and pushed. Then two independent reviewers (economy/security + gameplay/performance) before merge. The build stamp (`index.html` BUILD and `?v=` cache keys, `version.json`) is bumped once at release, after Phase 3.

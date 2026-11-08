@@ -287,6 +287,13 @@ class Operation extends Battle {
 }
 // Daily Command Base CP batch (shared so the MAP shows the Worker's exact figure).
 function baseProduction(base,reputation=0){const b=base||{},m=b.modules||{};return b.tier?Math.min(800,40*b.tier+35*(m.reactor||0)+Math.floor(Math.sqrt(reputation||0))*3)*(1+.1*(m.uplink||0)):0;}
+// Daily Base Yield (shared by the Worker and the HUD meter): two clocks, each filling over 24 h and stopping when full.
+// claimedAt drives CP + materials; pointsAt drives the airdrop points part (it keeps filling while it waits for the day's
+// first verified operation). Amounts are the full-day table x fill, rounded down; the Worker settles the same numbers.
+function baseYield(base,reputation=0,now=Date.now()){const b=base||{},Y=CQ_YIELD,t=Math.max(0,Math.min(5,b.tier|0)),f=at=>Math.max(0,Math.min(1,(now-(Number(at)||0))/Y.day));
+ if(!t)return {tier:0,fill:0,pointsFill:0,cp:0,alloy:0,biomass:0,helium:0,pts:0,full:false,min:Y.min};
+ const fill=f(b.claimedAt),pointsFill=f(b.pointsAt??b.claimedAt);
+ return {tier:t,fill,pointsFill,cp:Math.floor(baseProduction(b,reputation)*fill),alloy:Math.floor(Y.alloy[t]*fill),biomass:Math.floor(Y.biomass[t]*fill),helium:Math.floor(Y.helium[t]*fill),pts:Math.floor(Y.pts[t]*pointsFill),full:fill>=1,min:Y.min};}
 // RECALL to the Command Base: a 15 s channel of simulated play that any damage breaks; 10 min cooldown, 5 min for
 // premium Lunar Pass owners (entitlement read by the Worker from the account, never from the client).
 const RECALL=freeze({channelMs:15000,cooldownMs:600000,premiumCooldownMs:300000});
@@ -317,5 +324,5 @@ function travelBlock(state,p,enemies,now){if(!state)return 'Online connection re
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
  if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
-root.ConquestCombat=Object.freeze({waveKinds,baseProduction,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

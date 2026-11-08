@@ -133,7 +133,7 @@ await check('5% share: 2,000/day cap, carryover, exact remainder, claims replay 
   assert.equal(R.ecoSquad(S, rows, { ...X, day: X.day + 2 }).pts, 1000);
   const S2 = R.ecoNorm({}); assert.equal(R.ecoSquad(S2, [{ id: 'a', rb: 39, rms: [] }], X).pts, 1);
   assert.equal(R.ecoSquad(S2, [{ id: 'a', rb: 59, rms: [] }], { ...X, day: X.day + 1 }).pts, 1, '19 + 20 leftover pays on the next 20');
-  const S3 = R.ecoNorm({}); R.ecoAward(S3, 20000, X); assert.equal(R.ecoSquad(S3, rows, X).pts, 0); assert.deepEqual(S3.refC, {});
+  const S3 = R.ecoNorm({}); R.ecoAward(S3, R.DAILY_CAP, X); assert.equal(R.ecoSquad(S3, rows, X).pts, 0); assert.deepEqual(S3.refC, {});
 });
 await check('cap holds across a phase change (no bypass)', () => {
   const X = { day: 21000, week: 3000, rnd: () => 0.5, pk: 'tg_1' }, S = R.ecoNorm({});
@@ -163,11 +163,11 @@ await check('match bonus tiers, squad bonus, +100% cap', () => {
   assert.equal(b(0), 0); assert.equal(b(1), 0.03); assert.equal(b(5), 0.16); assert.equal(b(10), 0.32);
   assert.equal(b(50), 0.8); assert.equal(b(100), 1); assert.equal(b(500), 1);
 });
-await check('match bonus is referral points, never phase-multiplied, inside the 20,000 cap', async () => {
+await check('match bonus is referral points, never phase-multiplied, inside the daily cap', async () => {
   const X = { day: 22000, week: 3143, rnd: () => 0.5, pk: 'tg_1', rx: 3 }, S = R.ecoNorm({ mbx: 0.5 });
   const e0 = S.earned, f0 = S.rfe; const r = R.ecoPlayAward(S, 1000, 1000, X); R.ecoRefTrack(S, X, e0, f0);   // a 1,000-point match at league x1
   assert.equal(r.awarded, 1500); assert.equal(S.rfe, 500); assert.equal(S.rb, 3000, 'only the 1,000 play points, at 3x');
-  S.dailyPts = 19800; assert.equal(R.ecoPlayAward(S, 1000, 1000, X).awarded, 200, 'cap stays');
+  S.dailyPts = R.DAILY_CAP - 200; assert.equal(R.ecoPlayAward(S, 1000, 1000, X).awarded, 200, 'cap stays');
 });
 await check('server sets the match bonus from verified recruits; held recruits count 0', async () => {
   const REC = 'tg_9200'; await tgSync(9200);
@@ -210,7 +210,7 @@ await check('points-pool score: referral points at 7.5% (config range 5-10%)', (
   assert.equal(R.adCfg({ refW: 0.5 }).refW, 0.1); assert.equal(R.adCfg({ refW: 0.01 }).refW, 0.05);
 });
 await check('a milestone bigger than today\'s room pays in parts and never blocks other recruits', () => {
-  const X = { day: 23000, week: 3286, rnd: () => 0.5, pk: 'tg_1' }, S = R.ecoNorm({}); R.ecoAward(S, 10000, X);   // 10,000 room left
+  const X = { day: 23000, week: 3286, rnd: () => 0.5, pk: 'tg_1' }, S = R.ecoNorm({}); R.ecoAward(S, R.DAILY_CAP - 10000, X);   // 10,000 room left
   const rows = [{ id: 'big', rb: 0, rms: [3, 3, 3] }, { id: 'small', rb: 0, rms: [1] }];   // 22,500 owed, then 500
   assert.equal(R.ecoSquad(S, rows, X).pts, 10000); assert.equal(S.refC.big.mp, 10000);
   assert.equal(R.ecoSquad(S, rows, { ...X, day: X.day + 1 }).pts, 13000, 'rest of big (12,500) + small (500)');

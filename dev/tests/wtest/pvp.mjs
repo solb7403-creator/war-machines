@@ -395,10 +395,10 @@ function PVP_BANK() { return 0.6; }
   // daily cap
   const e1 = db.get('/eco/tg_501');
   t(e1 && e1.wins === 1 && e1.mp === 1 && e1.pass && e1.pass.xp >= 40 && e1.dq && Object.keys(e1.dq.p || {}).length >= 0, 'live result also counts for quests, pass XP and stats on the record ' + JSON.stringify({ w: e1 && e1.wins, xp: e1 && e1.pass && e1.pass.xp }));
-  db.root.eco.tg_501.dailyPts = 19990;
+  db.root.eco.tg_501.dailyPts = R.DAILY_CAP - 10;
   const { creditMatch } = await import('../../../worker/src/eco.js');
   const c = await creditMatch(env, 'tg_501', 'livea', () => ({ pts: 500, pvs: 2, won: true, drawn: false }));
-  t(c.awarded === 10 && c.capped && db.get('/players/tg_501').dailyPts === 20000, 'live points respect the daily cap');
+  t(c.awarded === 10 && c.capped && db.get('/players/tg_501').dailyPts === R.DAILY_CAP, 'live points respect the daily cap (' + R.DAILY_CAP + ')');
   const h = await worker.fetch(new Request('https://x/pvp/health'), env);
   t(h.status === 200 && (await h.json()).ok, 'health check');
 }

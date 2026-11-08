@@ -157,7 +157,7 @@ globalThis.tgMember = 'member'; [s, r] = await act(A, 'ms', { id: 'q_tg' }); t(r
 // claimed rewards never hit the daily cap, and don't use up the room matches have
 { const S = R.ecoNorm({}), X = { day: 900, week: 128, rnd: Math.random }; S.dailyDay = 900; S.dailyPts = R.DAILY_CAP; S.q.q_win1 = { p: 1, done: true, claimed: false };
   const m = R.ecoMsClaim(S, 'q_win1', X); t(m.pts === 500 && S.dailyPts === R.DAILY_CAP + 500, 'a quest claimed at the cap still pays in full');
-  S.dailyPts = 10000; S.fx = { d: 900, n: 5000 }; t(R.ecoAward(S, 20000, X) === 15000, 'matches keep their full 20,000 room after quest points ' + S.dailyPts); }
+  S.dailyPts = 10000; S.fx = { d: 900, n: 5000 }; t(R.ecoAward(S, R.DAILY_CAP, X) === R.DAILY_CAP - 5000, 'matches keep their full ' + R.DAILY_CAP + ' room after quest points ' + S.dailyPts); }
 globalThis.tgMember = null;
 // pass: free track points only up to the tier reached; premium never gives points
 [s, r] = await act(A, 'pass', { t: 'f', i: 30 }); t(r.out.err === 'no', 'pass tier not reached refused');
@@ -482,7 +482,7 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   const tr = lbv.top.find((x) => x[0] === pv); t(!tr || tr[5] === 2, 'the points board carries the Vault level for badges');
   t((lbv.vault || []).every((x) => x[2] >= 250), 'only Vault pilots on the Vault board');
 }
-// ---- Session 2: league base pay (airdrop points) and the spendable multiplier on top; the cap is 20,000 base everywhere ----
+// ---- Session 2: league base pay (airdrop points) and the spendable multiplier on top; one cap (DAILY_CAP, 50,000 since Nov 8 2026) everywhere ----
 {
   const X = { day: day + 400, week: Math.floor((day + 400 - 4) / 7), rnd: () => 0.5, pk: 'x' };
   const mkS = () => R.ecoNorm({});
@@ -491,10 +491,10 @@ t(R.winBase('royale', '1v1') > Math.max(...R.GT_ORDER.filter((g) => g !== 'royal
   const pr = R.ecoMatchPts(SR, o, 0, X), pl = R.ecoMatchPts(SL, o, 6, X);
   t(pl.basePts === Math.round(pr.basePts * R.LG_BASE_PAY[6]) && SL.dailyPts === pl.basePts && R.ecoBase(SL) === pl.basePts && R.ecoBase(SR) === pr.basePts, 'same result: Lunar Legend banks x' + R.LG_BASE_PAY[6] + ' base points (' + pr.basePts + ' -> ' + pl.basePts + '), counted on the daily board');
   t(SL.lgb === pl.pts - pl.basePts && pl.pts === Math.round(pl.basePts * R.LG_MULT[6]) && SR.lgb === 0 && SL.earned === pl.pts, 'spendable = base x' + R.LG_MULT[6] + ' (+' + SL.lgb + ' league bonus, spendable only)');
-  // a capped day: 100 base points of room left in both leagues; nobody banks more than 20,000 base a day
+  // a capped day: 100 base points of room left in both leagues; nobody banks more than DAILY_CAP base a day
   const CR = mkS(), CL = mkS(); for (const S of [CR, CL]) { R.ecoRoll(S, X); S.dailyPts = R.DAILY_CAP - 100; }
   const cr = R.ecoMatchPts(CR, o, 0, X), cl = R.ecoMatchPts(CL, o, 6, X);
-  t(CR.dailyPts === R.DAILY_CAP && CL.dailyPts === R.DAILY_CAP && R.ecoBase(CR) === 100 && R.ecoBase(CL) === 100, 'capped day: both leagues bank exactly the 100 base points left (20,000 a day in every league)');
+  t(CR.dailyPts === R.DAILY_CAP && CL.dailyPts === R.DAILY_CAP && R.ecoBase(CR) === 100 && R.ecoBase(CL) === 100, 'capped day: both leagues bank exactly the 100 base points left (' + R.DAILY_CAP + ' a day in every league)');
   t(CL.lgb === Math.round((cl.pts - cl.basePts) * 100 / cl.basePts) && cl.awarded === 100 + CL.lgb && cr.awarded === 100, 'capped day: the spendable bonus is paid on the 100 that fit (+' + CL.lgb + ')');
   // through the server: an AI ticket and a live room, Rookie (league 0) and Lunar Legend (league 6)
   const U1 = { id: 5101, username: 'rook' }, U2 = { id: 5102, username: 'legend' }, U3 = { id: 5103, username: 'rooklive' }, U4 = { id: 5104, username: 'legendlive' };

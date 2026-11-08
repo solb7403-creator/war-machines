@@ -200,14 +200,26 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td style="color:#c28bff">Master</td><td class="n">180</td><td class="n">1.50×</td><td class="n">1.80×</td></tr>
    <tr><td style="color:#ff4d6d">Lunar Legend</td><td class="n">218</td><td class="n">1.60×</td><td class="n">2.00×</td></tr>
   </table>
-  <p class="mut" style="margin-top:10px">Your league rating is your power (the strength of your tank) times your form: 0.8 for a pilot who loses every match, 1.2 for one who wins every match, 1.0 for an even record (your last ~20 matches; it counts from your 10th). Each league line is 21% above the last; you move up at the line and drop only 4% below it. Every league up, AI pilots field a stronger loadout (the full step in 1v1, part in 2v2 and Last Standing, a little in 3v3), never stronger than your own tank. Higher leagues pay more base points (league pay ×1.00 Rookie to ×1.60 Lunar Legend; these count for the leaderboard, the airdrop ranking and the daily cap) plus the spendable bonus above, on spendable points only. The daily cap is 20,000 base points in every league.</p>
+  <p class="mut" style="margin-top:10px">Your league rating is your power (the strength of your tank) times your form: 0.8 for a pilot who loses every match, 1.2 for one who wins every match, 1.0 for an even record (your last ~20 matches; it counts from your 10th). Each league line is 21% above the last; you move up at the line and drop only 4% below it. Every league up, AI pilots field a stronger loadout (the full step in 1v1, part in 2v2 and Last Standing, a little in 3v3), never stronger than your own tank. Higher leagues pay more base points (league pay ×1.00 Rookie to ×1.60 Lunar Legend; these count for the leaderboard, the airdrop ranking and the daily cap) plus the spendable bonus above, on spendable points only. The daily cap is 50,000 base points in every league, one cap shared by Arcade, PvP and Conquest.</p>
  </div>
  <div class="card">
   <p><b>Tiers</b> show how far you've climbed, by lifetime points: Bronze, Silver (10K), Gold (50K), Platinum (150K), Diamond (400K). Higher tiers add to your daily reward.</p>
   <p><b>Quests:</b> daily, weekly and one-time quests in the Quests tab pay thousands of points a day on top of matches.</p>
   <p><b>Daily reward:</b> claim it in Quests. Every day in a row pays more (100 up to 1,000 on day 7, plus a gem cache) and boosts your quest points by up to +30%.</p>
  </div>
- <div class="note">Matches can earn up to <b>20,000 points a day</b> (resets 00:00 UTC). Quests, milestones, the daily reward and the Lunar Pass pay on top. Spending points never lowers your rank: the board counts lifetime points earned.</div>
+ <div class="card">
+  <p><b>Conquest earns points too.</b> Every verified Conquest operation pays airdrop points, at about the same rate a minute as Arcade in your league. The server checks every result; points are never paid for idling.</p>
+  <table>
+   <tr><th>Conquest (base points at Rookie)</th><th class="n">Points</th></tr>
+   <tr><td>Field mission (any of the six)</td><td class="n">450</td></tr>
+   <tr><td>Raid victory, HARD / VETERAN</td><td class="n">900 / 1,300</td></tr>
+   <tr><td>Base or sector defense victory</td><td class="n">675</td></tr>
+   <tr><td>World kill: light / heavy</td><td class="n">35 / 90</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Your league's base pay multiplies them (×1.00 Rookie to ×1.60 Lunar Legend), and your Command Base adds up to ×1.25 (×1.05 at Base I, +0.05 a tier). Kills inside an operation are paid by its result; if the operation fails, the kills you made still count. At most 120 paying results an hour.</p>
+  <p><b>Daily Base Yield.</b> Your Command Base fills with points, CP and materials over 24 hours (1,000 points at Base I up to 2,600 at Base V). Collect it at the base terminal from 10%; it stops filling when full. The points part needs one verified operation that day.</p>
+ </div>
+ <div class="note">Matches and Conquest together can earn up to <b>50,000 points a day</b> (resets 00:00 UTC). Quests, milestones, the daily reward and the Lunar Pass pay on top. Spending points never lowers your rank: the board counts lifetime points earned.</div>
 </section>
 
 <section id="garage">
@@ -249,7 +261,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
  <h2>Squad (referrals)</h2>
  <p class="kick">Bring your crew. Get paid when they stick around.</p>
  <div class="card">
-  <p>Share your invite link from the Quests tab (website and Telegram links count the same). A brand-new pilot who opens the game with it joins your squad for good. Sign-ups alone pay nothing; a <b>day</b> below is a day with a real, server-verified match:</p>
+  <p>Share your invite link from the Quests tab (website and Telegram links count the same). A brand-new pilot who opens the game with it joins your squad for good. Sign-ups alone pay nothing; a <b>day</b> below is a day with a real, server-verified match or Conquest operation:</p>
   <table>
    <tr><th>Your recruit hits</th><th class="n">You get</th></tr>
    <tr><td>2 days, 1,500 points</td><td class="n">+500</td></tr>
@@ -258,7 +270,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Every point they earn by playing</td><td class="n">+5% (max 2,000 a day, rest carries over)</td></tr>
   </table>
   <p><b>Launch bonus:</b> milestones and the 5% pay ×3 until 10,000 active pilots, ×2 until 25,000, ×1.5 until 50,000. The rate is locked in when your recruit earns it.</p>
-  <p><b>Match bonus:</b> each verified active recruit (matches on 5+ days, the latest within 7 days) adds to your match points: +3% each for the first 10, +1% for 11-50, +0.5% for 51-100, plus +1% per 5 recruits (max +15%). Max +100%; the 20,000 daily cap stays.</p>
+  <p><b>Match bonus:</b> each verified active recruit (matches or Conquest operations on 5+ days, the latest within 7 days) adds to your match points: +3% each for the first 10, +1% for 11-50, +0.5% for 51-100, plus +1% per 5 recruits (max +15%). Max +100%; the 50,000 daily cap stays.</p>
   <p class="mut" style="margin-top:10px">Only your direct recruits count. The 5% never comes out of their points; they get +1,000 once they play on 2 different days. Recruits on your device or network are held for review with the reason shown. Referral points count at 7.5% in the airdrop ranking; top recruiters are tracked in a separate research ranking. Nothing about token amounts is promised.</p>
  </div>
 </section>

@@ -1,7 +1,7 @@
 name: Conquest regression
 on:
   pull_request:
-    paths: ['js/conquest/**', 'worker/src/conquest*.js', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest.mjs', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml']
+    paths: ['js/conquest/**', 'worker/src/conquest*.js', 'worker/src/eco.js', 'js/rules.js', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml']
   workflow_dispatch:
 jobs:
   conquest:
@@ -21,6 +21,8 @@ jobs:
           node dev/tests/conquest-controls.mjs
           node dev/tests/conquest-threat.mjs
           node dev/tests/conquest-economy.mjs
+          node dev/tests/conquest-airdrop.mjs
+          node dev/tests/wtest/conquest-airdrop.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-netcode.mjs
           node dev/tests/conquest-fast-travel.mjs
@@ -74,6 +76,7 @@ jobs:
           python dev/tests/conquest-earned-end-to-end.py
           python dev/tests/conquest-preview.py
           CQ_EARNED_SAVE=/tmp/lunar-earned-journey.json python dev/tests/conquest-preview.py
+          python dev/tests/conquest-airdrop-browser.py
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -83,6 +86,7 @@ jobs:
             docs/conquest-session-031
             docs/conquest-session-2
             docs/conquest-living-war/replay-current.json
+            docs/economy/phase1
 
   transmission:
     runs-on: ubuntu-24.04

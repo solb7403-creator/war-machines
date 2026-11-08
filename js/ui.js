@@ -129,7 +129,7 @@ function openLeagues(){
 const LEAGUE_INFO=()=>[
   ['Your league','Your league comes from your league rating: your tank’s power (gear, upgrades, cores, mods) times your form. Form is how your last 20 or so matches went (a win counts 1, a draw or a top-3 Last Standing finish 0.5, a loss or a quit 0); it starts counting at your 10th match.'],
   ['Tougher AI','Every league up, AI pilots field a stronger loadout: the full step in 1v1, part of it in 2v2 and Last Standing, a little in 3v3. Inside a league the AI never changes with your results. The VS screen shows the league it’s set for.'],
-  ['Points','Higher leagues pay more. Base points, the ones the airdrop ranking, the leaderboards and the daily cap count, grow with league pay. On top, a bonus on your spendable points only. The daily cap is 20,000 base points in every league: a higher league reaches it sooner.'],
+  ['Points','Higher leagues pay more. Base points, the ones the airdrop ranking, the leaderboards and the daily cap count, grow with league pay. On top, a bonus on your spendable points only. The daily cap is 50,000 base points in every league, shared by Arcade, PvP and Conquest: a higher league reaches it sooner.'],
   ['Leagues vs tiers','Your tier (Bronze to Diamond) comes from lifetime base points. Your league comes from power and form. Both show on the leaderboard.']];
 
 if(typeof document!=='undefined'&&document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{topFit='';renderTop();});   // re-fit once the display font is in
@@ -914,10 +914,10 @@ const INFO={
   ['Salvage','Paid with points: Salvaged Rare 10,000 (101 to 103% power), Salvaged Epic 20,000 (103.1 to 104.4%). Every crate item beats every salvaged item.']]],
  squad:()=>['Squad rewards',[
   ['How it works','Share your invite link (Telegram or website, both count the same). A brand-new pilot who opens the game with it on their first day joins your squad. It can never change later.'],
-  ['You get paid when they stick around','+500 when they play matches on 2 days with 1,500 points. +2,000 at 5 days and 5,000 points. +5,000 at 10 days and 20,000 points. Days are days with a server-verified match.'],
+  ['You get paid when they stick around','+500 when they play matches on 2 days with 1,500 points. +2,000 at 5 days and 5,000 points. +5,000 at 10 days and 20,000 points. Days are days with a server-verified match or Conquest operation.'],
   ['Launch bonus','Milestones and the 5% share pay ×3 until 10,000 active pilots, ×2 until 25,000, ×1.5 until 50,000. The rate is locked in when your recruit earns it.'],
   ['5% ongoing','You also get 5% of the points your recruits earn by playing, up to 2,000 a day. Anything over carries to the next day. They lose nothing. Only direct recruits count, never their recruits.'],
-  ['Match bonus','Each verified active recruit (matches on 5+ days, played in the last 7) adds to your match points: +3% each for 1-10, +1% for 11-50, +0.5% for 51-100, plus +1% per 5 recruits (max +15%). Max +100% total; the 20,000 daily cap stays.'],
+  ['Match bonus','Each verified active recruit (matches or Conquest operations on 5+ days, played in the last 7) adds to your match points: +3% each for 1-10, +1% for 11-50, +0.5% for 51-100, plus +1% per 5 recruits (max +15%). Max +100% total; the '+fmtNum(DAILY_CAP)+' daily cap stays.'],
   ['They get +1,000','Your recruit gets a 1,000 point welcome bonus once they play on 2 different days.'],
   ['Fair play','Recruits on your device or network, or flagged for review, are held (you see the reason) until reviewed. Nobody can clear their own hold.'],
   ['Airdrop','Referral points count at 7.5% in the points ranking. Top recruiters are tracked for a separate referral pool. Both are research rankings: no token amount, price or allocation is promised.']]],
@@ -931,7 +931,7 @@ const INFO={
   ['Fair play','Fake or duplicate accounts are removed before the snapshot.'],
   ['Details','The wiki has the full tokenomics.']]],
  points:()=>['Points',[
-  ['Earning','Matches, quests, daily rewards and your squad all pay points. Up to 20,000 a day; the cap resets at 00:00 UTC.'],
+  ['Earning','Matches, Conquest operations, quests, daily rewards and your squad all pay points. Up to '+fmtNum(DAILY_CAP)+' a day from matches and Conquest together; the cap resets at 00:00 UTC.'],
   ['Spending','Upgrades, crates and salvage. Spending never lowers your rank: the leaderboard counts lifetime points.']]]};
 function coreInfo(k){
  const I={dmg:['Every shot hits harder, your super too.','damage'],rof:['Your cannon fires faster.','fire rate'],arm:['You take less damage from every hit. Armor from cores and boxes adds up, to 70% at most.','less damage taken'],
@@ -1172,7 +1172,7 @@ function resultsHTML(r){
  if(r.leagueMult!==1)lines.push([r.league.n+' league bonus'+(r.lgBonus?': +'+fmtNum(r.lgBonus)+' to spend':''),'×'+r.leagueMult]);   // spendable only: the airdrop and the daily cap count base points
  if(r.streakBonus)lines.push(['Win streak: '+r.streak,'+'+r.streakBonus]);
  if(r.sqb>0)lines.push(['Squad match bonus','+'+fmtNum(r.sqb)]);   // verified active recruits (server-set)
- if(r.capped)lines.push(['Daily cap (20,000) reached','−'+fmtNum(r.pts-r.awarded)]);
+ if(r.capped)lines.push(['Daily cap ('+fmtNum(DAILY_CAP)+') reached','−'+fmtNum(r.pts-r.awarded)]);
  if(r.note)lines.push([esc(r.note),'0']);   // the server didn't count it (too fast, an expired ticket, no connection at the start)
  const t=tierOfPts(r.after),lo=TPTS[t],hi=TPTS[t+1],f=hi?(r.after-lo)/(hi-lo):1;
  const rb=lbCache?myRank(r.before):null,ra=lbCache?myRank(r.after):null;

@@ -46,6 +46,9 @@ export const ECO = {
   // "brand new" = among the newest NEW_SHARE of the id range seen so far (the newest id any pilot has, tracked in cfg/maxid)
   NEW_SHARE: 0.03, AC_DAYS: 7,
   RL_MIN: 90,              // actions per pilot per minute (sync, claims, match tickets and results)
+  // Conquest base points a minute of simulated Conquest play, over at least CQ_PPM_SECS in a UTC day: about 1.5x the best
+  // modeled honest rate (Lunar Legend, legend kit, Command Base V: ~775 a minute; docs/economy/RESOURCE_ECONOMY.md §3.3)
+  CQ_PPM: 1200, CQ_PPM_SECS: 1800,
 };
 // a pilot's account age, from Telegram: new ids and no Premium
 let NEWID = Infinity;   // from cfg/maxid (cfg() below); off until real Telegram ids have been seen
@@ -502,6 +505,44 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
   for (const o of trade) await link(env, pid, o, "trade").catch(() => {});
   return { pts: t.pts, awarded: t.awarded, capped: t.capped, pvs: t.pvs, sb: t.sb, lgBonus: t.lgBonus, lgi: t.lgi };
+}
+
+// ================= Conquest airdrop points =================
+// The Conquest record's immutable outbox entries ({id, raw, n, op, ms}: raw = value x Command Base multiplier), credited once
+// each by id against the watermark cqw written in this same CAS. League base pay and the spendable bonus apply here, from
+// the account's own league, through ecoPlayAward (the shared daily cap, boards, airdrop credit and squad bonus).
+// docs/economy/RESOURCE_ECONOMY.md §3.5. A verified Conquest operation day is a verified play day (referral active day).
+export async function creditConquest(env, pid, out, now = Date.now()) {
+  let flags = [];
+  const t = await tx(env, pid, (S, X) => {
+    const w = Number.isSafeInteger(S.cqw) ? S.cqw : 0;
+    const fresh = (Array.isArray(out) ? out : []).filter((e) => e && Number.isSafeInteger(e.id) && e.id > w && e.id <= 1e12).sort((a, b) => a.id - b.id);
+    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay });
+    if (!fresh.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
+    let base = 0, spend = 0, ms = 0, op = false;
+    for (const e of fresh) {
+      const b = Math.max(0, Math.round(Math.min(1e6, Number(e.raw) || 0) * L.pay));
+      base += b; spend += Math.round(b * L.mult); ms += Math.max(0, Math.min(36e5, Number(e.ms) || 0)); op = op || !!e.op;
+    }
+    const aw = R.ecoPlayAward(S, base, spend, X);
+    if (op) R.ecoPlayDay(S, X);
+    S.cqw = fresh[fresh.length - 1].id;
+    S.cqd = S.cqd && S.cqd.d === X.day ? S.cqd : { d: X.day, b: 0, ms: 0, n: 0 };
+    S.cqd.b += aw.base; S.cqd.ms += ms; S.cqd.n += fresh.length;
+    flags = watchConquest(S, X, now);
+    return { ...view(), base: aw.base, awarded: aw.awarded, capped: aw.base < base };
+  }, now);
+  if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
+  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped };
+}
+// Conquest anomaly flags (flag only: a flagged pilot keeps playing and sits out the airdrop snapshot until cleared)
+function watchConquest(S, X, now) {
+  const A = S.an && S.an.d === X.day ? S.an : { ...(S.an || {}), d: X.day, m: 0, h: 0, pf: 0, ni: 0 };
+  A.h |= 1 << new Date(now).getUTCHours(); S.an = A;
+  const out = [], C = S.cqd, secs = C.ms / 1000;
+  if (bits(A.h) >= ECO.HOURS) raise(S, out, "hours", bits(A.h) + " hours in one day");
+  if (secs >= ECO.CQ_PPM_SECS && C.b / (secs / 60) > ECO.CQ_PPM) raise(S, out, "cqppm", Math.round(C.b / (secs / 60)) + " Conquest points a minute");
+  return out;
 }
 
 // ================= payments on record (for the one-time move and the loadout) =================

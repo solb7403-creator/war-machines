@@ -2,7 +2,8 @@
 import {syncWarfront,persistWarfront,applyWarfront} from './conquest-warfront.js';
 import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
-import {readEco,readTag,writeIf} from './eco.js';
+import {readEco,readTag,writeIf,creditConquest} from './eco.js';
+import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS} from './conquest-sim.js';
@@ -20,24 +21,36 @@ export function passPremium(S,now){return S?.pass?.prem===true&&S.pass.s===RULES
 // Bounded per-isolate cache so repeated recall taps cost no extra account reads; read errors fail closed and are not cached.
 const premiumCaches=new WeakMap();
 async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
-async function canonical(env,pid){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null};}
+async function canonical(env,pid,now=Date.now()){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');const day=Math.floor(now/86400000),lgi=S.lgi|0;
+ // The HUD's airdrop numbers come from the account on every session open (today's points across all modes, league pay).
+ return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null,view:{d:day,dailyPts:S.dailyDay===day?S.dailyPts||0:0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now}};}
 async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
  if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}
  applyWarfront(r.state,war,now);
  }catch{r.state.warfront={...r.state.warfront,pending:true};}}return result(r);}
+// Conquest airdrop points (docs/economy/RESOURCE_ECONOMY.md §3.5): the committed Conquest record's immutable outbox
+// entries are credited to the account exactly once (eco.cqw watermark, same account CAS), then dropped here. A failed or
+// busy account write leaves them pending for the next request or session open; nothing earned is lost.
+async function settleAirdrop(env,pid,r,now,force=false){
+ const s=r.state;if(!s||s.v!==1||r.error||!(force?pending(s).length:due(s,now)))return r;
+ let c;try{c=await creditConquest(env,pid,pending(s),now);}catch{return r;}
+ const view={d:c.day,dailyPts:c.dailyPts,cap:RULES.DAILY_CAP,cq:c.cqToday,lgi:c.lgi,pay:c.pay,at:now};
+ // Prune with its own CAS loop: server bookkeeping, not a pilot request (never counts against the request rate limit).
+ for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}
+ acknowledge(s,c.cqw,view);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now};return r;}
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
- const {loadout:L,legacy}=await canonical(env,a.pid);
- return projected(env,a.pid,await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const state=s||legacy||createState(L,now);refreshState(state,now);refitState(state,L);return {state};},now),now);
+ const {loadout:L,legacy,view}=await canonical(env,a.pid,now);
+ return projected(env,a.pid,await settleAirdrop(env,a.pid,await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const state=s||legacy||createState(L,now);refreshState(state,now);refitState(state,L);seal(state,now);airdrop(state).view=view;return {state};},now),now,true),now);
 }
 async function submit(env,a,request,reduce,now){
  const digest=hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(request))));
  const r=await transaction(env,a.pid,previous=>{
   if(previous?.v!==1)return {abort:true,error:'open conquest session first'};
   if(request.seq===previous.seq){if(digest===previous.lastDigest)return {abort:true,state:previous,replayed:true};return {abort:true,error:'sequence already used',state:previous};}
-  try{const state=reduce(previous,request,now);state.lastDigest=digest;return {state};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
- },now);return projected(env,a.pid,r,now);
+  try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;return {state};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
+ },now);return projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
 }
 export async function conquestInput(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','seq','commands'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest input');

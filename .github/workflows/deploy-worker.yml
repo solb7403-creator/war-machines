@@ -37,6 +37,8 @@ jobs:
       - name: Server tests (points, payments, live matches, farm defense)
         run: |
           node dev/tests/wtest/conquest.mjs
+          node dev/tests/wtest/conquest-airdrop.mjs
+          node dev/tests/conquest-airdrop.mjs
           node dev/tests/conquest-authority.mjs
           node dev/tests/conquest-controls.mjs
           node dev/tests/conquest-threat.mjs

@@ -238,19 +238,18 @@ Base points a minute (= airdrop points), standard pilot, for the kit that settle
   - **new:** at most 120 points-paying Conquest outcomes per hour per pilot (above that, no points; the event is logged);
   - one Daily Base Yield points payout a day.
 - **Anomaly flags.** These reuse the eco flags. A flagged pilot keeps playing but sits out the airdrop snapshot until cleared.
-  - combined points a minute;
-  - more than 20 active hours a day;
-  - identical command sequences across 3+ activities, or zero steering variance;
-  - near-constant activity completion times;
-  - **yield-only accounts:** yields on 5+ days with no other verified activity;
-  - linked-account clusters (the existing `link()` by IP hash and device) collecting yields.
+  - **built in Phase 1:** Conquest points a minute (`cqppm`: over 1,200 base points a minute across 30+ minutes of simulated Conquest play in a day, about 1.5× the best honest modeled rate);
+  - **built in Phase 1:** more than 20 active hours a day, Arcade and Conquest combined (`hours`);
+  - **built in Phase 1, replacing the planned yield-only flag:** the Daily Base Yield's points part simply does not pay without a verified operation that day, so a yield-only account earns no points at all;
+  - **deferred** (needs per-activity command fingerprints, a later session): identical command sequences across activities, zero steering variance, near-constant completion times;
+  - linked-account clusters (the existing `link()` by IP hash and device) apply unchanged.
 - **The existing new-account airdrop weighting** applies to Conquest points automatically, because they flow through the same credit.
 
 ### 3.5 How Conquest points reach the account (exactly once)
 
 Conquest has its own Firebase record and CAS boundary (`conquest/<pid>`), separate from the account record (`eco/<pid>`). Credit uses a transactional outbox:
 
-1. **Conquest side.** Inside the Conquest transaction, each verified outcome adds raw points to a per-day outbox entry in the Conquest record. Raw points are value × danger × the base multiplier at that moment. Banked minerals are added to the same entry. Each entry has a monotonic id. Entries of the same day coalesce, so the outbox stays bounded.
+1. **Conquest side.** Inside the Conquest transaction, each verified outcome adds raw points (value × the Command Base multiplier at that moment) to the request's accumulator. When the transaction ends, the accumulator becomes **one immutable outbox entry** with a monotonic id. Entries are never modified after they are written, so a credit racing a new request can never lose or double-count points. At most 64 entries wait; beyond that, new outcomes wait in a spill the account side never reads. Banked minerals will join the same entries in Phase 3.
 2. **Account side.** After the Conquest write commits, the Worker runs one account (`eco/<pid>`) CAS transaction. For every entry above the watermark `eco.cqw`, it:
    - applies the league factor and spendable bonus;
    - credits through `ecoPlayAward`, which covers the cap, boards, airdrop credit and squad bonus exactly like an Arcade result;
@@ -258,7 +257,9 @@ Conquest has its own Firebase record and CAS boundary (`conquest/<pid>`), separa
    - raises the watermark.
 
    The credit and the watermark are written in the same atomic write, so a retry can never double-credit.
-3. **Clean-up.** The Conquest record drops the entries at or below the watermark. If the account write fails (outage), the entries wait and are retried on the next request. Nothing earned is lost.
+3. **Clean-up.** The Conquest record drops the entries at or below the watermark, using its own CAS loop that does not count against the pilot's request limit. If the account write fails (outage), the entries wait and are retried on the next request or session open. Nothing earned is lost.
+
+   **When credit runs:** at once when an operation completes, otherwise when the oldest pending entry is 20 s old or 8 entries are pending, and always on session open. This batches world kills into fewer account writes.
 4. **Late credit** counts on the day it is credited, like a late Arcade result.
 
 ---
@@ -597,19 +598,35 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
 
 **Constants.** All of them live in `js/rules.js`, shared by the phone and the Worker build. Values come from this document: the cap, the Conquest values, danger factors, base multipliers, yield, mineral ids, deposits, strike, Arcade drops and plating. `dev/tools/economy-model.mjs` then reads them from there instead of its own copy.
 
+**Phase 1 as built (branch `claude/friendly-allen-7tcyca`):**
+- Constants live in `js/rules.js`: `DAILY_CAP` (50,000), `CQ_PTS`, `CQ_BASE_MULT`, `CQ_YIELD`. `worker/src/db.js` mirrors the cap.
+- `worker/src/conquest-airdrop.js` is the Conquest side: `earn`, held operation kills (`opKill` / `settleOpKills` / `discardOpKills`), `seal`, `due`, `acknowledge`, `played`.
+- Hooks: world kills and mission/raid wins in `conquest-economy.js`; defenses and the Daily Base Yield in `conquest-campaign.js`; failure paths and play time in `conquest-sim.js`.
+- `worker/src/conquest.js` seals each request, credits, prunes, and fills the HUD numbers from the account on session open.
+- `worker/src/eco.js` `creditConquest()` is the account side; `watchConquest()` raises the flags.
+- The Daily Base Yield keeps the action name `base-claim`, so clients mid-update keep working. The shared fill math is `ConquestCombat.baseYield()`.
+- UI:
+  - the HUD status line shows "AIRDROP TODAY n / 50,000 · +n PENDING";
+  - a ticker on each credit;
+  - an AIRDROP PTS tile in the after-action report;
+  - the yield meter on the base terminal, the MAP base card, the HUD base line, an in-world ring of ten orbs over the base, and a 2D fallback label.
+- Tests:
+  - `dev/tests/conquest-airdrop.mjs` (sim, 30 checks);
+  - `dev/tests/wtest/conquest-airdrop.mjs` (Worker + fake Firebase, 20 checks);
+  - `dev/tests/conquest-airdrop-browser.py` (Chromium 390 journey).
+
+  All three run in CI.
+
 **Records (additive; old records get defaults; nothing is reset):**
 - `eco/<pid>`:
-  - `mn` {fe, il, ar, tq, se, mh}: mineral wallet;
-  - `ap` [FRONT, LEFT, RIGHT, TURRET]: plate tiers 0–6;
-  - `cqw`: Conquest credit watermark;
-  - `cqd`: today's Conquest points (shown on screen and used by flags).
+  - `cqw`: Conquest credit watermark (Phase 1);
+  - `cqd` {d, b, ms, n}: today's credited Conquest base points, simulated play ms and entries (Phase 1; flags);
+  - `mn` {fe, il, ar, tq, se, mh}: mineral wallet (Phase 3);
+  - `ap` [FRONT, LEFT, RIGHT, TURRET]: plate tiers 0–6 (Phase 3).
 - `conquest/<pid>`:
-  - `airdrop` {seq, out: [...]}: the outbox;
-  - `yield` {at}: last collection;
-  - `minerals` cargo;
-  - `deposits` {id: generation};
-  - `strikes` {slot: claimed};
-  - `resonance`.
+  - `airdrop` {seq, ack, out: [{id, at, raw, n, op, ms}], hr, ms, act, opk, spill, view, limited}: the outbox and its bookkeeping (Phase 1);
+  - `base.pointsAt`: the yield's points clock, next to the existing `base.claimedAt` (Phase 1);
+  - `minerals` cargo, `deposits` {id: generation}, `strikes` {slot: claimed}, `resonance` (Phase 3).
 
 **Credit:** the outbox in 3.5; every point goes through `ecoPlayAward`. A day with a credited verified Conquest operation also counts as a verified play day (`ecoPlayDay`: `vd`/`vdl`), so it counts as an active day for referral verification (owner decision 6). Referral bonuses themselves are unchanged.
 

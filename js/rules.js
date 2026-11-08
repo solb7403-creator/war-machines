@@ -257,7 +257,17 @@ function legacyTankOf(L,n){
 // them, so only the server can change a pilot's points and gear; outside Telegram the phone runs them for local play.
 // X = {day, week, rnd, pk}: UTC day and week numbers, a random source (0..1), the player id (picks the dailies)
 // =====================================================================
-const DAILY_CAP=20000;   // max points a pilot can bank per UTC day
+const DAILY_CAP=50000;   // max base points a pilot can bank per UTC day, one cap for Arcade, PvP and Conquest (owner, Nov 8 2026)
+// ---- Conquest airdrop points (docs/economy/RESOURCE_ECONOMY.md §3): base points per server-verified Conquest outcome at
+// Rookie. The account credit multiplies them by the league's base pay (LG_BASE_PAY, as Arcade) and pays the spendable bonus
+// (LG_MULT) on top, through ecoPlayAward: the same daily cap, boards, airdrop credit and squad bonus as a match.
+// Values = par minutes x 225 x danger (STANDARD 1, HARD 1.2, VETERAN 1.45): about Arcade's points a minute per league.
+const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,gather:{fe:100,il:140,ar:240,tq:390},hourMax:120};
+const CQ_BASE_MULT=[1,1.05,1.10,1.15,1.20,1.25];   // Command Base tier (none, I..V): multiplies Conquest active-play points only
+// Daily Base Yield: one full 24 h fill by Command Base tier. CP keeps the base production formula (ConquestCombat.baseProduction).
+// It fills continuously, stops when full, is collected at the physical base (from min of a fill), and its points part
+// needs one verified Conquest operation that UTC day (no pure AFK points). The points count inside the daily cap.
+const CQ_YIELD={day:86400000,min:0.1,pts:[0,1000,1400,1800,2200,2600],alloy:[0,6,9,12,15,18],biomass:[0,4,6,8,10,12],helium:[0,1,1,2,2,3]};
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
 const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile
 const TG_URL='https://t.me/LUNARmemecoin';   // Telegram news channel

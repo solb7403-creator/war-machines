@@ -1,4 +1,5 @@
-import {CONQUEST} from './sim.gen.js';
+import {CONQUEST,RULES} from './sim.gen.js';
+import {earn,opKill,discardOpKills} from './conquest-airdrop.js';
 // Separate Conquest ledger. Nothing here modifies Arcade, airdrop or paid inventory.
 export const POLICY=Object.freeze({day:86400000,patrolRefresh:1200000,missionRepeat:180000,dropLife:300000,wreckLife:600000,maxDrops:48,maxWrecks:3,pickupRadius:6,visibleRadius:350,daily:{cp:3000,alloy:300,biomass:240,helium:60},terminal:{x:1174,z:1168,r:12},first:{cp:250,alloy:24,biomass:16,helium:6},replay:{cp:75,alloy:8,biomass:5,helium:2}});
 const MATERIALS=['alloy','biomass','helium'],empty=()=>({alloy:0,biomass:0,helium:0});
@@ -12,7 +13,10 @@ export function killLoot(s,e,now){
  else {const meta=s.spawns[e.key]||(s.spawns[e.key]={generation:Math.floor(now/POLICY.day)});if(meta.lootGeneration===meta.generation)return;meta.lootGeneration=meta.generation;meta.deadAt=now;id='e:'+e.key+':'+meta.generation;}
  const heavy=e.kind==='command'||e.kind==='sentinel',patrol=e.base?.kind==='patrol';
  const amount=heavy?{cp:45,alloy:6,biomass:4,helium:1}:patrol?{cp:7,alloy:2,biomass:1,helium:0}:{cp:18,alloy:3,biomass:2,helium:0};
- if(s.drops.some(d=>d.id===id))return;s.drops.push({id,x:e.x,y:e.drone?CONQUEST.World.groundAt(e.x,e.z):e.y,z:e.z,amount,expires:now+POLICY.dropLife});s.drops=s.drops.slice(-POLICY.maxDrops);
+ if(s.drops.some(d=>d.id===id))return;
+ // Airdrop points: a world kill pays now (spawn generation gated like its salvage); a kill inside an operation is held for
+ // the operation's result (its completion pays instead; a failed or abandoned operation pays the held kills).
+ const pts=RULES.CQ_PTS.kill[heavy?'heavy':'light'];if(s.mission&&!e.resident)opKill(s,pts);else earn(s,'kill',pts,now);s.drops.push({id,x:e.x,y:e.drone?CONQUEST.World.groundAt(e.x,e.z):e.y,z:e.z,amount,expires:now+POLICY.dropLife});s.drops=s.drops.slice(-POLICY.maxDrops);
 }
 export function pickups(s,now){ledger(s,now);for(const d of [...s.drops])if(Math.hypot(d.x-s.position.x,d.z-s.position.z)<=POLICY.pickupRadius&&Math.abs(d.y-s.position.y)<6){grant(s,d.amount);s.drops=s.drops.filter(x=>x.id!==d.id);}for(const w of [...s.wrecks])if(Math.hypot(w.x-s.position.x,w.z-s.position.z)<=POLICY.pickupRadius&&Math.abs(w.y-s.position.y)<6){for(const k of MATERIALS)s.ledger.cargo[k]+=w.amount[k];s.wrecks=s.wrecks.filter(x=>x.id!==w.id);s.notice={kind:'wreck-recovered',...w.amount};}}
 export function death(s,now){ledger(s,now);if(s.death?.active)return;s.deathSerial=(s.deathSerial||0)+1;const amount=empty();for(const k of MATERIALS){amount[k]=Math.floor(s.ledger.cargo[k]/2);s.ledger.cargo[k]-=amount[k];}const id='wreck:'+s.deathSerial;s.wrecks.push({id,...s.position,amount,expires:now+POLICY.wreckLife});s.wrecks=s.wrecks.slice(-POLICY.maxWrecks);s.death={active:true,id,at:now,expires:now+POLICY.wreckLife,position:{...s.position},amount};s.notice={kind:'defeat'};}
@@ -20,11 +24,12 @@ export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.mi
  if(raid&&s.raidReceipts?.[s.attempt])return s.raidReceipts[s.attempt];
  if(claim&&now-(claim.lastAt||claim.firstAt)<POLICY.missionRepeat)return {kind:'cooldown',cp:0,alloy:0,biomass:0,helium:0};
  const first=!claim,daily=claim?.day!==s.daily.day,amount=raid?{...op.reward,cp:Math.floor(op.reward.cp*(first?1:daily?.7:.45))}:first?{...POLICY.first,cp:({convoy:140,relay:130,recon:100,rescue:150,redoubt:220})[id]||250}:daily?POLICY.replay:{cp:45,alloy:6,biomass:4,helium:1};
- const awarded=grant(s,{...amount,cp:amount.cp+(s.featuredMission?20:0)},true);s.missionClaims[id]={firstAt:claim?.firstAt||now,lastAt:now,day:s.daily.day,count:(claim?.count||0)+1};
+ const awarded=grant(s,{...amount,cp:amount.cp+(s.featuredMission?20:0)},true);
+ discardOpKills(s);const pts=earn(s,raid?'raid':'field',raid?RULES.CQ_PTS.raid[op.danger]||RULES.CQ_PTS.raid.HARD:RULES.CQ_PTS.field,now,{op:true});s.missionClaims[id]={firstAt:claim?.firstAt||now,lastAt:now,day:s.daily.day,count:(claim?.count||0)+1};
  s.orders=s.orders?.day===s.daily.day?s.orders:{day:s.daily.day,completed:0};s.orders.completed++;
  if(s.orders.completed===3){s.ledger.cp+=100;s.reputation+=50;s.achievements=s.achievements||{};s.achievements['field-veteran']=s.achievements['field-veteran']||now;awarded.cp+=100;}
  s.campaignScore=(s.campaignScore||0)+(raid?10:3);
- const receipt={kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:(s.reputation||0)-reputationBefore,...awarded};
+ const receipt={kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:(s.reputation||0)-reputationBefore,...awarded,ptsRaw:pts};
  if(raid){const p=s.raidProgress||(s.raidProgress={shards:0,clears:0,blueprint:false,eliteBlueprint:false});p.shards++;p.clears++;p.blueprint=p.blueprint||p.shards>=25;const elite=s.raidRoll?.attempt===s.attempt&&s.raidRoll.value<350;p.eliteBlueprint=p.eliteBlueprint||elite;receipt.shards=1;receipt.eliteBlueprint=elite;receipt.rareChance=.035;s.raidReceipts=s.raidReceipts||{};s.raidReceipts[s.attempt]=receipt;const keys=Object.keys(s.raidReceipts).sort((a,b)=>a-b);for(const key of keys.slice(0,-32))delete s.raidReceipts[key];}
  return receipt;}
 export function atTerminal(s){return !s.mission&&s.hp>0&&(Math.hypot(s.position.x-POLICY.terminal.x,s.position.z-POLICY.terminal.z)<=POLICY.terminal.r||s.base?.modules?.vault&&Math.hypot(s.position.x-CONQUEST.Combat.baseDefinition.x,s.position.z-CONQUEST.Combat.baseDefinition.z)<=18);}
