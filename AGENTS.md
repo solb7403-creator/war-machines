@@ -36,6 +36,12 @@ Applies to Codex, Claude Code and every other agent, including how many subagent
 4. **Limits:** max 4 agents active at once. Give each a tight brief (goal, files, acceptance test, output format) so it doesn't re-explore the repo. Subagents report back; they never redo the lead's finished work.
 5. At the end of every session, report: agents used, what each delivered, and whether it changed the result (e.g. "reviewer found 2 blockers", "option B chosen"). Agent types that don't change results get dropped next time.
 
+## Owner messages mid-session (owner rule, Nov 8 2026)
+1. Acknowledge every owner message sent during a session in your very next reply, in one or two lines: what you will change and when. Never continue silently past one.
+2. Owner direction sent mid-session overrides the original prompt and the current plan. Fold it in before continuing; if it changes something already built, redo that part before release.
+3. A status question from the owner gets a direct answer before any other work.
+4. Never merge or deploy while an owner request in the session is unanswered or unimplemented.
+
 ## Graphics contract
 - Preferred 3D authoring integrates with existing Three.js/EQUIPMENT3D and material/asset ownership conventions; do not add a parallel engine.
 - Model space: +X forward, +Y up, +Z right. Keep canonical hitboxes, chassis socket positions and weapon muzzle endpoints intact. Render and simulation must remain independent.
