@@ -15,7 +15,7 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  const top=el('div','cq-top',null,panel);top.append(button('← RETURN TO ARCADE',o.exit));
  const hero=el('div','cq-hub-hero',null,panel);H.hero=hero;const art=el('div','cq-hub-art',null,hero);art.setAttribute('aria-hidden','true');
  const copy=el('div','cq-hub-copy',null,hero);el('p','cq-kicker','LUNAR / CONQUEST COMMAND',copy);el('h1','','CONQUEST',copy);el('p','cq-premise','EARTH HAS FALLEN.\nWE HOLD THE MOON.',copy);
- const col=el('div','cq-hub-status',null,panel);col.setAttribute('aria-live','polite');H.col=col;
+ const col=el('div','cq-hub-status',null,panel);H.col=col;   // not a live region: it refreshes every second
  const acts=el('div','cq-hub-actions',null,panel);
  const deploy=button('ENTER CONQUEST',()=>o.enter(),'cq-enter cq-hub-deploy');acts.append(deploy);
  acts.append(button('FAST TRAVEL',()=>o.enter('travel'),'cq-hub-act'),button('MY BASE',()=>o.enter('base'),'cq-hub-act'));
@@ -23,8 +23,8 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  el('div','cq-hub-foot',null,panel).append(button('WORLD INTEL',()=>o.map(),'cq-secondary'));
  let cached=null;try{cached=JSON.parse(localStorage.getItem(CACHE)||'null');}catch(e){}status(cached,true);
  // after first paint: live status, then the 3D hero
- const later=root.requestIdleCallback?f=>root.requestIdleCallback(f,{timeout:400}):f=>setTimeout(f,60);
- later(()=>{if(!H||H.disposed)return;live();hero3d();});}
+ const later=root.requestIdleCallback?f=>root.requestIdleCallback(f,{timeout:400}):f=>setTimeout(f,60),me=H;
+ later(()=>{if(H!==me||me.disposed)return;live(me);hero3d(me);});}
 function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildren();const now=Date.now(),C=root.ConquestCombat;
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  // warfront
@@ -45,12 +45,12 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
  for(const [id] of alerts.slice(0,2))el('small','cq-hub-alert','⚠ INVASION · '+((root.ConquestWorld?.sectors||[]).find(x=>x.id===id)?.name||id.toUpperCase())+' NEEDS DEFENDERS',e);
  if(!alerts.length)el('small','','No invasions right now.',e);
  if(stale&&s)el('small','cq-hub-stale','Last known status · updating…',col);if(!s)el('small','cq-hub-stale',typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK?'Connecting to Conquest Command…':'Sign in to keep your Conquest progress.',col);}
-async function live(){if(!H||typeof apiFetch!=='function'||typeof ACCOUNT_OK==='undefined'||!ACCOUNT_OK)return;try{const r=await apiFetch('/api/conquest/session',{}),j=await r.json();if(!H||H.disposed||!r.ok||!j.state)return;H.state=j.state;
+async function live(me){if(!H||H!==me||typeof apiFetch!=='function'||typeof ACCOUNT_OK==='undefined'||!ACCOUNT_OK)return;try{const r=await apiFetch('/api/conquest/session',{}),j=await r.json();if(!H||H!==me||H.disposed||!r.ok||!j.state)return;H.state=j.state;
   const keep={territory:j.state.territory,warfront:j.state.warfront?{stage:j.state.warfront.stage,name:j.state.warfront.name}:null,base:j.state.base,plot:j.state.plot?{cc:j.state.plot.cc,site:j.state.plot.site,power:j.state.plot.power,job:j.state.plot.job,banner:j.state.plot.banner}:null,reputation:j.state.reputation,ledger:{cp:j.state.ledger?.cp||0}};
   try{localStorage.setItem(CACHE,JSON.stringify(keep));}catch(e){}status(j.state,false);H.tick=setInterval(()=>{if(H&&!H.disposed)status(H.state,false);},1000);H.rebuild?.(j.state);}catch(e){}}
 
 // ------------------------------------------------------------------------- cinematic hero ---------------------------
-async function hero3d(){if(!H||H.disposed)return;const gfx=typeof gfxMode==='function'?gfxMode():'auto';if(gfx==='2d'||root.LUNAR_HUB_STATIC)return;try{await H.o.three();}catch(e){return;}if(!H||H.disposed||!root.THREE)return;
+async function hero3d(me){if(!H||H!==me||H.disposed)return;const gfx=typeof gfxMode==='function'?gfxMode():'auto';if(gfx==='2d'||root.LUNAR_HUB_STATIC)return;try{await H.o.three();}catch(e){return;}if(!H||H!==me||H.disposed||!root.THREE)return;
  const T=root.THREE,host=H.hero,low=gfx==='low',reduce=root.matchMedia?.('(prefers-reduced-motion: reduce)').matches;let renderer;try{renderer=new T.WebGLRenderer({antialias:!low,alpha:true,powerPreference:'low-power'});}catch(e){return;}
  renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,low?1:1.75));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;const cv=renderer.domElement;cv.className='cq-hub-canvas';cv.setAttribute('aria-hidden','true');host.prepend(cv);
  const sc=new T.Scene();sc.fog=new T.Fog(0x05070d,120,900);const cam=new T.PerspectiveCamera(42,1,.3,4000);

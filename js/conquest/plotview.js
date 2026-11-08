@@ -16,7 +16,7 @@ const ICON={cc:'◆',refinery:'⚙',storage:'▦',reactor:'⚡',biodome:'✿',ha
 const TIER_COL=['#000','#8a6a4c','#8fa3b5','#5f7ea8','#d9d2ff','#7fe3ff'];
 function guideStep(p,s){// one clear step at a time, never a wall of options
  if(!p)return null;const has=t=>Object.values(p.b).some(b=>b.t===t&&(b.l>0||p.job?.id&&p.b[p.job.id]===b));
- if(!has('refinery'))return {id:'refinery',text:'STEP 1 · BUILD A REFINERY: it turns salvage into alloy. Tap BUILD.'};
+ if(!has('refinery'))return {id:'refinery',text:'STEP 1 · BUILD A REFINERY: it smelts plot regolith and scrap into alloy. Tap BUILD.'};
  if(!P.TURRETS.some(has))return {id:'cannon',text:'STEP 2 · PLACE A CANNON TURRET: your first defense.'};
  if(!(p.log||[]).length)return {id:'drill',text:'STEP 3 · RUN A DEFENSE DRILL: watch Parasites test your layout (no rewards).'};
  if(p.cc<2)return {id:'cc',text:'STEP 4 · UPGRADE THE COMMAND CENTER TO CC2: it unlocks the Biodome, Hangar and Laser.'};
@@ -95,6 +95,8 @@ function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConque
  const foes={r:new T.InstancedMesh(k.foe('r'),S.MAT.solid,48),s:new T.InstancedMesh(k.foe('s'),S.MAT.solid,24),d:new T.InstancedMesh(k.foe('d'),S.MAT.solid,24)};for(const m of Object.values(foes)){m.count=0;m.frustumCulled=false;g.actors.add(m);}
  const shotGeo=(()=>{const b=new S.Bld();b.box(0,0,.5,.18,.18,1,k.C.amber,2.4);return b.geometry();})(),shots=new T.InstancedMesh(shotGeo,S.MAT.solid,40);shots.count=0;shots.frustumCulled=false;g.actors.add(shots);
  return {S,T,k,sc,cam,g,crew,rovers,foes,shots,meshes:new Map(),heads:[],keys:{},anim:[]};}
+// Dispose a group's own geometries before clearing it (shared style geometries are kept).
+function wipe(g){for(const o of [...g.children]){o.traverse(q=>{if(q.geometry&&!q.geometry.userData?.hfShared)q.geometry.dispose();if(q.isInstancedMesh)q.dispose?.();});}g.clear();}
 function terrainMesh(R,site){const {S,T,k}=R,b=new S.Bld(),n=P.GRID.n,c=P.GRID.cell,half=n*c/2,step=4,ext=60;
  const col=(x,z)=>{const i=Math.round(x/c+(n-1)/2),j=Math.round(z/c+(n-1)/2),t=P.terrainAt(site,i,j),h=P.heightAt(site,x,z);
   if(Math.abs(x)>half+2||Math.abs(z)>half+2)return [.05,.05,.06];if(t==='water')return [.03,.08,.14];if(t==='lush')return [.09,.14,.06];if(t==='deposit')return [.24,.12,.06];if(t==='lane')return [.11,.1,.09];
@@ -123,7 +125,7 @@ function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>vie
  const s=st();if(!s?.base?.tier){sitePicker();return;}
  X.R=scene3d(view);if(!X.R){X.cv=el('canvas','cq-plot-canvas',null,X.stage);}
  input();render();}
-function close(){if(!X)return;X.ctx.panel.classList.remove('cq-in-plot');const R=X.R;if(R){R.sc.traverse(o=>{if(o.isMesh||o.isInstancedMesh){o.geometry?.userData?.hfShared||o.geometry?.dispose?.();}});}X.d.remove();X=null;}
+function close(){if(!X)return;X.ctx.panel.classList.remove('cq-in-plot');const R=X.R;if(R){R.sc.traverse(o=>{if(o.isMesh||o.isInstancedMesh){if(!o.geometry?.userData?.hfShared)o.geometry?.dispose?.();if(o.isInstancedMesh)o.dispose?.();}});}X.d.remove();X=null;}
 function isOpen(){return !!X;}
 const say=t=>{if(X){X.msg.textContent=t;X.msgAt=Date.now();}};
 async function act(action,plot,label){if(!X||X.busy)return false;X.busy=true;say(label||'SENDING ORDER…');try{const ok=await X.ctx.view.requestAction(action,plot===undefined?{}:{plot});say(ok?(label?label.replace('…',' ✓'):'DONE'):(X?.ctx.view.authority?.error||'Online verification required.').replace(/^conquest: /,'').toUpperCase());if(ok&&X){X.place=null;X.wall=null;X.sel=action==='plot-remove'?null:X.sel;}render();return ok;}finally{if(X)X.busy=false;}}
@@ -138,18 +140,26 @@ function sitePicker(){const {el,button,view}=X.ctx,s=view.authority?.state,D=roo
 
 // ------------------------------------------------------------------- UI --------------------------------------------------
 function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.state?.plot)return;const {el,button,view}=X.ctx,s=view.authority.state,p=s.plot,L=s.ledger,now=Date.now(),sh=X.sheet;
+ // keep what the pilot had open (closed sections, scroll) across a re-render; a designer in progress is only rebuilt by a state change
+ const openNow=new Set([...sh.querySelectorAll('details[open]>summary')].map(x=>x.textContent)),scroll=sh.scrollTop;if(sh.childNodes.length)X.openFolds=openNow;
  X.title.textContent='COMMAND BASE · '+P.SITES[p.site].name+' · CC'+p.cc+' · ⚡'+P.powerUse(p)+'/'+P.powerSupply(p)+' · POWER '+fmt(p.power||P.power(p));
- const g=guideStep(p,s);X.coach.textContent=g?g.text:'';X.coach.hidden=!g;
- sh.replaceChildren();const tabs=el('div','cq-plot-tabs',null,sh);for(const [m,lab] of [['view','BASE'],['build','BUILD'],['walls','WALLS'],['drill','DRILL']]){const b=button(lab,()=>{X.mode=m;X.place=null;X.wall=null;X.sel=null;render();},X.mode===m?'on':'');b.setAttribute('aria-pressed',String(X.mode===m));tabs.append(b);}
+ const g=guideStep(p,s),ct=g?g.text:'';if(X.coach.textContent!==ct)X.coach.textContent=ct;X.coach.hidden=!g;
+ sh.replaceChildren();X.dyn=null;const tabs=el('div','cq-plot-tabs',null,sh);for(const [m,lab] of [['view','BASE'],['build','BUILD'],['walls','WALLS'],['drill','DRILL']]){const b=button(lab,()=>{X.mode=m;X.place=null;X.wall=null;X.sel=null;render();},X.mode===m?'on':'');b.setAttribute('aria-pressed',String(X.mode===m));tabs.append(b);}
  const body=el('div','cq-plot-body',null,sh);
  const job=p.job;if(job){const B=job.t==='cc'?{n:'Command Center'}:P.BUILDINGS[job.t],left=job.ready-now,box=el('div','cq-plot-job',null,body);el('b','','BUILDER · '+B.n.toUpperCase()+' '+romanOf(job.l)+' · '+dur(left),box);const pr=el('progress','',null,box);pr.max=1;pr.value=Math.max(0,Math.min(1,1-left/Math.max(1,job.ready-job.at)));
   el('small','','SECOND BUILDER and SPEED-UPS: store items, unavailable until payments are certified.',box);}
  if(X.mode==='view')viewTab(body,s,p,L,now);else if(X.mode==='build')buildTab(body,s,p,L);else if(X.mode==='walls')wallTab(body,s,p);else drillTab(body,s,p);
+ for(const d of sh.querySelectorAll('details'))if(X.openFolds?.has(d.querySelector('summary')?.textContent))d.open=true;sh.scrollTop=scroll;
  sync();}
+// Once a second: only the live numbers change (builder countdown, production), never the open sections or a designer in progress.
+function tickUi(){if(!X||X.visit)return;const s=X.ctx.view.authority?.state,p=s?.plot;if(!p)return;const now=Date.now(),j=p.job,box=X.sheet.querySelector('.cq-plot-job');
+ if(j&&box){const b=box.querySelector('b'),pr=box.querySelector('progress'),B=j.t==='cc'?{n:'Command Center'}:P.BUILDINGS[j.t];if(b)b.textContent='BUILDER · '+B.n.toUpperCase()+' '+romanOf(j.l)+' · '+dur(j.ready-now);if(pr)pr.value=Math.max(0,Math.min(1,1-(j.ready-now)/Math.max(1,j.ready-j.at)));}
+ const pe=X.sheet.querySelector('.cq-plot-prod span');if(pe){const st=P.accrue({...p,st:{...(p.st||{})}},now),c=P.caps(p),r=P.rates(p);pe.textContent=['alloy','biomass','helium','fe'].filter(k=>r[k]>0||st[k]>0).map(k=>Math.floor(st[k]||0)+'/'+c[k]+' '+LABEL[k]+' (+'+(Math.round(r[k]*100)/100)+'/h)').join(' · ')||pe.textContent;}
+ const dr=[...X.sheet.querySelectorAll('.cq-plot-primary')].find(b=>/CREWS RESET/.test(b.textContent));if(dr){const w=Math.max(0,(p.drillAt||0)+60000-now);if(w>0)dr.textContent='CREWS RESET · '+dur(w);else render();}}
 const romanOf=n=>['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n]||String(n);
 function resLine(el,parent,s,p){const L=s.ledger,st=p.st||{},bm=(typeof save!=='undefined'&&save.bmn)||s.airdrop?.view?.bmn||{},sp=p.mnSpent||{},stores=P.MNS.filter(k=>(bm[k]||0)-(sp[k]||0)>0).map(k=>((bm[k]||0)-(sp[k]||0))+' '+LABEL[k]).join(' · ');
  el('p','cq-plot-res','BANKED · '+fmt(L.cp)+' CP · '+fmt(L.banked.alloy)+' ALLOY · '+fmt(L.banked.biomass)+' BIOMASS · '+fmt(L.banked.helium)+' HELIUM-3',parent);el('p','cq-plot-res','BASE STORES · '+(stores||'empty (walls use minerals from here)'),parent);return {st,stores};}
-function viewTab(body,s,p,L,now){const {el,button}=X.ctx;resLine(el,body,s,p);const c=P.caps(p),r=P.rates(p),st=P.accrue(JSON.parse(JSON.stringify(p)),now);   // live preview of the Worker's accrual
+function viewTab(body,s,p,L,now){const {el,button}=X.ctx;resLine(el,body,s,p);const c=P.caps(p),r=P.rates(p),st=P.accrue({...p,st:{...(p.st||{})}},now);   // live preview of the Worker's accrual (accrue only writes st)
  const prod=el('div','cq-plot-prod',null,body);el('b','','PRODUCTION · stops when the Storage Depot is full',prod);el('span','',['alloy','biomass','helium','fe'].filter(k=>r[k]>0||st[k]>0).map(k=>Math.floor(st[k]||0)+'/'+c[k]+' '+LABEL[k]+' (+'+(Math.round(r[k]*100)/100)+'/h)').join(' · ')||'Build a Refinery, Biodome or Helium Extractor to produce.',prod);
  if(['alloy','biomass','helium','fe'].some(k=>(st[k]||0)>=1))prod.append(button('COLLECT PRODUCTION',()=>act('plot-collect',{},'COLLECTING…'),'cq-plot-primary'));
  const sel=X.sel&&p.b[X.sel];if(sel){selCard(body,s,p,X.sel,sel);}else el('p','cq-plot-hint','Tap a building to upgrade, move or inspect it. Drag to pan, pinch to zoom.',body);
@@ -161,7 +171,7 @@ function viewTab(body,s,p,L,now){const {el,button}=X.ctx;resLine(el,body,s,p);co
 function selCard(body,s,p,id,b){const {el,button}=X.ctx,isCC=b.t==='cc',B=isCC?{n:'Command Center',desc:'Gates every unlock and the points multiplier (tier '+romanOf(P.tierOf(p.cc))+', ×'+(root.CQ_BASE_MULT||[1,1.05,1.1,1.15,1.2,1.25])[P.tierOf(p.cc)]+').'}:P.BUILDINGS[b.t],l=isCC?p.cc:b.l,box=el('div','cq-plot-sel',null,body);
  el('b','',(ICON[b.t]||'')+' '+B.n.toUpperCase()+' '+romanOf(l),box);el('small','',B.desc+(B.turret?' Range '+Math.round(B.turret.range*P.SITES[p.site].range*(1+.04*(l-1)))+' m.':'')+(B.prod?' Produces '+Object.entries(B.prod).map(([k,v])=>Math.round(v*Math.max(1,l)*100)/100+' '+LABEL[k]+'/h').join(', ')+'.':''),box);
  const nl=l+1,err=P.buildCheck(p,isCC?'cc':b.t,nl,isCC?null:id),cost=nl<=(isCC?P.CC.max:B.max)?P.costOf(isCC?'cc':b.t,nl):null;
- if(cost){const up=button((err?'LOCKED · '+err.toUpperCase():'UPGRADE TO '+romanOf(nl)+' · '+price(cost)+' · '+dur(P.timeOf(isCC?'cc':b.t,nl))),()=>act('plot-upgrade',{id},'UPGRADING…'),'cq-plot-primary');up.disabled=!!err||!!p.job;box.append(up);}else el('small','','MAXIMUM LEVEL',box);
+ if(cost){const up=button((err?'LOCKED · '+err.toUpperCase():'UPGRADE TO '+romanOf(nl)+' · '+price(cost)+' · '+dur(P.timeOf(isCC?'cc':b.t,nl))),()=>act('plot-upgrade',{id},'UPGRADING…'),'cq-plot-primary');up.disabled=!!err||!!p.job;box.append(up);const short=!err&&storesShort(s,p,cost);if(short)box.append(button('MOVE '+price(short)+' TO BASE STORES',()=>moveStores(short)));}else el('small','','MAXIMUM LEVEL',box);
  if(!isCC||true){const mv=button('MOVE / ROTATE',()=>{X.mode='build';X.place={type:b.t,id,i:b.i,j:b.j,r:b.r|0};render();});box.append(mv);}
  if(!['cc','storage'].includes(b.t)){const rm=button('REMOVE (no refund)',()=>{if(rm.dataset.sure){act('plot-remove',{id},'REMOVING…');}else{rm.dataset.sure='1';rm.textContent='TAP AGAIN TO REMOVE';}},'cq-plot-danger');box.append(rm);}}
 function buildTab(body,s,p,L){const {el,button}=X.ctx;if(X.place){const q=X.place,B=q.type==='cc'?{n:'Command Center'}:P.BUILDINGS[q.type],err=q.id?P.placeError(p,q.type,q.i,q.j,q.r,q.id):(P.buildCheck(p,q.type,1)||P.placeError(p,q.type,q.i,q.j,q.r));
@@ -189,7 +199,7 @@ function drillTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A sim
 const fromSnap=v=>({site:v.site,cc:v.cc|0,power:v.pw|0,b:Object.fromEntries(Object.entries(v.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:v.w||{},banner:v.bn||null,theme:v.th||null,log:[],st:{}});
 const plotOf=()=>X?.visit?X.visit.plot:X?.ctx.view.authority?.state?.plot;
 function sync(){const R=X?.R,s=X?.ctx.view.authority?.state,p=plotOf();if(!p)return;if(!R){draw2d();return;}const {S,T,k,g}=R;
- if(R.site!==p.site){R.site=p.site;g.terrain.clear();g.grid.clear();terrainMesh(R,p.site);gridMesh(R,p.site);}
+ if(R.site!==p.site){R.site=p.site;wipe(g.terrain);wipe(g.grid);terrainMesh(R,p.site);gridMesh(R,p.site);}
  g.grid.visible=X.mode!=='view'&&X.mode!=='drill';
  const want=new Set();R.heads=[];R.anim=[];const theme=p.theme;
  for(const [id,b] of Object.entries(p.b)){const building=p.job?.id===id||p.job?.t==='cc'&&b.t==='cc',lvl=b.t==='cc'?p.cc:b.l,key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||''].join(':');want.add(id);let e=R.meshes.get(id);
@@ -201,15 +211,15 @@ function sync(){const R=X?.R,s=X?.ctx.view.authority?.state,p=plotOf();if(!p)ret
    g.build.add(o);e={o,key,id};R.meshes.set(id,e);}
   if(e.o.userData.head)R.heads.push(e.o);if(e.o.userData.drones)R.anim.push(e.o);}
  for(const [id,e] of R.meshes)if(!want.has(id)){g.build.remove(e.o);e.o.traverse(o=>o.geometry?.dispose?.());R.meshes.delete(id);}
- const wk=JSON.stringify(p.w);if(R.keys.walls!==wk){R.keys.walls=wk;g.walls.clear();const b=new S.Bld();for(const [kk,t] of Object.entries(p.w)){const [i,j]=kk.split(',').map(Number),nb=[[1,0],[0,1]].filter(([a,c])=>p.w[P.key(i+a,j+c)]);k.wallCell(b,P.cellX(i),P.cellZ(j),t|0,nb);}if(b.n)g.walls.add(b.mesh());}
- const ck=JSON.stringify([p.banner,p.theme,p.b.cc?.i,p.b.cc?.j]);if(R.keys.deco!==ck){R.keys.deco=ck;if(R.deco){g.build.remove(R.deco);R.deco.traverse(o=>o.geometry?.dispose?.());}R.deco=new T.Group();const c=p.b.cc,x0=P.cellX(c.i)+6,z0=P.cellZ(c.j)+6;
+ const wk=JSON.stringify(p.w);if(R.keys.walls!==wk){R.keys.walls=wk;wipe(g.walls);const b=new S.Bld();for(const [kk,t] of Object.entries(p.w)){const [i,j]=kk.split(',').map(Number),nb=[[1,0],[0,1]].filter(([a,c])=>p.w[P.key(i+a,j+c)]);k.wallCell(b,P.cellX(i),P.cellZ(j),t|0,nb);}if(b.n)g.walls.add(b.mesh());}
+ const ck=JSON.stringify([p.banner,p.theme,p.b.cc?.i,p.b.cc?.j]);if(R.keys.deco!==ck){R.keys.deco=ck;if(R.deco){g.build.remove(R.deco);R.deco.traverse(o=>{if(!o.geometry?.userData?.hfShared)o.geometry?.dispose?.();});}R.deco=new T.Group();const c=p.b.cc,x0=P.cellX(c.i)+6,z0=P.cellZ(c.j)+6;
   if(p.banner){const m=k.banner(p.banner,1.6).mesh();m.position.set(x0+7,0,z0-7);R.deco.add(m);}if(p.theme?.decor?.length)R.deco.add(k.decor(p.theme.decor,x0,z0,16,16,p.theme.light).mesh());g.build.add(R.deco);}
  // hologram blueprint / wall preview / selection ring
- g.holo.clear();if(X.place){const q=X.place,err=q.id?P.placeError(p,q.type,q.i,q.j,q.r,q.id):P.buildCheck(p,q.type,1)||P.placeError(p,q.type,q.i,q.j,q.r),B=P.BUILDINGS[q.type],s2=P.sizeOf(q.type,q.r),cl=P.cells({t:q.type,i:q.i,j:q.j,r:q.r});
+ wipe(g.holo);if(X.place){const q=X.place,err=q.id?P.placeError(p,q.type,q.i,q.j,q.r,q.id):P.buildCheck(p,q.type,1)||P.placeError(p,q.type,q.i,q.j,q.r),B=P.BUILDINGS[q.type],s2=P.sizeOf(q.type,q.r),cl=P.cells({t:q.type,i:q.i,j:q.j,r:q.r});
   const ring=B?.turret?{x:P.cellX(q.i),z:P.cellZ(q.j),r:B.turret.range*P.SITES[p.site].range}:null;g.holo.add(holoMesh(R,cl,!err,ring));}
  if(X.wall?.cells)g.holo.add(holoMesh(R,X.wall.cells,!P.wallError(p,X.wall.cells,X.tier)));
  if(X.sel&&p.b[X.sel]){const b=p.b[X.sel],B=P.BUILDINGS[b.t];g.holo.add(holoMesh(R,P.cells(b),true,B?.turret?{x:P.cellX(b.i),z:P.cellZ(b.j),r:B.turret.range*P.SITES[p.site].range*(1+.04*(b.l-1))}:null));}}
-function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;if(s?.plot&&!X.visit){const key=JSON.stringify([s.plot.b,s.plot.w,s.plot.job,s.plot.cc,s.plot.site,s.plot.st&&Math.floor((s.plot.st.alloy||0)+(s.plot.st.biomass||0)),s.ledger?.cp,(s.plot.log||[]).length]);if(key!==X.lastKey||Date.now()-(X.lastUi||0)>1000){X.lastKey=key;X.lastUi=Date.now();if(!X.d.contains(document.activeElement)||document.activeElement===document.body)render();else{X.title&&(X.title.textContent=X.title.textContent);sync();}}}
+function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;if(s?.plot&&!X.visit&&(s!==X.lastState||Date.now()-(X.lastUi||0)>1000)){X.lastState=s;const key=JSON.stringify([s.plot.b,s.plot.w,s.plot.job,s.plot.cc,s.plot.site,s.plot.banner,s.plot.theme,s.plot.st&&Math.floor((s.plot.st.alloy||0)+(s.plot.st.biomass||0)),s.ledger?.cp,(s.plot.log||[]).length]);if(key!==X.lastKey){X.lastKey=key;X.lastUi=Date.now();render();}else if(Date.now()-(X.lastUi||0)>1000){X.lastUi=Date.now();tickUi();}}
  if(X.msgAt&&Date.now()-X.msgAt>5000){X.msg.textContent='';X.msgAt=0;}
  // The world waits while you build, so nothing else talks to the Worker: when the builder's time is up, re-open the session
  // (the Worker settles the job on its own clock) at most every 3 s.
@@ -265,11 +275,11 @@ async function visitList(box){const {el,button,view}=X.ctx;const wait=el('p','',
  const sec=(title,list)=>{el('b','',title,box);if(!list.length){el('small','','None yet.',box);return;}for(const x of list){box.append(button((x.n||'Pilot')+' · CC'+x.cc+' · '+(P.SITES[x.site]?.name||'')+' · '+fmt(x.pw),()=>visit(x.p,x.n)));}};
  sec('SQUAD',L.squad||[]);sec('TOP 20 BY COMMAND POWER',L.top||[]);if(L.week&&!(L.top||[]).some(x=>x.p===L.week.p))box.append(button('VISIT BASE OF THE WEEK · '+L.week.n,()=>visit(L.week.p,L.week.n)));}
 async function visit(pid,name){const {view}=X.ctx;say('OPENING '+String(name||'BASE').toUpperCase()+'…');let r;try{r=await view.authority.transport('/api/conquest/visit',{pid});}catch(e){say(String(e.message||'').replace(/^conquest: /,'').toUpperCase()||'NOT AVAILABLE');return;}
- X.visit={base:r.base,plot:fromSnap(r.base)};X.sel=null;X.mode='view';X.place=null;X.wall=null;if(X.R){X.R.site=null;}X.cam={x:0,z:6,dist:150,tilt:.95,yaw:0};visitUi();}
+ X.visit={base:r.base,plot:fromSnap(r.base)};X.sel=null;X.mode='view';X.place=null;X.wall=null;if(X.R){X.R.keys.walls=null;X.R.keys.deco=null;}X.cam={x:0,z:6,dist:150,tilt:.95,yaw:0};visitUi();}
 function visitUi(){const {el,button}=X.ctx,v=X.visit.base,p=X.visit.plot;X.title.textContent='VISITING · '+v.n+' · '+(P.SITES[v.site]?.name||'')+' · CC'+v.cc+' · POWER '+fmt(v.pw);X.coach.hidden=true;const sh=X.sheet;sh.replaceChildren();
  el('p','cq-plot-hint','Read-only visit: look around, nothing here can be changed or taken. Raids on other bases arrive in Session 7.',sh);
  if(X.sel&&p.b[X.sel]){const b=p.b[X.sel],B=b.t==='cc'?{n:'Command Center'}:P.BUILDINGS[b.t];el('b','',(ICON[b.t]||'')+' '+B.n.toUpperCase()+' '+romanOf(b.t==='cc'?p.cc:b.l),sh);}
- if(v.bn)sh.append(bannerCanvas(v.bn,90,110));sh.append(button('RETURN TO MY BASE',()=>{X.visit=null;X.sel=null;if(X.R)X.R.site=null;X.cam={x:0,z:6,dist:150,tilt:.95,yaw:0};render();},'cq-plot-primary'));sync();}
+ if(v.bn)sh.append(bannerCanvas(v.bn,90,110));sh.append(button('RETURN TO MY BASE',()=>{X.visit=null;X.sel=null;if(X.R){X.R.keys.walls=null;X.R.keys.deco=null;}X.cam={x:0,z:6,dist:150,tilt:.95,yaw:0};render();},'cq-plot-primary'));sync();}
 function shareCard(s,p){const {el,button}=X.ctx,c=document.createElement('canvas');c.width=720;c.height=900;const g=c.getContext('2d'),grad=g.createLinearGradient(0,0,0,900);grad.addColorStop(0,'#071426');grad.addColorStop(1,'#03060c');g.fillStyle=grad;g.fillRect(0,0,720,900);
  g.fillStyle='#22e6ff';g.font='700 34px sans-serif';g.fillText('MY LUNAR COMMAND BASE',40,70);g.fillStyle='#e8f6ff';g.font='600 26px sans-serif';const name=(typeof save!=='undefined'&&(save.callsign||save.name))||'Pilot';g.fillText(String(name).slice(0,20)+' · '+P.SITES[p.site].name,40,112);
  g.fillStyle='#ffd36b';g.font='700 30px sans-serif';g.fillText('CC'+p.cc+' · COMMAND POWER '+fmt(p.power||P.power(p)),40,156);

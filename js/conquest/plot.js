@@ -55,7 +55,7 @@ const TIME=[15*SEC,3*MIN,20*MIN,2*HOUR,6*HOUR],TIME3=[30*SEC,10*MIN,HOUR];
 const grow=(base,g,levels)=>Array.from({length:levels},(_,l)=>Object.fromEntries(Object.entries(base).map(([k,v])=>[k,Math.round(v*Math.pow(g,l))])));
 const T=(o)=>Object.freeze(o);
 const BUILDINGS=T({
- refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[7,2]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'Conveyor feeds scrap and ore to the smelter: alloy for your stores.'}),
+ refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[7,2]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'A conveyor feeds plot regolith and scrap to the smelter: alloy for your stores (no wallet minerals used).'}),
  storage:T({n:'Storage Depot',w:3,d:3,max:5,cc:1,pw:1,count:[[1,1]],cost:grow({cp:90,alloy:8},2.4,5),mod:'vault',desc:'Caps what production can hold (it stops when full). Bank salvage here.'}),
  reactor:T({n:'Reactor',w:3,d:3,max:5,cc:1,pw:0,count:[[1,1],[6,2]],cost:grow({cp:140,alloy:8,helium:1},2.4,5),mod:'reactor',power:14,desc:'Power for every building. Feeds Daily Base Yield CP.'}),
  biodome:T({n:'Biodome',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[8,2]],cost:grow({cp:150,alloy:8,biomass:8},2.4,5),prod:{biomass:.6},desc:'Plants grow under the dome: biomass.'}),
@@ -150,8 +150,9 @@ function newPlot(site,now){const p={v:1,site:SITES[site]?site:'ridge',cc:1,b:{},
 function migrate(base,now){const t=Math.max(1,Math.min(5,base.tier|0)),p=newPlot('ridge',now);p.cc=2*t-1;p.b.cc.l=p.cc;p.migratedFrom={tier:t,modules:{...(base.modules||{})},at:now};
  const map={reactor:'reactor',hangar:'hangar',defense:'shield',vault:'storage',radar:'radar',uplink:'uplink'};
  for(const [m,type] of Object.entries(map)){const lvl=Math.max(0,Math.min(3,base.modules?.[m]|0));if(type==='storage'){p.b.b1.l=Math.max(1,lvl);continue;}if(!lvl)continue;const at=autoPlace(p,type);if(at)p.b['b'+(++p.n)]={t:type,...at,l:lvl};}
- if(base.pending&&map[base.pending.module]){const type=map[base.pending.module],cur=Object.entries(p.b).find(([,b])=>b.t===type);let id=cur?.[0];if(!id){const at=autoPlace(p,type);if(at){id='b'+(++p.n);p.b[id]={t:type,...at,l:0};}}
-  if(id)p.job={id,t:type,l:(p.b[id].l|0)+1,at:now,ready:Math.max(now,Number(base.pending.readyAt)||now)};}
+ // A module under construction continues to the same target level (never one above it); nothing if the plot already has it.
+ if(base.pending&&map[base.pending.module]){const type=map[base.pending.module],want=Math.max(1,Math.min(3,base.pending.tier|0)),cur=Object.entries(p.b).find(([,b])=>b.t===type);let id=cur?.[0];if(!id){const at=autoPlace(p,type);if(at){id='b'+(++p.n);p.b[id]={t:type,...at,l:want-1};}}
+  if(id&&(p.b[id].l|0)<want){p.b[id].l=want-1;p.job={id,t:type,l:want,at:now,ready:Math.max(now,Number(base.pending.readyAt)||now)};}}
  return p;}
 // Finish the builder's job when its time is up (Worker clock).
 function settle(p,now){if(p?.job&&now>=p.job.ready){const j=p.job;if(j.t==='cc'){p.cc=j.l;p.b.cc.l=j.l;}else if(p.b[j.id]){accrue(p,j.ready);p.b[j.id].l=j.l;}delete p.job;return j;}return null;}

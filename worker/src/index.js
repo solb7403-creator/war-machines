@@ -698,7 +698,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)

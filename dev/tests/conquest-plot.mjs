@@ -30,6 +30,11 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
  const s=createState(R.STOCK_L,t0);s.base={tier:2,modules:{reactor:1},pending:{module:'radar',tier:1,readyAt:t0+50000},builtAt:t0,claimedAt:t0,defense:{}};campaign(s,t0);
  ok(!s.base.pending&&s.plot.job?.t==='radar'&&s.plot.job.ready===t0+50000,'a module still under construction continues as the builder\'s job with the same finish time');
  ok(s.plot.migratedFrom?.tier===2&&s.plot.siteFree===0&&s.plot.site==='ridge','migrated bases default to RIDGE; their first site change is free');
+ const pv=createState(R.STOCK_L,t0);pv.base={tier:1,modules:{vault:0},pending:{module:'vault',tier:1,readyAt:t0+30000},claimedAt:t0,defense:{}};campaign(pv,t0);campaign(pv,t0+60000);
+ ok(pv.base.modules.vault===1&&!pv.plot.job&&P.levelOf(pv.plot,'storage')===1,'a pending module never migrates into an extra free level (review fix: vault I pending -> Storage I, no job)');
+ const th=createState(R.STOCK_L,t0);th.base={tier:1,modules:{},claimedAt:t0,defense:{}};campaign(th,t0);th.plot.theme={light:'amber',finish:'steel'};campaign(th,t0+1000);ok(Array.isArray(th.plot.theme.decor)&&th.plot.theme.decor.length===0,'a theme saved with no decorations survives Firebase dropping the empty list (review fix)');
+ for(const bad of ['__proto__','constructor','toString'])for(const [act2,pl] of [['plot-build',{type:bad,i:30,j:30,r:0}],['plot-site',{site:bad}],['plot-upgrade',{id:bad}],['plot-move',{id:bad,i:30,j:30,r:0}],['plot-remove',{id:bad}]]){const q=createState(R.STOCK_L,t0);q.base={tier:1,modules:{},claimedAt:t0,defense:{}};q.position=at(D.x,D.z);q.battle.enemies=[];campaign(q,t0);assert.throws(()=>applyAction(q,{seq:q.seq+1,action:act2,plot:pl},t0+1000),/unknown building|invalid site|cannot be removed/);}
+ ok(true,'prototype keys (__proto__, constructor, toString) are refused as unknown, never reached (review fix)');
  const v=createState(R.STOCK_L,t0);v.base={tier:1,modules:{vault:0},claimedAt:t0,defense:{}};campaign(v,t0);ok(v.base.modules.vault===1,'every plot has a Storage Depot: banking and repair work inside the plot (vault 0 -> 1 is a gain, never a loss)');}
 
 // ---- 2. first build: site choice, guided first build, unlocks by CC ----

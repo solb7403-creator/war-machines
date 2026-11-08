@@ -1062,5 +1062,13 @@ Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, 
 - Region map: terraformed zones (soft green from the pylons), fields, paved roads (amber) and dirt tracks (dashed), settler lots (amber) vs military (cyan); zoom-only labels SETTLER TOWN / FARMS / FRONTIER WALL · MILITARY; one-line key (Parasites · Settlers · Military). `conquest-onboarding.py` key assertion updated.
 - Budget (390 portrait, SwiftShader): HIGH core town 76 draws / 194k tris (Session 4: 72 / 180k), farm ring 64 / 155k (50 / 118k), frontier wall 81 / 218k; LOW 48–68 draws / 110–149k tris; programs 16 everywhere; 2D fallback renders. Captures `docs/economy/colony/*-390-{high,low,2d}.png`, stats `stats-{high,low,2d}.json`.
 
+### Independent review (1 read-only agent, economy/security + gameplay/performance in one brief; given only the branch, head `fad694c`, the brief and this checkpoint)
+No blocker and no way to mint or duplicate CP, materials, minerals, points, base stores, production or plot levels. It changed the result: every valid finding was fixed and tested.
+- MAJOR: the plot sheet re-rendered every second (WebKit taps do not focus), collapsing open sections and losing unsaved banner picks. Fixed: full render only on a state change, `tickUi()` updates the live numbers, open sections and scroll are kept.
+- MAJOR: a theme saved with no decorations broke the editor after Firebase dropped the empty list. Fixed in `plotSync` and the designer (test).
+- MAJOR: geometry leaks (hologram, walls, terrain on visits, instanced buffers on close). Fixed with `wipe()` disposal; visits no longer rebuild unchanged terrain.
+- MINOR fixed: a pending module migrated into a free extra level (test); Base of the Week counted a first publish as gain and let the holder lower its own gain (tests); visit route rate-limited (30/min), no last-active time, pilots under review left off the lists (tests); prototype keys refused as unknown (test); the plot auto-opened far from the gate on a stale notice; hub FAST TRAVEL opened a collapsed list; hub status no longer a live region, coach text only on change; CC10 mineral shortfall can be moved from the selected card; Refinery copy no longer claims to consume wallet salvage; cheaper per-frame change checks; hub callbacks bound to their own instance; publish skips the rankings when power is unchanged and runs them in parallel.
+- Not changed (documented): the client drill replay is synchronous (about 100 ms worst case in node at CC10; once per drill).
+
 ### Next
-Independent review (one read-only reviewer, economy/security + gameplay/performance), fixes, then the pre-approved release.
+Release (pre-approved): bump, PR, CI green, merge, deploy-worker, verify `/pvp/health`, `version.json` and Pages.
