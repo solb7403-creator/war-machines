@@ -1,7 +1,7 @@
 {
   "scope": "Exact continuation of the continuous canonical starter earned save. No new resource/equipment/health/position/outcome fixture. Shared authoritative input replay, not a native browser combat recording.",
   "initial": {
-    "cp": 30,
+    "cp": 37,
     "loadout": {
       "w": {
         "a": "pulse",
@@ -32,9 +32,9 @@
       "paint": "stock"
     },
     "position": {
-      "x": 1080.263084896644,
-      "z": 1155.0400140368563,
-      "y": -1.7457648761265456,
+      "x": 1082.2285100018191,
+      "z": 1158.0906938816793,
+      "y": -1.457661552873451,
       "surface": "ground"
     }
   },
@@ -42,12 +42,7 @@
   "kills": 6,
   "report": {
     "outcome": "victory",
-    "at": 1800004991750,
-    "ptsRaw": 708.75,
-    "mn": {
-      "fe": 2,
-      "il": 1
-    },
+    "at": 1800004991150,
     "cp": 160,
     "alloy": 15,
     "biomass": 10,
@@ -56,8 +51,8 @@
     "stolen": 0,
     "damage": 0
   },
-  "hp": 1516.3979000000013,
-  "cp": 190,
+  "hp": 1533.4064000000012,
+  "cp": 197,
   "loadout": {
     "w": {
       "a": "pulse",
@@ -89,19 +84,19 @@
   },
   "completed": {
     "oxygen-line": {
-      "at": 1800000130200,
+      "at": 1800000131700,
       "attempt": 1
     },
     "relay": {
-      "at": 1800000226100,
+      "at": 1800000236750,
       "attempt": 2
     },
     "recon": {
-      "at": 1800000364150,
+      "at": 1800000374700,
       "attempt": 3
     },
     "base-defense": {
-      "at": 1800004991750,
+      "at": 1800004991150,
       "attempt": 43
     }
   }
