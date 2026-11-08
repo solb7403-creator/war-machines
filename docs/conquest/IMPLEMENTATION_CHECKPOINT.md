@@ -1028,7 +1028,7 @@ Neither reviewer found a blocker or any way to mint or duplicate points or miner
 
 **Next:** the owner's phone playtest of the frontier colony, minerals, Hull Plating and airdrop points (Safari + Telegram, HIGH and LOW). Then session 5 (base builder + Conquest Command hub + settler architecture) from docs/ROADMAP.md, on a new branch from `main`.
 
-## Checkpoint 24 — Session 5: base builder, Conquest Command hub, settler architecture (branch `claude/conquest-session-5`) — IN PROGRESS
+## Checkpoint 24 — Session 5: base builder, Conquest Command hub, settler architecture (PR #75, branch `claude/conquest-session-5`) — RELEASED
 
 Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, release pre-approved). Branch created from `claude/conquest-playtest-session4-fixes` (5812698) merged with `main` 4add71f.
 
@@ -1071,4 +1071,13 @@ No blocker and no way to mint or duplicate CP, materials, minerals, points, base
 - Not changed (documented): the client drill replay is synchronous (about 100 ms worst case in node at CC10; once per drill).
 
 ### Next
-Release (pre-approved): bump, PR, CI green, merge, deploy-worker, verify `/pvp/health`, `version.json` and Pages.
+Release (pre-approved): bump, PR, CI green, merge, deploy-worker, verify `/pvp/health`, `version.json` and Pages. Done, below.
+
+### Deploy verification (2026-11-08)
+- **CI:** all 10 checks green on head `7ef0c19` (the `conquest` job passed on its first run). The branch lacked only `main`'s docs-only `d47621c` (#74, ROADMAP); a local test merge had no conflicts.
+- **Merge:** PR #75 merged as `7ebb2bc`.
+- **Worker deploy:** run 42525835067 SUCCESS. Live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`. Live `version.json` **`20261108210830`** = repo. Both were read by the deploy job; this container's proxy blocks the live host.
+- **Pages:** run 42525834076 SUCCESS for `7ebb2bc`. Lab UI, Equipment Balance and Graphify index runs were also green. No database rules change, so no rules deploy.
+- No revert was needed. Payments/checkout remain DISABLED. No production accounts, payments, token, airdrop or referral data were changed.
+
+**Next:** the owner's phone playtest of Session 5 (base plot + site choice, guided build, walls, Defense Drill, Conquest Command hub, settler town, ore veins running dry, the Nov 8 playtest fixes). Then session 6 (tank modifications + Science Lab + audio & weather) from docs/ROADMAP.md, on a new branch from `main`.
