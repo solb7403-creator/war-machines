@@ -7,7 +7,7 @@ import {makeDB} from './fakedb.mjs';import {buildSim} from '../../../worker/buil
 buildSim();const db=makeDB({pruneEmptyUnder:['conquest']});
 globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachines-a6034-default-rtdb.firebaseio.com/'))return db.handle(url,init);throw Error('Unexpected external request');};
 const {default:worker}=await import('../../../worker/src/index.js');const {CONQUEST:{Combat:C,World:W,Plot:P}}=await import('../../../worker/src/sim.gen.js');
-const {earn}=await import('../../../worker/src/conquest-airdrop.js');
+const {earn}=await import('../../../worker/src/conquest-airdrop.js');const {weekOf}=await import('../../../worker/src/db.js');
 const env={BOT_TOKEN:'conquest-dev-test',FIREBASE_DB_SECRET:'SECRET'};let now=Date.UTC(2026,10,10,12);Date.now=()=>now;
 const OWNER='ln_6392735208728',PIN=999;
 function auth(id,username){const u={id,first_name:'Pilot'+id};if(username)u.username=username;const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify(u)});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
@@ -48,6 +48,11 @@ r=await act(owner,OWNER,'bank');ok(r.status===200&&rec(OWNER).ledger.banked.allo
 ok(earn(rec(OWNER),'kill',100,now)===0,'a dev-mode record earns no Conquest airdrop points');
 ok(!(db.get('cqtop')?.list||[]).some(x=>x.p===OWNER),'the dev-mode base is never in the top 20');
 ok(!Object.values(db.root.cqweek||{}).some(w=>w?.p===OWNER),'... nor Base of the Week');
+// a ranking the owner already held is dropped on the next publish, even with nothing changed (review fix)
+db.root.cqtop={at:now,list:[{p:OWNER,n:'Lunar',pw:999999,cc:9,site:'crater'},{p:'tg_1',n:'X',pw:1,cc:1,site:'ridge'}]};db.root.cqweek={[weekOf(now)]:{p:OWNER,g:5,pw:9,at:now}};await call(owner,'/api/conquest/session');
+ok(!db.get('cqtop').list.some(x=>x.p===OWNER)&&db.get('cqtop').list.length===1&&!db.get('cqweek/'+weekOf(now)),'an existing top-20 entry and Base of the Week title are removed on the next session open');
+ok(!!db.get('cqbase/'+OWNER),'... while the public snapshot stays (squadmates can still visit)');
+ok(Object.values(rec(OWNER).plot.mnSpent||{}).every(n=>!n),'dev mode never changes the real base-store mineral count');
 // OFF: costs are real again; the test flag stays
 r=await act(owner,OWNER,'dev-off');ok(r.status===200&&r.state.dev.on===0&&r.state.dev.used===1,'dev mode OFF keeps the test-record flag');
 r=await act(owner,OWNER,'plot-upgrade',{plot:{id:'cc'}});ok(r.status!==200,'with dev mode OFF upgrades cost real resources again (refused: '+String(r.error).slice(0,60)+')');

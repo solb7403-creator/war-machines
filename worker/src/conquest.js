@@ -26,7 +26,7 @@ export function unlimited(previous,run){const q=structuredClone(previous),L0=pre
  const s=run(q);
  // gains this request made (bank, collect, production) are kept; nothing this request spent leaves the real balance
  s.ledger.cp=(L0.cp||0)+Math.max(0,s.ledger.cp-UNLIMITED);for(const k of Object.keys(s.ledger.banked||{}))s.ledger.banked[k]=(L0.banked?.[k]||0)+Math.max(0,s.ledger.banked[k]-(keys.has(k)?UNLIMITED:0));
- if(s.plot){const sp=s.plot.mnSpent||{};for(const k of Object.keys(sp))sp[k]=Math.min(sp[k],mn0[k]||0);}
+ if(s.plot)s.plot.mnSpent={...mn0};   // base-store minerals: exactly what was really spent before (no spend, no refund)
  return s;}
 export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.seq+1)throw Error('conquest: stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)throw Error('conquest: invalid server clock');
  const s=structuredClone(previous);

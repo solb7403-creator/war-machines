@@ -262,8 +262,10 @@ function routeStep(ax,az,bx,bz){const k=ax+','+az+','+bx+','+bz;let v=ROUTE_EDGE
 // true when a ground tank at p can drive the straight segment to q (solids every 0.5 m, then the real move() in 2 m steps)
 function routeClear(p,q){const L=Math.hypot(q.x-p.x,q.z-p.z);if(L<1e-6)return true;const m=Math.ceil(L/.5);for(let k=1;k<m;k++)if(solidAt(p.x+(q.x-p.x)*k/m,p.z+(q.z-p.z)*k/m))return false;
  const n=Math.ceil(L/2);let c={x:p.x,z:p.z,y:Number.isFinite(p.y)?p.y:groundAt(p.x,p.z),surface:'ground'};for(let k=1;k<=n;k++){const r=move(c,(q.x-p.x)/n,(q.z-p.z)/n);if(r===c)return false;c=r;}return true;}
-function route(from,to,{goal=6,cell=4,margin=160,max=15000}={}){
- if(!from||!to||!Number.isFinite(from.x+from.z+to.x+to.z))return null;
+// Incremental: routeJob(...).step(n) expands at most n cells per call (the HUD spreads a search over frames so a phone never
+// stalls); route() runs one to the end (tests, tools).
+function routeJob(from,to,{goal=6,cell=4,margin=160,max=15000}={}){
+ const job={done:false,path:null,step(){return job;}};if(!from||!to||!Number.isFinite(from.x+from.z+to.x+to.z)){job.done=true;return job;}
  const x0=Math.round(Math.min(from.x,to.x)-margin),z0=Math.round(Math.min(from.z,to.z)-margin),nx=Math.ceil((Math.abs(from.x-to.x)+2*margin)/cell)+1,nz=Math.ceil((Math.abs(from.z-to.z)+2*margin)/cell)+1;
  const cx=i=>x0+i*cell,cz=j=>z0+j*cell,N=nx*nz,g=new Float64Array(N).fill(Infinity),prev=new Int32Array(N).fill(-1),closed=new Uint8Array(N),H=[];
  const push=(f,k)=>{H.push([f,k]);let i=H.length-1;while(i>0){const q=(i-1)>>1;if(H[q][0]<=H[i][0])break;[H[q],H[i]]=[H[i],H[q]];i=q;}};
@@ -271,12 +273,16 @@ function route(from,to,{goal=6,cell=4,margin=160,max=15000}={}){
  const h=(i,j)=>Math.hypot(cx(i)-to.x,cz(j)-to.z)/cell,si=Math.round((from.x-x0)/cell),sj=Math.round((from.z-z0)/cell);
  // seed from the cells the tank can reach from its exact position (the cell center itself may sit inside a wall corner)
  for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const i=si+di,j=sj+dj;if(i<0||j<0||i>=nx||j>=nz||!routeClear(from,{x:cx(i),z:cz(j)}))continue;const k=j*nx+i,c=Math.hypot(cx(i)-from.x,cz(j)-from.z)/cell;if(c<g[k]){g[k]=c;push(c+h(i,j),k);}}
- let n=0,end=-1;while(H.length&&n<max){const k=pop()[1];if(closed[k])continue;closed[k]=1;n++;const i=k%nx,j=(k/nx)|0;
-  if(Math.hypot(cx(i)-to.x,cz(j)-to.z)<=goal){end=k;break;}
-  for(let d=0;d<8;d++){const di=[1,-1,0,0,1,1,-1,-1][d],dj=[0,0,1,-1,1,-1,1,-1][d],ni=i+di,nj=j+dj;if(ni<0||nj<0||ni>=nx||nj>=nz)continue;const nk=nj*nx+ni;if(closed[nk])continue;const c=g[k]+(d>3?1.4142:1)+routeNear(cx(ni),cz(nj))*1.5;if(c>=g[nk]||!routeStep(cx(i),cz(j),cx(ni),cz(nj)))continue;g[nk]=c;prev[nk]=k;push(c+h(ni,nj),nk);}}
- if(end<0)return null;const path=[];for(let k=end;k>=0;k=prev[k])path.push({x:cx(k%nx),z:cz((k/nx)|0)});path.reverse();path.push({x:to.x,z:to.z});return path;}
+ let n=0;
+ job.step=budget=>{if(job.done)return job;let b=0;
+  while(H.length&&n<max&&b<budget){const k=pop()[1];if(closed[k])continue;closed[k]=1;n++;b++;const i=k%nx,j=(k/nx)|0;
+   if(Math.hypot(cx(i)-to.x,cz(j)-to.z)<=goal){const path=[];for(let q=k;q>=0;q=prev[q])path.push({x:cx(q%nx),z:cz((q/nx)|0)});path.reverse();path.push({x:to.x,z:to.z});job.path=path;job.done=true;return job;}
+   for(let d=0;d<8;d++){const di=[1,-1,0,0,1,1,-1,-1][d],dj=[0,0,1,-1,1,-1,1,-1][d],ni=i+di,nj=j+dj;if(ni<0||nj<0||ni>=nx||nj>=nz)continue;const nk=nj*nx+ni;if(closed[nk])continue;const c=g[k]+(d>3?1.4142:1)+routeNear(cx(ni),cz(nj))*1.5;if(c>=g[nk]||!routeStep(cx(i),cz(j),cx(ni),cz(nj)))continue;g[nk]=c;prev[nk]=k;push(c+h(ni,nj),nk);}}
+  if(!H.length||n>=max)job.done=true;return job;};
+ return job;}
+function route(from,to,opts){const job=routeJob(from,to,opts);while(!job.done)job.step(1e9);return job.path;}
 // The point the arrow should aim at: the farthest route point within 10 m that the tank can reach in a straight line.
 function routeAim(p,path,from=0){let best=from,bd=Infinity;for(let k=Math.max(0,from-3);k<Math.min(path.length,from+14);k++){const d=Math.hypot(path[k].x-p.x,path[k].z-p.z);if(d<bd){bd=d;best=k;}}
  let aim=Math.min(best+1,path.length-1);for(let k=best+1;k<path.length;k++){if(Math.hypot(path[k].x-p.x,path[k].z-p.z)>10)break;if(routeClear(p,path[k]))aim=k;}return {index:best,aim,off:bd,point:path[aim]};}
-root.ConquestWorld=Object.freeze({id:'moon',version:1,route,routeAim,routeClear,knownOre,speedFactor,waterTopAt,baseHeight,floraNodes,HARVEST,deposits,COLONY,ROAD_FAST,colonyLotAt,roadAt,clearedAt,structureSolidAt,flora,forestTrees,legacyGreen,pylons,blightSources,terraformAt,terraZone,blightAt,TERRA,water,waterAt,creekNearest,creekBridge,forests,forestAt,FOREST_CANOPY,raidObstacles,sectors,frontierSectorAt,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,chunkJob,horizonJob,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
+root.ConquestWorld=Object.freeze({id:'moon',version:1,route,routeJob,routeAim,routeClear,knownOre,speedFactor,waterTopAt,baseHeight,floraNodes,HARVEST,deposits,COLONY,ROAD_FAST,colonyLotAt,roadAt,clearedAt,structureSolidAt,flora,forestTrees,legacyGreen,pylons,blightSources,terraformAt,terraZone,blightAt,TERRA,water,waterAt,creekNearest,creekBridge,forests,forestAt,FOREST_CANOPY,raidObstacles,sectors,frontierSectorAt,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,chunkJob,horizonJob,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
 })(globalThis);

@@ -179,10 +179,15 @@ function Bactive(v){return v.battle?.state==='active';}
 // Cached drivable route to the base or Refuge (ConquestWorld.route). Re-routes when the pilot strays 10 m or is pushed
 // against something for 3 s; the aim point is refreshed 5 times a second (cheap: cached edges, a few move() checks).
 function homeAim(m,p,radius){const now=performance.now(),key=m.kind+':'+m.x+':'+m.z;let R=view.homeRoute;
- if(!R||R.key!==key){R=view.homeRoute={key,path:Math.hypot(p.x-m.x,p.z-m.z)<=700?W.route(p,m,{goal:Math.max(6,radius-4)}):null,from:0,at:now,aimAt:0,aim:null,last:{x:p.x,z:p.z,t:now}};}
+ if(!R||R.key!==key)R=view.homeRoute={key,job:null,path:null,from:0,retryAt:0,aimAt:0,aim:null,at:now,last:{x:p.x,z:p.z,t:now}};
+ // the search runs ~1,500 cells a frame (never a stall on a phone); until it lands the arrow points straight. Too far (>700 m)
+ // or no route found: try again later, so the route appears as soon as one exists.
+ if(!R.job&&(!R.path&&now>=R.retryAt)&&Math.hypot(p.x-m.x,p.z-m.z)<=700){R.job=W.routeJob({x:p.x,z:p.z,y:p.y,surface:'ground'},m,{goal:Math.max(6,radius-4)});R.at=now;}
+ if(R.job){R.job.step(1500);if(R.job.done){if(R.job.path){R.path=R.job.path;R.from=0;R.aim=null;}else if(!R.path)R.retryAt=now+3000;R.job=null;}}
  if(!R.path)return null;if(now-R.aimAt>200||!R.aim){const a=W.routeAim(p,R.path,R.from);R.from=a.index;R.aim=a;R.aimAt=now;}
  const stuck=now-R.last.t>3000&&Math.hypot(p.x-R.last.x,p.z-R.last.z)<1.5;if(now-R.last.t>3000)R.last={x:p.x,z:p.z,t:now};
- if((R.aim.off>10||stuck)&&now-R.at>1500){view.homeRoute=null;return homeAim(m,p,radius);}
+ // strayed or pushed against something: re-route from here in the background, keep following the old route meanwhile
+ if((R.aim.off>10||stuck)&&!R.job&&now-R.at>1500&&Math.hypot(p.x-m.x,p.z-m.z)<=700){R.job=W.routeJob({x:p.x,z:p.z,y:p.y,surface:'ground'},m,{goal:Math.max(6,radius-4)});R.at=now;}
  return R.aim.point;}
 function guidance(){
  if(!view)return;const m=view.battle?(view.battle.operation||root.ConquestCombat?.mission):(view.routeTarget||view.nearOperation||root.ConquestCombat?.mission),nav=panel.querySelector('#cq-navigation');if(!m||!nav)return;
@@ -323,10 +328,10 @@ function homeHud(){if(!view||!panel)return;const D=root.ConquestCombat.baseDefin
  if(btn){prop(btn,'hidden',!!view.battle);put(btn.querySelector('.cq-home-d'),d<=D.radius?'HERE':(d>100?Math.round(d/10)*10:Math.round(d))+' m');}
  if(view.authority?.connected&&!view.__homeFirst){view.__homeFirst=1;if(!homeSeen()&&btn){btn.classList.add('cq-home-new');const ticker=panel.querySelector('.cq-reward-ticker');if(ticker&&!s?.base?.tier){put(ticker,'⌂ YOUR BASE GATE IS '+Math.round(d)+' m WEST OF THE REFUGE · TAP ⌂ MY BASE ANYTIME');view.tickerUntil=Date.now()+6000;}}}   // first visits: the gold button pulses until used; the mission guidance is never taken over
  const inside=d<=D.radius&&!view.battle;if(view.__inBase===undefined){if(view.authority?.connected)view.__inBase=inside;return;}   // only ARRIVING opens it (not a session that starts at the gate)
- if(inside&&!view.__inBase&&view.authority?.connected){view.__inBase=true;try{localStorage.setItem(HOME_SEEN,'1');}catch(_){}btn?.classList.remove('cq-home-new');if(view.routeTarget?.kind==='base')view.routeTarget=null;
-  if(view.authority?.connected&&!mapOpen&&!panel.querySelector('.cq-dialog')&&!root.ConquestPlotView?.isOpen())setTimeout(()=>{if(view&&panel&&view.__inBase&&!view.battle&&!mapOpen)baseTerminal();},350);}
+ if(inside&&!view.__inBase&&view.authority?.connected){view.__inBase=true;try{localStorage.setItem(HOME_SEEN,'1');}catch(_){}btn?.classList.remove('cq-home-new');const routed=view.routeTarget?.kind==='base';if(routed)view.routeTarget=null;
+  if(routed&&view.authority?.connected&&!mapOpen&&!panel.querySelector('.cq-dialog')&&!root.ConquestPlotView?.isOpen())setTimeout(()=>{if(view&&panel&&view.__inBase&&!view.battle&&!mapOpen)baseTerminal();},350);}
  else if(!inside&&d>D.radius+8)view.__inBase=false;}
-function navigate(kind){if(!view)return;const t=homeTarget(kind);view.routeTarget=t;mapOpen=false;panel.querySelector('.cq-map')?.remove();const menu=panel.querySelector('.cq-more-panel');if(menu)menu.hidden=true;const ticker=panel.querySelector('.cq-reward-ticker');if(ticker){put(ticker,'ROUTE SET · '+t.name+' · '+Math.round(Math.hypot(view.p.x-t.x,view.p.z-t.z))+' m · FOLLOW THE ARROW AND BEACON');view.tickerUntil=Date.now()+3500;}}
+function navigate(kind){if(!view)return;const t=homeTarget(kind);view.routeTarget=t;view.homeRoute=null;mapOpen=false;panel.querySelector('.cq-map')?.remove();const menu=panel.querySelector('.cq-more-panel');if(menu)menu.hidden=true;const ticker=panel.querySelector('.cq-reward-ticker');if(ticker){put(ticker,'ROUTE SET · '+t.name+' · '+Math.round(Math.hypot(view.p.x-t.x,view.p.z-t.z))+' m · FOLLOW THE ARROW AND BEACON');view.tickerUntil=Date.now()+3500;}}
 // Fast travel: Worker-verified, position only. The client check is advisory; the Worker decides on its own clock.
 function travelFade(){const f=el('div','cq-travel-fade','',panel);setTimeout(()=>f.remove(),900);}
 function fastTravel(parent){if(!view)return;const C=root.ConquestCombat,s=view.authority?.state,box=el('section','cq-fast-travel',null,parent);el('h3','','FAST TRAVEL',box);
