@@ -1028,7 +1028,7 @@ Neither reviewer found a blocker or any way to mint or duplicate points or miner
 
 **Next:** the owner's phone playtest of the frontier colony, minerals, Hull Plating and airdrop points (Safari + Telegram, HIGH and LOW). Then session 5 (base builder + Conquest Command hub + settler architecture) from docs/ROADMAP.md, on a new branch from `main`.
 
-## Checkpoint 24 — Session 5: base builder, Conquest Command hub, settler architecture (branch `claude/conquest-session-5`) — IN PROGRESS
+## Checkpoint 24 — RELEASE: Session 5 base builder, Conquest Command hub, settler architecture (PR #75, merge `7ebb2bc`, build `20261108210830`)
 
 Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, release pre-approved). Branch created from `claude/conquest-playtest-session4-fixes` (5812698) merged with `main` 4add71f.
 
@@ -1070,5 +1070,23 @@ No blocker and no way to mint or duplicate CP, materials, minerals, points, base
 - MINOR fixed: a pending module migrated into a free extra level (test); Base of the Week counted a first publish as gain and let the holder lower its own gain (tests); visit route rate-limited (30/min), no last-active time, pilots under review left off the lists (tests); prototype keys refused as unknown (test); the plot auto-opened far from the gate on a stale notice; hub FAST TRAVEL opened a collapsed list; hub status no longer a live region, coach text only on change; CC10 mineral shortfall can be moved from the selected card; Refinery copy no longer claims to consume wallet salvage; cheaper per-frame change checks; hub callbacks bound to their own instance; publish skips the rankings when power is unchanged and runs them in parallel.
 - Not changed (documented): the client drill replay is synchronous (about 100 ms worst case in node at CC10; once per drill).
 
-### Next
-Release (pre-approved): bump, PR, CI green, merge, deploy-worker, verify `/pvp/health`, `version.json` and Pages.
+### Tests actually run (final code `7ef0c19`)
+- Local node: 79/79 suites (the Conquest CI list + regression.sh + vein economy + plot + base progression + visit), plus wtest test/lab/farm/accounts, web-login, web-auth: all PASS.
+- Local browser (Chromium 390, container Chromium): onboarding, minerals (with the under-fire/low-hull check), session-032, session-033, transmission, flagship 390, living-war high, earned-browser, earned end-to-end, preview, airdrop, base-builder, hub: all PASS. The earned, airdrop, living-war and flagship journeys were updated from the old base dialog to the plot UI (tier IV/V field checks now use migrated-base fixtures, because higher Command Center levels take hours of real timers).
+- CI on PR #75 head `7ef0c19`: Conquest regression (conquest job + transmission Chromium and WebKit), Website layout and login contracts, Equipment Balance and Runtime Verification, Validate Laboratory UI, AI tooling: all green on the first run.
+
+### Deploy verification (2026-11-08)
+- PR #75 merged as `7ebb2bc` (main had gained only the docs change #74: the desktop keyboard driving report, queued for a later session).
+- Worker deploy run 42525835067 SUCCESS. Live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`; live `version.json` **`20261108210830`** = repo (both read by the deploy job; this container's proxy blocks the live host).
+- Pages run 42525834076 SUCCESS for `7ebb2bc`. No revert needed. Payments/checkout remain DISABLED. No production accounts, payments, token, airdrop or referral data were changed by hand; existing saves migrate on their next session (tiers, modules, veins).
+
+### Agents used
+- 1 independent read-only reviewer (economy/security + gameplay/performance in one brief). It changed the result: 3 major and 11 minor findings, all valid ones fixed and tested (see above). No other agents.
+
+### Unverified
+- PHYSICAL_IPHONE_UNVERIFIED: no physical phone frame timing or touch check of build mode, the plot or the hub. SwiftShader numbers are relative only. WebKit only through CI.
+- Progression (CC2/CC5/CC10 days) and vein supply are modeled, not measured with players.
+- The client Defense Drill replay is synchronous (about 100 ms worst case in node at CC10).
+- Desktop keyboard driving (owner report, ROADMAP fix queue) is not addressed in this session.
+
+**Next:** the owner's phone playtest (below), then Session 6 (tank mods + Science Lab research + audio/weather) with the desktop keyboard fix from the ROADMAP fix queue.
