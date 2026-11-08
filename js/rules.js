@@ -494,7 +494,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
@@ -519,7 +519,7 @@ function ecoNorm(S){
  if(S.dq&&typeof S.dq==='object'){S.dq.ids=listOf(S.dq.ids);S.dq.p=S.dq.p||{};S.dq.c=S.dq.c||{};S.dq.was=listOf(S.dq.was);}
  if(S.wk&&typeof S.wk==='object'){S.wk.ids=listOf(S.wk.ids);S.wk.p=S.wk.p||{};S.wk.u=S.wk.u||{};S.wk.c=S.wk.c||{};for(const id in S.wk.u)S.wk.u[id]=listOf(S.wk.u[id]);}
  if(S.pass&&typeof S.pass==='object'){S.pass.cf=listOf(S.pass.cf);S.pass.cp=listOf(S.pass.cp);S.pass.xp=Number(S.pass.xp)||0;S.pass.prem=!!S.pass.prem;}
- S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.mnw&&typeof S.mnw==='object'){S.mnw={w:S.mnw.w|0,n:Math.max(0,S.mnw.n|0),p:S.mnw.p?1:0};}else delete S.mnw;   // minerals, Hull Plating, weekly league minerals
+ S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.bmn!==undefined)S.bmn=mnOf(S.bmn);if(S.mnw&&typeof S.mnw==='object'){S.mnw={w:S.mnw.w|0,n:Math.max(0,S.mnw.n|0),p:S.mnw.p?1:0};}else delete S.mnw;   // minerals, Hull Plating, weekly league minerals
  return S;
 }
 // ---- gear in the state ----
@@ -661,6 +661,10 @@ function ecoPlate(S,slot,tier){
  for(const k of MN_ORDER)if(C[k])S.mn[k]-=C[k];S.pts-=C.pts;S.ptsSpent+=C.pts;S.ap[slot]=tier;
  return {slot,tier,set:plateStats(S.ap).set};
 }
+// Move wallet minerals into the Conquest base stores (Session 5): walls and late Command Center levels spend them. One way and
+// permanent (stores never return to the wallet); S.bmn only ever grows, the Conquest plot counts what it has spent.
+function ecoBaseStore(S,mn){S.mn=mnOf(S.mn);S.bmn=mnOf(S.bmn);const moved={};let n=0;for(const k of MN_ORDER){const v=Math.floor(Number(mn&&mn[k])||0);if(v<0||v>100000)return {err:'item'};if(!v)continue;if(S.mn[k]<v)return {err:'mn',k,need:v-S.mn[k]};moved[k]=v;n+=v;}
+ if(!n)return {err:'item'};for(const [k,v] of Object.entries(moved)){S.mn[k]-=v;S.bmn[k]+=v;}return {moved,bmn:{...S.bmn}};}
 // Minerals into the wallet (Conquest banking, Arcade/PvP drops, weekly league minerals, strike rewards)
 function ecoMinerals(S,add){S.mn=mnOf(S.mn);const got={};for(const k of MN_ORDER){const n=Math.floor(Number(add&&add[k])||0);if(n>0){S.mn[k]+=n;got[k]=n;}}return got;}
 // A verified Arcade/PvP result's minerals (§5.5): its drop, plus the weekly league minerals at the week's 20th match.

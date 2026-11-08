@@ -47,12 +47,17 @@
       "minute": 75,
       "base": 1,
       "modules": {
-        "reactor": 1
+        "vault": 1,
+        "reactor": 1,
+        "hangar": 0,
+        "radar": 0,
+        "defense": 0,
+        "uplink": 0
       },
-      "cp": 15,
+      "cp": 55,
       "banked": {
-        "alloy": 244,
-        "biomass": 171,
+        "alloy": 248,
+        "biomass": 179,
         "helium": 60
       },
       "raidClears": 0,
@@ -70,18 +75,18 @@
       "minute": 240,
       "base": 3,
       "modules": {
-        "reactor": 3,
-        "hangar": 3,
-        "defense": 3,
-        "vault": 3,
+        "vault": 2,
+        "reactor": 2,
+        "hangar": 2,
         "radar": 2,
+        "defense": 2,
         "uplink": 2
       },
-      "cp": 321,
+      "cp": 2711,
       "banked": {
-        "alloy": 1844,
-        "biomass": 1198,
-        "helium": 531
+        "alloy": 2003,
+        "biomass": 1462,
+        "helium": 546
       },
       "raidClears": 110,
       "shards": 110,
@@ -98,18 +103,18 @@
       "minute": 1200,
       "base": 5,
       "modules": {
+        "vault": 3,
         "reactor": 3,
         "hangar": 3,
-        "defense": 3,
-        "vault": 3,
         "radar": 3,
+        "defense": 3,
         "uplink": 3
       },
-      "cp": 55674,
+      "cp": 54177,
       "banked": {
-        "alloy": 14894,
-        "biomass": 9520,
-        "helium": 3637
+        "alloy": 14818,
+        "biomass": 9844,
+        "helium": 3623
       },
       "raidClears": 750,
       "shards": 750,

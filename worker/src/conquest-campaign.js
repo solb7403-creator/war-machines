@@ -2,6 +2,7 @@
 import {CONQUEST,RULES} from './sim.gen.js';
 import {earn,activeToday,settleOpKills,discardOpKills} from './conquest-airdrop.js';
 import {cacheMinerals} from './conquest-economy.js';
+import {plotSync,legacyModule,upgrade as plotUpgrade} from './conquest-plot.js';
 const D=CONQUEST.Combat.baseDefinition,DAY=86400000;
 export const BASE_ACTIONS=['build-base','upgrade-base','base-module','base-claim','repair-base','defense-config'];
 export const REMOTE_BASE_ACTIONS=['upgrade-base','base-module'];
@@ -17,23 +18,26 @@ export function campaign(s,now){
  if(s.base.tier&&!s.base.defense.active&&now>=s.base.defense.nextAt&&!s.base.defense.alertAt)s.base.defense.alertAt=now;
  for(const t of Object.values(s.territory))if(t.owner==='humanity'&&t.defenseAt&&now>=t.defenseAt&&t.status!=='contested')t.status='defense-alert';
  if(s.base.pending&&now>=s.base.pending.readyAt){const p=s.base.pending;s.base.modules[p.module]=p.tier;delete s.base.pending;}
+ plotSync(s,now);   // Session 5: the plot owns tier/modules from here on (derived, so every old formula is unchanged)
  const intel=CONQUEST.Combat.baseBenefits(s.base.tier,s.base.modules);s.radarContacts=intel.radar?Object.values(s.battle?.enemies||{}).filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<intel.radarRange).map(e=>({id:e.id,x:e.x,z:e.z,kind:e.kind})).slice(0,24):[];
 }
 export function production(s){return CONQUEST.Combat.baseProduction(s.base,s.reputation);}
 function debit(s,price){for(const [k,n] of Object.entries(price)){if(!Number.isSafeInteger(n)||n<0)throw Error('conquest: invalid recipe');if((k==='cp'?s.ledger.cp:s.ledger.banked[k])<n)throw Error('conquest: insufficient banked '+k+': need '+n);}for(const [k,n] of Object.entries(price))if(k==='cp')s.ledger.cp-=n;else s.ledger.banked[k]-=n;}
-export function baseAction(s,r,now){
+export function baseAction(s,r,now,ctx={}){
  // Remote command (from the MAP): tier upgrades and module construction spend already-banked resources only. Collecting
  // production, banking salvage, first construction, repair and defense deployment still need the physical base.
  const remote=REMOTE_BASE_ACTIONS.includes(r.action)&&s.base?.tier>0;campaign(s,now);if(s.mission||s.hp<=0)throw Error('conquest: approach physical Command Base terminal');
  if(!remote&&Math.hypot(s.position.x-D.x,s.position.z-D.z)>D.radius)throw Error('conquest: approach physical Command Base terminal');
  if(!remote&&s.battle.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))throw Error('conquest: secure base perimeter');
  const b=s.base;
- if(r.action==='build-base'){if(b.tier)throw Error('conquest: base already built');debit(s,D.recipe);b.tier=1;b.builtAt=now;b.claimedAt=now;b.pointsAt=now;b.defense.alertAt=now;s.achievements['first-command']=now;}
+ if(r.action==='build-base'){if(b.tier)throw Error('conquest: base already built');debit(s,D.recipe);b.tier=1;b.builtAt=now;b.claimedAt=now;b.pointsAt=now;b.defense.alertAt=now;s.achievements['first-command']=now;
+  const site=r.plot?.site;s.plot=CONQUEST.Plot.newPlot(CONQUEST.Plot.SITES[site]?site:'ridge',now);if(CONQUEST.Plot.SITES[site])s.plot.siteFree=0;plotSync(s,now);}
  else if(!b.tier)throw Error('conquest: build base first');
  else if(r.action==='defense-config'){if(!['turret','shield','drone'].includes(r.module))throw Error('conquest: invalid defense configuration');b.defense.config=r.module;}
  else if(r.action==='repair-base'){if(!b.defense.damage)throw Error('conquest: base needs no repair');debit(s,{cp:Math.ceil(b.defense.damage*.5),alloy:Math.ceil(b.defense.damage*.05)});b.defense.damage=0;}
- else if(r.action==='upgrade-base'){if(b.tier>=D.maxTier)throw Error('conquest: maximum base tier');debit(s,D.tiers[b.tier]);b.tier++;}
- else if(r.action==='base-module'){if(!Object.prototype.hasOwnProperty.call(D.modules,r.module))throw Error('conquest: invalid module');const tier=b.modules[r.module]||0;if(b.pending||tier>=Math.min(3,b.tier))throw Error('conquest: module busy or tier locked');debit(s,D.moduleCosts[tier]);b.pending={module:r.module,tier:tier+1,readyAt:now+D.buildSeconds[tier]*1000};}
+ // Session 5: the old tier and module commands drive the plot (Command Center level, the module's building), on its timers.
+ else if(r.action==='upgrade-base'){plotUpgrade(s,'cc',now,ctx);}
+ else if(r.action==='base-module'){if(!Object.prototype.hasOwnProperty.call(D.modules,r.module))throw Error('conquest: invalid module');legacyModule(s,r.module,now,ctx);}
  else if(r.action==='base-claim'){
   // Daily Base Yield: CP + materials (banked straight into the base) and airdrop points, each clock filling over 24 h.
   // Collect from 10% of a fill. The points part needs the day's first verified activity (operation or harvest); until then it keeps filling.

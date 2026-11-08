@@ -732,6 +732,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     case "tune": { const isW = !!b.w, k = String(b.k || ""), t = riOf(b.t); if (t === null || !(isW ? R.WORDER : R.CHORDER).includes(k)) break; F = (S, X) => R.ecoTune(S, isW, k, t, X); break; }
     case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k); break; }
     case "plate": { const sl = Number(b.k), tr = Number(b.t); if (!(Number.isInteger(sl) && sl >= 0 && sl <= 3 && Number.isInteger(tr) && tr >= 1 && tr <= 6)) break; F = (S) => R.ecoPlate(S, sl, tr); break; }   // Hull Plating (RESOURCE_ECONOMY.md §6.2)
+    case "bstore": { const m = b.m; if (!m || typeof m !== "object" || Array.isArray(m) || Object.keys(m).some((k) => !R.MN_ORDER.includes(k))) break; F = (S) => R.ecoBaseStore(S, m); break; }   // wallet minerals to the Conquest base stores (Session 5)
     case "respec": F = (S) => R.ecoRespec(S); break;
     case "squad": {
       // recruits flagged for review (a shared device or network, or anything else) don't pay out until Jake clears them

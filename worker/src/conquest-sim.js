@@ -5,6 +5,7 @@ import {CONQUEST,RULES} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
 import {played,settleOpKills,discardOpKills,earn} from './conquest-airdrop.js';
 import {veins,readyVeins,pull,reveal} from './conquest-veins.js';
+import {PLOT_ACTIONS,REMOTE_PLOT_ACTIONS,plotAction} from './conquest-plot.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
 // Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
 // catch up instead of discarding earned time and diverging; 40 steps per request drains that backlog at the normal 1 Hz cadence.
@@ -121,7 +122,7 @@ function completeRecall(s,B,now){const node=C.travelNodes(s.territory,s.base?.ti
 function arrive(s,B,p,notice){s.position={x:p.x,z:p.z,y:p.y,surface:p.surface||'ground'};s.safe=[{...s.position}];s.stuckMs=0;delete s.recall;B.projectiles=[];B.superShells=[];B.superAttack=null;B.dashState=null;B.lockId=null;s.notice=notice;}
 function mergeResidents(from,to){for(const e of from.enemies.filter(e=>e.resident)){const old=to.enemies.find(x=>x.key===e.key);if(old){const id=old.id;Object.assign(old,copy(e),{id,resident:false});if(old.hp<=0){to.cleared=to.cleared||{};to.cleared[old.key]=true;}}}}
 export function applyAction(previous,request,now,ctx={}){
- if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel',...COSMETIC_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
+ if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
  if(request.action==='start-mission'||request.action==='start-defense'||request.action==='start-sector-defense'){
  const defense=request.action==='start-defense',sectorDefense=request.action==='start-sector-defense';if(defense){const d=s.base.defense;if(!s.base.tier||s.mission||!d.alertAt||d.active||now<d.nextAt)fail('defense unavailable');}
  const op=C.operations[defense?'base-defense':request.mission||'oxygen-line'];if(!own(C.operations,defense?'base-defense':request.mission||'oxygen-line')||!op||Object.keys(request).some(k=>!['seq','action',...(defense?[]:['mission'])].includes(k)))fail('invalid mission');
@@ -143,7 +144,13 @@ export function applyAction(previous,request,now,ctx={}){
  if(now<(s.recallReadyAt||0))fail('recall recharging: '+Math.ceil(((s.recallReadyAt||0)-now)/1000)+'s');s.recall={startedAt:now,simMs:0,cooldownMs:ctx.premium?C.RECALL.premiumCooldownMs:C.RECALL.cooldownMs};s.notice={kind:'recall-started'};
  }else if(request.action==='recall-cancel'){if(!s.recall)fail('no recall channeling');delete s.recall;s.notice={kind:'recall-cancelled'};
  }else if(COSMETIC_ACTIONS.includes(request.action)){cosmeticAction(s,request,now);
- }else if(BASE_ACTIONS.includes(request.action)){if(Object.keys(request).some(k=>!['seq','action',...(['base-module','defense-config'].includes(request.action)?['module']:[])].includes(k)))fail('invalid base fields');if(['build-base','upgrade-base'].includes(request.action)&&K.baseBlocked({...B,baseTier:(s.base?.tier||0)+1},s.position))fail('move to the open deployment pad before construction');baseAction(s,request,now);
+ }else if(BASE_ACTIONS.includes(request.action)){if(Object.keys(request).some(k=>!['seq','action',...(['base-module','defense-config'].includes(request.action)?['module']:[]),...(request.action==='build-base'?['plot']:[])].includes(k)))fail('invalid base fields');if(request.action==='build-base'&&request.plot!==undefined&&(!record(request.plot)||Object.keys(request.plot).some(k=>k!=='site')))fail('invalid base fields');if(['build-base','upgrade-base'].includes(request.action)&&K.baseBlocked({...B,baseTier:(s.base?.tier||0)+1},s.position)&&!(request.action==='upgrade-base'&&s.base?.tier))fail('move to the open deployment pad before construction');baseAction(s,request,now,ctx);
+ }else if(PLOT_ACTIONS.includes(request.action)){
+ // Inside the plot = at the Command Gate with the perimeter secure (the world waits while you build). Upgrades also work
+ // from the MAP (remote command, banked goods only), as module and tier upgrades always did.
+ if(Object.keys(request).some(k=>!['seq','action','plot'].includes(k)))fail('invalid plot fields');if(!s.base?.tier)fail('build your Command Base first');if(s.mission||s.hp<=0)fail('approach your Command Gate');
+ if(!REMOTE_PLOT_ACTIONS.includes(request.action)){if(Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)>C.baseDefinition.radius)fail('approach your Command Gate');if(B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))fail('secure base perimeter');}
+ plotAction(s,request,now,ctx);
  }else if(request.action==='buy-upgrade'||request.action==='set-tuning'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('engineering requires safe Refuge terminal');
  if(request.action==='buy-upgrade'){
