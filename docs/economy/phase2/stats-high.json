@@ -11,29 +11,29 @@
  "renderer": "Chromium SwiftShader (relative only)",
  "shots": {
   "crater-bridge": {
-   "draws": 51,
-   "tris": 167122,
-   "programs": 16
+   "draws": 65,
+   "tris": 212186,
+   "programs": 17
   },
   "forest-creek": {
-   "draws": 48,
-   "tris": 185566,
-   "programs": 16
+   "draws": 65,
+   "tris": 208000,
+   "programs": 17
   },
   "reservoir-dam": {
-   "draws": 43,
-   "tris": 128250,
-   "programs": 16
+   "draws": 42,
+   "tris": 130960,
+   "programs": 17
   },
   "lush-core-pylon": {
-   "draws": 56,
-   "tris": 179308,
-   "programs": 16
+   "draws": 76,
+   "tris": 195968,
+   "programs": 17
   },
   "blight-edge-oxygen": {
-   "draws": 55,
-   "tris": 105362,
-   "programs": 16
+   "draws": 73,
+   "tris": 152842,
+   "programs": 17
   }
  },
  "pageErrors": []

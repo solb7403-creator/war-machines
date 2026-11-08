@@ -99,9 +99,9 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));
  float zv=smoothstep(.05,.24,terra);
  // organic grass: patch colour from low-frequency noise (olive / dry straw / dark green), clump texture from warped noise
- // LOW: patch colour and clump texture come from the single detail fetch (d1); HIGH samples four finer scales.
- float pc=fract(d1.a*3.7+d1.r*1.9),pw=fract(d1.a*7.3+d1.g),gg=fract(d1.a*5.1+d1.b*2.3),cs=.55;
- if(hi){pc=texture2D(uDetail,vW*(1./11.)+vec2(.21,.63)).a;pw=texture2D(uDetail,vW*(1./5.3)+vec2(.71,.12)).a;gg=texture2D(uDetail,vW*(1./2.7)+.37).a;cs=smoothstep(.3,.62,texture2D(uDetail,vW*(1./1.9)+vec2(pw*.4,pc*.4)).a);}
+ // LOW: one patch fetch; its smooth channels stand in for the clump textures. HIGH samples three finer scales on top.
+ vec4 dp=texture2D(uDetail,vW*(1./11.)+vec2(.21,.63));float pc=dp.a,pw=dp.r,gg=dp.g,cs=.55;
+ if(hi){pw=texture2D(uDetail,vW*(1./5.3)+vec2(.71,.12)).a;gg=texture2D(uDetail,vW*(1./2.7)+.37).a;cs=smoothstep(.3,.62,texture2D(uDetail,vW*(1./1.9)+vec2(pw*.4,pc*.4)).a);}
  vec3 clump=pc<.4?mix(vec3(.048,.102,.027),vec3(.147,.195,.042),smoothstep(.3,.4,pc)):pc<.62?mix(vec3(.147,.195,.042),vec3(.39,.32,.105),smoothstep(.52,.62,pc)):vec3(.39,.32,.105)*(.85+.3*pw);
  vec3 dryG=mix(vec3(.13,.11,.06),vec3(.2,.17,.08),n1);
  vec3 grass=mix(dryG,clump*(.8+.4*gg),.45+.55*cs*lod);
