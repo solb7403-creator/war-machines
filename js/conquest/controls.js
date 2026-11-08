@@ -71,10 +71,10 @@ function advance(B,p,input,dt,exploration){
 // normalized command the Worker replays, so reconciliation reproduces the prediction instead of correcting it.
 const STEP=.05;
 function command(c){let x=Number(c.x)||0,z=Number(c.z)||0;const l=Math.hypot(x,z);if(l>1){x/=l;z/=l;}const yaw=Number.isFinite(c.aimYaw)?c.aimYaw:0,pitch=Number.isFinite(c.aimPitch)?clamp(c.aimPitch,-.4,.5):0;
- return {x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield};}
+ return {x,z,aimPitch:pitch||0,aimYaw:Math.atan2(Math.sin(yaw),Math.cos(yaw)),lockId:Number.isSafeInteger(c.lockId)&&c.lockId>=1&&c.lockId<=1e9?c.lockId:null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather};}
 // The Worker's validateCommands mapping, verbatim. Predict and replay with validated(sent) so both sides compute bit-identical
 // steps (re-wrapping an angle is not always idempotent in floating point).
-function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield};}
+function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather};}
 // Presentation only: where the hull will be after a partial step with the current input. Never mutates the battle.
 function preview(B,p,input,dt,exploration){
  if(!(dt>0)||B.playerHp<=0||B.state!=='active')return p;const values=C.engineeringValues(B.playerStats,B.engineering);

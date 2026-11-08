@@ -597,3 +597,122 @@ The defaults are approved too. `docs/economy/RESOURCE_ECONOMY.md` records all of
 - No WebKit run of the new journey; CI runs it in Chromium only.
 
 **Next:** Phase 2 (terraform rework), then Phase 3 (minerals and plating), each committed and pushed. Then two independent reviewers (economy/security + gameplay/performance) before merge. The build stamp (`index.html` BUILD and `?v=` cache keys, `version.json`) is bumped once at release, after Phase 3.
+
+### Checkpoint 22 — Phase 2: terraform rework (zones, water, forests, bio-flora Biomass)
+
+**Zone map (authored, deterministic; `js/conquest/world.js`).** The old noise patches (`biomeAt` terraformed blobs anywhere on the map) are gone. Terraforming now comes from the human atmosphere network and is eaten back by the Parasite blight:
+- **Sustain:** each atmosphere pylon gives `1 − d·√d` (d = distance / radius). The world takes the strongest pylon.
+
+  | Pylon | Position | Radius | Shell |
+  |---|---|---:|---|
+  | oxygen | 1196, 1112 | 185 | dome |
+  | refuge | 1194, 1214 | 160 | |
+  | base | 1072, 1216 | 175 | dome |
+  | corridor | 1004, 1122 | 132 | |
+  | crater | 960, 1158 | 158 | |
+  | valley | 898, 1238 | 152 | |
+  | reservoir | 842, 1318 | 158 | dome |
+- **Blight:** each Parasite installation (r 165) and two hive-front sources, (1290, 1200, r 140) and (1080, 835, r 150), subtract `0.95 · (1 − d)`.
+- **Zones:** lichen ≥ 0.14, grass ≥ 0.33, lush ≥ 0.55; anything else is barren. Outside x 640–1500 / z 900–1520 (the far frontier) everything stays barren.
+- **Result (8 m grid over the populated war region x 800–1400, z 715–1305):**
+  - 30.2% terraformed (owner target 30–40%): 1,203 lush, 272 grass and 223 lichen cells.
+  - Lush at the Refuge terminal, the Command Base, the ice-mining crater and the reservoir.
+  - The oxygen complex is terraformed but blight-pressed (grass and lichen edge facing the hives).
+  - Every Parasite installation and the far frontier stay barren. Blight stumps mark the war edge.
+
+**Why this shape.** Air is made by the Refuge, the oxygen station and their pylons, so green radiates from them and thins along the gradient lush → grass → lichen → barren. The hives sit north (z < 1000) and east, so the green edge is visibly bitten there. The south-west valley is the only place with a natural water path.
+
+**Water (hydrology).** The plateau has no closed basins, so water exists only where it is authored, and terrain carving is confined to the box x 750–960, z 1160–1372:
+- An **ice-mining crater** at (930, 1180) with a meltwater pool (r 8, deep) and a drilling rig.
+- A **creek** with 8 points down the real south-west valley (steepest descent). It runs in a carved channel 1.7 m deep: the core is deep and blocks hulls; the banks are shallow and slow hulls to ×0.55.
+- **Crossings (authored chokepoints):**
+  - two half-depth **fords**: `ford-upper` (920, 1231) and `ford-reservoir` (866, 1309), each r 7;
+  - the **creek bridge** on the crater-outflow span (936.5, 1197.4): an arched deck with railings.
+- The **Refuge Reservoir** (800, 1326; 36 × 40 m, deep) is held by a solid **dam** at z 1364 (x 768–834). Downstream of it is dry.
+- The water surface sits 0.4 m under the uncarved centreline. Deep water (> 1 m) stops a hull at the bank; a hull already in deep water can drive out.
+
+**Forests (cover).** Five stands with 288 trees, placed off routes:
+
+| Stand | Centre | Radius | Trees |
+|---|---|---:|---:|
+| crater | 972, 1216 | 21 | 69 |
+| valley | 878, 1222 | 17 | 45 |
+| falls | 836, 1279 | 16 | 40 |
+| base-south | 1048, 1236 | 22 | 75 |
+| refuge-south | 1132, 1246 | 20 | 59 |
+
+The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt`, `FOREST_CANOPY`). A hull at the edge can see and be seen.
+
+**Bio-flora (Biomass).**
+- **Nodes:** 24, 20 in lush and 4 in grass, all reachable from the spawn within harvest range.
+- **Harvest:** server-replayed GATHER (`harvestStep` in the 50 ms loop). Hold for 4 s, stopped within 6 m, for +3 Biomass. The node regrows 15 min per pilot.
+- **Exposure:** the channel alerts the nearest Parasite within 120 m every second.
+- **Resets:** moving, taking damage, releasing GATHER, being in an operation or a non-active battle.
+- **Points:** 80 airdrop points × the Command Base multiplier, through the Phase 1 outbox and hourly limit. It counts as the day's verified activity for the yield points; it is not a referral day.
+- **UI:**
+  - a GATHER hold button with the channel percentage (shown only on a ready node);
+  - a harvest ticker;
+  - bright, haloed ready nodes and dim, folded regrowing nodes in 3D;
+  - labels in the 2D fallback.
+- **Value:** 80 is derived by the approved §3.2 method (par 0.47 min × 225 × 75%). It is not a number the owner signed off line by line; it is flagged in RESOURCE_ECONOMY.md.
+
+**Every sector, raid, mission and route keeps working:**
+- `conquest-terraform.mjs` flood-fills real `move()` from the spawn and reaches all 49 authored operations, travel nodes and bases.
+- **World equivalence against `main`** (`world.js` at `origin/main`, the same 15,498 deterministic samples as `conquest-world-equivalence.mjs`). Every difference is intended and classified, with nothing unexplained:
+  - ground height differs at 165 points, all inside the water carve box;
+  - solid differs at 1 point (a pylon mast);
+  - blocked differs at 151 forest-canopy points, 36 carve points and 1 pylon point.
+
+  (The tool itself asserts zero differences against a baseline, so it is expected to report these intended ones.)
+- One scoping fix: the old viaduct-edge rule in `move()` matched any bridge surface in x 901–1139. It is now limited to the viaduct's z band, so hulls can leave the new creek bridge.
+
+**Visuals (Neon Frontline, `js/conquest/style.js`; presentation only, nothing here is collision):**
+- **Per fine chunk:** instanced plants (lush and grass), lichen cushions, blight stumps and ground-cover tufts.
+- **Forests:** every stand has a detailed and a far draw (same silhouette; trunk plus two canopy cones). The view switches them by camera distance: 80 m HIGH / 55 m LOW beyond the stand edge. The vendored Three build has no `THREE.LOD`, so this is a two-mesh switch.
+- **Ground flora** hides beyond 180 m (HIGH) / 150 m (LOW) from the hull per chunk; tufts hide sooner.
+- **Water:** one merged mesh and one draw, with its own cheap shader: flow bands along the creek, foam banks, sky fresnel, and sparkle on HIGH.
+- **Structures:** pylons with emitter rings and dome shells, the dam, the bridge, the crater rig with ice blocks, and ford stones.
+- **Terrain shader:** the lichen/grass/lush ramp is decoded from the vertex colour.
+- **Pre-existing bug fixed:** on `main`, the FX billboard shader multiplied a merged billboard's stored centre by `1 − aBill.z` (= 0). All 23 merged `X.bill()` glows (Refuge, viaduct, base and installation halos, HIGH only) therefore drew at their group origin. They now draw where they were authored. Reviewers: this changes those halos' look on HIGH.
+- **Visual-option agents: not used.** An approved single art direction (Neon Frontline) already exists, and the style internals are large and tightly coupled. Two option agents would have cost more than they could change. The owner made this optional.
+
+**Mobile budget, measured** (Chromium SwiftShader at 390×844, the same five spots on this branch and on `main`; relative numbers only, not iPhone performance):
+
+| Quality | This branch | `main` |
+|---|---|---|
+| HIGH | 105–186k triangles, 43–56 draws, 16 programs | 40–91k triangles, 26–53 draws, 15 programs |
+| LOW | 75–107k triangles, 37–51 draws | 38–76k triangles |
+
+- **First build was over budget:** 1.8–2.1M triangles. The flora used `G.ico` (a 320-triangle sphere) for every bud.
+- **Fixes:** 8–20-triangle gems, the forest LOD, flora distance culling, lighter pylon rings and a 50-triangle LOW plant.
+- **Locked by `conquest-style.mjs`, HIGH / LOW:**
+  - tree ≤ 520 / 260;
+  - far tree ≤ 60;
+  - plant ≤ 170 / 60;
+  - densest flora chunk ≤ 30k / 12k;
+  - terraformed world at the worst camera position over the south ≤ 100k / 50k.
+- **Extra program:** the water shader. It is compiled in the warm-up set.
+
+**Tests (local, all PASS):**
+- **New:**
+  - `dev/tests/conquest-terraform.mjs` (32 checks): zones, water, the bank stop, both fords crossed bank to bank, the bridge, ×0.55 slowdown, forest LOS/shots/canopy height, reachability, and the server harvest: 4 s exact, payment, regrow, move/release/damage/mission resets, out of range.
+  - Flora budget and LOD assertions in `conquest-style.mjs`.
+  - `dev/tests/conquest-terraform-captures.py` (390×844; HIGH, LOW and 2D):
+    - five scenes;
+    - a real GATHER hold through the shipped button: "GATHERING · 50%" mid-channel, then +3 Biomass, 80 raw points in the outbox, a 15 min regrow and the button hidden;
+    - no page errors.
+
+    Evidence is in `docs/economy/phase2/`.
+- **Re-run and PASS:**
+  - every Conquest CI suite, `conquest-regression.sh`, `wtest/conquest`, `conquest-war`, `farm`, `pvp`, `test`, `referrals`, `owner`, `accounts`, `web-auth`, `lunar-identity`, `lab`, `lab-battle`, `ticket-reliability`;
+  - the Phase 1 airdrop tests (sim 30, worker 20, browser journey);
+  - `conquest-onboarding.py` (390×844 and 360×640).
+- **CI:** `conquest-terraform.mjs` and the HIGH capture with the GATHER journey are added to `conquest-check.yml`; `docs/economy/phase2` is uploaded as an artifact.
+
+**Still unverified:**
+- PHYSICAL_IPHONE_UNVERIFIED: frame time and thermals of the new south (triangle counts are measured; frame rate on a phone is not).
+- No WebKit run.
+- Biomass pace (2–2.5 harvests a minute) is modeled from node spacing and is not measured with a scripted pilot.
+- The forest-LOD switch distance is set by eye on SwiftShader captures.
+
+**Next:** Phase 3 (minerals, deposits and scanner, Meteor Strike, Arcade/PvP drops, Hull Plating, first-plate hook).

@@ -40,6 +40,27 @@ const PYLONS=[[1121,1160.5],[1143,1160.5],[1121,1185.5],[1143,1185.5],[1099,1160
 const HASH=`float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 vec2 h22(vec2 p){vec3 p3=fract(vec3(p.xyx)*vec3(.1031,.1030,.0973));p3+=dot(p3,p3.yzx+33.33);return fract((p3.xx+p3.yz)*p3.zy);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);return mix(mix(h12(i),h12(i+vec2(1,0)),u.x),mix(h12(i+vec2(0,1)),h12(i+vec2(1,1)),u.x),u.y);}`;
+const WATER_VS=`attribute vec2 aFlow;varying vec2 vF;varying vec3 vWP;
+#include <common>
+#include <fog_pars_vertex>
+void main(){vF=aFlow;vec4 wp=modelMatrix*vec4(position,1.);vWP=wp.xyz;vec4 mvPosition=viewMatrix*wp;gl_Position=projectionMatrix*mvPosition;
+#include <fog_vertex>
+}`;
+// Cheap opaque water (one draw for creek, reservoir and crater pool): flow streaks along aFlow.x (metres downstream; 0 =
+// still water), bank foam by aFlow.y (-1..1 across / radius), a fresnel sky tint and HIGH-only glints. No reflections.
+const WATER_FS=`uniform float uTime,uHigh;uniform vec3 uRimCol;varying vec2 vF;varying vec3 vWP;
+#include <common>
+#include <fog_pars_fragment>
+void main(){float t=uTime,f=vF.x,ac=vF.y,still=1.-step(.001,abs(f));
+ float r1=mix(sin(f*.9-t*2.2+ac*1.7),sin(vWP.x*.35+vWP.z*.12+t*.6),still)*.5+.5,r2=mix(sin(f*2.3-t*3.1-ac*2.9+vWP.x*.1),sin(vWP.z*.41-vWP.x*.2-t*.8),still)*.5+.5;
+ float edge=smoothstep(.55,1.,abs(ac));vec3 col=mix(vec3(.012,.07,.1),vec3(.03,.2,.22),edge*.6+.25*r1);
+ vec3 V=normalize(cameraPosition-vWP);float fres=pow(1.-clamp(V.y,0.,1.),3.);col=mix(col,vec3(.07,.3,.42),fres*.75);
+ col+=vec3(.1,.5,.6)*smoothstep(.72,1.,r1)*(.22-still*.1);
+ col+=vec3(.35,.95,1.)*pow(max(0.,r1*r2),7.)*.7*uHigh*(1.-still*.5);
+ col+=vec3(.55,.95,1.)*smoothstep(.84,1.,abs(ac))*(.3+.4*r2)*(1.-still*.4);
+ gl_FragColor=vec4(col,1.);
+#include <fog_fragment>
+}`;
 // Site influence (friendly glow / Parasite creep) is evaluated per vertex (4 m apart near the player) and interpolated,
 // so the fragment shader never loops over the site table.
 const TERRAIN_VS=`uniform vec4 uSite[8];varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;varying vec4 vSite;
@@ -60,7 +81,7 @@ float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);retu
 float hexEdge(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r)-h;vec2 b=mod(p-h,r)-h;vec2 g=dot(a,a)<dot(b,b)?a:b;vec2 q=abs(g);return .5-max(dot(q,vec2(.5,.8660254)),q.x);}
 // Quality is a uniform (one program for HIGH and LOW, so every branch is compiled everywhere). Texture lookups stay in
 // uniform control flow (no implicit-derivative fetches inside per-pixel branches).
-void main(){vec3 c=vC;float terra=smoothstep(.03,.08,c.g-max(c.r,c.b));float massif=smoothstep(.0,.06,c.b-c.r);bool hi=uHigh>.5;
+void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float massif=smoothstep(.0,.06,c.b-c.r);bool hi=uHigh>.5;
  float lod=clamp(1.-vD/320.,0.,1.),lod2=clamp(1.-vD/1500.,0.,1.);
  vec4 d1=texture2D(uDetail,vW*(1./96.));float h1=d1.r-.5;vec2 grad=(d1.gb-.5)*.9;float rim=max(h1,0.)*1.6,bowl=max(-h1,0.)*1.5,tone=.7+.42*d1.a,na=d1.a,va=d1.a,vb=.5,st=.5;
  if(hi){vec4 d2=texture2D(uDetail,vec2(vW.y,-vW.x)*(1./29.)+.31),d3=texture2D(uDetail,vW*(1./8.7)+.67);float h2=(d2.r-.5)*lod2,h3=(d3.r-.5)*lod;
@@ -68,7 +89,10 @@ void main(){vec3 c=vC;float terra=smoothstep(.03,.08,c.g-max(c.r,c.b));float mas
   va=texture2D(uDetail,vW*(1./73.)+.13).a;vb=texture2D(uDetail,vW*(1./24.)+.71).a;st=texture2D(uDetail,vec2(vY*.032,(vW.x+vW.y)*.0018)).a;}
  vec3 rego=mix(vec3(.074,.078,.088),vec3(.055,.064,.082),massif)*tone;
  vec3 N=normalize(vN+vec3(-grad.x,0.,-grad.y));float steep=smoothstep(.3,.62,1.-N.y);
- if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));rego*=1.-.38*terra;
+ if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));
+ // Terraformed ground: lichen fringe -> grassland -> lush core, read from the vertex colour (ConquestWorld.terraformAt).
+ vec3 veg=terra<.4?mix(vec3(.06,.07,.045),vec3(.075,.095,.05),terra/.4):terra<.7?mix(vec3(.075,.095,.05),vec3(.04,.12,.055),(terra-.4)/.3):mix(vec3(.04,.12,.055),vec3(.022,.13,.085),(terra-.7)/.3);
+ rego=mix(rego,veg*(.62+.55*tone)*(1.-.25*min(bowl,1.))*(1.-.35*steep),smoothstep(.1,.35,terra));
  vec3 em=vec3(0.);if(terra>0.){float lp=smoothstep(.5,.74,na)*terra,speck=0.;if(hi)speck=step(.84,h12(floor(vW*1.6)))*lp*(1.-smoothstep(.14,.3,length(fract(vW*1.6)-.5)));em=vec3(.0,.62,.5)*(lp*.12+speck*.45)*(.45+.55*lod);}
  if(vSite.x>.002){float line=0.;if(hi){float he=hexEdge(vW/6.);line=1.-smoothstep(0.,.02+.12*(1.-lod),he);}
   float ring=smoothstep(.93,1.,fract(vSite.z/22.-uTime*.08));em+=vec3(.05,.72,1.)*(line*.15*vSite.x+ring*.13*vSite.y+.035*vSite.x);}
@@ -117,7 +141,7 @@ void main(){vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light di
 const FX_VS=`attribute vec4 aCol;attribute vec3 aBill;uniform vec3 uKind[4];varying vec4 vCol;varying vec2 vUv;
 #include <common>
 #include <fog_pars_vertex>
-void main(){vUv=uv;vCol=aCol;vec4 mvPosition=vec4(position*(1.-aBill.z),1.);float bs=length(modelMatrix[0].xyz);
+void main(){vUv=uv;vCol=aCol;vec4 mvPosition=vec4(position,1.);float bs=length(modelMatrix[0].xyz);   // a billboard's 4 corners store its centre (merged Fx) or the origin (instanced P.bill)
 #ifdef USE_INSTANCING
  mvPosition=instanceMatrix*mvPosition;bs*=length(instanceMatrix[0].xyz);float k=instanceMatrix[2].z;vCol.rgb*=k<1.5?uKind[0]:k<2.5?uKind[1]:k<3.5?uKind[2]:uKind[3];
 #endif
@@ -311,6 +335,99 @@ function create(T,opts={}){
 const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o);return keep(X.geometry());};
  const P={crystal:keep(cr.geometry()),fungus:keep(fu.geometry()),rock:keep(rk.geometry()),relay:keep(rl.geometry()),bill:billGeo(AT.BLOB,[1,1,1])};
  S.P=P;
+
+ // ---------- The terraformed south (Phase 2): engineered flora, forests, water, atmosphere pylons, dam, bridge, crater ----------
+ // Presentation only. Every position comes from ConquestWorld (terraZone, flora, forestTrees, water, pylons, floraNodes);
+ // nothing here is collision. Drive-through plants stay <= 1.5 m; only forest stands (the cover canopy) grow tall.
+ MAT.water=mk(WATER_VS,WATER_FS,{},{side:T.DoubleSide});const waterWarmGeo=keep(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute([0,0,0,1,0,0,0,0,1],3)).setAttribute('aFlow',new T.Float32BufferAttribute([0,0,1,0,0,1],2)));
+ // Flora budget: buds are 8-triangle gems (G.octa) and crowns 20-triangle gems, never the 320-triangle G.ico sphere.
+ const leafG=keep(flat(new T.OctahedronGeometry(1,0)).scale(1,.5,1).translate(0,.5,0)),gem=keep(new T.IcosahedronGeometry(1,0)),cushion=keep(blob(0,.16,11)),TP={};
+ {const stem=lin(0x1d3b33),lA=lin(0x1fa36f),lB=lin(0x2fc28a),lC=lin(0x167a5c);
+  // plant: a fan of leaf blades around a short stem with glowing bud tips (lush ground; smaller on grassland)
+  const pl=new Bld(),n=high?7:4;pl.add(high?G.hex:G.cone5,M(0,0,0,0,0,0,.08,.5,.08),stem);
+  for(let k=0;k<n;k++){const a=k/n*TAU+.3,t=.6+.4*((k*37)%5)/5;pl.add(leafG,MR(0,0,a,.12,.08,.55+.25*t,.2,.85*t+.35,.035),k%2?lA:lB);
+   if(high&&k%2===0)pl.add(G.octa,MR(0,0,a,.12+.78*t,.5*t+.25,0,.06,.06,.06),K.teal,1.5);}
+  pl.add(G.octa,M(0,.62,0,0,0,0,.1,.13,.1),K.ice,1.25);TP.plant=keep(pl.geometry());
+  // lichen fringe: a low irregular cushion with faint teal speckle
+  const li=new Bld();li.add(cushion,M(0,.04,0,0,0,0,1,.12,.8),lin(0x55603a));if(high)for(let k=0;k<3;k++)li.add(G.octa,M(Math.cos(k*2.1)*.5,.13,Math.sin(k*2.1)*.4,0,0,0,.06,.04,.06),K.teal,.9);TP.lichen=keep(li.geometry());
+  // blight-killed stump on the war edge: dark chitin with a magenta vein
+  const st=new Bld();st.add(G.hex,M(0,0,0,0,.4,0,.22,.75,.22),lin(0x1c1720));st.spike(V3(0,.7,0),V3(.18,1.15,.05),.09,lin(0x1c1720));st.seg(V3(.05,.05,.2),V3(.02,.7,.2),.035,K.mag,.9);TP.stump=keep(st.geometry());
+  // forest lumen tree (the cover canopy is 7.5 m): hex trunk, stacked canopy fans, glowing crown bud
+  const tr=new Bld(),tiers=high?4:3;tr.add(G.hex,M(0,0,0,0,0,0,.26,3.4,.26),lin(0x26332f));tr.add(G.hex,M(0,3.3,0,0,.5,0,.14,3.6,.14),lin(0x2c3d37));
+  for(let t=0;t<tiers;t++){const y=2.7+t*1.25,R=2.25-t*.42,nn=high?6:5;for(let k=0;k<nn;k++){const a=k/nn*TAU+t*.55;tr.add(leafG,MR(0,0,a,y,.15,1.2-.12*t,.62*R,R*.95,.16),t%2?lC:lA,t%2?0:.22);
+    if(high&&t%2===0)tr.add(G.octa,MR(0,0,a,y+R*.62,R*.62,0,.08,.08,.08),K.teal,1.4);}}
+  tr.add(gem,M(0,7.15,0,0,0,0,.32,.42,.32),K.ice,1.6);TP.tree=keep(tr.geometry());
+  // far LOD of the same tree (same silhouette and height): trunk, two canopy cones, crown gem
+  const tf=new Bld();tf.add(G.hex,M(0,0,0,0,0,0,.28,4.2,.28),lin(0x26332f));tf.add(G.cone6,M(0,2.5,0,0,0,0,2.1,2.9,2.1),lA);tf.add(G.cone6,M(0,4.6,0,0,.5,0,1.45,2.4,1.45),lC);tf.add(G.octa,M(0,7.15,0,0,0,0,.32,.42,.32),K.ice,1.6);TP.treeFar=keep(tf.geometry());
+  // bio-flora node: the harvestable Biomass plant. Ready: a glowing bulb; regrowing: a dim, folded bud
+  const bulb=(b,hot)=>{b.add(G.hex,M(0,0,0,0,0,0,.12,1.05,.12),stem);for(let k=0;k<4;k++)b.add(leafG,MR(0,0,k*TAU/4+.4,.05,.1,1.05,.3,.75,.04),lB);
+   b.add(gem,M(0,1.25,0,0,0,0,hot?.5:.28,hot?.62:.34,hot?.5:.28),hot?lin(0x6dffcf):lin(0x2c5a4a),hot?1.8:.15);if(hot)for(let k=0;k<3;k++)b.add(G.octa,M(Math.cos(k*2.1)*.32,1.3,Math.sin(k*2.1)*.32,0,0,0,.09,.09,.09),K.magHot,1.6);return b;};
+  TP.node=keep(bulb(new Bld(),true).geometry());TP.nodeDim=keep(bulb(new Bld(),false).geometry());
+  // ground-cover tuft (24 triangles): three slender blades that thicken lush and grass ground between the plants
+  const tu=new Bld();for(let k=0;k<3;k++)tu.add(leafG,MR(0,0,k*2.09+.4,0,.06,.32,.09,.62+.14*k,.03),k===1?lB:lA,k===1?.18:0);TP.tuft=keep(tu.geometry());}
+ S.TP=TP;
+ // Per fine chunk: the visual flora field plus the legacy scenery 'tree' items, drawn by today's terraZone (lush/grass
+ // plant, lichen cushion, a blight stump inside the war region; nothing on the far frontier). Two instanced draws at most.
+ S.flora=(cx,cz,legacy=[])=>{const ox=cx*128,oz=cz*128,g=new T.Group(),plants=[],lichen=[],stumps=[];
+  const add=(p,zone)=>{if(zone==='lush'||zone==='grass')plants.push([p,zone==='lush'?1:.62]);else if(zone==='lichen')lichen.push(p);else stumps.push(p);};
+  for(const p of root.ConquestWorld.flora(cx,cz))add(p,p.zone);
+  for(const p of legacy){if(p.x<640||p.x>1500||p.z<900||p.z>1520)continue;add(p,root.ConquestWorld.terraZone(p.x,p.z));}
+  // ground cover around each lush/grass plant (deterministic; off water and solids, on the real ground height)
+  const Wd=root.ConquestWorld,tufts=[],per=high?3:1;for(const [p,k] of plants)for(let j=0,n=k===1?per:high?1:0;j<n;j++){const h=hash3(Math.round(p.x*7),Math.round(p.z*7),j+5),a=h*TAU*3,r=1.4+2.6*((h*7.31)%1),x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r;
+   if(Math.floor(x/128)!==cx||Math.floor(z/128)!==cz||Wd.waterAt(x,z)||Wd.solidAt(x,z)||Wd.deckAt(x,z)!==null)continue;tufts.push({x,z,y:Wd.groundAt(x,z),s:(.8+.5*((h*13.7)%1))*k,a});}
+  const inst=(geo,list,fn)=>{if(!list.length)return;const im=new T.InstancedMesh(geo,MAT.solid,list.length);list.forEach((e,i)=>im.setMatrixAt(i,fn(e)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;g.add(im);};
+  inst(TP.plant,plants,([p,k])=>{const sc=Math.min(1.5/1.35,(.75+.45*p.size))*k;return M(p.x-ox,p.y-.04,p.z-oz,0,p.variant*40,0,sc,sc,sc);});
+  inst(TP.lichen,lichen,p=>M(p.x-ox,p.y-.02,p.z-oz,0,p.variant*40,0,.8+.9*p.size,1,.8+.9*p.size));
+  if(stumps.length)inst(TP.stump,stumps,p=>M(p.x-ox,p.y-.05,p.z-oz,0,p.variant*40,0,1,.8+.4*p.size,1));
+  inst(TP.tuft,tufts,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,p.s,p.s,p.s));if(tufts.length)g.userData.tufts=g.children[g.children.length-1];
+  return g;};
+ // Ground flora is <= 1.5 m: per fine chunk it is hidden beyond a distance (tufts sooner), measured from the hull.
+ const FLORA_RANGE=high?180:150,TUFT_RANGE=high?150:100;
+ S.floraCull=(chunks,p)=>{for(const c of chunks){const g=c.group.userData.flora;if(!g)continue;const d=Math.hypot(c.cx*128+64-p.x,c.cz*128+64-p.z);g.visible=d<FLORA_RANGE;if(g.userData.tufts)g.userData.tufts.visible=d<TUFT_RANGE;}};
+ // Once per view: forests, water, pylons + domes, the dam, the creek bridge, the ice-mining crater and the bio-flora nodes,
+ // in WORLD coordinates (the view moves the group by the floating origin). update(t, harvested) re-tints the nodes.
+ const FLORA_LOD=high?80:55,ringG=keep(new T.TorusGeometry(1,.065,4,high?24:16));// m beyond a forest stand's edge where its trees switch to the far LOD
+ S.terraWorld=()=>{const Wd=root.ConquestWorld,Wa=Wd.water,g=new T.Group(),Sb=new Bld(),X=new Fx(),domes=[];g.name='cq-terraformed-south';
+  // forests: per stand a detailed and a far (LOD) instanced draw; update() shows one of them by camera distance
+  const stands=Wd.forests.map(f=>{const trees=Wd.forestTrees(f),lod={f,near:null,far:null};if(!trees.length)return lod;
+   const draw=geo=>{const im=new T.InstancedMesh(geo,MAT.solid,trees.length);trees.forEach((p,i)=>{const k=p.size*.75*(p.edge?.85:1);im.setMatrixAt(i,M(p.x,p.y-.1,p.z,0,p.variant*40,0,k,k,k));});im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;g.add(im);return im;};
+   lod.near=draw(TP.tree);lod.far=draw(TP.treeFar);lod.far.visible=false;return lod;});
+  // water: creek ribbon + reservoir + crater pool, one merged geometry and one draw
+  const Pw=[],Fw=[],Iw=[];const quad=(a,b,c,d)=>Iw.push(a,b,c,a,c,d);
+  {const c=Wa.creek,pts=[];for(let i=1;i<c.length;i++){const [ax,az]=c[i-1],[bx,bz]=c[i],l=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(l/2));for(let k=i===1?0:1;k<=n;k++){const u=k/n;pts.push([ax+(bx-ax)*u,az+(bz-az)*u]);}}
+   let run=0;pts.forEach(([x,z],i)=>{const [px,pz]=pts[Math.max(0,i-1)],[nx,nz]=pts[Math.min(pts.length-1,i+1)],tx=nx-px,tz=nz-pz,l=Math.hypot(tx,tz)||1,ux=-tz/l,uz=tx/l,y=Wd.waterTopAt(x,z);if(i)run+=Math.hypot(x-px,z-pz);
+    const k=Pw.length/3;for(const s of [-1,1]){const h=Wa.half+.25;Pw.push(x+ux*h*s,y,z+uz*h*s);Fw.push(run+.001,s);}if(i)quad(k-2,k-1,k+1,k);});}
+  const disc=(x,z,rx,rz,y,clipZ=Infinity)=>{const k=Pw.length/3,n=high?48:28;Pw.push(x,y,z);Fw.push(0,0);for(let i=0;i<=n;i++){const a=i/n*TAU;Pw.push(x+Math.cos(a)*rx,y,Math.min(clipZ,z+Math.sin(a)*rz));Fw.push(0,1);}for(let i=1;i<=n;i++)Iw.push(k,k+i+1,k+i);};
+  disc(Wa.lake.x,Wa.lake.z,Wa.lake.rx+1,Wa.lake.rz+1,Wa.lake.surface,Wa.dam.z-Wa.dam.depth/2);disc(Wa.crater.x,Wa.crater.z,Wa.crater.pool+.6,Wa.crater.pool+.6,Wd.waterTopAt(Wa.crater.x,Wa.crater.z));
+  {const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(Pw,3));geo.setAttribute('aFlow',new T.Float32BufferAttribute(Fw,2));geo.setIndex(Iw);geo.computeBoundingSphere();const m=new T.Mesh(geo,MAT.water);m.userData.noPick=true;m.name='cq-water';g.add(m);}
+  // atmosphere pylons: plinth, slender mast, three emitter rings, crown; dome pylons carry a low atmosphere shell
+  for(const p of Wd.pylons){const y=ground(p.x,p.z);Sb.add(G.hex,M(p.x,y-.6,p.z,0,0,0,1.7,1.2,1.7),K.dark);Sb.add(G.hex,M(p.x,y+.55,p.z,0,0,0,1.75,.12,1.75),K.cyan,1);Sb.add(G.hex,M(p.x,y,p.z,0,0,0,.42,14,.42),K.dark2);
+   for(const h of [5,9,12.6])Sb.add(ringG,M(p.x,y+h,p.z,Math.PI/2,0,0,1.1-h*.03,1.1-h*.03,2.4),K.cyan,1.3);Sb.add(G.ico,M(p.x,y+14.4,p.z,0,0,0,.55,.55,.55),K.ice,1.8);
+   if(high)X.bill(p.x,y+14.4,p.z,4.2,AT.BLOB,E(0x5cf2ff,.6));if(p.dome)domes.push([p.x,y,p.z]);}
+  // the terraformers' dam across the reservoir outlet, with a neon crest and spillway glow
+  {const d=Wa.dam,cx=(d.x0+d.x1)/2;let lo=Infinity;for(let x=d.x0;x<=d.x1;x+=3)lo=Math.min(lo,ground(x,d.z));const top=Wa.lake.surface+1.6;
+   Sb.add(G.box,M(cx,(lo-2+top)/2,d.z,0,0,0,d.x1-d.x0,top-lo+2,d.depth),K.wall);Sb.add(G.box,M(cx,top+.08,d.z-d.depth/2+.2,0,0,0,d.x1-d.x0,.16,.3),K.cyan,1.2);
+   for(let x=d.x0+6;x<d.x1-4;x+=10)Sb.add(G.box,M(x,(lo+top)/2,d.z+d.depth/2+.05,0,0,0,.3,top-lo-.5,.1),K.dark2);if(high)X.flat(cx,Wa.lake.surface+.05,d.z-d.depth/2-1.2,(d.x1-d.x0)*.45,2.6,AT.BLOB,E(0x5cf2ff,.35));}
+  // the creek bridge: deck segments along its arch + glowing rails
+  {const b=Wd.creekBridge,n=12;for(let i=0;i<n;i++){const s0=-b.half+i*2*b.half/n,s1=s0+2*b.half/n,xa=b.x+b.ax*s0,za=b.z+b.az*s0,xb=b.x+b.ax*s1,zb=b.z+b.az*s1,ya=Wd.deckAt(xa,za)??ground(xa,za),yb=Wd.deckAt(xb,zb)??ground(xb,zb),cxm=(xa+xb)/2,czm=(za+zb)/2,ang=Math.atan2(b.ax,b.az);
+    const tilt=-Math.atan2(yb-ya,Math.hypot(xb-xa,zb-za)),len=Math.hypot(xb-xa,zb-za,yb-ya);Sb.add(G.box,MR(cxm,czm,ang,(ya+yb)/2-.22,0,tilt,b.width*2,.42,len+.04),K.dark2);
+    for(const w of [-1,1])Sb.add(G.box,MR(cxm+b.az*w*b.width,czm-b.ax*w*b.width,ang,(ya+yb)/2+.55,0,tilt,.12,.1,len),K.cyan,1.1);}}
+  // the ice-mining crater: ice blocks around the meltwater pool, a drilling rig and the outflow pipe
+  {const k=Wa.crater,y0=ground(k.x,k.z);for(let i=0;i<(high?12:8);i++){const a=i/(high?12:8)*TAU+.2,r=k.pool+2.5+(i%3);Sb.add(G.shard,M(k.x+Math.cos(a)*r,ground(k.x+Math.cos(a)*r,k.z+Math.sin(a)*r)-.2,k.z+Math.sin(a)*r,(i%2)*.3,a,0,1.1+(i%4)*.35,1.6+(i%3)*.7,1.1),K.ice,.55);}
+   const rx=k.x-k.pool-4,rz=k.z-2,ry=ground(rx,rz);for(const [a,b] of [[-1.6,-1.6],[1.6,-1.6],[1.6,1.6],[-1.6,1.6]])Sb.seg(V3(rx+a,ry,rz+b),V3(rx+a*.25,ry+8,rz+b*.25),.18,K.mid);Sb.add(G.box,M(rx,ry+8.2,rz,0,0,0,1.4,.6,1.4),K.dark2);Sb.add(G.hex,M(rx,ry,rz,0,0,0,.18,9,.18),K.cyan,1.2);
+   Sb.seg(V3(rx,ry+1,rz),V3(k.x,y0+1.2,k.z),.28,K.panelA);if(high)X.bill(rx,ry+9,rz,2.6,AT.BLOB,E(0x9ff6ff,.55));}
+  // fords: stepping stones across the creek
+  for(const f of Wa.fords)for(let i=0;i<7;i++){const a=i*2.4,r=1.2+(i%3)*1.7;Sb.add(G.rock,M(f.x+Math.cos(a)*r,ground(f.x+Math.cos(a)*r,f.z+Math.sin(a)*r)+.25,f.z+Math.sin(a)*r,0,a,0,.9,.35,.7),K.mid);}
+  g.add(Sb.mesh());if(X.n)g.add(fxMesh(X.geometry()));
+  if(domes.length){const dB=new Bld();for(const [x,y,z] of domes)dB.add(G.dome,M(x,y-.5,z,0,0,0,9,7,9),K.cyan,0);const dm=new T.Mesh(dB.geometry(),MAT.field);dm.renderOrder=3;dm.userData.noPick=true;g.add(dm);}
+  // bio-flora nodes: ready (bright, haloed) and regrowing (dim) — rebuilt only when a node changes state
+  const nodes=new T.Group();nodes.name='cq-bio-flora';g.add(nodes);let key='';
+  g.userData.lod=(cam)=>{if(!cam)return;const cx=cam.position.x-g.position.x,cz=cam.position.z-g.position.z;
+   for(const L of stands)if(L.near){const far=Math.hypot(cx-L.f.x,cz-L.f.z)-L.f.r>FLORA_LOD;L.near.visible=!far;L.far.visible=far;}};
+  g.userData.update=(harvest,now)=>{const ready=Wd.floraNodes.filter(n=>!(harvest?.[n.id]>now)),k=ready.map(n=>n.id).join();if(k===key)return;key=k;for(const c of [...nodes.children]){nodes.remove(c);if(c.isInstancedMesh)c.dispose();}
+   const dim=Wd.floraNodes.filter(n=>!ready.includes(n)),put=(geo,list)=>{if(!list.length)return;const im=new T.InstancedMesh(geo,MAT.solid,list.length);list.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)-.05,n.z,0,(n.x*.37)%TAU,0,1.25,1.25,1.25)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;nodes.add(im);};
+   put(TP.node,ready);put(TP.nodeDim,dim);if(high&&ready.length){const im=new T.InstancedMesh(P.bill,MAT.fx,ready.length);ready.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)+1.6,n.z,0,0,0,2.2,2.2,2)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.renderOrder=2;im.userData.noPick=true;nodes.add(im);}};
+  g.userData.update(null,0);return g;};
 
  // ---------- sky + lights ----------
  S.environment=(scene,renderer)=>{
@@ -587,7 +704,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  // Static groups are culled by distance (they are far apart); cheap per-frame loop.
  S.cull=(groups,p)=>{const k=software?.4:1;for(const g of groups){const s=g.userData.site;if(s)g.visible=Math.hypot(s.x-p.x,s.z-p.z)<s.range*k;}};
  // Compile every program variant once (static + instanced solid/fx, sky, terrain, shields) before play.
- S.warmObjects=()=>{const objs=[new T.Mesh(G.box,MAT.solid),new T.InstancedMesh(G.box,MAT.solid,1),new T.Mesh(P.bill,MAT.fx),new T.InstancedMesh(P.bill,MAT.fx,1),new T.Mesh(G.ico,MAT.shield),new T.Mesh(G.ico,MAT.field)];
+ S.warmObjects=()=>{const objs=[new T.Mesh(G.box,MAT.solid),new T.InstancedMesh(G.box,MAT.solid,1),new T.Mesh(P.bill,MAT.fx),new T.InstancedMesh(P.bill,MAT.fx,1),new T.Mesh(G.ico,MAT.shield),new T.Mesh(G.ico,MAT.field),new T.Mesh(waterWarmGeo,MAT.water)];
   for(const o of objs)if(o.isInstancedMesh){o.setMatrixAt(0,new T.Matrix4());o.instanceMatrix.needsUpdate=true;}return objs;};
  S.canvas={bg:'#03060c',grid:'#12303d',cover:'#3c2a46',coverEdge:'#ff4fd8',site:'#8ff6ff',hostile:'#ff4fd8',friend:'#3fe9ff',beacon:['#3fe9ff','#ffc45a'],shot:'#d8faff',enemyShot:'#ff6bd6'};
  S.dispose=()=>{for(const g of S.shared)g.dispose();for(const m of Object.values(MAT))m.dispose();tex.atlas.dispose();tex.earth.dispose();tex.detail.dispose();glowCache.clear();ringCache.clear();batteryCache=droneCache=null;S.shared.length=0;};

@@ -262,7 +262,7 @@ const DAILY_CAP=50000;   // max base points a pilot can bank per UTC day, one ca
 // Rookie. The account credit multiplies them by the league's base pay (LG_BASE_PAY, as Arcade) and pays the spendable bonus
 // (LG_MULT) on top, through ecoPlayAward: the same daily cap, boards, airdrop credit and squad bonus as a match.
 // Values = par minutes x 225 x danger (STANDARD 1, HARD 1.2, VETERAN 1.45): about Arcade's points a minute per league.
-const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,gather:{fe:100,il:140,ar:240,tq:390},hourMax:120};
+const CQ_PTS={kill:{light:35,heavy:90},field:450,raid:{HARD:900,VETERAN:1300},defense:675,strike:1075,gather:{flora:80,fe:100,il:140,ar:240,tq:390},hourMax:120};
 const CQ_BASE_MULT=[1,1.05,1.10,1.15,1.20,1.25];   // Command Base tier (none, I..V): multiplies Conquest active-play points only
 // Daily Base Yield: one full 24 h fill by Command Base tier. CP keeps the base production formula (ConquestCombat.baseProduction).
 // It fills continuously, stops when full, is collected at the physical base (from min of a fill), and its points part

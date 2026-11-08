@@ -23,6 +23,7 @@ jobs:
           node dev/tests/conquest-economy.mjs
           node dev/tests/conquest-airdrop.mjs
           node dev/tests/wtest/conquest-airdrop.mjs
+          node dev/tests/conquest-terraform.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-netcode.mjs
           node dev/tests/conquest-fast-travel.mjs
@@ -77,6 +78,7 @@ jobs:
           python dev/tests/conquest-preview.py
           CQ_EARNED_SAVE=/tmp/lunar-earned-journey.json python dev/tests/conquest-preview.py
           python dev/tests/conquest-airdrop-browser.py
+          python dev/tests/conquest-terraform-captures.py --quality high
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -87,6 +89,7 @@ jobs:
             docs/conquest-session-2
             docs/conquest-living-war/replay-current.json
             docs/economy/phase1
+            docs/economy/phase2
 
   transmission:
     runs-on: ubuntu-24.04

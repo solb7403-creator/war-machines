@@ -80,6 +80,25 @@ for(const low of [false,true]){
  const warm=S.warmObjects();assert.ok(warm.some(o=>o.isInstancedMesh&&o.material===S.MAT.solid)&&warm.some(o=>o.isInstancedMesh&&o.material===S.MAT.fx)&&warm.some(o=>o.material===S.MAT.shield),q+' warm set covers instanced and shield programs');
  const sites=CS.allSites(F,{'west-depot':{owner:'humanity'}});assert.ok(sites.length>=13&&sites.some(s=>s[3]>0&&Math.abs(s[0]-994)<1),'captured installations switch to friendly glow');
  S.update(0,1,{p:{x:1100,z:1100},origin:{x:1024,z:1024},renderer:null});assert.ok(S.U.uSite.value.filter(v=>v.z>0).length===8,'nearest 8 sites selected');
+ // Terraformed south (Phase 2): low-poly flora, per-stand far LOD, fixed materials and a bounded worst case.
+ {const TP=S.TP,tri=g=>(g.index?g.index.count:g.attributes.position.count)/3,cap={tree:low?260:520,treeFar:60,plant:low?60:170,lichen:low?30:60,stump:80,node:200,nodeDim:200,tuft:24};
+  for(const [k,max] of Object.entries(cap))assert.ok(tri(TP[k])<=max,q+' flora '+k+' triangles '+tri(TP[k])+' <= '+max);
+  const tw=S.terraWorld(),trees=W.forests.reduce((n,f)=>n+W.forestTrees(f).length,0);
+  tw.traverse(m=>{if(m.isMesh)assert.ok(allowed.has(m.material),q+' terraform only style materials: '+(m.name||m.parent?.name));});
+  const nearOn=()=>tw.children.filter(m=>m.isInstancedMesh&&m.geometry===TP.tree&&m.visible).length,farOn=()=>tw.children.filter(m=>m.isInstancedMesh&&m.geometry===TP.treeFar&&m.visible).length;
+  const cam=new T.PerspectiveCamera();tw.position.set(-1024,0,-1024);cam.position.set(972-1024,30,1216-1024);tw.userData.lod(cam);
+  assert.ok(nearOn()>=1&&farOn()>=1&&nearOn()+farOn()===W.forests.length,q+' forest LOD: the stand under the camera is detailed, distant stands draw the far tree');
+  cam.position.set(1600-1024,30,300-1024);tw.userData.lod(cam);assert.equal(nearOn(),0,q+' forest LOD: far from the south every stand draws the far tree');
+  const visTris=g=>{let n=0;g.traverse(m=>{if(m.isMesh&&m.visible)n+=tri(m.geometry)*(m.isInstancedMesh?m.count:1);});return n;};
+  let worst=0;for(let x=760;x<=1240;x+=40)for(let z=1100;z<=1380;z+=40){cam.position.set(x-1024,30,z-1024);tw.userData.lod(cam);worst=Math.max(worst,visTris(tw));}
+  assert.ok(worst<=(low?50000:100000),q+' terraform world worst camera position over the south '+worst+' triangles (all stands detailed would be '+(visTris(tw)+trees*(tri(TP.tree)-tri(TP.treeFar)))+')');
+  let flora=0;for(let cx=6;cx<=11;cx++)for(let cz=7;cz<=11;cz++)flora=Math.max(flora,tris(S.flora(cx,cz,W.scenery(cx,cz).filter(p=>p.kind==='tree'))));
+  assert.ok(flora<=(low?12000:30000),q+' densest fine chunk of ground flora '+flora+' triangles');
+  {const fg=S.flora(8,9,[]),grp=new T.Group();grp.add(fg);grp.userData.flora=fg;const ch=[{group:grp,cx:8,cz:9}];
+   S.floraCull(ch,{x:8*128+64,z:9*128+64});assert.ok(fg.visible&&(!fg.userData.tufts||fg.userData.tufts.visible),q+' ground flora drawn on the hull chunk');
+   S.floraCull(ch,{x:8*128+64+(low?125:165),z:9*128+64});assert.ok(fg.visible&&(!fg.userData.tufts||!fg.userData.tufts.visible),q+' tufts hidden first with distance');
+   S.floraCull(ch,{x:8*128+64+300,z:9*128+64});assert.ok(!fg.visible,q+' ground flora hidden on distant fine chunks');}
+  console.log('PASS',q,'terraform: tree',tri(TP.tree),'far',tri(TP.treeFar),'plant',tri(TP.plant),'world worst',worst,'densest chunk',flora,'trees',trees);}
  S.dispose();
  console.log('PASS',q,'refuge',tris(parts.refuge),'viaduct',tris(parts.viaduct),'hive',tris(parts.installs[0]),'base T5',tris(parts.base[5]),'battery',tris(parts.battery),'chunks',chunks.length);
 }

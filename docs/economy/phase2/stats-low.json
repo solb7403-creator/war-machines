@@ -1,0 +1,33 @@
+{
+ "quality": "low",
+ "viewport": "390x844",
+ "renderer": "Chromium SwiftShader (relative only)",
+ "shots": {
+  "crater-bridge": {
+   "draws": 46,
+   "tris": 102580,
+   "programs": 16
+  },
+  "forest-creek": {
+   "draws": 43,
+   "tris": 99428,
+   "programs": 16
+  },
+  "reservoir-dam": {
+   "draws": 37,
+   "tris": 74802,
+   "programs": 16
+  },
+  "lush-core-pylon": {
+   "draws": 51,
+   "tris": 107116,
+   "programs": 16
+  },
+  "blight-edge-oxygen": {
+   "draws": 50,
+   "tris": 79002,
+   "programs": 16
+  }
+ },
+ "pageErrors": []
+}

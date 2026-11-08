@@ -1,9 +1,9 @@
 // Server-owned deterministic input replay; never accepts client outcomes or positions.
 import {campaign,baseAction,BASE_ACTIONS,capture,defenseOutcome,contest,failedContest,beginContest,restoreContest,sectorDefenseOutcome} from './conquest-campaign.js';
 import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js';
-import {CONQUEST} from './sim.gen.js';
+import {CONQUEST,RULES} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
-import {played,settleOpKills,discardOpKills} from './conquest-airdrop.js';
+import {played,settleOpKills,discardOpKills,earn} from './conquest-airdrop.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
 // Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
 // catch up instead of discarding earned time and diverging; 40 steps per request drains that backlog at the normal 1 Hz cadence.
@@ -12,12 +12,12 @@ const record=v=>v&&typeof v==='object'&&!Array.isArray(v),fail=m=>{throw Error('
 const list=v=>Array.isArray(v)?v:v&&typeof v==='object'?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]):[];
 export function validateCommands(input){
  if(!Array.isArray(input)||input.length<1||input.length>MAX_FRAMES)fail('invalid batch');
- return input.map(c=>{if(!record(c)||Object.keys(c).some(k=>!['x','z','aimYaw','aimPitch','fire','tapFire','lockId','super','dash','shield'].includes(k)))fail('invalid command');
+ return input.map(c=>{if(!record(c)||Object.keys(c).some(k=>!['x','z','aimYaw','aimPitch','fire','tapFire','lockId','super','dash','shield','gather'].includes(k)))fail('invalid command');
  if(!Number.isFinite(c.x)||!Number.isFinite(c.z)||Math.hypot(c.x,c.z)>1.000001)fail('invalid movement');
- for(const k of ['fire','tapFire','super','dash','shield'])if(own(c,k)&&typeof c[k]!=='boolean')fail('invalid ability');
+ for(const k of ['fire','tapFire','super','dash','shield','gather'])if(own(c,k)&&typeof c[k]!=='boolean')fail('invalid ability');
  if(own(c,'aimYaw')&&!Number.isFinite(c.aimYaw)||own(c,'aimPitch')&&(!Number.isFinite(c.aimPitch)||c.aimPitch<-.4||c.aimPitch>.5))fail('invalid aim');
  if(c.lockId!=null&&(!Number.isSafeInteger(c.lockId)||c.lockId<1||c.lockId>1e9))fail('invalid target');
- return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield};});
+ return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather};});
 }
 export function createState(loadout,now){
  if(!Number.isSafeInteger(now)||now<0)fail('invalid server clock');const position={x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'},B=new C.Encounter(loadout,position);K.ensure(B);
@@ -64,6 +64,7 @@ export function applyCommands(previous,request,now){
  if(B.playerHp<hpBefore){s.lastHitAt=now;s.quietMs=0;}else if(s.lastHitAt)s.quietMs=Math.min(60000,(s.quietMs||0)+STEP_MS);if(s.recall){if(B.playerHp<hpBefore||s.mission||B.playerHp<=0){delete s.recall;s.notice={kind:'recall-broken'};}else if((s.recall.simMs=(s.recall.simMs||0)+STEP_MS)>=C.RECALL.channelMs)completeRecall(s,B,now);}
  if(!s.mission&&s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<18){const hangar=s.base.modules.hangar||0;if(hangar&&B.playerHp>0)B.playerHp=Math.min(B.playerMax,B.playerHp+B.playerMax*.002*hangar);s.hp=B.playerHp;}
  const wanted=running?Math.hypot(input.x,input.z):0,moved=Math.hypot(old.x-s.position.x,old.z-s.position.z);s.stuckMs=wanted>.1&&moved<B.combatSpeed*.05*.15?(s.stuckMs||0)+STEP_MS:wanted>.1?0:s.stuckMs||0;
+ harvestStep(s,B,input,moved,B.playerHp<hpBefore,now);
  if(s.hp>0){const last=s.safe.at(-1);if((!last||Math.hypot(last.x-s.position.x,last.z-s.position.z)>=8)&&footing(s,s.position)){s.safe.push({...s.position});s.safe=s.safe.slice(-10);}for(const e of B.enemies)if(e.hp<=0)killLoot(s,e,now);pickups(s,now);}
  if(s.hp<=0){delete s.recall;death(s,now);break;}
  }
@@ -73,6 +74,18 @@ export function applyCommands(previous,request,now){
  cosmetics(s,now);
  s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);return s;
 }
+// Harvesting bio-flora (the main Biomass source): hold GATHER while stationary within reach of a ready node. Simulated time
+// only; any damage, movement or release resets the channel. The channel's noise draws nearby Parasites. Each node then
+// regrows for this pilot. Biomass goes to cargo (banked like salvage; half is exposed on death).
+const harvestReady=(s,n,now)=>!(s.harvest?.[n.id]>now);
+export function harvestStep(s,B,input,moved,hit,now){const H=W.HARVEST;
+ if(!input.gather||s.mission||B.playerHp<=0||moved>.05||hit||B.state!=='active'){if(s.channel)delete s.channel;return;}
+ const node=W.floraNodes.find(n=>Math.hypot(n.x-s.position.x,n.z-s.position.z)<=H.radius&&harvestReady(s,n,now));if(!node){if(s.channel)delete s.channel;return;}
+ const ch=s.channel?.node===node.id?s.channel:(s.channel={node:node.id,ms:0});ch.ms+=STEP_MS;
+ if(ch.ms%1000===0){const e=B.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<H.noiseRadius).sort((a,b)=>Math.hypot(a.x-s.position.x,a.z-s.position.z)-Math.hypot(b.x-s.position.x,b.z-s.position.z))[0];if(e)B.alert?.(e);}
+ if(ch.ms<H.channelMs)return;delete s.channel;s.harvest=s.harvest||{};s.harvest[node.id]=now+H.respawnMs;
+ s.ledger.cargo.biomass+=H.biomass;s.daily.biomass+=H.biomass;const ptsRaw=earn(s,'gather',RULES.CQ_PTS.gather.flora,now,{act:true});
+ s.notice={kind:'harvest',node:node.id,biomass:H.biomass,ptsRaw};}
 export const TRAVEL_ACTIONS=['fast-travel','recall-start','recall-cancel'];
 // The channel completes inside verified command replay once 15 s of simulated play pass without damage.
 function completeRecall(s,B,now){const node=C.travelNodes(s.territory,s.base?.tier||0).find(n=>n.id==='base'),blocked=p=>K.baseBlocked({...B,baseTier:s.base?.tier||0},p),cooldown=s.recall.cooldownMs;if(!node){delete s.recall;return;}

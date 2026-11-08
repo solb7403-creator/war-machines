@@ -1,0 +1,23 @@
+{
+ "quality": "2d",
+ "viewport": "390x844",
+ "renderer": "Chromium SwiftShader (relative only)",
+ "shots": {
+  "crater-bridge": {
+   "canvas2d": true
+  },
+  "forest-creek": {
+   "canvas2d": true
+  },
+  "reservoir-dam": {
+   "canvas2d": true
+  },
+  "lush-core-pylon": {
+   "canvas2d": true
+  },
+  "blight-edge-oxygen": {
+   "canvas2d": true
+  }
+ },
+ "pageErrors": []
+}

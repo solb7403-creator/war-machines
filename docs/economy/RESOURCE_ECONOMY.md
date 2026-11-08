@@ -1,6 +1,6 @@
 # LUNAR: War Machines — Resource Economy (master spec)
 
-**Status: APPROVED v1 (owner sign-off 2026-11-08; decisions in §0 and §12). Phase 1 is being implemented; nothing else here is live yet.** Payments and checkout stay disabled. Airdrop boards stay tracking-only (`AIRDROP.dist=false`): nothing here promises tokens.
+**Status: APPROVED v1 (owner sign-off 2026-11-08; decisions in §0 and §12). Phases 1 and 2 are implemented on branch `claude/friendly-allen-7tcyca` (not yet released); Phase 3 is next.** Payments and checkout stay disabled. Airdrop boards stay tracking-only (`AIRDROP.dist=false`): nothing here promises tokens.
 
 This is the one economy document for:
 - this session (airdrop points, terraform/biomass, minerals and hull plating);
@@ -158,6 +158,9 @@ Conquest uses the pilot's current league. That league is gear rating × form, th
 | Defense victory (Command Base or sector) | 675 | 2.5 |
 | Meteor Strike secured | 1,075 | 4.0 |
 | Harvest: Ferrite / Ilmenite / Armalcolite / Tranquillityite | 100 / 140 / 240 / 390 | 0.6 / 0.85 / 1.2 / 1.6 |
+| Harvest: bio-flora node (Phase 2, Biomass) | 80 | 0.47 |
+
+The bio-flora value was not in the signed-off table. It is set by the same approved method: a 4 s channel plus about 20 s of travel between nodes is 0.47 par minutes × 225 × 75% (harvest) ≈ 80. That is about 200 base points a minute while gathering, below the 225 Arcade-matched rate.
 
 **Never pays points:**
 - driving or exploring on its own;
@@ -285,7 +288,11 @@ Current values from the code: `worker/src/conquest-economy.js` and `js/conquest/
 | **Total ladder** | **93,530** | **4,220** | **2,592** | **382** |
 
 **Changes in this session:**
-- **Biomass (Phase 2):** harvestable flora nodes in the terraformed zones become the main Biomass source. Kill Biomass stays.
+- **Biomass (Phase 2, as built):** 24 bio-flora nodes in the terraformed zones (20 lush, 4 grassland) are now the main Biomass source. Kill and mission Biomass stay.
+  - Stop within 6 m and hold GATHER for 4 s: +3 Biomass into cargo. It is banked like all cargo; on death, half of the carried cargo (rounded down) drops into the recoverable wreck, as before.
+  - Each node regrows 15 min after a pilot harvests it (per pilot).
+  - The channel alerts the nearest Parasite within 120 m every second. Moving, taking damage, releasing GATHER or starting an operation resets it.
+  - Pace: about 2–2.5 harvests a minute of gathering (travel-bound), so 6–7.5 Biomass a minute against 2.5 a minute from a replayed field mission. The ladder total (2,592) is unchanged, and CP still binds the ladder, so Biomass does not shorten progression.
 - **Alloy:** sources are unchanged until the base refinery exists.
 - **Helium-3:** unchanged.
 - **CP numbers:** unchanged. Only the base claim timing changes (3.2).
@@ -616,6 +623,13 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
   - `dev/tests/conquest-airdrop-browser.py` (Chromium 390 journey).
 
   All three run in CI.
+
+**Phase 2 as built (terraform rework; same branch):**
+- `js/conquest/world.js`: authored terraform zones (`terraformAt`, `terraZone`, `blightAt`, `TERRA`), atmosphere `pylons`, `blightSources`, the water system (`water`, `waterAt`, `waterTopAt`, `creekBridge`), `forests` / `forestAt` / `FOREST_CANOPY`, `floraNodes` and `HARVEST`. The zone map and its reasoning are in `docs/conquest/IMPLEMENTATION_CHECKPOINT.md` (Checkpoint 22, Phase 2).
+- `CQ_PTS.gather.flora` (80) in `js/rules.js`; `harvestStep` in `worker/src/conquest-sim.js` (server-replayed, in the 50 ms step loop). A harvest is `earn('gather', 80, {act:true})`: it counts toward the day's verified activity for the Daily Base Yield points part, not as a referral play day (only operations do that).
+- The bio-flora points go through the Phase 1 outbox and the 120-outcomes-an-hour limit like every other outcome.
+- Tests: `dev/tests/conquest-terraform.mjs` (32 checks: zones, water, crossings, forests, reachability, harvest) and the flora budgets in `dev/tests/conquest-style.mjs`; `dev/tests/conquest-terraform-captures.py` runs a real 390 GATHER journey in the browser. All run in CI.
+- Record: `conquest/<pid>`: `harvest` {nodeId: regrowsAt} and `channel` {node, ms} (additive; Phase 2).
 
 **Records (additive; old records get defaults; nothing is reset):**
 - `eco/<pid>`:

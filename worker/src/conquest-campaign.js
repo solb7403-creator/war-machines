@@ -35,9 +35,9 @@ export function baseAction(s,r,now){
  else if(r.action==='base-module'){if(!Object.prototype.hasOwnProperty.call(D.modules,r.module))throw Error('conquest: invalid module');const tier=b.modules[r.module]||0;if(b.pending||tier>=Math.min(3,b.tier))throw Error('conquest: module busy or tier locked');debit(s,D.moduleCosts[tier]);b.pending={module:r.module,tier:tier+1,readyAt:now+D.buildSeconds[tier]*1000};}
  else if(r.action==='base-claim'){
   // Daily Base Yield: CP + materials (banked straight into the base) and airdrop points, each clock filling over 24 h.
-  // Collect from 10% of a fill. The points part needs the day's first verified operation; until then it keeps filling.
+  // Collect from 10% of a fill. The points part needs the day's first verified activity (operation or harvest); until then it keeps filling.
   const Y=CONQUEST.Combat.baseYield(b,s.reputation,now),goods=Y.fill>=Y.min,points=Y.pts>0&&Y.pointsFill>=Y.min&&activeToday(s,now);
-  if(!goods&&!points)throw Error('conquest: production yield fills over 24 hours: '+Math.floor(Y.fill*100)+'% now, collect from '+Math.round(Y.min*100)+'%'+(Y.pointsFill>=Y.min&&!activeToday(s,now)?' (points need one operation today)':''));
+  if(!goods&&!points)throw Error('conquest: production yield fills over 24 hours: '+Math.floor(Y.fill*100)+'% now, collect from '+Math.round(Y.min*100)+'%'+(Y.pointsFill>=Y.min&&!activeToday(s,now)?' (points need one operation or harvest today)':''));
   const got={cp:0,alloy:0,biomass:0,helium:0,ptsRaw:0};
   if(goods){got.cp=Y.cp;s.ledger.cp+=Y.cp;for(const k of ['alloy','biomass','helium']){got[k]=Y[k];s.ledger.banked[k]+=Y[k];}b.claimedAt=now;}
   if(points){got.ptsRaw=earn(s,'yield',Y.pts,now,{flat:true});b.pointsAt=now;}
