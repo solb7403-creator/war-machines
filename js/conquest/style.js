@@ -813,6 +813,11 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
     for(const s of [-1,1])Sb.box(alongX?cx:cx+s*2.42,y+4.1,alongX?cz+s*2.42:cz,alongX?len-.4:.06,.12,alongX?.06:len-.4,K.cyan,1);
     const n=Math.floor(len/4);for(let i=1;i<n;i++){const t=-len/2+i*len/n;Sb.box(alongX?cx+t:cx,y+2.6,alongX?cz:cz+t,alongX?.16:4.5,3.7,alongX?4.5:.16,K.dark2);}};
    wall(-17,-.5,35,false);wall(17,-.5,35,false);wall(0,16,29.6,true);
+   // Session 5: the fortress front is the COMMAND GATE into the pilot's private base plot. Armored arch on the corner towers'
+   // inner faces (render only, outside the drive lane), lit portal field and gate sign; tanks drive under it.
+   for(const s of [-1,1]){Sb.box(s*13.4,y+5,-18.6,1.6,10,2.2,K.dark,0,0,[y,9]);Sb.box(s*12.55,y+5,-18.6,.12,9.4,1.4,K.cyan,1.1);}
+   Sb.box(0,y+10.4,-18.6,28.4,1.4,2.6,K.dark2);Sb.box(0,y+9.6,-17.25,26.4,.14,.12,K.cyan,1.2);Sb.box(0,y+11.2,-18.6,8,.6,2.8,K.wall);
+   X.quadV(0,y+10.4,-19.95,9.6,1.3,0,AT[SIGN.COMMAND]||AT.ICON,E(0x22e6ff,1.7));if(!low)X.quadV(0,y+4.8,-18.6,24.6,9.4,0,AT.BLOB,E(0x22e6ff,.16));
    for(const [x,z] of [[-17,-17.5],[17,-17.5]]){Sb.box(x,y+3,z,6.4,6,1.6,K.dark2,0,0,[y,5]);Sb.box(x,y+6.1,z,6.6,.25,1.8,K.cyan,1);X.bill(x,y+6.4,z,1.6,AT.BLOB,E(0x22e6ff,.9));}
    Sb.box(10,y+4,12,.6,8,.6,K.mid);Sb.box(10,y+8.2,12,.9,.4,.9,K.cyan,1);X.quadV(13.2,y+7,11.6,5,1.25,0,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));
    if(opt.veteran){Sb.add(G.cone6,M(-12,y+.3,10,0,0,0,1.2,5,1.2),K.gold,.7);Sb.box(-12,y+.5,10,3,1,3,K.dark2);X.bill(-12,y+5.4,10,1.6,AT.BLOB,E(0xffd36b,.9));}}

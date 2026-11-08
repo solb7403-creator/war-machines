@@ -1,0 +1,48 @@
+{
+ "journey": {
+  "gateLabel": "ENTER BASE",
+  "sites": 4,
+  "coach1": "STEP 1 \u00b7 BUILD A REFINERY: it turns salvage into alloy. Tap BUILD.",
+  "coach2": "STEP 2 \u00b7 PLACE A CANNON TURRET: your first defense.",
+  "refineryMs": 15000,
+  "wallPlan": "7 SECTIONS \u00b7 35 CP + 14 FERRITE",
+  "walls": 7,
+  "drill": "BREACHED \u00b7 11/14 PARASITES DOWN \u00b7 0 STRUCTURES LOST \u00b7 COMMAND CENTER 0%",
+  "noRewards": true,
+  "left": true,
+  "render": {
+   "calls": 13,
+   "triangles": 15778,
+   "programs": 16
+  },
+  "pageErrors": []
+ },
+ "cc10-high": {
+  "render": {
+   "calls": 55,
+   "triangles": 47400,
+   "programs": 16
+  },
+  "buildings": 33,
+  "walls": 100,
+  "cc": 10,
+  "power": 7716,
+  "pageErrors": []
+ },
+ "cc10-low": {
+  "render": {
+   "calls": 55,
+   "triangles": 47060,
+   "programs": 16
+  },
+  "buildings": 33,
+  "walls": 100,
+  "cc": 10,
+  "power": 7716,
+  "pageErrors": []
+ },
+ "2d": {
+  "plotDrawn": true,
+  "pageErrors": []
+ }
+}

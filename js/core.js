@@ -293,6 +293,13 @@ function respecBuild(){
   fx('buy');showToast('Build cleared. +'+fmtNum(r.back)+' points back');return true;
  });
 }
+// Conquest base stores (Session 5): move wallet minerals into the base for walls and late Command Center levels. One way.
+function baseStore(mn){
+ return when(ecoRun('bstore',{m:mn},S=>ecoBaseStore(S,mn)),r=>{
+  if(ecoErr(r))return false;
+  fx('buy');showToast('Moved to your base stores: '+Object.entries(r.moved||{}).map(([k,n])=>n+' '+MINERALS[k].s).join(', '));return true;
+ });
+}
 function fabPlate(slot,tier){
  return when(ecoRun('plate',{k:slot,t:tier},S=>ecoPlate(S,slot,tier)),r=>{
   if(ecoErr(r))return false;

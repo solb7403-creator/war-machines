@@ -26,6 +26,8 @@ jobs:
           node dev/tests/conquest-terraform.mjs
           node dev/tests/conquest-minerals.mjs
           node dev/tests/conquest-vein-economy.mjs
+          node dev/tests/conquest-plot.mjs
+          node dev/tests/conquest-base-progression.mjs
           node dev/tests/wtest/hull-plating.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-netcode.mjs
@@ -83,6 +85,7 @@ jobs:
           python dev/tests/conquest-airdrop-browser.py
           python dev/tests/conquest-terraform-captures.py --quality high
           python dev/tests/conquest-minerals-browser.py
+          python dev/tests/conquest-base-builder.py
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -95,6 +98,7 @@ jobs:
             docs/economy/phase1
             docs/economy/phase2
             docs/economy/phase3
+            docs/conquest/session5
 
   transmission:
     runs-on: ubuntu-24.04

@@ -30,18 +30,18 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
  const accent=l=>l>=5?C.gold:l>=3?C.teal:C.cyan;
  // A building at the local origin, footprint centred, facing +z; every level visibly changes it.
  function building(type,l,theme){const b=new S.Bld(),fin=theme?.finish==='sand'?C.sand:theme?.finish==='graphite'?C.dark:C.steel,s=P.sizeOf(type),W=s.w*P.GRID.cell,D=s.d*P.GRID.cell,L=Math.max(1,l),a=accent(L),hw=W/2,hd=D/2;
-  const pad=()=>{b.box(0,.15,0,W-.4,.3,D-.4,C.dark2);b.box(0,.32,hd-.5,W-.6,.05,.12,a,1);};
+  const pad=()=>{b.box(0,.15,0,W-.4,.3,D-.4,C.dark2);b.box(0,.32,hd-.35,W-.8,.05,.08,a,.7);};
   switch(type){
-   case 'cc':{pad();let y=.3;const tiers=Math.min(10,L);for(let k=0;k<tiers;k++){const r=6.6-k*.48,h=1.5+(k%2)*.5;b.add(G.oct,M(0,y,0,0,k*.2,0,r,h,r),k%2?C.mid:fin);b.add(G.oct,M(0,y+h,0,0,k*.2,0,r*1.02,.12,r*1.02),a,1);y+=h;}
-    b.add(G.cyl,M(0,y,0,0,0,0,.25,6+L*.4,.25),C.panel);b.box(0,y+6.4+L*.4,0,.7,.7,.7,L>=9?C.gold:C.ice,1.6);if(L>=5)for(const sx of [-1,1])for(const sz of [-1,1]){b.box(sx*5.6,2.2,sz*5.6,1.6,4.4+L*.25,1.6,C.dark);b.box(sx*5.6,4.5+L*.25,sz*5.6,1.8,.2,1.8,a,1);}
+   case 'cc':{pad();let y=.3;const tiers=Math.min(10,L);for(let k=0;k<tiers;k++){const r=6.6-k*.48,h=1.5+(k%2)*.5;b.add(G.oct,M(0,y,0,0,k*.2,0,r,h,r),k%2?C.mid:fin);b.add(G.torus,M(0,y+h,0,Math.PI/2,0,0,r*.98,r*.98,r*.98),a,.8);y+=h;}
+    b.add(G.cyl,M(0,y,0,0,0,0,.25,6+L*.4,.25),C.panel);b.box(0,y+6.2+L*.4,0,.7,.7,.7,L>=9?C.gold:C.ice,1.6);if(L>=5)for(const sx of [-1,1])for(const sz of [-1,1]){b.box(sx*5.6,2.2,sz*5.6,1.6,4.4+L*.25,1.6,C.dark);b.box(sx*5.6,4.5+L*.25,sz*5.6,1.8,.2,1.8,a,1);}
     if(L>=9){b.add(G.torus,M(0,y+2,0,Math.PI/2,0,0,4.2,4.2,4.2),C.gold,1.2);}break;}
    case 'refinery':{pad();b.box(-hw*.35,2.2,-hd*.2,W*.5,4.4,D*.55,fin);b.box(-hw*.35,4.5,-hd*.2,W*.52,.25,D*.57,C.roof);
     b.add(G.cyl,M(hw*.42,0,-hd*.35,0,0,0,1.5,6+L*.8,1.5),C.mid);b.add(G.cyl,M(hw*.42,5.8+L*.8,-hd*.35,0,0,0,1.65,.3,1.65),a,1);b.add(G.cyl,M(hw*.42,2,-hd*.35,0,0,0,1.55,.6,1.55),C.furnace,1.5);
     b.box(hw*.12,1.1,hd*.25,1,.25,D*.5,C.dark);b.box(hw*.12,1.25,hd*.25,.8,.06,D*.5,C.amber,.6);b.box(-hw*.2,1.6,hd*.62,2.2,2.2,1.6,C.rust);   // conveyor + ore hopper
     if(L>=2)b.add(G.cyl,M(-hw*.75,0,hd*.45,0,0,0,.6,4+L,.6),C.dark);if(L>=3)b.add(G.cyl,M(hw*.42,0,hd*.1,0,0,0,1.1,4+L*.6,1.1),C.mid);if(L>=4)b.box(-hw*.35,5,-hd*.2,W*.3,1.2,D*.3,C.panel);if(L>=5)b.add(G.cyl,M(hw*.42,0,hd*.42,0,0,0,.9,8,.9),C.gold,.3);break;}
-   case 'storage':{pad();for(let k=0;k<Math.min(5,L)+1;k++){const x=-hw+1.8+(k%3)*3.6,z=-hd+2+Math.floor(k/3)*4.5;b.add(G.cyl,M(x,.3,z,0,0,0,1.4,2.6+L*.4,1.4),k%2?fin:C.mid);b.add(G.cyl,M(x,2.9+L*.4,z,0,0,0,1.45,.15,1.45),a,1);}
+   case 'storage':{pad();for(let k=0;k<Math.min(5,L)+1;k++){const x=-hw+1.8+(k%3)*3.6,z=-hd+2+Math.floor(k/3)*4.5;b.add(G.cyl,M(x,.3,z,0,0,0,1.4,2.6+L*.4,1.4),k%2?fin:C.mid);b.add(G.torus,M(x,2.95+L*.4,z,Math.PI/2,0,0,1.42,1.42,1.42),a,.7);}
     for(let k=0;k<3+L;k++)b.box(-hw+1+(k%4)*1.6,.7+Math.floor(k/4)*.9,hd-1.4,1.3,.85,1.3,k%2?C.rust:C.sand);break;}
-   case 'reactor':{pad();b.add(G.cyl,M(0,.3,0,0,0,0,3.6,3+L*.6,3.6),C.dark);const top=3.3+L*.6;for(let k=0;k<L+1;k++)b.add(G.torus,M(0,1+k*(top-1)/(L+1),0,Math.PI/2,0,0,3.75,3.75,3.75),C.cyan,1.6);b.add(G.ico,M(0,top+.8,0,0,0,0,1.3,1.3,1.3),C.ice,2);
+   case 'reactor':{pad();b.add(G.cyl,M(0,.3,0,0,0,0,3.6,3+L*.6,3.6),C.dark);const top=3.3+L*.6;for(let k=0;k<L+1;k++)b.add(G.torus,M(0,1+k*(top-1)/(L+1),0,Math.PI/2,0,0,3.75,3.75,3.75),C.cyan,1.1);b.add(G.ico,M(0,top+.8,0,0,0,0,1.3,1.3,1.3),C.ice,2);
     if(L>=3)for(const sx of [-1,1])b.add(G.cyl,M(sx*(hw-1.4),.3,-hd+1.4,0,0,0,1,4+L*.5,1),fin);break;}
    case 'biodome':{pad();b.add(G.hex,M(0,.3,0,0,0,0,hw-.4,.8,hd-.4),C.dark2);const R=Math.min(hw,hd)-.8,h=2.4+L*.7;for(let k=0;k<8;k++){const ang=k/8*Math.PI*2;b.add(G.box,M(Math.cos(ang)*R*.5,1.1+h*.45,Math.sin(ang)*R*.5,0,-ang,Math.PI/2-.9,.12,R*1.25,.12),C.panel);}
     b.add(G.ico,M(0,1.1,0,0,0,0,R*.98,h,R*.98),C.glass,.18);for(let k=0;k<4+L*2;k++){const ang=k*2.4,r=(k%3+1)*R*.22;b.add(G.cone6,M(Math.cos(ang)*r,1.1,Math.sin(ang)*r,0,ang,0,.5,.8+L*.35+(k%2)*.4,.5),k%2?C.plant:C.moss,.25);}break;}
@@ -54,11 +54,11 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
    case 'uplink':{pad();const h=6+L*1.6;for(const sx of [-1,1])for(const sz of [-1,1])b.seg(new T.Vector3(sx*1.4,.3,sz*1.4),new T.Vector3(sx*.25,h,sz*.25),.12,C.panel);for(let k=1;k<4;k++)b.box(0,h*k/4,0,2.8*(1-k/4)+.3,.08,.08,C.mid);b.box(0,h+.3,0,.35,.6,.35,C.red,2);break;}
    case 'trophy':{pad();b.box(0,2.2,-hd*.2,W-1.4,4.4,D*.55,C.dark2);b.add(G.cone5,M(0,4.4,-hd*.2,0,Math.PI/4,0,W*.5,1.6,D*.4),C.gold,.2);for(let k=0;k<3+L*2;k++){const x=-hw+1.4+(k%5)*((W-2.8)/4),z=hd-1.8+Math.floor(k/5)*-1.2;b.box(x,.7,z,.8,.8,.8,C.dark);b.add(G.octa,M(x,1.5,z,0,k,0,.3,.4,.3),k%3?C.gold:C.ice,1.4);}break;}
    case 'gate':{b.box(0,1.8,0,3.8,3.6,3.8,C.dark);b.box(0,1.6,1.95,2.4,3,.1,C.amber,.8);b.box(0,3.65,0,4,.15,4,C.cyan,1);break;}
-   default:{if(P.BUILDINGS[type]?.turret){b.add(G.hex,M(0,0,0,0,0,0,1.6,.6,1.6),C.dark2);b.add(G.cyl,M(0,.6,0,0,0,0,.9,.6+L*.15,.9),fin);b.add(G.hex,M(0,1.2+L*.15,0,0,0,0,1.66,.08,1.66),a,1);}}}
+   default:{if(P.BUILDINGS[type]?.turret){b.add(G.hex,M(0,0,0,0,0,0,1.6,.6,1.6),C.dark2);b.add(G.cyl,M(0,.6,0,0,0,0,.9,.6+L*.15,.9),fin);b.add(G.torus,M(0,1.25+L*.15,0,Math.PI/2,0,0,.95,.95,.95),a,.7);}}}
   return b;}
  // The rotating head of turrets (and the radar dish): a separate small mesh so it can aim.
  function head(type,l){const b=new S.Bld(),L=Math.max(1,l),a=accent(L);
-  if(type==='cannon'){b.box(0,0,0,1.4,.9,1.6,C.mid);b.add(G.cyl,M(0,.15,.6,Math.PI/2,0,0,.18,2.2+L*.2,.18),C.dark);b.box(0,.5,0,1.1,.1,1.1,a,1);}
+  if(type==='cannon'){b.box(0,0,0,1.4,.9,1.6,C.mid);b.add(G.cyl,M(0,.15,.6,Math.PI/2,0,0,.18,2.2+L*.2,.18),C.dark);b.box(0,.48,-.79,1,.1,.04,a,.9);}
   else if(type==='laser'){b.add(G.ico,M(0,.2,0,0,0,0,.75,.75,.75),C.dark);b.add(G.cyl,M(0,.2,.4,Math.PI/2,0,0,.28,1.4,.28),C.panel);b.box(0,.2,1.85,.32,.32,.1,C.cyan,2.2);}
   else if(type==='missile'){b.box(0,.3,0,1.6,1,1.4,C.mid);for(let k=0;k<4;k++)b.box(-.4+(k%2)*.8,.1+Math.floor(k/2)*.45,.72,.35,.35,.12,C.red,1);}
   else if(type==='mortar'){b.add(G.cyl,M(0,0,0,-.7,0,0,.45,1.8+L*.15,.45),C.dark);b.add(G.cyl,M(0,0,0,0,0,0,.7,.4,.7),C.mid);}
@@ -71,11 +71,13 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
   for(const [dx,dz] of nb)b.box(x+dx*2,h*.45,z+dz*2,dx?.8:3.2,h*.9,dz?.8:3.2,col,em);}
  function person(){const b=new S.Bld();b.box(0,.55,0,.35,.7,.25,C.amber);b.box(0,1.08,0,.24,.26,.24,C.panelB);return b.geometry();}
  function rover(){const b=new S.Bld();b.box(0,.6,0,1.2,.5,2,C.sand);b.box(0,1,-.3,.9,.4,.9,C.dark2);for(const sx of [-1,1])for(const sz of [-.7,.7])b.add(G.cylC,M(sx*.7,.35,sz,0,0,Math.PI/2,.35,.25,.35),C.dark);b.box(0,1.25,-.3,.2,.1,.2,C.cyan,1.5);return b.geometry();}
- function foe(kind){const b=new S.Bld();if(kind==='d'){b.add(G.blob1,M(0,0,0,0,0,0,.8,.35,.8),K.chitin);b.box(0,0,0,2,.06,.25,K.mag,1.4);}else{const s=kind==='s'?1.6:1;b.add(G.blob1,M(0,s*.7,0,0,0,0,s,s*.7,s*1.3),K.chitin);b.box(0,s*.9,s*1.1,s*.5,s*.15,.15,K.mag,1.6);}return b.geometry();}
+ function foe(kind){const b=new S.Bld();if(kind==='d'){b.add(G.blob1,M(0,0,0,0,0,0,1.3,.55,1.3),K.chitin);b.box(0,0,0,3.4,.1,.4,K.mag,2.2);b.add(G.octa,M(0,.5,0,0,0,0,.4,.4,.4),K.magHot,2.4);}else{const s=kind==='s'?2.6:1.7;b.add(G.blob1,M(0,s*.7,0,0,0,0,s,s*.7,s*1.3),K.chitin);b.box(0,s*.95,s*1.15,s*.6,s*.18,.18,K.mag,2.4);b.add(G.octa,M(0,s*1.6,0,0,0,0,.35*s,.45*s,.35*s),K.magHot,2.2);}return b.geometry();}
  return {T,M,C,building,head,wallCell,person,rover,foe,lin};}
 
 // ------------------------------------------------------------------- scene ---------------------------------------------
 function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConquestCanvas)return null;const k=kit(S),sc=new T.Scene();sc.background=new T.Color(0x05070d);sc.fog=new T.Fog(0x06070f,240,900);
+ // The same light counts as the world scene (hemi + sun + rim): the style programs are shared, no new program variants.
+ const lights=[new T.HemisphereLight(0x3a5a9c,0x16131f,1.5),new T.DirectionalLight(0xe4ecff,2.9),new T.DirectionalLight(0x52c6ff,1.25)];lights[1].position.set(200,400,150);lights[2].position.set(-300,200,-200);sc.add(...lights);
  const cam=new T.PerspectiveCamera(50,1,.5,1600);const g={terrain:new T.Group(),build:new T.Group(),walls:new T.Group(),holo:new T.Group(),grid:new T.Group(),fx:new T.Group(),actors:new T.Group()};for(const v of Object.values(g))sc.add(v);
  const crewN=S.low?6:12,crew=new T.InstancedMesh(k.person(),S.MAT.solid,crewN),rovers=new T.InstancedMesh(k.rover(),S.MAT.solid,S.low?2:3);crew.frustumCulled=rovers.frustumCulled=false;g.actors.add(crew,rovers);
  const foes={r:new T.InstancedMesh(k.foe('r'),S.MAT.solid,48),s:new T.InstancedMesh(k.foe('s'),S.MAT.solid,24),d:new T.InstancedMesh(k.foe('d'),S.MAT.solid,24)};for(const m of Object.values(foes)){m.count=0;m.frustumCulled=false;g.actors.add(m);}
@@ -93,7 +95,7 @@ function terrainMesh(R,site){const {S,T,k}=R,b=new S.Bld(),n=P.GRID.n,c=P.GRID.c
  for(const L of P.SITES[site].lanes){const bb=new S.Bld(),x=P.cellX(L.i),z=P.cellZ(L.j);bb.box(x,.06,z,L.j===0||L.j===n-1?L.w*c:2,.05,L.j===0||L.j===n-1?2:L.w*c,k.C.red,.9);R.g.terrain.add(bb.mesh());}
  const m=b.mesh();R.g.terrain.add(m);
  const earth=new S.Bld();earth.add(S.G.ico,k.M(-500,260,-900,0,0,0,90,90,90),new T.Color(.06,.16,.34),.9);earth.add(S.G.ico,k.M(-520,276,-880,0,0,0,62,62,62),new T.Color(.12,.24,.12),.5);R.g.terrain.add(earth.mesh());}
-function gridMesh(R,site){const {S}=R,X=new S.Fx(),n=P.GRID.n,c=P.GRID.cell,half=n*c/2,ring=S.AT.SOLID||S.AT.BLOB;for(let i=0;i<=n;i++){const v=-half+i*c;X.flat(v,.12,0,.05,half,ring,[.05,.28,.34],0);X.flat(0,.12,v,half,.05,ring,[.05,.28,.34],0);}
+function gridMesh(R,site){const {S}=R,X=new S.Fx(),n=P.GRID.n,c=P.GRID.cell,half=n*c/2,ring=S.AT.SOLID||S.AT.BLOB;for(let i=0;i<=n;i++){const v=-half+i*c;X.flat(v,.12,0,.04,half,ring,[.02,.1,.13],0);X.flat(0,.12,v,half,.04,ring,[.02,.1,.13],0);}
  for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(P.BLOCKED[P.terrainAt(site,i,j)]&&Math.abs(P.heightAt(site,P.cellX(i),P.cellZ(j)))<3)X.flat(P.cellX(i),.14,P.cellZ(j),c*.42,c*.42,ring,[.16,.03,.05],0);R.g.grid.add(X.mesh());}
 function holoMesh(R,cellsList,ok,ring){const {S}=R,X=new S.Fx(),c=P.GRID.cell,col=ok?[.1,.9,.45]:[1,.18,.22],reg=S.AT.SOLID||S.AT.BLOB;
  for(const [i,j] of cellsList){const x=P.cellX(i),z=P.cellZ(j);X.flat(x,.2,z,c*.47,c*.47,reg,col.map(v=>v*.35),0);for(const [dx,dz,w,d] of [[0,-c/2,c/2,.06],[0,c/2,c/2,.06],[-c/2,0,.06,c/2],[c/2,0,.06,c/2]])X.flat(x+dx,.24,z+dz,w,d,reg,col,0);}
@@ -101,7 +103,7 @@ function holoMesh(R,cellsList,ok,ring){const {S}=R,X=new S.Fx(),c=P.GRID.cell,co
 
 // ------------------------------------------------------------------- open / close --------------------------------------
 function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>view.authority?.state;
- const d=el('section','cq-dialog cq-plot',null,panel);d.setAttribute('role','dialog');d.setAttribute('aria-label','Command Base plot');
+ panel.classList.add('cq-in-plot');const d=el('section','cq-dialog cq-plot',null,panel);d.setAttribute('role','dialog');d.setAttribute('aria-label','Command Base plot');
  X={ctx,d,mode:'view',sel:null,place:null,wall:null,cam:{x:0,z:6,dist:150,tilt:.95,yaw:0},drill:null,clock:0,lastKey:'',busy:false};
  const top=el('div','cq-plot-top',null,d),title=el('div','cq-plot-title','',top);top.append(button('LEAVE BASE',()=>close(),'cq-plot-leave'));X.title=title;
  X.stage=el('div','cq-plot-stage',null,d);X.coach=el('p','cq-plot-coach','',d);X.coach.setAttribute('role','status');
@@ -109,7 +111,7 @@ function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>vie
  const s=st();if(!s?.base?.tier){sitePicker();return;}
  X.R=scene3d(view);if(!X.R){X.cv=el('canvas','cq-plot-canvas',null,X.stage);}
  input();render();}
-function close(){if(!X)return;const R=X.R;if(R){R.sc.traverse(o=>{if(o.isMesh||o.isInstancedMesh){o.geometry?.userData?.hfShared||o.geometry?.dispose?.();}});}X.d.remove();X=null;}
+function close(){if(!X)return;X.ctx.panel.classList.remove('cq-in-plot');const R=X.R;if(R){R.sc.traverse(o=>{if(o.isMesh||o.isInstancedMesh){o.geometry?.userData?.hfShared||o.geometry?.dispose?.();}});}X.d.remove();X=null;}
 function isOpen(){return !!X;}
 const say=t=>{if(X){X.msg.textContent=t;X.msgAt=Date.now();}};
 async function act(action,plot,label){if(!X||X.busy)return false;X.busy=true;say(label||'SENDING ORDER…');try{const ok=await X.ctx.view.requestAction(action,plot===undefined?{}:{plot});say(ok?(label?label.replace('…',' ✓'):'DONE'):(X?.ctx.view.authority?.error||'Online verification required.').replace(/^conquest: /,'').toUpperCase());if(ok&&X){X.place=null;X.wall=null;X.sel=action==='plot-remove'?null:X.sel;}render();return ok;}finally{if(X)X.busy=false;}}
@@ -135,7 +137,7 @@ function render(){if(!X||!X.ctx.view.authority?.state?.plot)return;const {el,but
 const romanOf=n=>['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n]||String(n);
 function resLine(el,parent,s,p){const L=s.ledger,st=p.st||{},bm=(typeof save!=='undefined'&&save.bmn)||s.airdrop?.view?.bmn||{},sp=p.mnSpent||{},stores=P.MNS.filter(k=>(bm[k]||0)-(sp[k]||0)>0).map(k=>((bm[k]||0)-(sp[k]||0))+' '+LABEL[k]).join(' · ');
  el('p','cq-plot-res','BANKED · '+fmt(L.cp)+' CP · '+fmt(L.banked.alloy)+' ALLOY · '+fmt(L.banked.biomass)+' BIOMASS · '+fmt(L.banked.helium)+' HELIUM-3',parent);el('p','cq-plot-res','BASE STORES · '+(stores||'empty (walls use minerals from here)'),parent);return {st,stores};}
-function viewTab(body,s,p,L,now){const {el,button}=X.ctx;const {st}=resLine(el,body,s,p);const c=P.caps(p),r=P.rates(p);
+function viewTab(body,s,p,L,now){const {el,button}=X.ctx;resLine(el,body,s,p);const c=P.caps(p),r=P.rates(p),st=P.accrue(JSON.parse(JSON.stringify(p)),now);   // live preview of the Worker's accrual
  const prod=el('div','cq-plot-prod',null,body);el('b','','PRODUCTION · stops when the Storage Depot is full',prod);el('span','',['alloy','biomass','helium','fe'].filter(k=>r[k]>0||st[k]>0).map(k=>Math.floor(st[k]||0)+'/'+c[k]+' '+LABEL[k]+' (+'+(Math.round(r[k]*100)/100)+'/h)').join(' · ')||'Build a Refinery, Biodome or Helium Extractor to produce.',prod);
  if(['alloy','biomass','helium','fe'].some(k=>(st[k]||0)>=1))prod.append(button('COLLECT PRODUCTION',()=>act('plot-collect',{},'COLLECTING…'),'cq-plot-primary'));
  const sel=X.sel&&p.b[X.sel];if(sel){selCard(body,s,p,X.sel,sel);}else el('p','cq-plot-hint','Tap a building to upgrade, move or inspect it. Drag to pan, pinch to zoom.',body);
@@ -164,7 +166,7 @@ function storesShort(s,p,cost){const bm=(typeof save!=='undefined'&&save.bmn)||{
 async function moveStores(mn){if(typeof baseStore!=='function'){say('UPDATE THE GAME TO MOVE MINERALS');return;}say('MOVING MINERALS FROM YOUR WALLET…');const ok=await baseStore(mn);say(ok?'MINERALS IN BASE STORES':'NOT MOVED');render();}
 function drillTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A simulated Parasite attack on your own layout ('+P.SITES[p.site].lanes.length+' approach lanes). Watch your defenses work. Drills never pay rewards.',body);
  const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…'))startReplay();},'cq-plot-primary');b.disabled=!!X.drill||wait>0;body.append(b);
- if(X.drillResult){const r=X.drillResult;el('b','cq-plot-result '+r.outcome,(r.outcome==='breached'?'BREACHED':r.outcome==='repelled'?'REPELLED':'HELD')+' · '+r.kills+'/'+r.spawned+' PARASITES DOWN · '+r.lost+' STRUCTURES LOST · COMMAND CENTER '+r.core+'%',body);}
+ if(X.drillResult){const r=X.drillResult;el('b','cq-plot-result '+r.outcome,(r.outcome==='breached'?'BREACHED':r.outcome==='repelled'?'REPELLED':'HELD')+' · '+r.kills+'/'+r.spawned+' PARASITES DOWN · '+r.lost+' STRUCTURES LOST · COMMAND CENTER '+r.core+'%',body);if(r.outcome==='breached')el('small','','TIP · Parasites enter at the red lane markers. Turrets and walls across those lanes hold them; Shield Generators soften the damage.',body);}
  const log=el('details','cq-map-fold',null,body);el('summary','','BASE LOG · '+(p.log||[]).length+' DRILLS',log);for(const e of p.log||[])el('p','',new Date(e.at).toLocaleString()+' · '+e.outcome.toUpperCase()+' · '+e.kills+'/'+e.spawned+' · '+e.lost+' lost · CC '+e.core+'%',log);}
 
 // ------------------------------------------------------------------- scene sync / frame -------------------------------
@@ -189,20 +191,23 @@ function sync(){const R=X?.R,s=X?.ctx.view.authority?.state,p=s?.plot;if(!p)retu
  if(X.sel&&p.b[X.sel]){const b=p.b[X.sel],B=P.BUILDINGS[b.t];g.holo.add(holoMesh(R,P.cells(b),true,B?.turret?{x:P.cellX(b.i),z:P.cellZ(b.j),r:B.turret.range*P.SITES[p.site].range*(1+.04*(b.l-1))}:null));}}
 function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;if(s?.plot){const key=JSON.stringify([s.plot.b,s.plot.w,s.plot.job,s.plot.cc,s.plot.site,s.plot.st&&Math.floor((s.plot.st.alloy||0)+(s.plot.st.biomass||0)),s.ledger?.cp,(s.plot.log||[]).length]);if(key!==X.lastKey||Date.now()-(X.lastUi||0)>1000){X.lastKey=key;X.lastUi=Date.now();if(!X.d.contains(document.activeElement)||document.activeElement===document.body)render();else{X.title&&(X.title.textContent=X.title.textContent);sync();}}}
  if(X.msgAt&&Date.now()-X.msgAt>5000){X.msg.textContent='';X.msgAt=0;}
+ // The world waits while you build, so nothing else talks to the Worker: when the builder's time is up, re-open the session
+ // (the Worker settles the job on its own clock) at most every 3 s.
+ const job=s?.plot?.job,au=X.ctx.view.authority;if(job&&Date.now()>job.ready+250&&!X.syncing&&Date.now()-(X.syncAt||0)>3000&&au&&!X.busy){X.syncing=true;X.syncAt=Date.now();au.connect().finally(()=>{if(X)X.syncing=false;});}
  const R=X.R;if(!R){if(X.drill)drillStep(dt);draw2d();return;}const {view}=X.ctx,T=R.T,c=X.cam,host=view.host;
  const w=host.clientWidth||390,h=host.clientHeight||844;if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
  const tilt=X.mode==='view'||X.mode==='drill'?Math.min(c.tilt,1.05):1.38,dist=c.dist;R.cam.position.set(c.x+Math.sin(c.yaw)*Math.cos(tilt)*dist,Math.sin(tilt)*dist,c.z+Math.cos(c.yaw)*Math.cos(tilt)*dist);R.cam.lookAt(c.x,0,c.z);
  for(const o of R.heads){const hd=o.userData.head;hd.rotation.y=hd.userData.aim??(X.clock*(o.userData.radar?1:.4))%(Math.PI*2);}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  crewStep(R,s?.plot);if(X.drill)drillStep(dt);
- R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer;r.render(R.sc,R.cam);X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
+ R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer;r.render(R.sc,R.cam);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
 // crew walk between buildings, rovers drive the lanes (presentation)
 function crewStep(R,p){if(!p)return;const T=R.T,mt=R._m||(R._m=new T.Matrix4()),bs=Object.values(p.b).filter(b=>b.l>0||b.t==='cc');if(!bs.length)return;const pos=b=>[P.cellX(b.i)+2,P.cellZ(b.j)+2];
  for(let n=0;n<R.crew.count;n++){const a=bs[n%bs.length],b=bs[(n*7+3)%bs.length],[x0,z0]=pos(a),[x1,z1]=pos(b),L=Math.hypot(x1-x0,z1-z0)||1,ph=((X.clock*1.3+n*11)%(2*L))/L,f=ph>1?2-ph:ph,x=x0+(x1-x0)*f+(n%3-1)*1.2,z=z0+(z1-z0)*f+5;mt.makeRotationY(Math.atan2(x1-x0,z1-z0)+(ph>1?Math.PI:0));mt.setPosition(x,0,z);R.crew.setMatrixAt(n,mt);}
  R.crew.instanceMatrix.needsUpdate=true;const lanes=P.SITES[p.site].lanes;for(let n=0;n<R.rovers.count;n++){const L=lanes[n%lanes.length],t=((X.clock*.05+n*.33)%1),x=P.cellX(L.i)*(1-t)+6*t,z=P.cellZ(L.j)*(1-t)+6*t;mt.makeRotationY(Math.atan2(6-P.cellX(L.i),6-P.cellZ(L.j)));mt.setPosition(x,0,z);R.rovers.setMatrixAt(n,mt);}R.rovers.instanceMatrix.needsUpdate=true;}
 
 // ------------------------------------------------------------------- Defense Drill replay -----------------------------
-function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e)return;const r=P.drill(p,e.seed);X.drill={r,t:0,fi:0,ei:0,shots:[]};X.drillResult=null;X.mode='drill';X.cam.dist=Math.min(X.cam.dist,170);render();}
+function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e)return;const r=P.drill(p,e.seed);X.drill={r,t:0,fi:0,ei:0,shots:[]};X.drillResult=null;X.mode='drill';X.cam.dist=210;X.cam.x=0;X.cam.z=8;render();}
 function drillStep(dt){const D=X.drill,R=X.R;D.t+=dt*1.6;const fr=D.r.frames;while(D.fi<fr.length-1&&fr[D.fi+1].t<=D.t)D.fi++;const a=fr[D.fi],b=fr[Math.min(fr.length-1,D.fi+1)],f=b.t>a.t?Math.max(0,Math.min(1,(D.t-a.t)/(b.t-a.t))):0;
  const bm=new Map(b.f.map(q=>[q[0],q]));D.now=a.f.map(q=>{const n=bm.get(q[0]);return n?[q[0],q[1],q[2]+(n[2]-q[2])*f,q[3]+(n[3]-q[3])*f]:q;});D.dmg=new Map(a.s);
  const ev=D.r.events;while(D.ei<ev.length&&ev[D.ei].t<=D.t){const e=ev[D.ei++];if(e.k==='shot')D.shots.push({...e,life:.25});}D.shots=D.shots.filter(x=>(x.life-=dt)>0);
