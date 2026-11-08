@@ -134,7 +134,8 @@ async function act(action,plot,label){if(!X||X.busy)return false;X.busy=true;say
 function sitePicker(){const {el,button,view}=X.ctx,s=view.authority?.state,D=root.ConquestCombat.baseDefinition,L=s?.ledger;X.title.textContent='CLAIM YOUR BASE PLOT';X.stage.className='cq-plot-stage cq-plot-sites';
  el('p','cq-plot-intro','Your own private plot. Pick its site; it shapes your economy and your defense. You can change it once for free.',X.stage);let pick='ridge';const cards=[];
  for(const id of P.SITE_IDS){const S=P.SITES[id],c=button('',()=>{pick=id;cards.forEach(x=>x.classList.toggle('on',x.dataset.site===id));},'cq-site-card');c.dataset.site=id;el('b','',S.name,c);el('small','',S.bonus,c);if(id===pick)c.classList.add('on');cards.push(c);X.stage.append(c);}
- const need=Object.entries(D.recipe).map(([k,n])=>Math.min(n,k==='cp'?L?.cp||0:L?.banked?.[k]||0)+'/'+n+' '+LABEL[k]).join(' · ');el('p','cq-plot-need',need,X.sheet);
+ const need=s?.dev?.on?'DEV MODE · UNLIMITED · the claim costs nothing':Object.entries(D.recipe).map(([k,n])=>Math.min(n,k==='cp'?L?.cp||0:L?.banked?.[k]||0)+'/'+n+' '+LABEL[k]).join(' · ');el('p','cq-plot-need',need,X.sheet);
+ if(ownerUI()){const on=!!s?.dev?.on,box=el('div','cq-plot-dev',null,X.sheet);el('b','',on?'DEV MODE · UNLIMITED RESOURCES':'DEV MODE · OFF',box);el('small','','Owner only. Turning it on makes this a test record: no Conquest airdrop points, no rankings.',box);box.append(button(on?'TURN OFF':'TURN ON UNLIMITED',async()=>{if(X.busy)return;X.busy=true;let ok=false;try{ok=await view.requestAction(on?'dev-off':'dev-on');}finally{if(X)X.busy=false;}if(!X)return;if(!ok){say((view.authority?.error||'').replace(/^conquest: /,'').toUpperCase()||'ONLINE REQUIRED');return;}const ctx=X.ctx;close();open(ctx);},'cq-plot-primary'));}
  X.sheet.append(button('CLAIM PLOT · '+price(D.recipe),async()=>{if(await act('build-base',undefined,'CLAIMING…')){}},'cq-plot-primary'));
  const claim=X.sheet.lastChild;claim.onclick=async()=>{if(X.busy)return;X.busy=true;try{const ok=await view.requestAction('build-base',{plot:{site:pick}});if(!X)return;if(!ok){say((view.authority?.error||'').replace(/^conquest: /,'').toUpperCase()||'ONLINE REQUIRED');return;}const ctx=X.ctx;close();open(ctx);say('PLOT CLAIMED · '+P.SITES[pick].name);}finally{if(X)X.busy=false;}};}
 
@@ -142,10 +143,10 @@ function sitePicker(){const {el,button,view}=X.ctx,s=view.authority?.state,D=roo
 function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.state?.plot)return;const {el,button,view}=X.ctx,s=view.authority.state,p=s.plot,L=s.ledger,now=Date.now(),sh=X.sheet;
  // keep what the pilot had open (closed sections, scroll) across a re-render; a designer in progress is only rebuilt by a state change
  const openNow=new Set([...sh.querySelectorAll('details[open]>summary')].map(x=>x.textContent)),scroll=sh.scrollTop;if(sh.childNodes.length)X.openFolds=openNow;
- X.title.textContent='COMMAND BASE · '+P.SITES[p.site].name+' · CC'+p.cc+' · ⚡'+P.powerUse(p)+'/'+P.powerSupply(p)+' · POWER '+fmt(p.power||P.power(p));
+ X.title.textContent='MY BASE · '+P.SITES[p.site].name+' · CC'+p.cc+' · ⚡'+P.powerUse(p)+'/'+P.powerSupply(p)+' · POWER '+fmt(p.power||P.power(p));
  const g=guideStep(p,s),ct=g?g.text:'';if(X.coach.textContent!==ct)X.coach.textContent=ct;X.coach.hidden=!g;
  sh.replaceChildren();X.dyn=null;const tabs=el('div','cq-plot-tabs',null,sh);for(const [m,lab] of [['view','BASE'],['build','BUILD'],['walls','WALLS'],['drill','DRILL']]){const b=button(lab,()=>{X.mode=m;X.place=null;X.wall=null;X.sel=null;render();},X.mode===m?'on':'');b.setAttribute('aria-pressed',String(X.mode===m));tabs.append(b);}
- const body=el('div','cq-plot-body',null,sh);
+ const body=el('div','cq-plot-body',null,sh);devBar(body,s,p);
  const job=p.job;if(job){const B=job.t==='cc'?{n:'Command Center'}:P.BUILDINGS[job.t],left=job.ready-now,box=el('div','cq-plot-job',null,body);el('b','','BUILDER · '+B.n.toUpperCase()+' '+romanOf(job.l)+' · '+dur(left),box);const pr=el('progress','',null,box);pr.max=1;pr.value=Math.max(0,Math.min(1,1-left/Math.max(1,job.ready-job.at)));
   el('small','','SECOND BUILDER and SPEED-UPS: store items, unavailable until payments are certified.',box);}
  if(X.mode==='view')viewTab(body,s,p,L,now);else if(X.mode==='build')buildTab(body,s,p,L);else if(X.mode==='walls')wallTab(body,s,p);else drillTab(body,s,p);
@@ -157,7 +158,14 @@ function tickUi(){if(!X||X.visit)return;const s=X.ctx.view.authority?.state,p=s?
  const pe=X.sheet.querySelector('.cq-plot-prod span');if(pe){const st=P.accrue({...p,st:{...(p.st||{})}},now),c=P.caps(p),r=P.rates(p);pe.textContent=['alloy','biomass','helium','fe'].filter(k=>r[k]>0||st[k]>0).map(k=>Math.floor(st[k]||0)+'/'+c[k]+' '+LABEL[k]+' (+'+(Math.round(r[k]*100)/100)+'/h)').join(' · ')||pe.textContent;}
  const dr=[...X.sheet.querySelectorAll('.cq-plot-primary')].find(b=>/CREWS RESET/.test(b.textContent));if(dr){const w=Math.max(0,(p.drillAt||0)+60000-now);if(w>0)dr.textContent='CREWS RESET · '+dur(w);else render();}}
 const romanOf=n=>['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n]||String(n);
-function resLine(el,parent,s,p){const L=s.ledger,st=p.st||{},bm=(typeof save!=='undefined'&&save.bmn)||s.airdrop?.view?.bmn||{},sp=p.mnSpent||{},stores=P.MNS.filter(k=>(bm[k]||0)-(sp[k]||0)>0).map(k=>((bm[k]||0)-(sp[k]||0))+' '+LABEL[k]).join(' · ');
+// Owner dev mode (owner only, server-verified; conquest.js DEV_ACTIONS): unlimited resources and instant builds for testing.
+const ownerUI=()=>typeof isOwnerUI==='function'&&isOwnerUI();
+function devBar(body,s,p){if(!ownerUI())return;const {el,button}=X.ctx,on=!!s.dev?.on,box=el('div','cq-plot-dev',null,body);
+ el('b','',on?'DEV MODE · UNLIMITED RESOURCES':'DEV MODE · OFF',box);
+ el('small','',on?'Owner only. Builds, upgrades, walls and site changes cost nothing. This account earns no Conquest airdrop points and is never ranked.':'Owner only. Unlimited resources to build and test your base. Turning it on makes this a test record: no Conquest airdrop points, no rankings.',box);
+ const row=el('div','cq-plot-dev-row',null,box);row.append(button(on?'TURN OFF':'TURN ON UNLIMITED',()=>act(on?'dev-off':'dev-on',undefined,on?'DEV MODE OFF…':'UNLIMITED ON…'),'cq-plot-primary'));
+ if(on&&p.job)row.append(button('FINISH BUILD NOW',()=>act('dev-finish',undefined,'FINISHING…'),'cq-plot-primary'));}
+function resLine(el,parent,s,p){if(s.dev?.on){el('p','cq-plot-res cq-plot-dev-res','BANKED · ∞ UNLIMITED (DEV MODE)',parent);return {st:p.st||{},stores:'∞'};}const L=s.ledger,st=p.st||{},bm=(typeof save!=='undefined'&&save.bmn)||s.airdrop?.view?.bmn||{},sp=p.mnSpent||{},stores=P.MNS.filter(k=>(bm[k]||0)-(sp[k]||0)>0).map(k=>((bm[k]||0)-(sp[k]||0))+' '+LABEL[k]).join(' · ');
  el('p','cq-plot-res','BANKED · '+fmt(L.cp)+' CP · '+fmt(L.banked.alloy)+' ALLOY · '+fmt(L.banked.biomass)+' BIOMASS · '+fmt(L.banked.helium)+' HELIUM-3',parent);el('p','cq-plot-res','BASE STORES · '+(stores||'empty (walls use minerals from here)'),parent);return {st,stores};}
 function viewTab(body,s,p,L,now){const {el,button}=X.ctx;resLine(el,body,s,p);const c=P.caps(p),r=P.rates(p),st=P.accrue({...p,st:{...(p.st||{})}},now);   // live preview of the Worker's accrual (accrue only writes st)
  const prod=el('div','cq-plot-prod',null,body);el('b','','PRODUCTION · stops when the Storage Depot is full',prod);el('span','',['alloy','biomass','helium','fe'].filter(k=>r[k]>0||st[k]>0).map(k=>Math.floor(st[k]||0)+'/'+c[k]+' '+LABEL[k]+' (+'+(Math.round(r[k]*100)/100)+'/h)').join(' · ')||'Build a Refinery, Biodome or Helium Extractor to produce.',prod);
@@ -188,7 +196,7 @@ function wallTab(body,s,p){const {el,button}=X.ctx;const tiers=P.WALLS.map((w,t)
   const ok=button('BUILD WALL',()=>act('plot-wall',{cells:X.wall.cells,tier:X.tier},'BUILDING WALL…'),'cq-plot-primary');ok.disabled=!!err;r2.append(button('CANCEL',()=>{X.wall=null;render();}),ok);
   const short=storesShort(s,p,cost);if(short)r2.append(button('MOVE '+price(short)+' TO BASE STORES',()=>moveStores(short)));
   r2.append(button('REMOVE THESE',()=>act('plot-remove',{cells:X.wall.cells},'REMOVING…'),'cq-plot-danger'));}}
-function storesShort(s,p,cost){const bm=(typeof save!=='undefined'&&save.bmn)||{},sp=p.mnSpent||{},o={};for(const k of P.MNS)if(cost[k]){const have=(bm[k]||0)-(sp[k]||0);if(have<cost[k])o[k]=cost[k]-have;}return Object.keys(o).length?o:null;}
+function storesShort(s,p,cost){if(s?.dev?.on)return null;const bm=(typeof save!=='undefined'&&save.bmn)||{},sp=p.mnSpent||{},o={};for(const k of P.MNS)if(cost[k]){const have=(bm[k]||0)-(sp[k]||0);if(have<cost[k])o[k]=cost[k]-have;}return Object.keys(o).length?o:null;}
 async function moveStores(mn){if(typeof baseStore!=='function'){say('UPDATE THE GAME TO MOVE MINERALS');return;}say('MOVING MINERALS FROM YOUR WALLET…');const ok=await baseStore(mn);say(ok?'MINERALS IN BASE STORES':'NOT MOVED');render();}
 function drillTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A simulated Parasite attack on your own layout ('+P.SITES[p.site].lanes.length+' approach lanes). Watch your defenses work. Drills never pay rewards.',body);
  const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…'))startReplay();},'cq-plot-primary');b.disabled=!!X.drill||wait>0;body.append(b);

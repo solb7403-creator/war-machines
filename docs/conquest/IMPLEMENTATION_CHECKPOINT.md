@@ -1090,3 +1090,26 @@ No blocker and no way to mint or duplicate CP, materials, minerals, points, base
 - Desktop keyboard driving (owner report, ROADMAP fix queue) is not addressed in this session.
 
 **Next:** the owner's phone playtest (below), then Session 6 (tank mods + Science Lab research + audio/weather) with the desktop keyboard fix from the ROADMAP fix queue.
+
+## Checkpoint 25 — Find My Base + owner dev mode (branch `claude/find-my-base`, from main `d8e4cf8`) — owner-approved, release pre-approved
+
+Owner report on the Session 5 live build (Nov 8): "I have no idea how and where to find my base. That's supposed to be a key part of this mode, so it should be very straightforward." Plus: "give my dev account unlimited resources so I can fully test out the base." Both approved for build + ship in the same message.
+
+### What was actually wrong (measured, not guessed)
+- From the Refuge (where every pilot starts and respawns), the HUD arrow's "towers block direct travel · circle east" rule pointed **east, away from the base** for any route target, including the base.
+- Straight-line steering to the gate: **28 of 108** start points within 450 m arrived (node, real `move()` rules). The gate is walled (open on its east side) and a settler building sits on the straight line from the Refuge.
+- Four names for one thing (COMMAND BASE 0 beacon, PERSONAL COMMAND BASE, COMMAND GATE on the map, MY BASE/YOUR BASE in the hub); the map used ⌂ for both the base and the SETTLER TOWN; the only in-world route button sat inside MORE; ENTER BASE appeared only inside an 18 m circle.
+
+### Fix
+- `ConquestWorld.route/routeAim/routeClear` (`js/conquest/world.js`): grid A* (4 m) over the same `move()` rules plus a 0.5 m solid check (no corner cutting) and a wall-clearance cost; edge results cached; bounded box + 15k expansion cap; null → old straight arrow. The HUD arrow (`app.js` `homeAim`) follows it for base and Refuge routes, re-routing when the pilot strays 10 m or is stuck 3 s. The towers rule now applies only to northbound targets. Result: **100 of 108** starts arrive by arrow alone (`dev/tests/conquest-home-route.mjs`, floor 85%); route p50 16 ms / p95 192 ms in node (cached afterwards).
+- A permanent gold **⌂ MY BASE** HUD button with live distance (`myBase()`): in the zone → opens the plot or claim screen; base built → fast travel home (lands at the gate, plot opens); no base yet and >300 m away → fast travel to the Refuge next door, then the route; otherwise → route + arrow + beacon. Same action from MORE, the map's route row, the hub's MY BASE, and tapping the gold ⌂ on the map.
+- First visits: the button pulses and a one-time ticker says where the gate is. The mission arrow is never taken over (new pilots still get "hold the Oxygen Line").
+- Arrival zone `baseDefinition.radius` 18 → 30 m (shared with the Worker's gate checks). Arriving (driving in, fast travel, RECALL) opens the plot/claim screen by itself; a session that starts inside the zone does not.
+- One name: MY BASE (nav, beacon label, map label `MY BASE · CLAIM HERE` / `MY BASE · CCn`, legend "My base", menus, RECALL notices, plot title, hub). Settler town glyph ⌂ → ■. The base map marker is the one big pulsing marker. Hub "NO BASE YET" card says the gate is next to the Refuge, about 90 m west.
+- Server error strings are unchanged (tests match them).
+
+### Owner dev mode (owner only)
+- `worker/src/conquest.js` DEV_ACTIONS `dev-on` / `dev-off` / `dev-finish`: only `OWNER_PID` (`ln_6392735208728`) re-verified by `isOwner` (pinned Telegram admin + linked account) on every request; everyone else 403. While ON, every Conquest action is checked against an unlimited balance (1e9 CP/materials, 9e6 base-store minerals; `mnOf` ignores ≥1e7) and nothing is deducted; gains (bank, collect, production) are kept. FINISH BUILD NOW completes the builder job.
+- Once ever ON (`dev.used`), the record is a test record: `earn()` returns 0 (no Conquest airdrop points, no verified play days) and `publishBase` keeps it off the top 20 and Base of the Week (removes it if present). Minerals, the account wallet and the account are never minted.
+- UI: a magenta DEV MODE box on the plot screen and the claim screen, only when `isOwnerUI()` (same condition as the owner gem tool).
+

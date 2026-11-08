@@ -25,6 +25,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 
 ## Fix queue (owner reports; schedule into the next session that fits)
 
+- **Find My Base (owner, Nov 8): FIXED** in Checkpoint 25 (`claude/find-my-base`): drivable HUD route home, gold ⌂ MY BASE button, 30 m arrival zone that opens the base, one name everywhere. Owner dev mode (unlimited resources, owner account only) shipped with it.
 - **Desktop keyboard driving (owner, Nov 8):** on a computer, players cannot move their tank with the keyboard, so Conquest is unplayable on desktop. The code reads WASD/arrows (`view.js` keys → `controlInput`), and the living-war CI bot drives by keyboard in headless Chromium, so the break is likely environment-specific: focus held by a button or dialog after ENTER CONQUEST, Telegram Desktop / website embedding, or the website boot path. Reproduce on the real website and Telegram Desktop first, fix, and add a desktop keyboard journey (website build, real focus flow) to CI. Also show on-screen desktop hints (WASD move, mouse aim, Space fire, Shift dash, F shield, G gather, C scan).
 
 ## Standing owner decisions

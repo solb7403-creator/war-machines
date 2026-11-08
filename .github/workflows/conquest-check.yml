@@ -29,6 +29,8 @@ jobs:
           node dev/tests/conquest-plot.mjs
           node dev/tests/conquest-base-progression.mjs
           node dev/tests/wtest/conquest-visit.mjs
+          node dev/tests/wtest/conquest-dev.mjs
+          node dev/tests/conquest-home-route.mjs
           node dev/tests/wtest/hull-plating.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-netcode.mjs
@@ -88,6 +90,7 @@ jobs:
           python dev/tests/conquest-minerals-browser.py
           python dev/tests/conquest-base-builder.py
           python dev/tests/conquest-hub-browser.py
+          python dev/tests/conquest-find-base.py
 
       - uses: actions/upload-artifact@v4
         if: always()

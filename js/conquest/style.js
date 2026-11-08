@@ -1084,13 +1084,13 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
    if(un)add(list.reduce((n,o)=>n+o.x,0)/list.length,list.reduce((n,o)=>n+o.z,0)/list.length,done?'✓':'✦',done?'#5effd0':un?'#ffb347':'#8a93a0',un?'RAIDS '+cleared+'/'+list.length:'RAIDS · LOCKED',6);}
   if(Cb.sectorDefenseOpen(S.territory?.[sector.id],sector.id)){const o=ops.find(o=>o.defense&&o.sector===sector.id);if(o)add(o.x,o.z,'!','#ff4060',(S.territory[sector.id].owner==='humanity'?'DEFEND ':'RETAKE ')+sector.name,8);}}
  if(m.convoy){const a=m.toScreen(1090,944),b=m.toScreen(1090,809);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#ffb347';ctx.lineWidth=2;ctx.stroke();}
- const Bd=Cb.baseDefinition;add(Bd.x,Bd.z,'⌂','#ffc45a','COMMAND GATE '+(S.plot?'CC'+S.plot.cc:S.base?.tier?'T'+S.base.tier:'SITE'),9,{left:true});
+ const Bd=Cb.baseDefinition;add(Bd.x,Bd.z,'⌂','#ffc45a','MY BASE'+(S.plot?' · CC'+S.plot.cc:S.base?.tier?'':' · CLAIM HERE'),9,{left:true,big:true});
  if(zoomed&&Wd.COLONY){const L=Wd.COLONY.lots||[],mean=a=>a.length?[a.reduce((n,l)=>n+l.x,0)/a.length,a.reduce((n,l)=>n+l.z,0)/a.length]:null,town=mean(L.filter(l=>['hab','block','shop'].includes(l.k))),wall=mean(L.filter(l=>l.k==='wall'||l.k==='watch')),farm=mean(Wd.COLONY.fields||[]);
-  if(town&&d.has(town[0],town[1]))add(town[0],town[1],'⌂','#ffa84a','SETTLER TOWN',3);if(farm&&d.has(farm[0],farm[1]))add(farm[0],farm[1],'✿','#9fd85a','FARMS',2);if(wall&&d.has(wall[0],wall[1]))add(wall[0],wall[1],'▮','#46eeff','FRONTIER WALL · MILITARY',2);}
+  if(town&&d.has(town[0],town[1]))add(town[0],town[1],'■','#ffa84a','SETTLER TOWN',3);if(farm&&d.has(farm[0],farm[1]))add(farm[0],farm[1],'✿','#9fd85a','FARMS',2);if(wall&&d.has(wall[0],wall[1]))add(wall[0],wall[1],'▮','#46eeff','FRONTIER WALL · MILITARY',2);}
  for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','YOUR WRECK',8);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
- for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}
+ for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else if(k.big){ctx.save();ctx.strokeStyle=k.c;ctx.globalAlpha=.55+.35*Math.sin((m.time||0)*3);ctx.lineWidth=2;ctx.beginPath();ctx.arc(k.p.x,k.p.y,17,0,TAU);ctx.stroke();ctx.restore();ctx.drawImage(glyph(k.g,k.c),k.p.x-18,k.p.y-18,36,36);}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}   // Find My Base: the base is the one big, pulsing marker
  const ys=label(['YOU'],'#ffffff',false),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
- for(const k of marks)if(!k.dot)obst.push({x:k.p.x-7,y:k.p.y-7,w:14,h:14});
+ for(const k of marks)if(!k.dot)obst.push(k.big?{x:k.p.x-17,y:k.p.y-17,w:34,h:34}:{x:k.p.x-7,y:k.p.y-7,w:14,h:14});
  const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim),pri:k.pri,c:k.c,left:k.left});}
  items.sort((a,b)=>b.pri-a.pri||(Math.hypot(a.p.x-you.x,a.p.y-you.y)-Math.hypot(b.p.x-you.x,b.p.y-you.y)));
  const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w&&r.x+r.w>o.x&&r.y<o.y+o.h&&r.y+r.h>o.y);
@@ -1106,7 +1106,7 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  ctx.drawImage(ys.cv,you.x-ys.w/2,you.y-16-ys.h,ys.w,ys.h);}ctx.drawImage(overlay(),0,0,360,420);
  ctx.font=MFONT;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='#5fd8e8';ctx.fillText('N ↑',14,414);
  const sb=100*unit;if(sb>8&&sb<200){ctx.strokeStyle='#5fd8e8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(350-sb,411);ctx.lineTo(350,411);ctx.moveTo(350-sb,407);ctx.lineTo(350-sb,414);ctx.moveTo(350,407);ctx.lineTo(350,414);ctx.stroke();ctx.textAlign='right';ctx.fillText('100 m',350,404);ctx.textAlign='left';}}
-const MAP_LEGEND=[['●','#3fe9ff','Refuge'],['⌂','#ffc45a','Base'],['◆','#ffd36b','Mission'],['⬢','#c0703f','Ore'],['✿','#7dff8a','Bio-flora'],['▲','#ff4fd8','Parasites'],['■','#ffa84a','Settlers'],['■','#46eeff','Military'],['!','#ff4060','Alert']].map(([g,c,t])=>'<span class="cq-key"><b style="color:'+c+'">'+g+'</b> '+t+'</span>').join('');
+const MAP_LEGEND=[['●','#3fe9ff','Refuge'],['⌂','#ffc45a','My base'],['◆','#ffd36b','Mission'],['⬢','#c0703f','Ore'],['✿','#7dff8a','Bio-flora'],['▲','#ff4fd8','Parasites'],['■','#ffa84a','Settlers'],['■','#46eeff','Military'],['!','#ff4060','Alert']].map(([g,c,t])=>'<span class="cq-key"><b style="color:'+c+'">'+g+'</b> '+t+'</span>').join('');
 
 root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){if(MAPC.relief)MAPC.relief.canvas.width=MAPC.relief.canvas.height=0;MAPC.relief=null;}});
 })(typeof window!=='undefined'?window:globalThis);

@@ -190,3 +190,15 @@
 .cq-hub-foot{display:flex;justify-content:center;padding:2px 14px max(16px,env(safe-area-inset-bottom))}
 .cq-hub-art{z-index:0}.cq-hub-canvas{z-index:1}.cq-hub-hero{height:min(40vh,420px)}
 .cq-hub-copy{top:calc(max(10px,env(safe-area-inset-top)) + 52px);bottom:auto}
+/* Find My Base (owner playtest, Nov 8): the one gold, always-visible way home, with the live distance */
+.cq-top button.cq-home-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:#2a1d06e6;border:1px solid #ffc45a;color:#ffd98a;font-size:10px;font-weight:700;letter-spacing:.5px;box-shadow:0 0 12px #ffc45a55;min-width:68px}
+.cq-top button.cq-home-btn .cq-home-d{font-size:9px;font-weight:600;color:#ffe9bf;letter-spacing:0}
+.cq-top button.cq-home-btn[hidden]{display:none}
+.cq-home-routes .cq-nav-base{border-color:#ffc45a;color:#ffd98a}
+/* Owner dev mode (owner only) */
+.cq-plot-dev{border:1px dashed #ff4fd8;background:#2a0a2499;border-radius:8px;padding:8px;margin:0 0 8px;display:flex;flex-direction:column;gap:4px}
+.cq-plot-dev b{color:#ff9bf0;font-size:11px;letter-spacing:1px}.cq-plot-dev small{color:#f3d6ef;font-size:10px}
+.cq-plot-dev-row{display:flex;gap:6px;flex-wrap:wrap}.cq-plot-dev-res{color:#ff9bf0}
+.cq-top button.cq-home-btn.cq-home-new{animation:cqHomePulse 1.4s ease-in-out infinite}
+@keyframes cqHomePulse{0%,100%{box-shadow:0 0 6px #ffc45a66}50%{box-shadow:0 0 22px #ffc45add,0 0 0 3px #ffc45a55}}
+@media (prefers-reduced-motion:reduce){.cq-top button.cq-home-btn.cq-home-new{animation:none;box-shadow:0 0 18px #ffc45acc,0 0 0 3px #ffc45a66}}
