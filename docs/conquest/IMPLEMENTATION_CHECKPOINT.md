@@ -1015,3 +1015,15 @@ Neither reviewer found a blocker or any way to mint or duplicate points or miner
 - Strike difficulty and mineral income are modeled, not measured with players.
 - The colony wall stays physical only. Colony Defense is queued for session 7.
 
+
+### Deploy verification (2026-11-08)
+- **CI:** the first push of the final head, `4f099be`, failed `conquest`. `conquest-onboarding.py` waited a fixed 100 ms for the HUD nav arrow, which is shorter than one CI software-GL frame near the colony. `207cc3e` had passed the same job; `4f099be` was docs-only.
+  - Fix `f25cbd9`: the test polls up to 10 s for the arrow transform to change. The assertion is unchanged; it passed locally.
+  - All 10 checks were green on `f25cbd9`.
+- **Merge:** PR #69 merged as `a3ee186`.
+- **Worker deploy:** run 42509975811 SUCCESS. Live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`. Live `version.json` **`20261108113127`** = repo. Both were read by the deploy job; this container's proxy blocks the live host.
+- **Pages:** run 42509974707 SUCCESS for `a3ee186`. Lab UI, Equipment Balance and Graphify index runs were also green.
+- No revert was needed. Payments/checkout remain DISABLED. No production accounts, payments, token, airdrop or referral data were changed.
+- **Process note:** the overnight run pushed `4f099be` at 05:35 Chicago time and ended its turn on a timer, so nothing woke it to see the red check. The release sat idle until 12:05. The "released"/"Shipped" wording above and in ROADMAP was written before the merge; it became true at `a3ee186`.
+
+**Next:** the owner's phone playtest of the frontier colony, minerals, Hull Plating and airdrop points (Safari + Telegram, HIGH and LOW). Then session 5 (base builder + Conquest Command hub + settler architecture) from docs/ROADMAP.md, on a new branch from `main`.
