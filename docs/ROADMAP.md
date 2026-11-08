@@ -15,7 +15,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 3 | Graphics overhaul: Neon Frontline (PR #59) | Shipped Nov 7 |
 | 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating | In progress |
 | 5 | Base builder + Conquest Command hub page + full settler architecture | Next |
-| 6 | Tank modifications + Science Lab research | Planned |
+| 6 | Tank modifications + Science Lab research + Conquest audio & weather pass | Planned |
 | 7 | Competitive: raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event, terraform-zone game modes | Planned |
 | 8 | Payments certification (Stars, TON, SOL; website shop) — required before beta | Planned |
 | 9 | Full game audit (use Fable) | Planned |
@@ -55,6 +55,17 @@ Conquest gets its own dedicated page in the game, not just a mode button, and it
 ## Terraform-zone game modes (session 7)
 
 Terraformed zones get modes unique to them, distinct from the barren Moon's raids, mining and Meteor Strikes: Colony Defense (Parasite waves assault the frontier wall and farms; defend with colony turrets), Bridge Assault (capture and hold river bridges), Convoy Run (escort supply convoys along colony roads under ambush), Blight Purge (clear spreading blight; the zone visibly recovers), Forest Hunt (line-of-sight fights through forests). Feed the shared progression and airdrop points like other Conquest content.
+
+## Terraform audit additions (Nov 8, 2026)
+
+Gaps found auditing the terraformed zones against the goal, assigned to sessions:
+
+- **Audio (session 6):** Conquest has no sound today. Add zone ambience (barren: near-silence, suit hum, distant impacts; terraformed: wind in grass, water, settler life, machinery; colony core: activity), weapon/impact/explosion sounds shared with Arcade, UI and reward sounds, music stingers for raids, invasions and victories. Mobile-friendly, mute toggle.
+- **Weather (session 6):** dust storms on the barren Moon (reduced visibility, a real tactical event); rain and fog banks inside terraformed zones (they have air). Telegraphed, capped effect budgets.
+- **Living terraform (session 7):** the green frontier moves with the shared warfront. Holding sectors activates new atmosphere pylons and grows zones; failed defenses let blight spread and grass die visibly. Players see their war change the Moon.
+- **Settler contracts and reputation (session 7):** settlers post contracts in their towns (deliver biomass, escort harvests, defend farms, clear blight). Settler reputation unlocks settler vendors, cosmetics and base decorations.
+- **Life (session 5, with settler architecture):** engineered livestock, birds and small fauna in terraformed zones; settlers and rovers with daily routines.
+- **Region map (session 5):** terraformed zones, settlements, roads and the military/settler split drawn clearly on the region map.
 
 ## Working rules
 
