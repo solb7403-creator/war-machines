@@ -99,9 +99,11 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  if(hi)rego=mix(rego,rego*(.55+.5*st),steep);rego*=(1.-.32*min(bowl,1.))*(1.+.6*min(rim,1.));
  float zv=smoothstep(.05,.24,terra);
  // organic grass: patch colour from low-frequency noise (olive / dry straw / dark green), clump texture from warped noise
- float pc=texture2D(uDetail,vW*(1./11.)+vec2(.21,.63)).a,pw=texture2D(uDetail,vW*(1./5.3)+vec2(.71,.12)).a;
+ // LOW: patch colour and clump texture come from the single detail fetch (d1); HIGH samples four finer scales.
+ float pc=fract(d1.a*3.7+d1.r*1.9),pw=fract(d1.a*7.3+d1.g),gg=fract(d1.a*5.1+d1.b*2.3),cs=.55;
+ if(hi){pc=texture2D(uDetail,vW*(1./11.)+vec2(.21,.63)).a;pw=texture2D(uDetail,vW*(1./5.3)+vec2(.71,.12)).a;gg=texture2D(uDetail,vW*(1./2.7)+.37).a;cs=smoothstep(.3,.62,texture2D(uDetail,vW*(1./1.9)+vec2(pw*.4,pc*.4)).a);}
  vec3 clump=pc<.4?mix(vec3(.048,.102,.027),vec3(.147,.195,.042),smoothstep(.3,.4,pc)):pc<.62?mix(vec3(.147,.195,.042),vec3(.39,.32,.105),smoothstep(.52,.62,pc)):vec3(.39,.32,.105)*(.85+.3*pw);
- float gg=texture2D(uDetail,vW*(1./2.7)+.37).a,cs=smoothstep(.3,.62,texture2D(uDetail,vW*(1./1.9)+vec2(pw*.4,pc*.4)).a);vec3 dryG=mix(vec3(.13,.11,.06),vec3(.2,.17,.08),n1);
+ vec3 dryG=mix(vec3(.13,.11,.06),vec3(.2,.17,.08),n1);
  vec3 grass=mix(dryG,clump*(.8+.4*gg),.45+.55*cs*lod);
  vec3 dirt=mix(vec3(.11,.085,.062),vec3(.155,.12,.085),gg),regoG=vec3(.254,.242,.216)*(.6+.55*tone)*(1.-.3*min(bowl,1.))*(1.+.4*min(rim,1.));
  float grav=step(.55,h12(floor(vW*3.1)))*lod*.5;dirt=mix(dirt,vec3(.22,.21,.19)*(.7+.5*h12(floor(vW*3.1)+2.)),grav);
@@ -187,7 +189,7 @@ varying vec3 vDir;varying vec4 vCol;varying vec2 vQ;varying float vKind;
 void main(){vKind=aBill.z;vCol=aCol;vQ=aBill.xy;vec3 d=aBill.z>1.5?uEarthDir:position;vec3 vd=mat3(viewMatrix)*d;
  if(aBill.z>1.5)vd+=vec3(aBill.xy*uEarthSize*1.7,0.);vDir=(vec4(vd,0.)*viewMatrix).xyz;vec4 p=projectionMatrix*vec4(vd,1.);
  if(aBill.z>.5&&aBill.z<1.5)p.xy+=aBill.xy*aCol.a*2.*p.w/uViewport;gl_Position=p.xyww;}`;
-const SKY_FS=`uniform vec3 uZenith,uBandA,uBandB,uFogC,uEarthL,uSunW,uDaySunW;uniform sampler2D uEarth;uniform float uSpin,uAtmo,uTime;
+const SKY_FS=`uniform vec3 uZenith,uBandA,uBandB,uFogC,uEarthL,uSunW,uDaySunW;uniform sampler2D uEarth;uniform float uSpin,uAtmo,uTime,uHigh;
 varying vec3 vDir;varying vec4 vCol;varying vec2 vQ;varying float vKind;
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);float a=fract(sin(dot(i,vec2(127.1,311.7)))*43758.5),b=fract(sin(dot(i+vec2(1,0),vec2(127.1,311.7)))*43758.5),c=fract(sin(dot(i+vec2(0,1),vec2(127.1,311.7)))*43758.5),e=fract(sin(dot(i+vec2(1,1),vec2(127.1,311.7)))*43758.5);return mix(mix(a,b,f.x),mix(c,e,f.x),f.y);}
 vec3 night(vec3 d){float h=d.y;float band=exp(-abs(h-.012)*85.);float glow=exp(-max(h,0.)*9.);float hi=exp(-max(h,0.)*2.6);
@@ -196,7 +198,7 @@ vec3 night(vec3 d){float h=d.y;float band=exp(-abs(h-.012)*85.);float glow=exp(-
 // broken dramatic clouds (dark bellies, sunlit amber rims) and distant dust haze along the horizon.
 vec3 day(vec3 d){float h=max(d.y,0.);vec3 c=mix(vec3(.58,.36,.19),vec3(.078,.125,.18),pow(h,.42));float s=max(dot(d,uDaySunW),0.);
  c+=vec3(1.,.62,.3)*(pow(s,5.)*.35+pow(s,60.)*.9)+vec3(1.,.9,.75)*smoothstep(.9993,.9997,s)*9.;
- vec2 q=d.xz/(d.y+.1)*1.1+vec2(uTime*.004,uTime*.0015);float cl=vn(q)*.5+vn(q*2.3+3.7)*.3+vn(q*5.1+1.3)*.2;float cov=smoothstep(.46,.7,cl)*smoothstep(.0,.12,d.y),body=smoothstep(.55,.85,cl);
+ vec2 q=d.xz/(d.y+.1)*1.1+vec2(uTime*.004,uTime*.0015);float cl=uHigh>.5?vn(q)*.5+vn(q*2.3+3.7)*.3+vn(q*5.1+1.3)*.2:vn(q)*.8+.1;float cov=smoothstep(.46,.7,cl)*smoothstep(.0,.12,d.y),body=smoothstep(.55,.85,cl);
  vec3 cc=mix(vec3(.16,.13,.13),vec3(.36,.3,.27),body*.6)+vec3(1.,.55,.25)*pow(s,3.)*(1.-body)*.9;c=mix(c,cc,cov*.88);
  float haze=exp(-h*9.);c=mix(c,vec3(.5,.36,.24),haze*.55);return mix(c,uFogC,smoothstep(.03,-.05,d.y));}
 vec3 sky(vec3 d){return uAtmo<.002?night(d):uAtmo>.998?day(d):mix(night(d),day(d),uAtmo);}
@@ -439,25 +441,30 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.TP=TP;
  // Per fine chunk: the visual flora field plus the legacy scenery 'tree' items, drawn by today's terraZone (lush/grass
  // plant, lichen cushion, a blight stump inside the war region; nothing on the far frontier). Two instanced draws at most.
- S.flora=(cx,cz,legacy=[])=>{const ox=cx*128,oz=cz*128,g=new T.Group(),plants=[],lichen=[],stumps=[];
+ // Built by a resumable job (S.floraJob) so a chunk's world queries spread over frames under the streaming budget;
+ // S.flora runs one to completion (tests, tools).
+ function* floraBuild(cx,cz,legacy){const ox=cx*128,oz=cz*128,g=new T.Group(),plants=[],lichen=[],stumps=[];
   const add=(p,zone)=>{if(zone==='lush'||zone==='grass')plants.push([p,zone==='lush'?1:.62]);else if(zone==='lichen')lichen.push(p);else stumps.push(p);};
-  for(const p of root.ConquestWorld.flora(cx,cz))add(p,p.zone);
+  for(const p of root.ConquestWorld.flora(cx,cz))add(p,p.zone);yield;
   for(const p of legacy){if(p.x<640||p.x>1500||p.z<900||p.z>1520)continue;add(p,root.ConquestWorld.terraZone(p.x,p.z));}
   // ground cover around each lush/grass plant (deterministic; off water and solids, on the real ground height)
   const Wd=root.ConquestWorld,tufts=[],per=1;for(const [p,k] of plants)for(let j=0,n=k===1?per:high?1:0;j<n;j++){const h=hash3(Math.round(p.x*7),Math.round(p.z*7),j+5),a=h*TAU*3,r=1.4+2.6*((h*7.31)%1),x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r;
    if(Math.floor(x/128)!==cx||Math.floor(z/128)!==cz||Wd.waterAt(x,z)||Wd.solidAt(x,z)||Wd.deckAt(x,z)!==null)continue;tufts.push({x,z,y:Wd.groundAt(x,z),s:(.8+.5*((h*13.7)%1))*k,a});}
+  yield;
   const inst=(geo,list,fn)=>{if(!list.length)return;const im=new T.InstancedMesh(geo,MAT.solid,list.length);list.forEach((e,i)=>im.setMatrixAt(i,fn(e)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;g.add(im);};
   inst(TP.plant,plants,([p,k])=>{const sc=Math.min(1.5/1.35,(.75+.45*p.size))*k;return M(p.x-ox,p.y-.04,p.z-oz,0,p.variant*40,0,sc,sc,sc);});
   inst(TP.lichen,lichen,p=>M(p.x-ox,p.y-.02,p.z-oz,0,p.variant*40,0,.8+.9*p.size,1,.8+.9*p.size));
   if(stumps.length)inst(TP.stump,stumps,p=>M(p.x-ox,p.y-.05,p.z-oz,0,p.variant*40,0,1,.8+.4*p.size,1));
   // dense clump field (noise-driven: ~45% grass cover in the wild, sparser toward the frontier); ferns by water; rare crystals
-  const ferns=[],crys=[],flowers=[],step=high?4.8:7;for(let gx=0;gx<128;gx+=step)for(let gz=0;gz<128;gz+=step){const h=hash3(cx*977+Math.round(gx*3),cz*613+Math.round(gz*3),11),x=ox+gx+(h-.5)*step,z=oz+gz+(((h*7.31)%1)-.5)*step;
+  const ferns=[],crys=[],flowers=[],step=high?4.8:7;let cells=0;for(let gx=0;gx<128;gx+=step)for(let gz=0;gz<128;gz+=step){if(++cells%24===0)yield;const h=hash3(cx*977+Math.round(gx*3),cz*613+Math.round(gz*3),11),x=ox+gx+(h-.5)*step,z=oz+gz+(((h*7.31)%1)-.5)*step;
    const tf=Wd.terraformAt(x,z);if(tf<.06)continue;const cover=.5+.5*Math.sin(x*.045+Math.sin(z*.03)*2)*Math.cos(z*.05),dc=Math.hypot(x-1130,z-1125);if(((h*13.7)%1)>cover*(dc<220?.85:.6))continue;
    if(Wd.waterAt(x,z)||Wd.solidAt(x,z)||Wd.deckAt(x,z)!==null||Wd.clearedAt(x,z)||Wd.forestAt(x,z)?.core)continue;const y=Wd.groundAt(x,z),r=(h*29.3)%1;
    if(r<.03)crys.push({x,z,y,a:h*40});else if(Wd.creekNearest&&Wd.creekNearest(x,z).d<14&&r<.5)ferns.push({x,z,y,a:h*40,s:.8+.6*((h*3.7)%1)});else if(dc<170&&r<.08)flowers.push({x,z,y,a:h*40});else tufts.push({x,z,y,s:.7+.8*((h*5.3)%1),a:h*40});}
   inst(TP.tuft,tufts,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,p.s,p.s*(.8+.5*((p.a*.37)%1)),p.s));if(tufts.length)g.userData.tufts=g.children[g.children.length-1];
   inst(TP.fern,ferns,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,p.s,p.s,p.s));if(high){inst(TP.crystal,crys,p=>M(p.x-ox,p.y-.05,p.z-oz,0,p.a,0,1,1,1));inst(TP.flower,flowers,p=>M(p.x-ox,p.y-.03,p.z-oz,0,p.a,0,1,1,1));}
-  return g;};
+  return g;}
+ S.floraJob=(cx,cz,legacy=[])=>{const it=floraBuild(cx,cz,legacy);let result=null;return {step(deadline,clock){do{const r=it.next();if(r.done){result=r.value;return true;}}while(clock()<deadline);return false;},get result(){return result;}};};
+ S.flora=(cx,cz,legacy=[])=>{const j=S.floraJob(cx,cz,legacy);j.step(Infinity,()=>0);return j.result;};
  // Ground flora is <= 1.5 m: per fine chunk it is hidden beyond a distance (tufts sooner), measured from the hull.
  const FLORA_RANGE=high?180:150,TUFT_RANGE=high?150:100;
  S.floraCull=(chunks,p)=>{for(const c of chunks){const g=c.group.userData.flora;if(!g)continue;const d=Math.hypot(c.cx*128+64-p.x,c.cz*128+64-p.z);g.visible=d<FLORA_RANGE;if(g.userData.tufts)g.userData.tufts.visible=d<TUFT_RANGE;}};
@@ -504,7 +511,8 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const nodes=new T.Group();nodes.name='cq-bio-flora';g.add(nodes);let key='';
   g.userData.lod=(cam)=>{if(!cam)return;const cx=cam.position.x-g.position.x,cz=cam.position.z-g.position.z;
    for(const L of stands)if(L.near){const far=Math.hypot(cx-L.f.x,cz-L.f.z)-L.f.r>FLORA_LOD;L.near.visible=L.near2.visible=!far;L.far.visible=far;}};
-  g.userData.update=(harvest,now)=>{const ready=Wd.floraNodes.filter(n=>!(harvest?.[n.id]>now)),k=ready.map(n=>n.id).join();if(k===key)return;key=k;for(const c of [...nodes.children]){nodes.remove(c);if(c.isInstancedMesh)c.dispose();}
+  let lastH,nextH=0;g.userData.update=(harvest,now)=>{if(harvest===lastH&&now<nextH)return;lastH=harvest;nextH=now+500;   // re-key only on new state or twice a second
+   const ready=Wd.floraNodes.filter(n=>!(harvest?.[n.id]>now)),k=ready.map(n=>n.id).join();if(k===key)return;key=k;for(const c of [...nodes.children]){nodes.remove(c);if(c.isInstancedMesh)c.dispose();}
    const dim=Wd.floraNodes.filter(n=>!ready.includes(n)),put=(geo,list)=>{if(!list.length)return;const im=new T.InstancedMesh(geo,MAT.solid,list.length);list.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)-.05,n.z,0,(n.x*.37)%TAU,0,1.25,1.25,1.25)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;nodes.add(im);};
    put(TP.node,ready);put(TP.nodeDim,dim);if(high&&ready.length){const im=new T.InstancedMesh(P.bill,MAT.fx,ready.length);ready.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)+1.6,n.z,0,0,0,2.2,2.2,2)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.renderOrder=2;im.userData.noPick=true;nodes.add(im);}};
   g.userData.update(null,0);return g;};
@@ -524,9 +532,10 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.ML=ML;
  S.mineralWorld=()=>{const Wd=root.ConquestWorld,g=new T.Group(),dep=new T.Group();g.name='cq-minerals';g.add(dep);let key='';
   const meteor=new T.Mesh(ML.meteor,MAT.solid),crater=new T.Mesh(ML.crater,MAT.solid);meteor.visible=crater.visible=false;meteor.userData.noPick=crater.userData.noPick=true;g.add(meteor,crater);
-  g.userData.update=(s,now)=>{const found=s?.found||{},list=(Wd.deposits||[]).filter(d=>found[d.id]),state=list.map(d=>{const t=d.m==='starter'?(s.deposits?.[d.id]?-1:0):s.deposits?.[d.id]>now?1:0;return t;}),k=list.map((d,i)=>d.id+state[i]).join();
+  let lastS,nextS=0;g.userData.update=(s,now)=>{if(s!==lastS||now>=nextS){lastS=s;nextS=now+500;   // deposits re-key only on new state or twice a second; the strike animates every frame
+   const found=s?.found||{},list=(Wd.deposits||[]).filter(d=>found[d.id]),state=list.map(d=>{const t=d.m==='starter'?(s.deposits?.[d.id]?-1:0):s.deposits?.[d.id]>now?1:0;return t;}),k=list.map((d,i)=>d.id+state[i]).join();
    if(k!==key){key=k;for(const c of [...dep.children]){dep.remove(c);c.dispose?.();}const by={};list.forEach((d,i)=>{if(state[i]<0)return;const look=state[i]?'dim':d.m;(by[look]||(by[look]=[])).push(d);});
-    for(const [look,L] of Object.entries(by)){const im=new T.InstancedMesh(ML[look],MAT.solid,L.length);L.forEach((d,i)=>im.setMatrixAt(i,M(d.x,ground(d.x,d.z)-.1,d.z,0,(d.x*.13)%TAU,0,1.3,1.3,1.3)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;dep.add(im);}}
+    for(const [look,L] of Object.entries(by)){const im=new T.InstancedMesh(ML[look],MAT.solid,L.length);L.forEach((d,i)=>im.setMatrixAt(i,M(d.x,ground(d.x,d.z)-.1,d.z,0,(d.x*.13)%TAU,0,1.3,1.3,1.3)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;dep.add(im);}}}
    const Mt=root.ConquestCombat?.meteorStrike?.(now),claimed=Mt&&s?.strikes?.[Mt.slot]?.claimed;
    if(Mt&&Mt.phase==='telegraph'){const f=Math.max(0,(Mt.impactAt-now)/STRIKE.telegraphMs),y=ground(Mt.site.x,Mt.site.z);meteor.visible=true;meteor.position.set(Mt.site.x+f*260,y+4+f*520,Mt.site.z-f*90);meteor.rotation.y=-.33;crater.visible=false;}
    else if(Mt&&Mt.phase==='open'&&!claimed){meteor.visible=false;crater.visible=true;crater.position.set(Mt.site.x,ground(Mt.site.x,Mt.site.z),Mt.site.z);crater.rotation.y=now*2e-4%TAU;}
@@ -597,13 +606,14 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const trainB=new Bld();for(let k=0;k<3;k++){trainB.box(k*7.4,0,0,7,2.6,2.6,white);trainB.box(k*7.4,.4,0,7.05,.7,2.65,warm,.7);trainB.box(k*7.4,1.35,0,7.05,.15,2.7,cy,1.3);}const train=new T.Mesh(trainB.geometry(),MAT.solid);train.userData.noPick=true;g.add(train);
   const rotB=new Bld();for(let k=0;k<3;k++)rotB.add(G.box,M(0,0,0,0,0,k*TAU/3,.35,9,.12).multiply(new T.Matrix4().makeTranslation(0,.5,0)),white);const rot=rotors.length?new T.InstancedMesh(rotB.geometry(),MAT.solid,rotors.length):null;if(rot){rot.userData.noPick=true;g.add(rot);}
   const paths=CO.roads.filter(r=>r.w>=8).map(r=>r.pts),plaza=CO.lots.find(l=>l.k==='pad')||{x:1120,z:1110};
-  const along=(pts,t)=>{let L=0;const seg=[];for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l;}let d=((t%(2*L))+2*L)%(2*L),back=d>L;if(back)d=2*L-d;for(let i=0;i<seg.length;i++){if(d<=seg[i]){const f=d/seg[i],a=pts[i],b=pts[i+1];return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,Math.atan2(b[1]-a[1],b[0]-a[0])+(back?Math.PI:0)];}d-=seg[i];}return [pts[0][0],pts[0][1],0];};
-  const _m=new T.Matrix4(),railLen=RL.length>1?RL.reduce((n,p,i)=>i?n+Math.hypot(p[0]-RL[i-1][0],p[1]-RL[i-1][1]):0,0):0;
+  const segs=new Map(),along=(pts,t)=>{let c=segs.get(pts);if(!c){const seg=[];let L=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l;}segs.set(pts,c={seg,L});}const {seg,L}=c;let d=((t%(2*L))+2*L)%(2*L),back=d>L;if(back)d=2*L-d;for(let i=0;i<seg.length;i++){if(d<=seg[i]){const f=d/seg[i],a=pts[i],b=pts[i+1];return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,Math.atan2(b[1]-a[1],b[0]-a[0])+(back?Math.PI:0)];}d-=seg[i];}return [pts[0][0],pts[0][1],0];};
+  const _m=new T.Matrix4(),_m2=new T.Matrix4(),_m3=new T.Matrix4(),MI=(x,y,z,ry)=>{_e.set(0,ry,0);_q.setFromEuler(_e);return _m2.compose(_p.set(x,y,z),_q,_s.set(1,1,1));},railLen=RL.length>1?RL.reduce((n,p,i)=>i?n+Math.hypot(p[0]-RL[i-1][0],p[1]-RL[i-1][1]):0,0):0;
   g.userData.update=(now,cam)=>{const t=now/1000;
-   for(let i=0;i<nR;i++){const P=paths[i%paths.length],[x,z,a]=along(P,t*(6+i%3)+i*57),side=(Math.floor(((t*(6+i%3)+i*57)/1)%2))?1:1,o=2.2;rovers.setMatrixAt(i,M(x-Math.sin(a)*o*side,ground(x,z),z+Math.cos(a)*o*side,0,-a,0,1,1,1));}rovers.instanceMatrix.needsUpdate=true;
-   if(crew){for(let i=0;i<nC;i++){const a=i*2.4+t*(.15+.05*(i%3)),r=8+(i%5)*2.2,x=plaza.x+Math.cos(a)*r,z=plaza.z+Math.sin(a)*r;crew.setMatrixAt(i,M(x,ground(x,z),z,0,-a,0,1,1,1));}crew.instanceMatrix.needsUpdate=true;}
+   if(cam&&Math.hypot(cam.position.x-g.position.x-1130,cam.position.z-g.position.z-1125)>(high?700:500)){for(const p of parts)p.dm.visible=false;return;}   // the colony's moving life is out of view
+   for(let i=0;i<nR;i++){const P=paths[i%paths.length],[x,z,a]=along(P,t*(6+i%3)+i*57),side=(Math.floor(((t*(6+i%3)+i*57)/1)%2))?1:1,o=2.2;rovers.setMatrixAt(i,MI(x-Math.sin(a)*o*side,ground(x,z),z+Math.cos(a)*o*side,-a));}rovers.instanceMatrix.needsUpdate=true;
+   if(crew){for(let i=0;i<nC;i++){const a=i*2.4+t*(.15+.05*(i%3)),r=8+(i%5)*2.2,x=plaza.x+Math.cos(a)*r,z=plaza.z+Math.sin(a)*r;crew.setMatrixAt(i,MI(x,ground(x,z),z,-a));}crew.instanceMatrix.needsUpdate=true;}
    if(railLen){const [x,z,a]=along(RL,t*14);train.position.set(x,railH(x,z)+1.9,z);train.rotation.set(0,-a,0);}
-   if(rot){rotors.forEach(([x,ry,z,yy,r],i)=>{rot.setMatrixAt(i,_m.makeRotationY(-r).premultiply(new T.Matrix4().makeTranslation(x,yy,z)).multiply(new T.Matrix4().makeRotationX(t*1.6+i)));});rot.instanceMatrix.needsUpdate=true;}
+   if(rot){rotors.forEach(([x,ry,z,yy,r],i)=>{rot.setMatrixAt(i,_m.makeRotationY(-r).premultiply(_m2.makeTranslation(x,yy,z)).multiply(_m3.makeRotationX(t*1.6+i)));});rot.instanceMatrix.needsUpdate=true;}
    if(cam){const cx=cam.position.x-g.position.x,cz=cam.position.z-g.position.z,far=high?260:160;for(const p of parts){const bs=p.dm.geometry.boundingSphere;if(bs)p.dm.visible=Math.hypot(cx-bs.center.x,cz-bs.center.z)-bs.radius<far;}}};
   g.userData.update(0,null);return g;};
  // ---------- frontier dressing (owner art direction): the war-torn edge the colonists hold ----------

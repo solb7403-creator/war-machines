@@ -347,7 +347,7 @@ class View {
  // one frame. Old terrain stays until its replacement is ready, so the budget never opens holes. Output is identical.
  const clock=()=>performance.now(),start=clock(),near=[-1,0,1].every(i=>[-1,0,1].every(j=>this.chunks.has((cx+i)+':'+(cz+j))||cx+i<0||cz+j<0)),deadline=start+(near?3:24);
  if(cell!==this.horizonKey&&this.horizonJob?.key!==cell)this.horizonJob={key:cell,job:W.horizonJob(this.p.x,this.p.z,this.host.clientWidth<=600?2:4)};
- const selectionKey=cell+':'+this.detailRadius;if(selectionKey===this.selectionKey&&this.pending===0&&!this.horizonJob&&!this.chunkJob&&this.chunks.size<=this.wanted.length)return;if(selectionKey!==this.selectionKey){this.selectionKey=selectionKey;this.wanted=W.chunkKeys(this.p.x,this.p.z,this.host.clientWidth<=600?2:4,this.detailRadius);this.wanted.sort((a,b)=>Math.hypot(a.cx*128-this.p.x,a.cz*128-this.p.z)-Math.hypot(b.cx*128-this.p.x,b.cz*128-this.p.z));}
+ const selectionKey=cell+':'+this.detailRadius;if(selectionKey===this.selectionKey&&this.pending===0&&!this.horizonJob&&!this.chunkJob&&!this.floraJobs?.length&&this.chunks.size<=this.wanted.length)return;if(selectionKey!==this.selectionKey){this.selectionKey=selectionKey;this.wanted=W.chunkKeys(this.p.x,this.p.z,this.host.clientWidth<=600?2:4,this.detailRadius);this.wanted.sort((a,b)=>Math.hypot(a.cx*128-this.p.x,a.cz*128-this.p.z)-Math.hypot(b.cx*128-this.p.x,b.cz*128-this.p.z));}
  const wanted=this.wanted,keep=new Map(wanted.map(k=>[k.key,k]));
  // Each finished job is turned into meshes in its own frame, before any other streaming work.
  if(this.chunkJob?.done&&keep.get(this.chunkJob.k.key)?.step===this.chunkJob.k.step){const {k,job}=this.chunkJob;this.chunkJob=null;const d=job.result;const T=this.T,g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(d.positions,3));g.setAttribute('normal',new T.Float32BufferAttribute(d.normals,3));g.setAttribute('color',new T.Float32BufferAttribute(d.colors,3));g.setAttribute('uv',new T.Float32BufferAttribute(planarUv(d.positions,k.cx*128,k.cz*128),2));g.setIndex(d.indices);
@@ -358,7 +358,8 @@ class View {
  // Trees have separate trunks and varied layered crowns; all repetition is instanced and distance culled.
  if(k.step===4&&this.style){const D=root.ConquestCombat.baseDefinition,sc=W.scenery(k.cx,k.cz),outsideBase=p=>Math.abs(p.x-D.x)>24||Math.abs(p.z-D.z)>22;
  // Rocks and relays keep the Neon props; legacy 'tree' items and the new flora field are drawn by today's terraform zone.
- group.add(this.style.props(sc.filter(p=>p.kind!=='tree'),k.cx,k.cz));if(this.style.flora)group.add(group.userData.flora=this.style.flora(k.cx,k.cz,sc.filter(p=>p.kind==='tree'&&outsideBase(p))));}
+ group.add(this.style.props(sc.filter(p=>p.kind!=='tree'),k.cx,k.cz));const legacyTrees=sc.filter(p=>p.kind==='tree'&&outsideBase(p));
+ if(this.style.floraJob)(this.floraJobs||(this.floraJobs=[])).push({key:k.key,group,job:this.style.floraJob(k.cx,k.cz,legacyTrees)});else if(this.style.flora)group.add(group.userData.flora=this.style.flora(k.cx,k.cz,legacyTrees));}
  else if(k.step===4){const D=root.ConquestCombat.baseDefinition,list=W.scenery(k.cx,k.cz).filter(p=>p.kind!=='tree'||Math.abs(p.x-D.x)>24||Math.abs(p.z-D.z)>22),trees=list.filter(p=>p.kind==='tree'),pines=trees.filter(p=>p.variant>=.4),broad=trees.filter(p=>p.variant<.4),relays=list.filter(p=>p.kind==='relay'),rocks=list.filter(p=>p.kind==='rock'&&p.variant>.45);
  const batch=(items,geo,color,shape)=>{if(!items.length)return;const mesh=new T.InstancedMesh(geo,this.mat(color),items.length),o=new T.Object3D();items.forEach((p,i)=>{shape(o,p);o.position.x+=p.x-k.cx*128;o.position.z+=p.z-k.cz*128;o.updateMatrix();mesh.setMatrixAt(i,o.matrix);});group.add(mesh);};
  batch(trees,this.cylinder,0x625345,(o,p)=>{o.position.set(0,p.y+p.size*1.6,0);o.scale.set(.22*p.size,3.2*p.size,.22*p.size);});
@@ -368,16 +369,20 @@ class View {
  batch(rocks,this.rock,0x727781,(o,p)=>{o.position.set(0,p.y+p.size*.3,0);o.scale.set(p.size*1.6,p.size*(.5+p.variant),p.size);o.rotation.set(p.variant,0,p.variant*.4);});
  }
  
- const previous=this.chunks.get(k.key);if(previous)this.dropChunk(k.key,previous);this.scene.add(group);this.chunks.set(k.key,{group,step:k.step,cx:k.cx,cz:k.cz});this.builds++;this.pending=wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length+(this.horizonJob?1:0);this.streamMs=clock()-start;return;}
- if(this.horizonJob?.done){const job=this.horizonJob;this.horizonJob=null;this.horizonKey=job.key;const d=job.job.result;if(this.horizon){this.scene.remove(this.horizon);this.horizon.geometry.dispose();}const g=new this.T.BufferGeometry();for(const [name,values] of [['position',d.positions],['normal',d.normals],['color',d.colors]])g.setAttribute(name,new this.T.Float32BufferAttribute(values,3));g.setAttribute('uv',new this.T.Float32BufferAttribute(planarUv(d.positions,0,0),2));g.setIndex(d.indices);this.horizon=new this.T.Mesh(g,this.material);this.scene.add(this.horizon);this.pending=wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length;this.streamMs=clock()-start;return;}
+ const previous=this.chunks.get(k.key);if(previous)this.dropChunk(k.key,previous);this.scene.add(group);this.chunks.set(k.key,{group,step:k.step,cx:k.cx,cz:k.cz});this.builds++;this.pending=(this.floraJobs?.length||0)+wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length+(this.horizonJob?1:0);this.streamMs=clock()-start;return;}
+ if(this.horizonJob?.done){const job=this.horizonJob;this.horizonJob=null;this.horizonKey=job.key;const d=job.job.result;if(this.horizon){this.scene.remove(this.horizon);this.horizon.geometry.dispose();}const g=new this.T.BufferGeometry();for(const [name,values] of [['position',d.positions],['normal',d.normals],['color',d.colors]])g.setAttribute(name,new this.T.Float32BufferAttribute(values,3));g.setAttribute('uv',new this.T.Float32BufferAttribute(planarUv(d.positions,0,0),2));g.setIndex(d.indices);this.horizon=new this.T.Mesh(g,this.material);this.scene.add(this.horizon);this.pending=(this.floraJobs?.length||0)+wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length;this.streamMs=clock()-start;return;}
  if(this.chunkJob&&keep.get(this.chunkJob.k.key)?.step!==this.chunkJob.k.step)this.chunkJob=null;
  if(!this.chunkJob){const k=wanted.find(k=>this.chunks.get(k.key)?.step!==k.step);if(k)this.chunkJob={k,job:W.chunkJob(k.cx,k.cz,k.step)};}
+ // Ground flora is placed by its own resumable job after its chunk is on screen (never in the chunk's finalization frame),
+ // with at most half of what is left of this frame's budget; a job whose chunk was replaced or dropped is discarded.
+ while(this.floraJobs?.length&&this.chunks.get(this.floraJobs[0].key)?.group!==this.floraJobs[0].group)this.floraJobs.shift();
+ if(this.floraJobs?.length&&clock()<deadline){const f=this.floraJobs[0];if(f.job.step(Math.min(deadline,clock()+Math.max(.5,(deadline-clock())/2)),clock)){this.floraJobs.shift();const fg=f.job.result;f.group.add(fg);f.group.userData.flora=fg;}}
  if(this.chunkJob&&!this.chunkJob.done&&clock()<deadline&&this.chunkJob.job.run(deadline,clock))this.chunkJob.done=true;
  if(this.horizonJob&&!this.horizonJob.done&&clock()<deadline&&this.horizonJob.job.run(deadline,clock))this.horizonJob.done=true;
 
  // Retire terrain the player has left only once the recentred horizon covers it.
  if(!this.horizonJob)for(const [key,o] of this.chunks)if(!keep.has(key)){this.dropChunk(key,o);break;}
- this.pending=wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length+(this.horizonJob?1:0);this.streamMs=clock()-start;
+ this.pending=(this.floraJobs?.length||0)+wanted.filter(k=>this.chunks.get(k.key)?.step!==k.step).length+(this.horizonJob?1:0);this.streamMs=clock()-start;
  }
  dropChunk(key,o){this.scene.remove(o.group);o.group.traverse(m=>{if(m.geometry&&!this.shared.includes(m.geometry))m.geometry.dispose();if(m.isInstancedMesh)m.dispose();});this.chunks.delete(key);}
  tick(dt){if(this.disposed||document.hidden)return;this.profileFrame();this.prewarmEnemyGeometry();this.warmPrograms();if(this.resume){dt=0;this.resume=false;}dt=Math.min(.25,Math.max(0,dt));if(this.authority&&(!this.authority.connected||this.authority.stalled)){dt=0;this.edgeLatch={};}this.loadoutElapsed=(this.loadoutElapsed||0)+dt;if(this.loadoutElapsed>=.5){this.syncLoadout();this.loadoutElapsed=0;}this.elapsed+=dt;this.frames++;if(this.elapsed>.5){this.fps=this.frames/this.elapsed;this.elapsed=0;this.frames=0;}
