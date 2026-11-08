@@ -4,6 +4,7 @@ import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js
 import {CONQUEST,RULES} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
 import {played,settleOpKills,discardOpKills,earn} from './conquest-airdrop.js';
+import {veins,readyVeins,pull,reveal} from './conquest-veins.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
 // Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
 // catch up instead of discarding earned time and diverging; 40 steps per request drains that backlog at the normal 1 Hz cadence.
@@ -44,7 +45,7 @@ function migrateRegion(s,now){
  if(s.death?.position&&embedded(s.death.position))s.death.position=repair(s.death.position);
  s.regionRevision=2;if(changed)s.notice={kind:'world-migration',at:now};
 }
-export function refreshState(s,now){campaign(s,now);cosmetics(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
  // A patrol whose authored route moved is re-homed only while it is calm and far outside the player's view.
@@ -83,11 +84,12 @@ export function applyCommands(previous,request,now){
 // the channel, and its noise draws nearby Parasites. Each node then regrows for this pilot (the Starter Vein: once). Amounts are
 // the server's roll; the client never sends one. Biomass and minerals go to cargo (banked like salvage; half exposed on death).
 const harvestReady=(s,n,now)=>!(s.harvest?.[n.id]>now);
-const depositReady=(s,d,now)=>d.m==='starter'?!s.deposits?.[d.id]:!(s.deposits?.[d.id]>now);
+const starterReady=(s,d)=>!!s.found?.[d.id]&&!s.deposits?.[d.id];
 const roll=(id,now,k)=>{let h=2166136261;const t=id+':'+now+':'+k;for(let i=0;i<t.length;i++)h=Math.imul(h^t.charCodeAt(i),16777619);return (h>>>0)/4294967296;};
 export function gatherTarget(s,now){const p=s.position,r=W.HARVEST.radius;let best=null,bd=Infinity;
  for(const n of W.floraNodes){const d=Math.hypot(n.x-p.x,n.z-p.z);if(d<=r&&d<bd&&harvestReady(s,n,now)){best={node:n,flora:true,ms:W.HARVEST.channelMs};bd=d;}}
- for(const n of W.deposits){if(!s.found?.[n.id])continue;const d=Math.hypot(n.x-p.x,n.z-p.z);if(d<=r&&d<bd&&depositReady(s,n,now)){best={node:n,flora:false,ms:RULES.MN_GATHER[n.m].ms};bd=d;}}
+ for(const n of W.deposits){if(n.m!=='starter'||!starterReady(s,n))continue;const d=Math.hypot(n.x-p.x,n.z-p.z);if(d<=r&&d<bd){best={node:n,flora:false,ms:RULES.MN_GATHER.starter.ms};bd=d;}}
+ for(const {slot,node:n} of readyVeins(s)){const d=Math.hypot(n.x-p.x,n.z-p.z);if(d<=r&&d<bd){best={node:n,slot,flora:false,ms:RULES.MN_GATHER[n.m].ms};bd=d;}}
  return best;}
 export function harvestStep(s,B,input,moved,hit,now){const H=W.HARVEST;
  if(!input.gather||s.mission||B.playerHp<=0||moved>.05||hit||B.state!=='active'){if(s.channel)delete s.channel;return;}
@@ -98,15 +100,19 @@ export function harvestStep(s,B,input,moved,hit,now){const H=W.HARVEST;
  if(g.flora){s.harvest=s.harvest||{};s.harvest[node.id]=now+H.respawnMs;
   s.ledger.cargo.biomass+=H.biomass;s.daily.biomass+=H.biomass;const ptsRaw=earn(s,'gather',RULES.CQ_PTS.gather.flora,now,{act:true});
   s.notice={kind:'harvest',node:node.id,biomass:H.biomass,ptsRaw};return;}
- const G=RULES.MN_GATHER[node.m],k=node.mineral,units=G.min+Math.floor(roll(node.id,now,'u')*(G.max-G.min+1)),vein=G.vein&&roll(node.id,now,'v')<G.vein?1:0;
- s.deposits=s.deposits||{};s.deposits[node.id]=G.once?1:now+G.respawnMs;const mn=s.ledger.mn;mn[k]=(mn[k]||0)+units;if(vein)mn.se=(mn.se||0)+1;
+ const G=RULES.MN_GATHER[node.m],k=node.mineral,rolled=G.min+Math.floor(roll(node.id,now,'u')*(G.max-G.min+1)),vein=G.vein&&roll(node.id,now,'v')<G.vein?1:0;
+ let units=rolled,left=null,cap=null,exhausted=false,regrowMs=0;
+ if(G.once){s.deposits=s.deposits||{};s.deposits[node.id]=1;}else{const r=pull(s,g.slot,rolled,now);units=r.got;left=r.left;cap=r.cap;exhausted=r.exhausted;regrowMs=r.regrowMs;}
+ const mn=s.ledger.mn;mn[k]=(mn[k]||0)+units;if(vein)mn.se=(mn.se||0)+1;
  const ptsRaw=earn(s,'gather',RULES.CQ_PTS.gather[k],now,{act:true});
- s.notice={kind:'mineral',node:node.id,mineral:k,units,vein,ptsRaw,starter:!!G.once};}
-// Scanner pulse (RESOURCE_ECONOMY.md §5.3): free, 30 s cooldown; reveals deposits within 150 m (+50 m per Radar module level).
-// Discovered deposits stay on this pilot's MAP with their state (s.found; the respawn clocks are s.deposits).
+ s.notice={kind:'mineral',node:node.id,mineral:k,units,vein,ptsRaw,starter:!!G.once,...(G.once?{}:{left,cap,exhausted,...(exhausted?{regrowMs}:{})})};}
+// Scanner pulse (RESOURCE_ECONOMY.md §5.3): free, 30 s cooldown; reveals this pilot's live veins within 150 m (+50 m per Radar
+// module level) and the Starter Vein. Scanned veins stay on the MAP with what they hold; an exhausted vein shows EXHAUSTED for
+// MN_VEIN.dryShowMs and disappears; its replacement elsewhere in the sector needs a new SCAN.
 export function scanStep(s,B,input,now){const S=RULES.MN_SCAN;if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<S.cooldownMs)return;
  const r=S.radius+S.perRadar*(s.base?.modules?.radar|0);s.scanAt=now;s.found=s.found||{};let fresh=0,near=0;
- for(const d of W.deposits){if(Math.hypot(d.x-s.position.x,d.z-s.position.z)>r)continue;near++;if(!s.found[d.id]){s.found[d.id]=1;fresh++;}}
+ for(const d of W.deposits){if(d.m!=='starter'||s.deposits?.[d.id]||Math.hypot(d.x-s.position.x,d.z-s.position.z)>r)continue;near++;if(!s.found[d.id]){s.found[d.id]=1;fresh++;}}
+ const v=reveal(s,s.position,r,now);fresh+=v.fresh;near+=v.near;
  s.notice={kind:'scan',radius:r,found:fresh,near};}
 export const TRAVEL_ACTIONS=['fast-travel','recall-start','recall-cancel'];
 // The channel completes inside verified command replay once 15 s of simulated play pass without damage.

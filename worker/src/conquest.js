@@ -9,7 +9,9 @@ import {hex} from './db.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS} from './conquest-sim.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
-function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};
+import {publicVeins} from './conquest-veins.js';
+// Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
  if(s.strikes&&typeof s.strikes==='object')out.strikes=Object.fromEntries(Object.entries(s.strikes).map(([k,v])=>[k,{claimed:v?.claimed?1:0}]));return out;}
 async function transaction(env,pid,fn,now){

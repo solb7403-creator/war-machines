@@ -1027,3 +1027,17 @@ Neither reviewer found a blocker or any way to mint or duplicate points or miner
 - **Process note:** the overnight run pushed `4f099be` at 05:35 Chicago time and ended its turn on a timer, so nothing woke it to see the red check. The release sat idle until 12:05. The "released"/"Shipped" wording above and in ROADMAP was written before the merge; it became true at `a3ee186`.
 
 **Next:** the owner's phone playtest of the frontier colony, minerals, Hull Plating and airdrop points (Safari + Telegram, HIGH and LOW). Then session 5 (base builder + Conquest Command hub + settler architecture) from docs/ROADMAP.md, on a new branch from `main`.
+
+## Checkpoint 24 — Session 5: base builder, Conquest Command hub, settler architecture (branch `claude/conquest-session-5`) — IN PROGRESS
+
+Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, release pre-approved). Branch created from `claude/conquest-playtest-session4-fixes` (5812698) merged with `main` 4add71f.
+
+### Phase 0 — owner playtest fixes + ore fix (DONE, pushed)
+- Playtest fixes from 5812698 folded in unchanged (simpler map, UNDER FIRE flash/haptic/arrow, low-hull route, gather under-fire text, shorter death screen, SCAN · FIND ORE pulse, post-scan ore route, first-entry tip).
+- New browser check (in `dev/tests/conquest-minerals-browser.py`): a simulated hit shows `.cq-threat` (UNDER FIRE · RAIDER · 40 m) and `.cq-hurt.on`; a <25% hull shows `.cq-low-hull` and its tap sets the Refuge route. Captures `docs/economy/phase3/under-fire-390.png`, `low-hull-390.png`.
+- Ore fix, veins run dry: `worker/src/conquest-veins.js` (server-only `s.lodes`; public `s.veins` = scanned veins only), `MN_VEIN` in `js/rules.js`, `ConquestWorld.knownOre()` for HUD/MAP/3D. 16 fields, 17 live veins (Ferrite 7 × 12, Ilmenite 4 × 6, Armalcolite 3 × 5, Tranquillityite 3 × 3); new vein after 6 h / 12 h / 2 d / 5 d at another spot in the sector, hidden until SCAN. Two spots added (il-19, tq-06). Migration keeps the Starter Vein flag and pre-reveals ready old finds.
+- Economy: `dev/tools/economy-model.mjs` models veins + sessions (and drops the never-built Base Yield minerals); `dev/tests/conquest-vein-economy.mjs` proves model = live rules and the owner's targets (regular 3 d / 10 d / 4.3 wk / 2.6 mo; dedicated 1.8–3.0×; 6 h grinder < 6×). Spec §5.2, §5.3, §7.2 and the wiki updated.
+- Tests: all 76 node suites PASS locally (conquest-check list + regression.sh + vein economy); `conquest-minerals.mjs` 55 checks; `conquest-minerals-browser.py` and `conquest-onboarding.py` PASS (Chromium 390). Local Playwright needs the container Chromium (`executable_path`), CI is unchanged.
+
+### Next
+Phase 1 (base plot): shared rules `js/conquest/plot.js` (written, not yet wired), Worker actions, migration, build mode, Defense Drill, progression model test.

@@ -25,6 +25,7 @@ jobs:
           node dev/tests/wtest/conquest-airdrop.mjs
           node dev/tests/conquest-terraform.mjs
           node dev/tests/conquest-minerals.mjs
+          node dev/tests/conquest-vein-economy.mjs
           node dev/tests/wtest/hull-plating.mjs
           node dev/tests/conquest-session.mjs
           node dev/tests/conquest-netcode.mjs

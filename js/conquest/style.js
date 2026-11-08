@@ -514,7 +514,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   g.userData.update(null,0);return g;};
 
  // ---------- Phase 3: mineral deposits and the Meteor Strike (docs/economy/RESOURCE_ECONOMY.md §5) ----------
- // Presentation only: the pilot's discovered deposits (s.found) and their per-pilot respawn clocks (s.deposits), and the
+ // Presentation only: the pilot's scanned veins (ConquestWorld.knownOre: ore left, or EXHAUSTED for a few minutes), and the
  // shared strike schedule (ConquestCombat.meteorStrike). One instanced draw per mineral look, rebuilt only on state change.
  const ML={};{const rust=lin(0x7a4a2c),steel=lin(0x9aa6b2),basalt=lin(0x15161c),dark=lin(0x101015);
   const fe=new Bld();for(const [x,z,s] of [[0,0,1],[.9,.3,.7],[-.7,.5,.6],[.2,-.8,.55]])fe.add(G.rock,M(x,s*.35,z,0,x*3,0,s*.9,s*.6,s*.9),rust);for(let k=0;k<(high?5:3);k++)fe.add(G.octa,M(Math.cos(k*1.3)*.6,.55+.1*k%2,Math.sin(k*1.3)*.6,0,k,0,.09,.09,.09),steel,.9);ML.fe=keep(fe.geometry());
@@ -529,7 +529,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.mineralWorld=()=>{const Wd=root.ConquestWorld,g=new T.Group(),dep=new T.Group();g.name='cq-minerals';g.add(dep);let key='';
   const meteor=new T.Mesh(ML.meteor,MAT.solid),crater=new T.Mesh(ML.crater,MAT.solid);meteor.visible=crater.visible=false;meteor.userData.noPick=crater.userData.noPick=true;g.add(meteor,crater);
   let lastS,nextS=0;g.userData.update=(s,now)=>{if(s!==lastS||now>=nextS){lastS=s;nextS=now+500;   // deposits re-key only on new state or twice a second; the strike animates every frame
-   const found=s?.found||{},list=(Wd.deposits||[]).filter(d=>found[d.id]),state=list.map(d=>{const t=d.m==='starter'?(s.deposits?.[d.id]?-1:0):s.deposits?.[d.id]>now?1:0;return t;}),k=list.map((d,i)=>d.id+state[i]).join();
+   const ore=Wd.knownOre(s,now),list=ore.map(o=>o.d),state=ore.map(o=>o.ready?0:1),k=list.map((d,i)=>d.id+state[i]).join();
    if(k!==key){key=k;for(const c of [...dep.children]){dep.remove(c);c.dispose?.();}const by={};list.forEach((d,i)=>{if(state[i]<0)return;const look=state[i]?'dim':d.m;(by[look]||(by[look]=[])).push(d);});
     for(const [look,L] of Object.entries(by)){const im=new T.InstancedMesh(ML[look],MAT.solid,L.length);L.forEach((d,i)=>im.setMatrixAt(i,M(d.x,ground(d.x,d.z)-.1,d.z,0,(d.x*.13)%TAU,0,1.3,1.3,1.3)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;dep.add(im);}}}
    const Mt=root.ConquestCombat?.meteorStrike?.(now),claimed=Mt&&s?.strikes?.[Mt.slot]?.claimed;
@@ -1007,9 +1007,9 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  const zoomed=scale>=64,routed=o=>!!t&&Math.hypot(t.x-o.x,t.z-o.z)<1;
  for(const s of Cb.installations)if(d.has(s.x,s.z)){const cap=S.territory?.[s.id]?.owner==='humanity';add(s.x,s.z,cap?'⚑':'▲',cap?'#5effd0':'#ff4fd8',s.name,5);}
  const ops=Object.values(Cb.operations);if(m.mission){const done=m.missionDone;add(m.mission.x,m.mission.z,done?'✓':'◆','#f1cd7e',m.mission.name,4);}
- // Phase 3: discovered mineral deposits (ready / depleted with the respawn minutes) and the live Meteor Strike
- {const now=Date.now();for(const dp of Wd.deposits||[]){if(!S.found?.[dp.id])continue;const until=dp.m==='starter'?(S.deposits?.[dp.id]?Infinity:0):(S.deposits?.[dp.id]||0)-now,ready=until<=0,k=dp.mineral,c=typeof MINERALS!=='undefined'?MINERALS[k].c:'#c0703f';
-   if(dp.m==='starter'&&!ready)continue;add(dp.x,dp.z,'⬢',ready?c:'#566070',zoomed||dp.m==='starter'||routed(dp)?(typeof MINERALS!=='undefined'?MINERALS[k].s:'Ore')+(ready?'':' · '+Math.ceil(until/60000)+'m'):'',dp.m==='tq'||dp.m==='starter'?5:dp.m==='ar'?3:1);}
+ // Scanned veins (ore left / EXHAUSTED, then gone) and the live Meteor Strike
+ {const now=Date.now();for(const o of Wd.knownOre(S,now)){const dp=o.d,ready=o.ready,k=dp.mineral,c=typeof MINERALS!=='undefined'?MINERALS[k].c:'#c0703f';
+   add(dp.x,dp.z,'⬢',ready?c:'#566070',zoomed||dp.m==='starter'||routed(dp)||!ready?(typeof MINERALS!=='undefined'?MINERALS[k].s:'Ore')+(ready?(dp.m==='starter'?'':' · '+o.left+'/'+o.cap):' · EXHAUSTED'):'',dp.m==='tq'||dp.m==='starter'?5:dp.m==='ar'?3:1);}
   for(const f of Wd.floraNodes||[])if(d.has(f.x,f.z)&&!(S.harvest?.[f.id]>now))add(f.x,f.z,'✿','#7dff8a',zoomed||routed(f)?'Bio-flora':'',1);
   const M=Cb.meteorStrike?.(now);if(M&&M.phase!=='idle'&&!S.strikes?.[M.slot]?.claimed)add(M.site.x,M.site.z,'☄',M.phase==='open'?'#ff7a3d':'#ffd36b',(M.phase==='open'?'STRIKE OPEN · ':'IMPACT ')+Math.max(0,Math.ceil(((M.phase==='open'?M.closesAt:M.impactAt)-now)/60000))+'m',9);}
  for(const o of ops){if(o.raid||o.defense||o.strike||o.id==='base-defense'||o.id==='oxygen-line'||Cb.installations.some(s=>s.id===o.site))continue;const sec=S.territory?.[o.site]?.owner==='humanity';add(o.x,o.z,sec?'⚑':'◆',sec?'#5effd0':'#ffd36b',zoomed||routed(o)?o.name:'',4);}

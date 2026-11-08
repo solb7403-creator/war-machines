@@ -287,10 +287,16 @@ const plateEhp=(e,a)=>1/(1-(e||0)*PLATE.eShare-(a||0)*PLATE.aShare);   // traits
 // Arcade/PvP mineral drops: server-verified results only, straight to the wallet (§5.5). rnd: the server's random source
 const MN_DROP={win:{fe:[1,0.5],il:[0,0.20],ar:[0,0.06]},draw:{fe:[1,0],il:[0,0.10]},loss:{fe:[0,0.5]}};   // [guaranteed, chance of +1]
 // weekly league minerals, at the 20th verified Arcade/PvP match of a UTC week (fractions are a chance of +1)
-// Conquest minerals (§5.2-5.4). Deposits: channel ms, respawn per pilot, units a harvest (server roll), the 3% Selenite vein;
+// Conquest minerals (§5.2-5.4). A pull: channel ms and units (server roll, capped by what the vein holds), the 3% Selenite vein;
 // the one-time Starter Vein (35 Ferrite). Scanner pulse. Operation caches on victory (fractions are a chance of +1). Meteor Strike.
-const MN_GATHER={fe:{ms:5000,respawnMs:1200000,min:2,max:4},il:{ms:8000,respawnMs:2700000,min:1,max:3},ar:{ms:12000,respawnMs:10800000,min:1,max:2},
- tq:{ms:16000,respawnMs:28800000,min:1,max:1,vein:0.03},starter:{ms:5000,respawnMs:0,min:35,max:35,once:true}};
+const MN_GATHER={fe:{ms:5000,min:2,max:4},il:{ms:8000,min:1,max:3},ar:{ms:12000,min:1,max:2},
+ tq:{ms:16000,min:1,max:1,vein:0.03},starter:{ms:5000,min:35,max:35,once:true}};
+// Veins run dry, new ones appear (owner ore fix, Nov 8 2026): each (mineral, sector) field keeps `live` veins (more where named)
+// at its authored spots; a vein holds `cap` units (a few pulls), then is EXHAUSTED for that pilot and a new vein of that mineral
+// surfaces at another spot of the same sector `regrowMs` later (seeded per pilot and day, server-only, hidden until a SCAN).
+// The MAP keeps an exhausted vein for `dryShowMs`, then it disappears.
+const MN_VEIN={fe:{cap:12,regrowMs:21600000,live:1,more:{refuge:2}},il:{cap:6,regrowMs:43200000,live:1},ar:{cap:5,regrowMs:172800000,live:1},
+ tq:{cap:3,regrowMs:432000000,live:1},dryShowMs:600000};
 const MN_SCAN={cooldownMs:30000,radius:150,perRadar:50};
 const MN_CACHE={field:{fe:3,il:0.5},HARD:{il:2,ar:0.4},VETERAN:{ar:1.5,tq:0.3},defense:{fe:2,il:1}};
 const STRIKE={everyMs:7200000,telegraphMs:300000,windowMs:1200000,channelMs:16000,cp:120,guaranteed:{il:2,ar:2},tq:0.5,se:0.15,mh:0.025,resonance:{se:12,mh:40}};

@@ -319,29 +319,43 @@ Current values from the code: `worker/src/conquest-economy.js` and `js/conquest/
 | 5 | **Selenite Glass** | epic | reflective silver-violet impact glass | Meteor Strike craters; 3% vein in Tranquillityite | full set: −10% energy damage |
 | 6 | **Moonheart** | legendary | obsidian-dense core with a deep blue-white glow | Meteor Strike cores; top competitive rewards | full set: −10% area damage, keeps Selenite's trait |
 
-### 5.2 Deposits in the populated war region
+### 5.2 Veins in the populated war region (owner ore fix, Nov 8 2026: veins run dry, new ones appear)
 
-| Mineral | Nodes | Units per harvest | Gather channel | Respawn | Placement rule |
-|---|---:|---:|---:|---:|---|
-| Ferrite Regolith | 36 | 2–4 (avg 3) | 5 s | 20 min | open ground near routes; safe enough for a new pilot |
-| Ilmenite | 18 | 1–3 (avg 2) | 8 s | 45 min | off-route basalt, often within patrol paths |
-| Armalcolite | 10 | 1–2 (avg 1.5) | 12 s | 3 h | crater walls and Parasite territory, inside or next to garrison zones |
-| Tranquillityite | 5 | 1 (+3% Selenite vein) | 16 s | 8 h | contested sites: raid-site perimeters, hive edges |
-| Starter Vein | 1 (once) | 35 Ferrite | 5 s | never | beside the Refuge, revealed by the guided first scan |
+Session 5 replaced the respawning deposits (Ferrite 20 min ... Tranquillityite 8 h), which let a player circle the same few spots all day. Ore now comes in **veins**:
 
-Placement follows the Phase 2 zone map. Commons sit in open and terraformed ground near routes. Rarer minerals sit deeper in Parasite territory, crater walls and hard sectors. The top tiers sit only at contested sites. Every existing sector, raid, mission and route keeps working.
+- Each (mineral, sector) **field** has authored candidate spots and keeps a fixed number of **live veins**.
+- A vein holds a fixed amount and is mined in a few **pulls** (one HOLD GATHER channel each; the server rolls the units, capped by what the vein still holds).
+- At zero it is **EXHAUSTED for that pilot**. It never refills at that spot in minutes or hours.
+- After the regrow delay a **new vein** of that mineral surfaces at another spot of the same field. The spot is chosen by a hash of the pilot's server-only seed, the slot, its generation and the UTC day. It stays hidden until a SCAN reaches it, so prospecting with SCAN is how you find ore.
+- Clocks and spots are per pilot (no griefing). Code: `worker/src/conquest-veins.js`; rules: `MN_VEIN` and `MN_GATHER` in `js/rules.js`.
+
+| Mineral | Candidate spots | Live veins | Vein holds | Units a pull | Pulls a vein | Channel | New vein after | Placement rule |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Ferrite Regolith | 36 | 7 (2 in the Refuge Corridor, 1 in each other sector) | 12 | 2–4 | ~4 | 5 s | 6 h | open ground near routes; safe enough for a new pilot |
+| Ilmenite | 19 | 4 (Helium Basin, Western Salvage Reach, Ash approaches, Oxygen Spear) | 6 | 1–3 | ~3 | 8 s | 12 h | off-route basalt, often within patrol paths |
+| Armalcolite | 10 | 3 (Refuge Ridge, Oxygen Spear, Ash Redoubt) | 5 | 1–2 | ~3 | 12 s | 2 days | crater walls and Parasite territory, inside or next to garrison zones |
+| Tranquillityite | 6 | 3 (Oxygen Spear, Refuge Ridge, Ash Redoubt) | 3 | 1 (+3% Selenite vein a pull) | 3 | 16 s | 5 days | contested sites: raid-site perimeters, hive edges |
+| Starter Vein | 1 (once) | — | 35 Ferrite | 35 | 1 | 5 s | never | beside the Refuge, revealed by the guided first scan |
+
+Two spots were added so every field has at least two (Ilmenite at (1277,1014) in the Oxygen Spear, Tranquillityite at (1310,1210) on Refuge Ridge). Every spot passes the placement checks (clear of solids, water, forests, decks and bio-flora; reachable from the spawn; `conquest-minerals`).
+
+**Supply cap.** One play session can empty each vein once, so a day's gathering is capped at about live veins × holds × min(sessions, 24 h ÷ regrow). Regular players stay time-bound (they never empty every vein), so their timelines in 7.2 are unchanged. Grinders hit the cap: a 6 h-a-day player in 3 sessions gets at most 252 Ferrite a day from veins.
+
+**Migration of existing saves.** The Starter Vein keeps its once-ever flag. Each pilot gets 17 fresh full veins. A spot the pilot had already found (and that was ready) becomes one of their live veins, already on the MAP. Old respawn clocks are dropped. Nothing is granted or taken: cargo, banked minerals and the wallet are unchanged (`conquest-minerals`, migration checks).
+
+**MAP and HUD.** Scanned veins show what they still hold (e.g. "Ferrite · 9/12"). A mined-out vein shows **EXHAUSTED** for 10 minutes, then disappears. The ticker says when a new vein will surface in the sector ("SCAN TO FIND IT"). The post-SCAN HUD route goes to the nearest scanned vein with ore left and clears when that vein runs dry. The client only ever receives scanned veins: never the seed, an unscanned vein or the next spot.
 
 ### 5.3 Gathering rules (Phase 3)
 
 - **Scanner pulse:** a new HUD ability, free, with a 30 s cooldown.
-  - It reveals deposits within 150 m (+50 m per Radar module level).
-  - Discovered deposits stay on the MAP with their state: "ready", or "depleted · 12m" with the respawn time.
+  - It reveals this pilot's live veins within 150 m (+50 m per Radar module level), and the Starter Vein.
+  - Scanned veins stay on the MAP with what they hold; exhausted ones show EXHAUSTED for 10 minutes, then disappear (5.2).
 - **Gather:** stop within 6 m and hold GATHER for the channel time.
   - Damage interrupts the channel.
   - The channel makes noise: Parasites within 120 m move in to investigate. That is the exposure the owner asked for, so gathering creates fights.
 - **Server-authoritative:**
   - the channel advances only in simulated time, while in range and alive;
-  - the node's generation (like patrol spawns) prevents double harvests;
+  - each pull is capped by what the vein still holds, and an exhausted vein cannot be pulled again;
   - harvests count toward the per-hour outcome limit;
   - the client never sends an amount.
 - **Carry and bank:** minerals go to cargo and bank like salvage, at the Refuge terminal or the base vault. Banking sends them through the outbox (3.5) to the account wallet, where the garage can use them in every mode.
@@ -507,12 +521,15 @@ The armor ladder runs from a small first step to a long-term goal. At the top it
 
 | Profile | Ferrite | Ilmenite | Armalcolite | Tranquillityite | Selenite Glass | Moonheart |
 |---|---:|---:|---:|---:|---:|---:|
-| **Regular, Conquest-focused** | **3 d** (1 d) | **9 d** (3 d) | **4.3 wk** (11 d) | **2.6 mo** (5.4 wk) | 6.0 mo (2.8 mo) | 15.5 mo (6.9 mo) |
-| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.0 wk (13 d) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
+| **Regular, Conquest-focused** | **3 d** (1 d) | **10 d** (3 d) | **4.3 wk** (11 d) | **2.6 mo** (5.4 wk) | 6.0 mo (2.8 mo) | 15.5 mo (6.9 mo) |
+| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.0 wk (2.0 wk) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
 | **Regular, Arcade/PvP only** | **5 d** (2 d) | **5.3 wk** (11 d) | **3.1 mo** (6.0 wk) | 2.5+ yr (19 mo) | needs Conquest or top competitive rewards | needs Conquest or top competitive rewards |
-| Dedicated, Conquest-focused | 1 d (1 d) | 3 d (1 d) | 12 d (6 d) | 6.1 wk (3.3 wk) | 2.4 mo (6.6 wk) | 6.0 mo (2.7 mo) |
+| Dedicated, Conquest-focused (2 sessions) | 1 d (1 d) | 3 d (1 d) | 13 d (6 d) | 6.3 wk (3.3 wk) | 2.4 mo (6.6 wk) | 6.0 mo (2.7 mo) |
+| Grinder, 6 h a day in 3 sessions (vein cap check, Session 5) | 1 d (1 d) | 2 d (1 d) | 8 d (4 d) | 4.7 wk (2.3 wk) | 5.6 wk (4.9 wk) | 2.8 mo (6.0 wk) |
 
-The Arcade-only rare set takes about 3 months (owner target). Against the owner's targets, the regular Conquest-focused player hits every one: common 3–4 days, uncommon 1–2 weeks, rare about 1 month, very rare 2–3 months. Epic is about 6 months and legendary over a year (long-term). Dedicated players are 2–3× faster. The respawn timers and the strike schedule keep them from being 10× faster.
+Session 5 note: the table is regenerated with the vein rules (5.2) and without Base Yield minerals, which the Session 4 model had assumed but were never approved or built. That moves the regular Ilmenite set from 9 to 10 days; every owner target still holds (`dev/tests/conquest-vein-economy.mjs`).
+
+The Arcade-only rare set takes about 3 months (owner target). Against the owner's targets, the regular Conquest-focused player hits every one: common 3–4 days, uncommon 1–2 weeks, rare about 1 month, very rare 2–3 months. Epic is about 6 months and legendary over a year (long-term). Dedicated players are 2–3× faster. The veins (5.2) and the strike schedule keep them from being 10× faster: even a 6 h-a-day grinder stays under 6× the regular pace on every tier (`dev/tests/conquest-vein-economy.mjs`, Session 5).
 
 ### 7.3 First hour (new pilot, stock kit, Rookie, ordinary pace)
 
