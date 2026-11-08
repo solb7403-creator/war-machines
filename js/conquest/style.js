@@ -544,8 +544,13 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const dist=l=>l.k==='wall'||l.k==='watch'||l.k==='gate'?'wall':['greenhouse','silo','turbine','solar'].includes(l.k)?'farm':'core';
   const R=(l,x,y,z)=>{const c=Math.cos(l.r),s=Math.sin(l.r);return [l.x+x*c-z*s,y,l.z+x*s+z*c];};
   const barrel=(B,l,y0,len,rad,col,em=0)=>{const [wx,,wz]=R(l,0,0,0);B.add(G.cylC,M(wx,y0,wz,0,-l.r,Math.PI/2,rad,len,rad),col,em);};   // a vault lying along the lot's length
-  for(const l of CO.lots){const D=districts[dist(l)],B=D.m,Dt=D.d,y0=ground(l.x,l.z)-.15,ry=-l.r,at=(x,y,z,rx,sx,sy,sz,ryy=0)=>{const [wx,wy,wz]=R(l,x,y,z);return M(wx,y0+wy,wz,rx,ry+ryy,0,sx,sy,sz);},w=l.w,d=l.d,h=l.h;
+  // Settlers (owner, Nov 8): civilian towns and farms wear weathered, painted, patched materials with warm amber lights; the
+  // military (Refuge, Command Bases, frontier wall) keeps the cyan armoured Neon Frontline. Full settler architecture: session 5.
+  const amberC=lin(0xffa84a),PAINT=[lin(0xa88a5a),lin(0x8a4a32),lin(0x5f8a86),lin(0xc9c2b0),lin(0x7a6a52),lin(0x9a5a3a)],panelM=panel,whiteM=white,roofM=roof,patchC=[lin(0x5a5248),lin(0x8a8070),lin(0x6a3a2a)];
+  for(const l of CO.lots){const settler=dist(l)!=='wall',hh=Math.abs(Math.round(l.x*7+l.z*13)),cy=settler?amberC:K.cyan,panel=settler?PAINT[hh%PAINT.length]:panelM,white=settler?PAINT[(hh+3)%PAINT.length]:whiteM,roof=settler?lin(0x4a3e34):roofM;
+   const D=districts[dist(l)],B=D.m,Dt=D.d,y0=ground(l.x,l.z)-.15,ry=-l.r,at=(x,y,z,rx,sx,sy,sz,ryy=0)=>{const [wx,wy,wz]=R(l,x,y,z);return M(wx,y0+wy,wz,rx,ry+ryy,0,sx,sy,sz);},w=l.w,d=l.d,h=l.h;
    if(l.k!=='pad'&&l.k!=='wall')B.add(G.box,at(0,-2,0,0,w+.6,4,d+.6),conc);                      // foundation plinth
+   if(settler&&['hab','block','shop','hangar','silo'].includes(l.k))Dt.add(G.box,at(w*(.12-(hh%3)*.12),h*(.3+(hh%4)*.08),d/2+.06,0,w*.26,h*.18,.08),patchC[hh%3]);   // scrap-repair patch
    if(l.k==='hab'){B.add(G.hex,at(0,0,0,0,w*.48,h*.7,d*.48),panel);B.add(G.hexF(.8),at(0,h*.7,0,0,w*.48,h*.3,d*.48),roof);B.add(G.hex,at(0,h*.38,0,0,w*.49,.6,d*.49),warm,.75);Dt.add(G.hex,at(0,h*.7,0,0,w*.5,.18,d*.5),cy,1.2);}
    else if(l.k==='block'){B.add(G.box,at(0,h/2,0,0,w,h,d),white);for(let k=1;k<4;k++)B.add(G.box,at(0,h*k/4,0,0,w+.05,.5,d+.05),warm,.7);B.add(G.box,at(0,h+.4,0,0,w*.5,.8,d*.4),roof);for(const sx of [-1,1])Dt.add(G.box,at(sx*w/2,h/2,d/2,0,.2,h,.2),cy,1.2);}
    else if(l.k==='shop'){B.add(G.box,at(0,2,0,0,w,4,d),panel);B.add(G.box,at(0,1.4,d/2,0,w*.86,2.4,.1),warm,.8);B.add(G.box,at(0,3.9,d/2+.9,0,w+.4,.25,2),[mag,cy,lin(0xffb347)][Math.abs(Math.round(l.x+l.z))%3]);Dt.add(G.box,at(0,4.7,d/2+.1,0,w*.55,.8,.15),[cy,mag,warm][Math.abs(Math.round(l.x))%3],1.4);}
@@ -561,7 +566,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    else if(l.k==='gate'){B.add(G.box,at(0,h/2,0,0,w*.5,h,d*.5),wallC);Dt.add(G.box,at(0,h-.5,0,0,w*.55,.4,d*.55),cy,1.5);}
   }
   // roads: dark paved ribbon on the terrain with neon edge strips and dashed lane marks (bridge sections ride the deck)
-  const RB=new Bld(),asphalt=lin(0x24282e),edge=lin(0x30d6ff),dash=lin(0xe8e2c8),dirtC=lin(0x5e4a36),rutC=lin(0x3a2c20),lamps=[];
+  const RB=new Bld(),asphalt=lin(0x24282e),edge=lin(0xffa84a),dash=lin(0xe8e2c8),dirtC=lin(0x5e4a36),rutC=lin(0x3a2c20),lamps=[];
   for(const r of CO.roads){const pts=[];for(let i=1;i<r.pts.length;i++){const [a,b]=[r.pts[i-1],r.pts[i]],L=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(L/3));for(let k=i===1?0:1;k<=n;k++)pts.push([a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n]);}
    const hw=r.w/2,yAt=(x,z)=>{const dk=Wd.deckAt(x,z);return dk!==null?dk+.06:ground(x,z)+.09;},paved=!!r.p;let run=0;
    for(let i=1;i<pts.length;i++){const [ax,az]=pts[i-1],[bx,bz]=pts[i],L=Math.hypot(bx-ax,bz-az)||1,nx=-(bz-az)/L,nz=(bx-ax)/L,P=(x,z,o)=>[x+nx*o,yAt(x+nx*o,z+nz*o),z+nz*o];run+=L;
@@ -576,7 +581,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   for(const f of CO.fields){const c=Math.cos(f.r),s2=Math.sin(f.r),[cA,cB]=crops[f.c%3],L=(u,v)=>{const x=f.x+u*c-v*s2,z=f.z+u*s2+v*c;return [x,ground(x,z)+.12,z];};
    for(let v=-f.d/2;v<f.d/2;v+=1.6)for(let u=-f.w/2;u<f.w/2;u+=4){const u1=Math.min(u+4,f.w/2);FB.quad(L(u,v),L(u1,v),L(u1,v+.95),L(u,v+.95),cA,0);FB.quad(L(u,v+.95),L(u1,v+.95),L(u1,v+1.6),L(u,v+1.6),cB,0);}}
   // monorail: beam on pylons + the moving train; power line: poles and wires
-  const RL=CO.rail||[],railH=(x,z)=>ground(x,z)+11;if(RL.length>1){for(let i=1;i<RL.length;i++){const [a,b]=[RL[i-1],RL[i]],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/8);for(let k=0;k<n;k++){const x0=a[0]+(b[0]-a[0])*k/n,z0=a[1]+(b[1]-a[1])*k/n,x1=a[0]+(b[0]-a[0])*(k+1)/n,z1=a[1]+(b[1]-a[1])*(k+1)/n;districts.core.m.seg(V3(x0,railH(x0,z0),z0),V3(x1,railH(x1,z1),z1),.9,lin(0x9aa6b2));districts.core.d.seg(V3(x0,railH(x0,z0)+.55,z0),V3(x1,railH(x1,z1)+.55,z1),.12,cy,1.2);}}
+  const RL=CO.rail||[],railH=(x,z)=>ground(x,z)+11;if(RL.length>1){for(let i=1;i<RL.length;i++){const [a,b]=[RL[i-1],RL[i]],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/8);for(let k=0;k<n;k++){const x0=a[0]+(b[0]-a[0])*k/n,z0=a[1]+(b[1]-a[1])*k/n,x1=a[0]+(b[0]-a[0])*(k+1)/n,z1=a[1]+(b[1]-a[1])*(k+1)/n;districts.core.m.seg(V3(x0,railH(x0,z0),z0),V3(x1,railH(x1,z1),z1),.9,lin(0x9aa6b2));districts.core.d.seg(V3(x0,railH(x0,z0)+.55,z0),V3(x1,railH(x1,z1)+.55,z1),.12,lin(0xffa84a),1.1);}}
    for(const [x,z] of CO.railPylons){districts.core.m.add(G.cyl,M(x,ground(x,z)-1,z,0,0,0,.9,12.2,.9),lin(0x7d8894));}}
   const PW=CO.power||[];for(let i=0;i<PW.length;i++){const [x,z]=PW[i],y=ground(x,z);districts.farm.d.add(G.cyl,M(x,y,z,0,0,0,.13,9,.13),lin(0x2e2822));districts.farm.d.add(G.box,M(x,y+8.6,z,0,0,0,2.4,.16,.16),lin(0x2e2822));
    const q=PW[i+1];if(q&&Math.hypot(q[0]-x,q[1]-z)<45){const yq=ground(q[0],q[1]);for(const o of [-1,1])districts.farm.d.seg(V3(x+o,y+8.7,z),V3(q[0]+o,yq+8.7,q[1]),.03,lin(0x222222));}}
