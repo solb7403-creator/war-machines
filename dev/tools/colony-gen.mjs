@@ -61,10 +61,13 @@ for(const [cx,cz] of farmCenters){let made=0;for(let t=0;t<900&&made<4;t++){cons
 for(const l of lots.filter(l=>l.tmp))lots.splice(lots.indexOf(l),1);
 // irrigation canals: from the creek to the south-west fields (decorative shallow channels)
 const canals=[];{const near=fields.filter(f=>f.x<1000).sort((a,b)=>W.creekNearest(a.x,a.z).d-W.creekNearest(b.x,b.z).d);for(const f of near.slice(0,3)){const c=W.creekNearest(f.x,f.z);if(c&&c.d<160)canals.push([[Math.round(c.x),Math.round(c.z)],[f.x,f.z]]);}}
-// frontier wall: ~28 m runs with watchtowers where green meets barren on the hive side; every fourth run is an open lane
+// frontier wall: ~28 m runs with watchtowers where green meets barren on the hive side; every fifth run is an open lane.
+// The oxygen line stays breached: no wall or watchtower within 60 m of the starter defense objective (Battle.objective,
+// 1150,1080; beyond every Parasite weapon range), so its attackers can still reach and destroy it (conquest-combat).
+const oxyBreach=(x,z,w,d,rot)=>rectDist({x,z,w,d,r:rot},1150,1080)<60;
 const wallPts=[];{const cx=1150,cz=1160;for(let a=-1.0;a<=1.75;a+=0.02){const dx=Math.sin(a),dz=-Math.cos(a);let r=60;while(r<420&&W.terraformAt(cx+dx*r,cz+dz*r)>.06)r+=2;if(r>=420)continue;wallPts.push([cx+dx*(r-2),cz+dz*(r-2)]);}}
 {let run=[wallPts[0]],n=0;const flush=()=>{if(run.length<2)return;const a=run[0],b=run[run.length-1],L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<14)return;const x=(a[0]+b[0])/2,z=(a[1]+b[1])/2,rot=Math.atan2(b[1]-a[1],b[0]-a[0]);n++;
-  if(n%5===0)return;const WL=L-9;if(WL>=10&&clear(x,z,WL,3,rot,.5,{opGap:10,gap:.5,flat:7,nodeGap:3}))put('wall',x,z,rot,Math.round(WL*10)/10,3,5);if(clear(b[0],b[1],6,6,rot,.5,{opGap:10,gap:.5,flat:7,nodeGap:3}))put('watch',b[0],b[1],rot,6,6,12);};
+  if(n%5===0)return;const WL=L-9;if(WL>=10&&!oxyBreach(x,z,WL,3,rot)&&clear(x,z,WL,3,rot,.5,{opGap:10,gap:.5,flat:7,nodeGap:3}))put('wall',x,z,rot,Math.round(WL*10)/10,3,5);if(!oxyBreach(b[0],b[1],6,6,rot)&&clear(b[0],b[1],6,6,rot,.5,{opGap:10,gap:.5,flat:7,nodeGap:3}))put('watch',b[0],b[1],rot,6,6,12);};
  for(let i=1;i<wallPts.length;i++){const p=wallPts[i];if(roadDist(p[0],p[1])<7){flush();run=[];continue;}if(!run.length){run=[p];continue;}const a=run[0];if(Math.hypot(p[0]-a[0],p[1]-a[1])>=28||Math.hypot(p[0]-run[run.length-1][0],p[1]-run[run.length-1][1])>12){flush();run=[run[run.length-1],p];if(Math.hypot(p[0]-run[0][0],p[1]-run[0][1])>12)run=[p];}else run.push(p);}flush();}
 // gates where roads cross the wall line
 for(const r of roads)for(let i=1;i<r.pts.length;i++){const [a,b]=[r.pts[i-1],r.pts[i]];for(const p of wallPts){const d=segDist(p[0],p[1],a,b);if(d<6){const rot=Math.atan2(b[1]-a[1],b[0]-a[0])+Math.PI/2;for(const s of [-1,1]){const gx=p[0]+Math.cos(rot)*s*(r.w/2+4),gz=p[1]+Math.sin(rot)*s*(r.w/2+4);if(clear(gx,gz,5,5,rot,.5,{road:true,opGap:20,gap:1,flat:4}))put('gate',gx,gz,rot,5,5,9);}}}}
