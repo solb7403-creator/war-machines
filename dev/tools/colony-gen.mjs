@@ -39,6 +39,8 @@ function clear(x,z,w,d,rot,pad,opts={}){const L={x,z,w,d,r:rot},c=Math.cos(rot),
  if(!opts.field&&ops.some(o=>rectDist(L,o.x,o.z)<(opts.opGap??18)))return no('op');
  const ng=opts.nodeGap??6;if(W.deposits.some(o=>rectDist(L,o.x,o.z)<ng)||W.floraNodes.some(o=>rectDist(L,o.x,o.z)<ng)||W.pylons.some(o=>rectDist(L,o.x,o.z)<ng))return no('node');
  if(rectDist(L,1174,1168)<14||rectDist(L,base.x,base.z)<base.radius+6||C.strikeSites.some(o=>rectDist(L,o.x,o.z)<24))return no('site');
+ // the home approach: a clear 7 m corridor from Main Street straight to the Refuge supply terminal (the drive to bank)
+ for(let t=0;t<=44;t+=2)if(rectDist(L,1174,1124+t)<7)return no('approach');
  if(lots.some(o=>overlap(L,o,opts.gap??3)))return no('lot');
  for(let u=-w/2;u<=w/2;u+=2)for(let v=-d/2;v<=d/2;v+=2){const px=x+u*c-v*s,pz=z+u*s+v*c;if(Math.abs(W.groundAt(px,pz)-W.groundAt(x,z))>(opts.flat??4))return no('flat');}
  return true;}
