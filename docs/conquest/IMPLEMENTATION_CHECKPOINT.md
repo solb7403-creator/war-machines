@@ -841,7 +841,7 @@ The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt
 - Tank wrecks and the pipeline are decorative (no collision).
 - PHYSICAL_IPHONE_UNVERIFIED.
 
-## RESUME HERE — Checkpoint 22 handoff (World, Resources & Airdrop Points; branch `claude/friendly-allen-7tcyca`)
+## Checkpoint 22 handoff (superseded by Checkpoint 23 below; World, Resources & Airdrop Points; branch `claude/friendly-allen-7tcyca`)
 
 **State at handoff:** all work is committed and pushed on `claude/friendly-allen-7tcyca`, with no PR open and nothing merged or deployed. The build stamp is already set to `20261108075526` (`index.html` `window.BUILD` + 32 `?v=` keys, `version.json`). `main` (through `c01529d`, #67) was merged into the branch.
 
@@ -922,3 +922,86 @@ The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt
 7. `deploy-worker.yml` runs on the push to main. Confirm the pvp health annotation shows `ok:true` and the live `version.json` equals the stamp; also check the Pages `version.json`.
 8. If broken, revert the merge commit on main (`git revert -m 1 <merge>`), push, and confirm the redeploy.
 9. Final report here: what shipped, the agents used and whether they changed the result, and what is unverified (PHYSICAL_IPHONE_UNVERIFIED; no WebKit run; the strike difficulty and mineral income are modeled). Update the ROADMAP status.
+
+## Checkpoint 23 — RELEASE: World, Resources & Airdrop Points (PR #69, branch `claude/friendly-allen-7tcyca`) — owner morning review
+
+**Status:** released under the owner's pre-approval (Nov 8: "run unattended; don't wait for my approval"). The deploy verification is recorded in "Deploy verification" at the end of this section.
+
+### What shipped (session 4 of docs/ROADMAP.md)
+- **Economy:** Conquest airdrop points, Command Base multiplier, Daily Base Yield, and the 50,000 daily cap shared by every mode.
+- **Minerals and armour:** 6-tier minerals with deposits, scanner, gathering, caches and banking, plus Meteor Strike, Arcade/PvP and league mineral drops, and Hull Plating.
+- **Terraform rework:** creek, reservoir, forests and bio-flora.
+- **The colony:** core town, farm ring, frontier wall, roads (+15% on paved), monorail and crew, drawn in the owner's rugged war-torn frontier art direction (settlers in amber, military in cyan).
+
+### Terraform art self-check (owner override, Checkpoint 22 item 1)
+Every element of the override is in the build and visible in the captures:
+- clumped olive/straw/dark-green grass with dirt, gravel and regolith showing through
+- rock and strata on steep ground
+- shell craters and tank ruts
+- scrub, thornbushes, ferns by water, and dead/burnt trees; flowers only near the core
+- hazy amber-to-steel sky, low sun and baked long shadows
+- slate water with muddy banks
+- wrecks, sandbags, wire and the pipeline; a cleaner, lit colony core
+- no hex lines on open ground
+
+Nothing was half-done. Polish candidates stay for the later look session: crop rows at distance, more visible sky, unit shadows, veil tuning.
+
+### Final captures (390 portrait, Chromium SwiftShader; relative only, not phone FPS)
+- `docs/economy/colony/contact-sheet-390-high.jpg` and `contact-sheet-390-low.jpg`
+- the six shots at HIGH, LOW and 2D: `docs/economy/colony/*-390-{high,low,2d}.png`
+- stats: `stats-high.json`, `stats-low.json`, `stats-2d.json`
+
+| Quality | Draws | Triangles | Programs | Page errors |
+|---|---|---|---|---|
+| HIGH | 50–78 | 119k–205k | 17 | 0 |
+| LOW | 47–68 | 104k–142k | — | 0 |
+
+- Journey evidence regenerated on the final code: `docs/economy/phase1`, `phase2`, `phase3`.
+
+### Regressions found this session and fixed (all reproduced first, then shown passing)
+1. **`conquest-combat` (starter battle).** A new frontier-wall run 18–27 m from the oxygen objective blocked every attacker shot, so the starter battle could no longer be lost. `main` passes this test; the branch failed it.
+   - Fix: `colony-gen.mjs` keeps walls and watchtowers 60 m clear of the starter objective.
+   - The colony was regenerated. Only those 2 walls and 2 watchtowers were removed; nothing else in COLONY changed.
+   - Every other defense battle plays out the same as on `main`, undefended (checked on both).
+2. **`conquest-corrections`.** Exact-travel probes did not allow for the paved-road +15%.
+   - Fix: a shared `World.speedFactor`, used by `advance()` and by every footing probe (server footing, client safe footing, travel arrivals).
+3. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
+   - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
+
+### Independent reviews (2 read-only agents, given only the branch, head SHA, briefs and this checkpoint)
+Neither reviewer found a blocker or any way to mint or duplicate points or minerals. Both changed the result: every valid finding below was fixed and tested.
+
+**Economy/security reviewer:**
+- a won Meteor Strike left its sector "contested" forever (major); strikes no longer contest territory
+- the strike core roll was visible to the client; now hidden
+- Daily Base Yield points could be lost under the hourly limit; now held
+- PvP weekly minerals used the account league; now the room league
+- a live-room credit retry could pay twice; now keyed per seat and match, with a test
+- plates were missing from the non-lab loadout
+
+**Gameplay/performance reviewer:**
+- the same strike bug
+- SCAN taps were dropped at 60 fps; now latched
+- Hull Plating was missing from the client loadout
+- footing probes failed on roads; plus a new regionRevision-2 migration that moves pilots saved inside new colony solids, the dam, pylons or deep water (with a test)
+- LOW terrain went from 1 to 6 texture fetches; now 3, and LOW sky uses one cloud octave
+- flora placement ran synchronously on chunk load; now a resumable job under the streaming budget
+- per-frame allocations in the colony animation
+- GATHER covered ACT
+- featured contracts could pick strikes
+
+### Tests actually run (local, final code)
+- **Node:** all 81 node suites from conquest-check, deploy-worker, equipment-balance, lab-ui-check and website-check, including `bash dev/tests/conquest-regression.sh` (all 27 tests). All passed.
+  - The earned journey still reaches the first base inside the 45–75 min target.
+- **Browser (Chromium):** onboarding, earned-browser, earned end-to-end, preview x2, airdrop, terraform captures (high), minerals, and flagship 390 all passed. Colony captures at HIGH, LOW and 2D passed with no page errors.
+- **CI:** PR #69 runs the whole CI matrix, including WebKit and Firefox, against the final head.
+
+### Agents used
+2 reviewers (above). No other agents.
+
+### Unverified
+- PHYSICAL_IPHONE_UNVERIFIED: no physical phone frame timing.
+- WebKit only through CI.
+- Strike difficulty and mineral income are modeled, not measured with players.
+- The colony wall stays physical only. Colony Defense is queued for session 7.
+
