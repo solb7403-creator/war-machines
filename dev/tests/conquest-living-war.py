@@ -49,6 +49,10 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
     async def rect(selector):
      return await page.locator(selector).evaluate('''e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {x:r.x,y:r.y,w:r.width,h:r.height,hit:hit===e||e.contains(hit)};}''')
     async def tap(selector):
+     # the HUD updates on rendered frames; software GL in CI can take 250 ms+ per frame near the colony, so wait for the
+     # control to be laid out before asserting it (the assertion below is unchanged)
+     try:await page.wait_for_function('s=>{const e=document.querySelector(s);if(!e)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0}',arg=selector,timeout=10000)
+     except Exception:pass
      r=await rect(selector);assert r['x']>=0 and r['y']>=0 and r['x']+r['w']<=width+1 and r['y']+r['h']<=page.viewport_size['height']+1 and r['hit'],(engine,width,selector,r);await page.touchscreen.tap(r['x']+r['w']/2,r['y']+r['h']/2)
     async def fixture(position=None,**kw):
      await page.evaluate('Conquest.view.reset();Conquest.view.authority.actionBusy=true');await page.wait_for_function('!Conquest.view.authority.busy');await page.request.post(base+'/fixture',data={**kw,**({'position':position} if position else {})});await page.evaluate('Conquest.view.authority.state=null;Conquest.view.authority.queue=[];Conquest.view.authority.phase=null;Conquest.view.authority.connect()');await page.wait_for_function('Conquest.view.authority.state?.seq===0&&Conquest.view.authority.connected');await page.evaluate('Conquest.view.authority.actionBusy=false');await page.wait_for_timeout(250);verified_abilities.update(dash=False,shield=False)
@@ -70,6 +74,7 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
      for key in held:await page.keyboard.up(key)
      held=set()
     async def win_operation(id):
+     last=None;still=0
      for step in range(700):
       info=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.authority.state;if(!B)return {missing:true};const living=B.enemies.filter(e=>e.hp>0&&(!e.resident||!v.battle||(['relay','redoubt'].includes(B.operation?.id)&&e.base?.id===B.operation.site))&&(v.battle||Math.hypot(e.x-v.p.x,e.z-v.p.z)<75)),e=living.find(e=>e.id===B.carrierId)||living.sort((a,b)=>Math.hypot(a.x-v.p.x,a.z-v.p.z)-Math.hypot(b.x-v.p.x,b.z-v.p.z))[0];let pick=null;if(e&&ConquestControl.visible(B,v.p,e)){let hull=null;v.enemyMeshes.get(e.id)?.traverse(m=>{if(!hull&&m.isMesh&&!m.userData.noPick&&m!==v.enemyMeshes.get(e.id).userData.marker)hull=m;});if(hull&&!hull.geometry.boundingBox)hull.geometry.computeBoundingBox();const center=hull?hull.geometry.boundingBox.getCenter(new v.T.Vector3()).applyMatrix4(hull.matrixWorld):new v.T.Vector3(e.x-v.origin.x,e.y+1,e.z-v.origin.z);const q=center.project(v.camera),r=v.host.getBoundingClientRect();const meshes=[];v.enemyMeshes.get(e.id)?.traverse(m=>{if(m.isMesh&&!m.userData.noPick&&m!==v.enemyMeshes.get(e.id).userData.marker)meshes.push(m);});for(const [dx,dy] of [[0,0],[0,3],[0,-3],[3,0],[-3,0],[0,6]]){const x=(q.x+1)*r.width/2+dx,y=(1-q.y)*r.height/2+dy;if(document.elementFromPoint(x,y)!==v.renderer.domElement)continue;const ray=new v.T.Raycaster();ray.setFromCamera(new v.T.Vector2(x/r.width*2-1,1-y/r.height*2),v.camera);const hit=ray.intersectObjects(meshes,false)[0];if(hit&&ConquestCombat.lineClear({x:ray.ray.origin.x+v.origin.x,y:ray.ray.origin.y,z:ray.ray.origin.z+v.origin.z},{x:hit.point.x+v.origin.x,y:hit.point.y,z:hit.point.z+v.origin.z})){pick={id:e.id,x,y,visible:q.z<1};break;}}}return {state:s.battle.state,hp:s.hp,target:e?{x:e.x,z:e.z}:B.objective,selected:v.selectedId,pick,live:living.length,canHit:!!e&&ConquestControl.visible(B,v.p,e),site:B.operation};}''')
       if info.get('missing') or info['hp']<=0:
@@ -81,6 +86,10 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
       target=info['target'];p=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})')
       if id=='relay' and info['live'] and not info['canHit'] and p['z']>info['site']['z']-14:target={'x':info['site']['x']-25,'z':info['site']['z']-20}
       distance=math.hypot(target['x']-p['x'],target['z']-p['z'])
+      # the bot steers with 8 keyboard directions; pressed against a solid edge (as a player would notice), back off briefly
+      still=still+1 if last and math.hypot(p['x']-last['x'],p['z']-last['z'])<.05 and info['live'] and distance>28 else 0;last=p
+      if still>=12:
+       await release_keys();await page.keyboard.down('s');await page.wait_for_timeout(700);await page.keyboard.up('s');still=0;continue
       await steer(target if not info['live'] or distance>28 or not info['selected'] else p,fire=bool(info['live']))
       if step%20==0:await page.keyboard.press('f')
       await page.wait_for_timeout(150)

@@ -1,0 +1,27 @@
+{
+ "quality": "2d",
+ "gather": null,
+ "viewport": "390x844",
+ "renderer": "Chromium SwiftShader (relative only)",
+ "shots": {
+  "core-town": {
+   "canvas2d": true
+  },
+  "farm-ring": {
+   "canvas2d": true
+  },
+  "frontier-wall": {
+   "canvas2d": true
+  },
+  "river-bridge": {
+   "canvas2d": true
+  },
+  "wild-meadow": {
+   "canvas2d": true
+  },
+  "boundary-crossing": {
+   "canvas2d": true
+  }
+ },
+ "pageErrors": []
+}

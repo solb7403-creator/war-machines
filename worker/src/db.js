@@ -1,7 +1,7 @@
 // Shared server helpers: Firebase Realtime Database over REST (with the database secret, which bypasses the
 // locked rules), HMAC and names.
 export const DB_URL = "https://warmachines-a6034-default-rtdb.firebaseio.com";
-export const DAILY_CAP = 20000;          // max points a player can bank per UTC day
+export const DAILY_CAP = 50000;          // max base points a player can bank per UTC day, all modes together (js/rules.js DAILY_CAP)
 export const DAY_MS = 86400000;
 export const dayOf = (ms) => Math.floor(ms / DAY_MS);
 export const weekOf = (ms) => Math.floor((ms - 4 * DAY_MS) / (7 * DAY_MS)); // weeks start Monday 00:00 UTC

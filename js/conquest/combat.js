@@ -29,6 +29,9 @@ const archetypes=Object.freeze({
  sentinel:Object.freeze({name:'Parasite heavy sentinel',cls:'titan',arch:'siege',hp:1100,dps:72,shot:1.15,speed:1.8,range:54,role:'player'}),
  command:Object.freeze({name:'Parasite fire coordinator',cls:'titan',arch:'pulse',hp:330,dps:26,shot:.65,speed:2.0,range:48,role:'support'})
 });
+// Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1). Energy: the fire coordinator's and the plasma
+// batteries' pulse fire, plasma bombardment. Area: artillery/orbital strikes and plasma splash. Nothing else is cut.
+const plateTaken=(st,energy,area)=>(energy?1-(st?.enR||0):1)*(area?1-(st?.arR||0):1);
 const droneDefinition=Object.freeze({altitude:15,takeoffSeconds:1.2,speed:4.2,maxPerCarrier:2,tellSeconds:1.1,burstSeconds:2,cycleSeconds:6});
 const installations=W.installations;
 // Stable authored identities preserve production v1 locks and spawn keys as the region expands.
@@ -63,7 +66,16 @@ const raidIds=Object.freeze(raidOperations.map(o=>o.id)),sectors=W.sectors;
 // retaken through the same physical defense after an invasion is lost, so no sector is ever permanently unrecoverable.
 const retakeSectors=new Set(sectors.map(s=>s.id).filter(id=>!raidOperations.some(o=>o.sector===id)));
 function sectorDefenseOpen(t,sector){return !!t&&(t.owner==='humanity'&&t.status==='defense-alert'||retakeSectors.has(sector)&&t.owner==='parasites'&&t.status==='recaptured');}
-const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
+// Meteor Strike (docs/economy/RESOURCE_ECONOMY.md §5.4): every 2 hours on the even UTC hour, the same site for every pilot,
+// rotating through 8 authored craters in every sector (the dangerous ones included). 5 min telegraph, open for 20 min.
+// Each pilot contests it in their own world: two waves (interceptors, then a fixed HARD heavy group), then a 16 s core channel.
+const strikeSites=freeze([['refuge','REFUGE CORRIDOR',1007,1181],['ash','ASH REDOUBT',1357,858],['oxygen','OXYGEN SPEAR',1268,1087],['western','WESTERN SALVAGE REACH',892,817],
+ ['helium','HELIUM BASIN',1184,804],['ridge','REFUGE RIDGE',1366,1192],['south','RESERVOIR FLATS',895,1313],['east','EASTERN RIM',1398,1074]].map(([sector,name,x,z],i)=>freeze({id:'strike-'+(i+1),sector,name,x,z})));
+function meteorStrike(now){const S=STRIKE,slot=Math.floor((now+S.telegraphMs)/S.everyMs),impactAt=slot*S.everyMs,closesAt=impactAt+S.windowMs,site=strikeSites[((slot%strikeSites.length)+strikeSites.length)%strikeSites.length];
+ return {slot,impactAt,closesAt,site,phase:now<impactAt?'telegraph':now<closesAt?'open':'idle',nextAt:now<closesAt?impactAt:impactAt+S.everyMs};}
+const strikeOperations=strikeSites.map(t=>({id:t.id,name:'METEOR STRIKE / '+t.name,family:'strike',strike:true,site:t.id,sector:t.sector,x:t.x,z:t.z,danger:'HARD',
+ brief:'A meteor has hit '+t.name+'. Beat both Parasite waves converging on the crater, then hold at the strike core for 16 seconds to extract it. Rewards are carried: bring them home.'}));
+const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperations,...strikeOperations,...sectors.map(sector=>{const [x,z]=raidPoint(sector.x,sector.z);return {id:'sector-defense-'+sector.id,name:sector.name+' / INVASION DEFENSE',family:'sector-defense',defense:true,sector:sector.id,site:sector.id,x,z,danger:'HARD',brief:'Repel two incoming Parasite assault waves before they destroy the sector command beacon. A failed defense can recapture this frontier; your permanent first-clear history remains.',reward:{cp:160,alloy:15,biomass:10,helium:2}};}),{id:'base-defense',name:'COMMAND BASE / DEFENSE ALERT',family:'base-defense',site:'personal-base',x:1080,z:1160,danger:'HARD',brief:'Repel two incoming Parasite assault teams. Defend the Command Base reactor while using earned fortifications and your own weapons.',reward:{cp:160,alloy:15,biomass:10,helium:2}}].map(o=>[o.id,{activationRadius:45,...o}])));
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 // The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
 const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
@@ -127,7 +139,7 @@ class Battle {
  const owner=q.stats,direct=off<r*.4,isCrit=direct&&this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
  let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
- if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
+ if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,q.kind==='pulse',false);const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
  if(q.team==='player'&&t.pattern==='shield'&&this.time%8<3)damage*=.35;
  if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7});}}
  else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
@@ -216,12 +228,15 @@ class Operation extends Battle {
  constructor(loadout,p,id){super(loadout,p);this.operation=operations[id];if(!this.operation)throw Error('unknown operation');this.localEncounter=true;this.enemies=[];this.id=20000;this.stage=0;this.work=0;this.scans=0;this.objectiveHp=this.objectiveMax=1200;this.objectiveDamageable=id==='rescue';this.approachGrace=0;const o=this.operation;this.objective={x:o.x,y:W.groundAt(o.x,o.z)+2.2,z:o.z};
  this.nodes=id==='recon'?[[o.x,o.z],[o.x+30,o.z+20],[o.x+55,o.z-10]]:[];
  // Installation missions fight the persistent world garrison attached by the session.
- const team=o.raid||o.defense||id==='base-defense'?[]:id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
+ const team=o.raid||o.defense||o.strike||id==='base-defense'?[]:id==='relay'||id==='redoubt'?[]:id==='rescue'?['raider','breacher','command']:['raider','raider'];
  team.forEach((kind,i)=>this.deploy(kind,o.x+18+i*12,o.z-25,'guard:'+i));
  if(id==='convoy'){this.deploy('command',o.x,o.z-10,'carrier');this.carrierId=this.enemies.at(-1).id;}
  if(o.raid)this.setupRaid();if(id==='base-defense'||o.defense){this.objectiveDamageable=true;this.objectiveHp=this.objectiveMax=1800;this.defenseWave=0;this.deployDefense();}
  if(id==='relay'){this.deploy('command',o.x,o.z,'relay');const e=this.enemies.at(-1);e.immobile=true;e.hp=e.maxHp=450;this.relayId=e.id;}
+ if(o.family==='strike'){this.strikeWave=0;this.deployStrike();}
  }
+ // Meteor Strike waves: fixed authored HARD tier, never matched to the pilot's gear (interceptors, then a heavy group)
+ deployStrike(){const o=this.operation,n=++this.strikeWave,kinds=n===1?['raider','raider','raider']:['sentinel','command','raider'];kinds.forEach((kind,i)=>this.deploy(kind,o.x-28+i*14,o.z-34,'strike:'+n+':'+i));}
  spawnWave(){}
  setupRaid(){const o=this.operation;this.hazards=[];this.nextHazard=6;this.reinforcements=0;this.reinforcing=false;this.objectiveDamageable=false;this.nodes=o.route.map(p=>p.slice());this.extracting=false;
   const [a,b,c]=o.offsets;this.deploy('raider',o.x+a[0],o.z+a[1],'flanker');this.deploy(o.layout==='ash-approach'?'sentinel':'command',o.x+b[0],o.z+b[1],'support');
@@ -236,7 +251,7 @@ class Operation extends Battle {
  deployCommander(){const o=this.operation;this.deploy(o.commander==='ambush'?'raider':o.commander==='carrier'?'command':'sentinel',o.x+12,o.z-38,'commander');const e=this.enemies.at(-1);e.commander=true;e.pattern=o.commander;e.hp=e.maxHp=o.commander==='ambush'?460:680;e.nextPattern=this.time+4;e.drones=0;this.commanderId=e.id;this.harden(e);}
  defenseStep(dt){if(this.defenseConfig==='drone')this.objectiveHp=Math.min(this.objectiveMax,this.objectiveHp+12*dt);if(this.defenseConfig!=='turret')return;this.turretClock=(this.turretClock||0)-dt;if(this.turretClock>0)return;this.turretClock=.6;const from={x:this.operation.x,y:W.groundAt(this.operation.x,this.operation.z)+6,z:this.operation.z},e=this.enemies.find(e=>!e.resident&&e.hp>0&&Math.hypot(e.x-from.x,e.z-from.z)<65&&lineClear(from,center(e)));if(!e)return;const damage=18+3*(this.baseTier||0);e.hp=Math.max(0,e.hp-damage);this.effects.push({kind:'beam',weapon:'pulse',x:from.x,y:from.y,z:from.z,ex:e.x,ey:e.y+2.2,ez:e.z,life:.15});if(!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}}
  deployDefense(){this.defenseWave++;for(let i=0;i<3;i++){this.deploy(i===2?'breacher':'raider',this.operation.x-30+i*20,this.operation.z-40,'defense:'+this.defenseWave+':'+i);this.enemies.at(-1).role=i===2?'facility':'player';}this.objectiveDamageable=true;}
- hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
+ hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,h.kind==='plasma',h.kind==='plasma'||h.kind==='orbital');const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
   for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;{const D=doctrineOf(this.operation);e.nextPattern=this.time+(e.pattern==='artillery'?6:8)*(D?D.cadence*(e.enraged?D.enrageCadence:1):e.enraged?.65:1);}e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<droneDefinition.maxPerCarrier&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);const drone=this.enemies.at(-1);this.harden(drone);drone.drone=true;drone.launchedAt=this.time;drone.surface='air';drone.cd=droneDefinition.takeoffSeconds;drone.telegraph=true;e.drones++;}}}
   if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+(doctrineOf(this.operation)?.hazardEvery||11);this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
  }
@@ -276,6 +291,7 @@ class Operation extends Battle {
  }
  step(dt,fire){if(this.operation.family==='base-defense')this.defenseStep(dt);super.step(dt,fire);if(this.state!=='active')return;this.hazardStep(dt);if(this.playerHp<=0){this.state='defeat';this.reason='War Machine disabled by a telegraphed strike';return;}const o=this.operation,d=Math.hypot(this.player.x-this.objective.x,this.player.z-this.objective.z),living=this.enemies.filter(e=>e.hp>0&&(!e.resident||(['relay','redoubt'].includes(o.id)&&e.base?.id===o.site)));
  if(o.raid)this.raidStep(dt);if((o.family==='base-defense'||o.defense)&&!living.some(e=>!e.resident)){if(this.defenseWave<2)this.deployDefense();else this.state='victory';}
+ if(o.family==='strike'){if(!living.length){if(this.strikeWave<2)this.deployStrike();else{this.stage=2;const hurt=this.playerHp<(this.coreHp??this.playerHp);this.coreHp=this.playerHp;if(d<8&&!hurt)this.work+=dt;else this.work=0;if(this.work>=STRIKE.channelMs/1000)this.state='victory';}}else{this.stage=this.strikeWave-1;this.work=0;this.coreHp=this.playerHp;}}
  if(o.id==='convoy'){const c=this.enemies.find(e=>e.id===this.carrierId);this.stage=c.hp<=0?1:0;if(c.hp>0&&c.z<o.z-135){this.state='defeat';this.reason='Armored carrier escaped';}else if(!living.length)this.state='victory';}
  if(o.id==='relay'){const relay=this.enemies.find(e=>e.id===this.relayId);this.stage=relay.hp<=0?1:0;if(this.stage&&!living.length&&d<12)this.work+=dt;if(this.work>=8&&!living.length)this.state='victory';}
  if(o.id==='recon'){const node=this.nodes[this.scans];if(node&&Math.hypot(this.player.x-node[0],this.player.z-node[1])<9){this.work+=dt;if(this.work>=3){this.scans++;this.work=0;}}this.stage=this.scans;if(this.scans===3)this.state='victory';}
@@ -287,18 +303,25 @@ class Operation extends Battle {
 }
 // Daily Command Base CP batch (shared so the MAP shows the Worker's exact figure).
 function baseProduction(base,reputation=0){const b=base||{},m=b.modules||{};return b.tier?Math.min(800,40*b.tier+35*(m.reactor||0)+Math.floor(Math.sqrt(reputation||0))*3)*(1+.1*(m.uplink||0)):0;}
+// Daily Base Yield (shared by the Worker and the HUD meter): two clocks, each filling over 24 h and stopping when full.
+// claimedAt drives CP + materials; pointsAt drives the airdrop points part (it keeps filling while it waits for the day's
+// first verified operation). Amounts are the full-day table x fill, rounded down; the Worker settles the same numbers.
+function baseYield(base,reputation=0,now=Date.now()){const b=base||{},Y=CQ_YIELD,t=Math.max(0,Math.min(5,b.tier|0)),f=at=>Math.max(0,Math.min(1,(now-(Number(at)||0))/Y.day));
+ if(!t)return {tier:0,fill:0,pointsFill:0,cp:0,alloy:0,biomass:0,helium:0,pts:0,full:false,min:Y.min};
+ const fill=f(b.claimedAt),pointsFill=f(b.pointsAt??b.claimedAt);
+ return {tier:t,fill,pointsFill,cp:Math.floor(baseProduction(b,reputation)*fill),alloy:Math.floor(Y.alloy[t]*fill),biomass:Math.floor(Y.biomass[t]*fill),helium:Math.floor(Y.helium[t]*fill),pts:Math.floor(Y.pts[t]*pointsFill),full:fill>=1,min:Y.min};}
 // RECALL to the Command Base: a 15 s channel of simulated play that any damage breaks; 10 min cooldown, 5 min for
 // premium Lunar Pass owners (entitlement read by the Worker from the account, never from the client).
 const RECALL=freeze({channelMs:15000,cooldownMs:600000,premiumCooldownMs:300000});
 // Owner rule: raids unlock only after the six opening field missions each have a verified clear.
-const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&id!=='base-defense'));
+const fieldMissionIds=freeze(Object.keys(operations).filter(id=>!operations[id].raid&&!operations[id].defense&&!operations[id].strike&&id!=='base-defense'));
 function fieldProgress(completed){return fieldMissionIds.filter(id=>completed?.[id]).length;}
 function raidsUnlocked(completed){return fieldProgress(completed)>=fieldMissionIds.length;}
 // Fast travel network, shared by client and Worker: the Refuge, the Command Base once built, and every frontier sector
 // humanity holds. Departure needs a quiet spot inside one of those nodes; travel changes position only (cargo stays unbanked).
 const TRAVEL={safeRadius:60,quietMs:10000},arrivals=new Map();
 // Candidate arrival points per node: the authored spot first, then two rings inside the node, each on open, level footing.
-function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(id);const open=p=>!W.solidAt(p.x,p.z)&&[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const n=W.advance(p,dx,dz);return Math.hypot(n.x-p.x-dx,n.z-p.z-dz)<.1;});
+function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(id);const open=p=>!W.solidAt(p.x,p.z)&&[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const n=W.advance(p,dx,dz),f=W.speedFactor(p);return Math.hypot(n.x-p.x-dx*f,n.z-p.z-dz*f)<.1;});
  const near=(cx,cz)=>{for(let r=0;r<=12;r+=4)for(let i=0;i<(r?8:1);i++){const a=i*Math.PI/4,qx=cx+Math.cos(a)*r,qz=cz+Math.sin(a)*r,p={x:qx,z:qz,y:W.groundAt(qx,qz),surface:'ground'};if(open(p))return freeze(p);}return null;};
  const out=[near(x,z)];for(const ring of [Math.min(40,radius*.4),Math.min(80,radius*.75)])for(let i=0;i<8;i++){const a=i*Math.PI/4;out.push(near(x+Math.cos(a)*ring,z+Math.sin(a)*ring));}
  const list=freeze(out.filter(Boolean));arrivals.set(id,list);return list;}
@@ -317,5 +340,5 @@ function travelBlock(state,p,enemies,now){if(!state)return 'Online connection re
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
  if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
-root.ConquestCombat=Object.freeze({waveKinds,baseProduction,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

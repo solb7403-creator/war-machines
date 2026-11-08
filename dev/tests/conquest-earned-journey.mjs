@@ -19,8 +19,8 @@ function route(B,target,radius){
    open.sort((a,b)=>b.f-a.f);const c=open.pop(),ck=k(c.x,c.z,c.p.surface);if(closed.has(ck))continue;closed.add(ck);
    if(distance(c.p,target)<=Math.max(radius,4)){end=ck;break;}
    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
-    const x=c.x+dx,z=c.z+dz,q=W.advance(c.p,dx*step,dz*step),nk=k(x,z,q.surface),g=c.g+Math.hypot(dx,dz)*step;
-    if(closed.has(nk)||Math.hypot(q.x-origin.x-x*step,q.z-origin.z-z*step)>.3||Array.from({length:8},(_,i)=>({x:c.p.x+(q.x-c.p.x)*(i+1)/8,z:c.p.z+(q.z-c.p.z)*(i+1)/8})).some(p=>K.baseBlocked(B,p))||B.enemies.some(e=>e.hp>0&&distance(q,e)<4)||g>=(best.get(nk)??Infinity))continue;
+    const x=c.x+dx,z=c.z+dz,f=W.roadAt?.(c.p.x,c.p.z)?1/W.ROAD_FAST:1,q=W.advance(c.p,dx*step*f,dz*step*f),nk=k(x,z,q.surface),g=c.g+Math.hypot(dx,dz)*step;
+    if(closed.has(nk)||Math.hypot(q.x-origin.x-x*step,q.z-origin.z-z*step)>.3||Array.from({length:8},(_,i)=>({x:c.p.x+(q.x-c.p.x)*(i+1)/8,z:c.p.z+(q.z-c.p.z)*(i+1)/8})).some(p=>[[0,0],[1.6,0],[-1.6,0],[0,1.6],[0,-1.6]].some(o=>K.baseBlocked(B,{x:p.x+o[0],z:p.z+o[1]})))||B.enemies.some(e=>e.hp>0&&distance(q,e)<4)||g>=(best.get(nk)??Infinity))continue;
     best.set(nk,g);parents.set(nk,ck);points.set(nk,q);open.push({x,z,p:q,g,f:g+distance(q,target)});
    }
   }

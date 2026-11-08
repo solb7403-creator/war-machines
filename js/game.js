@@ -401,10 +401,16 @@ function moveBullets(dt){
 const bsum=(r,k)=>r.buffs.reduce((a,b)=>a+(b.k===k?BUFF[k].amt:0),0);
 const gsum=(r,k)=>r.gems.reduce((a,g)=>a+(g===k?GEM[k].amt*((r.gemM&&r.gemM[k])||1):0),0);
 const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+bsum(r,'rof'))*(1+gsum(r,'rof')),spdMult=r=>(1+bsum(r,'spd'))*(1+gsum(r,'spd'))*(r.spdM||1),armor=r=>Math.min(0.7,bsum(r,'arm')+gsum(r,'arm'));
+// Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1): energy = Pulse Cannon shots, Pierce Lance and
+// Static Nova; area = Static Nova, Siege Blast, meteors and the megatank's stomps and shells. Moonbeam and Moonfall are exempt
+const plateCut=(r,src,why,kind)=>{if(!r.enR&&!r.arR)return 1;const w=src&&src.wtype;let e=false,a=false;
+ if(kind===3||why==='meteor'||why==='stomp'||why==='shell')a=true;else if(kind===0)e=w==='pulse';else if(kind===1){e=w==='pulse'||w==='twin';a=w==='twin'||w==='siege';}
+ return (e?1-(r.enR||0):1)*(a?1-(r.arR||0):1);};
 // every hit goes through here. kind: 0 shot, 1 super, 2 storm, 3 meteor (sets the floating number); bid: the shot that hit
 function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const wasAlive=r.hp>0;
  if(r.shieldT>0&&(kind||0)<2){if(r.st)r.st.shd+=amt*(1-SHIELD_MULT);amt*=SHIELD_MULT;}   // shielded: combat damage cut before it lands
+ amt*=plateCut(r,src,why,kind||0);
  r.hp-=amt;r.flash=0.08;r.calm=0;
  if(r.st){r.st.taken+=amt;const f=Math.max(0,r.hp)/r.mhp;if(f<r.st.low)r.st.low=f;}
  ev('h',r.id,amt,kind||0,crit?1:0,direct?1:0,src?src.id:-1,bid||0);

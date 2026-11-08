@@ -22,7 +22,7 @@ function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w
 function diamond(ctx,x,y,s,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x+s*0.7,y);ctx.lineTo(x,y+s);ctx.lineTo(x-s*0.7,y);ctx.closePath();ctx.fill();}
 
 // ---- Crystal tank, top-down: hull follows movement, turret + cannon follow the aim ----
-function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,skin){
+function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,skin,ap){
  const fl=flash||null,P=skin==='lunar'?(paint&&paint.hull!=='#2c3a49'?{hull:paint.hull,tur:paint.tur,trim:'#bb914e',shine:true}:{hull:'#252b34',tur:'#333c47',trim:'#bb914e',shine:true}):paint||PAINTS.stock;parts=parts||3;   // 1 = hull only, 2 = turret only, 3 = whole tank. Paint colors the plates; team color stays on tracks and core
  if(parts&1){
  ctx.save();ctx.translate(px,py);ctx.rotate(hd);
@@ -39,6 +39,13 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,ski
  if(skin==='lunar'){
   ctx.strokeStyle='#bd944e';ctx.lineWidth=Math.max(1,r*.035);for(const sd of [-1,1]){ctx.strokeRect(-.7*r,sd*.39*r-.08*r,.58*r,.16*r);for(let i=0;i<8;i++){ctx.fillStyle='#48505a';ctx.fillRect((-1.13+i*.3)*r,sd*.64*r-.29*r,.10*r,.58*r);}}
   ctx.beginPath();ctx.arc(.78*r,0,.16*r,.7,5.58);ctx.stroke();
+ }
+ if(Array.isArray(ap)&&ap.some(Boolean)&&!fl){   // Hull Plating: tier-colored plate outlines (FRONT glacis, side skirts) and a set glow ring
+  const pc=t=>MINERALS[MN_ORDER[t-1]].c,lw=Math.max(1.2,r*.11);ctx.lineCap='round';
+  if(ap[0]){ctx.strokeStyle=pc(ap[0]);ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(.88*r,-.5*r);ctx.lineTo(1.1*r,-.24*r);ctx.lineTo(1.1*r,.24*r);ctx.lineTo(.88*r,.5*r);ctx.stroke();}
+  for(const [i,sd] of [[1,-1],[2,1]])if(ap[i]){ctx.strokeStyle=pc(ap[i]);ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(-.9*r,sd*.95*r);ctx.lineTo(.8*r,sd*.95*r);ctx.stroke();}
+  if(ap[3]){ctx.fillStyle=pc(ap[3]);for(const sd of [-1,1])ctx.fillRect(-.12*r,sd*.42*r-.05*r,.42*r,.1*r);}
+  const set=Math.min(ap[0]|0,ap[1]|0,ap[2]|0,ap[3]|0);if(set>=5){ctx.globalAlpha=.4;ctx.strokeStyle=pc(set);ctx.lineWidth=Math.max(1,r*.06);ctx.beginPath();ctx.arc(0,0,1.32*r,0,7);ctx.stroke();ctx.globalAlpha=1;}
  }
  [[-0.8,-0.36],[-0.8,0],[-0.8,0.36]].forEach(([sx,sy],i)=>{   // 3 core sockets, lit all match
   const gk=gems&&gems[i],cx=sx*r,cy=sy*r;
@@ -89,7 +96,7 @@ function star5(ctx,x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++
 function drawTank(b,col){
  const px=X(b.x),py=Y(b.y)-liftOf(b),r=R*sc*(b.dscale||1),hd=b.hd===undefined?b.ang:b.hd;
  const fl=b.flash>0?(armor(b)>0?BUFF.arm.c:'#ffe27a'):null;
- if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits,b.skin);
+ if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits,b.skin,b.ap);
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
   const bw=2.6*r,bx=px-bw/2,by=py-2.25*r,hh=Math.max(4,0.36*r),sh=Math.max(2,0.16*r),hf=Math.max(0,b.hp/b.mhp),f=b.sp/SUPER_MAX;
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
@@ -471,7 +478,7 @@ function drawHeroScene(ctx,w,h,t,noTank){
  ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(cx+r*0.3,cy+r*0.6,r*1.5,r*0.6,0,0,7);ctx.fill();
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(cx,cy+r*0.4,r*1.7,r*0.72,0,0,7);ctx.fill();ctx.restore();
  if(noTank)return;
- drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint(),fittingVisuals(myLoadout()),save.skin);
+ drawTankPx(ctx,cx,cy,r,hd,ang,col,(save.cores||[]).filter(Boolean),getW(save.weapon).arch||'pulse',null,3,myPaint(),fittingVisuals(myLoadout()),save.skin,apOf(save.ap));
 }
 function drawGearIcon(ctx,w,h,isW,it){   // the whole tank; the part this slot is about is lit, the rest is ghosted
  ctx.clearRect(0,0,w,h);
@@ -515,7 +522,7 @@ function drawUnitArt(ctx,w,h,u){
  ctx.clearRect(0,0,w,h);if(!u)return;
  const col=u===me?myTankColor():tcol(u.team),r=Math.min(w,h)*0.2*Math.min(1.3,u.dscale||1),a=u.team===0?-Math.PI/2:Math.PI/2;
  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(w/2,h/2+r*0.8,r*1.3,r*0.5,0,0,7);ctx.fill();ctx.restore();
- drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint],u.fits,u.skin);
+ drawTankPx(ctx,w/2,h/2,r,a,a,col,u.gems,u.wtype,null,3,PAINTS[u.paint],u.fits,u.skin,u.ap);
 }
 
 // ---- battle input: floating joystick, SUPER button, keyboard ----
@@ -887,5 +894,5 @@ function drawHUD(){
 function drawMachinePreview(ctx,w,h,L){
  ctx.clearRect(0,0,w,h);
  if(typeof machineArt3D==='function'&&machineArt3D(ctx,w,h,L))return;
- drawTankPx(ctx,w/2,h*.55,Math.min(w/6,h/3.7),-.6,-.8,TC[0],L.cores,L.w.a,null,3,PAINTS[L.paint],fittingVisuals(L),L.skin);
+ drawTankPx(ctx,w/2,h*.55,Math.min(w/6,h/3.7),-.6,-.8,TC[0],L.cores,L.w.a,null,3,PAINTS[L.paint],fittingVisuals(L),L.skin,L.ap);
 }

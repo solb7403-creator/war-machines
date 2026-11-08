@@ -1,0 +1,40 @@
+{
+ "quality": "high",
+ "gather": {
+  "biomass": 3,
+  "regrowMin": 15,
+  "pendingRaw": 80,
+  "gathers": 1,
+  "buttonHidden": true
+ },
+ "viewport": "390x844",
+ "renderer": "Chromium SwiftShader (relative only)",
+ "shots": {
+  "crater-bridge": {
+   "draws": 65,
+   "tris": 212186,
+   "programs": 17
+  },
+  "forest-creek": {
+   "draws": 65,
+   "tris": 208000,
+   "programs": 17
+  },
+  "reservoir-dam": {
+   "draws": 42,
+   "tris": 130960,
+   "programs": 17
+  },
+  "lush-core-pylon": {
+   "draws": 76,
+   "tris": 195968,
+   "programs": 17
+  },
+  "blight-edge-oxygen": {
+   "draws": 73,
+   "tris": 152842,
+   "programs": 17
+  }
+ },
+ "pageErrors": []
+}

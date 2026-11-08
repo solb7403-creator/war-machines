@@ -323,14 +323,15 @@ export class RoomCore {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
       const sb = won ? R.streakPts(g, m, pvs) : 0;
       const P = R.leaguePay(base * fxm + sb, s.league);   // base pay (airdrop points) and the spendable multiplier, as in AI matches
-      return { pts: quit ? 0 : P.pts, base: quit ? 0 : P.base, pw: R.powerOf(s.L), pvs, sb, won, drawn, m: mt, opp };
+      return { pts: quit ? 0 : P.pts, base: quit ? 0 : P.base, pw: R.powerOf(s.L), pvs, sb, won, drawn, m: mt, opp, lg: s.league,
+        key: this.startedAt ? 'm' + this.startedAt + ':' + s.idx : null };   // credit key: one payout per seat per match
     };
     const tryCredit = (k) => Promise.resolve().then(() => this.io.credit(s, calc)).catch((e) => {   // a database hiccup: try again, never drop the points
       if (k + 1 >= this.o.CREDIT_TRIES) throw e;
       return new Promise((res) => this.io.setTimeout(res, 500 * 2 ** k)).then(() => tryCredit(k + 1));
     });
     const p = tryCredit(0)
-      .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb, lgBonus: c.lgBonus || 0 }))
+      .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb, lgBonus: c.lgBonus || 0, mn: c.mn || null }))
       .catch(() => Object.assign(res, { pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true }))
       .then(() => { s.res = res; this.sendTo(s, { k: "res", r: res }); });
     this.pending.push(p);

@@ -77,3 +77,28 @@
 .cq .cq-dialog.cq-map button.cq-nav-base{border-color:rgba(255,180,70,.8);color:#ffd99a;text-shadow:0 0 6px rgba(255,170,60,.9);box-shadow:inset 0 0 14px rgba(255,170,60,.16),0 0 10px rgba(255,170,60,.16)}
 .cq .cq-dialog.cq-map canvas{background:#000;border:1px solid rgba(0,229,255,.55);box-shadow:0 0 22px rgba(0,229,255,.25),inset 0 0 0 1px rgba(0,229,255,.1);border-radius:3px}
 .cq .cq-dialog.cq-map h3{color:#8ff6ff;text-shadow:0 0 8px rgba(0,229,255,.7)}
+/* Conquest airdrop points and the Daily Base Yield meter (Phase 1, docs/economy/RESOURCE_ECONOMY.md §3) */
+.cq-aar-pts{border-color:#c79bff;background:linear-gradient(160deg,#2c2148,#0d1c2b)}
+.cq-aar-pts strong{color:#e2cdff}
+.cq-yield{margin:8px 0;padding:8px 10px;border-left:2px solid #ffc96b;background:#1a160c66}
+.cq-yield h3{margin:0 0 6px;font-size:13px;letter-spacing:1px;color:#ffe5b5}
+.cq-yield p{margin:6px 0 4px}
+.cq-yield small{display:block;color:#c9b98f;line-height:1.4}
+.cq-yield-bar{display:block;width:100%;height:10px;border:0;border-radius:5px;background:#2b2a22;overflow:hidden;-webkit-appearance:none;appearance:none}
+.cq-yield-bar::-webkit-progress-bar{background:#2b2a22;border-radius:5px}
+.cq-yield-bar::-webkit-progress-value{background:linear-gradient(90deg,#d99a3c,#ffe39a);border-radius:5px}
+.cq-yield-bar::-moz-progress-bar{background:linear-gradient(90deg,#d99a3c,#ffe39a);border-radius:5px}
+.cq-yield-remote{margin:4px 0 6px;padding:0;border:0;background:none}
+/* Hold-to-gather (bio-flora and mineral deposits): the operation prompt's slot when no operation is in reach */
+.cq .cq-gather-access{position:absolute;left:16px;bottom:calc(200px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)));min-height:44px;max-width:200px;padding:8px 12px;font-size:10px;border:1px solid #4fe0a8;color:#c9ffe9;background:#0b2a22e6;touch-action:none;user-select:none;-webkit-user-select:none}
+/* Deposits can sit near an operation: while its ACT prompt is up, GATHER moves above the ACT and SUPPLY slots */
+.cq-world:has(.cq-mission-access:not([hidden])) .cq-gather-access{bottom:calc(304px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)))}
+@media(orientation:landscape) and (max-height:500px){.cq .cq-gather-access{left:140px;bottom:20px}.cq-world:has(.cq-mission-access:not([hidden])) .cq-gather-access{bottom:120px}}
+/* Phase 3: scanner pulse, carried minerals and the Meteor Strike line (docs/economy/RESOURCE_ECONOMY.md §5) */
+.cq .cq-scan-access{position:absolute;left:16px;bottom:calc(146px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)));min-height:36px;min-width:64px;padding:6px 12px;font-size:10px;border:1px solid #57d2ea;color:#d6f6ff;background:#0a2230e6}
+@media(orientation:landscape) and (max-height:500px){.cq .cq-scan-access{left:140px;bottom:70px}}
+.cq-mn,.cq-strike{position:absolute;left:14px;right:14px;font:9px/1.4 sans-serif;pointer-events:none;text-shadow:0 1px 3px #000}
+.cq-mn{top:148px;color:#ffd9b8}.cq-strike{top:162px;color:#ffb37a;font-weight:700;letter-spacing:.04em}
+.cq-mn:empty,.cq-strike:empty{display:none}
+.cq-plating{margin:10px 0;padding:10px;border:1px solid #c0703f66;border-radius:10px;background:#1a120cb3}.cq-plating h3{margin:0 0 6px;font-size:12px;letter-spacing:.06em;color:#ffd9b8}
+.cq-plating button{display:block;width:100%;margin:6px 0;text-align:left;font-size:10px;white-space:normal}.cq-plating .cq-muted{opacity:.55}.cq-first-plate{color:#ffd36b;font-weight:700}

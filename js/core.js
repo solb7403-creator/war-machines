@@ -136,7 +136,7 @@ function myLoadout(){
  if(save.lab)return labLoadout(save);
  const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
  return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
-  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg)};
+  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg),ap:apOf(save.ap)};   // Hull Plating counts everywhere (power/league/PvP)
 }
 const calcPower=()=>powerOf(myLoadout());
 // your league right now: the server's record (lgi, form lwr) with the tank you'd field, the same rule the server applies (rules.js)
@@ -224,7 +224,7 @@ function waitMig(){
 function ecoErr(r){   // a toast for an action that didn't go through
  if(!r||!r.err)return false;
  const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'Epic crates are paid only',
-  join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.',empty:'Nothing to reset yet',offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
+  join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.',empty:'Nothing to reset yet',have:'That slot already has this plate or better',mn:'Not enough '+((MINERALS[r.k]||{}).s||'minerals')+(r.need?': '+r.need+' more':''),offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
  if(m&&typeof showToast==='function')showToast(r.err==='max'&&r.k?'Already at max level':m);
  return true;
 }
@@ -291,6 +291,12 @@ function respecBuild(){
  return when(ecoRun('respec',{},S=>ecoRespec(S)),r=>{
   if(ecoErr(r))return false;
   fx('buy');showToast('Build cleared. +'+fmtNum(r.back)+' points back');return true;
+ });
+}
+function fabPlate(slot,tier){
+ return when(ecoRun('plate',{k:slot,t:tier},S=>ecoPlate(S,slot,tier)),r=>{
+  if(ecoErr(r))return false;
+  fx('buy');showToast(PLATE.slots[slot]+' '+MINERALS[MN_ORDER[tier-1]].s+' plate fabricated'+(r.set>=tier?': full set':''));return true;
  });
 }
 function buyUp(k){

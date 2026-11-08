@@ -1468,7 +1468,26 @@ function fittingKit(f,team,part,context){
  }
  return {k,anims:[],meta:{}};
 }
+// Hull Plating (RESOURCE_ECONOMY.md §6.1): FRONT glacis and LEFT/RIGHT skirts on the body, TURRET cheeks on the mount, inside
+// the hull silhouette. Tier looks: rust Ferrite, black Ilmenite, grey-blue Armalcolite with cyan seams, dark Tranquillityite with
+// red-orange inlays, silver-violet Selenite glass, obsidian Moonheart with a blue-white core. low: one bucket (one draw per part).
+const PLATE_LOOK=[null,['#a8683e','#ff9a5a'],['#171b24','#5f86b8'],['#5b6d84','#57d2ea'],['#2a1d1d','#ff7a3d'],['#b8a9dc','#c8a2ff'],['#0c0f17','#a8e4ff']];
+function plateKit(ap,part,context,low){
+ const k=kit(),a=Array.isArray(ap)?ap:[0,0,0,0];if(!context||!CHASSIS_VISUALS[context.cls])return {k,anims:[],meta:{}};
+ const o=CHASSIS_VISUALS[context.cls][visualTier(context.ct)],slab=(t,geo,p,r,seam,sp)=>{if(!t)return;const L=PLATE_LOOK[t];put(k,geo,L[0],p,r,null,low||t<2?'lit':'shine');
+  if(L[1]&&seam&&!low)put(k,seam,L[1],sp||p,r,null,'glow');};
+ if(part==='body'){
+  const fx=o.len/2-.12,fy=o.h*.74,fw=o.trackZ*1.7;
+  slab(a[0],B(.12,o.h*.64,fw),[fx,fy,0],[0,0,-.55],B(.03,.045,fw*.9),[fx+.1,fy+o.h*.24,0]);
+  for(const [i,sd] of [[1,-1],[2,1]]){const z=sd*(o.trackZ+o.trackW/2+.045),y=o.h*.6;
+   slab(a[i],B(o.len*.7,o.h*.5,.06),[-.04,y,z],null,B(o.len*.56,.04,.025),[-.04,y+o.h*.16,z+sd*.035]);}
+ }else{
+  const w=WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)],x=context.arch==='moon'?-.17:.16,y=context.arch==='moon'?.24:(w?w.y:.24)+.02,z=context.arch==='moon'?.45:(w?w.width:.46)+.075;
+  for(const sd of [-1,1])slab(a[3],B(.44,.2,.06),[x,y,sd*z],[0,sd*.12,0],B(.32,.035,.025),[x,y+.06,sd*(z+.035)]);
+ }
+ return {k,anims:[],meta:{}};
+}
 const foundationChassis=(cls,tier,P,team,gems,lunar)=>lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems);
 const foundationWeapon=(arch,tier,P,team,lunar,cls)=>arch==='moon'?unifiedMoonbeam(team):standardWeapon(arch,visualTier(tier),P,team,lunar);
-return {MapArt,famChassis,famTools,famFinish,famLunar,famSurfaceY,LUNAR,lunarStock,bridgeVisual,foundationChassis,foundationWeapon,MOON_SCALE,weaponScale,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
+return {MapArt,famChassis,famTools,famFinish,famLunar,famSurfaceY,LUNAR,lunarStock,bridgeVisual,foundationChassis,foundationWeapon,MOON_SCALE,weaponScale,VISUAL_VERSION,CHASSIS_VISUALS,WEAPON_VISUALS,visualTier,fittingKit,plateKit,kit,put,bake,merge,loft,palette,chassisKit,weaponKit,bossKit,crateKit,gemKit,buildMap,meshOf,crateGeo,starGeo,trackGeo,hexMul,hexMix,DECK_H,WALL_H,TIERC,shapes:{B,CY,SP,CO,OC,IC,TO}};
 })();

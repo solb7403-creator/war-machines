@@ -13,7 +13,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 1 | Conquest Living War + Territory/Endgame (PR #53, #54) | Shipped Nov 6 |
 | 2 | Conquest playtest fixes: driving, NAVIGATE, fast travel, harder raids, RECALL (PR #57) | Shipped Nov 7 |
 | 3 | Graphics overhaul: Neon Frontline (PR #59) | Shipped Nov 7 |
-| 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating | In progress |
+| 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating (PR #69) | Shipped Nov 8 |
 | 5 | Base builder + Conquest Command hub page + full settler architecture | Next |
 | 6 | Tank modifications + Science Lab research + Conquest audio & weather pass | Planned |
 | 7 | Competitive: live airdrop standing on the hub ("You're #842, 1,200 pts to top 800") with visible anti-cheat, raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event, terraform-zone game modes | Planned |

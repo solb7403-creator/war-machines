@@ -460,3 +460,558 @@ Local reproduction at 390 (`conquest-flagship-browser.py --engine chromium --wid
 - No revert required. Payments/checkout remain DISABLED; no production accounts, payments, token, airdrop or referral data changed.
 
 **Next:** the owner's phone playtest of the new look (Safari + Telegram, HIGH and LOW). Fix on a new branch from `main`; the FX_VS billboard-origin fix and real-device frame-time sampling are the first candidates.
+
+
+## Checkpoint 22 — World, Resources & Airdrop Points: Phase 0 economy spec (branch `claude/friendly-allen-7tcyca`, from main `ad68b19`) — AWAITING OWNER APPROVAL
+
+Owner brief (2026-11-08), four phases:
+- **Phase 0:** economy spec. STOP for owner approval.
+- **Phase 1:** Conquest airdrop points, the Command Base multiplier, the Daily Base Yield and the 50,000 shared cap.
+- **Phase 2:** terraform rework (zones, rivers, flora, biomass).
+- **Phase 3:** minerals, deposits, Meteor Strike and Hull Plating.
+
+Owner instructions override older docs and code comments. Payments stay disabled.
+
+**Phase 0 delivered (docs/tooling only; no gameplay, economy, server or version change):**
+- `docs/economy/RESOURCE_ECONOMY.md`: the master economy spec for this and the later base-builder, tank and competitive sessions. It covers:
+  - every resource (points, CP, Alloy, Biomass, Helium-3 and the 6 minerals), with sources per mode, rarity, gather and drop rates, sinks and store rules;
+  - the long-term ladder;
+  - points a minute, Arcade vs Conquest per league;
+  - time-to-armor-tier tables (Conquest-focused, mixed, Arcade-only, dedicated);
+  - the first-hour timeline;
+  - revenue levers with fairness flags;
+  - the implementation contract (records, exactly-once outbox crediting, tests, copy);
+  - the owner decision list.
+- `dev/tools/economy-model.mjs`: a deterministic, read-only model on the real `js/rules.js` (league pay, `powerOf`/`powerWin`) and the measured Arcade grid. It writes `docs/economy/economy-model.json`.
+  - Arcade points a minute are measured. They reproduce `docs/launch/LEAGUES.md`: 223/264/320/343/460/495/702.
+  - Every Conquest, mineral, plating and timeline number is a modeled proposal, not a playtest.
+
+**Key modeled results (regular Conquest-focused player, 45 min a day):**
+- Ferrite set in 3 days, Ilmenite 9 days, Armalcolite 4.3 weeks, Tranquillityite 2.6 months, Selenite 6 months, Moonheart 15.5 months.
+- First plate at minute 12 of the first session.
+- Command Base I at about minute 59 (inside the 45–75 target; raid rewards unchanged).
+- Conquest points a minute within about 5% of Arcade without a base (top league −12%), and +10–20% with a Command Base.
+
+**Facts found in code (relevant for Phase 1):**
+- The cap is `DAILY_CAP=20000` in both `js/rules.js` and `worker/src/db.js`.
+- Conquest (`conquest/<pid>`) and the account (`eco/<pid>`) are separate CAS records. Conquest points need a transactional outbox with a watermark (`eco.cqw`), credited through `ecoPlayAward`.
+- The only "CP is separate from Arcade and airdrop points" copy is in `js/conquest/app.js` `briefing()`. The wiki and terms have no Conquest text.
+- The wiki states the 20,000 cap twice (Leagues paragraph and the Economy note).
+- The old Conquest `POLICY.daily` caps are still unenforced.
+- PvP `checkLoadout` already rebuilds loadouts from `ecoLoadout(owned)`, so plates in `eco.ap` reach gear rating and league automatically.
+- A known gap: the whole CP ladder (93,530 CP) is finished in about 5–6 weeks by a regular player. The base-builder session must add sinks.
+
+**Tests and checks run:**
+- `node dev/tools/economy-model.mjs --write`: PASS. It writes the JSON and asserts that each content mix sums to 1 and that the first hour never spends more than it has.
+- `node --check dev/tools/economy-model.mjs`, `node --test dev/tools/asset-audit.test.mjs` (4/4) and `node dev/tools/asset-audit.mjs` (exit 0): PASS. These are the steps of the `ai-tooling-check` CI workflow, which triggers on `dev/tools/**`.
+- No game tests were run: no game file changed.
+
+**Tooling state:** the Graphify MCP failed to connect in this session (proxy refused the tunnel, 403). Current source was read directly.
+
+**Owner decisions pending** (`RESOURCE_ECONOMY.md` §12):
+1. Yield points inside or outside the 50,000 cap.
+2. Whether Selenite's energy reduction applies to Moonbeam (recommended: exempt).
+3. Top armor strength vs Lunar Skin.
+4. The mineral store and the points-for-Ferrite shop.
+5. Guardrails for future paid levers.
+6. Whether a verified Conquest day counts as an active day for referral verification.
+7. The Arcade-only pace for rare+.
+
+**Next (only after owner sign-off):** Phase 1 on this branch.
+1. Move the approved constants into `js/rules.js`. Raise `DAILY_CAP` to 50,000 in rules + `db.js`.
+2. Add the Conquest points outbox to `conquest-economy`/`conquest.js` and the eco credit, with the base multiplier, the per-hour outcome limit and the flags.
+3. Daily Base Yield: fill and partial collect at the physical base, meter on the base terminal, MAP and HUD.
+4. Update the wiki and in-game copy.
+
+Then the tests in §10, then commit and push. Phase 2 (terraform) and Phase 3 (minerals and plating) follow, each committed and pushed.
+
+**Agents used so far:** none. Phase 0 was done by the lead alone.
+
+### Checkpoint 22 — Phase 0 sign-off and Phase 1: Conquest airdrop points, Command Base multiplier, Daily Base Yield, 50,000 shared cap
+
+**Owner sign-off on Phase 0 (2026-11-08):**
+1. Yield points count inside the cap.
+2. Moonbeam is exempt from Selenite.
+3. Moonheart stays at about +12%.
+4. The mineral store is approved; checkout stays off.
+5. Guardrail: no direct airdrop points or rare+ minerals from paid features. Indirect gains through power or base level are allowed.
+6. A Conquest operation day counts as a referral active day.
+7. The Arcade-only rare set takes about 3 months. The model now gives 3.1 months: Arcade wins drop Armalcolite 6%; weekly Veteran/Ace rewards are 2/4.
+
+The defaults are approved too. `docs/economy/RESOURCE_ECONOMY.md` records all of this (commit `2ebad69`).
+
+**Phase 1 delivered (server-authoritative):**
+- **Shared cap.**
+  - `DAILY_CAP` is 50,000 in `js/rules.js` and `worker/src/db.js`, one cap for Arcade, PvP and Conquest.
+  - Every Conquest point flows through the same `ecoPlayAward`: cap, daily/weekly boards, airdrop credit `ac`, squad bonus, league spendable bonus.
+- **Conquest points.** `CQ_PTS` per verified outcome × `CQ_BASE_MULT` (Base I..V ×1.05..×1.25), then × the account's `LG_BASE_PAY` at credit.
+  - World kills pay at once. They are gated by spawn generation like their salvage.
+  - Kills inside an operation are held. A win pays the completion instead; a fail, retreat, respawn or new attempt pays the held kills.
+  - Missions and raids pay by authored danger. Base and sector defenses pay 675.
+  - Cooldown receipts, replayed raid receipts and raid reinforcement waves pay nothing.
+- **Exactly once.** Each Conquest request seals its outcomes into one immutable outbox entry (monotonic id; 64 max plus a spill).
+  - `creditConquest()` credits entries above `eco.cqw` and writes the watermark in the same account CAS.
+  - The Conquest record is then pruned with its own CAS loop, outside the pilot's request rate limit.
+  - Credit runs at once for operations, after 20 s or 8 entries for kills, and on session open.
+- **Bot resistance.**
+  - At most 120 paying outcomes per hour.
+  - The `cqppm` flag: over 1,200 base points a minute across 30+ simulated minutes.
+  - Combined `hours` flag.
+  - Yield points need a verified operation that day.
+  - Deferred to a later session: command-sequence fingerprints.
+- **Referral days.** A credited operation runs `ecoPlayDay`, so it counts as a verified play day (owner decision 6).
+- **Daily Base Yield.**
+  - `base-claim` (same action name) is now two 24 h clocks: `claimedAt` for CP + materials, `pointsAt` for points. `ConquestCombat.baseYield()` holds the shared math.
+  - Collect at the physical terminal from 10%. Each clock stops at full.
+  - Materials are banked straight into the base.
+  - The points part is held, and keeps filling, until the day's first operation.
+  - Existing bases migrate with `pointsAt = claimedAt`.
+- **UI.**
+  - HUD status line: "AIRDROP TODAY n / 50,000 · +n PENDING". The numbers come from the account on session open and after every credit.
+  - "+n AIRDROP POINTS SECURED" ticker; AIRDROP PTS after-action tile.
+  - Base terminal yield panel with a fill bar and exact amounts; MAP base card meter; HUD base line "YIELD n%".
+  - In-world ring of ten orbs over the base (shared sphere, cached basic materials, no new shader program); 2D fallback label.
+- **Copy.**
+  - Conquest briefing: "CP is separate from Arcade and airdrop points" is removed; operations now state their airdrop points.
+  - Base terminal and MAP text.
+  - `js/ui.js`: leagues help, Earning help, squad help, the capped-result line.
+  - Wiki: the 50,000 cap and a new Conquest points + Daily Base Yield card; referral days now include Conquest operations.
+  - Terms: one sentence on Conquest points and the shared cap; date set to November 8, 2026.
+
+**Tests (local, all PASS):**
+- New:
+  - `dev/tests/conquest-airdrop.mjs`: 30 checks.
+  - `dev/tests/wtest/conquest-airdrop.mjs`: 20 checks, through the real Worker and the ETag fake DB. They cover two tabs racing a victory, a resent request, an account write failure then recovery, a stale watermark, the shared cap, league pay, referral days, the flags and the session-open HUD numbers.
+  - `dev/tests/conquest-airdrop-browser.py`: Chromium 390×844. A real Moonbeam kill of the Refuge scout patrol (camera turned and hull tapped like a player) shows "+35 PENDING", then "AIRDROP TODAY 35 / 50,000". A base at 50% shows 5/10 lit orbs, the terminal bar at 0.5 and HUD "YIELD 50%". Collecting banks 40 CP and holds the points part; the meter resets once the dialog closes. No page errors, no horizontal overflow.
+- Updated for the 50,000 cap (they used `R.DAILY_CAP` or hard-coded 20,000): `wtest/test.mjs` (203/0), `wtest/referrals.mjs` (29/0), `wtest/pvp.mjs` (113/0).
+- Also PASS:
+  - all 41 Conquest CI suites, plus `conquest-regression.sh` and `conquest-replay-budget`;
+  - `wtest/conquest`, `conquest-war`, `farm` (55/0), `web-auth`, `lunar-identity`, `accounts` (18), `lab`, `lab-battle`, `ticket-reliability` (37/0), `owner` (68/0).
+- **CI:** the new tests are added to `conquest-check.yml` (Conquest triggers now include `worker/src/eco.js`, `js/rules.js` and `dev/tests/wtest/conquest*`) and to the server tests in `deploy-worker.yml`.
+
+**Found while testing:** the committed `docs/conquest-session-2/earned-defense.json` was already stale on `main`. A clean `main` worktree regenerates the same numbers as this branch; the only addition is the new `ptsRaw` field. The tracked file is left unchanged.
+
+**Still unverified:**
+- Points a minute against Arcade is modeled (§3.3), not measured with the scripted pilot.
+- PHYSICAL_IPHONE_UNVERIFIED for the new HUD line and orb ring.
+- No WebKit run of the new journey; CI runs it in Chromium only.
+
+**Next:** Phase 2 (terraform rework), then Phase 3 (minerals and plating), each committed and pushed. Then two independent reviewers (economy/security + gameplay/performance) before merge. The build stamp (`index.html` BUILD and `?v=` cache keys, `version.json`) is bumped once at release, after Phase 3.
+
+### Checkpoint 22 — Phase 2: terraform rework (zones, water, forests, bio-flora Biomass)
+
+**Zone map (authored, deterministic; `js/conquest/world.js`).** The old noise patches (`biomeAt` terraformed blobs anywhere on the map) are gone. Terraforming now comes from the human atmosphere network and is eaten back by the Parasite blight:
+- **Sustain:** each atmosphere pylon gives `1 − d·√d` (d = distance / radius). The world takes the strongest pylon.
+
+  | Pylon | Position | Radius | Shell |
+  |---|---|---:|---|
+  | oxygen | 1196, 1112 | 185 | dome |
+  | refuge | 1194, 1214 | 160 | |
+  | base | 1072, 1216 | 175 | dome |
+  | corridor | 1004, 1122 | 132 | |
+  | crater | 960, 1158 | 158 | |
+  | valley | 898, 1238 | 152 | |
+  | reservoir | 842, 1318 | 158 | dome |
+- **Blight:** each Parasite installation (r 165) and two hive-front sources, (1290, 1200, r 140) and (1080, 835, r 150), subtract `0.95 · (1 − d)`.
+- **Zones:** lichen ≥ 0.14, grass ≥ 0.33, lush ≥ 0.55; anything else is barren. Outside x 640–1500 / z 900–1520 (the far frontier) everything stays barren.
+- **Result (8 m grid over the populated war region x 800–1400, z 715–1305):**
+  - 30.2% terraformed (owner target 30–40%): 1,203 lush, 272 grass and 223 lichen cells.
+  - Lush at the Refuge terminal, the Command Base, the ice-mining crater and the reservoir.
+  - The oxygen complex is terraformed but blight-pressed (grass and lichen edge facing the hives).
+  - Every Parasite installation and the far frontier stay barren. Blight stumps mark the war edge.
+
+**Why this shape.** Air is made by the Refuge, the oxygen station and their pylons, so green radiates from them and thins along the gradient lush → grass → lichen → barren. The hives sit north (z < 1000) and east, so the green edge is visibly bitten there. The south-west valley is the only place with a natural water path.
+
+**Water (hydrology).** The plateau has no closed basins, so water exists only where it is authored, and terrain carving is confined to the box x 750–960, z 1160–1372:
+- An **ice-mining crater** at (930, 1180) with a meltwater pool (r 8, deep) and a drilling rig.
+- A **creek** with 8 points down the real south-west valley (steepest descent). It runs in a carved channel 1.7 m deep: the core is deep and blocks hulls; the banks are shallow and slow hulls to ×0.55.
+- **Crossings (authored chokepoints):**
+  - two half-depth **fords**: `ford-upper` (920, 1231) and `ford-reservoir` (866, 1309), each r 7;
+  - the **creek bridge** on the crater-outflow span (936.5, 1197.4): an arched deck with railings.
+- The **Refuge Reservoir** (800, 1326; 36 × 40 m, deep) is held by a solid **dam** at z 1364 (x 768–834). Downstream of it is dry.
+- The water surface sits 0.4 m under the uncarved centreline. Deep water (> 1 m) stops a hull at the bank; a hull already in deep water can drive out.
+
+**Forests (cover).** Five stands with 288 trees, placed off routes:
+
+| Stand | Centre | Radius | Trees |
+|---|---|---:|---:|
+| crater | 972, 1216 | 21 | 69 |
+| valley | 878, 1222 | 17 | 45 |
+| falls | 836, 1279 | 16 | 40 |
+| base-south | 1048, 1236 | 22 | 75 |
+| refuge-south | 1132, 1246 | 20 | 59 |
+
+The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt`, `FOREST_CANOPY`). A hull at the edge can see and be seen.
+
+**Bio-flora (Biomass).**
+- **Nodes:** 24, 20 in lush and 4 in grass, all reachable from the spawn within harvest range.
+- **Harvest:** server-replayed GATHER (`harvestStep` in the 50 ms loop). Hold for 4 s, stopped within 6 m, for +3 Biomass. The node regrows 15 min per pilot.
+- **Exposure:** the channel alerts the nearest Parasite within 120 m every second.
+- **Resets:** moving, taking damage, releasing GATHER, being in an operation or a non-active battle.
+- **Points:** 80 airdrop points × the Command Base multiplier, through the Phase 1 outbox and hourly limit. It counts as the day's verified activity for the yield points; it is not a referral day.
+- **UI:**
+  - a GATHER hold button with the channel percentage (shown only on a ready node);
+  - a harvest ticker;
+  - bright, haloed ready nodes and dim, folded regrowing nodes in 3D;
+  - labels in the 2D fallback.
+- **Value:** 80 is derived by the approved §3.2 method (par 0.47 min × 225 × 75%). It is not a number the owner signed off line by line; it is flagged in RESOURCE_ECONOMY.md.
+
+**Every sector, raid, mission and route keeps working:**
+- `conquest-terraform.mjs` flood-fills real `move()` from the spawn and reaches all 49 authored operations, travel nodes and bases.
+- **World equivalence against `main`** (`world.js` at `origin/main`, the same 15,498 deterministic samples as `conquest-world-equivalence.mjs`). Every difference is intended and classified, with nothing unexplained:
+  - ground height differs at 165 points, all inside the water carve box;
+  - solid differs at 1 point (a pylon mast);
+  - blocked differs at 151 forest-canopy points, 36 carve points and 1 pylon point.
+
+  (The tool itself asserts zero differences against a baseline, so it is expected to report these intended ones.)
+- One scoping fix: the old viaduct-edge rule in `move()` matched any bridge surface in x 901–1139. It is now limited to the viaduct's z band, so hulls can leave the new creek bridge.
+
+**Visuals (Neon Frontline, `js/conquest/style.js`; presentation only, nothing here is collision):**
+- **Per fine chunk:** instanced plants (lush and grass), lichen cushions, blight stumps and ground-cover tufts.
+- **Forests:** every stand has a detailed and a far draw (same silhouette; trunk plus two canopy cones). The view switches them by camera distance: 80 m HIGH / 55 m LOW beyond the stand edge. The vendored Three build has no `THREE.LOD`, so this is a two-mesh switch.
+- **Ground flora** hides beyond 180 m (HIGH) / 150 m (LOW) from the hull per chunk; tufts hide sooner.
+- **Water:** one merged mesh and one draw, with its own cheap shader: flow bands along the creek, foam banks, sky fresnel, and sparkle on HIGH.
+- **Structures:** pylons with emitter rings and dome shells, the dam, the bridge, the crater rig with ice blocks, and ford stones.
+- **Terrain shader:** the lichen/grass/lush ramp is decoded from the vertex colour.
+- **Pre-existing bug fixed:** on `main`, the FX billboard shader multiplied a merged billboard's stored centre by `1 − aBill.z` (= 0). All 23 merged `X.bill()` glows (Refuge, viaduct, base and installation halos, HIGH only) therefore drew at their group origin. They now draw where they were authored. Reviewers: this changes those halos' look on HIGH.
+- **Visual-option agents: not used.** An approved single art direction (Neon Frontline) already exists, and the style internals are large and tightly coupled. Two option agents would have cost more than they could change. The owner made this optional.
+
+**Mobile budget, measured** (Chromium SwiftShader at 390×844, the same five spots on this branch and on `main`; relative numbers only, not iPhone performance):
+
+| Quality | This branch | `main` |
+|---|---|---|
+| HIGH | 105–186k triangles, 43–56 draws, 16 programs | 40–91k triangles, 26–53 draws, 15 programs |
+| LOW | 75–107k triangles, 37–51 draws | 38–76k triangles |
+
+- **First build was over budget:** 1.8–2.1M triangles. The flora used `G.ico` (a 320-triangle sphere) for every bud.
+- **Fixes:** 8–20-triangle gems, the forest LOD, flora distance culling, lighter pylon rings and a 50-triangle LOW plant.
+- **Locked by `conquest-style.mjs`, HIGH / LOW:**
+  - tree ≤ 520 / 260;
+  - far tree ≤ 60;
+  - plant ≤ 170 / 60;
+  - densest flora chunk ≤ 30k / 12k;
+  - terraformed world at the worst camera position over the south ≤ 100k / 50k.
+- **Extra program:** the water shader. It is compiled in the warm-up set.
+
+**Tests (local, all PASS):**
+- **New:**
+  - `dev/tests/conquest-terraform.mjs` (32 checks): zones, water, the bank stop, both fords crossed bank to bank, the bridge, ×0.55 slowdown, forest LOS/shots/canopy height, reachability, and the server harvest: 4 s exact, payment, regrow, move/release/damage/mission resets, out of range.
+  - Flora budget and LOD assertions in `conquest-style.mjs`.
+  - `dev/tests/conquest-terraform-captures.py` (390×844; HIGH, LOW and 2D):
+    - five scenes;
+    - a real GATHER hold through the shipped button: "GATHERING · 50%" mid-channel, then +3 Biomass, 80 raw points in the outbox, a 15 min regrow and the button hidden;
+    - no page errors.
+
+    Evidence is in `docs/economy/phase2/`.
+- **Re-run and PASS:**
+  - every Conquest CI suite, `conquest-regression.sh`, `wtest/conquest`, `conquest-war`, `farm`, `pvp`, `test`, `referrals`, `owner`, `accounts`, `web-auth`, `lunar-identity`, `lab`, `lab-battle`, `ticket-reliability`;
+  - the Phase 1 airdrop tests (sim 30, worker 20, browser journey);
+  - `conquest-onboarding.py` (390×844 and 360×640).
+- **CI:** `conquest-terraform.mjs` and the HIGH capture with the GATHER journey are added to `conquest-check.yml`; `docs/economy/phase2` is uploaded as an artifact.
+
+**Still unverified:**
+- PHYSICAL_IPHONE_UNVERIFIED: frame time and thermals of the new south (triangle counts are measured; frame rate on a phone is not).
+- No WebKit run.
+- Biomass pace (2–2.5 harvests a minute) is modeled from node spacing and is not measured with a scripted pilot.
+- The forest-LOD switch distance is set by eye on SwiftShader captures.
+
+**Next:** Phase 3 (minerals, deposits and scanner, Meteor Strike, Arcade/PvP drops, Hull Plating, first-plate hook).
+
+### Checkpoint 22 — Phase 3: minerals, deposits, Meteor Strike, Arcade/PvP drops, Hull Plating
+
+**Account side** (shared `js/rules.js` + Worker):
+- **Minerals and plates:** six minerals in the account wallet (`eco.mn`), and Hull Plating in four slots (`eco.ap`, tiers 1–6) inside the canonical loadout.
+- **Strength:** plates feed `tankOf` (HP and trait flags) and then `powerOf`, where traits count as effective HP. The approved full-set gear-rating gains are reproduced exactly. League and matchmaking follow through `setLoadout` → `ecoLeague` on every fabrication.
+- **PvP:** `checkLoadout` rebuilds plates from the owned record, so a claimed set is ignored.
+- **Traits:** applied by damage type in the shared Arcade/PvP `takeHit` and in Conquest (pulse fire, plasma and orbital strikes). Moonbeam and Moonfall are exempt.
+- **Fabrication:** `/api/act plate`, from the garage's Hull Plating section (wallet, per-slot compare card, fabricate) or from Refuge Supply in Conquest. Exact mineral and points costs; upgrade only; no refund.
+- **Drops:** Arcade/PvP mineral drops on verified results (AI tickets and live rooms; quits get none), shown on the results screen. The weekly league minerals arrive automatically at the 20th verified match of the UTC week.
+
+**Conquest** (server-authoritative):
+- **Deposits:** 70 authored deposits generated offline by the approved placement rules, then frozen as literal coordinates:
+
+  | Mineral | Nodes | Where |
+  |---|---:|---|
+  | Ferrite | 36 | every sector, near routes |
+  | Ilmenite | 18 | off-route basalt |
+  | Armalcolite | 10 | HARD walls |
+  | Tranquillityite | 5 | VETERAN perimeters and hive edges |
+  | Starter Vein | 1 | 15 m from the Refuge terminal |
+
+  All are reachable from the spawn and clear of structures, water, forests and flora.
+- **Scanner pulse:** 30 s cooldown, 150 m (+50 m per Radar level). Discoveries stay on the MAP with "ready" or "depleted · Nm".
+- **Gathering:**
+  - server-rolled amounts (deterministic per node and moment; the client never sends an amount);
+  - exact channels (5 / 8 / 12 / 16 s) and per-pilot respawns (20 min / 45 min / 3 h / 8 h);
+  - the 3% Selenite vein;
+  - the one-time Starter Vein (35 Ferrite);
+  - noise that alerts Parasites within 120 m.
+- **Mineral cargo:** half (rounded down) drops into the recoverable death wreck. Banking at the Refuge or base vault sends minerals through the Phase 1 outbox to the wallet, exactly once.
+- **Operation caches** on victory, per the approved model: field 3 Ferrite + 50% Ilmenite; HARD 2 Ilmenite + 40% Armalcolite; VETERAN 1.5 Armalcolite + 30% Tranquillityite; defense 2 Ferrite + 1 Ilmenite.
+- **Meteor Strike:** every 2 h on the even UTC hour at 8 rotating authored craters (one per sector plus Reservoir Flats and the Eastern Rim).
+  - **Telegraph:** 5 min. HUD countdown line, MAP pin, a falling meteor in the sky, and a toast plus haptic alert once per slot.
+  - **Window:** 20 min open. Two fixed HARD waves (three interceptors, then a heavy sentinel, a fire coordinator and an interceptor), then a 16 s core channel that damage resets.
+  - **Rewards:** 1,075 points, 120 CP, carried minerals, and the core roll (15% Selenite, 2.5% Moonheart). The roll is stored at the first start in the slot. One claim per pilot per slot. Strike Resonance guarantees a Selenite every 12th and a Moonheart every 40th secured strike.
+  - A strike never captures territory or counts toward raid unlocks.
+
+**Visuals** (Neon Frontline; budgets in `conquest-style.mjs`):
+- **Mineral formations:** one instanced draw per look (rust Ferrite clods with steel flecks, black Ilmenite shards with blue tips, grey-blue Armalcolite with cyan seams, dark rock with red-orange Tranquillityite needles, the Starter Vein beacon). Depleted deposits show a dim stub. With every deposit discovered: at most 6 draws and 40k triangles (HIGH).
+- **Strike:** a meteor with a trail during the telegraph; a glowing crater ring and core while open.
+- **Plates:** shown on the Arcade hull (`render3d` `plateB`) and the Conquest hull (`syncLoadout`). HIGH uses the shine material with mineral-coloured seams; LOW uses one bucket per part. The 2D fallback shows tier-coloured outlines and a set ring.
+
+**Copy:**
+- Wiki: a new "Minerals & Hull Plating" section with every table and the published odds, plus mineral and strike rows in the Conquest points table.
+- Arcade-first pilots get "Your first armor plate is minutes away in Conquest" (or "fabricate it in the Garage" once they have 40 Ferrite) after matches 3, 6 and 9.
+- Conquest shows the guided "TAP SCAN: A STARTER VEIN LIES BESIDE THE REFUGE" hint and the first-plate prompt at Refuge Supply.
+
+**First-plate hook:**
+- **Verified in the browser at 390** (`conquest-minerals-browser.py`, real Worker account): SCAN → the Starter Vein revealed → hold GATHER (35 Ferrite carried) → BANK (wallet 40 Ferrite) → FRONT Ferrite plate at Refuge Supply → the session refits. Hull goes 1700 → 1717, the Conquest vehicle gains the plate geometry, and the strike telegraph shows on the HUD.
+- **Not measured:** the time to the first plate. It is modeled at minute 12 (target: about 20).
+
+**Tests (local):**
+- `wtest/hull-plating.mjs` (24);
+- `conquest-minerals.mjs` (41);
+- the `conquest-style.mjs` budgets;
+- the 390 journey;
+- every CI suite re-run (results in the final report below).
+
+**Still unverified:**
+- PHYSICAL_IPHONE_UNVERIFIED: the new HUD lines, deposit formations, strike visuals and plate meshes.
+- No WebKit run.
+- Meteor Strike difficulty against a starter tank is not measured. The waves use fixed authored archetypes; the HARD tier is not tuned by a scripted pilot.
+- Daily mineral income by player type (§5.6) is modeled, not measured.
+- The Selenite sheen and Moonheart pulse are static.
+
+### Checkpoint 22 — Terraformed zones: owner art direction (rugged war-torn frontier colony) — AWAITING OWNER LOOK APPROVAL
+
+**Owner direction (Nov 8, final override):**
+- A rugged, war-torn frontier the colonists clawed out of the Moon: gritty military sci-fi, not a park.
+- About 30% of the zones built (core town, farm ring, frontier wall, roads); about 70% wild.
+- A dusty amber/steel sky inside the zones; the black lunar sky outside.
+- Nothing merges or deploys until the owner approves the look.
+
+**Built (presentation in `js/conquest/style.js` / `view.js`; collision and road speed in the shared `js/conquest/world.js`):**
+- **Atmosphere:**
+  - a per-vertex zone map: inside, a low warm sun (about 15°) with cool steel shade; outside, the unchanged Moon light;
+  - a dusty sky: hazy amber horizon to dusky steel blue overhead, broken clouds with dark bellies and sunlit rims, distant dust haze;
+  - dust fog;
+  - a shimmering atmosphere veil along the zone contour.
+- **Ground:**
+  - organic grass patches in olive / dry straw / dark green, with a fine grain (the LOW grass texture);
+  - bare dirt and gravel, and grey regolith with its craters showing through only in bare patches;
+  - rock faces with strata and moss on steep ground;
+  - shell craters with scorched centres and mud rings, and tank-track ruts;
+  - grit grows with distance from the core; no hex lines on zone ground.
+- **Flora:**
+  - instanced grass clumps (mixed colours, varied height);
+  - scrub and thornbushes, ferns by the creek, rare crystal sprouts, small flower patches only near the core;
+  - wind-bent conifers, muted broadleaf and dead/burnt trees (forest stands keep their LOS canopy);
+  - mossy boulders inside the zones (same collision).
+- **Water:** dark slate blue (#3C5568) reflecting the dusty sky, muddy banks, wet rocks in the stream.
+- **Colony** (authored by `dev/tools/colony-gen.mjs`, frozen in `ConquestWorld.COLONY`; all 57 operations, travel nodes and bases, 24 flora nodes, 70 deposits and 8 strike cores still reachable):
+  - **Buildings:** a core town of 41 Neon Frontline buildings (hex habitat pods, blocks, shopfronts, a hangar, ringed oxygen towers) around the existing Refuge, plus a landing pad.
+  - **Streets:** lit paved streets with neon edges and lane marks.
+  - **Movement:** rovers on the streets, crew at the plaza, a monorail with a moving train.
+  - **Farm ring:** 6 crop fields on the west plains with fences, a greenhouse and silos, and canals fed by the creek.
+  - **Frontier wall:** 6 wall runs and 6 watchtowers on the hive-facing edge, with open lanes and gates.
+  - **Roads and power:** rutted dirt tracks toward the frontier; a power line.
+- **Frontier dressing:** half-overgrown tank wrecks, burnt stumps, sandbag lines and trenches behind the wall, barbed wire beyond it, a rusted pipeline from the ice-mining crater, and abandoned machinery.
+- **Gameplay (shared sim):**
+  - colony buildings, wall runs, watchtowers, gates and monorail pylons collide and block sight up to their height;
+  - colony ground is cleared of loose rocks;
+  - paved roads are 15% faster (`ConquestWorld.advance`); dirt tracks are not.
+
+**Shots** (390 portrait, HIGH; `docs/economy/colony/`): core town, farm ring, frontier wall, river/bridge, wild meadow, boundary crossing. Contact sheet: `docs/economy/colony/contact-sheet-390-high.jpg`.
+
+**Measured** (Chromium SwiftShader at 390, the six spots; relative numbers only): HIGH 57–80 draws, 151k–217k triangles, 17 programs (the veil adds one). LOW numbers are in `stats-low.json`.
+
+**Second pass (owner gave full creative freedom):**
+- **Baked long shadows for the low sun:** colony buildings, walls, towers, Refuge pods, hives and forest trees are swept along the sun direction once into a ground shadow texture (no per-frame shadow pass). Terrain darkens under it, and hulls and buildings dim as they pass through. Casters never shadow their own footprint.
+- **Veil:** it was a grey curtain across the sky from inside. It is now faint from inside and stronger from the barren side, and lower (60 m).
+- **Small fixes:** organic grass patches replace a regular dot pattern; power poles are dark weathered wood; the plaza crew now read as small figures in work suits.
+- **Six shots reframed** to show more sky and horizon (`docs/economy/colony/`).
+- **Test harness:** `conquest-earned-journey.mjs` failed because its route planner assumed `advance()` moves exactly the requested 4 m (paved roads now move 15% farther) and ignored hull width against the base walls (the cleared colony ground opened a tighter shortcut). The planner now probes with the road factor and ±1.6 m clearance. Gameplay is unchanged.
+- **Journey timing:** the pilot earns Command Base I at 74.9 min against main's recorded 73.66 (target 45–75).
+- **Re-run and PASS:** `conquest-terraform`, `conquest-minerals`, `conquest-style`, `conquest-travel`, `conquest-session`, `conquest-netcode`, `conquest-canvas-contract`, `conquest-opening`, `conquest-operations`, `conquest-authority`, `conquest-controls`, `conquest-earned-journey`, `conquest-first-base`, `conquest-fast-travel`, `conquest-base`, `conquest-raids`, `conquest-view-travel`, `conquest-flagship-ui`, `wtest/conquest`.
+- **LOW at the same spots:** 47–68 draws, 110k–144k triangles.
+
+**Not done yet (for owner review):**
+- Static shadows are baked; moving units (tanks, rovers) cast none.
+- "Colony walls/gates are the safe zone edge" and "Parasite invasions hit the frontier wall first" are not yet wired into AI and invasion targeting. The walls are physical only.
+- Tank wrecks and the pipeline are decorative (no collision).
+- PHYSICAL_IPHONE_UNVERIFIED.
+
+## Checkpoint 22 handoff (superseded by Checkpoint 23 below; World, Resources & Airdrop Points; branch `claude/friendly-allen-7tcyca`)
+
+**State at handoff:** all work is committed and pushed on `claude/friendly-allen-7tcyca`, with no PR open and nothing merged or deployed. The build stamp is already set to `20261108075526` (`index.html` `window.BUILD` + 32 `?v=` keys, `version.json`). `main` (through `c01529d`, #67) was merged into the branch.
+
+### Owner direction in force (overrides older docs; see AGENTS.md "Owner messages mid-session")
+1. **Terraform art override (final; replaces every earlier terraform look note):** a rugged, war-torn frontier the colonists clawed out of the Moon. Gritty military sci-fi, not a park, lawn or meadow.
+   - **Ground:**
+     - grass about 45%, never uniform, in clumps of olive #6B7A3A, dry straw #A89A5B and dark green #3E5A2E;
+     - bare ground about 25%: dirt #6E5A43, gravel, grey regolith #8A8780;
+     - rock about 20%: outcrops, mossy boulders, cliff faces;
+     - scars about 10%: shell craters with scorched earth, mud, tank ruts.
+     - Uneven terrain; no flat lawn; no hex lines on open ground (bases only).
+   - **Flora:** hardy scrub, thornbushes, wind-bent and dead/burnt trees, ferns in gullies; crystal sprouts only as rare accents; flowers only in a few small patches near the colony core.
+   - **Sky and light inside zones:** a thin, dusty atmosphere; hazy amber horizon #C9A27A to dusky steel blue #4F6377; broken dramatic clouds; low sun; long hard shadows; warm light against cool shade; distant dust haze. Outside the zones, the black lunar sky is unchanged.
+   - **Frontier detail:** half-overgrown tank wrecks, burnt stumps, sandbags, trenches and barbed wire toward the frontier, rutted dirt roads, rusted pipelines, fences, abandoned machinery.
+   - **Colony core:** the same rugged base but cleaner: paved roads, lit buildings, neon edge strips, irrigated fields. Grit increases with distance from the core.
+   - **Water:** dark slate blue #3C5568 with sky reflection, muddy banks, rocks in the stream.
+   - **Creative freedom (owner):** treat the spec as guidance, not a checklist; change, drop or add anything that makes it better. The mission: a rugged frontier that looks great on a phone and makes players excited to explore, fight over and return to these zones.
+2. **Settlers:** colony towns and farms belong to civilian settlers. They get warm amber lights and weathered, painted, patched materials, distinct from the military's cyan armoured Neon Frontline (Refuge, Command Bases, frontier wall). Full settler architecture is session 5 (docs/ROADMAP.md); do not build it now.
+3. **Kept from the earlier colony message:** about 30% built / 70% wild; the core town, farm ring and frontier wall layout; tanks 15% faster on paved roads (server-authoritative, shared sim).
+4. **Release:** do NOT wait for owner approval. Once the terraform captures pass a self-check against the rugged-frontier override, go straight through: rerun affected tests, two independent reviewers, fix valid findings, green CI, merge, deploy, verify `/pvp/health` and `version.json`, revert if broken. Put the final captures and a short summary here for the owner's morning review. Look adjustments happen in a later session.
+5. **Scope:** build nothing else new this session. Later items are queued in docs/ROADMAP.md, including "Colony Defense" (walls as the safe-zone edge, invasions hitting the frontier wall) and settler life.
+
+### Finished (committed, tested locally)
+- **Phase 0** (`14ca3a0`, `2ebad69`): RESOURCE_ECONOMY.md, signed off.
+- **Phase 1** (`fd00978`): Conquest airdrop points, Command Base multiplier, Daily Base Yield, 50,000 shared cap.
+- **Phase 2** (`6e26d9e`): authored terraform zones, creek/fords/bridge/reservoir/dam, forest cover, bio-flora Biomass.
+- **Phase 3** (`31d9bc5`, `d1f5ad4`): minerals and wallet, deposits and scanner, gathering, caches, death wreck exposure, banking through the outbox, Meteor Strike, Arcade/PvP drops and weekly league minerals, Hull Plating (garage + Refuge Supply, power/league/PvP), plate visuals (3D/2D), first-plate hook, wiki.
+- **Art pass** (`8c2f57c`, `a22b7c5`, `28cb5b1`):
+  - **Colony data and world:**
+    - the colony is authored by `dev/tools/colony-gen.mjs` into `ConquestWorld.COLONY`;
+    - colony collision and sight blocking; cleared colony ground; +15% speed on paved roads only (dirt tracks are not faster);
+    - `conquest-earned-journey` planner fix (test harness only).
+  - **Looks:**
+    - dusty sky and low-sun light with the per-vertex zone map;
+    - rugged ground and flora;
+    - baked long shadows;
+    - slate water;
+    - the colony town, farm ring, wall, monorail, rovers and crew, and frontier dressing;
+    - the atmosphere veil;
+    - settler amber and weathered materials.
+- **Build stamp** (`cf4055a`).
+- **Local results, last full runs:**
+  - all Conquest suites, wtest suites and browser journeys passed at the Phase 3 commit, except `conquest-earned-journey` (since fixed);
+  - after the art pass, the affected subset passed (terraform, minerals, style, travel, session, netcode, canvas-contract, opening, operations, authority, controls, earned-journey, first-base, fast-travel, base, raids, view-travel, flagship-ui, wtest/conquest);
+  - the earned journey reaches Base I at 74.9 min (main recorded 73.66; target 45–75).
+
+### Latest captures (390 portrait, Chromium SwiftShader; relative performance only)
+- **Colony art:** `docs/economy/colony/{core-town,farm-ring,frontier-wall,river-bridge,wild-meadow,boundary-crossing}-390-high.png`, `docs/economy/colony/contact-sheet-390-high.jpg`, `docs/economy/colony/stats-high.json` and `stats-low.json`.
+  - Script: `python3 dev/tests/conquest-colony-captures.py --quality high|low|2d` (`ONLY=name,...` for single shots).
+  - Last measured: HIGH 55–79 draws, 146k–210k triangles, 17 programs; LOW 47–68 draws, 110k–144k triangles.
+- **Earlier evidence:** `docs/economy/phase1`, `phase2` (Phase-2 look, superseded by the art pass), `phase3` (minerals journey).
+
+### Half-done or open, file by file
+- **`js/conquest/style.js`:** the art pass is complete enough for release. Polish candidates for a later look session:
+  - crop rows read weakly at distance;
+  - the sky is only partly visible in the aerial captures;
+  - moving units cast no shadows;
+  - the veil strength is tuned by eye;
+  - the grass-clump density is capped by the per-chunk budget in `conquest-style.mjs` (HIGH ≤ 30k, LOW ≤ 12k).
+- **`js/conquest/world.js`:**
+  - **COLONY data:** regenerate only with `node dev/tools/colony-gen.mjs --write`, then re-run `conquest-terraform.mjs` and `conquest-minerals.mjs` (reachability).
+  - **Wall gameplay:** the wall is physical only. Safe-zone semantics and invasions targeting the wall are queued in the roadmap ("Colony Defense"), not done.
+  - **Decoration only:** tank wrecks and the pipeline have no collision.
+- **`dev/tests/conquest-colony-captures.py`:** not yet in CI. Optional: add it to `conquest-check.yml` and upload `docs/economy/colony` as an artifact.
+- **Reviews:** two independent read-only reviewers (economy/security; gameplay/performance) were launched on `git diff origin/main...HEAD` at `cf4055a`. Their results were NOT collected before handoff. Re-run them.
+- **Local CI-equivalent run:** launched at `cf4055a`; results NOT collected. Re-run it.
+- **Evidence file:** tests regenerate `docs/conquest-session-2/earned-defense.json` (already stale on main). Restore it with `git checkout`; never commit it.
+- **`docs/ROADMAP.md`:** update the status column after release.
+- **Network:** this cloud environment's proxy blocks `lunar-api.solb7403.workers.dev`. Verify production through the `deploy-worker.yml` run annotations (its last steps poll `/pvp/health` for `"ok":true` and print the live `version.json`), or add that host to an environment.
+
+### Exact remaining steps through release
+1. `git checkout claude/friendly-allen-7tcyca && git pull`, then `npm install --prefix worker --no-audit --no-fund --package-lock=false`.
+2. Run every `node dev/tests/...` listed in `.github/workflows/conquest-check.yml` and `deploy-worker.yml`, `bash dev/tests/conquest-regression.sh`, and the browser journeys (`conquest-onboarding.py`, `conquest-airdrop-browser.py`, `conquest-terraform-captures.py --quality high`, `conquest-minerals-browser.py`). Restore regenerated evidence files. Fix any failure.
+3. Two independent read-only reviewers (economy/security, gameplay/performance) on `git diff origin/main...HEAD`. Fix valid findings, re-run the affected tests, push.
+4. Merge the latest `origin/main`. Keep the build stamp consistent; re-stamp `index.html` and `version.json` together if anything changes after it; `lab-ui.mjs` checks they match.
+5. Open the PR (template `.github/pull_request_template.md`) and wait for green CI (conquest-check, equipment-balance, lab-ui-check, website-check, ai-tooling-check as triggered).
+6. Merge (the owner pre-approved the release; AGENTS.md rule 4: no owner request may be unanswered or unimplemented).
+7. `deploy-worker.yml` runs on the push to main. Confirm the pvp health annotation shows `ok:true` and the live `version.json` equals the stamp; also check the Pages `version.json`.
+8. If broken, revert the merge commit on main (`git revert -m 1 <merge>`), push, and confirm the redeploy.
+9. Final report here: what shipped, the agents used and whether they changed the result, and what is unverified (PHYSICAL_IPHONE_UNVERIFIED; no WebKit run; the strike difficulty and mineral income are modeled). Update the ROADMAP status.
+
+## Checkpoint 23 — RELEASE: World, Resources & Airdrop Points (PR #69, branch `claude/friendly-allen-7tcyca`) — owner morning review
+
+**Status:** released under the owner's pre-approval (Nov 8: "run unattended; don't wait for my approval"). The deploy verification is recorded in "Deploy verification" at the end of this section.
+
+### What shipped (session 4 of docs/ROADMAP.md)
+- **Economy:** Conquest airdrop points, Command Base multiplier, Daily Base Yield, and the 50,000 daily cap shared by every mode.
+- **Minerals and armour:** 6-tier minerals with deposits, scanner, gathering, caches and banking, plus Meteor Strike, Arcade/PvP and league mineral drops, and Hull Plating.
+- **Terraform rework:** creek, reservoir, forests and bio-flora.
+- **The colony:** core town, farm ring, frontier wall, roads (+15% on paved), monorail and crew, drawn in the owner's rugged war-torn frontier art direction (settlers in amber, military in cyan).
+
+### Terraform art self-check (owner override, Checkpoint 22 item 1)
+Every element of the override is in the build and visible in the captures:
+- clumped olive/straw/dark-green grass with dirt, gravel and regolith showing through
+- rock and strata on steep ground
+- shell craters and tank ruts
+- scrub, thornbushes, ferns by water, and dead/burnt trees; flowers only near the core
+- hazy amber-to-steel sky, low sun and baked long shadows
+- slate water with muddy banks
+- wrecks, sandbags, wire and the pipeline; a cleaner, lit colony core
+- no hex lines on open ground
+
+Nothing was half-done. Polish candidates stay for the later look session: crop rows at distance, more visible sky, unit shadows, veil tuning.
+
+### Final captures (390 portrait, Chromium SwiftShader; relative only, not phone FPS)
+- `docs/economy/colony/contact-sheet-390-high.jpg` and `contact-sheet-390-low.jpg`
+- the six shots at HIGH, LOW and 2D: `docs/economy/colony/*-390-{high,low,2d}.png`
+- stats: `stats-high.json`, `stats-low.json`, `stats-2d.json`
+
+| Quality | Draws | Triangles | Programs | Page errors |
+|---|---|---|---|---|
+| HIGH | 50–78 | 118k–203k | 16 (budget ≤ 16) | 0 |
+| LOW | 47–68 | 103k–142k | 16 | 0 |
+
+- Journey evidence regenerated on the final code: `docs/economy/phase1`, `phase2`, `phase3`.
+
+### Regressions found this session and fixed (all reproduced first, then shown passing)
+1. **`conquest-combat` (starter battle).** A new frontier-wall run 18–27 m from the oxygen objective blocked every attacker shot, so the starter battle could no longer be lost. `main` passes this test; the branch failed it.
+   - Fix: `colony-gen.mjs` keeps walls and watchtowers 60 m clear of the starter objective.
+   - The colony was regenerated. Only those 2 walls and 2 watchtowers were removed; nothing else in COLONY changed.
+   - Every other defense battle plays out the same as on `main`, undefended (checked on both).
+2. **`conquest-corrections`.** Exact-travel probes did not allow for the paved-road +15%.
+   - Fix: a shared `World.speedFactor`, used by `advance()` and by every footing probe (server footing, client safe footing, travel arrivals).
+3. **HIGH program budget (CI `transmission`, Chromium and WebKit).** The Phase 2 water and the art-pass veil had pushed HIGH to 17 material programs, over the README contract of ≤ 16.
+   - Fix: the veil now draws through the existing FX program, with an early raw-additive return, so it looks exactly as before.
+   - The relay fight now measures 16 programs and 73 draws.
+4. **The Refuge home approach (`conquest-living-war`).** A 23 m colony tower at (1170,1144) stood on the straight drive from Main Street to the Refuge supply terminal. Tanks clipped its corner and pinned.
+   - Fix: `colony-gen` keeps a 7 m corridor clear from Main Street to the terminal. Regenerating removed exactly that one lot.
+5. **Test-bot robustness (`conquest-living-war.py`).** None of these changes relax an assertion.
+   - `tap()` waits up to 10 s for the control to be laid out: CI software GL renders at 250 ms+ per frame near the colony.
+   - The 8-direction keyboard bot backs off when pinned on the relay spawn edge (994,944). That geometry is the same on `main`; only the relay fight's end position varies.
+   - Local result: 3 of 3 green after the back-off fix (it had failed 3 of 8 runs before it), and `main` 2 of 2.
+   - One earlier CI attempt also lost the browser process mid-job (infrastructure).
+6. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
+   - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
+
+### Independent reviews (2 read-only agents, given only the branch, head SHA, briefs and this checkpoint)
+Neither reviewer found a blocker or any way to mint or duplicate points or minerals. Both changed the result: every valid finding below was fixed and tested.
+
+**Economy/security reviewer:**
+- a won Meteor Strike left its sector "contested" forever (major); strikes no longer contest territory
+- the strike core roll was visible to the client; now hidden
+- Daily Base Yield points could be lost under the hourly limit; now held
+- PvP weekly minerals used the account league; now the room league
+- a live-room credit retry could pay twice; now keyed per seat and match, with a test
+- plates were missing from the non-lab loadout
+
+**Gameplay/performance reviewer:**
+- the same strike bug
+- SCAN taps were dropped at 60 fps; now latched
+- Hull Plating was missing from the client loadout
+- footing probes failed on roads; plus a new regionRevision-2 migration that moves pilots saved inside new colony solids, the dam, pylons or deep water (with a test)
+- LOW terrain went from 1 to 6 texture fetches; now 3, and LOW sky uses one cloud octave
+- flora placement ran synchronously on chunk load; now a resumable job under the streaming budget
+- per-frame allocations in the colony animation
+- GATHER covered ACT
+- featured contracts could pick strikes
+
+### Tests actually run (local, final code)
+- **Node:** all 81 node suites from conquest-check, deploy-worker, equipment-balance, lab-ui-check and website-check, including `bash dev/tests/conquest-regression.sh` (all 27 tests). All passed.
+  - The earned journey still reaches the first base inside the 45–75 min target.
+- **Browser (Chromium):** onboarding, earned-browser, earned end-to-end, preview x2, airdrop, terraform captures (high), minerals, and flagship 390 all passed. Colony captures at HIGH, LOW and 2D passed with no page errors.
+- **CI:** PR #69 runs the whole CI matrix, including WebKit and Firefox, against the final head.
+
+### Agents used
+2 reviewers (above). No other agents.
+
+### Unverified
+- PHYSICAL_IPHONE_UNVERIFIED: no physical phone frame timing.
+- WebKit only through CI.
+- Strike difficulty and mineral income are modeled, not measured with players.
+- The colony wall stays physical only. Colony Defense is queued for session 7.
+
