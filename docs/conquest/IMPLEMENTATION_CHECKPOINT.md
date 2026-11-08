@@ -1039,5 +1039,22 @@ Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, 
 - Economy: `dev/tools/economy-model.mjs` models veins + sessions (and drops the never-built Base Yield minerals); `dev/tests/conquest-vein-economy.mjs` proves model = live rules and the owner's targets (regular 3 d / 10 d / 4.3 wk / 2.6 mo; dedicated 1.8–3.0×; 6 h grinder < 6×). Spec §5.2, §5.3, §7.2 and the wiki updated.
 - Tests: all 76 node suites PASS locally (conquest-check list + regression.sh + vein economy); `conquest-minerals.mjs` 55 checks; `conquest-minerals-browser.py` and `conquest-onboarding.py` PASS (Chromium 390). Local Playwright needs the container Chromium (`executable_path`), CI is unchanged.
 
+### Phase 1 — base plot, site choice, build system (DONE, pushed `edfea7c`)
+- Shared rules `js/conquest/plot.js` (bundled into the Worker sim as `CONQUEST.Plot`), Worker actions `worker/src/conquest-plot.js` (`plot-site/build/upgrade/move/remove/wall/collect/drill/banner/theme`), plot sync inside `campaign()` derives the old `base.tier`/`base.modules` so every old formula is unchanged. Old `upgrade-base`/`base-module` drive the CC and module buildings on the builder.
+- Base stores: eco action `bstore` (`ecoBaseStore`, wallet → `S.bmn`, monotonic); Conquest reads `bmn` for mineral costs and counts `plot.mnSpent`.
+- Phone: `js/conquest/plotview.js` (ENTER BASE at the Command Gate; world HUD hidden; site picker; guided steps; build/walls/drill tabs; 2D canvas fallback), Command Gate arch in `style.js`.
+- Tests: `conquest-plot.mjs` (58), `conquest-base-progression.mjs` (CC1 51 min, CC2 day 3, CC5 day 7, CC9 day 21, CC10 day 31; dedicated 2.9×), `conquest-base-builder.py` (390 journey + CC10 budget + 2D). Updated `conquest-base`, `conquest-recall`, `conquest-long-progression` to the builder semantics. Full node suite 78/78.
+- Render budget (390 portrait, Chromium SwiftShader): guided CC1 plot 13–14 draws / 14–16k tris; full CC10 fixture (33 buildings, 100 walls) 55 draws / 33–47k tris; programs 16 at HIGH and LOW (no new programs: the plot scene uses the style kit with the world's light counts).
+
+### Phase 2 — personal and social (DONE)
+- Banner designer (4 shapes, 10 colours, 8 emblems) on the base and on the tank (`cq-tank-banner`), base theme (lights, finish, 6 decorations), all free.
+- `worker/src/conquest-visit.js`: public snapshot `cqbase/<pid>` (layout, site, CC, Command Power, banner, theme only) published after verified plot changes and on session open; `cqtop` (top 20, CAS); `cqweek/<week>` Base of the Week = largest verified weekly gain; `/api/conquest/visit` read-only (top 20, squad = recruits + referrer, Base of the Week). `wtest/conquest-visit.mjs` (11).
+- Share my base: 720×900 card (map, banner, CC, Command Power, invite link) → Telegram share / Web Share / download.
+- Base store: six items (themes, wall skin, banner, decoration, second builder, speed-up) listed and disabled: checkout off until payments are certified; never points or rare+ minerals.
+
+### Phase 3 — Conquest Command hub (DONE)
+- `js/conquest/hub.js`: hero (static art first, live 3D fades in: your actual tank from the M3 kit, your base, Earth on the horizon, the magenta warfront), one status column (warfront, your base + Daily Base Yield meter + builder timer + base assault alert, live events: Meteor Strike and invasions), four actions (ENTER CONQUEST, FAST TRAVEL, MY BASE → fast travel home and the plot, RESEARCH disabled until Session 6). Cached status paints first.
+- `conquest-hub-browser.py`: first paint in the tap task (~1 ms DOM), 390 and 1280; hero 17–33 draws, ≤ 12 programs (own renderer, disposed on leaving).
+
 ### Next
-Phase 1 (base plot): shared rules `js/conquest/plot.js` (written, not yet wired), Worker actions, migration, build mode, Defense Drill, progression model test.
+Phase 4 (settler kit, life, region map), then review and release.

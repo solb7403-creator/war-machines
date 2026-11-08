@@ -159,3 +159,34 @@
 .cq-plot-terminal{display:flex;flex-direction:column;gap:6px;padding-top:6px}
 .cq-dialog.cq-plot p{font-size:12px;line-height:1.35;color:#c9d6e2;margin:0}.cq-dialog.cq-plot .cq-plot-coach{color:#ffd9a0;padding:8px 12px}.cq-dialog.cq-plot .cq-plot-msg{color:#ffd36b;font-size:11px}.cq-dialog.cq-plot button{margin:0}
 .cq.cq-in-plot>*:not(.cq-plot):not(.cq-viewport){visibility:hidden!important}
+.cq-banner-prev canvas,.cq-plot-sheet>canvas{display:block;border:1px solid #2f4b5a;border-radius:6px;margin:4px 0}
+.cq-plot-row button[aria-label]{flex:0 0 44px;min-width:44px}
+.cq-plot-share{display:flex;flex-direction:column;gap:6px}.cq-plot-share-img{width:100%;max-width:360px;border-radius:8px;border:1px solid #2f4b5a}
+.cq-plot-dl{display:block;min-height:44px;line-height:44px;text-align:center;border:1px solid #566879;border-radius:6px;color:#dae8f3;text-decoration:none;font-size:12px}
+
+/* Session 5 Phase 3: Conquest Command hub. One hero, one status column, four actions. Static art paints first; the live 3D
+   hero fades in over it. */
+.cq.cq-command{background:#05070d;padding:0;display:flex;flex-direction:column;overflow-x:hidden}
+.cq-command:before,.cq-command:after{display:none}
+.cq-command .cq-top{position:absolute;z-index:3;top:max(10px,env(safe-area-inset-top));left:12px}
+.cq-hub-hero{position:relative;height:min(46vh,430px);min-height:280px;overflow:hidden;flex:none}
+.cq-hub-art{position:absolute;inset:0;background:#080e17 url('../js/assets/conquest/command-horizon.svg') center 30%/cover no-repeat}
+.cq-hub-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cq-hub-copy{position:absolute;left:16px;right:16px;bottom:14px;z-index:2;pointer-events:none;text-shadow:0 2px 12px #000}
+.cq-hub-copy h1{margin:2px 0;font-size:clamp(40px,12vw,64px);letter-spacing:.08em;color:#e8fbff}
+.cq-hub-copy .cq-premise{white-space:pre-line;margin:0;font-size:13px;color:#9fe8ff;letter-spacing:.12em}
+.cq-hub-copy .cq-kicker{margin:0;font-size:10px;letter-spacing:3px;color:#ffb347}
+.cq-hub-hero:after{content:'';position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,#05070d);pointer-events:none;z-index:1}
+.cq-hub-status{display:flex;flex-direction:column;gap:8px;padding:10px 14px 4px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+.cq-hub-card{border:1px solid #22e6ff33;border-radius:10px;padding:10px 12px;background:#0a1220e6}
+.cq-hub-card h3{margin:0 0 4px;font-size:10px;letter-spacing:.18em;color:#79dce8}
+.cq-hub-big{margin:0 0 4px;font-size:14px;font-weight:700;color:#e8f6ff}
+.cq-hub-card small{display:block;font-size:11px;color:#b3c4d3;line-height:1.35}
+.cq-hub-bar{width:100%;height:8px;margin:2px 0 4px}.cq-hub-meteor{color:#ffb347}.cq-hub-alert{color:#ff8a95!important;font-weight:700}
+.cq-hub-stale{font-size:10px;opacity:.7;text-align:center}
+.cq-hub-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 14px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+.cq-hub-actions .cq-hub-deploy{grid-column:1/-1;min-height:54px;font-size:16px;letter-spacing:.12em;background:#0f3a48;border-color:#22e6ff;color:#fff}
+.cq-hub-act{font-size:11px}.cq-hub-act[disabled]{opacity:.55}
+.cq-hub-foot{display:flex;justify-content:center;padding:2px 14px max(16px,env(safe-area-inset-bottom))}
+.cq-hub-art{z-index:0}.cq-hub-canvas{z-index:1}.cq-hub-hero{height:min(40vh,420px)}
+.cq-hub-copy{top:calc(max(10px,env(safe-area-inset-top)) + 52px);bottom:auto}

@@ -1,4 +1,11 @@
 {
+ "phase2": {
+  "visitList": "VISIT BASES \u00b7 TOP 20, SQUAD, BASE OF THE WEEK\n\n\u2605 BASE OF THE WEEK \u00b7 BrowserPilot \u00b7 +177 COMMAND POWER THIS WEEK\n\nSQUADNone yet.TOP 20 BY COMMAND POWERBrowserPilot \u00b7 CC1 \u00b7 CRATER RIM \u00b7 177",
+  "visiting": "VISITING \u00b7 BrowserPilot \u00b7 CRATER RIM \u00b7 CC1 \u00b7 POWER 177",
+  "readOnly": true,
+  "storeDisabled": true,
+  "tankBanner": true
+ },
  "journey": {
   "gateLabel": "ENTER BASE",
   "sites": 4,
@@ -7,12 +14,12 @@
   "refineryMs": 15000,
   "wallPlan": "7 SECTIONS \u00b7 35 CP + 14 FERRITE",
   "walls": 7,
-  "drill": "BREACHED \u00b7 11/14 PARASITES DOWN \u00b7 0 STRUCTURES LOST \u00b7 COMMAND CENTER 0%",
+  "drill": "BREACHED \u00b7 9/14 PARASITES DOWN \u00b7 0 STRUCTURES LOST \u00b7 COMMAND CENTER 0%",
   "noRewards": true,
   "left": true,
   "render": {
-   "calls": 13,
-   "triangles": 15778,
+   "calls": 14,
+   "triangles": 16014,
    "programs": 16
   },
   "pageErrors": []

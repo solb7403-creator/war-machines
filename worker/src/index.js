@@ -13,6 +13,7 @@ import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction} from "./conquest.js";
+import {conquestVisit} from "./conquest-visit.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -652,6 +653,7 @@ const ROUTES = {
   "/api/conquest/session": conquestSession,
   "/api/conquest/input": conquestInput,
   "/api/conquest/action": conquestAction,
+  "/api/conquest/visit": conquestVisit,
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),

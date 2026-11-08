@@ -74,7 +74,23 @@ async def main():
    await page.wait_for_function('ConquestPlotView.state?.drill',timeout=30000);await page.wait_for_timeout(5000);await page.screenshot(path=str(OUT/'defense-drill-390.png'))
    await page.wait_for_function('ConquestPlotView.state?.drillResult',timeout=120000);result=await page.locator('.cq-plot-result').inner_text()
    after=await st(page,'JSON.stringify([s.ledger,s.reputation,s.campaignScore])');info=await page.evaluate('ConquestPlotView.state.info');await page.screenshot(path=str(OUT/'drill-result-390.png'))
+   # ---------- Phase 2: banner + theme, visit (read-only), share card, store ----------
+   await page.locator('.cq-plot-tabs button',has_text='BASE').click();await page.locator('summary',has_text='BANNER & THEME').click()
+   await page.locator('.cq-plot-row button',has_text='PENNANT').click();await page.locator('button',has_text='SAVE BANNER').click()
+   await page.wait_for_function('Conquest.view.authority.state.plot.banner?.shape==="pennant"',timeout=30000)
+   await page.locator('summary',has_text='BANNER & THEME').click() if not await page.locator('button',has_text='SAVE THEME').is_visible() else None
+   await page.locator('.cq-plot-row button',has_text='AMBER').click();await page.locator('.cq-plot-row button',has_text='LAMPS').click();await page.locator('button',has_text='SAVE THEME').click()
+   await page.wait_for_function('Conquest.view.authority.state.plot.theme?.light==="amber"',timeout=30000);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/'banner-theme-390.png'))
+   await page.locator('summary',has_text='VISIT BASES').click();await page.wait_for_selector('.cq-map-fold[open] button:has-text("CC")',timeout=30000);visitText=await page.locator('.cq-map-fold[open]').last.inner_text()
+   await page.locator('.cq-map-fold[open] button:has-text("CC")').first.click();await page.wait_for_function('ConquestPlotView.state?.visit',timeout=30000);await page.wait_for_timeout(900)
+   visiting=await page.locator('.cq-plot-title').inner_text();await page.screenshot(path=str(OUT/'visit-read-only-390.png'));readOnly=await page.evaluate('!document.querySelector(".cq-plot-tabs")')
+   await page.locator('button',has_text='RETURN TO MY BASE').click();await page.wait_for_selector('.cq-plot-tabs')
+   await page.locator('button',has_text='SHARE MY BASE').click();await page.wait_for_selector('.cq-plot-share-img');await page.wait_for_timeout(300);await page.locator('.cq-plot-share-img').screenshot(path=str(OUT/'share-card.png'))
+   storeDisabled=await page.evaluate('[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).every(b=>b.disabled)&&[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).length===6')
+   results['phase2']={'visitList':visitText[:200],'visiting':visiting,'readOnly':readOnly,'storeDisabled':storeDisabled}
+   assert 'TOP 20' in visitText and 'VISITING' in visiting and readOnly and storeDisabled,results['phase2']
    await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(500);left=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
+   tankBanner=await page.evaluate('!!Conquest.view.vehicle.getObjectByName("cq-tank-banner")');results['phase2']['tankBanner']=tankBanner;assert tankBanner
    results['journey']={'gateLabel':label,'sites':sites,'coach1':coach1,'coach2':coach2,'refineryMs':job,'wallPlan':wallPlan,'walls':walls,'drill':result,'noRewards':before==after,'left':left,'render':info,'pageErrors':errors}
    print(json.dumps(results['journey']),flush=True)
    assert label=='ENTER BASE' and sites==4 and 'REFINERY' in coach1 and job==15000 and 'CANNON' in coach2 and walls>=3 and before==after and left and not errors,results['journey']

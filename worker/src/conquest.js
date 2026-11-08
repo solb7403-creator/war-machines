@@ -11,6 +11,8 @@ import {createState,applyCommands,applyAction,validateCommands,refreshState,refi
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
 import {publicVeins} from './conquest-veins.js';
+import {publishBase} from './conquest-visit.js';
+import {cleanName} from './db.js';
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
 export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
@@ -47,7 +49,9 @@ function result(r){return r.error?response(r.status||409,r.error,r.state):{statu
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
  const {loadout:L,legacy,view}=await canonical(env,a.pid,now);
- return projected(env,a.pid,await settleAirdrop(env,a.pid,await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const state=s||legacy||createState(L,now);refreshState(state,now);refitState(state,L);seal(state,now);airdrop(state).view=view;return {state};},now),now,true),now);
+ const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const state=s||legacy||createState(L,now);refreshState(state,now);refitState(state,L);seal(state,now);airdrop(state).view=view;return {state};},now),now,true),now);
+ if(out.status===200&&out.body?.state?.plot)await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // builder jobs settle on open
+ return out;
 }
 async function submit(env,a,request,reduce,now){
  const digest=hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(request))));
@@ -69,5 +73,8 @@ export async function conquestAction(env,a,now=Date.now()){
  const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
- const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:{};return submit(env,a,request,(p,r,n)=>applyAction(p,r,n,ctx),now);
+ const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:{};const out=await submit(env,a,request,(p,r,n)=>applyAction(p,r,n,ctx),now);
+ // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
+ if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});
+ return out;
 }
