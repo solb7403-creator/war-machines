@@ -98,6 +98,11 @@ for(const low of [false,true]){
    S.floraCull(ch,{x:8*128+64,z:9*128+64});assert.ok(fg.visible&&(!fg.userData.tufts||fg.userData.tufts.visible),q+' ground flora drawn on the hull chunk');
    S.floraCull(ch,{x:8*128+64+(low?125:165),z:9*128+64});assert.ok(fg.visible&&(!fg.userData.tufts||!fg.userData.tufts.visible),q+' tufts hidden first with distance');
    S.floraCull(ch,{x:8*128+64+300,z:9*128+64});assert.ok(!fg.visible,q+' ground flora hidden on distant fine chunks');}
+  // Phase 3: mineral formations (one instanced draw per look), the strike meteor/crater; fixed materials, bounded triangles
+  {const ML=S.ML,mw=S.mineralWorld(),all={found:Object.fromEntries(W.deposits.map(d=>[d.id,1])),deposits:{}};for(const [k,max] of Object.entries({fe:400,il:400,ar:500,tq:500,starter:500,dim:100,meteor:200,crater:low?900:1300}))assert.ok(tri(ML[k])<=max,q+' mineral look '+k+' triangles '+tri(ML[k])+' <= '+max);
+   const open=Date.UTC(2026,10,9,18,5);mw.userData.update(all,open);mw.traverse(m=>{if(m.isMesh)assert.ok(allowed.has(m.material),q+' minerals only style materials');});
+   const draws=mw.children[0].children.length,t=visTris(mw);assert.ok(draws<=6&&t<=(low?30000:40000),q+' every deposit discovered: '+draws+' draws, '+t+' triangles');
+   assert.ok(mw.children[2].visible&&!mw.children[1].visible,q+' an open strike shows the crater and core');mw.userData.update(all,Date.UTC(2026,10,9,17,57));assert.ok(mw.children[1].visible&&mw.children[1].position.y>W.groundAt(mw.children[1].position.x,mw.children[1].position.z)+100,q+' a telegraphed strike shows the meteor high in the sky');}
   console.log('PASS',q,'terraform: tree',tri(TP.tree),'far',tri(TP.treeFar),'plant',tri(TP.plant),'world worst',worst,'densest chunk',flora,'trees',trees);}
  S.dispose();
  console.log('PASS',q,'refuge',tris(parts.refuge),'viaduct',tris(parts.viaduct),'hive',tris(parts.installs[0]),'base T5',tris(parts.base[5]),'battery',tris(parts.battery),'chunks',chunks.length);

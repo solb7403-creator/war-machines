@@ -716,3 +716,68 @@ The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt
 - The forest-LOD switch distance is set by eye on SwiftShader captures.
 
 **Next:** Phase 3 (minerals, deposits and scanner, Meteor Strike, Arcade/PvP drops, Hull Plating, first-plate hook).
+
+### Checkpoint 22 — Phase 3: minerals, deposits, Meteor Strike, Arcade/PvP drops, Hull Plating
+
+**Account side** (shared `js/rules.js` + Worker):
+- **Minerals and plates:** six minerals in the account wallet (`eco.mn`), and Hull Plating in four slots (`eco.ap`, tiers 1–6) inside the canonical loadout.
+- **Strength:** plates feed `tankOf` (HP and trait flags) and then `powerOf`, where traits count as effective HP. The approved full-set gear-rating gains are reproduced exactly. League and matchmaking follow through `setLoadout` → `ecoLeague` on every fabrication.
+- **PvP:** `checkLoadout` rebuilds plates from the owned record, so a claimed set is ignored.
+- **Traits:** applied by damage type in the shared Arcade/PvP `takeHit` and in Conquest (pulse fire, plasma and orbital strikes). Moonbeam and Moonfall are exempt.
+- **Fabrication:** `/api/act plate`, from the garage's Hull Plating section (wallet, per-slot compare card, fabricate) or from Refuge Supply in Conquest. Exact mineral and points costs; upgrade only; no refund.
+- **Drops:** Arcade/PvP mineral drops on verified results (AI tickets and live rooms; quits get none), shown on the results screen. The weekly league minerals arrive automatically at the 20th verified match of the UTC week.
+
+**Conquest** (server-authoritative):
+- **Deposits:** 70 authored deposits generated offline by the approved placement rules, then frozen as literal coordinates:
+
+  | Mineral | Nodes | Where |
+  |---|---:|---|
+  | Ferrite | 36 | every sector, near routes |
+  | Ilmenite | 18 | off-route basalt |
+  | Armalcolite | 10 | HARD walls |
+  | Tranquillityite | 5 | VETERAN perimeters and hive edges |
+  | Starter Vein | 1 | 15 m from the Refuge terminal |
+
+  All are reachable from the spawn and clear of structures, water, forests and flora.
+- **Scanner pulse:** 30 s cooldown, 150 m (+50 m per Radar level). Discoveries stay on the MAP with "ready" or "depleted · Nm".
+- **Gathering:**
+  - server-rolled amounts (deterministic per node and moment; the client never sends an amount);
+  - exact channels (5 / 8 / 12 / 16 s) and per-pilot respawns (20 min / 45 min / 3 h / 8 h);
+  - the 3% Selenite vein;
+  - the one-time Starter Vein (35 Ferrite);
+  - noise that alerts Parasites within 120 m.
+- **Mineral cargo:** half (rounded down) drops into the recoverable death wreck. Banking at the Refuge or base vault sends minerals through the Phase 1 outbox to the wallet, exactly once.
+- **Operation caches** on victory, per the approved model: field 3 Ferrite + 50% Ilmenite; HARD 2 Ilmenite + 40% Armalcolite; VETERAN 1.5 Armalcolite + 30% Tranquillityite; defense 2 Ferrite + 1 Ilmenite.
+- **Meteor Strike:** every 2 h on the even UTC hour at 8 rotating authored craters (one per sector plus Reservoir Flats and the Eastern Rim).
+  - **Telegraph:** 5 min. HUD countdown line, MAP pin, a falling meteor in the sky, and a toast plus haptic alert once per slot.
+  - **Window:** 20 min open. Two fixed HARD waves (three interceptors, then a heavy sentinel, a fire coordinator and an interceptor), then a 16 s core channel that damage resets.
+  - **Rewards:** 1,075 points, 120 CP, carried minerals, and the core roll (15% Selenite, 2.5% Moonheart). The roll is stored at the first start in the slot. One claim per pilot per slot. Strike Resonance guarantees a Selenite every 12th and a Moonheart every 40th secured strike.
+  - A strike never captures territory or counts toward raid unlocks.
+
+**Visuals** (Neon Frontline; budgets in `conquest-style.mjs`):
+- **Mineral formations:** one instanced draw per look (rust Ferrite clods with steel flecks, black Ilmenite shards with blue tips, grey-blue Armalcolite with cyan seams, dark rock with red-orange Tranquillityite needles, the Starter Vein beacon). Depleted deposits show a dim stub. With every deposit discovered: at most 6 draws and 40k triangles (HIGH).
+- **Strike:** a meteor with a trail during the telegraph; a glowing crater ring and core while open.
+- **Plates:** shown on the Arcade hull (`render3d` `plateB`) and the Conquest hull (`syncLoadout`). HIGH uses the shine material with mineral-coloured seams; LOW uses one bucket per part. The 2D fallback shows tier-coloured outlines and a set ring.
+
+**Copy:**
+- Wiki: a new "Minerals & Hull Plating" section with every table and the published odds, plus mineral and strike rows in the Conquest points table.
+- Arcade-first pilots get "Your first armor plate is minutes away in Conquest" (or "fabricate it in the Garage" once they have 40 Ferrite) after matches 3, 6 and 9.
+- Conquest shows the guided "TAP SCAN: A STARTER VEIN LIES BESIDE THE REFUGE" hint and the first-plate prompt at Refuge Supply.
+
+**First-plate hook:**
+- **Verified in the browser at 390** (`conquest-minerals-browser.py`, real Worker account): SCAN → the Starter Vein revealed → hold GATHER (35 Ferrite carried) → BANK (wallet 40 Ferrite) → FRONT Ferrite plate at Refuge Supply → the session refits. Hull goes 1700 → 1717, the Conquest vehicle gains the plate geometry, and the strike telegraph shows on the HUD.
+- **Not measured:** the time to the first plate. It is modeled at minute 12 (target: about 20).
+
+**Tests (local):**
+- `wtest/hull-plating.mjs` (24);
+- `conquest-minerals.mjs` (41);
+- the `conquest-style.mjs` budgets;
+- the 390 journey;
+- every CI suite re-run (results in the final report below).
+
+**Still unverified:**
+- PHYSICAL_IPHONE_UNVERIFIED: the new HUD lines, deposit formations, strike visuals and plate meshes.
+- No WebKit run.
+- Meteor Strike difficulty against a starter tank is not measured. The waves use fixed authored archetypes; the HARD tier is not tuned by a scripted pilot.
+- Daily mineral income by player type (§5.6) is modeled, not measured.
+- The Selenite sheen and Moonheart pulse are static.

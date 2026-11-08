@@ -86,7 +86,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
 
 <nav>
  <a href="#story">The story</a><a href="#mission">The mission</a><a href="#start">How to play</a><a href="#combat">Combat</a><a href="#modes">Modes</a><a href="#points">Points</a>
- <a href="#garage">Garage</a><a href="#pass">Lunar Pass</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#vault">Vault</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
+ <a href="#garage">Garage</a><a href="#minerals">Minerals &amp; plating</a><a href="#pass">Lunar Pass</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#vault">Vault</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
 </nav>
 
 <section id="story">
@@ -216,11 +216,46 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Base or sector defense victory</td><td class="n">675</td></tr>
    <tr><td>World kill: light / heavy</td><td class="n">35 / 90</td></tr>
    <tr><td>Bio-flora harvest (terraformed zones, +3 Biomass)</td><td class="n">80</td></tr>
+   <tr><td>Mineral harvest: Ferrite / Ilmenite / Armalcolite / Tranquillityite</td><td class="n">100 / 140 / 240 / 390</td></tr>
+   <tr><td>Meteor Strike secured</td><td class="n">1,075</td></tr>
   </table>
   <p class="mut" style="margin-top:10px">Your league's base pay multiplies them (×1.00 Rookie to ×1.60 Lunar Legend), and your Command Base adds up to ×1.25 (×1.05 at Base I, +0.05 a tier). Kills inside an operation are paid by its result; if the operation fails, the kills you made still count. At most 120 paying results an hour.</p>
   <p><b>Daily Base Yield.</b> Your Command Base fills with points, CP and materials over 24 hours (1,000 points at Base I up to 2,600 at Base V). Collect it at the base terminal from 10%; it stops filling when full. The points part needs one verified operation or bio-flora harvest that day.</p>
  </div>
  <div class="note">Matches and Conquest together can earn up to <b>50,000 points a day</b> (resets 00:00 UTC). Quests, milestones, the daily reward and the Lunar Pass pay on top. Spending points never lowers your rank: the board counts lifetime points earned.</div>
+</section>
+
+<section id="minerals">
+ <h2>Minerals &amp; Hull Plating</h2>
+ <p class="kick">Ore from the war zone, armor on your hull, in every mode.</p>
+ <div class="card">
+  <p><b>Six minerals</b>, from common to legendary: <b>Ferrite Regolith</b>, <b>Ilmenite</b>, <b>Armalcolite</b>, <b>Tranquillityite</b>, <b>Selenite Glass</b> and <b>Moonheart</b>. They live in your account wallet, shared by Arcade, PvP and Conquest.</p>
+  <p><b>Conquest deposits.</b> Tap <b>SCAN</b> (free, every 30 s) to reveal deposits within 150 m (+50 m per Radar module level); they stay on your MAP with their state. Stop within 6 m and hold <b>GATHER</b>: the channel makes noise and Parasites come to look. Taking damage or moving resets it.</p>
+  <table>
+   <tr><th>Deposit</th><th class="n">Nodes</th><th class="n">Per harvest</th><th class="n">Channel</th><th class="n">Regrows</th></tr>
+   <tr><td>Ferrite Regolith (near routes, every sector)</td><td class="n">36</td><td class="n">2–4</td><td class="n">5 s</td><td class="n">20 min</td></tr>
+   <tr><td>Ilmenite (off-route basalt)</td><td class="n">18</td><td class="n">1–3</td><td class="n">8 s</td><td class="n">45 min</td></tr>
+   <tr><td>Armalcolite (HARD zones)</td><td class="n">10</td><td class="n">1–2</td><td class="n">12 s</td><td class="n">3 h</td></tr>
+   <tr><td>Tranquillityite (VETERAN zones; 3% Selenite vein)</td><td class="n">5</td><td class="n">1</td><td class="n">16 s</td><td class="n">8 h</td></tr>
+   <tr><td>Starter Vein (beside the Refuge, once)</td><td class="n">1</td><td class="n">35 Ferrite</td><td class="n">5 s</td><td class="n">never</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Minerals you carry in Conquest are cargo: bank them at the Refuge terminal or your base vault to send them to your wallet. If your War Machine is destroyed, half of each carried mineral (rounded down) drops into your personal wreck for ten minutes. Operation victories also pay a small mineral cache.</p>
+  <p><b>Meteor Strike.</b> Every 2 hours on the even UTC hour a meteor hits one of eight craters (the same one for every pilot), with a 5-minute warning on your HUD and MAP. The crater stays open for 20 minutes: beat both Parasite waves, then hold at the core for 16 seconds. It pays 1,075 airdrop points (× league × base), 120 CP, 2 Ilmenite + 2 Armalcolite, a 50% chance of a Tranquillityite, and the core roll: <b>15% Selenite Glass</b>, <b>2.5% Moonheart</b>. The roll is made once per strike by the server. <b>Strike Resonance:</b> every 12th strike you secure gives a Selenite and every 40th a Moonheart, whatever the rolls. Strike rewards are carried: bring them home.</p>
+  <p><b>Arcade and PvP.</b> Verified results drop minerals straight into your wallet: a win 1–2 Ferrite, a 20% chance of an Ilmenite and a 6% chance of an Armalcolite; a draw or a Last Standing top 3, 1 Ferrite and a 10% chance of an Ilmenite; a loss, a 50% chance of a Ferrite. Quits drop nothing. Your 20th verified match of a UTC week also pays weekly league minerals (Rookie 20 Ferrite up to Lunar Legend 8 Armalcolite + 2 Tranquillityite).</p>
+ </div>
+ <div class="card">
+  <p><b>Hull Plating</b>: four plate slots on every hull (FRONT, LEFT, RIGHT, TURRET), fabricated in the Garage or at Refuge Supply. Fabrication is instant and permanent; upgrading a slot absorbs the plate already in it. Plates add max hull HP in every mode and raise your gear rating like any other gear.</p>
+  <table>
+   <tr><th>Plate</th><th class="n">Hull per plate</th><th class="n">Cost</th><th>Full set (all four)</th></tr>
+   <tr><td>Ferrite Regolith</td><td class="n">+1%</td><td class="n">40 Ferrite + 300 pts</td><td>+4% hull</td></tr>
+   <tr><td>Ilmenite</td><td class="n">+1.75%</td><td class="n">40 Ilmenite + 20 Ferrite + 1,500 pts</td><td>+7% hull</td></tr>
+   <tr><td>Armalcolite</td><td class="n">+2.5%</td><td class="n">30 Armalcolite + 20 Ilmenite + 4,000 pts</td><td>+10% hull</td></tr>
+   <tr><td>Tranquillityite</td><td class="n">+3%</td><td class="n">20 Tranquillityite + 15 Armalcolite + 8,000 pts</td><td>+12% hull</td></tr>
+   <tr><td>Selenite Glass</td><td class="n">+3.5%</td><td class="n">6 Selenite + 10 Tranquillityite + 15,000 pts</td><td>+14% hull, −10% energy damage taken</td></tr>
+   <tr><td>Moonheart</td><td class="n">+4%</td><td class="n">3 Moonheart + 4 Selenite + 25,000 pts</td><td>+16% hull, −10% energy and −10% area damage taken</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Energy: Pulse Cannon shots, Pierce Lance, Static Nova and Conquest pulse and plasma fire. Area: Static Nova, Siege Blast, meteors, the Survival megatank's stomps and shells, and Conquest artillery, orbital strikes and plasma splash. Moonbeam and Moonfall are not reduced. AI pilots never carry plates. Plates are never sold for real money.</p>
+ </div>
 </section>
 
 <section id="garage">

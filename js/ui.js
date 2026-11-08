@@ -1203,6 +1203,7 @@ function resultsHTML(r){
  else if(giftPending()&&[2,4].includes(save.mp||0))tip='Come back tomorrow: your daily reward comes with a free Rare gem cache, one time.';
  else if(r.countered){const b=beatenBy(r.meCls),fix=beatenBy(b);tip='Their '+CH[b].n+' countered your '+CH[r.meCls].n+'. '+CH[fix].n+' beats '+CH[b].n+(ownedChassisClasses().includes(fix)?': switch on the next start screen.':'. Find one in a chassis crate.');}
  else if(r.quests.length)tip='Quest done: '+r.quests.join(', ')+'. Claim it in Quests.';
+ else if([3,6,9].includes(save.mp||0)&&!apOf(save.ap).some(Boolean))tip=mnOf(save.mn).fe>=PLATE.cost[1].fe?'You have the Ferrite for your first armor plate: fabricate it in the Garage under Hull Plating.':'Your first armor plate is minutes away in Conquest: scan for the Starter Vein beside the Refuge.';   // RESOURCE_ECONOMY.md §7.3
  else tip=TIPS[(save.mp||0)%TIPS.length];
  const st=r.stats;
  return (r.won?'<div class="confetti">'+Array.from({length:28},(_,i)=>'<i style="left:'+Math.min(96,i*3.5+Math.random()*2)+'%;background:'+['#ffcf4a','#5fe3a1','#4d9fff','#ff7a2f','#dfe7f2'][i%5]+';animation-duration:'+(1.6+Math.random()*1.4)+'s;animation-delay:'+(Math.random()*0.5)+'s"></i>').join('')+'</div>':'')+

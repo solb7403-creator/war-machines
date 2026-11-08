@@ -429,6 +429,30 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    put(TP.node,ready);put(TP.nodeDim,dim);if(high&&ready.length){const im=new T.InstancedMesh(P.bill,MAT.fx,ready.length);ready.forEach((n,i)=>im.setMatrixAt(i,M(n.x,ground(n.x,n.z)+1.6,n.z,0,0,0,2.2,2.2,2)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.renderOrder=2;im.userData.noPick=true;nodes.add(im);}};
   g.userData.update(null,0);return g;};
 
+ // ---------- Phase 3: mineral deposits and the Meteor Strike (docs/economy/RESOURCE_ECONOMY.md §5) ----------
+ // Presentation only: the pilot's discovered deposits (s.found) and their per-pilot respawn clocks (s.deposits), and the
+ // shared strike schedule (ConquestCombat.meteorStrike). One instanced draw per mineral look, rebuilt only on state change.
+ const ML={};{const rust=lin(0x7a4a2c),steel=lin(0x9aa6b2),basalt=lin(0x15161c),dark=lin(0x101015);
+  const fe=new Bld();for(const [x,z,s] of [[0,0,1],[.9,.3,.7],[-.7,.5,.6],[.2,-.8,.55]])fe.add(G.rock,M(x,s*.35,z,0,x*3,0,s*.9,s*.6,s*.9),rust);for(let k=0;k<(high?5:3);k++)fe.add(G.octa,M(Math.cos(k*1.3)*.6,.55+.1*k%2,Math.sin(k*1.3)*.6,0,k,0,.09,.09,.09),steel,.9);ML.fe=keep(fe.geometry());
+  const il=new Bld();il.add(G.rock,M(0,.2,0,0,0,0,1.1,.45,1),basalt);for(let k=0;k<(high?5:3);k++){const a=k*1.25;il.add(G.shard,M(Math.cos(a)*.45,.25,Math.sin(a)*.45,.35*Math.cos(a),a,.35*Math.sin(a),.55,1.3+.3*(k%2),.55),dark,0);il.add(G.octa,M(Math.cos(a)*.6,1.25+.2*(k%2),Math.sin(a)*.6,0,0,0,.06,.06,.06),lin(0x5f86b8),1.4);}ML.il=keep(il.geometry());
+  const ar=new Bld();ar.add(G.rock,M(0,.25,0,0,0,0,1.2,.6,1.1),lin(0x2a3240));for(let k=0;k<(high?6:4);k++){const a=k*1.05;ar.add(G.shard,M(Math.cos(a)*.5,.3,Math.sin(a)*.5,.3*Math.cos(a),a,.3*Math.sin(a),.5,1.6+.4*(k%3),.5),lin(0x5b6d84),.25);ar.seg(V3(Math.cos(a)*.5,.4,Math.sin(a)*.5),V3(Math.cos(a)*.7,1.7,Math.sin(a)*.7),.03,K.cyan,1.3);}ML.ar=keep(ar.geometry());
+  const tq=new Bld();tq.add(G.rock,M(0,.3,0,0,0,0,1.3,.7,1.2),basalt);for(let k=0;k<(high?8:5);k++){const a=k*.8;tq.add(G.shard,M(Math.cos(a)*.35,.5,Math.sin(a)*.35,.45*Math.cos(a),a,.45*Math.sin(a),.22,1.5+.5*(k%2),.22),lin(0xff7a3d),1.5);}ML.tq=keep(tq.geometry());
+  const sv=new Bld();for(const [x,z,s] of [[0,0,1.5],[1.3,.4,1],[-1.1,.7,.9],[.3,-1.2,.8],[-.5,-.9,.7]])sv.add(G.rock,M(x,s*.35,z,0,x*3,0,s*.9,s*.6,s*.9),rust);sv.add(G.hex,M(0,0,0,0,0,0,.08,4.2,.08),K.cyan,1.2);sv.add(gem,M(0,4.4,0,0,0,0,.35,.35,.35),lin(0xffb070),1.8);ML.starter=keep(sv.geometry());
+  const dim=new Bld();dim.add(G.rock,M(0,.12,0,0,0,0,.9,.25,.8),lin(0x2a2c33));ML.dim=keep(dim.geometry());
+  const met=new Bld();met.add(gem,M(0,0,0,0,0,0,1.6,1.6,1.6),lin(0xffb070),2.2);for(let k=1;k<=6;k++)met.add(gem,M(-k*1.4,k*2.6,0,0,k,0,1.2-k*.15,1.2-k*.15,1.2-k*.15),lin(0xff7a3d),1.8-k*.2);ML.meteor=keep(met.geometry());
+  const cr=new Bld();cr.add(ringG,M(0,.3,0,Math.PI/2,0,0,7,7,6),lin(0xff7a3d),1.5);for(let k=0;k<(high?10:6);k++){const a=k/(high?10:6)*TAU;cr.add(G.rock,M(Math.cos(a)*7.5,.2,Math.sin(a)*7.5,0,a,0,1.2,.6,1),basalt);}cr.add(gem,M(0,1.1,0,0,0,0,.7,.9,.7),lin(0xa8e4ff),2.2);ML.crater=keep(cr.geometry());}
+ S.ML=ML;
+ S.mineralWorld=()=>{const Wd=root.ConquestWorld,g=new T.Group(),dep=new T.Group();g.name='cq-minerals';g.add(dep);let key='';
+  const meteor=new T.Mesh(ML.meteor,MAT.solid),crater=new T.Mesh(ML.crater,MAT.solid);meteor.visible=crater.visible=false;meteor.userData.noPick=crater.userData.noPick=true;g.add(meteor,crater);
+  g.userData.update=(s,now)=>{const found=s?.found||{},list=(Wd.deposits||[]).filter(d=>found[d.id]),state=list.map(d=>{const t=d.m==='starter'?(s.deposits?.[d.id]?-1:0):s.deposits?.[d.id]>now?1:0;return t;}),k=list.map((d,i)=>d.id+state[i]).join();
+   if(k!==key){key=k;for(const c of [...dep.children]){dep.remove(c);c.dispose?.();}const by={};list.forEach((d,i)=>{if(state[i]<0)return;const look=state[i]?'dim':d.m;(by[look]||(by[look]=[])).push(d);});
+    for(const [look,L] of Object.entries(by)){const im=new T.InstancedMesh(ML[look],MAT.solid,L.length);L.forEach((d,i)=>im.setMatrixAt(i,M(d.x,ground(d.x,d.z)-.1,d.z,0,(d.x*.13)%TAU,0,1.3,1.3,1.3)));im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere();im.userData.noPick=true;dep.add(im);}}
+   const Mt=root.ConquestCombat?.meteorStrike?.(now),claimed=Mt&&s?.strikes?.[Mt.slot]?.claimed;
+   if(Mt&&Mt.phase==='telegraph'){const f=Math.max(0,(Mt.impactAt-now)/STRIKE.telegraphMs),y=ground(Mt.site.x,Mt.site.z);meteor.visible=true;meteor.position.set(Mt.site.x+f*260,y+4+f*520,Mt.site.z-f*90);meteor.rotation.y=-.33;crater.visible=false;}
+   else if(Mt&&Mt.phase==='open'&&!claimed){meteor.visible=false;crater.visible=true;crater.position.set(Mt.site.x,ground(Mt.site.x,Mt.site.z),Mt.site.z);crater.rotation.y=now*2e-4%TAU;}
+   else meteor.visible=crater.visible=false;};
+  return g;};
+
  // ---------- sky + lights ----------
  S.environment=(scene,renderer)=>{
   if(renderer){renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=low?1.25:1.2;renderer.outputColorSpace=T.SRGBColorSpace;}
@@ -781,7 +805,11 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  if(scale>=16)for(const l of Wd.landmarks)if(d.has(l.x,l.z))add(l.x,l.z,'·','#7fd3e0',l.name,1,{dim:true,dot:true});
  for(const s of Cb.installations)if(d.has(s.x,s.z)){const cap=S.territory?.[s.id]?.owner==='humanity';add(s.x,s.z,cap?'⚑':'▲',cap?'#5effd0':'#ff4fd8',s.name,5);}
  const ops=Object.values(Cb.operations);if(m.mission){const done=m.missionDone;add(m.mission.x,m.mission.z,done?'✓':'◆','#f1cd7e',m.mission.name,4);}
- for(const o of ops){if(o.raid||o.defense||o.id==='base-defense'||o.id==='oxygen-line'||Cb.installations.some(s=>s.id===o.site))continue;const sec=S.territory?.[o.site]?.owner==='humanity';add(o.x,o.z,sec?'⚑':'◆',sec?'#5effd0':'#ffd36b',o.name,4);}
+ // Phase 3: discovered mineral deposits (ready / depleted with the respawn minutes) and the live Meteor Strike
+ {const now=Date.now();for(const dp of Wd.deposits||[]){if(!S.found?.[dp.id])continue;const until=dp.m==='starter'?(S.deposits?.[dp.id]?Infinity:0):(S.deposits?.[dp.id]||0)-now,ready=until<=0,k=dp.mineral,c=typeof MINERALS!=='undefined'?MINERALS[k].c:'#c0703f';
+   if(dp.m==='starter'&&!ready)continue;add(dp.x,dp.z,'◆',ready?c:'#566070',(typeof MINERALS!=='undefined'?MINERALS[k].s:'Ore')+(ready?'':' · '+Math.ceil(until/60000)+'m'),dp.m==='tq'||dp.m==='starter'?5:dp.m==='ar'?3:1);}
+  const M=Cb.meteorStrike?.(now);if(M&&M.phase!=='idle'&&!S.strikes?.[M.slot]?.claimed)add(M.site.x,M.site.z,'☄',M.phase==='open'?'#ff7a3d':'#ffd36b',(M.phase==='open'?'STRIKE OPEN · ':'IMPACT ')+Math.max(0,Math.ceil(((M.phase==='open'?M.closesAt:M.impactAt)-now)/60000))+'m',9);}
+ for(const o of ops){if(o.raid||o.defense||o.strike||o.id==='base-defense'||o.id==='oxygen-line'||Cb.installations.some(s=>s.id===o.site))continue;const sec=S.territory?.[o.site]?.owner==='humanity';add(o.x,o.z,sec?'⚑':'◆',sec?'#5effd0':'#ffd36b',o.name,4);}
  for(const sector of Cb.sectors){const list=ops.filter(o=>o.raid&&o.sector===sector.id);if(list.length){const cleared=list.filter(o=>S.completed?.[o.id]).length,un=Cb.raidsUnlocked(S.completed),done=cleared===list.length;
    add(list.reduce((n,o)=>n+o.x,0)/list.length,list.reduce((n,o)=>n+o.z,0)/list.length,done?'✓':'✦',done?'#5effd0':un?'#ffb347':'#8a93a0',un?'RAIDS '+cleared+'/'+list.length:'RAIDS · LOCKED',6);}
   if(Cb.sectorDefenseOpen(S.territory?.[sector.id],sector.id)){const o=ops.find(o=>o.defense&&o.sector===sector.id);if(o)add(o.x,o.z,'!','#ff4060',(S.territory[sector.id].owner==='humanity'?'DEFEND ':'RETAKE ')+sector.name,8);}}

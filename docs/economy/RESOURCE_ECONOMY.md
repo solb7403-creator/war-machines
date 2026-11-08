@@ -1,6 +1,6 @@
 # LUNAR: War Machines — Resource Economy (master spec)
 
-**Status: APPROVED v1 (owner sign-off 2026-11-08; decisions in §0 and §12). Phases 1 and 2 are implemented on branch `claude/friendly-allen-7tcyca` (not yet released); Phase 3 is next.** Payments and checkout stay disabled. Airdrop boards stay tracking-only (`AIRDROP.dist=false`): nothing here promises tokens.
+**Status: APPROVED v1 (owner sign-off 2026-11-08; decisions in §0 and §12). Phases 1–3 are implemented on branch `claude/friendly-allen-7tcyca` (not yet released; §10 lists what was built and the few places it differs).** Payments and checkout stay disabled. Airdrop boards stay tracking-only (`AIRDROP.dist=false`): nothing here promises tokens.
 
 This is the one economy document for:
 - this session (airdrop points, terraform/biomass, minerals and hull plating);
@@ -630,6 +630,41 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
 - The bio-flora points go through the Phase 1 outbox and the 120-outcomes-an-hour limit like every other outcome.
 - Tests: `dev/tests/conquest-terraform.mjs` (32 checks: zones, water, crossings, forests, reachability, harvest) and the flora budgets in `dev/tests/conquest-style.mjs`; `dev/tests/conquest-terraform-captures.py` runs a real 390 GATHER journey in the browser. All run in CI.
 - Record: `conquest/<pid>`: `harvest` {nodeId: regrowsAt} and `channel` {node, ms} (additive; Phase 2).
+
+**Phase 3 as built (minerals, deposits, Meteor Strike, Hull Plating; same branch):**
+- **Shared constants** (`js/rules.js`): `MINERALS`, `MN_ORDER`, `PLATE` (HP per plate, costs, traits, the shares used to value traits), `MN_DROP`, `MN_WEEKLY`, `MN_GATHER`, `MN_SCAN`, `MN_CACHE`, `STRIKE`.
+  - Helpers: `plateStats`, `ecoPlate`, `ecoMinerals`, `ecoMatchMinerals`.
+  - The authored deposit and strike-site coordinates are world data, in `js/conquest/world.js` (`deposits`) and `js/conquest/combat.js` (`strikeSites`, `meteorStrike()`).
+- **Plates in the loadout:** `ecoLoadout` adds `ap` from the owned record only. `tankOf` applies the HP and the trait flags. `powerZ` values the traits as effective HP, which reproduces the §6.3 stock column exactly (+1.5 / 2.9 / 4.4 / 5.9 / 8.8 / 10.3%).
+- **Trait hooks:**
+  - shared Arcade/PvP `takeHit` (`plateCut`);
+  - Conquest projectile and hazard damage (`plateTaken`).
+- **Account actions:**
+  - fabrication is `/api/act {a:'plate', k: slot, t: tier}`;
+  - drops run in `ecoMatchPts` (AI tickets) and `creditMatch` (live rooms);
+  - banked Conquest minerals ride the Phase 1 outbox (`entry.mn`) and are credited by `creditConquest` with the same watermark.
+- **Conquest:**
+  - `scanStep`, a generalized `harvestStep` (flora and discovered deposits) and `cacheMinerals` (operation victories, per the model's `opMinerals`);
+  - the `strike` operation family with `strikeReward`;
+  - deposits, cargo, the scanner and the strike on the HUD, MAP, 3D and 2D fallback;
+  - Hull Plating at Refuge Supply.
+- **Where the build differs from, or decides beyond, the written spec (all within the approved numbers):**
+  - **Death exposure:** "50% of carried" works as it does for materials. Half of each carried mineral, rounded down, drops into the personal wreck, which can be recovered for 10 minutes; otherwise it is lost.
+  - **Weekly league minerals:** granted automatically at the 20th verified Arcade/PvP match of the UTC week, at that match's league; no claim screen. The competitive session may still finalize the table.
+  - **Base Yield minerals** (listed as a source in §2) are not built: no amounts were approved.
+  - **Strike core roll:** made with the server's crypto random at the pilot's first start in that slot and stored, so retries and reloads cannot re-roll it. A strike never captures territory and never counts toward field-mission progress.
+  - **Plate looks:** HIGH uses the shine material and glowing seams; LOW uses a single bucket with no seams. The animated Selenite sheen and Moonheart pulse are static for now.
+  - **Mineral store (§9.1):** not built. Checkout stays off.
+- **Records:**
+  - `eco/<pid>`: `mn`, `ap`, and `mnw` {w, n, p} (weekly league minerals).
+  - `conquest/<pid>`:
+    - `ledger.mn` (carried minerals), `found` (discovered deposits), `deposits` (respawn clocks; the Starter Vein is 1 once gathered), `scanAt`;
+    - `strikes` {slot: {roll, claimed}}, `strikeSlot`, `resonance`.
+- **Tests (all in CI):**
+  - `dev/tests/wtest/hull-plating.mjs` (24 checks);
+  - `dev/tests/conquest-minerals.mjs` (41);
+  - mineral and plate budgets in `conquest-style.mjs`;
+  - the 390 browser journey `dev/tests/conquest-minerals-browser.py`: scan, Starter Vein, gather, bank, first plate on the hull, strike telegraph.
 
 **Records (additive; old records get defaults; nothing is reset):**
 - `eco/<pid>`:

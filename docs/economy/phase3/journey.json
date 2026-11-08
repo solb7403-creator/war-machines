@@ -1,0 +1,19 @@
+{
+ "hint": "TAP SCAN: A STARTER VEIN LIES BESIDE THE REFUGE",
+ "scanFound": 22,
+ "gatherLabel": "HOLD \u00b7 GATHER STARTER VEIN",
+ "carried": "MINERALS CARRIED \u00b7 35 FERRITE \u00b7 BANK AT THE REFUGE",
+ "walletFe": 40,
+ "hullBefore": 1700,
+ "hullAfter": 1717,
+ "vehicleVertsBefore": 16552,
+ "vehicleVertsAfter": 16588,
+ "plates": [
+  1,
+  0,
+  0,
+  0
+ ],
+ "strike": "\u2604 METEOR STRIKE \u00b7 ASH REDOUBT \u00b7 IMPACT IN 2:59",
+ "pageErrors": []
+}
