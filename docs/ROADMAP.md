@@ -17,6 +17,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 5 | Base builder + Conquest Command hub page + full settler architecture | Next |
 | 6 | Tank modifications + Science Lab research + Conquest audio & weather pass | Planned |
 | 7 | Competitive: raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event, terraform-zone game modes | Planned |
+| 7.5 | Graphics 2.0: lighting (shadows, ambient occlusion, per-zone color grade), post-processing (bloom, depth fog, heat haze), higher-detail Blender models and PBR textures, upgraded VFX; quality tiers (website top tier as main platform, tuned phone HIGH/LOW) | Planned |
 | 8 | Payments certification (Stars, TON, SOL; website shop) — required before beta | Planned |
 | 9 | Full game audit (use Fable) | Planned |
 | 10 | Closed beta, then promotion (incl. public Conquest showcase page on the website) | Planned |
