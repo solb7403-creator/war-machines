@@ -1,0 +1,138 @@
+LUNAR: War Machines — SESSION 5 (owner-approved, complete brief, Nov 8 2026)
+Base builder + Conquest Command hub page + full settler architecture + terraform life + region map
+=====================================================================================================
+
+This is the complete, owner-approved brief for Session 5 of docs/ROADMAP.md. All the decisions below are settled; do not ask
+the owner to re-decide them. Read AGENTS.md, CLAUDE.md, docs/ROADMAP.md (sections "Base builder vision", "Settler
+architecture", "Conquest Command hub", "Terraform audit additions"), docs/economy/RESOURCE_ECONOMY.md, the newest
+docs/conquest/IMPLEMENTATION_CHECKPOINT.md and this file before coding. The owner's direct instructions override older docs.
+
+RUN MODE (owner, binding)
+- Run unattended. The release is PRE-APPROVED: do not wait for the owner at any point. Fix, commit, push, merge, deploy, verify.
+- Never end a turn while waiting on CI or a deploy without a durable wake-up: schedule a send_later (or equivalent scheduled
+  task) for the expected finish time plus margin BEFORE ending the turn, and actively poll when the owner is present. A timer
+  or sleep alone is not a wake-up. (On Nov 8 a release sat idle 6+ hours because a session ended its turn on a timer.)
+- When CI fails, fix it and push again. Never hand the decision back to the owner with "reply X to continue".
+- Do not write "released"/"shipped" in any doc until the deploy is verified.
+- Push after every phase (zero-loss protocol in docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md). If usage runs out
+  mid-session, the checkpoint must let the next session resume without redoing work.
+
+SETTLED OWNER DECISIONS (Nov 8 2026)
+1. Base location: OWN PLOT, PICK A SITE. Every pilot gets a private base plot (not on the shared map). At first build the
+   pilot picks one of four site types: CRATER RIM (+15% mineral/alloy production, deposits on the plot), RIVER DELTA (+15%
+   biomass, water and lush ground), RIDGE (defense: +10% turret range, long sightlines), CANYON (hard to raid: fewer and
+   narrower approach lanes). Others can visit it (read-only now; raidable when async raids arrive in Session 7).
+2. Build timers: REAL TIMERS, SHORT EARLY. First builds take seconds to about a minute; time grows with level to a maximum
+   of about 8 hours at the highest Session 5 levels. One builder. A second builder and speed-ups exist only as store items
+   (checkout stays DISABLED until payments are certified; show them honestly as unavailable, never as fake purchases).
+3. Today's playtest fixes ship as STEP 1 of this session (Phase 0 below).
+4. Scope: ALL OF IT in this session, checkpointed after every phase.
+
+PHASE 0 — owner playtest fixes (code done; finish and fold in)
+- Branch claude/conquest-playtest-session4-fixes (head 5812698, from main 40343b4) already contains: simpler region map
+  (no sector circles, no lettered grid, locked raids hidden, own Ore ⬢ and Bio-flora ✿ icons, labels only when zoomed or
+  routed, one-line key, map first, long lists in closed .cq-map-fold sections), UNDER FIRE edge flash + Telegram haptic +
+  arrow/distance to the shooter, tap-to-route low-hull banner (<25%), gather shows "UNDER FIRE · CLEAR ENEMIES, THEN GATHER",
+  shorter death screen naming the killer, SCAN · FIND ORE pulse until first scan, HUD route to nearest ready ore after a scan
+  (cleared once gathered), first-entry tip (3 entries) about SCAN, bio-flora and gathering noise. Root causes found: hull does
+  not regenerate in the field; gathering is cancelled by any hit and alerts the nearest enemy within 120 m every second.
+- Remaining: create the session branch claude/conquest-session-5 from that branch merged with latest main; rerun
+  dev/tests/conquest-minerals-browser.py (its own class check was fixed to cq-scan-pulse), conquest-onboarding.py,
+  conquest-session-032.py (already opens FIELD MISSIONS), conquest-flagship-browser.py (uses .cq-operation-board summary,
+  unchanged), conquest-style.mjs and the node suites; add a short browser check that a simulated hit shows .cq-threat and
+  .cq-hurt.on and that a <25% hull shows .cq-low-hull whose tap sets a Refuge route. Push. These ship with the Session 5
+  release (one review, one CI cycle, one deploy).
+
+ORE FIX (owner, Nov 8 — part of Phase 0; mining must feel like mining)
+- Today deposits respawn in minutes (Ferrite 20 min, Ilmenite 45 min, Armalcolite 3 h, Tranquillityite 8 h), so a player can
+  circle the same few spots all day. Replace with VEINS RUN DRY, NEW ONES APPEAR (owner left the choice to Claude; this is the
+  chosen design):
+  - A vein holds a fixed amount and is mined in a few pulls (several HOLD GATHER channels), then it is EXHAUSTED for that
+    pilot for days (it never refills in minutes or hours at the same spot).
+  - After a per-tier delay a NEW vein of that tier appears at another authored candidate spot in the same sector (seeded per
+    pilot and day, server-only, never visible before a SCAN). Suggested delays: Ferrite ~6 h, Ilmenite ~12 h, Armalcolite
+    ~2 days, Tranquillityite ~5 days. Prospecting with SCAN becomes the way to find ore.
+  - Rescale vein sizes so the owner's targets in docs/economy/RESOURCE_ECONOMY.md still hold (full common armor set 3–4 days,
+    uncommon 1–2 weeks, rare ~1 month, very rare 2–3 months; dedicated players 2–3x faster, never 10x). Prove it with the
+    earning-model / long-progression tests and update the spec tables.
+  - Keep: per-pilot clocks (no griefing), the Starter Vein (35 Ferrite once), Meteor Strike and Arcade/PvP mineral drops,
+    server-rolled yields, deposits clear of solids/water/forests/flora/decks, every candidate spot reachable (conquest-minerals).
+  - MAP and HUD: a mined-out vein shows EXHAUSTED and then disappears; the post-SCAN route goes to the nearest vein with ore
+    left. Migrate existing saves (found/deposits) safely.
+
+PHASE 1 — base plot, site choice and the build system (server-authoritative)
+- Plot: a per-pilot instanced scene (about 180 x 180 m) with terrain from the chosen site template. Enter it from the
+  current Command Base site (1080,1160), which becomes the Command Gate (military look), and via fast travel/RECALL. Leaving
+  returns the pilot to the gate. Banking, collection and repair work inside the plot.
+- Migration: existing saves keep everything. Map today's tier (I–V) and modules (reactor, hangar, defense, vault, radar,
+  uplink) onto the new buildings at equivalent levels with an auto layout, keep every current benefit (no regression), keep
+  banked resources, keep Daily Base Yield. The site type defaults to RIDGE for migrated bases; the first change of site is
+  free, later changes cost alloy and have a 24 h cooldown.
+- Build mode: top-down camera, pinch zoom, grid snapping, rotate, move, hologram blueprint preview with valid/invalid tint
+  and range rings for turrets; drones and scaffolding assemble buildings live; every level visibly changes the building.
+- Unlocks by Command Center level (CC 1–10). Guided first build (one clear step at a time), never a wall of options:
+  CC1 shows only what can be built now plus "next unlock at CC2".
+- Buildings (each with levels, visible upgrades, real production or real effect):
+  Command Center (gates tiers), Refinery (visible conveyor; minerals and salvage in, alloy out), Biodome (plants grow;
+  biomass), Helium Extractor, Storage Depot (caps — production stops when full, no stockpile exploits), Reactor (power
+  budget for buildings), Hangar (owned tanks on display), Science Lab (built and upgradable now; its research tree arrives in
+  Session 6 — label it honestly), Trophy Hall (defeated commanders, legendary minerals, future ladder trophies), Radar,
+  Uplink, Shield Generator, crew and rovers moving around the base.
+- Defense you design and watch: drag-to-draw walls in mineral tiers (regolith, titanium, Armalcolite, reflective Selenite
+  glass, glowing Moonheart; visibly different), gates, four turret types (cannon, laser, missile/anti-drone, mortar).
+  Defense Drill: a simulated Parasite attack on your layout you watch; no rewards (no farming); results go to a base log.
+- Economy: building costs, timers, production and caps are part of this owner-approved scope; document every number in
+  docs/economy/RESOURCE_ECONOMY.md. Do NOT change airdrop rules: Command Base multiplier ~x1.25, Daily Base Yield, 50,000
+  shared daily cap, points never purchasable, rare+ minerals never sold. Model the first hour, first day and first week
+  (time to CC2/CC5/CC10) with a test like conquest-first-base.mjs so progression is neither instant nor a wall.
+- Command Power: a visible score from building levels, wall tiers and defenses.
+- Server: all build/upgrade/move/collect actions are Worker actions with validation (costs, power, footprint, caps, timers on
+  the Worker clock); the client never grants anything.
+
+PHASE 2 — make it personal and social
+- Banner designer (shape, colors, emblem) shown on the base and on the tank; base theme (lighting color, finish, decorations).
+- Visit bases read-only: squadmates and the top 20 by Command Power. "Share my base" card (image + the pilot's existing
+  invite/referral link). Base of the week = largest verified weekly Command Power gain (no votes).
+- Revenue (fair, cosmetic or time only, checkout disabled until certified): base themes, wall skins, banners, decorations,
+  second builder, speed-ups. Never direct points or rare+ minerals.
+
+PHASE 3 — Conquest Command hub page
+- A dedicated Conquest page, not just a mode button, that looks spectacular: cinematic live 3D hero (your tank and base on the
+  Moon, Earth on the horizon, Neon Frontline), warfront status, your base status with the Daily Base Yield meter and running
+  timers, active events (Meteor Strike timer, invasions), quick actions (deploy, fast travel, base, research placeholder for
+  Session 6). Fast first paint, same quality bar on phone and desktop. Not overwhelming: one hero, one status column, four
+  actions. Session 7 later adds ladders, squad wars and the daily warfront event.
+
+PHASE 4 — settler architecture, terraform life, region map
+- Settler kit (shares the base builder's modular instanced kit with LODs): weathered prefab domes and habitat modules,
+  patched/scrap-repaired walls, salvaged panels, timber/composite add-ons, rooftop gardens, water towers, greenhouses,
+  workshops, a market square, a meeting hall, homes with porches, hand-painted signs and murals; painted, faded and rusted
+  surfaces; warm amber lights, lanterns, string lights, chimney smoke; laundry lines, crates, carts, farm machinery, small
+  vehicles, livestock pens. Replace the current colony buildings with it. Military (Refuge, Command Gate/Bases, frontier
+  wall) stays angular, armored, cyan Neon Frontline; the core town mixes both.
+- Life: engineered livestock, birds and small fauna in terraformed zones; settlers and rovers with daily routines.
+- Region map: draw terraformed zones, settlements, roads and the military/settler split clearly — inside the simplified
+  Phase 0 map rules (no clutter; labels only when zoomed; one-line key).
+
+NON-NEGOTIABLES
+- Nothing overwhelming: guided steps, progressive unlocks, closed sections for long lists, one-line keys.
+- Smooth on all devices: instancing and LOD so a fully built CC10 base and a dense settlement stay smooth on phones; HIGH
+  stays within the README material-program budget (<= 16); LOW and 2D fallbacks work; measure draws/triangles/programs at
+  390 portrait and record them.
+- Never weaken existing gear, Moonbeam or Lunar Skin. Never enable uncertified payments. No fake rewards or fake
+  availability. Preserve accounts, inventories, points/airdrop balances and existing Conquest progress (migration tests).
+- Not in scope: async player raids, revenge and raid replays (Session 7), Science Lab research effects and tank mods
+  (Session 6), audio/weather (Session 6), payments certification (Session 8).
+
+TESTING AND RELEASE
+- Per phase: run affected node suites + one short browser journey at 390x844 (Chromium; WebKit via CI), restore regenerated
+  evidence files, push. New tests: plot migration (every old tier/module combination keeps its benefits), build/upgrade/
+  move validation and timers on the Worker clock, caps, power budget, site bonuses, Defense Drill gives no rewards, visit
+  is read-only, progression model (CC2/CC5/CC10 times), hub first paint, settler/base render budgets.
+- One independent read-only reviewer before merge (economy/security + gameplay/performance in one brief), given only the
+  branch, head SHA, this brief and the checkpoint. Fix valid findings.
+- Release (pre-approved): green CI -> merge -> deploy-worker.yml -> verify live /pvp/health ok and live version.json = the
+  stamp (from the deploy job annotations; this container cannot reach the live host) and Pages -> revert if broken.
+- Write Checkpoint 24 in docs/conquest/IMPLEMENTATION_CHECKPOINT.md (what shipped, captures, numbers, tests, agents used and
+  whether they changed the result, what is unverified incl. PHYSICAL_IPHONE_UNVERIFIED), update the handoff ledger and the
+  ROADMAP status only after the deploy is verified. Then send the owner a short summary with what to playtest on his phone.
