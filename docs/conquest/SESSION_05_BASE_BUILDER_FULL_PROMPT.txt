@@ -43,6 +43,23 @@ PHASE 0 — owner playtest fixes (code done; finish and fold in)
   .cq-hurt.on and that a <25% hull shows .cq-low-hull whose tap sets a Refuge route. Push. These ship with the Session 5
   release (one review, one CI cycle, one deploy).
 
+ORE FIX (owner, Nov 8 — part of Phase 0; mining must feel like mining)
+- Today deposits respawn in minutes (Ferrite 20 min, Ilmenite 45 min, Armalcolite 3 h, Tranquillityite 8 h), so a player can
+  circle the same few spots all day. Replace with VEINS RUN DRY, NEW ONES APPEAR (owner left the choice to Claude; this is the
+  chosen design):
+  - A vein holds a fixed amount and is mined in a few pulls (several HOLD GATHER channels), then it is EXHAUSTED for that
+    pilot for days (it never refills in minutes or hours at the same spot).
+  - After a per-tier delay a NEW vein of that tier appears at another authored candidate spot in the same sector (seeded per
+    pilot and day, server-only, never visible before a SCAN). Suggested delays: Ferrite ~6 h, Ilmenite ~12 h, Armalcolite
+    ~2 days, Tranquillityite ~5 days. Prospecting with SCAN becomes the way to find ore.
+  - Rescale vein sizes so the owner's targets in docs/economy/RESOURCE_ECONOMY.md still hold (full common armor set 3–4 days,
+    uncommon 1–2 weeks, rare ~1 month, very rare 2–3 months; dedicated players 2–3x faster, never 10x). Prove it with the
+    earning-model / long-progression tests and update the spec tables.
+  - Keep: per-pilot clocks (no griefing), the Starter Vein (35 Ferrite once), Meteor Strike and Arcade/PvP mineral drops,
+    server-rolled yields, deposits clear of solids/water/forests/flora/decks, every candidate spot reachable (conquest-minerals).
+  - MAP and HUD: a mined-out vein shows EXHAUSTED and then disappears; the post-SCAN route goes to the nearest vein with ore
+    left. Migrate existing saves (found/deposits) safely.
+
 PHASE 1 — base plot, site choice and the build system (server-authoritative)
 - Plot: a per-pilot instanced scene (about 180 x 180 m) with terrain from the chosen site template. Enter it from the
   current Command Base site (1080,1160), which becomes the Command Gate (military look), and via fast travel/RECALL. Leaving
