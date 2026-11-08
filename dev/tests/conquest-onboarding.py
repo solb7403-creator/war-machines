@@ -28,7 +28,10 @@ async def main():
   assert await page.locator('#cq-navigation').get_by_text('HOLD THE OXYGEN LINE',exact=True).is_visible()
   await page.screenshot(path=str(OUT/'mission-waypoint.png'))
   first=await page.locator('.cq-nav-arrow').evaluate('(e)=>e.style.transform')
-  await page.evaluate('Conquest.view.yaw+=Math.PI/2');await page.wait_for_timeout(100)
+  await page.evaluate('Conquest.view.yaw+=Math.PI/2')
+  # CI software GL can take 250 ms+ per frame near the colony; wait for the next HUD frame instead of a fixed 100 ms.
+  try:await page.wait_for_function('(f)=>document.querySelector(".cq-nav-arrow").style.transform!==f',arg=first,timeout=10000)
+  except Exception:pass
   second=await page.locator('.cq-nav-arrow').evaluate('(e)=>e.style.transform');assert first!=second,'direction must follow camera yaw'
   await page.evaluate("Conquest.view.p={x:1020,z:1024,y:24,surface:'bridge'}");await page.wait_for_function("document.querySelector('.cq-nav-route').textContent.includes('VIADUCT EAST EXIT')")
   before=await page.evaluate('Conquest.view.discovery.version')
