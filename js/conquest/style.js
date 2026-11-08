@@ -946,7 +946,6 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
 // ---------- region map: holographic tactical display with a lettered grid reference ----------
 const MAPC={relief:null,glyphs:new Map(),labels:new Map(),overlay:null,fontWait:false,mctx:null};
 const MFONT="600 10px 'Chakra Petch','Segoe UI',system-ui,sans-serif",GFONT="bold 30px 'Segoe UI Symbol','DejaVu Sans','Noto Sans Symbols2',sans-serif";
-const colName=i=>{i=Math.max(0,i);return String.fromCharCode(65+Math.floor(i/26)%26)+String.fromCharCode(65+i%26);};
 // The relief is rendered at a power-of-two resolution level and reused across pan and pinch steps within that level.
 function relief(m,unit,vis){const Wd=m.W,d=m.discovery,c=MAPC.relief,level=Math.max(-6,Math.min(3,Math.ceil(Math.log2(unit*2)))),ppu=Math.pow(2,level);
  const fp=m.scale>=32&&!!m.footprints;if(c&&c.d===d&&c.fp===fp&&c.level===level&&c.low===m.low&&c.version===(d.version??0)&&vis.x0>=c.x0&&vis.x1<=c.x1&&vis.z0>=c.z0&&vis.z1<=c.z1)return c;
@@ -994,41 +993,36 @@ function label(lines,c,dim){const k=lines.join('|')+c+(dim?1:0);let s=MAPC.label
  lines.forEach((l,i)=>{const y=2+i*11;x.lineWidth=3;x.strokeStyle='rgba(1,4,9,.94)';x.strokeText(l,3,y);x.fillStyle=c;if(!dim){x.shadowColor=c;x.shadowBlur=5;x.fillText(l,3,y);x.shadowBlur=0;}x.fillText(l,3,y);});s={cv,w,h};if(MAPC.labels.size>400)MAPC.labels.clear();MAPC.labels.set(k,s);return s;}
 function overlay(){if(MAPC.overlay)return MAPC.overlay;const cv=document.createElement('canvas');cv.width=720;cv.height=840;const x=cv.getContext('2d');const g=x.createRadialGradient(360,420,200,360,420,580);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.62)');x.fillStyle=g;x.fillRect(0,0,720,840);
  x.fillStyle='rgba(0,229,255,.035)';for(let y=0;y<840;y+=4)x.fillRect(0,y,720,1);x.strokeStyle='rgba(0,229,255,.8)';x.lineWidth=2;for(const [cx,cy,sx,sy] of [[8,8,1,1],[712,8,-1,1],[8,832,1,-1],[712,832,-1,-1]]){x.beginPath();x.moveTo(cx,cy+sy*26);x.lineTo(cx,cy);x.lineTo(cx+sx*26,cy);x.stroke();}
- x.fillStyle='rgba(0,229,255,.6)';x.font="600 17px 'Chakra Petch',sans-serif";x.fillText('TACTICAL HOLO · SECTOR GRID',36,58);MAPC.overlay=cv;return cv;}
+ MAPC.overlay=cv;return cv;}
 function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m.scale,unit=280/Wd.WIDTH*scale;
  if(!MAPC.fontWait&&document.fonts&&!document.fonts.check(MFONT)){MAPC.fontWait=true;document.fonts.load(MFONT).then(()=>{MAPC.labels.clear();MAPC.overlay=null;m.repaint?.();}).catch(()=>{});}
  ctx.setTransform(2,0,0,2,0,0);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle='#010409';ctx.fillRect(0,0,360,420);
  const vis={x0:(-40-m.px)/unit,x1:(320-m.px)/unit,z0:Wd.LENGTH+(m.py-420)/unit,z1:Wd.LENGTH+m.py/unit},rel=relief(m,unit,vis);
  if(rel&&rel.n){const dx=Math.round((40+m.px+rel.x0*unit)*2)/2,dy=Math.round((m.py+(1-rel.z1/Wd.LENGTH)*420*scale)*2)/2;ctx.imageSmoothingEnabled=true;ctx.drawImage(rel.canvas,dx,dy,(rel.x1-rel.x0)*unit,(rel.z1-rel.z0)*unit);}
  ctx.strokeStyle='rgba(0,229,255,.25)';ctx.lineWidth=1;ctx.strokeRect(40+m.px,m.py,280*scale,420*scale);
- // Lettered / numbered grid reference (columns west→east, rows south→north) for calling out positions.
- const tl=m.toWorld(0,0),br=m.toWorld(360,420),gs=[50,100,250,500,1000,2500,5000,10000].find(g=>g*unit>=46)||10000,gx0=Math.floor(tl.x/gs),gx1=Math.ceil(br.x/gs),gz0=Math.floor(br.z/gs),gz1=Math.ceil(tl.z/gs);
- ctx.strokeStyle='rgba(0,229,255,.12)';ctx.lineWidth=.8;ctx.beginPath();for(let i=gx0;i<=gx1;i++){const x=m.toScreen(i*gs,0).x;ctx.moveTo(x,12);ctx.lineTo(x,403);}for(let j=gz0;j<=gz1;j++){const y=m.toScreen(0,j*gs).y;ctx.moveTo(12,y);ctx.lineTo(360,y);}ctx.stroke();
- const ringL=[];for(const sec of Cb.sectors){const p=m.toScreen(sec.x,sec.z),r=sec.radius*unit;if(p.x+r<0||p.x-r>360||p.y+r<0||p.y-r>420)continue;const own=S.territory?.[sec.id]?.owner==='humanity',rgb=own?'0,229,255':'255,60,214';
-  ctx.beginPath();ctx.arc(p.x,p.y,r,0,TAU);ctx.lineWidth=4;ctx.strokeStyle='rgba('+rgb+',.08)';ctx.stroke();ctx.setLineDash([6,4]);ctx.lineWidth=1;ctx.strokeStyle='rgba('+rgb+',.55)';ctx.stroke();ctx.setLineDash([]);
-  ctx.strokeStyle='rgba('+rgb+',.85)';ctx.lineWidth=1.4;ctx.beginPath();for(let k=0;k<4;k++){const a=k*Math.PI/2;ctx.moveTo(p.x+Math.cos(a)*(r-4),p.y+Math.sin(a)*(r-4));ctx.lineTo(p.x+Math.cos(a)*(r+4),p.y+Math.sin(a)*(r+4));}ctx.stroke();if(r>16)ringL.push({sec,p,r,own});}
+ // Owner playtest (Nov 8): no lettered grid and no sector rings; the map shows only places a pilot acts on.
  const player=m.player||{x:Cb.refuge.x,z:Cb.refuge.z,heading:0,none:true},you=m.toScreen(player.x,player.z),t=m.player?m.routeTarget:null;if(t){const q=m.toScreen(t.x,t.z);ctx.save();ctx.lineCap='round';ctx.strokeStyle='rgba(255,196,90,.2)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(you.x,you.y);ctx.lineTo(q.x,q.y);ctx.stroke();
   ctx.setLineDash([5,4]);ctx.strokeStyle='#ffc45a';ctx.lineWidth=1.6;ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(q.x,q.y,7,0,TAU);ctx.moveTo(q.x-11,q.y);ctx.lineTo(q.x-4,q.y);ctx.moveTo(q.x+4,q.y);ctx.lineTo(q.x+11,q.y);ctx.moveTo(q.x,q.y-11);ctx.lineTo(q.x,q.y-4);ctx.moveTo(q.x,q.y+4);ctx.lineTo(q.x,q.y+11);ctx.stroke();ctx.restore();}
  const marks=[],add=(wx,wz,g,c,txt,pri,o)=>marks.push(Object.assign({p:m.toScreen(wx,wz),g,c,t:txt,pri},o||{}));
- if(scale>=16)for(const l of Wd.landmarks)if(d.has(l.x,l.z))add(l.x,l.z,'·','#7fd3e0',l.name,1,{dim:true,dot:true});
+ const zoomed=scale>=64,routed=o=>!!t&&Math.hypot(t.x-o.x,t.z-o.z)<1;
  for(const s of Cb.installations)if(d.has(s.x,s.z)){const cap=S.territory?.[s.id]?.owner==='humanity';add(s.x,s.z,cap?'⚑':'▲',cap?'#5effd0':'#ff4fd8',s.name,5);}
  const ops=Object.values(Cb.operations);if(m.mission){const done=m.missionDone;add(m.mission.x,m.mission.z,done?'✓':'◆','#f1cd7e',m.mission.name,4);}
  // Phase 3: discovered mineral deposits (ready / depleted with the respawn minutes) and the live Meteor Strike
  {const now=Date.now();for(const dp of Wd.deposits||[]){if(!S.found?.[dp.id])continue;const until=dp.m==='starter'?(S.deposits?.[dp.id]?Infinity:0):(S.deposits?.[dp.id]||0)-now,ready=until<=0,k=dp.mineral,c=typeof MINERALS!=='undefined'?MINERALS[k].c:'#c0703f';
-   if(dp.m==='starter'&&!ready)continue;add(dp.x,dp.z,'◆',ready?c:'#566070',(typeof MINERALS!=='undefined'?MINERALS[k].s:'Ore')+(ready?'':' · '+Math.ceil(until/60000)+'m'),dp.m==='tq'||dp.m==='starter'?5:dp.m==='ar'?3:1);}
+   if(dp.m==='starter'&&!ready)continue;add(dp.x,dp.z,'⬢',ready?c:'#566070',zoomed||dp.m==='starter'||routed(dp)?(typeof MINERALS!=='undefined'?MINERALS[k].s:'Ore')+(ready?'':' · '+Math.ceil(until/60000)+'m'):'',dp.m==='tq'||dp.m==='starter'?5:dp.m==='ar'?3:1);}
+  for(const f of Wd.floraNodes||[])if(d.has(f.x,f.z)&&!(S.harvest?.[f.id]>now))add(f.x,f.z,'✿','#7dff8a',zoomed||routed(f)?'Bio-flora':'',1);
   const M=Cb.meteorStrike?.(now);if(M&&M.phase!=='idle'&&!S.strikes?.[M.slot]?.claimed)add(M.site.x,M.site.z,'☄',M.phase==='open'?'#ff7a3d':'#ffd36b',(M.phase==='open'?'STRIKE OPEN · ':'IMPACT ')+Math.max(0,Math.ceil(((M.phase==='open'?M.closesAt:M.impactAt)-now)/60000))+'m',9);}
- for(const o of ops){if(o.raid||o.defense||o.strike||o.id==='base-defense'||o.id==='oxygen-line'||Cb.installations.some(s=>s.id===o.site))continue;const sec=S.territory?.[o.site]?.owner==='humanity';add(o.x,o.z,sec?'⚑':'◆',sec?'#5effd0':'#ffd36b',o.name,4);}
+ for(const o of ops){if(o.raid||o.defense||o.strike||o.id==='base-defense'||o.id==='oxygen-line'||Cb.installations.some(s=>s.id===o.site))continue;const sec=S.territory?.[o.site]?.owner==='humanity';add(o.x,o.z,sec?'⚑':'◆',sec?'#5effd0':'#ffd36b',zoomed||routed(o)?o.name:'',4);}
  for(const sector of Cb.sectors){const list=ops.filter(o=>o.raid&&o.sector===sector.id);if(list.length){const cleared=list.filter(o=>S.completed?.[o.id]).length,un=Cb.raidsUnlocked(S.completed),done=cleared===list.length;
-   add(list.reduce((n,o)=>n+o.x,0)/list.length,list.reduce((n,o)=>n+o.z,0)/list.length,done?'✓':'✦',done?'#5effd0':un?'#ffb347':'#8a93a0',un?'RAIDS '+cleared+'/'+list.length:'RAIDS · LOCKED',6);}
+   if(un)add(list.reduce((n,o)=>n+o.x,0)/list.length,list.reduce((n,o)=>n+o.z,0)/list.length,done?'✓':'✦',done?'#5effd0':un?'#ffb347':'#8a93a0',un?'RAIDS '+cleared+'/'+list.length:'RAIDS · LOCKED',6);}
   if(Cb.sectorDefenseOpen(S.territory?.[sector.id],sector.id)){const o=ops.find(o=>o.defense&&o.sector===sector.id);if(o)add(o.x,o.z,'!','#ff4060',(S.territory[sector.id].owner==='humanity'?'DEFEND ':'RETAKE ')+sector.name,8);}}
  if(m.convoy){const a=m.toScreen(1090,944),b=m.toScreen(1090,809);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#ffb347';ctx.lineWidth=2;ctx.stroke();}
  const Bd=Cb.baseDefinition;add(Bd.x,Bd.z,'⌂','#ffc45a','COMMAND BASE '+(S.base?.tier?'T'+S.base.tier:'SITE'),9,{left:true});
- for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','PERSONAL WRECK',3);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
+ for(const w of S.wrecks||[])if(d.has(w.x,w.z))add(w.x,w.z,'◇','#8ee6ef','YOUR WRECK',8);add(Cb.refuge.x,Cb.refuge.z,'●','#3fe9ff','REFUGE',10);
  for(const k of marks){if(k.p.x<-12||k.p.x>372||k.p.y<-12||k.p.y>432)continue;if(k.dot){ctx.fillStyle=k.c;ctx.beginPath();ctx.arc(k.p.x,k.p.y,2,0,TAU);ctx.fill();}else ctx.drawImage(glyph(k.g,k.c),k.p.x-12,k.p.y-12,24,24);}
- const ys=label(['YOU'],'#ffffff',false),obst=[{x:0,y:403,w:360,h:17},{x:0,y:0,w:360,h:12},{x:0,y:0,w:12,h:420},{x:12,y:18,w:150,h:16},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
+ const ys=label(['YOU'],'#ffffff',false),obst=[{x:0,y:403,w:360,h:17},{x:you.x-13,y:you.y-13,w:26,h:26},{x:you.x-ys.w/2,y:you.y-16-ys.h,w:ys.w,h:ys.h}];
  for(const k of marks)if(!k.dot)obst.push({x:k.p.x-7,y:k.p.y-7,w:14,h:14});
  const items=[];for(const k of marks){if(!k.t||k.p.x<-10||k.p.x>370||k.p.y<-10||k.p.y>430)continue;items.push({p:k.p,s:label(wrap(k.t),k.c,k.dim),pri:k.pri,c:k.c,left:k.left});}
- for(const rl of ringL)items.push({p:rl.p,ring:rl,s:label([rl.sec.name],rl.own?'#61eaf6':'#ff74e0',true),pri:7,c:rl.own?'#61eaf6':'#ff74e0'});
  items.sort((a,b)=>b.pri-a.pri||(Math.hypot(a.p.x-you.x,a.p.y-you.y)-Math.hypot(b.p.x-you.x,b.p.y-you.y)));
  const placed=obst.slice(),fits=r=>r.x>=13&&r.y>=13&&r.x+r.w<=358&&r.y+r.h<=402&&!placed.some(o=>r.x<o.x+o.w&&r.x+r.w>o.x&&r.y<o.y+o.h&&r.y+r.h>o.y);
  for(const it of items){const w=it.s.w,h=it.s.h;let cands;
@@ -1041,13 +1035,9 @@ function mapPaint(ctx,m){const Wd=m.W,Cb=m.C,S=m.state||{},d=m.discovery,scale=m
  if(!player.none){ctx.save();ctx.translate(you.x,you.y);ctx.fillStyle='rgba(0,229,255,.16)';ctx.beginPath();ctx.arc(0,0,14,0,TAU);ctx.fill();ctx.strokeStyle='rgba(170,250,255,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,11,0,TAU);ctx.stroke();
  ctx.rotate(player.heading||0);ctx.shadowColor='#00e5ff';ctx.shadowBlur=8;ctx.fillStyle='#3fe9ff';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(6.5,6.5);ctx.lineTo(0,3);ctx.lineTo(-6.5,6.5);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.restore();
  ctx.drawImage(ys.cv,you.x-ys.w/2,you.y-16-ys.h,ys.w,ys.h);}ctx.drawImage(overlay(),0,0,360,420);
- // Grid margins: column letters along the top, row numbers down the left.
- ctx.fillStyle='rgba(1,8,14,.9)';ctx.fillRect(0,0,360,12);ctx.fillRect(0,12,12,391);ctx.strokeStyle='rgba(0,229,255,.45)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(12,12.5);ctx.lineTo(360,12.5);ctx.moveTo(12.5,12);ctx.lineTo(12.5,403);ctx.stroke();
- ctx.font=MFONT;ctx.fillStyle='#6fe3f0';ctx.textAlign='center';ctx.textBaseline='middle';for(let i=gx0;i<gx1;i++){const x=m.toScreen((i+.5)*gs,0).x;if(x>22&&x<350)ctx.fillText(colName(i),x,6.5);}
- for(let j=gz0;j<gz1;j++){const y=m.toScreen(0,(j+.5)*gs).y;if(y>20&&y<398){ctx.save();ctx.translate(6.5,y);ctx.rotate(-Math.PI/2);ctx.fillText(String(j).padStart(2,'0'),0,0);ctx.restore();}}
- ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='#5fd8e8';ctx.fillText('GRID '+gs+' M · N ↑ · '+Math.round(Wd.WIDTH/scale)+' M ACROSS',10,414);
+ ctx.font=MFONT;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='#5fd8e8';ctx.fillText('N ↑',14,414);
  const sb=100*unit;if(sb>8&&sb<200){ctx.strokeStyle='#5fd8e8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(350-sb,411);ctx.lineTo(350,411);ctx.moveTo(350-sb,407);ctx.lineTo(350-sb,414);ctx.moveTo(350,407);ctx.lineTo(350,414);ctx.stroke();ctx.textAlign='right';ctx.fillText('100 m',350,404);ctx.textAlign='left';}}
-const MAP_LEGEND='<span class="cq-holo-key">HOLO RELIEF · explored ground only.</span> <b style="color:#ffd36b">◆</b> Mission · <b style="color:#ffb347">✦</b> Raid site (<b style="color:#5effd0">✓</b> cleared · grey locked) · <b style="color:#ff4060">!</b> Defense alert · <b style="color:#3fe9ff">●</b> Refuge · <b style="color:#ffc45a">⌂</b> Command Base · <b style="color:#ff4fd8">▲</b> Parasite installation (when discovered; <b style="color:#5effd0">⚑</b> captured) · <b style="color:#8ee6ef">◇</b> Wreck. Grid letters + numbers call out positions. Drag to pan · pinch or + / − to zoom · north ↑.';
+const MAP_LEGEND=[['●','#3fe9ff','Refuge'],['⌂','#ffc45a','Base'],['◆','#ffd36b','Mission'],['⬢','#c0703f','Ore'],['✿','#7dff8a','Bio-flora'],['▲','#ff4fd8','Parasite installation'],['!','#ff4060','Alert'],['◇','#8ee6ef','Wreck']].map(([g,c,t])=>'<span class="cq-key"><b style="color:'+c+'">'+g+'</b> '+t+'</span>').join('');
 
 root.ConquestStyle=Object.freeze({id:'neon-frontline',version:1,create,footprints,allSites,map:mapPaint,MAP_LEGEND,resetMapCache(){if(MAPC.relief)MAPC.relief.canvas.width=MAPC.relief.canvas.height=0;MAPC.relief=null;}});
 })(typeof window!=='undefined'?window:globalThis);
