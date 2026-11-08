@@ -319,12 +319,13 @@ function homeTarget(kind){const C=root.ConquestCombat;return kind==='refuge'?{..
 // in the arrival zone -> open the plot (or the claim screen); base built -> fast travel home (lands at the gate, plot opens);
 // no base yet and far away -> fast travel to the Refuge next door, then the route; otherwise -> route + arrow + beacon.
 async function myBase(){if(!view)return;try{localStorage.setItem(HOME_SEEN,'1');}catch(_){}panel.querySelector('#cq-home-btn')?.classList.remove('cq-home-new');const s=view.authority?.state,D=root.ConquestCombat.baseDefinition,d=Math.hypot(view.p.x-D.x,view.p.z-D.z);mapOpen=false;panel.querySelector('.cq-map')?.remove();const menu=panel.querySelector('.cq-more-panel');if(menu)menu.hidden=true;
- if(d<=D.radius&&!view.battle){baseTerminal();return;}
+ if(d<=D.radius&&!view.battle){if(panel.querySelector('.cq-dialog'))view.__wantBase=true;else baseTerminal();return;}   // a story/tip dialog open: the base opens as soon as it closes
  if(!view.battle&&view.authority?.connected){if(s?.base?.tier){if(await view.requestAction('fast-travel',{destination:'base'}))return;}else if(d>300&&await view.requestAction('fast-travel',{destination:'refuge'})){navigate('base');return;}}
  navigate('base');}
 const HOME_SEEN='lunar-cq-my-base-found-v1';const homeSeen=()=>{try{return localStorage.getItem(HOME_SEEN)==='1';}catch(_){return true;}};
 // Every frame: the HUD button's distance, the first-visit route, and the arrival zone opening the plot by itself.
 function homeHud(){if(!view||!panel)return;const D=root.ConquestCombat.baseDefinition,s=view.authority?.state,d=Math.hypot(view.p.x-D.x,view.p.z-D.z),btn=panel.querySelector('#cq-home-btn');
+ if(view.__wantBase&&!mapOpen&&!panel.querySelector('.cq-dialog')){view.__wantBase=false;if(d<=D.radius&&!view.battle)baseTerminal();}
  if(btn){prop(btn,'hidden',!!view.battle);put(btn.querySelector('.cq-home-d'),d<=D.radius?'HERE':(d>100?Math.round(d/10)*10:Math.round(d))+' m');}
  if(view.authority?.connected&&!view.__homeFirst){view.__homeFirst=1;if(!homeSeen()&&btn){btn.classList.add('cq-home-new');const ticker=panel.querySelector('.cq-reward-ticker');if(ticker&&!s?.base?.tier){put(ticker,'⌂ YOUR BASE GATE IS '+Math.round(d)+' m WEST OF THE REFUGE · TAP ⌂ MY BASE ANYTIME');view.tickerUntil=Date.now()+6000;}}}   // first visits: the gold button pulses until used; the mission guidance is never taken over
  const inside=d<=D.radius&&!view.battle;if(view.__inBase===undefined){if(view.authority?.connected)view.__inBase=inside;return;}   // only ARRIVING opens it (not a session that starts at the gate)
