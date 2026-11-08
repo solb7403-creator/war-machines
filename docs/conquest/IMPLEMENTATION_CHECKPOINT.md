@@ -973,7 +973,7 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 5. **Test-bot robustness (`conquest-living-war.py`).** None of these changes relax an assertion.
    - `tap()` waits up to 10 s for the control to be laid out: CI software GL renders at 250 ms+ per frame near the colony.
    - The 8-direction keyboard bot backs off when pinned on the relay spawn edge (994,944). That geometry is the same on `main`; only the relay fight's end position varies.
-   - Local result: 6 of 6 green after the fixes, and `main` 2 of 2.
+   - Local result: 3 of 3 green after the back-off fix (it had failed 3 of 8 runs before it), and `main` 2 of 2.
    - One earlier CI attempt also lost the browser process mid-job (infrastructure).
 6. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
    - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
