@@ -14,7 +14,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 2 | Conquest playtest fixes: driving, NAVIGATE, fast travel, harder raids, RECALL (PR #57) | Shipped Nov 7 |
 | 3 | Graphics overhaul: Neon Frontline (PR #59) | Shipped Nov 7 |
 | 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating | In progress |
-| 5 | Base builder + Conquest Command hub page | Next |
+| 5 | Base builder + Conquest Command hub page + full settler architecture | Next |
 | 6 | Tank modifications + Science Lab research | Planned |
 | 7 | Competitive: raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event, terraform-zone game modes | Planned |
 | 8 | Payments certification (Stars, TON, SOL; website shop) — required before beta | Planned |
@@ -43,6 +43,10 @@ The base is the engine of account power and must feel personal, very visual and 
 - **Loops:** production with storage caps and Daily Base Yield (daily return), research/build timers, long-term levels/wall tiers/trophies, defenses vs raids.
 - **Revenue:** base themes, wall skins, banners, decorations, second builder, speed-ups (never direct points or rare+ minerals).
 - **Performance:** instancing/LOD so a fully built base stays smooth on phones; HIGH/LOW/2D fallback.
+
+## Settler architecture (session 5, shares the base builder's modular kit)
+
+Terraformed colony towns and farms belong to civilian settlers, a group distinct from the military. Full identity, not a recolor: weathered prefab domes and habitat modules, patched/scrap-repaired walls, salvaged panels, timber/composite add-ons, rooftop gardens, water towers, greenhouses, workshops, a market square, a meeting hall, homes with porches, hand-painted signs and murals; painted, faded and rusted surfaces; warm amber lights, lanterns, string lights, chimney smoke; laundry lines, crates, carts, farm machinery, small vehicles, settlers and rovers moving about, livestock pens. The Refuge, Command Bases and frontier wall stay military (angular, armored, cyan Neon Frontline); the core town mixes both (military checkpoints and depots among settler streets). Modular instanced kit with LODs. Mission: settlements players remember and want to protect.
 
 ## Conquest Command hub (session 5, expanded in session 7)
 
