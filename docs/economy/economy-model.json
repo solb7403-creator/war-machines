@@ -1,0 +1,1248 @@
+{
+ "generatedBy": "dev/tools/economy-model.mjs",
+ "status": "PROPOSAL for owner approval (Phase 0); modeled, not playtested",
+ "proposal": {
+  "dailyCap": 50000,
+  "conquest": {
+   "refPpm": 225,
+   "danger": {
+    "STANDARD": 1,
+    "HARD": 1.2,
+    "VETERAN": 1.45
+   },
+   "activities": {
+    "kill_light": {
+     "label": "World kill: interceptor or saboteur",
+     "value": 35,
+     "par": 0.16
+    },
+    "kill_heavy": {
+     "label": "World kill: heavy sentinel or fire coordinator",
+     "value": 90,
+     "par": 0.41
+    },
+    "field": {
+     "label": "Field mission completed (any of the six)",
+     "value": 450,
+     "par": 2
+    },
+    "raid_hard": {
+     "label": "Raid victory, HARD",
+     "value": 900,
+     "par": 3.33
+    },
+    "raid_veteran": {
+     "label": "Raid victory, VETERAN",
+     "value": 1300,
+     "par": 4
+    },
+    "defense": {
+     "label": "Defense victory (Command Base or sector)",
+     "value": 675,
+     "par": 2.5
+    },
+    "strike": {
+     "label": "Meteor Strike secured",
+     "value": 1075,
+     "par": 4
+    },
+    "gather_fe": {
+     "label": "Harvest a Ferrite Regolith deposit",
+     "value": 100,
+     "par": 0.6
+    },
+    "gather_il": {
+     "label": "Harvest an Ilmenite deposit",
+     "value": 140,
+     "par": 0.85
+    },
+    "gather_ar": {
+     "label": "Harvest an Armalcolite deposit (HARD zone)",
+     "value": 240,
+     "par": 1.2
+    },
+    "gather_tq": {
+     "label": "Harvest a Tranquillityite deposit (VETERAN zone)",
+     "value": 390,
+     "par": 1.6
+    }
+   },
+   "baseMult": [
+    1,
+    1.05,
+    1.1,
+    1.15,
+    1.2,
+    1.25
+   ]
+  },
+  "yield": {
+   "pts": [
+    0,
+    1000,
+    1400,
+    1800,
+    2200,
+    2600
+   ],
+   "alloy": [
+    0,
+    6,
+    9,
+    12,
+    15,
+    18
+   ],
+   "biomass": [
+    0,
+    4,
+    6,
+    8,
+    10,
+    12
+   ],
+   "helium": [
+    0,
+    1,
+    1,
+    2,
+    2,
+    3
+   ],
+   "fe": [
+    0,
+    6,
+    8,
+    10,
+    12,
+    14
+   ],
+   "il": [
+    0,
+    0,
+    1,
+    1,
+    2,
+    2
+   ]
+  },
+  "minerals": [
+   {
+    "id": "fe",
+    "name": "Ferrite Regolith",
+    "rarity": "common"
+   },
+   {
+    "id": "il",
+    "name": "Ilmenite",
+    "rarity": "uncommon"
+   },
+   {
+    "id": "ar",
+    "name": "Armalcolite",
+    "rarity": "rare"
+   },
+   {
+    "id": "tq",
+    "name": "Tranquillityite",
+    "rarity": "very rare"
+   },
+   {
+    "id": "se",
+    "name": "Selenite Glass",
+    "rarity": "epic"
+   },
+   {
+    "id": "mh",
+    "name": "Moonheart",
+    "rarity": "legendary"
+   }
+  ],
+  "deposits": {
+   "fe": {
+    "nodes": 36,
+    "yield": 3,
+    "channel": 5,
+    "respawnMin": 20,
+    "where": "open ground within 40 m of routes, every sector"
+   },
+   "il": {
+    "nodes": 18,
+    "yield": 2,
+    "channel": 8,
+    "respawnMin": 45,
+    "where": "basalt flows off the routes: Helium Basin, Western Salvage Reach, Ash approaches"
+   },
+   "ar": {
+    "nodes": 10,
+    "yield": 1.5,
+    "channel": 12,
+    "respawnMin": 180,
+    "where": "crater walls and Parasite territory: Ash Redoubt, Refuge Ridge, Oxygen Spear outer walls"
+   },
+   "tq": {
+    "nodes": 5,
+    "yield": 1,
+    "channel": 16,
+    "respawnMin": 480,
+    "where": "contested sites: raid-site perimeters and hive edges (VETERAN zones)",
+    "seVein": 0.03
+   }
+  },
+  "starterVein": 35,
+  "opMinerals": {
+   "field": {
+    "fe": 3,
+    "il": 0.5
+   },
+   "raid_hard": {
+    "il": 2,
+    "ar": 0.4
+   },
+   "raid_veteran": {
+    "ar": 1.5,
+    "tq": 0.3
+   },
+   "defense": {
+    "fe": 2,
+    "il": 1
+   }
+  },
+  "strike": {
+   "everyMin": 120,
+   "telegraphMin": 5,
+   "windowMin": 20,
+   "guaranteed": {
+    "il": 2,
+    "ar": 2,
+    "tq": 0.5
+   },
+   "se": 0.15,
+   "mh": 0.025,
+   "resonance": {
+    "se": 12,
+    "mh": 40
+   }
+  },
+  "arcade": {
+   "win": {
+    "fe": 1.5,
+    "il": 0.2,
+    "ar": 0.015
+   },
+   "draw": {
+    "fe": 1,
+    "il": 0.1
+   },
+   "loss": {
+    "fe": 0.5
+   },
+   "matchMin": 1.75,
+   "winRate": 0.62,
+   "drawRate": 0.1,
+   "weekly": [
+    {
+     "fe": 20
+    },
+    {
+     "fe": 30,
+     "il": 5
+    },
+    {
+     "fe": 40,
+     "il": 10,
+     "ar": 1,
+     "tq": 0.25
+    },
+    {
+     "il": 12,
+     "ar": 3,
+     "tq": 0.25
+    },
+    {
+     "il": 15,
+     "ar": 5,
+     "tq": 0.5
+    },
+    {
+     "ar": 6,
+     "tq": 1
+    },
+    {
+     "ar": 8,
+     "tq": 2
+    }
+   ]
+  },
+  "plating": {
+   "slots": [
+    "FRONT",
+    "LEFT",
+    "RIGHT",
+    "TURRET"
+   ],
+   "hp": [
+    0,
+    0.01,
+    0.018,
+    0.025,
+    0.03,
+    0.035,
+    0.04
+   ],
+   "cost": [
+    null,
+    {
+     "fe": 40,
+     "pts": 300
+    },
+    {
+     "il": 40,
+     "fe": 20,
+     "pts": 1500
+    },
+    {
+     "ar": 30,
+     "il": 20,
+     "pts": 4000
+    },
+    {
+     "tq": 20,
+     "ar": 15,
+     "pts": 8000
+    },
+    {
+     "se": 6,
+     "tq": 10,
+     "pts": 15000
+    },
+    {
+     "mh": 3,
+     "se": 4,
+     "pts": 25000
+    }
+   ],
+   "traits": {
+    "5": {
+     "energy": 0.1
+    },
+    "6": {
+     "energy": 0.1,
+     "area": 0.1
+    }
+   },
+   "energyShare": 0.35,
+   "areaShare": 0.15
+  }
+ },
+ "kitModel": {
+  "stock": {
+   "speed": 1,
+   "mix": {
+    "field": 0.5,
+    "kill_light": 0.12,
+    "kill_heavy": 0.03,
+    "gather_fe": 0.17,
+    "gather_il": 0.08,
+    "defense": 0.05,
+    "strike": 0.05
+   }
+  },
+  "common": {
+   "speed": 1.05,
+   "mix": {
+    "field": 0.35,
+    "raid_hard": 0.1,
+    "kill_light": 0.1,
+    "kill_heavy": 0.05,
+    "gather_fe": 0.15,
+    "gather_il": 0.1,
+    "defense": 0.1,
+    "strike": 0.05
+   }
+  },
+  "rare": {
+   "speed": 1.12,
+   "mix": {
+    "field": 0.15,
+    "raid_hard": 0.3,
+    "kill_light": 0.08,
+    "kill_heavy": 0.07,
+    "gather_fe": 0.08,
+    "gather_il": 0.1,
+    "gather_ar": 0.07,
+    "defense": 0.1,
+    "strike": 0.05
+   }
+  },
+  "epic": {
+   "speed": 1.25,
+   "mix": {
+    "field": 0.05,
+    "raid_hard": 0.2,
+    "raid_veteran": 0.2,
+    "kill_light": 0.05,
+    "kill_heavy": 0.1,
+    "gather_il": 0.05,
+    "gather_ar": 0.1,
+    "gather_tq": 0.05,
+    "defense": 0.1,
+    "strike": 0.1
+   }
+  },
+  "legend": {
+   "speed": 1.4,
+   "mix": {
+    "raid_hard": 0.05,
+    "raid_veteran": 0.4,
+    "kill_light": 0.05,
+    "kill_heavy": 0.1,
+    "gather_ar": 0.08,
+    "gather_tq": 0.07,
+    "defense": 0.1,
+    "strike": 0.15
+   }
+  }
+ },
+ "arcadePpm": {
+  "stock": [
+   223.354,
+   243.456,
+   263.558,
+   285.893,
+   310.462,
+   335.031,
+   357.366
+  ],
+  "common": [
+   242.868,
+   263.628,
+   276.478,
+   294.568,
+   319.882,
+   345.196,
+   368.209
+  ],
+  "rare": [
+   268.8,
+   293.464,
+   319.589,
+   343.428,
+   348.583,
+   359.507,
+   383.474
+  ],
+  "epic": [
+   348.361,
+   376.923,
+   400.535,
+   435.51,
+   459.792,
+   495.219,
+   513.182
+  ],
+  "legend": [
+   454.391,
+   494.398,
+   521.655,
+   567.402,
+   616.969,
+   658.192,
+   702.071
+  ]
+ },
+ "conquestPpm": {
+  "stock": [
+   [
+    213.783,
+    224.472,
+    235.161,
+    245.85,
+    256.539,
+    267.228
+   ],
+   [
+    233.023,
+    244.674,
+    256.325,
+    267.977,
+    279.628,
+    291.279
+   ],
+   [
+    252.264,
+    264.877,
+    277.49,
+    290.103,
+    302.716,
+    315.329
+   ],
+   [
+    273.642,
+    287.324,
+    301.006,
+    314.688,
+    328.37,
+    342.052
+   ],
+   [
+    297.158,
+    312.016,
+    326.874,
+    341.732,
+    356.589,
+    371.447
+   ],
+   [
+    320.674,
+    336.708,
+    352.741,
+    368.775,
+    384.809,
+    400.843
+   ],
+   [
+    342.052,
+    359.155,
+    376.257,
+    393.36,
+    410.463,
+    427.565
+   ]
+  ],
+  "common": [
+   [
+    231.563,
+    243.141,
+    254.719,
+    266.297,
+    277.875,
+    289.453
+   ],
+   [
+    252.403,
+    265.023,
+    277.643,
+    290.264,
+    302.884,
+    315.504
+   ],
+   [
+    273.244,
+    286.906,
+    300.568,
+    314.23,
+    327.893,
+    341.555
+   ],
+   [
+    296.4,
+    311.22,
+    326.04,
+    340.86,
+    355.68,
+    370.5
+   ],
+   [
+    321.872,
+    337.965,
+    354.059,
+    370.153,
+    386.246,
+    402.34
+   ],
+   [
+    347.344,
+    364.711,
+    382.078,
+    399.445,
+    416.813,
+    434.18
+   ],
+   [
+    370.5,
+    389.025,
+    407.55,
+    426.075,
+    444.6,
+    463.125
+   ]
+  ],
+  "rare": [
+   [
+    259.771,
+    272.76,
+    285.748,
+    298.737,
+    311.725,
+    324.714
+   ],
+   [
+    283.15,
+    297.308,
+    311.465,
+    325.623,
+    339.78,
+    353.938
+   ],
+   [
+    306.53,
+    321.856,
+    337.183,
+    352.509,
+    367.836,
+    383.162
+   ],
+   [
+    332.507,
+    349.132,
+    365.758,
+    382.383,
+    399.008,
+    415.634
+   ],
+   [
+    361.082,
+    379.136,
+    397.19,
+    415.244,
+    433.298,
+    451.352
+   ],
+   [
+    389.656,
+    409.139,
+    428.622,
+    448.105,
+    467.588,
+    487.071
+   ],
+   [
+    415.634,
+    436.415,
+    457.197,
+    477.979,
+    498.76,
+    519.542
+   ]
+  ],
+  "epic": [
+   [
+    321.863,
+    337.956,
+    354.05,
+    370.143,
+    386.236,
+    402.329
+   ],
+   [
+    350.831,
+    368.372,
+    385.914,
+    403.456,
+    420.997,
+    438.539
+   ],
+   [
+    379.799,
+    398.789,
+    417.778,
+    436.768,
+    455.758,
+    474.748
+   ],
+   [
+    411.985,
+    432.584,
+    453.183,
+    473.783,
+    494.382,
+    514.981
+   ],
+   [
+    447.39,
+    469.759,
+    492.129,
+    514.498,
+    536.868,
+    559.237
+   ],
+   [
+    482.795,
+    506.935,
+    531.074,
+    555.214,
+    579.354,
+    603.494
+   ],
+   [
+    514.981,
+    540.73,
+    566.479,
+    592.228,
+    617.977,
+    643.726
+   ]
+  ],
+  "legend": [
+   [
+    387.488,
+    406.863,
+    426.237,
+    445.611,
+    464.986,
+    484.36
+   ],
+   [
+    422.362,
+    443.48,
+    464.598,
+    485.716,
+    506.834,
+    527.953
+   ],
+   [
+    457.236,
+    480.098,
+    502.96,
+    525.821,
+    548.683,
+    571.545
+   ],
+   [
+    495.985,
+    520.784,
+    545.583,
+    570.383,
+    595.182,
+    619.981
+   ],
+   [
+    538.608,
+    565.539,
+    592.469,
+    619.4,
+    646.33,
+    673.261
+   ],
+   [
+    581.232,
+    610.294,
+    639.355,
+    668.417,
+    697.479,
+    726.54
+   ],
+   [
+    619.981,
+    650.98,
+    681.979,
+    712.978,
+    743.977,
+    774.976
+   ]
+  ]
+ },
+ "settled": [
+  "stock",
+  "common",
+  "rare",
+  "rare",
+  "epic",
+  "epic",
+  "legend"
+ ],
+ "platingPower": [
+  {
+   "tier": 1,
+   "name": "Ferrite Regolith",
+   "setHp": 0.04,
+   "traits": null,
+   "stock": {
+    "p0": 68,
+    "p1": 69,
+    "gain": 0.015,
+    "liveWin": 0.511
+   },
+   "legend": {
+    "p0": 235,
+    "p1": 240,
+    "gain": 0.021,
+    "liveWin": 0.516
+   }
+  },
+  {
+   "tier": 2,
+   "name": "Ilmenite",
+   "setHp": 0.07,
+   "traits": null,
+   "stock": {
+    "p0": 68,
+    "p1": 70,
+    "gain": 0.029,
+    "liveWin": 0.522
+   },
+   "legend": {
+    "p0": 235,
+    "p1": 244,
+    "gain": 0.038,
+    "liveWin": 0.529
+   }
+  },
+  {
+   "tier": 3,
+   "name": "Armalcolite",
+   "setHp": 0.1,
+   "traits": null,
+   "stock": {
+    "p0": 68,
+    "p1": 71,
+    "gain": 0.044,
+    "liveWin": 0.533
+   },
+   "legend": {
+    "p0": 235,
+    "p1": 248,
+    "gain": 0.055,
+    "liveWin": 0.542
+   }
+  },
+  {
+   "tier": 4,
+   "name": "Tranquillityite",
+   "setHp": 0.12,
+   "traits": null,
+   "stock": {
+    "p0": 68,
+    "p1": 72,
+    "gain": 0.059,
+    "liveWin": 0.544
+   },
+   "legend": {
+    "p0": 235,
+    "p1": 251,
+    "gain": 0.068,
+    "liveWin": 0.551
+   }
+  },
+  {
+   "tier": 5,
+   "name": "Selenite Glass",
+   "setHp": 0.14,
+   "traits": {
+    "energy": 0.1
+   },
+   "stock": {
+    "p0": 68,
+    "p1": 74,
+    "gain": 0.088,
+    "liveWin": 0.565
+   },
+   "legend": {
+    "p0": 235,
+    "p1": 259,
+    "gain": 0.102,
+    "liveWin": 0.575
+   }
+  },
+  {
+   "tier": 6,
+   "name": "Moonheart",
+   "setHp": 0.16,
+   "traits": {
+    "energy": 0.1,
+    "area": 0.1
+   },
+   "stock": {
+    "p0": 68,
+    "p1": 75,
+    "gain": 0.103,
+    "liveWin": 0.575
+   },
+   "legend": {
+    "p0": 235,
+    "p1": 264,
+    "gain": 0.123,
+    "liveWin": 0.589
+   }
+  }
+ ],
+ "reference": {
+  "lunarSkin": {
+   "gain": 0.083,
+   "liveWin": 0.561
+  },
+  "moonbeam": {
+   "gain": 0.146,
+   "liveWin": 0.604
+  }
+ },
+ "timelines": {
+  "conquest": {
+   "label": "Regular, Conquest-focused",
+   "first": {
+    "1": 1,
+    "2": 3,
+    "3": 11,
+    "4": 38,
+    "5": 86,
+    "6": 211
+   },
+   "full": {
+    "1": 3,
+    "2": 9,
+    "3": 30,
+    "4": 79,
+    "5": 182,
+    "6": 471
+   },
+   "fees": 215200,
+   "after": {
+    "fe": 39581.8,
+    "il": 13305.8,
+    "ar": 6191.6,
+    "tq": 1203.3,
+    "se": 82.4,
+    "mh": 11.1
+   }
+  },
+  "mixed": {
+   "label": "Regular, mixed (30 Conquest + 15 Arcade)",
+   "first": {
+    "1": 1,
+    "2": 4,
+    "3": 13,
+    "4": 44,
+    "5": 110,
+    "6": 277
+   },
+   "full": {
+    "1": 3,
+    "2": 12,
+    "3": 38,
+    "4": 100,
+    "5": 238,
+    "6": 611
+   },
+   "fees": 215200,
+   "after": {
+    "fe": 39750.6,
+    "il": 12013.4,
+    "ar": 4600.7,
+    "tq": 817.2,
+    "se": 52.6,
+    "mh": 5.7
+   }
+  },
+  "arcade": {
+   "label": "Regular, Arcade/PvP only",
+   "first": {
+    "1": 2,
+    "2": 11,
+    "3": 74,
+    "4": 581
+   },
+   "full": {
+    "1": 5,
+    "2": 37,
+    "3": 209
+   },
+   "fees": 31200,
+   "after": {
+    "fe": 27117.1,
+    "il": 4368,
+    "ar": 446.9,
+    "tq": 11.4,
+    "se": 0,
+    "mh": 0
+   }
+  },
+  "dedicated": {
+   "label": "Dedicated, Conquest-focused",
+   "first": {
+    "1": 1,
+    "2": 1,
+    "3": 6,
+    "4": 23,
+    "5": 46,
+    "6": 83
+   },
+   "full": {
+    "1": 1,
+    "2": 3,
+    "3": 12,
+    "4": 43,
+    "5": 72,
+    "6": 183
+   },
+   "fees": 215200,
+   "after": {
+    "fe": 103308.2,
+    "il": 40098.1,
+    "ar": 20396.5,
+    "tq": 4125.4,
+    "se": 290.8,
+    "mh": 48.3
+   }
+  }
+ },
+ "dailyIncome": {
+  "conquest": {
+   "1": {
+    "fe": 48.94,
+    "il": 18.03,
+    "ar": 1.5,
+    "tq": 0.16,
+    "se": 0.08,
+    "mh": 0.02
+   },
+   "10": {
+    "fe": 46.83,
+    "il": 19.75,
+    "ar": 4.83,
+    "tq": 0.23,
+    "se": 0.11,
+    "mh": 0.02
+   },
+   "45": {
+    "fe": 43.94,
+    "il": 14.85,
+    "ar": 7.2,
+    "tq": 1.51,
+    "se": 0.14,
+    "mh": 0.03
+   }
+  },
+  "mixed": {
+   "1": {
+    "fe": 45.51,
+    "il": 13.23,
+    "ar": 1.15,
+    "tq": 0.13,
+    "se": 0.06,
+    "mh": 0.01
+   },
+   "10": {
+    "fe": 48.87,
+    "il": 15.46,
+    "ar": 3.4,
+    "tq": 0.18,
+    "se": 0.08,
+    "mh": 0.02
+   },
+   "45": {
+    "fe": 49.7,
+    "il": 13.25,
+    "ar": 5.13,
+    "tq": 1.07,
+    "se": 0.1,
+    "mh": 0.02
+   }
+  },
+  "arcade": {
+   "1": {
+    "fe": 32.94,
+    "il": 3.45,
+    "ar": 0.24,
+    "tq": 0,
+    "se": 0,
+    "mh": 0
+   },
+   "10": {
+    "fe": 34.37,
+    "il": 4.16,
+    "ar": 0.24,
+    "tq": 0,
+    "se": 0,
+    "mh": 0
+   },
+   "45": {
+    "fe": 35.8,
+    "il": 4.87,
+    "ar": 0.38,
+    "tq": 0.04,
+    "se": 0,
+    "mh": 0
+   }
+  },
+  "dedicated": {
+   "1": {
+    "fe": 169.13,
+    "il": 59.62,
+    "ar": 4.54,
+    "tq": 0.43,
+    "se": 0.2,
+    "mh": 0.04
+   },
+   "10": {
+    "fe": 136.76,
+    "il": 63.85,
+    "ar": 15.45,
+    "tq": 0.6,
+    "se": 0.28,
+    "mh": 0.06
+   },
+   "45": {
+    "fe": 113.8,
+    "il": 44.09,
+    "ar": 23.27,
+    "tq": 4.86,
+    "se": 0.37,
+    "mh": 0.07
+   }
+  }
+ },
+ "firstHour": [
+  {
+   "minute": 2,
+   "what": "Arrive at the Refuge. War visible; first patrol skirmish (2 interceptors)",
+   "pts": 70,
+   "cp": 14,
+   "fe": 0,
+   "il": 0,
+   "ar": 0,
+   "plates": 0
+  },
+  {
+   "minute": 4,
+   "what": "Hold the Oxygen Line (first field mission)",
+   "pts": 520,
+   "cp": 264,
+   "fe": 3,
+   "il": 0,
+   "ar": 0,
+   "plates": 0
+  },
+  {
+   "minute": 5,
+   "what": "Bank salvage at the Refuge terminal",
+   "pts": 520,
+   "cp": 264,
+   "fe": 3,
+   "il": 0,
+   "ar": 0,
+   "plates": 0
+  },
+  {
+   "minute": 9,
+   "what": "Guided: scanner pulse, the Starter Vein and a roadside deposit; a patrol answers the noise",
+   "pts": 755,
+   "cp": 264,
+   "fe": 41,
+   "il": 0,
+   "ar": 0,
+   "plates": 0
+  },
+  {
+   "minute": 11,
+   "what": "Intercept the Parasite Convoy",
+   "pts": 1205,
+   "cp": 404,
+   "fe": 44,
+   "il": 1,
+   "ar": 0,
+   "plates": 0
+  },
+  {
+   "minute": 12,
+   "what": "Bank at the Refuge; fabricate the FRONT Ferrite plate (40 Ferrite + 300 points) - visible on the hull",
+   "pts": 905,
+   "cp": 404,
+   "fe": 4,
+   "il": 1,
+   "ar": 0,
+   "plates": 1
+  },
+  {
+   "minute": 14,
+   "what": "Sabotage the Relay",
+   "pts": 1355,
+   "cp": 534,
+   "fe": 7,
+   "il": 1,
+   "ar": 0,
+   "plates": 1
+  },
+  {
+   "minute": 16,
+   "what": "Signal Recovery (recon) + a roadside deposit on the way",
+   "pts": 1905,
+   "cp": 634,
+   "fe": 13,
+   "il": 2,
+   "ar": 0,
+   "plates": 1
+  },
+  {
+   "minute": 18,
+   "what": "Rescue / Extraction",
+   "pts": 2355,
+   "cp": 784,
+   "fe": 16,
+   "il": 2,
+   "ar": 0,
+   "plates": 1
+  },
+  {
+   "minute": 21,
+   "what": "Break the Redoubt (sixth field mission): raids unlock",
+   "pts": 2895,
+   "cp": 1004,
+   "fe": 19,
+   "il": 3,
+   "ar": 0,
+   "plates": 1
+  },
+  {
+   "minute": 23,
+   "what": "Engineering rank 1 x2 at Refuge Supply (100 CP + 4 alloy each)",
+   "pts": 2895,
+   "cp": 804,
+   "fe": 19,
+   "il": 3,
+   "ar": 0,
+   "plates": 1
+  },
+  {
+   "minute": 37,
+   "what": "Four HARD raids (3 won, 1 lost) + world kills between them",
+   "pts": 5985,
+   "cp": 1524,
+   "fe": 19,
+   "il": 9,
+   "ar": 1,
+   "plates": 1
+  },
+  {
+   "minute": 42,
+   "what": "Two Ferrite deposits and an Ilmenite deposit; bank",
+   "pts": 6325,
+   "cp": 1524,
+   "fe": 25,
+   "il": 11,
+   "ar": 1,
+   "plates": 1
+  },
+  {
+   "minute": 50,
+   "what": "Two more HARD raids (both won) + replays of two field missions",
+   "pts": 9025,
+   "cp": 2114,
+   "fe": 31,
+   "il": 16,
+   "ar": 2,
+   "plates": 1
+  },
+  {
+   "minute": 53,
+   "what": "Return to the build site; the Command Base I goal shows the exact remaining cost",
+   "pts": 9025,
+   "cp": 2114,
+   "fe": 31,
+   "il": 16,
+   "ar": 2,
+   "plates": 1
+  }
+ ],
+ "firstBaseMinute": 59
+}

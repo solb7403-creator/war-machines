@@ -460,3 +460,69 @@ Local reproduction at 390 (`conquest-flagship-browser.py --engine chromium --wid
 - No revert required. Payments/checkout remain DISABLED; no production accounts, payments, token, airdrop or referral data changed.
 
 **Next:** the owner's phone playtest of the new look (Safari + Telegram, HIGH and LOW). Fix on a new branch from `main`; the FX_VS billboard-origin fix and real-device frame-time sampling are the first candidates.
+
+
+## Checkpoint 22 — World, Resources & Airdrop Points: Phase 0 economy spec (branch `claude/friendly-allen-7tcyca`, from main `ad68b19`) — AWAITING OWNER APPROVAL
+
+Owner brief (2026-11-08), four phases:
+- **Phase 0:** economy spec. STOP for owner approval.
+- **Phase 1:** Conquest airdrop points, the Command Base multiplier, the Daily Base Yield and the 50,000 shared cap.
+- **Phase 2:** terraform rework (zones, rivers, flora, biomass).
+- **Phase 3:** minerals, deposits, Meteor Strike and Hull Plating.
+
+Owner instructions override older docs and code comments. Payments stay disabled.
+
+**Phase 0 delivered (docs/tooling only; no gameplay, economy, server or version change):**
+- `docs/economy/RESOURCE_ECONOMY.md`: the master economy spec for this and the later base-builder, tank and competitive sessions. It covers:
+  - every resource (points, CP, Alloy, Biomass, Helium-3 and the 6 minerals), with sources per mode, rarity, gather and drop rates, sinks and store rules;
+  - the long-term ladder;
+  - points a minute, Arcade vs Conquest per league;
+  - time-to-armor-tier tables (Conquest-focused, mixed, Arcade-only, dedicated);
+  - the first-hour timeline;
+  - revenue levers with fairness flags;
+  - the implementation contract (records, exactly-once outbox crediting, tests, copy);
+  - the owner decision list.
+- `dev/tools/economy-model.mjs`: a deterministic, read-only model on the real `js/rules.js` (league pay, `powerOf`/`powerWin`) and the measured Arcade grid. It writes `docs/economy/economy-model.json`.
+  - Arcade points a minute are measured. They reproduce `docs/launch/LEAGUES.md`: 223/264/320/343/460/495/702.
+  - Every Conquest, mineral, plating and timeline number is a modeled proposal, not a playtest.
+
+**Key modeled results (regular Conquest-focused player, 45 min a day):**
+- Ferrite set in 3 days, Ilmenite 9 days, Armalcolite 4.3 weeks, Tranquillityite 2.6 months, Selenite 6 months, Moonheart 15.5 months.
+- First plate at minute 12 of the first session.
+- Command Base I at about minute 59 (inside the 45–75 target; raid rewards unchanged).
+- Conquest points a minute within about 5% of Arcade without a base (top league −12%), and +10–20% with a Command Base.
+
+**Facts found in code (relevant for Phase 1):**
+- The cap is `DAILY_CAP=20000` in both `js/rules.js` and `worker/src/db.js`.
+- Conquest (`conquest/<pid>`) and the account (`eco/<pid>`) are separate CAS records. Conquest points need a transactional outbox with a watermark (`eco.cqw`), credited through `ecoPlayAward`.
+- The only "CP is separate from Arcade and airdrop points" copy is in `js/conquest/app.js` `briefing()`. The wiki and terms have no Conquest text.
+- The wiki states the 20,000 cap twice (Leagues paragraph and the Economy note).
+- The old Conquest `POLICY.daily` caps are still unenforced.
+- PvP `checkLoadout` already rebuilds loadouts from `ecoLoadout(owned)`, so plates in `eco.ap` reach gear rating and league automatically.
+- A known gap: the whole CP ladder (93,530 CP) is finished in about 5–6 weeks by a regular player. The base-builder session must add sinks.
+
+**Tests and checks run:**
+- `node dev/tools/economy-model.mjs --write`: PASS. It writes the JSON and asserts that each content mix sums to 1 and that the first hour never spends more than it has.
+- `node --check dev/tools/economy-model.mjs`, `node --test dev/tools/asset-audit.test.mjs` (4/4) and `node dev/tools/asset-audit.mjs` (exit 0): PASS. These are the steps of the `ai-tooling-check` CI workflow, which triggers on `dev/tools/**`.
+- No game tests were run: no game file changed.
+
+**Tooling state:** the Graphify MCP failed to connect in this session (proxy refused the tunnel, 403). Current source was read directly.
+
+**Owner decisions pending** (`RESOURCE_ECONOMY.md` §12):
+1. Yield points inside or outside the 50,000 cap.
+2. Whether Selenite's energy reduction applies to Moonbeam (recommended: exempt).
+3. Top armor strength vs Lunar Skin.
+4. The mineral store and the points-for-Ferrite shop.
+5. Guardrails for future paid levers.
+6. Whether a verified Conquest day counts as an active day for referral verification.
+7. The Arcade-only pace for rare+.
+
+**Next (only after owner sign-off):** Phase 1 on this branch.
+1. Move the approved constants into `js/rules.js`. Raise `DAILY_CAP` to 50,000 in rules + `db.js`.
+2. Add the Conquest points outbox to `conquest-economy`/`conquest.js` and the eco credit, with the base multiplier, the per-hour outcome limit and the flags.
+3. Daily Base Yield: fill and partial collect at the physical base, meter on the base terminal, MAP and HUD.
+4. Update the wiki and in-game copy.
+
+Then the tests in §10, then commit and push. Phase 2 (terraform) and Phase 3 (minerals and plating) follow, each committed and pushed.
+
+**Agents used so far:** none. Phase 0 was done by the lead alone.
