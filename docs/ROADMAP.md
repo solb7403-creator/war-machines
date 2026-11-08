@@ -16,7 +16,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating | In progress |
 | 5 | Base builder + Conquest Command hub page | Next |
 | 6 | Tank modifications + Science Lab research | Planned |
-| 7 | Competitive: raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event | Planned |
+| 7 | Competitive: raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event, terraform-zone game modes | Planned |
 | 8 | Payments certification (Stars, TON, SOL; website shop) — required before beta | Planned |
 | 9 | Full game audit (use Fable) | Planned |
 | 10 | Closed beta, then promotion (incl. public Conquest showcase page on the website) | Planned |
@@ -47,6 +47,10 @@ The base is the engine of account power and must feel personal, very visual and 
 ## Conquest Command hub (session 5, expanded in session 7)
 
 Conquest gets its own dedicated page in the game, not just a mode button, and it must look spectacular: a cinematic live 3D hero (your tank and base on the Moon, Earth on the horizon, Neon Frontline style) with the warfront status, your base status and Daily Base Yield meter, active events (Meteor Strike timer, invasions), quick actions (deploy, fast travel, base, research) and, from session 7, ladders, squad wars and the daily warfront event. Same quality bar on phone and desktop, fast first paint.
+
+## Terraform-zone game modes (session 7)
+
+Terraformed zones get modes unique to them, distinct from the barren Moon's raids, mining and Meteor Strikes: Colony Defense (Parasite waves assault the frontier wall and farms; defend with colony turrets), Bridge Assault (capture and hold river bridges), Convoy Run (escort supply convoys along colony roads under ambush), Blight Purge (clear spreading blight; the zone visibly recovers), Forest Hunt (line-of-sight fights through forests). Feed the shared progression and airdrop points like other Conquest content.
 
 ## Working rules
 
