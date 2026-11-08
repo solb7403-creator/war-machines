@@ -69,10 +69,10 @@ export const P = {
   },
   strike: { everyMin: 120, telegraphMin: 5, windowMin: 20, guaranteed: { il: 2, ar: 2, tq: 0.5 }, se: 0.15, mh: 0.025, resonance: { se: 12, mh: 40 } },
   arcade: {                     // per server-verified Arcade/PvP result (AI tickets and live rooms alike)
-    win: { fe: 1.5, il: 0.2, ar: 0.015 }, draw: { fe: 1, il: 0.1 }, loss: { fe: 0.5 },
+    win: { fe: 1.5, il: 0.2, ar: 0.06 }, draw: { fe: 1, il: 0.1 }, loss: { fe: 0.5 },   // owner: Arcade-only rare set in about 3 months
     matchMin: 1.75, winRate: 0.62, drawRate: 0.10,
     // weekly league reward for 20+ verified Arcade/PvP matches that week (the competitive session finalizes these)
-    weekly: [{ fe: 20 }, { fe: 30, il: 5 }, { fe: 40, il: 10, ar: 1, tq: 0.25 }, { il: 12, ar: 3, tq: 0.25 }, { il: 15, ar: 5, tq: 0.5 }, { ar: 6, tq: 1 }, { ar: 8, tq: 2 }],
+    weekly: [{ fe: 20 }, { fe: 30, il: 5 }, { fe: 40, il: 10, ar: 2, tq: 0.25 }, { il: 12, ar: 4, tq: 0.25 }, { il: 15, ar: 5, tq: 0.5 }, { ar: 6, tq: 1 }, { ar: 8, tq: 2 }],
   },
   plating: {
     slots: ['FRONT', 'LEFT', 'RIGHT', 'TURRET'],

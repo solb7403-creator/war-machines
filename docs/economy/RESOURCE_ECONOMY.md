@@ -1,6 +1,6 @@
 # LUNAR: War Machines — Resource Economy (master spec)
 
-**Status: DRAFT v1 for owner approval (Phase 0, 2026-11-08). Nothing in this document is live yet.** Payments and checkout stay disabled. Airdrop boards stay tracking-only (`AIRDROP.dist=false`): nothing here promises tokens.
+**Status: APPROVED v1 (owner sign-off 2026-11-08; decisions in §0 and §12). Phase 1 is being implemented; nothing else here is live yet.** Payments and checkout stay disabled. Airdrop boards stay tracking-only (`AIRDROP.dist=false`): nothing here promises tokens.
 
 This is the one economy document for:
 - this session (airdrop points, terraform/biomass, minerals and hull plating);
@@ -53,6 +53,20 @@ Later sessions extend this file. They do not start a new one.
 - **Store:**
   - Only common and uncommon minerals can be sold. Rare and above are earn-only.
   - Checkout stays disabled until payments are certified.
+
+**Owner sign-off on the Phase 0 decisions (2026-11-08):**
+1. The Daily Base Yield points count **inside** the 50,000 cap.
+2. Moonbeam and Moonfall are **exempt** from Selenite's energy reduction.
+3. Moonheart stays at about **+12% gear rating** on a top kit.
+4. The mineral store is approved as proposed (§9.1). Checkout stays off.
+5. Guardrail wording: **paid features never grant airdrop points or rare+ minerals directly.** Indirect gains through power or base level are allowed, the same as Moonbeam today. Examples: a faster base through speed-ups or a second builder, or gear that raises league. Raid shields only once PvP base raids exist.
+6. A day with a verified Conquest operation **counts as an active day** for referral verification.
+7. Arcade-only pace is raised so the **rare set takes about 3 months**. Very rare and above stay Conquest/competitive.
+8. The lead's defaults are approved:
+   - Conquest points are spendable too, with the same league bonus as Arcade.
+   - Command Base multiplier ×1.05/1.10/1.15/1.20/1.25.
+   - Meteor Strike every 2 hours.
+   - Raid and first-base rewards unchanged.
 
 ---
 
@@ -186,7 +200,7 @@ How the yield works:
 - **No pure AFK points.** The points part needs one verified Conquest activity earlier that UTC day: a mission, raid, defense, strike or harvest. The materials part does not.
 - **CP:** keeps today's formula and numbers (`baseProduction`: tier, Reactor, reputation, Uplink). Only the timing changes, from one claim a day to a continuous fill.
 - **Where it goes:** materials are banked straight into the base vault. Minerals go to the account wallet.
-- **Cap:** the points count inside the 50,000 cap (recommended; decision 1).
+- **Cap:** the points count inside the 50,000 cap (owner decision).
 
 ### 3.3 Points a minute: Arcade vs Conquest
 
@@ -353,7 +367,7 @@ These apply to server-verified results only: AI-match tickets (`matchEnd`) and l
 
 | Result | Ferrite | Ilmenite | Armalcolite |
 |---|---|---|---|
-| Win | 1–2 (avg 1.5) | 20% for 1 | 1.5% for 1 |
+| Win | 1–2 (avg 1.5) | 20% for 1 | 6% for 1 |
 | Draw, or Last Standing top 3 | 1 | 10% for 1 | — |
 | Loss | 50% for 1 | — | — |
 | Quit | — | — | — |
@@ -364,8 +378,8 @@ These apply to server-verified results only: AI-match tickets (`matchEnd`) and l
 |---|---|
 | Rookie | 20 Ferrite |
 | Pilot | 30 Ferrite + 5 Ilmenite |
-| Veteran | 40 Ferrite + 10 Ilmenite + 1 Armalcolite + 25% Tranquillityite |
-| Ace | 12 Ilmenite + 3 Armalcolite + 25% Tranquillityite |
+| Veteran | 40 Ferrite + 10 Ilmenite + 2 Armalcolite + 25% Tranquillityite |
+| Ace | 12 Ilmenite + 4 Armalcolite + 25% Tranquillityite |
 | Elite | 15 Ilmenite + 5 Armalcolite + 50% Tranquillityite |
 | Master | 6 Armalcolite + 1 Tranquillityite |
 | Lunar Legend | 8 Armalcolite + 2 Tranquillityite |
@@ -382,8 +396,8 @@ Day 1 / day 10 / day 45. The rare zones open as gear improves (Appendix).
 | Profile | Ferrite | Ilmenite | Armalcolite | Tranquillityite | Selenite | Moonheart |
 |---|---:|---:|---:|---:|---:|---:|
 | Regular, Conquest-focused (45 min/day) | 49 / 47 / 44 | 18 / 20 / 15 | 1.5 / 4.8 / 7.2 | 0.16 / 0.23 / 1.5 | 0.08 / 0.11 / 0.14 | 0.02 / 0.02 / 0.03 |
-| Regular, mixed (30 Conquest + 15 Arcade) | 46 / 49 / 50 | 13 / 15 / 13 | 1.2 / 3.4 / 5.1 | 0.13 / 0.18 / 1.1 | 0.06 / 0.08 / 0.10 | 0.01 / 0.02 / 0.02 |
-| Regular, Arcade/PvP only (45 min/day) | 33 / 34 / 36 | 3.5 / 4.2 / 4.9 | 0.24 / 0.24 / 0.38 | 0 / 0 / 0.04 | 0 | 0 |
+| Regular, mixed (30 Conquest + 15 Arcade) | 46 / 49 / 50 | 13 / 15 / 13 | 1.4 / 3.6 / 5.5 | 0.13 / 0.18 / 1.1 | 0.06 / 0.08 / 0.10 | 0.01 / 0.02 / 0.02 |
+| Regular, Arcade/PvP only (45 min/day) | 33 / 34 / 36 | 3.5 / 4.2 / 4.9 | 0.96 / 0.96 / 1.2 | 0 / 0 / 0.04 | 0 | 0 |
 | Dedicated, Conquest-focused (150 min/day) | 169 / 137 / 114 | 60 / 64 / 44 | 4.5 / 15 / 23 | 0.43 / 0.60 / 4.9 | 0.20 / 0.28 / 0.37 | 0.04 / 0.06 / 0.07 |
 
 ---
@@ -418,7 +432,7 @@ There are four plate slots on every hull: **FRONT** (glacis), **LEFT** and **RIG
   - Pulse Cannon shots and Pierce Lance;
   - Static Nova;
   - Conquest's Parasite fire coordinator, plasma batteries and plasma bombardment;
-  - Moonbeam and Moonfall: see decision 2 (recommended: exempt).
+  - **Not** Moonbeam or Moonfall: they are exempt (owner decision). The lore: Moonbeam's lunar laser passes clean through Selenite.
 - **Area:**
   - Static Nova and Siege Blast;
   - meteors;
@@ -455,7 +469,7 @@ Measured with the real power fit (`powerOf`). The traits are valued as effective
 | *Reference: Lunar Skin* | +8% HP and damage | | +8.3% | 56.1% |
 | *Reference: Moonbeam vs Epic Pulse* | | | +14.6% | 60.4% |
 
-The armor ladder runs from a small first step to a long-term goal. At the top it sits between Lunar Skin and Moonbeam (decision 3).
+The armor ladder runs from a small first step to a long-term goal. At the top it sits between Lunar Skin and Moonbeam; the owner kept this strength.
 
 ### 6.4 Rules
 
@@ -486,11 +500,11 @@ The armor ladder runs from a small first step to a long-term goal. At the top it
 | Profile | Ferrite | Ilmenite | Armalcolite | Tranquillityite | Selenite Glass | Moonheart |
 |---|---:|---:|---:|---:|---:|---:|
 | **Regular, Conquest-focused** | **3 d** (1 d) | **9 d** (3 d) | **4.3 wk** (11 d) | **2.6 mo** (5.4 wk) | 6.0 mo (2.8 mo) | 15.5 mo (6.9 mo) |
-| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.4 wk (13 d) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
-| **Regular, Arcade/PvP only** | **5 d** (2 d) | **5.3 wk** (11 d) | **6.9 mo** (2.4 mo) | 2.5+ yr (19 mo) | needs Conquest or top competitive rewards | needs Conquest or top competitive rewards |
+| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.0 wk (13 d) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
+| **Regular, Arcade/PvP only** | **5 d** (2 d) | **5.3 wk** (11 d) | **3.1 mo** (6.0 wk) | 2.5+ yr (19 mo) | needs Conquest or top competitive rewards | needs Conquest or top competitive rewards |
 | Dedicated, Conquest-focused | 1 d (1 d) | 3 d (1 d) | 12 d (6 d) | 6.1 wk (3.3 wk) | 2.4 mo (6.6 wk) | 6.0 mo (2.7 mo) |
 
-Against the owner's targets, the regular Conquest-focused player hits every one: common 3–4 days, uncommon 1–2 weeks, rare about 1 month, very rare 2–3 months. Epic is about 6 months and legendary over a year (long-term). Dedicated players are 2–3× faster. The respawn timers and the strike schedule keep them from being 10× faster.
+The Arcade-only rare set takes about 3 months (owner target). Against the owner's targets, the regular Conquest-focused player hits every one: common 3–4 days, uncommon 1–2 weeks, rare about 1 month, very rare 2–3 months. Epic is about 6 months and legendary over a year (long-term). Dedicated players are 2–3× faster. The respawn timers and the strike schedule keep them from being 10× faster.
 
 ### 7.3 First hour (new pilot, stock kit, Rookie, ordinary pace)
 
@@ -552,7 +566,7 @@ Every column keeps moving. In month 1 there is a new milestone every 1–3 days.
 
 Checkout stays **DISABLED** for every item below until payments are certified (`ConquestCatalog.checkout.enabled=false`; PR #21 is not certified).
 
-### 9.1 Minerals in the store (proposal, illustrative prices only)
+### 9.1 Minerals in the store (owner-approved; illustrative prices only; checkout off)
 
 - **Sellable:** Ferrite Regolith and Ilmenite only, in **fixed bundles** with nothing random:
   - Ferrite Crate: 150 Ferrite, about $1.99;
@@ -565,15 +579,17 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
 
 ### 9.2 Other planned revenue levers
 
-| Lever | Where it fits | What it does | Fairness flag | Guardrail |
+**Guardrail (owner wording, 2026-11-08):** paid features never grant airdrop points or rare+ minerals directly. Indirect gains through power or base level are allowed, the same as Moonbeam today. Examples: a faster base through speed-ups or a second builder, or gear that raises league. Raid shields only once PvP base raids exist.
+
+| Lever | Where it fits | What it does | Indirect effect (allowed) | Guardrail |
 |---|---|---|---|---|
-| Mineral crates (above) | garage store | saves time on plating tiers 1–2 (at most +7% HP) | **flag:** bought plating raises gear rating, so league and the league airdrop factor (Arcade already works this way for Moonbeam and Lunar Skin) | small cap (+7% HP ≈ +3–4% rating); daily and weekly limits; the stronger league also meets a harder AI |
-| Second builder | base-builder session | two base constructions at once | **flag:** faster base tiers would mean a faster airdrop multiplier and yield | the paid builder may run modules only, never the tier steps that set the multiplier; an earnable second builder exists too |
-| Speed-ups | base-builder session | finish a running timer now, at a fixed shown price, with the earn time beside it | **flag:** same as above | never on base tier steps, deposit respawns, strikes or anything else that pays points |
+| Mineral crates (§9.1) | garage store | saves time on plating tiers 1–2 (at most +7% HP) | plating raises gear rating, then league and the league airdrop factor | only Ferrite and Ilmenite; daily and weekly limits; the stronger league also meets a harder AI |
+| Second builder | base-builder session | two base constructions at once | a faster base reaches the Conquest points multiplier and the yield sooner | never grants points or rare+ minerals itself; an earnable second builder exists too |
+| Speed-ups | base-builder session | finish a running construction timer now, at a fixed shown price, with the earn time beside it | same as the second builder | construction timers only: never deposit respawns, strike timers or anything that pays points itself |
 | Base cosmetics | exists (`js/conquest/catalog.js`: 5 architecture collections, $7.99–$29.99 proposals, preview only) | looks only | none | must keep hitboxes and readability |
-| Plate finishes (cosmetic) | tank session | premium looks for plates (trim, glow colors) | none | looks only; tier stays readable |
-| Raid shields | competitive / async-raid session | protection from player raids for a while | **flag:** paying for protection in a steal system is pay-to-win-adjacent | only once async player raids exist (`base.pvpAvailable=false` today); free shields after being raided; earnable shields; paid ones limited; never against PvE alerts |
-| Lunar Pass perks | existing pass (13 TON / 799 Stars) | already halves RECALL; could add scanner range and plate finishes | **flag** if it ever pays points or rare+ minerals | the existing rule holds: the premium track never gives points; no rare+ minerals; no yield or points multipliers |
+| Plate finishes (cosmetic) | tank session | premium looks for plates (trim, glow colors) | none | looks only; the tier stays readable |
+| Raid shields | competitive / PvP base-raid session | protection from player raids for a while | protection in a steal system | only once PvP base raids exist (`base.pvpAvailable=false` today); free shields after being raided; earnable shields; never against PvE alerts |
+| Lunar Pass perks | existing pass (13 TON / 799 Stars) | already halves RECALL; could add scanner range and plate finishes | none | the existing rule holds: the premium track never gives points; never rare+ minerals |
 
 ---
 
@@ -595,7 +611,7 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
   - `strikes` {slot: claimed};
   - `resonance`.
 
-**Credit:** the outbox in 3.5; every point goes through `ecoPlayAward`.
+**Credit:** the outbox in 3.5; every point goes through `ecoPlayAward`. A day with a credited verified Conquest operation also counts as a verified play day (`ecoPlayDay`: `vd`/`vdl`), so it counts as an active day for referral verification (owner decision 6). Referral bonuses themselves are unchanged.
 
 **Tests:**
 - exactly-once credit under retry, concurrent tabs and account-write failure;
@@ -630,31 +646,18 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
 
 ---
 
-## 12. Owner decisions needed
+## 12. Owner decisions (signed off 2026-11-08)
 
-1. **Daily Base Yield points:** count inside the 50,000 cap (recommended), or outside it like the daily login reward?
-2. **Selenite Glass vs Moonbeam:** should Selenite's −10% energy damage apply to Moonbeam and Moonfall?
-   - Recommended: **exempt Moonbeam**, which keeps "never weaken Moonbeam" literal.
-   - The alternative: include it, a cleaner counter-play rule.
-3. **Top armor strength:** a full Moonheart set is about +12% gear rating on a top kit, above Lunar Skin (+8%) and below Moonbeam (+15%).
-   - Keep (recommended)?
-   - Or compress the ladder (+3/5/7/9/10.5/12% HP) so it never exceeds Lunar Skin?
-4. **Mineral store:** sell Ferrite and Ilmenite crates with daily and weekly limits (checkout disabled until certified), plus Ferrite for earned points?
-   - Flag: bought plating raises gear rating, so league, so airdrop rate a little, as Moonbeam does today.
-5. **Guardrails for future levers:**
-   - no paid lever may raise airdrop points, directly or through the base multiplier;
-   - the Lunar Pass never gives points or rare+ minerals;
-   - raid shields only once async player raids exist.
-
-   Approve?
-6. **Referrals:** count a day with a verified Conquest operation as an active day for squad/referral verification (recommended yes; referral bonuses unchanged)?
-7. **Arcade-only pace:** common 5 days, uncommon about 5 weeks, rare about 7 months. Very rare and above effectively need Conquest or top competitive rewards. OK, or raise Arcade's rare drops?
-
-**Defaults the lead will use unless the owner says otherwise:**
-- Conquest points are also spendable, with the same league bonus as Arcade (one wallet).
-- Base multiplier steps ×1.05/1.10/1.15/1.20/1.25.
-- Meteor Strike every 2 hours.
-- Raid and first-base rewards unchanged (first base now models at about 59 min).
+| # | Question | Owner decision |
+|---|---|---|
+| 1 | Daily Base Yield points inside or outside the cap | **inside** the 50,000 cap |
+| 2 | Selenite's energy reduction vs Moonbeam | **Moonbeam and Moonfall exempt** |
+| 3 | Top armor strength | **keep** Moonheart at about +12% gear rating |
+| 4 | Mineral store | **approved** as proposed (§9.1); checkout stays off |
+| 5 | Guardrails for paid features | **no direct** airdrop points or rare+ minerals; indirect gains through power or base level are allowed (§9.2); raid shields only once PvP base raids exist |
+| 6 | Conquest operation day as a referral active day | **yes** |
+| 7 | Arcade-only pace | rare set in about **3 months**; very rare and above stay Conquest/competitive |
+| — | The lead's defaults | **approved**: Conquest points spendable with the league bonus; base multiplier ×1.05…×1.25; Meteor Strike every 2 h; raid and first-base rewards unchanged |
 
 ---
 
