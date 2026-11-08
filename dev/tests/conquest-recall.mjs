@@ -25,7 +25,7 @@ const fresh=()=>{const s=createState(R.STOCK_L,now);s.position={x:1160,z:1030,y:
 {let s=fresh();s.base.tier=1;s.position={x:C.operations.relay.x,z:C.operations.relay.z,y:W.groundAt(C.operations.relay.x,C.operations.relay.z),surface:'ground'};s=act(s,'recall-start');s=act(s,'start-mission',{mission:'relay'});assert(!s.recall,'starting an operation ends the channel');assert.throws(()=>act(structuredClone(s),'recall-start'),/Finish or leave the operation/);}
 // 4. Remote base command: upgrades and module construction from anywhere (not mid-operation); banking and production need the base.
 {let s=fresh();s.base.tier=1;s.ledger.cp=1e6;s.ledger.banked={alloy:1e5,biomass:1e5,helium:1e5};s.base.claimedAt=now-2*86400000;
- s=act(s,'upgrade-base');assert.equal(s.base.tier,2,'remote tier upgrade');s=act(s,'base-module',{module:Object.keys(D.modules)[0]});assert(s.base.pending,'remote module queued');
+ s=act(s,'upgrade-base');assert.equal(s.plot.job.l,2,'remote Command Center upgrade queued');assert.throws(()=>act(structuredClone(s),'base-module',{module:Object.keys(D.modules)[0]}),/builder busy/,'one builder');now+=31000;s=act(s,'base-module',{module:Object.keys(D.modules)[0]});assert(s.plot.cc===2&&s.plot.job,'remote module queued once the builder is free');
  assert.throws(()=>act(structuredClone(s),'base-claim'),/approach physical Command Base/);assert.throws(()=>act(structuredClone(s),'repair-base'),/approach physical Command Base/);
  assert.throws(()=>act(structuredClone(s),'bank'),/approach Refuge supply terminal/,'banking needs the Refuge terminal or a Vault base');
  const m=structuredClone(s);m.mission='relay';assert.throws(()=>act(m,'upgrade-base'),/approach physical/);}

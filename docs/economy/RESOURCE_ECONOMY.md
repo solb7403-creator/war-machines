@@ -319,29 +319,43 @@ Current values from the code: `worker/src/conquest-economy.js` and `js/conquest/
 | 5 | **Selenite Glass** | epic | reflective silver-violet impact glass | Meteor Strike craters; 3% vein in Tranquillityite | full set: −10% energy damage |
 | 6 | **Moonheart** | legendary | obsidian-dense core with a deep blue-white glow | Meteor Strike cores; top competitive rewards | full set: −10% area damage, keeps Selenite's trait |
 
-### 5.2 Deposits in the populated war region
+### 5.2 Veins in the populated war region (owner ore fix, Nov 8 2026: veins run dry, new ones appear)
 
-| Mineral | Nodes | Units per harvest | Gather channel | Respawn | Placement rule |
-|---|---:|---:|---:|---:|---|
-| Ferrite Regolith | 36 | 2–4 (avg 3) | 5 s | 20 min | open ground near routes; safe enough for a new pilot |
-| Ilmenite | 18 | 1–3 (avg 2) | 8 s | 45 min | off-route basalt, often within patrol paths |
-| Armalcolite | 10 | 1–2 (avg 1.5) | 12 s | 3 h | crater walls and Parasite territory, inside or next to garrison zones |
-| Tranquillityite | 5 | 1 (+3% Selenite vein) | 16 s | 8 h | contested sites: raid-site perimeters, hive edges |
-| Starter Vein | 1 (once) | 35 Ferrite | 5 s | never | beside the Refuge, revealed by the guided first scan |
+Session 5 replaced the respawning deposits (Ferrite 20 min ... Tranquillityite 8 h), which let a player circle the same few spots all day. Ore now comes in **veins**:
 
-Placement follows the Phase 2 zone map. Commons sit in open and terraformed ground near routes. Rarer minerals sit deeper in Parasite territory, crater walls and hard sectors. The top tiers sit only at contested sites. Every existing sector, raid, mission and route keeps working.
+- Each (mineral, sector) **field** has authored candidate spots and keeps a fixed number of **live veins**.
+- A vein holds a fixed amount and is mined in a few **pulls** (one HOLD GATHER channel each; the server rolls the units, capped by what the vein still holds).
+- At zero it is **EXHAUSTED for that pilot**. It never refills at that spot in minutes or hours.
+- After the regrow delay a **new vein** of that mineral surfaces at another spot of the same field. The spot is chosen by a hash of the pilot's server-only seed, the slot, its generation and the UTC day. It stays hidden until a SCAN reaches it, so prospecting with SCAN is how you find ore.
+- Clocks and spots are per pilot (no griefing). Code: `worker/src/conquest-veins.js`; rules: `MN_VEIN` and `MN_GATHER` in `js/rules.js`.
+
+| Mineral | Candidate spots | Live veins | Vein holds | Units a pull | Pulls a vein | Channel | New vein after | Placement rule |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| Ferrite Regolith | 36 | 7 (2 in the Refuge Corridor, 1 in each other sector) | 12 | 2–4 | ~4 | 5 s | 6 h | open ground near routes; safe enough for a new pilot |
+| Ilmenite | 19 | 4 (Helium Basin, Western Salvage Reach, Ash approaches, Oxygen Spear) | 6 | 1–3 | ~3 | 8 s | 12 h | off-route basalt, often within patrol paths |
+| Armalcolite | 10 | 3 (Refuge Ridge, Oxygen Spear, Ash Redoubt) | 5 | 1–2 | ~3 | 12 s | 2 days | crater walls and Parasite territory, inside or next to garrison zones |
+| Tranquillityite | 6 | 3 (Oxygen Spear, Refuge Ridge, Ash Redoubt) | 3 | 1 (+3% Selenite vein a pull) | 3 | 16 s | 5 days | contested sites: raid-site perimeters, hive edges |
+| Starter Vein | 1 (once) | — | 35 Ferrite | 35 | 1 | 5 s | never | beside the Refuge, revealed by the guided first scan |
+
+Two spots were added so every field has at least two (Ilmenite at (1277,1014) in the Oxygen Spear, Tranquillityite at (1310,1210) on Refuge Ridge). Every spot passes the placement checks (clear of solids, water, forests, decks and bio-flora; reachable from the spawn; `conquest-minerals`).
+
+**Supply cap.** One play session can empty each vein once, so a day's gathering is capped at about live veins × holds × min(sessions, 24 h ÷ regrow). Regular players stay time-bound (they never empty every vein), so their timelines in 7.2 are unchanged. Grinders hit the cap: a 6 h-a-day player in 3 sessions gets at most 252 Ferrite a day from veins.
+
+**Migration of existing saves.** The Starter Vein keeps its once-ever flag. Each pilot gets 17 fresh full veins. A spot the pilot had already found (and that was ready) becomes one of their live veins, already on the MAP. Old respawn clocks are dropped. Nothing is granted or taken: cargo, banked minerals and the wallet are unchanged (`conquest-minerals`, migration checks).
+
+**MAP and HUD.** Scanned veins show what they still hold (e.g. "Ferrite · 9/12"). A mined-out vein shows **EXHAUSTED** for 10 minutes, then disappears. The ticker says when a new vein will surface in the sector ("SCAN TO FIND IT"). The post-SCAN HUD route goes to the nearest scanned vein with ore left and clears when that vein runs dry. The client only ever receives scanned veins: never the seed, an unscanned vein or the next spot.
 
 ### 5.3 Gathering rules (Phase 3)
 
 - **Scanner pulse:** a new HUD ability, free, with a 30 s cooldown.
-  - It reveals deposits within 150 m (+50 m per Radar module level).
-  - Discovered deposits stay on the MAP with their state: "ready", or "depleted · 12m" with the respawn time.
+  - It reveals this pilot's live veins within 150 m (+50 m per Radar module level), and the Starter Vein.
+  - Scanned veins stay on the MAP with what they hold; exhausted ones show EXHAUSTED for 10 minutes, then disappear (5.2).
 - **Gather:** stop within 6 m and hold GATHER for the channel time.
   - Damage interrupts the channel.
   - The channel makes noise: Parasites within 120 m move in to investigate. That is the exposure the owner asked for, so gathering creates fights.
 - **Server-authoritative:**
   - the channel advances only in simulated time, while in range and alive;
-  - the node's generation (like patrol spawns) prevents double harvests;
+  - each pull is capped by what the vein still holds, and an exhausted vein cannot be pulled again;
   - harvests count toward the per-hour outcome limit;
   - the client never sends an amount.
 - **Carry and bank:** minerals go to cargo and bank like salvage, at the Refuge terminal or the base vault. Banking sends them through the outbox (3.5) to the account wallet, where the garage can use them in every mode.
@@ -507,12 +521,15 @@ The armor ladder runs from a small first step to a long-term goal. At the top it
 
 | Profile | Ferrite | Ilmenite | Armalcolite | Tranquillityite | Selenite Glass | Moonheart |
 |---|---:|---:|---:|---:|---:|---:|
-| **Regular, Conquest-focused** | **3 d** (1 d) | **9 d** (3 d) | **4.3 wk** (11 d) | **2.6 mo** (5.4 wk) | 6.0 mo (2.8 mo) | 15.5 mo (6.9 mo) |
-| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.0 wk (13 d) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
+| **Regular, Conquest-focused** | **3 d** (1 d) | **10 d** (3 d) | **4.3 wk** (11 d) | **2.6 mo** (5.4 wk) | 6.0 mo (2.8 mo) | 15.5 mo (6.9 mo) |
+| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.0 wk (2.0 wk) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
 | **Regular, Arcade/PvP only** | **5 d** (2 d) | **5.3 wk** (11 d) | **3.1 mo** (6.0 wk) | 2.5+ yr (19 mo) | needs Conquest or top competitive rewards | needs Conquest or top competitive rewards |
-| Dedicated, Conquest-focused | 1 d (1 d) | 3 d (1 d) | 12 d (6 d) | 6.1 wk (3.3 wk) | 2.4 mo (6.6 wk) | 6.0 mo (2.7 mo) |
+| Dedicated, Conquest-focused (2 sessions) | 1 d (1 d) | 3 d (1 d) | 13 d (6 d) | 6.3 wk (3.3 wk) | 2.4 mo (6.6 wk) | 6.0 mo (2.7 mo) |
+| Grinder, 6 h a day in 3 sessions (vein cap check, Session 5) | 1 d (1 d) | 2 d (1 d) | 8 d (4 d) | 4.7 wk (2.3 wk) | 5.6 wk (4.9 wk) | 2.8 mo (6.0 wk) |
 
-The Arcade-only rare set takes about 3 months (owner target). Against the owner's targets, the regular Conquest-focused player hits every one: common 3–4 days, uncommon 1–2 weeks, rare about 1 month, very rare 2–3 months. Epic is about 6 months and legendary over a year (long-term). Dedicated players are 2–3× faster. The respawn timers and the strike schedule keep them from being 10× faster.
+Session 5 note: the table is regenerated with the vein rules (5.2) and without Base Yield minerals, which the Session 4 model had assumed but were never approved or built. That moves the regular Ilmenite set from 9 to 10 days; every owner target still holds (`dev/tests/conquest-vein-economy.mjs`).
+
+The Arcade-only rare set takes about 3 months (owner target). Against the owner's targets, the regular Conquest-focused player hits every one: common 3–4 days, uncommon 1–2 weeks, rare about 1 month, very rare 2–3 months. Epic is about 6 months and legendary over a year (long-term). Dedicated players are 2–3× faster. The veins (5.2) and the strike schedule keep them from being 10× faster: even a 6 h-a-day grinder stays under 6× the regular pace on every tier (`dev/tests/conquest-vein-economy.mjs`, Session 5).
 
 ### 7.3 First hour (new pilot, stock kit, Rookie, ordinary pace)
 
@@ -726,6 +743,85 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
 | — | The lead's defaults | **approved**: Conquest points spendable with the league bonus; base multiplier ×1.05…×1.25; Meteor Strike every 2 h; raid and first-base rewards unchanged |
 
 ---
+
+## 13. Command Base plot (Session 5, owner-approved scope)
+
+Code: shared rules `js/conquest/plot.js` (ConquestPlot), Worker actions `worker/src/conquest-plot.js`, phone view `js/conquest/plotview.js`. Every build, upgrade, move, wall, collect, site change and drill is a Worker action validated on the Worker clock; the phone never grants anything. Tests: `conquest-plot.mjs`, `conquest-base-progression.mjs`, `conquest-base-builder.py`.
+
+**Airdrop rules are unchanged:** Command Base multiplier ×1.05…×1.25 by tier, the Daily Base Yield, the 50,000 shared daily cap, points never purchasable, rare+ minerals never sold. The plot's tier (I…V) comes from the Command Center level, and the cumulative cost to CC3/5/7/9 equals the old Base II/III/IV/V costs, so the multiplier arrives exactly as before (modeled: tier V on day 20.75 for the regular player; Session 4 had day 20).
+
+### 13.1 The plot and sites
+- A private 180 × 180 m plot (a 45 × 45 grid of 4 m cells) entered from the Command Gate at (1080, 1160), or by RECALL / fast travel to the base. The world waits while you are inside. Banking, repair and collection work there.
+- Four sites, picked at first build. Migrated bases start on RIDGE. The first site change is free; later changes cost 150 alloy with a 24 h cooldown (buildings are re-seated; walls on newly blocked ground are removed and their minerals return to the base stores).
+
+| Site | Effect | Approach lanes |
+|---|---|---|
+| CRATER RIM | +15% Refinery alloy; two rim deposits give 3 Ferrite a day (to the wallet, collected at the base) | 4 wide |
+| RIVER DELTA | +15% Biodome biomass; water and lush ground | 4 wide |
+| RIDGE | +10% turret range | 3 wide |
+| CANYON | hard to raid | 2 narrow |
+
+### 13.2 Command Center and buildings
+One builder: one construction at a time. A second builder and speed-ups are store items, shown as unavailable until payments are certified. Building levels unlock with the Command Center (level ≤ ⌈CC ÷ 2⌉). Each level costs the previous × 2.4.
+
+| Building | Unlocks | Footprint (cells) | Levels | Power draw | Level I cost | Level V (or III) cost | Timers I…max |
+|---|---|---|---:|---:|---|---|---|
+| Refinery | CC1 | 3×4 | 5 | 2 a level | 60 CP + 4 alloy + 2 biomass | 1991 CP + 133 alloy + 66 biomass | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Storage Depot | CC1 | 3×3 | 5 | 1 a level | 90 CP + 8 alloy | 2986 CP + 265 alloy | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Reactor | CC1 | 3×3 | 5 | 0 a level | 140 CP + 8 alloy + 1 He-3 | 4645 CP + 265 alloy + 33 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Biodome | CC2 | 3×3 | 5 | 2 a level | 150 CP + 8 alloy + 8 biomass | 4977 CP + 265 alloy + 265 biomass | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Hangar | CC2 | 4×3 | 5 | 1 a level | 180 CP + 12 alloy | 5972 CP + 398 alloy | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Helium Extractor | CC3 | 2×2 | 5 | 2 a level | 200 CP + 10 alloy + 5 biomass | 6636 CP + 332 alloy + 166 biomass | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Radar | CC3 | 2×2 | 5 | 2 a level | 200 CP + 10 alloy + 2 He-3 | 6636 CP + 332 alloy + 66 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Shield Generator | CC3 | 2×2 | 5 | 3 a level | 240 CP + 14 alloy + 2 He-3 | 7963 CP + 464 alloy + 66 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Science Lab | CC3 | 3×3 | 3 | 2 a level | 320 CP + 18 alloy + 8 biomass + 3 He-3 | 1843 CP + 104 alloy + 46 biomass + 17 He-3 | 30 s / 10 min / 1 h |
+| Uplink | CC4 | 2×2 | 5 | 2 a level | 260 CP + 14 alloy + 3 He-3 | 8626 CP + 464 alloy + 100 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Trophy Hall | CC5 | 3×3 | 3 | 1 a level | 300 CP + 16 alloy | 1728 CP + 92 alloy | 30 s / 10 min / 1 h |
+| Cannon Turret | CC1 | 1×1 | 5 | 1 a level | 70 CP + 5 alloy | 2322 CP + 166 alloy | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Laser Turret | CC2 | 1×1 | 5 | 1 a level | 110 CP + 6 alloy + 1 He-3 | 3650 CP + 199 alloy + 33 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Missile Turret | CC4 | 1×1 | 5 | 1 a level | 160 CP + 8 alloy + 2 He-3 | 5308 CP + 265 alloy + 66 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Mortar | CC5 | 1×1 | 5 | 1 a level | 190 CP + 10 alloy + 2 He-3 | 6304 CP + 332 alloy + 66 He-3 | 15 s / 3 min / 20 min / 2 h / 6 h |
+| Gate | CC4 | 1×1 | 1 | 0 a level | 60 CP + 4 alloy | 60 CP + 4 alloy | 10 s |
+
+| Command Center | Cost | Timer | Tier (points multiplier) |
+|---|---|---|---|
+| CC1 (claim the plot) | 2550 CP + 110 alloy + 65 biomass + 8 He-3 | instant | I (×1.05) |
+| CC2 | 1800 CP + 50 alloy + 30 biomass + 4 He-3 | 30 s | I (×1.05) |
+| CC3 | 2700 CP + 110 alloy + 65 biomass + 8 He-3 | 3 min | II (×1.10) |
+| CC4 | 1700 CP + 100 alloy + 60 biomass + 8 He-3 | 10 min | II (×1.10) |
+| CC5 | 2500 CP + 150 alloy + 90 biomass + 12 He-3 | 30 min | III (×1.15) |
+| CC6 | 2600 CP + 150 alloy + 95 biomass + 12 He-3 | 1 h | III (×1.15) |
+| CC7 | 3900 CP + 230 alloy + 145 biomass + 20 He-3 | 2 h | IV (×1.20) |
+| CC8 | 4000 CP + 220 alloy + 140 biomass + 20 He-3 | 3 h | IV (×1.20) |
+| CC9 | 6000 CP + 330 alloy + 210 biomass + 30 He-3 | 5 h | V (×1.25) |
+| CC10 | 9000 CP + 500 alloy + 320 biomass + 45 He-3 + 30 Ilmenite + 6 Armalcolite | 8 h | V (×1.25) |
+
+### 13.3 Production, storage, power
+- Production per level an hour: Refinery 0.8 alloy, Biodome 0.6 biomass, Helium Extractor 0.15 He-3 (site bonuses on top). It accrues on the Worker clock into the plot store and stops at the Storage Depot cap: alloy and biomass 30 + 40 × Depot level, He-3 8 + 10 × Depot level (Ferrite rim deposits 30). Collect inside the plot: whole units go to banked materials (Ferrite to the wallet through the outbox).
+- Power: supply 12 + 3 × CC + 14 a Reactor level. Draw per level: Refinery, Biodome, Helium Extractor, Radar, Uplink, Science Lab 2; Storage Depot, Hangar, Trophy Hall, turrets 1; Shield Generator 3. A build over the budget is refused. A full CC10 base cannot max every building and turret at once (a real trade-off).
+- Old modules map onto buildings (Reactor, Hangar, Shield Generator = defense, Storage Depot = vault, Radar, Uplink), capped at III for the old formulas, so CP production, field repair, the protective field, base banking, scan range and radar contacts work exactly as before.
+
+### 13.4 Walls, turrets and the Defense Drill
+- Walls: drag-to-draw straight sections (up to 40 per drag; 24 + 16 × CC sections in all). Tiers: Regolith (CC1, 400 HP, 5 CP + 2 Ferrite), Titanium (CC2, 900 HP, 2 alloy + 1 Ilmenite), Armalcolite (CC5, 1,600 HP, 3 alloy + 1 Armalcolite), Selenite glass (CC7, 2,400 HP, 4 alloy + 1 Selenite), Moonheart (CC9, 3,500 HP, 5 alloy + 1 Moonheart). Gates: 2 at CC4, 4 at CC8.
+- **Base stores:** wall and CC10 minerals come from the base stores. "Move to base stores" moves minerals from the account wallet, one way and permanent (eco action `bstore`; the eco total `bmn` only grows and the plot counts what it has spent, so a stale read can refuse a build but never overspend). This is the mineral sink the Session 4 spec asked for.
+- Turrets (limit 2/4/5/6/8/9/10/12/14/16 by CC): Cannon (CC1, 28 m, 34 dmg every 1.1 s), Laser (CC2, 24 m, 9 dmg every 0.25 s), Missile (CC4, 36 m, 55 dmg + 3 m splash every 2 s, hits drones first), Mortar (CC5, 10–44 m, 46 dmg + 6 m splash every 3 s). +25% damage and +4% range a level.
+- **Defense Drill:** a deterministic simulated Parasite attack (three waves scaled by CC: raiders, sentinels, drones) entering by the site's lanes, following a flow field to the Command Center and breaching walls in the way; Shield Generators soften damage near them. The Worker runs it to write the base log (8 entries, one drill a minute); the phone replays the same seed. **It never grants anything** (tested: CP, materials, minerals, points, reputation, score and achievements unchanged).
+
+### 13.5 Command Power
+100 × CC level + 20 × level × (1 + 0.15 × (level − 1)) per building (30 for turrets, 10 for gates) + wall sections by tier (1/2/4/7/10). Shown in the plot; used for visits (top 20) and Base of the Week (Phase 2).
+
+### 13.6 Progression model (`dev/tests/conquest-base-progression.mjs`)
+Real reward, bank, claim and plot functions on the Worker clock; scripted 90 s sorties; after the first base, half of all CP goes to engineering and other sinks. Modeled, not a human playtest.
+
+| Profile | CC1 (first base) | CC2 | CC5 | CC9 (tier V) | CC10 |
+|---|---|---|---|---|---|
+| Regular, 45 min a day | 51 min of play | day 3 (96 min of play) | day 7 | day 21 | day 31 |
+| Dedicated, 150 min a day | day 1 | day 1 | day 3 | — | day 10.5 (2.9× faster) |
+
+Not instant (CC5 takes a week, CC10 a month) and not a wall (a new step every few sessions, first builds take 15 s).
+
+### 13.7 Migration (every existing base)
+Tier I…V becomes CC 1/3/5/7/9 with the same points multiplier, Daily Base Yield clocks, travel node and defense record; each module becomes its building at the same level with an auto layout; a module under construction continues as the builder's job with the same finish time; banked goods are untouched. Tested over all 13,081 old tier/module combinations.
 
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 

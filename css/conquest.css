@@ -102,3 +102,91 @@
 .cq-mn:empty,.cq-strike:empty{display:none}
 .cq-plating{margin:10px 0;padding:10px;border:1px solid #c0703f66;border-radius:10px;background:#1a120cb3}.cq-plating h3{margin:0 0 6px;font-size:12px;letter-spacing:.06em;color:#ffd9b8}
 .cq-plating button{display:block;width:100%;margin:6px 0;text-align:left;font-size:10px;white-space:normal}.cq-plating .cq-muted{opacity:.55}.cq-first-plate{color:#ffd36b;font-weight:700}
+
+/* Owner playtest (Nov 8): map dialog = map, one-line key, then closed sections. */
+.cq-map-fold{border-top:1px solid #527082;margin:10px 0;padding-top:8px}
+.cq-map-fold summary{min-height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;cursor:pointer;font-weight:700;list-style:none;border:1px solid #5d7f91;border-radius:6px;background:#10283a;color:#f3ddb0}
+.cq-map-fold summary::-webkit-details-marker{display:none}
+.cq-map-fold summary::before{content:'▸';font-size:14px;color:#79dce8}
+.cq-map-fold[open] summary::before{content:'▾'}
+.cq-map-fold>section>h3:first-child{display:none}
+.cq-map-fold>section,.cq-map-fold>.cq-field-missions{border-top:0;margin:6px 0 0;padding-top:0}
+.cq-map-fold button{min-height:44px;white-space:normal;max-width:100%}
+.cq-map .cq-map-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:6px 2px 8px;font-size:12px;line-height:1.3}
+.cq-map .cq-key{white-space:nowrap}
+/* Owner playtest (Nov 8): hit feedback, shooter direction, low-hull route home. */
+.cq-hurt{position:absolute;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 0 0 rgba(255,30,40,0);transition:box-shadow .4s ease-out}
+.cq-hurt.on{box-shadow:inset 0 0 80px 22px rgba(255,30,40,.6);transition:none}
+.cq-threat{position:absolute;top:34%;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #ff4060;border-radius:6px;background:rgba(40,0,8,.84);color:#ffd5da;font:700 13px/1 sans-serif;letter-spacing:.5px;white-space:nowrap;pointer-events:none;z-index:6}
+.cq-threat[hidden]{display:none}
+.cq-threat-arrow{display:inline-block;color:#ff4060;font-size:18px;line-height:1}
+.cq .cq-low-hull{position:absolute;top:128px;left:14px;right:14px;max-width:360px;min-height:44px;padding:6px 10px;border:1px solid #ff4060;border-radius:6px;background:rgba(60,0,10,.88);color:#fff;font:700 13px/1.2 sans-serif;letter-spacing:.5px;pointer-events:auto;z-index:6;animation:cqLowPulse 1.1s ease-in-out infinite}
+.cq .cq-low-hull[hidden]{display:none}
+.cq-hull-critical .cq-base-goal{visibility:hidden}
+@keyframes cqLowPulse{50%{background:rgba(150,0,24,.92)}}
+.cq .cq-scan-access.cq-scan-pulse{border-color:#ffd36b;box-shadow:0 0 0 0 rgba(255,211,107,.7);animation:cqHint 1.6s ease-out infinite}
+@keyframes cqHint{70%{box-shadow:0 0 0 10px rgba(255,211,107,0)}100%{box-shadow:0 0 0 0 rgba(255,211,107,0)}}
+
+/* Session 5: the private base plot (js/conquest/plotview.js). The world canvas shows through the stage; top bar and the
+   bottom sheet are opaque. Phone-first: 44 px targets, one status column, closed sections for long lists. */
+.cq-world .cq-dialog.cq-plot{position:absolute;inset:0;max-width:none;width:auto;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:flex;flex-direction:column;z-index:30;overflow:hidden;transform:none}
+.cq-plot-top{display:flex;gap:8px;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 8px;background:linear-gradient(#070c15f2,#070c15cc);border-bottom:1px solid #22e6ff44}
+.cq-plot-title{flex:1;font-size:11px;letter-spacing:.06em;font-weight:700;color:#cdf6ff;line-height:1.3}
+.cq-plot-leave{flex:none;font-size:11px}
+.cq-plot-stage{position:relative;flex:1;min-height:140px;touch-action:none;cursor:crosshair}
+.cq-plot-canvas{position:absolute;inset:0;width:100%;height:100%}
+.cq-plot-rot{position:absolute;right:10px;top:10px;width:44px;height:44px;padding:0;font-size:20px;background:#0b1623cc}
+.cq-plot-coach{margin:0;padding:8px 12px;background:#2a1d08e6;border-top:1px solid #ffb34766;color:#ffd9a0;font-size:12px;font-weight:700}
+.cq-plot-msg{position:absolute;left:12px;right:12px;top:64px;margin:0;font-size:11px;font-weight:700;color:#ffd36b;text-shadow:0 1px 3px #000;pointer-events:none}
+.cq-plot-msg:empty{display:none}
+.cq-plot-sheet{max-height:46vh;overflow:auto;background:#070c15f2;border-top:1px solid #22e6ff55;padding:8px 12px max(10px,env(safe-area-inset-bottom));overscroll-behavior:contain}
+.cq-plot-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.cq-plot-tabs button{font-size:11px;padding:6px}.cq-plot-tabs button.on,.cq-plot-row button.on{background:#0f3a48;border-color:#22e6ff;color:#fff}
+.cq-plot-body{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.cq-plot-body small,.cq-plot-hint,.cq-plot-next,.cq-plot-res{margin:0;opacity:.85;line-height:1.35}
+.cq-plot-next{color:#9fd8ff}
+.cq-plot-row{display:flex;flex-wrap:wrap;gap:6px}.cq-plot-row button{flex:1 1 30%;font-size:11px}
+.cq-plot-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.cq-plot-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;font-size:11px}.cq-plot-card small{font-size:10px}
+.cq-plot-glow{border-color:#ffb347;box-shadow:0 0 0 2px #ffb34777}
+.cq-plot-primary{background:#0f3a48;border-color:#22e6ff}.cq-plot-danger{border-color:#ff304888;color:#ffb0b8}
+.cq-plot-job{display:flex;flex-direction:column;gap:3px;padding:6px 8px;border:1px solid #ffb34766;border-radius:8px;background:#1a1208cc}.cq-plot-job progress{width:100%;height:8px}
+.cq-plot-sel,.cq-plot-prod{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #2f4b5a;border-radius:8px;background:#0b1623cc}
+.cq-plot-result.breached{color:#ff7a85}.cq-plot-result.repelled,.cq-plot-result.held{color:#7dffb0}
+.cq-plot-sites{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#080e17e6}
+.cq-site-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px}.cq-site-card.on{border-color:#ffd36b;background:#2a1d08}
+.cq-plot-intro,.cq-plot-need{margin:0;font-size:12px;opacity:.9}
+.cq-plot-terminal{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.cq-dialog.cq-plot p{font-size:12px;line-height:1.35;color:#c9d6e2;margin:0}.cq-dialog.cq-plot .cq-plot-coach{color:#ffd9a0;padding:8px 12px}.cq-dialog.cq-plot .cq-plot-msg{color:#ffd36b;font-size:11px}.cq-dialog.cq-plot button{margin:0}
+.cq.cq-in-plot>*:not(.cq-plot):not(.cq-viewport){visibility:hidden!important}
+.cq-banner-prev canvas,.cq-plot-sheet>canvas{display:block;border:1px solid #2f4b5a;border-radius:6px;margin:4px 0}
+.cq-plot-row button[aria-label]{flex:0 0 44px;min-width:44px}
+.cq-plot-share{display:flex;flex-direction:column;gap:6px}.cq-plot-share-img{width:100%;max-width:360px;border-radius:8px;border:1px solid #2f4b5a}
+.cq-plot-dl{display:block;min-height:44px;line-height:44px;text-align:center;border:1px solid #566879;border-radius:6px;color:#dae8f3;text-decoration:none;font-size:12px}
+
+/* Session 5 Phase 3: Conquest Command hub. One hero, one status column, four actions. Static art paints first; the live 3D
+   hero fades in over it. */
+.cq.cq-command{background:#05070d;padding:0;display:flex;flex-direction:column;overflow-x:hidden}
+.cq-command:before,.cq-command:after{display:none}
+.cq-command .cq-top{position:absolute;z-index:3;top:max(10px,env(safe-area-inset-top));left:12px}
+.cq-hub-hero{position:relative;height:min(46vh,430px);min-height:280px;overflow:hidden;flex:none}
+.cq-hub-art{position:absolute;inset:0;background:#080e17 url('../js/assets/conquest/command-horizon.svg') center 30%/cover no-repeat}
+.cq-hub-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cq-hub-copy{position:absolute;left:16px;right:16px;bottom:14px;z-index:2;pointer-events:none;text-shadow:0 2px 12px #000}
+.cq-hub-copy h1{margin:2px 0;font-size:clamp(40px,12vw,64px);letter-spacing:.08em;color:#e8fbff}
+.cq-hub-copy .cq-premise{white-space:pre-line;margin:0;font-size:13px;color:#9fe8ff;letter-spacing:.12em}
+.cq-hub-copy .cq-kicker{margin:0;font-size:10px;letter-spacing:3px;color:#ffb347}
+.cq-hub-hero:after{content:'';position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,#05070d);pointer-events:none;z-index:1}
+.cq-hub-status{display:flex;flex-direction:column;gap:8px;padding:10px 14px 4px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+.cq-hub-card{border:1px solid #22e6ff33;border-radius:10px;padding:10px 12px;background:#0a1220e6}
+.cq-hub-card h3{margin:0 0 4px;font-size:10px;letter-spacing:.18em;color:#79dce8}
+.cq-hub-big{margin:0 0 4px;font-size:14px;font-weight:700;color:#e8f6ff}
+.cq-hub-card small{display:block;font-size:11px;color:#b3c4d3;line-height:1.35}
+.cq-hub-bar{width:100%;height:8px;margin:2px 0 4px}.cq-hub-meteor{color:#ffb347}.cq-hub-alert{color:#ff8a95!important;font-weight:700}
+.cq-hub-stale{font-size:10px;opacity:.7;text-align:center}
+.cq-hub-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 14px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+.cq-hub-actions .cq-hub-deploy{grid-column:1/-1;min-height:54px;font-size:16px;letter-spacing:.12em;background:#0f3a48;border-color:#22e6ff;color:#fff}
+.cq-hub-act{font-size:11px}.cq-hub-act[disabled]{opacity:.55}
+.cq-hub-foot{display:flex;justify-content:center;padding:2px 14px max(16px,env(safe-area-inset-bottom))}
+.cq-hub-art{z-index:0}.cq-hub-canvas{z-index:1}.cq-hub-hero{height:min(40vh,420px)}
+.cq-hub-copy{top:calc(max(10px,env(safe-area-inset-top)) + 52px);bottom:auto}

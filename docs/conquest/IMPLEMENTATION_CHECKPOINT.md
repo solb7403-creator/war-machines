@@ -1027,3 +1027,48 @@ Neither reviewer found a blocker or any way to mint or duplicate points or miner
 - **Process note:** the overnight run pushed `4f099be` at 05:35 Chicago time and ended its turn on a timer, so nothing woke it to see the red check. The release sat idle until 12:05. The "released"/"Shipped" wording above and in ROADMAP was written before the merge; it became true at `a3ee186`.
 
 **Next:** the owner's phone playtest of the frontier colony, minerals, Hull Plating and airdrop points (Safari + Telegram, HIGH and LOW). Then session 5 (base builder + Conquest Command hub + settler architecture) from docs/ROADMAP.md, on a new branch from `main`.
+
+## Checkpoint 24 — Session 5: base builder, Conquest Command hub, settler architecture (branch `claude/conquest-session-5`) — IN PROGRESS
+
+Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, release pre-approved). Branch created from `claude/conquest-playtest-session4-fixes` (5812698) merged with `main` 4add71f.
+
+### Phase 0 — owner playtest fixes + ore fix (DONE, pushed)
+- Playtest fixes from 5812698 folded in unchanged (simpler map, UNDER FIRE flash/haptic/arrow, low-hull route, gather under-fire text, shorter death screen, SCAN · FIND ORE pulse, post-scan ore route, first-entry tip).
+- New browser check (in `dev/tests/conquest-minerals-browser.py`): a simulated hit shows `.cq-threat` (UNDER FIRE · RAIDER · 40 m) and `.cq-hurt.on`; a <25% hull shows `.cq-low-hull` and its tap sets the Refuge route. Captures `docs/economy/phase3/under-fire-390.png`, `low-hull-390.png`.
+- Ore fix, veins run dry: `worker/src/conquest-veins.js` (server-only `s.lodes`; public `s.veins` = scanned veins only), `MN_VEIN` in `js/rules.js`, `ConquestWorld.knownOre()` for HUD/MAP/3D. 16 fields, 17 live veins (Ferrite 7 × 12, Ilmenite 4 × 6, Armalcolite 3 × 5, Tranquillityite 3 × 3); new vein after 6 h / 12 h / 2 d / 5 d at another spot in the sector, hidden until SCAN. Two spots added (il-19, tq-06). Migration keeps the Starter Vein flag and pre-reveals ready old finds.
+- Economy: `dev/tools/economy-model.mjs` models veins + sessions (and drops the never-built Base Yield minerals); `dev/tests/conquest-vein-economy.mjs` proves model = live rules and the owner's targets (regular 3 d / 10 d / 4.3 wk / 2.6 mo; dedicated 1.8–3.0×; 6 h grinder < 6×). Spec §5.2, §5.3, §7.2 and the wiki updated.
+- Tests: all 76 node suites PASS locally (conquest-check list + regression.sh + vein economy); `conquest-minerals.mjs` 55 checks; `conquest-minerals-browser.py` and `conquest-onboarding.py` PASS (Chromium 390). Local Playwright needs the container Chromium (`executable_path`), CI is unchanged.
+
+### Phase 1 — base plot, site choice, build system (DONE, pushed `edfea7c`)
+- Shared rules `js/conquest/plot.js` (bundled into the Worker sim as `CONQUEST.Plot`), Worker actions `worker/src/conquest-plot.js` (`plot-site/build/upgrade/move/remove/wall/collect/drill/banner/theme`), plot sync inside `campaign()` derives the old `base.tier`/`base.modules` so every old formula is unchanged. Old `upgrade-base`/`base-module` drive the CC and module buildings on the builder.
+- Base stores: eco action `bstore` (`ecoBaseStore`, wallet → `S.bmn`, monotonic); Conquest reads `bmn` for mineral costs and counts `plot.mnSpent`.
+- Phone: `js/conquest/plotview.js` (ENTER BASE at the Command Gate; world HUD hidden; site picker; guided steps; build/walls/drill tabs; 2D canvas fallback), Command Gate arch in `style.js`.
+- Tests: `conquest-plot.mjs` (58), `conquest-base-progression.mjs` (CC1 51 min, CC2 day 3, CC5 day 7, CC9 day 21, CC10 day 31; dedicated 2.9×), `conquest-base-builder.py` (390 journey + CC10 budget + 2D). Updated `conquest-base`, `conquest-recall`, `conquest-long-progression` to the builder semantics. Full node suite 78/78.
+- Render budget (390 portrait, Chromium SwiftShader): guided CC1 plot 13–14 draws / 14–16k tris; full CC10 fixture (33 buildings, 100 walls) 55 draws / 33–47k tris; programs 16 at HIGH and LOW (no new programs: the plot scene uses the style kit with the world's light counts).
+
+### Phase 2 — personal and social (DONE)
+- Banner designer (4 shapes, 10 colours, 8 emblems) on the base and on the tank (`cq-tank-banner`), base theme (lights, finish, 6 decorations), all free.
+- `worker/src/conquest-visit.js`: public snapshot `cqbase/<pid>` (layout, site, CC, Command Power, banner, theme only) published after verified plot changes and on session open; `cqtop` (top 20, CAS); `cqweek/<week>` Base of the Week = largest verified weekly gain; `/api/conquest/visit` read-only (top 20, squad = recruits + referrer, Base of the Week). `wtest/conquest-visit.mjs` (11).
+- Share my base: 720×900 card (map, banner, CC, Command Power, invite link) → Telegram share / Web Share / download.
+- Base store: six items (themes, wall skin, banner, decoration, second builder, speed-up) listed and disabled: checkout off until payments are certified; never points or rare+ minerals.
+
+### Phase 3 — Conquest Command hub (DONE)
+- `js/conquest/hub.js`: hero (static art first, live 3D fades in: your actual tank from the M3 kit, your base, Earth on the horizon, the magenta warfront), one status column (warfront, your base + Daily Base Yield meter + builder timer + base assault alert, live events: Meteor Strike and invasions), four actions (ENTER CONQUEST, FAST TRAVEL, MY BASE → fast travel home and the plot, RESEARCH disabled until Session 6). Cached status paints first.
+- `conquest-hub-browser.py`: first paint in the tap task (~1 ms DOM), 390 and 1280; hero 17–33 draws, ≤ 12 programs (own renderer, disposed on leaving).
+
+### Phase 4 — settler architecture, terraform life, region map (DONE)
+- `style.js` colonyWorld: the civilian lots are rebuilt with the settler kit inside their collision footprints (prefab dome homes with timber porches, doors, chimney smoke, rooftop gardens, laundry lines and string lights; stacked habitat modules with salvaged patches, timber balconies, murals and rooftop water towers; market workshops with striped awnings, crates, barrels, lanterns and painted signs; workshop barns with carts; the meeting hall by the market square; a lattice water tower; rusted and faded paint throughout). Military wall, watchtowers and gates keep the cyan Neon Frontline. Main mesh per district + distance-culled detail mesh (the LOD) as before.
+- Life: engineered livestock in fenced pens in a third of the fields, bird flocks over the atmosphere pylons, hoppers among the bio-flora, settlers on UTC daily routines (home → work → market → work → square → home); all instanced.
+- Region map: terraformed zones (soft green from the pylons), fields, paved roads (amber) and dirt tracks (dashed), settler lots (amber) vs military (cyan); zoom-only labels SETTLER TOWN / FARMS / FRONTIER WALL · MILITARY; one-line key (Parasites · Settlers · Military). `conquest-onboarding.py` key assertion updated.
+- Budget (390 portrait, SwiftShader): HIGH core town 76 draws / 194k tris (Session 4: 72 / 180k), farm ring 64 / 155k (50 / 118k), frontier wall 81 / 218k; LOW 48–68 draws / 110–149k tris; programs 16 everywhere; 2D fallback renders. Captures `docs/economy/colony/*-390-{high,low,2d}.png`, stats `stats-{high,low,2d}.json`.
+
+### Independent review (1 read-only agent, economy/security + gameplay/performance in one brief; given only the branch, head `fad694c`, the brief and this checkpoint)
+No blocker and no way to mint or duplicate CP, materials, minerals, points, base stores, production or plot levels. It changed the result: every valid finding was fixed and tested.
+- MAJOR: the plot sheet re-rendered every second (WebKit taps do not focus), collapsing open sections and losing unsaved banner picks. Fixed: full render only on a state change, `tickUi()` updates the live numbers, open sections and scroll are kept.
+- MAJOR: a theme saved with no decorations broke the editor after Firebase dropped the empty list. Fixed in `plotSync` and the designer (test).
+- MAJOR: geometry leaks (hologram, walls, terrain on visits, instanced buffers on close). Fixed with `wipe()` disposal; visits no longer rebuild unchanged terrain.
+- MINOR fixed: a pending module migrated into a free extra level (test); Base of the Week counted a first publish as gain and let the holder lower its own gain (tests); visit route rate-limited (30/min), no last-active time, pilots under review left off the lists (tests); prototype keys refused as unknown (test); the plot auto-opened far from the gate on a stale notice; hub FAST TRAVEL opened a collapsed list; hub status no longer a live region, coach text only on change; CC10 mineral shortfall can be moved from the selected card; Refinery copy no longer claims to consume wallet salvage; cheaper per-frame change checks; hub callbacks bound to their own instance; publish skips the rankings when power is unchanged and runs them in parallel.
+- Not changed (documented): the client drill replay is synchronous (about 100 ms worst case in node at CC10; once per drill).
+
+### Next
+Release (pre-approved): bump, PR, CI green, merge, deploy-worker, verify `/pvp/health`, `version.json` and Pages.

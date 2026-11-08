@@ -13,6 +13,7 @@ import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction} from "./conquest.js";
+import {conquestVisit} from "./conquest-visit.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
 const GAME_URL = "https://solb7403-creator.github.io/war-machines/";
@@ -652,6 +653,7 @@ const ROUTES = {
   "/api/conquest/session": conquestSession,
   "/api/conquest/input": conquestInput,
   "/api/conquest/action": conquestAction,
+  "/api/conquest/visit": conquestVisit,
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
   "/api/match/start": async (env, a) => matchStart(env, a.b, a.user, a.pid, Date.now(), a.ip),
@@ -696,7 +698,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)

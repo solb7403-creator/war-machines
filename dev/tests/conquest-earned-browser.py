@@ -51,8 +51,9 @@ async def main():
     for k in held:await page.keyboard.up(k)
     await page.wait_for_timeout(1200)
    await go(1080,1140);await page.screenshot(path=str(OUT/'chromium-earned-base-exited.png'));await go(1080,1160)
-   await page.locator('#cq-base-access').tap();assert await page.get_by_text('REACTOR 1/3',exact=False).count()==1
-   await page.screenshot(path=str(OUT/'chromium-earned-reactor-retained.png'));await page.get_by_role('button',name='CLOSE BASE',exact=True).click()
+   await page.locator('#cq-base-access').tap();await page.wait_for_selector('.cq-plot-tabs')   # Session 5: the plot shows the earned Reactor as a building
+   assert await page.evaluate('Object.values(Conquest.view.authority.state.plot.b).some(b=>b.t==="reactor"&&b.l===1)&&Conquest.view.authority.state.base.modules.reactor===1')
+   await page.screenshot(path=str(OUT/'chromium-earned-reactor-retained.png'));await page.locator('.cq-plot-leave').click()
    await enter();assert await page.evaluate('Conquest.view.authority.state.base.modules.reactor===1&&Conquest.view.authority.state.base.tier===1');await page.get_by_role('button',name='OPEN MAP',exact=True).click();await page.wait_for_function('document.querySelector(".cq-map canvas")');await page.screenshot(path=str(OUT/'chromium-earned-frontline.png'));await page.locator('.cq-map canvas').scroll_into_view_if_needed();await page.screenshot(path=str(OUT/'chromium-earned-frontline-terrain.png'));assert not errors,errors
    report={k:v for k,v in earned.items() if k!='final'};report['retainedClient']={'engine':'chromium','viewport':'390x844','realWorkerAndAuth':True,'resourceFixture':False,'nativeKeyboardBaseExitAndEntry':True,'browserReload':True,'physicalDeviceVerified':False,'errors':errors}
    (OUT/'earned-journey.json').write_text(json.dumps(report,indent=2));await browser.close();print('PASS earned starter save: real Worker/auth, physical base exit/entry, Reactor and browser reload retained')

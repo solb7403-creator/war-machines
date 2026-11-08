@@ -1,0 +1,77 @@
+{
+ "scope": "Modeled settlement only (real reward/bank/plot functions, Worker clock, scripted 90 s sorties, half the CP to other sinks). Not a human playtest.",
+ "regular": {
+  "profile": "Regular, Conquest-focused (45 min/day)",
+  "hit": {
+   "CC1": {
+    "day": 1.75,
+    "playMin": 51
+   },
+   "CC2": {
+    "day": 2.75,
+    "playMin": 96
+   },
+   "CC3": {
+    "day": 3.76,
+    "playMin": 142.5
+   },
+   "CC5": {
+    "day": 7,
+    "playMin": 315
+   },
+   "CC7": {
+    "day": 15,
+    "playMin": 675
+   },
+   "CC9": {
+    "day": 20.75,
+    "playMin": 900
+   },
+   "CC10": {
+    "day": 30.75,
+    "playMin": 1350
+   }
+  },
+  "finalCC": 10,
+  "buildings": "cc10 storage4 refinery5 cannon5 cannon5 reactor4 cannon5 cannon5 biodome4 hangar4 cannon5 helium3 radar3 shield3 lab3 cannon5 uplink3 trophy3 reactor4 refinery5 shield3 biodome4 helium3",
+  "power": 4080,
+  "otherSinksCP": 82396
+ },
+ "dedicated": {
+  "profile": "Dedicated (150 min/day in two sessions)",
+  "hit": {
+   "CC1": {
+    "day": 0.54,
+    "playMin": 58.5
+   },
+   "CC2": {
+    "day": 0.81,
+    "playMin": 100.5
+   },
+   "CC3": {
+    "day": 1.51,
+    "playMin": 159
+   },
+   "CC5": {
+    "day": 2.83,
+    "playMin": 423
+   },
+   "CC7": {
+    "day": 6,
+    "playMin": 900
+   },
+   "CC9": {
+    "day": 9.5,
+    "playMin": 1350
+   },
+   "CC10": {
+    "day": 10.5,
+    "playMin": 1500
+   }
+  },
+  "finalCC": 10,
+  "buildings": "cc10 storage4 refinery5 cannon5 cannon5 reactor4 cannon4 cannon4 biodome4 hangar3 cannon4 helium3 radar3 shield3 lab3 cannon4 uplink3 trophy3 reactor4 refinery5 shield3 biodome4 helium3",
+  "power": 3778,
+  "otherSinksCP": 88179
+ }
+}

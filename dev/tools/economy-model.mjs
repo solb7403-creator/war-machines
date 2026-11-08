@@ -47,7 +47,9 @@ export const P = {
   yield: {
     pts: [0, 1000, 1400, 1800, 2200, 2600],
     alloy: [0, 6, 9, 12, 15, 18], biomass: [0, 4, 6, 8, 10, 12], helium: [0, 1, 1, 2, 2, 3],
-    fe: [0, 6, 8, 10, 12, 14], il: [0, 0, 1, 1, 2, 2],
+    // Base Yield minerals were modeled in Session 4 but never approved or built (RESOURCE_ECONOMY.md §10); Session 5 models
+    // the code as it is: no minerals in the Daily Base Yield (the CRATER RIM plot's rim deposits add 3 Ferrite a day, not modeled).
+    fe: [0, 0, 0, 0, 0, 0], il: [0, 0, 0, 0, 0, 0],
   },
   minerals: [
     { id: 'fe', name: 'Ferrite Regolith', rarity: 'common' },
@@ -57,11 +59,16 @@ export const P = {
     { id: 'se', name: 'Selenite Glass', rarity: 'epic' },
     { id: 'mh', name: 'Moonheart', rarity: 'legendary' },
   ],
-  deposits: {   // the populated war region (6 sectors). yield: average units a harvest; channel: seconds held in place
-    fe: { nodes: 36, yield: 3, channel: 5, respawnMin: 20, where: 'open ground within 40 m of routes, every sector' },
-    il: { nodes: 18, yield: 2, channel: 8, respawnMin: 45, where: 'basalt flows off the routes: Helium Basin, Western Salvage Reach, Ash approaches' },
-    ar: { nodes: 10, yield: 1.5, channel: 12, respawnMin: 180, where: 'crater walls and Parasite territory: Ash Redoubt, Refuge Ridge, Oxygen Spear outer walls' },
-    tq: { nodes: 5, yield: 1, channel: 16, respawnMin: 480, where: 'contested sites: raid-site perimeters and hive edges (VETERAN zones)', seVein: 0.03 },
+  // Mineral veins (owner ore fix, Nov 8 2026: veins run dry, new ones appear). Each (tier, sector) field keeps `veins` live
+  // veins at authored candidate spots. A vein holds `cap` units, mined in a few HOLD GATHER pulls (`yield` average units a
+  // pull, `channel` seconds held); then it is EXHAUSTED for that pilot and a new vein of that tier surfaces at another spot in
+  // the same sector `regrowH` hours later (per pilot, server-seeded, hidden until a SCAN). Supply a day therefore caps
+  // gathering: veins x cap x min(sessions, 24 / regrowH) (one play session a day can only empty each vein once).
+  deposits: {
+    fe: { spots: 36, veins: 7, cap: 12, yield: 3, channel: 5, regrowH: 6, where: 'open ground within 40 m of routes, every sector (2 live veins in the Refuge Corridor, 1 elsewhere)' },
+    il: { spots: 19, veins: 4, cap: 6, yield: 2, channel: 8, regrowH: 12, where: 'basalt flows off the routes: Helium Basin, Western Salvage Reach, Ash approaches, Oxygen Spear' },
+    ar: { spots: 10, veins: 3, cap: 5, yield: 1.5, channel: 12, regrowH: 48, where: 'crater walls and Parasite territory: Ash Redoubt, Refuge Ridge, Oxygen Spear outer walls' },
+    tq: { spots: 6, veins: 3, cap: 3, yield: 1, channel: 16, regrowH: 120, where: 'contested sites: raid-site perimeters and hive edges (VETERAN zones)', seVein: 0.03 },
   },
   starterVein: 35,              // one-time guided Ferrite deposit beside the Refuge (first-session hook)
   opMinerals: {                 // minerals in an operation's reward cache (victory only)
@@ -148,10 +155,11 @@ const reference = {
 // 4. Minerals by player profile, day by day, with greedy fabrication (lowest slot first). Assumptions are explicit.
 // ===================================================================================================================
 const PROFILES = {
-  conquest: { label: 'Regular, Conquest-focused', cq: 45, ar: 0, base: [2, 4, 7, 12, 20] },
-  mixed: { label: 'Regular, mixed (30 Conquest + 15 Arcade)', cq: 30, ar: 15, base: [3, 6, 10, 17, 28] },
-  arcade: { label: 'Regular, Arcade/PvP only', cq: 0, ar: 45, base: null },
-  dedicated: { label: 'Dedicated, Conquest-focused', cq: 150, ar: 0, base: [1, 1.5, 2.5, 4, 6] },
+  conquest: { label: 'Regular, Conquest-focused', cq: 45, ar: 0, base: [2, 4, 7, 12, 20], sessions: 1 },
+  mixed: { label: 'Regular, mixed (30 Conquest + 15 Arcade)', cq: 30, ar: 15, base: [3, 6, 10, 17, 28], sessions: 1 },
+  arcade: { label: 'Regular, Arcade/PvP only', cq: 0, ar: 45, base: null, sessions: 1 },
+  dedicated: { label: 'Dedicated, Conquest-focused', cq: 150, ar: 0, base: [1, 1.5, 2.5, 4, 6], sessions: 2 },
+  grinder: { label: 'Grinder (6 h a day in 3 sessions; vein cap check)', cq: 360, ar: 0, base: [1, 1.5, 2.5, 4, 6], sessions: 3 },
 };
 const ramp = (d, from, full) => d < from ? 0 : d >= full ? 1 : 0.5;   // access to harder zones as gear improves
 const baseTier = (pr, d) => pr.base ? pr.base.filter(x => d >= x).length : 0;
@@ -165,7 +173,8 @@ function dayIncome(pr, d) {
     const g = 0.25 * m, sh = { fe: 0.45, il: 0.30, ar: 0.17 * aAr, tq: 0.08 * aTq }, tot = Object.values(sh).reduce((a, b) => a + b, 0);
     for (const k of ['fe', 'il', 'ar', 'tq']) {
       const D = P.deposits[k], gid = 'gather_' + k, minutes = g * sh[k] / tot;
-      const harvests = Math.min(minutes / A[gid].par, D.nodes * Math.max(1, m / D.respawnMin));
+      const supply = D.veins * D.cap * (D.regrowH <= 24 ? Math.min(pr.sessions || 1, 24 / D.regrowH) : 24 / D.regrowH) / D.yield;   // pulls a day the veins hold
+      const harvests = Math.min(minutes / A[gid].par, supply);
       inc[k] += harvests * D.yield; if (k === 'tq') inc.se += harvests * D.seVein;
     }
     // operations: 45% of Conquest time
@@ -246,6 +255,8 @@ const firstBaseMinute = Math.round(hour.at(-1).minute + Math.max(0, 2550 - hour.
 // Output
 // ===================================================================================================================
 const r0 = x => Math.round(x), pct = x => (x * 100).toFixed(1) + '%', daysTxt = d => d === undefined ? '2.5+ yr' : d < 14 ? d + ' d' : d < 60 ? (d / 7).toFixed(1) + ' wk' : (d / 30.4).toFixed(1) + ' mo';
+export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute };
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 const out = [];
 out.push('## Points a minute (base points = airdrop points), standard pilot\n');
 out.push('| League | Kit settled there | Arcade (measured) | Conquest, no base | Conquest, Base III | Conquest, Base V |');
@@ -270,9 +281,9 @@ out.push('\n## First hour (new pilot, stock kit, Rookie)\n');
 out.push('| Minute | What happens | Points | CP | Ferrite | Ilmenite | Armalcolite | Plates |'); out.push('|---:|---|---:|---:|---:|---:|---:|---:|');
 for (const h of hour) out.push(`| ${h.minute} | ${h.what} | ${h.pts} | ${h.cp} | ${h.fe} | ${h.il} | ${h.ar} | ${h.plates} |`);
 out.push(`\nCommand Base I (2,550 CP binds): about minute ${firstBaseMinute} at the last segment's CP rate (modeled).`);
-console.log(out.join('\n'));
+if (isMain) console.log(out.join('\n'));
 
-if (process.argv.includes('--write')) {
+if (isMain && process.argv.includes('--write')) {
   const model = {
     generatedBy: 'dev/tools/economy-model.mjs', status: 'PROPOSAL for owner approval (Phase 0); modeled, not playtested',
     proposal: P, kitModel: KIT_MODEL, arcadePpm, conquestPpm, settled: SETTLED, platingPower, reference, timelines, dailyIncome, firstHour: hour, firstBaseMinute,

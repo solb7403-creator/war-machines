@@ -5,33 +5,33 @@
  "renderer": "Chromium SwiftShader (relative only)",
  "shots": {
   "core-town": {
-   "draws": 72,
-   "tris": 179532,
+   "draws": 76,
+   "tris": 193832,
    "programs": 16
   },
   "farm-ring": {
-   "draws": 50,
-   "tris": 117888,
+   "draws": 64,
+   "tris": 154762,
    "programs": 16
   },
   "frontier-wall": {
-   "draws": 75,
-   "tris": 203454,
+   "draws": 81,
+   "tris": 217796,
    "programs": 16
   },
   "river-bridge": {
-   "draws": 55,
-   "tris": 190280,
+   "draws": 59,
+   "tris": 205732,
    "programs": 16
   },
   "wild-meadow": {
-   "draws": 62,
-   "tris": 178810,
+   "draws": 59,
+   "tris": 183774,
    "programs": 16
   },
   "boundary-crossing": {
-   "draws": 78,
-   "tris": 185284,
+   "draws": 83,
+   "tris": 201492,
    "programs": 16
   }
  },

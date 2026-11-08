@@ -94,7 +94,7 @@ async def main():
    orbs=await page.evaluate('Conquest.view.yieldMeter.userData.n');goal=await page.locator('.cq-base-goal').text_content();print('in-world meter lit orbs',orbs,'| HUD',goal,flush=True)
    assert 'YIELD 50%' in goal,goal
    await page.screenshot(path=str(OUT/'base-meter-world-390.png'))
-   await tap('#cq-base-access');await page.wait_for_selector('.cq-yield')
+   await tap('#cq-base-access');await page.wait_for_selector('.cq-plot-tabs');await page.locator('summary',has_text='BASE TERMINAL').click();await page.wait_for_selector('.cq-yield')   # Session 5: the yield lives in the plot's BASE TERMINAL
    head=await page.locator('.cq-yield h3').text_content();val=await page.locator('.cq-yield-bar').first.evaluate('e=>e.value');print('terminal',head,val,flush=True)
    assert head.startswith('DAILY BASE YIELD · 50%') and abs(val-.5)<.01,(head,val)
    await page.locator('.cq-yield').scroll_into_view_if_needed();await page.screenshot(path=str(OUT/'base-yield-terminal-390.png'))
@@ -104,7 +104,7 @@ async def main():
    notice=await page.evaluate('Conquest.view.authority.state.notice');cp1=await page.evaluate('Conquest.view.authority.state.ledger.cp')
    print('collected',notice,flush=True)
    assert cp1-cp0==notice['cp']>0 and notice['pointsHeld'],'50% of the CP banked; the points part is held until an operation today'
-   await page.get_by_role('button',name='CLOSE BASE',exact=True).click()   # the 3D view pauses while a dialog is open (existing behaviour)
+   await page.locator('.cq-plot-leave').click()   # the 3D view pauses while the plot (a dialog) is open (existing behaviour)
    await page.wait_for_function("Conquest.view.yieldMeter.userData.n===0&&/YIELD 0%/.test(document.querySelector('.cq-base-goal').textContent)",timeout=10000)
    overflow=await page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
    assert not overflow,'no horizontal overflow at 390'
