@@ -953,7 +953,7 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 
 | Quality | Draws | Triangles | Programs | Page errors |
 |---|---|---|---|---|
-| HIGH | 50–78 | 119k–205k | 16 (budget ≤ 16) | 0 |
+| HIGH | 50–79 | 119k–205k | 16 (budget ≤ 16) | 0 |
 | LOW | 47–68 | 104k–142k | — | 0 |
 
 - Journey evidence regenerated on the final code: `docs/economy/phase1`, `phase2`, `phase3`.
