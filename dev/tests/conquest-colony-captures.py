@@ -12,11 +12,11 @@ import os
 def look(fx,fz):  # camera behind the hull looking along (fx,fz)
  import math;return math.atan2(-fx,-fz)
 SHOTS=[  # name, spawn, camera yaw (camera behind the hull looking along a direction), pitch, distance
- ('core-town',[1096,1128],look(.92,-.38),.36,58),
- ('farm-ring',[942,1096],look(-1,.35),.4,62),
- ('frontier-wall',[1004,1076],look(.15,-1),.3,42),
- ('river-bridge',[953,1186],look(-.85,.5),.38,40),
- ('wild-meadow',[990,1300],look(-.6,-.8),.26,40),
+ ('core-town',[1096,1128],look(.92,-.38),.28,46),
+ ('farm-ring',[946,1102],look(-1,.1),.3,40),
+ ('frontier-wall',[1006,1098],look(-.2,-1),.3,40),
+ ('river-bridge',[953,1186],look(-.85,.5),.3,36),
+ ('wild-meadow',[990,1300],look(-.6,-.8),.2,34),
  ('boundary-crossing',[806,1100],look(1,.12),.2,30),
 ]
 ONLY=os.environ.get('ONLY');SHOTS=[s for s in SHOTS if not ONLY or s[0] in ONLY.split(',')]

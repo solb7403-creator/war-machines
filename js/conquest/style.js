@@ -75,7 +75,7 @@ void main(){vW=uv*24.;vN=normal;vC=color;vY=position.y;vec4 mvPosition=modelView
 }`;
 // Regolith detail comes from one tileable texture (R crater height, G/B its gradient, A value noise) sampled at 2-3
 // rotated scales: ~3 fetches instead of hundreds of hash ops per pixel (measured ~5x cheaper in software GL).
-const TERRAIN_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uRimCol,uAmbUp,uAmbDn,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunW;uniform float uTime,uHigh;uniform sampler2D uDetail;
+const TERRAIN_FS=`uniform vec3 uSunDir,uSunCol,uRimDir,uRimCol,uAmbUp,uAmbDn,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunW;uniform float uTime,uHigh;uniform sampler2D uDetail,uShadowMap;uniform vec4 uAtmoBox;
 varying vec2 vW;varying vec3 vN;varying vec3 vC;varying float vY;varying float vD;varying vec4 vSite;varying float vAtm;
 #include <common>
 #include <fog_pars_fragment>
@@ -121,14 +121,14 @@ void main(){vec3 c=vC;float terra=clamp((c.g-max(c.r,c.b)+.04)/.24,0.,1.);float 
  float blight=vSite.w;
  if(blight>0.){float vein=1.-smoothstep(0.,.08,abs(va*2.-1.));if(hi)vein+=(1.-smoothstep(0.,.06,abs(vb*2.-1.)))*.5;
   rego=mix(rego,rego*vec3(.75,.45,.85),blight);em+=vec3(1.,.08,.62)*vein*blight*.5*(.7+.3*sin(uTime*2.3-dot(vW,vec2(.05))));}
- float at=vAtm,ndl=max(dot(N,normalize(mix(uSunDir,uDaySunW,at))),0.);vec3 light=mix(uSunCol,uDaySun,at)*ndl+mix(mix(uAmbDn,uDayAmbDn,at),mix(uAmbUp,uDayAmbUp,at),N.y*.5+.5)+uRimCol*max(dot(N,uRimDir),0.)*.7*(1.-at);
+ float at=vAtm,ndl=max(dot(N,normalize(mix(uSunDir,uDaySunW,at))),0.)*(1.-.88*texture2D(uShadowMap,(vW-uAtmoBox.xy)*uAtmoBox.zw).r*at);vec3 light=mix(uSunCol,uDaySun,at)*ndl+mix(mix(uAmbDn,uDayAmbDn,at),mix(uAmbUp,uDayAmbUp,at),N.y*.5+.5)+uRimCol*max(dot(N,uRimDir),0.)*.7*(1.-at);
  vec3 col=rego*light+em+uRimCol*min(rim,1.)*.03;if(hi)col+=(h12(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(col,1.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 #include <fog_fragment>
 }`;
-const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin;uniform vec3 uRimCol;uniform float uHigh;uniform sampler2D uAtmoMap;uniform vec4 uAtmoBox;
-varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;
+const SOLID_VS=`attribute vec4 aCol;uniform vec4 uSite[8];uniform vec2 uOrigin;uniform vec3 uRimCol;uniform float uHigh;uniform sampler2D uAtmoMap,uShadowMap;uniform vec4 uAtmoBox;
+varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;
 #include <common>
 #include <fog_pars_vertex>
 float hv(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
@@ -142,17 +142,17 @@ void main(){
 #ifdef USE_INSTANCING
  wp=instanceMatrix*wp;vec2 io=(modelMatrix*vec4(instanceMatrix[3].xyz,1.)).xz+uOrigin;vCol.rgb*=.75+.5*hv(floor(io*4.));
 #endif
- wp=modelMatrix*wp;vWP=wp.xyz;vec3 rc=uRimCol*2.2;vAtm=texture2D(uAtmoMap,(wp.xz+uOrigin-uAtmoBox.xy)*uAtmoBox.zw).r;
+ wp=modelMatrix*wp;vWP=wp.xyz;vec3 rc=uRimCol*2.2;vec2 uvA=(wp.xz+uOrigin-uAtmoBox.xy)*uAtmoBox.zw;vAtm=texture2D(uAtmoMap,uvA).r;vShd=texture2D(uShadowMap,uvA).r*vAtm;
  // HIGH tints each vertex's rim by the nearest friendly / Parasite site; LOW keeps the neutral rim (no per-vertex loop).
  if(uHigh>.5){vec2 w=wp.xz+uOrigin;float best=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}}
  vRim=rc;}`;
 const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV;uniform float uTime,uGlow,uHigh;
-varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;
+varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;
 #include <common>
 #include <fog_pars_fragment>
 void main(){vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light directions, set once per frame
  float at=vAtm;L=normalize(mix(L,uDaySunV,at));vec3 base=vCol.rgb;float ndl=max(dot(N,L),0.);vec3 sunC=mix(uSunCol,uDaySun,at),aU=mix(uAmbUp,uDayAmbUp,at),aD=mix(uAmbDn,uDayAmbDn,at);
- vec3 lit=base*(sunC*ndl+mix(aD,aU,dot(N,UP)*.5+.5));float rl=max(dot(N,R),0.)*(1.-.7*at);lit+=base*vRim*rl*.5;
+ vec3 lit=base*(sunC*ndl*(1.-.8*vShd)+mix(aD,aU,dot(N,UP)*.5+.5));float rl=max(dot(N,R),0.)*(1.-.7*at);lit+=base*vRim*rl*.5;
  if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=mix(vRim,vec3(.55,.7,.9),at)*fr*(.25+.75*rl)*(.45-.3*at);vec3 H=normalize(L+V);lit+=sunC*pow(max(dot(N,H),0.),56.)*.16;}
  float a=vCol.a,em=clamp(a>1.?a-1.:a,0.,1.);float pulse=a>1.?.5+.5*sin(uTime*3.+dot(vWP,vec3(.37,.61,.23))):1.;
  vec3 col=mix(lit,base*uGlow*(.45+.55*pulse),em);gl_FragColor=vec4(col,1.);
@@ -221,7 +221,7 @@ void main(){vUv=uv;vec4 wp=modelMatrix*vec4(position,1.);vWP=wp.xyz;gl_Position=
 const VEIL_FS=`uniform float uTime,uAtmo,uHigh;varying vec2 vUv;varying vec3 vWP;
 float hexL(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r)-h;vec2 b=mod(p-h,r)-h;vec2 g=dot(a,a)<dot(b,b)?a:b;vec2 q=abs(g);return .5-max(dot(q,vec2(.5,.8660254)),q.x);}
 void main(){vec3 V=normalize(cameraPosition-vWP);float y=vUv.y,base=exp(-y*3.)*.9+exp(-y*.8)*.4+exp(-y*60.)*1.5,band=.5+.5*sin(vUv.x*.21+y*9.-uTime*1.3),sh=.6+.4*sin(vUv.x*.9-uTime*2.1+y*14.);
- float hx=uHigh>.5?(1.-smoothstep(0.,.04,hexL(vec2(vUv.x*.25,y*14.))))*.18:0.;float graz=1.-abs(V.y)*.5;float a=(base*(.55+.45*band)*sh+hx*exp(-y*2.))*graz*mix(1.1,.8,uAtmo)*smoothstep(1.,.7,y);
+ float hx=uHigh>.5?(1.-smoothstep(0.,.04,hexL(vec2(vUv.x*.25,y*14.))))*.18:0.;float graz=1.-abs(V.y)*.5;float a=(base*(.55+.45*band)*sh+hx*exp(-y*2.))*graz*mix(1.,.14,uAtmo)*smoothstep(1.,.55,y);
  vec3 c=mix(vec3(.35,.7,1.),vec3(.75,.9,1.),band)*a*.42;gl_FragColor=vec4(c,1.);}`;   // additive (SRC_ALPHA, ONE): alpha 1 adds c
 // Energy shell: additive fresnel rim + moving hex scan, transparent, never writes depth.
 const SHIELD_VS=`varying vec3 vN;varying vec3 vV;varying vec3 vP;
@@ -319,7 +319,21 @@ function create(T,opts={}){
  // daylight with a blue-sky ambient; outside stays the black-skied grey Moon. uAtmo is the camera's own factor (sky, fog, veil).
  const AB=[600,860,1540,1560],atmoTex=(()=>{const N=high?128:96,d=new Uint8Array(N*N*4);for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=AB[0]+(i+.5)/N*(AB[2]-AB[0]),z=AB[1]+(j+.5)/N*(AB[3]-AB[1]),t=W.terraformAt?W.terraformAt(x,z):0,v=Math.round(255*Math.min(1,Math.max(0,(t-.03)/.13)));d.set([v,v,v,255],(j*N+i)*4);}
   const tx=new T.DataTexture(d,N,N);tx.magFilter=tx.minFilter=T.LinearFilter;tx.generateMipmaps=false;tx.needsUpdate=true;return tx;})();
- Object.assign(U,{uAtmo:{value:0},uAtmoMap:{value:atmoTex},uAtmoBox:{value:new T.Vector4(AB[0],AB[1],1/(AB[2]-AB[0]),1/(AB[3]-AB[1]))},uSunW:{value:sunDir},
+ // Baked long shadows for the low frontier sun: every static caster (colony buildings, walls, towers, Refuge pods, hives,
+ // forest trees) is swept along the sun direction into a ground shadow texture once (no shadow-map pass per frame). Terrain
+ // darkens under it; hulls and buildings sampling it per vertex dim as they pass through. Moving units cast nothing.
+ const shadowTex=(()=>{const NX=high?512:256,NZ=high?384:192,d=new Uint8Array(NX*NZ*4),sx=(AB[2]-AB[0])/NX,sz=(AB[3]-AB[1])/NZ,hd=Math.hypot(daySunDir.x,daySunDir.z),dx=-daySunDir.x/hd,dz=-daySunDir.z/hd,cot=hd/daySunDir.y,v=new Float32Array(NX*NZ);
+  const splat=(x,z,k)=>{const i=Math.floor((x-AB[0])/sx),j=Math.floor((z-AB[1])/sz);if(i<0||j<0||i>=NX||j>=NZ)return;const q=j*NX+i;if(k>v[q])v[q]=k;};
+  const cast=(pts,h,own)=>{const L=Math.min(70,h*cot),st=Math.min(sx,sz);for(const [x,z] of pts)for(let t=0;t<=L;t+=st){const px=x+dx*t,pz=z+dz*t;if(own&&own(px,pz))continue;splat(px,pz,.92-.35*t/Math.max(L,1));}};   // never on the caster's own footprint
+  const rect=(x,z,w,dd,r)=>{const c=Math.cos(r),s2=Math.sin(r),out=[];for(let u=-w/2;u<=w/2;u+=1.5)for(let q=-dd/2;q<=dd/2;q+=1.5)out.push([x+u*c-q*s2,z+u*s2+q*c]);return out;},inRect=(x,z,w,dd,r)=>(px,pz)=>{const c=Math.cos(r),s2=Math.sin(r),ex=px-x,ez=pz-z;return Math.abs(ex*c+ez*s2)<=w/2+.8&&Math.abs(-ex*s2+ez*c)<=dd/2+.8;},inDisc=(x,z,r)=>(px,pz)=>Math.hypot(px-x,pz-z)<=r+.8;
+  const disc=(x,z,r)=>{const out=[];for(let a=0;a<6.283;a+=.5)for(let rr=.5;rr<=r;rr+=1.5)out.push([x+Math.cos(a)*rr,z+Math.sin(a)*rr]);out.push([x,z]);return out;};
+  for(const l of W.COLONY?.lots||[])if(l.s||l.k==='turbine')cast(rect(l.x,l.z,l.w,l.d,l.r),l.h,inRect(l.x,l.z,l.w,l.d,l.r));
+  for(let i=0;i<3;i++)cast(disc(1150+i*30,1080,10),120,inDisc(1150+i*30,1080,12));for(let i=0;i<9;i++)cast(disc(1110+i%3*22,1148+Math.floor(i/3)*25,7),9,inDisc(1110+i%3*22,1148+Math.floor(i/3)*25,7.8));
+  for(const b of W.installations||[])cast(rect(b.x,b.z+8,18,12,0),12,inRect(b.x,b.z+8,18,12,0));for(const p of W.pylons||[])cast(disc(p.x,p.z,1.2),15);
+  for(const f of W.forests||[])for(const t of W.forestTrees(f))cast(disc(t.x,t.z,1.6*t.size*.75),6.5*t.size*.75);
+  for(let q=0;q<v.length;q++){const b=Math.round(255*v[q]);d[q*4]=d[q*4+1]=d[q*4+2]=b;d[q*4+3]=255;}
+  const tx=new T.DataTexture(d,NX,NZ);tx.magFilter=tx.minFilter=T.LinearFilter;tx.generateMipmaps=false;tx.needsUpdate=true;return tx;})();
+ Object.assign(U,{uShadowMap:{value:shadowTex},uAtmo:{value:0},uAtmoMap:{value:atmoTex},uAtmoBox:{value:new T.Vector4(AB[0],AB[1],1/(AB[2]-AB[0]),1/(AB[3]-AB[1]))},uSunW:{value:sunDir},
   uDaySun:{value:lin(0xffdcb6).multiplyScalar(3.6/Math.PI)},uDayAmbUp:{value:lin(0x7088a8).multiplyScalar(1.25/Math.PI)},uDayAmbDn:{value:lin(0x5a4a38).multiplyScalar(.8/Math.PI)},
   uDaySunW:{value:daySunDir},uDaySunV:{value:daySunDir.clone()}});
  const G={box:new T.BoxGeometry(1,1,1),hex:flat(new T.CylinderGeometry(1,1,1,6,1,false,Math.PI/6)).translate(0,.5,0),oct:flat(new T.CylinderGeometry(1,1,1,8,1,false,Math.PI/8)).translate(0,.5,0),
@@ -564,7 +578,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   // monorail: beam on pylons + the moving train; power line: poles and wires
   const RL=CO.rail||[],railH=(x,z)=>ground(x,z)+11;if(RL.length>1){for(let i=1;i<RL.length;i++){const [a,b]=[RL[i-1],RL[i]],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/8);for(let k=0;k<n;k++){const x0=a[0]+(b[0]-a[0])*k/n,z0=a[1]+(b[1]-a[1])*k/n,x1=a[0]+(b[0]-a[0])*(k+1)/n,z1=a[1]+(b[1]-a[1])*(k+1)/n;districts.core.m.seg(V3(x0,railH(x0,z0),z0),V3(x1,railH(x1,z1),z1),.9,lin(0x9aa6b2));districts.core.d.seg(V3(x0,railH(x0,z0)+.55,z0),V3(x1,railH(x1,z1)+.55,z1),.12,cy,1.2);}}
    for(const [x,z] of CO.railPylons){districts.core.m.add(G.cyl,M(x,ground(x,z)-1,z,0,0,0,.9,12.2,.9),lin(0x7d8894));}}
-  const PW=CO.power||[];for(let i=0;i<PW.length;i++){const [x,z]=PW[i],y=ground(x,z);districts.farm.d.add(G.cyl,M(x,y,z,0,0,0,.18,9,.18),lin(0x6a5a48));districts.farm.d.add(G.box,M(x,y+8.6,z,0,0,0,2.4,.18,.18),lin(0x6a5a48));
+  const PW=CO.power||[];for(let i=0;i<PW.length;i++){const [x,z]=PW[i],y=ground(x,z);districts.farm.d.add(G.cyl,M(x,y,z,0,0,0,.13,9,.13),lin(0x2e2822));districts.farm.d.add(G.box,M(x,y+8.6,z,0,0,0,2.4,.16,.16),lin(0x2e2822));
    const q=PW[i+1];if(q&&Math.hypot(q[0]-x,q[1]-z)<45){const yq=ground(q[0],q[1]);for(const o of [-1,1])districts.farm.d.seg(V3(x+o,y+8.7,z),V3(q[0]+o,yq+8.7,q[1]),.03,lin(0x222222));}}
   const parts=[];for(const [k,D] of Object.entries(districts)){const m=D.m.mesh(),dm=D.d.mesh();m.name='cq-colony-'+k;dm.name='cq-colony-'+k+'-detail';m.userData.noPick=dm.userData.noPick=true;g.add(m,dm);parts.push({m,dm});}
   const roadsM=RB.mesh(),fieldsM=FB.mesh();roadsM.userData.noPick=fieldsM.userData.noPick=true;g.add(roadsM,fieldsM);if(lampFx.n)g.add(fxMesh(lampFx.geometry()));
@@ -574,7 +588,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   // moving life: rovers on the roads, crew at the plaza, the monorail train, turbine rotors (presentation only)
   const rov=new Bld();rov.box(0,.9,0,3.2,1.1,1.8,white);rov.box(.7,1.7,0,1.3,.8,1.6,glass,.4);for(const [x,z] of [[-1,-.95],[1,-.95],[-1,.95],[1,.95]])rov.add(G.cylC,M(x,.45,z,Math.PI/2,0,0,.45,.3,.45),lin(0x15181c));rov.box(-1.6,1.1,0,.1,.3,1.6,cy,1.4);
   const rovG=rov.geometry(),nR=high?10:5,rovers=new T.InstancedMesh(rovG,MAT.solid,nR);rovers.userData.noPick=true;g.add(rovers);
-  const crewB=new Bld();crewB.add(G.cyl,M(0,0,0,0,0,0,.28,1.3,.28),lin(0xff8a3d));crewB.add(G.octa,M(0,1.55,0,0,0,0,.26,.3,.26),white);const nC=high?18:0,crew=nC?new T.InstancedMesh(crewB.geometry(),MAT.solid,nC):null;if(crew){crew.userData.noPick=true;g.add(crew);}
+  const crewB=new Bld();crewB.add(G.cyl,M(0,0,0,0,0,0,.15,.8,.15),lin(0x2a2a26));crewB.add(G.cyl,M(0,.8,0,0,0,0,.2,.55,.2),lin(0x5a5e4a));crewB.add(G.cyl,M(0,1.12,0,0,0,0,.205,.08,.205),lin(0xff8a3d),.4);crewB.add(G.octa,M(0,1.5,0,0,0,0,.16,.19,.16),lin(0xd8dcd8));const nC=high?10:0,crew=nC?new T.InstancedMesh(crewB.geometry(),MAT.solid,nC):null;if(crew){crew.userData.noPick=true;g.add(crew);}
   const trainB=new Bld();for(let k=0;k<3;k++){trainB.box(k*7.4,0,0,7,2.6,2.6,white);trainB.box(k*7.4,.4,0,7.05,.7,2.65,warm,.7);trainB.box(k*7.4,1.35,0,7.05,.15,2.7,cy,1.3);}const train=new T.Mesh(trainB.geometry(),MAT.solid);train.userData.noPick=true;g.add(train);
   const rotB=new Bld();for(let k=0;k<3;k++)rotB.add(G.box,M(0,0,0,0,0,k*TAU/3,.35,9,.12).multiply(new T.Matrix4().makeTranslation(0,.5,0)),white);const rot=rotors.length?new T.InstancedMesh(rotB.geometry(),MAT.solid,rotors.length):null;if(rot){rot.userData.noPick=true;g.add(rot);}
   const paths=CO.roads.filter(r=>r.w>=8).map(r=>r.pts),plaza=CO.lots.find(l=>l.k==='pad')||{x:1120,z:1110};
@@ -623,7 +637,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   g.userData.update=cam=>{if(!cam)return;const cx=cam.position.x-g.position.x,cz=cam.position.z-g.position.z,far=high?230:140;for(const d of ds){const bs=d.geometry?.boundingSphere;if(bs)d.visible=Math.hypot(cx-bs.center.x,cz-bs.center.z)-bs.radius<far;}};return g;};
  // ---------- the atmosphere boundary: a shimmering veil where the zone ends (contour of ConquestWorld.terraformAt) ----------
  S.atmoVeil=()=>{const Wd=root.ConquestWorld,step=high?10:16,x0=600,z0=860,nx=Math.ceil(940/step),nz=Math.ceil(700/step),th=.06,v=(i,j)=>Wd.terraformAt(x0+i*step,z0+j*step)-th,P=[],Q=[],I=[];
-  const seg=(a,b)=>{const n=P.length/3,H=110,lean=18,c=[1150,1160],ia=Math.hypot(c[0]-a[0],c[1]-a[1])||1,ib=Math.hypot(c[0]-b[0],c[1]-b[1])||1,ya=ground(a[0],a[1])-2,yb=ground(b[0],b[1])-2;
+  const seg=(a,b)=>{const n=P.length/3,H=60,lean=10,c=[1150,1160],ia=Math.hypot(c[0]-a[0],c[1]-a[1])||1,ib=Math.hypot(c[0]-b[0],c[1]-b[1])||1,ya=ground(a[0],a[1])-2,yb=ground(b[0],b[1])-2;
    P.push(a[0],ya,a[1],b[0],yb,b[1],b[0]+(c[0]-b[0])/ib*lean,yb+H,b[1]+(c[1]-b[1])/ib*lean,a[0]+(c[0]-a[0])/ia*lean,ya+H,a[1]+(c[1]-a[1])/ia*lean);const L=Math.hypot(b[0]-a[0],b[1]-a[1]);Q.push(0,0,L,0,L,1,0,1);I.push(n,n+1,n+2,n,n+2,n+3);};
   const lerp=(p,q,a,b)=>{const t=a/(a-b);return [p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];};
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const c=[[i,j],[i+1,j],[i+1,j+1],[i,j+1]].map(([a,b])=>[x0+a*step,z0+b*step,v(a,b)]),e=[];for(let k=0;k<4;k++){const p=c[k],q=c[(k+1)%4];if(p[2]>0!==q[2]>0)e.push(lerp(p,q,p[2],q[2]));}if(e.length===2)seg(e[0],e[1]);else if(e.length===4){seg(e[0],e[1]);seg(e[2],e[3]);}}

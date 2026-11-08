@@ -825,8 +825,18 @@ The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt
 
 **Measured** (Chromium SwiftShader at 390, the six spots; relative numbers only): HIGH 57–80 draws, 151k–217k triangles, 17 programs (the veil adds one). LOW numbers are in `stats-low.json`.
 
+**Second pass (owner gave full creative freedom):**
+- **Baked long shadows for the low sun:** colony buildings, walls, towers, Refuge pods, hives and forest trees are swept along the sun direction once into a ground shadow texture (no per-frame shadow pass). Terrain darkens under it, and hulls and buildings dim as they pass through. Casters never shadow their own footprint.
+- **Veil:** it was a grey curtain across the sky from inside. It is now faint from inside and stronger from the barren side, and lower (60 m).
+- **Small fixes:** organic grass patches replace a regular dot pattern; power poles are dark weathered wood; the plaza crew now read as small figures in work suits.
+- **Six shots reframed** to show more sky and horizon (`docs/economy/colony/`).
+- **Test harness:** `conquest-earned-journey.mjs` failed because its route planner assumed `advance()` moves exactly the requested 4 m (paved roads now move 15% farther) and ignored hull width against the base walls (the cleared colony ground opened a tighter shortcut). The planner now probes with the road factor and ±1.6 m clearance. Gameplay is unchanged.
+- **Journey timing:** the pilot earns Command Base I at 74.9 min against main's recorded 73.66 (target 45–75).
+- **Re-run and PASS:** `conquest-terraform`, `conquest-minerals`, `conquest-style`, `conquest-travel`, `conquest-session`, `conquest-netcode`, `conquest-canvas-contract`, `conquest-opening`, `conquest-operations`, `conquest-authority`, `conquest-controls`, `conquest-earned-journey`, `conquest-first-base`, `conquest-fast-travel`, `conquest-base`, `conquest-raids`, `conquest-view-travel`, `conquest-flagship-ui`, `wtest/conquest`.
+- **LOW at the same spots:** 47–68 draws, 110k–144k triangles.
+
 **Not done yet (for owner review):**
-- No cast shadows. Long hard shadows would need shadow maps on the custom materials; not built for the mobile budget.
+- Static shadows are baked; moving units (tanks, rovers) cast none.
 - "Colony walls/gates are the safe zone edge" and "Parasite invasions hit the frontier wall first" are not yet wired into AI and invasion targeting. The walls are physical only.
 - Tank wrecks and the pipeline are decorative (no collision).
 - PHYSICAL_IPHONE_UNVERIFIED.
