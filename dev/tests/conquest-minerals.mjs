@@ -78,6 +78,7 @@ const t0=Date.UTC(2026,10,9,10,0,0);
  ok(s.mission===site.id&&s.battle.enemies.filter(e=>!e.resident).map(e=>e.kind).join()==='raider,raider,raider'&&roll.se>=0&&roll.se<1,'the open crater starts: wave 1 is three interceptors; the core roll is stored now');
  s=applyAction(s,{seq:s.seq+1,action:'return-exploration'},open+60000);s.position=at(site.x,site.z+10);s=applyAction(s,{seq:s.seq+1,action:'start-mission',mission:site.id},open+120000);
  ok(JSON.stringify(s.strikes[O.slot].roll)===JSON.stringify(roll),'a retry in the same slot keeps the same roll (no re-roll by retrying or reloading)');
+ ok(s.territory[site.sector]?.status!=='contested'&&!s.territory[site.id]&&!s.contestPrevious,'a strike never contests its sector or leaves a fake territory entry (review fix)');
  s.ledger.mn={};const r=missionReward(s,open+300000),want={il:2,ar:2};if(roll.tq<R.STRIKE.tq)want.tq=1;if(roll.se<R.STRIKE.se)want.se=1;if(roll.mh<R.STRIKE.mh)want.mh=1;
  ok(r.kind==='strike'&&r.ptsRaw===R.CQ_PTS.strike&&r.cp===120&&JSON.stringify(r.mn)===JSON.stringify(want)&&s.ledger.mn.il===2,'secured: '+R.CQ_PTS.strike+' raw points, 120 CP, carried '+JSON.stringify(r.mn));
  ok(missionReward(s,open+310000).kind==='strike-claimed',"once per pilot per slot");

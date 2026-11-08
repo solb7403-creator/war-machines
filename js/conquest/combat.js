@@ -321,7 +321,7 @@ function raidsUnlocked(completed){return fieldProgress(completed)>=fieldMissionI
 // humanity holds. Departure needs a quiet spot inside one of those nodes; travel changes position only (cargo stays unbanked).
 const TRAVEL={safeRadius:60,quietMs:10000},arrivals=new Map();
 // Candidate arrival points per node: the authored spot first, then two rings inside the node, each on open, level footing.
-function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(id);const open=p=>!W.solidAt(p.x,p.z)&&[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const n=W.advance(p,dx,dz);return Math.hypot(n.x-p.x-dx,n.z-p.z-dz)<.1;});
+function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(id);const open=p=>!W.solidAt(p.x,p.z)&&[[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const n=W.advance(p,dx,dz),f=W.speedFactor(p);return Math.hypot(n.x-p.x-dx*f,n.z-p.z-dz*f)<.1;});
  const near=(cx,cz)=>{for(let r=0;r<=12;r+=4)for(let i=0;i<(r?8:1);i++){const a=i*Math.PI/4,qx=cx+Math.cos(a)*r,qz=cz+Math.sin(a)*r,p={x:qx,z:qz,y:W.groundAt(qx,qz),surface:'ground'};if(open(p))return freeze(p);}return null;};
  const out=[near(x,z)];for(const ring of [Math.min(40,radius*.4),Math.min(80,radius*.75)])for(let i=0;i<8;i++){const a=i*Math.PI/4;out.push(near(x+Math.cos(a)*ring,z+Math.sin(a)*ring));}
  const list=freeze(out.filter(Boolean));arrivals.set(id,list);return list;}

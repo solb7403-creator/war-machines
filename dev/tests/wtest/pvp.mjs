@@ -399,6 +399,11 @@ function PVP_BANK() { return 0.6; }
   const { creditMatch } = await import('../../../worker/src/eco.js');
   const c = await creditMatch(env, 'tg_501', 'livea', () => ({ pts: 500, pvs: 2, won: true, drawn: false }));
   t(c.awarded === 10 && c.capped && db.get('/players/tg_501').dailyPts === R.DAILY_CAP, 'live points respect the daily cap (' + R.DAILY_CAP + ')');
+  // a retry after a committed write whose reply was lost carries the same seat key and is never paid twice
+  db.root.eco.tg_501.dailyPts = 0;
+  const k1 = await creditMatch(env, 'tg_501', 'livea', () => ({ pts: 40, pvs: 1, won: true, drawn: false, key: 'm1700000000000:0' }));
+  const mp1 = db.get('/eco/tg_501').pvm, k2 = await creditMatch(env, 'tg_501', 'livea', () => ({ pts: 40, pvs: 1, won: true, drawn: false, key: 'm1700000000000:0' }));
+  t(k1.awarded === 40 && k2.awarded === 0 && k2.pts === 0 && db.get('/eco/tg_501').pvm === mp1, 'a credit retry for the same seat and match pays once');
   const h = await worker.fetch(new Request('https://x/pvp/health'), env);
   t(h.status === 200 && (await h.json()).ok, 'health check');
 }

@@ -21,10 +21,10 @@ const multiplier=s=>R.CQ_BASE_MULT[Math.max(0,Math.min(R.CQ_BASE_MULT.length-1,s
 // flat: the value is already final (the Daily Base Yield table is per tier; no Command Base multiplier on top).
 export function earn(s,kind,value,now,{op=false,act=false,flat=false}={}){
  const a=airdrop(s),h=Math.floor(now/3600000),v=Math.max(0,Number(value)||0);if(!v)return 0;
- if(a.hr.h!==h)a.hr={h,n:0};
+ if(a.hr.h!==h)a.hr={h,n:0};if(op||act)a.act=Math.floor(now/DAY);   // verified activity counts even when the points are rate-limited
  if(a.hr.n>=R.CQ_PTS.hourMax){a.limited=(a.limited||0)+1;return 0;}   // rate limit: no points beyond the hourly outcome limit
  a.hr.n++;const raw=Math.round(v*(flat?1:multiplier(s))*100)/100,p=a.pend||(a.pend={raw:0,n:{},op:0});
- p.raw=Math.round((p.raw+raw)*100)/100;p.n[kind]=(p.n[kind]||0)+1;if(op)p.op=1;if(op||act)a.act=Math.floor(now/DAY);
+ p.raw=Math.round((p.raw+raw)*100)/100;p.n[kind]=(p.n[kind]||0)+1;if(op)p.op=1;
  return raw;}
 // The day's first verified operation releases the Daily Base Yield's points part (no pure AFK points).
 export const activeToday=(s,now)=>airdrop(s).act===Math.floor(now/DAY);

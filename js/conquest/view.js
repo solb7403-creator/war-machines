@@ -314,7 +314,7 @@ class View {
  safeFooting(p){
  if(p.surface==='ground'&&W.solidAt(p.x,p.z))return false;
  if(((this.battle||this.encounter)?.enemies||[]).some(e=>e.hp>0&&Math.hypot(p.x-e.x,p.z-e.z)<4&&Math.abs(p.y-e.y)<4))return false;
- return [[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const q=W.advance(p,dx,dz);return Math.hypot(q.x-p.x-dx,q.z-p.z-dz)<.1;});
+ const f=W.speedFactor(p);return [[2,0],[-2,0],[0,2],[0,-2]].every(([dx,dz])=>{const q=W.advance(p,dx,dz);return Math.hypot(q.x-p.x-dx*f,q.z-p.z-dz*f)<.1;});
  }
  recover(){
  if(this.authority)return this.authority.action('recover');
@@ -387,7 +387,7 @@ class View {
  if(K&&board){
  // Simulate in the Worker's exact 50 ms steps with the exact normalized command it replays, so reconciliation agrees with
  // prediction. Button edges latch until the next step; the frame shows the hull a partial step ahead with the live input.
- const input=this.controlInput(dt,sx,sz),held={...input,tapFire:false,super:false,dash:false,shield:false},latch=this.edgeLatch||(this.edgeLatch={});for(const k of ['tapFire','super','dash','shield'])if(input[k])latch[k]=true;
+ const input=this.controlInput(dt,sx,sz),held={...input,tapFire:false,super:false,dash:false,shield:false,scan:false},latch=this.edgeLatch||(this.edgeLatch={});for(const k of ['tapFire','super','dash','shield','scan'])if(input[k])latch[k]=true;
  const simStart=performance.now(),start=this.p;let steps=0;this.stepAcc=(this.stepAcc||0)+dt;
  while(this.stepAcc>=K.STEP-1e-9){this.stepAcc-=K.STEP;const command=K.command({...held,...this.edgeLatch});this.edgeLatch={};this.rememberActors(board);const before=this.p;this.p=K.advance(board,this.p,K.validated(command),K.STEP,!this.battle);this.discovery?.accept(before,this.p,K.STEP,this.speed);this.authority?.enqueue(command);if(++steps>=6){this.stepAcc=0;break;}}
  if(steps)this.blocked=!!(sx||sz)&&start===this.p;this.controlSimMs=performance.now()-simStart;this.controlStepped=true;this.alpha=Math.max(0,Math.min(1,this.stepAcc/K.STEP));

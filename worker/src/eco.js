@@ -487,6 +487,9 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
     if (name) S.nm = name;
     trade.length = 0;
     const c = calc(S) || {};
+    // a retry after a committed write whose reply was lost: this seat's match is already on the record, never pay it twice
+    if (c.key && S.lcr === c.key) return { pts: 0, awarded: 0, capped: false, pvs: S.pvs || 0, sb: 0, lgBonus: 0, lgi: S.lgi, mn: null, dup: true };
+    if (c.key) S.lcr = c.key;
     // the same opponent over and over in one day: accounts trading wins
     if (Array.isArray(c.opp) && c.opp.length) {
       S.op = S.op && S.op.d === X.day ? S.op : { d: X.day, m: {} };
@@ -498,7 +501,7 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
     let mn = null;
     if (c.m) {
       if (c.m.quit) R.ecoQuit(S);
-      else { mn = R.ecoMatchMinerals(S, { won: !!c.won, drawn: !!c.drawn, top3: !!c.m.top3 }, S.lgi | 0, X); R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
+      else { mn = R.ecoMatchMinerals(S, { won: !!c.won, drawn: !!c.drawn, top3: !!c.m.top3 }, Number.isInteger(c.lg) ? c.lg : S.lgi | 0, X); /* the room's league, as for the points */ R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
       if (c.pw) R.ecoLeague(S, c.pw);   // live results move your form and league the same way
     }
     return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0, lgBonus: aw.lb, lgi: S.lgi, mn };

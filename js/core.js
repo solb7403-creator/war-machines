@@ -136,7 +136,7 @@ function myLoadout(){
  if(save.lab)return labLoadout(save);
  const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
  return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
-  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg)};
+  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg),ap:apOf(save.ap)};   // Hull Plating counts everywhere (power/league/PvP)
 }
 const calcPower=()=>powerOf(myLoadout());
 // your league right now: the server's record (lgi, form lwr) with the tank you'd field, the same rule the server applies (rules.js)
