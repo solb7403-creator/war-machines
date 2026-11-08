@@ -14,12 +14,12 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 2 | Conquest playtest fixes: driving, NAVIGATE, fast travel, harder raids, RECALL (PR #57) | Shipped Nov 7 |
 | 3 | Graphics overhaul: Neon Frontline (PR #59) | Shipped Nov 7 |
 | 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating | In progress |
-| 5 | Base builder | Next |
+| 5 | Base builder + Conquest Command hub page | Next |
 | 6 | Tank modifications + Science Lab research | Planned |
 | 7 | Competitive: raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event | Planned |
 | 8 | Payments certification (Stars, TON, SOL; website shop) — required before beta | Planned |
 | 9 | Full game audit (use Fable) | Planned |
-| 10 | Closed beta, then promotion | Planned |
+| 10 | Closed beta, then promotion (incl. public Conquest showcase page on the website) | Planned |
 
 ## Standing owner decisions
 
@@ -43,6 +43,10 @@ The base is the engine of account power and must feel personal, very visual and 
 - **Loops:** production with storage caps and Daily Base Yield (daily return), research/build timers, long-term levels/wall tiers/trophies, defenses vs raids.
 - **Revenue:** base themes, wall skins, banners, decorations, second builder, speed-ups (never direct points or rare+ minerals).
 - **Performance:** instancing/LOD so a fully built base stays smooth on phones; HIGH/LOW/2D fallback.
+
+## Conquest Command hub (session 5, expanded in session 7)
+
+Conquest gets its own dedicated page in the game, not just a mode button, and it must look spectacular: a cinematic live 3D hero (your tank and base on the Moon, Earth on the horizon, Neon Frontline style) with the warfront status, your base status and Daily Base Yield meter, active events (Meteor Strike timer, invasions), quick actions (deploy, fast travel, base, research) and, from session 7, ladders, squad wars and the daily warfront event. Same quality bar on phone and desktop, fast first paint.
 
 ## Working rules
 
