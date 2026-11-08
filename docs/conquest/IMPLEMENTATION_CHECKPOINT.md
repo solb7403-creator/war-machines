@@ -1056,5 +1056,11 @@ Brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt` (owner-approved, 
 - `js/conquest/hub.js`: hero (static art first, live 3D fades in: your actual tank from the M3 kit, your base, Earth on the horizon, the magenta warfront), one status column (warfront, your base + Daily Base Yield meter + builder timer + base assault alert, live events: Meteor Strike and invasions), four actions (ENTER CONQUEST, FAST TRAVEL, MY BASE → fast travel home and the plot, RESEARCH disabled until Session 6). Cached status paints first.
 - `conquest-hub-browser.py`: first paint in the tap task (~1 ms DOM), 390 and 1280; hero 17–33 draws, ≤ 12 programs (own renderer, disposed on leaving).
 
+### Phase 4 — settler architecture, terraform life, region map (DONE)
+- `style.js` colonyWorld: the civilian lots are rebuilt with the settler kit inside their collision footprints (prefab dome homes with timber porches, doors, chimney smoke, rooftop gardens, laundry lines and string lights; stacked habitat modules with salvaged patches, timber balconies, murals and rooftop water towers; market workshops with striped awnings, crates, barrels, lanterns and painted signs; workshop barns with carts; the meeting hall by the market square; a lattice water tower; rusted and faded paint throughout). Military wall, watchtowers and gates keep the cyan Neon Frontline. Main mesh per district + distance-culled detail mesh (the LOD) as before.
+- Life: engineered livestock in fenced pens in a third of the fields, bird flocks over the atmosphere pylons, hoppers among the bio-flora, settlers on UTC daily routines (home → work → market → work → square → home); all instanced.
+- Region map: terraformed zones (soft green from the pylons), fields, paved roads (amber) and dirt tracks (dashed), settler lots (amber) vs military (cyan); zoom-only labels SETTLER TOWN / FARMS / FRONTIER WALL · MILITARY; one-line key (Parasites · Settlers · Military). `conquest-onboarding.py` key assertion updated.
+- Budget (390 portrait, SwiftShader): HIGH core town 76 draws / 194k tris (Session 4: 72 / 180k), farm ring 64 / 155k (50 / 118k), frontier wall 81 / 218k; LOW 48–68 draws / 110–149k tris; programs 16 everywhere; 2D fallback renders. Captures `docs/economy/colony/*-390-{high,low,2d}.png`, stats `stats-{high,low,2d}.json`.
+
 ### Next
-Phase 4 (settler kit, life, region map), then review and release.
+Independent review (one read-only reviewer, economy/security + gameplay/performance), fixes, then the pre-approved release.

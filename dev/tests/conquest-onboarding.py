@@ -37,7 +37,7 @@ async def main():
   before=await page.evaluate('Conquest.view.discovery.version')
   await page.get_by_role('button',name='OPEN MAP',exact=True).click()
   assert 'ASSIGNED' in await page.locator('.cq-map-mission').inner_text()
-  assert 'Parasite installation' in await page.locator('.cq-map').inner_text()
+  assert 'Parasites' in await page.locator('.cq-map').inner_text()
   await page.screenshot(path=str(OUT/'assigned-map.png'))
   await page.get_by_role('button',name='CLOSE MAP',exact=True).click()
   assert before==await page.evaluate('Conquest.view.discovery.version'),'mission intel must not reveal terrain'
