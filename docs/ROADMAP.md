@@ -33,7 +33,16 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 
 ## Base builder vision (session 5)
 
-The base is the engine of account power: production with storage caps (daily return), Science Lab (tank research), refinery (alloy from minerals), defenses (turrets, wall materials by mineral tier, shield generators) that protect production from async raids, a visible Command Power score, and visual construction with real customization. Deep enough to be entertaining for months, gated by Command Center level so it never overwhelms.
+The base is the engine of account power and must feel personal, very visual and involved in every section, without overwhelming (buildings unlock by Command Center level, guided first build).
+
+- **Yours from day one:** pick a site (crater rim = minerals, river delta = biomass, ridge = defense sightlines, canyon = hard to raid); banner designer (shape, colors, emblem) shown on base and tank; base theme (lighting color, finish, decorations).
+- **Building is a show:** build mode with top-down camera, pinch zoom, grid snapping; hologram blueprints, drones and scaffolding assemble buildings live; every upgrade level visibly changes the building.
+- **Living buildings:** Command Center (gates tiers); Refinery (visible conveyor, minerals in, alloy out); Biodome (plants grow, biomass); Science Lab (holographic research tree for tank mods/upgrades, timers); Hangar (owned tanks on display); Trophy Hall (defeated commanders, legendary minerals, ladder trophies); crew and rovers moving around the base.
+- **Defense you design and watch:** drag-to-draw walls with visibly different mineral tiers (regolith, titanium, Armalcolite, reflective Selenite glass, glowing Moonheart); turrets (cannon, laser, missile/anti-drone, mortar) with range rings while placing; shield generators; Defense Drill (simulated Parasite attack you watch); raid log with replays + revenge once async raids exist.
+- **Social pride:** visit squadmates' and top players' bases; Share my base card with invite link; visible Command Power score; weekly Base of the week.
+- **Loops:** production with storage caps and Daily Base Yield (daily return), research/build timers, long-term levels/wall tiers/trophies, defenses vs raids.
+- **Revenue:** base themes, wall skins, banners, decorations, second builder, speed-ups (never direct points or rare+ minerals).
+- **Performance:** instancing/LOD so a fully built base stays smooth on phones; HIGH/LOW/2D fallback.
 
 ## Working rules
 
