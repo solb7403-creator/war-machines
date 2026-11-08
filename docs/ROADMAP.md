@@ -23,6 +23,10 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 9 | Full game audit (use Fable) | Planned |
 | 10 | Closed beta, then promotion (incl. public Conquest showcase page on the website) | Planned |
 
+## Fix queue (owner reports; schedule into the next session that fits)
+
+- **Desktop keyboard driving (owner, Nov 8):** on a computer, players cannot move their tank with the keyboard, so Conquest is unplayable on desktop. The code reads WASD/arrows (`view.js` keys → `controlInput`), and the living-war CI bot drives by keyboard in headless Chromium, so the break is likely environment-specific: focus held by a button or dialog after ENTER CONQUEST, Telegram Desktop / website embedding, or the website boot path. Reproduce on the real website and Telegram Desktop first, fix, and add a desktop keyboard journey (website build, real focus flow) to CI. Also show on-screen desktop hints (WASD move, mouse aim, Space fire, Shift dash, F shield, G gather, C scan).
+
 ## Standing owner decisions
 
 - **Airdrop:** Conquest earns airdrop points (active play + Command Base multiplier ~×1.25 + Daily Base Yield collected at the base). No pure AFK points. Daily cap 50,000, shared across all modes. Higher leagues earn more airdrop points.
