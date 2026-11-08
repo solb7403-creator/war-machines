@@ -14,8 +14,8 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 | 2 | Conquest playtest fixes: driving, NAVIGATE, fast travel, harder raids, RECALL (PR #57) | Shipped Nov 7 |
 | 3 | Graphics overhaul: Neon Frontline (PR #59) | Shipped Nov 7 |
 | 4 | World, Resources & Airdrop Points: economy spec (`docs/economy/RESOURCE_ECONOMY.md`), Conquest airdrop points, 50k cap, terraform rework, minerals, hull armor plating (PR #69, merge `a3ee186`, build `20261108113127`) | Shipped Nov 8 |
-| 5 | Base builder + Conquest Command hub page + full settler architecture (brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt`; own plot + site choice, real timers short early, Nov 8 playtest fixes first) | Next |
-| 6 | Tank modifications + Science Lab research + Conquest audio & weather pass | Planned |
+| 5 | Base builder + Conquest Command hub page + full settler architecture (brief: `docs/conquest/SESSION_05_BASE_BUILDER_FULL_PROMPT.txt`; own plot + site choice, real timers short early, Nov 8 playtest fixes first; ore veins run dry) (PR #75, merge `7ebb2bc`, build `20261108210830`) | Shipped Nov 8 |
+| 6 | Tank modifications + Science Lab research + Conquest audio & weather pass (the Science Lab building already exists on the plot) | Next |
 | 7 | Competitive: live airdrop standing on the hub ("You're #842, 1,200 pts to top 800") with visible anti-cheat, raid time-attack ladders, async base raids (brief 3.3/3.4), squad territory wars, daily warfront event, terraform-zone game modes | Planned |
 | 7.5 | Graphics 2.0: lighting (shadows, ambient occlusion, per-zone color grade), post-processing (bloom, depth fog, heat haze), higher-detail Blender models and PBR textures, upgraded VFX; quality tiers (website top tier as main platform, tuned phone HIGH/LOW) | Planned |
 | 7.8 | Security (owner's Nov 1 Session 3, restored Nov 8): scrub his email from git history, scan the repo for exposed secrets, rotate the Telegram bot token and the Firebase secret | Planned |
