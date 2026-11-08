@@ -840,3 +840,85 @@ The canopy core blocks line of sight, shots and movement below 7.5 m (`blockedAt
 - "Colony walls/gates are the safe zone edge" and "Parasite invasions hit the frontier wall first" are not yet wired into AI and invasion targeting. The walls are physical only.
 - Tank wrecks and the pipeline are decorative (no collision).
 - PHYSICAL_IPHONE_UNVERIFIED.
+
+## RESUME HERE — Checkpoint 22 handoff (World, Resources & Airdrop Points; branch `claude/friendly-allen-7tcyca`)
+
+**State at handoff:** all work is committed and pushed on `claude/friendly-allen-7tcyca`, with no PR open and nothing merged or deployed. The build stamp is already set to `20261108075526` (`index.html` `window.BUILD` + 32 `?v=` keys, `version.json`). `main` (through `c01529d`, #67) was merged into the branch.
+
+### Owner direction in force (overrides older docs; see AGENTS.md "Owner messages mid-session")
+1. **Terraform art override (final; replaces every earlier terraform look note):** a rugged, war-torn frontier the colonists clawed out of the Moon. Gritty military sci-fi, not a park, lawn or meadow.
+   - **Ground:**
+     - grass about 45%, never uniform, in clumps of olive #6B7A3A, dry straw #A89A5B and dark green #3E5A2E;
+     - bare ground about 25%: dirt #6E5A43, gravel, grey regolith #8A8780;
+     - rock about 20%: outcrops, mossy boulders, cliff faces;
+     - scars about 10%: shell craters with scorched earth, mud, tank ruts.
+     - Uneven terrain; no flat lawn; no hex lines on open ground (bases only).
+   - **Flora:** hardy scrub, thornbushes, wind-bent and dead/burnt trees, ferns in gullies; crystal sprouts only as rare accents; flowers only in a few small patches near the colony core.
+   - **Sky and light inside zones:** a thin, dusty atmosphere; hazy amber horizon #C9A27A to dusky steel blue #4F6377; broken dramatic clouds; low sun; long hard shadows; warm light against cool shade; distant dust haze. Outside the zones, the black lunar sky is unchanged.
+   - **Frontier detail:** half-overgrown tank wrecks, burnt stumps, sandbags, trenches and barbed wire toward the frontier, rutted dirt roads, rusted pipelines, fences, abandoned machinery.
+   - **Colony core:** the same rugged base but cleaner: paved roads, lit buildings, neon edge strips, irrigated fields. Grit increases with distance from the core.
+   - **Water:** dark slate blue #3C5568 with sky reflection, muddy banks, rocks in the stream.
+   - **Creative freedom (owner):** treat the spec as guidance, not a checklist; change, drop or add anything that makes it better. The mission: a rugged frontier that looks great on a phone and makes players excited to explore, fight over and return to these zones.
+2. **Settlers:** colony towns and farms belong to civilian settlers. They get warm amber lights and weathered, painted, patched materials, distinct from the military's cyan armoured Neon Frontline (Refuge, Command Bases, frontier wall). Full settler architecture is session 5 (docs/ROADMAP.md); do not build it now.
+3. **Kept from the earlier colony message:** about 30% built / 70% wild; the core town, farm ring and frontier wall layout; tanks 15% faster on paved roads (server-authoritative, shared sim).
+4. **Release:** do NOT wait for owner approval. Once the terraform captures pass a self-check against the rugged-frontier override, go straight through: rerun affected tests, two independent reviewers, fix valid findings, green CI, merge, deploy, verify `/pvp/health` and `version.json`, revert if broken. Put the final captures and a short summary here for the owner's morning review. Look adjustments happen in a later session.
+5. **Scope:** build nothing else new this session. Later items are queued in docs/ROADMAP.md, including "Colony Defense" (walls as the safe-zone edge, invasions hitting the frontier wall) and settler life.
+
+### Finished (committed, tested locally)
+- **Phase 0** (`14ca3a0`, `2ebad69`): RESOURCE_ECONOMY.md, signed off.
+- **Phase 1** (`fd00978`): Conquest airdrop points, Command Base multiplier, Daily Base Yield, 50,000 shared cap.
+- **Phase 2** (`6e26d9e`): authored terraform zones, creek/fords/bridge/reservoir/dam, forest cover, bio-flora Biomass.
+- **Phase 3** (`31d9bc5`, `d1f5ad4`): minerals and wallet, deposits and scanner, gathering, caches, death wreck exposure, banking through the outbox, Meteor Strike, Arcade/PvP drops and weekly league minerals, Hull Plating (garage + Refuge Supply, power/league/PvP), plate visuals (3D/2D), first-plate hook, wiki.
+- **Art pass** (`8c2f57c`, `a22b7c5`, `28cb5b1`):
+  - **Colony data and world:**
+    - the colony is authored by `dev/tools/colony-gen.mjs` into `ConquestWorld.COLONY`;
+    - colony collision and sight blocking; cleared colony ground; +15% speed on paved roads only (dirt tracks are not faster);
+    - `conquest-earned-journey` planner fix (test harness only).
+  - **Looks:**
+    - dusty sky and low-sun light with the per-vertex zone map;
+    - rugged ground and flora;
+    - baked long shadows;
+    - slate water;
+    - the colony town, farm ring, wall, monorail, rovers and crew, and frontier dressing;
+    - the atmosphere veil;
+    - settler amber and weathered materials.
+- **Build stamp** (`cf4055a`).
+- **Local results, last full runs:**
+  - all Conquest suites, wtest suites and browser journeys passed at the Phase 3 commit, except `conquest-earned-journey` (since fixed);
+  - after the art pass, the affected subset passed (terraform, minerals, style, travel, session, netcode, canvas-contract, opening, operations, authority, controls, earned-journey, first-base, fast-travel, base, raids, view-travel, flagship-ui, wtest/conquest);
+  - the earned journey reaches Base I at 74.9 min (main recorded 73.66; target 45–75).
+
+### Latest captures (390 portrait, Chromium SwiftShader; relative performance only)
+- **Colony art:** `docs/economy/colony/{core-town,farm-ring,frontier-wall,river-bridge,wild-meadow,boundary-crossing}-390-high.png`, `docs/economy/colony/contact-sheet-390-high.jpg`, `docs/economy/colony/stats-high.json` and `stats-low.json`.
+  - Script: `python3 dev/tests/conquest-colony-captures.py --quality high|low|2d` (`ONLY=name,...` for single shots).
+  - Last measured: HIGH 55–79 draws, 146k–210k triangles, 17 programs; LOW 47–68 draws, 110k–144k triangles.
+- **Earlier evidence:** `docs/economy/phase1`, `phase2` (Phase-2 look, superseded by the art pass), `phase3` (minerals journey).
+
+### Half-done or open, file by file
+- **`js/conquest/style.js`:** the art pass is complete enough for release. Polish candidates for a later look session:
+  - crop rows read weakly at distance;
+  - the sky is only partly visible in the aerial captures;
+  - moving units cast no shadows;
+  - the veil strength is tuned by eye;
+  - the grass-clump density is capped by the per-chunk budget in `conquest-style.mjs` (HIGH ≤ 30k, LOW ≤ 12k).
+- **`js/conquest/world.js`:**
+  - **COLONY data:** regenerate only with `node dev/tools/colony-gen.mjs --write`, then re-run `conquest-terraform.mjs` and `conquest-minerals.mjs` (reachability).
+  - **Wall gameplay:** the wall is physical only. Safe-zone semantics and invasions targeting the wall are queued in the roadmap ("Colony Defense"), not done.
+  - **Decoration only:** tank wrecks and the pipeline have no collision.
+- **`dev/tests/conquest-colony-captures.py`:** not yet in CI. Optional: add it to `conquest-check.yml` and upload `docs/economy/colony` as an artifact.
+- **Reviews:** two independent read-only reviewers (economy/security; gameplay/performance) were launched on `git diff origin/main...HEAD` at `cf4055a`. Their results were NOT collected before handoff. Re-run them.
+- **Local CI-equivalent run:** launched at `cf4055a`; results NOT collected. Re-run it.
+- **Evidence file:** tests regenerate `docs/conquest-session-2/earned-defense.json` (already stale on main). Restore it with `git checkout`; never commit it.
+- **`docs/ROADMAP.md`:** update the status column after release.
+- **Network:** this cloud environment's proxy blocks `lunar-api.solb7403.workers.dev`. Verify production through the `deploy-worker.yml` run annotations (its last steps poll `/pvp/health` for `"ok":true` and print the live `version.json`), or add that host to an environment.
+
+### Exact remaining steps through release
+1. `git checkout claude/friendly-allen-7tcyca && git pull`, then `npm install --prefix worker --no-audit --no-fund --package-lock=false`.
+2. Run every `node dev/tests/...` listed in `.github/workflows/conquest-check.yml` and `deploy-worker.yml`, `bash dev/tests/conquest-regression.sh`, and the browser journeys (`conquest-onboarding.py`, `conquest-airdrop-browser.py`, `conquest-terraform-captures.py --quality high`, `conquest-minerals-browser.py`). Restore regenerated evidence files. Fix any failure.
+3. Two independent read-only reviewers (economy/security, gameplay/performance) on `git diff origin/main...HEAD`. Fix valid findings, re-run the affected tests, push.
+4. Merge the latest `origin/main`. Keep the build stamp consistent; re-stamp `index.html` and `version.json` together if anything changes after it; `lab-ui.mjs` checks they match.
+5. Open the PR (template `.github/pull_request_template.md`) and wait for green CI (conquest-check, equipment-balance, lab-ui-check, website-check, ai-tooling-check as triggered).
+6. Merge (the owner pre-approved the release; AGENTS.md rule 4: no owner request may be unanswered or unimplemented).
+7. `deploy-worker.yml` runs on the push to main. Confirm the pvp health annotation shows `ok:true` and the live `version.json` equals the stamp; also check the Pages `version.json`.
+8. If broken, revert the merge commit on main (`git revert -m 1 <merge>`), push, and confirm the redeploy.
+9. Final report here: what shipped, the agents used and whether they changed the result, and what is unverified (PHYSICAL_IPHONE_UNVERIFIED; no WebKit run; the strike difficulty and mineral income are modeled). Update the ROADMAP status.
