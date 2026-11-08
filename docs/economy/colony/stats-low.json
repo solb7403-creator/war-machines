@@ -6,33 +6,33 @@
  "shots": {
   "core-town": {
    "draws": 60,
-   "tris": 122268,
-   "programs": 17
+   "tris": 121502,
+   "programs": 16
   },
   "farm-ring": {
-   "draws": 46,
-   "tris": 98236,
-   "programs": 17
+   "draws": 50,
+   "tris": 103022,
+   "programs": 16
   },
   "frontier-wall": {
    "draws": 68,
-   "tris": 142442,
-   "programs": 17
+   "tris": 141676,
+   "programs": 16
   },
   "river-bridge": {
    "draws": 49,
-   "tris": 130612,
-   "programs": 17
+   "tris": 129846,
+   "programs": 16
   },
   "wild-meadow": {
    "draws": 47,
-   "tris": 104776,
-   "programs": 17
+   "tris": 104010,
+   "programs": 16
   },
   "boundary-crossing": {
    "draws": 68,
-   "tris": 138824,
-   "programs": 17
+   "tris": 138058,
+   "programs": 16
   }
  },
  "pageErrors": []

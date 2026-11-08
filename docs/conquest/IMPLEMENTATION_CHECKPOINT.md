@@ -953,8 +953,8 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 
 | Quality | Draws | Triangles | Programs | Page errors |
 |---|---|---|---|---|
-| HIGH | 50–79 | 119k–205k | 16 (budget ≤ 16) | 0 |
-| LOW | 47–68 | 104k–142k | — | 0 |
+| HIGH | 50–78 | 118k–203k | 16 (budget ≤ 16) | 0 |
+| LOW | 47–68 | 103k–142k | 16 | 0 |
 
 - Journey evidence regenerated on the final code: `docs/economy/phase1`, `phase2`, `phase3`.
 
@@ -968,7 +968,14 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 3. **HIGH program budget (CI `transmission`, Chromium and WebKit).** The Phase 2 water and the art-pass veil had pushed HIGH to 17 material programs, over the README contract of ≤ 16.
    - Fix: the veil now draws through the existing FX program, with an early raw-additive return, so it looks exactly as before.
    - The relay fight now measures 16 programs and 73 draws.
-4. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
+4. **The Refuge home approach (`conquest-living-war`).** A 23 m colony tower at (1170,1144) stood on the straight drive from Main Street to the Refuge supply terminal. Tanks clipped its corner and pinned.
+   - Fix: `colony-gen` keeps a 7 m corridor clear from Main Street to the terminal. Regenerating removed exactly that one lot.
+5. **Test-bot robustness (`conquest-living-war.py`).** None of these changes relax an assertion.
+   - `tap()` waits up to 10 s for the control to be laid out: CI software GL renders at 250 ms+ per frame near the colony.
+   - The 8-direction keyboard bot backs off when pinned on the relay spawn edge (994,944). That geometry is the same on `main`; only the relay fight's end position varies.
+   - Local result: 6 of 6 green after the fixes, and `main` 2 of 2.
+   - One earlier CI attempt also lost the browser process mid-job (infrastructure).
+6. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
    - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
 
 ### Independent reviews (2 read-only agents, given only the branch, head SHA, briefs and this checkpoint)
