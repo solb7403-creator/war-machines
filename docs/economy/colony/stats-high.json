@@ -4,35 +4,10 @@
  "viewport": "390x844",
  "renderer": "Chromium SwiftShader (relative only)",
  "shots": {
-  "core-town": {
-   "draws": 72,
-   "tris": 180792,
-   "programs": 17
-  },
-  "farm-ring": {
-   "draws": 50,
-   "tris": 119296,
-   "programs": 17
-  },
-  "frontier-wall": {
-   "draws": 75,
-   "tris": 204862,
-   "programs": 17
-  },
-  "river-bridge": {
-   "draws": 55,
-   "tris": 191688,
-   "programs": 17
-  },
-  "wild-meadow": {
-   "draws": 62,
-   "tris": 180218,
-   "programs": 17
-  },
   "boundary-crossing": {
    "draws": 78,
    "tris": 186692,
-   "programs": 17
+   "programs": 16
   }
  },
  "pageErrors": []

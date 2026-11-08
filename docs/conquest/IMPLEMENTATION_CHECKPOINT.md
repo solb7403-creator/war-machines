@@ -953,7 +953,7 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 
 | Quality | Draws | Triangles | Programs | Page errors |
 |---|---|---|---|---|
-| HIGH | 50–78 | 119k–205k | 17 | 0 |
+| HIGH | 50–78 | 119k–205k | 16 (budget ≤ 16) | 0 |
 | LOW | 47–68 | 104k–142k | — | 0 |
 
 - Journey evidence regenerated on the final code: `docs/economy/phase1`, `phase2`, `phase3`.
@@ -965,7 +965,10 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
    - Every other defense battle plays out the same as on `main`, undefended (checked on both).
 2. **`conquest-corrections`.** Exact-travel probes did not allow for the paved-road +15%.
    - Fix: a shared `World.speedFactor`, used by `advance()` and by every footing probe (server footing, client safe footing, travel arrivals).
-3. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
+3. **HIGH program budget (CI `transmission`, Chromium and WebKit).** The Phase 2 water and the art-pass veil had pushed HIGH to 17 material programs, over the README contract of ≤ 16.
+   - Fix: the veil now draws through the existing FX program, with an early raw-additive return, so it looks exactly as before.
+   - The relay fight now measures 16 programs and 73 draws.
+4. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
    - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
 
 ### Independent reviews (2 read-only agents, given only the branch, head SHA, briefs and this checkpoint)

@@ -163,20 +163,27 @@ void main(){vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light di
 #include <fog_fragment>
 }`;
 // Billboards (aBill.z = 1) expand in view space by aBill.xy × the object's scale, so pooled effects scale with the mesh.
-const FX_VS=`attribute vec4 aCol;attribute vec3 aBill;uniform vec3 uKind[4];varying vec4 vCol;varying vec2 vUv;
+const FX_VS=`attribute vec4 aCol;attribute vec3 aBill;uniform vec3 uKind[4];varying vec4 vCol;varying vec2 vUv;varying vec3 vWP;
 #include <common>
 #include <fog_pars_vertex>
-void main(){vUv=uv;vCol=aCol;vec4 mvPosition=vec4(position,1.);float bs=length(modelMatrix[0].xyz);   // a billboard's 4 corners store its centre (merged Fx) or the origin (instanced P.bill)
+void main(){vUv=uv;vCol=aCol;vWP=(modelMatrix*vec4(position,1.)).xyz;vec4 mvPosition=vec4(position,1.);float bs=length(modelMatrix[0].xyz);   // a billboard's 4 corners store its centre (merged Fx) or the origin (instanced P.bill)
 #ifdef USE_INSTANCING
  mvPosition=instanceMatrix*mvPosition;bs*=length(instanceMatrix[0].xyz);float k=instanceMatrix[2].z;vCol.rgb*=k<1.5?uKind[0]:k<2.5?uKind[1]:k<3.5?uKind[2]:uKind[3];
 #endif
  mvPosition=modelViewMatrix*mvPosition;mvPosition.xy+=aBill.xy*bs;mvPosition.z+=length(aBill.xy)*bs*.55;gl_Position=projectionMatrix*mvPosition;
 #include <fog_vertex>
 }`;
-const FX_FS=`uniform sampler2D uMap;uniform float uFade;varying vec4 vCol;varying vec2 vUv;
+const FX_FS=`uniform sampler2D uMap;uniform float uFade,uTime,uAtmo,uHigh;varying vec4 vCol;varying vec2 vUv;varying vec3 vWP;
 #include <common>
 #include <fog_pars_fragment>
-void main(){vec4 t=texture2D(uMap,vUv);vec3 e=vCol.rgb*t.r*uFade;float o=vCol.a*t.g*uFade;
+float hexL(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r)-h;vec2 b=mod(p-h,r)-h;vec2 g=dot(a,a)<dot(b,b)?a:b;vec2 q=abs(g);return .5-max(dot(q,vec2(.5,.8660254)),q.x);}
+void main(){vec4 t=texture2D(uMap,vUv);
+ // The atmosphere boundary veil (aCol.a < 0): rising light bands + faint hex lattice, strongest at the ground and at grazing
+ // angles; raw additive output (alpha 0 under premultiplied blending), no fog, tone mapping or colour conversion, as authored.
+ if(vCol.a<0.){vec3 V=normalize(cameraPosition-vWP);float y=vUv.y,base=exp(-y*3.)*.9+exp(-y*.8)*.4+exp(-y*60.)*1.5,band=.5+.5*sin(vUv.x*.21+y*9.-uTime*1.3),sh=.6+.4*sin(vUv.x*.9-uTime*2.1+y*14.);
+  float hx=uHigh>.5?(1.-smoothstep(0.,.04,hexL(vec2(vUv.x*.25,y*14.))))*.18:0.;float graz=1.-abs(V.y)*.5;float a=(base*(.55+.45*band)*sh+hx*exp(-y*2.))*graz*mix(1.,.14,uAtmo)*smoothstep(1.,.55,y);
+  gl_FragColor=vec4(mix(vec3(.35,.7,1.),vec3(.75,.9,1.),band)*a*.42,0.);return;}
+ vec3 e=vCol.rgb*t.r*uFade;float o=vCol.a*t.g*uFade;
 #ifdef USE_FOG
  float f=1.-smoothstep(fogNear,fogFar,vFogDepth);e*=f;o*=f;
 #endif
@@ -215,16 +222,6 @@ void main(){vec3 d=normalize(vDir);vec3 col;
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`;
-// The atmosphere boundary: an additive shimmering veil (rising light bands + faint hex lattice), strongest at the ground and
-// at grazing view angles, so crossing the zone edge reads as passing through the atmosphere of another world.
-const VEIL_VS=`varying vec2 vUv;varying vec3 vWP;
-#include <common>
-void main(){vUv=uv;vec4 wp=modelMatrix*vec4(position,1.);vWP=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`;
-const VEIL_FS=`uniform float uTime,uAtmo,uHigh;varying vec2 vUv;varying vec3 vWP;
-float hexL(vec2 p){const vec2 r=vec2(1.,1.7320508);vec2 h=r*.5;vec2 a=mod(p,r)-h;vec2 b=mod(p-h,r)-h;vec2 g=dot(a,a)<dot(b,b)?a:b;vec2 q=abs(g);return .5-max(dot(q,vec2(.5,.8660254)),q.x);}
-void main(){vec3 V=normalize(cameraPosition-vWP);float y=vUv.y,base=exp(-y*3.)*.9+exp(-y*.8)*.4+exp(-y*60.)*1.5,band=.5+.5*sin(vUv.x*.21+y*9.-uTime*1.3),sh=.6+.4*sin(vUv.x*.9-uTime*2.1+y*14.);
- float hx=uHigh>.5?(1.-smoothstep(0.,.04,hexL(vec2(vUv.x*.25,y*14.))))*.18:0.;float graz=1.-abs(V.y)*.5;float a=(base*(.55+.45*band)*sh+hx*exp(-y*2.))*graz*mix(1.,.14,uAtmo)*smoothstep(1.,.55,y);
- vec3 c=mix(vec3(.35,.7,1.),vec3(.75,.9,1.),band)*a*.42;gl_FragColor=vec4(c,1.);}`;   // additive (SRC_ALPHA, ONE): alpha 1 adds c
 // Energy shell: additive fresnel rim + moving hex scan, transparent, never writes depth.
 const SHIELD_VS=`varying vec3 vN;varying vec3 vV;varying vec3 vP;
 void main(){vP=position;vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=-mv.xyz;gl_Position=projectionMatrix*mv;}`;
@@ -355,7 +352,6 @@ function create(T,opts={}){
    uZenith:{value:V3(.0002,.0003,.0009)},uBandA:{value:V3(0,.2,.19)},uBandB:{value:V3(.045,.012,.11)},uFogC:{value:V3(.0018,.0021,.0048)}},{fog:false,depthWrite:false,side:T.DoubleSide})};
  const shieldMat=(color,opacity,hexK=1,side=T.DoubleSide)=>{const m=new T.ShaderMaterial({uniforms:{uColor:{value:lin(color)},uTime:U.uTime,uOpacity:{value:opacity},uHex:{value:hexK}},vertexShader:SHIELD_VS,fragmentShader:SHIELD_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,blending:T.AdditiveBlending,side});m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
  MAT.shield=shieldMat(0x48d8ff,.85);MAT.field=shieldMat(0x2dd4ff,.32,.12,T.FrontSide);
- MAT.veil=new T.ShaderMaterial({uniforms:{uTime:U.uTime,uAtmo:U.uAtmo,uHigh:U.uHigh},vertexShader:VEIL_VS,fragmentShader:VEIL_FS,transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide});MAT.veil.userData.conquestStyle=true;MAT.veil.userData.motionSkip=true;
  // Additive glow/decal draws are never tap targets (view pick() and the browser bots skip userData.noPick).
  const fxMesh=(geo,order=2)=>{const m=new T.Mesh(geo,MAT.fx);m.renderOrder=order;m.userData.noPick=true;return m;};
  const S={id:'neon-frontline',version:1,low,high,software,T,U,MAT,G,AT,SIGN,K,tex,footprints:F,shared:[],ground};
@@ -656,8 +652,9 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    P.push(a[0],ya,a[1],b[0],yb,b[1],b[0]+(c[0]-b[0])/ib*lean,yb+H,b[1]+(c[1]-b[1])/ib*lean,a[0]+(c[0]-a[0])/ia*lean,ya+H,a[1]+(c[1]-a[1])/ia*lean);const L=Math.hypot(b[0]-a[0],b[1]-a[1]);Q.push(0,0,L,0,L,1,0,1);I.push(n,n+1,n+2,n,n+2,n+3);};
   const lerp=(p,q,a,b)=>{const t=a/(a-b);return [p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t];};
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const c=[[i,j],[i+1,j],[i+1,j+1],[i,j+1]].map(([a,b])=>[x0+a*step,z0+b*step,v(a,b)]),e=[];for(let k=0;k<4;k++){const p=c[k],q=c[(k+1)%4];if(p[2]>0!==q[2]>0)e.push(lerp(p,q,p[2],q[2]));}if(e.length===2)seg(e[0],e[1]);else if(e.length===4){seg(e[0],e[1]);seg(e[2],e[3]);}}
-  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(P,3));geo.setAttribute('uv',new T.Float32BufferAttribute(Q,2));geo.setIndex(I);geo.computeBoundingSphere();
-  const m=new T.Mesh(geo,MAT.veil);m.renderOrder=4;m.frustumCulled=false;m.userData.noPick=true;m.name='cq-atmosphere-veil';return m;};
+  const nV=P.length/3,geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(P,3));geo.setAttribute('uv',new T.Float32BufferAttribute(Q,2));
+  geo.setAttribute('aCol',new T.Float32BufferAttribute(new Float32Array(nV*4).map((_,i)=>i%4===3?-1:1),4));geo.setAttribute('aBill',new T.Float32BufferAttribute(new Float32Array(nV*3),3));geo.setIndex(I);geo.computeBoundingSphere();
+  const m=new T.Mesh(geo,MAT.fx);m.renderOrder=4;m.frustumCulled=false;m.userData.noPick=true;m.name='cq-atmosphere-veil';return m;};
 
  // ---------- sky + lights ----------
  S.environment=(scene,renderer)=>{
@@ -939,7 +936,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  // Static groups are culled by distance (they are far apart); cheap per-frame loop.
  S.cull=(groups,p)=>{const k=software?.4:1;for(const g of groups){const s=g.userData.site;if(s)g.visible=Math.hypot(s.x-p.x,s.z-p.z)<s.range*k;}};
  // Compile every program variant once (static + instanced solid/fx, sky, terrain, shields) before play.
- S.warmObjects=()=>{const objs=[new T.Mesh(G.box,MAT.solid),new T.InstancedMesh(G.box,MAT.solid,1),new T.Mesh(P.bill,MAT.fx),new T.InstancedMesh(P.bill,MAT.fx,1),new T.Mesh(G.ico,MAT.shield),new T.Mesh(G.ico,MAT.field),new T.Mesh(waterWarmGeo,MAT.water),new T.Mesh(waterWarmGeo,MAT.veil)];
+ S.warmObjects=()=>{const objs=[new T.Mesh(G.box,MAT.solid),new T.InstancedMesh(G.box,MAT.solid,1),new T.Mesh(P.bill,MAT.fx),new T.InstancedMesh(P.bill,MAT.fx,1),new T.Mesh(G.ico,MAT.shield),new T.Mesh(G.ico,MAT.field),new T.Mesh(waterWarmGeo,MAT.water)];
   for(const o of objs)if(o.isInstancedMesh){o.setMatrixAt(0,new T.Matrix4());o.instanceMatrix.needsUpdate=true;}return objs;};
  S.canvas={bg:'#03060c',grid:'#12303d',cover:'#3c2a46',coverEdge:'#ff4fd8',site:'#8ff6ff',hostile:'#ff4fd8',friend:'#3fe9ff',beacon:['#3fe9ff','#ffc45a'],shot:'#d8faff',enemyShot:'#ff6bd6'};
  S.dispose=()=>{for(const g of S.shared)g.dispose();for(const m of Object.values(MAT))m.dispose();tex.atlas.dispose();tex.earth.dispose();tex.detail.dispose();glowCache.clear();ringCache.clear();batteryCache=droneCache=null;S.shared.length=0;};
