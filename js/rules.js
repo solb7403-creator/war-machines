@@ -190,7 +190,7 @@ const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:1.20};   // weapon type (its 
 const POWER_BASE=68,POWER_K=13.75,COUNTER_EDGE=1.72;
 function powerZ(L){
  const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log;
- const h=ln(t.mhp/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)/STAT.dps),s=ln(t.spdM*(1+g('spd')));
+ const h=ln(t.mhp*plateEhp(t.enR,t.arR)/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)/STAT.dps),s=ln(t.spdM*(1+g('spd')));
  return W.h*h+W.a*-ln(1-Math.min(0.7,g('arm')))+W.d*d+W.c*ln(1+CRIT_BASE+t.critB+g('lck'))+W.su*ln((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))*(t.wtype==='siege'?projectileImpactMult(t):1))
   +W.fi*ln(t.fillM)+W.s*s+W.r*g('reg')*100+W.hc*ln(t.hitChg||1)+W.tu*ln(t.turnM)+W.ps*ln(t.wpspd/22)+(t.cls==='scout'?W.sc:t.cls==='titan'?W.ti:0)
   +(POWER_WPN[t.wtype]||0)+W.hh*h*h+W.ss*s*s+W.dd*d*d+W.hd*h*d+W.hs*h*s+W.ds*d*s;
@@ -240,6 +240,8 @@ function tankOf(L,n){
  if(F.supTaken)T.supTk=1+F.supTaken;if(F.hitCharge)T.hitChg=1+F.hitCharge;if(F.dashCd)T.dashCdM=1+F.dashCd;if(F.shieldCd)T.shieldCdM=1+F.shieldCd;
  // Apply Velocity once to the actual shot speed, after the existing fitting calculation.
  if(T.gems.includes('vel'))T.wpspd*=1+coreVal('vel',L.gl&&L.gl.vel);
+ // Hull Plating: max hull HP per plate and the set traits (energy / area damage taken), the same in every mode
+ const Pl=plateStats(L.ap);if(Pl.hp){T.mhp=Math.round(T.mhp*(1+Pl.hp));T.ap=Pl.ap;}if(Pl.e)T.enR=Pl.e;if(Pl.a)T.arR=Pl.a;
  if(hasFittings(L))T.fits=fittingVisuals(L);return T;
 }
 function legacyTankOf(L,n){
@@ -268,6 +270,31 @@ const CQ_BASE_MULT=[1,1.05,1.10,1.15,1.20,1.25];   // Command Base tier (none, I
 // It fills continuously, stops when full, is collected at the physical base (from min of a fill), and its points part
 // needs one verified Conquest operation that UTC day (no pure AFK points). The points count inside the daily cap.
 const CQ_YIELD={day:86400000,min:0.1,pts:[0,1000,1400,1800,2200,2600],alloy:[0,6,9,12,15,18],biomass:[0,4,6,8,10,12],helium:[0,1,1,2,2,3]};
+// ---- minerals and Hull Plating (docs/economy/RESOURCE_ECONOMY.md §5-6, owner-approved Nov 8 2026) ----
+// Six minerals, common to legendary. The account wallet (S.mn) is shared by every mode; Conquest carries them as cargo first.
+const MINERALS={fe:{n:'Ferrite Regolith',s:'Ferrite',r:'common',c:'#c0703f'},il:{n:'Ilmenite',s:'Ilmenite',r:'uncommon',c:'#5f86b8'},ar:{n:'Armalcolite',s:'Armalcolite',r:'rare',c:'#57d2ea'},
+ tq:{n:'Tranquillityite',s:'Tranquillityite',r:'very rare',c:'#ff7a3d'},se:{n:'Selenite Glass',s:'Selenite',r:'epic',c:'#c8a2ff'},mh:{n:'Moonheart',s:'Moonheart',r:'legendary',c:'#a8e4ff'}};
+const MN_ORDER=['fe','il','ar','tq','se','mh'];
+const mnOf=v=>{const o={};for(const k of MN_ORDER){const n=Math.floor(Number(v&&v[k]));o[k]=n>0&&n<1e7?n:0;}return o;};
+// Plates: four slots on every hull, tier 0 (none) .. 6 (Moonheart). HP adds up per plate; a set trait needs all four at that
+// tier or better. Traits: energy / area damage taken (Moonbeam and Moonfall are exempt: owner decision 2).
+const PLATE={slots:['FRONT','LEFT','RIGHT','TURRET'],hp:[0,0.01,0.0175,0.025,0.03,0.035,0.04],
+ cost:[null,{fe:40,pts:300},{il:40,fe:20,pts:1500},{ar:30,il:20,pts:4000},{tq:20,ar:15,pts:8000},{se:6,tq:10,pts:15000},{mh:3,se:4,pts:25000}],
+ traits:{5:{e:0.10},6:{e:0.10,a:0.10}},eShare:0.35,aShare:0.15};   // e/aShare: the share of damage taken that is energy/area, used only to value traits in power
+const apOf=v=>[0,1,2,3].map(i=>{const t=Math.round(Number(v&&v[i]));return t>=1&&t<=6?t:0;});
+function plateStats(ap){const a=apOf(ap),set=Math.min(a[0],a[1],a[2],a[3]),T=PLATE.traits[set>=6?6:set>=5?5:0]||{};return {ap:a,hp:a.reduce((n,t)=>n+PLATE.hp[t],0),set,e:T.e||0,a:T.a||0};}
+const plateEhp=(e,a)=>1/(1-(e||0)*PLATE.eShare-(a||0)*PLATE.aShare);   // traits valued as effective HP in power (gear rating)
+// Arcade/PvP mineral drops: server-verified results only, straight to the wallet (§5.5). rnd: the server's random source
+const MN_DROP={win:{fe:[1,0.5],il:[0,0.20],ar:[0,0.06]},draw:{fe:[1,0],il:[0,0.10]},loss:{fe:[0,0.5]}};   // [guaranteed, chance of +1]
+// weekly league minerals, at the 20th verified Arcade/PvP match of a UTC week (fractions are a chance of +1)
+// Conquest minerals (§5.2-5.4). Deposits: channel ms, respawn per pilot, units a harvest (server roll), the 3% Selenite vein;
+// the one-time Starter Vein (35 Ferrite). Scanner pulse. Operation caches on victory (fractions are a chance of +1). Meteor Strike.
+const MN_GATHER={fe:{ms:5000,respawnMs:1200000,min:2,max:4},il:{ms:8000,respawnMs:2700000,min:1,max:3},ar:{ms:12000,respawnMs:10800000,min:1,max:2},
+ tq:{ms:16000,respawnMs:28800000,min:1,max:1,vein:0.03},starter:{ms:5000,respawnMs:0,min:35,max:35,once:true}};
+const MN_SCAN={cooldownMs:30000,radius:150,perRadar:50};
+const MN_CACHE={field:{fe:3,il:0.5},HARD:{il:2,ar:0.4},VETERAN:{ar:1.5,tq:0.3},defense:{fe:2,il:1}};
+const STRIKE={everyMs:7200000,telegraphMs:300000,windowMs:1200000,channelMs:16000,cp:120,guaranteed:{il:2,ar:2},tq:0.5,se:0.15,mh:0.025,resonance:{se:12,mh:40}};
+const MN_WEEKLY_N=20,MN_WEEKLY=[{fe:20},{fe:30,il:5},{fe:40,il:10,ar:2,tq:0.25},{il:12,ar:4,tq:0.25},{il:15,ar:5,tq:0.5},{ar:6,tq:1},{ar:8,tq:2}];
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
 const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile
 const TG_URL='https://t.me/LUNARmemecoin';   // Telegram news channel
@@ -461,7 +488,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
- 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S){
@@ -486,6 +513,7 @@ function ecoNorm(S){
  if(S.dq&&typeof S.dq==='object'){S.dq.ids=listOf(S.dq.ids);S.dq.p=S.dq.p||{};S.dq.c=S.dq.c||{};S.dq.was=listOf(S.dq.was);}
  if(S.wk&&typeof S.wk==='object'){S.wk.ids=listOf(S.wk.ids);S.wk.p=S.wk.p||{};S.wk.u=S.wk.u||{};S.wk.c=S.wk.c||{};for(const id in S.wk.u)S.wk.u[id]=listOf(S.wk.u[id]);}
  if(S.pass&&typeof S.pass==='object'){S.pass.cf=listOf(S.pass.cf);S.pass.cp=listOf(S.pass.cp);S.pass.xp=Number(S.pass.xp)||0;S.pass.prem=!!S.pass.prem;}
+ S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.mnw&&typeof S.mnw==='object'){S.mnw={w:S.mnw.w|0,n:Math.max(0,S.mnw.n|0),p:S.mnw.p?1:0};}else delete S.mnw;   // minerals, Hull Plating, weekly league minerals
  return S;
 }
 // ---- gear in the state ----
@@ -520,7 +548,7 @@ function ecoLoadout(S,L0){
  const paint=PAINTS[L0.paint]&&S.paints&&S.paints[L0.paint]?L0.paint:'stock';
  const mods=fittingSelection(S.lab?L0.mods:undefined),f=fittingStats(mods);
  const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
- return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg)};   // vl: Vault level, looks only
+ return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg),ap:apOf(S.ap)};   // vl: Vault level, looks only; ap: owned Hull Plating (never from the client)
 }
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
@@ -616,6 +644,29 @@ function ecoUp(S,k){
  if(upLevels(S.up)>=BUILD_MAX)return {err:'budget'};
  const cost=UPS[k].costs[lvl];if(S.pts<cost)return {err:'pts',need:cost-S.pts};
  S.pts-=cost;S.ptsSpent+=cost;S.up[k]++;return {k,lv:S.up[k]};
+}
+// Fabricate a Hull Plating plate in a slot (0 FRONT, 1 LEFT, 2 RIGHT, 3 TURRET). Instant, from the account wallet and
+// spendable points. Upgrading absorbs the plate already there (no refund); a plate is permanent (never lost, never traded).
+function ecoPlate(S,slot,tier){
+ slot=Math.round(Number(slot));tier=Math.round(Number(tier));if(!(slot>=0&&slot<=3)||!(tier>=1&&tier<=6))return {err:'item'};
+ S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.ap[slot]>=tier)return {err:'have'};
+ const C=PLATE.cost[tier];for(const k of MN_ORDER)if(C[k]&&S.mn[k]<C[k])return {err:'mn',k,need:C[k]-S.mn[k]};
+ if(S.pts<C.pts)return {err:'pts',need:C.pts-S.pts};
+ for(const k of MN_ORDER)if(C[k])S.mn[k]-=C[k];S.pts-=C.pts;S.ptsSpent+=C.pts;S.ap[slot]=tier;
+ return {slot,tier,set:plateStats(S.ap).set};
+}
+// Minerals into the wallet (Conquest banking, Arcade/PvP drops, weekly league minerals, strike rewards)
+function ecoMinerals(S,add){S.mn=mnOf(S.mn);const got={};for(const k of MN_ORDER){const n=Math.floor(Number(add&&add[k])||0);if(n>0){S.mn[k]+=n;got[k]=n;}}return got;}
+// A verified Arcade/PvP result's minerals (§5.5): its drop, plus the weekly league minerals at the week's 20th match.
+// Quits never reach here. lg: the league the match was played in.
+function ecoMatchMinerals(S,o,lg,X){
+ const row=o.won?MN_DROP.win:o.drawn||o.top3?MN_DROP.draw:MN_DROP.loss,drop={};
+ for(const [k,[g,c]] of Object.entries(row)){const n=g+(c>0&&X.rnd()<c?1:0);if(n>0)drop[k]=n;}
+ const got=ecoMinerals(S,drop);
+ if(!S.mnw||S.mnw.w!==X.week)S.mnw={w:X.week,n:0,p:0};S.mnw.n++;let weekly=null;
+ if(!S.mnw.p&&S.mnw.n>=MN_WEEKLY_N){S.mnw.p=1;const W=MN_WEEKLY[Math.max(0,Math.min(MN_WEEKLY.length-1,lg|0))],add={};
+  for(const [k,v] of Object.entries(W)){const n=Math.floor(v)+(X.rnd()<v-Math.floor(v)?1:0);if(n>0)add[k]=n;}weekly=ecoMinerals(S,add);}
+ return {drop:got,weekly};
 }
 // clear the build: every level to 0, half the points back. A paid reset (tier in $) also covers the points fee, so every
 // point comes back; it covers any fee that rounds to that tier. A paid reset with nothing to clear waits for the next one (rsCr)
@@ -777,8 +828,8 @@ function ecoMatchPts(S,o,lg,X){
  const mk=MODES[o.m]?o.m:'1v1',sb=o.won?streakPts(o.g,mk,S.streak):0,M=MODES[mk],solo=isSolo(o.g);
  const zx=teamX(o.g,mk,!!o.series),fxm=o.feat?FEATURED_X:1;
  const base=Math.round(solo?ROYALE_PTS[Math.max(1,Math.min(6,o.place||6))-1]:(o.won?M.win:o.drawn?M.draw:M.loss)*zx);
- const P=leaguePay(base*fxm+sb,lg),b=ecoPlayAward(S,P.base,P.pts,X);
- return {pts:P.pts,awarded:b.awarded,bonus:b.bonus,base,basePts:P.base,lgBonus:b.lb,lgPay:leagueInfo(lg).pay,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb};
+ const P=leaguePay(base*fxm+sb,lg),b=ecoPlayAward(S,P.base,P.pts,X),mn=ecoMatchMinerals(S,o,lg,X);
+ return {pts:P.pts,awarded:b.awarded,bonus:b.bonus,base,basePts:P.base,lgBonus:b.lb,lgPay:leagueInfo(lg).pay,modeX:zx,featX:fxm,streak:S.streak,streakBonus:sb,mn};
 }
 // A match's points, split in two. Base points (b1: the match with featured, streak and league base pay) are what the daily
 // cap, the daily/weekly boards, the leaderboard and the airdrop count. The league bonus (pts - b1) is paid on top, to spendable

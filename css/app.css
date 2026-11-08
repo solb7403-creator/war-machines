@@ -185,6 +185,11 @@ h3.sec .aside{margin-left:auto;font:500 13px var(--body);color:var(--dust)}
 .ups .bar4{display:flex;gap:3px;margin-top:5px}
 .ups .bar4 i{width:16px;height:5px;border-radius:2px;background:var(--rock4)}
 .ups .bar4 i.f{background:var(--ok)}
+.ups .plate{border-left:3px solid var(--pc,#3a4656)}
+.ups .bar6 i.f{background:var(--pc,var(--ok));box-shadow:0 0 6px var(--pc,transparent)}
+.mnwallet{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.mnchip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:12px;white-space:nowrap}
+.mnchip i{width:9px;height:9px;transform:rotate(45deg);background:var(--mc);box-shadow:0 0 6px var(--mc)}
 .bar14{display:flex;gap:3px;margin:2px 0 10px}
 .bar14 i{flex:1;height:6px;border-radius:2px;background:var(--rock4)}
 .bar14 i.f{background:var(--gold)}

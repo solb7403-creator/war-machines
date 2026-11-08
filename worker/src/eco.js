@@ -459,7 +459,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const dy = bp.dy && bp.dy[X.day];
     if (dy) dy[1] = Math.floor((now % DAY_MS) / 60000);
     flags = flags.concat(bpFlags(S));
-    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, bonus: p.bonus || 0, base: p.base, basePts: p.basePts, lgBonus: p.lgBonus, modeX: p.modeX, featX: p.featX, mult: T.mult, lg: T.lg, lgi: S.lgi }) };
+    return { ghr, res: keep({ pts: p.pts, awarded: p.awarded, streak: p.streak, streakBonus: p.streakBonus, bonus: p.bonus || 0, base: p.base, basePts: p.basePts, lgBonus: p.lgBonus, modeX: p.modeX, featX: p.featX, mult: T.mult, lg: T.lg, lgi: S.lgi, mn: p.mn }) };
   }, now, { rl: 1 });
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now);
   if (t.ghr && t.ghr.length) await ghostReport(env, t.ghr, now).catch(() => {});
@@ -495,16 +495,17 @@ export async function creditMatch(env, pid, name, calc, now = Date.now()) {
     const pts = Math.max(0, Math.round(c.pts || 0)), aw = R.ecoPlayAward(S, c.base === undefined ? pts : c.base, pts, X), awarded = aw.awarded;
     S.pvs = c.pvs || 0; S.pvm = (S.pvm || 0) + 1;
     const k = c.won ? "pvw" : c.drawn ? "pvd" : "pvl"; S[k] = (S[k] || 0) + 1;
+    let mn = null;
     if (c.m) {
       if (c.m.quit) R.ecoQuit(S);
-      else { R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
+      else { mn = R.ecoMatchMinerals(S, { won: !!c.won, drawn: !!c.drawn, top3: !!c.m.top3 }, S.lgi | 0, X); R.ecoAfterMatch(S, { ...c.m, streak: S.pvs }, X); flags = watch(S, { ai: false, secs: c.m.secs || 0, pts }, X, now); }
       if (c.pw) R.ecoLeague(S, c.pw);   // live results move your form and league the same way
     }
-    return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0, lgBonus: aw.lb, lgi: S.lgi };
+    return { pts, awarded, capped: awarded < pts, pvs: S.pvs, sb: c.sb || 0, lgBonus: aw.lb, lgi: S.lgi, mn };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
   for (const o of trade) await link(env, pid, o, "trade").catch(() => {});
-  return { pts: t.pts, awarded: t.awarded, capped: t.capped, pvs: t.pvs, sb: t.sb, lgBonus: t.lgBonus, lgi: t.lgi };
+  return { pts: t.pts, awarded: t.awarded, capped: t.capped, pvs: t.pvs, sb: t.sb, lgBonus: t.lgBonus, lgi: t.lgi, mn: t.mn };
 }
 
 // ================= Conquest airdrop points =================
@@ -517,23 +518,24 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
   const t = await tx(env, pid, (S, X) => {
     const w = Number.isSafeInteger(S.cqw) ? S.cqw : 0;
     const fresh = (Array.isArray(out) ? out : []).filter((e) => e && Number.isSafeInteger(e.id) && e.id > w && e.id <= 1e12).sort((a, b) => a.id - b.id);
-    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay });
+    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay, mn: R.mnOf(S.mn), ap: R.apOf(S.ap) });
     if (!fresh.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
-    let base = 0, spend = 0, ms = 0, op = false;
+    let base = 0, spend = 0, ms = 0, op = false;const mn = {};
     for (const e of fresh) {
+      if (e.mn) { const m = R.mnOf(e.mn); for (const k of R.MN_ORDER) if (m[k] > 0 && m[k] <= 10000) mn[k] = (mn[k] || 0) + m[k]; }   // banked Conquest minerals (RESOURCE_ECONOMY.md §5.3): to the wallet, once, by entry id
       const b = Math.max(0, Math.round(Math.min(1e6, Number(e.raw) || 0) * L.pay));
       base += b; spend += Math.round(b * L.mult); ms += Math.max(0, Math.min(36e5, Number(e.ms) || 0)); op = op || !!e.op;
     }
-    const aw = R.ecoPlayAward(S, base, spend, X);
+    const aw = R.ecoPlayAward(S, base, spend, X), got = R.ecoMinerals(S, mn);
     if (op) R.ecoPlayDay(S, X);
     S.cqw = fresh[fresh.length - 1].id;
     S.cqd = S.cqd && S.cqd.d === X.day ? S.cqd : { d: X.day, b: 0, ms: 0, n: 0 };
     S.cqd.b += aw.base; S.cqd.ms += ms; S.cqd.n += fresh.length;
     flags = watchConquest(S, X, now);
-    return { ...view(), base: aw.base, awarded: aw.awarded, capped: aw.base < base };
+    return { ...view(), base: aw.base, awarded: aw.awarded, capped: aw.base < base, minerals: got };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
-  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped };
+  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped, mn: t.mn, ap: t.ap, minerals: t.minerals || {} };
 }
 // Conquest anomaly flags (flag only: a flagged pilot keeps playing and sits out the airdrop snapshot until cleared)
 function watchConquest(S, X, now) {
@@ -726,6 +728,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     case "salvage": if (tk !== "weapon" && tk !== "chassis" || !(ri === 1 || ri === 2)) break; F = (S, X) => R.ecoSalvage(S, tk, ri, X); break;
     case "tune": { const isW = !!b.w, k = String(b.k || ""), t = riOf(b.t); if (t === null || !(isW ? R.WORDER : R.CHORDER).includes(k)) break; F = (S, X) => R.ecoTune(S, isW, k, t, X); break; }
     case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k); break; }
+    case "plate": { const sl = Number(b.k), tr = Number(b.t); if (!(Number.isInteger(sl) && sl >= 0 && sl <= 3 && Number.isInteger(tr) && tr >= 1 && tr <= 6)) break; F = (S) => R.ecoPlate(S, sl, tr); break; }   // Hull Plating (RESOURCE_ECONOMY.md §6.2)
     case "respec": F = (S) => R.ecoRespec(S); break;
     case "squad": {
       // recruits flagged for review (a shared device or network, or anything else) don't pay out until Jake clears them

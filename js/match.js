@@ -181,7 +181,7 @@ if(typeof document!=='undefined')document.addEventListener('visibilitychange',()
 const MATCH_WHY={mode:'this mode isn’t open right now',map:'this map isn’t open right now',proof:'the match couldn’t be verified',fast:'the match ended too fast',expired:'it was more than a day old',ticket:'the match ticket was already used',overlap:'it overlaps another match on this account',late:'too many matches without a ticket today'};
 function matchScored(tok,r){   // the server's numbers for a result, onto the results screen if it's still up
  const L=lastResult;if(!L||L.tok!==tok)return;
- if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,sqb:r.res.bonus||0,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,basePts:r.res.basePts,lgBonus:r.res.lgBonus,after:ecoBase(save)||L.after,note:null});}
+ if(r&&r.ok&&r.res){Object.assign(L,{pts:r.res.pts,awarded:r.res.awarded,sqb:r.res.bonus||0,capped:r.res.awarded<r.res.pts,streak:r.res.streak,streakBonus:r.res.streakBonus,leagueMult:r.res.mult||L.leagueMult,basePts:r.res.basePts,lgBonus:r.res.lgBonus,after:ecoBase(save)||L.after,note:null,mn:r.res.mn||null});}
  else if(r&&r.hold&&r.error==='hourly')Object.assign(L,{note:'Saved: this hour’s match limit is reached, so it counts '+(r.retry?'in about '+Math.max(1,Math.ceil(r.retry/60000))+' min':'soon')});
  else if(r&&(r.hold||r.error==='busy'))Object.assign(L,{note:'Saved: the server is busy, it will count shortly'});
  else if(r&&r.error==='pending')Object.assign(L,{note:'Saved: it will count when you’re back online'});
@@ -212,7 +212,7 @@ function localEnd(forced){
  const r=ecoMatchPts(IN_WEB?JSON.parse(JSON.stringify(save)):save,mo,battleLg,ecoX());
  if(IN_WEB){r.pts=0;r.awarded=0;} // Only the scored server response may change website progression.
  if(!SRV_ECO&&r.pts>0&&!r.awarded)showToast('Daily point cap reached. It resets at 00:00 UTC.');
- afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,basePts:r.basePts,lgBonus:r.lgBonus,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick});
+ afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,basePts:r.basePts,lgBonus:r.lgBonus,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick,mn:IN_WEB||SRV_ECO?null:r.mn});
  const st=mstat||{};
  const gh=units.filter(u=>u.gh&&u.gid!==undefined).map(u=>{const g=outcome(u,forced),s=u.st||{};return {i:u.gid,won:g.won?1:0,drawn:g.drawn?1:0,dmg:Math.round(s.dmg||0),kills:s.kills||0};});
  matchEnd({won,drawn,place,gh,pf:proofData(),seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
@@ -233,7 +233,7 @@ function afterMatch(o){
  lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,basePts:o.basePts,lgBonus:o.lgBonus,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,
   before:o.before,after:ecoBase(save),stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),arm:Math.round(st.arm||0),shd:Math.round(st.shd||0),best:Math.round(st.best||0),low:typeof st.low==='number'?st.low:1,cry:st.cry,stars:st.stars},
   quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won&&!storm,meCls:me.cls,series:series?{w:o.seriesW||series.w.slice()}:null,
-  live:!!o.live,quit:!!o.quit,n:units.length};
+  live:!!o.live,quit:!!o.quit,n:units.length,mn:o.mn||null};
  store();
  if(typeof fx==='function')fx(won?'win':drawn?'draw':'lose');
  if(typeof onMatchEnd==='function')setTimeout(()=>onMatchEnd(lastResult),won?650:900);

@@ -330,7 +330,7 @@ export class RoomCore {
       return new Promise((res) => this.io.setTimeout(res, 500 * 2 ** k)).then(() => tryCredit(k + 1));
     });
     const p = tryCredit(0)
-      .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb, lgBonus: c.lgBonus || 0 }))
+      .then((c) => Object.assign(res, { pts: c.pts, awarded: c.awarded, capped: c.capped, streak: c.pvs, streakBonus: c.sb, lgBonus: c.lgBonus || 0, mn: c.mn || null }))
       .catch(() => Object.assign(res, { pts: 0, awarded: 0, capped: false, streak: 0, streakBonus: 0, err: true }))
       .then(() => { s.res = res; this.sendTo(s, { k: "res", r: res }); });
     this.pending.push(p);

@@ -37,13 +37,16 @@ export function settleOpKills(s,now){const a=airdrop(s),k=a.opk;delete a.opk;if(
 export function played(s,ms){const a=airdrop(s);a.ms=Math.min(36e5,a.ms+Math.max(0,ms));}
 // End of every Conquest transaction: this request's outcomes become one immutable entry (or wait in the spill).
 export function seal(s,now){
- const a=airdrop(s),p=a.pend;delete a.pend;
- if(p&&p.raw>0){const sp=a.spill||(a.spill={raw:0,n:{},op:0});sp.raw=Math.round((sp.raw+p.raw)*100)/100;tally(sp.n,p.n);sp.op=sp.op||p.op;}
- if(a.spill&&a.spill.raw>0&&a.out.length<OUTBOX_MAX){a.seq++;a.out.push({id:a.seq,at:now,raw:a.spill.raw,n:a.spill.n,op:a.spill.op?1:0,ms:Math.round(a.ms)});a.ms=0;delete a.spill;}
+ const a=airdrop(s),p=a.pend,m=a.pmn;delete a.pend;delete a.pmn;
+ if(p&&p.raw>0||m){const sp=a.spill||(a.spill={raw:0,n:{},op:0});if(p&&p.raw>0){sp.raw=Math.round((sp.raw+p.raw)*100)/100;tally(sp.n,p.n);sp.op=sp.op||p.op;}if(m)sp.mn=tally(sp.mn||{},m);}
+ if(a.spill&&(a.spill.raw>0||a.spill.mn)&&a.out.length<OUTBOX_MAX){a.seq++;const e={id:a.seq,at:now,raw:a.spill.raw||0,n:a.spill.n||{},op:a.spill.op?1:0,ms:Math.round(a.ms)};if(a.spill.mn)e.mn=a.spill.mn;a.out.push(e);a.ms=0;delete a.spill;}
  return a;}
+// Banking Conquest minerals (RESOURCE_ECONOMY.md §5.3): the carried minerals leave the cargo and ride this request's
+// immutable outbox entry to the account wallet (credited once, by id, like points). Nothing is lost if the credit waits.
+export function bankMinerals(s,mn){const a=airdrop(s),add={};for(const [k,v] of Object.entries(mn||{})){const n=Math.floor(Number(v)||0);if(n>0)add[k]=n;}if(Object.keys(add).length)a.pmn=tally(a.pmn||{},add);return add;}
 // Whether this request should credit the account now: an operation completed, the oldest entry waited long enough, or a
 // batch is pending. Everything else waits (cheaper; nothing is lost: the session open credits any leftovers).
-export function due(s,now){const a=airdrop(s),out=a.out.filter(e=>e.id>a.ack);return out.length>0&&(out.some(e=>e.op)||out.length>=CREDIT_BATCH||now-Math.min(...out.map(e=>e.at||now))>=CREDIT_AFTER_MS);}
+export function due(s,now){const a=airdrop(s),out=a.out.filter(e=>e.id>a.ack);return out.length>0&&(out.some(e=>e.op||e.mn)||out.length>=CREDIT_BATCH||now-Math.min(...out.map(e=>e.at||now))>=CREDIT_AFTER_MS);}
 export const pending=s=>airdrop(s).out.filter(e=>e.id>airdrop(s).ack);
 // After the account credited up to cqw: drop those entries and keep the latest account numbers for the HUD.
 export function acknowledge(s,cqw,view){const a=airdrop(s);a.ack=Math.max(a.ack,cqw|0);a.out=a.out.filter(e=>e.id>a.ack);if(view)a.view=view;return a;}

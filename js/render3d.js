@@ -136,6 +136,7 @@ function fittingB(f,team,part,s){const key=JSON.stringify(s&&[s.lunar?1:0,...(pa
 const KC=new Map();
 function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};if(r.k.hf)return v;KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
 const hfKey=()=>typeof Equipment3D!=='undefined'&&Equipment3D.enabled?'hf:'+Equipment3D.quality+':'+Equipment3D.generation+'|':'';
+const PLATECACHE=new Map();function plateB(s,part){const low=R3.q!=='high',key=[part,s.ap.join(''),low?1:0,...(part==='body'?[s.cls,s.ct]:[s.arch,s.wt])].join('|');if(!PLATECACHE.has(key)){PLATECACHE.set(key,M3.bake(M3.plateKit(s.ap,part,s,low).k));if(PLATECACHE.size>FITTING_CACHE_LIMIT){const f=PLATECACHE.keys().next().value;for(const g of Object.values(PLATECACHE.get(f)))g?.dispose();PLATECACHE.delete(f);}}return PLATECACHE.get(key);}
 function chassisB(s){return bakedOf(hfKey()+['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>(s.ghost?M3.foundationChassis:M3.chassisKit)(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
 function weaponB(s){return bakedOf(hfKey()+['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>(s.ghost?M3.foundationWeapon:M3.weaponKit)(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
 let BOSSB=null;
@@ -181,6 +182,7 @@ function buildTank(spec,mats){
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);wg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
  // the Moonbeam's mount fitting is drawn against its cradle, so it rides in wg; standard mounts are unchanged (wg===tg)
  if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body',spec),null,mats));wg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount',spec),null,mats));}
+ if(spec.ap&&!spec.boss){body.add(M3.meshOf(plateB(spec,'body'),null,mats));wg.add(M3.meshOf(plateB(spec,'mount'),null,mats));}   // Hull Plating (rules.js plateStats)
  const T={g,hull,body,tur,tg,wg,ws,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
  if(!spec.boss&&typeof GraphicsMotion!=='undefined'&&typeof Equipment3D!=='undefined'&&Equipment3D.active())T.motion=GraphicsMotion.attach(g,H.meta.track);
  if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
@@ -202,10 +204,10 @@ function unitSpec(u){
  let ct=Math.max(0,Math.min(2,u.aura|0));
  if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,((typeof rangeRun!=='undefined'&&rangeRun?.sim?rangeRun.cfg.L:myLoadout()).c.t)|0);}catch(e){}}
  const lunar=u.skin==='lunar',team=tcol(u.team);
- return {fits:u.fits,cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl)};
+ return {fits:u.fits,cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl),ap:Array.isArray(u.ap)&&u.ap.some(Boolean)?u.ap.slice(0,4):null};
 }
 const vtOf=vl=>(vl|0)>=10?2:(vl|0)>=1?1:0;   // the tooth: none, gold, glowing
-const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{}),hfKey()].join('|');
+const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{}),s.ap?s.ap.join(''):'',hfKey()].join('|');
 function unitMats(ghost){
  const lit=MT.lit.clone(),shine=MT.shine.clone();
  if(ghost){for(const m of [lit,shine]){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(0x3a5a9a);m.depthWrite=false;}return {lit,shine,glow:MT.gglow};}

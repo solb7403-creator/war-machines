@@ -49,6 +49,6 @@ return {
   MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,powerWin,tankOf,leagueInfo,leaguePay,leagueIdx,leagueRating,LEAGUE,featuredOn,liveModes,isSolo,
   STAT,DASH_SPD,DASH_T,MAPS,AW:W,AH:H,RAD:R,SUP,GEM},   // the last row: limits the server checks AI match records against (worker/src/proof.js)
  setup:liveSetup,setTank:liveTank,roster,snap:snapState,start:startMatch,startRound,step:update,
- outcome,placeOf,useSuper,netClaim,netDash,netShield,netTarget,setCtl,hit:takeHit,
+ outcome,placeOf,useSuper,netClaim,netDash,netShield,netTarget,setCtl,hit:takeHit,plateCutOf:plateCut,
  get state(){return state;},get units(){return units;},get series(){return series;},get map(){return curMap;},get g(){return matchG;},get storm(){return storm;}
 };

@@ -233,12 +233,13 @@ function renderPlay(){
 // Every number on this screen comes from the rules tables (machineView, machineDelta, legendaryEdge, buildTag, FITS).
 let gBay=null,gCmp=null,gMore=false,gShowroom=null,gStageEl=null,gStaticKey='',gShare=null;
 const gOpen=new Set(['loadout']);
-const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Shared by both bays'],
+const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Shared by both bays'],['plate','Hull Plating','Armor from minerals, in every mode'],
  ['fit','Mods','Free trade-offs within a budget'],['style','Style','Looks only, except Lunar Skin']];
 const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
 const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
  cores:'Tap a socket, then a core, to see what it changes before you fit it.',
  up:'Levels cost points and count for both bays: '+BUILD_MAX+' levels in all, spread them how you like.',
+ plate:'Plates add max hull HP on both bays and in every mode. Minerals come from Conquest deposits, Meteor Strikes and Arcade/PvP results.',
  fit:'Mods are free. Each one trades one stat for another and adds one effect that changes how you fight; mix them within the weight and power budget.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
 const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
@@ -406,6 +407,7 @@ const G_BODY={
      (sel&&!max&&!full?gCmpCard(L,{...L,up:{...L.up,[k]:lv+1}},'up',k,'Buy level '+(lv+1)+' for '+fmtNum(c)+' points','<p class="gnote">Applies to both bays.</p>'):'');}).join('')+'</div>'+
    (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">'+(save.rsCr?'Paid reset ready: every level back to 0 and all '+fmtNum(inv)+' points back.':'Every level back to 0. Pay the fee in points and get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' back'+(respecTier(inv)?', or pay $'+respecTier(inv).toFixed(2)+' and keep all of them.':'.'))+'</div></div><span class="mut">Reset</span></button>':'');
  },
+ plate:(spec,L)=>gPlateBody(L),
  fit:(spec,L)=>{
   const cur=fittingSelection(spec.mods),f=fittingStats(cur);
   const bud=(n,k)=>'<div class="gbud"><span>'+n+'</span><div class="gbud-t">'+Array.from({length:FIT_BUDGET[k]},(_,i)=>'<i class="'+(i<f[k]?'f':'')+'"></i>').join('')+'</div><b>'+f[k]+' of '+FIT_BUDGET[k]+'</b></div>';
@@ -427,10 +429,25 @@ function gPaintCard(id,cur){
  const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'Buy · '+fmtNum(P.stars)+' ⭐';
  return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
+// Hull Plating (RESOURCE_ECONOMY.md §6): the mineral wallet, then each slot's next plate with its exact cost; compare, then fabricate
+const mnChip=(k,n)=>'<span class="mnchip" style="--mc:'+MINERALS[k].c+'"><i aria-hidden="true"></i>'+fmtNum(n)+' '+esc(MINERALS[k].s)+'</span>';
+function gPlateBody(L){
+ const P=plateStats(save.ap),mn=mnOf(save.mn),wallet='<div class="mnwallet" aria-label="Mineral wallet">'+MN_ORDER.map(k=>mnChip(k,mn[k])).join('')+'</div>';
+ const rows=PLATE.slots.map((sl,i)=>{const t=P.ap[i],nx=t+1,max=t>=6,C=max?null:PLATE.cost[nx],sel=gCmp==='plate|'+i+'|'+nx;
+  const have=C&&MN_ORDER.every(k=>!C[k]||mn[k]>=C[k])&&(save.pts||0)>=C.pts,cost=C?MN_ORDER.filter(k=>C[k]).map(k=>C[k]+' '+MINERALS[k].s).join(' + ')+' + '+fmtNum(C.pts)+' pts':'';
+  const cur=t?esc(MINERALS[MN_ORDER[t-1]].s)+' plate · +'+(PLATE.hp[t]*100)+'% hull':'No plate';
+  return '<div class="up plate'+(sel?' picked':'')+'" style="--pc:'+(t?MINERALS[MN_ORDER[t-1]].c:'#3a4656')+'"><div class="grow"><div class="nm">'+sl+' <span class="dimtxt">'+cur+'</span></div>'+
+   (max?'':'<div class="d">Next: '+esc(MINERALS[MN_ORDER[nx-1]].n)+' (+'+(PLATE.hp[nx]*100)+'% hull) · '+cost+'</div>')+'<div class="bar4 bar6">'+[1,2,3,4,5,6].map(k=>'<i class="'+(k<=t?'f':'')+'"></i>').join('')+'</div></div>'+
+   (max?'<span class="mut">Maxed</span>':'<button class="btn sm '+(have?'btn-gold':'btn-quiet')+'" data-act="gplc" data-arg="'+i+'|'+nx+'" aria-label="'+sl+' '+esc(MINERALS[MN_ORDER[nx-1]].s)+' plate, '+esc(cost)+': compare first">Fabricate</button>')+'</div>'+
+   (sel?gCmpCard(L,{...L,ap:P.ap.map((v,j)=>j===i?nx:v)},'plate',i+'|'+nx,'Fabricate for '+cost,'<p class="gnote">Instant and permanent. The plate it replaces is absorbed (no refund).'+(nx>=5?' A full '+esc(MINERALS[MN_ORDER[nx-1]].s)+' set adds '+(nx>=6?'−10% energy and −10% area damage taken.':'−10% energy damage taken (not Moonbeam).'):'')+'</p>'):'');}).join('');
+ const set=P.set?'<p class="gnote">Full '+esc(MINERALS[MN_ORDER[P.set-1]].n)+' set'+(P.e?': −10% energy damage taken'+(P.a?', −10% area damage taken':''):'')+'.</p>':'<p class="gnote">A set trait needs all four plates at that tier or better (Selenite: −10% energy; Moonheart: also −10% area).</p>';
+ return '<p class="gshared">Shared by both bays · every mode</p>'+wallet+'<div class="ups list">'+rows+'</div>'+set;
+}
 function gSum(k,spec){
  if(k==='loadout')return esc(gItem(true,spec.w).name)+' · '+esc(gItem(false,spec.c).name);
  if(k==='cores')return spec.cores.map(c=>c?GEM[c].name:'Empty').join(' · ');
  if(k==='up')return upLevels(save.up)+' of '+BUILD_MAX+' levels used';
+ if(k==='plate'){const P=plateStats(save.ap),n=P.ap.filter(Boolean).length;return n?n+' of 4 plated · +'+(Math.round(P.hp*1000)/10)+'% hull'+(P.set?' · '+esc(MINERALS[MN_ORDER[P.set-1]].s)+' set':''):'No plates yet · first plate: '+PLATE.cost[1].fe+' Ferrite';}
  if(k==='fit'){const m=fittingSelection(spec.mods),n=FIT_ORDER.filter(s=>m[s]!=='stock').map(s=>FITS[s][m[s]].n);return n.length?esc(n.join(' · ')):'All standard parts';}
  return esc((PAINTS[spec.paint]||PAINTS.stock).n)+' paint'+(save.skin==='lunar'?' · Lunar Skin':'');
 }
@@ -1174,6 +1191,8 @@ function resultsHTML(r){
  if(r.sqb>0)lines.push(['Squad match bonus','+'+fmtNum(r.sqb)]);   // verified active recruits (server-set)
  if(r.capped)lines.push(['Daily cap ('+fmtNum(DAILY_CAP)+') reached','−'+fmtNum(r.pts-r.awarded)]);
  if(r.note)lines.push([esc(r.note),'0']);   // the server didn't count it (too fast, an expired ticket, no connection at the start)
+ // minerals the server dropped for this result (RESOURCE_ECONOMY.md §5.5), and the weekly league minerals at the week's 20th match
+ if(r.mn){const fmt=o=>MN_ORDER.filter(k=>o&&o[k]).map(k=>'+'+o[k]+' '+MINERALS[k].s).join(' · ');if(fmt(r.mn.drop))lines.push(['Minerals (to your wallet)',fmt(r.mn.drop)]);if(r.mn.weekly&&fmt(r.mn.weekly))lines.push(['Weekly league minerals',fmt(r.mn.weekly)]);}
  const t=tierOfPts(r.after),lo=TPTS[t],hi=TPTS[t+1],f=hi?(r.after-lo)/(hi-lo):1;
  const rb=lbCache?myRank(r.before):null,ra=lbCache?myRank(r.after):null;
  let rank='';
@@ -1596,6 +1615,11 @@ const gShowCmp=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const c=
 ACT.gcmp=a=>{gCmp=gCmp===a?null:a;fx('tap');if(gCmp)gShowCmp();};
 ACT.gcmpx=()=>{gCmp=null;};
 ACT.gupc=k=>{gCmp=gCmp==='up|'+k?null:'up|'+k;fx('tap');if(gCmp)gShowCmp();};
+ACT.gplc=a=>{gCmp=gCmp==='plate|'+a?null:'plate|'+a;fx('tap');if(gCmp)gShowCmp();};
+ACT.plate=a=>{gCmp=null;const [sl,t]=String(a).split('|').map(Number),C=PLATE.cost[t],mn=mnOf(save.mn);if(!C)return;
+ const miss=MN_ORDER.filter(k=>C[k]&&mn[k]<C[k]);if(miss.length){showToast('You need '+miss.map(k=>(C[k]-mn[k])+' more '+MINERALS[k].s).join(' and ')+'. Find them in Conquest, Meteor Strikes and matches.');return;}
+ if((save.pts||0)<C.pts){showToast('You need '+fmtNum(C.pts-(save.pts||0))+' more points');return;}
+ when(fabPlate(sl,t),ok=>{if(ok)syncPlayer();uiDirty();});};
 ACT.gmore=()=>{gMore=!gMore;};
 ACT.ghint=k=>{save.gHint={...(save.gHint||{}),[k]:1};store();};
 ACT.goshop=()=>{closeAll();setTab('shop');};
