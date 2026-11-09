@@ -247,8 +247,16 @@ function standIn(S,k,t,lvl){const T=S.T,b=new S.Bld();if(t==='home'){b.box(0,1.4
  const z=P.sizeOf(t,0),W=z.w*P.GRID.cell-1,D=z.d*P.GRID.cell-1,H=2.4+Math.max(1,lvl)*1.1;b.box(0,H/2,0,W,H,D,k.C.mid);b.box(0,H+.1,0,W*.86,.2,D*.86,P.VITALS[t]?k.C.gold:k.C.cyan,P.VITALS[t]?1.3:.8);return b.geometry();}
 function diorama(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wgeo:o.cache?.wgeo||new Map(),hgeo:o.cache?.hgeo||new Map(),tgeo:o.cache?.tgeo||new Map()},g=new T.Group(),town=new T.Group(),pl=plan(p),h=P.townH(p.cc),c=P.GRID.cell,half=(h+2.5)*c;
  g.add(town);const sc=o.scale||1,vy=o.vy||1,bv=o.bv||1;town.scale.set(sc,sc*vy,sc);   // bv: buildings, turrets and homes stretched upward about their own base (walls keep vy)
- for(const m of terrain(S,p.site,p.cc,p,{step:low?12:8,clip:half,props:!low,glow:!low,far:false})){const a=m.geometry?.attributes?.aCol;if(a&&m.material===S.MAT.solid&&a.count>500){for(let i=0;i<a.count;i++)a.setW(i,Math.max(a.getW(i),.32));a.needsUpdate=true;}town.add(m);}   // owner gate: the board is self-lit (the courtyard is dark)
- {const b=new S.Bld();b.box(0,-1.1,0,2*half+2,2.2,2*half+2,k.C.dark2);for(const [x,z,w,d] of [[0,-half-1,2*half+2.4,.5],[0,half+1,2*half+2.4,.5],[-half-1,0,.5,2*half+2.4],[half+1,0,.5,2*half+2.4]])b.box(x,-.2,z,w,.5,d,k.C.cyan,.5);town.add(b.mesh());}
+ const tm=terrain(S,p.site,p.cc,p,{step:low?12:8,clip:half,props:!low,glow:!low,far:false});for(const m of tm){const a=m.geometry?.attributes?.aCol;if(a&&m.material===S.MAT.solid&&a.count>500){for(let i=0;i<a.count;i++)a.setW(i,Math.max(a.getW(i),.32));a.needsUpdate=true;}town.add(m);}   // owner gate: the board is self-lit (the courtyard is dark)
+ // The board is a cut block of the site: skirts from the ground's edge down to a base plate under its lowest point (the old
+ // plinth top sat at height 0, buried ridge terraces and the crater bowl under it and z-fought with flat ground).
+ const gp=tm[0].geometry.attributes.position,ga=tm[0].geometry.attributes.aCol,N=Math.round(Math.sqrt(gp.count));let minH=0;for(let i=0;i<gp.count;i++)minH=Math.min(minH,gp.getY(i));const base=minH-2.2;
+ {const Pp=[],Nn=[],A=[],I=[],sc0=TCOL.cliff,sk=[sc0[0]*1.7,sc0[1]*1.7,sc0[2]*1.7],e1=new T.Vector3(),e2=new T.Vector3(),nn=new T.Vector3();
+  const side=(idx,dx,dz)=>{for(let q=0;q<idx.length-1;q++){const a=idx[q],b2=idx[q+1],n0=Pp.length/3,ax=gp.getX(a),ay=gp.getY(a),az=gp.getZ(a),bx=gp.getX(b2),by=gp.getY(b2),bz=gp.getZ(b2);Pp.push(ax,ay,az,bx,by,bz,bx,base,bz,ax,base,az);for(let r=0;r<4;r++)Nn.push(dx,0,dz);for(const v of [a,b2])A.push(ga.getX(v)*.7,ga.getY(v)*.7,ga.getZ(v)*.7,.22);A.push(sk[0]*.45,sk[1]*.45,sk[2]*.5,.06,sk[0]*.45,sk[1]*.45,sk[2]*.5,.06);   // a geological cut: the edge's own ground fading to dark rock
+    e1.set(bx-ax,by-ay,bz-az);e2.set(bx-ax,base-ay,bz-az);nn.crossVectors(e1,e2);if(nn.x*dx+nn.z*dz>=0)I.push(n0,n0+1,n0+2,n0,n0+2,n0+3);else I.push(n0,n0+2,n0+1,n0,n0+3,n0+2);}};
+  const rng=[...Array(N).keys()];side(rng.map(b2=>b2),-1,0);side(rng.map(b2=>(N-1)*N+b2),1,0);side(rng.map(a2=>a2*N),0,-1);side(rng.map(a2=>a2*N+N-1),0,1);
+  const g2=new T.BufferGeometry();g2.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g2.setAttribute('normal',new T.Float32BufferAttribute(Nn,3));g2.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g2.setIndex(I);g2.computeBoundingSphere();town.add(new T.Mesh(g2,S.MAT.solid));}
+ {const b=new S.Bld();b.box(0,base-.2,0,2*half+2,.4,2*half+2,k.C.dark2);for(const [x,z,w,d] of [[0,-half-1,2*half+2.4,.5],[0,half+1,2*half+2.4,.5],[-half-1,0,.5,2*half+2.4],[half+1,0,.5,2*half+2.4]])b.box(x,base-.1,z,w,.3,d,k.C.cyan,.5);town.add(b.mesh());}
  const W=walls(R,p,pl,true,town,true),mg=Merge(T),M4=new T.Matrix4(),NM=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_z=new T.Vector3(),_one=new T.Vector3(1,bv,1),_nv=new T.Vector3(1,1/bv,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
  for(const [id,b,lvl,building] of pl.builds){const f=fp(b),y=P.heightAt(p.site,f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);NM.compose(_z,_q,_nv);mg.add(low&&b.t!=='cc'?cached(R.tgeo,'si:'+b.t+':'+Math.max(1,lvl),()=>standIn(S,k,b.t,lvl)):cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4,NM);nB++;
   if(b.t==='radar'&&!low){M4.compose(_v.set(f.x,y+(3.3+lvl*.5)*bv,f.z),_q.setFromAxisAngle(up,.7),_one);NM.compose(_z,_q,_nv);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4,NM);}}
@@ -261,7 +269,7 @@ function diorama(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wgeo:o.c
  if(p.theme?.decor?.length){const dg=k.decor(p.theme.decor,C0.x,C0.z,C0.w*c+6,C0.d*c+6,p.theme.light).geometry();M4.identity();if(dg.attributes.position.count)mg.add(dg,M4);dg.dispose();}
  if(mg.n){const m=new T.Mesh(mg.geometry(),S.MAT.solid);m.userData.merged=true;town.add(m);}
  damageFx(R,p,town);
- g.userData={lift:2.2*sc*vy,counts:{walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:pl.rubble.length,turrets:nT,homes:nH,builds:nB},plan:pl,R,half:half*sc,ccY:cy*sc};
+ g.userData={lift:(.4-base)*sc*vy,counts:{walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:pl.rubble.length,turrets:nT,homes:nH,builds:nB},plan:pl,R,half:half*sc,ccY:cy*sc};
  return g;}
 
 // ------------------------------------------------------------------- 2D layer ----------------------------------------------
