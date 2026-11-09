@@ -13,7 +13,11 @@ function closeWorld(){root.ConquestPlotView?.close();transmissionCleanup?.();tra
 function clear(){root.ConquestHub?.close();if(panel)panel.replaceChildren();}
 // Session 5: the Conquest Command hub page (js/conquest/hub.js). The four actions: deploy, fast travel, base, research (Session 6).
 let afterEnter=null;
-function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),enter:mode=>{afterEnter=mode||null;enter();}});return;}legacyHub();}
+function hub(){if(root.ConquestHub){closeWorld();clear();root.ConquestHub.render(panel,{el,button,exit,three,map:()=>map(null),enter:mode=>{afterEnter=mode||null;enter();}});pageNav();return;}legacyHub();}
+// Conquest as its own page (owner, Nov 8): the hub carries the app's bottom bar with CONQUEST lit; any other tab leaves
+// Conquest straight to that page. The world itself (ENTER CONQUEST) stays full screen.
+function pageNav(){if(typeof tabBarHtml!=='function'||!panel)return;const nav=el('nav','tabbar cq-pagenav',null,panel);nav.setAttribute('aria-label','Main');nav.innerHTML=tabBarHtml('conquest');panel.classList.add('cq-with-nav');
+ nav.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;e.stopPropagation();e.preventDefault();if(b.dataset.act==='conquest')return;const t=b.dataset.arg;exit();if(t&&typeof setTab==='function')setTab(t);},true);}
 function afterEnterStep(){if(!afterEnter||!view?.authority?.connected||view.pending)return;const mode=afterEnter;afterEnter=null;const s=view.authority.state;
  if(mode==='travel'){map(view);setTimeout(()=>{const f=panel?.querySelector('.cq-fast-travel'),fold=f?.closest('details');if(fold)fold.open=true;f?.scrollIntoView?.({block:'start'});},200);}
  else if(mode==='base')myBase();}
@@ -416,5 +420,5 @@ const unit=280/W.WIDTH*scale,left=(-40-px)/unit,right=(320-px)/unit,top=W.LENGTH
  function locate(){if(v){scale=Math.max(scale,64);const p=W.mapPoint(v.p.x,v.p.z);px=140-p.u*280*scale;py=210-p.v*420*scale;constrain();draw();}}
  const controls=el('div','cq-map-controls',null,d);controls.append(button('＋',()=>zoomTo(scale*1.5)),button('−',()=>zoomTo(scale/1.5)),button('WHOLE WORLD',()=>{scale=1;px=py=0;draw();}),button('LOCATE SELF',locate),button('CLOSE MAP',()=>{mapOpen=false;d.remove();}));if(v){fastTravel(fold(d,'FAST TRAVEL'));remoteBase(fold(d,'MY BASE · REMOTE'));}frontline(d,v);if(v)locate();else draw();}
 function tick(now){const dt=lastTick===null?0:W.frameSeconds(lastTick,now);lastTick=now;if(!view||!panel||document.hidden)return;view.authority?.pump();if(!mapOpen&&!panel.querySelector('.cq-dialog'))view.tick(dt);else view.reset();if(root.ConquestPlotView?.isOpen())root.ConquestPlotView.frame(dt);combatHUD();homeHud();afterEnterStep();const p=view.p,c=panel.querySelector('#cq-coords');if(c)c.textContent='N ↑ Z+ · X '+p.x.toFixed(0)+' / Z '+p.z.toFixed(0)+' · '+p.surface.toUpperCase()+(view.blocked?' · SLOPE / EDGE BLOCKED':'');const s=panel.querySelector('.cq-stats');if(s&&diag)s.textContent=JSON.stringify({theater:'moon',x:p.x,z:p.z,y:p.y,region:W.biomeAt(p.x,p.z),speed:view.speed,simulationMs:view.simMs||0,visibleFar:view.scene.fog.far,cameraFar:view.camera.far,drawCalls:view.renderer.info.render.calls,triangles:view.renderer.info.render.triangles,builds:view.builds,fps:Math.round(view.fps),chunks:view.chunks.size,pending:view.pending,geometries:view.renderer.info.memory.geometries},null,1);}
-root.Conquest=Object.freeze({open,tick,get active(){return !!panel;},get view(){return view;}});
+root.Conquest=Object.freeze({open,close:()=>{if(panel)exit();},tick,get active(){return !!panel;},get view(){return view;}});
 })(globalThis);

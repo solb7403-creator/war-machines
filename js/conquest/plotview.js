@@ -120,6 +120,7 @@ function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>vie
  panel.classList.add('cq-in-plot');const d=el('section','cq-dialog cq-plot',null,panel);d.setAttribute('role','dialog');d.setAttribute('aria-label','Command Base plot');
  X={ctx,d,mode:'view',sel:null,place:null,wall:null,cam:{x:0,z:6,dist:150,tilt:.95,yaw:0},drill:null,clock:0,lastKey:'',busy:false};
  const top=el('div','cq-plot-top',null,d),title=el('div','cq-plot-title','',top);top.append(button('LEAVE BASE',()=>close(),'cq-plot-leave'));X.title=title;
+ d.addEventListener('touchmove',e=>e.stopPropagation(),{passive:true});   // the app-wide touchmove guard must not block the menu's native scroll (iPhone)
  X.stage=el('div','cq-plot-stage',null,d);X.coach=el('p','cq-plot-coach','',d);X.coach.setAttribute('role','status');
  X.sheet=el('div','cq-plot-sheet',null,d);X.msg=el('p','cq-plot-msg','',d);X.msg.setAttribute('aria-live','polite');
  const s=st();if(!s?.base?.tier){sitePicker();return;}
@@ -151,7 +152,7 @@ function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.s
   el('small','','SECOND BUILDER and SPEED-UPS: store items, unavailable until payments are certified.',box);}
  if(X.mode==='view')viewTab(body,s,p,L,now);else if(X.mode==='build')buildTab(body,s,p,L);else if(X.mode==='walls')wallTab(body,s,p);else drillTab(body,s,p);
  for(const d of sh.querySelectorAll('details'))if(X.openFolds?.has(d.querySelector('summary')?.textContent))d.open=true;sh.scrollTop=scroll;
- sync();}
+ layout();sync();}
 // Once a second: only the live numbers change (builder countdown, production), never the open sections or a designer in progress.
 function tickUi(){if(!X||X.visit)return;const s=X.ctx.view.authority?.state,p=s?.plot;if(!p)return;const now=Date.now(),j=p.job,box=X.sheet.querySelector('.cq-plot-job');
  if(j&&box){const b=box.querySelector('b'),pr=box.querySelector('progress'),B=j.t==='cc'?{n:'Command Center'}:P.BUILDINGS[j.t];if(b)b.textContent='BUILDER · '+B.n.toUpperCase()+' '+romanOf(j.l)+' · '+dur(j.ready-now);if(pr)pr.value=Math.max(0,Math.min(1,1-(j.ready-now)/Math.max(1,j.ready-j.at)));}
@@ -160,11 +161,10 @@ function tickUi(){if(!X||X.visit)return;const s=X.ctx.view.authority?.state,p=s?
 const romanOf=n=>['','I','II','III','IV','V','VI','VII','VIII','IX','X'][n]||String(n);
 // Owner dev mode (owner only, server-verified; conquest.js DEV_ACTIONS): unlimited resources and instant builds for testing.
 const ownerUI=()=>typeof isOwnerUI==='function'&&isOwnerUI();
-function devBar(body,s,p){if(!ownerUI())return;const {el,button}=X.ctx,on=!!s.dev?.on,box=el('div','cq-plot-dev',null,body);
- el('b','',on?'DEV MODE · UNLIMITED RESOURCES':'DEV MODE · OFF',box);
- el('small','',on?'Owner only. Builds, upgrades, walls and site changes cost nothing. This account earns no Conquest airdrop points and is never ranked.':'Owner only. Unlimited resources to build and test your base. Turning it on makes this a test record: no Conquest airdrop points, no rankings.',box);
- const row=el('div','cq-plot-dev-row',null,box);row.append(button(on?'TURN OFF':'TURN ON UNLIMITED',()=>act(on?'dev-off':'dev-on',undefined,on?'DEV MODE OFF…':'UNLIMITED ON…'),'cq-plot-primary'));
- if(on&&p.job)row.append(button('FINISH BUILD NOW',()=>act('dev-finish',undefined,'FINISHING…'),'cq-plot-primary'));}
+function devBar(body,s,p){if(!ownerUI())return;const {el,button}=X.ctx,on=!!s.dev?.on,box=el('div','cq-plot-dev'+(on?' on':''),null,body);
+ el('b','',on?'DEV · UNLIMITED · INSTANT BUILDS':'DEV MODE · OFF',box);box.append(button(on?'TURN OFF':'TURN ON',()=>act(on?'dev-off':'dev-on',undefined,on?'DEV MODE OFF…':'UNLIMITED ON…')));
+ if(!on)el('small','','Owner only: unlimited resources, instant builds. Makes this a test record (no Conquest airdrop points, never ranked).',box);
+ else if(p.job)box.append(button('FINISH NOW',()=>act('dev-finish',undefined,'FINISHING…')));}
 function resLine(el,parent,s,p){if(s.dev?.on){el('p','cq-plot-res cq-plot-dev-res','BANKED · ∞ UNLIMITED (DEV MODE)',parent);return {st:p.st||{},stores:'∞'};}const L=s.ledger,st=p.st||{},bm=(typeof save!=='undefined'&&save.bmn)||s.airdrop?.view?.bmn||{},sp=p.mnSpent||{},stores=P.MNS.filter(k=>(bm[k]||0)-(sp[k]||0)>0).map(k=>((bm[k]||0)-(sp[k]||0))+' '+LABEL[k]).join(' · ');
  el('p','cq-plot-res','BANKED · '+fmt(L.cp)+' CP · '+fmt(L.banked.alloy)+' ALLOY · '+fmt(L.banked.biomass)+' BIOMASS · '+fmt(L.banked.helium)+' HELIUM-3',parent);el('p','cq-plot-res','BASE STORES · '+(stores||'empty (walls use minerals from here)'),parent);return {st,stores};}
 function viewTab(body,s,p,L,now){const {el,button}=X.ctx;resLine(el,body,s,p);const c=P.caps(p),r=P.rates(p),st=P.accrue({...p,st:{...(p.st||{})}},now);   // live preview of the Worker's accrual (accrue only writes st)
@@ -182,12 +182,20 @@ function selCard(body,s,p,id,b){const {el,button}=X.ctx,isCC=b.t==='cc',B=isCC?{
  if(cost){const up=button((err?'LOCKED · '+err.toUpperCase():'UPGRADE TO '+romanOf(nl)+' · '+price(cost)+' · '+dur(P.timeOf(isCC?'cc':b.t,nl))),()=>act('plot-upgrade',{id},'UPGRADING…'),'cq-plot-primary');up.disabled=!!err||!!p.job;box.append(up);const short=!err&&storesShort(s,p,cost);if(short)box.append(button('MOVE '+price(short)+' TO BASE STORES',()=>moveStores(short)));}else el('small','','MAXIMUM LEVEL',box);
  if(!isCC||true){const mv=button('MOVE / ROTATE',()=>{X.mode='build';X.place={type:b.t,id,i:b.i,j:b.j,r:b.r|0};render();});box.append(mv);}
  if(!['cc','storage'].includes(b.t)){const rm=button('REMOVE (no refund)',()=>{if(rm.dataset.sure){act('plot-remove',{id},'REMOVING…');}else{rm.dataset.sure='1';rm.textContent='TAP AGAIN TO REMOVE';}},'cq-plot-danger');box.append(rm);}}
+const BUILD_GROUPS=[['ECONOMY · makes and stores resources',k=>['refinery','biodome','helium','reactor','storage','uplink'].includes(k)],['DEFENSE · stops Parasite raids',(k,B)=>!!B.turret||['shield','gate'].includes(k)],['SUPPORT · repairs, scanning, research',()=>true]];
+const ROLE={vault:'STORES',hangar:'REPAIRS HULL',radar:'LONGER SCAN',defense:'LESS DAMAGE',uplink:'+YIELD CP'};
+function roleOf(k,B){if(B.turret){const t=B.turret;return 'RANGE '+t.range+' · DMG '+t.dmg+(t.air?' · ANTI-AIR':t.splash?' · SPLASH':'');}if(B.power)return '+'+B.power+' ⚡ POWER';if(B.prod)return Object.entries(B.prod).map(([r,v])=>'+'+v+' '+(LABEL[r]||r).toUpperCase()+'/H').join(' ');if(k==='lab')return 'RESEARCH';if(k==='trophy')return 'TROPHIES';if(B.gate)return 'OPENS';return ROLE[B.mod]||'';}
 function buildTab(body,s,p,L){const {el,button}=X.ctx;if(X.place){const q=X.place,B=q.type==='cc'?{n:'Command Center'}:P.BUILDINGS[q.type],err=q.id?P.placeError(p,q.type,q.i,q.j,q.r,q.id):(P.buildCheck(p,q.type,1)||P.placeError(p,q.type,q.i,q.j,q.r));
-  el('b','',(q.id?'MOVE · ':'PLACE · ')+B.n.toUpperCase(),body);el('small','',err?'✕ '+err.toUpperCase():'✓ VALID · tap the ground to move the blueprint'+(q.id?'':' · '+price(P.costOf(q.type,1))+' · '+dur(P.timeOf(q.type,1))),body);
+  el('b','',(q.id?'MOVE · ':'PLACE · ')+B.n.toUpperCase(),body);el('small','',err?'✕ '+err.toUpperCase():'✓ VALID · tap the ground to move the blueprint'+(q.id?'':' · '+(s.dev?.on?'FREE · INSTANT':price(P.costOf(q.type,1))+' · '+dur(P.timeOf(q.type,1)))),body);
   const row=el('div','cq-plot-row',null,body);row.append(button('↻ ROTATE',()=>{q.r=(q.r+1)%4;render();}),button('CANCEL',()=>{X.place=null;render();}));const ok=button(q.id?'CONFIRM MOVE':'CONFIRM BUILD',()=>q.id?act('plot-move',{id:q.id,i:q.i,j:q.j,r:q.r},'MOVING…'):act('plot-build',{type:q.type,i:q.i,j:q.j,r:q.r},'CONSTRUCTION ORDERED…'),'cq-plot-primary');ok.disabled=!!err||(!q.id&&!!p.job);row.append(ok);return;}
  const g=guideStep(p,s),list=Object.entries(P.BUILDINGS).filter(([k,B])=>p.cc>=B.cc&&(B.turret?P.turretCount(p)<P.TURRET_CAP[p.cc-1]:P.countOf(p,k)<P.countCap(k,p.cc)));
- el('p','cq-plot-hint',list.length?'Buildable now at CC'+p.cc+':':'Everything available at CC'+p.cc+' is placed.',body);const grid=el('div','cq-plot-cards',null,body);
- for(const [k,B] of list){const err=P.buildCheck(p,k,1),c=button('',()=>{const at=P.autoPlace(p,k)||{i:20,j:20,r:0};X.place={type:k,...at};X.cam.x=P.cellX(at.i);X.cam.z=P.cellZ(at.j);render();},'cq-plot-card'+(g?.id===k?' cq-plot-glow':''));el('b','',(ICON[k]||'')+' '+B.n,c);el('small','',err?err.toUpperCase():price(B.cost[0])+' · '+dur(P.timeOf(k,1)),c);c.disabled=!!err;grid.append(c);}
+ // Owner playtest (Nov 8): "make it more clear what the different items are". One full-width card per building, grouped by
+ // what it is for: what it does (its description), its key number, footprint and power, then cost and build time.
+ const dev=!!s.dev?.on;if(!list.length)el('p','cq-plot-hint','Everything available at CC'+p.cc+' is placed.',body);const used=new Set();
+ for(const [title,f] of BUILD_GROUPS){const items=list.filter(([k])=>!used.has(k)&&f(k,P.BUILDINGS[k]));if(!items.length)continue;items.forEach(([k])=>used.add(k));el('b','cq-plot-group',title,body);const box=el('div','cq-plot-list',null,body);
+  for(const [k,B] of items){const err=P.buildCheck(p,k,1),c=button('',()=>{const at=P.autoPlace(p,k)||{i:20,j:20,r:0};X.place={type:k,...at};X.cam.x=P.cellX(at.i);X.cam.z=P.cellZ(at.j);render();},'cq-plot-card'+(g?.id===k?' cq-plot-glow':''));
+   const head=el('span','cq-plot-card-head',null,c);el('span','cq-plot-ico',ICON[k]||'',head);el('b','',B.n,head);el('span','cq-plot-tag',roleOf(k,B),head);
+   el('small','cq-plot-desc',B.desc||'',c);el('small','cq-plot-cost',(err?'✕ '+err.toUpperCase():dev?'FREE · INSTANT':price(B.cost[0])+' · '+dur(P.timeOf(k,1)))+' · SIZE '+B.w+'×'+B.d+(B.pw?' · USES ⚡'+B.pw:''),c);c.disabled=!!err;box.append(c);}}
  el('p','cq-plot-next',unlockLine(p),body);}
 function wallTab(body,s,p){const {el,button}=X.ctx;const tiers=P.WALLS.map((w,t)=>w&&p.cc>=w.cc?t:0).filter(Boolean);X.tier=tiers.includes(X.tier)?X.tier:tiers[0];resLine(el,body,s,p);
  const row=el('div','cq-plot-row',null,body);for(const t of tiers){const W=P.WALLS[t],b=button(W.n.replace(' wall',''),()=>{X.tier=t;render();},X.tier===t?'on':'');b.style.borderColor=TIER_COL[t];row.append(b);}
@@ -233,12 +241,15 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  // (the Worker settles the job on its own clock) at most every 3 s.
  const job=s?.plot?.job,au=X.ctx.view.authority;if(job&&Date.now()>job.ready+250&&!X.syncing&&Date.now()-(X.syncAt||0)>3000&&au&&!X.busy){X.syncing=true;X.syncAt=Date.now();au.connect().finally(()=>{if(X)X.syncing=false;});}
  const R=X.R;if(!R){if(X.drill)drillStep(dt);draw2d();return;}const {view}=X.ctx,T=R.T,c=X.cam,host=view.host;
- const w=host.clientWidth||390,h=host.clientHeight||844;if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
+ // Owner playtest (Nov 8): taps landed in the wrong cell. The plot drew across the whole host (centre hidden under the menu)
+ // while taps were measured against the visible stage. Now it draws only inside the stage, with the stage's own aspect, so
+ // the plot is centred where you can see it and cellAt() (stage rect) matches the picture exactly.
+ const hr=host.getBoundingClientRect(),sr=X.stage.getBoundingClientRect(),w=Math.max(1,sr.width||390),h=Math.max(1,sr.height||400);if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
  const tilt=X.mode==='view'||X.mode==='drill'?Math.min(c.tilt,1.05):1.38,dist=c.dist;R.cam.position.set(c.x+Math.sin(c.yaw)*Math.cos(tilt)*dist,Math.sin(tilt)*dist,c.z+Math.cos(c.yaw)*Math.cos(tilt)*dist);R.cam.lookAt(c.x,0,c.z);
  for(const o of R.heads){const hd=o.userData.head;hd.rotation.y=hd.userData.aim??(X.clock*(o.userData.radar?1:.4))%(Math.PI*2);}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  crewStep(R,plotOf());if(X.drill)drillStep(dt);
- R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer;r.render(R.sc,R.cam);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
+ R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer,vx=sr.left-hr.left,vy=hr.bottom-sr.bottom;r.setScissorTest(false);r.clear();r.setViewport(vx,vy,w,h);r.setScissor(vx,vy,w,h);r.setScissorTest(true);r.render(R.sc,R.cam);r.setScissorTest(false);r.setViewport(0,0,hr.width||w,hr.height||h);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
 // crew walk between buildings, rovers drive the lanes (presentation)
 function crewStep(R,p){if(!p)return;const T=R.T,mt=R._m||(R._m=new T.Matrix4()),bs=Object.values(p.b).filter(b=>b.l>0||b.t==='cc');if(!bs.length)return;const pos=b=>[P.cellX(b.i)+2,P.cellZ(b.j)+2];
  for(let n=0;n<R.crew.count;n++){const a=bs[n%bs.length],b=bs[(n*7+3)%bs.length],[x0,z0]=pos(a),[x1,z1]=pos(b),L=Math.hypot(x1-x0,z1-z0)||1,ph=((X.clock*1.3+n*11)%(2*L))/L,f=ph>1?2-ph:ph,x=x0+(x1-x0)*f+(n%3-1)*1.2,z=z0+(z1-z0)*f+5;mt.makeRotationY(Math.atan2(x1-x0,z1-z0)+(ph>1?Math.PI:0));mt.setPosition(x,0,z);R.crew.setMatrixAt(n,mt);}
@@ -255,7 +266,7 @@ function drillStep(dt){const D=X.drill,R=X.R;D.t+=dt*1.6;const fr=D.r.frames;whi
  if(D.t>=D.r.time+1){X.drillResult=D.r;X.drill=null;if(R){for(const im of Object.values(R.foes))im.count=0;R.shots.count=0;for(const e of R.meshes.values()){e.o.visible=true;if(e.o.userData.head)delete e.o.userData.head.userData.aim;}}render();}}
 
 // ------------------------------------------------------------------- 2D fallback ---------------------------------------
-function draw2d(){if(!X?.cv)return;const cv=X.cv,p=plotOf();if(!p)return;const r=X.stage.getBoundingClientRect(),dpr=Math.min(2,root.devicePixelRatio||1);if(cv.width!==Math.round(r.width*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);}
+function draw2d(){if(!X?.cv)return;const cv=X.cv,p=plotOf();if(!p)return;const r=X.stage.getBoundingClientRect(),dpr=Math.min(2,root.devicePixelRatio||1);if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);}   // height too: the stage resizes whenever the menu does
  const g=cv.getContext('2d'),n=P.GRID.n,cs=Math.min(cv.width,cv.height)/(n+2)*(150/X.cam.dist),ox=cv.width/2-X.cam.x/P.GRID.cell*cs,oy=cv.height/2-X.cam.z/P.GRID.cell*cs,X0=i=>ox+(i-(n-1)/2-.5)*cs,Y0=j=>oy+(j-(n-1)/2-.5)*cs;X.map2d={cs,ox,oy};
  g.fillStyle='#05070d';g.fillRect(0,0,cv.width,cv.height);for(let i=0;i<n;i++)for(let j=0;j<n;j++){const t=P.terrainAt(p.site,i,j);g.fillStyle={rim:'#2a2a30',cliff:'#1a1b20',water:'#123a5c',deposit:'#7a4a2c',lush:'#203a1c',lane:'#3a1c20',ground:'#2b2f36'}[t];g.fillRect(X0(i),Y0(j),cs-1,cs-1);}
  for(const [kk,t] of Object.entries(p.w)){const [i,j]=kk.split(',').map(Number);g.fillStyle=TIER_COL[t];g.fillRect(X0(i)+1,Y0(j)+1,cs-3,cs-3);}
@@ -317,7 +328,10 @@ function input(){const el=X.stage,pts=new Map();let start=null,moved=0,pinch=0;
   if(moved>8){const k=X.cam.dist/((el.clientHeight||600)*.9),cs=Math.cos(X.cam.yaw),sn=Math.sin(X.cam.yaw);X.cam.x=Math.max(-90,Math.min(90,start.cx-(dx*cs+dy*sn)*k));X.cam.z=Math.max(-90,Math.min(90,start.cz-(-dx*sn+dy*cs)*k));}});
  const end=e=>{if(!pts.has(e.pointerId))return;pts.delete(e.pointerId);if(pts.size===0){if(start&&moved<8&&X.mode!=='walls')tap(e.clientX,e.clientY);if(X.mode==='walls'&&X.wall)render();start=null;pinch=0;}};
  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);el.addEventListener('wheel',e=>{e.preventDefault();X.cam.dist=Math.max(45,Math.min(260,X.cam.dist*(e.deltaY>0?1.1:.9)));},{passive:false});
- const rot=X.ctx.button('⟲',()=>{X.cam.yaw=(X.cam.yaw+Math.PI/2)%(Math.PI*2);},'cq-plot-rot');rot.setAttribute('aria-label','Rotate view');X.stage.append(rot);}
+ const rot=X.ctx.button('⟲',()=>{X.cam.yaw=(X.cam.yaw+Math.PI/2)%(Math.PI*2);},'cq-plot-rot');rot.setAttribute('aria-label','Rotate view');X.stage.append(rot);
+ // Owner playtest (Nov 8): the menu felt tight. One tap swaps the split: bigger map (placing, walls) or bigger menu (browsing).
+ const size=X.ctx.button('⤢',()=>{X.big=X.big==='map'?'menu':'map';layout();},'cq-plot-size');size.setAttribute('aria-label','Bigger map / bigger menu');X.stage.append(size);}
+function layout(){if(!X)return;const want=X.big||(X.place||X.mode==='walls'?'map':'menu');X.d.classList.toggle('cq-plot-mapbig',want==='map');X.d.classList.toggle('cq-plot-menubig',want==='menu');}
 
 function tankBanner(view){const bn=view?.authority?.state?.plot?.banner,veh=view?.vehicle,S=view?.style;if(!veh||!S||view.renderer?.isConquestCanvas)return;const key=bn?JSON.stringify(bn):'';if(veh.userData.bannerKey===key)return;veh.userData.bannerKey=key;
  const old=veh.getObjectByName('cq-tank-banner');if(old){veh.remove(old);old.traverse(o=>o.geometry?.dispose?.());}if(!bn)return;const m=kit(S).banner(bn,.42).mesh();m.name='cq-tank-banner';m.position.set(-2.1,1.1,-.9);m.rotation.y=Math.PI;m.userData.noPick=true;veh.add(m);}

@@ -1129,3 +1129,17 @@ No blocker; non-owners cannot reach dev mode and the points/rankings guards hold
 - PR #78 merged as `471d93e`. Worker deploy run 42538834372 SUCCESS: live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`, live `version.json` **`20261108233308`** = repo. Pages run 42538833908 SUCCESS. Payments stay DISABLED; no production data changed by hand.
 
 **Owner, to try it:** open Conquest → the gold ⌂ MY BASE button (top bar) → follow the arrow → the claim screen opens at the gate. Dev mode: on the claim or plot screen, the magenta DEV MODE box → TURN ON UNLIMITED (your account only).
+
+## Checkpoint 26 — Conquest page, instant dev builds, base menu, tap-to-place fix (branch `claude/conquest-page-base-ui`) — owner request, release pre-approved
+
+Owner phone playtest of build `20261108233308` (Telegram, iPhone, Nov 8): wants Conquest as its own page (not a button on Play); no build countdown while testing; the base menu feels tight and cannot scroll, so the build items at the bottom cannot be seen or understood; placing an item sometimes lands somewhere other than the tap.
+
+### Root causes (from code, confirmed by a test)
+- **Placement:** the 3D plot drew across the whole host with the host's aspect (its centre hidden under the menu), while taps were converted with the visible stage's rect. Fix: render only inside the stage (viewport + scissor, stage aspect), so the plot is centred where you can see it and `cellAt()` matches the picture. The 2D fallback now also resizes its canvas when only the height changes. Test: 14/14 taps land on the exact cell, in both map/menu splits.
+- **Menu:** `.cq-plot-sheet{max-height:46vh}`. In Telegram's webview `vh` is taller than the visible area, so the sheet ran off the bottom with nothing to scroll. The plot section also lacked the touchmove shield every other Conquest dialog has against the app-wide scroll guard. Fix: a flex split (map 40% / menu the rest, a real `overflow-y:auto` scroller), the shield, and a ⤢ button that swaps the split (map 60% while placing or drawing walls).
+
+### Changes
+- **Conquest page:** CONQUEST is the middle tab of the bottom bar (six tabs; fits at 320 px); the Play button is gone. The Conquest Command hub carries the same bar with CONQUEST lit; any other tab leaves Conquest for that page. The website sidebar has 07 CONQUEST. The world itself stays full screen.
+- **Dev mode instant builds:** while owner dev mode is ON, every build/upgrade completes in the same request; turning it on finishes anything already building. The dev box is one compact line.
+- **Build cards:** full-width cards grouped ECONOMY / DEFENSE / SUPPORT, each with icon, name, a role tag (+0.8 ALLOY/H, +14 ⚡ POWER, RANGE 28 · DMG 34…), the building's description, size, power use, then cost and time (FREE · INSTANT in dev mode).
+- Tests: `dev/tests/conquest-plot-ui.py` (new, in Conquest CI); `wtest/conquest-dev.mjs` updated (instant builds).

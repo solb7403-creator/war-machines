@@ -133,13 +133,13 @@
 .cq-plot-top{display:flex;gap:8px;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 8px;background:linear-gradient(#070c15f2,#070c15cc);border-bottom:1px solid #22e6ff44}
 .cq-plot-title{flex:1;font-size:11px;letter-spacing:.06em;font-weight:700;color:#cdf6ff;line-height:1.3}
 .cq-plot-leave{flex:none;font-size:11px}
-.cq-plot-stage{position:relative;flex:1;min-height:140px;touch-action:none;cursor:crosshair}
+.cq-plot-stage{position:relative;flex:0 0 40%;min-height:150px;touch-action:none;cursor:crosshair;transition:flex-basis .2s}
 .cq-plot-canvas{position:absolute;inset:0;width:100%;height:100%}
 .cq-plot-rot{position:absolute;right:10px;top:10px;width:44px;height:44px;padding:0;font-size:20px;background:#0b1623cc}
 .cq-plot-coach{margin:0;padding:8px 12px;background:#2a1d08e6;border-top:1px solid #ffb34766;color:#ffd9a0;font-size:12px;font-weight:700}
 .cq-plot-msg{position:absolute;left:12px;right:12px;top:64px;margin:0;font-size:11px;font-weight:700;color:#ffd36b;text-shadow:0 1px 3px #000;pointer-events:none}
 .cq-plot-msg:empty{display:none}
-.cq-plot-sheet{max-height:46vh;overflow:auto;background:#070c15f2;border-top:1px solid #22e6ff55;padding:8px 12px max(10px,env(safe-area-inset-bottom));overscroll-behavior:contain}
+.cq-plot-sheet{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#070c15f2;border-top:1px solid #22e6ff55;padding:8px 12px max(10px,env(safe-area-inset-bottom));overscroll-behavior:contain}
 .cq-plot-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
 .cq-plot-tabs button{font-size:11px;padding:6px}.cq-plot-tabs button.on,.cq-plot-row button.on{background:#0f3a48;border-color:#22e6ff;color:#fff}
 .cq-plot-body{display:flex;flex-direction:column;gap:6px;font-size:12px}
@@ -202,3 +202,32 @@
 .cq-top button.cq-home-btn.cq-home-new{animation:cqHomePulse 1.4s ease-in-out infinite}
 @keyframes cqHomePulse{0%,100%{box-shadow:0 0 6px #ffc45a66}50%{box-shadow:0 0 22px #ffc45add,0 0 0 3px #ffc45a55}}
 @media (prefers-reduced-motion:reduce){.cq-top button.cq-home-btn.cq-home-new{animation:none;box-shadow:0 0 18px #ffc45acc,0 0 0 3px #ffc45a66}}
+
+/* Base screen (owner playtest, Nov 8): the menu is a real scroll area below a map that takes 40% (60% while placing). */
+.cq-dialog.cq-plot.cq-plot-mapbig .cq-plot-stage{flex-basis:60%}
+.cq-dialog.cq-plot.cq-plot-menubig .cq-plot-stage{flex-basis:36%}
+@media (prefers-reduced-motion:reduce){.cq-plot-stage{transition:none}}
+.cq-plot-size{position:absolute;right:10px;top:60px;width:44px;height:44px;padding:0;font-size:18px;background:#0b1623cc}
+.cq-plot-group{display:block;margin:6px 0 0;font-size:10px;letter-spacing:.12em;color:#7fe9ff}
+.cq-plot-list{display:flex;flex-direction:column;gap:6px}
+.cq-plot-list .cq-plot-card{width:100%;padding:8px 10px;gap:3px;min-height:44px}
+.cq-plot-card-head{display:flex;align-items:center;gap:8px;width:100%}
+.cq-plot-card-head b{flex:1;font-size:13px;color:#eaf8ff}
+.cq-plot-ico{flex:none;width:26px;height:26px;display:grid;place-items:center;border-radius:6px;background:#10283a;border:1px solid #22e6ff55;font-size:14px}
+.cq-plot-tag{flex:none;font-size:9px;font-weight:700;letter-spacing:.04em;color:#ffd36b;background:#2a1d08;border:1px solid #ffb34755;border-radius:4px;padding:2px 5px;white-space:nowrap}
+.cq-plot-card .cq-plot-desc{font-size:11px;color:#c6d8e6;line-height:1.35;opacity:1}
+.cq-plot-card .cq-plot-cost{font-size:10px;color:#8fd8ff;letter-spacing:.02em}
+.cq-plot-card[disabled] .cq-plot-cost{color:#ff9aa5}
+.cq-plot-dev{flex-direction:row;align-items:center;flex-wrap:wrap;padding:6px 8px;gap:6px}
+.cq-plot-dev b{flex:1;min-width:150px}.cq-plot-dev button{min-height:36px;padding:4px 10px;font-size:10px}
+.cq-plot-dev small{flex-basis:100%}
+
+/* Conquest page nav: the app's bottom bar inside the hub */
+.cq.cq-with-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.cq .cq-pagenav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;margin:0;font-family:inherit}
+.cq .cq-pagenav .tab{background:none;border:0;min-height:0;border-radius:0;box-shadow:none}
+.cq .cq-pagenav .tab{padding:6px 0 4px;font:600 12px var(--disp,'Chakra Petch'),sans-serif;color:var(--dim,#8a97a6);letter-spacing:.02em}
+.cq .cq-pagenav .tab.tab-cq{color:#7dffb0}.cq .cq-pagenav .tab.tab-cq.on{color:#c9ffe0}
+@media (max-width:360px){.cq .cq-pagenav .tab{font-size:10px;letter-spacing:0}}
+.cq .cq-pagenav{z-index:60;background:#0a0e17;border-top:1px solid #2a3a4a;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+.cq .cq-pagenav .tab.tab-cq.on svg{color:#43e08a}

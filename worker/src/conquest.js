@@ -28,9 +28,11 @@ export function unlimited(previous,run){const q=structuredClone(previous),L0=pre
  s.ledger.cp=(L0.cp||0)+Math.max(0,s.ledger.cp-UNLIMITED);for(const k of Object.keys(s.ledger.banked||{}))s.ledger.banked[k]=(L0.banked?.[k]||0)+Math.max(0,s.ledger.banked[k]-(keys.has(k)?UNLIMITED:0));
  if(s.plot)s.plot.mnSpent={...mn0};   // base-store minerals: exactly what was really spent before (no spend, no refund)
  return s;}
+// Dev mode builds are instant (owner, Nov 8: "get rid of the countdown for testing"): the builder's job completes in the same request.
+function instant(s,now){if(s?.plot?.job){s.plot.job.ready=now;refreshState(s,now);}return s;}
 export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.seq+1)throw Error('conquest: stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)throw Error('conquest: invalid server clock');
  const s=structuredClone(previous);
- if(r.action==='dev-on')s.dev={on:1,used:1,at:now};
+ if(r.action==='dev-on'){s.dev={on:1,used:1,at:now};instant(s,now);}
  else if(r.action==='dev-off')s.dev={...(s.dev||{}),on:0,used:1};
  else{if(!s.dev?.on)throw Error('conquest: dev mode is off');if(!s.plot?.job)throw Error('conquest: nothing is building');s.plot.job.ready=now;refreshState(s,now);}
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
@@ -99,7 +101,7 @@ export async function conquestAction(env,a,now=Date.now()){
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
  const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:{};const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
- const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))})):applyAction(p,r,n,ctx),now);
+ const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
  // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
  if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});
  return out;
