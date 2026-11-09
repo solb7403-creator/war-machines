@@ -149,7 +149,7 @@ function terrain(S,site,cc,p,o={}){const T=S.T,k=kitFor(S),n=P.GRID.n,c=P.GRID.c
  const H=(x,z)=>Math.abs(x)>half+2||Math.abs(z)>half+2?P.heightAt(site,Math.sign(x)*Math.min(Math.abs(x),half),Math.sign(z)*Math.min(Math.abs(z),half))+(site==='canyon'?8:2)+vn(x*.05,z*.05)*3:P.heightAt(site,x,z);
  const tint=site==='delta'?[.9,1,.8]:site==='crater'?[1.06,.96,.86]:site==='plateau'?[1.1,1,.9]:site==='ash'?[.92,.9,.95]:site==='ice'?[.95,1,1.08]:[1,.98,1.02];
  const col=(x,z)=>{const i=Math.max(0,Math.min(n-1,Math.round(x/c+(n-1)/2))),j=Math.max(0,Math.min(n-1,Math.round(z/c+(n-1)/2))),off=Math.abs(x)>half+2||Math.abs(z)>half+2,t=off?'rim':P.terrainAt(site,i,j),open=!P.NOBUILD[t];let base=TCOL[t]||TCOL.ground;
-  const d=Math.max(Math.abs(x),Math.abs(z)),inside=sstep(edge+10,edge-6,d),lift=.5+1.05*inside,mot=1+.16*vn(x*.03,z*.03)+.08*vn(x*.11+7,z*.11+3);
+  const d=Math.max(Math.abs(x),Math.abs(z)),inside=sstep(edge+10,edge-6,d),lift=.62+1.45*inside,mot=1+.16*vn(x*.03,z*.03)+.08*vn(x*.11+7,z*.11+3);
   let r=base[0]*lift*mot*tint[0],g=base[1]*lift*mot*tint[1],bb=base[2]*lift*mot*tint[2];
   if(open&&inside>.3){let rd=99;for(const q of roads)rd=Math.min(rd,segD(x,z,q[0],q[1],q[2],q[3]));const w=sstep(5.5,2.2,rd)*inside;if(w>0){const R2=ROAD[0]*1.45,G2=ROAD[1]*1.45,B2=ROAD[2]*1.45;r+=(R2-r)*w;g+=(G2-g)*w;bb+=(B2-bb)*w;}
    const wl=inside*(1-sstep(plaza+6,plaza+26,Math.max(Math.abs(x-C0.x),Math.abs(z-C0.z))))*.18;r+=wl*.5;g+=wl*.38;bb+=wl*.22;}   // warm spill from the lit plaza
@@ -161,7 +161,7 @@ function terrain(S,site,cc,p,o={}){const T=S.T,k=kitFor(S),n=P.GRID.n,c=P.GRID.c
   if(t==='water')pr.box(x,-.35,z,c,.1,c,wc,.35);else if(t==='ice')pr.box(x,y+.06,z,c,.08,c,ic,.12);else if(o.props!==false&&t==='rock'&&(i+j)%2===0)pr.add(S.G.rock,k.M(x+1,y+.6,z+1,0,i*j,0,2.2,1.6,2.2),k.C.rust.clone().multiplyScalar(.6));else if(t==='vent')pr.add(S.G.cone6,k.M(x,y,z,0,i,0,1.6,1.4,1.6),k.C.furnace,.8);}
  if(site==='crater'&&o.props!==false)for(const d of P.RIM_DEPOSITS){for(let k2=0;k2<6;k2++)pr.add(S.G.rock,k.M(P.cellX(d.i)+2+(k2%3-1)*1.6,.4,P.cellZ(d.j)+2+(k2>2?1.2:-1.2),0,k2,0,1.1,.8,1.1),k.C.rust);pr.box(P.cellX(d.i)+2,.05,P.cellZ(d.j)+2,7,.08,7,k.C.amber,.5);}
  // the plaza: a paved slab with joints every 4 m, a dark curb with an amber light line, four lamp posts and warm light pools
- {const y0=P.heightAt(site,C0.x,C0.z),P2=plaza,pave=new T.Color(.34,.35,.37),joint=new T.Color(.12,.12,.13);pr.box(C0.x,y0+.07,C0.z,2*P2,.14,2*P2,pave);
+ {const y0=P.heightAt(site,C0.x,C0.z),P2=plaza,pave=new T.Color(.2,.205,.215),joint=new T.Color(.075,.075,.08);pr.box(C0.x,y0+.07,C0.z,2*P2,.14,2*P2,pave);
   for(let v=-P2+4;v<P2;v+=4){pr.box(C0.x+v,y0+.15,C0.z,.1,.02,2*P2,joint);pr.box(C0.x,y0+.15,C0.z+v,2*P2,.02,.1,joint);}
   for(const [x,z,w,d] of [[0,-P2,2*P2+.6,.6],[0,P2,2*P2+.6,.6],[-P2,0,.6,2*P2+.6],[P2,0,.6,2*P2+.6]]){pr.box(C0.x+x,y0+.2,C0.z+z,w,.4,d,k.C.dark2);pr.box(C0.x+x,y0+.42,C0.z+z,w*.98,.05,d*.4,k.C.amber,1.3);}
   for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]]){const x=C0.x+sx*(P2-1.5),z=C0.z+sz*(P2-1.5);pr.box(x,y0+2.3,z,.3,4.6,.3,k.C.dark);pr.box(x,y0+4.7,z,.9,.25,.9,k.C.amber,2.2);fx?.flat(x,y0+.2,z,6,6,reg,[.55,.36,.14],0);}
