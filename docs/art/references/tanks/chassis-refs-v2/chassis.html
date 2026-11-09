@@ -1,0 +1,304 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#2b2e33}canvas{display:block}</style></head><body>
+<script src="three.js"></script>
+<script>
+const W = new URLSearchParams(location.search).get('w') || '1';
+const S = 1600;
+const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+renderer.setSize(S,S); renderer.setPixelRatio(1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x2b2e33);
+
+// ---- studio environment for reflections ----
+(function(){
+  const env = new THREE.Scene(); env.background = new THREE.Color(0x15171a);
+  const pm = (w,h,c,x,y,z,ry,rx)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide}));m.position.set(x,y,z);m.rotation.y=ry||0;m.rotation.x=rx||0;env.add(m);};
+  pm(8,3,0x6a6a6a,0,6,0,0,Math.PI/2);
+  pm(4,4,0xc8d0dc,-7,2,3,Math.PI/2.5);      // left fill
+  pm(3,5,0xffffff,6,2,-3,-Math.PI/3);pm(4,2,0xdfe6f0,-3,4,-6,2.6);
+  pm(20,2,0x3a3f46,0,-2,0,0,Math.PI/2);     // floor bounce
+  const g = new THREE.PMREMGenerator(renderer);
+  scene.environment = g.fromScene(env,0.03).texture;
+})();
+
+// ---- procedural grime / wear texture ----
+function wearTex(seed, base, scratch, dirt){
+  const c=document.createElement('canvas'); c.width=c.height=512; const x=c.getContext('2d');
+  let s=seed; const r=()=>{s=(s*16807)%2147483647;return s/2147483647};
+  x.fillStyle=base; x.fillRect(0,0,512,512);
+  for(let i=0;i<9000;i++){const v=r();x.fillStyle=`rgba(${v>0.5?255:0},${v>0.5?255:0},${v>0.5?255:0},${0.035*r()})`;x.fillRect(r()*512,r()*512,1+r()*3,1+r()*3);}
+  for(let i=0;i<60;i++){x.fillStyle=`rgba(20,16,10,${dirt*0.45*r()})`;x.beginPath();x.ellipse(r()*512,r()*512,10+r()*50,4+r()*20,r()*3,0,7);x.fill();}
+  x.strokeStyle=scratch; for(let i=0;i<140;i++){x.globalAlpha=0.15+0.5*r();x.lineWidth=0.5+r()*1.2;x.beginPath();const a=r()*512,b=r()*512;x.moveTo(a,b);x.lineTo(a+(r()-0.5)*60,b+(r()-0.5)*30);x.stroke();}
+  x.globalAlpha=1; const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(1.5,1.5); return t;
+}
+function roughTex(seed){
+  const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
+  let s=seed; const r=()=>{s=(s*16807)%2147483647;return s/2147483647};
+  x.fillStyle='#9a9a9a'; x.fillRect(0,0,256,256);
+  for(let i=0;i<4000;i++){const v=Math.floor(110+r()*120);x.fillStyle=`rgb(${v},${v},${v})`;x.fillRect(r()*256,r()*256,1+r()*4,1+r()*2);}
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+const RT = roughTex(7);
+const M = {
+  olive: new THREE.MeshStandardMaterial({map:wearTex(11,'#5d6450','#c9c4b0',0.25),metalness:0.15,roughness:0.8,roughnessMap:RT}),
+  steel: new THREE.MeshStandardMaterial({map:wearTex(23,'#7d838a','#d8dde2',0.18),metalness:0.8,roughness:0.5,roughnessMap:RT}),
+  gun:   new THREE.MeshStandardMaterial({map:wearTex(31,'#4c5157','#a9b0b8',0.12),metalness:0.85,roughness:0.42,roughnessMap:RT}),
+  silver:new THREE.MeshStandardMaterial({map:wearTex(41,'#b7bec7','#eef2f6',0.06),metalness:0.85,roughness:0.32,roughnessMap:RT}),
+  silverDk:new THREE.MeshStandardMaterial({map:wearTex(43,'#6f7782','#c7ced6',0.05),metalness:0.85,roughness:0.36,roughnessMap:RT}),
+  dark:  new THREE.MeshStandardMaterial({map:wearTex(53,'#45413c','#7a7068',0.08),metalness:0.8,roughness:0.45,roughnessMap:RT}),
+  darkB: new THREE.MeshStandardMaterial({map:wearTex(57,'#544b41','#8a7c6a',0.08),metalness:0.8,roughness:0.42,roughnessMap:RT}),
+  gold:  new THREE.MeshStandardMaterial({color:0xd4a23c,metalness:1,roughness:0.28,roughnessMap:RT}),
+  black: new THREE.MeshStandardMaterial({color:0x111214,metalness:0.6,roughness:0.6}),
+  rubber:new THREE.MeshStandardMaterial({color:0x1d1f22,metalness:0.2,roughness:0.85}),
+  hazard:new THREE.MeshStandardMaterial({color:0xc9a227,metalness:0.3,roughness:0.6}),
+};
+const GLOW = {
+  violet:{c:0xb27bff, e:0x9a5cff},
+  amber: {c:0xffb347, e:0xff9a1f},
+  gold:  {c:0xffd36a, e:0xffc040},
+};
+function glowMat(k,i){return new THREE.MeshStandardMaterial({color:GLOW[k].c,emissive:GLOW[k].e,emissiveIntensity:i||3.2,metalness:0,roughness:0.4});}
+function haloMat(k,o){return new THREE.MeshBasicMaterial({color:GLOW[k].e,transparent:true,opacity:o||0.22,blending:THREE.AdditiveBlending,depthWrite:false});}
+
+const root = new THREE.Group(); scene.add(root);
+function add(geo,mat,x,y,z,rx,ry,rz,parent){const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.rotation.set(rx||0,ry||0,rz||0);m.castShadow=true;m.receiveShadow=true;(parent||root).add(m);return m;}
+// side-profile extrusion (x forward, y up), width along z, centered
+function prof(pts,width,bevel){const sh=new THREE.Shape();pts.forEach((p,i)=>i?sh.lineTo(p[0],p[1]):sh.moveTo(p[0],p[1]));sh.closePath();
+  const b=bevel==null?0.05:bevel;const g=new THREE.ExtrudeGeometry(sh,{depth:width-2*b,bevelEnabled:b>0,bevelThickness:b,bevelSize:b,bevelSegments:3,curveSegments:8});g.translate(0,0,-(width-2*b)/2);return g;}
+// top-plan extrusion (x forward, z side) with height along y
+function plan(pts,h,bevel){const sh=new THREE.Shape();pts.forEach((p,i)=>i?sh.lineTo(p[0],-p[1]):sh.moveTo(p[0],-p[1]));sh.closePath();
+  const b=bevel==null?0.05:bevel;const g=new THREE.ExtrudeGeometry(sh,{depth:h-2*b,bevelEnabled:b>0,bevelThickness:b,bevelSize:b,bevelSegments:3});g.rotateX(-Math.PI/2);g.translate(0,b,0);return g;}
+function rbox(w,h,d,b){const r=b==null?0.04:b;const sh=new THREE.Shape();const x=w/2-r,y=h/2-r;sh.moveTo(-x,-h/2);sh.lineTo(x,-h/2);sh.quadraticCurveTo(w/2,-h/2,w/2,-y);sh.lineTo(w/2,y);sh.quadraticCurveTo(w/2,h/2,x,h/2);sh.lineTo(-x,h/2);sh.quadraticCurveTo(-w/2,h/2,-w/2,y);sh.lineTo(-w/2,-y);sh.quadraticCurveTo(-w/2,-h/2,-x,-h/2);
+  const g=new THREE.ExtrudeGeometry(sh,{depth:d-2*r,bevelEnabled:true,bevelThickness:r,bevelSize:r*0.6,bevelSegments:2});g.translate(0,0,-(d-2*r)/2);return g;}
+function cylX(r,len,seg){const g=new THREE.CylinderGeometry(r,r,len,seg||40);g.rotateZ(-Math.PI/2);g.translate(len/2,0,0);return g;}
+function coneX(r1,r2,len,seg){const g=new THREE.CylinderGeometry(r2,r1,len,seg||40);g.rotateZ(-Math.PI/2);g.translate(len/2,0,0);return g;}
+function bolts(x0,x1,n,y,z,mat,r){for(let i=0;i<n;i++){const x=x0+(x1-x0)*i/(n-1);add(new THREE.CylinderGeometry(r||0.028,r||0.028,0.03,10),mat||M.gun,x,y,z,Math.PI/2);}}
+function boltsTop(x0,x1,n,y,z,mat){for(let i=0;i<n;i++){const x=x0+(x1-x0)*i/(n-1);add(new THREE.CylinderGeometry(0.028,0.028,0.03,10),mat||M.gun,x,y,z);}}
+function vents(x,y,z,n,w,h,step,mat,dir){for(let i=0;i<n;i++)add(new THREE.BoxGeometry(w,h,0.02),mat||M.black,x+i*step*(dir==='x'?1:0),y,z+(dir==='x'?0:i*step));}
+function glowStrip(k,geo,x,y,z,rx,ry,rz,halo){const m=add(geo,glowMat(k),x,y,z,rx,ry,rz);m.castShadow=false;if(halo!==false){const h=add(geo.clone().scale(1.0,1.0,1.0),haloMat(k,0.0),x,y,z,rx,ry,rz);}return m;}
+function haloSprite(k,x,y,z,s,o){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.25,'rgba(255,255,255,0.5)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),color:GLOW[k].e,transparent:true,opacity:o||0.6,blending:THREE.AdditiveBlending,depthWrite:false}));sp.position.set(x,y,z);sp.scale.set(s,s,1);root.add(sp);return sp;}
+function glowLight(k,x,y,z,i,d){const l=new THREE.PointLight(GLOW[k].e,i||3,d||2.5,2);l.position.set(x,y,z);root.add(l);}
+
+// ---- shared turret ring base (sits on the chassis mount) ----
+function ring(r,mat){
+  add(new THREE.CylinderGeometry(r,r*1.04,0.16,64),M.gun,0,0.08,0);
+  add(new THREE.CylinderGeometry(r*0.97,r*0.97,0.1,64),M.gun,0,0.21,0);
+  add(new THREE.TorusGeometry(r*1.0,0.025,8,64),M.black,0,0.16,0,Math.PI/2);
+  for(let i=0;i<16;i++){const a=i/16*Math.PI*2;add(new THREE.CylinderGeometry(0.025,0.025,0.04,8),M.gun,Math.cos(a)*r*0.98,0.17,Math.sin(a)*r*0.98,0,0,Math.PI/2).lookAt(0,0.17,0);}
+}
+
+const B = {};
+// ---------- shared chassis parts ----------
+// track unit: center x, length, height, width, z; sits on ground
+function track(xc,L,H,tw,z,n,o){
+  o=o||{};const R=H/2;
+  const sh=new THREE.Shape();sh.moveTo(-L/2+R,-R);sh.lineTo(L/2-R,-R);sh.absarc(L/2-R,0,R,-Math.PI/2,Math.PI/2,false);sh.lineTo(-L/2+R,R);sh.absarc(-L/2+R,0,R,Math.PI/2,Math.PI*1.5,false);
+  const t=0.11;const ho=new THREE.Path();const r2=R-t;ho.moveTo(-L/2+R,-r2);ho.lineTo(L/2-R,-r2);ho.absarc(L/2-R,0,r2,-Math.PI/2,Math.PI/2,false);ho.lineTo(-L/2+R,r2);ho.absarc(-L/2+R,0,r2,Math.PI/2,Math.PI*1.5,false);sh.holes.push(ho);
+  const g=new THREE.ExtrudeGeometry(sh,{depth:tw,bevelEnabled:false,curveSegments:24});g.translate(0,0,-tw/2);
+  add(g,M.rubber,xc,R,z);
+  // tread ridges
+  for(let x=-L/2+R;x<=L/2-R;x+=0.17){add(new THREE.BoxGeometry(0.07,0.045,tw+0.02),M.gun,xc+x,H+0.012,z);add(new THREE.BoxGeometry(0.07,0.045,tw+0.02),M.gun,xc+x,-0.012+0.0,z);}
+  for(const e of [-1,1])for(let a=-Math.PI/2+0.25;a<Math.PI/2;a+=0.3){const ang=e>0?a:Math.PI-a;add(new THREE.BoxGeometry(0.045,0.07,tw+0.02),M.gun,xc+e*(L/2-R)+Math.cos(ang)*(R+0.012),R+Math.sin(ang)*(R+0.012),z,0,0,ang);}
+  // wheels
+  const s=Math.sign(z)||1, wr=r2-0.05;
+  for(let i=0;i<n;i++){const x=xc-L/2+R+(L-2*R)*i/(n-1);
+    add(new THREE.CylinderGeometry(wr,wr,tw*0.7,30),M.gun,x,R,z,Math.PI/2);
+    add(new THREE.CylinderGeometry(wr*0.55,wr*0.55,tw*0.72,20),o.hub||M.steel,x,R,z,Math.PI/2);
+    add(new THREE.CylinderGeometry(wr*0.15,wr*0.15,tw*0.76,12),M.black,x,R,z,Math.PI/2);}
+}
+function tring(r,x,y,mat){ // flat round turret mount
+  add(new THREE.CylinderGeometry(r*1.12,r*1.16,0.1,64),mat||M.gun,x,y+0.05,0);
+  add(new THREE.CylinderGeometry(r,r,0.08,64),M.steel,x,y+0.13,0);
+  add(new THREE.TorusGeometry(r*1.06,0.022,8,64),M.black,x,y+0.1,0,Math.PI/2);
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2;add(new THREE.CylinderGeometry(0.025,0.025,0.03,8),M.gun,x+Math.cos(a)*r*1.1,y+0.11,Math.sin(a)*r*1.1);}
+}
+function lights(x,y,z,mat){add(new THREE.CylinderGeometry(0.09,0.1,0.08,20),M.gun,x,y,z,0,0,Math.PI/2);add(new THREE.CylinderGeometry(0.07,0.07,0.02,20),mat||new THREE.MeshStandardMaterial({color:0xfff6dc,emissive:0xfff0c8,emissiveIntensity:1.5}),x+0.045,y,z,0,0,Math.PI/2);}
+function fins(x,y,z,n,h,d,mat,step){for(let i=0;i<n;i++)add(new THREE.BoxGeometry(0.04,h,d),mat||M.gun,x+i*(step||0.1),y,z);}
+function stripes(x,y,z,w,h,nz,rotY){ // hazard stripe panel on a face (normal +x)
+  add(new THREE.BoxGeometry(0.02,h,w),M.hazard,x,y,z,0,rotY||0,0);
+  for(let i=0;i<nz;i++)add(new THREE.BoxGeometry(0.025,h*1.02,w/(nz*2)),M.black,x+0.002,y,z-w/2+w/nz*(i+0.5),0.55,rotY||0,0);
+}
+
+// ---------- SCOUT LINE (fast: low, long, wedge) ----------
+B['1']=()=>{ // SCOUT — common
+  track(0,5.0,0.72,0.55,1.25,5);track(0,5.0,0.72,0.55,-1.25,5);
+  const Y=0.38;
+  add(prof([[-2.55,0],[2.2,0],[2.75,0.32],[1.55,0.8],[-2.3,0.86],[-2.65,0.48]],2.0),M.olive,0,Y,0);
+  [-1,1].forEach(s=>add(prof([[-2.5,0],[2.4,0],[2.6,0.1],[-2.45,0.1]],0.62,0.02),M.olive,0,Y+0.33,s*1.25)); // fenders
+  tring(0.62,-0.45,Y+0.86);
+  add(prof([[1.65,0],[2.55,0],[2.25,0.18],[1.75,0.18]],1.5,0.02),M.steel,0,Y+0.62,0); // glacis plate
+  add(rbox(0.16,0.16,2.3,0.05),M.steel,2.95,Y+0.18,0); // thick bull bar
+  [-0.8,0.8].forEach(z=>{add(rbox(0.5,0.14,0.14,0.04),M.steel,2.7,Y+0.18,z);lights(2.82,Y+0.45,z*0.7);});
+  stripes(2.78,Y+0.28,0,1.1,0.12,6,0);
+  [-1,1].forEach(s=>{vents(-0.6,Y+0.5,s*1.0+s*0.012,6,0.12,0.03,0.0,M.black,'x');for(let i=0;i<6;i++)add(new THREE.BoxGeometry(0.5,0.03,0.02),M.black,0.3,Y+0.35+i*0.07,s*1.005);});
+  fins(-2.62,Y+0.45,0,1,0.3,1.3,M.gun); for(let i=0;i<7;i++)add(new THREE.BoxGeometry(0.02,0.3,0.03),M.black,-2.66,Y+0.45,-0.6+i*0.2);
+  add(new THREE.BoxGeometry(0.05,0.7,0.05),M.gun,-1.9,Y+1.2,0.7);
+  bolts(-2.0,1.6,10,Y+0.1,1.0);bolts(-2.0,1.6,10,Y+0.1,-1.0);
+};
+B['2']=()=>{ // STRIDER — rare
+  track(0,5.4,0.68,0.55,1.25,6);track(0,5.4,0.68,0.55,-1.25,6);
+  const Y=0.36;
+  add(prof([[-2.75,0],[2.4,0],[3.15,0.26],[1.3,0.78],[-2.5,0.8],[-2.85,0.45]],2.0),M.silver,0,Y,0);
+  [-1,1].forEach(s=>{add(prof([[-2.7,0],[2.7,0],[3.0,0.12],[2.6,0.34],[-2.6,0.34],[-2.8,0.15]],0.12,0.03),M.silverDk,0,Y+0.08,s*1.58); // side skirt (upper track only)
+    glowStrip('violet',new THREE.BoxGeometry(4.6,0.035,0.02),0.1,Y+0.2,s*1.645);
+    add(prof([[-2.7,0],[2.8,0],[3.0,0.08],[-2.6,0.08]],0.66,0.02),M.silverDk,0,Y+0.32,s*1.25);});
+  tring(0.62,-0.4,Y+0.8,M.silverDk);
+  [-1,1].forEach(s=>{glowStrip('violet',new THREE.BoxGeometry(0.03,0.04,0.5),3.0,Y+0.28,s*0.6,0,0,0);add(new THREE.SphereGeometry(0.13,20,12),M.silverDk,2.1,Y+0.6,s*0.75);
+    glowStrip('violet',new THREE.SphereGeometry(0.06,12,8),2.2,Y+0.62,s*0.75);});
+  glowStrip('violet',new THREE.BoxGeometry(1.6,0.03,0.03),1.4,Y+0.64,0,0,0,-0.42);
+  // rear cooling fins
+  [-1,1].forEach(s=>{for(let i=0;i<5;i++)add(new THREE.BoxGeometry(0.5,0.35,0.03),M.silverDk,-2.3,Y+0.95,s*(0.45+i*0.08));});
+  glowStrip('violet',new THREE.BoxGeometry(0.03,0.3,1.4),-2.84,Y+0.45,0);
+  glowLight('violet',0.5,Y+0.6,2.4,3,3);
+};
+B['3']=()=>{ // PHANTOM — epic stealth
+  track(-0.1,5.3,0.68,0.55,1.25,6,{hub:M.dark});track(-0.1,5.3,0.68,0.55,-1.25,6,{hub:M.dark});
+  const Y=0.36;
+  add(prof([[-2.8,0],[2.45,0],[3.2,0.24],[1.0,0.82],[-1.8,0.86],[-2.9,0.42]],2.1),M.darkB,0,Y,0);
+  // faceted chines over tracks
+  [-1,1].forEach(s=>{add(plan([[-2.7,s*1.05],[2.9,s*1.05],[2.5,s*1.62],[-2.5,s*1.62]].map(p=>[p[0],p[1]]),0.12,0.03),M.dark,0,Y+0.3,0);
+    add(new THREE.BoxGeometry(5.0,0.04,0.04),M.gold,0.1,Y+0.43,s*1.6);
+    glowStrip('amber',new THREE.BoxGeometry(3.6,0.03,0.02),0.0,Y+0.36,s*1.64);});
+  add(prof([[0.9,0],[2.4,0],[2.1,0.12],[1.0,0.12]],1.3,0.02),M.dark,0,Y+0.68,0);
+  tring(0.64,-0.5,Y+0.86,M.dark);
+  add(new THREE.TorusGeometry(0.73,0.025,8,64),M.gold,-0.5,Y+0.97,0,Math.PI/2);
+  // gold chevron on glacis
+  [-1,1].forEach(s=>add(new THREE.BoxGeometry(1.1,0.04,0.06),M.gold,2.25,Y+0.5,s*0.42,0,s*0.45,-0.3));
+  glowStrip('amber',new THREE.BoxGeometry(0.03,0.04,1.0),3.1,Y+0.27,0);
+  // rear amber thrusters
+  [-0.55,0.55].forEach(z=>{add(coneX(0.26,0.2,0.4),M.dark,-3.25,Y+0.45,z);add(cylX(0.27,0.06),M.gold,-3.27,Y+0.45,z);add(new THREE.CylinderGeometry(0.18,0.18,0.02,24),glowMat('amber',5),-3.28,Y+0.45,z,0,0,Math.PI/2);haloSprite('amber',-3.35,Y+0.45,z,0.8,0.6);});
+  glowLight('amber',-3.6,Y+0.6,0,4,3);
+  [-1,1].forEach(s=>glowStrip('amber',new THREE.BoxGeometry(2.4,0.03,0.02),0.2,Y+0.55,s*1.05,0,0,-0.12));
+};
+// ---------- VANGUARD LINE (balanced: classic MBT proportions) ----------
+B['4']=()=>{ // VANGUARD — common
+  track(0,5.4,0.95,0.68,1.38,6);track(0,5.4,0.95,0.68,-1.38,6);
+  const Y=0.45;
+  add(prof([[-2.75,0],[2.5,0],[3.0,0.42],[1.95,1.0],[-2.55,1.04],[-2.85,0.58]],2.1),M.olive,0,Y,0);
+  [-1,1].forEach(s=>{add(prof([[-2.75,0],[2.75,0],[2.95,0.1],[-2.7,0.1]],0.78,0.02),M.olive,0,Y+0.5,s*1.38);
+    add(rbox(0.9,0.4,0.55,0.05),M.olive,-1.3,Y+0.82,s*1.38);add(rbox(0.6,0.32,0.55,0.05),M.olive,-0.2,Y+0.78,s*1.38);
+    add(new THREE.BoxGeometry(0.92,0.03,0.57),M.gun,-1.3,Y+1.03,s*1.38);});
+  tring(0.72,-0.4,Y+1.04);
+  for(let i=0;i<5;i++)add(rbox(0.12,0.08,0.5,0.02),M.gun,2.5-i*0.0,Y+0.62-i*0.0,-0.6+i*0.3,0,0,-0.5); // spare track links on glacis
+  [-0.85,0.85].forEach(z=>{lights(2.6,Y+0.6,z);add(rbox(0.2,0.12,0.12,0.03),M.gun,3.02,Y+0.2,z*0.6);});
+  for(let i=0;i<8;i++)add(new THREE.BoxGeometry(0.02,0.28,0.03),M.black,-2.86,Y+0.5,-0.7+i*0.2);
+  add(new THREE.BoxGeometry(0.05,0.8,0.05),M.gun,-2.1,Y+1.4,-0.75);
+  bolts(-2.2,2.0,12,Y+0.12,1.05);bolts(-2.2,2.0,12,Y+0.12,-1.05);
+};
+B['5']=()=>{ // SENTINEL — rare
+  track(0,5.5,0.92,0.68,1.38,6,{hub:M.silverDk});track(0,5.5,0.92,0.68,-1.38,6,{hub:M.silverDk});
+  const Y=0.45;
+  add(prof([[-2.8,0],[2.55,0],[3.05,0.4],[1.85,1.0],[-2.5,1.05],[-2.9,0.6]],2.1),M.silver,0,Y,0);
+  [-1,1].forEach(s=>{add(prof([[-2.75,0],[2.8,0],[3.05,0.2],[2.7,0.48],[-2.7,0.48],[-2.85,0.22]],0.14,0.03),M.silverDk,0,Y+0.15,s*1.76);
+    [-1.6,-0.3,1.0].forEach(x=>add(new THREE.BoxGeometry(0.03,0.42,0.02),M.black,x,Y+0.4,s*1.835));
+    glowStrip('violet',new THREE.BoxGeometry(4.8,0.035,0.02),0.1,Y+0.52,s*1.84);
+    add(prof([[-2.75,0],[2.85,0],[3.0,0.08],[-2.7,0.08]],0.78,0.02),M.silverDk,0,Y+0.6,s*1.38);
+    add(new THREE.SphereGeometry(0.17,20,12),M.silverDk,2.15,Y+0.85,s*0.8);glowStrip('violet',new THREE.SphereGeometry(0.08,12,8),2.29,Y+0.88,s*0.8);});
+  tring(0.72,-0.4,Y+1.05,M.silverDk);
+  glowStrip('violet',new THREE.BoxGeometry(0.03,0.05,1.2),3.07,Y+0.38,0);
+  [-1,1].forEach(s=>glowStrip('violet',new THREE.BoxGeometry(1.3,0.035,0.03),2.4,Y+0.72,s*0.5,0,0,-0.47));
+  for(let i=0;i<6;i++)add(new THREE.BoxGeometry(0.6,0.03,1.6),M.silverDk,-2.2,Y+1.08+i*0.06,0);
+  glowLight('violet',0.5,Y+0.8,2.6,3,3);
+};
+B['6']=()=>{ // PALADIN — epic knight
+  track(0,5.5,0.95,0.7,1.42,6,{hub:M.dark});track(0,5.5,0.95,0.7,-1.42,6,{hub:M.dark});
+  const Y=0.45;
+  add(prof([[-2.8,0],[2.55,0],[3.1,0.45],[1.7,1.12],[-2.4,1.15],[-2.9,0.6]],2.15),M.darkB,0,Y,0);
+  // pauldron-style shoulder armor over the tracks
+  [-1,1].forEach(s=>{const g=prof([[-2.6,0],[2.6,0],[2.9,0.25],[2.4,0.6],[-2.3,0.66],[-2.75,0.3]],0.95,0.06);add(g,M.dark,0,Y+0.42,s*1.45);
+    add(new THREE.BoxGeometry(5.1,0.05,0.05),M.gold,0,Y+0.43,s*1.93);add(new THREE.BoxGeometry(4.6,0.05,0.05),M.gold,0.05,Y+1.08,s*1.93);
+    glowStrip('amber',new THREE.BoxGeometry(3.4,0.035,0.02),-0.1,Y+0.75,s*1.94);
+    for(let i=0;i<3;i++)add(new THREE.BoxGeometry(0.04,0.5,0.03),M.gold,-1.4+i*1.3,Y+0.75,s*1.935);});
+  // gold crest ridge down the glacis + amber visor slit
+  add(prof([[0.4,0],[2.5,0],[2.2,0.16],[0.6,0.2]],0.22,0.04),M.gold,0,Y+1.02,0);
+  add(new THREE.BoxGeometry(0.05,0.07,1.5),glowMat('amber',4),2.75,Y+0.65,0,0,0,0.55);
+  haloSprite('amber',2.85,Y+0.7,0,1.0,0.35);
+  [-1,1].forEach(s=>add(new THREE.BoxGeometry(1.4,0.05,0.06),M.gold,2.35,Y+0.78,s*0.85,0,0,-0.55));
+  tring(0.72,-0.55,Y+1.15,M.dark);add(new THREE.TorusGeometry(0.81,0.03,8,64),M.gold,-0.55,Y+1.26,0,Math.PI/2);
+  for(let i=0;i<8;i++)add(new THREE.BoxGeometry(0.02,0.3,0.03),M.black,-2.86,Y+0.55,-0.7+i*0.2);
+  glowLight('amber',2.6,Y+0.9,1.6,3,3);
+};
+// ---------- TITAN LINE (heavy: tall, wide, massive) ----------
+B['7']=()=>{ // TITAN — common
+  track(0,5.8,1.15,0.85,1.6,7);track(0,5.8,1.15,0.85,-1.6,7);
+  const Y=0.5;
+  add(prof([[-2.9,0],[2.5,0],[2.95,0.55],[2.2,1.3],[-2.7,1.35],[-3.0,0.7]],2.35),M.olive,0,Y,0);
+  // integrated plow armor
+  add(prof([[2.6,-0.35],[3.35,-0.35],[3.55,0.1],[3.2,0.75],[2.7,0.75]],3.6,0.06),M.steel,0,Y,0);
+  for(let i=0;i<6;i++)add(new THREE.BoxGeometry(0.06,0.9,0.06),M.gun,3.32,Y+0.18,-1.5+i*0.6,0,0,-0.3);
+  stripes(3.53,Y+0.08,0,3.4,0.16,12,0);
+  [-1,1].forEach(s=>{add(prof([[-2.9,0],[2.9,0],[3.05,0.1],[-2.85,0.1]],0.95,0.02),M.olive,0,Y+0.66,s*1.6);
+    add(rbox(1.6,0.6,0.1,0.03),M.steel,-0.6,Y+0.65,s*1.2);bolts(-1.3,0.1,6,Y+0.88,s*1.26);bolts(-1.3,0.1,6,Y+0.42,s*1.26);});
+  // twin thick exhaust stacks
+  [-0.75,0.75].forEach(z=>{add(new THREE.CylinderGeometry(0.16,0.18,0.8,24),M.gun,-2.4,Y+1.7,z);add(new THREE.CylinderGeometry(0.2,0.2,0.08,24),M.steel,-2.4,Y+2.1,z);});
+  tring(0.85,-0.3,Y+1.35);
+  for(let i=0;i<9;i++)add(new THREE.BoxGeometry(0.02,0.35,0.03),M.black,-3.01,Y+0.7,-0.8+i*0.2);
+};
+B['8']=()=>{ // BULWARK — rare
+  track(0,5.8,1.1,0.85,1.6,7,{hub:M.silverDk});track(0,5.8,1.1,0.85,-1.6,7,{hub:M.silverDk});
+  const Y=0.5;
+  add(prof([[-2.95,0],[2.6,0],[3.05,0.55],[2.4,1.3],[-2.75,1.35],[-3.05,0.7]],2.35),M.silver,0,Y,0);
+  // layered slab shields (upper part of track only)
+  [-1,1].forEach(s=>{add(prof([[-2.9,0],[2.9,0],[3.1,0.3],[2.8,0.65],[-2.8,0.65],[-3.0,0.3]],0.16,0.04),M.silverDk,0,Y+0.25,s*2.1);
+    add(prof([[-2.4,0],[2.3,0],[2.5,0.2],[-2.3,0.25]],0.12,0.03),M.silver,0,Y+0.6,s*2.22);
+    glowStrip('violet',new THREE.BoxGeometry(4.5,0.04,0.02),0,Y+0.45,s*2.19);
+    [-1.5,0,1.5].forEach(x=>glowStrip('violet',new THREE.BoxGeometry(0.04,0.3,0.02),x,Y+0.62,s*2.29));
+    add(prof([[-2.9,0],[2.9,0],[3.05,0.1],[-2.85,0.1]],0.95,0.02),M.silverDk,0,Y+0.9,s*1.6);});
+  // front ram
+  add(rbox(0.5,0.55,2.6,0.08),M.silverDk,3.1,Y+0.3,0);glowStrip('violet',new THREE.BoxGeometry(0.03,0.05,2.2),3.36,Y+0.3,0);
+  // capacitor stacks at rear deck
+  for(let i=0;i<3;i++)add(new THREE.CylinderGeometry(0.15,0.15,0.6,20),M.silverDk,-2.2,Y+1.6,-0.6+i*0.6);
+  glowStrip('violet',new THREE.BoxGeometry(0.04,0.05,1.5),-2.2,Y+1.6,0,Math.PI/2);
+  tring(0.85,-0.2,Y+1.35,M.silverDk);
+  glowLight('violet',0.5,Y+1.2,3.2,4,4);
+};
+B['9']=()=>{ // COLOSSUS — epic, four track pods
+  for(const s of [-1,1]){track(1.6,2.9,1.05,0.8,s*2.05,4,{hub:M.dark});track(-1.7,2.9,1.05,0.8,s*2.05,4,{hub:M.dark});
+    // pod armor shells over each track
+    [1.6,-1.7].forEach(x=>{add(prof([[-1.5,0],[1.5,0],[1.65,0.25],[1.4,0.45],[-1.4,0.45],[-1.6,0.25]],0.95,0.05),M.dark,x,Y9+0.55,s*2.05);
+      add(new THREE.BoxGeometry(2.9,0.05,0.05),M.gold,x,Y9+0.82,s*2.54);glowStrip('amber',new THREE.BoxGeometry(2.0,0.035,0.02),x,Y9+0.7,s*2.55);});
+    // pylons connecting pods to hull
+    [1.6,-1.7].forEach(x=>add(rbox(0.9,0.45,0.7,0.05),M.dark,x,Y9+0.85,s*1.4));}
+  const Y=Y9;
+  add(prof([[-3.1,0],[2.7,0],[3.2,0.55],[2.5,1.35],[-2.8,1.42],[-3.25,0.75]],2.3),M.darkB,0,Y+0.3,0);
+  [-1,1].forEach(s=>{add(new THREE.BoxGeometry(5.6,0.05,0.05),M.gold,0,Y+0.33,s*1.16);add(new THREE.BoxGeometry(5.0,0.05,0.05),M.gold,0,Y+1.7,s*1.16);
+    add(prof([[-2.6,0],[2.2,0],[2.5,0.3],[2.1,0.7],[-2.4,0.7]],0.12,0.03),M.dark,0,Y+0.75,s*1.2);
+    glowStrip('amber',new THREE.BoxGeometry(3.4,0.035,0.02),-0.2,Y+1.1,s*1.27);});
+  // reactor core under the hull, glowing between the pods
+  add(rbox(1.8,0.5,1.4,0.06),M.dark,0,Y+0.05,0);
+  add(new THREE.BoxGeometry(1.2,0.3,1.42),glowMat('amber',4),0,Y+0.05,0);
+  haloSprite('amber',0.2,Y+0.05,1.1,1.6,0.6);glowLight('amber',0,Y-0.2,1.6,5,3);
+  // gold chevron and visor
+  add(new THREE.BoxGeometry(0.05,0.07,1.6),glowMat('amber',4),2.9,Y+0.95,0,0,0,0.6);
+  [-1,1].forEach(s=>add(new THREE.BoxGeometry(1.2,0.05,0.06),M.gold,2.6,Y+1.15,s*0.75,0,0,-0.6));
+  tring(0.85,-0.35,Y+1.72,M.dark);add(new THREE.TorusGeometry(0.96,0.03,8,64),M.gold,-0.35,Y+1.84,0,Math.PI/2);
+  for(let i=0;i<9;i++)add(new THREE.BoxGeometry(0.02,0.4,0.03),M.black,-3.26,Y+1.05,-0.8+i*0.2);
+};
+var Y9=0.62;
+B[W]();
+
+// ---- framing: auto-fit bounding box, 3/4 view from front-right-above, barrel to the right ----
+const box=new THREE.Box3().setFromObject(root); const c=box.getCenter(new THREE.Vector3()); const sz=box.getSize(new THREE.Vector3());
+root.position.sub(new THREE.Vector3(c.x,0,c.z));
+const cam=new THREE.PerspectiveCamera(30,1,0.1,100);
+const dir=new THREE.Vector3(0.95,0.55,0.85).normalize();const tgt=new THREE.Vector3(0,sz.y*0.45,0);
+const corners=[];const b2=new THREE.Box3().setFromObject(root);for(const x of [b2.min.x,b2.max.x])for(const y of [b2.min.y,b2.max.y])for(const z of [b2.min.z,b2.max.z])corners.push(new THREE.Vector3(x,y,z));
+let D=4;for(let k=0;k<40;k++){cam.position.copy(tgt).addScaledVector(dir,D);cam.lookAt(tgt);cam.updateMatrixWorld();let mx=0,cx0=1,cx1=-1,cy0=1,cy1=-1;
+ corners.forEach(v=>{const q=v.clone().project(cam);cx0=Math.min(cx0,q.x);cx1=Math.max(cx1,q.x);cy0=Math.min(cy0,q.y);cy1=Math.max(cy1,q.y);});
+ const ext=Math.max(cx1-cx0,cy1-cy0)/2; // half-extent in NDC
+
+ D*= ext/0.80;}
+cam.position.copy(tgt).addScaledVector(dir,D);cam.lookAt(tgt);
+// lights
+const key=new THREE.DirectionalLight(0xffffff,1.5);key.position.set(3,6,8);key.castShadow=true;key.shadow.mapSize.set(2048,2048);
+Object.assign(key.shadow.camera,{left:-6,right:6,top:6,bottom:-6});key.shadow.radius=6;key.shadow.bias=-0.0005;scene.add(key);
+const rim=new THREE.DirectionalLight(0xbfd2ff,1.6);rim.position.set(-6,5,-6);scene.add(rim);
+const fill=new THREE.DirectionalLight(0xffffff,0.6);fill.position.set(-4,2,6);scene.add(fill);
+scene.add(new THREE.HemisphereLight(0x8a93a0,0x202226,0.5));
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMaterial({opacity:0.45}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+renderer.render(scene,cam);
+window.DONE=true;
+</script></body></html>
