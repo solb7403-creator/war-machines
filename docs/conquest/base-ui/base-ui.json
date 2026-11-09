@@ -61,22 +61,111 @@
   "sheetBottom": 700,
   "vh": 700,
   "scrolls": true,
-  "lastVisible": true,
-  "cards": 3,
+  "cards": 4,
   "described": true,
   "groups": [
    "ECONOMY \u00b7 makes and stores resources",
-   "DEFENSE \u00b7 stops Parasite raids"
+   "DEFENSE \u00b7 turrets, shields and gates"
   ],
   "tags": [
    "+0.8 ALLOY/H",
-   "+14 \u26a1 POWER",
-   "RANGE 28 \u00b7 DMG 34"
-  ]
+   "\u25c6 VITAL \u00b7 +14 \u26a1 POWER",
+   "ALL-ROUND \u00b7 28 m",
+   "VS SWARMS \u00b7 22 m"
+  ],
+  "afterSwipe": {
+   "scrollTop": 301,
+   "lastVisible": true
+  }
  },
  "placement": {
-  "exact": 14,
-  "wrong": []
+  "cc1-ridge": {
+   "exact": 22,
+   "wrong": [],
+   "pageErrors": []
+  },
+  "cc5-canyon": {
+   "exact": 22,
+   "wrong": [],
+   "pageErrors": []
+  },
+  "cc10-plateau": {
+   "exact": 20,
+   "wrong": [],
+   "pageErrors": []
+  },
+  "cc10-ridge": {
+   "exact": 22,
+   "wrong": [],
+   "pageErrors": []
+  }
  },
- "pageErrors": []
+ "fit": {
+  "390x700": {
+   "walls": {
+    "sheetBottom": 700,
+    "vh": 700,
+    "ores": 7,
+    "oresFit": true,
+    "count": "WALLS 0 + 13 / 2000 \u00b7 COMPOSITE 200",
+    "confirm": true,
+    "scrolls": true,
+    "confirmReachable": true,
+    "lastReachable": true
+   },
+   "draft": [
+    [
+     "line",
+     [
+      33,
+      46
+     ],
+     [
+      45,
+      46
+     ]
+    ]
+   ],
+   "turretList": {
+    "turrets": 11,
+    "lastVisible": true,
+    "scrollTop": 1953,
+    "confirmOnScreen": true
+   },
+   "pageErrors": []
+  },
+  "320x568": {
+   "walls": {
+    "sheetBottom": 568,
+    "vh": 568,
+    "ores": 7,
+    "oresFit": true,
+    "count": "WALLS 0 + 13 / 2000 \u00b7 COMPOSITE 200",
+    "confirm": true,
+    "scrolls": true,
+    "confirmReachable": true,
+    "lastReachable": true
+   },
+   "draft": [
+    [
+     "line",
+     [
+      33,
+      46
+     ],
+     [
+      45,
+      46
+     ]
+    ]
+   ],
+   "turretList": {
+    "turrets": 11,
+    "lastVisible": true,
+    "scrollTop": 2326,
+    "confirmOnScreen": true
+   },
+   "pageErrors": []
+  }
+ }
 }

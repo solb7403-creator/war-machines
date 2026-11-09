@@ -1,4 +1,4 @@
-// Session 5 Phase 1: the pilot's private base plot, server-authoritative (worker/src/conquest-plot.js + js/conquest/plot.js).
+// Session 5 Phase 1 (+ Session 5B town): the pilot's private base town, server-authoritative (worker/src/conquest-plot.js + js/conquest/plot.js).
 // Migration (every old tier/module combination keeps its benefits), build/upgrade/move/wall validation, one builder on the
 // Worker clock, storage caps, the power budget, site bonuses and site changes, Command Power, base stores (minerals moved
 // from the wallet; monotonic), and the Defense Drill (deterministic, never rewarded, written to the base log).
@@ -40,7 +40,7 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
 // ---- 2. first build: site choice, guided first build, unlocks by CC ----
 {let s=base('crater');ok(s.base.tier===1&&s.plot.cc===1&&s.plot.site==='crater'&&s.plot.b.cc&&Object.values(s.plot.b).some(b=>b.t==='storage'),'claiming the plot: CC1 on a CRATER RIM site with a Storage Depot');
  const cpBefore=s.ledger.cp,al=s.ledger.banked.alloy,open=Object.keys(P.BUILDINGS).filter(k=>P.buildCheck(s.plot,k,1)==='');
- ok(open.sort().join()==='cannon,reactor,refinery','CC1 offers only Refinery, Reactor and the Cannon turret (next unlocks at CC2): '+open.join(', '));
+ ok(open.sort().join()==='cannon,mg,reactor,refinery','CC1 offers only Refinery, Reactor, the Cannon and the Twin-Barrel MG (next unlocks at CC2): '+open.join(', '));
  assert.throws(()=>act(structuredClone(s),'plot-build',{type:'biodome',i:5,j:5,r:0}),/unlocks at CC2/);ok(true,'a CC2 building is refused at CC1');
  const at1=P.autoPlace(s.plot,'refinery');s=act(s,'plot-build',{type:'refinery',...at1});const c=P.costOf('refinery',1);
  ok(s.plot.job.t==='refinery'&&s.plot.job.ready-now===15000&&s.ledger.cp===cpBefore-c.cp&&s.ledger.banked.alloy===al-c.alloy,'guided first build: the Refinery costs '+c.cp+' CP + '+c.alloy+' alloy and takes 15 s on the Worker clock');
@@ -48,8 +48,8 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
  assert.throws(()=>act(structuredClone(s),'plot-build',{type:'cannon',...P.autoPlace(s.plot,'cannon')}),/builder busy/);ok(true,'one builder: a second build waits');
  s=wait(s,s.plot.job.ready-now-1000);ok(s.plot.b[id].l===0,'1 s before its finish time: still building (no client clock is trusted)');s=wait(s,1000);ok(s.plot.b[id].l===1&&P.rates(s.plot).alloy>0,'15 s: the Refinery is built and producing');
  // placement validation
- const bad=[[{type:'cannon',i:-1,j:3,r:0},/outside/],[{type:'cannon',i:0,j:0,r:0},/blocked/],[{type:'cannon',i:s.plot.b.cc.i,j:s.plot.b.cc.j,r:0},/occupied/],[{type:'cannon',i:1.5,j:3,r:0},/invalid position/],[{type:'cannon',i:30,j:30,r:5},/invalid position/],[{type:'nuke',i:30,j:30,r:0},/unknown building/]];
- for(const [p,re] of bad)assert.throws(()=>act(structuredClone(s),'plot-build',p),re);ok(true,'placement refused outside the plot, on blocked rim ground, on another building, off-grid, with a bad rotation or an unknown type');
+ const bad=[[{type:'cannon',i:-1,j:3,r:0},/outside/],[{type:'cannon',i:10,j:39,r:0},/outside the town/],[{type:'cannon',i:54,j:55,r:0},/blocked/],[{type:'cannon',i:s.plot.b.cc.i,j:s.plot.b.cc.j,r:0},/occupied/],[{type:'cannon',i:1.5,j:3,r:0},/invalid position/],[{type:'cannon',i:30,j:30,r:5},/invalid position/],[{type:'nuke',i:30,j:30,r:0},/unknown building/]];
+ for(const [p,re] of bad)assert.throws(()=>act(structuredClone(s),'plot-build',p),re);ok(true,'placement refused outside the plot, outside the current town, on blocked rim ground, on another building, off-grid, with a bad rotation or an unknown type');
  assert.throws(()=>act(structuredClone(s),'plot-build',{type:'cannon',i:30,j:30,r:0,cost:0}),/invalid plot fields/);ok(true,'extra fields (a client price) are refused');
  const poor=structuredClone(s);poor.ledger.cp=10;assert.throws(()=>act(poor,'plot-build',{type:'cannon',...P.autoPlace(s.plot,'cannon')}),/insufficient banked cp/);ok(true,'a build you cannot afford is refused and nothing is spent');
  assert.throws(()=>act(structuredClone(s),'plot-upgrade',{id}),/needs CC3/);ok(true,'building level II needs CC3 (levels unlock with the Command Center)');
@@ -79,18 +79,20 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
  const q=structuredClone(p);for(let k=0;k<20;k++)q.b['x'+k]={t:'refinery',i:0,j:0,r:0,l:1};ok(/not enough power/.test(P.buildCheck(q,'cannon',1)),'over the power budget a build is refused');
  q.b.rx={t:'reactor',i:0,j:0,r:0,l:3};ok(P.powerSupply(q)===15+42,'a Reactor adds 14 power a level');
  s=act(s,'plot-build',{type:'cannon',...P.autoPlace(s.plot,'cannon')});s=finish(s);s=act(s,'plot-build',{type:'cannon',...P.autoPlace(s.plot,'cannon')});s=finish(s);
- assert.throws(()=>act(structuredClone(s),'plot-build',{type:'cannon',...P.autoPlace(s.plot,'cannon')}),/turret limit at CC1/);ok(true,'turret limit: 2 at CC1');}
+ s=act(s,'plot-build',{type:'mg',...P.autoPlace(s.plot,'mg')});s=finish(s);
+ assert.throws(()=>act(structuredClone(s),'plot-build',{type:'cannon',...P.autoPlace(s.plot,'cannon')}),/turret limit at CC1/);ok(true,'turret limit: 3 at CC1 (42 at CC10)');}
 
-// ---- 5. walls: base stores (wallet minerals moved to base), tiers, caps ----
-{let s=base('ridge');const line=P.wallLine([14,8],[22,8]);ok(line.length===9,'drag-to-draw: a straight wall of 9 sections');
- assert.throws(()=>act(structuredClone(s),'plot-wall',{cells:line,tier:1},{bmn:{fe:0}}),/base stores need fe/);ok(true,'a regolith wall needs Ferrite in the base stores');
- s=act(s,'plot-wall',{cells:line,tier:1},{bmn:{fe:30}});ok(Object.keys(s.plot.w).length===9&&s.plot.mnSpent.fe===18,'regolith wall: 9 sections, 18 Ferrite from the base stores (2 each) + CP');
- assert.throws(()=>act(structuredClone(s),'plot-wall',{cells:P.wallLine([14,10],[22,10]),tier:1},{bmn:{fe:30}}),/base stores need fe/);ok(true,'the stores count what was spent (30 moved, 18 spent: 12 left)');
- assert.throws(()=>act(structuredClone(s),'plot-wall',{cells:line,tier:2},{bmn:{il:99}}),/unlocks at CC2/);ok(true,'titanium walls unlock at CC2');
- assert.throws(()=>act(structuredClone(s),'plot-wall',{cells:[[0,0]],tier:1},{bmn:{fe:99}}),/blocked/);ok(true,'walls only on buildable ground');
- const many=Array.from({length:39},(_,k)=>[8+k%30,30+Math.floor(k/30)]);const q=structuredClone(s);q.plot.w=Object.fromEntries(Array.from({length:P.wallCap(1)},(_,k)=>[P.key(8+k%30,36+Math.floor(k/30)),1]));
- ok(/wall limit/.test(P.wallError(q.plot,[[20,20]],1)||'')||/occupied/.test(P.wallError(q.plot,[[20,20]],1)||''),'wall limit: '+P.wallCap(1)+' sections at CC1');
- s=act(s,'plot-remove',{cells:line.slice(0,3)});ok(Object.keys(s.plot.w).length===6,'walls can be removed (no refund)');
+// ---- 5. walls: composite + ore blends from the base stores, caps (Session 5B) ----
+{let s=base('ridge');const sec=(o,l)=>[{k:'line',a:[31,25],b:[39,25],o,l}];ok(P.shapeCells(sec(0,0)[0]).length===9&&s.plot.cm===200,'wall tools: a straight 9-cell line; every town starts with 200 wall composite');
+ assert.throws(()=>act(structuredClone(s),'plot-wall',{s:sec(1,1)},{bmn:{fe:0}}),/base stores need fe/);ok(true,'a Ferrite blend needs Ferrite in the base stores');
+ s=act(s,'plot-wall',{s:sec(1,1)},{bmn:{fe:30}});ok(Object.keys(s.plot.w).length===9&&s.plot.mnSpent.fe===9&&s.plot.cm===191,'Ferrite light wall: 9 cells, 9 composite + 9 Ferrite from the base stores');
+ assert.throws(()=>act(structuredClone(s),'plot-wall',{s:[{k:'line',a:[31,27],b:[52,27],o:1,l:2}]},{bmn:{fe:30}}),/base stores need fe/);ok(true,'the stores count what was spent (30 moved, 9 spent: 21 left; 22 medium cells need 44)');
+ assert.throws(()=>act(structuredClone(s),'plot-wall',{s:sec(2,1)},{bmn:{il:99}}),/unlock at CC2/);ok(true,'Ilmenite blends unlock at CC2');
+ const plain=act(structuredClone(s),'plot-wall',{s:[{k:'line',a:[31,29],b:[39,29],o:0,l:0}]},{bmn:{}});ok(Object.keys(plain.plot.w).length===18&&plain.plot.cm===182,'composite-only walls need no minerals at all');
+ const sk=act(structuredClone(s),'plot-wall',{s:[{k:'line',a:[50,40],b:[60,40],o:0,l:0}]},{});ok(sk.notice.skip.blocked+sk.notice.skip.occupied+sk.notice.skip.outside>=0&&!Object.keys(sk.plot.w).some(k=>P.NOBUILD[P.terrainAt('ridge',...k.split(',').map(Number))]),'big shapes skip blocked ground and buildings instead of failing');
+ assert.throws(()=>act(structuredClone(s),'plot-wall',{s:[{k:'line',a:[0,0],b:[3,0],o:0,l:0}]},{}),/nothing to build/);ok(true,'walls only inside the town on buildable ground');
+ const q=structuredClone(s);q.plot.w=Object.fromEntries(Array.from({length:P.wallCap(1)},(_,k)=>[P.key(18+k%40,18+Math.floor(k/40)),1]));ok(/wall limit/.test(P.wallPlan(q.plot,[{k:'line',a:[45,45],b:[46,45],o:0,l:0}]).err||''),'wall limit: '+P.wallCap(1)+' cells at CC1');
+ const cm=s.plot.cm;s=act(s,'plot-remove',{w:[{k:'line',a:[31,25],b:[33,25]}]});ok(Object.keys(s.plot.w).length===6&&s.plot.cm===cm+1,'walls can be removed: 50% of their composite comes back, rounded down (3 cells → 1), none of the ore');
  ok(R.ecoBaseStore({mn:{fe:5}},{fe:9}).err==='mn'&&JSON.stringify(R.ecoBaseStore({mn:{fe:9,il:1}},{fe:4}).bmn)==='{"fe":4,"il":0,"ar":0,"tq":0,"se":0,"mh":0}','moving minerals to the base stores: only what the wallet holds, one way, the stores total only grows');}
 
 // ---- 6. sites: change rules, lanes, turret range ----
@@ -98,7 +100,7 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
  assert.throws(()=>act(structuredClone(s),'plot-site',{site:'delta'}),/cooldown/);ok(true,'later changes have a 24 h cooldown');
  s=wait(s,86400000+1000);const al=s.ledger.banked.alloy;s=act(s,'plot-site',{site:'delta'});ok(s.ledger.banked.alloy===al-150,'... and cost 150 alloy');
  ok(Object.values(s.plot.b).every((b,i,arr)=>!P.placeError(s.plot,b.t,b.i,b.j,b.r|0,Object.keys(s.plot.b)[i])),'every building is re-seated on valid ground of the new site');
- ok(P.SITES.canyon.lanes.length===2&&P.SITES.canyon.lanes.every(l=>l.w===2)&&P.SITE_IDS.filter(k=>k!=='canyon').every(k=>P.SITES[k].lanes.length>=3&&P.SITES[k].lanes.every(l=>l.w===4)),'CANYON: 2 narrow lanes (others 3-4 wide lanes)');
+ ok(P.SITES.canyon.lanes.length===2&&P.SITES.canyon.lanes.every(l=>l.w===2)&&P.SITE_IDS.filter(k=>k!=='canyon').every(k=>P.SITES[k].lanes.length>=3&&P.SITES[k].lanes.every(l=>l.w>=3)),'CANYON: 2 narrow lanes (the six other sites: 3-5 lanes, 3-4 wide)');
  ok(P.SITES.ridge.range===1.1,'RIDGE: +10% turret range');}
 
 // ---- 7. Defense Drill: deterministic, watched, never rewarded ----
@@ -114,6 +116,6 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
  const t=performance.now();for(let k=0;k<5;k++)P.drill(strong,k+1,{frames:false,events:false});ok((performance.now()-t)/5<60,'a full drill simulates in '+((performance.now()-t)/5).toFixed(1)+' ms (Worker budget)');}
 
 // ---- 8. Command Power ----
-{const s=base('ridge'),p0=P.power(s.plot);const q=structuredClone(s.plot);q.w={'10,10':5,'11,10':5};const p1=P.power(q);ok(p0>0&&p1===p0+20,'Command Power: '+p0+' for a fresh CC1 plot; Moonheart wall sections add 10 each');}
+{const s=base('ridge'),p0=P.power(s.plot);const q=structuredClone(s.plot);q.w={'30,30':19,'31,30':19};const p1=P.power(q);ok(p0>0&&p1===p0+13,'Command Power: '+p0+' for a fresh CC1 town; Moonheart-heavy wall cells add 6.5 each');}
 
 console.log(`conquest plot: passed ${passed}`);

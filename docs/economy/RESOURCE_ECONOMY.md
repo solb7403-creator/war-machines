@@ -802,6 +802,9 @@ One builder: one construction at a time. A second builder and speed-ups are stor
 - Old modules map onto buildings (Reactor, Hangar, Shield Generator = defense, Storage Depot = vault, Radar, Uplink), capped at III for the old formulas, so CP production, field repair, the protective field, base banking, scan range and radar contacts work exactly as before.
 
 ### 13.4 Walls, turrets and the Defense Drill
+
+> **Superseded by §14 (Session 5B Town Defense):** the five wall tiers, the 24 + 16 × CC wall cap, the four turrets and the lane-only drill below are replaced by wall composite + ore blends, 600–2,000 cells + extensions, eleven turrets and the whole-town raid. Kept here as history.
+
 - Walls: drag-to-draw straight sections (up to 40 per drag; 24 + 16 × CC sections in all). Tiers: Regolith (CC1, 400 HP, 5 CP + 2 Ferrite), Titanium (CC2, 900 HP, 2 alloy + 1 Ilmenite), Armalcolite (CC5, 1,600 HP, 3 alloy + 1 Armalcolite), Selenite glass (CC7, 2,400 HP, 4 alloy + 1 Selenite), Moonheart (CC9, 3,500 HP, 5 alloy + 1 Moonheart). Gates: 2 at CC4, 4 at CC8.
 - **Base stores:** wall and CC10 minerals come from the base stores. "Move to base stores" moves minerals from the account wallet, one way and permanent (eco action `bstore`; the eco total `bmn` only grows and the plot counts what it has spent, so a stale read can refuse a build but never overspend). This is the mineral sink the Session 4 spec asked for.
 - Turrets (limit 2/4/5/6/8/9/10/12/14/16 by CC): Cannon (CC1, 28 m, 34 dmg every 1.1 s), Laser (CC2, 24 m, 9 dmg every 0.25 s), Missile (CC4, 36 m, 55 dmg + 3 m splash every 2 s, hits drones first), Mortar (CC5, 10–44 m, 46 dmg + 6 m splash every 3 s). +25% damage and +4% range a level.
@@ -822,6 +825,92 @@ Not instant (CC5 takes a week, CC10 a month) and not a wall (a new step every fe
 
 ### 13.7 Migration (every existing base)
 Tier I…V becomes CC 1/3/5/7/9 with the same points multiplier, Daily Base Yield clocks, travel node and defense record; each module becomes its building at the same level with an auto layout; a module under construction continues as the builder's job with the same finish time; banked goods are untouched. Tested over all 13,081 old tier/module combinations.
+
+## 14. Town Defense (Session 5B, owner-approved Nov 8 2026)
+
+Brief: `docs/conquest/SESSION_05B_TOWN_DEFENSE_FULL_PROMPT.txt`. Code: `js/conquest/plot.js` (rules + raid simulation), `worker/src/conquest-plot.js` (Worker actions), `js/conquest/plotview.js` (phone). Tests: `dev/tests/conquest-town.mjs`, `dev/tests/conquest-town-balance.mjs`, `dev/tests/conquest-plot.mjs`, `dev/tests/wtest/conquest-dev.mjs`, `dev/tests/conquest-plot-ui.py`, `dev/tests/conquest-base-builder.py`. **Airdrop rules are unchanged** (multiplier by tier from the CC level, Daily Base Yield, 50,000 cap, points never purchasable). The drill never pays CP, materials, minerals or points.
+
+**MONEY RULE (owner, Nov 8):** what is sold and the limits on it are the owner's business decisions. Every price and every "sellable" flag lives in one data table, `ConquestPlot.STORE` (store tiles) and `STORE.ores` (which ores may ever be sold). The values below are recommendations.
+
+### 14.1 The town grows with the Command Center
+A fixed 79 × 79 grid of 4 m cells. The town is the centred square of side 45, 49, 53, 57, 61, 65, 69, 73, 75, 77 cells at CC1…CC10 (CC10 is 2.93× the CC1 area, about 308 m across). Everything must be built inside the current town; raiders gather in the one-cell ring just outside it. No live players existed, so Session 5 plots (v1) became a fresh town claim on the same site at the same CC level (tier and points multiplier unchanged; banner and theme kept); accounts, wallets, points and minerals were not touched.
+
+**Settler homes** (settler kit look: domes, habitat blocks, water towers, greenhouses, market stalls) fill a fixed lot lattice per site; a lot is lived in from the first CC whose town keeps it 3 cells inside the edge, unless the pilot builds over it (homes never block the pilot). Ridge: 13 homes at CC1 rising to about 80 at CC10. Homes are real raid structures (260 HP).
+
+### 14.2 Sites (seven)
+| Site | Bonus | Lanes | Defensive character |
+|---|---|---|---|
+| CRATER RIM | +15% Refinery alloy, rim deposits (3 Ferrite a day) | 4 | the crater rim is an inner wall with four passes; outer districts spill over it |
+| RIVER DELTA | +15% Biodome biomass | 4 | river channels split the town into islands joined by fords |
+| RIDGE | +10% turret range | 3 | cliffs guard the lower west and south terraces (ramps) |
+| CANYON | hard to raid | 2 narrow | end walls with 3-cell passes; side ravines climb to the plateau |
+| HIGHLAND PLATEAU (new) | +12% wall strength | 3 | a summit ring and an escarpment ring, each with three ramps |
+| ICE BASIN (new) | +15% Helium-3 | 4 | frozen lakes: not buildable, raiders cross at half speed (kill zones); crevasses |
+| ASH FIELD (new) | +20% Reactor power | 5 | basalt ridges channel raiders, vents; the most open site |
+
+### 14.3 Vitals
+The Command Center is the primary objective: destroyed = the raid wins. Reactor, Storage Depot and Science Lab are secondary vitals (gold corner marks, ◆ VITAL in the menu); placed anywhere in the town. In a raid a fallen Reactor cuts power (turrets fire slower, shields weaken, down to 35%); a fallen Storage Depot exposes the production store (raids from Session 7 take a share); a fallen Science Lab pauses research (Session 6). The drill only reports these; nothing persists.
+
+### 14.4 Buildings rebalanced for the larger town
+Refinery 1 → 2 at CC5 → 3 at CC9; Reactor 1/2/3/4/5 at CC1/3/5/7/9 (14 power a level); Biodome 1/2/3 at CC2/6/10; Helium Extractor 1/2/3 at CC3/7/10; Shield Generator 1/2/3 at CC3/6/9; Gates 2/4/6/8 at CC3/5/8/10; new **Foundry** (CC2, 3×3, levels I–V, 2 power a level, 120 CP + 10 alloy at level I, ×2.4 a level; a second one at CC7). Turret cap 3, 5, 7, 10, 13, 17, 22, 27, 34, 42 by CC. Power stays a real trade-off: a fully built CC10 town cannot max every building and turret.
+
+### 14.5 Walls: composite and ore blends
+Every wall cell costs **1 wall composite**. Every town starts with **200** (the CC1 perimeter is 176 cells). The **Foundry** turns alloy the pilot loads (hopper 30 alloy a level) plus plot regolith into composite: 4 composite per alloy, 5 composite an hour per Foundry level, into the composite stock up to 400 + 300 per Foundry level (it stops when full and keeps the loaded alloy). Removing walls gives their composite back (not the ore).
+
+Each section may carry an **ore blend** (ore + light/medium/heavy). Ore comes from the base stores (minerals moved from the wallet). With q = tier weight (Ferrite .12, Ilmenite .25, Armalcolite .42, Tranquillityite .6, Selenite .8, Moonheart 1) × blend weight (light .4, medium .7, heavy 1): **strength** = 600 × (1 + 4q) HP, **durability** = 40q % less damage, **reflectiveness** = 35q % of each incoming hit bounced back at the attacker (the wall takes the rest × (1 − durability) × (1 − shield)). Ore totals round up once per order. Highland Plateau walls get +12% HP.
+
+| Blend | Unlock | Strength (HP) | Durability | Reflect | Ore per cell |
+|---|---|---:|---:|---:|---|
+| Composite | CC1 | 600 | 0% | 0% | none |
+| Ferrite light / medium / heavy | CC1 | 715 / 802 / 888 | 2 / 3 / 5% | 2 / 3 / 4% | 1 / 2 / 4 Ferrite |
+| Ilmenite light / medium / heavy | CC2 | 840 / 1,020 / 1,200 | 4 / 7 / 10% | 4 / 6 / 9% | 1 per 2 cells / 1 / 2 |
+| Armalcolite light / medium / heavy | CC4 | 1,003 / 1,306 / 1,608 | 7 / 12 / 17% | 6 / 10 / 15% | 1 per 4 cells / 1 per 2 / 1 |
+| Tranquillityite light / medium / heavy | CC5 | 1,176 / 1,608 / 2,040 | 10 / 17 / 24% | 8 / 15 / 21% | 1 per 10 cells / 1 per 5 / 2 per 5 |
+| Selenite light / medium / heavy | CC7 | 1,368 / 1,944 / 2,520 | 13 / 22 / 32% | 11 / 20 / 28% | 1 per 20 cells / 1 per 10 / 1 per 5 |
+| Moonheart light / medium / heavy | CC9 | 1,560 / 2,280 / 3,000 | 16 / 28 / 40% | 14 / 25 / 35% | 1 per 40 cells / 1 per 20 / 1 per 10 |
+
+Rare-or-better ores (Armalcolite and up) stay earn-only by default (`STORE.ores`). Looks: composite concrete; Ferrite rust with steel flecks; Ilmenite black with a blue sheen; Armalcolite grey-blue with cyan seams; Tranquillityite red-orange needles; Selenite pale glass with a white glint; Moonheart obsidian with a deep blue-white glow. Heavier blends stand taller with more veins.
+
+### 14.6 Wall caps and extensions
+Base cap **600, 756, 911, 1,067, 1,222, 1,378, 1,533, 1,689, 1,844, 2,000** cells at CC1…CC10. **Extensions** add up to **+50%** of the level's base cap (CC10: 3,000), capacity only:
+- **Foundry research** (REINFORCED LATTICE I–V, ore from the base stores, needs that Foundry level): 30 Ilmenite, 12 Armalcolite, 25 Armalcolite, 6 Tranquillityite, 2 Selenite; +6% each (30%).
+- **Defense Drill milestones**: the first drill held (Command Center ≥ 50%) at CC1, CC3, CC5, CC7 and CC9 or higher: +4% each (20%). Capacity only; the drill still pays nothing.
+- **Real base defenses won**: 3 and 10 wins: +5% each.
+- **Store**: wall extension pack +10% (capacity only), checkout DISABLED until payments are certified.
+Fast wall tools: LINE (solid, 4-connected), RECT, RING, COPY/PASTE, ERASE and UNDO on a draft; the Worker expands shapes itself (up to 12 sections and 1,200 cells an order); live "WALLS n / cap (+EXT)" and composite/ore cost before CONFIRM.
+
+### 14.7 Eleven turrets
+| Turret | Unlock | Role | Range | Damage | Every | Special | Power/level | Level I cost |
+|---|---|---|---:|---:|---:|---|---:|---|
+| Cannon Turret | CC1 | all-round | 28 m | 34 | 1.1 s | | 1 | 70 CP + 5 alloy |
+| Twin-Barrel MG | CC1 | vs swarms | 22 m | 7 | 0.14 s | ×1.45 vs light | 1 | 80 CP + 5 alloy |
+| Laser Turret | CC2 | fast beam | 24 m | 9 | 0.25 s | ×1.2 vs light | 1 | 110 CP + 6 alloy + 1 He-3 |
+| Rocket Pod | CC3 | salvo · area | 30 m | 18 ×4 | 3.4 s | 4-rocket salvo, 3.5 m splash, ground only | 1 | 140 CP + 8 alloy + 1 He-3 |
+| Missile Turret | CC4 | anti-air | 36 m | 55 | 2 s | 3 m splash, flyers first | 1 | 160 CP + 8 alloy + 2 He-3 |
+| Mortar | CC5 | long splash | 44 m | 46 | 3 s | 6 m splash, min 10 m, ground only | 1 | 190 CP + 10 alloy + 2 He-3 |
+| Flame Projector | CC5 | short cone · burns | 13 m | 5 | 0.2 s | cone, burns 6/s for 3 s, ×1.3 vs light | 1 | 170 CP + 9 alloy + 4 biomass |
+| Heavy Siege Cannon | CC6 | vs armor | 34 m | 240 | 4.6 s | armor piercing, toughest target first, ground only | 2 | 260 CP + 16 alloy + 3 He-3 |
+| Tesla Arc Coil | CC7 | chains | 18 m | 30 | 1.1 s | jumps to 4 more within 7 m (×0.8 each) | 2 | 300 CP + 16 alloy + 4 He-3 |
+| Laser Cannon | CC8 | charged burst | 34 m | 210 | 3.6 s | half armor piercing | 2 | 340 CP + 18 alloy + 5 He-3 |
+| Railgun | CC9 | pierces a line | 50 m | 190 | 5 s | everything in a 1.4 m line, armor piercing | 2 | 420 CP + 22 alloy + 6 He-3 |
+Levels I–V as before (+25% damage, +4% range a level; cost ×2.4 a level).
+
+### 14.8 The whole-town raid (Defense Drill now, async raids in Session 7)
+Waves gather at the lanes just outside the town and path to the Command Center over a Dijkstra flow field whose cell cost is 1 (2 on ice) + the effective HP of any structure there ÷ 40 + the threat of the turrets covering it (dps × 0.008), so they break through the weakest wall and avoid kill zones when a detour is cheap. On the way they attack whatever blocks them; raiders, swarmlings and sentinels also attack structures in reach (sentinels prefer turrets); brutes break walls (×1.8). Kinds: raider 110 HP, swarmling 34, sentinel 420 (30% armor), brute 1,500 (45% armor), drone 70 (flies straight at turrets, then vitals). Waves by threat T (= CC): three waves (four from T6) of raiders 3+T…, swarmlings 2T–4T, sentinels, drones and, from T5, brutes; HP ×1.19^(T−1) (×4.8 at T10), damage ×1.11^(T−1) (×2.6), up to 130 + 5(T−1) s. Deterministic from (layout, seed, threat); the Worker runs it without frames for the log (the result shown is the log's); the phone replays the same seed, simulated in 8 ms slices so it never freezes. Bounded: a full CC10 town (2,000–2,600 walls, 42 turrets, ~60 homes, 211 raiders) median 56–129 ms on the Worker path in node (numbers in `docs/conquest/session5b/town-rules.json`).
+
+### 14.9 Balance model (`dev/tests/conquest-town-balance.mjs`, numbers in `docs/conquest/session5b/balance-model.json`)
+- CC1 starter town (2 Cannons + 1 Twin-Barrel MG at level I, a 53-cell composite + Ferrite-light ring: 53 composite, 53 Ferrite) holds the threat-1 drill on all seven sites × 5 seeds; an undefended CC1 town always falls.
+- CC10 town (legal power: 5 Reactors, production, 3 Shield Generators, 42 turrets of all eleven types) with 2,000 cells of heavy rare blends holds threat 10 on all seven sites × 2 seeds.
+- The same town with 3,000 composite-only cells (+50% extensions, no ore) loses its Command Center in 12 of 14 drills (the other two end at 9% and 22%); with no walls it falls in 12 of 14. Spending power without materials does not hold.
+Modeled with scenario layouts, not a human playtest.
+
+### 14.10 Owner addendum (Nov 8): raids that leave marks, one engine, layouts, refunds, hooks
+- **Raid damage persists** (real raids, never the drill): `plot.dmg` holds each structure's HP lost (building ids, `w:i,j` wall cells). A structure at 0 HP is ruined: it does not block, fire or produce (a ruined Reactor gives no power, a ruined Storage Depot no capacity) until repaired; the Command Center is never left below 1 HP. **REPAIR** (one order for everything damaged): composite = lost share × 1 a wall cell; buildings = lost share × 30% of the level's alloy + 20% of its CP; builder time 10 s … 2 h (HP ÷ 150 a second). `applyRaidDamage()` writes it (Session 7 async raids).
+- **One raid engine:** the Defense Drill is the raid simulation (`ConquestPlot.raid === drill`): seeded, deterministic, run on the Worker; the phone only replays the seed. **DEFENSE RATING** = 2 × wall strength (effective HP vs composite, per cell) + 1.5 × turret firepower (dps × range ÷ 28) + up to 300 for vitals covered by turrets (3 covering turrets = full) + 50 × CC; ruined structures do not count. Shown on the base screen and in the public snapshot (`dr`) for raid matchmaking and Base of the Week later.
+- **Layout slots:** 3 (a fourth is a store item, disabled). SAVE records building positions and walls (compact, 4 characters a cell); APPLY moves buildings and walls in one tap; nothing is rebuilt or charged. Walls are a conserved stock of cells by blend: cells a layout has no wall stock for stay empty; cells it has no room for wait in storage (`plot.ws`) and are placed again for free with the wall tools. Placed + stored walls count toward the cap. Not while the town is damaged.
+- **Visits** show the real town: wall blends, turret types and levels, vitals and the defense rating ("WHAT YOU WOULD FACE").
+- **Refunds (no loops):** removing a wall returns 50% of its composite (rounded down per order) and none of its ore; removing a turret returns 50% of what all its levels cost (CP and materials, rounded down); other buildings nothing; dev-mode test records get nothing back.
+- **Hooks (data now, Session 7 gameplay):** garrison (`plot.gar`: one Hangar slot a level for defending tanks), loot protection (`loot()`: banked goods never raidable; the Storage Depot protects 25% + 10% a level, up to 75%, of the production store and composite), peace shield (`plot.shieldUntil`, set after a raid), attack alerts (`plot.alerts`: who, when, outcome, `sent:0` for the Telegram bot; drills and raids write them).
 
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 

@@ -35,4 +35,9 @@ ok((await call(8203,'/api/conquest/visit',{pid:'tg_8201',write:1})).status===400
 // squad: a recruit can visit their referrer even outside the top 20
 db.root.players.tg_8204={...(db.root.players.tg_8204||{}),ref:'tg_9999',name:'Recruit'};await call(8204,'/api/sync');db.root.players.tg_8204.ref='tg_9999';const sq=await call(8204,'/api/conquest/visit',{pid:'tg_9999'});
 ok(sq.status===200&&sq.base.n==='Hidden','squadmates can visit each other (here: a recruit visits their referrer)');
+// Session 5B review fix: walls (composite refunds 1:1) must not farm Base of the Week by dipping before the rollover
+{const {publishBase}=await import('../../../worker/src/conquest-visit.js');const W1=Date.UTC(2026,10,11,12),W2=W1+7*86400000,pl=(pw)=>({plot:{site:'ridge',cc:5,power:pw,b:{cc:{t:'cc',i:37,j:37,r:0,l:5}},w:{}}});
+ await publishBase(env,'tg_8300','Dipper',pl(4000),W1);await publishBase(env,'tg_8300','Dipper',pl(1000),W1+1000);   // walls removed late in the week
+ await publishBase(env,'tg_8300','Dipper',pl(1000),W2);await publishBase(env,'tg_8300','Dipper',pl(4000),W2+1000);   // rebuilt after the rollover
+ const sn=db.get('cqbase/tg_8300'),bw=db.get('cqweek/'+Object.keys(db.root.cqweek).sort().at(-1));ok(sn.w0===4000&&sn.pk===4000&&(bw?.p!=='tg_8300'||bw.g<=0),'removing walls before the weekly rollover and rebuilding them after is no Base of the Week gain (baseline = peak power)');}
 console.log(`conquest visit: passed ${passed}`);

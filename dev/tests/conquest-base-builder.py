@@ -1,4 +1,4 @@
-"""Session 5 Phase 1 journey in the shipped client (Chromium 390x844, HIGH) against the real Worker reducer and account on a
+"""Session 5 Phase 1 journey (Session 5B: town, RING wall tool + Ferrite blend, CC10 town with 2,000 walls and 42 turrets) in the shipped client (Chromium 390x844, HIGH) against the real Worker reducer and account on a
 disposable local DB: at the Command Gate tap ENTER BASE -> pick CRATER RIM -> CLAIM PLOT -> guided first build (Refinery,
 real 15 s Worker timer, scaffolding + drones) -> a Cannon turret with its range ring -> move minerals to the base stores and
 drag a regolith wall -> Defense Drill replay (no rewards) -> leave. Then a fully built CC10 plot fixture for the render budget
@@ -43,7 +43,7 @@ async def main():
    st=lambda page,js:page.evaluate('(()=>{const s=Conquest.view.authority.state;return '+js+';})()')
    gate=[1080,1160]
    # ---------- 1. claim + guided first build (HIGH) ----------
-   ctx,page,errors=await session('high',{'position':gate,'fieldMissions':True,'baseFunds':True,'wallet':{'mn':{'fe':40},'pts':5000}})
+   ctx,page,errors=await session('high',{'position':gate,'fieldMissions':True,'baseFunds':True,'wallet':{'mn':{'fe':90},'pts':5000}})
    b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);label=await b.inner_text();await b.click()
    await page.wait_for_selector('.cq-site-card');sites=await page.locator('.cq-site-card').count();await page.screenshot(path=str(OUT/'site-picker-390.png'))
    await page.locator('.cq-site-card[data-site="crater"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
@@ -56,17 +56,18 @@ async def main():
    # the plot view re-opens the session once the builder's time is up; the Worker settles the job on its own clock
    await page.wait_for_function('Object.values(Conquest.view.authority.state.plot.b).some(b=>b.t==="refinery"&&b.l===1)',timeout=40000)
    coach2=await page.locator('.cq-plot-coach').inner_text()
-   await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.locator('.cq-plot-card',has_text='Cannon').click();await page.wait_for_timeout(700);await page.screenshot(path=str(OUT/'turret-range-ring-390.png'))
+   await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.locator('.cq-plot-card',has_text='Cannon Turret').click();await page.wait_for_timeout(700);await page.screenshot(path=str(OUT/'turret-range-ring-390.png'))
    await page.locator('button',has_text='CONFIRM BUILD').click();await page.wait_for_function('Conquest.view.authority.state.plot.job?.t==="cannon"',timeout=30000)
-   # ---------- walls: base stores + drag ----------
+   # ---------- walls: RING tool drag, a Ferrite blend from the base stores, CONFIRM WALLS ----------
    await page.locator('.cq-plot-tabs button',has_text='WALLS').click();await page.wait_for_timeout(300)
-   box=await page.locator('.cq-plot-stage').bounding_box();cx=box['x']+box['width']*.5;cy=box['y']+box['height']*.62
-   await page.mouse.move(cx-90,cy);await page.mouse.down();await page.mouse.move(cx-20,cy,steps=6);await page.mouse.move(cx+60,cy,steps=6);await page.mouse.up();await page.wait_for_timeout(400)
-   wallPlan=await page.locator('.cq-plot-body b').last.inner_text()
+   await page.locator('.cq-plot-tools button',has_text='RING').click();await page.locator('.cq-plot-ore',has_text='FERR').click();await page.wait_for_timeout(300)
+   pts=await page.evaluate('''()=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,p=Conquest.view.authority.state.plot,r=X.stage.getBoundingClientRect(),c=p.b.cc,pr=(i,j)=>{const v=new T.Vector3(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)).project(X.R.cam);return [r.left+(v.x+1)/2*r.width,r.top+(1-v.y)/2*r.height];};return [pr(c.i+2,c.j+2),pr(c.i+9,c.j+2)];}''')
+   await page.mouse.move(*pts[0]);await page.mouse.down();await page.mouse.move((pts[0][0]+pts[1][0])/2,pts[0][1],steps=5);await page.mouse.move(*pts[1],steps=5);await page.mouse.up();await page.wait_for_timeout(500)
+   wallPlan=await page.locator('.cq-plot-draft b').inner_text()
    mv=page.locator('button',has_text='TO BASE STORES')
-   if await mv.count():await mv.click();await page.wait_for_function('(save.bmn?.fe||0)>0',timeout=30000)
-   await page.wait_for_timeout(500);await page.locator('button',has_text='BUILD WALL').click();await page.wait_for_function('Object.keys(Conquest.view.authority.state.plot.w).length>0',timeout=30000)
-   walls=await st(page,'Object.keys(s.plot.w).length');await page.wait_for_timeout(600);await page.screenshot(path=str(OUT/'regolith-wall-390.png'))
+   if await mv.count():await mv.first.click();await page.wait_for_function('(save.bmn?.fe||0)>0',timeout=30000)
+   await page.wait_for_timeout(500);await page.screenshot(path=str(OUT/'wall-ring-draft-390.png'));await page.locator('.cq-plot-fab .cq-plot-primary').click();await page.wait_for_function('Object.keys(Conquest.view.authority.state.plot.w).length>0',timeout=30000)
+   walls=await st(page,'Object.keys(s.plot.w).length');blended=await st(page,'Object.values(s.plot.w).filter(c=>c>1).length');await page.wait_for_timeout(600);await page.screenshot(path=str(OUT/'ferrite-ring-390.png'))
    # ---------- Defense Drill ----------
    await page.wait_for_function('Object.values(Conquest.view.authority.state.plot.b).some(b=>b.t==="cannon"&&b.l===1)',timeout=40000)
    before=await st(page,'JSON.stringify([s.ledger,s.reputation,s.campaignScore])')
@@ -86,23 +87,27 @@ async def main():
    visiting=await page.locator('.cq-plot-title').inner_text();await page.screenshot(path=str(OUT/'visit-read-only-390.png'));readOnly=await page.evaluate('!document.querySelector(".cq-plot-tabs")')
    await page.locator('button',has_text='RETURN TO MY BASE').click();await page.wait_for_selector('.cq-plot-tabs')
    await page.locator('button',has_text='SHARE MY BASE').click();await page.wait_for_selector('.cq-plot-share-img');await page.wait_for_timeout(300);await page.locator('.cq-plot-share-img').screenshot(path=str(OUT/'share-card.png'))
-   storeDisabled=await page.evaluate('[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).every(b=>b.disabled)&&[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).length===6')
+   storeDisabled=await page.evaluate('[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).every(b=>b.disabled)&&[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).length===ConquestPlot.STORE.items.length&&/WALL EXTENSION PACK/.test(document.body.textContent)')
    results['phase2']={'visitList':visitText[:200],'visiting':visiting,'readOnly':readOnly,'storeDisabled':storeDisabled}
    assert 'TOP 20' in visitText and 'VISITING' in visiting and readOnly and storeDisabled,results['phase2']
    await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(500);left=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
    tankBanner=await page.evaluate('!!Conquest.view.vehicle.getObjectByName("cq-tank-banner")');results['phase2']['tankBanner']=tankBanner;assert tankBanner
-   results['journey']={'gateLabel':label,'sites':sites,'coach1':coach1,'coach2':coach2,'refineryMs':job,'wallPlan':wallPlan,'walls':walls,'drill':result,'noRewards':before==after,'left':left,'render':info,'pageErrors':errors}
+   results['journey']={'gateLabel':label,'sites':sites,'coach1':coach1,'coach2':coach2,'refineryMs':job,'wallPlan':wallPlan,'walls':walls,'blended':blended,'drill':result,'noRewards':before==after,'left':left,'render':info,'pageErrors':errors}
    print(json.dumps(results['journey']),flush=True)
-   assert label=='ENTER BASE' and sites==4 and 'REFINERY' in coach1 and job==15000 and 'CANNON' in coach2 and walls>=3 and before==after and left and not errors,results['journey']
+   assert label=='ENTER BASE' and sites==7 and 'REFINERY' in coach1 and job==15000 and 'CANNON' in coach2 and walls>=30 and blended==walls and before==after and left and not errors,results['journey']
    await ctx.close()
-   # ---------- 2. fully built CC10 plot: render budget (HIGH, LOW) ----------
+   # ---------- 2. fully built CC10 town: render budget (HIGH, LOW) + a whole-town raid replay ----------
    for q in ['high','low']:
     ctx,page,errors=await session(q,{'position':gate,'plotFull':'crater','baseFunds':True})
     await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(2500)
-    info=await page.evaluate('ConquestPlotView.state.info');n=await st(page,'[Object.keys(s.plot.b).length,Object.keys(s.plot.w).length,s.plot.cc,s.plot.power]')
-    await page.screenshot(path=str(OUT/f'cc10-full-390-{q}.png'));results['cc10-'+q]={'render':info,'buildings':n[0],'walls':n[1],'cc':n[2],'power':n[3],'pageErrors':errors}
+    info=await page.evaluate('ConquestPlotView.state.info');n=await st(page,'[Object.keys(s.plot.b).length,Object.keys(s.plot.w).length,s.plot.cc,s.plot.power,ConquestPlot.turretCount(s.plot),ConquestPlot.homes(s.plot).length]')
+    await page.screenshot(path=str(OUT/f'cc10-town-390-{q}.png'))
+    await page.locator('.cq-plot-tabs button',has_text='DRILL').click();await page.locator('button',has_text='START DEFENSE DRILL').click()
+    await page.wait_for_function('ConquestPlotView.state?.drill',timeout=60000);drillMs=await page.evaluate('ConquestPlotView.state.drillMs');await page.wait_for_timeout(6000)
+    raid=await page.evaluate('ConquestPlotView.state.info');await page.screenshot(path=str(OUT/f'cc10-raid-390-{q}.png'))
+    results['cc10-'+q]={'render':info,'raidRender':raid,'drillMs':drillMs,'buildings':n[0],'walls':n[1],'cc':n[2],'power':n[3],'turrets':n[4],'homes':n[5],'pageErrors':errors}
     print(json.dumps(results['cc10-'+q]),flush=True)
-    assert info['programs']<=16 and not errors,results['cc10-'+q]
+    assert n[1]>=2000 and n[4]>=40 and info['programs']<=16 and raid['programs']<=16 and info['calls']<=140 and raid['calls']<=150 and not errors,results['cc10-'+q]
     await ctx.close()
    # ---------- 3. 2D fallback ----------
    ctx,page,errors=await session('low',{'position':gate,'plotFull':'canyon','baseFunds':True},gfx='2d')
@@ -111,7 +116,7 @@ async def main():
    assert canvas and not errors,results['2d']
    await ctx.close();await browser.close()
   json.dump(results,open(OUT/'base-builder-journey.json','w'),indent=1)
-  print('PASS base builder 390: claim CRATER RIM -> guided Refinery (15 s Worker timer) -> Cannon + range ring -> base stores + regolith wall -> Defense Drill replay, no rewards; CC10 render budget HIGH/LOW; 2D fallback')
+  print('PASS town builder 390: claim CRATER RIM (7 sites) -> guided Refinery (15 s Worker timer) -> Cannon + range ring -> RING tool + Ferrite blend from the base stores -> Defense Drill replay, no rewards; CC10 town (2,000 walls, 42 turrets, homes) render budget + raid replay HIGH/LOW; 2D fallback')
  finally:
   server.kill()
 asyncio.run(main())

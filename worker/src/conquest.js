@@ -2,7 +2,7 @@
 import {syncWarfront,persistWarfront,applyWarfront} from './conquest-warfront.js';
 import {COSMETIC_ACTIONS} from './conquest-cosmetics.js';
 import {BASE_ACTIONS} from './conquest-campaign.js';
-import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS} from './conquest-plot.js';
+import {PLOT_ACTIONS,MINERAL_PLOT_ACTIONS,BIG_PLOT_ACTIONS} from './conquest-plot.js';
 import {readEco,readTag,writeIf,creditConquest} from './eco.js';
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
@@ -21,9 +21,12 @@ import {isOwner,OWNER_PID,OWNER_ADMIN} from './owner.js';
 // and the base stays off the top 20 and Base of the Week (publishBase). Minerals, wallet and account are never minted.
 export const DEV_ACTIONS=['dev-on','dev-off','dev-finish'];
 const UNLIMITED=1e9;
-export function unlimited(previous,run){const q=structuredClone(previous),L0=previous.ledger||{cp:0,banked:{}},mn0=previous.plot?.mnSpent||{};
+export function unlimited(previous,run){const q=structuredClone(previous),L0=previous.ledger||{cp:0,banked:{}},mn0=previous.plot?.mnSpent||{},cm0=previous.plot?.cm,fh0=previous.plot?.fh,ext0=previous.plot?.ext?structuredClone(previous.plot.ext):undefined;
  const keys=new Set([...Object.keys(L0.banked||{}),'alloy','biomass','helium']);q.ledger.cp=UNLIMITED;q.ledger.banked=Object.fromEntries([...keys].map(k=>[k,UNLIMITED]));
+ // Session 5B: unlimited wall composite and the full +50% wall extension while dev mode is on (restored afterwards)
+ if(q.plot){q.plot.cm=UNLIMITED;q.plot.devx=1;}
  const s=run(q);
+ if(s.plot){delete s.plot.devx;if(cm0!==undefined)s.plot.cm=cm0;else if(s.plot.cm>=UNLIMITED/2)s.plot.cm=200;if(fh0!==undefined)s.plot.fh=fh0;else s.plot.fh=0;if(ext0!==undefined)s.plot.ext=ext0;}   // research and drill milestones made in dev mode do not persist (dev mode already gives the full +50%)   // a plot claimed in this request starts with the normal 200
  // gains this request made (bank, collect, production) are kept; nothing this request spent leaves the real balance
  s.ledger.cp=(L0.cp||0)+Math.max(0,s.ledger.cp-UNLIMITED);for(const k of Object.keys(s.ledger.banked||{}))s.ledger.banked[k]=(L0.banked?.[k]||0)+Math.max(0,s.ledger.banked[k]-(keys.has(k)?UNLIMITED:0));
  if(s.plot)s.plot.mnSpent={...mn0};   // base-store minerals: exactly what was really spent before (no spend, no refund)
@@ -96,7 +99,7 @@ export async function conquestAction(env,a,now=Date.now()){
   return submit(env,a,{seq:a.b.seq,action:a.b.action},devAction,now);}
  if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
  if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
- if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>2400)return response(400,'invalid conquest action fields');
+ if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
  const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
