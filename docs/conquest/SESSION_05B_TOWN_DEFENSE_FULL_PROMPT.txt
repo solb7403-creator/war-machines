@@ -1,0 +1,107 @@
+LUNAR: War Machines — SESSION 5B (owner-approved, complete brief, Nov 8 2026)
+Town Defense: your base becomes a town to defend — big walls, wall composite + ore blends, vital buildings, whole-town raids,
+eleven turret types, more terrain templates
+=====================================================================================================
+
+This is the complete, owner-approved brief for Session 5B (between Session 5 and Session 6 in docs/ROADMAP.md). All decisions
+below are settled; do not ask the owner to re-decide them. Read AGENTS.md (incl. "Every screen fits or scrolls"), CLAUDE.md,
+docs/ROADMAP.md, docs/economy/RESOURCE_ECONOMY.md, the newest docs/conquest/IMPLEMENTATION_CHECKPOINT.md (Checkpoints 24-27)
+and this file before coding. The owner's direct instructions override older docs. Model: Opus, effort Extra (owner choice).
+
+RUN MODE (owner, binding)
+- Run unattended. The release is PRE-APPROVED: do not wait for the owner at any point. Fix, commit, push, merge, deploy, verify.
+- Never end a turn while waiting on CI or a deploy without a durable wake-up (send_later / scheduled task for the expected
+  finish plus margin). A timer or sleep alone is not a wake-up.
+- When CI fails, fix it and push again. Known timing flakes (conquest-minerals-browser screenshot timeout, session-032 combat
+  taps, transmission 400 ms keypress) may be re-run once; anything that fails twice in the same place is treated as real.
+- Push after every phase (zero-loss protocol, docs/conquest/CONQUEST_FLAGSHIP_EXECUTION_HANDOFF.md). Write "released" only
+  after the deploy is verified.
+
+CONTEXT
+- There are NO live players. Do not write migrations for old plots: the plot schema may change freely; existing test plots
+  (the owner's) may be reset to a fresh claim. Accounts, wallets, points and minerals are still never touched.
+- Today (Checkpoint 24-27): private 45x45-cell plot (4 m cells, 180 m), four site templates, CC1-CC10, one builder, walls in 5
+  fixed tiers each tied to one mineral, cap 24+16*CC cells, 4 turrets (Cannon, Laser, Missile, Mortar), a Defense Drill
+  (simulated Parasite attack on lanes, no rewards), owner dev mode (unlimited resources, instant builds, never ranked).
+
+SETTLED OWNER DECISIONS (Nov 8 2026)
+1. TOWN DEFENSE, not a bunker. The plot is a town that grows with the Command Center: CC1 = today's 45x45, growing in steps
+   to about 3x the area at CC10 (about 78x78 cells). Settler homes and town structures fill the new districts as it grows
+   (settler architecture kit from Session 5), so CC10 reads as a real settlement, not an empty field.
+2. VITAL BUILDINGS are the enemy's objective. The Command Center is the primary objective: destroy it and the raid wins.
+   Reactor, Storage Depot and Science Lab are secondary vitals: losing one cuts that building's output until repaired. The
+   player places vitals ANYWHERE in the town (spread out for coverage, or clustered behind the best walls).
+3. ENEMIES ATTACK THE WHOLE TOWN. Raiders path toward the Command Center through the cheapest route (weighted by wall HP and
+   turret threat), attack anything that blocks them or is in range on the way (walls, turrets, production, homes, vitals),
+   and break through the weakest wall. Applies to the Defense Drill now (still no rewards) and is the model async raids
+   (Session 7) will reuse.
+4. WALLS AS LARGE AS YOU WANT. Base wall cap 600 cells at CC1 rising to 2,000 at CC10
+   (600, 756, 911, 1067, 1222, 1378, 1533, 1689, 1844, 2000). WALL EXTENSIONS add up to +50% of the current level's base cap;
+   they can be EARNED (Foundry research with rarer ores, defended raids / drill milestones) or BOUGHT as a store item
+   (capacity only: strength still comes from composite and ore). Checkout stays DISABLED until payments are certified.
+5. WALL COMPOSITE: a new base material. Every pilot starts with a stock (target: enough to wall the CC1 perimeter, about 180
+   cells, on day one). A new FOUNDRY building turns alloy + plot regolith into more composite (production + cap like the
+   Refinery; upgradable). The old 5-tier wall table is replaced.
+6. ORE BLENDS: for each wall section the player picks an ore (Ferrite, Ilmenite, Armalcolite, Tranquillityite, Selenite,
+   Moonheart) and a blend level (none / light / medium / heavy, ore per cell rising with the level). Three stats scale in
+   direct relation to the ore's tier and amount: STRENGTH (max HP), DURABILITY (damage reduction) and REFLECTIVENESS (share
+   of incoming energy/kinetic damage bounced back). Composite alone is modest; Ferrite is a cheap step up; Moonheart heavy is
+   unmistakably elite (target: about 5x composite HP, high damage reduction, about 35% reflect). Rare ores stay EARN-ONLY
+   (only common and uncommon minerals are ever sold, owner decision Nov 7). Walls show their blend visually (tint, sheen,
+   veins, glass glint for Selenite, a deep glow for Moonheart).
+7. ELEVEN TURRET TYPES, each with its own 3D model, firing effects and a clear role:
+   existing Cannon, Laser, Missile (anti-air), Mortar (long splash, min range), plus
+   TWIN-BARREL MACHINE GUN (fast, light, great vs swarms), HEAVY SIEGE CANNON (slow, huge single hits, vs armor),
+   ROCKET POD (salvos, area), LASER CANNON (charged beam, high burst), TESLA ARC COIL (chains between nearby enemies),
+   RAILGUN (pierces everything in a line), FLAME PROJECTOR (short cone, burns).
+   Unlock them across CC levels so early choices stay simple; turret cap scales with the town. Upgrades I-V as today.
+8. TERRAIN TEMPLATES stay (no world-map placement): Crater Rim, River Delta, Ridge, Canyon, plus 2-3 new ones with real
+   defensive character (e.g. Highland Plateau, Ice Basin, Ash Field). At town scale the terrain shapes the whole defense.
+9. FAST WALL TOOLS so 600+ cells never means 600 taps: line, rectangle, ring, copy/paste a section, undo; blend applies to a
+   whole drawn section. Live count "WALLS 412 / 600 (+EXT)" and composite/ore cost before confirming.
+10. DEV MODE covers everything new: unlimited composite, ores and extensions, instant builds, never ranked.
+11. STORE (fair revenue; all DISABLED until payments are certified, shown honestly as unavailable): wall extension packs
+    (capacity), wall and turret skins, Foundry speed-up, second builder. Never airdrop points, never rare-or-better ores.
+
+PHASES (checkpoint + push after each)
+PHASE 1 — town plot and vitals (server-authoritative, js/conquest/plot.js + worker/src/conquest-plot.js)
+- Growing plot by CC level, new template generation for the bigger grid and the 2-3 new templates, vital flags, placement
+  rules, town districts for settler homes, power/production rebalanced for the larger town. Fresh plot schema (no migration).
+PHASE 2 — walls: composite, Foundry, ore blends, caps, extensions, tools
+- Stats per blend (documented table in docs/economy/RESOURCE_ECONOMY.md), costs debited on the Worker, extension earning
+  paths, wall tools in plotview.js, instanced wall rendering with blend visuals (HIGH/LOW/2D).
+PHASE 3 — turrets and raid AI
+- Seven new turret types (models via the existing kit/asset pipeline, effects, stats), the whole-town raid sim (pathing
+  toward the Command Center through the cheapest wall, attacking everything on the way, win on Command Center destroyed,
+  secondary-vital effects), Defense Drill replay showing breaches and which structures fell. Drill still gives no rewards.
+PHASE 4 — polish and balance
+- Balance model: a CC1 starter town can hold the first drill waves with composite + Ferrite; a CC10 town with heavy rare
+  blends and a mixed turret set holds the strongest waves; spending power (extensions) without materials does not.
+  Store tiles (disabled), hub/plot copy, onboarding coach steps for walls/blends/vitals.
+
+NON-NEGOTIABLES
+- Every screen fits or scrolls (AGENTS.md): plot menu, blend picker, wall tools, turret list at 390x700 and 320x568, tested
+  with a real touch swipe. Primary actions (CONFIRM, BUILD) stay on screen.
+- Nothing overwhelming: progressive unlocks, guided first wall + first blend + first vital placement, closed sections.
+- Smooth on all devices: a CC10 town with 2,000+ wall cells, 40+ turrets and settler homes stays smooth on phones (instancing,
+  LOD, distance culling); HIGH <= 16 material programs; LOW and 2D work. Measure draws/triangles/programs at 390 portrait.
+  The raid sim stays bounded (record worst-case ms per drill in node and in the browser).
+- Taps land exactly on the tapped cell at every town size (extend dev/tests/conquest-plot-ui.py).
+- Never weaken existing gear, Moonbeam or Lunar Skin. Never enable uncertified payments. No fake rewards or availability.
+- Not in scope: async player raids (Session 7), tank mods / Science Lab research (Session 6), the arcade gear-vs-AI fix and
+  arcade 3D maps (their own sessions), payments (Session 8).
+
+TESTING AND RELEASE
+- Per phase: affected node suites + a short browser journey (Chromium 390x700; WebKit via CI), restore regenerated evidence.
+- New tests: town growth per CC, vital placement and raid win condition, wall caps + extensions (earned paths, store tile
+  disabled), composite/Foundry economy, blend stat table (monotonic in tier and blend), reflect math, raid pathing (breaks the
+  weakest wall, attacks structures on the way), each turret role (unit sims), wall tools (line/rect/ring/copy/undo), dev
+  mode covers new costs, render budgets of a full CC10 town, tap accuracy, fit-or-scroll.
+- One independent read-only reviewer before merge (economy/security + gameplay/performance), given only the branch, head
+  SHA, this brief and the checkpoint. Fix valid findings.
+- Release (pre-approved): bump, PR, green CI -> merge -> deploy-worker.yml -> verify live /pvp/health and version.json = stamp
+  (from the deploy job annotations) and Pages -> revert if broken.
+- Write Checkpoint 28 in docs/conquest/IMPLEMENTATION_CHECKPOINT.md (what shipped, captures, numbers, tests, agents used,
+  unverified incl. PHYSICAL_IPHONE_UNVERIFIED), update ROADMAP only after the deploy is verified, then send the owner a
+  short summary with exactly what to try on his phone (dev mode on: claim, grow the town, draw walls with blends, place
+  vitals, add the new turrets, run a Defense Drill).
