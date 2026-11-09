@@ -394,14 +394,14 @@ function padOf(p,block){const C0=TK.ccCenter(p),c=P.GRID.cell,ci=cellOf(C0.x),cj
  return {i:ci,j:cj,x:P.cellX(ci),z:P.cellZ(cj)};}
 function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.visit,block=blockMap(p,owner),pad=padOf(p,block);
  if(!X.tank){X.tank=tankModel(R);R.g.actors.add(X.tank);}
- X.drive={x:pad.x,z:pad.z,h:Math.PI,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:26,yaw:0};
+ X.drive={x:pad.x,z:pad.z,h:Math.PI,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:26,yaw:0};
  // the gate pad: a lit ring you drive back onto to leave (the shared world's Command Gate on this side)
  if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.cyan,.9);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1.6);}fx.ringGlow(pad.x,pad.z,y+1.2,4.8,2.4,[.1,.8,1],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
  if(!X.visit&&!reduced()){let seen=false;try{seen=localStorage.getItem(TOUR_KEY)==='1';}catch(_){seen=true;}if(!seen){X.tour={t:0,dur:6};try{localStorage.setItem(TOUR_KEY,'1');}catch(_){}}}}
 function setView(v){if(!X||!X.R&&v==='drive')return;if(v===X.view)return;X.camFrom=camPose();X.camT=0;X.view=v;if(v==='drive'){X.place=null;X.draw=null;X.erase=null;X.sel=null;if(!X.drive)startDrive();}render();}
 // the pilot's input: a floating stick (one finger anywhere on the map), WASD / arrow keys; camera-relative like the world
 function driveStep(dt){const D=X.drive,p=plotOf();if(!D||!p)return;const k=D.keys;let sx=D.stick.x+((k.d||k.arrowright)?1:0)-((k.a||k.arrowleft)?1:0),sz=D.stick.z+((k.s||k.arrowdown)?1:0)-((k.w||k.arrowup)?1:0);const L=Math.hypot(sx,sz);if(L>1){sx/=L;sz/=L;}
- const key=JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site]);if(key!==D.key){D.key=key;D.block=blockMap(p,D.owner);}
+ if(p!==D.plot){D.plot=p;const key=JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site]);if(key!==D.key){D.key=key;D.block=blockMap(p,D.owner);}}   // only when the Worker sends a new plot, never per frame
  const cy=X.chase.yaw,fx=-Math.sin(cy),fz=-Math.cos(cy),rx=Math.cos(cy),rz=-Math.sin(cy),wx=rx*sx-fx*sz,wz=rz*sx-fz*sz,mag=Math.min(1,Math.hypot(wx,wz));
  const ti=cellOf(D.x),tj=cellOf(D.z),slow=P.inGrid(ti,tj)?(P.SLOW[P.terrainAt(p.site,ti,tj)]||1):1;D.v+=((mag>.08?SPEED*mag*slow:0)-D.v)*Math.min(1,dt*(mag>.08?3.5:6));
  if(mag>.08){const want=Math.atan2(wx,wz);let d=want-D.h;d=Math.atan2(Math.sin(d),Math.cos(d));D.h+=d*Math.min(1,dt*7);}
@@ -423,7 +423,7 @@ function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos
  if(X.camFrom&&X.camT<1){X.camT=reduced()?1:Math.min(1,X.camT+dt/.6);const e=X.camT<.5?2*X.camT*X.camT:1-Math.pow(-2*X.camT+2,2)/2;pos.lerpVectors(X.camFrom.p,pos,e);look.lerpVectors(X.camFrom.t,look,e);if(X.camT>=1)X.camFrom=null;}
  R.cam.position.copy(pos);R.cam.lookAt(look);X.camLook=(X.camLook||new T.Vector3()).copy(look);}
 function driveUi(){const st=X.stage;if(!X.driveBtn){const {button}=X.ctx;X.driveBtn=button('🚙 DRIVE',()=>setView('drive'),'cq-plot-drivebtn');X.driveBtn.setAttribute('aria-label','Drive your tank in your town');st.append(X.driveBtn);X.skip=button('SKIP ▸',()=>{if(X.tour){X.camFrom=camPose();X.camT=0;X.tour=null;}},'cq-plot-skip');st.append(X.skip);X.stickEl=document.createElement('div');X.stickEl.className='cq-plot-stick';X.stickEl.hidden=true;X.stickEl.append(document.createElement('i'));st.append(X.stickEl);X.exitEl=document.createElement('div');X.exitEl.className='cq-plot-exit';X.exitEl.hidden=true;st.append(X.exitEl);}
- const drive=X.view==='drive';X.d.classList.toggle('cq-plot-driving',drive);X.driveBtn.hidden=drive||!X.R||!!X.place;   // hidden while a blueprint is placed (the map is for placing then)X.skip.hidden=!X.tour;
+ const drive=X.view==='drive';X.d.classList.toggle('cq-plot-driving',drive);X.driveBtn.hidden=drive||!X.R||!!X.place;/* hidden while a blueprint is placed (the map is for placing then) */X.skip.hidden=!X.tour;
  const D=X.drive,ex=drive&&D&&D.exit>0;X.exitEl.hidden=!ex;if(ex)X.exitEl.textContent='LEAVING TOWN · BACK TO THE WORLD';}
 
 // ------------------------------------------------------------------- raid replay (Defense Drill) -----------------------
