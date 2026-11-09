@@ -145,7 +145,7 @@
 /* 5C bottom sheet: grab handle, five tabs, scrolling body; its height is --cq-sheet (PEEK/HALF/FULL, js/conquest/sheet.js) */
 .cq-plot-drawer{flex:0 0 var(--cq-sheet);min-height:0;display:flex;flex-direction:column;background:#070c15f4;border-top:1px solid #22e6ff66;border-radius:14px 14px 0 0;box-shadow:0 -6px 18px #0008;transition:flex-basis .24s cubic-bezier(.2,.8,.2,1)}
 .cq-plot-dragging .cq-plot-drawer{transition:none}
-.cq-plot-grab{flex:none;height:44px;touch-action:none;cursor:grab;display:grid;place-items:center;outline-offset:-3px}.cq-plot-grab::before{content:'';width:46px;height:5px;border-radius:3px;background:#6f93a8}.cq-plot-dragging .cq-plot-grab{cursor:grabbing}
+.cq-plot-grab{flex:none;height:34px;position:relative;z-index:5;touch-action:none;cursor:grab;display:grid;place-items:center;outline-offset:-3px}.cq-plot-grab::after{content:'';position:absolute;left:0;right:0;top:-10px;height:10px}   /* a 44 px touch target without 10 px more chrome */.cq-plot-grab::before{content:'';width:46px;height:5px;border-radius:3px;background:#6f93a8}.cq-plot-dragging .cq-plot-grab{cursor:grabbing}
 .cq-plot-sheet{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:4px 12px max(10px,var(--sab,env(safe-area-inset-bottom,0px)));overscroll-behavior:contain}
 .cq-plot-claim .cq-plot-drawer{flex:none;border-radius:0}.cq-plot-claim .cq-plot-grab,.cq-plot-claim .cq-plot-tabs{display:none}.cq-plot-claim .cq-plot-stage{flex:1 1 auto;min-height:0}
 .cq-plot-tabs{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:0 8px 6px}.cq-plot-tabs[hidden]{display:none}
@@ -266,7 +266,7 @@
 .cq-plot-draft,.cq-plot-report{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #ffb34766;border-radius:8px;background:#1a1208cc}
 .cq-plot-report{border-color:#2f4b5a;background:#0b1623cc}.cq-plot-vital-lost{color:#ffb0b8}
 .cq-plot-store{font-size:10px;text-align:left}
-@media (max-width:340px){.cq-plot-stat{grid-template-columns:66px 1fr 92px}.cq-plot-chip{font-size:10px;padding:3px 4px}.cq-plot-title{font-size:11px}}
+@media (max-width:340px){.cq-plot-stat{grid-template-columns:66px 1fr 92px}.cq-plot-chip{font-size:10px;padding:3px 4px}.cq-plot-title{font-size:11px}.cq-plot-defw{display:none}.cq-dialog.cq-plot .cq-plot-leave{font-size:0;min-width:0;width:42px;padding:0}.cq-plot-leave::after{content:'✕';font-size:15px}}   /* 320 px: the town name keeps its room (LEAVE keeps its label for screen readers) */
 .cq-plot-fab{position:absolute;left:10px;right:64px;bottom:10px;display:flex;gap:6px;z-index:3}.cq-plot-fab[hidden]{display:none}
 .cq-plot-fab button{flex:1 1 auto;min-height:44px;font-size:11px;background:#0b1623e6}.cq-plot-fab button.cq-plot-primary{flex:2 1 auto;background:#0f3a48f2}
 .cq-map-fold .cq-plot-row>small{flex:1 1 100%}.cq-plot-damage{border-color:#ff304888;background:#2a0a10cc}
