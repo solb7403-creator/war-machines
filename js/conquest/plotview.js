@@ -50,9 +50,9 @@ const TK=root.ConquestTownKit,kit=TK.kit;
 // Firing effects by turret type: amber tracers, cyan beams, white-blue rails, violet arcs, flame cones, rocket/shell blasts.
 const FX_OF={cannon:'tracer',mg:'tracer',laser:'beam',rocket:'blast',missile:'blast',mortar:'blast',flame:'flame',siege:'shell',tesla:'arc',lasercannon:'burst',railgun:'rail'};
 const FX_LOOK={tracer:[0xffb347,.16,2.4],beam:[0x22e6ff,.12,2.6],rail:[0xd8f6ff,.18,3],arc:[0xb08cff,.1,3],flame:[0xff7a2d,.9,2.2],blast:[0xff5a2a,.3,2.6],shell:[0xffd36b,.34,2.8],burst:[0xff6ae0,.36,3]};
-function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConquestCanvas)return null;const k=kit(S),sc=new T.Scene();sc.background=new T.Color(0x05070d);sc.fog=new T.Fog(0x06070f,300,1100);
+function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConquestCanvas)return null;const k=kit(S),sc=new T.Scene();
  // The same light counts as the world scene (hemi + sun + rim): the style programs are shared, no new program variants.
- const lights=[new T.HemisphereLight(0x3a5a9c,0x16131f,1.5),new T.DirectionalLight(0xe4ecff,2.9),new T.DirectionalLight(0x52c6ff,1.25)];lights[1].position.set(200,400,150);lights[2].position.set(-300,200,-200);sc.add(...lights);
+ const env=S.environment(sc,null);sc.fog=new T.Fog(0x06070f,420,1500);   // 5C Max pass: the world's own sky (stars, Earth, galaxy) and light set over the town; compiled programs are shared
  const cam=new T.PerspectiveCamera(50,1,.5,2000);const g={terrain:new T.Group(),build:new T.Group(),walls:new T.Group(),turrets:new T.Group(),homes:new T.Group(),holo:new T.Group(),grid:new T.Group(),fx:new T.Group(),actors:new T.Group()};for(const v of Object.values(g))sc.add(v);
  const im=(geo,n)=>{const m=new T.InstancedMesh(geo,S.MAT.solid,n);m.count=0;m.frustumCulled=false;m.visible=false;return m;};
  const crewN=S.low?8:16,crew=new T.InstancedMesh(k.person(),S.MAT.solid,crewN),rovers=new T.InstancedMesh(k.rover(),S.MAT.solid,S.low?2:4);crew.frustumCulled=rovers.frustumCulled=false;g.actors.add(crew,rovers);
@@ -117,7 +117,7 @@ function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>vie
  const s=st();if(!s?.base?.tier){sitePicker();return;}
  X.R=scene3d(view);if(!X.R){X.cv=el('canvas','cq-plot-canvas',null,X.stage);}
  X.cam=frameCam(s.plot);X.view='build';if(X.R&&ctx.drive!==false){startDrive();X.view='drive';}input();render();}
-function close(){if(!X)return;X.ctx.panel.classList.remove('cq-in-plot');root.removeEventListener?.('resize',X.onResize);if(X.onKey){root.removeEventListener?.('keydown',X.onKey);root.removeEventListener?.('keyup',X.onKey);}const R=X.R;if(X.tank)X.tank.parent?.remove(X.tank);if(R){R.sc.traverse(o=>{if(o.isMesh||o.isInstancedMesh){if(!o.geometry?.userData?.hfShared)o.geometry?.dispose?.();if(o.isInstancedMesh)o.dispose?.();}});for(const m of [R.wgeo,R.hgeo,R.tgeo])for(const gq of m.values())gq.dispose?.();}X.d.remove();X=null;}
+function close(){if(!X)return;X.ctx.panel.classList.remove('cq-in-plot');root.removeEventListener?.('resize',X.onResize);if(X.onKey){root.removeEventListener?.('keydown',X.onKey);root.removeEventListener?.('keyup',X.onKey);}const R=X.R;if(X.tank){X.tank.getObjectByName('cq-town-tank-banner')?.geometry?.dispose?.();X.tank.parent?.remove(X.tank);}if(R){R.sc.traverse(o=>{if(o.isMesh||o.isInstancedMesh){if(!o.geometry?.userData?.hfShared)o.geometry?.dispose?.();if(o.isInstancedMesh)o.dispose?.();}});for(const m of [R.wgeo,R.hgeo,R.tgeo])for(const gq of m.values())gq.dispose?.();}X.d.remove();X=null;}
 function isOpen(){return !!X;}
 const say=t=>{if(X){X.msg.textContent=t;X.msgAt=Date.now();}};
 async function act(action,plot,label){if(!X||X.busy)return false;X.busy=true;say(label||'SENDING ORDER…');try{const ok=await X.ctx.view.requestAction(action,plot===undefined?{}:{plot});say(ok?(label?label.replace('…',' ✓'):'DONE'):(X?.ctx.view.authority?.error||'Online verification required.').replace(/^conquest: /,'').toUpperCase());if(ok&&X){X.place=null;X.sel=action==='plot-remove'?null:X.sel;}render();return ok;}finally{if(X)X.busy=false;}}
@@ -323,7 +323,7 @@ const footY=(site,b)=>{const s=P.sizeOf(b.t,b.r|0);return P.heightAt(site,P.cell
 const _m=[];
 function inst(R,geo,n){const m=new R.T.InstancedMesh(geo,R.S.MAT.solid,Math.max(1,n));m.count=n;m.frustumCulled=false;return m;}
 function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}const {S,T,k,g}=R,low=!!S.low||!!R.far,M4=R._sm||(R._sm=new T.Matrix4()),keep=keepSet(R);
- if(R.keys.ter!==p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j)){R.keys.ter=p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j);wipe(g.terrain);for(const m of TK.terrain(S,p.site,p.cc,p,{earth:true}))g.terrain.add(m);}
+ if(R.keys.ter!==p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j)){R.keys.ter=p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j);wipe(g.terrain);for(const m of TK.terrain(S,p.site,p.cc,p,{}))g.terrain.add(m);}
  const pl=TK.plan(p),want=new Set(),turs=[],theme=p.theme;R.anim=[];R.plan=pl;
  for(const [id,b,lvl,building] of pl.builds){const B=P.BUILDINGS[b.t];
   const key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||''].join(':');want.add(id);let e=R.meshes.get(id);
@@ -369,6 +369,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const big=(R.wcell?.size||0)>600,far=X.view==='drive'?big:big?(R.far?c.dist>60:c.dist>80):(R.far?c.dist>165:c.dist>195);/* 5C: big towns stay light in the close drive view and the closer default camera */if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));{const pm=R.wpost?.values().next().value?.[0];if(pm)pm.geometry=cached(R.wgeo,'post:'+lo,()=>R.k.post(lo));}for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
   const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
  crewStep(R,plotOf());if(X.drill)drillStep(dt);if(R.dmgFx&&!reduced())TK.damageStep(R.dmgFx,X.clock);
+ R.sc.getObjectByName('cq-style-sky')?.position.copy(R.cam.position);
  if(SPRITE_WAIT.length&&!X.drill)spriteStep(R);   // before the frame's full clear, so a sprite never shows on the map
  R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer,vx=sr.left-hr.left,vy=hr.bottom-sr.bottom;r.setScissorTest(false);r.clear();r.setViewport(vx,vy,w,h);r.setScissor(vx,vy,w,h);r.setScissorTest(true);r.render(R.sc,R.cam);r.setScissorTest(false);r.setViewport(0,0,hr.width||w,hr.height||h);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
 // crew walk between buildings, rovers drive the lanes (presentation)
@@ -402,9 +403,9 @@ function padOf(p,block){const C0=TK.ccCenter(p),c=P.GRID.cell,ci=cellOf(C0.x),cj
  return {i:ci,j:cj,x:P.cellX(ci),z:P.cellZ(cj)};}
 function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.visit,block=blockMap(p,owner),pad=padOf(p,block);
  if(!X.tank){X.tank=tankModel(R);R.g.actors.add(X.tank);}X.tankFlagKey=null;if(!X.visit)tankFlag(R,p);
- X.drive={x:pad.x,z:pad.z,h:Math.PI,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:26,yaw:0};
+ X.drive={x:pad.x,z:pad.z,h:Math.PI,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:31,yaw:0};
  // the gate pad: a lit ring you drive back onto to leave (the shared world's Command Gate on this side)
- if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.cyan,.9);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1.6);}fx.ringGlow(pad.x,pad.z,y+1.2,4.8,2.4,[.1,.8,1],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
+ if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.cyan,.35);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1.6);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1.2,[.05,.4,.55],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
  if(!X.visit&&!reduced()){let seen=false;try{seen=localStorage.getItem(TOUR_KEY)==='1';}catch(_){seen=true;}if(!seen){X.tour={t:0,dur:6};try{localStorage.setItem(TOUR_KEY,'1');}catch(_){}}}}
 function setView(v){if(!X||!X.R&&v==='drive')return;endTour();if(v===X.view)return;X.camFrom=camPose();X.camT=0;X.view=v;if(v==='drive'){X.place=null;X.draw=null;X.erase=null;X.sel=null;if(!X.drive)startDrive();}render();}
 // the pilot's input: a floating stick (one finger anywhere on the map), WASD / arrow keys; camera-relative like the world
@@ -425,7 +426,7 @@ function camPose(){const R=X.R;if(!R)return null;return {p:R.cam.position.clone(
 function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos=new T.Vector3()),look=R._clook||(R._clook=new T.Vector3());
  if(X.tour&&X.drive){const t=(X.tour.t+=dt),C0=TK.ccCenter(p),rad=(P.townH(p.cc)+4)*P.GRID.cell*.75,a=-Math.PI/2+t/X.tour.dur*Math.PI*1.6;pos.set(C0.x+Math.cos(a)*rad,55+20*Math.sin(t*.5),C0.z+Math.sin(a)*rad);look.set(C0.x,4,C0.z);
   if(t>=X.tour.dur){X.tour=null;X.camFrom={p:pos.clone(),t:look.clone()};X.camT=0;}}
- else if(X.view==='drive'&&X.drive){const D=X.drive,y=P.heightAt(p.site,D.x,D.z),cy=X.chase.yaw,d=X.chase.dist;pos.set(D.x+Math.sin(cy)*d,y+d*.56+3,D.z+Math.cos(cy)*d);look.set(D.x-Math.sin(cy)*9,y+1.5,D.z-Math.cos(cy)*9);}
+ else if(X.view==='drive'&&X.drive){const D=X.drive,y=P.heightAt(p.site,D.x,D.z),cy=X.chase.yaw,d=X.chase.dist;pos.set(D.x+Math.sin(cy)*d,y+d*.36+3.5,D.z+Math.cos(cy)*d);look.set(D.x-Math.sin(cy)*16,y+4,D.z-Math.cos(cy)*16);}
  else{const tilt=X.place||X.mode==='walls'?1.38:Math.min(c.tilt,1.2),dist=c.dist;pos.set(c.x+Math.sin(c.yaw)*Math.cos(tilt)*dist,Math.sin(tilt)*dist,c.z+Math.cos(c.yaw)*Math.cos(tilt)*dist);look.set(c.x,0,c.z);}
  // ease from the last pose after a view change (0.6 s; instant with reduced motion)
  if(X.camFrom&&X.camT<1){X.camT=reduced()?1:Math.min(1,X.camT+dt/.6);const e=X.camT<.5?2*X.camT*X.camT:1-Math.pow(-2*X.camT+2,2)/2;pos.lerpVectors(X.camFrom.p,pos,e);look.lerpVectors(X.camFrom.t,look,e);if(X.camT>=1)X.camFrom=null;}

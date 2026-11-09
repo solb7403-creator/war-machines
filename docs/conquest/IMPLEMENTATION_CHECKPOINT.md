@@ -1285,3 +1285,17 @@ Each tab at HALF and PEEK (390×700), HOME at PEEK/HALF/FULL, default camera CC1
 
 ### Agents used
 - 2 independent read-only reviewers (above). Both changed the result (1 blocker, 7 majors and ~12 minors fixed). No other agents.
+
+### Owner gate (Nov 9, mid-session): STOP before merge — Max visual pass of Section D first (IN PROGRESS)
+Owner instruction: judge every capture in `docs/conquest/session5c/` against Sections A and D as on an iPhone ("premium sci-fi game, or a dev build with the right features?"), fix every shortfall (rendering, lighting, materials, camera, LOD, sprites, copy; Section F stays out of scope; ≤16 programs), recapture, update the before/after pairs, append per-capture verdicts + what changed here and in the PR description, then the full Section G matrix, two fresh independent reviewers (the rendering reviewer also judges visual quality against Section D), fix, and only then merge/deploy/verify. **Not merged.**
+
+Verdicts on the pre-pass captures (head `e1f0a23`):
+- default-camera CC1/CC10 (ridge, canyon, plateau, crater): dev-build look. Ground is a hard checkerboard (the ±5% per-cell texture flat-shaded per 4 m quad), dust roads are jagged staircases, the plaza is a flat grey placeholder square, no light pools or night lighting; only the CC tower carries the frame (CC10 clearly bigger than CC1 there).
+- home-sector tour/drive CC1: an empty grey plane with props; no sky or horizon, flat lighting, the pad's cyan ring is the brightest thing, the tank fills too much of the frame. drive CC10 (crater): denser, but boxed in by buildings.
+- pad-diorama CC1 vs CC10: CC10 is visibly denser (walls ring, buildings) but from the world camera both read as a flat dark board; the CC tower barely rises.
+- hub-hero-town: the town is a thin strip behind the title, not a hero.
+- tabs HALF/PEEK, HUD thumbnails, share card: functional and readable (checked after the review fixes); thumbnail CC10 shows more walls than CC1.
+
+Changes so far (uncommitted→this commit): smooth indexed ground with per-vertex regolith mottling and real normals (no checkerboard), lift inside the town edge with a soft falloff outside, soft-edged dust roads, warm spill from the plaza; a paved plaza slab with joints every 4 m, dark curb with an amber light line, four lamp posts and light pools; street lamps with warm pools every ~22 m along each road; the Home Sector uses the world's own sky (stars, Earth, galaxy band) and light set; chase camera further back and lower (horizon in frame), quieter gate-pad glow; world diorama 21 m at CC1 → 27 m at CC10 with heights ×2.2 and a thin plinth; hub town larger (30→40 m by CC), heights ×2.8, right behind the tank. Review A's re-check: all 4 items FIXED, no new blocker/mint; its new minor (town-tank banner geometry not freed on close) fixed.
+
+**Resume here:** recapture with `python dev/tests/conquest-session5c.py` (writes all captures), look at every capture again, fix what still falls short, rerun `python3` pair script (compose `docs/conquest/session5c/before-after/` from the 5B versions in git `929acfb` vs the new captures), write final verdicts here + in the PR #94 description with draws/tris/programs (CC1 and CC10, HIGH and LOW), then the full G matrix, two fresh reviewers, merge, deploy, verify.
