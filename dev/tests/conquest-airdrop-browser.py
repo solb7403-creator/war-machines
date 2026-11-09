@@ -94,7 +94,7 @@ async def main():
    orbs=await page.evaluate('Conquest.view.yieldMeter.userData.n');goal=await page.locator('.cq-base-goal').text_content();print('in-world meter lit orbs',orbs,'| HUD',goal,flush=True)
    assert 'YIELD 50%' in goal,goal
    await page.screenshot(path=str(OUT/'base-meter-world-390.png'))
-   await tap('#cq-base-access');await page.wait_for_selector('.cq-plot-tabs');await page.locator('summary',has_text='BASE TERMINAL').click();await page.wait_for_selector('.cq-yield')   # Session 5: the yield lives in the plot's BASE TERMINAL
+   await tap('#cq-base-access');await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_selector('.cq-plot-status .cq-yield')   # Session 5C: the yield is on the HOME status card
    head=await page.locator('.cq-yield h3').text_content();val=await page.locator('.cq-yield-bar').first.evaluate('e=>e.value');print('terminal',head,val,flush=True)
    assert head.startswith('DAILY BASE YIELD · 50%') and abs(val-.5)<.01,(head,val)
    await page.locator('.cq-yield').scroll_into_view_if_needed();await page.screenshot(path=str(OUT/'base-yield-terminal-390.png'))

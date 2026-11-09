@@ -1,0 +1,37 @@
+{
+ "HIGH": {
+  "build": {
+   "draws": 64,
+   "tris": 188540
+  },
+  "drive": {
+   "draws": 69,
+   "tris": 200836
+  }
+ },
+ "parity": {
+  "wallCells": 2000,
+  "wallLooks": 5,
+  "turrets": 42,
+  "turretGroups": 11,
+  "homes": 56,
+  "homeKinds": 5,
+  "buildings": 26,
+  "posts": 118,
+  "rubble": 0
+ },
+ "diorama": {
+  "draws": 1,
+  "tris": 33242
+ },
+ "LOW": {
+  "build": {
+   "draws": 64,
+   "tris": 175604
+  },
+  "drive": {
+   "draws": 64,
+   "tris": 175604
+  }
+ }
+}

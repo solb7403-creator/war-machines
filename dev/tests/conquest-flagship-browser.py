@@ -214,12 +214,15 @@ async def run(args):
             if not args.no_defense:
                 await page.evaluate('Conquest.view.authority.dispose()');await page.wait_for_timeout(300)
                 await page.request.post(base+'/fixture',data={'veteranLoadout':True,'baseFunds':True,'position':[1080,1160]})
-                # Session 5: ENTER BASE opens the private plot: claim it (default RIDGE), then deploy the defense from its BASE TERMINAL
+                # Session 5: ENTER BASE opens the private plot: claim it (default RIDGE). Session 5C retired the old fortress
+                # defense from the UI (the town's Defense Drill is the one defense system); its Worker action stays for
+                # compatibility, so the verified base-defense battle is started through the same authority request.
                 await enter();await page.locator('#cq-base-access').click()
                 await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
                 await page.wait_for_function('Conquest.view.authority.state.base.tier===1&&!!document.querySelector(".cq-plot-tabs")')
-                await page.locator('summary',has_text='BASE TERMINAL').click()
-                await page.get_by_role('button',name='DEPLOY BASE DEFENSE',exact=True).click()
+                assert await page.evaluate('!/DEPLOY BASE DEFENSE|PARASITE DEFENSE|REPAIR FORTRESS/.test(document.querySelector(".cq-plot").textContent)'),'the legacy fortress defense UI is retired'
+                await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(300)
+                assert await page.evaluate('Conquest.view.requestAction("start-defense")'),'the legacy base-defense action still works on the Worker'
                 await page.wait_for_function('Conquest.view.authority.state.mission==="base-defense"&&!document.querySelector(".cq-plot")')
                 result['cases'].append(await j.win('base-defense'))
                 defense=await page.evaluate('Conquest.view.authority.state.base.defense')

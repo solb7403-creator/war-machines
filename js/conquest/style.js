@@ -852,7 +852,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    geo.setAttribute('aCol',new T.BufferAttribute(a,4));}o.material=MAT.solid;});return group;};
 
  // ---------- Command Base I–V (base-local x/z, absolute y; built to the shared baseBlocked() footprints) ----------
- S.commandBase=(base,opt={})=>{const D=F.base,tier=base.tier||0,Sb=new Bld(),X=new Fx(),gy=(x,z)=>ground(D.x+x,D.z+z),y=gy(0,0);
+ S.commandBase=(base,opt={})=>{const D=F.base,tier=base.tier||0,Sb=new Bld(),X=new Fx(),gy=(x,z)=>ground(D.x+x,D.z+z),y=gy(0,0),shell=!!opt.shell;   // shell (Session 5C): floor, walls and the Command Gate only; your town's diorama stands inside
   const decal=(x,z,hw,hd,r,e,o,seg,lift)=>{X.decal(D.x+x,D.z+z,hw,hd,0,r,e,o,seg,lift);};
   // World-space decals are rebased to the base-local frame after building (the group sits at the base centre).
   Sb.box(0,y-.9,0,38,2.4,34,K.dark,0,0,[y-2,2.4]);Sb.box(0,y+.2,0,37.4,.2,33.4,K.dark2);Sb.box(0,y+.29,-17.05,38,.06,.12,K.cyan,1);Sb.box(0,y+.29,17.05,38,.06,.12,K.cyan,.6);for(const s of [-1,1])Sb.box(s*19.05,y+.29,0,.12,.06,34,K.cyan,.6);
@@ -860,7 +860,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const paint=new T.Color(opt.paint||'#2c3a49');Sb.box(0,y+.31,0,10,.04,8,paint,0);
   decal(0,0,5.6,5.6,AT.HEX,E(tier?0x22e6ff:0xffb347,.9),0,low?8:10,.38);
   // Build terminal (exists before purchase): kiosk with amber holo.
-  Sb.box(-10,y+1.7,-7,2,3.4,1.5,K.dark2,0,0,[y,3]);Sb.box(-10,y+2.5,-7.78,1.6,1,.06,K.amber,.95);X.quadV(-10,y+4.6,-7.2,3.4,3.4,0,AT.ICON,E(0xffb347,1.2));
+  if(!shell){Sb.box(-10,y+1.7,-7,2,3.4,1.5,K.dark2,0,0,[y,3]);Sb.box(-10,y+2.5,-7.78,1.6,1,.06,K.amber,.95);X.quadV(-10,y+4.6,-7.2,3.4,3.4,0,AT.ICON,E(0xffb347,1.2));}
   if(!tier){decal(0,0,19,17,AT.DASH,E(0xffb347,.75),0,low?10:16,.4);X.quadV(0,y+6.5,-17.4,4.8,1.2,0,AT[SIGN['BUILD SITE']],E(0xffb347,1.5));}
   if(tier){
    // Perimeter barrier (side walls |x|=17, back wall z=16; 6 m thick in the sim): berm + wall + lit cap.
@@ -875,9 +875,10 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    Sb.box(0,y+10.4,-18.6,28.4,1.4,2.6,K.dark2);Sb.box(0,y+9.6,-17.25,26.4,.14,.12,K.cyan,1.2);Sb.box(0,y+11.2,-18.6,8,.6,2.8,K.wall);
    X.quadV(0,y+10.4,-19.95,9.6,1.3,0,AT[SIGN.COMMAND]||AT.ICON,E(0x22e6ff,1.7));if(!low)X.quadV(0,y+4.8,-18.6,24.6,9.4,0,AT.BLOB,E(0x22e6ff,.16));
    for(const [x,z] of [[-17,-17.5],[17,-17.5]]){Sb.box(x,y+3,z,6.4,6,1.6,K.dark2,0,0,[y,5]);Sb.box(x,y+6.1,z,6.6,.25,1.8,K.cyan,1);X.bill(x,y+6.4,z,1.6,AT.BLOB,E(0x22e6ff,.9));}
-   Sb.box(10,y+4,12,.6,8,.6,K.mid);Sb.box(10,y+8.2,12,.9,.4,.9,K.cyan,1);X.quadV(13.2,y+7,11.6,5,1.25,0,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));
-   if(opt.veteran){Sb.add(G.cone6,M(-12,y+.3,10,0,0,0,1.2,5,1.2),K.gold,.7);Sb.box(-12,y+.5,10,3,1,3,K.dark2);X.bill(-12,y+5.4,10,1.6,AT.BLOB,E(0xffd36b,.9));}}
-  if(tier>=2){
+   if(!shell){Sb.box(10,y+4,12,.6,8,.6,K.mid);Sb.box(10,y+8.2,12,.9,.4,.9,K.cyan,1);X.quadV(13.2,y+7,11.6,5,1.25,0,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));}
+   else{X.flat(0,y+.36,-15.4,3.6,3.6,AT.RING,E(0x22e6ff,1.3),0);X.flat(0,y+.34,-15.4,3,3,AT.BLOB,E(0x22e6ff,.45),0);X.band(0,-15.4,y+.3,2.8,2.6,5.5,E(0x22e6ff,.5),[0,0,0],18);}   // the portal ring: drive into it to enter your town
+   if(opt.veteran&&!shell){Sb.add(G.cone6,M(-12,y+.3,10,0,0,0,1.2,5,1.2),K.gold,.7);Sb.box(-12,y+.5,10,3,1,3,K.dark2);X.bill(-12,y+5.4,10,1.6,AT.BLOB,E(0xffd36b,.9));}}
+  if(tier>=2&&!shell){
    // Hangar (sim: x 1..17, z 1..17): chamfered block, lit door facing the pad.
    Sb.box(9,y+3.6,9,15.4,7.2,15.4,K.panelA,0,0,[y,6]);Sb.add(G.hexF(.82),M(9,y+7.2,9,0,Math.PI/4,0,10.4,1.6,10.4),K.roof);Sb.box(9,y+.4,9,16,.8,16,K.dark);
    Sb.box(9,y+3.1,1.25,9.5,5.6,.4,K.dark);Sb.box(9,y+5.95,1.15,10,.14,.3,K.cyan,1);for(const s of [-1,1])Sb.box(9+s*4.85,y+3.1,1.15,.14,5.6,.3,K.cyan,1);Sb.box(9,y+.55,1.1,9.4,.1,.3,K.amber,1);
@@ -888,25 +889,25 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    if(tier<3||!opt.citadel){Sb.add(G.cylF(.86),M(-7,y+1.6,8,0,0,0,5.6,8.4,5.6),K.panelB);for(const h of [3.6,6.6])Sb.add(G.torus,M(-7,y+h,8,Math.PI/2,0,0,5.9,5.9,5.9),K.cyan,1);
     Sb.add(G.dome,M(-7,y+10,8,0,0,0,4.9,2.4,4.9),K.panelA);Sb.add(G.hex,M(-7,y+12.2,8,0,0,0,1,.5,1),K.teal,1);X.bill(-7,y+12.8,8,2.4,AT.BLOB,E(0x2dffc4,.9));if(high)X.ringGlow(-7,8+D.z-D.z,y+5.1,6.2,4,E(0x2dffc4,.4),18);}
    X.quadV(-7,y+3.2,.15,3.8,.95,0,AT[SIGN.REACTOR],E(0x2dffc4,1.4));}
-  if(tier>=3)for(const s of [-1,1]){const x=s*15,z=-13;
+  if(tier>=3&&!shell)for(const s of [-1,1]){const x=s*15,z=-13;
    // Corner gun towers (sim: 8x8 at (±15,-13)).
    Sb.box(x,y+1,z,7.6,2,7.6,K.dark,0,0,[y,2]);Sb.box(x,y+5.5,z,5.6,7.2,5.6,K.panelA,0,0,[y+2,6]);Sb.box(x,y+9.4,z,6.4,.6,6.4,K.dark2);
    for(const [cx,cz] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x+cx*2.82,y+5.5,z+cz*2.82,.14,7,.14,K.cyan,1);
    Sb.box(x,y+10.6,z,4.2,1.8,4.2,K.dark2);for(const t of [-.55,.55])Sb.add(G.cylC,MDc(V3(x+t,y+10.7,z-1.6),V3(x+t,y+10.9,z-6.4),.34),K.mid);Sb.box(x,y+11.6,z+1.2,.5,.5,.5,K.red,1);
    X.bill(x,y+11.6,z+1.2,1.2,AT.BLOB,E(0xff3048,1));X.quadV(x,y+7.6,z-2.86,3.6,.9,0,AT[SIGN.DEFENSE],E(0x22e6ff,1.3));}
-  if(tier>=4){Sb.box(12,y+10,10,.5,5.6,.5,K.mid);Sb.box(12,y+12.9,10,.8,.4,.8,K.cyan,1);X.quadV(12,y+8.8,15.9,3.4,.85,0,AT[SIGN.RADAR],E(0x22e6ff,1.2));}
-  if(tier>=5){const x=0,z=16;/* on the solid back-wall line (sim |z-16|<3), so tanks never drive through the tower */Sb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
+  if(tier>=4&&!shell){Sb.box(12,y+10,10,.5,5.6,.5,K.mid);Sb.box(12,y+12.9,10,.8,.4,.8,K.cyan,1);X.quadV(12,y+8.8,15.9,3.4,.85,0,AT[SIGN.RADAR],E(0x22e6ff,1.2));}
+  if(tier>=5&&!shell){const x=0,z=16;/* on the solid back-wall line (sim |z-16|<3), so tanks never drive through the tower */Sb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
    Sb.add(G.cone6,M(x,y+26,z,0,0,0,1.3,6,1.3),K.panelA);Sb.add(G.ico,M(x,y+32.6,z,0,0,0,.8,.8,.8),K.ice,1);X.bill(x,y+32.6,z,4.2,AT.BLOB,E(0x22e6ff,1.2));X.quadV(x,y+6.2,z-2.7,4.6,1.15,0,AT[SIGN.COMMAND],E(0x22e6ff,1.6));}
   // Modules along the inner face of the back wall: colour = function, height = level.
   const MOD={reactor:[K.teal,0x2dffc4],hangar:[K.cyan,0x22e6ff],defense:[K.red,0xff3048],vault:[K.gold,0xffd36b],radar:[K.ice,0xa8f8ff],uplink:[K.violet,0xa07bff]};
-  Object.keys(C.baseDefinition.modules).forEach((m,i)=>{const level=base.modules?.[m]||0;if(!level)return;const x=-12+i*4,h=1.2+level*1.1,c=MOD[m]||MOD.hangar,mz=13.6;Sb.add(G.hex,M(x,y,mz,0,0,0,1.5,h,1.5),K.dark2);Sb.add(G.hex,M(x,y+h,mz,0,0,0,1.6,.3,1.6),c[0],1);
+  if(!shell)Object.keys(C.baseDefinition.modules).forEach((m,i)=>{const level=base.modules?.[m]||0;if(!level)return;const x=-12+i*4,h=1.2+level*1.1,c=MOD[m]||MOD.hangar,mz=13.6;Sb.add(G.hex,M(x,y,mz,0,0,0,1.5,h,1.5),K.dark2);Sb.add(G.hex,M(x,y+h,mz,0,0,0,1.6,.3,1.6),c[0],1);
    for(let k=1;k<=level;k++)Sb.add(G.hex,M(x,y+h*k/(level+1),mz,0,0,0,1.56,.12,1.56),c[0],.9);X.bill(x,y+h+.6,mz,1.3,AT.BLOB,E(c[1],.8));});
   // Defense damage reads as scorch and wreckage at the gate.
-  for(let i=0;i<Math.ceil((base.defense?.damage||0)/20);i++){decal(-12+i*5,-15,2.6,2.2,AT.BLOB,[0,0,0],.75,3,.4);Sb.box(-12+i*5,y+.5,-15,1.6,.5,.9,K.chitinD,0,i);}
+  if(!shell)for(let i=0;i<Math.ceil((base.defense?.damage||0)/20);i++){decal(-12+i*5,-15,2.6,2.2,AT.BLOB,[0,0,0],.75,3,.4);Sb.box(-12+i*5,y+.5,-15,1.6,.5,.9,K.chitinD,0,i);}
   const solidMesh=Sb.mesh(),fxMesh=X.mesh();
   // Rebase world-space decals (built with absolute x/z) into the base-local frame.
   if(fxMesh.geometry){const p=fxMesh.geometry.attributes.position,b=fxMesh.geometry.attributes.aBill;for(let i=0;i<p.count;i++)if(Math.abs(p.getX(i))>500)p.setXYZ(i,p.getX(i)-D.x,p.getY(i),p.getZ(i)-D.z);fxMesh.geometry.computeBoundingSphere();}
-  const g=new T.Group();g.add(solidMesh,fxMesh);if(tier>=4){const dish=new Bld();dish.add(G.cone6,M(0,0,0,Math.PI/2,0,0,2.6,1,2.6),K.panelB);dish.add(G.box,M(0,0,-.5,0,0,0,.2,.2,1.2),K.cyan,1);const r=dish.mesh();r.position.set(12,y+13.6,10);r.name='cq-radar';g.add(r);g.userData.spin=r;}
+  const g=new T.Group();g.add(solidMesh,fxMesh);if(tier>=4&&!shell){const dish=new Bld();dish.add(G.cone6,M(0,0,0,Math.PI/2,0,0,2.6,1,2.6),K.panelB);dish.add(G.box,M(0,0,-.5,0,0,0,.2,.2,1.2),K.cyan,1);const r=dish.mesh();r.position.set(12,y+13.6,10);r.name='cq-radar';g.add(r);g.userData.spin=r;}
   return g;};
 
  // ---------- enemies: Parasite war machines on today's canonical hull silhouettes (bbox unchanged) ----------

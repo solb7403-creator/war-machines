@@ -7,7 +7,7 @@
 import {CONQUEST,RULES} from './sim.gen.js';
 import {bankMinerals} from './conquest-airdrop.js';
 const P=CONQUEST.Plot,DAY=86400000;
-export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout'];
+export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.
 export const REMOTE_PLOT_ACTIONS=['plot-upgrade'];
 export const MINERAL_PLOT_ACTIONS=['plot-build','plot-upgrade','plot-wall','plot-research','base-module','upgrade-base'];
@@ -91,4 +91,6 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
   p.banner={shape:a.shape,colors:a.colors.map(c=>c.toLowerCase()),emblem:a.emblem};s.notice={kind:'plot-banner'};return;}
  if(r.action==='plot-theme'){only(['light','finish','decor']);if(!['cyan','amber','violet','green','red'].includes(a.light)||!['steel','sand','graphite'].includes(a.finish)||!Array.isArray(a.decor)||a.decor.length>6||!a.decor.every(d=>['flags','lamps','crates','antenna','plants','statue'].includes(d)))fail('invalid theme');
   p.theme={light:a.light,finish:a.finish,decor:[...new Set(a.decor)]};s.notice={kind:'plot-theme'};return;}
+ // Session 5C: a town name (shared rules: up to 16 characters, profanity list); an empty name restores the default.
+ if(r.action==='plot-name'){only(['name']);const v=P.townName(a.name);if(!v.ok)fail(v.err);if(v.name)p.name=v.name;else delete p.name;s.notice={kind:'plot-name'};return;}
  fail('invalid plot action');}

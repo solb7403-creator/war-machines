@@ -46,7 +46,12 @@ function migrateRegion(s,now){
  if(s.death?.position&&embedded(s.death.position))s.death.position=repair(s.death.position);
  s.regionRevision=2;if(changed)s.notice={kind:'world-migration',at:now};
 }
-export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+// Session 5C: your town's diorama stands on the pad on a plinth (ConquestControl.plinthOf); a pilot whose saved position is
+// inside its footprint (standing on the pad while claiming, or as the plinth grows with the Command Center) steps out to
+// the open apron in front of the Command Gate. Position only: nothing is granted or taken.
+function padClear(s,B){const t=s.base?.tier|0;if(!t||s.mission||!s.position||!K.baseBlocked({baseTier:t},s.position))return false;const D=C.baseDefinition,x=D.x,z=D.z-26;   // outside the gate's portal ring (and its 9 m re-arm radius), inside the 30 m base zone
+ s.position={x,z,y:W.groundAt(x,z),surface:'ground'};s.safe=[{...s.position}];s.stuckMs=0;if(B?.player){B.player.x=x;B.player.z=z;B.player.y=s.position.y;}return true;}
+export function refreshState(s,now){campaign(s,now);padClear(s);cosmetics(s,now);veins(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
  // A patrol whose authored route moved is re-homed only while it is calm and far outside the player's view.
@@ -144,13 +149,13 @@ export function applyAction(previous,request,now,ctx={}){
  if(now<(s.recallReadyAt||0))fail('recall recharging: '+Math.ceil(((s.recallReadyAt||0)-now)/1000)+'s');s.recall={startedAt:now,simMs:0,cooldownMs:ctx.premium?C.RECALL.premiumCooldownMs:C.RECALL.cooldownMs};s.notice={kind:'recall-started'};
  }else if(request.action==='recall-cancel'){if(!s.recall)fail('no recall channeling');delete s.recall;s.notice={kind:'recall-cancelled'};
  }else if(COSMETIC_ACTIONS.includes(request.action)){cosmeticAction(s,request,now);
- }else if(BASE_ACTIONS.includes(request.action)){if(Object.keys(request).some(k=>!['seq','action',...(['base-module','defense-config'].includes(request.action)?['module']:[]),...(request.action==='build-base'?['plot']:[])].includes(k)))fail('invalid base fields');if(request.action==='build-base'&&request.plot!==undefined&&(!record(request.plot)||Object.keys(request.plot).some(k=>k!=='site')))fail('invalid base fields');if(['build-base','upgrade-base'].includes(request.action)&&K.baseBlocked({...B,baseTier:(s.base?.tier||0)+1},s.position)&&!(request.action==='upgrade-base'&&s.base?.tier))fail('move to the open deployment pad before construction');baseAction(s,request,now,ctx);
+ }else if(BASE_ACTIONS.includes(request.action)){if(Object.keys(request).some(k=>!['seq','action',...(['base-module','defense-config'].includes(request.action)?['module']:[]),...(request.action==='build-base'?['plot']:[])].includes(k)))fail('invalid base fields');if(request.action==='build-base'&&request.plot!==undefined&&(!record(request.plot)||Object.keys(request.plot).some(k=>k!=='site')))fail('invalid base fields');if(['build-base','upgrade-base'].includes(request.action)&&K.baseBlocked({...B,baseTier:(s.base?.tier||0)+1},s.position)&&!(request.action==='upgrade-base'&&s.base?.tier)&&request.action!=='build-base')fail('move to the open deployment pad before construction');baseAction(s,request,now,ctx);padClear(s,B);
  }else if(PLOT_ACTIONS.includes(request.action)){
  // Inside the plot = at the Command Gate with the perimeter secure (the world waits while you build). Upgrades also work
  // from the MAP (remote command, banked goods only), as module and tier upgrades always did.
  if(Object.keys(request).some(k=>!['seq','action','plot'].includes(k)))fail('invalid plot fields');if(!s.base?.tier)fail('build your Command Base first');if(s.mission||s.hp<=0)fail('approach your Command Gate');
  if(!REMOTE_PLOT_ACTIONS.includes(request.action)){if(Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)>C.baseDefinition.radius)fail('approach your Command Gate');if(B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<65))fail('secure base perimeter');}
- plotAction(s,request,now,ctx);
+ plotAction(s,request,now,ctx);padClear(s,B);
  }else if(request.action==='buy-upgrade'||request.action==='set-tuning'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('engineering requires safe Refuge terminal');
  if(request.action==='buy-upgrade'){

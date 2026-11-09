@@ -45,11 +45,15 @@ C.Battle.prototype.abilityStep=function(dt){
  q.life-=dt;}
  this.superShells=this.superShells.filter(q=>q.life>0).slice(-4);
 };
+// The Command Base pad (Session 5C): perimeter walls on three sides, the Command Gate (the portal into your town) on the
+// open -z side, and the plinth of your town's diorama against the back wall. The plinth grows with the base tier (CC1-2 ...
+// CC9-10); its footprint is the same for every pilot, so the shared world stays one shape. Shared by the Worker and the phone.
+const PLINTH=Object.freeze([9,10,11,12,12.5]);
+function plinthOf(tier){const h=PLINTH[Math.max(1,Math.min(5,tier|0))-1];return {h,x0:-h,x1:h,z0:13-2*h,z1:14};}
 function baseBlocked(B,p){if(!B.baseTier)return false;const D=C.baseDefinition,x=p.x-D.x,z=p.z-D.z;
  if(Math.abs(x)>22||Math.abs(z)>21)return false;
  if(Math.abs(Math.abs(x)-17)<3&&Math.abs(z)<18||Math.abs(z-16)<3&&Math.abs(x)<18)return true;
- if(B.baseTier>=2&&(x>1&&x<17&&z>1&&z<17||Math.hypot(x+7,z-8)<8))return true;
- if(B.baseTier>=3&&[-15,15].some(a=>Math.abs(x-a)<4&&Math.abs(z+13)<4))return true;
+ const q=plinthOf(B.baseTier);if(x>q.x0&&x<q.x1&&z>q.z0&&z<q.z1)return true;
  return false;
 }
 function advance(B,p,input,dt,exploration){
@@ -85,5 +89,5 @@ function preview(B,p,input,dt,exploration){
  return p;
 }
 function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
-root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,command,validated,preview,STEP,CONFIG});
+root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,PLINTH,plinthOf,command,validated,preview,STEP,CONFIG});
 })(globalThis);

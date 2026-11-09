@@ -41,11 +41,11 @@ async def main():
    gate=[1080,1160]
    for q in ['high','low']:
     ctx,page,errors=await session(q,{'position':gate,'baseFunds':True,'plotGallery':True})
-    await page.evaluate('ConquestPlotView.state.big="map"');await page.locator('.cq-plot-size').click();await page.locator('.cq-plot-size').click();await page.wait_for_timeout(400)
+    await page.evaluate('ConquestPlotView.snapTo("peek")');await page.wait_for_timeout(600)   # Session 5C: the sheet at PEEK (bigger map)
     await cam(page,-4,-30,58,.55,3.14159);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'turrets-11-390-{q}.png'))
     await cam(page,0,38,40,.6,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'wall-blends-390-{q}.png'))
     if q=='high':
-     await page.locator('.cq-plot-tabs button',has_text='DRILL').click();await page.locator('button',has_text='START DEFENSE DRILL').click();await page.wait_for_function('ConquestPlotView.state?.drill',timeout=60000)
+     await page.locator('.cq-plot-tabs button',has_text='DEFEND').click();await page.locator('button',has_text='START DEFENSE DRILL').click();await page.wait_for_function('ConquestPlotView.state?.drill',timeout=60000)
      ms=await page.evaluate('ConquestPlotView.state.drillMs');await cam(page,0,-34,70,.9);await page.evaluate('(()=>{const D=ConquestPlotView.state.drill,e=D.r.events.find(x=>x.k==="shot");if(e){D.t=Math.max(0,e.t-1);}})()')
      shots=[]
      for k in range(24):

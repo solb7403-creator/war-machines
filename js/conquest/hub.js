@@ -19,7 +19,7 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  const acts=el('div','cq-hub-actions',null,panel);
  const deploy=button('ENTER CONQUEST',()=>o.enter(),'cq-enter cq-hub-deploy');acts.append(deploy);
  acts.append(button('FAST TRAVEL',()=>o.enter('travel'),'cq-hub-act'),button('MY BASE',()=>o.enter('base'),'cq-hub-act'));
- const rs=button('RESEARCH · SESSION 6',()=>{},'cq-hub-act');rs.disabled=true;rs.setAttribute('aria-disabled','true');rs.title='The Science Lab research tree (tank mods) arrives in Session 6.';acts.append(rs);
+ const rs=button('RESEARCH · COMING SOON',()=>{},'cq-hub-act');rs.disabled=true;rs.setAttribute('aria-disabled','true');rs.title='Coming soon: the Science Lab research tree (tank mods).';acts.append(rs);
  el('div','cq-hub-foot',null,panel).append(button('WORLD INTEL',()=>o.map(),'cq-secondary'));
  let cached=null;try{cached=JSON.parse(localStorage.getItem(CACHE)||'null');}catch(e){}status(cached,true);
  // after first paint: live status, then the 3D hero
@@ -33,10 +33,10 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
  el('small','',s?.warfront?.stage?'Stage '+s.warfront.stage+' of the shared warfront'+(s.warfront.name?' · '+s.warfront.name:''):'Every operation you win pushes the shared warfront.',w);
  // your base
  const b=card('YOUR BASE');const p=s?.plot,base=s?.base;
- if(base?.tier&&p){const PL=root.ConquestPlot;el('p','cq-hub-big','TOWN CC'+p.cc+' · '+(PL?.SITES[p.site]?.name||'')+' · POWER '+fmt(p.power||0),b);if(PL?.wallCapOf)el('small','','WALLS '+(p.wn??Object.keys(p.w||{}).length)+' / '+PL.wallCapOf(p)+' · TURRETS '+(p.tn??PL.turretCount(p))+' / '+PL.TURRET_CAP[(p.cc||1)-1]+(p.log?.[0]?' · LAST DRILL '+String(p.log[0].outcome).toUpperCase():' · run a Defense Drill'),b);
+ if(base?.tier&&p){const PL=root.ConquestPlot;el('p','cq-hub-big',String(p.name||((PL?.SITES[p.site]?.name||'')+' TOWN')).toUpperCase()+' · CC'+p.cc+' · TOWN SCORE '+fmt(p.power||0),b);if(PL?.wallCapOf)el('small','','WALLS '+(p.wn??Object.keys(p.w||{}).length)+' / '+PL.wallCapOf(p)+' · TURRETS '+(p.tn??PL.turretCount(p))+' / '+PL.TURRET_CAP[(p.cc||1)-1]+(p.log?.[0]?' · LAST DRILL '+String(p.log[0].outcome).toUpperCase():' · run a Defense Drill'),b);
   if(C?.baseYield){const y=C.baseYield(base,s.reputation,now),m=el('progress','cq-hub-bar cq-hub-yield',null,b);m.max=1;m.value=Math.round(y.fill*1000)/1000;m.setAttribute('aria-label','Daily Base Yield');el('small','','DAILY BASE YIELD '+Math.floor(y.fill*100)+'%'+(y.fill>=1?' · FULL, COLLECT AT YOUR BASE':' · +'+fmt(y.cp)+' CP so far'),b);}
   const j=p.job;el('small','',j?'BUILDER · '+(j.t==='cc'?'COMMAND CENTER':(root.ConquestPlot?.BUILDINGS[j.t]?.n||j.t).toUpperCase())+' '+(j.l||'')+' · '+(j.ready>now?t2(j.ready-now):'READY'):'BUILDER FREE · open MY BASE to build',b);
-  if(base.defense?.alertAt&&!base.defense.active)el('small','cq-hub-alert','⚠ PARASITE ASSAULT ON YOUR BASE · DEFEND IT',b);}
+  if(Object.keys(p.dmg||{}).length)el('small','cq-hub-alert','⚠ YOUR TOWN IS DAMAGED · OPEN MY BASE TO REPAIR',b);}
  else{el('p','cq-hub-big','NO BASE YET',b);const D=C?.baseDefinition,L=s?.ledger;el('small','',D&&L?'Claim your own town: '+Math.min(L.cp,D.recipe.cp)+' / '+fmt(D.recipe.cp)+' CP banked. Seven sites, from crater rim to ash field; it grows with your Command Center.':'Win operations, bank salvage, then claim your own town.',b);el('small','cq-hub-where','⌂ Your base gate is next to the Refuge, about 90 m west. Tap MY BASE: the gold arrow takes you there.',b);}
  // events
  const e=card('LIVE EVENTS');const M=C?.meteorStrike?.(now);
@@ -46,7 +46,7 @@ function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildr
  if(!alerts.length)el('small','','No invasions right now.',e);
  if(stale&&s)el('small','cq-hub-stale','Last known status · updating…',col);if(!s)el('small','cq-hub-stale',typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK?'Connecting to Conquest Command…':'Sign in to keep your Conquest progress.',col);}
 async function live(me){if(!H||H!==me||typeof apiFetch!=='function'||typeof ACCOUNT_OK==='undefined'||!ACCOUNT_OK)return;try{const r=await apiFetch('/api/conquest/session',{}),j=await r.json();if(!H||H!==me||H.disposed||!r.ok||!j.state)return;H.state=j.state;
-  const keep={territory:j.state.territory,warfront:j.state.warfront?{stage:j.state.warfront.stage,name:j.state.warfront.name}:null,base:j.state.base,plot:j.state.plot?{cc:j.state.plot.cc,site:j.state.plot.site,power:j.state.plot.power,job:j.state.plot.job,banner:j.state.plot.banner,w:{},b:{},log:(j.state.plot.log||[]).slice(0,1),wn:Object.keys(j.state.plot.w||{}).length,tn:root.ConquestPlot?.turretCount(j.state.plot)||0}:null,reputation:j.state.reputation,ledger:{cp:j.state.ledger?.cp||0}};
+  const keep={territory:j.state.territory,warfront:j.state.warfront?{stage:j.state.warfront.stage,name:j.state.warfront.name}:null,base:j.state.base,plot:j.state.plot?{cc:j.state.plot.cc,site:j.state.plot.site,power:j.state.plot.power,job:j.state.plot.job,banner:j.state.plot.banner,theme:j.state.plot.theme||null,name:j.state.plot.name||'',dmg:j.state.plot.dmg||{},w:j.state.plot.w||{},b:j.state.plot.b||{},log:(j.state.plot.log||[]).slice(0,1),wn:Object.keys(j.state.plot.w||{}).length,tn:root.ConquestPlot?.turretCount(j.state.plot)||0}:null,reputation:j.state.reputation,ledger:{cp:j.state.ledger?.cp||0}};
   try{localStorage.setItem(CACHE,JSON.stringify(keep));}catch(e){}status(j.state,false);H.tick=setInterval(()=>{if(H&&!H.disposed)status(H.state,false);},1000);H.rebuild?.(j.state);}catch(e){}}
 
 // ------------------------------------------------------------------------- cinematic hero ---------------------------
@@ -72,12 +72,13 @@ async function hero3d(me){if(!H||H!==me||H.disposed)return;const gfx=typeof gfxM
  for(let i=0;i<(low?6:12);i++){const m=new T.Mesh(new T.OctahedronGeometry(2+i%3,0),glow);m.position.set(-500+i*90+(i%2)*30,-6-(i%3)*4,-760-(i%4)*40);sc.add(m);}
  const pad=new T.Mesh(new T.RingGeometry(6.2,6.7,64),cyan);pad.rotation.x=-Math.PI/2;pad.position.y=.06;sc.add(pad);
  const baseG=new T.Group();sc.add(baseG);const steel=new T.MeshPhongMaterial({color:0x4a5664,shininess:20,flatShading:true}),dark=new T.MeshPhongMaterial({color:0x222932,shininess:10,flatShading:true});
- H.rebuild=s=>{baseG.clear();const p=s?.plot,cc=p?.cc||0;baseG.position.set(-13,0,-30);baseG.rotation.y=.5;
+ // Session 5C: the hero shows the pilot's ACTUAL town (walls, turrets, vitals, the Command Center at its level, the banner)
+ // from the shared town kit, on the hub's own renderer (one lit vertex-colour material).
+ H.rebuild=s=>{baseG.traverse(o=>{if(o.isMesh&&o.geometry)o.geometry.dispose();});baseG.clear();const p=s?.plot,cc=p?.cc||0,TK=root.ConquestTownKit,PL=root.ConquestPlot;baseG.position.set(-15,0,-34);baseG.rotation.y=.5;
   if(!cc){const ring=new T.Mesh(new T.RingGeometry(10,10.6,64),amber);ring.rotation.x=-Math.PI/2;ring.position.y=.1;baseG.add(ring);return;}
-  let y=0;for(let k=0;k<Math.min(10,cc);k++){const r=7-k*.5,h=1.8+(k%2)*.6,m=new T.Mesh(new T.CylinderGeometry(r*.96,r,h,8),k%2?steel:dark);m.position.y=y+h/2;baseG.add(m);const ringM=new T.Mesh(new T.TorusGeometry(r*.97,.09,6,32),cyan);ringM.rotation.x=Math.PI/2;ringM.position.y=y+h;baseG.add(ringM);y+=h;}
-  const beacon=new T.Mesh(new T.OctahedronGeometry(.8,0),cc>=9?new T.MeshBasicMaterial({color:0xffd36b}):cyan);beacon.position.y=y+3;baseG.add(beacon);
-  for(const [x,z,w,h,d] of [[-14,4,8,5,10],[13,6,9,6,8],[-6,16,6,3,6]]){const m=new T.Mesh(new T.BoxGeometry(w,h,d),steel);m.position.set(x,h/2,z);baseG.add(m);const strip=new T.Mesh(new T.BoxGeometry(w*1.01,.18,.18),cyan);strip.position.set(x,h*.8,z+d/2);baseG.add(strip);}
-  if(p?.banner){const pole=new T.Mesh(new T.BoxGeometry(.25,9,.25),dark);pole.position.set(9,4.5,-6);baseG.add(pole);const flag=new T.Mesh(new T.BoxGeometry(4,2.6,.1),new T.MeshBasicMaterial({color:p.banner.colors[0]}));flag.position.set(11,7.6,-6);baseG.add(flag);const st=new T.Mesh(new T.BoxGeometry(4,.5,.12),new T.MeshBasicMaterial({color:p.banner.colors[1]}));st.position.set(11,7.6,-6);baseG.add(st);}};
+  if(TK&&PL&&p.b&&Object.keys(p.b).length){try{const L=TK.lite(T),k=TK.kit(L),dio=TK.diorama(L,k,p,{size:34,ex:2.4,low,plinth:1.2,bannerScale:1.4});baseG.add(dio);H.townDrawn=dio.userData.counts;return;}catch(e){H.townError=String(e&&e.message||e);}}
+  let y=0;for(let k=0;k<Math.min(10,cc);k++){const r=7-k*.5,h=1.8+(k%2)*.6,m=new T.Mesh(new T.CylinderGeometry(r*.96,r,h,8),k%2?steel:dark);m.position.y=y+h/2;baseG.add(m);y+=h;}
+  const beacon=new T.Mesh(new T.OctahedronGeometry(.8,0),cc>=9?new T.MeshBasicMaterial({color:0xffd36b}):cyan);beacon.position.y=y+3;baseG.add(beacon);};
  H.rebuild(H.state||(()=>{try{return JSON.parse(localStorage.getItem(CACHE)||'null');}catch(e){return null;}})());
  // your tank, built from your equipped loadout with the shared 3D kit
  const tank=new T.Group();sc.add(tank);try{const K3=typeof M3!=='undefined'?M3:null,L=typeof myLoadout==='function'?myLoadout():null;if(K3&&L){const mats={lit:new T.MeshPhongMaterial({vertexColors:true,shininess:45}),shine:new T.MeshPhongMaterial({vertexColors:true,shininess:65}),glow:new T.MeshBasicMaterial({vertexColors:true})},P=(typeof PAINTS!=='undefined'&&PAINTS[L.paint])||(typeof PAINTS!=='undefined'?PAINTS.stock:null);
