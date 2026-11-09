@@ -1458,7 +1458,7 @@ function initUI(){
  // Decided once per touch (touchstart), so a drive stick or a map drag never scrolls and a long page always does.
  let scrollOk=false;
  const scrollable=el=>{for(let n=el;n&&n!==document.body&&n!==document.documentElement;n=n.parentElement){const c=getComputedStyle(n);if(c.touchAction==='none')return false;const o=c.overflowY;if((o==='auto'||o==='scroll')&&n.scrollHeight>n.clientHeight+1)return true;}return false;};   // a map/stick (touch-action:none) never scrolls its page
- document.addEventListener('touchstart',e=>{const t=e.target instanceof Element?e.target:null;scrollOk=!!t&&(!!t.closest('.screen,.pscroll,.sheet,.modal,.full')||scrollable(t));},{passive:true,capture:true});
+ document.addEventListener('touchstart',e=>{const t=e.target instanceof Element?e.target:null;scrollOk=!!t&&e.touches.length<2&&(!!t.closest('.screen,.pscroll,.sheet,.modal,.full')||scrollable(t));},{passive:true,capture:true});
  document.addEventListener('touchmove',e=>{if(!scrollOk)e.preventDefault();},{passive:false});
  document.addEventListener('gesturestart',e=>e.preventDefault());
  addEventListener('keydown',e=>{if(e.key==='Escape'&&state==='play')confirmLeave();});
