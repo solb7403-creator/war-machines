@@ -1130,7 +1130,7 @@ No blocker; non-owners cannot reach dev mode and the points/rankings guards hold
 
 **Owner, to try it:** open Conquest → the gold ⌂ MY BASE button (top bar) → follow the arrow → the claim screen opens at the gate. Dev mode: on the claim or plot screen, the magenta DEV MODE box → TURN ON UNLIMITED (your account only).
 
-## Checkpoint 26 — Conquest page, instant dev builds, base menu, tap-to-place fix (branch `claude/conquest-page-base-ui`) — owner request, release pre-approved
+## Checkpoint 26 — Conquest page, instant dev builds, base menu, tap-to-place fix (PR #80, branch `claude/conquest-page-base-ui`) — RELEASED
 
 Owner phone playtest of build `20261108233308` (Telegram, iPhone, Nov 8): wants Conquest as its own page (not a button on Play); no build countdown while testing; the base menu feels tight and cannot scroll, so the build items at the bottom cannot be seen or understood; placing an item sometimes lands somewhere other than the tap.
 
@@ -1143,3 +1143,5 @@ Owner phone playtest of build `20261108233308` (Telegram, iPhone, Nov 8): wants 
 - **Dev mode instant builds:** while owner dev mode is ON, every build/upgrade completes in the same request; turning it on finishes anything already building. The dev box is one compact line.
 - **Build cards:** full-width cards grouped ECONOMY / DEFENSE / SUPPORT, each with icon, name, a role tag (+0.8 ALLOY/H, +14 ⚡ POWER, RANGE 28 · DMG 34…), the building's description, size, power use, then cost and time (FREE · INSTANT in dev mode).
 - Tests: `dev/tests/conquest-plot-ui.py` (new, in Conquest CI); `wtest/conquest-dev.mjs` updated (instant builds).
+- CI: all checks green on `b16dec0` (after fixing a session-032 harness race: an in-flight `/api/conquest/input` route failed the next browser context; and one re-run of the known minerals screenshot-timeout flake).
+- PR #80 merged as `ac598ca`. Worker deploy run 42548327162 SUCCESS: live `/pvp/health` ok, live `version.json` **`20261109004759`** = repo. Pages run 42548326497 SUCCESS. Payments stay DISABLED.
