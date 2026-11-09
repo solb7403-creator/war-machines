@@ -1146,7 +1146,7 @@ Owner phone playtest of build `20261108233308` (Telegram, iPhone, Nov 8): wants 
 - CI: all checks green on `b16dec0` (after fixing a session-032 harness race: an in-flight `/api/conquest/input` route failed the next browser context; and one re-run of the known minerals screenshot-timeout flake).
 - PR #80 merged as `ac598ca`. Worker deploy run 42548327162 SUCCESS: live `/pvp/health` ok, live `version.json` **`20261109004759`** = repo. Pages run 42548326497 SUCCESS. Payments stay DISABLED.
 
-## Checkpoint 27 — every screen fits or scrolls; Conquest page actions pinned; sector count (branch `claude/scroll-fix-hub`) — owner request, release pre-approved
+## Checkpoint 27 — every screen fits or scrolls; Conquest page actions pinned; sector count (PR #82, branch `claude/scroll-fix-hub`) — RELEASED
 
 Owner phone report on build `20261109004759`: the Conquest page would not scroll, so ENTER CONQUEST (below the fold since the bottom bar was added) could not be reached; "7 / 6 SECTORS HELD". Owner rule: a page fits the screen or scrolls, and this must be prevented for anything similar going forward.
 
@@ -1154,3 +1154,6 @@ Owner phone report on build `20261109004759`: the Conquest page would not scroll
 - **Conquest page fits:** the action row (ENTER CONQUEST, FAST TRAVEL, MY BASE, RESEARCH) is pinned just above the bottom bar, on screen without scrolling at 320x568, 390x700 and 390x844; the status above scrolls.
 - **Sector count:** held counted every captured site (installations too); now sectors only.
 - Rule recorded in AGENTS.md ("Every screen fits or scrolls") with the test recipe.
+- Hardening: a second finger (FIRE held while steering) never enables page scrolling.
+- CI: all 10 checks green on `01ba99d` (two earlier session-032 runs failed at different timing-sensitive combat taps, lines 122 and 89; line 89 also fails locally on code before this change).
+- PR #82 merged as `a65f581`. Worker deploy run 42559035744 SUCCESS: live `/pvp/health` ok, live `version.json` **`20261109033625`** = repo. Pages run 42559035446 SUCCESS.
