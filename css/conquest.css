@@ -231,3 +231,6 @@
 @media (max-width:360px){.cq .cq-pagenav .tab{font-size:10px;letter-spacing:0}}
 .cq .cq-pagenav{z-index:60;background:#0a0e17;border-top:1px solid #2a3a4a;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
 .cq .cq-pagenav .tab.tab-cq.on svg{color:#43e08a}
+/* Owner rule (Nov 8): a page fits the screen, or it scrolls. The hub's actions are pinned just above the bottom bar so ENTER
+   CONQUEST is always on screen; the status above them scrolls when it is taller than the screen. */
+.cq.cq-hub.cq-with-nav .cq-hub-actions{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:6;padding-top:10px;padding-bottom:10px;background:linear-gradient(180deg,#05070d00,#05070dee 14px,#05070d)}

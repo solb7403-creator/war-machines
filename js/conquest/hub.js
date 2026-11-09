@@ -28,7 +28,7 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
 function status(s,stale){if(!H)return;const {el}=H.o,col=H.col;col.replaceChildren();const now=Date.now(),C=root.ConquestCombat;
  const card=(title,cls)=>{const c=el('section','cq-hub-card '+(cls||''),null,col);el('h3','',title,c);return c;};
  // warfront
- const terr=s?.territory||{},held=Object.values(terr).filter(t=>t?.owner==='humanity').length,total=(root.ConquestWorld?.sectors||[]).length||6,alerts=Object.entries(terr).filter(([,t])=>t?.status==='defense-alert'||t?.status==='contested');
+ const terr=s?.territory||{},secs=(root.ConquestWorld?.sectors||[]).map(x=>x.id),held=secs.filter(id=>terr[id]?.owner==='humanity').length,total=secs.length||6,alerts=Object.entries(terr).filter(([,t])=>t?.status==='defense-alert'||t?.status==='contested');
  const w=card('WARFRONT');el('p','cq-hub-big',held+' / '+total+' SECTORS HELD',w);const bar=el('progress','cq-hub-bar',null,w);bar.max=total;bar.value=held;bar.setAttribute('aria-label','Sectors held');
  el('small','',s?.warfront?.stage?'Stage '+s.warfront.stage+' of the shared warfront'+(s.warfront.name?' · '+s.warfront.name:''):'Every operation you win pushes the shared warfront.',w);
  // your base

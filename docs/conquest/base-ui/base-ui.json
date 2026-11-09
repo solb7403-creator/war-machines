@@ -14,7 +14,13 @@
   },
   "nav": {
    "navBottom": true,
-   "navTop": 507
+   "navTop": 507,
+   "onTop": true,
+   "enterVisible": true,
+   "scroll": {
+    "scrollable": true,
+    "scrolledBy": 201
+   }
   },
   "leftTo": {
    "cq": false,
@@ -37,7 +43,13 @@
   },
   "nav": {
    "navBottom": true,
-   "navTop": 778
+   "navTop": 778,
+   "onTop": true,
+   "enterVisible": true,
+   "scroll": {
+    "scrollable": true,
+    "scrolledBy": 139
+   }
   },
   "leftTo": {
    "cq": false,
