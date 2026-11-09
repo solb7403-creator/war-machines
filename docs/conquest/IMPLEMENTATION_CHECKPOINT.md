@@ -1091,7 +1091,7 @@ No blocker and no way to mint or duplicate CP, materials, minerals, points, base
 
 **Next:** the owner's phone playtest (below), then Session 6 (tank mods + Science Lab research + audio/weather) with the desktop keyboard fix from the ROADMAP fix queue.
 
-## Checkpoint 25 — Find My Base + owner dev mode (branch `claude/find-my-base`, from main `d8e4cf8`) — owner-approved, release pre-approved
+## Checkpoint 25 — Find My Base + owner dev mode (PR #78, branch `claude/find-my-base`) — RELEASED
 
 Owner report on the Session 5 live build (Nov 8): "I have no idea how and where to find my base. That's supposed to be a key part of this mode, so it should be very straightforward." Plus: "give my dev account unlimited resources so I can fully test out the base." Both approved for build + ship in the same message.
 
@@ -1122,3 +1122,10 @@ No blocker; non-owners cannot reach dev mode and the points/rankings guards hold
 - MINOR: a ranking the owner already held survived dev-on until his power changed. Fixed: the dev check runs before the early returns (test).
 - MINOR: a site change could refund minerals for walls placed free in dev mode. Fixed: dev mode leaves `mnSpent` exactly as it was, and a dev record's site change refunds nothing (test).
 - MINOR: driving past the gate without a base reopened the claim screen every time. Fixed: auto-open only when routed home.
+
+### Tests and release (2026-11-08)
+- Local: every node test in the Conquest CI list + regression.sh PASS; new conquest-home-route (9), wtest/conquest-dev (27), conquest-find-base (390 journey) PASS; browser hub, base-builder, onboarding, transmission PASS. conquest-minerals-browser times out in this container on `main` too (software GL frame time; passes in CI).
+- CI: the first run caught a real regression (session-032 tapped MORE by position; the new button is 3rd). Fixed with a stable `.cq-more` class (`9662601`). Two timing flakes on the next run (transmission 400 ms keypress, a minerals screenshot timeout) passed on re-run; all 8 checks green on `9662601`.
+- PR #78 merged as `471d93e`. Worker deploy run 42538834372 SUCCESS: live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`, live `version.json` **`20261108233308`** = repo. Pages run 42538833908 SUCCESS. Payments stay DISABLED; no production data changed by hand.
+
+**Owner, to try it:** open Conquest → the gold ⌂ MY BASE button (top bar) → follow the arrow → the claim screen opens at the gate. Dev mode: on the claim or plot screen, the magenta DEV MODE box → TURN ON UNLIMITED (your account only).
