@@ -459,11 +459,16 @@ function* drillGen(plot,seed=1,opt={}){
  return {outcome,seed:seed>>>0,threat,byTurret,...(lostNow?{damage:lostNow}:{}),time:Math.round(time*10)/10,kills,spawned:id,lost:fell.length+homesLost,fell:fell.slice(0,40),vitals:[...new Set(vitals)],homesLost,wallsLost,breaches:groups.sort((a,b)=>b.n-a.n).slice(0,12).map(g=>[g.i,g.j,g.n]),
   core:Math.max(0,Math.round(100*core.hp/core.max)),power:Math.round(pf*100),frames:keepF?frames:[],events:keepE?events:[]};}
 
+// Town name (Session 5C): up to 16 characters, letters, digits, spaces and - ' . only, no leading/trailing or double spaces;
+// '' clears it. The Worker also runs the call-sign profanity list on it (worker/src/callsign.js nameBlocked).
+const TOWN_NAME_MAX=16;
+function townName(raw){const n=String(raw??'').replace(/\s+/g,' ').trim();if(!n)return {name:''};if(n.length>TOWN_NAME_MAX)return {err:'town names are '+TOWN_NAME_MAX+' characters at most'};
+ if(!/^[A-Za-z0-9 '.\-]+$/.test(n))return {err:'town names use letters, numbers, spaces and - \' . only'};if(!/[A-Za-z0-9]/.test(n))return {err:'include a letter or number'};return {name:n};}
 root.ConquestPlot=Object.freeze({GRID,MID,TOWN,SITES,SITE_IDS,BUILDINGS,TURRETS,TURRET_CAP,VITALS,VITAL_EFFECT,CC,CPS,MNS,DRILL,RAID,RIM_DEPOSITS,BLOCKED,NOBUILD,SLOW,
  ORES,ORE_NAME,ORE_CC,TIER_W,BLEND_W,BLEND_NAME,ORE_UNITS,BLEND_UNITS,COMPOSITE,WALL_CAP,EXT,STORE,MAX_WALL_CELLS,MAX_SECTIONS,
  cellX,cellZ,key,hash,clampCC,townH,townSide,inTown,inGrid,cheb,terrainAt,heightAt,groundY,corridor,spawnCells,laneEdge,
  wallCap,wallBase,wallCapOf,extParts,wcode,wdecode,blendQ,wallStats,blendName,levelCap,countCap,tierOf,costOf,timeOf,sizeOf,cells,occupancy,countOf,turretCount,
  powerSupply,powerUse,levelOf,levelSum,modulesOf,caps,rates,accrue,power,lotsOf,homes,placeError,buildCheck,line4,rectCells,ringCells,shapeCells,wallLine,wallPlan,wallRemovePlan,
  autoPlace,newPlot,resetPlot,migrate,settle,drill,drillGen,raid:drill,drillWaves,hpOfBuilding,wallHit,
- maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,SEC,MIN,HOUR,DAY});
+ maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,townName,TOWN_NAME_MAX,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,SEC,MIN,HOUR,DAY});
 })(globalThis);

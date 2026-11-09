@@ -1,0 +1,340 @@
+{
+ "sheet": {
+  "390x700": {
+   "snaps": {
+    "full": {
+     "snap": "full",
+     "stageH": 77,
+     "drawerTop": 138,
+     "drawerBottom": 700,
+     "vh": 700,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    },
+    "peek": {
+     "snap": "peek",
+     "stageH": 524,
+     "drawerTop": 585,
+     "drawerBottom": 700,
+     "vh": 700,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    },
+    "half": {
+     "snap": "half",
+     "stageH": 319,
+     "drawerTop": 380,
+     "drawerBottom": 700,
+     "vh": 700,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    }
+   },
+   "tabs": {
+    "HOME": {
+     "scrolls": true,
+     "scrollTop": 383,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "BUILD": {
+     "scrolls": true,
+     "scrollTop": 948,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "WEAPONS": {
+     "scrolls": true,
+     "scrollTop": 1476,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0,
+     "weapons": {
+      "cards": 13,
+      "turrets": 11,
+      "gate": true,
+      "shield": true,
+      "sprites": 13
+     }
+    },
+    "WALLS": {
+     "scrolls": true,
+     "scrollTop": 376,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "DEFEND": {
+     "scrolls": true,
+     "scrollTop": 77,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    }
+   },
+   "pageErrors": []
+  },
+  "390x844": {
+   "snaps": {
+    "full": {
+     "snap": "full",
+     "stageH": 94,
+     "drawerTop": 155,
+     "drawerBottom": 844,
+     "vh": 844,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    },
+    "peek": {
+     "snap": "peek",
+     "stageH": 642,
+     "drawerTop": 703,
+     "drawerBottom": 844,
+     "vh": 844,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    },
+    "half": {
+     "snap": "half",
+     "stageH": 391,
+     "drawerTop": 452,
+     "drawerBottom": 844,
+     "vh": 844,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    }
+   },
+   "tabs": {
+    "HOME": {
+     "scrolls": true,
+     "scrollTop": 311,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "BUILD": {
+     "scrolls": true,
+     "scrollTop": 876,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "WEAPONS": {
+     "scrolls": true,
+     "scrollTop": 1404,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0,
+     "weapons": {
+      "cards": 13,
+      "turrets": 11,
+      "gate": true,
+      "shield": true,
+      "sprites": 13
+     }
+    },
+    "WALLS": {
+     "scrolls": true,
+     "scrollTop": 304,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "DEFEND": {
+     "scrolls": true,
+     "scrollTop": 5,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    }
+   },
+   "pageErrors": []
+  },
+  "320x568": {
+   "snaps": {
+    "full": {
+     "snap": "full",
+     "stageH": 61,
+     "drawerTop": 122,
+     "drawerBottom": 568,
+     "vh": 568,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    },
+    "peek": {
+     "snap": "peek",
+     "stageH": 416,
+     "drawerTop": 477,
+     "drawerBottom": 568,
+     "vh": 568,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    },
+    "half": {
+     "snap": "half",
+     "stageH": 253,
+     "drawerTop": 314,
+     "drawerBottom": 568,
+     "vh": 568,
+     "pageScroll": 0,
+     "meet": true,
+     "reached": true
+    }
+   },
+   "tabs": {
+    "HOME": {
+     "scrolls": true,
+     "scrollTop": 467,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "BUILD": {
+     "scrolls": true,
+     "scrollTop": 1126,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "WEAPONS": {
+     "scrolls": true,
+     "scrollTop": 1750,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0,
+     "weapons": {
+      "cards": 13,
+      "turrets": 11,
+      "gate": true,
+      "shield": true,
+      "sprites": 13
+     }
+    },
+    "WALLS": {
+     "scrolls": true,
+     "scrollTop": 477,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    },
+    "DEFEND": {
+     "scrolls": true,
+     "scrollTop": 159,
+     "lastReachable": true,
+     "fitsWidth": true,
+     "pageScroll": 0
+    }
+   },
+   "pageErrors": []
+  }
+ },
+ "homeSector": {
+  "open": {
+   "view": "drive",
+   "tank": true,
+   "tour": true,
+   "pad": {
+    "i": 39,
+    "j": 43,
+    "x": 0,
+    "z": 16
+   }
+  },
+  "moved": 7.9,
+  "buildView": "build",
+  "driveBack": "drive",
+  "sameScene": true,
+  "walls": 52,
+  "wallBlocks": true,
+  "title": "Iron Hold \u00b7 CC1",
+  "badNameKept": "Iron Hold",
+  "shareShot": true,
+  "back": true,
+  "padBefore": "{\"walls\":0,\"posts\":0,\"rubble\":0,\"turrets\":0,\"homes\":13,\"builds\":2}",
+  "padAfter": {
+   "walls": 52,
+   "posts": 12,
+   "rubble": 0,
+   "turrets": 0,
+   "homes": 13,
+   "builds": 2
+  },
+  "thumb": [
+   true,
+   true
+  ],
+  "pageErrors": []
+ },
+ "hub": {
+  "walls": 52,
+  "posts": 12,
+  "rubble": 0,
+  "turrets": 0,
+  "homes": 13,
+  "builds": 2
+ },
+ "perf": {
+  "high": {
+   "world": {
+    "calls": 107,
+    "triangles": 601480,
+    "programs": 13,
+    "diorama": {
+     "walls": 2000,
+     "posts": 330,
+     "rubble": 0,
+     "turrets": 42,
+     "homes": 50,
+     "builds": 26
+    }
+   },
+   "homeSectorDrive": {
+    "calls": 62,
+    "triangles": 397714,
+    "programs": 13
+   },
+   "homeSectorBuild": {
+    "calls": 78,
+    "triangles": 403364,
+    "programs": 13
+   },
+   "pageErrors": []
+  },
+  "low": {
+   "world": {
+    "calls": 86,
+    "triangles": 509844,
+    "programs": 12,
+    "diorama": {
+     "walls": 2000,
+     "posts": 330,
+     "rubble": 0,
+     "turrets": 42,
+     "homes": 50,
+     "builds": 26
+    }
+   },
+   "homeSectorDrive": {
+    "calls": 62,
+    "triangles": 259394,
+    "programs": 12
+   },
+   "homeSectorBuild": {
+    "calls": 78,
+    "triangles": 265044,
+    "programs": 12
+   },
+   "pageErrors": []
+  }
+ }
+}

@@ -71,6 +71,12 @@ function holoMesh(R,cellsList,ok,ring,site){const {S}=R,X2=new S.Fx(),c=P.GRID.c
 function queueSprite(kind,key,level){const k=kind+':'+key+':'+level;if(SPRITES.has(k)||SPRITE_WAIT.some(w=>w.k===k))return;SPRITE_WAIT.push({k,kind,key,level});}
 function spriteModel(R,w){const {T,k}=R,g=new T.Group(),lv=Math.max(1,w.level||1);
  if(w.kind==='w'){const code=P.wcode(+w.key,+w.key?Math.max(1,w.level||2):0),geo=k.wallGeo(code,false);for(let n=-1;n<=1;n++){const m=new T.Mesh(geo,R.S.MAT.solid);m.position.x=n*4.02;g.add(m);}g.userData.geos=[geo];g.rotation.y=-.5;return g;}
+ if(w.kind==='x'){const tint=(geo,c,e)=>{const a=geo.attributes.aCol;for(let i=0;i<a.count;i++){if(a.getW(i)>.3)a.setXYZW(i,c.r*1.4,c.g*1.4,c.b*1.4,e);else a.setXYZ(i,c.r*.55+a.getX(i)*.3,c.g*.55+a.getY(i)*.3,c.b*.55+a.getZ(i)*.3);}return geo;},gold=new T.Color(0xd8a640),neon=new T.Color(0xff2bd6);
+  const add=(geo,x=0,y=0,ry=0)=>{const m=new T.Mesh(geo,R.S.MAT.solid);m.position.set(x,y,0);m.rotation.y=ry;g.add(m);};
+  if(w.key==='wall-ext-10'){for(let n=-1;n<=1;n++)add(k.wallGeo(P.wcode(3,2),false),n*4.02);add(k.post(false),6.1);}else if(w.key==='skin-gilded'){for(let n=-1;n<=1;n++)add(tint(k.wallGeo(P.wcode(5,3),false),gold,1.4),n*4.02);}
+  else if(w.key==='skin-turret-neon'){add(tint(k.building('railgun',5,null).geometry(),neon,2));add(tint(k.head('railgun',5).geometry(),neon,2),0,2.15,.7);}else if(w.key==='theme-aurora'){g.add(k.building('cc',10,{light:'violet',finish:'graphite'}).mesh());}
+  else if(w.key==='foundry-rush'){g.add(k.building('foundry',5,{light:'amber'}).mesh());}else if(w.key==='builder-2'){g.add(k.building('hangar',4,null).mesh());}else g.add(k.building('storage',3,null).mesh());
+  g.rotation.y=-.4;return g;}
  const b=k.building(w.key,w.key==='cc'?Math.min(10,lv):lv,null).mesh();g.add(b);const B=P.BUILDINGS[w.key];if(B?.turret||w.key==='radar'){const hd=k.head(w.key,lv).mesh();hd.position.y=w.key==='radar'?3.3+lv*.5:1.4+lv*.15;hd.rotation.y=.7;g.add(hd);}return g;}
 function spriteStep(R){if(!SPRITE_WAIT.length||!R||!X)return;const w=SPRITE_WAIT.shift();if(SPRITES.has(w.k))return;const {T}=R,r=X.ctx.view.renderer,el=r.domElement,px=144;if(!el||el.height<px||el.width<px)return;
  try{if(!R.spr){const sc=new T.Scene();sc.fog=new T.Fog(0x06070f,3000,4000);const L=[new T.HemisphereLight(0x3a5a9c,0x16131f,1.5),new T.DirectionalLight(0xe4ecff,2.9),new T.DirectionalLight(0x52c6ff,1.25)];L[1].position.set(200,400,150);L[2].position.set(-300,200,-200);sc.add(...L);R.spr={sc,cam:new T.PerspectiveCamera(30,1,.1,500),v:new T.Vector3(),c:document.createElement('canvas')};R.spr.c.width=R.spr.c.height=px;}
@@ -139,7 +145,7 @@ function fold(body,k,title,cls=''){const {el}=X.ctx,f=el('details','cq-map-fold'
 const townName=p=>p?.nm||(P.SITES[p?.site]?.name||'')+' TOWN';
 function header(p,visit){X.title.textContent=(visit?'VISITING · ':'')+townName(p)+' · CC'+p.cc;const use=P.powerUse(p),sup=P.powerSupply(p);X.chipPw.hidden=X.chipDef.hidden=false;X.chipPw.textContent='⚡ '+use+'/'+sup;X.chipPw.classList.toggle('short',use>sup);X.chipDef.textContent='🛡 DEF '+fmt(visit?.dr||P.defenseRating(p));}
 // The coach floats on the map in every tab but HOME (where it is a card with a GO button); tapping it opens its tab.
-function coachUi(g){const {el}=X.ctx,c=X.coach,show=!!g&&(X.mode!=='home'||X.view==='drive')&&!X.drill&&!X.visit&&!X.tour;c.hidden=!show;if(!show){X.coachKey='';return;}const key=g.k+g.text+X.mode;if(X.coachKey===key)return;X.coachKey=key;c.replaceChildren();el('b','cq-plot-step','STEP '+g.k+' OF '+g.n,c);el('span','',g.text,c);c.setAttribute('aria-label','Step '+g.k+' of '+g.n+': '+g.text);}
+function coachUi(g){const {el}=X.ctx,c=X.coach,show=!!g&&(X.mode!=='home'||X.view==='drive')&&!X.drill&&!X.visit&&!X.tour&&!busy();/* hidden while placing or drawing: a tap near it must never switch tabs */c.hidden=!show;if(!show){X.coachKey='';return;}const key=g.k+g.text+X.mode;if(X.coachKey===key)return;X.coachKey=key;c.replaceChildren();el('b','cq-plot-step','STEP '+g.k+' OF '+g.n,c);el('span','',g.text,c);c.setAttribute('aria-label','Step '+g.k+' of '+g.n+': '+g.text);}
 function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.state?.plot)return;const {el,view}=X.ctx,s=view.authority.state,p=s.plot,L=s.ledger,now=Date.now(),sh=X.sheet;
  // keep what the pilot had open (closed sections, scroll) across a re-render; a designer in progress is only rebuilt by a state change
  const openNow=new Set([...sh.querySelectorAll('details[open]>summary')].map(x=>x.dataset.k||x.textContent)),scroll=sh.scrollTop;if(sh.childNodes.length)X.openFolds=openNow;
@@ -153,7 +159,11 @@ function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.s
  updateAuto();fab(s,p);layout();if(X.R)driveUi();sync();}
 // While drawing walls the map is big and the menu small: UNDO and CONFIRM float on the map so the primary action is always
 // on screen (owner rule: primary actions stay on screen).
-function fab(s,p){const {button}=X.ctx;if(!X.fab){X.fab=document.createElement('div');X.fab.className='cq-plot-fab';X.stage.append(X.fab);}const plan=X.mode==='walls'?draftPlan(p):null;X.fab.replaceChildren();X.fab.hidden=!plan;if(!plan)return;
+function fab(s,p){const {button}=X.ctx;if(!X.fab){X.fab=document.createElement('div');X.fab.className='cq-plot-fab';X.stage.append(X.fab);}X.fab.replaceChildren();
+ // placing or moving a building: ROTATE, CANCEL and CONFIRM float on the map too (the sheet drops to PEEK while placing)
+ if(X.place&&X.view!=='drive'){const q=X.place,err=q.id?P.placeError(p,q.type,q.i,q.j,q.r,q.id):(P.buildCheck(p,q.type,1)||P.placeError(p,q.type,q.i,q.j,q.r)),ok=button(q.id?'CONFIRM MOVE':'CONFIRM BUILD',()=>q.id?act('plot-move',{id:q.id,i:q.i,j:q.j,r:q.r},'MOVING…'):act('plot-build',{type:q.type,i:q.i,j:q.j,r:q.r},'CONSTRUCTION ORDERED…'),'cq-plot-primary');ok.disabled=!!err||(!q.id&&!!p.job);ok.title=err||'';
+  X.fab.append(button('↻',()=>{q.r=(q.r+1)%4;render();},'cq-plot-fab-rot'),button('CANCEL',()=>{X.place=null;render();}),ok);X.fab.lastChild.previousSibling.previousSibling.setAttribute('aria-label','Rotate');X.fab.hidden=false;return;}
+ const plan=X.mode==='walls'?draftPlan(p):null;X.fab.hidden=!plan;if(!plan)return;
  const ok=button('CONFIRM WALLS · '+plan.cells.length,async()=>{if(await act('plot-wall',{s:X.draft.map(d=>d.sec)},'BUILDING WALLS…')&&X){X.draft=[];render();}},'cq-plot-primary');ok.disabled=!!plan.err;ok.title=plan.err||price(plan.cost);X.fab.append(button('↶ UNDO',()=>{X.draft.pop();render();}),ok);}
 // Once a second: only the live numbers change (builder countdown, production), never the open sections or a designer in progress.
 function tickUi(){if(!X||X.visit)return;const s=X.ctx.view.authority?.state,p=s?.plot;if(!p)return;const now=Date.now(),j=p.job,box=X.sheet.querySelector('.cq-plot-job:not(.cq-plot-damage)');
@@ -179,9 +189,14 @@ const multOf=p=>(root.CQ_BASE_MULT||[1,1.05,1.1,1.15,1.2,1.25])[P.tierOf(p.cc)]|
 function homeTab(body,s,p,L,now,g){const {el,button}=X.ctx;devBar(body,s,p);statusCard(body,s,p,L,now);
  if(g){const c=el('div','cq-plot-coachcard',null,body);el('b','cq-plot-step','STEP '+g.k+' OF '+g.n,c);el('span','',g.text,c);if(g.tab!=='home')c.append(button('GO TO '+tabName(g.tab),()=>setTab(g.tab),'cq-plot-primary'));else if(g.id==='cc')c.append(button('SELECT THE COMMAND CENTER',()=>{X.sel='cc';render();},'cq-plot-primary'));}
  else if(!X.sel)el('p','cq-plot-hint','Tap a building on the map to upgrade or move it. One finger pans, two fingers pinch to zoom, ⌖ frames the town.',body);
- const look=fold(body,'look','TOWN LOOK · BANNER, LIGHTS, DECORATIONS, SHARE');look.ontoggle=()=>{if(look.open&&!look.dataset.built){look.dataset.built='1';designer(look,p);look.append(button('SHARE MY TOWN',()=>shareCard(s,p)));}};
+ const look=fold(body,'look','TOWN LOOK · BANNER, LIGHTS, DECORATIONS, SHARE');look.ontoggle=()=>{if(look.open&&!look.dataset.built){look.dataset.built='1';nameRow(look,p);designer(look,p);look.append(button('SHARE MY TOWN',()=>shareCard(s,p)));}};
  const vis=fold(body,'visit','VISIT TOWNS · TOP 20, SQUAD, BASE OF THE WEEK');vis.ontoggle=()=>{if(vis.open&&!vis.dataset.built){vis.dataset.built='1';visitList(vis);}};
- if(P.STORE.open){const shop=fold(body,'store','STORE · CAPACITY, COSMETICS AND TIME');storeList(shop);}else if(ownerUI()){const shop=fold(body,'store','STORE PREVIEW · OWNER ONLY · CHECKOUT OFF');storeList(shop);}}   // the store stays hidden from players until payments are enabled
+ if(P.STORE.checkout){const shop=fold(body,'store','STORE · CAPACITY, COSMETICS AND TIME');storeList(shop);}else if(ownerUI()){const shop=fold(body,'store','STORE PREVIEW · OWNER ONLY · CHECKOUT OFF');storeList(shop);}}   // the store stays hidden from players until payments are enabled
+// Name your town (5C): up to 16 characters; the Worker validates it (and its profanity list); shown on the HOME card, the
+// header, visits, the hub and the share card.
+function nameRow(box,p){const {el,button}=X.ctx,r=el('div','cq-plot-name',null,box);el('small','','TOWN NAME · up to '+P.TOWN_NAME_MAX+' letters, numbers, spaces',r);const row=el('div','cq-plot-row',null,r),inp=document.createElement('input');inp.type='text';inp.maxLength=P.TOWN_NAME_MAX;inp.value=p.nm||'';inp.placeholder=townName({...p,nm:''});inp.setAttribute('aria-label','Town name');inp.className='cq-plot-input';inp.autocomplete='off';inp.spellcheck=false;row.append(inp);
+ const msg=el('small','',' ',r);inp.oninput=()=>{const t=P.townName(inp.value);msg.textContent=t.err?'✕ '+t.err.toUpperCase():' ';};
+ row.append(button('SAVE NAME',()=>{const t=P.townName(inp.value);if(t.err){msg.textContent='✕ '+t.err.toUpperCase();return;}act('plot-name',{n:t.name},'NAMING YOUR TOWN…');},'cq-plot-primary'));}
 function statusCard(body,s,p,L,now){const {el,button}=X.ctx,box=el('div','cq-plot-status',null,body),use=P.powerUse(p),sup=P.powerSupply(p),mult=multOf(p),site=P.SITES[p.site];
  const hd=el('div','cq-plot-status-head',null,box);hd.append(sprite('b','cc',p.cc));const t=el('div','cq-plot-status-name',null,hd);el('b','',townName(p)+' · CC'+p.cc,t);el('small','',site.name+(mult>1?' · points ×'+mult.toFixed(2):'')+' · TOWN SCORE '+fmt(p.power||P.power(p)),t);
  const pw=el('div','cq-plot-meter'+(use>sup?' short':''),null,box);el('span','','⚡ POWER',pw);const m=el('meter','',null,pw);m.min=0;m.max=Math.max(1,sup);m.value=Math.min(use,Math.max(1,sup));m.setAttribute('aria-label','Power used '+use+' of '+sup);el('small','',use+' / '+sup+(use>sup?' · SHORT':''),pw);
@@ -232,7 +247,7 @@ function card(box,p,k,B,o={}){const {el,button}=X.ctx,c=button('',()=>{if(!o.loc
  el('small','cq-plot-cost',o.lock?'UNLOCKS AT CC'+B.cc:(o.err?'✕ '+o.err.toUpperCase():o.dev?'FREE · INSTANT':price(B.cost[0])+' · '+dur(P.timeOf(k,1)))+' · SIZE '+B.w+'×'+B.d+(B.pw?' · USES ⚡'+B.pw:''),c);c.disabled=!!o.err||!!o.lock;if(o.lock)c.setAttribute('aria-label',B.n+': unlocks at CC'+B.cc);box.append(c);return c;}
 function placePanel(body,s,p){const {el,button}=X.ctx,q=X.place,B=q.type==='cc'?{n:'Command Center'}:P.BUILDINGS[q.type],err=q.id?P.placeError(p,q.type,q.i,q.j,q.r,q.id):(P.buildCheck(p,q.type,1)||P.placeError(p,q.type,q.i,q.j,q.r));
  // the primary action first, so it stays on screen even with the bigger map (owner rule: every screen fits or scrolls)
- const row=el('div','cq-plot-row',null,body);row.append(button('↻ ROTATE',()=>{q.r=(q.r+1)%4;render();}),button('CANCEL',()=>{X.place=null;render();}));const ok=button(q.id?'CONFIRM MOVE':'CONFIRM BUILD',()=>q.id?act('plot-move',{id:q.id,i:q.i,j:q.j,r:q.r},'MOVING…'):act('plot-build',{type:q.type,i:q.i,j:q.j,r:q.r},'CONSTRUCTION ORDERED…'),'cq-plot-primary');ok.disabled=!!err||(!q.id&&!!p.job);row.append(ok);
+ // ROTATE, CANCEL and CONFIRM float on the map (fab), so the primary action is on screen at every sheet height
  el('b','',(q.id?'MOVE · ':'PLACE · ')+B.n.toUpperCase()+(P.VITALS[q.type]?' · ◆ VITAL':''),body);el('small','',err?'✕ '+err.toUpperCase():'✓ VALID · tap the ground to move the blueprint'+(q.id?'':' · '+(devOn()?'FREE · INSTANT':price(P.costOf(q.type,1))+' · '+dur(P.timeOf(q.type,1)))),body);
  if(!q.id&&p.job)el('small','','The builder is busy: '+jobText(p.job,Date.now()),body);if(P.VITALS[q.type])el('small','',VITAL_DEF+' Spread them out for coverage, or keep them behind your strongest walls.',body);}
 function buildTab(body,s,p,L){const {el}=X.ctx;if(X.place){placePanel(body,s,p);return;}const g=guideStep(p,s),dev=devOn();resLine(el,body,s,p);jobCard(body,p,Date.now());
@@ -294,7 +309,7 @@ function defendTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A pr
  raidFold(body,s,p);}
 
 // ------------------------------------------------------------------- scene sync / frame -------------------------------
-const fromSnap=v=>({site:v.site,cc:v.cc|0,power:v.pw|0,b:Object.fromEntries(Object.entries(v.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:v.w||{},banner:v.bn||null,theme:v.th||null,log:[],st:{}});
+const fromSnap=v=>({nm:v.nm||'',site:v.site,cc:v.cc|0,power:v.pw|0,b:Object.fromEntries(Object.entries(v.b||{}).map(([id,a])=>[id,{t:a[0],i:a[1],j:a[2],r:a[3],l:a[4]}])),w:v.w||{},banner:v.bn||null,theme:v.th||null,log:[],st:{}});
 const plotOf=()=>X?.visit?X.visit.plot:X?.ctx.view.authority?.state?.plot;
 const cached=(m,key,make)=>{let g=m.get(key);if(!g){g=make();m.set(key,g);}return g;};
 const keepSet=R=>new Set([...R.wgeo.values(),...R.hgeo.values(),...R.tgeo.values()]);
@@ -317,7 +332,7 @@ function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}con
  // complete turrets: one base and one head draw per turret type and level (a CC10 town has up to 42 turrets)
  const tk=JSON.stringify([[...pl.turrets].map(([kk,l])=>[kk,l.map(([id,b])=>[id,b.i,b.j])]),theme?.finish,theme?.light]);if(R.keys.tur!==tk){R.keys.tur=tk;wipe(g.turrets,keep);R.tur=TK.turrets(R,p,pl,theme,g.turrets);}
  // walls: one instanced draw per blend look (up to 3,000 cells at CC10 with extensions), one for corner posts, one for rubble
- const wk=JSON.stringify(p.w)+low+JSON.stringify(p.dmg||{});if(R.keys.walls!==wk){R.keys.walls=wk;wipe(g.walls,keep);const W=TK.walls(R,p,pl,low,g.walls);R.wim=W.wim;R.wcell=W.wcell;R.wpost=W.wpost;}
+ const wk=JSON.stringify(p.w)+low+JSON.stringify(p.dmg||{});if(R.keys.walls!==wk){R.keys.walls=wk;wipe(g.walls,keep);const W=TK.walls(R,p,pl,low,g.walls);R.wim=W.wim;R.wcell=W.wcell;R.wpost=W.wpost;R.dmgFx=TK.damageFx(R,p,g.walls);}
  // settler homes: one instanced draw per home kind
  const hk=P.homes(p).map(h=>h.id).join()+p.site+p.cc+low;if(R.keys.homes!==hk){R.keys.homes=hk;wipe(g.homes,keep);const H=TK.homes(R,p,pl,low,g.homes);R.him=H.him;R.hcell=H.hcell;}
  const ck=JSON.stringify([p.banner,p.theme,p.b.cc?.i,p.b.cc?.j,p.site]);if(R.keys.deco!==ck){R.keys.deco=ck;if(R.deco){g.build.remove(R.deco);R.deco.traverse(o=>{if(!o.geometry?.userData?.hfShared)o.geometry?.dispose?.();});}R.deco=new T.Group();const c=p.b.cc,x0=P.cellX(c.i)+6,z0=P.cellZ(c.j)+6;R.deco.position.y=footY(p.site,c);
@@ -347,7 +362,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  const far=R.far?c.dist>165:c.dist>195;if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
   const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
- crewStep(R,plotOf());if(X.drill)drillStep(dt);
+ crewStep(R,plotOf());if(X.drill)drillStep(dt);if(R.dmgFx&&!reduced())TK.damageStep(R.dmgFx,X.clock);
  if(SPRITE_WAIT.length&&!X.drill)spriteStep(R);   // before the frame's full clear, so a sprite never shows on the map
  R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer,vx=sr.left-hr.left,vy=hr.bottom-sr.bottom;r.setScissorTest(false);r.clear();r.setViewport(vx,vy,w,h);r.setScissor(vx,vy,w,h);r.setScissorTest(true);r.render(R.sc,R.cam);r.setScissorTest(false);r.setViewport(0,0,hr.width||w,hr.height||h);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
 // crew walk between buildings, rovers drive the lanes (presentation)
@@ -408,7 +423,7 @@ function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos
  if(X.camFrom&&X.camT<1){X.camT=reduced()?1:Math.min(1,X.camT+dt/.6);const e=X.camT<.5?2*X.camT*X.camT:1-Math.pow(-2*X.camT+2,2)/2;pos.lerpVectors(X.camFrom.p,pos,e);look.lerpVectors(X.camFrom.t,look,e);if(X.camT>=1)X.camFrom=null;}
  R.cam.position.copy(pos);R.cam.lookAt(look);X.camLook=(X.camLook||new T.Vector3()).copy(look);}
 function driveUi(){const st=X.stage;if(!X.driveBtn){const {button}=X.ctx;X.driveBtn=button('🚙 DRIVE',()=>setView('drive'),'cq-plot-drivebtn');X.driveBtn.setAttribute('aria-label','Drive your tank in your town');st.append(X.driveBtn);X.skip=button('SKIP ▸',()=>{if(X.tour){X.camFrom=camPose();X.camT=0;X.tour=null;}},'cq-plot-skip');st.append(X.skip);X.stickEl=document.createElement('div');X.stickEl.className='cq-plot-stick';X.stickEl.hidden=true;X.stickEl.append(document.createElement('i'));st.append(X.stickEl);X.exitEl=document.createElement('div');X.exitEl.className='cq-plot-exit';X.exitEl.hidden=true;st.append(X.exitEl);}
- const drive=X.view==='drive';X.d.classList.toggle('cq-plot-driving',drive);X.driveBtn.hidden=drive||!X.R||!!X.drill&&false;X.skip.hidden=!X.tour;
+ const drive=X.view==='drive';X.d.classList.toggle('cq-plot-driving',drive);X.driveBtn.hidden=drive||!X.R||!!X.place;   // hidden while a blueprint is placed (the map is for placing then)X.skip.hidden=!X.tour;
  const D=X.drive,ex=drive&&D&&D.exit>0;X.exitEl.hidden=!ex;if(ex)X.exitEl.textContent='LEAVING TOWN · BACK TO THE WORLD';}
 
 // ------------------------------------------------------------------- raid replay (Defense Drill) -----------------------
@@ -476,29 +491,39 @@ async function visitList(box){const {el,button,view}=X.ctx;const wait=el('p','',
  const sec=(title,list)=>{el('b','',title,box);if(!list.length){el('small','','None yet.',box);return;}for(const x of list){box.append(button((x.nm||x.n||'Pilot')+' · CC'+x.cc+' · '+(P.SITES[x.site]?.name||'')+' · SCORE '+fmt(x.pw),()=>visit(x.p,x.n)));}};
  sec('SQUAD',L.squad||[]);sec('TOP 20 BY TOWN SCORE',L.top||[]);if(L.week&&!(L.top||[]).some(x=>x.p===L.week.p))box.append(button('VISIT BASE OF THE WEEK · '+L.week.n,()=>visit(L.week.p,L.week.n)));}
 async function visit(pid,name){const {view}=X.ctx;say('OPENING '+String(name||'BASE').toUpperCase()+'…');let r;try{r=await view.authority.transport('/api/conquest/visit',{pid});}catch(e){say(String(e.message||'').replace(/^conquest: /,'').toUpperCase()||'NOT AVAILABLE');return;}
- X.visit={base:r.base,plot:fromSnap(r.base)};X.sel=null;X.mode='home';X.place=null;X.draw=null;X.draft=[];if(X.R){X.R.keys={};}X.cam=frameCam(X.visit.plot);visitUi();}
+ X.visit={base:r.base,plot:fromSnap(r.base)};X.sel=null;X.mode='home';X.place=null;X.draw=null;X.draft=[];if(X.R){X.R.keys={};}X.cam=frameCam(X.visit.plot);
+ // 5C: a visit is a read-only Home Sector you can drive through (gates stay shut for visitors; nothing can be changed)
+ if(X.R){X.drive=null;X.camFrom=camPose();X.camT=0;startDrive();X.view='drive';}visitUi();}
 function visitUi(){const {el,button}=X.ctx,v=X.visit.base,p=X.visit.plot;header(p,v);X.title.textContent='VISITING · '+(v.nm||v.n)+' · CC'+v.cc;X.coach.hidden=true;X.tabs.hidden=true;const sh=X.sheet;sh.replaceChildren();
  el('p','cq-plot-hint','Read-only visit: look around '+(v.nm?v.nm+', ':'')+v.n+'\'s town on a '+(P.SITES[v.site]?.name||'')+'. Nothing here can be changed or taken. Player raids are coming. TOWN SCORE '+fmt(v.pw)+'.',sh);
  if(X.sel&&p.b[X.sel]){const b=p.b[X.sel],B=b.t==='cc'?{n:'Command Center'}:P.BUILDINGS[b.t];el('b','',(ICON[b.t]||'')+' '+B.n.toUpperCase()+' '+romanOf(b.t==='cc'?p.cc:b.l),sh);}
  {const w=Object.values(p.w||{}),by={};for(const c of w){const n=P.blendName(c);by[n]=(by[n]||0)+1;}const tu={};for(const b of Object.values(p.b)){const B=P.BUILDINGS[b.t];if(B?.turret)tu[B.n]=(tu[B.n]||0)+1;}const vit=Object.values(p.b).filter(b=>P.VITALS[b.t]).map(b=>b.t==='cc'?'Command Center':P.BUILDINGS[b.t].n);
   el('p','cq-plot-res','WHAT YOU WOULD FACE · DEFENSE RATING '+fmt(v.dr||P.defenseRating(p))+' · '+w.length+' walls'+(w.length?' ('+Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n,k])=>k+' '+n).join(', ')+')':'')+' · '+(Object.entries(tu).map(([n,k])=>k+' '+n).join(', ')||'no turrets')+' · vitals: '+vit.join(', '),sh);}
- if(v.bn)sh.append(bannerCanvas(v.bn,90,110));sh.append(button('RETURN TO MY BASE',()=>{X.visit=null;X.sel=null;if(X.R){X.R.keys={};}X.cam=frameCam(X.ctx.view.authority?.state?.plot);render();},'cq-plot-primary'));sync();}
+ if(v.bn)sh.append(bannerCanvas(v.bn,90,110));sh.prepend(button('RETURN TO MY BASE',()=>{X.visit=null;X.sel=null;if(X.R){X.R.keys={};X.drive=null;X.camFrom=camPose();X.camT=0;startDrive();X.view='drive';}X.cam=frameCam(X.ctx.view.authority?.state?.plot);render();},'cq-plot-primary'));if(X.R)driveUi();sync();}
+// The share card (5C): a render of the pilot's town (the 3D scene from a 3/4 camera; the 2D map in the 2D setting), its
+// name, CC, defense rating and banner. Rendered and copied in the same task (the drawing buffer is still valid), then the
+// next frame redraws the map.
+function townShot(p,w=720,h=520){const R=X?.R;if(!R)return null;const r=X.ctx.view.renderer,el=r.domElement,pr=r.getPixelRatio?.()||1,W=Math.min(w,el.width),H=Math.min(h,el.height);if(W<240||H<180)return null;
+ const T=R.T,cam=new T.PerspectiveCamera(38,W/H,.5,2500),C0=TK.ccCenter(p),half=(P.townH(p.cc)+2)*P.GRID.cell,d=half*2.05;cam.position.set(C0.x+d*.5,d*.6,C0.z+d*.78);cam.lookAt(C0.x,0,C0.z);R.S.viewLights(cam);
+ const hide=[R.g.holo,X.tank,X.padMesh,X.fab].filter(o=>o&&'visible' in o),vis=hide.map(o=>o.visible);hide.forEach(o=>o.visible=false);const old=new T.Color();r.getClearColor(old);const oa=r.getClearAlpha();
+ try{r.setScissorTest(true);r.setViewport(0,0,W/pr,H/pr);r.setScissor(0,0,W/pr,H/pr);r.setClearColor(0x05070d,1);r.clear();r.render(R.sc,cam);r.setScissorTest(false);const c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(el,0,el.height-H,W,H,0,0,W,H);return c;}
+ catch(e){return null;}finally{r.setClearColor(old,oa);hide.forEach((o,i)=>o.visible=vis[i]);R.S.viewLights(R.cam);}}
 function shareCard(s,p){const {el,button}=X.ctx,c=document.createElement('canvas');c.width=720;c.height=900;const g=c.getContext('2d'),grad=g.createLinearGradient(0,0,0,900);grad.addColorStop(0,'#071426');grad.addColorStop(1,'#03060c');g.fillStyle=grad;g.fillRect(0,0,720,900);
- g.fillStyle='#22e6ff';g.font='700 34px sans-serif';g.fillText('MY LUNAR TOWN',40,70);g.fillStyle='#e8f6ff';g.font='600 26px sans-serif';const name=(typeof save!=='undefined'&&(save.callsign||save.name))||'Pilot';g.fillText(String(name).slice(0,20)+' · '+P.SITES[p.site].name,40,112);
- g.fillStyle='#ffd36b';g.font='700 30px sans-serif';g.fillText('CC'+p.cc+' · '+Object.keys(p.w||{}).length+' WALLS · TOWN SCORE '+fmt(p.power||P.power(p)),40,156);
- const h=P.townH(p.cc),side=2*h+1,cs=Math.floor(600/side),i0=P.MID-h,ox=(720-side*cs)/2-i0*cs,oy=190-i0*cs;X.l2=null;g.imageSmoothingEnabled=false;g.drawImage(layer2d(p),i0,i0,side,side,ox+i0*cs,oy+i0*cs,side*cs,side*cs);X.l2=null;g.font=Math.max(9,cs)+'px sans-serif';g.textAlign='center';g.textBaseline='middle';
- for(const b of Object.values(p.b||{})){const z=P.sizeOf(b.t,b.r|0);g.fillStyle=P.VITALS[b.t]?'#6a5a3a':'#4a5664';g.fillRect(ox+b.i*cs+1,oy+b.j*cs+1,z.w*cs-2,z.d*cs-2);if(z.w>1){g.fillStyle='#e8f6ff';g.fillText(ICON[b.t]||'',ox+(b.i+z.w/2)*cs,oy+(b.j+z.d/2)*cs);}}g.textAlign='left';g.textBaseline='alphabetic';
- if(p.banner)g.drawImage(bannerCanvas(p.banner,120,150),560,24);const link=typeof refLink==='function'?refLink():null;g.fillStyle='#ffb347';g.font='700 26px sans-serif';g.fillText('JOIN MY SQUAD · BUILD YOURS',40,818);g.fillStyle='#c9d6e2';g.font='500 24px sans-serif';g.fillText(link?link.replace(/^https?:\/\//,''):'LUNAR: War Machines · Telegram and web',40,858);
- const url=c.toDataURL('image/png'),box=el('div','cq-plot-share',null,X.sheet);X.sheet.scrollTop=X.sheet.scrollHeight;const img=document.createElement('img');img.src=url;img.alt='My town: CC'+p.cc+', town score '+(p.power||0);img.className='cq-plot-share-img';box.append(img);
- const text='My LUNAR town: CC'+p.cc+' on a '+P.SITES[p.site].name+', town score '+fmt(p.power||0)+'. Join my squad and build yours.';
- box.append(button(typeof IN_TG!=='undefined'&&IN_TG?'SHARE IN TELEGRAM':'SHARE',async()=>{if(typeof IN_TG!=='undefined'&&IN_TG&&typeof shareRef==='function'){shareRef(text);return;}try{const blob=await (await fetch(url)).blob(),file=new File([blob],'lunar-base.png',{type:'image/png'}),data={title:'LUNAR: War Machines',text,...(link?{url:link}:{})};if(navigator.canShare?.({files:[file]}))data.files=[file];if(navigator.share)await navigator.share(data);else if(typeof shareRef==='function')shareRef(text);}catch(e){}},'cq-plot-primary'));
- const a=document.createElement('a');a.href=url;a.download='lunar-base.png';a.textContent='DOWNLOAD IMAGE';a.className='cq-plot-dl';box.append(a);}
+ const name=townName(p),pilot=(typeof save!=='undefined'&&(save.callsign||save.name))||'Pilot';g.fillStyle='#22e6ff';g.font='800 40px sans-serif';g.fillText(name.toUpperCase().slice(0,22),40,72);g.fillStyle='#e8f6ff';g.font='600 24px sans-serif';g.fillText(String(pilot).slice(0,20)+'\'s town · '+P.SITES[p.site].name,40,110);
+ g.fillStyle='#ffd36b';g.font='800 30px sans-serif';g.fillText('CC'+p.cc+' · DEFENSE '+fmt(P.defenseRating(p))+' · '+Object.keys(p.w||{}).length+' WALLS',40,154);
+ const shot=townShot(p);if(shot){const k=Math.min(680/shot.width,600/shot.height),w=shot.width*k,h=shot.height*k;g.drawImage(shot,(720-w)/2,180+(600-h)/2,w,h);g.strokeStyle='#22e6ff66';g.lineWidth=2;g.strokeRect((720-w)/2,180+(600-h)/2,w,h);}
+ else{const h=P.townH(p.cc),side=2*h+1,cs=Math.floor(600/side),i0=P.MID-h,ox=(720-side*cs)/2-i0*cs,oy=190-i0*cs;g.imageSmoothingEnabled=false;g.drawImage(layer2d(p),i0,i0,side,side,ox+i0*cs,oy+i0*cs,side*cs,side*cs);}
+ if(p.banner)g.drawImage(bannerCanvas(p.banner,120,150),570,14);const link=typeof refLink==='function'?refLink():null;g.fillStyle='#ffb347';g.font='700 26px sans-serif';g.fillText('JOIN MY SQUAD · BUILD YOURS',40,818);g.fillStyle='#c9d6e2';g.font='500 24px sans-serif';g.fillText(link?link.replace(/^https?:\/\//,''):'LUNAR: War Machines · Telegram and web',40,858);
+ const url=c.toDataURL('image/png'),box=el('div','cq-plot-share',null,X.sheet);X.sheet.scrollTop=X.sheet.scrollHeight;const img=document.createElement('img');img.src=url;img.alt=name+': CC'+p.cc+', defense rating '+P.defenseRating(p);img.className='cq-plot-share-img';box.append(img);X.shareShot=!!shot;
+ const text='My LUNAR town '+name+': CC'+p.cc+' on a '+P.SITES[p.site].name+', defense rating '+fmt(P.defenseRating(p))+'. Join my squad and build yours.';
+ box.append(button(typeof IN_TG!=='undefined'&&IN_TG?'SHARE IN TELEGRAM':'SHARE',async()=>{if(typeof IN_TG!=='undefined'&&IN_TG&&typeof shareRef==='function'){shareRef(text);return;}try{const blob=await (await fetch(url)).blob(),file=new File([blob],'lunar-town.png',{type:'image/png'}),data={title:'LUNAR: War Machines',text,...(link?{url:link}:{})};if(navigator.canShare?.({files:[file]}))data.files=[file];if(navigator.share)await navigator.share(data);else if(typeof shareRef==='function')shareRef(text);}catch(e){}},'cq-plot-primary'));
+ const a=document.createElement('a');a.href=url;a.download='lunar-town.png';a.textContent='DOWNLOAD IMAGE';a.className='cq-plot-dl';box.append(a);}
 // Revenue (fair, cosmetic or time only). Checkout stays disabled until payments are certified: shown honestly as unavailable.
 const STORE=[['Aurora base lighting','theme'],['Gilded wall skin','skin'],['Animated war banner','banner'],['Commander statue','decoration'],['Second builder','two constructions at once'],['Speed-up','finish a construction sooner']];
 // Revenue (owner MONEY RULE: what is sold and its limits live in ConquestPlot.STORE, one table). Checkout stays disabled
 // until payments are certified: every tile is shown honestly as unavailable.
 function storeList(box){const {el,button}=X.ctx;el('small','','Capacity, cosmetics and time only. Never airdrop points; rare-or-better ores are earn-only.',box);
- for(const it of P.STORE.items){const b=button(it.name.toUpperCase()+' · '+it.what.toUpperCase()+' · UNAVAILABLE',()=>{});b.disabled=true;b.setAttribute('aria-disabled','true');b.className='cq-plot-store';box.append(b);}
+ for(const it of P.STORE.items){const b=button('',()=>{});b.disabled=true;b.setAttribute('aria-disabled','true');b.className='cq-plot-store cq-plot-card';const hd=el('span','cq-plot-card-head',null,b);hd.append(sprite('x',it.id,1));el('b','',it.name,hd);el('span','cq-plot-tag','UNAVAILABLE',hd);el('small','cq-plot-desc',it.what,b);box.append(b);}
  el('small','','Checkout is not open: nothing here can be bought today. Everything a pack gives (wall capacity) can also be earned.',box);}
 
 // ------------------------------------------------------------------- input ---------------------------------------------

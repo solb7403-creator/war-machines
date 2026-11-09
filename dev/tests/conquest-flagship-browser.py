@@ -214,12 +214,13 @@ async def run(args):
             if not args.no_defense:
                 await page.evaluate('Conquest.view.authority.dispose()');await page.wait_for_timeout(300)
                 await page.request.post(base+'/fixture',data={'veteranLoadout':True,'baseFunds':True,'position':[1080,1160]})
-                # Session 5: ENTER BASE opens the private plot: claim it (default RIDGE), then deploy the defense from its BASE TERMINAL
+                # Session 5: ENTER BASE opens the private plot: claim it (default RIDGE); then the (UI-retired) base defense via the Worker action
                 await enter();await page.locator('#cq-base-access').click()
                 await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
                 await page.wait_for_function('Conquest.view.authority.state.base.tier===1&&!!document.querySelector(".cq-plot-tabs")')
-                await page.locator('summary',has_text='BASE TERMINAL').click()
-                await page.get_by_role('button',name='DEPLOY BASE DEFENSE',exact=True).click()
+                # Session 5C: the legacy fortress-defense UI is retired (the town Defense Drill is the one defense system); the
+                # Worker keeps start-defense for compatibility, so this checks that server path stays sound end to end
+                await page.evaluate('ConquestPlotView.close()');assert await page.evaluate("Conquest.view.requestAction('start-defense')")
                 await page.wait_for_function('Conquest.view.authority.state.mission==="base-defense"&&!document.querySelector(".cq-plot")')
                 result['cases'].append(await j.win('base-defense'))
                 defense=await page.evaluate('Conquest.view.authority.state.base.defense')

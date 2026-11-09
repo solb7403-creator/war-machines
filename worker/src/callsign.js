@@ -26,6 +26,13 @@ const LEET = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "8": 
 const norm = (s) => [...String(s).toLowerCase()].map((c) => LEET[c] || c).join("").replace(/[^a-z]/g, "");
 const normPlain = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
 
+// Session 5C: the same slur/profanity and reserved-word check for other public names (town names); true = not allowed.
+export function nameBlocked(name) {
+  const n = norm(name), p = normPlain(name), words = String(name).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  return BAD_SUB.some((w) => n.includes(w) || p.includes(w)) || BAD_WHOLE.includes(n) || BAD_WHOLE.includes(p) || words.some((w) => BAD_WHOLE.includes(norm(w)))
+    || RESERVED_PREFIX.some((w) => p.startsWith(w)) || RESERVED.includes(p);
+}
+
 // null when fine, otherwise a short reason code + friendly message
 export function csProblem(cs, { ownerOk = false } = {}) {
   cs = String(cs ?? "");

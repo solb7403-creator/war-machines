@@ -72,12 +72,11 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
    case 'railgun':b.box(0,0,-.6,1.4,.9,1.6,C.mid);for(const sx of [-.28,.28])b.box(sx,.2,1.4,.14,.32,3.8+L*.25,C.dark);b.box(0,.2,1.4,.06,.06,3.6+L*.25,C.cyan,2);b.box(0,.6,-.6,1,.12,1.2,a,.9);break;
    case 'radar':b.add(G.cone6,M(0,.4,0,Math.PI*.38,0,0,1.6+l*.25,.6,1.6+l*.25),C.panelB);b.box(0,.2,0,.3,.6,.3,a,1.2);break;}
   return b;}
- // One wall cell (4 m square) read as a fortification at every distance (5C): a darker body on a battered plinth, a wider
- // coping slab, a lit cap line in the blend's accent and two merlons; ore blends add sheen bands, veins, Selenite glass glint
- // or a deep Moonheart glow, and heavier blends stand taller. LOW keeps body, plinth, coping and the lit cap line.
+ // One wall cell (4 m square) read as a fortification at every distance (5C): a darker body shaded toward its foot, a wider
+ // coping slab and a lit cap line in the blend's accent; corner posts come separately; ore blends add sheen bands, veins,
+ // Selenite glass glint or a deep Moonheart glow, and heavier blends stand taller. LOW keeps body, coping and the cap line.
  function wallGeo(code,low){const b=new S.Bld(),{o,l}=P.wdecode(code),q=P.blendQ(o,l),h=wallH(code),W=4.02,[body,acc,glow]=ORE_LOOK[o],bc=lin(body).multiplyScalar(.72),ac=lin(acc),cap=o?ac:lin(0xd8c08a),capE=o?Math.max(.55,glow*.8):.45;
-  b.box(0,.3,0,W+.16,.6,W+.16,C.dark2);b.box(0,h/2+.25,0,W,h-.5,W,bc);b.box(0,h+.06,0,W+.18,.26,W+.18,o>=5?ac.clone().multiplyScalar(.5):C.dark);b.box(0,h+.22,0,W+.2,.06,W+.2,cap,capE);
-  if(!low)for(const sx of [-1.2,1.2])b.box(sx,h+.55,0,1.2,.6,W*.62,o>=5?ac.clone().multiplyScalar(.5):C.dark);
+  b.box(0,h/2,0,W,h,W,bc,0,0,[0,h*1.4]);b.box(0,h+.06,0,W+.18,.26,W+.18,o>=5?ac.clone().multiplyScalar(.5):C.dark);b.box(0,h+.22,0,W+.2,.06,W+.2,cap,capE);
   if(!o){if(!low)b.box(0,h*.5,0,W+.03,.08,W+.03,lin(0x3c3a34));return b.geometry();}
   for(let k=0;k<(low?1:Math.max(1,l-1));k++)b.box(0,h*(.34+.26*k),0,W+.04,o>=4?.14+.04*l:.1,W+.04,ac,glow*(.55+.25*l));
   if(low)return b.geometry();
@@ -188,11 +187,22 @@ function homes(R,p,pl,low,group){const {T,k}=R,M4=new T.Matrix4(),_q=new T.Quate
  for(const [kind,list] of pl.homes){const m=inst(R,cached(R.hgeo,kind+low,()=>k.home(kind,low)),list.length);list.forEach((h,n)=>{const x=P.cellX(h.i)+P.GRID.cell/2,z=P.cellZ(h.j)+P.GRID.cell/2;_q.setFromAxisAngle(up,(h.seed%4)*Math.PI/2);M4.compose(_v.set(x,P.heightAt(p.site,x,z),z),_q,_one);m.setMatrixAt(n,M4);hcell.set(h.id,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);him.set(kind,m);}
  return {him,hcell};}
 
+// Damage you can see (5C): damaged walls and buildings smoke, ruined turrets and buildings spark. Two instanced draws
+// (dark puffs, hot sparks), animated by damageStep() in the Home Sector, frozen on the diorama.
+function damageFx(R,p,group){const {T,S,k}=R,src=[];for(const key of Object.keys(p.dmg||{})){if(src.length>=48)break;const ru=P.ruined(p,key);
+  if(key.startsWith('w:')){const kk=key.slice(2);if(ru||!p.w[kk])continue;const [i,j]=kk.split(',').map(Number);src.push({x:P.cellX(i),z:P.cellZ(j),y:P.groundY(p.site,i,j)+wallH(p.w[kk]|0),spark:false});}
+  else{const b=p.b?.[key];if(!b)continue;const f=fp(b),tur=!!P.BUILDINGS[b.t]?.turret;src.push({x:f.x,z:f.z,y:P.heightAt(p.site,f.x,f.z)+(tur?2.4:4.5),spark:ru,smoke:!tur||!ru});}}
+ if(!src.length)return null;const sg=cached(R.wgeo,'smoke',()=>{const b=new S.Bld();b.add(S.G.ico,k.M(0,0,0,0,0,0,1,1,1),new T.Color(.05,.05,.055));return b.geometry();}),kg=cached(R.wgeo,'spark',()=>{const b=new S.Bld();b.box(0,0,0,.22,.22,.22,k.C.furnace,3.2);return b.geometry();});
+ const puffs=src.filter(x=>x.smoke!==false).length*3,sparks=src.filter(x=>x.spark).length*4,sm=inst(R,sg,puffs),sp=inst(R,kg,sparks);group.add(sm,sp);const fx={src,sm,sp,M4:new T.Matrix4(),v:new T.Vector3(),q:new T.Quaternion(),sc:new T.Vector3()};damageStep(fx,0);return fx;}
+function damageStep(fx,t){if(!fx)return;const {src,sm,sp,M4,v,q,sc}=fx;let a=0,b=0;src.forEach((s2,n)=>{if(s2.smoke!==false)for(let k2=0;k2<3;k2++){const ph=(t*.32+k2/3+n*.137)%1,r=(.5+ph*1.3)*(1-ph*.55);M4.compose(v.set(s2.x+Math.sin(n*2.1+k2+t*.4)*.7*ph,s2.y+ph*7,s2.z+Math.cos(n*1.3+k2)*.7*ph),q.identity(),sc.set(r,r,r));sm.setMatrixAt(a++,M4);}
+  if(s2.spark)for(let k2=0;k2<4;k2++){const ph=(t*1.7+k2*.27+n*.31)%1,on=Math.sin(t*23+n*5+k2*2)>-.2?1:0;M4.compose(v.set(s2.x+Math.sin(n+k2*1.7)*1.2,s2.y-.4+ph*1.8,s2.z+Math.cos(n*.7+k2*2.3)*1.2),q.identity(),sc.set(on,on,on));sp.setMatrixAt(b++,M4);}});
+ sm.instanceMatrix.needsUpdate=sp.instanceMatrix.needsUpdate=true;}
+
 // ------------------------------------------------------------------- diorama -----------------------------------------------
 // One indexed geometry from many solid geometries (position/normal/aCol), each with its own transform: the diorama's static
 // part (buildings, turrets, homes, banner, decorations) is one draw.
-function Merge(T){const P2=[],N=[],A=[],I=[];let n=0;const v=new T.Vector3(),nm=new T.Matrix3();
- return {add(geo,m){const p=geo.attributes.position,no=geo.attributes.normal,ac=geo.attributes.aCol,ix=geo.index;nm.getNormalMatrix(m);for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(m);P2.push(v.x,v.y,v.z);v.fromBufferAttribute(no,i).applyMatrix3(nm).normalize();N.push(v.x,v.y,v.z);A.push(ac.getX(i),ac.getY(i),ac.getZ(i),ac.getW(i));}
+function Merge(T){const P2=[],N=[],A=[],I=[];let n=0;const v=new T.Vector3();   // transforms here are rotation + translation (+ uniform scale): normals use transformDirection (the vendored three has no Matrix3)
+ return {add(geo,m){const p=geo.attributes.position,no=geo.attributes.normal,ac=geo.attributes.aCol,ix=geo.index;for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(m);P2.push(v.x,v.y,v.z);v.fromBufferAttribute(no,i).transformDirection(m);N.push(v.x,v.y,v.z);A.push(ac.getX(i),ac.getY(i),ac.getZ(i),ac.getW(i));}
    if(ix)for(let k=0;k<ix.count;k++)I.push(ix.getX(k)+n);else for(let k=0;k<p.count;k++)I.push(k+n);n+=p.count;},
   get n(){return n;},
   geometry(){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(P2,3));g.setAttribute('normal',new T.Float32BufferAttribute(N,3));g.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g.setIndex(I);g.computeBoundingSphere();return g;}};}
@@ -203,7 +213,7 @@ function diorama(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wgeo:o.c
  g.add(town);const sc=o.scale||1;town.scale.setScalar(sc);
  for(const m of terrain(S,p.site,p.cc,p,{step:low?12:8,clip:half,props:!low,glow:!low}))town.add(m);
  {const b=new S.Bld();b.box(0,-3.2,0,2*half+2,6,2*half+2,k.C.dark2);for(const [x,z,w,d] of [[0,-half-1,2*half+2.4,.5],[0,half+1,2*half+2.4,.5],[-half-1,0,.5,2*half+2.4],[half+1,0,.5,2*half+2.4]])b.box(x,-.2,z,w,.5,d,k.C.cyan,1.2);town.add(b.mesh());}
- const W=walls(R,p,pl,low,town),mg=Merge(T),M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_one=new T.Vector3(1,1,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
+ const W=walls(R,p,pl,true,town),mg=Merge(T),M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_one=new T.Vector3(1,1,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
  for(const [id,b,lvl,building] of pl.builds){const f=fp(b),y=P.heightAt(p.site,f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);mg.add(cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4);nB++;
   if(b.t==='radar'){M4.compose(_v.set(f.x,y+3.3+lvl*.5,f.z),_q.setFromAxisAngle(up,.7),_one);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4);}}
  for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());
@@ -213,6 +223,7 @@ function diorama(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wgeo:o.c
  if(p.banner){const bg=k.banner(p.banner,3.2).geometry();M4.makeTranslation(C0.x+C0.w*c/2+3,cy,C0.z-C0.d*c/2-2);mg.add(bg,M4);bg.dispose();}
  if(p.theme?.decor?.length){const dg=k.decor(p.theme.decor,C0.x,C0.z,C0.w*c+6,C0.d*c+6,p.theme.light).geometry();M4.identity();if(dg.attributes.position.count)mg.add(dg,M4);dg.dispose();}
  if(mg.n){const m=new T.Mesh(mg.geometry(),S.MAT.solid);m.userData.merged=true;town.add(m);}
+ damageFx(R,p,town);
  g.userData={counts:{walls:[...W.wim.values()].reduce((a,m)=>a+m.count,0),posts:W.wpost.size,rubble:pl.rubble.length,turrets:nT,homes:nH,builds:nB},plan:pl,R,half:half*sc,ccY:cy*sc};
  return g;}
 
@@ -230,5 +241,5 @@ function layer2d(p,c){const n=P.GRID.n,h=P.townH(p.cc);c=c||document.createEleme
 function thumb(p,size=44,c){const n=P.GRID.n,h=P.townH(p.cc),side=2*h+1,i0=P.MID-h,src=layer2d(p);c=c||document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#05070d';g.fillRect(0,0,size,size);g.drawImage(src,i0,i0,side,side,1,1,size-2,size-2);
  const dmg=Object.keys(p.dmg||{}).length>0;g.strokeStyle=dmg?'#ff3048':'#22e6ff';g.lineWidth=dmg?3:1.5;g.strokeRect(1,1,size-2,size-2);return c;}
 
-root.ConquestTownKit=Object.freeze({ORE_LOOK,TCOL,kit:kitFor,wallH,terrain,gridPatch,lanesOf,ccCenter,plan,counts,walls,turrets,homes,diorama,Merge,layer2d,thumb});
+root.ConquestTownKit=Object.freeze({ORE_LOOK,TCOL,kit:kitFor,wallH,terrain,gridPatch,lanesOf,ccCenter,plan,counts,walls,turrets,homes,diorama,damageFx,damageStep,Merge,layer2d,thumb});
 })(globalThis);

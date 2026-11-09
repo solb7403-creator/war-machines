@@ -277,3 +277,8 @@
 .cq-plot-exit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;border-radius:10px;background:#0b1623ee;border:1px solid #22e6ff;color:#cdf6ff;font-size:12px;font-weight:800;letter-spacing:.06em;pointer-events:none}.cq-plot-exit[hidden]{display:none}
 .cq-plot-driving .cq-plot-rot,.cq-plot-driving .cq-plot-frame,.cq-plot-driving .cq-plot-pan{display:none}
 .cq-plot-driving .cq-plot-stage{cursor:move}
+.cq-top button.cq-home-btn.cq-home-has-thumb{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:5px;row-gap:0;align-items:center;justify-items:start;padding:3px 7px 3px 3px}
+.cq-home-thumb{grid-row:1 / span 2;width:30px;height:30px;border-radius:4px;image-rendering:pixelated;border:1px solid #ffc45a88}.cq-home-damaged .cq-home-thumb{border-color:#ff3048;box-shadow:0 0 6px #ff3048}
+.cq-plot-name{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}.cq-plot-input{flex:2 1 140px;min-height:44px;padding:6px 10px;border-radius:6px;border:1px solid #2f6b7a;background:#0b1623;color:#eaf8ff;font:700 14px system-ui,sans-serif;letter-spacing:.04em}
+.cq-plot-yield{background:linear-gradient(90deg,#1f5a3a calc(var(--fill,0)*100%),#0b1623 calc(var(--fill,0)*100%))!important}
+.cq-plot-fab .cq-plot-fab-rot{flex:0 0 48px;font-size:18px}

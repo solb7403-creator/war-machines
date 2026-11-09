@@ -71,7 +71,14 @@ async function hero3d(me){if(!H||H!==me||H.disposed)return;const gfx=typeof gfxM
  for(let i=0;i<(low?6:12);i++){const m=new T.Mesh(new T.OctahedronGeometry(2+i%3,0),glow);m.position.set(-500+i*90+(i%2)*30,-6-(i%3)*4,-760-(i%4)*40);sc.add(m);}
  const pad=new T.Mesh(new T.RingGeometry(6.2,6.7,64),cyan);pad.rotation.x=-Math.PI/2;pad.position.y=.06;sc.add(pad);
  const baseG=new T.Group();sc.add(baseG);const steel=new T.MeshPhongMaterial({color:0x4a5664,shininess:20,flatShading:true}),dark=new T.MeshPhongMaterial({color:0x222932,shininess:10,flatShading:true});
+ // Session 5C: once the live state has the town, the hero shows the pilot's actual town (CC height by level, walls in their
+ // blends, turrets, homes, banner) from the shared town kit, drawn with simple lit vertex colours in this renderer.
+ const townModel=p=>{const TKit=root.ConquestTownKit,CS=root.ConquestStyle,PL=root.ConquestPlot;if(!TKit||!CS||!PL||!p?.b?.cc||!p.w)return null;try{H.cs=H.cs||CS.create(T,{low:true});const half=(PL.townH(p.cc)+2.5)*PL.GRID.cell,sc=38/(2*half),d=TKit.diorama(H.cs,p,{low:true,scale:sc});
+   const mat=H.townMat||(H.townMat=new T.MeshPhongMaterial({vertexColors:true,shininess:12,flatShading:true}));d.traverse(o=>{if(!o.isMesh)return;const g=o.geometry,a=g.attributes.aCol;if(!a||!g.attributes.normal){o.visible=false;return;}
+    if(!g.attributes.color){const c=new Float32Array(a.count*3);for(let i=0;i<a.count;i++){const e=1+a.getW(i)*.9;c[i*3]=Math.min(1,a.getX(i)*e);c[i*3+1]=Math.min(1,a.getY(i)*e);c[i*3+2]=Math.min(1,a.getZ(i)*e);}g.setAttribute('color',new T.BufferAttribute(c,3));}o.material=mat;});
+   d.position.y=6.2*sc-.2;H.town=d.userData.counts;return d;}catch(e){H.townError=String(e&&e.message||e);return null;}};
  H.rebuild=s=>{baseG.clear();const p=s?.plot,cc=p?.cc||0;baseG.position.set(-13,0,-30);baseG.rotation.y=.5;
+  const town=townModel(p);if(town){baseG.add(town);return;}
   if(!cc){const ring=new T.Mesh(new T.RingGeometry(10,10.6,64),amber);ring.rotation.x=-Math.PI/2;ring.position.y=.1;baseG.add(ring);return;}
   let y=0;for(let k=0;k<Math.min(10,cc);k++){const r=7-k*.5,h=1.8+(k%2)*.6,m=new T.Mesh(new T.CylinderGeometry(r*.96,r,h,8),k%2?steel:dark);m.position.y=y+h/2;baseG.add(m);const ringM=new T.Mesh(new T.TorusGeometry(r*.97,.09,6,32),cyan);ringM.rotation.x=Math.PI/2;ringM.position.y=y+h;baseG.add(ringM);y+=h;}
   const beacon=new T.Mesh(new T.OctahedronGeometry(.8,0),cc>=9?new T.MeshBasicMaterial({color:0xffd36b}):cyan);beacon.position.y=y+3;baseG.add(beacon);
