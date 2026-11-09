@@ -6,7 +6,7 @@ import {dbGet,dbPut,weekOf} from './db.js';
 import {readTag,writeIf,squadRows} from './eco.js';
 const TOP=20;
 export function snapshot(name,p,now){const b={};for(const [id,x] of Object.entries(p.b||{}))b[id]=[x.t,x.i|0,x.j|0,x.r|0,x.t==='cc'?p.cc|0:x.l|0];
- return {n:String(name||'Pilot').slice(0,24),site:p.site,cc:p.cc|0,pw:p.power|0,b,w:{...(p.w||{})},...(p.banner?{bn:p.banner}:{}),...(p.theme?{th:p.theme}:{}),at:now};}
+ return {n:String(name||'Pilot').slice(0,24),site:p.site,cc:p.cc|0,pw:p.power|0,dr:p.def|0,b,w:{...(p.w||{})},...(p.banner?{bn:p.banner}:{}),...(p.theme?{th:p.theme}:{}),at:now};}
 async function cas(env,path,fn){for(let i=0;i<5;i++){const {v,tag}=await readTag(env,path);const next=fn(v);if(next===undefined)return v;if(await writeIf(env,path,next,tag))return next;}return null;}
 // Publish after a verified plot change. Best effort: a failed publish never fails the pilot's action.
 export async function publishBase(env,pid,name,s,now){const p=s?.plot;if(!p)return null;const path='cqbase/'+pid,old=await dbGet(env,path).catch(()=>null),wk=weekOf(now);
@@ -30,4 +30,4 @@ export async function conquestVisit(env,a,now=Date.now()){const b=a.b||{};if(Obj
  if(typeof b.pid!=='string'||!/^[A-Za-z0-9_:-]{1,64}$/.test(b.pid))return {status:400,body:{error:'invalid visit'}};
  const allowed=b.pid===a.pid||topList.some(x=>x.p===b.pid)||bow?.p===b.pid||(await squadOf(env,a.pid)).some(x=>x.p===b.pid);if(!allowed)return {status:403,body:{error:'visits are open to the top 20, your squad and the Base of the Week'}};
  const s=await dbGet(env,'cqbase/'+b.pid).catch(()=>null);if(!s)return {status:404,body:{error:'no base yet'}};
- const {n,site,cc,pw,b:bl,w,bn,th}=s;return {status:200,body:{ok:true,base:{p:b.pid,n,site,cc,pw,b:bl,w:w||{},bn:bn||null,th:th||null}}};}   // no activity time (privacy)
+ const {n,site,cc,pw,dr,b:bl,w,bn,th}=s;return {status:200,body:{ok:true,base:{p:b.pid,n,site,cc,pw,dr:dr|0,b:bl,w:w||{},bn:bn||null,th:th||null}}};}   // no activity time (privacy)

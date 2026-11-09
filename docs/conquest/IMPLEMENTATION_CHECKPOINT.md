@@ -1188,4 +1188,13 @@ No blocker and **no way to mint or duplicate value** (walls neutral on remove, r
 - Also from the browser runs: UNDO and CONFIRM WALLS float on the map while drawing (the map is big then, so the primary action is always on screen at 390×700 and 320×568); the plot view load is now checked in node (a misplaced brace once left the base screen blank in the browser).
 - Not changed (documented): WebKit coverage of the town UI comes from the existing WebKit journeys that claim a plot and build a Reactor (`conquest-living-war.py`); the touch-swipe fit tests use Chromium CDP touch events.
 
-**Next:** bump, PR, CI, merge, deploy, verify.
+### Owner addendum (Nov 8, received mid-session; folded in before the merge, spec §14.10)
+1. Raid damage persists: `plot.dmg` per structure (raids only; the drill never writes it), ruined structures cut output, REPAIR action (composite/alloy/CP + builder time), `applyRaidDamage()` for Session 7.
+2. One raid engine (`ConquestPlot.raid === drill`, seeded, Worker-side) and DEFENSE RATING (walls, blends, turrets, vitals coverage) on the base screen and in the public snapshot.
+3. Layout slots: 3 (4th = disabled store item); buildings and walls move, nothing rebuilt; walls conserved as a stock by blend (`plot.ws`); not while damaged.
+4. Visits: "WHAT YOU WOULD FACE" (blends, turrets, vitals, rating) from the snapshot.
+5. Refunds: walls 50% composite, none of the ore; turrets 50% of cumulative cost; rounded down; no loops.
+6–9. Hooks: garrison (`plot.gar`), loot protection (`loot()`, Storage Depot share), peace shield (`plot.shieldUntil`), attack alerts (`plot.alerts`, written by drills and raids).
+Tests: `conquest-town.mjs` §13 (+20 checks, 83 in all).
+
+**Next:** PR #90 CI, merge, deploy, verify.

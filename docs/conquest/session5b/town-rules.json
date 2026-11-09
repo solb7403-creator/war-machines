@@ -196,71 +196,71 @@
    "walls": 2000,
    "turrets": 42,
    "homes": 50,
-   "replayMedianMs": 239,
-   "replayWorstMs": 386,
-   "workerMedianMs": 109,
-   "workerWorstMs": 115
+   "replayMedianMs": 200,
+   "replayWorstMs": 255,
+   "workerMedianMs": 81,
+   "workerWorstMs": 161
   },
   "delta": {
    "walls": 2000,
    "turrets": 42,
    "homes": 72,
-   "replayMedianMs": 145,
-   "replayWorstMs": 202,
-   "workerMedianMs": 138,
-   "workerWorstMs": 206
+   "replayMedianMs": 154,
+   "replayWorstMs": 171,
+   "workerMedianMs": 67,
+   "workerWorstMs": 70
   },
   "ridge": {
    "walls": 2000,
    "turrets": 42,
    "homes": 56,
-   "replayMedianMs": 91,
-   "replayWorstMs": 154,
-   "workerMedianMs": 58,
-   "workerWorstMs": 79
+   "replayMedianMs": 78,
+   "replayWorstMs": 79,
+   "workerMedianMs": 61,
+   "workerWorstMs": 89
   },
   "canyon": {
    "walls": 2000,
    "turrets": 42,
    "homes": 63,
-   "replayMedianMs": 76,
-   "replayWorstMs": 94,
-   "workerMedianMs": 81,
-   "workerWorstMs": 90
+   "replayMedianMs": 60,
+   "replayWorstMs": 80,
+   "workerMedianMs": 66,
+   "workerWorstMs": 67
   },
   "plateau": {
    "walls": 2000,
    "turrets": 42,
    "homes": 61,
-   "replayMedianMs": 96,
-   "replayWorstMs": 96,
-   "workerMedianMs": 80,
-   "workerWorstMs": 87
+   "replayMedianMs": 109,
+   "replayWorstMs": 110,
+   "workerMedianMs": 65,
+   "workerWorstMs": 65
   },
   "ice": {
    "walls": 2000,
    "turrets": 42,
    "homes": 67,
-   "replayMedianMs": 88,
-   "replayWorstMs": 102,
-   "workerMedianMs": 76,
-   "workerWorstMs": 77
+   "replayMedianMs": 73,
+   "replayWorstMs": 73,
+   "workerMedianMs": 74,
+   "workerWorstMs": 89
   },
   "ash": {
    "walls": 2000,
    "turrets": 42,
    "homes": 56,
-   "replayMedianMs": 76,
-   "replayWorstMs": 82,
-   "workerMedianMs": 61,
-   "workerWorstMs": 63
+   "replayMedianMs": 87,
+   "replayWorstMs": 95,
+   "workerMedianMs": 57,
+   "workerWorstMs": 59
   },
   "adversarial": {
    "walls": 2600,
-   "workerMedianMs": 85,
-   "workerWorstMs": 93,
-   "replayMedianMs": 55,
-   "replayWorstMs": 60
+   "workerMedianMs": 55,
+   "workerWorstMs": 56,
+   "replayMedianMs": 77,
+   "replayWorstMs": 84
   }
  }
 }

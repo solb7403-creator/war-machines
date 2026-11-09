@@ -92,7 +92,7 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
  const sk=act(structuredClone(s),'plot-wall',{s:[{k:'line',a:[50,40],b:[60,40],o:0,l:0}]},{});ok(sk.notice.skip.blocked+sk.notice.skip.occupied+sk.notice.skip.outside>=0&&!Object.keys(sk.plot.w).some(k=>P.NOBUILD[P.terrainAt('ridge',...k.split(',').map(Number))]),'big shapes skip blocked ground and buildings instead of failing');
  assert.throws(()=>act(structuredClone(s),'plot-wall',{s:[{k:'line',a:[0,0],b:[3,0],o:0,l:0}]},{}),/nothing to build/);ok(true,'walls only inside the town on buildable ground');
  const q=structuredClone(s);q.plot.w=Object.fromEntries(Array.from({length:P.wallCap(1)},(_,k)=>[P.key(18+k%40,18+Math.floor(k/40)),1]));ok(/wall limit/.test(P.wallPlan(q.plot,[{k:'line',a:[45,45],b:[46,45],o:0,l:0}]).err||''),'wall limit: '+P.wallCap(1)+' cells at CC1');
- const cm=s.plot.cm;s=act(s,'plot-remove',{w:[{k:'line',a:[31,25],b:[33,25]}]});ok(Object.keys(s.plot.w).length===6&&s.plot.cm===cm+3,'walls can be removed: their composite comes back (the ore does not)');
+ const cm=s.plot.cm;s=act(s,'plot-remove',{w:[{k:'line',a:[31,25],b:[33,25]}]});ok(Object.keys(s.plot.w).length===6&&s.plot.cm===cm+1,'walls can be removed: 50% of their composite comes back, rounded down (3 cells → 1), none of the ore');
  ok(R.ecoBaseStore({mn:{fe:5}},{fe:9}).err==='mn'&&JSON.stringify(R.ecoBaseStore({mn:{fe:9,il:1}},{fe:4}).bmn)==='{"fe":4,"il":0,"ar":0,"tq":0,"se":0,"mh":0}','moving minerals to the base stores: only what the wallet holds, one way, the stores total only grows');}
 
 // ---- 6. sites: change rules, lanes, turret range ----
