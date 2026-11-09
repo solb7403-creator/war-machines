@@ -216,7 +216,7 @@ async def run(args):
                 await page.request.post(base+'/fixture',data={'veteranLoadout':True,'baseFunds':True,'position':[1080,1160]})
                 # Session 5: ENTER BASE opens the private plot: claim it (default RIDGE); then the (UI-retired) base defense via the Worker action
                 await enter();await page.locator('#cq-base-access').click()
-                await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
+                await page.locator('.cq-plot-primary',has_text='CLAIM TOWN').click()
                 await page.wait_for_function('Conquest.view.authority.state.base.tier===1&&!!document.querySelector(".cq-plot-tabs")')
                 # Session 5C: the legacy fortress-defense UI is retired (the town Defense Drill is the one defense system); the
                 # Worker keeps start-defense for compatibility, so this checks that server path stays sound end to end

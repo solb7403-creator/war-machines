@@ -1,5 +1,5 @@
 """Session 5 Phase 1 journey (Session 5B: town, RING wall tool + Ferrite blend, CC10 town with 2,000 walls and 42 turrets) in the shipped client (Chromium 390x844, HIGH) against the real Worker reducer and account on a
-disposable local DB: at the Command Gate tap ENTER BASE -> pick CRATER RIM -> CLAIM PLOT -> guided first build (Refinery,
+disposable local DB: at the Command Gate tap ENTER BASE -> pick CRATER RIM -> CLAIM TOWN -> guided first build (Refinery,
 real 15 s Worker timer, scaffolding + drones) -> a Cannon turret with its range ring -> move minerals to the base stores and
 drag a regolith wall -> Defense Drill replay (no rewards) -> leave. Then a fully built CC10 plot fixture for the render budget
 (draws / triangles / programs at 390 portrait, HIGH and LOW) and the 2D canvas fallback.
@@ -46,7 +46,7 @@ async def main():
    ctx,page,errors=await session('high',{'position':gate,'fieldMissions':True,'baseFunds':True,'wallet':{'mn':{'fe':90},'pts':5000}})
    b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);label=await b.inner_text();await b.click()
    await page.wait_for_selector('.cq-site-card');sites=await page.locator('.cq-site-card').count();await page.screenshot(path=str(OUT/'site-picker-390.png'))
-   await page.locator('.cq-site-card[data-site="crater"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
+   await page.locator('.cq-site-card[data-site="crater"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM TOWN').click()
    await page.wait_for_function('Conquest.view.authority.state?.plot?.site==="crater"&&document.querySelector(".cq-plot-tabs")',timeout=60000)
    await page.wait_for_timeout(900);coach1=await page.locator('.cq-plot-coach').inner_text();await page.screenshot(path=str(OUT/'plot-claimed-390.png'))
    await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.locator('.cq-plot-card',has_text='Refinery').click()

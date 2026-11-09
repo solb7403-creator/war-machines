@@ -100,7 +100,7 @@ async def main():
     b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);await b.click()
    ctx,page,errors=await session(390,700,{'position':gate,'fieldMissions':True,'baseFunds':True})   # ~ the iPhone Telegram visible area (header takes ~140 px)
    await open_base(ctx,page)
-   await page.wait_for_selector('.cq-site-card');sites=await page.locator('.cq-site-card').count();await page.locator('.cq-site-card[data-site="ridge"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
+   await page.wait_for_selector('.cq-site-card');sites=await page.locator('.cq-site-card').count();await page.locator('.cq-site-card[data-site="ridge"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM TOWN').click()
    await page.wait_for_function('Conquest.view.authority.state?.plot&&document.querySelector(".cq-plot-tabs")',timeout=60000)
    await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.wait_for_timeout(900)
    menu=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),cards=[...s.querySelectorAll('.cq-plot-card')];
