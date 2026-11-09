@@ -16,8 +16,8 @@
     "peek": {
      "free": true,
      "snap": "peek",
-     "stageH": 493,
-     "drawerTop": 554,
+     "stageH": 483,
+     "drawerTop": 544,
      "drawerBottom": 700,
      "vh": 700,
      "pageScroll": 0,
@@ -39,21 +39,21 @@
    "tabs": {
     "HOME": {
      "scrolls": true,
-     "scrollTop": 393,
+     "scrollTop": 403,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 889,
+     "scrollTop": 915,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1431,
+     "scrollTop": 1457,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -67,14 +67,14 @@
     },
     "WALLS": {
      "scrolls": true,
-     "scrollTop": 386,
+     "scrollTop": 396,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "DEFEND": {
      "scrolls": true,
-     "scrollTop": 71,
+     "scrollTop": 97,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
@@ -98,8 +98,8 @@
     "peek": {
      "free": true,
      "snap": "peek",
-     "stageH": 637,
-     "drawerTop": 698,
+     "stageH": 627,
+     "drawerTop": 688,
      "drawerBottom": 844,
      "vh": 844,
      "pageScroll": 0,
@@ -121,21 +121,21 @@
    "tabs": {
     "HOME": {
      "scrolls": true,
-     "scrollTop": 321,
+     "scrollTop": 331,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 817,
+     "scrollTop": 843,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1359,
+     "scrollTop": 1385,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -149,14 +149,14 @@
     },
     "WALLS": {
      "scrolls": true,
-     "scrollTop": 314,
+     "scrollTop": 324,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "DEFEND": {
-     "scrolls": false,
-     "scrollTop": 0,
+     "scrolls": true,
+     "scrollTop": 25,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
@@ -169,8 +169,8 @@
     "full": {
      "free": true,
      "snap": "full",
-     "stageH": 61,
-     "drawerTop": 122,
+     "stageH": 59,
+     "drawerTop": 138,
      "drawerBottom": 568,
      "vh": 568,
      "pageScroll": 0,
@@ -180,8 +180,8 @@
     "peek": {
      "free": true,
      "snap": "peek",
-     "stageH": 361,
-     "drawerTop": 422,
+     "stageH": 333,
+     "drawerTop": 412,
      "drawerBottom": 568,
      "vh": 568,
      "pageScroll": 0,
@@ -191,8 +191,8 @@
     "half": {
      "free": true,
      "snap": "half",
-     "stageH": 253,
-     "drawerTop": 314,
+     "stageH": 244,
+     "drawerTop": 323,
      "drawerBottom": 568,
      "vh": 568,
      "pageScroll": 0,
@@ -203,21 +203,21 @@
    "tabs": {
     "HOME": {
      "scrolls": true,
-     "scrollTop": 477,
+     "scrollTop": 496,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 1098,
+     "scrollTop": 1117,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1721,
+     "scrollTop": 1740,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -231,14 +231,14 @@
     },
     "WALLS": {
      "scrolls": true,
-     "scrollTop": 487,
+     "scrollTop": 506,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "DEFEND": {
      "scrolls": true,
-     "scrollTop": 153,
+     "scrollTop": 188,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
@@ -254,7 +254,7 @@
   ],
   "cc1Render": {
    "calls": 24,
-   "triangles": 49632,
+   "triangles": 53280,
    "programs": 13
   },
   "open": {
@@ -268,7 +268,7 @@
     "z": 16
    }
   },
-  "moved": 7.9,
+  "moved": 7.8,
   "buildView": "build",
   "driveBack": "drive",
   "sameScene": true,
@@ -304,8 +304,8 @@
  "perf": {
   "high": {
    "world": {
-    "calls": 107,
-    "triangles": 392816,
+    "calls": 108,
+    "triangles": 398920,
     "programs": 13,
     "diorama": {
      "walls": 2000,
@@ -318,20 +318,20 @@
    },
    "homeSectorDrive": {
     "calls": 63,
-    "triangles": 255866,
+    "triangles": 261650,
     "programs": 13
    },
    "homeSectorBuild": {
     "calls": 63,
-    "triangles": 255866,
+    "triangles": 261650,
     "programs": 13
    },
    "pageErrors": []
   },
   "low": {
    "world": {
-    "calls": 86,
-    "triangles": 301180,
+    "calls": 87,
+    "triangles": 307284,
     "programs": 12,
     "diorama": {
      "walls": 2000,
@@ -344,12 +344,12 @@
    },
    "homeSectorDrive": {
     "calls": 63,
-    "triangles": 244794,
+    "triangles": 250578,
     "programs": 12
    },
    "homeSectorBuild": {
-    "calls": 63,
-    "triangles": 244794,
+    "calls": 80,
+    "triangles": 256252,
     "programs": 12
    },
    "pageErrors": []
