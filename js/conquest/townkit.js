@@ -85,6 +85,9 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
   if(o===5){b.box(0,h+.2,0,W*.9,.04,.3,lin(0xffffff),2.4,Math.PI/4);if(l>=2)b.box(0,h*.5,W/2+.03,.12,h*.8,.04,lin(0xffffff),1.8,0);}
   if(o===6)b.box(0,h+.22,0,W*.5,.06,W*.5,ac,glow*1.2);
   return b.geometry();}
+ // Diorama shapes (a 27 m model of the whole town): a wall cell is its body and lit cap; a post is one pier.
+ function wallMini(code){const b=new S.Bld(),{o}=P.wdecode(code),h=wallH(code),[body,acc,glow]=ORE_LOOK[o];b.box(0,h/2,0,4.02,h,4.02,lin(body).multiplyScalar(.72));b.box(0,h+.12,0,4.22,.24,4.22,o?lin(acc):lin(0xd8c08a),o?Math.max(.55,glow*.8):.45);return b.geometry();}
+ function postMini(){const b=new S.Bld();b.box(0,2.6,0,1.6,5.2,1.6,C.dark);return b.geometry();}
  // A corner post every 6 cells along a run and at its ends (visual only): a taller pier with a light. One instanced draw.
  function post(low){const b=new S.Bld();b.box(0,.35,0,1.9,.7,1.9,C.dark2);b.box(0,2.6,0,1.5,4.6,1.5,C.dark);b.box(0,5,0,1.75,.25,1.75,C.mid);b.box(0,5.22,0,.5,.3,.5,C.cyan,1.6);if(!low)for(const sx of [-1,1])b.box(sx*.76,2.6,0,.06,4,.06,C.cyan,.7);return b.geometry();}
  // A ruined wall cell: rubble and a stub, not a hole.
@@ -118,7 +121,7 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
   if(d==='lamps'){b.box(x,1.6,z,.18,3.2,.18,C.dark);b.box(x,3.3,z,.5,.3,.5,L,2);}else if(d==='crates'){b.box(x,.45,z,.9,.9,.9,C.rust);b.box(x+.8,.4,z+.3,.8,.8,.8,C.sand);}
   else if(d==='antenna'){b.box(x,2.5,z,.12,5,.12,C.panel);b.box(x,5,z,.3,.3,.3,C.red,2);}else if(d==='plants'){b.add(G.cone6,M(x,0,z,0,i,0,.6,1.4,.6),C.plant,.2);b.add(G.cone6,M(x+.8,0,z+.4,0,i,0,.45,1,.45),C.moss,.2);}
   else if(d==='statue'){b.box(x,.5,z,1.6,1,1.6,C.dark2);b.add(G.ico,M(x,1.8,z,0,0,0,.7,1,.7),C.gold,.5);}else if(d==='flags'){for(const k of [-1,1]){b.box(x+k*.6,1.8,z,.1,3.6,.1,C.dark);b.box(x+k*.6+.45,3.2,z,.9,.6,.05,L,.6);}}});return b;}
- return {T,M,C,building,head,wallGeo,post,rubble,home,person,rover,foe,lin,banner,decor};}
+ return {T,M,C,building,head,wallGeo,wallMini,post,postMini,rubble,home,person,rover,foe,lin,banner,decor};}
 
 const KITS=new WeakMap();function kitFor(S){let k=KITS.get(S);if(!k){k=kit(S);KITS.set(S,k);}return k;}
 
@@ -173,9 +176,9 @@ const counts=pl=>({walls:[...pl.walls.values()].reduce((a,l)=>a+l.length,0),post
 const cached=(m,key,make)=>{let g=m.get(key);if(!g){g=make();m.set(key,g);}return g;};
 function inst(R,geo,n){const m=new R.T.InstancedMesh(geo,R.S.MAT.solid,Math.max(1,n));m.count=n;m.frustumCulled=false;return m;}
 // R: {T,S,k,wgeo,hgeo,tgeo} (geometry caches kept across rebuilds). Each returns what the caller needs to hide or animate.
-function walls(R,p,pl,low,group){const {T,k}=R,M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_s=new T.Vector3(),wim=new Map(),wcell=new Map(),wpost=new Map();
- for(const [c,keys] of pl.walls){const geo=cached(R.wgeo,c+':'+low,()=>k.wallGeo(c,low)),m=inst(R,geo,keys.length);keys.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);M4.makeTranslation(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j));m.setMatrixAt(n,M4);wcell.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);wim.set(c,m);}
- if(pl.posts.length){const m=inst(R,cached(R.wgeo,'post:'+low,()=>k.post(low)),pl.posts.length);pl.posts.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number),h=wallH(p.w[kk]|0);M4.compose(_v.set(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)),_q.identity(),_s.set(1,(h+1.2)/5.2,1));m.setMatrixAt(n,M4);wpost.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);}
+function walls(R,p,pl,low,group,mini){const {T,k}=R,M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_s=new T.Vector3(),wim=new Map(),wcell=new Map(),wpost=new Map();
+ for(const [c,keys] of pl.walls){const geo=mini?cached(R.wgeo,'mini:'+c,()=>k.wallMini(c)):cached(R.wgeo,c+':'+low,()=>k.wallGeo(c,low)),m=inst(R,geo,keys.length);keys.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);M4.makeTranslation(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j));m.setMatrixAt(n,M4);wcell.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);wim.set(c,m);}
+ if(pl.posts.length){const m=inst(R,mini?cached(R.wgeo,'post:mini',()=>k.postMini()):cached(R.wgeo,'post:'+low,()=>k.post(low)),pl.posts.length);pl.posts.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number),h=wallH(p.w[kk]|0);M4.compose(_v.set(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)),_q.identity(),_s.set(1,(h+1.2)/5.2,1));m.setMatrixAt(n,M4);wpost.set(kk,[m,n]);});m.instanceMatrix.needsUpdate=true;group.add(m);}
  if(pl.rubble.length){const m=inst(R,cached(R.wgeo,'rubble',()=>k.rubble()),pl.rubble.length);pl.rubble.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);_q.setFromAxisAngle(_s.set(0,1,0),(i*7+j*3)%4*Math.PI/2);M4.compose(_v.set(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)),_q,_s.set(1,1,1));m.setMatrixAt(n,M4);});m.instanceMatrix.needsUpdate=true;group.add(m);}
  return {wim,wcell,wpost};}
 function turrets(R,p,pl,theme,group){const {T,k}=R,M4=new T.Matrix4(),tur=new Map();
@@ -213,7 +216,7 @@ function diorama(S,p,o={}){const T=S.T,k=kitFor(S),low=!!o.low,R={T,S,k,wgeo:o.c
  g.add(town);const sc=o.scale||1;town.scale.setScalar(sc);
  for(const m of terrain(S,p.site,p.cc,p,{step:low?12:8,clip:half,props:!low,glow:!low}))town.add(m);
  {const b=new S.Bld();b.box(0,-3.2,0,2*half+2,6,2*half+2,k.C.dark2);for(const [x,z,w,d] of [[0,-half-1,2*half+2.4,.5],[0,half+1,2*half+2.4,.5],[-half-1,0,.5,2*half+2.4],[half+1,0,.5,2*half+2.4]])b.box(x,-.2,z,w,.5,d,k.C.cyan,1.2);town.add(b.mesh());}
- const W=walls(R,p,pl,true,town),mg=Merge(T),M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_one=new T.Vector3(1,1,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
+ const W=walls(R,p,pl,true,town,true),mg=Merge(T),M4=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_one=new T.Vector3(1,1,1),up=new T.Vector3(0,1,0),theme=p.theme||null;let nT=0,nH=0,nB=0;
  for(const [id,b,lvl,building] of pl.builds){const f=fp(b),y=P.heightAt(p.site,f.x,f.z);_q.setFromAxisAngle(up,-(b.r|0)*Math.PI/2);M4.compose(_v.set(f.x,y,f.z),_q,_one);mg.add(cached(R.tgeo,'d:'+b.t+':'+Math.max(1,lvl)+':'+(theme?.finish||'')+(theme?.light||''),()=>k.building(b.t,Math.max(1,lvl),theme).geometry()),M4);nB++;
   if(b.t==='radar'){M4.compose(_v.set(f.x,y+3.3+lvl*.5,f.z),_q.setFromAxisAngle(up,.7),_one);mg.add(cached(R.tgeo,'dh:radar:'+Math.max(1,lvl),()=>k.head('radar',Math.max(1,lvl)).geometry()),M4);}}
  for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),bg=cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':b',()=>k.building(t,+l,theme).geometry()),hg=cached(R.tgeo,kk+':'+(theme?.finish||'')+(theme?.light||'')+':h',()=>k.head(t,+l).geometry());

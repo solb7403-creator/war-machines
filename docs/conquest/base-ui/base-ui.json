@@ -48,7 +48,7 @@
    "enterVisible": true,
    "scroll": {
     "scrollable": true,
-    "scrolledBy": 139
+    "scrolledBy": 156
    }
   },
   "leftTo": {
@@ -61,41 +61,47 @@
   "sheetBottom": 700,
   "vh": 700,
   "scrolls": true,
-  "cards": 4,
+  "cards": 10,
   "described": true,
   "groups": [
    "ECONOMY \u00b7 makes and stores resources",
-   "DEFENSE \u00b7 turrets, shields and gates"
+   "LOCKED \u00b7 UNLOCK WITH THE COMMAND CENTER"
   ],
   "tags": [
    "+0.8 ALLOY/H",
    "\u25c6 VITAL \u00b7 +14 \u26a1 POWER",
-   "ALL-ROUND \u00b7 28 m",
-   "VS SWARMS \u00b7 22 m"
+   "CC2",
+   "CC2",
+   "CC2",
+   "CC3",
+   "CC3",
+   "CC3",
+   "CC4",
+   "CC5"
   ],
   "afterSwipe": {
-   "scrollTop": 301,
+   "scrollTop": 764,
    "lastVisible": true
   }
  },
  "placement": {
   "cc1-ridge": {
-   "exact": 22,
+   "exact": 17,
    "wrong": [],
    "pageErrors": []
   },
   "cc5-canyon": {
-   "exact": 22,
+   "exact": 17,
    "wrong": [],
    "pageErrors": []
   },
   "cc10-plateau": {
-   "exact": 20,
+   "exact": 17,
    "wrong": [],
    "pageErrors": []
   },
   "cc10-ridge": {
-   "exact": 22,
+   "exact": 17,
    "wrong": [],
    "pageErrors": []
   }
@@ -129,7 +135,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1953,
+    "scrollTop": 1476,
     "confirmOnScreen": true
    },
    "pageErrors": []
@@ -162,7 +168,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 2326,
+    "scrollTop": 1750,
     "confirmOnScreen": true
    },
    "pageErrors": []

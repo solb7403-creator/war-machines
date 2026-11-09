@@ -239,6 +239,11 @@
   }
  },
  "homeSector": {
+  "cc1Render": {
+   "calls": 23,
+   "triangles": 39880,
+   "programs": 13
+  },
   "open": {
    "view": "drive",
    "tank": true,
@@ -287,7 +292,7 @@
   "high": {
    "world": {
     "calls": 107,
-    "triangles": 601480,
+    "triangles": 450916,
     "programs": 13,
     "diorama": {
      "walls": 2000,
@@ -300,12 +305,12 @@
    },
    "homeSectorDrive": {
     "calls": 62,
-    "triangles": 397714,
+    "triangles": 325714,
     "programs": 13
    },
    "homeSectorBuild": {
-    "calls": 78,
-    "triangles": 403364,
+    "calls": 62,
+    "triangles": 325714,
     "programs": 13
    },
    "pageErrors": []
@@ -313,7 +318,7 @@
   "low": {
    "world": {
     "calls": 86,
-    "triangles": 509844,
+    "triangles": 359280,
     "programs": 12,
     "diorama": {
      "walls": 2000,
@@ -326,12 +331,12 @@
    },
    "homeSectorDrive": {
     "calls": 62,
-    "triangles": 259394,
+    "triangles": 235394,
     "programs": 12
    },
    "homeSectorBuild": {
     "calls": 78,
-    "triangles": 265044,
+    "triangles": 241044,
     "programs": 12
    },
    "pageErrors": []
