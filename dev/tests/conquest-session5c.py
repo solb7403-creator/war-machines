@@ -56,7 +56,7 @@ async def main():
      if g['snap']==want:return True
      await drag(ctx,page,g['x'],g['y'],g['dy'])
     return await page.evaluate('ConquestPlotView.state.d.dataset.snap')==want
-   geom='''(()=>{const X=ConquestPlotView.state,st=X.stage.getBoundingClientRect(),dr=X.drawer.getBoundingClientRect();return {snap:X.d.dataset.snap,stageH:Math.round(st.height),drawerTop:Math.round(dr.top),drawerBottom:Math.round(dr.bottom),vh:innerHeight,pageScroll:(document.scrollingElement||document.documentElement).scrollTop+window.scrollY,meet:Math.abs(st.bottom-dr.top)<2};})()'''
+   geom='''(()=>{const X=ConquestPlotView.state,st=X.stage.getBoundingClientRect(),dr=X.drawer.getBoundingClientRect(),g=X.grab.getBoundingClientRect(),hit=(x,y,sel)=>!!document.elementFromPoint(x,y)?.closest(sel),free=[g.left+6,g.left+g.width/2,g.right-6].every(x=>hit(x,g.top+g.height/2,'.cq-plot-grab'))&&[...X.tabs.children].every(b=>{const r=b.getBoundingClientRect();return hit(r.left+r.width/2,r.top+r.height/2,'.cq-plot-tabs button');});return {free,snap:X.d.dataset.snap,stageH:Math.round(st.height),drawerTop:Math.round(dr.top),drawerBottom:Math.round(dr.bottom),vh:innerHeight,pageScroll:(document.scrollingElement||document.documentElement).scrollTop+window.scrollY,meet:Math.abs(st.bottom-dr.top)<2};})()'''
    # ---------- 1. sheet snaps by touch; every tab fits or scrolls; WEAPONS with sprites ----------
    sheet={}
    for (w,h) in ((390,700),(390,844),(320,568)):
@@ -66,7 +66,8 @@ async def main():
     for want in ('full','peek','half'):
      okSnap=await snap_to(ctx,page,want);snaps[want]={**await page.evaluate(geom),'reached':okSnap}
      if w==390 and h==700:await page.screenshot(path=str(OUT/f'home-{want}-390x700.png'))
-    assert all(v['reached'] and v['meet'] and v['pageScroll']==0 and v['drawerBottom']<=v['vh']+1 for v in snaps.values()),snaps
+    assert all(v['reached'] and v['meet'] and v['free'] and v['pageScroll']==0 and v['drawerBottom']<=v['vh']+1 for v in snaps.values()),snaps   # 5C review blocker: map overlays never cover the handle or the tabs
+    assert await snap_to(ctx,page,'full') and await snap_to(ctx,page,'peek'),'a real finger brings the sheet back down from FULL'
     assert snaps['peek']['stageH']>snaps['half']['stageH']>snaps['full']['stageH']>=40,snaps
     tabs={}
     for tab in ('HOME','BUILD','WEAPONS','WALLS','DEFEND'):
@@ -96,6 +97,8 @@ async def main():
    hs=await page.evaluate('({view:ConquestPlotView.state.view,tank:!!ConquestPlotView.state.tank,tour:!!ConquestPlotView.state.tour,pad:ConquestPlotView.state.drive?.pad})')
    await page.wait_for_timeout(1500);await page.screenshot(path=str(OUT/'home-sector-tour-cc1-390.png'))
    await page.wait_for_function('!ConquestPlotView.state.tour',timeout=15000);await page.wait_for_timeout(1200);await page.screenshot(path=str(OUT/'home-sector-drive-cc1-390.png'));cc1=await page.evaluate('ConquestPlotView.state.info')
+   hb=await page.locator('.cq-plot-grab').bounding_box();await page.touchscreen.tap(hb['x']+hb['width']/2,hb['y']+hb['height']/2);await page.wait_for_timeout(700)
+   handleOpens=await page.evaluate('[ConquestPlotView.state.view,ConquestPlotView.state.d.dataset.snap]');await page.evaluate('ConquestPlotView.setView("drive")');await page.wait_for_timeout(700)
    p0=await page.evaluate('[ConquestPlotView.state.drive.x,ConquestPlotView.state.drive.z]')
    await page.keyboard.down('w');await page.wait_for_timeout(1500);await page.keyboard.up('w');await page.wait_for_timeout(300)
    p1=await page.evaluate('[ConquestPlotView.state.drive.x,ConquestPlotView.state.drive.z]')
@@ -127,9 +130,9 @@ async def main():
    back=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
    pad1=await page.evaluate('Conquest.view.diorama?.userData.counts');thumb1=await page.evaluate('!!document.querySelector("#cq-home-btn .cq-home-thumb")')
    await page.screenshot(path=str(OUT/'pad-diorama-cc1-walls-390.png'))
-   R['homeSector']={'cc1Render':cc1,'open':hs,'moved':round(moved,1),'buildView':v1,'driveBack':v2[0],'sameScene':v2[1]==scene0,'walls':nW,'wallBlocks':blocked,'title':title,'badNameKept':kept,'shareShot':shot,'back':back,'padBefore':pad0,'padAfter':pad1,'thumb':[thumb,thumb1],'pageErrors':errors}
+   R['homeSector']={'handleOpens':handleOpens,'cc1Render':cc1,'open':hs,'moved':round(moved,1),'buildView':v1,'driveBack':v2[0],'sameScene':v2[1]==scene0,'walls':nW,'wallBlocks':blocked,'title':title,'badNameKept':kept,'shareShot':shot,'back':back,'padBefore':pad0,'padAfter':pad1,'thumb':[thumb,thumb1],'pageErrors':errors}
    print(json.dumps(R['homeSector']),flush=True)
-   assert cc1['programs']<=16 and hs['view']=='drive' and hs['tank'] and moved>6 and v1=='build' and v2[0]=='drive' and v2[1]==scene0 and nW>=8 and blocked and 'Iron Hold' in title and kept=='Iron Hold' and shot and back and pad1 and pad1['walls']>=8 and thumb and thumb1 and not errors,R['homeSector']
+   assert handleOpens==['build','half'] and cc1['programs']<=16 and hs['view']=='drive' and hs['tank'] and moved>6 and v1=='build' and v2[0]=='drive' and v2[1]==scene0 and nW>=8 and blocked and 'Iron Hold' in title and kept=='Iron Hold' and shot and back and pad1 and pad1['walls']>=8 and thumb and thumb1 and not errors,R['homeSector']
    # the hub hero shows the town
    await page.locator('.cq-top button').first.click();await page.wait_for_timeout(600)
    if not await page.locator('.cq-hub').count():

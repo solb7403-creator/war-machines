@@ -135,7 +135,7 @@ const TURRET_CAP=T([3,5,7,10,13,17,22,27,34,42]);
 // cut that building's output when they fall (Reactor: power, so turrets slow down; Storage: the production store is exposed
 // to raids from Session 7; Science Lab: research pauses, Session 6). Placed anywhere in the town.
 const VITALS=T({cc:'primary',reactor:'secondary',storage:'secondary',lab:'secondary'});
-const VITAL_EFFECT=T({cc:'the raid wins',reactor:'power cut: turrets fire slower, shields weaken',storage:'production store exposed (raids from Session 7 take a share)',lab:'research paused (Session 6)'});
+const VITAL_EFFECT=T({cc:'the raid wins',reactor:'power cut: turrets fire slower, shields weaken',storage:'production store exposed (player raids can take a share)',lab:'research paused'});
 // Command Center levels. The cumulative cost to CC3/5/7/9 equals the old Command Base II/III/IV/V costs, so the Conquest
 // points multiplier (tier) arrives exactly as before.
 const CC=T({max:10,claim:{cp:2550,alloy:110,biomass:65,helium:8},

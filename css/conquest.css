@@ -134,7 +134,7 @@
 .cq-plot-title{flex:1;min-width:0;font-size:12px;letter-spacing:.06em;font-weight:800;color:#eaf8ff;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cq-plot-chips{display:flex;gap:4px;flex:none}.cq-plot-chip{font-size:11px;font-weight:800;padding:4px 6px;border-radius:6px;background:#0b1623;border:1px solid #2f4b5a;color:#cdf6ff;white-space:nowrap}.cq-plot-chip.short{color:#ffb0b8;border-color:#ff3048;background:#2a0a10}.cq-plot-chip[hidden]{display:none}
 .cq-plot-leave{flex:none;font-size:11px}
-.cq-plot-stage{position:relative;flex:1 1 auto;min-height:56px;touch-action:none;cursor:crosshair}
+.cq-plot-stage{position:relative;flex:1 1 auto;min-height:56px;touch-action:none;cursor:crosshair;overflow:hidden}
 .cq-plot-canvas{position:absolute;inset:0;width:100%;height:100%}
 .cq-plot-rot{position:absolute;right:10px;top:10px;width:44px;height:44px;padding:0;font-size:20px;background:#0b1623cc}
 .cq-plot-coach{position:absolute;left:8px;right:62px;top:8px;z-index:3;display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0;padding:7px 10px;min-height:0;text-align:left;background:#2a1d08eb;border:1px solid #ffb34788;border-radius:8px;color:#ffd9a0;font-size:11px;font-weight:700;line-height:1.3}.cq-plot-coach[hidden]{display:none}
@@ -144,7 +144,7 @@
 /* 5C bottom sheet: grab handle, five tabs, scrolling body; its height is --cq-sheet (PEEK/HALF/FULL, js/conquest/sheet.js) */
 .cq-plot-drawer{flex:0 0 var(--cq-sheet);min-height:0;display:flex;flex-direction:column;background:#070c15f4;border-top:1px solid #22e6ff66;border-radius:14px 14px 0 0;box-shadow:0 -6px 18px #0008;transition:flex-basis .24s cubic-bezier(.2,.8,.2,1)}
 .cq-plot-dragging .cq-plot-drawer{transition:none}
-.cq-plot-grab{flex:none;height:24px;touch-action:none;cursor:grab;display:grid;place-items:center;outline-offset:-3px}.cq-plot-grab::before{content:'';width:46px;height:5px;border-radius:3px;background:#6f93a8}.cq-plot-dragging .cq-plot-grab{cursor:grabbing}
+.cq-plot-grab{flex:none;height:34px;touch-action:none;cursor:grab;display:grid;place-items:center;outline-offset:-3px}.cq-plot-grab::before{content:'';width:46px;height:5px;border-radius:3px;background:#6f93a8}.cq-plot-dragging .cq-plot-grab{cursor:grabbing}
 .cq-plot-sheet{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:4px 12px max(10px,env(safe-area-inset-bottom));overscroll-behavior:contain}
 .cq-plot-claim .cq-plot-drawer{flex:none;border-radius:0}.cq-plot-claim .cq-plot-grab,.cq-plot-claim .cq-plot-tabs{display:none}.cq-plot-claim .cq-plot-stage{flex:1 1 auto;min-height:0}
 .cq-plot-tabs{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:0 8px 6px}.cq-plot-tabs[hidden]{display:none}
@@ -282,3 +282,10 @@
 .cq-plot-name{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}.cq-plot-input{flex:2 1 140px;min-height:44px;padding:6px 10px;border-radius:6px;border:1px solid #2f6b7a;background:#0b1623;color:#eaf8ff;font:700 14px system-ui,sans-serif;letter-spacing:.04em}
 .cq-plot-yield{background:linear-gradient(90deg,#1f5a3a calc(var(--fill,0)*100%),#0b1623 calc(var(--fill,0)*100%))!important}
 .cq-plot-fab .cq-plot-fab-rot{flex:0 0 48px;font-size:18px}
+/* 5C review: the coach is at most two lines on the map (the full step is on the HOME card); a short map (sheet near FULL)
+   hides the floating coach and map buttons so they never cover the handle or the tabs */
+.cq-plot-coach span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cq-plot-short .cq-plot-coach,.cq-plot-short .cq-plot-frame,.cq-plot-short .cq-plot-pan,.cq-plot-short .cq-plot-rot,.cq-plot-short .cq-plot-drivebtn,.cq-plot-short .cq-plot-skip{display:none!important}
+.cq-plot-fab .cq-plot-why{color:#ffb0b8;border-color:#ff304888;font-size:10px}
+.cq-plot-ore span{overflow-wrap:normal;word-break:normal;hyphens:manual;-webkit-hyphens:manual}
+.cq-plot-visit-sel{display:block;color:#ffd36b;font-size:12px;margin:6px 0}
