@@ -27,6 +27,8 @@ jobs:
           node dev/tests/conquest-minerals.mjs
           node dev/tests/conquest-vein-economy.mjs
           node dev/tests/conquest-plot.mjs
+          node dev/tests/conquest-town.mjs
+          node dev/tests/conquest-town-balance.mjs
           node dev/tests/conquest-base-progression.mjs
           node dev/tests/wtest/conquest-visit.mjs
           node dev/tests/wtest/conquest-dev.mjs
@@ -105,6 +107,8 @@ jobs:
             docs/economy/phase2
             docs/economy/phase3
             docs/conquest/session5
+            docs/conquest/session5b
+            docs/conquest/base-ui
 
   transmission:
     runs-on: ubuntu-24.04

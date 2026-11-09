@@ -38,7 +38,12 @@ for(let i=0;i<4;i++){r=await act(owner,OWNER,'plot-upgrade',{plot:{id:'cc'}});as
 ok(rec(OWNER).plot.cc===5&&!rec(OWNER).plot.job,'Command Center upgraded to CC5 for free, each upgrade instant');
 ok((await act(owner,OWNER,'dev-finish')).status!==200,'... so FINISH BUILD NOW has nothing left to finish');
 // walls spend base-store minerals: free too, base stores untouched
-s=rec(OWNER);const cells=[[3,20],[4,20],[5,20]];r=await act(owner,OWNER,'plot-wall',{plot:{cells,tier:1}});ok(r.status===200&&Object.keys(rec(OWNER).plot.w).length>=3,'mineral walls are placed without minerals in the base stores');
+// Session 5B: unlimited composite, ores and the full +50% wall extension; nothing real is spent
+s=rec(OWNER);const cm0=s.plot.cm;r=await act(owner,OWNER,'plot-wall',{plot:{s:[{k:'rect',a:[9,9],b:[69,69],o:3,l:3},{k:'rect',a:[11,11],b:[67,67],o:3,l:3}]}});
+ok(r.status===200&&Object.keys(rec(OWNER).plot.w).length>=400&&Object.values(rec(OWNER).plot.w).every(c=>c===P.wcode(3,3)),'a 400+ cell Armalcolite-heavy wall ring is built in dev mode: unlimited composite (stock '+cm0+') and ore, no base stores ('+String(r.error||'').slice(0,80)+')');
+ok(rec(OWNER).plot.cm===cm0&&!rec(OWNER).plot.devx,'... the real composite stock is unchanged and the dev flag never persists');
+{const q=structuredClone(rec(OWNER).plot);ok(P.wallCapOf(q,true)===P.wallBase(q.cc)+Math.floor(P.wallBase(q.cc)/2)&&P.wallCapOf(q)===P.wallBase(q.cc),'dev mode covers wall extensions: cap '+P.wallCapOf(q,true)+' (+50%) vs '+P.wallCapOf(q)+' without');}
+r=await act(owner,OWNER,'plot-build',{plot:{type:'foundry',...P.autoPlace(rec(OWNER).plot,'foundry')}});ok(r.status===200,'a Foundry is built for free');r=await act(owner,OWNER,'plot-feed',{plot:{n:30}});ok(r.status===200&&(rec(OWNER).plot.fh||0)===0,'loading the Foundry in dev mode moves no (unlimited) alloy into the real hopper');
 ok(Object.values(rec(OWNER).plot.mnSpent||{}).every(n=>!n),'... and no minerals were counted as spent');
 ok(rec(OWNER).ledger.cp===before.cp,'real CP still untouched after all of it');
 // gains are kept: bank adds real CP on top

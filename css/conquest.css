@@ -234,3 +234,21 @@
 /* Owner rule (Nov 8): a page fits the screen, or it scrolls. The hub's actions are pinned just above the bottom bar so ENTER
    CONQUEST is always on screen; the status above them scrolls when it is taller than the screen. */
 .cq.cq-hub.cq-with-nav .cq-hub-actions{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:6;padding-top:10px;padding-bottom:10px;background:linear-gradient(180deg,#05070d00,#05070dee 14px,#05070d)}
+/* Session 5B Town Defense: wall tools, blend picker, draft, raid report */
+.cq-plot-pan{position:absolute;right:10px;top:110px;width:44px;height:44px;padding:0;font-size:18px;background:#0b1623cc;display:none}.cq-plot-walls .cq-plot-pan{display:block}.cq-plot-pan.on{border-color:#ffd36b;color:#ffd36b}
+.cq-plot-wallcount{font-size:12px;color:#eaf8ff;letter-spacing:.04em}
+.cq-plot-tools button{flex:1 1 15%;min-width:0;padding:6px 2px;font-size:10px;min-height:40px}
+.cq-plot-tooltip{color:#9fd8ff}
+.cq-plot-blend{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #2f4b5a;border-radius:8px;background:#0b1623cc}
+.cq-plot-ores{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cq-plot-ore{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 1px;min-height:52px;min-width:0;font-size:9px}
+.cq-plot-ore i{display:block;width:22px;height:14px;border-radius:3px;background:linear-gradient(135deg,var(--ore) 55%,var(--acc));border:1px solid #ffffff33}
+.cq-plot-ore span{font-size:8px;letter-spacing:0;white-space:nowrap;overflow:hidden;max-width:100%}.cq-plot-ore small{font-size:8px;opacity:.8}
+.cq-plot-ore.on{border-color:#ffd36b;background:#2a1d08}
+.cq-plot-levels button{flex:1 1 30%}
+.cq-plot-stats{display:flex;flex-direction:column;gap:3px}
+.cq-plot-stat{display:grid;grid-template-columns:78px 1fr 112px;align-items:center;gap:6px;font-size:10px}.cq-plot-stat meter{width:100%;height:8px}.cq-plot-stat small{font-size:9px;text-align:right}
+.cq-plot-draft,.cq-plot-report{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #ffb34766;border-radius:8px;background:#1a1208cc}
+.cq-plot-report{border-color:#2f4b5a;background:#0b1623cc}.cq-plot-vital-lost{color:#ffb0b8}
+.cq-plot-store{font-size:10px;text-align:left}
+@media (max-width:340px){.cq-plot-ores{grid-template-columns:repeat(4,minmax(0,1fr))}.cq-plot-stat{grid-template-columns:66px 1fr 92px}}

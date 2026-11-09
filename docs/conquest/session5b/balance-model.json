@@ -1,0 +1,719 @@
+{
+ "scope": "Deterministic raid simulation (the Defense Drill model), scenario layouts; not a human playtest.",
+ "raid": {
+  "hpGrow": 1.19,
+  "dmGrow": 1.11,
+  "maxT": 130,
+  "maxTPer": 5
+ },
+ "starter": {
+  "crater": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 64,
+     "kills": 19,
+     "spawned": 19,
+     "time": 97.8
+    },
+    {
+     "outcome": "repelled",
+     "core": 64,
+     "kills": 19,
+     "spawned": 19,
+     "time": 97.8
+    },
+    {
+     "outcome": "repelled",
+     "core": 69,
+     "kills": 19,
+     "spawned": 19,
+     "time": 97.7
+    },
+    {
+     "outcome": "repelled",
+     "core": 67,
+     "kills": 19,
+     "spawned": 19,
+     "time": 97.7
+    },
+    {
+     "outcome": "repelled",
+     "core": 66,
+     "kills": 19,
+     "spawned": 19,
+     "time": 98.3
+    }
+   ]
+  },
+  "delta": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 44,
+     "kills": 19,
+     "spawned": 19,
+     "time": 92.5
+    },
+    {
+     "outcome": "repelled",
+     "core": 46,
+     "kills": 19,
+     "spawned": 19,
+     "time": 95
+    },
+    {
+     "outcome": "repelled",
+     "core": 30,
+     "kills": 19,
+     "spawned": 19,
+     "time": 92
+    },
+    {
+     "outcome": "repelled",
+     "core": 48,
+     "kills": 19,
+     "spawned": 19,
+     "time": 92.3
+    },
+    {
+     "outcome": "repelled",
+     "core": 39,
+     "kills": 19,
+     "spawned": 19,
+     "time": 92
+    }
+   ]
+  },
+  "ridge": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 95,
+     "kills": 19,
+     "spawned": 19,
+     "time": 87.8
+    },
+    {
+     "outcome": "repelled",
+     "core": 96,
+     "kills": 19,
+     "spawned": 19,
+     "time": 89
+    },
+    {
+     "outcome": "repelled",
+     "core": 98,
+     "kills": 19,
+     "spawned": 19,
+     "time": 87.3
+    },
+    {
+     "outcome": "repelled",
+     "core": 96,
+     "kills": 19,
+     "spawned": 19,
+     "time": 88.3
+    },
+    {
+     "outcome": "repelled",
+     "core": 96,
+     "kills": 19,
+     "spawned": 19,
+     "time": 88
+    }
+   ]
+  },
+  "canyon": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 66,
+     "kills": 19,
+     "spawned": 19,
+     "time": 87.4
+    },
+    {
+     "outcome": "repelled",
+     "core": 67,
+     "kills": 19,
+     "spawned": 19,
+     "time": 86.8
+    },
+    {
+     "outcome": "repelled",
+     "core": 66,
+     "kills": 19,
+     "spawned": 19,
+     "time": 87.9
+    },
+    {
+     "outcome": "repelled",
+     "core": 69,
+     "kills": 19,
+     "spawned": 19,
+     "time": 88
+    },
+    {
+     "outcome": "repelled",
+     "core": 66,
+     "kills": 19,
+     "spawned": 19,
+     "time": 86.8
+    }
+   ]
+  },
+  "plateau": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 66,
+     "kills": 19,
+     "spawned": 19,
+     "time": 86.4
+    },
+    {
+     "outcome": "repelled",
+     "core": 66,
+     "kills": 19,
+     "spawned": 19,
+     "time": 86.3
+    },
+    {
+     "outcome": "repelled",
+     "core": 62,
+     "kills": 19,
+     "spawned": 19,
+     "time": 86.5
+    },
+    {
+     "outcome": "repelled",
+     "core": 64,
+     "kills": 19,
+     "spawned": 19,
+     "time": 86.7
+    },
+    {
+     "outcome": "repelled",
+     "core": 62,
+     "kills": 19,
+     "spawned": 19,
+     "time": 87
+    }
+   ]
+  },
+  "ice": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 27,
+     "kills": 19,
+     "spawned": 19,
+     "time": 101.4
+    },
+    {
+     "outcome": "repelled",
+     "core": 13,
+     "kills": 19,
+     "spawned": 19,
+     "time": 95.6
+    },
+    {
+     "outcome": "repelled",
+     "core": 41,
+     "kills": 19,
+     "spawned": 19,
+     "time": 94.3
+    },
+    {
+     "outcome": "repelled",
+     "core": 27,
+     "kills": 19,
+     "spawned": 19,
+     "time": 95.1
+    },
+    {
+     "outcome": "repelled",
+     "core": 17,
+     "kills": 19,
+     "spawned": 19,
+     "time": 95.3
+    }
+   ]
+  },
+  "ash": {
+   "cost": {
+    "cm": 53,
+    "fe": 53
+   },
+   "drills": [
+    {
+     "outcome": "repelled",
+     "core": 94,
+     "kills": 19,
+     "spawned": 19,
+     "time": 103.4
+    },
+    {
+     "outcome": "repelled",
+     "core": 83,
+     "kills": 19,
+     "spawned": 19,
+     "time": 106.4
+    },
+    {
+     "outcome": "repelled",
+     "core": 93,
+     "kills": 19,
+     "spawned": 19,
+     "time": 114.6
+    },
+    {
+     "outcome": "repelled",
+     "core": 83,
+     "kills": 19,
+     "spawned": 19,
+     "time": 105.5
+    },
+    {
+     "outcome": "repelled",
+     "core": 94,
+     "kills": 19,
+     "spawned": 19,
+     "time": 106.9
+    }
+   ]
+  }
+ },
+ "cc10": {
+  "rare": {
+   "crater": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 100,
+      "kills": 195,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 100,
+      "kills": 194,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "delta": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 68,
+      "kills": 200,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 83,
+      "kills": 200,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "ridge": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 100,
+      "kills": 209,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 100,
+      "kills": 209,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "canyon": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 9,
+      "kills": 210,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 4,
+      "kills": 210,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "plateau": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 100,
+      "kills": 197,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 100,
+      "kills": 197,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "ice": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 58,
+      "kills": 186,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 59,
+      "kills": 187,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "ash": {
+    "walls": 2000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 27,
+      "kills": 196,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 35,
+      "kills": 197,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   }
+  },
+  "comp": {
+   "crater": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 201,
+      "spawned": 211,
+      "time": 151.6
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 201,
+      "spawned": 211,
+      "time": 152
+     }
+    ]
+   },
+   "delta": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 190,
+      "spawned": 211,
+      "time": 128.4
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 189,
+      "spawned": 211,
+      "time": 127.3
+     }
+    ]
+   },
+   "ridge": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 206,
+      "spawned": 211,
+      "time": 147.2
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 206,
+      "spawned": 211,
+      "time": 146.7
+     }
+    ]
+   },
+   "canyon": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 210,
+      "spawned": 211,
+      "time": 166.9
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 210,
+      "spawned": 211,
+      "time": 169.5
+     }
+    ]
+   },
+   "plateau": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 196,
+      "spawned": 211,
+      "time": 154.8
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 199,
+      "spawned": 211,
+      "time": 154.3
+     }
+    ]
+   },
+   "ice": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 9,
+      "kills": 185,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 22,
+      "kills": 184,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "ash": {
+    "walls": 3000,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 203,
+      "spawned": 211,
+      "time": 160.9
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 203,
+      "spawned": 211,
+      "time": 161
+     }
+    ]
+   }
+  },
+  "none": {
+   "crater": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 207,
+      "spawned": 211,
+      "time": 150.8
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 207,
+      "spawned": 211,
+      "time": 149.6
+     }
+    ]
+   },
+   "delta": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 186,
+      "spawned": 211,
+      "time": 145.5
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 184,
+      "spawned": 211,
+      "time": 143.9
+     }
+    ]
+   },
+   "ridge": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 207,
+      "spawned": 211,
+      "time": 149.4
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 206,
+      "spawned": 211,
+      "time": 151
+     }
+    ]
+   },
+   "canyon": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 210,
+      "spawned": 211,
+      "time": 163.6
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 210,
+      "spawned": 211,
+      "time": 165.3
+     }
+    ]
+   },
+   "plateau": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 192,
+      "spawned": 211,
+      "time": 144.1
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 194,
+      "spawned": 211,
+      "time": 146.2
+     }
+    ]
+   },
+   "ice": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "held",
+      "core": 55,
+      "kills": 208,
+      "spawned": 211,
+      "time": 174.9
+     },
+     {
+      "outcome": "held",
+      "core": 22,
+      "kills": 207,
+      "spawned": 211,
+      "time": 174.9
+     }
+    ]
+   },
+   "ash": {
+    "walls": 0,
+    "drills": [
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 201,
+      "spawned": 211,
+      "time": 150.7
+     },
+     {
+      "outcome": "breached",
+      "core": 0,
+      "kills": 201,
+      "spawned": 211,
+      "time": 150.1
+     }
+    ]
+   }
+  }
+ }
+}

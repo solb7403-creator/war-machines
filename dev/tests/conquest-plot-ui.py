@@ -6,7 +6,9 @@ own page". Shipped client, Chromium 390x700 (~iPhone Telegram visible area; 320x
  2. base screen: the menu ends inside the visible screen, scrolls, and its LAST build card can be reached and read
  3. build cards say what each building is for (description + role tag + size/power + cost/time)
  4. tap-to-place: tapping the on-screen position of a cell puts the blueprint exactly on that cell (3D HIGH), for cells
-    spread over the whole visible stage, before and after the map/menu split changes
+    spread over the whole visible stage, before and after the map/menu split changes, at CC1/CC5/CC10 (Session 5B town sizes)
+    on flat, canyon and plateau ground
+ 5. Session 5B: wall tools + blend picker + CONFIRM WALLS and the 11-turret list fit or scroll at 390x700 and 320x568 (real touch)
 """
 import asyncio,json,pathlib,shutil
 from urllib.parse import urlparse
@@ -77,43 +79,94 @@ async def main():
     await ctx.close()
    # ---------- 2-4. base screen ----------
    gate=[1080,1160]
+   async def touch_swipe(ctx,page,sel,dy=-260):   # a real finger on the element: touchstart, moves, touchend (through the app's touch guard)
+    box=await page.locator(sel).bounding_box();sx=box['x']+box['width']/2;sy=box['y']+min(box['height']-20,box['height']*.75)
+    cdp=await ctx.new_cdp_session(page);await cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':sx,'y':sy}]})
+    for k in range(1,13):
+     await cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':sx,'y':sy+dy*k/12}]});await page.wait_for_timeout(16)
+    await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});await page.wait_for_timeout(500)
+   async def open_base(ctx,page):
+    await page.locator('#tabbar [data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
+    await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
+    b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);await b.click()
    ctx,page,errors=await session(390,700,{'position':gate,'fieldMissions':True,'baseFunds':True})   # ~ the iPhone Telegram visible area (header takes ~140 px)
-   await page.locator('#tabbar [data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
-   await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
-   b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);await b.click()
-   await page.wait_for_selector('.cq-site-card');await page.locator('.cq-site-card[data-site="ridge"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
+   await open_base(ctx,page)
+   await page.wait_for_selector('.cq-site-card');sites=await page.locator('.cq-site-card').count();await page.locator('.cq-site-card[data-site="ridge"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
    await page.wait_for_function('Conquest.view.authority.state?.plot&&document.querySelector(".cq-plot-tabs")',timeout=60000)
    await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.wait_for_timeout(900)
-   menu=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),cards=[...s.querySelectorAll('.cq-plot-card')];s.scrollTop=s.scrollHeight;const last=cards.at(-1).getBoundingClientRect();
-      return {sheetBottom:Math.round(r.bottom),vh:innerHeight,scrolls:s.scrollHeight>s.clientHeight,lastVisible:last.bottom<=r.bottom+1&&last.top>=r.top-1,cards:cards.length,
+   menu=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),cards=[...s.querySelectorAll('.cq-plot-card')];
+      return {sheetBottom:Math.round(r.bottom),vh:innerHeight,scrolls:s.scrollHeight>s.clientHeight,cards:cards.length,
       described:cards.every(c=>c.querySelector('.cq-plot-desc')?.textContent.length>8&&c.querySelector('.cq-plot-cost')?.textContent.includes('SIZE')),groups:[...s.querySelectorAll('.cq-plot-group')].map(g=>g.textContent),tags:cards.map(c=>c.querySelector('.cq-plot-tag')?.textContent)};})()''')
-   assert menu['sheetBottom']<=menu['vh'] and menu['lastVisible'] and menu['described'] and menu['cards']>=3,menu
+   await touch_swipe(ctx,page,'.cq-plot-sheet',-600);await touch_swipe(ctx,page,'.cq-plot-sheet',-600)
+   menu['afterSwipe']=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),last=[...s.querySelectorAll('.cq-plot-card')].at(-1).getBoundingClientRect();return {scrollTop:Math.round(s.scrollTop),lastVisible:last.bottom<=r.bottom+1&&last.top>=r.top-1};})()''')
+   assert sites==7 and menu['sheetBottom']<=menu['vh'] and menu['described'] and menu['cards']>=4 and any('VITAL' in (t or '') for t in menu['tags']),menu
+   assert (not menu['scrolls']) or (menu['afterSwipe']['scrollTop']>20 and menu['afterSwipe']['lastVisible']),menu
    await page.screenshot(path=str(OUT/'build-menu-scrolled-390x700.png'))
-   await page.evaluate('document.querySelector(".cq-plot-sheet").scrollTop=0');await page.wait_for_timeout(300);await page.screenshot(path=str(OUT/'build-menu-top-390x700.png'))
    results['menu']=menu
-   # 4. tap-to-place accuracy (3D): pick a Cannon (1x1), then tap the screen position of target cells
-   await page.locator('.cq-plot-card',has_text='Cannon').click();await page.wait_for_function('ConquestPlotView.state?.place?.type==="cannon"',timeout=10000);await page.wait_for_timeout(900)
-   async def tap_cell(i,j):
-    pt=await page.evaluate('''([i,j])=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,v=new T.Vector3(P.cellX(i),0,P.cellZ(j)).project(X.R.cam),r=X.stage.getBoundingClientRect();return {x:r.left+(v.x+1)/2*r.width,y:r.top+(1-v.y)/2*r.height,in:v.x>-.85&&v.x<.85&&v.y>-.8&&v.y<.75};}''',[i,j])
+   await ctx.close()
+   # 3. taps land on the exact cell at every town size and on terraced ground (3D HIGH): pick a Cannon, tap cells
+   async def tap_cell(page,i,j):
+    pt=await page.evaluate('''([i,j])=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,p=Conquest.view.authority.state.plot,v=new T.Vector3(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)).project(X.R.cam),r=X.stage.getBoundingClientRect();return {x:r.left+(v.x+1)/2*r.width,y:r.top+(1-v.y)/2*r.height,in:v.x>-.8&&v.x<.8&&v.y>-.78&&v.y<.7};}''',[i,j])
     if not pt['in']:return None
-    await page.touchscreen.tap(pt['x'],pt['y']);await page.wait_for_timeout(450)
+    await page.touchscreen.tap(pt['x'],pt['y']);await page.wait_for_timeout(350)
     return await page.evaluate('[ConquestPlotView.state.place.i,ConquestPlotView.state.place.j]')
-   hits=[];misses=[]
-   for split in ('auto','menu'):
-    if split=='menu':
-     await page.locator('.cq-plot-size').click();await page.wait_for_timeout(700)
-    for (i,j) in ((20,20),(14,18),(26,22),(18,26),(24,14),(12,24),(28,28)):
-     got=await tap_cell(i,j)
-     if got is None:continue
-     (hits if got==[i,j] else misses).append({'split':split,'want':[i,j],'got':got})
-   await page.screenshot(path=str(OUT/'place-tap-390x700.png'))
-   results['placement']={'exact':len(hits),'wrong':misses}
-   assert len(hits)>=8 and not misses,results['placement']
-   assert not errors,errors
-   results['pageErrors']=errors
-   await ctx.close();await browser.close()
+   placement={}
+   for (cc,site) in ((1,'ridge'),(5,'canyon'),(10,'plateau'),(10,'ridge')):
+    ctx,page,errors=await session(390,700,{'position':gate,'baseFunds':True,'plotCC':cc,'plotSite':site});await open_base(ctx,page)
+    await page.wait_for_selector('.cq-plot-tabs');await page.locator('.cq-plot-tabs button',has_text='BUILD').click()
+    await page.locator('.cq-plot-card',has_text='Cannon Turret').click();await page.wait_for_function('ConquestPlotView.state?.place?.type==="cannon"',timeout=10000);await page.wait_for_timeout(700)
+    await page.evaluate('ConquestPlotView.state.cam.x=0;ConquestPlotView.state.cam.z=0;ConquestPlotView.state.cam.dist=150');await page.wait_for_timeout(500)
+    hits=[];misses=[]
+    for split in ('auto','menu'):
+     if split=='menu':
+      await page.locator('.cq-plot-size').click();await page.wait_for_timeout(600)
+     for (di,dj) in ((0,-4),(-6,-2),(5,3),(-3,7),(4,-6),(-8,5),(8,8),(-10,-8),(11,-3),(2,12),(-12,10),(13,13)):
+      got=await tap_cell(page,39+di,39+dj)
+      if got is None:continue
+      (hits if got==[39+di,39+dj] else misses).append({'split':split,'want':[39+di,39+dj],'got':got})
+    await page.screenshot(path=str(OUT/f'place-tap-cc{cc}-{site}-390x700.png'))
+    placement[f'cc{cc}-{site}']={'exact':len(hits),'wrong':misses,'pageErrors':errors}
+    assert len(hits)>=10 and not misses and not errors,placement
+    await ctx.close()
+   results['placement']=placement
+   # 4. every screen fits or scrolls: wall tools + blend picker + draft CONFIRM, and the turret list, at 390x700 and 320x568
+   fit={}
+   for (w,h) in ((390,700),(320,568)):
+    ctx,page,errors=await session(w,h,{'position':gate,'baseFunds':True,'plotCC':10,'plotSite':'ridge'});await open_base(ctx,page)
+    await page.wait_for_selector('.cq-plot-tabs');await page.locator('.cq-plot-tabs button',has_text='WALLS').click();await page.wait_for_timeout(500)
+    # draw a LINE with a real finger drag on the stage (touch), then check the draft and the primary action
+    await page.locator('.cq-plot-tools button',has_text='LINE').click();await page.evaluate('ConquestPlotView.state.cam.x=0;ConquestPlotView.state.cam.z=0;ConquestPlotView.state.cam.dist=150');await page.wait_for_timeout(400)
+    ends=await page.evaluate('''()=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,p=Conquest.view.authority.state.plot,r=X.stage.getBoundingClientRect(),pr=(i,j)=>{const v=new T.Vector3(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)).project(X.R.cam);return {x:r.left+(v.x+1)/2*r.width,y:r.top+(1-v.y)/2*r.height};};return [pr(33,46),pr(45,46)];}''')
+    cdp=await ctx.new_cdp_session(page);await cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':ends[0]['x'],'y':ends[0]['y']}]})
+    for k in range(1,11):
+     await cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':ends[0]['x']+(ends[1]['x']-ends[0]['x'])*k/10,'y':ends[0]['y']+(ends[1]['y']-ends[0]['y'])*k/10}]});await page.wait_for_timeout(20)
+    await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});await page.wait_for_timeout(600)
+    draft=await page.evaluate('ConquestPlotView.state.draft.map(d=>[d.sec.k,d.sec.a,d.sec.b])')
+    await page.locator('.cq-plot-ore',has_text='FERR').click();await page.locator('.cq-plot-levels button',has_text='HEAVY').click();await page.wait_for_timeout(300)
+    walls=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),ok=[...s.querySelectorAll('button')].find(b=>b.textContent==='CONFIRM WALLS'),ores=[...s.querySelectorAll('.cq-plot-ore')];const vis=e=>{const q=e.getBoundingClientRect();return q.width>0&&q.left>=0&&q.right<=innerWidth+1;};
+      return {sheetBottom:Math.round(r.bottom),vh:innerHeight,ores:ores.length,oresFit:ores.every(vis),count:s.querySelector('.cq-plot-wallcount')?.textContent,confirm:!!ok,scrolls:s.scrollHeight>s.clientHeight};})()''')
+    await page.screenshot(path=str(OUT/f'wall-tools-{w}x{h}.png'))
+    if walls['scrolls']:
+     await touch_swipe(ctx,page,'.cq-plot-sheet',-500)
+    walls['confirmReachable']=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),ok=[...s.querySelectorAll('button')].find(b=>b.textContent==='CONFIRM WALLS');if(!ok)return false;const q=ok.getBoundingClientRect();return q.top>=r.top-1&&q.bottom<=r.bottom+1&&q.bottom<=innerHeight;})()''')
+    await page.screenshot(path=str(OUT/f'wall-confirm-{w}x{h}.png'))
+    assert draft and draft[-1][1]==[33,46] and draft[-1][2]==[45,46],draft
+    assert walls['sheetBottom']<=walls['vh'] and walls['ores']==7 and walls['oresFit'] and walls['confirm'] and walls['confirmReachable'] and 'WALLS' in (walls['count'] or ''),walls
+    # the turret list (11 types at CC10): the last card is reachable by a real swipe; placing keeps CONFIRM BUILD on screen
+    await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.wait_for_timeout(500)
+    for k in range(4):
+     await touch_swipe(ctx,page,'.cq-plot-sheet',-600)
+    tl=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),cards=[...s.querySelectorAll('.cq-plot-card')],turrets=cards.filter(c=>/ · \\d+ m/.test(c.querySelector('.cq-plot-tag')?.textContent||'')),last=cards.at(-1).getBoundingClientRect();return {turrets:turrets.length,lastVisible:last.bottom<=r.bottom+1&&last.top>=r.top-1,scrollTop:Math.round(s.scrollTop)};})()''')
+    await page.screenshot(path=str(OUT/f'turret-list-{w}x{h}.png'))
+    await page.evaluate('document.querySelector(".cq-plot-sheet").scrollTop=0');await page.locator('.cq-plot-card',has_text='Railgun').click();await page.wait_for_timeout(500)
+    tl['confirmOnScreen']=await page.evaluate('''(()=>{const b=[...document.querySelectorAll('.cq-plot-sheet button')].find(x=>x.textContent==='CONFIRM BUILD');if(!b)return 'missing:'+document.querySelector('.cq-plot-sheet').innerText.slice(0,200);const q=b.getBoundingClientRect(),s=document.querySelector('.cq-plot-sheet').getBoundingClientRect();return q.bottom<=s.bottom+1&&q.top>=s.top-1?true:JSON.stringify([q.top,q.bottom,s.top,s.bottom,document.querySelector('.cq-plot-sheet').scrollTop]);})()''')
+    assert tl['turrets']==11 and tl['lastVisible'] and tl['confirmOnScreen'] is True,tl
+    fit[f'{w}x{h}']={'walls':walls,'draft':draft,'turretList':tl,'pageErrors':errors};assert not errors,errors
+    await ctx.close()
+   results['fit']=fit
+   await browser.close()
   json.dump(results,open(OUT/'base-ui.json','w'),indent=1);print(json.dumps(results)[:1500])
-  print('PASS Conquest page + base screen 390: six-tab bar with CONQUEST (320 fits), hub carries the bar and leaves to Garage; base menu ends on screen, scrolls to its last card, cards describe each building; taps place the blueprint on the exact cell in both splits')
+  print('PASS Conquest page + town screen: six-tab bar with CONQUEST (320 fits); seven sites; build menu fits and scrolls by touch to its last card (vitals tagged); taps land on the exact cell at CC1/CC5/CC10 on flat, canyon and plateau ground in both splits; wall tools (touch-drawn LINE, blend picker, CONFIRM WALLS) and the 11-turret list fit or scroll at 390x700 and 320x568')
  finally:
   server.kill()
 asyncio.run(main())
