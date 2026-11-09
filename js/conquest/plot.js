@@ -103,7 +103,7 @@ const TIME=[15*SEC,3*MIN,20*MIN,2*HOUR,6*HOUR],TIME3=[30*SEC,10*MIN,HOUR];
 const grow=(base,g,levels)=>Array.from({length:levels},(_,l)=>Object.fromEntries(Object.entries(base).map(([k,v])=>[k,Math.round(v*Math.pow(g,l))])));
 const tur=(o)=>T({w:1,d:1,max:5,...o,turret:T(o.turret)});
 const BUILDINGS=T({
- refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[5,2],[9,3]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'Turns rock and scrap into alloy, the metal you build with (no wallet minerals used).'}),
+ refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[5,2],[9,3]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'Turns rock and scrap into alloy, the metal you build with.'}),
  storage:T({n:'Storage Depot',w:3,d:3,max:5,cc:1,pw:1,count:[[1,1]],cost:grow({cp:90,alloy:8},2.4,5),mod:'vault',vital:'secondary',desc:'Caps what production can hold (it stops when full). Bank salvage here. A vital: raiders target it.'}),
  reactor:T({n:'Reactor',w:3,d:3,max:5,cc:1,pw:0,count:[[1,1],[3,2],[5,3],[7,4],[9,5]],cost:grow({cp:140,alloy:8,helium:1},2.4,5),mod:'reactor',power:14,vital:'secondary',desc:'Power for every building and turret. Feeds Daily Base Yield CP. A vital: if it falls, turrets slow down.'}),
  foundry:T({n:'Foundry',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[7,2]],cost:grow({cp:120,alloy:10},2.4,5),desc:'Load alloy and it becomes wall composite (4 composite per alloy). Its research earns wall extensions.'}),

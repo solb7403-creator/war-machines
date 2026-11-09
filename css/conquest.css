@@ -285,6 +285,7 @@
 /* 5C review: the coach is at most two lines on the map (the full step is on the HOME card); a short map (sheet near FULL)
    hides the floating coach and map buttons so they never cover the handle or the tabs */
 .cq-plot-coach span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cq-dialog.cq-plot .cq-plot-coach{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:6px 10px;right:auto;max-width:calc(100% - 70px)}   /* 5C owner gate: a one-line pill, not a banner over the town */
 .cq-plot-short .cq-plot-coach,.cq-plot-short .cq-plot-frame,.cq-plot-short .cq-plot-pan,.cq-plot-short .cq-plot-rot,.cq-plot-short .cq-plot-drivebtn,.cq-plot-short .cq-plot-skip{display:none!important}
 .cq-plot-fab .cq-plot-why{color:#ffb0b8;border-color:#ff304888;font-size:10px}
 .cq-plot-ore span{overflow-wrap:normal;word-break:normal;hyphens:manual;-webkit-hyphens:manual}

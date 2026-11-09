@@ -32,14 +32,14 @@ function storesOf(s,p){const bm=(typeof save!=='undefined'&&save.bmn)||s?.airdro
 // first time it appears. k/n feed the "STEP k OF n" chip; tab is the tab the step needs (it glows).
 const VITAL_DEF='VITAL: raiders hunt these; lose the Command Center and the raid wins.';
 function guideStep(p,s){
- if(!p)return null;const has=t=>Object.values(p.b).some(b=>b.t===t&&(b.l>0||p.job?.id&&p.b[p.job.id]===b)),walls=Object.values(p.w||{}),fe=(storesOf(s,p).fe||0)>0||hasWallet('fe'),n=fe?7:6,st=(k,id,tab,text)=>({id,tab,k,n,text});
- if(!has('refinery'))return st(1,'refinery','build','BUILD A REFINERY: it turns rock and scrap into alloy, the metal you build with. Open BUILD.');
- if(!P.TURRETS.some(has))return st(2,'cannon','weapons','PLACE A CANNON TURRET: your first defense. Open WEAPONS.');
- if(!walls.length)return st(3,'wall','walls','BUILD YOUR FIRST WALL: open WALLS, pick RING and drag outward from your Command Center. You start with 200 composite, enough for a ring.');
- if(!has('reactor'))return st(4,'reactor','build','BUILD A REACTOR inside your walls: it powers your turrets. It is a '+VITAL_DEF);
- if(fe&&!walls.some(c=>P.wdecode(c).o>0))return st(5,'blend','walls','MAKE A STRONGER WALL: in WALLS pick FERRITE, then draw over your wall. Ore makes walls tougher.');
- if(!(p.log||[]).length)return st(fe?6:5,'drill','defend','RUN A DEFENSE DRILL in DEFEND: watch Parasites attack your whole town. It is practice: nothing is lost (milestones can add wall capacity).');
- if(p.cc<2)return st(n,'cc','home','UPGRADE THE COMMAND CENTER TO CC2 (tap it): the town grows and unlocks the Foundry, Biodome and Laser.');
+ if(!p)return null;const has=t=>Object.values(p.b).some(b=>b.t===t&&(b.l>0||p.job?.id&&p.b[p.job.id]===b)),walls=Object.values(p.w||{}),fe=(storesOf(s,p).fe||0)>0||hasWallet('fe'),n=fe?7:6,st=(k,id,tab,text,short,here)=>({id,tab,k,n,text,short,here});   // text: the sheet card; short: the map pill; here: the pill once its tab is open
+ if(!has('refinery'))return st(1,'refinery','build','BUILD A REFINERY: it turns rock and scrap into alloy, the metal you build with. Open BUILD.','BUILD A REFINERY · open BUILD','BUILD A REFINERY · tap its card, then a spot on the map');
+ if(!P.TURRETS.some(has))return st(2,'cannon','weapons','PLACE A CANNON TURRET: your first defense. Open WEAPONS.','PLACE A CANNON · open WEAPONS','PLACE A CANNON · tap its card, then a spot in town');
+ if(!walls.length)return st(3,'wall','walls','BUILD YOUR FIRST WALL: open WALLS, pick RING and drag outward from your Command Center. You start with 200 composite, enough for a ring.','YOUR FIRST WALL · open WALLS','YOUR FIRST WALL · RING, then drag out from the Command Center');
+ if(!has('reactor'))return st(4,'reactor','build','BUILD A REACTOR inside your walls: it powers your turrets. It is a '+VITAL_DEF,'BUILD A REACTOR · open BUILD','BUILD A REACTOR · tap its card, place it inside your walls');
+ if(fe&&!walls.some(c=>P.wdecode(c).o>0))return st(5,'blend','walls','MAKE A STRONGER WALL: in WALLS pick FERRITE, then draw over your wall. Ore makes walls tougher.','STRONGER WALLS · open WALLS','STRONGER WALLS · pick FERRITE, then draw over your wall');
+ if(!(p.log||[]).length)return st(fe?6:5,'drill','defend','RUN A DEFENSE DRILL in DEFEND: watch Parasites attack your whole town. It is practice: nothing is lost (milestones can add wall capacity).','RUN A DEFENSE DRILL · open DEFEND','RUN A DEFENSE DRILL · tap START DEFENSE DRILL');
+ if(p.cc<2)return st(n,'cc','home','UPGRADE THE COMMAND CENTER TO CC2 (tap it): the town grows and unlocks the Foundry, Biodome and Laser.','UPGRADE TO CC2 · tap the Command Center','UPGRADE TO CC2 · tap the Command Center');
  return null;}
 function unlockLine(p){const cc=p.cc,next=Object.entries(P.BUILDINGS).filter(([,B])=>B.cc===cc+1).map(([,B])=>B.n),ores=P.ORES.filter((m,o)=>P.ORE_CC[o+1]===cc+1).map(m=>P.ORE_NAME[m]+' blends');
  return cc>=P.CC.max?'COMMAND CENTER AT MAXIMUM':'NEXT AT CC'+(cc+1)+': town '+P.townSide(cc+1)+'×'+P.townSide(cc+1)+', '+P.wallBase(cc+1)+' walls, '+P.TURRET_CAP[cc]+' turrets'+([...next,...ores].length?', '+[...next,...ores].join(', '):'');}
@@ -125,7 +125,8 @@ function endTour(){if(X?.tour){X.camFrom=camPose();X.camT=0;X.tour=null;}}
 function setTab(m){if(!X)return;endTour();if(X.view==='drive'){X.camFrom=camPose();X.camT=0;X.view='build';}X.mode=m;X.place=null;X.draw=null;X.erase=null;if(m==='walls')X.sel=null;render();}
 // ---- the sheet: snap per tab (remembered), PEEK while a blueprint is placed or walls are drawn, restored after ----
 const freeH=()=>Math.max(160,(X?.d.clientHeight||600)-(X?.top?.offsetHeight||48));
-const minPeek=()=>(X?.grab?.offsetHeight||34)+(X?.tabs?.offsetHeight||48)+50;   // handle + tabs + one row of content (5C review)
+const safeBottom=()=>{try{return Math.max(0,(parseFloat(getComputedStyle(X.sheet).paddingBottom)||10)-10);}catch(_){return 0;}};   // the iPhone home indicator (env(safe-area-inset-bottom) beyond the sheet's 10 px)
+const minPeek=()=>(X?.grab?.offsetHeight||34)+(X?.tabs?.offsetHeight||48)+60+(X?.sheet?safeBottom():0);   // handle + tabs + one whole row of content (5C review; owner gate: +10 px, rows were sliced)
 const busy=()=>!!X&&(!!X.place||X.mode==='walls'&&(!!X.draw||X.draft.length>0));
 function snapNow(){if(!X)return 'half';if(X.visit)return X.visitSnap||'peek';if(X.view==='drive')return 'peek';if(X.busySnap)return X.busySnap;if(X.auto)return X.auto;return X.snapOf[X.mode]||'half';}
 function updateAuto(){if(busy()){if(!X.busySnap)X.auto='peek';}else{X.auto=null;X.busySnap=null;}}
@@ -149,7 +150,7 @@ function fold(body,k,title,cls=''){const {el}=X.ctx,f=el('details','cq-map-fold'
 const townName=p=>p?.nm||(P.SITES[p?.site]?.name||'')+' TOWN';
 function header(p,visit){X.title.textContent=(visit?'VISITING · ':'')+townName(p)+' · CC'+p.cc;const use=P.powerUse(p),sup=P.powerSupply(p);X.chipPw.hidden=X.chipDef.hidden=false;X.chipPw.textContent='⚡ '+use+'/'+sup+(use>sup?' !':'');X.chipPw.classList.toggle('short',use>sup);X.chipPw.setAttribute('aria-label','Power '+use+' used of '+sup+(use>sup?', short: build a Reactor':''));X.chipDef.textContent='🛡 DEF '+fmt(visit?.dr||P.defenseRating(p));}
 // The coach floats on the map in every tab but HOME (where it is a card with a GO button); tapping it opens its tab.
-function coachUi(g){const {el}=X.ctx,c=X.coach,show=!!g&&!X.drill&&!X.visit&&!X.tour&&!busy();/* hidden while placing or drawing: a tap near it must never switch tabs */c.hidden=!show;if(!show){X.coachKey='';return;}const key=g.k+g.text+X.mode;if(X.coachKey===key)return;X.coachKey=key;c.replaceChildren();el('b','cq-plot-step','STEP '+g.k+' OF '+g.n,c);el('span','',g.text,c);c.setAttribute('aria-label','Step '+g.k+' of '+g.n+': '+g.text);}
+function coachUi(g){const {el}=X.ctx,c=X.coach,show=!!g&&!X.drill&&!X.visit&&!X.tour&&!busy();/* hidden while placing or drawing: a tap near it must never switch tabs */c.hidden=!show;if(!show){X.coachKey='';return;}const t=(X.mode===g.tab&&X.view!=='drive'?g.here:g.short)||g.text,key=g.k+t;if(X.coachKey===key)return;X.coachKey=key;c.replaceChildren();el('b','cq-plot-step','STEP '+g.k+'/'+g.n,c);el('span','',t,c);c.setAttribute('aria-label','Step '+g.k+' of '+g.n+': '+t);}   /* a one-line pill on the map (owner gate: the banner hid the town, and said Open BUILD with BUILD open) */
 function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.state?.plot)return;const {el,view}=X.ctx,s=view.authority.state,p=s.plot,L=s.ledger,now=Date.now(),sh=X.sheet;
  // keep what the pilot had open (closed sections, scroll) across a re-render; a designer in progress is only rebuilt by a state change
  const openNow=new Set([...sh.querySelectorAll('details[open]>summary')].map(x=>x.dataset.k||x.textContent)),scroll=sh.scrollTop;if(sh.childNodes.length)X.openFolds=openNow;
@@ -183,7 +184,7 @@ function devBar(body,s,p){if(!ownerUI())return;const {el,button}=X.ctx,on=!!s.de
  if(!on)el('small','','Owner only: unlimited resources, composite, ores and wall extensions, instant builds. Makes this a test record (no Conquest airdrop points, never ranked).',box);
  else if(p.job)box.append(button('FINISH NOW',()=>act('dev-finish',undefined,'FINISHING…')));}
 function resLine(el,parent,s,p){if(s.dev?.on){el('p','cq-plot-res cq-plot-dev-res','BANKED · ∞ UNLIMITED (DEV MODE) · COMPOSITE ∞ · ORES ∞',parent);return {stores:'∞'};}const L=s.ledger,o=storesOf(s,p),stores=P.MNS.filter(k=>o[k]>0).map(k=>o[k]+' '+LABEL[k]).join(' · ');
- el('p','cq-plot-res','BANKED · '+fmt(L.cp)+' CP · '+fmt(L.banked.alloy)+' ALLOY · '+fmt(L.banked.biomass)+' BIOMASS · '+fmt(L.banked.helium)+' HELIUM-3',parent);el('p','cq-plot-res','WALL COMPOSITE · '+fmt(Math.floor(p.cm||0))+' · BASE STORES · '+(stores||'empty (ore blends use minerals from here)'),parent);return {stores};}
+ el('p','cq-plot-res',fmt(L.cp)+' CP · '+fmt(L.banked.alloy)+' ALLOY · '+fmt(L.banked.biomass)+' BIOMASS · '+fmt(L.banked.helium)+' HE-3 · '+fmt(Math.floor(p.cm||0))+' COMPOSITE'+(stores?' · ORES '+stores:''),parent);return {stores};}   // 5C owner gate: one line, no notes in brackets
 const jobName=j=>j.t==='cc'?'Command Center':j.t==='repair'?'Repairs':P.BUILDINGS[j.t]?.n||j.t;
 const jobText=(j,now)=>'BUILDER · '+jobName(j).toUpperCase()+(j.t==='repair'?'':' '+romanOf(j.l))+' · '+dur(j.ready-now);
 function jobCard(body,p,now){const j=p.job;if(!j)return;const {el}=X.ctx,box=el('div','cq-plot-job',null,body);el('b','',jobText(j,now),box);const pr=el('progress','',null,box);pr.max=1;pr.value=Math.max(0,Math.min(1,1-(j.ready-now)/Math.max(1,j.ready-j.at)));pr.setAttribute('aria-label','Construction progress');}
@@ -254,8 +255,9 @@ function placePanel(body,s,p){const {el,button}=X.ctx,q=X.place,B=q.type==='cc'?
  // ROTATE, CANCEL and CONFIRM float on the map (fab), so the primary action is on screen at every sheet height
  el('b','',(q.id?'MOVE · ':'PLACE · ')+B.n.toUpperCase()+(P.VITALS[q.type]?' · ◆ VITAL':''),body);el('small','',err?'✕ '+err.toUpperCase():'✓ VALID · tap the ground to move the blueprint'+(q.id?'':' · '+(devOn()?'FREE · INSTANT':price(P.costOf(q.type,1))+' · '+dur(P.timeOf(q.type,1)))),body);
  if(!q.id&&p.job)el('small','','The builder is busy: '+jobText(p.job,Date.now()),body);if(P.VITALS[q.type])el('small','',VITAL_DEF+' Spread them out for coverage, or keep them behind your strongest walls.',body);}
-function buildTab(body,s,p,L){const {el}=X.ctx;if(X.place){placePanel(body,s,p);return;}const g=guideStep(p,s),dev=devOn();resLine(el,body,s,p);jobCard(body,p,Date.now());
- if(X.mode==='weapons'){weaponsTab(body,s,p,g,dev);return;}
+function buildTab(body,s,p,L){const {el}=X.ctx;if(X.place){placePanel(body,s,p);return;}const g=guideStep(p,s),dev=devOn();
+ if(X.mode==='weapons'){weaponsTab(body,s,p,g,dev);return;}   // WEAPONS opens on its turret summary (the row PEEK shows)
+ resLine(el,body,s,p);jobCard(body,p,Date.now());
  for(const [title,keys] of [['ECONOMY · makes and stores resources',ECON],['SUPPORT · repairs, scanning, research',SUPPORT]]){const items=keys.filter(k=>p.cc>=P.BUILDINGS[k].cc&&P.countOf(p,k)<P.countCap(k,p.cc));if(!items.length)continue;el('b','cq-plot-group',title,body);const box=el('div','cq-plot-list',null,body);
   for(const k of items)card(box,p,k,P.BUILDINGS[k],{err:P.buildCheck(p,k,1),glow:g?.id===k,dev});}
  const locked=[...ECON,...SUPPORT].filter(k=>P.BUILDINGS[k].cc>p.cc).sort((a,b)=>P.BUILDINGS[a].cc-P.BUILDINGS[b].cc);if(locked.length){el('b','cq-plot-group','LOCKED · UNLOCK WITH THE COMMAND CENTER',body);const box=el('div','cq-plot-list',null,body);for(const k of locked)card(box,p,k,P.BUILDINGS[k],{lock:true});}
@@ -265,7 +267,7 @@ function weaponsTab(body,s,p,g,dev){const {el}=X.ctx,cap=P.TURRET_CAP[p.cc-1],n=
  const sum=el('div','cq-plot-weapsum',null,body);el('b','','TURRETS '+n+'/'+cap+(n>=cap?' · CAP REACHED (the Command Center raises it)':''),sum);const chips=el('div','cq-plot-wchips',null,sum);
  for(const k of keys)if(by[k]){const chip=el('span','cq-plot-wchip',null,chips);chip.append(sprite('t',k,1));el('small','',by[k]+'× '+P.BUILDINGS[k].n.replace(/ Turret$/,'').toUpperCase(),chip);}
  if(!n)el('small','','No turrets yet: a Cannon is the best first pick.',sum);
- const box=el('div','cq-plot-list',null,body);for(const k of keys.filter(k=>P.BUILDINGS[k].cc<=p.cc)){const B=P.BUILDINGS[k],placed=P.countOf(p,k);card(box,p,k,B,{err:P.buildCheck(p,k,1),glow:g?.id==='cannon'&&k==='cannon',dev,extra:(B.turret?weaponWords(B.turret,p)+' · '+placed+' PLACED':(B.gate?'Opens for your tanks; raiders must break it':'Protective field: less damage at your base')+' · '+placed+'/'+P.countCap(k,p.cc)+' PLACED')});}
+ resLine(el,body,s,p);jobCard(body,p,Date.now());const box=el('div','cq-plot-list',null,body);for(const k of keys.filter(k=>P.BUILDINGS[k].cc<=p.cc)){const B=P.BUILDINGS[k],placed=P.countOf(p,k);card(box,p,k,B,{err:P.buildCheck(p,k,1),glow:g?.id==='cannon'&&k==='cannon',dev,extra:(B.turret?weaponWords(B.turret,p)+' · '+placed+' PLACED':(B.gate?'Opens for your tanks; raiders must break it':'Protective field: less damage at your base')+' · '+placed+'/'+P.countCap(k,p.cc)+' PLACED')});}
  const locked=keys.filter(k=>P.BUILDINGS[k].cc>p.cc);if(locked.length){el('b','cq-plot-group','LOCKED · UNLOCK WITH THE COMMAND CENTER',body);const lb=el('div','cq-plot-list',null,body);for(const k of locked){const B=P.BUILDINGS[k];card(lb,p,k,B,{lock:true,extra:B.turret?B.role+' · '+weaponWords(B.turret,p):''});}}}
 // ---- walls: blend picker first, then the tools; draft (undo) and confirm; Foundry and layouts (wall tooling) ----
 const SOFT={COMPOSITE:'COMPO\u00adSITE',ILMENITE:'ILMEN\u00adITE',ARMALCOLITE:'ARMAL\u00adCOLITE',TRANQUILLITYITE:'TRANQUIL\u00adLITYITE',SELENITE:'SELEN\u00adITE',MOONHEART:'MOON\u00adHEART'};   // soft hyphens: two clean lines at 320 px
@@ -277,6 +279,7 @@ function wallTab(body,s,p){const {el,button}=X.ctx,dev=devOn(),cap=P.wallCapOf(p
  const tr=el('div','cq-plot-row cq-plot-tools',null,body),more=X.moreTools||X.tool==='copy'||X.tool==='paste';for(const [id,lab,tip] of TOOLS.slice(0,4)){const b=button(lab,()=>{X.tool=id;X.draw=null;X.erase=null;render();},X.tool===id?'on':'');b.title=tip;b.setAttribute('aria-pressed',String(X.tool===id));tr.append(b);}
  const mb=button(more?'LESS':'MORE',()=>{X.moreTools=!more;if(more&&(X.tool==='copy'||X.tool==='paste'))X.tool='ring';render();});mb.setAttribute('aria-expanded',String(more));tr.append(mb);
  if(more){const r2=el('div','cq-plot-row cq-plot-tools',null,body);for(const [id,lab,tip] of TOOLS.slice(4)){const b=button(lab,()=>{X.tool=id;X.draw=null;render();},X.tool===id?'on':'');b.title=tip;b.setAttribute('aria-pressed',String(X.tool===id));if(id==='paste')b.disabled=!X.clip;r2.append(b);}}
+ {const wc=body.querySelector('.cq-plot-wallcount');if(wc)body.append(wc);}   // owner gate: the tools are the PEEK row; the wall count follows them
  // the draft and its CONFIRM come first when there is one (primary action on screen); it also floats on the map
  if(plan){const sk=plan.skip,skipped=sk.outside+sk.blocked+sk.occupied+sk.same,box=el('div','cq-plot-draft',null,body);
   el('b','',X.draft.length+' SECTION'+(X.draft.length>1?'S':'')+' · '+plan.cells.length+' CELLS'+(skipped?' ('+skipped+' skipped: '+[sk.same&&sk.same+' same',sk.occupied&&sk.occupied+' buildings',sk.blocked&&sk.blocked+' blocked',sk.outside&&sk.outside+' outside'].filter(Boolean).join(', ')+')':''),box);
@@ -300,8 +303,9 @@ function wallTab(body,s,p){const {el,button}=X.ctx,dev=devOn(),cap=P.wallCapOf(p
 function storesShort(s,p,cost){if(s?.dev?.on)return null;const o2=storesOf(s,p),o={};for(const k of P.MNS)if(cost[k]&&o2[k]<cost[k])o[k]=cost[k]-o2[k];return Object.keys(o).length?o:null;}
 async function moveStores(mn){if(typeof baseStore!=='function'){say('UPDATE THE GAME TO MOVE MINERALS');return;}say('MOVING MINERALS FROM YOUR WALLET…');const ok=await baseStore(mn);say(ok?'MINERALS IN BASE STORES':'NOT MOVED');render();}
 // DEFEND: the Defense Drill (the one defense system), its report and breach tips, the base log and raid protection.
-function defendTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A practice raid on your whole town at threat '+p.cc+' ('+P.SITES[p.site].lanes.length+' lanes). Raiders path to your Command Center through the weakest wall and hit everything on the way; the raid wins if the Command Center falls. Drills never pay rewards and never damage your town.',body);
+function defendTab(body,s,p){const {el,button}=X.ctx;   // the drill button first: it is the row PEEK shows
  const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…'))startReplay();},'cq-plot-primary');b.disabled=!!X.drill||!!X.simulating||wait>0;body.append(b);
+ el('p','cq-plot-hint','A practice raid on your whole town (threat '+p.cc+', '+P.SITES[p.site].lanes.length+' lanes): raiders take the weakest wall to your Command Center and the raid wins if it falls. Drills never pay rewards and never damage your town.',body);
  if(X.drillResult){const r=X.drillResult,name=t=>t==='cc'?'Command Center':P.BUILDINGS[t]?.n||t,box=el('div','cq-plot-report',null,body);
   const L=r.log&&r.log.seed===r.seed?r.log:null,same=!L||L.outcome===r.outcome&&L.kills===r.kills,o=L?L.outcome:r.outcome;   // the Worker's log is the result; the phone's replay is the picture
   el('b','cq-plot-result '+o,(o==='breached'?'COMMAND CENTER FELL · RAID WON':o==='repelled'?'REPELLED':'HELD')+' · '+(L?L.kills:r.kills)+'/'+(L?L.spawned:r.spawned)+' PARASITES DOWN · COMMAND CENTER '+(L?L.core:r.core)+'%',box);
