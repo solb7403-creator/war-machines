@@ -15,12 +15,12 @@
   "wallPlan": "1 SECTION \u00b7 53 CELLS (3 skipped: 3 buildings)",
   "walls": 53,
   "blended": 53,
-  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 8/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
+  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 4/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
   "noRewards": true,
   "left": true,
   "render": {
    "calls": 32,
-   "triangles": 57014,
+   "triangles": 62042,
    "programs": 16
   },
   "pageErrors": []
@@ -28,15 +28,15 @@
  "cc10-high": {
   "render": {
    "calls": 63,
-   "triangles": 251386,
+   "triangles": 255866,
    "programs": 16
   },
   "raidRender": {
    "calls": 83,
-   "triangles": 260500,
+   "triangles": 264980,
    "programs": 16
   },
-  "drillMs": 271,
+  "drillMs": 289,
   "buildings": 68,
   "walls": 2000,
   "cc": 10,
@@ -48,15 +48,15 @@
  "cc10-low": {
   "render": {
    "calls": 63,
-   "triangles": 240314,
+   "triangles": 244794,
    "programs": 16
   },
   "raidRender": {
-   "calls": 80,
-   "triangles": 245988,
+   "calls": 83,
+   "triangles": 253908,
    "programs": 16
   },
-  "drillMs": 360,
+  "drillMs": 287,
   "buildings": 68,
   "walls": 2000,
   "cc": 10,
