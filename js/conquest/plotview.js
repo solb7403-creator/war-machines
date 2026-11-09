@@ -149,7 +149,7 @@ function sitePicker(){const {el,button,view}=X.ctx,s=view.authority?.state,D=roo
 function fold(body,k,title,cls=''){const {el}=X.ctx,f=el('details','cq-map-fold'+(cls?' '+cls:''),null,body),sm=el('summary','',title,f);sm.dataset.k=k;return f;}
 const townName=p=>p?.nm||(P.SITES[p?.site]?.name||'')+' TOWN';
 // The header keeps the level visible: a long site name shortens, ' · CCn' never does (owner gate: 'CRATER RIM TO…').
-function titleSet(name,cc){const {el}=X.ctx;X.title.replaceChildren();el('span','cq-plot-tname',name,X.title);el('span','cq-plot-tcc',' · CC'+cc,X.title);}
+function titleSet(name,cc){const {el}=X.ctx;X.title.replaceChildren();const nm=el('span','cq-plot-tname',name,X.title);el('span','cq-plot-tcc',' · CC'+cc,X.title);X.top.classList.remove('cq-plot-top2');if(nm.scrollWidth>nm.clientWidth+1)X.top.classList.add('cq-plot-top2');}   // a name that does not fit gets the header's first row to itself
 function header(p,visit){titleSet((visit?'VISITING · ':'')+townName(p),p.cc);const use=P.powerUse(p),sup=P.powerSupply(p);X.chipPw.hidden=X.chipDef.hidden=false;X.chipPw.textContent='⚡ '+use+'/'+sup+(use>sup?' !':'');X.chipPw.classList.toggle('short',use>sup);X.chipPw.setAttribute('aria-label','Power '+use+' used of '+sup+(use>sup?', short: build a Reactor':''));{const dv=Math.round(visit?.dr||P.defenseRating(p));X.chipDef.textContent='🛡 DEF '+(dv>=1e4?(dv/1e3).toFixed(dv>=1e5?0:1).replace(/\.0$/,'')+'K':fmt(dv));X.chipDef.setAttribute('aria-label','Defense rating '+fmt(dv));X.chipDef.setAttribute('role','img');X.chipPw.setAttribute('role','img');}}
 // The coach floats on the map in every tab but HOME (where it is a card with a GO button); tapping it opens its tab.
 function coachUi(g){const {el}=X.ctx,c=X.coach,show=!!g&&!X.drill&&!X.visit&&!X.tour&&!busy();/* hidden while placing or drawing: a tap near it must never switch tabs */c.hidden=!show;if(!show){X.coachKey='';return;}const here=X.mode===g.tab&&X.view!=='drive',t=(here?(snapNow()==='peek'&&(g.tab==='build'||g.tab==='weapons')?g.short.split(' · ')[0]+' · tap here for the cards':g.here):g.short)||g.text,key=g.k+t;if(X.coachKey===key)return;X.coachKey=key;c.replaceChildren();el('b','cq-plot-step','STEP '+g.k+' OF '+g.n,c);el('span','',t,c);c.setAttribute('aria-label','Step '+g.k+' of '+g.n+': '+t);}   /* a one-line pill on the map (owner gate: the banner hid the town, and said Open BUILD with BUILD open) */
@@ -164,8 +164,9 @@ function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.s
  if(X.mode==='home')homeTab(body,s,p,L,now,g);else if(X.mode==='build'||X.mode==='weapons')buildTab(body,s,p,L);else if(X.mode==='walls')wallTab(body,s,p);else defendTab(body,s,p);
  for(const d of sh.querySelectorAll('details')){const k=d.querySelector('summary')?.dataset.k;if(k&&X.openFolds?.has(k))d.open=true;}
  sh.scrollTop=X.place&&!X.wasPlace||X.sel&&X.sel!==X.wasSel?0:scroll;X.wasPlace=!!X.place;X.wasSel=X.sel;   // a new blueprint or selection: its card at the top, on screen
- if(fk){const same=[...sh.querySelectorAll(fk[0])].find(e=>(e.getAttribute('aria-label')||e.textContent)===fk[1])||sh.querySelector('button:not([disabled]),summary,input');same?.focus({preventScroll:true});}
- updateAuto();fab(s,p);layout();if(X.R)driveUi();sync();}
+ updateAuto();fab(s,p);
+ if(fk){const same=[...sh.querySelectorAll(fk[0])].find(e=>(e.getAttribute('aria-label')||e.textContent)===fk[1])||(X.place||X.draft?.length?X.fab?.querySelector('.cq-plot-primary:not([disabled])')||X.fab?.querySelector('button'):null)||sh.querySelector('button:not([disabled]),summary,input');same?.focus({preventScroll:true});}   // while placing, CONFIRM on the map
+ layout();if(X.R)driveUi();sync();}
 // While drawing walls the map is big and the menu small: UNDO and CONFIRM float on the map so the primary action is always
 // on screen (owner rule: primary actions stay on screen).
 function fab(s,p){const {button}=X.ctx;if(!X.fab){X.fab=document.createElement('div');X.fab.className='cq-plot-fab';X.stage.append(X.fab);}X.fab.replaceChildren();
