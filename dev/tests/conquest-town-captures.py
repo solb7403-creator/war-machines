@@ -37,19 +37,20 @@ async def main():
     await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
     await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(1500)
     return ctx,page,errors
-   cam=lambda page,x,z,d,tilt=.95:page.evaluate(f'(()=>{{const c=ConquestPlotView.state.cam;c.x={x};c.z={z};c.dist={d};c.tilt={tilt};}})()')
+   cam=lambda page,x,z,d,tilt=.95,yaw=0:page.evaluate(f'(()=>{{const c=ConquestPlotView.state.cam;c.x={x};c.z={z};c.dist={d};c.tilt={tilt};c.yaw={yaw};}})()')
    gate=[1080,1160]
    for q in ['high','low']:
     ctx,page,errors=await session(q,{'position':gate,'baseFunds':True,'plotGallery':True})
-    await page.locator('.cq-plot-size').click();await page.wait_for_timeout(400)
-    await cam(page,0,-32,46,.7);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'turrets-11-390-{q}.png'))
-    await cam(page,0,36,44,.8);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'wall-blends-390-{q}.png'))
+    await page.evaluate('ConquestPlotView.state.big="map"');await page.locator('.cq-plot-size').click();await page.locator('.cq-plot-size').click();await page.wait_for_timeout(400)
+    await cam(page,-4,-30,58,.55,3.14159);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'turrets-11-390-{q}.png'))
+    await cam(page,0,38,40,.6,0);await page.wait_for_timeout(900);await page.screenshot(path=str(OUT/f'wall-blends-390-{q}.png'))
     if q=='high':
      await page.locator('.cq-plot-tabs button',has_text='DRILL').click();await page.locator('button',has_text='START DEFENSE DRILL').click();await page.wait_for_function('ConquestPlotView.state?.drill',timeout=60000)
-     ms=await page.evaluate('ConquestPlotView.state.drillMs');await cam(page,0,-20,120,1.0)
+     ms=await page.evaluate('ConquestPlotView.state.drillMs');await cam(page,0,-34,70,.9);await page.evaluate('(()=>{const D=ConquestPlotView.state.drill,e=D.r.events.find(x=>x.k==="shot");if(e){D.t=Math.max(0,e.t-1);}})()')
      shots=[]
-     for k in range(6):
-      await page.wait_for_timeout(2500);await page.screenshot(path=str(OUT/f'raid-effects-{k}-390.png'));shots.append(await page.evaluate('ConquestPlotView.state.drill?ConquestPlotView.state.drill.shots.map(s=>s.ty):[]'))
+     for k in range(24):
+      await page.wait_for_timeout(500);shots.append(await page.evaluate('ConquestPlotView.state.drill?ConquestPlotView.state.drill.shots.map(s=>s.ty):[]'))
+      if k%4==3:await page.screenshot(path=str(OUT/f'raid-effects-{k//4}-390.png'))
      results['raid']={'drillMs':ms,'effectsSeen':sorted(set(t for s in shots for t in s))}
     results['gallery-'+q]={'render':await page.evaluate('ConquestPlotView.state.info'),'pageErrors':errors};assert not errors,errors
     await ctx.close()

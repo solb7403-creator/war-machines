@@ -252,4 +252,5 @@
 .cq-plot-report{border-color:#2f4b5a;background:#0b1623cc}.cq-plot-vital-lost{color:#ffb0b8}
 .cq-plot-store{font-size:10px;text-align:left}
 @media (max-width:340px){.cq-plot-ores{grid-template-columns:repeat(4,minmax(0,1fr))}.cq-plot-stat{grid-template-columns:66px 1fr 92px}}
-.cq-plot-draft{position:sticky;bottom:-10px;z-index:2;box-shadow:0 -6px 14px #070c15}   /* CONFIRM WALLS stays on screen while the picker scrolls */
+.cq-plot-fab{position:absolute;left:10px;right:64px;bottom:10px;display:flex;gap:6px;z-index:3}.cq-plot-fab[hidden]{display:none}
+.cq-plot-fab button{flex:1 1 auto;min-height:44px;font-size:11px;background:#0b1623e6}.cq-plot-fab button.cq-plot-primary{flex:2 1 auto;background:#0f3a48f2}

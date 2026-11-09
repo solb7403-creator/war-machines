@@ -101,10 +101,10 @@
    "drills": [
     {
      "outcome": "repelled",
-     "core": 95,
+     "core": 96,
      "kills": 19,
      "spawned": 19,
-     "time": 87.8
+     "time": 87.9
     },
     {
      "outcome": "repelled",
@@ -230,14 +230,14 @@
    "drills": [
     {
      "outcome": "repelled",
-     "core": 27,
+     "core": 23,
      "kills": 19,
      "spawned": 19,
-     "time": 101.4
+     "time": 101.6
     },
     {
      "outcome": "repelled",
-     "core": 13,
+     "core": 12,
      "kills": 19,
      "spawned": 19,
      "time": 95.6
@@ -251,17 +251,17 @@
     },
     {
      "outcome": "repelled",
-     "core": 27,
-     "kills": 19,
-     "spawned": 19,
-     "time": 95.1
-    },
-    {
-     "outcome": "repelled",
-     "core": 17,
+     "core": 23,
      "kills": 19,
      "spawned": 19,
      "time": 95.3
+    },
+    {
+     "outcome": "repelled",
+     "core": 1,
+     "kills": 19,
+     "spawned": 19,
+     "time": 95.4
     }
    ]
   },
@@ -290,7 +290,7 @@
      "core": 93,
      "kills": 19,
      "spawned": 19,
-     "time": 114.6
+     "time": 115.2
     },
     {
      "outcome": "repelled",
@@ -304,7 +304,7 @@
      "core": 94,
      "kills": 19,
      "spawned": 19,
-     "time": 106.9
+     "time": 107
     }
    ]
   }
@@ -335,14 +335,14 @@
     "drills": [
      {
       "outcome": "held",
-      "core": 68,
+      "core": 79,
       "kills": 200,
       "spawned": 211,
       "time": 174.9
      },
      {
       "outcome": "held",
-      "core": 83,
+      "core": 73,
       "kills": 200,
       "spawned": 211,
       "time": 174.9
@@ -373,14 +373,14 @@
     "drills": [
      {
       "outcome": "held",
-      "core": 9,
+      "core": 17,
       "kills": 210,
       "spawned": 211,
       "time": 174.9
      },
      {
       "outcome": "held",
-      "core": 4,
+      "core": 27,
       "kills": 210,
       "spawned": 211,
       "time": 174.9
@@ -393,7 +393,7 @@
      {
       "outcome": "held",
       "core": 100,
-      "kills": 197,
+      "kills": 196,
       "spawned": 211,
       "time": 174.9
      },
@@ -411,15 +411,15 @@
     "drills": [
      {
       "outcome": "held",
-      "core": 58,
-      "kills": 186,
+      "core": 61,
+      "kills": 187,
       "spawned": 211,
       "time": 174.9
      },
      {
       "outcome": "held",
-      "core": 59,
-      "kills": 187,
+      "core": 62,
+      "kills": 185,
       "spawned": 211,
       "time": 174.9
      }
@@ -430,14 +430,14 @@
     "drills": [
      {
       "outcome": "held",
-      "core": 27,
-      "kills": 196,
+      "core": 50,
+      "kills": 197,
       "spawned": 211,
       "time": 174.9
      },
      {
       "outcome": "held",
-      "core": 35,
+      "core": 48,
       "kills": 197,
       "spawned": 211,
       "time": 174.9
@@ -471,16 +471,16 @@
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 190,
+      "kills": 191,
       "spawned": 211,
-      "time": 128.4
+      "time": 129.7
      },
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 189,
+      "kills": 191,
       "spawned": 211,
-      "time": 127.3
+      "time": 129.7
      }
     ]
    },
@@ -490,16 +490,16 @@
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 206,
+      "kills": 207,
       "spawned": 211,
-      "time": 147.2
+      "time": 148.4
      },
      {
       "outcome": "breached",
       "core": 0,
       "kills": 206,
       "spawned": 211,
-      "time": 146.7
+      "time": 146.9
      }
     ]
    },
@@ -528,16 +528,16 @@
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 196,
+      "kills": 197,
       "spawned": 211,
-      "time": 154.8
+      "time": 154.3
      },
      {
       "outcome": "breached",
       "core": 0,
       "kills": 199,
       "spawned": 211,
-      "time": 154.3
+      "time": 154.6
      }
     ]
    },
@@ -546,15 +546,15 @@
     "drills": [
      {
       "outcome": "held",
-      "core": 9,
-      "kills": 185,
+      "core": 19,
+      "kills": 186,
       "spawned": 211,
       "time": 174.9
      },
      {
       "outcome": "held",
-      "core": 22,
-      "kills": 184,
+      "core": 16,
+      "kills": 185,
       "spawned": 211,
       "time": 174.9
      }
@@ -568,14 +568,14 @@
       "core": 0,
       "kills": 203,
       "spawned": 211,
-      "time": 160.9
+      "time": 161.3
      },
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 203,
+      "kills": 201,
       "spawned": 211,
-      "time": 161
+      "time": 157.7
      }
     ]
    }
@@ -606,16 +606,16 @@
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 186,
+      "kills": 178,
       "spawned": 211,
-      "time": 145.5
+      "time": 137.4
      },
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 184,
+      "kills": 183,
       "spawned": 211,
-      "time": 143.9
+      "time": 140.2
      }
     ]
    },
@@ -625,9 +625,9 @@
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 207,
+      "kills": 206,
       "spawned": 211,
-      "time": 149.4
+      "time": 150.7
      },
      {
       "outcome": "breached",
@@ -653,7 +653,7 @@
       "core": 0,
       "kills": 210,
       "spawned": 211,
-      "time": 165.3
+      "time": 169.7
      }
     ]
    },
@@ -665,14 +665,14 @@
       "core": 0,
       "kills": 192,
       "spawned": 211,
-      "time": 144.1
+      "time": 144.4
      },
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 194,
+      "kills": 193,
       "spawned": 211,
-      "time": 146.2
+      "time": 145.6
      }
     ]
    },
@@ -681,15 +681,15 @@
     "drills": [
      {
       "outcome": "held",
-      "core": 55,
+      "core": 24,
       "kills": 208,
       "spawned": 211,
       "time": 174.9
      },
      {
       "outcome": "held",
-      "core": 22,
-      "kills": 207,
+      "core": 35,
+      "kills": 208,
       "spawned": 211,
       "time": 174.9
      }
@@ -701,9 +701,9 @@
      {
       "outcome": "breached",
       "core": 0,
-      "kills": 201,
+      "kills": 202,
       "spawned": 211,
-      "time": 150.7
+      "time": 153.6
      },
      {
       "outcome": "breached",

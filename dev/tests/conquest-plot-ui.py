@@ -146,12 +146,14 @@ async def main():
     walls=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),ok=[...s.querySelectorAll('button')].find(b=>b.textContent==='CONFIRM WALLS'),ores=[...s.querySelectorAll('.cq-plot-ore')];const vis=e=>{const q=e.getBoundingClientRect();return q.width>0&&q.left>=0&&q.right<=innerWidth+1;};
       return {sheetBottom:Math.round(r.bottom),vh:innerHeight,ores:ores.length,oresFit:ores.every(vis),count:s.querySelector('.cq-plot-wallcount')?.textContent,confirm:!!ok,scrolls:s.scrollHeight>s.clientHeight};})()''')
     await page.screenshot(path=str(OUT/f'wall-tools-{w}x{h}.png'))
+    # the primary action is on screen without scrolling; the rest of the picker is reachable by a real swipe
+    walls['confirmReachable']=await page.evaluate('''(()=>{const ok=document.querySelector('.cq-plot-fab .cq-plot-primary');if(!ok||ok.disabled||!/CONFIRM WALLS/.test(ok.textContent))return false;const q=ok.getBoundingClientRect(),hit=document.elementFromPoint(q.left+q.width/2,q.top+q.height/2);return q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth&&(hit===ok||ok.contains(hit));})()''')
     if walls['scrolls']:
      await touch_swipe(ctx,page,'.cq-plot-sheet',-500)
-    walls['confirmReachable']=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),ok=[...s.querySelectorAll('button')].find(b=>b.textContent==='CONFIRM WALLS');if(!ok)return false;const q=ok.getBoundingClientRect();return q.top>=r.top-1&&q.bottom<=r.bottom+1&&q.bottom<=innerHeight;})()''')
+    walls['lastReachable']=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),st=[...s.querySelectorAll('.cq-plot-stat')].at(-1);if(!st)return false;const q=st.getBoundingClientRect();return q.top>=r.top-1&&q.bottom<=r.bottom+1;})()''')
     await page.screenshot(path=str(OUT/f'wall-confirm-{w}x{h}.png'))
     assert draft and draft[-1][1]==[33,46] and draft[-1][2]==[45,46],draft
-    assert walls['sheetBottom']<=walls['vh'] and walls['ores']==7 and walls['oresFit'] and walls['confirm'] and walls['confirmReachable'] and 'WALLS' in (walls['count'] or ''),walls
+    assert walls['sheetBottom']<=walls['vh'] and walls['ores']==7 and walls['oresFit'] and walls['confirm'] and walls['confirmReachable'] and walls['lastReachable'] and 'WALLS' in (walls['count'] or ''),walls
     # the turret list (11 types at CC10): the last card is reachable by a real swipe; placing keeps CONFIRM BUILD on screen
     await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.wait_for_timeout(500)
     for k in range(4):

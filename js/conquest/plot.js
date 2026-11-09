@@ -119,7 +119,7 @@ const BUILDINGS=T({
  cannon:tur({n:'Cannon Turret',cc:1,pw:1,role:'ALL-ROUND',turret:{range:28,dmg:34,rof:1.1,dt:'kin'},cost:grow({cp:70,alloy:5},2.4,5),desc:'Reliable kinetic turret: steady single shots at anything in range.'}),
  mg:tur({n:'Twin-Barrel MG',cc:1,pw:1,role:'VS SWARMS',turret:{range:22,dmg:7,rof:.14,dt:'kin',light:1.45},cost:grow({cp:80,alloy:5},2.4,5),desc:'Fast and light: shreds swarmlings, raiders and drones; weak against armor.'}),
  laser:tur({n:'Laser Turret',cc:2,pw:1,role:'FAST BEAM',turret:{range:24,dmg:9,rof:.25,dt:'en',light:1.2},cost:grow({cp:110,alloy:6,helium:1},2.4,5),desc:'Fast energy beam; melts light hulls.'}),
- rocket:tur({n:'Rocket Pod',cc:3,pw:1,role:'SALVO · AREA',turret:{range:30,dmg:18,salvo:4,rof:3.4,splash:3.5,dt:'kin'},cost:grow({cp:140,alloy:8,helium:1},2.4,5),desc:'Four-rocket salvos that blanket an area: best against packs.'}),
+ rocket:tur({n:'Rocket Pod',cc:3,pw:1,role:'SALVO · AREA',turret:{range:30,dmg:18,salvo:4,rof:3.4,splash:3.5,ground:1,dt:'kin'},cost:grow({cp:140,alloy:8,helium:1},2.4,5),desc:'Four-rocket salvos that blanket an area: best against packs on the ground (it cannot track flyers).'}),
  missile:tur({n:'Missile Turret',cc:4,pw:1,role:'ANTI-AIR',turret:{range:36,dmg:55,rof:2,splash:3,airFirst:1,dt:'kin'},cost:grow({cp:160,alloy:8,helium:2},2.4,5),desc:'Anti-drone missiles; hits flyers first.'}),
  mortar:tur({n:'Mortar',cc:5,pw:1,role:'LONG SPLASH',turret:{range:44,min:10,dmg:46,rof:3,splash:6,ground:1,dt:'kin'},cost:grow({cp:190,alloy:10,helium:2},2.4,5),desc:'Long-range splash on the ground; cannot hit close targets or flyers.'}),
  flame:tur({n:'Flame Projector',cc:5,pw:1,role:'SHORT CONE · BURNS',turret:{range:13,dmg:5,rof:.2,cone:.38,burn:6,burnT:3,ground:1,light:1.3,dt:'fire'},cost:grow({cp:170,alloy:9,biomass:4},2.4,5),desc:'A short cone of fire: everything in front burns for 3 s. Put it where raiders bunch up.'}),
@@ -273,7 +273,7 @@ function wallPlan(p,sections,opt={}){const cc=ccLevel(p);if(!Array.isArray(secti
  for(const [k,code] of want){const [i,j]=k.split(',').map(Number);if(!inTown(cc,i,j)){skip.outside++;continue;}if(NOBUILD[terrainAt(p.site,i,j)]){skip.blocked++;continue;}const o2=occ.get(k);if(o2&&o2!=='wall'){skip.occupied++;continue;}
   if((w[k]|0)===code){skip.same++;continue;}const isNew=!w[k];if(isNew)fresh++;const {o,l}=wdecode(code);units[o]+=ORE_UNITS[o]*BLEND_UNITS[l];out.push({i,j,code,isNew});}
  const cost={};if(fresh)cost.cm=fresh*COMPOSITE.perCell;for(let o=1;o<=6;o++)if(units[o])cost[ORES[o-1]]=Math.ceil(units[o]/40);
- const have=Object.keys(w).length,cap=wallCapOf(p,!!opt.dev),err=!out.length?'nothing to build: every cell is '+(skip.same?'already that blend':skip.occupied?'a building':skip.blocked?'blocked ground':'outside the town'):have+fresh>cap?'wall limit at CC'+cc+': '+have+' + '+fresh+' > '+cap:'';
+ const have=Object.keys(w).length,cap=wallCapOf(p,!!opt.dev),err=!out.length?'nothing to build: every cell is '+(skip.same?'already that blend':skip.occupied?'a building':skip.blocked?'blocked ground':'outside the town'):fresh&&have+fresh>cap?'wall limit at CC'+cc+': '+have+' + '+fresh+' > '+cap:'';   // re-blending existing cells never needs new capacity
  return {cells:out,skip,cost,fresh,have,cap,err};}
 function wallRemovePlan(p,sections){if(!Array.isArray(sections)||!sections.length||sections.length>MAX_SECTIONS)return {err:'invalid wall plan'};const w=p.w||{},out=new Set();let total=0;
  for(const sec of sections){const cl=shapeCells(sec);if(!cl)return {err:'invalid wall shape'};total+=cl.length;if(total>MAX_WALL_CELLS)return {err:'too many cells in one order'};for(const [i,j] of cl){const k=key(i,j);if(w[k])out.add(k);}}
@@ -325,7 +325,9 @@ function hpOfBuilding(b){if(b.t==='cc')return 1500+500*(b.l|0);const B=BUILDINGS
 // a tiny binary heap of (value, cell) for the flow field
 function Heap(){const v=[],c=[];return {get size(){return v.length;},push(x,y){let k=v.length;v.push(x);c.push(y);while(k>0){const q=(k-1)>>1;if(v[q]<=x)break;v[k]=v[q];c[k]=c[q];k=q;}v[k]=x;c[k]=y;},
  pop(){const tv=v[0],tc=c[0],lv=v.pop(),lc=c.pop();if(v.length){let k=0;for(;;){let m=2*k+1;if(m>=v.length)break;if(m+1<v.length&&v[m+1]<v[m])m++;if(v[m]>=lv)break;v[k]=v[m];c[k]=c[m];k=m;}v[k]=lv;c[k]=lc;}return [tv,tc];}};}
-function drill(plot,seed=1,opt={}){
+// The simulation as a generator: the phone runs it in slices (no main-thread freeze), the Worker runs it to the end.
+function drill(plot,seed=1,opt={}){const g=drillGen(plot,seed,opt);let r;do r=g.next();while(!r.done);return r.value;}
+function* drillGen(plot,seed=1,opt={}){
  const p=plot,S=siteOf(p),sid=S.id,cc=clampCC(p.cc),h=townH(cc),threat=clampCC(opt.threat||cc),ter=terrainMap(sid),dt=RAID.dt,frames=[],events=[],keepF=opt.frames!==false,keepE=opt.events!==false;
  const rnd=(()=>{let s=(seed>>>0)||1;return ()=>{s=Math.imul(s^s>>>15,2246822507)^Math.imul(s^s>>>13,3266489909);s^=s>>>16;return (s>>>0)/4294967296;};})();
  const blk=new Int32Array(NN).fill(-1),structs=[],hpK=Math.pow(RAID.hpGrow,threat-1),dmK=Math.pow(RAID.dmGrow,threat-1);
@@ -379,9 +381,10 @@ function drill(plot,seed=1,opt={}){
 // opt.waves: a custom wave list for unit simulations (tests); the Worker and the phone always use drillWaves(threat)
  const waves=(Array.isArray(opt.waves)?opt.waves:drillWaves(threat)).map(w=>({...w})),solid=structs.filter(s=>s.kind!=='wall');repower();
  const steps=Math.round((opt.maxT||RAID.maxT+RAID.maxTPer*(threat-1))/dt);
- for(let n=0;n<steps&&!done;n++){time=n*dt;
+ const every=opt.yieldEvery|0;
+ for(let n=0;n<steps&&!done;n++){time=n*dt;if(every&&n&&n%every===0)yield n/steps;
   for(const w of waves)if(!w.done&&time>=w.at){w.done=true;for(const kind of KIND_IDS)for(let k=0;k<(w[kind]|0);k++)spawn(kind);}
-  if(lowered.size)lower();
+  if(lowered.size&&n%5===0)lower();   // fallen structures update the field every 0.5 s (bounded work in raids where hundreds of cells fall)
   for(const f of foes){if(f.dead)continue;if(f.burn>0){f.burn-=dt;const bd=Math.min(f.hp,(f.burnD||0)*dt);f.hp-=bd;if(f.burnBy)f.burnBy.done+=bd;killFoe(f);if(f.dead){if(f.burnBy)f.burnBy.kills++;continue;}}f.cd=Math.max(0,f.cd-dt);const K=f.K;
    if(K.air){const s=airTarget(f);if(reach(f,s)<=K.range+1.5)strike(f,s);else step(f,s.x,s.z);if(done)break;continue;}
    if(reach(f,core)<=K.range+.5){strike(f,core);if(done)break;continue;}
@@ -410,5 +413,5 @@ root.ConquestPlot=Object.freeze({GRID,MID,TOWN,SITES,SITE_IDS,BUILDINGS,TURRETS,
  cellX,cellZ,key,hash,clampCC,townH,townSide,inTown,inGrid,cheb,terrainAt,heightAt,groundY,corridor,spawnCells,laneEdge,
  wallCap,wallBase,wallCapOf,extParts,wcode,wdecode,blendQ,wallStats,blendName,levelCap,countCap,tierOf,costOf,timeOf,sizeOf,cells,occupancy,countOf,turretCount,
  powerSupply,powerUse,levelOf,levelSum,modulesOf,caps,rates,accrue,power,lotsOf,homes,placeError,buildCheck,line4,rectCells,ringCells,shapeCells,wallLine,wallPlan,wallRemovePlan,
- autoPlace,newPlot,resetPlot,migrate,settle,drill,drillWaves,hpOfBuilding,wallHit,SEC,MIN,HOUR,DAY});
+ autoPlace,newPlot,resetPlot,migrate,settle,drill,drillGen,drillWaves,hpOfBuilding,wallHit,SEC,MIN,HOUR,DAY});
 })(globalThis);

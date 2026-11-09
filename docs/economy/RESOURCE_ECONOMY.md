@@ -885,7 +885,7 @@ Fast wall tools: LINE (solid, 4-connected), RECT, RING, COPY/PASTE, ERASE and UN
 | Cannon Turret | CC1 | all-round | 28 m | 34 | 1.1 s | | 1 | 70 CP + 5 alloy |
 | Twin-Barrel MG | CC1 | vs swarms | 22 m | 7 | 0.14 s | ×1.45 vs light | 1 | 80 CP + 5 alloy |
 | Laser Turret | CC2 | fast beam | 24 m | 9 | 0.25 s | ×1.2 vs light | 1 | 110 CP + 6 alloy + 1 He-3 |
-| Rocket Pod | CC3 | salvo · area | 30 m | 18 ×4 | 3.4 s | 4-rocket salvo, 3.5 m splash | 1 | 140 CP + 8 alloy + 1 He-3 |
+| Rocket Pod | CC3 | salvo · area | 30 m | 18 ×4 | 3.4 s | 4-rocket salvo, 3.5 m splash, ground only | 1 | 140 CP + 8 alloy + 1 He-3 |
 | Missile Turret | CC4 | anti-air | 36 m | 55 | 2 s | 3 m splash, flyers first | 1 | 160 CP + 8 alloy + 2 He-3 |
 | Mortar | CC5 | long splash | 44 m | 46 | 3 s | 6 m splash, min 10 m, ground only | 1 | 190 CP + 10 alloy + 2 He-3 |
 | Flame Projector | CC5 | short cone · burns | 13 m | 5 | 0.2 s | cone, burns 6/s for 3 s, ×1.3 vs light | 1 | 170 CP + 9 alloy + 4 biomass |
@@ -896,7 +896,13 @@ Fast wall tools: LINE (solid, 4-connected), RECT, RING, COPY/PASTE, ERASE and UN
 Levels I–V as before (+25% damage, +4% range a level; cost ×2.4 a level).
 
 ### 14.8 The whole-town raid (Defense Drill now, async raids in Session 7)
-Waves gather at the lanes just outside the town and path to the Command Center over a Dijkstra flow field whose cell cost is 1 (2 on ice) + the effective HP of any structure there ÷ 40 + the threat of the turrets covering it (dps × 0.008), so they break through the weakest wall and avoid kill zones when a detour is cheap. On the way they attack whatever blocks them; raiders, swarmlings and sentinels also attack structures in reach (sentinels prefer turrets); brutes break walls (×1.8). Kinds: raider 110 HP, swarmling 34, sentinel 420 (30% armor), brute 1,500 (45% armor), drone 70 (flies straight at turrets, then vitals). Waves by threat T (= CC): three waves (four from T6) of raiders 3+T…, swarmlings 2T–4T, sentinels, drones and, from T5, brutes; HP ×(1 + 0.07(T−1)), damage ×(1 + 0.05(T−1)). Deterministic from (layout, seed, threat); the Worker runs it without frames for the log and the phone replays the same seed. Bounded: a full CC10 town (2,000 walls, 42 turrets, ~60 homes, 211 raiders) simulates in 40–170 ms in node (numbers in `docs/conquest/session5b/town-rules.json`).
+Waves gather at the lanes just outside the town and path to the Command Center over a Dijkstra flow field whose cell cost is 1 (2 on ice) + the effective HP of any structure there ÷ 40 + the threat of the turrets covering it (dps × 0.008), so they break through the weakest wall and avoid kill zones when a detour is cheap. On the way they attack whatever blocks them; raiders, swarmlings and sentinels also attack structures in reach (sentinels prefer turrets); brutes break walls (×1.8). Kinds: raider 110 HP, swarmling 34, sentinel 420 (30% armor), brute 1,500 (45% armor), drone 70 (flies straight at turrets, then vitals). Waves by threat T (= CC): three waves (four from T6) of raiders 3+T…, swarmlings 2T–4T, sentinels, drones and, from T5, brutes; HP ×1.19^(T−1) (×4.8 at T10), damage ×1.11^(T−1) (×2.6), up to 130 + 5(T−1) s. Deterministic from (layout, seed, threat); the Worker runs it without frames for the log (the result shown is the log's); the phone replays the same seed, simulated in 8 ms slices so it never freezes. Bounded: a full CC10 town (2,000–2,600 walls, 42 turrets, ~60 homes, 211 raiders) median 56–129 ms on the Worker path in node (numbers in `docs/conquest/session5b/town-rules.json`).
+
+### 14.9 Balance model (`dev/tests/conquest-town-balance.mjs`, numbers in `docs/conquest/session5b/balance-model.json`)
+- CC1 starter town (2 Cannons + 1 Twin-Barrel MG at level I, a 53-cell composite + Ferrite-light ring: 53 composite, 53 Ferrite) holds the threat-1 drill on all seven sites × 5 seeds; an undefended CC1 town always falls.
+- CC10 town (legal power: 5 Reactors, production, 3 Shield Generators, 42 turrets of all eleven types) with 2,000 cells of heavy rare blends holds threat 10 on all seven sites × 2 seeds.
+- The same town with 3,000 composite-only cells (+50% extensions, no ore) loses its Command Center in 12 of 14 drills (the other two end at 9% and 22%); with no walls it falls in 12 of 14. Spending power without materials does not hold.
+Modeled with scenario layouts, not a human playtest.
 
 ## Appendix: model assumptions (`dev/tools/economy-model.mjs`)
 

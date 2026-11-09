@@ -208,7 +208,11 @@ function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.s
   el('small','','SECOND BUILDER and SPEED-UPS: store items, unavailable until payments are certified.',box);}
  if(X.mode==='view')viewTab(body,s,p,L,now);else if(X.mode==='build')buildTab(body,s,p,L);else if(X.mode==='walls')wallTab(body,s,p);else drillTab(body,s,p);
  for(const d of sh.querySelectorAll('details'))if(X.openFolds?.has(d.querySelector('summary')?.textContent))d.open=true;sh.scrollTop=X.place&&!X.wasPlace?0:scroll;X.wasPlace=!!X.place;   // a new blueprint: CONFIRM BUILD at the top, on screen
- layout();sync();}
+ fab(s,p);layout();sync();}
+// While drawing walls the map is big and the menu small: UNDO and CONFIRM float on the map so the primary action is always
+// on screen (owner rule: primary actions stay on screen).
+function fab(s,p){const {button}=X.ctx;if(!X.fab){X.fab=document.createElement('div');X.fab.className='cq-plot-fab';X.stage.append(X.fab);}const plan=X.mode==='walls'?draftPlan(p):null;X.fab.replaceChildren();X.fab.hidden=!plan;if(!plan)return;
+ const ok=button('CONFIRM WALLS · '+plan.cells.length,async()=>{if(await act('plot-wall',{s:X.draft.map(d=>d.sec)},'BUILDING WALLS…')&&X){X.draft=[];render();}},'cq-plot-primary');ok.disabled=!!plan.err;ok.title=plan.err||price(plan.cost);X.fab.append(button('↶ UNDO',()=>{X.draft.pop();render();}),ok);}
 // Once a second: only the live numbers change (builder countdown, production), never the open sections or a designer in progress.
 function tickUi(){if(!X||X.visit)return;const s=X.ctx.view.authority?.state,p=s?.plot;if(!p)return;const now=Date.now(),j=p.job,box=X.sheet.querySelector('.cq-plot-job');
  if(j&&box){const b=box.querySelector('b'),pr=box.querySelector('progress'),B=j.t==='cc'?{n:'Command Center'}:P.BUILDINGS[j.t];if(b)b.textContent='BUILDER · '+B.n.toUpperCase()+' '+romanOf(j.l)+' · '+dur(j.ready-now);if(pr)pr.value=Math.max(0,Math.min(1,1-(j.ready-now)/Math.max(1,j.ready-j.at)));}
@@ -272,6 +276,15 @@ function wallTab(body,s,p){const {el,button}=X.ctx,dev=devOn(),cap=P.wallCapOf(p
  el('b','cq-plot-wallcount','WALLS '+n+(plan?.fresh?' + '+plan.fresh:'')+' / '+base+(cap>base?' (+EXT '+(cap-base)+')':'')+' · COMPOSITE '+(dev?'∞':fmt(Math.floor(p.cm||0))),body);
  const tr=el('div','cq-plot-row cq-plot-tools',null,body);for(const [id,lab,tip] of TOOLS){const b=button(lab,()=>{X.tool=id;X.draw=null;render();},X.tool===id?'on':'');b.title=tip;b.setAttribute('aria-pressed',String(X.tool===id));if(id==='paste')b.disabled=!X.clip;tr.append(b);}
  el('small','cq-plot-tooltip',(TOOLS.find(t=>t[0]===X.tool)||TOOLS[0])[2].toUpperCase()+' · two fingers (or ✥) pan the map',body);
+ // the draft and its CONFIRM come first (primary action on screen); the blend picker below sets the next section's blend
+ if(plan){const sk=plan.skip,skipped=sk.outside+sk.blocked+sk.occupied+sk.same,box=el('div','cq-plot-draft',null,body);
+  el('b','',X.draft.length+' SECTION'+(X.draft.length>1?'S':'')+' · '+plan.cells.length+' CELLS'+(skipped?' ('+skipped+' skipped: '+[sk.same&&sk.same+' same',sk.occupied&&sk.occupied+' buildings',sk.blocked&&sk.blocked+' blocked',sk.outside&&sk.outside+' outside'].filter(Boolean).join(', ')+')':''),box);
+  el('small','',plan.err?'✕ '+plan.err.toUpperCase():'COST · '+(dev?'FREE (DEV MODE)':price(plan.cost)||'nothing'),box);
+  const r=el('div','cq-plot-row',null,box);r.append(button('↶ UNDO',()=>{X.draft.pop();render();}),button('CLEAR',()=>{X.draft=[];render();}));const ok=button('CONFIRM WALLS',async()=>{if(await act('plot-wall',{s:X.draft.map(d=>d.sec)},'BUILDING WALLS…')&&X){X.draft=[];render();}},'cq-plot-primary');ok.disabled=!!plan.err;r.append(ok);
+  const short=!plan.err&&storesShort(s,p,plan.cost);if(short)box.append(button('MOVE '+price(short)+' TO BASE STORES',()=>moveStores(short)));
+  if(!dev&&(plan.cost.cm||0)>Math.floor(p.cm||0))el('small','','Not enough composite: load alloy in the FOUNDRY (BASE tab).',box);}
+ else if(X.tool!=='erase'&&X.tool!=='copy')el('p','cq-plot-hint','Draw on the map: sections collect here, UNDO takes the last one back, CONFIRM builds them all at once.',body);
+
  if(X.tool!=='erase'&&X.tool!=='copy'){// the blend picker: ore chips, level, live stats
   const st=storesOf(s,p),bp=el('div','cq-plot-blend',null,body),ores=el('div','cq-plot-ores',null,bp);
   for(let o=0;o<=6;o++){const m=P.ORES[o-1],lock=p.cc<P.ORE_CC[o],look=ORE_LOOK[o],b=button('',()=>{X.blend={o,l:o?(X.blend.l||1):0};render();},'cq-plot-ore'+(X.blend.o===o?' on':''));b.style.setProperty('--ore',hex(look[0]));b.style.setProperty('--acc',hex(look[1]));
@@ -281,23 +294,17 @@ function wallTab(body,s,p){const {el,button}=X.ctx,dev=devOn(),cap=P.wallCapOf(p
   for(const [lab,v,mx,txt] of [['STRENGTH',w.hp,best.hp,fmt(w.hp)+' HP'],['DURABILITY',w.dr,.4,Math.round(w.dr*100)+'% less damage'],['REFLECT',w.refl,.35,Math.round(w.refl*100)+'% bounced back']]){const r=el('div','cq-plot-stat',null,bars);el('span','',lab,r);const m=el('meter','',null,r);m.min=0;m.max=mx;m.value=v;el('small','',txt,r);}
   const per=X.blend.o?P.ORE_UNITS[X.blend.o]*P.BLEND_UNITS[X.blend.l]/40:0;el('small','',P.blendName(code).toUpperCase()+' · a cell: 1 composite'+(per?' + '+(per>=1?per:'1 per '+Math.round(1/per)+' cells of')+' '+P.ORE_NAME[P.ORES[X.blend.o-1]]:'')+(X.blend.o>=3?' · rare ores are earn-only':''),bp);}
  if(X.tool==='erase'&&X.erase){const m=X.erase;el('b','',m.keys.length+' WALL CELLS SELECTED · their composite comes back (ore does not)',body);const r=el('div','cq-plot-row',null,body);r.append(button('CANCEL',()=>{X.erase=null;render();}));const rm=button('REMOVE '+m.keys.length+' WALLS',()=>{if(rm.dataset.sure){act('plot-remove',{w:[m.sec]},'REMOVING WALLS…').then(ok=>{if(ok&&X)X.erase=null;});}else{rm.dataset.sure='1';rm.textContent='TAP AGAIN TO REMOVE '+m.keys.length;}},'cq-plot-danger');r.append(rm);}
- if(X.tool==='copy'||X.tool==='paste')el('small','',X.clip?'COPIED '+X.clip.cells.length+' wall cells. PASTE, then tap where the top-left corner goes.':'COPY: drag a box over walls you built.',body);
- if(plan){const sk=plan.skip,skipped=sk.outside+sk.blocked+sk.occupied+sk.same,box=el('div','cq-plot-draft',null,body);
-  el('b','',X.draft.length+' SECTION'+(X.draft.length>1?'S':'')+' · '+plan.cells.length+' CELLS'+(skipped?' ('+skipped+' skipped: '+[sk.same&&sk.same+' same',sk.occupied&&sk.occupied+' buildings',sk.blocked&&sk.blocked+' blocked',sk.outside&&sk.outside+' outside'].filter(Boolean).join(', ')+')':''),box);
-  el('small','',plan.err?'✕ '+plan.err.toUpperCase():'COST · '+(dev?'FREE (DEV MODE)':price(plan.cost)||'nothing'),box);
-  const r=el('div','cq-plot-row',null,box);r.append(button('↶ UNDO',()=>{X.draft.pop();render();}),button('CLEAR',()=>{X.draft=[];render();}));const ok=button('CONFIRM WALLS',async()=>{if(await act('plot-wall',{s:X.draft.map(d=>d.sec)},'BUILDING WALLS…')&&X){X.draft=[];render();}},'cq-plot-primary');ok.disabled=!!plan.err;r.append(ok);
-  const short=!plan.err&&storesShort(s,p,plan.cost);if(short)box.append(button('MOVE '+price(short)+' TO BASE STORES',()=>moveStores(short)));
-  if(!dev&&(plan.cost.cm||0)>Math.floor(p.cm||0))el('small','','Not enough composite: load alloy in the FOUNDRY (BASE tab).',box);}
- else if(X.tool!=='erase'&&X.tool!=='copy')el('p','cq-plot-hint','Draw on the map: sections collect here, UNDO takes the last one back, CONFIRM builds them all at once.',body);}
+ if(X.tool==='copy'||X.tool==='paste')el('small','',X.clip?'COPIED '+X.clip.cells.length+' wall cells. PASTE, then tap where the top-left corner goes.':'COPY: drag a box over walls you built.',body);}
 function storesShort(s,p,cost){if(s?.dev?.on)return null;const o2=storesOf(s,p),o={};for(const k of P.MNS)if(cost[k]&&o2[k]<cost[k])o[k]=cost[k]-o2[k];return Object.keys(o).length?o:null;}
 async function moveStores(mn){if(typeof baseStore!=='function'){say('UPDATE THE GAME TO MOVE MINERALS');return;}say('MOVING MINERALS FROM YOUR WALLET…');const ok=await baseStore(mn);say(ok?'MINERALS IN BASE STORES':'NOT MOVED');render();}
 function drillTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A simulated Parasite raid on your whole town at threat '+p.cc+' ('+P.SITES[p.site].lanes.length+' lanes). Raiders path to your Command Center through the weakest wall and hit everything on the way; the raid wins if the Command Center falls. Drills never pay rewards.',body);
- const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…')){say('SIMULATING THE RAID…');setTimeout(startReplay,40);}},'cq-plot-primary');b.disabled=!!X.drill||wait>0;body.append(b);
+ const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…'))startReplay();},'cq-plot-primary');b.disabled=!!X.drill||!!X.simulating||wait>0;body.append(b);
  if(X.drillResult){const r=X.drillResult,name=t=>t==='cc'?'Command Center':P.BUILDINGS[t]?.n||t,box=el('div','cq-plot-report',null,body);
-  el('b','cq-plot-result '+r.outcome,(r.outcome==='breached'?'COMMAND CENTER FELL · RAID WON':r.outcome==='repelled'?'REPELLED':'HELD')+' · '+r.kills+'/'+r.spawned+' PARASITES DOWN · COMMAND CENTER '+r.core+'%',box);
-  el('small','','BREACHES · '+(r.breaches.length?r.breaches.length+' ('+r.wallsLost+' wall cells lost; red rings on the map)':'none')+' · HOMES LOST '+r.homesLost+(r.power<100?' · POWER '+r.power+'%':''),box);
-  if(r.vitals.length)el('small','cq-plot-vital-lost','◆ VITALS LOST · '+r.vitals.map(t=>name(t)+': '+(P.VITAL_EFFECT[t]||'')).join(' · '),box);
-  if(r.fell.length)el('small','','FELL · '+r.fell.map(f=>name(f.t)).join(', '),box);
+  const L=r.log&&r.log.seed===r.seed?r.log:null,same=!L||L.outcome===r.outcome&&L.kills===r.kills,o=L?L.outcome:r.outcome;   // the Worker's log is the result; the phone's replay is the picture
+  el('b','cq-plot-result '+o,(o==='breached'?'COMMAND CENTER FELL · RAID WON':o==='repelled'?'REPELLED':'HELD')+' · '+(L?L.kills:r.kills)+'/'+(L?L.spawned:r.spawned)+' PARASITES DOWN · COMMAND CENTER '+(L?L.core:r.core)+'%',box);
+  const vit=L?(L.vitals||[]):r.vitals,br=L?L.breaches|0:r.breaches.length;el('small','','BREACHES · '+(br?br+' ('+(L?L.walls|0:r.wallsLost)+' wall cells lost; red rings on the map)':'none')+' · HOMES LOST '+(L?L.homes|0:r.homesLost)+(same&&r.power<100?' · POWER '+r.power+'%':''),box);
+  if(vit.length)el('small','cq-plot-vital-lost','◆ VITALS LOST · '+vit.map(t=>name(t)+': '+(P.VITAL_EFFECT[t]||'')).join(' · '),box);
+  if(same&&r.fell.length)el('small','','FELL · '+r.fell.map(f=>name(f.t)).join(', '),box);
   const e=p.log?.[0];if(e?.ext)el('small','cq-plot-next','MILESTONE · +'+e.ext+'% WALL CAPACITY EARNED',box);
   if(r.outcome==='breached')el('small','','TIP · raiders gather at the red lane marks outside your town edge. Wall across them, blend the walls they hit first, keep turrets covering the breach points and vitals behind walls.',box);}
  const log=el('details','cq-map-fold',null,body);el('summary','','BASE LOG · '+(p.log||[]).length+' DRILLS',log);for(const e of p.log||[])el('p','',new Date(e.at).toLocaleString()+' · '+e.outcome.toUpperCase()+' · '+e.kills+'/'+e.spawned+' · '+(e.breaches|0)+' breaches · '+e.lost+' lost · CC '+e.core+'%',log);}
@@ -361,7 +368,8 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);_q.setFromAxisAngle(up,a);M4.compose(_v.set(it.x,it.y,it.z),_q,_s.set(it.dead?0:1,it.dead?0:1,it.dead?0:1));t.hd.setMatrixAt(it.n,M4);}t.hd.instanceMatrix.needsUpdate=true;}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
- const far=c.dist>180;if(far!==!!R.far){R.far=far;sync();}   // distance LOD: the whole CC10 town in view draws the lighter wall and home geometry
+ const far=R.far?c.dist>165:c.dist>195;if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
+  const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo;R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
  crewStep(R,plotOf());if(X.drill)drillStep(dt);
  R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer,vx=sr.left-hr.left,vy=hr.bottom-sr.bottom;r.setScissorTest(false);r.clear();r.setViewport(vx,vy,w,h);r.setScissor(vx,vy,w,h);r.setScissorTest(true);r.render(R.sc,R.cam);r.setScissorTest(false);r.setViewport(0,0,hr.width||w,hr.height||h);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
 // crew walk between buildings, rovers drive the lanes (presentation)
@@ -373,7 +381,13 @@ function crewStep(R,p){if(!p)return;const T=R.T,mt=R._m||(R._m=new T.Matrix4()),
 // The phone replays the Worker's drill from its seed (same deterministic simulation): raiders, every turret type's firing
 // effect, walls/homes/buildings falling, then the breach points and the fallen structures. The replay time is measured
 // (X.drillMs) because the simulation runs once on the phone before the replay starts.
-function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e)return;const t0=performance.now(),r=P.drill(p,e.seed,{threat:e.threat});X.drillMs=Math.round(performance.now()-t0);X.drill={r,t:0,fi:0,ei:0,shots:[],gone:new Set()};X.drillResult=null;X.mode='drill';X.cam.dist=Math.min(320,140+P.townH(p.cc)*3);X.cam.x=0;X.cam.z=8;render();}
+// The simulation runs in slices of about 8 ms (a generator), so the phone never freezes, even for a CC10 town; the time it
+// took is X.drillMs (wall clock) and X.drillCpu (pure simulation time).
+function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e||X.simulating)return;const g=P.drillGen(p,e.seed,{threat:e.threat,yieldEvery:25}),t0=performance.now();let cpu=0;X.simulating=true;
+ const pump=()=>{if(!X){return;}const a=performance.now();let r;do{r=g.next();}while(!r.done&&performance.now()-a<8);cpu+=performance.now()-a;
+  if(!r.done){say('SIMULATING THE RAID… '+Math.round(100*r.value)+'%');setTimeout(pump,0);return;}
+  X.simulating=false;X.drillMs=Math.round(performance.now()-t0);X.drillCpu=Math.round(cpu);say('');X.drill={r:r.value,log:e,t:0,fi:0,ei:0,shots:[],gone:new Set()};X.drillResult=null;X.mode='drill';X.cam.dist=Math.min(320,140+P.townH(p.cc)*3);X.cam.x=0;X.cam.z=8;render();};
+ pump();}
 function hideStruct(id,p){const R=X.R;if(!R)return;if(id.startsWith('w:')){const e=R.wcell?.get(id.slice(2));if(e){const T=R.T,m=new T.Matrix4().makeScale(0,0,0);e[0].setMatrixAt(e[1],m);e[0].instanceMatrix.needsUpdate=true;}return;}
  const he=R.hcell?.get(id);if(he){he[0].setMatrixAt(he[1],new R.T.Matrix4().makeScale(0,0,0));he[0].instanceMatrix.needsUpdate=true;return;}
  for(const t of R.tur.values())for(const it of t.items)if(it.id===id){it.dead=true;t.base.setMatrixAt(it.n,new R.T.Matrix4().makeScale(0,0,0));t.base.instanceMatrix.needsUpdate=true;return;}
@@ -391,18 +405,18 @@ function drillStep(dt){const D=X.drill,R=X.R,p=plotOf();D.t+=dt*1.6;const fr=D.r
    else put(kind,o[0],o[1],o[2],sh.x,sh.z,kind==='burst'||kind==='rail'?1.6:1);
    for(const t of R.tur.values())for(const it of t.items)if(it.id===sh.from)it.aim=Math.atan2(sh.x-it.x,sh.z-it.z);const e=R.meshes.get(sh.from);if(e?.o.userData.head)e.o.userData.head.userData.aim=Math.atan2(sh.x-o[0],sh.z-o[2])+(e.o.rotation.y||0);}
   for(const [k2,im] of Object.entries(R.fx)){im.count=fc[k2];im.visible=fc[k2]>0;im.instanceMatrix.needsUpdate=true;}}
- if(D.t>=D.r.time+1){X.drillResult=D.r;X.drill=null;if(R){for(const im of [...Object.values(R.foes),...Object.values(R.fx)]){im.count=0;im.visible=false;}for(const e of R.meshes.values()){e.o.visible=true;if(e.o.userData.head)delete e.o.userData.head.userData.aim;}for(const t of R.tur.values())for(const it of t.items){delete it.aim;}R.keys.walls=R.keys.homes=R.keys.tur=null;}render();}}
+ if(D.t>=D.r.time+1){X.drillResult={...D.r,log:D.log};X.drill=null;if(R){for(const im of [...Object.values(R.foes),...Object.values(R.fx)]){im.count=0;im.visible=false;}for(const e of R.meshes.values()){e.o.visible=true;if(e.o.userData.head)delete e.o.userData.head.userData.aim;}for(const t of R.tur.values())for(const it of t.items){delete it.aim;}R.keys.walls=R.keys.homes=R.keys.tur=null;}render();}}
 
 // ------------------------------------------------------------------- 2D fallback ---------------------------------------
 // One pixel per cell in an offscreen canvas (terrain, walls by blend, homes), drawn scaled with no smoothing; buildings,
 // raiders and previews on top. Cheap on any phone at any town size.
-function layer2d(p){const key=p.site+p.cc+JSON.stringify(p.w)+P.homes(p).length;if(X.l2?.key===key)return X.l2.c;const n=P.GRID.n,c=X.l2?.c||document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d'),img=g.createImageData(n,n),h=P.townH(p.cc);
+function layer2d(p){if(X.l2?.p===p&&X.l2.cc===p.cc)return X.l2.c;const key=p.site+p.cc+JSON.stringify(p.w)+P.homes(p).length;if(X.l2?.key===key){X.l2.p=p;return X.l2.c;}const n=P.GRID.n,c=X.l2?.c||document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d'),img=g.createImageData(n,n),h=P.townH(p.cc);
  const put=(i,j,rgb)=>{const o=(j*n+i)*4;img.data[o]=rgb[0];img.data[o+1]=rgb[1];img.data[o+2]=rgb[2];img.data[o+3]=255;};
  const T2={ground:[43,47,54],lush:[32,58,28],ash:[34,32,36],pass:[58,34,32],ice:[120,160,180],rim:[42,42,48],cliff:[26,27,32],water:[18,58,92],rock:[46,40,36],crevasse:[10,20,30],vent:[110,44,20],deposit:[122,74,44]};
  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const t=T2[P.terrainAt(p.site,i,j)]||T2.ground,f=P.cheb(i,j)<=h?1:.45;put(i,j,t.map(v=>Math.round(v*f)));}
  for(const hm of P.homes(p))for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]])put(hm.i+a,hm.j+b,[150,110,70]);
  for(const [kk,code] of Object.entries(p.w)){const [i,j]=kk.split(',').map(Number),{o,l}=P.wdecode(code),c0=ORE_LOOK[o][0],c1=ORE_LOOK[o][1],t=o?l/3*.6:0,mix=k=>Math.round(((c0>>k)&255)*(1-t)+((c1>>k)&255)*t);put(i,j,[mix(16),mix(8),mix(0)]);}
- g.putImageData(img,0,0);X.l2={key,c};return c;}
+ g.putImageData(img,0,0);X.l2={key,c,p,cc:p.cc};return c;}
 function draw2d(){if(!X?.cv)return;const cv=X.cv,p=plotOf();if(!p)return;const r=X.stage.getBoundingClientRect(),dpr=Math.min(2,root.devicePixelRatio||1);if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);}   // height too: the stage resizes whenever the menu does
  const g=cv.getContext('2d'),n=P.GRID.n,cs=Math.min(cv.width,cv.height)/(P.townSide(p.cc)+4)*(170/X.cam.dist),ox=cv.width/2-X.cam.x/P.GRID.cell*cs,oy=cv.height/2-X.cam.z/P.GRID.cell*cs,X0=i=>ox+(i-(n-1)/2-.5)*cs,Y0=j=>oy+(j-(n-1)/2-.5)*cs;X.map2d={cs,ox,oy};
  g.fillStyle='#05070d';g.fillRect(0,0,cv.width,cv.height);g.imageSmoothingEnabled=false;g.drawImage(layer2d(p),X0(0),Y0(0),n*cs,n*cs);
@@ -473,15 +487,17 @@ function classify(p,cells){const occ=P.occupancy(p),code=P.wcode(X.blend.o,X.ble
 function drawStart(c){const p=plotOf();if(!p||!c)return;if(X.tool==='paste'){pasteAt(c);return;}X.draw={a:c,b:c,cells:drawCells(c,c)};X.draw.ok=classify(p,X.draw.cells);holo();if(!X.R)draw2d();}
 function drawMove(c){if(!X.draw||!c)return;const p=plotOf();if(c[0]===X.draw.b[0]&&c[1]===X.draw.b[1])return;if(X.tool==='ring'&&Math.hypot(c[0]-X.draw.a[0],c[1]-X.draw.a[1])>44)return;X.draw.b=c;X.draw.cells=drawCells(X.draw.a,c);X.draw.ok=classify(p,X.draw.cells);holo();if(!X.R)draw2d();}
 function drawEnd(){const d=X.draw,p=plotOf();X.draw=null;if(!d||!p){render();return;}
- if(X.tool==='copy'){const cells=d.cells.filter(([i,j])=>p.w[P.key(i,j)]).map(([i,j])=>[i-Math.min(d.a[0],d.b[0]),j-Math.min(d.a[1],d.b[1]),p.w[P.key(i,j)]|0]);X.clip=cells.length?{cells}:null;say(cells.length?'COPIED '+cells.length+' WALL CELLS · PASTE IS READY':'NO WALLS IN THAT BOX');if(cells.length)X.tool='paste';render();return;}
- if(X.tool==='erase'){const keys=d.cells.filter(([i,j])=>p.w[P.key(i,j)]).map(([i,j])=>P.key(i,j));X.erase=keys.length?{keys,sec:{k:'cells',c:keys.flatMap(k=>k.split(',').map(Number))}}:null;if(!keys.length)say('NO WALLS IN THAT BOX');render();return;}
+ const ONE=1000;   // one order carries at most 1,200 cells and 9,000 characters: copy and erase up to 1,000 at a time
+ if(X.tool==='copy'){const cells=d.cells.filter(([i,j])=>p.w[P.key(i,j)]).map(([i,j])=>[i-Math.min(d.a[0],d.b[0]),j-Math.min(d.a[1],d.b[1]),p.w[P.key(i,j)]|0]);if(cells.length>ONE){say('COPY UP TO '+ONE+' WALL CELLS AT A TIME ('+cells.length+' IN THAT BOX)');render();return;}X.clip=cells.length?{cells}:null;say(cells.length?'COPIED '+cells.length+' WALL CELLS · PASTE IS READY':'NO WALLS IN THAT BOX');if(cells.length)X.tool='paste';render();return;}
+ if(X.tool==='erase'){const keys=d.cells.filter(([i,j])=>p.w[P.key(i,j)]).map(([i,j])=>P.key(i,j));if(keys.length>ONE){say('ERASE UP TO '+ONE+' WALL CELLS AT A TIME ('+keys.length+' IN THAT BOX)');X.erase=null;render();return;}X.erase=keys.length?{keys,sec:{k:'cells',c:keys.flatMap(k=>k.split(',').map(Number))}}:null;if(!keys.length)say('NO WALLS IN THAT BOX');render();return;}
  if(X.draft.length>=P.MAX_SECTIONS){say('CONFIRM THESE FIRST (UP TO '+P.MAX_SECTIONS+' SECTIONS AN ORDER)');render();return;}
  X.draft.push({sec:{k:X.tool,a:d.a,b:d.b,o:X.blend.o,l:X.blend.l}});render();}
 function pasteAt(c){const p=plotOf();if(!X.clip||!p)return;const by=new Map();for(const [di,dj,code] of X.clip.cells){const i=c[0]+di,j=c[1]+dj;if(!P.inGrid(i,j))continue;if(!by.has(code))by.set(code,[]);by.get(code).push(i,j);}
  if(X.draft.length+by.size>P.MAX_SECTIONS){say('CONFIRM THE DRAFT FIRST (UP TO '+P.MAX_SECTIONS+' SECTIONS AN ORDER)');return;}for(const [code,flat] of by){const {o,l}=P.wdecode(code);X.draft.push({sec:{k:'cells',c:flat,o,l}});}say('PASTED · CONFIRM WALLS TO BUILD');render();}
 function input(){const el=X.stage,pts=new Map();let start=null,moved=0,pinch=0,mid=null;
  const drawing=()=>X.mode==='walls'&&!X.pan&&!X.place;
- el.addEventListener('pointerdown',e=>{el.setPointerCapture?.(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;
+ el.addEventListener('pointerdown',e=>{if(e.target.closest?.('button'))return;   // ⟲ ⤢ ✥ sit on the map: tapping them never draws a wall cell
+  el.setPointerCapture?.(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;
   if(pts.size===1){start={x:e.clientX,y:e.clientY,cx:X.cam.x,cz:X.cam.z};if(drawing())drawStart(cellAt(e.clientX,e.clientY));}
   else if(pts.size===2){const [a,b]=[...pts.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y);mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};start=null;if(X.draw){X.draw=null;holo();}}});
  const panBy=(dx,dy,cx,cz)=>{const k=X.cam.dist/((el.clientHeight||600)*.9),cs=Math.cos(X.cam.yaw),sn=Math.sin(X.cam.yaw),lim=(P.townH(plotOf()?.cc||1)+6)*P.GRID.cell;X.cam.x=Math.max(-lim,Math.min(lim,cx-(dx*cs+dy*sn)*k));X.cam.z=Math.max(-lim,Math.min(lim,cz-(-dx*sn+dy*cs)*k));};

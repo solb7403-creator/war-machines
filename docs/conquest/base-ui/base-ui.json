@@ -48,7 +48,7 @@
    "enterVisible": true,
    "scroll": {
     "scrollable": true,
-    "scrolledBy": 159
+    "scrolledBy": 139
    }
   },
   "leftTo": {
@@ -110,7 +110,8 @@
     "count": "WALLS 0 + 13 / 2000 \u00b7 COMPOSITE 200",
     "confirm": true,
     "scrolls": true,
-    "confirmReachable": true
+    "confirmReachable": true,
+    "lastReachable": true
    },
    "draft": [
     [
@@ -128,7 +129,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1938,
+    "scrollTop": 1953,
     "confirmOnScreen": true
    },
    "pageErrors": []
@@ -142,7 +143,8 @@
     "count": "WALLS 0 + 13 / 2000 \u00b7 COMPOSITE 200",
     "confirm": true,
     "scrolls": true,
-    "confirmReachable": true
+    "confirmReachable": true,
+    "lastReachable": true
    },
    "draft": [
     [

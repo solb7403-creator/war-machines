@@ -66,7 +66,7 @@ async def main():
    wallPlan=await page.locator('.cq-plot-draft b').inner_text()
    mv=page.locator('button',has_text='TO BASE STORES')
    if await mv.count():await mv.first.click();await page.wait_for_function('(save.bmn?.fe||0)>0',timeout=30000)
-   await page.wait_for_timeout(500);await page.screenshot(path=str(OUT/'wall-ring-draft-390.png'));await page.locator('button',has_text='CONFIRM WALLS').click();await page.wait_for_function('Object.keys(Conquest.view.authority.state.plot.w).length>0',timeout=30000)
+   await page.wait_for_timeout(500);await page.screenshot(path=str(OUT/'wall-ring-draft-390.png'));await page.locator('.cq-plot-fab .cq-plot-primary').click();await page.wait_for_function('Object.keys(Conquest.view.authority.state.plot.w).length>0',timeout=30000)
    walls=await st(page,'Object.keys(s.plot.w).length');blended=await st(page,'Object.values(s.plot.w).filter(c=>c>1).length');await page.wait_for_timeout(600);await page.screenshot(path=str(OUT/'ferrite-ring-390.png'))
    # ---------- Defense Drill ----------
    await page.wait_for_function('Object.values(Conquest.view.authority.state.plot.b).some(b=>b.t==="cannon"&&b.l===1)',timeout=40000)

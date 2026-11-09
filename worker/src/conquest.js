@@ -21,12 +21,12 @@ import {isOwner,OWNER_PID,OWNER_ADMIN} from './owner.js';
 // and the base stays off the top 20 and Base of the Week (publishBase). Minerals, wallet and account are never minted.
 export const DEV_ACTIONS=['dev-on','dev-off','dev-finish'];
 const UNLIMITED=1e9;
-export function unlimited(previous,run){const q=structuredClone(previous),L0=previous.ledger||{cp:0,banked:{}},mn0=previous.plot?.mnSpent||{},cm0=previous.plot?.cm,fh0=previous.plot?.fh;
+export function unlimited(previous,run){const q=structuredClone(previous),L0=previous.ledger||{cp:0,banked:{}},mn0=previous.plot?.mnSpent||{},cm0=previous.plot?.cm,fh0=previous.plot?.fh,ext0=previous.plot?.ext?structuredClone(previous.plot.ext):undefined;
  const keys=new Set([...Object.keys(L0.banked||{}),'alloy','biomass','helium']);q.ledger.cp=UNLIMITED;q.ledger.banked=Object.fromEntries([...keys].map(k=>[k,UNLIMITED]));
  // Session 5B: unlimited wall composite and the full +50% wall extension while dev mode is on (restored afterwards)
  if(q.plot){q.plot.cm=UNLIMITED;q.plot.devx=1;}
  const s=run(q);
- if(s.plot){delete s.plot.devx;if(cm0!==undefined)s.plot.cm=cm0;else if(s.plot.cm>=UNLIMITED/2)s.plot.cm=200;if(fh0!==undefined)s.plot.fh=fh0;else s.plot.fh=0;}   // a plot claimed in this request starts with the normal 200
+ if(s.plot){delete s.plot.devx;if(cm0!==undefined)s.plot.cm=cm0;else if(s.plot.cm>=UNLIMITED/2)s.plot.cm=200;if(fh0!==undefined)s.plot.fh=fh0;else s.plot.fh=0;if(ext0!==undefined)s.plot.ext=ext0;}   // research and drill milestones made in dev mode do not persist (dev mode already gives the full +50%)   // a plot claimed in this request starts with the normal 200
  // gains this request made (bank, collect, production) are kept; nothing this request spent leaves the real balance
  s.ledger.cp=(L0.cp||0)+Math.max(0,s.ledger.cp-UNLIMITED);for(const k of Object.keys(s.ledger.banked||{}))s.ledger.banked[k]=(L0.banked?.[k]||0)+Math.max(0,s.ledger.banked[k]-(keys.has(k)?UNLIMITED:0));
  if(s.plot)s.plot.mnSpent={...mn0};   // base-store minerals: exactly what was really spent before (no spend, no refund)
