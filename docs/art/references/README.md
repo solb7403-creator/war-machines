@@ -18,7 +18,7 @@ blockout.
 | 05-props-outdoor.png | Close-up detail: command module, container, dome, lander, pylon, crate, boulder, spire, rock fin | Crater Field + Longshot props |
 | 06-ground-closeup.png | Surface quality: regolith, tracks, crater rim, scree, beacon glow | What makes maps read as truly 3D |
 | 07-turrets-eleven.png | The 11 Town Defense turrets (Session 5B and later) | Ignore the caption strip |
-| 08-wall-blends-colors.png | Wall blend colour/value progression composite → Moonheart | Cartoon-shaded: use colours only, not the style |
+| 08-wall-blends.png | Wall blends, left to right: composite concrete, Ferrite (rebar, rust), Ilmenite (riveted plate), Armalcolite (blue-black armor), Tranquillityite (gold-veined), Selenite (reflective glass), Moonheart (glowing crimson crystal) | Realistic; match materials, sheen and glow |
 
 Not used: the "town under attack" image (medieval stone walls, rainbow lasers: off-style). A terraformed-colony reference can
 be added later for Graphics 2.0 (owner art direction: bright, rugged, real grass, civilized but with open wild land).
