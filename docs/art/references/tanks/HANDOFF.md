@@ -32,7 +32,7 @@ Moonbeam (premium weapon) and Lunar Skin come after these.
   - Vanguard took 3 tries; the final one has a wedge front, side skirts, stowage and camo.
   - Sentinel took 2 tries.
 - **No 3D conversions yet.** Convert **Scout first**, as the riskiest (thin cage tubes). Check its GLB for triangle count, textures, scale and how it looks in game before converting the other 8.
-- **Weapons:** guides and prompts were sent to the owner. He is generating them now and has **not sent results yet**.
+- **Weapons (v2, Nov 9 2026, supersedes the flat `guides/weapon-*` images):** 3D-rendered 3/4-view references in `weapon-refs-v2/` (three.js scene `scene.html?w=1..9`, Playwright 1600px then auto-cropped to 1024). Updated prompts sent to the owner: same bodies as below, revised to match the renders, with the v2 weapon ending below. He is generating them and has **not sent results yet**.
 - Credits used so far on tanks: about 13 images (about 117). Remaining plan: 9 weapon images (81), 18 conversions to 3D (360), plus re-rolls.
 
 ## NEXT
@@ -47,7 +47,10 @@ Chassis:
 Weapons:
 `single tank turret weapon alone on a plain dark grey background, 3/4 side view, barrel pointing right, round turret base ring at the bottom, no tank hull, no text or markings, game-ready hard-surface sci-fi weapon, lunar military, realistic worn metal and panel lines, PBR materials, soft studio lighting, high detail`
 
-## Weapon prompt bodies
+Weapons v2 ending (use this one):
+`single tank turret weapon alone on a plain dark grey background, 3/4 view, barrel pointing right, exactly one round turret base ring at the bottom, no tank hull, no tracks, no text, no lettering, no markings, thick sturdy parts, game-ready hard-surface sci-fi weapon, lunar military, realistic worn metal and panel lines, PBR materials, soft studio lighting, high detail`
+
+## Weapon prompt bodies (v1; v2 bodies add the detail visible in each weapon-refs-v2 render)
 Add the weapon ending after each one.
 1. PULSE CANNON tank turret, a compact boxy turret with one medium straight energy cannon barrel and a simple muzzle, worn bare steel with scuffed olive-grey paint
 2. ARC PULSE tank turret, a sleek angled turret with one energy cannon barrel wrapped in four raised coil rings, silver-grey armor with thin glowing violet energy lines along the turret and barrel
