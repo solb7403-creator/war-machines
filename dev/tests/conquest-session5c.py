@@ -162,6 +162,14 @@ async def main():
     await page.locator('.cq-plot-tabs button',has_text='HOME').click();await snap_to(ctx,page,'peek');await page.wait_for_timeout(1500)
     await page.screenshot(path=str(OUT/f'default-camera-cc{cc}-{site}-390.png'));assert not errors,errors
     await ctx.close()
+   # the hub hero at CC5 and CC10 (CC1 is captured above): a bigger town must read as a bigger town from the hero camera
+   for (cc,fx) in ((5,{'position':GATE,'baseFunds':True,'plotCC':5,'plotSite':'ridge'}),(10,{'position':GATE,'plotFull':'crater','baseFunds':True})):
+    ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(800)
+    await page.locator('.cq-top button').first.click();await page.wait_for_timeout(600)
+    if not await page.locator('.cq-hub').count():await page.locator('#tabbar [data-act="conquest"]').click()
+    await page.wait_for_function('ConquestHub.state?.town',timeout=60000);await page.wait_for_timeout(1500)
+    await page.screenshot(path=str(OUT/f'hub-hero-town-cc{cc}-390.png'));R['hub'+str(cc)]=await page.evaluate('ConquestHub.state.town');assert not errors,errors
+    await ctx.close()
    await browser.close()
   json.dump(R,open(OUT/'session5c.json','w'),indent=1)
   print('PASS Session 5C: sheet PEEK/HALF/FULL by touch at 390x700, 390x844, 320x568 (map resizes, page never scrolls); every tab fits or scrolls; WEAPONS 11 turrets + Gate + Shield with sprites; Home Sector drive (keys move the tank, walls block), tab lifts to the build view in the same scene, DRIVE returns, LEAVE back to the world; wall order updates the pad diorama and HUD thumbnail; Worker-validated town name; diorama share card; hub hero town; Home Sector CC10 within 16 programs at HIGH and LOW')
