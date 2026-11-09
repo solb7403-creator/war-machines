@@ -1,82 +1,83 @@
 {
  "raid": {
-  "drillMs": 133,
+  "drillMs": 108,
   "effectsSeen": [
    "cannon",
    "mg",
    "missile",
    "mortar",
+   "railgun",
    "siege"
   ]
  },
  "gallery-high": {
   "render": {
-   "calls": 55,
-   "triangles": 106998,
+   "calls": 70,
+   "triangles": 120828,
    "programs": 13
   },
   "pageErrors": []
  },
  "gallery-low": {
   "render": {
-   "calls": 54,
-   "triangles": 76172,
+   "calls": 67,
+   "triangles": 80426,
    "programs": 12
   },
   "pageErrors": []
  },
  "town-crater": {
   "render": {
-   "calls": 63,
-   "triangles": 203936,
+   "calls": 62,
+   "triangles": 325714,
    "programs": 13
   },
   "pageErrors": []
  },
  "town-delta": {
   "render": {
-   "calls": 63,
-   "triangles": 209736,
+   "calls": 65,
+   "triangles": 332286,
    "programs": 13
   },
   "pageErrors": []
  },
  "town-ridge": {
   "render": {
-   "calls": 63,
-   "triangles": 196352,
+   "calls": 62,
+   "triangles": 314824,
    "programs": 13
   },
   "pageErrors": []
  },
  "town-canyon": {
   "render": {
-   "calls": 63,
-   "triangles": 204208,
+   "calls": 62,
+   "triangles": 326974,
    "programs": 13
   },
   "pageErrors": []
  },
  "town-plateau": {
   "render": {
-   "calls": 63,
-   "triangles": 210864,
+   "calls": 62,
+   "triangles": 328366,
    "programs": 13
   },
   "pageErrors": []
  },
  "town-ice": {
   "render": {
-   "calls": 63,
-   "triangles": 202508,
+   "calls": 62,
+   "triangles": 321870,
    "programs": 13
   },
   "pageErrors": []
  },
  "town-ash": {
   "render": {
-   "calls": 63,
-   "triangles": 212912,
+   "calls": 62,
+   "triangles": 336912,
    "programs": 13
   },
   "pageErrors": []

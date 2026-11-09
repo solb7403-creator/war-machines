@@ -78,7 +78,7 @@ async def main():
      t=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),kids=[...s.querySelectorAll('.cq-plot-body>*')].filter(e=>e.getBoundingClientRect().height>0),last=kids.at(-1).getBoundingClientRect();return {scrolls:s.scrollHeight>s.clientHeight+1,scrollTop:Math.round(s.scrollTop),lastReachable:s.scrollTop+s.clientHeight>=s.scrollHeight-2&&last.bottom<=r.bottom+2,fitsWidth:kids.every(e=>e.getBoundingClientRect().right<=innerWidth+1),pageScroll:(document.scrollingElement||document.documentElement).scrollTop};})()''')
      if w==390 and h==700:
       await page.evaluate('document.querySelector(".cq-plot-sheet").scrollTop=0');await page.wait_for_timeout(300);await page.screenshot(path=str(OUT/f'tab-{tab.lower()}-half-390x700.png'))
-      if tab in ('BUILD','WEAPONS','WALLS'):
+      if True:
        await snap_to(ctx,page,'peek');await page.wait_for_timeout(400);await page.screenshot(path=str(OUT/f'tab-{tab.lower()}-peek-390x700.png'))
      if tab=='WEAPONS':
       t['weapons']=await page.evaluate('''(()=>{const c=[...document.querySelectorAll('.cq-plot-sheet .cq-plot-card')];return {cards:c.length,turrets:c.filter(x=>/RANGE \\d+ m/.test(x.querySelector('.cq-plot-statline')?.textContent||'')&&!x.classList.contains('cq-plot-locked')).length,gate:c.some(x=>/Gate/.test(x.textContent)),shield:c.some(x=>/Shield Generator/.test(x.textContent)),sprites:c.filter(x=>x.querySelector('img.cq-plot-spr')).length};})()''')
@@ -95,7 +95,7 @@ async def main():
    await enter_base(page)
    hs=await page.evaluate('({view:ConquestPlotView.state.view,tank:!!ConquestPlotView.state.tank,tour:!!ConquestPlotView.state.tour,pad:ConquestPlotView.state.drive?.pad})')
    await page.wait_for_timeout(1500);await page.screenshot(path=str(OUT/'home-sector-tour-cc1-390.png'))
-   await page.wait_for_function('!ConquestPlotView.state.tour',timeout=15000);await page.wait_for_timeout(800);await page.screenshot(path=str(OUT/'home-sector-drive-cc1-390.png'))
+   await page.wait_for_function('!ConquestPlotView.state.tour',timeout=15000);await page.wait_for_timeout(1200);await page.screenshot(path=str(OUT/'home-sector-drive-cc1-390.png'));cc1=await page.evaluate('ConquestPlotView.state.info')
    p0=await page.evaluate('[ConquestPlotView.state.drive.x,ConquestPlotView.state.drive.z]')
    await page.keyboard.down('w');await page.wait_for_timeout(1500);await page.keyboard.up('w');await page.wait_for_timeout(300)
    p1=await page.evaluate('[ConquestPlotView.state.drive.x,ConquestPlotView.state.drive.z]')
@@ -127,9 +127,9 @@ async def main():
    back=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
    pad1=await page.evaluate('Conquest.view.diorama?.userData.counts');thumb1=await page.evaluate('!!document.querySelector("#cq-home-btn .cq-home-thumb")')
    await page.screenshot(path=str(OUT/'pad-diorama-cc1-walls-390.png'))
-   R['homeSector']={'open':hs,'moved':round(moved,1),'buildView':v1,'driveBack':v2[0],'sameScene':v2[1]==scene0,'walls':nW,'wallBlocks':blocked,'title':title,'badNameKept':kept,'shareShot':shot,'back':back,'padBefore':pad0,'padAfter':pad1,'thumb':[thumb,thumb1],'pageErrors':errors}
+   R['homeSector']={'cc1Render':cc1,'open':hs,'moved':round(moved,1),'buildView':v1,'driveBack':v2[0],'sameScene':v2[1]==scene0,'walls':nW,'wallBlocks':blocked,'title':title,'badNameKept':kept,'shareShot':shot,'back':back,'padBefore':pad0,'padAfter':pad1,'thumb':[thumb,thumb1],'pageErrors':errors}
    print(json.dumps(R['homeSector']),flush=True)
-   assert hs['view']=='drive' and hs['tank'] and moved>6 and v1=='build' and v2[0]=='drive' and v2[1]==scene0 and nW>=8 and blocked and 'Iron Hold' in title and kept=='Iron Hold' and shot and back and pad1 and pad1['walls']>=8 and thumb and thumb1 and not errors,R['homeSector']
+   assert cc1['programs']<=16 and hs['view']=='drive' and hs['tank'] and moved>6 and v1=='build' and v2[0]=='drive' and v2[1]==scene0 and nW>=8 and blocked and 'Iron Hold' in title and kept=='Iron Hold' and shot and back and pad1 and pad1['walls']>=8 and thumb and thumb1 and not errors,R['homeSector']
    # the hub hero shows the town
    await page.locator('.cq-top button').first.click();await page.wait_for_timeout(600)
    if not await page.locator('.cq-hub').count():

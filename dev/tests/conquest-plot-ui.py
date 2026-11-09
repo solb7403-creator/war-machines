@@ -115,7 +115,7 @@ async def main():
    await ctx.close()
    # 3. taps land on the exact cell at every town size and on terraced ground (3D HIGH): pick a Cannon, tap cells
    async def tap_cell(page,i,j):
-    pt=await page.evaluate('''([i,j])=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,p=Conquest.view.authority.state.plot,v=new T.Vector3(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)).project(X.R.cam),r=X.stage.getBoundingClientRect();const x=r.left+(v.x+1)/2*r.width,y=r.top+(1-v.y)/2*r.height,hit=document.elementFromPoint(x,y);return {x,y,in:v.x>-.8&&v.x<.8&&v.y>-.78&&v.y<.7&&!!hit&&!hit.closest('button,.cq-plot-coach')&&!!hit.closest('.cq-plot-stage,.cq-viewport,canvas')};}''',[i,j])   # only taps that reach the map (not a map button)
+    pt=await page.evaluate('''([i,j])=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,p=Conquest.view.authority.state.plot,v=new T.Vector3(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)).project(X.R.cam),r=X.stage.getBoundingClientRect();const x=r.left+(v.x+1)/2*r.width,y=r.top+(1-v.y)/2*r.height,hit=document.elementFromPoint(x,y),near=[[0,0],[26,0],[-26,0],[0,26],[0,-26],[18,18],[-18,18],[18,-18],[-18,-18]].some(([dx,dy])=>{const e=document.elementFromPoint(x+dx,y+dy);return !!e&&!!e.closest('button,.cq-plot-coach,.cq-plot-fab,.cq-plot-drawer');});return {x,y,in:v.x>-.8&&v.x<.8&&v.y>-.78&&v.y<.7&&!!hit&&!near&&!!hit.closest('.cq-plot-stage,.cq-viewport,canvas')};}''',[i,j])   # only taps that reach the map, clear of map buttons and the sheet by the touch-adjustment radius (a finger must be too)
     if not pt['in']:return None
     await page.touchscreen.tap(pt['x'],pt['y']);await page.wait_for_timeout(350)
     return await page.evaluate('[ConquestPlotView.state.place.i,ConquestPlotView.state.place.j]')
@@ -159,9 +159,11 @@ async def main():
     walls['confirmReachable']=await page.evaluate('''(()=>{const ok=document.querySelector('.cq-plot-fab .cq-plot-primary');if(!ok||ok.disabled||!/CONFIRM WALLS/.test(ok.textContent))return false;const q=ok.getBoundingClientRect(),hit=document.elementFromPoint(q.left+q.width/2,q.top+q.height/2);return q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth&&(hit===ok||ok.contains(hit));})()''')
     assert await snap_to(ctx,page,'half')
     walls['scrolls']=await page.evaluate('(()=>{const s=document.querySelector(".cq-plot-sheet");return s.scrollHeight>s.clientHeight})()')
-    if walls['scrolls']:
-     await touch_swipe(ctx,page,'.cq-plot-sheet',-500)
-    walls['lastReachable']=await page.evaluate('''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),st=[...s.querySelectorAll('.cq-plot-stat')].at(-1);if(!st)return false;const q=st.getBoundingClientRect();return q.top>=r.top-1&&q.bottom<=r.bottom+1;})()''')
+    seen='''(()=>{const s=document.querySelector('.cq-plot-sheet'),r=s.getBoundingClientRect(),st=[...s.querySelectorAll('.cq-plot-stat')].at(-1);if(!st)return false;const q=st.getBoundingClientRect();return q.top>=r.top-1&&q.bottom<=r.bottom+1;})()'''
+    walls['lastReachable']=await page.evaluate(seen)
+    for k in range(10):   # real swipes, a little at a time, until the last meter is on screen (Foundry and layouts follow it now)
+     if walls['lastReachable'] or not walls['scrolls']:break
+     await touch_swipe(ctx,page,'.cq-plot-sheet',-120);walls['lastReachable']=await page.evaluate(seen)
     await page.screenshot(path=str(OUT/f'wall-confirm-{w}x{h}.png'))
     assert draft and draft[-1][1]==[33,46] and draft[-1][2]==[45,46],draft
     assert walls['sheetBottom']<=walls['vh'] and walls['ores']==7 and walls['oresFit'] and walls['confirm'] and walls['confirmReachable'] and walls['lastReachable'] and 'WALLS' in (walls['count'] or ''),walls

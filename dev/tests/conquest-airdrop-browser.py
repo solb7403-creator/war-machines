@@ -94,12 +94,13 @@ async def main():
    orbs=await page.evaluate('Conquest.view.yieldMeter.userData.n');goal=await page.locator('.cq-base-goal').text_content();print('in-world meter lit orbs',orbs,'| HUD',goal,flush=True)
    assert 'YIELD 50%' in goal,goal
    await page.screenshot(path=str(OUT/'base-meter-world-390.png'))
-   await tap('#cq-base-access');await page.wait_for_selector('.cq-plot-tabs');await page.locator('.cq-plot-tabs button',has_text='HOME').click();await page.wait_for_selector('.cq-plot-terminal .cq-plot-term')   # 5C: the yield is a button on the HOME status card
+   if not await page.evaluate('ConquestPlotView.isOpen()'):await tap('#cq-base-access')   # 5C: arriving in the gate ring opens the town by itself (portal)
+   await page.wait_for_selector('.cq-plot-tabs');await page.locator('.cq-plot-tabs button',has_text='HOME').click();await page.wait_for_selector('.cq-plot-terminal .cq-plot-term')   # 5C: the yield is a button on the HOME status card
    head=await page.locator('.cq-plot-terminal .cq-plot-term').first.text_content();val=await page.locator('.cq-plot-terminal .cq-plot-term').first.evaluate('e=>parseFloat(getComputedStyle(e).getPropertyValue("--fill"))');print('terminal',head,val,flush=True)
    assert 'YIELD' in head and '50%' in head and abs(val-.5)<.01,(head,val)
    await page.locator('.cq-plot-terminal').scroll_into_view_if_needed();await page.screenshot(path=str(OUT/'base-yield-terminal-390.png'))
    cp0=await page.evaluate('Conquest.view.authority.state.ledger.cp')
-   await page.get_by_role('button',name=re.compile('^COLLECT DAILY YIELD')).click()
+   await page.get_by_role('button',name=re.compile('^COLLECT YIELD')).click()   # 5C: the HOME status card's yield button
    await page.wait_for_function("Conquest.view.authority.state?.notice?.kind==='base-production'",timeout=20000)
    notice=await page.evaluate('Conquest.view.authority.state.notice');cp1=await page.evaluate('Conquest.view.authority.state.ledger.cp')
    print('collected',notice,flush=True)

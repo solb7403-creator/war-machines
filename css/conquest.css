@@ -270,11 +270,11 @@
 .cq-plot-fab button{flex:1 1 auto;min-height:44px;font-size:11px;background:#0b1623e6}.cq-plot-fab button.cq-plot-primary{flex:2 1 auto;background:#0f3a48f2}
 .cq-map-fold .cq-plot-row>small{flex:1 1 100%}.cq-plot-damage{border-color:#ff304888;background:#2a0a10cc}
 /* 5C Home Sector: drive your tank in your town (build mode is a camera) */
-.cq-plot-drivebtn{position:absolute;left:10px;bottom:10px;z-index:2;min-height:44px;padding:6px 12px;font-size:11px;font-weight:800;background:#0f3a48f0;border-color:#22e6ff}.cq-plot-drivebtn[hidden]{display:none}
+.cq-plot-drivebtn{position:absolute;left:10px;bottom:10px;z-index:2;min-height:44px;padding:6px 12px;font-size:11px;font-weight:800;background:#0f3a48f0;border-color:#22e6ff}.cq-plot-drivebtn[hidden]{display:none!important}
 .cq-plot-walls .cq-plot-drivebtn{display:none}
-.cq-plot-skip{position:absolute;right:10px;bottom:10px;z-index:3;min-height:44px;padding:6px 14px;font-size:11px;background:#0b1623e6}.cq-plot-skip[hidden]{display:none}
-.cq-plot-stick{position:absolute;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #22e6ff88;background:#0b162366;pointer-events:none;z-index:2;display:grid;place-items:center}.cq-plot-stick[hidden]{display:none}.cq-plot-stick i{display:block;width:44px;height:44px;border-radius:50%;background:#22e6ffaa;box-shadow:0 0 12px #22e6ff}
-.cq-plot-exit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;border-radius:10px;background:#0b1623ee;border:1px solid #22e6ff;color:#cdf6ff;font-size:12px;font-weight:800;letter-spacing:.06em;pointer-events:none}.cq-plot-exit[hidden]{display:none}
+.cq-plot-skip{position:absolute;right:10px;bottom:10px;z-index:3;min-height:44px;padding:6px 14px;font-size:11px;background:#0b1623e6}.cq-plot-skip[hidden]{display:none!important}
+.cq-plot-stick{position:absolute;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #22e6ff88;background:#0b162366;pointer-events:none;z-index:2;display:grid;place-items:center}.cq-plot-stick[hidden]{display:none!important}.cq-plot-stick i{display:block;width:44px;height:44px;border-radius:50%;background:#22e6ffaa;box-shadow:0 0 12px #22e6ff}
+.cq-plot-exit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;border-radius:10px;background:#0b1623ee;border:1px solid #22e6ff;color:#cdf6ff;font-size:12px;font-weight:800;letter-spacing:.06em;pointer-events:none}.cq-plot-exit[hidden]{display:none!important}
 .cq-plot-driving .cq-plot-rot,.cq-plot-driving .cq-plot-frame,.cq-plot-driving .cq-plot-pan{display:none}
 .cq-plot-driving .cq-plot-stage{cursor:move}
 .cq-top button.cq-home-btn.cq-home-has-thumb{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:5px;row-gap:0;align-items:center;justify-items:start;padding:3px 7px 3px 3px}

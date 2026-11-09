@@ -1,38 +1,38 @@
 {
  "390x844": {
-  "firstPaintMs": 2.4,
+  "firstPaintMs": 1.9,
   "render": {
-   "calls": 35,
-   "triangles": 38632,
+   "calls": 28,
+   "triangles": 48354,
    "programs": 9,
    "tankError": null,
-   "tankMeshes": 38
+   "tankMeshes": 31
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nTOWN CC3 \u00b7 RIDGE \u00b7 POWER 320\n\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\n\u26a0 PARASITE ASSAULT ON YOUR BASE \u00b7 DEFEND IT\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 44:53\n\nNo invasions right now.",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 1h 36m\n\nNo invasions right now.",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
    "MY BASE",
-   "RESEARCH \u00b7 SESSION 6 (disabled)"
+   "RESEARCH \u00b7 COMING SOON (disabled)"
   ],
   "pageErrors": []
  },
  "myBase": "plot opened from the hub",
  "1280x800": {
-  "firstPaintMs": 1.7,
+  "firstPaintMs": 2,
   "render": {
-   "calls": 36,
-   "triangles": 44340,
-   "programs": 9,
+   "calls": 32,
+   "triangles": 57706,
+   "programs": 11,
    "tankError": null,
-   "tankMeshes": 35
+   "tankMeshes": 31
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nTOWN CC3 \u00b7 RIDGE \u00b7 POWER 320\n\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\n\u26a0 PARASITE ASSAULT ON YOUR BASE \u00b7 DEFEND IT\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 44:46\n\nNo invasions right now.",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 1h 36m\n\nNo invasions right now.",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
    "MY BASE",
-   "RESEARCH \u00b7 SESSION 6 (disabled)"
+   "RESEARCH \u00b7 COMING SOON (disabled)"
   ],
   "pageErrors": []
  }

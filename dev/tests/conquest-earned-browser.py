@@ -51,7 +51,9 @@ async def main():
     for k in held:await page.keyboard.up(k)
     await page.wait_for_timeout(1200)
    await go(1080,1140);await page.screenshot(path=str(OUT/'chromium-earned-base-exited.png'));await go(1080,1160)
-   await page.locator('#cq-base-access').tap();await page.wait_for_selector('.cq-plot-tabs')   # Session 5: the plot shows the earned Reactor as a building
+   await page.wait_for_timeout(600)
+   if not await page.evaluate('ConquestPlotView.isOpen()'):await page.locator('#cq-base-access').tap()   # 5C: arriving in the gate ring may already have opened the town (portal)
+   await page.wait_for_selector('.cq-plot-tabs')   # Session 5: the plot shows the earned Reactor as a building
    assert await page.evaluate('Object.values(Conquest.view.authority.state.plot.b).some(b=>b.t==="reactor"&&b.l===1)&&Conquest.view.authority.state.base.modules.reactor===1')
    await page.screenshot(path=str(OUT/'chromium-earned-reactor-retained.png'));await page.locator('.cq-plot-leave').click()
    await enter();assert await page.evaluate('Conquest.view.authority.state.base.modules.reactor===1&&Conquest.view.authority.state.base.tier===1');await page.get_by_role('button',name='OPEN MAP',exact=True).click();await page.wait_for_function('document.querySelector(".cq-map canvas")');await page.screenshot(path=str(OUT/'chromium-earned-frontline.png'));await page.locator('.cq-map canvas').scroll_into_view_if_needed();await page.screenshot(path=str(OUT/'chromium-earned-frontline-terrain.png'));assert not errors,errors

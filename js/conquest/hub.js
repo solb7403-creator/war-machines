@@ -75,8 +75,8 @@ async function hero3d(me){if(!H||H!==me||H.disposed)return;const gfx=typeof gfxM
  // blends, turrets, homes, banner) from the shared town kit, drawn with simple lit vertex colours in this renderer.
  const townModel=p=>{const TKit=root.ConquestTownKit,CS=root.ConquestStyle,PL=root.ConquestPlot;if(!TKit||!CS||!PL||!p?.b?.cc||!p.w)return null;try{H.cs=H.cs||CS.create(T,{low:true});const half=(PL.townH(p.cc)+2.5)*PL.GRID.cell,sc=38/(2*half),d=TKit.diorama(H.cs,p,{low:true,scale:sc});
    const mat=H.townMat||(H.townMat=new T.MeshPhongMaterial({vertexColors:true,shininess:12,flatShading:true}));d.traverse(o=>{if(!o.isMesh)return;const g=o.geometry,a=g.attributes.aCol;if(!a||!g.attributes.normal){o.visible=false;return;}
-    if(!g.attributes.color){const c=new Float32Array(a.count*3);for(let i=0;i<a.count;i++){const e=1+a.getW(i)*.9;c[i*3]=Math.min(1,a.getX(i)*e);c[i*3+1]=Math.min(1,a.getY(i)*e);c[i*3+2]=Math.min(1,a.getZ(i)*e);}g.setAttribute('color',new T.BufferAttribute(c,3));}o.material=mat;});
-   d.position.y=6.2*sc-.2;H.town=d.userData.counts;return d;}catch(e){H.townError=String(e&&e.message||e);return null;}};
+    if(!g.attributes.color){const c=new Float32Array(a.count*3);for(let i=0;i<a.count;i++){const e=1.7+a.getW(i)*.9;c[i*3]=Math.min(1,a.getX(i)*e);c[i*3+1]=Math.min(1,a.getY(i)*e);c[i*3+2]=Math.min(1,a.getZ(i)*e);}g.setAttribute('color',new T.BufferAttribute(c,3));}o.material=mat;});
+   d.position.y=2.4+6.2*sc;const ped=new T.Mesh(new T.CylinderGeometry(19.5,21,2.4,8),dark);ped.position.y=1.2;const g2=new T.Group();g2.add(ped,d);const rim=new T.Mesh(new T.TorusGeometry(19.6,.12,6,48),cyan);rim.rotation.x=Math.PI/2;rim.position.y=2.42;g2.add(rim);H.town=d.userData.counts;return g2;}catch(e){H.townError=String(e&&e.message||e);return null;}};
  H.rebuild=s=>{baseG.clear();const p=s?.plot,cc=p?.cc||0;baseG.position.set(-13,0,-30);baseG.rotation.y=.5;
   const town=townModel(p);if(town){baseG.add(town);return;}
   if(!cc){const ring=new T.Mesh(new T.RingGeometry(10,10.6,64),amber);ring.rotation.x=-Math.PI/2;ring.position.y=.1;baseG.add(ring);return;}
