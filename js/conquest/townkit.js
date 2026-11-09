@@ -21,12 +21,12 @@ const ORE_LOOK=[[0x8a8676,0x5c5a50,0],[0x7a4a2c,0xb7a28a,.15],[0x23262c,0x5fa8ff
 function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternion(),_e=new T.Euler(),_p=new T.Vector3(),_s=new T.Vector3();
  const M=(x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{_e.set(rx,ry,rz);_q.setFromEuler(_e);return new T.Matrix4().compose(_p.set(x,y,z),_q,_s.set(sx,sy,sz));};
  const C={rust:lin(0x7a4a2c),sand:lin(0x8f7c62),moss:lin(0x3f5a2a),plant:lin(0x3fae4a),glass:lin(0x78aed0),furnace:lin(0xff8a3d),steel:lin(0x6d7884),timber:lin(0x6a4a2e),timberD:lin(0x4a3220),comp:lin(0x8a8676),warm:lin(0xffc47a),
-  paint:[lin(0xb8553a),lin(0x5a7a8a),lin(0xc9a04a),lin(0x6a8a4a),lin(0x8a5a7a),lin(0xbcae8c)],gold:K.gold,cyan:K.cyan,amber:K.amber,dark:lin(0x353d49),dark2:lin(0x404a57),mid:K.mid,panel:K.panelA,panelB:K.panelB,roof:K.roof,violet:K.violet,red:K.red,teal:K.teal,ice:K.ice,mag:K.mag};
+  paint:[lin(0xb8553a),lin(0x5a7a8a),lin(0xc9a04a),lin(0x6a8a4a),lin(0x8a5a7a),lin(0xbcae8c)],gold:K.gold,cyan:K.cyan,amber:K.amber,dark:lin(0x353d49),dark2:lin(0x404a57),apron:lin(0x7d848d),mid:K.mid,panel:K.panelA,panelB:K.panelB,roof:K.roof,violet:K.violet,red:K.red,teal:K.teal,ice:K.ice,mag:K.mag};
  const LIGHT={cyan:K.cyan,amber:K.amber,violet:K.violet,green:K.teal,red:K.red};let themeLight=null;
  const accent=l=>l>=5?C.gold:themeLight||(l>=3?C.teal:C.cyan);
  // A building at the local origin, footprint centred, facing +z; every level visibly changes it.
  function building(type,l,theme){themeLight=theme?.light?LIGHT[theme.light]||null:null;const b=new S.Bld(),fin=theme?.finish==='sand'?C.sand:theme?.finish==='graphite'?C.dark:C.steel,s=P.sizeOf(type),W=s.w*P.GRID.cell,D=s.d*P.GRID.cell,L=Math.max(1,l),a=accent(L),hw=W/2,hd=D/2;
-  const pad=()=>{b.box(0,.15,0,W-.4,.3,D-.4,C.dark2);b.box(0,.32,hd-.35,W-.8,.05,.08,a,.7);};
+  const pad=()=>{b.box(0,.15,0,W-.4,.3,D-.4,C.apron);b.box(0,.32,hd-.35,W-.8,.05,.08,a,.7);};
   const vital=()=>{if(P.VITALS[type])for(const sx of [-1,1])b.box(sx*(hw-.5),.36,-hd+.5,.6,.08,.6,C.gold,1.3);};   // gold corner marks: a vital
   switch(type){
    case 'cc':{pad();let y=.3;const tiers=Math.min(10,L);for(let k=0;k<tiers;k++){const r=6.6-k*.48,h=1.5+(k%2)*.5;b.add(G.oct,M(0,y,0,0,k*.2,0,r,h,r),k%2?C.mid:fin);b.add(G.torus,M(0,y+h,0,Math.PI/2,0,0,r*.98,r*.98,r*.98),a,.8);y+=h;}
@@ -150,10 +150,10 @@ function terrain(S,site,cc,p,o={}){const T=S.T,k=kitFor(S),n=P.GRID.n,c=P.GRID.c
  const H=(x,z)=>Math.abs(x)>half+2||Math.abs(z)>half+2?P.heightAt(site,Math.sign(x)*Math.min(Math.abs(x),half),Math.sign(z)*Math.min(Math.abs(z),half))+(site==='canyon'?8:2)+vn(x*.05,z*.05)*3:P.heightAt(site,x,z);
  const tint=site==='delta'?[.9,1,.8]:site==='crater'?[1.06,.96,.86]:site==='plateau'?[1.1,1,.9]:site==='ash'?[.92,.9,.95]:site==='ice'?[.95,1,1.08]:site==='canyon'?[1.16,.95,.78]:site==='ridge'?[.93,.98,1.07]:[1,.98,1.02];   // owner gate: each site its own regolith (canyon ochre, ridge cool grey)
  const col=(x,z)=>{const i=Math.max(0,Math.min(n-1,Math.round(x/c+(n-1)/2))),j=Math.max(0,Math.min(n-1,Math.round(z/c+(n-1)/2))),off=Math.abs(x)>half+2||Math.abs(z)>half+2,t=off?'rim':P.terrainAt(site,i,j),open=!P.NOBUILD[t];let base=TCOL[t]||TCOL.ground;
-  const d=Math.max(Math.abs(x),Math.abs(z)),inside=sstep(edge+24,edge-8,d),lift=.9+1.17*inside,mot=1+.16*vn(x*.03,z*.03)+.08*vn(x*.11+7,z*.11+3);
+  const d=Math.max(Math.abs(x),Math.abs(z)),inside=sstep(edge+24,edge-8,d),lift=.9+1.17*inside,mot=1+.09*vn(x*.03,z*.03)+.045*vn(x*.11+7,z*.11+3);
   let r=base[0]*lift*mot*tint[0],g=base[1]*lift*mot*tint[1],bb=base[2]*lift*mot*tint[2];
   if(open&&inside>.3){let rd=99;for(const q of roads)rd=Math.min(rd,segD(x,z,q[0],q[1],q[2],q[3]));const w=sstep(7.5,4,rd)*inside;if(w>0){const R2=ROAD[0]*1.7,G2=ROAD[1]*1.7,B2=ROAD[2]*1.7;r+=(R2-r)*w;g+=(G2-g)*w;bb+=(B2-bb)*w;}
-   const wl=inside*(1-sstep(plaza+6,plaza+26,Math.max(Math.abs(x-C0.x),Math.abs(z-C0.z))))*.18;r+=wl*.5;g+=wl*.38;bb+=wl*.22;}   // warm spill from the lit plaza
+   const wl=inside*(1-sstep(plaza+6,plaza+26,Math.max(Math.abs(x-C0.x),Math.abs(z-C0.z))))*.07;r+=wl*.5;g+=wl*.38;bb+=wl*.22;}   // warm spill from the lit plaza
   return [r,g,bb];};
  {const N=Math.floor(2*clip/step)+1,Pp=new Float32Array(N*N*3),A=new Float32Array(N*N*4),I=[];for(let a2=0;a2<N;a2++)for(let b2=0;b2<N;b2++){const x=-clip+a2*step,z=-clip+b2*step,v=a2*N+b2,cl=col(x,z);Pp.set([x,H(x,z),z],v*3);A.set([cl[0],cl[1],cl[2],0],v*4);}
   for(let a2=0;a2<N-1;a2++)for(let b2=0;b2<N-1;b2++){const v=a2*N+b2;I.push(v,v+1,v+N+1,v,v+N+1,v+N);}
@@ -170,14 +170,14 @@ function terrain(S,site,cc,p,o={}){const T=S.T,k=kitFor(S),n=P.GRID.n,c=P.GRID.c
   if(t==='water')pr.box(x,-.35,z,c,.1,c,wc,.35);else if(t==='ice')pr.box(x,y+.06,z,c,.08,c,ic,.12);else if(o.props!==false&&t==='rock'&&(i+j)%2===0)pr.add(S.G.rock,k.M(x+1,y+.6,z+1,0,i*j,0,2.2,1.6,2.2),k.C.rust.clone().multiplyScalar(.6));else if(t==='vent')pr.add(S.G.cone6,k.M(x,y,z,0,i,0,1.6,1.4,1.6),k.C.furnace,.8);}
  if(site==='crater'&&o.props!==false)for(const d of P.RIM_DEPOSITS){for(let k2=0;k2<6;k2++)pr.add(S.G.rock,k.M(P.cellX(d.i)+2+(k2%3-1)*1.6,.4,P.cellZ(d.j)+2+(k2>2?1.2:-1.2),0,k2,0,1.1,.8,1.1),k.C.rust);pr.box(P.cellX(d.i)+2,.05,P.cellZ(d.j)+2,7,.08,7,k.C.amber,.5);}
  // the plaza: a paved slab with joints every 4 m, a dark curb with an amber light line, four lamp posts and warm light pools
- {const y0=P.heightAt(site,C0.x,C0.z),P2=plaza,pave=new T.Color(.35,.355,.37),joint=new T.Color(.13,.13,.14);pr.box(C0.x,y0+.07,C0.z,2*P2,.14,2*P2,pave);
+ {const y0=P.heightAt(site,C0.x,C0.z),P2=plaza,pave=new T.Color(.47,.46,.45),joint=new T.Color(.17,.17,.175);pr.box(C0.x,y0+.07,C0.z,2*P2,.14,2*P2,pave);
   for(let v=-P2+4;v<P2;v+=4){pr.box(C0.x+v,y0+.15,C0.z,.1,.02,2*P2,joint);pr.box(C0.x,y0+.15,C0.z+v,2*P2,.02,.1,joint);}
   for(const [x,z,w,d] of [[0,-P2,2*P2+.6,.6],[0,P2,2*P2+.6,.6],[-P2,0,.6,2*P2+.6],[P2,0,.6,2*P2+.6]]){pr.box(C0.x+x,y0+.2,C0.z+z,w,.4,d,k.C.dark2);pr.box(C0.x+x,y0+.42,C0.z+z,w*.98,.05,d*.4,k.C.amber,1.3);}
   for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1],...(cc>=5?[[0,-1],[1,0],[0,1],[-1,0]]:[])]){const x=C0.x+sx*(P2-1.5),z=C0.z+sz*(P2-1.5),v=.85+.3*hsh(Math.round(x),Math.round(z));pr.box(x,y0+2.3,z,.3,4.6,.3,k.C.dark);pr.box(x,y0+4.7,z,.9,.25,.9,k.C.amber,2.2);fx?.flat(x-sx*3,y0+.2,z-sz*3,7.5,7.5,reg,[.3*v,.2*v,.08*v],0);}
   fx?.flat(C0.x,y0+.2,C0.z,P2*.9,P2*.9,reg,[.07,.055,.03],0);}
  // street lamps every ~22 m along each road inside the town, each with a warm pool of light
  for(const q of roads){const L=Math.hypot(q[2]-q[0],q[3]-q[1])||1,ux=(q[2]-q[0])/L,uz=(q[3]-q[1])/L;for(let d=plaza+10;d<L;d+=22){const x=q[0]+ux*d-uz*4.5,z=q[1]+uz*d+ux*4.5;if(Math.max(Math.abs(x),Math.abs(z))>edge-2)break;const i=Math.round(x/c+P.MID),j=Math.round(z/c+P.MID);if(!P.inGrid(i,j)||P.NOBUILD[P.terrainAt(site,i,j)])continue;const y=P.heightAt(site,x,z);
-  pr.box(x,y+.15,z,.7,.3,.7,k.C.dark2);pr.box(x,y+2.1,z,.22,4.2,.22,k.C.dark);pr.box(x+uz*.5,y+4.25,z-ux*.5,1.2,.18,.4,k.C.dark,0,Math.atan2(ux,uz));pr.box(x+uz*.9,y+4.12,z-ux*.9,.5,.08,.3,k.C.amber,2.4,Math.atan2(ux,uz));{const v=.8+.4*hsh(Math.round(x),Math.round(z));fx?.flat(x+uz*.9,y+.18,z-ux*.9,6.5,6.5,reg,[.27*v,.17*v,.065*v],0);}}}
+  pr.box(x,y+.15,z,.7,.3,.7,k.C.dark2);pr.box(x,y+2.1,z,.22,4.2,.22,k.C.dark);pr.box(x+uz*.5,y+4.25,z-ux*.5,1.2,.18,.4,k.C.dark,0,Math.atan2(ux,uz));pr.box(x+uz*.9,y+4.12,z-ux*.9,.5,.08,.3,k.C.amber,2.4,Math.atan2(ux,uz));{const v=.8+.4*hsh(Math.round(x),Math.round(z));fx?.flat(x+uz*.9,y+.18,z-ux*.9,6.5,6.5,reg,[.18*v,.115*v,.045*v],0);}}}
  for(const [x,z,w,d] of [[0,-edge,2*edge,.14],[0,edge,2*edge,.14],[-edge,0,.14,2*edge],[edge,0,.14,2*edge]])pr.box(x,.45,z,w,.06,d,k.C.cyan,.9);
  for(const L of lanes){const ang=Math.atan2(L.dx,L.dz);for(let s2=0;s2<3;s2++){const cx=L.x+L.dx*s2*5.5,cz=L.z+L.dz*s2*5.5,y=P.heightAt(site,cx,cz)+.12;for(const sd of [-1,1]){const a=ang+sd*Math.PI/4;pr.box(cx-Math.sin(a)*1.3,y,cz-Math.cos(a)*1.3,.5,.08,2.9,k.C.red,1.5-s2*.3,a);}}fx?.flat(L.x+L.dx*5,P.heightAt(site,L.x,L.z)+.2,L.z+L.dz*5,9,9,reg,[.55,.05,.1],0);}
  if(pr.n)out.push(pr.mesh());if(fx&&fx.n)out.push(fx.mesh());

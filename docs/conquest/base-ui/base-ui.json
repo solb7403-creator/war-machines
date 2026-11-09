@@ -80,18 +80,18 @@
    "CC5"
   ],
   "afterSwipe": {
-   "scrollTop": 764,
+   "scrollTop": 720,
    "lastVisible": true
   }
  },
  "placement": {
   "cc1-ridge": {
-   "exact": 17,
+   "exact": 18,
    "wrong": [],
    "pageErrors": []
   },
   "cc5-canyon": {
-   "exact": 17,
+   "exact": 18,
    "wrong": [],
    "pageErrors": []
   },
@@ -101,7 +101,7 @@
    "pageErrors": []
   },
   "cc10-ridge": {
-   "exact": 17,
+   "exact": 18,
    "wrong": [],
    "pageErrors": []
   }
@@ -135,7 +135,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1476,
+    "scrollTop": 1447,
     "confirmOnScreen": true
    },
    "pageErrors": []
@@ -168,7 +168,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1750,
+    "scrollTop": 1721,
     "confirmOnScreen": true
    },
    "pageErrors": []
