@@ -1195,6 +1195,7 @@ No blocker and **no way to mint or duplicate value** (walls neutral on remove, r
 4. Visits: "WHAT YOU WOULD FACE" (blends, turrets, vitals, rating) from the snapshot.
 5. Refunds: walls 50% composite, none of the ore; turrets 50% of cumulative cost; rounded down; no loops.
 6–9. Hooks: garrison (`plot.gar`), loot protection (`loot()`, Storage Depot share), peace shield (`plot.shieldUntil`), attack alerts (`plot.alerts`, written by drills and raids).
-Tests: `conquest-town.mjs` §13 (+20 checks, 83 in all).
+Tests: `conquest-town.mjs` §13–14 (91 checks in all).
+Second independent review (addendum diff only, read-only agent): no blocker, no mint or duplication (a 400-step random layout/stock/removal run conserved walls exactly). Fixed: MAJOR stored walls lost when Firebase returns a numeric-keyed map as an array (`stockOf`, round-trip test); MAJOR re-blending or remove+rebuild skipped REPAIR (damage kept on re-blend, removal refund by remaining HP); MAJOR leftover damage of removed walls locked layouts (pruned in plotSync, layouts check `repairPlan`); MINOR: repairs subtract only the HP they fixed and accrue first, ruined turrets add no path threat, a ruined Foundry/Uplink/Shield/Hangar stops working, a lower cap never deletes stored goods, the snapshot rating is computed fresh (and republished when it changes), drill alerts are logged as handled so raid alerts are never pushed out, the wall counter shows stored cells.
 
 **Next:** PR #90 CI, merge, deploy, verify.

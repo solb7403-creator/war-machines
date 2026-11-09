@@ -203,9 +203,9 @@ function reactorPower(p,l){return BUILDINGS.reactor.power*l*siteOf(p).power;}
 function powerSupply(p,alive=null){let s=12+3*ccLevel(p);for(const [id,b] of Object.entries(p.b||{}))if(b.t==='reactor'&&!ruined(p,id)&&(!alive||alive(id)))s+=reactorPower(p,b.l|0);return Math.round(s);}
 function powerUse(p,extra=null){let u=0;for(const [id,b] of Object.entries(p.b||{})){const B=BUILDINGS[b.t];if(!B)continue;const l=extra&&extra.id===id?extra.l:b.l|0;u+=B.pw*l;}if(extra&&!extra.id)u+=BUILDINGS[extra.t].pw*extra.l;return u;}
 function levelOf(p,type){let l=0;for(const b of Object.values(p.b||{}))if(b.t===type)l=Math.max(l,b.l|0);return l;}
-function levelSum(p,type){let l=0;for(const b of Object.values(p.b||{}))if(b.t===type)l+=b.l|0;return l;}
+function levelSum(p,type){let l=0;for(const [id,b] of Object.entries(p.b||{}))if(b.t===type&&!ruined(p,id))l+=b.l|0;return l;}
 // Old Command Base modules derived from buildings (capped at III, as before): every old formula keeps working unchanged.
-function modulesOf(p){const m={};for(const [type,B] of Object.entries(BUILDINGS))if(B.mod)m[B.mod]=Math.min(3,levelOf(p,type));return m;}
+function modulesOf(p){const m={};for(const [type,B] of Object.entries(BUILDINGS))if(B.mod)m[B.mod]=Math.min(3,Object.entries(p.b||{}).reduce((a,[id,b])=>b.t===type&&!ruined(p,id)?Math.max(a,b.l|0):a,0));return m;}
 // Storage caps: production stops when a material reaches its cap. Composite: the Foundry stops when the stock is full.
 function caps(p){const d=Object.entries(p.b||{}).reduce((a,[id,b])=>b.t==='storage'&&!ruined(p,id)?Math.max(a,b.l|0):a,0);return {alloy:30+40*d,biomass:30+40*d,helium:8+10*d,fe:30,cm:COMPOSITE.cap0+COMPOSITE.capPer*levelSum(p,'foundry'),fh:COMPOSITE.hopperPer*levelSum(p,'foundry')};}
 function rates(p){const S=siteOf(p),r={alloy:0,biomass:0,helium:0,fe:0,cm:0};
@@ -215,7 +215,7 @@ function rates(p){const S=siteOf(p),r={alloy:0,biomass:0,helium:0,fe:0,cm:0};
 // Production accrues continuously into the plot store (fractions kept), capped; collected inside the plot. The Foundry
 // turns the alloy loaded into its hopper into composite at its rate, straight into the composite stock, up to its cap.
 function accrue(p,now){const st=p.st||(p.st={alloy:0,biomass:0,helium:0,fe:0,at:now});const dt=Math.max(0,Math.min(7*DAY,now-(Number(st.at)||now)));
- if(dt>0){const r=rates(p),c=caps(p);for(const k of ['alloy','biomass','helium','fe'])st[k]=Math.min(c[k],(Number(st[k])||0)+r[k]*dt/HOUR);
+ if(dt>0){const r=rates(p),c=caps(p);for(const k of ['alloy','biomass','helium','fe']){const old=Number(st[k])||0;st[k]=Math.max(old,Math.min(c[k],old+r[k]*dt/HOUR));}   // a lower cap (a ruined Depot) stops production, never deletes what is stored
   const cm=Number(p.cm)||0,fh=Number(p.fh)||0,out=Math.max(0,Math.min(r.cm*dt/HOUR,fh*COMPOSITE.perAlloy,c.cm-cm));if(out>0){p.cm=cm+out;p.fh=Math.max(0,fh-out/COMPOSITE.perAlloy);}}
  st.at=now;return st;}
 // Command Power: a visible score from building levels, wall strength and defenses.
@@ -270,7 +270,7 @@ function wallPlan(p,sections,opt={}){const cc=ccLevel(p);if(!Array.isArray(secti
  for(const sec of sections){if(!record(sec))return {err:'invalid wall plan'};const o=sec.o,l=sec.l;if(!Number.isInteger(o)||o<0||o>6||!Number.isInteger(l)||l<0||l>3||(o===0)!==(l===0))return {err:'invalid blend'};
   if(cc<ORE_CC[o])return {err:ORE_NAME[ORES[o-1]]+' blends unlock at CC'+ORE_CC[o]};const cl=shapeCells(sec);if(!cl)return {err:'invalid wall shape'};total+=cl.length;if(total>MAX_WALL_CELLS)return {err:'too many cells in one order (max '+MAX_WALL_CELLS+')'};
   const code=wcode(o,l);for(const [i,j] of cl)want.set(key(i,j),code);}
- const occ=occupancy(p),w=p.w||{},skip={outside:0,blocked:0,occupied:0,same:0},out=[],units=[0,0,0,0,0,0,0],stock={...(record(p.ws)?p.ws:{})},used={};let fresh=0,stored=0;for(const v of Object.values(stock))stored+=Math.max(0,v|0);
+ const occ=occupancy(p),w=p.w||{},skip={outside:0,blocked:0,occupied:0,same:0},out=[],units=[0,0,0,0,0,0,0],stock={...stockOf(p)},used={};let fresh=0,stored=0;for(const v of Object.values(stock))stored+=Math.max(0,v|0);
  for(const [k,code] of want){const [i,j]=k.split(',').map(Number);if(!inTown(cc,i,j)){skip.outside++;continue;}if(NOBUILD[terrainAt(p.site,i,j)]){skip.blocked++;continue;}const o2=occ.get(k);if(o2&&o2!=='wall'){skip.occupied++;continue;}
   if((w[k]|0)===code){skip.same++;continue;}const isNew=!w[k];if(isNew&&(stock[code]|0)>0){stock[code]--;used[code]=(used[code]||0)+1;out.push({i,j,code,isNew,stock:1});continue;}if(isNew)fresh++;const {o,l}=wdecode(code);units[o]+=ORE_UNITS[o]*BLEND_UNITS[l];out.push({i,j,code,isNew});}
  const cost={};if(fresh)cost.cm=fresh*COMPOSITE.perCell;for(let o=1;o<=6;o++)if(units[o])cost[ORES[o-1]]=Math.ceil(units[o]/40);
@@ -299,7 +299,7 @@ function migrate(base,now){const t=Math.max(1,Math.min(5,base.tier|0)),p=newPlot
   if(id&&(p.b[id].l|0)<want){p.b[id].l=want-1;p.job={id,t:type,l:want,at:now,ready:Math.max(now,Number(base.pending.readyAt)||now)};}}
  return p;}
 // Finish the builder's job when its time is up (Worker clock).
-function settle(p,now){if(p?.job&&now>=p.job.ready){const j=p.job;if(j.t==='repair'){for(const k of Array.isArray(j.keys)?j.keys:Object.values(j.keys||{}))if(p.dmg)delete p.dmg[k];delete p.job;return j;}if(j.t==='cc'){accrue(p,j.ready);p.cc=j.l;p.b.cc.l=j.l;}else if(p.b[j.id]){accrue(p,j.ready);p.b[j.id].l=j.l;}delete p.job;return j;}return null;}
+function settle(p,now){if(p?.job&&now>=p.job.ready){const j=p.job;if(j.t==='repair'){accrue(p,j.ready);for(const [k,hp] of Object.entries(record(j.fix)?j.fix:{}))if(p.dmg?.[k]!==undefined){const d=(Number(p.dmg[k])||0)-(Number(hp)||0);if(d>0)p.dmg[k]=d;else delete p.dmg[k];}delete p.job;return j;}if(j.t==='cc'){accrue(p,j.ready);p.cc=j.l;p.b.cc.l=j.l;}else if(p.b[j.id]){accrue(p,j.ready);p.b[j.id].l=j.l;}delete p.job;return j;}return null;}
 
 // ---------------------------------------------------------------- persistent damage, repair, rating, layouts, hooks ---
 // Owner addendum (Nov 8): raid damage persists (raids, not the drill): p.dmg = {structure id: HP lost} (building ids and
@@ -309,14 +309,14 @@ function settle(p,now){if(p?.job&&now>=p.job.ready){const j=p.job;if(j.t==='repa
 function maxHpOf(p,id){if(typeof id!=='string')return 0;if(id.startsWith('w:')){const c=p?.w?.[id.slice(2)];return c?wallStats(c,p.site).hp:0;}const b=p?.b?.[id];if(!b)return 0;return hpOfBuilding(b.t==='cc'?{...b,l:p.cc|0}:b);}
 function hpLeft(p,id){const m=maxHpOf(p,id);return Math.max(0,m-Math.max(0,Number(p?.dmg?.[id])||0));}
 function ruined(p,id){return !!p?.dmg&&maxHpOf(p,id)>0&&hpLeft(p,id)<=0;}
-function repairPlan(p){let cm=0,alloy=0,cp=0,hp=0;const keys=[];for(const [id,d0] of Object.entries(p?.dmg||{})){const m=maxHpOf(p,id),d=Math.min(m,Math.max(0,Number(d0)||0));if(!m||!d)continue;keys.push(id);hp+=d;const f=d/m;
+function repairPlan(p){let cm=0,alloy=0,cp=0,hp=0;const keys=[],fix={};for(const [id,d0] of Object.entries(p?.dmg||{})){const m=maxHpOf(p,id),d=Math.min(m,Math.max(0,Number(d0)||0));if(!m||!d)continue;keys.push(id);fix[id]=Math.round(d);hp+=d;const f=d/m;
   if(id.startsWith('w:'))cm+=f*COMPOSITE.perCell;else{const b=p.b[id],c=b.t==='cc'?(p.cc>1?CC.cost[p.cc]:CC.claim):costOf(b.t,Math.max(1,b.l|0))||{};alloy+=f*.3*(c.alloy||0);cp+=f*.2*(c.cp||0);}}
- const cost={};if(cm)cost.cm=Math.ceil(cm);if(alloy)cost.alloy=Math.ceil(alloy);if(cp)cost.cp=Math.ceil(cp);return {keys,hp:Math.round(hp),cost,ms:keys.length?Math.round(Math.min(2*HOUR,Math.max(10*SEC,hp/150*SEC))):0};}
+const cost={};if(cm)cost.cm=Math.ceil(cm);if(alloy)cost.alloy=Math.ceil(alloy);if(cp)cost.cp=Math.ceil(cp);return {keys,fix,hp:Math.round(hp),cost,ms:keys.length?Math.round(Math.min(2*HOUR,Math.max(10*SEC,hp/150*SEC))):0};}
 // After a real raid (Session 7): write each structure's HP lost (the Command Center is never left below 1 HP) and an alert.
 function applyRaidDamage(p,result,now,by='raider'){p.dmg=record(p.dmg)?p.dmg:{};for(const [id,lost] of Object.entries(result?.damage||{})){const m=maxHpOf(p,id);if(!m)continue;const d=Math.min(id==='cc'?m-1:m,Math.max(0,Math.round((Number(p.dmg[id])||0)+lost)));if(d>0)p.dmg[id]=d;}
  alert(p,{at:now,kind:'raid',by:String(by).slice(0,40),outcome:result?.outcome||'',changed:1});return p;}
 // Attack alerts hook: (who, when, outcome) events for the Telegram bot (Session 7 sends them; sent stays 0 until then).
-function alert(p,e){p.alerts=[{...e,sent:0},...(Array.isArray(p.alerts)?p.alerts:Object.values(p.alerts||{}))].slice(0,10);return p;}
+function alert(p,e){const all=[{...e,sent:e.kind==='raid'?0:1},...(Array.isArray(p.alerts)?p.alerts:Object.values(p.alerts||{})).filter(Boolean)],unsent=all.filter(x=>!x.sent).slice(0,20),sent=all.filter(x=>x.sent).slice(0,Math.max(3,10-unsent.length));p.alerts=all.filter(x=>unsent.includes(x)||sent.includes(x));return p;}   // drills are logged as already handled; unsent raid alerts are never pushed out by drills
 // Loot protection hook (display now, Session 7 raids use it): banked goods are never raidable; of the town's production
 // store and composite stock, the Storage Depot protects 25% + 10% a level (up to 75%).
 function loot(p){const lv=Object.entries(p?.b||{}).reduce((a,[id,b])=>b.t==='storage'&&!ruined(p,id)?Math.max(a,b.l|0):a,0),protect=Math.min(.75,.25+.1*lv),st=p?.st||{},have={alloy:st.alloy||0,biomass:st.biomass||0,helium:st.helium||0,fe:st.fe||0,cm:p?.cm||0},raidable={},safe={};
@@ -335,8 +335,8 @@ const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 function encWalls(w){let out='';for(const [k,c] of Object.entries(w||{})){const [i,j]=k.split(',').map(Number),n=i*N+j;out+=B64[(n>>12)&63]+B64[(n>>6)&63]+B64[n&63]+B64[c&63];}return out;}
 function decWalls(str){const w={};if(typeof str!=='string'||str.length%4)return w;for(let k=0;k<str.length;k+=4){const v=[0,1,2,3].map(q=>B64.indexOf(str[k+q]));if(v.some(x=>x<0))return {};const n=(v[0]<<12)|(v[1]<<6)|v[2],i=Math.floor(n/N),j=n%N,c=v[3];if(inGrid(i,j)&&c>=1&&c<=19)w[i+','+j]=c;}return w;}
 function layoutOf(p,now=0){return {at:now,cc:ccLevel(p),b:Object.fromEntries(Object.entries(p.b||{}).map(([id,b])=>[id,[b.i,b.j,b.r|0]])),w:encWalls(p.w)};}
-function applyLayout(p,L){if(!record(L)||!record(L.b))return 'empty layout slot';if(Object.values(p.dmg||{}).some(d=>Number(d)>0))return 'repair your town first';
- const stock={};for(const [c,n] of Object.entries(record(p.ws)?p.ws:{}))if((n|0)>0)stock[c]=n|0;for(const c of Object.values(p.w||{}))stock[c|0]=(stock[c|0]||0)+1;
+function applyLayout(p,L){if(!record(L)||!record(L.b))return 'empty layout slot';if(repairPlan(p).keys.length)return 'repair your town first';
+ const stock={...stockOf(p)};for(const c of Object.values(p.w||{}))stock[c|0]=(stock[c|0]||0)+1;
  const nb={};for(const [id,b] of Object.entries(p.b||{})){nb[id]={...b};const at=L.b[id];if(Array.isArray(at)&&p.job?.id!==id&&[0,1,2].every(k=>Number.isInteger(at[k])))Object.assign(nb[id],{i:at[0],j:at[1],r:((at[2]%4)+4)%4});}
  const q={...p,b:nb,w:{}};for(const id of Object.keys(nb)){const b=nb[id];if(placeError(q,b.t,b.i,b.j,b.r|0,id)){const rest={...q,b:Object.fromEntries(Object.entries(nb).filter(([k])=>k!==id))},at=autoPlace(rest,b.t,b.r|0)||autoPlace(rest,b.t,0);if(!at)return 'that layout no longer fits';Object.assign(b,at);}}
  const occ=occupancy(q),w={};for(const [k,c] of Object.entries(decWalls(L.w))){const [i,j]=k.split(',').map(Number);if((stock[c]|0)>0&&inTown(ccLevel(p),i,j)&&!NOBUILD[terrainAt(p.site,i,j)]&&!occ.has(k)){w[k]=c;stock[c]--;}}
@@ -346,6 +346,7 @@ function applyLayout(p,L){if(!record(L)||!record(L.b))return 'empty layout slot'
 function turretRefund(b){const B=BUILDINGS[b?.t];if(!B?.turret)return {};const sum={};for(let l=1;l<=(b.l|0);l++)for(const [k,v] of Object.entries(B.cost[l-1]||{}))if(!MNS.includes(k))sum[k]=(sum[k]||0)+v;return Object.fromEntries(Object.entries(sum).map(([k,v])=>[k,Math.floor(v/2)]).filter(([,v])=>v>0));}
 const wallRefund=n=>Math.floor(n*COMPOSITE.perCell/2);
 // Garrison hook (Session 7): defending tanks from the Hangar; one slot a Hangar level. Data only.
+const stockOf=p=>{const w=p?.ws;if(Array.isArray(w))return Object.fromEntries(w.map((n,i)=>[String(i),n|0]).filter(([,n])=>n>0));return record(w)?Object.fromEntries(Object.entries(w).filter(([,n])=>(n|0)>0).map(([k,n])=>[k,n|0])):{};};   // Firebase returns numeric-keyed maps as arrays
 const garrisonSlots=p=>Object.entries(p?.b||{}).reduce((a,[id,b])=>b.t==='hangar'&&!ruined(p,id)?a+(b.l|0):a,0);
 
 // ---------------------------------------------------------------- raid simulation ------------------------------------
@@ -394,7 +395,7 @@ function* drillGen(plot,seed=1,opt={}){
  // passable cells: inside the town or its gathering ring, not on a barrier
  const pass=new Uint8Array(NN),slow=new Float32Array(NN).fill(1);for(let i=0;i<N;i++)for(let j=0;j<N;j++){const c=i*N+j,t=ter[c];if(cheb(i,j)<=h+1&&!BLOCKED[t]){pass[c]=1;slow[c]=SLOW[t]||1;}}
  const threatMap=new Float32Array(NN),cover=t=>{const r=Math.ceil(t.range/C),ti=Math.round(t.s.x/C+MID),tj=Math.round(t.s.z/C+MID),out=[];for(let i=Math.max(0,ti-r);i<=Math.min(N-1,ti+r);i++)for(let j=Math.max(0,tj-r);j<=Math.min(N-1,tj+r);j++)if(Math.hypot(cellX(i)-t.s.x,cellZ(j)-t.s.z)<=t.range)out.push(i*N+j);return out;};
- for(const t of turrets){t.cells=cover(t);t.dps=t.dmg*(t.B.salvo||1)/t.B.rof;for(const c of t.cells)threatMap[c]+=t.dps*RAID.threatK;}
+ for(const t of turrets){t.cells=cover(t);t.dps=t.s.hp>0?t.dmg*(t.B.salvo||1)/t.B.rof:0;for(const c of t.cells)threatMap[c]+=t.dps*RAID.threatK;}   // a ruined turret adds no threat
  const cost=c=>{const si=blk[c];let w=1/slow[c]+threatMap[c];if(si>=0){const s=structs[si];if(s.hp>0&&s!==core)w+=s.eff/RAID.breakRate;}return w;};
  const field=new Float64Array(NN).fill(Infinity),heap=Heap(),NB4=[[1,0],[-1,0],[0,1],[0,-1]],DX8=[1,-1,0,0,1,1,-1,-1],DZ8=[0,0,1,-1,1,-1,1,-1];let ver=0;
  const relax=()=>{while(heap.size){const [v,c]=heap.pop();if(v>field[c])continue;const i=(c/N)|0,j=c-i*N;for(const [a,b] of NB4){const x=i+a,z=j+b;if(x<0||z<0||x>=N||z>=N)continue;const n=x*N+z;if(!pass[n])continue;const nv=v+cost(n);if(nv<field[n]){field[n]=nv;heap.push(nv,n);}}}};
@@ -464,5 +465,5 @@ root.ConquestPlot=Object.freeze({GRID,MID,TOWN,SITES,SITE_IDS,BUILDINGS,TURRETS,
  wallCap,wallBase,wallCapOf,extParts,wcode,wdecode,blendQ,wallStats,blendName,levelCap,countCap,tierOf,costOf,timeOf,sizeOf,cells,occupancy,countOf,turretCount,
  powerSupply,powerUse,levelOf,levelSum,modulesOf,caps,rates,accrue,power,lotsOf,homes,placeError,buildCheck,line4,rectCells,ringCells,shapeCells,wallLine,wallPlan,wallRemovePlan,
  autoPlace,newPlot,resetPlot,migrate,settle,drill,drillGen,raid:drill,drillWaves,hpOfBuilding,wallHit,
- maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,SEC,MIN,HOUR,DAY});
+ maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,SEC,MIN,HOUR,DAY});
 })(globalThis);

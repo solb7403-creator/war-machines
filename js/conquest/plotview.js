@@ -287,7 +287,7 @@ function buildTab(body,s,p,L){const {el,button}=X.ctx;if(X.place){const q=X.plac
 const TOOLS=[['line','LINE','drag: a solid straight wall'],['rect','RECT','drag corner to corner: a rectangle'],['ring','RING','drag from the centre outward: a ring'],['copy','COPY','drag a box over walls to copy them'],['paste','PASTE','tap to paste the copied walls'],['erase','ERASE','drag over walls to remove them']];
 function draftPlan(p){return X.draft.length?P.wallPlan(p,X.draft.map(d=>d.sec),{dev:devOn()}):null;}
 function wallTab(body,s,p){const {el,button}=X.ctx,dev=devOn(),cap=P.wallCapOf(p,dev),base=P.wallBase(p.cc),n=Object.keys(p.w).length,plan=draftPlan(p);
- el('b','cq-plot-wallcount','WALLS '+n+(plan?.fresh?' + '+plan.fresh:'')+' / '+base+(cap>base?' (+EXT '+(cap-base)+')':'')+' · COMPOSITE '+(dev?'∞':fmt(Math.floor(p.cm||0))),body);
+ const stor=Object.values(P.stockOf(p)).reduce((a,v)=>a+v,0);el('b','cq-plot-wallcount','WALLS '+n+(stor?' (+'+stor+' STORED)':'')+(plan?.fresh?' + '+plan.fresh:'')+' / '+base+(cap>base?' (+EXT '+(cap-base)+')':'')+' · COMPOSITE '+(dev?'∞':fmt(Math.floor(p.cm||0))),body);
  const tr=el('div','cq-plot-row cq-plot-tools',null,body);for(const [id,lab,tip] of TOOLS){const b=button(lab,()=>{X.tool=id;X.draw=null;render();},X.tool===id?'on':'');b.title=tip;b.setAttribute('aria-pressed',String(X.tool===id));if(id==='paste')b.disabled=!X.clip;tr.append(b);}
  el('small','cq-plot-tooltip',(TOOLS.find(t=>t[0]===X.tool)||TOOLS[0])[2].toUpperCase()+' · two fingers (or ✥) pan the map',body);
  // the draft and its CONFIRM come first (primary action on screen); the blend picker below sets the next section's blend
