@@ -195,50 +195,50 @@
    "walls": 2000,
    "turrets": 42,
    "homes": 50,
-   "replayMs": 344,
-   "workerMs": 248
+   "replayMs": 338,
+   "workerMs": 233
   },
   "delta": {
    "walls": 2000,
    "turrets": 42,
    "homes": 72,
-   "replayMs": 227,
-   "workerMs": 119
+   "replayMs": 133,
+   "workerMs": 83
   },
   "ridge": {
    "walls": 2000,
    "turrets": 42,
    "homes": 56,
-   "replayMs": 128,
-   "workerMs": 225
+   "replayMs": 108,
+   "workerMs": 87
   },
   "canyon": {
    "walls": 2000,
    "turrets": 42,
    "homes": 63,
-   "replayMs": 205,
-   "workerMs": 250
+   "replayMs": 86,
+   "workerMs": 106
   },
   "plateau": {
    "walls": 2000,
    "turrets": 42,
    "homes": 61,
-   "replayMs": 68,
-   "workerMs": 69
+   "replayMs": 102,
+   "workerMs": 87
   },
   "ice": {
    "walls": 2000,
    "turrets": 42,
    "homes": 67,
-   "replayMs": 76,
-   "workerMs": 70
+   "replayMs": 95,
+   "workerMs": 119
   },
   "ash": {
    "walls": 2000,
    "turrets": 42,
    "homes": 56,
-   "replayMs": 98,
-   "workerMs": 102
+   "replayMs": 80,
+   "workerMs": 77
   }
  }
 }

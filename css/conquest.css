@@ -252,3 +252,4 @@
 .cq-plot-report{border-color:#2f4b5a;background:#0b1623cc}.cq-plot-vital-lost{color:#ffb0b8}
 .cq-plot-store{font-size:10px;text-align:left}
 @media (max-width:340px){.cq-plot-ores{grid-template-columns:repeat(4,minmax(0,1fr))}.cq-plot-stat{grid-template-columns:66px 1fr 92px}}
+.cq-plot-draft{position:sticky;bottom:-10px;z-index:2;box-shadow:0 -6px 14px #070c15}   /* CONFIRM WALLS stays on screen while the picker scrolls */

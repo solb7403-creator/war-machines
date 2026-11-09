@@ -1,51 +1,68 @@
 {
  "phase2": {
-  "visitList": "VISIT BASES \u00b7 TOP 20, SQUAD, BASE OF THE WEEK\n\n\u2605 BASE OF THE WEEK \u00b7 BrowserPilot \u00b7 +57 COMMAND POWER THIS WEEK\n\nSQUADNone yet.TOP 20 BY COMMAND POWERBrowserPilot \u00b7 CC1 \u00b7 CRATER RIM \u00b7 177",
-  "visiting": "VISITING \u00b7 BrowserPilot \u00b7 CRATER RIM \u00b7 CC1 \u00b7 POWER 177",
+  "visitList": "VISIT BASES \u00b7 TOP 20, SQUAD, BASE OF THE WEEK\n\n\u2605 BASE OF THE WEEK \u00b7 BrowserPilot \u00b7 +92 COMMAND POWER THIS WEEK\n\nSQUADNone yet.TOP 20 BY COMMAND POWERBrowserPilot \u00b7 CC1 \u00b7 CRATER RIM \u00b7 212",
+  "visiting": "VISITING \u00b7 BrowserPilot \u00b7 CRATER RIM \u00b7 CC1 \u00b7 POWER 212",
   "readOnly": true,
   "storeDisabled": true,
   "tankBanner": true
  },
  "journey": {
   "gateLabel": "ENTER BASE",
-  "sites": 4,
+  "sites": 7,
   "coach1": "STEP 1 \u00b7 BUILD A REFINERY: it smelts plot regolith and scrap into alloy. Tap BUILD.",
   "coach2": "STEP 2 \u00b7 PLACE A CANNON TURRET: your first defense.",
   "refineryMs": 15000,
-  "wallPlan": "7 SECTIONS \u00b7 35 CP + 14 FERRITE",
-  "walls": 7,
-  "drill": "BREACHED \u00b7 9/14 PARASITES DOWN \u00b7 0 STRUCTURES LOST \u00b7 COMMAND CENTER 0%",
+  "wallPlan": "1 SECTION \u00b7 53 CELLS (3 skipped: 3 buildings)",
+  "walls": 53,
+  "blended": 53,
+  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 10/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
   "noRewards": true,
   "left": true,
   "render": {
-   "calls": 15,
-   "triangles": 16026,
+   "calls": 14,
+   "triangles": 44590,
    "programs": 16
   },
   "pageErrors": []
  },
  "cc10-high": {
   "render": {
-   "calls": 55,
-   "triangles": 47400,
+   "calls": 63,
+   "triangles": 314204,
    "programs": 16
   },
-  "buildings": 33,
-  "walls": 100,
+  "raidRender": {
+   "calls": 66,
+   "triangles": 207376,
+   "programs": 16
+  },
+  "drillMs": 351,
+  "buildings": 68,
+  "walls": 2000,
   "cc": 10,
-  "power": 7716,
+  "power": 24164,
+  "turrets": 42,
+  "homes": 50,
   "pageErrors": []
  },
  "cc10-low": {
   "render": {
-   "calls": 55,
-   "triangles": 47060,
+   "calls": 63,
+   "triangles": 195252,
    "programs": 16
   },
-  "buildings": 33,
-  "walls": 100,
+  "raidRender": {
+   "calls": 66,
+   "triangles": 198692,
+   "programs": 16
+  },
+  "drillMs": 320,
+  "buildings": 68,
+  "walls": 2000,
   "cc": 10,
-  "power": 7716,
+  "power": 24164,
+  "turrets": 42,
+  "homes": 50,
   "pageErrors": []
  },
  "2d": {

@@ -97,12 +97,12 @@ function kit(S){const T=S.T,K=S.K,G=S.G,lin=h=>new T.Color(h),_q=new T.Quaternio
  function wallGeo(code,low){const b=new S.Bld(),{o,l}=P.wdecode(code),q=P.blendQ(o,l),h=2.6+1.3*q,W=4.02,[body,acc,glow]=ORE_LOOK[o],bc=lin(body),ac=lin(acc);
   b.box(0,h/2,0,W,h,W,bc);b.box(0,h+.08,0,W+.06,.16,W+.06,o>=5?ac:o?bc.clone().multiplyScalar(1.35):C.dark2,o>=5?glow*.6:0);
   if(!o){b.box(0,h*.55,0,W+.03,.08,W+.03,lin(0x5c5a50));return b.geometry();}
-  for(let k=0;k<(low?1:l);k++)b.box(0,h*(.3+.22*k),0,W+.04,o>=4?.14:.1,W+.04,ac,glow*(.55+.25*l));
+  for(let k=0;k<(low?1:Math.max(1,l-1));k++)b.box(0,h*(.34+.26*k),0,W+.04,o>=4?.14+.04*l:.1,W+.04,ac,glow*(.55+.25*l));
   if(low)return b.geometry();
   if(o===1)for(let k=0;k<l*2;k++)b.box(-1.4+k*.9,h*.7,W/2+.02,.25,.25,.05,ac,.1);
   if(o===4)for(let k=0;k<l*2;k++)b.add(G.cone5,M(-1.2+(k%3)*1.2,h+.12,-1+Math.floor(k/3)*1.6,.15,k,0,.18,.6+.2*l,.18),ac,1.3);
   if(o===5){b.box(0,h+.2,0,W*.9,.04,.3,lin(0xffffff),2.4,Math.PI/4);if(l>=2)b.box(0,h*.5,W/2+.03,.12,h*.8,.04,lin(0xffffff),1.8,0);}
-  if(o===6){for(const sx of [-1,1])b.box(sx*(W/2+.02),h*.55,0,.05,h*.75,2.6,ac,glow);b.box(0,h+.22,0,W*.5,.06,W*.5,ac,glow*1.2);}
+  if(o===6)b.box(0,h+.22,0,W*.5,.06,W*.5,ac,glow*1.2);
   return b.geometry();}
  // Settler homes and town structures (Session 5 settler kit look: painted prefab domes, timber porches, habitat blocks,
  // water towers, greenhouses, market stalls; warm amber lights). A 2x2 lot (8 m), centred at the origin.
@@ -292,7 +292,7 @@ function wallTab(body,s,p){const {el,button}=X.ctx,dev=devOn(),cap=P.wallCapOf(p
 function storesShort(s,p,cost){if(s?.dev?.on)return null;const o2=storesOf(s,p),o={};for(const k of P.MNS)if(cost[k]&&o2[k]<cost[k])o[k]=cost[k]-o2[k];return Object.keys(o).length?o:null;}
 async function moveStores(mn){if(typeof baseStore!=='function'){say('UPDATE THE GAME TO MOVE MINERALS');return;}say('MOVING MINERALS FROM YOUR WALLET…');const ok=await baseStore(mn);say(ok?'MINERALS IN BASE STORES':'NOT MOVED');render();}
 function drillTab(body,s,p){const {el,button}=X.ctx;el('p','cq-plot-hint','A simulated Parasite raid on your whole town at threat '+p.cc+' ('+P.SITES[p.site].lanes.length+' lanes). Raiders path to your Command Center through the weakest wall and hit everything on the way; the raid wins if the Command Center falls. Drills never pay rewards.',body);
- const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…'))startReplay();},'cq-plot-primary');b.disabled=!!X.drill||wait>0;body.append(b);
+ const wait=Math.max(0,(p.drillAt||0)+60000-Date.now()),b=button(X.drill?'DRILL RUNNING…':wait?'CREWS RESET · '+dur(wait):'START DEFENSE DRILL',async()=>{if(await act('plot-drill',{},'DRILL CREWS DEPLOYING…')){say('SIMULATING THE RAID…');setTimeout(startReplay,40);}},'cq-plot-primary');b.disabled=!!X.drill||wait>0;body.append(b);
  if(X.drillResult){const r=X.drillResult,name=t=>t==='cc'?'Command Center':P.BUILDINGS[t]?.n||t,box=el('div','cq-plot-report',null,body);
   el('b','cq-plot-result '+r.outcome,(r.outcome==='breached'?'COMMAND CENTER FELL · RAID WON':r.outcome==='repelled'?'REPELLED':'HELD')+' · '+r.kills+'/'+r.spawned+' PARASITES DOWN · COMMAND CENTER '+r.core+'%',box);
   el('small','','BREACHES · '+(r.breaches.length?r.breaches.length+' ('+r.wallsLost+' wall cells lost; red rings on the map)':'none')+' · HOMES LOST '+r.homesLost+(r.power<100?' · POWER '+r.power+'%':''),box);
@@ -310,7 +310,7 @@ const keepSet=R=>new Set([...R.wgeo.values(),...R.hgeo.values(),...R.tgeo.values
 const footY=(site,b)=>{const s=P.sizeOf(b.t,b.r|0);return P.heightAt(site,P.cellX(b.i)+(s.w-1)*P.GRID.cell/2,P.cellZ(b.j)+(s.d-1)*P.GRID.cell/2);};
 const _m=[];
 function inst(R,geo,n){const m=new R.T.InstancedMesh(geo,R.S.MAT.solid,Math.max(1,n));m.count=n;m.frustumCulled=false;return m;}
-function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}const {S,T,k,g}=R,low=!!S.low,M4=R._sm||(R._sm=new T.Matrix4()),keep=keepSet(R);
+function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}const {S,T,k,g}=R,low=!!S.low||!!R.far,M4=R._sm||(R._sm=new T.Matrix4()),keep=keepSet(R);
  if(R.keys.ter!==p.site+':'+p.cc){R.keys.ter=p.site+':'+p.cc;wipe(g.terrain);wipe(g.grid);terrainMesh(R,p.site,p.cc);gridMesh(R,p.site,p.cc);}
  g.grid.visible=X.mode==='build'||X.mode==='walls';
  const want=new Set(),turs=[],theme=p.theme;R.anim=[];
@@ -348,7 +348,7 @@ function holo(){const R=X?.R,p=plotOf();if(!R||!p)return;const g=R.g;wipe(g.holo
  if(X.mode==='walls'){const dcells=[];for(const d of X.draft)for(const c of P.shapeCells(d.sec)||[])dcells.push(c);if(dcells.length)g.holo.add(holoMesh(R,dcells,2,null,p.site));
   if(X.draw?.cells?.length)g.holo.add(holoMesh(R,X.draw.cells,X.draw.ok,null,p.site));if(X.erase)g.holo.add(holoMesh(R,X.erase.keys.map(k=>k.split(',').map(Number)),false,null,p.site));}
  if(X.sel&&p.b[X.sel]){const b=p.b[X.sel],B=P.BUILDINGS[b.t];g.holo.add(holoMesh(R,P.cells(b),true,B?.turret?{x:P.cellX(b.i),z:P.cellZ(b.j),y:P.groundY(p.site,b.i,b.j),r:B.turret.range*P.SITES[p.site].range*(1+.04*(b.l-1))}:null,p.site));}
- if(X.mode==='drill'&&X.drillResult&&!X.drill){for(const [i,j,n] of X.drillResult.breaches)g.holo.add(holoMesh(R,[[i,j]],false,{x:P.cellX(i),z:P.cellZ(j),y:P.groundY(p.site,i,j)+1,r:5+Math.min(8,n),col:[1,.15,.2]},p.site));}}
+ if(X.mode==='drill'&&X.drillResult&&!X.drill){for(const [i,j,n] of X.drillResult.breaches)g.holo.add(holoMesh(R,[[i,j]],false,{x:P.cellX(i),z:P.cellZ(j),y:P.groundY(p.site,i,j)+1,r:9+Math.min(12,2*n),col:[1.4,.2,.25]},p.site));}}
 function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;if(s?.plot&&!X.visit&&(s!==X.lastState||Date.now()-(X.lastUi||0)>1000)){X.lastState=s;const key=JSON.stringify([s.plot.b,s.plot.job,s.plot.cc,s.plot.site,s.plot.banner,s.plot.theme,Object.keys(s.plot.w).length,s.plot.cm|0,s.plot.fh,s.plot.ext,s.plot.st&&Math.floor((s.plot.st.alloy||0)+(s.plot.st.biomass||0)),s.ledger?.cp,(s.plot.log||[]).length,s.dev?.on]);if(key!==X.lastKey){X.lastKey=key;X.lastUi=Date.now();render();}else if(Date.now()-(X.lastUi||0)>1000){X.lastUi=Date.now();tickUi();}}
  if(X.msgAt&&Date.now()-X.msgAt>5000){X.msg.textContent='';X.msgAt=0;}
  // The world waits while you build: when the builder's time is up, re-open the session (the Worker settles the job) at most every 3 s.
@@ -361,6 +361,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);_q.setFromAxisAngle(up,a);M4.compose(_v.set(it.x,it.y,it.z),_q,_s.set(it.dead?0:1,it.dead?0:1,it.dead?0:1));t.hd.setMatrixAt(it.n,M4);}t.hd.instanceMatrix.needsUpdate=true;}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
+ const far=c.dist>180;if(far!==!!R.far){R.far=far;sync();}   // distance LOD: the whole CC10 town in view draws the lighter wall and home geometry
  crewStep(R,plotOf());if(X.drill)drillStep(dt);
  R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer,vx=sr.left-hr.left,vy=hr.bottom-sr.bottom;r.setScissorTest(false);r.clear();r.setViewport(vx,vy,w,h);r.setScissor(vx,vy,w,h);r.setScissorTest(true);r.render(R.sc,R.cam);r.setScissorTest(false);r.setViewport(0,0,hr.width||w,hr.height||h);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
 // crew walk between buildings, rovers drive the lanes (presentation)

@@ -43,7 +43,7 @@ async def main():
    st=lambda page,js:page.evaluate('(()=>{const s=Conquest.view.authority.state;return '+js+';})()')
    gate=[1080,1160]
    # ---------- 1. claim + guided first build (HIGH) ----------
-   ctx,page,errors=await session('high',{'position':gate,'fieldMissions':True,'baseFunds':True,'wallet':{'mn':{'fe':40},'pts':5000}})
+   ctx,page,errors=await session('high',{'position':gate,'fieldMissions':True,'baseFunds':True,'wallet':{'mn':{'fe':90},'pts':5000}})
    b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);label=await b.inner_text();await b.click()
    await page.wait_for_selector('.cq-site-card');sites=await page.locator('.cq-site-card').count();await page.screenshot(path=str(OUT/'site-picker-390.png'))
    await page.locator('.cq-site-card[data-site="crater"]').click();await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
@@ -87,7 +87,7 @@ async def main():
    visiting=await page.locator('.cq-plot-title').inner_text();await page.screenshot(path=str(OUT/'visit-read-only-390.png'));readOnly=await page.evaluate('!document.querySelector(".cq-plot-tabs")')
    await page.locator('button',has_text='RETURN TO MY BASE').click();await page.wait_for_selector('.cq-plot-tabs')
    await page.locator('button',has_text='SHARE MY BASE').click();await page.wait_for_selector('.cq-plot-share-img');await page.wait_for_timeout(300);await page.locator('.cq-plot-share-img').screenshot(path=str(OUT/'share-card.png'))
-   storeDisabled=await page.evaluate('[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).every(b=>b.disabled)&&[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).length===ConquestPlot.STORE.items.length&&/WALL EXTENSION PACK/.test(document.body.innerText)')
+   storeDisabled=await page.evaluate('[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).every(b=>b.disabled)&&[...document.querySelectorAll(".cq-map-fold button")].filter(b=>/UNAVAILABLE/.test(b.textContent)).length===ConquestPlot.STORE.items.length&&/WALL EXTENSION PACK/.test(document.body.textContent)')
    results['phase2']={'visitList':visitText[:200],'visiting':visiting,'readOnly':readOnly,'storeDisabled':storeDisabled}
    assert 'TOP 20' in visitText and 'VISITING' in visiting and readOnly and storeDisabled,results['phase2']
    await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(500);left=await page.evaluate('!document.querySelector(".cq-plot")&&!!document.querySelector("#cq-base-access")')
