@@ -1,6 +1,6 @@
 {
  "390x844": {
-  "firstPaintMs": 1.6,
+  "firstPaintMs": 2.9,
   "render": {
    "calls": 29,
    "triangles": 46678,
@@ -8,7 +8,7 @@
    "tankError": null,
    "tankMeshes": 32
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 1h 01m\n\nNo invasions right now.",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 27:23\n\nNo invasions right now.",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
@@ -19,7 +19,7 @@
  },
  "myBase": "plot opened from the hub",
  "1280x800": {
-  "firstPaintMs": 1.2,
+  "firstPaintMs": 1.5,
   "render": {
    "calls": 30,
    "triangles": 52386,
@@ -27,7 +27,7 @@
    "tankError": null,
    "tankMeshes": 29
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 1h 01m\n\nNo invasions right now.",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nRIDGE TOWN \u00b7 CC3\n\nTOWN SCORE 320 \u00b7 DEFENSE RATING 150\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 27:16\n\nNo invasions right now.",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",

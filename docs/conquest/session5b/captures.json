@@ -1,20 +1,19 @@
 {
  "raid": {
-  "drillMs": 87,
+  "drillMs": 91,
   "effectsSeen": [
    "cannon",
-   "lasercannon",
-   "mg",
    "missile",
    "mortar",
    "railgun",
-   "siege"
+   "siege",
+   "tesla"
   ]
  },
  "gallery-high": {
   "render": {
    "calls": 70,
-   "triangles": 133882,
+   "triangles": 134282,
    "programs": 13
   },
   "pageErrors": []

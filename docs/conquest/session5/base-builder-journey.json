@@ -9,18 +9,18 @@
  "journey": {
   "gateLabel": "ENTER BASE",
   "sites": 7,
-  "coach1": "STEP 1 OF 7\nBUILD A REFINERY \u00b7 open BUILD",
-  "coach2": "STEP 2 OF 7\nPLACE A CANNON \u00b7 open WEAPONS",
+  "coach1": "STEP 1 OF 7BUILD A REFINERY \u00b7 open BUILD",
+  "coach2": "STEP 2 OF 7PLACE A CANNON \u00b7 open WEAPONS",
   "refineryMs": 15000,
   "wallPlan": "1 SECTION \u00b7 53 CELLS (3 skipped: 3 buildings)",
   "walls": 53,
   "blended": 53,
-  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 4/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
+  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 8/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
   "noRewards": true,
   "left": true,
   "render": {
    "calls": 32,
-   "triangles": 62042,
+   "triangles": 65322,
    "programs": 16
   },
   "pageErrors": []
@@ -28,15 +28,15 @@
  "cc10-high": {
   "render": {
    "calls": 63,
-   "triangles": 255866,
+   "triangles": 261650,
    "programs": 16
   },
   "raidRender": {
    "calls": 83,
-   "triangles": 264980,
+   "triangles": 270764,
    "programs": 16
   },
-  "drillMs": 289,
+  "drillMs": 321,
   "buildings": 68,
   "walls": 2000,
   "cc": 10,
@@ -48,15 +48,15 @@
  "cc10-low": {
   "render": {
    "calls": 63,
-   "triangles": 244794,
+   "triangles": 250578,
    "programs": 16
   },
   "raidRender": {
    "calls": 83,
-   "triangles": 253908,
+   "triangles": 259692,
    "programs": 16
   },
-  "drillMs": 287,
+  "drillMs": 227,
   "buildings": 68,
   "walls": 2000,
   "cc": 10,

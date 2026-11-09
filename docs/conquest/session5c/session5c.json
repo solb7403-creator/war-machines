@@ -268,7 +268,7 @@
     "z": 16
    }
   },
-  "moved": 7.8,
+  "moved": 7.9,
   "buildView": "build",
   "driveBack": "drive",
   "sameScene": true,
@@ -322,8 +322,8 @@
     "programs": 13
    },
    "homeSectorBuild": {
-    "calls": 63,
-    "triangles": 261650,
+    "calls": 80,
+    "triangles": 267324,
     "programs": 13
    },
    "pageErrors": []
