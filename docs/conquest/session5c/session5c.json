@@ -46,14 +46,14 @@
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 905,
+     "scrollTop": 889,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1447,
+     "scrollTop": 1431,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -128,14 +128,14 @@
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 833,
+     "scrollTop": 817,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1375,
+     "scrollTop": 1359,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -254,7 +254,7 @@
   ],
   "cc1Render": {
    "calls": 24,
-   "triangles": 45152,
+   "triangles": 49632,
    "programs": 13
   },
   "open": {
@@ -268,7 +268,7 @@
     "z": 16
    }
   },
-  "moved": 7.8,
+  "moved": 7.9,
   "buildView": "build",
   "driveBack": "drive",
   "sameScene": true,
@@ -318,12 +318,12 @@
    },
    "homeSectorDrive": {
     "calls": 63,
-    "triangles": 251386,
+    "triangles": 255866,
     "programs": 13
    },
    "homeSectorBuild": {
-    "calls": 80,
-    "triangles": 257060,
+    "calls": 63,
+    "triangles": 255866,
     "programs": 13
    },
    "pageErrors": []
@@ -344,12 +344,12 @@
    },
    "homeSectorDrive": {
     "calls": 63,
-    "triangles": 240314,
+    "triangles": 244794,
     "programs": 12
    },
    "homeSectorBuild": {
-    "calls": 80,
-    "triangles": 245988,
+    "calls": 63,
+    "triangles": 244794,
     "programs": 12
    },
    "pageErrors": []
