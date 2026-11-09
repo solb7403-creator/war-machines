@@ -1158,7 +1158,7 @@ Owner phone report on build `20261109004759`: the Conquest page would not scroll
 - CI: all 10 checks green on `01ba99d` (two earlier session-032 runs failed at different timing-sensitive combat taps, lines 122 and 89; line 89 also fails locally on code before this change).
 - PR #82 merged as `a65f581`. Worker deploy run 42559035744 SUCCESS: live `/pvp/health` ok, live `version.json` **`20261109033625`** = repo. Pages run 42559035446 SUCCESS.
 
-## Checkpoint 28 — Session 5B Town Defense (branch `claude/optimistic-pasteur-7va7mu`, from main `6ef1569`) — IN PROGRESS
+## Checkpoint 28 — RELEASE: Session 5B Town Defense (PR #90, merge `c2dafb6`, build `20261109074525`)
 
 Brief: `docs/conquest/SESSION_05B_TOWN_DEFENSE_FULL_PROMPT.txt` (owner-approved, release pre-approved). Spec: `docs/economy/RESOURCE_ECONOMY.md` §14.
 
@@ -1198,4 +1198,16 @@ No blocker and **no way to mint or duplicate value** (walls neutral on remove, r
 Tests: `conquest-town.mjs` §13–14 (91 checks in all).
 Second independent review (addendum diff only, read-only agent): no blocker, no mint or duplication (a 400-step random layout/stock/removal run conserved walls exactly). Fixed: MAJOR stored walls lost when Firebase returns a numeric-keyed map as an array (`stockOf`, round-trip test); MAJOR re-blending or remove+rebuild skipped REPAIR (damage kept on re-blend, removal refund by remaining HP); MAJOR leftover damage of removed walls locked layouts (pruned in plotSync, layouts check `repairPlan`); MINOR: repairs subtract only the HP they fixed and accrue first, ruined turrets add no path threat, a ruined Foundry/Uplink/Shield/Hangar stops working, a lower cap never deletes stored goods, the snapshot rating is computed fresh (and republished when it changes), drill alerts are logged as handled so raid alerts are never pushed out, the wall counter shows stored cells.
 
-**Next:** PR #90 CI, merge, deploy, verify.
+### Tests and release (2026-11-09)
+- Local: all node suites in the Conquest CI list + `conquest-regression.sh` PASS; `conquest-town.mjs` 91, `conquest-town-balance.mjs` 5, `conquest-plot.mjs` 63, `wtest/conquest-dev.mjs` 32, `wtest/conquest-visit.mjs` 15; browser `conquest-plot-ui.py`, `conquest-base-builder.py`, `conquest-town-captures.py`, `conquest-find-base.py`, `conquest-hub-browser.py`, `conquest-airdrop-browser.py` PASS (Chromium 390). `conquest-onboarding.py` and `conquest-earned-browser.py` need the CI browser install here (ran green in CI).
+- CI on PR #90 head `f155235`: all 9 checks green (Conquest regression incl. the new suites, transmission Chromium + WebKit, balance, website, signup browsers ×3, verify). An earlier head had one session-032 combat-tap failure (line 89, the known flake); it passed on the next run.
+- PR #90 merged as `c2dafb6` (main had gained docs-only commits #87–#89). Worker deploy run 42584500684 SUCCESS: live `/pvp/health` `{"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}`, live `version.json` **`20261109074525`** = repo (job annotations). Pages run 42584500218 SUCCESS for `c2dafb6`. No revert needed. Payments/checkout stay DISABLED. No production accounts, wallets, points, minerals or payments were changed by hand; Session 5 plots become fresh towns on their next session (same site and CC level).
+
+### Agents used
+- 2 independent read-only reviewers. Review 1 (full branch, economy/security + gameplay/performance): no mint/duplication, 3 major + 7 minor, all fixed or documented. Review 2 (owner-addendum diff only): no mint/duplication, 3 major + 8 minor, all fixed. Both changed the result. No other agents.
+
+### Unverified
+- PHYSICAL_IPHONE_UNVERIFIED: no physical phone frame timing, touch or Telegram check of the town; SwiftShader numbers are relative only. The town UI's touch-swipe tests run on Chromium; WebKit covers it through the existing plot journeys.
+- Balance is the deterministic raid model with scenario layouts, not a human playtest. Async player raids (the callers of `applyRaidDamage`, peace shields, loot, garrisons, alert delivery) arrive in Session 7.
+
+**Next:** the owner's phone playtest, then Session 6 (tank mods + Science Lab research + audio/weather).
