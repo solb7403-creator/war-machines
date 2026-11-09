@@ -12,7 +12,7 @@ import asyncio,json,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session5c';OUT.mkdir(parents=True,exist_ok=True)
-GATE=[1080,1160]
+GATE=[1080,1160];PAD_VIEW=[1077,1154]   # a resting spot in the courtyard: the world camera is centred over the tank, so it must not sit on the model's CC
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port']);R={}
@@ -92,7 +92,7 @@ async def main():
    # ---------- 2. Home Sector, diorama, thumbnail, name, hub ----------
    ctx,page,errors=await session(390,700,{'position':GATE,'baseFunds':True,'plotCC':1,'plotSite':'ridge'},motion='no-preference');await world(page)
    pad0=await page.evaluate('JSON.stringify(Conquest.view.diorama?.userData.counts)');thumb=await page.evaluate('!!document.querySelector("#cq-home-btn .cq-home-thumb")')
-   await page.screenshot(path=str(OUT/'pad-diorama-cc1-390.png'));await page.locator('#cq-home-btn').screenshot(path=str(OUT/'hud-thumbnail-cc1.png'))
+   await page.locator('#cq-home-btn').screenshot(path=str(OUT/'hud-thumbnail-cc1.png'))
    await enter_base(page)
    hs=await page.evaluate('({view:ConquestPlotView.state.view,tank:!!ConquestPlotView.state.tank,tour:!!ConquestPlotView.state.tour,pad:ConquestPlotView.state.drive?.pad})')
    await page.wait_for_timeout(1500);await page.screenshot(path=str(OUT/'home-sector-tour-cc1-390.png'))
@@ -146,7 +146,7 @@ async def main():
     ctx,page,errors=await session(390,700,{'position':GATE,'plotFull':'crater','baseFunds':True},q=q);await world(page);await page.wait_for_timeout(1500)
     worldInfo=await page.evaluate('({calls:Conquest.view.renderer.info.render.calls,triangles:Conquest.view.renderer.info.render.triangles,programs:Conquest.view.renderer.info.programs?.length||0,diorama:Conquest.view.diorama?.userData.counts})')
     if q=='high':
-     await page.screenshot(path=str(OUT/'pad-diorama-cc10-390.png'));await page.locator('#cq-home-btn').screenshot(path=str(OUT/'hud-thumbnail-cc10.png'))
+     await page.locator('#cq-home-btn').screenshot(path=str(OUT/'hud-thumbnail-cc10.png'))
     await enter_base(page);await page.wait_for_timeout(2500);drive=await page.evaluate('ConquestPlotView.state.info')
     if q=='high':await page.screenshot(path=str(OUT/'home-sector-drive-cc10-390.png'))
     await page.locator('.cq-plot-tabs button',has_text='HOME').click();await page.wait_for_timeout(2500);build=await page.evaluate('ConquestPlotView.state.info')
@@ -161,6 +161,11 @@ async def main():
     ctx,page,errors=await session(390,700,{'position':GATE,'baseFunds':True,'plotCC':cc,'plotSite':site});await world(page);await enter_base(page)
     await page.locator('.cq-plot-tabs button',has_text='HOME').click();await snap_to(ctx,page,'peek');await page.wait_for_timeout(1500)
     await page.screenshot(path=str(OUT/f'default-camera-cc{cc}-{site}-390.png'));assert not errors,errors
+    await ctx.close()
+   # the pad diorama at CC1 and CC10 from a resting spot in the courtyard (CC1 vs CC10 side by side for the owner)
+   for (cc,fx) in ((1,{'position':GATE,'at':PAD_VIEW,'baseFunds':True,'plotCC':1,'plotSite':'ridge'}),(10,{'position':GATE,'at':PAD_VIEW,'plotFull':'crater','baseFunds':True})):
+    ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(2500)
+    await page.screenshot(path=str(OUT/f'pad-diorama-cc{cc}-390.png'));assert not errors,errors
     await ctx.close()
    # the hub hero at CC5 and CC10 (CC1 is captured above): a bigger town must read as a bigger town from the hero camera
    for (cc,fx) in ((5,{'position':GATE,'baseFunds':True,'plotCC':5,'plotSite':'ridge'}),(10,{'position':GATE,'plotFull':'crater','baseFunds':True})):

@@ -52,7 +52,7 @@ const FX_OF={cannon:'tracer',mg:'tracer',laser:'beam',rocket:'blast',missile:'bl
 const FX_LOOK={tracer:[0xffb347,.16,2.4],beam:[0x22e6ff,.12,2.6],rail:[0xd8f6ff,.18,3],arc:[0xb08cff,.1,3],flame:[0xff7a2d,.9,2.2],blast:[0xff5a2a,.3,2.6],shell:[0xffd36b,.34,2.8],burst:[0xff6ae0,.36,3]};
 function scene3d(view){const S=view.style,T=view.T;if(!S||view.renderer.isConquestCanvas)return null;const k=kit(S),sc=new T.Scene();
  // The same light counts as the world scene (hemi + sun + rim): the style programs are shared, no new program variants.
- const env=S.environment(sc,null);sc.fog=new T.Fog(0x06070f,420,1500);   // 5C Max pass: the world's own sky (stars, Earth, galaxy) and light set over the town; compiled programs are shared
+ const env=S.environment(sc,null,{guest:true});if(S.atmoApply)S.atmoApply(sc,420,1500);else sc.fog=new T.Fog(0x06070f,420,1500);   /* owner gate: a guest of the world sky (the world keeps its atmosphere), with the zone's own haze */   // 5C Max pass: the world's own sky (stars, Earth, galaxy) and light set over the town; compiled programs are shared
  const cam=new T.PerspectiveCamera(50,1,.5,2000);const g={terrain:new T.Group(),build:new T.Group(),walls:new T.Group(),turrets:new T.Group(),homes:new T.Group(),holo:new T.Group(),grid:new T.Group(),fx:new T.Group(),actors:new T.Group()};for(const v of Object.values(g))sc.add(v);
  const im=(geo,n)=>{const m=new T.InstancedMesh(geo,S.MAT.solid,n);m.count=0;m.frustumCulled=false;m.visible=false;return m;};
  const crewN=S.low?8:16,crew=new T.InstancedMesh(k.person(),S.MAT.solid,crewN),rovers=new T.InstancedMesh(k.rover(),S.MAT.solid,S.low?2:4);crew.frustumCulled=rovers.frustumCulled=false;g.actors.add(crew,rovers);
@@ -99,7 +99,7 @@ function saveSnaps(){try{localStorage.setItem(SNAP_KEY,JSON.stringify(X.snapOf))
 const defDist=cc=>{const h=P.townH(cc||1),h1=P.townH(1),hN=P.townH(P.CC.max);return Math.round(95+25*Math.max(0,Math.min(1,(h-h1)/Math.max(1,hN-h1))));};
 const ccAt=p=>{const c=p?.b?.cc;if(!c)return {x:0,z:0};const s=P.sizeOf('cc',c.r|0);return {x:P.cellX(c.i)+(s.w-1)*P.GRID.cell/2,z:P.cellZ(c.j)+(s.d-1)*P.GRID.cell/2};};
 // Default camera (5C): a 3/4 view framed on the Command Center at about 55% of the old distance (CC1 95 m, CC10 120 m).
-function frameCam(p,yaw=0){const c=ccAt(p);return {x:c.x,z:c.z+4,dist:defDist(p?.cc),tilt:.78,yaw};}
+function frameCam(p,yaw=0){const c=ccAt(p);return {x:c.x-Math.sin(yaw)*12,z:c.z-Math.cos(yaw)*12,dist:defDist(p?.cc),tilt:.78,yaw};}   // owner gate: aimed past the CC (the near half was bare ground)
 const tabName=m=>(TABS.find(t=>t[0]===m)||TABS[0])[2];
 function open(ctx){if(X)return;const {view,panel,el,button}=ctx;const st=()=>view.authority?.state;
  panel.classList.add('cq-in-plot');const d=el('section','cq-dialog cq-plot',null,panel);d.setAttribute('role','dialog');d.setAttribute('aria-label','Command Base town');
@@ -148,7 +148,9 @@ function sitePicker(){const {el,button,view}=X.ctx,s=view.authority?.state,D=roo
 // A closed section that keeps its open state across re-renders by a stable key (its title carries live numbers).
 function fold(body,k,title,cls=''){const {el}=X.ctx,f=el('details','cq-map-fold'+(cls?' '+cls:''),null,body),sm=el('summary','',title,f);sm.dataset.k=k;return f;}
 const townName=p=>p?.nm||(P.SITES[p?.site]?.name||'')+' TOWN';
-function header(p,visit){X.title.textContent=(visit?'VISITING · ':'')+townName(p)+' · CC'+p.cc;const use=P.powerUse(p),sup=P.powerSupply(p);X.chipPw.hidden=X.chipDef.hidden=false;X.chipPw.textContent='⚡ '+use+'/'+sup+(use>sup?' !':'');X.chipPw.classList.toggle('short',use>sup);X.chipPw.setAttribute('aria-label','Power '+use+' used of '+sup+(use>sup?', short: build a Reactor':''));X.chipDef.textContent='🛡 DEF '+fmt(visit?.dr||P.defenseRating(p));}
+// The header keeps the level visible: a long site name shortens, ' · CCn' never does (owner gate: 'CRATER RIM TO…').
+function titleSet(name,cc){const {el}=X.ctx;X.title.replaceChildren();el('span','cq-plot-tname',name,X.title);el('span','cq-plot-tcc',' · CC'+cc,X.title);}
+function header(p,visit){titleSet((visit?'VISITING · ':'')+townName(p),p.cc);const use=P.powerUse(p),sup=P.powerSupply(p);X.chipPw.hidden=X.chipDef.hidden=false;X.chipPw.textContent='⚡ '+use+'/'+sup+(use>sup?' !':'');X.chipPw.classList.toggle('short',use>sup);X.chipPw.setAttribute('aria-label','Power '+use+' used of '+sup+(use>sup?', short: build a Reactor':''));X.chipDef.textContent='🛡 DEF '+fmt(visit?.dr||P.defenseRating(p));}
 // The coach floats on the map in every tab but HOME (where it is a card with a GO button); tapping it opens its tab.
 function coachUi(g){const {el}=X.ctx,c=X.coach,show=!!g&&!X.drill&&!X.visit&&!X.tour&&!busy();/* hidden while placing or drawing: a tap near it must never switch tabs */c.hidden=!show;if(!show){X.coachKey='';return;}const t=(X.mode===g.tab&&X.view!=='drive'?g.here:g.short)||g.text,key=g.k+t;if(X.coachKey===key)return;X.coachKey=key;c.replaceChildren();el('b','cq-plot-step','STEP '+g.k+'/'+g.n,c);el('span','',t,c);c.setAttribute('aria-label','Step '+g.k+' of '+g.n+': '+t);}   /* a one-line pill on the map (owner gate: the banner hid the town, and said Open BUILD with BUILD open) */
 function render(){if(X?.visit){visitUi();return;}if(!X||!X.ctx.view.authority?.state?.plot)return;const {el,view}=X.ctx,s=view.authority.state,p=s.plot,L=s.ledger,now=Date.now(),sh=X.sheet;
@@ -409,7 +411,7 @@ function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.vi
  if(!X.tank){X.tank=tankModel(R);R.g.actors.add(X.tank);}X.tankFlagKey=null;if(!X.visit)tankFlag(R,p);
  X.drive={x:pad.x,z:pad.z,h:Math.PI,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:31,yaw:0};
  // the gate pad: a lit ring you drive back onto to leave (the shared world's Command Gate on this side)
- if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.cyan,.35);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1.6);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1.2,[.05,.4,.55],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
+ if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.dark);b.add(S.G.hex,R.k.M(pad.x,y+.3,pad.z,0,0,0,4.75,.03,4.75),R.k.C.cyan,.5);b.add(S.G.hex,R.k.M(pad.x,y+.31,pad.z,0,0,0,4.45,.04,4.45),R.k.C.dark);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1,[.02,.16,.22],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
  if(!X.visit&&!reduced()){let seen=false;try{seen=localStorage.getItem(TOUR_KEY)==='1';}catch(_){seen=true;}if(!seen){X.tour={t:0,dur:6};try{localStorage.setItem(TOUR_KEY,'1');}catch(_){}}}}
 function setView(v){if(!X||!X.R&&v==='drive')return;endTour();if(v===X.view)return;X.camFrom=camPose();X.camT=0;X.view=v;if(v==='drive'){X.place=null;X.draw=null;X.erase=null;X.sel=null;if(!X.drive)startDrive();}render();}
 // the pilot's input: a floating stick (one finger anywhere on the map), WASD / arrow keys; camera-relative like the world
@@ -425,12 +427,19 @@ function driveStep(dt){const D=X.drive,p=plotOf();if(!D||!p)return;const k=D.key
  const pd=Math.hypot(D.x-D.pad.x,D.z-D.pad.z);if(pd>9)D.left=true;if(D.left&&pd<5&&!X.visit){D.exit+=dt;if(D.exit>1.1){close();return;}}else D.exit=0;
  X.tank.position.set(D.x,P.heightAt(p.site,D.x,D.z),D.z);X.tank.rotation.set(0,D.h,0);}
 const _cp={};
+// The share card frames the built-up part of the town (walls, buildings, homes) with a margin, at least 40 m, at most the town.
+function shareHalf(p,C0){const c=P.GRID.cell;let m=40;const at=(i,j)=>{m=Math.max(m,Math.abs(P.cellX(i)-C0.x)*1.15+6,Math.abs(P.cellZ(j)-C0.z)*1.15+6);};for(const k of Object.keys(p.w||{})){const [i,j]=k.split(',').map(Number);at(i,j);}for(const b of Object.values(p.b||{}))at(b.i,b.j);for(const h of P.homes(p))at(h.i,h.j);return Math.min(m,(P.townH(p.cc)+2)*c);}
+// Obstacle heights along the chase line (approximate: walls 4.5 m, homes and turrets 6, buildings 7 + level, the CC 12 + 2 per
+// level); the camera comes in to the first one that would hide the hull, and eases back out.
+function camHeights(p){const occ=P.occupancy(p),h=new Map();for(const [k,o] of occ){const b=p.b[o];h.set(k,o==='wall'?4.5:!b?6:b.t==='cc'?12+2*(b.l||1):P.BUILDINGS[b.t]?.turret||b.t==='gate'?6:7+(b.l||1));}for(const hm of P.homes(p))for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]])h.set(P.key(hm.i+a,hm.j+b),6);return h;}
+function chaseDist(D,cy,dt){const p=D.plot;if(!D.camH||D.camKey!==D.key){D.camH=camHeights(p);D.camKey=D.key;}let want=X.chase.dist;for(let s2=6;s2<want;s2+=2){const hh=D.camH.get(P.key(cellOf(D.x+Math.sin(cy)*s2),cellOf(D.z+Math.cos(cy)*s2)));if(hh&&hh>s2*.36+2){want=Math.max(9,s2-2.5);break;}}
+ X.chase.cur=X.chase.cur==null||want<X.chase.cur?want:X.chase.cur+(want-X.chase.cur)*Math.min(1,(dt||0)*1.5);return X.chase.cur;}
 function camPose(){const R=X.R;if(!R)return null;return {p:R.cam.position.clone(),t:(X.camLook||new R.T.Vector3()).clone()};}
 // camera: drive (chase), tour (a 6 s orbit of the town the first time), or the build view (3/4, overhead to place/draw)
 function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos=new T.Vector3()),look=R._clook||(R._clook=new T.Vector3());
- if(X.tour&&X.drive){const t=(X.tour.t+=dt),C0=TK.ccCenter(p),rad=(P.townH(p.cc)+4)*P.GRID.cell*.75,a=-Math.PI/2+t/X.tour.dur*Math.PI*1.6;pos.set(C0.x+Math.cos(a)*rad,55+20*Math.sin(t*.5),C0.z+Math.sin(a)*rad);look.set(C0.x,4,C0.z);
+ if(X.tour&&X.drive){const t=(X.tour.t+=dt),C0=TK.ccCenter(p),rad=(P.townH(p.cc)+4)*P.GRID.cell*.75,a=-Math.PI/2+t/X.tour.dur*Math.PI*1.6;pos.set(C0.x+Math.cos(a)*rad,18+rad*.14+6*Math.sin(t*.5),C0.z+Math.sin(a)*rad);look.set(C0.x,6,C0.z);
   if(t>=X.tour.dur){X.tour=null;X.camFrom={p:pos.clone(),t:look.clone()};X.camT=0;}}
- else if(X.view==='drive'&&X.drive){const D=X.drive,y=P.heightAt(p.site,D.x,D.z),cy=X.chase.yaw,d=X.chase.dist;pos.set(D.x+Math.sin(cy)*d,y+d*.36+3.5,D.z+Math.cos(cy)*d);look.set(D.x-Math.sin(cy)*16,y+4,D.z-Math.cos(cy)*16);}
+ else if(X.view==='drive'&&X.drive){const D=X.drive,y=P.heightAt(p.site,D.x,D.z),cy=X.chase.yaw,d=chaseDist(D,cy,dt);pos.set(D.x+Math.sin(cy)*d,y+d*.36+3.5,D.z+Math.cos(cy)*d);look.set(D.x-Math.sin(cy)*16,y+4,D.z-Math.cos(cy)*16);}
  else{const tilt=X.place||X.mode==='walls'?1.38:Math.min(c.tilt,1.2),dist=c.dist;pos.set(c.x+Math.sin(c.yaw)*Math.cos(tilt)*dist,Math.sin(tilt)*dist,c.z+Math.cos(c.yaw)*Math.cos(tilt)*dist);look.set(c.x,0,c.z);}
  // ease from the last pose after a view change (0.6 s; instant with reduced motion)
  if(X.camFrom&&X.camT<1){X.camT=reduced()?1:Math.min(1,X.camT+dt/.6);const e=X.camT<.5?2*X.camT*X.camT:1-Math.pow(-2*X.camT+2,2)/2;pos.lerpVectors(X.camFrom.p,pos,e);look.lerpVectors(X.camFrom.t,look,e);if(X.camT>=1)X.camFrom=null;}
@@ -507,7 +516,7 @@ async function visit(pid,name){const {view}=X.ctx;say('OPENING '+String(name||'B
  X.visit={base:r.base,plot:fromSnap(r.base)};X.sel=null;X.mode='home';X.place=null;X.draw=null;X.draft=[];if(X.R){X.R.keys={};}X.cam=frameCam(X.visit.plot);
  // 5C: a visit is a read-only Home Sector you can drive through (gates stay shut for visitors; nothing can be changed)
  if(X.R){X.drive=null;X.camFrom=camPose();X.camT=0;startDrive();X.view='drive';}visitUi();}
-function visitUi(){const {el,button}=X.ctx,v=X.visit.base,p=X.visit.plot;header(p,v);X.title.textContent='VISITING · '+(v.nm||v.n)+' · CC'+v.cc;X.coach.hidden=true;X.tabs.hidden=true;const sh=X.sheet;sh.replaceChildren();
+function visitUi(){const {el,button}=X.ctx,v=X.visit.base,p=X.visit.plot;header(p,v);titleSet('VISITING · '+(v.nm||v.n),v.cc);X.coach.hidden=true;X.tabs.hidden=true;const sh=X.sheet;sh.replaceChildren();
  el('p','cq-plot-hint','Read-only visit: look around '+(v.nm?v.nm+', ':'')+v.n+'\'s town on a '+(P.SITES[v.site]?.name||'')+'. Nothing here can be changed or taken. Player raids are coming. TOWN SCORE '+fmt(v.pw)+'.',sh);
  {const w=Object.values(p.w||{}),by={};for(const c of w){const n=P.blendName(c);by[n]=(by[n]||0)+1;}const tu={};for(const b of Object.values(p.b)){const B=P.BUILDINGS[b.t];if(B?.turret)tu[B.n]=(tu[B.n]||0)+1;}const vit=Object.values(p.b).filter(b=>P.VITALS[b.t]).map(b=>b.t==='cc'?'Command Center':P.BUILDINGS[b.t].n);
   el('p','cq-plot-res','WHAT YOU WOULD FACE · DEFENSE RATING '+fmt(v.dr||P.defenseRating(p))+' · '+w.length+' walls'+(w.length?' ('+Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([n,k])=>k+' '+n).join(', ')+')':'')+' · '+(Object.entries(tu).map(([n,k])=>k+' '+n).join(', ')||'no turrets')+' · vitals: '+vit.join(', '),sh);}
@@ -516,7 +525,7 @@ function visitUi(){const {el,button}=X.ctx,v=X.visit.base,p=X.visit.plot;header(
 // name, CC, defense rating and banner. Rendered and copied in the same task (the drawing buffer is still valid), then the
 // next frame redraws the map.
 function townShot(p,w=720,h=520){const R=X?.R;if(!R)return null;const r=X.ctx.view.renderer,el=r.domElement,pr=r.getPixelRatio?.()||1,W=Math.min(w,el.width),H=Math.min(h,el.height);if(W<240||H<180)return null;
- const T=R.T,cam=new T.PerspectiveCamera(38,W/H,.5,2500),C0=TK.ccCenter(p),half=(P.townH(p.cc)+2)*P.GRID.cell,d=half*2.05;cam.position.set(C0.x+d*.5,d*.6,C0.z+d*.78);cam.lookAt(C0.x,0,C0.z);R.S.viewLights(cam);
+ const T=R.T,cam=new T.PerspectiveCamera(38,W/H,.5,2500),C0=TK.ccCenter(p),half=shareHalf(p,C0),d=half*2.35,hd=d*Math.cos(.96);cam.position.set(C0.x+hd*.54,d*Math.sin(.96),C0.z+hd*.84);cam.lookAt(C0.x,0,C0.z);   /* owner gate: framed on what is built (+15%), 55 degrees down: no sky strip */R.S.viewLights(cam);
  const hide=[R.g.holo,X.tank,X.padMesh,X.fab].filter(o=>o&&'visible' in o),vis=hide.map(o=>o.visible);hide.forEach(o=>o.visible=false);const old=new T.Color();r.getClearColor(old);const oa=r.getClearAlpha();
  try{r.setScissorTest(true);r.setViewport(0,0,W/pr,H/pr);r.setScissor(0,0,W/pr,H/pr);r.setClearColor(0x05070d,1);r.clear();r.render(R.sc,cam);r.setScissorTest(false);const c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(el,0,el.height-H,W,H,0,0,W,H);return c;}
  catch(e){return null;}finally{r.setClearColor(old,oa);hide.forEach((o,i)=>o.visible=vis[i]);R.S.viewLights(R.cam);}}

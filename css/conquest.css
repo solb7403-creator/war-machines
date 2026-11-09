@@ -132,6 +132,7 @@
 .cq-world .cq-dialog.cq-plot{position:absolute;inset:0;max-width:none;width:auto;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:flex;flex-direction:column;z-index:30;overflow:hidden;transform:none;--cq-sheet:50%}
 .cq-plot-top{display:flex;gap:8px;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 8px;background:linear-gradient(#070c15f2,#070c15cc);border-bottom:1px solid #22e6ff44}
 .cq-plot-title{flex:1;min-width:0;font-size:12px;letter-spacing:.06em;font-weight:800;color:#eaf8ff;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cq-plot-title{display:flex}.cq-plot-tname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cq-plot-tcc{flex:none;white-space:pre}
 .cq-plot-chips{display:flex;gap:4px;flex:none}.cq-plot-chip{font-size:11px;font-weight:800;padding:4px 6px;border-radius:6px;background:#0b1623;border:1px solid #2f4b5a;color:#cdf6ff;white-space:nowrap}.cq-plot-chip.short{color:#ffb0b8;border-color:#ff3048;background:#2a0a10}.cq-plot-chip[hidden]{display:none}
 .cq-plot-leave{flex:none;font-size:11px}
 .cq-plot-stage{position:relative;flex:1 1 auto;min-height:56px;touch-action:none;cursor:crosshair;overflow:hidden}

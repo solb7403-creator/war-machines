@@ -713,9 +713,9 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const m=new T.Mesh(geo,MAT.fx);m.renderOrder=4;m.frustumCulled=false;m.userData.noPick=true;m.name='cq-atmosphere-veil';return m;};
 
  // ---------- sky + lights ----------
- S.environment=(scene,renderer)=>{
+ S.environment=(scene,renderer,o)=>{   // o.guest: a second scene (the Home Sector) shares the sky and lights but never takes over the world's atmosphere
   if(renderer){renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=low?1.25:1.2;renderer.outputColorSpace=T.SRGBColorSpace;}
-  scene.background=new T.Color(0);scene.fog=new T.Fog(0x06070f,900,2600);S.atmoScene={scene,renderer};
+  scene.background=new T.Color(0);scene.fog=new T.Fog(0x06070f,900,2600);if(!o?.guest)S.atmoScene={scene,renderer};
   const hemi=new T.HemisphereLight(0x3a5a9c,0x16131f,1.5),sun=new T.DirectionalLight(0xe4ecff,2.9),rim=new T.DirectionalLight(0x52c6ff,1.25);sun.position.copy(sunDir).multiplyScalar(500);rim.position.copy(rimDir).multiplyScalar(500);scene.add(hemi,sun,rim);
   const Pp=[],B=[],A=[],I=[],dome=new T.SphereGeometry(1,high?48:32,high?24:16),dp=dome.attributes.position;
   for(let i=0;i<dp.count;i++){const x=dp.getX(i),y=dp.getY(i),z=dp.getZ(i);Pp.push(x,y,z);B.push(0,0,0);const gal=Math.exp(-Math.pow(x*.35+y*.55-z*.76,2)*7),nb=Math.max(0,fbm3(x*2.3+3,y*2.3,z*2.3,4)-.44),up=clamp01(y*3+.1);
@@ -991,6 +991,9 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.atmo=(p,dt)=>{const tf=W.terraformAt?W.terraformAt(p.x,p.z):0,want=Math.min(1,Math.max(0,(tf-.03)/.13)),a=U.uAtmo.value;U.uAtmo.value=a+(want-a)*Math.min(1,(dt||0)*1.6);
   const k=U.uAtmo.value,A=S.atmoScene;if(A?.scene?.fog){A.scene.fog.color.copy(nightFog).lerp(dayFog,k);A.scene.fog.near=900-640*k;A.scene.fog.far=2600-1250*k;A.scene.background.setRGB(.36*k,.27*k,.19*k);}
   if(A?.renderer)A.renderer.toneMappingExposure=(low?1.25:1.2)-.1*k;MAT.sky.uniforms.uFogC.value.copy(nightFogC).lerp(dayFogC,k);return k;};
+ // A guest scene takes the world's current atmosphere once (fog colour, haze distance, background): under a terraformed
+ // day sky the far ground fades into the same amber haze as the world, at night into the same dark.
+ S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};
  S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};
