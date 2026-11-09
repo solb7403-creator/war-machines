@@ -79,7 +79,7 @@ const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperation
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 // The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
 const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
-const baseDefinition=freeze({x:1080,z:1160,radius:18,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
+const baseDefinition=freeze({x:1080,z:1160,radius:30,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
@@ -326,7 +326,7 @@ function travelArrivals(id,x,z,radius){if(arrivals.has(id))return arrivals.get(i
  const out=[near(x,z)];for(const ring of [Math.min(40,radius*.4),Math.min(80,radius*.75)])for(let i=0;i<8;i++){const a=i*Math.PI/4;out.push(near(x+Math.cos(a)*ring,z+Math.sin(a)*ring));}
  const list=freeze(out.filter(Boolean));arrivals.set(id,list);return list;}
 function travelNodes(territory={},baseTier=0){const nodes=[{id:'refuge',name:'REFUGE SUPPLY',x:refuge.x,z:refuge.z,radius:45,arrivals:travelArrivals('refuge',refuge.x-6,refuge.z-8,24)}];
- if(baseTier>0)nodes.push({id:'base',name:'COMMAND BASE',x:baseDefinition.x,z:baseDefinition.z,radius:45,arrivals:travelArrivals('base',baseDefinition.x,baseDefinition.z-10,24)});
+ if(baseTier>0)nodes.push({id:'base',name:'MY BASE',x:baseDefinition.x,z:baseDefinition.z,radius:45,arrivals:travelArrivals('base',baseDefinition.x,baseDefinition.z-10,24)});
  for(const s of sectors)if(s.id!=='refuge'&&territory?.[s.id]?.owner==='humanity')nodes.push({id:s.id,name:s.name,x:s.x,z:s.z,radius:s.radius,arrivals:travelArrivals(s.id,s.x,s.z,s.radius)});
  // The Refuge corridor is humanity's home sector: departing anywhere inside it counts as the Refuge network.
  const home=sectors.find(s=>s.id==='refuge');if(home)nodes.push({id:'refuge-corridor',name:home.name,x:home.x,z:home.z,radius:home.radius,departOnly:true});

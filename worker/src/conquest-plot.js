@@ -41,7 +41,7 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
   p.site=a.site;p.siteFree=1;p.siteAt=now;
   // Re-seat anything the new terrain blocks: buildings move to the nearest free spot; walls on blocked ground are removed
   // and their minerals return to the base stores (no loss).
-  for(const [k,t] of Object.entries(p.w)){const [i,j]=k.split(',').map(Number);if(P.BLOCKED[P.terrainAt(p.site,i,j)]){delete p.w[k];for(const [m,n] of Object.entries(P.WALLS[t].cost))if(P.MNS.includes(m))p.mnSpent[m]=Math.max(0,(p.mnSpent[m]||0)-n);}}
+  for(const [k,t] of Object.entries(p.w)){const [i,j]=k.split(',').map(Number);if(P.BLOCKED[P.terrainAt(p.site,i,j)]){delete p.w[k];if(!s.dev?.used)for(const [m,n] of Object.entries(P.WALLS[t].cost))if(P.MNS.includes(m))p.mnSpent[m]=Math.max(0,(p.mnSpent[m]||0)-n);}/* a dev-mode test record's walls were free: no refund */}
   for(const [id,b] of Object.entries(p.b)){if(!P.placeError(p,b.t,b.i,b.j,b.r|0,id))continue;const t=b.t;const at=P.autoPlace({...p,b:Object.fromEntries(Object.entries(p.b).filter(([k])=>k!==id))},t,b.r|0)||P.autoPlace({...p,b:Object.fromEntries(Object.entries(p.b).filter(([k])=>k!==id))},t,0);if(at)Object.assign(b,at);}
   s.notice={kind:'plot-site',site:p.site,free};return;}
  if(r.action==='plot-build'){only(['type','i','j','r']);const B=own(P.BUILDINGS,a.type)?P.BUILDINGS[a.type]:null;if(!B)fail('unknown building');const e=P.buildCheck(p,a.type,1)||P.placeError(p,a.type,a.i,a.j,a.r|0);if(e)fail(e);

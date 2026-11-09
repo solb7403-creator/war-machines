@@ -44,7 +44,7 @@ function strikeReward(s,op,now){const T=RULES.STRIKE,slot=s.strikeSlot,rec=s.str
  const n=s.resonance=(s.resonance|0)+1;if(n%T.resonance.se===0){mn.se=(mn.se||0)+1;core.push('resonance-se');}if(n%T.resonance.mh===0){mn.mh=(mn.mh||0)+1;core.push('resonance-mh');}
  for(const [k,v] of Object.entries(mn))s.ledger.mn[k]=(s.ledger.mn[k]||0)+v;s.reputation=(s.reputation||0)+40;s.campaignScore=(s.campaignScore||0)+8;
  return {kind:'strike',slot,cp:T.cp,alloy:0,biomass:0,helium:0,mn,core,resonance:n,ptsRaw};}
-export function atTerminal(s){return !s.mission&&s.hp>0&&(Math.hypot(s.position.x-POLICY.terminal.x,s.position.z-POLICY.terminal.z)<=POLICY.terminal.r||s.base?.modules?.vault&&Math.hypot(s.position.x-CONQUEST.Combat.baseDefinition.x,s.position.z-CONQUEST.Combat.baseDefinition.z)<=18);}
+export function atTerminal(s){return !s.mission&&s.hp>0&&(Math.hypot(s.position.x-POLICY.terminal.x,s.position.z-POLICY.terminal.z)<=POLICY.terminal.r||s.base?.modules?.vault&&Math.hypot(s.position.x-CONQUEST.Combat.baseDefinition.x,s.position.z-CONQUEST.Combat.baseDefinition.z)<=CONQUEST.Combat.baseDefinition.radius);}   // the gate zone (30 m, Find My Base): the plot screen's BANK / REPAIR work wherever it opens
 export function bank(s,now){ledger(s,now);if(!atTerminal(s))throw Error('conquest: approach Refuge supply terminal');for(const k of MATERIALS){s.ledger.banked[k]+=s.ledger.cargo[k];s.ledger.cargo[k]=0;}
  const mn=bankMinerals(s,s.ledger.mn);s.ledger.mn={};s.notice={kind:'banked',...(Object.keys(mn).length?{mn}:{})};}   // minerals: to the account wallet through the outbox (RESOURCE_ECONOMY.md §5.3)
 // Mineral caches on a verified operation victory (§5, the approved model): fractions are a chance of +1, rolled by the server

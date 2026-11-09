@@ -14,12 +14,12 @@
   "refineryMs": 15000,
   "wallPlan": "7 SECTIONS \u00b7 35 CP + 14 FERRITE",
   "walls": 7,
-  "drill": "BREACHED \u00b7 8/14 PARASITES DOWN \u00b7 0 STRUCTURES LOST \u00b7 COMMAND CENTER 0%",
+  "drill": "BREACHED \u00b7 9/14 PARASITES DOWN \u00b7 0 STRUCTURES LOST \u00b7 COMMAND CENTER 0%",
   "noRewards": true,
   "left": true,
   "render": {
-   "calls": 13,
-   "triangles": 15502,
+   "calls": 15,
+   "triangles": 16026,
    "programs": 16
   },
   "pageErrors": []

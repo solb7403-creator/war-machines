@@ -1,0 +1,25 @@
+{
+ "hud": {
+  "button": "\u2302 MY BASE\n94 m",
+  "nav": "MY BASE",
+  "firstAim": {
+   "x": 1164,
+   "z": 1168,
+   "n": 19
+  }
+ },
+ "drive": {
+  "seconds": 7.9,
+  "claimScreenOpenedItself": true,
+  "remembered": "1"
+ },
+ "map": {
+  "legend": "\u25cf Refuge\n\u2302 My base\n\u25c6 Mission\n\u2b22 Ore\n\u273f Bio-flora\n\u25b2 Parasites\n\u25a0 Settlers\n\u25a0 Military\n! Alert",
+  "tapRoutes": {
+   "kind": null,
+   "mapOpen": false,
+   "opened": true
+  }
+ },
+ "pageErrors": []
+}
