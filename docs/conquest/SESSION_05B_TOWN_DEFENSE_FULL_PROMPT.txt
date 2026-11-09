@@ -8,6 +8,9 @@ below are settled; do not ask the owner to re-decide them. Read AGENTS.md (incl.
 docs/ROADMAP.md, docs/economy/RESOURCE_ECONOMY.md, the newest docs/conquest/IMPLEMENTATION_CHECKPOINT.md (Checkpoints 24-27)
 and this file before coding. The owner's direct instructions override older docs. Model: Opus, effort Extra (owner choice).
 
+MONEY RULE (owner, Nov 8): what is sold, and the limits on it, are business decisions the owner may adjust. Defaults below are
+recommendations, not fixed rules; implement them so prices/what is sellable change in one data table, not in code paths.
+
 RUN MODE (owner, binding)
 - Run unattended. The release is PRE-APPROVED: do not wait for the owner at any point. Fix, commit, push, merge, deploy, verify.
 - Never end a turn while waiting on CI or a deploy without a durable wake-up (send_later / scheduled task for the expected
@@ -46,8 +49,8 @@ SETTLED OWNER DECISIONS (Nov 8 2026)
    Moonheart) and a blend level (none / light / medium / heavy, ore per cell rising with the level). Three stats scale in
    direct relation to the ore's tier and amount: STRENGTH (max HP), DURABILITY (damage reduction) and REFLECTIVENESS (share
    of incoming energy/kinetic damage bounced back). Composite alone is modest; Ferrite is a cheap step up; Moonheart heavy is
-   unmistakably elite (target: about 5x composite HP, high damage reduction, about 35% reflect). Rare ores stay EARN-ONLY
-   (only common and uncommon minerals are ever sold, owner decision Nov 7). Walls show their blend visually (tint, sheen,
+   unmistakably elite (target: about 5x composite HP, high damage reduction, about 35% reflect). Rare ores are EARN-ONLY
+   by default (Claude's Nov 7 recommendation, accepted by the owner; monetization limits are the owner's to adjust). Walls show their blend visually (tint, sheen,
    veins, glass glint for Selenite, a deep glow for Moonheart).
 7. ELEVEN TURRET TYPES, each with its own 3D model, firing effects and a clear role:
    existing Cannon, Laser, Missile (anti-air), Mortar (long splash, min range), plus
@@ -61,7 +64,7 @@ SETTLED OWNER DECISIONS (Nov 8 2026)
    whole drawn section. Live count "WALLS 412 / 600 (+EXT)" and composite/ore cost before confirming.
 10. DEV MODE covers everything new: unlimited composite, ores and extensions, instant builds, never ranked.
 11. STORE (fair revenue; all DISABLED until payments are certified, shown honestly as unavailable): wall extension packs
-    (capacity), wall and turret skins, Foundry speed-up, second builder. Never airdrop points, never rare-or-better ores.
+    (capacity), wall and turret skins, Foundry speed-up, second builder. Never airdrop points. Rare-or-better ores not sold by default (adjustable by the owner).
 
 PHASES (checkpoint + push after each)
 PHASE 1 — town plot and vitals (server-authoritative, js/conquest/plot.js + worker/src/conquest-plot.js)
