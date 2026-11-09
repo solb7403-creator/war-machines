@@ -181,8 +181,8 @@
 .cq-hub-art{position:absolute;inset:0;background:#080e17 url('../js/assets/conquest/command-horizon.svg') center 30%/cover no-repeat}
 .cq-hub-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cq-hub-copy{position:absolute;left:16px;right:16px;bottom:14px;z-index:2;pointer-events:none;text-shadow:0 2px 12px #000}
-.cq-hub-copy h1{margin:2px 0;font-size:clamp(40px,12vw,64px);letter-spacing:.08em;color:#e8fbff}
-.cq-hub-copy .cq-premise{white-space:pre-line;margin:0;font-size:13px;color:#9fe8ff;letter-spacing:.12em}
+.cq-hub-copy h1{margin:2px 0;font-size:clamp(40px,12vw,64px);letter-spacing:.08em;color:#e8fbff;text-shadow:0 0 4px #000a,0 2px 12px #000}
+.cq-hub-copy .cq-premise{white-space:pre-line;margin:0;font-size:13px;color:#9fe8ff;letter-spacing:.12em;text-shadow:0 0 3px #000,0 1px 2px #000,0 2px 12px #000}   /* owner gate: legible over the town's pale roofs */
 .cq-hub-copy .cq-kicker{margin:0;font-size:10px;letter-spacing:3px;color:#ffb347}
 .cq-hub-hero:after{content:'';position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,#05070d);pointer-events:none;z-index:1}
 .cq-hub-status{display:flex;flex-direction:column;gap:8px;padding:10px 14px 4px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
