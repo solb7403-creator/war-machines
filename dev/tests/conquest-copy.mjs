@@ -16,5 +16,5 @@ for(const f of FILES){for(const {s,line} of strings(fs.readFileSync(f,'utf8'))){
 {const src=fs.readFileSync('js/conquest/plot.js','utf8');for(const m of src.matchAll(/desc:'([^']*)'/g)){n++;for(const [re,why] of BAD)if(re.test(m[1]))hits.push('js/conquest/plot.js desc '+why+': '+m[1].slice(0,90));}}
 assert.deepEqual(hits,[],'player-facing text is clean:\n'+hits.join('\n'));
 // the base screen shows the new names
-const pv=fs.readFileSync('js/conquest/plotview.js','utf8');for(const t of ["'HOME'","'BUILD'","'WEAPONS'","'WALLS'","'DEFEND'",'TOWN SCORE','STEP ',' OF ','FRAME','🛡 DEF '])assert.ok(pv.includes(t),'base screen copy has '+t);
+const pv=fs.readFileSync('js/conquest/plotview.js','utf8');for(const t of ["'HOME'","'BUILD'","'WEAPONS'","'WALLS'","'DEFEND'",'TOWN SCORE','STEP ',' OF ','FRAME',"'🛡 '","'DEF '",'cq-plot-defw'])   // the DEF chip: shield + DEF (the word hides under 340 px) + the ratingassert.ok(pv.includes(t),'base screen copy has '+t);
 console.log('PASS conquest-copy: '+n+' player strings in '+(FILES.length+1)+' files, no roadmap jargon, one POWER (TOWN SCORE), CC levels only, no retired defense UI');
