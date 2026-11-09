@@ -1,6 +1,6 @@
 {
  "390x844": {
-  "firstPaintMs": 2.9,
+  "firstPaintMs": 2.4,
   "render": {
    "calls": 35,
    "triangles": 38632,
@@ -8,7 +8,7 @@
    "tankError": null,
    "tankMeshes": 38
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nCC3 \u00b7 RIDGE \u00b7 POWER 320\n\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\n\u26a0 PARASITE ASSAULT ON YOUR BASE \u00b7 DEFEND IT\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 58:49\n\nNo invasions right now.",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nTOWN CC3 \u00b7 RIDGE \u00b7 POWER 320\n\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\n\u26a0 PARASITE ASSAULT ON YOUR BASE \u00b7 DEFEND IT\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 44:53\n\nNo invasions right now.",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
@@ -19,7 +19,7 @@
  },
  "myBase": "plot opened from the hub",
  "1280x800": {
-  "firstPaintMs": 1.9,
+  "firstPaintMs": 1.7,
   "render": {
    "calls": 36,
    "triangles": 44340,
@@ -27,7 +27,7 @@
    "tankError": null,
    "tankMeshes": 35
   },
-  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nCC3 \u00b7 RIDGE \u00b7 POWER 320\n\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\n\u26a0 PARASITE ASSAULT ON YOUR BASE \u00b7 DEFEND IT\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 58:39\n\nNo invasions right now.",
+  "status": "WARFRONT\n\n1 / 6 SECTORS HELD\n\nEvery operation you win pushes the shared warfront.\nYOUR BASE\n\nTOWN CC3 \u00b7 RIDGE \u00b7 POWER 320\n\nWALLS 0 / 911 \u00b7 TURRETS 0 / 7 \u00b7 run a Defense Drill\nDAILY BASE YIELD 0% \u00b7 +0 CP so far\nBUILDER FREE \u00b7 open MY BASE to build\n\u26a0 PARASITE ASSAULT ON YOUR BASE \u00b7 DEFEND IT\nLIVE EVENTS\n\n\u2604 NEXT METEOR STRIKE IN 44:46\n\nNo invasions right now.",
   "actions": [
    "ENTER CONQUEST",
    "FAST TRAVEL",
