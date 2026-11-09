@@ -1145,3 +1145,12 @@ Owner phone playtest of build `20261108233308` (Telegram, iPhone, Nov 8): wants 
 - Tests: `dev/tests/conquest-plot-ui.py` (new, in Conquest CI); `wtest/conquest-dev.mjs` updated (instant builds).
 - CI: all checks green on `b16dec0` (after fixing a session-032 harness race: an in-flight `/api/conquest/input` route failed the next browser context; and one re-run of the known minerals screenshot-timeout flake).
 - PR #80 merged as `ac598ca`. Worker deploy run 42548327162 SUCCESS: live `/pvp/health` ok, live `version.json` **`20261109004759`** = repo. Pages run 42548326497 SUCCESS. Payments stay DISABLED.
+
+## Checkpoint 27 — every screen fits or scrolls; Conquest page actions pinned; sector count (branch `claude/scroll-fix-hub`) — owner request, release pre-approved
+
+Owner phone report on build `20261109004759`: the Conquest page would not scroll, so ENTER CONQUEST (below the fold since the bottom bar was added) could not be reached; "7 / 6 SECTORS HELD". Owner rule: a page fits the screen or scrolls, and this must be prevented for anything similar going forward.
+
+- **Root cause (systemic):** `js/ui.js` blocks `touchmove` everywhere except a whitelist (`.screen,.pscroll,.sheet,.modal,.full`). The Conquest hub (`.cq`, its own scroller) was not on it; dialogs survived only through per-dialog shields. The guard now decides once per touch: any element that really overflows may scroll, unless it or an ancestor is `touch-action:none` (maps, drive stick, plot stage). Verified with a real CDP touch swipe: the old guard leaves the page at scrollTop 0 (the bug), the new one scrolls (139–389 px).
+- **Conquest page fits:** the action row (ENTER CONQUEST, FAST TRAVEL, MY BASE, RESEARCH) is pinned just above the bottom bar, on screen without scrolling at 320x568, 390x700 and 390x844; the status above scrolls.
+- **Sector count:** held counted every captured site (installations too); now sectors only.
+- Rule recorded in AGENTS.md ("Every screen fits or scrolls") with the test recipe.

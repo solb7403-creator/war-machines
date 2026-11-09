@@ -42,6 +42,14 @@ Applies to Codex, Claude Code and every other agent, including how many subagent
 3. A status question from the owner gets a direct answer before any other work.
 4. Never merge or deploy while an owner request in the session is unanswered or unimplemented.
 
+## Every screen fits or scrolls (owner rule, Nov 8 2026)
+
+Recurring owner report on iPhone/Telegram: pages and menus whose bottom could not be reached (base menu, Conquest page). Rule for all UI work:
+- A page, menu, sheet or dialog either fits the visible screen, or scrolls. Prefer fitting when the content allows; keep the primary action (e.g. ENTER, CONFIRM) on screen without scrolling.
+- Never size panels with `vh` (Telegram's webview `vh` is taller than the visible area). Use flex inside the JS-sized panel, `min-height:0` + `overflow-y:auto` on the scroller.
+- The app-wide touch guard (`js/ui.js`) now lets any element that really overflows scroll, unless it or an ancestor is `touch-action:none` (maps, drive stick). Do not add per-screen whitelists; do not set `touch-action:none` on scroll containers.
+- Test it: a browser test at ~390x700 (Telegram visible area) and 320x568 that checks the last item / primary action is reachable, with a real touch swipe (CDP `Input.dispatchTouchEvent`), as `dev/tests/conquest-plot-ui.py` does.
+
 ## Graphics contract
 - Preferred 3D authoring integrates with existing Three.js/EQUIPMENT3D and material/asset ownership conventions; do not add a parallel engine.
 - Model space: +X forward, +Y up, +Z right. Keep canonical hitboxes, chassis socket positions and weapon muzzle endpoints intact. Render and simulation must remain independent.

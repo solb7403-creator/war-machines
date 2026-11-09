@@ -40,7 +40,7 @@ async def main():
     await page.evaluate('closeAll();save.welcomed=true;uiDirty();try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
     return ctx,page,errors
    # ---------- 1. Conquest is its own page ----------
-   for w,h in ((320,568),(390,844)):
+   for w,h in ((320,568),(390,700),(390,844)):
     ctx,page,errors=await session(w,h,{'position':[1174,1168]})
     await page.wait_for_timeout(500)
     bar=await page.evaluate('''(()=>{const t=[...document.querySelectorAll('#tabbar .tab')];return {labels:t.map(b=>b.textContent.trim()),fit:t.every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.width>=44;}),playBtn:!!document.querySelector('#s-play [data-act="conquest"]')};})()''')
@@ -49,8 +49,27 @@ async def main():
     await page.locator('#tabbar [data-act="conquest"]').click()
     await page.wait_for_selector('.cq-hub .cq-pagenav .tab-cq.on',timeout=30000);await page.wait_for_timeout(1200)
     await page.screenshot(path=str(OUT/f'conquest-page-{w}.png'))
-    navFit=await page.evaluate('''(()=>{const n=document.querySelector('.cq-pagenav').getBoundingClientRect(),a=document.querySelector('.cq-hub-actions').getBoundingClientRect();const hit=document.elementFromPoint(innerWidth/2,n.top+n.height/2);return {navBottom:n.bottom<=innerHeight+1,navTop:n.top,onTop:!!hit?.closest('.cq-pagenav')};})()''')
-    assert navFit['navBottom'] and navFit['onTop'],navFit
+    navFit=await page.evaluate('''(()=>{const n=document.querySelector('.cq-pagenav').getBoundingClientRect(),a=document.querySelector('.cq-hub-actions').getBoundingClientRect();const hit=document.elementFromPoint(innerWidth/2,n.top+n.height/2),e=document.querySelector('.cq-hub-deploy').getBoundingClientRect(),eh=document.elementFromPoint(e.left+e.width/2,e.top+e.height/2);return {navBottom:n.bottom<=innerHeight+1,navTop:n.top,onTop:!!hit?.closest('.cq-pagenav'),enterVisible:e.bottom<=n.top+1&&e.top>=0&&!!eh?.closest('.cq-hub-deploy')};})()''')
+    assert navFit['navBottom'] and navFit['onTop'] and navFit['enterVisible'],navFit   # ENTER CONQUEST on screen without scrolling
+    # the page scrolls when it is taller than the screen (iPhone touch scroll, through the app's touch guard)
+    sc=await page.evaluate('(()=>{const p=document.querySelector(".cq.cq-hub");return {scrollable:p.scrollHeight>p.clientHeight+1};})()')
+    if sc['scrollable']:
+     sx,sy=w/2,min(200,h*.3)   # start on the hero (the pinned actions cover the lower screen)
+     cdp=await ctx.new_cdp_session(page)
+     async def swipe():   # a real finger: touchstart, moves, touchend (through the app's touch guard)
+      await cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':sx,'y':sy}]})
+      for k in range(1,13):
+       await cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':sx,'y':sy-k*18}]});await page.wait_for_timeout(16)
+      await cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});await page.wait_for_timeout(600)
+     await swipe()
+     sc['scrolledBy']=await page.evaluate('document.querySelector(".cq.cq-hub").scrollTop')
+     import os
+     if os.environ.get('DBG'):
+      await page.evaluate('window.__tm=[];document.addEventListener("touchmove",e=>window.__tm.push(e.defaultPrevented+":"+e.cancelable),{passive:true});document.addEventListener("touchstart",e=>window.__tm.push("start:"+e.target.className),{passive:true})')
+      await swipe()
+      print('DBG',await page.evaluate('[window.__tm.slice(0,6),window.__tm.length,document.querySelector(".cq.cq-hub").scrollTop,getComputedStyle(document.querySelector(".cq.cq-hub")).overflowY]'))
+     assert sc['scrolledBy']>20,sc
+    navFit['scroll']=sc
     await page.locator('.cq-pagenav .tab[data-arg="garage"]').click();await page.wait_for_timeout(500)
     left=await page.evaluate('({cq:!!document.querySelector(".cq"),tab:uiTab})')
     assert not left['cq'] and left['tab']=='garage',left

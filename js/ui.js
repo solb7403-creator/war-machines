@@ -1453,8 +1453,13 @@ function initUI(){
  document.addEventListener('pointerdown',()=>{ptrDown=true;},true);
  const up=()=>{ptrDown=false;};
  document.addEventListener('pointerup',up,true);document.addEventListener('pointercancel',up,true);
- // keep iOS from rubber-banding the whole app; the menu lists still scroll
- document.addEventListener('touchmove',e=>{if(!e.target.closest('.screen,.pscroll,.sheet,.modal,.full'))e.preventDefault();},{passive:false});
+ // keep iOS from rubber-banding the whole app; the menu lists still scroll. Owner rule (Nov 8, after the Conquest page and the
+ // base menu froze on iPhone): ANY element that actually has more content than fits may scroll, without being listed here.
+ // Decided once per touch (touchstart), so a drive stick or a map drag never scrolls and a long page always does.
+ let scrollOk=false;
+ const scrollable=el=>{for(let n=el;n&&n!==document.body&&n!==document.documentElement;n=n.parentElement){const c=getComputedStyle(n);if(c.touchAction==='none')return false;const o=c.overflowY;if((o==='auto'||o==='scroll')&&n.scrollHeight>n.clientHeight+1)return true;}return false;};   // a map/stick (touch-action:none) never scrolls its page
+ document.addEventListener('touchstart',e=>{const t=e.target instanceof Element?e.target:null;scrollOk=!!t&&(!!t.closest('.screen,.pscroll,.sheet,.modal,.full')||scrollable(t));},{passive:true,capture:true});
+ document.addEventListener('touchmove',e=>{if(!scrollOk)e.preventDefault();},{passive:false});
  document.addEventListener('gesturestart',e=>e.preventDefault());
  addEventListener('keydown',e=>{if(e.key==='Escape'&&state==='play')confirmLeave();});
  addEventListener('resize',()=>{if(!inBattle())uiDirty();});
