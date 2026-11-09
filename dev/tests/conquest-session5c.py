@@ -40,6 +40,11 @@ async def main():
     await page.request.post(base+'/fixture',data=fixture)
     await page.evaluate('closeAll();save.welcomed=true;uiDirty();try{localStorage.setItem("lunar-conquest-onboarding-v1","1")}catch(e){}')
     return ctx,page,errors
+   async def close(ctx):   # requests still in flight must not raise TargetClosedError into the next session
+    for pg in ctx.pages:
+     try:await pg.unroute_all(behavior='ignoreErrors')
+     except Exception:pass
+    await ctx.close()
    async def world(page):
     await page.locator('#tabbar [data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
     await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
@@ -87,7 +92,7 @@ async def main():
      assert (not t['scrolls'] or t['lastReachable']) and t['fitsWidth'] and t['pageScroll']==0,(tab,t)
      tabs[tab]=t
     sheet[f'{w}x{h}']={'snaps':snaps,'tabs':tabs,'pageErrors':errors};assert not errors,errors
-    await ctx.close()
+    await close(ctx)
    R['sheet']=sheet
    # ---------- 2. Home Sector, diorama, thumbnail, name, hub ----------
    ctx,page,errors=await session(390,700,{'position':GATE,'baseFunds':True,'plotCC':1,'plotSite':'ridge'},motion='no-preference');await world(page)
@@ -139,7 +144,7 @@ async def main():
     await page.locator('#tabbar [data-act="conquest"]').click()
    await page.wait_for_function('ConquestHub.state?.town',timeout=60000);await page.wait_for_timeout(1500);hub=await page.evaluate('ConquestHub.state.town')
    await page.screenshot(path=str(OUT/'hub-hero-town-390.png'));R['hub']=hub;assert hub['walls']>=8 and hub['builds']>=1,hub
-   await ctx.close()
+   await close(ctx)
    # ---------- 3. performance + CC10 captures ----------
    perf={}
    for q in ('high','low'):
@@ -154,19 +159,19 @@ async def main():
     perf[q]={'world':worldInfo,'homeSectorDrive':drive,'homeSectorBuild':build,'pageErrors':errors}
     print(q,json.dumps(perf[q]),flush=True)
     assert drive['programs']<=16 and build['programs']<=16 and drive['calls']<=140 and build['calls']<=140 and worldInfo['diorama'] and worldInfo['diorama']['walls']>=2000 and not errors,perf[q]
-    await ctx.close()
+    await close(ctx)
    R['perf']=perf
    # default camera at CC1 and CC10 on three sites (before/after pairs for the owner)
    for (cc,site) in ((1,'ridge'),(1,'canyon'),(1,'plateau'),(10,'ridge'),(10,'canyon'),(10,'plateau')):
     ctx,page,errors=await session(390,700,{'position':GATE,'baseFunds':True,'plotCC':cc,'plotSite':site});await world(page);await enter_base(page)
     await page.locator('.cq-plot-tabs button',has_text='HOME').click();await snap_to(ctx,page,'peek');await page.wait_for_timeout(1500)
     await page.screenshot(path=str(OUT/f'default-camera-cc{cc}-{site}-390.png'));assert not errors,errors
-    await ctx.close()
+    await close(ctx)
    # the pad diorama at CC1 and CC10 from a resting spot in the courtyard (CC1 vs CC10 side by side for the owner)
    for (cc,fx) in ((1,{'position':GATE,'at':PAD_VIEW,'baseFunds':True,'plotCC':1,'plotSite':'ridge'}),(10,{'position':GATE,'at':PAD_VIEW,'plotFull':'crater','baseFunds':True})):
     ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(2500)
     await page.screenshot(path=str(OUT/f'pad-diorama-cc{cc}-390.png'));assert not errors,errors
-    await ctx.close()
+    await close(ctx)
    # the hub hero at CC5 and CC10 (CC1 is captured above): a bigger town must read as a bigger town from the hero camera
    for (cc,fx) in ((5,{'position':GATE,'baseFunds':True,'plotCC':5,'plotSite':'ridge'}),(10,{'position':GATE,'plotFull':'crater','baseFunds':True})):
     ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(800)
@@ -174,7 +179,7 @@ async def main():
     if not await page.locator('.cq-hub').count():await page.locator('#tabbar [data-act="conquest"]').click()
     await page.wait_for_function('ConquestHub.state?.town',timeout=60000);await page.wait_for_timeout(1500)
     await page.screenshot(path=str(OUT/f'hub-hero-town-cc{cc}-390.png'));R['hub'+str(cc)]=await page.evaluate('ConquestHub.state.town');assert not errors,errors
-    await ctx.close()
+    await close(ctx)
    await browser.close()
   json.dump(R,open(OUT/'session5c.json','w'),indent=1)
   print('PASS Session 5C: sheet PEEK/HALF/FULL by touch at 390x700, 390x844, 320x568 (map resizes, page never scrolls); every tab fits or scrolls; WEAPONS 11 turrets + Gate + Shield with sprites; Home Sector drive (keys move the tank, walls block), tab lifts to the build view in the same scene, DRIVE returns, LEAVE back to the world; wall order updates the pad diorama and HUD thumbnail; Worker-validated town name; diorama share card; hub hero town; Home Sector CC10 within 16 programs at HIGH and LOW')

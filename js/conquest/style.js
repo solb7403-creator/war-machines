@@ -717,7 +717,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   if(renderer){renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=low?1.25:1.2;renderer.outputColorSpace=T.SRGBColorSpace;}
   scene.background=new T.Color(0);scene.fog=new T.Fog(0x06070f,900,2600);if(!o?.guest)S.atmoScene={scene,renderer};
   const hemi=new T.HemisphereLight(0x3a5a9c,0x16131f,1.5),sun=new T.DirectionalLight(0xe4ecff,2.9),rim=new T.DirectionalLight(0x52c6ff,1.25);sun.position.copy(sunDir).multiplyScalar(500);rim.position.copy(rimDir).multiplyScalar(500);scene.add(hemi,sun,rim);
-  const Pp=[],B=[],A=[],I=[],dome=new T.SphereGeometry(1,high?48:32,high?24:16),dp=dome.attributes.position;
+  let g=o?.guest?S.guestSkyGeo:null;if(!g){const Pp=[],B=[],A=[],I=[],dome=new T.SphereGeometry(1,high?48:32,high?24:16),dp=dome.attributes.position;
   for(let i=0;i<dp.count;i++){const x=dp.getX(i),y=dp.getY(i),z=dp.getZ(i);Pp.push(x,y,z);B.push(0,0,0);const gal=Math.exp(-Math.pow(x*.35+y*.55-z*.76,2)*7),nb=Math.max(0,fbm3(x*2.3+3,y*2.3,z*2.3,4)-.44),up=clamp01(y*3+.1);
    A.push((.02*nb+.0035*gal)*up,(.006*nb+.003*gal)*up,(.05*nb+.007*gal)*up,0);}
   if(!software)for(let k=0;k<dome.index.count;k++)I.push(dome.index.getX(k));dome.dispose();let n=dp.count,seed=1337;const rnd=()=>(seed=(Math.imul(seed,1664525)+1013904223)|0,(seed>>>0)/4294967296);
@@ -725,7 +725,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    const big=rnd()<.035,sz=big?4.6+rnd()*2.6:1.05+rnd()*rnd()*2.3,b=big?1.7:.3+rnd()*rnd()*1.35,t=rnd(),c=t<.2?[.72,.86,1.25]:t<.3?[1.2,.92,.72]:[1,1,1];
    for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(x,y,z);B.push(cx,cy,1);A.push(c[0]*b,c[1]*b,c[2]*b,sz);}I.push(n,n+1,n+2,n,n+2,n+3);n+=4;}
   for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(0,1,0);B.push(cx,cy,2);A.push(0,0,0,0);}I.push(n,n+1,n+2,n,n+2,n+3);
-  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g.setAttribute('aBill',new T.Float32BufferAttribute(B,3));g.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g.setIndex(I);keep(g);
+  g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g.setAttribute('aBill',new T.Float32BufferAttribute(B,3));g.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g.setIndex(I);keep(g);if(o?.guest)S.guestSkyGeo=g;}   // guest scenes share one sky geometry (it is pinned in S.shared)
   const sky=new T.Mesh(g,MAT.sky);sky.frustumCulled=false;sky.renderOrder=1000;/* after opaque terrain/structures: the depth test culls covered sky pixels */sky.name='cq-style-sky';scene.add(sky);return {sky,lights:[hemi,sun,rim]};};
 
  // ---------- props (per fine terrain chunk; InstancedMesh, chunk-local positions) ----------
@@ -993,6 +993,14 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   if(A?.renderer)A.renderer.toneMappingExposure=(low?1.25:1.2)-.1*k;MAT.sky.uniforms.uFogC.value.copy(nightFogC).lerp(dayFogC,k);return k;};
  // A guest scene takes the world's current atmosphere once (fog colour, haze distance, background): under a terraformed
  // day sky the far ground fades into the same amber haze as the world, at night into the same dark.
+ // Guest renders (the Home Sector, its card sprites and share card) are town-local: SOLID_VS would otherwise sample the
+ // world's baked colony shadows, atmosphere map and Parasite/friendly site rim tints at town-local + uOrigin (shadow
+ // streaks, a magenta rim on the far hills, day or night light by entry side). One flat texel at the zone's current
+ // atmosphere, no shadow, no site tints; S.guest(false) restores the world's values.
+ const G1=v=>{const t=new T.DataTexture(new Uint8Array([v,v,v,255]),1,1);t.needsUpdate=true;return t;},guestNoShadow=G1(0),guestAtmo=G1(0),gSave={on:false,sh:null,at:null,sites:null};
+ S.guest=on=>{if(on){if(gSave.on)return;gSave.on=true;gSave.sh=U.uShadowMap.value;gSave.at=U.uAtmoMap.value;if(!gSave.sites)gSave.sites=U.uSite.value.map(v=>v.clone());U.uSite.value.forEach((v,i)=>{gSave.sites[i].copy(v);v.set(0,0,0,0);});
+   const b=Math.round(255*Math.min(1,Math.max(0,U.uAtmo.value))),d=guestAtmo.image.data;if(d[0]!==b){d[0]=d[1]=d[2]=b;guestAtmo.needsUpdate=true;}U.uShadowMap.value=guestNoShadow;U.uAtmoMap.value=guestAtmo;}
+  else{if(!gSave.on)return;gSave.on=false;U.uShadowMap.value=gSave.sh;U.uAtmoMap.value=gSave.at;U.uSite.value.forEach((v,i)=>v.copy(gSave.sites[i]));}};
  S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};
  S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
