@@ -196,71 +196,71 @@
    "walls": 2000,
    "turrets": 42,
    "homes": 50,
-   "replayMedianMs": 184,
-   "replayWorstMs": 245,
-   "workerMedianMs": 79,
-   "workerWorstMs": 155
+   "replayMedianMs": 209,
+   "replayWorstMs": 263,
+   "workerMedianMs": 84,
+   "workerWorstMs": 140
   },
   "delta": {
    "walls": 2000,
    "turrets": 42,
    "homes": 72,
    "replayMedianMs": 93,
-   "replayWorstMs": 112,
-   "workerMedianMs": 69,
-   "workerWorstMs": 71
+   "replayWorstMs": 172,
+   "workerMedianMs": 121,
+   "workerWorstMs": 129
   },
   "ridge": {
    "walls": 2000,
    "turrets": 42,
    "homes": 56,
-   "replayMedianMs": 61,
-   "replayWorstMs": 67,
+   "replayMedianMs": 74,
+   "replayWorstMs": 105,
    "workerMedianMs": 60,
-   "workerWorstMs": 62
+   "workerWorstMs": 61
   },
   "canyon": {
    "walls": 2000,
    "turrets": 42,
    "homes": 63,
-   "replayMedianMs": 112,
-   "replayWorstMs": 128,
-   "workerMedianMs": 107,
-   "workerWorstMs": 108
+   "replayMedianMs": 64,
+   "replayWorstMs": 85,
+   "workerMedianMs": 66,
+   "workerWorstMs": 75
   },
   "plateau": {
    "walls": 2000,
    "turrets": 42,
    "homes": 61,
-   "replayMedianMs": 72,
-   "replayWorstMs": 72,
-   "workerMedianMs": 82,
-   "workerWorstMs": 90
+   "replayMedianMs": 71,
+   "replayWorstMs": 74,
+   "workerMedianMs": 68,
+   "workerWorstMs": 70
   },
   "ice": {
    "walls": 2000,
    "turrets": 42,
    "homes": 67,
-   "replayMedianMs": 78,
-   "replayWorstMs": 97,
-   "workerMedianMs": 74,
-   "workerWorstMs": 85
+   "replayMedianMs": 79,
+   "replayWorstMs": 82,
+   "workerMedianMs": 75,
+   "workerWorstMs": 76
   },
   "ash": {
    "walls": 2000,
    "turrets": 42,
    "homes": 56,
-   "replayMedianMs": 66,
-   "replayWorstMs": 76,
-   "workerMedianMs": 53,
-   "workerWorstMs": 62
+   "replayMedianMs": 55,
+   "replayWorstMs": 55,
+   "workerMedianMs": 61,
+   "workerWorstMs": 66
   },
   "adversarial": {
    "walls": 2600,
-   "workerMedianMs": 64,
-   "workerWorstMs": 73,
+   "workerMedianMs": 54,
+   "workerWorstMs": 56,
    "replayMedianMs": 56,
-   "replayWorstMs": 56
+   "replayWorstMs": 57
   }
  }
 }

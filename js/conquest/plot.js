@@ -103,16 +103,16 @@ const TIME=[15*SEC,3*MIN,20*MIN,2*HOUR,6*HOUR],TIME3=[30*SEC,10*MIN,HOUR];
 const grow=(base,g,levels)=>Array.from({length:levels},(_,l)=>Object.fromEntries(Object.entries(base).map(([k,v])=>[k,Math.round(v*Math.pow(g,l))])));
 const tur=(o)=>T({w:1,d:1,max:5,...o,turret:T(o.turret)});
 const BUILDINGS=T({
- refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[5,2],[9,3]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'A conveyor feeds plot regolith and scrap to the smelter: alloy for your stores (no wallet minerals used).'}),
+ refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[5,2],[9,3]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'Turns rock and scrap into alloy, the metal you build with (no wallet minerals used).'}),
  storage:T({n:'Storage Depot',w:3,d:3,max:5,cc:1,pw:1,count:[[1,1]],cost:grow({cp:90,alloy:8},2.4,5),mod:'vault',vital:'secondary',desc:'Caps what production can hold (it stops when full). Bank salvage here. A vital: raiders target it.'}),
  reactor:T({n:'Reactor',w:3,d:3,max:5,cc:1,pw:0,count:[[1,1],[3,2],[5,3],[7,4],[9,5]],cost:grow({cp:140,alloy:8,helium:1},2.4,5),mod:'reactor',power:14,vital:'secondary',desc:'Power for every building and turret. Feeds Daily Base Yield CP. A vital: if it falls, turrets slow down.'}),
- foundry:T({n:'Foundry',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[7,2]],cost:grow({cp:120,alloy:10},2.4,5),desc:'Load alloy: with plot regolith it becomes wall composite (4 composite per alloy). Its research earns wall extensions.'}),
+ foundry:T({n:'Foundry',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[7,2]],cost:grow({cp:120,alloy:10},2.4,5),desc:'Load alloy and it becomes wall composite (4 composite per alloy). Its research earns wall extensions.'}),
  biodome:T({n:'Biodome',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[6,2],[10,3]],cost:grow({cp:150,alloy:8,biomass:8},2.4,5),prod:{biomass:.6},desc:'Plants grow under the dome: biomass.'}),
  hangar:T({n:'Hangar',w:4,d:3,max:5,cc:2,pw:1,count:[[2,1]],cost:grow({cp:180,alloy:12},2.4,5),mod:'hangar',desc:'Your owned tanks on display. Repairs your hull at the base.'}),
  helium:T({n:'Helium Extractor',w:2,d:2,max:5,cc:3,pw:2,count:[[3,1],[7,2],[10,3]],cost:grow({cp:200,alloy:10,biomass:5},2.4,5),prod:{helium:.15},desc:'Helium-3 from the regolith.'}),
  radar:T({n:'Radar',w:2,d:2,max:5,cc:3,pw:2,count:[[3,1]],cost:grow({cp:200,alloy:10,helium:2},2.4,5),mod:'radar',desc:'Longer SCAN pulses and real radar contacts in the field.'}),
  shield:T({n:'Shield Generator',w:2,d:2,max:5,cc:3,pw:3,count:[[3,1],[6,2],[9,3]],cost:grow({cp:240,alloy:14,helium:2},2.4,5),mod:'defense',desc:'Protective field: less damage at your base and in raids near it.'}),
- lab:T({n:'Science Lab',w:3,d:3,max:3,cc:3,pw:2,count:[[3,1]],cost:grow({cp:320,alloy:18,biomass:8,helium:3},2.4,3),time:TIME3,vital:'secondary',desc:'Built and upgradable now; its research tree (tank mods) arrives in Session 6. A vital: raiders target it.'}),
+ lab:T({n:'Science Lab',w:3,d:3,max:3,cc:3,pw:2,count:[[3,1]],cost:grow({cp:320,alloy:18,biomass:8,helium:3},2.4,3),time:TIME3,vital:'secondary',desc:'Built and upgradable now; its research tree (tank mods) is coming soon. A vital: raiders target it.'}),
  uplink:T({n:'Uplink',w:2,d:2,max:5,cc:4,pw:2,count:[[4,1]],cost:grow({cp:260,alloy:14,helium:3},2.4,5),mod:'uplink',desc:'+10% Daily Base Yield CP per level (up to III).'}),
  trophy:T({n:'Trophy Hall',w:3,d:3,max:3,cc:5,pw:1,count:[[5,1]],cost:grow({cp:300,alloy:16},2.4,3),time:TIME3,desc:'Defeated commanders, legendary minerals and future ladder trophies.'}),
  // Eleven turret types (owner decision 7), unlocked across CC levels so early choices stay simple. dt: damage type.
