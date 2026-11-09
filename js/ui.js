@@ -11,6 +11,7 @@ const ICON={
  shop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5 12 3.5l9 4v9l-9 4-9-4z"/><path d="M3 7.5l9 4 9-4M12 11.5v9M7.5 5.5l9 4"/></svg>',
  quests:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5.5 21V3.5M5.5 4h12l-2.5 4.2 2.5 4.3h-12"/></svg>',
  ranks:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M2.5 20.5h19M4.5 20.5v-6h5v6M9.5 20.5V8.5h5v12M14.5 20.5v-9h5v9"/></svg>',
+ conquest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="14" r="7"/><path d="M7.5 12.5h.01M12.5 16.5h.01M10 17.5a1.4 1.4 0 0 0 2-1"/><path d="M16 8V2l5 2-5 2"/></svg>',
  cog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6.5h9M17 6.5h3M4 12h3M11 12h9M4 17.5h11M19 17.5h1"/><circle cx="15" cy="6.5" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17.5" r="2"/></svg>',
  arena:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l1.9 5.1 5.3-1.6-2.2 5 4.6 2.9-5.4 1 .6 5.4L12 17.3l-4.8 3.3.6-5.4-5.4-1 4.6-2.9-2.2-5 5.3 1.6z"/></svg>',
  zone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 3"/><path d="M14.6 7.6a5 5 0 1 0 2.2 7.6 4.1 4.1 0 0 1-2.2-7.6z" stroke-linejoin="round"/></svg>',
@@ -20,6 +21,10 @@ const ICON={
  royale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4.2 17.2 3 7.6l5 3.9 4-6 4 6 5-3.9-1.2 9.6z"/><path d="M4.5 20.5h15"/></svg>',
  boss:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="8.5" width="17" height="11" rx="2.5"/><circle cx="12" cy="14" r="3.2"/><path d="M12 10.8V3M8.5 8.5 7 5.5M15.5 8.5 17 5.5"/></svg>'};
 const TAB_LIST=[['play','Play'],['garage','Garage'],['shop','Shop'],['quests','Quests'],['ranks','Ranks']];
+// Owner request (Nov 8): Conquest is its own page in the bottom bar (middle slot), not a button on Play. It opens the
+// Conquest Command hub, which carries the same bar (js/conquest/app.js pageNav) so every tab stays one tap away.
+function tabBarHtml(current){const b=([k,l])=>k==='conquest'?'<button class="tab tab-cq'+(current==='conquest'?' on':'')+'" data-act="conquest">'+ICON.conquest+'<span>Conquest</span><i class="dot"></i></button>':'<button class="tab'+(k===(current||uiTab)&&current!=='conquest'?' on':'')+'" data-act="tab" data-arg="'+k+'">'+ICON[k]+'<span>'+l+'</span><i class="dot"></i></button>';
+ return [...TAB_LIST.slice(0,2),['conquest','Conquest'],...TAB_LIST.slice(2)].map(b).join('');}
 let uiTab='play',uiReady=false,uiRaf=0,ptrDown=false,heroCv=null,lbScope='overall';
 const stale=new Set(TAB_LIST.map(t=>t[0]));
 const inBattle=()=>document.body.classList.contains('battle');
@@ -222,7 +227,7 @@ function renderPlay(){
   '<button class="setup" data-act="setup"><canvas data-art="map:'+mp+'"></canvas><span class="grow"><span class="nm">'+modeName(gk,mk)+(gk===featuredMode()?' <span class="featchip">+25%</span>':'')+(IN_TG&&(save.mp||0)>=1&&isLiveMode(gk)?' <span class="livechip">Live</span>':'')+'</span><span class="mut">'+(mp==='random'?'Random map':esc(MAPS[mp].n))+'</span><span class="dimtxt">'+(gk==='arena'&&mk==='1v1'?'Best of 3 rounds, first to 2':GT_DESC[gk])+'</span></span><span class="chg">Change</span></button>'+
   '<button class="fight" data-act="fight"><span class="big">FIGHT</span><span class="small">Win '+rangeTxt(wr)+' points</span></button>'+
   (quickOK()?'<button class="quick" data-act="quick"><b>QUICK MATCH</b><span>Live pilots, any mode, random map</span></button>':'')+
-  '<button class="quick" data-act="conquest"><b>CONQUEST ↗</b><span>Explore the Moon · World foundation preview</span></button>'+
+
   '</div>'+battleRosterHtml();   // the bay picker sits under FIGHT, so FIGHT stays on the first screen
 }
 
@@ -1442,7 +1447,7 @@ function onTap(e){
 
 // ---------- boot ----------
 function initUI(){
- $('#tabbar').innerHTML=TAB_LIST.map(([k,l])=>'<button class="tab'+(k===uiTab?' on':'')+'" data-act="tab" data-arg="'+k+'">'+ICON[k]+'<span>'+l+'</span><i class="dot"></i></button>').join('');
+ $('#tabbar').innerHTML=tabBarHtml();
  $('#btnSettings').innerHTML=ICON.cog;
  document.addEventListener('click',onTap);
  document.addEventListener('pointerdown',()=>{ptrDown=true;},true);

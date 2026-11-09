@@ -1,0 +1,70 @@
+{
+ "page-320": {
+  "tabs": {
+   "labels": [
+    "Play",
+    "Garage",
+    "Conquest",
+    "Shop",
+    "Quests",
+    "Ranks"
+   ],
+   "fit": true,
+   "playBtn": false
+  },
+  "nav": {
+   "navBottom": true,
+   "navTop": 507
+  },
+  "leftTo": {
+   "cq": false,
+   "tab": "garage"
+  },
+  "pageErrors": []
+ },
+ "page-390": {
+  "tabs": {
+   "labels": [
+    "Play",
+    "Garage",
+    "Conquest",
+    "Shop",
+    "Quests",
+    "Ranks"
+   ],
+   "fit": true,
+   "playBtn": false
+  },
+  "nav": {
+   "navBottom": true,
+   "navTop": 778
+  },
+  "leftTo": {
+   "cq": false,
+   "tab": "garage"
+  },
+  "pageErrors": []
+ },
+ "menu": {
+  "sheetBottom": 700,
+  "vh": 700,
+  "scrolls": true,
+  "lastVisible": true,
+  "cards": 3,
+  "described": true,
+  "groups": [
+   "ECONOMY \u00b7 makes and stores resources",
+   "DEFENSE \u00b7 stops Parasite raids"
+  ],
+  "tags": [
+   "+0.8 ALLOY/H",
+   "+14 \u26a1 POWER",
+   "RANGE 28 \u00b7 DMG 34"
+  ]
+ },
+ "placement": {
+  "exact": 14,
+  "wrong": []
+ },
+ "pageErrors": []
+}

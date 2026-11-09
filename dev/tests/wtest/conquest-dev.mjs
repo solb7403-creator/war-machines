@@ -33,10 +33,10 @@ let r=await act(owner,OWNER,'dev-on');ok(r.status===200&&r.state.dev?.on===1&&r.
 r=await act(owner,OWNER,'build-base',{plot:{site:'crater'}});ok(r.status===200&&r.state.plot?.site==='crater','with dev mode ON the owner claims the plot for free');
 ok(rec(OWNER).ledger.cp===before.cp&&JSON.stringify(rec(OWNER).ledger.banked)===JSON.stringify({...{alloy:0,biomass:0,helium:0},...before.banked}),'... and the real CP and materials are untouched ('+rec(OWNER).ledger.cp+' CP)');
 // builds and upgrades: free; FINISH NOW completes the builder's job
-let s=rec(OWNER);const at=P.autoPlace(s.plot,'refinery');r=await act(owner,OWNER,'plot-build',{plot:{type:'refinery',...at}});ok(r.status===200&&rec(OWNER).plot.job?.t==='refinery','a Refinery starts building for free');
-r=await act(owner,OWNER,'dev-finish');ok(r.status===200&&!rec(OWNER).plot.job&&Object.values(rec(OWNER).plot.b).some(b=>b.t==='refinery'&&b.l===1),'FINISH BUILD NOW completes the builder job at once');
-for(let i=0;i<4;i++){r=await act(owner,OWNER,'plot-upgrade',{plot:{id:'cc'}});assert.equal(r.status,200,JSON.stringify(r).slice(0,160));r=await act(owner,OWNER,'dev-finish');assert.equal(r.status,200);}
-ok(rec(OWNER).plot.cc===5,'Command Center upgraded to CC5 for free (each one finished at once)');
+let s=rec(OWNER);const at=P.autoPlace(s.plot,'refinery');r=await act(owner,OWNER,'plot-build',{plot:{type:'refinery',...at}});ok(r.status===200&&!rec(OWNER).plot.job&&Object.values(rec(OWNER).plot.b).some(b=>b.t==='refinery'&&b.l===1),'a Refinery is built for free and INSTANTLY (no countdown in dev mode)');
+for(let i=0;i<4;i++){r=await act(owner,OWNER,'plot-upgrade',{plot:{id:'cc'}});assert.equal(r.status,200,JSON.stringify(r).slice(0,160));}
+ok(rec(OWNER).plot.cc===5&&!rec(OWNER).plot.job,'Command Center upgraded to CC5 for free, each upgrade instant');
+ok((await act(owner,OWNER,'dev-finish')).status!==200,'... so FINISH BUILD NOW has nothing left to finish');
 // walls spend base-store minerals: free too, base stores untouched
 s=rec(OWNER);const cells=[[3,20],[4,20],[5,20]];r=await act(owner,OWNER,'plot-wall',{plot:{cells,tier:1}});ok(r.status===200&&Object.keys(rec(OWNER).plot.w).length>=3,'mineral walls are placed without minerals in the base stores');
 ok(Object.values(rec(OWNER).plot.mnSpent||{}).every(n=>!n),'... and no minerals were counted as spent');
