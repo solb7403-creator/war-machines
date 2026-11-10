@@ -61,7 +61,8 @@ async def main():
     ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(600)
     await page.wait_for_function('!!Conquest.view.diorama',timeout=90000)   # the sliced build (idle time; slow under software GL)
     p0=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,nudge:!!Conquest.view.nudge,dio:!!Conquest.view.diorama,half:Conquest.view.diorama?.userData.half,connected:!!Conquest.view.authority?.connected})')
-    try:await page.wait_for_function('()=>{const v=Conquest.view,D=ConquestCombat.baseDefinition,h=(v.diorama?.userData.half||0)+1.6;return !(Math.abs(v.p.x-D.x)<h&&Math.abs(v.p.z-D.z-1.5)<h);}',timeout=30000)
+    # the nudge is 4 s of SIM time (dt is clamped per frame): at the CI runner's 2-3 fps that is well over 30 s of wall time (seen: 6.6 m in 30 s with 2.8 s of nudge left)
+    try:await page.wait_for_function('()=>{const v=Conquest.view,D=ConquestCombat.baseDefinition,h=(v.diorama?.userData.half||0)+1.6;return !(Math.abs(v.p.x-D.x)<h&&Math.abs(v.p.z-D.z-1.5)<h);}',timeout=120000)
     except Exception as e:
      diag=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,nudge:Conquest.view.nudge,connected:!!Conquest.view.authority?.connected,stalled:!!Conquest.view.authority?.stalled,half:Conquest.view.diorama?.userData.half})')
      raise AssertionError('the tank did not leave the town model: '+json.dumps(diag)+' start '+json.dumps(p0)) from e
