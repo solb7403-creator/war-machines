@@ -15,7 +15,11 @@ Prime suspect (verify, don't assume): AI strength is derived from the player's o
 - Also check `mkBoss` (boss HP from player DPS, DPS from player HP), `rebuildBot`/`endRound` (counter-chassis switching), `worker/src/eco.js` `pickGhosts` (`GHOST_BAND` 0.25 on live rooms; AI matches use `AI_GHOST_LO`/`HI` 0.7–0.95), and any other path where enemy stats read the player's loadout, power, league or tier.
 - First find which commit(s) reintroduced the parity after the Oct 31 combat-repair fix (`git log -S`/`git blame` on those lines), and say plainly why the previous 4 fixes didn't hold.
 
-Design (decided by the owner's standing rules):
+Also broken (owner, Nov 9): the AI fires its super weapon every 0.5–1 s, as if the super charges instantly, and it seems to dash just as often. Super + dash spam together is a broken combo. AI must charge and cool down its super, dash and every ability under exactly the same rules and timers as the player (same charge sources, same cooldowns, no free resets). Find why it doesn't today (separate AI code path, missing cooldown, charge from the wrong source, per-frame triggering) and cover it in the regression test.
+
+Owner direction: the league should be the main difficulty lever, with only a slight adjustment for overall gear level (never a copy of the player's gear). **You have design freedom.** The goals and guardrails below are fixed. How you get there (AI loadouts per league, skill and tactics tuning, enemy counts, ability usage, matchmaking tweaks, the exact gear adjustment curve) is yours to design, as long as you explain your choices and prove them with the sims. If you find a better approach than anything suggested here, use it and say why.
+
+Goals and guardrails (from the owner's standing rules):
 - Enemy AI strength never reads the player's gear, power or power-derived rating. Difficulty comes from authored, visible things: league, mode, number of enemies, AI skill (accuracy, tactics, focus-fire limits). Enemy AI gear comes from fixed authored loadouts per league with a hard cap below the top player gear (no Lunar Skin, no Moonbeam-class weapon on ordinary AI).
 - Gear always matters, at every league, including Lunar Legend. Never weaken existing gear, Moonbeam or Lunar Skin; fairness comes from leagues and matchmaking, not nerfs. Ghosts in AI matches stay clearly weaker than the pilot and are labeled.
 - Top leagues stay challenging through skill and numbers, not stat copying.
@@ -24,13 +28,14 @@ Design (decided by the owner's standing rules):
 
 Acceptance (seeded, deterministic sims with the real game code, enough matches per cell for stable rates; report every cell):
 - For each league (Rookie → Lunar Legend) and each arcade mode, including 1v1, 2v2, 3v3, Bounty, Survival boss and Last Standing, run pilots at stock, full common, full rare, full Epic, and full legendary (Lunar Skin + Moonbeam + Epic Colossus) against that league's AI.
-- Win rate and damage ratio must rise at every gear step in every league (no flat or inverted steps). Targets to calibrate toward and report against:
+- Win rate and damage ratio must rise at every gear step in every league (no flat or inverted steps). Owner-approved targets (calibrate toward these; if a mode genuinely needs a different band, justify it with data):
   - Stock vs its own league AI: 45–60% wins.
   - Each gear step: at least +8 points of win rate.
   - Full Epic: 70–85%.
   - Full legendary: 78–92%, so it's never a guaranteed win.
   - Legendary damage taken: at most ~65% of damage dealt.
-- A permanent regression test in CI (node suite) that fails if any of these monotonic gear steps flattens or inverts, or if any enemy stat path reads the player's gear or power. It should fail on the current main before your fix, so the bug can't come back a 5th time. Show it failing on main first.
+- AI super and dash usage rates match what a player can achieve under the same rules (report AI supers and dashes per minute vs the player maximum).
+- A permanent regression test in CI (node suite) that fails if any of these monotonic gear steps flattens or inverts, if any enemy stat path copies the player's gear, or if AI abilities fire faster than the player rules allow. It should fail on the current main before your fix, so the bug can't come back a 5th time. Show it failing on main first.
 - Before/after table plus a plain-language summary for the owner. No softlocks in any mode; client/server parity; PvP frozen loadouts untouched; Worker dry-run clean.
 
 ## B. Desktop keyboard driving (Conquest unplayable on a computer)
