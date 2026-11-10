@@ -45,6 +45,9 @@ async def journey(b,width,height,label,results):
   p1=await pg.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})');return ((p1['x']-p0['x'])**2+(p1['z']-p0['z'])**2)**.5
  s0=await state();assert s0['active'].startswith('DIV.cq-viewport'),f'{label}: focus after ACKNOWLEDGE sits on {s0["active"]}'
  moved={c:await drive(c) for c in ['KeyW','ArrowLeft','KeyS','KeyD','ArrowUp']}
+ # what the view and the authority saw during the drive (printed always: the CI runner once reported W registered, connected, 0 m, 540 fps)
+ diag=await pg.evaluate('''()=>{const v=Conquest.view,A=v.authority,S=A?.state;return {yaw:v.yaw,speed:v.speed,p:v.p,fps:v.fps,blocked:v.blocked,stepAcc:v.stepAcc,stepped:v.controlStepped,fallback:!!v.fallback2d||!!v.canvasFallback,nudge:!!v.nudge,resume:v.resume,connected:!!A?.connected,stalled:!!A?.stalled,queue:A?.queue?.length,pushed:A?.pushed,sent:A?.sent,credit:A?.credit?.(),authPos:S?.position,stuckMs:S?.stuckMs,recoveryAt:S?.recoveryAt,death:!!S?.death?.active,mission:S?.mission,battle:S?.battle?.state,hidden:document.hidden,webgl:!!v.renderer?.getContext?.()&&!v.renderer.getContext().isContextLost?.()};}''')
+ print('DRIVE DIAG',label,json.dumps({'moved':moved,'held':held,'diag':diag},default=str),flush=True)
  await pg.screenshot(path=str(OUT/f'desktop-keys-{label}.png'))
  # abilities by key: Space fires (no page navigation, no button click), Shift (either side) dashes, F shield, C scan
  url=pg.url;await pg.keyboard.down('Space');await pg.wait_for_timeout(400);fired=await pg.evaluate('!!Conquest.view.keys.Space');await pg.keyboard.up('Space')
@@ -58,7 +61,7 @@ async def journey(b,width,height,label,results):
  results.append({'label':label,'held':held,'viewport':[width,height],'before':s0,'moved':moved,'spaceFires':fired,'shiftRightDash':dashR,'after10s':s1,'movedAfter10s':later,'pageErrors':errs[:3]})
  for c,d in moved.items():
   assert c in (held.get(c) or {}).get('keys',[]),f'{label}: {c} never reached the Conquest view; while held {json.dumps(held.get(c))}; state {json.dumps(s0)}'
-  if c in ('KeyW','ArrowUp'):assert d>1,f'{label}: {c} did not move the tank ({d:.2f} m); while held {json.dumps(held.get(c))}; state {json.dumps(s0)}'
+  if c in ('KeyW','ArrowUp'):assert d>1,f'{label}: {c} did not move the tank ({d:.2f} m); moved {json.dumps(moved)}; while held {json.dumps(held.get(c))}; state {json.dumps(s0)}; diag {json.dumps(diag,default=str)}'
  assert later>1,f'{label}: keyboard dead after 10 s (moved {later:.2f}); while held {json.dumps(held.get("KeyW"))}; state {json.dumps(s1)}'
  assert fired and dashR,f'{label}: Space fire {fired}, right Shift dash {dashR}'
  assert s1['prompts']==0 or 'INPUT' not in s1['active'],f'{label}: a website prompt took the keyboard: {json.dumps(s1)}'
