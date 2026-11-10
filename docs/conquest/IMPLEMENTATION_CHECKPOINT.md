@@ -1493,3 +1493,26 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
     `u.sup` write would be invisible) and that section 4's 48-match cells can flake at the -5 pt tolerance; B's note that the 60 s
     strip timer starts during the first briefing; `mkBot`'s legacy no-`ai` mirror path is dead code but still present; LEAGUES.md
     points-per-minute not re-measured (payouts unchanged). Candidates for the Fix queue, not release blockers.
+
+### Release (Nov 10, 2026)
+- **RELEASED: PR #103 merged (merge commit `e1a8ffa`, head `c4867fb`), build `20261110101106`.** Worker deploy run
+  [42851674319](https://github.com/solb7403-creator/war-machines/actions/runs/42851674319): success; notices
+  `pvp health: {"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}` and `live version: {"v":"20261110101106"} (repo: {"v":"20261110101106"})`,
+  live = repo. Pages run [42851667175](https://github.com/solb7403-creator/war-machines/actions/runs/42851667175): success on the
+  first attempt (deployment of `e1a8ffa`, whose `version.json` is `20261110101106`). The live hosts are outside this container's
+  network allowlist, so the Worker figures come from the deploy run's own checks and the Pages figure from the deployment record.
+- CI on `c4867fb`: 9/9 green (conquest incl. all 13 portrait harnesses and the desktop keyboard journey, balance incl. fair-arcade,
+  transmission chromium + webkit, signup x3, website, verify). Reviews: A and B on `18fbe54` (PASS, MAJORs fixed in `1cd016d`) and a
+  read-only delta review of the game-code changes `18fbe54..c4867fb` (PASS; 1 MINOR + notes, carried to the roadmap Fix queue).
+- **What the CI gate found after the reviews (all in the PR):** two real game fixes: (1) `ConquestWorld.frameSeconds` dropped any
+  frame slower than 250 ms as a pause, freezing the simulation on a device under 4 fps (the owner's "cannot drive on a computer");
+  (2) held HUD controls (FIRE, stick, GATHER) and the world canvas lacked `touch-action:none`, so a second finger could cancel the
+  held pointer. And the CI browser harnesses were hardened for the runner's software GL: every fixed wait became a wait for the real
+  condition (W key, taps on moving hulls, the recover hop, the resize check, the nudge off the town model), the session-032 mission
+  fight holds FIRE in heat bursts (the original harness held it continuously and sat in the overheat penalty), route handlers
+  retry a dropped fixture-server socket, the balance job gets 50 minutes for the 4-seed grid, and session5d measures the sprite in
+  the page (no Pillow in CI). No test was skipped or weakened. The owner report `docs/launch/s5d/FAIR_ARCADE.md` carries the final
+  numbers.
+- Payments stay disabled; payouts, caps, league rates, gear stats and PvP rules unchanged. PHYSICAL_IPHONE_UNVERIFIED and Telegram
+  Desktop unverified until the owner's playtest. Next: 5E Models, then Session 6 (`docs/ROADMAP.md`).
+
