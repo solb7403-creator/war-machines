@@ -111,8 +111,10 @@ async def main(engine,journey_only=False,fallback=False):
      await page.evaluate('window.preLoss=Conquest.view.authority.state.hp;Conquest.view.renderer.forceContextLoss()')
      await page.wait_for_function('Conquest.view.renderer.isConquestCanvas')
      assert await page.evaluate('Conquest.view.authority.state.hp===preLoss&&Conquest.view.authority.connected')
-     await page.set_viewport_size({'width':width,'height':height-100});await page.wait_for_timeout(100)
-     assert await page.locator('.cq-world').evaluate('(e)=>e.getBoundingClientRect().height<=innerHeight')
+     await page.set_viewport_size({'width':width,'height':height-100})
+     try:await page.wait_for_function('()=>document.querySelector(".cq-world").getBoundingClientRect().height<=innerHeight',timeout=5000)   # the resize handler lands on the next frame; a fixed 100 ms wait was a flake on the CI runner (WebKit)
+     except Exception:pass
+     assert await page.locator('.cq-world').evaluate('(e)=>e.getBoundingClientRect().height<=innerHeight'),'the world fits the shorter viewport after a resize'
      await page.set_viewport_size({'width':width,'height':height})
     assert not errors,errors
     results.append({'viewport':[width,height],'multiPointer':'native three-touch' if engine=='chromium' else 'mouse DRIVE plus native touch abilities','errors':errors})
