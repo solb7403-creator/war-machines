@@ -9,3 +9,4 @@ Moonbeam v2 (owner: v1 didn't read as legendary): `1-moonbeam-legendary-ref.png`
 Moonbeam v3 (owner disliked the sloped barrel): perfectly straight tri-blade barrel around a plasma beam, gold collars, gold crescent crown at the muzzle.
 Moonbeam v4 (final): eclipse crown (gold crescent + dark inner crescent), gold dorsal crest, swept filigree wings, rear wing blades, straight tri-blade barrel with gold collars and dorsal sickle blades, spiked gold muzzle crown.
 Moonbeam v5 (owner addition): two large rectangular blue energy crystals in gold cradles, one on each side of the frame just before the barrel. They're the charge accumulators for the energy blast, so in-game they should brighten as the shot charges and dim after firing.
+Moonbeam v6 (owner): the charge crystals are hexagonal quartz-like prisms with pointed faceted tips, same spot, same in-game charge behavior.
