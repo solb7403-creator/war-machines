@@ -1,0 +1,230 @@
+[
+ {
+  "label": "1440",
+  "held": {
+   "KeyW": {
+    "keys": [
+     "KeyW"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 9,
+    "fps": 10.50105010501064
+   },
+   "ArrowLeft": {
+    "keys": [
+     "ArrowLeft"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 37,
+    "fps": 5.581914596706682
+   },
+   "KeyS": {
+    "keys": [
+     "KeyS"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 36,
+    "fps": 5.581914596706682
+   },
+   "KeyD": {
+    "keys": [
+     "KeyD"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 32,
+    "fps": 10.244402165959272
+   },
+   "ArrowUp": {
+    "keys": [
+     "ArrowUp"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 32,
+    "fps": 10.244402165959272
+   }
+  },
+  "viewport": [
+   1440,
+   900
+  ],
+  "before": {
+   "active": "DIV.cq-viewport",
+   "dialogs": 0,
+   "prompts": 0,
+   "connected": true,
+   "keys": [],
+   "p": {
+    "x": 898,
+    "z": 1024
+   },
+   "hint": true
+  },
+  "moved": {
+   "KeyW": 2.1999999999997044,
+   "ArrowLeft": 2.1999999999997044,
+   "KeyS": 1.7599999999997635,
+   "KeyD": 3.960000000000832,
+   "ArrowUp": 2.1999999999997044
+  },
+  "spaceFires": true,
+  "shiftRightDash": true,
+  "after10s": {
+   "active": "DIV.cq-viewport",
+   "dialogs": 0,
+   "prompts": 0,
+   "connected": true,
+   "keys": [],
+   "p": {
+    "x": 909.6159999999975,
+    "z": 1025.7600000000011
+   },
+   "hint": false
+  },
+  "movedAfter10s": 2.1999999999997044,
+  "pageErrors": []
+ },
+ {
+  "label": "420-desktop",
+  "held": {
+   "KeyW": {
+    "keys": [
+     "KeyW"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 0,
+    "fps": 9.676795045480924
+   },
+   "ArrowLeft": {
+    "keys": [
+     "ArrowLeft"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 11,
+    "fps": 8.331944675887346
+   },
+   "KeyS": {
+    "keys": [
+     "KeyS"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 9,
+    "fps": 10.288065843621418
+   },
+   "KeyD": {
+    "keys": [
+     "KeyD"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 7,
+    "fps": 15.485869144405719
+   },
+   "ArrowUp": {
+    "keys": [
+     "ArrowUp"
+    ],
+    "stalled": false,
+    "connected": true,
+    "resume": false,
+    "hidden": false,
+    "dialogs": 0,
+    "prompts": 0,
+    "active": "DIV",
+    "pending": 7,
+    "fps": 9.67679504548092
+   }
+  },
+  "viewport": [
+   420,
+   700
+  ],
+  "before": {
+   "active": "DIV.cq-viewport",
+   "dialogs": 0,
+   "prompts": 0,
+   "connected": true,
+   "keys": [],
+   "p": {
+    "x": 898,
+    "z": 1024
+   },
+   "hint": true
+  },
+  "moved": {
+   "KeyW": 2.1999999999997044,
+   "ArrowLeft": 2.6399999999996453,
+   "KeyS": 3.079999999999586,
+   "KeyD": 3.0799999999999272,
+   "ArrowUp": 3.079999999999586
+  },
+  "spaceFires": true,
+  "shiftRightDash": true,
+  "after10s": {
+   "active": "DIV.cq-viewport",
+   "dialogs": 0,
+   "prompts": 0,
+   "connected": true,
+   "keys": [],
+   "p": {
+    "x": 909.1759999999975,
+    "z": 1024.4400000000003
+   },
+   "hint": false
+  },
+  "movedAfter10s": 2.6399999999996453,
+  "pageErrors": []
+ }
+]
