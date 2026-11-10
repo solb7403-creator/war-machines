@@ -1414,7 +1414,8 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
   player watches the match at x3.
 - **Fix (rules.js `LG_AI_SUP_GAP`, `AI_SUP_TEAM_GAP`; game.js AI super loop):** on top of exactly the player's charge rule, an AI
   pilot keeps a minimum time between its own supers (Rookie 12 s -> Lunar Legend 6 s) and AI teammates never fire within 2 s of
-  each other; reset every match and round; applies to AI matches, live-room fill-ins, ghosts and range opponents. A player is never
+  each other; reset every match and held across the rounds of a series (a match clock, `simT`); applies to AI matches, live-room
+  fill-ins, ghosts and range opponents. A player is never
   slowed. **Regression** (`fair-arcade.mjs`): in every league x mode x kit cell an AI pilot never out-supers the pilot in the same
   matches (AI <= pilot x1.05 + 0.3 a minute per tank) and keeps the league spacing (shortest gap >= LG_AI_SUP_GAP - 0.1 s); on main
   the spacing check fails (gaps of 1.4-2.7 s seen).

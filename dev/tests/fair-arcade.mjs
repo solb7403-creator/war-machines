@@ -73,10 +73,10 @@ ok(bossOf(GEAR.legend, 6)[0] > bossOf(GEAR.legend, 0)[0], 'the Lunar Legend mega
 
 // ---- 4. gear always matters, in every league and every mode (seeded sims, 6 maps) ----
 const MODES = [['arena', '1v1'], ['arena', '3v3'], ['bounty', '1v1'], ['royale', '1v1']];
-// 2 seeds x 6 maps x 4 modes = 48 matches a kit a league. Steps are judged on the aggregate win rate and damage trade; a step may
+// 4 seeds x 6 maps x 4 modes = 96 matches a kit a league (2 seeds left a 48-match cell within sampling noise of the tolerances). Steps are judged on the aggregate win rate and damage trade; a step may
 // never get materially worse on either and must improve at least one (two kits far under a league's AI meet an AI at their own
 // power, so their results are close by design)
-const T = (await fairGrid({ pilots: ['standard'], modes: MODES, seeds: 2 })).standard;
+const T = (await fairGrid({ pilots: ['standard'], modes: MODES, seeds: 4 })).standard;
 const agg = (lg, k, modes = MODES) => { let w = 0, n = 0, d = 0, t = 0, kl = 0, de = 0; for (const [g, m] of modes) { const c = T[lg][g + ' ' + m][k]; w += c.w; n += c.n; d += c.dmg * c.n; t += c.taken * c.n; kl += c.kills; de += c.deaths; } return { win: w / n, ratio: t / d, kd: kl / Math.max(1, de), n }; };
 console.log('league       ' + KITS.map(k => k.padStart(14)).join('') + '   (win rate / damage taken per damage dealt, ' + MODES.map(x => x.join(' ')).join(', ') + ')');
 for (let lg = 0; lg < 7; lg++) {
