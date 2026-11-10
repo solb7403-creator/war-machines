@@ -1357,6 +1357,6 @@ Programs ≤ 13 locally (budget ≤ 16). CI's Chromium reports 16 programs for t
 ### Release (Nov 10, 2026)
 - PR #94 merged (merge commit `7a81b35`, head `c987dce`) after the owner gate, two fresh independent reviews and their fixes; CI on the head 9/9 green (conquest, transmission chromium/webkit, signup-browsers ×3, verify, website, asset-integrity).
 - Build `20261110004649`. Deploy run [42735209687](https://github.com/solb7403-creator/war-machines/actions/runs/42735209687): success; notices `pvp health: {"ok":true,"v":4,"open":0,"waiting":0,"queues":[]}` and `live version: {"v":"20261110004649"} (repo: {"v":"20261110004649"})` — live = repo.
-- Pages run [42735207022](https://github.com/solb7403-creator/war-machines/actions/runs/42735207022): running at the time of writing (result added below).
+- Pages (the Mini App's `GAME_URL` is GitHub Pages): run [42735207022](https://github.com/solb7403-creator/war-machines/actions/runs/42735207022) built the site (149 MB artifact; 141 MB last time) but its deploy step hit GitHub's 10-minute deploy timeout, and the rerun's deployment was cancelled 11 s after creation (a GitHub-side failure: both deployments for `7a81b35` failed; the previous `66f4cb0` deployment stayed live). Redeployed by merging this release record to main (the next pages-build-deployment run); its result is in the session report and the next checkpoint.
 - Payments stay disabled; no economy numbers changed. PHYSICAL_IPHONE_UNVERIFIED until the owner's playtest. Still open: see "Still open" in the owner gate result above.
 
