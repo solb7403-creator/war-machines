@@ -209,8 +209,13 @@ export class RoomCore {
     const maps = this.sim.R.MAP_REAL, map = this.o.MAP || maps[Math.floor(Math.random() * maps.length)];   // live matches pick the map (tests can fix it)
     const seats = Array.from({ length: this.cap }, (_, i) => (this.seats[i] ? { pid: this.seats[i].pid, name: this.seats[i].name, L: this.seats[i].L } : null));
     const empty = seats.filter((x) => !x).length, hp = this.humans().map((s) => s.pid);
-    const ghosts = (this.gh || []).filter((x) => !hp.includes(x.id)).slice(0, Math.min(ECO.GHOST_MAX, Math.ceil(empty / 2)));
-    this.sim.setup({ map, g: this.q.g, m: this.q.g === "royale" ? "1v1" : this.q.m, series: this.series, seats, ghosts });
+    const lgs = this.humans().map((s) => s.league | 0).sort((a, b) => a - b), lg = lgs[(lgs.length - 1) >> 1] | 0;   // the room's league: the middle human's. AI fill-ins fly that league's authored loadout (rules.js aiLevel), never a human's gear
+    // ghosts (offline pilots' real tanks) no stronger than this league's AI (rules.js aiGhostCap, the same cap AI tickets use in eco.js):
+    // the pool was read by power band around the first pilot; a lone pilot's 1v1 must never meet a stronger ghost in the one enemy seat
+    const pws = this.humans().map((s) => Number(s.power) || 0).sort((a, b) => a - b), pw = pws[(pws.length - 1) >> 1] || 0, RR = this.R;
+    const ghCap = RR.aiGhostCap(pw, RR.aiLevel(pw, undefined, lg, this.q.g === "royale" ? "solo" : (RR.MODES[this.q.m] || RR.MODES["1v1"]).n).p);
+    const ghosts = (this.gh || []).filter((x) => !hp.includes(x.id)).filter((x) => { try { return (Number(x.pw) || RR.powerOf(x.L)) <= ghCap; } catch (e) { return false; } }).slice(0, Math.min(ECO.GHOST_MAX, Math.ceil(empty / 2)));
+    this.sim.setup({ map, g: this.q.g, m: this.q.g === "royale" ? "1v1" : this.q.m, series: this.series, seats, ghosts, lg });
     for (const s of this.humans()) { const u = this.sim.units[s.idx]; s.flip = this.q.g === "royale" ? u.y < 16 : u.team === 1; }
     this.vsAt = now + this.o.VS_MS;
     for (const s of this.humans()) this.sendTo(s, this.goMsg(s));

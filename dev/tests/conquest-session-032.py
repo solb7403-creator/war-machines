@@ -86,7 +86,12 @@ async def main(engine,journey_only=False):
       if not selected:
        await page.screenshot(path=str(OUT/'failed-target.png'));print('TARGET DEBUG',await page.evaluate('''()=>{const v=Conquest.view,B=v.battle;return {selected:v.selectedId,errors:window.onerror,enemies:B.enemies.map(e=>{const p=new THREE.Vector3(e.x-v.origin.x,e.y+2.2,e.z-v.origin.z).project(v.camera),x=(p.x+1)*v.host.clientWidth/2,y=(1-p.y)*v.host.clientHeight/2,ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(p.x,p.y),v.camera);const g=v.enemyMeshes.get(e.id),hits=g?ray.intersectObject(g,true):[];return {id:e.id,x,y,visible:ConquestControl.visible(B,v.p,e),hit:hits.map(h=>({point:h.point,distance:h.distance})),node:document.elementFromPoint(x,y)?.className};})};}'''),flush=True)
       assert selected,('no physical target',await page.evaluate('Conquest.view.battle.enemies.map(e=>({x:e.x,z:e.z,hp:e.hp}))'))
-      pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null'),'same hull toggle';pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
+      pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null'),'same hull toggle'
+      for attempt in range(8):   # re-select the same hull: the point is projected one frame before the tap and the hull moves (software GL in CI: a frame can take a second), so retry on a fresh projection and give each tap a frame or two to land
+       pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y'])
+       try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=selected['id'],timeout=1500);break
+       except Exception:pass
+      assert await page.evaluate('Conquest.view.selectedId')==selected['id'],'same hull re-select'
       # Switching lock must follow the second physical hull, never nearest-enemy acquisition.
       other=None
       for _ in range(20):
@@ -105,24 +110,52 @@ async def main(engine,journey_only=False):
       assert await page.evaluate('Conquest.view.selectedId')==other['id'],'native moving-hull lock switch'
       pt=await target_point(other['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null')
       yaw=await page.evaluate('Conquest.view.yaw');await page.mouse.move(width/2,350);await page.mouse.down();await page.mouse.move(width/2+15,355,steps=3);await page.mouse.up();assert await page.evaluate('Conquest.view.selectedId===null');assert await page.evaluate('Conquest.view.yaw')!=yaw,'camera drag stays independent'
-      pt=await target_point(selected['id']);assert pt;await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
+      for attempt in range(8):   # back to the first hull: a fresh projection per tap, and a frame or two for the lock to land (moving hull, slow runner)
+       pt=await target_point(selected['id'])
+       if pt:
+        await page.touchscreen.tap(pt['x'],pt['y'])
+        try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=selected['id'],timeout=1500);break
+        except Exception:pass
+       else:await page.wait_for_timeout(200)
+      assert await page.evaluate('Conquest.view.selectedId')==selected['id'],'first hull re-lock after the switch'
       stick=await rect('.cq-stick');drive_contact={'id':1,'x':stick['x']+stick['w']/2,'y':stick['y']+stick['h']/2};start=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await touch('touchStart',[contact,drive_contact]);drive_contact['y']-=36;await touch('touchMove',[contact,drive_contact]);await page.wait_for_timeout(350);await touch('touchEnd',[drive_contact]);assert await page.evaluate('Conquest.view.firing'),'releasing joystick preserves held Fire';end=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');assert math.dist(start,end)>.3,'simultaneous drive/fire moves';await page.wait_for_timeout(1600);await page.screenshot(path=str(OUT/'active-combat.png'))
-      # Hold FIRE while precisely tapping each later living hostile. No HP/outcome/tick mutation.
-      for i in range(90):
-       if await page.evaluate('Conquest.view.authority.state.battle.state!=="active"'):break
-       if not await page.evaluate('Conquest.view.selectedId'):
+      # Hold FIRE in heat bursts (a person releases before the weapon overheats: at ~85% heat, back on at ~35%) while precisely
+      # tapping each later living hostile. No HP/outcome/tick mutation. CDP touchEnd lists the points being RELEASED (probed:
+      # touchStart [A,B] then touchEnd [A] releases A and keeps B), so a tap while firing is touchStart [contact,t] / touchEnd [t]. The loop ends as soon as the authority reports the outcome
+      # (up to ~200 s of real time; on the CI runner, software GL at a few fps, the same fight takes 2-3x longer than here)
+      # diagnostics for the CI runner (the fight is won locally and on WebKit, lost on CI Chromium about half the time): count FIRE
+      # pointer cancels and log the fight state every ~3 s
+      await page.evaluate('''()=>{const b=document.querySelector('#cq-fire');window.__fireEv={cancel:0,lost:0,up:0,down:0};for(const t of ['pointercancel','lostpointercapture','pointerup','pointerdown'])b.addEventListener(t,()=>{window.__fireEv[{pointercancel:'cancel',lostpointercapture:'lost',pointerup:'up',pointerdown:'down'}[t]]++;});}''')
+      firing=False
+      async def fire(on):
+       nonlocal firing
+       if on==firing:return
+       await (touch('touchStart',[contact]) if on else touch('touchEnd',[contact]));firing=on
+      async def press(t):await touch('touchStart',[contact,t] if firing else [t]);await touch('touchEnd',[t])
+      for i in range(800):
+       st=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {state:S.battle.state,heat:B.heat||0,hot:!!B.overheated,locked:v.selectedId!=null&&B.enemies.some(e=>e.id===v.selectedId&&e.hp>0),shield:B.shieldCd<=0,super:B.charge>=1000};}''')
+       if st['state']!='active':break
+       if firing and (st['hot'] or st['heat']>=85):await fire(False)
+       elif not firing and not st['hot'] and st['heat']<=35:await fire(True)
+       if not st['locked']:
         pt=await target_point()
-        if pt:
-         t={'id':3,'x':pt['x'],'y':pt['y']};await touch('touchStart',[contact,t]);await touch('touchEnd',[t])
-       for selector,condition in [('#cq-shield','Conquest.view.battle.shieldCd<=0'),('#cq-super','Conquest.view.battle.charge>=1000')]:
-        if await page.evaluate(condition):
-         r=await rect(selector);t={'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2};await touch('touchStart',[contact,t]);await touch('touchEnd',[t])
-       await page.wait_for_timeout(1000)
-      await touch('touchEnd',[])
+        if pt:await press({'id':3,'x':pt['x'],'y':pt['y']})
+       for selector,avail in [('#cq-shield',st['shield']),('#cq-super',st['super'])]:   # (not 'ready': that is the fixture server's handshake JSON in this scope)
+        if avail:
+         r=await rect(selector);await press({'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2})
+       await page.wait_for_timeout(250)
+       if i%12==0:print('FIGHT',i,'harnessFiring',firing,json.dumps(await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {kills:S.battle.kills,hp:Math.round(S.hp),viewFiring:!!v.firing,heat:Math.round(B.heat||0),hot:!!B.overheated,sel:v.selectedId,fps:+v.fps.toFixed(1),fireEv:window.__fireEv,alive:B.enemies.filter(e=>e.hp>0&&!e.resident).length};}''')),flush=True)
+      if firing:await touch('touchEnd',[contact])
+      firing=False
       battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement,featured:Conquest.view.authority.state.featuredMission})');assert battle['state']=='victory',battle;assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle
       await page.screenshot(path=str(OUT/'victory.png'));await page.get_by_role('button',name='RETURN TO EXPLORATION').click();await page.wait_for_function('!Conquest.view.battle');assert await page.evaluate('!Conquest.view.firing')
       await fixture([1240,893]);await page.evaluate('Conquest.view.yaw=Math.PI;Conquest.view.distance=65;Conquest.view.pitch=.8');await page.wait_for_timeout(300);await page.screenshot(path=str(OUT/'garrison.png'))
-      pt=await target_point();assert pt,'garrison hull visible';await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==pt['id'];await touch('touchStart',[contact]);await page.wait_for_function('(id)=>Conquest.view.authority.state.battle.enemies.find(e=>e.id===id).hp<=0',arg=pt['id'],timeout=30000);await touch('touchEnd',[]);assert await page.evaluate('Conquest.view.authority.state.drops.length>0');await page.screenshot(path=str(OUT/'salvage.png'))
+      pt=await target_point();assert pt,'garrison hull visible'
+      for attempt in range(8):
+       await page.touchscreen.tap(pt['x'],pt['y'])
+       try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=pt['id'],timeout=1500);break
+       except Exception:pt=await target_point(pt['id']) or pt
+      assert await page.evaluate('Conquest.view.selectedId')==pt['id'],'garrison hull lock';await touch('touchStart',[contact]);await page.wait_for_function('(id)=>Conquest.view.authority.state.battle.enemies.find(e=>e.id===id).hp<=0',arg=pt['id'],timeout=30000);await touch('touchEnd',[]);assert await page.evaluate('Conquest.view.authority.state.drops.length>0');await page.screenshot(path=str(OUT/'salvage.png'))
       await fixture([1174,1168],cargo={'alloy':11,'biomass':7,'helium':3},hp=100);await tap('#cq-supply-access');await page.get_by_role('button',name='BANK SALVAGE',exact=True).click();await page.wait_for_function('Conquest.view.authority.state.ledger.banked.alloy===11');await page.get_by_role('button',name='REPAIR HULL',exact=True).click();await page.wait_for_function('Conquest.view.authority.state.hp===Conquest.view.encounter.playerMax');await page.screenshot(path=str(OUT/'supply.png'));await page.get_by_role('button',name='CLOSE SUPPLY').click()
      # Authenticated destruction from real incoming fire, exact material risk, safe respawn and physical wreck retrieval.
      await fixture([1290,1150],cargo={'alloy':11,'biomass':7,'helium':3},hp=1);await page.wait_for_function('Conquest.view.authority.state.death?.active',timeout=20000);death=await page.evaluate('Conquest.view.authority.state');assert death['ledger']['cargo']=={'alloy':6,'biomass':4,'helium':2};assert death['death']['amount']=={'alloy':5,'biomass':3,'helium':1};await page.screenshot(path=str(OUT/'defeat.png'));atlas=await page.evaluate('Conquest.view.discovery.version');await page.get_by_role('button',name='RESPAWN AT REFUGE',exact=True).click();await page.wait_for_function('Conquest.view.authority.state.hp>0');assert await page.evaluate('Conquest.view.p.x===898&&Conquest.view.p.z===1024');assert await page.evaluate('Conquest.view.discovery.version')==atlas
@@ -139,7 +172,10 @@ async def main(engine,journey_only=False):
       await fixture([3000,3000]);await page.wait_for_function('Conquest.view.pending===0',timeout=60000);assert await page.evaluate('Conquest.view.enemyMeshes.size===0&&Conquest.view.lootMeshes.size===0')
       await fixture([1240,893]);await page.wait_for_function('Conquest.view.pending===0',timeout=60000);cleanup.append(await page.evaluate('({geometry:Conquest.view.renderer.info.memory.geometries,hostiles:Conquest.view.enemyMeshes.size})'))
      assert cleanup[-1]['geometry']<=cleanup[0]['geometry']+3,cleanup
-     await fixture([1130,1080]);await page.evaluate('Conquest.view.yaw=-Math.PI/2');await drive('w','Conquest.view.authority.state.stuckMs>=1500',20000);before=await page.evaluate('({p:Conquest.view.p,version:Conquest.view.discovery.version})');await tap('#cq-recover');await page.wait_for_timeout(300);after=await page.evaluate('({p:Conquest.view.p,version:Conquest.view.discovery.version})');assert math.dist([before['p']['x'],before['p']['z']],[after['p']['x'],after['p']['z']])>=6;assert before['version']==after['version']
+     await fixture([1130,1080]);await page.evaluate('Conquest.view.yaw=-Math.PI/2');await drive('w','Conquest.view.authority.state.stuckMs>=1500',20000);before=await page.evaluate('({p:Conquest.view.p,version:Conquest.view.discovery.version})');await tap('#cq-recover')
+     try:await page.wait_for_function('b=>Math.hypot(Conquest.view.p.x-b.x,Conquest.view.p.z-b.z)>=6',arg=before['p'],timeout=5000)   # the recover hop lands on the next authority round trip (a fixed 300 ms wait was a flake on a slow runner)
+     except Exception:pass
+     after=await page.evaluate('({p:Conquest.view.p,version:Conquest.view.discovery.version})');assert math.dist([before['p']['x'],before['p']['z']],[after['p']['x'],after['p']['z']])>=6,('recover did not move the tank',before,after);assert before['version']==after['version']
      assert await page.evaluate('JSON.stringify({pts:save.pts,buys:save.buys,up:save.up})===accountBefore');perf=await page.evaluate('({samples:cqPerf,heap:performance.memory?.usedJSHeapSize})');inspect=await page.request.post(base+'/inspect');integrated={'physicalInputs':({'deathRespawnAndPhysicalWreckRecovery':True} if os.getenv('CQ_WRECK_ONLY') else {'activeMissionOverridesSelectedRoute':True,'sameHullToggle':True,'adjacentHullSwitch':True,'cameraDragNoLock':True,'simultaneousDriveAndFire':True,'deathRespawnAndPhysicalWreckRecovery':True}),'defeat':{'drop':death['death']['amount'],'retained':death['ledger']['cargo'],'expires':death['death']['expires'],'at':death['death']['at']},'runMode':{'combatOnly':bool(os.getenv('CQ_COMBAT_ONLY')),'wreckOnly':bool(os.getenv('CQ_WRECK_ONLY'))},'cleanup':cleanup,'movement':movement,'battle':battle,'performance':perf,'backend':(await inspect.json())['measurements']};(OUT/('wreck-results.json' if os.getenv('CQ_WRECK_ONLY') else 'integrated-results.json')).write_text(json.dumps(integrated,indent=2))
     assert not errors,errors;results.append({'viewport':[width,height],'controls':bounds,'safeArea':safe,'reducedViewport':short,'errors':errors});await page.unroute_all(behavior='ignoreErrors');await context.close();print('PASS',engine,width,height,flush=True)
    await browser.close();(OUT/f'{engine}-results.json').write_text(json.dumps({'engine':engine,'physicalTelegramVerified':False,'runMode':{'journeyOnly':journey_only,'combatOnly':bool(os.getenv('CQ_COMBAT_ONLY')),'wreckOnly':bool(os.getenv('CQ_WRECK_ONLY'))},'cases':results},indent=2))

@@ -150,10 +150,8 @@ const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplie
 const LG_FIRST=84,LG_RATIO=1.21;   // league rating lines: Pilot from 84, then each line 21% above the last (Lunar Legend from ~218)
 const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*10)/10);
 const LG_DEMOTE=0.04,LG_FORM_N=20,LG_FORM_MIN=10,LG_FORM_W=0.4;
-// AI step per league (x the base AI power), and how much of it applies by team size: full in 1v1, part in 2v2 and Last
-// Standing, none in 3v3: five other tanks dilute a pilot's gear edge there, so 3v3 is already a fight, and even a one-tier AI
-// step moved measured 3v3 results by 7-12 points (docs/launch/LEAGUES.md); 3v3 keeps today's difficulty in every league
-const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
+// LG_AI: the league's AI power relative to Rookie's (what the league screen shows as "AI +x%"); set from LG_AI_PW below (Session 5D)
+let LG_AI=LEAGUE.map(()=>1);
 const leagueRating=(pw,lwr,mp)=>(Number(pw)||0)*(1-LG_FORM_W/2+LG_FORM_W*((mp|0)<LG_FORM_MIN?0.5:Math.max(0,Math.min(1,Number(lwr)))));
 function leagueIdx(rating,prev){
  prev=Math.max(0,Math.min(LEAGUE.length-1,prev|0));
@@ -203,34 +201,59 @@ function powerOf(L){if(POWER_Z0===null)POWER_Z0=powerZ(STOCK_L);return Math.roun
 const POWER_K_LIVE=3.10,COUNTER_EDGE_LIVE=0.46;   // fitted: 60 held-out kit pairs x 96 human-profile duels (bots: 13.75 / 1.72)
 function powerWin(pA,pB,ctr,live){return 1/(1+Math.exp(-((live?POWER_K_LIVE:POWER_K)*Math.log(Math.max(1,pA)/Math.max(1,pB))+(live?COUNTER_EDGE_LIVE:COUNTER_EDGE)*(ctr||0))));}
 const STOCK_L={w:{a:'pulse',t:0,q:1,s:false},c:{c:'vanguard',t:0,q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'};   // a new pilot's tank
-// ---- AI difficulty (AI matches). AI pilots never copy your gear, upgrades or cores. They fly an authored loadout (AI_TIERS:
-// t rarity, q roll, h hull and cannon levels, e engine levels, g core levels [dmg,rof,arm]; p its power, checked by
-// dev/tests/combat-balance.mjs): the strongest one at or under the AI power shown on the VS screen, 68 x (your power / 68)^AI_EXP.
-// A starter tank meets starter AI, exactly as before; above that the AI grows slower than you do, so every upgrade, crate and
-// purchase widens your edge. Measured on the real sim: dev/tests/combat-sim.mjs, docs/combat-balance-audit.md
+// ---- AI difficulty (AI matches). Session 5D (owner rule, Nov 9 2026): THE LEAGUE SETS THE AI. AI pilots never copy your gear,
+// upgrades, cores or power. Each league has one authored AI power (LG_AI_PW: the tank you meet there), moved by at most
+// AI_GEAR_LO..AI_GEAR_HI for your own gear level ((your power / the league's reference pilot)^AI_GEAR_EXP: a slight adjustment that
+// keeps top gear from making a league trivial, never enough to even the fight), never above AI_CAP (a hard cap below the top player
+// gear: no Moonbeam, no Lunar Skin, no full 14-level build) and never above your own power. The AI flies the strongest authored
+// loadout (AI_TIERS: t rarity, q roll, h hull and cannon levels, e engine levels, g core levels [dmg,rof,arm]; p its power, checked by
+// dev/tests/combat-balance.mjs) at or under that power. Inside a league the AI never changes with your results (no rubber-banding).
+// Why not a curve of your power (the Oct 31 and Nov 2 models, 68 x (power/68)^0.7 x a league step): it followed every upgrade, so a
+// Legendary pilot met an AI at 77% of their power with a full Epic build, level-5 cores and a reactor, and at top gear supers (which
+// charge from damage taken too) made that a near-even trade (owner, Nov 8: 16,385 dealt vs 16,160 taken). Measured on the real sim:
+// dev/tests/fair-arcade-grid.mjs, docs/launch/s5d/FAIR_ARCADE.md; locked by dev/tests/fair-arcade.mjs (CI).
 const AI_TIERS=[[0,1,0,0,[1,1,1],68],[0,1,1,0,[1,1,1],73],[0,1,1,1,[2,2,2],77],[0,1.05,1,1,[1,1,1],79],[1,1.05,0,0,[1,1,1],85],[1,1.05,0,1,[2,2,2],88],[1,1.05,1,0,[1,1,1],92],
  [1,1.05,1,1,[2,1,1],94],[1,1.05,1,1,[2,2,2],95],[1,1.08,1,1,[2,2,2],98],[1,1.05,2,1,[2,2,2],102],[1,1.08,2,2,[2,2,2],107],[1,1.05,3,2,[2,2,2],111],
  [2,1.05,1,1,[2,2,2],115],[1,1.05,4,2,[3,2,2],119],[2,1.05,2,1,[2,2,2],124],[2,1.05,2,1,[3,2,2],125],[2,1.05,2,1,[3,3,2],126],[2,1.05,2,1,[3,3,3],128],[1,1.1,4,1,[4,4,4],132],
  [2,1.05,3,1,[3,3,3],137],[2,1.08,3,2,[3,3,3],143],[2,1.08,3,2,[4,3,3],145],[2,1.08,3,2,[4,4,3],147],[2,1.08,3,2,[4,4,4],149],[2,1.05,4,2,[4,4,4],154],
- [2,1.08,4,2,[4,4,4],159],[2,1.1,4,2,[4,4,4],162],[2,1.1,4,2,[5,4,4],165],[2,1.1,4,2,[5,5,4],168],[2,1.1,4,2,[5,5,5],171],
- [2,1.1,4,2,[5,5,5],175,{rc:1,m:{mobility:'sprint'}}],[2,1.1,4,2,[5,5,5],181,{rc:4,m:{mobility:'sprint'}}]   // the top two: a full 14-level build and a mod, still Epic gear
+ [2,1.08,4,2,[4,4,4],159],[2,1.1,4,2,[4,4,4],162]   // the top: Epic items, 10 of 14 upgrade levels, level-4 cores, no reactor, no mod. Never Moonbeam or Lunar Skin
 ].map(([t,q,h,e,g,p,x])=>({t,q,h,e,g,p,x:x||{}}));
-// AI_EXP 0.75 (measured, 24 seeds x 11 mode/sizes): average win 58/61/68/80/92% starter->common->rare->Epic->Legendary kit; 1.0
-// (AI = your power) cancels progression again, 0.8 and 0.7 each left one mode where Epic trailed Rare by 17-21 points.
-// AI_BOSS_EXP: the Survival megatank is tuned to a reference tank closer to yours (a boss should be a fight), never above it
-const AI_EXP=0.70,AI_BOSS_EXP=1.0;
-const aiPower=(pw,e)=>{const b=AI_TIERS[0].p,p=Math.max(b,Number(pw)||0);return b*Math.pow(p/b,e===undefined?AI_EXP:e);};
-// the league step on top (lg: league index, n: team size; Survival's megatank uses AI_BOSS_EXP, already at your power, so the
-// step can't raise it). Never above your own power; the same at every result inside a league (no rubber-banding)
-const aiStep=(lg,n)=>1+(LG_AI[Math.max(0,Math.min(LG_AI.length-1,lg|0))]-1)*(LG_TEAM_W[n]!==undefined?LG_TEAM_W[n]:1);
-function aiLevel(pw,e,lg,n){const a=Math.min(Math.max(AI_TIERS[0].p,Number(pw)||0),aiPower(pw,e)*aiStep(lg,n));let i=0;for(let k=1;k<AI_TIERS.length;k++)if(AI_TIERS[k].p<=a)i=k;return {i,p:AI_TIERS[i].p,lg:lg|0};}
+const AI_CAP=165;   // the hard cap: no AI pilot (or megatank reference) above this power. Top free kit 213, full Legendary kit 235
+// per league (Rookie .. Lunar Legend): the AI power, the reference pilot power it is tuned for (the middle of the league's rating
+// band: a stock tank is 68, the Pilot line 84, each line x1.21), how long an AI pilot holds a ready super before firing (seconds in
+// sight and range; a player can fire the instant it is charged) and how often it dashes out of a super it sees coming
+const LG_AI_PW=[68,72,82,98,120,134,146];LG_AI=LG_AI_PW.map(p=>Math.round(p/LG_AI_PW[0]*1000)/1000);
+const LG_AI_REF=[72,92,112,135,164,198,235];
+const AI_GEAR_EXP=0.3,AI_GEAR_LO=0.88,AI_GEAR_HI=1.12;
+const LG_AI_SUP_WAIT=[1.0,0.85,0.7,0.6,0.5,0.5,0.5],LG_AI_DODGE=[0.35,0.4,0.45,0.5,0.5,0.5,0.5];
+// Owner, Nov 10: "the AI supers every 1-2 s, 3-5x my own". Measured: every AI obeyed the charge rule, but each AI fires the instant it
+// is charged (a person is slower), and in team modes five AI tanks' supers add up to one every 1-2 s. So on top of the player's own
+// charge rule every AI pilot keeps a minimum time between its supers (by league) and AI teammates never fire within AI_SUP_TEAM_GAP of
+// each other. These only ever make the AI fire less than a player could; a player keeps firing the instant the charge is full
+const LG_AI_SUP_GAP=[12,11,10,9,8,7,6],AI_SUP_TEAM_GAP=2;
+// Last Standing: five rivals at the league's AI, every tank for itself: the league step is diluted (LG_SOLO_W of it) so a place
+// among six stays reachable; team modes meet the league's AI in full (your wingmen fly it too)
+const LG_SOLO_W=0.7;
+const aiGearAdj=(pw,lg)=>Math.max(AI_GEAR_LO,Math.min(AI_GEAR_HI,Math.pow(Math.max(1,Number(pw)||0)/LG_AI_REF[lg],AI_GEAR_EXP)));
+// the AI power for a league and a pilot (before the loadout step): the league anchor, the bounded gear adjustment, the caps
+function aiPowerFor(pw,lg,n){
+ lg=Math.max(0,Math.min(LEAGUE.length-1,lg|0));
+ const base=n==='solo'?LG_AI_PW[0]+(LG_AI_PW[lg]-LG_AI_PW[0])*LG_SOLO_W:LG_AI_PW[lg];
+ return Math.min(Math.max(AI_TIERS[0].p,Number(pw)||0),AI_CAP,base*aiGearAdj(pw,lg));
+}
+// e: kept for older callers (the Oct 31 curve exponent); ignored. lg: league index (0 Rookie), n: team size or 'solo'
+function aiLevel(pw,e,lg,n){const a=aiPowerFor(pw,lg,n);let i=0;for(let k=1;k<AI_TIERS.length;k++)if(AI_TIERS[k].p<=a)i=k;return {i,p:AI_TIERS[i].p,lg:Math.max(0,Math.min(LEAGUE.length-1,lg|0))};}
+// the Survival megatank is tuned to the same league AI's reference tank (never to your own tank)
+function aiBossLevel(pw,lg,n){return aiLevel(pw,undefined,lg,n);}
 function aiLoadout(i,arch,cls){
  const A=AI_TIERS[Math.max(0,Math.min(AI_TIERS.length-1,i|0))];
  return {w:{a:WORDER.includes(arch)?arch:'pulse',t:A.t,q:A.q,s:false},c:{c:CH[cls]?cls:'vanguard',t:A.t,q:A.q,s:false},up:{hull:A.h,cannon:A.h,engine:A.e,target:A.x.tg|0,reactor:A.x.rc|0},
   cores:['dmg','rof','arm'],gl:{dmg:A.g[0],rof:A.g[1],arm:A.g[2]},skin:'default',paint:'stock',...(A.x.m?{mods:{...A.x.m}}:{})};
 }
-// ghosts in AI matches: only tanks clearly weaker than yours (by power), and never more than one on the enemy team
-const AI_GHOST_LO=0.7,AI_GHOST_HI=0.95;
+// ghosts in AI matches: offline pilots' real tanks in AI seats, only when clearly weaker than you AND no stronger than the match's
+// AI x AI_GHOST_X (a ghost never turns a league's fight into a hidden max-gear duel), never more than one on the enemy team
+const AI_GHOST_LO=0.7,AI_GHOST_HI=0.95,AI_GHOST_X=1.05;
+const aiGhostCap=(pw,aiP)=>Math.min((Number(pw)||0)*AI_GHOST_HI,(Number(aiP)||0)*AI_GHOST_X);
 // the stat block a tank fights with (n = health scale for the mode and team size)
 function tankOf(L,n){
  const T=legacyTankOf(L,n),F=fittingStats(L.mods);

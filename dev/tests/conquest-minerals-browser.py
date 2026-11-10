@@ -24,7 +24,12 @@ async def main():
    async def route(r):
     u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
     if u.path.startswith('/api/conquest/') or u.path in ('/api/sync','/api/act'):
-     resp=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+     body=json.loads(r.request.post_data or '{}')
+     for attempt in range(2):   # the local fixture server can drop a socket under CI load ('socket hang up'): retry once, then answer 503 so the client's own retry/poll takes over instead of the harness dying
+      try:resp=await page.request.post(base+u.path,data=body);return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+      except Exception:
+       if attempt:return await r.fulfill(status=503,body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+       await asyncio.sleep(0.2)
     if u.path.startswith('/api/'):return await r.fulfill(body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
     if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
     if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
@@ -84,7 +89,7 @@ async def main():
    await page.evaluate('(()=>{const B=Conquest.view.encounter||Conquest.view.battle;B.enemies=B.enemies.filter(e=>!e.__probe);B.playerHp=B.playerMax;Conquest.view.routeTarget=null;})()')
    # 6. the Meteor Strike telegraph on the HUD and MAP (presentation; the page clock is moved to 17:57 UTC)
    await page.clock.set_system_time(datetime.datetime(2026,11,9,17,57,tzinfo=datetime.timezone.utc));await page.wait_for_timeout(1500)
-   strike=await page.locator('.cq-strike').inner_text();await page.screenshot(path=str(OUT/'meteor-telegraph-hud-390.png'))
+   strike=await page.locator('.cq-strike').inner_text();await page.screenshot(path=str(OUT/'meteor-telegraph-hud-390.png'),timeout=90000)   # a WebGL page under software GL can take >30 s to present a frame for the capture (CI flake)
    r={'hint':hint,'scanFound':found,'gatherLabel':label,'carried':carried,'walletFe':wallet,'hullBefore':hp0,'hullAfter':hp1,'vehicleVertsBefore':v0,'vehicleVertsAfter':v1,'plates':ap,'strike':strike,'threat':threat,'lowHull':lowText,'lowHullRoute':route,'pageErrors':errors,'scanHint':scanHint,'oreRoute':oreRoute}
    print(json.dumps(r),flush=True);json.dump(r,open(OUT/'journey.json','w'),indent=1)
    assert 'STARTER VEIN' in hint and found>=1 and 'STARTER VEIN' in label and '35 FERRITE' in carried and wallet>=40 and ap[0]==1 and hp1>hp0 and v1>v0 and 'METEOR STRIKE' in strike and not errors and scanHint=='SCAN · FIND ORE|true' and oreRoute.split('|')[1].endswith(' ORE') and ('ORE' in oreRoute.split('|')[2] or 'HOLD GATHER' in oreRoute.split('|')[2]) and 'FIND ORE' not in oreRoute.split('|')[3],r

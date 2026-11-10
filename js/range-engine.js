@@ -16,11 +16,11 @@ function rangeSetup(cfg){
  matchG=cfg.g;setMap(cfg.map);MM={n:['zone','crystal','bounty','boss'].includes(matchG)?2:1,series:false,mp:99};
  const L=rangeConfig.L,hs=hpScale();
  me=Object.assign(tankOf(L,hs),{x:10,y:28,ang:-Math.PI/2,flash:0,cd:.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:'You',pid:'practice'});me.hp=me.mhp;units=[me];
- const add=(team,x,y,name,preset)=>{const u=mkGhost(team,x,y,{n:name,L:rangePreset(preset)});delete u.gh;delete u.gid;u.name=name;units.push(u);};
+ const add=(team,x,y,name,preset)=>{const u=mkGhost(team,x,y,{n:name,L:rangePreset(preset)},cfg.lg|0);delete u.gh;delete u.gid;u.name=name;units.push(u);};
  if(isSolo(matchG)){const sp=royaleSpawns();for(let i=1;i<6;i++)add(i,sp[i].x,sp[i].y,'AI '+i,cfg.preset);}
  else{
   for(let i=1;i<MM.n;i++)add(0,i===1?6:14,26,'Wingman '+i,'standard');
-  if(matchG==='boss')units.push(mkBoss(me,MM.n,aiLevel(powerOf(rangePreset(cfg.preset)),AI_BOSS_EXP)));   // the same fixed megatank as AI matches at that difficulty
+  if(matchG==='boss')units.push(mkBoss(me,MM.n,aiBossLevel(powerOf(rangePreset(cfg.preset)),cfg.lg|0,MM.n)));   // the same fixed megatank as AI matches in that league (cfg.lg, 0 Rookie)
   else for(let i=0;i<MM.n;i++)add(1,i?6:10,i?6:4,'Opponent '+(i+1),cfg.preset);
  }
  startMatch();mstat=me.st;

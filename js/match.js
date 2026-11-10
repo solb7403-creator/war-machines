@@ -38,7 +38,7 @@ function populatePreparedMatch(){
  units=[me];
  if(matchG==='boss'){   // Survival: you (and AI wingmen in 2v2 and 3v3) against one megatank
   for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop(),aiLv));
-  units.push(mkBoss(me,modeN,aiLevel(pw,AI_BOSS_EXP)));
+  units.push(mkBoss(me,modeN,aiBossLevel(pw,battleLg,modeN)));   // the megatank of this league (never tuned to your tank)
  }else if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
   const sp=royaleSpawns();
   for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y,me,names.pop(),aiLv));
@@ -137,14 +137,14 @@ function matchStart(){
  flushMatches();
 }
 // ghosts: offline pilots' real tanks (sent with the ticket) take AI seats, enemies first. The VS screen shows who they are
-// Only ghosts clearly weaker than your tank (AI_GHOST_HI, rules.js), and at most one on the enemy team: after the first enemy
+// Only ghosts clearly weaker than your tank and no stronger than this match's AI (aiGhostCap, rules.js), and at most one on the enemy team: after the first enemy
 // seat they fill your team's seats, so a ghost can't turn an AI match into a hidden fight against stronger pilots
 function placeGhosts(list){
- const cap=(battlePower||powerOf(battleLoadout||myLoadout()))*AI_GHOST_HI;
+ const pw=battlePower||powerOf(battleLoadout||myLoadout()),cap=aiGhostCap(pw,(aiLv||aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n)).p);
  const free=units.map((u,i)=>i).filter(i=>i>0&&!units[i].hum&&!units[i].boss&&!units[i].gh);
  const foeSeats=free.filter(i=>units[i].team!==me.team),allySeats=free.filter(i=>units[i].team===me.team);
  const seats=foeSeats.slice(0,1).concat(allySeats);
- list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g);}catch(e){}});
+ list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g,battleLg);}catch(e){}});
  const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
 }
 // results waiting for the server: sent in order, each counts once (the server gives a resent one the same answer).

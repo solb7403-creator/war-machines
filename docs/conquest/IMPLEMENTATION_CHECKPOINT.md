@@ -1360,3 +1360,136 @@ Programs ≤ 13 locally (budget ≤ 16). CI's Chromium reports 16 programs for t
 - Pages (the Mini App's `GAME_URL` is GitHub Pages): run [42735207022](https://github.com/solb7403-creator/war-machines/actions/runs/42735207022) built the site (149 MB artifact; 141 MB last time) but its deploy step hit GitHub's 10-minute deploy timeout, and the rerun's deployment was cancelled 11 s after creation (a GitHub-side failure: both deployments for `7a81b35` failed; the previous `66f4cb0` deployment stayed live). The record merge (PR #95, `fb199f6`) hit the same `syncing_files` timeout once; its rerun ([42736905365](https://github.com/solb7403-creator/war-machines/actions/runs/42736905365) attempt 2) **succeeded**: github-pages deployment 7671216233 for `fb199f6` live at 01:48:57 UTC (45 s), so the Mini App's Pages build carries `version.json` `20261110004649`, the same as the Worker.
 - Payments stay disabled; no economy numbers changed. PHYSICAL_IPHONE_UNVERIFIED until the owner's playtest. Still open: see "Still open" in the owner gate result above.
 
+
+## Checkpoint 30 — Session 5D: Fair Arcade + desktop keyboard + 5C leftovers (branch `claude/session-5d-fair-arcade-qqyp9f`, from main `f193de1`)
+
+Brief: `docs/conquest/SESSION_05D_FAIR_ARCADE_PROMPT.md` (owner-approved; release pre-approved: merge, deploy, verify, record when
+every gate passes, CI is green and two independent reviewers pass). PR #97 (the brief + roadmap order) was merged first (`f193de1`).
+Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unchanged.
+
+### A. Arcade AI never matches the player's gear (shipped in commit `180e6ff`, this branch)
+- **Cause** (verified, not assumed): `aiLevel` derived the AI's power from the pilot's power (`68 x (power/68)^0.7 x league step`,
+  x1.265 at Lunar Legend 1v1), so the owner's 235-power kit met a 181-power AI (full 14-level Epic, level-5 cores, reactor, Sprint).
+  At top gear the fight is supers, and supers charge from damage taken too (x0.7, the player rule), so 77% of the power traded
+  nearly even damage: the owner's Bounty 1v1 (16,385 vs 16,160) matches the old simulator (taken/dealt 0.82-0.90). Two more copy
+  paths: live-room AI fill-ins mirrored the middle human's weapon/chassis multipliers, cores and aura (a lone human = a mirror),
+  and ghosts could take the single enemy seat of a 1v1 at 95% of your power.
+- **Why four fixes did not hold**: each kept "AI power = f(your power)" and proved only bot win rates (87% for the Legendary kit),
+  never the damage trade; each later balance pass raised the AI ceiling (25 -> 33 tiers, league steps) for "challenge"; the
+  regression test pinned the AI tier so it could not see the creep. History before Nov 8 is squashed (`js/rules.js` starts at
+  `d1f5ad4`), so blame is by document: Oct 31 combat repair, Nov 2 Session 2 leagues, Nov 8 Session 4.
+- **Model** (`js/rules.js`): one authored AI power per league `LG_AI_PW=[68,72,82,98,120,134,146]`, a slight bounded gear
+  adjustment `(power/LG_AI_REF[league])^0.3` within 0.88..1.12, hard cap `AI_CAP=165` (Epic items, 10 of 14 upgrades, level-4
+  cores; the 168-181 tiers are gone; never Moonbeam/Lunar Skin), never above the pilot. Last Standing dilutes the league step to 70%.
+  League skill: `LG_AI_SUP_WAIT` 1.0 -> 0.5 s, `LG_AI_DODGE` 0.35 -> 0.5; every AI ability still runs the player's own functions
+  (full charge, 4 s dash, 25 s shield, telegraph). Megatank: `aiBossLevel` (the league AI's reference tank). Ghosts: `aiGhostCap`
+  (match AI x1.05) on phone and Worker (`eco.js matchStart` filters the pool by its stored power). Live rooms: `sim-api.js liveSetup`
+  gives fill-ins `aiLevel(middle human power, room league)`; `pvp.js startVs` passes the room league (median human league).
+- **Regression** `dev/tests/fair-arcade.mjs` (CI: `equipment-balance.yml`): on main 93 checks fail (no cap; AI 68 -> 181 across pilot
+  power in every league; rosters doubling with gear; megatank scaling with the pilot; ghost at 92% seated; fill-ins copying
+  multipliers; Epic < Rare in Master/Lunar Legend); on this branch 11,195 checks pass (structural + 7 leagues x 4 modes x 5 kits x 48
+  seeded matches: no worse step, every step felt, stock in Rookie 40-51%, Legendary at Lunar Legend arena 1v1 taken/dealt 0.52 and
+  bounty 1v1 kills/deaths > 1.5; ability ledger: every AI super at full charge, no dash/shield on cooldown; Conquest: fixed stats,
+  no loadout in raids, Legendary kills a sentinel < 60% of the stock time and keeps more hull). Also PASS: `combat-balance.mjs`
+  (2,595, its AI-model part rewritten for the league model), `wtest/test.mjs` (203), `wtest/pvp.mjs` (114), `conquest-townkit.mjs`.
+- **Owner report**: `docs/launch/s5d/FAIR_ARCADE.md` (+ `FAIR_ARCADE_TABLES.md` from `dev/tests/fair-arcade-report.mjs`; raw grids
+  `before-standard.json` / `after-standard.json`, 24 matches a cell, tool `dev/tests/fair-arcade-grid.mjs`). Deviations stated there:
+  the Legendary kit wins ~100% of simulated top fights (perfect-aim bot pilot; the owner's own number to retune is `LG_AI_PW[6]`),
+  Bounty's damage ratio is a hull-size artefact (judged by kills a death), the Session 2 "human" profile was not used (manual-aim
+  model; the game auto-aims). `wiki.html` and `docs/launch/LEAGUES.md` updated.
+- **A2 Conquest**: enemies, commanders, garrisons and town raids are authored (`enemyStats`, doctrine, `plot.js drill`); nothing reads
+  the pilot's gear/power/league; abilities keep authored cadences. In the regression test. Nothing to fix.
+
+### Owner follow-up (Nov 10, mid-session): "the AI supers every 1-2 s, 3-5x my own" (commit `d76312a` + this one)
+- **Measured, not assumed.** Worker sim (the live-room path, 30 ticks/s, legend kit, 6 matches each): fill-in bots fired 6.8-11.7
+  supers a minute per tank, the human seat flown by a maximal pilot (fires the instant the charge is full) 7.0-12.7. Real browser at
+  phone size (`dev/tests/arcade-supers-browser.py`, the shipped client in a Telegram stub, SwiftShader 15-19 fps, full matches):
+  see the numbers in `docs/launch/s5d/FAIR_ARCADE.md` "Owner follow-up". Every AI super in every run had a full charge (the log
+  records the charge at each use) and no AI path skips `useSuper`/`useDash`/`useShield`; charging is not frame-rate dependent
+  (charge is per damage, damage per shot, `dt` only moves the clock) and the fast-forward while dead (x3, `ffwd`) applies to the
+  whole sim, player included.
+- **Why it looks 3-5x.** (1) The AI fires the moment its charge is full; a person fires later. (2) In team modes five AI tanks each
+  fire every 5-8 s: from the player's chair that is one AI super every 1-2 s. (3) Supers charge the victim too (x0.7 of the damage),
+  so each super the player lands hands the AI most of its next one, and the AI answers within ~1 s. (4) In respawn modes the dead
+  player watches the match at x3.
+- **Fix (rules.js `LG_AI_SUP_GAP`, `AI_SUP_TEAM_GAP`; game.js AI super loop):** on top of exactly the player's charge rule, an AI
+  pilot keeps a minimum time between its own supers (Rookie 12 s -> Lunar Legend 6 s) and AI teammates never fire within 2 s of
+  each other; reset every match and held across the rounds of a series (a match clock, `simT`); applies to AI matches, live-room
+  fill-ins, ghosts and range opponents. A player is never
+  slowed. **Regression** (`fair-arcade.mjs`): in every league x mode x kit cell an AI pilot never out-supers the pilot in the same
+  matches (AI <= pilot x1.05 + 0.3 a minute per tank) and keeps the league spacing (shortest gap >= LG_AI_SUP_GAP - 0.1 s); on main
+  the spacing check fails (gaps of 1.4-2.7 s seen).
+
+### B. Desktop keyboard driving (commits `4b4f5b5`, `d76312a`, this one)
+- **Reproduction on the real website build** (`dev/tests/conquest-desktop-keys.py`, in CI `conquest-check.yml`): the Worker fixture
+  (`dev/tests/webserver.mjs`) + `worker/build-web.mjs`, a real call-sign signup, mouse clicks on the Conquest tab, ENTER CONQUEST
+  and ACKNOWLEDGE, no `focus()` and no `evaluate()` that touches Conquest or focus before the keys (the website welcome card is
+  skipped by script), 1440x900 and a 420x700 Telegram-Desktop-size window. Finding:
+  with that flow the keys *do* reach the view and move the tank at 1, 10, 20 and 45 s (probed every 250 ms); zero movement in the
+  first harness runs was the software renderer stalling for seconds, not a game gate. The desktop-only breakers found and fixed:
+  the website's account prompts (`web/account-prompts.js`) opened under the Conquest layer every 4 s, took focus and let Enter
+  navigate to the account page (`busyNow` now counts Conquest as busy); only the left Shift dashed (`ShiftRight` added); a tapped
+  Shift / F / R / C shorter than a frame was lost at low frame rates (latched at keydown now, `view.js`); keyboard focus was never
+  placed inside the world after ENTER CONQUEST / ACKNOWLEDGE (the viewport is focusable, `role=application`, focused on enter and
+  after the briefing: desktop webviews route keys only once the document holds focus); the website page and the Worker's
+  "update" reply carried a stale `20261104` build string (now stamped by `dev/bump.sh`).
+- **Hints**: `.cq-keys` strip on keyboard devices only (`(hover:hover) and (pointer:fine)`, or after the first drive key; hidden on
+  coarse pointers; above the stick on narrow windows; shown on the first three visits, until the pilot has driven + 6 s, at most
+  60 s): WASD / arrows move, Space fire, Shift dash, F shield, G gather, C scan, R super, Q / E turret, click a hull to lock, drag
+  to orbit. HELP carries the same list. **Deviation**: the brief's "mouse aim" does not exist in the game (click locks a target,
+  drag orbits); the hint says what the game does. Touch controls unchanged.
+- **Release-gate finding (CI, 1440x900 on the runner's software GL): the real reason a slow computer could not drive.** `ConquestWorld.frameSeconds`
+  discarded any frame slower than 250 ms as a pause (dt 0), so on a device that renders slower than 4 fps the whole simulation
+  froze: keys registered, the authority was connected, `fps` read 250-635 (frames counted, no time credited) and the tank never
+  moved. A 420x700 window rendered fast enough and always passed; 1440x900 failed 3 of 4 runs. A frame now advances the clock
+  clamped to 250 ms; only a gap over a second (hidden tab, resume) is dropped. A weak laptop or Telegram Desktop without GPU
+  acceleration at a large window hits exactly this. `conquest-travel.mjs` covers it.
+- Not reproduced here: Telegram Desktop itself (no Telegram Desktop in the container). The focus fix is the plausible cause there;
+  if the owner can still not drive in Telegram Desktop after this build, the next thing to try is a one-off "click the world to
+  take the keyboard" prompt.
+
+### C. Session 5C leftovers (commits `4b4f5b5`, this one; harness `dev/tests/conquest-session5d.py`, in CI, captures in `docs/conquest/session5d/`)
+1. Home Sector spawn: `padOf` first tries a spot on a dust road just outside the plaza with a clear line to the Command Center
+   (southern lanes first), and the tank faces the CC along the road (`h = atan2`, chase camera behind); fallback is the old search.
+2. A session that starts on the town model: `view.nudgeOffDiorama` drives the tank south onto clear courtyard ground through the
+   normal input path (Worker-replayed), 4 s of sim time (waits for the session), cancelled by any steering; also after a >15 m jump
+   (fast travel / visit return) onto the model. Collision volumes untouched.
+3. The 5B kiosk is drawn only when the shell is not in use (`style.commandBase`).
+4. Hub hero towns use the kit models on HIGH (stand-ins on LOW), built over frames (townkit `dioramaGen` stepped in the hero loop).
+5. BUILD at PEEK shows its first card (resource line and group title wait for HALF, `data-mode` on the sheet); the build readout is
+   one line with short tokens (ALLOY / BIO / He-3 / COMP); the visit readout still wraps.
+6. Card sprites render with x1.7 ambient (uniforms restored in `finally`): the Cannon reads.
+7. Terrain: a slow mottle octave, height banding on ridge / plateau / canyon, sparse darker patches off the roads.
+8. Storage tanks get a lit cap; settler-home pads use the apron tone.
+9. The diorama is a generator (`dioramaGen`: yields after the terrain, the plinth, the walls, every 40 merged pieces and before the
+   merge) stepped in idle time (~8 ms a slice; iOS without requestIdleCallback: setTimeout(0) slices) and attached whole; `diorama()`
+   drains it (parity test unchanged).
+10. Judge captures: `docs/conquest/session5d/` (pad diorama CC1/CC10, gate-centre start, Home Sector drive CC1/CC10, hub hero
+    CC1/CC5, BUILD at PEEK, WEAPONS, Cannon sprite). Programs <= 16 asserted in the harness.
+
+### Release gate (Nov 10, this session; commits `61854c0` and the one adding this note)
+- **Browser harnesses re-run locally** (the earlier session had not run `conquest-session5d.py` to completion: its last two steps
+  had never passed, and no BUILD / WEAPONS / hub captures were committed). Found and fixed: (1) in the fully built CC10 fixture town
+  the road-spot search legitimately falls back to the old pad south of the CC, and that pad kept the fixed south heading
+  (`plotview.js startDrive`: the heading always points at the CC now; CC10 `ccAhead` 0.14 -> 1.0); (2) the desktop-keys harness
+  clicked the sidebar's Conquest button, which is `display:none` at 420 px (now the visible one); (3) BUILD at PEEK was checked on
+  the full town, which has no cards (it shows the all-placed hint, which is right): the step now uses a fresh CC5 ridge town.
+  Harness checks tightened (reviewer B): the gate-centre fixture must start on the model, a phone session must never show the key
+  strip, focus after ACKNOWLEDGE must be the viewport itself, the movement window is 8 s under software GL.
+- **Two independent read-only reviewers** on head `18fbe54` (A: rules / game / server authority / economy / security; B: Conquest
+  client UX, rendering, desktop keys, harness honesty). Both PASS; everything tagged MAJOR fixed here:
+  - A MAJOR (pre-existing, inside the brief's suspect list): live-room ghosts were picked within +/-25% of the first pilot's power
+    with no league cap, so a lone pilot's 1v1 could meet a stronger ghost (Moonbeam included) in the one enemy seat. `pvp.js startVs`
+    now filters ghosts by `aiGhostCap(middle human power, league AI)`, the same cap AI tickets use (`eco.js`); `wtest/pvp.mjs` seats a
+    hull-3 pair against a stock ghost and an above-cap ghost that must never be seated (115 checks).
+  - A MINOR: ghosts and range opponents flew the Lunar Legend AI skill profile in every league (`u.aiL` missing); `mkGhost` takes the
+    match league (`u.lg`, `aiLgOf`), passed by `match.js`, `sim-api.js` and `range-engine.js`. The league sheet footnote (`ui.js`) no
+    longer says "in full in 1v1".
+  - B MAJOR: the key strip sat over the stick / FIRE / scan / heat / START DEFENSE on windows under ~1000 px; it now sits under the
+    top bar on every width. B MAJOR: missing committed captures (fixed by the harness runs above; stale `-stuck` capture removed).
+  - B MINOR: Space on a focused HUD button presses the button (never fires); `.cq-viewport:focus` shows no ring; the strip shown by
+    a first drive key on a non-keyboard device also leaves after 6 s.
+  - Not done (recorded): A's note that `combat-sim.mjs`'s ability ledger only sees `useSuper/useDash/useShield` calls (a direct
+    `u.sup` write would be invisible) and that section 4's 48-match cells can flake at the -5 pt tolerance; B's note that the 60 s
+    strip timer starts during the first briefing; `mkBot`'s legacy no-`ai` mirror path is dead code but still present; LEAGUES.md
+    points-per-minute not re-measured (payouts unchanged). Candidates for the Fix queue, not release blockers.

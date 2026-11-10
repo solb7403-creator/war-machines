@@ -18,7 +18,7 @@
 
 .cq-world .cq-mission-access{bottom:calc(200px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)))}.cq-world .cq-supply-access{bottom:calc(252px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)))}.cq-reward-ticker{position:absolute;top:112px;left:12px;right:12px;text-align:center;pointer-events:none;color:#e8d29a;font-size:10px}.cq-net{color:#a9bac5}.cq-world .cq-vital progress{accent-color:#9ed5c3}.cq-world .cq-low progress{accent-color:#e68376}
 
-.cq-target progress{display:block;width:100%;height:3px;margin-top:3px;accent-color:#d68879}.cq-world{overscroll-behavior:none}.cq-world .cq-top button{touch-action:manipulation}
+.cq-target progress{display:block;width:100%;height:3px;margin-top:3px;accent-color:#d68879}.cq-world{overscroll-behavior:none}.cq-world .cq-top button{touch-action:manipulation}.cq-viewport canvas,.cq-stick,#cq-fire,#cq-gather-access{touch-action:none}   /* held controls and the world: a second finger (tap a hull while FIRE is held) must never become a browser gesture that cancels the held pointer (pointercancel = FIRE released) */
 
 .cq-large-text .cq-vital-label,.cq-large-text .cq-vital-value{font-size:14px}.cq-large-text .cq-nav-title,.cq-large-text .cq-nav-distance{font-size:11px}.cq-large-text .cq-action,.cq-large-text .cq-action small{font-size:10px!important}.cq-large-text .cq-target{font-size:12px;max-width:180px}
 
@@ -293,3 +293,11 @@
 .cq-plot-ore span{overflow-wrap:normal;word-break:normal;hyphens:manual;-webkit-hyphens:manual}
 .cq-plot-visit-sel{display:block;color:#ffd36b;font-size:12px;margin:6px 0}
 .cq-plot-drivehint{top:auto;left:20px;right:20px;bottom:calc(var(--cq-sheet) + 70px);transform:none;text-align:center;font-size:11px}
+
+/* Session 5D: desktop key map, keyboard devices only (coarse pointers never see it) */
+.cq-keys{position:absolute;left:50%;top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 52px);transform:translateX(-50%);max-width:min(92vw,760px);padding:7px 12px;background:#081524e6;border:1px solid #79e2d266;border-radius:6px;color:#cfe6ec;font-size:11px;letter-spacing:.04em;text-align:center;pointer-events:none;z-index:5;white-space:normal;line-height:1.5}
+@media(pointer:coarse){.cq-keys{display:none}}
+/* Session 5D: BUILD at PEEK shows its first card (the resource line and the group title wait for HALF); the readout never wraps at 390 px */
+.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
+.cq-plot-body>.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em}   /* the build readout only (its tokens are short enough for 320 px); the visit readout wraps */
+.cq-viewport:focus{outline:none}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world; no ring around the whole screen */

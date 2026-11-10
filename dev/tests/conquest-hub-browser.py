@@ -6,6 +6,14 @@ Software GL: relative look only, not phone FPS."""
 import asyncio,json,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
+
+# close a context only after its route handlers are detached: an in-flight /api/conquest/* route (the game polls while the page
+# closes) otherwise throws "Response has been disposed" into the NEXT browser context (seen in CI under software GL)
+async def close_ctx(ctx):
+ for pg in ctx.pages:
+  try:await pg.unroute_all(behavior='ignoreErrors')
+  except Exception:pass
+ await ctx.close()
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session5';OUT.mkdir(parents=True,exist_ok=True)
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -22,7 +30,12 @@ async def main():
     async def route(r):
      u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
      if u.path.startswith('/api/conquest/') or u.path in ('/api/sync','/api/act'):
-      resp=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+      body=json.loads(r.request.post_data or '{}')
+      for attempt in range(2):   # the local fixture server can drop a socket under CI load ('socket hang up'): retry once, then answer 503 so the client's own retry/poll takes over instead of the harness dying
+       try:resp=await page.request.post(base+u.path,data=body);return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+       except Exception:
+        if attempt:return await r.fulfill(status=503,body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+        await asyncio.sleep(0.2)
      if u.path.startswith('/api/'):return await r.fulfill(body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
      if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
      if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
@@ -42,7 +55,7 @@ async def main():
      await page.get_by_role('button',name='MY BASE').click()
      if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
      await page.wait_for_selector('.cq-plot-tabs',timeout=90000);results['myBase']='plot opened from the hub';await page.screenshot(path=str(OUT/'hub-my-base-390.png'))
-    await ctx.close()
+    await close_ctx(ctx)
    await browser.close()
   json.dump(results,open(OUT/'hub-journey.json','w'),indent=1)
   print('PASS Conquest Command hub: first paint in the tap task, live status + 3D hero (own renderer, programs <= 12), four actions; MY BASE opens the plot')

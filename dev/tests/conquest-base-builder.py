@@ -8,6 +8,14 @@ Scenario placements only: base funds (CP/materials), a wallet with Ferrite, and 
 import asyncio,json,pathlib,shutil,sys
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
+
+# close a context only after its route handlers are detached: an in-flight /api/conquest/* route (the game polls while the page
+# closes) otherwise throws "Response has been disposed" into the NEXT browser context (seen in CI under software GL)
+async def close_ctx(ctx):
+ for pg in ctx.pages:
+  try:await pg.unroute_all(behavior='ignoreErrors')
+  except Exception:pass
+ await ctx.close()
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session5';OUT.mkdir(parents=True,exist_ok=True)
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -26,7 +34,12 @@ async def main():
     async def route(r):
      u=urlparse(r.request.url);f=ROOT/u.path.lstrip('/')
      if u.path.startswith('/api/conquest/') or u.path in ('/api/sync','/api/act'):
-      resp=await page.request.post(base+u.path,data=json.loads(r.request.post_data or '{}'));return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+      body=json.loads(r.request.post_data or '{}')
+      for attempt in range(2):   # the local fixture server can drop a socket under CI load ('socket hang up'): retry once, then answer 503 so the client's own retry/poll takes over instead of the harness dying
+       try:resp=await page.request.post(base+u.path,data=body);return await r.fulfill(status=resp.status,body=await resp.body(),content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+       except Exception:
+        if attempt:return await r.fulfill(status=503,body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
+        await asyncio.sleep(0.2)
      if u.path.startswith('/api/'):return await r.fulfill(body='{}',content_type='application/json',headers={'Access-Control-Allow-Origin':'*'})
      if u.netloc=='lunar.test' and f.is_file():return await r.fulfill(path=str(f))
      if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
@@ -97,7 +110,7 @@ async def main():
    results['journey']={'gateLabel':label,'sites':sites,'coach1':coach1,'coach2':coach2,'refineryMs':job,'wallPlan':wallPlan,'walls':walls,'blended':blended,'drill':result,'noRewards':before==after,'left':left,'render':info,'pageErrors':errors}
    print(json.dumps(results['journey']),flush=True)
    assert label=='ENTER BASE' and sites==7 and 'REFINERY' in coach1 and job==15000 and 'CANNON' in coach2 and walls>=30 and blended==walls and before==after and left and not errors,results['journey']
-   await ctx.close()
+   await close_ctx(ctx)
    # ---------- 2. fully built CC10 town: render budget (HIGH, LOW) + a whole-town raid replay ----------
    for q in ['high','low']:
     ctx,page,errors=await session(q,{'position':gate,'plotFull':'crater','baseFunds':True})
@@ -110,13 +123,13 @@ async def main():
     results['cc10-'+q]={'render':info,'raidRender':raid,'drillMs':drillMs,'buildings':n[0],'walls':n[1],'cc':n[2],'power':n[3],'turrets':n[4],'homes':n[5],'pageErrors':errors}
     print(json.dumps(results['cc10-'+q]),flush=True)
     assert n[1]>=2000 and n[4]>=40 and info['programs']<=16 and raid['programs']<=16 and info['calls']<=140 and raid['calls']<=150 and not errors,results['cc10-'+q]
-    await ctx.close()
+    await close_ctx(ctx)
    # ---------- 3. 2D fallback ----------
    ctx,page,errors=await session('low',{'position':gate,'plotFull':'canyon','baseFunds':True},gfx='2d')
    await page.locator('#cq-base-access').click();await page.wait_for_selector('.cq-plot-tabs');await page.wait_for_timeout(1200)
    canvas=await page.evaluate('Conquest.view.renderer.isConquestCanvas&&!!document.querySelector(".cq-plot-canvas")');await page.screenshot(path=str(OUT/'cc10-full-390-2d.png'));results['2d']={'plotDrawn':canvas,'pageErrors':errors}
    assert canvas and not errors,results['2d']
-   await ctx.close();await browser.close()
+   await close_ctx(ctx);await browser.close()
   json.dump(results,open(OUT/'base-builder-journey.json','w'),indent=1)
   print('PASS town builder 390: claim CRATER RIM (7 sites) -> guided Refinery (15 s Worker timer) -> Cannon + range ring -> RING tool + Ferrite blend from the base stores -> Defense Drill replay, no rewards; CC10 town (2,000 walls, 42 turrets, homes) render budget + raid replay HIGH/LOW; 2D fallback')
  finally:

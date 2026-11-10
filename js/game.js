@@ -130,6 +130,7 @@ const isSeriesMode=()=>!!MM.series;   // set when the match is set up (the coach
 const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},meteor:{txt:'Meteor shower! Stay out of the red circles',c:'#ff6b5e'},flare:{txt:'Solar flare: supers charge twice as fast',c:'#ffb347'}};
 const EVT_KEYS=Object.keys(EVENTS),METEOR_DMG=260;
 let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0,feed=[];
+let supTeamAt={},simT=0;   // simT: match clock that runs across rounds (elapsed restarts each round). supTeamAt: simT of the last AI super per team (AI_SUP_TEAM_GAP); u.supAt likewise. Reset every match, held across rounds so a series never shortens the league spacing
 const flareMult=()=>evt&&evt.k==='flare'?2:1;
 const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+random()*3:15+random()*15;a.push(tt);}return a;};   // first box lands early
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
@@ -210,8 +211,10 @@ const BOT_PAINTS=['nebula','ember','arctic','venom','gold','void'];
 const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0,bx:null});
 // a ghost: an offline pilot's real tank (their build and gear, from the server) flown by the AI, in an AI seat.
 // g: {n: name, L: loadout, i or id: who it is}. It plays exactly like an AI pilot and changes nobody's points
-function mkGhost(team,x,y,g){
- const u=Object.assign(tankOf(g.L,hpScale()),{x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],sp:0,sup:null,
+// the league whose AI skill profile a non-human unit flies: an AI pilot's own (aiL), a ghost's match league (lg), else the top league
+const aiLgOf=u=>u.aiL?u.aiL.lg:(u.lg!==undefined?u.lg:LEAGUE.length-1);
+function mkGhost(team,x,y,g,lg){   // lg: the match league (0 Rookie); the ghost's super wait / spacing / dodge profile. Its gear is its owner's
+ const u=Object.assign(tankOf(g.L,hpScale()),{x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],sp:0,sup:null,lg:Math.max(0,Math.min(LEAGUE.length-1,lg|0)),
   fitSpd:fittingStats(g.L.mods).spd,team,hum:false,ctl:'bot',name:'Ghost of '+String(g.n||'Pilot').slice(0,24),gh:1,gid:g.id!==undefined?g.id:g.i,brain:newBrain(),strafe:1,strafeT:1.5});
  u.hp=u.mhp;return u;
 }
@@ -226,8 +229,8 @@ function mkBoss(ref,n,ai){   // the megatank, sized for how many tanks are on yo
   bt:{bar:5,stomp:3,st:0,enr:0,ref:ref.mhp}};   // stomps and shells hit for a share of the reference tank's health: more hull means you take them better
  u.hp=u.mhp;return u;
 }
-// ai: the AI level (aiLevel, rules.js). AI matches always pass one: the pilot flies the authored loadout for that level,
-// whatever you field. Without it (live-match fill-ins only) it mirrors ref's gear level, as live matches always have
+// ai: the AI level (aiLevel, rules.js). Every AI pilot gets one (AI matches: the league's AI; live rooms: the room's league, worker/sim-api.js):
+// the pilot flies the authored loadout for that level, whatever you field. Without it (older callers) it mirrors ref's gear level
 function mkBot(team,x,y,ref,name,ai){
  const hs=hpScale(),mp=MM.mp,aiT=!!ai;
  const bwm=aiT?1:ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=aiT?1:ref.chm||1;
@@ -244,7 +247,7 @@ function mkBot(team,x,y,ref,name,ai){
  if(aiT){   // the authored loadout, through the same stat math as every pilot's tank (rarity, upgrades, cores, supers)
   const T=tankOf(aiLoadout(ai.i,bwA,bcC),hs),k=pScale;
   Object.assign(u,{gems:T.gems,gemM:T.gemM,mhp:Math.round(T.mhp*k),dmgM:T.dmgM,spdM:T.spdM,critB:T.critB,fillM:T.fillM,turnM:T.turnM,
-   wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:ai.i,k}});   // aiL, not ai: live matches use u.ai for "an AI seat"
+   wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:ai.i,k,lg:ai.lg|0}});   // aiL, not ai: live matches use u.ai for "an AI seat". lg: the league whose AI this is (skill: LG_AI_SUP_WAIT, LG_AI_DODGE)
  }
  u.hp=u.mhp;return u;
 }
@@ -265,7 +268,7 @@ function startMatch(){
 function simStart(){
  series=MM.series?{w:[0,0],round:1}:null;
  const G=GTYPES[matchG];
- bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;
+ bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;simT=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;supTeamAt={};
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=EVT_KEYS[(random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
@@ -503,7 +506,7 @@ function shieldStep(u,dt){
  if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt);
  if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0)u.shieldT=0;}
 }
-// bots dash out of a super they see coming (about half the time)
+// bots dash out of a super they see coming (about half the time; by league for AI pilots, LG_AI_DODGE)
 function botDodge(u){
  if(u.dash)return;
  const dashOk=(u.dashCd||0)<=0,shieldOk=(u.shieldCd||0)<=0&&(u.shieldT||0)<=0;
@@ -516,7 +519,7 @@ function botDodge(u){
    if(along>0&&along<ln&&Math.abs(side)<wd+bodyR(u)){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
-  if(dashOk&&random()<0.5)useDash(u,px,py);
+  if(dashOk&&random()<LG_AI_DODGE[aiLgOf(u)])useDash(u,px,py);   // league skill: how often the AI dashes out of it (same dash cooldown as everyone)
   else if(shieldOk&&random()<0.6)useShield(u);
   return;
  }
@@ -605,7 +608,10 @@ function superTick(dt){
   u.rdy=u.sp>=SUPER_MAX&&!u.sup?(u.rdy||0)+dt:0;
   const brng=u.wtype==='twin'?SUP.twin.r+1.2:STAT.range+1.5;
   const tgt=nearestFoe(u);
-  if(u.rdy>0.5&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng)useSuper(u);
+  const lg=aiLgOf(u),wait=LG_AI_SUP_WAIT[lg],gap=LG_AI_SUP_GAP[lg];   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
+  // minimum time between an AI pilot's supers, and between AI teammates' supers (owner, Nov 10): never faster than the charge rule allows a player
+  const spaced=simT-(u.supAt===undefined?-1e9:u.supAt)>=gap&&simT-(supTeamAt[u.team]===undefined?-1e9:supTeamAt[u.team])>=AI_SUP_TEAM_GAP;
+  if(u.rdy>wait&&spaced&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng&&useSuper(u)){u.supAt=simT;supTeamAt[u.team]=simT;}
  }
 }
 function heading(dt){   // hull turns toward the direction of travel; the turret aims on its own
@@ -1016,7 +1022,7 @@ function update(dt){
  moveBullets(dt);
  for(const u of units)u.flash=Math.max(0,u.flash-dt);
  for(const c of crates)c.flash=Math.max(0,(c.flash||0)-dt);
- timeLeft-=dt;elapsed+=dt;eventTick(dt);
+ timeLeft-=dt;elapsed+=dt;simT+=dt;eventTick(dt);
  if(gzones){zoneTick(dt);respawnTick(dt);if(gscore[0]>=ZONE_WIN||gscore[1]>=ZONE_WIN||timeLeft<=0)endMatch();}
  else if(cry){crystalTick(dt);respawnTick(dt);if((cry.cd&&cry.cd.t<=0)||timeLeft<=0)endMatch();}
  else if(matchG==='bounty'){respawnTick(dt);if(timeLeft<=0)endMatch();}

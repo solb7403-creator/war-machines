@@ -862,7 +862,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const paint=new T.Color(opt.paint||'#2c3a49');Sb.box(0,y+.31,0,10,.04,8,paint,0);
   decal(0,0,5.6,5.6,AT.HEX,E(tier?0x22e6ff:0xffb347,.9),0,low?8:10,.38);
   // Build terminal (exists before purchase): kiosk with amber holo.
-  Sb.box(-10,y+1.7,-7,2,3.4,1.5,K.dark2,0,0,[y,3]);Sb.box(-10,y+2.5,-7.78,1.6,1,.06,K.amber,.95);X.quadV(-10,y+4.6,-7.2,3.4,3.4,0,AT.ICON,E(0xffb347,1.2));
+  if(!shell){Sb.box(-10,y+1.7,-7,2,3.4,1.5,K.dark2,0,0,[y,3]);Sb.box(-10,y+2.5,-7.78,1.6,1,.06,K.amber,.95);X.quadV(-10,y+4.6,-7.2,3.4,3.4,0,AT.ICON,E(0xffb347,1.2));}   // 5D: not under the town diorama (the shell)
   if(!tier){decal(0,0,19,17,AT.DASH,E(0xffb347,.75),0,low?10:16,.4);X.quadV(0,y+6.5,-17.4,4.8,1.2,0,AT[SIGN['BUILD SITE']],E(0xffb347,1.5));}
   if(tier){
    // Perimeter barrier (side walls |x|=17, back wall z=16; 6 m thick in the sim): berm + wall + lit cap.

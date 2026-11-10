@@ -10,15 +10,16 @@ const ok = (c, m) => { assert.ok(c, m); checks++; };
 // 1. AI levels: authored powers are what powerOf says and rise; the AI power never tops yours and grows slower than yours
 const tiers = W.eval(`AI_TIERS.map((A,i)=>({p:A.p,real:powerOf(aiLoadout(i,'pulse','vanguard'))}))`);
 tiers.forEach((t, i) => { ok(t.p === t.real, 'AI level ' + i + ' power ' + t.p + ' vs powerOf ' + t.real); if (i) ok(t.p > tiers[i - 1].p, 'levels rise'); });
-let lastEdge = 0;
-for (let pw = 68; pw <= 400; pw += 2) {
-  const a = W.eval(`aiLevel(${pw})`), b = W.eval(`aiLevel(${pw},AI_BOSS_EXP)`), curve = W.eval(`aiPower(${pw})`), edge = pw / curve;
-  ok(a.p <= pw && b.p <= pw && tiers[a.i].p === a.p, 'AI power ' + a.p + ' and boss ' + b.p + ' never above yours (' + pw + ')');
-  ok(a.p <= curve + 1e-9 && (a.i === tiers.length - 1 || tiers[a.i + 1].p > curve), 'the AI fielded is the strongest authored level at or under the AI curve (' + pw + ')');
-  ok(pw === 68 || edge > lastEdge, 'your edge over the AI curve rises with every power point (' + pw + ': ' + edge.toFixed(3) + ')'); lastEdge = edge;
+// Session 5D: the league sets the AI (rules.js LG_AI_PW); the pilot's power only moves it inside AI_GEAR_LO..HI, never above the
+// pilot or AI_CAP. The full fairness set (every league, every mode, the megatank, ghosts, live fill-ins, abilities) is dev/tests/fair-arcade.mjs
+for (let lg = 0; lg < 7; lg++) for (let pw = 68; pw <= 400; pw += 2) {
+  const a = W.eval(`aiLevel(${pw},undefined,${lg},1)`), b = W.eval(`aiBossLevel(${pw},${lg},1)`), cap = W.eval('AI_CAP');
+  ok(a.p <= pw && b.p <= pw && tiers[a.i].p === a.p && a.p <= cap && b.p <= cap, 'league ' + lg + ': AI power ' + a.p + ' and boss ' + b.p + ' never above yours (' + pw + ') or the cap (' + cap + ')');
+  ok(a.p <= Math.max(tiers[0].p, W.eval(`aiPowerFor(${pw},${lg},1)`)) + 1e-9 && (a.i === tiers.length - 1 || tiers[a.i + 1].p > W.eval(`aiPowerFor(${pw},${lg},1)`)), 'the AI fielded is the strongest authored level at or under the league AI power (' + pw + ')');
 }
 for (let i = 1; i < tiers.length; i++) ok(tiers[i].p / tiers[i - 1].p <= 1.08, 'AI ladder steps stay small (' + tiers[i - 1].p + '->' + tiers[i].p + ')');
-ok(W.eval('aiLevel(68).p') === 68 && W.eval('aiLevel(68).i') === 0, 'a starter tank meets starter AI, as before');
+ok(W.eval('aiLevel(68,undefined,0,1).p') === 68 && W.eval('aiLevel(68,undefined,0,1).i') === 0, 'a starter tank in Rookie meets starter AI, as before');
+ok(W.eval('aiLevel(235,undefined,6,1).p') < W.eval(`powerOf(${J(GEAR.legend)})`) * 0.7, 'the Legendary kit in Lunar Legend meets an AI well under its own power');
 
 // 2. AI pilots never copy your tank: same AI level + same seed = the very same AI roster, whatever gear you field (your chassis
 // class held fixed: the counter triangle is dealt against your class on purpose, see fairField)
@@ -28,7 +29,7 @@ for (const [g, m] of [['arena', '3v3'], ['royale', '1v1'], ['boss', '3v3'], ['zo
   for (const k of ['common', 'rare', 'epic', 'legend']) ok(J(roster({ ...GEAR[k], c: { ...GEAR[k].c, c: 'vanguard' }, chs: undefined }, g, m, 77)) === base, g + ' ' + m + ': AI roster independent of your gear (' + k + ')');
 }
 // the megatank: fixed by its level, not by your tank; stomps and shells sized to the level's reference tank
-const boss = L => W.eval(`(()=>{MM={n:1,series:false,mp:50};matchG='boss';const me=Object.assign(tankOf(${J(L)},hpScale()),{});const b=mkBoss(me,1,aiLevel(120));return [b.mhp,b.wdps,b.bt.ref];})()`);
+const boss = L => W.eval(`(()=>{MM={n:1,series:false,mp:50};matchG='boss';const me=Object.assign(tankOf(${J(L)},hpScale()),{});const b=mkBoss(me,1,aiBossLevel(120,3,1));return [b.mhp,b.wdps,b.bt.ref];})()`);
 ok(J(boss(GEAR.stock)) === J(boss(GEAR.legend)), 'megatank independent of your tank');
 
 // 3. Advertised gear is in the tank you field: Moonbeam DPS + Legendary super scale + Precision, Lunar Skin health and damage bonus, chassis tiers; Gold Plate is looks only

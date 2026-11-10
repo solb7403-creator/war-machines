@@ -203,7 +203,7 @@ export async function pickGhosts(env, pid, pw, k, now = Date.now(), skip = [], b
   if (Object.keys(rows).length < 10) rows = Object.assign((await dbGet(env, "gh", { orderBy: '"pw"', startAt: lo, endAt: hi, limitToFirst: 10 }).catch(() => null)) || {}, rows);
   const pool = Object.entries(rows).filter(([id, g]) => id !== pid && !skip.includes(id) && g && g.L && now - (g.t || 0) > ECO.GHOST_IDLE);
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  return pool.slice(0, k).map(([id, g]) => ({ id, n: String(g.n || "Pilot").slice(0, 24), L: g.L }));
+  return pool.slice(0, k).map(([id, g]) => ({ id, n: String(g.n || "Pilot").slice(0, 24), L: g.L, pw: Number(g.pw) || 0 }));
 }
 // list: [[owner pid, {won, drawn, dmg, kills}]]
 export async function ghostReport(env, list, now = Date.now()) {
@@ -307,7 +307,10 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (S.lab && (b.labRev === undefined || (R.FIT_ORDER.some(k => R.labLoadout(S).mods[k] !== "stock") && b.fv !== R.FIT_VERSION))) return {abort:true,error:"update"};
     if (S.lab && b.labRev !== undefined && b.labRev !== S.lab.rev) return {abort:true, error:"garage_changed"};
     if (cid) { const same = openTickets(S).find((T) => T.cid === cid && now - T.t0 < ECO.TICKET_MS); if (same) return { abort: true, same }; }
-    const L = setLoadout(S, b.L), brk = R.leagueInfo(S.lgi), ghosts = await ghostBox;
+    const L = setLoadout(S, b.L), brk = R.leagueInfo(S.lgi);
+    // ghosts: no stronger than this league's AI (aiGhostCap, rules.js): the pool was read by power band, the league decides the cap
+    const ghCap = R.aiGhostCap(S.pw, R.aiLevel(S.pw, undefined, brk.i, g === "royale" ? "solo" : (R.MODES[m] || R.MODES["1v1"]).n).p);
+    const ghosts = (await ghostBox).filter((x) => { try { return (x.pw || R.powerOf(x.L)) <= ghCap; } catch (e) { return false; } });
     // a newer match doesn't kill the last ticket: its result may still be on its way (held on a phone with no signal).
     // It only has to show a fight that ended before this one started (nx)
     if (S.mt) { const o = (S.mto = S.mto || {}); o[S.mt.n] = { ...S.mt, nx: now };
