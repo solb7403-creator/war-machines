@@ -36,7 +36,11 @@ async def main(engine):
    await page.touchscreen.tap(first['x']+first['w']/2,first['y']+first['h']/2)
    await page.wait_for_function('!document.querySelector(".cq-transmission")&&Conquest.view?.pending===0',timeout=60000)
    assert await page.evaluate('localStorage.getItem("lunar-conquest-onboarding-v1")==="1"')
-   before=await page.evaluate('Conquest.view.p.x');await page.keyboard.down('w');await page.wait_for_timeout(400);await page.keyboard.up('w');assert await page.evaluate('Conquest.view.p.x')>before,'dismissal must enter responsive exploration'
+   # hold W until the tank has moved (software GL in CI renders a few frames a second and can stall for a second: a fixed 400 ms hold was a flake); dead = nothing in 8 s
+   before=await page.evaluate('Conquest.view.p.x');await page.keyboard.down('w')
+   try:await page.wait_for_function('b=>Conquest.view.p.x>b',arg=before,timeout=8000)
+   except Exception:pass
+   await page.keyboard.up('w');assert await page.evaluate('Conquest.view.p.x')>before,'dismissal must enter responsive exploration'
    await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000);assert await page.locator('.cq-transmission').count()==0,'dismissal must persist across reload'
    await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
    body=page.locator('.cq-transmission-scroll');await body.wait_for()

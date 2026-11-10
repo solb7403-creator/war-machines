@@ -86,7 +86,11 @@ async def main(engine,journey_only=False):
       if not selected:
        await page.screenshot(path=str(OUT/'failed-target.png'));print('TARGET DEBUG',await page.evaluate('''()=>{const v=Conquest.view,B=v.battle;return {selected:v.selectedId,errors:window.onerror,enemies:B.enemies.map(e=>{const p=new THREE.Vector3(e.x-v.origin.x,e.y+2.2,e.z-v.origin.z).project(v.camera),x=(p.x+1)*v.host.clientWidth/2,y=(1-p.y)*v.host.clientHeight/2,ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(p.x,p.y),v.camera);const g=v.enemyMeshes.get(e.id),hits=g?ray.intersectObject(g,true):[];return {id:e.id,x,y,visible:ConquestControl.visible(B,v.p,e),hit:hits.map(h=>({point:h.point,distance:h.distance})),node:document.elementFromPoint(x,y)?.className};})};}'''),flush=True)
       assert selected,('no physical target',await page.evaluate('Conquest.view.battle.enemies.map(e=>({x:e.x,z:e.z,hp:e.hp}))'))
-      pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null'),'same hull toggle';pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
+      pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null'),'same hull toggle'
+      for attempt in range(4):   # re-select the same hull: the point is projected one frame before the tap and the hull moves (software GL in CI: a frame can take a second), so retry on a fresh projection
+       pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);await page.wait_for_timeout(100)
+       if await page.evaluate('Conquest.view.selectedId')==selected['id']:break
+      assert await page.evaluate('Conquest.view.selectedId')==selected['id'],'same hull re-select'
       # Switching lock must follow the second physical hull, never nearest-enemy acquisition.
       other=None
       for _ in range(20):
