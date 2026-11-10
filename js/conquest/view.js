@@ -205,7 +205,8 @@ class View {
  const g=this.baseGroup=new this.T.Group();this.scene.add(g);const y=W.groundAt(D.x,D.z),tier=base.tier,trim=0x84dfe0,steel=0x4d626f;
  if(this.style&&plot){const low=!!this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low',art=this.style.commandBase(base,{paint:(PAINTS[this.loadout.paint]||PAINTS.stock).hull,veteran:!!s?.achievements?.['field-veteran'],shell:true});g.add(art);
   // the town on a lit plinth, fitted to the 27 m courtyard (1/7 of a CC1 town, 1/12 at CC10): walls, turrets, homes, vitals, CC height, banner
-  // 5D: built in slices (townkit dioramaGen) in idle time, at most ~8 ms a slice, and attached whole when done, so a town change
+  // 5D: built in slices (townkit dioramaGen yields after the terrain, the walls, every 40 merged pieces and before the merge) in idle
+  // time, ~8 ms of work a slice, attached whole when done, so a town change
   // never lands the build inside a rendered frame (iPhone measured 65-106 ms in one task before). A newer key cancels a stale build
   let gen=null;const later=f=>root.requestIdleCallback?root.requestIdleCallback(f,{timeout:700}):setTimeout(f,0);
   const step=(dl)=>{if(this.baseGroup!==g||this.lifecycle?.signal?.aborted)return;try{
@@ -310,7 +311,7 @@ class View {
  }
  form(group,geo,x,y,z,w,h,d,color){const m=new this.T.Mesh(geo,this.mat(color));m.position.set(x,y,z);m.scale.set(w,h,d);group.add(m);return m;}
  bind(){this.abort=new AbortController();const on=(el,t,f)=>el.addEventListener(t,f,{signal:this.abort.signal});
- on(window,'resize',()=>this.resize());on(window,'keydown',e=>{if(!/INPUT|TEXTAREA/.test(e.target.tagName)){this.keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();}});on(window,'keyup',e=>delete this.keys[e.code]);on(window,'blur',()=>this.reset());on(document,'visibilitychange',()=>{this.reset();this.discovery?.flush();this.flushHealth();});on(window,'pagehide',()=>{this.discovery?.flush();this.flushHealth();});
+ on(window,'resize',()=>this.resize());on(window,'keydown',e=>{if(!/INPUT|TEXTAREA/.test(e.target.tagName)){this.keys[e.code]=true;const ab={ShiftLeft:'dash',ShiftRight:'dash',KeyF:'shield',KeyR:'super',KeyC:'scan'}[e.code];if(ab)(this.edgeLatch||(this.edgeLatch={}))[ab]=true;   /* 5D: a tap shorter than a frame still fires */if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();}});on(window,'keyup',e=>delete this.keys[e.code]);on(window,'blur',()=>this.reset());on(document,'visibilitychange',()=>{this.reset();this.discovery?.flush();this.flushHealth();});on(window,'pagehide',()=>{this.discovery?.flush();this.flushHealth();});
  const c=this.renderer.domElement,pointers=new Map();let drag=null,pinch=0;
  on(c,'pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={id:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,time:performance.now(),moved:false,multi:pointers.size>1};if(pointers.size>1){const [a,b]=[...pointers.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y);drag.multi=true;}c.setPointerCapture(e.pointerId);});
  on(c,'pointermove',e=>{const p=pointers.get(e.pointerId);if(!p||!drag)return;p.x=e.clientX;p.y=e.clientY;if(pointers.size>1){const [a,b]=[...pointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch)this.zoom((pinch-d)*.2);pinch=d;drag.multi=true;return;}if(drag.id!==e.pointerId)return;

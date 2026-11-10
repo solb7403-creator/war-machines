@@ -23,6 +23,7 @@ async def journey(b,width,height,label,results):
  # the real flow: mouse on the Conquest tab, ENTER CONQUEST, ACKNOWLEDGE the briefing. Nothing focuses anything for the test.
  await pg.locator('[data-act="conquest"]').first.click();await pg.locator('.cq-enter').first.click()
  await pg.locator('.cq-story-start').click(timeout=30000)
+ await pg.wait_for_timeout(400);hint0=await pg.evaluate('!!document.querySelector(".cq-keys")')
  try:
   await pg.wait_for_function('Conquest.view?.authority?.connected',timeout=90000)
   try:await pg.wait_for_function('Conquest.view.pending<=2',timeout=45000)   # terrain streaming (slow under software GL); driving does not wait for it
@@ -47,7 +48,9 @@ async def journey(b,width,height,label,results):
  await pg.screenshot(path=str(OUT/f'desktop-keys-{label}.png'))
  # abilities by key: Space fires (no page navigation, no button click), Shift (either side) dashes, F shield, C scan
  url=pg.url;await pg.keyboard.down('Space');await pg.wait_for_timeout(400);fired=await pg.evaluate('!!Conquest.view.keys.Space');await pg.keyboard.up('Space')
- await pg.keyboard.press('ShiftRight');await pg.wait_for_timeout(300);dashR=await pg.evaluate('(Conquest.view.battle||Conquest.view.encounter)?.dashCd>0')
+ await pg.keyboard.press('ShiftRight')   # a tap: latched at keydown, consumed by the next tick (software GL renders a few frames a second here)
+ try:await pg.wait_for_function('(Conquest.view.battle||Conquest.view.encounter)?.dashCd>0',timeout=4000);dashR=True
+ except Exception:dashR=False
  assert pg.url==url,'a key must never leave the page: '+pg.url
  # the account prompt timer (web/account-prompts.js) ticks every 4 s: after 10 s nothing may have taken the keyboard
  await pg.wait_for_timeout(10000);s1=await state();later=await drive('KeyW')
@@ -59,7 +62,7 @@ async def journey(b,width,height,label,results):
  assert later>1,f'{label}: keyboard dead after 10 s (moved {later:.2f}); while held {json.dumps(held.get("KeyW"))}; state {json.dumps(s1)}'
  assert fired and dashR,f'{label}: Space fire {fired}, right Shift dash {dashR}'
  assert s1['prompts']==0 or 'INPUT' not in s1['active'],f'{label}: a website prompt took the keyboard: {json.dumps(s1)}'
- assert s0['hint'],f'{label}: desktop key hint not shown on a keyboard device'
+ assert hint0,f'{label}: desktop key hint not shown on a keyboard device right after the briefing'
  assert not errs,errs
  await ctx.close()
 async def main():

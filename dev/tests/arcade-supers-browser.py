@@ -10,7 +10,7 @@ from playwright.async_api import async_playwright
 ROOT=pathlib.Path(os.environ.get('LUNAR_SRC') or pathlib.Path(__file__).resolve().parents[2]).resolve();HERE=pathlib.Path(__file__).resolve().parents[2]
 LEGEND={'w':{'a':'moon','t':2,'q':1,'s':False},'c':{'c':'titan','t':2,'q':1.1,'s':False},'up':{'hull':4,'cannon':4,'engine':2,'target':2,'reactor':2},'cores':['dmg','rof','arm'],'gl':{'dmg':4,'rof':4,'arm':4,'spd':4,'lck':4,'reg':4},'skin':'lunar','paint':'gold','chs':[{'c':'scout','t':1,'q':1.08,'s':False},{'c':'vanguard','t':2,'q':1.08,'s':False},{'c':'titan','t':2,'q':1.1,'s':False}]}
 HOOK='''(L)=>{window.myLoadout=()=>JSON.parse(JSON.stringify(L));save.mp=50;save.lwr=0.5;
- window.__log=[];window.__frames=[];const us=useSuper;window.useSuper=(r,a)=>{const sp=r.sp,ok=us(r,a);if(ok)__log.push({t:performance.now(),e:elapsed,id:r.id,me:r===me,sp,dead:me&&me.hp<=0,ff:ffwd,flare:!!(evt&&evt.k==='flare')});return ok;};
+ window.__log=[];window.__frames=[];if(window.__hooked){let last=performance.now();const f=()=>{const n=performance.now();__frames.push(n-last);last=n;if(typeof state!=='undefined'&&state==='play')requestAnimationFrame(f);};requestAnimationFrame(f);return;}window.__hooked=1;const us=useSuper;window.useSuper=(r,a)=>{const sp=r.sp,ok=us(r,a);if(ok)__log.push({t:performance.now(),e:elapsed,id:r.id,me:r===me,sp,dead:me&&me.hp<=0,ff:ffwd,flare:!!(evt&&evt.k==='flare')});return ok;};
  let last=performance.now();const f=()=>{const n=performance.now();__frames.push(n-last);last=n;if(typeof state!=='undefined'&&state==='play')requestAnimationFrame(f);};requestAnimationFrame(f);}'''
 START='''([g,m])=>{save.mode=m;save.gtype=g;prepareMatch();startMatch();me.ctl='pilot';me.hum=true;me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(!window.__upd){window.__upd=update;window.update=function(dt){__upd(dt);if(typeof me!=='undefined'&&me&&me.hp>0&&me.ctl==='pilot'){botAI(dt,me);if(me.sp>=SUPER_MAX&&!me.sup)useSuper(me);}};}window.__t0=performance.now();window.__meId=me.id;return {lg:battleLg,aiP:aiLv&&aiLv.p,pw:battlePower,n:units.length,roster:units.map(u=>({id:u.id,team:u.team,cls:u.cls,w:u.wtype,hp:u.mhp,dps:Math.round(u.wdps),fillM:u.fillM,boss:!!u.boss}))};}'''
 async def run(pg,g,m,secs):
@@ -27,7 +27,8 @@ async def main():
  out=sys.argv[1] if len(sys.argv)>1 else None;cpu=float(os.environ.get('CPU','1'))
  # the shipped client leaves to the website unless it runs inside Telegram: a Telegram stub + the local Worker fixture (match tickets, sync)
  import subprocess
- srv=subprocess.Popen(['node','dev/tests/conquest-server.mjs'],cwd=str(ROOT),stdout=subprocess.PIPE,text=True);ready=json.loads(srv.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
+ # the fixture Worker from this tree (tickets, sync); the client under test comes from ROOT
+ srv=subprocess.Popen(['node','dev/tests/conquest-server.mjs'],cwd=str(HERE),stdout=subprocess.PIPE,text=True);ready=json.loads(srv.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
  async with async_playwright() as p:
   exe=shutil.which('chromium') or '/opt/pw-browsers/chromium'
   b=await p.chromium.launch(executable_path=exe,args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
@@ -49,7 +50,8 @@ async def main():
   R={'src':str(ROOT),'cpuThrottle':cpu,'build':await pg.evaluate('window.BUILD'),'gfx':await pg.evaluate('typeof gfxMode==="function"?gfxMode():null')}
   for (g,m,secs) in [('bounty','1v1',120),('arena','3v3',180),('arena','1v1',180)]:
    await pg.evaluate(HOOK,LEGEND);r=await run(pg,g,m,secs);R[g+' '+m]=r
-   print(g,m,json.dumps({k:r[k] for k in ('wall','simSecs','fps','worstFrameMs','me','enemyAI','ratioEnemyTankVsMe','ratioAllEnemiesVsMe','secsDeadApprox','deaths','result')}),'setup',json.dumps(r['setup']['roster'][:4]),'lg',r['setup']['lg'],'aiP',r['setup']['aiP'],flush=True)
+   foes={k:v for k,v in r['units'].items() if not v['me'] and v['team']!=r['units'][str(r['setup']['roster'][0]['id'])]['team']} if r['units'] else {}
+   print(g,m,json.dumps({k:r[k] for k in ('wall','simSecs','fps','worstFrameMs','me','enemyAI','ratioEnemyTankVsMe','ratioAllEnemiesVsMe','secsDeadApprox','deaths','result')}),'enemy tanks',json.dumps({k:{kk:v[kk] for kk in ('n','perWallMin','perSimMin','minGapSim','medGapWall','lowSp')} for k,v in foes.items()}),'lg',r['setup']['lg'],'aiP',r['setup']['aiP'],flush=True)
    await pg.evaluate('closeAll();exitBattle&&exitBattle();');await pg.wait_for_timeout(500)
   R['pageErrors']=errs;await b.close()
  srv.terminate()

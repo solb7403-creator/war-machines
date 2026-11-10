@@ -299,4 +299,5 @@
 @media(pointer:coarse){.cq-keys{display:none}}
 /* Session 5D: BUILD at PEEK shows its first card (the resource line and the group title wait for HALF); the readout never wraps at 390 px */
 .cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
-.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em;scrollbar-width:none}.cq-plot-res::-webkit-scrollbar{display:none}
+.cq-plot-body>.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em}   /* the build readout only (its tokens are short enough for 320 px); the visit readout wraps */
+@media(max-width:600px){.cq-keys{bottom:calc(168px + env(safe-area-inset-bottom))}}   /* a narrow desktop window: above the stick, FIRE and the zoom column */

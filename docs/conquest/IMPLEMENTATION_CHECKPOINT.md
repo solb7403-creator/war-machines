@@ -1399,3 +1399,62 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
   model; the game auto-aims). `wiki.html` and `docs/launch/LEAGUES.md` updated.
 - **A2 Conquest**: enemies, commanders, garrisons and town raids are authored (`enemyStats`, doctrine, `plot.js drill`); nothing reads
   the pilot's gear/power/league; abilities keep authored cadences. In the regression test. Nothing to fix.
+
+### Owner follow-up (Nov 10, mid-session): "the AI supers every 1-2 s, 3-5x my own" (commit `d76312a` + this one)
+- **Measured, not assumed.** Worker sim (the live-room path, 30 ticks/s, legend kit, 6 matches each): fill-in bots fired 6.8-11.7
+  supers a minute per tank, the human seat flown by a maximal pilot (fires the instant the charge is full) 7.0-12.7. Real browser at
+  phone size (`dev/tests/arcade-supers-browser.py`, the shipped client in a Telegram stub, SwiftShader 15-19 fps, full matches):
+  see the numbers in `docs/launch/s5d/FAIR_ARCADE.md` "Owner follow-up". Every AI super in every run had a full charge (the log
+  records the charge at each use) and no AI path skips `useSuper`/`useDash`/`useShield`; charging is not frame-rate dependent
+  (charge is per damage, damage per shot, `dt` only moves the clock) and the fast-forward while dead (x3, `ffwd`) applies to the
+  whole sim, player included.
+- **Why it looks 3-5x.** (1) The AI fires the moment its charge is full; a person fires later. (2) In team modes five AI tanks each
+  fire every 5-8 s: from the player's chair that is one AI super every 1-2 s. (3) Supers charge the victim too (x0.7 of the damage),
+  so each super the player lands hands the AI most of its next one, and the AI answers within ~1 s. (4) In respawn modes the dead
+  player watches the match at x3.
+- **Fix (rules.js `LG_AI_SUP_GAP`, `AI_SUP_TEAM_GAP`; game.js AI super loop):** on top of exactly the player's charge rule, an AI
+  pilot keeps a minimum time between its own supers (Rookie 12 s -> Lunar Legend 6 s) and AI teammates never fire within 2 s of
+  each other; reset every match and round; applies to AI matches, live-room fill-ins, ghosts and range opponents. A player is never
+  slowed. **Regression** (`fair-arcade.mjs`): in every league x mode x kit cell an AI pilot never out-supers the pilot in the same
+  matches (AI <= pilot x1.05 + 0.3 a minute per tank) and keeps the league spacing (shortest gap >= LG_AI_SUP_GAP - 0.1 s); on main
+  the spacing check fails (gaps of 1.4-2.7 s seen).
+
+### B. Desktop keyboard driving (commits `4b4f5b5`, `d76312a`, this one)
+- **Reproduction on the real website build** (`dev/tests/conquest-desktop-keys.py`, in CI `conquest-check.yml`): the Worker fixture
+  (`dev/tests/webserver.mjs`) + `worker/build-web.mjs`, a real call-sign signup, mouse clicks on the Conquest tab, ENTER CONQUEST
+  and ACKNOWLEDGE, no `focus()` or `evaluate()` before the keys, 1440x900 and a 420x700 Telegram-Desktop-size window. Finding:
+  with that flow the keys *do* reach the view and move the tank at 1, 10, 20 and 45 s (probed every 250 ms); zero movement in the
+  first harness runs was the software renderer stalling for seconds, not a game gate. The desktop-only breakers found and fixed:
+  the website's account prompts (`web/account-prompts.js`) opened under the Conquest layer every 4 s, took focus and let Enter
+  navigate to the account page (`busyNow` now counts Conquest as busy); only the left Shift dashed (`ShiftRight` added); a tapped
+  Shift / F / R / C shorter than a frame was lost at low frame rates (latched at keydown now, `view.js`); keyboard focus was never
+  placed inside the world after ENTER CONQUEST / ACKNOWLEDGE (the viewport is focusable, `role=application`, focused on enter and
+  after the briefing: desktop webviews route keys only once the document holds focus); the website page and the Worker's
+  "update" reply carried a stale `20261104` build string (now stamped by `dev/bump.sh`).
+- **Hints**: `.cq-keys` strip on keyboard devices only (`(hover:hover) and (pointer:fine)`, or after the first drive key; hidden on
+  coarse pointers; above the stick on narrow windows; shown on the first three visits, until the pilot has driven + 6 s, at most
+  60 s): WASD / arrows move, Space fire, Shift dash, F shield, G gather, C scan, R super, Q / E turret, click a hull to lock, drag
+  to orbit. HELP carries the same list. **Deviation**: the brief's "mouse aim" does not exist in the game (click locks a target,
+  drag orbits); the hint says what the game does. Touch controls unchanged.
+- Not reproduced here: Telegram Desktop itself (no Telegram Desktop in the container). The focus fix is the plausible cause there;
+  if the owner can still not drive in Telegram Desktop after this build, the next thing to try is a one-off "click the world to
+  take the keyboard" prompt.
+
+### C. Session 5C leftovers (commits `4b4f5b5`, this one; harness `dev/tests/conquest-session5d.py`, in CI, captures in `docs/conquest/session5d/`)
+1. Home Sector spawn: `padOf` first tries a spot on a dust road just outside the plaza with a clear line to the Command Center
+   (southern lanes first), and the tank faces the CC along the road (`h = atan2`, chase camera behind); fallback is the old search.
+2. A session that starts on the town model: `view.nudgeOffDiorama` drives the tank south onto clear courtyard ground through the
+   normal input path (Worker-replayed), 4 s of sim time (waits for the session), cancelled by any steering; also after a >15 m jump
+   (fast travel / visit return) onto the model. Collision volumes untouched.
+3. The 5B kiosk is drawn only when the shell is not in use (`style.commandBase`).
+4. Hub hero towns use the kit models on HIGH (stand-ins on LOW), built over frames (townkit `dioramaGen` stepped in the hero loop).
+5. BUILD at PEEK shows its first card (resource line and group title wait for HALF, `data-mode` on the sheet); the build readout is
+   one line with short tokens (ALLOY / BIO / He-3 / COMP); the visit readout still wraps.
+6. Card sprites render with x1.7 ambient (uniforms restored in `finally`): the Cannon reads.
+7. Terrain: a slow mottle octave, height banding on ridge / plateau / canyon, sparse darker patches off the roads.
+8. Storage tanks get a lit cap; settler-home pads use the apron tone.
+9. The diorama is a generator (`dioramaGen`: yields after the terrain, the plinth, the walls, every 40 merged pieces and before the
+   merge) stepped in idle time (~8 ms a slice; iOS without requestIdleCallback: setTimeout(0) slices) and attached whole; `diorama()`
+   drains it (parity test unchanged).
+10. Judge captures: `docs/conquest/session5d/` (pad diorama CC1/CC10, gate-centre start, Home Sector drive CC1/CC10, hub hero
+    CC1/CC5, BUILD at PEEK, WEAPONS, Cannon sprite). Programs <= 16 asserted in the harness.

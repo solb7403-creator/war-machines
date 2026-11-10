@@ -1,0 +1,371 @@
+{
+ "src": "/tmp/claude-0/-home-user-war-machines/c0aabf50-46b4-5d41-bba7-7daf5c5fdc78/scratchpad/main-src",
+ "cpuThrottle": 1.0,
+ "build": "20261110004649",
+ "gfx": "auto",
+ "bounty 1v1": {
+  "wall": 137.8,
+  "simSecs": 106.83479999999778,
+  "fps": 21.1,
+  "worstFrameMs": 626,
+  "units": {
+   "0": {
+    "team": 0,
+    "me": true,
+    "boss": false,
+    "n": 18,
+    "perWallMin": 7.84,
+    "perSimMin": 10.11,
+    "minGapWall": 1.88,
+    "medGapWall": 6.5,
+    "minGapSim": 1.37,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "1": {
+    "team": 1,
+    "me": false,
+    "boss": false,
+    "n": 18,
+    "perWallMin": 7.84,
+    "perSimMin": 10.11,
+    "minGapWall": 1.88,
+    "medGapWall": 5.69,
+    "minGapSim": 1.42,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   }
+  },
+  "me": {
+   "n": 18,
+   "perWallMin": 7.84,
+   "perSimMin": 10.11,
+   "minGapWall": 1.88,
+   "medGapWall": 6.5,
+   "minGapSim": 1.37,
+   "lowSp": 1000,
+   "whileDead": 0,
+   "duringFF": 0,
+   "flare": 0
+  },
+  "enemyAI": {
+   "total": 18,
+   "perWallSec": 0.131,
+   "perTankWallMin": 7.84
+  },
+  "ratioEnemyTankVsMe": 1,
+  "ratioAllEnemiesVsMe": 1,
+  "secsDeadApprox": 0,
+  "deaths": 4,
+  "result": "win",
+  "setup": {
+   "lg": 6,
+   "aiP": 181,
+   "pw": 235,
+   "n": 2,
+   "roster": [
+    {
+     "id": 0,
+     "team": 0,
+     "cls": "titan",
+     "w": "moon",
+     "hp": 2327,
+     "dps": 118,
+     "fillM": 1.2,
+     "boss": false
+    },
+    {
+     "id": 1,
+     "team": 1,
+     "cls": "scout",
+     "w": "siege",
+     "hp": 1360,
+     "dps": 96,
+     "fillM": 1.4,
+     "boss": false
+    }
+   ]
+  }
+ },
+ "arena 3v3": {
+  "wall": 68.9,
+  "simSecs": 51.14319999999929,
+  "fps": 16.5,
+  "worstFrameMs": 214,
+  "units": {
+   "0": {
+    "team": 0,
+    "me": true,
+    "boss": false,
+    "n": 14,
+    "perWallMin": 12.2,
+    "perSimMin": 16.42,
+    "minGapWall": 2.22,
+    "medGapWall": 4.64,
+    "minGapSim": 1.75,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "1": {
+    "team": 0,
+    "me": false,
+    "boss": false,
+    "n": 8,
+    "perWallMin": 6.97,
+    "perSimMin": 9.39,
+    "minGapWall": 4.4,
+    "medGapWall": 5.76,
+    "minGapSim": 2.8,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "2": {
+    "team": 0,
+    "me": false,
+    "boss": false,
+    "n": 6,
+    "perWallMin": 5.23,
+    "perSimMin": 7.04,
+    "minGapWall": 5.02,
+    "medGapWall": 9.57,
+    "minGapSim": 3.88,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "3": {
+    "team": 1,
+    "me": false,
+    "boss": false,
+    "n": 8,
+    "perWallMin": 6.97,
+    "perSimMin": 9.39,
+    "minGapWall": 2.65,
+    "medGapWall": 5.75,
+    "minGapSim": 1.97,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "4": {
+    "team": 1,
+    "me": false,
+    "boss": false,
+    "n": 9,
+    "perWallMin": 7.84,
+    "perSimMin": 10.56,
+    "minGapWall": 2.45,
+    "medGapWall": 6.58,
+    "minGapSim": 2.05,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "5": {
+    "team": 1,
+    "me": false,
+    "boss": false,
+    "n": 9,
+    "perWallMin": 7.84,
+    "perSimMin": 10.56,
+    "minGapWall": 3.15,
+    "medGapWall": 7.26,
+    "minGapSim": 1.93,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   }
+  },
+  "me": {
+   "n": 14,
+   "perWallMin": 12.2,
+   "perSimMin": 16.42,
+   "minGapWall": 2.22,
+   "medGapWall": 4.64,
+   "minGapSim": 1.75,
+   "lowSp": 1000,
+   "whileDead": 0,
+   "duringFF": 0,
+   "flare": 0
+  },
+  "enemyAI": {
+   "total": 26,
+   "perWallSec": 0.378,
+   "perTankWallMin": 7.55
+  },
+  "ratioEnemyTankVsMe": 0.62,
+  "ratioAllEnemiesVsMe": 1.86,
+  "secsDeadApprox": 0,
+  "deaths": 0,
+  "result": "win",
+  "setup": {
+   "lg": 6,
+   "aiP": 159,
+   "pw": 235,
+   "n": 6,
+   "roster": [
+    {
+     "id": 0,
+     "team": 0,
+     "cls": "titan",
+     "w": "moon",
+     "hp": 13959,
+     "dps": 118,
+     "fillM": 1.2,
+     "boss": false
+    },
+    {
+     "id": 1,
+     "team": 0,
+     "cls": "vanguard",
+     "w": "pulse",
+     "hp": 9367,
+     "dps": 97,
+     "fillM": 1,
+     "boss": false
+    },
+    {
+     "id": 2,
+     "team": 0,
+     "cls": "scout",
+     "w": "twin",
+     "hp": 7788,
+     "dps": 90,
+     "fillM": 1,
+     "boss": false
+    },
+    {
+     "id": 3,
+     "team": 1,
+     "cls": "scout",
+     "w": "siege",
+     "hp": 8897,
+     "dps": 115,
+     "fillM": 1,
+     "boss": false
+    },
+    {
+     "id": 4,
+     "team": 1,
+     "cls": "scout",
+     "w": "siege",
+     "hp": 8402,
+     "dps": 109,
+     "fillM": 1,
+     "boss": false
+    },
+    {
+     "id": 5,
+     "team": 1,
+     "cls": "vanguard",
+     "w": "twin",
+     "hp": 9757,
+     "dps": 96,
+     "fillM": 1,
+     "boss": false
+    }
+   ]
+  }
+ },
+ "arena 1v1": {
+  "wall": 22.3,
+  "simSecs": 18.579700000000024,
+  "fps": 20,
+  "worstFrameMs": 177,
+  "units": {
+   "0": {
+    "team": 0,
+    "me": true,
+    "boss": false,
+    "n": 4,
+    "perWallMin": 10.77,
+    "perSimMin": 12.92,
+    "minGapWall": 3.15,
+    "medGapWall": 4.42,
+    "minGapSim": 2.87,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   },
+   "1": {
+    "team": 1,
+    "me": false,
+    "boss": false,
+    "n": 3,
+    "perWallMin": 8.08,
+    "perSimMin": 9.69,
+    "minGapWall": 4.35,
+    "medGapWall": 6.01,
+    "minGapSim": 3.72,
+    "lowSp": 1000,
+    "whileDead": 0,
+    "duringFF": 0,
+    "flare": 0
+   }
+  },
+  "me": {
+   "n": 4,
+   "perWallMin": 10.77,
+   "perSimMin": 12.92,
+   "minGapWall": 3.15,
+   "medGapWall": 4.42,
+   "minGapSim": 2.87,
+   "lowSp": 1000,
+   "whileDead": 0,
+   "duringFF": 0,
+   "flare": 0
+  },
+  "enemyAI": {
+   "total": 3,
+   "perWallSec": 0.135,
+   "perTankWallMin": 8.08
+  },
+  "ratioEnemyTankVsMe": 0.75,
+  "ratioAllEnemiesVsMe": 0.75,
+  "secsDeadApprox": 0,
+  "deaths": 0,
+  "result": "loss",
+  "setup": {
+   "lg": 6,
+   "aiP": 181,
+   "pw": 235,
+   "n": 2,
+   "roster": [
+    {
+     "id": 0,
+     "team": 0,
+     "cls": "titan",
+     "w": "moon",
+     "hp": 4653,
+     "dps": 118,
+     "fillM": 1.2,
+     "boss": false
+    },
+    {
+     "id": 1,
+     "team": 1,
+     "cls": "vanguard",
+     "w": "twin",
+     "hp": 3420,
+     "dps": 92,
+     "fillM": 1.4,
+     "boss": false
+    }
+   ]
+  }
+ },
+ "pageErrors": []
+}

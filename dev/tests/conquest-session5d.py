@@ -49,20 +49,29 @@ async def main():
    async def world(page):
     await page.locator('#tabbar [data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
     await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
-   async def enter_base(page):
-    b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);await b.click();await page.wait_for_selector('.cq-plot-tabs',timeout=60000);await page.wait_for_timeout(1200)
+   async def enter_base(page,errors=None):
+    b=page.locator('#cq-base-access');await b.wait_for(state='visible',timeout=30000);await b.click()
+    try:await page.wait_for_selector('.cq-plot-tabs',timeout=60000)
+    except Exception as e:
+     diag=await page.evaluate('''()=>({plot:!!document.querySelector('.cq-plot'),txt:document.querySelector('.cq')?.innerText.slice(0,300),p:[Conquest.view.p.x,Conquest.view.p.z],err:ConquestPlotView.state?.sprErr})''')
+     raise AssertionError('Home Sector did not open: '+json.dumps(diag)+' pageErrors '+json.dumps((errors or [])[:3])) from e
+    await page.wait_for_timeout(1200)
    lum=lambda png:(lambda im:sum(im)/len(im))(list(__import__('PIL.Image',fromlist=['Image']).open(io.BytesIO(png)).convert('L').getdata())) if True else 0
    # ---- 1 + 2 + 3: the gate-centre session (tank on the model), then the Home Sector spawn at CC1 and CC10 ----
    for (cc,fx) in ((1,{'position':GATE,'baseFunds':True,'plotCC':1,'plotSite':'ridge'}),(10,{'position':GATE,'plotFull':'crater','baseFunds':True})):
     ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(600)
-    p0=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,nudge:!!Conquest.view.nudge,dio:!!Conquest.view.diorama,half:Conquest.view.diorama?.userData.half})')
-    await page.wait_for_function('()=>{const v=Conquest.view,D=ConquestCombat.baseDefinition,h=(v.diorama?.userData.half||0)+1.6;return !!v.diorama&&!(Math.abs(v.p.x-D.x)<h&&Math.abs(v.p.z-D.z-1.5)<h);}',timeout=20000)
+    await page.wait_for_function('!!Conquest.view.diorama',timeout=90000)   # the sliced build (idle time; slow under software GL)
+    p0=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,nudge:!!Conquest.view.nudge,dio:!!Conquest.view.diorama,half:Conquest.view.diorama?.userData.half,connected:!!Conquest.view.authority?.connected})')
+    try:await page.wait_for_function('()=>{const v=Conquest.view,D=ConquestCombat.baseDefinition,h=(v.diorama?.userData.half||0)+1.6;return !(Math.abs(v.p.x-D.x)<h&&Math.abs(v.p.z-D.z-1.5)<h);}',timeout=30000)
+    except Exception as e:
+     diag=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,nudge:Conquest.view.nudge,connected:!!Conquest.view.authority?.connected,stalled:!!Conquest.view.authority?.stalled,half:Conquest.view.diorama?.userData.half})')
+     raise AssertionError('the tank did not leave the town model: '+json.dumps(diag)+' start '+json.dumps(p0)) from e
     p1=await page.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z,nudge:!!Conquest.view.nudge})');await page.wait_for_timeout(1500)
     await page.screenshot(path=str(OUT/f'pad-diorama-cc{cc}-gate-centre-390.png'))
     kiosk=await page.evaluate('''()=>{let n=0;Conquest.view.baseGroup?.traverse(o=>{if(o.isMesh)n++;});return n;}''')
     inside=abs(p0['x']-GATE[0])<p0['half']+1.6 and abs(p0['z']-GATE[1]-1.5)<p0['half']+1.6
     R[f'gateCentre{cc}']={'start':p0,'after':p1,'meshes':kiosk,'startedOnModel':inside};assert (not inside) or p1['z']<p0['z']-4,R[f'gateCentre{cc}']
-    await enter_base(page);await page.wait_for_timeout(2000)
+    await enter_base(page,errors);await page.wait_for_timeout(2000)
     sp=await page.evaluate('''()=>{const X=ConquestPlotView.state,D=X.drive,TK=ConquestTownKit,P=ConquestPlot,p=D.plot,C=TK.ccCenter(p);const dx=C.x-D.x,dz=C.z-D.z,d=Math.hypot(dx,dz),fwd=Math.cos(Math.atan2(dx,dz)-D.h);return {x:D.x,z:D.z,h:D.h,ccDist:d,ccAhead:fwd,face:!!D.pad.face,info:X.info};}''')
     await page.screenshot(path=str(OUT/f'home-sector-drive-cc{cc}-390.png'))
     R[f'spawn{cc}']=sp;assert sp['ccAhead']>0.9 and sp['info']['programs']<=16,sp
@@ -77,7 +86,7 @@ async def main():
     await page.screenshot(path=str(OUT/f'hub-hero-town-cc{cc}-390.png'));R['hub'+str(cc)]=await page.evaluate('ConquestHub.state.town');assert not errors,errors
     await close(ctx)
    # ---- 5 + 6: BUILD at PEEK shows a card, the readout is one line; the Cannon sprite is lit ----
-   ctx,page,errors=await session(390,700,{'position':GATE,'plotFull':'crater','baseFunds':True});await world(page);await enter_base(page)
+   ctx,page,errors=await session(390,700,{'position':GATE,'plotFull':'crater','baseFunds':True});await world(page);await enter_base(page,errors)
    await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.wait_for_timeout(800)
    async def snap(want):   # the handle is a keyboard control: ArrowDown lowers the sheet one snap, ArrowUp raises it (sheet.js)
     for _ in range(4):
@@ -91,7 +100,7 @@ async def main():
    assert peek['snap']=='peek' and peek['mode']=='build' and peek['card'] and peek['card']['top']<peek['innerH']-20 and (not peek['res'] or peek['res']['display']=='none'),peek
    await snap('half')
    half=await page.evaluate('''()=>{const d=ConquestPlotView.state.d,res=d.querySelector('.cq-plot-body>.cq-plot-res');if(!res)return null;const r=res.getBoundingClientRect(),s=getComputedStyle(res);return {h:r.height,lh:parseFloat(s.lineHeight),nowrap:s.whiteSpace==='nowrap',scrollW:res.scrollWidth,clientW:res.clientWidth};}''')
-   R['resLine']=half;assert half and half['nowrap'] and half['h']<half['lh']*1.6,half
+   R['resLine']=half;assert half and half['nowrap'] and half['h']<half['lh']*1.6 and half['scrollW']<=half['clientW']+1,half
    await page.locator('.cq-plot-tabs button',has_text='WEAPONS').click();await page.wait_for_timeout(2500)
    await page.wait_for_function('document.querySelector(".cq-plot-spr[data-spr=\\"cannon\\"],img.cq-plot-spr")',timeout=20000)
    spr=await page.evaluate('''()=>{const i=[...document.querySelectorAll('img.cq-plot-spr')].find(x=>x.dataset.spr==='cannon')||document.querySelector('img.cq-plot-spr');return i?{k:i.dataset.spr,src:i.src}:null;}''')
