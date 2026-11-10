@@ -112,21 +112,30 @@ async def main(engine,journey_only=False):
       yaw=await page.evaluate('Conquest.view.yaw');await page.mouse.move(width/2,350);await page.mouse.down();await page.mouse.move(width/2+15,355,steps=3);await page.mouse.up();assert await page.evaluate('Conquest.view.selectedId===null');assert await page.evaluate('Conquest.view.yaw')!=yaw,'camera drag stays independent'
       pt=await target_point(selected['id']);assert pt;await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
       stick=await rect('.cq-stick');drive_contact={'id':1,'x':stick['x']+stick['w']/2,'y':stick['y']+stick['h']/2};start=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await touch('touchStart',[contact,drive_contact]);drive_contact['y']-=36;await touch('touchMove',[contact,drive_contact]);await page.wait_for_timeout(350);await touch('touchEnd',[drive_contact]);assert await page.evaluate('Conquest.view.firing'),'releasing joystick preserves held Fire';end=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');assert math.dist(start,end)>.3,'simultaneous drive/fire moves';await page.wait_for_timeout(1600);await page.screenshot(path=str(OUT/'active-combat.png'))
-      # Hold FIRE while precisely tapping each later living hostile. No HP/outcome/tick mutation. Up to ~200 s of real time: the loop
-      # ends as soon as the authority reports the outcome; on the CI runner (software GL, a few fps) the same fight takes 2-3x longer than here
-      for i in range(400):
-       if await page.evaluate('Conquest.view.authority.state.battle.state!=="active"'):break
-       # keep a living hull locked (a person re-taps as soon as the locked hull dies); on a slow runner a 1 s cadence left the
-       # turret firing at nothing between locks and the fight ran long enough for the pilot to die
-       if not await page.evaluate('(()=>{const v=Conquest.view,B=v.battle||v.encounter,id=v.selectedId;return id!=null&&B.enemies.some(e=>e.id===id&&e.hp>0);})()'):
+      # Hold FIRE in heat bursts (a person releases before the weapon overheats: at ~85% heat, back on at ~35%) while precisely
+      # tapping each later living hostile. No HP/outcome/tick mutation. CDP touchEnd lists the points being RELEASED (probed:
+      # touchStart [A,B] then touchEnd [A] releases A and keeps B), so a tap while firing is touchStart [contact,t] / touchEnd [t]. The loop ends as soon as the authority reports the outcome
+      # (up to ~200 s of real time; on the CI runner, software GL at a few fps, the same fight takes 2-3x longer than here)
+      firing=False
+      async def fire(on):
+       nonlocal firing
+       if on==firing:return
+       await (touch('touchStart',[contact]) if on else touch('touchEnd',[contact]));firing=on
+      async def press(t):await touch('touchStart',[contact,t] if firing else [t]);await touch('touchEnd',[t])
+      for i in range(800):
+       st=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {state:S.battle.state,heat:B.heat||0,hot:!!B.overheated,locked:v.selectedId!=null&&B.enemies.some(e=>e.id===v.selectedId&&e.hp>0),shield:B.shieldCd<=0,super:B.charge>=1000};}''')
+       if st['state']!='active':break
+       if firing and (st['hot'] or st['heat']>=85):await fire(False)
+       elif not firing and not st['hot'] and st['heat']<=35:await fire(True)
+       if not st['locked']:
         pt=await target_point()
-        if pt:
-         t={'id':3,'x':pt['x'],'y':pt['y']};await touch('touchStart',[contact,t]);await touch('touchEnd',[t])
-       for selector,condition in [('#cq-shield','Conquest.view.battle.shieldCd<=0'),('#cq-super','Conquest.view.battle.charge>=1000')]:
-        if await page.evaluate(condition):
-         r=await rect(selector);t={'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2};await touch('touchStart',[contact,t]);await touch('touchEnd',[t])
-       await page.wait_for_timeout(500)
-      await touch('touchEnd',[])
+        if pt:await press({'id':3,'x':pt['x'],'y':pt['y']})
+       for selector,avail in [('#cq-shield',st['shield']),('#cq-super',st['super'])]:   # (not 'ready': that is the fixture server's handshake JSON in this scope)
+        if avail:
+         r=await rect(selector);await press({'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2})
+       await page.wait_for_timeout(250)
+      if firing:await touch('touchEnd',[contact])
+      firing=False
       battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement,featured:Conquest.view.authority.state.featuredMission})');assert battle['state']=='victory',battle;assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle
       await page.screenshot(path=str(OUT/'victory.png'));await page.get_by_role('button',name='RETURN TO EXPLORATION').click();await page.wait_for_function('!Conquest.view.battle');assert await page.evaluate('!Conquest.view.firing')
       await fixture([1240,893]);await page.evaluate('Conquest.view.yaw=Math.PI;Conquest.view.distance=65;Conquest.view.pitch=.8');await page.wait_for_timeout(300);await page.screenshot(path=str(OUT/'garrison.png'))
