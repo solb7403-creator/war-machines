@@ -6,6 +6,14 @@ Software GL: relative look only, not phone FPS."""
 import asyncio,json,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
+
+# close a context only after its route handlers are detached: an in-flight /api/conquest/* route (the game polls while the page
+# closes) otherwise throws "Response has been disposed" into the NEXT browser context (seen in CI under software GL)
+async def close_ctx(ctx):
+ for pg in ctx.pages:
+  try:await pg.unroute_all(behavior='ignoreErrors')
+  except Exception:pass
+ await ctx.close()
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/session5';OUT.mkdir(parents=True,exist_ok=True)
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -42,7 +50,7 @@ async def main():
      await page.get_by_role('button',name='MY BASE').click()
      if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
      await page.wait_for_selector('.cq-plot-tabs',timeout=90000);results['myBase']='plot opened from the hub';await page.screenshot(path=str(OUT/'hub-my-base-390.png'))
-    await ctx.close()
+    await close_ctx(ctx)
    await browser.close()
   json.dump(results,open(OUT/'hub-journey.json','w'),indent=1)
   print('PASS Conquest Command hub: first paint in the tap task, live status + 3D hero (own renderer, programs <= 12), four actions; MY BASE opens the plot')

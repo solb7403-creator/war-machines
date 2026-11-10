@@ -84,7 +84,7 @@ async def main():
    await page.evaluate('(()=>{const B=Conquest.view.encounter||Conquest.view.battle;B.enemies=B.enemies.filter(e=>!e.__probe);B.playerHp=B.playerMax;Conquest.view.routeTarget=null;})()')
    # 6. the Meteor Strike telegraph on the HUD and MAP (presentation; the page clock is moved to 17:57 UTC)
    await page.clock.set_system_time(datetime.datetime(2026,11,9,17,57,tzinfo=datetime.timezone.utc));await page.wait_for_timeout(1500)
-   strike=await page.locator('.cq-strike').inner_text();await page.screenshot(path=str(OUT/'meteor-telegraph-hud-390.png'))
+   strike=await page.locator('.cq-strike').inner_text();await page.screenshot(path=str(OUT/'meteor-telegraph-hud-390.png'),timeout=90000)   # a WebGL page under software GL can take >30 s to present a frame for the capture (CI flake)
    r={'hint':hint,'scanFound':found,'gatherLabel':label,'carried':carried,'walletFe':wallet,'hullBefore':hp0,'hullAfter':hp1,'vehicleVertsBefore':v0,'vehicleVertsAfter':v1,'plates':ap,'strike':strike,'threat':threat,'lowHull':lowText,'lowHullRoute':route,'pageErrors':errors,'scanHint':scanHint,'oreRoute':oreRoute}
    print(json.dumps(r),flush=True);json.dump(r,open(OUT/'journey.json','w'),indent=1)
    assert 'STARTER VEIN' in hint and found>=1 and 'STARTER VEIN' in label and '35 FERRITE' in carried and wallet>=40 and ap[0]==1 and hp1>hp0 and v1>v0 and 'METEOR STRIKE' in strike and not errors and scanHint=='SCAN · FIND ORE|true' and oreRoute.split('|')[1].endswith(' ORE') and ('ORE' in oreRoute.split('|')[2] or 'HOLD GATHER' in oreRoute.split('|')[2]) and 'FIND ORE' not in oreRoute.split('|')[3],r

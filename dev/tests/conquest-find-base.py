@@ -12,6 +12,14 @@ identical).
 import asyncio,json,math,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
+
+# close a context only after its route handlers are detached: an in-flight /api/conquest/* route (the game polls while the page
+# closes) otherwise throws "Response has been disposed" into the NEXT browser context (seen in CI under software GL)
+async def close_ctx(ctx):
+ for pg in ctx.pages:
+  try:await pg.unroute_all(behavior='ignoreErrors')
+  except Exception:pass
+ await ctx.close()
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/find-my-base';OUT.mkdir(parents=True,exist_ok=True)
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -92,7 +100,7 @@ async def main():
    assert not routed['mapOpen'] and (routed['opened'] or routed['kind']=='base'),routed
    assert not errors,errors
    results['pageErrors']=errors
-   await ctx.close();await browser.close()
+   await close_ctx(ctx);await browser.close()
   json.dump(results,open(OUT/'find-my-base.json','w'),indent=1);print(json.dumps(results))
   print('PASS find my base 390: gold MY BASE button (first-visit pulse, one tap routes home), west-bound route from the Refuge, arrow-only drive reaches the gate and the claim screen opens itself, map MY BASE marker routes home')
  finally:

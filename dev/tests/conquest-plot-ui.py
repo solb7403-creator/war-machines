@@ -13,6 +13,14 @@ own page". Shipped client, Chromium 390x700 (~iPhone Telegram visible area; 320x
 import asyncio,json,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
+
+# close a context only after its route handlers are detached: an in-flight /api/conquest/* route (the game polls while the page
+# closes) otherwise throws "Response has been disposed" into the NEXT browser context (seen in CI under software GL)
+async def close_ctx(ctx):
+ for pg in ctx.pages:
+  try:await pg.unroute_all(behavior='ignoreErrors')
+  except Exception:pass
+ await ctx.close()
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest/base-ui';OUT.mkdir(parents=True,exist_ok=True)
 async def main():
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,stdout=asyncio.subprocess.PIPE)
@@ -76,7 +84,7 @@ async def main():
     left=await page.evaluate('({cq:!!document.querySelector(".cq"),tab:uiTab})')
     assert not left['cq'] and left['tab']=='garage',left
     results[f'page-{w}']={'tabs':bar,'nav':navFit,'leftTo':left,'pageErrors':errors};assert not errors,errors
-    await ctx.close()
+    await close_ctx(ctx)
    # ---------- 2-4. base screen ----------
    gate=[1080,1160]
    async def touch_swipe(ctx,page,sel,dy=-260):   # a real finger on the element: touchstart, moves, touchend (through the app's touch guard)
@@ -112,7 +120,7 @@ async def main():
    assert (not menu['scrolls']) or (menu['afterSwipe']['scrollTop']>20 and menu['afterSwipe']['lastVisible']),menu
    await page.screenshot(path=str(OUT/'build-menu-scrolled-390x700.png'))
    results['menu']=menu
-   await ctx.close()
+   await close_ctx(ctx)
    # 3. taps land on the exact cell at every town size and on terraced ground (3D HIGH): pick a Cannon, tap cells
    async def tap_cell(page,i,j):
     pt=await page.evaluate('''([i,j])=>{const X=ConquestPlotView.state,P=ConquestPlot,T=X.R.T,p=Conquest.view.authority.state.plot,v=new T.Vector3(P.cellX(i),P.groundY(p.site,i,j),P.cellZ(j)).project(X.R.cam),r=X.stage.getBoundingClientRect();const x=r.left+(v.x+1)/2*r.width,y=r.top+(1-v.y)/2*r.height,hit=document.elementFromPoint(x,y),near=[[0,0],[26,0],[-26,0],[0,26],[0,-26],[18,18],[-18,18],[18,-18],[-18,-18]].some(([dx,dy])=>{const e=document.elementFromPoint(x+dx,y+dy);return !!e&&!!e.closest('button,.cq-plot-coach,.cq-plot-fab,.cq-plot-drawer');});return {x,y,in:v.x>-.8&&v.x<.8&&v.y>-.78&&v.y<.7&&!!hit&&!near&&!!hit.closest('.cq-plot-stage,.cq-viewport,canvas')};}''',[i,j])   # only taps that reach the map, clear of map buttons and the sheet by the touch-adjustment radius (a finger must be too)
@@ -136,7 +144,7 @@ async def main():
     await page.screenshot(path=str(OUT/f'place-tap-cc{cc}-{site}-390x700.png'))
     placement[f'cc{cc}-{site}']={'exact':len(hits),'wrong':misses,'pageErrors':errors}
     assert len(hits)>=10 and not misses and not errors and {m['split'] for m in hits}>={'peek','half'},placement
-    await ctx.close()
+    await close_ctx(ctx)
    results['placement']=placement
    # 4. every screen fits or scrolls: wall tools + blend picker + draft CONFIRM, and the turret list, at 390x700 and 320x568
    fit={}
@@ -177,7 +185,7 @@ async def main():
     tl['confirmOnScreen']=await page.evaluate('''(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent==='CONFIRM BUILD');if(!b)return 'missing';const q=b.getBoundingClientRect(),hit=document.elementFromPoint(q.left+q.width/2,q.top+q.height/2);return q.top>=0&&q.bottom<=innerHeight&&q.left>=0&&q.right<=innerWidth&&(hit===b||b.contains(hit))?true:JSON.stringify([q.top,q.bottom,innerHeight]);})()''')   # 5C: it floats on the map while placing
     assert tl['turrets']==11 and tl['lastVisible'] and tl['confirmOnScreen'] is True,tl
     fit[f'{w}x{h}']={'walls':walls,'draft':draft,'turretList':tl,'pageErrors':errors};assert not errors,errors
-    await ctx.close()
+    await close_ctx(ctx)
    results['fit']=fit
    await browser.close()
   json.dump(results,open(OUT/'base-ui.json','w'),indent=1);print(json.dumps(results)[:1500])
