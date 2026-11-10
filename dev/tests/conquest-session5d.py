@@ -56,7 +56,6 @@ async def main():
      diag=await page.evaluate('''()=>({plot:!!document.querySelector('.cq-plot'),txt:document.querySelector('.cq')?.innerText.slice(0,300),p:[Conquest.view.p.x,Conquest.view.p.z],err:ConquestPlotView.state?.sprErr})''')
      raise AssertionError('Home Sector did not open: '+json.dumps(diag)+' pageErrors '+json.dumps((errors or [])[:3])) from e
     await page.wait_for_timeout(1200)
-   lum=lambda png:(lambda im:sum(im)/len(im))(list(__import__('PIL.Image',fromlist=['Image']).open(io.BytesIO(png)).convert('L').getdata())) if True else 0
    # ---- 1 + 2 + 3: the gate-centre session (tank on the model), then the Home Sector spawn at CC1 and CC10 ----
    for (cc,fx) in ((1,{'position':GATE,'baseFunds':True,'plotCC':1,'plotSite':'ridge'}),(10,{'position':GATE,'plotFull':'crater','baseFunds':True})):
     ctx,page,errors=await session(390,700,fx);await world(page);await page.wait_for_timeout(600)
@@ -106,7 +105,10 @@ async def main():
    await page.wait_for_function('document.querySelector(".cq-plot-spr[data-spr=\\"cannon\\"],img.cq-plot-spr")',timeout=20000)
    spr=await page.evaluate('''()=>{const i=[...document.querySelectorAll('img.cq-plot-spr')].find(x=>x.dataset.spr==='cannon')||document.querySelector('img.cq-plot-spr');return i?{k:i.dataset.spr,src:i.src}:null;}''')
    assert spr and spr['src'].startswith('data:image/png'),spr
-   png=base64.b64decode(spr['src'].split(',',1)[1]);L=lum(png);R['cannonSprite']={'key':spr['k'],'luminance':L};(OUT/'card-sprite-cannon.png').write_bytes(png)
+   png=base64.b64decode(spr['src'].split(',',1)[1]);(OUT/'card-sprite-cannon.png').write_bytes(png)
+   # mean luminance measured in the page (a canvas; no Pillow in CI): the sprite must read against the card, not as its background (#10283a ~ 35)
+   L=await page.evaluate('''src=>new Promise(res=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const x=c.getContext('2d');x.drawImage(i,0,0);const d=x.getImageData(0,0,c.width,c.height).data;let s=0,n=0;for(let k=0;k<d.length;k+=4){s+=0.299*d[k]+0.587*d[k+1]+0.114*d[k+2];n++;}res(s/n);};i.src=src;})''',spr['src'])
+   R['cannonSprite']={'key':spr['k'],'luminance':L}
    assert L>40,R['cannonSprite']
    await page.screenshot(path=str(OUT/'weapons-tab-half-390.png'));assert not errors,errors
    await close(ctx)
