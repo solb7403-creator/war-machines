@@ -129,6 +129,14 @@ B['1']=()=>{
     // hexagonal crystal prism (quartz-like) lying along the barrel axis, with faceted pointed tips
     const pr=new THREE.CylinderGeometry(0.34,0.34,1.25,6,1);pr.rotateZ(-Math.PI/2);add(pr,crys,cx,cy,cz,Math.PI/6,0,0).castShadow=false;
     [-1,1].forEach(e=>{const tip=new THREE.ConeGeometry(0.34,0.42,6);tip.rotateZ(-e*Math.PI/2);add(tip,crys,cx+e*0.835,cy,cz,Math.PI/6,0,0).castShadow=false;});
+    // crystal texture: bright facet edges + internal striation planes
+    for(let k=0;k<6;k++){const a=Math.PI/6+k*Math.PI/3+Math.PI/6;add(new THREE.BoxGeometry(1.22,0.018,0.018),glowMat('blue',1.6),cx,cy+Math.sin(a)*0.34,cz+Math.cos(a)*0.34).castShadow=false;}
+    [-0.3,0.15,0.4].forEach((dx,i)=>add(new THREE.BoxGeometry(0.02,0.42,0.3),new THREE.MeshStandardMaterial({color:0xe6f3ff,emissive:0x6fb0ff,emissiveIntensity:0.6,transparent:true,opacity:0.45}),cx+dx,cy,cz,0,0.4*(i-1),0.3*(i-1)).castShadow=false);
+    // replaceable cartridge hardware: rear socket collar, connector plug + cable, hinged clamp latches
+    add(cylX(0.4,0.16,24),M.gold,cx-0.78,cy,cz);add(cylX(0.3,0.12,24),M.graph,cx-0.92,cy,cz);
+    add(new THREE.TorusGeometry(0.2,0.05,8,20,Math.PI),M.graphL,cx-1.02,cy-0.15,cz,0,Math.PI/2,0);
+    [-0.45,0.45].forEach(dx=>{add(new THREE.BoxGeometry(0.1,0.12,0.12),M.gold,cx+dx,cy+0.47,cz+s*0.12);add(new THREE.BoxGeometry(0.28,0.05,0.06),M.graphL,cx+dx+0.12,cy+0.53,cz+s*0.12,0,0,-0.35);
+      add(new THREE.CylinderGeometry(0.05,0.05,0.42,10),M.gold,cx+dx,cy+0.43,cz,Math.PI/2);});
     // bright inner core line
     add(cylX(0.08,1.4,8),glowMat('blue',2.6),cx-0.7,cy,cz).castShadow=false;
     // gold cradle: top/bottom rails and three clamps
