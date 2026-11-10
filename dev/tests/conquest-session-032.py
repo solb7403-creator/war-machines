@@ -123,6 +123,9 @@ async def main(engine,journey_only=False):
       # tapping each later living hostile. No HP/outcome/tick mutation. CDP touchEnd lists the points being RELEASED (probed:
       # touchStart [A,B] then touchEnd [A] releases A and keeps B), so a tap while firing is touchStart [contact,t] / touchEnd [t]. The loop ends as soon as the authority reports the outcome
       # (up to ~200 s of real time; on the CI runner, software GL at a few fps, the same fight takes 2-3x longer than here)
+      # diagnostics for the CI runner (the fight is won locally and on WebKit, lost on CI Chromium about half the time): count FIRE
+      # pointer cancels and log the fight state every ~3 s
+      await page.evaluate('''()=>{const b=document.querySelector('#cq-fire');window.__fireEv={cancel:0,lost:0,up:0,down:0};for(const t of ['pointercancel','lostpointercapture','pointerup','pointerdown'])b.addEventListener(t,()=>{window.__fireEv[{pointercancel:'cancel',lostpointercapture:'lost',pointerup:'up',pointerdown:'down'}[t]]++;});}''')
       firing=False
       async def fire(on):
        nonlocal firing
@@ -141,6 +144,7 @@ async def main(engine,journey_only=False):
         if avail:
          r=await rect(selector);await press({'id':4,'x':r['x']+r['w']/2,'y':r['y']+r['h']/2})
        await page.wait_for_timeout(250)
+       if i%12==0:print('FIGHT',i,'harnessFiring',firing,json.dumps(await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {kills:S.battle.kills,hp:Math.round(S.hp),viewFiring:!!v.firing,heat:Math.round(B.heat||0),hot:!!B.overheated,sel:v.selectedId,fps:+v.fps.toFixed(1),fireEv:window.__fireEv,alive:B.enemies.filter(e=>e.hp>0&&!e.resident).length};}''')),flush=True)
       if firing:await touch('touchEnd',[contact])
       firing=False
       battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement,featured:Conquest.view.authority.state.featuredMission})');assert battle['state']=='victory',battle;assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle
