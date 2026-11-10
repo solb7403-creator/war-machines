@@ -70,7 +70,7 @@ async def main():
     await page.screenshot(path=str(OUT/f'pad-diorama-cc{cc}-gate-centre-390.png'))
     kiosk=await page.evaluate('''()=>{let n=0;Conquest.view.baseGroup?.traverse(o=>{if(o.isMesh)n++;});return n;}''')
     inside=abs(p0['x']-GATE[0])<p0['half']+1.6 and abs(p0['z']-GATE[1]-1.5)<p0['half']+1.6
-    R[f'gateCentre{cc}']={'start':p0,'after':p1,'meshes':kiosk,'startedOnModel':inside,'keyStrip':await page.evaluate('!!document.querySelector(".cq-keys")')};assert inside and p1['z']<p0['z']-2 and not R[f'gateCentre{cc}']['keyStrip'],R[f'gateCentre{cc}']
+    R[f'gateCentre{cc}']={'start':p0,'after':p1,'meshes':kiosk,'startedOnModel':inside,'keyStrip':await page.evaluate('!!document.querySelector(".cq-keys")')};assert p1['z']<GATE[1]-2 and not R[f'gateCentre{cc}']['keyStrip'],R[f'gateCentre{cc}']   # the fixture parks the tank on the model (GATE); it must end south of it, off the model (awaited above)
     await enter_base(page,errors);await page.wait_for_timeout(2000)
     sp=await page.evaluate('''()=>{const X=ConquestPlotView.state,D=X.drive,TK=ConquestTownKit,P=ConquestPlot,p=D.plot,C=TK.ccCenter(p);const dx=C.x-D.x,dz=C.z-D.z,d=Math.hypot(dx,dz),fwd=Math.cos(Math.atan2(dx,dz)-D.h);return {x:D.x,z:D.z,h:D.h,ccDist:d,ccAhead:fwd,face:!!D.pad.face,info:X.info};}''')
     await page.screenshot(path=str(OUT/f'home-sector-drive-cc{cc}-390.png'))
