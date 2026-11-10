@@ -1,0 +1,144 @@
+{
+ "speedMs": 4.4,
+ "spawn": {
+  "x": 898,
+  "z": 1024
+ },
+ "legs": [
+  {
+   "leg": "spawn → Refuge supply terminal",
+   "metres": 338,
+   "seconds": 77,
+   "straightLine": false
+  },
+  {
+   "leg": "spawn → HOLD THE OXYGEN LINE (first mission)",
+   "metres": 274,
+   "seconds": 62,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → Oxygen Line",
+   "metres": 121,
+   "seconds": 27,
+   "straightLine": false
+  },
+  {
+   "leg": "Oxygen Line → Refuge (bank)",
+   "metres": 121,
+   "seconds": 28,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → Command Gate (MY BASE)",
+   "metres": 95,
+   "seconds": 22,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → INTERCEPT THE CONVOY",
+   "metres": 258,
+   "seconds": 59,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → SABOTAGE THE RELAY",
+   "metres": 316,
+   "seconds": 72,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → SIGNAL RECOVERY",
+   "metres": 243,
+   "seconds": 55,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → BEACON EXTRACTION",
+   "metres": 274,
+   "seconds": 62,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → BREAK THE REDOUBT",
+   "metres": 290,
+   "seconds": 66,
+   "straightLine": false
+  },
+  {
+   "leg": "Refuge → nearest HARD raid (dust-switchback)",
+   "metres": 380,
+   "seconds": 86,
+   "straightLine": false
+  }
+ ],
+ "playerHp": 1700,
+ "playerDps": 140,
+ "enemies": {
+  "raider": {
+   "hp": 180,
+   "dps": 18,
+   "range": 43,
+   "ttkSeconds": 1.3,
+   "killsPlayerInSeconds": 94.4
+  },
+  "breacher": {
+   "hp": 230,
+   "dps": 24,
+   "range": 40,
+   "ttkSeconds": 1.6,
+   "killsPlayerInSeconds": 70.8
+  },
+  "sentinel": {
+   "hp": 1100,
+   "dps": 72,
+   "range": 54,
+   "ttkSeconds": 7.9,
+   "killsPlayerInSeconds": 23.6
+  },
+  "command": {
+   "hp": 330,
+   "dps": 26,
+   "range": 48,
+   "ttkSeconds": 2.4,
+   "killsPlayerInSeconds": 65.4
+  }
+ },
+ "oxygenLineWaves": [
+  [
+   "raider",
+   "breacher"
+  ],
+  [
+   "raider",
+   "breacher"
+  ],
+  [
+   "raider",
+   "breacher",
+   "command"
+  ]
+ ],
+ "oxygenLineTtkSeconds": 11.1,
+ "firstClearCP": {
+  "oxygen-line": 250,
+  "convoy": 140,
+  "relay": 130,
+  "recon": 100,
+  "rescue": 150,
+  "redoubt": 220
+ },
+ "firstBase": {
+  "cp": 2550,
+  "alloy": 110,
+  "biomass": 65,
+  "helium": 8
+ },
+ "firstPlate": {
+  "fe": 40,
+  "pts": 300
+ },
+ "starterVein": 35,
+ "hullRegenInField": false,
+ "repairOnlyAt": "Refuge terminal (12 m) or base gate zone (30 m)"
+}
