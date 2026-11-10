@@ -38,6 +38,9 @@ Acceptance (seeded, deterministic sims with the real game code, enough matches p
 - A permanent regression test in CI (node suite) that fails if any of these monotonic gear steps flattens or inverts, if any enemy stat path copies the player's gear, or if AI abilities fire faster than the player rules allow. It should fail on the current main before your fix, so the bug can't come back a 5th time. Show it failing on main first.
 - Before/after table plus a plain-language summary for the owner. No softlocks in any mode; client/server parity; PvP frozen loadouts untouched; Worker dry-run clean.
 
+### A2. Conquest check (owner asked that the fix carry into Conquest; keep it light)
+Conquest uses its own AI (`js/conquest/combat.js`: fixed archetype stats via `enemyStats`, garrisons, patrols, commanders, waves; plus town raids from Session 5B). A quick read suggests it does not copy the player's gear. Verify that rather than assume it: confirm that no Conquest enemy, commander, raid or wave path reads the player's gear, power or league in a way that cancels the gear advantage, that Conquest enemy abilities respect their cooldowns, and that better gear makes Conquest fights measurably easier, with a short seeded check of stock vs full legendary on a garrison, a commander and a town raid. Fix only what's actually broken. Add the Conquest case to the same regression test so a future change can't add gear-copying there either.
+
 ## B. Desktop keyboard driving (Conquest unplayable on a computer)
 From the Fix queue: the code reads WASD/arrows (`view.js` keys → `controlInput`), and the living-war CI bot drives by keyboard in headless Chromium, so the break is likely environment-specific. Suspects: focus held by a button or dialog after ENTER CONQUEST, Telegram Desktop / website embedding, or the website boot path.
 - Reproduce on the real website build and a Telegram Desktop-like embedding first, then fix it.
