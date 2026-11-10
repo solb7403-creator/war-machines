@@ -7,3 +7,4 @@ Building ending: `single sci-fi lunar base building alone on a plain dark grey b
 Next month: Missile, Mortar, Flame Projector, Heavy Siege Cannon, Laser Cannon; Foundry, Biodome, Hangar, Helium Extractor, Radar, Uplink, Trophy Hall, Gate; ore deposits, bio-flora.
 Moonbeam v2 (owner: v1 didn't read as legendary): `1-moonbeam-legendary-ref.png` from `moon.html`, dark graphite + gold + blue-white, a giant crescent arch around the core, open-jaw crescent-blade barrel. Replaces v1.
 Moonbeam v3 (owner disliked the sloped barrel): perfectly straight tri-blade barrel around a plasma beam, gold collars, gold crescent crown at the muzzle.
+Moonbeam v4 (final): eclipse crown (gold crescent + dark inner crescent), gold dorsal crest, swept filigree wings, rear wing blades, straight tri-blade barrel with gold collars and dorsal sickle blades, spiked gold muzzle crown.

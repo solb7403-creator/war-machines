@@ -95,49 +95,50 @@ const _gm=glowMat;glowMat=(k,i)=>_gm(k,Math.min(i||3,2.6));
 M.graph=new THREE.MeshStandardMaterial({map:wearTex(81,'#2a2e36','#8a93a3',0.03),metalness:0.9,roughness:0.32,roughnessMap:RT});
 M.graphL=new THREE.MeshStandardMaterial({map:wearTex(83,'#454b56','#a8b2c2',0.02),metalness:0.9,roughness:0.28,roughnessMap:RT});
 const B={};
+function crescentShape(R,r,off){const sh=new THREE.Shape();sh.absarc(0,0,R,0,Math.PI*2,false);const h=new THREE.Path();h.absarc(off,0,r,0,Math.PI*2,true);sh.holes.push(h);return sh;}
+function crescentPlate(R,r,off,th,mat,x,y,z,rx,ry,rz){const g=new THREE.ExtrudeGeometry(crescentShape(R,r,off),{depth:th,bevelEnabled:true,bevelThickness:0.02,bevelSize:0.02,bevelSegments:2,curveSegments:48});g.translate(0,0,-th/2);return add(g,mat,x,y,z,rx,ry,rz);}
 B['1']=()=>{
-  ring(1.25,M.graph);
-  add(new THREE.TorusGeometry(1.3,0.05,8,64),M.gold,0,0.24,0,Math.PI/2);
+  ring(1.35,M.graph);
+  add(new THREE.TorusGeometry(1.42,0.06,8,72),M.gold,0,0.24,0,Math.PI/2);
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2;add(new THREE.BoxGeometry(0.16,0.12,0.08),M.gold,Math.cos(a)*1.43,0.12,Math.sin(a)*1.43,0,-a,0);}
   const Y=0.28;
-  // layered faceted hull
-  add(prof([[-1.5,0],[1.1,0],[1.5,0.4],[1.2,0.95],[-0.6,1.1],[-1.6,0.6]],1.9,0.06),M.graph,0,Y,0);
-  add(prof([[-1.2,0],[0.9,0],[0.7,0.18],[-1.0,0.2]],1.5,0.04),M.graphL,0,Y+1.1,0);
-  // side armor wings with gold piping and crescent emblems
+  add(prof([[-1.7,0],[1.2,0],[1.65,0.45],[1.3,1.05],[-0.7,1.2],[-1.8,0.65]],2.0,0.07),M.graph,0,Y,0);
+  add(prof([[-1.3,0],[0.95,0],[0.7,0.22],[-1.1,0.25]],1.55,0.05),M.graphL,0,Y+1.2,0);
+  add(prof([[-1.5,0],[0.6,0],[0.3,0.22],[-1.4,0.3]],0.14,0.03),M.gold,0,Y+1.45,0);
   [-1,1].forEach(s=>{
-    add(prof([[-1.4,0],[1.0,0],[1.3,0.35],[1.0,0.85],[-1.2,0.9],[-1.55,0.45]],0.14,0.04),M.graphL,0,Y+0.15,s*1.02);
-    add(new THREE.BoxGeometry(2.4,0.05,0.05),M.gold,-0.15,Y+1.05,s*1.1);add(new THREE.BoxGeometry(2.5,0.05,0.05),M.gold,-0.15,Y+0.16,s*1.1);
-    add(new THREE.TorusGeometry(0.34,0.07,12,48,Math.PI*1.3),M.gold,-0.35,Y+0.6,s*1.12,0,0,0.85);
-    glowStrip('blue',new THREE.BoxGeometry(1.6,0.035,0.02),0.0,Y+0.35,s*1.105);
-    glowStrip('blue',new THREE.BoxGeometry(0.03,0.5,0.02),0.85,Y+0.6,s*1.105);
-    // rear vanes
-    for(let i=0;i<3;i++)add(new THREE.BoxGeometry(0.5,0.08,0.4),M.graphL,-1.55-i*0.05,Y+0.5+i*0.18,s*(0.55+i*0.12),0,0,0.3);
+    add(prof([[-1.6,0],[1.1,0],[1.45,0.4],[1.1,0.95],[-1.3,1.0],[-1.75,0.5]],0.16,0.05),M.graphL,0,Y+0.12,s*1.08);
+    for(const [y0,len] of [[0.25,2.6],[0.62,2.2],[0.98,2.3]])add(new THREE.BoxGeometry(len,0.045,0.045),M.gold,-0.15,Y+y0,s*1.17);
+    for(const x of [-1.2,-0.4,0.4])add(new THREE.BoxGeometry(0.04,0.34,0.045),M.gold,x,Y+0.8,s*1.17);
+    crescentPlate(0.36,0.3,0.14,0.08,M.gold,0.75,Y+0.45,s*1.2,0,0,0.6);
+    glowStrip('blue',new THREE.BoxGeometry(1.7,0.035,0.02),-0.2,Y+0.44,s*1.172);
+    add(prof([[0,0],[-1.1,0.25],[-1.3,0.7],[-0.2,0.35]],0.1,0.03),M.graphL,-1.55,Y+0.75,s*0.8);
+    add(new THREE.BoxGeometry(1.0,0.035,0.11),M.gold,-2.15,Y+1.12,s*0.8,0,0,0.3);
+    glowStrip('blue',new THREE.BoxGeometry(0.9,0.03,0.11),-2.1,Y+0.96,s*0.8,0,0,0.25);
   });
-  // giant crescent rising around the core
-  const cres=new THREE.TorusGeometry(0.95,0.16,16,64,Math.PI*1.35);
-  add(cres,M.gold,-0.15,Y+2.0,0,0,0,-0.95);
-  add(new THREE.TorusGeometry(0.95,0.05,8,64,Math.PI*1.35),M.graph,-0.15,Y+2.0,0.14,0,0,-0.95);
-  add(rbox(0.7,0.45,0.7,0.06),M.graphL,-0.15,Y+1.35,0);
-  add(new THREE.SphereGeometry(0.52,40,24),glowMat('blue',2.6),-0.15,Y+2.0,0);
-  [0,1,2].forEach(k=>add(new THREE.TorusGeometry(0.66+k*0.04,0.025,8,56),M.gold,-0.15,Y+2.0,0,k*0.9,k*0.6,0.4));
-  haloSprite('blue',-0.15,Y+2.0,0,2.6,0.8);glowLight('blue',-0.15,Y+2.3,1.3,7,4);
-  // mantlet
-  add(rbox(0.7,0.85,1.2,0.08),M.graph,1.55,Y+0.55,0);add(new THREE.BoxGeometry(0.06,0.87,1.22),M.gold,1.9,Y+0.55,0);
-  // straight tri-blade barrel: three parallel blades around a central plasma beam
-  const BY=Y+0.55,X0=1.9,L=3.3;
-  for(let k=0;k<3;k++){const a=Math.PI/2+k*Math.PI*2/3;const r=0.27;
-    const m=add(rbox(L,0.13,0.26,0.04),M.graphL,X0+L/2,BY+Math.sin(a)*r,Math.cos(a)*r,a-Math.PI/2,0,0);
-    add(new THREE.BoxGeometry(L-0.2,0.025,0.1),M.gold,X0+L/2,BY+Math.sin(a)*(r+0.075),Math.cos(a)*(r+0.075),a-Math.PI/2,0,0);}
-  glowStrip('blue',cylX(0.07,L+0.1),X0,BY,0);
-  add(cylX(0.18,L-0.2,24),haloMat('blue',0.22),X0+0.1,BY,0).castShadow=false;
-  // gold collars along the barrel
-  [2.5,3.4,4.3].forEach(x=>{add(cylX(0.44,0.12,40),M.gold,x,BY,0);glowStrip('blue',new THREE.TorusGeometry(0.4,0.018,8,48),x+0.13,BY,0,0,Math.PI/2);});
-  // crescent muzzle crown
-  add(cylX(0.42,0.18,40),M.graph,X0+L,BY,0);
-  const cm=new THREE.TorusGeometry(0.46,0.08,12,48,Math.PI*1.4);add(cm,M.gold,X0+L+0.2,BY,0,0,Math.PI/2,0.9);
-  add(new THREE.SphereGeometry(0.17,20,12),glowMat('blue',2.6),X0+L+0.25,BY,0);haloSprite('blue',X0+L+0.35,BY,0,1.4,0.75);
-  glowLight('blue',3.6,Y+1.3,1.2,5,4);
-  // top sensor + gold hatch ring
-  add(new THREE.CylinderGeometry(0.3,0.32,0.1,32),M.graphL,0.6,Y+1.36,-0.45);add(new THREE.TorusGeometry(0.31,0.025,8,32),M.gold,0.6,Y+1.42,-0.45,Math.PI/2);
+  const CX=-0.15,CY=Y+2.15;
+  add(rbox(0.8,0.5,0.8,0.06),M.graphL,CX,Y+1.5,0);add(new THREE.BoxGeometry(0.84,0.05,0.84),M.gold,CX,Y+1.76,0);
+  crescentPlate(1.05,0.86,-0.28,0.22,M.gold,CX,CY,0,0,0,0);
+  crescentPlate(0.78,0.66,0.2,0.16,M.graph,CX,CY,0.05,0,0,Math.PI);
+  add(new THREE.SphereGeometry(0.55,40,24),glowMat('blue',2.6),CX,CY,0);
+  [0,1].forEach(k=>add(new THREE.TorusGeometry(0.72+k*0.05,0.03,8,56),M.gold,CX,CY,0,k?1.1:0.5,k?0.4:-0.5,0.3));
+  haloSprite('blue',CX,CY,0,3.0,0.8);glowLight('blue',CX,CY+0.3,1.3,8,4);
+  add(rbox(0.75,0.95,1.3,0.08),M.graph,1.65,Y+0.58,0);add(new THREE.BoxGeometry(0.07,0.97,1.32),M.gold,2.02,Y+0.58,0);
+  const BY=Y+0.58,X0=2.0,L=3.3;
+  for(let k=0;k<3;k++){const a=Math.PI/2+k*Math.PI*2/3,r=0.28;
+    add(rbox(L,0.14,0.28,0.04),M.graphL,X0+L/2,BY+Math.sin(a)*r,Math.cos(a)*r,a-Math.PI/2,0,0);
+    add(new THREE.BoxGeometry(L-0.2,0.03,0.1),M.gold,X0+L/2,BY+Math.sin(a)*(r+0.08),Math.cos(a)*(r+0.08),a-Math.PI/2,0,0);}
+  glowStrip('blue',cylX(0.075,L+0.1),X0,BY,0);
+  add(cylX(0.19,L-0.2,24),haloMat('blue',0.22),X0+0.1,BY,0).castShadow=false;
+  [2.5,3.4,4.3].forEach((x,i)=>{const h=0.62-i*0.08;
+    add(cylX(0.4,0.12,32),M.gold,x,BY,0);
+    // swept sickle blade standing on top of the barrel
+    add(prof([[0,0],[0.55,0],[0.25,h*0.55],[-0.25,h],[-0.05,h*0.45]],0.07,0.02),M.gold,x,BY+0.36,0);
+    glowStrip('blue',new THREE.TorusGeometry(0.36,0.018,8,48),x+0.07,BY,0,0,Math.PI/2);});
+  add(cylX(0.45,0.2,40),M.graph,X0+L,BY,0);add(cylX(0.5,0.12,40),M.gold,X0+L+0.2,BY,0);
+  for(let i=0;i<6;i++){const a=i/6*Math.PI*2;add(new THREE.ConeGeometry(0.07,0.42,10),M.gold,X0+L+0.5,BY+Math.sin(a)*0.43,Math.cos(a)*0.43,0,0,-Math.PI/2);}
+  add(new THREE.SphereGeometry(0.2,24,14),glowMat('blue',2.6),X0+L+0.38,BY,0);haloSprite('blue',X0+L+0.5,BY,0,1.6,0.8);
+  glowLight('blue',3.6,Y+1.4,1.3,5,4);
+  add(new THREE.CylinderGeometry(0.28,0.3,0.1,32),M.graphL,0.7,Y+1.5,-0.5);add(new THREE.TorusGeometry(0.29,0.025,8,32),M.gold,0.7,Y+1.56,-0.5,Math.PI/2);
 };
 B[W]();
 
