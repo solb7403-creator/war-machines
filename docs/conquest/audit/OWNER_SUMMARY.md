@@ -8,7 +8,7 @@ Fable · Extra, Nov 10 2026. Read-only design audit of `main` at `36f9ba6` (buil
 
 | # | Area | Score | Why (short) |
 |---|---|---|---|
-| 1 | First 10 minutes | **4** | You spawn on an empty viaduct 274 m from anything, read 7 paragraphs, and your first enemies cannot hurt you (an interceptor needs 94 s to kill a stock tank). Your first town is ~60 min away. |
+| 1 | First 10 minutes | **3** | You spawn on an empty viaduct 274 m from anything, read 7 paragraphs, and your first enemies cannot hurt you (an interceptor needs 94 s to kill a stock tank), yet our scripted pilot lost the first mission with 0 kills because the arrow points at the objective, not the attackers. Your first town is ~60 min away. |
 | 2 | Core loop | 6 | Every step exists and is server-verified. "Stronger tank" is the weak step: +1% hull per plate, hidden engineering percentages. |
 | 3 | Session length / one more raid | 5 | 3–4 min raids suit phones. No in-session pull: repeat pay drops to 45%, no chain bonus, no timer worth chasing except the 2-hour Meteor. |
 | 4 | Daily / weekly return | 4 | Daily Base Yield is a good appointment. No contracts board, no weekly goal, no streak, no Telegram alert when yield is full or your town was hit. |
@@ -24,11 +24,11 @@ Fable · Extra, Nov 10 2026. Read-only design audit of `main` at `36f9ba6` (buil
 | 14 | Airdrop integrity | 6 | Strong server authority and exactly-once credit. One 2-minute mission unlocks the whole day's yield points (alt-farm), and field missions repay 100% every 3 minutes (bot-farm). |
 | 15 | Measurement | 2 | Zero gameplay analytics. Only the signup funnel and anomaly flags exist. |
 
-Average 4.9. Everything above 6 is server/economy plumbing; everything below 5 is what the player feels.
+Average 4.9. Everything at 6 or above is server/economy plumbing; everything below 5 is what the player feels.
 
 ## The 10 biggest problems
 
-1. **The opening does not hook.** Minute 0 shows three lines of economy text and a Meteor Strike 290 m away; the first fight is risk-free; the first "mine" moment (claim your town) is modeled at minute 59. Captures `02-world-first-view.png`, `05-first-fight.png`.
+1. **The opening does not hook, and it can fail silently.** Minute 0 shows three lines of economy text and a Meteor Strike 290 m away; the drive to the first mission is 88 simulated seconds of nothing; our scripted pilot, following the HUD arrow and holding FIRE, **lost the first mission with 0 kills** because the attackers spawn 150 m away behind buildings and the arrow points at the processor, not at them ("DEFENSE LOST · No payout"). The first "mine" moment (claim your town) is modeled at minute 59. Captures `02-world-first-view.png`, `05-first-fight.png`, `06-after-action-first-mission.png`.
 2. **Silent, numb combat.** `js/conquest/view.js` plays one sound; `js/fx.js` already has `hit`, `kill`, `boom`, `claim`, `meteor` that Arcade uses. No hit flash, numbers, kill pop or loot flyout.
 3. **No reason to return tomorrow** except the yield meter. Contracts rotate every 30 min with a +20 CP tag nobody sees; no board, no weekly, no alerts (the alert hook writes `sent:0`, the bot never sends).
 4. **Town defense has no consequence.** Walls and 42 turrets cost ~480,000 CP to max and only ever face the drill. Raiders never come while you are away.

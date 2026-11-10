@@ -13,7 +13,7 @@ Fable · Extra, Nov 10 2026. Brief: [CONQUEST_FUN_AUDIT_BRIEF.md](../CONQUEST_FU
 
 | # | Area | Score |
 |---|---|---|
-| 1 | First 10 minutes | 4 |
+| 1 | First 10 minutes | 3 |
 | 2 | Core loop | 6 |
 | 3 | Session length / "one more raid" | 5 |
 | 4 | Daily and weekly reasons to return | 4 |
@@ -31,7 +31,7 @@ Fable · Extra, Nov 10 2026. Brief: [CONQUEST_FUN_AUDIT_BRIEF.md](../CONQUEST_FU
 
 ---
 
-## 1. First 10 minutes — 4/10
+## 1. First 10 minutes — 3/10
 
 **What happens (measured).**
 
@@ -43,6 +43,7 @@ Fable · Extra, Nov 10 2026. Brief: [CONQUEST_FUN_AUDIT_BRIEF.md](../CONQUEST_FU
 | Refuge terminal (bank, repair, plating) | 338 m from spawn = 77 s | same |
 | Command Gate (MY BASE) | 230 m from spawn; the HUD shows it from second 0 | `02-world-first-view.png` |
 | First fight | Three waves: 2 → 2 → 3 enemies (interceptor + saboteur + coordinator). Stock Pulse kills an interceptor in 1.3 s, the whole mission in ~11 s of firing. An interceptor needs 94 s to kill a stock tank (1,700 HP vs 18 DPS) | `js/conquest/combat.js` `archetypes`, `formations`; model |
+| **First fight, as played** | Our scripted pilot drove the real route (87.8 simulated seconds from spawn), started the mission from the ACT button at the activation radius and then held FIRE while driving toward the HUD arrow. It **lost**: "DEFENSE LOST · 0 HOSTILES DESTROYED · 2:04 · HULL 98%". The attackers spawn at (1218–1240, 995), ~108 m north-east of the processor and ~150 m from the activation point, beyond the Pulse Cannon's 92 m range and behind colony buildings; the HUD arrow points at the processor, not at them; the processor's 1,800 HP falls in about two minutes. CI's living-war bot wins the same mission with an A* path to the attackers, so it is a guidance problem, not an impossibility: a pilot who does not know to drive past the objective to the north-east loses the first mission with no explanation and no payout | `captures/05-first-fight.png`, `06-after-action-first-mission.png`, `playtest-log.json` "mission-end" |
 | First loot | 250 CP + 450 base points + ~3 Ferrite, shown as after-action tiles; salvage caches on the ground | `worker/src/conquest-economy.js` `missionReward`, `cacheMinerals` |
 | First upgrade | Engineering rank 1 (100 CP + 4 alloy) at Refuge Supply: a +9% heat-capacity line in a menu | `combat.js` `costs`, `tracks` |
 | First plate | 40 Ferrite + 300 points; needs the Starter Vein (35 Ferrite), which needs SCAN; modeled at minute 12 | `js/rules.js` `PLATE`, economy spec §7.3 |
@@ -56,9 +57,13 @@ Fable · Extra, Nov 10 2026. Brief: [CONQUEST_FUN_AUDIT_BRIEF.md](../CONQUEST_FU
 - The first "this is mine" moment (claim a site, name the town) is an hour away for a regular and two days for a casual. The hub tells a brand-new account "0 / 2,550 CP banked" (`00-hub-new-account.png`), which reads as a wall, not a goal.
 - The guided resource step (SCAN · FIND ORE pulse, first-entry tip) exists and works, but the first plate is only +1% hull: nothing on the tank changes that a player notices at 390 px.
 - Bug: the hub's pinned action row covers the YOUR BASE card text and the LIVE EVENTS title at 390×844 on first paint (`00-hub-new-account.png`). The page scrolls, but the first impression is clipped copy.
+- The first mission can be started 150 m from the fight (`activationRadius:150`) and its arrow points at the objective, not the attackers; a failed first mission says "No payout for a failed operation" and nothing about what to do differently (`06-after-action-first-mission.png`).
+- Refuge Supply opens on five lines of zeros and a paragraph before the two buttons a new pilot needs (`10-refuge-supply-engineering-plating.png`); the plating cards are the right idea, buried under the ledger.
+- The spawn-to-mission drive took 87.8 simulated seconds along the route the HUD uses (the straight-line estimate is 62 s): a minute and a half of nothing before the first input that matters.
 
 **Fixes (Session 6, decided unless marked).**
 - Spawn at the Refuge gate with the oxygen towers under attack: two interceptors strafing within 20 s and one sentinel (7.9 s to kill, can hurt you) as the first real target, so the first 60 seconds contain a visible fight, a kill pop and a drop.
+- During a defense mission the HUD arrow points at the nearest living attacker (the objective keeps its own bar); the first mission's activation radius drops to 60 m and the first wave spawns within line of sight of the activation point; a failed operation's after-action names the cause and the fix ("The attackers came from the north-east. Follow the red arrow next time").
 - The transmission becomes a 15-second radio over gameplay with SKIP; the full text stays in HELP → REPLAY OPENING TRANSMISSION.
 - HUD at minute 0: mission line only. AIRDROP, BASE and METEOR lines appear after the first bank (progressive disclosure).
 - Starter Vein on the Refuge road within 40 m of the terminal; the coach walks SCAN → GATHER → BANK → FABRICATE in one chain, first plate by minute 5, with a visible hull change (plate slabs on the glacis are already modeled for HIGH).
@@ -265,4 +270,6 @@ Full tables: [CONQUEST_1_0_SPEC.md](CONQUEST_1_0_SPEC.md) §4.
 
 ## Appendix: captures
 
-`captures/00-hub-new-account.png`, `01-opening-transmission.png`, `02-world-first-view.png`, `03-region-map-new.png`, `04-first-mission-briefing.png`, `05-first-fight.png`, `06-after-action-first-mission.png`, `07-world-after-mission.png`, `08-refuge-terminal.png`, `09-more-menu.png`, `10-refuge-supply-engineering-plating.png`, `11-scan-ore.png`, `12-gather-channel.png`, `13-command-gate-no-base.png`, `14-claim-town-screen.png`, `20-hub-cc10.png`, `21-world-at-gate-cc10.png`, `22-home-sector-drive-cc10.png`, `23-home-tab.png` … `27-defend-tab.png`, `28-drill-replay.png`, `29-drill-report.png`, `30-region-map-advanced.png`, `31-raid-site-operations.png`; `captures/playtest-log.json`. Chromium software GL at 390×844, device scale 2; relative only.
+`captures/00-hub-new-account.png`, `01-opening-transmission.png`, `02-world-first-view.png`, `03-region-map-new.png`, `04-first-mission-briefing.png`, `05-first-fight.png`, `06-after-action-first-mission.png`, `07-world-after-mission.png`, `08-refuge-terminal.png`, `09-more-menu.png`, `10-refuge-supply-engineering-plating.png`, `11-scan-ore.png`, `13-command-gate-no-base.png`, `14-claim-town-screen.png`, `20-hub-cc10.png`, `21-world-at-gate-cc10.png`, `22-home-sector-drive-cc10.png`, `23-home-tab.png` … `27-defend-tab.png`, `28-drill-replay.png`, `29-drill-report.png`, `30-region-map-advanced.png`, `31-raid-site-operations.png`; `captures/playtest-log.json`. Chromium software GL at 390×844 (captured at device scale 2, stored at 390 px wide); relative only.
+
+Limits of the scripted playtest, stated plainly: the bot's SCAN keypress did not register (no vein was revealed, so there is no gather capture and `11-scan-ore.png` shows the pre-scan HUD), and its tap on START did not start the drill (`28`/`29` show the DEFEND tab, not a replay). Both features are covered by the existing CI journeys (`conquest-minerals-browser.py`, `conquest-base-builder.py`); neither is claimed as a bug here. The first-mission loss is real: the bot drove, fired and followed the arrow as a new player would.

@@ -1,0 +1,261 @@
+[
+ {
+  "t": 34.4,
+  "event": "world-ready"
+ },
+ {
+  "t": 34.4,
+  "event": "spawn",
+  "p": {
+   "x": 898,
+   "z": 1024,
+   "y": -0.001666473554330139,
+   "surface": "ground"
+  },
+  "hp": 1700,
+  "enemies": [
+   {
+    "k": "raider",
+    "d": 96,
+    "vis": false
+   },
+   {
+    "k": "raider",
+    "d": 126,
+    "vis": false
+   },
+   {
+    "k": "command",
+    "d": 140,
+    "vis": false
+   },
+   {
+    "k": "raider",
+    "d": 181,
+    "vis": false
+   },
+   {
+    "k": "raider",
+    "d": 208,
+    "vis": false
+   }
+  ]
+ },
+ {
+  "t": 116.9,
+  "event": "travel",
+  "label": "spawn to Oxygen Line",
+  "wallSeconds": 82.5,
+  "simSeconds": 87.8,
+  "at": {
+   "x": 1159,
+   "z": 1132
+  },
+  "routePoints": 68
+ },
+ {
+  "t": 118.3,
+  "event": "shot",
+  "name": "04-first-mission-briefing"
+ },
+ {
+  "t": 118.5,
+  "event": "mission-started"
+ },
+ {
+  "t": 121.1,
+  "event": "shot",
+  "name": "05-first-fight"
+ },
+ {
+  "t": 265.9,
+  "event": "mission-end",
+  "state": "defeat",
+  "hp": 1665.3725000000002,
+  "objHp": 0,
+  "simSeconds": 124.6,
+  "wallSeconds": 147.4,
+  "kills": 0
+ },
+ {
+  "t": 267.9,
+  "event": "shot",
+  "name": "06-after-action-first-mission"
+ },
+ {
+  "t": 267.9,
+  "event": "aar",
+  "text": "DEFENSE LOST\n\nOPERATION FAILED \u00b7 0 HOSTILES DESTROYED \u00b7 2:04 \u00b7 HULL 98%\n\nOxygen infrastructure destroyed No payout for a failed operation. First-clear history, CP, banked salvage and permanent equipment are unaffected.\n\nBASE \u00b7 0/2550 CP | 0/110 ALLOY | 0/65 BIOMASS | 0/8 HELIUM \u00b7 Reputation 0\n\nRETURN TO EXPLORATION"
+ },
+ {
+  "t": 268.0,
+  "event": "after-first-mission",
+  "cp": 0,
+  "cargo": {
+   "alloy": 0,
+   "biomass": 0,
+   "helium": 0
+  },
+  "airdrop": [],
+  "completed": []
+ },
+ {
+  "t": 269.6,
+  "event": "shot",
+  "name": "07-world-after-mission"
+ },
+ {
+  "t": 276.6,
+  "event": "travel",
+  "label": "Oxygen Line to Refuge",
+  "wallSeconds": 6.9,
+  "simSeconds": 7.7,
+  "at": {
+   "x": 1173,
+   "z": 1163
+  },
+  "routePoints": 12
+ },
+ {
+  "t": 277.9,
+  "event": "shot",
+  "name": "08-refuge-terminal"
+ },
+ {
+  "t": 280.0,
+  "event": "shot",
+  "name": "09-more-menu"
+ },
+ {
+  "t": 282.2,
+  "event": "shot",
+  "name": "10-refuge-supply-engineering-plating"
+ },
+ {
+  "t": 282.2,
+  "event": "supply-text",
+  "text": "0\nBronze\nRookie\nVanguard\nPulse Cannon, power 59, Rookie league\n\u2605\nDaily reward ready\n+125 points, day 1 of 7\n\u203a\nArena 1v1\nMoonbase\nBest of 3 rounds, first to 2\nChange\nFIGHT\nWin +270 points\nYOUR BATTLE MACHINES\nChoose which bay deploys in your next match\nBAY 1 \u00b7 DEPLOYING\nWar Machine MK-I\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nSelected\nBAY 2 \u00b7 READY\nWar Machine MK-II\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nDeploy this machine\n\nEdit either build in the Garage.\n\nPlay\nGarage\nConquest\nShop\nQuests\nRanks\n\u2039\nMAP\n\u2302 MY BASE\n93 m\nMORE\nHOLD THE OXYGEN LINE\n\u2191\n116 m \u00b7 BRIEFING AVAILABLE\nHULL\n1666 / 1700\nAIRDROP TODAY 0 / 50,000\nDEFEND THE OXYGEN LINE\nBASE \u00b7 0/2550 CP | 0/110 ALLOY | 0/65 BIOMASS | 0/8 HELIUM\nSCAN \u00b7 FIND ORE\n\u2604 METEOR STRIKE OPEN \u00b7 RESERVOIR FLATS \u00b7 5:55 LEFT\nREFUGE SUPPLY\nHEAT 0%\nSUPER\n2%\nDASH\nSHIELD\nFIRE\nDRIVE\nREFUGE SUPPLY\n\n0 CP SECURED\n\nLUNAR ALLOY \u00b7 BANKED 0 \u00b7 CARRIED 0 \u00b7 AT RISK 0\n\nPARASITE BIOMASS \u00b7 BANKED 0 \u00b7 CARRIED 0 \u00b7 AT RISK 0\n\nHELIUM-3 \u00b7 BANKED 0 \u00b7 CARRIED 0 \u00b7 AT RISK 0\n\nAt the physical Refuge terminal, bank all salvage or repair your hull. CP and banked materials survive defeat. Half of each carried stack drops into a personal wreck for ten minutes.\n\nBANK SALVAGEREPAIR HULL\nHULL PLATING \u00b7 EVERY MODE\n\nWALLET \u00b7 NO MINERALS BANKED YET\n\nFRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS\nLEFT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS\nRIGHT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS\nTURRET \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS\n\nFIRST PLATE: 40 FERRITE + 300 PTS. SCAN FOR THE"
+ },
+ {
+  "t": 285.5,
+  "event": "shot",
+  "name": "11-scan-ore"
+ },
+ {
+  "t": 285.5,
+  "event": "veins",
+  "veins": []
+ },
+ {
+  "t": 299.8,
+  "event": "travel",
+  "label": "vein to Command Gate",
+  "wallSeconds": 14.3,
+  "simSeconds": 14.7,
+  "at": {
+   "x": 1084,
+   "z": 1160
+  },
+  "routePoints": 23
+ },
+ {
+  "t": 301.3,
+  "event": "shot",
+  "name": "13-command-gate-no-base"
+ },
+ {
+  "t": 303.7,
+  "event": "shot",
+  "name": "14-claim-town-screen"
+ },
+ {
+  "t": 303.7,
+  "event": "claim-text",
+  "text": "0\nBronze\nRookie\nVanguard\nPulse Cannon, power 59, Rookie league\n\u2605\nDaily reward ready\n+125 points, day 1 of 7\n\u203a\nArena 1v1\nMoonbase\nBest of 3 rounds, first to 2\nChange\nFIGHT\nWin +270 points\nYOUR BATTLE MACHINES\nChoose which bay deploys in your next match\nBAY 1 \u00b7 DEPLOYING\nWar Machine MK-I\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nSelected\nBAY 2 \u00b7 READY\nWar Machine MK-II\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nDeploy this machine\n\nEdit either build in the Garage.\n\nPlay\nGarage\nConquest\nShop\nQuests\nRanks\nCLAIM YOUR TOWN\nLEAVE\n\nYour own private town. It grows with your Command Center (45\u00d745 cells now, 77\u00d777 at CC10). Pick its site: it shapes your economy and your whole defense. You can change it once for free.\n\nCRATER RIM \u00b7 4 LANES\n+15% alloy from Refineries and two rim deposits (Ferrite for your wallet). The crater rim is a natural inner wall with four passes.\nRIVER DELTA \u00b7 4 LANES\n+15% biomass from Biodomes. River channels split the town into islands joined by fords.\nRIDGE \u00b7 3 LANES\n+10% turret range from the high ground. Cliffs guard the lower west and south terraces.\nCANYON \u00b7 2 LANES\nHard to raid: only two narrow lanes along the canyon floor. Side ravines climb to the plateau.\nHIGHLAND PLATEAU \u00b7 3 LA"
+ },
+ {
+  "t": 303.7,
+  "event": "new-account-errors",
+  "errors": []
+ },
+ {
+  "t": 314.6,
+  "event": "shot",
+  "name": "20-hub-cc10"
+ },
+ {
+  "t": 355.1,
+  "event": "shot",
+  "name": "21-world-at-gate-cc10"
+ },
+ {
+  "t": 366.1,
+  "event": "shot",
+  "name": "22-home-sector-drive-cc10"
+ },
+ {
+  "t": 370.3,
+  "event": "shot",
+  "name": "23-home-tab"
+ },
+ {
+  "t": 374.5,
+  "event": "shot",
+  "name": "24-build-tab"
+ },
+ {
+  "t": 378.7,
+  "event": "shot",
+  "name": "25-weapons-tab"
+ },
+ {
+  "t": 383.2,
+  "event": "shot",
+  "name": "26-walls-tab"
+ },
+ {
+  "t": 387.5,
+  "event": "shot",
+  "name": "27-defend-tab"
+ },
+ {
+  "t": 398.1,
+  "event": "shot",
+  "name": "28-drill-replay"
+ },
+ {
+  "t": 548.1,
+  "event": "drill-wait",
+  "err": "Page.wait_for_function: Timeout 150000ms exceeded."
+ },
+ {
+  "t": 550.8,
+  "event": "shot",
+  "name": "29-drill-report"
+ },
+ {
+  "t": 550.8,
+  "event": "base-text",
+  "text": "0\nBronze\nRookie\nVanguard\nPulse Cannon, power 59, Rookie league\n\u2605\nDaily reward ready\n+125 points, day 1 of 7\n\u203a\nArena 1v1\nMoonbase\nBest of 3 rounds, first to 2\nChange\nFIGHT\nWin +270 points\nYOUR BATTLE MACHINES\nChoose which bay deploys in your next match\nBAY 1 \u00b7 DEPLOYING\nWar Machine MK-I\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nSelected\nBAY 2 \u00b7 READY\nWar Machine MK-II\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nDeploy this machine\n\nEdit either build in the Garage.\n\nPlay\nGarage\nConquest\nShop\nQuests\nRanks\nRIDGE TOWN\n \u00b7 CC10\n\u26a1 469/392 !\n\ud83d\udee1 DEF 36.4K\nLEAVE\nSTEP 5 OF 6RUN A DEFENSE DRILL \u00b7 tap the START button\n\u27f2\n\u2316\n\ud83d\ude99 DRIVE\n\u2302\nHOME\n\u2699\nBUILD\n\u271b\nWEAPONS\n\u25a6\nWALLS\n\u26e8\nDEFEND\nSTART DEFENSE DRILL\n\nA practice raid on your whole town (threat 10, 3 lanes): raiders take the weakest wall to your Command Center and the raid wins if it falls. Drills never pay CP or salvage and never damage your town; drill milestones add wall capacity.\n\nTIP \u00b7 raiders gather at the red chevrons outside your town edge and come in along those lanes.\nBASE LOG \u00b7 0 DRILLS\nRAID PROTECTION \u00b7 SHIELD, GARRISON, ALERTS"
+ },
+ {
+  "t": 582.1,
+  "event": "shot",
+  "name": "30-region-map-advanced"
+ },
+ {
+  "t": 584.2,
+  "event": "shot",
+  "name": "31-raid-site-operations"
+ },
+ {
+  "t": 584.2,
+  "event": "raid-text",
+  "text": "0\nBronze\nRookie\nVanguard\nPulse Cannon, power 59, Rookie league\n\u2605\nDaily reward ready\n+125 points, day 1 of 7\n\u203a\nArena 1v1\nMoonbase\nBest of 3 rounds, first to 2\nChange\nFIGHT\nWin +270 points\nYOUR BATTLE MACHINES\nChoose which bay deploys in your next match\nBAY 1 \u00b7 DEPLOYING\nWar Machine MK-I\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nSelected\nBAY 2 \u00b7 READY\nWar Machine MK-II\nVanguard \u00b7 Pulse Cannon\nPOWER 59\nDeploy this machine\n\nEdit either build in the Garage.\n\nPlay\nGarage\nConquest\nShop\nQuests\nRanks\n\u2039\nMAP\n\u2302 MY BASE\n270 m\nMORE\nHELIUM DEPOT EXTRACTION / DUST SWITCHBACK\n\u2191\n17 m \u00b7 BRIEFING AVAILABLE\nHULL\n2958 / 2958\nAIRDROP TODAY 0 / 50,000\nCHOOSE OPERATION \u00b7 5 READY HERE\nBASE \u00b7 0/2550 CP | 0/110 ALLOY | 0/65 BIOMASS | 0/8 HELIUM\nSCAN \u00b7 FIND ORE\nTAP SCAN: A STARTER VEIN LIES BESIDE THE REFUGE\n\u2604 METEOR STRIKE OPEN \u00b7 RESERVOIR FLATS \u00b7 0:53 LEFT\nHEAT 0%\nSUPER\n0%\nDASH\nSHIELD\nFIRE\nDRIVE\n\nSITE OPERATIONS \u00b7 5 READY\n\nWESTERN SALVAGE REACH\n\nChoose one operation at this physical site. Each has its own objective, verified reward and permanent first-clear record. Starting one does not consume the others.\n\nHULL 100% \u00b7 ready to engage\n\nHELIUM DEPOT EXTRACTION / DUST SWITCHBACK\n\nHARD \u00b7 FIRST CLEAR 225 CP \u00b7 REPEAT 101\u2013157 CP\n\nBRIEF \u00b7 HELIUM DEPOT EXTRACTION / DUST SWITCHBACK\nANTI-AIR BATTERY KNOCKOUT / DUST SWITCHBACK\n\nHARD \u00b7 FIRST CLEAR 210 CP \u00b7 REPEAT 94\u2013147 CP\n\nBRIEF \u00b7 ANTI-AIR BATTERY KNOCKOUT / DUST SWITCHBACK\nPLASMA FORTRESS BREACH / DUST SWITCHBACK\n\nHARD \u00b7 FIRST CLEAR 240 CP \u00b7 REPEAT 108\u2013168 CP\n\nBRIEF \u00b7 PL"
+ },
+ {
+  "t": 584.2,
+  "event": "advanced-errors",
+  "errors": []
+ }
+]
