@@ -110,7 +110,14 @@ async def main(engine,journey_only=False):
       assert await page.evaluate('Conquest.view.selectedId')==other['id'],'native moving-hull lock switch'
       pt=await target_point(other['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null')
       yaw=await page.evaluate('Conquest.view.yaw');await page.mouse.move(width/2,350);await page.mouse.down();await page.mouse.move(width/2+15,355,steps=3);await page.mouse.up();assert await page.evaluate('Conquest.view.selectedId===null');assert await page.evaluate('Conquest.view.yaw')!=yaw,'camera drag stays independent'
-      pt=await target_point(selected['id']);assert pt;await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
+      for attempt in range(8):   # back to the first hull: a fresh projection per tap, and a frame or two for the lock to land (moving hull, slow runner)
+       pt=await target_point(selected['id'])
+       if pt:
+        await page.touchscreen.tap(pt['x'],pt['y'])
+        try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=selected['id'],timeout=1500);break
+        except Exception:pass
+       else:await page.wait_for_timeout(200)
+      assert await page.evaluate('Conquest.view.selectedId')==selected['id'],'first hull re-lock after the switch'
       stick=await rect('.cq-stick');drive_contact={'id':1,'x':stick['x']+stick['w']/2,'y':stick['y']+stick['h']/2};start=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await touch('touchStart',[contact,drive_contact]);drive_contact['y']-=36;await touch('touchMove',[contact,drive_contact]);await page.wait_for_timeout(350);await touch('touchEnd',[drive_contact]);assert await page.evaluate('Conquest.view.firing'),'releasing joystick preserves held Fire';end=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');assert math.dist(start,end)>.3,'simultaneous drive/fire moves';await page.wait_for_timeout(1600);await page.screenshot(path=str(OUT/'active-combat.png'))
       # Hold FIRE in heat bursts (a person releases before the weapon overheats: at ~85% heat, back on at ~35%) while precisely
       # tapping each later living hostile. No HP/outcome/tick mutation. CDP touchEnd lists the points being RELEASED (probed:
@@ -139,7 +146,12 @@ async def main(engine,journey_only=False):
       battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement,featured:Conquest.view.authority.state.featuredMission})');assert battle['state']=='victory',battle;assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle
       await page.screenshot(path=str(OUT/'victory.png'));await page.get_by_role('button',name='RETURN TO EXPLORATION').click();await page.wait_for_function('!Conquest.view.battle');assert await page.evaluate('!Conquest.view.firing')
       await fixture([1240,893]);await page.evaluate('Conquest.view.yaw=Math.PI;Conquest.view.distance=65;Conquest.view.pitch=.8');await page.wait_for_timeout(300);await page.screenshot(path=str(OUT/'garrison.png'))
-      pt=await target_point();assert pt,'garrison hull visible';await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==pt['id'];await touch('touchStart',[contact]);await page.wait_for_function('(id)=>Conquest.view.authority.state.battle.enemies.find(e=>e.id===id).hp<=0',arg=pt['id'],timeout=30000);await touch('touchEnd',[]);assert await page.evaluate('Conquest.view.authority.state.drops.length>0');await page.screenshot(path=str(OUT/'salvage.png'))
+      pt=await target_point();assert pt,'garrison hull visible'
+      for attempt in range(8):
+       await page.touchscreen.tap(pt['x'],pt['y'])
+       try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=pt['id'],timeout=1500);break
+       except Exception:pt=await target_point(pt['id']) or pt
+      assert await page.evaluate('Conquest.view.selectedId')==pt['id'],'garrison hull lock';await touch('touchStart',[contact]);await page.wait_for_function('(id)=>Conquest.view.authority.state.battle.enemies.find(e=>e.id===id).hp<=0',arg=pt['id'],timeout=30000);await touch('touchEnd',[]);assert await page.evaluate('Conquest.view.authority.state.drops.length>0');await page.screenshot(path=str(OUT/'salvage.png'))
       await fixture([1174,1168],cargo={'alloy':11,'biomass':7,'helium':3},hp=100);await tap('#cq-supply-access');await page.get_by_role('button',name='BANK SALVAGE',exact=True).click();await page.wait_for_function('Conquest.view.authority.state.ledger.banked.alloy===11');await page.get_by_role('button',name='REPAIR HULL',exact=True).click();await page.wait_for_function('Conquest.view.authority.state.hp===Conquest.view.encounter.playerMax');await page.screenshot(path=str(OUT/'supply.png'));await page.get_by_role('button',name='CLOSE SUPPLY').click()
      # Authenticated destruction from real incoming fire, exact material risk, safe respawn and physical wreck retrieval.
      await fixture([1290,1150],cargo={'alloy':11,'biomass':7,'helium':3},hp=1);await page.wait_for_function('Conquest.view.authority.state.death?.active',timeout=20000);death=await page.evaluate('Conquest.view.authority.state');assert death['ledger']['cargo']=={'alloy':6,'biomass':4,'helium':2};assert death['death']['amount']=={'alloy':5,'biomass':3,'helium':1};await page.screenshot(path=str(OUT/'defeat.png'));atlas=await page.evaluate('Conquest.view.discovery.version');await page.get_by_role('button',name='RESPAWN AT REFUGE',exact=True).click();await page.wait_for_function('Conquest.view.authority.state.hp>0');assert await page.evaluate('Conquest.view.p.x===898&&Conquest.view.p.z===1024');assert await page.evaluate('Conquest.view.discovery.version')==atlas
