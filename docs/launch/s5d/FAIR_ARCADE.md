@@ -39,7 +39,7 @@ auto-aiming turret a person gets). Before = `main` at `f193de1`, after = this br
   and 25 s shield cooldowns, the telegraph. Nothing resets for free. The regression test logs every AI ability use and fails if
   one ever fires early.
 - **Survival megatank**: tuned to the league AI's reference tank (it used to be tuned to your own power).
-- **Ghosts**: in AI matches never stronger than the match's AI x1.05 (phone and Worker), still clearly weaker than you and labeled.
+- **Ghosts**: never stronger than the match's AI x1.05, in AI matches (phone and Worker) and, since the release review, in live rooms too (the Worker's `startVs` applies the same cap at the room league; before, a room's ghosts came from a plain +/-25% band around the first pilot's power, so a lone pilot's 1v1 could meet a stronger ghost in its one enemy seat). Still clearly weaker than you and labeled.
 - **Live rooms**: AI fill-ins fly the room league's authored loadout (the middle human's league). Humans against humans are untouched;
   the only change is that a bot no longer mirrors a human's gear. Reason: a room with no second human is an AI match in disguise.
   One consequence for the owner to know (reviewer finding): in a mixed room (say a 2v2 with three humans and one fill-in), the side
@@ -67,13 +67,13 @@ Owner targets and what the simulator shows for the kits in the leagues where the
 
 | Target | Result (24 matches a cell) |
 |---|---|
-| Stock vs its own league AI: 45-60% | Rookie 48% over the 7 modes (Arena 1v1 71%, 3v3 33%, Bounty 1v1 65%, Survival 79%, Last Standing 1st place 4%; par 17%) |
-| Each gear step at least +8 points | Rookie 48 / 76 / 91 / 100 / 100%; Veteran 51 / 68 / 85 / 99 / 100%; Master 43 / 55 / 58 / 88 / 99%. Kits far under a league's AI meet an AI at their own power, so stock-common-rare sit close in high leagues (the CI test requires every step to improve wins or the damage trade; it does) |
-| Full Epic 70-85% | Elite 94% (Arena 1v1 100% / 0.72, Bounty 1v1 90% / 0.65), Master 88% (Arena 1v1 96% / 0.78, Bounty 1v1 83% / 0.77); before: 77% / 76% with taken/dealt 0.98 in Arena 1v1 |
-| Full Legendary 78-92% | Master 99%, Lunar Legend 100% for the perfect-aim bot pilot (before 83%); see the note |
-| Legendary damage taken at most ~65% of dealt | Lunar Legend: Arena 1v1 0.51 (before 0.74), 2v2 0.49, 3v3 0.45, Bounty 1v1 0.55 (before 0.72), Bounty 2v2 0.57 (before 0.84), Survival 0.12, Last Standing 0.37 (before 0.80) |
-| Legendary kills a death in Bounty 1v1 at Lunar Legend | 2.8 before -> 5.6 after |
-| AI supers and dashes a minute vs the player maximum | Lunar Legend Arena 1v1: AI 9.7 a minute per tank, the pilot 11.7 under the same rules; AI dashes 3.6 (pilot 3.0; rule maximum 15). Every AI super logged at full charge, no dash or shield on cooldown |
+| Stock vs its own league AI: 45-60% | Rookie 51% over the 7 modes (Arena 1v1 79%, 3v3 38%, Bounty 1v1 62%, Survival 79%, Last Standing 1st place 17%; par 17%) |
+| Each gear step at least +8 points | Rookie 51 / 82 / 93 / 100 / 100%; Veteran 55 / 71 / 89 / 100 / 100%; Master 48 / 59 / 63 / 93 / 99%. Kits far under a league's AI meet an AI at their own power, so stock-common-rare sit close in high leagues (the CI test requires every step to improve wins or the damage trade; it does) |
+| Full Epic 70-85% | Elite 93% (Arena 1v1 96% / 0.65, Bounty 1v1 88% / 0.67), Master 93% (Arena 1v1 92% / 0.76, Bounty 1v1 90% / 0.73); before: 77% / 76% with taken/dealt 0.98 in Arena 1v1 |
+| Full Legendary 78-92% | Master 99%, Lunar Legend 99% for the perfect-aim bot pilot (before 83%); see the note |
+| Legendary damage taken at most ~65% of dealt | Lunar Legend: Arena 1v1 0.48 (before 0.74), 2v2 0.40, 3v3 0.36, Bounty 1v1 0.54 (before 0.72), Bounty 2v2 0.49 (before 0.84), Survival 0.12, Last Standing 0.33 (before 0.80) |
+| Legendary kills a death in Bounty 1v1 at Lunar Legend | 2.8 before -> 6.3 after |
+| AI supers and dashes a minute vs the player maximum | Lunar Legend Arena 1v1: AI 6.5 a minute per tank (the league's 6 s minimum spacing, held across the rounds of a series), the pilot 11.0 under the same rules; AI dashes 4.4 (pilot 3.0; rule maximum 15). Every AI super logged at full charge, the shortest AI super gap in any cell 6.0 s, no dash or shield on cooldown |
 
 Notes, honestly:
 - **The Legendary kit wins nearly every simulated fight at the top.** The simulator's pilot never misses and always dodges a
@@ -83,7 +83,7 @@ Notes, honestly:
   live play now feels too easy at Lunar Legend, raise `LG_AI_PW[6]` (146 -> 152 gives the 149 tier) - one number.
 - **Bounty's damage ratio is a hull-size artefact.** With respawns, a heavy Titan + Lunar Skin tank "pays" 2,327 HP per death while
   the AI pays 1,318; a 6-4 kill lead reads as even damage. Bounty is judged by kills a death in the tables (Legendary at Lunar
-  Legend: 1.9 before -> 3+ after in 1v1).
+  Legend: 2.8 before -> 6.3 after in 1v1).
 - **The "human" pilot profile from Session 2 was not used.** It models manual aiming (30% hits); this game auto-aims the turret, so
   that profile predicts a stock tank losing every Rookie fight 9:1 on damage, which no live player reports. The standard pilot's
   numbers match the owner's live evidence; that is the proxy.
@@ -95,7 +95,7 @@ Notes, honestly:
 `dev/tests/fair-arcade.mjs`, in the `Equipment Balance` workflow. On `main` (`COMBAT_SRC=<main checkout>`) it fails 93 checks:
 no hard cap, AI power 68 -> 181 across pilot power at every league, enemy rosters doubling with the pilot's gear, the megatank
 scaling with the pilot's tank, a ghost at 92% of your power seated at Lunar Legend, live fill-ins copying the human's multipliers,
-and the gear ladder inverting (Epic wins less than Rare in Master and Lunar Legend). On this branch: 11,195 checks pass.
+and the gear ladder inverting (Epic wins less than Rare in Master and Lunar Legend). On this branch: 11,475 checks pass (4 seeds a cell, 96 matches a kit a league).
 It also runs the Conquest case: wave, garrison and commander stats identical for a stock and a Legendary pilot, town raids take
 no loadout, the Legendary kit kills a heavy sentinel in under 60% of the stock time and keeps more hull under the same fire.
 
