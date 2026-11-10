@@ -26,7 +26,7 @@ async def journey(b,width,height,label,results):
  await pg.wait_for_timeout(400);hint0=await pg.evaluate('!!document.querySelector(".cq-keys")')
  try:
   await pg.wait_for_function('Conquest.view?.authority?.connected',timeout=90000)
-  try:await pg.wait_for_function('Conquest.view.pending<=2',timeout=45000)   # terrain streaming (slow under software GL); driving does not wait for it
+  try:await pg.wait_for_function('Conquest.view.pending<=2',timeout=150000)   # terrain streaming (slow under software GL): on the CI runner a key held with 34 chunks still pending moved nothing in 8 s, so wait for the world first
   except Exception:pass
  except Exception as e:
   diag=await pg.evaluate('''()=>({view:!!Conquest.view,auth:!!Conquest.view?.authority,status:Conquest.view?.authority?.status,error:Conquest.view?.authority?.error,connected:Conquest.view?.authority?.connected,pending:Conquest.view?.pending,net:document.querySelector('.cq-net')?.textContent,load:document.querySelector('.cq-load')?.textContent,account:typeof ACCOUNT_OK!=='undefined'&&ACCOUNT_OK,session:typeof ConquestSession})''')
