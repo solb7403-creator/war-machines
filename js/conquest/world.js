@@ -201,7 +201,10 @@ function move(p,dx,dz){
 // Exploration travel only, after authoritative permanent equipment; never a combat stat.
 function travelSpeed(L){return machineSpeed(L)*2;}
 function groundColor(x,z,b){const base=b==='massif'?[.38,.39,.43]:[.48,.44,.39],t=terraformAt(x,z);if(t<=0)return base;const k=Math.min(1,t/.85);return [mix(base[0],.12,k),mix(base[1],.36,k),mix(base[2],.16,k)];}
-function frameSeconds(previous,now){const dt=(now-previous)/1000;return Number.isFinite(dt)&&dt>0&&dt<=.25?dt:0;}
+// A slow frame still advances the clock (clamped to 250 ms); only a real pause (over a second: a hidden tab, a resume) is dropped.
+// Before, any frame slower than 250 ms was discarded whole, so a device that renders slower than 4 fps (software GL, a weak laptop
+// in Telegram Desktop, a 1440x900 window on the CI runner) froze the simulation and the tank never moved (Session 5D).
+function frameSeconds(previous,now){const dt=(now-previous)/1000;return Number.isFinite(dt)&&dt>0&&dt<=1?Math.min(dt,.25):0;}
 const WATER_SLOW=.55;
 // The terrain speed factor advance() applies from p: shallow water slows, paved roads are faster. Footing probes scale by it.
 function speedFactor(p){return p.surface!=='bridge'&&p.x>WBOX[0]&&p.x<WBOX[1]&&p.z>WBOX[2]&&p.z<WBOX[3]&&waterAt(p.x,p.z)?WATER_SLOW:p.surface!=='air'&&roadAt(p.x,p.z)?ROAD_FAST:1;}

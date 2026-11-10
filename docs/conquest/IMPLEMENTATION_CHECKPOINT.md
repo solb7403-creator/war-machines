@@ -1438,6 +1438,12 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
   60 s): WASD / arrows move, Space fire, Shift dash, F shield, G gather, C scan, R super, Q / E turret, click a hull to lock, drag
   to orbit. HELP carries the same list. **Deviation**: the brief's "mouse aim" does not exist in the game (click locks a target,
   drag orbits); the hint says what the game does. Touch controls unchanged.
+- **Release-gate finding (CI, 1440x900 on the runner's software GL): the real reason a slow computer could not drive.** `ConquestWorld.frameSeconds`
+  discarded any frame slower than 250 ms as a pause (dt 0), so on a device that renders slower than 4 fps the whole simulation
+  froze: keys registered, the authority was connected, `fps` read 250-635 (frames counted, no time credited) and the tank never
+  moved. A 420x700 window rendered fast enough and always passed; 1440x900 failed 3 of 4 runs. A frame now advances the clock
+  clamped to 250 ms; only a gap over a second (hidden tab, resume) is dropped. A weak laptop or Telegram Desktop without GPU
+  acceleration at a large window hits exactly this. `conquest-travel.mjs` covers it.
 - Not reproduced here: Telegram Desktop itself (no Telegram Desktop in the container). The focus fix is the plausible cause there;
   if the owner can still not drive in Telegram Desktop after this build, the next thing to try is a one-off "click the world to
   take the keyboard" prompt.
