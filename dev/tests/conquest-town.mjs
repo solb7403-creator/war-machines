@@ -182,7 +182,7 @@ const plain=(site,cc=1)=>{const p=P.newPlot(site,t0);p.cc=cc;p.b.cc.l=cc;return 
  const {snapshot}=await import('../../worker/src/conquest-visit.js');const m2=structuredClone(s.plot);m2.b.tz={t:'cannon',i:33,j:41,r:0,l:3};ok(snapshot('x',m2,now).dr===P.defenseRating(m2),'the public snapshot\'s defense rating is computed from the town as it is now');}
 
 // ---- 12. the phone view loads (a top-level error would leave the base screen blank) ----
-{const {createRequire}=await import('node:module');const req=createRequire(import.meta.url);globalThis.ConquestPlot=P;req('../../js/conquest/plotview.js');ok(typeof globalThis.ConquestPlotView?.open==='function','js/conquest/plotview.js loads and exposes ConquestPlotView');}
+{const {createRequire}=await import('node:module');const req=createRequire(import.meta.url);globalThis.ConquestPlot=P;for(const f of ['townkit','sheet','plotview'])req('../../js/conquest/'+f+'.js');ok(typeof globalThis.ConquestPlotView?.open==='function'&&typeof globalThis.ConquestTownKit?.diorama==='function'&&typeof globalThis.ConquestSheet?.settle==='function','js/conquest/townkit.js, sheet.js and plotview.js load (in page order) and expose their APIs');}
 
 mkdirSync('docs/conquest/session5b',{recursive:true});writeFileSync('docs/conquest/session5b/town-rules.json',JSON.stringify(evidence,null,1));
 console.log(`conquest town: passed ${passed}`);

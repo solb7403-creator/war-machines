@@ -713,11 +713,11 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
   const m=new T.Mesh(geo,MAT.fx);m.renderOrder=4;m.frustumCulled=false;m.userData.noPick=true;m.name='cq-atmosphere-veil';return m;};
 
  // ---------- sky + lights ----------
- S.environment=(scene,renderer)=>{
+ S.environment=(scene,renderer,o)=>{   // o.guest: a second scene (the Home Sector) shares the sky and lights but never takes over the world's atmosphere
   if(renderer){renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=low?1.25:1.2;renderer.outputColorSpace=T.SRGBColorSpace;}
-  scene.background=new T.Color(0);scene.fog=new T.Fog(0x06070f,900,2600);S.atmoScene={scene,renderer};
+  scene.background=new T.Color(0);scene.fog=new T.Fog(0x06070f,900,2600);if(!o?.guest)S.atmoScene={scene,renderer};
   const hemi=new T.HemisphereLight(0x3a5a9c,0x16131f,1.5),sun=new T.DirectionalLight(0xe4ecff,2.9),rim=new T.DirectionalLight(0x52c6ff,1.25);sun.position.copy(sunDir).multiplyScalar(500);rim.position.copy(rimDir).multiplyScalar(500);scene.add(hemi,sun,rim);
-  const Pp=[],B=[],A=[],I=[],dome=new T.SphereGeometry(1,high?48:32,high?24:16),dp=dome.attributes.position;
+  let g=o?.guest?S.guestSkyGeo:null;if(!g){const Pp=[],B=[],A=[],I=[],dome=new T.SphereGeometry(1,high?48:32,high?24:16),dp=dome.attributes.position;
   for(let i=0;i<dp.count;i++){const x=dp.getX(i),y=dp.getY(i),z=dp.getZ(i);Pp.push(x,y,z);B.push(0,0,0);const gal=Math.exp(-Math.pow(x*.35+y*.55-z*.76,2)*7),nb=Math.max(0,fbm3(x*2.3+3,y*2.3,z*2.3,4)-.44),up=clamp01(y*3+.1);
    A.push((.02*nb+.0035*gal)*up,(.006*nb+.003*gal)*up,(.05*nb+.007*gal)*up,0);}
   if(!software)for(let k=0;k<dome.index.count;k++)I.push(dome.index.getX(k));dome.dispose();let n=dp.count,seed=1337;const rnd=()=>(seed=(Math.imul(seed,1664525)+1013904223)|0,(seed>>>0)/4294967296);
@@ -725,7 +725,7 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    const big=rnd()<.035,sz=big?4.6+rnd()*2.6:1.05+rnd()*rnd()*2.3,b=big?1.7:.3+rnd()*rnd()*1.35,t=rnd(),c=t<.2?[.72,.86,1.25]:t<.3?[1.2,.92,.72]:[1,1,1];
    for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(x,y,z);B.push(cx,cy,1);A.push(c[0]*b,c[1]*b,c[2]*b,sz);}I.push(n,n+1,n+2,n,n+2,n+3);n+=4;}
   for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){Pp.push(0,1,0);B.push(cx,cy,2);A.push(0,0,0,0);}I.push(n,n+1,n+2,n,n+2,n+3);
-  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g.setAttribute('aBill',new T.Float32BufferAttribute(B,3));g.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g.setIndex(I);keep(g);
+  g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(Pp,3));g.setAttribute('aBill',new T.Float32BufferAttribute(B,3));g.setAttribute('aCol',new T.Float32BufferAttribute(A,4));g.setIndex(I);keep(g);if(o?.guest)S.guestSkyGeo=g;}   // guest scenes share one sky geometry (it is pinned in S.shared)
   const sky=new T.Mesh(g,MAT.sky);sky.frustumCulled=false;sky.renderOrder=1000;/* after opaque terrain/structures: the depth test culls covered sky pixels */sky.name='cq-style-sky';scene.add(sky);return {sky,lights:[hemi,sun,rim]};};
 
  // ---------- props (per fine terrain chunk; InstancedMesh, chunk-local positions) ----------
@@ -852,7 +852,9 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    geo.setAttribute('aCol',new T.BufferAttribute(a,4));}o.material=MAT.solid;});return group;};
 
  // ---------- Command Base I–V (base-local x/z, absolute y; built to the shared baseBlocked() footprints) ----------
- S.commandBase=(base,opt={})=>{const D=F.base,tier=base.tier||0,Sb=new Bld(),X=new Fx(),gy=(x,z)=>ground(D.x+x,D.z+z),y=gy(0,0);
+ // opt.shell (Session 5C): only the pad, perimeter and Command Gate, so the pilot's real town (a diorama, js/conquest/townkit.js)
+ // stands in the courtyard; the sim's collision volumes are unchanged.
+ S.commandBase=(base,opt={})=>{const D=F.base,tier=base.tier||0,Sb=new Bld(),X=new Fx(),gy=(x,z)=>ground(D.x+x,D.z+z),y=gy(0,0),shell=!!opt.shell;
   const decal=(x,z,hw,hd,r,e,o,seg,lift)=>{X.decal(D.x+x,D.z+z,hw,hd,0,r,e,o,seg,lift);};
   // World-space decals are rebased to the base-local frame after building (the group sits at the base centre).
   Sb.box(0,y-.9,0,38,2.4,34,K.dark,0,0,[y-2,2.4]);Sb.box(0,y+.2,0,37.4,.2,33.4,K.dark2);Sb.box(0,y+.29,-17.05,38,.06,.12,K.cyan,1);Sb.box(0,y+.29,17.05,38,.06,.12,K.cyan,.6);for(const s of [-1,1])Sb.box(s*19.05,y+.29,0,.12,.06,34,K.cyan,.6);
@@ -875,9 +877,9 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    Sb.box(0,y+10.4,-18.6,28.4,1.4,2.6,K.dark2);Sb.box(0,y+9.6,-17.25,26.4,.14,.12,K.cyan,1.2);Sb.box(0,y+11.2,-18.6,8,.6,2.8,K.wall);
    X.quadV(0,y+10.4,-19.95,9.6,1.3,0,AT[SIGN.COMMAND]||AT.ICON,E(0x22e6ff,1.7));if(!low)X.quadV(0,y+4.8,-18.6,24.6,9.4,0,AT.BLOB,E(0x22e6ff,.16));
    for(const [x,z] of [[-17,-17.5],[17,-17.5]]){Sb.box(x,y+3,z,6.4,6,1.6,K.dark2,0,0,[y,5]);Sb.box(x,y+6.1,z,6.6,.25,1.8,K.cyan,1);X.bill(x,y+6.4,z,1.6,AT.BLOB,E(0x22e6ff,.9));}
-   Sb.box(10,y+4,12,.6,8,.6,K.mid);Sb.box(10,y+8.2,12,.9,.4,.9,K.cyan,1);X.quadV(13.2,y+7,11.6,5,1.25,0,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));
+   if(!shell){Sb.box(10,y+4,12,.6,8,.6,K.mid);Sb.box(10,y+8.2,12,.9,.4,.9,K.cyan,1);X.quadV(13.2,y+7,11.6,5,1.25,0,AT[SIGN['BASE '+['I','II','III','IV','V'][Math.min(5,tier)-1]]],E(0x22e6ff,1.6));}
    if(opt.veteran){Sb.add(G.cone6,M(-12,y+.3,10,0,0,0,1.2,5,1.2),K.gold,.7);Sb.box(-12,y+.5,10,3,1,3,K.dark2);X.bill(-12,y+5.4,10,1.6,AT.BLOB,E(0xffd36b,.9));}}
-  if(tier>=2){
+  if(tier>=2&&!shell){
    // Hangar (sim: x 1..17, z 1..17): chamfered block, lit door facing the pad.
    Sb.box(9,y+3.6,9,15.4,7.2,15.4,K.panelA,0,0,[y,6]);Sb.add(G.hexF(.82),M(9,y+7.2,9,0,Math.PI/4,0,10.4,1.6,10.4),K.roof);Sb.box(9,y+.4,9,16,.8,16,K.dark);
    Sb.box(9,y+3.1,1.25,9.5,5.6,.4,K.dark);Sb.box(9,y+5.95,1.15,10,.14,.3,K.cyan,1);for(const s of [-1,1])Sb.box(9+s*4.85,y+3.1,1.15,.14,5.6,.3,K.cyan,1);Sb.box(9,y+.55,1.1,9.4,.1,.3,K.amber,1);
@@ -888,25 +890,25 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
    if(tier<3||!opt.citadel){Sb.add(G.cylF(.86),M(-7,y+1.6,8,0,0,0,5.6,8.4,5.6),K.panelB);for(const h of [3.6,6.6])Sb.add(G.torus,M(-7,y+h,8,Math.PI/2,0,0,5.9,5.9,5.9),K.cyan,1);
     Sb.add(G.dome,M(-7,y+10,8,0,0,0,4.9,2.4,4.9),K.panelA);Sb.add(G.hex,M(-7,y+12.2,8,0,0,0,1,.5,1),K.teal,1);X.bill(-7,y+12.8,8,2.4,AT.BLOB,E(0x2dffc4,.9));if(high)X.ringGlow(-7,8+D.z-D.z,y+5.1,6.2,4,E(0x2dffc4,.4),18);}
    X.quadV(-7,y+3.2,.15,3.8,.95,0,AT[SIGN.REACTOR],E(0x2dffc4,1.4));}
-  if(tier>=3)for(const s of [-1,1]){const x=s*15,z=-13;
+  if(tier>=3&&!shell)for(const s of [-1,1]){const x=s*15,z=-13;
    // Corner gun towers (sim: 8x8 at (±15,-13)).
    Sb.box(x,y+1,z,7.6,2,7.6,K.dark,0,0,[y,2]);Sb.box(x,y+5.5,z,5.6,7.2,5.6,K.panelA,0,0,[y+2,6]);Sb.box(x,y+9.4,z,6.4,.6,6.4,K.dark2);
    for(const [cx,cz] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x+cx*2.82,y+5.5,z+cz*2.82,.14,7,.14,K.cyan,1);
    Sb.box(x,y+10.6,z,4.2,1.8,4.2,K.dark2);for(const t of [-.55,.55])Sb.add(G.cylC,MDc(V3(x+t,y+10.7,z-1.6),V3(x+t,y+10.9,z-6.4),.34),K.mid);Sb.box(x,y+11.6,z+1.2,.5,.5,.5,K.red,1);
    X.bill(x,y+11.6,z+1.2,1.2,AT.BLOB,E(0xff3048,1));X.quadV(x,y+7.6,z-2.86,3.6,.9,0,AT[SIGN.DEFENSE],E(0x22e6ff,1.3));}
-  if(tier>=4){Sb.box(12,y+10,10,.5,5.6,.5,K.mid);Sb.box(12,y+12.9,10,.8,.4,.8,K.cyan,1);X.quadV(12,y+8.8,15.9,3.4,.85,0,AT[SIGN.RADAR],E(0x22e6ff,1.2));}
-  if(tier>=5){const x=0,z=16;/* on the solid back-wall line (sim |z-16|<3), so tanks never drive through the tower */Sb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
+  if(tier>=4&&!shell){Sb.box(12,y+10,10,.5,5.6,.5,K.mid);Sb.box(12,y+12.9,10,.8,.4,.8,K.cyan,1);X.quadV(12,y+8.8,15.9,3.4,.85,0,AT[SIGN.RADAR],E(0x22e6ff,1.2));}
+  if(tier>=5&&!shell){const x=0,z=16;/* on the solid back-wall line (sim |z-16|<3), so tanks never drive through the tower */Sb.add(G.hexF(.62),M(x,y,z,0,0,0,2.4,26,2.4),K.panelB);for(let h=5;h<=24;h+=4.5){const r=2.4-(h/26)*.9;Sb.add(G.torus,M(x,y+h,z,Math.PI/2,0,0,r+1.1,r+1.1,r+1.1),K.cyan,1);if(high)X.ringGlow(x,z,y+h,r+1.1,2.2,E(0x22e6ff,.45),14);}
    Sb.add(G.cone6,M(x,y+26,z,0,0,0,1.3,6,1.3),K.panelA);Sb.add(G.ico,M(x,y+32.6,z,0,0,0,.8,.8,.8),K.ice,1);X.bill(x,y+32.6,z,4.2,AT.BLOB,E(0x22e6ff,1.2));X.quadV(x,y+6.2,z-2.7,4.6,1.15,0,AT[SIGN.COMMAND],E(0x22e6ff,1.6));}
   // Modules along the inner face of the back wall: colour = function, height = level.
   const MOD={reactor:[K.teal,0x2dffc4],hangar:[K.cyan,0x22e6ff],defense:[K.red,0xff3048],vault:[K.gold,0xffd36b],radar:[K.ice,0xa8f8ff],uplink:[K.violet,0xa07bff]};
-  Object.keys(C.baseDefinition.modules).forEach((m,i)=>{const level=base.modules?.[m]||0;if(!level)return;const x=-12+i*4,h=1.2+level*1.1,c=MOD[m]||MOD.hangar,mz=13.6;Sb.add(G.hex,M(x,y,mz,0,0,0,1.5,h,1.5),K.dark2);Sb.add(G.hex,M(x,y+h,mz,0,0,0,1.6,.3,1.6),c[0],1);
+  if(!shell)Object.keys(C.baseDefinition.modules).forEach((m,i)=>{const level=base.modules?.[m]||0;if(!level)return;const x=-12+i*4,h=1.2+level*1.1,c=MOD[m]||MOD.hangar,mz=13.6;Sb.add(G.hex,M(x,y,mz,0,0,0,1.5,h,1.5),K.dark2);Sb.add(G.hex,M(x,y+h,mz,0,0,0,1.6,.3,1.6),c[0],1);
    for(let k=1;k<=level;k++)Sb.add(G.hex,M(x,y+h*k/(level+1),mz,0,0,0,1.56,.12,1.56),c[0],.9);X.bill(x,y+h+.6,mz,1.3,AT.BLOB,E(c[1],.8));});
   // Defense damage reads as scorch and wreckage at the gate.
   for(let i=0;i<Math.ceil((base.defense?.damage||0)/20);i++){decal(-12+i*5,-15,2.6,2.2,AT.BLOB,[0,0,0],.75,3,.4);Sb.box(-12+i*5,y+.5,-15,1.6,.5,.9,K.chitinD,0,i);}
   const solidMesh=Sb.mesh(),fxMesh=X.mesh();
   // Rebase world-space decals (built with absolute x/z) into the base-local frame.
   if(fxMesh.geometry){const p=fxMesh.geometry.attributes.position,b=fxMesh.geometry.attributes.aBill;for(let i=0;i<p.count;i++)if(Math.abs(p.getX(i))>500)p.setXYZ(i,p.getX(i)-D.x,p.getY(i),p.getZ(i)-D.z);fxMesh.geometry.computeBoundingSphere();}
-  const g=new T.Group();g.add(solidMesh,fxMesh);if(tier>=4){const dish=new Bld();dish.add(G.cone6,M(0,0,0,Math.PI/2,0,0,2.6,1,2.6),K.panelB);dish.add(G.box,M(0,0,-.5,0,0,0,.2,.2,1.2),K.cyan,1);const r=dish.mesh();r.position.set(12,y+13.6,10);r.name='cq-radar';g.add(r);g.userData.spin=r;}
+  const g=new T.Group();g.add(solidMesh,fxMesh);if(tier>=4&&!shell){const dish=new Bld();dish.add(G.cone6,M(0,0,0,Math.PI/2,0,0,2.6,1,2.6),K.panelB);dish.add(G.box,M(0,0,-.5,0,0,0,.2,.2,1.2),K.cyan,1);const r=dish.mesh();r.position.set(12,y+13.6,10);r.name='cq-radar';g.add(r);g.userData.spin=r;}
   return g;};
 
  // ---------- enemies: Parasite war machines on today's canonical hull silhouettes (bbox unchanged) ----------
@@ -989,6 +991,17 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.atmo=(p,dt)=>{const tf=W.terraformAt?W.terraformAt(p.x,p.z):0,want=Math.min(1,Math.max(0,(tf-.03)/.13)),a=U.uAtmo.value;U.uAtmo.value=a+(want-a)*Math.min(1,(dt||0)*1.6);
   const k=U.uAtmo.value,A=S.atmoScene;if(A?.scene?.fog){A.scene.fog.color.copy(nightFog).lerp(dayFog,k);A.scene.fog.near=900-640*k;A.scene.fog.far=2600-1250*k;A.scene.background.setRGB(.36*k,.27*k,.19*k);}
   if(A?.renderer)A.renderer.toneMappingExposure=(low?1.25:1.2)-.1*k;MAT.sky.uniforms.uFogC.value.copy(nightFogC).lerp(dayFogC,k);return k;};
+ // A guest scene takes the world's current atmosphere once (fog colour, haze distance, background): under a terraformed
+ // day sky the far ground fades into the same amber haze as the world, at night into the same dark.
+ // Guest renders (the Home Sector, its card sprites and share card) are town-local: SOLID_VS would otherwise sample the
+ // world's baked colony shadows, atmosphere map and Parasite/friendly site rim tints at town-local + uOrigin (shadow
+ // streaks, a magenta rim on the far hills, day or night light by entry side). One flat texel at the zone's current
+ // atmosphere, no shadow, no site tints; S.guest(false) restores the world's values.
+ const G1=v=>{const t=new T.DataTexture(new Uint8Array([v,v,v,255]),1,1);t.needsUpdate=true;return t;},guestNoShadow=G1(0),guestAtmo=G1(0),gSave={on:false,sh:null,at:null,sites:null};
+ S.guest=on=>{if(on){if(gSave.on)return;gSave.on=true;gSave.sh=U.uShadowMap.value;gSave.at=U.uAtmoMap.value;if(!gSave.sites)gSave.sites=U.uSite.value.map(v=>v.clone());U.uSite.value.forEach((v,i)=>{gSave.sites[i].copy(v);v.set(0,0,0,0);});
+   const b=Math.round(255*Math.min(1,Math.max(0,U.uAtmo.value))),d=guestAtmo.image.data;if(d[0]!==b){d[0]=d[1]=d[2]=b;guestAtmo.needsUpdate=true;}U.uShadowMap.value=guestNoShadow;U.uAtmoMap.value=guestAtmo;}
+  else{if(!gSave.on)return;gSave.on=false;U.uShadowMap.value=gSave.sh;U.uAtmoMap.value=gSave.at;U.uSite.value.forEach((v,i)=>v.copy(gSave.sites[i]));}};
+ S.atmoApply=(scene,near,far)=>{const k=U.uAtmo.value;if(!scene.fog)scene.fog=new T.Fog(0,near,far);scene.fog.color.copy(nightFog).lerp(dayFog,k);scene.fog.near=near*(1-.55*k);scene.fog.far=far*(1-.45*k);if(!scene.background)scene.background=new T.Color(0);scene.background.setRGB(.36*k,.27*k,.19*k);return k;};
  S.update=(dt,t,view)=>{U.uTime.value=t;if(view?.renderer?.getDrawingBufferSize)view.renderer.getDrawingBufferSize(U.uViewport.value);if(view?.origin)U.uOrigin.value.set(view.origin.x,view.origin.z);if(view?.p)S.atmo(view.p,dt);
   const p=view?.p,terr=view?.authority?.state?.territory;if(!p)return;const k=Math.round(p.x/32)*100003+Math.round(p.z/32);if(siteKey.k===k&&siteKey.t===terr)return;siteKey.k=k;siteKey.t=terr;
   const list=allSites(F,terr).map(s=>[s,Math.hypot(s[0]-p.x,s[1]-p.z)-s[2]]).sort((a,b)=>a[1]-b[1]).slice(0,8);for(let i=0;i<8;i++){const s=list[i]?.[0];U.uSite.value[i].set(s?s[0]:0,s?s[1]:0,s?s[2]:0,s?s[3]:0);}};

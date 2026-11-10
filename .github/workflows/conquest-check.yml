@@ -29,6 +29,9 @@ jobs:
           node dev/tests/conquest-plot.mjs
           node dev/tests/conquest-town.mjs
           node dev/tests/conquest-town-balance.mjs
+          node dev/tests/conquest-sheet.mjs
+          node dev/tests/conquest-townkit.mjs
+          node dev/tests/conquest-copy.mjs
           node dev/tests/conquest-base-progression.mjs
           node dev/tests/wtest/conquest-visit.mjs
           node dev/tests/wtest/conquest-dev.mjs

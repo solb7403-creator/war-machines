@@ -103,16 +103,16 @@ const TIME=[15*SEC,3*MIN,20*MIN,2*HOUR,6*HOUR],TIME3=[30*SEC,10*MIN,HOUR];
 const grow=(base,g,levels)=>Array.from({length:levels},(_,l)=>Object.fromEntries(Object.entries(base).map(([k,v])=>[k,Math.round(v*Math.pow(g,l))])));
 const tur=(o)=>T({w:1,d:1,max:5,...o,turret:T(o.turret)});
 const BUILDINGS=T({
- refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[5,2],[9,3]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'A conveyor feeds plot regolith and scrap to the smelter: alloy for your stores (no wallet minerals used).'}),
+ refinery:T({n:'Refinery',w:3,d:4,max:5,cc:1,pw:2,count:[[1,1],[5,2],[9,3]],cost:grow({cp:60,alloy:4,biomass:2},2.4,5),prod:{alloy:.8},desc:'Turns rock and scrap into alloy, the metal you build with.'}),
  storage:T({n:'Storage Depot',w:3,d:3,max:5,cc:1,pw:1,count:[[1,1]],cost:grow({cp:90,alloy:8},2.4,5),mod:'vault',vital:'secondary',desc:'Caps what production can hold (it stops when full). Bank salvage here. A vital: raiders target it.'}),
  reactor:T({n:'Reactor',w:3,d:3,max:5,cc:1,pw:0,count:[[1,1],[3,2],[5,3],[7,4],[9,5]],cost:grow({cp:140,alloy:8,helium:1},2.4,5),mod:'reactor',power:14,vital:'secondary',desc:'Power for every building and turret. Feeds Daily Base Yield CP. A vital: if it falls, turrets slow down.'}),
- foundry:T({n:'Foundry',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[7,2]],cost:grow({cp:120,alloy:10},2.4,5),desc:'Load alloy: with plot regolith it becomes wall composite (4 composite per alloy). Its research earns wall extensions.'}),
+ foundry:T({n:'Foundry',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[7,2]],cost:grow({cp:120,alloy:10},2.4,5),desc:'Load alloy and it becomes wall composite (4 composite per alloy). Its research earns wall extensions.'}),
  biodome:T({n:'Biodome',w:3,d:3,max:5,cc:2,pw:2,count:[[2,1],[6,2],[10,3]],cost:grow({cp:150,alloy:8,biomass:8},2.4,5),prod:{biomass:.6},desc:'Plants grow under the dome: biomass.'}),
  hangar:T({n:'Hangar',w:4,d:3,max:5,cc:2,pw:1,count:[[2,1]],cost:grow({cp:180,alloy:12},2.4,5),mod:'hangar',desc:'Your owned tanks on display. Repairs your hull at the base.'}),
  helium:T({n:'Helium Extractor',w:2,d:2,max:5,cc:3,pw:2,count:[[3,1],[7,2],[10,3]],cost:grow({cp:200,alloy:10,biomass:5},2.4,5),prod:{helium:.15},desc:'Helium-3 from the regolith.'}),
  radar:T({n:'Radar',w:2,d:2,max:5,cc:3,pw:2,count:[[3,1]],cost:grow({cp:200,alloy:10,helium:2},2.4,5),mod:'radar',desc:'Longer SCAN pulses and real radar contacts in the field.'}),
  shield:T({n:'Shield Generator',w:2,d:2,max:5,cc:3,pw:3,count:[[3,1],[6,2],[9,3]],cost:grow({cp:240,alloy:14,helium:2},2.4,5),mod:'defense',desc:'Protective field: less damage at your base and in raids near it.'}),
- lab:T({n:'Science Lab',w:3,d:3,max:3,cc:3,pw:2,count:[[3,1]],cost:grow({cp:320,alloy:18,biomass:8,helium:3},2.4,3),time:TIME3,vital:'secondary',desc:'Built and upgradable now; its research tree (tank mods) arrives in Session 6. A vital: raiders target it.'}),
+ lab:T({n:'Science Lab',w:3,d:3,max:3,cc:3,pw:2,count:[[3,1]],cost:grow({cp:320,alloy:18,biomass:8,helium:3},2.4,3),time:TIME3,vital:'secondary',desc:'Built and upgradable now; its research tree (tank mods) is coming soon. A vital: raiders target it.'}),
  uplink:T({n:'Uplink',w:2,d:2,max:5,cc:4,pw:2,count:[[4,1]],cost:grow({cp:260,alloy:14,helium:3},2.4,5),mod:'uplink',desc:'+10% Daily Base Yield CP per level (up to III).'}),
  trophy:T({n:'Trophy Hall',w:3,d:3,max:3,cc:5,pw:1,count:[[5,1]],cost:grow({cp:300,alloy:16},2.4,3),time:TIME3,desc:'Defeated commanders, legendary minerals and future ladder trophies.'}),
  // Eleven turret types (owner decision 7), unlocked across CC levels so early choices stay simple. dt: damage type.
@@ -135,7 +135,7 @@ const TURRET_CAP=T([3,5,7,10,13,17,22,27,34,42]);
 // cut that building's output when they fall (Reactor: power, so turrets slow down; Storage: the production store is exposed
 // to raids from Session 7; Science Lab: research pauses, Session 6). Placed anywhere in the town.
 const VITALS=T({cc:'primary',reactor:'secondary',storage:'secondary',lab:'secondary'});
-const VITAL_EFFECT=T({cc:'the raid wins',reactor:'power cut: turrets fire slower, shields weaken',storage:'production store exposed (raids from Session 7 take a share)',lab:'research paused (Session 6)'});
+const VITAL_EFFECT=T({cc:'the raid wins',reactor:'power cut: turrets fire slower, shields weaken',storage:'production store exposed (player raids can take a share)',lab:'research paused'});
 // Command Center levels. The cumulative cost to CC3/5/7/9 equals the old Command Base II/III/IV/V costs, so the Conquest
 // points multiplier (tier) arrives exactly as before.
 const CC=T({max:10,claim:{cp:2550,alloy:110,biomass:65,helium:8},
@@ -459,11 +459,16 @@ function* drillGen(plot,seed=1,opt={}){
  return {outcome,seed:seed>>>0,threat,byTurret,...(lostNow?{damage:lostNow}:{}),time:Math.round(time*10)/10,kills,spawned:id,lost:fell.length+homesLost,fell:fell.slice(0,40),vitals:[...new Set(vitals)],homesLost,wallsLost,breaches:groups.sort((a,b)=>b.n-a.n).slice(0,12).map(g=>[g.i,g.j,g.n]),
   core:Math.max(0,Math.round(100*core.hp/core.max)),power:Math.round(pf*100),frames:keepF?frames:[],events:keepE?events:[]};}
 
+// Town name (Session 5C): up to 16 characters, letters, digits, spaces and - ' . only, no leading/trailing or double spaces;
+// '' clears it. The Worker also runs the call-sign profanity list on it (worker/src/callsign.js nameBlocked).
+const TOWN_NAME_MAX=16;
+function townName(raw){const n=String(raw??'').replace(/\s+/g,' ').trim();if(!n)return {name:''};if(n.length>TOWN_NAME_MAX)return {err:'town names are '+TOWN_NAME_MAX+' characters at most'};
+ if(!/^[A-Za-z0-9 '.\-]+$/.test(n))return {err:'town names use letters, numbers, spaces and - \' . only'};if(!/[A-Za-z0-9]/.test(n))return {err:'include a letter or number'};return {name:n};}
 root.ConquestPlot=Object.freeze({GRID,MID,TOWN,SITES,SITE_IDS,BUILDINGS,TURRETS,TURRET_CAP,VITALS,VITAL_EFFECT,CC,CPS,MNS,DRILL,RAID,RIM_DEPOSITS,BLOCKED,NOBUILD,SLOW,
  ORES,ORE_NAME,ORE_CC,TIER_W,BLEND_W,BLEND_NAME,ORE_UNITS,BLEND_UNITS,COMPOSITE,WALL_CAP,EXT,STORE,MAX_WALL_CELLS,MAX_SECTIONS,
  cellX,cellZ,key,hash,clampCC,townH,townSide,inTown,inGrid,cheb,terrainAt,heightAt,groundY,corridor,spawnCells,laneEdge,
  wallCap,wallBase,wallCapOf,extParts,wcode,wdecode,blendQ,wallStats,blendName,levelCap,countCap,tierOf,costOf,timeOf,sizeOf,cells,occupancy,countOf,turretCount,
  powerSupply,powerUse,levelOf,levelSum,modulesOf,caps,rates,accrue,power,lotsOf,homes,placeError,buildCheck,line4,rectCells,ringCells,shapeCells,wallLine,wallPlan,wallRemovePlan,
  autoPlace,newPlot,resetPlot,migrate,settle,drill,drillGen,raid:drill,drillWaves,hpOfBuilding,wallHit,
- maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,SEC,MIN,HOUR,DAY});
+ maxHpOf,hpLeft,ruined,repairPlan,applyRaidDamage,alert,loot,defenseRating,townName,TOWN_NAME_MAX,LAYOUT,encWalls,decWalls,layoutOf,applyLayout,turretRefund,wallRefund,garrisonSlots,stockOf,SEC,MIN,HOUR,DAY});
 })(globalThis);

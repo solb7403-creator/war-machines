@@ -5,9 +5,10 @@
 // (eco `bmn`, monotonic) minus what the plot has spent (plot.mnSpent). The eco counter only ever grows, so a stale read can
 // refuse a build but never overspend.
 import {CONQUEST,RULES} from './sim.gen.js';
+import {nameBlocked} from './callsign.js';
 import {bankMinerals} from './conquest-airdrop.js';
 const P=CONQUEST.Plot,DAY=86400000;
-export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout'];
+export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.
 export const REMOTE_PLOT_ACTIONS=['plot-upgrade'];
 export const MINERAL_PLOT_ACTIONS=['plot-build','plot-upgrade','plot-wall','plot-research','base-module','upgrade-base'];
@@ -87,6 +88,8 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
   const seed=(P.hash(Math.floor(now/1000),p.n|0,Object.keys(p.w).length)*4294967296)>>>0,R=P.drill(p,seed,{frames:false,events:false});
   let ext=0;if(R.outcome!=='breached'&&R.core>=50)P.EXT.drill.forEach((m,k)=>{if((p.cc|0)>=m.cc&&!((p.ext.d>>k)&1)){p.ext.d|=1<<k;ext+=m.pct;}});
   p.drillAt=now;p.log=[{at:now,seed,threat:R.threat,outcome:R.outcome,kills:R.kills,spawned:R.spawned,lost:R.lost,core:R.core,time:R.time,power:p.power,walls:R.wallsLost,homes:R.homesLost,vitals:R.vitals,breaches:R.breaches.length,...(ext?{ext}:{})},...p.log].slice(0,8);P.alert(p,{at:now,kind:'drill',by:'drill crews',outcome:R.outcome,changed:ext?1:0});s.notice={kind:'plot-drill',...p.log[0]};return;}
+ // Session 5C: the town's name (cosmetic; on the HOME card, visits, the hub and the share card). Validated here, never trusted from the phone.
+ if(r.action==='plot-name'){only(['n']);if(typeof a.n!=='string'||a.n.length>64)fail('invalid town name');const t=P.townName(a.n);if(t.err)fail(t.err);if(t.name&&nameBlocked(t.name))fail('that name is not allowed: please pick another');if(t.name)p.nm=t.name;else delete p.nm;s.notice={kind:'plot-name',n:t.name};return;}
  if(r.action==='plot-banner'){only(['shape','colors','emblem']);if(!['shield','pennant','square','chevron'].includes(a.shape)||!Array.isArray(a.colors)||a.colors.length!==2||!a.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))||!['moon','tank','star','skull','gear','wing','bolt','crown'].includes(a.emblem))fail('invalid banner');
   p.banner={shape:a.shape,colors:a.colors.map(c=>c.toLowerCase()),emblem:a.emblem};s.notice={kind:'plot-banner'};return;}
  if(r.action==='plot-theme'){only(['light','finish','decor']);if(!['cyan','amber','violet','green','red'].includes(a.light)||!['steel','sand','graphite'].includes(a.finish)||!Array.isArray(a.decor)||a.decor.length>6||!a.decor.every(d=>['flags','lamps','crates','antenna','plants','statue'].includes(d)))fail('invalid theme');

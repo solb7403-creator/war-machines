@@ -156,7 +156,7 @@ async def main(engine,journey_only=False,fallback=False,quality='auto'):
     # (15 s on the Worker clock). Higher tiers now take hours of real timers, so the tier IV/V field checks use migrated bases.
     await fixture([1080,1160],baseFunds=True)
     await tap('#cq-base-access')
-    await page.locator('.cq-plot-primary',has_text='CLAIM PLOT').click()
+    await page.locator('.cq-plot-primary',has_text='CLAIM TOWN').click()
     await page.wait_for_function('Conquest.view.authority.state.base.tier===1&&!!document.querySelector(".cq-plot-tabs")')
     await page.locator('.cq-plot-leave').click();await page.wait_for_timeout(150)
     await page.screenshot(path=str(OUT/f'{engine}-{width}-base-I.png'));await tap('#cq-base-access');await page.wait_for_selector('.cq-plot-tabs')

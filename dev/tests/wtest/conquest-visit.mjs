@@ -40,4 +40,9 @@ ok(sq.status===200&&sq.base.n==='Hidden','squadmates can visit each other (here:
  await publishBase(env,'tg_8300','Dipper',pl(4000),W1);await publishBase(env,'tg_8300','Dipper',pl(1000),W1+1000);   // walls removed late in the week
  await publishBase(env,'tg_8300','Dipper',pl(1000),W2);await publishBase(env,'tg_8300','Dipper',pl(4000),W2+1000);   // rebuilt after the rollover
  const sn=db.get('cqbase/tg_8300'),bw=db.get('cqweek/'+Object.keys(db.root.cqweek).sort().at(-1));ok(sn.w0===4000&&sn.pk===4000&&(bw?.p!=='tg_8300'||bw.g<=0),'removing walls before the weekly rollover and rebuilding them after is no Base of the Week gain (baseline = peak power)');}
+// Session 5C review fix: a renamed town reaches visits and its top-20 entry even when nothing else changed
+{const {publishBase}=await import('../../../worker/src/conquest-visit.js');const t=Date.UTC(2026,10,12,12),pl=(nm)=>({plot:{site:'ridge',cc:5,power:2500,...(nm?{nm}:{}),b:{cc:{t:'cc',i:37,j:37,r:0,l:5}},w:{}}});
+ await publishBase(env,'tg_8310','Namer',pl(''),t);ok(db.get('cqtop').list.some(x=>x.p==='tg_8310'&&!x.nm),'unnamed town enters the top list');
+ await publishBase(env,'tg_8310','Namer',pl('Iron Hold'),t+1000);ok(db.get('cqbase/tg_8310').nm==='Iron Hold'&&db.get('cqtop').list.find(x=>x.p==='tg_8310')?.nm==='Iron Hold','a rename alone updates the public snapshot and the top-20 entry');
+ await publishBase(env,'tg_8310','Namer',pl(''),t+2000);ok(!db.get('cqbase/tg_8310').nm&&!db.get('cqtop').list.find(x=>x.p==='tg_8310')?.nm,'clearing the name clears it everywhere');}
 console.log(`conquest visit: passed ${passed}`);

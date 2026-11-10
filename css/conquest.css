@@ -29,7 +29,7 @@
 
 /* Readable custom thermal display, above FIRE and outside touch controls. */
 .cq-heat{right:18px;bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 166px);width:102px;height:29px;color:#a9f6ef;font:700 11px/15px sans-serif;letter-spacing:.5px;background:#101c29e8;border:1px solid #648b9b;border-radius:5px;padding:4px 6px;box-sizing:content-box}.cq-heat-label{display:block}.cq-heat-track{height:7px;background:#263744;overflow:hidden;border-radius:3px}.cq-heat-fill{display:block;height:100%;background:#79e9d5;transform-origin:left;transition:transform .08s linear}.cq-heat.cq-warm{color:#ffd27f}.cq-warm .cq-heat-fill{background:#ffc36b}.cq-heat.cq-hot{color:#ff947c;animation:none}.cq-hot .cq-heat-fill{background:#ff8065}
-.cq-base-goal{position:absolute;top:132px;left:14px;right:14px;font:9px/1.4 sans-serif;color:#d7e7d9;pointer-events:none;text-shadow:0 1px 3px #000}.cq .cq-base-access{position:absolute;left:16px;bottom:252px;max-width:180px;font-size:10px}.cq-map{touch-action:pan-y}.cq-map canvas{height:280px}.cq-wave{max-width:80%;line-height:1.4}
+.cq-base-goal{position:absolute;top:132px;left:14px;right:14px;font:9px/1.4 sans-serif;color:#d7e7d9;pointer-events:none;text-shadow:0 0 2px #000,0 1px 3px #000,0 0 7px #000d}.cq .cq-base-access{position:absolute;left:16px;bottom:252px;max-width:180px;font-size:10px}.cq-map{touch-action:pan-y}.cq-map canvas{height:280px}.cq-wave{max-width:80%;line-height:1.4}
 
 /* Session 2 boards remain scrollable and keep touch targets readable on 320px phones. */
 .cq-operation-board,.cq-product-section{border-top:1px solid #527082;margin:12px 0;padding-top:8px}.cq-operation-board summary,.cq-product-section summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}.cq-operation-board button,.cq-product button{min-height:44px;white-space:normal;max-width:100%}.cq-product{padding:10px 0;border-bottom:1px solid #395363}.cq-product h3{margin:4px 0}.cq-product p{font-size:12px}.cq-product-preview{width:100%;height:auto;aspect-ratio:16/9;background:#10202e;border:1px solid #688595;border-radius:6px}.cq-collection-status{min-height:48px;color:#f0dca2}.cq-collection button:disabled{opacity:.55}.cq-dialog{overflow-wrap:anywhere}
@@ -129,19 +129,27 @@
 
 /* Session 5: the private base plot (js/conquest/plotview.js). The world canvas shows through the stage; top bar and the
    bottom sheet are opaque. Phone-first: 44 px targets, one status column, closed sections for long lists. */
-.cq-world .cq-dialog.cq-plot{position:absolute;inset:0;max-width:none;width:auto;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:flex;flex-direction:column;z-index:30;overflow:hidden;transform:none}
-.cq-plot-top{display:flex;gap:8px;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 8px;background:linear-gradient(#070c15f2,#070c15cc);border-bottom:1px solid #22e6ff44}
-.cq-plot-title{flex:1;font-size:11px;letter-spacing:.06em;font-weight:700;color:#cdf6ff;line-height:1.3}
+.cq-world .cq-dialog.cq-plot{position:absolute;inset:0;max-width:none;width:auto;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:flex;flex-direction:column;z-index:30;overflow:hidden;transform:none;--cq-sheet:50%}
+.cq-plot-top{display:flex;gap:8px;align-items:center;padding:max(8px,var(--sat,env(safe-area-inset-top,0px))) 12px 8px;background:linear-gradient(#070c15f2,#070c15cc);border-bottom:1px solid #22e6ff44}
+.cq-plot-title{flex:1;min-width:0;font-size:12px;letter-spacing:.06em;font-weight:800;color:#eaf8ff;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cq-plot-title{display:flex}.cq-plot-top{flex-wrap:wrap;row-gap:4px}.cq-plot-top2>.cq-plot-title{flex-basis:100%}.cq-plot-top2>.cq-plot-chips{margin-left:auto}.cq-plot-tname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cq-plot-tcc{flex:none;white-space:pre}
+.cq-plot-chips{display:flex;gap:4px;flex:none}.cq-plot-chip{font-size:11px;font-weight:800;padding:4px 6px;border-radius:6px;background:#0b1623;border:1px solid #2f4b5a;color:#cdf6ff;white-space:nowrap}.cq-plot-chip.short{color:#ffb0b8;border-color:#ff3048;background:#2a0a10}.cq-plot-chip[hidden]{display:none}
 .cq-plot-leave{flex:none;font-size:11px}
-.cq-plot-stage{position:relative;flex:0 0 40%;min-height:150px;touch-action:none;cursor:crosshair;transition:flex-basis .2s}
+.cq-plot-stage{position:relative;flex:1 1 auto;min-height:56px;touch-action:none;cursor:crosshair;overflow:hidden}
 .cq-plot-canvas{position:absolute;inset:0;width:100%;height:100%}
 .cq-plot-rot{position:absolute;right:10px;top:10px;width:44px;height:44px;padding:0;font-size:20px;background:#0b1623cc}
-.cq-plot-coach{margin:0;padding:8px 12px;background:#2a1d08e6;border-top:1px solid #ffb34766;color:#ffd9a0;font-size:12px;font-weight:700}
-.cq-plot-msg{position:absolute;left:12px;right:12px;top:64px;margin:0;font-size:11px;font-weight:700;color:#ffd36b;text-shadow:0 1px 3px #000;pointer-events:none}
+.cq-plot-coach{position:absolute;left:8px;right:62px;top:8px;z-index:3;display:flex;flex-direction:column;align-items:flex-start;gap:3px;margin:0;padding:7px 10px;min-height:0;text-align:left;background:#2a1d08eb;border:1px solid #ffb34788;border-radius:8px;color:#ffd9a0;font-size:11px;font-weight:700;line-height:1.3}.cq-plot-coach[hidden]{display:none}
+.cq-plot-step{display:inline-block;font-size:9px;letter-spacing:.1em;color:#1a1208;background:#ffb347;border-radius:4px;padding:1px 5px}
+.cq-plot-msg{position:absolute;left:12px;right:62px;bottom:calc(var(--cq-sheet) + 62px);z-index:4;margin:0;font-size:11px;font-weight:700;color:#ffd36b;text-shadow:0 1px 3px #000;pointer-events:none}.cq-plot-claim .cq-plot-msg{bottom:auto;top:64px}.cq-plot-short .cq-plot-msg{bottom:calc(var(--cq-sheet) + 6px)}
 .cq-plot-msg:empty{display:none}
-.cq-plot-sheet{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#070c15f2;border-top:1px solid #22e6ff55;padding:8px 12px max(10px,env(safe-area-inset-bottom));overscroll-behavior:contain}
-.cq-plot-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
-.cq-plot-tabs button{font-size:11px;padding:6px}.cq-plot-tabs button.on,.cq-plot-row button.on{background:#0f3a48;border-color:#22e6ff;color:#fff}
+/* 5C bottom sheet: grab handle, five tabs, scrolling body; its height is --cq-sheet (PEEK/HALF/FULL, js/conquest/sheet.js) */
+.cq-plot-drawer{flex:0 0 var(--cq-sheet);min-height:0;display:flex;flex-direction:column;background:#070c15f4;border-top:1px solid #22e6ff66;border-radius:14px 14px 0 0;box-shadow:0 -6px 18px #0008;transition:flex-basis .24s cubic-bezier(.2,.8,.2,1)}
+.cq-plot-dragging .cq-plot-drawer{transition:none}
+.cq-plot-grab{flex:none;height:34px;position:relative;z-index:5;touch-action:none;cursor:grab;display:grid;place-items:center;outline-offset:-3px}.cq-plot-grab::after{content:'';position:absolute;left:0;right:0;top:-10px;height:10px}   /* a 44 px touch target without 10 px more chrome */.cq-plot-grab::before{content:'';width:46px;height:5px;border-radius:3px;background:#6f93a8}.cq-plot-dragging .cq-plot-grab{cursor:grabbing}
+.cq-plot-sheet{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:4px 12px max(10px,var(--sab,env(safe-area-inset-bottom,0px)));overscroll-behavior:contain}
+.cq-plot-claim .cq-plot-drawer{flex:none;border-radius:0}.cq-plot-claim .cq-plot-grab,.cq-plot-claim .cq-plot-tabs{display:none}.cq-plot-claim .cq-plot-stage{flex:1 1 auto;min-height:0}
+.cq-plot-tabs{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:0 8px 6px}.cq-plot-tabs[hidden]{display:none}
+.cq-plot-tabs button{min-height:46px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 1px;font-size:9px;letter-spacing:.03em;overflow:hidden}.cq-plot-tabs button i{font-style:normal;font-size:16px;line-height:1}.cq-plot-tabs button span{white-space:nowrap}.cq-plot-tabs button.on,.cq-plot-row button.on{background:#0f3a48;border-color:#22e6ff;color:#fff}
 .cq-plot-body{display:flex;flex-direction:column;gap:6px;font-size:12px}
 .cq-plot-body small,.cq-plot-hint,.cq-plot-next,.cq-plot-res{margin:0;opacity:.85;line-height:1.35}
 .cq-plot-next{color:#9fd8ff}
@@ -173,8 +181,8 @@
 .cq-hub-art{position:absolute;inset:0;background:#080e17 url('../js/assets/conquest/command-horizon.svg') center 30%/cover no-repeat}
 .cq-hub-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cq-hub-copy{position:absolute;left:16px;right:16px;bottom:14px;z-index:2;pointer-events:none;text-shadow:0 2px 12px #000}
-.cq-hub-copy h1{margin:2px 0;font-size:clamp(40px,12vw,64px);letter-spacing:.08em;color:#e8fbff}
-.cq-hub-copy .cq-premise{white-space:pre-line;margin:0;font-size:13px;color:#9fe8ff;letter-spacing:.12em}
+.cq-hub-copy h1{margin:2px 0;font-size:clamp(40px,12vw,64px);letter-spacing:.08em;color:#e8fbff;text-shadow:0 0 4px #000a,0 2px 12px #000}
+.cq-hub-copy .cq-premise{white-space:pre-line;margin:0;font-size:13px;color:#9fe8ff;letter-spacing:.12em;text-shadow:0 0 3px #000,0 1px 2px #000,0 2px 12px #000}   /* owner gate: legible over the town's pale roofs */
 .cq-hub-copy .cq-kicker{margin:0;font-size:10px;letter-spacing:3px;color:#ffb347}
 .cq-hub-hero:after{content:'';position:absolute;inset:auto 0 0;height:45%;background:linear-gradient(transparent,#05070d);pointer-events:none;z-index:1}
 .cq-hub-status{display:flex;flex-direction:column;gap:8px;padding:10px 14px 4px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
@@ -204,16 +212,23 @@
 @media (prefers-reduced-motion:reduce){.cq-top button.cq-home-btn.cq-home-new{animation:none;box-shadow:0 0 18px #ffc45acc,0 0 0 3px #ffc45a66}}
 
 /* Base screen (owner playtest, Nov 8): the menu is a real scroll area below a map that takes 40% (60% while placing). */
-.cq-dialog.cq-plot.cq-plot-mapbig .cq-plot-stage{flex-basis:60%}
-.cq-dialog.cq-plot.cq-plot-menubig .cq-plot-stage{flex-basis:36%}
-@media (prefers-reduced-motion:reduce){.cq-plot-stage{transition:none}}
-.cq-plot-size{position:absolute;right:10px;top:60px;width:44px;height:44px;padding:0;font-size:18px;background:#0b1623cc}
+@media (prefers-reduced-motion:reduce){.cq-plot-drawer{transition:none}}
+.cq-plot-frame{position:absolute;right:10px;top:60px;width:44px;height:44px;padding:0;font-size:20px;background:#0b1623cc;z-index:2}
+.cq-plot-status{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #2f6b7a;border-radius:10px;background:linear-gradient(#0d2030e6,#0b1623e6)}
+.cq-plot-status-head{display:flex;align-items:center;gap:10px}.cq-plot-status-head .cq-plot-ico{width:52px;height:52px;font-size:24px;border-radius:8px}.cq-plot-status-name{display:flex;flex-direction:column;gap:1px;min-width:0}.cq-plot-status-name b{font-size:14px;color:#eaf8ff;letter-spacing:.04em}
+.cq-plot-meter{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;font-size:10px;font-weight:700}.cq-plot-meter meter{width:100%;height:10px}.cq-plot-meter.short{color:#ffb0b8}
+.cq-plot-defline{color:#9fd8ff}.cq-plot-terminal button{flex:1 1 30%;min-height:44px;font-size:10px}
+.cq-plot-coachcard{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #ffb34788;border-radius:10px;background:#2a1d08cc;color:#ffd9a0;font-size:12px;font-weight:700;line-height:1.35}
+.cq-plot-locked{opacity:.5}.cq-plot-locked .cq-plot-tag{color:#9fb4c4;background:#141c26;border-color:#3a4a5a}
+.cq-plot-statline{font-size:10px;color:#ffd9a0;letter-spacing:.02em}
+.cq-plot-weapsum{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #2f4b5a;border-radius:8px;background:#0b1623cc}.cq-plot-wchips{display:flex;flex-wrap:wrap;gap:4px}.cq-plot-wchip{display:flex;align-items:center;gap:4px;padding:2px 6px 2px 2px;border:1px solid #2f4b5a;border-radius:6px;background:#10283a}.cq-plot-wchip .cq-plot-ico{width:22px;height:22px;font-size:11px}.cq-plot-wchip small{font-size:9px}
+.cq-plot-spr{object-fit:cover;padding:0;overflow:hidden}.cq-plot-ico-w{background:linear-gradient(135deg,var(--ore,#8a8676) 55%,var(--acc,#5c5a50))}
 .cq-plot-group{display:block;margin:6px 0 0;font-size:10px;letter-spacing:.12em;color:#7fe9ff}
 .cq-plot-list{display:flex;flex-direction:column;gap:6px}
 .cq-plot-list .cq-plot-card{width:100%;padding:8px 10px;gap:3px;min-height:44px}
 .cq-plot-card-head{display:flex;align-items:center;gap:8px;width:100%}
 .cq-plot-card-head b{flex:1;font-size:13px;color:#eaf8ff}
-.cq-plot-ico{flex:none;width:26px;height:26px;display:grid;place-items:center;border-radius:6px;background:#10283a;border:1px solid #22e6ff55;font-size:14px}
+.cq-plot-ico{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:6px;background:#10283a;border:1px solid #22e6ff55;font-size:16px}
 .cq-plot-tag{flex:none;font-size:9px;font-weight:700;letter-spacing:.04em;color:#ffd36b;background:#2a1d08;border:1px solid #ffb34755;border-radius:4px;padding:2px 5px;white-space:nowrap}
 .cq-plot-card .cq-plot-desc{font-size:11px;color:#c6d8e6;line-height:1.35;opacity:1}
 .cq-plot-card .cq-plot-cost{font-size:10px;color:#8fd8ff;letter-spacing:.02em}
@@ -237,13 +252,13 @@
 /* Session 5B Town Defense: wall tools, blend picker, draft, raid report */
 .cq-plot-pan{position:absolute;right:10px;top:110px;width:44px;height:44px;padding:0;font-size:18px;background:#0b1623cc;display:none}.cq-plot-walls .cq-plot-pan{display:block}.cq-plot-pan.on{border-color:#ffd36b;color:#ffd36b}
 .cq-plot-wallcount{font-size:12px;color:#eaf8ff;letter-spacing:.04em}
-.cq-plot-tools button{flex:1 1 15%;min-width:0;padding:6px 2px;font-size:10px;min-height:40px}
+.cq-plot-tools button{flex:1 1 15%;min-width:0;padding:6px 2px;font-size:10px;min-height:44px}
 .cq-plot-tooltip{color:#9fd8ff}
 .cq-plot-blend{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #2f4b5a;border-radius:8px;background:#0b1623cc}
-.cq-plot-ores{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
-.cq-plot-ore{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 1px;min-height:52px;min-width:0;font-size:9px}
+.cq-plot-ores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.cq-plot-ore{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 3px;min-height:86px;min-width:0;font-size:9px}.cq-plot-ore .cq-plot-ico{width:44px;height:44px}
 .cq-plot-ore i{display:block;width:22px;height:14px;border-radius:3px;background:linear-gradient(135deg,var(--ore) 55%,var(--acc));border:1px solid #ffffff33}
-.cq-plot-ore span{font-size:8px;letter-spacing:0;white-space:nowrap;overflow:hidden;max-width:100%}.cq-plot-ore small{font-size:8px;opacity:.8}
+.cq-plot-ore span{font-size:9px;font-weight:800;letter-spacing:0;line-height:1.15;max-width:100%;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.3em}.cq-plot-ore small{font-size:8px;opacity:.8}
 .cq-plot-ore.on{border-color:#ffd36b;background:#2a1d08}
 .cq-plot-levels button{flex:1 1 30%}
 .cq-plot-stats{display:flex;flex-direction:column;gap:3px}
@@ -251,7 +266,30 @@
 .cq-plot-draft,.cq-plot-report{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #ffb34766;border-radius:8px;background:#1a1208cc}
 .cq-plot-report{border-color:#2f4b5a;background:#0b1623cc}.cq-plot-vital-lost{color:#ffb0b8}
 .cq-plot-store{font-size:10px;text-align:left}
-@media (max-width:340px){.cq-plot-ores{grid-template-columns:repeat(4,minmax(0,1fr))}.cq-plot-stat{grid-template-columns:66px 1fr 92px}}
+@media (max-width:340px){.cq-plot-stat{grid-template-columns:66px 1fr 92px}.cq-plot-chip{font-size:10px;padding:3px 4px}.cq-plot-title{font-size:11px}.cq-plot-defw{display:none}.cq-dialog.cq-plot .cq-plot-leave{font-size:0;min-width:0;width:42px;padding:0}.cq-plot-leave::after{content:'✕';font-size:15px}}   /* 320 px: the town name keeps its room (LEAVE keeps its label for screen readers) */
 .cq-plot-fab{position:absolute;left:10px;right:64px;bottom:10px;display:flex;gap:6px;z-index:3}.cq-plot-fab[hidden]{display:none}
 .cq-plot-fab button{flex:1 1 auto;min-height:44px;font-size:11px;background:#0b1623e6}.cq-plot-fab button.cq-plot-primary{flex:2 1 auto;background:#0f3a48f2}
 .cq-map-fold .cq-plot-row>small{flex:1 1 100%}.cq-plot-damage{border-color:#ff304888;background:#2a0a10cc}
+/* 5C Home Sector: drive your tank in your town (build mode is a camera) */
+.cq-plot-drivebtn{position:absolute;left:10px;bottom:10px;z-index:2;min-height:44px;padding:6px 12px;font-size:11px;font-weight:800;background:#0f3a48f0;border-color:#22e6ff}.cq-plot-drivebtn[hidden]{display:none!important}
+.cq-plot-walls.cq-plot-fabon .cq-plot-drivebtn{display:none}
+.cq-plot-skip{position:absolute;right:10px;bottom:10px;z-index:3;min-height:44px;padding:6px 14px;font-size:11px;background:#0b1623e6}.cq-plot-skip[hidden]{display:none!important}
+.cq-plot-stick{position:absolute;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #22e6ff88;background:#0b162366;pointer-events:none;z-index:2;display:grid;place-items:center}.cq-plot-stick[hidden]{display:none!important}.cq-plot-stick i{display:block;width:44px;height:44px;border-radius:50%;background:#22e6ffaa;box-shadow:0 0 12px #22e6ff}
+.cq-plot-exit{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;padding:10px 14px;border-radius:10px;background:#0b1623ee;border:1px solid #22e6ff;color:#cdf6ff;font-size:12px;font-weight:800;letter-spacing:.06em;pointer-events:none}.cq-plot-exit[hidden]{display:none!important}
+.cq-plot-driving .cq-plot-rot,.cq-plot-driving .cq-plot-frame,.cq-plot-driving .cq-plot-pan{display:none}
+.cq-plot-driving .cq-plot-stage{cursor:move}
+.cq-top button.cq-home-btn.cq-home-has-thumb{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:5px;row-gap:0;align-items:center;justify-items:start;padding:3px 7px 3px 3px}
+.cq-home-thumb{grid-row:1 / span 2;width:30px;height:30px;border-radius:4px;image-rendering:pixelated;border:1px solid #ffc45a88}.cq-home-damaged .cq-home-thumb{border-color:#ff3048;box-shadow:0 0 6px #ff3048}
+.cq-plot-name{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}.cq-plot-input{flex:2 1 140px;min-height:44px;padding:6px 10px;border-radius:6px;border:1px solid #2f6b7a;background:#0b1623;color:#eaf8ff;font:700 14px system-ui,sans-serif;letter-spacing:.04em}
+.cq-plot-yield{background:linear-gradient(90deg,#1f5a3a calc(var(--fill,0)*100%),#0b1623 calc(var(--fill,0)*100%))!important}
+.cq-plot-fab .cq-plot-fab-rot{flex:0 0 48px;font-size:18px}
+/* 5C review: the coach is at most two lines on the map (the full step is on the HOME card); a short map (sheet near FULL)
+   hides the floating coach and map buttons so they never cover the handle or the tabs */
+.cq-plot-coach span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cq-plot[data-snap="peek"] .cq-plot-sheet{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 16px),transparent)}   /* owner gate: PEEK fades out the row below instead of slicing it */
+.cq-dialog.cq-plot .cq-plot-coach{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding:6px 10px;right:auto;max-width:calc(100% - 70px)}.cq-dialog.cq-plot .cq-plot-coach>b{display:inline;margin-right:6px}.cq-dialog.cq-plot .cq-plot-coach>span{display:inline}   /* 5C owner gate: a one-line pill, not a banner over the town */
+.cq-plot-short .cq-plot-coach,.cq-plot-short .cq-plot-frame,.cq-plot-short .cq-plot-pan,.cq-plot-short .cq-plot-rot,.cq-plot-short .cq-plot-drivebtn,.cq-plot-short .cq-plot-skip{display:none!important}
+.cq-plot-fab .cq-plot-why{color:#ffb0b8;border-color:#ff304888;font-size:10px}
+.cq-plot-ore span{overflow-wrap:normal;word-break:normal;hyphens:manual;-webkit-hyphens:manual}
+.cq-plot-visit-sel{display:block;color:#ffd36b;font-size:12px;margin:6px 0}
+.cq-plot-drivehint{top:auto;left:20px;right:20px;bottom:calc(var(--cq-sheet) + 70px);transform:none;text-align:center;font-size:11px}
