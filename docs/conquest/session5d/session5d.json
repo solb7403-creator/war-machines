@@ -1,0 +1,135 @@
+{
+ "gateCentre1": {
+  "start": {
+   "x": 1080,
+   "z": 1148.999999999993,
+   "nudge": false,
+   "dio": true,
+   "half": 10.5,
+   "connected": true
+  },
+  "after": {
+   "x": 1080,
+   "z": 1148.999999999993,
+   "nudge": false
+  },
+  "meshes": 8,
+  "startedOnModel": false,
+  "keyStrip": false
+ },
+ "spawn1": {
+  "x": 8,
+  "z": 20,
+  "h": -2.714965160462917,
+  "ccDist": 24.16609194718914,
+  "ccAhead": 1,
+  "face": true,
+  "info": {
+   "calls": 25,
+   "triangles": 54592,
+   "programs": 13
+  }
+ },
+ "gateCentre10": {
+  "start": {
+   "x": 1080,
+   "z": 1154.2799999999963,
+   "nudge": true,
+   "dio": true,
+   "half": 13.166666666666666,
+   "connected": true
+  },
+  "after": {
+   "x": 1080,
+   "z": 1148.1199999999924,
+   "nudge": true
+  },
+  "meshes": 13,
+  "startedOnModel": true,
+  "keyStrip": false
+ },
+ "spawn10": {
+  "x": -16,
+  "z": 0,
+  "h": 1.7126933813990606,
+  "ccDist": 14.142135623730951,
+  "ccAhead": 1,
+  "face": false,
+  "info": {
+   "calls": 67,
+   "triangles": 252450,
+   "programs": 13
+  }
+ },
+ "hub1": {
+  "walls": 0,
+  "posts": 0,
+  "rubble": 0,
+  "turrets": 0,
+  "homes": 13,
+  "builds": 2
+ },
+ "hub5": {
+  "walls": 0,
+  "posts": 0,
+  "rubble": 0,
+  "turrets": 0,
+  "homes": 59,
+  "builds": 2
+ },
+ "buildPeek": {
+  "snap": "peek",
+  "mode": "build",
+  "sheetTop": 641,
+  "sheetBottom": 700,
+  "res": {
+   "top": 0,
+   "bottom": 0,
+   "h": 0,
+   "display": "none",
+   "lines": 0
+  },
+  "card": {
+   "top": 645,
+   "bottom": 733.34375,
+   "h": 88.34375,
+   "display": "flex",
+   "lines": NaN
+  },
+  "innerH": 700
+ },
+ "resLine": {
+  "h": 16.1875,
+  "lh": 16.2,
+  "nowrap": true,
+  "scrollW": 366,
+  "clientW": 366
+ },
+ "cannonSprite": {
+  "key": "t:cannon:1",
+  "luminance": 40.49117476851852
+ },
+ "dioramaSlices": {
+  "slices": 9,
+  "ms": [
+   37.5,
+   0.6,
+   3.9,
+   19.9,
+   6,
+   16.4,
+   1.9,
+   5.9,
+   8.3
+  ],
+  "counts": {
+   "walls": 2000,
+   "posts": 330,
+   "rubble": 0,
+   "turrets": 42,
+   "homes": 50,
+   "builds": 26
+  },
+  "programs": 13
+ }
+}
