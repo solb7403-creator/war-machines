@@ -211,8 +211,10 @@ const BOT_PAINTS=['nebula','ember','arctic','venom','gold','void'];
 const newBrain=()=>({mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0,bx:null});
 // a ghost: an offline pilot's real tank (their build and gear, from the server) flown by the AI, in an AI seat.
 // g: {n: name, L: loadout, i or id: who it is}. It plays exactly like an AI pilot and changes nobody's points
-function mkGhost(team,x,y,g){
- const u=Object.assign(tankOf(g.L,hpScale()),{x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],sp:0,sup:null,
+// the league whose AI skill profile a non-human unit flies: an AI pilot's own (aiL), a ghost's match league (lg), else the top league
+const aiLgOf=u=>u.aiL?u.aiL.lg:(u.lg!==undefined?u.lg:LEAGUE.length-1);
+function mkGhost(team,x,y,g,lg){   // lg: the match league (0 Rookie); the ghost's super wait / spacing / dodge profile. Its gear is its owner's
+ const u=Object.assign(tankOf(g.L,hpScale()),{x,y,flash:0,ang:team===0?-Math.PI/2:Math.PI/2,cd:0.5,lk:null,buffs:[],sp:0,sup:null,lg:Math.max(0,Math.min(LEAGUE.length-1,lg|0)),
   fitSpd:fittingStats(g.L.mods).spd,team,hum:false,ctl:'bot',name:'Ghost of '+String(g.n||'Pilot').slice(0,24),gh:1,gid:g.id!==undefined?g.id:g.i,brain:newBrain(),strafe:1,strafeT:1.5});
  u.hp=u.mhp;return u;
 }
@@ -517,7 +519,7 @@ function botDodge(u){
    if(along>0&&along<ln&&Math.abs(side)<wd+bodyR(u)){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
-  if(dashOk&&random()<(u.aiL?LG_AI_DODGE[u.aiL.lg]:0.5))useDash(u,px,py);   // league skill: how often the AI dashes out of it (same dash cooldown as everyone)
+  if(dashOk&&random()<LG_AI_DODGE[aiLgOf(u)])useDash(u,px,py);   // league skill: how often the AI dashes out of it (same dash cooldown as everyone)
   else if(shieldOk&&random()<0.6)useShield(u);
   return;
  }
@@ -606,7 +608,7 @@ function superTick(dt){
   u.rdy=u.sp>=SUPER_MAX&&!u.sup?(u.rdy||0)+dt:0;
   const brng=u.wtype==='twin'?SUP.twin.r+1.2:STAT.range+1.5;
   const tgt=nearestFoe(u);
-  const lg=u.aiL?u.aiL.lg:LEAGUE.length-1,wait=LG_AI_SUP_WAIT[lg],gap=LG_AI_SUP_GAP[lg];   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
+  const lg=aiLgOf(u),wait=LG_AI_SUP_WAIT[lg],gap=LG_AI_SUP_GAP[lg];   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
   // minimum time between an AI pilot's supers, and between AI teammates' supers (owner, Nov 10): never faster than the charge rule allows a player
   const spaced=elapsed-(u.supAt===undefined?-1e9:u.supAt)>=gap&&elapsed-(supTeamAt[u.team]===undefined?-1e9:supTeamAt[u.team])>=AI_SUP_TEAM_GAP;
   if(u.rdy>wait&&spaced&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng&&useSuper(u)){u.supAt=elapsed;supTeamAt[u.team]=elapsed;}

@@ -128,7 +128,7 @@ function openLeagues(){
     '<div class="lgx"><b>×'+L.pay.toFixed(2)+'</b><span>pay</span></div><div class="lgx"><b>×'+L.mult.toFixed(2)+'</b><span>bonus</span></div><div class="lgx"><b>'+(ai?'+'+ai+'%':'Base')+'</b><span>AI</span></div></li>';};
   return '<h3>Leagues</h3><p class="mut">League = tank power × form. You move up at the line and drop 4% below it.</p>'+
    '<ol class="lgladder" reversed>'+LEAGUE.map((_,i)=>rung(LEAGUE.length-1-i)).join('')+'</ol>'+
-   '<p class="dimtxt">Pay: base points (airdrop, boards, daily cap). Bonus: spendable points only. AI: how much stronger AI loadouts get, in full in 1v1.</p>'+
+   '<p class="dimtxt">Pay: base points (airdrop, boards, daily cap). Bonus: spendable points only. AI: the league&#39;s authored AI loadout as a step above Rookie (Last Standing takes 70% of it).</p>'+
    infoBody(LEAGUE_INFO());});
 }
 const LEAGUE_INFO=()=>[

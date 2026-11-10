@@ -35,7 +35,7 @@ async def journey(b,width,height,label,results):
  STATE='''()=>({active:document.activeElement?.tagName+(document.activeElement?.className?'.'+document.activeElement.className:''),dialogs:document.querySelectorAll(".cq .cq-dialog").length,prompts:document.querySelectorAll(".lw-prompt-wrap").length,connected:!!Conquest.view.authority.connected,keys:Object.keys(Conquest.view.keys),p:{x:Conquest.view.p.x,z:Conquest.view.p.z},hint:!!document.querySelector(".cq-keys")})'''
  state=lambda:pg.evaluate(STATE)
  held={}
- async def drive(code,ms=4000):
+ async def drive(code,ms=8000):
   # hold the key until the tank has moved (software GL renders a few frames a second here and can stall for a second); dead = nothing in 4 s
   p0=await pg.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})');await pg.keyboard.down(code);await pg.wait_for_timeout(300)
   held[code]=await pg.evaluate('({keys:Object.keys(Conquest.view.keys),stalled:!!Conquest.view.authority?.stalled,connected:!!Conquest.view.authority?.connected,resume:Conquest.view.resume,hidden:document.hidden,dialogs:document.querySelectorAll(".cq .cq-dialog").length,prompts:document.querySelectorAll(".lw-prompt-wrap").length,active:document.activeElement?.tagName,pending:Conquest.view.pending,fps:Conquest.view.fps})')
@@ -43,7 +43,7 @@ async def journey(b,width,height,label,results):
   except Exception:pass
   await pg.keyboard.up(code);await pg.wait_for_timeout(150)
   p1=await pg.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})');return ((p1['x']-p0['x'])**2+(p1['z']-p0['z'])**2)**.5
- s0=await state();assert s0['active'].startswith('DIV.cq-viewport') or s0['active'].startswith('BODY'),f'{label}: focus after ACKNOWLEDGE sits on {s0["active"]}'
+ s0=await state();assert s0['active'].startswith('DIV.cq-viewport'),f'{label}: focus after ACKNOWLEDGE sits on {s0["active"]}'
  moved={c:await drive(c) for c in ['KeyW','ArrowLeft','KeyS','KeyD','ArrowUp']}
  await pg.screenshot(path=str(OUT/f'desktop-keys-{label}.png'))
  # abilities by key: Space fires (no page navigation, no button click), Shift (either side) dashes, F shield, C scan

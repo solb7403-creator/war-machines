@@ -1422,7 +1422,8 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
 ### B. Desktop keyboard driving (commits `4b4f5b5`, `d76312a`, this one)
 - **Reproduction on the real website build** (`dev/tests/conquest-desktop-keys.py`, in CI `conquest-check.yml`): the Worker fixture
   (`dev/tests/webserver.mjs`) + `worker/build-web.mjs`, a real call-sign signup, mouse clicks on the Conquest tab, ENTER CONQUEST
-  and ACKNOWLEDGE, no `focus()` or `evaluate()` before the keys, 1440x900 and a 420x700 Telegram-Desktop-size window. Finding:
+  and ACKNOWLEDGE, no `focus()` and no `evaluate()` that touches Conquest or focus before the keys (the website welcome card is
+  skipped by script), 1440x900 and a 420x700 Telegram-Desktop-size window. Finding:
   with that flow the keys *do* reach the view and move the tank at 1, 10, 20 and 45 s (probed every 250 ms); zero movement in the
   first harness runs was the software renderer stalling for seconds, not a game gate. The desktop-only breakers found and fixed:
   the website's account prompts (`web/account-prompts.js`) opened under the Conquest layer every 4 s, took focus and let Enter
@@ -1458,3 +1459,30 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
    drains it (parity test unchanged).
 10. Judge captures: `docs/conquest/session5d/` (pad diorama CC1/CC10, gate-centre start, Home Sector drive CC1/CC10, hub hero
     CC1/CC5, BUILD at PEEK, WEAPONS, Cannon sprite). Programs <= 16 asserted in the harness.
+
+### Release gate (Nov 10, this session; commits `61854c0` and the one adding this note)
+- **Browser harnesses re-run locally** (the earlier session had not run `conquest-session5d.py` to completion: its last two steps
+  had never passed, and no BUILD / WEAPONS / hub captures were committed). Found and fixed: (1) in the fully built CC10 fixture town
+  the road-spot search legitimately falls back to the old pad south of the CC, and that pad kept the fixed south heading
+  (`plotview.js startDrive`: the heading always points at the CC now; CC10 `ccAhead` 0.14 -> 1.0); (2) the desktop-keys harness
+  clicked the sidebar's Conquest button, which is `display:none` at 420 px (now the visible one); (3) BUILD at PEEK was checked on
+  the full town, which has no cards (it shows the all-placed hint, which is right): the step now uses a fresh CC5 ridge town.
+  Harness checks tightened (reviewer B): the gate-centre fixture must start on the model, a phone session must never show the key
+  strip, focus after ACKNOWLEDGE must be the viewport itself, the movement window is 8 s under software GL.
+- **Two independent read-only reviewers** on head `18fbe54` (A: rules / game / server authority / economy / security; B: Conquest
+  client UX, rendering, desktop keys, harness honesty). Both PASS; everything tagged MAJOR fixed here:
+  - A MAJOR (pre-existing, inside the brief's suspect list): live-room ghosts were picked within +/-25% of the first pilot's power
+    with no league cap, so a lone pilot's 1v1 could meet a stronger ghost (Moonbeam included) in the one enemy seat. `pvp.js startVs`
+    now filters ghosts by `aiGhostCap(middle human power, league AI)`, the same cap AI tickets use (`eco.js`); `wtest/pvp.mjs` seats a
+    hull-3 pair against a stock ghost and an above-cap ghost that must never be seated (115 checks).
+  - A MINOR: ghosts and range opponents flew the Lunar Legend AI skill profile in every league (`u.aiL` missing); `mkGhost` takes the
+    match league (`u.lg`, `aiLgOf`), passed by `match.js`, `sim-api.js` and `range-engine.js`. The league sheet footnote (`ui.js`) no
+    longer says "in full in 1v1".
+  - B MAJOR: the key strip sat over the stick / FIRE / scan / heat / START DEFENSE on windows under ~1000 px; it now sits under the
+    top bar on every width. B MAJOR: missing committed captures (fixed by the harness runs above; stale `-stuck` capture removed).
+  - B MINOR: Space on a focused HUD button presses the button (never fires); `.cq-viewport:focus` shows no ring; the strip shown by
+    a first drive key on a non-keyboard device also leaves after 6 s.
+  - Not done (recorded): A's note that `combat-sim.mjs`'s ability ledger only sees `useSuper/useDash/useShield` calls (a direct
+    `u.sup` write would be invisible) and that section 4's 48-match cells can flake at the -5 pt tolerance; B's note that the 60 s
+    strip timer starts during the first briefing; `mkBot`'s legacy no-`ai` mirror path is dead code but still present; LEAGUES.md
+    points-per-minute not re-measured (payouts unchanged). Candidates for the Fix queue, not release blockers.

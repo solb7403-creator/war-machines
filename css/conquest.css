@@ -295,9 +295,9 @@
 .cq-plot-drivehint{top:auto;left:20px;right:20px;bottom:calc(var(--cq-sheet) + 70px);transform:none;text-align:center;font-size:11px}
 
 /* Session 5D: desktop key map, keyboard devices only (coarse pointers never see it) */
-.cq-keys{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,760px);padding:7px 12px;background:#081524e6;border:1px solid #79e2d266;border-radius:6px;color:#cfe6ec;font-size:11px;letter-spacing:.04em;text-align:center;pointer-events:none;z-index:5;white-space:normal;line-height:1.5}
+.cq-keys{position:absolute;left:50%;top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 52px);transform:translateX(-50%);max-width:min(92vw,760px);padding:7px 12px;background:#081524e6;border:1px solid #79e2d266;border-radius:6px;color:#cfe6ec;font-size:11px;letter-spacing:.04em;text-align:center;pointer-events:none;z-index:5;white-space:normal;line-height:1.5}
 @media(pointer:coarse){.cq-keys{display:none}}
 /* Session 5D: BUILD at PEEK shows its first card (the resource line and the group title wait for HALF); the readout never wraps at 390 px */
 .cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
 .cq-plot-body>.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em}   /* the build readout only (its tokens are short enough for 320 px); the visit readout wraps */
-@media(max-width:600px){.cq-keys{bottom:calc(168px + env(safe-area-inset-bottom))}}   /* a narrow desktop window: above the stick, FIRE and the zoom column */
+.cq-viewport:focus{outline:none}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world; no ring around the whole screen */

@@ -70,7 +70,7 @@ async def main():
     await page.screenshot(path=str(OUT/f'pad-diorama-cc{cc}-gate-centre-390.png'))
     kiosk=await page.evaluate('''()=>{let n=0;Conquest.view.baseGroup?.traverse(o=>{if(o.isMesh)n++;});return n;}''')
     inside=abs(p0['x']-GATE[0])<p0['half']+1.6 and abs(p0['z']-GATE[1]-1.5)<p0['half']+1.6
-    R[f'gateCentre{cc}']={'start':p0,'after':p1,'meshes':kiosk,'startedOnModel':inside};assert (not inside) or p1['z']<p0['z']-4,R[f'gateCentre{cc}']
+    R[f'gateCentre{cc}']={'start':p0,'after':p1,'meshes':kiosk,'startedOnModel':inside,'keyStrip':await page.evaluate('!!document.querySelector(".cq-keys")')};assert inside and p1['z']<p0['z']-2 and not R[f'gateCentre{cc}']['keyStrip'],R[f'gateCentre{cc}']
     await enter_base(page,errors);await page.wait_for_timeout(2000)
     sp=await page.evaluate('''()=>{const X=ConquestPlotView.state,D=X.drive,TK=ConquestTownKit,P=ConquestPlot,p=D.plot,C=TK.ccCenter(p);const dx=C.x-D.x,dz=C.z-D.z,d=Math.hypot(dx,dz),fwd=Math.cos(Math.atan2(dx,dz)-D.h);return {x:D.x,z:D.z,h:D.h,ccDist:d,ccAhead:fwd,face:!!D.pad.face,info:X.info};}''')
     await page.screenshot(path=str(OUT/f'home-sector-drive-cc{cc}-390.png'))
@@ -86,7 +86,8 @@ async def main():
     await page.screenshot(path=str(OUT/f'hub-hero-town-cc{cc}-390.png'));R['hub'+str(cc)]=await page.evaluate('ConquestHub.state.town');assert not errors,errors
     await close(ctx)
    # ---- 5 + 6: BUILD at PEEK shows a card, the readout is one line; the Cannon sprite is lit ----
-   ctx,page,errors=await session(390,700,{'position':GATE,'plotFull':'crater','baseFunds':True});await world(page);await enter_base(page,errors)
+   # a CC5 town with buildings left to place (the fully built CC10 town has no cards: it shows the all-placed hint, which is right)
+   ctx,page,errors=await session(390,700,{'position':GATE,'baseFunds':True,'plotCC':5,'plotSite':'ridge'});await world(page);await enter_base(page,errors)
    await page.locator('.cq-plot-tabs button',has_text='BUILD').click();await page.wait_for_timeout(800)
    async def snap(want):   # the handle is a keyboard control: ArrowDown lowers the sheet one snap, ArrowUp raises it (sheet.js)
     for _ in range(4):

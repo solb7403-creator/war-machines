@@ -47,7 +47,7 @@ function keysHint(panel){
  const show=()=>{if(strip||!panel.isConnected)return;strip=el('div','cq-keys','WASD / arrows move · Space fire · Shift dash · F shield · G gather · C scan · R super · Q / E turret · click a hull to lock · drag to orbit',panel);strip.setAttribute('role','note');bye(60000);};
  let seen=0;try{seen=+(localStorage.getItem('lunar-conquest-keys-seen')||0);}catch(_){}
  if(kb()&&seen<3){show();try{localStorage.setItem('lunar-conquest-keys-seen',String(seen+1));}catch(_){}}   // three visits, then HELP keeps the list
- const onKey=e=>{if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){if(!strip&&!kb())show();else bye(6000);root.removeEventListener('keydown',onKey);}};   // it goes 6 s after the first drive key
+ const onKey=e=>{if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){if(!strip&&!kb())show();bye(6000);root.removeEventListener('keydown',onKey);}};   // it goes 6 s after the first drive key
  root.addEventListener('keydown',onKey,{signal:view?.lifecycle?.signal});
  view?.lifecycle?.signal?.addEventListener('abort',()=>{clearTimeout(timer);strip?.remove();strip=null;},{once:true});
 }

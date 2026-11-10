@@ -275,17 +275,20 @@ function PVP_BANK() { return 0.6; }
 // ================= ghosts: offline pilots' tanks take AI seats in live rooms; owners get a report, no points =================
 {
   const { room, run, io } = rig();
-  const Lg = L0(); Lg.up.hull = 3; Lg.paint = 'ember';
+  const Lg = L0(); Lg.paint = 'ember';   // a stock tank (power 68): no stronger than the Rookie room's AI (aiGhostCap). The strong one below must be refused
+  const Lh = L0(); Lh.up.hull = 3;   // the humans (power 76)
+  const Ls = L0(); Ls.up.hull = 6;   // an offline pilot above the cap (power 83): never seated
   io.ghostAsks = 0; io.reports = [];
-  io.ghosts = async (pw, skip) => { io.ghostAsks++; return [{ id: 'tg_9001', n: 'Sleepy', L: Lg }, { id: 'tg_9002', n: 'Dozer', L: Lg }, { id: 'a', n: 'A', L: Lg }]; };
+  io.ghosts = async (pw, skip) => { io.ghostAsks++; return [{ id: 'tg_9000', n: 'Bruiser', L: Ls, pw: R.powerOf(Ls) }, { id: 'tg_9001', n: 'Sleepy', L: Lg }, { id: 'tg_9002', n: 'Dozer', L: Lg }, { id: 'a', n: 'A', L: Lg }]; };
   io.ghostReport = async (list) => { io.reports.push(...list); };
   const S = {};
-  for (const p of ['a', 'b']) { seat(room, p, { g: 'arena', m: '2v2' }); S[p] = sock(p); room.connect(p, S[p]); }
+  for (const p of ['a', 'b']) { seat(room, p, { g: 'arena', m: '2v2' }, JSON.parse(JSON.stringify(Lh))); S[p] = sock(p); room.connect(p, S[p]); }
   await flush(); await flush();   // the ghost lookup lands while the room waits
   await run(PVP.WAIT_MS + 50);
   const g = last(S.a, 'go');
   const gh = g.units.filter((u) => u.gh);
   t(io.ghostAsks === 1 && gh.length === 1 && gh[0].ai && /^Ghost of (Sleepy|Dozer)$/.test(gh[0].name), 'live room: 1 of 2 AI seats goes to an offline pilot, labeled ' + JSON.stringify(g.units.map((u) => u.name)));
+  t(!g.units.some((u) => /Bruiser/.test(u.name)), 'live room: a ghost above the league AI cap (rules.js aiGhostCap) is never seated, even first in the pool');
   const gu = room.sim.units.find((u) => u.gh);
   t(gu && gu.team === 1 && gu.mhp === R.tankOf(Lg, 2).mhp && gu.paint === 'ember', 'the ghost fights with its owner\'s build and gear (enemy seat first)');
   t(!g.units.some((u) => u.gid) && !JSON.stringify(g).includes('tg_900'), 'owner ids never reach the phones');
