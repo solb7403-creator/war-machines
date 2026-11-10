@@ -150,10 +150,8 @@ const LG_MULT=[1,1.15,1.30,1.45,1.60,1.80,2.00];   // spendable points multiplie
 const LG_FIRST=84,LG_RATIO=1.21;   // league rating lines: Pilot from 84, then each line 21% above the last (Lunar Legend from ~218)
 const LG_AT=LEAGUE.slice(1).map((_,i)=>Math.round(LG_FIRST*Math.pow(LG_RATIO,i)*10)/10);
 const LG_DEMOTE=0.04,LG_FORM_N=20,LG_FORM_MIN=10,LG_FORM_W=0.4;
-// AI step per league (x the base AI power), and how much of it applies by team size: full in 1v1, part in 2v2 and Last
-// Standing, none in 3v3: five other tanks dilute a pilot's gear edge there, so 3v3 is already a fight, and even a one-tier AI
-// step moved measured 3v3 results by 7-12 points (docs/launch/LEAGUES.md); 3v3 keeps today's difficulty in every league
-const LG_AI_STEP=1.04,LG_AI=LEAGUE.map((_,i)=>Math.round(Math.pow(LG_AI_STEP,i)*1000)/1000),LG_TEAM_W={1:1,2:0.6,3:0,solo:0.3};   // solo: Last Standing (five rivals, every tank for itself)
+// LG_AI: the league's AI power relative to Rookie's (what the league screen shows as "AI +x%"); set from LG_AI_PW below (Session 5D)
+let LG_AI=LEAGUE.map(()=>1);
 const leagueRating=(pw,lwr,mp)=>(Number(pw)||0)*(1-LG_FORM_W/2+LG_FORM_W*((mp|0)<LG_FORM_MIN?0.5:Math.max(0,Math.min(1,Number(lwr)))));
 function leagueIdx(rating,prev){
  prev=Math.max(0,Math.min(LEAGUE.length-1,prev|0));
@@ -224,10 +222,15 @@ const AI_CAP=165;   // the hard cap: no AI pilot (or megatank reference) above t
 // per league (Rookie .. Lunar Legend): the AI power, the reference pilot power it is tuned for (the middle of the league's rating
 // band: a stock tank is 68, the Pilot line 84, each line x1.21), how long an AI pilot holds a ready super before firing (seconds in
 // sight and range; a player can fire the instant it is charged) and how often it dashes out of a super it sees coming
-const LG_AI_PW=[68,72,82,98,120,134,146];
+const LG_AI_PW=[68,72,82,98,120,134,146];LG_AI=LG_AI_PW.map(p=>Math.round(p/LG_AI_PW[0]*1000)/1000);
 const LG_AI_REF=[72,92,112,135,164,198,235];
 const AI_GEAR_EXP=0.3,AI_GEAR_LO=0.88,AI_GEAR_HI=1.12;
 const LG_AI_SUP_WAIT=[1.0,0.85,0.7,0.6,0.5,0.5,0.5],LG_AI_DODGE=[0.35,0.4,0.45,0.5,0.5,0.5,0.5];
+// Owner, Nov 10: "the AI supers every 1-2 s, 3-5x my own". Measured: every AI obeyed the charge rule, but each AI fires the instant it
+// is charged (a person is slower), and in team modes five AI tanks' supers add up to one every 1-2 s. So on top of the player's own
+// charge rule every AI pilot keeps a minimum time between its supers (by league) and AI teammates never fire within AI_SUP_TEAM_GAP of
+// each other. These only ever make the AI fire less than a player could; a player keeps firing the instant the charge is full
+const LG_AI_SUP_GAP=[12,11,10,9,8,7,6],AI_SUP_TEAM_GAP=2;
 // Last Standing: five rivals at the league's AI, every tank for itself: the league step is diluted (LG_SOLO_W of it) so a place
 // among six stays reachable; team modes meet the league's AI in full (your wingmen fly it too)
 const LG_SOLO_W=0.7;

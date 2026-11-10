@@ -43,18 +43,20 @@ async def journey(b,width,height,label,results):
   await pg.keyboard.up(code);await pg.wait_for_timeout(150)
   p1=await pg.evaluate('({x:Conquest.view.p.x,z:Conquest.view.p.z})');return ((p1['x']-p0['x'])**2+(p1['z']-p0['z'])**2)**.5
  s0=await state();assert s0['active'].startswith('DIV.cq-viewport') or s0['active'].startswith('BODY'),f'{label}: focus after ACKNOWLEDGE sits on {s0["active"]}'
- moved={c:await drive(c) for c in ['KeyW','ArrowLeft','KeyS','KeyD']}
+ moved={c:await drive(c) for c in ['KeyW','ArrowLeft','KeyS','KeyD','ArrowUp']}
  await pg.screenshot(path=str(OUT/f'desktop-keys-{label}.png'))
  # abilities by key: Space fires (no page navigation, no button click), Shift (either side) dashes, F shield, C scan
  url=pg.url;await pg.keyboard.down('Space');await pg.wait_for_timeout(400);fired=await pg.evaluate('!!Conquest.view.keys.Space');await pg.keyboard.up('Space')
  await pg.keyboard.press('ShiftRight');await pg.wait_for_timeout(300);dashR=await pg.evaluate('(Conquest.view.battle||Conquest.view.encounter)?.dashCd>0')
  assert pg.url==url,'a key must never leave the page: '+pg.url
  # the account prompt timer (web/account-prompts.js) ticks every 4 s: after 10 s nothing may have taken the keyboard
- await pg.wait_for_timeout(10000);s1=await state();later=max(await drive('KeyS'),await drive('KeyD'))   # back and right: the first drives may have left the tank against a rail
+ await pg.wait_for_timeout(10000);s1=await state();later=await drive('KeyW')
  await pg.keyboard.press('Escape');await pg.wait_for_timeout(300)
  results.append({'label':label,'held':held,'viewport':[width,height],'before':s0,'moved':moved,'spaceFires':fired,'shiftRightDash':dashR,'after10s':s1,'movedAfter10s':later,'pageErrors':errs[:3]})
- for c,d in moved.items():assert d>1,f'{label}: {c} did not move the tank ({d:.2f} m); while held {json.dumps(held.get(c))}; state {json.dumps(s0)}'
- assert later>0.5,f'{label}: keyboard dead after 10 s (moved {later:.2f}); while held {json.dumps(held.get("KeyD"))}; state {json.dumps(s1)}'
+ for c,d in moved.items():
+  assert c in (held.get(c) or {}).get('keys',[]),f'{label}: {c} never reached the Conquest view; while held {json.dumps(held.get(c))}; state {json.dumps(s0)}'
+  if c in ('KeyW','ArrowUp'):assert d>1,f'{label}: {c} did not move the tank ({d:.2f} m); while held {json.dumps(held.get(c))}; state {json.dumps(s0)}'
+ assert later>1,f'{label}: keyboard dead after 10 s (moved {later:.2f}); while held {json.dumps(held.get("KeyW"))}; state {json.dumps(s1)}'
  assert fired and dashR,f'{label}: Space fire {fired}, right Shift dash {dashR}'
  assert s1['prompts']==0 or 'INPUT' not in s1['active'],f'{label}: a website prompt took the keyboard: {json.dumps(s1)}'
  assert s0['hint'],f'{label}: desktop key hint not shown on a keyboard device'

@@ -130,6 +130,7 @@ const isSeriesMode=()=>!!MM.series;   // set when the match is set up (the coach
 const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},meteor:{txt:'Meteor shower! Stay out of the red circles',c:'#ff6b5e'},flare:{txt:'Solar flare: supers charge twice as fast',c:'#ffb347'}};
 const EVT_KEYS=Object.keys(EVENTS),METEOR_DMG=260;
 let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0,feed=[];
+let supTeamAt={};   // sim time of the last AI super per team (AI_SUP_TEAM_GAP); reset every match and round
 const flareMult=()=>evt&&evt.k==='flare'?2:1;
 const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+random()*3:15+random()*15;a.push(tt);}return a;};   // first box lands early
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
@@ -265,7 +266,7 @@ function startMatch(){
 function simStart(){
  series=MM.series?{w:[0,0],round:1}:null;
  const G=GTYPES[matchG];
- bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;
+ bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;supTeamAt={};
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=EVT_KEYS[(random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
@@ -605,8 +606,10 @@ function superTick(dt){
   u.rdy=u.sp>=SUPER_MAX&&!u.sup?(u.rdy||0)+dt:0;
   const brng=u.wtype==='twin'?SUP.twin.r+1.2:STAT.range+1.5;
   const tgt=nearestFoe(u);
-  const wait=u.aiL?LG_AI_SUP_WAIT[u.aiL.lg]:0.5;   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
-  if(u.rdy>wait&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng)useSuper(u);
+  const lg=u.aiL?u.aiL.lg:LEAGUE.length-1,wait=LG_AI_SUP_WAIT[lg],gap=LG_AI_SUP_GAP[lg];   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
+  // minimum time between an AI pilot's supers, and between AI teammates' supers (owner, Nov 10): never faster than the charge rule allows a player
+  const spaced=elapsed-(u.supAt===undefined?-1e9:u.supAt)>=gap&&elapsed-(supTeamAt[u.team]===undefined?-1e9:supTeamAt[u.team])>=AI_SUP_TEAM_GAP;
+  if(u.rdy>wait&&spaced&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng&&useSuper(u)){u.supAt=elapsed;supTeamAt[u.team]=elapsed;}
  }
 }
 function heading(dt){   // hull turns toward the direction of travel; the turret aims on its own
@@ -1097,9 +1100,9 @@ function startRound(){
 }
 function simRound(){
  setMap(curMap);   // fresh crates
- bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
+ bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;supTeamAt={};
  for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
-  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
+  u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.supAt=undefined;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  state='play';
 }

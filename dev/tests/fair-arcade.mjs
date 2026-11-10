@@ -64,7 +64,7 @@ ok(bossOf(GEAR.legend, 6)[0] > bossOf(GEAR.legend, 0)[0], 'the Lunar Legend mega
 
 // ---- 3. live rooms: AI fill-ins fly the room league's authored loadout, never a human's gear ----
 { const api = new Function('HOST', '"use strict";\n' + src('js/rules.js') + src('js/game.js') + src('worker/sim-api.js'));
-  const fill = (L, lg, g = 'arena', m = '1v1') => { const sim = api({ seed: 5, random: Math.random, ev() {}, end() {}, round() {}, death() {} }); sim.setup({ g, m, map: 'classic', series: false, seats: [{ pid: 'me', name: 'Me', L }, null], ghosts: [], lg }); const b = sim.units.find(u => !u.pid); return { wmult: b.wmult || 1, chm: b.chm || 1, aura: b.aura | 0, gems: b.gems, wtier: b.wtier | 0, mhp: b.mhp, dps: b.wdps, me: sim.units.find(u => u.pid) }; };
+  const fill = (L, lg, g = 'arena', m = '1v1') => { let rs = 5; const sim = api({ seed: 5, random: () => { rs = (rs * 1664525 + 1013904223) >>> 0; return rs / 4294967296; }, ev() {}, end() {}, round() {}, death() {} });   // seeded: pScale draws are the same every run sim.setup({ g, m, map: 'classic', series: false, seats: [{ pid: 'me', name: 'Me', L }, null], ghosts: [], lg }); const b = sim.units.find(u => !u.pid); return { wmult: b.wmult || 1, chm: b.chm || 1, aura: b.aura | 0, gems: b.gems, wtier: b.wtier | 0, mhp: b.mhp, dps: b.wdps, me: sim.units.find(u => u.pid) }; };
   for (const lg of [0, 6]) { const s = fill(GEAR.stock, lg), l = fill(GEAR.legend, lg);
     ok(l.wmult !== l.me.wmult && l.chm !== l.me.chm, LGN[lg] + ' live room: the fill-in does not copy the lone human\'s weapon/chassis multipliers (' + l.wmult + '/' + l.chm + ' vs yours ' + l.me.wmult + '/' + l.me.chm + ')');
     ok(l.aura < 3 && l.wmult < 1.48, LGN[lg] + ' live room: no Legendary-class fill-in');
@@ -103,6 +103,10 @@ for (let lg = 0; lg < 7; lg++) {
     ok(c.aiDashCd <= 1e-9 && c.aiShieldCd <= 1e-9, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': no AI dash or shield while on cooldown (leftover dash ' + c.aiDashCd + ' s, shield ' + c.aiShieldCd + ' s)');
     // gaps: a respawn or a new best-of-3 round resets everyone's cooldowns (players too), so only the telegraph bounds the gap between supers
     ok(c.aiSupGap >= minSup - 0.04, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': two AI supers are never closer than the telegraph (' + c.aiSupGap.toFixed(2) + ' s)');
+    // owner, Nov 10: an AI pilot's supers keep the league's minimum spacing and never come faster than the pilot's own under the same rules
+    const gapRule = has('LG_AI_SUP_GAP') ? W.eval('LG_AI_SUP_GAP[' + lg + ']') : 99;
+    ok(c.aiSupGap >= gapRule - 0.1, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': an AI pilot keeps at least ' + gapRule + ' s between its supers (shortest seen ' + c.aiSupGap.toFixed(2) + ' s)');
+    ok(c.aiSupPM <= c.meSupPM * 1.05 + 0.3 || c.aiSup <= 1, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': an AI pilot never out-supers the pilot under the same rules (AI ' + c.aiSupPM + ' vs pilot ' + c.meSupPM + ' a minute per tank)');
     aiSup += c.aiSup; aiMin += c.foeMin; meSup += c.meSup; meMin += c.meMin; aiDash += c.aiDash; meDash += c.meDash; }
   const aiPM = aiSup / aiMin, mePM = meSup / meMin;
   console.log('abilities a minute of one tank: AI supers ' + aiPM.toFixed(2) + ' (pilot ' + mePM.toFixed(2) + '), AI dashes ' + (aiDash / aiMin).toFixed(2) + ' (pilot ' + (meDash / meMin).toFixed(2) + ', rule maximum ' + (60 / DASH_CD).toFixed(0) + ')');
@@ -123,7 +127,7 @@ for (let lg = 0; lg < 7; lg++) {
   const kill = L => { const B = new C.Battle(L, p), e = B.enemies.find(x => x.kind === 'sentinel') || B.enemies[0]; Object.assign(e, { x: 1175, z: 1048, y: Wd.groundAt(1175, 1048), hp: 1100, maxHp: 1100, decision: 1e9, cd: 1e9, vx: 0, vz: 0 }); B.enemies = [e]; let t = 0; while (e.hp > 0 && t < 60) { B.tick(1 / 30, p, { fire: true, aim: { x: e.x, y: e.y + 2.2, z: e.z } }); t += 1 / 30; } return t; };
   const ks = kill(stock), kl = kill(legend); ok(kl < ks * 0.6, 'Conquest: the Legendary kit kills a heavy sentinel far faster than stock (' + kl.toFixed(1) + ' s vs ' + ks.toFixed(1) + ' s)');
   // a redoubt commander's patterns keep their authored cadence (doctrine), never the player's
-  ok(J(C.raidDoctrine.VETERAN) === J(C.raidDoctrine.VETERAN) && Object.isFrozen(C.raidDoctrine.VETERAN), 'raid doctrine is authored and frozen');
+  ok(Object.isFrozen(C.raidDoctrine.VETERAN) && C.raidDoctrine.VETERAN.hull === 1.55 && C.raidDoctrine.VETERAN.damage === 1.5 && J(C.raidDoctrine.VETERAN.garrison) === J(['raider', 'command']), 'raid doctrine is authored and frozen (VETERAN hull 1.55, damage 1.5, garrison raider + command)');
   // the same enemy fire, taken: the Legendary kit survives longer under a sentinel's gun
   const left = L => { const B = new C.Battle(L, p), e = B.enemies.find(x => x.kind === 'sentinel') || B.enemies[0]; Object.assign(e, { x: 1175, z: 1048, y: Wd.groundAt(1175, 1048), hp: 1e9, maxHp: 1e9, vx: 0, vz: 0 }); B.enemies = [e]; let t = 0; while (B.playerHp > 0 && t < 60) { B.tick(1 / 30, p, {}); t += 1 / 30; } return B.playerHp / B.playerMax; };
   const hs = left(stock), hl = left(legend); ok(hl > hs + 0.1, 'Conquest: after a minute under the same enemy fire the Legendary kit keeps more of its hull than stock (' + (hl * 100).toFixed(0) + '% vs ' + (hs * 100).toFixed(0) + '%)'); }

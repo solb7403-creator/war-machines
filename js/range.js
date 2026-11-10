@@ -69,7 +69,7 @@ async function rangeStart(repeat){
   const seed=Number($('#range-seed')?.value);
   if(!Number.isInteger(seed)||seed<1||seed>4294967295){$('#range-error').textContent='Choose a whole-number seed from 1 to 4294967295.';return;}
   rangeOptions={g:$('#range-mode').value,map:$('#range-map').value,seed,preset:$('#range-opponent').value,control:$('#range-control').value};
-  cfg={...rangeOptions,L:ecoLoadout(O.owned,rangeSource.spec)};
+  cfg={...rangeOptions,L:ecoLoadout(O.owned,rangeSource.spec)};cfg.lg=typeof myLeague==='function'?myLeague(powerOf(cfg.L)).i:0;   // 5D: the Survival megatank of your league, as in AI matches
  }
  const token=++rangeLoading,frame=document.createElement('iframe');
  frame.hidden=true;frame.title='Isolated practice engine';frame.src='range-engine.html';

@@ -42,6 +42,10 @@ auto-aiming turret a person gets). Before = `main` at `f193de1`, after = this br
 - **Ghosts**: in AI matches never stronger than the match's AI x1.05 (phone and Worker), still clearly weaker than you and labeled.
 - **Live rooms**: AI fill-ins fly the room league's authored loadout (the middle human's league). Humans against humans are untouched;
   the only change is that a bot no longer mirrors a human's gear. Reason: a room with no second human is an AI match in disguise.
+  One consequence for the owner to know (reviewer finding): in a mixed room (say a 2v2 with three humans and one fill-in), the side
+  carrying the bot is now weaker than before, because its bot is a league tank (145 power at Lunar Legend) instead of a mirror of a
+  235-power human. If you prefer the old mixed-room balance, the one-line alternative is to anchor live fill-ins at
+  `min(middle human power, AI_CAP)`; I kept the league loadout because the brief's rule is that no AI ever copies a player's gear.
 - **Points, payouts, caps, PvP rules, gear stats**: unchanged. Moonbeam and Lunar Skin unchanged.
 
 What the kits meet now (AI power, 1v1 / 3v3 / Last Standing):

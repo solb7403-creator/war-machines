@@ -1,7 +1,7 @@
 // League report + checks (item 4), from league-grid.mjs output and today's table (origin/main, ai-table.mjs).
 // usage: node dev/tests/s2/league-report.mjs today.json grid-standard.json grid-casual-expert.json > LEAGUES-tables.md
 import fs from 'node:fs';
-const R = new Function(fs.readFileSync('js/rules.js', 'utf8') + ';return {LEAGUE,leagueIdx,leagueRating,powerOf,LG_AI,LG_TEAM_W,LG_BASE_PAY,LG_MULT};')();
+const R = new Function(fs.readFileSync('js/rules.js', 'utf8') + ';return {LEAGUE,leagueIdx,leagueRating,powerOf,LG_AI,LG_TEAM_W:{1:1,2:1,3:1,solo:1},LG_BASE_PAY,LG_MULT};')();
 const { GEAR } = await import('../combat-sim.mjs');
 const today = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')), G = {};
 for (const f of process.argv.slice(3)) { const g = JSON.parse(fs.readFileSync(f, 'utf8')); for (const lg in g) for (const p in g[lg]) ((G[p] ||= {})[lg] = g[lg][p]); }

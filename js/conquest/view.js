@@ -359,7 +359,7 @@ class View {
  // edge) drives itself south onto clear courtyard ground through the normal input path (the Worker replays it like any drive), for
  // at most 4 s, and stops the moment the pilot steers. force: just built or just arrived; otherwise only after a position jump
  nudgeOffDiorama(force){const dio=this.diorama,D=root.ConquestCombat?.baseDefinition;if(!dio||!D)return;const half=(dio.userData.half||0)+1.6,lx=this.p.x-D.x,lz=this.p.z-D.z-1.5;
-  if(Math.abs(lx)<half&&Math.abs(lz)<half){if(force||!this.nudge)this.nudge={wx:0,wz:-1,until:performance.now()+4000,half};}}
+  if(Math.abs(lx)<half&&Math.abs(lz)<half){if(force||!this.nudge)this.nudge={wx:0,wz:-1,left:4,half};}}   // left: seconds of driving (sim time: it waits for the Worker session)
  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;this.detailRadius=w<=600?1:2;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
  zoom(v){this.distance=Math.max(16,Math.min(110,this.distance+v));}
  jump(x,z){if(this.authority)return false;x=Math.max(1,Math.min(W.WIDTH-1,Number(x)));z=Math.max(1,Math.min(W.LENGTH-1,Number(z)));if(!Number.isFinite(x)||!Number.isFinite(z))return false;this.p={x,z,y:W.groundAt(x,z),surface:'ground'};this.pending=Infinity;this.reset();return true;}
@@ -409,7 +409,7 @@ class View {
  tick(dt){if(this.disposed||document.hidden)return;this.profileFrame();this.prewarmEnemyGeometry();this.warmPrograms();if(this.resume){dt=0;this.resume=false;}dt=Math.min(.25,Math.max(0,dt));if(this.authority&&(!this.authority.connected||this.authority.stalled)){dt=0;this.edgeLatch={};}this.loadoutElapsed=(this.loadoutElapsed||0)+dt;if(this.loadoutElapsed>=.5){this.syncLoadout();this.loadoutElapsed=0;}this.elapsed+=dt;this.frames++;if(this.elapsed>.5){this.fps=this.frames/this.elapsed;this.elapsed=0;this.frames=0;}
  let sx=this.stick.x+(this.keys.KeyD||this.keys.ArrowRight?1:0)-(this.keys.KeyA||this.keys.ArrowLeft?1:0),sz=this.stick.z+(this.keys.KeyW||this.keys.ArrowUp?1:0)-(this.keys.KeyS||this.keys.ArrowDown?1:0),n=Math.max(1,Math.hypot(sx,sz));sx/=n;sz/=n;
  if(this.lastP&&Math.hypot(this.p.x-this.lastP.x,this.p.z-this.lastP.z)>15)this.nudgeOffDiorama(true);this.lastP={x:this.p.x,z:this.p.z};   // a teleport (fast travel, a visit's return) onto the town model
- if(this.nudge){const N=this.nudge,D=root.ConquestCombat?.baseDefinition,on=D&&Math.abs(this.p.x-D.x)<N.half&&Math.abs(this.p.z-D.z-1.5)<N.half;if(performance.now()>N.until||Math.hypot(sx,sz)>.1||!on)this.nudge=null;else{sx=Math.cos(this.yaw)*N.wx-Math.sin(this.yaw)*N.wz;sz=-(Math.sin(this.yaw)*N.wx+Math.cos(this.yaw)*N.wz);}}
+ if(this.nudge){const N=this.nudge,D=root.ConquestCombat?.baseDefinition,on=D&&Math.abs(this.p.x-D.x)<N.half&&Math.abs(this.p.z-D.z-1.5)<N.half;N.left-=dt;if(N.left<=0||Math.hypot(sx,sz)>.1||!on)this.nudge=null;else{sx=Math.cos(this.yaw)*N.wx-Math.sin(this.yaw)*N.wz;sz=-(Math.sin(this.yaw)*N.wx+Math.cos(this.yaw)*N.wz);}}
  const dx=(Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz)*this.speed*dt,dz=(-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz)*this.speed*dt;
  const K=root.ConquestControl,board=this.battle||this.encounter,frameStart=this.p;let shown;
  if(K&&board){
