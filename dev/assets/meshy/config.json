@@ -1,0 +1,87 @@
+{
+ "version": "meshy-v1",
+ "output": "../../../js/assets/meshy-v1",
+ "bake": {
+  "aoRays": 48,
+  "aoDistance": 0.12,
+  "aoSmooth": 2,
+  "curvatureSmooth": 3
+ },
+ "quality": {
+  "light": {
+   "maxError": 0.03,
+   "creaseAngle": 38,
+   "padding": 2,
+   "cage": 0.012,
+   "supersample": 2,
+   "webpQuality": {
+    "normal": 90,
+    "orm": 85,
+    "base": 88,
+    "mask": 90
+   },
+   "hiddenTexelScale": 0.3
+  },
+  "full": {
+   "maxError": 0.01,
+   "creaseAngle": 38,
+   "padding": 2,
+   "cage": 0.008,
+   "supersample": 2,
+   "webpQuality": {
+    "normal": 92,
+    "orm": 88,
+    "base": 90,
+    "mask": 90
+   },
+   "hiddenTexelScale": 0.2
+  }
+ },
+ "kinds": {
+  "chassis": {
+   "tris": {
+    "light": 18000,
+    "full": 120000
+   },
+   "texture": {
+    "light": 512,
+    "full": 2048
+   }
+  },
+  "weapon": {
+   "tris": {
+    "light": 6000,
+    "full": 36000
+   },
+   "texture": {
+    "light": 512,
+    "full": 1024
+   }
+  },
+  "town": {
+   "tris": {
+    "light": 5000,
+    "full": 40000
+   },
+   "texture": {
+    "light": 512,
+    "full": 1024
+   }
+  }
+ },
+ "items": [
+  {
+   "id": "chassis-vanguard-0",
+   "src": "VANGUARD tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "vanguard",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.61
+   }
+  }
+ ]
+}
