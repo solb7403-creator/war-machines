@@ -111,8 +111,9 @@ async def main(engine,journey_only=False):
       yaw=await page.evaluate('Conquest.view.yaw');await page.mouse.move(width/2,350);await page.mouse.down();await page.mouse.move(width/2+15,355,steps=3);await page.mouse.up();assert await page.evaluate('Conquest.view.selectedId===null');assert await page.evaluate('Conquest.view.yaw')!=yaw,'camera drag stays independent'
       pt=await target_point(selected['id']);assert pt;await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId')==selected['id']
       stick=await rect('.cq-stick');drive_contact={'id':1,'x':stick['x']+stick['w']/2,'y':stick['y']+stick['h']/2};start=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await touch('touchStart',[contact,drive_contact]);drive_contact['y']-=36;await touch('touchMove',[contact,drive_contact]);await page.wait_for_timeout(350);await touch('touchEnd',[drive_contact]);assert await page.evaluate('Conquest.view.firing'),'releasing joystick preserves held Fire';end=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');assert math.dist(start,end)>.3,'simultaneous drive/fire moves';await page.wait_for_timeout(1600);await page.screenshot(path=str(OUT/'active-combat.png'))
-      # Hold FIRE while precisely tapping each later living hostile. No HP/outcome/tick mutation.
-      for i in range(90):
+      # Hold FIRE while precisely tapping each later living hostile. No HP/outcome/tick mutation. Up to ~200 s of real time: the loop
+      # ends as soon as the authority reports the outcome; on the CI runner (software GL, a few fps) the same fight takes 2-3x longer than here
+      for i in range(200):
        if await page.evaluate('Conquest.view.authority.state.battle.state!=="active"'):break
        if not await page.evaluate('Conquest.view.selectedId'):
         pt=await target_point()
