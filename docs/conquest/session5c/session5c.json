@@ -16,8 +16,8 @@
     "peek": {
      "free": true,
      "snap": "peek",
-     "stageH": 483,
-     "drawerTop": 544,
+     "stageH": 493,
+     "drawerTop": 554,
      "drawerBottom": 700,
      "vh": 700,
      "pageScroll": 0,
@@ -39,21 +39,21 @@
    "tabs": {
     "HOME": {
      "scrolls": true,
-     "scrollTop": 403,
+     "scrollTop": 393,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 915,
+     "scrollTop": 905,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1457,
+     "scrollTop": 1447,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -67,14 +67,14 @@
     },
     "WALLS": {
      "scrolls": true,
-     "scrollTop": 396,
+     "scrollTop": 386,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "DEFEND": {
      "scrolls": true,
-     "scrollTop": 97,
+     "scrollTop": 87,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
@@ -98,8 +98,8 @@
     "peek": {
      "free": true,
      "snap": "peek",
-     "stageH": 627,
-     "drawerTop": 688,
+     "stageH": 637,
+     "drawerTop": 698,
      "drawerBottom": 844,
      "vh": 844,
      "pageScroll": 0,
@@ -121,21 +121,21 @@
    "tabs": {
     "HOME": {
      "scrolls": true,
-     "scrollTop": 331,
+     "scrollTop": 321,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 843,
+     "scrollTop": 833,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1385,
+     "scrollTop": 1375,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -149,14 +149,14 @@
     },
     "WALLS": {
      "scrolls": true,
-     "scrollTop": 324,
+     "scrollTop": 314,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "DEFEND": {
      "scrolls": true,
-     "scrollTop": 25,
+     "scrollTop": 15,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
@@ -169,8 +169,8 @@
     "full": {
      "free": true,
      "snap": "full",
-     "stageH": 59,
-     "drawerTop": 138,
+     "stageH": 61,
+     "drawerTop": 122,
      "drawerBottom": 568,
      "vh": 568,
      "pageScroll": 0,
@@ -180,8 +180,8 @@
     "peek": {
      "free": true,
      "snap": "peek",
-     "stageH": 333,
-     "drawerTop": 412,
+     "stageH": 361,
+     "drawerTop": 422,
      "drawerBottom": 568,
      "vh": 568,
      "pageScroll": 0,
@@ -191,8 +191,8 @@
     "half": {
      "free": true,
      "snap": "half",
-     "stageH": 244,
-     "drawerTop": 323,
+     "stageH": 253,
+     "drawerTop": 314,
      "drawerBottom": 568,
      "vh": 568,
      "pageScroll": 0,
@@ -203,21 +203,21 @@
    "tabs": {
     "HOME": {
      "scrolls": true,
-     "scrollTop": 496,
+     "scrollTop": 477,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "BUILD": {
      "scrolls": true,
-     "scrollTop": 1117,
+     "scrollTop": 1098,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "WEAPONS": {
      "scrolls": true,
-     "scrollTop": 1740,
+     "scrollTop": 1721,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0,
@@ -231,14 +231,14 @@
     },
     "WALLS": {
      "scrolls": true,
-     "scrollTop": 506,
+     "scrollTop": 487,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0
     },
     "DEFEND": {
      "scrolls": true,
-     "scrollTop": 188,
+     "scrollTop": 169,
      "lastReachable": true,
      "fitsWidth": true,
      "pageScroll": 0

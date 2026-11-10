@@ -48,7 +48,7 @@
    "enterVisible": true,
    "scroll": {
     "scrollable": true,
-    "scrolledBy": 156
+    "scrolledBy": 176
    }
   },
   "leftTo": {
@@ -135,7 +135,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1431,
+    "scrollTop": 1447,
     "confirmOnScreen": true
    },
    "pageErrors": []
