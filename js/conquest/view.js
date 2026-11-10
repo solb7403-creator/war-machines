@@ -153,7 +153,7 @@ class View {
  g.userData.gun=gun;g.userData.marker=this.form(g,this.cone,0,5,0,.6,1,.6,0xff4b48);g.scale.setScalar(1.65);this.scene.add(g);return g;}
  controlInput(dt,sx=0,sz=0){
  if(this.keys.KeyQ)this.aimYaw+=dt*1.8;if(this.keys.KeyE)this.aimYaw-=dt*1.8;
- return {x:Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz,z:-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz,aimYaw:this.aimYaw,aimPitch:this.aimPitch,lockId:this.selectedId??null,fire:this.firing||!!this.keys.Space,tapFire:!!this.fireTap,super:!!this.pendingAbilities?.super||!!this.keys.KeyR,dash:!!this.pendingAbilities?.dash||!!this.keys.ShiftLeft,shield:!!this.pendingAbilities?.shield||!!this.keys.KeyF,gather:!!this.gathering||!!this.keys.KeyG,scan:!!this.pendingAbilities?.scan||!!this.keys.KeyC};
+ return {x:Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz,z:-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz,aimYaw:this.aimYaw,aimPitch:this.aimPitch,lockId:this.selectedId??null,fire:this.firing||!!this.keys.Space,tapFire:!!this.fireTap,super:!!this.pendingAbilities?.super||!!this.keys.KeyR,dash:!!this.pendingAbilities?.dash||!!this.keys.ShiftLeft||!!this.keys.ShiftRight,shield:!!this.pendingAbilities?.shield||!!this.keys.KeyF,gather:!!this.gathering||!!this.keys.KeyG,scan:!!this.pendingAbilities?.scan||!!this.keys.KeyC};
  }
  combatTick(dt){const B=this.battle||this.encounter;if(!B)return;const before=performance.now();
  if(root.ConquestControl){if(!this.controlStepped){const i=this.controlInput(dt);this.p=root.ConquestControl.advance(B,this.p,i,dt,!this.battle);}this.controlStepped=false;
@@ -205,10 +205,17 @@ class View {
  const g=this.baseGroup=new this.T.Group();this.scene.add(g);const y=W.groundAt(D.x,D.z),tier=base.tier,trim=0x84dfe0,steel=0x4d626f;
  if(this.style&&plot){const low=!!this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low',art=this.style.commandBase(base,{paint:(PAINTS[this.loadout.paint]||PAINTS.stock).hull,veteran:!!s?.achievements?.['field-veteran'],shell:true});g.add(art);
   // the town on a lit plinth, fitted to the 27 m courtyard (1/7 of a CC1 town, 1/12 at CC10): walls, turrets, homes, vitals, CC height, banner
-  const build=()=>{if(this.baseGroup!==g||this.lifecycle?.signal?.aborted)return;try{const PL=root.ConquestPlot,h=PL.townH(plot.cc),half=(h+2.5)*PL.GRID.cell,size=21+6*Math.max(0,Math.min(1,(h-PL.townH(1))/Math.max(1,PL.townH(PL.CC.max)-PL.townH(1)))),sc=size/(2*half),cache=this.dioCache||(this.dioCache={wgeo:new Map(),hgeo:new Map(),tgeo:new Map()}),dio=TKit.diorama(this.style,plot,{low,scale:sc,vy:1,bv:3.1,wv:2.2,cache});   /* true terrain relief (a deep ridge block hid arriving tanks); walls x2.2 and buildings x3.1 about their base */   /* 21 m at CC1 -> 27 m at CC10, heights x2.2: a bigger town is a bigger, taller model */
-    for(const m of [cache.wgeo,cache.hgeo,cache.tgeo])for(const q of m.values())q.userData.dioKeep=true;dio.position.set(0,y+.34+dio.userData.lift,1.5);   /* the base plate sits on the courtyard floor (its top is y+.30): no terrain under it */dio.name='cq-town-diorama';g.add(dio);this.diorama=dio;}catch(e){this.dioramaError=String(e&&e.message||e);}};
-  // built after this frame (idle time), so a plot change never lands the whole town build inside a rendered frame
-  if(root.requestIdleCallback)root.requestIdleCallback(build,{timeout:700});else setTimeout(build,30);}
+  // 5D: built in slices (townkit dioramaGen) in idle time, at most ~8 ms a slice, and attached whole when done, so a town change
+  // never lands the build inside a rendered frame (iPhone measured 65-106 ms in one task before). A newer key cancels a stale build
+  let gen=null;const later=f=>root.requestIdleCallback?root.requestIdleCallback(f,{timeout:700}):setTimeout(f,0);
+  const step=(dl)=>{if(this.baseGroup!==g||this.lifecycle?.signal?.aborted)return;try{
+    if(!gen){const PL=root.ConquestPlot,h=PL.townH(plot.cc),half=(h+2.5)*PL.GRID.cell,size=21+6*Math.max(0,Math.min(1,(h-PL.townH(1))/Math.max(1,PL.townH(PL.CC.max)-PL.townH(1)))),sc=size/(2*half),cache=this.dioCache||(this.dioCache={wgeo:new Map(),hgeo:new Map(),tgeo:new Map()});   /* 21 m at CC1 -> 27 m at CC10, heights x2.2: a bigger town is a bigger, taller model */
+     const opts={low,scale:sc,vy:1,bv:3.1,wv:2.2,cache};gen=TKit.dioramaGen?TKit.dioramaGen(this.style,plot,opts):(function*(){return TKit.diorama(this.style,plot,opts);}).call(this);}
+    const t0=performance.now();let r;do{r=gen.next();}while(!r.done&&(dl&&typeof dl.timeRemaining==='function'?dl.timeRemaining()>4:performance.now()-t0<8));
+    if(!r.done){later(step);return;}
+    const dio=r.value,cache=this.dioCache;for(const m of [cache.wgeo,cache.hgeo,cache.tgeo])for(const q of m.values())q.userData.dioKeep=true;dio.position.set(0,y+.34+dio.userData.lift,1.5);   /* the base plate sits on the courtyard floor (its top is y+.30): no terrain under it */
+    dio.name='cq-town-diorama';g.add(dio);this.diorama=dio;this.dioramaAt=performance.now();this.nudgeOffDiorama(true);}catch(e){this.dioramaError=String(e&&e.message||e);}};
+  later(step);}
  else if(this.style){const asset=tier>=3?root.ConquestAssets?.make(this.T,'command',this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low'?'low':'high'):null,art=this.style.commandBase(base,{paint:(PAINTS[this.loadout.paint]||PAINTS.stock).hull,veteran:!!s?.achievements?.['field-veteran'],citadel:!!asset});g.add(art);g.userData.spin=art.userData.spin;if(asset){this.style.adopt(asset);asset.position.set(-7,y+1.6,8);g.add(asset);}}else{
  this.cube(g,0,y+.15,0,38,.3,34,0x313f4b);this.form(g,this.cylinder,0,y+.5,0,8,.7,8,0x708f99);
  // Physical build terminal exists before purchase, with an unmistakable construction apron.
@@ -348,6 +355,11 @@ class View {
  }
  }
  reset(){this.resume=true;this.keys={};this.stick={x:0,z:0};this.firing=false;this.fireTap=false;this.pendingAbilities={};this.edgeLatch={};}
+ // 5D (5C leftover 2): a tank that stands on the town model (a session that starts in the courtyard centre, an arrival on the model's
+ // edge) drives itself south onto clear courtyard ground through the normal input path (the Worker replays it like any drive), for
+ // at most 4 s, and stops the moment the pilot steers. force: just built or just arrived; otherwise only after a position jump
+ nudgeOffDiorama(force){const dio=this.diorama,D=root.ConquestCombat?.baseDefinition;if(!dio||!D)return;const half=(dio.userData.half||0)+1.6,lx=this.p.x-D.x,lz=this.p.z-D.z-1.5;
+  if(Math.abs(lx)<half&&Math.abs(lz)<half){if(force||!this.nudge)this.nudge={wx:0,wz:-1,until:performance.now()+4000,half};}}
  resize(){const w=this.host.clientWidth,h=this.host.clientHeight;this.detailRadius=w<=600?1:2;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
  zoom(v){this.distance=Math.max(16,Math.min(110,this.distance+v));}
  jump(x,z){if(this.authority)return false;x=Math.max(1,Math.min(W.WIDTH-1,Number(x)));z=Math.max(1,Math.min(W.LENGTH-1,Number(z)));if(!Number.isFinite(x)||!Number.isFinite(z))return false;this.p={x,z,y:W.groundAt(x,z),surface:'ground'};this.pending=Infinity;this.reset();return true;}
@@ -396,6 +408,8 @@ class View {
  dropChunk(key,o){this.scene.remove(o.group);o.group.traverse(m=>{if(m.geometry&&!this.shared.includes(m.geometry))m.geometry.dispose();if(m.isInstancedMesh)m.dispose();});this.chunks.delete(key);}
  tick(dt){if(this.disposed||document.hidden)return;this.profileFrame();this.prewarmEnemyGeometry();this.warmPrograms();if(this.resume){dt=0;this.resume=false;}dt=Math.min(.25,Math.max(0,dt));if(this.authority&&(!this.authority.connected||this.authority.stalled)){dt=0;this.edgeLatch={};}this.loadoutElapsed=(this.loadoutElapsed||0)+dt;if(this.loadoutElapsed>=.5){this.syncLoadout();this.loadoutElapsed=0;}this.elapsed+=dt;this.frames++;if(this.elapsed>.5){this.fps=this.frames/this.elapsed;this.elapsed=0;this.frames=0;}
  let sx=this.stick.x+(this.keys.KeyD||this.keys.ArrowRight?1:0)-(this.keys.KeyA||this.keys.ArrowLeft?1:0),sz=this.stick.z+(this.keys.KeyW||this.keys.ArrowUp?1:0)-(this.keys.KeyS||this.keys.ArrowDown?1:0),n=Math.max(1,Math.hypot(sx,sz));sx/=n;sz/=n;
+ if(this.lastP&&Math.hypot(this.p.x-this.lastP.x,this.p.z-this.lastP.z)>15)this.nudgeOffDiorama(true);this.lastP={x:this.p.x,z:this.p.z};   // a teleport (fast travel, a visit's return) onto the town model
+ if(this.nudge){const N=this.nudge,D=root.ConquestCombat?.baseDefinition,on=D&&Math.abs(this.p.x-D.x)<N.half&&Math.abs(this.p.z-D.z-1.5)<N.half;if(performance.now()>N.until||Math.hypot(sx,sz)>.1||!on)this.nudge=null;else{sx=Math.cos(this.yaw)*N.wx-Math.sin(this.yaw)*N.wz;sz=-(Math.sin(this.yaw)*N.wx+Math.cos(this.yaw)*N.wz);}}
  const dx=(Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz)*this.speed*dt,dz=(-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz)*this.speed*dt;
  const K=root.ConquestControl,board=this.battle||this.encounter,frameStart=this.p;let shown;
  if(K&&board){

@@ -1,7 +1,7 @@
 name: Conquest regression
 on:
   pull_request:
-    paths: ['js/conquest/**', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml']
+    paths: ['web/account-prompts.js', 'web/play.html', 'worker/sim-api.js', 'js/conquest/**', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml']
   workflow_dispatch:
 jobs:
   conquest:
@@ -97,6 +97,9 @@ jobs:
           python dev/tests/conquest-hub-browser.py
           python dev/tests/conquest-find-base.py
           python dev/tests/conquest-plot-ui.py
+          python dev/tests/conquest-session5d.py
+      - name: Desktop keyboard journey (website build)
+        run: python dev/tests/conquest-desktop-keys.py
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -112,6 +115,7 @@ jobs:
             docs/conquest/session5
             docs/conquest/session5b
             docs/conquest/base-ui
+            docs/conquest/session5d
 
   transmission:
     runs-on: ubuntu-24.04

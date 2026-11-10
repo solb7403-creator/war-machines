@@ -293,3 +293,10 @@
 .cq-plot-ore span{overflow-wrap:normal;word-break:normal;hyphens:manual;-webkit-hyphens:manual}
 .cq-plot-visit-sel{display:block;color:#ffd36b;font-size:12px;margin:6px 0}
 .cq-plot-drivehint{top:auto;left:20px;right:20px;bottom:calc(var(--cq-sheet) + 70px);transform:none;text-align:center;font-size:11px}
+
+/* Session 5D: desktop key map, keyboard devices only (coarse pointers never see it) */
+.cq-keys{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,760px);padding:7px 12px;background:#081524e6;border:1px solid #79e2d266;border-radius:6px;color:#cfe6ec;font-size:11px;letter-spacing:.04em;text-align:center;pointer-events:none;z-index:5;white-space:normal;line-height:1.5}
+@media(pointer:coarse){.cq-keys{display:none}}
+/* Session 5D: BUILD at PEEK shows its first card (the resource line and the group title wait for HALF); the readout never wraps at 390 px */
+.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
+.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em;scrollbar-width:none}.cq-plot-res::-webkit-scrollbar{display:none}

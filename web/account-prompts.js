@@ -14,7 +14,7 @@
  const ua=navigator.userAgent||'',iOS=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
  const inApp=/Telegram|Instagram|FBAN|FBAV|Twitter|TikTok|musical_ly|Line\//i.test(ua);
  const iosSafari=iOS&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS/.test(ua)&&!inApp;
- const busyNow=()=>typeof state!=='undefined'&&['play','vs','round','range'].includes(state)||(typeof rangeRun!=='undefined'&&rangeRun);
+ const busyNow=()=>typeof state!=='undefined'&&['play','vs','round','range'].includes(state)||(typeof rangeRun!=='undefined'&&rangeRun)||(typeof Conquest!=='undefined'&&Conquest&&Conquest.active);   // Conquest open: the prompt would sit under it and take the keyboard (Session 5D)
  function dialog(html,onAction){
   open=true;const wrap=document.createElement('div');wrap.className='lw-prompt-wrap';
   wrap.innerHTML='<div class="lw-prompt" role="dialog" aria-modal="true" aria-labelledby="lw-p-title">'+html+'</div>';

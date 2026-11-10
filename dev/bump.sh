@@ -3,6 +3,7 @@
 cd "$(dirname "$0")/.."
 V=$(date -u +%Y%m%d%H%M%S)
 sed -i "s/window.BUILD='[^']*'/window.BUILD='$V'/" index.html
-sed -i -E "s/\.(css|js)\?v=[0-9]+/.\1?v=$V/g" index.html
+sed -i -E "s/\.(css|js)\?v=[0-9]+/.\1?v=$V/g" index.html web/play.html
+sed -i -E "s/build:\"[0-9]{14}\"/build:\"$V\"/" worker/src/index.js
 printf '{"v":"%s"}\n' "$V" > version.json
 echo $V

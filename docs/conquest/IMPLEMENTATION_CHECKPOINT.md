@@ -1360,3 +1360,42 @@ Programs ≤ 13 locally (budget ≤ 16). CI's Chromium reports 16 programs for t
 - Pages (the Mini App's `GAME_URL` is GitHub Pages): run [42735207022](https://github.com/solb7403-creator/war-machines/actions/runs/42735207022) built the site (149 MB artifact; 141 MB last time) but its deploy step hit GitHub's 10-minute deploy timeout, and the rerun's deployment was cancelled 11 s after creation (a GitHub-side failure: both deployments for `7a81b35` failed; the previous `66f4cb0` deployment stayed live). The record merge (PR #95, `fb199f6`) hit the same `syncing_files` timeout once; its rerun ([42736905365](https://github.com/solb7403-creator/war-machines/actions/runs/42736905365) attempt 2) **succeeded**: github-pages deployment 7671216233 for `fb199f6` live at 01:48:57 UTC (45 s), so the Mini App's Pages build carries `version.json` `20261110004649`, the same as the Worker.
 - Payments stay disabled; no economy numbers changed. PHYSICAL_IPHONE_UNVERIFIED until the owner's playtest. Still open: see "Still open" in the owner gate result above.
 
+
+## Checkpoint 30 — Session 5D: Fair Arcade + desktop keyboard + 5C leftovers (branch `claude/session-5d-fair-arcade-qqyp9f`, from main `f193de1`)
+
+Brief: `docs/conquest/SESSION_05D_FAIR_ARCADE_PROMPT.md` (owner-approved; release pre-approved: merge, deploy, verify, record when
+every gate passes, CI is green and two independent reviewers pass). PR #97 (the brief + roadmap order) was merged first (`f193de1`).
+Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unchanged.
+
+### A. Arcade AI never matches the player's gear (shipped in commit `180e6ff`, this branch)
+- **Cause** (verified, not assumed): `aiLevel` derived the AI's power from the pilot's power (`68 x (power/68)^0.7 x league step`,
+  x1.265 at Lunar Legend 1v1), so the owner's 235-power kit met a 181-power AI (full 14-level Epic, level-5 cores, reactor, Sprint).
+  At top gear the fight is supers, and supers charge from damage taken too (x0.7, the player rule), so 77% of the power traded
+  nearly even damage: the owner's Bounty 1v1 (16,385 vs 16,160) matches the old simulator (taken/dealt 0.82-0.90). Two more copy
+  paths: live-room AI fill-ins mirrored the middle human's weapon/chassis multipliers, cores and aura (a lone human = a mirror),
+  and ghosts could take the single enemy seat of a 1v1 at 95% of your power.
+- **Why four fixes did not hold**: each kept "AI power = f(your power)" and proved only bot win rates (87% for the Legendary kit),
+  never the damage trade; each later balance pass raised the AI ceiling (25 -> 33 tiers, league steps) for "challenge"; the
+  regression test pinned the AI tier so it could not see the creep. History before Nov 8 is squashed (`js/rules.js` starts at
+  `d1f5ad4`), so blame is by document: Oct 31 combat repair, Nov 2 Session 2 leagues, Nov 8 Session 4.
+- **Model** (`js/rules.js`): one authored AI power per league `LG_AI_PW=[68,72,82,98,120,134,146]`, a slight bounded gear
+  adjustment `(power/LG_AI_REF[league])^0.3` within 0.88..1.12, hard cap `AI_CAP=165` (Epic items, 10 of 14 upgrades, level-4
+  cores; the 168-181 tiers are gone; never Moonbeam/Lunar Skin), never above the pilot. Last Standing dilutes the league step to 70%.
+  League skill: `LG_AI_SUP_WAIT` 1.0 -> 0.5 s, `LG_AI_DODGE` 0.35 -> 0.5; every AI ability still runs the player's own functions
+  (full charge, 4 s dash, 25 s shield, telegraph). Megatank: `aiBossLevel` (the league AI's reference tank). Ghosts: `aiGhostCap`
+  (match AI x1.05) on phone and Worker (`eco.js matchStart` filters the pool by its stored power). Live rooms: `sim-api.js liveSetup`
+  gives fill-ins `aiLevel(middle human power, room league)`; `pvp.js startVs` passes the room league (median human league).
+- **Regression** `dev/tests/fair-arcade.mjs` (CI: `equipment-balance.yml`): on main 93 checks fail (no cap; AI 68 -> 181 across pilot
+  power in every league; rosters doubling with gear; megatank scaling with the pilot; ghost at 92% seated; fill-ins copying
+  multipliers; Epic < Rare in Master/Lunar Legend); on this branch 11,195 checks pass (structural + 7 leagues x 4 modes x 5 kits x 48
+  seeded matches: no worse step, every step felt, stock in Rookie 40-51%, Legendary at Lunar Legend arena 1v1 taken/dealt 0.52 and
+  bounty 1v1 kills/deaths > 1.5; ability ledger: every AI super at full charge, no dash/shield on cooldown; Conquest: fixed stats,
+  no loadout in raids, Legendary kills a sentinel < 60% of the stock time and keeps more hull). Also PASS: `combat-balance.mjs`
+  (2,595, its AI-model part rewritten for the league model), `wtest/test.mjs` (203), `wtest/pvp.mjs` (114), `conquest-townkit.mjs`.
+- **Owner report**: `docs/launch/s5d/FAIR_ARCADE.md` (+ `FAIR_ARCADE_TABLES.md` from `dev/tests/fair-arcade-report.mjs`; raw grids
+  `before-standard.json` / `after-standard.json`, 24 matches a cell, tool `dev/tests/fair-arcade-grid.mjs`). Deviations stated there:
+  the Legendary kit wins ~100% of simulated top fights (perfect-aim bot pilot; the owner's own number to retune is `LG_AI_PW[6]`),
+  Bounty's damage ratio is a hull-size artefact (judged by kills a death), the Session 2 "human" profile was not used (manual-aim
+  model; the game auto-aims). `wiki.html` and `docs/launch/LEAGUES.md` updated.
+- **A2 Conquest**: enemies, commanders, garrisons and town raids are authored (`enemyStats`, doctrine, `plot.js drill`); nothing reads
+  the pilot's gear/power/league; abilities keep authored cadences. In the regression test. Nothing to fix.

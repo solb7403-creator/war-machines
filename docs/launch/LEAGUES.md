@@ -286,3 +286,13 @@ steps clear +6%; the exceptions are steps where the AI tier jumps (e.g. Rare at 
 - **Leaderboard**: every All time / Today / This week row and your pinned row shows a league pill. The public `lb` file carries the league key (`top`: 5th field; `daily`/`weekly`: 4th field, `[id, name, score, league, vault level?]`), from `players/<pid>/league`, else the score row's copy (`dly`/`wly` `l`, rewritten when the league moves); `""` when there is none.
 - **Results**: one line, "Promoted to Ace" / "Dropped to Pilot", when the match moved your league (the league the match was played in vs your league now, the server's record once the result is scored).
 - Every number comes from `myLeague`, `leagueRating`, `leagueInfo` (`dev/tests/league-ui.py`).
+
+## Session 5D (Nov 10 2026): the AI is set by the league, not by your power
+
+The AI step above (`AI power = min(your power, aiPower(power) x aiStep(league, team size))`) is retired. Each league now has one
+authored AI power (`LG_AI_PW` 68 / 72 / 82 / 98 / 120 / 134 / 146), moved at most x0.88..1.12 for the pilot's own gear
+((power / the league's reference pilot)^0.3), capped at 165 (no reactor or mod tiers; Epic items, 10 upgrade levels, level-4
+cores) and never above the pilot. AI pilots get a league skill profile (`LG_AI_SUP_WAIT`, `LG_AI_DODGE`). Ghosts in AI matches are
+capped at the match AI x1.05; live-room fill-ins fly the room league's loadout. Pay per league, lines, form and caps are unchanged.
+Measured tables and the owner report: `docs/launch/s5d/FAIR_ARCADE.md`; the CI lock: `dev/tests/fair-arcade.mjs`.
+The points-a-minute measurement above was not re-run with the new AI; win rates per league moved (see the 5D tables), payouts did not.

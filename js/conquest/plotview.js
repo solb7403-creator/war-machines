@@ -83,7 +83,7 @@ function spriteStep(R){if(!SPRITE_WAIT.length||!R||!X)return;const w=SPRITE_WAIT
   const Sp=R.spr,g=spriteModel(R,w);Sp.sc.add(g);g.updateMatrixWorld(true);const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9],v=Sp.v;g.traverse(o=>{const pa=o.geometry?.attributes?.position;if(!pa)return;for(let i=0;i<pa.count;i+=Math.max(1,pa.count>>9)){v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);for(let a2=0;a2<3;a2++){const q=v.getComponent(a2);if(q<lo[a2])lo[a2]=q;if(q>hi[a2])hi[a2]=q;}}});   // the vendored three has no Box3
   const ctr=new T.Vector3((lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2),rad=Math.max(1.5,Math.hypot(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2])/2),d=rad/Math.sin(15*Math.PI/180)*.8;
   Sp.cam.position.set(ctr.x+Math.sin(.65)*Math.cos(.5)*d,ctr.y+Math.sin(.5)*d,ctr.z+Math.cos(.65)*Math.cos(.5)*d);Sp.cam.lookAt(ctr);R.S.viewLights(Sp.cam);
-  const old=new T.Color();r.getClearColor(old);const oa=r.getClearAlpha();r.setScissorTest(true);r.setViewport(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setScissor(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setClearColor(0x10283a,1);r.clear();R.S.guest?.(true);r.render(Sp.sc,Sp.cam);R.S.guest?.(false);r.setClearColor(old,oa);r.setScissorTest(false);
+  const old=new T.Color();r.getClearColor(old);const oa=r.getClearAlpha();r.setScissorTest(true);r.setViewport(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setScissor(0,0,px/(r.getPixelRatio?.()||1),px/(r.getPixelRatio?.()||1));r.setClearColor(0x10283a,1);r.clear();R.S.guest?.(true);const U=R.S.U,au=U?.uAmbUp?.value,ad=U?.uAmbDn?.value,aU0=au&&au.clone(),aD0=ad&&ad.clone();if(au)au.multiplyScalar(1.7);if(ad)ad.multiplyScalar(1.7);try{r.render(Sp.sc,Sp.cam);}finally{if(au&&aU0)au.copy(aU0);if(ad&&aD0)ad.copy(aD0);}R.S.guest?.(false);   /* 5D: brighter ambient for the card only (the Cannon read dark) */r.setClearColor(old,oa);r.setScissorTest(false);
   const cx=Sp.c.getContext('2d');cx.clearRect(0,0,px,px);cx.drawImage(el,0,el.height-px,px,px,0,0,px,px);const url=Sp.c.toDataURL('image/png');Sp.sc.remove(g);g.traverse(o=>{if(o.geometry&&!o.geometry.userData?.hfShared)o.geometry.dispose();});
   SPRITES.set(w.k,url);for(const n of X.d.querySelectorAll('[data-spr="'+w.k+'"]')){const i=document.createElement('img');i.className='cq-plot-ico cq-plot-spr';i.src=url;i.alt='';i.dataset.spr=w.k;n.replaceWith(i);}}
  catch(e){SPRITES.set(w.k,'');if(X)X.sprErr=String(e&&e.message||e);}}
@@ -134,7 +134,7 @@ function sheetVar(px,animate){X.d.classList.toggle('cq-plot-dragging',!animate);
 // a short map (the sheet near FULL) hides the floating coach and map buttons: they never cover the handle or the tabs
 function shortMap(px){if(!X)return;const st=freeH()-px;X.d.classList.toggle('cq-plot-short',st<150);}
 function layout(){if(!X||!X.grab)return;X.d.classList.toggle('cq-plot-walls',X.mode==='walls');if(X.claim)return;const k=snapNow(),hs=root.ConquestSheet?root.ConquestSheet.heights(freeH(),minPeek()):{peek:120,half:Math.round(freeH()/2),full:Math.round(freeH()*.88)};
- X.sheetPx=hs[k];sheetVar(hs[k],true);shortMap(hs[k]);X.d.dataset.snap=k;X.grab.setAttribute('aria-label','Menu size '+k.toUpperCase()+': drag up or down, or tap to change');if(X.coachStep&&X.ctx)coachUi(X.coachStep);}
+ X.sheetPx=hs[k];sheetVar(hs[k],true);shortMap(hs[k]);X.d.dataset.snap=k;X.d.dataset.mode=X.mode||'';X.grab.setAttribute('aria-label','Menu size '+k.toUpperCase()+': drag up or down, or tap to change');if(X.coachStep&&X.ctx)coachUi(X.coachStep);}
 
 // first build: pick one of seven sites, then claim the plot (the existing first-base recipe)
 function sitePicker(){const {el,button,view}=X.ctx,s=view.authority?.state,D=root.ConquestCombat.baseDefinition,L=s?.ledger;X.claim=true;X.d.classList.add('cq-plot-claim');X.title.textContent='CLAIM YOUR TOWN';X.chipPw.hidden=X.chipDef.hidden=true;X.stage.className='cq-plot-stage cq-plot-sites';
@@ -408,11 +408,17 @@ const cellOf=v=>Math.round(v/P.GRID.cell+P.MID);
 function hits(D,x,z){const r=TANK_R;for(const [dx,dz] of [[0,0],[r,0],[-r,0],[0,r],[0,-r],[r*.7,r*.7],[-r*.7,r*.7],[r*.7,-r*.7],[-r*.7,-r*.7]])if(D.block(cellOf(x+dx),cellOf(z+dz)))return true;return false;}
 // The gate pad: the nearest free 3x3 patch south of the Command Center (so walls can never trap the tank at its spawn).
 function padOf(p,block){const C0=TK.ccCenter(p),c=P.GRID.cell,ci=cellOf(C0.x),cj=cellOf(C0.z+C0.d*c/2)+2,free=(i,j)=>{for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(block(i+a,j+b))return false;return true;};
+ // 5D: first choice, a spot on a dust road just outside the plaza with a clear line to the Command Center (the spawn faces the open
+ // plaza, never a reactor); the southern lanes first. Fallback: the old search south of the CC
+ const plaza=Math.max(C0.w,C0.d)*c/2+9+.6*(p.cc-1),clear=(x,z)=>{const n=Math.ceil(Math.hypot(C0.x-x,C0.z-z)/c);for(let s=1;s<n;s++){const qx=x+(C0.x-x)*s/n,qz=z+(C0.z-z)*s/n;if(Math.max(Math.abs(qx-C0.x),Math.abs(qz-C0.z))<=C0.w*c/2+c)break;if(block(cellOf(qx),cellOf(qz)))return false;}return true;};
+ const lanes=TK.lanesOf(p.site,p.cc).slice().sort((a,b)=>b.z-a.z);
+ for(const L of lanes){const dx=L.x-C0.x,dz=L.z-C0.z,d0=Math.hypot(dx,dz)||1;for(let t=plaza+6;t<Math.min(d0-4,plaza+34);t+=c){const x=C0.x+dx/d0*t,z=C0.z+dz/d0*t,i=cellOf(x),j=cellOf(z);if(free(i,j)&&clear(P.cellX(i),P.cellZ(j)))return {i,j,x:P.cellX(i),z:P.cellZ(j),face:true};}}
  for(let r=0;r<30;r++)for(let a=-r;a<=r;a++)for(const b of r?[-r,r]:[0]){for(const [i,j] of [[ci+a,cj+b],[ci+b,cj+a]])if(free(i,j))return {i,j,x:P.cellX(i),z:P.cellZ(j)};}
  return {i:ci,j:cj,x:P.cellX(ci),z:P.cellZ(cj)};}
-function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.visit,block=blockMap(p,owner),pad=padOf(p,block);
+function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.visit,block=blockMap(p,owner),pad=padOf(p,block),C0=TK.ccCenter(p);
  if(!X.tank){X.tank=tankModel(R);R.g.actors.add(X.tank);}X.tankFlagKey=null;if(!X.visit)tankFlag(R,p);
- X.drive={x:pad.x,z:pad.z,h:Math.PI,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:31,yaw:0};
+ const h=pad.face?Math.atan2(C0.x-pad.x,C0.z-pad.z):Math.PI;   // 5D: face the Command Center along the road (the old fixed heading looked into the reactors at CC10)
+ X.drive={x:pad.x,z:pad.z,h,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:31,yaw:h+Math.PI};
  // the gate pad: a lit ring you drive back onto to leave (the shared world's Command Gate on this side)
  if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.dark);b.add(S.G.hex,R.k.M(pad.x,y+.3,pad.z,0,0,0,4.75,.03,4.75),R.k.C.cyan,.3);b.add(S.G.hex,R.k.M(pad.x,y+.31,pad.z,0,0,0,4.45,.04,4.45),R.k.C.dark);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1,[.012,.1,.13],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
  if(!X.visit&&!reduced()){let seen=false;try{seen=localStorage.getItem(TOUR_KEY)==='1';}catch(_){seen=true;}if(!seen){X.tour={t:0,dur:6};try{localStorage.setItem(TOUR_KEY,'1');}catch(_){}}}}
