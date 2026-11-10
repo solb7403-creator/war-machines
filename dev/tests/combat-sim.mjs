@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { humanPatch } from './s2/human.mjs';
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const srcRoot = process.env.COMBAT_SRC || repo;   // COMBAT_SRC: another checkout (e.g. the code before a change) to compare
 const src = f => fs.readFileSync(path.join(srcRoot, f), 'utf8');
@@ -39,25 +40,32 @@ function __expertDodge(u){
  const b=nearestFoe(a);if(!b||a.hp<=0)return tu(a,dt);
  const d=Math.hypot(b.x-a.x,b.y-a.y),tt=d/(a.wpspd||22),lx=b.x+(b.vx||0)*tt,ly=b.y+(b.vy||0)*tt;
  const bx=b.x,by=b.y;b.x=lx;b.y=ly;try{return tu(a,dt);}finally{b.x=bx;b.y=by;}};}
+// ability ledger (Session 5D): every super, dash and shield that went off, who used it, when, and the charge/cooldown it saw.
+// The fair-arcade regression reads it: AI pilots must obey exactly the player's charge and cooldown rules
+var __abl=[];
+{const us=useSuper;useSuper=function(r,a){const sp=r.sp,ok=us(r,a);if(ok)__abl.push(['sup',r.id,__t,sp,r===me]);return ok;};}
+{const ud=useDash;useDash=function(u,x,y){const cd=u.dashCd||0,ok=ud(u,x,y);if(ok)__abl.push(['dash',u.id,__t,cd,u===me]);return ok;};}
+{const uh=useShield;useShield=function(u){const cd=u.shieldCd||0,ok=uh(u);if(ok)__abl.push(['shield',u.id,__t,cd,u===me]);return ok;};}
+var __t=0;
 function __seed(s){__rng=rng32(s);Math.random=rng32((s*2654435761)>>>0);}
 function __run(cfg){
- __seed(cfg.seed);__events=[];__ended=null;__round=0;
+ __seed(cfg.seed);__events=[];__ended=null;__round=0;__abl=[];__t=0;
  setMap(cfg.map);matchG=cfg.g;
  battleLoadout=JSON.parse(JSON.stringify(cfg.L));battlePower=powerOf(battleLoadout);
  const mk=cfg.g==='royale'?'1v1':cfg.m;
  MM={n:MODES[mk].n,series:cfg.g==='arena'&&mk==='1v1'&&cfg.mp>0,mp:cfg.mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // as prepareMatch sets it (older code ignores cp)
  save.mp=cfg.mp;
  if(typeof aiLevel==='function'){if(!__aiLevel)__aiLevel=aiLevel;   // exploration only: pin the AI (an authored level, or another AI_EXP for the bots)
-  aiLevel=cfg.forceTier!==undefined?()=>({i:cfg.forceTier,p:AI_TIERS[cfg.forceTier].p}):cfg.aiExp!==undefined?(pw,e,lg,n)=>__aiLevel(pw,e===undefined?cfg.aiExp:e,lg,n):__aiLevel;}
+  aiLevel=cfg.forceTier!==undefined?(pw,e,lg)=>({i:cfg.forceTier,p:AI_TIERS[cfg.forceTier].p,lg:lg|0}):__aiLevel;}   // (cfg.aiExp, the old curve exponent, no longer exists)
  if(typeof battleLg!=='undefined')battleLg=cfg.lg|0;   // the league the AI is set for (0 Rookie: no step)
  __casual=cfg.pilot==='casual';__expert=cfg.pilot==='expert';
  populatePreparedMatch();
  if(cfg.ghosts&&cfg.ghosts.length)placeGhosts(cfg.ghosts.map((L,i)=>({i,n:'G'+i,L})));
- me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
- const roster=units.map(u=>({team:u.team,cls:u.cls,w:u.wtype,mhp:u.mhp,dps:Math.round(u.wdps*dmgMult(u)*rofMult(u)),gh:!!u.gh,boss:!!u.boss,ai:u!==me}));
+ me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(cfg.pilot==='human')me.hu={};if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
+ const roster=units.map(u=>({team:u.team,cls:u.cls,w:u.wtype,mhp:u.mhp,dps:Math.round(u.wdps*dmgMult(u)*rofMult(u)),gh:!!u.gh,boss:!!u.boss,ai:u!==me,aiP:u.aiL?AI_TIERS[u.aiL.i].p:null,wmult:u.wmult||null,aura:u.aura|0}));   // aiP: the authored AI power this pilot flies
  startMatch();
  const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0;
- const enemyDmgOnMe=[0],enemyDmgTotal=[0],allyDmg=[0],meDmg=[0],enemyHpLost=[0];
+ const enemyDmgOnMe=[0],enemyDmgTotal=[0],allyDmg=[0],meDmg=[0],enemyHpLost=[0];let foeAlive=0;
  while(steps++<Math.ceil(30000/(60*DT))){
   if(state==='round'){   // between rounds a sensible pilot answers a counter with the chassis that beats it, if they own it
    const foe=units.find(u=>u.team!==me.team),fix=foe&&beatenBy(foe.cls);
@@ -70,12 +78,13 @@ function __run(cfg){
    const brng=me.wtype==='twin'?SUP.twin.r+1.2:STAT.range+1.5;
    me.rdy=me.sp>=SUPER_MAX&&!me.sup?(me.rdy||0)+DT:0;
    if(me.rdy>0.5&&t&&los(me,t)&&Math.hypot(t.x-me.x,t.y-me.y)<=brng)useSuper(me);}
-  update(DT);
+  update(DT);__t=steps*DT;
   if(steps%15===0&&me.hp>0){   // every 0.25 s while you're alive: how many enemies are locked on you
    const foes=units.filter(u=>u.team!==me.team&&u.hp>0&&!u.boss);
    if(foes.length>=2){samples++;const n=foes.filter(u=>u.focus===me).length;focusSamples[Math.min(4,n)]++;}
    meAlive++;
   }
+  if(steps%15===0)for(const u of units)if(u.team!==me.team&&u.hp>0&&!u.boss&&!u.hum)foeAlive+=15*DT;
   for(const e of __events){
    if(e[0]==='h'){const tgt=units[e[1]],src=units[e[6]],amt=e[2];if(!src||!tgt)continue;
     if(src.team!==me.team&&tgt===me)enemyDmgOnMe[0]+=amt;
@@ -92,7 +101,18 @@ function __run(cfg){
  const o=outcome(me,__ended&&(__ended.series||__ended.won!==undefined)?__ended:undefined);
  const bad=units.filter(u=>!Number.isFinite(u.hp)||!Number.isFinite(u.mhp)||u.mhp<=0);
  if(bad.length)throw new Error('non-finite unit');
- return {out:o.won?'win':o.drawn?'draw':'loss',place:o.place,score:o.score,secs:+(steps*DT).toFixed(1),dmg:Math.round(meDmg[0]),taken:Math.round(me.st.taken),
+ // abilities: counts for the pilot and for the enemy AI pilots (not the megatank: its attacks are its own), the shortest gap
+ // between two uses by one AI tank, and the lowest charge / highest leftover cooldown any AI use saw (0 and 0 when the rules held)
+ const foeIds=new Set(units.filter(u=>u.team!==me.team&&!u.boss&&!u.hum).map(u=>u.id)),ab={meSup:0,meDash:0,meShield:0,aiSup:0,aiDash:0,aiShield:0,aiSupGap:1e9,aiDashGap:1e9,aiShieldGap:1e9,aiSupLowSp:SUPER_MAX,aiDashCd:0,aiShieldCd:0,foeMin:+(foeAlive/60).toFixed(2),meMin:+(meAlive*15*DT/60).toFixed(2)};
+ const last={};
+ for(const [k,id,t,v,isMe] of __abl){
+  if(isMe){ab[k==='sup'?'meSup':k==='dash'?'meDash':'meShield']++;continue;}
+  if(!foeIds.has(id))continue;
+  ab[k==='sup'?'aiSup':k==='dash'?'aiDash':'aiShield']++;
+  const key=k+':'+id;if(last[key]!==undefined)ab[k==='sup'?'aiSupGap':k==='dash'?'aiDashGap':'aiShieldGap']=Math.min(ab[k==='sup'?'aiSupGap':k==='dash'?'aiDashGap':'aiShieldGap'],t-last[key]);last[key]=t;
+  if(k==='sup')ab.aiSupLowSp=Math.min(ab.aiSupLowSp,v);else if(k==='dash')ab.aiDashCd=Math.max(ab.aiDashCd,v);else ab.aiShieldCd=Math.max(ab.aiShieldCd,v);
+ }
+ return {out:o.won?'win':o.drawn?'draw':'loss',place:o.place,score:o.score,secs:+(steps*DT).toFixed(1),dmg:Math.round(meDmg[0]),taken:Math.round(me.st.taken),ab,
   allyDmg:Math.round(allyDmg[0]),teamDmg:Math.round(enemyHpLost[0]),onMe:Math.round(enemyDmgOnMe[0]),enemyDmg:Math.round(enemyDmgTotal[0]),
   focus:focusSamples,focusN:samples,firstK,deaths:me.deaths||0,kills:me.st.kills,series:series?series.w.slice():null,roster,bossLeft:boss?Math.max(0,Math.round(boss.hp)):null};
 }
@@ -101,6 +121,7 @@ export function makeWorld() {
   const ctx = vm.createContext({ console, structuredClone });
   vm.runInContext(DRIVER, ctx, { filename: 'driver.js' });
   for (const f of ['js/rules.js', 'js/game.js', 'js/match.js']) vm.runInContext(src(f), ctx, { filename: f });
+  vm.runInContext(humanPatch(), ctx, { filename: 'human.js' });   // the "human" pilot profile (s2/human.mjs): only the player's stand-in gets it (cfg.pilot 'human'), never an AI pilot
   vm.runInContext(RUN, ctx, { filename: 'run.js' });
   return { run: cfg => vm.runInContext('__run(' + JSON.stringify(cfg) + ')', ctx), eval: s => vm.runInContext(s, ctx) };
 }

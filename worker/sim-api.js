@@ -16,11 +16,12 @@ function liveSetup(cfg){
   const u=Object.assign(tankOf(s.L,hs),{x:pos[i].x,y:pos[i].y,flash:0,ang:pos[i].y>16?-Math.PI/2:Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,
    team:team(i),name:s.name,pid:s.pid,L:s.L,pw:powerOf(s.L),hum:true,ctl:'net'});
   u.hp=u.mhp;hums.push(u);return u;});
- const ref=hums.slice().sort((a,b)=>a.pw-b.pw)[(hums.length-1)>>1]||tankOf(STOCK_L,hs);   // AI pilots match the middle human's gear
+ const ref=hums.slice().sort((a,b)=>a.pw-b.pw)[(hums.length-1)>>1]||tankOf(STOCK_L,hs);   // the middle human: their power and league set the AI fill-ins (never their gear: aiLevel, rules.js)
+ const ai=aiLevel(ref.pw||powerOf(STOCK_L),undefined,cfg.lg|0,solo?'solo':n);
  const gq=(cfg.ghosts||[]).slice();   // offline pilots' tanks take the first AI seats (enemies first)
  const order=units.map((u,i)=>i).filter(i=>!units[i]).sort((a,b)=>(team(b)!==0)-(team(a)!==0));
  const gseat={};for(const i of order){if(!gq.length)break;gseat[i]=gq.shift();}
- units=units.map((u,i)=>u||(gseat[i]?mkGhost(team(i),pos[i].x,pos[i].y,gseat[i]):mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop())));
+ units=units.map((u,i)=>u||(gseat[i]?mkGhost(team(i),pos[i].x,pos[i].y,gseat[i]):mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop(),ai)));
  units.forEach((u,i)=>{u.id=i;});
  me=null;series=null;state='vs';
 }

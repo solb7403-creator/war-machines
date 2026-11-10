@@ -226,8 +226,8 @@ function mkBoss(ref,n,ai){   // the megatank, sized for how many tanks are on yo
   bt:{bar:5,stomp:3,st:0,enr:0,ref:ref.mhp}};   // stomps and shells hit for a share of the reference tank's health: more hull means you take them better
  u.hp=u.mhp;return u;
 }
-// ai: the AI level (aiLevel, rules.js). AI matches always pass one: the pilot flies the authored loadout for that level,
-// whatever you field. Without it (live-match fill-ins only) it mirrors ref's gear level, as live matches always have
+// ai: the AI level (aiLevel, rules.js). Every AI pilot gets one (AI matches: the league's AI; live rooms: the room's league, worker/sim-api.js):
+// the pilot flies the authored loadout for that level, whatever you field. Without it (older callers) it mirrors ref's gear level
 function mkBot(team,x,y,ref,name,ai){
  const hs=hpScale(),mp=MM.mp,aiT=!!ai;
  const bwm=aiT?1:ref.wmult||TIER_MULT[Math.max(0,ref.wtier)],bcm=aiT?1:ref.chm||1;
@@ -244,7 +244,7 @@ function mkBot(team,x,y,ref,name,ai){
  if(aiT){   // the authored loadout, through the same stat math as every pilot's tank (rarity, upgrades, cores, supers)
   const T=tankOf(aiLoadout(ai.i,bwA,bcC),hs),k=pScale;
   Object.assign(u,{gems:T.gems,gemM:T.gemM,mhp:Math.round(T.mhp*k),dmgM:T.dmgM,spdM:T.spdM,critB:T.critB,fillM:T.fillM,turnM:T.turnM,
-   wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:ai.i,k}});   // aiL, not ai: live matches use u.ai for "an AI seat"
+   wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:ai.i,k,lg:ai.lg|0}});   // aiL, not ai: live matches use u.ai for "an AI seat". lg: the league whose AI this is (skill: LG_AI_SUP_WAIT, LG_AI_DODGE)
  }
  u.hp=u.mhp;return u;
 }
@@ -503,7 +503,7 @@ function shieldStep(u,dt){
  if(u.shieldCd>0)u.shieldCd=Math.max(0,u.shieldCd-dt);
  if(u.shieldT>0){u.shieldT-=dt;if(u.shieldT<=0)u.shieldT=0;}
 }
-// bots dash out of a super they see coming (about half the time)
+// bots dash out of a super they see coming (about half the time; by league for AI pilots, LG_AI_DODGE)
 function botDodge(u){
  if(u.dash)return;
  const dashOk=(u.dashCd||0)<=0,shieldOk=(u.shieldCd||0)<=0&&(u.shieldT||0)<=0;
@@ -516,7 +516,7 @@ function botDodge(u){
    if(along>0&&along<ln&&Math.abs(side)<wd+bodyR(u)){inDanger=true;const sg=side>=0?1:-1;px=-sa*sg;py=ca*sg;}}
   if(!inDanger)continue;
   v.sup.dodged=v.sup.dodged||{};v.sup.dodged[u.id]=1;
-  if(dashOk&&random()<0.5)useDash(u,px,py);
+  if(dashOk&&random()<(u.aiL?LG_AI_DODGE[u.aiL.lg]:0.5))useDash(u,px,py);   // league skill: how often the AI dashes out of it (same dash cooldown as everyone)
   else if(shieldOk&&random()<0.6)useShield(u);
   return;
  }
@@ -605,7 +605,8 @@ function superTick(dt){
   u.rdy=u.sp>=SUPER_MAX&&!u.sup?(u.rdy||0)+dt:0;
   const brng=u.wtype==='twin'?SUP.twin.r+1.2:STAT.range+1.5;
   const tgt=nearestFoe(u);
-  if(u.rdy>0.5&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng)useSuper(u);
+  const wait=u.aiL?LG_AI_SUP_WAIT[u.aiL.lg]:0.5;   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
+  if(u.rdy>wait&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng)useSuper(u);
  }
 }
 function heading(dt){   // hull turns toward the direction of travel; the turret aims on its own

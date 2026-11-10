@@ -20,7 +20,7 @@ function rangeSetup(cfg){
  if(isSolo(matchG)){const sp=royaleSpawns();for(let i=1;i<6;i++)add(i,sp[i].x,sp[i].y,'AI '+i,cfg.preset);}
  else{
   for(let i=1;i<MM.n;i++)add(0,i===1?6:14,26,'Wingman '+i,'standard');
-  if(matchG==='boss')units.push(mkBoss(me,MM.n,aiLevel(powerOf(rangePreset(cfg.preset)),AI_BOSS_EXP)));   // the same fixed megatank as AI matches at that difficulty
+  if(matchG==='boss')units.push(mkBoss(me,MM.n,aiBossLevel(powerOf(rangePreset(cfg.preset)),cfg.lg|0,MM.n)));   // the same fixed megatank as AI matches in that league (cfg.lg, 0 Rookie)
   else for(let i=0;i<MM.n;i++)add(1,i?6:10,i?6:4,'Opponent '+(i+1),cfg.preset);
  }
  startMatch();mstat=me.st;

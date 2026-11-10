@@ -59,7 +59,7 @@ if (!isMainThread) {
   parentPort.on('message', async ({ i, job }) => {
     try {
       let r;
-      if (job.kind === 'ai') { const W = await getAI(); const x = W.run(job.cfg); r = { out: x.out === 'win' ? 1 : x.out === 'draw' ? 0.5 : 0, place: x.place, secs: x.secs, dmg: x.dmg, taken: x.taken, allyDmg: x.allyDmg, teamDmg: x.teamDmg }; }
+      if (job.kind === 'ai') { const W = await getAI(); const x = W.run(job.cfg); r = { out: x.out === 'win' ? 1 : x.out === 'draw' ? 0.5 : 0, place: x.place, secs: x.secs, dmg: x.dmg, taken: x.taken, allyDmg: x.allyDmg, teamDmg: x.teamDmg, ab: x.ab, kills: x.kills, deaths: x.deaths, roster: job.roster ? x.roster : undefined }; }
       else r = duel(job);
       parentPort.postMessage({ i, r });
     } catch (e) { parentPort.postMessage({ i, err: String(e && e.stack || e) }); }

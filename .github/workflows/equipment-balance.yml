@@ -11,6 +11,9 @@ on:
       - 'dev/tests/gear-balance.mjs'
       - 'dev/tests/gear-combat.mjs'
       - 'dev/tests/combat-*.mjs'
+      - 'dev/tests/fair-arcade*.mjs'
+      - 'dev/tests/s2/pool.mjs'
+      - 'worker/sim-api.js'
       - 'dev/tests/gear-browser.py'
       - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
@@ -28,6 +31,9 @@ on:
       - 'dev/tests/gear-balance.mjs'
       - 'dev/tests/gear-combat.mjs'
       - 'dev/tests/combat-*.mjs'
+      - 'dev/tests/fair-arcade*.mjs'
+      - 'dev/tests/s2/pool.mjs'
+      - 'worker/sim-api.js'
       - 'dev/tests/gear-browser.py'
       - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
@@ -55,6 +61,7 @@ jobs:
           node dev/tests/gear-balance.mjs
           node dev/tests/gear-combat.mjs
           node dev/tests/combat-balance.mjs
+          node dev/tests/fair-arcade.mjs
           node dev/tests/lab-ui.mjs
           node dev/tests/garage-rules.mjs
       - name: Build authoritative Workers simulation
