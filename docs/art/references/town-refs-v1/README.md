@@ -12,3 +12,4 @@ Moonbeam v5 (owner addition): two large rectangular blue energy crystals in gold
 Moonbeam v6 (owner): the charge crystals are hexagonal quartz-like prisms with pointed faceted tips, same spot, same in-game charge behavior.
 Moonbeam v7 (owner-approved, best so far): crystals are removable cartridges (hinged latch clamps, rear gold socket collar with connector plug and cable) with crystal texture (facet edges, inner striations). Gameplay idea for later: crystal swap/reload animation, crystal variants as cosmetics.
 Moonbeam v8 (owner found the round top orb too bulky): low sleek top, a hex lunar crystal in a recessed gold hex housing under a thin swept-back gold crescent blade. Matches the side charge crystals.
+Moonbeam v9 (owner): crescent blade removed; low square gold housing with four angled corner prongs holding an exotic deep crimson red hex crystal. Blue side charge crystals unchanged.
