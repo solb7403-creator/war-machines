@@ -21,7 +21,7 @@ async def journey(b,width,height,label,results):
  await pg.evaluate('()=>{save.welcomed=true;closeAll();uiDirty&&uiDirty();}')
  assert await pg.evaluate('SRV_ECO&&IN_WEB&&!IN_TG'),'website edition'
  # the real flow: mouse on the Conquest tab, ENTER CONQUEST, ACKNOWLEDGE the briefing. Nothing focuses anything for the test.
- await pg.locator('[data-act="conquest"]').first.click();await pg.locator('.cq-enter').first.click()
+ await pg.locator('[data-act="conquest"]:visible').first.click();await pg.locator('.cq-enter').first.click()   # the sidebar button on a wide window, the tabbar's on a narrow one (the other is display:none)
  await pg.locator('.cq-story-start').click(timeout=30000)
  await pg.wait_for_timeout(400);hint0=await pg.evaluate('!!document.querySelector(".cq-keys")')
  try:

@@ -417,7 +417,7 @@ function padOf(p,block){const C0=TK.ccCenter(p),c=P.GRID.cell,ci=cellOf(C0.x),cj
  return {i:ci,j:cj,x:P.cellX(ci),z:P.cellZ(cj)};}
 function startDrive(){const R=X?.R,p=plotOf();if(!R||!p)return;const owner=!X.visit,block=blockMap(p,owner),pad=padOf(p,block),C0=TK.ccCenter(p);
  if(!X.tank){X.tank=tankModel(R);R.g.actors.add(X.tank);}X.tankFlagKey=null;if(!X.visit)tankFlag(R,p);
- const h=pad.face?Math.atan2(C0.x-pad.x,C0.z-pad.z):Math.PI;   // 5D: face the Command Center along the road (the old fixed heading looked into the reactors at CC10)
+ const h=Math.atan2(C0.x-pad.x,C0.z-pad.z);   // 5D: face the Command Center (along the road, or from the fallback pad south of it; the old fixed heading looked into the reactors at CC10)
  X.drive={x:pad.x,z:pad.z,h,v:0,stick:{x:0,z:0},keys:{},pad,block,owner,left:false,exit:0,plot:p,key:JSON.stringify([p.b,p.w,p.dmg,p.cc,p.site])};X.chase={dist:31,yaw:h+Math.PI};
  // the gate pad: a lit ring you drive back onto to leave (the shared world's Command Gate on this side)
  if(X.padMesh){X.padMesh.parent?.remove(X.padMesh);X.padMesh.traverse(o=>o.geometry?.dispose?.());}{const S=R.S,y=P.heightAt(p.site,pad.x,pad.z),b=new S.Bld(),fx=new S.Fx(),grp=new R.T.Group();b.add(S.G.hex,R.k.M(pad.x,y,pad.z,0,0,0,5.2,.25,5.2),R.k.C.dark2);b.add(S.G.hex,R.k.M(pad.x,y+.27,pad.z,0,0,0,4.6,.05,4.6),R.k.C.dark);b.add(S.G.hex,R.k.M(pad.x,y+.3,pad.z,0,0,0,4.75,.03,4.75),R.k.C.cyan,.3);b.add(S.G.hex,R.k.M(pad.x,y+.31,pad.z,0,0,0,4.45,.04,4.45),R.k.C.dark);for(const sx of [-1,1]){b.box(pad.x+sx*6,y+2.2,pad.z,.6,4.4,.9,R.k.C.dark);b.box(pad.x+sx*6,y+4.6,pad.z,.9,.3,1.2,R.k.C.cyan,1);}fx.ringGlow(pad.x,pad.z,y+.7,4.8,1,[.012,.1,.13],32);grp.add(b.mesh(),fx.mesh());X.padMesh=grp;R.g.actors.add(grp);}
