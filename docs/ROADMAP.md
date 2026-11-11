@@ -8,7 +8,7 @@ An exceptional sci-fi warfare game with a large, loyal, highly engaged community
 
 ## Session order
 
-**Conquest blueprint (owner-approved Nov 10, 2026):** `docs/conquest/CONQUEST_BLUEPRINT.md` is the canonical design for battalions, the living war, the nine-tier Citadel, co-op and the shared war. Decisions 1a 2a 3a 4b 5b 6a 7a 8a 9a 10b. One coding session at a time; a detailed prompt is written only for the session that is next. Each row ends with the recommended model and effort. **Fable sessions (owner-approved Nov 11, 2026): 7C, 8, 9, 12 only; every other session runs on Opus.** Fable is used where a miss is costly and hard to catch later (exploits, money, netcode, audit), not for visuals or ordinary builds.
+**Conquest blueprint (owner-approved Nov 10, 2026):** `docs/conquest/CONQUEST_BLUEPRINT.md` is the canonical design for battalions, the living war, the nine-tier Citadel, co-op and the shared war. Decisions 1a 2a 3a 4b 5b 6a 7a 8a 9a 10b. One coding session at a time; a detailed prompt is written only for the session that is next. Each row ends with the recommended model and effort. **Fable sessions (owner-approved Nov 11, 2026): 7C, 8, 9, 12 only; every other session runs on Opus.** Fable is used where a miss is costly and hard to catch later (exploits, money, netcode, audit). **Visual sessions (5E-2b, 7B, 7.5, 11): Opus · Max builds, and every render-and-compare critic runs as a read-only Fable subagent** (Fable 5.2 leads Opus 5.5 by a wide margin at reading images and matching reference geometry; no test shows either model building visibly better art).
 
 | # | Session | Status |
 |---|---|---|
