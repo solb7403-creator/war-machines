@@ -11,8 +11,8 @@
      "programs": 17,
      "geometries": 49,
      "textures": 10,
-     "frameMsMedian": 1.3,
-     "frameMsP90": 3.4
+     "frameMsMedian": 1,
+     "frameMsP90": 3.9
     },
     "scout1-twin0|high": {
      "meshyChassis": null,
@@ -23,7 +23,7 @@
      "geometries": 49,
      "textures": 10,
      "frameMsMedian": 1,
-     "frameMsP90": 2.9
+     "frameMsP90": 1.7
     },
     "scout2-moon2|high": {
      "meshyChassis": null,
@@ -33,8 +33,8 @@
      "programs": 17,
      "geometries": 50,
      "textures": 10,
-     "frameMsMedian": 1.3,
-     "frameMsP90": 7.1
+     "frameMsMedian": 1.2,
+     "frameMsP90": 6.9
     },
     "vanguard0-pulse1|high": {
      "meshyChassis": null,
@@ -44,8 +44,8 @@
      "programs": 17,
      "geometries": 49,
      "textures": 10,
-     "frameMsMedian": 0.8,
-     "frameMsP90": 5.1
+     "frameMsMedian": 1,
+     "frameMsP90": 2.4
     },
     "vanguard1-twin1|high": {
      "meshyChassis": null,
@@ -55,8 +55,8 @@
      "programs": 17,
      "geometries": 49,
      "textures": 10,
-     "frameMsMedian": 1,
-     "frameMsP90": 6.3
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1
     },
     "vanguard2-siege0|high": {
      "meshyChassis": null,
@@ -66,8 +66,8 @@
      "programs": 17,
      "geometries": 49,
      "textures": 10,
-     "frameMsMedian": 1.2,
-     "frameMsP90": 4.7
+     "frameMsMedian": 0.9,
+     "frameMsP90": 5
     },
     "titan0-siege1|high": {
      "meshyChassis": null,
@@ -77,8 +77,8 @@
      "programs": 17,
      "geometries": 49,
      "textures": 10,
-     "frameMsMedian": 0.9,
-     "frameMsP90": 1.4
+     "frameMsMedian": 0.8,
+     "frameMsP90": 5.5
     },
     "titan1-pulse2|high": {
      "meshyChassis": null,
@@ -88,8 +88,8 @@
      "programs": 17,
      "geometries": 50,
      "textures": 10,
-     "frameMsMedian": 1.1,
-     "frameMsP90": 7
+     "frameMsMedian": 0.9,
+     "frameMsP90": 2.3
     },
     "titan2-twin2|high": {
      "meshyChassis": null,
@@ -99,8 +99,8 @@
      "programs": 17,
      "geometries": 51,
      "textures": 10,
-     "frameMsMedian": 0.8,
-     "frameMsP90": 1.1
+     "frameMsMedian": 0.9,
+     "frameMsP90": 5
     },
     "titan2-siege2|high": {
      "meshyChassis": null,
@@ -111,7 +111,7 @@
      "geometries": 49,
      "textures": 10,
      "frameMsMedian": 0.9,
-     "frameMsP90": 2.2
+     "frameMsP90": 4.9
     },
     "scout0-pulse0|low": {
      "meshyChassis": null,
@@ -121,8 +121,8 @@
      "programs": 18,
      "geometries": 53,
      "textures": 12,
-     "frameMsMedian": 0.9,
-     "frameMsP90": 3.7
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
     },
     "scout1-twin0|low": {
      "meshyChassis": null,
@@ -132,8 +132,8 @@
      "programs": 18,
      "geometries": 55,
      "textures": 12,
-     "frameMsMedian": 1,
-     "frameMsP90": 1.5
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.6
     },
     "scout2-moon2|low": {
      "meshyChassis": null,
@@ -143,8 +143,8 @@
      "programs": 18,
      "geometries": 60,
      "textures": 12,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 3.1
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1
     },
     "vanguard0-pulse1|low": {
      "meshyChassis": null,
@@ -154,8 +154,8 @@
      "programs": 18,
      "geometries": 60,
      "textures": 12,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 0.9
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1
     },
     "vanguard1-twin1|low": {
      "meshyChassis": null,
@@ -165,8 +165,8 @@
      "programs": 18,
      "geometries": 61,
      "textures": 12,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 1.2
+     "frameMsMedian": 0.7,
+     "frameMsP90": 3.1
     },
     "vanguard2-siege0|low": {
      "meshyChassis": null,
@@ -176,8 +176,8 @@
      "programs": 18,
      "geometries": 61,
      "textures": 12,
-     "frameMsMedian": 1.2,
-     "frameMsP90": 1.6
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.4
     },
     "titan0-siege1|low": {
      "meshyChassis": null,
@@ -187,8 +187,8 @@
      "programs": 18,
      "geometries": 61,
      "textures": 12,
-     "frameMsMedian": 0.5,
-     "frameMsP90": 0.7
+     "frameMsMedian": 0.9,
+     "frameMsP90": 2.8
     },
     "titan1-pulse2|low": {
      "meshyChassis": null,
@@ -198,8 +198,8 @@
      "programs": 18,
      "geometries": 61,
      "textures": 12,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 1.8
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.6
     },
     "titan2-twin2|low": {
      "meshyChassis": null,
@@ -209,8 +209,8 @@
      "programs": 18,
      "geometries": 61,
      "textures": 12,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 1
+     "frameMsMedian": 0.8,
+     "frameMsP90": 2.9
     },
     "titan2-siege2|low": {
      "meshyChassis": null,
@@ -220,8 +220,8 @@
      "programs": 18,
      "geometries": 55,
      "textures": 12,
-     "frameMsMedian": 0.8,
-     "frameMsP90": 1.2
+     "frameMsMedian": 1,
+     "frameMsP90": 2.1
     }
    }
   },
@@ -236,7 +236,7 @@
      "geometries": 36,
      "textures": 25,
      "frameMsMedian": 0.8,
-     "frameMsP90": 9.1
+     "frameMsP90": 1.2
     },
     "scout1-twin0|high": {
      "meshyChassis": "chassis-scout-1",
@@ -246,8 +246,8 @@
      "programs": 14,
      "geometries": 38,
      "textures": 35,
-     "frameMsMedian": 0.9,
-     "frameMsP90": 1.4
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.8
     },
     "scout2-moon2|high": {
      "meshyChassis": "chassis-scout-2",
@@ -257,8 +257,8 @@
      "programs": 14,
      "geometries": 35,
      "textures": 45,
-     "frameMsMedian": 0.7,
-     "frameMsP90": 4.6
+     "frameMsMedian": 1,
+     "frameMsP90": 5.2
     },
     "vanguard0-pulse1|high": {
      "meshyChassis": "chassis-vanguard-0",
@@ -268,8 +268,8 @@
      "programs": 14,
      "geometries": 36,
      "textures": 50,
-     "frameMsMedian": 0.9,
-     "frameMsP90": 6.5
+     "frameMsMedian": 0.7,
+     "frameMsP90": 9
     },
     "vanguard1-twin1|high": {
      "meshyChassis": "chassis-vanguard-1",
@@ -279,8 +279,8 @@
      "programs": 14,
      "geometries": 38,
      "textures": 60,
-     "frameMsMedian": 0.7,
-     "frameMsP90": 4.8
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.3
     },
     "vanguard2-siege0|high": {
      "meshyChassis": "chassis-vanguard-2",
@@ -291,7 +291,7 @@
      "geometries": 40,
      "textures": 70,
      "frameMsMedian": 0.8,
-     "frameMsP90": 5
+     "frameMsP90": 1.6
     },
     "titan0-siege1|high": {
      "meshyChassis": "chassis-titan-0",
@@ -302,7 +302,7 @@
      "geometries": 42,
      "textures": 80,
      "frameMsMedian": 0.7,
-     "frameMsP90": 4.8
+     "frameMsP90": 1.2
     },
     "titan1-pulse2|high": {
      "meshyChassis": "chassis-titan-1",
@@ -312,8 +312,8 @@
      "programs": 14,
      "geometries": 44,
      "textures": 90,
-     "frameMsMedian": 0.7,
-     "frameMsP90": 1.1
+     "frameMsMedian": 0.6,
+     "frameMsP90": 5
     },
     "titan2-twin2|high": {
      "meshyChassis": "chassis-titan-2",
@@ -321,10 +321,10 @@
      "calls": 30,
      "triangles": 57197,
      "programs": 14,
-     "geometries": 45,
-     "textures": 95,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 1.1
+     "geometries": 46,
+     "textures": 100,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
     },
     "titan2-siege2|high": {
      "meshyChassis": "chassis-titan-2",
@@ -332,10 +332,10 @@
      "calls": 30,
      "triangles": 57183,
      "programs": 14,
-     "geometries": 46,
-     "textures": 100,
+     "geometries": 47,
+     "textures": 105,
      "frameMsMedian": 0.7,
-     "frameMsP90": 1.3
+     "frameMsP90": 1.6
     },
     "scout0-pulse0|low": {
      "meshyChassis": "chassis-scout-0",
@@ -343,10 +343,10 @@
      "calls": 27,
      "triangles": 35275,
      "programs": 15,
-     "geometries": 45,
-     "textures": 98,
-     "frameMsMedian": 0.8,
-     "frameMsP90": 1.1
+     "geometries": 47,
+     "textures": 105,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.3
     },
     "scout1-twin0|low": {
      "meshyChassis": "chassis-scout-1",
@@ -354,10 +354,10 @@
      "calls": 27,
      "triangles": 37340,
      "programs": 15,
-     "geometries": 46,
-     "textures": 96,
-     "frameMsMedian": 0.4,
-     "frameMsP90": 0.6
+     "geometries": 49,
+     "textures": 105,
+     "frameMsMedian": 1,
+     "frameMsP90": 1.7
     },
     "scout2-moon2|low": {
      "meshyChassis": "chassis-scout-2",
@@ -365,10 +365,10 @@
      "calls": 27,
      "triangles": 34503,
      "programs": 15,
-     "geometries": 47,
-     "textures": 94,
-     "frameMsMedian": 0.6,
-     "frameMsP90": 0.7
+     "geometries": 51,
+     "textures": 105,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
     },
     "vanguard0-pulse1|low": {
      "meshyChassis": "chassis-vanguard-0",
@@ -376,10 +376,10 @@
      "calls": 27,
      "triangles": 34724,
      "programs": 15,
-     "geometries": 47,
-     "textures": 92,
+     "geometries": 52,
+     "textures": 105,
      "frameMsMedian": 0.5,
-     "frameMsP90": 0.8
+     "frameMsP90": 1.2
     },
     "vanguard1-twin1|low": {
      "meshyChassis": "chassis-vanguard-1",
@@ -387,10 +387,10 @@
      "calls": 27,
      "triangles": 36355,
      "programs": 15,
-     "geometries": 48,
-     "textures": 90,
-     "frameMsMedian": 0.5,
-     "frameMsP90": 1.5
+     "geometries": 54,
+     "textures": 105,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 1.9
     },
     "vanguard2-siege0|low": {
      "meshyChassis": "chassis-vanguard-2",
@@ -398,10 +398,10 @@
      "calls": 27,
      "triangles": 36068,
      "programs": 15,
-     "geometries": 49,
-     "textures": 88,
+     "geometries": 56,
+     "textures": 105,
      "frameMsMedian": 0.5,
-     "frameMsP90": 0.6
+     "frameMsP90": 1.1
     },
     "titan0-siege1|low": {
      "meshyChassis": "chassis-titan-0",
@@ -409,10 +409,10 @@
      "calls": 27,
      "triangles": 36369,
      "programs": 15,
-     "geometries": 50,
-     "textures": 86,
-     "frameMsMedian": 0.4,
-     "frameMsP90": 0.8
+     "geometries": 58,
+     "textures": 105,
+     "frameMsMedian": 0.5,
+     "frameMsP90": 1
     },
     "titan1-pulse2|low": {
      "meshyChassis": "chassis-titan-1",
@@ -420,9 +420,9 @@
      "calls": 27,
      "triangles": 41289,
      "programs": 15,
-     "geometries": 51,
-     "textures": 84,
-     "frameMsMedian": 0.4,
+     "geometries": 60,
+     "textures": 105,
+     "frameMsMedian": 0.5,
      "frameMsP90": 0.7
     },
     "titan2-twin2|low": {
@@ -431,10 +431,10 @@
      "calls": 27,
      "triangles": 36452,
      "programs": 15,
-     "geometries": 52,
-     "textures": 84,
+     "geometries": 62,
+     "textures": 105,
      "frameMsMedian": 0.7,
-     "frameMsP90": 1.4
+     "frameMsP90": 1.1
     },
     "titan2-siege2|low": {
      "meshyChassis": "chassis-titan-2",
@@ -442,312 +442,258 @@
      "calls": 27,
      "triangles": 35711,
      "programs": 15,
-     "geometries": 53,
-     "textures": 84,
-     "frameMsMedian": 0.8,
-     "frameMsP90": 1
+     "geometries": 63,
+     "textures": 105,
+     "frameMsMedian": 0.6,
+     "frameMsP90": 0.8
     }
    },
    "loads": [
     {
      "id": "chassis-vanguard-1",
      "q": "light",
-     "bytes": 842100,
-     "ms": 2854
-    },
-    {
-     "id": "weapon-siege-2",
-     "q": "light",
-     "bytes": 416792,
-     "ms": 2720
+     "bytes": 830724,
+     "ms": 2322
     },
     {
      "id": "weapon-pulse-1",
      "q": "light",
      "bytes": 363844,
-     "ms": 2824
+     "ms": 2476
     },
     {
      "id": "chassis-titan-2",
      "q": "light",
      "bytes": 800172,
-     "ms": 2760
+     "ms": 2377
     },
     {
-     "id": "chassis-vanguard-1",
-     "q": "full",
-     "bytes": 4360160,
-     "ms": 2740
+     "id": "weapon-siege-2",
+     "q": "light",
+     "bytes": 416792,
+     "ms": 2340
     },
     {
      "id": "weapon-pulse-1",
      "q": "full",
      "bytes": 1080644,
-     "ms": 2742
+     "ms": 2316
     },
     {
      "id": "chassis-scout-0",
      "q": "light",
-     "bytes": 749260,
-     "ms": 2607
+     "bytes": 743264,
+     "ms": 2198
     },
     {
      "id": "weapon-pulse-0",
      "q": "light",
      "bytes": 344820,
-     "ms": 2759
+     "ms": 2329
     },
     {
-     "id": "chassis-scout-0",
+     "id": "chassis-vanguard-1",
      "q": "full",
-     "bytes": 3723036,
-     "ms": 2824
+     "bytes": 4284524,
+     "ms": 2569
     },
     {
      "id": "weapon-pulse-0",
      "q": "full",
      "bytes": 1010964,
-     "ms": 3105
+     "ms": 2321
+    },
+    {
+     "id": "chassis-scout-0",
+     "q": "full",
+     "bytes": 3692080,
+     "ms": 2476
     },
     {
      "id": "chassis-vanguard-0",
      "q": "light",
-     "bytes": 850188,
-     "ms": 1697
+     "bytes": 841272,
+     "ms": 1743
     },
     {
      "id": "chassis-scout-1",
      "q": "light",
-     "bytes": 961164,
-     "ms": 6062
+     "bytes": 952300,
+     "ms": 3781
     },
     {
      "id": "weapon-twin-0",
      "q": "light",
      "bytes": 318064,
-     "ms": 6815
+     "ms": 4811
+    },
+    {
+     "id": "chassis-scout-1",
+     "q": "full",
+     "bytes": 4564404,
+     "ms": 9358
     },
     {
      "id": "weapon-twin-0",
      "q": "full",
      "bytes": 997368,
-     "ms": 11370
-    },
-    {
-     "id": "chassis-scout-1",
-     "q": "full",
-     "bytes": 4614132,
-     "ms": 11695
+     "ms": 9619
     },
     {
      "id": "chassis-scout-2",
      "q": "light",
      "bytes": 720848,
-     "ms": 3917
+     "ms": 3734
     },
     {
      "id": "weapon-moon",
      "q": "light",
      "bytes": 469660,
-     "ms": 12309
+     "ms": 4468
     },
     {
      "id": "chassis-scout-2",
      "q": "full",
      "bytes": 3766664,
-     "ms": 12902
+     "ms": 9545
     },
     {
      "id": "weapon-moon",
      "q": "full",
      "bytes": 2543528,
-     "ms": 13486
+     "ms": 10013
+    },
+    {
+     "id": "chassis-vanguard-0",
+     "q": "full",
+     "bytes": 4709860,
+     "ms": 2260
     },
     {
      "id": "weapon-pulse-1",
      "q": "full",
      "bytes": 1080644,
-     "ms": 2706
-    },
-    {
-     "id": "chassis-vanguard-0",
-     "q": "full",
-     "bytes": 4733960,
-     "ms": 3732
+     "ms": 3249
     },
     {
      "id": "weapon-twin-1",
      "q": "light",
      "bytes": 375132,
-     "ms": 4067
+     "ms": 3292
+    },
+    {
+     "id": "chassis-vanguard-1",
+     "q": "full",
+     "bytes": 4284524,
+     "ms": 9107
     },
     {
      "id": "weapon-twin-1",
      "q": "full",
      "bytes": 1202968,
-     "ms": 5451
-    },
-    {
-     "id": "chassis-vanguard-1",
-     "q": "full",
-     "bytes": 4360160,
-     "ms": 13441
+     "ms": 10291
     },
     {
      "id": "chassis-vanguard-2",
      "q": "light",
-     "bytes": 769800,
-     "ms": 4547
+     "bytes": 803256,
+     "ms": 3437
     },
     {
      "id": "weapon-siege-0",
      "q": "light",
      "bytes": 409184,
-     "ms": 7122
-    },
-    {
-     "id": "chassis-vanguard-2",
-     "q": "full",
-     "bytes": 3907492,
-     "ms": 13145
+     "ms": 4105
     },
     {
      "id": "weapon-siege-0",
      "q": "full",
      "bytes": 1261068,
-     "ms": 13538
+     "ms": 9232
+    },
+    {
+     "id": "chassis-vanguard-2",
+     "q": "full",
+     "bytes": 4112752,
+     "ms": 10601
     },
     {
      "id": "chassis-titan-0",
      "q": "light",
-     "bytes": 721324,
-     "ms": 4462
+     "bytes": 718476,
+     "ms": 2828
     },
     {
      "id": "weapon-siege-1",
      "q": "light",
      "bytes": 457476,
-     "ms": 5446
+     "ms": 9473
     },
     {
      "id": "chassis-titan-0",
      "q": "full",
-     "bytes": 3848912,
-     "ms": 11673
+     "bytes": 3827148,
+     "ms": 10287
     },
     {
      "id": "weapon-siege-1",
      "q": "full",
      "bytes": 1336252,
-     "ms": 12963
+     "ms": 11168
     },
     {
      "id": "chassis-titan-1",
      "q": "light",
-     "bytes": 1095244,
-     "ms": 4558
+     "bytes": 1083120,
+     "ms": 3465
     },
     {
      "id": "weapon-pulse-2",
      "q": "light",
      "bytes": 383204,
-     "ms": 5429
+     "ms": 4255
     },
     {
      "id": "weapon-pulse-2",
      "q": "full",
      "bytes": 1268800,
-     "ms": 12402
+     "ms": 10264
     },
     {
      "id": "chassis-titan-1",
      "q": "full",
-     "bytes": 4533740,
-     "ms": 12782
+     "bytes": 4463032,
+     "ms": 10610
     },
     {
      "id": "weapon-twin-2",
      "q": "light",
      "bytes": 487972,
-     "ms": 4716
-    },
-    {
-     "id": "weapon-twin-2",
-     "q": "full",
-     "bytes": 1373924,
-     "ms": 12257
+     "ms": 3363
     },
     {
      "id": "chassis-titan-2",
      "q": "full",
      "bytes": 4259568,
-     "ms": 13692
+     "ms": 4698
+    },
+    {
+     "id": "weapon-twin-2",
+     "q": "full",
+     "bytes": 1373924,
+     "ms": 10858
     },
     {
      "id": "weapon-siege-2",
      "q": "full",
      "bytes": 1335124,
-     "ms": 2176
-    },
-    {
-     "id": "chassis-scout-0",
-     "q": "light",
-     "bytes": 749260,
-     "ms": 11667
-    },
-    {
-     "id": "chassis-scout-1",
-     "q": "light",
-     "bytes": 961164,
-     "ms": 1016
-    },
-    {
-     "id": "chassis-scout-2",
-     "q": "light",
-     "bytes": 720848,
-     "ms": 1067
-    },
-    {
-     "id": "weapon-pulse-1",
-     "q": "light",
-     "bytes": 363844,
-     "ms": 809
-    },
-    {
-     "id": "chassis-vanguard-1",
-     "q": "light",
-     "bytes": 842100,
-     "ms": 631
-    },
-    {
-     "id": "chassis-vanguard-2",
-     "q": "light",
-     "bytes": 769800,
-     "ms": 751
-    },
-    {
-     "id": "chassis-titan-0",
-     "q": "light",
-     "bytes": 721324,
-     "ms": 819
-    },
-    {
-     "id": "chassis-titan-1",
-     "q": "light",
-     "bytes": 1095244,
-     "ms": 725
-    },
-    {
-     "id": "weapon-twin-2",
-     "q": "light",
-     "bytes": 487972,
-     "ms": 793
+     "ms": 1019
     }
    ],
    "memory": {
-    "jsHeapMB": 82.4,
-    "meshyStore": 21,
-    "meshyBytesDownloaded": 76557336
+    "jsHeapMB": 77.6,
+    "meshyStore": 22,
+    "meshyBytesDownloaded": 67975420
    }
   }
  },

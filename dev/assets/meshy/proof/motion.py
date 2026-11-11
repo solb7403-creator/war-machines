@@ -34,7 +34,7 @@ for name, _, frames in SEQ:
         shots.append(dict(name=f'{name}_{i}', w=W, h=H, **f))
 tmp = tempfile.mkdtemp()
 sp = os.path.join(tmp, 'shots.json'); json.dump(shots, open(sp, 'w'))
-subprocess.run(['node', os.path.join(here, 'view.mjs'), built, tmp, sp], check=True, stdout=subprocess.DEVNULL)
+subprocess.run(['node', os.path.join(here, 'view.mjs'), built, tmp, sp], check=True)
 os.makedirs(out, exist_ok=True)
 for name, title, frames in SEQ:
     S = Image.new('RGB', (W * len(frames), H + 20), (10, 14, 20)); ImageDraw.Draw(S).text((6, 3), title, fill=(255, 217, 120))

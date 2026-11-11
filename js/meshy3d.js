@@ -137,8 +137,8 @@ const Meshy3D=(()=>{
  // (a later request reloads from the browser's HTTP cache). Sizes are GPU texture bytes + geometry, estimated.
  let clock=0;const LIMIT={light:(typeof navigator!=='undefined'&&navigator.deviceMemory&&navigator.deviceMemory<=4?10:22),full:3};
  function evict(){
-  for(const q of ['light','full']){const idle=[...store].filter(([k,e])=>e.state==='ready'&&k.endsWith('|'+q));let over=idle.length-LIMIT[q];if(over<=0)continue;
-   for(const [k,e] of idle.filter(([,e])=>!e.asset.refs).sort((a,b)=>(a[1].used||0)-(b[1].used||0))){if(over--<=0)break;free(e.asset);store.delete(k);}}
+  for(const q of ['light','full']){const idle=[...store].filter(([k,e])=>e.state==='ready'&&k.endsWith('|'+q)&&!e.asset.refs);let over=idle.length-LIMIT[q];if(over<=0)continue;   // models in use never count and are never dropped
+   for(const [k,e] of idle.sort((a,b)=>(a[1].used||0)-(b[1].used||0))){if(over--<=0)break;free(e.asset);store.delete(k);}}
  }
  function free(a){a.geometry.dispose();a.lowGeometry&&a.lowGeometry.dispose();a.partTex&&a.partTex.dispose();for(const g of Object.values(a.split||{}))g.dispose();for(const t of Object.values(a.maps)){t.dispose();t.image&&t.image.close&&t.image.close();}}
  // best asset for the current detail scope: FULL when a close-up asked for it and it has arrived, LIGHT meanwhile

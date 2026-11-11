@@ -18,7 +18,7 @@ function init(){
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x2a2e35,roughness:.95,metalness:0}));ground.rotation.x=-Math.PI/2;ground.position.y=-.002;scene.add(ground);
  cam=new THREE.PerspectiveCamera(26,1,.05,200);holder=new THREE.Group();scene.add(holder);
 }
-async function load(id,q){Meshy3D.base='/__built/';const key=id+'|'+q;if(items[key])return items[key];Meshy3D.request(id,q);for(let i=0;i<600;i++){const a=Meshy3D.peek(id,q);if(a){items[key]=a;return {tris:a.triangles,bytes:a.bytes,info:a.info};}const e=Meshy3D.store.get(key);if(e&&e.state==='error')throw Error(e.error);await new Promise(r=>setTimeout(r,50));}throw Error('timeout');}
+async function load(id,q){Meshy3D.base='/__built/';const key=id+'|'+q;if(items[key])return items[key];Meshy3D.request(id,q);for(let i=0;i<600;i++){const a=Meshy3D.peek(id,q);if(a){a.refs=1e6;items[key]=a;return {tris:a.triangles,bytes:a.bytes,info:a.info};}const e=Meshy3D.store.get(key);if(e&&e.state==='error')throw Error(e.error);await new Promise(r=>setTimeout(r,50));}throw Error('timeout');}
 // spec: {parts:[{id,q,paint,lunar,pos,yaw,low}], w,h, cam:{yaw,pitch,dist,target,fov}, ch:{name:value}, bg}
 function shot(spec){
  while(holder.children.length){const c=holder.children[0];holder.remove(c);Meshy3D.release(c);}

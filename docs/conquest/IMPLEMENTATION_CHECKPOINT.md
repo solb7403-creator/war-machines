@@ -1655,3 +1655,16 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
 5. Write `docs/art/meshy-proof/README.md` (what each sheet shows, load size/time, frame time and memory with the honest
    software-GL caveat), run the browser suites (`conquest-check.yml`, `website-check.yml`, `lab-ui-check.yml` lists), open the
    PR for CI only. No merge, no deploy.
+
+**Addendum, Nov 11 (latest push)**
+- Seven chassis rebuilt with the reference-matched palettes and committed (`259c6d2`); `node dev/tests/meshy.mjs` PASS (1784).
+- Proof regenerated after the weapon fit and the recolour: `docs/art/meshy-proof/app/` (Garage + battle before/after HIGH and
+  LOW, paint sheets, `app.json`: 0 errors), `fit/` (9 proportion sheets + `scales.json`), `motion/` (10 frame sequences),
+  `colour_check_stock_vs_reference.webp`, `town/`, `README.md`, `MANIFEST.md`, `RETEXTURE.md`.
+- Lead's second colour review: Paladin (silver + gold), Phantom and Colossus (dark + gold / amber) match their references.
+  Common hulls are closer but still read paler and cleaner than the worn olive references; Rare hulls are mid grey-blue,
+  still lighter than the dark gunmetal references. **Next tuning step if the owner wants it closer:** `looks.common.paintA`
+  toward `#3f4535` (+ `wear` 1.5), `looks.rare.paintA` toward `#454d58`, then `build.py --only` the six Common / Rare chassis
+  and rerun the proof scripts.
+- Cache fix: models in use are never evicted (the studio viewer exposed it).
+- Draft PR **#105** opened for CI and owner review only (subscribed for CI results). Do not merge or deploy without owner approval.
