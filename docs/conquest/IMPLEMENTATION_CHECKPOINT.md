@@ -1927,3 +1927,22 @@ were stopped and was re-run). Both changed the result: 4 graphics fixes and 2 ne
   2.9 -> 4.6, cyan rim 1.25 -> 1.9; same light count, no new program): 41.4, PASS. `conquest-base-builder`, `conquest-plot-ui`,
   `conquest-find-base`, `meshy.mjs` (1802), `conquest-town`, `conquest-townkit`, `conquest-plot` re-run after the town rebuild:
   PASS; `proof/v2_town.py` both profiles: PASS (all 12 town items Meshy, programs 11-14).
+
+## Checkpoint 33 — Session 5E-2b: spectacular supers + destruction (branch `claude/supers-destruction-5e-2b-ykuxgp`, from main `8e853b4`) — IN PROGRESS
+
+Brief: owner's Session 5E-2b prompt (two slices: supers, destruction). Owner not monitoring: every decision below was made by the
+lead and is recorded with its reason. Release is pre-approved once both slices are done, CI is green and two independent
+read-only reviewers pass. Payments stay DISABLED. Not touched: prices, economy, airdrop points, save schema, ownership, hitboxes,
+sockets, muzzle endpoints, chassis / weapon base stats, enemyStats. Changed on purpose (ordered in Slice 1): super charge, super
+damage, the timing bar, AI super skill.
+
+### State at the latest push (resume here if the session ends)
+- Pushed: sim + rules (timing bar, charge by share of hull, gear^2.2 super damage, AI tap skill, PVP_V 5), the canvas timing bar,
+  `js/fx3d.js` (shared effects + destruction), the ten supers x three outcomes in the Arcade, tank/crate damage stages and
+  break-up in the Arcade, the Conquest timing bar + FX3D supers + Parasite hull break-up, the town raid replay break-ups by
+  material, tests (`super-timing.mjs`, `super-report.mjs`, `super-vfx-capture.py`, `conquest-super-fx.py`).
+- Next steps, in order: (1) final VFX sheets phone + desktop into `docs/supers-5e2b/`, critic round 2; (2) destruction sheet
+  (`super-vfx-capture.py --destroy`); (3) LOW and reduced-motion captures; (4) before/after performance numbers
+  (`arcade-supers-browser.py` on main vs branch); (5) the affected Conquest browser tests; (6) two read-only reviewers
+  (graphics/performance, combat/parity), fixes; (7) PR, CI, merge, verify Pages + Worker deploys, record the release here and in
+  `docs/ROADMAP.md`.

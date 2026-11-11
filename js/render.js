@@ -666,7 +666,7 @@ const TUT_STEPS=[
  {txt:'Drag anywhere to drive',done:()=>tut.moved>0.12},
  {txt:'Your cannon aims and fires by itself. Get in range!',done:()=>mstat&&mstat.dmg>250},
  {txt:'Grab the gold box for a power-up',done:()=>mstat&&mstat.box>0||!boxes.length&&tut.t>14},
- {txt:'Super ready: tap the red button!',done:()=>mstat&&mstat.sup>0,wait:()=>me.sp>=SUPER_MAX}];
+ {txt:'Super ready: tap the red button, then tap again in the blue zone!',done:()=>mstat&&mstat.sup>0,wait:()=>me.sp>=SUPER_MAX}];
 function tutTick(dt){
  if(!tut)return;
  tut.t+=dt;

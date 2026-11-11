@@ -113,8 +113,71 @@ async def run_view(p,name,report):
             if l in tiles[(k,2)]:seq.paste(tile(tiles[(k,2)][l]),(c*T,r*th))
     seq.save(OUT/f'seq-{tag}.webp',quality=82)
     return errs
+# ---- destruction sheets (--destroy): damage stages and the break-up of a tank, a crate and every material ----
+MATS=['armor','metal','concrete','ferrite','ilmenite','armalcolite','tranq','selenite','moonheart','crate','rock','chitin']
+DSETUP='''(mats)=>{const e=window.__e;const put=(u,x,y)=>{u.x=x;u.y=y;u.px=x;u.py=y;u.ox=x;u.oy=y;u.sx=x;u.sy=y;};put(me,10,29.5);put(e,10,3.2);e.mhp=e.hp=2000;
+ const C={armor:0x4a5058,metal:0x6d737b,concrete:0x8b8f94,ferrite:0x7a5238,ilmenite:0x59647a,armalcolite:0x27365c,tranq:0x4a463f,selenite:0xbfe8ff,moonheart:0xd81e3c,crate:0x8a6a3a,rock:0x6f6a66,chitin:0x3a1c44};
+ window.__blocks=mats.map((m,i)=>{const x=3.4+(i%4)*4.4,z=9+Math.floor(i/4)*5.2,mesh=new THREE.Mesh(new THREE.BoxGeometry(2,1.1,2),new THREE.MeshLambertMaterial({color:C[m]}));mesh.position.set(x,.55,z);RS.add(mesh);return {m,x,z,mesh,hp:1,gone:false};});
+ const b0=SFX.begin;SFX.begin=function(dt,t){b0(dt,t);for(const [i,b] of __blocks.entries())if(!b.gone&&b.hp<.7)SFX.wear(b.m,b.x,.55,b.z,1,.55,1,0,b.hp,i*7919+3);};
+ window.__hp=(f)=>{for(const b of __blocks)b.hp=f;};
+ window.__break=()=>{for(const b of __blocks){b.gone=true;b.mesh.visible=false;SFX.shatter(b.m,b.x,0,b.z,1.1,1.1,0,0);if(b.m==='armor'||b.m==='metal'||b.m==='chitin')SFX.blast(b.x,0,b.z,1.1,1);}};
+ return __blocks.map(b=>[b.m,b.x,b.z]);}'''
+async def run_destroy(p,name,report):
+    from PIL import ImageDraw
+    w,h,scale=VIEWS[name];tag=name+'-'+QUALITY+('-reduced' if REDUCED else '');d=OUT/tag;d.mkdir(exist_ok=True)
+    b,pg,errs=await open_game(p,w,h,scale=scale)
+    await pg.wait_for_function('typeof prepareMatch==="function"&&typeof save!=="undefined"&&typeof FX3D!=="undefined"',timeout=60000)
+    await pg.evaluate('closeAll();save.welcomed=true;uiDirty();')
+    try:await pg.wait_for_function('typeof use3D==="function"&&(R3.ready||R3.failed)',timeout=90000)
+    except Exception:pass
+    info=await pg.evaluate(SCENE,['pulse0',QUALITY,REDUCED])
+    for _ in range(40):await pg.evaluate('__step(1)')
+    await pg.evaluate('window.__clean=true');blocks=await pg.evaluate(DSETUP,MATS);sc,ox,oy=info['sc'],info['ox'],info['oy']
+    frames=[]
+    async def snap(label):
+        png=await pg.screenshot(type='png');im=Image.open(io.BytesIO(png)).convert('RGB');im.save(d/f'destroy-{label}.png');frames.append((label,im))
+    for label,hp in (('60% health: cracks',.6),('35%: scorch + sparks',.35),('15%: heavy cracks + smoke',.15)):
+        await pg.evaluate('(f)=>{__hp(f);__e.hp=__e.mhp*f;}',hp);st=None
+        for _ in range(24):st=await pg.evaluate('__step(1)')
+        await snap(label)
+    await pg.evaluate('()=>{__break();takeHit(__e,__e.hp+10,me,null,0);}')
+    peak={'chunks':0,'particles':0,'debrisVerts':0,'calls':0}
+    for t,label in ((3,'destroyed +0.1 s'),(12,'+0.5 s: debris bounces'),(30,'+1.5 s: settled'),(45,'+3 s: fading')):
+        for _ in range(t):
+            st=await pg.evaluate('__step(1)')
+            for k in ('chunks','particles','debrisVerts'):peak[k]=max(peak[k],st['fx'][k])
+            peak['calls']=max(peak['calls'],st['calls'])
+        await snap(label)
+    for _ in range(140):st=await pg.evaluate('__step(1)')
+    report[tag+'-destroy']={'pageErrors':errs,'peak':peak,'after':st['fx'],'materials':MATS}
+    await b.close()
+    # one sheet: the whole arena for every stage, the material names on the first frame
+    x0,x1=int((ox+1*sc)*scale),int((ox+19*sc)*scale);y0,y1=int((oy+1*sc*.86)*scale),int((oy+25*sc*.86)*scale)
+    T=420;tiles=[]
+    for label,im in frames:
+        c=im.crop((x0,y0,x1,y1));c.thumbnail((T,T*2));dr=ImageDraw.Draw(c);dr.rectangle((0,0,c.width,16),fill=(8,10,16));dr.text((4,2),label,fill=(255,255,255));tiles.append(c)
+    k=tiles[0].width/(x1-x0);dr=ImageDraw.Draw(tiles[0])
+    for m,bx,bz in blocks:dr.text(((ox+bx*sc)*scale*k-x0*k-22,(oy+(bz+1.6)*sc*.86)*scale*k-y0*k),m,fill=(255,230,150))
+    sheet=Image.new('RGB',(sum(t.width for t in tiles[:4]),tiles[0].height*2),(8,10,16));x=0
+    for i,t in enumerate(tiles):
+        if i==4:x=0
+        sheet.paste(t,(x,0 if i<4 else tiles[0].height));x+=t.width
+    sheet.save(OUT/f'destruction-{tag}.webp',quality=84)
+    print(tag,'destruction peak',peak,'after',st['fx'],flush=True)
+    return errs
 async def main():
     dev=start_dev();report={}
+    if DESTROY:
+        try:
+            async with async_playwright() as p:
+                errs=[]
+                for v in (['phone','desktop'] if VIEW=='both' else [VIEW]):errs+=await run_destroy(p,v,report)
+        finally:
+            if dev:dev.terminate()
+        (OUT/'report-destroy.json').write_text(json.dumps(report,indent=1))
+        bad=[k for k,r in report.items() if r['pageErrors'] or r['peak']['chunks']<=0 or r['after']['chunks'] or r['after']['particles']]
+        if bad:print('FAIL destruction capture',bad,report);sys.exit(1)
+        print('PASS destruction capture',OUT);return
     try:
         async with async_playwright() as p:
             allerrs=[]

@@ -154,7 +154,7 @@ function ownedList(isW,eq){   // everything in this slot: owned first (best firs
 }
 const gearKey=it=>(it.premium?'moon':(it.arch||it.cls))+':'+Math.max(0,it.tier)+':'+(it.sal?1:0);
 function gearMeta(isW,it){
- if(isW)return it.dps+' damage per second, super: '+WEAPONS[it.arch].sup;
+ if(isW)return it.dps+' damage per second, super: '+(SUP_NAMES[supKey(it.arch,it.tier)]||WEAPONS[it.arch].sup);   // every weapon item has its own super (5E-2b)
  return 'Health ×'+it.hp+', speed ×'+it.spd+', beats '+CH[COUNTER[it.cls]].n;
 }
 function winRange(gk,mk){
@@ -894,7 +894,7 @@ const INFO={
   ['Drive','Drag anywhere on the screen. Your cannon aims and fires on its own.'],
   ['Win','Every mode has its own goal: Arena, Moon Zone, Crystal Rush, Bounty, Last Standing and Survival. The start screen tells you what it is.'],
   ['Mystery boxes','Drive over the gold box for a random boost. It lasts until you take enough damage; the ring around your tank shows what’s left.'],
-  ['Super','The thin bar under your health fills as you fight. When it’s full, tap the red Super button to auto-aim, or drag from it to aim yourself.'],
+  ['Super','The thin bar under your health fills as you fight (about three supers a match). When it’s full, tap the red Super button to auto-aim, or drag from it to aim yourself. A timing bar opens: tap again to stop the marker. Blue zone: a full hit. Gold circle: JACKPOT, 25% more damage and the weapon’s signature effect. Outside the zone, or no tap: a weaker super (65%). Every weapon has its own super, and higher tiers hit much harder.'],
   ['Dash','The blue Dash button bursts you forward in the direction you’re driving. Use it to dodge supers. It recharges in 4 seconds.'],
   ['Shield','The teal Shield button raises a plasma shield for 3 seconds that cuts the damage you take by 65%. It recharges in 25 seconds.'],
   ['Crits','Direct hits can crit for double damage. Shots that only clip the edge do less.'],
