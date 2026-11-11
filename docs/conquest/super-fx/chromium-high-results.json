@@ -7,33 +7,33 @@
   "w": 300,
   "x": 45,
   "right": 345,
-  "y": 614,
+  "y": 560,
   "text": "PIERCE LANCE: TAP TO STOP",
-  "zone": "36.4%",
-  "jack": "44.8%",
+  "zone": "39.4%",
+  "jack": "61.6%",
   "bar": {
-   "z0": 0.364,
-   "jc": 0.448
+   "z0": 0.394,
+   "jc": 0.616
   },
   "charge": 0,
   "vw": 390
  },
  "hud": {
-  "oc": "1",
-  "text": "HIT",
-  "note": "100% damage"
+  "oc": "0",
+  "text": "MISS",
+  "note": "65% damage"
  },
  "programsBefore": 14,
  "programsDuring": 14,
- "callsBefore": 56,
+ "callsBefore": 57,
  "callsDuring": 62,
  "fxPeak": {
-  "quads": 293,
-  "debrisVerts": 252,
-  "particles": 35,
-  "chunks": 9,
+  "quads": 190,
+  "debrisVerts": 168,
+  "particles": 34,
+  "chunks": 6,
   "effects": 4,
-  "marks": 2,
+  "marks": 1,
   "caps": {
    "quads": 2000,
    "verts": 4200,

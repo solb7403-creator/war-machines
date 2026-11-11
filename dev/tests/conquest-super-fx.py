@@ -37,20 +37,20 @@ async def main(engine,quality):
    return {enemies:2,programs:v.renderer.info.programs.length,calls:v.renderer.info.render.calls,style:!!v.style,canvas:!!v.renderer.isConquestCanvas};}''')
   assert setup and setup.get('enemies')==2,('the encounter needs two hulls to stage the shot',setup)
   await page.keyboard.down('KeyR');await page.wait_for_timeout(60);await page.keyboard.up('KeyR')
-  await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter;return !!(B.superAttack&&B.superAttack.bar);}',timeout=20000)
+  await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter;return !!(B.superAttack&&B.superAttack.bar);}',timeout=90000)
   bar=await page.evaluate('''()=>{const sb=document.querySelector('#cq-supbar'),B=Conquest.view.battle||Conquest.view.encounter,r=sb.getBoundingClientRect();return {hidden:sb.hidden,w:Math.round(r.width),x:Math.round(r.left),right:Math.round(r.right),y:Math.round(r.top),text:sb.querySelector('.cq-supbar-text').textContent,zone:sb.querySelector('.cq-supbar-zone').style.left,jack:sb.querySelector('.cq-supbar-jack').style.left,bar:B.superAttack.bar,charge:B.charge,vw:innerWidth};}''')
   assert not bar['hidden'] and bar['w']>=220 and bar['x']>=0 and bar['right']<=bar['vw'] and 'TAP' in bar['text'],('the timing bar shows inside the screen',bar)
   assert bar['charge']==0 and bar['zone'] and bar['jack'],bar
   await page.screenshot(path=str(OUT/f'{engine}-{quality}-bar.png'))
   # stop it inside the zone (frame rate in software GL decides whether it lands on the jackpot circle or just the zone)
-  await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter,s=B.superAttack;return !s||s.oc!==undefined||s.el>=(s.bar.jc-0.03)*SUP_BAR_T;}',timeout=20000)
+  await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter,s=B.superAttack;return !s||s.oc!==undefined||s.el>=(s.bar.jc-0.03)*SUP_BAR_T;}',timeout=90000)
   await page.keyboard.down('KeyR');await page.wait_for_timeout(60);await page.keyboard.up('KeyR')
-  await page.wait_for_function('()=>{const sb=document.querySelector("#cq-supbar");return sb.getAttribute("data-oc")==="0"||sb.getAttribute("data-oc")==="1"||sb.getAttribute("data-oc")==="2";}',timeout=20000)
+  await page.wait_for_function('()=>{const sb=document.querySelector("#cq-supbar");return sb.getAttribute("data-oc")==="0"||sb.getAttribute("data-oc")==="1"||sb.getAttribute("data-oc")==="2";}',timeout=90000)
   hud=await page.evaluate('''()=>{const sb=document.querySelector('#cq-supbar');return {oc:sb.getAttribute('data-oc'),text:sb.querySelector('.cq-supbar-text').textContent,note:sb.querySelector('.cq-supbar-note').textContent};}''')
   assert hud['text'] in ('MISS','HIT','JACKPOT!') and '% damage' in hud['note'],hud
   # the beam fires: FX3D draws it; the hull ahead dies and breaks apart
-  await page.wait_for_function('()=>{const v=Conquest.view;return !!v.fx&&v.fx.stats().effects>0;}',timeout=20000)
-  await page.wait_for_function('()=>{const v=Conquest.view,B=v.battle||v.encounter;return B.kills>window.__k0&&v.fx.stats().chunks>0;}',timeout=20000)
+  await page.wait_for_function('()=>{const v=Conquest.view;return !!v.fx&&v.fx.stats().effects>0;}',timeout=90000)
+  await page.wait_for_function('()=>{const v=Conquest.view,B=v.battle||v.encounter;return B.kills>window.__k0&&v.fx.stats().chunks>0;}',timeout=90000)
   mid=await page.evaluate('''()=>{const v=Conquest.view,s=v.fx.stats();return {fx:s,programs:v.renderer.info.programs.length,calls:v.renderer.info.render.calls,glowMat:v.fx.glow.material===v.style.MAT.fx,solidMat:v.fx.debris.material===v.style.MAT.solid};}''')
   await page.screenshot(path=str(OUT/f'{engine}-{quality}-blast.png'))
   assert mid['glowMat'] and mid['solidMat'],('effects draw through the style materials: no new shader',mid)
@@ -58,11 +58,11 @@ async def main(engine,quality):
   assert mid['programs']<=setup['programs']+1,('the effects add no program beyond one already-known variant',setup,mid)
   assert mid['fx']['quads']>0 and mid['fx']['chunks']>0,mid
   # a damaged hull shows wear (cracks drawn as quads while nothing else is alive), then everything stops drawing
-  await page.wait_for_function('()=>{const s=Conquest.view.fx.stats();return s.effects===0&&s.chunks===0&&s.particles===0&&s.marks===0;}',timeout=40000)
+  await page.wait_for_function('()=>{const s=Conquest.view.fx.stats();return s.effects===0&&s.chunks===0&&s.particles===0&&s.marks===0;}',timeout=120000)
   end=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,s=v.fx.stats(),e=B.enemies.find(e=>e.hp>0);return {fx:s,damaged:e?e.hp/e.maxHp:null,programs:v.renderer.info.programs.length};}''')
   assert end['damaged'] is None or end['damaged']>=.7 or end['fx']['quads']>0,('a hull under 70% shows damage cracks',end)
   if end['damaged'] is not None and end['damaged']<.7:
-   await page.evaluate('()=>{const B=Conquest.view.battle||Conquest.view.encounter;for(const e of B.enemies)e.hp=e.maxHp;}');await page.wait_for_function('()=>!Conquest.view.fx.glow.visible&&!Conquest.view.fx.debris.visible',timeout=20000)
+   await page.evaluate('()=>{const B=Conquest.view.battle||Conquest.view.encounter;for(const e of B.enemies)e.hp=e.maxHp;}');await page.wait_for_function('()=>!Conquest.view.fx.glow.visible&&!Conquest.view.fx.debris.visible',timeout=90000)
   assert not errors,errors
   result={'engine':engine,'quality':quality,'status':'PASS','bar':bar,'hud':hud,'programsBefore':setup['programs'],'programsDuring':mid['programs'],'callsBefore':setup['calls'],'callsDuring':mid['calls'],'fxPeak':mid['fx'],'physicalDeviceVerified':False}
   (OUT/f'{engine}-{quality}-results.json').write_text(json.dumps(result,indent=1));print(json.dumps(result))

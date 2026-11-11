@@ -530,10 +530,15 @@ function ev3D(a){
    B3.wrecks.push({g:w,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y});
    // destroyed = breaks apart: the turret is blown off the hull, hops, bounces and comes to rest beside it (HIGH only: LOW keeps
    // today's draw cost). It rocks about its own centre (a pivot at the turret ring) and eases level: nothing snaps or sinks
-   if(R3.q!=='low'&&o.tur&&o.tur.children.length){const tw=new THREE.Group(),pv=new THREE.Group(),tc=o.tur.clone(true),ty=o.tur.position.y;tc.traverse(x=>{if(x.isMesh)x.material=mat;});tc.position.y=0;pv.position.y=ty;pv.add(tc);tw.add(pv);
+   // The piece is built from the turret's visible meshes (same geometry, the charred material), not with Object3D.clone():
+   // Meshy weapon nodes carry userData that three cannot copy. Anything going wrong here must never reach the sim's event
+   if(R3.q!=='low'&&o.tur&&o.tur.children.length)try{const tw=new THREE.Group(),pv=new THREE.Group(),tc=new THREE.Group(),ty=o.tur.position.y;
+    o.tur.updateWorldMatrix(true,true);const inv=new THREE.Matrix4().copy(o.tur.matrixWorld).invert();let nm=0;
+    o.tur.traverse(x=>{if(!x.isMesh||x.isInstancedMesh||!x.geometry||nm>=12)return;for(let q=x;q&&q!==o.tur;q=q.parent)if(!q.visible)return;const m=new THREE.Mesh(x.geometry,mat);m.matrixAutoUpdate=false;m.matrix.multiplyMatrices(inv,x.matrixWorld);tc.add(m);nm++;});
+    if(nm){pv.position.y=ty;pv.add(tc);tw.add(pv);
     tw.position.copy(o.g.position);tw.scale.copy(o.g.scale);tw.rotation.y=o.hull.rotation.y;RS.add(tw);
     const kk=U(a[2]),dx=kk?r.x-kk.x:Math.random()-0.5,dz=kk?r.y-kk.y:Math.random()-0.5,dl=Math.hypot(dx,dz)||1;
-    B3.wrecks.push({g:tw,pv,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y,piece:1,fl:o.g.position.y-ty*o.g.scale.y*0.8,vx:dx/dl*2.4+(Math.random()-0.5)*1.2,vz:dz/dl*2.4+(Math.random()-0.5)*1.2,vy:6.5,ph:Math.random()*6.28});}}
+    B3.wrecks.push({g:tw,pv,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y,piece:1,fl:o.g.position.y-ty*o.g.scale.y*0.8,vx:dx/dl*2.4+(Math.random()-0.5)*1.2,vz:dz/dl*2.4+(Math.random()-0.5)*1.2,vy:6.5,ph:Math.random()*6.28});}}catch(e){}}
   // destroyed = breaks apart: the hull tears into plates and chunks in its own colours, thrown away from the killing blow
   if(SFX){const k=U(a[2]),sz=(r.boss?2.6:1)*(r.dscale||1),hh=heightAt(r),dx=k?r.x-k.x:0,dz=k?r.y-k.y:0;
    SFX.shatter(tankMat(r),r.x,hh,r.y,0.95*sz,0.8*sz,dx,dz,o?FX3D_RGB(o.spec.team):null);SFX.blast(r.x,hh,r.y,1.1*sz,1);}
