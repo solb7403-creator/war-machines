@@ -28,7 +28,7 @@ const PAL={
  pulse0:{c:'#eaffff',a:'#3fe0d4',b:'#157f96',x:'#b9fff6'},   // Pulse Cannon (olive, plain barrel): teal rail lance
  pulse1:{c:'#ffffff',a:'#b56bff',b:'#5326d9',x:'#ead4ff'},   // Arc Pulse (silver, violet coils): violet helix lightning
  pulse2:{c:'#fff6d8',a:'#ffb52e',b:'#ff5a14',x:'#ffe9a0'},   // Nova Pulse (dark, amber star core, gold bell): solar lance
- twin0:{c:'#ffffff',a:'#ffe14a',b:'#ff9a1f',x:'#fff7c2'},    // Twin Repeater (olive, hazard strip): yellow static ring
+ twin0:{c:'#ffffff',a:'#ffd24a',b:'#c98a1a',x:'#fff7c2'},    // Twin Repeater (5a4bea6f.png: olive turret, two thin black barrels; no accent colour on the model): static in the weapon's own tracer yellow (rules.js WEAPONS.twin.c)
  twin1:{c:'#f4eaff',a:'#9d5cff',b:'#3f24c4',x:'#8fdcff'},    // Storm Repeater (silver, violet lines): violet storm vortex
  twin2:{c:'#fff1c4',a:'#ffae2b',b:'#f04a12',x:'#ffd66b'},    // Helix Repeater (amber spiral coils): amber helix dome
  siege0:{c:'#fff3c9',a:'#ff8a2a',b:'#c9300f',x:'#ffd24a'},   // Siege Breaker (olive, box brake): high-explosive fireball
@@ -326,7 +326,7 @@ function create(T,host){
  function superNova(key,oc,x,y,z,r,u){
   const d=oc===2?(key==='twin1'?1.1:.95):oc===1?.65:.45,e=spawn(fxNova,d,x,y,z,rnd()*TAU,r,0,u,key,oc),P=PAL[key]||PAL.pulse0;
   shake(oc===2?13:oc===1?7:3,oc===2?.5:.3);
-  if(key==='twin0'){if(oc>0)mark(3,oc===2?2.8:2.0,x,y+.03,z,r*.95,0,0,null,col('#fff200'),u);}
+  if(key==='twin0'){if(oc>0)mark(3,oc===2?2.8:2.0,x,y+.03,z,r*.95,0,0,null,col(P.a),u);}
   else if(key==='twin1'){mark(4,oc===2?3.0:oc===1?2.2:1.1,x,y+.03,z,r*(oc===0?.6:.9),0,0,null,col('#7c3aed'),u);if(oc===2)mark(3,2.2,x,y+.03,z,r*.9,0,0,null,col('#d8b4fe'),u);}
   else{mark(2,oc===2?2.8:1.5,x,y+.03,z,r*(oc===2?1.0:.7),rnd()*TAU,oc===2?9:oc===1?5:3,col('#120a04'),col('#ff3d00'),u);}
   if(oc>0)mark(0,oc===2?2.2:1.3,x,y+.025,z,r*.5,0,0);
@@ -335,8 +335,8 @@ function create(T,host){
  function fxNova(e){
   const P=e.P,key=e.k,oc=e.oc,u=e.u,R=e.a,t=e.t,k=t/e.d,q=quiet(),A=col(P.a),B=col(P.b),C=col(P.c),X=col(P.x),fs=frame>>(q?4:1),y=e.y+.08;
   const ex=1-Math.pow(1-Math.min(1,t/.2),2.4),fade=k<.35?1:Math.max(0,1-(k-.35)/.65),rr=R*(.12+.88*ex);   // the wave reaches its full radius in 0.2 s (the hit lands at once), then lingers and fades
-  if(key==='twin0'){   // STATIC NOVA: lemon-yellow jagged rings snap outward with lightning spokes to the rim; nothing smooth
-   const Y=col('#fff200'),I=col('#e0ffff'),ns=oc===0?0:oc===1?6:10;
+  if(key==='twin0'){   // STATIC NOVA: jagged tracer-yellow rings snap outward with lightning spokes to the rim; nothing smooth
+   const Y=col(P.a),I=col('#fffbe0'),ns=oc===0?0:oc===1?6:10;   // the Twin Repeater's own tracer yellow with a white-hot edge
    disc(e.x,e.y+.05,e.z,R*(.5+.6*ex),col('#b89b00'),.36*fade);if(oc>0)disc(e.x,e.y+.06,e.z,rr*(oc===2?1.15:.95),oc===2?I:Y,(oc===2?.75:.4)*Math.max(0,1-t/.22));   // a filled flash under the rings
    ring(e.x,y,e.z,rr,.2*u*OCW[oc],Y,fade,48,.2,fs);ring(e.x,y+.02,e.z,rr,.08*u,I,fade,48,.2,fs);
    if(oc>0){ring(e.x,y+.1,e.z,rr*.72,.15*u,Y,fade*.9,40,.3,fs+50);ring(e.x,y+.2,e.z,rr*.45,.12*u,col(P.b),fade*.85,30,.36,fs+90);}

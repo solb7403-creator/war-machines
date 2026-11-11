@@ -95,7 +95,7 @@ async def run_view(p,name,report):
             box=crop_box(info,w,h,scale,6.0 if key.startswith('twin') else 5.6)
             tiles[(key,oc)]={k:v.crop(box) for k,v in shots.items()}
             print(tag,key,OC[oc],info['name'],'fired',round(fired/30,2),'peak',peak,flush=True)
-    rep['pageErrors']=errs;rep['idleAfter']=await pg.evaluate('(()=>{for(let i=0;i<150;i++)__step(1);const s=__step(1);return {calls:s.calls,programs:s.programs,tris:s.tris,fxOn:SFX.glow.visible||SFX.debris.visible,fx:s.fx};})()')
+    rep['pageErrors']=errs;rep['idleAfter']=await pg.evaluate('(()=>{for(const c of crates)c.hp=c.mhp;for(const u of units)u.hp=u.mhp;for(let i=0;i<150;i++)__step(1);const s=__step(1);return {calls:s.calls,programs:s.programs,tris:s.tris,fxOn:SFX.glow.visible||SFX.debris.visible,fx:s.fx};})()')
     await b.close()
     # sheets
     T=300

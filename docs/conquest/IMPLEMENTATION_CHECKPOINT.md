@@ -1941,6 +1941,8 @@ prop rebuilds, the town tank, see-through removal, the visual addendum, war mode
   asked to update before a live match, as with every protocol step).
 - Merge commit, Pages and Worker deploy run IDs and the health / version check: see "Release record" at the end of this checkpoint.
 
+**Owner correction (Nov 11, mid-session):** the Twin Repeater's reference is `docs/art/references/tanks/v2/weapons/5a4bea6f.png` (olive turret, two thin black barrels), not `a4207149.png` as Checkpoint 32's table says; `a4207149.png` and `13e648cb.png` are not in the game and must never be used. Static Nova's yellow had been taken from the hazard strip on `a4207149.png`: it now uses the weapon's own tracer yellow (`WEAPONS.twin.c`), its sheet rows were re-captured, and the model and its colours were not touched.
+
 ### What shipped
 **Slice 1, supers**
 - **About 3 supers a match** for every pilot (was 5.94 on average: 3.6 on a stock tank up to 9.8 with the Moonbeam kit).
@@ -1958,7 +1960,7 @@ prop rebuilds, the town tank, see-through removal, the visual addendum, war mode
   0.10): every league taps worse than an average person, none is perfect. Their super spacing rules are unchanged.
 - **Ten supers**, one per weapon item, each with its own name, colours (from the weapon's Meshy look) and shape, x three outcomes:
   Pierce Lance (teal rail, shock diamonds; jackpot sonic rings), Arc Lance (violet beam in a lightning helix; chain lightning),
-  Sunlance (gold solar beam, muzzle star; flame columns), Static Nova (lemon jagged rings and spokes), Storm Nova (violet vortex
+  Sunlance (gold solar beam, muzzle star; flame columns), Static Nova (tracer-yellow jagged rings and spokes), Storm Nova (violet vortex
   arms; sky strikes), Helix Nova (orange stacked-ring dome; fire rain + cracks), Siege Blast (fireball and black smoke; ring of
   secondary blasts), Rail Blast (implosion lens, violet sphere, crawling lightning; EMP rings), Titanfall (white-gold dome and
   column, ground cracks; fire rain), Moonfall (owner-fixed: miss thinner blue beam, normal blue beam with thin blue electricity,
