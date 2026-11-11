@@ -47,6 +47,7 @@ jobs:
           node dev/tests/conquest-living-war.mjs
           node dev/tests/conquest-frontline.mjs
           node dev/tests/conquest-adaptive.mjs
+          node dev/tests/conquest-freeze.mjs
           node dev/tests/conquest-opening.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs
@@ -143,7 +144,6 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           python dev/tests/conquest-transmission.py --engine ${{ matrix.engine }}
-          python dev/tests/conquest-occluder.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback

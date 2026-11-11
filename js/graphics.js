@@ -68,7 +68,12 @@ const GraphicsResolution=(()=>{
    setMax(m){this.max=m;this.min=Math.min(this.min,m);if(this.ratio>m){this.ratio=m;return m;}return null;},
    reset(){this.t=0;this.frames.length=0;this.slow=0;this.good=0;this.probe=null;},
    sample(ms,now){
-    if(!this.auto||!(ms>0)||ms>250){if(ms>250)this.reset();return null;}   // a hidden tab or a single hitch is not a frame rate
+    if(!this.auto||!(ms>0))return null;
+    if(ms>250){   // a hidden tab or a single hitch is not a frame rate, but three huge frames in a row on a visible page are an
+     // overloaded GPU: drop straight to the floor (before this, a phone under 4 fps never stepped down and Conquest looked frozen)
+     this.reset();if(typeof document!=='undefined'&&document.hidden){this.huge=0;return null;}
+     this.huge=(this.huge||0)+1;if(this.huge>=3&&this.ratio>this.min){this.huge=0;this.ratio=this.min;this.capped=now+60;return this.ratio;}return null;}
+    this.huge=0;
     this.frames.push(ms);this.t+=ms/1000;if(this.t<WINDOW||this.frames.length<12)return null;
     const a=this.frames.slice().sort((x,y)=>x-y),med=a[a.length>>1];this.frames.length=0;this.t=0;
     this.slow=med>BUDGET?this.slow+1:0;this.good=med<=GOOD?this.good+1:0;
@@ -85,5 +90,5 @@ const GraphicsResolution=(()=>{
    }};
   return g;
  }
- return {cap,antialias,software,governor,PHONE_MAX,BUDGET,GOOD,get dpr(){return dpr();}};
+ return {cap,antialias,software,governor,coarse,PHONE_MAX,CONQUEST_PHONE_MAX:1.5,BUDGET,GOOD,get dpr(){return dpr();}};
 })();

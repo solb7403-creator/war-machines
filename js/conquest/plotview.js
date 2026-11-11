@@ -377,7 +377,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const R=X.R;if(!R){if(X.drill)drillStep(dt);draw2d();return;}const {view}=X.ctx,T=R.T,c=X.cam,host=view.host;
  // Draw only inside the visible stage with its own aspect, so cellAt() (stage rect) matches the picture exactly.
  const hr=host.getBoundingClientRect(),sr=X.stage.getBoundingClientRect(),w=Math.max(1,sr.width||390),h=Math.max(1,sr.height||400);if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
- if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}placeCam(dt);driveFade(R,dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
+ if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}placeCam(dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
  for(const o of R.meshes.values()){const hd=o.o.userData.head;if(hd)hd.rotation.y=hd.userData.aim??(X.clock*(o.o.userData.radar?1:.4))%(Math.PI*2);}
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);if(it.kick)it.kick=Math.max(0,it.kick-dt*5);
