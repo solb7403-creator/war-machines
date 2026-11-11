@@ -1,0 +1,35 @@
+<!doctype html><meta charset="utf-8"><title>Meshy gate</title>
+<style>html,body{margin:0;background:#20242b}canvas{display:block}</style><body>
+<script src="/js/vendor/three.lunar.min.js"></script>
+<script src="/js/vendor/meshopt_decoder.js"></script>
+<script src="/js/meshy3d.js"></script>
+<script>
+'use strict';
+// Gate 1 comparison page: the original high-poly (gray) against LIGHT / FULL (gray + baked maps), same camera, same light.
+const models={};let renderer,scene,cam,holder;
+function init(){
+ renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x20242b);
+ const key=new THREE.DirectionalLight(0xffffff,2.6);key.position.set(3,6,4);scene.add(key);
+ const rim=new THREE.DirectionalLight(0x9fc0ff,.7);rim.position.set(-4,3,-5);scene.add(rim);
+ scene.add(new THREE.HemisphereLight(0xdfe8f5,0x2a2520,1.1));
+ cam=new THREE.OrthographicCamera(-1,1,1,-1,.1,100);holder=new THREE.Group();scene.add(holder);
+}
+async function load(name,url,matrix,useMaps){
+ const buf=await (await fetch(url)).arrayBuffer(),a=await Meshy3D.decode(buf);
+ if(matrix){a.geometry.applyMatrix4(new THREE.Matrix4().fromArray(matrix));if(new THREE.Matrix4().fromArray(matrix).determinant()<0){const ix=a.geometry.index.array;for(let i=0;i<ix.length;i+=3){const t=ix[i+1];ix[i+1]=ix[i+2];ix[i+2]=t;}}a.geometry.computeVertexNormals();}
+ const mk=(n,ao)=>new THREE.MeshStandardMaterial({color:0x9aa1a9,roughness:.55,metalness:0,normalMap:n&&a.maps.normal||null,normalScale:new THREE.Vector2(1,-1),aoMap:ao&&a.maps.orm||null,aoMapIntensity:1});
+ models[name]={a,mats:{flat:mk(false,false),normal:mk(useMaps,false),full:mk(useMaps,useMaps)},mesh:null};
+ return {tris:a.triangles,bytes:a.bytes,verts:a.geometry.attributes.position.count};
+}
+// one frame -> PNG data URL. pxPerUnit = on-screen scale; yaw of the model; el = camera elevation (deg)
+function shot(name,mode,w,h,pxPerUnit,yaw,el,center){
+ const m=models[name];while(holder.children.length)holder.remove(holder.children[0]);
+ const mesh=new THREE.Mesh(m.a.geometry,m.mats[mode]);holder.add(mesh);holder.rotation.y=yaw*Math.PI/180;
+ renderer.setSize(w,h,false);renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';
+ const hw=w/2/pxPerUnit,hh=h/2/pxPerUnit;cam.left=-hw;cam.right=hw;cam.top=hh;cam.bottom=-hh;cam.updateProjectionMatrix();
+ const e=el*Math.PI/180,c=center||[0,.45,0];cam.position.set(c[0],c[1]+Math.sin(e)*20,c[2]+Math.cos(e)*20);cam.lookAt(c[0],c[1],c[2]);
+ renderer.render(scene,cam);return renderer.domElement.toDataURL('image/png');
+}
+addEventListener("DOMContentLoaded",()=>{init();window.ready=true;});
+</script>

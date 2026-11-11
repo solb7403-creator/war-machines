@@ -1,0 +1,35 @@
+<!doctype html><meta charset="utf-8"><title>Meshy viewer</title>
+<style>html,body{margin:0;background:#14171c}canvas{display:block}</style><body>
+<script src="/js/vendor/three.lunar.min.js"></script>
+<script src="/js/vendor/meshopt_decoder.js"></script>
+<script src="/js/rules.js"></script>
+<script src="/js/models3d.js"></script>
+<script src="/js/graphics.js"></script>
+<script src="/js/meshy3d.js"></script>
+<script>
+'use strict';
+// Studio viewer for pipeline outputs: the game's materials and motion shader, a neutral stage, scripted shots.
+let renderer,scene,cam,holder,items={};
+function init(){
+ renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;document.body.appendChild(renderer.domElement);
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x1c2027);
+ scene.add(new THREE.HemisphereLight(0xd2ddff,0x3a3344,.62));
+ const k=new THREE.DirectionalLight(0xfff1dc,2.8);k.position.set(-6,14,-5);scene.add(k);const f=new THREE.DirectionalLight(0x7fa6ff,.65);f.position.set(5,4,9);scene.add(f);const r=new THREE.DirectionalLight(0xffffff,1.8);r.position.set(4,6,-8);scene.add(r);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x2a2e35,roughness:.95,metalness:0}));ground.rotation.x=-Math.PI/2;ground.position.y=-.002;scene.add(ground);
+ cam=new THREE.PerspectiveCamera(26,1,.05,200);holder=new THREE.Group();scene.add(holder);
+}
+async function load(id,q){Meshy3D.base='/__built/';const key=id+'|'+q;if(items[key])return items[key];Meshy3D.request(id,q);for(let i=0;i<600;i++){const a=Meshy3D.peek(id,q);if(a){a.refs=1e6;items[key]=a;return {tris:a.triangles,bytes:a.bytes,info:a.info};}const e=Meshy3D.store.get(key);if(e&&e.state==='error')throw Error(e.error);await new Promise(r=>setTimeout(r,50));}throw Error('timeout');}
+// spec: {parts:[{id,q,paint,lunar,pos,yaw,low}], w,h, cam:{yaw,pitch,dist,target,fov}, ch:{name:value}, bg}
+function shot(spec){
+ while(holder.children.length){const c=holder.children[0];holder.remove(c);Meshy3D.release(c);}
+ for(const p of spec.parts){const asset=Meshy3D.peek(p.id,p.q||'light'),g=Meshy3D.mesh({asset,paint:p.paint?PAINTS[p.paint]:null,lunar:!!p.lunar,low:!!p.low});
+  if(p.pos)g.position.set(...p.pos);g.rotation.y=(p.yaw||0)*Math.PI/180;holder.add(g);
+  const U=g.children[0].userData.meshy.U;for(const [n,v] of Object.entries(Object.assign({},spec.ch||{},p.ch||{})))U.uCh.value[Meshy3D.CH[n]]=v;}
+ const w=spec.w||960,h=spec.h||640,c=spec.cam||{};renderer.setSize(w,h,false);renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';
+ if(spec.bg!==undefined)scene.background=new THREE.Color(spec.bg);
+ cam.fov=c.fov||26;cam.aspect=w/h;cam.updateProjectionMatrix();const t=c.target||[0,.4,0],yaw=(c.yaw===undefined?35:c.yaw)*Math.PI/180,pt=(c.pitch===undefined?24:c.pitch)*Math.PI/180,d=c.dist||7.5;
+ cam.position.set(t[0]+Math.cos(pt)*Math.cos(yaw)*d,t[1]+Math.sin(pt)*d,t[2]+Math.cos(pt)*Math.sin(yaw)*d);cam.lookAt(t[0],t[1],t[2]);
+ renderer.render(scene,cam);return renderer.domElement.toDataURL('image/png');
+}
+addEventListener('DOMContentLoaded',()=>{init();window.ready=true;});
+</script>

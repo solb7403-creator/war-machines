@@ -27,6 +27,8 @@ jobs:
           node --check js/models3d.js
           node --check js/equipment3d.js
           node --check js/graphics.js
+          node --check js/meshy3d.js
+          node --check js/vendor/meshopt_decoder.js
           node --check js/environment3d.js
           node --check js/render3d.js
           node --check js/render.js
@@ -50,6 +52,7 @@ jobs:
           node dev/tests/map-layout.mjs
           node dev/tests/graphics-motion.mjs
           node dev/tests/graphics-release.mjs
+          node dev/tests/meshy.mjs
           node dev/tests/wtest/web-auth.mjs
           node dev/tests/wtest/lunar-identity.mjs
           node dev/tests/wtest/accounts.mjs

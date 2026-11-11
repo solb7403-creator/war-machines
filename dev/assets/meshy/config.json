@@ -1,0 +1,7722 @@
+{
+ "version": "meshy-v1",
+ "output": "../../../js/assets/meshy-v1",
+ "bake": {
+  "aoRays": 48,
+  "aoDistance": 0.12,
+  "aoSmooth": 2,
+  "curvatureSmooth": 3
+ },
+ "quality": {
+  "light": {
+   "maxError": 0.03,
+   "creaseAngle": 38,
+   "padding": 2,
+   "cage": 0.012,
+   "supersample": 2,
+   "webpQuality": {
+    "normal": 90,
+    "orm": 85,
+    "base": 88,
+    "mask": 90
+   },
+   "hiddenTexelScale": 0.3,
+   "lowRatio": 0.45,
+   "lowError": 0.05
+  },
+  "full": {
+   "maxError": 0.01,
+   "creaseAngle": 38,
+   "padding": 2,
+   "cage": 0.008,
+   "supersample": 2,
+   "webpQuality": {
+    "normal": 88,
+    "orm": 82,
+    "base": 86,
+    "mask": 84
+   },
+   "hiddenTexelScale": 0.2
+  }
+ },
+ "kinds": {
+  "chassis": {
+   "tris": {
+    "light": 18000,
+    "full": 120000
+   },
+   "texture": {
+    "light": 512,
+    "full": 2048
+   }
+  },
+  "weapon": {
+   "tris": {
+    "light": 7000,
+    "full": 45000
+   },
+   "texture": {
+    "light": 512,
+    "full": 1024
+   }
+  },
+  "town": {
+   "tris": {
+    "light": 6000,
+    "full": 40000
+   },
+   "texture": {
+    "light": 512,
+    "full": 1024
+   }
+  },
+  "moon": {
+   "tris": {
+    "light": 7000,
+    "full": 45000
+   },
+   "texture": {
+    "light": 512,
+    "full": 2048
+   }
+  }
+ },
+ "items": [
+  {
+   "id": "chassis-vanguard-0",
+   "src": "VANGUARD tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "vanguard",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.61
+   },
+   "tracks": "auto",
+   "look": "common"
+  },
+  {
+   "id": "weapon-pulse-0",
+   "src": "PULSE CANNON",
+   "kind": "weapon",
+   "game": {
+    "arch": "pulse",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.88
+   },
+   "look": "weapon-common",
+   "turret": {
+    "ringTop": 0.107,
+    "barrels": [
+     {
+      "x": 0.77,
+      "y": 0.38,
+      "z": 0.0,
+      "r": 0.16,
+      "recoil": 0.11
+     }
+    ]
+   },
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -0.345,
+        0.27,
+        0.425
+       ],
+       [
+        0.08,
+        0.48,
+        0.53
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.69,
+        0.318,
+        -0.057
+       ],
+       [
+        1.89,
+        0.442,
+        0.05
+       ]
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.705,
+        0.325,
+        -0.094
+       ],
+       [
+        1.835,
+        0.435,
+        0.094
+       ]
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.155,
+        0.706,
+        -0.233
+       ],
+       [
+        0.19,
+        0.736,
+        -0.168
+       ]
+      ]
+     },
+     "region": "lamp"
+    }
+   ]
+  },
+  {
+   "id": "weapon-pulse-1",
+   "src": "ARC PULSE",
+   "kind": "weapon",
+   "game": {
+    "arch": "pulse",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.94
+   },
+   "look": "weapon-rare",
+   "turret": {
+    "ringTop": 0.103
+   },
+   "tips": [
+    [
+     1.94,
+     0.342,
+     0.0
+    ]
+   ],
+   "meta": {
+    "barrels": 1
+   },
+   "parts": [
+    {
+     "name": "barrel0",
+     "select": {
+      "cyl": {
+       "p0": [
+        0.77,
+        0.342,
+        0.0
+       ],
+       "p1": [
+        1.96,
+        0.342,
+        0.0
+       ],
+       "r": 0.2
+      }
+     },
+     "pivot": [
+      0.77,
+      0.342,
+      0.0
+     ],
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "slide": {
+      "ch": "recoil0",
+      "k": -0.08
+     },
+     "glow": {
+      "ch": "charge",
+      "base": 0.45,
+      "k": 1.4
+     },
+     "minTris": {
+      "light": 2400,
+      "full": 14000
+     }
+    },
+    {
+     "name": "pods",
+     "glow": {
+      "ch": "charge",
+      "base": 0.45,
+      "k": 1.4
+     },
+     "region": "trim",
+     "select": {
+      "box": [
+       [
+        -0.48,
+        0.25,
+        0.402
+       ],
+       [
+        0.09,
+        0.45,
+        0.52
+       ]
+      ],
+      "mirrorZ": true
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0.84,
+        0.342,
+        0.0
+       ],
+       "p1": [
+        1.5,
+        0.342,
+        0.0
+       ],
+       "r": 0.2,
+       "r0": 0.093
+      }
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.832,
+        0.342,
+        0.0
+       ],
+       "p1": [
+        1.96,
+        0.342,
+        0.0
+       ],
+       "r": 0.068
+      }
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.917,
+        0.342,
+        0.0
+       ],
+       "p1": [
+        1.96,
+        0.342,
+        0.0
+       ],
+       "r": 0.2
+      }
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.345,
+        0.25,
+        0.402
+       ],
+       [
+        -0.045,
+        0.45,
+        0.52
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "onlyParts": [
+      "pods"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "weapon-pulse-2",
+   "src": "NOVA PULSE",
+   "kind": "weapon",
+   "game": {
+    "arch": "pulse",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.02
+   },
+   "look": "weapon-epic",
+   "turret": {
+    "ringTop": 0.096,
+    "barrels": [
+     {
+      "x": 0.94,
+      "y": 0.528,
+      "z": 0.0,
+      "r": 0.3,
+      "recoil": 0.1
+     }
+    ]
+   },
+   "parts": [
+    {
+     "name": "core",
+     "glow": {
+      "ch": "charge",
+      "base": 0.45,
+      "k": 1.4
+     },
+     "minTris": {
+      "light": 1100,
+      "full": 6000
+     },
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.112,
+        0.515,
+        0.5
+       ],
+       "p1": [
+        -0.112,
+        0.515,
+        0.7
+       ],
+       "r": 0.36
+      },
+      "mirrorZ": true
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.112,
+        0.515,
+        0.538
+       ],
+       "p1": [
+        -0.112,
+        0.515,
+        0.7
+       ],
+       "r": 0.345,
+       "r0": 0.187
+      },
+      "mirrorZ": true
+     },
+     "region": "gold",
+     "onlyParts": [
+      "core"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.112,
+        0.515,
+        0.5
+       ],
+       "p1": [
+        -0.112,
+        0.515,
+        0.7
+       ],
+       "r": 0.187
+      },
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "onlyParts": [
+      "core"
+     ]
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.172,
+      "r1": 0.32,
+      "t": [
+       0.6,
+       1.2
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.32,
+      "t": [
+       0.875,
+       1.2
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.175,
+      "r1": 0.32,
+      "t": [
+       0.21,
+       0.345
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.14,
+      "t": [
+       0.87,
+       0.96
+      ]
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "weapon-twin-0",
+   "src": "TWIN REPEATER",
+   "kind": "weapon",
+   "game": {
+    "arch": "twin",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.74
+   },
+   "look": "weapon-common",
+   "turret": {
+    "ringTop": 0.108,
+    "barrels": [
+     {
+      "x": 0.555,
+      "y": 0.287,
+      "z": -0.0905,
+      "r": 0.057,
+      "recoil": 0.05
+     },
+     {
+      "x": 0.555,
+      "y": 0.287,
+      "z": 0.0945,
+      "r": 0.057,
+      "recoil": 0.05
+     }
+    ]
+   },
+   "lookOverride": {
+    "hazardFreq": 180
+   },
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -0.2,
+        0.185,
+        0.35
+       ],
+       [
+        0.09,
+        0.4,
+        0.5
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.2,
+        0.343,
+        0.35
+       ],
+       [
+        0.09,
+        0.4,
+        0.5
+       ]
+      ]
+     },
+     "region": "hazard",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.15,
+        0.458,
+        -0.192
+       ],
+       [
+        0.165,
+        0.492,
+        -0.131
+       ]
+      ]
+     },
+     "region": "lamp"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.1,
+        0.25,
+        -0.06
+       ],
+       [
+        1.21,
+        0.33,
+        0.06
+       ]
+      ]
+     },
+     "region": "steel",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.595,
+        0.287,
+        -0.0905
+       ],
+       "p1": [
+        1.76,
+        0.287,
+        -0.0905
+       ],
+       "r": 0.046
+      }
+     },
+     "region": "dark"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.595,
+        0.287,
+        0.0945
+       ],
+       "p1": [
+        1.76,
+        0.287,
+        0.0945
+       ],
+       "r": 0.046
+      }
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "weapon-twin-1",
+   "src": "STORM REPEATER",
+   "kind": "weapon",
+   "game": {
+    "arch": "twin",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.88
+   },
+   "look": "weapon-rare",
+   "turret": {
+    "ringTop": 0.165
+   },
+   "tips": [
+    [
+     1.875,
+     0.4425,
+     -0.1025
+    ],
+    [
+     1.875,
+     0.4425,
+     0.1025
+    ]
+   ],
+   "meta": {
+    "barrels": 2
+   },
+   "parts": [
+    {
+     "name": "barrel0",
+     "select": {
+      "box": [
+       [
+        0.668,
+        0.3,
+        -0.25
+       ],
+       [
+        1.9,
+        0.6,
+        0.25
+       ]
+      ]
+     },
+     "pivot": [
+      0.668,
+      0.446,
+      0.0
+     ],
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "slide": {
+      "ch": "fire",
+      "k": -0.05
+     },
+     "glow": {
+      "ch": "charge",
+      "base": 0.45,
+      "k": 1.4
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.12,
+        0.438,
+        0.375
+       ],
+       "p1": [
+        -0.12,
+        0.438,
+        0.56
+       ],
+       "r": 0.205
+      },
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.12,
+        0.438,
+        0.5
+       ],
+       "p1": [
+        -0.12,
+        0.438,
+        0.56
+       ],
+       "r": 0.05
+      },
+      "mirrorZ": true
+     },
+     "region": "trim",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.67,
+        0.434,
+        -0.072
+       ],
+       [
+        1.645,
+        0.458,
+        -0.044
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.67,
+        0.434,
+        -0.168
+       ],
+       [
+        1.645,
+        0.458,
+        -0.14
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.85,
+        0.4425,
+        -0.1025
+       ],
+       "p1": [
+        1.9,
+        0.4425,
+        -0.1025
+       ],
+       "r": 0.036
+      }
+     },
+     "region": "dark",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.67,
+        0.434,
+        0.14
+       ],
+       [
+        1.645,
+        0.458,
+        0.168
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.67,
+        0.434,
+        0.044
+       ],
+       [
+        1.645,
+        0.458,
+        0.072
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.85,
+        0.4425,
+        0.1025
+       ],
+       "p1": [
+        1.9,
+        0.4425,
+        0.1025
+       ],
+       "r": 0.036
+      }
+     },
+     "region": "dark",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.785,
+        0.3,
+        -0.25
+       ],
+       [
+        0.87,
+        0.6,
+        0.25
+       ]
+      ]
+     },
+     "region": "armor",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.035,
+        0.3,
+        -0.25
+       ],
+       [
+        1.125,
+        0.6,
+        0.25
+       ]
+      ]
+     },
+     "region": "armor",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.29,
+        0.3,
+        -0.25
+       ],
+       [
+        1.375,
+        0.6,
+        0.25
+       ]
+      ]
+     },
+     "region": "armor",
+     "onlyParts": [
+      "barrel0"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "weapon-twin-2",
+   "src": "HELIX REPEATER",
+   "kind": "weapon",
+   "game": {
+    "arch": "twin",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.98
+   },
+   "look": "weapon-epic",
+   "turret": {
+    "ringTop": 0.09,
+    "barrels": [
+     {
+      "x": 0.8,
+      "y": 0.38,
+      "z": -0.22,
+      "r": 0.195,
+      "recoil": 0.05,
+      "spin": 1.0
+     },
+     {
+      "x": 0.8,
+      "y": 0.38,
+      "z": 0.22,
+      "r": 0.195,
+      "recoil": 0.05,
+      "spin": -1.0
+     }
+    ]
+   },
+   "regions": [
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.128,
+      "r1": 0.2,
+      "t": [
+       0.19,
+       1.07
+      ]
+     },
+     "region": "glow",
+     "color": "#ff9d2e"
+    },
+    {
+     "partShell": {
+      "part": "barrel1",
+      "r0": 0.128,
+      "r1": 0.2,
+      "t": [
+       0.19,
+       1.07
+      ]
+     },
+     "region": "glow",
+     "color": "#ff9d2e"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.058,
+      "r1": 0.21,
+      "t": [
+       1.085,
+       1.25
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.072,
+      "t": [
+       1.085,
+       1.166
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.083,
+      "r1": 0.108,
+      "t": [
+       1.14,
+       1.166
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "partShell": {
+      "part": "barrel1",
+      "r0": 0.058,
+      "r1": 0.21,
+      "t": [
+       1.085,
+       1.25
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel1",
+      "r0": 0.0,
+      "r1": 0.072,
+      "t": [
+       1.085,
+       1.166
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "partShell": {
+      "part": "barrel1",
+      "r0": 0.083,
+      "r1": 0.108,
+      "t": [
+       1.14,
+       1.166
+      ]
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "weapon-siege-0",
+   "src": "SIEGE BREAKER",
+   "kind": "weapon",
+   "game": {
+    "arch": "siege",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.88
+   },
+   "look": "weapon-common",
+   "turret": {
+    "ringTop": 0.244,
+    "barrels": [
+     {
+      "x": 0.875,
+      "y": 0.645,
+      "z": 0.0,
+      "r": 0.3,
+      "recoil": 0.15
+     }
+    ]
+   },
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -0.81,
+        0.3,
+        0.562
+       ],
+       [
+        0.69,
+        0.91,
+        0.66
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.47,
+        0.515,
+        -0.19
+       ],
+       [
+        1.815,
+        0.78,
+        0.19
+       ]
+      ]
+     },
+     "region": "dark",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.84,
+        0.482,
+        -0.17
+       ],
+       [
+        1.9,
+        0.812,
+        0.17
+       ]
+      ]
+     },
+     "region": "dark",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.2,
+        1.085,
+        -0.325
+       ],
+       [
+        0.235,
+        1.132,
+        -0.245
+       ]
+      ]
+     },
+     "region": "lamp"
+    }
+   ]
+  },
+  {
+   "id": "weapon-siege-1",
+   "src": "RAIL BREAKER",
+   "kind": "weapon",
+   "game": {
+    "arch": "siege",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.0
+   },
+   "look": "weapon-rare",
+   "turret": {
+    "ringTop": 0.075
+   },
+   "tips": [
+    [
+     2.0,
+     0.341,
+     -0.002
+    ]
+   ],
+   "meta": {
+    "barrels": 1
+   },
+   "parts": [
+    {
+     "name": "barrel0",
+     "select": {
+      "box": [
+       [
+        0.64,
+        0.1,
+        -0.2
+       ],
+       [
+        2.1,
+        0.56,
+        0.2
+       ]
+      ]
+     },
+     "pivot": [
+      0.64,
+      0.3345,
+      -0.0095
+     ],
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "slide": {
+      "ch": "recoil0",
+      "k": -0.12
+     },
+     "glow": {
+      "ch": "charge",
+      "base": 0.45,
+      "k": 1.4
+     }
+    },
+    {
+     "name": "caps",
+     "select": {
+      "or": [
+       {
+        "and": [
+         {
+          "or": [
+           {
+            "cyl": {
+             "p0": [
+              -0.297,
+              0.17,
+              0.348
+             ],
+             "p1": [
+              -0.297,
+              0.425,
+              0.348
+             ],
+             "r": 0.06
+            }
+           },
+           {
+            "cyl": {
+             "p0": [
+              -0.18,
+              0.17,
+              0.348
+             ],
+             "p1": [
+              -0.18,
+              0.425,
+              0.348
+             ],
+             "r": 0.06
+            }
+           },
+           {
+            "cyl": {
+             "p0": [
+              -0.066,
+              0.17,
+              0.348
+             ],
+             "p1": [
+              -0.066,
+              0.425,
+              0.348
+             ],
+             "r": 0.06
+            }
+           }
+          ]
+         },
+         {
+          "box": [
+           [
+            -0.4,
+            0.15,
+            0.338
+           ],
+           [
+            0.05,
+            0.45,
+            0.43
+           ]
+          ]
+         }
+        ]
+       },
+       {
+        "and": [
+         {
+          "or": [
+           {
+            "cyl": {
+             "p0": [
+              -0.297,
+              0.17,
+              -0.348
+             ],
+             "p1": [
+              -0.297,
+              0.425,
+              -0.348
+             ],
+             "r": 0.06
+            }
+           },
+           {
+            "cyl": {
+             "p0": [
+              -0.18,
+              0.17,
+              -0.348
+             ],
+             "p1": [
+              -0.18,
+              0.425,
+              -0.348
+             ],
+             "r": 0.06
+            }
+           },
+           {
+            "cyl": {
+             "p0": [
+              -0.066,
+              0.17,
+              -0.348
+             ],
+             "p1": [
+              -0.066,
+              0.425,
+              -0.348
+             ],
+             "r": 0.06
+            }
+           }
+          ]
+         },
+         {
+          "box": [
+           [
+            -0.4,
+            0.15,
+            -0.338
+           ],
+           [
+            0.05,
+            0.45,
+            -0.43
+           ]
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "region": "trim",
+     "glow": {
+      "ch": "charge",
+      "base": 0.45,
+      "k": 1.4
+     },
+     "minTris": {
+      "light": 600,
+      "full": 3000
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -0.4,
+        0.237,
+        0.338
+       ],
+       [
+        0.05,
+        0.372,
+        0.43
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "onlyParts": [
+      "caps"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.69,
+        0.1,
+        -0.2
+       ],
+       [
+        0.81,
+        0.56,
+        0.2
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.02,
+        0.1,
+        -0.2
+       ],
+       [
+        1.16,
+        0.56,
+        0.2
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.38,
+        0.1,
+        -0.2
+       ],
+       [
+        1.5,
+        0.56,
+        0.2
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.815,
+        0.295,
+        -0.055
+       ],
+       [
+        1.025,
+        0.385,
+        0.05
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.165,
+        0.295,
+        -0.055
+       ],
+       [
+        1.385,
+        0.385,
+        0.05
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.505,
+        0.295,
+        -0.055
+       ],
+       [
+        2.1,
+        0.385,
+        0.05
+       ]
+      ]
+     },
+     "region": "glow",
+     "onlyParts": [
+      "barrel0"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "weapon-siege-2",
+   "src": "TITANFALL",
+   "kind": "weapon",
+   "game": {
+    "arch": "siege",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.12
+   },
+   "look": "weapon-epic",
+   "turret": {
+    "ringTop": 0.06,
+    "barrels": [
+     {
+      "x": 0.858,
+      "y": 0.4825,
+      "z": 0.0,
+      "r": 0.36,
+      "recoil": 0.15
+     }
+    ]
+   },
+   "regions": [
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.183,
+      "r1": 0.37,
+      "t": [
+       0.86,
+       1.3
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.37,
+      "t": [
+       0.99,
+       1.3
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.183,
+      "t": [
+       0.9,
+       0.99
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.16,
+      "t": [
+       0.99,
+       1.3
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.19,
+      "r1": 0.23,
+      "t": [
+       0.268,
+       0.35
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.19,
+      "r1": 0.23,
+      "t": [
+       0.59,
+       0.68
+      ]
+     },
+     "region": "gold"
+    }
+   ]
+  },
+  {
+   "id": "chassis-scout-0",
+   "src": "SCOUT tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "scout",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 1.84
+   },
+   "look": "common",
+   "tracks": {
+    "units": [
+     {
+      "x": [
+       -0.65,
+       0.939
+      ],
+      "z": [
+       -0.485,
+       -0.315
+      ],
+      "wheels": [
+       [
+        -0.532,
+        0.128,
+        0.078
+       ],
+       [
+        -0.192,
+        0.128,
+        0.078
+       ],
+       [
+        0.15,
+        0.128,
+        0.078
+       ],
+       [
+        0.486,
+        0.127,
+        0.078
+       ],
+       [
+        0.82,
+        0.125,
+        0.078
+       ]
+      ]
+     },
+     {
+      "x": [
+       -0.65,
+       0.937
+      ],
+      "z": [
+       0.318,
+       0.484
+      ],
+      "wheels": [
+       [
+        -0.532,
+        0.128,
+        0.078
+       ],
+       [
+        -0.192,
+        0.128,
+        0.078
+       ],
+       [
+        0.15,
+        0.128,
+        0.078
+       ],
+       [
+        0.486,
+        0.127,
+        0.078
+       ],
+       [
+        0.82,
+        0.125,
+        0.078
+       ]
+      ]
+     }
+    ]
+   },
+   "parts": [
+    {
+     "name": "antenna",
+     "select": {
+      "box": [
+       [
+        -0.52,
+        0.425,
+        0.18
+       ],
+       [
+        -0.465,
+        0.65,
+        0.23
+       ]
+      ]
+     },
+     "pivot": [
+      -0.493,
+      0.42,
+      0.205
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": {
+      "ch": "sway",
+      "k": 0.06
+     },
+     "region": "trim",
+     "decor": true
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        0.925,
+        0.15,
+        -0.26
+       ],
+       [
+        1.045,
+        0.235,
+        -0.1
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.035,
+        0.15,
+        -0.38
+       ],
+       [
+        1.13,
+        0.255,
+        0.38
+       ]
+      ]
+     },
+     "region": "hazard"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.005,
+        0.25,
+        -0.22
+       ],
+       [
+        1.065,
+        0.33,
+        -0.14
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.05,
+        0.262,
+        -0.205
+       ],
+       [
+        1.065,
+        0.316,
+        -0.155
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "lamp"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.16,
+        0.285,
+        0.4
+       ],
+       [
+        0.35,
+        0.365,
+        0.5
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark"
+    }
+   ],
+   "halos": [
+    [
+     1.06,
+     0.289,
+     -0.18,
+     "#ffe9b8",
+     0.1
+    ],
+    [
+     1.06,
+     0.289,
+     0.18,
+     "#ffe9b8",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "chassis-scout-1",
+   "src": "STRIDER tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "scout",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.04
+   },
+   "tracks": {
+    "units": [
+     {
+      "x": [
+       -0.771,
+       1.026
+      ],
+      "z": [
+       -0.514,
+       -0.336
+      ],
+      "wheels": [
+       [
+        -0.666,
+        0.125,
+        0.078
+       ],
+       [
+        -0.337,
+        0.132,
+        0.078
+       ],
+       [
+        -0.027,
+        0.136,
+        0.078
+       ],
+       [
+        0.29,
+        0.128,
+        0.078
+       ],
+       [
+        0.607,
+        0.126,
+        0.078
+       ],
+       [
+        0.93,
+        0.135,
+        0.078
+       ]
+      ]
+     },
+     {
+      "x": [
+       -0.771,
+       1.026
+      ],
+      "z": [
+       0.335,
+       0.515
+      ],
+      "wheels": [
+       [
+        -0.666,
+        0.125,
+        0.078
+       ],
+       [
+        -0.337,
+        0.132,
+        0.078
+       ],
+       [
+        -0.027,
+        0.136,
+        0.078
+       ],
+       [
+        0.29,
+        0.128,
+        0.078
+       ],
+       [
+        0.607,
+        0.126,
+        0.078
+       ],
+       [
+        0.93,
+        0.135,
+        0.078
+       ]
+      ]
+     }
+    ],
+    "zPad": 0.005,
+    "tIn": 0.05,
+    "periodicity": 0.02,
+    "pitchMin": 0.05,
+    "pitchMax": 0.066
+   },
+   "look": "rare",
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -0.86,
+        0.165,
+        0.345
+       ],
+       [
+        1.2,
+        0.32,
+        0.56
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.63,
+        0.198,
+        0.5
+       ],
+       [
+        0.94,
+        0.22,
+        0.56
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#b78bff",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "sphere": {
+       "c": [
+        0.832,
+        0.345,
+        0.247
+       ],
+       "r": 0.047
+      },
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.73,
+        0.432,
+        0.135
+       ],
+       [
+        -0.525,
+        0.54,
+        0.27
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "chassis-scout-2",
+   "src": "PHANTOM tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "scout",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 1.98
+   },
+   "tracks": {
+    "tOut": 0.059,
+    "core": 0.4,
+    "pitchMin": 0.04,
+    "pitchMax": 0.06,
+    "periodicity": 0.02,
+    "units": [
+     {
+      "x": [
+       -0.803,
+       0.791
+      ],
+      "z": [
+       -0.476,
+       -0.303
+      ],
+      "wheels": [
+       [
+        -0.687,
+        0.116,
+        0.06
+       ],
+       [
+        -0.417,
+        0.116,
+        0.06
+       ],
+       [
+        -0.137,
+        0.116,
+        0.06
+       ],
+       [
+        0.127,
+        0.116,
+        0.06
+       ],
+       [
+        0.411,
+        0.116,
+        0.06
+       ],
+       [
+        0.693,
+        0.116,
+        0.06
+       ]
+      ]
+     },
+     {
+      "x": [
+       -0.803,
+       0.791
+      ],
+      "z": [
+       0.302,
+       0.476
+      ],
+      "wheels": [
+       [
+        -0.687,
+        0.116,
+        0.06
+       ],
+       [
+        -0.417,
+        0.116,
+        0.06
+       ],
+       [
+        -0.137,
+        0.116,
+        0.06
+       ],
+       [
+        0.127,
+        0.116,
+        0.06
+       ],
+       [
+        0.411,
+        0.116,
+        0.06
+       ],
+       [
+        0.693,
+        0.116,
+        0.06
+       ]
+      ]
+     }
+    ]
+   },
+   "look": "epic",
+   "parts": [
+    {
+     "name": "thrusters",
+     "select": {
+      "cyl": {
+       "p0": [
+        -1.0,
+        0.243,
+        0.165
+       ],
+       "p1": [
+        -0.853,
+        0.243,
+        0.165
+       ],
+       "r": 0.092
+      },
+      "mirrorZ": true
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.3,
+      "k": 1.0
+     },
+     "region": "gold"
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -0.75,
+        0.2,
+        0.476
+       ],
+       [
+        0.8,
+        0.245,
+        0.51
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.945,
+        0.12,
+        -0.34
+       ],
+       [
+        1.0,
+        0.22,
+        0.34
+       ]
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "box": [
+         [
+          -0.3,
+          0.24,
+          0.24
+         ],
+         [
+          0.215,
+          0.345,
+          0.46
+         ]
+        ],
+        "mirrorZ": true
+       },
+       {
+        "plane": {
+         "n": [
+          0.1331,
+          0.9911,
+          0
+         ],
+         "d": 0.2718
+        }
+       },
+       {
+        "plane": {
+         "n": [
+          -0.1331,
+          -0.9911,
+          0
+         ],
+         "d": -0.2948
+        }
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#ffb347"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -1.0,
+        0.243,
+        0.165
+       ],
+       "p1": [
+        -0.853,
+        0.243,
+        0.165
+       ],
+       "r": 0.057
+      },
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#ffb347"
+    }
+   ]
+  },
+  {
+   "id": "chassis-vanguard-1",
+   "src": "SENTINEL tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "vanguard",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.56
+   },
+   "tracks": "auto",
+   "look": "rare",
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -1.1,
+        0.24,
+        0.435
+       ],
+       [
+        1.47,
+        0.485,
+        0.77
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.34,
+        0.53,
+        -0.155
+       ],
+       [
+        1.127,
+        0.635,
+        -0.115
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.34,
+        0.53,
+        0.101
+       ],
+       [
+        1.127,
+        0.635,
+        0.141
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.095,
+        0.53,
+        -0.155
+       ],
+       [
+        1.127,
+        0.61,
+        0.141
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.62,
+        0.6,
+        -0.155
+       ],
+       [
+        -0.33,
+        0.635,
+        -0.115
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.62,
+        0.6,
+        0.101
+       ],
+       [
+        -0.33,
+        0.635,
+        0.141
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "sphere": {
+       "c": [
+        1.081,
+        0.555,
+        0.319
+       ],
+       "r": 0.062
+      },
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#b78bff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.92,
+        0.628,
+        -0.35
+       ],
+       [
+        -0.6,
+        0.76,
+        0.35
+       ]
+      ]
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "chassis-vanguard-2",
+   "src": "PALADIN tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "vanguard",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.7
+   },
+   "tracks": {
+    "tIn": 0.0,
+    "periodicity": 0.35,
+    "units": [
+     {
+      "x": [
+       -0.88,
+       1.43
+      ],
+      "z": [
+       -0.807,
+       -0.447
+      ],
+      "wheels": [
+       [
+        -0.718,
+        0.222,
+        0.152
+       ],
+       [
+        -0.325,
+        0.222,
+        0.152
+       ],
+       [
+        0.083,
+        0.222,
+        0.152
+       ],
+       [
+        0.474,
+        0.222,
+        0.152
+       ],
+       [
+        0.869,
+        0.222,
+        0.152
+       ],
+       [
+        1.255,
+        0.222,
+        0.152
+       ]
+      ]
+     },
+     {
+      "x": [
+       -0.88,
+       1.43
+      ],
+      "z": [
+       0.444,
+       0.805
+      ],
+      "wheels": [
+       [
+        -0.718,
+        0.222,
+        0.152
+       ],
+       [
+        -0.325,
+        0.222,
+        0.152
+       ],
+       [
+        0.083,
+        0.222,
+        0.152
+       ],
+       [
+        0.474,
+        0.222,
+        0.152
+       ],
+       [
+        0.869,
+        0.222,
+        0.152
+       ],
+       [
+        1.255,
+        0.222,
+        0.152
+       ]
+      ]
+     }
+    ]
+   },
+   "look": "epic",
+   "parts": [
+    {
+     "name": "visor",
+     "select": {
+      "and": [
+       {
+        "box": [
+         [
+          1.36,
+          0.46,
+          -0.375
+         ],
+         [
+          1.7,
+          0.548,
+          0.375
+         ]
+        ]
+       },
+       {
+        "plane": {
+         "n": [
+          1,
+          0,
+          0.146
+         ],
+         "d": 1.518
+        }
+       },
+       {
+        "plane": {
+         "n": [
+          1,
+          0,
+          -0.146
+         ],
+         "d": 1.518
+        }
+       },
+       {
+        "plane": {
+         "n": [
+          -1,
+          0,
+          -0.146
+         ],
+         "d": -1.572
+        }
+       },
+       {
+        "plane": {
+         "n": [
+          -1,
+          0,
+          0.146
+         ],
+         "d": -1.572
+        }
+       }
+      ]
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.6,
+      "k": 0.6
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -1.2,
+        0.3,
+        0.435
+       ],
+       [
+        1.7,
+        0.9,
+        1.0
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.95,
+        0.0,
+        0.44
+       ],
+       [
+        1.5,
+        0.355,
+        0.81
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.31,
+        0.6,
+        -0.043
+       ],
+       [
+        1.5,
+        0.95,
+        0.043
+       ]
+      ]
+     },
+     "region": "gold",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        0.72,
+        0
+       ],
+       "p1": [
+        0,
+        0.9,
+        0
+       ],
+       "r": 0.338,
+       "r0": 0.295
+      }
+     },
+     "region": "gold",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.78,
+        0.6,
+        0.2
+       ],
+       [
+        -0.5,
+        0.9,
+        0.4
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#ffb347",
+     "onlyParts": [
+      "visor"
+     ]
+    }
+   ],
+   "lookOverride": {
+    "paintA": "#b2b8c0",
+    "paintB": "#8a919b",
+    "bare": "#c9ced5"
+   }
+  },
+  {
+   "id": "chassis-titan-0",
+   "src": "TITAN tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "titan",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.94
+   },
+   "tracks": {
+    "tIn": -0.02,
+    "tOut": 0.066,
+    "periodicity": 0.35,
+    "units": [
+     {
+      "x": [
+       -1.09,
+       1.335
+      ],
+      "z": [
+       -0.915,
+       -0.582
+      ],
+      "wheels": [
+       [
+        -0.925,
+        0.247,
+        0.193
+       ],
+       [
+        -0.208,
+        0.247,
+        0.193
+       ],
+       [
+        0.472,
+        0.247,
+        0.193
+       ],
+       [
+        1.182,
+        0.247,
+        0.193
+       ],
+       [
+        -0.558,
+        0.247,
+        0.193
+       ],
+       [
+        0.138,
+        0.247,
+        0.193
+       ],
+       [
+        0.814,
+        0.247,
+        0.193
+       ]
+      ]
+     },
+     {
+      "x": [
+       -1.09,
+       1.335
+      ],
+      "z": [
+       0.582,
+       0.915
+      ],
+      "wheels": [
+       [
+        -0.925,
+        0.247,
+        0.193
+       ],
+       [
+        -0.208,
+        0.247,
+        0.193
+       ],
+       [
+        0.472,
+        0.247,
+        0.193
+       ],
+       [
+        1.182,
+        0.247,
+        0.193
+       ],
+       [
+        -0.558,
+        0.247,
+        0.193
+       ],
+       [
+        0.138,
+        0.247,
+        0.193
+       ],
+       [
+        0.814,
+        0.247,
+        0.193
+       ]
+      ]
+     }
+    ]
+   },
+   "look": "common",
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -1.12,
+        0.0,
+        0.6
+       ],
+       [
+        1.38,
+        0.46,
+        0.915
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.3,
+        0.49,
+        0.535
+       ],
+       [
+        1.32,
+        0.64,
+        0.96
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.3,
+        0.05,
+        -0.9
+       ],
+       [
+        1.9,
+        0.75,
+        0.9
+       ]
+      ]
+     },
+     "region": "hazard",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.3,
+        0.0,
+        -0.9
+       ],
+       [
+        1.9,
+        0.285,
+        0.9
+       ]
+      ]
+     },
+     "region": "trim",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.975,
+        0.86,
+        0.333
+       ],
+       "p1": [
+        -0.975,
+        1.25,
+        0.333
+       ],
+       "r": 0.13
+      },
+      "mirrorZ": true
+     },
+     "region": "trim",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        -0.975,
+        1.12,
+        0.333
+       ],
+       "p1": [
+        -0.975,
+        1.25,
+        0.333
+       ],
+       "r": 0.062
+      },
+      "mirrorZ": true
+     },
+     "region": "dark",
+     "onlyParts": [
+      "body"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chassis-titan-1",
+   "src": "BULWARK tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "titan",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.9
+   },
+   "tracks": "auto",
+   "look": "rare",
+   "parts": [
+    {
+     "name": "antenna",
+     "select": {
+      "box": [
+       [
+        -0.95,
+        1.062,
+        -0.05
+       ],
+       [
+        -0.85,
+        1.4,
+        0.05
+       ]
+      ]
+     },
+     "pivot": [
+      -0.9,
+      1.062,
+      0.0
+     ],
+     "axis": [
+      1,
+      0,
+      0
+     ],
+     "angle": {
+      "ch": "sway",
+      "k": 0.06
+     },
+     "region": "trim",
+     "decor": true
+    },
+    {
+     "name": "caps",
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          -0.9,
+          0.87,
+          -0.262
+         ],
+         "p1": [
+          -0.9,
+          1.08,
+          -0.262
+         ],
+         "r": 0.105
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -0.9,
+          0.87,
+          0.0
+         ],
+         "p1": [
+          -0.9,
+          1.08,
+          0.0
+         ],
+         "r": 0.105
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -0.9,
+          0.87,
+          0.262
+         ],
+         "p1": [
+          -0.9,
+          1.08,
+          0.262
+         ],
+         "r": 0.105
+        }
+       }
+      ]
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.5,
+      "k": 0.8
+     },
+     "region": "trim",
+     "minTris": {
+      "light": 180,
+      "full": 1200
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -1.4,
+        0.6,
+        0.55
+       ],
+       [
+        1.55,
+        0.72,
+        1.08
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.4,
+        0.3,
+        0.9
+       ],
+       [
+        1.55,
+        0.72,
+        1.08
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.385,
+        0.15,
+        -0.65
+       ],
+       [
+        1.6,
+        0.5,
+        0.65
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.15,
+        0.0,
+        0.56
+       ],
+       [
+        1.33,
+        0.4,
+        0.92
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.88,
+        0.44,
+        0.93
+       ],
+       [
+        1.03,
+        0.472,
+        1.1
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#b78bff",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.1,
+        0.905,
+        -0.4
+       ],
+       [
+        -0.7,
+        0.99,
+        0.4
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#b78bff",
+     "onlyParts": [
+      "caps"
+     ]
+    }
+   ],
+   "tris": {
+    "light": 24000
+   }
+  },
+  {
+   "id": "chassis-titan-2",
+   "src": "COLOSSUS tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "titan",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 3.1
+   },
+   "tracks": {
+    "zPad": 0.09,
+    "units": [
+     {
+      "x": [
+       -1.267,
+       -0.072
+      ],
+      "z": [
+       -1.102,
+       -0.689
+      ],
+      "wheels": [
+       [
+        -0.785,
+        0.276,
+        0.142
+       ],
+       [
+        -0.514,
+        0.276,
+        0.142
+       ],
+       [
+        -1.087,
+        0.256,
+        0.232
+       ],
+       [
+        -0.218,
+        0.258,
+        0.232
+       ]
+      ]
+     },
+     {
+      "x": [
+       -1.267,
+       -0.072
+      ],
+      "z": [
+       0.687,
+       1.107
+      ],
+      "wheels": [
+       [
+        -0.785,
+        0.276,
+        0.142
+       ],
+       [
+        -0.514,
+        0.276,
+        0.142
+       ],
+       [
+        -1.087,
+        0.256,
+        0.232
+       ],
+       [
+        -0.218,
+        0.258,
+        0.232
+       ]
+      ]
+     },
+     {
+      "x": [
+       0.269,
+       1.462
+      ],
+      "z": [
+       -1.102,
+       -0.681
+      ],
+      "wheels": [
+       [
+        0.741,
+        0.276,
+        0.142
+       ],
+       [
+        1.01,
+        0.276,
+        0.142
+       ],
+       [
+        0.45,
+        0.256,
+        0.232
+       ],
+       [
+        1.307,
+        0.258,
+        0.232
+       ]
+      ]
+     },
+     {
+      "x": [
+       0.269,
+       1.462
+      ],
+      "z": [
+       0.683,
+       1.107
+      ],
+      "wheels": [
+       [
+        0.741,
+        0.276,
+        0.142
+       ],
+       [
+        1.01,
+        0.276,
+        0.142
+       ],
+       [
+        0.45,
+        0.256,
+        0.232
+       ],
+       [
+        1.307,
+        0.258,
+        0.232
+       ]
+      ]
+     }
+    ],
+    "parents": {
+     "0": "pod0",
+     "1": "pod1",
+     "2": "pod2",
+     "3": "pod3"
+    }
+   },
+   "look": "epic",
+   "parts": [
+    {
+     "name": "pod0",
+     "select": {
+      "box": [
+       [
+        -1.7,
+        -0.1,
+        -1.35
+       ],
+       [
+        0.117,
+        1.3,
+        -0.62
+       ]
+      ]
+     },
+     "pivot": [
+      -0.675,
+      0.62,
+      -0.62
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": {
+      "ch": "flex",
+      "k": 0.03
+     },
+     "region": "armor2"
+    },
+    {
+     "name": "pod1",
+     "select": {
+      "box": [
+       [
+        -1.7,
+        -0.1,
+        0.62
+       ],
+       [
+        0.117,
+        1.3,
+        1.35
+       ]
+      ]
+     },
+     "pivot": [
+      -0.675,
+      0.62,
+      0.62
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": {
+      "ch": "flex",
+      "k": 0.03
+     },
+     "region": "armor2"
+    },
+    {
+     "name": "pod2",
+     "select": {
+      "box": [
+       [
+        0.117,
+        -0.1,
+        -1.35
+       ],
+       [
+        1.9,
+        1.3,
+        -0.62
+       ]
+      ]
+     },
+     "pivot": [
+      0.89,
+      0.62,
+      -0.62
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": {
+      "ch": "flex",
+      "k": -0.03
+     },
+     "region": "armor2"
+    },
+    {
+     "name": "pod3",
+     "select": {
+      "box": [
+       [
+        0.117,
+        -0.1,
+        0.62
+       ],
+       [
+        1.9,
+        1.3,
+        1.35
+       ]
+      ]
+     },
+     "pivot": [
+      0.89,
+      0.62,
+      0.62
+     ],
+     "axis": [
+      0,
+      0,
+      1
+     ],
+     "angle": {
+      "ch": "flex",
+      "k": -0.03
+     },
+     "region": "armor2"
+    },
+    {
+     "name": "reactor",
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          -0.35,
+          0.27,
+          -0.3
+         ],
+         [
+          0.55,
+          0.365,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.04,
+          0.345,
+          0.43
+         ],
+         [
+          0.27,
+          0.5,
+          0.52
+         ]
+        ],
+        "mirrorZ": true
+       },
+       {
+        "box": [
+         [
+          1.2,
+          0.41,
+          -0.222
+         ],
+         [
+          1.7,
+          0.595,
+          0.222
+         ]
+        ]
+       }
+      ]
+     },
+     "minTris": {
+      "light": 60,
+      "full": 300
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.4,
+      "k": 1.0
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -1.7,
+        -0.1,
+        0.6
+       ],
+       [
+        1.9,
+        0.52,
+        1.35
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "dark",
+     "onlyParts": [
+      "pod0",
+      "pod1",
+      "pod2",
+      "pod3"
+     ]
+    },
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#ffb347",
+     "onlyParts": [
+      "reactor"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.3,
+        0.955,
+        -0.375
+       ],
+       [
+        1.75,
+        1.0,
+        0.375
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#ffb347",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "box": [
+         [
+          1.4,
+          0.7,
+          -0.158
+         ],
+         [
+          1.8,
+          0.89,
+          0.158
+         ]
+        ]
+       },
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          -0.607
+         ],
+         "d": 0.717
+        }
+       },
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0.607
+         ],
+         "d": 0.717
+        }
+       }
+      ]
+     },
+     "region": "gold",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.43,
+        0.792,
+        0.45
+       ],
+       [
+        0.64,
+        0.826,
+        0.6
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#ffb347",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.5,
+        0.42,
+        -0.45
+       ],
+       [
+        -1.2,
+        0.79,
+        0.45
+       ]
+      ]
+     },
+     "region": "dark",
+     "onlyParts": [
+      "body"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "weapon-moon",
+   "src": "Obsidian Starpiercer_Meshy_AI_2026-11-10_4e13cd",
+   "kind": "moon",
+   "game": {
+    "arch": "moon"
+   },
+   "yaw": 180,
+   "textured": true,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.35
+   },
+   "look": "moon",
+   "turret": {
+    "barrels": [
+     {
+      "x": 1.13,
+      "y": 0.29,
+      "z": 0.0,
+      "r": 0.37,
+      "recoil": 0.05,
+      "refine": false
+     }
+    ]
+   },
+   "tips": [
+    [
+     2.3,
+     0.305,
+     0.0
+    ]
+   ],
+   "halos": [
+    [
+     2.3,
+     0.305,
+     0.0,
+     "#66cfff",
+     0.22
+    ]
+   ],
+   "parts": [
+    {
+     "name": "core",
+     "glow": {
+      "ch": "charge",
+      "base": 0.7,
+      "k": 1.3
+     },
+     "minTris": {
+      "light": 500,
+      "full": 3000
+     },
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          -0.163,
+          0.655,
+          0.003
+         ],
+         "p1": [
+          -0.163,
+          0.7,
+          0.003
+         ],
+         "r": 0.14
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -0.163,
+          0.7,
+          0.003
+         ],
+         "p1": [
+          -0.163,
+          0.97,
+          0.003
+         ],
+         "r": 0.17
+        }
+       }
+      ]
+     }
+    },
+    {
+     "name": "chargeL",
+     "glow": {
+      "ch": "charge",
+      "base": 0.7,
+      "k": 1.3
+     },
+     "minTris": {
+      "light": 350,
+      "full": 2000
+     },
+     "select": {
+      "cyl": {
+       "p0": [
+        0.335,
+        0.321,
+        -0.467
+       ],
+       "p1": [
+        1.03,
+        0.321,
+        -0.467
+       ],
+       "r": 0.127
+      }
+     }
+    },
+    {
+     "name": "chargeR",
+     "glow": {
+      "ch": "charge",
+      "base": 0.7,
+      "k": 1.3
+     },
+     "minTris": {
+      "light": 350,
+      "full": 2000
+     },
+     "select": {
+      "cyl": {
+       "p0": [
+        0.335,
+        0.3255,
+        0.459
+       ],
+       "p1": [
+        1.03,
+        0.3255,
+        0.459
+       ],
+       "r": 0.127
+      }
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#ff3b30",
+     "onlyParts": [
+      "core"
+     ]
+    },
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#4db8ff",
+     "onlyParts": [
+      "chargeL",
+      "chargeR"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "town-cc",
+   "src": "COMMAND CENTER",
+   "kind": "town",
+   "game": {
+    "town": "cc"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 16,
+    "d": 16,
+    "fill": 0.9
+   },
+   "look": "town",
+   "parts": [
+    {
+     "name": "dish",
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          -1.7,
+          10.85,
+          -1.45
+         ],
+         [
+          -0.45,
+          13.1,
+          0.45
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.45,
+          10.99,
+          -1.45
+         ],
+         [
+          0.3,
+          13.1,
+          0.45
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          0.3,
+          11.32,
+          -1.45
+         ],
+         [
+          0.6,
+          13.1,
+          0.45
+         ]
+        ]
+       }
+      ]
+     },
+     "pivot": [
+      -0.045,
+      10.99,
+      0.0
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": {
+      "ch": "time",
+      "k": 0.6
+     },
+     "decor": true,
+     "selfAO": true,
+     "region": "trim"
+    },
+    {
+     "name": "beacon",
+     "select": {
+      "box": [
+       [
+        0.95,
+        13.45,
+        0.5
+       ],
+       [
+        1.2,
+        13.8,
+        0.8
+       ]
+      ]
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.0,
+      "k": 2.0
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -8,
+        0,
+        -8
+       ],
+       [
+        8,
+        0.75,
+        8
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          -8,
+          3.1,
+          -8
+         ],
+         [
+          8,
+          3.6,
+          8
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -8,
+          5.5,
+          -8
+         ],
+         [
+          8,
+          6.0,
+          8
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -8,
+          7.5,
+          -8
+         ],
+         [
+          8,
+          8.0,
+          8
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "box": [
+         [
+          -3,
+          9.95,
+          -3
+         ],
+         [
+          3,
+          10.5,
+          3
+         ]
+        ]
+       },
+       {
+        "not": {
+         "cyl": {
+          "p0": [
+           0,
+           9,
+           0
+          ],
+          "p1": [
+           0,
+           11,
+           0
+          ],
+          "r": 1.45
+         }
+        }
+       }
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          5.3,
+          0.95,
+          -0.9
+         ],
+         [
+          6.1,
+          2.65,
+          0.9
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -6.1,
+          0.95,
+          -0.9
+         ],
+         [
+          -5.3,
+          2.65,
+          0.9
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.9,
+          0.95,
+          5.3
+         ],
+         [
+          0.9,
+          2.65,
+          6.1
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.9,
+          0.95,
+          -6.1
+         ],
+         [
+          0.9,
+          2.65,
+          -5.3
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          4.3,
+          4.05,
+          -0.4
+         ],
+         [
+          5.0,
+          4.85,
+          0.4
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -5.0,
+          4.05,
+          -0.4
+         ],
+         [
+          -4.3,
+          4.85,
+          0.4
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.4,
+          4.05,
+          4.3
+         ],
+         [
+          0.4,
+          4.85,
+          5.0
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.4,
+          4.05,
+          -5.0
+         ],
+         [
+          0.4,
+          4.85,
+          -4.3
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          2.75,
+          6.55,
+          -0.3
+         ],
+         [
+          3.2,
+          7.25,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -3.2,
+          6.55,
+          -0.3
+         ],
+         [
+          -2.75,
+          7.25,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.3,
+          6.55,
+          2.75
+         ],
+         [
+          0.3,
+          7.25,
+          3.2
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.3,
+          6.55,
+          -3.2
+         ],
+         [
+          0.3,
+          7.25,
+          -2.75
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          1.6,
+          8.35,
+          -0.3
+         ],
+         [
+          2.0,
+          9.15,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -2.0,
+          8.35,
+          -0.3
+         ],
+         [
+          -1.6,
+          9.15,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.3,
+          8.35,
+          1.6
+         ],
+         [
+          0.3,
+          9.15,
+          2.0
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.3,
+          8.35,
+          -2.0
+         ],
+         [
+          0.3,
+          9.15,
+          -1.6
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    },
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "beacon"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "town-reactor",
+   "src": "REACTOR_",
+   "kind": "town",
+   "game": {
+    "town": "reactor"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 12,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town",
+   "parts": [
+    {
+     "name": "core",
+     "select": {
+      "and": [
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 5.68
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          5,
+          0
+         ],
+         "p1": [
+          0,
+          7.2,
+          0
+         ],
+         "r": 2.45
+        }
+       }
+      ]
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.5,
+      "k": 1.2
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -6,
+        0,
+        -6
+       ],
+       [
+        6,
+        0.4,
+        6
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "box": [
+         [
+          -6,
+          0.4,
+          -6
+         ],
+         [
+          6,
+          3.4,
+          6
+         ]
+        ]
+       },
+       {
+        "not": {
+         "cyl": {
+          "p0": [
+           0,
+           0,
+           0
+          ],
+          "p1": [
+           0,
+           4,
+           0
+          ],
+          "r": 4.25
+         }
+        }
+       }
+      ]
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 4.5
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          4,
+          0
+         ],
+         "p1": [
+          0,
+          6,
+          0
+         ],
+         "r": 4.25,
+         "r0": 2.75
+        }
+       }
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        4.95,
+        0
+       ],
+       "p1": [
+        0,
+        5.68,
+        0
+       ],
+       "r": 2.75,
+       "r0": 2.3
+      }
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#9fe8ff",
+     "onlyParts": [
+      "core"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "town-refinery",
+   "src": "REFINERY_",
+   "kind": "town",
+   "game": {
+    "town": "refinery"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 16,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town",
+   "parts": [
+    {
+     "name": "beacon",
+     "select": {
+      "and": [
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 12.15
+        }
+       },
+       {
+        "box": [
+         [
+          4.4,
+          12,
+          2.7
+         ],
+         [
+          7,
+          12.6,
+          4.8
+         ]
+        ]
+       }
+      ]
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.0,
+      "k": 2.0
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -8,
+        0,
+        -6
+       ],
+       [
+        8,
+        1.5,
+        6
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -7,
+        1.5,
+        -4.4
+       ],
+       [
+        -1.95,
+        9.0,
+        4.4
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.3,
+        9.28,
+        -2.9
+       ],
+       [
+        5.3,
+        9.7,
+        2.7
+       ]
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        1.0,
+        6.55,
+        -1.75
+       ],
+       [
+        4.1,
+        6.95,
+        1.75
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#ffb347"
+    },
+    {
+     "select": {
+      "all": true
+     },
+     "region": "glow",
+     "color": "#ffb347",
+     "onlyParts": [
+      "beacon"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "town-lab",
+   "src": "SCIENCE LAB",
+   "kind": "town",
+   "game": {
+    "town": "lab"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 12,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town",
+   "parts": [
+    {
+     "name": "dish",
+     "select": {
+      "box": [
+       [
+        -2.95,
+        6.5,
+        0.8
+       ],
+       [
+        -1.1,
+        9.0,
+        2.5
+       ]
+      ]
+     },
+     "pivot": [
+      -1.896,
+      6.5,
+      2.2
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": {
+      "ch": "time",
+      "k": 0.8
+     },
+     "decor": true,
+     "selfAO": true,
+     "region": "trim"
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -6,
+        0,
+        -6
+       ],
+       [
+        6,
+        0.78,
+        6
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 3.22
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          3,
+          0
+         ],
+         "p1": [
+          0,
+          8,
+          0
+         ],
+         "r": 3.7
+        }
+       },
+       {
+        "not": {
+         "box": [
+          [
+           -2.95,
+           6.5,
+           0.8
+          ],
+          [
+           -1.1,
+           9.0,
+           2.5
+          ]
+         ]
+        }
+       }
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 6.55
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          6,
+          0
+         ],
+         "p1": [
+          0,
+          8,
+          0
+         ],
+         "r": 1.2
+        }
+       }
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        2.88,
+        0
+       ],
+       "p1": [
+        0,
+        3.06,
+        0
+       ],
+       "r": 4.32,
+       "r0": 3.62
+      }
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    }
+   ]
+  },
+  {
+   "id": "town-shield",
+   "src": "SHIELD GENERATOR",
+   "kind": "town",
+   "game": {
+    "town": "shield"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 8,
+    "d": 8,
+    "fill": 0.9
+   },
+   "look": "town",
+   "parts": [
+    {
+     "name": "emitter",
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        3.49,
+        0
+       ],
+       "p1": [
+        0,
+        11.3,
+        0
+       ],
+       "r": 1.6
+      }
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.5,
+      "k": 1.2
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -4,
+        0,
+        -4
+       ],
+       [
+        4,
+        0.68,
+        4
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "or": [
+         {
+          "box": [
+           [
+            1.7,
+            0.9,
+            -0.62
+           ],
+           [
+            3.3,
+            8.2,
+            0.62
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -3.3,
+            0.9,
+            -0.62
+           ],
+           [
+            -1.7,
+            8.2,
+            0.62
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -0.62,
+            0.9,
+            1.7
+           ],
+           [
+            0.62,
+            8.2,
+            3.3
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -0.62,
+            0.9,
+            -3.3
+           ],
+           [
+            0.62,
+            8.2,
+            -1.7
+           ]
+          ]
+         }
+        ]
+       },
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 2.95
+        }
+       }
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "or": [
+         {
+          "box": [
+           [
+            1.7,
+            0.9,
+            -0.62
+           ],
+           [
+            3.3,
+            8.2,
+            0.62
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -3.3,
+            0.9,
+            -0.62
+           ],
+           [
+            -1.7,
+            8.2,
+            0.62
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -0.62,
+            0.9,
+            1.7
+           ],
+           [
+            0.62,
+            8.2,
+            3.3
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -0.62,
+            0.9,
+            -3.3
+           ],
+           [
+            0.62,
+            8.2,
+            -1.7
+           ]
+          ]
+         }
+        ]
+       },
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 7.45
+        }
+       }
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            -1.68,
+            1.95,
+            -1.68
+           ],
+           "r": 0.52
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -1.68,
+            1.95,
+            1.68
+           ],
+           "r": 0.52
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            1.68,
+            1.95,
+            -1.68
+           ],
+           "r": 0.52
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            1.68,
+            1.95,
+            1.68
+           ],
+           "r": 0.52
+          }
+         }
+        ]
+       },
+       {
+        "not": {
+         "cyl": {
+          "p0": [
+           0,
+           0,
+           0
+          ],
+          "p1": [
+           0,
+           4,
+           0
+          ],
+          "r": 2.1
+         }
+        }
+       }
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          3.78,
+          0
+         ],
+         "p1": [
+          0,
+          4.07,
+          0
+         ],
+         "r": 1.45,
+         "r0": 1.0
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          4.53,
+          0
+         ],
+         "p1": [
+          0,
+          4.8,
+          0
+         ],
+         "r": 1.31,
+         "r0": 0.95
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          5.38,
+          0
+         ],
+         "p1": [
+          0,
+          5.62,
+          0
+         ],
+         "r": 1.17,
+         "r0": 0.88
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          6.18,
+          0
+         ],
+         "p1": [
+          0,
+          6.42,
+          0
+         ],
+         "r": 1.07,
+         "r0": 0.79
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          6.98,
+          0
+         ],
+         "p1": [
+          0,
+          7.22,
+          0
+         ],
+         "r": 1.07,
+         "r0": 0.7
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          7.78,
+          0
+         ],
+         "p1": [
+          0,
+          8.06,
+          0
+         ],
+         "r": 1.03,
+         "r0": 0.65
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          8.63,
+          0
+         ],
+         "p1": [
+          0,
+          8.87,
+          0
+         ],
+         "r": 0.95,
+         "r0": 0.6
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          0,
+          9.48,
+          0
+         ],
+         "p1": [
+          0,
+          9.72,
+          0
+         ],
+         "r": 0.82,
+         "r0": 0.56
+        }
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "emitter"
+     ]
+    },
+    {
+     "select": {
+      "plane": {
+       "n": [
+        0,
+        1,
+        0
+       ],
+       "d": 9.97
+      }
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "emitter"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "town-storage",
+   "src": "STORAGE DEPOT",
+   "kind": "town",
+   "game": {
+    "town": "storage"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 12,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town",
+   "regions": [
+    {
+     "select": {
+      "box": [
+       [
+        -6,
+        0,
+        -5
+       ],
+       [
+        6,
+        1.0,
+        5
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -6,
+        4.32,
+        -2.9
+       ],
+       [
+        6,
+        7,
+        3.84
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          -2.351,
+          5.4,
+          -3.0
+         ],
+         [
+          -2.144,
+          7,
+          3.9
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -0.7020000000000001,
+          5.4,
+          -3.0
+         ],
+         [
+          -0.495,
+          7,
+          3.9
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          0.955,
+          5.4,
+          -3.0
+         ],
+         [
+          1.161,
+          7,
+          3.9
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          2.6109999999999998,
+          5.4,
+          -3.0
+         ],
+         [
+          2.817,
+          7,
+          3.9
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -3.3,
+        1.0,
+        -4.8
+       ],
+       [
+        3.4,
+        2.8,
+        -3.0
+       ]
+      ]
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          4.6,
+          1.15,
+          -1.3
+         ],
+         [
+          4.72,
+          4.25,
+          2.5
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          -4.72,
+          1.15,
+          -1.3
+         ],
+         [
+          -4.6,
+          4.25,
+          2.5
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -4.25,
+        3.2,
+        3.6
+       ],
+       [
+        4.25,
+        3.5,
+        3.875
+       ]
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    }
+   ]
+  },
+  {
+   "id": "town-tesla",
+   "src": "TESLA ARC COIL",
+   "kind": "town",
+   "game": {
+    "town": "tesla"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town",
+   "parts": [
+    {
+     "name": "emitter",
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          1.32,
+          0
+         ],
+         "p1": [
+          0,
+          3.3,
+          0
+         ],
+         "r": 0.6
+        }
+       },
+       {
+        "and": [
+         {
+          "plane": {
+           "n": [
+            0,
+            1,
+            0
+           ],
+           "d": 3.25
+          }
+         },
+         {
+          "not": {
+           "or": [
+            {
+             "box": [
+              [
+               0.56,
+               0.4,
+               -0.45
+              ],
+              [
+               1.35,
+               3.66,
+               0.45
+              ]
+             ]
+            },
+            {
+             "box": [
+              [
+               -1.35,
+               0.4,
+               -0.45
+              ],
+              [
+               -0.56,
+               3.66,
+               0.45
+              ]
+             ]
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "glow": {
+      "ch": "pulse",
+      "base": 0.5,
+      "k": 1.2
+     }
+    }
+   ],
+   "regions": [
+    {
+     "select": {
+      "and": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          0.16,
+          0
+         ],
+         "p1": [
+          0,
+          0.3,
+          0
+         ],
+         "r": 1.77,
+         "r0": 1.44
+        }
+       },
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            1.6,
+            0.22999999999999998,
+            -0.055
+           ],
+           "r": 0.2
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -1.6,
+            0.22999999999999998,
+            -0.055
+           ],
+           "r": 0.2
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0,
+            0.22999999999999998,
+            1.6
+           ],
+           "r": 0.2
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0,
+            0.22999999999999998,
+            -1.6
+           ],
+           "r": 0.2
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "or": [
+         {
+          "box": [
+           [
+            0.56,
+            0.4,
+            -0.45
+           ],
+           [
+            1.35,
+            3.66,
+            0.45
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -1.35,
+            0.4,
+            -0.45
+           ],
+           [
+            -0.56,
+            3.66,
+            0.45
+           ]
+          ]
+         }
+        ]
+       },
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 1.22
+        }
+       }
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "or": [
+         {
+          "box": [
+           [
+            0.56,
+            0.4,
+            -0.45
+           ],
+           [
+            1.35,
+            3.66,
+            0.45
+           ]
+          ]
+         },
+         {
+          "box": [
+           [
+            -1.35,
+            0.4,
+            -0.45
+           ],
+           [
+            -0.56,
+            3.66,
+            0.45
+           ]
+          ]
+         }
+        ]
+       },
+       {
+        "plane": {
+         "n": [
+          0,
+          1,
+          0
+         ],
+         "d": 3.47
+        }
+       }
+      ]
+     },
+     "region": "gold"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        1.2,
+        0
+       ],
+       "p1": [
+        0,
+        3.62,
+        0
+       ],
+       "r": 0.345
+      }
+     },
+     "region": "trim",
+     "onlyParts": [
+      "emitter"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        3.18,
+        0
+       ],
+       "p1": [
+        0,
+        3.36,
+        0
+       ],
+       "r": 0.5
+      }
+     },
+     "region": "gold",
+     "onlyParts": [
+      "emitter"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        1.3,
+        0
+       ],
+       "p1": [
+        0,
+        3.3,
+        0
+       ],
+       "r": 0.6,
+       "r0": 0.345
+      }
+     },
+     "region": "glow",
+     "color": "#c8a2ff",
+     "onlyParts": [
+      "emitter"
+     ]
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "sphere": {
+         "c": [
+          0,
+          4.0,
+          0
+         ],
+         "r": 0.5
+        }
+       },
+       {
+        "and": [
+         {
+          "cyl": {
+           "p0": [
+            0,
+            3.28,
+            0
+           ],
+           "p1": [
+            0,
+            4.4,
+            0
+           ],
+           "r": 0.95,
+           "r0": 0.4
+          }
+         },
+         {
+          "not": {
+           "or": [
+            {
+             "box": [
+              [
+               0.56,
+               0.4,
+               -0.45
+              ],
+              [
+               1.35,
+               3.66,
+               0.45
+              ]
+             ]
+            },
+            {
+             "box": [
+              [
+               -1.35,
+               0.4,
+               -0.45
+              ],
+              [
+               -0.56,
+               3.66,
+               0.45
+              ]
+             ]
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#c8a2ff",
+     "onlyParts": [
+      "emitter"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "town-cannon",
+   "src": "CANNON TURRET_",
+   "kind": "town",
+   "game": {
+    "town": "cannon"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 1.12,
+    "offset": [
+     0.757,
+     0,
+     0
+    ]
+   },
+   "look": "town",
+   "lookOverride": {
+    "barrelRegion": "steel"
+   },
+   "turret": {
+    "ringTop": -1,
+    "barrels": [
+     {
+      "x": 1.205,
+      "y": 1.34,
+      "z": 0.0,
+      "r": 0.26,
+      "recoil": 0.25
+     }
+    ]
+   },
+   "pivot": [
+    0.0,
+    0.0
+   ],
+   "parts": [
+    {
+     "name": "ring",
+     "select": {
+      "or": [
+       {
+        "plane": {
+         "n": [
+          0,
+          -1,
+          0
+         ],
+         "d": -0.24
+        }
+       },
+       {
+        "and": [
+         {
+          "plane": {
+           "n": [
+            0,
+            -1,
+            0
+           ],
+           "d": -0.3
+          }
+         },
+         {
+          "not": {
+           "cyl": {
+            "p0": [
+             0,
+             -1,
+             0
+            ],
+            "p1": [
+             0,
+             1.3,
+             0
+            ],
+            "r": 1.2
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "pivot": [
+      0,
+      0,
+      0
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": {
+      "ch": "aim",
+      "k": -1.0
+     }
+    }
+   ],
+   "meta": {
+    "headFrom": 0.24
+   },
+   "regions": [
+    {
+     "select": {
+      "all": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          0.14,
+          0
+         ],
+         "p1": [
+          0,
+          0.255,
+          0
+         ],
+         "r": 1.45,
+         "r0": 1.25
+        }
+       },
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            -1.22,
+            0.1975,
+            -0.53
+           ],
+           "r": 0.17
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -0.52,
+            0.1975,
+            -1.24
+           ],
+           "r": 0.17
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0.93,
+            0.1975,
+            -1.02
+           ],
+           "r": 0.17
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            1.21,
+            0.1975,
+            0.52
+           ],
+           "r": 0.17
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -0.53,
+            0.1975,
+            1.25
+           ],
+           "r": 0.17
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -1.3,
+            0.1975,
+            0.55
+           ],
+           "r": 0.17
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.6,
+        0.24,
+        -0.56
+       ],
+       [
+        0.6,
+        0.97,
+        0.56
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        0.2,
+        0
+       ],
+       "p1": [
+        0,
+        0.37,
+        0
+       ],
+       "r": 1.21,
+       "r0": 0.6
+      }
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        0.77,
+        1.0,
+        -0.4
+       ],
+       [
+        1.205,
+        1.7,
+        0.4
+       ]
+      ]
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.6,
+        0.4,
+        0.515
+       ],
+       [
+        0.6,
+        1.02,
+        1.05
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        2.8,
+        1.34,
+        0
+       ],
+       "p1": [
+        3.02,
+        1.34,
+        0
+       ],
+       "r": 0.125
+      }
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "town-mg",
+   "src": "MACHINE GUN TURRET",
+   "kind": "town",
+   "game": {
+    "town": "mg"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 1.054,
+    "offset": [
+     0.598,
+     0,
+     0
+    ]
+   },
+   "look": "town",
+   "lookOverride": {
+    "barrelRegion": "steel"
+   },
+   "turret": {
+    "ringTop": 0.528,
+    "barrels": [
+     {
+      "x": 0.62,
+      "y": 1.714,
+      "z": -0.177,
+      "r": 0.12,
+      "recoil": 0.08
+     },
+     {
+      "x": 0.62,
+      "y": 1.714,
+      "z": 0.168,
+      "r": 0.12,
+      "recoil": 0.08
+     }
+    ]
+   },
+   "regions": [
+    {
+     "select": {
+      "all": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          0.125,
+          0
+         ],
+         "p1": [
+          0,
+          0.245,
+          0
+         ],
+         "r": 1.46,
+         "r0": 1.25
+        }
+       },
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            1.36,
+            0.185,
+            0
+           ],
+           "r": 0.2
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -1.36,
+            0.185,
+            0
+           ],
+           "r": 0.2
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0,
+            0.185,
+            1.36
+           ],
+           "r": 0.2
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0,
+            0.185,
+            -1.36
+           ],
+           "r": 0.2
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.7,
+        0.528,
+        -0.7
+       ],
+       [
+        0.7,
+        1.38,
+        0.7
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.9,
+        0.9,
+        0.47
+       ],
+       [
+        0.3,
+        2.1,
+        1.4
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.45,
+        2.05,
+        -0.3
+       ],
+       [
+        0.0,
+        2.3,
+        0.3
+       ]
+      ]
+     },
+     "region": "trim"
+    }
+   ]
+  },
+  {
+   "id": "town-rocket",
+   "src": "ROCKET POD TURRET",
+   "kind": "town",
+   "game": {
+    "town": "rocket"
+   },
+   "yaw": 90,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town",
+   "turret": {
+    "ringTop": -1,
+    "barrels": []
+   },
+   "pivot": [
+    0.0,
+    0.0
+   ],
+   "parts": [
+    {
+     "name": "ring",
+     "select": {
+      "or": [
+       {
+        "plane": {
+         "n": [
+          0,
+          -1,
+          0
+         ],
+         "d": -0.258
+        }
+       },
+       {
+        "and": [
+         {
+          "plane": {
+           "n": [
+            0,
+            -1,
+            0
+           ],
+           "d": -0.33
+          }
+         },
+         {
+          "not": {
+           "cyl": {
+            "p0": [
+             0,
+             -1,
+             0
+            ],
+            "p1": [
+             0,
+             1.33,
+             0
+            ],
+            "r": 1.31
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "pivot": [
+      0,
+      0,
+      0
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": {
+      "ch": "aim",
+      "k": -1.0
+     }
+    }
+   ],
+   "meta": {
+    "headFrom": 0.258,
+    "recoil": 0.04,
+    "tips": [
+     [
+      1.25,
+      1.985,
+      -1.42
+     ],
+     [
+      1.25,
+      1.985,
+      -0.958
+     ],
+     [
+      1.25,
+      1.985,
+      0.958
+     ],
+     [
+      1.25,
+      1.985,
+      1.42
+     ],
+     [
+      1.25,
+      2.457,
+      -1.42
+     ],
+     [
+      1.25,
+      2.457,
+      -0.958
+     ],
+     [
+      1.25,
+      2.457,
+      0.958
+     ],
+     [
+      1.25,
+      2.457,
+      1.42
+     ]
+    ]
+   },
+   "regions": [
+    {
+     "select": {
+      "all": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          0.125,
+          0
+         ],
+         "p1": [
+          0,
+          0.26,
+          0
+         ],
+         "r": 1.57,
+         "r0": 1.37
+        }
+       },
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            1.47,
+            0.1925,
+            0
+           ],
+           "r": 0.21
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -1.47,
+            0.1925,
+            0
+           ],
+           "r": 0.21
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0,
+            0.1925,
+            1.47
+           ],
+           "r": 0.21
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0,
+            0.1925,
+            -1.47
+           ],
+           "r": 0.21
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.85,
+        0.258,
+        -0.75
+       ],
+       [
+        0.85,
+        1.0,
+        0.75
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        0.2,
+        0
+       ],
+       "p1": [
+        0,
+        0.4,
+        0
+       ],
+       "r": 1.32,
+       "r0": 0.6
+      }
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          1.985,
+          -1.42
+         ],
+         "p1": [
+          1.3,
+          1.985,
+          -1.42
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          1.985,
+          -0.958
+         ],
+         "p1": [
+          1.3,
+          1.985,
+          -0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          1.985,
+          0.958
+         ],
+         "p1": [
+          1.3,
+          1.985,
+          0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          1.985,
+          1.42
+         ],
+         "p1": [
+          1.3,
+          1.985,
+          1.42
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          2.457,
+          -1.42
+         ],
+         "p1": [
+          1.3,
+          2.457,
+          -1.42
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          2.457,
+          -0.958
+         ],
+         "p1": [
+          1.3,
+          2.457,
+          -0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          2.457,
+          0.958
+         ],
+         "p1": [
+          1.3,
+          2.457,
+          0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.05,
+          2.457,
+          1.42
+         ],
+         "p1": [
+          1.3,
+          2.457,
+          1.42
+         ],
+         "r": 0.225
+        }
+       }
+      ]
+     },
+     "region": "dark"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          1.985,
+          -1.42
+         ],
+         "p1": [
+          1.62,
+          1.985,
+          -1.42
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          1.985,
+          -0.958
+         ],
+         "p1": [
+          1.62,
+          1.985,
+          -0.958
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          1.985,
+          0.958
+         ],
+         "p1": [
+          1.62,
+          1.985,
+          0.958
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          1.985,
+          1.42
+         ],
+         "p1": [
+          1.62,
+          1.985,
+          1.42
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          2.457,
+          -1.42
+         ],
+         "p1": [
+          1.62,
+          2.457,
+          -1.42
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          2.457,
+          -0.958
+         ],
+         "p1": [
+          1.62,
+          2.457,
+          -0.958
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          2.457,
+          0.958
+         ],
+         "p1": [
+          1.62,
+          2.457,
+          0.958
+         ],
+         "r": 0.15
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          1.12,
+          2.457,
+          1.42
+         ],
+         "p1": [
+          1.62,
+          2.457,
+          1.42
+         ],
+         "r": 0.15
+        }
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#ff8a3d"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          1.985,
+          -1.42
+         ],
+         "p1": [
+          -1.05,
+          1.985,
+          -1.42
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          1.985,
+          -0.958
+         ],
+         "p1": [
+          -1.05,
+          1.985,
+          -0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          1.985,
+          0.958
+         ],
+         "p1": [
+          -1.05,
+          1.985,
+          0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          1.985,
+          1.42
+         ],
+         "p1": [
+          -1.05,
+          1.985,
+          1.42
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          2.457,
+          -1.42
+         ],
+         "p1": [
+          -1.05,
+          2.457,
+          -1.42
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          2.457,
+          -0.958
+         ],
+         "p1": [
+          -1.05,
+          2.457,
+          -0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          2.457,
+          0.958
+         ],
+         "p1": [
+          -1.05,
+          2.457,
+          0.958
+         ],
+         "r": 0.225
+        }
+       },
+       {
+        "cyl": {
+         "p0": [
+          -1.62,
+          2.457,
+          1.42
+         ],
+         "p1": [
+          -1.05,
+          2.457,
+          1.42
+         ],
+         "r": 0.225
+        }
+       }
+      ]
+     },
+     "region": "dark"
+    }
+   ]
+  },
+  {
+   "id": "town-laser",
+   "src": "LASER TURRET_",
+   "kind": "town",
+   "game": {
+    "town": "laser"
+   },
+   "yaw": 90,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.816,
+    "offset": [
+     0.032,
+     0,
+     0
+    ]
+   },
+   "look": "town",
+   "turret": {
+    "ringTop": -1,
+    "barrels": []
+   },
+   "pivot": [
+    0.0,
+    0.0
+   ],
+   "parts": [
+    {
+     "name": "ring",
+     "select": {
+      "or": [
+       {
+        "plane": {
+         "n": [
+          0,
+          -1,
+          0
+         ],
+         "d": -0.232
+        }
+       },
+       {
+        "and": [
+         {
+          "plane": {
+           "n": [
+            0,
+            -1,
+            0
+           ],
+           "d": -0.33
+          }
+         },
+         {
+          "not": {
+           "cyl": {
+            "p0": [
+             0,
+             -1,
+             0
+            ],
+            "p1": [
+             0,
+             1.33,
+             0
+            ],
+            "r": 1.29
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "pivot": [
+      0,
+      0,
+      0
+     ],
+     "axis": [
+      0,
+      1,
+      0
+     ],
+     "angle": {
+      "ch": "aim",
+      "k": -1.0
+     }
+    }
+   ],
+   "meta": {
+    "headFrom": 0.232,
+    "recoil": 0.02,
+    "tips": [
+     [
+      1.69,
+      1.568,
+      0.0
+     ]
+    ]
+   },
+   "regions": [
+    {
+     "select": {
+      "all": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          0.1,
+          0
+         ],
+         "p1": [
+          0,
+          0.25,
+          0
+         ],
+         "r": 1.56,
+         "r0": 1.37
+        }
+       },
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            -0.62,
+            0.175,
+            -1.31
+           ],
+           "r": 0.26
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            1.32,
+            0.175,
+            0.58
+           ],
+           "r": 0.26
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -0.59,
+            0.175,
+            1.33
+           ],
+           "r": 0.26
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.7,
+        0.232,
+        -0.9
+       ],
+       [
+        0.7,
+        1.07,
+        0.9
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        0.2,
+        0
+       ],
+       "p1": [
+        0,
+        0.4,
+        0
+       ],
+       "r": 1.3,
+       "r0": 0.6
+      }
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.55,
+        0.9,
+        0.555
+       ],
+       [
+        0.45,
+        1.95,
+        0.9
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "armor2"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.2,
+        1.568,
+        0
+       ],
+       "p1": [
+        1.72,
+        1.568,
+        0
+       ],
+       "r": 0.375
+      }
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        1.585,
+        1.568,
+        0
+       ],
+       "p1": [
+        1.72,
+        1.568,
+        0
+       ],
+       "r": 0.38
+      }
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.0,
+        1.66,
+        0.5
+       ],
+       [
+        1.15,
+        1.78,
+        0.537
+       ]
+      ],
+      "mirrorZ": true
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    }
+   ]
+  },
+  {
+   "id": "town-railgun",
+   "src": "RAILGUN TURRET_",
+   "kind": "town",
+   "game": {
+    "town": "railgun"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 1.202,
+    "offset": [
+     1.003,
+     0,
+     0
+    ]
+   },
+   "look": "town",
+   "lookOverride": {
+    "barrelRegion": "steel"
+   },
+   "turret": {
+    "ringTop": 0.218,
+    "barrels": [
+     {
+      "x": 0.705,
+      "y": 1.197,
+      "z": -0.002,
+      "r": 0.4,
+      "recoil": 0.3,
+      "refine": false
+     }
+    ]
+   },
+   "regions": [
+    {
+     "select": {
+      "all": true
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "and": [
+       {
+        "cyl": {
+         "p0": [
+          0,
+          0.055,
+          0
+         ],
+         "p1": [
+          0,
+          0.185,
+          0
+         ],
+         "r": 1.37,
+         "r0": 1.13
+        }
+       },
+       {
+        "or": [
+         {
+          "sphere": {
+           "c": [
+            -1.07,
+            0.12,
+            -0.71
+           ],
+           "r": 0.15
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            0.5,
+            0.12,
+            -1.14
+           ],
+           "r": 0.15
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            1.04,
+            0.12,
+            -0.69
+           ],
+           "r": 0.15
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            1.16,
+            0.12,
+            0.47
+           ],
+           "r": 0.15
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -0.49,
+            0.12,
+            1.14
+           ],
+           "r": 0.15
+          }
+         },
+         {
+          "sphere": {
+           "c": [
+            -1.18,
+            0.12,
+            0.4
+           ],
+           "r": 0.15
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff",
+     "onlyParts": [
+      "ring"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -0.6,
+        0.218,
+        -0.6
+       ],
+       [
+        0.6,
+        0.86,
+        0.6
+       ]
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "cyl": {
+       "p0": [
+        0,
+        0.218,
+        0
+       ],
+       "p1": [
+        0,
+        0.3,
+        0
+       ],
+       "r": 1.2,
+       "r0": 0.6
+      }
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "body"
+     ]
+    },
+    {
+     "select": {
+      "box": [
+       [
+        -1.0,
+        0.9,
+        0.44
+       ],
+       [
+        -0.4,
+        1.6,
+        0.75
+       ]
+      ]
+     },
+     "region": "trim"
+    },
+    {
+     "select": {
+      "or": [
+       {
+        "box": [
+         [
+          0.98,
+          0.8,
+          -0.3
+         ],
+         [
+          1.2,
+          1.6,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          1.74,
+          0.8,
+          -0.3
+         ],
+         [
+          1.99,
+          1.6,
+          0.3
+         ]
+        ]
+       },
+       {
+        "box": [
+         [
+          2.64,
+          0.8,
+          -0.3
+         ],
+         [
+          2.88,
+          1.6,
+          0.3
+         ]
+        ]
+       }
+      ]
+     },
+     "region": "armor2",
+     "onlyParts": [
+      "barrel0"
+     ]
+    },
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.0,
+      "r1": 0.075,
+      "t": [
+       0.0,
+       2.72
+      ]
+     },
+     "region": "glow",
+     "color": "#22e6ff"
+    }
+   ]
+  }
+ ],
+ "seed": 7403,
+ "autoTrim": {
+  "thickness": 0.03,
+  "maxArea": 0.06,
+  "minArea": 0.0002
+ },
+ "looks": {
+  "common": {
+   "rarity": 0,
+   "paintA": "#4d5340",
+   "paintB": "#716e58",
+   "camo": 0.5,
+   "trim": "#6f767d",
+   "bare": "#8e9499",
+   "track": "#2b2d31",
+   "glow": "#ffe9b8",
+   "wear": 1.3,
+   "dirt": 1.15,
+   "dust": 0.22,
+   "dustColor": "#77736a",
+   "trackBare": "#5e6166"
+  },
+  "rare": {
+   "rarity": 1,
+   "paintA": "#57606c",
+   "paintB": "#434b56",
+   "trim": "#8e97a3",
+   "bare": "#aab1ba",
+   "track": "#2f3238",
+   "glow": "#b78bff",
+   "wear": 0.7,
+   "dirt": 0.7,
+   "dust": 0.12,
+   "trackBare": "#6a6f78"
+  },
+  "epic": {
+   "rarity": 2,
+   "paintA": "#2b2f37",
+   "paintB": "#3a3f49",
+   "trim": "#c9a04a",
+   "bare": "#8d8f96",
+   "track": "#25272c",
+   "glow": "#ffb347",
+   "gold": "#d4aa4f",
+   "wear": 0.6,
+   "dirt": 0.6,
+   "dust": 0.1,
+   "trackBare": "#55585f"
+  },
+  "weapon-common": {
+   "rarity": 0,
+   "paintA": "#565b43",
+   "paintB": "#6b7076",
+   "camo": 0,
+   "trim": "#5d646b",
+   "bare": "#8e9499",
+   "track": "#2b2d31",
+   "glow": "#ffe9b8",
+   "wear": 1.0,
+   "dirt": 1.0,
+   "dust": 0.18,
+   "dustColor": "#77736a",
+   "trackBare": "#5e6166",
+   "barrelRegion": "steel",
+   "ringRegion": "steel",
+   "steel": "#70777e"
+  },
+  "weapon-rare": {
+   "rarity": 1,
+   "paintA": "#727c89",
+   "paintB": "#596370",
+   "trim": "#aab3bf",
+   "bare": "#b9c0c8",
+   "track": "#2f3238",
+   "glow": "#b78bff",
+   "wear": 0.7,
+   "dirt": 0.7,
+   "dust": 0.12,
+   "trackBare": "#6a6f78",
+   "barrelRegion": "steel",
+   "ringRegion": "steel",
+   "steel": "#8b94a0"
+  },
+  "weapon-epic": {
+   "rarity": 2,
+   "paintA": "#25282f",
+   "paintB": "#343841",
+   "trim": "#c9a04a",
+   "bare": "#8d8f96",
+   "track": "#25272c",
+   "glow": "#ffb347",
+   "gold": "#d4aa4f",
+   "wear": 0.6,
+   "dirt": 0.6,
+   "dust": 0.1,
+   "trackBare": "#55585f",
+   "barrelRegion": "steel",
+   "ringRegion": "steel",
+   "steel": "#3b3f47"
+  },
+  "moon": {
+   "rarity": 3,
+   "glow": "#66cfff",
+   "bodyRegion": "keep"
+  },
+  "town": {
+   "rarity": 0,
+   "paintA": "#8b9096",
+   "paintB": "#6f7781",
+   "trim": "#59616b",
+   "bare": "#a9afb6",
+   "glow": "#22e6ff",
+   "gold": "#d9a94e",
+   "dust": 0.3,
+   "dirt": 0.9,
+   "wear": 0.8,
+   "dustColor": "#8a877f",
+   "bodyRegion": "armor"
+  }
+ },
+ "autoTrimTown": {
+  "thickness": 0.25,
+  "maxArea": 2.0,
+  "minArea": 0.01
+ }
+}

@@ -1,0 +1,110 @@
+{
+ "scout0": {
+  "Pulse Cannon": 0.544,
+  "Arc Pulse": 0.661,
+  "Nova Pulse": 0.582,
+  "Twin Repeater": 0.584,
+  "Storm Repeater": 0.613,
+  "Helix Repeater": 0.552,
+  "Siege Breaker": 0.432,
+  "Rail Breaker": 0.792,
+  "Titanfall": 0.574,
+  "Moonbeam": 0.561
+ },
+ "scout1": {
+  "Pulse Cannon": 0.577,
+  "Arc Pulse": 0.702,
+  "Nova Pulse": 0.58,
+  "Twin Repeater": 0.62,
+  "Storm Repeater": 0.651,
+  "Helix Repeater": 0.586,
+  "Siege Breaker": 0.43,
+  "Rail Breaker": 0.841,
+  "Titanfall": 0.572,
+  "Moonbeam": 0.604
+ },
+ "scout2": {
+  "Pulse Cannon": 0.534,
+  "Arc Pulse": 0.65,
+  "Nova Pulse": 0.526,
+  "Twin Repeater": 0.574,
+  "Storm Repeater": 0.603,
+  "Helix Repeater": 0.542,
+  "Siege Breaker": 0.39,
+  "Rail Breaker": 0.778,
+  "Titanfall": 0.529,
+  "Moonbeam": 0.548
+ },
+ "vanguard0": {
+  "Pulse Cannon": 0.819,
+  "Arc Pulse": 0.996,
+  "Nova Pulse": 0.888,
+  "Twin Repeater": 0.88,
+  "Storm Repeater": 0.924,
+  "Helix Repeater": 0.831,
+  "Siege Breaker": 0.69,
+  "Rail Breaker": 1.04,
+  "Titanfall": 0.917,
+  "Moonbeam": 0.76
+ },
+ "vanguard1": {
+  "Pulse Cannon": 0.81,
+  "Arc Pulse": 0.986,
+  "Nova Pulse": 0.862,
+  "Twin Repeater": 0.871,
+  "Storm Repeater": 0.914,
+  "Helix Repeater": 0.822,
+  "Siege Breaker": 0.64,
+  "Rail Breaker": 1.04,
+  "Titanfall": 0.85,
+  "Moonbeam": 0.78
+ },
+ "vanguard2": {
+  "Pulse Cannon": 0.904,
+  "Arc Pulse": 1.04,
+  "Nova Pulse": 0.966,
+  "Twin Repeater": 0.972,
+  "Storm Repeater": 1.02,
+  "Helix Repeater": 0.918,
+  "Siege Breaker": 0.717,
+  "Rail Breaker": 1.04,
+  "Titanfall": 0.952,
+  "Moonbeam": 0.8
+ },
+ "titan0": {
+  "Pulse Cannon": 0.98,
+  "Arc Pulse": 1.04,
+  "Nova Pulse": 1.1,
+  "Twin Repeater": 0.98,
+  "Storm Repeater": 1.04,
+  "Helix Repeater": 1.042,
+  "Siege Breaker": 0.835,
+  "Rail Breaker": 1.04,
+  "Titanfall": 1.1,
+  "Moonbeam": 0.84
+ },
+ "titan1": {
+  "Pulse Cannon": 0.98,
+  "Arc Pulse": 1.04,
+  "Nova Pulse": 1.089,
+  "Twin Repeater": 0.98,
+  "Storm Repeater": 1.04,
+  "Helix Repeater": 1.049,
+  "Siege Breaker": 0.808,
+  "Rail Breaker": 1.04,
+  "Titanfall": 1.073,
+  "Moonbeam": 0.86
+ },
+ "titan2": {
+  "Pulse Cannon": 0.98,
+  "Arc Pulse": 1.04,
+  "Nova Pulse": 1.1,
+  "Twin Repeater": 0.98,
+  "Storm Repeater": 1.04,
+  "Helix Repeater": 1.1,
+  "Siege Breaker": 0.98,
+  "Rail Breaker": 1.04,
+  "Titanfall": 1.1,
+  "Moonbeam": 0.92
+ }
+}

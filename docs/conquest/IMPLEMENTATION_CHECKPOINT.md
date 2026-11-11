@@ -1516,3 +1516,206 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
 - Payments stay disabled; payouts, caps, league rates, gear stats and PvP rules unchanged. PHYSICAL_IPHONE_UNVERIFIED and Telegram
   Desktop unverified until the owner's playtest. Next: 5E Models, then Session 6 (`docs/ROADMAP.md`).
 
+
+## Checkpoint 31 — Session 5E-1: Meshy models into the game (branch `claude/meshy-models-integration-xixuuv`, from main `9e25c2c`) — IN PROGRESS
+
+Brief: owner's Session 5E-1 prompt (models only; arcade maps and the war-model addendum are 5E-2). Visual only: no stats, hitboxes,
+damage, AI, economy, prices, payments (still DISABLED), save schema or ownership touched. No merge/deploy without owner approval.
+
+### What exists on the branch (pushed)
+- **Pipeline** `dev/assets/meshy/` (one script `build.py`, one config `config.json`, README with the whole schema): orient + size to the
+  game, cut moving parts on the original mesh, decimate to LIGHT and FULL, unwrap (axis-projected charts packed by xatlas,
+  hidden faces get fewer texels), bake normal + AO + curvature from the original in the renderer's own tangent frame, synthesize
+  base / ORM / mask maps (`lib/paint.py`), write quantized meshopt GLBs with embedded WebP maps + manifest. Textured sources
+  (Moonbeam, later Meshy retextures) take colour / roughness / metal / normal detail from their own maps (`"textured": true`).
+- **Gate 1 (Vanguard): PASSED**, proof in `docs/art/meshy-proof/gate1/` (LIGHT 0.981-0.982 SSIM at phone battle size; FULL 0.996 /
+  0.983 / 0.975 at battle / Garage / 1920 desktop and indistinguishable on inspection). Settings approved: LIGHT chassis 18k
+  triangles + 512 px maps, FULL chassis 120k + 2048 px; weapons 7k / 45k; town 6k / 40k.
+- **Moving parts, data-driven** (every vertex carries a part index; the part table rides in a small float texture; a tank only
+  uploads 16 channel values): tracks = belt rebuilt from one clean link repeated around the hull of the wheel circles and conveyed
+  along that path in the vertex shader; road wheels spin by their own radius (tread liner keeps them round where they were fused
+  to the belt); turret base ring stays with the hull while the turret aims; each barrel recoils on its own channel; Helix
+  clusters spin up and down; antennas sway; glow parts pulse; one-level parenting (Colossus pods carry their running gear).
+- **Colour**: base map = factory look per rarity (camo olive Common, silver + violet Rare, dark metal + gold/amber Epic), with dirt
+  from AO, edge chips from curvature, dust, scratches. Chassis armour is re-tinted by (pilot paint / factory paint) so every paint
+  and Lunar Skin work; tracks, trim and glow keep fixed materials. Weapons are not paint-tinted.
+- **Runtime** `js/meshy3d.js` + plain-JS meshopt decoder `js/vendor/meshopt_decoder.js` (the website CSP forbids WebAssembly: found in
+  the real-app harness). Lazy per item, cached with LRU eviction, procedural model stays until the GLB is ready, never blocks a
+  battle. `M3.chassisKit / weaponKit` return the Meshy model when ready, so battle (`render3d.js`), Garage (`showroom.js`, FULL
+  fetched only there), menu pictures, hero and the Conquest player tank all use it; `GraphicsMotion` drives its parts. LOW graphics:
+  Lambert + base map and a reduced index set of the same file. Conquest enemy hulls stay procedural this session (crowd buckets).
+- **Town** (`js/conquest/plotview.js`, `townkit.js`): Meshy building groups and instanced turret base + head (head tracks and kicks
+  back on a shot), clock-driven spin / blink / pulse, card sprites redrawn when the model lands; kit models remain on LOW, in
+  the diorama and until the file is in.
+
+### State at the latest push (resume here) — written Nov 11 before context compaction
+**Branch** `claude/meshy-models-integration-xixuuv` (from main `9e25c2c`), everything below is pushed. No PR yet, nothing merged or deployed.
+
+**Done and verified**
+- All 31 items built and committed: `js/assets/meshy-v1/` = 62 GLBs + `manifest.json` (LIGHT 16.4 MB total, FULL 66.6 MB, largest
+  FULL 4.7 MB; originals 808 MB / 33.2M triangles, never committed). Table: `docs/art/meshy-proof/MANIFEST.md`.
+- `node dev/tests/meshy.mjs`: PASS, 1784 checks (in `website-check.yml`). Existing node suites still pass (graphics-motion,
+  graphics-release, hf-collection, hf-foundation, environment, chassis-family, defender-visual, legendary-visual, map-layout,
+  conquest-townkit, conquest-town, conquest-plot, conquest-style).
+- Real app (website build + fixture Worker, `dev/assets/meshy/proof/app.mjs`): ten loadouts, Garage + Free Test battle, HIGH and
+  LOW, before/after, **0 page errors**; every "after" tank is Meshy (chassis + weapon). Battle draw calls 47 -> 30, shader
+  programs 17 -> 14, triangles 40k -> 58k (two tanks + map, HIGH); LOW 17k -> 36k. Frame times there are software-GL numbers.
+- Town: `python dev/tests/conquest-town-captures.py` PASSES with the Meshy hookup live (no page errors, programs <= 16:
+  gallery HIGH 15, CC10 towns 11); the Meshy Command Center stands in the town and on its card
+  (`docs/art/meshy-proof/town/`).
+- `docs/art/meshy-proof/RETEXTURE.md`: the four retexture candidates with prompts (Command Center, Titanfall, Nova Pulse,
+  Storage Depot; chassis excluded on purpose because their armour must stay paint-tintable).
+
+**Approved settings (Gate 1, all in `dev/assets/meshy/config.json`)**
+- LIGHT: chassis 18,000 triangles (Bulwark 24,000), weapons / Moonbeam 7,000, town 6,000; 512 px maps; maxError 0.03,
+  crease 38 deg, padding 2, cage 0.012, 2x2 supersampled bake, hidden faces 0.3 texel scale, LOW index ratio 0.45.
+- FULL: chassis 120,000 + 2048 px, weapons 45,000 + 1024 px, Moonbeam 45,000 + 2048 px, town 40,000 + 1024 px; maxError 0.01,
+  padding 2, cage 0.008, 2x2 supersample, hidden 0.2; WebP normal 88 / base 86 / ORM 82 / mask 84.
+- Looks: `common` olive camo, `rare` silver + violet, `epic` dark + gold/amber, `weapon-*` (not paint-tinted), `town`, `moon`
+  (texture kept). Runtime glow gain 1.25 (clamped), environment intensity 1.0.
+
+**OWNER DIRECTION Nov 11 (mid-session, overrides the earlier weapon sizing) and the lead's decisions**
+Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassis. Requirements, with the later correction applied:
+1. Each weapon is scaled only UNIFORMLY as a whole (no stretching of any part); it keeps its design identity (Pulse one barrel,
+   Twin two, Siege short and thick, rails long). The "barrel 25-50% past the front" guide is dropped.
+2. Fit per class AND tier from measured hull dimensions: turret body width about 55-75% of hull width and never wider than the
+   hull, footprint inside the hull deck, turret height no more than about the hull's height, low aggressive silhouette, never
+   top-heavy. Heavier classes carry visibly heavier guns. Where a guide conflicts with the owner's chosen reference image in
+   `docs/art/references/tanks/`, the reference wins.
+3. Tier upgrades are visible through fit size: within a line Epic sits slightly larger than Rare, Rare than Common, still
+   inside the hull guides.
+4. Hitbox, muzzle and VFX positions stay correct. Check chassis and weapon colours against the chosen references; stock paint
+   must match the intended stock look and paints must still tint armour.
+5. Put a before/after proportion sheet for all 9 chassis x their weapons in `docs/art/meshy-proof/`, review it against the
+   references, refit anything toy-like, top-heavy or undersized.
+**Decisions logged (no questions asked, per owner):**
+- D1. The fit is computed at runtime from numbers already in every GLB (hull: `meta.visual` trackZ / trackW / ring / x0 / x1;
+  weapon: `meta.visual.width` + bounding box), so no asset rebuild is needed and a future Meshy re-export refits itself.
+  scale = min( k(tier) x hullWidth / turretBodyWidth, hullHeight x h(tier) / turretHeight, rear overhang inside the hull,
+  full weapon width <= hull width ), with k = 0.58 / 0.65 / 0.72 and h = 0.85 / 0.92 / 1.0 for Common / Rare / Epic.
+  The hull tier does not enter except through its own measured size. Applied once on the weapon group (uniform).
+- D2. This replaces the interim class map pushed in `1ee437a` (scout .64, vanguard .8, titan .92).
+- D3. The Moonbeam keeps the game's `MOON_SCALE` class map but is capped by the same hull guides.
+- D4. Gameplay is untouched: the simulation never reads visuals; muzzle flashes, halos and recoil use weapon-local points
+  inside the scaled group, so they stay on the visible muzzles.
+- D5. `M3.weaponKit` gets the chassis tier as an extra argument so the fit knows the exact hull (callers: `render3d.js`
+  buildTank, `showroom.js`, `conquest/view.js`).
+
+**Weapon fit: IMPLEMENTED and pushed (`72d7cee`), reviewed by the lead on the proportion sheets**
+- `js/meshy3d.js weaponFit()`: uniform scale = min( k(tier) x hullWidth / turretBodyWidth [.58 / .65 / .72],
+  max( h(tier) x hullHeight / turretBodyHeight [1.0 / 1.08 / 1.16], floor ), 0.98 x hullWidth / wholeWeaponWidth,
+  0.96 x rearDeck / turretRear ), then capped per tier at .98 / 1.04 / 1.10. floor = at least .50 / .54 / .58 of the hull
+  width while the turret stays under 1.35 hull heights (stops tall Meshy turrets from going toy-sized on low Scout hulls).
+  Antennas and periscopes do not count as turret height. The Moonbeam keeps `MOON_SCALE`, capped by the same guides.
+- Result (`docs/art/meshy-proof/fit/scales.json`): Scout class x0.39-0.84, Vanguard class x0.64-1.04, Titan class x0.81-1.10.
+  Sheets: `docs/art/meshy-proof/fit/<chassis>.webp` (before = every weapon at x1.00, after = fitted; all 9 chassis x 10 weapons).
+- Lead's review: before, turrets were as wide as or wider than the Scout-class hulls and top-heavy; after, every turret sits
+  inside its hull on all nine. First pass left every weapon at the upper limit on the Colossus (its track pods make the hull
+  measure wider than its deck) and top-heavy: fixed with the per-tier cap. Scout-class fits are bound by the "rear inside
+  the deck" guide, so Common weapons there are about 45-50% of hull width (below the 55% target): left as is, because pushing
+  them out would overhang the short deck. Siege Breaker is the smallest fit on every hull (tall blocky body): candidate for a
+  per-item nudge if the owner wants it heavier.
+- **Colour check against the nine chosen images: done** (`docs/art/meshy-proof/colour_check_stock_vs_reference.webp`). Findings
+  and decisions: Common hulls were too pale and clean -> darker, greyer olive (`paintA #4d5340`, `paintB #716e58`), more wear
+  and dirt. Rare hulls were light silver, references are dark gunmetal with violet lines -> `paintA #57606c`,
+  `paintB #434b56`. Paladin's reference is bright silver with gold trim, ours was dark -> per-item override
+  (`#b2b8c0` / `#8a919b`). Phantom and Colossus (dark with gold / amber) already matched. Titan's plow keeps its hazard
+  stripes (its prompt asks for them) although the reference plow is mostly bare steel. Seven chassis were rebuilt for this
+  (scout-0, scout-1, vanguard-0, vanguard-1, vanguard-2, titan-0, titan-1). The Meshy hull SHAPES differ from the reference
+  images (they were generated from text prompts, not from those images): colour and trim placement follow the references,
+  shape follows the owner's Meshy models. Paints still tint armour (ratio against the new factory colours).
+  If the rebuilt GLBs are not in the last commit, rerun `build.py --only` for those seven ids.
+
+**Open problems / known deviations**
+- Stock colour check against the nine chosen chassis images has not been done pairing by pairing (Vanguard camo was tuned by
+  eye; Rare was darkened once because it rendered near-white).
+- Storm Repeater kicks as one unit (clamps span both barrels in the source). Arc Pulse / Storm / Rail Breaker carry the barrel
+  as a `parts` entry so barrel glow pulses with charge.
+- Sentinel: mud-flap slivers turn with the wheels on the -Z side in motion. Titan: overlapping source wheels, three per side
+  lose a lens. Colossus: bogie link arm over wheels 3-4 of each pod turns with the wheels; no reactor geometry in the source
+  (amber glow patches under the hull instead). Phantom: wheels turn 4 mm off-centre. Bulwark LIGHT: front ram coarse.
+- Town turrets overhang their 4 m site with the barrel (cannon 3.0 m from the pivot, railgun 3.4 m). Cannon / rocket / laser
+  use a `parts` ring with `ringTop: -1` (harmless build warning). Town level is shown by a small scale step only.
+- Conquest enemy hulls, the town diorama and LOW-graphics town stay on the procedural kit models. LOW battle triangles
+  (36k for two tanks + map) are above the old 17k: acceptable on software GL, unmeasured on a real low-end phone.
+- Website CSP forbids WebAssembly: the plain-JS meshopt decoder is used everywhere (fine for LIGHT; a FULL chassis decodes in
+  well under a second on desktop, unmeasured on a phone).
+- Physical iPhone / Telegram check has not been done by anyone.
+
+**Remaining work, in order**
+1. (done) Weapon fit implemented, tests green.
+2. (done, lead review only) Proportion sheets in `docs/art/meshy-proof/fit/`. Still to do: compare each chassis sheet with its
+   image in `docs/art/references/tanks/chosen/` and nudge single pairings with a per-item factor if any still reads wrong
+   (regenerate with `node dev/assets/meshy/proof/app.mjs <dir> fit`).
+3. Colour check of the 9 chassis + 10 weapons against the references; adjust `looks` / `lookOverride` in the config; rebuild only
+   the items that change (`build.py --only ...`; originals: release `meshy-models`).
+4. Regenerate the app proof: `node worker/build-web.mjs && node dev/assets/meshy/proof/app.mjs <dir>` then
+   `python dev/assets/meshy/proof/sheets.py <dir> docs/art/meshy-proof/app`; motion sequences:
+   `python dev/assets/meshy/proof/motion.py js/assets/meshy-v1 docs/art/meshy-proof/motion`.
+5. Write `docs/art/meshy-proof/README.md` (what each sheet shows, load size/time, frame time and memory with the honest
+   software-GL caveat), run the browser suites (`conquest-check.yml`, `website-check.yml`, `lab-ui-check.yml` lists), open the
+   PR for CI only. No merge, no deploy.
+
+**Addendum, Nov 11 (latest push)**
+- Seven chassis rebuilt with the reference-matched palettes and committed (`259c6d2`); `node dev/tests/meshy.mjs` PASS (1784).
+- Proof regenerated after the weapon fit and the recolour: `docs/art/meshy-proof/app/` (Garage + battle before/after HIGH and
+  LOW, paint sheets, `app.json`: 0 errors), `fit/` (9 proportion sheets + `scales.json`), `motion/` (10 frame sequences),
+  `colour_check_stock_vs_reference.webp`, `town/`, `README.md`, `MANIFEST.md`, `RETEXTURE.md`.
+- Lead's second colour review: Paladin (silver + gold), Phantom and Colossus (dark + gold / amber) match their references.
+  Common hulls are closer but still read paler and cleaner than the worn olive references; Rare hulls are mid grey-blue,
+  still lighter than the dark gunmetal references. **Next tuning step if the owner wants it closer:** `looks.common.paintA`
+  toward `#3f4535` (+ `wear` 1.5), `looks.rare.paintA` toward `#454d58`, then `build.py --only` the six Common / Rare chassis
+  and rerun the proof scripts.
+- Cache fix: models in use are never evicted (the studio viewer exposed it).
+- Draft PR **#105** opened for CI and owner review only (subscribed for CI results). Do not merge or deploy without owner approval.
+
+**CI state on PR #105 (Nov 11, 02:50 UTC) — RED at that push; ROOT CAUSE FOUND AND FIXED, see the section after this one**
+- Failing: `conquest`, `transmission (chromium)`, `transmission (webkit)` (workflow `conquest-check.yml`). Everything else was
+  still running or green at the time of writing.
+- Reproduced locally: `python dev/tests/conquest-living-war.py --engine chromium --quality high` fails its HIGH budget
+  assertion with `materialPrograms: 18` against the limit of 16 (draw calls 66-70 are inside their limit). `conquest-
+  transmission.py`, `conquest-session-032.py`, `conquest-session-033.py` pass locally. The `conquest` job very likely fails on
+  the same program budget (`conquest-session5d.py` and others assert programs <= 16); not yet reproduced.
+- Tried: showing the plain foundation tank in Conquest while the Meshy files load (`Meshy3D.pending`, pushed) so the
+  high-fidelity procedural programs are never compiled there. Still 18, so the two extra programs come from the Meshy
+  materials themselves (probably chassis and weapon compiling as two variants, or a HIGH + shadow/fog variant).
+- Next step: in that test's page print `renderer.info.programs.map(p=>p.cacheKey)` (or names) with and without
+  `window.LUNAR_MESHY=false`, find the two added keys, then make the Conquest player tank use ONE Meshy program (same
+  defines for chassis and weapon, e.g. force the moving-part path and the mask on both, or use the Lambert variant in
+  Conquest). Do not raise the 16 limit and do not skip the test. Local run needs
+  `ln -sfn /opt/pw-browsers/chromium_headless_shell-1243 /opt/pw-browsers/chromium_headless_shell-1254` (Python Playwright
+  1.65 expects build 1254) and `git checkout docs` afterwards (the tests rewrite committed captures).
+
+**Program budget fix (Nov 11, later push) — both budget failures fixed, verified locally in Chromium**
+Conquest keeps every shader program it has ever drawn for the whole session (`keepPrograms`, no recompile hitches), the world
+and the town share one renderer, and everything except the player tank already uses 13 of the 16. Found by listing
+`renderer.info.programs` (with their owners) in the failing tests, with and without `window.LUNAR_MESHY=false`:
+1. **World fight** (`conquest-living-war.py --quality high`, jobs `transmission (chromium / webkit)`): 18. The tank cost 5 instead
+   of the old 3: the HIGH Meshy program, the LOW one (the session drops to auto-low part-way, on CI and on a struggling phone,
+   and the tank is rebuilt with the Lambert variant) and 3 for the stand-in tank shown while the files load (its three
+   materials were cloned by `GraphicsMotion`). Chassis and weapon already shared ONE program per quality.
+   Fix (`js/conquest/view.js syncLoadout`): the stand-in is merged into `archMaterial`, the material enemy hulls already use,
+   and `GraphicsMotion` clones nothing for it, so it compiles no program of its own. Vault parts wait for the real model.
+2. **Fully built town raid** (`conquest-base-builder.py`, job `conquest`, step "Portrait player journey"): 18. That test counts
+   every program, and three's own equirect -> PMREM conversion of the Meshy studio map leaves two helper programs alive for
+   the renderer's life (`EquirectangularToCubeUV`, `SphericalGaussianBlur`).
+   Fix (`js/meshy3d.js hostRenderer / hostPrefilter / envHook`): Conquest registers its renderer; the studio map is prefiltered
+   once by a `PMREMGenerator` that is disposed straight away, and Meshy meshes drawn by that renderer use the prefiltered map.
+   No helper program stays. Battle, Garage and hub renderers are untouched. The CC10 town capture is the same before and
+   after (mean difference 0.03 of 255, animation noise).
+- No limit raised, no test skipped or edited.
+- Results on the final code: `conquest-living-war.py --engine chromium --quality high` PASS at 320 and 390 with
+  `materialPrograms: 15`; `conquest-base-builder.py` PASS (CC10 town 14, raid 16: the same 16 as before Meshy);
+  every other browser test of `conquest-check.yml` PASSES locally in Chromium on the final code (onboarding, earned-browser,
+  earned-end-to-end, preview x2, airdrop, terraform-captures, minerals, hub, find-base, plot-ui, session5d, desktop-keys,
+  transmission, session-032, session-033 + fallback, living-war fallback, flagship-browser 390 and 320 siege), plus
+  `conquest-regression.sh` and `node dev/tests/meshy.mjs` (1784). Run browser tests one at a time: `conquest-session-032.py`
+  timed out once with three browsers running side by side and passes alone.
+  Stand-in checked by eye with the downloads held back: a lit, upright foundation tank, no errors.
+- Headroom is thin by design of the budget: town raid = 13 + Meshy LOW + Meshy HIGH + Meshy HIGH instanced (town turrets) = 16.
+- Known remainder (no test covers it, not fixed here): add-ons drawn with their own materials on top of a Meshy tank
+  (fittings, Hull Plating, vault parts) can add 2-3 programs; with a mid-session drop to auto-low that reaches 17-18.
+  If it shows on a device: merge those add-ons into `archMaterial` the same way the stand-in is (helper `add` in `syncLoadout`).
+- In this container the Conquest tank runs the LOW (Lambert) Meshy material (software GL), so the HIGH tank with the
+  prefiltered map was verified through the town models only (same material path). Webkit is not installed here; its job
+  failed on the same assertion with the same numbers, so the same fix applies. CI confirms both.

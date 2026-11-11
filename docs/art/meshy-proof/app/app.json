@@ -1,0 +1,701 @@
+{
+ "environment": "Chromium + SwiftShader (software GL), local fixture Worker, website build",
+ "runs": {
+  "before": {
+   "loadouts": {
+    "scout0-pulse0|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 33828,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 1,
+     "frameMsP90": 3.9
+    },
+    "scout1-twin0|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 35624,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 1,
+     "frameMsP90": 1.7
+    },
+    "scout2-moon2|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 48,
+     "triangles": 46528,
+     "programs": 17,
+     "geometries": 50,
+     "textures": 10,
+     "frameMsMedian": 1.2,
+     "frameMsP90": 6.9
+    },
+    "vanguard0-pulse1|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 41960,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 1,
+     "frameMsP90": 2.4
+    },
+    "vanguard1-twin1|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 38872,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1
+    },
+    "vanguard2-siege0|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 37336,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 5
+    },
+    "titan0-siege1|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 39728,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 5.5
+    },
+    "titan1-pulse2|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 48,
+     "triangles": 39268,
+     "programs": 17,
+     "geometries": 50,
+     "textures": 10,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 2.3
+    },
+    "titan2-twin2|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 49,
+     "triangles": 46212,
+     "programs": 17,
+     "geometries": 51,
+     "textures": 10,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 5
+    },
+    "titan2-siege2|high": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 44460,
+     "programs": 17,
+     "geometries": 49,
+     "textures": 10,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 4.9
+    },
+    "scout0-pulse0|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 14296,
+     "programs": 18,
+     "geometries": 53,
+     "textures": 12,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
+    },
+    "scout1-twin0|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 14964,
+     "programs": 18,
+     "geometries": 55,
+     "textures": 12,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.6
+    },
+    "scout2-moon2|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 46,
+     "triangles": 17752,
+     "programs": 18,
+     "geometries": 60,
+     "textures": 12,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1
+    },
+    "vanguard0-pulse1|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 16792,
+     "programs": 18,
+     "geometries": 60,
+     "textures": 12,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1
+    },
+    "vanguard1-twin1|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 15824,
+     "programs": 18,
+     "geometries": 61,
+     "textures": 12,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 3.1
+    },
+    "vanguard2-siege0|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 15388,
+     "programs": 18,
+     "geometries": 61,
+     "textures": 12,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.4
+    },
+    "titan0-siege1|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 17124,
+     "programs": 18,
+     "geometries": 61,
+     "textures": 12,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 2.8
+    },
+    "titan1-pulse2|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 16364,
+     "programs": 18,
+     "geometries": 61,
+     "textures": 12,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.6
+    },
+    "titan2-twin2|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 19464,
+     "programs": 18,
+     "geometries": 61,
+     "textures": 12,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 2.9
+    },
+    "titan2-siege2|low": {
+     "meshyChassis": null,
+     "meshyWeapon": null,
+     "calls": 47,
+     "triangles": 18888,
+     "programs": 18,
+     "geometries": 55,
+     "textures": 12,
+     "frameMsMedian": 1,
+     "frameMsP90": 2.1
+    }
+   }
+  },
+  "after": {
+   "loadouts": {
+    "scout0-pulse0|high": {
+     "meshyChassis": "chassis-scout-0",
+     "meshyWeapon": "weapon-pulse-0",
+     "calls": 30,
+     "triangles": 57031,
+     "programs": 14,
+     "geometries": 36,
+     "textures": 25,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
+    },
+    "scout1-twin0|high": {
+     "meshyChassis": "chassis-scout-1",
+     "meshyWeapon": "weapon-twin-0",
+     "calls": 30,
+     "triangles": 57936,
+     "programs": 14,
+     "geometries": 38,
+     "textures": 35,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.8
+    },
+    "scout2-moon2|high": {
+     "meshyChassis": "chassis-scout-2",
+     "meshyWeapon": "weapon-moon",
+     "calls": 30,
+     "triangles": 57034,
+     "programs": 14,
+     "geometries": 35,
+     "textures": 45,
+     "frameMsMedian": 1,
+     "frameMsP90": 5.2
+    },
+    "vanguard0-pulse1|high": {
+     "meshyChassis": "chassis-vanguard-0",
+     "meshyWeapon": "weapon-pulse-1",
+     "calls": 30,
+     "triangles": 56956,
+     "programs": 14,
+     "geometries": 36,
+     "textures": 50,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 9
+    },
+    "vanguard1-twin1|high": {
+     "meshyChassis": "chassis-vanguard-1",
+     "meshyWeapon": "weapon-twin-1",
+     "calls": 30,
+     "triangles": 57024,
+     "programs": 14,
+     "geometries": 38,
+     "textures": 60,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.3
+    },
+    "vanguard2-siege0|high": {
+     "meshyChassis": "chassis-vanguard-2",
+     "meshyWeapon": "weapon-siege-0",
+     "calls": 30,
+     "triangles": 57078,
+     "programs": 14,
+     "geometries": 40,
+     "textures": 70,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.6
+    },
+    "titan0-siege1|high": {
+     "meshyChassis": "chassis-titan-0",
+     "meshyWeapon": "weapon-siege-1",
+     "calls": 30,
+     "triangles": 56998,
+     "programs": 14,
+     "geometries": 42,
+     "textures": 80,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.2
+    },
+    "titan1-pulse2|high": {
+     "meshyChassis": "chassis-titan-1",
+     "meshyWeapon": "weapon-pulse-2",
+     "calls": 30,
+     "triangles": 64841,
+     "programs": 14,
+     "geometries": 44,
+     "textures": 90,
+     "frameMsMedian": 0.6,
+     "frameMsP90": 5
+    },
+    "titan2-twin2|high": {
+     "meshyChassis": "chassis-titan-2",
+     "meshyWeapon": "weapon-twin-2",
+     "calls": 30,
+     "triangles": 57197,
+     "programs": 14,
+     "geometries": 46,
+     "textures": 100,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
+    },
+    "titan2-siege2|high": {
+     "meshyChassis": "chassis-titan-2",
+     "meshyWeapon": "weapon-siege-2",
+     "calls": 30,
+     "triangles": 57183,
+     "programs": 14,
+     "geometries": 47,
+     "textures": 105,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.6
+    },
+    "scout0-pulse0|low": {
+     "meshyChassis": "chassis-scout-0",
+     "meshyWeapon": "weapon-pulse-0",
+     "calls": 27,
+     "triangles": 35275,
+     "programs": 15,
+     "geometries": 47,
+     "textures": 105,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.3
+    },
+    "scout1-twin0|low": {
+     "meshyChassis": "chassis-scout-1",
+     "meshyWeapon": "weapon-twin-0",
+     "calls": 27,
+     "triangles": 37340,
+     "programs": 15,
+     "geometries": 49,
+     "textures": 105,
+     "frameMsMedian": 1,
+     "frameMsP90": 1.7
+    },
+    "scout2-moon2|low": {
+     "meshyChassis": "chassis-scout-2",
+     "meshyWeapon": "weapon-moon",
+     "calls": 27,
+     "triangles": 34503,
+     "programs": 15,
+     "geometries": 51,
+     "textures": 105,
+     "frameMsMedian": 0.8,
+     "frameMsP90": 1.2
+    },
+    "vanguard0-pulse1|low": {
+     "meshyChassis": "chassis-vanguard-0",
+     "meshyWeapon": "weapon-pulse-1",
+     "calls": 27,
+     "triangles": 34724,
+     "programs": 15,
+     "geometries": 52,
+     "textures": 105,
+     "frameMsMedian": 0.5,
+     "frameMsP90": 1.2
+    },
+    "vanguard1-twin1|low": {
+     "meshyChassis": "chassis-vanguard-1",
+     "meshyWeapon": "weapon-twin-1",
+     "calls": 27,
+     "triangles": 36355,
+     "programs": 15,
+     "geometries": 54,
+     "textures": 105,
+     "frameMsMedian": 0.9,
+     "frameMsP90": 1.9
+    },
+    "vanguard2-siege0|low": {
+     "meshyChassis": "chassis-vanguard-2",
+     "meshyWeapon": "weapon-siege-0",
+     "calls": 27,
+     "triangles": 36068,
+     "programs": 15,
+     "geometries": 56,
+     "textures": 105,
+     "frameMsMedian": 0.5,
+     "frameMsP90": 1.1
+    },
+    "titan0-siege1|low": {
+     "meshyChassis": "chassis-titan-0",
+     "meshyWeapon": "weapon-siege-1",
+     "calls": 27,
+     "triangles": 36369,
+     "programs": 15,
+     "geometries": 58,
+     "textures": 105,
+     "frameMsMedian": 0.5,
+     "frameMsP90": 1
+    },
+    "titan1-pulse2|low": {
+     "meshyChassis": "chassis-titan-1",
+     "meshyWeapon": "weapon-pulse-2",
+     "calls": 27,
+     "triangles": 41289,
+     "programs": 15,
+     "geometries": 60,
+     "textures": 105,
+     "frameMsMedian": 0.5,
+     "frameMsP90": 0.7
+    },
+    "titan2-twin2|low": {
+     "meshyChassis": "chassis-titan-2",
+     "meshyWeapon": "weapon-twin-2",
+     "calls": 27,
+     "triangles": 36452,
+     "programs": 15,
+     "geometries": 62,
+     "textures": 105,
+     "frameMsMedian": 0.7,
+     "frameMsP90": 1.1
+    },
+    "titan2-siege2|low": {
+     "meshyChassis": "chassis-titan-2",
+     "meshyWeapon": "weapon-siege-2",
+     "calls": 27,
+     "triangles": 35711,
+     "programs": 15,
+     "geometries": 63,
+     "textures": 105,
+     "frameMsMedian": 0.6,
+     "frameMsP90": 0.8
+    }
+   },
+   "loads": [
+    {
+     "id": "chassis-vanguard-1",
+     "q": "light",
+     "bytes": 830724,
+     "ms": 2322
+    },
+    {
+     "id": "weapon-pulse-1",
+     "q": "light",
+     "bytes": 363844,
+     "ms": 2476
+    },
+    {
+     "id": "chassis-titan-2",
+     "q": "light",
+     "bytes": 800172,
+     "ms": 2377
+    },
+    {
+     "id": "weapon-siege-2",
+     "q": "light",
+     "bytes": 416792,
+     "ms": 2340
+    },
+    {
+     "id": "weapon-pulse-1",
+     "q": "full",
+     "bytes": 1080644,
+     "ms": 2316
+    },
+    {
+     "id": "chassis-scout-0",
+     "q": "light",
+     "bytes": 743264,
+     "ms": 2198
+    },
+    {
+     "id": "weapon-pulse-0",
+     "q": "light",
+     "bytes": 344820,
+     "ms": 2329
+    },
+    {
+     "id": "chassis-vanguard-1",
+     "q": "full",
+     "bytes": 4284524,
+     "ms": 2569
+    },
+    {
+     "id": "weapon-pulse-0",
+     "q": "full",
+     "bytes": 1010964,
+     "ms": 2321
+    },
+    {
+     "id": "chassis-scout-0",
+     "q": "full",
+     "bytes": 3692080,
+     "ms": 2476
+    },
+    {
+     "id": "chassis-vanguard-0",
+     "q": "light",
+     "bytes": 841272,
+     "ms": 1743
+    },
+    {
+     "id": "chassis-scout-1",
+     "q": "light",
+     "bytes": 952300,
+     "ms": 3781
+    },
+    {
+     "id": "weapon-twin-0",
+     "q": "light",
+     "bytes": 318064,
+     "ms": 4811
+    },
+    {
+     "id": "chassis-scout-1",
+     "q": "full",
+     "bytes": 4564404,
+     "ms": 9358
+    },
+    {
+     "id": "weapon-twin-0",
+     "q": "full",
+     "bytes": 997368,
+     "ms": 9619
+    },
+    {
+     "id": "chassis-scout-2",
+     "q": "light",
+     "bytes": 720848,
+     "ms": 3734
+    },
+    {
+     "id": "weapon-moon",
+     "q": "light",
+     "bytes": 469660,
+     "ms": 4468
+    },
+    {
+     "id": "chassis-scout-2",
+     "q": "full",
+     "bytes": 3766664,
+     "ms": 9545
+    },
+    {
+     "id": "weapon-moon",
+     "q": "full",
+     "bytes": 2543528,
+     "ms": 10013
+    },
+    {
+     "id": "chassis-vanguard-0",
+     "q": "full",
+     "bytes": 4709860,
+     "ms": 2260
+    },
+    {
+     "id": "weapon-pulse-1",
+     "q": "full",
+     "bytes": 1080644,
+     "ms": 3249
+    },
+    {
+     "id": "weapon-twin-1",
+     "q": "light",
+     "bytes": 375132,
+     "ms": 3292
+    },
+    {
+     "id": "chassis-vanguard-1",
+     "q": "full",
+     "bytes": 4284524,
+     "ms": 9107
+    },
+    {
+     "id": "weapon-twin-1",
+     "q": "full",
+     "bytes": 1202968,
+     "ms": 10291
+    },
+    {
+     "id": "chassis-vanguard-2",
+     "q": "light",
+     "bytes": 803256,
+     "ms": 3437
+    },
+    {
+     "id": "weapon-siege-0",
+     "q": "light",
+     "bytes": 409184,
+     "ms": 4105
+    },
+    {
+     "id": "weapon-siege-0",
+     "q": "full",
+     "bytes": 1261068,
+     "ms": 9232
+    },
+    {
+     "id": "chassis-vanguard-2",
+     "q": "full",
+     "bytes": 4112752,
+     "ms": 10601
+    },
+    {
+     "id": "chassis-titan-0",
+     "q": "light",
+     "bytes": 718476,
+     "ms": 2828
+    },
+    {
+     "id": "weapon-siege-1",
+     "q": "light",
+     "bytes": 457476,
+     "ms": 9473
+    },
+    {
+     "id": "chassis-titan-0",
+     "q": "full",
+     "bytes": 3827148,
+     "ms": 10287
+    },
+    {
+     "id": "weapon-siege-1",
+     "q": "full",
+     "bytes": 1336252,
+     "ms": 11168
+    },
+    {
+     "id": "chassis-titan-1",
+     "q": "light",
+     "bytes": 1083120,
+     "ms": 3465
+    },
+    {
+     "id": "weapon-pulse-2",
+     "q": "light",
+     "bytes": 383204,
+     "ms": 4255
+    },
+    {
+     "id": "weapon-pulse-2",
+     "q": "full",
+     "bytes": 1268800,
+     "ms": 10264
+    },
+    {
+     "id": "chassis-titan-1",
+     "q": "full",
+     "bytes": 4463032,
+     "ms": 10610
+    },
+    {
+     "id": "weapon-twin-2",
+     "q": "light",
+     "bytes": 487972,
+     "ms": 3363
+    },
+    {
+     "id": "chassis-titan-2",
+     "q": "full",
+     "bytes": 4259568,
+     "ms": 4698
+    },
+    {
+     "id": "weapon-twin-2",
+     "q": "full",
+     "bytes": 1373924,
+     "ms": 10858
+    },
+    {
+     "id": "weapon-siege-2",
+     "q": "full",
+     "bytes": 1335124,
+     "ms": 1019
+    }
+   ],
+   "memory": {
+    "jsHeapMB": 77.6,
+    "meshyStore": 22,
+    "meshyBytesDownloaded": 67975420
+   }
+  }
+ },
+ "errors": []
+}

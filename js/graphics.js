@@ -7,7 +7,7 @@ const GraphicsMotion=(()=>{
  const reduced=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
  const state=()=>({left:0,right:0,kick:0,charge:0,hit:0,heading:null,aim:0,phase:0,profile:'pulse'});
  const delta=a=>Math.atan2(Math.sin(a),Math.cos(a));
- function shot(s,arch){s.profile=PROFILES[arch]?arch:'pulse';s.kick=Math.min(PROFILES[s.profile].kick*1.5,s.kick+PROFILES[s.profile].kick);s.charge=1;}
+ function shot(s,arch){s.profile=PROFILES[arch]?arch:'pulse';s.kick=Math.min(PROFILES[s.profile].kick*1.5,s.kick+PROFILES[s.profile].kick);s.charge=1;s.shots=(s.shots|0)+1;}   // shots: which barrel of a Meshy weapon recoils next
  function advance(s,dt,v={},quiet=reduced()){
   dt=Math.max(0,Math.min(.05,dt));const hd=v.heading||0,dh=s.heading===null?0:delta(hd-s.heading),dist=(v.dx||0)*Math.cos(hd)+(v.dz||0)*Math.sin(hd);s.heading=hd;
   if(!quiet){const half=v.trackHalfWidth??.78;s.left+=dist+dh*half;s.right+=dist-dh*half;s.phase+=dt;s.kick*=Math.exp(-PROFILES[s.profile].damp*dt);s.hit*=Math.exp(-18*dt);}else{s.kick=0;s.hit=0;}
@@ -22,7 +22,9 @@ const GraphicsMotion=(()=>{
  function attach(root,track,{includeOwned=false}={}){
   const s=state(),uniforms={uDrive:{value:new THREE.Vector2()},uTrack:{value:new THREE.Vector4(...(track||[1,.22,.25,0]))},uCharge:{value:0}},materials=new Map();
   root.traverse(o=>{if(!o.isMesh||(!o.material?.userData.hfShared&&!includeOwned)||o.material.userData.motionSkip)return;const base=o.material,driven=!!o.geometry.attributes.drive,key=base.uuid+'|'+driven;let m=materials.get(key);if(!m){m=base.clone();m.userData={graphicsOwned:true};m.defaultAttributeValues={...m.defaultAttributeValues,drive:[0,0,0,0]};m.customProgramCacheKey=()=> 'lunar-motion-v1|'+driven;m.onBeforeCompile=shader=>{Object.assign(shader.uniforms,uniforms);shader.vertexShader=GLSL+shader.vertexShader;if(driven){shader.vertexShader=shader.vertexShader.replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nvec2 oldDrive,newDrive;float driveAngle;drivePose(oldDrive,newDrive,driveAngle);objectNormal.xy=driveRotate(objectNormal.xy,driveAngle);\n#ifdef USE_TANGENT\nobjectTangent.xy=driveRotate(objectTangent.xy,driveAngle);\n#endif').replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed.xy=driveRotate(transformed.xy-oldDrive,driveAngle)+newDrive;');}shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCore=position.x;');shader.fragmentShader='uniform float uCharge;varying float vCore;\n'+shader.fragmentShader; if(base.type==='MeshBasicMaterial')shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb*=1.0+.20*uCharge*(.6+.4*sin(vCore*18.0-uCharge*7.0));');};materials.set(key,m);}o.material=m;});
-  let disposed=false;const motion={state:s,uniforms,step(dt,v,quiet){advance(s,dt,v,quiet);uniforms.uDrive.value.set(s.left,s.right);uniforms.uCharge.value=quiet?0:s.charge;},dispose(){if(disposed)return;disposed=true;for(const m of materials.values())m.dispose();materials.clear();},materials};root.userData.graphicsMotion=motion;return motion;
+  // Meshy models carry their own moving parts (js/meshy3d.js); they are driven from the same cosmetic state
+  const meshy=typeof Meshy3D!=='undefined'?Meshy3D.motion(root):null;
+  let disposed=false;const motion={state:s,uniforms,meshy,step(dt,v,quiet){advance(s,dt,v,quiet);uniforms.uDrive.value.set(s.left,s.right);uniforms.uCharge.value=quiet?0:s.charge;if(meshy)meshy.step(s,Math.max(0,Math.min(.05,dt)),quiet===undefined?reduced():quiet);},dispose(){if(disposed)return;disposed=true;for(const m of materials.values())m.dispose();materials.clear();if(meshy)meshy.dispose();},materials};root.userData.graphicsMotion=motion;return motion;
  }
  return {PROFILES,state,shot,advance,attach,reduced,delta};
 })();
