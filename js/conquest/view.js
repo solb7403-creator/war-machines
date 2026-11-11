@@ -78,7 +78,7 @@ class View {
  const body=new T.Group();body.rotation.y=-Math.PI/2;this.vehicle.add(body);
  const add=(raw,parent)=>{parent.add(M3.meshOf(M3.bake(raw.k),null,this.modelMats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);parent.add(m);}};
  const H=M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');const hullB=M3.bake(H.k);body.add(M3.meshOf(hullB,null,this.modelMats));for(const a of H.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);body.add(m);}
- const gun=new T.Group();this.gun=gun;gun.position.y=H.meta.ty;body.add(gun);gun.scale.setScalar(M3.weaponScale(L.w.a,L.c.c));add(M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c),gun);
+ const gun=new T.Group();this.gun=gun;gun.position.y=H.meta.ty;body.add(gun);const Wkit=M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c);gun.scale.setScalar(Wkit.meta.scale||M3.weaponScale(L.w.a,L.c.c));add(Wkit,gun);
  if(this.authority?.state?.achievements?.['field-veteran']){this.form(body,this.box,-.55,H.meta.ty*.7,0,.12,.18,1.25,0xf0d38c);this.form(body,this.box,-.65,H.meta.ty*.7+.15,0,.14,.12,.6,0x8ee8df);}
  const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};add(M3.fittingKit(fits,team,'body',context),body);add(M3.fittingKit(fits,team,'mount',context),gun);
  if(Array.isArray(L.ap)&&L.ap.some(Boolean)&&M3.plateKit){const low=this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low';add(M3.plateKit(L.ap,'body',context,low),body);add(M3.plateKit(L.ap,'mount',context,low),gun);}   // Hull Plating (RESOURCE_ECONOMY.md §6.1)

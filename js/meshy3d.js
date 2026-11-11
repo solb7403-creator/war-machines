@@ -266,10 +266,13 @@ const Meshy3D=(()=>{
   return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:addons(asset,team,gems),
    meta:Object.assign({ty:M.ty||0,bob:0,halos:(M.halos||[]).map(h=>h.slice()),trail:[],tc:(I.look&&I.look.paintA)||'#8a97ab',track:M.track||[1,.22,.25,0],meshy:asset.id,profile:cls+':'+tier,lunar:lunar&&M.lunar?M.lunar:undefined,legend:lunar?'lunar-black-gold':undefined},M.extra||{})};
  }
+ // Meshy turrets are bulkier than the procedural housings, so (like the Moonbeam's class map) they are sized to the hull
+ // class they sit on. Applied once on the weapon group; muzzle FX follow because tips are weapon-local.
+ const WEAPON_FIT={scout:.64,vanguard:.8,titan:.92};
  function weaponKit(arch,tier,P,team,lunar,cls){
   const asset=best(itemId.weapon(arch,tier));if(!asset)return null;
   const I=asset.info,M=I.meta||{};
-  return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:[],meta:{tips:(M.tips||[[1.9,.25,0]]).map(t=>t.slice()),halos:(M.halos||[]).map(h=>h.slice()),meshy:asset.id,barrels:M.barrels||0,profile:arch+':'+tier,legend:arch==='moon'?'moonbeam-unified':undefined}};
+  return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:[],meta:{tips:(M.tips||[[1.9,.25,0]]).map(t=>t.slice()),halos:(M.halos||[]).map(h=>h.slice()),meshy:asset.id,barrels:M.barrels||0,scale:arch==='moon'?undefined:WEAPON_FIT[cls]||WEAPON_FIT.vanguard,profile:arch+':'+tier,legend:arch==='moon'?'moonbeam-unified':undefined}};
  }
  // measured dimensions of the active Meshy model in the CHASSIS_VISUALS / WEAPON_VISUALS shape (fittings and plates seat on these)
  const visual=(kind,a,t)=>{const as=peek(kind==='chassis'?itemId.chassis(a,t):itemId.weapon(a,t),'light');return as&&as.info.meta&&as.info.meta.visual||null;};

@@ -179,7 +179,7 @@ function buildTank(spec,mats){
  tur.position.y=H.meta.ty;body.add(tur);
  // tg = aim + recoil; wg = the weapon in its own kit space, scaled once per chassis (class x tier; Moonbeam only).
  // wmeta tips/halos and anim pivots are wg-local, so muzzle FX follow via wpos(o.wg,…) with no second scale.
- const ws=spec.boss?1:M3.weaponScale(spec.arch,spec.cls,spec.ct),tg=new THREE.Group();tur.add(tg);
+ const ws=spec.boss?1:Wk.meta.scale||M3.weaponScale(spec.arch,spec.cls,spec.ct),tg=new THREE.Group();tur.add(tg);
  let wg=tg;if(ws!==1){wg=new THREE.Group();wg.scale.setScalar(ws);tg.add(wg);}
  wg.add(M3.meshOf(Wk.b,null,mats));
  for(const a of Wk.anims){const m=M3.meshOf(a.b,null,mats);m.position.set(a.p[0],a.p[1],a.p[2]);wg.add(m);anims.push({o:m,axis:a.axis,spd:a.spd,type:a.type});}
