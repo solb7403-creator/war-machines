@@ -1936,7 +1936,10 @@ hitboxes, sockets, muzzle endpoints, chassis / weapon base stats, enemyStats. Ch
 charge, super damage, the timing bar, AI super skill. Not started (later sessions): arcade map art (5E-2c), Conquest building /
 prop rebuilds, the town tank, see-through removal, the visual addendum, war models (5E-2d).
 
-@@RELEASE@@
+### Release (pre-approved by the owner in the session brief: CI green + two reviewers pass -> PR -> merge -> deploys -> verify)
+- PR #115 (`claude/supers-destruction-5e-2b-ykuxgp` -> main), build stamp `20261111221214`, `PVP_V` 5 (phones on the old build are
+  asked to update before a live match, as with every protocol step).
+- Merge commit, Pages and Worker deploy run IDs and the health / version check: see "Release record" at the end of this checkpoint.
 
 ### What shipped
 **Slice 1, supers**
