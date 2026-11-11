@@ -2152,7 +2152,7 @@ the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5
   [43119552497](https://github.com/solb7403-creator/war-machines/actions/runs/43119552497)) and the Graphify code index (run
   [43119552463](https://github.com/solb7403-creator/war-machines/actions/runs/43119552463)): success. Equipment Balance (run
   [43119553157](https://github.com/solb7403-creator/war-machines/actions/runs/43119553157), the same suite that was green on the PR
-  head): still running when this record was first written; result in the next line once it ends.
+  head): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
 - Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment), so main
   was merged into it instead; this record is the only change it carries on top of main.
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build misbehaves,
