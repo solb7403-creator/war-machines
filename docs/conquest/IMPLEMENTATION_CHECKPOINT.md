@@ -1669,7 +1669,7 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
 - Cache fix: models in use are never evicted (the studio viewer exposed it).
 - Draft PR **#105** opened for CI and owner review only (subscribed for CI results). Do not merge or deploy without owner approval.
 
-**CI state on PR #105 (Nov 11, 02:50 UTC) — RED, next task for whoever resumes**
+**CI state on PR #105 (Nov 11, 02:50 UTC) — RED at that push; ROOT CAUSE FOUND AND FIXED, see the section after this one**
 - Failing: `conquest`, `transmission (chromium)`, `transmission (webkit)` (workflow `conquest-check.yml`). Everything else was
   still running or green at the time of writing.
 - Reproduced locally: `python dev/tests/conquest-living-war.py --engine chromium --quality high` fails its HIGH budget
@@ -1685,3 +1685,37 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
   Conquest). Do not raise the 16 limit and do not skip the test. Local run needs
   `ln -sfn /opt/pw-browsers/chromium_headless_shell-1243 /opt/pw-browsers/chromium_headless_shell-1254` (Python Playwright
   1.65 expects build 1254) and `git checkout docs` afterwards (the tests rewrite committed captures).
+
+**Program budget fix (Nov 11, later push) — both budget failures fixed, verified locally in Chromium**
+Conquest keeps every shader program it has ever drawn for the whole session (`keepPrograms`, no recompile hitches), the world
+and the town share one renderer, and everything except the player tank already uses 13 of the 16. Found by listing
+`renderer.info.programs` (with their owners) in the failing tests, with and without `window.LUNAR_MESHY=false`:
+1. **World fight** (`conquest-living-war.py --quality high`, jobs `transmission (chromium / webkit)`): 18. The tank cost 5 instead
+   of the old 3: the HIGH Meshy program, the LOW one (the session drops to auto-low part-way, on CI and on a struggling phone,
+   and the tank is rebuilt with the Lambert variant) and 3 for the stand-in tank shown while the files load (its three
+   materials were cloned by `GraphicsMotion`). Chassis and weapon already shared ONE program per quality.
+   Fix (`js/conquest/view.js syncLoadout`): the stand-in is merged into `archMaterial`, the material enemy hulls already use,
+   and `GraphicsMotion` clones nothing for it, so it compiles no program of its own. Vault parts wait for the real model.
+2. **Fully built town raid** (`conquest-base-builder.py`, job `conquest`, step "Portrait player journey"): 18. That test counts
+   every program, and three's own equirect -> PMREM conversion of the Meshy studio map leaves two helper programs alive for
+   the renderer's life (`EquirectangularToCubeUV`, `SphericalGaussianBlur`).
+   Fix (`js/meshy3d.js hostRenderer / hostPrefilter / envHook`): Conquest registers its renderer; the studio map is prefiltered
+   once by a `PMREMGenerator` that is disposed straight away, and Meshy meshes drawn by that renderer use the prefiltered map.
+   No helper program stays. Battle, Garage and hub renderers are untouched. The CC10 town capture is the same before and
+   after (mean difference 0.03 of 255, animation noise).
+- No limit raised, no test skipped or edited.
+- Results on the final code: `conquest-living-war.py --engine chromium --quality high` PASS at 320 and 390 with
+  `materialPrograms: 15`; `conquest-base-builder.py` PASS (CC10 town 14, raid 16: the same 16 as before Meshy);
+  every other browser test of `conquest-check.yml` PASSES locally in Chromium on the final code (onboarding, earned-browser,
+  earned-end-to-end, preview x2, airdrop, terraform-captures, minerals, hub, find-base, plot-ui, session5d, desktop-keys,
+  transmission, session-032, session-033 + fallback, living-war fallback, flagship-browser 390 and 320 siege), plus
+  `conquest-regression.sh` and `node dev/tests/meshy.mjs` (1784). Run browser tests one at a time: `conquest-session-032.py`
+  timed out once with three browsers running side by side and passes alone.
+  Stand-in checked by eye with the downloads held back: a lit, upright foundation tank, no errors.
+- Headroom is thin by design of the budget: town raid = 13 + Meshy LOW + Meshy HIGH + Meshy HIGH instanced (town turrets) = 16.
+- Known remainder (no test covers it, not fixed here): add-ons drawn with their own materials on top of a Meshy tank
+  (fittings, Hull Plating, vault parts) can add 2-3 programs; with a mid-session drop to auto-low that reaches 17-18.
+  If it shows on a device: merge those add-ons into `archMaterial` the same way the stand-in is (helper `add` in `syncLoadout`).
+- In this container the Conquest tank runs the LOW (Lambert) Meshy material (software GL), so the HIGH tank with the
+  prefiltered map was verified through the town models only (same material path). Webkit is not installed here; its job
+  failed on the same assertion with the same numbers, so the same fix applies. CI confirms both.

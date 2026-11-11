@@ -192,9 +192,28 @@ const Meshy3D=(()=>{
  `;
  const FS_HEAD=`uniform sampler2D uMask;uniform vec3 uPaintA;uniform vec3 uPaintB;uniform vec4 uPaintP;uniform vec4 uTrim;uniform vec4 uGlowTint;uniform float uGlowGain;uniform float uFlash;varying float vMeshyGlow;
  `;
+ // A renderer with a tight shader-program budget registers as the host (Conquest: the world and the town share one renderer
+ // and 16 programs). Its studio map is prefiltered once by a generator that is disposed straight away, so three never builds
+ // its own equirect -> PMREM helper there (two programs that would live as long as the renderer). Meshy meshes pick the
+ // prefiltered map up when the host draws them (envHook); every other renderer is untouched.
+ let host=null;const hostEnv=new WeakMap();
+ function hostRenderer(r){
+  if(host&&host!==r){const t=hostEnv.get(host);if(t)t.dispose();hostEnv.delete(host);}
+  host=r&&r.capabilities&&!r.isConquestCanvas&&typeof THREE!=='undefined'&&typeof THREE.PMREMGenerator==='function'?r:null;
+ }
+ function releaseHost(r){if(host===r)hostRenderer(null);}
+ function hostPrefilter(){
+  if(!host||hostEnv.has(host))return;
+  try{const pg=new THREE.PMREMGenerator(host),rt=pg.fromEquirectangular(environment());pg.dispose();hostEnv.set(host,rt);}catch(e){hostEnv.set(host,null);}
+ }
+ function envHook(r,sc,cam,geo,mat){
+  if(r!==host||!mat||!mat.envMap||mat.envMap.mapping!==THREE.EquirectangularReflectionMapping)return;
+  const t=hostEnv.get(r);if(t)mat.envMap=t.texture;
+ }
+ function weaponHook(r,sc,cam,geo,mat){envHook(r,sc,cam,geo,mat);aimHook.call(this);}
  // pg: shared program per (kind, moving, flags); uniforms are per mesh
  function makeMaterial(asset,q,U){
-  const moving=!!asset.partTex,high=q==='high',maps=asset.maps;
+  const moving=!!asset.partTex,high=q==='high',maps=asset.maps;if(high)hostPrefilter();
   const m=high?new THREE.MeshStandardMaterial({map:maps.base||null,normalMap:maps.normal||null,normalScale:new THREE.Vector2(1,-1),roughnessMap:maps.orm||null,metalnessMap:maps.orm||null,aoMap:maps.orm||null,aoMapIntensity:.85,metalness:1,roughness:1,envMap:environment(),envMapIntensity:1.0})
    :new THREE.MeshLambertMaterial({map:maps.base||null});
   m.userData={meshy:true,meshyOwned:true,motionSkip:true,uniforms:U};
@@ -236,7 +255,7 @@ const Meshy3D=(()=>{
   let geo=asset.geometry;
   if(q==='low'&&asset.lowIndex){if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}geo=asset.lowGeometry;}
   const m=new THREE.Mesh(geo,mat),g=new THREE.Group();m.castShadow=true;m.receiveShadow=true;m.userData.meshy={asset,U,kind:asset.info.kind};asset.refs=(asset.refs||0)+1;
-  if((asset.info.kind==='weapon'||asset.info.kind==='moon')&&asset.partTex)m.onBeforeRender=aimHook;
+  m.onBeforeRender=(asset.info.kind==='weapon'||asset.info.kind==='moon')&&asset.partTex?weaponHook:envHook;
   g.add(m);g.userData.meshyGroup=true;return g;
  }
  // the base ring stays with the hull: the weapon mesh turns with the turret, so ring vertices are turned back by the
@@ -357,7 +376,7 @@ const Meshy3D=(()=>{
  function townBuilding(type,lvl,theme,low){
   const asset=townAsset(type);if(!asset)return null;
   const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
-  const place=geo=>{const m=new THREE.Mesh(geo,mat);m.rotation.y=TOWN_YAW;m.position.set(-(pv[0]*Math.cos(TOWN_YAW)+pv[1]*Math.sin(TOWN_YAW)),0,-(-pv[0]*Math.sin(TOWN_YAW)+pv[1]*Math.cos(TOWN_YAW)));m.userData.meshyTown=asset;return m;};
+  const place=geo=>{const m=new THREE.Mesh(geo,mat);m.onBeforeRender=envHook;m.rotation.y=TOWN_YAW;m.position.set(-(pv[0]*Math.cos(TOWN_YAW)+pv[1]*Math.sin(TOWN_YAW)),0,-(-pv[0]*Math.sin(TOWN_YAW)+pv[1]*Math.cos(TOWN_YAW)));m.userData.meshyTown=asset;return m;};
   if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(asset.geometry));
   g.userData.meshyTown=asset.id;asset.refs=(asset.refs||0)+1;g.userData.meshyTownRelease=()=>{asset.refs=Math.max(0,asset.refs-1);};return g;
  }
@@ -365,7 +384,7 @@ const Meshy3D=(()=>{
  function townTurret(type,count,lvl,theme,low){
   const asset=townAsset(type),sp=asset&&townSplit(asset);if(!sp)return null;
   const mat=townMaterial(asset,theme,low),n=Math.max(1,count),base=new THREE.InstancedMesh(sp.base,mat,n),hd=new THREE.InstancedMesh(sp.head,mat,n),pv=townPivot(asset),sc=.9+.025*(Math.max(1,lvl)-1);
-  base.count=hd.count=count;base.frustumCulled=hd.frustumCulled=false;
+  base.count=hd.count=count;base.frustumCulled=hd.frustumCulled=false;base.onBeforeRender=hd.onBeforeRender=envHook;
   const q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),s3=new THREE.Vector3(),off=new THREE.Vector3();
   // model point p -> world: T(x,y,z) * R(yaw) * S * T(-pivot); kick slides the head back along its aim
   const matrix=(out,x,y,z,aim,kick,dead)=>{const yaw=aim+TOWN_YAW;q.setFromAxisAngle(up,yaw);const k=dead?0:sc;off.set(-pv[0]*k,0,-pv[1]*k).applyQuaternion(q);
@@ -380,6 +399,6 @@ const Meshy3D=(()=>{
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;
