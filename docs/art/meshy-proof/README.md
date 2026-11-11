@@ -8,7 +8,7 @@ phone frame rates; nobody has checked a physical iPhone yet.
 |---|---|---|
 | `gate1/` | Gate 1: Vanguard original high-poly vs LIGHT vs FULL at phone battle, Garage and 1920 desktop size, SSIM | `proof/gate.mjs` + `ssim.py` |
 | `fit/<chassis>.webp`, `fit/scales.json` | Weapon proportions: every chassis with all ten weapons, before (one scale) and after (measured uniform fit) | `proof/app.mjs <dir> fit` |
-| `colour_check_stock_vs_reference.webp` | The nine chosen reference images next to the in-game stock look | lead's check |
+| `colour_check_stock_vs_reference.webp` | 5E-1 only: the old `chosen/` (v1) images next to the 5E-1 stock look. Superseded: see `v2/colour_check_*_v2.webp` | lead's check |
 | `app/garage_battle_high.webp`, `_low.webp` | Real app: Garage and Free Test battle, before (procedural) and after (Meshy), ten loadouts, HIGH and LOW graphics | `proof/app.mjs` + `sheets.py` |
 | `app/paints_<chassis>.webp` | Every paint and Lunar Skin on every chassis, before and after, through the game's menu renderer | same |
 | `app/app.json` | Per loadout: draw calls, triangles, shader programs, textures, frame times; every model load (bytes, ms); JS heap | same |
@@ -49,12 +49,13 @@ Captures are taken only after the Meshy files have loaded. Still software GL: th
 
 | File | What it shows |
 |---|---|
-| `v2/colour_check_stock_vs_reference.webp` | The nine chosen references next to the rebuilt stock chassis in the real Garage (phone 3x, FULL) |
+| `v2/colour_check_chassis_v2.webp`, `v2/colour_check_weapons_v2.webp` | Each chassis and weapon's v2 reference (`docs/art/references/tanks/v2/`, the owner's actual Meshy source images) next to its stock look in the real Garage (phone 3x, FULL); made by `proof/colour_sheet.py` |
 | `v2/phone3x_garage_<loadout>.webp`, `v2/desktop1920_garage_<loadout>.webp` | Garage, FULL models, ten loadouts covering all 9 chassis and all 10 weapons |
 | `v2/phone3x_battle_<loadout>.webp`, `v2/desktop1920_battle_<loadout>.webp` | Free Test arena: yours and the AI tank, LIGHT models |
 | `v2/*_garage_vanguard1-twin1_lunar.webp` | Lunar Skin: the bright energy glow (stock lines are faint and still) |
 | `v2/world_<profile>_*.webp` | Conquest world: the player's Meshy tank |
 | `v2/town_turrets_*`, `v2/town_overview_*` | Town: turret gallery (all turret types) and a fully built CC10 town |
+| `v2/sharpness-before.json`, `v2/sharpness-after.json` | Resolution, anti-aliasing, framebuffer memory, frame time and heap, main vs this branch (`proof/sharpness.mjs`) |
 | `v2/verify.json`, `v2/town.json` | Per loadout / town: the Meshy id of every tank and town item on screen, anything still procedural, pixel ratio, AA, programs |
 
 Result: every tank on screen in the Garage and in battle (yours and the AI's, both profiles, ten loadouts) is its Meshy chassis +
