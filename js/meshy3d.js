@@ -152,6 +152,13 @@ const Meshy3D=(()=>{
   if(!enabled)return '';const t=x=>Math.max(0,Math.min(2,x|0)),c=itemId.chassis(cls,t(ct)),w=itemId.weapon(arch,t(wt)),lv=id=>(d||detail)==='full'&&peek(id,'full')?2:peek(id,'light')?1:0;
   return 'my'+lv(c)+lv(w);
  }
+ // true while this loadout's Meshy files are on their way (both known, neither failed): a caller with a tight shader
+ // budget (Conquest) draws its cheapest stand-in meanwhile instead of compiling the high-fidelity procedural set first
+ function pending(cls,ct,arch,wt){
+  if(!enabled||detail==='none')return false;const t=x=>Math.max(0,Math.min(2,x|0)),ids=[itemId.chassis(cls,t(ct)),itemId.weapon(arch,t(wt))];
+  for(const id of ids)request(id,'light');
+  const st=ids.map(id=>(store.get(id+'|light')||{}).state);return st.every(x=>x==='loading'||x==='ready')&&st.includes('loading');
+ }
  function withDetail(d,fn){const old=detail;detail=d;try{return fn();}finally{detail=old;}}
  const itemId={chassis:(cls,tier)=>'chassis-'+cls+'-'+tier,weapon:(arch,tier)=>arch==='moon'?'weapon-moon':'weapon-'+arch+'-'+tier};
 
@@ -373,6 +380,6 @@ const Meshy3D=(()=>{
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;

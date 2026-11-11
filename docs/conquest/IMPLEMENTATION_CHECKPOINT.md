@@ -1668,3 +1668,20 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
   and rerun the proof scripts.
 - Cache fix: models in use are never evicted (the studio viewer exposed it).
 - Draft PR **#105** opened for CI and owner review only (subscribed for CI results). Do not merge or deploy without owner approval.
+
+**CI state on PR #105 (Nov 11, 02:50 UTC) — RED, next task for whoever resumes**
+- Failing: `conquest`, `transmission (chromium)`, `transmission (webkit)` (workflow `conquest-check.yml`). Everything else was
+  still running or green at the time of writing.
+- Reproduced locally: `python dev/tests/conquest-living-war.py --engine chromium --quality high` fails its HIGH budget
+  assertion with `materialPrograms: 18` against the limit of 16 (draw calls 66-70 are inside their limit). `conquest-
+  transmission.py`, `conquest-session-032.py`, `conquest-session-033.py` pass locally. The `conquest` job very likely fails on
+  the same program budget (`conquest-session5d.py` and others assert programs <= 16); not yet reproduced.
+- Tried: showing the plain foundation tank in Conquest while the Meshy files load (`Meshy3D.pending`, pushed) so the
+  high-fidelity procedural programs are never compiled there. Still 18, so the two extra programs come from the Meshy
+  materials themselves (probably chassis and weapon compiling as two variants, or a HIGH + shadow/fog variant).
+- Next step: in that test's page print `renderer.info.programs.map(p=>p.cacheKey)` (or names) with and without
+  `window.LUNAR_MESHY=false`, find the two added keys, then make the Conquest player tank use ONE Meshy program (same
+  defines for chassis and weapon, e.g. force the moving-part path and the mask on both, or use the Lambert variant in
+  Conquest). Do not raise the 16 limit and do not skip the test. Local run needs
+  `ln -sfn /opt/pw-browsers/chromium_headless_shell-1243 /opt/pw-browsers/chromium_headless_shell-1254` (Python Playwright
+  1.65 expects build 1254) and `git checkout docs` afterwards (the tests rewrite committed captures).

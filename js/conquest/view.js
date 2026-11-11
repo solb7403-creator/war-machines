@@ -69,7 +69,7 @@ class View {
 
  }
  syncLoadout(){
- const L=this.battle?.snapshot||this.authority?.loadout||myLoadout(),key=JSON.stringify([L,typeof Equipment3D!=='undefined'?Equipment3D.generation:0,typeof Meshy3D!=='undefined'?Meshy3D.stamp(L.c.c,L.c.t,L.w.a,L.w.t):'',!!this.authority?.state?.achievements?.['field-veteran'],this.authority?.state?.cosmetics?.equipped,!!this.autoLow,typeof gfxMode==='function'?gfxMode():'auto']);this.speed=this.battle?.state==='active'?this.battle.combatSpeed:W.travelSpeed(L);this.loadout=L;
+ const L=this.battle?.snapshot||this.authority?.loadout||myLoadout(),key=JSON.stringify([L,typeof Equipment3D!=='undefined'?Equipment3D.generation:0,typeof Meshy3D!=='undefined'?Meshy3D.stamp(L.c.c,L.c.t,L.w.a,L.w.t)+(Meshy3D.pending(L.c.c,L.c.t,L.w.a,L.w.t)?'w':''):'',!!this.authority?.state?.achievements?.['field-veteran'],this.authority?.state?.cosmetics?.equipped,!!this.autoLow,typeof gfxMode==='function'?gfxMode():'auto']);this.speed=this.battle?.state==='active'?this.battle.combatSpeed:W.travelSpeed(L);this.loadout=L;
  if(key===this.loadoutKey)return;this.loadoutKey=key;
  this.keepPrograms();this.motion?.dispose();if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(this.vehicle);
  this.vehicle.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!this.shared?.includes(o.geometry))o.geometry.dispose();});this.vehicle.clear();
@@ -77,8 +77,10 @@ class View {
  if(!this.modelMats)this.modelMats={lit:new T.MeshPhongMaterial({vertexColors:true,shininess:45}),shine:new T.MeshPhongMaterial({vertexColors:true,shininess:65}),glow:new T.MeshBasicMaterial({vertexColors:true})};
  const body=new T.Group();body.rotation.y=-Math.PI/2;this.vehicle.add(body);
  const add=(raw,parent)=>{parent.add(M3.meshOf(M3.bake(raw.k),null,this.modelMats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);parent.add(m);}};
- const H=M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');const hullB=M3.bake(H.k);body.add(M3.meshOf(hullB,null,this.modelMats));for(const a of H.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);body.add(m);}
- const gun=new T.Group();this.gun=gun;gun.position.y=H.meta.ty;body.add(gun);const Wkit=M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c,L.c.t);gun.scale.setScalar(Wkit.meta.scale||M3.weaponScale(L.w.a,L.c.c));add(Wkit,gun);
+ // while the Meshy files load, the plain foundation tank stands in (no extra shader programs: the 16-program budget)
+ const wait=typeof Meshy3D!=='undefined'&&Meshy3D.pending(L.c.c,L.c.t,L.w.a,L.w.t);
+ const H=wait?M3.foundationChassis(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar'):M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');const hullB=M3.bake(H.k);body.add(M3.meshOf(hullB,null,this.modelMats));for(const a of H.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.modelMats);m.position.set(...a.p);body.add(m);}
+ const gun=new T.Group();this.gun=gun;gun.position.y=H.meta.ty;body.add(gun);const Wkit=wait?M3.foundationWeapon(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c):M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c,L.c.t);gun.scale.setScalar(Wkit.meta.scale||M3.weaponScale(L.w.a,L.c.c));add(Wkit,gun);
  if(this.authority?.state?.achievements?.['field-veteran']){this.form(body,this.box,-.55,H.meta.ty*.7,0,.12,.18,1.25,0xf0d38c);this.form(body,this.box,-.65,H.meta.ty*.7+.15,0,.14,.12,.6,0x8ee8df);}
  const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};add(M3.fittingKit(fits,team,'body',context),body);add(M3.fittingKit(fits,team,'mount',context),gun);
  if(Array.isArray(L.ap)&&L.ap.some(Boolean)&&M3.plateKit){const low=this.autoLow||typeof gfxMode==='function'&&gfxMode()==='low';add(M3.plateKit(L.ap,'body',context,low),body);add(M3.plateKit(L.ap,'mount',context,low),gun);}   // Hull Plating (RESOURCE_ECONOMY.md §6.1)
