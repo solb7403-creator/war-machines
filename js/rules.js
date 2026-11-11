@@ -3,14 +3,62 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=4;   // game/reward and live-match protocol version: 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
+const PVP_V=5;   // game/reward and live-match protocol version: 5 is the 5E-2b supers (timing bar, charge by share of hull, the tap message and the wider snapshot); 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
 const BUFF={dmg:{n:'DMG',c:'#ff6b5e',amt:0.4,txt:'+40% DAMAGE'},arm:{n:'ARM',c:'#5aa9ff',amt:0.35,txt:'+35% ARMOR'},rof:{n:'ROF',c:'#ffd24a',amt:0.4,txt:'+40% FIRE RATE'},spd:{n:'SPD',c:'#7be07b',amt:0.3,txt:'+30% SPEED'},lck:{n:'LCK',c:'#c28bff',amt:0.1,txt:'+10% CRIT CHANCE'},reg:{n:'REG',c:'#4be3a0',amt:0.003,txt:'+0.3% HP/SEC'}};
 const BUFF_KEYS=Object.keys(BUFF);
 const CRIT_BASE=0.1,CRIT_MULT=2,GRAZE=0.75,DIRECT=0.4;
-const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;
+// Supers (Session 5E-2b, owner Nov 10-11 2026): fewer, bigger moments. Measured on main with seeded sims
+// (dev/tests/super-report.mjs, dev/tests/fixtures/super-baseline.json): a pilot fired 5.94 supers a match, 2,406 super damage
+// a match. Arcade and live matches now charge by share of hull (below) so every pilot fires about 3 a match, and each super
+// hits proportionally harder (game.js SUP, SUP_GEAR), so the total stays where it was. dev/tests/super-timing.mjs holds both.
+const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;   // Conquest only (charge per point of damage): unchanged, see game.js SUP_CQ
+// Arcade and live matches charge by SHARE OF HULL, not by raw damage: destroying one whole enemy hull fills FILL_HULL_DEALT of
+// the bar, losing your own whole hull fills FILL_HULL_TAKEN, a critical hit adds FILL_HULL_CRIT points. With raw damage the charge
+// followed gear (measured on main: 3.6 supers a match on a stock tank, 9.8 with the Moonbeam kit), so one number could not give
+// every pilot "about 3". By share of hull every gear level lands near 3; gear still shows where it should: in how hard each
+// super hits (SUP_GEAR) and in winning more fights. The megatank counts as its reference tank's hull, and a mode's
+// health scale (team modes, Bounty, Last Standing) is taken out, so every mode charges as a 1v1 does (game.js supFill).
+const FILL_HULL_DEALT=1.4,FILL_HULL_TAKEN=1.0,FILL_HULL_CRIT=30;
+// SUP_GEAR: a super's damage rises with the tank's gear multiplier (weapon tier x roll, cannon upgrades, damage cores, Lunar
+// Skin) to this power. It was 1 while better gear also fired more supers; now that every pilot fires about 3, the step that
+// used to come from firing more often is in each super's damage (fitted on the measured kits, game.js SUP)
+// SUP_GEAR_AI: an AI pilot's super rises a little less steeply with its gear. On main the AI's minimum time between supers
+// (LG_AI_SUP_GAP, owner Nov 10: keep AI super frequency limited) held the AI back more the better its gear was (measured: the
+// pilot's supers per AI super rose 7% from the stock to the Common kit and 14% to the Rare kit). With about 3 supers a match
+// that spacing rarely binds any more, so the same restraint now sits in the damage: fitted (gear ratio)^-0.4 = those steps.
+// It only ever makes an AI super weaker than a person's with the same gear (dev/tests/fair-arcade.mjs holds the gear ladder).
+const SUP_GEAR=2.2,SUP_GEAR_AI=1.8;
+// The timing bar: pressing SUPER starts the charge and a marker sweeps the bar once in SUP_BAR_T seconds. A second tap stops it:
+// outside the normal zone = MISS (a weaker, simpler super), inside = NORMAL, inside the jackpot circle = JACKPOT (stronger, with
+// the weapon's signature effect). No tap by the end of the sweep = MISS. The super fires SUP_REL after the tap, never sooner
+// than the weapon's own telegraph (SUP[..].charge), so it stays as dodgeable as before. All positions are fractions of the bar.
+// SUP_OC: damage by outcome. The worst possible tap does 65% of a normal one (owner range 60-70%); the jackpot bonus is +25%:
+// with an average person's taps (SUP_TAP_HUMAN) the three outcomes average out at ~1.0x, so a perfect player's supers do at
+// most 25% more than an average player's and a careless one never loses more than 35%.
+// SUP_TAP_TOL: live matches. The server owns the bar (it draws the zone and the jackpot) and its own clock judges the tap; the
+// phone's reported stop time is only believed inside this latency allowance, so a modified client cannot claim a jackpot it
+// did not time (it would have to send the tap within the allowance of the right moment anyway).
+// The press and the tap reach the server the same way, so steady lag cancels out: the allowance only has to cover jitter
+// and one 33 ms server tick (0.06 s). A cheat that times its taps perfectly cannot be told from a perfect player; the
+// jackpot bonus is capped at +25% for that reason.
+// SUP_HULL_CAP: one super never takes more than this share of the target's FULL hull on a normal stop (x0.65 on a miss, x1.25
+// = 62.5% on a jackpot), before the target's armour and shield. With about 3 big supers a match, an uncapped hit could
+// delete an equal tank outright where a mode halves the hulls (Bounty 1v1) or against lighter gear: the moment must be
+// big, never a one-shot from full health. The megatank is too big for the cap to matter.
+// LG_AI_TAP: an AI pilot stops the bar with a timing spread set by its league (seconds of error, as a fraction of the sweep):
+// every league taps worse than an average person and none is ever perfect.
+const SUP_BAR_T=1.0,SUP_ZONE_W=0.36,SUP_JACK_W=0.08,SUP_REL=0.2,SUP_TAP_TOL=0.06;
+const SUP_OC=[0.65,1,1.25],SUP_OC_TXT=['MISS','HIT','JACKPOT'],SUP_HULL_CAP=0.5;
+const SUP_TAP_HUMAN=0.10,LG_AI_TAP=[0.24,0.21,0.18,0.16,0.14,0.13,0.12];
+function supBar(rnd){const z0=0.36+0.2*rnd(),m=0.03+SUP_JACK_W/2;return {z0:Math.round(z0*1000)/1000,jc:Math.round((z0+m+(SUP_ZONE_W-2*m)*rnd())*1000)/1000};}   // the zone starts 36-56% along; the jackpot sits anywhere inside it
+function supJudge(bar,el){const p=el/SUP_BAR_T;return Math.abs(p-bar.jc)<=SUP_JACK_W/2+1e-9?2:p>=bar.z0-1e-9&&p<=bar.z0+SUP_ZONE_W+1e-9?1:0;}   // 0 miss, 1 normal, 2 jackpot
+// one super per weapon item (ten): the key picks its look (js/fx3d.js); the hit shape stays the archetype's (SUP)
+const supKey=(arch,tier)=>arch==='moon'?'moon':(WEAPONS[arch]?arch:'pulse')+Math.max(0,Math.min(2,tier|0));
+const SUP_KEYS=['pulse0','pulse1','pulse2','twin0','twin1','twin2','siege0','siege1','siege2','moon'];
+const SUP_NAMES={pulse0:'Pierce Lance',pulse1:'Arc Lance',pulse2:'Sunlance',twin0:'Static Nova',twin1:'Storm Nova',twin2:'Helix Nova',siege0:'Siege Blast',siege1:'Rail Blast',siege2:'Titanfall',moon:'Moonfall'};
 const BUFF_LIFE=780;
 // core gems: socketed in the garage, permanent all game. Weaker than box buffs; they multiply with them.
 const GEM={dmg:{n:'DMG',name:'Damage',c:'#ff6b5e',amt:0.12},rof:{n:'ROF',name:'Fire rate',c:'#ffd24a',amt:0.10},arm:{n:'ARM',name:'Armor',c:'#5aa9ff',amt:0.08},spd:{n:'SPD',name:'Speed',c:'#7be07b',amt:0.08},lck:{n:'LCK',name:'Luck',c:'#c28bff',amt:0.03},reg:{n:'REG',name:'Repair',c:'#4be3a0',amt:0.001},vel:{n:'VEL',name:'Velocity',c:'#42d9ff',amt:0.15,impact:0.05}};
@@ -1045,7 +1093,7 @@ function garageOpen(S,sec){
 // What the garage shows for a loadout: Toughness (health), Firepower (ordinary DPS), Speed (driving), power, and the extras.
 function machineView(L){
  const m=machineMetrics(L),t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0;
- const sup=typeof SUP!=='undefined'&&SUP[t.wtype]?Math.round(SUP[t.wtype].dmg*(t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))*(SUP[t.wtype].kind==='shell'?projectileImpactMult(t):1)):0;   // super damage (game.js SUP; 0 where the sim isn't loaded)
+ const sup=typeof SUP!=='undefined'&&SUP[t.wtype]?Math.round(SUP[t.wtype].dmg*Math.pow((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg')),SUP_GEAR)*(SUP[t.wtype].kind==='shell'?projectileImpactMult(t):1)):0;   // super damage (game.js SUP; 0 where the sim isn't loaded)
  return {tough:m.hp,fire:m.dps,speed:m.spd,power:powerOf(L),armor:Math.round(Math.min(0.7,g('arm'))*100),
   crit:Math.round((CRIT_BASE+t.critB+g('lck'))*100),charge:Math.round((t.fillM-1)*100),repair:+(g('reg')*100).toFixed(2),
   edge:Math.round((t.wedge||GRAZE)*100),super:sup};

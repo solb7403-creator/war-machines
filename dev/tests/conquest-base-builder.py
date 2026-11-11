@@ -120,7 +120,12 @@ async def main():
     await page.locator('.cq-plot-tabs button',has_text='DEFEND').click();await page.locator('button',has_text='START DEFENSE DRILL').click()
     await page.wait_for_function('ConquestPlotView.state?.drill',timeout=60000);drillMs=await page.evaluate('ConquestPlotView.state.drillMs');await page.wait_for_timeout(6000)
     raid=await page.evaluate('ConquestPlotView.state.info');await page.screenshot(path=str(OUT/f'cc10-raid-390-{q}.png'))
-    results['cc10-'+q]={'render':info,'raidRender':raid,'drillMs':drillMs,'buildings':n[0],'walls':n[1],'cc':n[2],'power':n[3],'turrets':n[4],'homes':n[5],'pageErrors':errors}
+    # 5E-2b: the raid replay draws damage stages and break-ups through FX3D (its own slot R.dfx; R.fx is the raid-shot meshes)
+    fx=await page.evaluate('''()=>{const X=ConquestPlotView.state,R=X.R,D=X.drill;return {dfx:!!R.dfx,shots:typeof R.fx==='object'&&!R.fx.begin&&Object.keys(R.fx).length>0,stats:R.dfx?R.dfx.stats():null,gone:D?D.gone.size:-1,
+     glowMat:R.dfx?R.dfx.glow.material===R.S.MAT.fx:false,solidMat:R.dfx?R.dfx.debris.material===R.S.MAT.solid:false,damaged:D&&D.r.frames[D.fi]?D.r.frames[D.fi].s.length:0};}''')
+    assert fx['dfx'] and fx['shots'] and fx['glowMat'] and fx['solidMat'],('town FX3D runs beside the raid-shot meshes, on the style materials',fx)
+    assert fx['stats']['quads']<=fx['stats']['caps']['quads'] and (fx['damaged']==0 or fx['stats']['quads']>0 or q=='low'),('damaged structures show wear inside the batch budget',fx)
+    results['cc10-'+q]={'render':info,'raidRender':raid,'fx':fx,'drillMs':drillMs,'buildings':n[0],'walls':n[1],'cc':n[2],'power':n[3],'turrets':n[4],'homes':n[5],'pageErrors':errors}
     print(json.dumps(results['cc10-'+q]),flush=True)
     assert n[1]>=2000 and n[4]>=40 and info['programs']<=16 and raid['programs']<=16 and info['calls']<=140 and raid['calls']<=150 and not errors,results['cc10-'+q]
     await close_ctx(ctx)

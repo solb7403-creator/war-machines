@@ -1,0 +1,722 @@
+{
+ "phone-high": {
+  "supers": {
+   "pulse0-miss": {
+    "name": "Pierce Lance",
+    "peak": {
+     "calls": 31,
+     "programs": 15,
+     "quads": 101,
+     "particles": 23,
+     "chunks": 0
+    },
+    "firedAt": 0.73
+   },
+   "pulse0-normal": {
+    "name": "Pierce Lance",
+    "peak": {
+     "calls": 34,
+     "programs": 17,
+     "quads": 129,
+     "particles": 48,
+     "chunks": 9
+    },
+    "firedAt": 0.73
+   },
+   "pulse0-jackpot": {
+    "name": "Pierce Lance",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 378,
+     "particles": 75,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "pulse1-miss": {
+    "name": "Arc Lance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 141,
+     "particles": 18,
+     "chunks": 0
+    },
+    "firedAt": 0.73
+   },
+   "pulse1-normal": {
+    "name": "Arc Lance",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 263,
+     "particles": 36,
+     "chunks": 9
+    },
+    "firedAt": 0.73
+   },
+   "pulse1-jackpot": {
+    "name": "Arc Lance",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 472,
+     "particles": 96,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "pulse2-miss": {
+    "name": "Sunlance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 135,
+     "particles": 20,
+     "chunks": 0
+    },
+    "firedAt": 0.73
+   },
+   "pulse2-normal": {
+    "name": "Sunlance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 176,
+     "particles": 45,
+     "chunks": 9
+    },
+    "firedAt": 0.73
+   },
+   "pulse2-jackpot": {
+    "name": "Sunlance",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 305,
+     "particles": 80,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "twin0-miss": {
+    "name": "Static Nova",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 110,
+     "particles": 21,
+     "chunks": 0
+    },
+    "firedAt": 0.57
+   },
+   "twin0-normal": {
+    "name": "Static Nova",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 344,
+     "particles": 33,
+     "chunks": 0
+    },
+    "firedAt": 0.7
+   },
+   "twin0-jackpot": {
+    "name": "Static Nova",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 507,
+     "particles": 65,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "twin1-miss": {
+    "name": "Storm Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 169,
+     "particles": 17,
+     "chunks": 0
+    },
+    "firedAt": 0.57
+   },
+   "twin1-normal": {
+    "name": "Storm Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 202,
+     "particles": 24,
+     "chunks": 0
+    },
+    "firedAt": 0.7
+   },
+   "twin1-jackpot": {
+    "name": "Storm Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 445,
+     "particles": 69,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "twin2-miss": {
+    "name": "Helix Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 178,
+     "particles": 17,
+     "chunks": 0
+    },
+    "firedAt": 0.57
+   },
+   "twin2-normal": {
+    "name": "Helix Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 327,
+     "particles": 27,
+     "chunks": 0
+    },
+    "firedAt": 0.7
+   },
+   "twin2-jackpot": {
+    "name": "Helix Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 534,
+     "particles": 550,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "siege0-miss": {
+    "name": "Siege Blast",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 77,
+     "particles": 37,
+     "chunks": 0
+    },
+    "firedAt": 1.17
+   },
+   "siege0-normal": {
+    "name": "Siege Blast",
+    "peak": {
+     "calls": 34,
+     "programs": 17,
+     "quads": 126,
+     "particles": 79,
+     "chunks": 9
+    },
+    "firedAt": 1.13
+   },
+   "siege0-jackpot": {
+    "name": "Siege Blast",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 176,
+     "particles": 156,
+     "chunks": 9
+    },
+    "firedAt": 1.27
+   },
+   "siege1-miss": {
+    "name": "Rail Blast",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 239,
+     "particles": 11,
+     "chunks": 0
+    },
+    "firedAt": 1.13
+   },
+   "siege1-normal": {
+    "name": "Rail Blast",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 289,
+     "particles": 32,
+     "chunks": 9
+    },
+    "firedAt": 1.17
+   },
+   "siege1-jackpot": {
+    "name": "Rail Blast",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 491,
+     "particles": 42,
+     "chunks": 9
+    },
+    "firedAt": 1.27
+   },
+   "siege2-miss": {
+    "name": "Titanfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 82,
+     "particles": 28,
+     "chunks": 0
+    },
+    "firedAt": 1.17
+   },
+   "siege2-normal": {
+    "name": "Titanfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 186,
+     "particles": 69,
+     "chunks": 9
+    },
+    "firedAt": 1.17
+   },
+   "siege2-jackpot": {
+    "name": "Titanfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 262,
+     "particles": 489,
+     "chunks": 9
+    },
+    "firedAt": 1.27
+   },
+   "moon-miss": {
+    "name": "Moonfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 115,
+     "particles": 24,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "moon-normal": {
+    "name": "Moonfall",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 227,
+     "particles": 70,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "moon-jackpot": {
+    "name": "Moonfall",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 411,
+     "particles": 122,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   }
+  },
+  "idle": {
+   "calls": 30,
+   "programs": 14,
+   "tris": 53621
+  },
+  "pageErrors": [],
+  "idleAfter": {
+   "calls": 37,
+   "programs": 17,
+   "tris": 53945,
+   "fxOn": false,
+   "fx": {
+    "quads": 0,
+    "debrisVerts": 0,
+    "particles": 0,
+    "chunks": 0,
+    "effects": 0,
+    "marks": 0,
+    "caps": {
+     "quads": 2600,
+     "verts": 5400,
+     "particles": 1500,
+     "chunks": 96
+    }
+   }
+  }
+ },
+ "desktop-high": {
+  "supers": {
+   "pulse0-miss": {
+    "name": "Pierce Lance",
+    "peak": {
+     "calls": 31,
+     "programs": 15,
+     "quads": 101,
+     "particles": 24,
+     "chunks": 0
+    },
+    "firedAt": 0.73
+   },
+   "pulse0-normal": {
+    "name": "Pierce Lance",
+    "peak": {
+     "calls": 34,
+     "programs": 17,
+     "quads": 129,
+     "particles": 48,
+     "chunks": 9
+    },
+    "firedAt": 0.73
+   },
+   "pulse0-jackpot": {
+    "name": "Pierce Lance",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 378,
+     "particles": 75,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "pulse1-miss": {
+    "name": "Arc Lance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 141,
+     "particles": 20,
+     "chunks": 0
+    },
+    "firedAt": 0.73
+   },
+   "pulse1-normal": {
+    "name": "Arc Lance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 255,
+     "particles": 36,
+     "chunks": 9
+    },
+    "firedAt": 0.73
+   },
+   "pulse1-jackpot": {
+    "name": "Arc Lance",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 456,
+     "particles": 96,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "pulse2-miss": {
+    "name": "Sunlance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 135,
+     "particles": 19,
+     "chunks": 0
+    },
+    "firedAt": 0.73
+   },
+   "pulse2-normal": {
+    "name": "Sunlance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 176,
+     "particles": 46,
+     "chunks": 9
+    },
+    "firedAt": 0.73
+   },
+   "pulse2-jackpot": {
+    "name": "Sunlance",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 305,
+     "particles": 80,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "twin0-miss": {
+    "name": "Static Nova",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 110,
+     "particles": 20,
+     "chunks": 0
+    },
+    "firedAt": 0.57
+   },
+   "twin0-normal": {
+    "name": "Static Nova",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 352,
+     "particles": 32,
+     "chunks": 0
+    },
+    "firedAt": 0.7
+   },
+   "twin0-jackpot": {
+    "name": "Static Nova",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 507,
+     "particles": 65,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "twin1-miss": {
+    "name": "Storm Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 169,
+     "particles": 16,
+     "chunks": 0
+    },
+    "firedAt": 0.57
+   },
+   "twin1-normal": {
+    "name": "Storm Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 202,
+     "particles": 23,
+     "chunks": 0
+    },
+    "firedAt": 0.7
+   },
+   "twin1-jackpot": {
+    "name": "Storm Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 445,
+     "particles": 69,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "twin2-miss": {
+    "name": "Helix Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 178,
+     "particles": 18,
+     "chunks": 0
+    },
+    "firedAt": 0.57
+   },
+   "twin2-normal": {
+    "name": "Helix Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 333,
+     "particles": 29,
+     "chunks": 0
+    },
+    "firedAt": 0.7
+   },
+   "twin2-jackpot": {
+    "name": "Helix Nova",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 530,
+     "particles": 550,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "siege0-miss": {
+    "name": "Siege Blast",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 77,
+     "particles": 37,
+     "chunks": 0
+    },
+    "firedAt": 1.17
+   },
+   "siege0-normal": {
+    "name": "Siege Blast",
+    "peak": {
+     "calls": 34,
+     "programs": 17,
+     "quads": 120,
+     "particles": 80,
+     "chunks": 9
+    },
+    "firedAt": 1.17
+   },
+   "siege0-jackpot": {
+    "name": "Siege Blast",
+    "peak": {
+     "calls": 31,
+     "programs": 17,
+     "quads": 178,
+     "particles": 156,
+     "chunks": 9
+    },
+    "firedAt": 1.27
+   },
+   "siege1-miss": {
+    "name": "Rail Blast",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 249,
+     "particles": 12,
+     "chunks": 0
+    },
+    "firedAt": 1.13
+   },
+   "siege1-normal": {
+    "name": "Rail Blast",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 289,
+     "particles": 32,
+     "chunks": 9
+    },
+    "firedAt": 1.13
+   },
+   "siege1-jackpot": {
+    "name": "Rail Blast",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 498,
+     "particles": 42,
+     "chunks": 9
+    },
+    "firedAt": 1.27
+   },
+   "siege2-miss": {
+    "name": "Titanfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 82,
+     "particles": 28,
+     "chunks": 0
+    },
+    "firedAt": 1.17
+   },
+   "siege2-normal": {
+    "name": "Titanfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 188,
+     "particles": 69,
+     "chunks": 9
+    },
+    "firedAt": 1.17
+   },
+   "siege2-jackpot": {
+    "name": "Titanfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 260,
+     "particles": 484,
+     "chunks": 9
+    },
+    "firedAt": 1.27
+   },
+   "moon-miss": {
+    "name": "Moonfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 115,
+     "particles": 25,
+     "chunks": 0
+    },
+    "firedAt": 0.83
+   },
+   "moon-normal": {
+    "name": "Moonfall",
+    "peak": {
+     "calls": 36,
+     "programs": 17,
+     "quads": 227,
+     "particles": 70,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   },
+   "moon-jackpot": {
+    "name": "Moonfall",
+    "peak": {
+     "calls": 33,
+     "programs": 17,
+     "quads": 413,
+     "particles": 122,
+     "chunks": 9
+    },
+    "firedAt": 0.83
+   }
+  },
+  "idle": {
+   "calls": 30,
+   "programs": 14,
+   "tris": 53611
+  },
+  "pageErrors": [],
+  "idleAfter": {
+   "calls": 34,
+   "programs": 17,
+   "tris": 53734,
+   "fxOn": false,
+   "fx": {
+    "quads": 0,
+    "debrisVerts": 0,
+    "particles": 0,
+    "chunks": 0,
+    "effects": 0,
+    "marks": 0,
+    "caps": {
+     "quads": 2600,
+     "verts": 5400,
+     "particles": 1500,
+     "chunks": 96
+    }
+   }
+  }
+ }
+}

@@ -135,8 +135,8 @@ export function checkProof(pf, c) {
       total += d;
       let dmin = 1e9;
       for (let i = 1; i < n; i++) if (enemy[i] && (HP(s, i) > 0 || (s > 0 && HP(s - 1, i) > 0))) dmin = Math.min(dmin, Math.hypot(X(s, i) - X(s, 0), Y(s, i) - Y(s, 0)));
-      let sup = false;
-      for (let j = Math.max(0, s - 4); j <= s; j++) if (FL(j) & 8) sup = true;
+      let sup = false;   // a super counts for 3 s after the press: the timing bar (up to 1.2 s, Session 5E-2b) plus a Siege shell's flight (up to 1.2 s)
+      for (let j = Math.max(0, s - 6); j <= s; j++) if (FL(j) & 8) sup = true;
       if (dmin > (sup ? PROOF.SUPER_REACH : L.STAT.range + PROOF.REACH)) bad += d;
     }
     if (s > 0) for (let i = 1; i < n; i++) {

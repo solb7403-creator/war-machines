@@ -544,7 +544,81 @@ function tapTarget(sx,sy){   // a quick tap on the field: lock onto an enemy (ta
 const aimAng=()=>{if(!aim||!aim.on||!me)return null;const px=X(me.x),py=Y(me.y)-liftOf(me),dx=aim.x-px,dy=aim.y-py;return Math.hypot(dx,dy)>24?Math.atan2(dy/GK,dx):null;};   // aim is measured from the tank, not from the finger: the preview line is where the shot really goes
 const ffBtnOn=()=>!(typeof rangeRun!=='undefined'&&rangeRun)&&state==='play'&&me&&me.hp<=0&&!respawns()&&!storm&&aliveCount(0)>0&&!pvpOn();   // live matches run on the server's clock
 // your super and dash: straight into the sim in AI matches, to the server in live ones
-const superGo=a=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('super',a):pvpOn()?pvpSuper(a):useSuper(me,a);
+const superFire=a=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('super',a):pvpOn()?pvpSuper(a):useSuper(me,a);
+// ---- the super timing bar (Session 5E-2b; rules.js SUP_BAR_T...). Pressing SUPER starts the charge and the sweep; a second
+// tap (the SUPER button, the bar itself, or Space) stops the marker: MISS / HIT / JACKPOT. Driving is never blocked.
+// supUI: {t0 (ms, my press), bar {z0,jc}, live, p (where the marker stopped), oc, at (ms, when it stopped)}
+let supUI=null;
+const supBarOn=()=>!!supUI&&supUI.oc===undefined;
+function superGo(a){
+ if(supBarOn())return supStop();   // the same control stops the bar
+ if(!superFire(a))return false;
+ const live=pvpOn()&&!(typeof rangeRun!=='undefined'&&rangeRun),bar=live?me.nbar:me.sup&&me.sup.bar;
+ if(bar)supUI={t0:performance.now(),bar:{z0:bar.z0,jc:bar.jc},live,k:supKey(me.wtype,me.wtier)};
+ return true;
+}
+// seconds since the press: the sim's own clock where the sim runs on this phone (exactly what it will judge), mine in a live match
+const supEl=()=>!supUI?0:supUI.live||!me||!me.sup||me.sup.el===undefined?(performance.now()-supUI.t0)/1000:me.sup.el;
+function supStop(){
+ if(!supBarOn()||!me)return false;
+ const el=supEl();
+ if(typeof rangeRun!=='undefined'&&rangeRun)rangeRun.sim.action('tap',el);else if(supUI.live)pvpTap(el);else supTap(me,el);
+ if(supBarOn())supShow(supJudge(supUI.bar,el),el/SUP_BAR_T);   // live: shown at once; the server's verdict ('Z') replaces it if it differs
+ return true;
+}
+// the bar's result: freeze the marker, flash, sound, haptic (Telegram). Called by my tap and by the sim's 'Z' event for my tank
+function supShow(oc,p){
+ if(!supUI)return;
+ const first=supUI.oc===undefined;if(!first&&supUI.oc===oc)return;
+ supUI.oc=oc;supUI.at=performance.now();if(p!==undefined)supUI.p=p;else if(supUI.p===undefined)supUI.p=Math.min(1,supEl()/SUP_BAR_T);
+ if(typeof fx==='function')fx(oc===2?'jackpot':oc===1?'supgood':'supmiss');
+}
+function supUiTick(){   // drop the bar when its super is over (or never started: the server refused the press)
+ if(!supUI)return;
+ const now=performance.now();
+ if(!me||me.hp<=0||state!=='play'){supUI=null;return;}
+ if(supUI.oc!==undefined){if(now-supUI.at>900)supUI=null;return;}
+ if(!supUI.live){if(!me.sup)supUI=null;return;}   // AI match: the sim on this phone ends the bar itself (its 'Z' event)
+ if(!me.sup&&now-supUI.t0>(SUP_BAR_T+SUP_REL)*1000){supUI=null;return;}   // the server never started it (a slow link still gets the whole sweep to tap in)
+ if(now-supUI.t0>(SUP_BAR_T+SUP_REL+0.6)*1000)supShow(0,1);   // live safety: nothing came back from the server
+}
+const supBarRect=()=>{const w=Math.min(300,vw-36),wide=vw>vh*1.2;return {x:(vw-w)/2,y:wide?vh-150-SAB:vh-244-SAB,w,h:22};};
+function drawSupBar(g){
+ if(!supUI)return;
+ const B=supBarRect(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),done=supUI.oc!==undefined;
+ const p=done?supUI.p:Math.min(1,supEl()/SUP_BAR_T),age=done?(now-supUI.at)/1000:0,fade=done?Math.max(0,1-Math.max(0,age-0.55)/0.35):1;
+ const zx=B.x+B.w*supUI.bar.z0,zw=B.w*SUP_ZONE_W,jx=B.x+B.w*supUI.bar.jc,jr=Math.max(B.h*0.6,B.w*SUP_JACK_W/2),cy=B.y+B.h/2;
+ g.save();g.globalAlpha=fade;
+ // track
+ g.fillStyle='rgba(6,10,18,.82)';g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=2;rr(g,B.x-4,B.y-4,B.w+8,B.h+8,(B.h+8)/2);g.fill();g.stroke();
+ // normal zone: a bright band
+ g.fillStyle=done&&supUI.oc===0?'rgba(120,150,170,.55)':'rgba(96,226,255,.85)';rr(g,zx,B.y,zw,B.h,5);g.fill();
+ g.fillStyle='rgba(255,255,255,.35)';g.fillRect(zx+2,B.y+2,zw-4,Math.max(2,B.h*0.28));
+ // jackpot: a gold circle that stands proud of the track
+ const pulse=quiet||done?1:1+0.10*Math.sin(now/90);
+ g.fillStyle='#1a1204';g.beginPath();g.arc(jx,cy,jr+3,0,7);g.fill();
+ g.fillStyle=done&&supUI.oc!==2?'#b08a2e':'#ffcf4a';g.beginPath();g.arc(jx,cy,jr*pulse,0,7);g.fill();
+ g.fillStyle='#fff6cf';g.beginPath();g.arc(jx,cy,jr*0.42*pulse,0,7);g.fill();
+ if(!done&&!quiet){g.globalAlpha=fade*(0.35+0.35*Math.sin(now/90));g.strokeStyle='#ffe9a0';g.lineWidth=2;g.beginPath();g.arc(jx,cy,jr+6+2*Math.sin(now/90),0,7);g.stroke();g.globalAlpha=fade;}
+ // marker: a white needle with a dark edge, taller than the track
+ const mx=B.x+B.w*p;
+ // the marker is the thing to watch: the brightest, tallest shape on the bar, with an arrow above and below
+ g.fillStyle='rgba(0,0,0,.8)';g.fillRect(mx-5.5,B.y-15,11,B.h+30);
+ const mc=done?(supUI.oc===2?'#ffcf4a':supUI.oc===1?'#ffffff':'#ff8f8f'):'#ffffff';if(!done&&!quiet){g.shadowColor='#ffffff';g.shadowBlur=10;}
+ g.fillStyle=mc;g.fillRect(mx-3.5,B.y-14,7,B.h+28);g.shadowBlur=0;
+ g.beginPath();g.moveTo(mx-10,B.y-25);g.lineTo(mx+10,B.y-25);g.lineTo(mx,B.y-11);g.closePath();g.fill();
+ // words
+ g.textAlign='center';g.textBaseline='alphabetic';
+ if(done){const big=supUI.oc===2,k=quiet?1:Math.min(1,age/0.12),sz=Math.round((big?30:22)*(quiet?1:1.35-0.35*k));
+  g.font='700 '+sz+'px '+FONT_FAMILY;g.lineWidth=5;g.strokeStyle='rgba(0,0,0,.8)';const t=big?'JACKPOT!':supUI.oc===1?'HIT':'MISS',c=big?'#ffcf4a':supUI.oc===1?'#ffffff':'#ff8f8f';
+  g.strokeText(t,vw/2,B.y-36);g.fillStyle=c;g.fillText(t,vw/2,B.y-36);
+  g.font='700 14px '+FONT_FAMILY;g.lineWidth=4;g.strokeText(Math.round(SUP_OC[supUI.oc]*100)+'% DAMAGE',vw/2,B.y+B.h+30);g.fillStyle='#ffffff';g.fillText(Math.round(SUP_OC[supUI.oc]*100)+'% DAMAGE',vw/2,B.y+B.h+30);}
+ else{g.font='700 15px '+FONT_FAMILY;g.lineWidth=4;g.strokeStyle='rgba(0,0,0,.75)';const t=(SUP_NAMES[supUI.k]||'SUPER').toUpperCase()+': TAP TO STOP';g.strokeText(t,vw/2,B.y-34);g.fillStyle='#ffffff';g.fillText(t,vw/2,B.y-34);
+  if((save.mp||0)<8){g.font=font(11);g.fillStyle='rgba(255,255,255,.8)';g.fillText('blue zone = hit   gold circle = jackpot',vw/2,B.y+B.h+30);}}
+ g.restore();
+ // jackpot: one short gold flash over the screen edge (never with reduced motion; it does not cover the field)
+ if(done&&supUI.oc===2&&!quiet&&age<0.25){const a=(1-age/0.25)*0.5,gr=g.createRadialGradient(vw/2,vh/2,Math.min(vw,vh)*0.35,vw/2,vh/2,Math.max(vw,vh)*0.75);gr.addColorStop(0,'rgba(255,207,74,0)');gr.addColorStop(1,'rgba(255,207,74,'+a+')');g.fillStyle=gr;g.fillRect(0,0,vw,vh);}
+}
 const dashGo=(x,y)=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('dash',x,y):pvpOn()?pvpDash(x,y):useDash(me,x,y);
 const shieldGo=()=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('shield'):pvpOn()?pvpShield():useShield(me);
 const ffBtn=()=>({x:vw/2-80,y:vh-74-SAB,w:160,h:44});
@@ -554,7 +628,9 @@ cv.addEventListener('pointerdown',e=>combatView(()=>{
  if(state!=='play'||!me)return;
  const L=loc(e);
  if(ffBtnOn()){const F=ffBtn();if(L.x>=F.x&&L.x<=F.x+F.w&&L.y>=F.y&&L.y<=F.y+F.h){ffwd=!ffwd;if(typeof fx==='function')fx('tap');return;}}
- const B=btn();if(me.hp>0&&Math.hypot(L.x-B.x,L.y-B.y)<=B.r+16){
+ const B=btn();
+ if(supBarOn()&&me.hp>0){const R=supBarRect();if(Math.hypot(L.x-B.x,L.y-B.y)<=B.r+26||(L.x>=R.x-10&&L.x<=R.x+R.w+10&&L.y>=R.y-16&&L.y<=R.y+R.h+16)){supStop();return;}}   // second tap: stop the timing bar (the SUPER button or the bar itself)
+ if(me.hp>0&&Math.hypot(L.x-B.x,L.y-B.y)<=B.r+16){
   if(me.sp<SUPER_MAX||me.sup){nums.push({x:me.x,y:me.y-1.6,t:0.9,z:1,txt:'Super '+Math.round(me.sp/SUPER_MAX*100)+'%',c:'#ff9d9d'});return;}
   aim={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,on:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}return;}
  const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();dashGo(ix,iy);return;}
@@ -576,7 +652,7 @@ const joyUp=e=>combatView(()=>{
  if(tapCand&&e.pointerId===tapCand.id){const c=tapCand;tapCand=null;if(e.type!=='pointercancel'&&performance.now()-c.t<300&&Math.hypot(c.x-c.sx,c.y-c.sy)<12)tapTarget(c.x,c.y);}
  if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}});
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);
-addEventListener('keydown',e=>combatView(()=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();}));
+addEventListener('keydown',e=>combatView(()=>{keys[e.key.toLowerCase()]=1;if(e.key===' '&&!e.repeat&&state==='play'&&me)superGo();if(e.key==='Shift'&&state==='play'&&me){const [ix,iy]=inputVec();dashGo(ix,iy);}if(e.key.toLowerCase()==='e'&&state==='play'&&me)shieldGo();}));
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 function inputVec(){
  let x=joy.dx,y=joy.dy;
@@ -592,7 +668,7 @@ const TUT_STEPS=[
  {txt:'Drag anywhere to drive',done:()=>tut.moved>0.12},
  {txt:'Your cannon aims and fires by itself. Get in range!',done:()=>mstat&&mstat.dmg>250},
  {txt:'Grab the gold box for a power-up',done:()=>mstat&&mstat.box>0||!boxes.length&&tut.t>14},
- {txt:'Super ready: tap the red button!',done:()=>mstat&&mstat.sup>0,wait:()=>me.sp>=SUPER_MAX}];
+ {txt:'Super ready: tap the red button, then tap again in the blue zone!',done:()=>mstat&&mstat.sup>0,wait:()=>me.sp>=SUPER_MAX}];
 function tutTick(dt){
  if(!tut)return;
  tut.t+=dt;
@@ -680,11 +756,12 @@ function drawBattle(){
  // super telegraphs (lane for beam/shell, danger ring for nova): on the ground, so they dodge the same in 2D and 3D
  for(const r of units){
   if(!r.sup||r.hp<=0)continue;
-  const S=SUP[r.sup.w],k=1-r.sup.t/S.charge;
-  if(S.kind==='nova'){g.globalAlpha=0.15+0.3*k;g.strokeStyle='#ff3b3b';g.lineWidth=3;g.beginPath();gArc(r.x,r.y,S.r);g.stroke();g.globalAlpha=1;}
+  const S=SUP[r.sup.w],k=Math.max(0,Math.min(1,r.sup.el===undefined?1-r.sup.t/S.charge:r.sup.el/Math.max(0.05,r.sup.el+r.sup.t)));   // 0 at the press, 1 as it fires
+  const tc=me&&r.team===me.team&&typeof FX3D!=='undefined'&&FX3D.PAL[r.sup.k]?FX3D.PAL[r.sup.k].a:'#ff3b3b',tc2=tc==='#ff3b3b'?'#ffb3b3':'#ffffff';   // an enemy's lane is red (danger); your side's is the super's own colour
+  if(S.kind==='nova'){g.globalAlpha=0.15+0.3*k;g.strokeStyle=tc;g.lineWidth=3;g.beginPath();gArc(r.x,r.y,S.r);g.stroke();g.globalAlpha=1;}
   else{const len=S.kind==='beam'?S.len:beamLen(r,r.sup.ang),wdt=S.kind==='beam'?S.w:1.2;
-   g.save();g.translate(X(r.x),Y(r.y)-liftOf(r));g.scale(1,GK);g.rotate(r.sup.ang);g.globalAlpha=0.12+0.28*k;g.fillStyle='#ff3b3b';
-   g.fillRect(0,-wdt*sc,len*sc,wdt*2*sc);g.globalAlpha=0.5+0.5*k;g.fillStyle='#ffb3b3';g.fillRect(0,-1,len*sc,2);g.restore();g.globalAlpha=1;}
+   g.save();g.translate(X(r.x),Y(r.y)-liftOf(r));g.scale(1,GK);g.rotate(r.sup.ang);g.globalAlpha=0.12+0.28*k;g.fillStyle=tc;
+   g.fillRect(0,-wdt*sc,len*sc,wdt*2*sc);g.globalAlpha=0.5+0.5*k;g.fillStyle=tc2;g.fillRect(0,-1,len*sc,2);g.restore();g.globalAlpha=1;}
  }
  if(!D3){
   for(const bm of beams){g.globalAlpha=Math.min(1,bm.t/0.15);g.strokeStyle=(bm.w||1.2)>=1.9?'#75d5ff':bm.c;g.lineWidth=Math.max(6,sc*0.9*(bm.w||1.25));g.lineCap='round';
@@ -885,9 +962,12 @@ function drawHUD(){
   g.fillStyle=rdy?'#e0242f':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
   g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r-4,0,7);g.stroke();
   g.strokeStyle=rdy?'#fff':'#ff6b6b';g.beginPath();g.arc(B.x,B.y,B.r-4,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,f));g.stroke();
-  g.fillStyle=rdy?'#fff':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1);
+  if(supBarOn()){const q=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?1:0.5+0.5*Math.sin(performance.now()/70);g.fillStyle='#ffcf4a';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();g.strokeStyle='rgba(255,255,255,'+(0.5+0.5*q)+')';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r+5,0,7);g.stroke();
+   g.fillStyle='#2a1c00';g.textAlign='center';g.font='700 '+Math.round(B.r*0.5)+'px '+FONT_FAMILY;g.fillText('TAP!',B.x,B.y+1);}
+  else{g.fillStyle=rdy?'#fff':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1);}
   if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-12);}
   if(rdy){g.globalAlpha=0.25+0.25*Math.sin(performance.now()/120);g.strokeStyle='#ff4d4d';g.lineWidth=6;g.beginPath();g.arc(B.x,B.y,B.r+6,0,7);g.stroke();g.globalAlpha=1;}}
+ supUiTick();drawSupBar(g);
  g.textBaseline='top';
 }
 

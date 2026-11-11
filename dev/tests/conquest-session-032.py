@@ -88,8 +88,11 @@ async def main(engine,journey_only=False):
       assert selected,('no physical target',await page.evaluate('Conquest.view.battle.enemies.map(e=>({x:e.x,z:e.z,hp:e.hp}))'))
       pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y']);assert await page.evaluate('Conquest.view.selectedId===null'),'same hull toggle'
       for attempt in range(8):   # re-select the same hull: the point is projected one frame before the tap and the hull moves (software GL in CI: a frame can take a second), so retry on a fresh projection and give each tap a frame or two to land
-       pt=await target_point(selected['id']);await page.touchscreen.tap(pt['x'],pt['y'])
-       try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=selected['id'],timeout=1500);break
+       if await page.evaluate('id=>Conquest.view.selectedId===id',selected['id']):break   # an earlier tap landed late: tapping again would toggle the hull off (5E-2b: seen in CI on software GL)
+       pt=await target_point(selected['id'])
+       if not pt:await page.wait_for_timeout(400);continue   # the hull is behind cover this frame: project again
+       await page.touchscreen.tap(pt['x'],pt['y'])
+       try:await page.wait_for_function('id=>Conquest.view.selectedId===id',arg=selected['id'],timeout=4000);break
        except Exception:pass
       assert await page.evaluate('Conquest.view.selectedId')==selected['id'],'same hull re-select'
       # Switching lock must follow the second physical hull, never nearest-enemy acquisition.
@@ -133,7 +136,7 @@ async def main(engine,journey_only=False):
        await (touch('touchStart',[contact]) if on else touch('touchEnd',[contact]));firing=on
       async def press(t):await touch('touchStart',[contact,t] if firing else [t]);await touch('touchEnd',[t])
       for i in range(800):
-       st=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {state:S.battle.state,heat:B.heat||0,hot:!!B.overheated,locked:v.selectedId!=null&&B.enemies.some(e=>e.id===v.selectedId&&e.hp>0),shield:B.shieldCd<=0,super:B.charge>=1000};}''')
+       st=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {state:S.battle.state,heat:B.heat||0,hot:!!B.overheated,locked:v.selectedId!=null&&B.enemies.some(e=>e.id===v.selectedId&&e.hp>0),shield:B.shieldCd<=0,super:B.charge>=1000||!!(B.superAttack&&B.superAttack.bar&&B.superAttack.oc===undefined&&B.superAttack.el>=B.superAttack.bar.z0+0.06)};}''')
        if st['state']!='active':break
        if firing and (st['hot'] or st['heat']>=85):await fire(False)
        elif not firing and not st['hot'] and st['heat']<=35:await fire(True)

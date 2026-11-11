@@ -9,6 +9,9 @@ on:
       - 'js/ui.js'
       - 'wiki.html'
       - 'dev/tests/gear-balance.mjs'
+      - 'dev/tests/super-timing.mjs'
+      - 'dev/tests/super-report.mjs'
+      - 'js/fx3d.js'
       - 'dev/tests/gear-combat.mjs'
       - 'dev/tests/combat-*.mjs'
       - 'dev/tests/fair-arcade*.mjs'
@@ -29,6 +32,9 @@ on:
       - 'js/core.js'
       - 'js/ui.js'
       - 'dev/tests/gear-balance.mjs'
+      - 'dev/tests/super-timing.mjs'
+      - 'dev/tests/super-report.mjs'
+      - 'js/fx3d.js'
       - 'dev/tests/gear-combat.mjs'
       - 'dev/tests/combat-*.mjs'
       - 'dev/tests/fair-arcade*.mjs'
@@ -55,6 +61,7 @@ jobs:
         run: |
           node --check js/rules.js
           node --check js/game.js
+          node --check js/fx3d.js
           node --check js/core.js
           node --check js/ui.js
       - name: Equipment balance and Laboratory stat parity
@@ -64,6 +71,7 @@ jobs:
           node dev/tests/combat-balance.mjs
           node dev/tests/fair-arcade.mjs
           node dev/tests/super-aim.mjs
+          node dev/tests/super-timing.mjs
           node dev/tests/lab-ui.mjs
           node dev/tests/garage-rules.mjs
       - name: Build authoritative Workers simulation

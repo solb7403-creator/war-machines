@@ -1927,3 +1927,206 @@ were stopped and was re-run). Both changed the result: 4 graphics fixes and 2 ne
   2.9 -> 4.6, cyan rim 1.25 -> 1.9; same light count, no new program): 41.4, PASS. `conquest-base-builder`, `conquest-plot-ui`,
   `conquest-find-base`, `meshy.mjs` (1802), `conquest-town`, `conquest-townkit`, `conquest-plot` re-run after the town rebuild:
   PASS; `proof/v2_town.py` both profiles: PASS (all 12 town items Meshy, programs 11-14).
+
+## Checkpoint 33 — Session 5E-2b: spectacular supers + destruction (branch `claude/supers-destruction-5e-2b-ykuxgp`, from main `8e853b4`)
+
+Brief: owner's Session 5E-2b prompt (two slices: supers, destruction). Owner not monitoring: every decision below was made by the
+lead and is recorded with its reason. Payments stay DISABLED. Not touched: prices, economy, airdrop points, save schema, ownership,
+hitboxes, sockets, muzzle endpoints, chassis / weapon base stats, enemyStats. Changed on purpose (ordered in Slice 1): super
+charge, super damage, the timing bar, AI super skill. Not started (later sessions): arcade map art (5E-2c), Conquest building /
+prop rebuilds, the town tank, see-through removal, the visual addendum, war models (5E-2d).
+
+### Release (pre-approved by the owner in the session brief: CI green + two reviewers pass -> PR -> merge -> deploys -> verify)
+- PR #115 (`claude/supers-destruction-5e-2b-ykuxgp` -> main), build stamp `20261111221214`, `PVP_V` 5 (phones on the old build are
+  asked to update before a live match, as with every protocol step).
+- Merge commit, Pages and Worker deploy run IDs and the health / version check: see "Release record" at the end of this checkpoint.
+
+**Owner correction (Nov 11, mid-session):** the Twin Repeater's reference is `docs/art/references/tanks/v2/weapons/5a4bea6f.png` (olive turret, two thin black barrels), not `a4207149.png` as Checkpoint 32's table says; `a4207149.png` and `13e648cb.png` are not in the game and must never be used. Static Nova's yellow had been taken from the hazard strip on `a4207149.png`: it now uses the weapon's own tracer yellow (`WEAPONS.twin.c`), its sheet rows were re-captured, and the model and its colours were not touched.
+
+### What shipped
+**Slice 1, supers**
+- **About 3 supers a match** for every pilot (was 5.94 on average: 3.6 on a stock tank up to 9.8 with the Moonbeam kit).
+- **Timing bar**: press SUPER (tap = auto-aim, drag = aim, exactly as before, 5E-2a aim fix kept) and a bar opens with a marker
+  sweeping once in 1.0 s, a blue normal zone and a gold jackpot circle placed at random inside it. A second tap (the SUPER button,
+  the bar, Space on desktop, R in Conquest) stops it: MISS x0.65, HIT x1, JACKPOT x1.25. No tap = MISS. The super fires 0.2 s after
+  the stop and never sooner than the weapon's old telegraph, so it stays as dodgeable as before. Driving is never blocked.
+  Jackpot feedback: gold flash at the screen edge, "JACKPOT!", a chime (existing WebAudio synth) and Telegram haptics
+  (notification success + heavy impact); reduced motion: no flash, no pulsing.
+- **Server authority**: the sim draws the bar and its own clock judges the tap. In live rooms the server sends each pilot's next
+  bar in the snapshot (so the bar shows the instant they press) and takes one new message, `z` with the pilot's own stop time;
+  that time is believed only within 0.06 s of the server clock, any other claim is judged on the server clock. The phone never
+  sends an outcome. Conquest: the second press travels in the command stream the Worker replays, so the replay is the judge.
+- **AI pilots** use the same bar with a timing spread set by their league (0.24 Rookie .. 0.12 Lunar Legend, a person averages
+  0.10): every league taps worse than an average person, none is perfect. Their super spacing rules are unchanged.
+- **Ten supers**, one per weapon item, each with its own name, colours (from the weapon's Meshy look) and shape, x three outcomes:
+  Pierce Lance (teal rail, shock diamonds; jackpot sonic rings), Arc Lance (violet beam in a lightning helix; chain lightning),
+  Sunlance (gold solar beam, muzzle star; flame columns), Static Nova (tracer-yellow jagged rings and spokes), Storm Nova (violet vortex
+  arms; sky strikes), Helix Nova (orange stacked-ring dome; fire rain + cracks), Siege Blast (fireball and black smoke; ring of
+  secondary blasts), Rail Blast (implosion lens, violet sphere, crawling lightning; EMP rings), Titanfall (white-gold dome and
+  column, ground cracks; fire rain), Moonfall (owner-fixed: miss thinner blue beam, normal blue beam with thin blue electricity,
+  jackpot thicker beam with RED electricity riding outside it). Layers: weapon-coloured charge-up, core, secondary energy,
+  impact, aftermath on the ground (1.5 - 3 s). They play in Arcade, live PvP (every phone sees the same super and outcome) and
+  Conquest.
+**Slice 2, destruction** (`js/fx3d.js`, one shared pooled system)
+- **Damage stages** on anything with health: cracks under 70%, scorch and sparks under 45%, heavy cracks and smoke under 22%.
+  Wired to Arcade tanks and crates, Conquest hulls (Parasites and the player), and every structure in the town raid replay.
+- **Destroyed = breaks apart**: Arcade tanks tear into plates and chunks in their team colour, the turret is blown off, hops,
+  bounces and lies still (HIGH), a charred hull stays and fades; crates break into planks; Conquest Parasite hulls split like
+  chitin with a magenta burst; town walls, homes, turrets and buildings break by material: composite concrete crumbles,
+  Ferrite bends and rusts apart (rebar slivers), Ilmenite plates pop rivets, Armalcolite splinters, Tranquillityite cracks
+  along gold veins, Selenite shatters like glass with glints, Moonheart bursts with crimson glow and leaves glowing cracks.
+  Debris bounces, settles and fades; explosions are sized to the object.
+- **How later sessions plug in** (5E-2c map props, 5E-2d buildings): three calls on the scene's FX3D instance:
+  `wear(material, cx, cy, cz, halfW, halfH, halfD, heading, healthLeft 0..1, seed)` every frame an object is damaged,
+  `shatter(material, x, y, z, size, height, pushX, pushZ, tint)` when it is destroyed, `blast(x, y, z, size)` for an explosion.
+  Materials: `armor metal concrete ferrite ilmenite armalcolite tranq selenite moonheart crate rock chitin` (`FX3D.MATS`).
+
+### Decisions and reasons
+1. **Charge by share of hull, not a flat halving.** A flat halving gave 1.5 supers a match on a stock tank and 5.2 with the
+   Moonbeam kit (the old charge followed damage, so gear multiplied it): a new pilot would rarely see the moment this session is
+   about, and the owner's own kit would still fire far more than 3. Now destroying one enemy hull fills 140% of the bar and
+   losing your own fills 100% (hulls at 1v1 scale, the megatank as its reference tank, mode health scales removed), +30 a crit:
+   every kit lands at 2.8 - 3.6 a match. Upgrades that speed the charge (Reactor, mods) still multiply it.
+2. **Super damage rises with gear^2.2** (weapon tier and roll, cannon levels, damage cores, Lunar Skin) instead of ^1, because the
+   step that used to come from firing more often now has to be in each super: measured need per kit x1.1 / x1.5 / x2.5 / x2.95.
+   Bases 335 Pulse < 380 Siege, 320 Twin (owner: slow weapons hit harder per use), Moonfall 385 with its Legendary multipliers
+   (still the hardest hit). AI pilots use ^1.8: on main their spacing rule held them back more the better their gear, and that
+   rule no longer binds at 3 a match, so the same restraint sits in their damage (never stronger than a person with that gear).
+3. **No one-shots: one super takes at most half of a full hull** on a normal stop (32.5% on a miss, 62.5% on a jackpot, before
+   armour and shield). Found by the combat reviewer: with ~3 big supers, an uncapped hit deleted an equal tank where a mode
+   halves the hulls (Bounty 1v1) and a Legendary hit exceeded a stock hull. The moment stays big, never a kill from full health.
+4. **Outcomes 65 / 100 / 125%.** 65% is the owner's range (60-70%). +25% for a jackpot: with an average person's taps (13% miss,
+   57% hit, 30% jackpot in the seeded runs) the three average ~1.0x, so a perfect player gains at most 25% on supers and a
+   careless one loses at most 35%. A tap-timing cheat cannot be told from a perfect player, which is why the bonus is modest.
+5. **The second tap is the trigger** (fires 0.2 s later) rather than a fixed delay: it feels like releasing the shot. Floor: never
+   before the old telegraph, so an early tap is not a faster super.
+6. **Latency allowance 0.06 s** (first 0.12: the reviewer showed it tripled the jackpot window for a forged claim). The press
+   and the tap travel the same way, so steady lag cancels; 0.06 covers jitter plus one 33 ms tick.
+7. **PVP_V 5**: old phones update before a live match (the snapshot and the tap message changed, and so did the rules).
+8. **Conquest keeps its own charge rate and super damage** (350 / 375 / 350 / 400): it has no matches, its enemies are authored
+   and many are small, so a twice-as-strong super half as often was mostly overkill (a VETERAN raid the scripted pilot must win
+   was lost). Conquest gets the bar, its three outcomes and the looks; the cannon keeps firing while the bar sweeps.
+9. **The damage stat counts hull really removed by a super** (no overkill, nothing a shield soaked). Found by the reviewer: bigger
+   supers made honest Epic / Legendary results trip the server's proof-of-play rule (reported damage vs hull lost). The proof
+   window for "a super was fired" is 3 s (bar up to 1.2 s + shell flight). New test runs real records through the real check.
+10. **`fair-arcade.mjs`, mirror cells judged pooled (OWNER PLEASE NOTE).** A pilot under a league's AI meets an AI at their own
+    power, so stock vs Common there is a near-mirror with a true step of a few points; with ~3 supers a match that carry a tap
+    outcome, single 96-match cells are noisier. The same three rules now apply to the mirror leagues pooled (384 matches a kit:
+    wins 44.5% -> 50.0%, damage trade 0.98 -> 0.94) plus a per-league guard (-8 points, +0.04 trade); every other step is judged
+    per league exactly as before. With the original per-league rules 1 of 11,475 checks fails (Ace, Common vs stock: 49% -> 49%,
+    0.94 -> 0.93). The AI-never-matches-gear rules, the caps and the big-step rules are untouched.
+11. **FX3D design**: two fixed dynamic batches (glow quads; lit debris) drawn with materials the scene already has, particles into
+    the host's particle batch, everything in typed arrays and fixed pools (no allocation per hit). Arcade: +1 small shader program
+    (the glow batch, premultiplied so glow and dark scorch share one draw). Conquest and the town: no new program (the style's
+    `MAT.fx` and `MAT.solid`). In the Arcade FX3D replaces the old beam / nova / blast / shell meshes and the kill and crate
+    blast meshes, so draw cost did not rise. LOW: fewer chunks and particles, no crack quads in the Arcade, no turret piece.
+    Reduced motion: no shake, no flicker (arcs held still), far fewer particles. 2D fallback: the old 2D shapes, in the super's
+    own colour and sized by outcome.
+12. **Text**: the beam's "MISSED" pop-up is now "NO HIT" (so it cannot be confused with a MISS on the bar); the garage shows each
+    weapon's own super name; help and wiki explain the bar. Your side's aim lane is drawn in the super's colour, an enemy's
+    stays red (danger).
+13. **Critic loop**: a separate read-only critic scored the phone sheets twice: 5.5/10 (hairline strokes, no aftermath,
+    look-alike pairs), then 7/10 "ship: yes". Its second list (Titanfall whiteout, weak aftermath, ruler-straight rays, small
+    jackpot signatures, bar marker less prominent than the jackpot circle) was applied afterwards and not scored a third time.
+
+### Numbers
+Seeded AI matches on the real phone code (`dev/tests/super-report.mjs`, 1,920 matches: 10 kits x 8 modes x 6 maps x 4 seeds, the
+"human" stand-in pilot; before = main `8e853b4`, `dev/tests/fixtures/super-baseline.json`; after = this branch,
+`docs/supers-5e2b/super-after.json`). Super damage = what the hits dealt; hull removed = health really taken off enemies.
+
+| Kit (weapon item, gear, league) | Supers a match before -> after | Super damage a match before -> after | Hull removed before -> after | Per super before -> after |
+|---|---|---|---|---|
+| Pulse Cannon, stock, Rookie | 3.57 -> 2.76 | 836 -> 781 (-7%) | 820 -> 771 (-6%) | 234 -> 283 |
+| Twin Repeater, stock, Rookie | 3.55 -> 2.84 | 850 -> 827 (-3%) | 844 -> 819 (-3%) | 239 -> 291 |
+| Siege Breaker, stock, Rookie | 3.71 -> 3.06 | 872 -> 914 (+5%) | 865 -> 895 (+3%) | 235 -> 298 |
+| Arc Pulse, Rare kit, Veteran | 4.93 -> 3.03 | 1494 -> 1569 (+5%) | 1436 -> 1472 (+3%) | 303 -> 518 |
+| Storm Repeater, Rare kit, Veteran | 4.78 -> 2.92 | 1524 -> 1565 (+3%) | 1495 -> 1505 (+1%) | 319 -> 536 |
+| Rail Breaker, Rare kit, Veteran | 5.18 -> 3.27 | 1666 -> 1828 (+10%) | 1635 -> 1767 (+8%) | 322 -> 559 |
+| Nova Pulse, Epic kit, Elite | 7.98 -> 3.18 | 3068 -> 2787 (-9%) | 3003 -> 2565 (-15%) | 384 -> 876 |
+| Helix Repeater, Epic kit, Elite | 7.77 -> 3.04 | 3254 -> 3000 (-8%) | 3200 -> 2845 (-11%) | 419 -> 986 |
+| Titanfall, Epic kit, Elite | 8.1 -> 3.29 | 3442 -> 3281 (-5%) | 3375 -> 3092 (-8%) | 425 -> 998 |
+| Moonbeam, Legendary kit, Lunar Legend | 9.78 -> 3.72 | 7055 -> 6433 (-9%) | 6698 -> 5795 (-13%) | 721 -> 1730 |
+| **All kits** | **5.94 -> 3.11** | **2406 -> 2298 (-4%)** | **2337 -> 2153 (-8%)** | 405 -> 739 |
+
+Timing-bar outcomes of the stand-in pilot (an average person's spread): miss 13%, hit 56%, jackpot 31%.
+By mode (supers a match before -> after): arena 1v1 3.71 -> 2.07, arena 2v2 4.75 -> 2.44, arena 3v3 6.39 -> 3.23, zone 2v2 9.55 -> 5.17, crystal 2v2 7.42 -> 3.78, bounty 2v2 7.57 -> 3.9, royale 1v1 4.95 -> 2.68, boss 2v2 3.15 -> 1.62.
+Known shortfall (combat reviewer's probe, 6 seeded matches a cell, not in the table's modes): in **Bounty 1v1** (hulls halved) and
+Arena 1v1 a top kit's supers now remove much less hull than on main (Legendary, Bounty 1v1 at Lunar Legend: 819 vs 4,172 a match;
+Arena 1v1: 3,161 vs 4,568) because three capped supers cannot remove what ten uncapped ones did. Decision: no one-shots comes
+first (decision 3); win rates and damage trade in those modes are unchanged or better (`fair-arcade.mjs`: Legendary 97-100% wins).
+
+`fair-arcade.mjs` on this branch: PASS, 11,471 checks. Win rate / damage taken per damage dealt, stock .. Legendary kit: Rookie
+47% / 0.93, 74% / 0.70, 86% / 0.51, 100% / 0.28, 100% / 0.18 (main: 48% / 0.91 .. 100% / 0.17); Lunar Legend 40% / 1.00, 49% / 0.95,
+51% / 0.89, 89% / 0.67, 98% / 0.46 (main: 42% / 0.98, 48% / 1.00, 55% / 0.88, 89% / 0.70, 97% / 0.42).
+
+Draw cost, Arcade (same seeded 3v3 Arena battle with the Legendary kit, 840 frames at 390x844, software GL; FX3D vs the legacy
+effects path, which is what main draws; `docs/supers-5e2b/arcade-draws.json`):
+
+| Quality | Draw calls median / p95 / max, legacy -> FX3D | Programs | Triangles max | drawBattle CPU ms median / p95 |
+|---|---|---|---|---|
+| LOW | 71 / 113 / 113 -> 69 / 113 / 113 | 15 -> 16 | 108490 -> 98997 | 2.1 / 4.6 -> 2 / 3.8 |
+| HIGH | 68 / 122 / 131 -> 70 / 121 / 130 | 19 -> 19 | 163479 -> 162530 | 2.9 / 6.6 -> 2.6 / 6.5 |
+
+Arcade LOW is at or under the old draw cost (median 71 -> 69, peak 113 -> 113); the one extra program is FX3D's glow batch.
+Conquest (browser tests, software GL, 390x844): world fight with a super and a hull breaking apart: programs 14 before, 14
+during (budget 16), draw calls 56 -> 62 while the effect plays (`docs/conquest/super-fx/chromium-high-results.json`); CC10 town:
+56 calls, programs 14; CC10 raid replay 73 calls, programs 15 on HIGH and 14 on LOW (`conquest-base-builder.py`, limits 150 / 16);
+Home Sector CC10 (65-draw budget) is asserted by the existing CI tests, unchanged. FX3D peaks in the captures: 60 supers x
+outcomes on phone and desktop, at most 503 glow quads and 738 particles (Helix Nova / Titanfall jackpots); 12 materials breaking
+at once: 96 chunks, 289 particles, all gone 5 s later. Frame rate on the SwiftShader profiles: the CPU side of a battle frame is
+unchanged within noise (table); software GL frame times are not phone frame rates (no physical device in this session).
+
+Sheets (`docs/supers-5e2b/`): `sheet-phone-390x844-3x.webp` and `sheet-desktop-1920x1080.webp` (10 supers x miss / hit / jackpot,
+the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5 s, aftermath), `destruction-phone-390x844-3x.webp`
+(damage stages at 60 / 35 / 15% and the break-up of 12 materials and a tank), `sheet-phone-LOW-4-supers.webp`,
+`sheet-phone-reduced-motion-4-supers.webp`. Conquest: `docs/conquest/super-fx/*.png`.
+
+### Tests
+- New: `dev/tests/super-timing.mjs` (CI, equipment-balance.yml): bar geometry, 65% floor, jackpot cap, no early fire, forged /
+  mistimed / malformed / double taps refused, the bar the server announced is the bar used, AI tap skill by league, per-weapon and
+  per-tier order, no one-shots (mirror kits in Arena, Bounty and Last Standing with a jackpot and a damage box; Legendary vs
+  stock), 45 real match records through the real `checkProof`, about 3 supers and super damage within 10% over seeded matches,
+  Conquest bar through replayed commands. `dev/tests/super-report.mjs` + `fixtures/super-baseline.json` (measured on main).
+  `dev/tests/conquest-super-fx.py` (browser: Conquest bar, outcome, FX3D on the style materials, programs <= 16, hull breaks
+  apart). `dev/tests/super-vfx-capture.py` (frame-stepped sheets; `--destroy`, `--quality low`, `--reduced`).
+- Extended: `super-aim.mjs` (the sight-lost wall spans the arena: an untapped super now takes 1.2 s), `wtest/pvp.mjs` (the `z`
+  message through the live room), `conquest-base-builder.py` (town FX3D beside the raid-shot meshes, HIGH and LOW),
+  `combat-sim.mjs` (the stand-in pilot stops the bar with a person's spread; optional proof record), scripted Conquest pilots
+  stop the bar inside the zone and press SUPER once per batch, `gv` 5 in the worker tests and smokes.
+
+### Agents used (AGENTS.md)
+- VFX critic (read-only, images only), two rounds: changed the result both times (stroke weights, aftermath, look-alikes,
+  whiteout, bar marker).
+- Combat / parity reviewer (read-only): FAIL on the first pass with 2 blockers (proof-of-play tripping on super overkill;
+  one-shot supers in Bounty 1v1) and 7 more; all addressed. Re-review: PASS at `b060b84`, with one test line to fix (done) and two points it wants the owner to see: the 1v1 shortfall under the cap (Numbers) and the pooled mirror cells (decision 10).
+- Graphics / performance reviewer (read-only): FAIL on the first pass with 1 blocker (the town view broke: FX3D was stored under
+  a name the raid-shot meshes already used) and 14 more; all addressed. Re-review: PASS at `b060b84`; follow-ups done after it: unknown-key fallback at the call, bar text clear of the SHIELD button, dimmer nova gather in Conquest, turret piece built without `Object3D.clone` (it failed on Meshy weapon nodes: found by the destruction capture). Left as notes: helix strands and diamonds stay level when a Conquest beam is pitched; crack height is fitted to composite walls (taller ore walls show them a little low); Arcade LOW shows sparks and smoke but no crack lines.
+
+### Risks and limits
+- No physical iPhone / Android / Telegram check by anyone: all frame numbers are software GL (SwiftShader). The effects use
+  large additive quads; on a slow phone the frame-time governor (5E-2a) steps the resolution, the effects do not lower it.
+- A cheat that times its taps perfectly looks like a perfect player (bonus capped at +25%); a forged stop time is believed only
+  within 0.06 s. Per-pilot jackpot rates are not logged yet (Session 7C Integrity is the place).
+- Top kits in 1v1 against much weaker tanks remove less hull with supers than on main because the enemy has no more hull to
+  lose (fewer, capped hits); win rates there are unchanged (fair-arcade table). Overall hull removed by supers is in the table.
+- `fair-arcade.mjs` mirror cells are judged pooled (decision 10): please confirm or ask for the per-league rule with more seeds.
+- Conquest timing is judged in 50 ms command steps (the middle of the step): the marker and the verdict can differ by up to
+  25 ms at the edge of the gold circle.
+- Destruction is visual: Arcade walls and rocks are not destroyable in the rules, so they do not break; 5E-2c props and 5E-2d
+  buildings must call the three FX3D functions to get stages and break-ups.
+- Not done: a third critic score; WebKit locally (CI runs it); jackpot-rate logging; per-super sounds (one shared jackpot /
+  hit / miss set and the existing fire and impact sounds).
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Arcade, any AI match: when SUPER is full, tap it. A bar opens above the buttons; tap SUPER again when the white marker is in
+   the blue zone. Check: HIT / JACKPOT / MISS shows at once, the phone buzzes on a jackpot, the tank keeps driving.
+2. Count your supers in three matches: about 3 each. A jackpot Moonfall should take a big bite, never a full-health kill.
+3. Drag from SUPER to aim, release, then tap for the bar: the shot goes where you dragged.
+4. Fire each weapon you own once on purpose as a MISS and once in the gold circle: the two must look clearly different.
+5. Shoot a crate and an enemy down slowly: cracks first, then scorch and sparks, then smoke; when it dies it breaks into pieces
+   and the turret flies off; pieces bounce, settle and fade within ~3 s.
+6. Settings > Graphics LOW: effects are lighter but all there; no stutter when two supers land together.
+7. A live match against a friend: both see the same super and the same JACKPOT / MISS; nobody can fire before the bar.
+8. Conquest: fill the super in a fight, press SUPER, press again in the zone; destroy a Parasite: its hull splits and bursts.
+   Then your town: DEFEND > START DEFENSE DRILL and watch a wall or turret take damage and break.
+9. iPhone Settings > Accessibility > Reduce Motion ON: no screen shake, no flashing; the bar still sweeps.

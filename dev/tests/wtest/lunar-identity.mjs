@@ -31,7 +31,7 @@ env.SESSIONS={idFromName:n=>n,get(n){if(!objects.has(n)){
 const origin=env.WEB_ORIGIN;
 async function call(path,body,cookies='',csrf='',from=origin){
  const headers={Origin:from,...(body!==undefined?{'Content-Type':'application/json'}:{}),...(cookies?{Cookie:cookies}:{}),...(csrf?{'X-Lunar-CSRF':csrf}:{})};
- return worker.fetch(new Request(origin+path,{method:body===undefined?'GET':'POST',headers,body:body===undefined?undefined:JSON.stringify({gv:4,...body})}),env);
+ return worker.fetch(new Request(origin+path,{method:body===undefined?'GET':'POST',headers,body:body===undefined?undefined:JSON.stringify({gv:5,...body})}),env);
 }
 const cookie=(r,k)=>r.headers.getSetCookie().find(x=>x.startsWith(k+'='))?.split(';')[0]||'';
 const b64=buf=>Buffer.from(buf instanceof Uint8Array?buf:typeof buf==='string'?buf:JSON.stringify(buf)).toString('base64url');

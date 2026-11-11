@@ -118,6 +118,8 @@ const respawns=()=>!!(GTYPES[matchG]&&GTYPES[matchG].respawn);
 const hpScale=()=>isSolo(matchG)?ROYALE_HP:matchG==='boss'?BOSS_HP:MM.n*(matchG==='bounty'?BTY_HP:1);
 // ---- Survival: your team against one megatank. No respawns. Destroy it to win; still alive at the horn is a draw ----
 const BOSS_HP=1.5;                  // your team's tanks: x1.5 health
+// super charge from a hit (5E-2b): the damage as a share of the target's hull at 1v1 scale (rules.js FILL_HULL_*)
+const supFill=(dmg,t)=>dmg/Math.max(1,((t.boss&&t.bt&&t.bt.ref)||t.mhp||STAT.hp)/(hpScale()||1))*SUPER_MAX;
 const BOSS_SECS=110,BOSS_TEAM=1.0;   // megatank health: your cannon's damage per second x this many seconds, +100% per extra tank on your side
 const BOSS_KILL=100,BOSS_TEAM_DPS=0.5;   // its cannon alone wrecks a lone tank in about this many seconds of hits (+50% firepower per extra tank on your side)
 const BOSS_SIZE=1.9;                // drawn (and hit) this much bigger than a tank
@@ -393,7 +395,7 @@ function moveBullets(dt){
    const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
    if(t.st)t.st.arm+=gross*aT;
-   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(dmg*FILL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+dmg*FILL_TAKEN*(t.fillM||1)*(t.hitChg||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
+   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(supFill(dmg,t)*FILL_HULL_DEALT+(isCrit?FILL_HULL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+supFill(dmg,t)*FILL_HULL_TAKEN*(t.fillM||1)*(t.hitChg||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
   }
   q.life-=dt;
  }
@@ -447,11 +449,28 @@ function spawnBox(){
  for(let s=0;s<n;s++){if(boxes.length>=cap)break;placeBox(false);}   // the cap stops unclaimed boxes piling up
 }
 // ---- super attacks: one per weapon. All telegraphed so they can be dodged ----
+// Damage (Session 5E-2b). The charge now fills by share of hull (rules.js FILL_HULL_*), so every pilot fires about 3 supers a
+// match whatever they fly (on main: 3.6 on a stock tank, 9.8 with the Moonbeam kit, because the charge followed damage). Each
+// super hits proportionally harder so a kit's super damage over a match stays where it was: the damage now rises with the
+// tank's own gear multiplier (weapon tier and roll, cannon upgrades, damage cores, Lunar Skin) to the power SUP_GEAR (rules.js)
+// instead of 1. Measured needed step per kit: stock x1.1, Rare x1.5, Epic x2.5, Moonbeam kit x2.95 per super; gear^2.2 gives
+// x1.1 / x1.6 / x2.3 / x2.95. So a higher tier weapon's super hits much harder (owner: supers differ by tier, same direction
+// as the tier multipliers) and every upgrade still counts. Owner rule: a slow weapon's super hits harder per use than a fast
+// one's (Siege Breaker 0.45 s a shot > Pulse Cannon 0.2 s > Twin Repeater 0.09 s); Moonfall keeps its premium number.
+// The hit shapes (width, length, radius, telegraph) are unchanged. dmg is a NORMAL stop of the timing bar (SUP_OC scales it).
+// SUP_CQ: Conquest keeps its own charge rule and super damage exactly as they were (350 / 375 / 350 / 400, charge per point of
+// damage, rules.js FILL_DEALT): it has no matches to count supers in, its enemies are authored and many of them are small, so
+// a twice-as-strong super half as often would mostly be wasted on overkill (measured: dev/tests/conquest-raids.mjs lost a raid
+// it must be able to win). Conquest gets the timing bar and its three outcomes (x0.65 / x1 / x1.25) and the new looks.
 const SUP={
- pulse:{kind:'beam',dmg:350,charge:0.7,w:1.2,len:16},          // PIERCE LANCE: railbeam that goes through cover
- siege:{kind:'shell',dmg:375,charge:0.7,r:3.2,spd:11,range:13},  // SIEGE BLAST: huge shell, big AoE explosion
- twin:{kind:'nova',dmg:350,charge:0.55,r:4.6},                 // STATIC NOVA: vibrating electric shockwave
- moon:{kind:'beam',dmg:400,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
+ pulse:{kind:'beam',dmg:335,charge:0.7,w:1.2,len:16},          // PIERCE LANCE: railbeam that goes through cover
+ siege:{kind:'shell',dmg:380,charge:0.7,r:3.2,spd:11,range:13},  // SIEGE BLAST: huge shell, big AoE explosion
+ twin:{kind:'nova',dmg:320,charge:0.55,r:4.6},                 // STATIC NOVA: vibrating electric shockwave
+ moon:{kind:'beam',dmg:385,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
+const SUP_CQ={pulse:350,siege:375,twin:350,moon:400};
+// a tank's super multiplier: its permanent gear to the power SUP_GEAR, a mystery-box damage buff on top as before
+const supCap=(dmg,e)=>e.boss?dmg:Math.min(dmg,SUP_HULL_CAP*(e.mhp||STAT.hp));   // rules.js SUP_HULL_CAP (before the outcome multiplier)
+const supMult=r=>Math.pow((r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*(r.dmgM||1)*(1+gsum(r,'dmg')),r.hum?SUP_GEAR:SUP_GEAR_AI)*(1+bsum(r,'dmg'));
 let shells=[],blasts=[],novas=[],shakeT=0,shakeM=0;   // shells are sim objects; blasts, novas and shake are visuals (phone only)
 function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse pierces)
  for(let d=0.3;d<SUPER_LEN;d+=0.2){const x=a.x+Math.cos(ang)*d,y=a.y+Math.sin(ang)*d;
@@ -472,10 +491,25 @@ function useSuper(r,aimAng){
  r.sp=0;
  if(r.st)r.st.sup++;
  ev('u',r.id);   // your super whooshes, anyone else's beeps as it charges
- const ang=aimed?aimAng:supLead(r,e,S.charge);
- r.sup={t:S.charge,ang,w:r.wtype||'pulse',fixed:aimed,tgt:aimed?null:e};   // tgt: the super stays on the target it was fired at (Session 5E-2a)
+ // the timing bar (5E-2b): the sim draws the bar, the marker sweeps for SUP_BAR_T; supTap() stops it. t: seconds until it fires
+ // (no tap: the end of the sweep + SUP_REL); el: seconds since the press; oc: the outcome once the bar has been stopped
+ const bar=r.nbar||supBar(random);r.nbar=r.hum?supBar(random):null;   // a person's next bar is drawn now, so the snapshot can show it before the next press
+ const ang=aimed?aimAng:supLead(r,e,Math.max(S.charge,bar.jc*SUP_BAR_T+SUP_REL));
+ r.sup={t:SUP_BAR_T+SUP_REL,el:0,ang,w:r.wtype||'pulse',k:supKey(r.wtype,r.wtier),bar,fixed:aimed,tgt:aimed?null:e};   // tgt: the super stays on the target it was fired at (Session 5E-2a)
+ // a tank the sim flies itself stops the bar on its own: an AI pilot with its league's timing spread (never perfect), a
+ // test pilot with the spread it was given (tapS). A person's tank waits for their tap (the phone, or the live room)
+ const sg=r.tapS||(r.hum?0:LG_AI_TAP[aiLgOf(r)]||LG_AI_TAP[0]);
+ if(sg)r.sup.tapAt=Math.max(0.05,(bar.jc+sg*Math.sqrt(-2*Math.log(1-random()*0.999999))*Math.cos(6.283185307*random()))*SUP_BAR_T);
  return true;
 }
+// stop the bar. claimed: the seconds since the press that the pilot's own device measured. The sim's clock is the judge:
+// a claim further than SUP_TAP_TOL from it (a forged or badly delayed tap) is ignored and the sim's own time is used
+function supTap(r,claimed){
+ const s=r.sup;if(!s||s.oc!==undefined||r.hp<=0||state!=='play')return false;
+ const el=typeof claimed==='number'&&Number.isFinite(claimed)&&Math.abs(claimed-s.el)<=SUP_TAP_TOL?Math.max(0,claimed):s.el;
+ supEnd(r,supJudge(s.bar,el));return true;
+}
+function supEnd(r,oc){const s=r.sup;s.oc=oc;s.t=Math.max(SUP_REL,SUP[s.w].charge-s.el);ev('Z',r.id,oc,s.k);}   // fires SUP_REL after the tap, never before the weapon's own telegraph has run
 // Super aim (Session 5E-2a, owner report "the super sometimes fires in a random direction"). Root causes found:
 //  - the charge re-picked its target every tick (focus or nearest), so a target that died, a new tap or another enemy
 //    getting closer swung the aim up to 1.6 rad/s towards someone else; now the target is locked when the super starts
@@ -544,57 +578,58 @@ function botDodge(u){
  }
 }
 function fireSuper(r,S){
- const hurt=(e,dmg)=>{if(!lvOK(r,e))return;const aE=armor(e),pre=dmg*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e)*(e.supTk||1);   // supTk: Reinforced plates take less from supers
- if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1)*(e.hitChg||1));
-  if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}};
+ const oc=r.sup.oc||0,om=SUP_OC[oc],K=r.sup.k,D=S.dmg;   // outcome of the timing bar: damage x0.65 / x1 / x1.25; K: which of the ten supers (looks only)
+ const hurt=(e,dmg)=>{if(!lvOK(r,e))return;const aE=armor(e),pre=supCap(dmg*supMult(r)*cmult(r,e)*(e.supTk||1),e)*om;   // supTk: Reinforced plates take less from supers; supCap: never more than half a full hull
+ if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);const h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
+  if(r.st){const d=h0-Math.max(0,e.hp);r.st.dmg+=d;if(d>r.st.best)r.st.best=d;}};   // the damage stat counts hull really removed (no overkill, nothing a shield soaked): the proof-of-play check compares it with the hull the enemies lost
  if(S.kind==='beam'){
   const ang=r.sup.ang;
-  ev('M',r.x,r.y,r.x+Math.cos(ang)*S.len,r.y+Math.sin(ang)*S.len,r.team,S.w);
-  for(const c of crates.slice())if(segHitsRect(r.x,r.y,r.x+Math.cos(ang)*S.len,r.y+Math.sin(ang)*S.len,c[0]-S.w*0.5,c[1]-S.w*0.5,c[2]+S.w,c[3]+S.w))hitCrate(c,S.dmg);
+  ev('M',r.x,r.y,r.x+Math.cos(ang)*S.len,r.y+Math.sin(ang)*S.len,r.team,S.w,K,oc,r.id);
+  for(const c of crates.slice())if(segHitsRect(r.x,r.y,r.x+Math.cos(ang)*S.len,r.y+Math.sin(ang)*S.len,c[0]-S.w*0.5,c[1]-S.w*0.5,c[2]+S.w,c[3]+S.w))hitCrate(c,D*om);
   let hit=false;
   for(const e of foesOf(r)){
    const ex=e.x-r.x,ey=e.y-r.y;
    const along=ex*Math.cos(ang)+ey*Math.sin(ang),side=Math.abs(-ex*Math.sin(ang)+ey*Math.cos(ang));
    if(along>0&&along<=S.len&&side<S.w+bodyR(e)-R){   // beam width is tuned for a Vanguard body
-    hurt(e,S.dmg);hit=true;
-    ev('B',e.x,e.y,1.4,0.25,'#ffd24a');   // impact flare
-    ev('I',e.x,e.y,r.sup.w,r.team);   // super impact: an explosion where it lands (looks and sound only)
+    hurt(e,D);hit=true;
+    ev('B',e.x,e.y,1.4,0.25,'#ffd24a',1);   // impact flare (the trailing 1: part of a super; the 3D view draws its own)
+    ev('I',e.x,e.y,r.sup.w,r.team,K,oc,1);   // super impact: an explosion where it lands (looks and sound only; the last 1: it hit a tank)
    }
   }
-  {const ex=Math.max(1,Math.min(W-1,r.x+Math.cos(ang)*S.len)),ey=Math.max(1,Math.min(H-1,r.y+Math.sin(ang)*S.len));ev('I',ex,ey,r.sup.w,r.team);}   // and where the beam ends
-  if(!hit)ev('n',r.x+Math.cos(ang)*Math.min(S.len,6),r.y+Math.sin(ang)*Math.min(S.len,6),'MISSED','#c0cad4',1.2);
+  {const ex=Math.max(1,Math.min(W-1,r.x+Math.cos(ang)*S.len)),ey=Math.max(1,Math.min(H-1,r.y+Math.sin(ang)*S.len));ev('I',ex,ey,r.sup.w,r.team,K,oc,0);}   // and where the beam ends
+  if(!hit)ev('n',r.x+Math.cos(ang)*Math.min(S.len,6),r.y+Math.sin(ang)*Math.min(S.len,6),'NO HIT','#c0cad4',1.2);
  }else if(S.kind==='shell'){
   const speed=S.spd*(1+gsum(r,'vel'));
   shells.push({id:++bid,x:r.x+Math.cos(r.sup.ang)*1.2,y:r.y+Math.sin(r.sup.ang)*1.2,
    vx:Math.cos(r.sup.ang)*speed,vy:Math.sin(r.sup.ang)*speed,
-   dmg:S.dmg*projectileImpactMult(r),r:S.r,life:S.range/speed,owner:r});
-  ev('S',4,0.25);
+   dmg:D*projectileImpactMult(r),r:S.r,life:S.range/speed,owner:r,k:K,oc});
+  ev('S',4,0.25);ev('L',r.id,K,oc,r.sup.ang);   // L: the shell leaves the barrel (looks only)
  }else{
-  ev('V',r.x,r.y,S.r,r.team);ev('I',r.x,r.y,r.sup.w,r.team);
-  hitCratesNear(r.x,r.y,S.r,S.dmg*0.6);
+  ev('V',r.x,r.y,S.r,r.team,K,oc,r.id);ev('I',r.x,r.y,r.sup.w,r.team,K,oc,0);
+  hitCratesNear(r.x,r.y,S.r,D*0.6*om);
   ev('S',6,0.35);
   let hit=false;
   for(const e of foesOf(r)){
    const d=Math.hypot(e.x-r.x,e.y-r.y);
-   if(d<S.r+bodyR(e)){hurt(e,S.dmg*(1-0.4*(d/S.r)));hit=true;}
+   if(d<S.r+bodyR(e)){hurt(e,D*(1-0.4*(d/S.r)));hit=true;}
   }
-  if(!hit)ev('n',r.x,r.y-1.6,'MISSED','#c0cad4',1.2);
+  if(!hit)ev('n',r.x,r.y-1.6,'NO HIT','#c0cad4',1.2);
  }
 }
 function explode(s){
  s.dead=true;
  const r=s.owner;
- ev('I',s.x,s.y,'siege',r?r.team:0);
- ev('B',s.x,s.y,s.r,0.5,'#ff9d45');
- hitCratesNear(s.x,s.y,s.r,s.dmg);
- ev('B',s.x,s.y,s.r*0.65,0.35,'#ffd24a');
+ ev('I',s.x,s.y,'siege',r?r.team:0,s.k||'siege0',s.oc||0,2);   // 2: a shell landing (the full blast)
+ ev('B',s.x,s.y,s.r,0.5,'#ff9d45',1);
+ hitCratesNear(s.x,s.y,s.r,s.dmg*SUP_OC[s.oc||0]);
+ ev('B',s.x,s.y,s.r*0.65,0.35,'#ffd24a',1);
  ev('S',9,0.45);
  for(const e of foesOf(r)){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
   if(d<s.r+bodyR(e)&&lvOK(r,e)){
    const fall=1-0.65*(d/(s.r+bodyR(e)));
-   const aE=armor(e),pre=s.dmg*fall*(r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*dmgMult(r)*cmult(r,e)*(e.supTk||1);if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+dmg*FILL_TAKEN*(e.fillM||1)*(e.hitChg||1));
-   if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}
+   const aE=armor(e),pre=supCap(s.dmg*fall*supMult(r)*cmult(r,e)*(e.supTk||1),e)*SUP_OC[s.oc||0];if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE),h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
+   if(r.st){const d=h0-Math.max(0,e.hp);r.st.dmg+=d;if(d>r.st.best)r.st.best=d;}
   }
  }
 }
@@ -602,8 +637,15 @@ function superTick(dt){
  for(const r of units){
   if(!r.sup||r.hp<=0)continue;
   const S=SUP[r.sup.w],e=r.sup.tgt;
+  r.sup.el+=dt;
+  if(r.sup.oc===undefined){   // the bar is still sweeping: a tank the sim flies taps when its moment comes; nobody tapping by the end is a MISS
+   if(r.sup.tapAt!==undefined&&r.sup.el>=r.sup.tapAt)supTap(r,r.sup.tapAt);
+   else if(r.sup.el>=SUP_BAR_T)supEnd(r,0);
+  }
   if(supLive(r,e)&&S.kind!=='nova'&&r.sup.t>0.25&&!r.sup.fixed){   // the aim follows its own target until the last 0.25s, then locks
-   if(los(r,e)){const want=supLead(r,e,r.sup.t);let d=want-r.sup.ang;d=Math.atan2(Math.sin(d),Math.cos(d));const st=1.6*dt;r.sup.ang+=Math.max(-st,Math.min(st,d));}
+   // lead to where the target will be when it fires: once the bar is stopped that is t; while it sweeps, the tap is expected at the jackpot
+   const lt=r.sup.oc===undefined?Math.max(SUP_REL,Math.min(r.sup.t,r.sup.bar.jc*SUP_BAR_T-r.sup.el+SUP_REL)):r.sup.t;
+   if(los(r,e)){const want=supLead(r,e,lt);let d=want-r.sup.ang;d=Math.atan2(Math.sin(d),Math.cos(d));const st=1.6*dt;r.sup.ang+=Math.max(-st,Math.min(st,d));}
   }
   r.sup.t-=dt;
   if(r.sup.t<=0){fireSuper(r,S);r.sup=null;}

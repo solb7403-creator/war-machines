@@ -35,8 +35,8 @@ function initData(user) {
   p.set('hash', createHmac('sha256', createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest()).update(dcs).digest('hex'));
   return p.toString();
 }
-const tg = async (path, user, body = {}) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ gv:4, initData: initData(user), ...body }) }), env); return [r.status, await r.json()]; };
-const web = async (path, sess, body = {}) => { const r = await worker.fetch(new Request(env.WEB_ORIGIN + path, { method: 'POST', headers: { Origin: env.WEB_ORIGIN, 'Content-Type': 'application/json', Cookie: sess.cookie.split(';')[0], 'X-Lunar-CSRF': sess.csrf }, body: JSON.stringify({gv:4,...body}) }), env); return [r.status, await r.json()]; };
+const tg = async (path, user, body = {}) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ gv:5, initData: initData(user), ...body }) }), env); return [r.status, await r.json()]; };
+const web = async (path, sess, body = {}) => { const r = await worker.fetch(new Request(env.WEB_ORIGIN + path, { method: 'POST', headers: { Origin: env.WEB_ORIGIN, 'Content-Type': 'application/json', Cookie: sess.cookie.split(';')[0], 'X-Lunar-CSRF': sess.csrf }, body: JSON.stringify({gv:5,...body}) }), env); return [r.status, await r.json()]; };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const E = () => JSON.parse(JSON.stringify(db.get('/eco/' + OWNER_PID)));
 const OPEN = { a: 'owner_gem_epic' };

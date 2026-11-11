@@ -301,3 +301,17 @@
 .cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-res,.cq-plot[data-snap="peek"][data-mode="build"] .cq-plot-body>.cq-plot-group:first-of-type{display:none}
 .cq-plot-body>.cq-plot-res{white-space:nowrap;overflow-x:auto;overflow-y:hidden;font-size:11px;letter-spacing:.01em}   /* the build readout only (its tokens are short enough for 320 px); the visit readout wraps */
 .cq-viewport:focus{outline:none}   /* focused by script after ENTER CONQUEST / ACKNOWLEDGE so the keyboard reaches the world; no ring around the whole screen */
+
+/* the super timing bar (Session 5E-2b): bottom centre, above the ability buttons; one glance: blue zone, gold jackpot, white marker */
+.cq-supbar{position:absolute;left:50%;bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 262px);transform:translateX(-50%);width:min(300px,calc(100% - 44px));height:22px;padding:4px;border-radius:16px;background:rgba(6,10,18,.84);border:2px solid rgba(255,255,255,.55);z-index:7;touch-action:none;cursor:pointer}
+.cq-supbar[hidden]{display:none}
+.cq-supbar-track{position:relative;width:100%;height:100%}
+.cq-supbar-zone{position:absolute;top:0;height:100%;border-radius:5px;background:linear-gradient(rgba(190,244,255,.95),rgba(96,226,255,.9) 38%)}
+.cq-supbar-jack{position:absolute;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:radial-gradient(circle,#fff6cf 0 36%,#ffcf4a 38% 100%);box-shadow:0 0 0 3px #1a1204,0 0 10px 2px rgba(255,207,74,.7)}
+.cq-supbar-mark{position:absolute;top:-14px;width:7px;height:50px;margin-left:-3.5px;border-radius:2px;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.8),0 0 10px 2px rgba(255,255,255,.8);transition:left .05s linear}
+.cq-supbar-text{position:absolute;left:-20px;right:-20px;top:-36px;text-align:center;font-weight:700;font-size:15px;letter-spacing:.04em;color:#fff;text-shadow:0 0 4px #000,0 2px 3px #000;pointer-events:none;white-space:nowrap}
+.cq-supbar-note{position:absolute;left:-20px;right:-20px;bottom:-24px;text-align:center;font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 0 3px #000;pointer-events:none;white-space:nowrap}
+.cq-supbar[data-oc="2"] .cq-supbar-text{color:#ffcf4a;font-size:24px;top:-44px}.cq-supbar[data-oc="2"] .cq-supbar-mark{background:#ffcf4a}
+.cq-supbar[data-oc="0"] .cq-supbar-text{color:#ff8f8f}.cq-supbar[data-oc="0"] .cq-supbar-mark{background:#ff8f8f}.cq-supbar[data-oc="0"] .cq-supbar-zone{background:rgba(120,150,170,.6)}
+@media (min-width:900px){.cq-supbar{bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 160px)}}
+@media (prefers-reduced-motion:reduce){.cq-supbar-jack{box-shadow:0 0 0 3px #1a1204}.cq-supbar-mark{transition:none}}

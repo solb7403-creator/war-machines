@@ -386,7 +386,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  const big=(R.wcell?.size||0)>600,far=X.view==='drive'?big:big?(R.far?c.dist>60:c.dist>80):(R.far?c.dist>165:c.dist>195);/* 5C: big towns stay light in the close drive view and the closer default camera */if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));{const pm=R.wpost?.values().next().value?.[0];if(pm)pm.geometry=cached(R.wgeo,'post:'+lo,()=>R.k.post(lo));}for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
   const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}try{sync();}catch(e){}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
- crewStep(R,plotOf());if(X.drill)drillStep(dt);if(R.dmgFx&&!reduced())TK.damageStep(R.dmgFx,X.clock);
+ crewStep(R,plotOf());if(X.drill)drillStep(dt);if(X&&X.R===R&&(X.drill||R.dfx))townFxStep(R,dt);if(R.dmgFx&&!reduced())TK.damageStep(R.dmgFx,X.clock);
  R.sc.getObjectByName('cq-style-sky')?.position.copy(R.cam.position);
  if(SPRITE_WAIT.length&&!X.drill)spriteStep(R);   // before the frame's full clear, so a sprite never shows on the map
  R.S.viewLights(R.cam);R.S.U.uTime.value=(R.S.U.uTime.value||0)+dt;const r=view.renderer,vx=sr.left-hr.left,vy=hr.bottom-sr.bottom;r.setScissorTest(false);r.clear();r.setViewport(vx,vy,w,h);r.setScissor(vx,vy,w,h);r.setScissorTest(true);R.S.guest?.(true);r.render(R.sc,R.cam);R.S.guest?.(false);r.setScissorTest(false);r.setViewport(0,0,hr.width||w,hr.height||h);if((X.frames=(X.frames||0)+1)%30===1)X.info={calls:r.info.render.calls,triangles:r.info.render.triangles,programs:r.info.programs?.length||0};}
@@ -480,6 +480,27 @@ function driveUi(){const st=X.stage;if(!X.driveBtn){const {button}=X.ctx;X.drive
 // (X.drillMs) because the simulation runs once on the phone before the replay starts.
 // The simulation runs in slices of about 8 ms (a generator), so the phone never freezes, even for a CC10 town; the time it
 // took is X.drillMs (wall clock) and X.drillCpu (pure simulation time).
+// ---- FX3D in the town (Session 5E-2b, js/fx3d.js): during a raid replay every structure shows damage stages as it loses
+// health (cracks, scorch, sparks, smoke) and breaks apart when it falls, each wall blend in its own way (08-wall-blends.png):
+// composite concrete crumbles, Ferrite bends and rusts apart, Ilmenite plates pop rivets, Armalcolite splinters,
+// Tranquillityite cracks along its gold veins, Selenite shatters like glass, Moonheart bursts with crimson glow. Drawn with
+// the style's own materials (no new shader program). Visual only: what falls and when is the drill's own result.
+const ORE_MAT=['concrete','ferrite','ilmenite','armalcolite','tranq','selenite','moonheart'];
+function townFx(R){if(R.dfxTried)return R.dfx;R.dfxTried=true;const F=root.FX3D,S=R.S;if(!F)return null;const B=S.AT.BLOB,cu=(B[0]+B[2])/2,cv=(B[1]+B[3])/2,hu=(B[2]-B[0])/2*.94,hv=(B[3]-B[1])/2*.94,cam=R.cam;
+ R.dfx=F.create(R.T,{mode:'conquest',scene:R.sc,low:()=>!!S.low,quiet:()=>reduced(),glowMat:S.MAT.fx,solidMat:S.MAT.solid,glowAttr:'aCol',solidAttr:'aCol',bill:true,lin:true,gain:1.5,minW:.2,uv:(u,v,o)=>{o[0]=cu+u*hu;o[1]=cv+v*hv;},
+  eye:(x,y,z,o)=>{const dx=cam.position.x-x,dy=cam.position.y-y,dz=cam.position.z-z,l=Math.hypot(dx,dy,dz)||1;o[0]=dx/l;o[1]=dy/l;o[2]=dz/l;},order:{glow:3,solid:0},maxQuads:1800,maxVerts:4200,maxParticles:700,maxDebris:72});
+ return R.dfx;}   // R.dfx, never R.fx: that is the raid-shot meshes
+// where a structure stands and what it is made of: {x,y,z (its base), hw,hh,hd (half sizes), mat, size, hot}
+function structBox(id,p,R){const c=P.GRID.cell;
+ if(id.startsWith('w:')){const k=id.slice(2),[i,j]=k.split(',').map(Number),o=p.w&&p.w[k]!==undefined?P.wdecode(p.w[k]).o:0;return {x:P.cellX(i),y:P.groundY(p.site,i,j),z:P.cellZ(j),hw:c*.5,hh:1.45,hd:c*.5,mat:ORE_MAT[o]||'concrete',size:c*.6};}   // hh: a wall section is about 2.9 m tall
+ const he=R.hcell?.get(id);if(he){const m=R._sm||(R._sm=new R.T.Matrix4());he[0].getMatrixAt(he[1],m);const e=m.elements;if(e[0]||e[5]||e[10])return {x:e[12],y:e[13],z:e[14],hw:c*.9,hh:1.6,hd:c*.9,mat:'concrete',size:c};return null;}
+ for(const t of R.tur.values())for(const it of t.items)if(it.id===id)return it.dead?null:{x:it.x,y:it.y,z:it.z,hw:c*.7,hh:1.5,hd:c*.7,mat:'metal',size:c*.9,hot:1};
+ const b=p.b&&p.b[id];if(b){let sz={w:2,d:2};try{sz=P.sizeOf(b.t,b.r||0);}catch(e){}const ci=b.i+(sz.w-1)/2,cj=b.j+(sz.d-1)/2;return {x:P.cellX(ci),y:P.groundY(p.site,b.i,b.j),z:P.cellZ(cj),hw:c*sz.w*.5,hh:3,hd:c*sz.d*.5,mat:'armor',size:c*Math.max(sz.w,sz.d)*.55,hot:1};}
+ return null;}
+function townFxStep(R,dt){const D=X.drill,F=D?townFx(R):R.dfx;if(!F)return;const p=plotOf();if(D&&R.dbox?.d!==D)R.dbox={d:D,m:new Map()};F.begin(dt);
+ if(D&&p){const fr=D.r.frames[D.fi],list=fr&&fr.s||[],cap=R.S.low?12:36,M=R.dbox.m;let n=0;   // damage stages on standing damaged structures (36 a frame, 12 on LOW; FX3D also caps wear's share of the batch)
+  for(let i=0;i<list.length&&n<cap;i++){const s2=list[i],id=s2[0],hp=s2[1];if(hp>=70||hp<=0||D.gone.has(id))continue;let b=M.get(id);if(b===undefined){b=structBox(id,p,R);if(b){let h=0;for(let q=0;q<id.length;q++)h=(h*31+id.charCodeAt(q))|0;b.seed=h;}M.set(id,b);}if(!b)continue;n++;F.wear(b.mat,b.x,b.y+b.hh,b.z,b.hw,b.hh,b.hd,0,hp/100,b.seed);}}   // a structure's box is worked out once a replay
+ F.end();}
 function startReplay(){const s=X?.ctx.view.authority?.state,p=s?.plot,e=p?.log?.[0];if(!e||X.simulating)return;const g=P.drillGen(p,e.seed,{threat:e.threat,yieldEvery:25}),t0=performance.now();let cpu=0;X.simulating=true;
  const pump=()=>{if(!X){return;}const a=performance.now();let r;do{r=g.next();}while(!r.done&&performance.now()-a<8);cpu+=performance.now()-a;
   if(!r.done){say('SIMULATING THE RAID… '+Math.round(100*r.value)+'%');setTimeout(pump,0);return;}
@@ -491,7 +512,7 @@ function hideStruct(id,p){const R=X.R;if(!R)return;if(id.startsWith('w:')){const
  const e=R.meshes.get(id);if(e)e.o.visible=false;}
 function drillStep(dt){const D=X.drill,R=X.R,p=plotOf();D.t+=dt*1.6;const fr=D.r.frames;while(D.fi<fr.length-1&&fr[D.fi+1].t<=D.t)D.fi++;const a=fr[D.fi]||{f:[],s:[]},b=fr[Math.min(fr.length-1,D.fi+1)]||a,f=b.t>a.t?Math.max(0,Math.min(1,(D.t-a.t)/(b.t-a.t))):0;
  const bm=new Map(b.f.map(q=>[q[0],q]));D.now=a.f.map(q=>{const n=bm.get(q[0]);return n?[q[0],q[1],q[2]+(n[2]-q[2])*f,q[3]+(n[3]-q[3])*f]:q;});
- const ev=D.r.events;while(D.ei<ev.length&&ev[D.ei].t<=D.t){const e=ev[D.ei++];if(e.k==='shot')D.shots.push({...e,life:e.ty==='flame'?.35:.25});else if(e.k==='destroyed'){D.gone.add(e.id);hideStruct(e.id,p);}}D.shots=D.shots.filter(x=>(x.life-=dt)>0);
+ const ev=D.r.events;while(D.ei<ev.length&&ev[D.ei].t<=D.t){const e=ev[D.ei++];if(e.k==='shot')D.shots.push({...e,life:e.ty==='flame'?.35:.25});else if(e.k==='destroyed'){D.gone.add(e.id);const F=R&&townFx(R),b=F&&(R.dbox?.m.get(e.id)||structBox(e.id,p,R));if(b){F.shatter(b.mat,b.x,b.y,b.z,b.size,b.hh*2,0,0);if(b.hot)F.blast(b.x,b.y,b.z,b.size,1);}hideStruct(e.id,p);}}D.shots=D.shots.filter(x=>(x.life-=dt)>0);
  if(R){const T=R.T,m=R._d||(R._d=new T.Matrix4()),sv=R._dv||(R._dv=new T.Vector3()),cnt={r:0,s:0,d:0,w:0,b:0};for(const [,kind,x,z] of D.now){const im=R.foes[kind];if(!im||cnt[kind]>=im.instanceMatrix.count)continue;m.makeRotationY(Math.atan2(-x,-z));m.setPosition(x,(kind==='d'?7:0)+P.heightAt(p.site,x,z),z);im.setMatrixAt(cnt[kind]++,m);}for(const [kk,im] of Object.entries(R.foes)){im.count=cnt[kk];im.visible=cnt[kk]>0;im.instanceMatrix.needsUpdate=true;}
   const fc={};for(const k2 of Object.keys(R.fx))fc[k2]=0;const from=id=>{const bb=p.b[id];return bb?[P.cellX(bb.i),P.groundY(p.site,bb.i,bb.j)+2,P.cellZ(bb.j)]:null;};
   const put=(kind,x0,y0,z0,x1,z1,scale=1)=>{const im=R.fx[kind];if(fc[kind]>=im.instanceMatrix.count)return;const dx=x1-x0,dz=z1-z0,L=Math.hypot(dx,dz)||1;m.makeRotationY(Math.atan2(dx,dz));m.scale(sv.set(scale,scale,L));m.setPosition(x0,y0,z0);im.setMatrixAt(fc[kind]++,m);};

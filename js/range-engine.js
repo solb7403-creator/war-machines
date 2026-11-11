@@ -1,7 +1,7 @@
 'use strict';
 // Supported browser instance adapter for the ACTUAL rules.js/game.js, loaded in its own realm.
 // Bump this identity whenever combat or this setup/controller policy changes. No backend interface.
-const RANGE_ENGINE_VERSION='lunar-range-s4.3-equipment/fits-'+FIT_VERSION;
+const RANGE_ENGINE_VERSION='lunar-range-s5e2b-supers/fits-'+FIT_VERSION;
 let rangeConfig=null,rangeSeconds=0,rangeOpponents=[];
 function rangePreset(k){
  const L=JSON.parse(JSON.stringify(STOCK_L));
@@ -38,7 +38,7 @@ function rangeResult(){
 }
 globalThis.RangeSim={version:RANGE_ENGINE_VERSION,stock:()=>JSON.stringify(STOCK_L),setup:rangeSetup,view:rangeView,
  step(dt,input){if(state!=='play')return;rangeInput=input||[0,0];rangeSeconds+=dt;update(dt);},
- action(k,a,b){if(state!=='play'||!me||rangeConfig.control!=='player')return false;if(k==='super')return useSuper(me,a);if(k==='dash')return useDash(me,a,b);if(k==='shield')return useShield(me);return false;},
+ action(k,a,b){if(state!=='play'||!me||rangeConfig.control!=='player')return false;if(k==='super')return useSuper(me,a);if(k==='tap')return supTap(me,a);if(k==='dash')return useDash(me,a,b);if(k==='shield')return useShield(me);return false;},
  events(){const es=rangeEvents;rangeEvents=[];return es;},result:rangeResult,
  stop(){if(state==='play'){rangeStopped=true;state='over';}},
  dispose(){state='menu';me=null;units=[];bullets=[];boxes=[];rangeEvents=[];rangeConfig=null;rangeOpponents=[];}

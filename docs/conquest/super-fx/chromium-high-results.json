@@ -1,0 +1,45 @@
+{
+ "engine": "chromium",
+ "quality": "high",
+ "status": "PASS",
+ "bar": {
+  "hidden": false,
+  "w": 300,
+  "x": 45,
+  "right": 345,
+  "y": 560,
+  "text": "PIERCE LANCE: TAP TO STOP",
+  "zone": "39.4%",
+  "jack": "61.6%",
+  "bar": {
+   "z0": 0.394,
+   "jc": 0.616
+  },
+  "charge": 0,
+  "vw": 390
+ },
+ "hud": {
+  "oc": "0",
+  "text": "MISS",
+  "note": "65% damage"
+ },
+ "programsBefore": 14,
+ "programsDuring": 14,
+ "callsBefore": 57,
+ "callsDuring": 62,
+ "fxPeak": {
+  "quads": 190,
+  "debrisVerts": 168,
+  "particles": 34,
+  "chunks": 6,
+  "effects": 4,
+  "marks": 1,
+  "caps": {
+   "quads": 2000,
+   "verts": 4200,
+   "particles": 420,
+   "chunks": 26
+  }
+ },
+ "physicalDeviceVerified": false
+}

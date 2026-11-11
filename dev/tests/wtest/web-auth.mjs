@@ -11,7 +11,7 @@ const db=makeDB(),pair=await crypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5'
 const jwk=await crypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='test-key';jwk.alg='RS256';jwk.use='sig';
 globalThis.fetch=async (url,opts)=>{if(String(url).includes('firebaseio.com/'))return db.handle(url,opts);if(String(url)==='https://oauth.telegram.org/.well-known/jwks.json')return Response.json({keys:[jwk]});throw Error('No external fallback: '+url);};
 const env={BOT_TOKEN:'123:fixture',FIREBASE_DB_SECRET:'SECRET',WEB_ORIGIN:'https://game.test',WEB_LOGIN_ENABLED:'1'};
-async function call(path,body,cookies='',csrf='',origin=env.WEB_ORIGIN){const headers={Origin:origin,...(body?{'Content-Type':'application/json'}:{}),...(cookies?{Cookie:cookies}:{}),...(csrf?{'X-Lunar-CSRF':csrf}:{})};return worker.fetch(new Request(env.WEB_ORIGIN+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify({gv:4,...body}):undefined}),env);}
+async function call(path,body,cookies='',csrf='',origin=env.WEB_ORIGIN){const headers={Origin:origin,...(body?{'Content-Type':'application/json'}:{}),...(cookies?{Cookie:cookies}:{}),...(csrf?{'X-Lunar-CSRF':csrf}:{})};return worker.fetch(new Request(env.WEB_ORIGIN+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify({gv:5,...body}):undefined}),env);}
 let r=await call('/auth/config');assert.equal(r.status,200,'website login configuration route exists');
 console.log('PASS website auth configuration route');
 // Separate disposable per-token DO storage; no production database, cookies or account IDs.
@@ -52,7 +52,7 @@ Date.now=clock;
 const mini=await call('/api/sync',{initData:tgData.toString(),lab:1},'','','https://solb7403-creator.github.io');assert.equal((await mini.json()).E.earned,score.E.earned,'website battle credit visible to Mini App');
 // Web joins have session-bound tickets; legacy Telegram tickets keep their original format.
 env.ROOM=makeNamespace(mod.PvpRoom,env);env.LOBBY=makeNamespace(mod.PvpLobby,env);
-const joined=await call('/api/pvp/join',{v:4,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:2},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
+const joined=await call('/api/pvp/join',{v:5,g:'arena',m:'1v1',labRev:score.E.lab.rev,fv:2},sid,identity.csrf);const seat=await joined.json();assert.equal(joined.status,200,JSON.stringify(seat));assert.ok(seat.tok.includes('.web.'));
 const wsReq=(cookies,origin)=>new Request(env.WEB_ORIGIN+'/pvp/ws?r='+seat.room+'&t='+seat.tok,{headers:{Upgrade:'websocket',Cookie:cookies,Origin:origin}});
 assert.equal((await worker.fetch(wsReq('',env.WEB_ORIGIN),env)).status,403);
 assert.equal((await worker.fetch(wsReq(sid,'https://evil.test'),env)).status,403);

@@ -35,7 +35,7 @@ function initData(user, age = 0) {
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
   return p.toString();
 }
-const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:4,...body}) }), env); return [r.status, await r.json().catch(() => null)]; };
+const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:5,...body}) }), env); return [r.status, await r.json().catch(() => null)]; };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const E = (pid) => db.get('/eco/' + pid);
 const setEco = (pid, f) => f(db.root.eco[pid]);

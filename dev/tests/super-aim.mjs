@@ -105,7 +105,7 @@ for (const a of [0, 1.1, -2.3, Math.PI]) {
 // ---- 5. line of sight lost mid-charge: the aim holds ----
 { const { S, U } = match('1v1', ['h', 'h']); const [r, e] = U; ok(openPair(S, r, e, 0, 6), 'setup: open ground');
   r.sp = 1000; S.useSuper(r); const a0 = r.sup.ang;
-  const walls = S.walls(); walls.push([Math.min(r.x, e.x) - 1, (r.y + e.y) / 2 - 0.2, 2 + Math.abs(e.x - r.x), 0.4]);   // a wall drops between them
+  const walls = S.walls(); walls.push([-1, (r.y + e.y) / 2 - 0.2, 40, 0.4]);   // a wall drops between them (right across the arena: with the 5E-2b timing bar an untapped super takes 1.2 s, and the target must stay hidden for all of it)
   ok(!S.los(r, e), 'setup: sight is blocked');
   const ang = charge(S, r, t => S.netClaim(e, e.x + 0.3, e.y, e.tp | 0));   // and the target slips away behind it
   ok(ang !== null && dAng(ang, a0) < 1e-9, '5 sight lost: the super keeps the aim it had (no swing)'); walls.pop(); }

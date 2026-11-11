@@ -15,28 +15,50 @@
   "wallPlan": "1 SECTION \u00b7 53 CELLS (3 skipped: 3 buildings)",
   "walls": 53,
   "blended": 53,
-  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 7/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
+  "drill": "COMMAND CENTER FELL \u00b7 RAID WON \u00b7 10/19 PARASITES DOWN \u00b7 COMMAND CENTER 0%",
   "noRewards": true,
   "left": true,
   "render": {
-   "calls": 32,
-   "triangles": 65414,
-   "programs": 16
+   "calls": 21,
+   "triangles": 68003,
+   "programs": 15
   },
   "pageErrors": []
  },
  "cc10-high": {
   "render": {
-   "calls": 63,
-   "triangles": 261650,
-   "programs": 16
+   "calls": 56,
+   "triangles": 246718,
+   "programs": 14
   },
   "raidRender": {
-   "calls": 83,
-   "triangles": 270764,
-   "programs": 16
+   "calls": 73,
+   "triangles": 407882,
+   "programs": 15
   },
-  "drillMs": 215,
+  "fx": {
+   "dfx": true,
+   "shots": true,
+   "stats": {
+    "quads": 0,
+    "debrisVerts": 0,
+    "particles": 0,
+    "chunks": 0,
+    "effects": 0,
+    "marks": 0,
+    "caps": {
+     "quads": 1800,
+     "verts": 4200,
+     "particles": 140,
+     "chunks": 12
+    }
+   },
+   "gone": 0,
+   "glowMat": true,
+   "solidMat": true,
+   "damaged": 0
+  },
+  "drillMs": 250,
   "buildings": 68,
   "walls": 2000,
   "cc": 10,
@@ -47,16 +69,38 @@
  },
  "cc10-low": {
   "render": {
-   "calls": 63,
-   "triangles": 250578,
-   "programs": 16
+   "calls": 56,
+   "triangles": 235646,
+   "programs": 14
   },
   "raidRender": {
-   "calls": 83,
-   "triangles": 259692,
-   "programs": 16
+   "calls": 73,
+   "triangles": 254584,
+   "programs": 14
   },
-  "drillMs": 324,
+  "fx": {
+   "dfx": true,
+   "shots": true,
+   "stats": {
+    "quads": 0,
+    "debrisVerts": 0,
+    "particles": 0,
+    "chunks": 0,
+    "effects": 0,
+    "marks": 0,
+    "caps": {
+     "quads": 1800,
+     "verts": 4200,
+     "particles": 140,
+     "chunks": 12
+    }
+   },
+   "gone": 0,
+   "glowMat": true,
+   "solidMat": true,
+   "damaged": 0
+  },
+  "drillMs": 264,
   "buildings": 68,
   "walls": 2000,
   "cc": 10,
