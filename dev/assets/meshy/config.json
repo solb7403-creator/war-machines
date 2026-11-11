@@ -2787,7 +2787,12 @@
       "visor"
      ]
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#b2b8c0",
+    "paintB": "#8a919b",
+    "bare": "#c9ced5"
+   }
   },
   {
    "id": "chassis-titan-0",
@@ -7598,25 +7603,25 @@
  "looks": {
   "common": {
    "rarity": 0,
-   "paintA": "#5d6243",
-   "paintB": "#8a8062",
+   "paintA": "#4d5340",
+   "paintB": "#716e58",
    "camo": 0.5,
    "trim": "#6f767d",
    "bare": "#8e9499",
    "track": "#2b2d31",
    "glow": "#ffe9b8",
-   "wear": 1.0,
-   "dirt": 1.0,
-   "dust": 0.18,
+   "wear": 1.3,
+   "dirt": 1.15,
+   "dust": 0.22,
    "dustColor": "#77736a",
    "trackBare": "#5e6166"
   },
   "rare": {
    "rarity": 1,
-   "paintA": "#79838f",
-   "paintB": "#5f6a78",
-   "trim": "#aab3bf",
-   "bare": "#b9c0c8",
+   "paintA": "#57606c",
+   "paintB": "#434b56",
+   "trim": "#8e97a3",
+   "bare": "#aab1ba",
    "track": "#2f3238",
    "glow": "#b78bff",
    "wear": 0.7,

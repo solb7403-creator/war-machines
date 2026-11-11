@@ -1615,8 +1615,16 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
   the deck" guide, so Common weapons there are about 45-50% of hull width (below the 55% target): left as is, because pushing
   them out would overhang the short deck. Siege Breaker is the smallest fit on every hull (tall blocky body): candidate for a
   per-item nudge if the owner wants it heavier.
-- NOT yet done from the owner's list: pairing-by-pairing comparison against the nine chosen reference images and the stock
-  colour check (step 3 below).
+- **Colour check against the nine chosen images: done** (`docs/art/meshy-proof/colour_check_stock_vs_reference.webp`). Findings
+  and decisions: Common hulls were too pale and clean -> darker, greyer olive (`paintA #4d5340`, `paintB #716e58`), more wear
+  and dirt. Rare hulls were light silver, references are dark gunmetal with violet lines -> `paintA #57606c`,
+  `paintB #434b56`. Paladin's reference is bright silver with gold trim, ours was dark -> per-item override
+  (`#b2b8c0` / `#8a919b`). Phantom and Colossus (dark with gold / amber) already matched. Titan's plow keeps its hazard
+  stripes (its prompt asks for them) although the reference plow is mostly bare steel. Seven chassis were rebuilt for this
+  (scout-0, scout-1, vanguard-0, vanguard-1, vanguard-2, titan-0, titan-1). The Meshy hull SHAPES differ from the reference
+  images (they were generated from text prompts, not from those images): colour and trim placement follow the references,
+  shape follows the owner's Meshy models. Paints still tint armour (ratio against the new factory colours).
+  If the rebuilt GLBs are not in the last commit, rerun `build.py --only` for those seven ids.
 
 **Open problems / known deviations**
 - Stock colour check against the nine chosen chassis images has not been done pairing by pairing (Vanguard camo was tuned by
