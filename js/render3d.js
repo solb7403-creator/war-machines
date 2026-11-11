@@ -134,11 +134,13 @@ const FITCACHE=new Map();
 const MODEL_CACHE_LIMIT=64,FITTING_CACHE_LIMIT=96;
 function fittingB(f,team,part,s){const key=JSON.stringify(s&&[s.lunar?1:0,...(part==='body'?[s.cls,s.ct]:[s.arch,s.wt])])+'|'+part+'|'+team+'|'+(part==='body'?f.hull+','+f.mobility:f.mount);if(!FITCACHE.has(key)){const r=M3.fittingKit(f,team,part,s);FITCACHE.set(key,M3.bake(r.k));if(FITCACHE.size>FITTING_CACHE_LIMIT){const first=FITCACHE.keys().next().value;for(const g of Object.values(FITCACHE.get(first)))g?.dispose();FITCACHE.delete(first);}}return FITCACHE.get(key);}
 const KC=new Map();
-function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};if(r.k.hf)return v;KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
+function bakedOf(key,fn){let v=KC.get(key);if(v)return v;const r=fn();v={b:M3.bake(r.k),anims:r.anims.map(a=>Object.assign({},a,{b:M3.bake(a.k),k:null})),meta:r.meta};if(r.k.hf||r.k.meshy)return v;KC.set(key,v);if(KC.size>MODEL_CACHE_LIMIT){const f=KC.keys().next().value;const old=KC.get(f);KC.delete(f);for(const g of [...Object.values(old.b),...old.anims.flatMap(a=>Object.values(a.b))])g?.dispose();}return v;}
 const hfKey=()=>typeof Equipment3D!=='undefined'&&Equipment3D.enabled?'hf:'+Equipment3D.quality+':'+Equipment3D.generation+'|':'';
+// which Meshy files of this spec have arrived: a tank is rebuilt once when its own model lands, never for someone else's
+const myKey=s=>typeof Meshy3D!=='undefined'&&!s.boss&&!s.ghost?Meshy3D.stamp(s.cls,s.ct,s.arch,s.wt):'';
 const PLATECACHE=new Map();function plateB(s,part){const low=R3.q!=='high',key=[part,s.ap.join(''),low?1:0,...(part==='body'?[s.cls,s.ct]:[s.arch,s.wt])].join('|');if(!PLATECACHE.has(key)){PLATECACHE.set(key,M3.bake(M3.plateKit(s.ap,part,s,low).k));if(PLATECACHE.size>FITTING_CACHE_LIMIT){const f=PLATECACHE.keys().next().value;for(const g of Object.values(PLATECACHE.get(f)))g?.dispose();PLATECACHE.delete(f);}}return PLATECACHE.get(key);}
-function chassisB(s){return bakedOf(hfKey()+['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>(s.ghost?M3.foundationChassis:M3.chassisKit)(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
-function weaponB(s){return bakedOf(hfKey()+['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>(s.ghost?M3.foundationWeapon:M3.weaponKit)(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
+function chassisB(s){return bakedOf(hfKey()+myKey(s)+['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>(s.ghost?M3.foundationChassis:M3.chassisKit)(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
+function weaponB(s){return bakedOf(hfKey()+myKey(s)+['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>(s.ghost?M3.foundationWeapon:M3.weaponKit)(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
 let BOSSB=null;
 function bossB(){if(!BOSSB){const k=M3.bossKit();BOSSB={hull:bakedOf('bossH',()=>k.hull),gun:bakedOf('bossG',()=>k.gun)};}return BOSSB;}
 // Hyperspace Vault looks (rules.js VAULT_REW): a gold tooth laid on the front deck (it glows from level 10), and where the
@@ -156,11 +158,12 @@ function deckY(geos,x,z){let best=-1;for(const g of geos){if(!g)continue;const a
   const l0=((z1-z2)*(x-x2)+(x2-x1)*(z-z2))/d,l1=((z2-z0)*(x-x2)+(x0-x2)*(z-z2))/d,l2=1-l0-l1;if(l0<-1e-6||l1<-1e-6||l2<-1e-6)continue;
   const y=l0*a[i+1]+l1*a[i+4]+l2*a[i+7];if(y>best)best=y;}}return best;}
 function vaultParts(T,H,spec,mats){
- const geos=Object.entries(H.b).filter(([key,g])=>g&&key!=='glow'&&!key.endsWith('_energy')&&!key.endsWith('_lunar')).map(([,g])=>g);let mnx=1e9,mxx=-1e9;
+ const my=H.b.meshy,geos=my?[]:Object.entries(H.b).filter(([key,g])=>g&&key!=='glow'&&!key.endsWith('_energy')&&!key.endsWith('_lunar')).map(([,g])=>g);let mnx=1e9,mxx=-1e9;
+ if(my){const bb=my.asset.geometry.boundingBox;mnx=bb.min.x;mxx=bb.max.x;}   // a Meshy hull: its own (indexed) surface
  for(const g of geos){if(!g)continue;const a=g.attributes.position.array;for(let i=0;i<a.length;i+=3){if(a[i]<mnx)mnx=a[i];if(a[i]>mxx)mxx=a[i];}}
  if(mxx<mnx)return;
  let x=mxx-0.22,y=-1;
- for(let i=0;i<6&&y<0.15;i++){y=deckY(geos,x,ZT);if(y<0.15)x-=0.14;}
+ for(let i=0;i<6&&y<0.15;i++){y=my?Meshy3D.deckY(my.asset,x,ZT):deckY(geos,x,ZT);if(y<0.15)x-=0.14;}
  if(y<0.15)return;
  const k=M3.kit();M3.put(k,toothGeo().clone(),'#ffcf4a',[x-0.16,y+0.012,ZT],[-Math.PI/2,0,-Math.PI/2],[0.42,0.42,0.42],spec.vt>=2?'glow':'shine');
  T.body.add(M3.meshOf(M3.bake(k),null,mats));
@@ -184,7 +187,7 @@ function buildTank(spec,mats){
  if(spec.fits&&!spec.boss){body.add(M3.meshOf(fittingB(spec.fits,spec.team,'body',spec),null,mats));wg.add(M3.meshOf(fittingB(spec.fits,spec.team,'mount',spec),null,mats));}
  if(spec.ap&&!spec.boss){body.add(M3.meshOf(plateB(spec,'body'),null,mats));wg.add(M3.meshOf(plateB(spec,'mount'),null,mats));}   // Hull Plating (rules.js plateStats)
  const T={g,hull,body,tur,tg,wg,ws,anims,meta:H.meta,wmeta:Wk.meta,tooth:null,rear:null,spec};
- if(!spec.boss&&typeof GraphicsMotion!=='undefined'&&typeof Equipment3D!=='undefined'&&Equipment3D.active())T.motion=GraphicsMotion.attach(g,H.meta.track);
+ if(!spec.boss&&typeof GraphicsMotion!=='undefined'&&(typeof Equipment3D!=='undefined'&&Equipment3D.active()||H.meta.meshy||Wk.meta.meshy))T.motion=GraphicsMotion.attach(g,H.meta.track);
  if(spec.vt&&!spec.boss)try{vaultParts(T,H,spec,mats);}catch(e){}
  return T;
 }
@@ -207,7 +210,7 @@ function unitSpec(u){
  return {fits:u.fits,cls:CH[u.cls]?u.cls:'vanguard',ct,arch:WEAPONS[u.wtype]?u.wtype:'pulse',wt:Math.max(0,Math.min(2,u.wtier|0)),paint:PAINTS[u.paint]?u.paint:'stock',lunar,team,gems:(u.gems||[]).filter(Boolean).slice(0,3).join(','),boss:!!u.boss,ghost:!!u.gh,vl:u.vl|0,vt:vtOf(u.vl),ap:Array.isArray(u.ap)&&u.ap.some(Boolean)?u.ap.slice(0,4):null};
 }
 const vtOf=vl=>(vl|0)>=10?2:(vl|0)>=1?1:0;   // the tooth: none, gold, glowing
-const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{}),s.ap?s.ap.join(''):'',hfKey()].join('|');
+const specKey=s=>[s.cls,s.ct,s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.gems,s.boss?1:0,s.ghost?1:0,s.vt|0,JSON.stringify(s.fits||{}),s.ap?s.ap.join(''):'',hfKey(),myKey(s)].join('|');
 function unitMats(ghost){
  const lit=MT.lit.clone(),shine=MT.shine.clone();
  if(ghost){for(const m of [lit,shine]){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(0x3a5a9a);m.depthWrite=false;}return {lit,shine,glow:MT.gglow};}
@@ -334,7 +337,7 @@ function frame3D(shx,shy){
   const quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced();
   if(o.motion){o.motion.step(dt,{dx:(u.x-o.px)/ds,dz:(u.y-o.py)/ds,heading:hd,aim:u.ang},quiet);o.tur.rotation.y=-(o.motion.state.aim-hd);}else o.tur.rotation.y=-(u.ang-hd);
   o.body.position.y=(o.meta.bob?o.meta.bob*Math.sin(t*3+(u.id||0)):0)+lift/ds;
-  o.recoil=Math.max(0,o.recoil-dt*6);o.tg.position.x=-(o.motion?o.motion.state.kick:o.recoil*0.14)*o.ws;
+  o.recoil=Math.max(0,o.recoil-dt*6);o.tg.position.x=o.wmeta.barrels&&o.motion?0:-(o.motion?o.motion.state.kick:o.recoil*0.14)*o.ws;   // a Meshy weapon recoils its own barrels, not the whole turret
   if(o.motion){const ms=o.motion.state,travel=Math.hypot(u.x-o.px,u.y-o.py);o.body.rotation.z=quiet?0:Math.min(.012,travel*.10)*Math.sin(ms.phase*19)+ms.hit*.018;o.body.position.y+=quiet?0:Math.min(.008,travel*.05)*Math.sin(ms.phase*24);}
   stepAnims(o.anims,dt,t);
   const fl=u.flash>0;if(fl&&!o.fl&&o.motion)o.motion.state.hit=1;if(fl!==o.fl){o.fl=fl;const e=fl?(armor(u)>0?BUFF.arm.c:'#ffe27a'):'#000000';o.mats.lit.emissive.set(e);o.mats.shine.emissive.set(e);if(!fl&&u.gh){o.mats.lit.emissive.setHex(0x3a5a9a);o.mats.shine.emissive.setHex(0x3a5a9a);}}

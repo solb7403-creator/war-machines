@@ -1,204 +1,468 @@
+// meshoptimizer 0.25 reference decoder (MIT, Copyright (C) 2016-2025 Arseny Kapoulkine; implementation by Jasper St. Pierre),
+// vendored unchanged apart from this wrapper that exposes it as the classic-script global MeshoptDecoder.
+// LUNAR uses the plain-JavaScript decoder on purpose: the website's Content-Security-Policy does not allow WebAssembly,
+// and a LIGHT model decodes in a few milliseconds either way. License: js/vendor/MESHOPTIMIZER-LICENSE.txt
+var MeshoptDecoder=(function(){
 // This file is part of meshoptimizer library and is distributed under the terms of MIT License.
 // Copyright (C) 2016-2025, by Arseny Kapoulkine (arseny.kapoulkine@gmail.com)
-var MeshoptDecoder = (function () {
-	'use strict';
-	// Built with clang version 19.1.5-wasi-sdk
-	// Built from meshoptimizer 0.25
-	var wasm_base =
-		'b9H79Tebbbe8Fv9Gbb9Gvuuuuueu9Giuuub9Geueu9Giuuueuixkbeeeddddillviebeoweuec:W:Odkr;Neqo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbeY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVbdE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbiL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtblK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949WboY9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVJ9V29VVbrl79IV9Rbwq;BZkdbk;jYi5ud9:du8Jjjjjbcj;kb9Rgv8Kjjjjbc9:hodnalTmbcuhoaiRbbgrc;WeGc:Ge9hmbarcsGgwce0mbc9:hoalcufadcd4cbawEgDadfgrcKcaawEgqaraq0Egk6mbaicefhxcj;abad9Uc;WFbGcjdadca0EhmaialfgPar9Rgoadfhsavaoadz:jjjjbgzceVhHcbhOdndninaeaO9nmeaPax9RaD6mdamaeaO9RaOamfgoae6EgAcsfglc9WGhCabaOad2fhXaAcethQaxaDfhiaOaeaoaeao6E9RhLalcl4cifcd4hKazcj;cbfaAfhYcbh8AazcjdfhEaHh3incbhodnawTmbaxa8Acd4fRbbhokaocFeGh5cbh8Eazcj;cbfhqinaih8Fdndndndna5a8Ecet4ciGgoc9:fPdebdkaPa8F9RaA6mrazcj;cbfa8EaA2fa8FaAz:jjjjb8Aa8FaAfhixdkazcj;cbfa8EaA2fcbaAz:kjjjb8Aa8FhixekaPa8F9RaK6mva8FaKfhidnaCTmbaPai9RcK6mbaocdtc:q1jjbfcj1jjbawEhaczhrcbhlinargoc9Wfghaqfhrdndndndndndnaaa8Fahco4fRbbalcoG4ciGcdtfydbPDbedvivvvlvkar9cb83bbarcwf9cb83bbxlkarcbaiRbdai8Xbb9c:c:qj:bw9:9c:q;c1:I1e:d9c:b:c:e1z9:gg9cjjjjjz:dg8J9qE86bbaqaofgrcGfag9c8F1:NghcKtc8F91aicdfa8J9c8N1:Nfg8KRbbG86bbarcVfcba8KahcjeGcr4fghRbbag9cjjjjjl:dg8J9qE86bbarc7fcbaha8J9c8L1:NfghRbbag9cjjjjjd:dg8J9qE86bbarctfcbaha8J9c8K1:NfghRbbag9cjjjjje:dg8J9qE86bbarc91fcbaha8J9c8J1:NfghRbbag9cjjjj;ab:dg8J9qE86bbarc4fcbaha8J9cg1:NfghRbbag9cjjjja:dg8J9qE86bbarc93fcbaha8J9ch1:NfghRbbag9cjjjjz:dgg9qE86bbarc94fcbahag9ca1:NfghRbbai8Xbe9c:c:qj:bw9:9c:q;c1:I1e:d9c:b:c:e1z9:gg9cjjjjjz:dg8J9qE86bbarc95fag9c8F1:NgicKtc8F91aha8J9c8N1:NfghRbbG86bbarc96fcbahaicjeGcr4fgiRbbag9cjjjjjl:dg8J9qE86bbarc97fcbaia8J9c8L1:NfgiRbbag9cjjjjjd:dg8J9qE86bbarc98fcbaia8J9c8K1:NfgiRbbag9cjjjjje:dg8J9qE86bbarc99fcbaia8J9c8J1:NfgiRbbag9cjjjj;ab:dg8J9qE86bbarc9:fcbaia8J9cg1:NfgiRbbag9cjjjja:dg8J9qE86bbarcufcbaia8J9ch1:NfgiRbbag9cjjjjz:dgg9qE86bbaiag9ca1:NfhixikaraiRblaiRbbghco4g8Ka8KciSg8KE86bbaqaofgrcGfaiclfa8Kfg8KRbbahcl4ciGg8La8LciSg8LE86bbarcVfa8Ka8Lfg8KRbbahcd4ciGg8La8LciSg8LE86bbarc7fa8Ka8Lfg8KRbbahciGghahciSghE86bbarctfa8Kahfg8KRbbaiRbeghco4g8La8LciSg8LE86bbarc91fa8Ka8Lfg8KRbbahcl4ciGg8La8LciSg8LE86bbarc4fa8Ka8Lfg8KRbbahcd4ciGg8La8LciSg8LE86bbarc93fa8Ka8Lfg8KRbbahciGghahciSghE86bbarc94fa8Kahfg8KRbbaiRbdghco4g8La8LciSg8LE86bbarc95fa8Ka8Lfg8KRbbahcl4ciGg8La8LciSg8LE86bbarc96fa8Ka8Lfg8KRbbahcd4ciGg8La8LciSg8LE86bbarc97fa8Ka8Lfg8KRbbahciGghahciSghE86bbarc98fa8KahfghRbbaiRbigico4g8Ka8KciSg8KE86bbarc99faha8KfghRbbaicl4ciGg8Ka8KciSg8KE86bbarc9:faha8KfghRbbaicd4ciGg8Ka8KciSg8KE86bbarcufaha8KfgrRbbaiciGgiaiciSgiE86bbaraifhixdkaraiRbwaiRbbghcl4g8Ka8KcsSg8KE86bbaqaofgrcGfaicwfa8Kfg8KRbbahcsGghahcsSghE86bbarcVfa8KahfghRbbaiRbeg8Kcl4g8La8LcsSg8LE86bbarc7faha8LfghRbba8KcsGg8Ka8KcsSg8KE86bbarctfaha8KfghRbbaiRbdg8Kcl4g8La8LcsSg8LE86bbarc91faha8LfghRbba8KcsGg8Ka8KcsSg8KE86bbarc4faha8KfghRbbaiRbig8Kcl4g8La8LcsSg8LE86bbarc93faha8LfghRbba8KcsGg8Ka8KcsSg8KE86bbarc94faha8KfghRbbaiRblg8Kcl4g8La8LcsSg8LE86bbarc95faha8LfghRbba8KcsGg8Ka8KcsSg8KE86bbarc96faha8KfghRbbaiRbvg8Kcl4g8La8LcsSg8LE86bbarc97faha8LfghRbba8KcsGg8Ka8KcsSg8KE86bbarc98faha8KfghRbbaiRbog8Kcl4g8La8LcsSg8LE86bbarc99faha8LfghRbba8KcsGg8Ka8KcsSg8KE86bbarc9:faha8KfghRbbaiRbrgicl4g8Ka8KcsSg8KE86bbarcufaha8KfgrRbbaicsGgiaicsSgiE86bbaraifhixekarai8Pbb83bbarcwfaicwf8Pbb83bbaiczfhikdnaoaC9pmbalcdfhlaoczfhraPai9RcL0mekkaoaC6moaimexokaCmva8FTmvkaqaAfhqa8Ecefg8Ecl9hmbkdndndndnawTmbasa8Acd4fRbbgociGPlbedrbkaATmdaza8Afh8Fazcj;cbfhhcbh8EaEhaina8FRbbhraahocbhlinaoahalfRbbgqce4cbaqceG9R7arfgr86bbaoadfhoaAalcefgl9hmbkaacefhaa8Fcefh8FahaAfhha8Ecefg8Ecl9hmbxikkaATmeaza8Afhaazcj;cbfhhcbhoceh8EaYh8FinaEaofhlaa8Vbbhrcbhoinala8FaofRbbcwtahaofRbbgqVc;:FiGce4cbaqceG9R7arfgr87bbaladfhlaLaocefgofmbka8FaQfh8FcdhoaacdfhaahaQfhha8EceGhlcbh8EalmbxdkkaATmbcbaocl49Rh8Eaza8AfRbbhqcwhoa3hlinalRbbaotaqVhqalcefhlaocwfgoca9hmbkcbhhaEh8FaYhainazcj;cbfahfRbbhrcwhoaahlinalRbbaotarVhralaAfhlaocwfgoca9hmbkara8E93aq7hqcbhoa8Fhlinalaqao486bbalcefhlaocwfgoca9hmbka8Fadfh8FaacefhaahcefghaA9hmbkkaEclfhEa3clfh3a8Aclfg8Aad6mbkaXazcjdfaAad2z:jjjjb8AazazcjdfaAcufad2fadz:jjjjb8AaAaOfhOaihxaimbkc9:hoxdkcbc99aPax9RakSEhoxekc9:hokavcj;kbf8Kjjjjbaok:XseHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgDce0mbavc;abfcFecjez:kjjjb8AavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhqaicefgwarfhldnaeTmbcmcsaDceSEhkcbhxcbhmcbhrcbhicbhoindnalaq9nmbc9:hoxikdndnawRbbgDc;Ve0mbavc;abfaoaDcu7gPcl4fcsGcitfgsydlhzasydbhHdndnaDcsGgsak9pmbavaiaPfcsGcdtfydbaxasEhDaxasTgOfhxxekdndnascsSmbcehOasc987asamffcefhDxekalcefhDal8SbbgscFeGhPdndnascu9mmbaDhlxekalcvfhlaPcFbGhPcrhsdninaD8SbbgOcFbGastaPVhPaOcu9kmeaDcefhDascrfgsc8J9hmbxdkkaDcefhlkcehOaPce4cbaPceG9R7amfhDkaDhmkavc;abfaocitfgsaDBdbasazBdlavaicdtfaDBdbavc;abfaocefcsGcitfgsaHBdbasaDBdlaocdfhoaOaifhidnadcd9hmbabarcetfgsaH87ebasclfaD87ebascdfaz87ebxdkabarcdtfgsaHBdbascwfaDBdbasclfazBdbxekdnaDcpe0mbaxcefgOavaiaqaDcsGfRbbgscl49RcsGcdtfydbascz6gPEhDavaias9RcsGcdtfydbaOaPfgzascsGgOEhsaOThOdndnadcd9hmbabarcetfgHax87ebaHclfas87ebaHcdfaD87ebxekabarcdtfgHaxBdbaHcwfasBdbaHclfaDBdbkavaicdtfaxBdbavc;abfaocitfgHaDBdbaHaxBdlavaicefgicsGcdtfaDBdbavc;abfaocefcsGcitfgHasBdbaHaDBdlavaiaPfgicsGcdtfasBdbavc;abfaocdfcsGcitfgDaxBdbaDasBdlaocifhoaiaOfhiazaOfhxxekaxcbalRbbgHEgAaDc;:eSgDfhzaHcsGhCaHcl4hXdndnaHcs0mbazcefhOxekazhOavaiaX9RcsGcdtfydbhzkdndnaCmbaOcefhxxekaOhxavaiaH9RcsGcdtfydbhOkdndnaDTmbalcefhDxekalcdfhDal8SbegPcFeGhsdnaPcu9kmbalcofhAascFbGhscrhldninaD8SbbgPcFbGaltasVhsaPcu9kmeaDcefhDalcrfglc8J9hmbkaAhDxekaDcefhDkasce4cbasceG9R7amfgmhAkdndnaXcsSmbaDhsxekaDcefhsaD8SbbglcFeGhPdnalcu9kmbaDcvfhzaPcFbGhPcrhldninas8SbbgDcFbGaltaPVhPaDcu9kmeascefhsalcrfglc8J9hmbkazhsxekascefhskaPce4cbaPceG9R7amfgmhzkdndnaCcsSmbashlxekascefhlas8SbbgDcFeGhPdnaDcu9kmbascvfhOaPcFbGhPcrhDdninal8SbbgscFbGaDtaPVhPascu9kmealcefhlaDcrfgDc8J9hmbkaOhlxekalcefhlkaPce4cbaPceG9R7amfgmhOkdndnadcd9hmbabarcetfgDaA87ebaDclfaO87ebaDcdfaz87ebxekabarcdtfgDaABdbaDcwfaOBdbaDclfazBdbkavc;abfaocitfgDazBdbaDaABdlavaicdtfaABdbavc;abfaocefcsGcitfgDaOBdbaDazBdlavaicefgicsGcdtfazBdbavc;abfaocdfcsGcitfgDaABdbaDaOBdlavaiaHcz6aXcsSVfgicsGcdtfaOBdbaiaCTaCcsSVfhiaocifhokawcefhwaocsGhoaicsGhiarcifgrae6mbkkcbc99alaqSEhokavc;aef8Kjjjjbaok:clevu8Jjjjjbcz9Rhvdnaecvfal9nmbc9:skdnaiRbbc;:eGc;qeSmbcuskav9cb83iwaicefhoaialfc98fhrdnaeTmbdnadcdSmbcbhwindnaoar6mbc9:skaocefhlao8SbbgicFeGhddndnaicu9mmbalhoxekaocvfhoadcFbGhdcrhidninal8SbbgDcFbGaitadVhdaDcu9kmealcefhlaicrfgic8J9hmbxdkkalcefhokabawcdtfadc8Etc8F91adcd47avcwfadceGcdtVglydbfgiBdbalaiBdbawcefgwae9hmbxdkkcbhwindnaoar6mbc9:skaocefhlao8SbbgicFeGhddndnaicu9mmbalhoxekaocvfhoadcFbGhdcrhidninal8SbbgDcFbGaitadVhdaDcu9kmealcefhlaicrfgic8J9hmbxdkkalcefhokabawcetfadc8Etc8F91adcd47avcwfadceGcdtVglydbfgi87ebalaiBdbawcefgwae9hmbkkcbc99aoarSEk:Lvoeue99dud99eud99dndnadcl9hmbaeTmeindndnabcdfgd8Sbb:Yab8Sbbgi:Ygl:l:tabcefgv8Sbbgo:Ygr:l:tgwJbb;:9cawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai86bbdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad86bbdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad86bbabclfhbaecufgembxdkkaeTmbindndnabclfgd8Ueb:Yab8Uebgi:Ygl:l:tabcdfgv8Uebgo:Ygr:l:tgwJb;:FSawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai87ebdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad87ebdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad87ebabcwfhbaecufgembkkk;oiliui99iue99dnaeTmbcbhiabhlindndnJ;Zl81Zalcof8UebgvciV:Y:vgoal8Ueb:YNgrJb;:FSNJbbbZJbbb:;arJbbbb9GEMgw:lJbbb9p9DTmbaw:OhDxekcjjjj94hDkalclf8Uebhqalcdf8UebhkabaiavcefciGfcetfaD87ebdndnaoak:YNgwJb;:FSNJbbbZJbbb:;awJbbbb9GEMgx:lJbbb9p9DTmbax:OhDxekcjjjj94hDkabaiavciGfgkcd7cetfaD87ebdndnaoaq:YNgoJb;:FSNJbbbZJbbb:;aoJbbbb9GEMgx:lJbbb9p9DTmbax:OhDxekcjjjj94hDkabaiavcufciGfcetfaD87ebdndnJbbjZararN:tawawN:taoaoN:tgrJbbbbarJbbbb9GE:rJb;:FSNJbbbZMgr:lJbbb9p9DTmbar:Ohvxekcjjjj94hvkabakcetfav87ebalcwfhlaiclfhiaecufgembkkk9mbdnadcd4ae2gdTmbinababydbgecwtcw91:Yaece91cjjj98Gcjjj;8if::NUdbabclfhbadcufgdmbkkk:Tvirud99eudndnadcl9hmbaeTmeindndnabRbbgiabcefgl8Sbbgvabcdfgo8Sbbgrf9R:YJbbuJabcifgwRbbgdce4adVgDcd4aDVgDcl4aDVgD:Z:vgqNJbbbZMgk:lJbbb9p9DTmbak:Ohxxekcjjjj94hxkaoax86bbdndnaraif:YaqNJbbbZMgk:lJbbb9p9DTmbak:Ohoxekcjjjj94hokalao86bbdndnavaifar9R:YaqNJbbbZMgk:lJbbb9p9DTmbak:Ohixekcjjjj94hikabai86bbdndnaDadcetGadceGV:ZaqNJbbbZMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkawad86bbabclfhbaecufgembxdkkaeTmbindndnab8Vebgiabcdfgl8Uebgvabclfgo8Uebgrf9R:YJbFu9habcofgw8Vebgdce4adVgDcd4aDVgDcl4aDVgDcw4aDVgD:Z:vgqNJbbbZMgk:lJbbb9p9DTmbak:Ohxxekcjjjj94hxkaoax87ebdndnaraif:YaqNJbbbZMgk:lJbbb9p9DTmbak:Ohoxekcjjjj94hokalao87ebdndnavaifar9R:YaqNJbbbZMgk:lJbbb9p9DTmbak:Ohixekcjjjj94hikabai87ebdndnaDadcetGadceGV:ZaqNJbbbZMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkawad87ebabcwfhbaecufgembkkk9teiucbcbyd:K1jjbgeabcifc98GfgbBd:K1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaik;teeeudndnaeabVciGTmbabhixekdndnadcz9pmbabhixekabhiinaiaeydbBdbaiaeydlBdlaiaeydwBdwaiaeydxBdxaeczfheaiczfhiadc9Wfgdcs0mbkkadcl6mbinaiaeydbBdbaeclfheaiclfhiadc98fgdci0mbkkdnadTmbinaiaeRbb86bbaicefhiaecefheadcufgdmbkkabk:3eedudndnabciGTmbabhixekaecFeGc:b:c:ew2hldndnadcz9pmbabhixekabhiinaialBdxaialBdwaialBdlaialBdbaiczfhiadc9Wfgdcs0mbkkadcl6mbinaialBdbaiclfhiadc98fgdci0mbkkdnadTmbinaiae86bbaicefhiadcufgdmbkkabkk81dbcjwk8Kbbbbdbbblbbbwbbbbbbbebbbdbbblbbbwbbbbc:Kwkl8WNbb'; // embed! base
-	var wasm_simd =
-		'b9H79TebbbeKl9Gbb9Gvuuuuueu9Giuuub9Geueuixkbbebeeddddilve9Weeeviebeoweuec:q:6dkr;Neqo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbdY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVblE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtboK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbrL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949WbwY9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVJ9V29VVbDl79IV9Rbqq;Ctklbzik9:evu8Jjjjjbcz9Rhbcbheincbhdcbhiinabcwfadfaicjuaead4ceGglE86bbaialfhiadcefgdcw9hmbkaec:q:yjjbfai86bbaecitc:q1jjbfab8Piw83ibaecefgecjd9hmbkk:183lYud97dur978Jjjjjbcj;kb9Rgv8Kjjjjbc9:hodnalTmbcuhoaiRbbgrc;WeGc:Ge9hmbarcsGgwce0mbc9:hoalcufadcd4cbawEgDadfgrcKcaawEgqaraq0Egk6mbaicefhxavaialfgmar9Rgoad;8qbbcj;abad9Uc;WFbGcjdadca0EhPdndndnadTmbaoadfhscbhzinaeaz9nmdamax9RaD6miabazad2fhHaxaDfhOaPaeaz9RazaPfae6EgAcsfgocl4cifcd4hCavcj;cbfaoc9WGgXcetfhQavcj;cbfaXci2fhLavcj;cbfaXfhKcbhYaoc;ab6h8AincbhodnawTmbaxaYcd4fRbbhokaocFeGhEcbh3avcj;cbfh5indndndndnaEa3cet4ciGgoc9:fPdebdkamaO9RaX6mwavcj;cbfa3aX2faOaX;8qbbaOaAfhOxdkavcj;cbfa3aX2fcbaX;8kbxekamaO9RaC6moaoclVcbawEhraOaCfhocbhidna8Ambamao9Rc;Gb6mbcbhlina5alfhidndndndndndnaOalco4fRbbgqciGarfPDbedibledibkaipxbbbbbbbbbbbbbbbbpklbxlkaiaopbblaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLg8Ecdp:mea8EpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9og8Fpxiiiiiiiiiiiiiiiip8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaaaoclffahc:q:yjjbfRbbfhoxikaiaopbbwaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9og8Fpxssssssssssssssssp8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaaaocwffahc:q:yjjbfRbbfhoxdkaiaopbbbpklbaoczfhoxekaiaopbbdaoRbbgacitc:q1jjbfpbibaac:q:yjjbfRbbgapsaoRbeghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPpklbaaaocdffahc:q:yjjbfRbbfhokdndndndndndnaqcd4ciGarfPDbedibledibkaiczfpxbbbbbbbbbbbbbbbbpklbxlkaiczfaopbblaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLg8Ecdp:mea8EpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9og8Fpxiiiiiiiiiiiiiiiip8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaaaoclffahc:q:yjjbfRbbfhoxikaiczfaopbbwaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9og8Fpxssssssssssssssssp8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaaaocwffahc:q:yjjbfRbbfhoxdkaiczfaopbbbpklbaoczfhoxekaiczfaopbbdaoRbbgacitc:q1jjbfpbibaac:q:yjjbfRbbgapsaoRbeghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPpklbaaaocdffahc:q:yjjbfRbbfhokdndndndndndnaqcl4ciGarfPDbedibledibkaicafpxbbbbbbbbbbbbbbbbpklbxlkaicafaopbblaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLg8Ecdp:mea8EpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9og8Fpxiiiiiiiiiiiiiiiip8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaaaoclffahc:q:yjjbfRbbfhoxikaicafaopbbwaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9og8Fpxssssssssssssssssp8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaaaocwffahc:q:yjjbfRbbfhoxdkaicafaopbbbpklbaoczfhoxekaicafaopbbdaoRbbgacitc:q1jjbfpbibaac:q:yjjbfRbbgapsaoRbeghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPpklbaaaocdffahc:q:yjjbfRbbfhokdndndndndndnaqco4arfPDbedibledibkaic8Wfpxbbbbbbbbbbbbbbbbpklbxlkaic8Wfaopbblaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLg8Ecdp:mea8EpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9og8Fpxiiiiiiiiiiiiiiiip8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngicitc:q1jjbfpbibaic:q:yjjbfRbbgipsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Ngqcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaiaoclffaqc:q:yjjbfRbbfhoxikaic8Wfaopbbwaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9og8Fpxssssssssssssssssp8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngicitc:q1jjbfpbibaic:q:yjjbfRbbgipsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Ngqcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spklbaiaocwffaqc:q:yjjbfRbbfhoxdkaic8Wfaopbbbpklbaoczfhoxekaic8WfaopbbdaoRbbgicitc:q1jjbfpbibaic:q:yjjbfRbbgipsaoRbegqcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPpklbaiaocdffaqc:q:yjjbfRbbfhokalc;abfhialcjefaX0meaihlamao9Rc;Fb0mbkkdnaiaX9pmbaici4hlinamao9RcK6mwa5aifhqdndndndndndnaOaico4fRbbalcoG4ciGarfPDbedibledibkaqpxbbbbbbbbbbbbbbbbpkbbxlkaqaopbblaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLg8Ecdp:mea8EpmbzeHdOiAlCvXoQrLpxiiiiiiiiiiiiiiiip9og8Fpxiiiiiiiiiiiiiiiip8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spkbbaaaoclffahc:q:yjjbfRbbfhoxikaqaopbbwaopbbbg8Eclp:mea8EpmbzeHdOiAlCvXoQrLpxssssssssssssssssp9og8Fpxssssssssssssssssp8Jg8Ep5b9cjF;8;4;W;G;ab9:9cU1:Ngacitc:q1jjbfpbibaac:q:yjjbfRbbgapsa8Ep5e9cjF;8;4;W;G;ab9:9cU1:Nghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPa8Fa8Ep9spkbbaaaocwffahc:q:yjjbfRbbfhoxdkaqaopbbbpkbbaoczfhoxekaqaopbbdaoRbbgacitc:q1jjbfpbibaac:q:yjjbfRbbgapsaoRbeghcitc:q1jjbfpbibp9UpmbedilvorzHOACXQLpPpkbbaaaocdffahc:q:yjjbfRbbfhokalcdfhlaiczfgiaX6mbkkaohOaoTmoka5aXfh5a3cefg3cl9hmbkdndndndnawTmbasaYcd4fRbbglciGPlbedwbkaXTmdavcjdfaYfhlavaYfpbdbhgcbhoinalavcj;cbfaofpblbg8JaKaofpblbg8KpmbzeHdOiAlCvXoQrLg8LaQaofpblbg8MaLaofpblbg8NpmbzeHdOiAlCvXoQrLgypmbezHdiOAlvCXorQLg8Ecep9Ta8Epxeeeeeeeeeeeeeeeeg8Fp9op9Hp9rg8Eagp9Uggp9Abbbaladfglaga8Ea8Epmlvorlvorlvorlvorp9Uggp9Abbbaladfglaga8Ea8EpmwDqkwDqkwDqkwDqkp9Uggp9Abbbaladfglaga8Ea8EpmxmPsxmPsxmPsxmPsp9Uggp9Abbbaladfglaga8LaypmwDKYqk8AExm35Ps8E8Fg8Ecep9Ta8Ea8Fp9op9Hp9rg8Ep9Uggp9Abbbaladfglaga8Ea8Epmlvorlvorlvorlvorp9Uggp9Abbbaladfglaga8Ea8EpmwDqkwDqkwDqkwDqkp9Uggp9Abbbaladfglaga8Ea8EpmxmPsxmPsxmPsxmPsp9Uggp9Abbbaladfglaga8Ja8KpmwKDYq8AkEx3m5P8Es8Fg8Ja8Ma8NpmwKDYq8AkEx3m5P8Es8Fg8KpmbezHdiOAlvCXorQLg8Ecep9Ta8Ea8Fp9op9Hp9rg8Ep9Uggp9Abbbaladfglaga8Ea8Epmlvorlvorlvorlvorp9Uggp9Abbbaladfglaga8Ea8EpmwDqkwDqkwDqkwDqkp9Uggp9Abbbaladfglaga8Ea8EpmxmPsxmPsxmPsxmPsp9Uggp9Abbbaladfglaga8Ja8KpmwDKYqk8AExm35Ps8E8Fg8Ecep9Ta8Ea8Fp9op9Hp9rg8Ep9Ug8Fp9Abbbaladfgla8Fa8Ea8Epmlvorlvorlvorlvorp9Ug8Fp9Abbbaladfgla8Fa8Ea8EpmwDqkwDqkwDqkwDqkp9Ug8Fp9Abbbaladfgla8Fa8Ea8EpmxmPsxmPsxmPsxmPsp9Uggp9AbbbaladfhlaoczfgoaX6mbxikkaXTmeavcjdfaYfhlavaYfpbdbhgcbhoinalavcj;cbfaofpblbg8JaKaofpblbg8KpmbzeHdOiAlCvXoQrLg8LaQaofpblbg8MaLaofpblbg8NpmbzeHdOiAlCvXoQrLgypmbezHdiOAlvCXorQLg8Ecep:nea8Epxebebebebebebebebg8Fp9op:bep9rg8Eagp:oeggp9Abbbaladfglaga8Ea8Epmlvorlvorlvorlvorp:oeggp9Abbbaladfglaga8Ea8EpmwDqkwDqkwDqkwDqkp:oeggp9Abbbaladfglaga8Ea8EpmxmPsxmPsxmPsxmPsp:oeggp9Abbbaladfglaga8LaypmwDKYqk8AExm35Ps8E8Fg8Ecep:nea8Ea8Fp9op:bep9rg8Ep:oeggp9Abbbaladfglaga8Ea8Epmlvorlvorlvorlvorp:oeggp9Abbbaladfglaga8Ea8EpmwDqkwDqkwDqkwDqkp:oeggp9Abbbaladfglaga8Ea8EpmxmPsxmPsxmPsxmPsp:oeggp9Abbbaladfglaga8Ja8KpmwKDYq8AkEx3m5P8Es8Fg8Ja8Ma8NpmwKDYq8AkEx3m5P8Es8Fg8KpmbezHdiOAlvCXorQLg8Ecep:nea8Ea8Fp9op:bep9rg8Ep:oeggp9Abbbaladfglaga8Ea8Epmlvorlvorlvorlvorp:oeggp9Abbbaladfglaga8Ea8EpmwDqkwDqkwDqkwDqkp:oeggp9Abbbaladfglaga8Ea8EpmxmPsxmPsxmPsxmPsp:oeggp9Abbbaladfglaga8Ja8KpmwDKYqk8AExm35Ps8E8Fg8Ecep:nea8Ea8Fp9op:bep9rg8Ep:oeg8Fp9Abbbaladfgla8Fa8Ea8Epmlvorlvorlvorlvorp:oeg8Fp9Abbbaladfgla8Fa8Ea8EpmwDqkwDqkwDqkwDqkp:oeg8Fp9Abbbaladfgla8Fa8Ea8EpmxmPsxmPsxmPsxmPsp:oeggp9AbbbaladfhlaoczfgoaX6mbxdkkaXTmbcbhocbalcl4gl9Rc8FGhiavcjdfaYfhravaYfpbdbh8Finaravcj;cbfaofpblbggaKaofpblbg8JpmbzeHdOiAlCvXoQrLg8KaQaofpblbg8LaLaofpblbg8MpmbzeHdOiAlCvXoQrLg8NpmbezHdiOAlvCXorQLg8Eaip:Rea8Ealp:Sep9qg8Ea8Fp9rg8Fp9Abbbaradfgra8Fa8Ea8Epmlvorlvorlvorlvorp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmwDqkwDqkwDqkwDqkp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmxmPsxmPsxmPsxmPsp9rg8Fp9Abbbaradfgra8Fa8Ka8NpmwDKYqk8AExm35Ps8E8Fg8Eaip:Rea8Ealp:Sep9qg8Ep9rg8Fp9Abbbaradfgra8Fa8Ea8Epmlvorlvorlvorlvorp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmwDqkwDqkwDqkwDqkp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmxmPsxmPsxmPsxmPsp9rg8Fp9Abbbaradfgra8Faga8JpmwKDYq8AkEx3m5P8Es8Fgga8La8MpmwKDYq8AkEx3m5P8Es8Fg8JpmbezHdiOAlvCXorQLg8Eaip:Rea8Ealp:Sep9qg8Ep9rg8Fp9Abbbaradfgra8Fa8Ea8Epmlvorlvorlvorlvorp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmwDqkwDqkwDqkwDqkp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmxmPsxmPsxmPsxmPsp9rg8Fp9Abbbaradfgra8Faga8JpmwDKYqk8AExm35Ps8E8Fg8Eaip:Rea8Ealp:Sep9qg8Ep9rg8Fp9Abbbaradfgra8Fa8Ea8Epmlvorlvorlvorlvorp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmwDqkwDqkwDqkwDqkp9rg8Fp9Abbbaradfgra8Fa8Ea8EpmxmPsxmPsxmPsxmPsp9rg8Fp9AbbbaradfhraoczfgoaX6mbkkaYclfgYad6mbkaHavcjdfaAad2;8qbbavavcjdfaAcufad2fad;8qbbaAazfhzc9:hoaOhxaOmbxlkkaeTmbaDalfhrcbhocuhlinaralaD9RglfaD6mdaPaeao9RaoaPfae6Eaofgoae6mbkaial9Rhxkcbc99amax9RakSEhoxekc9:hokavcj;kbf8Kjjjjbaokwbz:bjjjbk:TseHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgDce0mbavc;abfcFecje;8kbavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhqaicefgwarfhldnaeTmbcmcsaDceSEhkcbhxcbhmcbhrcbhicbhoindnalaq9nmbc9:hoxikdndnawRbbgDc;Ve0mbavc;abfaoaDcu7gPcl4fcsGcitfgsydlhzasydbhHdndnaDcsGgsak9pmbavaiaPfcsGcdtfydbaxasEhDaxasTgOfhxxekdndnascsSmbcehOasc987asamffcefhDxekalcefhDal8SbbgscFeGhPdndnascu9mmbaDhlxekalcvfhlaPcFbGhPcrhsdninaD8SbbgOcFbGastaPVhPaOcu9kmeaDcefhDascrfgsc8J9hmbxdkkaDcefhlkcehOaPce4cbaPceG9R7amfhDkaDhmkavc;abfaocitfgsaDBdbasazBdlavaicdtfaDBdbavc;abfaocefcsGcitfgsaHBdbasaDBdlaocdfhoaOaifhidnadcd9hmbabarcetfgsaH87ebasclfaD87ebascdfaz87ebxdkabarcdtfgsaHBdbascwfaDBdbasclfazBdbxekdnaDcpe0mbaxcefgOavaiaqaDcsGfRbbgscl49RcsGcdtfydbascz6gPEhDavaias9RcsGcdtfydbaOaPfgzascsGgOEhsaOThOdndnadcd9hmbabarcetfgHax87ebaHclfas87ebaHcdfaD87ebxekabarcdtfgHaxBdbaHcwfasBdbaHclfaDBdbkavaicdtfaxBdbavc;abfaocitfgHaDBdbaHaxBdlavaicefgicsGcdtfaDBdbavc;abfaocefcsGcitfgHasBdbaHaDBdlavaiaPfgicsGcdtfasBdbavc;abfaocdfcsGcitfgDaxBdbaDasBdlaocifhoaiaOfhiazaOfhxxekaxcbalRbbgHEgAaDc;:eSgDfhzaHcsGhCaHcl4hXdndnaHcs0mbazcefhOxekazhOavaiaX9RcsGcdtfydbhzkdndnaCmbaOcefhxxekaOhxavaiaH9RcsGcdtfydbhOkdndnaDTmbalcefhDxekalcdfhDal8SbegPcFeGhsdnaPcu9kmbalcofhAascFbGhscrhldninaD8SbbgPcFbGaltasVhsaPcu9kmeaDcefhDalcrfglc8J9hmbkaAhDxekaDcefhDkasce4cbasceG9R7amfgmhAkdndnaXcsSmbaDhsxekaDcefhsaD8SbbglcFeGhPdnalcu9kmbaDcvfhzaPcFbGhPcrhldninas8SbbgDcFbGaltaPVhPaDcu9kmeascefhsalcrfglc8J9hmbkazhsxekascefhskaPce4cbaPceG9R7amfgmhzkdndnaCcsSmbashlxekascefhlas8SbbgDcFeGhPdnaDcu9kmbascvfhOaPcFbGhPcrhDdninal8SbbgscFbGaDtaPVhPascu9kmealcefhlaDcrfgDc8J9hmbkaOhlxekalcefhlkaPce4cbaPceG9R7amfgmhOkdndnadcd9hmbabarcetfgDaA87ebaDclfaO87ebaDcdfaz87ebxekabarcdtfgDaABdbaDcwfaOBdbaDclfazBdbkavc;abfaocitfgDazBdbaDaABdlavaicdtfaABdbavc;abfaocefcsGcitfgDaOBdbaDazBdlavaicefgicsGcdtfazBdbavc;abfaocdfcsGcitfgDaABdbaDaOBdlavaiaHcz6aXcsSVfgicsGcdtfaOBdbaiaCTaCcsSVfhiaocifhokawcefhwaocsGhoaicsGhiarcifgrae6mbkkcbc99alaqSEhokavc;aef8Kjjjjbaok:clevu8Jjjjjbcz9Rhvdnaecvfal9nmbc9:skdnaiRbbc;:eGc;qeSmbcuskav9cb83iwaicefhoaialfc98fhrdnaeTmbdnadcdSmbcbhwindnaoar6mbc9:skaocefhlao8SbbgicFeGhddndnaicu9mmbalhoxekaocvfhoadcFbGhdcrhidninal8SbbgDcFbGaitadVhdaDcu9kmealcefhlaicrfgic8J9hmbxdkkalcefhokabawcdtfadc8Etc8F91adcd47avcwfadceGcdtVglydbfgiBdbalaiBdbawcefgwae9hmbxdkkcbhwindnaoar6mbc9:skaocefhlao8SbbgicFeGhddndnaicu9mmbalhoxekaocvfhoadcFbGhdcrhidninal8SbbgDcFbGaitadVhdaDcu9kmealcefhlaicrfgic8J9hmbxdkkalcefhokabawcetfadc8Etc8F91adcd47avcwfadceGcdtVglydbfgi87ebalaiBdbawcefgwae9hmbkkcbc99aoarSEk:2Pliur97eue978Jjjjjbc8W9Rhiaec98Ghldndnadcl9hmbdnalTmbcbhvabhdinadadpbbbgocKp:RecKp:Sep;6egraocwp:RecKp:Sep;6earp;Geaoczp:RecKp:Sep;6egwp;Gep;Kep;LegDpxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgkp9op9rp;Kegrpxbb;:9cbb;:9cbb;:9cbb;:9cararp;MeaDaDp;Meawaqawakp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFbbbFbbbFbbbFbbbp9oaopxbbbFbbbFbbbFbbbFp9op9qarawp;Meaqp;Kecwp:RepxbFbbbFbbbFbbbFbbp9op9qaDawp;Meaqp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qpkbbadczfhdavclfgval6mbkkalaeSmeaipxbbbbbbbbbbbbbbbbgqpklbaiabalcdtfgdaeciGglcdtgv;8qbbdnalTmbaiaipblbgocKp:RecKp:Sep;6egraocwp:RecKp:Sep;6earp;Geaoczp:RecKp:Sep;6egwp;Gep;Kep;LegDaqp:2egqarpxbbbjbbbjbbbjbbbjgkp9op9rp;Kegrpxbb;:9cbb;:9cbb;:9cbb;:9cararp;MeaDaDp;Meawaqawakp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFbbbFbbbFbbbFbbbp9oaopxbbbFbbbFbbbFbbbFp9op9qarawp;Meaqp;Kecwp:RepxbFbbbFbbbFbbbFbbp9op9qaDawp;Meaqp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qpklbkadaiav;8qbbskaipxFubbFubbFubbFubbgxpklbdnalTmbcbhvabhdinadczfgmampbbbgopxbbbbbbFFbbbbbbFFgkp9oadpbbbgDaopmbediwDqkzHOAKY8AEgwczp:Reczp:Sep;6egraipblbaDaopmlvorxmPsCXQL358E8Fp9op;6eawczp:Sep;6egwp;Gearp;Gep;Kep;Legopxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgPp9op9rp;Kegrpxb;:FSb;:FSb;:FSb;:FSararp;Meaoaop;MeawaqawaPp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFFbbFFbbFFbbFFbbp9oaoawp;Meaqp;Keczp:Rep9qgoarawp;Meaqp;KepxFFbbFFbbFFbbFFbbp9ogrpmwDKYqk8AExm35Ps8E8Fp9qpkbbadaDakp9oaoarpmbezHdiOAlvCXorQLp9qpkbbadcafhdavclfgval6mbkkalaeSmbaiczfpxbbbbbbbbbbbbbbbbgopklbaiaopklbaiabalcitfgdaeciGglcitgv;8qbbaiaxpkladnalTmbaiaipblzgopxbbbbbbFFbbbbbbFFgkp9oaipblbgDaopmbediwDqkzHOAKY8AEgwczp:Reczp:Sep;6egraipblaaDaopmlvorxmPsCXQL358E8Fp9op;6eawczp:Sep;6egwp;Gearp;Gep;Kep;Legopxbbbbbbbbbbbbbbbbp:2egqarpxbbbjbbbjbbbjbbbjgPp9op9rp;Kegrpxb;:FSb;:FSb;:FSb;:FSararp;Meaoaop;MeawaqawaPp9op9rp;Kegrarp;Mep;Kep;Kep;Jep;Negwp;Mepxbbn0bbn0bbn0bbn0gqp;KepxFFbbFFbbFFbbFFbbp9oaoawp;Meaqp;Keczp:Rep9qgoarawp;Meaqp;KepxFFbbFFbbFFbbFFbbp9ogrpmwDKYqk8AExm35Ps8E8Fp9qpklzaiaDakp9oaoarpmbezHdiOAlvCXorQLp9qpklbkadaiav;8qbbkk;Iwllue97euo978Jjjjjbca9Rhidnaec98GglTmbcbhvabhoinaocKfpxbbjZbbjZbbjZbbjZpx;Zl81Z;Zl81Z;Zl81Z;Zl81ZaopbbbgraoczfgwpbbbgDpmlvorxmPsCXQL358E8Fgqczp:Segkpxibbbibbbibbbibbbp9qp;6ep;NegxaraDpmbediwDqkzHOAKY8AEgrczp:Reczp:Sep;6ep;MegDaDp;Meaxarczp:Sep;6ep;Megmamp;Meaxaqczp:Reczp:Sep;6ep;Megqaqp;Mep;Kep;Kep;Lepxbbbbbbbbbbbbbbbbp:4ep;Jepxb;:FSb;:FSb;:FSb;:FSgxp;Mepxbbn0bbn0bbn0bbn0grp;KepxFFbbFFbbFFbbFFbbgPp9oamaxp;Mearp;Keczp:Rep9qgmaDaxp;Mearp;KeaPp9oaqaxp;Mearp;Keczp:Rep9qgrpmwDKYqk8AExm35Ps8E8FgDp5eakclp:RegxpEi:T:j83ibawaDp5baxpEd:T:j83ibaocwfamarpmbezHdiOAlvCXorQLgrp5eaxpEe:T:j83ibaoarp5baxpEb:T:j83ibaocafhoavclfgval6mbkkdnalaeSmbaiczfpxbbbbbbbbbbbbbbbbgxpklbaiaxpklbaiabalcitfgoaeciGgvcitgw;8qbbdnavTmbaipxbbjZbbjZbbjZbbjZpx;Zl81Z;Zl81Z;Zl81Z;Zl81ZaipblbgraipblzgDpmlvorxmPsCXQL358E8Fgqczp:Segkpxibbbibbbibbbibbbp9qp;6ep;NegxaraDpmbediwDqkzHOAKY8AEgrczp:Reczp:Sep;6ep;MegDaDp;Meaxarczp:Sep;6ep;Megmamp;Meaxaqczp:Reczp:Sep;6ep;Megqaqp;Mep;Kep;Kep;Lepxbbbbbbbbbbbbbbbbp:4ep;Jepxb;:FSb;:FSb;:FSb;:FSgxp;Mepxbbn0bbn0bbn0bbn0grp;KepxFFbbFFbbFFbbFFbbgPp9oamaxp;Mearp;Keczp:Rep9qgmaDaxp;Mearp;KeaPp9oaqaxp;Mearp;Keczp:Rep9qgrpmwDKYqk8AExm35Ps8E8FgDp5eakclp:RegxpEi:T:j83iKaiaDp5baxpEd:T:j83izaiamarpmbezHdiOAlvCXorQLgrp5eaxpEe:T:j83iwaiarp5baxpEb:T:j83ibkaoaiaw;8qbbkk;uddiue978Jjjjjbc;ab9Rhidnadcd4ae2glc98GgvTmbcbheabhdinadadpbbbgocwp:Recwp:Sep;6eaocep:SepxbbjFbbjFbbjFbbjFp9opxbbjZbbjZbbjZbbjZp:Uep;Mepkbbadczfhdaeclfgeav6mbkkdnavalSmbaic8WfpxbbbbbbbbbbbbbbbbgopklbaicafaopklbaiczfaopklbaiaopklbaiabavcdtfgdalciGgecdtgv;8qbbdnaeTmbaiaipblbgocwp:Recwp:Sep;6eaocep:SepxbbjFbbjFbbjFbbjFp9opxbbjZbbjZbbjZbbjZp:Uep;Mepklbkadaiav;8qbbkk:CPvdue97euw97eu8Jjjjjbc8W9Rhiaec98Ghldndnadcl9hmbaipxbbbbbbbbbbbbbbbbgvpklbdnalTmbcbhoabhdinadpbbbhradpxbbuJbbuJbbuJbbuJaipblbarcKp:Tep9qgwcep:Seawp9qgDcdp:SeaDp9qgDclp:SeaDp9qgqp;6ep;NegDarcwp:RecKp:SegkarpxFbbbFbbbFbbbFbbbgxp9ogmp:Uep;6ep;Mepxbbn0bbn0bbn0bbn0gPp;Kecwp:RepxbFbbbFbbbFbbbFbbp9oaDamakp:Xearczp:RecKp:Segrp:Uep;6ep;MeaPp;Keaxp9op9qaDamakarp:Uep:Xep;6ep;MeaPp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qaDaqawcep:Rep9oawpxebbbebbbebbbebbbp9op9qp;6ep;MeaPp;KecKp:Rep9qpkbbadczfhdaoclfgoal6mbkkalaeSmeaiavpklaaicafabalcdtfgdaeciGglcdtgo;8qbbaiavpklbdnalTmbaipblahraipxbbuJbbuJbbuJbbuJaipblbarcKp:Tep9qgwcep:Seawp9qgDcdp:SeaDp9qgDclp:SeaDp9qgqp;6ep;NegDarcwp:RecKp:SegkarpxFbbbFbbbFbbbFbbbgxp9ogmp:Uep;6ep;Mepxbbn0bbn0bbn0bbn0gPp;Kecwp:RepxbFbbbFbbbFbbbFbbp9oaDamakp:Xearczp:RecKp:Segrp:Uep;6ep;MeaPp;Keaxp9op9qaDamakarp:Uep:Xep;6ep;MeaPp;Keczp:RepxbbFbbbFbbbFbbbFbp9op9qaDaqawcep:Rep9oawpxebbbebbbebbbebbbp9op9qp;6ep;MeaPp;KecKp:Rep9qpklakadaicafao;8qbbskaipxbbbbbbbbbbbbbbbbgvpklbdnalTmbcbhoabhdinadczfgspxbFu9hbFu9hbFu9hbFu9hadpbbbgDaspbbbgPpmlvorxmPsCXQL358E8Fgmczp:Teaipblbp9qgrcep:Searp9qgwcdp:Seawp9qgwclp:Seawp9qgwcwp:Seawp9qgqp;6ep;NegwaDaPpmbediwDqkzHOAKY8AEgDpxFFbbFFbbFFbbFFbbgPp9ogkaDczp:Segxp:Ueamczp:Reczp:Segmp:Xep;6ep;Mepxbbn0bbn0bbn0bbn0gDp;KeaPp9oawakaxamp:Uep:Xep;6ep;MeaDp;Keczp:Rep9qgxawaqarcep:Rep9oarpxebbbebbbebbbebbbp9op9qp;6ep;MeaDp;Keczp:Reawamakp:Uep;6ep;MeaDp;KeaPp9op9qgrpmwDKYqk8AExm35Ps8E8FpkbbadaxarpmbezHdiOAlvCXorQLpkbbadcafhdaoclfgoal6mbkkalaeSmbaiczfpxbbbbbbbbbbbbbbbbgrpklbaiarpklbaiabalcitfgdaeciGglcitgo;8qbbaiavpkladnalTmbaipxbFu9hbFu9hbFu9hbFu9haipblbgDaipblzgPpmlvorxmPsCXQL358E8Fgmczp:Teaipblap9qgrcep:Searp9qgwcdp:Seawp9qgwclp:Seawp9qgwcwp:Seawp9qgqp;6ep;NegwaDaPpmbediwDqkzHOAKY8AEgDpxFFbbFFbbFFbbFFbbgPp9ogkaDczp:Segxp:Ueamczp:Reczp:Segmp:Xep;6ep;Mepxbbn0bbn0bbn0bbn0gDp;KeaPp9oawakaxamp:Uep:Xep;6ep;MeaDp;Keczp:Rep9qgxawaqarcep:Rep9oarpxebbbebbbebbbebbbp9op9qp;6ep;MeaDp;Keczp:Reawamakp:Uep;6ep;MeaDp;KeaPp9op9qgrpmwDKYqk8AExm35Ps8E8FpklzaiaxarpmbezHdiOAlvCXorQLpklbkadaiao;8qbbkk9teiucbcbydj1jjbgeabcifc98GfgbBdj1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaikkkebcjwklz:Dbb'; // embed! simd
 
-	var detector = new Uint8Array([
-		0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 3, 2, 0, 0, 5, 3, 1, 0, 1, 12, 1, 0, 10, 22, 2, 12, 0, 65, 0, 65, 0, 65, 0, 252, 10, 0, 0,
-		11, 7, 0, 65, 0, 253, 15, 26, 11,
-	]);
-	var wasmpack = new Uint8Array([
-		32, 0, 65, 2, 1, 106, 34, 33, 3, 128, 11, 4, 13, 64, 6, 253, 10, 7, 15, 116, 127, 5, 8, 12, 40, 16, 19, 54, 20, 9, 27, 255, 113, 17, 42, 67,
-		24, 23, 146, 148, 18, 14, 22, 45, 70, 69, 56, 114, 101, 21, 25, 63, 75, 136, 108, 28, 118, 29, 73, 115,
-	]);
+// This is the reference decoder implementation by Jasper St. Pierre.
+// It follows the decoder interface and should be a drop-in replacement for the actual decoder from meshopt_decoder.js
+// It is provided for educational value and is not recommended for use in production because it's not performance-optimized.
 
-	if (typeof WebAssembly !== 'object') {
-		return {
-			supported: false,
-		};
+var MeshoptDecoder = {};
+MeshoptDecoder.supported = true;
+MeshoptDecoder.ready = Promise.resolve();
+
+function assert(cond) {
+	if (!cond) {
+		throw new Error('Assertion failed');
 	}
+}
 
-	var wasm = WebAssembly.validate(detector) ? unpack(wasm_simd) : unpack(wasm_base);
+function dezig(v) {
+	return (v & 1) !== 0 ? ~(v >>> 1) : v >>> 1;
+}
 
-	var instance;
+MeshoptDecoder.decodeVertexBuffer = (target, elementCount, byteStride, source, filter) => {
+	assert(source[0] === 0xa0 || source[0] === 0xa1);
+	const version = source[0] & 0x0f;
 
-	var ready = WebAssembly.instantiate(wasm, {}).then(function (result) {
-		instance = result.instance;
-		instance.exports.__wasm_call_ctors();
-	});
+	const maxBlockElements = Math.min((0x2000 / byteStride) & ~0x000f, 0x100);
 
-	function unpack(data) {
-		var result = new Uint8Array(data.length);
-		for (var i = 0; i < data.length; ++i) {
-			var ch = data.charCodeAt(i);
-			result[i] = ch > 96 ? ch - 97 : ch > 64 ? ch - 39 : ch + 4;
-		}
-		var write = 0;
-		for (var i = 0; i < data.length; ++i) {
-			result[write++] = result[i] < 60 ? wasmpack[result[i]] : (result[i] - 60) * 64 + result[++i];
-		}
-		return result.buffer.slice(0, write);
-	}
+	const deltas = new Uint8Array(maxBlockElements * byteStride);
 
-	function decode(instance, fun, target, count, size, source, filter) {
-		var sbrk = instance.exports.sbrk;
-		var count4 = (count + 3) & ~3;
-		var tp = sbrk(count4 * size);
-		var sp = sbrk(source.length);
-		var heap = new Uint8Array(instance.exports.memory.buffer);
-		heap.set(source, sp);
-		var res = fun(tp, count, size, sp, source.length);
-		if (res == 0 && filter) {
-			filter(tp, count4, size);
-		}
-		target.set(heap.subarray(tp, tp + count * size));
-		sbrk(tp - sbrk(0));
-		if (res != 0) {
-			throw new Error('Malformed buffer data: ' + res);
-		}
-	}
+	const tailSize = version === 0 ? byteStride : byteStride + byteStride / 4;
+	const tailDataOffs = source.length - tailSize;
 
-	var filters = {
-		NONE: '',
-		OCTAHEDRAL: 'meshopt_decodeFilterOct',
-		QUATERNION: 'meshopt_decodeFilterQuat',
-		EXPONENTIAL: 'meshopt_decodeFilterExp',
-		COLOR: 'meshopt_decodeFilterColor',
-	};
+	// What deltas are stored relative to
+	const tempData = source.slice(tailDataOffs, tailDataOffs + byteStride);
 
-	var decoders = {
-		ATTRIBUTES: 'meshopt_decodeVertexBuffer',
-		TRIANGLES: 'meshopt_decodeIndexBuffer',
-		INDICES: 'meshopt_decodeIndexSequence',
-	};
+	// Channel modes for v1
+	const channels = version === 0 ? null : source.slice(tailDataOffs + byteStride, tailDataOffs + tailSize);
 
-	var workers = [];
-	var requestId = 0;
+	let srcOffs = 1; // Skip header byte
 
-	function createWorker(url) {
-		var worker = {
-			object: new Worker(url),
-			pending: 0,
-			requests: {},
-		};
+	const headerModes = [
+		[0, 2, 4, 8], // v0
+		[0, 1, 2, 4], // v1, when control is 0
+		[1, 2, 4, 8], // v1, when control is 1
+	];
 
-		worker.object.onmessage = function (event) {
-			var data = event.data;
+	// Attribute blocks
+	for (let dstElemBase = 0; dstElemBase < elementCount; dstElemBase += maxBlockElements) {
+		const attrBlockElementCount = Math.min(elementCount - dstElemBase, maxBlockElements);
+		const groupCount = ((attrBlockElementCount + 0x0f) & ~0x0f) >>> 4;
+		const headerByteCount = ((groupCount + 0x03) & ~0x03) >>> 2;
 
-			worker.pending -= data.count;
-			worker.requests[data.id][data.action](data.value);
-			delete worker.requests[data.id];
-		};
+		// Control modes for v1
+		const controlBitsOffs = srcOffs;
+		srcOffs += version === 0 ? 0 : byteStride / 4;
 
-		return worker;
-	}
+		// Zero out deltas to simplify logic
+		deltas.fill(0x00);
 
-	function initWorkers(count) {
-		var source =
-			'self.ready = WebAssembly.instantiate(new Uint8Array([' +
-			new Uint8Array(wasm) +
-			']), {})' +
-			'.then(function(result) { result.instance.exports.__wasm_call_ctors(); return result.instance; });' +
-			'self.onmessage = ' +
-			workerProcess.name +
-			';' +
-			decode.toString() +
-			workerProcess.toString();
+		// Data blocks
+		for (let byte = 0; byte < byteStride; byte++) {
+			const deltaBase = byte * attrBlockElementCount;
 
-		var blob = new Blob([source], { type: 'text/javascript' });
-		var url = URL.createObjectURL(blob);
+			// Control mode for current byte for v1
+			const controlMode = version === 0 ? 0 : (source[controlBitsOffs + (byte >>> 2)] >>> ((byte & 0x03) << 1)) & 0x03;
 
-		for (var i = workers.length; i < count; ++i) {
-			workers[i] = createWorker(url);
-		}
+			if (controlMode === 2) {
+				// All byte deltas are 0; no data is stored for this byte
+				continue;
+			} else if (controlMode === 3) {
+				// Byte deltas are stored uncompressed with no header bits
+				deltas.set(source.subarray(srcOffs, srcOffs + attrBlockElementCount), deltaBase);
+				srcOffs += attrBlockElementCount;
+				continue;
+			}
 
-		for (var i = count; i < workers.length; ++i) {
-			workers[i].object.postMessage({});
-		}
+			// Header bits are omitted for v1 when using control modes 2/3
+			const headerBitsOffs = srcOffs;
+			srcOffs += headerByteCount;
 
-		workers.length = count;
+			for (let group = 0; group < groupCount; group++) {
+				const mode = (source[headerBitsOffs + (group >>> 2)] >>> ((group & 0x03) << 1)) & 0x03;
+				const modeBits = headerModes[version === 0 ? 0 : controlMode + 1][mode];
 
-		URL.revokeObjectURL(url);
-	}
+				const deltaOffs = deltaBase + (group << 4);
 
-	function decodeWorker(count, size, source, mode, filter) {
-		var worker = workers[0];
-
-		for (var i = 1; i < workers.length; ++i) {
-			if (workers[i].pending < worker.pending) {
-				worker = workers[i];
+				if (modeBits === 0) {
+					// All 16 byte deltas are 0; the size of the encoded block is 0 bytes
+				} else if (modeBits === 1) {
+					// Deltas are using 1-bit sentinel encoding; the size of the encoded block is [2..18] bytes
+					const srcBase = srcOffs;
+					srcOffs += 0x02;
+					for (let m = 0; m < 0x10; m++) {
+						// Bits are stored from least significant to most significant for 1-bit encoding
+						const shift = m & 0x07;
+						let delta = (source[srcBase + (m >>> 3)] >>> shift) & 0x01;
+						if (delta === 1) delta = source[srcOffs++];
+						deltas[deltaOffs + m] = delta;
+					}
+				} else if (modeBits === 2) {
+					// Deltas are using 2-bit sentinel encoding; the size of the encoded block is [4..20] bytes
+					const srcBase = srcOffs;
+					srcOffs += 0x04;
+					for (let m = 0; m < 0x10; m++) {
+						// 0 = >>> 6, 1 = >>> 4, 2 = >>> 2, 3 = >>> 0
+						const shift = 6 - ((m & 0x03) << 1);
+						let delta = (source[srcBase + (m >>> 2)] >>> shift) & 0x03;
+						if (delta === 3) delta = source[srcOffs++];
+						deltas[deltaOffs + m] = delta;
+					}
+				} else if (modeBits === 4) {
+					// Deltas are using 4-bit sentinel encoding; the size of the encoded block is [8..24] bytes
+					const srcBase = srcOffs;
+					srcOffs += 0x08;
+					for (let m = 0; m < 0x10; m++) {
+						// 0 = >>> 6, 1 = >>> 4, 2 = >>> 2, 3 = >>> 0
+						const shift = 4 - ((m & 0x01) << 2);
+						let delta = (source[srcBase + (m >>> 1)] >>> shift) & 0x0f;
+						if (delta === 0xf) delta = source[srcOffs++];
+						deltas[deltaOffs + m] = delta;
+					}
+				} else {
+					// All 16 byte deltas are stored verbatim; the size of the encoded block is 16 bytes
+					deltas.set(source.subarray(srcOffs, srcOffs + 0x10), deltaOffs);
+					srcOffs += 0x10;
+				}
 			}
 		}
 
-		return new Promise(function (resolve, reject) {
-			var data = new Uint8Array(source);
-			var id = ++requestId;
+		// Go through and apply deltas to data
+		for (let elem = 0; elem < attrBlockElementCount; elem++) {
+			const dstElem = dstElemBase + elem;
 
-			worker.pending += count;
-			worker.requests[id] = { resolve: resolve, reject: reject };
-			worker.object.postMessage({ id: id, count: count, size: size, source: data, mode: mode, filter: filter }, [data.buffer]);
-		});
-	}
+			for (let byteGroup = 0; byteGroup < byteStride; byteGroup += 4) {
+				let channelMode = version === 0 ? 0 : channels[byteGroup >>> 2] & 0x03;
+				assert(channelMode !== 0x03);
 
-	function workerProcess(event) {
-		var data = event.data;
-		if (!data.id) {
-			return self.close();
+				if (channelMode === 0) {
+					// Channel 0 (byte deltas): Byte deltas are stored as zigzag-encoded differences between the byte values of the element and the byte values of the previous element in the same position.
+					for (let byte = byteGroup; byte < byteGroup + 4; byte++) {
+						const delta = dezig(deltas[byte * attrBlockElementCount + elem]);
+						const temp = (tempData[byte] + delta) & 0xff; // wrap around
+
+						const dstOffs = dstElem * byteStride + byte;
+						target[dstOffs] = tempData[byte] = temp;
+					}
+				} else if (channelMode === 1) {
+					// Channel 1 (2-byte deltas): 2-byte deltas are computed as zigzag-encoded differences between 16-bit values of the element and the previous element in the same position.
+					for (let byte = byteGroup; byte < byteGroup + 4; byte += 2) {
+						const delta = dezig(deltas[byte * attrBlockElementCount + elem] + (deltas[(byte + 1) * attrBlockElementCount + elem] << 8));
+						let temp = tempData[byte] + (tempData[byte + 1] << 8);
+
+						temp = (temp + delta) & 0xffff; // wrap around
+
+						const dstOffs = dstElem * byteStride + byte;
+						target[dstOffs] = tempData[byte] = temp & 0xff;
+						target[dstOffs + 1] = tempData[byte + 1] = temp >>> 8;
+					}
+				} else if (channelMode === 2) {
+					// Channel 2 (4-byte XOR deltas): 4-byte deltas are computed as XOR between 32-bit values of the element and the previous element in the same position, with an additional rotation applied based on the high 4 bits of the channel mode byte.
+					const byte = byteGroup;
+					const delta =
+						deltas[byte * attrBlockElementCount + elem] +
+						(deltas[(byte + 1) * attrBlockElementCount + elem] << 8) +
+						(deltas[(byte + 2) * attrBlockElementCount + elem] << 16) +
+						(deltas[(byte + 3) * attrBlockElementCount + elem] << 24);
+					let temp = tempData[byte] + (tempData[byte + 1] << 8) + (tempData[byte + 2] << 16) + (tempData[byte + 3] << 24);
+
+					const rot = channels[byteGroup >>> 2] >>> 4;
+					temp = temp ^ ((delta >>> rot) | (delta << (32 - rot))); // rotate and XOR
+
+					const dstOffs = dstElem * byteStride + byte;
+					target[dstOffs] = tempData[byte] = temp & 0xff;
+					target[dstOffs + 1] = tempData[byte + 1] = (temp >>> 8) & 0xff;
+					target[dstOffs + 2] = tempData[byte + 2] = (temp >>> 16) & 0xff;
+					target[dstOffs + 3] = tempData[byte + 3] = temp >>> 24;
+				}
+			}
 		}
-		self.ready.then(function (instance) {
-			try {
-				var target = new Uint8Array(data.count * data.size);
-				decode(instance, instance.exports[data.mode], target, data.count, data.size, data.source, instance.exports[data.filter]);
-				self.postMessage({ id: data.id, count: data.count, action: 'resolve', value: target }, [target.buffer]);
-			} catch (error) {
-				self.postMessage({ id: data.id, count: data.count, action: 'reject', value: error });
-			}
-		});
 	}
 
-	return {
-		ready: ready,
-		supported: true,
-		useWorkers: function (count) {
-			initWorkers(count);
-		},
-		decodeVertexBuffer: function (target, count, size, source, filter) {
-			decode(instance, instance.exports.meshopt_decodeVertexBuffer, target, count, size, source, instance.exports[filters[filter]]);
-		},
-		decodeIndexBuffer: function (target, count, size, source) {
-			decode(instance, instance.exports.meshopt_decodeIndexBuffer, target, count, size, source);
-		},
-		decodeIndexSequence: function (target, count, size, source) {
-			decode(instance, instance.exports.meshopt_decodeIndexSequence, target, count, size, source);
-		},
-		decodeGltfBuffer: function (target, count, size, source, mode, filter) {
-			decode(instance, instance.exports[decoders[mode]], target, count, size, source, instance.exports[filters[filter]]);
-		},
-		decodeGltfBufferAsync: function (count, size, source, mode, filter) {
-			if (workers.length > 0) {
-				return decodeWorker(count, size, source, decoders[mode], filters[filter]);
+	const tailSizePadded = Math.max(tailSize, version === 0 ? 32 : 24);
+	assert(srcOffs == source.length - tailSizePadded);
+
+	// Filters - only applied if filter isn't undefined or NONE
+	if (filter === 'OCTAHEDRAL') {
+		assert(byteStride === 4 || byteStride === 8);
+
+		const dst = byteStride === 4 ? new Int8Array(target.buffer) : new Int16Array(target.buffer);
+		const maxInt = byteStride === 4 ? 127 : 32767;
+
+		for (let i = 0; i < 4 * elementCount; i += 4) {
+			let x = dst[i + 0],
+				y = dst[i + 1],
+				one = dst[i + 2];
+			x /= one;
+			y /= one;
+			const z = 1.0 - Math.abs(x) - Math.abs(y);
+			const t = Math.max(-z, 0.0);
+			x -= x >= 0 ? t : -t;
+			y -= y >= 0 ? t : -t;
+			const h = maxInt / Math.hypot(x, y, z);
+			dst[i + 0] = Math.round(x * h);
+			dst[i + 1] = Math.round(y * h);
+			dst[i + 2] = Math.round(z * h);
+			// keep dst[i + 3] as is
+		}
+	} else if (filter === 'QUATERNION') {
+		assert(byteStride === 8);
+
+		const dst = new Int16Array(target.buffer);
+
+		for (let i = 0; i < 4 * elementCount; i += 4) {
+			const inputW = dst[i + 3];
+			const maxComponent = inputW & 0x03;
+			const s = Math.SQRT1_2 / (inputW | 0x03);
+			let x = dst[i + 0] * s;
+			let y = dst[i + 1] * s;
+			let z = dst[i + 2] * s;
+			let w = Math.sqrt(Math.max(0.0, 1.0 - x ** 2 - y ** 2 - z ** 2));
+			dst[i + ((maxComponent + 1) % 4)] = Math.round(x * 32767);
+			dst[i + ((maxComponent + 2) % 4)] = Math.round(y * 32767);
+			dst[i + ((maxComponent + 3) % 4)] = Math.round(z * 32767);
+			dst[i + ((maxComponent + 0) % 4)] = Math.round(w * 32767);
+		}
+	} else if (filter === 'EXPONENTIAL') {
+		assert((byteStride & 0x03) === 0x00);
+
+		const src = new Int32Array(target.buffer);
+		const dst = new Float32Array(target.buffer);
+		for (let i = 0; i < (byteStride * elementCount) / 4; i++) {
+			const v = src[i],
+				exp = v >> 24,
+				mantissa = (v << 8) >> 8;
+			dst[i] = 2.0 ** exp * mantissa;
+		}
+	} else if (filter === 'COLOR') {
+		assert(byteStride === 4 || byteStride === 8);
+
+		const maxInt = (1 << (byteStride * 2)) - 1;
+
+		const data = byteStride === 4 ? new Uint8Array(target.buffer) : new Uint16Array(target.buffer, 0, elementCount * 4);
+		const dataSigned = byteStride === 4 ? new Int8Array(target.buffer) : new Int16Array(target.buffer, 0, elementCount * 4);
+
+		for (let i = 0; i < elementCount * 4; i += 4) {
+			const y = data[i + 0];
+			const co = dataSigned[i + 1];
+			const cg = dataSigned[i + 2];
+			const alphaInput = data[i + 3];
+
+			// Recover scale from alpha high bit - find highest bit set
+			const alphaBit = 31 - Math.clz32(alphaInput);
+			const as = (1 << (alphaBit + 1)) - 1;
+
+			// YCoCg to RGB conversion
+			const r = y + co - cg;
+			const g = y + cg;
+			const b = y - co - cg;
+
+			// Expand alpha by one bit, replicating last bit
+			let a = alphaInput & (as >> 1);
+			a = (a << 1) | (a & 1);
+
+			// Scale to full range
+			const ss = maxInt / as;
+
+			// Store result
+			data[i + 0] = Math.round(r * ss);
+			data[i + 1] = Math.round(g * ss);
+			data[i + 2] = Math.round(b * ss);
+			data[i + 3] = Math.round(a * ss);
+		}
+	}
+};
+
+function pushfifo(fifo, n) {
+	for (let i = fifo.length - 1; i > 0; i--) fifo[i] = fifo[i - 1];
+	fifo[0] = n;
+}
+
+MeshoptDecoder.decodeIndexBuffer = (target, count, byteStride, source) => {
+	assert(source[0] === 0xe1);
+	assert(count % 3 === 0);
+	assert(byteStride === 2 || byteStride === 4);
+
+	let dst;
+	if (byteStride === 2) dst = new Uint16Array(target.buffer);
+	else dst = new Uint32Array(target.buffer);
+
+	const triCount = count / 3;
+
+	let codeOffs = 0x01;
+	let dataOffs = codeOffs + triCount;
+	let codeauxOffs = source.length - 0x10;
+
+	function readLEB128() {
+		let n = 0;
+		for (let i = 0; ; i += 7) {
+			const b = source[dataOffs++];
+			n |= (b & 0x7f) << i;
+
+			if (b < 0x80) return n;
+		}
+	}
+
+	let next = 0,
+		last = 0;
+	const edgefifo = new Uint32Array(32);
+	const vertexfifo = new Uint32Array(16);
+
+	function decodeIndex(v) {
+		return (last += dezig(v));
+	}
+
+	let dstOffs = 0;
+	for (let i = 0; i < triCount; i++) {
+		const code = source[codeOffs++];
+		const b0 = code >>> 4,
+			b1 = code & 0x0f;
+
+		if (b0 < 0x0f) {
+			const a = edgefifo[(b0 << 1) + 0],
+				b = edgefifo[(b0 << 1) + 1];
+			let c = -1;
+
+			if (b1 === 0x00) {
+				c = next++;
+				pushfifo(vertexfifo, c);
+			} else if (b1 < 0x0d) {
+				c = vertexfifo[b1];
+			} else if (b1 === 0x0d) {
+				c = --last;
+				pushfifo(vertexfifo, c);
+			} else if (b1 === 0x0e) {
+				c = ++last;
+				pushfifo(vertexfifo, c);
+			} else if (b1 === 0x0f) {
+				const v = readLEB128();
+				c = decodeIndex(v);
+				pushfifo(vertexfifo, c);
 			}
 
-			return ready.then(function () {
-				var target = new Uint8Array(count * size);
-				decode(instance, instance.exports[decoders[mode]], target, count, size, source, instance.exports[filters[filter]]);
-				return target;
-			});
-		},
+			// fifo pushes happen backwards
+			pushfifo(edgefifo, b);
+			pushfifo(edgefifo, c);
+			pushfifo(edgefifo, c);
+			pushfifo(edgefifo, a);
+
+			dst[dstOffs++] = a;
+			dst[dstOffs++] = b;
+			dst[dstOffs++] = c;
+		} else {
+			// b0 === 0x0F
+			let a = -1,
+				b = -1,
+				c = -1;
+
+			if (b1 < 0x0e) {
+				const e = source[codeauxOffs + b1];
+				const z = e >>> 4,
+					w = e & 0x0f;
+
+				a = next++;
+
+				if (z === 0x00) b = next++;
+				else b = vertexfifo[z - 1];
+
+				if (w === 0x00) c = next++;
+				else c = vertexfifo[w - 1];
+
+				pushfifo(vertexfifo, a);
+				if (z === 0x00) pushfifo(vertexfifo, b);
+				if (w === 0x00) pushfifo(vertexfifo, c);
+			} else {
+				const e = source[dataOffs++];
+				if (e === 0x00) next = 0;
+
+				const z = e >>> 4,
+					w = e & 0x0f;
+
+				if (b1 === 0x0e) a = next++;
+				else a = decodeIndex(readLEB128());
+
+				if (z === 0x00) b = next++;
+				else if (z === 0x0f) b = decodeIndex(readLEB128());
+				else b = vertexfifo[z - 1];
+
+				if (w === 0x00) c = next++;
+				else if (w === 0x0f) c = decodeIndex(readLEB128());
+				else c = vertexfifo[w - 1];
+
+				pushfifo(vertexfifo, a);
+				if (z === 0x00 || z === 0x0f) pushfifo(vertexfifo, b);
+				if (w === 0x00 || w === 0x0f) pushfifo(vertexfifo, c);
+			}
+
+			pushfifo(edgefifo, a);
+			pushfifo(edgefifo, b);
+			pushfifo(edgefifo, b);
+			pushfifo(edgefifo, c);
+			pushfifo(edgefifo, c);
+			pushfifo(edgefifo, a);
+
+			dst[dstOffs++] = a;
+			dst[dstOffs++] = b;
+			dst[dstOffs++] = c;
+		}
+	}
+};
+
+MeshoptDecoder.decodeIndexSequence = (target, count, byteStride, source) => {
+	assert(source[0] === 0xd1);
+	assert(byteStride === 2 || byteStride === 4);
+
+	let dst;
+	if (byteStride === 2) dst = new Uint16Array(target.buffer);
+	else dst = new Uint32Array(target.buffer);
+
+	let dataOffs = 0x01;
+
+	function readLEB128() {
+		let n = 0;
+		for (let i = 0; ; i += 7) {
+			const b = source[dataOffs++];
+			n |= (b & 0x7f) << i;
+
+			if (b < 0x80) return n;
+		}
+	}
+
+	const last = new Uint32Array(2);
+
+	for (let i = 0; i < count; i++) {
+		const v = readLEB128();
+		const b = v & 0x01;
+		const delta = dezig(v >>> 1);
+		dst[i] = last[b] += delta;
+	}
+};
+
+MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) => {
+	const table = {
+		ATTRIBUTES: MeshoptDecoder.decodeVertexBuffer,
+		TRIANGLES: MeshoptDecoder.decodeIndexBuffer,
+		INDICES: MeshoptDecoder.decodeIndexSequence,
 	};
+	assert(table[mode] !== undefined);
+	table[mode](target, count, size, source, filter);
+};
+
+MeshoptDecoder.decodeGltfBufferAsync = (count, size, source, mode, filter) => {
+	const target = new Uint8Array(count * size);
+	MeshoptDecoder.decodeGltfBuffer(target, count, size, source, mode, filter);
+	return Promise.resolve(target);
+};
+
+// node.js interface:
+// for (let k in MeshoptDecoder) exports[k] = MeshoptDecoder[k];
+
+
+return MeshoptDecoder;
 })();
-
-// export! MeshoptDecoder
-if (typeof exports === 'object' && typeof module === 'object') module.exports = MeshoptDecoder;
-else if (typeof define === 'function' && define['amd'])
-	define([], function () {
-		return MeshoptDecoder;
-	});
-else if (typeof exports === 'object') exports['MeshoptDecoder'] = MeshoptDecoder;
-else (typeof self !== 'undefined' ? self : this).MeshoptDecoder = MeshoptDecoder;
+if(typeof module!=='undefined')module.exports=MeshoptDecoder;

@@ -45,7 +45,7 @@ function merge(list){
  if(N)g.setAttribute('normal',new THREE.BufferAttribute(N,3));else g.computeVertexNormals();g.computeBoundingSphere();return g;
 }
 function driveMark(g,x,y,type,side){const a=new Float32Array(g.attributes.position.count*4);for(let i=0;i<a.length;i+=4)a.set([x,y,type,side],i);g.setAttribute('drive',new THREE.BufferAttribute(a,4));}
-const bake=k=>k.hf&&typeof Equipment3D!=='undefined'?Equipment3D.bake(k):({lit:merge(k.lit),shine:merge(k.shine),glow:merge(k.glow)});
+const bake=k=>k.meshy?{meshy:k.meshy}:k.hf&&typeof Equipment3D!=='undefined'?Equipment3D.bake(k):({lit:merge(k.lit),shine:merge(k.shine),glow:merge(k.glow)});   // a Meshy model is already baked: pass its descriptor through
 // shapes
 const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
 const CY=(rt,rb,h,s)=>new THREE.CylinderGeometry(rt,rb,h,s||10);
@@ -719,8 +719,12 @@ function standardWeapon(arch,tier,P,team,lunar=false){
 // Phantom, biggest and most imposing on the Colossus, never longer than the hull. Visual only.
 const MOON_SCALE=Object.freeze({scout:Object.freeze([.70,.68,.61]),vanguard:Object.freeze([.76,.78,.80]),titan:Object.freeze([.84,.86,.92])});
 const weaponScale=(arch,cls,tier)=>{if(arch!=='moon')return 1;const row=MOON_SCALE[cls]||MOON_SCALE.vanguard;return row[visualTier(tier)];};
-function chassisKit(cls,tier,P,team,gems,lunar){if(typeof Equipment3D!=='undefined'&&Equipment3D.canChassis(cls,tier))return Equipment3D.chassisKit(cls,tier,P,team,gems,lunar);return CHASSIS_VISUALS[cls]?(lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems)):legacyChassisKit(cls,tier,P,team,gems,false);}
-function weaponKit(arch,tier,P,team,lunar,cls){if(typeof Equipment3D!=='undefined'&&Equipment3D.canWeapon(arch,tier))return Equipment3D.weaponKit(arch,tier,P,team,lunar,cls);return arch==='moon'?unifiedMoonbeam(team):WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team,lunar):legacyWeaponKit(arch,tier,P,team,false,cls);}
+// The owner's Meshy models (js/meshy3d.js) come first whenever their file has arrived; until then (and on any load
+// failure) the procedural models below draw exactly as before, so nothing ever waits on a download.
+const meshyKit=(fn,a)=>{if(typeof Meshy3D==='undefined')return null;try{return Meshy3D[fn](...a);}catch(e){return null;}};
+const meshyVisual=(kind,a,t)=>typeof Meshy3D!=='undefined'?Meshy3D.visual(kind,a,visualTier(t)):null;
+function chassisKit(cls,tier,P,team,gems,lunar){const my=CHASSIS_VISUALS[cls]?meshyKit('chassisKit',[cls,visualTier(tier),P,team,gems,lunar]):null;if(my)return my;if(typeof Equipment3D!=='undefined'&&Equipment3D.canChassis(cls,tier))return Equipment3D.chassisKit(cls,tier,P,team,gems,lunar);return CHASSIS_VISUALS[cls]?(lunar?lunarChassis(cls,visualTier(tier),P,team,gems):standardChassis(cls,visualTier(tier),P,team,gems)):legacyChassisKit(cls,tier,P,team,gems,false);}
+function weaponKit(arch,tier,P,team,lunar,cls){const my=arch==='moon'||WEAPON_VISUALS[arch]?meshyKit('weaponKit',[arch,visualTier(tier),P,team,lunar,cls]):null;if(my)return my;if(typeof Equipment3D!=='undefined'&&Equipment3D.canWeapon(arch,tier))return Equipment3D.weaponKit(arch,tier,P,team,lunar,cls);return arch==='moon'?unifiedMoonbeam(team):WEAPON_VISUALS[arch]?standardWeapon(arch,visualTier(tier),P,team,lunar):legacyWeaponKit(arch,tier,P,team,false,cls);}
 
 // Final approved Lunar Skin: class/tier-specific tracked architecture, never a new item.
 // Palette ignores paint only while this existing skin is equipped; selected paint data is untouched.
@@ -1426,6 +1430,7 @@ function buildMap(id,mats,q){
 }
 // a baked kit as one object (up to three meshes sharing the given materials)
 function meshOf(b,mats,ownMats){
+ if(b.meshy)return Meshy3D.mesh(b.meshy);
  const g=new THREE.Group(),m=ownMats||mats;
  for(const [key,geo] of Object.entries(b))if(key.startsWith('hf_')&&geo){const material=Equipment3D.material(key)||m.lit,mesh=new THREE.Mesh(geo,material);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);}
  if(typeof Equipment3D!=='undefined')Equipment3D.retain(b,g);
@@ -1441,9 +1446,10 @@ function crateGeo(){const k=kit();
 function fittingKit(f,team,part,context){
  const k=kit(),steel='#91a1b3';
  if(context&&CHASSIS_VISUALS[context.cls]){
-  const o=CHASSIS_VISUALS[context.cls][visualTier(context.ct)],w=WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)];
+  // seats follow the model that is actually drawn: a Meshy hull / turret reports its own measured dimensions
+  const o=meshyVisual('chassis',context.cls,context.ct)||CHASSIS_VISUALS[context.cls][visualTier(context.ct)],w=meshyVisual('weapon',context.arch,context.wt)||WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)];
   if(part==='body'){
-   const fp=FAM_FIT[context.cls+':'+visualTier(context.ct)]||[-.13,o.h+.22,o.trackZ-.02];if(f.hull==='plates')sym(s=>put(k,B(.85,.08,.14),steel,[fp[0],fp[1],s*fp[2]]));
+   const fp=o.fit||FAM_FIT[context.cls+':'+visualTier(context.ct)]||[-.13,o.h+.22,o.trackZ-.02];if(f.hull==='plates')sym(s=>put(k,B(.85,.08,.14),steel,[fp[0],fp[1],s*fp[2]]));
    if(f.hull==='light')for(const x of [-.55,-.30,-.05])put(k,B(.07,.025,.45),team,[x,o.deck+.045,0],null,null,'glow');
    if(f.mobility==='sprint')sym(s=>put(k,B(.55,.07,.12),team,[-.82,o.h*.65,s*o.trackZ],null,null,'glow'));
    if(f.mobility==='stable')sym(s=>{for(const x of [-.65,.65])put(k,CY(.14,.14,.035,10),steel,[x,o.h*.5,s*(o.trackZ+o.trackW/2+.075)],[Math.PI/2,0,0],null,'shine');});
@@ -1474,15 +1480,15 @@ function fittingKit(f,team,part,context){
 const PLATE_LOOK=[null,['#a8683e','#ff9a5a'],['#171b24','#5f86b8'],['#5b6d84','#57d2ea'],['#2a1d1d','#ff7a3d'],['#b8a9dc','#c8a2ff'],['#0c0f17','#a8e4ff']];
 function plateKit(ap,part,context,low){
  const k=kit(),a=Array.isArray(ap)?ap:[0,0,0,0];if(!context||!CHASSIS_VISUALS[context.cls])return {k,anims:[],meta:{}};
- const o=CHASSIS_VISUALS[context.cls][visualTier(context.ct)],slab=(t,geo,p,r,seam,sp)=>{if(!t)return;const L=PLATE_LOOK[t];put(k,geo,L[0],p,r,null,low||t<2?'lit':'shine');
+ const o=meshyVisual('chassis',context.cls,context.ct)||CHASSIS_VISUALS[context.cls][visualTier(context.ct)],slab=(t,geo,p,r,seam,sp)=>{if(!t)return;const L=PLATE_LOOK[t];put(k,geo,L[0],p,r,null,low||t<2?'lit':'shine');
   if(L[1]&&seam&&!low)put(k,seam,L[1],sp||p,r,null,'glow');};
  if(part==='body'){
-  const fx=o.len/2-.12,fy=o.h*.74,fw=o.trackZ*1.7;
+  const fx=(o.x1!==undefined?o.x1:o.len/2)-.12,fy=o.h*.74,fw=o.trackZ*1.7;
   slab(a[0],B(.12,o.h*.64,fw),[fx,fy,0],[0,0,-.55],B(.03,.045,fw*.9),[fx+.1,fy+o.h*.24,0]);
   for(const [i,sd] of [[1,-1],[2,1]]){const z=sd*(o.trackZ+o.trackW/2+.045),y=o.h*.6;
    slab(a[i],B(o.len*.7,o.h*.5,.06),[-.04,y,z],null,B(o.len*.56,.04,.025),[-.04,y+o.h*.16,z+sd*.035]);}
  }else{
-  const w=WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)],x=context.arch==='moon'?-.17:.16,y=context.arch==='moon'?.24:(w?w.y:.24)+.02,z=context.arch==='moon'?.45:(w?w.width:.46)+.075;
+  const w=meshyVisual('weapon',context.arch,context.wt)||WEAPON_VISUALS[context.arch]?.[visualTier(context.wt)],x=context.arch==='moon'?-.17:.16,y=context.arch==='moon'?.24:(w?w.y:.24)+.02,z=context.arch==='moon'?.45:(w?w.width:.46)+.075;
   for(const sd of [-1,1])slab(a[3],B(.44,.2,.06),[x,y,sd*z],[0,sd*.12,0],B(.32,.035,.025),[x,y+.06,sd*(z+.035)]);
  }
  return {k,anims:[],meta:{}};

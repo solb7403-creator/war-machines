@@ -47,7 +47,7 @@ const Equipment3D=(()=>{
  function evict(){const workingPair=new Set([...GEOMETRY.keys()].slice(-2));for(const [key,e] of GEOMETRY){if(geometryBytes()<=GEOMETRY_BYTES&&GEOMETRY.size<=12)break;if(e.refs||workingPair.has(key))continue;for(const p of e.parts)for(const g of Object.values(p||{}))g.dispose();GEOMETRY.delete(key);}}
  function cached(id,build){if(GEOMETRY.has(id)){const e=GEOMETRY.get(id);GEOMETRY.delete(id);GEOMETRY.set(id,e);return e.raw;}const raw=build(),e={raw,parts:[],refs:0};[raw.k,...raw.anims.map(a=>a.k)].forEach((k,i)=>{k.cacheKey=id;k.part=i;});GEOMETRY.set(id,e);return raw;}
  function retain(b,group){const key=Object.values(b).find(g=>g?.userData.hfAsset)?.userData.hfAsset,e=GEOMETRY.get(key);if(!e)return;e.refs++;group.userData.hfRelease=()=>{if(!group.userData.hfRelease)return;delete group.userData.hfRelease;e.refs=Math.max(0,e.refs-1);evict();};evict();}
- function releaseTree(root){root?.traverse(o=>{o.userData.graphicsMotion?.dispose();o.userData.hfRelease?.();});}
+ function releaseTree(root){root?.traverse(o=>{o.userData.graphicsMotion?.dispose();o.userData.hfRelease?.();});if(typeof Meshy3D!=='undefined')Meshy3D.release(root);}
  function studioEnvironment(){
   if(environment)return environment;
   const w=256,h=128,a=new Float32Array(w*h*4);

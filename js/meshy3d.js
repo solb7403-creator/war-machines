@@ -75,6 +75,7 @@ const Meshy3D=(()=>{
  }
  // ---- one GLB -> {geometry, maps:{base,normal,orm,mask}, info, bytes} ----
  async function decode(buffer,{maxTexture=0}={}){
+  if(typeof MeshoptDecoder==='undefined')await decoder();
   if(typeof MeshoptDecoder!=='undefined'&&MeshoptDecoder.ready)await MeshoptDecoder.ready;
   const G=container(buffer),J=G.json,memo=[];
   if(!J.meshes||J.meshes.length!==1||J.meshes[0].primitives.length!==1)fail('one primitive expected');
@@ -98,6 +99,14 @@ const Meshy3D=(()=>{
   return a;
  }
 
+ // the meshopt decoder (33 KB) is fetched with the first model, not with the page
+ let decoderPromise=null;
+ function decoder(){
+  if(typeof MeshoptDecoder!=='undefined')return Promise.resolve();
+  if(decoderPromise)return decoderPromise;
+  decoderPromise=new Promise((ok,no)=>{if(typeof document==='undefined')return no(Error('Meshy3D: no decoder'));const el=document.createElement('script');el.src=new URL('../../vendor/meshopt_decoder.js',BASE).href+(typeof window!=='undefined'&&window.BUILD?'?v='+window.BUILD:'');el.async=true;el.onload=()=>ok();el.onerror=()=>{decoderPromise=null;no(Error('Meshy3D: decoder load'));};document.head.appendChild(el);});
+  return decoderPromise;
+ }
  // ---- lazy per-item store ----
  const emit=()=>{generation++;if(typeof dispatchEvent==='function'&&typeof Event==='function')try{dispatchEvent(new Event('lunar-meshy-ready'));}catch(e){}};
  function loadManifest(){
@@ -116,7 +125,7 @@ const Meshy3D=(()=>{
   e={state:'loading',t0:typeof performance!=='undefined'?performance.now():0};store.set(key,e);stats.requests++;
   e.promise=loadManifest().then(async m=>{
    const rec=m.items[id];if(!rec||!rec[q]){e.state='missing';return null;}
-   const r=await fetch(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||''));if(!r.ok)fail('fetch '+r.status);
+   const [r]=await Promise.all([fetch(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||'')),decoder()]);if(!r.ok)fail('fetch '+r.status);
    const buf=await r.arrayBuffer(),asset=await decode(buf,{maxTexture:maxTextureFor(q)});
    asset.id=id;asset.quality=q;asset.record=rec;e.asset=asset;e.state='ready';e.ms=(typeof performance!=='undefined'?performance.now():0)-e.t0;e.bytes=buf.byteLength;
    stats.bytes+=buf.byteLength;stats.ready++;stats.log.push({id,q,bytes:buf.byteLength,ms:Math.round(e.ms)});emit();return asset;
@@ -126,8 +135,14 @@ const Meshy3D=(()=>{
  const peek=(id,q)=>{const e=store.get(id+'|'+q);return e&&e.state==='ready'?e.asset:null;};
  // best asset for the current detail scope: FULL when a close-up asked for it and it has arrived, LIGHT meanwhile
  function best(id){
+  if(detail==='none')return null;
   if(detail==='full'){const f=request(id,'full');if(f)return f;}
   return request(id,'light');
+ }
+ // readiness of one loadout's two models as a short key: consumers rebuild a tank when this changes
+ function stamp(cls,ct,arch,wt,d){
+  if(!enabled)return '';const t=x=>Math.max(0,Math.min(2,x|0)),c=itemId.chassis(cls,t(ct)),w=itemId.weapon(arch,t(wt)),lv=id=>(d||detail)==='full'&&peek(id,'full')?2:peek(id,'light')?1:0;
+  return 'my'+lv(c)+lv(w);
  }
  function withDetail(d,fn){const old=detail;detail=d;try{return fn();}finally{detail=old;}}
  const itemId={chassis:(cls,tier)=>'chassis-'+cls+'-'+tier,weapon:(arch,tier)=>arch==='moon'?'weapon-moon':'weapon-'+arch+'-'+tier};
@@ -206,7 +221,7 @@ const Meshy3D=(()=>{
   let geo=asset.geometry;
   if(q==='low'&&asset.lowIndex){if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}geo=asset.lowGeometry;}
   const m=new THREE.Mesh(geo,mat),g=new THREE.Group();m.castShadow=true;m.receiveShadow=true;m.userData.meshy={asset,U,kind:asset.info.kind};
-  if(asset.info.kind==='weapon'&&asset.partTex)m.onBeforeRender=aimHook;
+  if((asset.info.kind==='weapon'||asset.info.kind==='moon')&&asset.partTex)m.onBeforeRender=aimHook;
   g.add(m);g.userData.meshyGroup=true;return g;
  }
  // the base ring stays with the hull: the weapon mesh turns with the turret, so ring vertices are turned back by the
@@ -256,8 +271,9 @@ const Meshy3D=(()=>{
  function motion(root){
   const list=[];root.traverse(o=>{if(o.isMesh&&o.userData.meshy&&o.userData.meshy.asset.partTex)list.push(o.userData.meshy);});
   if(!list.length)return null;
+  const barrels=Math.max(0,...list.map(d=>d.kind==='weapon'||d.kind==='moon'?(d.asset.info.meta&&d.asset.info.meta.barrels)||0:0));
   const st={shots:0,recoil:[0,0,0,0],spin:0,spinV:0,t:0,fire:0,trav:0,act:0,flex:0};
-  return {list,state:st,
+  return {list,state:st,barrels,
    // s = GraphicsMotion state (left/right travel, kick, charge, phase); decor=false drops the decorative channels
    step(s,dt,quiet){
     const low=typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low',decor=!quiet&&!low;
@@ -281,6 +297,6 @@ const Meshy3D=(()=>{
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset){e.asset.geometry.dispose();e.asset.lowGeometry&&e.asset.lowGeometry.dispose();e.asset.partTex&&e.asset.partTex.dispose();for(const t of Object.values(e.asset.maps)){t.dispose();t.image&&t.image.close&&t.image.close();}}store.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+  decode,container,request,peek,best,withDetail,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;

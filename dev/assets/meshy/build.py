@@ -761,9 +761,11 @@ def build_quality(item, cfg, H, S, q, out_dir):
                                elems=[[0 if e['kind'] == 'line' else 1, e['s'], e['len']] + ([e['p'][0], e['p'][1], e['d'][0], e['d'][1]] if e['kind'] == 'line' else [e['c'][0], e['c'][1], e['r'], e['a0']]) for e in el])
         table.append(row)
     name = f"{item['id']}-{q}"
-    st = gltfout.write_glb(os.path.join(out_dir, name + '.glb'), V, N, uv, F, mot=mot, textures=tex, name=name,
-                           extras={'v': 1, 'id': item['id'], 'kind': item['kind'], 'quality': q, 'parts': table, 'meta': S.meta, 'look': {k: look[k] for k in ('paintA', 'paintB', 'glow', 'rarity') if k in look}})
-    st.update(charts=int(ainfo['charts']), texture=res, missed=float((~hit).mean()), coverage=float(cov.mean()), parts=len(S.parts), seconds=round(time.time() - t0, 1))
+    low_faces = lowpoly.reduced_indices(V, N, uv, F, Q['lowRatio'], Q.get('lowError', 0.03)) if Q.get('lowRatio') else None
+    st = gltfout.write_glb(os.path.join(out_dir, name + '.glb'), V, N, uv, F, mot=mot, textures=tex, name=name, low_faces=low_faces,
+                           extras={'v': 1, 'id': item['id'], 'kind': item['kind'], 'quality': q, 'parts': table, 'meta': S.meta, 'lowIndex': low_faces is not None, 'look': {k: look[k] for k in ('paintA', 'paintB', 'glow', 'rarity') if k in look}})
+    st.update(charts=int(ainfo['charts']), texture=res, missed=float((~hit).mean()), coverage=float(cov.mean()), parts=len(S.parts), seconds=round(time.time() - t0, 1),
+              hash=hashlib.sha1(open(os.path.join(out_dir, name + '.glb'), 'rb').read()).hexdigest()[:10])
     log(f"  {q}: {st['tris']} tris {st['verts']} verts, {len(S.parts)} parts, {ainfo['charts']} charts, {res}px cover {cov.mean():.2f}, miss {st['missed']:.4f}, "
         f"{st['bytes'] / 1024:.0f} KB (geo {st['geometryBytes'] / 1024:.0f} KB), decimate+unwrap {t1 - t0:.1f}s bake {time.time() - t1:.1f}s")
     return st

@@ -48,9 +48,11 @@ window.LunarShowroom=class {
   this.listen(container,'wheel',e=>{this.wake=performance.now();if(!e.ctrlKey&&Math.abs(e.deltaY)<80){e.preventDefault();this.setZoom(this.zoom-e.deltaY*.002);}},{passive:false});
   this.observer=new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;if(this.visible)this.wake=performance.now();this.motionLast=0;this.run();});this.observer.observe(container);
   this.listen(window,'lunar-graphics-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});
+  this.listen(window,'lunar-meshy-ready',()=>{if(this.L&&!this.disposed)this.setLoadout(this.L,this.parts||3);});   // the Meshy model (LIGHT first, then FULL) swaps in when its file lands
   this.onVisibility=()=>this.run();this.listen(document,'visibilitychange',this.onVisibility);this.run();
  }
  size(){if(!this.renderer)return;const w=this.el.clientWidth,h=this.el.clientHeight;if(w&&h){this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.draw();}}
+ detail(){return typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'?'light':'full';}
  kit(raw,parent){const baked=M3.bake(raw.k);parent.add(M3.meshOf(baked,null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);if(a.axis&&this.animations)this.animations.push({m,axis:a.axis,spd:a.spd});}return baked;}
  setContext(kind){if(this.context!==kind){this.context=kind;if(this.L)this.setLoadout(this.L,this.parts||3);}}
  setEnvironment(){
@@ -63,7 +65,7 @@ window.LunarShowroom=class {
   if(typeof Environment3D!=='undefined')Environment3D.refresh();
  }
  setLoadout(L,parts=3){
-  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,L.vl,this.context,parts,typeof Environment3D!=='undefined'?Environment3D.key():'legacy',typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.generation:0]);if(this.key===next)return;this.key=next;this.wake=performance.now();this.L=L;
+  const next=JSON.stringify([L.w,L.c,L.cores,L.paint,L.skin,L.mods,L.looks,L.vl,this.context,parts,typeof Environment3D!=='undefined'?Environment3D.key():'legacy',typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.generation:0,typeof Meshy3D!=='undefined'?Meshy3D.stamp(L.c.c,L.c.t,L.w.a,L.w.t,this.detail()):'']);if(this.key===next)return;this.key=next;this.wake=performance.now();this.L=L;
   if(!this.renderer){this.fallback();return;}
   if(this.model){this.scene.remove(this.model);this.disposeGeometry(this.model);}
   this.setEnvironment();
@@ -73,14 +75,15 @@ window.LunarShowroom=class {
   this.mats.shine.shininess=this.defender?48:100;this.mats.shine.specular.setHex(this.defender?0x253746:0xc2d9e4);
   this.contactShadow.visible=this.defender&&parts!==2;
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);const team='#88cbdc',P=PAINTS[L.paint]||PAINTS.stock;
-  const H=parts===2?{meta:{ty:0}}:M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar');const hullB=parts!==2?this.kit(H,body):null;
+  const full=f=>typeof Meshy3D!=='undefined'?Meshy3D.withDetail(this.detail(),f):f();   // close-up: the FULL Meshy model (fetched only now), LIGHT until it lands
+  const H=parts===2?{meta:{ty:0}}:full(()=>M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar'));const hullB=parts!==2?this.kit(H,body):null;
   const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);
   // same per-class Moonbeam scale as the game's buildTank(): one scaled child group, the cached kit stays unscaled
   const ws=M3.weaponScale(L.w.a,L.c.c),gun=ws===1?turret:new THREE.Group();if(gun!==turret){gun.scale.setScalar(ws);turret.add(gun);}
-  if(parts!==1)this.kit(M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c),gun);
+  if(parts!==1)this.kit(full(()=>M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c)),gun);
   const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};if(parts!==2)body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body',context).k),null,this.mats));if(parts!==1)gun.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount',context).k),null,this.mats));
   if(parts!==2&&L.vl>0&&typeof vaultParts==='function'){const v={body};vaultParts(v,{b:hullB},{vl:L.vl,vt:typeof vtOf==='function'?vtOf(L.vl):L.vl>=10?2:1},this.mats);root.userData.vaultTooth=v.tooth;}
-  if(typeof GraphicsMotion!=='undefined'&&typeof Equipment3D!=='undefined'&&Equipment3D.active())this.motion=GraphicsMotion.attach(root,H.meta.track);
+  if(typeof GraphicsMotion!=='undefined'&&(typeof Equipment3D!=='undefined'&&Equipment3D.active()||H.meta.meshy))this.motion=GraphicsMotion.attach(root,H.meta.track);
   root.scale.setScalar(1.65);this.model=root;this.scene.add(root);
   this.bounds=null;
   if(this.defender){

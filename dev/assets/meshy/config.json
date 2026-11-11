@@ -20,7 +20,9 @@
     "base": 88,
     "mask": 90
    },
-   "hiddenTexelScale": 0.3
+   "hiddenTexelScale": 0.3,
+   "lowRatio": 0.45,
+   "lowError": 0.05
   },
   "full": {
    "maxError": 0.01,

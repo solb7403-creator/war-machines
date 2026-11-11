@@ -23,7 +23,7 @@ def encode_image(arr, quality, lossless=False, fmt='WEBP'):
     return bio.getvalue()
 
 
-def write_glb(path, V, N, UV, F, mot=None, textures=None, material=None, extras=None, name='meshy', compress=True):
+def write_glb(path, V, N, UV, F, mot=None, textures=None, material=None, extras=None, name='meshy', compress=True, low_faces=None):
     """V (n,3) float, N (n,3) unit, UV (n,2) in 0..1, F (m,3) int, mot (n,4) uint16 or None.
     textures: dict name -> (bytes, mime) for 'base','normal','orm','mask'. Returns stats dict."""
     V = np.asarray(V, np.float64); F = np.asarray(F, np.int64)
@@ -34,6 +34,10 @@ def write_glb(path, V, N, UV, F, mot=None, textures=None, material=None, extras=
     remap = np.zeros(n, np.uint32); nuniq = mo.optimize_vertex_fetch_remap(remap, idx, len(idx), n)
     order = np.zeros(nuniq, np.int64); order[remap[remap != 0xffffffff]] = np.flatnonzero(remap != 0xffffffff)
     idx = remap[idx]
+    low_idx = None
+    if low_faces is not None and len(low_faces):   # reduced index set over the same vertices (LOW graphics)
+        li = np.ascontiguousarray(low_faces, np.uint32).ravel()
+        lo2 = np.zeros_like(li); mo.optimize_vertex_cache(lo2, li, len(li), len(V)); low_idx = remap[lo2]
     V = V[order]; N = N[order]; UV = UV[order]
     if mot is not None:
         mot = mot[order]
@@ -83,6 +87,12 @@ def write_glb(path, V, N, UV, F, mot=None, textures=None, material=None, extras=
     bv = add_view(qi, 4 if big else 2, len(qi), 'TRIANGLES', 34963)
     accessors.append({'bufferView': bv, 'componentType': 5125 if big else 5123, 'count': len(qi), 'type': 'SCALAR'})
     ind = len(accessors) - 1
+    prim_extras = None
+    if low_idx is not None:
+        ql = low_idx.astype(np.uint32 if big else np.uint16)
+        bv = add_view(ql, 4 if big else 2, len(ql), 'TRIANGLES', 34963)
+        accessors.append({'bufferView': bv, 'componentType': 5125 if big else 5123, 'count': len(ql), 'type': 'SCALAR'})
+        prim_extras = {'lowIndex': len(accessors) - 1}
     geo_bytes = len(bin_)
     images = []; tex = []; tex_bytes = {}
     mat = {'name': name, 'pbrMetallicRoughness': {'baseColorFactor': [1, 1, 1, 1], 'metallicFactor': 1.0, 'roughnessFactor': 1.0}}
@@ -119,7 +129,7 @@ def write_glb(path, V, N, UV, F, mot=None, textures=None, material=None, extras=
         'extensionsUsed': used, 'extensionsRequired': used,
         'scene': 0, 'scenes': [{'nodes': [0]}],
         'nodes': [{'name': name, 'mesh': 0, 'translation': [float(x) for x in mn], 'scale': [float(x) for x in ext]}],
-        'meshes': [{'name': name, 'primitives': [{'attributes': attrs, 'indices': ind, 'material': 0, 'mode': 4}]}],
+        'meshes': [{'name': name, 'primitives': [dict({'attributes': attrs, 'indices': ind, 'material': 0, 'mode': 4}, **({'extras': prim_extras} if prim_extras else {}))]}],
         'materials': [mat], 'accessors': accessors, 'bufferViews': views,
         'buffers': [{'byteLength': len(bin_)}] + ([{'byteLength': fallback, 'extensions': {'EXT_meshopt_compression': {'fallback': True}}}] if compress else []),
     }
@@ -134,4 +144,4 @@ def write_glb(path, V, N, UV, F, mot=None, textures=None, material=None, extras=
         f.write(struct.pack('<III', 0x46546c67, 2, total))
         f.write(struct.pack('<II', len(jb), 0x4e4f534a)); f.write(jb)
         f.write(struct.pack('<II', len(bin_), 0x004e4942)); f.write(bin_)
-    return {'bytes': total, 'geometryBytes': geo_bytes, 'textureBytes': tex_bytes, 'verts': int(n), 'tris': int(len(qi) // 3)}
+    return {'bytes': total, 'geometryBytes': geo_bytes, 'textureBytes': tex_bytes, 'verts': int(n), 'tris': int(len(qi) // 3), 'lowTris': int(len(low_idx) // 3) if low_idx is not None else None}
