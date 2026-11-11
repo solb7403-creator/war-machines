@@ -121,6 +121,37 @@ def synthesize(region, P, N, ao, cur, look, extra=None, seed=7403):
         mask[sel, 2] = t
         orm[sel, 1] = np.clip(L.get('paintRough', 0.56) + 0.16 * (fine[sel] - 0.5) + 0.25 * dirt[sel] + 0.25 * dust[sel] - 0.1 * chip, 0.15, 1)
         orm[sel, 2] = np.clip(chip * 0.8, 0, 1)
+    # ---- reference lines (Session 5E-2a): trim and energy lines traced on the armour from the model's own geometry, so the
+    # stock look carries the chosen reference's gold edges / glowing panel seams. Each rule: at 'edge' (convex creases) or
+    # 'groove' (panel seams); kind 'trim' (fixed metal, never paint-tinted) or 'glow' (emissive in mask.g; the game lights it
+    # faintly on stock and paints, fully on Lunar Skin). Crisp threshold, no wear noise: a line is either there or not.
+    for rule in L.get('lines', []):
+        sel = np.flatnonzero(np.isin(region, [RID['armor'], RID['armor2']]))
+        if not len(sel):
+            continue
+        v = cur[sel] if rule.get('at', 'edge') == 'edge' else -cur[sel]
+        on = smooth(rule.get('k0', 90.0), rule.get('k1', 160.0), v) > 0.5
+        if 'yMin' in rule:
+            on &= P[sel, 1] >= rule['yMin']
+        if 'yMax' in rule:
+            on &= P[sel, 1] <= rule['yMax']
+        if rule.get('ringClear'):   # keep the turret seat clean (the weapon's base sits there)
+            on &= np.hypot(P[sel, 0], P[sel, 2]) >= rule['ringClear']
+        if rule.get('up') is not None:   # only faces looking up at least this much (deck lines, not the belly)
+            on &= N[sel, 1] >= rule['up']
+        idx = sel[on]
+        if not len(idx):
+            continue
+        if rule.get('kind', 'trim') == 'glow':
+            c = to_lin(srgb(rule.get('color', L.get('glow', '#ffffff'))))
+            base[idx] = c * (0.85 + 0.15 * smooth(0.0, 0.6, ao[idx]))[:, None]
+            mask[idx, 0] = 0; mask[idx, 1] = rule.get('glow', 1.0); mask[idx, 2] = 0
+            orm[idx, 1] = 0.35; orm[idx, 2] = 0.0
+        else:
+            c = to_lin(srgb(rule.get('color', L.get('gold', '#c9a04a'))))
+            base[idx] = c * (0.9 + 0.2 * big[idx, None]) * (1 - 0.35 * dirt[idx, None])
+            mask[idx, 0] = 0; mask[idx, 1] = 0; mask[idx, 2] = 0
+            orm[idx, 1] = np.clip(rule.get('rough', 0.3) + 0.15 * dirt[idx], 0.12, 1); orm[idx, 2] = 1.0
     fixed(region == RID['trim'], L.get('trim', '#7b838b'), L.get('trimRough', 0.42), 1.0)
     fixed(region == RID['steel'], L.get('steel', '#8c949c'), 0.4, 1.0)
     fixed(region == RID['gold'], L.get('gold', '#c9a04a'), 0.32, 1.0, wear=0.5, dirt_k=0.6)

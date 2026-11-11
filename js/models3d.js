@@ -1430,8 +1430,9 @@ function buildMap(id,mats,q){
 }
 // a baked kit as one object (up to three meshes sharing the given materials)
 function meshOf(b,mats,ownMats){
- if(b.meshy)return Meshy3D.mesh(b.meshy);
- const g=new THREE.Group(),m=ownMats||mats;
+ const m=ownMats||mats;
+ if(b.meshy)return Meshy3D.mesh(m&&m.ghost?Object.assign({},b.meshy,{ghost:true}):b.meshy);   // an offline pilot's ghost: the same model as a hologram
+ const g=new THREE.Group();
  for(const [key,geo] of Object.entries(b))if(key.startsWith('hf_')&&geo){const material=Equipment3D.material(key)||m.lit,mesh=new THREE.Mesh(geo,material);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);}
  if(typeof Equipment3D!=='undefined')Equipment3D.retain(b,g);
  if(b.lit)g.add(new THREE.Mesh(b.lit,m.lit));if(b.shine)g.add(new THREE.Mesh(b.shine,m.shine));if(b.glow)g.add(new THREE.Mesh(b.glow,m.glow));

@@ -572,7 +572,7 @@ cv.addEventListener('pointermove',e=>combatView(()=>{
  if(tut)tut.moved=(tut.moved||0)+d*0.001;
 }));
 const joyUp=e=>combatView(()=>{
- if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(e.type==='pointercancel'?undefined:a);return;}
+ if(aim&&e.pointerId===aim.id){const a=aimAng();aim=null;if(state==='play'&&me)superGo(a);return;}   // a cancelled drag (iOS/Telegram took the touch) still fires where the preview pointed, never auto-aimed somewhere else (5E-2a)
  if(tapCand&&e.pointerId===tapCand.id){const c=tapCand;tapCand=null;if(e.type!=='pointercancel'&&performance.now()-c.t<300&&Math.hypot(c.x-c.sx,c.y-c.sy)<12)tapTarget(c.x,c.y);}
  if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0;}});
 cv.addEventListener('pointerup',joyUp);cv.addEventListener('pointercancel',joyUp);

@@ -2,21 +2,21 @@
  "items": {
   "chassis-scout-0": {
    "full": {
-    "bytes": 3692080,
+    "bytes": 3616332,
     "charts": 5301,
     "coverage": 0.6782635450363159,
     "geometryBytes": 1993648,
-    "hash": "e729d564ce",
+    "hash": "91252c219c",
     "lowTris": null,
     "missed": 0.0019193498693337613,
     "parts": 14,
-    "seconds": 108.3,
+    "seconds": 170.2,
     "texture": 2048,
     "textureBytes": {
-     "base": 272538,
-     "mask": 402480,
+     "base": 239076,
+     "mask": 354990,
      "normal": 617294,
-     "orm": 397968
+     "orm": 403170
     },
     "tris": 119902,
     "verts": 154744
@@ -29,21 +29,21 @@
    "kind": "chassis",
    "length": 1.84,
    "light": {
-    "bytes": 743264,
+    "bytes": 732340,
     "charts": 2110,
     "coverage": 0.44489097595214844,
     "geometryBytes": 430656,
-    "hash": "aedbe01793",
+    "hash": "da1cd01b89",
     "lowTris": 11255,
     "missed": 0.007939944523281787,
     "parts": 14,
-    "seconds": 3.9,
+    "seconds": 4.0,
     "texture": 512,
     "textureBytes": {
-     "base": 51542,
-     "mask": 83024,
+     "base": 46826,
+     "mask": 76718,
      "normal": 100430,
-     "orm": 69190
+     "orm": 69286
     },
     "tris": 17915,
     "verts": 29357
@@ -197,21 +197,21 @@
   },
   "chassis-scout-1": {
    "full": {
-    "bytes": 4564404,
+    "bytes": 4611332,
     "charts": 8900,
     "coverage": 0.6319428086280823,
     "geometryBytes": 2318108,
-    "hash": "069f31bf44",
+    "hash": "2b3eb2b3ab",
     "lowTris": null,
     "missed": 0.0026286895383721234,
     "parts": 15,
-    "seconds": 101.7,
+    "seconds": 134.1,
     "texture": 2048,
     "textureBytes": {
-     "base": 354458,
-     "mask": 528358,
+     "base": 395260,
+     "mask": 528108,
      "normal": 826792,
-     "orm": 527750
+     "orm": 534132
     },
     "tris": 119887,
     "verts": 176780
@@ -224,21 +224,21 @@
    "kind": "chassis",
    "length": 2.04,
    "light": {
-    "bytes": 952300,
+    "bytes": 961012,
     "charts": 3280,
     "coverage": 0.3833951950073242,
     "geometryBytes": 557988,
-    "hash": "ce3d026bdf",
+    "hash": "a7bd3fbfae",
     "lowTris": 13972,
     "missed": 0.009882617488228168,
     "parts": 15,
-    "seconds": 4.2,
+    "seconds": 4.4,
     "texture": 512,
     "textureBytes": {
-     "base": 67112,
-     "mask": 103432,
+     "base": 75020,
+     "mask": 103452,
      "normal": 126242,
-     "orm": 88314
+     "orm": 89100
     },
     "tris": 18810,
     "verts": 37049
@@ -378,21 +378,21 @@
   },
   "chassis-scout-2": {
    "full": {
-    "bytes": 3766664,
+    "bytes": 3864164,
     "charts": 6102,
     "coverage": 0.6147754192352295,
     "geometryBytes": 1844388,
-    "hash": "f23f887f05",
+    "hash": "76bd081162",
     "lowTris": null,
     "missed": 0.001986965567924671,
     "parts": 16,
-    "seconds": 103.0,
+    "seconds": 131.7,
     "texture": 2048,
     "textureBytes": {
-     "base": 374942,
-     "mask": 378862,
+     "base": 414624,
+     "mask": 424234,
      "normal": 651330,
-     "orm": 509700
+     "orm": 522146
     },
     "tris": 119792,
     "verts": 149182
@@ -405,21 +405,21 @@
    "kind": "chassis",
    "length": 1.9799999999999998,
    "light": {
-    "bytes": 720848,
+    "bytes": 734828,
     "charts": 2180,
     "coverage": 0.4311180114746094,
     "geometryBytes": 408456,
-    "hash": "d0126ee4a8",
+    "hash": "d19f3a3eca",
     "lowTris": 9896,
     "missed": 0.008647082245719594,
     "parts": 16,
-    "seconds": 3.6,
+    "seconds": 4.1,
     "texture": 512,
     "textureBytes": {
-     "base": 55886,
-     "mask": 68666,
+     "base": 60938,
+     "mask": 76174,
      "normal": 101048,
-     "orm": 79082
+     "orm": 80504
     },
     "tris": 17916,
     "verts": 28757
@@ -560,21 +560,21 @@
   },
   "chassis-titan-0": {
    "full": {
-    "bytes": 3827148,
+    "bytes": 3799760,
     "charts": 9307,
     "coverage": 0.6349564790725708,
     "geometryBytes": 1758796,
-    "hash": "1d733607c5",
+    "hash": "4275057fab",
     "lowTris": null,
     "missed": 0.002752984613813342,
     "parts": 17,
-    "seconds": 101.4,
+    "seconds": 150.8,
     "texture": 2048,
     "textureBytes": {
-     "base": 313190,
-     "mask": 379656,
+     "base": 290892,
+     "mask": 372968,
      "normal": 847108,
-     "orm": 520632
+     "orm": 522230
     },
     "tris": 119703,
     "verts": 146012
@@ -587,21 +587,21 @@
    "kind": "chassis",
    "length": 2.94,
    "light": {
-    "bytes": 718476,
+    "bytes": 713688,
     "charts": 3203,
     "coverage": 0.36946964263916016,
     "geometryBytes": 393944,
-    "hash": "f5883420c2",
+    "hash": "fc5c0e6c52",
     "lowTris": 11556,
     "missed": 0.011504399652054504,
     "parts": 17,
     "seconds": 4.1,
     "texture": 512,
     "textureBytes": {
-     "base": 49632,
-     "mask": 61850,
+     "base": 47484,
+     "mask": 59788,
      "normal": 123202,
-     "orm": 81810
+     "orm": 81234
     },
     "tris": 17896,
     "verts": 28682
@@ -743,21 +743,21 @@
   },
   "chassis-titan-1": {
    "full": {
-    "bytes": 4463032,
+    "bytes": 4689096,
     "charts": 9935,
     "coverage": 0.6062870621681213,
     "geometryBytes": 1986288,
-    "hash": "e44993343d",
+    "hash": "90a1f2a3ec",
     "lowTris": null,
     "missed": 0.004647845825654021,
     "parts": 19,
-    "seconds": 97.7,
+    "seconds": 144.2,
     "texture": 2048,
     "textureBytes": {
-     "base": 331658,
-     "mask": 554526,
+     "base": 434524,
+     "mask": 632146,
      "normal": 985650,
-     "orm": 595614
+     "orm": 641194
     },
     "tris": 119536,
     "verts": 159805
@@ -770,21 +770,21 @@
    "kind": "chassis",
    "length": 2.9,
    "light": {
-    "bytes": 1083120,
+    "bytes": 1099128,
     "charts": 4811,
     "coverage": 0.3272237777709961,
     "geometryBytes": 674032,
-    "hash": "2c7fcf4a54",
+    "hash": "c1b3d5fe25",
     "lowTris": 17671,
     "missed": 0.013467630763670912,
     "parts": 19,
-    "seconds": 5.1,
+    "seconds": 5.3,
     "texture": 512,
     "textureBytes": {
-     "base": 59948,
-     "mask": 105374,
+     "base": 68962,
+     "mask": 108944,
      "normal": 141404,
-     "orm": 92792
+     "orm": 96214
     },
     "tris": 25772,
     "verts": 47823
@@ -928,21 +928,21 @@
   },
   "chassis-titan-2": {
    "full": {
-    "bytes": 4259568,
+    "bytes": 4603040,
     "charts": 10521,
     "coverage": 0.5507476925849915,
     "geometryBytes": 1783700,
-    "hash": "8b936c5c08",
+    "hash": "784b52e28a",
     "lowTris": null,
     "missed": 0.0038956655147563105,
     "parts": 26,
-    "seconds": 99.7,
+    "seconds": 136.6,
     "texture": 2048,
     "textureBytes": {
-     "base": 240856,
-     "mask": 579284,
+     "base": 413454,
+     "mask": 687160,
      "normal": 1037296,
-     "orm": 608396
+     "orm": 671390
     },
     "tris": 119743,
     "verts": 148107
@@ -955,21 +955,21 @@
    "kind": "chassis",
    "length": 3.1,
    "light": {
-    "bytes": 800172,
+    "bytes": 837336,
     "charts": 3416,
     "coverage": 0.3347187042236328,
     "geometryBytes": 417428,
-    "hash": "83b03a149c",
+    "hash": "7efc713f44",
     "lowTris": 11547,
     "missed": 0.013923949649265766,
     "parts": 26,
-    "seconds": 4.3,
+    "seconds": 4.6,
     "texture": 512,
     "textureBytes": {
-     "base": 39410,
-     "mask": 105980,
+     "base": 58604,
+     "mask": 117282,
      "normal": 138814,
-     "orm": 88232
+     "orm": 94900
     },
     "tris": 18073,
     "verts": 29934
@@ -1120,21 +1120,21 @@
   },
   "chassis-vanguard-0": {
    "full": {
-    "bytes": 4709860,
+    "bytes": 4550052,
     "charts": 9219,
     "coverage": 0.5889451503753662,
     "geometryBytes": 2098504,
-    "hash": "0559db89ee",
+    "hash": "2cfdfd8990",
     "lowTris": null,
     "missed": 0.0033252166309410314,
     "parts": 15,
-    "seconds": 98.4,
+    "seconds": 146.7,
     "texture": 2048,
     "textureBytes": {
-     "base": 386642,
-     "mask": 628848,
+     "base": 338690,
+     "mask": 527848,
      "normal": 988154,
-     "orm": 598932
+     "orm": 588074
     },
     "tris": 119756,
     "verts": 161829
@@ -1147,21 +1147,21 @@
    "kind": "chassis",
    "length": 2.61,
    "light": {
-    "bytes": 841272,
+    "bytes": 825712,
     "charts": 2984,
     "coverage": 0.37041759490966797,
     "geometryBytes": 443352,
-    "hash": "bfdaedb0ba",
+    "hash": "9f98c44bb5",
     "lowTris": 11428,
     "missed": 0.013297769630623232,
     "parts": 15,
-    "seconds": 6.6,
+    "seconds": 5.2,
     "texture": 512,
     "textureBytes": {
-     "base": 60032,
-     "mask": 107650,
+     "base": 55206,
+     "mask": 96554,
      "normal": 137116,
-     "orm": 84066
+     "orm": 84432
     },
     "tris": 17838,
     "verts": 30593
@@ -1301,21 +1301,21 @@
   },
   "chassis-vanguard-1": {
    "full": {
-    "bytes": 4284524,
+    "bytes": 4474892,
     "charts": 8210,
     "coverage": 0.5907504558563232,
     "geometryBytes": 1888356,
-    "hash": "cc22be113a",
+    "hash": "aebb7cb8e0",
     "lowTris": null,
     "missed": 0.0042402756976285694,
     "parts": 15,
-    "seconds": 95.6,
+    "seconds": 154.8,
     "texture": 2048,
     "textureBytes": {
-     "base": 320264,
-     "mask": 564756,
+     "base": 417360,
+     "mask": 622244,
      "normal": 941504,
-     "orm": 561818
+     "orm": 597602
     },
     "tris": 119906,
     "verts": 151049
@@ -1328,21 +1328,21 @@
    "kind": "chassis",
    "length": 2.56,
    "light": {
-    "bytes": 830724,
+    "bytes": 854628,
     "charts": 3175,
     "coverage": 0.36194610595703125,
     "geometryBytes": 438196,
-    "hash": "fb4af6cff5",
+    "hash": "cc871ed459",
     "lowTris": 12578,
     "missed": 0.013443013427204317,
     "parts": 15,
     "seconds": 4.3,
     "texture": 512,
     "textureBytes": {
-     "base": 58486,
-     "mask": 108136,
+     "base": 71276,
+     "mask": 113050,
      "normal": 132746,
-     "orm": 85062
+     "orm": 91262
     },
     "tris": 17917,
     "verts": 30604
@@ -1482,21 +1482,21 @@
   },
   "chassis-vanguard-2": {
    "full": {
-    "bytes": 4112752,
+    "bytes": 4127324,
     "charts": 8369,
     "coverage": 0.5696743726730347,
     "geometryBytes": 1830956,
-    "hash": "188c90a2d8",
+    "hash": "8015656818",
     "lowTris": null,
     "missed": 0.003209190639860634,
     "parts": 16,
-    "seconds": 92.1,
+    "seconds": 145.4,
     "texture": 2048,
     "textureBytes": {
-     "base": 404754,
-     "mask": 494664,
+     "base": 303460,
+     "mask": 561088,
      "normal": 834588,
-     "orm": 540314
+     "orm": 589758
     },
     "tris": 119899,
     "verts": 147197
@@ -1509,21 +1509,21 @@
    "kind": "chassis",
    "length": 2.7,
    "light": {
-    "bytes": 803256,
+    "bytes": 786564,
     "charts": 3255,
     "coverage": 0.35335445404052734,
     "geometryBytes": 417972,
-    "hash": "1d0e5119c7",
+    "hash": "4fd6d7b8b2",
     "lowTris": 11751,
     "missed": 0.011138430147981614,
     "parts": 16,
-    "seconds": 4.2,
+    "seconds": 4.5,
     "texture": 512,
     "textureBytes": {
-     "base": 68800,
-     "mask": 90738,
+     "base": 43560,
+     "mask": 95940,
      "normal": 132580,
-     "orm": 85420
+     "orm": 88766
     },
     "tris": 17948,
     "verts": 29650
@@ -1664,21 +1664,21 @@
   },
   "town-cannon": {
    "full": {
-    "bytes": 1147248,
+    "bytes": 1119992,
     "charts": 3049,
     "coverage": 0.49427032470703125,
     "geometryBytes": 475480,
-    "hash": "50aa760ae0",
+    "hash": "5f873e2bcd",
     "lowTris": null,
     "missed": 0.0007221000231535078,
     "parts": 3,
-    "seconds": 18.0,
+    "seconds": 20.7,
     "texture": 1024,
     "textureBytes": {
-     "base": 128062,
-     "mask": 169668,
+     "base": 101208,
+     "mask": 168242,
      "normal": 214302,
-     "orm": 155728
+     "orm": 156750
     },
     "tris": 39987,
     "verts": 42505
@@ -1690,21 +1690,21 @@
    "kind": "town",
    "length": 4.48,
    "light": {
-    "bytes": 364104,
+    "bytes": 349504,
     "charts": 906,
     "coverage": 0.49519920349121094,
     "geometryBytes": 105588,
-    "hash": "d8cce199c7",
+    "hash": "2a2bc43a11",
     "lowTris": 3452,
     "missed": 0.004781860130109734,
     "parts": 3,
-    "seconds": 3.8,
+    "seconds": 4.2,
     "texture": 512,
     "textureBytes": {
-     "base": 49292,
-     "mask": 66472,
+     "base": 35806,
+     "mask": 65750,
      "normal": 80372,
-     "orm": 58106
+     "orm": 57710
     },
     "tris": 5992,
     "verts": 8172
@@ -1759,21 +1759,21 @@
   },
   "town-cc": {
    "full": {
-    "bytes": 1631924,
+    "bytes": 1559160,
     "charts": 5753,
     "coverage": 0.4492018222808838,
     "geometryBytes": 643364,
-    "hash": "ad7cb4170a",
+    "hash": "a77f326af3",
     "lowTris": null,
     "missed": 0.0005854288199761264,
     "parts": 3,
-    "seconds": 19.1,
+    "seconds": 20.9,
     "texture": 1024,
     "textureBytes": {
-     "base": 173738,
-     "mask": 223908,
+     "base": 108870,
+     "mask": 221194,
      "normal": 369364,
-     "orm": 217644
+     "orm": 212458
     },
     "tris": 39896,
     "verts": 56026
@@ -1785,21 +1785,21 @@
    "kind": "town",
    "length": 14.400000000000002,
    "light": {
-    "bytes": 473784,
+    "bytes": 449280,
     "charts": 1340,
     "coverage": 0.43726062774658203,
     "geometryBytes": 128024,
-    "hash": "ec43dc2dfe",
+    "hash": "e88438f177",
     "lowTris": 4055,
     "missed": 0.0033216939548659655,
     "parts": 3,
-    "seconds": 5.6,
+    "seconds": 5.8,
     "texture": 512,
     "textureBytes": {
-     "base": 63298,
-     "mask": 85562,
+     "base": 41588,
+     "mask": 84674,
      "normal": 121288,
-     "orm": 71432
+     "orm": 69528
     },
     "tris": 5976,
     "verts": 9466
@@ -1841,21 +1841,21 @@
   },
   "town-lab": {
    "full": {
-    "bytes": 1245736,
+    "bytes": 1201640,
     "charts": 3574,
     "coverage": 0.4827747344970703,
     "geometryBytes": 521732,
-    "hash": "aa0b9ad5eb",
+    "hash": "4ad66ae101",
     "lowTris": null,
     "missed": 0.0006271902272897876,
     "parts": 2,
-    "seconds": 18.7,
+    "seconds": 19.2,
     "texture": 1024,
     "textureBytes": {
-     "base": 112802,
-     "mask": 160880,
+     "base": 70966,
+     "mask": 159470,
      "normal": 273942,
-     "orm": 172562
+     "orm": 171712
     },
     "tris": 39992,
     "verts": 45480
@@ -1867,21 +1867,21 @@
    "kind": "town",
    "length": 10.279541669241965,
    "light": {
-    "bytes": 379820,
+    "bytes": 361232,
     "charts": 881,
     "coverage": 0.4385232925415039,
     "geometryBytes": 106996,
-    "hash": "da80a975ad",
+    "hash": "a761b7b6d9",
     "lowTris": 3237,
     "missed": 0.0021725656499755343,
     "parts": 2,
-    "seconds": 4.1,
+    "seconds": 4.5,
     "texture": 512,
     "textureBytes": {
-     "base": 44236,
-     "mask": 61608,
+     "base": 26262,
+     "mask": 61150,
      "normal": 101770,
-     "orm": 61126
+     "orm": 60968
     },
     "tris": 5994,
     "verts": 8105
@@ -1922,21 +1922,21 @@
   },
   "town-laser": {
    "full": {
-    "bytes": 1117248,
+    "bytes": 1101072,
     "charts": 3681,
     "coverage": 0.5559952259063721,
     "geometryBytes": 496140,
-    "hash": "acac14c607",
+    "hash": "b7ad3c5c8b",
     "lowTris": null,
     "missed": 0.0008113162319421032,
     "parts": 2,
-    "seconds": 19.8,
+    "seconds": 22.1,
     "texture": 1024,
     "textureBytes": {
-     "base": 133040,
-     "mask": 145558,
+     "base": 120200,
+     "mask": 144254,
      "normal": 191432,
-     "orm": 147194
+     "orm": 145164
     },
     "tris": 39959,
     "verts": 45477
@@ -1948,21 +1948,21 @@
    "kind": "town",
    "length": 3.264,
    "light": {
-    "bytes": 292932,
+    "bytes": 281252,
     "charts": 590,
     "coverage": 0.505467414855957,
     "geometryBytes": 88000,
-    "hash": "6c5caad8de",
+    "hash": "0cc18f8f39",
     "lowTris": 2687,
     "missed": 0.0019886004516802163,
     "parts": 2,
-    "seconds": 3.7,
+    "seconds": 4.0,
     "texture": 512,
     "textureBytes": {
-     "base": 39606,
-     "mask": 50812,
+     "base": 29062,
+     "mask": 50182,
      "normal": 63752,
-     "orm": 46616
+     "orm": 46106
     },
     "tris": 5975,
     "verts": 7072
@@ -2016,21 +2016,21 @@
   },
   "town-mg": {
    "full": {
-    "bytes": 1016332,
+    "bytes": 978824,
     "charts": 2828,
     "coverage": 0.5206584930419922,
     "geometryBytes": 474168,
-    "hash": "05e3a85883",
+    "hash": "b5b23519a3",
     "lowTris": null,
     "missed": 0.0004707390786702079,
     "parts": 4,
-    "seconds": 18.6,
+    "seconds": 20.1,
     "texture": 1024,
     "textureBytes": {
-     "base": 92426,
-     "mask": 93908,
+     "base": 57236,
+     "mask": 92718,
      "normal": 215410,
-     "orm": 136246
+     "orm": 135120
     },
     "tris": 39997,
     "verts": 41695
@@ -2042,21 +2042,21 @@
    "kind": "town",
    "length": 4.216,
    "light": {
-    "bytes": 324744,
+    "bytes": 307284,
     "charts": 777,
     "coverage": 0.47165870666503906,
     "geometryBytes": 97660,
-    "hash": "dcac91f6d4",
+    "hash": "ce7f135b89",
     "lowTris": 2873,
     "missed": 0.0034858564005095334,
     "parts": 4,
-    "seconds": 3.6,
+    "seconds": 4.0,
     "texture": 512,
     "textureBytes": {
-     "base": 38780,
-     "mask": 46454,
+     "base": 22982,
+     "mask": 45546,
      "normal": 83680,
-     "orm": 53730
+     "orm": 52974
     },
     "tris": 5991,
     "verts": 7640
@@ -2117,21 +2117,21 @@
   },
   "town-railgun": {
    "full": {
-    "bytes": 1097116,
+    "bytes": 1079700,
     "charts": 2729,
     "coverage": 0.5560359954833984,
     "geometryBytes": 474096,
-    "hash": "6ce79bbcaa",
+    "hash": "6ab19fee94",
     "lowTris": null,
     "missed": 0.0005441251633661838,
     "parts": 3,
-    "seconds": 19.5,
+    "seconds": 22.2,
     "texture": 1024,
     "textureBytes": {
-     "base": 120708,
-     "mask": 155300,
+     "base": 104652,
+     "mask": 153798,
      "normal": 194332,
-     "orm": 148622
+     "orm": 148764
     },
     "tris": 39996,
     "verts": 42048
@@ -2143,21 +2143,21 @@
    "kind": "town",
    "length": 4.808000000000001,
    "light": {
-    "bytes": 355404,
+    "bytes": 344928,
     "charts": 846,
     "coverage": 0.5236825942993164,
     "geometryBytes": 106712,
-    "hash": "6ebc82fba5",
+    "hash": "6b5b005802",
     "lowTris": 3516,
     "missed": 0.0017664594870711555,
     "parts": 3,
-    "seconds": 3.9,
+    "seconds": 4.5,
     "texture": 512,
     "textureBytes": {
-     "base": 47710,
-     "mask": 64578,
+     "base": 38336,
+     "mask": 63916,
      "normal": 76026,
-     "orm": 56046
+     "orm": 55610
     },
     "tris": 5981,
     "verts": 8276
@@ -2212,21 +2212,21 @@
   },
   "town-reactor": {
    "full": {
-    "bytes": 1467796,
+    "bytes": 1438892,
     "charts": 4042,
     "coverage": 0.4241938591003418,
     "geometryBytes": 535720,
-    "hash": "0ba80f04e6",
+    "hash": "8c9207c038",
     "lowTris": null,
     "missed": 0.0009712241133364583,
     "parts": 2,
-    "seconds": 17.2,
+    "seconds": 18.8,
     "texture": 1024,
     "textureBytes": {
-     "base": 171842,
-     "mask": 237980,
+     "base": 143580,
+     "mask": 237934,
      "normal": 299530,
-     "orm": 218928
+     "orm": 218334
     },
     "tris": 39993,
     "verts": 46370
@@ -2238,21 +2238,21 @@
    "kind": "town",
    "length": 10.8,
    "light": {
-    "bytes": 498204,
+    "bytes": 488208,
     "charts": 1392,
     "coverage": 0.3873882293701172,
     "geometryBytes": 133128,
-    "hash": "785b6fbda4",
+    "hash": "e6e524dc1d",
     "lowTris": 4535,
     "missed": 0.005292880952029266,
     "parts": 2,
-    "seconds": 4.3,
+    "seconds": 4.4,
     "texture": 512,
     "textureBytes": {
-     "base": 67154,
-     "mask": 97544,
+     "base": 56640,
+     "mask": 97524,
      "normal": 116184,
-     "orm": 80126
+     "orm": 80666
     },
     "tris": 5997,
     "verts": 9804
@@ -2293,21 +2293,21 @@
   },
   "town-refinery": {
    "full": {
-    "bytes": 1321364,
+    "bytes": 1247912,
     "charts": 4759,
     "coverage": 0.49911952018737793,
     "geometryBytes": 568136,
-    "hash": "4a813468bf",
+    "hash": "5f8c6df4b7",
     "lowTris": null,
     "missed": 0.0006716157326224206,
     "parts": 2,
-    "seconds": 19.6,
+    "seconds": 21.8,
     "texture": 1024,
     "textureBytes": {
-     "base": 139798,
-     "mask": 155916,
+     "base": 72904,
+     "mask": 154682,
      "normal": 289428,
-     "orm": 164288
+     "orm": 158968
     },
     "tris": 39982,
     "verts": 49625
@@ -2319,21 +2319,21 @@
    "kind": "town",
    "length": 14.4,
    "light": {
-    "bytes": 406472,
+    "bytes": 382004,
     "charts": 1316,
     "coverage": 0.4654855728149414,
     "geometryBytes": 123244,
-    "hash": "5457929972",
+    "hash": "67f509940d",
     "lowTris": 3833,
     "missed": 0.004009448941501382,
     "parts": 2,
-    "seconds": 4.7,
+    "seconds": 4.9,
     "texture": 512,
     "textureBytes": {
-     "base": 51690,
-     "mask": 64846,
+     "base": 29356,
+     "mask": 64510,
      "normal": 103980,
-     "orm": 58634
+     "orm": 56840
     },
     "tris": 5996,
     "verts": 9115
@@ -2374,21 +2374,21 @@
   },
   "town-rocket": {
    "full": {
-    "bytes": 1457208,
+    "bytes": 1403324,
     "charts": 4506,
     "coverage": 0.5065746307373047,
     "geometryBytes": 552424,
-    "hash": "e8e280efbc",
+    "hash": "8542c99c1a",
     "lowTris": null,
     "missed": 0.0015710246205631968,
     "parts": 2,
-    "seconds": 19.6,
+    "seconds": 23.6,
     "texture": 1024,
     "textureBytes": {
-     "base": 193814,
-     "mask": 244352,
+     "base": 141292,
+     "mask": 244152,
      "normal": 262206,
-     "orm": 200376
+     "orm": 199216
     },
     "tris": 39958,
     "verts": 47971
@@ -2400,21 +2400,21 @@
    "kind": "town",
    "length": 3.2424085637722775,
    "light": {
-    "bytes": 503396,
+    "bytes": 485448,
     "charts": 1610,
     "coverage": 0.4335289001464844,
     "geometryBytes": 134780,
-    "hash": "23a3c5faaf",
+    "hash": "52d7434c14",
     "lowTris": 4552,
     "missed": 0.005974640773623589,
     "parts": 2,
-    "seconds": 4.6,
+    "seconds": 5.8,
     "texture": 512,
     "textureBytes": {
-     "base": 75388,
-     "mask": 103056,
+     "base": 58116,
+     "mask": 102546,
      "normal": 107290,
-     "orm": 78568
+     "orm": 78400
     },
     "tris": 5920,
     "verts": 10081
@@ -2503,21 +2503,21 @@
   },
   "town-shield": {
    "full": {
-    "bytes": 1503048,
+    "bytes": 1447968,
     "charts": 4761,
     "coverage": 0.4845759868621826,
     "geometryBytes": 577296,
-    "hash": "00adde05bf",
+    "hash": "06fa38eb6f",
     "lowTris": null,
     "missed": 0.0006238748235511762,
     "parts": 2,
-    "seconds": 19.0,
+    "seconds": 22.4,
     "texture": 1024,
     "textureBytes": {
-     "base": 194130,
-     "mask": 225534,
+     "base": 144200,
+     "mask": 223528,
      "normal": 306366,
-     "orm": 195926
+     "orm": 192786
     },
     "tris": 39986,
     "verts": 50589
@@ -2529,21 +2529,21 @@
    "kind": "town",
    "length": 7.197962209700601,
    "light": {
-    "bytes": 486884,
+    "bytes": 469756,
     "charts": 1350,
     "coverage": 0.4270029067993164,
     "geometryBytes": 126692,
-    "hash": "175132d6bc",
+    "hash": "afc7f45b0b",
     "lowTris": 4207,
     "missed": 0.009927525712179924,
     "parts": 2,
-    "seconds": 4.3,
+    "seconds": 4.9,
     "texture": 512,
     "textureBytes": {
-     "base": 76238,
-     "mask": 92904,
+     "base": 60774,
+     "mask": 92256,
      "normal": 114638,
-     "orm": 72348
+     "orm": 71332
     },
     "tris": 5996,
     "verts": 9540
@@ -2584,21 +2584,21 @@
   },
   "town-storage": {
    "full": {
-    "bytes": 1010140,
+    "bytes": 994456,
     "charts": 3422,
     "coverage": 0.5847015380859375,
     "geometryBytes": 462216,
-    "hash": "56238dc1e4",
+    "hash": "bacbc3df86",
     "lowTris": null,
     "missed": 9.419282862287638e-05,
     "parts": 1,
-    "seconds": 20.3,
+    "seconds": 24.6,
     "texture": 1024,
     "textureBytes": {
-     "base": 85006,
-     "mask": 143306,
+     "base": 72018,
+     "mask": 143028,
      "normal": 179778,
-     "orm": 136116
+     "orm": 133698
     },
     "tris": 39992,
     "verts": 42768
@@ -2610,21 +2610,21 @@
    "kind": "town",
    "length": 10.8,
    "light": {
-    "bytes": 305180,
+    "bytes": 296552,
     "charts": 903,
     "coverage": 0.5135278701782227,
     "geometryBytes": 99396,
-    "hash": "d257a343e6",
+    "hash": "901bfea9c1",
     "lowTris": 2955,
     "missed": 0.0008264109806805541,
     "parts": 1,
-    "seconds": 3.7,
+    "seconds": 3.6,
     "texture": 512,
     "textureBytes": {
-     "base": 33278,
-     "mask": 53174,
+     "base": 25884,
+     "mask": 53110,
      "normal": 68688,
-     "orm": 46660
+     "orm": 45492
     },
     "tris": 5998,
     "verts": 8077
@@ -2664,21 +2664,21 @@
   },
   "town-tesla": {
    "full": {
-    "bytes": 1381096,
+    "bytes": 1367692,
     "charts": 3706,
     "coverage": 0.5201120376586914,
     "geometryBytes": 531228,
-    "hash": "bbcb74775a",
+    "hash": "ba801ad192",
     "lowTris": null,
     "missed": 0.0003561756363029611,
     "parts": 2,
-    "seconds": 19.2,
+    "seconds": 21.4,
     "texture": 1024,
     "textureBytes": {
-     "base": 170528,
-     "mask": 216846,
+     "base": 161304,
+     "mask": 215388,
      "normal": 273524,
-     "orm": 185210
+     "orm": 182492
     },
     "tris": 39984,
     "verts": 46418
@@ -2690,21 +2690,21 @@
    "kind": "town",
    "length": 3.5982403548607698,
    "light": {
-    "bytes": 465136,
+    "bytes": 458028,
     "charts": 1203,
     "coverage": 0.4393157958984375,
     "geometryBytes": 114632,
-    "hash": "fcfffd6569",
+    "hash": "e616cad06f",
     "lowTris": 3872,
     "missed": 0.0032345177312354556,
     "parts": 2,
-    "seconds": 4.2,
+    "seconds": 3.6,
     "texture": 512,
     "textureBytes": {
-     "base": 71006,
-     "mask": 95208,
+     "base": 65464,
+     "mask": 94868,
      "normal": 106644,
-     "orm": 73586
+     "orm": 72362
     },
     "tris": 5982,
     "verts": 8705
@@ -2847,18 +2847,18 @@
   },
   "weapon-pulse-0": {
    "full": {
-    "bytes": 1010964,
+    "bytes": 1007560,
     "charts": 2499,
     "coverage": 0.5991003513336182,
     "geometryBytes": 502624,
-    "hash": "7dadf5ded6",
+    "hash": "d6248adb38",
     "lowTris": null,
     "missed": 0.0003263280257273832,
     "parts": 3,
-    "seconds": 21.1,
+    "seconds": 25.2,
     "texture": 1024,
     "textureBytes": {
-     "base": 82030,
+     "base": 78626,
      "mask": 112320,
      "normal": 180138,
      "orm": 129800
@@ -2874,18 +2874,18 @@
    "kind": "weapon",
    "length": 2.625856640278964,
    "light": {
-    "bytes": 344820,
+    "bytes": 343268,
     "charts": 1070,
     "coverage": 0.5559730529785156,
     "geometryBytes": 125160,
-    "hash": "744cd66397",
+    "hash": "88a45eb3cb",
     "lowTris": 4367,
     "missed": 0.0013671137946413257,
     "parts": 3,
-    "seconds": 4.3,
+    "seconds": 4.6,
     "texture": 512,
     "textureBytes": {
-     "base": 36068,
+     "base": 34516,
      "mask": 45960,
      "normal": 80388,
      "orm": 52902
@@ -3152,18 +3152,18 @@
   },
   "weapon-siege-0": {
    "full": {
-    "bytes": 1261068,
+    "bytes": 1257544,
     "charts": 4209,
     "coverage": 0.5264534950256348,
     "geometryBytes": 584340,
-    "hash": "aab984d79e",
+    "hash": "e2dc3bd391",
     "lowTris": null,
     "missed": 0.0003464507591573955,
     "parts": 3,
-    "seconds": 19.0,
+    "seconds": 23.3,
     "texture": 1024,
     "textureBytes": {
-     "base": 104950,
+     "base": 101428,
      "mask": 149020,
      "normal": 242708,
      "orm": 175972
@@ -3179,18 +3179,18 @@
    "kind": "weapon",
    "length": 2.9305839574761547,
    "light": {
-    "bytes": 409184,
+    "bytes": 407964,
     "charts": 1514,
     "coverage": 0.4564657211303711,
     "geometryBytes": 138616,
-    "hash": "43dc498172",
+    "hash": "568c142b72",
     "lowTris": 4664,
     "missed": 0.0024444309803421786,
     "parts": 3,
-    "seconds": 3.9,
+    "seconds": 4.4,
     "texture": 512,
     "textureBytes": {
-     "base": 43306,
+     "base": 42088,
      "mask": 56764,
      "normal": 99750,
      "orm": 66388
@@ -3456,18 +3456,18 @@
   },
   "weapon-twin-0": {
    "full": {
-    "bytes": 997368,
+    "bytes": 995020,
     "charts": 2790,
     "coverage": 0.6256287097930908,
     "geometryBytes": 524984,
-    "hash": "9a911a5543",
+    "hash": "bbb237603e",
     "lowTris": null,
     "missed": 0.0003105853982181163,
     "parts": 4,
-    "seconds": 21.4,
+    "seconds": 24.8,
     "texture": 1024,
     "textureBytes": {
-     "base": 92554,
+     "base": 90206,
      "mask": 81454,
      "normal": 164900,
      "orm": 129196
@@ -3483,18 +3483,18 @@
    "kind": "weapon",
    "length": 2.2494531938306146,
    "light": {
-    "bytes": 318064,
+    "bytes": 318104,
     "charts": 960,
     "coverage": 0.5486135482788086,
     "geometryBytes": 115708,
-    "hash": "d537a99fc0",
+    "hash": "99d86363eb",
     "lowTris": 3715,
     "missed": 0.0010516928778662976,
     "parts": 4,
     "seconds": 3.9,
     "texture": 512,
     "textureBytes": {
-     "base": 37848,
+     "base": 37888,
      "mask": 36868,
      "normal": 70860,
      "orm": 52232

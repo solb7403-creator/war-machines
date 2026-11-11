@@ -171,14 +171,14 @@ const Meshy3D=(()=>{
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const u=x/w,v=y/h,i=(y*w+x)*4;let c=[.16,.18,.21];if(v<.56)c=[.21,.25,.31];for(const [cx,cy,sx,sy,L,tint] of [[.21,.29,.045,.10,7,[1,.95,.83]],[.61,.40,.035,.20,4,[.65,.82,1]],[.89,.27,.10,.02,5,[1,1,1]],[.84,.68,.13,.13,4,[1,.92,.79]],[.45,.69,.12,.055,3,[.86,.94,1]]]){const d=Math.max(Math.abs(u-cx)/sx,Math.abs(v-cy)/sy),f=L*Math.max(0,1-d*.86);for(let z=0;z<3;z++)c[z]+=f*tint[z];}a.set([...c,1],i);}
   ownEnv=new THREE.DataTexture(a,w,h,THREE.RGBAFormat,THREE.FloatType);ownEnv.mapping=THREE.EquirectangularReflectionMapping;ownEnv.colorSpace=THREE.LinearSRGBColorSpace;ownEnv.needsUpdate=true;return ownEnv;
  }
- const VS_HEAD=`attribute vec4 mot;uniform highp sampler2D uParts;uniform float uCh[${NCH}];varying float vMeshyGlow;
+ const VS_HEAD=`attribute vec4 mot;uniform highp sampler2D uParts;uniform float uCh[${NCH}];uniform vec2 uGlowAnim;varying float vMeshyGlow;
  vec4 mPart(int i){return texelFetch(uParts,ivec2(i,0),0);}
  void meshyScrew(int b,inout vec3 pos,inout vec3 nrm){vec4 A=mPart(b);if(A.w<.5||A.w>1.5)return;vec4 B=mPart(b+1),C=mPart(b+2);
   float ang=C.y*uCh[int(C.x+.5)],sl=C.w*uCh[int(C.z+.5)],cs=cos(ang),sn=sin(ang);vec3 ax=B.xyz,r=pos-A.xyz;
   r=r*cs+cross(ax,r)*sn+ax*dot(ax,r)*(1.-cs);nrm=nrm*cs+cross(ax,nrm)*sn+ax*dot(ax,nrm)*(1.-cs);pos=A.xyz+r+ax*sl;}
  void meshyPose(inout vec3 pos,inout vec3 nrm){
   int b=int(mot.x+.5)*${ROW};vec4 A=mPart(b),B=mPart(b+1),D=mPart(b+3);
-  vMeshyGlow=B.w+D.y*uCh[int(D.x+.5)];
+  vMeshyGlow=(B.w+D.y*uCh[int(D.x+.5)]*uGlowAnim.x)*(1.+uGlowAnim.y*(uCh[${CH.pulse}]-.72));
   if(A.w>1.5){vec4 C=mPart(b+2);
    float L=A.x,s=mot.y/65535.*L+C.y*uCh[int(C.x+.5)],n=A.y+(A.z-A.y)*mot.z/65535.,a0=mot.w/65535.*6.2831853,ang=a0;s=mod(mod(s,L)+L,L);
    int ps=int(D.z+.5),pc=int(D.w+.5);vec2 p=pos.xy;
@@ -190,7 +190,7 @@ const Meshy3D=(()=>{
   int par=int(mPart(b+4).x+.5);if(par>0)meshyScrew((par-1)*${ROW},pos,nrm);
  }
  `;
- const FS_HEAD=`uniform sampler2D uMask;uniform vec3 uPaintA;uniform vec3 uPaintB;uniform vec4 uPaintP;uniform vec4 uTrim;uniform vec4 uGlowTint;uniform float uGlowGain;uniform float uFlash;varying float vMeshyGlow;
+ const FS_HEAD=`uniform sampler2D uMask;uniform vec3 uPaintA;uniform vec3 uPaintB;uniform vec4 uPaintP;uniform vec4 uTrim;uniform vec4 uGlowTint;uniform float uGlowGain;uniform float uFlash;uniform vec3 uGhost;varying float vMeshyGlow;
  `;
  // A renderer with a tight shader-program budget registers as the host (Conquest: the world and the town share one renderer
  // and 16 programs). Its studio map is prefiltered once by a generator that is disposed straight away, so three never builds
@@ -227,7 +227,7 @@ const Meshy3D=(()=>{
     // paint: the base map is the factory look; armour texels are re-tinted by (pilot paint / factory paint), chips, trim and tracks keep their own colour
     f=f.replace('#include <map_fragment>','#include <map_fragment>\nvec3 meshyK=texture2D(uMask,vMapUv).rgb;vec3 meshyBase=diffuseColor.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*mix(uPaintA,uPaintB,meshyK.b),meshyK.r);');
     if(high)f=f.replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=mix(metalnessFactor,max(metalnessFactor,uPaintP.y),meshyK.r);roughnessFactor=mix(roughnessFactor,clamp(roughnessFactor*uPaintP.z,.08,1.),meshyK.r);float meshyT=uTrim.a*(1.-meshyK.r)*(1.-meshyK.g)*smoothstep(.86,.97,metalnessFactor);diffuseColor.rgb=mix(diffuseColor.rgb,uTrim.rgb*(.35+1.3*dot(meshyBase,vec3(.3333))),meshyT);');
-    f=f.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=mix(meshyBase,uGlowTint.rgb*(.4+.9*dot(meshyBase,vec3(.3333))),uGlowTint.a)*meshyK.g*min(vMeshyGlow,1.7)*uGlowGain+vec3(uFlash);');
+    f=f.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=mix(meshyBase,uGlowTint.rgb*(.4+.9*dot(meshyBase,vec3(.3333))),uGlowTint.a)*meshyK.g*min(vMeshyGlow,1.7)*uGlowGain+vec3(uFlash)+uGhost;');
    }
    shader.fragmentShader=f;
   };
@@ -235,11 +235,16 @@ const Meshy3D=(()=>{
  }
  const lin=hex=>new THREE.Color(hex);   // THREE.Color converts sRGB hex to linear working space
  const ratio=(to,from)=>new THREE.Vector3(Math.min(40,to.r/Math.max(from.r,.004)),Math.min(40,to.g/Math.max(from.g,.004)),Math.min(40,to.b/Math.max(from.b,.004)));
+ const GLOW={stock:.42,lunar:1.6,breath:.55};
  function paintUniforms(asset,P,lunar){
   const L=asset.info.look||{},stock=!P||!P.hull||P.hull==='#2c3a49',fa=lin(L.paintA||'#808890'),fb=lin(L.paintB||L.paintA||'#808890');
   const U={uParts:{value:asset.partTex||null},uCh:{value:new Float32Array(NCH)},uMask:{value:asset.maps.mask||null},uPaintA:{value:new THREE.Vector3(1,1,1)},uPaintB:{value:new THREE.Vector3(1,1,1)},
-   uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.25},uFlash:{value:0}};
+   uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.25},uGlowAnim:{value:new THREE.Vector2(1,0)},uFlash:{value:0},uGhost:{value:new THREE.Vector3(0,0,0)}};
   U.uCh.value[CH.one]=1;U.uCh.value[CH.pulse]=.75;
+  // stock look and paints (owner, Nov 11; references docs/art/references/tanks/v2/): energy lines on chassis AND weapons only
+  // faintly lit in the reference colour, held still. The full bright, breathing energy glow is Lunar Skin's alone. The
+  // Moonbeam (kind 'moon', textured legendary) keeps its glowing crystals, as in its v2 image.
+  if(asset.info.kind==='chassis'||asset.info.kind==='weapon'){U.uGlowGain.value=lunar?GLOW.lunar:GLOW.stock;U.uGlowAnim.value.set(lunar?1:0,lunar?GLOW.breath:0);}
   if(asset.info.kind==='chassis'){
    // paints: the same palette the procedural models use (js/models3d.js palette), as a ratio against the factory colours
    if(!stock&&typeof M3!=='undefined'){const C=M3.palette(P,null,null,false);U.uPaintA.value=ratio(lin(C.hull),fa);U.uPaintB.value=ratio(lin(C.tur),fb);if(P.shine)U.uPaintP.value.set(1,.9,.62,0);}
@@ -252,6 +257,8 @@ const Meshy3D=(()=>{
  function mesh(d){
   const asset=d.asset,q=typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'||d.low?'low':'high';
   const U=paintUniforms(asset,d.paint,d.lunar),mat=makeMaterial(asset,q,U);
+  // an offline pilot's ghost tank (Arcade): the same Meshy model, see-through with a cool hologram light (was the old procedural tank)
+  if(d.ghost){mat.transparent=true;mat.opacity=.58;mat.depthWrite=false;const c=lin('#3a5a9a');U.uGhost.value.set(c.r,c.g,c.b);}
   let geo=asset.geometry;
   if(q==='low'&&asset.lowIndex){if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}geo=asset.lowGeometry;}
   const m=new THREE.Mesh(geo,mat),g=new THREE.Group();m.castShadow=true;m.receiveShadow=true;m.userData.meshy={asset,U,kind:asset.info.kind};asset.refs=(asset.refs||0)+1;
@@ -373,32 +380,38 @@ const Meshy3D=(()=>{
  }
  const townPivot=asset=>(asset.info.meta&&asset.info.meta.pivot)||[0,0];
  // a building (or a turret drawn alone: under construction, cards) as a group at the footprint centre, facing +Z
- function townBuilding(type,lvl,theme,low){
+ // lod: a big town seen from the drive view or zoomed out draws the model's reduced index set (the LOW one) with the same
+ // HIGH material (no new program), instead of the old kit model
+ function lowGeo(asset){if(!asset.lowIndex)return asset.geometry;if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}return asset.lowGeometry;}
+ function townBuilding(type,lvl,theme,low,lod){
   const asset=townAsset(type);if(!asset)return null;
-  const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
+  const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=lod?null:townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
   const place=geo=>{const m=new THREE.Mesh(geo,mat);m.onBeforeRender=envHook;m.rotation.y=TOWN_YAW;m.position.set(-(pv[0]*Math.cos(TOWN_YAW)+pv[1]*Math.sin(TOWN_YAW)),0,-(-pv[0]*Math.sin(TOWN_YAW)+pv[1]*Math.cos(TOWN_YAW)));m.userData.meshyTown=asset;return m;};
-  if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(asset.geometry));
+  if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(lod?lowGeo(asset):asset.geometry));
   g.userData.meshyTown=asset.id;asset.refs=(asset.refs||0)+1;g.userData.meshyTownRelease=()=>{asset.refs=Math.max(0,asset.refs-1);};return g;
  }
  // instanced turret set: {base, hd, matrix(out, x, y, z, aim, kick, dead)} with the pedestal centred on the cell
+ let noHead=null;
  function townTurret(type,count,lvl,theme,low){
-  const asset=townAsset(type),sp=asset&&townSplit(asset);if(!sp)return null;
+  const asset=townAsset(type);if(!asset)return null;
+  // a tower with no turning head (Tesla coil: body + emitter, no ring part) is one fixed instanced piece; its head set is empty
+  let sp=townSplit(asset);if(!sp){if(!noHead){noHead=new THREE.BufferGeometry();noHead.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9),3));noHead.setIndex([]);noHead.userData.hfShared=true;noHead.userData.meshy=true;}sp={base:asset.geometry,head:noHead,fixed:true};}
   const mat=townMaterial(asset,theme,low),n=Math.max(1,count),base=new THREE.InstancedMesh(sp.base,mat,n),hd=new THREE.InstancedMesh(sp.head,mat,n),pv=townPivot(asset),sc=.9+.025*(Math.max(1,lvl)-1);
   base.count=hd.count=count;base.frustumCulled=hd.frustumCulled=false;base.onBeforeRender=hd.onBeforeRender=envHook;
   const q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),s3=new THREE.Vector3(),off=new THREE.Vector3();
   // model point p -> world: T(x,y,z) * R(yaw) * S * T(-pivot); kick slides the head back along its aim
-  const matrix=(out,x,y,z,aim,kick,dead)=>{const yaw=aim+TOWN_YAW;q.setFromAxisAngle(up,yaw);const k=dead?0:sc;off.set(-pv[0]*k,0,-pv[1]*k).applyQuaternion(q);
+  const matrix=(out,x,y,z,aim,kick,dead)=>{if(sp.fixed){aim=0;kick=0;}const yaw=aim+TOWN_YAW;q.setFromAxisAngle(up,yaw);const k=dead?0:sc;off.set(-pv[0]*k,0,-pv[1]*k).applyQuaternion(q);
    v.set(x+off.x-Math.sin(aim)*(kick||0),y,z+off.z-Math.cos(aim)*(kick||0));return out.compose(v,q,s3.set(k,k,k));};
   asset.refs=(asset.refs||0)+2;return {base,hd,matrix,asset,meshy:true,recoil:(asset.info.meta&&asset.info.meta.recoil)||.22};
  }
  // clock-driven channels of every live town material (spinning dishes, blinking lights, pulsing cores)
  function townStep(t,quiet){for(const U of townLive){const c=U.uCh.value;c[CH.time]=quiet?0:t;c[CH.pulse]=quiet?.8:.72+.28*Math.sin(t*2.6);c[CH.sway]=quiet?0:Math.sin(t*2.3)*.6;c[CH.charge]=quiet?.3:.5+.5*Math.sin(t*1.7);}}
  // free the per-mesh materials of a removed tree (geometry and maps are shared and stay cached)
- function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
+ function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}const om=o.isMesh&&(o.userData.fadeOrig||o.material);if(om&&om.userData&&om.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;om.dispose();if(om!==o.material&&o.material)o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
  // warm the cache for a loadout (LIGHT only): called when a loadout is known before it is drawn
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+  decode,container,request,peek,best,withDetail,pending,stamp,itemId,loadManifest,GLOW,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,hostRenderer,releaseHost,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;

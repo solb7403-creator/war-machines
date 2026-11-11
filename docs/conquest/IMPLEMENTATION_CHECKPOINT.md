@@ -1719,3 +1719,211 @@ and the town share one renderer, and everything except the player tank already u
 - In this container the Conquest tank runs the LOW (Lambert) Meshy material (software GL), so the HIGH tank with the
   prefiltered map was verified through the town models only (same material path). Webkit is not installed here; its job
   failed on the same assertion with the same numbers, so the same fix applies. CI confirms both.
+
+## Checkpoint 32 — Session 5E-2a: visual fixes after the Meshy release (branch `claude/hopeful-hawking-mupebe`, from main `f91d564`, build 20261111053053)
+
+Brief: owner's Session 5E-2a prompt (six items). Visual work plus the super-aim bug fix only: no stats, hitboxes, damage, AI
+behaviour, economy, prices, payments (still DISABLED), save schema or ownership touched. The owner pre-approved the merge once
+CI is green (merged outside this session); nothing was merged or deployed here. Owner not monitoring: every decision below was
+made by the lead and is recorded with its reason.
+
+### 1. Super aim (owner bug: "the super sometimes fires in a random direction") — FIXED, `js/game.js`, `js/render.js`
+Reproduced on main with a new regression on the real shared sim (`dev/tests/super-aim.mjs`, 44 checks, 6 FAIL on main, all PASS
+now; wired into `equipment-balance.yml`). Root causes:
+- the charge re-picked its target every tick (focus or nearest): a target that died, a new tap, or another enemy getting
+  closer swung the aim at up to 1.6 rad/s toward someone else (died: 0.59 rad off; switched by tap or by distance: 0.64 rad);
+- the lead used the raw per-tick step as velocity. The live server sees a pilot's position in 100 ms reports (three ticks of
+  motion in one), so a live pilot read as 3x speed one tick and 0 the next (opening aim 0.51 rad off; AI vs live pilot in a
+  PvP-vs-AI room missed, 0.38 rad); a dash or respawn read as a huge speed;
+- a lock on a tank object that had been replaced (chassis switch rebuilds the tank, `match.js switchChassis`) aimed at a ghost;
+- a cancelled drag (iOS/Telegram took the touch) fired auto-aimed instead of where the preview pointed.
+Fix: the target is locked when the super starts (`r.sup.tgt`) and the aim only follows that tank (holds its last angle once it
+is dead or out of sight); the lead uses a jump-safe velocity capped at the tank's own top speed, averaged over ~0.3 s for live
+pilots only (`aimVel`; tanks the sim drives itself keep their exact step, so AI-match outcomes are unchanged:
+`fair-arcade.mjs` stays green — a first version that smoothed every tank shifted two seeded win-rate checks and was narrowed);
+a lock must be a tank still in play (`supLive`); a cancelled drag fires along the dragged direction. Drag-aim is untouched.
+Note: live rooms run the same file; the fix reaches live PvP when the Worker is next deployed (owner's merge/deploy path).
+
+### 2. Flaky Conquest relay fight (transmission suite) — FIXED, `dev/tests/conquest-session-032.py`
+The fight is real input against real AI on software GL; who wins follows the runner's frame rate. Decision: outcome-
+independent assertions (a fixed seed cannot remove frame-rate dependence). It must make real kills; victory must pay exactly
+250 CP (+20 featured), a loss must pay nothing, and both endings must hand back to exploration. The exact payout stays
+deterministically covered by `conquest-operations.mjs` / `conquest-session.mjs`.
+
+### 3. Stock looks (first pass against `chosen/`; SUPERSEDED by the v2 correction below for palettes, Titan plow and Scout bull bar)
+- `dev/assets/meshy/config.json` per-chassis `lookOverride` from `docs/art/references/tanks/chosen/`: Scout weathered grey-olive
+  (no camo, bare-steel cage, yellow/black bull bar), Strider light silver + violet strip, Phantom black + gold edges + orange
+  facet lines, Vanguard tan/olive camo, Sentinel and Bulwark dark gunmetal + violet seam lines, Paladin silver + gold edges,
+  Titan worn khaki, Colossus dark + gold edges + amber seams. Titan's plow loses its hazard stripes (its reference plow is bare
+  plate; owner: the reference wins over the prompt). Two tones of one colour stay clearly apart (armour A/B >= 1.2x luminance,
+  gold trim vs orange/amber glow are different hues), asserted in `dev/tests/meshy.mjs`.
+- New pipeline option `lines` (`lib/paint.py`): trim or energy lines traced from the model's own convex creases (`edge`) or
+  panel seams (`groove`), crisp threshold, optional height / up-facing / turret-seat (`ringClear`) limits. Trim and lines are
+  fixed colours (mask R = 0): paints tint armour panels only.
+- Calibration decision: palettes were tuned in the REAL Garage (website build), not the proof viewer — the viewer's studio
+  lights blow light paint out to white. In the Garage the game lifts paint about 2-3x in linear terms, so stock values are darker
+  than the reference's apparent colour (as 5E-1 found for Rare).
+- Runtime (`js/meshy3d.js`): stock and paints light the energy lines faintly (`GLOW.stock` 0.42) and hold them still (glow
+  channels and breathing off: `uGlowAnim`); Lunar Skin keeps the full bright glow (`GLOW.lunar` 1.6) and breathes. No new
+  shader program (uniforms only, same cache key).
+- `pyfqmr` was missing from `dev/assets/meshy/requirements.txt` (the quadric fallback for dense sources); added.
+
+### 4. Sharpness — DONE (`js/graphics.js GraphicsResolution`, `js/render3d.js`, `js/showroom.js`, `js/ui.js`, `js/conquest/view.js`, `js/conquest/hub.js`)
+- One ceiling for every renderer: LOW 1x; HIGH phone/tablet up to 2.5x; HIGH desktop the full device ratio (up to 3x); a CPU
+  rasterizer (SwiftShader/llvmpipe, detected once with a throwaway context) 1x. Anti-aliasing on for HIGH everywhere (Conquest
+  had it off). Conquest asks for the high-performance GPU on HIGH.
+- Auto mode: a frame-time governor (median of 0.5 s windows; over budget = slower than 48 fps for ~1 s -> one 0.25 step down;
+  faster than 56 fps for ~2 s -> one step up; a level that failed waits 6 s, then 12, 24 ... 120 s before its next try, so it
+  never flickers). Conquest's cheaper shading (auto-low) now only kicks in once resolution is at its floor and lifts again on
+  recovery. Manual HIGH keeps its ceiling; LOW stays 1x.
+- Decision: auto quality now starts HIGH on phones that report no memory (every iPhone; was LOW, which meant 1x and no AA on
+  every iPhone). Phones that report <= 3 GB, or <= 2 cores, still start LOW. Reason: owner rule (website is the full baseline,
+  Telegram matches it as far as the device allows, scale down only where the device truly can't hold frame rate) and the
+  governor + the existing quality watch now protect slower phones. `graphics-motion.mjs` updated to the new rule.
+- Telegram Garage was capped at 1.25x (website 1.5x): both now use the shared ceiling.
+- Tests: `graphics-motion.mjs` (ceilings + governor: one step under sustained load, floor, recovery, back-off, manual fixed),
+  `conquest-adaptive.mjs` rewritten for the new contract (the old one encoded the fixed 1.5 -> 1 -> 0.75 steps).
+
+### 5. See-through occluders in the Conquest world and town — DONE (`js/conquest/view.js occluderFade`)
+Buildings and props (refuge, viaduct, installations, cover, the base and its town, monument, raid spire, colony/frontier art)
+between the camera and the tank, or the path 9 m ahead, fade to a see-through ghost (opacity eases to 0.22) and ease back when
+they stop blocking. Every third frame: bounding-sphere test on the camera->tank and camera->ahead segments, then exact triangles
+of the few candidates. Decision: the ghost is a MeshBasicMaterial with the laser halo's exact parameters, so it shares that
+program — no new shader program in Conquest's 16 budget (browser test asserts it). Instanced sets (walls, turrets, homes) are
+low and are not faded. `dev/tests/conquest-occluder.py` (in `conquest-check.yml`, both engines). The town build view
+(plotview) is top-down with no tank in it, so it needs no fade.
+
+### 6. Meshy everywhere — VERIFIED (re-verified after the v2 rebuild, see the end), three gaps fixed (`docs/art/meshy-proof/v2/`, `verify.json`, `town.json`)
+- Battle + Garage (`proof/v2.mjs`, website build, phone 390x844 at 3x and desktop 1920, HIGH, AA on, after load): ten loadouts
+  that cover all 9 chassis and all 10 weapons. Every tank on screen (yours and the AI's) carries its Meshy chassis and weapon;
+  the Garage shows both FULL models; nothing procedural; 0 page errors on both profiles.
+- World + town (`proof/v2_town.py`, shipped client + real Worker reducer, same two profiles): the Conquest world tank is Meshy;
+  all 12 town items are Meshy across the turret gallery and a fully built CC10 town; 0 page errors; Conquest programs 12-15.
+- Gaps found and fixed:
+  1. Tesla tower drew the kit model: `Meshy3D.townTurret` needed a turning head (`ring` part) and the tower has none. Now a
+     fixed instanced piece with an empty head set (`js/meshy3d.js`).
+  2. Big towns in the drive view and zoomed out drew kit buildings (5C distance LOD). Decision: keep the LOD idea but use the
+     Meshy model's own reduced index set (about 45% of the triangles, same HIGH material, no new program) instead of the kit
+     (`townBuilding(..., lod)`, `plotview.js sync`; LOD flips trigger a rebuild).
+  3. Arcade offline-pilot ghost tanks always drew the procedural foundation model. Now their Meshy model as a hologram
+     (transparent, cool emissive `uGhost`; one extra transparent program in Arcade battles only, Arcade has no 16 budget).
+  4. Also found: the town drive view (your tank driving through your town) needed the see-through fade too; it now shares the
+     world view's fade core (`driveFade` -> `ConquestView.fadeCore`).
+- Kept procedural on purpose (decisions): Conquest enemy hulls (the hostile faction's styled crowd buckets, merged per
+  silhouette for draw calls; turning them into per-enemy Meshy meshes would roughly double world draw calls in a fight and
+  change the faction art direction — a separate, owner-reviewed task); the miniature town diorama in the world courtyard (a
+  scaled tabletop model with vertical exaggeration; Meshy meshes would distort); LOW-graphics town stand-ins (unchanged 5E-1
+  decision). Building types with no Meshy model (foundry, biodome, hangar, helium, radar, uplink, trophy, six turret types)
+  keep their kit models by definition.
+
+### Sharpness: measured before (main `f91d564`) / after (this branch) — `dev/assets/meshy/proof/sharpness.mjs`, data in `docs/art/meshy-proof/v2/sharpness-*.json`
+Headless Chromium + SwiftShader with a GPU renderer string (so the page takes its real-device path), index.html, local economy,
+manual HIGH unless noted. Frame times are CPU rasterizer numbers: they show the relative pixel cost on the same machine, never a
+phone frame rate. Framebuffer MB = colour + depth (+ 4x multisample buffers when anti-aliased), an estimate of GPU memory.
+
+| Profile | Scene | Pixel ratio | Anti-aliasing | Framebuffer MB | Frame ms (median, SwiftShader) | JS heap MB |
+|---|---|---|---|---|---|---|
+| Desktop 1920x1080 (1x) | Arcade battle | 1 -> 1 | on -> on | 79 -> 79 | 1.0 -> 0.9 | 26 -> 26 |
+| Desktop 1920x1080 (1x) | Conquest world | 1 -> 1 | **off -> on** | 16 -> 79 | 995 -> 1435 | 93 -> 93 |
+| Desktop 1920x1080 retina (2x) | Arcade battle | **1.5 -> 2** | on -> on | 178 -> 316 | 1.1 -> 1.5 | 26 -> 26 |
+| Mid phone 390x844 (3x, 4x CPU throttle) | Arcade battle | **1.5 -> 2.5** | **off -> on** | 6 -> 79 | 3.4 -> 5.5 | 28 -> 28 |
+| Mid phone 390x844 (3x, 4x CPU throttle) | Conquest world | **1.5 -> 2.5** | **off -> on** | 6 -> 79 | 415 -> 1214 | 88 -> 82 |
+| Mid phone, AUTO graphics | Arcade battle | quality **LOW -> HIGH** at start, ratio 1 -> 2.5 held for 20 s (frames on budget) | | | | |
+
+Reading: before, a phone in auto mode started on LOW (1x, no AA) and Conquest never anti-aliased; now the phone draws 2.8x the
+pixels with 4x AA, about 80 MB of framebuffer at 390x844@2.5x. That cost is what the governor exists for: in auto mode it steps
+the ratio down 0.25 at a time while frames are over budget (drop to 1x leaves ~13 MB) and climbs back when they recover.
+Program count and draw calls are unchanged. Not measured: a physical phone GPU (nobody has one in this environment).
+
+### OWNER CORRECTION (mid-session, Nov 11): the look reference is `docs/art/references/tanks/v2/`, not `chosen/`
+`chosen/` holds the older v1 images; `v2/` (merged from main `319d47b`) holds the images the owner actually fed into Meshy and is
+authoritative for every chassis and weapon. The stock-look work above (item 3) was redone against v2; renders against `chosen/`
+were dropped (the earlier `docs/art/meshy-proof/v2/colour_check_stock_vs_reference.webp` is replaced).
+
+**Mapping v2 image -> GLB (by shape, cross-checked with each source GLB's own prompt in its file name)**
+| Item | GLB id | v2 image | Shape cues |
+|---|---|---|---|
+| Scout | chassis-scout-0 | chassis/b5ae93de.png | long low wedge, round bull bar, twin headlights, antenna |
+| Strider | chassis-scout-1 | chassis/68556221.png | sharp wedge, two small rear fin units, violet skirt strip, sensor pods |
+| Phantom | chassis-scout-2 | chassis/97e0789b.png | faceted stealth hull, two amber thruster nozzles, gold edges |
+| Vanguard | chassis-vanguard-0 | chassis/cc0abe1f.png | fenders with stowage boxes, spare track links on the front |
+| Sentinel | chassis-vanguard-1 | chassis/3dbcb303.png | big rear radiator fin block, two front sensor domes, violet lines |
+| Paladin | chassis-vanguard-2 | chassis/ef23a11f.png | shoulder "pauldron" armour over the tracks, gold edges, orange glow |
+| Titan | chassis-titan-0 | chassis/c93ab27d.png | hazard-striped plow, two exhaust stacks |
+| Bulwark | chassis-titan-1 | chassis/72448d12.png | slab skirts, front ram, three capacitor cylinders, violet lines |
+| Colossus | chassis-titan-2 | chassis/5081ec59.png | four track pods, amber underglow, gold trim |
+| Pulse Cannon | weapon-pulse-0 | weapons/2fae26ad.png | compact olive turret, periscope, one barrel with sleeve bands |
+| Arc Pulse | weapon-pulse-1 | weapons/7e0a6b77.png | silver turret, barrel in four raised coil rings, violet muzzle |
+| Nova Pulse | weapon-pulse-2 | weapons/bf00915f.png | faceted dark turret, amber star core in a gold ring, gold bell muzzle |
+| Twin Repeater | weapon-twin-0 | weapons/a4207149.png | two long barrels with slotted flash hiders, hazard-strip ammo box |
+| Storm Repeater | weapon-twin-1 | weapons/dbd6fceb.png | silver, two long barrels with violet lines, side ammo drum |
+| Helix Repeater | weapon-twin-2 | weapons/97c7a5ee.png | two rotary clusters in amber spiral coils, gold muzzle rings |
+| Siege Breaker | weapon-siege-0 | weapons/3c76abeb.png | big blocky olive turret, short thick barrel, box muzzle brake |
+| Rail Breaker | weapon-siege-1 | weapons/6666703f.png | silver, two rail prongs held by clamps, violet arc |
+| Titanfall | weapon-siege-2 | weapons/1c7f4122.png | massive dark turret, huge barrel, gold bands and gold muzzle |
+| Moonbeam | weapon-moon | weapons/0c88031a.png | red core in square gold housing, blue charge crystals (README) |
+`weapons/13e648cb.png` (silver turret, blue orb, blue coil rings) and `weapons/5a4bea6f.png` (olive turret, two thin black barrels)
+match no GLB in the `meshy-models` release: recorded as unused alternates.
+
+**What v2 changed against the first pass (rebuilt: 6 chassis LIGHT + FULL, 3 Common weapons)**
+- Sentinel: dark gunmetal -> light silver with violet lines. Bulwark: dark -> steel silver with violet lines.
+- Paladin: silver + gold -> dark gunmetal with gold edges and orange seam glow.
+- Vanguard: tan/olive camo -> plain worn olive-grey (no camo). Scout: slightly greener olive-grey; its bull bar is bare steel
+  (v2 has no hazard stripes; region `hazard` -> `trim`). Titan: olive-grey; its plow gets its yellow/black hazard stripes back
+  (v2 shows them; the first pass had removed them for the v1 image).
+- Common weapons (Pulse Cannon, Twin Repeater, Siege Breaker): a greyer olive (`looks.weapon-common.paintA #585c4e`).
+- Unchanged because v2 agrees: Strider (silver + violet), Phantom (black + gold + orange), Colossus (dark + gold + amber), Rare
+  weapons (silver + violet), Epic weapons (dark + gold/amber).
+- Decision: weapons now follow the same energy rule as chassis — faint and still on stock and paints, full bright and
+  animated only with Lunar Skin (`js/meshy3d.js paintUniforms`). The Moonbeam (textured legendary) keeps its glowing crystals,
+  because its v2 image shows them glowing brightly. Calibrated in the real Garage, as before.
+
+### Independent review (AGENTS.md: 2 reviewers because the super fix touches combat) and what changed because of it
+- Graphics/performance reviewer: nothing blocking. Fixed from its findings: (1) Arcade quality watch could drop to LOW before
+  resolution had stepped down -> it now waits while the governor still has room (`GraphicsQuality.sample resolving`);
+  (2) iPhone memory: the Arcade battle canvas is parked at 1x1 while Conquest is open (`park3D`, frees ~80 MB at 2.5x + AA);
+  (3) a 30 fps cap (iOS Low Power Mode) read as overload -> a step that does not speed frames up by 10% is undone and
+  resolution is left alone for a minute (tests: fill-bound frame times + a 30 fps case in graphics-motion and
+  conquest-adaptive); (4) fade flicker on double-sided meshes -> a faded mesh is hit-tested with its own material; faded
+  Meshy meshes are released correctly (`fadeOrig`); leaving the drive view clears ghosts at once; Conquest auto-low lifts
+  back off exponentially. Not changed (noted): the far/near switch in big towns rebuilds the Meshy building groups once
+  (a short hitch, cheap: shared geometry and materials); merged landmark meshes fade as one piece.
+- Combat reviewer: nothing blocking; confirmed 6 (now 7) fail on main for the right reasons and no change to stats, damage,
+  economy or server trust. Added from its findings: a 2v2 siege case (target dies with a second enemy in sight) and a
+  flipped live-seat case to `super-aim.mjs` (48 checks, 7 fail on main), a corrected comment in `aimVel`, the correct
+  determinism citation in `conquest-session-032.py` (`conquest-economy.mjs`). Noted for the PR: AI supers follow the same
+  rule (a bot's super no longer re-aims at another enemy when its target dies; its lead is capped at the target's top speed).
+  Not covered by a test: the one-line `pointercancel` change in `js/render.js` (UI glue); the relay fight's DEFEAT branch has
+  only been exercised when the fight was won locally (both endings are handled by the same dialog code).
+
+### Final state (build 20261111115814; head of `claude/hopeful-hawking-mupebe`, resolve with `git log -1`)
+Tests executed locally on the final code (Chromium; WebKit is not installed in this container, CI runs it):
+- Node: every list in `conquest-check.yml`, `website-check.yml`, `lab-ui-check.yml`, `equipment-balance.yml` (90 suites incl.
+  `conquest-regression.sh`, `wtest/*`, `fair-arcade`, `super-aim` 48, `meshy` 1802, `graphics-motion`, `conquest-adaptive`).
+- Browser: all 13 portrait-journey tests + `conquest-desktop-keys.py` + the 9 transmission tests (incl. the new
+  `conquest-occluder.py`, the reworked `conquest-session-032.py`, `conquest-living-war.py --quality high` = 16-program budget)
+  + `signup-browser.cjs chromium`: 23/23 PASS.
+- Proof: `proof/v2.mjs` (20 loadout x profile runs, all Meshy, 0 errors), `proof/v2_town.py` (all 12 town items Meshy, programs
+  11-14), `proof/sharpness.mjs` before/after.
+Risks / not done: no physical iPhone, Android or Telegram check by anyone (all numbers are SwiftShader); the 2.5x + 4x AA
+framebuffer (~80 MB on a phone) is protected by the frame-time governor, not by a memory check; Conquest enemy hulls and the
+courtyard diorama stay procedural (decision above); the super fix reaches live PvP when the Worker is next deployed.
+Agents used: 2 read-only reviewers (graphics/performance; combat — the first combat reviewer was lost when test processes
+were stopped and was re-run). Both changed the result: 4 graphics fixes and 2 new regression cases came from them.
+
+### OWNER UPDATE (final): Moonbeam reference and town references
+- Moonbeam reference is `docs/art/references/tanks/v2/weapons/moonbeam.png` (black body, gold rings, gold spikes and fins, red
+  core crystal in a square gold housing, two blue charge crystals); the earlier `0c88031a.png` mapping is withdrawn (main removed
+  it). Checked against the in-game FULL Moonbeam (proof viewer + Garage): it already matches (it keeps its own Meshy texture,
+  `"textured": true`), so it was not rebuilt. Its row in `colour_check_weapons_v2.webp` now uses `moonbeam.png`.
+- Town items checked against `docs/art/references/town-refs-v1/` (Command Center, the five turrets + Tesla coil, reactor,
+  refinery, storage depot, science lab, shield generator) with close-ups in the real town view (`proof/v2_town.py`, phone 3x).
+  Finding: our town models were light silver-grey; every reference is dark grey armoured metal with cyan/white accent lights.
+  Fix: `looks.town` -> armour `#2a2e34` / `#22252a`, trim `#4c525a`, bare `#7d838b`, turret barrels (`steel`) `#3a3f46`, cyan
+  glow `#7fe9ff`, less dust and dirt; all 12 town items rebuilt (LIGHT + FULL). Player town themes (sand / graphite finish,
+  light colour) still tint by ratio against the new factory colours. Sheet: `docs/art/meshy-proof/v2/colour_check_town_v1.webp`.
+- Found by `conquest-session5d.py` (owner gate: a card picture must read against the card): the dark Cannon card dropped to
+  luminance 39.2 (limit 40). The card renderer's lights (`plotview.js spriteStep`) are raised (hemisphere 1.5 -> 2.8, key
+  2.9 -> 4.6, cyan rim 1.25 -> 1.9; same light count, no new program): 41.4, PASS. `conquest-base-builder`, `conquest-plot-ui`,
+  `conquest-find-base`, `meshy.mjs` (1802), `conquest-town`, `conquest-townkit`, `conquest-plot` re-run after the town rebuild:
+  PASS; `proof/v2_town.py` both profiles: PASS (all 12 town items Meshy, programs 11-14).

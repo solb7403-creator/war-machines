@@ -8,7 +8,7 @@ phone frame rates; nobody has checked a physical iPhone yet.
 |---|---|---|
 | `gate1/` | Gate 1: Vanguard original high-poly vs LIGHT vs FULL at phone battle, Garage and 1920 desktop size, SSIM | `proof/gate.mjs` + `ssim.py` |
 | `fit/<chassis>.webp`, `fit/scales.json` | Weapon proportions: every chassis with all ten weapons, before (one scale) and after (measured uniform fit) | `proof/app.mjs <dir> fit` |
-| `colour_check_stock_vs_reference.webp` | The nine chosen reference images next to the in-game stock look | lead's check |
+| `colour_check_stock_vs_reference.webp` | 5E-1 only: the old `chosen/` (v1) images next to the 5E-1 stock look. Superseded: see `v2/colour_check_*_v2.webp` | lead's check |
 | `app/garage_battle_high.webp`, `_low.webp` | Real app: Garage and Free Test battle, before (procedural) and after (Meshy), ten loadouts, HIGH and LOW graphics | `proof/app.mjs` + `sheets.py` |
 | `app/paints_<chassis>.webp` | Every paint and Lunar Skin on every chassis, before and after, through the game's menu renderer | same |
 | `app/app.json` | Per loadout: draw calls, triangles, shader programs, textures, frame times; every model load (bytes, ms); JS heap | same |
@@ -40,3 +40,29 @@ phone frame rates; nobody has checked a physical iPhone yet.
 - Town proof is the Command Center view and the line-up; not every one of the 12 town items has its own close-up capture here
   (they are all in `motion/` or the pipeline renders the helpers checked).
 - Conquest enemy hulls, the town diorama and LOW-graphics town are still the procedural kit models.
+
+## v2 (Session 5E-2a): after the visual fixes, at full phone resolution and desktop 1920 with anti-aliasing
+Made by `dev/assets/meshy/proof/v2.mjs` (website build + fixture Worker: Garage and Free Test battle) and
+`dev/assets/meshy/proof/v2_town.py` (shipped client + real Worker reducer: Conquest world and town). Both tell the page it runs
+on a GPU (the WebGL renderer string), so it uses what a real device gets: phone 2.5x, desktop the full ratio, anti-aliasing on.
+Captures are taken only after the Meshy files have loaded. Still software GL: this proves what is drawn, not phone frame rates.
+
+| File | What it shows |
+|---|---|
+| `v2/colour_check_chassis_v2.webp`, `v2/colour_check_weapons_v2.webp` | Each chassis and weapon's v2 reference (`docs/art/references/tanks/v2/`, the owner's actual Meshy source images) next to its stock look in the real Garage (phone 3x, FULL); made by `proof/colour_sheet.py` |
+| `v2/phone3x_garage_<loadout>.webp`, `v2/desktop1920_garage_<loadout>.webp` | Garage, FULL models, ten loadouts covering all 9 chassis and all 10 weapons |
+| `v2/phone3x_battle_<loadout>.webp`, `v2/desktop1920_battle_<loadout>.webp` | Free Test arena: yours and the AI tank, LIGHT models |
+| `v2/*_garage_vanguard1-twin1_lunar.webp` | Lunar Skin: the bright energy glow (stock lines are faint and still) |
+| `v2/world_<profile>_*.webp` | Conquest world: the player's Meshy tank |
+| `v2/town_turrets_*`, `v2/town_overview_*` | Town: turret gallery (all turret types) and a fully built CC10 town |
+| `v2/colour_check_town_v1.webp`, `v2/item_town-*.webp` | The 12 town items in the real town view (phone 3x, HIGH) next to `docs/art/references/town-refs-v1/` (rebuilt dark armour + cyan lights in 5E-2a) |
+| `v2/sharpness-before.json`, `v2/sharpness-after.json` | Resolution, anti-aliasing, framebuffer memory, frame time and heap, main vs this branch (`proof/sharpness.mjs`) |
+| `v2/verify.json`, `v2/town.json` | Per loadout / town: the Meshy id of every tank and town item on screen, anything still procedural, pixel ratio, AA, programs |
+
+Result: every tank on screen in the Garage and in battle (yours and the AI's, both profiles, ten loadouts) is its Meshy chassis +
+weapon; the Conquest world tank is Meshy; all 12 town items are Meshy in the town (gallery + full CC10 town) on both profiles;
+no page errors; Conquest programs 12-15 (budget 16). Three places that still drew old geometry were fixed in 5E-2a: the
+Tesla tower (no turning head, so the instanced-turret path refused it), big towns in the drive view and zoomed out (a 5C
+performance LOD switched buildings to the kit; they now use the model's own reduced index set), and offline-pilot ghost tanks
+in Arcade battles (now the Meshy model as a hologram). Kept procedural on purpose: Conquest enemy hulls (hostile faction
+dress and crowd buckets) and the miniature town diorama in the world courtyard (see the checkpoint).

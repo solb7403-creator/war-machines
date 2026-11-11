@@ -5,14 +5,15 @@
 // Keyboard: arrow keys turn and tilt, + and - zoom.
 window.LunarShowroom=class {
  constructor(container,opts){   // opts (garage): maxPR caps the pixel ratio, idleMs paces the auto-rotate (the website passes none)
-  this.maxPR=(opts&&opts.maxPR)||1.5;this.idleMs=(opts&&opts.idleMs)||45;this.settle=(opts&&opts.settleMs)||0;this.wake=performance.now();   // settleMs: stop redrawing that long after the last interaction
+  this.maxPR=(opts&&opts.maxPR)||0;   // 0: the shared ceiling (js/graphics.js GraphicsResolution: phone up to 2.5x, desktop full)
+  this.idleMs=(opts&&opts.idleMs)||45;this.settle=(opts&&opts.settleMs)||0;this.wake=performance.now();   // settleMs: stop redrawing that long after the last interaction
   this.hfRelease=typeof Equipment3D!=='undefined'?Equipment3D.attach():null;
   this.listeners=[];this.listen=(target,event,fn,options)=>{target.addEventListener(event,fn,options);this.listeners.push(()=>target.removeEventListener(event,fn,options));};
   this.el=container;this.yaw=-.65;this.tilt=.32;this.zoom=1;this.raf=0;this.last=0;this.visible=true;this.key='';this.model=null;this.drag=null;this.auto=!matchMedia('(prefers-reduced-motion: reduce)').matches;
   this.resize=new ResizeObserver(()=>this.size());this.resize.observe(container);
   try{
    if(typeof THREE==='undefined')throw Error('3D unavailable');
-   this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power',stencil:false});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.maxPR));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);container.append(this.renderer.domElement);
+   this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power',stencil:false});this.renderer.setPixelRatio(this.pixelRatio());this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor(0,0);if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);container.append(this.renderer.domElement);
    this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(29,1,.1,80);
    this.hemi=new THREE.HemisphereLight(0xc9e2ec,0x152131,2.1);this.scene.add(this.hemi);this.lights=[];
    for(const [c,i,p] of [[0xe7f1f1,3.0,[3,7,5]],[0xff9559,1.25,[-6,3,-2]],[0x70cce9,2.3,[0,4,-6]]]){const l=new THREE.DirectionalLight(c,i);l.position.set(...p);this.scene.add(l);this.lights.push(l);}
@@ -52,11 +53,12 @@ window.LunarShowroom=class {
   this.onVisibility=()=>this.run();this.listen(document,'visibilitychange',this.onVisibility);this.run();
  }
  size(){if(!this.renderer)return;const w=this.el.clientWidth,h=this.el.clientHeight;if(w&&h){this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.draw();}}
+ pixelRatio(){const q=typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'?'low':'high',cap=typeof GraphicsResolution!=='undefined'?GraphicsResolution.cap(q):Math.min(devicePixelRatio||1,q==='low'?1:1.5);return this.maxPR?Math.min(cap,this.maxPR):cap;}
  detail(){return typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'?'light':'full';}
  kit(raw,parent){const baked=M3.bake(raw.k);parent.add(M3.meshOf(baked,null,this.mats));for(const a of raw.anims||[]){const m=M3.meshOf(M3.bake(a.k),null,this.mats);m.position.set(...a.p);parent.add(m);if(a.axis&&this.animations)this.animations.push({m,axis:a.axis,spd:a.spd});}return baked;}
  setContext(kind){if(this.context!==kind){this.context=kind;if(this.L)this.setLoadout(this.L,this.parts||3);}}
  setEnvironment(){
-  this.renderer?.setPixelRatio(typeof Equipment3D!=='undefined'&&Equipment3D.quality==='low'?1:Math.min(devicePixelRatio||1,this.maxPR));
+  this.renderer?.setPixelRatio(this.pixelRatio());
   const on=typeof Environment3D!=='undefined'&&Environment3D.active(),kind=this.context||(this.el.closest('.labform')?'engineer':this.el.closest('.web-game')?'garage':'inspection'),key=on?Environment3D.key()+'|'+kind:'legacy';
   if(this.envKey===key)return;this.envKey=key;
   if(this.envStage){this.scene.remove(this.envStage.group);this.envStage.dispose();this.envStage=null;}

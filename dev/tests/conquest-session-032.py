@@ -2,7 +2,7 @@
 Raw visible-coordinate input; fixtures are explicit scenario placements, never fabricated kills/rewards.
 Automated Chromium/WebKit evidence is not physical iPhone Telegram verification.
 """
-import asyncio,argparse,json,pathlib,shutil,math,statistics,os
+import re,asyncio,argparse,json,pathlib,shutil,math,statistics,os
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest-session-032';OUT.mkdir(exist_ok=True)
@@ -147,8 +147,22 @@ async def main(engine,journey_only=False):
        if i%12==0:print('FIGHT',i,'harnessFiring',firing,json.dumps(await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {kills:S.battle.kills,hp:Math.round(S.hp),viewFiring:!!v.firing,heat:Math.round(B.heat||0),hot:!!B.overheated,sel:v.selectedId,fps:+v.fps.toFixed(1),fireEv:window.__fireEv,alive:B.enemies.filter(e=>e.hp>0&&!e.resident).length};}''')),flush=True)
       if firing:await touch('touchEnd',[contact])
       firing=False
-      battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement,featured:Conquest.view.authority.state.featuredMission})');assert battle['state']=='victory',battle;assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle
-      await page.screenshot(path=str(OUT/'victory.png'));await page.get_by_role('button',name='RETURN TO EXPLORATION').click();await page.wait_for_function('!Conquest.view.battle');assert await page.evaluate('!Conquest.view.firing')
+      battle=await page.evaluate('({state:Conquest.view.authority.state.battle.state,kills:Conquest.view.authority.state.battle.kills,hp:Conquest.view.authority.state.hp,ledger:Conquest.view.authority.state.ledger,settlement:Conquest.view.authority.state.settlement,featured:Conquest.view.authority.state.featuredMission})');
+      # Outcome-independent (Session 5E-2a): the fight is real input against real AI on software GL, so who wins depends on the
+      # runner's frame rate (CI Chromium lost it once with 6 kills and passed on re-run). What this journey proves is that held
+      # FIRE, taps and abilities destroy hostiles through the authority and that BOTH authoritative endings settle and hand back
+      # to exploration. The exact victory payout is asserted whenever the fight is won (and deterministically in
+      # conquest-economy.mjs); a loss must pay nothing.
+      assert battle['state'] in ('victory','defeat'),battle;assert battle['kills']>=1,('real fire destroyed no hostile',battle)
+      if battle['state']=='victory':
+       assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle
+       await page.screenshot(path=str(OUT/'victory.png'));await page.get_by_role('button',name='RETURN TO EXPLORATION').click()
+      else:
+       assert not (battle.get('settlement') or {}).get('cp'),('a failed operation pays nothing',battle)
+       await page.wait_for_selector('.cq-result');await page.screenshot(path=str(OUT/'defeat.png'))
+       await page.locator('.cq-result button',has_text=re.compile('RESPAWN AT REFUGE|RETURN TO EXPLORATION')).first.click()
+      print('RELAY FIGHT',battle['state'],'kills',battle['kills'],flush=True)
+      await page.wait_for_function('!Conquest.view.battle');await page.wait_for_function('!document.querySelector(".cq-result")',timeout=30000);assert await page.evaluate('!Conquest.view.firing')
       await fixture([1240,893]);await page.evaluate('Conquest.view.yaw=Math.PI;Conquest.view.distance=65;Conquest.view.pitch=.8');await page.wait_for_timeout(300);await page.screenshot(path=str(OUT/'garrison.png'))
       pt=await target_point();assert pt,'garrison hull visible'
       for attempt in range(8):

@@ -1,0 +1,224 @@
+{
+ "phone3x-gallery": {
+  "world": {
+   "ids": [
+    "chassis-vanguard-0",
+    "weapon-pulse-0"
+   ],
+   "pixelRatio": 2.5,
+   "antialias": true,
+   "programs": 11
+  },
+  "town": {
+   "meshy": {
+    "town-cc": 1,
+    "town-storage": 1,
+    "town-reactor": 1,
+    "town-lab": 1,
+    "town-cannon": 1,
+    "town-mg": 1,
+    "town-laser": 1,
+    "town-rocket": 1,
+    "town-tesla": 1,
+    "town-railgun": 1
+   },
+   "missing": [
+    "refinery",
+    "shield"
+   ],
+   "procedural": [
+    "turret:missile:5",
+    "turret:mortar:5",
+    "turret:flame:5",
+    "turret:siege:5",
+    "turret:lasercannon:5"
+   ],
+   "programs": 12,
+   "pixelRatio": 2.5
+  },
+  "pageErrors": []
+ },
+ "phone3x-full": {
+  "world": {
+   "ids": [
+    "chassis-vanguard-0",
+    "weapon-pulse-0"
+   ],
+   "pixelRatio": 2.5,
+   "antialias": true,
+   "programs": 11
+  },
+  "town": {
+   "meshy": {
+    "town-cc": 1,
+    "town-storage": 1,
+    "town-refinery": 3,
+    "town-reactor": 5,
+    "town-shield": 3,
+    "town-lab": 1,
+    "town-cannon": 4,
+    "town-mg": 5,
+    "town-laser": 5,
+    "town-rocket": 4,
+    "town-tesla": 3,
+    "town-railgun": 3
+   },
+   "missing": [],
+   "procedural": [
+    "foundry:5:48:35:0:0:::0f",
+    "foundry:5:45:39:0:0:::0f",
+    "biodome:5:36:41:0:0:::0f",
+    "biodome:5:35:44:0:0:::0f",
+    "biodome:5:38:45:0:0:::0f",
+    "hangar:5:30:32:0:0:::0f",
+    "helium:5:43:33:0:0:::0f",
+    "helium:5:41:35:0:0:::0f",
+    "helium:5:45:31:0:0:::0f",
+    "radar:5:33:42:0:0:::0f",
+    "uplink:5:44:44:0:0:::0f",
+    "trophy:3:44:28:0:0:::0f",
+    "turret:missile:5",
+    "turret:mortar:5",
+    "turret:flame:5",
+    "turret:siege:5",
+    "turret:lasercannon:5"
+   ],
+   "programs": 12,
+   "pixelRatio": 2.5
+  },
+  "pageErrors": []
+ },
+ "phone3x-summary": {
+  "townItemsMeshy": [
+   "town-cannon",
+   "town-cc",
+   "town-lab",
+   "town-laser",
+   "town-mg",
+   "town-railgun",
+   "town-reactor",
+   "town-refinery",
+   "town-rocket",
+   "town-shield",
+   "town-storage",
+   "town-tesla"
+  ],
+  "missing": [],
+  "worldTank": [
+   "chassis-vanguard-0",
+   "weapon-pulse-0"
+  ],
+  "pageErrors": 0
+ },
+ "desktop1920-gallery": {
+  "world": {
+   "ids": [
+    "chassis-vanguard-0",
+    "weapon-pulse-0"
+   ],
+   "pixelRatio": 1,
+   "antialias": true,
+   "programs": 13
+  },
+  "town": {
+   "meshy": {
+    "town-cc": 1,
+    "town-storage": 1,
+    "town-reactor": 1,
+    "town-lab": 1,
+    "town-cannon": 1,
+    "town-mg": 1,
+    "town-laser": 1,
+    "town-rocket": 1,
+    "town-tesla": 1,
+    "town-railgun": 1
+   },
+   "missing": [
+    "refinery",
+    "shield"
+   ],
+   "procedural": [
+    "turret:missile:5",
+    "turret:mortar:5",
+    "turret:flame:5",
+    "turret:siege:5",
+    "turret:lasercannon:5"
+   ],
+   "programs": 14,
+   "pixelRatio": 1
+  },
+  "pageErrors": []
+ },
+ "desktop1920-full": {
+  "world": {
+   "ids": [
+    "chassis-vanguard-0",
+    "weapon-pulse-0"
+   ],
+   "pixelRatio": 1,
+   "antialias": true,
+   "programs": 13
+  },
+  "town": {
+   "meshy": {
+    "town-cc": 1,
+    "town-storage": 1,
+    "town-refinery": 3,
+    "town-reactor": 5,
+    "town-shield": 3,
+    "town-lab": 1,
+    "town-cannon": 4,
+    "town-mg": 5,
+    "town-laser": 5,
+    "town-rocket": 4,
+    "town-tesla": 3,
+    "town-railgun": 3
+   },
+   "missing": [],
+   "procedural": [
+    "foundry:5:48:35:0:0:::0f",
+    "foundry:5:45:39:0:0:::0f",
+    "biodome:5:36:41:0:0:::0f",
+    "biodome:5:35:44:0:0:::0f",
+    "biodome:5:38:45:0:0:::0f",
+    "hangar:5:30:32:0:0:::0f",
+    "helium:5:43:33:0:0:::0f",
+    "helium:5:41:35:0:0:::0f",
+    "helium:5:45:31:0:0:::0f",
+    "radar:5:33:42:0:0:::0f",
+    "uplink:5:44:44:0:0:::0f",
+    "trophy:3:44:28:0:0:::0f",
+    "turret:missile:5",
+    "turret:mortar:5",
+    "turret:flame:5",
+    "turret:siege:5",
+    "turret:lasercannon:5"
+   ],
+   "programs": 14,
+   "pixelRatio": 1
+  },
+  "pageErrors": []
+ },
+ "desktop1920-summary": {
+  "townItemsMeshy": [
+   "town-cannon",
+   "town-cc",
+   "town-lab",
+   "town-laser",
+   "town-mg",
+   "town-railgun",
+   "town-reactor",
+   "town-refinery",
+   "town-rocket",
+   "town-shield",
+   "town-storage",
+   "town-tesla"
+  ],
+  "missing": [],
+  "worldTank": [
+   "chassis-vanguard-0",
+   "weapon-pulse-0"
+  ],
+  "pageErrors": 0
+ }
+}

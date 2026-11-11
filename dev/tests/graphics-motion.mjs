@@ -1,7 +1,7 @@
 // Pure cosmetic motion contracts: no simulation, accounts, WebGL or network.
 import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createContext,runInContext} from 'node:vm';
 const c=createContext({console,Math,performance:{now:()=>0},globalThis:null});c.globalThis=c;
-const p=new URL('../../js/graphics.js',import.meta.url);assert.ok(readFileSync(p,'utf8').includes('GraphicsMotion'),'shared motion module must exist');runInContext(readFileSync(p,'utf8'),c);runInContext('globalThis.M=GraphicsMotion;globalThis.Q=GraphicsQuality;globalThis.G=GraphicsRelease',c);
+const p=new URL('../../js/graphics.js',import.meta.url);assert.ok(readFileSync(p,'utf8').includes('GraphicsMotion'),'shared motion module must exist');runInContext(readFileSync(p,'utf8'),c);runInContext('globalThis.M=GraphicsMotion;globalThis.Q=GraphicsQuality;globalThis.G=GraphicsRelease;globalThis.GR=GraphicsResolution',c);
 assert.equal(c.G.enabled,true,'2026-10-31 owner-approved nonpayment gear release activates HF; rollback flips this gate');
 for(const a of ['pulse','twin','siege','moon']){const s=c.M.state();c.M.shot(s,a);assert.ok(s.kick>0);for(let i=0;i<180;i++)c.M.advance(s,1/60,{dx:0,dz:0,heading:0,aim:0},false);assert.ok(Math.abs(s.kick)<.001,a+' recoil settles');}
 assert.ok(c.M.PROFILES.siege.kick>c.M.PROFILES.pulse.kick);assert.ok(c.M.PROFILES.twin.kick<c.M.PROFILES.pulse.kick);
@@ -16,5 +16,27 @@ const root=new c.THREE.Group(),mat=new c.THREE.MeshBasicMaterial();mat.userData.
 console.log('PASS 9 HIGH/LOW real hull drive tags and independent material ownership/disposal');
 const gen=c.E.generation;c.E.quality=c.E.quality;assert.equal(c.E.generation,gen,'same profile must not invalidate every cached model');
 const tagged=c.E.bake(c.E.chassisKit('vanguard',0,c.P.stock,'#fff',[],false,'high').k);assert.ok(Object.values(tagged).some(g=>Array.from(g.attributes.drive?.array||[]).some((v,i)=>i%4===2&&v>1&&v<1.5)),'wheel metadata must carry its actual radius');
-assert.equal(c.Q.initial({mode:'auto',coarse:true,cores:6,memory:null}),'low','unknown iPhone memory starts conservatively');assert.equal(c.Q.initial({mode:'high',coarse:true,cores:4}),'high','manual High wins');assert.equal(c.Q.initial({mode:'auto',coarse:false,cores:12,memory:16}),'high');
+assert.equal(c.Q.initial({mode:'auto',coarse:true,cores:6,memory:null}),'high','unknown iPhone memory starts HIGH (owner, Nov 11 2026: full quality unless the device truly cannot hold frame rate; the watch steps down)');assert.equal(c.Q.initial({mode:'auto',coarse:true,cores:4,memory:2}),'low','a phone that reports 2 GB starts LOW');assert.equal(c.Q.initial({mode:'low',coarse:false,cores:16,memory:32}),'low','manual Low wins');assert.equal(c.Q.initial({mode:'high',coarse:true,cores:4}),'high','manual High wins');assert.equal(c.Q.initial({mode:'auto',coarse:false,cores:12,memory:16}),'high');
 const severe=c.Q.state();severe.q='low';let fallback;for(let i=0;i<600;i++){fallback=c.Q.sample(severe,.1,i*.1,{});if(fallback)break;}assert.equal(fallback,'2d','sustained LOW overload reaches 2D without a single-frame downgrade');
+
+// ---- render resolution (Session 5E-2a): ceilings and the frame-time governor ----
+{const R=c.GR,hw={software:false};
+assert.equal(R.cap('low',{...hw,dpr:3,coarse:true}),1,'LOW graphics stays 1x');assert.equal(R.cap('high',{...hw,dpr:3,coarse:true}),2.5,'phone HIGH: up to 2.5x');assert.equal(R.cap('high',{...hw,dpr:2,coarse:false}),2,'desktop HIGH: the full device ratio');assert.equal(R.cap('high',{dpr:2,coarse:false,software:true}),1,'a CPU rasterizer never goes above 1x');
+// frame time that follows the pixel count (fill-bound GPU): ms = base + k * ratio^2
+const g=R.governor(2.5,{min:1});let t=0;const run=(f,secs)=>{let out=[],left=secs;while(left>0){const ms=f(g.ratio);left-=ms/1000;t+=ms/1000;const r=g.sample(ms,t);if(r!==null)out.push(r);}return out;};
+const heavy=r=>8+5*r*r,light=r=>4+1.5*r*r,cap30=()=>33.4;
+assert.deepEqual(run(light,10),[],'on budget at full ratio: nothing changes');
+const down=run(heavy,1.3);assert.deepEqual(down,[2.25],'over budget for about a second: exactly one step down');
+run(heavy,20);assert.ok(g.ratio<=1.5&&g.ratio>=1,'still over budget: keeps stepping down until frames fit ('+g.ratio+')');
+const ups=run(light,60);assert.ok(ups.length>=1&&g.ratio>1.5,'recovered: climbs back ('+ups.join(',')+')');
+run(light,600);assert.equal(g.ratio,2.5,'with headroom long enough it returns to the full ratio');
+assert.equal(g.sample(400,t+1),null,'a hidden-tab gap is ignored');
+{const f=R.governor(2.5,{min:1,auto:false});for(let i=0;i<600;i++)assert.equal(f.sample(40,i*.04),null,'manual mode: the ratio is fixed');}
+// a 30 fps cap (iOS Low Power Mode): lowering resolution gains nothing, so the step is undone and resolution stays sharp
+{const c=R.governor(2.5,{min:1});let tc=0,seen=[];for(let i=0;i<30*90;i++){tc+=.0334;const r=c.sample(33.4,tc);if(r!==null)seen.push(r);}
+ assert.equal(c.ratio,2.5,'30 fps cap: resolution is not thrown away ('+seen.join(',')+')');assert.ok(seen.length<=6,'30 fps cap: at most an occasional probe per minute ('+seen.length+')');}
+// no flicker: a level that keeps failing is retried less and less often
+{const h=R.governor(2,{min:1});let tt=0,tries=0;for(let i=0;i<60*120;i++){const ms=h.ratio>1.75?30:16.7;tt+=ms/1000;const r=h.sample(ms,tt);if(r===2)tries++;}assert.ok(tries<=5,'a failing level backs off ('+tries+' retries in 2 min)');}
+// the quality watch waits while resolution can still drop
+{const q=c.Q.state();for(let i=0;i<600;i++)assert.equal(c.Q.sample(q,.06,i*.06,{resolving:true}),null,'quality never drops while the resolution governor still has room');}}
+console.log('graphics-motion: resolution governor checks PASS');

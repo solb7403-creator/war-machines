@@ -519,7 +519,7 @@ function gMountStage(){
  const scene=gStageEl.querySelector('.g-scene'),L={...gL(),vl:vaultLevel(save.vg)},live=gLiveOK();
  scene.setAttribute('aria-label',M.name+(live?', live 3D view. Drag sideways or use the arrow keys to turn it; pinch or + and − to zoom.':', picture.'));
  if(live){
-  if(!gShowroom||!gShowroom.renderer||!scene.contains(gShowroom.renderer.domElement)){gStageRelease();scene.replaceChildren();gShowroom=new LunarShowroom(scene,{maxPR:1.25,idleMs:66,settleMs:8000});}
+  if(!gShowroom||!gShowroom.renderer||!scene.contains(gShowroom.renderer.domElement)){gStageRelease();scene.replaceChildren();gShowroom=new LunarShowroom(scene,{idleMs:66,settleMs:8000});/* same resolution ceiling as the website (5E-2a) */}
   gShowroom.setContext('garage');gShowroom.setLoadout(L);
  }else{
   if(gShowroom)gStageRelease();

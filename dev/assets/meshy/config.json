@@ -95,7 +95,16 @@
     "length": 2.61
    },
    "tracks": "auto",
-   "look": "common"
+   "look": "common",
+   "lookOverride": {
+    "paintA": "#525545",
+    "paintB": "#46493b",
+    "camo": 0,
+    "camoScale": 1.4,
+    "trim": "#7b7f74",
+    "wear": 1.2,
+    "dirt": 1.1
+   }
   },
   {
    "id": "weapon-pulse-0",
@@ -1847,7 +1856,7 @@
        ]
       ]
      },
-     "region": "hazard"
+     "region": "trim"
     },
     {
      "select": {
@@ -1919,7 +1928,17 @@
      "#ffe9b8",
      0.1
     ]
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#4f5243",
+    "paintB": "#44473a",
+    "camo": 0,
+    "trim": "#8a8f93",
+    "bare": "#9da2a6",
+    "glow": "#ffd27a",
+    "wear": 1.45,
+    "dirt": 1.2
+   }
   },
   {
    "id": "chassis-scout-1",
@@ -2104,7 +2123,16 @@
      },
      "region": "dark"
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#767b81",
+    "paintB": "#62676d",
+    "trim": "#c4c9cf",
+    "bare": "#d0d4d8",
+    "glow": "#b78bff",
+    "wear": 0.6,
+    "dirt": 0.55
+   }
   },
   {
    "id": "chassis-scout-2",
@@ -2338,7 +2366,25 @@
      "region": "glow",
      "color": "#ffb347"
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#191a1d",
+    "paintB": "#24262a",
+    "trim": "#c9a04a",
+    "glow": "#ff7a1f",
+    "lines": [
+     {
+      "at": "edge",
+      "kind": "glow",
+      "color": "#ff7a1f",
+      "k0": 22,
+      "k1": 45,
+      "up": 0.1,
+      "yMin": 0.2,
+      "ringClear": 0.36
+     }
+    ]
+   }
   },
   {
    "id": "chassis-vanguard-1",
@@ -2498,7 +2544,26 @@
      },
      "region": "dark"
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#767b81",
+    "paintB": "#62676d",
+    "trim": "#9aa1a9",
+    "bare": "#c0c5cb",
+    "glow": "#b78bff",
+    "lines": [
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#b78bff",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.15
+     }
+    ],
+    "wear": 0.6,
+    "dirt": 0.55
+   }
   },
   {
    "id": "chassis-vanguard-2",
@@ -2789,9 +2854,31 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#b2b8c0",
-    "paintB": "#8a919b",
-    "bare": "#c9ced5"
+    "paintA": "#2a2d32",
+    "paintB": "#212327",
+    "bare": "#8d8f96",
+    "trim": "#c9a04a",
+    "lines": [
+     {
+      "at": "edge",
+      "kind": "trim",
+      "color": "#d4aa4f",
+      "k0": 45,
+      "k1": 90,
+      "yMin": 0.3,
+      "ringClear": 0.42
+     },
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#ff8a24",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.2,
+      "ringClear": 0.42
+     }
+    ],
+    "glow": "#ff8a24"
    }
   },
   {
@@ -3035,7 +3122,16 @@
       "body"
      ]
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#555745",
+    "paintB": "#4a4c3d",
+    "camo": 0,
+    "trim": "#8c8a80",
+    "bare": "#aaa69a",
+    "wear": 1.5,
+    "dirt": 1.25
+   }
   },
   {
    "id": "chassis-titan-1",
@@ -3278,6 +3374,26 @@
    ],
    "tris": {
     "light": 24000
+   },
+   "lookOverride": {
+    "paintA": "#6c7177",
+    "paintB": "#5a5f65",
+    "trim": "#9aa1a9",
+    "bare": "#b9bec4",
+    "glow": "#b78bff",
+    "lines": [
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#b78bff",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.15,
+      "ringClear": 0.45
+     }
+    ],
+    "wear": 0.6,
+    "dirt": 0.6
    }
   },
   {
@@ -3763,7 +3879,33 @@
       "body"
      ]
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#2a2d32",
+    "paintB": "#212327",
+    "trim": "#c9a04a",
+    "glow": "#ff9a2e",
+    "lines": [
+     {
+      "at": "edge",
+      "kind": "trim",
+      "color": "#d4aa4f",
+      "k0": 45,
+      "k1": 90,
+      "yMin": 0.45,
+      "ringClear": 0.5
+     },
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#ff8a24",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.2,
+      "ringClear": 0.5
+     }
+    ]
+   }
   },
   {
    "id": "weapon-moon",
@@ -7645,7 +7787,7 @@
   },
   "weapon-common": {
    "rarity": 0,
-   "paintA": "#565b43",
+   "paintA": "#585c4e",
    "paintB": "#6b7076",
    "camo": 0,
    "trim": "#5d646b",
@@ -7701,17 +7843,18 @@
   },
   "town": {
    "rarity": 0,
-   "paintA": "#8b9096",
-   "paintB": "#6f7781",
-   "trim": "#59616b",
-   "bare": "#a9afb6",
-   "glow": "#22e6ff",
+   "paintA": "#2a2e34",
+   "paintB": "#22252a",
+   "trim": "#4c525a",
+   "bare": "#7d838b",
+   "glow": "#7fe9ff",
    "gold": "#d9a94e",
-   "dust": 0.3,
-   "dirt": 0.9,
-   "wear": 0.8,
-   "dustColor": "#8a877f",
-   "bodyRegion": "armor"
+   "dust": 0.12,
+   "dirt": 0.7,
+   "wear": 0.6,
+   "dustColor": "#6c6a66",
+   "bodyRegion": "armor",
+   "steel": "#3a3f46"
   }
  },
  "autoTrimTown": {

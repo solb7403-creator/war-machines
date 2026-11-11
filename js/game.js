@@ -461,7 +461,7 @@ function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse p
 }
 function useSuper(r,aimAng){
  if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0||r.boss)return false;   // the megatank has its own attacks (bossAI)
- const S=SUP[r.wtype||'pulse'],e=(r.focus&&r.focus.hp>0&&r.focus.team!==r.team)?r.focus:nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;   // a locked target (tap-to-target, a bot's objective) is who the super wants
+ const S=SUP[r.wtype||'pulse'],e=supFocus(r)||nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;   // a locked target (tap-to-target, a bot's objective) is who the super wants
  if(!aimed){
   if(!e)return false;
   if(S.kind!=='nova'&&!los(r,e)){   // don't burn the charge on a blind auto-fire
@@ -472,9 +472,28 @@ function useSuper(r,aimAng){
  r.sp=0;
  if(r.st)r.st.sup++;
  ev('u',r.id);   // your super whooshes, anyone else's beeps as it charges
- const ang=aimed?aimAng:Math.atan2(e.y+(e.vy||0)*S.charge-r.y,e.x+(e.vx||0)*S.charge-r.x);
- r.sup={t:S.charge,ang,w:r.wtype||'pulse',fixed:aimed};
+ const ang=aimed?aimAng:supLead(r,e,S.charge);
+ r.sup={t:S.charge,ang,w:r.wtype||'pulse',fixed:aimed,tgt:aimed?null:e};   // tgt: the super stays on the target it was fired at (Session 5E-2a)
  return true;
+}
+// Super aim (Session 5E-2a, owner report "the super sometimes fires in a random direction"). Root causes found:
+//  - the charge re-picked its target every tick (focus or nearest), so a target that died, a new tap or another enemy
+//    getting closer swung the aim up to 1.6 rad/s towards someone else; now the target is locked when the super starts
+//    and the aim only follows THAT tank (holds its last angle once it is dead or out of sight);
+//  - the lead used the raw per-tick step as velocity: a live pilot's position reaches the server in 100 ms reports
+//    (three ticks of motion in one), a dash or a respawn reads as a huge speed, so the lead flew metres off; the lead
+//    now uses a smoothed velocity, reset on a jump and capped at the tank's own top speed;
+//  - a lock on a tank object that was replaced (chassis switch rebuilds the tank) aimed at a ghost; a lock must be in play.
+// The dragged direction (fixed aim) is never touched.
+const supLive=(r,e)=>!!e&&e.hp>0&&e.team!==r.team&&units.includes(e);
+const supFocus=r=>supLive(r,r.focus)?r.focus:null;
+function supLead(r,e,t){return Math.atan2(e.y+(e.avy||0)*t-r.y,e.x+(e.avx||0)*t-r.x);}
+function aimVel(r,dx,dy,dt){   // smoothed velocity for leading supers (heading() calls this every tick)
+ const step=Math.hypot(dx,dy),top=STAT.speed*spdMult(r);
+ if(step>top*DASH_SPD*dt*4+0.5){r.avx=0;r.avy=0;return;}   // a jump this big (a resync snap, a teleport) is not motion; respawn and round reset already set px=x
+ if(r.ctl==='net'){const k=Math.min(1,dt/0.3);r.avx=(r.avx||0)+(dx/dt-(r.avx||0))*k;r.avy=(r.avy||0)+(dy/dt-(r.avy||0))*k;}   // a live pilot's reports come in steps: average them
+ else{r.avx=dx/dt;r.avy=dy/dt;}   // tanks this sim drives itself move smoothly: their own step is their speed
+ const m=Math.hypot(r.avx,r.avy),cap=top*1.05;if(m>cap){r.avx*=cap/m;r.avy*=cap/m;}   // never lead faster than the tank can drive (a dash lasts 0.2 s)
 }
 // ---- dash: a quick burst in the direction you're steering (4s cooldown) ----
 const DASH_CD=4,DASH_T=0.2,DASH_SPD=3.4;
@@ -582,9 +601,9 @@ function explode(s){
 function superTick(dt){
  for(const r of units){
   if(!r.sup||r.hp<=0)continue;
-  const S=SUP[r.sup.w],e=(r.focus&&r.focus.hp>0&&r.focus.team!==r.team)?r.focus:nearestFoe(r);
-  if(e&&S.kind!=='nova'&&r.sup.t>0.25&&!r.sup.fixed){   // the aim keeps steering until the last 0.25s, then locks
-   if(los(r,e)){const want=Math.atan2(e.y+(e.vy||0)*r.sup.t-r.y,e.x+(e.vx||0)*r.sup.t-r.x);let d=want-r.sup.ang;d=Math.atan2(Math.sin(d),Math.cos(d));const st=1.6*dt;r.sup.ang+=Math.max(-st,Math.min(st,d));}
+  const S=SUP[r.sup.w],e=r.sup.tgt;
+  if(supLive(r,e)&&S.kind!=='nova'&&r.sup.t>0.25&&!r.sup.fixed){   // the aim follows its own target until the last 0.25s, then locks
+   if(los(r,e)){const want=supLead(r,e,r.sup.t);let d=want-r.sup.ang;d=Math.atan2(Math.sin(d),Math.cos(d));const st=1.6*dt;r.sup.ang+=Math.max(-st,Math.min(st,d));}
   }
   r.sup.t-=dt;
   if(r.sup.t<=0){fireSuper(r,S);r.sup=null;}
@@ -616,7 +635,7 @@ function superTick(dt){
 }
 function heading(dt){   // hull turns toward the direction of travel; the turret aims on its own
  for(const r of units){
-  const dx=r.x-(r.px===undefined?r.x:r.px),dy=r.y-(r.py===undefined?r.y:r.py);r.px=r.x;r.py=r.y;r.vx=dx/dt;r.vy=dy/dt;
+  const dx=r.x-(r.px===undefined?r.x:r.px),dy=r.y-(r.py===undefined?r.y:r.py);r.px=r.x;r.py=r.y;r.vx=dx/dt;r.vy=dy/dt;aimVel(r,dx,dy,dt);
   if(r.hd===undefined)r.hd=r.ang;
   if(Math.hypot(dx,dy)>0.004){let d=Math.atan2(dy,dx)-r.hd;d=Math.atan2(Math.sin(d),Math.cos(d));const st=7*dt;r.hd+=Math.max(-st,Math.min(st,d));}
  }
