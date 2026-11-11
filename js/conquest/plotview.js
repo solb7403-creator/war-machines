@@ -457,7 +457,7 @@ function camPose(){const R=X.R;if(!R)return null;return {p:R.cam.position.clone(
 // drive view (5E-2a, owner): buildings between the chase camera and your tank, or the road just ahead, fade see-through (the
 // world view's fade, js/conquest/view.js fadeCore: same ghost material and program, no new shader program)
 function driveFade(R,dt){const v=X.ctx.view;if(!v?.fadeCore||!R.cam||!X.tank)return;const F=R.fade||(R.fade=v.fadeState()),T=R.T;
- if(!(X.view==='drive'&&X.drive)||X.tour){if(F.faded.size)v.fadeCore(F,dt,[],R.cam.position,0,-1e4,0,0);return;}   // leaving the drive view eases every ghost back
+ if(!(X.view==='drive'&&X.drive)||X.tour){if(F.faded.size){F.scan=99;v.fadeCore(F,dt,[],R.cam.position,0,-1e4,0,0);}return;}   // leaving the drive view eases every ghost back
  const w=R._fw||(R._fw=new T.Vector3()),c=R._fc||(R._fc=new T.Vector3());X.tank.getWorldPosition(w);R.cam.getWorldPosition(c);v.fadeCore(F,dt,[R.g.build],c,w.x,w.y,w.z,X.drive.h||0);}
 function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos=new T.Vector3()),look=R._clook||(R._clook=new T.Vector3());
  if(X.tour&&X.drive){const t=(X.tour.t+=dt),C0=TK.ccCenter(p),rad=(P.townH(p.cc)+4)*P.GRID.cell*.75,a=-Math.PI/2+t/X.tour.dur*Math.PI*1.6;pos.set(C0.x+Math.cos(a)*rad,18+rad*.14+6*Math.sin(t*.5),C0.z+Math.sin(a)*rad);look.set(C0.x,6,C0.z);

@@ -52,9 +52,12 @@ let RR=null,RS=null,RC=null,MT=null,PSA=null,PSN=null,STARS=null,CV3=null;
 // battle resolution (Session 5E-2a): the shared ceiling (LOW 1x, phone up to 2.5x, desktop the full ratio) and, in auto mode,
 // the frame-time governor that lowers it only while frames are over budget and climbs back when they recover (js/graphics.js)
 function resCap(){return typeof GraphicsResolution!=='undefined'?GraphicsResolution.cap(R3.q):Math.min(window.devicePixelRatio||1,R3.q==='low'?1:1.5);}
-function setPR(){if(!RR)return;const cap=resCap(),auto=gfxMode()==='auto'&&!window.LUNAR_NO_AUTOGFX;
+function setPR(){if(!RR||R3.parked)return;const cap=resCap(),auto=gfxMode()==='auto'&&!window.LUNAR_NO_AUTOGFX;
  if(typeof GraphicsResolution!=='undefined'){if(!R3.res||R3.res.auto!==auto)R3.res=GraphicsResolution.governor(cap,{min:Math.min(1,cap),auto});else R3.res.setMax(cap);if(!auto)R3.res.ratio=cap;}
  RR.setPixelRatio(R3.res?Math.min(cap,R3.res.ratio):cap);RR.setSize(vw||innerWidth,vh||innerHeight,false);}
+// another full-screen renderer is open (Conquest): the battle canvas shrinks to 1x1 so its 2.5x anti-aliased buffers are freed
+// (about 80 MB on a 390x844 phone), and comes back at its own size when that view closes
+function park3D(on){R3.parked=!!on;if(!RR)return;if(on){RR.setPixelRatio(1);RR.setSize(1,1,false);}else setPR();}
 function disposeBattle3D(){
  if(!RR)return;clearRange3D();if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}for(const P of Object.values(B3.pool))for(const o of P.items){o.material?.dispose();if(o.geometry?.attributes.position?.count===48*6)o.geometry.dispose();}B3.pool={};for(const p of [PSA,PSN]){p.g.dispose();p.pts.material.dispose();}STARS.geometry.dispose();STARS.material.dispose();for(const m of Object.values(MT))m.dispose();R3.hfRelease?.();R3.hfRelease=null;RR.dispose();CV3?.remove();RR=null;RS=null;R3.ready=false;
 }
@@ -502,8 +505,8 @@ function ev3D(a){
 function perfWatch(dt){
  if(!qualityWatch||typeof state==='undefined'||state!=='play')return;
  const now=performance.now()/1000,eq=typeof Equipment3D!=='undefined'?Equipment3D:null;
- if(R3.res&&RR&&!document.hidden&&use3D()){const r=R3.res.sample(dt*1000,now);if(r!==null){RR.setPixelRatio(r);RR.setSize(vw||innerWidth,vh||innerHeight,false);}}
- const next=GraphicsQuality.sample(qualityWatch,dt,now,{manual:gfxMode()!=='auto'||!!window.LUNAR_NO_AUTOGFX,hidden:document.hidden,loading:!!(eq?.enabled&&eq.status(eq.quality)==='loading')});
+ if(R3.res&&RR&&!R3.parked&&!document.hidden&&use3D()){const r=R3.res.sample(dt*1000,now);if(r!==null){RR.setPixelRatio(r);RR.setSize(vw||innerWidth,vh||innerHeight,false);}}
+ const next=GraphicsQuality.sample(qualityWatch,dt,now,{manual:gfxMode()!=='auto'||!!window.LUNAR_NO_AUTOGFX,hidden:document.hidden,loading:!!(eq?.enabled&&eq.status(eq.quality)==='loading'),resolving:!!(R3.res&&R3.res.auto&&R3.res.ratio>R3.res.min&&!(R3.res.capped>now))});
  if(!next||!use3D())return;
  R3.auto=next;if(next==='2d'){R3.off2d=true;clearRange3D();apply3D();if(typeof showToast==='function')showToast('Switched to 2D graphics for smoother play. Change it in Settings.');}
  else{R3.q=next;if(eq?.enabled){eq.quality=next;eq.ensure(next).then(()=>apply3D());}setPR();apply3D();}

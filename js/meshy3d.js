@@ -241,10 +241,11 @@ const Meshy3D=(()=>{
   const U={uParts:{value:asset.partTex||null},uCh:{value:new Float32Array(NCH)},uMask:{value:asset.maps.mask||null},uPaintA:{value:new THREE.Vector3(1,1,1)},uPaintB:{value:new THREE.Vector3(1,1,1)},
    uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.25},uGlowAnim:{value:new THREE.Vector2(1,0)},uFlash:{value:0},uGhost:{value:new THREE.Vector3(0,0,0)}};
   U.uCh.value[CH.one]=1;U.uCh.value[CH.pulse]=.75;
+  // stock look and paints (owner, Nov 11; references docs/art/references/tanks/v2/): energy lines on chassis AND weapons only
+  // faintly lit in the reference colour, held still. The full bright, breathing energy glow is Lunar Skin's alone. The
+  // Moonbeam (kind 'moon', textured legendary) keeps its glowing crystals, as in its v2 image.
+  if(asset.info.kind==='chassis'||asset.info.kind==='weapon'){U.uGlowGain.value=lunar?GLOW.lunar:GLOW.stock;U.uGlowAnim.value.set(lunar?1:0,lunar?GLOW.breath:0);}
   if(asset.info.kind==='chassis'){
-   // stock look and paints (owner, Nov 11): energy lines only faintly lit in the reference colour, held still. The full bright,
-   // breathing energy glow is Lunar Skin's alone (set below).
-   U.uGlowGain.value=lunar?GLOW.lunar:GLOW.stock;U.uGlowAnim.value.set(lunar?1:0,lunar?GLOW.breath:0);
    // paints: the same palette the procedural models use (js/models3d.js palette), as a ratio against the factory colours
    if(!stock&&typeof M3!=='undefined'){const C=M3.palette(P,null,null,false);U.uPaintA.value=ratio(lin(C.hull),fa);U.uPaintB.value=ratio(lin(C.tur),fb);if(P.shine)U.uPaintP.value.set(1,.9,.62,0);}
    if(lunar&&typeof M3!=='undefined'){const K=M3.LUNAR;if(stock){U.uPaintA.value=ratio(lin(K.body),fa);U.uPaintB.value=ratio(lin(K.plate),fb);U.uPaintP.value.set(1,.55,.75,0);}
@@ -406,7 +407,7 @@ const Meshy3D=(()=>{
  // clock-driven channels of every live town material (spinning dishes, blinking lights, pulsing cores)
  function townStep(t,quiet){for(const U of townLive){const c=U.uCh.value;c[CH.time]=quiet?0:t;c[CH.pulse]=quiet?.8:.72+.28*Math.sin(t*2.6);c[CH.sway]=quiet?0:Math.sin(t*2.3)*.6;c[CH.charge]=quiet?.3:.5+.5*Math.sin(t*1.7);}}
  // free the per-mesh materials of a removed tree (geometry and maps are shared and stay cached)
- function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
+ function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}const om=o.isMesh&&(o.userData.fadeOrig||o.material);if(om&&om.userData&&om.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;om.dispose();if(om!==o.material&&o.material)o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
  // warm the cache for a loadout (LIGHT only): called when a loadout is known before it is drawn
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}

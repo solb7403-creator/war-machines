@@ -31,8 +31,8 @@ const GraphicsMotion=(()=>{
 const GraphicsQuality=(()=>{
  const state=()=>({since:0,sum:0,n:0,bad:0,q:'high'});
  function reset(s,now){s.since=now;s.sum=0;s.n=0;s.bad=0;}
- function sample(s,dt,now,{manual=false,hidden=false,loading=false}={}){
-  if(manual||hidden||loading||dt<=0||dt>.5){reset(s,now);return null;}if(now-s.since<6)return null;
+ function sample(s,dt,now,{manual=false,hidden=false,loading=false,resolving=false}={}){
+  if(manual||hidden||loading||resolving||dt<=0||dt>.5){reset(s,now);return null;}if(now-s.since<6)return null;   // resolving: the resolution governor still has room to step down, so quality waits
   s.sum+=dt;s.n++;if(s.sum<3||s.n<45)return null;const fps=s.n/s.sum;s.sum=0;s.n=0;s.bad=fps<(s.q==='high'?35:21)?s.bad+1:0;
   if(s.bad<2)return null;s.q=s.q==='high'?'low':'2d';reset(s,now);return s.q;
  }
@@ -66,15 +66,19 @@ const GraphicsResolution=(()=>{
  function governor(max,{min=1,start=max,auto=true}={}){
   const g={max,min:Math.min(min,max),ratio:Math.max(Math.min(start,max),Math.min(min,max)),auto,t:0,frames:[],slow:0,good:0,block:new Map(),fails:new Map(),
    setMax(m){this.max=m;this.min=Math.min(this.min,m);if(this.ratio>m){this.ratio=m;return m;}return null;},
-   reset(){this.t=0;this.frames.length=0;this.slow=0;this.good=0;},
+   reset(){this.t=0;this.frames.length=0;this.slow=0;this.good=0;this.probe=null;},
    sample(ms,now){
     if(!this.auto||!(ms>0)||ms>250){if(ms>250)this.reset();return null;}   // a hidden tab or a single hitch is not a frame rate
     this.frames.push(ms);this.t+=ms/1000;if(this.t<WINDOW||this.frames.length<12)return null;
     const a=this.frames.slice().sort((x,y)=>x-y),med=a[a.length>>1];this.frames.length=0;this.t=0;
     this.slow=med>BUDGET?this.slow+1:0;this.good=med<=GOOD?this.good+1:0;
+    // the window after a step down: if frames did not get at least 10% faster, resolution was not the limit (a 30 fps cap: iOS
+    // Low Power Mode, battery savers, some webviews). Undo the step and leave resolution alone for a minute.
+    if(this.probe){const pr=this.probe;this.probe=null;if(med>pr.med*.9){this.ratio=pr.from;this.capped=now+60;this.slow=0;this.good=0;return this.ratio;}}
+    if(this.capped&&now<this.capped){this.slow=0;}
     if(this.slow>=2&&this.ratio>this.min){   // over budget for a second: one step down, and this level waits longer before its next try
      const lv=+this.ratio.toFixed(2),f=(this.fails.get(lv)||0)+1;this.fails.set(lv,f);this.block.set(lv,now+Math.min(120,6*2**(f-1)));
-     this.ratio=Math.max(this.min,+(this.ratio-STEP).toFixed(2));this.slow=0;this.good=0;return this.ratio;}
+     this.probe={from:this.ratio,med};this.ratio=Math.max(this.min,+(this.ratio-STEP).toFixed(2));this.slow=0;this.good=0;return this.ratio;}
     if(this.good>=4&&this.ratio<this.max){   // two seconds with headroom: try one step up unless that level failed recently
      const up=Math.min(this.max,+(this.ratio+STEP).toFixed(2));if((this.block.get(up)||0)>now)return null;this.ratio=up;this.good=0;return up;}
     return null;

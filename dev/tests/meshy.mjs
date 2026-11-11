@@ -80,12 +80,14 @@ for(const id of want){const rec=manifest.items[id],item=config.items.find(i=>i.i
 // ---- stock look (Session 5E-2a, owner): every chassis's stock look follows its chosen reference; energy lines are lit faintly
 // and held still on stock and paints, the bright breathing glow is Lunar Skin's alone; paints tint armour only
 {const G=Meshy3D.GLOW;ok(G&&G.stock>0&&G.stock<=G.lunar*.35,'stock energy lines are faint next to Lunar Skin ('+(G&&G.stock)+' vs '+(G&&G.lunar)+')');ok(G.breath>0,'Lunar Skin glow breathes');
- ok(/U\.uGlowAnim\.value\.set\(lunar\?1:0,lunar\?GLOW\.breath:0\)/.test(src),'chassis glow animation is switched on only for Lunar Skin');
+ ok(/U\.uGlowAnim\.value\.set\(lunar\?1:0,lunar\?GLOW\.breath:0\)/.test(src),'chassis and weapon glow animation is switched on only for Lunar Skin');
  ok(/uCh\[int\(D\.x\+\.5\)\]\*uGlowAnim\.x/.test(src),'glow channels are multiplied by the animation switch in the shader');
  const lum=h=>{const v=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2];};
  for(const it of config.items.filter(i=>i.kind==='chassis')){const L={...config.looks[it.look],...(it.lookOverride||{})};
   ok(L.paintA&&L.paintB&&Math.max(lum(L.paintA),lum(L.paintB))/Math.max(1e-4,Math.min(lum(L.paintA),lum(L.paintB)))>=1.2,it.id+': the two armour tones are clearly distinct shades');
   for(const r of L.lines||[])if(r.kind==='glow'&&(L.lines||[]).some(t=>t.kind!=='glow'))ok(r.color.toLowerCase()!==((L.lines.find(t=>t.kind!=='glow').color)||'').toLowerCase(),it.id+': glow lines and trim lines use different shades');}
- const titan=config.items.find(i=>i.id==='chassis-titan-0');ok(!titan.regions.some(r=>r.region==='hazard'),'Titan plow follows its reference (bare plate, no hazard stripes)');}
+ const titan=config.items.find(i=>i.id==='chassis-titan-0'),scout=config.items.find(i=>i.id==='chassis-scout-0');
+ ok(titan.regions.some(r=>r.region==='hazard'),'Titan plow carries hazard stripes, as in its v2 reference');ok(!scout.regions.some(r=>r.region==='hazard'),'Scout bull bar is bare steel, as in its v2 reference');
+ ok(/kind==='chassis'\|\|asset\.info\.kind==='weapon'\)\{U\.uGlowGain\.value=lunar\?GLOW\.lunar:GLOW\.stock/.test(src),'weapons follow the same faint, still stock glow; Lunar Skin bright');}
 ok(totalLight<22e6,'all LIGHT files together under 22 MB ('+(totalLight/1e6).toFixed(1)+')');
 console.log('PASS meshy assets: '+want.length+' items x LIGHT/FULL, '+checks+' checks; LIGHT total '+(totalLight/1e6).toFixed(1)+' MB, FULL total '+(totalFull/1e6).toFixed(1)+' MB');

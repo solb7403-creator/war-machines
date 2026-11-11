@@ -97,9 +97,9 @@
    "tracks": "auto",
    "look": "common",
    "lookOverride": {
-    "paintA": "#7a6d4d",
-    "paintB": "#55573f",
-    "camo": 0.36,
+    "paintA": "#525545",
+    "paintB": "#46493b",
+    "camo": 0,
     "camoScale": 1.4,
     "trim": "#7b7f74",
     "wear": 1.2,
@@ -1856,7 +1856,7 @@
        ]
       ]
      },
-     "region": "hazard"
+     "region": "trim"
     },
     {
      "select": {
@@ -1930,8 +1930,8 @@
     ]
    ],
    "lookOverride": {
-    "paintA": "#4a4a41",
-    "paintB": "#3c3d36",
+    "paintA": "#4f5243",
+    "paintB": "#44473a",
     "camo": 0,
     "trim": "#8a8f93",
     "bare": "#9da2a6",
@@ -2546,10 +2546,10 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#43484f",
-    "paintB": "#363a40",
-    "trim": "#7f868e",
-    "bare": "#9aa1a9",
+    "paintA": "#767b81",
+    "paintB": "#62676d",
+    "trim": "#9aa1a9",
+    "bare": "#c0c5cb",
     "glow": "#b78bff",
     "lines": [
      {
@@ -2560,7 +2560,9 @@
       "k1": 130,
       "up": 0.15
      }
-    ]
+    ],
+    "wear": 0.6,
+    "dirt": 0.55
    }
   },
   {
@@ -2852,21 +2854,31 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#7f8287",
-    "paintB": "#666a70",
-    "bare": "#d3d7dc",
+    "paintA": "#2a2d32",
+    "paintB": "#212327",
+    "bare": "#8d8f96",
     "trim": "#c9a04a",
     "lines": [
      {
       "at": "edge",
       "kind": "trim",
-      "color": "#d1a64a",
+      "color": "#d4aa4f",
       "k0": 45,
       "k1": 90,
       "yMin": 0.3,
       "ringClear": 0.42
+     },
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#ff8a24",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.2,
+      "ringClear": 0.42
      }
-    ]
+    ],
+    "glow": "#ff8a24"
    }
   },
   {
@@ -3041,7 +3053,7 @@
        ]
       ]
      },
-     "region": "armor2",
+     "region": "hazard",
      "onlyParts": [
       "body"
      ]
@@ -3112,8 +3124,8 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#66604b",
-    "paintB": "#545041",
+    "paintA": "#555745",
+    "paintB": "#4a4c3d",
     "camo": 0,
     "trim": "#8c8a80",
     "bare": "#aaa69a",
@@ -3364,10 +3376,10 @@
     "light": 24000
    },
    "lookOverride": {
-    "paintA": "#3a3e45",
-    "paintB": "#2e3137",
-    "trim": "#7f868e",
-    "bare": "#9aa1a9",
+    "paintA": "#6c7177",
+    "paintB": "#5a5f65",
+    "trim": "#9aa1a9",
+    "bare": "#b9bec4",
     "glow": "#b78bff",
     "lines": [
      {
@@ -3379,7 +3391,9 @@
       "up": 0.15,
       "ringClear": 0.45
      }
-    ]
+    ],
+    "wear": 0.6,
+    "dirt": 0.6
    }
   },
   {
@@ -7773,7 +7787,7 @@
   },
   "weapon-common": {
    "rarity": 0,
-   "paintA": "#565b43",
+   "paintA": "#585c4e",
    "paintB": "#6b7076",
    "camo": 0,
    "trim": "#5d646b",

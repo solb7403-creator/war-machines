@@ -1750,7 +1750,7 @@ independent assertions (a fixed seed cannot remove frame-rate dependence). It mu
 250 CP (+20 featured), a loss must pay nothing, and both endings must hand back to exploration. The exact payout stays
 deterministically covered by `conquest-operations.mjs` / `conquest-session.mjs`.
 
-### 3. Stock looks match the chosen references — DONE (9 chassis rebuilt with the one config + `build.py`)
+### 3. Stock looks (first pass against `chosen/`; SUPERSEDED by the v2 correction below for palettes, Titan plow and Scout bull bar)
 - `dev/assets/meshy/config.json` per-chassis `lookOverride` from `docs/art/references/tanks/chosen/`: Scout weathered grey-olive
   (no camo, bare-steel cage, yellow/black bull bar), Strider light silver + violet strip, Phantom black + gold edges + orange
   facet lines, Vanguard tan/olive camo, Sentinel and Bulwark dark gunmetal + violet seam lines, Paladin silver + gold edges,
@@ -1793,7 +1793,7 @@ program — no new shader program in Conquest's 16 budget (browser test asserts 
 low and are not faded. `dev/tests/conquest-occluder.py` (in `conquest-check.yml`, both engines). The town build view
 (plotview) is top-down with no tank in it, so it needs no fade.
 
-### 6. Meshy everywhere — VERIFIED, three gaps fixed (`docs/art/meshy-proof/v2/`, `verify.json`, `town.json`)
+### 6. Meshy everywhere — VERIFIED (re-verified after the v2 rebuild, see the end), three gaps fixed (`docs/art/meshy-proof/v2/`, `verify.json`, `town.json`)
 - Battle + Garage (`proof/v2.mjs`, website build, phone 390x844 at 3x and desktop 1920, HIGH, AA on, after load): ten loadouts
   that cover all 9 chassis and all 10 weapons. Every tank on screen (yours and the AI's) carries its Meshy chassis and weapon;
   the Garage shows both FULL models; nothing procedural; 0 page errors on both profiles.
@@ -1834,3 +1834,46 @@ Reading: before, a phone in auto mode started on LOW (1x, no AA) and Conquest ne
 pixels with 4x AA, about 80 MB of framebuffer at 390x844@2.5x. That cost is what the governor exists for: in auto mode it steps
 the ratio down 0.25 at a time while frames are over budget (drop to 1x leaves ~13 MB) and climbs back when they recover.
 Program count and draw calls are unchanged. Not measured: a physical phone GPU (nobody has one in this environment).
+
+### OWNER CORRECTION (mid-session, Nov 11): the look reference is `docs/art/references/tanks/v2/`, not `chosen/`
+`chosen/` holds the older v1 images; `v2/` (merged from main `319d47b`) holds the images the owner actually fed into Meshy and is
+authoritative for every chassis and weapon. The stock-look work above (item 3) was redone against v2; renders against `chosen/`
+were dropped (the earlier `docs/art/meshy-proof/v2/colour_check_stock_vs_reference.webp` is replaced).
+
+**Mapping v2 image -> GLB (by shape, cross-checked with each source GLB's own prompt in its file name)**
+| Item | GLB id | v2 image | Shape cues |
+|---|---|---|---|
+| Scout | chassis-scout-0 | chassis/b5ae93de.png | long low wedge, round bull bar, twin headlights, antenna |
+| Strider | chassis-scout-1 | chassis/68556221.png | sharp wedge, two small rear fin units, violet skirt strip, sensor pods |
+| Phantom | chassis-scout-2 | chassis/97e0789b.png | faceted stealth hull, two amber thruster nozzles, gold edges |
+| Vanguard | chassis-vanguard-0 | chassis/cc0abe1f.png | fenders with stowage boxes, spare track links on the front |
+| Sentinel | chassis-vanguard-1 | chassis/3dbcb303.png | big rear radiator fin block, two front sensor domes, violet lines |
+| Paladin | chassis-vanguard-2 | chassis/ef23a11f.png | shoulder "pauldron" armour over the tracks, gold edges, orange glow |
+| Titan | chassis-titan-0 | chassis/c93ab27d.png | hazard-striped plow, two exhaust stacks |
+| Bulwark | chassis-titan-1 | chassis/72448d12.png | slab skirts, front ram, three capacitor cylinders, violet lines |
+| Colossus | chassis-titan-2 | chassis/5081ec59.png | four track pods, amber underglow, gold trim |
+| Pulse Cannon | weapon-pulse-0 | weapons/2fae26ad.png | compact olive turret, periscope, one barrel with sleeve bands |
+| Arc Pulse | weapon-pulse-1 | weapons/7e0a6b77.png | silver turret, barrel in four raised coil rings, violet muzzle |
+| Nova Pulse | weapon-pulse-2 | weapons/bf00915f.png | faceted dark turret, amber star core in a gold ring, gold bell muzzle |
+| Twin Repeater | weapon-twin-0 | weapons/a4207149.png | two long barrels with slotted flash hiders, hazard-strip ammo box |
+| Storm Repeater | weapon-twin-1 | weapons/dbd6fceb.png | silver, two long barrels with violet lines, side ammo drum |
+| Helix Repeater | weapon-twin-2 | weapons/97c7a5ee.png | two rotary clusters in amber spiral coils, gold muzzle rings |
+| Siege Breaker | weapon-siege-0 | weapons/3c76abeb.png | big blocky olive turret, short thick barrel, box muzzle brake |
+| Rail Breaker | weapon-siege-1 | weapons/6666703f.png | silver, two rail prongs held by clamps, violet arc |
+| Titanfall | weapon-siege-2 | weapons/1c7f4122.png | massive dark turret, huge barrel, gold bands and gold muzzle |
+| Moonbeam | weapon-moon | weapons/0c88031a.png | red core in square gold housing, blue charge crystals (README) |
+`weapons/13e648cb.png` (silver turret, blue orb, blue coil rings) and `weapons/5a4bea6f.png` (olive turret, two thin black barrels)
+match no GLB in the `meshy-models` release: recorded as unused alternates.
+
+**What v2 changed against the first pass (rebuilt: 6 chassis LIGHT + FULL, 3 Common weapons)**
+- Sentinel: dark gunmetal -> light silver with violet lines. Bulwark: dark -> steel silver with violet lines.
+- Paladin: silver + gold -> dark gunmetal with gold edges and orange seam glow.
+- Vanguard: tan/olive camo -> plain worn olive-grey (no camo). Scout: slightly greener olive-grey; its bull bar is bare steel
+  (v2 has no hazard stripes; region `hazard` -> `trim`). Titan: olive-grey; its plow gets its yellow/black hazard stripes back
+  (v2 shows them; the first pass had removed them for the v1 image).
+- Common weapons (Pulse Cannon, Twin Repeater, Siege Breaker): a greyer olive (`looks.weapon-common.paintA #585c4e`).
+- Unchanged because v2 agrees: Strider (silver + violet), Phantom (black + gold + orange), Colossus (dark + gold + amber), Rare
+  weapons (silver + violet), Epic weapons (dark + gold/amber).
+- Decision: weapons now follow the same energy rule as chassis — faint and still on stock and paints, full bright and
+  animated only with Lunar Skin (`js/meshy3d.js paintUniforms`). The Moonbeam (textured legendary) keeps its glowing crystals,
+  because its v2 image shows them glowing brightly. Calibrated in the real Garage, as before.

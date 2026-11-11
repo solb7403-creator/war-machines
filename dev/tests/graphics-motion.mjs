@@ -22,15 +22,21 @@ const severe=c.Q.state();severe.q='low';let fallback;for(let i=0;i<600;i++){fall
 // ---- render resolution (Session 5E-2a): ceilings and the frame-time governor ----
 {const R=c.GR,hw={software:false};
 assert.equal(R.cap('low',{...hw,dpr:3,coarse:true}),1,'LOW graphics stays 1x');assert.equal(R.cap('high',{...hw,dpr:3,coarse:true}),2.5,'phone HIGH: up to 2.5x');assert.equal(R.cap('high',{...hw,dpr:2,coarse:false}),2,'desktop HIGH: the full device ratio');assert.equal(R.cap('high',{dpr:2,coarse:false,software:true}),1,'a CPU rasterizer never goes above 1x');
-const g=R.governor(2.5,{min:1});let t=0;const run=(ms,secs)=>{let out=[];for(let i=0;i<secs*1000/ms;i++){t+=ms/1000;const r=g.sample(ms,t);if(r!==null)out.push(r);}return out;};
-assert.deepEqual(run(16.7,10),[],'on budget at full ratio: nothing changes');
-const down=run(30,1.2);assert.deepEqual(down,[2.25],'over budget for about a second: exactly one step down');
-assert.equal(run(30,0.4).length,0,'a short stretch over budget after a step is not acted on at once');
-run(30,6);assert.ok(g.ratio<2.25&&g.ratio>=1,'still over budget: keeps stepping down to the floor ('+g.ratio+')');run(30,30);assert.equal(g.ratio,1,'never below the floor');
-const ups=run(16.7,60);assert.ok(ups.length>=1&&g.ratio>1,'recovered: climbs back ('+ups.join(',')+')');
-const before=g.ratio;run(16.7,600);assert.equal(g.ratio,2.5,'with headroom long enough it returns to the full ratio (from '+before+')');
+// frame time that follows the pixel count (fill-bound GPU): ms = base + k * ratio^2
+const g=R.governor(2.5,{min:1});let t=0;const run=(f,secs)=>{let out=[],left=secs;while(left>0){const ms=f(g.ratio);left-=ms/1000;t+=ms/1000;const r=g.sample(ms,t);if(r!==null)out.push(r);}return out;};
+const heavy=r=>8+5*r*r,light=r=>4+1.5*r*r,cap30=()=>33.4;
+assert.deepEqual(run(light,10),[],'on budget at full ratio: nothing changes');
+const down=run(heavy,1.3);assert.deepEqual(down,[2.25],'over budget for about a second: exactly one step down');
+run(heavy,20);assert.ok(g.ratio<=1.5&&g.ratio>=1,'still over budget: keeps stepping down until frames fit ('+g.ratio+')');
+const ups=run(light,60);assert.ok(ups.length>=1&&g.ratio>1.5,'recovered: climbs back ('+ups.join(',')+')');
+run(light,600);assert.equal(g.ratio,2.5,'with headroom long enough it returns to the full ratio');
 assert.equal(g.sample(400,t+1),null,'a hidden-tab gap is ignored');
-const f=R.governor(2.5,{min:1,auto:false});for(let i=0;i<600;i++)assert.equal(f.sample(40,i*.04),null,'manual mode: the ratio is fixed');
+{const f=R.governor(2.5,{min:1,auto:false});for(let i=0;i<600;i++)assert.equal(f.sample(40,i*.04),null,'manual mode: the ratio is fixed');}
+// a 30 fps cap (iOS Low Power Mode): lowering resolution gains nothing, so the step is undone and resolution stays sharp
+{const c=R.governor(2.5,{min:1});let tc=0,seen=[];for(let i=0;i<30*90;i++){tc+=.0334;const r=c.sample(33.4,tc);if(r!==null)seen.push(r);}
+ assert.equal(c.ratio,2.5,'30 fps cap: resolution is not thrown away ('+seen.join(',')+')');assert.ok(seen.length<=6,'30 fps cap: at most an occasional probe per minute ('+seen.length+')');}
 // no flicker: a level that keeps failing is retried less and less often
-const h=R.governor(2,{min:1});let tt=0,tries=0;for(let i=0;i<60*120;i++){const ms=h.ratio>1.75?30:16.7;tt+=ms/1000;const r=h.sample(ms,tt);if(r===2)tries++;}assert.ok(tries<=5,'a failing level backs off ('+tries+' retries in 2 min)');}
+{const h=R.governor(2,{min:1});let tt=0,tries=0;for(let i=0;i<60*120;i++){const ms=h.ratio>1.75?30:16.7;tt+=ms/1000;const r=h.sample(ms,tt);if(r===2)tries++;}assert.ok(tries<=5,'a failing level backs off ('+tries+' retries in 2 min)');}
+// the quality watch waits while resolution can still drop
+{const q=c.Q.state();for(let i=0;i<600;i++)assert.equal(c.Q.sample(q,.06,i*.06,{resolving:true}),null,'quality never drops while the resolution governor still has room');}}
 console.log('graphics-motion: resolution governor checks PASS');

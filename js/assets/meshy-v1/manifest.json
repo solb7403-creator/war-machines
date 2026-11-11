@@ -2,21 +2,21 @@
  "items": {
   "chassis-scout-0": {
    "full": {
-    "bytes": 3619312,
+    "bytes": 3616332,
     "charts": 5301,
     "coverage": 0.6782635450363159,
     "geometryBytes": 1993648,
-    "hash": "ff12253d70",
+    "hash": "91252c219c",
     "lowTris": null,
     "missed": 0.0019193498693337613,
     "parts": 14,
-    "seconds": 150.3,
+    "seconds": 170.2,
     "texture": 2048,
     "textureBytes": {
-     "base": 246888,
+     "base": 239076,
      "mask": 354990,
      "normal": 617294,
-     "orm": 398338
+     "orm": 403170
     },
     "tris": 119902,
     "verts": 154744
@@ -29,21 +29,21 @@
    "kind": "chassis",
    "length": 1.84,
    "light": {
-    "bytes": 732836,
+    "bytes": 732340,
     "charts": 2110,
     "coverage": 0.44489097595214844,
     "geometryBytes": 430656,
-    "hash": "9f7e200015",
+    "hash": "da1cd01b89",
     "lowTris": 11255,
     "missed": 0.007939944523281787,
     "parts": 14,
-    "seconds": 3.9,
+    "seconds": 4.0,
     "texture": 512,
     "textureBytes": {
-     "base": 48180,
+     "base": 46826,
      "mask": 76718,
      "normal": 100430,
-     "orm": 68430
+     "orm": 69286
     },
     "tris": 17915,
     "verts": 29357
@@ -560,21 +560,21 @@
   },
   "chassis-titan-0": {
    "full": {
-    "bytes": 3794368,
+    "bytes": 3799760,
     "charts": 9307,
     "coverage": 0.6349564790725708,
     "geometryBytes": 1758796,
-    "hash": "6268ae0dab",
+    "hash": "4275057fab",
     "lowTris": null,
     "missed": 0.002752984613813342,
     "parts": 17,
-    "seconds": 142.5,
+    "seconds": 150.8,
     "texture": 2048,
     "textureBytes": {
-     "base": 270024,
-     "mask": 386292,
+     "base": 290892,
+     "mask": 372968,
      "normal": 847108,
-     "orm": 524382
+     "orm": 522230
     },
     "tris": 119703,
     "verts": 146012
@@ -587,21 +587,21 @@
    "kind": "chassis",
    "length": 2.94,
    "light": {
-    "bytes": 713112,
+    "bytes": 713688,
     "charts": 3203,
     "coverage": 0.36946964263916016,
     "geometryBytes": 393944,
-    "hash": "a6152b1004",
+    "hash": "fc5c0e6c52",
     "lowTris": 11556,
     "missed": 0.011504399652054504,
     "parts": 17,
-    "seconds": 4.4,
+    "seconds": 4.1,
     "texture": 512,
     "textureBytes": {
-     "base": 44598,
-     "mask": 61864,
+     "base": 47484,
+     "mask": 59788,
      "normal": 123202,
-     "orm": 81466
+     "orm": 81234
     },
     "tris": 17896,
     "verts": 28682
@@ -743,21 +743,21 @@
   },
   "chassis-titan-1": {
    "full": {
-    "bytes": 4615320,
+    "bytes": 4689096,
     "charts": 9935,
     "coverage": 0.6062870621681213,
     "geometryBytes": 1986288,
-    "hash": "65ba9caeba",
+    "hash": "90a1f2a3ec",
     "lowTris": null,
     "missed": 0.004647845825654021,
     "parts": 19,
-    "seconds": 133.7,
+    "seconds": 144.2,
     "texture": 2048,
     "textureBytes": {
-     "base": 360220,
-     "mask": 632464,
+     "base": 434524,
+     "mask": 632146,
      "normal": 985650,
-     "orm": 641408
+     "orm": 641194
     },
     "tris": 119536,
     "verts": 159805
@@ -770,21 +770,21 @@
    "kind": "chassis",
    "length": 2.9,
    "light": {
-    "bytes": 1080348,
+    "bytes": 1099128,
     "charts": 4811,
     "coverage": 0.3272237777709961,
     "geometryBytes": 674032,
-    "hash": "b0749b669a",
+    "hash": "c1b3d5fe25",
     "lowTris": 17671,
     "missed": 0.013467630763670912,
     "parts": 19,
-    "seconds": 5.5,
+    "seconds": 5.3,
     "texture": 512,
     "textureBytes": {
-     "base": 50998,
-     "mask": 108932,
+     "base": 68962,
+     "mask": 108944,
      "normal": 141404,
-     "orm": 95412
+     "orm": 96214
     },
     "tris": 25772,
     "verts": 47823
@@ -1120,19 +1120,19 @@
   },
   "chassis-vanguard-0": {
    "full": {
-    "bytes": 4689152,
+    "bytes": 4550052,
     "charts": 9219,
     "coverage": 0.5889451503753662,
     "geometryBytes": 2098504,
-    "hash": "6e9706f469",
+    "hash": "2cfdfd8990",
     "lowTris": null,
     "missed": 0.0033252166309410314,
     "parts": 15,
-    "seconds": 133.5,
+    "seconds": 146.7,
     "texture": 2048,
     "textureBytes": {
-     "base": 439540,
-     "mask": 566098,
+     "base": 338690,
+     "mask": 527848,
      "normal": 988154,
      "orm": 588074
     },
@@ -1147,19 +1147,19 @@
    "kind": "chassis",
    "length": 2.61,
    "light": {
-    "bytes": 846892,
+    "bytes": 825712,
     "charts": 2984,
     "coverage": 0.37041759490966797,
     "geometryBytes": 443352,
-    "hash": "a4e545678f",
+    "hash": "9f98c44bb5",
     "lowTris": 11428,
     "missed": 0.013297769630623232,
     "parts": 15,
-    "seconds": 4.9,
+    "seconds": 5.2,
     "texture": 512,
     "textureBytes": {
-     "base": 70928,
-     "mask": 102012,
+     "base": 55206,
+     "mask": 96554,
      "normal": 137116,
      "orm": 84432
     },
@@ -1301,21 +1301,21 @@
   },
   "chassis-vanguard-1": {
    "full": {
-    "bytes": 4393768,
+    "bytes": 4474892,
     "charts": 8210,
     "coverage": 0.5907504558563232,
     "geometryBytes": 1888356,
-    "hash": "1994d821cb",
+    "hash": "aebb7cb8e0",
     "lowTris": null,
     "missed": 0.0042402756976285694,
     "parts": 15,
-    "seconds": 133.1,
+    "seconds": 154.8,
     "texture": 2048,
     "textureBytes": {
-     "base": 339446,
-     "mask": 622458,
+     "base": 417360,
+     "mask": 622244,
      "normal": 941504,
-     "orm": 594174
+     "orm": 597602
     },
     "tris": 119906,
     "verts": 151049
@@ -1328,21 +1328,21 @@
    "kind": "chassis",
    "length": 2.56,
    "light": {
-    "bytes": 837464,
+    "bytes": 854628,
     "charts": 3175,
     "coverage": 0.36194610595703125,
     "geometryBytes": 438196,
-    "hash": "b4176cb5b5",
+    "hash": "cc871ed459",
     "lowTris": 12578,
     "missed": 0.013443013427204317,
     "parts": 15,
-    "seconds": 4.2,
+    "seconds": 4.3,
     "texture": 512,
     "textureBytes": {
-     "base": 54774,
-     "mask": 113074,
+     "base": 71276,
+     "mask": 113050,
      "normal": 132746,
-     "orm": 90576
+     "orm": 91262
     },
     "tris": 17917,
     "verts": 30604
@@ -1482,21 +1482,21 @@
   },
   "chassis-vanguard-2": {
    "full": {
-    "bytes": 4099192,
+    "bytes": 4127324,
     "charts": 8369,
     "coverage": 0.5696743726730347,
     "geometryBytes": 1830956,
-    "hash": "0579ef30d7",
+    "hash": "8015656818",
     "lowTris": null,
     "missed": 0.003209190639860634,
     "parts": 16,
-    "seconds": 123.2,
+    "seconds": 145.4,
     "texture": 2048,
     "textureBytes": {
-     "base": 361308,
-     "mask": 512270,
+     "base": 303460,
+     "mask": 561088,
      "normal": 834588,
-     "orm": 552596
+     "orm": 589758
     },
     "tris": 119899,
     "verts": 147197
@@ -1509,21 +1509,21 @@
    "kind": "chassis",
    "length": 2.7,
    "light": {
-    "bytes": 802468,
+    "bytes": 786564,
     "charts": 3255,
     "coverage": 0.35335445404052734,
     "geometryBytes": 417972,
-    "hash": "3c1deafbc8",
+    "hash": "4fd6d7b8b2",
     "lowTris": 11751,
     "missed": 0.011138430147981614,
     "parts": 16,
-    "seconds": 4.4,
+    "seconds": 4.5,
     "texture": 512,
     "textureBytes": {
-     "base": 64106,
-     "mask": 93422,
+     "base": 43560,
+     "mask": 95940,
      "normal": 132580,
-     "orm": 86640
+     "orm": 88766
     },
     "tris": 17948,
     "verts": 29650
@@ -2847,18 +2847,18 @@
   },
   "weapon-pulse-0": {
    "full": {
-    "bytes": 1010964,
+    "bytes": 1007560,
     "charts": 2499,
     "coverage": 0.5991003513336182,
     "geometryBytes": 502624,
-    "hash": "7dadf5ded6",
+    "hash": "d6248adb38",
     "lowTris": null,
     "missed": 0.0003263280257273832,
     "parts": 3,
-    "seconds": 21.1,
+    "seconds": 25.2,
     "texture": 1024,
     "textureBytes": {
-     "base": 82030,
+     "base": 78626,
      "mask": 112320,
      "normal": 180138,
      "orm": 129800
@@ -2874,18 +2874,18 @@
    "kind": "weapon",
    "length": 2.625856640278964,
    "light": {
-    "bytes": 344820,
+    "bytes": 343268,
     "charts": 1070,
     "coverage": 0.5559730529785156,
     "geometryBytes": 125160,
-    "hash": "744cd66397",
+    "hash": "88a45eb3cb",
     "lowTris": 4367,
     "missed": 0.0013671137946413257,
     "parts": 3,
-    "seconds": 4.3,
+    "seconds": 4.6,
     "texture": 512,
     "textureBytes": {
-     "base": 36068,
+     "base": 34516,
      "mask": 45960,
      "normal": 80388,
      "orm": 52902
@@ -3152,18 +3152,18 @@
   },
   "weapon-siege-0": {
    "full": {
-    "bytes": 1261068,
+    "bytes": 1257544,
     "charts": 4209,
     "coverage": 0.5264534950256348,
     "geometryBytes": 584340,
-    "hash": "aab984d79e",
+    "hash": "e2dc3bd391",
     "lowTris": null,
     "missed": 0.0003464507591573955,
     "parts": 3,
-    "seconds": 19.0,
+    "seconds": 23.3,
     "texture": 1024,
     "textureBytes": {
-     "base": 104950,
+     "base": 101428,
      "mask": 149020,
      "normal": 242708,
      "orm": 175972
@@ -3179,18 +3179,18 @@
    "kind": "weapon",
    "length": 2.9305839574761547,
    "light": {
-    "bytes": 409184,
+    "bytes": 407964,
     "charts": 1514,
     "coverage": 0.4564657211303711,
     "geometryBytes": 138616,
-    "hash": "43dc498172",
+    "hash": "568c142b72",
     "lowTris": 4664,
     "missed": 0.0024444309803421786,
     "parts": 3,
-    "seconds": 3.9,
+    "seconds": 4.4,
     "texture": 512,
     "textureBytes": {
-     "base": 43306,
+     "base": 42088,
      "mask": 56764,
      "normal": 99750,
      "orm": 66388
@@ -3456,18 +3456,18 @@
   },
   "weapon-twin-0": {
    "full": {
-    "bytes": 997368,
+    "bytes": 995020,
     "charts": 2790,
     "coverage": 0.6256287097930908,
     "geometryBytes": 524984,
-    "hash": "9a911a5543",
+    "hash": "bbb237603e",
     "lowTris": null,
     "missed": 0.0003105853982181163,
     "parts": 4,
-    "seconds": 21.4,
+    "seconds": 24.8,
     "texture": 1024,
     "textureBytes": {
-     "base": 92554,
+     "base": 90206,
      "mask": 81454,
      "normal": 164900,
      "orm": 129196
@@ -3483,18 +3483,18 @@
    "kind": "weapon",
    "length": 2.2494531938306146,
    "light": {
-    "bytes": 318064,
+    "bytes": 318104,
     "charts": 960,
     "coverage": 0.5486135482788086,
     "geometryBytes": 115708,
-    "hash": "d537a99fc0",
+    "hash": "99d86363eb",
     "lowTris": 3715,
     "missed": 0.0010516928778662976,
     "parts": 4,
     "seconds": 3.9,
     "texture": 512,
     "textureBytes": {
-     "base": 37848,
+     "base": 37888,
      "mask": 36868,
      "normal": 70860,
      "orm": 52232
