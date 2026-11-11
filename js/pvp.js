@@ -232,13 +232,14 @@ function pvpApply(rt){
   }else u.ang=pvA(lerpA(a[2],b?b[2]:a[2],k));
   u.hp=cur[4];u.sp=cur[5];u.rep=cur[6]&4?0.3:0;u.away=!!(cur[6]&16);u.cry=cur[7];u.bty=cur[8];u.deaths=cur[10];u.dead=cur[11]/10;u.mhp=cur[15];
   u.buffs=cur[13]?cur[13].map(([ki,tk])=>({k:BUFF_KEYS[ki],taken:tk})):[];
-  u.sup=cur[14]?{t:cur[14][0],ang:pvA(cur[14][1]),w:u.wtype}:null;
+  u.sup=cur[14]?{t:cur[14][0],ang:pvA(cur[14][1]),w:u.wtype,el:cur[14][2],bar:{z0:cur[14][3],jc:cur[14][4]},oc:cur[14][5]?cur[14][5]-1:undefined,k:SUP_KEYS[cur[14][6]]||supKey(u.wtype,u.wtier)}:null;
+  if(u===me&&cur[16])me.nbar={z0:cur[16][0],jc:cur[16][1]};   // my next timing bar, drawn by the server before I press
  });
  timeLeft=B?lerp(s.tl,B.s.tl,k):s.tl;elapsed=B?lerp(s.el,B.s.el,k):s.el;
  gscore=pvSwap(s.gs);
  boxes=s.bx.map(([x,y])=>({x:pvX(x),y:pvY(y),life:20,age:1}));
  if(pvp.crates){const have={};for(const [id,hp] of s.cr){have[id]=1;const c=pvp.crates[id];if(c){if(hp<c.hp)c.flash=0.08;c.hp=hp;}}for(const id in pvp.crates)if(pvp.crates[id]&&!have[id])pvpCrateGone(+id);}
- shells=s.sh.map(([id,x,y])=>{const o=B&&B.s.sh.find(q=>q[0]===id);return {id,x:pvX(o?lerp(x,o[1],k):x),y:pvY(o?lerp(y,o[2],k):y)};});
+ shells=s.sh.map(([id,x,y,ko])=>{const o=B&&B.s.sh.find(q=>q[0]===id);return {id,x:pvX(o?lerp(x,o[1],k):x),y:pvY(o?lerp(y,o[2],k):y),k:SUP_KEYS[((ko|0)/3)|0]||'siege0',oc:(ko|0)%3};});
  if(s.z){const z=s.z,sw=pvp.team===1;gzones=[{x:pvX(z[0]),y:pvY(z[1]),r:z[2],cap:sw?-z[3]:z[3],own:z[4]<0?-1:pvT(z[4]),p0:sw?z[6]:z[5],p1:sw?z[5]:z[6],t:z[7],next:z[8]===null?null:{x:pvX(z[8]),y:pvY(z[9])}}];}else gzones=null;
  if(s.cy){const c=s.cy;cry={mine:{x:10,y:16},loose:c[0].map(([x,y,l,age])=>({x:pvX(x),y:pvY(y),l,age})),cd:c[1]?{team:pvT(c[1][0]),t:c[1][1]}:null,cnt:pvSwap(c[2])};}else cry=null;
  storm=s.st?{x:pvX(s.st[0]),y:pvY(s.st[1]),r:B&&B.s.st?lerp(s.st[2],B.s.st[2],k):s.st[2],l:0}:null;
@@ -308,6 +309,8 @@ function pvpSuper(a){
  if(a===undefined||a===null){const e=nearestFoe(me);if(!e)return false;if(SUP[me.wtype||'pulse'].kind!=='nova'&&!los(me,e)){showToast('No line of sight. Drag from Super to aim it yourself.');return false;}}
  pvpSend({k:'s',a:a===undefined||a===null?null:Math.round(a*1000)/1000});fx('super');return true;
 }
+// stop the timing bar: el is the seconds since my press on my own clock; the server's clock judges it (rules.js SUP_TAP_TOL)
+function pvpTap(el){pvpSend({k:'z',p:Math.round(el*1000)/1000});return true;}
 function pvpDash(ix,iy){if(!useDash(me,ix,iy))return false;pvpSend({k:'d',x:Math.round(me.dash.dx*100)/100,y:Math.round(me.dash.dy*100)/100});return true;}
 function pvpShield(){if(!useShield(me))return false;pvpSend({k:'h'});return true;}
 function pvpTarget(id){pvpSend({k:'t',v:id});return true;}

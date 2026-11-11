@@ -26,7 +26,7 @@ const objects=new Map();env.SESSIONS={idFromName:n=>n,get(n){if(!objects.has(n))
 let ipN=0;const freshIP=()=>'10.0.'+Math.floor(++ipN/250)+'.'+(ipN%250);
 async function call(path,body,{cookie='',csrf='',origin=env.WEB_ORIGIN,ip='10.9.9.9',method}={}){
  const headers={Origin:origin,'CF-Connecting-IP':ip,...(body!==undefined?{'Content-Type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...(csrf?{'X-Lunar-CSRF':csrf}:{})};
- return worker.fetch(new Request(env.WEB_ORIGIN+path,{method:method||(body===undefined?'GET':'POST'),headers,body:body===undefined?undefined:JSON.stringify({gv:4,...body})}),env);
+ return worker.fetch(new Request(env.WEB_ORIGIN+path,{method:method||(body===undefined?'GET':'POST'),headers,body:body===undefined?undefined:JSON.stringify({gv:5,...body})}),env);
 }
 const cookieOf=(r,n='__Host-lunar-session')=>r.headers.getSetCookie().find(c=>c.startsWith(n+'='))||'';
 const jar=r=>cookieOf(r).split(';')[0];

@@ -15,7 +15,7 @@ const {creditConquest}=await import('../../../worker/src/eco.js');
 const env={BOT_TOKEN:'conquest-airdrop-test',FIREBASE_DB_SECRET:'SECRET'};
 let now=Date.UTC(2026,10,9,10,0,0);const clock=Date.now;Date.now=()=>now;
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify({id,first_name:'Pilot'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:4,initData:auth(id),...body})}),env);const text=await r.text();return {status:r.status,...(text.startsWith('{')?JSON.parse(text):{error:text})};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:5,initData:auth(id),...body})}),env);const text=await r.text();return {status:r.status,...(text.startsWith('{')?JSON.parse(text):{error:text})};}
 const eco=id=>db.get('eco/tg_'+id),cq=id=>db.get('conquest/tg_'+id);
 let passed=0;const ok=(cond,msg)=>{assert(cond,msg);passed++;console.log('PASS '+msg);};
 

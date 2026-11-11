@@ -47,6 +47,9 @@ var __abl=[];
 {const ud=useDash;useDash=function(u,x,y){const cd=u.dashCd||0,ok=ud(u,x,y);if(ok)__abl.push(['dash',u.id,__t,cd,u===me]);return ok;};}
 {const uh=useShield;useShield=function(u){const cd=u.shieldCd||0,ok=uh(u);if(ok)__abl.push(['shield',u.id,__t,cd,u===me]);return ok;};}
 var __t=0;
+// the pilot's stand-in stops the super timing bar (5E-2b) with a person's timing spread: average (rules.js SUP_TAP_HUMAN), a
+// casual pilot looser, an expert tighter; cfg.tap overrides it (0.001 = always the jackpot, 9 = never taps in time)
+function __tapS(cfg){if(typeof SUP_TAP_HUMAN==='undefined')return;me.tapS=cfg.tap||(cfg.pilot==='casual'?SUP_TAP_HUMAN*1.5:cfg.pilot==='expert'?SUP_TAP_HUMAN*0.7:SUP_TAP_HUMAN);}
 function __seed(s){__rng=rng32(s);Math.random=rng32((s*2654435761)>>>0);}
 function __run(cfg){
  __seed(cfg.seed);__events=[];__ended=null;__round=0;__abl=[];__t=0;
@@ -61,7 +64,7 @@ function __run(cfg){
  __casual=cfg.pilot==='casual';__expert=cfg.pilot==='expert';
  populatePreparedMatch();
  if(cfg.ghosts&&cfg.ghosts.length)placeGhosts(cfg.ghosts.map((L,i)=>({i,n:'G'+i,L})));
- me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(cfg.pilot==='human')me.hu={};if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
+ me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(cfg.pilot==='human')me.hu={};__tapS(cfg);if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
  const roster=units.map(u=>({team:u.team,cls:u.cls,w:u.wtype,mhp:u.mhp,dps:Math.round(u.wdps*dmgMult(u)*rofMult(u)),gh:!!u.gh,boss:!!u.boss,ai:u!==me,aiP:u.aiL?AI_TIERS[u.aiL.i].p:null,wmult:u.wmult||null,aura:u.aura|0}));   // aiP: the authored AI power this pilot flies
  startMatch();
  const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0;
@@ -70,7 +73,7 @@ function __run(cfg){
   if(state==='round'){   // between rounds a sensible pilot answers a counter with the chassis that beats it, if they own it
    const foe=units.find(u=>u.team!==me.team),fix=foe&&beatenBy(foe.cls);
    if(fix&&fix!==me.cls&&(battleLoadout.chs||[]).some(c=>c.c===fix)&&typeof switchChassis==='function'){switchChassis(fix);me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;}
-   startRound();me=units[0];if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];continue;}
+   startRound();me=units[0];__tapS(cfg);if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];continue;}
   if(state!=='play'||(cfg.maxSteps&&steps>cfg.maxSteps))break;
   if(me.hp>0){if(__casual){me.brain.mode='press';me.brain.t=99;me.brain.hideCd=99;}   // casual: drives at the target, no peeking or cover play
    botAI(DT,me);

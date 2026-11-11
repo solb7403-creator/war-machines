@@ -156,6 +156,7 @@ export class RoomCore {
     switch (m.k) {
       case "m": if (live && u.hp > 0) this.sim.netClaim(u, s.flip ? W - m.x : m.x, s.flip ? H - m.y : m.y, m.tp | 0); break;   // where my tank is
       case "s": if (live) this.sim.useSuper(u, typeof m.a === "number" && Number.isFinite(m.a) ? m.a + (s.flip ? Math.PI : 0) : undefined); break;
+      case "z": if (live) this.sim.supTap(u, typeof m.p === "number" && Number.isFinite(m.p) ? m.p : undefined); break;   // stop the timing bar: the sim's clock judges it, the phone's time only counts inside the latency allowance (rules.js SUP_TAP_TOL)
       case "d": if (live) this.sim.netDash(u, fl * (+m.x || 0), fl * (+m.y || 0)); break;
       case "h": if (live) this.sim.netShield(u); break;
       case "t": if (live) this.sim.netTarget(u, m.v | 0); break;   // tap-to-target lock (unit id, -1 clears)

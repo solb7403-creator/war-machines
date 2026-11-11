@@ -38,7 +38,7 @@ function rangeResult(){
 }
 globalThis.RangeSim={version:RANGE_ENGINE_VERSION,stock:()=>JSON.stringify(STOCK_L),setup:rangeSetup,view:rangeView,
  step(dt,input){if(state!=='play')return;rangeInput=input||[0,0];rangeSeconds+=dt;update(dt);},
- action(k,a,b){if(state!=='play'||!me||rangeConfig.control!=='player')return false;if(k==='super')return useSuper(me,a);if(k==='dash')return useDash(me,a,b);if(k==='shield')return useShield(me);return false;},
+ action(k,a,b){if(state!=='play'||!me||rangeConfig.control!=='player')return false;if(k==='super')return useSuper(me,a);if(k==='tap')return supTap(me,a);if(k==='dash')return useDash(me,a,b);if(k==='shield')return useShield(me);return false;},
  events(){const es=rangeEvents;rangeEvents=[];return es;},result:rangeResult,
  stop(){if(state==='play'){rangeStopped=true;state='over';}},
  dispose(){state='menu';me=null;units=[];bullets=[];boxes=[];rangeEvents=[];rangeConfig=null;rangeOpponents=[];}

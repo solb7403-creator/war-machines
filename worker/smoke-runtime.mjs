@@ -50,7 +50,7 @@ try{
   p.on('error',reject);p.on('exit',resolve);
  });
  assert.equal(code,0,'real runtime smoke completed');assert.deepEqual(unexpected,[],'no production/external fallback');
- const callWeb=(path,body,cookies='',csrf='')=>mf.dispatchFetch('https://web.smoke.test'+path,{method:body?'POST':'GET',headers:{Origin:'https://web.smoke.test','Content-Type':'application/json',Cookie:cookies,'X-Lunar-CSRF':csrf},body:body?JSON.stringify({gv:4,...body}):undefined});
+ const callWeb=(path,body,cookies='',csrf='')=>mf.dispatchFetch('https://web.smoke.test'+path,{method:body?'POST':'GET',headers:{Origin:'https://web.smoke.test','Content-Type':'application/json',Cookie:cookies,'X-Lunar-CSRF':csrf},body:body?JSON.stringify({gv:5,...body}):undefined});
  const challenge=await callWeb('/auth/challenge',{});assert.equal(challenge.status,200);
  const nonce=await challenge.json(),loginCookie=challenge.headers.get('Set-Cookie').split(';')[0];
  const signed=await identity.token(nonce.nonce,8837111);
@@ -60,7 +60,7 @@ try{
  const shared=await callWeb('/api/sync',{lab:1,mig:{pts:999999}},sid,who.csrf);assert.equal(shared.status,200);
  const account=await shared.json();assert.equal(account.E.earned,0);assert.equal(Object.keys(account.E.lab.machines).length,2);
  assert.equal((await callWeb('/api/sync',{},sid)).status,401,'SQLite session enforces CSRF');
- const joinedWeb=await callWeb('/api/pvp/join',{v:4,g:'arena',m:'1v1',fv:2,labRev:account.E.lab.rev},sid,who.csrf);assert.equal(joinedWeb.status,200);const seat=await joinedWeb.json();
+ const joinedWeb=await callWeb('/api/pvp/join',{v:5,g:'arena',m:'1v1',fv:2,labRev:account.E.lab.rev},sid,who.csrf);assert.equal(joinedWeb.status,200);const seat=await joinedWeb.json();
  const socket=await mf.dispatchFetch('https://web.smoke.test/pvp/ws?r='+seat.room+'&t='+seat.tok,{headers:{Upgrade:'websocket',Origin:'https://web.smoke.test',Cookie:sid}});assert.equal(socket.status,101);assert.ok(socket.webSocket);socket.webSocket.accept();socket.webSocket.close();
  assert.equal((await callWeb('/auth/logout',{},sid,who.csrf)).status,200);
  assert.equal((await callWeb('/auth/session',undefined,sid)).status,401);

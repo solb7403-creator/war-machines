@@ -251,11 +251,12 @@ function dmgNum(q,t,dmg,isCrit){
 const HIT_TXT=[null,{txt:'SUPER',t:0.9,z:2,c:'#ff4d4d'},{txt:'STORM',t:0.7,z:0.8,c:'#c79bff'},{txt:'METEOR',t:0.9,z:1.6,c:'#ff8a3d'}];
 // super impacts, per weapon: blast size and colors (match.js 2D overlay; render3d.js adds the 3D explosion)
 const IMPACT={pulse:{r:2.2,c:'#ffb35a',c2:'#ffe08a'},twin:{r:2.6,c:'#7fd4ff',c2:'#e2f4ff'},siege:{r:3.0,c:'#ff7a2f',c2:'#ffd24a'},moon:{r:2.8,c:'#bfe6ff',c2:'#ffffff'}};
-const evColor=c=>typeof c==='number'?tcol(c):c;   // a team number means that team's color
+const evColor=c=>typeof c==='number'?tcol(c):c;
+const supCol=(k,fb)=>typeof FX3D!=='undefined'&&FX3D.PAL[k]?FX3D.PAL[k].a:fb;   // a super's own colour (2D fallback)   // a team number means that team's color
 const sndF=(k,a)=>{if(typeof fx==='function')fx(k,a);};
 function onSimEv(a){
  if(typeof ev3D==='function')ev3D(a);   // 3D effects: explosions, wrecks, sparks
- const U=i=>i>=0?units[i]:null,live=typeof pvpOn==='function'&&pvpOn();
+ const U=i=>i>=0?units[i]:null,live=typeof pvpOn==='function'&&pvpOn(),d3=typeof use3D==='function'&&use3D()&&typeof SFX!=='undefined'&&!!SFX;
  switch(a[0]){
   case 'h':{const t=U(a[1]),amt=a[2],kind=a[3],cr=!!a[4],dir=!!a[5],s=U(a[6]);if(!t)return;
    t.flash=0.08;
@@ -263,7 +264,7 @@ function onSimEv(a){
    if(!kind){if(s===me)sndF('dealt',cr);
     dmgNum({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:cr?1.6:dir?1:0.75,g:!dir,txt:'',c:cr?'#ffd24a':tcol(s?s.team:1)},t,amt,cr);
     if(live&&a[7])pvpBulletHit(a[7]);}
-   else{const K=HIT_TXT[kind];nums.push({x:t.x,y:t.y-R,t:K.t,z:K.z,txt:K.txt+' '+Math.round(amt),c:K.c});}
+   else{const K=HIT_TXT[kind],jk=kind===1&&s&&s.supOc===2;nums.push({x:t.x,y:t.y-R,t:jk?1.2:K.t,z:jk?2.6:K.z,txt:(jk?'JACKPOT':K.txt)+' '+Math.round(amt),c:jk?'#ffcf4a':K.c});}
    return;}
   case 'k':{const r=U(a[1]),s=U(a[2]),why=a[3];if(!r)return;
    feedPush(s?(s===me?'You':s.name)+' destroyed '+(r===me?'you':r.name):(r===me?'You':r.name)+(why==='storm'?' got caught in the storm':' got hit by a meteor'),s?tcol(s.team):why==='storm'?'#c79bff':'#ff8a3d');
@@ -273,13 +274,20 @@ function onSimEv(a){
    return;}
   case 'n':nums.push({x:a[1],y:a[2],t:0.9,z:a[5],txt:a[3],c:a[4]});return;
   case 'p':pop(a[1],a[2],a[3],evColor(a[4]));return;
-  case 'B':blasts.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4],c:a[5]});return;
-  case 'M':beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:tcol(a[5]),w:a[6]});return;
-  case 'V':novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:tcol(a[4])});return;
-  case 'I':{const C=IMPACT[a[3]]||IMPACT.pulse,x=a[1],y=a[2];   // a super landing: an explosion, a shake and the impact sound
-   blasts.push({x,y,r:C.r,t:0.55,t0:0.55,c:C.c});blasts.push({x,y,r:C.r*0.55,t:0.35,t0:0.35,c:C.c2});
-   shake(a[4]===(me?me.team:0)?7:10,0.4);sndF('impact',a[3]);return;}
+  // supers: the 3D view draws each of the ten supers itself (render3d.js ev3D -> FX3D); these lists are the 2D fallback.
+  // The colour is the super's own (FX3D palette), the size follows the timing-bar outcome (a[..] oc: 0 miss, 1 hit, 2 jackpot)
+  case 'B':if(a[6]&&d3)return;blasts.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4],c:a[5]});return;
+  case 'M':if(d3)return;beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:supCol(a[7],tcol(a[5])),w:a[6]*[0.7,1,1.3][a[8]===undefined?1:a[8]],k:a[7],oc:a[8]});return;
+  case 'V':if(d3)return;novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:supCol(a[5],tcol(a[4]))});return;
+  case 'I':{const C=IMPACT[a[3]]||IMPACT.pulse,x=a[1],y=a[2],oc=a[6]===undefined?1:a[6],sz=[0.7,1,1.3][oc];   // a super landing: an explosion, a shake and the impact sound
+   if(!d3){blasts.push({x,y,r:C.r*sz,t:0.55,t0:0.55,c:supCol(a[5],C.c)});blasts.push({x,y,r:C.r*0.55*sz,t:0.35,t0:0.35,c:C.c2});
+    if(typeof GraphicsMotion==='undefined'||!GraphicsMotion.reduced())shake((a[4]===(me?me.team:0)?7:10)*sz,0.4);}
+   sndF('impact',a[3]);return;}
   case 'S':shake(a[1],a[2]);return;
+  case 'Z':{const r=U(a[1]);if(!r)return;r.supOc=a[2];   // a timing bar was stopped: 0 miss, 1 hit, 2 jackpot (the hit numbers and the 3D effects read it)
+   if(r===me){if(typeof supShow==='function')supShow(a[2]);}
+   else if(a[2]===2){nums.push({x:r.x,y:r.y-1.9,t:1.0,z:1.5,txt:'JACKPOT!',c:'#ffcf4a'});sndF('warn');}
+   return;}
   case 'z':if(a[1]==='cap'){if(a[2]===0){pop(a[3],a[4],'ZONE CAPTURED!',TC[0]);sndF('cap');}else pop(a[3],a[4],'ENEMY TOOK THE ZONE',TC[1]);}
    else pop(a[3],a[4],a[2]===0?'ZONE LOST':'ZONE NEUTRAL',a[2]===0?'#ff9d9d':'#c9d6e3');
    return;

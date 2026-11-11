@@ -19,29 +19,33 @@ function aim(B,p,input,dt){
 function hurt(B,e,amount){B.alert?.(e);const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
 function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
 function fireSuper(B,s){
- const raw=SUP[s.weapon],spec={...raw};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
+ const raw=SUP[s.weapon],spec={...raw,dmg:SUP_CQ[s.weapon]*SUP_OC[s.oc||0]};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
  if(spec.kind==='shell'){
   const speed=spec.spd*(1+gsum(B.playerStats,'vel'));
-  B.superShells.push({x:p.x,y:p.y+2.2,z:p.z,vx:dx*speed,vz:dz*speed,vy:Math.tan(s.pitch)*speed,life:spec.range/speed,range:spec.r,damage:spec.dmg*projectileImpactMult(B.playerStats)});return;
+  B.superShells.push({x:p.x,y:p.y+2.2,z:p.z,vx:dx*speed,vz:dz*speed,vy:Math.tan(s.pitch)*speed,life:spec.range/speed,range:spec.r,damage:spec.dmg*projectileImpactMult(B.playerStats),k:s.k,oc:s.oc||0});return;
  }
  if(spec.kind==='nova'){
   for(const e of B.enemies){const d=Math.hypot(e.x-p.x,e.y-p.y,e.z-p.z);if(e.hp>0&&d<spec.r+2&&visible(B,p,e,spec.r+2))hurt(B,e,superDamage(B,e,spec.dmg*(1-.4*d/(spec.r+2))));}
-  B.effects.push({kind:'nova',x:p.x,y:p.y+2,z:p.z,r:spec.r,life:.45});return;
+  B.effects.push({kind:'nova',x:p.x,y:p.y+2,z:p.z,r:spec.r,life:.45,k:s.k,oc:s.oc||0,at:B.time});return;
  }
  // Pulse retains Arcade cover penetration; elevation blocks beams at the ground. Moonfall also stops at structures.
  const start={x:p.x,y:p.y+2.2,z:p.z};let length=spec.len;
  for(let d=.3;d<length;d+=.3)if(s.weapon==='pulse'?start.y+Math.tan(s.pitch)*d<=W.groundAt(start.x+dx*d,start.z+dz*d)+.08:C.blocked(start.x+dx*d,start.y+Math.tan(s.pitch)*d,start.z+dz*d)){length=d;break;}
  for(const e of B.enemies){const ex=e.x-p.x,ez=e.z-p.z,along=ex*dx+ez*dz,side=Math.abs(ex*dz-ez*dx),ey=p.y+Math.tan(s.pitch)*along;
  if(e.hp>0&&along>0&&along<=length&&side<spec.w+1.2&&Math.abs(e.y-ey)<3)hurt(B,e,superDamage(B,e,spec.dmg));}
- B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon});
+ B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon,k:s.k,oc:s.oc||0,w:spec.w,at:B.time});
 }
 C.Battle.prototype.abilityStep=function(dt){
  ensure(this);this.dashCd=Math.max(0,this.dashCd-dt);this.shieldCd=Math.max(0,this.shieldCd-dt);this.shieldT=Math.max(0,this.shieldT-dt);
  if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=1e-8)this.dashState=null;}
+ // the timing bar (Session 5E-2b, rules.js SUP_BAR_T...): the first SUPER press starts the charge and the sweep, a second
+ // press stops it (advance() below); nobody pressing by the end of the sweep is a MISS. It fires SUP_REL after the stop
+ if(this.superAttack){const sa=this.superAttack;if(sa.el===undefined){sa.el=0;sa.oc=0;}   // a super saved by an older build fires as it was
+  sa.el+=dt;if(sa.oc===undefined&&sa.el>=SUP_BAR_T){sa.oc=0;sa.t=SUP_REL;}}
  if(this.superAttack){this.superAttack.t-=dt;if(this.superAttack.t<=0){this.superAttack.origin={x:this.player.x,y:this.player.y-2.2,z:this.player.z};fireSuper(this,this.superAttack);this.superAttack=null;}}
  for(const q of this.superShells){const n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vz)*dt/.3));for(let i=0;i<n&&q.life>0;i++){q.x+=q.vx*dt/n;q.z+=q.vz*dt/n;q.y+=q.vy*dt/n;
  const hit=this.enemies.some(e=>e.hp>0&&Math.hypot(e.x-q.x,e.z-q.z)<2.5&&Math.abs(e.y+2.2-q.y)<3);
- if(hit||C.blocked(q.x,q.y,q.z)||q.life<=dt){for(const e of this.enemies){const d=Math.hypot(e.x-q.x,e.y+2.2-q.y,e.z-q.z);if(e.hp>0&&d<q.range+2&&C.lineClear(q,{x:e.x,y:e.y+2.2,z:e.z}))hurt(this,e,superDamage(this,e,q.damage*(1-.65*d/(q.range+2))));}this.effects.push({kind:'destroy',x:q.x,y:q.y,z:q.z,life:.5});q.life=0;}}
+ if(hit||C.blocked(q.x,q.y,q.z)||q.life<=dt){for(const e of this.enemies){const d=Math.hypot(e.x-q.x,e.y+2.2-q.y,e.z-q.z);if(e.hp>0&&d<q.range+2&&C.lineClear(q,{x:e.x,y:e.y+2.2,z:e.z}))hurt(this,e,superDamage(this,e,q.damage*(1-.65*d/(q.range+2))));}this.effects.push({kind:'destroy',x:q.x,y:q.y,z:q.z,life:.5,k:q.k,oc:q.oc||0,r:q.range,at:this.time});q.life=0;}}
  q.life-=dt;}
  this.superShells=this.superShells.filter(q=>q.life>0).slice(-4);
 };
@@ -62,7 +66,13 @@ function advance(B,p,input,dt,exploration){
  if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
  const target=aim(B,p,input,h);
- if(input.super&&B.charge>=SUPER_MAX&&!B.superAttack){B.charge=0;const weapon=B.playerStats.wtype;B.superAttack={weapon,t:SUP[weapon].charge,yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}
+ // SUPER is an edge: it acts once, on the first slice of the command it arrives in. No super charging: it starts one (the bar
+ // is drawn from the battle clock, the same on the phone and on the Worker that replays the command). A bar sweeping: it stops
+ // it. A command is STEP long, so the stop is judged at the middle of the step it arrived in (fair to an early and a late thumb)
+ if(first&&input.super){
+  if(B.superAttack){const sa=B.superAttack;if(sa.oc===undefined){sa.oc=supJudge(sa.bar,sa.el+STEP/2);sa.t=Math.max(SUP_REL,SUP[sa.weapon].charge-sa.el);}}
+  else if(B.charge>=SUPER_MAX){B.charge=0;const weapon=B.playerStats.wtype;let h=(Math.round(B.time*1000)*2654435761+(B.kills|0)*40503)>>>0;const rnd=()=>{h=(Math.imul(h^(h>>>15),0x2c1b3c6d)+0x9e3779b9)>>>0;return ((h^(h>>>13))>>>0)/4294967296;};
+   B.superAttack={weapon,k:supKey(weapon,B.playerStats.wtier),t:SUP_BAR_T+SUP_REL,el:0,bar:supBar(rnd),yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}}
  B.tick(h,p,{aim:target,fire:(!!input.fire||first&&!!input.tapFire)&&!B.superAttack});first=false;
  }
  return p;

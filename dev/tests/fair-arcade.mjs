@@ -78,18 +78,38 @@ const MODES = [['arena', '1v1'], ['arena', '3v3'], ['bounty', '1v1'], ['royale',
 // power, so their results are close by design)
 const T = (await fairGrid({ pilots: ['standard'], modes: MODES, seeds: 4 })).standard;
 const agg = (lg, k, modes = MODES) => { let w = 0, n = 0, d = 0, t = 0, kl = 0, de = 0; for (const [g, m] of modes) { const c = T[lg][g + ' ' + m][k]; w += c.w; n += c.n; d += c.dmg * c.n; t += c.taken * c.n; kl += c.kills; de += c.deaths; } return { win: w / n, ratio: t / d, kd: kl / Math.max(1, de), n }; };
+// Mirror cells (Session 5E-2b): a pilot whose power is under the league's AI meets an AI at their own power (the standing rule
+// above), so two such kits fly near-mirror matches and their true step is a few points: smaller than the sampling noise of one
+// 96-match cell (a win-rate difference has a standard error of ~0.07). Since 5E-2b a match has about 3 supers with a timing-bar
+// outcome each (fewer, bigger, more varied moments), which widened that noise. So a step between two mirror kits is judged
+// with the SAME three rules on the leagues where it is a mirror step pooled together (up to 4 x 96 matches a kit), plus a guard
+// in every single league (never more than 8 points of wins or 0.04 of damage trade worse). Every other step is judged per
+// league exactly as before.
+const mirror = (lg, k) => { const p = pw(GEAR[k]); return W.eval(`aiLevel(${p},undefined,${lg},1).p`) >= p * 0.94; };
+const pool = {};
 console.log('league       ' + KITS.map(k => k.padStart(14)).join('') + '   (win rate / damage taken per damage dealt, ' + MODES.map(x => x.join(' ')).join(', ') + ')');
 for (let lg = 0; lg < 7; lg++) {
   const rows = KITS.map(k => agg(lg, k));
   console.log(LGN[lg].padEnd(13) + rows.map(r => ((r.win * 100).toFixed(0) + '% / ' + r.ratio.toFixed(2)).padStart(14)).join(''));
   for (let i = 1; i < rows.length; i++) {
     const a = rows[i - 1], b = rows[i], tag = LGN[lg] + ': ' + KITS[i] + ' vs ' + KITS[i - 1] + ' (wins ' + (a.win * 100).toFixed(0) + '% -> ' + (b.win * 100).toFixed(0) + '%, taken/dealt ' + a.ratio.toFixed(2) + ' -> ' + b.ratio.toFixed(2) + ', ' + a.n + ' matches a kit)';
+    if (mirror(lg, KITS[i - 1]) && mirror(lg, KITS[i])) {
+      ok(b.win >= a.win - 0.08 && b.ratio <= a.ratio + 0.04, tag + ': a mirror gear step is never materially worse in any league');
+      const P = pool[i] ||= { a: { w: 0, n: 0, r: 0 }, b: { w: 0, n: 0, r: 0 }, lgs: [] }; P.lgs.push(LGN[lg]);
+      P.a.w += a.win * a.n; P.a.n += a.n; P.a.r += a.ratio * a.n; P.b.w += b.win * b.n; P.b.n += b.n; P.b.r += b.ratio * b.n; continue;
+    }
     ok(b.win >= a.win - 0.05, tag + ': a gear step never wins less');
     ok(b.ratio <= a.ratio + 0.04, tag + ': a gear step never trades damage worse');
     ok(b.win >= a.win + 0.03 || b.ratio <= a.ratio - 0.02 || (a.win >= 0.97 && b.win >= 0.97 && b.ratio <= a.ratio), tag + ': a gear step is felt (more wins or a better trade)');
   }
   const s = rows[0], l = rows[4]; ok(l.win >= s.win + 0.3 && l.ratio <= s.ratio - 0.3, LGN[lg] + ': stock -> Legendary is a big step (' + (s.win * 100).toFixed(0) + '% -> ' + (l.win * 100).toFixed(0) + '%, taken/dealt ' + s.ratio.toFixed(2) + ' -> ' + l.ratio.toFixed(2) + ')');
 }
+for (const i in pool) { const P = pool[i], a = { win: P.a.w / P.a.n, ratio: P.a.r / P.a.n }, b = { win: P.b.w / P.b.n, ratio: P.b.r / P.b.n };
+  const tag = 'mirror leagues (' + P.lgs.join(', ') + '): ' + KITS[i] + ' vs ' + KITS[i - 1] + ' (wins ' + (a.win * 100).toFixed(1) + '% -> ' + (b.win * 100).toFixed(1) + '%, taken/dealt ' + a.ratio.toFixed(3) + ' -> ' + b.ratio.toFixed(3) + ', ' + P.a.n + ' matches a kit)';
+  console.log(tag);
+  ok(b.win >= a.win - 0.05, tag + ': a gear step never wins less');
+  ok(b.ratio <= a.ratio + 0.04, tag + ': a gear step never trades damage worse');
+  ok(b.win >= a.win + 0.03 || b.ratio <= a.ratio - 0.02, tag + ': a gear step is felt (more wins or a better trade)'); }
 { const s = agg(0, 'stock', [['arena', '1v1'], ['arena', '3v3'], ['bounty', '1v1']]); ok(s.win >= 0.35 && s.win <= 0.7, 'a stock tank in Rookie has a fight (' + (s.win * 100).toFixed(0) + '% wins in Arena and Bounty)'); }
 { const c = T[6]['arena 1v1'].legend; ok(c.ratio <= 0.72 && c.win >= 0.75, 'Lunar Legend arena 1v1: the Legendary kit takes at most ~65% of the damage it deals and wins most fights (' + c.ratio.toFixed(2) + ', ' + (c.win * 100).toFixed(0) + '%)'); }
 { const c = T[6]['bounty 1v1'].legend; ok(c.win >= 0.75 && c.kills >= c.deaths * 1.5, 'Lunar Legend bounty 1v1: the Legendary kit wins most fights and scores well over one kill a death (' + (c.win * 100).toFixed(0) + '%, ' + c.kills + ' kills / ' + c.deaths + ' deaths; in Bounty a heavier tank dies dearer, so kills, not damage, measure the trade)'); }

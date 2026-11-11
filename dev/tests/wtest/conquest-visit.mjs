@@ -8,7 +8,7 @@ globalThis.fetch=async(url,init)=>{if(String(url).startsWith('https://warmachine
 const {default:worker}=await import('../../../worker/src/index.js');const {CONQUEST:{Combat:C,World:W,Plot:P}}=await import('../../../worker/src/sim.gen.js');
 const env={BOT_TOKEN:'conquest-test',FIREBASE_DB_SECRET:'SECRET'};let now=Date.UTC(2026,10,10,12);Date.now=()=>now;
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify({id,first_name:'Pilot'+id})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:4,initData:auth(id),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:5,initData:auth(id),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
 const D=C.baseDefinition,gate={x:D.x,z:D.z,y:W.groundAt(D.x,D.z),surface:'ground'};
 async function pilotWithBase(id,site){await call(id,'/api/sync');await call(id,'/api/conquest/session');const s=db.get('conquest/tg_'+id);s.position=gate;s.battle.enemies=[];s.ledger.cp=1e6;s.ledger.banked={alloy:1e5,biomass:1e5,helium:1e5};db.root.conquest['tg_'+id]=s;

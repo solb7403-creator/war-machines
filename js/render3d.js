@@ -59,7 +59,7 @@ function setPR(){if(!RR||R3.parked)return;const cap=resCap(),auto=gfxMode()==='a
 // (about 80 MB on a 390x844 phone), and comes back at its own size when that view closes
 function park3D(on){R3.parked=!!on;if(!RR)return;if(on){RR.setPixelRatio(1);RR.setSize(1,1,false);}else setPR();}
 function disposeBattle3D(){
- if(!RR)return;clearRange3D();if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}for(const P of Object.values(B3.pool))for(const o of P.items){o.material?.dispose();if(o.geometry?.attributes.position?.count===48*6)o.geometry.dispose();}B3.pool={};for(const p of [PSA,PSN]){p.g.dispose();p.pts.material.dispose();}STARS.geometry.dispose();STARS.material.dispose();for(const m of Object.values(MT))m.dispose();R3.hfRelease?.();R3.hfRelease=null;RR.dispose();CV3?.remove();RR=null;RS=null;R3.ready=false;
+ if(!RR)return;clearRange3D();if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}for(const P of Object.values(B3.pool))for(const o of P.items){o.material?.dispose();if(o.geometry?.attributes.position?.count===48*6)o.geometry.dispose();}B3.pool={};if(SFX){SFX.dispose();SFX.glow.material.dispose();SFX=null;}for(const p of [PSA,PSN]){p.g.dispose();p.pts.material.dispose();}STARS.geometry.dispose();STARS.material.dispose();for(const m of Object.values(MT))m.dispose();R3.hfRelease?.();R3.hfRelease=null;RR.dispose();CV3?.remove();RR=null;RS=null;R3.ready=false;
 }
 function init3D(){
  CV3=document.createElement('canvas');CV3.id='c3';document.body.insertBefore(CV3,document.getElementById('c'));
@@ -74,6 +74,7 @@ function init3D(){
  if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){R3.hfRelease=Equipment3D.attach();Equipment3D.quality=R3.q;Equipment3D.configure(RR,RS);Equipment3D.ensure(R3.q).then(()=>apply3D());}
  MT=mkMats();
  PSA=mkPS(true);PSN=mkPS(false);RS.add(PSA.pts,PSN.pts);
+ SFX=mkSFX();
  STARS=mkStars();RS.add(STARS);
  setPR();
 }
@@ -89,6 +90,21 @@ function mkMats(){
   deck:new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:1}),tun:new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:0.6,depthWrite:false}),
   gglow:new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:0.55,depthWrite:false})};
 }
+// ---------- FX3D (js/fx3d.js): supers and destruction. One glow batch (its own small program, premultiplied: additive glow
+// and dark scorch in one draw) and one debris batch drawn with the map's own lit material (no new program); its particles
+// go into the two particle batches below. Arcade adds at most 2 draw calls while something is on screen, 0 otherwise ----------
+let SFX=null;
+const FXG_VS='attribute vec4 rgba;varying vec4 vC;varying vec2 vU;void main(){vC=rgba;vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
+const FXG_FS='varying vec4 vC;varying vec2 vU;void main(){float d=length(vU);float f=clamp(1.0-d,0.0,1.0);f=f*f*(3.0-2.0*f);gl_FragColor=vec4(vC.rgb*f*(1.9-0.9*smoothstep(0.0,0.55,d)),vC.a*f);}';
+function mkSFX(){
+ if(typeof FX3D==='undefined')return null;
+ const glowMat=new THREE.ShaderMaterial({vertexShader:FXG_VS,fragmentShader:FXG_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,side:THREE.DoubleSide});   // premultiplied: colour adds, alpha darkens (one batch for glow and scorch)
+ const dot=(add,x,y,z,sz,r,g,b,a)=>{const ps=add?PSA:PSN;if(ps.n>=ps.max)return;const i=ps.n++;ps.P[i*3]=x;ps.P[i*3+1]=y;ps.P[i*3+2]=z;ps.C[i*4]=r;ps.C[i*4+1]=g;ps.C[i*4+2]=b;ps.C[i*4+3]=a;ps.S[i]=sz;};
+ return FX3D.create(THREE,{mode:'arcade',scene:RS,low:()=>R3.q==='low',quiet:()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),glowMat,solidMat:MT.lit,glowAttr:'rgba',solidAttr:'color',
+  right:[1,0,0],up:[0,GSN,-GKC],dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:2600,maxVerts:5400,maxParticles:1500,maxDebris:96});
+}
+// what a tank is made of when it breaks: Parasite-style hulls split like chitin, everything else tears like armour
+const tankMat=u=>'armor';
 // ---------- particles: one additive (fire, sparks, glows) and one normal (smoke) system, one draw call each ----------
 const PS_VS='attribute float size;attribute vec4 rgba;varying vec4 vC;uniform float uS;uniform float uMax;uniform float uP;'+
  'void main(){vC=rgba;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*mv;gl_PointSize=min(uMax,size*uS/(uP>0.5?-mv.z:1.0));}';
@@ -210,7 +226,7 @@ const WISP=[0,0,0],WISP_C=['#86dcff','#d4f6ff','#4fb8ff'];
 function lunarWisp(e,f,rise){WISP[0]=e[0]-f*rise*.55;WISP[1]=e[1]+f*rise;WISP[2]=e[2]+Math.sign(e[2])*f*rise*.08;return WISP;}
 
 // ---------- battle state ----------
-let B3={map:null,mapId:null,mapKey:null,units:new Map(),uref:null,crates:new Map(),pool:{},seen:new WeakSet(),shellL0:new WeakMap(),pads:null,wrecks:[],t:0,last:0,dyn:null};
+let B3={map:null,mapId:null,mapKey:null,units:new Map(),uref:null,crates:new Map(),pool:{},seen:new WeakSet(),shellL0:new Map(),pads:null,wrecks:[],t:0,last:0,dyn:null};
 function unitSpec(u){
  let ct=Math.max(0,Math.min(2,u.aura|0));
  if(u===me&&typeof myLoadout==='function'){try{ct=Math.max(0,((typeof rangeRun!=='undefined'&&rangeRun?.sim?rangeRun.cfg.L:myLoadout()).c.t)|0);}catch(e){}}
@@ -311,7 +327,7 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
 
 // ---------- the frame ----------
 function frame3D(shx,shy){
- const now=performance.now(),rawDt=B3.last?(now-B3.last)/1000:0.016,dt=Math.min(0.05,rawDt);B3.last=now;B3.t+=dt;const t=B3.t;
+ const now=performance.now(),rawDt=B3.last?(now-B3.last)/1000:0.016,dt=B3.step||Math.min(0.05,rawDt);B3.last=now;B3.t+=dt;const t=B3.t;   // B3.step: a fixed frame step (dev/tests/super-vfx-capture.py renders effects frame by frame)
  perfWatch(rawDt);
  if(!use3D())return;
  ensureMap();matchObjs();
@@ -320,7 +336,7 @@ function frame3D(shx,shy){
  RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();
  const pr=RR.getPixelRatio(),pxs=s*pr;
  STARS.material.uniforms.uS.value=pr*18;
- poolsBegin();
+ poolsBegin();if(SFX)SFX.begin(dt,t);
  const G=geos(),meUnder=me&&typeof underDeck==='function'&&underDeck(me);
  // map: spinning pylons, deck fades while you're under it, pulsing energy
  for(const sp of B3.map.spin)sp.o.rotation[sp.axis]+=sp.spd*dt;
@@ -332,7 +348,8 @@ function frame3D(shx,shy){
  for(const [c,m] of B3.crates)if(!live.has(c)){RS.remove(m);m.material.dispose();B3.crates.delete(c);}
  for(const c of crates){let m=B3.crates.get(c);
   if(!m){m=new THREE.Group();const mat=new THREE.MeshLambertMaterial({vertexColors:true});m.add(new THREE.Mesh(G.crate.lit,mat));m.material=mat;m.scale.set(c[2],0.85,c[3]);m.position.set(c[0]+c[2]/2,0,c[1]+c[3]/2);RS.add(m);B3.crates.set(c,m);}
-  const f=c.hp/c.mhp;m.material.emissive.setHex(c.flash>0?0x6a4a20:0x000000);m.material.color.setScalar(0.55+0.45*f);m.rotation.z=(1-f)*0.06*Math.sin(c[0]*7);}
+  const f=c.hp/c.mhp;m.material.emissive.setHex(c.flash>0?0x6a4a20:0x000000);m.material.color.setScalar(0.55+0.45*f);m.rotation.z=(1-f)*0.06*Math.sin(c[0]*7);
+  if(SFX&&f<0.7)SFX.wear('crate',c[0]+c[2]/2,0.42,c[1]+c[3]/2,c[2]/2,0.43,c[3]/2,0,f,(c.id|0)*7919+17);}   // damage stages: cracks, scorch, sparks and smoke
  // tanks
  const seen=new Set();
  for(const u of units){
@@ -373,8 +390,12 @@ function frame3D(shx,shy){
   for(const h of o.wmeta.halos){const w=wpos(o.wg,h);once(PSA,w.x,w.y,w.z,h[4]*o.ws*ds*1.6,h[3],0.55);}
   // Lunar: 3 small, faint wisps per emitter (<=4), riding the hull; never drawn on Low or with reduced motion
   if(lfx&&o.spec.lunar&&o.meta.lunar){const E=o.meta.lunar.wisps,ph=(u.id||0)*.37;for(let i=0;i<E.length&&i<4;i++)for(let j=0;j<3;j++){const f=(t*1.7+j/3+ph+i*.29)%1,w=wpos(o.body,lunarWisp(E[i],f,.30));once(PSA,w.x,w.y,w.z,(.17*(1-f)+.05)*ds,WISP_C[j],.48*(1-f)*Math.min(1,f*5));}}
-  // super charging: light gathers at the muzzle
-  if(u.sup&&SUP[u.sup.w]){const S=SUP[u.sup.w],k=1-u.sup.t/S.charge,tp=o.wmeta.tips[0];if(tp){const w=wpos(o.wg,tp);once(PSA,w.x,w.y,w.z,0.6+1.6*k,'#ff5a4a',0.5+0.5*k);once(PSA,w.x,w.y,w.z,0.3+0.6*k,'#ffffff',0.8);}}
+  // super charging: each of the ten supers gathers its own light while the timing bar sweeps (FX3D)
+  if(u.sup&&SUP[u.sup.w]){const S=SUP[u.sup.w],k=Math.min(1,(u.sup.el||0)/SUP_BAR_T);
+   if(SFX)SFX.superCharge(u.sup.k||supKey(u.wtype,u.wtier),k,u.x,hgt,u.y,u.sup.ang,u.sup.oc,S.kind==='nova'?S.r:S.kind==='beam'?S.len:S.range,1);
+   else{const tp=o.wmeta.tips[0];if(tp){const w=wpos(o.wg,tp);once(PSA,w.x,w.y,w.z,0.6+1.6*k,'#ff5a4a',0.5+0.5*k);once(PSA,w.x,w.y,w.z,0.3+0.6*k,'#ffffff',0.8);}}}
+  // damage stages on the hull: cracks under 70% health, scorch and sparks under 45%, smoke under 22%
+  if(SFX&&u.hp<u.mhp*0.7){const bs=ds*(u.boss?1.25:1.15);SFX.wear(tankMat(u),u.x,hgt+0.42*ds/R*0.7,u.y,bs*1.05,0.3*ds/R*0.7,bs*0.8,hd,u.hp/u.mhp,(u.id|0)*977+31);}
   // bounty: a gold star over tanks worth 3+
   if(matchG==='bounty'&&(u.bty||0)>=3){const st=poolGet('star',()=>{const m=new THREE.Group();m.add(new THREE.Mesh(G.star.shine,MT.shine));return m;});
    st.position.set(u.x,hgt+1.9*ds/R*0.7+0.4*Math.sin(t*3),u.y);st.rotation.y=t*2.2;st.scale.setScalar(0.7+Math.min(0.8,(u.bty-3)*0.08));}
@@ -419,11 +440,14 @@ function frame3D(shx,shy){
   once(PSA,m.position.x,m.position.y,m.position.z,w.boss?1.6:2.2,w.boss?'#ff5a3a':'#ff9a45',0.8);emit(PSA,{x:m.position.x,y:m.position.y,z:m.position.z,life:0.35,s0:1.0,s1:0.1,c:'#ffb35a',a:0.8});
   if(R3.q!=='low')emit(PSN,{x:m.position.x,y:m.position.y,z:m.position.z,life:0.8,s0:0.5,s1:1.2,c:'#2c2c30',a:0.45});}
  // super shells (Siege Blast): an arcing fireball
- for(const sh of shells){if(!B3.shellL0.has(sh))B3.shellL0.set(sh,sh.life||1);const L0=B3.shellL0.get(sh),f=1-Math.max(0,sh.life)/L0,hh=0.6+Math.sin(Math.min(1,f)*Math.PI)*2.2;
-  const m=poolGet('shell',()=>new THREE.Mesh(G.sphere,addMat('#ff9d45',1)));m.position.set(sh.x,hh,sh.y);m.scale.setScalar(0.32);
-  once(PSA,sh.x,hh,sh.y,2.4,'#ff7a2f',0.75);once(PSA,sh.x,hh,sh.y,1.0,'#ffe08a',1);emit(PSA,{x:sh.x,y:hh,z:sh.y,life:0.3,s0:0.9,s1:0.1,c:'#ff8a3d'});emit(PSN,{x:sh.x,y:hh,z:sh.y,life:0.9,s0:0.6,s1:1.6,c:'#33302e',a:0.5,vy:0.3});}
+ // In live matches the shell objects are rebuilt from every snapshot, so the arc is keyed by the shell's id.
+ for(const sh of shells){const key=sh.id||sh;let L=B3.shellL0.get(key);if(!L){L={x:sh.x,y:sh.y,d:0};B3.shellL0.set(key,L);}L.d=Math.max(L.d,Math.hypot(sh.x-L.x,sh.y-L.y));
+  const f=Math.min(1,L.d/SUP.siege.range),hh=0.6+Math.sin(f*Math.PI)*2.2;
+  if(SFX)SFX.superShell(sh.k||'siege0',sh.oc===undefined?1:sh.oc,sh.x,hh,sh.y,1);
+  else{const m=poolGet('shell',()=>new THREE.Mesh(G.sphere,addMat('#ff9d45',1)));m.position.set(sh.x,hh,sh.y);m.scale.setScalar(0.32);once(PSA,sh.x,hh,sh.y,2.4,'#ff7a2f',0.75);once(PSA,sh.x,hh,sh.y,1.0,'#ffe08a',1);}}
+ if(B3.shellL0.size>64)B3.shellL0.clear();
  // beams (Pierce Lance, Moonfall)
- for(const bm of beams){const big=(bm.w||1.2)>=1.9,dx=bm.bx-bm.ax,dz=bm.by-bm.ay,L=Math.hypot(dx,dz),a=Math.atan2(dz,dx),k=Math.min(1,bm.t/0.15);
+ if(!SFX)for(const bm of beams){const big=(bm.w||1.2)>=1.9,dx=bm.bx-bm.ax,dz=bm.by-bm.ay,L=Math.hypot(dx,dz),a=Math.atan2(dz,dx),k=Math.min(1,bm.t/0.15);
   const o=poolGet('beam',()=>new THREE.Mesh(G.unit,addMat('#ffffff',1)));o.material.color.set(big?'#64cfff':bm.c);o.material.opacity=0.75*k;
   o.scale.set(L,0.35,0.9*(bm.w||1.2)*(0.7+0.3*k));o.position.set(bm.ax+dx/2,0.55,bm.ay+dz/2);o.rotation.set(0,-a,0);
   const c=poolGet('beamc',()=>new THREE.Mesh(G.unit,addMat('#ffffff',1)));c.material.opacity=k;c.scale.set(L,0.2,0.28*(bm.w||1.2));c.position.copy(o.position);c.rotation.copy(o.rotation);
@@ -434,11 +458,11 @@ function frame3D(shx,shy){
   const f=poolGet('blast',()=>new THREE.Mesh(G.sphere,addMat('#ffffff',1)));f.material.color.set(b.c);f.material.opacity=Math.max(0,1-k)*0.8;f.scale.setScalar(b.r*(0.25+0.6*k));f.position.set(b.x,0.3+b.r*0.2*k,b.y);
   const r=poolGet('bring',()=>new THREE.Mesh(G.ring,addMat('#ffffff',1)));r.material.color.set(b.c);r.material.opacity=Math.max(0,1-k);r.scale.setScalar(b.r*(0.3+0.9*k));r.position.set(b.x,0.06,b.y);}
  // Static Nova: jagged electric rings
- for(const n of novas){const k=1-n.t/n.t0;if(!B3.seen.has(n)){B3.seen.add(n);for(let i=0;i<24;i++){const a=i/24*6.28;emit(PSA,{x:n.x,y:0.5,z:n.y,vx:Math.cos(a)*n.r*2.2,vz:Math.sin(a)*n.r*2.2,drag:3,life:0.45,s0:0.5,s1:0.1,c:'#e9f6ff'});}}
+ if(!SFX)for(const n of novas){const k=1-n.t/n.t0;if(!B3.seen.has(n)){B3.seen.add(n);for(let i=0;i<24;i++){const a=i/24*6.28;emit(PSA,{x:n.x,y:0.5,z:n.y,vx:Math.cos(a)*n.r*2.2,vz:Math.sin(a)*n.r*2.2,drag:3,life:0.45,s0:0.5,s1:0.1,c:'#e9f6ff'});}}
   for(let ring=0;ring<3;ring++){const m=poolGet('nova',()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(48*6*3),3));return new THREE.Mesh(g,addMat('#ffffff',1));});
    novaRing(m.geometry,n.r*(0.25+0.75*k)*(1-ring*0.2),0.12-ring*0.03,k);m.position.set(n.x,0.4+ring*0.15,n.y);m.material.color.set(ring?n.c:'#e9f6ff');m.material.opacity=Math.max(0,1-k);}}
  poolsEnd();
- psStep(PSA,dt);psStep(PSN,dt);psFlush(PSA,pxs);psFlush(PSN,pxs);
+ psStep(PSA,dt);psStep(PSN,dt);if(SFX)SFX.end();psFlush(PSA,pxs);psFlush(PSN,pxs);
  RR.render(RS,RC);
  R3.calls=RR.info.render.calls;
 }
@@ -477,10 +501,19 @@ function muzzle(u,arch){
  emit(PSA,{x:w.x,y:w.y,z:w.z,life:F?.flash||.07,s0:arch==='siege'?1.25:arch==='twin'?.60:.82,s1:0.3,c,a:1,fade:0});
  if(arch==='siege'&&R3.q!=='low')emit(PSN,{x:w.x,y:w.y,z:w.z,life:0.6,s0:0.4,s1:1.1,c:'#4a4c55',a:0.45,vy:0.5});
 }
+const FX3D_RGB=h=>{const n=parseInt(String(h).slice(1),16);return [(n>>16)/255,((n>>8)&255)/255,(n&255)/255];};
 // game events: kills (explosion + wreck), hits (sparks; counters burn gold, resisted hits flash blue), crates breaking
 function ev3D(a){
  if(!use3D()||!RS)return;
  const U=i=>i>=0?units[i]:null;
+ if(SFX){   // supers: each weapon item's own super, by timing-bar outcome (FX3D). a[..] K: super key, oc: 0 miss, 1 hit, 2 jackpot
+  const hOf=i=>{const r=U(i);return r?heightAt(r):0;};
+  if(a[0]==='M'){const K=a[7]||'pulse0',r=U(a[9]),S0=SUP[r?r.wtype:'pulse']||SUP.pulse;SFX.superBeam(K,a[8]===undefined?1:a[8],a[1],hOf(a[9]),a[2],Math.atan2(a[4]-a[2],a[3]-a[1]),Math.hypot(a[3]-a[1],a[4]-a[2]),a[6]||S0.w,1);return;}
+  if(a[0]==='V'){SFX.superNova(a[5]||'twin0',a[6]===undefined?1:a[6],a[1],hOf(a[7]),a[2],a[3],1);return;}
+  if(a[0]==='I'){const K=a[5]||supKey(a[3],0),oc=a[6]===undefined?1:a[6];if(a[7]===2)SFX.superBlast(K,oc,a[1],0,a[2],SUP.siege.r,1);else if(FX3D.KIND[K]!=='nova')SFX.superImpact(K,oc,a[1],0,a[2],a[7]?1:0,1);return;}
+  if(a[0]==='Z'){const r=U(a[1]);if(r)SFX.superLock(a[3],a[2],r.x,heightAt(r),r.y,1);return;}
+  if(a[0]==='X'){SFX.shatter('crate',a[2],0.1,a[3],0.8,0.8,0,0);return;}   // a crate breaks into planks
+ }
  if(a[0]==='I'){impact3(a[1],a[2],a[3]);return;}
  if(a[0]==='k'){const r=U(a[1]);if(!r)return;const o=B3.units.get(r);
   if(o){const w=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:0x1a1c22,transparent:true,emissive:0x2a0c00});
@@ -488,7 +521,10 @@ function ev3D(a){
    const m0=o.body.children[0];if(m0){const c=m0.clone();c.traverse(x=>{if(x.isMesh)x.material=mat;});w.add(c);}
    w.position.copy(o.g.position);w.scale.copy(o.g.scale);w.rotation.y=o.hull.rotation.y+0.3;RS.add(w);
    B3.wrecks.push({g:w,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y});}
-  for(let i=0;i<10;i++){const aa=Math.random()*6.28;emit(PSA,{x:r.x,y:0.6,z:r.y,vx:Math.cos(aa)*4,vz:Math.sin(aa)*4,vy:4+Math.random()*3,g:12,life:0.9,s0:0.3,s1:0.15,c:'#ffb35a'});}
+  // destroyed = breaks apart: the hull tears into plates and chunks in its own colours, thrown away from the killing blow
+  if(SFX){const k=U(a[2]),sz=(r.boss?2.6:1)*(r.dscale||1),hh=heightAt(r),dx=k?r.x-k.x:0,dz=k?r.y-k.y:0;
+   SFX.shatter(tankMat(r),r.x,hh,r.y,0.95*sz,0.8*sz,dx,dz,o?FX3D_RGB(o.spec.team):null);SFX.blast(r.x,hh,r.y,1.1*sz,1);}
+  else for(let i=0;i<10;i++){const aa=Math.random()*6.28;emit(PSA,{x:r.x,y:0.6,z:r.y,vx:Math.cos(aa)*4,vz:Math.sin(aa)*4,vy:4+Math.random()*3,g:12,life:0.9,s0:0.3,s1:0.15,c:'#ffb35a'});}
   return;}
  if(a[0]==='h'&&!a[3]&&a[2]>0){const t=U(a[1]),s=U(a[6]);if(!t)return;
   const dx=s?s.x-t.x:0,dz=s?s.y-t.y:0,d=Math.hypot(dx,dz)||1,x=t.x+dx/d*0.55,z=t.y+dz/d*0.55,y=heightAt(t)+0.5;
@@ -625,7 +661,7 @@ function clearRange3D(){
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
  if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material?.dispose&&!o.material.userData.hfShared)o.material.dispose();if(o.userData.envOwnedTexture)o.material.map?.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});B3.dyn=null;}
- for(const w of B3.wrecks){RS.remove(w.g);w.mat.dispose();}B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new WeakMap();
+ for(const w of B3.wrecks){RS.remove(w.g);w.mat.dispose();}B3.wrecks=[];B3.uref=null;B3.seen=new WeakSet();B3.shellL0=new Map();if(SFX)SFX.clear();
  PSA.live.length=0;PSN.live.length=0;for(const k in B3.pool)for(const o of B3.pool[k].items)o.visible=false;
 }
 

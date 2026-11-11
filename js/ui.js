@@ -1558,8 +1558,8 @@ function labItemFacts(key,spec){
    line('Edge hits',actual.edge?'Precision: '+Math.round(actual.edge*100)+'% of a full hit':Math.round(GRAZE*100)+'% of a full hit');
    line('Weapon quality',actual.premium?'Fixed legendary':live.q+'×');
    line('Super ability',base.sup);
-   if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',+(supreme.dmg*actual.mult).toFixed(2));
-    line('Equipped super damage',+(supreme.dmg*T.wmult*T.dmgM*(1+gem('dmg'))*(supreme.kind==='shell'?projectileImpactMult(T):1)).toFixed(2));
+   if(supreme){line('Super base damage',supreme.dmg);line('Unbuffed super damage',+(supreme.dmg*Math.pow(actual.mult,SUP_GEAR)).toFixed(2));
+    line('Equipped super damage',+(supreme.dmg*Math.pow(T.wmult*T.dmgM*(1+gem('dmg')),SUP_GEAR)*(supreme.kind==='shell'?projectileImpactMult(T):1)).toFixed(2));
     line('Super wind-up',supreme.charge+' sec');}
   }
  }else if(key==='chassis'){

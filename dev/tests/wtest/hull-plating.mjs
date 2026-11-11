@@ -14,7 +14,7 @@ const {checkLoadout}=await import('../../../worker/src/pvp.js');
 const {RULES:R,createSim}=await import('../../../worker/src/sim.gen.js');
 const env={BOT_TOKEN:'hull-plating-test',FIREBASE_DB_SECRET:'SECRET'};
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id,first_name:'Pilot'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:4,initData:auth(id),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:5,initData:auth(id),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
 const eco=id=>db.get('eco/tg_'+id);
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
 

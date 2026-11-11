@@ -54,6 +54,10 @@ const SND={
  ready:()=>tone(320,1250,0.35,'sawtooth',0.04),
  // supers: a sharp crack over a deep bass drop when one fires, a heavy boom where it lands
  super:()=>{burst(0.08,0.32,7000);tone(62,30,0.55,'sine',0.34);tone(190,48,0.28,'sawtooth',0.1);burst(0.45,0.16,1800,0.05);},
+ // the timing bar: a rising gold chime with a heavy thump on a jackpot, a clean tick on a hit, a dull drop on a miss
+ jackpot:()=>{tone(660,660,0.09,'triangle',0.09);tone(880,880,0.09,'triangle',0.09,0.07);tone(1320,1760,0.28,'triangle',0.10,0.14);tone(90,40,0.4,'sine',0.3);burst(0.12,0.2,6000);},
+ supgood:()=>{tone(740,980,0.1,'triangle',0.07);burst(0.05,0.08,3000);},
+ supmiss:()=>tone(240,120,0.18,'sawtooth',0.06),
  impact:()=>{tone(78,26,0.7,'sine',0.42);burst(0.1,0.38,5200);burst(0.75,0.24,1300,0.03);tone(260,55,0.2,'square',0.06);},
  box:()=>{tone(880,880,0.07,'triangle',0.07);tone(1320,1320,0.12,'triangle',0.07,0.07);},
  cap:()=>{tone(523,523,0.1,'triangle',0.07);tone(784,784,0.16,'triangle',0.07,0.09);},
@@ -86,6 +90,9 @@ function fx(name,arg){
   case 'boom':sfx('boom');break;
   case 'super':haptic('i','rigid');sfx('super');break;
   case 'impact':haptic('i','heavy');sfx('impact');break;
+  case 'jackpot':haptic('n','success');haptic('i','heavy');sfx('jackpot');break;
+  case 'supgood':haptic('i','medium');sfx('supgood');break;
+  case 'supmiss':haptic('i','soft');sfx('supmiss');break;
   case 'ready':haptic('i','light');sfx('ready');break;
   case 'box':haptic('i','soft');sfx('box');break;
   case 'crystal':haptic('i','soft');sfx('crystal');break;
