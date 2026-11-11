@@ -1548,37 +1548,87 @@ damage, AI, economy, prices, payments (still DISABLED), save schema or ownership
   back on a shot), clock-driven spin / blink / pulse, card sprites redrawn when the model lands; kit models remain on LOW, in
   the diorama and until the file is in.
 
-### State at the latest push (resume here)
-- **Config complete for all 31 items** (`dev/assets/meshy/config.json`): 9 chassis (tracks, wheels, antennas, glow parts, hazard
-  stripes, lamps; Colossus pods flex and carry their running gear), 9 weapons + Moonbeam (ring, barrels, charge-pulse parts,
-  Moonbeam red core + two blue charge crystals as glow parts over the kept Meshy texture), 12 town items (6 buildings, Tesla
-  tower, 5 turrets with fixed base + tracking head). Authored by four helper agents with the pipeline tools, merged by the lead.
-- **Town mapping (all 12 placed, none left over):** COMMAND CENTER -> `cc`, REACTOR -> `reactor`, REFINERY -> `refinery`, SCIENCE
-  LAB -> `lab`, SHIELD GENERATOR -> `shield`, STORAGE DEPOT -> `storage`, TESLA ARC COIL TOWER -> `tesla`, CANNON -> `cannon`,
-  TWIN-BARREL MG -> `mg`, ROCKET POD -> `rocket`, LASER -> `laser`, RAILGUN -> `railgun`. The other six turret types and the
-  other buildings keep their kit models.
-- **Known deviations / defects to fix or report to the owner:**
-  - Storm Repeater: the three clamps span both barrels in the source, so the gun kicks as one unit (muzzle flash still
-    alternates). Arc Pulse / Storm / Rail Breaker carry their barrel as a `parts` entry (glow on the barrel pulses with charge).
-  - Sentinel: thin mud-flap slivers turn with the wheels on the -Z side in motion (clean at rest). Titan: road wheels overlap
-    in the source, three per side lose a lens. Colossus: the bogie link arm over wheels 3-4 of each pod turns with the wheels;
-    the source has no reactor geometry, so the amber "reactor" is glow patches under the hull. Phantom: wheels turn 4 mm
-    off-centre (fender sits where the top belt run would be).
-  - Bulwark LIGHT: the front ram decimates coarsely; LIGHT budget raised to 24k for it.
-  - Weapon size: muzzle tip kept at today's tip distance, so Meshy turret bodies are wider/taller than today's housings
-    (Pulse Cannon body 1.03 wide vs 0.92). Chassis are shifted so the turret ring is on the model origin.
-  - Town turrets: barrels overhang the 4 m site (cannon tip 3.0 m from the pivot, railgun 3.4 m); cannon / rocket / laser use a
-    `parts` ring with `ringTop: -1` (the build prints a harmless "part ring selected no faces").
-  - Conquest enemy hulls and the town diorama / LOW town stay on the procedural kit models.
-- **Next steps, in order:**
-  1. If `js/assets/meshy-v1/` does not hold 62 GLBs + `manifest.json`, run the full batch
-     (`python dev/assets/meshy/build.py --src <originals>`; originals = release `meshy-models`, `GLB.downloaded.3D.images.zip`;
-     about 35 minutes on 4 cores) and commit the output.
-  2. `node dev/tests/meshy.mjs` (asset + contract test, already in `website-check.yml`), the graphics / Conquest node tests,
-     then the browser suites (programs <= 16 and the CC10 Home Sector draw budget are the ones Meshy town models can break).
-  3. Real-app proof: `node worker/build-web.mjs && node dev/assets/meshy/proof/app.mjs docs/art/meshy-proof/app` (Garage + battle
-     before/after on HIGH and LOW for ten loadouts, every chassis x paint + Lunar sheet, load sizes/times, frame times), motion
-     frame sequences with `proof/view.mjs`, a town capture (no real town screenshot has been taken yet: the town hooks are
-     written but only syntax-checked and covered by the node town tests).
-  4. Manifest table (source file -> game item, triangles and size before/after), the four retexture candidates with prompts,
-     final checkpoint, PR for CI only. No merge, no deploy.
+### State at the latest push (resume here) — written Nov 11 before context compaction
+**Branch** `claude/meshy-models-integration-xixuuv` (from main `9e25c2c`), everything below is pushed. No PR yet, nothing merged or deployed.
+
+**Done and verified**
+- All 31 items built and committed: `js/assets/meshy-v1/` = 62 GLBs + `manifest.json` (LIGHT 16.4 MB total, FULL 66.6 MB, largest
+  FULL 4.7 MB; originals 808 MB / 33.2M triangles, never committed). Table: `docs/art/meshy-proof/MANIFEST.md`.
+- `node dev/tests/meshy.mjs`: PASS, 1784 checks (in `website-check.yml`). Existing node suites still pass (graphics-motion,
+  graphics-release, hf-collection, hf-foundation, environment, chassis-family, defender-visual, legendary-visual, map-layout,
+  conquest-townkit, conquest-town, conquest-plot, conquest-style).
+- Real app (website build + fixture Worker, `dev/assets/meshy/proof/app.mjs`): ten loadouts, Garage + Free Test battle, HIGH and
+  LOW, before/after, **0 page errors**; every "after" tank is Meshy (chassis + weapon). Battle draw calls 47 -> 30, shader
+  programs 17 -> 14, triangles 40k -> 58k (two tanks + map, HIGH); LOW 17k -> 36k. Frame times there are software-GL numbers.
+- Town: `python dev/tests/conquest-town-captures.py` PASSES with the Meshy hookup live (no page errors, programs <= 16:
+  gallery HIGH 15, CC10 towns 11); the Meshy Command Center stands in the town and on its card
+  (`docs/art/meshy-proof/town/`).
+- `docs/art/meshy-proof/RETEXTURE.md`: the four retexture candidates with prompts (Command Center, Titanfall, Nova Pulse,
+  Storage Depot; chassis excluded on purpose because their armour must stay paint-tintable).
+
+**Approved settings (Gate 1, all in `dev/assets/meshy/config.json`)**
+- LIGHT: chassis 18,000 triangles (Bulwark 24,000), weapons / Moonbeam 7,000, town 6,000; 512 px maps; maxError 0.03,
+  crease 38 deg, padding 2, cage 0.012, 2x2 supersampled bake, hidden faces 0.3 texel scale, LOW index ratio 0.45.
+- FULL: chassis 120,000 + 2048 px, weapons 45,000 + 1024 px, Moonbeam 45,000 + 2048 px, town 40,000 + 1024 px; maxError 0.01,
+  padding 2, cage 0.008, 2x2 supersample, hidden 0.2; WebP normal 88 / base 86 / ORM 82 / mask 84.
+- Looks: `common` olive camo, `rare` silver + violet, `epic` dark + gold/amber, `weapon-*` (not paint-tinted), `town`, `moon`
+  (texture kept). Runtime glow gain 1.25 (clamped), environment intensity 1.0.
+
+**OWNER DIRECTION Nov 11 (mid-session, overrides the earlier weapon sizing) and the lead's decisions**
+Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassis. Requirements, with the later correction applied:
+1. Each weapon is scaled only UNIFORMLY as a whole (no stretching of any part); it keeps its design identity (Pulse one barrel,
+   Twin two, Siege short and thick, rails long). The "barrel 25-50% past the front" guide is dropped.
+2. Fit per class AND tier from measured hull dimensions: turret body width about 55-75% of hull width and never wider than the
+   hull, footprint inside the hull deck, turret height no more than about the hull's height, low aggressive silhouette, never
+   top-heavy. Heavier classes carry visibly heavier guns. Where a guide conflicts with the owner's chosen reference image in
+   `docs/art/references/tanks/`, the reference wins.
+3. Tier upgrades are visible through fit size: within a line Epic sits slightly larger than Rare, Rare than Common, still
+   inside the hull guides.
+4. Hitbox, muzzle and VFX positions stay correct. Check chassis and weapon colours against the chosen references; stock paint
+   must match the intended stock look and paints must still tint armour.
+5. Put a before/after proportion sheet for all 9 chassis x their weapons in `docs/art/meshy-proof/`, review it against the
+   references, refit anything toy-like, top-heavy or undersized.
+**Decisions logged (no questions asked, per owner):**
+- D1. The fit is computed at runtime from numbers already in every GLB (hull: `meta.visual` trackZ / trackW / ring / x0 / x1;
+  weapon: `meta.visual.width` + bounding box), so no asset rebuild is needed and a future Meshy re-export refits itself.
+  scale = min( k(tier) x hullWidth / turretBodyWidth, hullHeight x h(tier) / turretHeight, rear overhang inside the hull,
+  full weapon width <= hull width ), with k = 0.58 / 0.65 / 0.72 and h = 0.85 / 0.92 / 1.0 for Common / Rare / Epic.
+  The hull tier does not enter except through its own measured size. Applied once on the weapon group (uniform).
+- D2. This replaces the interim class map pushed in `1ee437a` (scout .64, vanguard .8, titan .92).
+- D3. The Moonbeam keeps the game's `MOON_SCALE` class map but is capped by the same hull guides.
+- D4. Gameplay is untouched: the simulation never reads visuals; muzzle flashes, halos and recoil use weapon-local points
+  inside the scaled group, so they stay on the visible muzzles.
+- D5. `M3.weaponKit` gets the chassis tier as an extra argument so the fit knows the exact hull (callers: `render3d.js`
+  buildTank, `showroom.js`, `conquest/view.js`).
+
+**Open problems / known deviations**
+- Weapon fit (above) is NOT implemented yet: this is the next task. The committed `docs/art/meshy-proof/app/` sheets (if
+  present) predate it and must be regenerated.
+- Stock colour check against the nine chosen chassis images has not been done pairing by pairing (Vanguard camo was tuned by
+  eye; Rare was darkened once because it rendered near-white).
+- Storm Repeater kicks as one unit (clamps span both barrels in the source). Arc Pulse / Storm / Rail Breaker carry the barrel
+  as a `parts` entry so barrel glow pulses with charge.
+- Sentinel: mud-flap slivers turn with the wheels on the -Z side in motion. Titan: overlapping source wheels, three per side
+  lose a lens. Colossus: bogie link arm over wheels 3-4 of each pod turns with the wheels; no reactor geometry in the source
+  (amber glow patches under the hull instead). Phantom: wheels turn 4 mm off-centre. Bulwark LIGHT: front ram coarse.
+- Town turrets overhang their 4 m site with the barrel (cannon 3.0 m from the pivot, railgun 3.4 m). Cannon / rocket / laser
+  use a `parts` ring with `ringTop: -1` (harmless build warning). Town level is shown by a small scale step only.
+- Conquest enemy hulls, the town diorama and LOW-graphics town stay on the procedural kit models. LOW battle triangles
+  (36k for two tanks + map) are above the old 17k: acceptable on software GL, unmeasured on a real low-end phone.
+- Website CSP forbids WebAssembly: the plain-JS meshopt decoder is used everywhere (fine for LIGHT; a FULL chassis decodes in
+  well under a second on desktop, unmeasured on a phone).
+- Physical iPhone / Telegram check has not been done by anyone.
+
+**Remaining work, in order**
+1. Implement the weapon fit (D1-D5) in `js/meshy3d.js` (+ the three callers), rerun `node dev/tests/meshy.mjs` and the graphics
+   node tests.
+2. Proportion sheet: all 9 chassis x 10 weapons, before (uniform scale 1) and after (fit), into `docs/art/meshy-proof/fit/`;
+   review against `docs/art/references/tanks/chosen/`; refit; log the result here.
+3. Colour check of the 9 chassis + 10 weapons against the references; adjust `looks` / `lookOverride` in the config; rebuild only
+   the items that change (`build.py --only ...`; originals: release `meshy-models`).
+4. Regenerate the app proof: `node worker/build-web.mjs && node dev/assets/meshy/proof/app.mjs <dir>` then
+   `python dev/assets/meshy/proof/sheets.py <dir> docs/art/meshy-proof/app`; motion sequences:
+   `python dev/assets/meshy/proof/motion.py js/assets/meshy-v1 docs/art/meshy-proof/motion`.
+5. Write `docs/art/meshy-proof/README.md` (what each sheet shows, load size/time, frame time and memory with the honest
+   software-GL caveat), run the browser suites (`conquest-check.yml`, `website-check.yml`, `lab-ui-check.yml` lists), open the
+   PR for CI only. No merge, no deploy.
