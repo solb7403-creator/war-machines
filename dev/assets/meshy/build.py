@@ -580,6 +580,19 @@ def item_meta(item, cfg, H, S):
         meta.update(size=[float(x) for x in (mx - mn)])
         if S.tips:
             meta['tips'] = S.tips
+        ri = next((i for i, p in enumerate(S.parts) if p['name'] == 'ring'), None)
+        if ri is not None:   # a turret: the head turns about the centre of the pedestal's neck (top band of the fixed base)
+            from lib import segment as sg
+            top = item['turret']['ringTop']
+            m = (S.part == ri) & (H.C[:, 1] > 0.55 * top)
+            pv = [float(np.average(H.C[m, 0], weights=H.FA[m])), float(np.average(H.C[m, 2], weights=H.FA[m]))] if m.any() else [0.0, 0.0]
+            rad = float(np.percentile(np.hypot(H.C[m, 0] - pv[0], H.C[m, 2] - pv[1]), 95)) if m.any() else 1.0
+            cand = sg.find_wheels(H.C[m][:, [0, 2, 1]], H.FN[m][:, [0, 2, 1]], H.FA[m], (0.55 * top, top, pv[1] - 0.4 * rad, pv[1] + 0.4 * rad, pv[0] - 0.4 * rad, pv[0] + 0.4 * rad),
+                                  rmin=0.3 * rad, rmax=1.3 * rad, min_sep=rad, max_wheels=1, res=max(0.01, rad / 60), thresh=0.5) if m.sum() > 200 else []
+            if cand:
+                pv = [float(cand[0][0]), float(cand[0][1])]
+            meta['pivot'] = item.get('pivot', pv); meta['headFrom'] = float(top)
+            meta['recoil'] = float(max([b.get('recoil', 0) for b in item['turret'].get('barrels', [])] or [0.2]))
     meta.update(item.get('meta', {}))
     return meta
 

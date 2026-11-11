@@ -784,6 +784,9 @@ function renderRanks(){
 const SCREENS={play:renderPlay,garage:renderGarage,shop:renderShop,quests:renderQuests,ranks:renderRanks};
 
 // ---------- canvases inside the menus ----------
+// a Meshy model that just arrived replaces its procedural stand-in in the menu pictures too (one repaint per burst)
+let meshyArtTimer=0;
+if(typeof addEventListener==='function')addEventListener('lunar-meshy-ready',()=>{clearTimeout(meshyArtTimer);meshyArtTimer=setTimeout(()=>{try{if(typeof inGame==='undefined'||!inGame)paintArt(document);}catch(e){}},150);});
 function paintArt(root){
  for(const c of root.querySelectorAll('canvas[data-art]')){
   const w=c.clientWidth,h=c.clientHeight;if(!w||!h)continue;

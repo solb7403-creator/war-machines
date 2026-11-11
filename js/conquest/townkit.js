@@ -212,7 +212,12 @@ function walls(R,p,pl,low,group,mini){const {T,k}=R,M4=new T.Matrix4(),_q=new T.
  if(pl.rubble.length){const m=inst(R,cached(R.wgeo,'rubble',()=>k.rubble()),pl.rubble.length);pl.rubble.forEach((kk,n)=>{const [i,j]=kk.split(',').map(Number);_q.setFromAxisAngle(_s.set(0,1,0),(i*7+j*3)%4*Math.PI/2);M4.compose(_v.set(P.cellX(i),Math.max(R.ymin??-1e9,P.groundY(p.site,i,j)),P.cellZ(j)),_q,_s.set(1,1,1));m.setMatrixAt(n,M4);});m.instanceMatrix.needsUpdate=true;group.add(m);}
  return {wim,wcell,wpost};}
 function turrets(R,p,pl,theme,group){const {T,k}=R,M4=new T.Matrix4(),tur=new Map();
- for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':'),tk2=kk+':'+(theme?.finish||'')+(theme?.light||''),bg=cached(R.tgeo,tk2+':b',()=>k.building(t,+l,theme).geometry()),hg=cached(R.tgeo,tk2+':h',()=>k.head(t,+l).geometry()),base=inst(R,bg,list.length),hd=inst(R,hg,list.length);
+ for(const [kk,list] of pl.turrets){const [t,l]=kk.split(':');
+  // the owner's Meshy turret when its file is in (HIGH): an instanced fixed base and an instanced head, pedestal on the cell centre
+  const my=!R.S.low&&typeof Meshy3D!=='undefined'?Meshy3D.townTurret(t,list.length,+l,theme,false):null;
+  if(my){const items=list.map(([id,b],n)=>{const x=P.cellX(b.i),z=P.cellZ(b.j),y=P.groundY(p.site,b.i,b.j);my.base.setMatrixAt(n,my.matrix(M4,x,y,z,0,0,false));my.hd.setMatrixAt(n,my.matrix(M4,x,y,z,0,0,false));return {id,t,x,y,z,n,spin:(b.i*7+b.j*3)%6};});
+   my.base.instanceMatrix.needsUpdate=my.hd.instanceMatrix.needsUpdate=true;group.add(my.base,my.hd);tur.set(kk,{base:my.base,hd:my.hd,items,meshy:my});continue;}
+  const tk2=kk+':'+(theme?.finish||'')+(theme?.light||''),bg=cached(R.tgeo,tk2+':b',()=>k.building(t,+l,theme).geometry()),hg=cached(R.tgeo,tk2+':h',()=>k.head(t,+l).geometry()),base=inst(R,bg,list.length),hd=inst(R,hg,list.length);
   const items=list.map(([id,b],n)=>{const x=P.cellX(b.i),z=P.cellZ(b.j),y=P.groundY(p.site,b.i,b.j);M4.makeTranslation(x,y,z);base.setMatrixAt(n,M4);M4.makeTranslation(x,y+1.4+(+l)*.15,z);hd.setMatrixAt(n,M4);return {id,t,x,y:y+1.4+(+l)*.15,z,n,spin:(b.i*7+b.j*3)%6};});
   base.instanceMatrix.needsUpdate=hd.instanceMatrix.needsUpdate=true;group.add(base,hd);tur.set(kk,{base,hd,items});}
  return tur;}

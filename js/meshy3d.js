@@ -127,12 +127,20 @@ const Meshy3D=(()=>{
    const rec=m.items[id];if(!rec||!rec[q]){e.state='missing';return null;}
    const [r]=await Promise.all([fetch(baseUrl+id+'-'+q+'.glb?h='+(rec[q].hash||m.build||'')),decoder()]);if(!r.ok)fail('fetch '+r.status);
    const buf=await r.arrayBuffer(),asset=await decode(buf,{maxTexture:maxTextureFor(q)});
-   asset.id=id;asset.quality=q;asset.record=rec;e.asset=asset;e.state='ready';e.ms=(typeof performance!=='undefined'?performance.now():0)-e.t0;e.bytes=buf.byteLength;
+   asset.id=id;asset.quality=q;asset.record=rec;asset.refs=0;e.asset=asset;e.state='ready';e.used=++clock;evict();e.ms=(typeof performance!=='undefined'?performance.now():0)-e.t0;e.bytes=buf.byteLength;
    stats.bytes+=buf.byteLength;stats.ready++;stats.log.push({id,q,bytes:buf.byteLength,ms:Math.round(e.ms)});emit();return asset;
   }).catch(err=>{e.state='error';e.error=String(err&&err.message||err);stats.failed++;return null;});
   return null;
  }
- const peek=(id,q)=>{const e=store.get(id+'|'+q);return e&&e.state==='ready'?e.asset:null;};
+ const peek=(id,q)=>{const e=store.get(id+'|'+q);if(e&&e.state==='ready'){e.used=++clock;return e.asset;}return null;};
+ // memory: models nobody is drawing are dropped least-recently-used first once the cache is over its size
+ // (a later request reloads from the browser's HTTP cache). Sizes are GPU texture bytes + geometry, estimated.
+ let clock=0;const LIMIT={light:(typeof navigator!=='undefined'&&navigator.deviceMemory&&navigator.deviceMemory<=4?10:18),full:3};
+ function evict(){
+  for(const q of ['light','full']){const idle=[...store].filter(([k,e])=>e.state==='ready'&&k.endsWith('|'+q));let over=idle.length-LIMIT[q];if(over<=0)continue;
+   for(const [k,e] of idle.filter(([,e])=>!e.asset.refs).sort((a,b)=>(a[1].used||0)-(b[1].used||0))){if(over--<=0)break;free(e.asset);store.delete(k);}}
+ }
+ function free(a){a.geometry.dispose();a.lowGeometry&&a.lowGeometry.dispose();a.partTex&&a.partTex.dispose();for(const g of Object.values(a.split||{}))g.dispose();for(const t of Object.values(a.maps)){t.dispose();t.image&&t.image.close&&t.image.close();}}
  // best asset for the current detail scope: FULL when a close-up asked for it and it has arrived, LIGHT meanwhile
  function best(id){
   if(detail==='none')return null;
@@ -220,7 +228,7 @@ const Meshy3D=(()=>{
   const U=paintUniforms(asset,d.paint,d.lunar),mat=makeMaterial(asset,q,U);
   let geo=asset.geometry;
   if(q==='low'&&asset.lowIndex){if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}geo=asset.lowGeometry;}
-  const m=new THREE.Mesh(geo,mat),g=new THREE.Group();m.castShadow=true;m.receiveShadow=true;m.userData.meshy={asset,U,kind:asset.info.kind};
+  const m=new THREE.Mesh(geo,mat),g=new THREE.Group();m.castShadow=true;m.receiveShadow=true;m.userData.meshy={asset,U,kind:asset.info.kind};asset.refs=(asset.refs||0)+1;
   if((asset.info.kind==='weapon'||asset.info.kind==='moon')&&asset.partTex)m.onBeforeRender=aimHook;
   g.add(m);g.userData.meshyGroup=true;return g;
  }
@@ -291,12 +299,57 @@ const Meshy3D=(()=>{
     }
    },dispose(){list.length=0;}};
  }
+ // ---- Conquest town: buildings are one mesh, turrets an instanced fixed base plus an instanced head ----
+ // Pipeline space faces +X; the town kit faces +Z, so town models are turned a quarter once here.
+ const TOWN_YAW=-Math.PI/2,townLive=new Set();
+ const townScale=(type,l)=>type==='cc'?.78+.0245*(Math.max(1,l)-1):.82+.045*(Math.min(5,Math.max(1,l))-1);
+ const townAsset=type=>enabled&&detail!=='none'?request('town-'+type,'light'):null;
+ const townStamp=types=>enabled?types.map(t=>peek('town-'+t,'light')?1:0).join(''):'';
+ const THEME_FINISH={sand:'#8f7c62',graphite:'#353d49'},THEME_LIGHT={cyan:'#22e6ff',amber:'#ffb347',violet:'#b78bff',green:'#3fe0c0',red:'#ff5a4a'};
+ // one material per model and theme, shared by every instance (town motion is clock-driven, so nothing is per instance)
+ function townMaterial(asset,theme,low){
+  const key=(low?'l':'h')+'|'+(theme&&theme.finish||'')+'|'+(theme&&theme.light||'');asset.townMats=asset.townMats||new Map();let m=asset.townMats.get(key);if(m)return m;
+  const U=paintUniforms(asset,null,false),L=asset.info.look||{};
+  if(theme&&THEME_FINISH[theme.finish]){const c=lin(THEME_FINISH[theme.finish]);U.uPaintA.value=ratio(c,lin(L.paintA||'#808890'));U.uPaintB.value=ratio(c.clone().multiplyScalar(.8),lin(L.paintB||L.paintA||'#808890'));}
+  if(theme&&THEME_LIGHT[theme.light]){const c=lin(THEME_LIGHT[theme.light]);U.uGlowTint.value.set(c.r,c.g,c.b,1);}
+  m=makeMaterial(asset,low?'low':'high',U);m.userData.meshyOwned=false;m.userData.town=true;asset.townMats.set(key,m);townLive.add(U);return m;
+ }
+ // index subsets of one geometry: the fixed base (part "ring") and the head (everything else)
+ function townSplit(asset){
+  if(asset.split!==undefined)return asset.split;const parts=asset.info.parts||[],ri=parts.findIndex(p=>p.name==='ring'),g=asset.geometry;
+  if(ri<0||!g.attributes.mot){asset.split=null;return null;}
+  const ix=g.index.array,mot=g.attributes.mot.array,A=[],B=[];for(let i=0;i<ix.length;i+=3)(mot[ix[i]*4]===ri?A:B).push(ix[i],ix[i+1],ix[i+2]);
+  const mk=list=>{const n=new THREE.BufferGeometry();for(const [k,a] of Object.entries(g.attributes))n.setAttribute(k,a);n.setIndex(new THREE.BufferAttribute(new (ix.constructor)(list),1));n.boundingBox=g.boundingBox;n.boundingSphere=g.boundingSphere;n.userData.hfShared=true;n.userData.meshy=true;return n;};
+  asset.split={base:mk(A),head:mk(B)};return asset.split;
+ }
+ const townPivot=asset=>(asset.info.meta&&asset.info.meta.pivot)||[0,0];
+ // a building (or a turret drawn alone: under construction, cards) as a group at the footprint centre, facing +Z
+ function townBuilding(type,lvl,theme,low){
+  const asset=townAsset(type);if(!asset)return null;
+  const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
+  const place=geo=>{const m=new THREE.Mesh(geo,mat);m.rotation.y=TOWN_YAW;m.position.set(-(pv[0]*Math.cos(TOWN_YAW)+pv[1]*Math.sin(TOWN_YAW)),0,-(-pv[0]*Math.sin(TOWN_YAW)+pv[1]*Math.cos(TOWN_YAW)));m.userData.meshyTown=asset;return m;};
+  if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(asset.geometry));
+  g.userData.meshyTown=asset.id;asset.refs=(asset.refs||0)+1;g.userData.meshyTownRelease=()=>{asset.refs=Math.max(0,asset.refs-1);};return g;
+ }
+ // instanced turret set: {base, hd, matrix(out, x, y, z, aim, kick, dead)} with the pedestal centred on the cell
+ function townTurret(type,count,lvl,theme,low){
+  const asset=townAsset(type),sp=asset&&townSplit(asset);if(!sp)return null;
+  const mat=townMaterial(asset,theme,low),n=Math.max(1,count),base=new THREE.InstancedMesh(sp.base,mat,n),hd=new THREE.InstancedMesh(sp.head,mat,n),pv=townPivot(asset),sc=.9+.025*(Math.max(1,lvl)-1);
+  base.count=hd.count=count;base.frustumCulled=hd.frustumCulled=false;
+  const q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),s3=new THREE.Vector3(),off=new THREE.Vector3();
+  // model point p -> world: T(x,y,z) * R(yaw) * S * T(-pivot); kick slides the head back along its aim
+  const matrix=(out,x,y,z,aim,kick,dead)=>{const yaw=aim+TOWN_YAW;q.setFromAxisAngle(up,yaw);const k=dead?0:sc;off.set(-pv[0]*k,0,-pv[1]*k).applyQuaternion(q);
+   v.set(x+off.x-Math.sin(aim)*(kick||0),y,z+off.z-Math.cos(aim)*(kick||0));return out.compose(v,q,s3.set(k,k,k));};
+  asset.refs=(asset.refs||0)+2;return {base,hd,matrix,asset,meshy:true,recoil:(asset.info.meta&&asset.info.meta.recoil)||.22};
+ }
+ // clock-driven channels of every live town material (spinning dishes, blinking lights, pulsing cores)
+ function townStep(t,quiet){for(const U of townLive){const c=U.uCh.value;c[CH.time]=quiet?0:t;c[CH.pulse]=quiet?.8:.72+.28*Math.sin(t*2.6);c[CH.sway]=quiet?0:Math.sin(t*2.3)*.6;c[CH.charge]=quiet?.3:.5+.5*Math.sin(t*1.7);}}
  // free the per-mesh materials of a removed tree (geometry and maps are shared and stay cached)
- function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.meshyOwned){o.material.dispose();o.onBeforeRender=()=>{};}});}
+ function release(root){if(!root||!root.traverse)return;root.traverse(o=>{if(o.userData.meshyTownRelease){o.userData.meshyTownRelease();delete o.userData.meshyTownRelease;}if(o.isMesh&&o.material&&o.material.userData&&o.material.userData.meshyOwned&&!o.userData.meshyReleased){o.userData.meshyReleased=true;o.material.dispose();o.onBeforeRender=()=>{};const a=o.userData.meshy&&o.userData.meshy.asset;if(a)a.refs=Math.max(0,(a.refs||0)-1);}});}
  // warm the cache for a loadout (LIGHT only): called when a loadout is known before it is drawn
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
- function dispose(){for(const e of store.values())if(e.asset){e.asset.geometry.dispose();e.asset.lowGeometry&&e.asset.lowGeometry.dispose();e.asset.partTex&&e.asset.partTex.dispose();for(const t of Object.values(e.asset.maps)){t.dispose();t.image&&t.image.close&&t.image.close();}}store.clear();generation++;}
+ function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
  return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
-  decode,container,request,peek,best,withDetail,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
+  decode,container,request,peek,best,withDetail,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;

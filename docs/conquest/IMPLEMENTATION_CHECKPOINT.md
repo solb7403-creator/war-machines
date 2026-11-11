@@ -1516,3 +1516,47 @@ Payments stay DISABLED. Economy rules, payouts, caps, PvP rules, gear stats: unc
 - Payments stay disabled; payouts, caps, league rates, gear stats and PvP rules unchanged. PHYSICAL_IPHONE_UNVERIFIED and Telegram
   Desktop unverified until the owner's playtest. Next: 5E Models, then Session 6 (`docs/ROADMAP.md`).
 
+
+## Checkpoint 31 — Session 5E-1: Meshy models into the game (branch `claude/meshy-models-integration-xixuuv`, from main `9e25c2c`) — IN PROGRESS
+
+Brief: owner's Session 5E-1 prompt (models only; arcade maps and the war-model addendum are 5E-2). Visual only: no stats, hitboxes,
+damage, AI, economy, prices, payments (still DISABLED), save schema or ownership touched. No merge/deploy without owner approval.
+
+### What exists on the branch (pushed)
+- **Pipeline** `dev/assets/meshy/` (one script `build.py`, one config `config.json`, README with the whole schema): orient + size to the
+  game, cut moving parts on the original mesh, decimate to LIGHT and FULL, unwrap (axis-projected charts packed by xatlas,
+  hidden faces get fewer texels), bake normal + AO + curvature from the original in the renderer's own tangent frame, synthesize
+  base / ORM / mask maps (`lib/paint.py`), write quantized meshopt GLBs with embedded WebP maps + manifest. Textured sources
+  (Moonbeam, later Meshy retextures) take colour / roughness / metal / normal detail from their own maps (`"textured": true`).
+- **Gate 1 (Vanguard): PASSED**, proof in `docs/art/meshy-proof/gate1/` (LIGHT 0.981-0.982 SSIM at phone battle size; FULL 0.996 /
+  0.983 / 0.975 at battle / Garage / 1920 desktop and indistinguishable on inspection). Settings approved: LIGHT chassis 18k
+  triangles + 512 px maps, FULL chassis 120k + 2048 px; weapons 7k / 45k; town 6k / 40k.
+- **Moving parts, data-driven** (every vertex carries a part index; the part table rides in a small float texture; a tank only
+  uploads 16 channel values): tracks = belt rebuilt from one clean link repeated around the hull of the wheel circles and conveyed
+  along that path in the vertex shader; road wheels spin by their own radius (tread liner keeps them round where they were fused
+  to the belt); turret base ring stays with the hull while the turret aims; each barrel recoils on its own channel; Helix
+  clusters spin up and down; antennas sway; glow parts pulse; one-level parenting (Colossus pods carry their running gear).
+- **Colour**: base map = factory look per rarity (camo olive Common, silver + violet Rare, dark metal + gold/amber Epic), with dirt
+  from AO, edge chips from curvature, dust, scratches. Chassis armour is re-tinted by (pilot paint / factory paint) so every paint
+  and Lunar Skin work; tracks, trim and glow keep fixed materials. Weapons are not paint-tinted.
+- **Runtime** `js/meshy3d.js` + plain-JS meshopt decoder `js/vendor/meshopt_decoder.js` (the website CSP forbids WebAssembly: found in
+  the real-app harness). Lazy per item, cached with LRU eviction, procedural model stays until the GLB is ready, never blocks a
+  battle. `M3.chassisKit / weaponKit` return the Meshy model when ready, so battle (`render3d.js`), Garage (`showroom.js`, FULL
+  fetched only there), menu pictures, hero and the Conquest player tank all use it; `GraphicsMotion` drives its parts. LOW graphics:
+  Lambert + base map and a reduced index set of the same file. Conquest enemy hulls stay procedural this session (crowd buckets).
+- **Town** (`js/conquest/plotview.js`, `townkit.js`): Meshy building groups and instanced turret base + head (head tracks and kicks
+  back on a shot), clock-driven spin / blink / pulse, card sprites redrawn when the model lands; kit models remain on LOW, in
+  the diorama and until the file is in.
+
+### In flight when this was written (resume here)
+1. Four helper agents were authoring per-item cuts + colour regions in scratch copies of the config (scout line + Sentinel;
+   Paladin + titan line incl. Colossus pods; nine weapons + Moonbeam crystals; twelve town items). Their output must be merged
+   into `dev/assets/meshy/config.json` (items only). If their scratch folders are gone, redo with `look.py` + README (Vanguard,
+   Pulse Cannon, Helix are worked examples already in the config).
+2. Run the full batch: `python dev/assets/meshy/build.py --src <originals>` (originals: release `meshy-models`, asset
+   `GLB.downloaded.3D.images.zip`), copy nothing by hand: output goes to `js/assets/meshy-v1/`. Commit the GLBs + manifest.
+3. `node dev/tests/meshy.mjs` (asset + contract test, written against the final 31-item manifest), add it to
+   `.github/workflows/website-check.yml`, run the existing graphics / Conquest node tests and the browser suites.
+4. Proof into `docs/art/meshy-proof/` (before/after sheets per chassis x paint incl. Lunar, weapons, Moonbeam, town; motion
+   frame sequences; load size/time; frame time), manifest table, the four retexture candidates with prompts, final checkpoint.
+5. Open the PR for CI only. No merge, no deploy.
