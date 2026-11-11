@@ -7843,17 +7843,18 @@
   },
   "town": {
    "rarity": 0,
-   "paintA": "#8b9096",
-   "paintB": "#6f7781",
-   "trim": "#59616b",
-   "bare": "#a9afb6",
-   "glow": "#22e6ff",
+   "paintA": "#2a2e34",
+   "paintB": "#22252a",
+   "trim": "#4c525a",
+   "bare": "#7d838b",
+   "glow": "#7fe9ff",
    "gold": "#d9a94e",
-   "dust": 0.3,
-   "dirt": 0.9,
-   "wear": 0.8,
-   "dustColor": "#8a877f",
-   "bodyRegion": "armor"
+   "dust": 0.12,
+   "dirt": 0.7,
+   "wear": 0.6,
+   "dustColor": "#6c6a66",
+   "bodyRegion": "armor",
+   "steel": "#3a3f46"
   }
  },
  "autoTrimTown": {

@@ -55,6 +55,7 @@ Captures are taken only after the Meshy files have loaded. Still software GL: th
 | `v2/*_garage_vanguard1-twin1_lunar.webp` | Lunar Skin: the bright energy glow (stock lines are faint and still) |
 | `v2/world_<profile>_*.webp` | Conquest world: the player's Meshy tank |
 | `v2/town_turrets_*`, `v2/town_overview_*` | Town: turret gallery (all turret types) and a fully built CC10 town |
+| `v2/colour_check_town_v1.webp`, `v2/item_town-*.webp` | The 12 town items in the real town view (phone 3x, HIGH) next to `docs/art/references/town-refs-v1/` (rebuilt dark armour + cyan lights in 5E-2a) |
 | `v2/sharpness-before.json`, `v2/sharpness-after.json` | Resolution, anti-aliasing, framebuffer memory, frame time and heap, main vs this branch (`proof/sharpness.mjs`) |
 | `v2/verify.json`, `v2/town.json` | Per loadout / town: the Meshy id of every tank and town item on screen, anything still procedural, pixel ratio, AA, programs |
 

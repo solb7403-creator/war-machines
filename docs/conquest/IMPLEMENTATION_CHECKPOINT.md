@@ -1896,7 +1896,7 @@ match no GLB in the `meshy-models` release: recorded as unused alternates.
   Not covered by a test: the one-line `pointercancel` change in `js/render.js` (UI glue); the relay fight's DEFEAT branch has
   only been exercised when the fight was won locally (both endings are handled by the same dialog code).
 
-### Final state (build 20261111110159; head of `claude/hopeful-hawking-mupebe`, resolve with `git log -1`)
+### Final state (build 20261111115814; head of `claude/hopeful-hawking-mupebe`, resolve with `git log -1`)
 Tests executed locally on the final code (Chromium; WebKit is not installed in this container, CI runs it):
 - Node: every list in `conquest-check.yml`, `website-check.yml`, `lab-ui-check.yml`, `equipment-balance.yml` (90 suites incl.
   `conquest-regression.sh`, `wtest/*`, `fair-arcade`, `super-aim` 48, `meshy` 1802, `graphics-motion`, `conquest-adaptive`).
@@ -1910,3 +1910,20 @@ framebuffer (~80 MB on a phone) is protected by the frame-time governor, not by 
 courtyard diorama stay procedural (decision above); the super fix reaches live PvP when the Worker is next deployed.
 Agents used: 2 read-only reviewers (graphics/performance; combat — the first combat reviewer was lost when test processes
 were stopped and was re-run). Both changed the result: 4 graphics fixes and 2 new regression cases came from them.
+
+### OWNER UPDATE (final): Moonbeam reference and town references
+- Moonbeam reference is `docs/art/references/tanks/v2/weapons/moonbeam.png` (black body, gold rings, gold spikes and fins, red
+  core crystal in a square gold housing, two blue charge crystals); the earlier `0c88031a.png` mapping is withdrawn (main removed
+  it). Checked against the in-game FULL Moonbeam (proof viewer + Garage): it already matches (it keeps its own Meshy texture,
+  `"textured": true`), so it was not rebuilt. Its row in `colour_check_weapons_v2.webp` now uses `moonbeam.png`.
+- Town items checked against `docs/art/references/town-refs-v1/` (Command Center, the five turrets + Tesla coil, reactor,
+  refinery, storage depot, science lab, shield generator) with close-ups in the real town view (`proof/v2_town.py`, phone 3x).
+  Finding: our town models were light silver-grey; every reference is dark grey armoured metal with cyan/white accent lights.
+  Fix: `looks.town` -> armour `#2a2e34` / `#22252a`, trim `#4c525a`, bare `#7d838b`, turret barrels (`steel`) `#3a3f46`, cyan
+  glow `#7fe9ff`, less dust and dirt; all 12 town items rebuilt (LIGHT + FULL). Player town themes (sand / graphite finish,
+  light colour) still tint by ratio against the new factory colours. Sheet: `docs/art/meshy-proof/v2/colour_check_town_v1.webp`.
+- Found by `conquest-session5d.py` (owner gate: a card picture must read against the card): the dark Cannon card dropped to
+  luminance 39.2 (limit 40). The card renderer's lights (`plotview.js spriteStep`) are raised (hemisphere 1.5 -> 2.8, key
+  2.9 -> 4.6, cyan rim 1.25 -> 1.9; same light count, no new program): 41.4, PASS. `conquest-base-builder`, `conquest-plot-ui`,
+  `conquest-find-base`, `meshy.mjs` (1802), `conquest-town`, `conquest-townkit`, `conquest-plot` re-run after the town rebuild:
+  PASS; `proof/v2_town.py` both profiles: PASS (all 12 town items Meshy, programs 11-14).

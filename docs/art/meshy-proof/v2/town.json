@@ -88,6 +88,28 @@
   },
   "pageErrors": []
  },
+ "phone3x-summary": {
+  "townItemsMeshy": [
+   "town-cannon",
+   "town-cc",
+   "town-lab",
+   "town-laser",
+   "town-mg",
+   "town-railgun",
+   "town-reactor",
+   "town-refinery",
+   "town-rocket",
+   "town-shield",
+   "town-storage",
+   "town-tesla"
+  ],
+  "missing": [],
+  "worldTank": [
+   "chassis-vanguard-0",
+   "weapon-pulse-0"
+  ],
+  "pageErrors": 0
+ },
  "desktop1920-gallery": {
   "world": {
    "ids": [
@@ -122,7 +144,7 @@
     "turret:siege:5",
     "turret:lasercannon:5"
    ],
-   "programs": 15,
+   "programs": 14,
    "pixelRatio": 1
   },
   "pageErrors": []
@@ -176,28 +198,6 @@
    "pixelRatio": 1
   },
   "pageErrors": []
- },
- "phone3x-summary": {
-  "townItemsMeshy": [
-   "town-cannon",
-   "town-cc",
-   "town-lab",
-   "town-laser",
-   "town-mg",
-   "town-railgun",
-   "town-reactor",
-   "town-refinery",
-   "town-rocket",
-   "town-shield",
-   "town-storage",
-   "town-tesla"
-  ],
-  "missing": [],
-  "worldTank": [
-   "chassis-vanguard-0",
-   "weapon-pulse-0"
-  ],
-  "pageErrors": 0
  },
  "desktop1920-summary": {
   "townItemsMeshy": [

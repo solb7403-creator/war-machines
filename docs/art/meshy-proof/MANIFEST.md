@@ -25,19 +25,19 @@ untextured twin of the Moonbeam (same mesh) and is not used.
 | Rail Breaker | `weapon-siege-1` | RAIL BREAKER tank turret …942910.glb | 435,694 | 6,967 | 44,947 | 10.5 MB | 457 KB | 1.34 MB | 4 |
 | Titanfall | `weapon-siege-2` | TITANFALL tank turret …a4d127.glb | 819,838 | 6,975 | 44,985 | 19.7 MB | 417 KB | 1.34 MB | 3 |
 | Moonbeam (Obsidian Starpiercer, textured) | `weapon-moon` | Obsidian Starpiercer_Meshy_AI_2026 …4e13cd.glb | 513,136 | 6,983 | 44,984 | 23.6 MB | 470 KB | 2.54 MB | 5 |
-| Command Center | `town-cc` | COMMAND CENTER …b71794.glb | 1,839,924 | 5,976 | 39,896 | 44.1 MB | 474 KB | 1.63 MB | 3 |
-| Reactor | `town-reactor` | REACTOR …8a9c6e.glb | 1,140,468 | 5,997 | 39,993 | 27.4 MB | 498 KB | 1.47 MB | 2 |
-| Refinery | `town-refinery` | REFINERY …158cf5.glb | 1,206,854 | 5,996 | 39,982 | 29.0 MB | 406 KB | 1.32 MB | 2 |
-| Science Lab | `town-lab` | SCIENCE LAB …56748f.glb | 881,822 | 5,994 | 39,992 | 21.2 MB | 380 KB | 1.25 MB | 2 |
-| Shield Generator | `town-shield` | SHIELD GENERATOR …f83d7d.glb | 1,121,164 | 5,996 | 39,986 | 26.9 MB | 487 KB | 1.50 MB | 2 |
-| Storage Depot | `town-storage` | STORAGE DEPOT …d20885.glb | 203,346 | 5,998 | 39,992 | 4.9 MB | 305 KB | 1.01 MB | 1 |
-| Tesla Arc Coil | `town-tesla` | TESLA ARC COIL TOWER …24c5df.glb | 804,284 | 5,982 | 39,984 | 19.3 MB | 465 KB | 1.38 MB | 2 |
-| Cannon Turret | `town-cannon` | CANNON TURRET …9df701.glb | 432,680 | 5,992 | 39,987 | 10.4 MB | 364 KB | 1.15 MB | 3 |
-| Twin-Barrel MG | `town-mg` | TWIN-BARREL MACHINE GUN TURRET …409829.glb | 481,648 | 5,991 | 39,997 | 11.6 MB | 325 KB | 1.02 MB | 4 |
-| Rocket Pod | `town-rocket` | ROCKET POD TURRET …924a95.glb | 1,330,446 | 5,920 | 39,958 | 31.9 MB | 503 KB | 1.46 MB | 2 |
-| Laser Turret | `town-laser` | LASER TURRET …b0f7e2.glb | 364,492 | 5,975 | 39,959 | 8.7 MB | 293 KB | 1.12 MB | 2 |
-| Railgun | `town-railgun` | RAILGUN TURRET …260797.glb | 358,282 | 5,981 | 39,996 | 8.6 MB | 355 KB | 1.10 MB | 3 |
-| **Total (31)** | | | **33,192,040** | **311,653** | **2,007,470** | **808 MB** | **16.4 MB** | **67.1 MB** | |
+| Command Center | `town-cc` | COMMAND CENTER …b71794.glb | 1,839,924 | 5,976 | 39,896 | 44.1 MB | 449 KB | 1.56 MB | 3 |
+| Reactor | `town-reactor` | REACTOR …8a9c6e.glb | 1,140,468 | 5,997 | 39,993 | 27.4 MB | 488 KB | 1.44 MB | 2 |
+| Refinery | `town-refinery` | REFINERY …158cf5.glb | 1,206,854 | 5,996 | 39,982 | 29.0 MB | 382 KB | 1.25 MB | 2 |
+| Science Lab | `town-lab` | SCIENCE LAB …56748f.glb | 881,822 | 5,994 | 39,992 | 21.2 MB | 361 KB | 1.20 MB | 2 |
+| Shield Generator | `town-shield` | SHIELD GENERATOR …f83d7d.glb | 1,121,164 | 5,996 | 39,986 | 26.9 MB | 470 KB | 1.45 MB | 2 |
+| Storage Depot | `town-storage` | STORAGE DEPOT …d20885.glb | 203,346 | 5,998 | 39,992 | 4.9 MB | 297 KB | 994 KB | 1 |
+| Tesla Arc Coil | `town-tesla` | TESLA ARC COIL TOWER …24c5df.glb | 804,284 | 5,982 | 39,984 | 19.3 MB | 458 KB | 1.37 MB | 2 |
+| Cannon Turret | `town-cannon` | CANNON TURRET …9df701.glb | 432,680 | 5,992 | 39,987 | 10.4 MB | 350 KB | 1.12 MB | 3 |
+| Twin-Barrel MG | `town-mg` | TWIN-BARREL MACHINE GUN TURRET …409829.glb | 481,648 | 5,991 | 39,997 | 11.6 MB | 307 KB | 979 KB | 4 |
+| Rocket Pod | `town-rocket` | ROCKET POD TURRET …924a95.glb | 1,330,446 | 5,920 | 39,958 | 31.9 MB | 485 KB | 1.40 MB | 2 |
+| Laser Turret | `town-laser` | LASER TURRET …b0f7e2.glb | 364,492 | 5,975 | 39,959 | 8.7 MB | 281 KB | 1.10 MB | 2 |
+| Railgun | `town-railgun` | RAILGUN TURRET …260797.glb | 358,282 | 5,981 | 39,996 | 8.6 MB | 345 KB | 1.08 MB | 3 |
+| **Total (31)** | | | **33,192,040** | **311,653** | **2,007,470** | **808 MB** | **16.2 MB** | **66.7 MB** | |
 
 - LIGHT = battle, town, world map (512 px maps; a reduced index set of the same file serves LOW graphics).
 - FULL = Garage and close-ups, fetched only when shown (2048 px maps on chassis and the Moonbeam, 1024 px elsewhere; phones
