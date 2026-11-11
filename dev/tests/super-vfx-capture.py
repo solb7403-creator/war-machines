@@ -28,7 +28,7 @@ VIEW=opt('view','both');QUALITY=opt('quality','high');REDUCED=bool(opt('reduced'
 SCENE='''([key,quality,reduced])=>{
  const arch=key==='moon'?'moon':key.slice(0,-1),tier=key==='moon'?2:+key.slice(-1);
  window.myLoadout=()=>({w:{a:arch,t:tier,q:1,s:false},c:{c:'vanguard',t:Math.min(2,tier),q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'});
- save.mp=50;save.mode='1v1';save.gtype='arena';save.map='craters';save.gfx=quality;save.sound=false;
+ save.mp=50;save.mode='1v1';save.gtype='arena';save.map='craters';save.sound=false;if(gfxMode()!==quality)setGfx(quality);
  if(reduced&&typeof GraphicsMotion!=='undefined')GraphicsMotion.reduced=()=>true;
  closeAll();prepareMatch();startMatch();
  window.requestAnimationFrame=()=>0;   // the frame loop stops here: the capture steps the game by hand

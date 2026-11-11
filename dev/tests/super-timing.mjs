@@ -86,7 +86,8 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   ok(forgedEarly.oc === 0, 'a jackpot claimed at the wrong moment is refused: judged on the server clock (outcome ' + forgedEarly.oc + ')');
   const forgedLate = fire(M, 0.95, 0.6); ok(forgedLate.oc === 0, 'a jackpot claimed after the zone has passed is refused');
   const forgedHit = fire(M, 0.15, 0.5); ok(forgedHit.oc === 0, 'a hit claimed from outside the zone is refused');
-  const lagged = fire(M, 0.63, 0.6);   // lands on the tick at 0.633 s ok(lagged.oc === 2, 'an honest tap that arrives 33 ms late (inside the ' + K.SUP_TAP_TOL * 1000 + ' ms allowance) keeps its jackpot');
+  const lagged = fire(M, 0.63, 0.6);   // lands on the tick at 0.633 s
+  ok(lagged.oc === 2, 'an honest tap that arrives 33 ms late (inside the ' + K.SUP_TAP_TOL * 1000 + ' ms allowance) keeps its jackpot');
   ok(K.SUP_TAP_TOL <= 0.06 + 1e-9 && K.SUP_TAP_TOL >= 0.04, 'the latency allowance is small: jitter plus one server tick (' + K.SUP_TAP_TOL * 1000 + ' ms)');
   const edge = fire(M, 0.6 - K.SUP_TAP_TOL - 0.05, 0.6); ok(edge.oc !== 2, 'a forged jackpot claim sent ' + ((K.SUP_TAP_TOL + 0.05) * 1000).toFixed(0) + ' ms early is refused (the known bound: only a claim within ' + K.SUP_TAP_TOL * 1000 + ' ms of the server clock is believed)');
   const tooLate = fire(M, 0.6 + K.SUP_TAP_TOL + 0.08, 0.6); ok(tooLate.oc !== 2, 'beyond the allowance the server clock decides (outcome ' + tooLate.oc + ')');

@@ -606,15 +606,15 @@ function drawSupBar(g){
  g.fillStyle='rgba(0,0,0,.8)';g.fillRect(mx-5.5,B.y-15,11,B.h+30);
  const mc=done?(supUI.oc===2?'#ffcf4a':supUI.oc===1?'#ffffff':'#ff8f8f'):'#ffffff';if(!done&&!quiet){g.shadowColor='#ffffff';g.shadowBlur=10;}
  g.fillStyle=mc;g.fillRect(mx-3.5,B.y-14,7,B.h+28);g.shadowBlur=0;
- g.beginPath();g.moveTo(mx-10,B.y-25);g.lineTo(mx+10,B.y-25);g.lineTo(mx,B.y-11);g.closePath();g.fill();g.beginPath();g.moveTo(mx-10,B.y+B.h+25);g.lineTo(mx+10,B.y+B.h+25);g.lineTo(mx,B.y+B.h+11);g.closePath();g.fill();
+ g.beginPath();g.moveTo(mx-10,B.y-25);g.lineTo(mx+10,B.y-25);g.lineTo(mx,B.y-11);g.closePath();g.fill();
  // words
  g.textAlign='center';g.textBaseline='alphabetic';
  if(done){const big=supUI.oc===2,k=quiet?1:Math.min(1,age/0.12),sz=Math.round((big?30:22)*(quiet?1:1.35-0.35*k));
   g.font='700 '+sz+'px '+FONT_FAMILY;g.lineWidth=5;g.strokeStyle='rgba(0,0,0,.8)';const t=big?'JACKPOT!':supUI.oc===1?'HIT':'MISS',c=big?'#ffcf4a':supUI.oc===1?'#ffffff':'#ff8f8f';
   g.strokeText(t,vw/2,B.y-36);g.fillStyle=c;g.fillText(t,vw/2,B.y-36);
-  g.font='700 14px '+FONT_FAMILY;g.lineWidth=4;g.strokeText(Math.round(SUP_OC[supUI.oc]*100)+'% DAMAGE',vw/2,B.y+B.h+42);g.fillStyle='#ffffff';g.fillText(Math.round(SUP_OC[supUI.oc]*100)+'% DAMAGE',vw/2,B.y+B.h+42);}
+  g.font='700 14px '+FONT_FAMILY;g.lineWidth=4;g.strokeText(Math.round(SUP_OC[supUI.oc]*100)+'% DAMAGE',vw/2,B.y+B.h+30);g.fillStyle='#ffffff';g.fillText(Math.round(SUP_OC[supUI.oc]*100)+'% DAMAGE',vw/2,B.y+B.h+30);}
  else{g.font='700 15px '+FONT_FAMILY;g.lineWidth=4;g.strokeStyle='rgba(0,0,0,.75)';const t=(SUP_NAMES[supUI.k]||'SUPER').toUpperCase()+': TAP TO STOP';g.strokeText(t,vw/2,B.y-34);g.fillStyle='#ffffff';g.fillText(t,vw/2,B.y-34);
-  if((save.mp||0)<8){g.font=font(11);g.fillStyle='rgba(255,255,255,.8)';g.fillText('blue zone = hit   gold circle = jackpot',vw/2,B.y+B.h+40);}}
+  if((save.mp||0)<8){g.font=font(11);g.fillStyle='rgba(255,255,255,.8)';g.fillText('blue zone = hit   gold circle = jackpot',vw/2,B.y+B.h+30);}}
  g.restore();
  // jackpot: one short gold flash over the screen edge (never with reduced motion; it does not cover the field)
  if(done&&supUI.oc===2&&!quiet&&age<0.25){const a=(1-age/0.25)*0.5,gr=g.createRadialGradient(vw/2,vh/2,Math.min(vw,vh)*0.35,vw/2,vh/2,Math.max(vw,vh)*0.75);gr.addColorStop(0,'rgba(255,207,74,0)');gr.addColorStop(1,'rgba(255,207,74,'+a+')');g.fillStyle=gr;g.fillRect(0,0,vw,vh);}

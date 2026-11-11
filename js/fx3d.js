@@ -248,7 +248,7 @@ function create(T,host){
   const mx=x+Math.cos(ang)*1.15*u,mz=z+Math.sin(ang)*1.15*u;
   if(K==='nova'){   // a ring closes in on the tank again and again, faster as it fills
    const ph=(time*(1.4+2.2*k))%1,r=dim*(1-ph*.82);ring(x,y+.05,z,r,.1*u*boost,A,(.25+.55*k)*(1-ph*.3)*boost,40,key==='twin0'?.1:0,frame>>2);
-   disc(x,y+.04,z,dim*.55*grow,B,.22*grow*boost);sprite(x,y+.7*u,z,(.5+.9*k)*u*boost*pulse,A,.8);sprite(x,y+.7*u,z,(.22+.4*k)*u*boost,C,1);
+   disc(x,y+.04,z,dim*.55*grow,B,.22*grow*boost);sprite(x,y+.7*u,z,(.5+.9*k)*u*boost*pulse,A,.8*CQ);sprite(x,y+.7*u,z,(.22+.4*k)*u*boost,C,CQ);
    if(key==='twin1'&&!q)for(let i=0;i<3;i++){const a=time*5+i*TAU/3;ring(x,y+.06,z,dim*(.2+.3*k),.07*u,X,.5*k,10,0,0,a,a+1.1);}
    if(key==='twin2')for(let i=0;i<2;i++)ring(x,y+.3*u+i*.5*u,z,(1.0-i*.25)*u*grow,.06*u,X,.6*k*boost,22,0,0);
   }else{
@@ -271,7 +271,7 @@ function create(T,host){
 
  // ---- beams (Pulse x3, Moonbeam). a: length, b: hit half-width ----
  function superBeam(key,oc,x,y,z,ang,len,w,u,dy){
-  const d=key==='pulse2'?(oc===2?.95:.6):key==='moon'?(oc===2?.9:.62):oc===2?.7:.48,e=spawn(fxBeam,d*(oc===0?.75:1),x,y,z,ang,len,w,u,key,oc),P=PAL[key];
+  const d=key==='pulse2'?(oc===2?.95:.6):key==='moon'?(oc===2?.9:.62):oc===2?.7:.48,e=spawn(fxBeam,d*(oc===0?.75:1),x,y,z,ang,len,w,u,key,oc),P=PAL[key]||PAL.pulse0;
   e.dy=dy||0;shake(oc===2?14:oc===1?8:4,oc===2?.5:.3);
   const sx=x+Math.cos(ang)*u,sz=z+Math.sin(ang)*u,L=len-u;
   // aftermath on the ground, each beam its own: a teal scorch line, crawling violet sparks, a molten trench, moonlit motes
@@ -324,7 +324,7 @@ function create(T,host){
  }
  // ---- novas (Twin x3). a: radius ----
  function superNova(key,oc,x,y,z,r,u){
-  const d=oc===2?(key==='twin1'?1.1:.95):oc===1?.65:.45,e=spawn(fxNova,d,x,y,z,rnd()*TAU,r,0,u,key,oc),P=PAL[key];
+  const d=oc===2?(key==='twin1'?1.1:.95):oc===1?.65:.45,e=spawn(fxNova,d,x,y,z,rnd()*TAU,r,0,u,key,oc),P=PAL[key]||PAL.pulse0;
   shake(oc===2?13:oc===1?7:3,oc===2?.5:.3);
   if(key==='twin0'){if(oc>0)mark(3,oc===2?2.8:2.0,x,y+.03,z,r*.95,0,0,null,col('#fff200'),u);}
   else if(key==='twin1'){mark(4,oc===2?3.0:oc===1?2.2:1.1,x,y+.03,z,r*(oc===0?.6:.9),0,0,null,col('#7c3aed'),u);if(oc===2)mark(3,2.2,x,y+.03,z,r*.9,0,0,null,col('#d8b4fe'),u);}
@@ -375,7 +375,7 @@ function create(T,host){
    if(rnd()<lastDt*40*amt())part(0,x,y,z,0,.4,0,1.0,.55*u,1.5*u,col('#1a1a1a'),.6,0,.5);}
  }
  function superBlast(key,oc,x,y,z,r,u){
-  const d=key==='siege2'?(oc===2?1.5:1.0):oc===2?1.1:.75,e=spawn(fxBlast,d*(oc===0?.7:1),x,y,z,rnd()*TAU,r,0,u,key,oc),P=PAL[key];
+  const d=key==='siege2'?(oc===2?1.5:1.0):oc===2?1.1:.75,e=spawn(fxBlast,d*(oc===0?.7:1),x,y,z,rnd()*TAU,r,0,u,key,oc),P=PAL[key]||PAL.pulse0;
   shake(oc===2?(key==='siege2'?20:16):oc===1?11:5,oc===2?.65:.4);
   mark(0,oc===2?3.6:oc===1?2.8:1.6,x,y+.025,z,r*(oc===2?1.05:oc===1?.8:.5),0,0);
   if(key==='siege0'&&oc>0)mark(2,oc===2?3.0:2.2,x,y+.03,z,r*(oc===2?.95:.7),rnd()*TAU,oc===2?7:5,col('#0a0806'),col('#ff5a14'),u);
