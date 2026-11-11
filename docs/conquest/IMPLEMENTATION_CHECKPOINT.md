@@ -1601,9 +1601,24 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
 - D5. `M3.weaponKit` gets the chassis tier as an extra argument so the fit knows the exact hull (callers: `render3d.js`
   buildTank, `showroom.js`, `conquest/view.js`).
 
+**Weapon fit: IMPLEMENTED and pushed (`72d7cee`), reviewed by the lead on the proportion sheets**
+- `js/meshy3d.js weaponFit()`: uniform scale = min( k(tier) x hullWidth / turretBodyWidth [.58 / .65 / .72],
+  max( h(tier) x hullHeight / turretBodyHeight [1.0 / 1.08 / 1.16], floor ), 0.98 x hullWidth / wholeWeaponWidth,
+  0.96 x rearDeck / turretRear ), then capped per tier at .98 / 1.04 / 1.10. floor = at least .50 / .54 / .58 of the hull
+  width while the turret stays under 1.35 hull heights (stops tall Meshy turrets from going toy-sized on low Scout hulls).
+  Antennas and periscopes do not count as turret height. The Moonbeam keeps `MOON_SCALE`, capped by the same guides.
+- Result (`docs/art/meshy-proof/fit/scales.json`): Scout class x0.39-0.84, Vanguard class x0.64-1.04, Titan class x0.81-1.10.
+  Sheets: `docs/art/meshy-proof/fit/<chassis>.webp` (before = every weapon at x1.00, after = fitted; all 9 chassis x 10 weapons).
+- Lead's review: before, turrets were as wide as or wider than the Scout-class hulls and top-heavy; after, every turret sits
+  inside its hull on all nine. First pass left every weapon at the upper limit on the Colossus (its track pods make the hull
+  measure wider than its deck) and top-heavy: fixed with the per-tier cap. Scout-class fits are bound by the "rear inside
+  the deck" guide, so Common weapons there are about 45-50% of hull width (below the 55% target): left as is, because pushing
+  them out would overhang the short deck. Siege Breaker is the smallest fit on every hull (tall blocky body): candidate for a
+  per-item nudge if the owner wants it heavier.
+- NOT yet done from the owner's list: pairing-by-pairing comparison against the nine chosen reference images and the stock
+  colour check (step 3 below).
+
 **Open problems / known deviations**
-- Weapon fit (above) is NOT implemented yet: this is the next task. The committed `docs/art/meshy-proof/app/` sheets (if
-  present) predate it and must be regenerated.
 - Stock colour check against the nine chosen chassis images has not been done pairing by pairing (Vanguard camo was tuned by
   eye; Rare was darkened once because it rendered near-white).
 - Storm Repeater kicks as one unit (clamps span both barrels in the source). Arc Pulse / Storm / Rail Breaker carry the barrel
@@ -1620,10 +1635,10 @@ Owner reviewed the Garage/Battle sheet: weapons look oversized on several chassi
 - Physical iPhone / Telegram check has not been done by anyone.
 
 **Remaining work, in order**
-1. Implement the weapon fit (D1-D5) in `js/meshy3d.js` (+ the three callers), rerun `node dev/tests/meshy.mjs` and the graphics
-   node tests.
-2. Proportion sheet: all 9 chassis x 10 weapons, before (uniform scale 1) and after (fit), into `docs/art/meshy-proof/fit/`;
-   review against `docs/art/references/tanks/chosen/`; refit; log the result here.
+1. (done) Weapon fit implemented, tests green.
+2. (done, lead review only) Proportion sheets in `docs/art/meshy-proof/fit/`. Still to do: compare each chassis sheet with its
+   image in `docs/art/references/tanks/chosen/` and nudge single pairings with a per-item factor if any still reads wrong
+   (regenerate with `node dev/assets/meshy/proof/app.mjs <dir> fit`).
 3. Colour check of the 9 chassis + 10 weapons against the references; adjust `looks` / `lookOverride` in the config; rebuild only
    the items that change (`build.py --only ...`; originals: release `meshy-models`).
 4. Regenerate the app proof: `node worker/build-web.mjs && node dev/assets/meshy/proof/app.mjs <dir>` then
