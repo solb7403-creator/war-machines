@@ -152,7 +152,7 @@ async def main(engine,journey_only=False):
       # runner's frame rate (CI Chromium lost it once with 6 kills and passed on re-run). What this journey proves is that held
       # FIRE, taps and abilities destroy hostiles through the authority and that BOTH authoritative endings settle and hand back
       # to exploration. The exact victory payout is asserted whenever the fight is won (and deterministically in
-      # conquest-operations.mjs / conquest-session.mjs); a loss must pay nothing.
+      # conquest-economy.mjs); a loss must pay nothing.
       assert battle['state'] in ('victory','defeat'),battle;assert battle['kills']>=1,('real fire destroyed no hostile',battle)
       if battle['state']=='victory':
        assert battle['settlement']['cp']==250+(20 if battle['featured'] else 0),battle

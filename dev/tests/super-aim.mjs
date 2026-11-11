@@ -142,5 +142,17 @@ for (const how of ['tap', 'nearest']) {
   r.sp = 1000; S.useSuper(r); const ang = charge(S, r, t => { if (t === 3) S.kill(e); });
   ok(ang !== null && dAng(ang, angTo(r, e.x, e.y)) < 0.05, 'siege shell: target died mid-charge, the shell still goes where it was aimed'); }
 
+// ---- siege shell in a 2v2: target died mid-charge with another enemy in sight -> the shell keeps its aim ----
+{ const { S, U } = match('2v2', ['h', 'h', 'h', 'h'], 'siege'); const [r, mate, e1, e2] = U; put(mate, 2, 30); put(r, 10, 16); put(e1, 10, 21); put(e2, 14.5, 14.5);
+  r.focus = e1; r.sp = 1000; S.useSuper(r); const a0 = angTo(r, e1.x, e1.y);
+  const ang = charge(S, r, t => { if (t === 3) S.kill(e1); });
+  ok(ang !== null && dAng(ang, a0) < 0.05, 'siege 2v2: target died mid-charge, the shell does not swing to the other enemy (off by ' + dAng(ang, a0).toFixed(3) + ' rad, the other enemy is ' + dAng(a0, angTo(r, e2.x, e2.y)).toFixed(2) + ' rad away)'); }
+// ---- live seat on the flipped side: the client sends its screen angle, the room adds pi (worker/src/pvp.js 's') ----
+{ const room = fs.readFileSync(path.join(srcRoot, 'worker/src/pvp.js'), 'utf8');
+  ok(/useSuper\(u, typeof m\.a === "number" && Number\.isFinite\(m\.a\) \? m\.a \+ \(s\.flip \? Math\.PI : 0\) : undefined\)/.test(room), 'live room: a flipped seat\'s dragged angle is turned by pi into world space, an auto super stays the server\'s own aim');
+  const { S, U } = match('1v1', ['h', 'h']); const [r, e] = U; ok(openPair(S, r, e, 0, 6), 'setup: open ground');
+  const world = 0.7, sent = Math.round((world + Math.PI) * 1000) / 1000;   // what a flipped phone sends for that world direction (pvp.js rounds to 1/1000)
+  r.sp = 1000; S.useSuper(r, sent + Math.PI); const ang = charge(S, r);
+  ok(ang !== null && dAng(ang, world) < 0.002, 'flipped seat: the super fires along the dragged world direction'); }
 console.log(fails.length ? `super-aim: ${fails.length} of ${checks} checks FAILED` : `super-aim: PASS (${checks} checks)`);
 process.exit(fails.length ? 1 : 0);

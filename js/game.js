@@ -490,7 +490,7 @@ const supFocus=r=>supLive(r,r.focus)?r.focus:null;
 function supLead(r,e,t){return Math.atan2(e.y+(e.avy||0)*t-r.y,e.x+(e.avx||0)*t-r.x);}
 function aimVel(r,dx,dy,dt){   // smoothed velocity for leading supers (heading() calls this every tick)
  const step=Math.hypot(dx,dy),top=STAT.speed*spdMult(r);
- if(step>top*DASH_SPD*dt*4+0.5){r.avx=0;r.avy=0;return;}   // a teleport, respawn or resync is not motion
+ if(step>top*DASH_SPD*dt*4+0.5){r.avx=0;r.avy=0;return;}   // a jump this big (a resync snap, a teleport) is not motion; respawn and round reset already set px=x
  if(r.ctl==='net'){const k=Math.min(1,dt/0.3);r.avx=(r.avx||0)+(dx/dt-(r.avx||0))*k;r.avy=(r.avy||0)+(dy/dt-(r.avy||0))*k;}   // a live pilot's reports come in steps: average them
  else{r.avx=dx/dt;r.avy=dy/dt;}   // tanks this sim drives itself move smoothly: their own step is their speed
  const m=Math.hypot(r.avx,r.avy),cap=top*1.05;if(m>cap){r.avx*=cap/m;r.avy*=cap/m;}   // never lead faster than the tank can drive (a dash lasts 0.2 s)
