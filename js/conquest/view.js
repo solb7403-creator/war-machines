@@ -45,7 +45,7 @@ class View {
  try{const p=JSON.parse(localStorage.getItem('lunar-conquest-position-v1'));if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z)){this.jump(p.x,p.z);if(p.surface==='bridge'){const deck=W.deckAt(this.p.x,this.p.z);if(deck!==null){this.p.surface='bridge';this.p.y=deck;}}}}catch(_){}
  this.discovery=root.ConquestDiscovery?.create();
  if(this.p.x===898&&this.p.z===1024)this.discovery?.spawn(this.p);
- try{if(typeof gfxMode==='function'&&gfxMode()==='2d')throw Error('2d selected');this.renderer=new T.WebGLRenderer({antialias:false,powerPreference:'low-power'});}catch(_){this.renderer=canvasRenderer(this);}if(typeof Meshy3D!=='undefined')Meshy3D.hostRenderer(this.renderer);this.renderer.setPixelRatio(typeof gfxMode==='function'&&gfxMode()==='low'?1:Math.min(devicePixelRatio,1.5));host.append(this.renderer.domElement);
+ try{if(typeof gfxMode==='function'&&gfxMode()==='2d')throw Error('2d selected');const lowGfx=typeof gfxMode==='function'&&gfxMode()==='low',GR=typeof GraphicsResolution!=='undefined'?GraphicsResolution:null;this.renderer=new T.WebGLRenderer({antialias:GR?GR.antialias(lowGfx?'low':'high'):false,powerPreference:lowGfx?'low-power':'high-performance'});}catch(_){this.renderer=canvasRenderer(this);}if(typeof Meshy3D!=='undefined')Meshy3D.hostRenderer(this.renderer);this.setupResolution();host.append(this.renderer.domElement);
  this.hfRelease=typeof Equipment3D!=='undefined'?Equipment3D.attach():null;if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);
  this.scene=new T.Scene();
  // Neon Frontline art direction (js/conquest/style.js): one instance per view and quality. Absent or failing -> the original look.
@@ -53,7 +53,7 @@ class View {
  // root.LUNAR_STYLE_QUALITY ('high'|'low') is a development override for captures.
  this.softwareGL=(()=>{try{const gl=this.renderer.getContext?.(),d=gl?.getExtension('WEBGL_debug_renderer_info'),r=d?gl.getParameter(d.UNMASKED_RENDERER_WEBGL):gl?.getParameter(gl.RENDERER);return /swiftshader|llvmpipe|softpipe|software/i.test(String(r||''));}catch(_){return false;}})();
  try{const forced=root.LUNAR_STYLE_QUALITY;this.style=root.ConquestStyle&&!this.renderer.isConquestCanvas?root.ConquestStyle.create(T,{low:forced?forced==='low':typeof gfxMode==='function'&&gfxMode()==='low',software:forced?false:this.softwareGL}):null;}catch(e){this.style=null;}
- if(this.style?.software){this.autoRatio=Math.min(this.renderer.getPixelRatio?.()||1,.75);this.renderer.setPixelRatio(this.autoRatio);}
+ 
  if(!this.style){this.scene.background=new T.Color(0x101b29);this.scene.fog=new T.Fog(0x101b29,1100,2560);}
  this.camera=new T.PerspectiveCamera(55,1,.2,3000);if(this.style)this.styleEnv=this.style.environment(this.scene,this.renderer);else{this.scene.add(new T.HemisphereLight(0xc4ddff,0x353025,.85));const sun=new T.DirectionalLight(0xffe5ba,2.8);sun.position.set(-100,180,-70);this.scene.add(sun);}
  const surface=document.createElement('canvas');surface.width=surface.height=128;const ctx=surface.getContext('2d'),pixels=ctx.createImageData(128,128);let seed=82741;for(let i=0;i<pixels.data.length;i+=4){seed=(Math.imul(seed,1664525)+1013904223)|0;const v=185+(seed>>>26);pixels.data.set([v,v,v,255],i);}ctx.putImageData(pixels,0,0);this.groundTexture=new T.CanvasTexture(surface);this.groundTexture.wrapS=this.groundTexture.wrapT=T.RepeatWrapping;this.groundTexture.repeat.set(1,1);this.material=this.style?this.style.MAT.terrain:new T.MeshLambertMaterial({vertexColors:true,map:this.groundTexture});this.archMaterial=new T.MeshLambertMaterial({vertexColors:true});this.shared=this.style?[...this.style.shared]:[];this.props=new T.Group();this.scene.add(this.props);
@@ -453,7 +453,7 @@ class View {
  cx=px+(cx-px)*this.camReach;cz=pz+(cz-pz)*this.camReach;hy=cy+(Math.max(hy,this.camHy)-cy)*this.camReach;hy=Math.max(hy,W.groundAt(cx,cz)+1.5);
  // A close obstruction must not push the camera inside our own hull.
  if(Math.hypot(cx-px,cz-pz)<7){cx=px;cz=pz+.1;hy=Math.max(hy,shown.y+Math.max(18,d*.8));}
- this.camera.position.set(cx-ox,hy,cz-oz);this.camera.lookAt(px-ox,cy,pz-oz);this.camSnap=false;this.style?.viewLights(this.camera);this.withShownActors(()=>{this.combatRender();const renderStart=root.performance?root.performance.now():Date.now();this.renderer.render(this.scene,this.camera);this.renderCpuMs=(root.performance?root.performance.now():Date.now())-renderStart;const calls=this.renderer.info?.render?.calls||0;if(calls>(this.maxDrawCalls||0))this.maxDrawCalls=calls;});
+ this.camera.position.set(cx-ox,hy,cz-oz);this.camera.lookAt(px-ox,cy,pz-oz);this.camSnap=false;this.occluderFade(dt);this.style?.viewLights(this.camera);this.withShownActors(()=>{this.combatRender();const renderStart=root.performance?root.performance.now():Date.now();this.renderer.render(this.scene,this.camera);this.renderCpuMs=(root.performance?root.performance.now():Date.now())-renderStart;const calls=this.renderer.info?.render?.calls||0;if(calls>(this.maxDrawCalls||0))this.maxDrawCalls=calls;});
  }
  // Interpolate other actors between the last two fixed steps for presentation only, then restore the simulated values.
  rememberActors(B){const from=this.shownFrom||(this.shownFrom=new Map());from.clear();for(const e of B.enemies)from.set(e.id,{x:e.x,y:e.y,z:e.z,heading:e.heading,turret:e.turret});this.shownTurret=B.turretYaw;}
@@ -462,8 +462,37 @@ class View {
  // Shots fly straight between steps: lead them by the elapsed part of the step so they leave the muzzle with the hull.
  for(const p of [...(B.projectiles||[]),...(B.superShells||[])])if(Number.isFinite(p.vx)&&Number.isFinite(p.vz)){const t=Math.min(lead,Math.max(0,p.life||0));shots.push([p,p.x,p.y,p.z]);p.x+=p.vx*t;p.y+=(p.vy||0)*t;p.z+=p.vz*t;}
  try{fn();}finally{for(const [e,x,y,z,h,t] of saved){e.x=x;e.y=y;e.z=z;e.heading=h;e.turret=t;}for(const [p,x,y,z] of shots){p.x=x;p.y=y;p.z=z;}}}
+ // See-through occluders (Session 5E-2a, owner): a building or prop between the camera and the tank, or the path just ahead,
+ // fades to a see-through ghost, so the tank and its way forward stay visible in the world and around the town. The ghost is
+ // the same material kind as the laser halo (MeshBasicMaterial, transparent, no depth write), so it shares that program and
+ // never adds one to Conquest's 16-program budget. Checked every third frame against bounding spheres first, then the exact
+ // triangles of the few meshes on the line; instanced sets (walls, turrets) are low and never block the view.
+ occluderFade(dt){
+  if(this.renderer.isConquestCanvas||!this.vehicle||!this.camera)return;const T=this.T;
+  const F=this.fade||(this.fade={list:[],scan:99,n:0,faded:new Map(),ray:new T.Raycaster(),c:new T.Vector3(),v:new T.Vector3(),w:new T.Vector3(),pts:[new T.Vector3(),new T.Vector3()],hits:new Set()});
+  F.scan+=dt;
+  if(F.scan>1){F.scan=0;F.list.length=0;for(const r of [this.props,this.baseGroup,this.monument,this.raidArt,this.colony,this.frontier])if(r)r.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||Array.isArray(o.material)||o.userData.noFade||!o.geometry?.attributes?.position)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius>1.2)F.list.push(o);});}
+  if(F.n++%3===0){
+   const cam=this.camera.position,veh=this.vehicle.position,h=this.heading||0;F.pts[0].set(veh.x,veh.y+1.8,veh.z);F.pts[1].set(veh.x+Math.sin(h)*9,veh.y+1.2,veh.z+Math.cos(h)*9);F.hits.clear();
+   for(const o of F.list){let p=o,shown=true;while(p){if(!p.visible){shown=false;break;}p=p.parent;}if(!shown)continue;
+    const bs=o.geometry.boundingSphere,rad=bs.radius*o.matrixWorld.getMaxScaleOnAxis();F.c.copy(bs.center).applyMatrix4(o.matrixWorld);   // (the bundled three has no Sphere class: plain vectors)
+    for(const q of F.pts){const len=F.w.subVectors(q,cam).length();if(len<2)continue;F.w.divideScalar(len);const t=Math.max(0,Math.min(len,F.v.subVectors(F.c,cam).dot(F.w)));if(F.v.copy(cam).addScaledVector(F.w,t).distanceTo(F.c)>rad)continue;
+     F.ray.set(cam,F.w);F.ray.far=len-1.2;F.ray.near=0;const hit=F.ray.intersectObject(o,false);if(hit.length){F.hits.add(o);break;}}}
+   for(const o of F.hits)if(!F.faded.has(o)){const ghost=new T.MeshBasicMaterial({color:0xa9c8de,transparent:true,opacity:.62,depthWrite:false});F.faded.set(o,{orig:o.material,ghost,a:.62,out:false});o.material=ghost;}
+   for(const [o,f] of F.faded)f.out=!F.hits.has(o);
+  }
+  // ease: in to .22 while it blocks, back up before the real material returns (no pop to opaque)
+  for(const [o,f] of F.faded){f.a+=((f.out?.7:.22)-f.a)*Math.min(1,dt*9);f.ghost.opacity=f.a;if(f.out&&f.a>.66||!o.parent){o.material=f.orig;f.ghost.dispose();F.faded.delete(o);}}
+ }
+ // render resolution (Session 5E-2a): the shared ceiling (LOW 1x, phone up to 2.5x, desktop the full ratio, CPU rasterizer 1x) and
+ // in auto mode the frame-time governor (js/graphics.js). A CPU rasterizer starts and may stay at .75x (it cannot hold full size).
+ setupResolution(){const GR=typeof GraphicsResolution!=='undefined'?GraphicsResolution:null,low=typeof gfxMode==='function'&&gfxMode()==='low',auto=typeof gfxMode!=='function'||gfxMode()==='auto';
+  if(this.renderer.isConquestCanvas||!GR){this.renderer.setPixelRatio(low?1:Math.min(root.devicePixelRatio||1,1.5));return;}
+  const cap=GR.cap(low?'low':'high'),soft=GR.software();this.res=GR.governor(cap,{min:soft?Math.min(.75,cap):Math.min(1,cap),start:soft?Math.min(.75,cap):cap,auto:auto&&!low});this.autoRatio=this.res.ratio;this.renderer.setPixelRatio(this.res.ratio);}
  profileFrame(){const now=root.performance?root.performance.now():Date.now();if(this.profileLast){const ms=now-this.profileLast;if(!this.frameSamples)this.frameSamples=[];this.frameSamples.push(ms);if(this.frameSamples.length>600)this.frameSamples.shift();this.frameCount=(this.frameCount||0)+1;this.hitches=(this.hitches||0)+(ms>100?1:0);this.worstFrame=Math.max(this.worstFrame||0,ms);
- if(!this.renderer.isConquestCanvas&&this.frameCount%60===0&&typeof gfxMode==='function'&&gfxMode()==='auto'){const a=this.frameSamples.slice(-60).sort((a,b)=>a-b),p95=a[Math.floor(a.length*.95)];this.slowWindows=p95>24?(this.slowWindows||0)+1:0;this.fastWindows=p95<18?(this.fastWindows||0)+1:0;if(this.slowWindows>=2){const previous=this.autoRatio||this.renderer.getPixelRatio?.()||1.5;this.autoRatio=previous<=1?.75:1;if(previous!==this.autoRatio)this.renderer.setPixelRatio(this.autoRatio);this.detailRadius=1;this.autoLow=true;this.slowWindows=0;this.fastWindows=0;}else if(this.autoLow&&this.fastWindows>=18){this.autoRatio=this.autoRatio===.75?1:Math.min(devicePixelRatio,1.5);this.renderer.setPixelRatio(this.autoRatio);this.autoLow=this.autoRatio<=1;this.fastWindows=0;}}}
+ if(this.res&&!this.renderer.isConquestCanvas){const r=this.res.sample(ms,now/1000);if(r!==null){this.autoRatio=r;this.renderer.setPixelRatio(r);}}
+ // auto-low (cheaper shading + nearer detail) only once the resolution is already at its floor and frames are still slow; it lifts when they recover
+ if(!this.renderer.isConquestCanvas&&this.frameCount%60===0&&typeof gfxMode==='function'&&gfxMode()==='auto'){const a=this.frameSamples.slice(-60).sort((a,b)=>a-b),p95=a[Math.floor(a.length*.95)],floor=!this.res||this.res.ratio<=this.res.min;this.slowWindows=p95>24&&floor?(this.slowWindows||0)+1:0;this.fastWindows=p95<18?(this.fastWindows||0)+1:0;if(this.slowWindows>=2&&!this.autoLow){this.detailRadius=1;this.autoLow=true;this.slowWindows=0;this.fastWindows=0;}else if(this.autoLow&&this.fastWindows>=18){this.autoLow=false;this.fastWindows=0;}}}
  this.profileLast=now;
  }
  performanceReport(){const a=[...(this.frameSamples||[])].sort((a,b)=>a-b),n=a.length;return {samples:n,pixelRatio:this.autoRatio||this.renderer.getPixelRatio?.()||0,percentBelow50fps:n?100*a.filter(t=>t>20).length/n:null,percentBelow40fps:n?100*a.filter(t=>t>25).length/n:null,percentBelow30fps:n?100*a.filter(t=>t>1000/30).length/n:null,simulationMs:this.simMs||0,renderSubmissionMs:this.renderCpuMs||0,heapBytes:root.performance?.memory?.usedJSHeapSize||null,textures:this.renderer.info?.memory?.textures||0,frameMedian:n?a[Math.floor(n*.5)]:null,frameP95:n?a[Math.floor(n*.95)]:null,worstFrame:this.worstFrame||0,hitches:this.hitches||0,drawCalls:this.renderer.info?.render?.calls||0,maxDrawCalls:this.maxDrawCalls||0,programs:this.renderer.info?.programs?.length||0,materialPrograms:(this.renderer.info?.programs||[]).filter(p=>!/CubeUV|GaussianBlur/.test(p.name)).length,triangles:this.renderer.info?.render?.triangles||0,geometries:this.renderer.info?.memory?.geometries||0,chunks:this.chunks.size,enemies:(this.battle||this.encounter)?.enemies.filter(e=>e.hp>0).length||0,projectiles:(this.battle||this.encounter)?.projectiles.length||0,autoLow:!!this.autoLow,softwareGL:!!this.softwareGL,styleQuality:this.style?(this.style.high?'high':'low'):null,styleShading:this.style?(this.style.U.uHigh.value?'high':'low'):null,physicalDeviceVerified:false};}

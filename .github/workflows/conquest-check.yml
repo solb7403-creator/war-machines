@@ -143,6 +143,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           python dev/tests/conquest-transmission.py --engine ${{ matrix.engine }}
+          python dev/tests/conquest-occluder.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
           python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback

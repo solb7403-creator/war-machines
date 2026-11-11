@@ -95,7 +95,16 @@
     "length": 2.61
    },
    "tracks": "auto",
-   "look": "common"
+   "look": "common",
+   "lookOverride": {
+    "paintA": "#a99d78",
+    "paintB": "#6f7450",
+    "camo": 0.5,
+    "camoScale": 1.4,
+    "trim": "#7b7f74",
+    "wear": 1.2,
+    "dirt": 1.1
+   }
   },
   {
    "id": "weapon-pulse-0",
@@ -1919,7 +1928,17 @@
      "#ffe9b8",
      0.1
     ]
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#5f624d",
+    "paintB": "#4a4d3d",
+    "camo": 0,
+    "trim": "#8a8f93",
+    "bare": "#9da2a6",
+    "glow": "#ffd27a",
+    "wear": 1.45,
+    "dirt": 1.2
+   }
   },
   {
    "id": "chassis-scout-1",
@@ -2104,7 +2123,16 @@
      },
      "region": "dark"
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#a9aeb4",
+    "paintB": "#8b9198",
+    "trim": "#c4c9cf",
+    "bare": "#d0d4d8",
+    "glow": "#b78bff",
+    "wear": 0.6,
+    "dirt": 0.55
+   }
   },
   {
    "id": "chassis-scout-2",
@@ -2338,7 +2366,30 @@
      "region": "glow",
      "color": "#ffb347"
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#2b2d31",
+    "paintB": "#383b41",
+    "trim": "#c9a04a",
+    "glow": "#ff7a1f",
+    "lines": [
+     {
+      "at": "edge",
+      "kind": "trim",
+      "color": "#d4aa4f",
+      "k0": 150,
+      "k1": 230
+     },
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#ff7a1f",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.15
+     }
+    ]
+   }
   },
   {
    "id": "chassis-vanguard-1",
@@ -2498,7 +2549,24 @@
      },
      "region": "dark"
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#4b5058",
+    "paintB": "#3b4047",
+    "trim": "#7f868e",
+    "bare": "#9aa1a9",
+    "glow": "#b78bff",
+    "lines": [
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#b78bff",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.15
+     }
+    ]
+   }
   },
   {
    "id": "chassis-vanguard-2",
@@ -2789,9 +2857,19 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#b2b8c0",
-    "paintB": "#8a919b",
-    "bare": "#c9ced5"
+    "paintA": "#c3c7cc",
+    "paintB": "#a4a9b0",
+    "bare": "#d3d7dc",
+    "trim": "#c9a04a",
+    "lines": [
+     {
+      "at": "edge",
+      "kind": "trim",
+      "color": "#d1a64a",
+      "k0": 150,
+      "k1": 230
+     }
+    ]
    }
   },
   {
@@ -2966,7 +3044,7 @@
        ]
       ]
      },
-     "region": "hazard",
+     "region": "armor2",
      "onlyParts": [
       "body"
      ]
@@ -3035,7 +3113,16 @@
       "body"
      ]
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#a69d7e",
+    "paintB": "#8b8468",
+    "camo": 0,
+    "trim": "#8c8a80",
+    "bare": "#aaa69a",
+    "wear": 1.5,
+    "dirt": 1.25
+   }
   },
   {
    "id": "chassis-titan-1",
@@ -3278,6 +3365,23 @@
    ],
    "tris": {
     "light": 24000
+   },
+   "lookOverride": {
+    "paintA": "#484d55",
+    "paintB": "#393e45",
+    "trim": "#7f868e",
+    "bare": "#9aa1a9",
+    "glow": "#b78bff",
+    "lines": [
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#b78bff",
+      "k0": 70,
+      "k1": 130,
+      "up": 0.15
+     }
+    ]
    }
   },
   {
@@ -3763,7 +3867,30 @@
       "body"
      ]
     }
-   ]
+   ],
+   "lookOverride": {
+    "paintA": "#3e4249",
+    "paintB": "#2f333a",
+    "trim": "#c9a04a",
+    "glow": "#ff9a2e",
+    "lines": [
+     {
+      "at": "edge",
+      "kind": "trim",
+      "color": "#d4aa4f",
+      "k0": 150,
+      "k1": 230
+     },
+     {
+      "at": "groove",
+      "kind": "glow",
+      "color": "#ff8a24",
+      "k0": 80,
+      "k1": 140,
+      "up": 0.2
+     }
+    ]
+   }
   },
   {
    "id": "weapon-moon",

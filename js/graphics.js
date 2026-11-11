@@ -36,6 +36,50 @@ const GraphicsQuality=(()=>{
   s.sum+=dt;s.n++;if(s.sum<3||s.n<45)return null;const fps=s.n/s.sum;s.sum=0;s.n=0;s.bad=fps<(s.q==='high'?35:21)?s.bad+1:0;
   if(s.bad<2)return null;s.q=s.q==='high'?'low':'2d';reset(s,now);return s.q;
  }
- const initial=({mode='auto',coarse=false,cores=8,memory=null}={})=>mode==='high'?'high':mode==='low'?'low':coarse&&(memory===null||memory<6||cores<8)||cores<=4&&(memory===null||memory<4)?'low':'high';
+ // Auto starts HIGH unless the device says it is small (owner, Nov 11 2026: the website is the full-quality baseline and
+ // Telegram matches it as closely as the device allows; effects scale down only where a device truly can't hold frame rate).
+ // iPhones report no memory: they start HIGH and the frame-time watch (sample) and GraphicsResolution step down if needed.
+ const initial=({mode='auto',coarse=false,cores=8,memory=null}={})=>mode==='high'?'high':mode==='low'?'low':(memory!==null&&memory<=3)||cores<=2||(coarse&&memory!==null&&memory<4&&cores<=4)?'low':'high';
  return {state,reset,sample,initial};
+})();
+// Render resolution (Session 5E-2a). One ceiling and one governor for every renderer (battle, Garage, Conquest):
+//  - LOW graphics: 1x, fixed.  HIGH on a phone/tablet: up to 2.5x.  HIGH on a desktop: the full device pixel ratio.
+//  - a CPU rasterizer (SwiftShader / llvmpipe: GPU-blocklisted browsers, VMs, CI) never goes above 1x.
+//  - auto mode: the governor drops the ratio one step only while frame time is really over budget and climbs back when it
+//    recovers; a level that failed is retried later each time it fails again (no flicker between two levels).
+const GraphicsResolution=(()=>{
+ const PHONE_MAX=2.5,DESK_MAX=3,STEP=.25,BUDGET=1000/48,GOOD=1000/56,WINDOW=.5;
+ let soft=null;
+ const dpr=()=>typeof devicePixelRatio==='number'&&devicePixelRatio>0?devicePixelRatio:1;
+ const coarse=()=>typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches;
+ // one throwaway context, once per page: is WebGL running on a CPU rasterizer?
+ function software(){
+  if(soft!==null)return soft;soft=false;
+  try{if(typeof document==='undefined')return soft;const c=document.createElement('canvas'),gl=c.getContext('webgl2')||c.getContext('webgl');if(!gl)return soft;
+   const d=gl.getExtension('WEBGL_debug_renderer_info'),r=d?gl.getParameter(d.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);soft=/swiftshader|llvmpipe|softpipe|software/i.test(String(r||''));
+   const lose=gl.getExtension('WEBGL_lose_context');lose&&lose.loseContext();}catch(e){soft=false;}
+  return soft;
+ }
+ function cap(q,o={}){const d=o.dpr||dpr(),sw=o.software!==undefined?o.software:software();if(q==='low')return Math.min(1,d);if(sw)return Math.min(1,d);return Math.min(d,(o.coarse!==undefined?o.coarse:coarse())?PHONE_MAX:DESK_MAX);}
+ const antialias=q=>q!=='low'&&!software();
+ // governor: feed it every frame's wall time (ms); it returns the new ratio when it changes, else null
+ function governor(max,{min=1,start=max,auto=true}={}){
+  const g={max,min:Math.min(min,max),ratio:Math.max(Math.min(start,max),Math.min(min,max)),auto,t:0,frames:[],slow:0,good:0,block:new Map(),fails:new Map(),
+   setMax(m){this.max=m;this.min=Math.min(this.min,m);if(this.ratio>m){this.ratio=m;return m;}return null;},
+   reset(){this.t=0;this.frames.length=0;this.slow=0;this.good=0;},
+   sample(ms,now){
+    if(!this.auto||!(ms>0)||ms>250){if(ms>250)this.reset();return null;}   // a hidden tab or a single hitch is not a frame rate
+    this.frames.push(ms);this.t+=ms/1000;if(this.t<WINDOW||this.frames.length<12)return null;
+    const a=this.frames.slice().sort((x,y)=>x-y),med=a[a.length>>1];this.frames.length=0;this.t=0;
+    this.slow=med>BUDGET?this.slow+1:0;this.good=med<=GOOD?this.good+1:0;
+    if(this.slow>=2&&this.ratio>this.min){   // over budget for a second: one step down, and this level waits longer before its next try
+     const lv=+this.ratio.toFixed(2),f=(this.fails.get(lv)||0)+1;this.fails.set(lv,f);this.block.set(lv,now+Math.min(120,6*2**(f-1)));
+     this.ratio=Math.max(this.min,+(this.ratio-STEP).toFixed(2));this.slow=0;this.good=0;return this.ratio;}
+    if(this.good>=4&&this.ratio<this.max){   // two seconds with headroom: try one step up unless that level failed recently
+     const up=Math.min(this.max,+(this.ratio+STEP).toFixed(2));if((this.block.get(up)||0)>now)return null;this.ratio=up;this.good=0;return up;}
+    return null;
+   }};
+  return g;
+ }
+ return {cap,antialias,software,governor,PHONE_MAX,BUDGET,GOOD,get dpr(){return dpr();}};
 })();
