@@ -403,6 +403,11 @@ function frame3D(shx,shy){
  for(const [u,o] of B3.units)if(!seen.has(u)){if(units.includes(u))o.g.visible=false;else dropUnit(u,o);}
  // wrecks: charred hulls that smoke, then sink away
  B3.wrecks=B3.wrecks.filter(w=>{w.t+=dt;const k=w.t/3.2;if(k>=1){RS.remove(w.g);w.mat.dispose();return false;}
+  if(w.piece){const p=w.g.position;   // a blown-off turret: ballistic, two or three bounces, then it lies still and fades with the hull
+   if(!w.rest){w.vy-=20*dt;p.x+=w.vx*dt;p.z+=w.vz*dt;p.y+=w.vy*dt;w.g.rotation.x+=w.spin*dt;w.g.rotation.z+=w.spin*0.6*dt;
+    if(p.y<w.fl){p.y=w.fl;if(Math.abs(w.vy)<1.6){w.rest=1;w.g.rotation.x=Math.round(w.g.rotation.x/Math.PI)*Math.PI;w.g.rotation.z=0;}else{w.vy*=-0.36;w.vx*=0.6;w.vz*=0.6;w.spin*=0.5;if(SFX)SFX.sparks(p.x,w.y0+0.1,p.z,4,3,[1,0.7,0.35],0.22,0.35,1,w.y0);}}}
+   else if(k>0.6)p.y-=dt*0.3;
+   w.mat.opacity=1-Math.max(0,k-0.6)/0.4;return true;}
   w.g.position.y=w.y0-Math.max(0,k-0.6)*0.8;w.mat.opacity=1-Math.max(0,k-0.6)/0.4;
   if(Math.random()<dt*10)emit(PSN,{x:w.x+(Math.random()-0.5)*0.5,y:w.y0+0.5,z:w.z+(Math.random()-0.5)*0.5,vy:0.9,vx:0.2,life:1.4,s0:0.4,s1:1.5,c:'#1d1f24',a:0.6*(1-k)});
   if(k<0.5&&Math.random()<dt*8)emit(PSA,{x:w.x+(Math.random()-0.5)*0.6,y:w.y0+0.4,z:w.z+(Math.random()-0.5)*0.6,vy:1.4,life:0.4,s0:0.5,s1:0.1,c:'#ff8a3d'});
@@ -520,7 +525,11 @@ function ev3D(a){
    o.body.children.forEach(ch=>{if(ch.isGroup)return;const c=ch.clone();c.traverse(x=>{if(x.isMesh)x.material=mat;});w.add(c);});
    const m0=o.body.children[0];if(m0){const c=m0.clone();c.traverse(x=>{if(x.isMesh)x.material=mat;});w.add(c);}
    w.position.copy(o.g.position);w.scale.copy(o.g.scale);w.rotation.y=o.hull.rotation.y+0.3;RS.add(w);
-   B3.wrecks.push({g:w,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y});}
+   B3.wrecks.push({g:w,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y});
+   // destroyed = breaks apart: the turret is blown off the hull, tumbles, bounces and comes to rest beside it
+   if(o.tur&&o.tur.children.length){const tw=new THREE.Group(),tc=o.tur.clone(true);tc.traverse(x=>{if(x.isMesh)x.material=mat;});tw.add(tc);tw.position.copy(o.g.position);tw.scale.copy(o.g.scale);tw.rotation.y=o.hull.rotation.y;RS.add(tw);
+    const kk=U(a[2]),dx=kk?r.x-kk.x:Math.random()-0.5,dz=kk?r.y-kk.y:Math.random()-0.5,dl=Math.hypot(dx,dz)||1;
+    B3.wrecks.push({g:tw,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y,piece:1,fl:o.g.position.y-o.tur.position.y*o.g.scale.y*0.75,vx:dx/dl*2.4+(Math.random()-0.5)*1.2,vz:dz/dl*2.4+(Math.random()-0.5)*1.2,vy:6.5,spin:(Math.random()<0.5?-1:1)*(5+Math.random()*4)});}}
   // destroyed = breaks apart: the hull tears into plates and chunks in its own colours, thrown away from the killing blow
   if(SFX){const k=U(a[2]),sz=(r.boss?2.6:1)*(r.dscale||1),hh=heightAt(r),dx=k?r.x-k.x:0,dz=k?r.y-k.y:0;
    SFX.shatter(tankMat(r),r.x,hh,r.y,0.95*sz,0.8*sz,dx,dz,o?FX3D_RGB(o.spec.team):null);SFX.blast(r.x,hh,r.y,1.1*sz,1);}
