@@ -1877,3 +1877,36 @@ match no GLB in the `meshy-models` release: recorded as unused alternates.
 - Decision: weapons now follow the same energy rule as chassis — faint and still on stock and paints, full bright and
   animated only with Lunar Skin (`js/meshy3d.js paintUniforms`). The Moonbeam (textured legendary) keeps its glowing crystals,
   because its v2 image shows them glowing brightly. Calibrated in the real Garage, as before.
+
+### Independent review (AGENTS.md: 2 reviewers because the super fix touches combat) and what changed because of it
+- Graphics/performance reviewer: nothing blocking. Fixed from its findings: (1) Arcade quality watch could drop to LOW before
+  resolution had stepped down -> it now waits while the governor still has room (`GraphicsQuality.sample resolving`);
+  (2) iPhone memory: the Arcade battle canvas is parked at 1x1 while Conquest is open (`park3D`, frees ~80 MB at 2.5x + AA);
+  (3) a 30 fps cap (iOS Low Power Mode) read as overload -> a step that does not speed frames up by 10% is undone and
+  resolution is left alone for a minute (tests: fill-bound frame times + a 30 fps case in graphics-motion and
+  conquest-adaptive); (4) fade flicker on double-sided meshes -> a faded mesh is hit-tested with its own material; faded
+  Meshy meshes are released correctly (`fadeOrig`); leaving the drive view clears ghosts at once; Conquest auto-low lifts
+  back off exponentially. Not changed (noted): the far/near switch in big towns rebuilds the Meshy building groups once
+  (a short hitch, cheap: shared geometry and materials); merged landmark meshes fade as one piece.
+- Combat reviewer: nothing blocking; confirmed 6 (now 7) fail on main for the right reasons and no change to stats, damage,
+  economy or server trust. Added from its findings: a 2v2 siege case (target dies with a second enemy in sight) and a
+  flipped live-seat case to `super-aim.mjs` (48 checks, 7 fail on main), a corrected comment in `aimVel`, the correct
+  determinism citation in `conquest-session-032.py` (`conquest-economy.mjs`). Noted for the PR: AI supers follow the same
+  rule (a bot's super no longer re-aims at another enemy when its target dies; its lead is capped at the target's top speed).
+  Not covered by a test: the one-line `pointercancel` change in `js/render.js` (UI glue); the relay fight's DEFEAT branch has
+  only been exercised when the fight was won locally (both endings are handled by the same dialog code).
+
+### Final state (build 20261111110159; head of `claude/hopeful-hawking-mupebe`, resolve with `git log -1`)
+Tests executed locally on the final code (Chromium; WebKit is not installed in this container, CI runs it):
+- Node: every list in `conquest-check.yml`, `website-check.yml`, `lab-ui-check.yml`, `equipment-balance.yml` (90 suites incl.
+  `conquest-regression.sh`, `wtest/*`, `fair-arcade`, `super-aim` 48, `meshy` 1802, `graphics-motion`, `conquest-adaptive`).
+- Browser: all 13 portrait-journey tests + `conquest-desktop-keys.py` + the 9 transmission tests (incl. the new
+  `conquest-occluder.py`, the reworked `conquest-session-032.py`, `conquest-living-war.py --quality high` = 16-program budget)
+  + `signup-browser.cjs chromium`: 23/23 PASS.
+- Proof: `proof/v2.mjs` (20 loadout x profile runs, all Meshy, 0 errors), `proof/v2_town.py` (all 12 town items Meshy, programs
+  11-14), `proof/sharpness.mjs` before/after.
+Risks / not done: no physical iPhone, Android or Telegram check by anyone (all numbers are SwiftShader); the 2.5x + 4x AA
+framebuffer (~80 MB on a phone) is protected by the frame-time governor, not by a memory check; Conquest enemy hulls and the
+courtyard diorama stay procedural (decision above); the super fix reaches live PvP when the Worker is next deployed.
+Agents used: 2 read-only reviewers (graphics/performance; combat — the first combat reviewer was lost when test processes
+were stopped and was re-run). Both changed the result: 4 graphics fixes and 2 new regression cases came from them.
