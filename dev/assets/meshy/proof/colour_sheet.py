@@ -10,7 +10,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[4];REF=ROOT/'docs/art/references/t
 cap,out=pathlib.Path(sys.argv[1]),pathlib.Path(sys.argv[2]);out.mkdir(parents=True,exist_ok=True)
 # loadout capture -> (v2 image, name); the ten proof loadouts cover all 9 chassis and all 10 weapons
 CH=[('scout0-pulse0','b5ae93de','Scout'),('scout1-twin0','68556221','Strider'),('scout2-moon2','97e0789b','Phantom'),('vanguard0-pulse1','cc0abe1f','Vanguard'),('vanguard1-twin1','3dbcb303','Sentinel'),('vanguard2-siege0','ef23a11f','Paladin'),('titan0-siege1','c93ab27d','Titan'),('titan1-pulse2','72448d12','Bulwark'),('titan2-twin2','5081ec59','Colossus')]
-WP=[('scout0-pulse0','2fae26ad','Pulse Cannon'),('vanguard0-pulse1','7e0a6b77','Arc Pulse'),('titan1-pulse2','bf00915f','Nova Pulse'),('scout1-twin0','a4207149','Twin Repeater'),('vanguard1-twin1','dbd6fceb','Storm Repeater'),('titan2-twin2','97c7a5ee','Helix Repeater'),('vanguard2-siege0','3c76abeb','Siege Breaker'),('titan0-siege1','6666703f','Rail Breaker'),('titan2-siege2','1c7f4122','Titanfall'),('scout2-moon2','moonbeam','Moonbeam')]
+WP=[('scout0-pulse0','2fae26ad','Pulse Cannon'),('vanguard0-pulse1','7e0a6b77','Arc Pulse'),('titan1-pulse2','bf00915f','Nova Pulse'),('scout1-twin0','5a4bea6f','Twin Repeater'),('vanguard1-twin1','dbd6fceb','Storm Repeater'),('titan2-twin2','97c7a5ee','Helix Repeater'),('vanguard2-siege0','3c76abeb','Siege Breaker'),('titan0-siege1','6666703f','Rail Breaker'),('titan2-siege2','1c7f4122','Titanfall'),('scout2-moon2','moonbeam','Moonbeam')]
 def sheet(rows,sub,cols,name):
   T=420;n=len(rows);o=Image.new('RGB',(T*2*cols,T*((n+cols-1)//cols)),(13,20,28));d=ImageDraw.Draw(o)
   for k,(g,r,label) in enumerate(rows):
