@@ -2025,7 +2025,56 @@ prop rebuilds, the town tank, see-through removal, the visual addendum, war mode
     jackpot signatures, bar marker less prominent than the jackpot circle) was applied afterwards and not scored a third time.
 
 ### Numbers
-@@TABLE@@
+Seeded AI matches on the real phone code (`dev/tests/super-report.mjs`, 1,920 matches: 10 kits x 8 modes x 6 maps x 4 seeds, the
+"human" stand-in pilot; before = main `8e853b4`, `dev/tests/fixtures/super-baseline.json`; after = this branch,
+`docs/supers-5e2b/super-after.json`). Super damage = what the hits dealt; hull removed = health really taken off enemies.
+
+| Kit (weapon item, gear, league) | Supers a match before -> after | Super damage a match before -> after | Hull removed before -> after | Per super before -> after |
+|---|---|---|---|---|
+| Pulse Cannon, stock, Rookie | 3.57 -> 2.76 | 836 -> 781 (-7%) | 820 -> 771 (-6%) | 234 -> 283 |
+| Twin Repeater, stock, Rookie | 3.55 -> 2.84 | 850 -> 827 (-3%) | 844 -> 819 (-3%) | 239 -> 291 |
+| Siege Breaker, stock, Rookie | 3.71 -> 3.06 | 872 -> 914 (+5%) | 865 -> 895 (+3%) | 235 -> 298 |
+| Arc Pulse, Rare kit, Veteran | 4.93 -> 3.03 | 1494 -> 1569 (+5%) | 1436 -> 1472 (+3%) | 303 -> 518 |
+| Storm Repeater, Rare kit, Veteran | 4.78 -> 2.92 | 1524 -> 1565 (+3%) | 1495 -> 1505 (+1%) | 319 -> 536 |
+| Rail Breaker, Rare kit, Veteran | 5.18 -> 3.27 | 1666 -> 1828 (+10%) | 1635 -> 1767 (+8%) | 322 -> 559 |
+| Nova Pulse, Epic kit, Elite | 7.98 -> 3.18 | 3068 -> 2787 (-9%) | 3003 -> 2565 (-15%) | 384 -> 876 |
+| Helix Repeater, Epic kit, Elite | 7.77 -> 3.04 | 3254 -> 3000 (-8%) | 3200 -> 2845 (-11%) | 419 -> 986 |
+| Titanfall, Epic kit, Elite | 8.1 -> 3.29 | 3442 -> 3281 (-5%) | 3375 -> 3092 (-8%) | 425 -> 998 |
+| Moonbeam, Legendary kit, Lunar Legend | 9.78 -> 3.72 | 7055 -> 6433 (-9%) | 6698 -> 5795 (-13%) | 721 -> 1730 |
+| **All kits** | **5.94 -> 3.11** | **2406 -> 2298 (-4%)** | **2337 -> 2153 (-8%)** | 405 -> 739 |
+
+Timing-bar outcomes of the stand-in pilot (an average person's spread): miss 13%, hit 56%, jackpot 31%.
+By mode (supers a match before -> after): arena 1v1 3.71 -> 2.07, arena 2v2 4.75 -> 2.44, arena 3v3 6.39 -> 3.23, zone 2v2 9.55 -> 5.17, crystal 2v2 7.42 -> 3.78, bounty 2v2 7.57 -> 3.9, royale 1v1 4.95 -> 2.68, boss 2v2 3.15 -> 1.62.
+Known shortfall (combat reviewer's probe, 6 seeded matches a cell, not in the table's modes): in **Bounty 1v1** (hulls halved) and
+Arena 1v1 a top kit's supers now remove much less hull than on main (Legendary, Bounty 1v1 at Lunar Legend: 819 vs 4,172 a match;
+Arena 1v1: 3,161 vs 4,568) because three capped supers cannot remove what ten uncapped ones did. Decision: no one-shots comes
+first (decision 3); win rates and damage trade in those modes are unchanged or better (`fair-arcade.mjs`: Legendary 97-100% wins).
+
+`fair-arcade.mjs` on this branch: PASS, 11,471 checks. Win rate / damage taken per damage dealt, stock .. Legendary kit: Rookie
+47% / 0.93, 74% / 0.70, 86% / 0.51, 100% / 0.28, 100% / 0.18 (main: 48% / 0.91 .. 100% / 0.17); Lunar Legend 40% / 1.00, 49% / 0.95,
+51% / 0.89, 89% / 0.67, 98% / 0.46 (main: 42% / 0.98, 48% / 1.00, 55% / 0.88, 89% / 0.70, 97% / 0.42).
+
+Draw cost, Arcade (same seeded 3v3 Arena battle with the Legendary kit, 840 frames at 390x844, software GL; FX3D vs the legacy
+effects path, which is what main draws; `docs/supers-5e2b/arcade-draws.json`):
+
+| Quality | Draw calls median / p95 / max, legacy -> FX3D | Programs | Triangles max | drawBattle CPU ms median / p95 |
+|---|---|---|---|---|
+| LOW | 71 / 113 / 113 -> 69 / 113 / 113 | 15 -> 16 | 108490 -> 98997 | 2.1 / 4.6 -> 2 / 3.8 |
+| HIGH | 68 / 122 / 131 -> 70 / 121 / 130 | 19 -> 19 | 163479 -> 162530 | 2.9 / 6.6 -> 2.6 / 6.5 |
+
+Arcade LOW is at or under the old draw cost (median 71 -> 69, peak 113 -> 113); the one extra program is FX3D's glow batch.
+Conquest (browser tests, software GL, 390x844): world fight with a super and a hull breaking apart: programs 14 before, 14
+during (budget 16), draw calls 56 -> 62 while the effect plays (`docs/conquest/super-fx/chromium-high-results.json`); CC10 town:
+56 calls, programs 14; CC10 raid replay 73 calls, programs 15 on HIGH and 14 on LOW (`conquest-base-builder.py`, limits 150 / 16);
+Home Sector CC10 (65-draw budget) is asserted by the existing CI tests, unchanged. FX3D peaks in the captures: 60 supers x
+outcomes on phone and desktop, at most 503 glow quads and 738 particles (Helix Nova / Titanfall jackpots); 12 materials breaking
+at once: 96 chunks, 289 particles, all gone 5 s later. Frame rate on the SwiftShader profiles: the CPU side of a battle frame is
+unchanged within noise (table); software GL frame times are not phone frame rates (no physical device in this session).
+
+Sheets (`docs/supers-5e2b/`): `sheet-phone-390x844-3x.webp` and `sheet-desktop-1920x1080.webp` (10 supers x miss / hit / jackpot,
+the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5 s, aftermath), `destruction-phone-390x844-3x.webp`
+(damage stages at 60 / 35 / 15% and the break-up of 12 materials and a tank), `sheet-phone-LOW-4-supers.webp`,
+`sheet-phone-reduced-motion-4-supers.webp`. Conquest: `docs/conquest/super-fx/*.png`.
 
 ### Tests
 - New: `dev/tests/super-timing.mjs` (CI, equipment-balance.yml): bar geometry, 65% floor, jackpot cap, no early fire, forged /
@@ -2044,9 +2093,9 @@ prop rebuilds, the town tank, see-through removal, the visual addendum, war mode
 - VFX critic (read-only, images only), two rounds: changed the result both times (stroke weights, aftermath, look-alikes,
   whiteout, bar marker).
 - Combat / parity reviewer (read-only): FAIL on the first pass with 2 blockers (proof-of-play tripping on super overkill;
-  one-shot supers in Bounty 1v1) and 7 more; all addressed. Re-review: @@REVIEW_COMBAT@@
+  one-shot supers in Bounty 1v1) and 7 more; all addressed. Re-review: PASS at `b060b84`, with one test line to fix (done) and two points it wants the owner to see: the 1v1 shortfall under the cap (Numbers) and the pooled mirror cells (decision 10).
 - Graphics / performance reviewer (read-only): FAIL on the first pass with 1 blocker (the town view broke: FX3D was stored under
-  a name the raid-shot meshes already used) and 14 more; all addressed. Re-review: @@REVIEW_GFX@@
+  a name the raid-shot meshes already used) and 14 more; all addressed. Re-review: PASS at `b060b84`; follow-ups done after it: unknown-key fallback at the call, bar text clear of the SHIELD button, dimmer nova gather in Conquest, turret piece built without `Object3D.clone` (it failed on Meshy weapon nodes: found by the destruction capture). Left as notes: helix strands and diamonds stay level when a Conquest beam is pitched; crack height is fitted to composite walls (taller ore walls show them a little low); Arcade LOW shows sparks and smoke but no crack lines.
 
 ### Risks and limits
 - No physical iPhone / Android / Telegram check by anyone: all frame numbers are software GL (SwiftShader). The effects use

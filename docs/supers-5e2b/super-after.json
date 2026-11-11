@@ -3,290 +3,290 @@
  "seeds": 4,
  "all": {
   "matches": 1920,
-  "supers": 3.1,
-  "superDmg": 2489,
-  "superEff": 2251,
-  "perSuper": 803,
-  "dmg": 4112,
-  "share": 0.605,
-  "secs": 98,
+  "supers": 3.11,
+  "superDmg": 2298,
+  "superEff": 2153,
+  "perSuper": 739,
+  "dmg": 3939,
+  "share": 0.584,
+  "secs": 99,
   "oc": [
-   781,
-   3378,
-   1795
+   772,
+   3359,
+   1843
   ]
  },
  "kits": {
   "pulse0": {
    "matches": 192,
-   "supers": 2.92,
-   "superDmg": 827,
-   "superEff": 812,
-   "perSuper": 284,
-   "dmg": 1794,
-   "share": 0.461,
-   "secs": 95,
+   "supers": 2.76,
+   "superDmg": 781,
+   "superEff": 771,
+   "perSuper": 283,
+   "dmg": 1723,
+   "share": 0.453,
+   "secs": 94,
    "oc": [
     77,
-    301,
-    182
+    284,
+    169
    ]
   },
   "twin0": {
    "matches": 192,
-   "supers": 2.79,
-   "superDmg": 745,
-   "superEff": 738,
-   "perSuper": 267,
-   "dmg": 1476,
-   "share": 0.505,
-   "secs": 93,
+   "supers": 2.84,
+   "superDmg": 827,
+   "superEff": 819,
+   "perSuper": 291,
+   "dmg": 1585,
+   "share": 0.522,
+   "secs": 94,
    "oc": [
-    72,
-    299,
-    164
+    60,
+    296,
+    190
    ]
   },
   "siege0": {
    "matches": 192,
-   "supers": 3.03,
-   "superDmg": 907,
-   "superEff": 892,
-   "perSuper": 300,
-   "dmg": 2141,
-   "share": 0.424,
+   "supers": 3.06,
+   "superDmg": 914,
+   "superEff": 895,
+   "perSuper": 298,
+   "dmg": 2159,
+   "share": 0.423,
    "secs": 94,
    "oc": [
-    85,
-    319,
-    177
+    87,
+    356,
+    145
    ]
   },
   "pulse1": {
    "matches": 192,
    "supers": 3.03,
-   "superDmg": 1684,
-   "superEff": 1593,
-   "perSuper": 556,
-   "dmg": 3226,
-   "share": 0.522,
+   "superDmg": 1569,
+   "superEff": 1472,
+   "perSuper": 518,
+   "dmg": 3132,
+   "share": 0.501,
    "secs": 102,
    "oc": [
-    66,
-    345,
-    171
+    73,
+    323,
+    185
    ]
   },
   "twin1": {
    "matches": 192,
-   "supers": 2.95,
-   "superDmg": 1617,
-   "superEff": 1574,
-   "perSuper": 549,
-   "dmg": 2793,
-   "share": 0.579,
-   "secs": 104,
+   "supers": 2.92,
+   "superDmg": 1565,
+   "superEff": 1505,
+   "perSuper": 536,
+   "dmg": 2735,
+   "share": 0.572,
+   "secs": 103,
    "oc": [
-    76,
-    305,
+    68,
+    308,
     185
    ]
   },
   "siege1": {
    "matches": 192,
-   "supers": 3.14,
-   "superDmg": 1831,
-   "superEff": 1758,
-   "perSuper": 583,
-   "dmg": 3730,
-   "share": 0.491,
-   "secs": 101,
+   "supers": 3.27,
+   "superDmg": 1828,
+   "superEff": 1767,
+   "perSuper": 559,
+   "dmg": 3813,
+   "share": 0.479,
+   "secs": 103,
    "oc": [
-    73,
-    356,
-    174
+    90,
+    351,
+    187
    ]
   },
   "pulse2": {
    "matches": 192,
-   "supers": 3.05,
-   "superDmg": 2906,
-   "superEff": 2615,
-   "perSuper": 954,
-   "dmg": 4811,
-   "share": 0.604,
-   "secs": 99,
+   "supers": 3.18,
+   "superDmg": 2787,
+   "superEff": 2565,
+   "perSuper": 876,
+   "dmg": 4745,
+   "share": 0.587,
+   "secs": 102,
    "oc": [
-    74,
-    354,
-    157
+    85,
+    329,
+    197
    ]
   },
   "twin2": {
    "matches": 192,
-   "supers": 3.08,
-   "superDmg": 3095,
-   "superEff": 2927,
-   "perSuper": 1006,
-   "dmg": 4610,
-   "share": 0.671,
+   "supers": 3.04,
+   "superDmg": 3000,
+   "superEff": 2845,
+   "perSuper": 986,
+   "dmg": 4462,
+   "share": 0.672,
    "secs": 101,
    "oc": [
-    80,
-    302,
-    209
+    62,
+    328,
+    194
    ]
   },
   "siege2": {
    "matches": 192,
-   "supers": 3.43,
-   "superDmg": 3524,
-   "superEff": 3287,
-   "perSuper": 1028,
-   "dmg": 6160,
-   "share": 0.572,
+   "supers": 3.29,
+   "superDmg": 3281,
+   "superEff": 3092,
+   "perSuper": 998,
+   "dmg": 5838,
+   "share": 0.562,
    "secs": 99,
    "oc": [
-    92,
-    368,
-    198
+    80,
+    381,
+    170
    ]
   },
   "moon": {
    "matches": 192,
-   "supers": 3.61,
-   "superDmg": 7752,
-   "superEff": 6313,
-   "perSuper": 2148,
-   "dmg": 10383,
-   "share": 0.747,
-   "secs": 92,
+   "supers": 3.72,
+   "superDmg": 6433,
+   "superEff": 5795,
+   "perSuper": 1730,
+   "dmg": 9197,
+   "share": 0.699,
+   "secs": 95,
    "oc": [
-    86,
-    429,
-    178
+    90,
+    403,
+    221
    ]
   }
  },
  "modes": {
   "arena 1v1": {
    "matches": 240,
-   "supers": 2.03,
-   "superDmg": 1207,
-   "superEff": 1071,
-   "perSuper": 594,
-   "dmg": 1784,
-   "share": 0.677,
-   "secs": 83,
+   "supers": 2.07,
+   "superDmg": 902,
+   "superEff": 876,
+   "perSuper": 436,
+   "dmg": 1579,
+   "share": 0.571,
+   "secs": 85,
    "oc": [
-    60,
-    303,
-    125
+    64,
+    269,
+    163
    ]
   },
   "arena 2v2": {
    "matches": 240,
-   "supers": 2.46,
-   "superDmg": 1695,
-   "superEff": 1484,
-   "perSuper": 690,
-   "dmg": 3063,
-   "share": 0.553,
+   "supers": 2.44,
+   "superDmg": 1547,
+   "superEff": 1365,
+   "perSuper": 635,
+   "dmg": 2933,
+   "share": 0.528,
    "secs": 66,
    "oc": [
-    86,
-    321,
-    183
+    85,
+    316,
+    184
    ]
   },
   "arena 3v3": {
    "matches": 240,
-   "supers": 3.26,
-   "superDmg": 2617,
-   "superEff": 2398,
-   "perSuper": 802,
-   "dmg": 3787,
-   "share": 0.691,
+   "supers": 3.23,
+   "superDmg": 2634,
+   "superEff": 2422,
+   "perSuper": 815,
+   "dmg": 3816,
+   "share": 0.69,
    "secs": 91,
    "oc": [
-    101,
-    454,
-    228
+    116,
+    420,
+    240
    ]
   },
   "zone 2v2": {
    "matches": 240,
-   "supers": 4.88,
-   "superDmg": 4507,
-   "superEff": 4222,
-   "perSuper": 924,
-   "dmg": 6909,
-   "share": 0.652,
-   "secs": 127,
+   "supers": 5.17,
+   "superDmg": 4453,
+   "superEff": 4308,
+   "perSuper": 862,
+   "dmg": 6995,
+   "share": 0.637,
+   "secs": 130,
    "oc": [
-    149,
-    646,
-    375
+    157,
+    711,
+    372
    ]
   },
   "crystal 2v2": {
    "matches": 240,
-   "supers": 3.91,
-   "superDmg": 3013,
-   "superEff": 2914,
-   "perSuper": 771,
-   "dmg": 5267,
-   "share": 0.572,
-   "secs": 106,
+   "supers": 3.78,
+   "superDmg": 2843,
+   "superEff": 2782,
+   "perSuper": 752,
+   "dmg": 5019,
+   "share": 0.567,
+   "secs": 104,
    "oc": [
-    133,
-    513,
-    292
+    107,
+    519,
+    282
    ]
   },
   "bounty 2v2": {
    "matches": 240,
-   "supers": 3.99,
-   "superDmg": 2714,
-   "superEff": 2240,
-   "perSuper": 681,
-   "dmg": 4820,
-   "share": 0.563,
+   "supers": 3.9,
+   "superDmg": 2078,
+   "superEff": 1903,
+   "perSuper": 532,
+   "dmg": 4148,
+   "share": 0.501,
    "secs": 120,
    "oc": [
-    111,
-    563,
-    283
+    119,
+    512,
+    306
    ]
   },
   "royale 1v1": {
    "matches": 240,
-   "supers": 2.63,
-   "superDmg": 2269,
-   "superEff": 1856,
-   "perSuper": 862,
-   "dmg": 3658,
-   "share": 0.62,
+   "supers": 2.68,
+   "superDmg": 2189,
+   "superEff": 1852,
+   "perSuper": 816,
+   "dmg": 3609,
+   "share": 0.607,
    "secs": 63,
    "oc": [
-    96,
-    366,
-    170
+    84,
+    375,
+    185
    ]
   },
   "boss 2v2": {
    "matches": 240,
-   "supers": 1.65,
-   "superDmg": 1889,
-   "superEff": 1823,
-   "perSuper": 1145,
-   "dmg": 3612,
-   "share": 0.523,
-   "secs": 129,
+   "supers": 1.62,
+   "superDmg": 1741,
+   "superEff": 1714,
+   "perSuper": 1077,
+   "dmg": 3412,
+   "share": 0.51,
+   "secs": 130,
    "oc": [
-    45,
-    212,
-    139
+    40,
+    237,
+    111
    ]
   }
  }

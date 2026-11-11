@@ -1,0 +1,50 @@
+{
+ "low": {
+  "quality": "low",
+  "frames": 840,
+  "callsMedian": 69,
+  "callsP95": 113,
+  "callsMax": 113,
+  "programsMax": 16,
+  "trianglesMax": 98997,
+  "frameMsMedian": 2,
+  "frameMsP95": 3.8,
+  "pageErrors": []
+ },
+ "low-legacy": {
+  "quality": "low",
+  "frames": 840,
+  "callsMedian": 71,
+  "callsP95": 113,
+  "callsMax": 113,
+  "programsMax": 15,
+  "trianglesMax": 108490,
+  "frameMsMedian": 2.1,
+  "frameMsP95": 4.6,
+  "pageErrors": []
+ },
+ "high": {
+  "quality": "high",
+  "frames": 840,
+  "callsMedian": 70,
+  "callsP95": 121,
+  "callsMax": 130,
+  "programsMax": 19,
+  "trianglesMax": 162530,
+  "frameMsMedian": 2.6,
+  "frameMsP95": 6.5,
+  "pageErrors": []
+ },
+ "high-legacy": {
+  "quality": "high",
+  "frames": 840,
+  "callsMedian": 68,
+  "callsP95": 122,
+  "callsMax": 131,
+  "programsMax": 19,
+  "trianglesMax": 163479,
+  "frameMsMedian": 2.9,
+  "frameMsP95": 6.6,
+  "pageErrors": []
+ }
+}
