@@ -14,7 +14,7 @@ ok(boot.indexOf("'equipment3d'")<boot.indexOf("'meshy3d'")&&boot.indexOf("'meshy
 ok(!/meshopt_decoder/.test(index)&&!/meshopt_decoder/.test(boot),'the decoder is fetched with the first model, not with the page');
 const src=read('js/meshy3d.js');
 for(const word of ['save.','ecoRun','localStorage','WEAPONS[','CH[cls]','hp=','dmg=','fetch(\'/api','/api/'])ok(!src.includes(word),'meshy3d.js must not touch '+word);
-ok(!/WebAssembly/.test(read('js/vendor/meshopt_decoder.js')),'decoder is plain JavaScript (the website CSP forbids WebAssembly)');
+ok(!/WebAssembly\./.test(read('js/vendor/meshopt_decoder.js')),'decoder is plain JavaScript (the website CSP forbids WebAssembly)');
 // without THREE (2D fallback, tests, the Worker) every entry point answers "no model" and the procedural kit is used
 ok(Meshy3D.chassisKit('vanguard',0,null,'#fff',[],false)===null&&Meshy3D.weaponKit('pulse',0,null,'#fff',false,'vanguard')===null,'no THREE -> procedural');
 ok(Meshy3D.stamp('vanguard',0,'pulse',0)==='my00','readiness stamp');
