@@ -2130,3 +2130,30 @@ the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5
 8. Conquest: fill the super in a fight, press SUPER, press again in the zone; destroy a Parasite: its hull splits and bursts.
    Then your town: DEFEND > START DEFENSE DRILL and watch a wall or turret take damage and break.
 9. iPhone Settings > Accessibility > Reduce Motion ON: no screen shake, no flashing; the bar still sweeps.
+
+### Release record (Nov 11, 2026)
+- **RELEASED: PR #115 squash-merged as `521bf2b` (head `449d49c`), build `20261111221214`, `PVP_V` 5.** Payments stay disabled.
+- CI on `449d49c`: 9/9 green: conquest and transmission chromium + webkit (run
+  [43114009736](https://github.com/solb7403-creator/war-machines/actions/runs/43114009736)), balance incl. `super-timing.mjs` and
+  `fair-arcade.mjs` (run [43114009750](https://github.com/solb7403-creator/war-machines/actions/runs/43114009750)), website and
+  signup x3 (run [43114009765](https://github.com/solb7403-creator/war-machines/actions/runs/43114009765)), verify (run
+  [43114009755](https://github.com/solb7403-creator/war-machines/actions/runs/43114009755)). No review threads, mergeable `clean`.
+- Two CI failures before that head, both in tests, neither in game code: `conquest-earned-end-to-end.py` still posted protocol
+  version 4 (the Worker answered `update`), and `conquest-session-032.py` could tap a hull off again when a first tap landed late
+  on the runner's software GL. Fixed in `449d49c` (the test sends 5; the re-select loop stops once the hull is selected). No test
+  was skipped or relaxed.
+- Worker deploy run [43119552581](https://github.com/solb7403-creator/war-machines/actions/runs/43119552581): success (server tests
+  and the Workers-runtime live-match smoke passed before the deploy); notices `pvp health: {"ok":true,"v":5,"open":0,"waiting":0,"queues":[]}`
+  and `live version: {"v":"20261111221214"} (repo: {"v":"20261111221214"})`, live = repo.
+- Pages run [43119550878](https://github.com/solb7403-creator/war-machines/actions/runs/43119550878): success on the first attempt
+  (deployment of `521bf2b`, whose `version.json` is `20261111221214`). The live hosts are outside this container's network
+  allowlist, so the Worker figures come from the deploy run's own checks and the Pages figure from the deployment record.
+- Post-merge runs on main `521bf2b`: Validate Laboratory UI (run
+  [43119552497](https://github.com/solb7403-creator/war-machines/actions/runs/43119552497)) and the Graphify code index (run
+  [43119552463](https://github.com/solb7403-creator/war-machines/actions/runs/43119552463)): success. Equipment Balance (run
+  [43119553157](https://github.com/solb7403-creator/war-machines/actions/runs/43119553157), the same suite that was green on the PR
+  head): still running when this record was first written; result in the next line once it ends.
+- Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment), so main
+  was merged into it instead; this record is the only change it carries on top of main.
+- Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build misbehaves,
+  revert `521bf2b` on main (the Pages and Worker deploys follow the revert) and note it here.
