@@ -188,3 +188,101 @@ def vertex_curvature(V, F, N):
     np.add.at(cur, e[:, 0], k); np.add.at(cur, e[:, 1], k)
     np.add.at(cnt, e[:, 0], 1); np.add.at(cnt, e[:, 1], 1)
     return cur / np.maximum(cnt, 1)
+
+
+def _simplify_loop(P, tol):
+    """Douglas-Peucker on a closed 3D polyline; returns kept indices (in order)."""
+    n = len(P)
+    if n <= 8:
+        return np.arange(n)
+    a = 0; b = int(np.argmax(np.linalg.norm(P - P[0], axis=1)))
+    keep = np.zeros(n, bool); keep[[a, b]] = True
+    stack = [(a, b), (b, n)]
+    while stack:
+        i, j = stack.pop()
+        if j - i < 2:
+            continue
+        p0 = P[i]; p1 = P[j % n]
+        seg = p1 - p0; L = np.linalg.norm(seg)
+        q = P[i + 1:j] - p0
+        d = np.linalg.norm(q - np.outer(q @ seg / max(L * L, 1e-30), seg), axis=1) if L > 1e-12 else np.linalg.norm(q, axis=1)
+        k = int(d.argmax())
+        if d[k] > tol:
+            m = i + 1 + k; keep[m] = True; stack.append((i, m)); stack.append((m, j))
+    return np.flatnonzero(keep)
+
+
+def cap_loop(V, loop, tol=0.0015, max_pts=220, planar=None):
+    """Triangles closing one boundary loop without adding vertices: the loop is thinned, projected on its best-fit
+    plane and ear-clipped, so the cap never pokes outside the opening (a centroid fan does on bent or concave loops).
+    Winding is opposite to the open edge so the cap faces outward. Returns (m,3) vertex indices."""
+    P = V[loop]
+    kp = _simplify_loop(P, tol)
+    while len(kp) > max_pts:
+        tol *= 1.6; kp = _simplify_loop(P, tol)
+    if len(kp) < 3:
+        return np.zeros((0, 3), np.int64)
+    idx = loop[kp]; Q = V[idx]
+    c = Q.mean(0)
+    _, sv, vt = np.linalg.svd(Q - c, full_matrices=False)
+    if planar is not None and np.abs((Q - c) @ vt[2]).max() > planar * max(np.linalg.norm(Q - c, axis=1).max(), 1e-9):
+        return np.zeros((0, 3), np.int64)   # a bent opening: a flat cap would cut through the part
+    xy = (Q - c) @ vt[:2].T
+    area = 0.5 * np.sum(xy[:, 0] * np.roll(xy[:, 1], -1) - np.roll(xy[:, 0], -1) * xy[:, 1])
+    if area < 0:
+        xy = xy * [1, -1]            # make it counter-clockwise in the working plane
+    order = list(range(len(idx))); tris = []
+    guard = 0
+    while len(order) > 3 and guard < 20000:
+        guard += 1
+        n = len(order); o = np.array(order)
+        a = xy[np.roll(o, 1)]; b = xy[o]; cc = xy[np.roll(o, -1)]
+        cross = (b[:, 0] - a[:, 0]) * (cc[:, 1] - a[:, 1]) - (b[:, 1] - a[:, 1]) * (cc[:, 0] - a[:, 0])
+        conv = np.flatnonzero(cross > 1e-14)
+        done = False
+        # prefer the ear with the best shape; test containment only against reflex vertices
+        reflex = o[cross <= 1e-14]
+        cand = conv[np.argsort(-cross[conv] / (np.linalg.norm(cc[conv] - a[conv], axis=1) ** 2 + 1e-30))] if len(conv) else []
+        for k in cand[:40]:
+            A, B, C = a[k], b[k], cc[k]
+            ok = True
+            if len(reflex):
+                Pp = xy[reflex]
+                d1 = (B[0] - A[0]) * (Pp[:, 1] - A[1]) - (B[1] - A[1]) * (Pp[:, 0] - A[0])
+                d2 = (C[0] - B[0]) * (Pp[:, 1] - B[1]) - (C[1] - B[1]) * (Pp[:, 0] - B[0])
+                d3 = (A[0] - C[0]) * (Pp[:, 1] - C[1]) - (A[1] - C[1]) * (Pp[:, 0] - C[0])
+                inside = (d1 > 1e-12) & (d2 > 1e-12) & (d3 > 1e-12)
+                inside &= ~np.isin(reflex, [order[k - 1], order[k], order[(k + 1) % n]])
+                ok = not inside.any()
+            if ok:
+                tris.append((order[k - 1], order[k], order[(k + 1) % n])); order.pop(k); done = True; break
+        if not done:   # degenerate / self-crossing projection: clip the most convex corner anyway
+            k = int(np.argmax(cross)); tris.append((order[k - 1], order[k], order[(k + 1) % n])); order.pop(k)
+    if len(order) == 3:
+        tris.append(tuple(order))
+    T = idx[np.array(tris, np.int64)]
+    # orient: opposite to the loop direction (the loop follows the open edge's face winding)
+    pos = {int(v): i for i, v in enumerate(loop)}
+    i0, i1 = pos[int(T[0, 0])], pos[int(T[0, 1])]
+    fwd = ((i1 - i0) % len(loop)) < len(loop) / 2
+    return T[:, ::-1] if fwd else T
+
+
+def lathe(profile, pivot, axis_z=True, segments=72):
+    """Closed surface of revolution around the Z axis through pivot. profile: [(r, z)] from one pole to the other."""
+    pr = np.asarray(profile, float); n = len(pr)
+    th = np.linspace(0, 2 * np.pi, segments, endpoint=False)
+    V = np.zeros((n * segments, 3))
+    for i, (r, z) in enumerate(pr):
+        V[i * segments:(i + 1) * segments] = np.c_[pivot[0] + r * np.cos(th), pivot[1] + r * np.sin(th), np.full(segments, z)]
+    F = []
+    for i in range(n - 1):
+        for j in range(segments):
+            a = i * segments + j; b = i * segments + (j + 1) % segments; c = a + segments; d = b + segments
+            F.append((a, b, c)); F.append((b, d, c))
+    F = np.array(F, np.int64)
+    fn = np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
+    cen = V[F].mean(1) - [pivot[0], pivot[1], pr[:, 1].mean()]
+    if (fn * cen).sum() < 0:
+        F = F[:, ::-1]
+    return V, F

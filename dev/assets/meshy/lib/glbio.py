@@ -51,3 +51,38 @@ def load_mesh(path, want_uv=False):
     V=np.vstack(Vs);F=np.vstack(Fs)
     if want_uv and UVs: info['uv']=np.vstack(UVs)
     return V,F,info
+
+
+def load_textures(path):
+    """Base colour (sRGB->linear float), metallic-roughness and normal images of the first material, or None each."""
+    import io
+    from PIL import Image
+    js, bin_ = read_glb(path)
+    out = {'base': None, 'mr': None, 'normal': None}
+    mats = js.get('materials') or []
+    if not mats:
+        return out
+    m = mats[0]; pbr = m.get('pbrMetallicRoughness', {})
+    slots = {'base': pbr.get('baseColorTexture'), 'mr': pbr.get('metallicRoughnessTexture'), 'normal': m.get('normalTexture')}
+    for key, ref in slots.items():
+        if not ref:
+            continue
+        tex = js['textures'][ref['index']]
+        src = tex.get('source', tex.get('extensions', {}).get('EXT_texture_webp', {}).get('source'))
+        bv = js['bufferViews'][js['images'][src]['bufferView']]
+        raw = bytes(bin_[bv.get('byteOffset', 0):bv.get('byteOffset', 0) + bv['byteLength']])
+        a = np.asarray(Image.open(io.BytesIO(raw)).convert('RGB')).astype(np.float32) / 255.0
+        if key == 'base':
+            a = np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
+        out[key] = a
+    out['factors'] = dict(base=pbr.get('baseColorFactor', [1, 1, 1, 1]), metallic=pbr.get('metallicFactor', 1.0), roughness=pbr.get('roughnessFactor', 1.0))
+    return out
+
+
+def sample(img, uv):
+    """Bilinear sample of an HxWx3 image at glTF uv (origin top-left), clamped."""
+    h, w = img.shape[:2]
+    x = np.clip(uv[:, 0], 0, 1) * w - 0.5; y = np.clip(uv[:, 1], 0, 1) * h - 0.5
+    x0 = np.floor(x).astype(int); y0 = np.floor(y).astype(int); fx = (x - x0)[:, None]; fy = (y - y0)[:, None]
+    xa = np.clip(x0, 0, w - 1); xb = np.clip(x0 + 1, 0, w - 1); ya = np.clip(y0, 0, h - 1); yb = np.clip(y0 + 1, 0, h - 1)
+    return (img[ya, xa] * (1 - fx) + img[ya, xb] * fx) * (1 - fy) + (img[yb, xa] * (1 - fx) + img[yb, xb] * fx) * fy

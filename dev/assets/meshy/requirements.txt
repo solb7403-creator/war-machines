@@ -1,0 +1,8 @@
+numpy>=2.0
+scipy>=1.14
+numba>=0.60
+embreex>=4.3
+xatlas>=0.0.9
+meshoptimizer>=0.2.30a0
+pillow>=11
+scikit-image>=0.25

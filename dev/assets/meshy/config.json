@@ -50,8 +50,8 @@
   },
   "weapon": {
    "tris": {
-    "light": 6000,
-    "full": 36000
+    "light": 7000,
+    "full": 45000
    },
    "texture": {
     "light": 512,
@@ -60,12 +60,22 @@
   },
   "town": {
    "tris": {
-    "light": 5000,
+    "light": 6000,
     "full": 40000
    },
    "texture": {
     "light": 512,
     "full": 1024
+   }
+  },
+  "moon": {
+   "tris": {
+    "light": 7000,
+    "full": 45000
+   },
+   "texture": {
+    "light": 512,
+    "full": 2048
    }
   }
  },
@@ -81,7 +91,657 @@
    "yaw": 180,
    "fit": {
     "length": 2.61
+   },
+   "tracks": "auto",
+   "look": "common"
+  },
+  {
+   "id": "weapon-pulse-0",
+   "src": "PULSE CANNON",
+   "kind": "weapon",
+   "game": {
+    "arch": "pulse",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.88
+   },
+   "look": "weapon-common",
+   "turret": {
+    "ringTop": 0.105,
+    "barrels": [
+     {
+      "x": 0.76,
+      "y": 0.42,
+      "z": -0.02,
+      "r": 0.13,
+      "recoil": 0.12
+     }
+    ]
    }
+  },
+  {
+   "id": "weapon-pulse-1",
+   "src": "ARC PULSE",
+   "kind": "weapon",
+   "game": {
+    "arch": "pulse",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.94
+   },
+   "look": "weapon-rare"
+  },
+  {
+   "id": "weapon-pulse-2",
+   "src": "NOVA PULSE",
+   "kind": "weapon",
+   "game": {
+    "arch": "pulse",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.02
+   },
+   "look": "weapon-epic"
+  },
+  {
+   "id": "weapon-twin-0",
+   "src": "TWIN REPEATER",
+   "kind": "weapon",
+   "game": {
+    "arch": "twin",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.74
+   },
+   "look": "weapon-common"
+  },
+  {
+   "id": "weapon-twin-1",
+   "src": "STORM REPEATER",
+   "kind": "weapon",
+   "game": {
+    "arch": "twin",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.88
+   },
+   "look": "weapon-rare"
+  },
+  {
+   "id": "weapon-twin-2",
+   "src": "HELIX REPEATER",
+   "kind": "weapon",
+   "game": {
+    "arch": "twin",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.98
+   },
+   "look": "weapon-epic",
+   "turret": {
+    "ringTop": 0.09,
+    "barrels": [
+     {
+      "x": 0.8,
+      "y": 0.38,
+      "z": -0.22,
+      "r": 0.195,
+      "recoil": 0.05,
+      "spin": 1.0
+     },
+     {
+      "x": 0.8,
+      "y": 0.38,
+      "z": 0.22,
+      "r": 0.195,
+      "recoil": 0.05,
+      "spin": -1.0
+     }
+    ]
+   },
+   "regions": [
+    {
+     "partShell": {
+      "part": "barrel0",
+      "r0": 0.128,
+      "r1": 0.2,
+      "t": [
+       0.19,
+       1.07
+      ]
+     },
+     "region": "glow",
+     "color": "#ff9d2e"
+    },
+    {
+     "partShell": {
+      "part": "barrel1",
+      "r0": 0.128,
+      "r1": 0.2,
+      "t": [
+       0.19,
+       1.07
+      ]
+     },
+     "region": "glow",
+     "color": "#ff9d2e"
+    }
+   ]
+  },
+  {
+   "id": "weapon-siege-0",
+   "src": "SIEGE BREAKER",
+   "kind": "weapon",
+   "game": {
+    "arch": "siege",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 1.88
+   },
+   "look": "weapon-common"
+  },
+  {
+   "id": "weapon-siege-1",
+   "src": "RAIL BREAKER",
+   "kind": "weapon",
+   "game": {
+    "arch": "siege",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.0
+   },
+   "look": "weapon-rare"
+  },
+  {
+   "id": "weapon-siege-2",
+   "src": "TITANFALL",
+   "kind": "weapon",
+   "game": {
+    "arch": "siege",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.12
+   },
+   "look": "weapon-epic"
+  },
+  {
+   "id": "chassis-scout-0",
+   "src": "SCOUT tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "scout",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 1.84
+   },
+   "tracks": "auto",
+   "look": "common"
+  },
+  {
+   "id": "chassis-scout-1",
+   "src": "STRIDER tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "scout",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.04
+   },
+   "tracks": "auto",
+   "look": "rare"
+  },
+  {
+   "id": "chassis-scout-2",
+   "src": "PHANTOM tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "scout",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 1.98
+   },
+   "tracks": "auto",
+   "look": "epic"
+  },
+  {
+   "id": "chassis-vanguard-1",
+   "src": "SENTINEL tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "vanguard",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.56
+   },
+   "tracks": "auto",
+   "look": "rare"
+  },
+  {
+   "id": "chassis-vanguard-2",
+   "src": "PALADIN tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "vanguard",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.7
+   },
+   "tracks": "auto",
+   "look": "epic"
+  },
+  {
+   "id": "chassis-titan-0",
+   "src": "TITAN tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "titan",
+    "tier": 0
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.94
+   },
+   "tracks": "auto",
+   "look": "common"
+  },
+  {
+   "id": "chassis-titan-1",
+   "src": "BULWARK tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "titan",
+    "tier": 1
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 2.9
+   },
+   "tracks": "auto",
+   "look": "rare"
+  },
+  {
+   "id": "chassis-titan-2",
+   "src": "COLOSSUS tank chassis",
+   "kind": "chassis",
+   "game": {
+    "cls": "titan",
+    "tier": 2
+   },
+   "yaw": 180,
+   "fit": {
+    "length": 3.1
+   },
+   "tracks": "auto",
+   "look": "epic"
+  },
+  {
+   "id": "weapon-moon",
+   "src": "Obsidian Starpiercer_Meshy_AI_2026-11-10_4e13cd",
+   "kind": "moon",
+   "game": {
+    "arch": "moon"
+   },
+   "yaw": 180,
+   "textured": true,
+   "fit": {
+    "mode": "weapon",
+    "tip": 2.35
+   },
+   "look": "moon"
+  },
+  {
+   "id": "town-cc",
+   "src": "COMMAND CENTER",
+   "kind": "town",
+   "game": {
+    "town": "cc"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 16,
+    "d": 16,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-reactor",
+   "src": "REACTOR_",
+   "kind": "town",
+   "game": {
+    "town": "reactor"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 12,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-refinery",
+   "src": "REFINERY_",
+   "kind": "town",
+   "game": {
+    "town": "refinery"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 16,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-lab",
+   "src": "SCIENCE LAB",
+   "kind": "town",
+   "game": {
+    "town": "lab"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 12,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-shield",
+   "src": "SHIELD GENERATOR",
+   "kind": "town",
+   "game": {
+    "town": "shield"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 8,
+    "d": 8,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-storage",
+   "src": "STORAGE DEPOT",
+   "kind": "town",
+   "game": {
+    "town": "storage"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 12,
+    "d": 12,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-tesla",
+   "src": "TESLA ARC COIL",
+   "kind": "town",
+   "game": {
+    "town": "tesla"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-cannon",
+   "src": "CANNON TURRET_",
+   "kind": "town",
+   "game": {
+    "town": "cannon"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-mg",
+   "src": "MACHINE GUN TURRET",
+   "kind": "town",
+   "game": {
+    "town": "mg"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-rocket",
+   "src": "ROCKET POD TURRET",
+   "kind": "town",
+   "game": {
+    "town": "rocket"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-laser",
+   "src": "LASER TURRET_",
+   "kind": "town",
+   "game": {
+    "town": "laser"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town"
+  },
+  {
+   "id": "town-railgun",
+   "src": "RAILGUN TURRET_",
+   "kind": "town",
+   "game": {
+    "town": "railgun"
+   },
+   "yaw": 180,
+   "fit": {
+    "mode": "footprint",
+    "w": 4,
+    "d": 4,
+    "fill": 0.9
+   },
+   "look": "town"
   }
- ]
+ ],
+ "seed": 7403,
+ "autoTrim": {
+  "thickness": 0.03,
+  "maxArea": 0.06,
+  "minArea": 0.0002
+ },
+ "looks": {
+  "common": {
+   "rarity": 0,
+   "paintA": "#5d6243",
+   "paintB": "#8a8062",
+   "camo": 0.5,
+   "trim": "#6f767d",
+   "bare": "#8e9499",
+   "track": "#2b2d31",
+   "glow": "#ffe9b8",
+   "wear": 1.0,
+   "dirt": 1.0,
+   "dust": 0.18,
+   "dustColor": "#77736a",
+   "trackBare": "#5e6166"
+  },
+  "rare": {
+   "rarity": 1,
+   "paintA": "#aab3bf",
+   "paintB": "#8791a0",
+   "trim": "#c4ccd6",
+   "bare": "#d5dbe2",
+   "track": "#2f3238",
+   "glow": "#b78bff",
+   "wear": 0.7,
+   "dirt": 0.7,
+   "dust": 0.12,
+   "trackBare": "#6a6f78"
+  },
+  "epic": {
+   "rarity": 2,
+   "paintA": "#2b2f37",
+   "paintB": "#3a3f49",
+   "trim": "#c9a04a",
+   "bare": "#8d8f96",
+   "track": "#25272c",
+   "glow": "#ffb347",
+   "gold": "#d4aa4f",
+   "wear": 0.6,
+   "dirt": 0.6,
+   "dust": 0.1,
+   "trackBare": "#55585f"
+  },
+  "weapon-common": {
+   "rarity": 0,
+   "paintA": "#565b43",
+   "paintB": "#6b7076",
+   "camo": 0,
+   "trim": "#5d646b",
+   "bare": "#8e9499",
+   "track": "#2b2d31",
+   "glow": "#ffe9b8",
+   "wear": 1.0,
+   "dirt": 1.0,
+   "dust": 0.18,
+   "dustColor": "#77736a",
+   "trackBare": "#5e6166",
+   "barrelRegion": "steel",
+   "ringRegion": "steel",
+   "steel": "#70777e"
+  },
+  "weapon-rare": {
+   "rarity": 1,
+   "paintA": "#9aa3b0",
+   "paintB": "#7d8795",
+   "trim": "#c4ccd6",
+   "bare": "#d5dbe2",
+   "track": "#2f3238",
+   "glow": "#b78bff",
+   "wear": 0.7,
+   "dirt": 0.7,
+   "dust": 0.12,
+   "trackBare": "#6a6f78",
+   "barrelRegion": "steel",
+   "ringRegion": "steel",
+   "steel": "#b4bcc8"
+  },
+  "weapon-epic": {
+   "rarity": 2,
+   "paintA": "#25282f",
+   "paintB": "#343841",
+   "trim": "#c9a04a",
+   "bare": "#8d8f96",
+   "track": "#25272c",
+   "glow": "#ffb347",
+   "gold": "#d4aa4f",
+   "wear": 0.6,
+   "dirt": 0.6,
+   "dust": 0.1,
+   "trackBare": "#55585f",
+   "barrelRegion": "steel",
+   "ringRegion": "steel",
+   "steel": "#3b3f47"
+  },
+  "moon": {
+   "rarity": 3,
+   "glow": "#66cfff",
+   "bodyRegion": "keep"
+  },
+  "town": {
+   "rarity": 0,
+   "paintA": "#8b9096",
+   "paintB": "#6f7781",
+   "trim": "#59616b",
+   "bare": "#a9afb6",
+   "glow": "#22e6ff",
+   "gold": "#d9a94e",
+   "dust": 0.3,
+   "dirt": 0.9,
+   "wear": 0.8,
+   "dustColor": "#8a877f",
+   "bodyRegion": "armor"
+  }
+ },
+ "autoTrimTown": {
+  "thickness": 0.25,
+  "maxArea": 2.0,
+  "minArea": 0.01
+ }
 }
