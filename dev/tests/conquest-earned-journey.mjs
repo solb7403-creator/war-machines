@@ -8,7 +8,7 @@ const {createState,applyCommands,applyAction,hydrate}=await import('../../worker
 const initial=1800000000000,terminal={x:1174,z:1168};let now=initial,s=createState(R.STOCK_L,now),path=[],pathKey='',stalled=0;
 const trace=[],minutes=()=>+( (now-initial)/60000).toFixed(2),distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function record(event){const row={event,minute:minutes(),hp:Math.round(s.hp),cp:s.ledger.cp,banked:structuredClone(s.ledger.banked),cargo:structuredClone(s.ledger.cargo),position:s.position};trace.push(row);console.log(JSON.stringify(row));}
-function tick(input,frames=5){const old=s.position;now+=frames*50;s=applyCommands(s,{seq:s.seq+1,commands:Array(frames).fill(input)},now);assert(s.hp>0,'continuous starter pilot survives at '+minutes()+'min');stalled=distance(old,s.position)<.01?stalled+1:0;}
+function tick(input,frames=5){const old=s.position;now+=frames*50;s=applyCommands(s,{seq:s.seq+1,commands:Array.from({length:frames},(_,i)=>i?{...input,super:false}:input)},now);   /* SUPER is a press (5E-2b: a second press stops the timing bar), so only the first command of a batch carries it */assert(s.hp>0,'continuous starter pilot survives at '+minutes()+'min');stalled=distance(old,s.position)<.01?stalled+1:0;}
 function action(action,extra={}){s=applyAction(s,{seq:s.seq+1,action,...extra},now);path=[];pathKey='';}
 function route(B,target,radius){
  const p=s.position,key=Math.round(target.x/3)+':'+Math.round(target.z/3)+':'+radius;
@@ -31,7 +31,7 @@ function route(B,target,radius){
 }
 function command(target,{stop=5,enemy=null,exploration=!s.mission}={}){
  const B=hydrate(s),p=s.position,move=distance(p,target)>stop,goal=move?route(B,target,stop):p,dx=goal.x-p.x,dz=goal.z-p.z,d=Math.hypot(dx,dz);
- const input={x:move&&d?dx/d:0,z:move&&d?dz/d:0,fire:!!enemy,lockId:enemy?.id||null,aimYaw:enemy?Math.atan2(enemy.x-p.x,enemy.z-p.z):Math.atan2(dx,dz),shield:B.playerHp<B.playerMax*.85,super:!!enemy&&K.visible(B,p,enemy)&&B.charge>=1000};
+ const input={x:move&&d?dx/d:0,z:move&&d?dz/d:0,fire:!!enemy,lockId:enemy?.id||null,aimYaw:enemy?Math.atan2(enemy.x-p.x,enemy.z-p.z):Math.atan2(dx,dz),shield:B.playerHp<B.playerMax*.85,super:(!!enemy&&K.visible(B,p,enemy)&&B.charge>=1000)||!!(B.superAttack&&B.superAttack.bar&&B.superAttack.oc===undefined&&B.superAttack.el>=B.superAttack.bar.z0+0.06)};
  const speed=B.combatSpeed*(exploration?2:1),frames=move?Math.max(1,Math.min(10,Math.floor(d/(speed*.05)*.7))):10;tick(input,frames);
 }
 function nearest(B,enemies=B.enemies){return enemies.filter(e=>K.visible(B,s.position,e)).sort((a,b)=>distance(s.position,a)-distance(s.position,b))[0];}

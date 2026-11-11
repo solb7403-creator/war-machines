@@ -157,7 +157,7 @@ class View {
  g.userData.gun=gun;g.userData.marker=this.form(g,this.cone,0,5,0,.6,1,.6,0xff4b48);g.scale.setScalar(1.65);this.scene.add(g);return g;}
  controlInput(dt,sx=0,sz=0){
  if(this.keys.KeyQ)this.aimYaw+=dt*1.8;if(this.keys.KeyE)this.aimYaw-=dt*1.8;
- return {x:Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz,z:-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz,aimYaw:this.aimYaw,aimPitch:this.aimPitch,lockId:this.selectedId??null,fire:this.firing||!!this.keys.Space,tapFire:!!this.fireTap,super:!!this.pendingAbilities?.super||!!this.keys.KeyR,dash:!!this.pendingAbilities?.dash||!!this.keys.ShiftLeft||!!this.keys.ShiftRight,shield:!!this.pendingAbilities?.shield||!!this.keys.KeyF,gather:!!this.gathering||!!this.keys.KeyG,scan:!!this.pendingAbilities?.scan||!!this.keys.KeyC};
+ return {x:Math.cos(this.yaw)*sx-Math.sin(this.yaw)*sz,z:-Math.sin(this.yaw)*sx-Math.cos(this.yaw)*sz,aimYaw:this.aimYaw,aimPitch:this.aimPitch,lockId:this.selectedId??null,fire:this.firing||!!this.keys.Space,tapFire:!!this.fireTap,super:!!this.pendingAbilities?.super||this.superKey(),dash:!!this.pendingAbilities?.dash||!!this.keys.ShiftLeft||!!this.keys.ShiftRight,shield:!!this.pendingAbilities?.shield||!!this.keys.KeyF,gather:!!this.gathering||!!this.keys.KeyG,scan:!!this.pendingAbilities?.scan||!!this.keys.KeyC};
  }
  combatTick(dt){const B=this.battle||this.encounter;if(!B)return;const before=performance.now();
  if(root.ConquestControl){if(!this.controlStepped){const i=this.controlInput(dt);this.p=root.ConquestControl.advance(B,this.p,i,dt,!this.battle);}this.controlStepped=false;
@@ -178,8 +178,39 @@ class View {
  if(!root.ConquestControl.visible(this.battle||this.encounter,this.p,e)||!root.ConquestCombat.lineClear(origin,point)){this.selectedId=null;return;}
  this.selectedId=this.selectedId===id?null:id;
  }
+ // R is an edge, not a hold: the first press starts the super and its timing bar, the next press stops the bar (5E-2b)
+ superKey(){const d=!!this.keys.KeyR;if(!d){this.superKeyHeld=false;return false;}if(this.superKeyHeld)return false;this.superKeyHeld=true;return true;}
+ // ---- FX3D (js/fx3d.js): supers and destruction in the Conquest world. Drawn through the style's own glow material (MAT.fx)
+ // and solid material (MAT.solid): no new shader program, two draw calls while something is on screen ----
+ fxSys(){if(this.fxTried)return this.fx;this.fxTried=true;const St=this.style,F=root.FX3D;if(!St||!F||this.renderer.isConquestCanvas)return null;
+  const R=St.AT.BLOB,cu=(R[0]+R[2])/2,cv=(R[1]+R[3])/2,hu=(R[2]-R[0])/2*.94,hv=(R[3]-R[1])/2*.94,cam=this.camera;
+  this.fx=F.create(this.T,{mode:'conquest',scene:this.scene,low:()=>!!this.autoLow||!!St.low||typeof gfxMode==='function'&&gfxMode()==='low',quiet:()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),
+   glowMat:St.MAT.fx,solidMat:St.MAT.solid,glowAttr:'aCol',solidAttr:'aCol',bill:true,lin:true,gain:1.2,minW:.2,uv:(u,v,o)=>{o[0]=cu+u*hu;o[1]=cv+v*hv;},
+   eye:(x,y,z,o)=>{const dx=cam.position.x-x,dy=cam.position.y-y,dz=cam.position.z-z,l=Math.hypot(dx,dy,dz)||1;o[0]=dx/l;o[1]=dy/l;o[2]=dz/l;},
+   shake:(m,t)=>{this.fxShake=Math.max(this.fxShake||0,m);this.fxShakeT=Math.max(this.fxShakeT||0,t);},order:{glow:3,solid:0},maxQuads:2000,maxVerts:4200,maxParticles:900,maxDebris:72});
+  return this.fx;}
+ fxFrame(B){const F=this.fxSys();if(!F)return;const now=root.performance?root.performance.now():Date.now(),dt=Math.min(.05,Math.max(0,(now-(this.fxLast||now))/1000));this.fxLast=now;
+  const ox=this.origin.x,oz=this.origin.z;if(this.fxOx!==ox||this.fxOz!==oz){if(this.fxOx!==undefined)F.clear();this.fxOx=ox;this.fxOz=oz;}
+  F.begin(dt);
+  if(B){const U=3,p=this.renderP||this.p,ang=y=>Math.atan2(Math.cos(y),Math.sin(y)),sa=B.superAttack,seen=this.fxSeen||(this.fxSeen=new Map());
+   if(sa&&sa.bar){const S=SUP[sa.weapon],k=sa.k||supKey(sa.weapon,B.playerStats.wtier);   // the charge-up while the timing bar sweeps
+    F.superCharge(k,Math.min(1,sa.el/SUP_BAR_T),p.x-ox,p.y+.4,p.z-oz,ang(sa.yaw),sa.oc,(S.kind==='nova'?S.r:S.kind==='beam'?S.len:S.range)*U,S.kind==='nova'?U:U*.55);   // the chase camera sits right behind the muzzle: a smaller gather, so the view ahead stays clear
+    if(sa.oc!==undefined&&this.fxOc===undefined)F.superLock(k,sa.oc,p.x-ox,p.y+.4,p.z-oz,U);this.fxOc=sa.oc;}else this.fxOc=undefined;
+   for(const q of B.superShells||[])F.superShell(q.k||'siege0',q.oc||0,q.x-ox,q.y,q.z-oz,U);
+   for(const e of B.effects||[]){if(e.at===undefined)continue;const id=e.kind+'|'+e.at+'|'+Math.round(e.x)+'|'+Math.round(e.z);if(seen.has(id))continue;seen.set(id,now);   // each effect once (a reconciled battle re-creates the objects)
+    if(e.kind==='beam'&&e.k){const dx=e.ex-e.x,dz=e.ez-e.z;F.superBeam(e.k,e.oc||0,e.x-ox,e.y-1.65,e.z-oz,Math.atan2(dz,dx),Math.hypot(dx,dz),e.w||3.6,U);F.superImpact(e.k,e.oc||0,e.ex-ox,W.groundAt(e.ex,e.ez),e.ez-oz,0,U);}
+    else if(e.kind==='nova'&&e.k)F.superNova(e.k,e.oc||0,e.x-ox,W.groundAt(e.x,e.z),e.z-oz,e.r,U);
+    else if(e.kind==='destroy'&&e.k)F.superBlast(e.k,e.oc||0,e.x-ox,W.groundAt(e.x,e.z),e.z-oz,e.r||9.6,U);
+    else if(e.kind==='destroy'){F.shatter('chitin',e.x-ox,e.y-2,e.z-oz,2.7,2.6,e.x-p.x,e.z-p.z);F.blast(e.x-ox,e.y-2,e.z-oz,2.6,1);}}   // a Parasite hull destroyed: the carapace splits and bursts
+   if(seen.size>48)for(const [k,t] of seen)if(now-t>4000)seen.delete(k);
+   // damage stages: cracks under 70% hull, scorch and sparks under 45%, smoke under 22% (the eight nearest damaged hulls)
+   let n=0;for(const e of B.enemies){if(n>=8)break;if(e.hp<=0||!(e.maxHp>0)||e.hp>=e.maxHp*.7||Math.hypot(e.x-p.x,e.z-p.z)>140)continue;n++;F.wear('chitin',e.x-ox,e.y+1.5,e.z-oz,2.4,1.3,3.2,-(e.heading||0),e.hp/e.maxHp,(e.id|0)*977+7);}
+   if(B.playerMax>0&&B.playerHp>0&&B.playerHp<B.playerMax*.7)F.wear('armor',p.x-ox,p.y+1.6,p.z-oz,2.2,1.2,3,-(this.heading||0),B.playerHp/B.playerMax,4241);
+   const dead=B.playerHp<=0;if(dead&&this.fxDead===false){F.shatter('armor',p.x-ox,p.y,p.z-oz,2.8,2.4,0,0);F.blast(p.x-ox,p.y,p.z-oz,3,1);}this.fxDead=dead;}
+  F.end();
+  if(this.fxShakeT>0){this.fxShakeT-=dt;const m=(this.fxShake||0)*Math.min(1,this.fxShakeT*3)*.035;this.camera.position.x+=(Math.random()-.5)*m;this.camera.position.y+=(Math.random()-.5)*m;if(this.fxShakeT<=0)this.fxShake=0;}}
  combatRender(){if(this.renderer.isConquestCanvas)return;this.homeBeaconRender(this.origin.x,this.origin.z);this.terraRender(this.origin.x,this.origin.z);this.mineralRender(this.origin.x,this.origin.z);const ox=this.origin.x,oz=this.origin.z,m=this.routeTarget||this.nearOperation||root.ConquestCombat?.mission;if(this.beacon&&m){this.beacon.position.set(m.x-ox,W.groundAt(m.x,m.z),m.z-oz);this.beacon.visible=!this.battle&&Math.hypot(this.p.x-m.x,this.p.z-m.z)<350;}
- const B=this.battle||this.encounter;if(!B)return;
+ const B=this.battle||this.encounter;this.fxFrame(B);if(!B)return;
  if(!this.reticle){const geo=new this.T.RingGeometry(.65,.85,16);this.shared.push(geo);this.reticle=new this.T.Mesh(geo,this.mat(0xf4cf77));this.scene.add(this.reticle);}this.reticle.visible=B.state==='active';if(this.aimPoint){this.reticle.position.set(this.aimPoint.x-ox,this.aimPoint.y,this.aimPoint.z-oz);this.reticle.quaternion.copy(this.camera.quaternion);}
  const visible=new Set(B.enemies.filter(e=>Math.hypot(e.x-this.p.x,e.z-this.p.z)<240).map(e=>e.id));
  for(const [id,g] of this.enemyMeshes)if(!visible.has(id)){this.scene.remove(g);g.traverse(o=>{if(o.geometry&&!o.geometry.userData.hfShared&&!this.shared?.includes(o.geometry))o.geometry.dispose();});this.enemyMeshes.delete(id);}
@@ -192,7 +223,7 @@ class View {
  if(laser){core.scale.set(.07,6,.07);halo.scale.set(.17,5,.17);this.alignLaser(g,p.vx,p.vy,p.vz);}else core.scale.setScalar(p.kind==='siege'?.5:p.kind==='twin'?.18:.28);
  }
  this.fireSignature(B,ox,oz);
- const effects=B.effects||[];for(let i=0;i<Math.max(effects.length,this.effectMeshes.length);i++){let g=this.effectMeshes[i],p=effects[i];if(!g&&p){g=this.createLaserEffect();if(this.style&&!this.style.software){g.userData.flare=this.style.glow(0xffa34d,'FLARE');g.add(g.userData.flare);}this.effectMeshes.push(g);this.scene.add(g);}if(!g)continue;g.visible=!!p;if(!p)continue;
+ const effects=this.fx?(B.effects||[]).filter(e=>e.at===undefined||!(e.k||e.kind==='destroy')):B.effects||[];   /* supers and break-ups are drawn by FX3D */for(let i=0;i<Math.max(effects.length,this.effectMeshes.length);i++){let g=this.effectMeshes[i],p=effects[i];if(!g&&p){g=this.createLaserEffect();if(this.style&&!this.style.software){g.userData.flare=this.style.glow(0xffa34d,'FLARE');g.add(g.userData.flare);}this.effectMeshes.push(g);this.scene.add(g);}if(!g)continue;g.visible=!!p;if(!p)continue;
  const dx=(p.ex??p.x)-p.x,dy=(p.ey??p.y)-p.y,dz=(p.ez??p.z)-p.z,length=Math.hypot(dx,dy,dz),beam=p.kind==='beam',moon=p.weapon==='moon';g.position.set(p.x-ox+dx/2,p.y+dy/2,p.z-oz+dz/2);g.quaternion.identity();g.scale.setScalar(1);
  const core=g.children[0],halo=g.children[1];halo.visible=beam&&moon;g.children[2].visible=beam&&moon;if(beam&&moon)g.children[2].scale.set(.9,Math.max(.2,length),.9);if(beam&&moon&&!g.userData.rings){if(!this.laserRingGeo){this.laserRingGeo=new this.T.RingGeometry(.85,1,20);this.shared.push(this.laserRingGeo);}g.userData.rings=[0,1].map(()=>{const ring=new this.T.Mesh(this.laserRingGeo,this.effectMaterial(0x9b88ff,true));ring.rotation.x=Math.PI/2;g.add(ring);return ring;});}for(const [i,ring] of (g.userData.rings||[]).entries()){ring.visible=beam&&moon;ring.position.y=(i?1:-1)*length*.3;ring.scale.setScalar(1.5+(1-p.life/.4)*3);}core.geometry=beam?this.cylinder:this.sphere;core.material=this.effectMaterial(moon?0xf3ffff:p.kind==='destroy'?0xffbb66:0xc9faff);if(g.userData.flare){const f=g.userData.flare,on=p.kind==='destroy'||p.kind==='nova';f.visible=on;if(on)f.scale.setScalar((p.kind==='nova'?(p.r||4)*.9:3.4)*(.45+.9*Math.max(0,1-(p.life||0)/.5)));}
  if(beam){core.scale.set(moon?.22:.3,Math.max(.2,length),moon?.22:.3);halo.scale.set(.65*(.8+.2*Math.sin(B.time*55)),Math.max(.2,length),.65);this.alignLaser(g,dx,dy,dz);}else{const radius=p.kind==='nova'?(p.r||4)*(1-p.life/.45):moon?.45:p.kind==='destroy'?1:.25;core.scale.setScalar(radius);}

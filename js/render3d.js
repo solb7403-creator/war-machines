@@ -101,7 +101,7 @@ function mkSFX(){
  const glowMat=new THREE.ShaderMaterial({vertexShader:FXG_VS,fragmentShader:FXG_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,side:THREE.DoubleSide});   // premultiplied: colour adds, alpha darkens (one batch for glow and scorch)
  const dot=(add,x,y,z,sz,r,g,b,a)=>{const ps=add?PSA:PSN;if(ps.n>=ps.max)return;const i=ps.n++;ps.P[i*3]=x;ps.P[i*3+1]=y;ps.P[i*3+2]=z;ps.C[i*4]=r;ps.C[i*4+1]=g;ps.C[i*4+2]=b;ps.C[i*4+3]=a;ps.S[i]=sz;};
  return FX3D.create(THREE,{mode:'arcade',scene:RS,low:()=>R3.q==='low',quiet:()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),glowMat,solidMat:MT.lit,glowAttr:'rgba',solidAttr:'color',
-  right:[1,0,0],up:[0,GSN,-GKC],dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:2600,maxVerts:5400,maxParticles:1500,maxDebris:96});
+  right:[1,0,0],up:[0,GSN,-GKC],fwd:[0,GKC,GSN],minW:.08,dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:2600,maxVerts:5400,maxParticles:1500,maxDebris:96});
 }
 // what a tank is made of when it breaks: Parasite-style hulls split like chitin, everything else tears like armour
 const tankMat=u=>'armor';

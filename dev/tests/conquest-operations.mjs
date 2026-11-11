@@ -14,7 +14,7 @@ for(const id of ['oxygen-line','convoy','relay','recon','rescue','redoubt']){
   if(id==='rescue')target=b.objective;
   if(id==='relay'&&priority?.immobile&&!K.visible(b,p,priority)&&p.z>o.z-14)target={x:o.x-25,z:o.z-20};
   const dx=target.x-p.x,dz=target.z-p.z,d=Math.hypot(dx,dz),move=id==='recon'||id==='rescue'||!priority||target!==priority?d>5:d>28||!K.visible(b,p,priority);
-  const input={x:move?dx/d:0,z:move?dz/d:0,fire:!!priority,lockId:priority?.id||null,aimYaw:Math.atan2(priority?priority.x-p.x:dx,priority?priority.z-p.z:dz),shield:b.playerHp<b.playerMax*.8,super:b.charge>=1000};
+  const input={x:move?dx/d:0,z:move?dz/d:0,fire:!!priority,lockId:priority?.id||null,aimYaw:Math.atan2(priority?priority.x-p.x:dx,priority?priority.z-p.z:dz),shield:b.playerHp<b.playerMax*.8,super:b.charge>=1000||!!(b.superAttack&&b.superAttack.bar&&b.superAttack.oc===undefined&&b.superAttack.el>=b.superAttack.bar.z0+0.06)};
   now+=50;s=applyCommands(s,{seq:s.seq+1,commands:[input]},now);steps++;
  }
  results.push({id,state:s.battle.state,seconds:steps/20,hp:s.hp,kills:s.battle.kills,position:s.position,objectiveHp:s.battle.objectiveHp,reason:s.battle.reason,stage:s.battle.stage,scans:s.battle.scans});

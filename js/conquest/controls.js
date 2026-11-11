@@ -16,7 +16,7 @@ function aim(B,p,input,dt){
  const pitch=B.lockId!==null?Math.atan2(locked.y-p.y,Math.hypot(locked.x-p.x,locked.z-p.z)):input.aimPitch||0;
  return {x:p.x+Math.sin(B.turretYaw)*160,y:p.y+2.2+Math.tan(clamp(pitch,-1.2,1.2))*160,z:p.z+Math.cos(B.turretYaw)*160};
 }
-function hurt(B,e,amount){B.alert?.(e);const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
+function hurt(B,e,amount){B.alert?.(e);const old=e.hp;e.hp=Math.max(0,e.hp-amount);if(old>0&&!e.hp){B.kills++;B.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:B.time});}B.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25});}
 function superDamage(B,e,base){const t=B.playerStats;return base*(t.wmult||TIER_MULT[Math.max(0,t.wtier||0)])*dmgMult(t)*cmult(t,e.stats)*(e.stats.supTk||1)*(1-armor(e.stats));}
 function fireSuper(B,s){
  const raw=SUP[s.weapon],spec={...raw,dmg:SUP_CQ[s.weapon]*SUP_OC[s.oc||0]};for(const k of ['w','len','r','spd','range'])if(Number.isFinite(spec[k]))spec[k]*=SUPER_WORLD_SCALE;const p=s.origin,dx=Math.sin(s.yaw),dz=Math.cos(s.yaw);
@@ -73,7 +73,7 @@ function advance(B,p,input,dt,exploration){
   if(B.superAttack){const sa=B.superAttack;if(sa.oc===undefined){sa.oc=supJudge(sa.bar,sa.el+STEP/2);sa.t=Math.max(SUP_REL,SUP[sa.weapon].charge-sa.el);}}
   else if(B.charge>=SUPER_MAX){B.charge=0;const weapon=B.playerStats.wtype;let h=(Math.round(B.time*1000)*2654435761+(B.kills|0)*40503)>>>0;const rnd=()=>{h=(Math.imul(h^(h>>>15),0x2c1b3c6d)+0x9e3779b9)>>>0;return ((h^(h>>>13))>>>0)/4294967296;};
    B.superAttack={weapon,k:supKey(weapon,B.playerStats.wtier),t:SUP_BAR_T+SUP_REL,el:0,bar:supBar(rnd),yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}}
- B.tick(h,p,{aim:target,fire:(!!input.fire||first&&!!input.tapFire)&&!B.superAttack});first=false;
+ B.tick(h,p,{aim:target,fire:(!!input.fire||first&&!!input.tapFire)&&!(B.superAttack&&B.superAttack.oc!==undefined)});first=false;   // the cannon keeps firing while the timing bar sweeps; it holds only for the release
  }
  return p;
 }

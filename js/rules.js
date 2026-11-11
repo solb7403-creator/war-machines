@@ -12,16 +12,16 @@ const BUFF_KEYS=Object.keys(BUFF);
 const CRIT_BASE=0.1,CRIT_MULT=2,GRAZE=0.75,DIRECT=0.4;
 // Supers (Session 5E-2b, owner Nov 10-11 2026): fewer, bigger moments. Measured on main with seeded sims
 // (dev/tests/super-report.mjs, dev/tests/fixtures/super-baseline.json): a pilot fired 5.94 supers a match, 2,406 super damage
-// a match. The charge now fills at about half the old rate (FILL_* were 1 / 0.7 / 60) so a pilot fires about 3 a match, and
-// each super hits about twice as hard (game.js SUP), so the total stays where it was. dev/tests/super-timing.mjs holds both.
-const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=0.5,FILL_TAKEN=0.35,FILL_CRIT=30;   // FILL_DEALT / FILL_TAKEN: Conquest (charge per point of damage)
+// a match. Arcade and live matches now charge by share of hull (below) so every pilot fires about 3 a match, and each super
+// hits proportionally harder (game.js SUP, SUP_GEAR), so the total stays where it was. dev/tests/super-timing.mjs holds both.
+const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;   // Conquest only (charge per point of damage): unchanged, see game.js SUP_CQ
 // Arcade and live matches charge by SHARE OF HULL, not by raw damage: destroying one whole enemy hull fills FILL_HULL_DEALT of
-// the bar, losing your own whole hull fills FILL_HULL_TAKEN, a critical hit adds FILL_CRIT points. With raw damage the charge
+// the bar, losing your own whole hull fills FILL_HULL_TAKEN, a critical hit adds FILL_HULL_CRIT points. With raw damage the charge
 // followed gear (measured on main: 3.6 supers a match on a stock tank, 9.8 with the Moonbeam kit), so one number could not give
 // every pilot "about 3". By share of hull every gear level lands near 3; gear still shows where it should: in how hard each
 // super hits (SUP_GEAR) and in winning more fights. The megatank counts as its reference tank's hull, and a mode's
 // health scale (team modes, Bounty, Last Standing) is taken out, so every mode charges as a 1v1 does (game.js supFill).
-const FILL_HULL_DEALT=1.4,FILL_HULL_TAKEN=1.0;
+const FILL_HULL_DEALT=1.4,FILL_HULL_TAKEN=1.0,FILL_HULL_CRIT=30;
 // SUP_GEAR: a super's damage rises with the tank's gear multiplier (weapon tier x roll, cannon upgrades, damage cores, Lunar
 // Skin) to this power. It was 1 while better gear also fired more supers; now that every pilot fires about 3, the step that
 // used to come from firing more often is in each super's damage (fitted on the measured kits, game.js SUP)

@@ -133,7 +133,7 @@ async def main(engine,journey_only=False):
        await (touch('touchStart',[contact]) if on else touch('touchEnd',[contact]));firing=on
       async def press(t):await touch('touchStart',[contact,t] if firing else [t]);await touch('touchEnd',[t])
       for i in range(800):
-       st=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {state:S.battle.state,heat:B.heat||0,hot:!!B.overheated,locked:v.selectedId!=null&&B.enemies.some(e=>e.id===v.selectedId&&e.hp>0),shield:B.shieldCd<=0,super:B.charge>=1000};}''')
+       st=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,S=v.authority.state;return {state:S.battle.state,heat:B.heat||0,hot:!!B.overheated,locked:v.selectedId!=null&&B.enemies.some(e=>e.id===v.selectedId&&e.hp>0),shield:B.shieldCd<=0,super:B.charge>=1000||!!(B.superAttack&&B.superAttack.bar&&B.superAttack.oc===undefined&&B.superAttack.el>=B.superAttack.bar.z0+0.06)};}''')
        if st['state']!='active':break
        if firing and (st['hot'] or st['heat']>=85):await fire(False)
        elif not firing and not st['hot'] and st['heat']<=35:await fire(True)

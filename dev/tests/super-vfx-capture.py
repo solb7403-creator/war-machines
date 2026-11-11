@@ -22,6 +22,7 @@ def opt(name,default=None):
     return default
 ONLY=opt('only');ONLY=ONLY.split(',') if isinstance(ONLY,str) else KEYS
 VIEWS={'phone':(390,844,3),'desktop':(1920,1080,1)}
+CLEAN=not bool(opt('numbers',False));   # the sheets leave the floating damage numbers out (pass --numbers to keep them)
 VIEW=opt('view','both');QUALITY=opt('quality','high');REDUCED=bool(opt('reduced',False));DESTROY=bool(opt('destroy',False))
 # one scene: my tank low in the arena, one enemy ahead; nobody drives or shoots unless the capture says so
 SCENE='''([key,quality,reduced])=>{
@@ -39,7 +40,7 @@ SCENE='''([key,quality,reduced])=>{
  put(me,spot[0],spot[1]);put(e,spot[0]+(arch==='twin'?1.6:0.6),spot[1]-far);
  e.hum=true;e.ctl='net';e.mhp=e.hp=arch==='twin'?60000:90000;me.ang=-Math.PI/2;me.hd=-Math.PI/2;e.ang=Math.PI/2;e.hd=Math.PI/2;
  window.__e=e;window.__errs=[];B3.step=1/30;timeLeft=85;
- window.__step=(n)=>{for(let i=0;i<n;i++){me.cd=99;e.cd=99;me.sp=Math.min(me.sp,SUPER_MAX);timeLeft=85;update(1/30);fxTick(1/30);}drawBattle();
+ window.__step=(n)=>{for(let i=0;i<n;i++){me.cd=99;e.cd=99;me.sp=Math.min(me.sp,SUPER_MAX);timeLeft=85;update(1/30);fxTick(1/30);}if(window.__clean){nums.length=0;pops.length=0;}drawBattle();
   return {calls:R3.calls,programs:RR.info.programs.length,tris:RR.info.render.triangles,fx:SFX?SFX.stats():null,sup:me.sup?{el:me.sup.el,t:me.sup.t,oc:me.sup.oc}:null,ui:supUI?{oc:supUI.oc,p:supUI.p}:null,hp:e.hp,shells:shells.length};};
  return {key,k:supKey(me.wtype,me.wtier),name:SUP_NAMES[supKey(me.wtype,me.wtier)],gfx:R3.q,me:[me.x,me.y],e:[e.x,e.y],sc,ox,oy};
 }'''
@@ -66,7 +67,7 @@ async def run_view(p,name,report):
             for _ in range(40):   # models and textures settle (Meshy kits load asynchronously)
                 st=await pg.evaluate('__step(1)')
             idle=st;rep['idle']=rep['idle'] or {'calls':idle['calls'],'programs':idle['programs'],'tris':idle['tris']}
-            f=await pg.evaluate(FIRE,oc);assert f['ok'],'super did not start for '+key
+            await pg.evaluate('window.__clean=%s'%('true' if CLEAN else 'false'));f=await pg.evaluate(FIRE,oc);assert f['ok'],'super did not start for '+key
             shots={};tick=0;tapped=False;fired=None;peak={'calls':0,'programs':0,'quads':0,'particles':0,'chunks':0}
             async def snap(label):
                 png=await pg.screenshot(type='png');im=Image.open(io.BytesIO(png)).convert('RGB');shots[label]=im;im.save(d/f'{key}-{OC[oc]}-{label}.png')
@@ -80,7 +81,7 @@ async def run_view(p,name,report):
                     await pg.evaluate('supStop()');tapped=True;st=await pg.evaluate('__step(0)')
                     assert st['ui'] and st['ui']['oc']==oc,f'{key}: the bar gave outcome {st["ui"]} for a {OC[oc]} tap'
                     await pg.evaluate('__step(2)');tick+=2;await snap('lock');continue
-                if not tapped and abs(el-0.18)<1e-6 and oc!=0:await snap('charge')
+                if not tapped and tick==6 and oc!=0:await snap('charge')
                 if tapped and fired is None and st['sup'] is None and st['shells']==0:fired=tick   # a shell: the moment it lands
                 if fired is not None:
                     dt=tick-fired

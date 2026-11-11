@@ -33,7 +33,7 @@ function runRaid(id,L,engineered){
   let mx=move?dx/(d||1):0,mz=move?dz/(d||1):0;
   const hazard=b.hazards?.find(h=>Math.hypot(h.x-p.x,h.z-p.z)<h.radius+2);if(hazard){const ax=p.x-hazard.x,az=p.z-hazard.z,n=Math.hypot(ax,az)||1;mx=Math.hypot(ax,az)<.01?1:ax/n;mz=Math.hypot(ax,az)<.01?0:az/n;}
   if(move&&!hazard&&!planned.length){let best=-Infinity;for(const off of [0,.6,-.6,1.2,-1.2,1.8,-1.8,2.4,-2.4]){const a=Math.atan2(mx,mz)+off,vx=Math.sin(a),vz=Math.cos(a),q=W.advance(p,vx*4,vz*4),travel=Math.hypot(q.x-p.x,q.z-p.z),score=travel>2?-Math.hypot(steering.x-q.x,steering.z-q.z)-Math.abs(off)*.7:-Infinity;if(score>best){best=score;mx=vx;mz=vz;}}}
-  const input={x:mx,z:mz,fire:!!priority,lockId:priority?.id||null,aimYaw:Math.atan2(priority?priority.x-p.x:dx,priority?priority.z-p.z:dz),shield:b.playerHp<b.playerMax*.8,super:b.charge>=1000};
+  const input={x:mx,z:mz,fire:!!priority,lockId:priority?.id||null,aimYaw:Math.atan2(priority?priority.x-p.x:dx,priority?priority.z-p.z:dz),shield:b.playerHp<b.playerMax*.8,super:b.charge>=1000||!!(b.superAttack&&b.superAttack.bar&&b.superAttack.oc===undefined&&b.superAttack.el>=b.superAttack.bar.z0+0.06)};
   const before={...p};now+=50;s=applyCommands(s,{seq:s.seq+1,commands:[input]},now);steps++;stuck=move&&Math.hypot(s.position.x-before.x,s.position.z-before.z)<.03?stuck+1:0;
  }
  const r={id,danger:o.danger,family:o.family,layout:o.layout,commander:o.commander,gear:L===STARTER?'starter':'epic',engineered:!!engineered,outcome:s.battle.state,seconds:steps/20,hp:Math.max(0,s.hp),hullLeft:Math.round(100*Math.max(0,s.hp)/hydrate(s).playerMax),kills:s.battle.kills,stage:s.battle.stage,scans:s.battle.scans};

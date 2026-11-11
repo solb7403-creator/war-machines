@@ -395,7 +395,7 @@ function moveBullets(dt){
    const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
    if(t.st)t.st.arm+=gross*aT;
-   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(supFill(dmg,t)*FILL_HULL_DEALT+(isCrit?FILL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+supFill(dmg,t)*FILL_HULL_TAKEN*(t.fillM||1)*(t.hitChg||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
+   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(supFill(dmg,t)*FILL_HULL_DEALT+(isCrit?FILL_HULL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+supFill(dmg,t)*FILL_HULL_TAKEN*(t.fillM||1)*(t.hitChg||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
   }
   q.life-=dt;
  }
@@ -458,14 +458,16 @@ function spawnBox(){
 // as the tier multipliers) and every upgrade still counts. Owner rule: a slow weapon's super hits harder per use than a fast
 // one's (Siege Breaker 0.45 s a shot > Pulse Cannon 0.2 s > Twin Repeater 0.09 s); Moonfall keeps its premium number.
 // The hit shapes (width, length, radius, telegraph) are unchanged. dmg is a NORMAL stop of the timing bar (SUP_OC scales it).
-// SUP_CQ: Conquest keeps its damage-based charge at half the old rate (rules.js FILL_DEALT), so there each super simply hits twice
-// as hard as before (350 / 375 / 350 / 400), with the tank's multipliers applied as before.
+// SUP_CQ: Conquest keeps its own charge rule and super damage exactly as they were (350 / 375 / 350 / 400, charge per point of
+// damage, rules.js FILL_DEALT): it has no matches to count supers in, its enemies are authored and many of them are small, so
+// a twice-as-strong super half as often would mostly be wasted on overkill (measured: dev/tests/conquest-raids.mjs lost a raid
+// it must be able to win). Conquest gets the timing bar and its three outcomes (x0.65 / x1 / x1.25) and the new looks.
 const SUP={
  pulse:{kind:'beam',dmg:335,charge:0.7,w:1.2,len:16},          // PIERCE LANCE: railbeam that goes through cover
  siege:{kind:'shell',dmg:380,charge:0.7,r:3.2,spd:11,range:13},  // SIEGE BLAST: huge shell, big AoE explosion
  twin:{kind:'nova',dmg:320,charge:0.55,r:4.6},                 // STATIC NOVA: vibrating electric shockwave
  moon:{kind:'beam',dmg:385,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
-const SUP_CQ={pulse:700,siege:750,twin:700,moon:800};
+const SUP_CQ={pulse:350,siege:375,twin:350,moon:400};
 // a tank's super multiplier: its permanent gear to the power SUP_GEAR, a mystery-box damage buff on top as before
 const supMult=r=>Math.pow((r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*(r.dmgM||1)*(1+gsum(r,'dmg')),r.hum?SUP_GEAR:SUP_GEAR_AI)*(1+bsum(r,'dmg'));
 let shells=[],blasts=[],novas=[],shakeT=0,shakeM=0;   // shells are sim objects; blasts, novas and shake are visuals (phone only)
