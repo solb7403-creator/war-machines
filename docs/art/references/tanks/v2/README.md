@@ -5,4 +5,4 @@ These are the images the owner fed into Meshy image-to-3D to make the 32 GLBs in
 Any colour, trim, glow or proportion check for a chassis or weapon must compare against these images, not `chosen/`.
 
 - `chassis/` — the 9 chassis images (file names are upload ids; match each to its GLB in the release by shape and record the mapping).
-- `weapons/` — the weapon images, including Moonbeam (`0c88031a.png`: red core crystal in a square gold housing, two blue charge crystals). Same note on file names.
+- `weapons/` — the weapon images, plus `moonbeam.png`, the exact image the owner fed into Meshy for Moonbeam (dark barrel with gold rings, red core crystal in a square gold housing, two blue charge crystals, crescent fins). Same note on file names.
