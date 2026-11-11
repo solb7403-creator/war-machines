@@ -6,3 +6,4 @@ xatlas>=0.0.9
 meshoptimizer>=0.2.30a0
 pillow>=11
 scikit-image>=0.25
+pyfqmr>=0.2

@@ -135,6 +135,8 @@ def synthesize(region, P, N, ao, cur, look, extra=None, seed=7403):
             on &= P[sel, 1] >= rule['yMin']
         if 'yMax' in rule:
             on &= P[sel, 1] <= rule['yMax']
+        if rule.get('ringClear'):   # keep the turret seat clean (the weapon's base sits there)
+            on &= np.hypot(P[sel, 0], P[sel, 2]) >= rule['ringClear']
         if rule.get('up') is not None:   # only faces looking up at least this much (deck lines, not the belly)
             on &= N[sel, 1] >= rule['up']
         idx = sel[on]

@@ -8,7 +8,7 @@ Writes <out>/town_*.png, world_*.png and town.json.   usage: python dev/assets/m
 import asyncio,json,pathlib,shutil,sys
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
-ROOT=pathlib.Path(__file__).resolve().parents[3];OUT=pathlib.Path(sys.argv[1]);OUT.mkdir(parents=True,exist_ok=True)
+ROOT=pathlib.Path(__file__).resolve().parents[4];OUT=pathlib.Path(sys.argv[1]);OUT.mkdir(parents=True,exist_ok=True)
 SPOOF="(()=>{for(const C of [self.WebGLRenderingContext,self.WebGL2RenderingContext]){if(!C)continue;const g=C.prototype.getParameter;C.prototype.getParameter=function(p){if(p===0x9246)return 'ANGLE (Apple, Apple M-series GPU, OpenGL 4.1)';return g.call(this,p);};}})();"
 TOWN=['cc','reactor','refinery','lab','shield','storage','tesla','cannon','mg','rocket','laser','railgun']
 PROFILES=[('phone3x',{'width':390,'height':844},3,True),('desktop1920',{'width':1920,'height':1080},1,False)]

@@ -97,8 +97,8 @@
    "tracks": "auto",
    "look": "common",
    "lookOverride": {
-    "paintA": "#a99d78",
-    "paintB": "#6f7450",
+    "paintA": "#74694a",
+    "paintB": "#4e5238",
     "camo": 0.5,
     "camoScale": 1.4,
     "trim": "#7b7f74",
@@ -1930,8 +1930,8 @@
     ]
    ],
    "lookOverride": {
-    "paintA": "#5f624d",
-    "paintB": "#4a4d3d",
+    "paintA": "#45473b",
+    "paintB": "#3a3c32",
     "camo": 0,
     "trim": "#8a8f93",
     "bare": "#9da2a6",
@@ -2125,8 +2125,8 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#a9aeb4",
-    "paintB": "#8b9198",
+    "paintA": "#767b81",
+    "paintB": "#62676d",
     "trim": "#c4c9cf",
     "bare": "#d0d4d8",
     "glow": "#b78bff",
@@ -2368,25 +2368,20 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#2b2d31",
-    "paintB": "#383b41",
+    "paintA": "#191a1d",
+    "paintB": "#24262a",
     "trim": "#c9a04a",
     "glow": "#ff7a1f",
     "lines": [
      {
       "at": "edge",
-      "kind": "trim",
-      "color": "#d4aa4f",
-      "k0": 150,
-      "k1": 230
-     },
-     {
-      "at": "groove",
       "kind": "glow",
       "color": "#ff7a1f",
-      "k0": 70,
-      "k1": 130,
-      "up": 0.15
+      "k0": 22,
+      "k1": 45,
+      "up": 0.1,
+      "yMin": 0.2,
+      "ringClear": 0.36
      }
     ]
    }
@@ -2551,8 +2546,8 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#4b5058",
-    "paintB": "#3b4047",
+    "paintA": "#43484f",
+    "paintB": "#363a40",
     "trim": "#7f868e",
     "bare": "#9aa1a9",
     "glow": "#b78bff",
@@ -2857,8 +2852,8 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#c3c7cc",
-    "paintB": "#a4a9b0",
+    "paintA": "#7f8287",
+    "paintB": "#666a70",
     "bare": "#d3d7dc",
     "trim": "#c9a04a",
     "lines": [
@@ -2866,8 +2861,10 @@
       "at": "edge",
       "kind": "trim",
       "color": "#d1a64a",
-      "k0": 150,
-      "k1": 230
+      "k0": 45,
+      "k1": 90,
+      "yMin": 0.3,
+      "ringClear": 0.42
      }
     ]
    }
@@ -3115,8 +3112,8 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#a69d7e",
-    "paintB": "#8b8468",
+    "paintA": "#66604b",
+    "paintB": "#545041",
     "camo": 0,
     "trim": "#8c8a80",
     "bare": "#aaa69a",
@@ -3367,8 +3364,8 @@
     "light": 24000
    },
    "lookOverride": {
-    "paintA": "#484d55",
-    "paintB": "#393e45",
+    "paintA": "#3a3e45",
+    "paintB": "#2e3137",
     "trim": "#7f868e",
     "bare": "#9aa1a9",
     "glow": "#b78bff",
@@ -3379,7 +3376,8 @@
       "color": "#b78bff",
       "k0": 70,
       "k1": 130,
-      "up": 0.15
+      "up": 0.15,
+      "ringClear": 0.45
      }
     ]
    }
@@ -3869,8 +3867,8 @@
     }
    ],
    "lookOverride": {
-    "paintA": "#3e4249",
-    "paintB": "#2f333a",
+    "paintA": "#2a2d32",
+    "paintB": "#212327",
     "trim": "#c9a04a",
     "glow": "#ff9a2e",
     "lines": [
@@ -3878,16 +3876,19 @@
       "at": "edge",
       "kind": "trim",
       "color": "#d4aa4f",
-      "k0": 150,
-      "k1": 230
+      "k0": 45,
+      "k1": 90,
+      "yMin": 0.45,
+      "ringClear": 0.5
      },
      {
       "at": "groove",
       "kind": "glow",
       "color": "#ff8a24",
-      "k0": 80,
-      "k1": 140,
-      "up": 0.2
+      "k0": 70,
+      "k1": 130,
+      "up": 0.2,
+      "ringClear": 0.5
      }
     ]
    }

@@ -1719,3 +1719,33 @@ and the town share one renderer, and everything except the player tank already u
 - In this container the Conquest tank runs the LOW (Lambert) Meshy material (software GL), so the HIGH tank with the
   prefiltered map was verified through the town models only (same material path). Webkit is not installed here; its job
   failed on the same assertion with the same numbers, so the same fix applies. CI confirms both.
+
+## Checkpoint 32 — Session 5E-2a: visual fixes after the Meshy release (branch `claude/hopeful-hawking-mupebe`, from main `f91d564`, build 20261111053053)
+
+Brief: owner's Session 5E-2a prompt (six items). Visual work plus the super-aim bug fix only: no stats, hitboxes, damage, AI
+behaviour, economy, prices, payments (still DISABLED), save schema or ownership touched. The owner pre-approved the merge once
+CI is green (merged outside this session); nothing was merged or deployed here. Owner not monitoring: every decision below was
+made by the lead and is recorded with its reason.
+
+### 1. Super aim (owner bug: "the super sometimes fires in a random direction") — FIXED, `js/game.js`, `js/render.js`
+Reproduced on main with a new regression on the real shared sim (`dev/tests/super-aim.mjs`, 44 checks, 6 FAIL on main, all PASS
+now; wired into `equipment-balance.yml`). Root causes:
+- the charge re-picked its target every tick (focus or nearest): a target that died, a new tap, or another enemy getting
+  closer swung the aim at up to 1.6 rad/s toward someone else (died: 0.59 rad off; switched by tap or by distance: 0.64 rad);
+- the lead used the raw per-tick step as velocity. The live server sees a pilot's position in 100 ms reports (three ticks of
+  motion in one), so a live pilot read as 3x speed one tick and 0 the next (opening aim 0.51 rad off; AI vs live pilot in a
+  PvP-vs-AI room missed, 0.38 rad); a dash or respawn read as a huge speed;
+- a lock on a tank object that had been replaced (chassis switch rebuilds the tank, `match.js switchChassis`) aimed at a ghost;
+- a cancelled drag (iOS/Telegram took the touch) fired auto-aimed instead of where the preview pointed.
+Fix: the target is locked when the super starts (`r.sup.tgt`) and the aim only follows that tank (holds its last angle once it
+is dead or out of sight); the lead uses a jump-safe velocity capped at the tank's own top speed, averaged over ~0.3 s for live
+pilots only (`aimVel`; tanks the sim drives itself keep their exact step, so AI-match outcomes are unchanged:
+`fair-arcade.mjs` stays green — a first version that smoothed every tank shifted two seeded win-rate checks and was narrowed);
+a lock must be a tank still in play (`supLive`); a cancelled drag fires along the dragged direction. Drag-aim is untouched.
+Note: live rooms run the same file; the fix reaches live PvP when the Worker is next deployed (owner's merge/deploy path).
+
+### 2. Flaky Conquest relay fight (transmission suite) — FIXED, `dev/tests/conquest-session-032.py`
+The fight is real input against real AI on software GL; who wins follows the runner's frame rate. Decision: outcome-
+independent assertions (a fixed seed cannot remove frame-rate dependence). It must make real kills; victory must pay exactly
+250 CP (+20 featured), a loss must pay nothing, and both endings must hand back to exploration. The exact payout stays
+deterministically covered by `conquest-operations.mjs` / `conquest-session.mjs`.
