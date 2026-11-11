@@ -2,21 +2,21 @@
  "items": {
   "chassis-scout-0": {
    "full": {
-    "bytes": 3723036,
+    "bytes": 3692080,
     "charts": 5301,
     "coverage": 0.6782635450363159,
     "geometryBytes": 1993648,
-    "hash": "e97c062390",
+    "hash": "e729d564ce",
     "lowTris": null,
     "missed": 0.0019193498693337613,
     "parts": 14,
-    "seconds": 117.3,
+    "seconds": 108.3,
     "texture": 2048,
     "textureBytes": {
-     "base": 304336,
-     "mask": 400322,
+     "base": 272538,
+     "mask": 402480,
      "normal": 617294,
-     "orm": 399282
+     "orm": 397968
     },
     "tris": 119902,
     "verts": 154744
@@ -29,21 +29,21 @@
    "kind": "chassis",
    "length": 1.84,
    "light": {
-    "bytes": 749260,
+    "bytes": 743264,
     "charts": 2110,
     "coverage": 0.44489097595214844,
     "geometryBytes": 430656,
-    "hash": "b9e8f2f183",
+    "hash": "aedbe01793",
     "lowTris": 11255,
     "missed": 0.007939944523281787,
     "parts": 14,
-    "seconds": 3.7,
+    "seconds": 3.9,
     "texture": 512,
     "textureBytes": {
-     "base": 58274,
-     "mask": 82688,
+     "base": 51542,
+     "mask": 83024,
      "normal": 100430,
-     "orm": 68792
+     "orm": 69190
     },
     "tris": 17915,
     "verts": 29357
@@ -197,18 +197,18 @@
   },
   "chassis-scout-1": {
    "full": {
-    "bytes": 4614132,
+    "bytes": 4564404,
     "charts": 8900,
     "coverage": 0.6319428086280823,
     "geometryBytes": 2318108,
-    "hash": "2c0fe002d4",
+    "hash": "069f31bf44",
     "lowTris": null,
     "missed": 0.0026286895383721234,
     "parts": 15,
-    "seconds": 109.3,
+    "seconds": 101.7,
     "texture": 2048,
     "textureBytes": {
-     "base": 404186,
+     "base": 354458,
      "mask": 528358,
      "normal": 826792,
      "orm": 527750
@@ -224,18 +224,18 @@
    "kind": "chassis",
    "length": 2.04,
    "light": {
-    "bytes": 961164,
+    "bytes": 952300,
     "charts": 3280,
     "coverage": 0.3833951950073242,
     "geometryBytes": 557988,
-    "hash": "46f69b0a91",
+    "hash": "ce3d026bdf",
     "lowTris": 13972,
     "missed": 0.009882617488228168,
     "parts": 15,
-    "seconds": 4.0,
+    "seconds": 4.2,
     "texture": 512,
     "textureBytes": {
-     "base": 75976,
+     "base": 67112,
      "mask": 103432,
      "normal": 126242,
      "orm": 88314
@@ -560,21 +560,21 @@
   },
   "chassis-titan-0": {
    "full": {
-    "bytes": 3848912,
+    "bytes": 3827148,
     "charts": 9307,
     "coverage": 0.6349564790725708,
     "geometryBytes": 1758796,
-    "hash": "d61fd45c64",
+    "hash": "1d733607c5",
     "lowTris": null,
     "missed": 0.002752984613813342,
     "parts": 17,
-    "seconds": 112.2,
+    "seconds": 101.4,
     "texture": 2048,
     "textureBytes": {
-     "base": 340682,
-     "mask": 374450,
+     "base": 313190,
+     "mask": 379656,
      "normal": 847108,
-     "orm": 520108
+     "orm": 520632
     },
     "tris": 119703,
     "verts": 146012
@@ -587,21 +587,21 @@
    "kind": "chassis",
    "length": 2.94,
    "light": {
-    "bytes": 721324,
+    "bytes": 718476,
     "charts": 3203,
     "coverage": 0.36946964263916016,
     "geometryBytes": 393944,
-    "hash": "9966ee8e7b",
+    "hash": "f5883420c2",
     "lowTris": 11556,
     "missed": 0.011504399652054504,
     "parts": 17,
-    "seconds": 4.0,
+    "seconds": 4.1,
     "texture": 512,
     "textureBytes": {
-     "base": 52994,
-     "mask": 61246,
+     "base": 49632,
+     "mask": 61850,
      "normal": 123202,
-     "orm": 81898
+     "orm": 81810
     },
     "tris": 17896,
     "verts": 28682
@@ -743,18 +743,18 @@
   },
   "chassis-titan-1": {
    "full": {
-    "bytes": 4533740,
+    "bytes": 4463032,
     "charts": 9935,
     "coverage": 0.6062870621681213,
     "geometryBytes": 1986288,
-    "hash": "ade69e4530",
+    "hash": "e44993343d",
     "lowTris": null,
     "missed": 0.004647845825654021,
     "parts": 19,
-    "seconds": 107.8,
+    "seconds": 97.7,
     "texture": 2048,
     "textureBytes": {
-     "base": 402366,
+     "base": 331658,
      "mask": 554526,
      "normal": 985650,
      "orm": 595614
@@ -770,18 +770,18 @@
    "kind": "chassis",
    "length": 2.9,
    "light": {
-    "bytes": 1095244,
+    "bytes": 1083120,
     "charts": 4811,
     "coverage": 0.3272237777709961,
     "geometryBytes": 674032,
-    "hash": "9ef32007fb",
+    "hash": "2c7fcf4a54",
     "lowTris": 17671,
     "missed": 0.013467630763670912,
     "parts": 19,
     "seconds": 5.1,
     "texture": 512,
     "textureBytes": {
-     "base": 72070,
+     "base": 59948,
      "mask": 105374,
      "normal": 141404,
      "orm": 92792
@@ -1120,21 +1120,21 @@
   },
   "chassis-vanguard-0": {
    "full": {
-    "bytes": 4733960,
+    "bytes": 4709860,
     "charts": 9219,
     "coverage": 0.5889451503753662,
     "geometryBytes": 2098504,
-    "hash": "748c8a3d4d",
+    "hash": "0559db89ee",
     "lowTris": null,
     "missed": 0.0033252166309410314,
     "parts": 15,
-    "seconds": 107.5,
+    "seconds": 98.4,
     "texture": 2048,
     "textureBytes": {
-     "base": 429638,
-     "mask": 620522,
+     "base": 386642,
+     "mask": 628848,
      "normal": 988154,
-     "orm": 588358
+     "orm": 598932
     },
     "tris": 119756,
     "verts": 161829
@@ -1147,21 +1147,21 @@
    "kind": "chassis",
    "length": 2.61,
    "light": {
-    "bytes": 850188,
+    "bytes": 841272,
     "charts": 2984,
     "coverage": 0.37041759490966797,
     "geometryBytes": 443352,
-    "hash": "8e36a76f97",
+    "hash": "bfdaedb0ba",
     "lowTris": 11428,
     "missed": 0.013297769630623232,
     "parts": 15,
-    "seconds": 4.4,
+    "seconds": 6.6,
     "texture": 512,
     "textureBytes": {
-     "base": 68662,
-     "mask": 107012,
+     "base": 60032,
+     "mask": 107650,
      "normal": 137116,
-     "orm": 84990
+     "orm": 84066
     },
     "tris": 17838,
     "verts": 30593
@@ -1301,18 +1301,18 @@
   },
   "chassis-vanguard-1": {
    "full": {
-    "bytes": 4360160,
+    "bytes": 4284524,
     "charts": 8210,
     "coverage": 0.5907504558563232,
     "geometryBytes": 1888356,
-    "hash": "e163cce284",
+    "hash": "cc22be113a",
     "lowTris": null,
     "missed": 0.0042402756976285694,
     "parts": 15,
-    "seconds": 104.7,
+    "seconds": 95.6,
     "texture": 2048,
     "textureBytes": {
-     "base": 395900,
+     "base": 320264,
      "mask": 564756,
      "normal": 941504,
      "orm": 561818
@@ -1328,18 +1328,18 @@
    "kind": "chassis",
    "length": 2.56,
    "light": {
-    "bytes": 842100,
+    "bytes": 830724,
     "charts": 3175,
     "coverage": 0.36194610595703125,
     "geometryBytes": 438196,
-    "hash": "c05ccb47fe",
+    "hash": "fb4af6cff5",
     "lowTris": 12578,
     "missed": 0.013443013427204317,
     "parts": 15,
-    "seconds": 4.0,
+    "seconds": 4.3,
     "texture": 512,
     "textureBytes": {
-     "base": 69864,
+     "base": 58486,
      "mask": 108136,
      "normal": 132746,
      "orm": 85062
@@ -1482,18 +1482,18 @@
   },
   "chassis-vanguard-2": {
    "full": {
-    "bytes": 3907492,
+    "bytes": 4112752,
     "charts": 8369,
     "coverage": 0.5696743726730347,
     "geometryBytes": 1830956,
-    "hash": "923ef26070",
+    "hash": "188c90a2d8",
     "lowTris": null,
     "missed": 0.003209190639860634,
     "parts": 16,
-    "seconds": 101.9,
+    "seconds": 92.1,
     "texture": 2048,
     "textureBytes": {
-     "base": 199496,
+     "base": 404754,
      "mask": 494664,
      "normal": 834588,
      "orm": 540314
@@ -1509,18 +1509,18 @@
    "kind": "chassis",
    "length": 2.7,
    "light": {
-    "bytes": 769800,
+    "bytes": 803256,
     "charts": 3255,
     "coverage": 0.35335445404052734,
     "geometryBytes": 417972,
-    "hash": "30ae8d4552",
+    "hash": "1d0e5119c7",
     "lowTris": 11751,
     "missed": 0.011138430147981614,
     "parts": 16,
     "seconds": 4.2,
     "texture": 512,
     "textureBytes": {
-     "base": 35342,
+     "base": 68800,
      "mask": 90738,
      "normal": 132580,
      "orm": 85420
