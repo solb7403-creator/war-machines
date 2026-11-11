@@ -79,7 +79,7 @@ window.LunarShowroom=class {
   const H=parts===2?{meta:{ty:0}}:full(()=>M3.chassisKit(L.c.c,L.c.t,P,team,L.cores,L.skin==='lunar'));const hullB=parts!==2?this.kit(H,body):null;
   const turret=new THREE.Group();turret.position.y=H.meta.ty;body.add(turret);
   // same per-class Moonbeam scale as the game's buildTank(): one scaled child group, the cached kit stays unscaled
-  const Wkit=parts!==1?full(()=>M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c)):null;
+  const Wkit=parts!==1?full(()=>M3.weaponKit(L.w.a,L.w.t,P,team,L.skin==='lunar',L.c.c,L.c.t)):null;
   const ws=Wkit&&Wkit.meta.scale||M3.weaponScale(L.w.a,L.c.c),gun=ws===1?turret:new THREE.Group();if(gun!==turret){gun.scale.setScalar(ws);turret.add(gun);}
   if(Wkit)this.kit(Wkit,gun);
   const fits=fittingVisuals(L),context={cls:L.c.c,ct:L.c.t,arch:L.w.a,wt:L.w.t,lunar:L.skin==='lunar'};if(parts!==2)body.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'body',context).k),null,this.mats));if(parts!==1)gun.add(M3.meshOf(M3.bake(M3.fittingKit(fits,team,'mount',context).k),null,this.mats));

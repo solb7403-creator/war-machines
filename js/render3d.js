@@ -140,7 +140,7 @@ const hfKey=()=>typeof Equipment3D!=='undefined'&&Equipment3D.enabled?'hf:'+Equi
 const myKey=s=>typeof Meshy3D!=='undefined'&&!s.boss&&!s.ghost?Meshy3D.stamp(s.cls,s.ct,s.arch,s.wt):'';
 const PLATECACHE=new Map();function plateB(s,part){const low=R3.q!=='high',key=[part,s.ap.join(''),low?1:0,...(part==='body'?[s.cls,s.ct]:[s.arch,s.wt])].join('|');if(!PLATECACHE.has(key)){PLATECACHE.set(key,M3.bake(M3.plateKit(s.ap,part,s,low).k));if(PLATECACHE.size>FITTING_CACHE_LIMIT){const f=PLATECACHE.keys().next().value;for(const g of Object.values(PLATECACHE.get(f)))g?.dispose();PLATECACHE.delete(f);}}return PLATECACHE.get(key);}
 function chassisB(s){return bakedOf(hfKey()+myKey(s)+['c',s.cls,s.ct,s.paint,s.lunar?1:0,s.team,s.gems].join('|'),()=>(s.ghost?M3.foundationChassis:M3.chassisKit)(s.cls,s.ct,PAINTS[s.paint],s.team,s.gems?s.gems.split(','):[],s.lunar));}
-function weaponB(s){return bakedOf(hfKey()+myKey(s)+['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>(s.ghost?M3.foundationWeapon:M3.weaponKit)(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls));}
+function weaponB(s){return bakedOf(hfKey()+myKey(s)+['w',s.arch,s.wt,s.paint,s.lunar?1:0,s.team,s.lunar?s.cls:'standard'].join('|'),()=>(s.ghost?M3.foundationWeapon:M3.weaponKit)(s.arch,s.wt,PAINTS[s.paint],s.team,s.lunar,s.cls,s.ct));}
 let BOSSB=null;
 function bossB(){if(!BOSSB){const k=M3.bossKit();BOSSB={hull:bakedOf('bossH',()=>k.hull),gun:bakedOf('bossG',()=>k.gun)};}return BOSSB;}
 // Hyperspace Vault looks (rules.js VAULT_REW): a gold tooth laid on the front deck (it glows from level 10), and where the

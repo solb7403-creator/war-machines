@@ -26,9 +26,9 @@ async function session(meshy){
  return {ctx,pg,setL,ready};
 }
 const tag=l=>l[0]+l[1]+'-'+l[2]+l[3];
-for(const meshy of [false,true]){
+for(const meshy of (what.every(w=>w==='fit'||w==='perf')?[true]:[false,true])){
  const name=meshy?'after':'before',S=await session(meshy),{pg}=S,R=report.runs[name]={loadouts:{}};
- for(const gfx of ['high','low']){
+ for(const gfx of (what.includes('garage')||what.includes('battle')?['high','low']:[])){
   await pg.evaluate(g=>setGfx(g),gfx);
   for(const l of LOADOUTS){const rec=R.loadouts[tag(l)+'|'+gfx]={};
    const id=await S.setL(...l);
@@ -49,6 +49,20 @@ for(const meshy of [false,true]){
    const url=await pg.evaluate(([cls,t])=>{const ids=[...Object.keys(PAINTS),'lunar'],W=220,H=150,cols=7,rows=Math.ceil(ids.length/cols),cv=document.createElement('canvas');cv.width=W*cols;cv.height=H*rows;const x=cv.getContext('2d');x.fillStyle='#0d141c';x.fillRect(0,0,cv.width,cv.height);
     ids.forEach((p,i)=>{const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');artTank(g,W,H,mySpec({cls,ct:t,arch:'pulse',wt:0,paint:p==='lunar'?'stock':p,team:'#4d9fff',lunar:p==='lunar'}),3,{hd:-.6});x.drawImage(c,(i%cols)*W,Math.floor(i/cols)*H);x.fillStyle='#ffd978';x.font='12px sans-serif';x.fillText(p==='lunar'?'Lunar Skin':PAINTS[p].n,(i%cols)*W+6,Math.floor(i/cols)*H+14);});return cv.toDataURL('image/png');},[cls,t]);
    fs.writeFileSync(path.join(out,`paints_${name}_${cls}${t}.png`),Buffer.from(url.split(',')[1],'base64'));console.log(name,'paints',cls,t);}
+ }
+ if(what.includes('fit')&&meshy){
+  // proportion sheets: every chassis with all ten weapons, uniform scale 1 (before) against the measured fit (after)
+  await pg.evaluate(()=>setGfx('high'));const W=[['pulse',0],['pulse',1],['pulse',2],['twin',0],['twin',1],['twin',2],['siege',0],['siege',1],['siege',2],['moon',2]];
+  await pg.evaluate(W=>{for(const c of ['scout','vanguard','titan'])for(let t=0;t<3;t++)Meshy3D.request('chassis-'+c+'-'+t,'light');for(const [a,t] of W)Meshy3D.request(Meshy3D.itemId.weapon(a,t),'light');},W);
+  await pg.waitForFunction(W=>['scout','vanguard','titan'].every(c=>[0,1,2].every(t=>Meshy3D.peek('chassis-'+c+'-'+t,'light')))&&W.every(([a,t])=>Meshy3D.peek(Meshy3D.itemId.weapon(a,t),'light')),W,{timeout:180000});
+  R.fit={};
+  for(const cls of ['scout','vanguard','titan'])for(let t=0;t<3;t++)for(const mode of ['before','after']){
+   const r=await pg.evaluate(([cls,t,W,fit])=>{Meshy3D.fit=fit;const TW=250,TH=170,cols=5,cv=document.createElement('canvas');cv.width=TW*cols;cv.height=TH*2;const x=cv.getContext('2d');x.fillStyle='#0d141c';x.fillRect(0,0,cv.width,cv.height);const scales={};
+    W.forEach(([a,wt],i)=>{const c=document.createElement('canvas');c.width=TW;c.height=TH;artTank(c.getContext('2d'),TW,TH,mySpec({cls,ct:t,arch:a,wt,paint:'stock',team:'#4d9fff',lunar:false}),3,{hd:-.75});x.drawImage(c,(i%cols)*TW,Math.floor(i/cols)*TH);
+     const nm=a==='moon'?'Moonbeam':WNAMES[a][wt],sc=Meshy3D.weaponFit(Meshy3D.peek(Meshy3D.itemId.weapon(a,wt),'light'),a,wt,cls,t);scales[nm]=+sc.toFixed(3);x.fillStyle='#ffd978';x.font='12px sans-serif';x.fillText(nm+'  x'+sc.toFixed(2),(i%cols)*TW+6,Math.floor(i/cols)*TH+14);});
+    Meshy3D.fit=true;return {url:cv.toDataURL('image/png'),scales};},[cls,t,W,mode==='after']);
+   fs.writeFileSync(path.join(out,`fit_${mode}_${cls}${t}.png`),Buffer.from(r.url.split(',')[1],'base64'));if(mode==='after')R.fit[cls+t]=r.scales;}
+  console.log('fit sheets done',JSON.stringify(R.fit));
  }
  if(what.includes('perf')&&meshy){
   // mid-phone profile: CPU throttled 4x, 6-tank Last Standing style load is approximated by the arena match above; report JS-side memory

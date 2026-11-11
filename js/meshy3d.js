@@ -135,7 +135,7 @@ const Meshy3D=(()=>{
  const peek=(id,q)=>{const e=store.get(id+'|'+q);if(e&&e.state==='ready'){e.used=++clock;return e.asset;}return null;};
  // memory: models nobody is drawing are dropped least-recently-used first once the cache is over its size
  // (a later request reloads from the browser's HTTP cache). Sizes are GPU texture bytes + geometry, estimated.
- let clock=0;const LIMIT={light:(typeof navigator!=='undefined'&&navigator.deviceMemory&&navigator.deviceMemory<=4?10:18),full:3};
+ let clock=0;const LIMIT={light:(typeof navigator!=='undefined'&&navigator.deviceMemory&&navigator.deviceMemory<=4?10:22),full:3};
  function evict(){
   for(const q of ['light','full']){const idle=[...store].filter(([k,e])=>e.state==='ready'&&k.endsWith('|'+q));let over=idle.length-LIMIT[q];if(over<=0)continue;
    for(const [k,e] of idle.filter(([,e])=>!e.asset.refs).sort((a,b)=>(a[1].used||0)-(b[1].used||0))){if(over--<=0)break;free(e.asset);store.delete(k);}}
@@ -266,13 +266,33 @@ const Meshy3D=(()=>{
   return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:addons(asset,team,gems),
    meta:Object.assign({ty:M.ty||0,bob:0,halos:(M.halos||[]).map(h=>h.slice()),trail:[],tc:(I.look&&I.look.paintA)||'#8a97ab',track:M.track||[1,.22,.25,0],meshy:asset.id,profile:cls+':'+tier,lunar:lunar&&M.lunar?M.lunar:undefined,legend:lunar?'lunar-black-gold':undefined},M.extra||{})};
  }
- // Meshy turrets are bulkier than the procedural housings, so (like the Moonbeam's class map) they are sized to the hull
- // class they sit on. Applied once on the weapon group; muzzle FX follow because tips are weapon-local.
- const WEAPON_FIT={scout:.64,vanguard:.8,titan:.92};
- function weaponKit(arch,tier,P,team,lunar,cls){
+ // Weapon fit (owner direction, Nov 11): a weapon is scaled only uniformly, as a whole, to the hull it sits on, from
+ // measured numbers: turret body width = k(tier) of the hull width (Common .58, Rare .65, Epic .72, so an upgrade sits
+ // visibly larger), turret about as tall as the hull (h(tier) 1.0 / 1.08 / 1.16, never above 1.35), its rear inside the hull deck, and the
+ // whole weapon never wider than the hull. Applied once on the weapon group; muzzle points are weapon-local, so flashes,
+ // halos and recoil stay on the visible muzzles. Visual only: the simulation never reads any of this.
+ const FIT_K=[.58,.65,.72],FIT_H=[1,1.08,1.16],FIT_FLOOR=[.5,.54,.58],FIT_TOP=1.35,FIT_MAX=[.98,1.04,1.1];let fitOn=true;
+ function bodyHeight(asset){
+  if(asset.fitH)return asset.fitH;const p=asset.geometry.attributes.position.array,tip=(asset.info.meta.visual&&asset.info.meta.visual.tip)||asset.geometry.boundingBox.max.x,ys=[];
+  for(let i=0;i<p.length;i+=3)if(p[i]<tip*.4)ys.push(p[i+1]);ys.sort((a,b)=>a-b);return asset.fitH=ys.length?ys[Math.floor(ys.length*.97)]:asset.geometry.boundingBox.max.y;   // antennas and periscopes do not count
+ }
+ function weaponFit(asset,arch,wt,cls,ct){
+  if(!fitOn)return 1;const t=Math.max(0,Math.min(2,wt|0)),tc=Math.max(0,Math.min(2,ct===undefined?1:ct|0)),hull=peek(itemId.chassis(cls,tc),'light');
+  let hv=hull&&hull.info.meta&&hull.info.meta.visual;
+  if(!hv&&typeof M3!=='undefined'&&M3.CHASSIS_VISUALS[cls]){const o=M3.CHASSIS_VISUALS[cls][tc];hv={trackZ:o.trackZ,trackW:o.trackW,ring:o.ring,x0:-o.len/2};}   // procedural hull still on screen
+  if(!hv)return 1;
+  const bb=asset.geometry.boundingBox,wv=asset.info.meta.visual||{},hullW=2*(hv.trackZ+hv.trackW/2),moon=arch==='moon',k=moon?.75:FIT_K[t],h=moon?1.05:FIT_H[t];
+  // width target, held down by the height guide; but never undersized: the body keeps at least FLOOR of the hull width as
+  // long as it stays under FIT_TOP hull heights (tall Meshy turrets on the low Scout hulls). Hard caps last.
+  const bw=2*(wv.width||.5),bh=bodyHeight(asset),floor=Math.min((moon?.5:FIT_FLOOR[t])*hullW/bw,FIT_TOP*hv.ring/bh);
+  let sc=Math.min(Math.min(k*hullW/bw,Math.max(h*hv.ring/bh,floor)),.98*hullW/(bb.max.z-bb.min.z),.96*-hv.x0/Math.max(.1,-bb.min.x));
+  if(moon&&typeof M3!=='undefined')sc=Math.min(sc,M3.weaponScale('moon',cls,tc));
+  return Math.max(.35,Math.min(moon?1:FIT_MAX[t],sc));   // upper cap per tier: wide four-pod hulls must not get an oversized gun
+ }
+ function weaponKit(arch,tier,P,team,lunar,cls,ct){
   const asset=best(itemId.weapon(arch,tier));if(!asset)return null;
   const I=asset.info,M=I.meta||{};
-  return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:[],meta:{tips:(M.tips||[[1.9,.25,0]]).map(t=>t.slice()),halos:(M.halos||[]).map(h=>h.slice()),meshy:asset.id,barrels:M.barrels||0,scale:arch==='moon'?undefined:WEAPON_FIT[cls]||WEAPON_FIT.vanguard,profile:arch+':'+tier,legend:arch==='moon'?'moonbeam-unified':undefined}};
+  return {k:{meshy:{asset,paint:P,lunar:!!lunar,team}},anims:[],meta:{tips:(M.tips||[[1.9,.25,0]]).map(t=>t.slice()),halos:(M.halos||[]).map(h=>h.slice()),meshy:asset.id,barrels:M.barrels||0,scale:weaponFit(asset,arch,tier,cls,ct),profile:arch+':'+tier,legend:arch==='moon'?'moonbeam-unified':undefined}};
  }
  // measured dimensions of the active Meshy model in the CHASSIS_VISUALS / WEAPON_VISUALS shape (fittings and plates seat on these)
  const visual=(kind,a,t)=>{const as=peek(kind==='chassis'?itemId.chassis(a,t):itemId.weapon(a,t),'light');return as&&as.info.meta&&as.info.meta.visual||null;};
@@ -352,7 +372,7 @@ const Meshy3D=(()=>{
  // warm the cache for a loadout (LIGHT only): called when a loadout is known before it is drawn
  function prefetch(L){if(!L)return;try{if(L.c)request(itemId.chassis(L.c.c,Math.max(0,Math.min(2,L.c.t|0))),'light');if(L.w)request(itemId.weapon(L.w.a,Math.max(0,Math.min(2,L.w.t|0))),'light');}catch(e){}}
  function dispose(){for(const e of store.values())if(e.asset)free(e.asset);store.clear();generation++;}
- return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
+ return {VERSION,CH,get enabled(){return enabled;},set enabled(v){if(enabled!==!!v){enabled=!!v;generation++;}},get generation(){return generation;},get fit(){return fitOn;},set fit(v){if(fitOn!==!!v){fitOn=!!v;generation++;}},weaponFit,get base(){return baseUrl;},set base(v){baseUrl=v;manifest=null;manifestPromise=null;},
   decode,container,request,peek,best,withDetail,stamp,itemId,loadManifest,get manifest(){return manifest;},chassisKit,weaponKit,mesh,motion,release,prefetch,deckY,visual,townBuilding,townTurret,townStep,townStamp,townAsset,TOWN_YAW,makeMaterial,paintUniforms,partTexture,dispose,stats,store};
 })();
 if(typeof module!=='undefined')module.exports=Meshy3D;
