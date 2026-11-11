@@ -1749,3 +1749,46 @@ The fight is real input against real AI on software GL; who wins follows the run
 independent assertions (a fixed seed cannot remove frame-rate dependence). It must make real kills; victory must pay exactly
 250 CP (+20 featured), a loss must pay nothing, and both endings must hand back to exploration. The exact payout stays
 deterministically covered by `conquest-operations.mjs` / `conquest-session.mjs`.
+
+### 3. Stock looks match the chosen references — DONE (9 chassis rebuilt with the one config + `build.py`)
+- `dev/assets/meshy/config.json` per-chassis `lookOverride` from `docs/art/references/tanks/chosen/`: Scout weathered grey-olive
+  (no camo, bare-steel cage, yellow/black bull bar), Strider light silver + violet strip, Phantom black + gold edges + orange
+  facet lines, Vanguard tan/olive camo, Sentinel and Bulwark dark gunmetal + violet seam lines, Paladin silver + gold edges,
+  Titan worn khaki, Colossus dark + gold edges + amber seams. Titan's plow loses its hazard stripes (its reference plow is bare
+  plate; owner: the reference wins over the prompt). Two tones of one colour stay clearly apart (armour A/B >= 1.2x luminance,
+  gold trim vs orange/amber glow are different hues), asserted in `dev/tests/meshy.mjs`.
+- New pipeline option `lines` (`lib/paint.py`): trim or energy lines traced from the model's own convex creases (`edge`) or
+  panel seams (`groove`), crisp threshold, optional height / up-facing / turret-seat (`ringClear`) limits. Trim and lines are
+  fixed colours (mask R = 0): paints tint armour panels only.
+- Calibration decision: palettes were tuned in the REAL Garage (website build), not the proof viewer — the viewer's studio
+  lights blow light paint out to white. In the Garage the game lifts paint about 2-3x in linear terms, so stock values are darker
+  than the reference's apparent colour (as 5E-1 found for Rare).
+- Runtime (`js/meshy3d.js`): stock and paints light the energy lines faintly (`GLOW.stock` 0.42) and hold them still (glow
+  channels and breathing off: `uGlowAnim`); Lunar Skin keeps the full bright glow (`GLOW.lunar` 1.6) and breathes. No new
+  shader program (uniforms only, same cache key).
+- `pyfqmr` was missing from `dev/assets/meshy/requirements.txt` (the quadric fallback for dense sources); added.
+
+### 4. Sharpness — DONE (`js/graphics.js GraphicsResolution`, `js/render3d.js`, `js/showroom.js`, `js/ui.js`, `js/conquest/view.js`, `js/conquest/hub.js`)
+- One ceiling for every renderer: LOW 1x; HIGH phone/tablet up to 2.5x; HIGH desktop the full device ratio (up to 3x); a CPU
+  rasterizer (SwiftShader/llvmpipe, detected once with a throwaway context) 1x. Anti-aliasing on for HIGH everywhere (Conquest
+  had it off). Conquest asks for the high-performance GPU on HIGH.
+- Auto mode: a frame-time governor (median of 0.5 s windows; over budget = slower than 48 fps for ~1 s -> one 0.25 step down;
+  faster than 56 fps for ~2 s -> one step up; a level that failed waits 6 s, then 12, 24 ... 120 s before its next try, so it
+  never flickers). Conquest's cheaper shading (auto-low) now only kicks in once resolution is at its floor and lifts again on
+  recovery. Manual HIGH keeps its ceiling; LOW stays 1x.
+- Decision: auto quality now starts HIGH on phones that report no memory (every iPhone; was LOW, which meant 1x and no AA on
+  every iPhone). Phones that report <= 3 GB, or <= 2 cores, still start LOW. Reason: owner rule (website is the full baseline,
+  Telegram matches it as far as the device allows, scale down only where the device truly can't hold frame rate) and the
+  governor + the existing quality watch now protect slower phones. `graphics-motion.mjs` updated to the new rule.
+- Telegram Garage was capped at 1.25x (website 1.5x): both now use the shared ceiling.
+- Tests: `graphics-motion.mjs` (ceilings + governor: one step under sustained load, floor, recovery, back-off, manual fixed),
+  `conquest-adaptive.mjs` rewritten for the new contract (the old one encoded the fixed 1.5 -> 1 -> 0.75 steps).
+
+### 5. See-through occluders in the Conquest world and town — DONE (`js/conquest/view.js occluderFade`)
+Buildings and props (refuge, viaduct, installations, cover, the base and its town, monument, raid spire, colony/frontier art)
+between the camera and the tank, or the path 9 m ahead, fade to a see-through ghost (opacity eases to 0.22) and ease back when
+they stop blocking. Every third frame: bounding-sphere test on the camera->tank and camera->ahead segments, then exact triangles
+of the few candidates. Decision: the ghost is a MeshBasicMaterial with the laser halo's exact parameters, so it shares that
+program — no new shader program in Conquest's 16 budget (browser test asserts it). Instanced sets (walls, turrets, homes) are
+low and are not faded. `dev/tests/conquest-occluder.py` (in `conquest-check.yml`, both engines). The town build view
+(plotview) is top-down with no tank in it, so it needs no fade.

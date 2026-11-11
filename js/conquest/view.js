@@ -468,12 +468,17 @@ class View {
  // never adds one to Conquest's 16-program budget. Checked every third frame against bounding spheres first, then the exact
  // triangles of the few meshes on the line; instanced sets (walls, turrets) are low and never block the view.
  occluderFade(dt){
-  if(this.renderer.isConquestCanvas||!this.vehicle||!this.camera)return;const T=this.T;
-  const F=this.fade||(this.fade={list:[],scan:99,n:0,faded:new Map(),ray:new T.Raycaster(),c:new T.Vector3(),v:new T.Vector3(),w:new T.Vector3(),pts:[new T.Vector3(),new T.Vector3()],hits:new Set()});
+  if(this.renderer.isConquestCanvas||!this.vehicle||!this.camera)return;
+  const F=this.fade||(this.fade=this.fadeState()),veh=this.vehicle.position;this.fadeCore(F,dt,[this.props,this.baseGroup,this.monument,this.raidArt,this.colony,this.frontier],this.camera.position,veh.x,veh.y,veh.z,this.heading||0);
+ }
+ fadeState(){const T=this.T;return {list:[],scan:99,n:0,faded:new Map(),ray:new T.Raycaster(),c:new T.Vector3(),v:new T.Vector3(),w:new T.Vector3(),pts:[new T.Vector3(),new T.Vector3()],hits:new Set()};}
+ // the shared fade (world view above, and the town's drive view: js/conquest/plotview.js): roots = groups whose meshes may
+ // block, cam = camera position, (x, y, z) the tank in the same space, h its heading
+ fadeCore(F,dt,roots,cam,tx,ty,tz,h){const T=this.T;
   F.scan+=dt;
-  if(F.scan>1){F.scan=0;F.list.length=0;for(const r of [this.props,this.baseGroup,this.monument,this.raidArt,this.colony,this.frontier])if(r)r.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||Array.isArray(o.material)||o.userData.noFade||!o.geometry?.attributes?.position)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius>1.2)F.list.push(o);});}
+  if(F.scan>1){F.scan=0;F.list.length=0;for(const r of roots)if(r)r.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||Array.isArray(o.material)||o.userData.noFade||!o.geometry?.attributes?.position)return;if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius>1.2)F.list.push(o);});}
   if(F.n++%3===0){
-   const cam=this.camera.position,veh=this.vehicle.position,h=this.heading||0;F.pts[0].set(veh.x,veh.y+1.8,veh.z);F.pts[1].set(veh.x+Math.sin(h)*9,veh.y+1.2,veh.z+Math.cos(h)*9);F.hits.clear();
+   F.pts[0].set(tx,ty+1.8,tz);F.pts[1].set(tx+Math.sin(h)*9,ty+1.2,tz+Math.cos(h)*9);F.hits.clear();
    for(const o of F.list){let p=o,shown=true;while(p){if(!p.visible){shown=false;break;}p=p.parent;}if(!shown)continue;
     const bs=o.geometry.boundingSphere,rad=bs.radius*o.matrixWorld.getMaxScaleOnAxis();F.c.copy(bs.center).applyMatrix4(o.matrixWorld);   // (the bundled three has no Sphere class: plain vectors)
     for(const q of F.pts){const len=F.w.subVectors(q,cam).length();if(len<2)continue;F.w.divideScalar(len);const t=Math.max(0,Math.min(len,F.v.subVectors(F.c,cam).dot(F.w)));if(F.v.copy(cam).addScaledVector(F.w,t).distanceTo(F.c)>rad)continue;

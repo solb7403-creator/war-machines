@@ -2,18 +2,18 @@
  "items": {
   "chassis-scout-0": {
    "full": {
-    "bytes": 3617436,
+    "bytes": 3619312,
     "charts": 5301,
     "coverage": 0.6782635450363159,
     "geometryBytes": 1993648,
-    "hash": "ddb63c9162",
+    "hash": "ff12253d70",
     "lowTris": null,
     "missed": 0.0019193498693337613,
     "parts": 14,
-    "seconds": 132.2,
+    "seconds": 150.3,
     "texture": 2048,
     "textureBytes": {
-     "base": 245012,
+     "base": 246888,
      "mask": 354990,
      "normal": 617294,
      "orm": 398338
@@ -29,18 +29,18 @@
    "kind": "chassis",
    "length": 1.84,
    "light": {
-    "bytes": 732536,
+    "bytes": 732836,
     "charts": 2110,
     "coverage": 0.44489097595214844,
     "geometryBytes": 430656,
-    "hash": "f339a2c15b",
+    "hash": "9f7e200015",
     "lowTris": 11255,
     "missed": 0.007939944523281787,
     "parts": 14,
     "seconds": 3.9,
     "texture": 512,
     "textureBytes": {
-     "base": 47880,
+     "base": 48180,
      "mask": 76718,
      "normal": 100430,
      "orm": 68430
@@ -1120,19 +1120,19 @@
   },
   "chassis-vanguard-0": {
    "full": {
-    "bytes": 4724280,
+    "bytes": 4689152,
     "charts": 9219,
     "coverage": 0.5889451503753662,
     "geometryBytes": 2098504,
-    "hash": "093ef270d0",
+    "hash": "6e9706f469",
     "lowTris": null,
     "missed": 0.0033252166309410314,
     "parts": 15,
-    "seconds": 111.8,
+    "seconds": 133.5,
     "texture": 2048,
     "textureBytes": {
-     "base": 413478,
-     "mask": 627286,
+     "base": 439540,
+     "mask": 566098,
      "normal": 988154,
      "orm": 588074
     },
@@ -1147,19 +1147,19 @@
    "kind": "chassis",
    "length": 2.61,
    "light": {
-    "bytes": 847944,
+    "bytes": 846892,
     "charts": 2984,
     "coverage": 0.37041759490966797,
     "geometryBytes": 443352,
-    "hash": "b82a7432d5",
+    "hash": "a4e545678f",
     "lowTris": 11428,
     "missed": 0.013297769630623232,
     "parts": 15,
-    "seconds": 5.0,
+    "seconds": 4.9,
     "texture": 512,
     "textureBytes": {
-     "base": 66754,
-     "mask": 107236,
+     "base": 70928,
+     "mask": 102012,
      "normal": 137116,
      "orm": 84432
     },

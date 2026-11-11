@@ -337,12 +337,12 @@ const _m=[];
 function inst(R,geo,n){const m=new R.T.InstancedMesh(geo,R.S.MAT.solid,Math.max(1,n));m.count=n;m.frustumCulled=false;return m;}
 function sync(){const R=X?.R,p=plotOf();if(!p)return;if(!R){draw2d();return;}const {S,T,k,g}=R,low=!!S.low||!!R.far,M4=R._sm||(R._sm=new T.Matrix4()),keep=keepSet(R);
  if(R.keys.ter!==p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j)){R.keys.ter=p.site+':'+p.cc+':'+(p.b.cc?.i)+','+(p.b.cc?.j);wipe(g.terrain);for(const m of TK.terrain(S,p.site,p.cc,p,{}))g.terrain.add(m);}
- const pl=TK.plan(p),want=new Set(),turs=[],theme=p.theme,MY=!low&&typeof Meshy3D!=='undefined'?Meshy3D:null;R.anim=[];R.plan=pl;
+ const pl=TK.plan(p),want=new Set(),turs=[],theme=p.theme,MY=!S.low&&typeof Meshy3D!=='undefined'?Meshy3D:null,lod=!!R.far;   /* 5E-2a: Meshy in big towns too (reduced index set when far / driving) */R.anim=[];R.plan=pl;
  for(const [id,b,lvl,building] of pl.builds){const B=P.BUILDINGS[b.t];
-  const key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||'',MY?MY.townStamp([b.t]):''].join(':');want.add(id);let e=R.meshes.get(id);
+  const key=[b.t,lvl,b.i,b.j,b.r|0,building?1:0,theme?.finish||'',theme?.light||'',MY?MY.townStamp([b.t])+(lod?'f':''):''].join(':');want.add(id);let e=R.meshes.get(id);
   if(!e||e.key!==key){if(e){g.build.remove(e.o);MY?.release(e.o);e.o.traverse(o=>{if(!keep.has(o.geometry)&&!o.geometry?.userData?.meshy)o.geometry?.dispose?.();});}const o=new T.Group(),s2=P.sizeOf(b.t,b.r|0);o.position.set(P.cellX(b.i)+(s2.w-1)*P.GRID.cell/2,footY(p.site,b),P.cellZ(b.j)+(s2.d-1)*P.GRID.cell/2);o.rotation.y=-(b.r|0)*Math.PI/2;
    // the owner's Meshy model when its file is in (HIGH); the kit model until then and on LOW
-   const my=MY&&(lvl>0||building)?MY.townBuilding(b.t,Math.max(1,lvl),theme,false):null;
+   const my=MY&&(lvl>0||building)?MY.townBuilding(b.t,Math.max(1,lvl),theme,false,lod&&!B?.turret):null;
    if(my){my.userData.id=id;my.traverse(c=>{c.userData.id=id;});o.add(my);if(my.userData.meshyHead)o.userData.head=my.userData.meshyHead;}
    else if(lvl>0||building){const m=k.building(b.t,Math.max(1,lvl),theme).mesh();m.userData.id=id;o.add(m);}
    const hd=!my&&(B?.turret||b.t==='radar')?k.head(b.t,Math.max(1,lvl)).mesh():null;if(hd){hd.position.y=b.t==='radar'?3.3+lvl*.5:1.4+lvl*.15;o.add(hd);o.userData.head=hd;o.userData.radar=b.t==='radar';}
@@ -377,7 +377,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  const R=X.R;if(!R){if(X.drill)drillStep(dt);draw2d();return;}const {view}=X.ctx,T=R.T,c=X.cam,host=view.host;
  // Draw only inside the visible stage with its own aspect, so cellAt() (stage rect) matches the picture exactly.
  const hr=host.getBoundingClientRect(),sr=X.stage.getBoundingClientRect(),w=Math.max(1,sr.width||390),h=Math.max(1,sr.height||400);if(R.cam.aspect!==w/h){R.cam.aspect=w/h;R.cam.updateProjectionMatrix();}
- if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}placeCam(dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
+ if(X.view==='drive'&&X.drive&&!X.tour){driveStep(dt);if(!X)return;}placeCam(dt);driveFade(R,dt);driveUi();if(X.tank&&!X.visit&&s?.plot&&s.plot!==X.flagPlot){X.flagPlot=s.plot;tankFlag(R,s.plot);}
  for(const o of R.meshes.values()){const hd=o.o.userData.head;if(hd)hd.rotation.y=hd.userData.aim??(X.clock*(o.o.userData.radar?1:.4))%(Math.PI*2);}
  const M4=R._fm||(R._fm=new T.Matrix4()),_q=R._fq||(R._fq=new T.Quaternion()),_v=R._fv||(R._fv=new T.Vector3()),_s=R._fs||(R._fs=new T.Vector3()),up=R._up||(R._up=new T.Vector3(0,1,0));
  for(const t of R.tur.values()){for(const it of t.items){const a=it.aim??(X.clock*.4+it.spin)%(Math.PI*2);if(it.kick)it.kick=Math.max(0,it.kick-dt*5);
@@ -385,7 +385,7 @@ function frame(dt){if(!X)return;X.clock+=dt;const s=X.ctx.view.authority?.state;
  if(typeof Meshy3D!=='undefined'){Meshy3D.townStep(X.clock,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced());if(R.myGen!==Meshy3D.generation){R.myGen=Meshy3D.generation;try{sync();meshySprites();}catch(e){}}}
  for(const o of R.anim){const dr=o.userData.drones;dr.rotation.y=X.clock*1.4;dr.position.y=Math.sin(X.clock*3)*.4;}
  const big=(R.wcell?.size||0)>600,far=X.view==='drive'?big:big?(R.far?c.dist>60:c.dist>80):(R.far?c.dist>165:c.dist>195);/* 5C: big towns stay light in the close drive view and the closer default camera */if(far!==!!R.far){R.far=far;const lo=!!R.S.low||far;for(const [code,m] of R.wim)m.geometry=cached(R.wgeo,code+':'+lo,()=>R.k.wallGeo(code,lo));{const pm=R.wpost?.values().next().value?.[0];if(pm)pm.geometry=cached(R.wgeo,'post:'+lo,()=>R.k.post(lo));}for(const [kind,m] of R.him)m.geometry=cached(R.hgeo,kind+lo,()=>R.k.home(kind,lo));
-  const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
+  const pp=plotOf();if(pp){R.keys.walls=JSON.stringify(pp.w)+lo+JSON.stringify(pp.dmg||{});R.keys.homes=P.homes(pp).map(h=>h.id).join()+pp.site+pp.cc+lo;}try{sync();}catch(e){}}   // distance LOD with hysteresis: zoomed out, walls and homes switch to the lighter geometry (no instance rebuild)
  crewStep(R,plotOf());if(X.drill)drillStep(dt);if(R.dmgFx&&!reduced())TK.damageStep(R.dmgFx,X.clock);
  R.sc.getObjectByName('cq-style-sky')?.position.copy(R.cam.position);
  if(SPRITE_WAIT.length&&!X.drill)spriteStep(R);   // before the frame's full clear, so a sprite never shows on the map
@@ -454,6 +454,11 @@ function chaseDist(D,cy,dt){const p=D.plot;if(!D.camH||D.camKey!==D.key){D.camH=
  X.chase.cur=X.chase.cur==null||want<X.chase.cur?want:X.chase.cur+(want-X.chase.cur)*Math.min(1,(dt||0)*1.5);return X.chase.cur;}
 function camPose(){const R=X.R;if(!R)return null;return {p:R.cam.position.clone(),t:(X.camLook||new R.T.Vector3()).clone()};}
 // camera: drive (chase), tour (a 6 s orbit of the town the first time), or the build view (3/4, overhead to place/draw)
+// drive view (5E-2a, owner): buildings between the chase camera and your tank, or the road just ahead, fade see-through (the
+// world view's fade, js/conquest/view.js fadeCore: same ghost material and program, no new shader program)
+function driveFade(R,dt){const v=X.ctx.view;if(!v?.fadeCore||!R.cam||!X.tank)return;const F=R.fade||(R.fade=v.fadeState()),T=R.T;
+ if(!(X.view==='drive'&&X.drive)||X.tour){if(F.faded.size)v.fadeCore(F,dt,[],R.cam.position,0,-1e4,0,0);return;}   // leaving the drive view eases every ghost back
+ const w=R._fw||(R._fw=new T.Vector3()),c=R._fc||(R._fc=new T.Vector3());X.tank.getWorldPosition(w);R.cam.getWorldPosition(c);v.fadeCore(F,dt,[R.g.build],c,w.x,w.y,w.z,X.drive.h||0);}
 function placeCam(dt){const R=X.R,T=R.T,c=X.cam,p=plotOf(),pos=R._cpos||(R._cpos=new T.Vector3()),look=R._clook||(R._clook=new T.Vector3());
  if(X.tour&&X.drive){const t=(X.tour.t+=dt),C0=TK.ccCenter(p),rad=(P.townH(p.cc)+4)*P.GRID.cell*.75,a=-Math.PI/2+t/X.tour.dur*Math.PI*1.6;pos.set(C0.x+Math.cos(a)*rad,18+rad*.14+6*Math.sin(t*.5),C0.z+Math.sin(a)*rad);look.set(C0.x,6,C0.z);
   if(t>=X.tour.dur){X.tour=null;X.camFrom={p:pos.clone(),t:look.clone()};X.camT=0;}}

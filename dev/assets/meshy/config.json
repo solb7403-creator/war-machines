@@ -97,9 +97,9 @@
    "tracks": "auto",
    "look": "common",
    "lookOverride": {
-    "paintA": "#74694a",
-    "paintB": "#4e5238",
-    "camo": 0.5,
+    "paintA": "#7a6d4d",
+    "paintB": "#55573f",
+    "camo": 0.36,
     "camoScale": 1.4,
     "trim": "#7b7f74",
     "wear": 1.2,
@@ -1930,8 +1930,8 @@
     ]
    ],
    "lookOverride": {
-    "paintA": "#45473b",
-    "paintB": "#3a3c32",
+    "paintA": "#4a4a41",
+    "paintB": "#3c3d36",
     "camo": 0,
     "trim": "#8a8f93",
     "bare": "#9da2a6",

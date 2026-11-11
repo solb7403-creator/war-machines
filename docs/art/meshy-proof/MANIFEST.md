@@ -9,7 +9,7 @@ untextured twin of the Moonbeam (same mesh) and is not used.
 | Scout | `chassis-scout-0` | SCOUT tank chassis …2b25b4.glb | 1,271,780 | 17,915 | 119,902 | 30.5 MB | 733 KB | 3.62 MB | 14 |
 | Strider | `chassis-scout-1` | STRIDER tank chassis …95465b.glb | 2,023,454 | 18,810 | 119,887 | 48.5 MB | 961 KB | 4.61 MB | 15 |
 | Phantom | `chassis-scout-2` | PHANTOM tank chassis …7face6.glb | 908,070 | 17,916 | 119,792 | 21.8 MB | 735 KB | 3.86 MB | 16 |
-| Vanguard | `chassis-vanguard-0` | VANGUARD tank chassis …720a5c.glb | 2,912,648 | 17,838 | 119,756 | 69.9 MB | 848 KB | 4.72 MB | 15 |
+| Vanguard | `chassis-vanguard-0` | VANGUARD tank chassis …720a5c.glb | 2,912,648 | 17,838 | 119,756 | 69.9 MB | 847 KB | 4.69 MB | 15 |
 | Sentinel | `chassis-vanguard-1` | SENTINEL tank chassis …2d027b.glb | 2,191,352 | 17,917 | 119,906 | 52.6 MB | 837 KB | 4.39 MB | 15 |
 | Paladin | `chassis-vanguard-2` | PALADIN tank chassis …036b0b.glb | 1,475,352 | 17,948 | 119,899 | 35.4 MB | 802 KB | 4.10 MB | 16 |
 | Titan | `chassis-titan-0` | TITAN tank chassis …4e90fd.glb | 1,363,390 | 17,896 | 119,703 | 32.7 MB | 713 KB | 3.79 MB | 17 |

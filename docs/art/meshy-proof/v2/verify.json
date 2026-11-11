@@ -1,0 +1,641 @@
+{
+ "environment": "Chromium + SwiftShader, GPU renderer string, website build, fixture Worker, HIGH graphics",
+ "profiles": {
+  "phone3x": {
+   "loadouts": {
+    "scout0-pulse0": {
+     "garage": [
+      "chassis-scout-0/full",
+      "weapon-pulse-0/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "scout",
+        "wtype": "pulse",
+        "chassis": "chassis-scout-0",
+        "weapon": "weapon-pulse-0"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57031,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "scout1-twin0": {
+     "garage": [
+      "chassis-scout-1/full",
+      "weapon-twin-0/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "scout",
+        "wtype": "twin",
+        "chassis": "chassis-scout-1",
+        "weapon": "weapon-twin-0"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57936,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "scout2-moon2": {
+     "garage": [
+      "chassis-scout-2/full",
+      "weapon-moon/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "scout",
+        "wtype": "moon",
+        "chassis": "chassis-scout-2",
+        "weapon": "weapon-moon"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57034,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "vanguard0-pulse1": {
+     "garage": [
+      "chassis-vanguard-0/full",
+      "weapon-pulse-1/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-1"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 56956,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "vanguard1-twin1": {
+     "garage": [
+      "chassis-vanguard-1/full",
+      "weapon-twin-1/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "vanguard",
+        "wtype": "twin",
+        "chassis": "chassis-vanguard-1",
+        "weapon": "weapon-twin-1"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57024,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "vanguard2-siege0": {
+     "garage": [
+      "chassis-vanguard-2/full",
+      "weapon-siege-0/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "vanguard",
+        "wtype": "siege",
+        "chassis": "chassis-vanguard-2",
+        "weapon": "weapon-siege-0"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57078,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan0-siege1": {
+     "garage": [
+      "chassis-titan-0/full",
+      "weapon-siege-1/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "siege",
+        "chassis": "chassis-titan-0",
+        "weapon": "weapon-siege-1"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 56998,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan1-pulse2": {
+     "garage": [
+      "chassis-titan-1/full",
+      "weapon-pulse-2/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "pulse",
+        "chassis": "chassis-titan-1",
+        "weapon": "weapon-pulse-2"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 64841,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan2-twin2": {
+     "garage": [
+      "chassis-titan-2/full",
+      "weapon-twin-2/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "twin",
+        "chassis": "chassis-titan-2",
+        "weapon": "weapon-twin-2"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57197,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan2-siege2": {
+     "garage": [
+      "chassis-titan-2/full",
+      "weapon-siege-2/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "siege",
+        "chassis": "chassis-titan-2",
+        "weapon": "weapon-siege-2"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 2.5,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57183,
+      "allMeshy": true
+     },
+     "procedural": []
+    }
+   },
+   "errors": [],
+   "renderer": {
+    "showroomPixelRatio": 2.5,
+    "showroomAntialias": true,
+    "dpr": 3
+   },
+   "loads": 42
+  },
+  "desktop1920": {
+   "loadouts": {
+    "scout0-pulse0": {
+     "garage": [
+      "chassis-scout-0/full",
+      "weapon-pulse-0/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "scout",
+        "wtype": "pulse",
+        "chassis": "chassis-scout-0",
+        "weapon": "weapon-pulse-0"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57031,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "scout1-twin0": {
+     "garage": [
+      "chassis-scout-1/full",
+      "weapon-twin-0/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "scout",
+        "wtype": "twin",
+        "chassis": "chassis-scout-1",
+        "weapon": "weapon-twin-0"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57936,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "scout2-moon2": {
+     "garage": [
+      "chassis-scout-2/full",
+      "weapon-moon/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "scout",
+        "wtype": "moon",
+        "chassis": "chassis-scout-2",
+        "weapon": "weapon-moon"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57034,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "vanguard0-pulse1": {
+     "garage": [
+      "chassis-vanguard-0/full",
+      "weapon-pulse-1/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-1"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 56956,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "vanguard1-twin1": {
+     "garage": [
+      "chassis-vanguard-1/full",
+      "weapon-twin-1/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "vanguard",
+        "wtype": "twin",
+        "chassis": "chassis-vanguard-1",
+        "weapon": "weapon-twin-1"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57024,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "vanguard2-siege0": {
+     "garage": [
+      "chassis-vanguard-2/full",
+      "weapon-siege-0/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "vanguard",
+        "wtype": "siege",
+        "chassis": "chassis-vanguard-2",
+        "weapon": "weapon-siege-0"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57078,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan0-siege1": {
+     "garage": [
+      "chassis-titan-0/full",
+      "weapon-siege-1/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "siege",
+        "chassis": "chassis-titan-0",
+        "weapon": "weapon-siege-1"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 56998,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan1-pulse2": {
+     "garage": [
+      "chassis-titan-1/full",
+      "weapon-pulse-2/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "pulse",
+        "chassis": "chassis-titan-1",
+        "weapon": "weapon-pulse-2"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 64841,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan2-twin2": {
+     "garage": [
+      "chassis-titan-2/full",
+      "weapon-twin-2/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "twin",
+        "chassis": "chassis-titan-2",
+        "weapon": "weapon-twin-2"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57197,
+      "allMeshy": true
+     },
+     "procedural": []
+    },
+    "titan2-siege2": {
+     "garage": [
+      "chassis-titan-2/full",
+      "weapon-siege-2/full"
+     ],
+     "battle": {
+      "units": [
+       {
+        "me": true,
+        "cls": "titan",
+        "wtype": "siege",
+        "chassis": "chassis-titan-2",
+        "weapon": "weapon-siege-2"
+       },
+       {
+        "me": false,
+        "cls": "vanguard",
+        "wtype": "pulse",
+        "chassis": "chassis-vanguard-0",
+        "weapon": "weapon-pulse-0"
+       }
+      ],
+      "pixelRatio": 1,
+      "antialias": true,
+      "calls": 30,
+      "triangles": 57183,
+      "allMeshy": true
+     },
+     "procedural": []
+    }
+   },
+   "errors": [],
+   "renderer": {
+    "showroomPixelRatio": 1,
+    "showroomAntialias": true,
+    "dpr": 1
+   },
+   "loads": 42
+  }
+ },
+ "summary": {
+  "phone3x": {
+   "loadouts": 10,
+   "stillProcedural": [],
+   "garageMissing": [],
+   "errors": 0
+  },
+  "desktop1920": {
+   "loadouts": 10,
+   "stillProcedural": [],
+   "garageMissing": [],
+   "errors": 0
+  }
+ }
+}

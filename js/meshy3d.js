@@ -379,21 +379,27 @@ const Meshy3D=(()=>{
  }
  const townPivot=asset=>(asset.info.meta&&asset.info.meta.pivot)||[0,0];
  // a building (or a turret drawn alone: under construction, cards) as a group at the footprint centre, facing +Z
- function townBuilding(type,lvl,theme,low){
+ // lod: a big town seen from the drive view or zoomed out draws the model's reduced index set (the LOW one) with the same
+ // HIGH material (no new program), instead of the old kit model
+ function lowGeo(asset){if(!asset.lowIndex)return asset.geometry;if(!asset.lowGeometry){const g=new THREE.BufferGeometry();for(const [k,a] of Object.entries(asset.geometry.attributes))g.setAttribute(k,a);g.setIndex(asset.lowIndex);g.boundingBox=asset.geometry.boundingBox;g.boundingSphere=asset.geometry.boundingSphere;g.userData.hfShared=true;g.userData.meshy=true;asset.lowGeometry=g;}return asset.lowGeometry;}
+ function townBuilding(type,lvl,theme,low,lod){
   const asset=townAsset(type);if(!asset)return null;
-  const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
+  const g=new THREE.Group(),sc=townScale(type,lvl),mat=townMaterial(asset,theme,low),sp=lod?null:townSplit(asset),pv=townPivot(asset);g.scale.setScalar(sc);
   const place=geo=>{const m=new THREE.Mesh(geo,mat);m.onBeforeRender=envHook;m.rotation.y=TOWN_YAW;m.position.set(-(pv[0]*Math.cos(TOWN_YAW)+pv[1]*Math.sin(TOWN_YAW)),0,-(-pv[0]*Math.sin(TOWN_YAW)+pv[1]*Math.cos(TOWN_YAW)));m.userData.meshyTown=asset;return m;};
-  if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(asset.geometry));
+  if(sp){g.add(place(sp.base));const head=new THREE.Group();head.add(place(sp.head));g.add(head);g.userData.meshyHead=head;}else g.add(place(lod?lowGeo(asset):asset.geometry));
   g.userData.meshyTown=asset.id;asset.refs=(asset.refs||0)+1;g.userData.meshyTownRelease=()=>{asset.refs=Math.max(0,asset.refs-1);};return g;
  }
  // instanced turret set: {base, hd, matrix(out, x, y, z, aim, kick, dead)} with the pedestal centred on the cell
+ let noHead=null;
  function townTurret(type,count,lvl,theme,low){
-  const asset=townAsset(type),sp=asset&&townSplit(asset);if(!sp)return null;
+  const asset=townAsset(type);if(!asset)return null;
+  // a tower with no turning head (Tesla coil: body + emitter, no ring part) is one fixed instanced piece; its head set is empty
+  let sp=townSplit(asset);if(!sp){if(!noHead){noHead=new THREE.BufferGeometry();noHead.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9),3));noHead.setIndex([]);noHead.userData.hfShared=true;noHead.userData.meshy=true;}sp={base:asset.geometry,head:noHead,fixed:true};}
   const mat=townMaterial(asset,theme,low),n=Math.max(1,count),base=new THREE.InstancedMesh(sp.base,mat,n),hd=new THREE.InstancedMesh(sp.head,mat,n),pv=townPivot(asset),sc=.9+.025*(Math.max(1,lvl)-1);
   base.count=hd.count=count;base.frustumCulled=hd.frustumCulled=false;base.onBeforeRender=hd.onBeforeRender=envHook;
   const q=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),s3=new THREE.Vector3(),off=new THREE.Vector3();
   // model point p -> world: T(x,y,z) * R(yaw) * S * T(-pivot); kick slides the head back along its aim
-  const matrix=(out,x,y,z,aim,kick,dead)=>{const yaw=aim+TOWN_YAW;q.setFromAxisAngle(up,yaw);const k=dead?0:sc;off.set(-pv[0]*k,0,-pv[1]*k).applyQuaternion(q);
+  const matrix=(out,x,y,z,aim,kick,dead)=>{if(sp.fixed){aim=0;kick=0;}const yaw=aim+TOWN_YAW;q.setFromAxisAngle(up,yaw);const k=dead?0:sc;off.set(-pv[0]*k,0,-pv[1]*k).applyQuaternion(q);
    v.set(x+off.x-Math.sin(aim)*(kick||0),y,z+off.z-Math.cos(aim)*(kick||0));return out.compose(v,q,s3.set(k,k,k));};
   asset.refs=(asset.refs||0)+2;return {base,hd,matrix,asset,meshy:true,recoil:(asset.info.meta&&asset.info.meta.recoil)||.22};
  }
