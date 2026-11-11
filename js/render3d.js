@@ -311,7 +311,7 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
  if(B3.dyn){RS.remove(B3.dyn);B3.dyn.traverse(o=>{if(o.material&&!o.material.userData.hfShared&&o.material.dispose)o.material.dispose();if(o.userData.envOwnedTexture)o.material.map?.dispose();if(o.userData.rangeOwnedGeometry&&o.geometry)o.geometry.dispose();});}
  for(const [u,o] of B3.units)dropUnit(u,o);
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();}B3.crates.clear();
- for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];PSA.live.length=0;PSN.live.length=0;B3.seen=new WeakSet();
+ for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];PSA.live.length=0;PSN.live.length=0;B3.seen=new WeakSet();if(SFX)SFX.clear();B3.shellL0.clear();   // a new match starts with no effects, debris or shell arcs left over
  B3.uref=units;const D=new THREE.Group(),G=geos();
  const done=new Set();
  for(const u of units){if(u.boss||u.sx===undefined)continue;const k=Math.round(u.sx*2)+','+Math.round(u.sy*2);if(done.has(k))continue;done.add(k);
@@ -403,9 +403,10 @@ function frame3D(shx,shy){
  for(const [u,o] of B3.units)if(!seen.has(u)){if(units.includes(u))o.g.visible=false;else dropUnit(u,o);}
  // wrecks: charred hulls that smoke, then sink away
  B3.wrecks=B3.wrecks.filter(w=>{w.t+=dt;const k=w.t/3.2;if(k>=1){RS.remove(w.g);w.mat.dispose();return false;}
-  if(w.piece){const p=w.g.position;   // a blown-off turret: ballistic, two or three bounces, then it lies still and fades with the hull
-   if(!w.rest){w.vy-=20*dt;p.x+=w.vx*dt;p.z+=w.vz*dt;p.y+=w.vy*dt;w.g.rotation.x+=w.spin*dt;w.g.rotation.z+=w.spin*0.6*dt;
-    if(p.y<w.fl){p.y=w.fl;if(Math.abs(w.vy)<1.6){w.rest=1;w.g.rotation.x=Math.round(w.g.rotation.x/Math.PI)*Math.PI;w.g.rotation.z=0;}else{w.vy*=-0.36;w.vx*=0.6;w.vz*=0.6;w.spin*=0.5;if(SFX)SFX.sparks(p.x,w.y0+0.1,p.z,4,3,[1,0.7,0.35],0.22,0.35,1,w.y0);}}}
+  if(w.piece){const p=w.g.position,wob=Math.exp(-2.4*w.t);   // a blown-off turret: ballistic, two or three bounces, then it lies level and fades with the hull
+   w.pv.rotation.x=0.9*Math.sin(w.t*9+w.ph)*wob;w.pv.rotation.z=0.7*Math.sin(w.t*7+w.ph*2)*wob;
+   if(!w.rest){w.vy-=20*dt;p.x+=w.vx*dt;p.z+=w.vz*dt;p.y+=w.vy*dt;
+    if(p.y<w.fl){p.y=w.fl;if(Math.abs(w.vy)<1.6)w.rest=1;else{w.vy*=-0.36;w.vx*=0.6;w.vz*=0.6;if(SFX)SFX.sparks(p.x,w.y0+0.1,p.z,4,3,SPK,0.22,0.35,1,w.y0);}}}
    else if(k>0.6)p.y-=dt*0.3;
    w.mat.opacity=1-Math.max(0,k-0.6)/0.4;return true;}
   w.g.position.y=w.y0-Math.max(0,k-0.6)*0.8;w.mat.opacity=1-Math.max(0,k-0.6)/0.4;
@@ -506,6 +507,7 @@ function muzzle(u,arch){
  emit(PSA,{x:w.x,y:w.y,z:w.z,life:F?.flash||.07,s0:arch==='siege'?1.25:arch==='twin'?.60:.82,s1:0.3,c,a:1,fade:0});
  if(arch==='siege'&&R3.q!=='low')emit(PSN,{x:w.x,y:w.y,z:w.z,life:0.6,s0:0.4,s1:1.1,c:'#4a4c55',a:0.45,vy:0.5});
 }
+const SPK=[1,0.7,0.35];
 const FX3D_RGB=h=>{const n=parseInt(String(h).slice(1),16);return [(n>>16)/255,((n>>8)&255)/255,(n&255)/255];};
 // game events: kills (explosion + wreck), hits (sparks; counters burn gold, resisted hits flash blue), crates breaking
 function ev3D(a){
@@ -517,7 +519,7 @@ function ev3D(a){
   if(a[0]==='V'){SFX.superNova(a[5]||'twin0',a[6]===undefined?1:a[6],a[1],hOf(a[7]),a[2],a[3],1);return;}
   if(a[0]==='I'){const K=a[5]||supKey(a[3],0),oc=a[6]===undefined?1:a[6];if(a[7]===2)SFX.superBlast(K,oc,a[1],0,a[2],SUP.siege.r,1);else if(FX3D.KIND[K]!=='nova')SFX.superImpact(K,oc,a[1],0,a[2],a[7]?1:0,1);return;}
   if(a[0]==='Z'){const r=U(a[1]);if(r)SFX.superLock(a[3],a[2],r.x,heightAt(r),r.y,1);return;}
-  if(a[0]==='X'){SFX.shatter('crate',a[2],0.1,a[3],0.8,0.8,0,0);return;}   // a crate breaks into planks
+  if(a[0]==='X'){SFX.shatter('crate',a[2],0.1,a[3],0.8,0.8,0,0);SFX.sparks(a[2],0.5,a[3],8,4,SPK,0.26,0.4,1.2,0);return;}   // a crate breaks into planks
  }
  if(a[0]==='I'){impact3(a[1],a[2],a[3]);return;}
  if(a[0]==='k'){const r=U(a[1]);if(!r)return;const o=B3.units.get(r);
@@ -526,10 +528,12 @@ function ev3D(a){
    const m0=o.body.children[0];if(m0){const c=m0.clone();c.traverse(x=>{if(x.isMesh)x.material=mat;});w.add(c);}
    w.position.copy(o.g.position);w.scale.copy(o.g.scale);w.rotation.y=o.hull.rotation.y+0.3;RS.add(w);
    B3.wrecks.push({g:w,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y});
-   // destroyed = breaks apart: the turret is blown off the hull, tumbles, bounces and comes to rest beside it
-   if(o.tur&&o.tur.children.length){const tw=new THREE.Group(),tc=o.tur.clone(true);tc.traverse(x=>{if(x.isMesh)x.material=mat;});tw.add(tc);tw.position.copy(o.g.position);tw.scale.copy(o.g.scale);tw.rotation.y=o.hull.rotation.y;RS.add(tw);
+   // destroyed = breaks apart: the turret is blown off the hull, hops, bounces and comes to rest beside it (HIGH only: LOW keeps
+   // today's draw cost). It rocks about its own centre (a pivot at the turret ring) and eases level: nothing snaps or sinks
+   if(R3.q!=='low'&&o.tur&&o.tur.children.length){const tw=new THREE.Group(),pv=new THREE.Group(),tc=o.tur.clone(true),ty=o.tur.position.y;tc.traverse(x=>{if(x.isMesh)x.material=mat;});tc.position.y=0;pv.position.y=ty;pv.add(tc);tw.add(pv);
+    tw.position.copy(o.g.position);tw.scale.copy(o.g.scale);tw.rotation.y=o.hull.rotation.y;RS.add(tw);
     const kk=U(a[2]),dx=kk?r.x-kk.x:Math.random()-0.5,dz=kk?r.y-kk.y:Math.random()-0.5,dl=Math.hypot(dx,dz)||1;
-    B3.wrecks.push({g:tw,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y,piece:1,fl:o.g.position.y-o.tur.position.y*o.g.scale.y*0.75,vx:dx/dl*2.4+(Math.random()-0.5)*1.2,vz:dz/dl*2.4+(Math.random()-0.5)*1.2,vy:6.5,spin:(Math.random()<0.5?-1:1)*(5+Math.random()*4)});}}
+    B3.wrecks.push({g:tw,pv,mat,t:0,x:r.x,z:r.y,y0:o.g.position.y,piece:1,fl:o.g.position.y-ty*o.g.scale.y*0.8,vx:dx/dl*2.4+(Math.random()-0.5)*1.2,vz:dz/dl*2.4+(Math.random()-0.5)*1.2,vy:6.5,ph:Math.random()*6.28});}}
   // destroyed = breaks apart: the hull tears into plates and chunks in its own colours, thrown away from the killing blow
   if(SFX){const k=U(a[2]),sz=(r.boss?2.6:1)*(r.dscale||1),hh=heightAt(r),dx=k?r.x-k.x:0,dz=k?r.y-k.y:0;
    SFX.shatter(tankMat(r),r.x,hh,r.y,0.95*sz,0.8*sz,dx,dz,o?FX3D_RGB(o.spec.team):null);SFX.blast(r.x,hh,r.y,1.1*sz,1);}

@@ -22,7 +22,7 @@ function liveSetup(cfg){
  const order=units.map((u,i)=>i).filter(i=>!units[i]).sort((a,b)=>(team(b)!==0)-(team(a)!==0));
  const gseat={};for(const i of order){if(!gq.length)break;gseat[i]=gq.shift();}
  units=units.map((u,i)=>u||(gseat[i]?mkGhost(team(i),pos[i].x,pos[i].y,gseat[i],cfg.lg|0):mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop(),ai)));
- units.forEach((u,i)=>{u.id=i;});
+ units.forEach((u,i)=>{u.id=i;if(u.hum)u.nbar=supBar(random);});   // each live pilot's first timing bar
  me=null;series=null;state='vs';
 }
 function liveTank(u,L){Object.assign(u,tankOf(L,hpScale()),{L,pw:powerOf(L)});u.hp=u.mhp;}   // chassis swap on the VS screen or between rounds

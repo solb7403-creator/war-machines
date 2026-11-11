@@ -181,7 +181,21 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   t(ua.sup && Math.abs(ua.sup.ang + Math.PI / 2) < 0.01, 'aimed super (no turn for team 0)');
   say(room, 'a', A, { k: 's' });
   t(ua.sup.fixed === true, 'second super ignored while charging');
-  await run(1500);
+  // the timing bar (5E-2b): the room passes the tap ('z') to the sim; the sim's clock is the judge, the phone only reports when it tapped
+  { const snapA = last(A, 's'), barA = ua.sup.bar; t(barA && barA.z0 >= 0.3 && barA.jc > barA.z0 && ua.sup.oc === undefined, 'the server drew the bar: zone ' + barA.z0 + ', jackpot ' + barA.jc);
+    t(Array.isArray(snapA.s.u[0][16]) || snapA.s.u[0][16] === 0, 'the snapshot has the next-bar slot');
+    say(room, 'b', B, { k: 'z', p: ub.sup.bar.jc });   // B claims a jackpot right after the press: forged
+    t(ub.sup.oc === 0, 'a jackpot claimed at the wrong moment is judged on the server clock: MISS (' + ub.sup.oc + ')');
+    say(room, 'b', B, { k: 'z', p: ub.sup.bar.jc }); t(ub.sup.oc === 0, 'a second tap changes nothing');
+    say(room, 'a', A, { k: 'z', oc: 2, p: 'x' }); t(ua.sup.oc === 0, 'an outcome sent by the phone is ignored; a malformed tap falls back to the server clock');
+    await run(1500);
+    t(!ua.sup && !ub.sup, 'both supers fired');
+    ua.sp = 1000; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); const jc = ua.sup.bar.jc;
+    while (ua.sup && ua.sup.el < jc - 0.02) await run(34);
+    say(room, 'a', A, { k: 'z', p: ua.sup.el }); t(ua.sup && ua.sup.oc >= 1, 'an honest tap in the zone is a HIT or a JACKPOT (' + (ua.sup && ua.sup.oc) + ', at ' + (ua.sup && ua.sup.el.toFixed(2)) + ' s of ' + jc + ')');
+    say(room, 'a', A, { k: 'z', p: 0.1 }); await run(900); t(!ua.sup, 'it fires after the stop');
+    say(room, 'a', A, { k: 'z', p: 0.6 }); t(!ua.sup, 'a tap with no super charging does nothing'); }
+  await run(600);
   say(room, 'b', B, { k: 'd', x: 0, y: -1 });
   t(ub.dash && ub.dash.dy > 0.9 && ub.dashCd > 3.5, 'dash turned into the server frame');
   say(room, 'b', B, { k: 'd', x: 1, y: 0 });

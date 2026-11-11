@@ -190,15 +190,15 @@ class View {
    shake:(m,t)=>{this.fxShake=Math.max(this.fxShake||0,m);this.fxShakeT=Math.max(this.fxShakeT||0,t);},order:{glow:3,solid:0},maxQuads:2000,maxVerts:4200,maxParticles:900,maxDebris:72});
   return this.fx;}
  fxFrame(B){const F=this.fxSys();if(!F)return;const now=root.performance?root.performance.now():Date.now(),dt=Math.min(.05,Math.max(0,(now-(this.fxLast||now))/1000));this.fxLast=now;
-  const ox=this.origin.x,oz=this.origin.z;if(this.fxOx!==ox||this.fxOz!==oz){if(this.fxOx!==undefined)F.clear();this.fxOx=ox;this.fxOz=oz;}
+  const ox=this.origin.x,oz=this.origin.z;if(this.fxOx!==ox||this.fxOz!==oz){if(this.fxOx!==undefined)F.shift(this.fxOx-ox,this.fxOz-oz);this.fxOx=ox;this.fxOz=oz;}   // the origin rebased: live effects move with the world
   F.begin(dt);
   if(B){const U=3,p=this.renderP||this.p,ang=y=>Math.atan2(Math.cos(y),Math.sin(y)),sa=B.superAttack,seen=this.fxSeen||(this.fxSeen=new Map());
    if(sa&&sa.bar){const S=SUP[sa.weapon],k=sa.k||supKey(sa.weapon,B.playerStats.wtier);   // the charge-up while the timing bar sweeps
     F.superCharge(k,Math.min(1,sa.el/SUP_BAR_T),p.x-ox,p.y+.4,p.z-oz,ang(sa.yaw),sa.oc,(S.kind==='nova'?S.r:S.kind==='beam'?S.len:S.range)*U,S.kind==='nova'?U:U*.55);   // the chase camera sits right behind the muzzle: a smaller gather, so the view ahead stays clear
     if(sa.oc!==undefined&&this.fxOc===undefined)F.superLock(k,sa.oc,p.x-ox,p.y+.4,p.z-oz,U);this.fxOc=sa.oc;}else this.fxOc=undefined;
    for(const q of B.superShells||[])F.superShell(q.k||'siege0',q.oc||0,q.x-ox,q.y,q.z-oz,U);
-   for(const e of B.effects||[]){if(e.at===undefined)continue;const id=e.kind+'|'+e.at+'|'+Math.round(e.x)+'|'+Math.round(e.z);if(seen.has(id))continue;seen.set(id,now);   // each effect once (a reconciled battle re-creates the objects)
-    if(e.kind==='beam'&&e.k){const dx=e.ex-e.x,dz=e.ez-e.z;F.superBeam(e.k,e.oc||0,e.x-ox,e.y-1.65,e.z-oz,Math.atan2(dz,dx),Math.hypot(dx,dz),e.w||3.6,U);F.superImpact(e.k,e.oc||0,e.ex-ox,W.groundAt(e.ex,e.ez),e.ez-oz,0,U);}
+   for(const e of B.effects||[]){if(e.at===undefined)continue;const id=(Math.round(e.at*100)%1e6)*4194304+((Math.round(e.x)&2047)*2048+(Math.round(e.z)&2047))+(e.kind==='beam'?.1:e.kind==='nova'?.2:.3);if(seen.has(id))continue;seen.set(id,now);   // a number, not a string: nothing allocated per effect per frame   // each effect once (a reconciled battle re-creates the objects)
+    if(e.kind==='beam'&&e.k){const dx=e.ex-e.x,dz=e.ez-e.z;F.superBeam(e.k,e.oc||0,e.x-ox,e.y-1.65,e.z-oz,Math.atan2(dz,dx),Math.hypot(dx,dz),e.w||3.6,U,(e.ey??e.y)-e.y);/* the beam follows the shot's pitch */F.superImpact(e.k,e.oc||0,e.ex-ox,W.groundAt(e.ex,e.ez),e.ez-oz,0,U);}
     else if(e.kind==='nova'&&e.k)F.superNova(e.k,e.oc||0,e.x-ox,W.groundAt(e.x,e.z),e.z-oz,e.r,U);
     else if(e.kind==='destroy'&&e.k)F.superBlast(e.k,e.oc||0,e.x-ox,W.groundAt(e.x,e.z),e.z-oz,e.r||9.6,U);
     else if(e.kind==='destroy'){F.shatter('chitin',e.x-ox,e.y-2,e.z-oz,2.7,2.6,e.x-p.x,e.z-p.z);F.blast(e.x-ox,e.y-2,e.z-oz,2.6,1);}}   // a Parasite hull destroyed: the carapace splits and bursts

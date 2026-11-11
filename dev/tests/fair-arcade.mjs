@@ -85,7 +85,7 @@ const agg = (lg, k, modes = MODES) => { let w = 0, n = 0, d = 0, t = 0, kl = 0, 
 // with the SAME three rules on the leagues where it is a mirror step pooled together (up to 4 x 96 matches a kit), plus a guard
 // in every single league (never more than 8 points of wins or 0.04 of damage trade worse). Every other step is judged per
 // league exactly as before.
-const mirror = (lg, k) => { const p = pw(GEAR[k]); return W.eval(`aiLevel(${p},undefined,${lg},1).p`) >= p * 0.94; };
+const mirror = (lg, k) => { const p = pw(GEAR[k]); return [1, 3, '"solo"'].every(n => W.eval(`aiLevel(${p},undefined,${lg},${n}).p`) >= p * 0.94); };   // a mirror in every mode of the grid (1v1, 3v3, Last Standing)
 const pool = {};
 console.log('league       ' + KITS.map(k => k.padStart(14)).join('') + '   (win rate / damage taken per damage dealt, ' + MODES.map(x => x.join(' ')).join(', ') + ')');
 for (let lg = 0; lg < 7; lg++) {

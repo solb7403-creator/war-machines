@@ -469,6 +469,7 @@ const SUP={
  moon:{kind:'beam',dmg:385,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
 const SUP_CQ={pulse:350,siege:375,twin:350,moon:400};
 // a tank's super multiplier: its permanent gear to the power SUP_GEAR, a mystery-box damage buff on top as before
+const supCap=(dmg,e)=>e.boss?dmg:Math.min(dmg,SUP_HULL_CAP*(e.mhp||STAT.hp));   // rules.js SUP_HULL_CAP (before the outcome multiplier)
 const supMult=r=>Math.pow((r.wmult||TIER_MULT[Math.max(0,r.wtier||0)])*(r.dmgM||1)*(1+gsum(r,'dmg')),r.hum?SUP_GEAR:SUP_GEAR_AI)*(1+bsum(r,'dmg'));
 let shells=[],blasts=[],novas=[],shakeT=0,shakeM=0;   // shells are sim objects; blasts, novas and shake are visuals (phone only)
 function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse pierces)
@@ -492,7 +493,7 @@ function useSuper(r,aimAng){
  ev('u',r.id);   // your super whooshes, anyone else's beeps as it charges
  // the timing bar (5E-2b): the sim draws the bar, the marker sweeps for SUP_BAR_T; supTap() stops it. t: seconds until it fires
  // (no tap: the end of the sweep + SUP_REL); el: seconds since the press; oc: the outcome once the bar has been stopped
- const bar=r.nbar||supBar(random);r.nbar=null;
+ const bar=r.nbar||supBar(random);r.nbar=r.hum?supBar(random):null;   // a person's next bar is drawn now, so the snapshot can show it before the next press
  const ang=aimed?aimAng:supLead(r,e,Math.max(S.charge,bar.jc*SUP_BAR_T+SUP_REL));
  r.sup={t:SUP_BAR_T+SUP_REL,el:0,ang,w:r.wtype||'pulse',k:supKey(r.wtype,r.wtier),bar,fixed:aimed,tgt:aimed?null:e};   // tgt: the super stays on the target it was fired at (Session 5E-2a)
  // a tank the sim flies itself stops the bar on its own: an AI pilot with its league's timing spread (never perfect), a
@@ -578,9 +579,9 @@ function botDodge(u){
 }
 function fireSuper(r,S){
  const oc=r.sup.oc||0,om=SUP_OC[oc],K=r.sup.k,D=S.dmg;   // outcome of the timing bar: damage x0.65 / x1 / x1.25; K: which of the ten supers (looks only)
- const hurt=(e,dmg)=>{dmg*=om;if(!lvOK(r,e))return;const aE=armor(e),pre=dmg*supMult(r)*cmult(r,e)*(e.supTk||1);   // supTk: Reinforced plates take less from supers
- if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
-  if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}};
+ const hurt=(e,dmg)=>{if(!lvOK(r,e))return;const aE=armor(e),pre=supCap(dmg*supMult(r)*cmult(r,e)*(e.supTk||1),e)*om;   // supTk: Reinforced plates take less from supers; supCap: never more than half a full hull
+ if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);const h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
+  if(r.st){const d=h0-Math.max(0,e.hp);r.st.dmg+=d;if(d>r.st.best)r.st.best=d;}};   // the damage stat counts hull really removed (no overkill, nothing a shield soaked): the proof-of-play check compares it with the hull the enemies lost
  if(S.kind==='beam'){
   const ang=r.sup.ang;
   ev('M',r.x,r.y,r.x+Math.cos(ang)*S.len,r.y+Math.sin(ang)*S.len,r.team,S.w,K,oc,r.id);
@@ -601,7 +602,7 @@ function fireSuper(r,S){
   const speed=S.spd*(1+gsum(r,'vel'));
   shells.push({id:++bid,x:r.x+Math.cos(r.sup.ang)*1.2,y:r.y+Math.sin(r.sup.ang)*1.2,
    vx:Math.cos(r.sup.ang)*speed,vy:Math.sin(r.sup.ang)*speed,
-   dmg:D*om*projectileImpactMult(r),r:S.r,life:S.range/speed,owner:r,k:K,oc});
+   dmg:D*projectileImpactMult(r),r:S.r,life:S.range/speed,owner:r,k:K,oc});
   ev('S',4,0.25);ev('L',r.id,K,oc,r.sup.ang);   // L: the shell leaves the barrel (looks only)
  }else{
   ev('V',r.x,r.y,S.r,r.team,K,oc,r.id);ev('I',r.x,r.y,r.sup.w,r.team,K,oc,0);
@@ -620,15 +621,15 @@ function explode(s){
  const r=s.owner;
  ev('I',s.x,s.y,'siege',r?r.team:0,s.k||'siege0',s.oc||0,2);   // 2: a shell landing (the full blast)
  ev('B',s.x,s.y,s.r,0.5,'#ff9d45',1);
- hitCratesNear(s.x,s.y,s.r,s.dmg);
+ hitCratesNear(s.x,s.y,s.r,s.dmg*SUP_OC[s.oc||0]);
  ev('B',s.x,s.y,s.r*0.65,0.35,'#ffd24a',1);
  ev('S',9,0.45);
  for(const e of foesOf(r)){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
   if(d<s.r+bodyR(e)&&lvOK(r,e)){
    const fall=1-0.65*(d/(s.r+bodyR(e)));
-   const aE=armor(e),pre=s.dmg*fall*supMult(r)*cmult(r,e)*(e.supTk||1);if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
-   if(r.st){r.st.dmg+=dmg;if(dmg>r.st.best)r.st.best=dmg;}
+   const aE=armor(e),pre=supCap(s.dmg*fall*supMult(r)*cmult(r,e)*(e.supTk||1),e)*SUP_OC[s.oc||0];if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE),h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
+   if(r.st){const d=h0-Math.max(0,e.hp);r.st.dmg+=d;if(d>r.st.best)r.st.best=d;}
   }
  }
 }

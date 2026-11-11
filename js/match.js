@@ -269,7 +269,7 @@ function onSimEv(a){
   case 'k':{const r=U(a[1]),s=U(a[2]),why=a[3];if(!r)return;
    feedPush(s?(s===me?'You':s.name)+' destroyed '+(r===me?'you':r.name):(r===me?'You':r.name)+(why==='storm'?' got caught in the storm':' got hit by a meteor'),s?tcol(s.team):why==='storm'?'#c79bff':'#ff8a3d');
    sndF(r===me?'die':s===me?'kill':'boom');
-   blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});blasts.push({x:r.x,y:r.y,r:1.4,t:0.4,t0:0.4,c:'#ffd24a'});shake(10,0.5);
+   if(!d3){blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});blasts.push({x:r.x,y:r.y,r:1.4,t:0.4,t0:0.4,c:'#ffd24a'});}shake(10,0.5);   // in 3D the break-up and its explosion are FX3D's (two batches instead of four meshes)
    nums.push({x:r.x,y:r.y-R,t:1.1,z:1.4,txt:r===me?'YOU ARE DOWN':'DESTROYED',c:r===me?'#ff6b6b':'#ffd24a'});
    return;}
   case 'n':nums.push({x:a[1],y:a[2],t:0.9,z:a[5],txt:a[3],c:a[4]});return;
@@ -304,7 +304,7 @@ function onSimEv(a){
   case 'r':{const u=U(a[1]);if(u)pop(u.x,u.y-1,u===me?'BACK IN THE FIGHT':'RESPAWNED',tcol(u.team));return;}
   case 'C':if(U(a[1])===me)sndF('crystal');return;
   case 'X':{const x=a[2],y=a[3];if(live)pvpCrateGone(a[1]);
-   blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);sndF('crate');
+   if(!d3)blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);sndF('crate');
    pop(x,y-0.8,a[4]?'MYSTERY BOX':'CRATE DESTROYED',a[4]?'#ffd24a':'#c9d6e3');return;}
   case 'e':{const E=EVENTS[a[1]];if(E){banner={t:3.2,txt:E.txt,c:E.c};sndF('event');}return;}
   case 'w':if(live)warns.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4]});sndF('warn');return;

@@ -66,7 +66,7 @@ function __run(cfg){
  if(cfg.ghosts&&cfg.ghosts.length)placeGhosts(cfg.ghosts.map((L,i)=>({i,n:'G'+i,L})));
  me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(cfg.pilot==='human')me.hu={};__tapS(cfg);if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
  const roster=units.map(u=>({team:u.team,cls:u.cls,w:u.wtype,mhp:u.mhp,dps:Math.round(u.wdps*dmgMult(u)*rofMult(u)),gh:!!u.gh,boss:!!u.boss,ai:u!==me,aiP:u.aiL?AI_TIERS[u.aiL.i].p:null,wmult:u.wmult||null,aura:u.aura|0}));   // aiP: the authored AI power this pilot flies
- startMatch();
+ startMatch();if(typeof proofBegin==='function')proofBegin();
  const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0;
  const enemyDmgOnMe=[0],enemyDmgTotal=[0],allyDmg=[0],meDmg=[0],enemyHpLost=[0];let foeAlive=0;
  while(steps++<Math.ceil(30000/(60*DT))){
@@ -115,16 +115,20 @@ function __run(cfg){
   const key=k+':'+id;if(last[key]!==undefined)ab[k==='sup'?'aiSupGap':k==='dash'?'aiDashGap':'aiShieldGap']=Math.min(ab[k==='sup'?'aiSupGap':k==='dash'?'aiDashGap':'aiShieldGap'],t-last[key]);last[key]=t;
   if(k==='sup')ab.aiSupLowSp=Math.min(ab.aiSupLowSp,v);else if(k==='dash')ab.aiDashCd=Math.max(ab.aiDashCd,v);else ab.aiShieldCd=Math.max(ab.aiShieldCd,v);
  }
- return {out:o.won?'win':o.drawn?'draw':'loss',place:o.place,score:o.score,secs:+(steps*DT).toFixed(1),dmg:Math.round(meDmg[0]),taken:Math.round(me.st.taken),ab,
+ const pf=typeof proofData==='function'?proofData():undefined;   // the match record (only when js/proof.js is loaded)
+ return {pf,st:{dmg:Math.round(me.st.dmg||0),kills:me.st.kills||0,sup:me.st.sup||0,box:me.st.box||0,low:typeof me.st.low==='number'?Math.round(me.st.low*1000)/1000:1},won:!!o.won,drawn:!!o.drawn,spdM:me.spdM||1,
+  out:o.won?'win':o.drawn?'draw':'loss',place:o.place,score:o.score,secs:+(steps*DT).toFixed(1),dmg:Math.round(meDmg[0]),taken:Math.round(me.st.taken),ab,
   allyDmg:Math.round(allyDmg[0]),teamDmg:Math.round(enemyHpLost[0]),onMe:Math.round(enemyDmgOnMe[0]),enemyDmg:Math.round(enemyDmgTotal[0]),
   focus:focusSamples,focusN:samples,firstK,deaths:me.deaths||0,kills:me.st.kills,series:series?series.w.slice():null,roster,bossLeft:boss?Math.max(0,Math.round(boss.hp)):null};
 }
 `;
-export function makeWorld() {
-  const ctx = vm.createContext({ console, structuredClone });
+// proof: also load js/proof.js (the phone's match record), so a run returns the record the server's proof-of-play check reads
+export function makeWorld({ proof = false } = {}) {
+  const ctx = vm.createContext({ console, structuredClone, btoa });
   vm.runInContext(DRIVER, ctx, { filename: 'driver.js' });
   for (const f of ['js/rules.js', 'js/game.js', 'js/match.js']) vm.runInContext(src(f), ctx, { filename: f });
   vm.runInContext(humanPatch(), ctx, { filename: 'human.js' });   // the "human" pilot profile (s2/human.mjs): only the player's stand-in gets it (cfg.pilot 'human'), never an AI pilot
+  if (proof) { vm.runInContext('var document={getElementById(){return null;}},keys={};function addEventListener(){}', ctx); vm.runInContext(src('js/proof.js'), ctx, { filename: 'js/proof.js' }); }
   vm.runInContext(RUN, ctx, { filename: 'run.js' });
   return { run: cfg => vm.runInContext('__run(' + JSON.stringify(cfg) + ')', ctx), eval: s => vm.runInContext(s, ctx) };
 }

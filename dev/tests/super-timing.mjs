@@ -86,7 +86,9 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   ok(forgedEarly.oc === 0, 'a jackpot claimed at the wrong moment is refused: judged on the server clock (outcome ' + forgedEarly.oc + ')');
   const forgedLate = fire(M, 0.95, 0.6); ok(forgedLate.oc === 0, 'a jackpot claimed after the zone has passed is refused');
   const forgedHit = fire(M, 0.15, 0.5); ok(forgedHit.oc === 0, 'a hit claimed from outside the zone is refused');
-  const lagged = fire(M, 0.66, 0.6); ok(lagged.oc === 2, 'an honest tap that arrives ' + ((0.66 - 0.6) * 1000).toFixed(0) + ' ms late (inside the ' + K.SUP_TAP_TOL * 1000 + ' ms allowance) keeps its jackpot');
+  const lagged = fire(M, 0.63, 0.6);   // lands on the tick at 0.633 s ok(lagged.oc === 2, 'an honest tap that arrives 33 ms late (inside the ' + K.SUP_TAP_TOL * 1000 + ' ms allowance) keeps its jackpot');
+  ok(K.SUP_TAP_TOL <= 0.06 + 1e-9 && K.SUP_TAP_TOL >= 0.04, 'the latency allowance is small: jitter plus one server tick (' + K.SUP_TAP_TOL * 1000 + ' ms)');
+  const edge = fire(M, 0.6 - K.SUP_TAP_TOL - 0.05, 0.6); ok(edge.oc !== 2, 'a forged jackpot claim sent ' + ((K.SUP_TAP_TOL + 0.05) * 1000).toFixed(0) + ' ms early is refused (the known bound: only a claim within ' + K.SUP_TAP_TOL * 1000 + ' ms of the server clock is believed)');
   const tooLate = fire(M, 0.6 + K.SUP_TAP_TOL + 0.08, 0.6); ok(tooLate.oc !== 2, 'beyond the allowance the server clock decides (outcome ' + tooLate.oc + ')');
   for (const bad of [NaN, Infinity, -5, '0.6', null, {}]) { const r = fire(M, 0.1, bad); ok(r.oc === 0, 'a malformed claim (' + String(bad) + ') falls back to the server clock'); }
   // a second tap changes nothing; a tap with no super does nothing
@@ -125,6 +127,40 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   const ai = W.eval(`(()=>{const u=tankOf(${JSON.stringify(GEAR.epic)},1);u.buffs=[];u.hum=true;const h=supMult(u);u.hum=false;return supMult(u)/h;})()`);
   ok(ai < 1 && ai > 0.6, 'an AI pilot\'s super is never stronger than a person\'s with the same gear (x' + ai.toFixed(2) + ')'); }
 
+// ---- 4b. no one-shots: one super never removes more than SUP_HULL_CAP of a full hull (x1.25 on a jackpot), in any mode ----
+{ const W = makeWorld(), cap = W.eval('SUP_HULL_CAP'), jk = W.eval('SUP_OC[2]');
+  ok(cap > 0.3 && cap <= 0.5, 'a normal super takes at most half of a full hull (' + cap + ')');
+  // the worst cases the review found: equal gear in Bounty 1v1 (hulls halved), a jackpot, the hardest-hitting kits; and Legendary vs stock
+  const shot = (A, B, g, oc, buff) => W.eval(`(()=>{setMap('craters');matchG=${JSON.stringify(g)};MM={n:1,series:false,mp:50};const hs=hpScale(),mk=(L,t)=>Object.assign(tankOf(L,hs),{x:10,y:t?14:20,ang:0,flash:0,cd:9,lk:null,buffs:[],sp:0,sup:null,team:t,hum:true,ctl:'net',id:t,st:{dmg:0,taken:0,best:0,arm:0,shd:0,low:1,sup:0}});
+   const a=mk(${JSON.stringify(A)},0),b=mk(${JSON.stringify(B)},1);a.hp=a.mhp;b.hp=b.mhp;units=[a,b];me=null;state='play';walls.length=0;rocks.length=0;crates=[];bullets=[];shells=[];
+   if(${buff ? 1 : 0})a.buffs.push({k:'dmg',taken:0});
+   a.sup={t:0,el:1,ang:Math.atan2(b.y-a.y,b.x-a.x),w:a.wtype,k:supKey(a.wtype,a.wtier),bar:{z0:.4,jc:.6},oc:${oc}};fireSuper(a,SUP[a.wtype]);a.sup=null;
+   for(let i=0;i<60&&shells.length;i++)superTick(1/30);
+   return {share:(b.mhp-b.hp)/b.mhp,dmgStat:a.st.dmg,removed:b.mhp-Math.max(0,b.hp),mhp:b.mhp};})()`);
+  const kits = { stock: GEAR.stock, rare: GEAR.rare, epic: GEAR.epic, legend: GEAR.legend };
+  let worst = 0, worstTag = '';
+  for (const g of ['arena', 'bounty', 'royale']) for (const k in kits) for (const a of ['pulse', 'twin', 'siege', 'moon']) {
+    if ((a === 'moon') !== (k === 'legend')) continue;
+    const Lk = { ...kits[k], w: { ...kits[k].w, a } }, r = shot(Lk, Lk, g, 2, true);
+    if (r.share > worst) { worst = r.share; worstTag = g + ' ' + k + ' ' + a; }
+    ok(r.share <= cap * jk + 1e-6, g + ' 1v1 ' + k + ' ' + a + ' mirror: a jackpot with a damage box takes ' + (r.share * 100).toFixed(0) + '% of a full hull (limit ' + (cap * jk * 100).toFixed(1) + '%)');
+    ok(r.dmgStat <= r.removed + 1e-6, g + ' ' + k + ' ' + a + ': the damage stat counts hull removed, no overkill (' + Math.round(r.dmgStat) + ' <= ' + Math.round(r.removed) + ')');
+  }
+  const mis = shot(GEAR.legend, GEAR.stock, 'bounty', 2, true);
+  ok(mis.share <= cap * jk + 1e-6 && mis.share > 0.4, 'Legendary jackpot on a stock tank in Bounty 1v1: big, never a one-shot from full health (' + (mis.share * 100).toFixed(0) + '%)');
+  console.log('largest single super vs an equal kit: ' + (worst * 100).toFixed(0) + '% of a full hull (' + worstTag + ')'); }
+
+// ---- 4c. proof of play: honest matches with big supers pass the server's record check (real records, real checkProof) ----
+{ const { buildSim } = await import('../../worker/build-sim.mjs'); buildSim();
+  const { checkProof } = await import('../../worker/src/proof.js'), { minSecs } = await import('../../worker/src/eco.js');
+  const W = makeWorld({ proof: true }); let n = 0, bad = [];
+  for (const [k, lg] of [['epic', 0], ['epic', 4], ['legend', 0], ['legend', 3], ['legend', 6]]) for (const [g, m] of [['arena', '1v1'], ['bounty', '1v1'], ['arena', '3v3']]) for (const seed of [71, 419, 2027]) {
+    const map = ['classic', 'craters', 'canyon'][n % 3], r = W.run({ g, m, map, seed, mp: 50, L: GEAR[k], pilot: 'human', lg, dt: 1 / 30 }); n++;
+    const c = { g, m, map, secs: r.secs + 5, won: r.won, drawn: r.drawn, place: r.place, series: g === 'arena' && m === '1v1', min: minSecs(g, m, r.won, r.drawn, r.place), spdM: r.spdM, st: r.st };
+    const out = checkProof(r.pf, c); if (!out.ok) bad.push(k + ' lg' + lg + ' ' + g + ' ' + m + ' seed ' + seed + ': ' + out.why);
+  }
+  ok(n === 45 && !bad.length, 'the server accepts the record of every honest Epic / Legendary match (' + (n - bad.length) + ' of ' + n + (bad.length ? '; refused: ' + bad.slice(0, 4).join(' | ') : '') + ')'); }
+
 // ---- 5. about 3 supers a match, total super damage within 10% of main ----
 { const base = JSON.parse(fs.readFileSync(path.join(repo, 'dev/tests/fixtures/super-baseline.json'), 'utf8'));
   const R = await superReport({ seeds: +(process.env.SEEDS || 2), pilot: 'human' });
@@ -132,6 +168,7 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   for (const k in R.kits) console.log(' ' + k.padEnd(7), 'supers', base.kits[k].supers, '->', R.kits[k].supers, ' super damage', base.kits[k].superDmg, '->', R.kits[k].superDmg, '(' + ((R.kits[k].superDmg / base.kits[k].superDmg - 1) * 100).toFixed(0) + '%)');
   ok(R.all.supers >= 2.6 && R.all.supers <= 3.5, 'a pilot fires about 3 supers a match (' + R.all.supers + '; main: ' + base.all.supers + ')');
   ok(Math.abs(R.all.superDmg / base.all.superDmg - 1) <= 0.10, 'total super damage a match within 10% of main (' + base.all.superDmg + ' -> ' + R.all.superDmg + ')');
+  ok(Math.abs(R.all.superEff / base.all.superEff - 1) <= 0.12, 'hull really removed by supers a match (no overkill) stays near main (' + base.all.superEff + ' -> ' + R.all.superEff + ')');
   for (const k in R.kits) { ok(R.kits[k].supers >= 2.2 && R.kits[k].supers <= 4.3, k + ': about 3 supers a match whatever the gear (' + R.kits[k].supers + '; main ' + base.kits[k].supers + ')');
     ok(Math.abs(R.kits[k].superDmg / base.kits[k].superDmg - 1) <= 0.3, k + ': its super damage a match stays near main (' + base.kits[k].superDmg + ' -> ' + R.kits[k].superDmg + ')'); }
   const n = R.all.oc[0] + R.all.oc[1] + R.all.oc[2], j = R.all.oc[2] / n, m = R.all.oc[0] / n;

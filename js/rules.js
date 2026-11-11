@@ -40,11 +40,18 @@ const SUP_GEAR=2.2,SUP_GEAR_AI=1.8;
 // most 25% more than an average player's and a careless one never loses more than 35%.
 // SUP_TAP_TOL: live matches. The server owns the bar (it draws the zone and the jackpot) and its own clock judges the tap; the
 // phone's reported stop time is only believed inside this latency allowance, so a modified client cannot claim a jackpot it
-// did not time (it would have to send the tap at the right moment anyway).
+// did not time (it would have to send the tap within the allowance of the right moment anyway).
+// The press and the tap reach the server the same way, so steady lag cancels out: the allowance only has to cover jitter
+// and one 33 ms server tick (0.06 s). A cheat that times its taps perfectly cannot be told from a perfect player; the
+// jackpot bonus is capped at +25% for that reason.
+// SUP_HULL_CAP: one super never takes more than this share of the target's FULL hull on a normal stop (x0.65 on a miss, x1.25
+// = 62.5% on a jackpot), before the target's armour and shield. With about 3 big supers a match, an uncapped hit could
+// delete an equal tank outright where a mode halves the hulls (Bounty 1v1) or against lighter gear: the moment must be
+// big, never a one-shot from full health. The megatank is too big for the cap to matter.
 // LG_AI_TAP: an AI pilot stops the bar with a timing spread set by its league (seconds of error, as a fraction of the sweep):
 // every league taps worse than an average person and none is ever perfect.
-const SUP_BAR_T=1.0,SUP_ZONE_W=0.36,SUP_JACK_W=0.08,SUP_REL=0.2,SUP_TAP_TOL=0.12;
-const SUP_OC=[0.65,1,1.25],SUP_OC_TXT=['MISS','HIT','JACKPOT'];
+const SUP_BAR_T=1.0,SUP_ZONE_W=0.36,SUP_JACK_W=0.08,SUP_REL=0.2,SUP_TAP_TOL=0.06;
+const SUP_OC=[0.65,1,1.25],SUP_OC_TXT=['MISS','HIT','JACKPOT'],SUP_HULL_CAP=0.5;
 const SUP_TAP_HUMAN=0.10,LG_AI_TAP=[0.24,0.21,0.18,0.16,0.14,0.13,0.12];
 function supBar(rnd){const z0=0.36+0.2*rnd(),m=0.03+SUP_JACK_W/2;return {z0:Math.round(z0*1000)/1000,jc:Math.round((z0+m+(SUP_ZONE_W-2*m)*rnd())*1000)/1000};}   // the zone starts 36-56% along; the jackpot sits anywhere inside it
 function supJudge(bar,el){const p=el/SUP_BAR_T;return Math.abs(p-bar.jc)<=SUP_JACK_W/2+1e-9?2:p>=bar.z0-1e-9&&p<=bar.z0+SUP_ZONE_W+1e-9?1:0;}   // 0 miss, 1 normal, 2 jackpot
