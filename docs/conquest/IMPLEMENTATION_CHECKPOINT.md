@@ -1792,3 +1792,45 @@ of the few candidates. Decision: the ghost is a MeshBasicMaterial with the laser
 program — no new shader program in Conquest's 16 budget (browser test asserts it). Instanced sets (walls, turrets, homes) are
 low and are not faded. `dev/tests/conquest-occluder.py` (in `conquest-check.yml`, both engines). The town build view
 (plotview) is top-down with no tank in it, so it needs no fade.
+
+### 6. Meshy everywhere — VERIFIED, three gaps fixed (`docs/art/meshy-proof/v2/`, `verify.json`, `town.json`)
+- Battle + Garage (`proof/v2.mjs`, website build, phone 390x844 at 3x and desktop 1920, HIGH, AA on, after load): ten loadouts
+  that cover all 9 chassis and all 10 weapons. Every tank on screen (yours and the AI's) carries its Meshy chassis and weapon;
+  the Garage shows both FULL models; nothing procedural; 0 page errors on both profiles.
+- World + town (`proof/v2_town.py`, shipped client + real Worker reducer, same two profiles): the Conquest world tank is Meshy;
+  all 12 town items are Meshy across the turret gallery and a fully built CC10 town; 0 page errors; Conquest programs 12-15.
+- Gaps found and fixed:
+  1. Tesla tower drew the kit model: `Meshy3D.townTurret` needed a turning head (`ring` part) and the tower has none. Now a
+     fixed instanced piece with an empty head set (`js/meshy3d.js`).
+  2. Big towns in the drive view and zoomed out drew kit buildings (5C distance LOD). Decision: keep the LOD idea but use the
+     Meshy model's own reduced index set (about 45% of the triangles, same HIGH material, no new program) instead of the kit
+     (`townBuilding(..., lod)`, `plotview.js sync`; LOD flips trigger a rebuild).
+  3. Arcade offline-pilot ghost tanks always drew the procedural foundation model. Now their Meshy model as a hologram
+     (transparent, cool emissive `uGhost`; one extra transparent program in Arcade battles only, Arcade has no 16 budget).
+  4. Also found: the town drive view (your tank driving through your town) needed the see-through fade too; it now shares the
+     world view's fade core (`driveFade` -> `ConquestView.fadeCore`).
+- Kept procedural on purpose (decisions): Conquest enemy hulls (the hostile faction's styled crowd buckets, merged per
+  silhouette for draw calls; turning them into per-enemy Meshy meshes would roughly double world draw calls in a fight and
+  change the faction art direction — a separate, owner-reviewed task); the miniature town diorama in the world courtyard (a
+  scaled tabletop model with vertical exaggeration; Meshy meshes would distort); LOW-graphics town stand-ins (unchanged 5E-1
+  decision). Building types with no Meshy model (foundry, biodome, hangar, helium, radar, uplink, trophy, six turret types)
+  keep their kit models by definition.
+
+### Sharpness: measured before (main `f91d564`) / after (this branch) — `dev/assets/meshy/proof/sharpness.mjs`, data in `docs/art/meshy-proof/v2/sharpness-*.json`
+Headless Chromium + SwiftShader with a GPU renderer string (so the page takes its real-device path), index.html, local economy,
+manual HIGH unless noted. Frame times are CPU rasterizer numbers: they show the relative pixel cost on the same machine, never a
+phone frame rate. Framebuffer MB = colour + depth (+ 4x multisample buffers when anti-aliased), an estimate of GPU memory.
+
+| Profile | Scene | Pixel ratio | Anti-aliasing | Framebuffer MB | Frame ms (median, SwiftShader) | JS heap MB |
+|---|---|---|---|---|---|---|
+| Desktop 1920x1080 (1x) | Arcade battle | 1 -> 1 | on -> on | 79 -> 79 | 1.0 -> 0.9 | 26 -> 26 |
+| Desktop 1920x1080 (1x) | Conquest world | 1 -> 1 | **off -> on** | 16 -> 79 | 995 -> 1435 | 93 -> 93 |
+| Desktop 1920x1080 retina (2x) | Arcade battle | **1.5 -> 2** | on -> on | 178 -> 316 | 1.1 -> 1.5 | 26 -> 26 |
+| Mid phone 390x844 (3x, 4x CPU throttle) | Arcade battle | **1.5 -> 2.5** | **off -> on** | 6 -> 79 | 3.4 -> 5.5 | 28 -> 28 |
+| Mid phone 390x844 (3x, 4x CPU throttle) | Conquest world | **1.5 -> 2.5** | **off -> on** | 6 -> 79 | 415 -> 1214 | 88 -> 82 |
+| Mid phone, AUTO graphics | Arcade battle | quality **LOW -> HIGH** at start, ratio 1 -> 2.5 held for 20 s (frames on budget) | | | | |
+
+Reading: before, a phone in auto mode started on LOW (1x, no AA) and Conquest never anti-aliased; now the phone draws 2.8x the
+pixels with 4x AA, about 80 MB of framebuffer at 390x844@2.5x. That cost is what the governor exists for: in auto mode it steps
+the ratio down 0.25 at a time while frames are over budget (drop to 1x leaves ~13 MB) and climbs back when they recover.
+Program count and draw calls are unchanged. Not measured: a physical phone GPU (nobody has one in this environment).

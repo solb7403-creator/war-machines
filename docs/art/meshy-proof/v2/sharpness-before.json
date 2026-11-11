@@ -1,0 +1,181 @@
+{
+ "label": "before",
+ "root": "/home/user/wm-main",
+ "environment": "Chromium + SwiftShader (software GL) with a GPU renderer string; index.html, local economy",
+ "profiles": {
+  "desktop-1920": {
+   "battleHigh": {
+    "pixelRatio": 1,
+    "antialias": true,
+    "samples": 4,
+    "drawingBuffer": [
+     1920,
+     1080
+    ],
+    "framebufferMB": 79.1,
+    "frameMsMedian": 1,
+    "frameMsP90": 1.5,
+    "calls": 28,
+    "textures": 27,
+    "jsHeapMB": 26.3,
+    "errors": []
+   },
+   "battleAuto": {
+    "startQuality": "high",
+    "ratioEvery2s": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "qualityEvery2s": [
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high"
+    ],
+    "errors": []
+   },
+   "conquestHigh": {
+    "pixelRatio": 1,
+    "antialias": false,
+    "samples": 1,
+    "drawingBuffer": [
+     1920,
+     1080
+    ],
+    "framebufferMB": 15.8,
+    "frameMsMedian": 995.2,
+    "frameMsP95": 2458.7,
+    "drawCalls": 155,
+    "programs": 14,
+    "textures": 17,
+    "heapMB": 92.9,
+    "autoLow": false,
+    "errors": []
+   }
+  },
+  "desktop-1920-retina": {
+   "battleHigh": {
+    "pixelRatio": 1.5,
+    "antialias": true,
+    "samples": 4,
+    "drawingBuffer": [
+     2880,
+     1620
+    ],
+    "framebufferMB": 178,
+    "frameMsMedian": 1.1,
+    "frameMsP90": 1.3,
+    "calls": 28,
+    "textures": 22,
+    "jsHeapMB": 26.3,
+    "errors": []
+   },
+   "battleAuto": {
+    "startQuality": "high",
+    "ratioEvery2s": [
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5,
+     1.5
+    ],
+    "qualityEvery2s": [
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high",
+     "high"
+    ],
+    "errors": []
+   }
+  },
+  "mid-phone-390": {
+   "battleHigh": {
+    "pixelRatio": 1.5,
+    "antialias": false,
+    "samples": 1,
+    "drawingBuffer": [
+     585,
+     1266
+    ],
+    "framebufferMB": 5.7,
+    "frameMsMedian": 3.4,
+    "frameMsP90": 11.1,
+    "calls": 28,
+    "textures": 27,
+    "jsHeapMB": 28,
+    "errors": []
+   },
+   "battleAuto": {
+    "startQuality": "low",
+    "ratioEvery2s": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "qualityEvery2s": [
+     "low",
+     "low",
+     "low",
+     "low",
+     "low",
+     "low",
+     "low",
+     "low",
+     "low",
+     "low"
+    ],
+    "errors": []
+   },
+   "conquestHigh": {
+    "pixelRatio": 1.5,
+    "antialias": false,
+    "samples": 1,
+    "drawingBuffer": [
+     585,
+     1266
+    ],
+    "framebufferMB": 5.7,
+    "frameMsMedian": 414.8,
+    "frameMsP95": 1117,
+    "drawCalls": 68,
+    "programs": 14,
+    "textures": 17,
+    "heapMB": 87.5,
+    "autoLow": false,
+    "errors": []
+   }
+  }
+ }
+}
