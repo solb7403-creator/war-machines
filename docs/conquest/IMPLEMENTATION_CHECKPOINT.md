@@ -1548,15 +1548,37 @@ damage, AI, economy, prices, payments (still DISABLED), save schema or ownership
   back on a shot), clock-driven spin / blink / pulse, card sprites redrawn when the model lands; kit models remain on LOW, in
   the diorama and until the file is in.
 
-### In flight when this was written (resume here)
-1. Four helper agents were authoring per-item cuts + colour regions in scratch copies of the config (scout line + Sentinel;
-   Paladin + titan line incl. Colossus pods; nine weapons + Moonbeam crystals; twelve town items). Their output must be merged
-   into `dev/assets/meshy/config.json` (items only). If their scratch folders are gone, redo with `look.py` + README (Vanguard,
-   Pulse Cannon, Helix are worked examples already in the config).
-2. Run the full batch: `python dev/assets/meshy/build.py --src <originals>` (originals: release `meshy-models`, asset
-   `GLB.downloaded.3D.images.zip`), copy nothing by hand: output goes to `js/assets/meshy-v1/`. Commit the GLBs + manifest.
-3. `node dev/tests/meshy.mjs` (asset + contract test, written against the final 31-item manifest), add it to
-   `.github/workflows/website-check.yml`, run the existing graphics / Conquest node tests and the browser suites.
-4. Proof into `docs/art/meshy-proof/` (before/after sheets per chassis x paint incl. Lunar, weapons, Moonbeam, town; motion
-   frame sequences; load size/time; frame time), manifest table, the four retexture candidates with prompts, final checkpoint.
-5. Open the PR for CI only. No merge, no deploy.
+### State at the latest push (resume here)
+- **Config complete for all 31 items** (`dev/assets/meshy/config.json`): 9 chassis (tracks, wheels, antennas, glow parts, hazard
+  stripes, lamps; Colossus pods flex and carry their running gear), 9 weapons + Moonbeam (ring, barrels, charge-pulse parts,
+  Moonbeam red core + two blue charge crystals as glow parts over the kept Meshy texture), 12 town items (6 buildings, Tesla
+  tower, 5 turrets with fixed base + tracking head). Authored by four helper agents with the pipeline tools, merged by the lead.
+- **Town mapping (all 12 placed, none left over):** COMMAND CENTER -> `cc`, REACTOR -> `reactor`, REFINERY -> `refinery`, SCIENCE
+  LAB -> `lab`, SHIELD GENERATOR -> `shield`, STORAGE DEPOT -> `storage`, TESLA ARC COIL TOWER -> `tesla`, CANNON -> `cannon`,
+  TWIN-BARREL MG -> `mg`, ROCKET POD -> `rocket`, LASER -> `laser`, RAILGUN -> `railgun`. The other six turret types and the
+  other buildings keep their kit models.
+- **Known deviations / defects to fix or report to the owner:**
+  - Storm Repeater: the three clamps span both barrels in the source, so the gun kicks as one unit (muzzle flash still
+    alternates). Arc Pulse / Storm / Rail Breaker carry their barrel as a `parts` entry (glow on the barrel pulses with charge).
+  - Sentinel: thin mud-flap slivers turn with the wheels on the -Z side in motion (clean at rest). Titan: road wheels overlap
+    in the source, three per side lose a lens. Colossus: the bogie link arm over wheels 3-4 of each pod turns with the wheels;
+    the source has no reactor geometry, so the amber "reactor" is glow patches under the hull. Phantom: wheels turn 4 mm
+    off-centre (fender sits where the top belt run would be).
+  - Bulwark LIGHT: the front ram decimates coarsely; LIGHT budget raised to 24k for it.
+  - Weapon size: muzzle tip kept at today's tip distance, so Meshy turret bodies are wider/taller than today's housings
+    (Pulse Cannon body 1.03 wide vs 0.92). Chassis are shifted so the turret ring is on the model origin.
+  - Town turrets: barrels overhang the 4 m site (cannon tip 3.0 m from the pivot, railgun 3.4 m); cannon / rocket / laser use a
+    `parts` ring with `ringTop: -1` (the build prints a harmless "part ring selected no faces").
+  - Conquest enemy hulls and the town diorama / LOW town stay on the procedural kit models.
+- **Next steps, in order:**
+  1. If `js/assets/meshy-v1/` does not hold 62 GLBs + `manifest.json`, run the full batch
+     (`python dev/assets/meshy/build.py --src <originals>`; originals = release `meshy-models`, `GLB.downloaded.3D.images.zip`;
+     about 35 minutes on 4 cores) and commit the output.
+  2. `node dev/tests/meshy.mjs` (asset + contract test, already in `website-check.yml`), the graphics / Conquest node tests,
+     then the browser suites (programs <= 16 and the CC10 Home Sector draw budget are the ones Meshy town models can break).
+  3. Real-app proof: `node worker/build-web.mjs && node dev/assets/meshy/proof/app.mjs docs/art/meshy-proof/app` (Garage + battle
+     before/after on HIGH and LOW for ten loadouts, every chassis x paint + Lunar sheet, load sizes/times, frame times), motion
+     frame sequences with `proof/view.mjs`, a town capture (no real town screenshot has been taken yet: the town hooks are
+     written but only syntax-checked and covered by the node town tests).
+  4. Manifest table (source file -> game item, triangles and size before/after), the four retexture candidates with prompts,
+     final checkpoint, PR for CI only. No merge, no deploy.

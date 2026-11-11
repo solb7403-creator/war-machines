@@ -12,6 +12,9 @@ from . import geom
 # ---------------------------------------------------------------- selectors (evaluated on face centroids) -------------
 def select(sel, C, FN=None):
     """Boolean mask of faces matched by a selector dict."""
+    if sel.get('mirrorZ'):   # on any selector, combined ones included
+        s2 = {k: v for k, v in sel.items() if k != 'mirrorZ'}
+        return select(s2, C, FN) | select(s2, C * [1, 1, -1], None if FN is None else FN * [1, 1, -1])
     if 'and' in sel:
         m = np.ones(len(C), bool)
         for s in sel['and']:
@@ -41,10 +44,6 @@ def select(sel, C, FN=None):
         m = np.ones(len(C), bool)
     else:
         raise ValueError(f'unknown selector {sel}')
-    if sel.get('mirrorZ'):
-        C2 = C * [1, 1, -1]
-        s2 = {k: v for k, v in sel.items() if k != 'mirrorZ'}
-        m |= select(s2, C2, FN)
     return m
 
 

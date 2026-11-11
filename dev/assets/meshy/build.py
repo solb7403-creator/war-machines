@@ -159,7 +159,8 @@ def track_units(H, tcfg):
     nx = int((H.V[:, 0].max() - x0) / res) + 2; nz = int((H.V[:, 2].max() - z0) / res) + 2
     occ = np.zeros((nx, nz), bool)
     occ[((C[ground, 0] - x0) / res).astype(int), ((C[ground, 2] - z0) / res).astype(int)] = True
-    occ = ndimage.binary_closing(occ, iterations=int(tcfg.get('joinGap', 0.12) / res), border_value=0)
+    it = int(tcfg.get('joinGap', 0.12) / res)
+    occ = ndimage.binary_closing(np.pad(occ, it + 1), iterations=it)[it + 1:-it - 1, it + 1:-it - 1]   # padded: a unit on the grid border is not eroded
     lab, n = ndimage.label(occ)
     units = []
     for k in range(1, n + 1):

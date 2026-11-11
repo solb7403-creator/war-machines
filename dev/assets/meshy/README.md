@@ -53,6 +53,8 @@ textures; the cuts, masks and motion stay as configured. Nothing else changes.
 the band around the convex hull of the wheel circles, and rebuilds the belt from one clean link repeated around the path
 (the original has no belt surface where it is fused to wheels and fenders). Overrides, all optional:
 `{"top": 0.5, "rMin": 0.05, "rMax": 0.3, "tIn": 0.03, "tOut": 0.08, "zPad": 0.02, "tile": true, "periodicity": 0.45,
+"pitchMin": 0.03, "pitchMax": 0.3 (link pitch search range), "core": 0.5 (fraction of tOut beyond which a surface facing the
+belt, e.g. a fender underside, is not belt), "wheelShrink": 0,
 "units": [{"x": [x0, x1], "z": [z0, z1], "wheels": [[x, y, r], ...]}]}`. Give `units` (with or without `wheels`) only when
 the automatic result is wrong. Wheels become parts `wheel<unit>_<n>`, belts `belt<unit>`.
 `"parents": {"0": "pod0", "1": "pod1"}` makes a unit's wheels and belt ride on a part you define in `parts` (a track pod

@@ -17,6 +17,13 @@ def simplify(V, F, target_tris, max_error=0.02, lock_border=False):
     if len(F2) > target_tris * 1.25:   # collapses blocked by topology: allow pruning of tiny disconnected bits
         n = mo.simplify(out, idx, np.ascontiguousarray(V, np.float32), target_index_count=int(target_tris) * 3, target_error=float(max_error) * 2, options=opts | mo.SIMPLIFY_PRUNE)
         F2 = out[:n].reshape(-1, 3).astype(np.int64)
+    if len(F2) > target_tris * 1.15:   # still blocked (very dense, fused sources): quadric collapse that may move vertices
+        import pyfqmr
+        q = pyfqmr.Simplify(); q.setMesh(np.asarray(V, np.float64), np.asarray(F, np.int32))
+        q.simplify_mesh(target_count=int(target_tris), aggressiveness=5, preserve_border=False, verbose=False)
+        v2, f2, _ = q.getMesh()
+        if len(f2) < len(F2):
+            return geom.compact(np.asarray(v2, np.float64), np.asarray(f2, np.int64))[:2]
     V2, F2, _ = geom.compact(V, F2)
     return V2, F2
 

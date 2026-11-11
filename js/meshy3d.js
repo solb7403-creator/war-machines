@@ -201,7 +201,7 @@ const Meshy3D=(()=>{
     // paint: the base map is the factory look; armour texels are re-tinted by (pilot paint / factory paint), chips, trim and tracks keep their own colour
     f=f.replace('#include <map_fragment>','#include <map_fragment>\nvec3 meshyK=texture2D(uMask,vMapUv).rgb;vec3 meshyBase=diffuseColor.rgb;diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*mix(uPaintA,uPaintB,meshyK.b),meshyK.r);');
     if(high)f=f.replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor=mix(metalnessFactor,max(metalnessFactor,uPaintP.y),meshyK.r);roughnessFactor=mix(roughnessFactor,clamp(roughnessFactor*uPaintP.z,.08,1.),meshyK.r);float meshyT=uTrim.a*(1.-meshyK.r)*(1.-meshyK.g)*smoothstep(.86,.97,metalnessFactor);diffuseColor.rgb=mix(diffuseColor.rgb,uTrim.rgb*(.35+1.3*dot(meshyBase,vec3(.3333))),meshyT);');
-    f=f.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=mix(meshyBase,uGlowTint.rgb*(.4+.9*dot(meshyBase,vec3(.3333))),uGlowTint.a)*meshyK.g*vMeshyGlow*uGlowGain+vec3(uFlash);');
+    f=f.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=mix(meshyBase,uGlowTint.rgb*(.4+.9*dot(meshyBase,vec3(.3333))),uGlowTint.a)*meshyK.g*min(vMeshyGlow,1.7)*uGlowGain+vec3(uFlash);');
    }
    shader.fragmentShader=f;
   };
@@ -212,7 +212,7 @@ const Meshy3D=(()=>{
  function paintUniforms(asset,P,lunar){
   const L=asset.info.look||{},stock=!P||!P.hull||P.hull==='#2c3a49',fa=lin(L.paintA||'#808890'),fb=lin(L.paintB||L.paintA||'#808890');
   const U={uParts:{value:asset.partTex||null},uCh:{value:new Float32Array(NCH)},uMask:{value:asset.maps.mask||null},uPaintA:{value:new THREE.Vector3(1,1,1)},uPaintB:{value:new THREE.Vector3(1,1,1)},
-   uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.5},uFlash:{value:0}};
+   uPaintP:{value:new THREE.Vector4(1,0,1,0)},uTrim:{value:new THREE.Vector4(0,0,0,0)},uGlowTint:{value:new THREE.Vector4(0,0,0,0)},uGlowGain:{value:1.25},uFlash:{value:0}};
   U.uCh.value[CH.one]=1;U.uCh.value[CH.pulse]=.75;
   if(asset.info.kind==='chassis'){
    // paints: the same palette the procedural models use (js/models3d.js palette), as a ratio against the factory colours
