@@ -10,6 +10,7 @@ assert(begin>=0&&end>begin,'production joystick setup exists');
 assert(viewSource.includes('reset(){this.releaseStick?.();'),'View.reset releases pointer state along with movement');
 class Target {
  constructor(){this.listeners=new Map();this.captured=new Set();this.style={transform:''};}
+ setAttribute(){}
  addEventListener(type,fn){const xs=this.listeners.get(type)||[];xs.push(fn);this.listeners.set(type,xs);}
  emit(type,e={}){for(const fn of this.listeners.get(type)||[])fn(e);}
  setPointerCapture(id){this.captured.add(id);}
