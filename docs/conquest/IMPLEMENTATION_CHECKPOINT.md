@@ -2158,7 +2158,7 @@ the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build misbehaves,
   revert `521bf2b` on main (the Pages and Worker deploys follow the revert) and note it here.
 
-## Checkpoint 34 — Session 5E-2c: Arcade 3D maps (branch `claude/arcade-3d-maps-rebuild-q1w6vj`, from main `7f358ca`) — IN PROGRESS
+## Checkpoint 34 — Session 5E-2c: Arcade 3D maps (branch `claude/arcade-3d-maps-rebuild-q1w6vj`, from main `7f358ca`) — RELEASED Nov 12, 2026 (PR #119, merge `434e09a`, build `20261112061837`)
 
 Brief: owner's Session 5E-2c prompt (rebuild all six Arcade maps to the Meshy references; one shared environment layer; critic
 loop; phones and desktops equal; release pre-approved once CI is green and two reviewers pass). Owner not monitoring: every
@@ -2447,3 +2447,27 @@ time between frames (the game draws twice per frame in this harness, the same on
 - Longshot / Canyon rock to reference level needs sculpted meshes (Meshy) rather than code-built strata.
 - Wiki map pictures (`python3 dev/gallery3d.py`), and the three stale browser tests that already fail on main.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
+
+### Release record (Nov 12, 2026)
+- **RELEASED: PR #119 squash-merged as `434e09a` (head `e427c22`), build `20261112061837`, `PVP_V` 5 (unchanged).** Payments
+  stay disabled. No price, economy, airdrop, save, ownership, stat or supers-tuning change.
+- CI on `e427c22`: 10/10 green: conquest and transmission chromium + webkit (run [43176455930](https://github.com/solb7403-creator/war-machines/actions/runs/43176455930)), balance (run
+  [43176455812](https://github.com/solb7403-creator/war-machines/actions/runs/43176455812)), website incl. `arena-maps.mjs` and signup x3 (run [43176456048](https://github.com/solb7403-creator/war-machines/actions/runs/43176456048)), verify (run [43176455829](https://github.com/solb7403-creator/war-machines/actions/runs/43176455829)),
+  asset-integrity (run [43176455975](https://github.com/solb7403-creator/war-machines/actions/runs/43176455975)). No review threads, mergeable `clean`.
+- One CI failure before that head (`540d6dc`, run [43167575668](https://github.com/solb7403-creator/war-machines/actions/runs/43167575668)): `conquest-super-fx.py`, the Conquest super-bar race
+  described under "State at each push". Fixed in `e427c22` in the HUD, reproduced before and after; no test skipped or relaxed.
+  The fix came after the two reviewers' PASS (`cf0862b`): it is 4 lines in `combatHUD`, covered by the test at normal speed and
+  at a forced 3 fps, and by the full conquest job.
+- Worker deploy run [43179555394](https://github.com/solb7403-creator/war-machines/actions/runs/43179555394): success (server tests and the Workers-runtime live-match smoke passed before the deploy);
+  notices `pvp health: {"ok":true,"v":5,"open":0,"waiting":0,"queues":[]}` and
+  `live version: {"v":"20261112061837"} (repo: {"v":"20261112061837"})`, live = repo.
+- Pages run [43179553557](https://github.com/solb7403-creator/war-machines/actions/runs/43179553557): success on the first attempt (deployment of `434e09a`, whose `version.json` is `20261112061837`).
+  The live hosts are outside this container's network allowlist, so the Worker figures come from the deploy run's own checks
+  and the Pages figure from the deployment record.
+- Post-merge runs on main `434e09a`: Validate Laboratory UI (run [43179555343](https://github.com/solb7403-creator/war-machines/actions/runs/43179555343)): success. Equipment Balance (run
+  [43179555372](https://github.com/solb7403-creator/war-machines/actions/runs/43179555372), the same suite that was green on the PR head): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
+- Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment), so
+  main was merged into it instead; this record and the ROADMAP row are the only changes it carries on top of main.
+- Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build
+  misbehaves, `window.LUNAR_ARENA3D=false` brings the earlier maps back for one device; for everyone, revert `434e09a` on main
+  (the Pages and Worker deploys follow the revert) and note it here.
