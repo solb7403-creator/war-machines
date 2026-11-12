@@ -2157,3 +2157,53 @@ the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5
   was merged into it instead; this record is the only change it carries on top of main.
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build misbehaves,
   revert `521bf2b` on main (the Pages and Worker deploys follow the revert) and note it here.
+
+## Checkpoint 34 — Session 5E-2c: Arcade 3D maps (branch `claude/arcade-3d-maps-rebuild-q1w6vj`, from main `7f358ca`) — IN PROGRESS
+
+Brief: owner's Session 5E-2c prompt (rebuild all six Arcade maps to the Meshy references; one shared environment layer; critic
+loop; phones and desktops equal; release pre-approved once CI is green and two reviewers pass). Owner not monitoring: every
+decision below was made by the lead and is recorded with its reason. Payments stay DISABLED. Not touched: prices, economy,
+airdrop points, save schema, ownership, chassis / weapon stats, supers tuning, `MAPS` (layout, hitboxes, spawns), the Worker,
+`PVP_V`.
+
+### Research that drove the choices (step 1; a research agent, web search, sources named; items it could not open are marked)
+1. **Read order is UI > effects > characters > environment** (Riot's Summoner's Rift rework: value ranges clamped, shapes
+   simplified). => The ground stays in a narrow, low-saturation mid band; the brightest, darkest and most saturated pixels are
+   kept for tanks, shots and pick-ups.
+2. **Static light is baked, only vehicles are lit live** (World of Tanks Blitz: "Only tanks are being dynamically lit.
+   Lighting of the environment is baked"; Unity / Android mobile guidance: baked is the cheapest mode, blob shadows and
+   additive glow sprites instead of real-time shadows and bloom). => The ground carries its light and every prop shadow in one
+   baked texture; tanks keep their own three-light rig and a ground shadow quad; lights glow through additive sprites.
+3. **Characters stay readable by desaturating the world, not by outlining** (Valorant, TF2 rim light, Dota 2 art guide:
+   saturation only at points of interest). => Container orange and bridge cyan are smaller in area and less saturated than the
+   team blue / red; every tank has a crisp team ring; tanks are never darkened inside a prop's shadow.
+4. **Out-of-bounds scenery is richer but pushed back in value and saturation; props are clustered, lanes stay quiet; one
+   landmark per map; background motion small and slow** (Level Design Book, 80.lv set-dressing guides, L4D / 2XKO notes).
+   => Everything beyond the arena edge is drawn 30 - 55% darker; set dressing sits on solids or outside the arena.
+5. **Merge static meshes per material, few shared tiling textures, gate micro-props by tier** (War Robots remaster notes,
+   three.js forum). => A map is 3 lit meshes + 1 glow mesh + the ground; LOW drops small props and normal maps.
+6. **The Moon: hard, dark shadows, albedo 0.07 - 0.16, a low sun hides rocks; realistic lighting reads drab in a game**
+   (NASA Ames / NESC; a Mars devlog). => Stylised: crisp shadows 0.75 x height (short enough not to hide a tank), a cool fill
+   so shadowed sides still read, ground lighter than real regolith.
+Not verified (the agent could not open the pages): Brawl Stars / Squad Busters specifics, the "under 100 - 150 draw calls on
+a mid-range phone" figure, KTX2 savings.
+
+### Architecture (new files; nothing in the sim, rules or Worker changed)
+- `js/mapenv.js` — **MapEnv, the shared environment layer** (API below).
+- `js/arena3d.js` — **Arena3D**: the prop kit (four buckets: rock / paint / metal / glow, merged, box-projected UVs), GPU-made
+  tiling detail textures (no downloads), the ground bake, the ground-mark pool (tread prints, scorch), crate and shadow helpers.
+- `js/arenaprops.js` — **ArenaProps**: every prop and the six map builds, the 2D paint layers (tracks, stains, floor
+  markings, light pools), the sky (stars, Earth), the far ridge.
+- `js/render3d.js` — builds maps through Arena3D, runs MapEnv once a frame, draws the map's lights (additive sprites) and
+  small motions, sun-side ground shadows for tanks and crates, tread prints, dust and scorch.
+- The earlier map code (`Environment3D.buildMap`, `M3.buildMap`, `MapArt`) is still in the tree: it is the fallback if
+  Arena3D fails to build and it is what `dev/tests/environment.mjs` pins byte-for-byte. `window.LUNAR_ARENA3D=false` turns
+  the new maps off.
+
+**How a map is drawn**
+1. Props are merged into at most three lit meshes and one glow mesh.
+2. The ground is baked once per map by a shader into ONE texture: regolith (or deck plates), the craters the rules know as
+   bowls with rims, tracks, pebbles, contact shading round every solid, and the sun's shadow of every prop (the props are
+   flattened onto the ground along the sun and drawn into a mask). rgb = albedo, alpha = the sun term, so MapEnv re-lights
+   it every frame for free: `colour = albedo * (ambient + sun * term)`.
+3. Each frame the ground costs one texture read per pixel. No shadow maps, no extra passes.
