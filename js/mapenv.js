@@ -34,8 +34,8 @@
 const MapEnv=(()=>{
  const VERSION='mapenv-1';
  const lin=h=>{const n=parseInt(String(h).slice(1),16),f=v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return [f(n>>16),f((n>>8)&255),f(n&255)];};
- const SUN=[-0.55,0.72,-0.42];   // one sun for every outdoor map: shadows fall right and towards the camera, about as long as the prop is tall
- const base={sunDir:SUN,sun:lin('#fffaf2'),sunI:2.5,sky:lin('#b9cbe0'),gnd:lin('#2a3038'),hemiI:0.95,fill:lin('#9ab8de'),fillI:0.8,gGain:1,gAmb:0.55,
+ const SUN=[-0.6,0.66,-0.45];   // one sun for every outdoor map: shadows fall right and towards the camera, a little longer than the prop is tall (1.14 x)
+ const base={sunDir:SUN,sun:lin('#fffaf2'),sunI:2.5,sky:lin('#b9cbe0'),gnd:lin('#2a3038'),hemiI:0.95,fill:lin('#9ab8de'),fillI:0.8,gGain:1.06,gAmb:0.44,
   fogC:lin('#8a8f98'),fog:0,fogNear:30,fogFar:-12,clear:lin('#04060b'),stars:1,earth:1,exposure:1.1,shadow:0.62};
  // Per-map presets: the look each map loads with. Outdoor maps share the sun; each has its own temperature and ambient motes.
  const PRESETS={

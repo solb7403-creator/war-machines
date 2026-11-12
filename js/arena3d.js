@@ -65,12 +65,12 @@ const Arena3D=(()=>{
  function rockG(seed,detail){
   return cached('rock'+seed+'|'+detail,()=>{
    const g=new T.IcosahedronGeometry(1,detail),p=g.attributes.position,n=p.count,N=new Float32Array(n*3),acc=new Map();
-   for(let i=0;i<n;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const f=0.74+0.34*vn3(x*1.5+seed*7.1,y*1.5+3.3,z*1.5-seed*2.7)+0.16*vn3(x*4.1+seed,y*4.1,z*4.1+9);x*=f;y*=f;z*=f;if(y<-0.42)y=-0.42-(y+0.42)*0.05;p.setXYZ(i,x,y+0.42,z);}
+   for(let i=0;i<n;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const f=0.66+0.5*vn3(x*1.3+seed*7.1,y*1.3+3.3,z*1.3-seed*2.7)+0.12*vn3(x*4.1+seed,y*4.1,z*4.1+9);x*=f;y*=f;z*=f;if(y<-0.42)y=-0.42-(y+0.42)*0.05;p.setXYZ(i,x,y+0.42,z);}
    for(let i=0;i<n;i+=3){const ax=p.getX(i),ay=p.getY(i),az=p.getZ(i),ux=p.getX(i+1)-ax,uy=p.getY(i+1)-ay,uz=p.getZ(i+1)-az,vx=p.getX(i+2)-ax,vy=p.getY(i+2)-ay,vz=p.getZ(i+2)-az;
     let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
     for(let j=0;j<3;j++){const key=Math.round(p.getX(i+j)*400)+','+Math.round(p.getY(i+j)*400)+','+Math.round(p.getZ(i+j)*400);let a=acc.get(key);if(!a){a=[0,0,0];acc.set(key,a);}a[0]+=nx;a[1]+=ny;a[2]+=nz;N[(i+j)*3]=nx;N[(i+j)*3+1]=ny;N[(i+j)*3+2]=nz;}}
    for(let i=0;i<n;i++){const key=Math.round(p.getX(i)*400)+','+Math.round(p.getY(i)*400)+','+Math.round(p.getZ(i)*400),a=acc.get(key),l=Math.hypot(a[0],a[1],a[2])||1;   // mostly faceted: cracked planes with a crisp terminator
-    let nx=N[i*3]*0.68+a[0]/l*0.32,ny=N[i*3+1]*0.68+a[1]/l*0.32,nz=N[i*3+2]*0.68+a[2]/l*0.32;const m=Math.hypot(nx,ny,nz)||1;N[i*3]=nx/m;N[i*3+1]=ny/m;N[i*3+2]=nz/m;}
+    let nx=N[i*3]*0.82+a[0]/l*0.18,ny=N[i*3+1]*0.82+a[1]/l*0.18,nz=N[i*3+2]*0.82+a[2]/l*0.18;const m=Math.hypot(nx,ny,nz)||1;N[i*3]=nx/m;N[i*3+1]=ny/m;N[i*3+2]=nz/m;}
    g.setAttribute('normal',new T.BufferAttribute(N,3));return g;});
  }
  // a spire: a tapering faceted column with a leaning tip
@@ -88,11 +88,12 @@ const Arena3D=(()=>{
    cyl(cls,c,x,y,z,r,h,seg,o){o=o||{};add(k,cls,o.rt!==undefined?coneG(seg||12,o.rt):cylG(seg||12,o.open),c,mat(x,y,z,o.rx||0,o.ry||0,o.rz||0,r,h,o.rz2||r),o);return B;},
    sph(cls,c,x,y,z,r,sy,seg,half,o){add(k,cls,sphG(seg||12,half),c,mat(x,y,z,0,o&&o.ry||0,0,r,sy===undefined?r:sy,o&&o.sz||r),o);return B;},
    tor(cls,c,x,y,z,R,r,seg,o){o=o||{};add(k,cls,torG(+(r/R).toFixed(3),seg||16,o.ts),c,mat(x,y,z,o.rx===undefined?Math.PI/2:o.rx,o.ry||0,o.rz||0,R,R*(o.sy||1),R),o);return B;},
+   skyline(c,x0,x1,y,z,depth,prof,o){const pts=[new T.Vector2(x0,0)];for(const p of prof)pts.push(new T.Vector2(p[0],p[1]));pts.push(new T.Vector2(x1,0));const g=new T.ExtrudeGeometry(new T.Shape(pts),{depth,bevelEnabled:false,steps:1,curveSegments:1});add(k,o&&o.cls||'rock',g,c,mat(0,y,z-depth),o);g.dispose();return B;},
    // an upright prism from a footprint polygon [[x,z]..] (local to x,z), h tall, with a small bevel
    prism(cls,c,x,y,z,pts,h,o){o=o||{};const bv=Math.min(o.bevel===undefined?0.03:o.bevel,h*0.45),sh=new T.Shape(pts.map(p=>new T.Vector2(p[0],-p[1]))),g=new T.ExtrudeGeometry(sh,{depth:h-2*bv,bevelEnabled:bv>0,bevelThickness:bv,bevelSize:bv,bevelOffset:-bv,bevelSegments:1,steps:1,curveSegments:1});
     g.rotateX(-Math.PI/2);add(k,cls,g,c,mat(x,y+bv,z,0,o.ry||0,0),o);g.dispose();return B;},
    geo(cls,c,g,x,y,z,rx,ry,rz,sx,sy,sz,o){add(k,cls,g,c,mat(x,y,z,rx,ry,rz,sx,sy,sz),o);return B;},
-   rock(c,x,y,z,r,h,seed,o){o=o||{};add(k,o.cls||'rock',rockG(((seed|0)%5+5)%5,k.high&&r>0.3?2:1),c,mat(x,y,z,0,o.ry===undefined?hs(seed,x)*6.28:o.ry,0,r*(o.sx||1),h/1.42,r*(o.sz||1)),Object.assign({ao:0.42,aoH:Math.max(0.25,h*0.6)},o));return B;},
+   rock(c,x,y,z,r,h,seed,o){o=o||{};add(k,o.cls||'rock',rockG(((seed|0)%5+5)%5,o.smooth&&k.high?2:1),c,mat(x,y,z,0,o.ry===undefined?hs(seed,x)*6.28:o.ry,0,r*(o.sx||1),h/1.42,r*(o.sz||1)),Object.assign({ao:0.42,aoH:Math.max(0.25,h*0.6)},o));return B;},
    spire(c,x,y,z,r,h,seed,o){o=o||{};add(k,o.cls||'rock',spireG(((seed|0)%4+4)%4,k.high?7:5),c,mat(x,y,z,0,o.ry===undefined?hs(seed,z)*6.28:o.ry,0,r,h,r*(o.sz||1)),Object.assign({ao:0.45,aoH:h*0.5},o));return B;},
    glow(c,x,y,z,sx,sy,sz,ry,o){add(k,'glow',boxG(),c,mat(x,y,z,o&&o.rx||0,ry||0,o&&o.rz||0,sx,sy,sz),o);return B;},
    halo(x,y,z,size,c,a,pulse){k.halos.push([x,y,z,size,c,a===undefined?0.5:a,pulse||0]);return B;},
@@ -103,23 +104,23 @@ const Arena3D=(()=>{
   // layered rock: stacked, jittered, bevelled slabs inside the rect [x,z,w,d]. open: which sides look into the arena (they
   // get the ragged ledges; the others are straight so neighbouring masses meet). The top can be handed to the baked ground.
   B.strata=(rect,Hh,o)=>{
-   o=o||{};const [x,z,w,d]=rect,sd=o.seed===undefined?x*3.1+z*1.7:o.seed,layers=o.layers||Math.max(2,Math.round(Hh/(k.high?0.3:0.5))),step=o.step||(k.high?0.5:1.0),open=o.open||{W:1,E:1,N:1,S:1},cols=o.cols||k.theme.strata,y0=o.y0||0,ins=o.inset===undefined?0.2:o.inset;
+   o=o||{};const [x,z,w,d]=rect,sd=o.seed===undefined?x*3.1+z*1.7:o.seed,layers=o.layers||Math.max(2,Math.round(Hh/(k.high?0.3:0.5))),step=o.step||(k.high?0.85:1.4),open=o.open||{W:1,E:1,N:1,S:1},cols=o.cols||k.theme.strata,y0=o.y0||0,ins=o.inset===undefined?0.2:o.inset;
    for(let j=0;j<layers;j++){
     const hh=Hh/layers,yy=y0+j*hh,last=j===layers-1,grow=j/layers*(o.lean===undefined?0.16:o.lean),pts=[];
     const side=(ax,az,bx,bz,nx,nz,isOpen)=>{const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<n;i++){const f=i/n,px=ax+(bx-ax)*f,pz=az+(bz-az)*f,r1=hs(px*1.7+sd+j*5.3,pz*1.3-j*2.1),r2=hs(pz*2.3-sd,px*0.7+j*9.1);
-      const edge=Math.min(f,1-f)*L<0.01?0.5:1,inA=isOpen?(0.03+grow+ins*r1*(0.4+0.6*r2))*edge+(i===0?0.06:0):0,tj=isOpen?(r2-0.5)*step*0.45:0;
+      const edge=Math.min(f,1-f)*L<0.01?0.5:1,inA=isOpen?(0.03+grow+ins*(r1>0.55?1:r1*0.5)*(0.5+0.5*r2))*edge+(i===0?0.06:0):0,tj=isOpen?(r2-0.5)*step*0.6:0;   // big, uneven bites: fractured rock, not rolls
       pts.push([Math.min(x+w,Math.max(x,px+nx*inA+(bx-ax)/L*tj)),Math.min(z+d,Math.max(z,pz+nz*inA+(bz-az)/L*tj))]);}};   // never outside its footprint
     side(x,z,x+w,z,0,1,open.N);side(x+w,z,x+w,z+d,-1,0,open.E);side(x+w,z+d,x,z+d,0,-1,open.S);side(x,z+d,x,z,1,0,open.W);
-    const sh=new T.Shape(pts.map(p=>new T.Vector2(p[0],-p[1]))),bv=Math.min(0.05,hh*0.2);
+    const sh=new T.Shape(pts.map(p=>new T.Vector2(p[0],-p[1]))),bv=Math.min(0.022,hh*0.1);
     const g=new T.ExtrudeGeometry(sh,{depth:hh-2*bv,bevelEnabled:true,bevelThickness:bv,bevelSize:bv,bevelOffset:-bv,bevelSegments:1,steps:1,curveSegments:1});g.rotateX(-Math.PI/2);
-    const c=cols[(j+Math.floor(hs(sd,3)*4))%cols.length],M=mat(0,yy+bv,0);
+    const c0=col(cols[(j+Math.floor(hs(sd,3)*4))%cols.length]),c=mul(c0,0.78),ct=mul(c0,1.18),M=mat(0,yy+bv,0);
     if(last&&o.cap!==false){   // the top face goes to the baked ground, the rest to the rock bucket
      const P=g.attributes.position,N=g.attributes.normal,keep=[],kn=[];
      for(let i=0;i<P.count;i+=3){if(N.getY(i)>0.9&&N.getY(i+1)>0.9&&N.getY(i+2)>0.9&&P.getY(i)>hh-2*bv){for(let q=0;q<3;q++)k.gtop.push([P.getX(i+q),yy+hh,P.getZ(i+q)]);}
       else for(let q=0;q<3;q++){keep.push(P.getX(i+q),P.getY(i+q),P.getZ(i+q));kn.push(N.getX(i+q),N.getY(i+q),N.getZ(i+q));}}
      const g2=new T.BufferGeometry();g2.setAttribute('position',new T.BufferAttribute(new Float32Array(keep),3));g2.setAttribute('normal',new T.BufferAttribute(new Float32Array(kn),3));
-     add(k,'rock',g2,c,M,{ao:o.ao===undefined?0.3:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.3,dim:o.dim});g2.dispose();
-    }else add(k,'rock',g,c,M,{ao:o.ao===undefined?0.3:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.3,dim:o.dim});
+     add(k,'rock',g2,c,M,{ao:o.ao===undefined?0.3:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.15,dim:o.dim,top:ct});g2.dispose();
+    }else add(k,'rock',g,c,M,{ao:o.ao===undefined?0.3:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.15,dim:o.dim,top:ct});
     g.dispose();
    }
    return B;
@@ -169,24 +170,22 @@ void main(){vec2 u=vUv;float e=1./uRes;
   for(const [name,kind,srgb] of [['gritC',0,true],['gritN',1,false],['paintC',2,true],['paintN',3,false]]){if(!high&&!srgb)continue;const rt=mkRT(size,size,srgb,true,true);rt.texture.anisotropy=an;m.uniforms.uKind.value=kind;quadPass(renderer,m,rt);out[name]=rt;}
   m.dispose();R.tiles[key]=out;return out;
  }
- // the Earth, painted once on the CPU: oceans, land, cloud bands, a lit limb and a thin blue atmosphere
+ // the Earth, painted once by a small shader: oceans, land, swirling cloud, a lit limb, night on the far side, thin air
+ const EARTH_FS=`precision highp float;varying vec2 vUv;`+NOISE+`
+float f3(vec3 p){return fbm(p.xy*1.0+p.z*vec2(.7,-.4))*.6+fbm(p.zy*1.3+p.x*vec2(-.5,.6)+7.)*.4;}
+void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3,.52));
+ if(r2>1.){float g=max(0.,1.-(r2-1.)/.16);vec3 n=normalize(vec3(u,0.));float day=clamp(dot(n,L)*2.+.5,0.05,1.);gl_FragColor=vec4(.2,.45,.9,g*g*.45*day);return;}
+ float z=sqrt(1.-r2);vec3 p=vec3(u,z);float land=f3(p*1.9+vec3(4.,1.,0.));float arid=fbm(p.xy*3.+p.z*2.+2.);vec2 w=vec2(fbm(p.xy*2.+p.z+7.),fbm(p.yx*2.-p.z+3.))-.5;float cl=fbm(vec2(p.x*2.4+p.z*1.2,p.y*4.4)+w*1.7+9.);
+ float ndl=dot(p,L);float day=clamp(ndl*3.2+.12,0.,1.);
+ vec3 c=land>.5?(arid>.52?vec3(.40,.33,.2):vec3(.13,.26,.11)):vec3(.012,.07+.05*land,.21+.1*land);if(abs(u.y)>.9-.06*arid)c=vec3(.85,.9,.95);
+ float cm=clamp((cl-.47)*5.,0.,1.);c=mix(c,vec3(.93,.95,.98),cm);
+ float spec=land>.5?0.:pow(max(ndl,0.),24.)*.3*(1.-cm);float rim=pow(1.-z,3.);
+ vec3 o=(c*.9+spec)*day+vec3(.1,.3,.75)*rim*day+vec3(0.,0.,.004);float l=dot(o,vec3(.3,.55,.15));o=mix(o,vec3(l),.25);
+ gl_FragColor=vec4(o,1.);}`;
  function earthTex(renderer,q){
-  const R=res(renderer);if(R.earth)return R.earth;
-  const n=q==='low'?96:192,d=new Uint8Array(n*n*4),Ll=Math.hypot(-0.72,0.3,0.52),Lx=-0.72/Ll,Ly=0.3/Ll,Lz=0.52/Ll;
-  const f3=(x,y,z)=>{let a=0.5,s=0,f=1;for(let i=0;i<5;i++){s+=a*vn3(x*f,y*f,z*f);a*=0.5;f*=2.1;}return s;};
-  for(let j=0;j<n;j++)for(let i=0;i<n;i++){const u=(i+0.5)/n*2.16-1.08,v=1.08-(j+0.5)/n*2.16,r2=u*u+v*v,o=(j*n+i)*4;
-   if(r2>1.16){d[o+3]=0;continue;}
-   const rr=Math.min(1,r2),z=Math.sqrt(1-rr),x=u,y=v;
-   const land=f3(x*1.7+4,y*1.7+1,z*1.7)+0.1*f3(x*6,y*6,z*6),wx=f3(x*2+7,y*2,z*2+3)-0.5,wy=f3(x*2,y*2+5,z*2)-0.5,cl=f3(x*2.6+wx*1.6+9,y*4.6+wy*1.6,z*2.6+2);   // warped noise: cloud bands that swirl
-   const ndl=x*Lx+y*Ly+z*Lz,day=Math.max(0,Math.min(1,ndl*3.2+0.12)),arid=f3(x*3+2,y*3,z*3);
-   let c=land>0.56?(arid>0.52?[0.42,0.34,0.2]:[0.13,0.27,0.1]):[0.012,0.07+0.05*land,0.22+0.1*land];if(Math.abs(y)>0.9-0.06*arid)c=[0.85,0.9,0.95];
-   const cm=Math.max(0,Math.min(1,(cl-0.48)*5));c=[c[0]+(0.93-c[0])*cm,c[1]+(0.95-c[1])*cm,c[2]+(0.98-c[2])*cm];
-   const spec=land>0.56?0:Math.pow(Math.max(0,ndl),24)*0.35*(1-cm),rim=Math.pow(1-z,3);
-   let R0=(c[0]*0.9+spec)*day+0.1*rim*day,G0=(c[1]*0.9+spec)*day+0.3*rim*day,B0=(c[2]*0.9+spec)*day+0.75*rim*day+0.004;
-   let a=1;if(r2>1){const g=Math.max(0,1-(r2-1)/0.16);a=g*g*0.5*Math.max(0.05,day);R0=0.2;G0=0.5;B0=1;}
-   {const l=0.3*R0+0.55*G0+0.15*B0;R0+=(l-R0)*0.25;G0+=(l-G0)*0.25;B0+=(l-B0)*0.25;}
-   d[o]=Math.min(255,Math.pow(Math.max(0,R0),0.4545)*255);d[o+1]=Math.min(255,Math.pow(Math.max(0,G0),0.4545)*255);d[o+2]=Math.min(255,Math.pow(Math.max(0,B0),0.4545)*255);d[o+3]=a*255;}
-  const t=new T.DataTexture(d,n,n,T.RGBAFormat);t.colorSpace=T.SRGBColorSpace;t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.flipY=true;t.needsUpdate=true;R.earth=t;return t;
+  const R=res(renderer);if(R.earth)return R.earth.texture;
+  const n=q==='low'?128:256,rt=mkRT(n,n,true,true,false),m=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:EARTH_FS,depthTest:false,depthWrite:false,toneMapped:false});
+  quadPass(renderer,m,rt);m.dispose();R.earth=rt;return rt.texture;
  }
  const GROUND_VS='uniform vec4 uRect;varying vec2 vUv;varying float vZ;void main(){vUv=(position.xz-uRect.xy)/uRect.zw;vZ=position.z;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
  const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;void main(){vec4 t=texture2D(tMap,vUv);vec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*smoothstep(uFog.y,uFog.z,vZ));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
@@ -250,7 +249,7 @@ float plateH(vec2 P){vec2 pf=fract(P/4.);vec2 pd=min(pf,1.-pf)*4.;float seam=min
  float rx=length(vec2(pd.x-.17,(fract(P.y/.5)-.5)*.5)),rz=length(vec2(pd.y-.17,(fract(P.x/.5)-.5)*.5));h+=.012*(smoothstep(.05,.02,rx)+smoothstep(.05,.02,rz));
  return h+(vn(P*9.)-.5)*.004+(fbm(P*1.3)-.5)*.012;}
 vec3 plateA(vec2 P){vec2 ip=floor(P/4.);vec2 pf=fract(P/4.);vec2 pd=min(pf,1.-pf)*4.;float seam=min(pd.x,pd.y);
- float v=.86+.22*h21(ip+uSeed);float grime=fbm(P*.7+uSeed);v*=mix(.74,1.06,smoothstep(.3,.7,grime));v*=.93+.14*vn(P*6.);v*=1.-.3*smoothstep(.62,.8,fbm(P*2.3+7.));
+ float v=.86+.22*h21(ip+uSeed);float grime=fbm(P*.7+uSeed);v*=mix(.66,1.08,smoothstep(.3,.7,grime));v*=.93+.14*vn(P*6.);v*=1.-.3*smoothstep(.62,.8,fbm(P*2.3+7.));
  float scuff=pow(vn(vec2(P.x*1.2,P.y*14.)+3.),4.)+pow(vn(vec2(P.x*14.,P.y*1.2)+8.),4.);v+=.10*scuff;
  v*=1.-.55*smoothstep(.035,.0,seam);v+=.10*smoothstep(.12,.05,seam)*smoothstep(.035,.06,seam);
  return uBase*v*mix(vec3(1.02,1.,.97),vec3(.95,1.,1.05),vn(P*.4+2.));}
@@ -285,7 +284,7 @@ void main(){
 #ifdef PLATES
  if(top<.5)alb=plateA(P);else
 #endif
- if(top>.5&&uTopKind>.5){vec3 v3=vor(P*.52+vec2(fbm(P*.7)*.5));vec3 w3=vor(P*1.7+7.);float m=slabM(P);float v=(.93+.14*h21(v3.yz+3.))*(.82+.36*fbm(P*.45+uSeed))*(.94+.12*vn(P*7.))*(.97+.06*vn(P*31.));v*=1.-.42*m*smoothstep(.045,0.,v3.x);v*=1.-.2*(1.-m*.5)*smoothstep(.03,0.,w3.x)*step(.5,h21(w3.yz));alb=uTopBase*v*mix(1.22,1.,step(.3,tm.g));}else
+ if(top>.5&&uTopKind>.5){vec3 v3=vor(P*.52+vec2(fbm(P*.7)*.5));vec3 w3=vor(P*1.7+7.);float m=slabM(P);float v=(.93+.14*h21(v3.yz+3.))*(.72+.56*fbm(P*.16+uSeed))*(.9+.2*fbm(P*.6+uSeed*3.))*(.94+.12*vn(P*7.))*(.97+.06*vn(P*31.));v*=1.-.42*m*smoothstep(.045,0.,v3.x);v*=1.-.2*(1.-m*.5)*smoothstep(.03,0.,w3.x)*step(.5,h21(w3.yz));alb=uTopBase*v*mix(1.22,1.,step(.3,tm.g));}else
  {vec3 base=top>.5?uTopBase:uBase;float m=fbm(P*.3+uSeed);float v=1.+uMottle*(m-.5)*2.;v*=.94+.12*vn(P*2.6+3.);v*=.965+.07*vn(P*21.);
   alb=base*v*mix(vec3(1.03,1.,.96),vec3(.96,.99,1.04),vn(P*.5+50.));
 #ifndef LITE
@@ -340,7 +339,7 @@ void main(){
   const amb=M.env?M.env.uniforms.uAmb.value:new T.Vector3(0.11,0.135,0.16);
   const bm=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:BAKE_FS,defines:Object.assign(th.plates?{PLATES:1}:{},M.soft?{LITE:1}:{}),depthTest:false,depthWrite:false,toneMapped:false,uniforms:{
    uRect:{value:rectU},uPaintRect:{value:new T.Vector4(pr[0],pr[1],pr[2],pr[3])},uArena:{value:new T.Vector4(0,0,AW,AH)},uTexel:{value:new T.Vector2(rect[2]/w,rect[3]/h)},uL:{value:new T.Vector3(L[0],L[1],L[2])},
-   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.14:th.mottle},uWallPeb:{value:th.wallPeb||0},uTrackK:{value:th.trackK||0.24},
+   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uTrackK:{value:th.trackK||0.24},
    uNc:{value:Math.min(NCR,M.craters.length)},uNb:{value:Math.min(NBX,M.aoBoxes.length)},uNi:{value:Math.min(NCI,M.aoCircles.length)},tShadow:{value:shadow.texture},tTop:{value:top.texture},tPaint:{value:tP},tDecal:{value:tD},tGlow:{value:tG},uCr:{value:cr.slice(0,NCR)},uBox:{value:bx.slice(0,NBX)},uCir:{value:ci.slice(0,NCI)}}});
   quadPass(renderer,bm,M.rt);
   bm.dispose();top.dispose();shadow.dispose();tP.dispose();tD.dispose();tG.dispose();
