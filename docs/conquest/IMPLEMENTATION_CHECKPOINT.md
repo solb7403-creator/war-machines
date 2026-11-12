@@ -1855,15 +1855,15 @@ were dropped (the earlier `docs/art/meshy-proof/v2/colour_check_stock_vs_referen
 | Pulse Cannon | weapon-pulse-0 | weapons/2fae26ad.png | compact olive turret, periscope, one barrel with sleeve bands |
 | Arc Pulse | weapon-pulse-1 | weapons/7e0a6b77.png | silver turret, barrel in four raised coil rings, violet muzzle |
 | Nova Pulse | weapon-pulse-2 | weapons/bf00915f.png | faceted dark turret, amber star core in a gold ring, gold bell muzzle |
-| Twin Repeater | weapon-twin-0 | weapons/a4207149.png | two long barrels with slotted flash hiders, hazard-strip ammo box |
+| Twin Repeater | weapon-twin-0 | weapons/5a4bea6f.png | olive turret, two thin black barrels (owner correction Nov 11; was a4207149.png, removed) |
 | Storm Repeater | weapon-twin-1 | weapons/dbd6fceb.png | silver, two long barrels with violet lines, side ammo drum |
 | Helix Repeater | weapon-twin-2 | weapons/97c7a5ee.png | two rotary clusters in amber spiral coils, gold muzzle rings |
 | Siege Breaker | weapon-siege-0 | weapons/3c76abeb.png | big blocky olive turret, short thick barrel, box muzzle brake |
 | Rail Breaker | weapon-siege-1 | weapons/6666703f.png | silver, two rail prongs held by clamps, violet arc |
 | Titanfall | weapon-siege-2 | weapons/1c7f4122.png | massive dark turret, huge barrel, gold bands and gold muzzle |
 | Moonbeam | weapon-moon | weapons/0c88031a.png | red core in square gold housing, blue charge crystals (README) |
-`weapons/13e648cb.png` (silver turret, blue orb, blue coil rings) and `weapons/5a4bea6f.png` (olive turret, two thin black barrels)
-match no GLB in the `meshy-models` release: recorded as unused alternates.
+Owner correction (Nov 11): the Twin Repeater's reference is `weapons/5a4bea6f.png`. The two unused images, `a4207149.png`
+(hazard-strip twin gun) and `13e648cb.png` (silver turret, blue orb), were deleted from the repo; never use them.
 
 **What v2 changed against the first pass (rebuilt: 6 chassis LIGHT + FULL, 3 Common weapons)**
 - Sentinel: dark gunmetal -> light silver with violet lines. Bulwark: dark -> steel silver with violet lines.
