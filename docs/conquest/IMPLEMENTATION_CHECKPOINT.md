@@ -2429,7 +2429,16 @@ time between frames (the game draws twice per frame in this harness, the same on
 - slice 2: critic round 1 fixes, lazy-loaded modules, `arena-maps.mjs`, capture and perf tools.
 - slice 3: critic rounds 2 - 3, thumbnails, CI wiring, load tool. slice 4: critic round 4. `56e4484` slice 5: rounds 5 - 6.
 - `cf0862b` slice 6: both reviewers' fixes, the VS-screen pre-build (both reviewers PASS at this commit).
-- final: re-review follow-ups, LOW on wide screens, softer tread prints, sheets, numbers, build stamp (see Release record).
+- `540d6dc` final: re-review follow-ups, LOW on wide screens, softer tread prints, sheets, numbers, build stamp (see Release record).
+- CI fix (after `540d6dc`): PR #119's `conquest` job went red in `dev/tests/conquest-super-fx.py` (run
+  [43167575668](https://github.com/solb7403-creator/war-machines/actions/runs/43167575668): 90 s wait for the super bar's outcome).
+  Root cause, in the 5E-2b Conquest HUD and not in the maps: the super fires `SUP_REL` (0.2 s) after the stop and the bar object
+  is dropped with it, so on any frame slower than 0.2 s the HUD never saw the outcome and HIT / JACKPOT / MISS was skipped
+  (a player under 5 fps lost the label too). Reproduced here on the unchanged code (software GL, and again at a forced 3 fps),
+  so it is a race that 5E-2b's one green run happened to win, not a change this branch made. Fix (`js/conquest/app.js`,
+  `combatHUD`): the HUD keeps the bar it was showing and reads the outcome from it when the battle has already fired. No rule,
+  timing, damage or Worker change. The test gained `--slow-ms N` (every frame waits N ms more): with the fix it passes at
+  3 fps, without it it times out. Nothing was skipped or relaxed.
 
 ### What is left (not blocking; for the owner or a later session)
 - The owner's iPhone / Telegram playtest (checklist above): the only check no agent could do.
