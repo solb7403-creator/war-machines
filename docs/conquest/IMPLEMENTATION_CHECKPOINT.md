@@ -2207,3 +2207,39 @@ a mid-range phone" figure, KTX2 savings.
    flattened onto the ground along the sun and drawn into a mask). rgb = albedo, alpha = the sun term, so MapEnv re-lights
    it every frame for free: `colour = albedo * (ambient + sun * term)`.
 3. Each frame the ground costs one texture read per pixel. No shadow maps, no extra passes.
+
+### The environment layer: `MapEnv` (`js/mapenv.js`) — API for the weather / hazard session
+One instance per battle scene (`ENV` in `js/render3d.js`). It owns the three scene lights, the two light terms of the baked
+ground, the haze, the sky and the ambient particles. A later session drives it per match; **no map is rebuilt for any of it**.
+
+| Call | What it does |
+|---|---|
+| `ENV.use(mapId, anchors)` | Loads the map's preset (`MapEnv.PRESETS[mapId]`) and its ambient emitters. Arena3D calls it when a map is built. |
+| `ENV.set(patch, seconds)` | Blends any state field to a new value over `seconds` (0 = at once). |
+| `ENV.reset(seconds)` | Back to the map's preset; drops every `'weather'` emitter. |
+| `ENV.flash(rgb, strength, seconds)` | A short pulse of light on ground, props and tanks (lightning, solar flare, a big blast). |
+| `ENV.addEmitter(spec)` -> id, `ENV.removeEmitter(id)`, `ENV.clearEmitters(group)` | Ambient / weather particles, written into the two existing particle batches (no new draw call). |
+| `ENV.update(dt, t)` | Once a frame (render3d does it). |
+| `ENV.state`, `ENV.uniforms`, `ENV.sunDir()`, `ENV.anchors` | Live values; what the ground shader reads; the sun; the map's hazard anchors. |
+| `ENV.onRebake` | Set by render3d. Called once when `state.sunDir` changes: the map re-bakes its ground shadows in one frame. |
+
+State fields (colours are linear `[r,g,b]`): `sunDir[3]`, `sun`, `sunI`, `sky`, `gnd`, `hemiI`, `fill`, `fillI`, `gGain`
+(ground brightness), `gAmb` (how dark ground shadows are; props and tanks unaffected), `fogC`, `fog` (0..1), `fogNear`,
+`fogFar` (ground z where the haze starts / is full), `clear` (space colour), `stars`, `earth`, `exposure`, `shadow` (tank and
+crate ground-shadow strength).
+
+Emitter spec: `{group:'ambient'|'weather', add:true|false, rate, area:[x0,z0,x1,z1], y:[lo,hi], life:[lo,hi], size:[start,end],
+color:'#rrggbb' | [..], alpha, vel:[vx,vy,vz], jitter, gravity, drag, pick:()=>[x,y,z]}`.
+
+Anchors each map publishes (`ENV.anchors`, also `B3.map.anchors`): `vents [[x,z,r,y]]` (crater centres, reactor banks,
+coolant pools, surface vents), `lasers [[x,y,z,dx,dz]]` (the Bunker's side walls carry six dormant emitter housings),
+`rail [[x,y,z],[x,y,z]]` (a straight run for a train: the Overpass deck, the Canyon rille, the Longshot lane), `drops [[x,z]]`
+(lift platforms / map centre), `walls`, `sparks`, `area`.
+
+How the listed hazards map onto it (none of them is built in this session):
+- **Dust storm**: `ENV.set({fog:0.7,fogC:[..],sunI:1.2,gAmb:0.9,stars:0},4)` + a `'weather'` emitter of fast, flat motes; `ENV.reset(4)` ends it.
+- **Rain / ash / meteor shower**: emitters with `vel`, `gravity`; meteors land on `anchors.drops` or anywhere in `anchors.area`; `ENV.flash` on impact.
+- **Solar flare**: `ENV.set({sun:[1,0.8,0.5],sunI:3.4,exposure:1.25},1.5)` + `ENV.flash`.
+- **Crater vents**: emitters with `pick` on `anchors.vents`; **ceiling lasers**: beams from `anchors.lasers` (FX3D `seg` / `bolt`); **maglev train**: a mesh moved along `anchors.rail`.
+- Moving the sun (`ENV.set({sunDir:[..]})`) re-bakes the ground shadows through `onRebake` (one frame of work, no rebuild).
+Proof it works without a rebuild: `dev/tests/arena-maps.mjs` drives blend, haze, flash, emitters, reset and the re-bake hook.

@@ -24,7 +24,8 @@
 //   env.sunDir()                   unit vector towards the sun. Changing state.sunDir moves the lights at once; the baked
 //                                  shadows follow on env.onRebake (Arena3D re-bakes the ground in one frame, no rebuild)
 // STATE fields (colours are linear [r,g,b]):
-//   sunDir[3]  sun[3] sunI   sky[3] gnd[3] hemiI   fill[3] fillI   gGain (ground brightness trim)
+//   sunDir[3]  sun[3] sunI   sky[3] gnd[3] hemiI   fill[3] fillI   gGain (ground brightness trim)  gAmb (how much sky light
+//   reaches ground in shadow: lower = darker, harder ground shadows; props and tanks are not affected)
 //   fogC[3] fog (0..1) fogNear fogFar (ground z where the haze starts / is full; smaller z is further from the camera)
 //   clear[3] stars (0..1) earth (0..1) exposure   shadow (0..1 strength of tank / crate ground shadows)
 // EMITTER spec: {group:'ambient'|'weather', add:true|false, rate (per second), area:[x0,z0,x1,z1], y:[lo,hi], life:[lo,hi],
@@ -33,21 +34,21 @@
 const MapEnv=(()=>{
  const VERSION='mapenv-1';
  const lin=h=>{const n=parseInt(String(h).slice(1),16),f=v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};return [f(n>>16),f((n>>8)&255),f(n&255)];};
- const SUN=[-0.50,0.80,-0.34];   // one sun for every outdoor map: shadows fall right and towards the camera, 0.75 x height long
- const base={sunDir:SUN,sun:lin('#fff5e8'),sunI:2.5,sky:lin('#b9cbe0'),gnd:lin('#2a3038'),hemiI:0.95,fill:lin('#9ab8de'),fillI:0.8,gGain:1,
+ const SUN=[-0.55,0.72,-0.42];   // one sun for every outdoor map: shadows fall right and towards the camera, about as long as the prop is tall
+ const base={sunDir:SUN,sun:lin('#fffaf2'),sunI:2.5,sky:lin('#b9cbe0'),gnd:lin('#2a3038'),hemiI:0.95,fill:lin('#9ab8de'),fillI:0.8,gGain:1,gAmb:0.55,
   fogC:lin('#8a8f98'),fog:0,fogNear:30,fogFar:-12,clear:lin('#04060b'),stars:1,earth:1,exposure:1.1,shadow:0.62};
  // Per-map presets: the look each map loads with. Outdoor maps share the sun; each has its own temperature and ambient motes.
  const PRESETS={
   classic:Object.assign({},base,{emit:[{kind:'motes',rate:5,color:['#fff4dc','#cfe2ff'],alpha:0.5}]}),
-  overpass:Object.assign({},base,{sun:lin('#fff7ee'),sunI:2.55,sky:lin('#bfd2e8'),emit:[{kind:'motes',rate:5,color:['#ffffff','#9fe8ff'],alpha:0.5}]}),
-  longshot:Object.assign({},base,{sunDir:[-0.27,0.8,-0.52],sun:lin('#fff3e2'),sunI:2.55,sky:lin('#b4c5dc'),hemiI:0.95,emit:[{kind:'motes',rate:4,color:['#ffe6bf','#ffd08a'],alpha:0.45}]}),
-  craters:Object.assign({},base,{sun:lin('#fff5e8'),sky:lin('#b4c8e0'),emit:[{kind:'motes',rate:5,color:['#fff4dc','#d8e6ff'],alpha:0.5}]}),
-  canyon:Object.assign({},base,{sunDir:[-0.3,0.8,-0.5],sun:lin('#fff2e0'),sunI:2.55,sky:lin('#b2c3da'),hemiI:0.95,emit:[{kind:'motes',rate:4,color:['#ffe0b8','#e8d2b0'],alpha:0.45},{kind:'fall',rate:1.2}]}),
+  overpass:Object.assign({},base,{sun:lin('#fff8ee'),sunI:2.55,sky:lin('#bfd2e8'),emit:[{kind:'motes',rate:5,color:['#ffffff','#9fe8ff'],alpha:0.5}]}),
+  longshot:Object.assign({},base,{sun:lin('#fff6e8'),sunI:2.55,sky:lin('#b4c5dc'),hemiI:0.95,emit:[{kind:'motes',rate:4,color:['#ffe6bf','#ffd08a'],alpha:0.45}]}),
+  craters:Object.assign({},base,{sun:lin('#fffaf2'),sky:lin('#b4c8e0'),emit:[{kind:'motes',rate:5,color:['#fff4dc','#d8e6ff'],alpha:0.5}]}),
+  canyon:Object.assign({},base,{sun:lin('#fff6e8'),sunI:2.55,sky:lin('#b2c3da'),hemiI:0.95,emit:[{kind:'motes',rate:4,color:['#ffe0b8','#e8d2b0'],alpha:0.45},{kind:'fall',rate:1.2}]}),
   // the only interior: overhead work lights (a steep "sun": short shadows straight under things), cool steel bounce
-  bunker:Object.assign({},base,{sunDir:[-0.22,0.95,-0.2],sun:lin('#eef1ff'),sunI:2.2,sky:lin('#9fb6d0'),gnd:lin('#20303c'),hemiI:1.0,fill:lin('#58c8e8'),fillI:0.7,
-   clear:lin('#030509'),shadow:0.5,emit:[{kind:'motes',rate:4,color:['#bfefff','#ffe2b0'],alpha:0.4},{kind:'steam',rate:2.2},{kind:'spark',rate:0.35}]})
+  bunker:Object.assign({},base,{sunDir:[-0.42,0.84,-0.34],sun:lin('#fff3e0'),sunI:2.1,sky:lin('#aab2bc'),gnd:lin('#262c33'),hemiI:0.66,fill:lin('#8cc4dc'),fillI:0.75,
+   clear:lin('#030509'),shadow:0.5,gAmb:0.8,emit:[{kind:'motes',rate:4,color:['#bfefff','#ffe2b0'],alpha:0.4},{kind:'steam',rate:2.2},{kind:'spark',rate:0.35}]})
  };
- const KEYS=['sunDir','sun','sunI','sky','gnd','hemiI','fill','fillI','gGain','fogC','fog','fogNear','fogFar','clear','stars','earth','exposure','shadow'];
+ const KEYS=['sunDir','sun','sunI','sky','gnd','hemiI','fill','fillI','gGain','gAmb','fogC','fog','fogNear','fogFar','clear','stars','earth','exposure','shadow'];
  const copy=s=>{const o={};for(const k of KEYS)o[k]=Array.isArray(s[k])?s[k].slice():s[k];return o;};
  const mix=(a,b,f)=>Array.isArray(a)?a.map((v,i)=>v+(b[i]-v)*f):a+(b-a)*f;
  const hex=h=>{const n=parseInt(String(h).slice(1),16);return [(n>>16)/255,((n>>8)&255)/255,(n&255)/255];};
@@ -67,8 +68,8 @@ const MapEnv=(()=>{
    }
    // the baked ground is lit exactly like a flat Lambert surface under the same three lights (three: radiance = albedo/PI * E).
    // Its sun term is stored as 0.78 for flat lit ground, so slopes facing the sun can be brighter than flat ground.
-   const g=state.gGain/Math.PI,fy=L?Math.max(0,L.fill.position.y/(L.fill.position.length()||1)):0.4;
-   uniforms.uAmb.value.set((state.sky[0]*state.hemiI+state.fill[0]*state.fillI*fy)*g+flashC[0]*fl*0.4,(state.sky[1]*state.hemiI+state.fill[1]*state.fillI*fy)*g+flashC[1]*fl*0.4,(state.sky[2]*state.hemiI+state.fill[2]*state.fillI*fy)*g+flashC[2]*fl*0.4);
+   const g=state.gGain/Math.PI,ga=g*state.gAmb,fy=L?Math.max(0,L.fill.position.y/(L.fill.position.length()||1)):0.4;
+   uniforms.uAmb.value.set((state.sky[0]*state.hemiI+state.fill[0]*state.fillI*fy)*ga+flashC[0]*fl*0.4,(state.sky[1]*state.hemiI+state.fill[1]*state.fillI*fy)*ga+flashC[1]*fl*0.4,(state.sky[2]*state.hemiI+state.fill[2]*state.fillI*fy)*ga+flashC[2]*fl*0.4);
    const k=state.sunI*d[1]/0.78*g;uniforms.uSun.value.set(state.sun[0]*k,state.sun[1]*k,state.sun[2]*k);
    uniforms.uFogC.value.set(state.fogC[0],state.fogC[1],state.fogC[2]);uniforms.uFog.value.set(state.fog,state.fogNear,state.fogFar);
    if(host.scene){   // every lit mesh (props, tanks) takes the same haze through scene.fog; created only when a haze is asked for

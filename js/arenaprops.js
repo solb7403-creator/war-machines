@@ -9,23 +9,23 @@ const ArenaProps=(()=>{
  const W=20,H=32,TILT=0.6,GKC=Math.cos(TILT),GSN=Math.sin(TILT),PI=Math.PI,hs=Arena3D.hs;
  const HZ='#d9a92e',HZK='#1d1f23',CYAN='#4fe3ff',STEEL='#8d969e',STEEL_D='#3b424a',STEEL_L='#aab2b9';
  const THEMES={
-  classic:{name:'Moonbase',tread:0.36,dustC:'#b4b2ae',ground:'#989a9e',dust:'#a3a4a6',strata:['#7c7872','#8a857e','#6a6660','#807b74'],seed:3,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  overpass:{name:'Overpass',tread:0.3,dustC:'#d2cfc9',ground:'#c4c3c2',dust:'#cbcac8',strata:['#8e8a84','#9a958e'],seed:7,pebbles:0.45,relief:1.3,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  longshot:{name:'Longshot',tread:0.36,dustC:'#b0aca6',ground:'#93949a',topGround:'#8a847c',dust:'#a09a92',strata:['#756e66','#877f76','#625c55','#7d756c'],seed:11,crate:'tan',crateMat:'crate',accent:'#ffc46a',horizon:1,topLit:0},
-  craters:{name:'Crater Field',tread:0.36,dustC:'#b2b0ac',ground:'#96989c',dust:'#a2a3a5',strata:['#7c7872','#8a857e'],seed:17,pebbles:1.5,relief:1.7,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  canyon:{name:'Canyon',tread:0.36,dustC:'#aaa8a6',ground:'#8d8d90',topGround:'#847c73',dust:'#99958f',strata:['#786f66','#8a8076','#655d55','#80766b'],seed:23,pebbles:1.25,relief:1.6,crate:'steel',crateMat:'metal',accent:'#ffb066',horizon:1},
-  bunker:{name:'Underground Bunker',tread:0.16,dustC:null,ground:'#5f6872',topGround:'#6b6a6c',dust:null,strata:['#5a5a5e','#66666a'],seed:29,plates:true,pebbles:0.8,outDim:0.5,crate:'steel',crateMat:'metal',accent:CYAN,horizon:1}
+  classic:{name:'Moonbase',tread:0.36,dustC:'#a9a9aa',ground:'#8a8b8e',dust:'#98999b',strata:['#7c7872','#8a857e','#6a6660','#807b74'],seed:3,pebbles:0.8,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
+  overpass:{name:'Overpass',tread:0.3,dustC:'#cfc9bf',ground:'#cbc4b9',dust:'#cfc9bf',strata:['#8e8a84','#9a958e'],seed:7,pebbles:0.4,relief:1.3,mottle:0.1,trackK:0.3,crate:'tan',crateMat:'crate',accent:'#35e0d2',horizon:1},
+  longshot:{name:'Longshot',tread:0.36,dustC:'#aaa097',ground:'#8f847a',topGround:'#7d6e60',topKind:1,wallPeb:0.7,dust:'#978c82',strata:['#6b5848','#8e7660','#a58c72','#7a6654'],seed:11,pebbles:0.7,crate:'tan',crateMat:'crate',accent:'#ffc46a',horizon:1},
+  craters:{name:'Crater Field',tread:0.36,dustC:'#a8a8aa',ground:'#898a8d',dust:'#98999b',strata:['#7c7872','#8a857e'],seed:17,pebbles:1.0,relief:1.7,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
+  canyon:{name:'Canyon',tread:0.36,dustC:'#b3b4b6',ground:'#a4a7ab',topGround:'#7c6e60',topKind:1,wallPeb:0.8,dust:'#9a958e',strata:['#6b5d50','#8a7a69','#a08e7a','#77685a'],seed:23,pebbles:0.8,relief:1.6,crate:'steel',crateMat:'metal',accent:'#ffb066',horizon:1},
+  bunker:{name:'Underground Bunker',tread:0.16,dustC:null,ground:'#666a6f',topGround:'#6b6a6c',dust:null,strata:['#5a5a5e','#66666a'],seed:29,plates:true,pebbles:0.6,crate:'steel',crateMat:'metal',accent:CYAN,horizon:1}
  };
  const theme=id=>Object.assign({id},THEMES[id]||THEMES.classic);
 
  // ---------- shared pieces ----------
  // one shipping container, l long (along x if alongX), s wide
  function containerOne(B,X,Z,l,s,alongX,Hc,sd){
-  const pal=[['#c8601a','#e07a2a','#8f4212'],['#bf5a18','#d87226','#863e11'],['#cf6c22','#e68a38','#964a16'],['#b25a20','#cc7430','#7d3f14']][Math.floor(hs(sd,1.7)*4)%4],[body,rib,frame]=pal,hi=B.high;
+  const pal=[['#b9571a','#e2802c','#7c3a10'],['#b05216','#da7826','#74360f'],['#c06220','#e88e3a','#84400f'],['#a65320','#cf7a32','#6e3712']][Math.floor(hs(sd,1.7)*4)%4],[body,rib,frame]=pal,hi=B.high;
   const bx=(cls,c,lx,y,lz,sx,sy,sz,o)=>B.box(cls,c,alongX?X+lx:X+lz,y,alongX?Z+lz:Z+lx,alongX?sx:sz,sy,alongX?sz:sx,0,o);
   bx('paint',body,0,Hc/2+0.02,0,l-0.06,Hc-0.04,s-0.08,{dust:0.1});
-  const st=hi?0.21:0.42;for(let t=-l/2+0.16;t<l/2-0.1;t+=st){for(const sg of [-1,1])bx('paint',rib,t,Hc*0.5+0.02,sg*(s/2-0.028),0.085,Hc*0.76,0.04,{ao:0.22,dust:0.1});   // side corrugation
-   if(hi)bx('paint',rib,t+st/2,Hc+0.008,0,0.09,0.03,s-0.24,{ao:0,dust:0.14});}   // roof corrugation
+  const st=hi?0.21:0.42;for(let t=-l/2+0.16;t<l/2-0.1;t+=st){for(const sg of [-1,1])bx('paint',rib,t,Hc*0.5+0.02,sg*(s/2-0.028),0.1,Hc*0.76,0.045,{ao:0.22,dust:0.1});   // side corrugation
+   if(hi)bx('paint',rib,t+st/2,Hc+0.01,0,0.1,0.036,s-0.24,{ao:0,dust:0.1});}   // roof corrugation
   for(const a of [-1,1])for(const b of [-1,1])bx('paint',frame,a*(l/2-0.04),Hc/2,b*(s/2-0.04),0.08,Hc,0.08,{dust:0.12});   // corner posts
   for(const b of [-1,1]){bx('paint',frame,0,Hc-0.03,b*(s/2-0.035),l,0.07,0.07,{ao:0,dust:0.12});bx('paint',frame,0,0.05,b*(s/2-0.035),l,0.08,0.07);}
   for(const a of [-1,1])bx('paint',frame,a*(l/2-0.035),Hc-0.03,0,0.07,0.07,s,{ao:0,dust:0.12});
@@ -35,7 +35,7 @@ const ArenaProps=(()=>{
   for(const v of [-0.34,-0.12,0.12,0.34])bx('metal',STEEL_L,de*(l/2+0.012),Hc/2+0.02,v*s,0.022,Hc*0.78,0.028,{ao:0.1});
   if(hi){for(const v of [-0.23,0.23])bx('metal',STEEL_D,de*(l/2+0.03),Hc*0.42,v*s,0.02,0.05,0.16,{ao:0});
    for(let t=-s/2+0.2;t<s/2-0.12;t+=0.21)bx('paint',rib,-de*(l/2-0.012),Hc/2+0.02,t,0.04,Hc*0.76,0.085,{ao:0.2});
-   bx('paint','#e9e3d2',-l*0.22*de,Hc*0.66,(hs(sd,4)>0.5?1:-1)*(s/2+0.002),0.46,0.15,0.012,{ao:0,dust:0});bx('paint','#e9e3d2',l*0.18,Hc+0.026,0,0.5,0.008,0.22,{ao:0,dust:0.25});}
+   }
  }
  // a container wall of any footprint: stacks of 1-wide containers
  function containers(B,x,z,w,d,sd){
@@ -57,14 +57,17 @@ const ArenaProps=(()=>{
  }
  // the kerb and light strip that marks the arena edge wherever no wall stands on it. The south edge stays low.
  function border(B,M,o){
-  o=o||{};const hi=B.high,walls=M.map.walls||[],c=o.c||'#7f8890',gl=o.glow||M.theme.accent,segs=[];
+  o=o||{};const hi=B.high,walls=M.map.walls||[],c=o.c||'#96928b',gl=o.glow||M.theme.accent;
   const free=(a0,a1,test)=>{const out=[];let s=a0;const cuts=walls.filter(test.hit).map(test.span).sort((p,q)=>p[0]-q[0]);for(const [u,v] of cuts){if(u>s+0.05)out.push([s,Math.min(u,a1)]);s=Math.max(s,v);}if(s<a1-0.05)out.push([s,a1]);return out;};
   const N=free(0,W,{hit:w=>w[1]<0.01,span:w=>[w[0],w[0]+w[2]]}),S=free(0,W,{hit:w=>w[1]+w[3]>H-0.01,span:w=>[w[0],w[0]+w[2]]}),Wt=free(0,H,{hit:w=>w[0]<0.01,span:w=>[w[1],w[1]+w[3]]}),E=free(0,H,{hit:w=>w[0]+w[2]>W-0.01,span:w=>[w[1],w[1]+w[3]]});
-  const kh=o.h||0.1;
-  for(const [a,b] of N){B.box('rock',c,(a+b)/2,kh/2,-0.16,b-a+0.3,kh,0.3,0,{ao:0.2});B.glow('#ff6a72',(a+b)/2,kh+0.012,-0.1,b-a-0.3,0.024,0.05);for(let x=a+1;x<b;x+=hi?3:6)B.halo(x,kh+0.1,-0.1,0.7,'#ff5a66',0.22);}
-  for(const [a,b] of S){B.box('rock',c,(a+b)/2,kh/2,H+0.16,b-a+0.3,kh,0.3,0,{ao:0.2});B.glow('#5aa8ff',(a+b)/2,kh+0.012,H+0.1,b-a-0.3,0.024,0.05);for(let x=a+1;x<b;x+=hi?3:6)B.halo(x,kh+0.1,H+0.1,0.7,'#4d9fff',0.22);}
-  for(const [arr,x] of [[Wt,-0.16],[E,W+0.16]])for(const [a,b] of arr){B.box('rock',c,x,kh/2,(a+b)/2,0.3,kh,b-a+0.3,0,{ao:0.2});B.glow(gl,x+(x<0?0.06:-0.06),kh+0.012,(a+b)/2,0.05,0.024,b-a-0.4);
-   if(hi)for(let z=a+2;z<b-1;z+=4){B.box('metal',STEEL_D,x,0.2,z,0.12,0.4,0.12);B.glow(gl,x,0.42,z,0.07,0.05,0.07);B.halo(x,0.45,z,0.9,gl,0.3,1.3);}}
+  const kh=o.h||0.16,kw=0.44,ko=kw/2+0.02,stud=(x,z,cc)=>{B.box('metal',STEEL_D,x,kh+0.03,z,0.2,0.06,0.2,0,{ao:0,lit:1});B.glow(cc,x,kh+0.07,z,0.12,0.03,0.12);B.halo(x,kh+0.14,z,0.95,cc,0.5,1.1);};
+  const seg=(x0,z0,x1,z1,cc,edge)=>{const lx=x1-x0,lz=z1-z0,X=(x0+x1)/2,Z=(z0+z1)/2,alongX=lx>lz;B.box('rock',c,X,kh/2,Z,alongX?lx+kw:kw,kh,alongX?kw:lz+kw,0,{ao:0.25,aoH:0.16,lit:1,dust:0.1});
+   B.glow(cc,alongX?X:X+edge*0.13,kh+0.012,alongX?Z+edge*0.13:Z,alongX?lx-0.3:0.045,0.022,alongX?0.045:lz-0.3);M.aoBoxes.push([alongX?x0:x0-kw/2,alongX?z0-kw/2:z0,alongX?lx:kw,alongX?kw:lz]);
+   const L=alongX?lx:lz,n=Math.max(1,Math.round(L/4));for(let i=0;i<=n;i++){const f=i/n;if(hi||i%2===0)stud(alongX?x0+lx*f:X,alongX?Z:z0+lz*f,cc);}};
+  for(const [a,b] of N)seg(a,-ko,b,-ko,'#ff6a72',1);
+  for(const [a,b] of S)seg(a,H+ko,b,H+ko,'#5aa8ff',-1);
+  for(const [a,b] of Wt)seg(-ko,a,-ko,b,gl,1);
+  for(const [a,b] of E)seg(W+ko,a,W+ko,b,gl,-1);
  }
  // the world outside the arena on open ground: rocks, a far ridge under the sky, base clutter. Darker with distance.
  function outland(B,M,o){
@@ -72,26 +75,29 @@ const ArenaProps=(()=>{
   const clear=(x,z,r)=>x<-r-0.6||x>W+r+0.6||z<-r-0.6||z>H+r+0.6;
   const n=Math.round((hi?0.085:0.035)*((v.x1-v.x0)*(v.z1-v.z0)-W*H));
   for(let i=0;i<n;i++){const x=v.x0+hs(i,sd)*(v.x1-v.x0),z=Math.max(M.horizon+0.8,v.z0)+hs(sd,i*1.3)*(v.z1-Math.max(M.horizon+0.8,v.z0)),big=hs(i*3.7,sd)>0.86,r=big?0.5+hs(i,7)*0.7:0.1+hs(i,9)*0.22;
-   if(!clear(x,z,r)||z>H+2&&r>0.3)continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||'#8a8681',x,0,z,r,r*(big?1.1:1.3),i,{dim:dimAt(x,z)});}
+   if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||'#8a8681',x,0,z,r,r*(big?1.1:1.3),i,{dim:dimAt(x,z)});}
  }
  // the far ridge: a chain of low hills on the horizon line (north), so the ground ends in a silhouette under the stars
  function ridge(B,M,y0,c){
   const v=M.view,z=M.horizon;if((v.vis||v).z0>z-0.5)return;
-  const n=Math.ceil((v.x1-v.x0)/2.2);for(let i=0;i<=n;i++){const x=v.x0+(v.x1-v.x0)*i/n+(hs(i,4.4)-0.5)*1.2,r=1.5+hs(i,8.1)*1.5,h=0.55+hs(i*1.9,2.2)*1.25;B.rock(c||'#6f6c68',x,y0||0,z+0.2+hs(i,6)*0.7,r,h,i+40,{sz:0.55,ry:0,ao:0.2,dim:0.62,noShadow:1});}
+  const n=Math.ceil((v.x1-v.x0)/1.1),far=c?Arena3D.mul(Arena3D.lin(c),0.34):Arena3D.lin('#2c2e33'),near=c?Arena3D.mul(Arena3D.lin(c),0.52):Arena3D.lin('#484b51');
+  // two flat silhouette layers (unlit): far peaks, nearer low hills, each with a paler crest where the sun catches it
+  for(let i=0;i<=n;i++){const x=v.x0+(v.x1-v.x0)*i/n+(hs(i,4.4)-0.5)*0.8;
+   B.spire(far,x+0.5,y0||0,z-0.5,1.5+hs(i,3.3)*1.5,0.5+Math.pow(hs(i,7.7),1.6)*1.3,i+70,{cls:'glow',noShadow:1,top:Arena3D.mul(far,1.5)});
+   B.rock(near,x,y0||0,z+0.3+hs(i,6)*0.4,1.0+hs(i,8.1)*1.2,0.16+Math.pow(hs(i*1.9,2.2),1.8)*0.5,i+40,{cls:'glow',sz:0.5,ry:0,noShadow:1,top:Arena3D.mul(near,1.45)});}
  }
 
  // ---------- Moonbase / Crater Field / Longshot props ----------
- function cmd(B,x,z,w,d){
-  const X=x+w/2,Z=z+d/2,H1=0.6,body='#647385',lt='#7e8c9b',dk='#3a4450',hi=B.high;
+ function cmd(B,x,z,w,d,M){
+  const X=x+w/2,Z=z+d/2,H1=0.6,body='#586b82',lt='#6f849c',dk='#313c4a',hi=B.high;
   B.prism('paint',dk,X,0,Z,oct(w/2-0.01,d/2-0.01,0.5),0.1,{bevel:0.02});
   B.prism('paint',body,X,0.08,Z,oct(w/2-0.06,d/2-0.06,0.52),H1,{bevel:0.06,top:lt});
   B.prism('paint',lt,X,H1+0.06,Z,oct(w/2-0.62,d/2-0.5,0.36),0.24,{bevel:0.05});
-  B.prism('paint',dk,X-0.2,H1+0.3,Z,oct(0.62,0.5,0.2),0.07,{bevel:0.02});B.cyl('metal',STEEL,X-0.2,H1+0.39,Z,0.3,0.04,hi?14:8);   // roof hatch
+  B.prism('paint',dk,X-0.2,H1+0.3,Z,oct(0.62,0.5,0.2),0.07,{bevel:0.02});B.glow(CYAN,X,H1+0.19,Z+d/2-0.49,w-1.9,0.03,0.02);for(const sg of [-1,1])B.box('paint',HZ,X+sg*(w/2-0.9),H1+0.305,Z+0.2,0.1,0.012,1.2,0,{ao:0,dust:0});B.cyl('metal',STEEL,X-0.2,H1+0.39,Z,0.3,0.04,hi?14:8);   // roof hatch
   // windows: warm light on the camera-facing side and both flanks
-  for(const t of [-1,0,1]){B.box('paint',dk,X+t*0.82,0.42,Z+d/2-0.07,0.58,0.26,0.04,0,{ao:0});B.glow('#ffd27a',X+t*0.82,0.42,Z+d/2-0.048,0.48,0.17,0.02);}
-  B.halo(X,0.5,Z+d/2+0.15,2.6,'#ffcf7a',0.3);
+  for(const t of [-1.5,-0.5,0.5,1.5]){B.box('paint',dk,X+t*0.62,0.42,Z+d/2-0.07,0.5,0.28,0.04,0,{ao:0});B.glow('#ffd46a',X+t*0.62,0.42,Z+d/2-0.048,0.4,0.19,0.02);}
+  B.halo(X,0.5,Z+d/2+0.15,3.2,'#ffcf7a',0.42);if(M)M.glowSpots.push([X,Z+d/2+0.7,2.2,'255,205,110',0.42]);
   for(const sg of [-1,1]){B.glow('#ffd27a',X+sg*(w/2-0.075),0.42,Z+0.1,0.02,0.16,0.8);B.box('paint',dk,X+sg*(w/2-0.36),H1*0.55,Z-d/2+0.42,0.5,0.34,0.5,sg*0.78,{dust:0.25});}
-  B.box('paint',dk,X,0.24,Z+d/2-0.03,0.5,0.38,0.06,0,{ao:0});B.glow(CYAN,X,0.46,Z+d/2-0.005,0.4,0.03,0.02);   // airlock door
   hazard(B,X-0.8,Z+d/2-0.02,X+0.8,Z+d/2-0.02,0.1,0.08,[0,1]);
   if(hi){for(const t of [-1.25,-0.75,0.85,1.3])B.box('paint',dk,X+t,H1+0.095,Z-0.05,0.03,0.012,d*0.6,0,{ao:0,dust:0.1});
    for(const sg of [-1,1])B.box('metal',STEEL,X+sg*1.05,H1+0.13,Z+0.55,0.5,0.1,0.34,0,{dust:0.3});B.box('metal',STEEL_D,X+1.0,H1+0.14,Z-0.75,0.6,0.12,0.4,0,{dust:0.3});}
@@ -99,17 +105,17 @@ const ArenaProps=(()=>{
   for(const [ax,az,ah] of [[X-1.45,Z-0.95,1.05],[X+1.5,Z-1.0,0.8]]){B.cyl('metal',STEEL_L,ax,H1+ah/2,az,0.022,ah,5,{ao:0});B.glow('#ff5a50',ax,H1+ah+0.03,az,0.06,0.06,0.06);B.halo(ax,H1+ah+0.03,az,0.75,'#ff4d44',0.6,2.2);}
   B.k.spin.push({p:[X+0.75,H1+0.32,Z-0.3],axis:'y',spd:0.6,build:b=>{b.cyl('metal',STEEL_D,0,0.09,0,0.05,0.18,6,{ao:0});b.cyl('metal','#c9d0d6',0,0.24,0,0.3,0.1,hi?14:8,{rt:0.25,rx:0.9,ao:0,dust:0});b.box('metal',STEEL_D,0.12,0.32,0,0.02,0.2,0.02,0,{ao:0,rz:-0.6});}});
  }
- function dome(B,x,z,r){
+ function dome(B,x,z,r,M){
   const hi=B.high,seg=hi?22:12,R=r*0.9,sy=0.8;
   B.cyl('metal','#5c656e',x,0.08,z,r*0.98,0.16,seg,{dust:0.3});
-  B.sph('paint','#e2e7ec',x,0.15,z,R,R*sy,seg,true,{ao:0.25,aoH:0.5,dust:0.1});
+  B.sph('paint','#f2efe6',x,0.15,z,R,R*sy,seg,true,{ao:0.18,aoH:0.4,dust:0.04,punch:0.1});B.sph('glow','#fff1d2',x,0.2,z,R*0.5,R*sy*0.52,hi?12:8,true);
   const nm=hi?6:3;for(let i=0;i<nm;i++)B.tor('metal','#8f989f',x,0.15,z,R*1.004,0.017,hi?24:14,{rx:0,ry:i*PI/nm,sy,ts:4,ao:0,dust:0});
   for(const f of hi?[0.36,0.72]:[0.5]){const a=f*PI/2;B.tor('metal','#8f989f',x,0.15+R*sy*Math.sin(a),z,R*Math.cos(a)*1.004,0.017,hi?24:14,{ts:4,ao:0,dust:0});}
-  B.tor('glow','#bfeaff',x,0.19,z,R*1.01,0.014,hi?28:14,{ts:4});B.halo(x,0.55,z,r*2.4,'#cfe9ff',0.2);
+  B.tor('glow','#ffe9c0',x,0.19,z,R*1.01,0.016,hi?28:14,{ts:4});B.halo(x,0.6,z,r*3.0,'#ffe6b8',0.34);if(M)M.glowSpots.push([x,z,r*2.3,'255,232,190',0.34]);
   B.box('paint','#aeb7be',x,0.22,z+r*0.76,0.52,0.44,0.34,0,{dust:0.3});B.glow(CYAN,x,0.3,z+r*0.76+0.175,0.3,0.2,0.012);B.halo(x,0.3,z+r*0.95,0.8,CYAN,0.35);
  }
  function lander(B,x,z,w,d,sd){
-  const X=x+w/2,Z=z+d/2,hi=B.high,gold='#c9a44c',gold2='#b08a36',fl=sd>10?-1:1;
+  const X=x+w/2,Z=z+d/2,hi=B.high,gold='#c89a2e',gold2='#a87c1e',fl=sd>10?-1:1;
   B.prism('metal',gold,X,0.3,Z,oct(0.58,d/2-0.06,0.2),0.42,{bevel:0.04,dust:0.1,ao:0.25});   // descent stage, gold foil
   if(hi)for(let i=0;i<6;i++){const a=hs(sd+i,2)*6.28;B.box('metal',gold2,X+Math.cos(a)*0.4,0.52+hs(i,sd)*0.14,Z+Math.sin(a)*(d/2-0.2),0.22,0.12,0.2,a,{ao:0,dust:0.1});}
   B.cyl('metal','#4a4f56',X,0.2,Z,0.2,0.2,10,{rt:0.55,ao:0.3});   // engine bell
@@ -151,7 +157,7 @@ const ArenaProps=(()=>{
    const xo=side?W:v.x0,wo=side?v.x1-W:-v.x0;if(wo>0.05)B.box('rock',th.strata[0],xo+wo/2,Hc*0.5-0.01,H+0.02,wo,Hc-0.02,0.04,0,{ao:0.3});
    if(side)B.topRect(W,H,v.x1,v.z1,Hc*0.2);else B.topRect(v.x0,H,0,v.z1,Hc*0.2);
    // set dressing on the rim: boulders, spires, work lights looking down into the lane
-   const n=B.high?9:4;for(let i=0;i<n;i++){const z=1.5+i*(H-3)/(n-1)+(hs(i,side)-0.5)*1.2,x=side?W-0.9-hs(i,3+side)*1.9:0.9+hs(i,3+side)*1.9,r=0.22+hs(i*1.7,side+5)*0.4;B.yb(Hc);if(hs(i,side+8)>0.7)B.spire(th.strata[1],x,Hc,z,r*0.8,0.5+r*1.6,i+side*7);else B.rock(th.strata[i%4],x,Hc,z,r,r*1.1,i+side*9);B.yb(0);}
+   const n=B.high?9:4;for(let i=0;i<n;i++){const z=1.5+i*(H-3)/(n-1)+(hs(i,side)-0.5)*1.2,x=side?W-0.9-hs(i,3+side)*1.9:0.9+hs(i,3+side)*1.9,r=0.22+hs(i*1.7,side+5)*0.4;B.yb(Hc);if(hs(i,side+8)>0.55){for(let j=0;j<3;j++)B.rock(th.strata[(i+j)%4],x+(j-1)*r*0.62,Hc,z+(hs(i,j)-0.5)*r*0.6,r*0.42,r*(0.9+hs(j,i)*0.7),i*3+j,{sz:1.8,ry:0.35+0.2*hs(i,j+3)});}else B.rock(th.strata[i%4],x,Hc,z,r,r*1.1,i+side*9);B.yb(0);}
    for(const z of B.high?[5,11,21,27]:[8,24]){const x=side?16.5:3.5,s=side?-1:1;B.yb(Hc);B.box('metal',STEEL_D,x,Hc+0.3,z,0.08,0.6,0.08);B.box('metal',STEEL_D,x+s*0.2,Hc+0.6,z,0.5,0.06,0.1);B.glow('#ffd9a0',x+s*0.42,Hc+0.565,z,0.12,0.03,0.16);B.yb(0);B.halo(x+s*0.42,Hc+0.5,z,1.6,'#ffcf8a',0.4);
     M.glowSpots.push([x+s*1.4,z,2.4,'255,200,120',0.16]);B.k.anchors.sparks.push([x+s*0.42,Hc+0.5,z]);}
   }
@@ -160,7 +166,7 @@ const ArenaProps=(()=>{
  // ---------- Overpass: the steel bridge, its ramps and tunnels ----------
  const DECK=1.0;
  function steelBridge(B,M,BRd){
-  const [dx,dy,dw,dh]=BRd.deck,hi=B.high,slab='#9aa2a9',slabD='#7b848c',dark='#444c55';
+  const [dx,dy,dw,dh]=BRd.deck,hi=B.high,slab='#6a6f74',slabD='#54595e',dark='#2c3136',CYAN=M.theme.accent;
   let x0=dx;const blocks=[];for(const [tx,tw] of BRd.tunnels){blocks.push([x0,tx-x0,true]);blocks.push([tx,tw,false]);x0=tx+tw;}blocks.push([x0,dx+dw-x0,true]);
   for(const [sx,sw,solid] of blocks){
    if(solid){
@@ -177,7 +183,7 @@ const ArenaProps=(()=>{
     const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal',slab,sx+sw/2,DECK-0.035,dy+dh*j/nz,sw,0.06,0.07,0,{ao:0,dust:0});
     // portals: frames with a light bar on both mouths
     for(const s of [-1,1]){const zf=dy+dh/2+s*(dh/2+0.01);for(const e of [0.07,sw-0.07])B.box('metal',dark,sx+e,(DECK-0.1)/2,zf,0.14,DECK-0.1,0.14);B.box('metal',dark,sx+sw/2,DECK-0.24,zf,sw,0.12,0.12);B.glow(CYAN,sx+sw/2,DECK-0.31,zf+s*0.065,sw-0.4,0.03,0.02);if(s>0)B.halo(sx+sw/2,DECK-0.35,zf+0.2,2.2,CYAN,0.3);}
-    M.stains.push([sx+0.1,dy+0.1,sw-0.2,dh-0.2,0.6]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.5,'90,225,255',0.3]);M.glowSpots.push([sx+sw/2,dy-0.5,1.5,'90,225,255',0.22]);
+    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.92]);M.glowSpots.push([sx+sw/2,dy+dh+0.6,1.9,'60,230,215',0.42]);M.glowSpots.push([sx+sw/2,dy-0.6,1.9,'60,230,215',0.34]);
    }
   }
   // edge beams with light strips; railings wherever no ramp joins
@@ -193,7 +199,7 @@ const ArenaProps=(()=>{
   // ramps: a sloped plate between two rails (the rails are the solids the rules have), light strips down the sides
   for(const [rx,ry,rw,rh,o] of ramps){const lo=o<0?ry:ry+rh,hiZ=o<0?ry+rh:ry,ang=Math.atan2(DECK,rh)*(o<0?-1:1),len=Math.hypot(DECK,rh),zc=ry+rh/2;
    B.box('metal',slab,rx+rw/2,DECK/2-0.04,zc,rw,0.1,len,0,{rx:ang,ao:0.15,dust:0.16});
-   const nt=hi?9:5;for(let i=1;i<nt;i++){const f=i/nt,z=lo+(hiZ-lo)*f;B.box('metal',slabD,rx+rw/2,f*DECK+0.02,z,rw-0.3,0.025,0.06,0,{rx:ang,ao:0,dust:0});}
+   for(const sg of [-1,1])B.box('paint',HZ,rx+rw/2+sg*(rw/2-0.2),DECK/2+0.014,zc,0.07,0.012,len-0.1,0,{rx:ang,ao:0,dust:0});B.box('metal',slabD,rx+rw/2,DECK/2+0.012,zc,0.03,0.012,len-0.1,0,{rx:ang,ao:0,dust:0});
    for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;
     B.box('rock','#8a8f94',xr,DECK/2*0.5,zc,0.2,0.3,len,0,{rx:ang,ao:0.2,yb:0});   // sloped concrete cheek
     for(let i=1;i<=4;i++){const f=i/4,zz=lo+(hiZ-lo)*(f-0.125);B.box('rock','#80858a',xr,f*DECK*0.5-0.06,zz,0.2,Math.max(0.02,f*DECK-0.12),Math.abs(hiZ-lo)/4,0,{ao:0.3});}   // stepped concrete under the cheek
@@ -216,7 +222,7 @@ const ArenaProps=(()=>{
   const [x,z,w,d]=wl,n=B.high?5:3,cs=M.theme.strata;B.strata([x,z,w,d],0.34,{seed:x+z*2,inset:0.1,layers:1,cap:false});
   for(let i=0;i<n;i++){const f=(i+0.5)/n,hh=0.62+0.5*hs(x,i+2);B.rock(cs[i%4],x+w*(0.12+0.76*f),0.2,z+d*(0.42+0.16*hs(i,z)),w/n*0.62,hh,i+Math.floor(x),{sx:1,sz:d*0.42/(w/n*0.62),ry:0.25+0.2*hs(i,5),ao:0.3});}
  }
- function spire(B,M,x,z,r,sd){const cs=M.theme.strata;B.spire(cs[0],x,0,z,r*0.92,r*2.35,sd);B.spire(cs[1],x+r*0.42,0,z+r*0.3,r*0.42,r*1.25,sd+1);B.spire(cs[3],x-r*0.4,0,z+r*0.38,r*0.33,r*0.85,sd+2);if(B.high)B.rock(cs[2],x+r*0.1,0,z-r*0.55,r*0.34,r*0.3,sd+3);}
+ function spire(B,M,x,z,r,sd){const cs=M.theme.strata;B.spire(cs[1],x,0,z,r*0.92,r*2.35,sd,{top:'#9a8f83'});B.spire(cs[1],x+r*0.42,0,z+r*0.3,r*0.42,r*1.25,sd+1);B.spire(cs[3],x-r*0.4,0,z+r*0.38,r*0.33,r*0.85,sd+2);if(B.high)B.rock(cs[2],x+r*0.1,0,z-r*0.55,r*0.34,r*0.3,sd+3);}
  function scree(B,M,x,z,r){const n=B.high?26:10;for(let i=0;i<n;i++){const a=hs(i,x)*6.283,dd=Math.sqrt(hs(z,i))*r*0.95,q=0.04+hs(i,i+z)*0.075;B.rock(M.theme.strata[i%4],x+Math.cos(a)*dd,0,z+Math.sin(a)*dd,q,q*1.2,i+x,{ao:0.5,aoH:0.1});}}
  // the mesa: the same rules as the Overpass bridge, drawn as a rock table split by a cleft; a steel grating spans the cleft
  function mesa(B,M,BRd){
@@ -225,23 +231,23 @@ const ArenaProps=(()=>{
   for(const [sx,sw,solid] of blocks){
    if(solid)B.strata([sx,dy,sw,dh],DECK,{seed:sx*2.3,inset:0.14,lean:0.1,layers:hi?4:2,open:{N:1,S:1,W:sx<=dx+0.01,E:sx+sw>=dx+dw-0.01}});
    else{   // the cleft and its grating
-    for(const s of [-1,1])B.box('metal','#6e7780',sx+sw/2,DECK-0.09,dy+dh/2+s*(dh/2-0.1),sw+0.3,0.18,0.2,0,{ao:0,dust:0.25});
-    const nb=Math.max(2,Math.round(sw/(hi?0.3:0.6)));for(let i=0;i<=nb;i++)B.box('metal',i%4===0?'#8b949c':'#6e7780',sx+sw*i/nb,DECK-0.035,dy+dh/2,i%4===0?0.07:0.04,0.07,dh-0.3,0,{ao:0,dust:0.1});
-    const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal','#8b949c',sx+sw/2,DECK-0.03,dy+dh*j/nz,sw,0.06,0.07,0,{ao:0,dust:0.1});
+    for(const s of [-1,1])B.box('metal','#4d545b',sx+sw/2,DECK-0.09,dy+dh/2+s*(dh/2-0.1),sw+0.3,0.18,0.2,0,{ao:0,dust:0.2});
+    const nb=Math.max(2,Math.round(sw/(hi?0.3:0.6)));for(let i=0;i<=nb;i++)B.box('metal',i%4===0?'#5d646b':'#454b52',sx+sw*i/nb,DECK-0.035,dy+dh/2,i%4===0?0.07:0.04,0.07,dh-0.3,0,{ao:0,dust:0.1});
+    const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal','#5d646b',sx+sw/2,DECK-0.03,dy+dh*j/nz,sw,0.06,0.07,0,{ao:0,dust:0.1});
     for(const s of [-1,1]){B.glow('#ffb066',sx+sw/2,DECK-0.24,dy+dh/2+s*(dh/2-0.02),sw-0.5,0.03,0.02);B.halo(sx+sw/2,DECK-0.3,dy+dh/2+s*(dh/2+0.15),1.9,'#ffa860',0.3);}
-    M.stains.push([sx+0.1,dy+0.1,sw-0.2,dh-0.2,0.55]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.4,'255,170,100',0.28]);M.glowSpots.push([sx+sw/2,dy-0.5,1.4,'255,170,100',0.2]);
+    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.9]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.4,'255,170,100',0.28]);M.glowSpots.push([sx+sw/2,dy-0.5,1.4,'255,170,100',0.2]);
    }
   }
   for(const [rx,ry,rw,rh,o] of BRd.ramps){const lo=o<0?ry:ry+rh,hiZ=o<0?ry+rh:ry;
    B.top([[rx,o<0?0:DECK,ry],[rx+rw,o<0?0:DECK,ry],[rx+rw,o<0?DECK:0,ry+rh],[rx,o<0?DECK:0,ry+rh]]);   // the ramp surface takes the baked ground
-   const n=hi?7:4;for(let i=1;i<n;i++){const f=i/n;B.box('rock',cs[2],rx+rw/2,f*DECK+0.012,lo+(hiZ-lo)*f,rw-0.2,0.03,0.07,0,{rx:Math.atan2(DECK,rh)*(o<0?-1:1),ao:0,dust:0.3});}
+   M.rampTracks.push([rx+rw/2,ry-0.6,rx+rw/2,ry+rh+0.6]);
    for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;for(let t=0.2;t<rh;t+=hi?0.45:0.9){const zz=ry+t,f=Math.abs(zz-lo)/rh,r=0.15+hs(t,xr)*0.07;B.rock(cs[(Math.floor(t*3)+1)%4],xr,0,zz,r,DECK*f+0.2+r,Math.floor(t*7+xr),{ao:0.35});}}
    M.aoBoxes.push([rx-0.2,ry,rw+0.4,rh]);
   }
  }
 
  // ---------- Underground Bunker ----------
- const BW='#4c5762',BW2='#3d4750',BRIB='#6f7b86',BCAP='#808c97';
+ const BW='#565d64',BW2='#41474d',BRIB='#7b848c',BCAP='#8f979e';
  function bulk(B,wl){
   const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,Hb=1.35,hi=B.high,long=w>=d;
   B.box('paint',BW,X,Hb/2,Z,w-0.04,Hb,d-0.04,0,{ao:0.4});B.box('metal',BCAP,X,Hb+0.03,Z,w,0.07,d,0,{ao:0});B.box('metal',BW2,X,Hb+0.075,Z,w-0.3,0.03,d-0.3,0,{ao:0});
@@ -288,7 +294,7 @@ const ArenaProps=(()=>{
   zs.forEach((zz,i)=>reactor(B,X,zz,r,i+(x>10?1:0)));
   const wx=x<10?x+0.03:x+w-0.03;B.cyl('metal','#a9793a',wx,0.55,z+d/2,0.07,d*0.9,8,{rx:PI/2,ao:0});if(hi)B.cyl('metal',STEEL,wx,0.3,z+d/2,0.05,d*0.9,8,{rx:PI/2,ao:0});
   B.k.anims.push({type:'arc',a:[X,0.62,zs[0]+r*0.86],b:[X,0.62,zs[1]-r*0.86],c:'#aef3ff',w:0.05});
-  M.glowSpots.push([X,z+d/2,3.4,'80,220,255',0.55]);B.k.anchors.vents.push([X,z+d/2,1.2,0.9]);B.k.anchors.sparks.push([X,0.7,z+d/2]);
+  M.glowSpots.push([X,z+d/2,3.6,'80,220,255',0.7]);B.k.anchors.vents.push([X,z+d/2,1.2,0.9]);B.k.anchors.sparks.push([X,0.7,z+d/2]);
  }
  function lift(B,wl,M){
   const [x,z,w,d]=wl,X=x+w/2,Z=z+d/2,north=z<0.01,hi=B.high,face=north?z+d:z;
@@ -328,19 +334,23 @@ const ArenaProps=(()=>{
  }
  // the bunker's shell: tall walls north, east and west, a low one on the camera's side; lunar surface beyond
  function bunkerShell(B,M){
-  const v=M.view,hi=B.high,Hw=2.0,t=1.1,wall='#434d57',cap='#6b7781';
+  const v=M.view,hi=B.high,Hw=2.0,t=1.1,wall='#4b5259',cap='#7b848c';
   B.box('paint',wall,W/2,Hw/2,-t/2,W+2*t,Hw,t,0,{ao:0.4,aoH:0.9});B.box('metal',cap,W/2,Hw+0.03,-t/2,W+2*t,0.08,t+0.08,0,{ao:0});
   for(const s of [-1,1]){const xo=s<0?-t/2:W+t/2;B.box('paint',wall,xo,Hw/2,H/2+0.3,t,Hw,H+0.6,0,{ao:0.4,aoH:0.9});B.box('metal',cap,xo,Hw+0.03,H/2+0.3,t+0.08,0.08,H+0.6,0,{ao:0});
    B.cyl('metal','#a9793a',xo-s*0.2,Hw+0.14,H/2,0.07,H,8,{rx:PI/2,ao:0});B.cyl('metal',STEEL,xo+s*0.12,Hw+0.13,H/2,0.055,H,8,{rx:PI/2,ao:0});
-   for(let z=2;z<H;z+=hi?4:8){B.box('metal','#59636d',xo-s*(t/2+0.06),Hw-0.12,z,0.3,0.08,0.5,0,{ao:0});B.glow('#ffe0a8',xo-s*(t/2+0.1),Hw-0.17,z,0.2,0.03,0.42);B.halo(xo-s*(t/2+0.1),Hw-0.25,z,2.0,'#ffd590',0.32);M.glowSpots.push([s<0?1.2:W-1.2,z,2.6,'255,214,150',0.2]);
+   for(let z=2;z<H;z+=hi?4:8){B.box('metal','#59636d',xo-s*(t/2+0.06),Hw-0.12,z,0.3,0.08,0.5,0,{ao:0});B.glow('#ffe0a8',xo-s*(t/2+0.1),Hw-0.17,z,0.2,0.03,0.42);B.halo(xo-s*(t/2+0.1),Hw-0.25,z,2.0,'#ffd590',0.32);M.glowSpots.push([s<0?1.4:W-1.4,z,3.0,'255,214,150',0.34]);
     if(hi)B.box('metal','#59636d',xo,Hw+0.09,z+2,t*0.7,0.05,0.5,0,{ao:0});}}
   B.box('rock','#5b6068',W/2,0.17,H+t/2,W+2*t,0.34,t,0,{ao:0.2});hazard(B,-0.2,H+0.02,W+0.2,H+0.02,0.34,0.012,[0,0]);B.glow('#5aa8ff',W/2,0.36,H+0.2,W-1,0.02,0.05);
   // the north wall is the back of the stage: ribs, panels, pipes, work lamps
   for(let x=0;x<=W;x+=hi?2:4){B.box('metal',BRIB,x,Hw/2,0.03,0.16,Hw,0.07,0,{ao:0.3});}
   for(let x=1;x<W;x+=2){if(x>6.5&&x<13.5)continue;B.box('paint','#39424b',x,0.95,0.012,1.5,1.2,0.03,0,{ao:0.2});if(hi)B.box('paint','#525e69',x,0.95,0.03,1.1,0.8,0.02,0,{ao:0});}
   B.cyl('metal','#a9793a',W/2,1.72,0.1,0.07,W,8,{rz:PI/2,ao:0});B.cyl('metal',STEEL,W/2,1.55,0.08,0.05,W,8,{rz:PI/2,ao:0});
-  for(const x of [3,17]){B.box('metal','#59636d',x,1.62,0.2,0.34,0.14,0.4,0,{ao:0});B.glow('#ffe9c0',x,1.54,0.26,0.24,0.03,0.26);B.halo(x,1.45,0.4,2.6,'#ffdca0',0.4);M.glowSpots.push([x,1.7,3.2,'255,220,160',0.3]);}
+  for(const x of [3,17]){B.box('metal','#59636d',x,1.62,0.15,0.34,0.14,0.3,0,{ao:0});B.glow('#ffe9c0',x,1.54,0.18,0.24,0.03,0.22);B.halo(x,1.45,0.4,2.6,'#ffdca0',0.4);M.glowSpots.push([x,1.9,3.6,'255,220,160',0.42]);}
   hazard(B,0,0.02,7,0.02,0.12,0.14,[0,1]);hazard(B,13,0.02,W,0.02,0.12,0.14,[0,1]);
+  for(let x=0;x<=W;x+=4){if(x>6.5&&x<13.5)continue;B.box('metal','#8f979e',x,Hw/2,0.045,0.5,Hw,0.09,0,{ao:0.3});B.box('metal',BW2,x,Hw-0.2,0.07,0.56,0.12,0.14,0,{ao:0});}
+  for(const x of [6.9,13.1]){B.box('paint',HZ,x,Hw/2,0.05,0.22,Hw,0.1,0,{ao:0.2});for(let y=0.2;y<Hw;y+=0.4)B.box('paint',HZK,x,y,0.103,0.22,0.16,0.012,0,{rz:0.5,ao:0});}
+  // the reactor hall's floor ring: a flush strip of light and four slow pulses
+  B.tor('glow','#49dcff',10,0.016,16,2.55,0.02,hi?56:28,{ts:4});B.tor('glow','#2aa9cc',10,0.014,16,1.2,0.014,hi?40:20,{ts:4});for(let i=0;i<4;i++){const a=i*PI/2+PI/4;B.halo(10+Math.cos(a)*2.55,0.1,16+Math.sin(a)*2.55,1.5,'#49dcff',0.5,1.3+i*0.2);}
   // ground level outside the shell
   B.topRect(v.x0,M.horizon,v.x1,-t,Hw);B.topRect(v.x0,-t,-t,H+t,Hw);B.topRect(W+t,-t,v.x1,H+t,Hw);
   B.box('rock','#5a5a5e',(v.x0-t)/2,Hw/2-0.01,H+t,-t-v.x0,Hw-0.02,0.04,0,{ao:0.2});B.box('rock','#5a5a5e',(W+t+v.x1)/2,Hw/2-0.01,H+t,v.x1-W-t,Hw-0.02,0.04,0,{ao:0.2});
@@ -351,14 +361,14 @@ const ArenaProps=(()=>{
 
  // ---------- crates (drawn per crate by the renderer): a unit crate, 1 x 1 x 1 ----------
  function crate(B,style){
-  if(style==='steel'){const b='#9aa3ab',d='#5c666f';B.box('metal',b,0,0.5,0,0.94,0.96,0.94,0,{ao:0.3,aoH:0.5});for(const y of [0.2,0.5,0.8]){B.box('metal',d,0,y,0.475,0.9,0.07,0.02,0,{ao:0});B.box('metal',d,0,y,-0.475,0.9,0.07,0.02,0,{ao:0});B.box('metal',d,0.475,y,0,0.02,0.07,0.9,0,{ao:0});B.box('metal',d,-0.475,y,0,0.02,0.07,0.9,0,{ao:0});}
-   for(const a of [-1,1])for(const c of [-1,1])B.box('metal',d,a*0.455,0.5,c*0.455,0.1,1,0.1,0,{ao:0.2});B.box('metal','#b9c1c7',0,1.0,0,0.8,0.03,0.8,0,{ao:0});B.box('paint',HZ,0,1.02,0,0.5,0.012,0.14,0,{ao:0});for(const a of [-0.25,0.25])B.box('metal',STEEL_D,a,0.62,0.49,0.1,0.14,0.03,0,{ao:0});return;}
-  const b='#a38a62',d='#6f5d42',l='#b89f76';   // a tan hard case: reinforced edges, a lid seam, two latches
+  if(style==='steel'){const b='#b4babf',d='#59626a';B.box('metal',b,0,0.5,0,0.94,0.96,0.94,0,{ao:0.3,aoH:0.5});for(const y of [0.2,0.5,0.8]){B.box('metal',d,0,y,0.475,0.9,0.07,0.02,0,{ao:0});B.box('metal',d,0,y,-0.475,0.9,0.07,0.02,0,{ao:0});B.box('metal',d,0.475,y,0,0.02,0.07,0.9,0,{ao:0});B.box('metal',d,-0.475,y,0,0.02,0.07,0.9,0,{ao:0});}
+   for(const a of [-1,1])for(const c of [-1,1])B.box('metal',d,a*0.455,0.5,c*0.455,0.1,1,0.1,0,{ao:0.2});B.box('metal','#c3c9ce',0,1.0,0,0.8,0.03,0.8,0,{ao:0});for(const a of [-0.24,0,0.24])B.box('metal',d,a,1.02,0,0.05,0.012,0.76,0,{ao:0});for(const a of [-0.25,0.25])B.box('metal',STEEL_D,a,0.62,0.49,0.1,0.14,0.03,0,{ao:0});return;}
+  const b='#7d6a47',d='#4f422c',l='#927d55';   // a tan hard case: reinforced edges, a lid seam, two latches
   B.box('paint',b,0,0.5,0,0.92,0.96,0.92,0,{ao:0.3,aoH:0.5});B.box('paint',l,0,1.0,0,0.74,0.03,0.74,0,{ao:0});
   for(const a of [-1,1])for(const c of [-1,1])B.box('paint',d,a*0.44,0.5,c*0.44,0.14,1.0,0.14,0,{ao:0.25});
   for(const y of [0.06,0.94])for(const a of [-1,1]){B.box('paint',d,0,y,a*0.455,0.9,0.12,0.09,0,{ao:0});B.box('paint',d,a*0.455,y,0,0.09,0.12,0.9,0,{ao:0});}
   for(const a of [-1,1]){B.box('paint','#584a35',0,0.7,a*0.465,0.92,0.03,0.012,0,{ao:0});B.box('paint','#584a35',a*0.465,0.7,0,0.012,0.03,0.92,0,{ao:0});}
-  for(const a of [-0.22,0.22])B.box('metal',STEEL_L,a,0.68,0.475,0.1,0.16,0.03,0,{ao:0});B.box('paint','#e9e3d2',0,0.38,0.467,0.34,0.14,0.01,0,{ao:0});
+  for(const a of [-0.22,0.22])B.box('metal',STEEL_L,a,0.68,0.475,0.1,0.16,0.03,0,{ao:0});
  }
 
  // ---------- ground paint (2D canvas, world units): tracks in red, stains in blue, colour decals, glow pools ----------
@@ -375,6 +385,7 @@ const ArenaProps=(()=>{
   const id=M.id,d=lay.decal,sd=M.theme.seed;
   for(const s of M.stains){lay.paint.save();lay.paint.globalCompositeOperation='lighter';lay.paint.fillStyle='rgba(0,0,255,'+s[4]+')';lay.paint.fillRect(s[0],s[1],s[2],s[3]);lay.paint.restore();}
   for(const g of M.glowSpots)pool(lay,g[0],g[1],g[2],g[3],g[4]);
+  for(const t of M.rampTracks)track(lay,[[t[0],t[1]],[t[0],(t[1]+t[3])/2],[t[2],t[3]]],{a:0.8});
   if(id==='overpass'){   // the reference: sweeping loops of tread marks round both halves, straight runs through the tunnels
    for(const zc of [7.2,24.8])for(const [rx,rz,a] of [[6.6,4.2,0.9],[5.2,3.2,0.7],[3.6,2.3,0.6]]){const k=0.5523,x=10+(hs(rx,zc)-0.5)*0.8;track(lay,[[x-rx,zc],[x-rx,zc-rz*k],[x-rx*k,zc-rz],[x,zc-rz],[x+rx*k,zc-rz],[x+rx,zc-rz*k],[x+rx,zc],[x+rx,zc+rz*k],[x+rx*k,zc+rz],[x,zc+rz],[x-rx*k,zc+rz],[x-rx,zc+rz*k],[x-rx,zc]],{curve:1,a});}
    for(const x of [7,13]){track(lay,[[x,3],[x+0.3,9],[x-0.2,13],[x,13.5],[x,18.5],[x+0.2,22],[x-0.3,26],[x,29.5]],{a:0.9});}
@@ -393,12 +404,12 @@ const ArenaProps=(()=>{
    track(lay,[[14.5,29],[16.2,24],[16.6,18],[16.9,13]],{a:0.55});track(lay,[[5.5,3],[3.8,8],[3.4,14],[3.1,19]],{a:0.55});track(lay,[[10,21],[10,11]],{a:0.8});
   }else if(id==='bunker'){
    // painted lanes, spawn boxes and the reactor ring, worn by tracks
-   d.lineWidth=0.09;d.strokeStyle='rgba(222,176,58,0.85)';d.setLineDash([0.5,0.35]);for(const x of [5.4,14.6]){d.beginPath();d.moveTo(x,1.8);d.lineTo(x,8.2);d.moveTo(x,23.8);d.lineTo(x,30.2);d.stroke();}
+   d.lineWidth=0.08;d.strokeStyle='rgba(222,176,58,0.4)';d.setLineDash([0.5,0.35]);for(const x of [5.4,14.6]){d.beginPath();d.moveTo(x,1.8);d.lineTo(x,8.2);d.moveTo(x,23.8);d.lineTo(x,30.2);d.stroke();}
    d.setLineDash([]);d.strokeStyle='rgba(205,214,222,0.5)';d.lineWidth=0.06;d.beginPath();d.ellipse(10,16,2.55,2.55,0,0,PI*2);d.stroke();d.beginPath();d.ellipse(10,16,1.2,1.2,0,0,PI*2);d.stroke();
    for(let i=0;i<12;i++){const a=i/12*PI*2;d.beginPath();d.moveTo(10+Math.cos(a)*1.2,16+Math.sin(a)*1.2);d.lineTo(10+Math.cos(a)*2.55,16+Math.sin(a)*2.55);d.stroke();}
-   d.strokeStyle='rgba(255,90,100,0.6)';d.lineWidth=0.07;d.strokeRect(5.6,2.0,8.8,3.2);d.strokeStyle='rgba(90,160,255,0.6)';d.strokeRect(5.6,26.8,8.8,3.2);
+   const br=(x0,z0,x1,z1,cc)=>{d.strokeStyle=cc;d.lineWidth=0.08;for(const [cx,cz,sx,sz] of [[x0,z0,1,1],[x1,z0,-1,1],[x1,z1,-1,-1],[x0,z1,1,-1]]){d.beginPath();d.moveTo(cx+sx*0.9,cz);d.lineTo(cx,cz);d.lineTo(cx,cz+sz*0.9);d.stroke();}};br(5.6,2.0,14.4,5.2,'rgba(255,90,100,0.38)');br(5.6,26.8,14.4,30.0,'rgba(90,160,255,0.38)');
    d.fillStyle='rgba(222,176,58,0.8)';for(const [x0,z0] of [[8.3,9.6],[8.3,22.25]])for(let i=0;i<9;i++){d.save();d.translate(x0+i*0.4,z0);d.transform(1,0,-0.6,1,0,0);d.fillRect(0,0,0.2,0.16);d.restore();}
-   pool(lay,10,16,5.2,'120,225,255',0.36);pool(lay,10,3.4,3.6,'255,120,110',0.14);pool(lay,10,28.6,3.6,'110,170,255',0.14);
+   pool(lay,10,16,5.6,'90,215,255',0.5);pool(lay,10,16,2.2,'150,235,255',0.4);pool(lay,10,3.4,3.6,'255,120,110',0.14);pool(lay,10,28.6,3.6,'110,170,255',0.14);
    for(const [x,z,a] of [[10,5.5,0.5],[10,26.5,0.5],[2.2,10.5,0.4],[17.8,21.5,0.4],[7,16,0.35],[13,16,0.35]])stain(lay,x,z,2.2,1.4,a);
    for(const x of [8.6,11.4]){track(lay,[[x,30],[x+0.2,25],[x-0.1,20.5]],{a:0.5});track(lay,[[x,2],[x-0.2,7],[x+0.1,11.5]],{a:0.5});}
    track(lay,[[1.9,10],[2.1,13.5],[1.7,18.5],[1.9,22]],{a:0.45});track(lay,[[18.1,22],[17.9,18.5],[18.3,13.5],[18.1,10]],{a:0.45});
@@ -411,19 +422,20 @@ const ArenaProps=(()=>{
  // ---------- build one map ----------
  function build(id,B,M){
   const MP=M.map,th=M.theme,v=M.view,hi=B.high;
-  M.horizon=th.horizon?Math.max(v.z0,-5.4):v.z0;M.stains=[];M.glowSpots=[];
+  M.horizon=th.horizon?Math.max(v.z0,-5.4):v.z0;M.stains=[];M.glowSpots=[];M.rampTracks=[];
   v.z0=Math.max(v.z0,M.horizon);   // the ground ends at the ridge; beyond it is sky
   th.paint=paint;
   const outdoor=id!=='bunker';
   for(const wl of MP.walls||[]){const [x,z,w,d,st]=wl,sd=x*7.3+z*3.1;
-   if(st==='ctr')containers(B,x,z,w,d,sd);else if(st==='cmd')cmd(B,x,z,w,d);else if(st==='pylon')pylon(B,x,z,w,d,M);else if(st==='lander')lander(B,x,z,w,d,sd);
+   if(st==='ctr')containers(B,x,z,w,d,sd);else if(st==='cmd')cmd(B,x,z,w,d,M);else if(st==='pylon')pylon(B,x,z,w,d,M);else if(st==='lander')lander(B,x,z,w,d,sd);
    else if(st==='cliff'){/* built together below */}else if(st==='canyon')canyonWall(B,M,wl);else if(st==='fin')fin(B,M,wl);
    else if(st==='bulk')bulk(B,wl);else if(st==='door')door(B,wl);else if(st==='pillar')pillar(B,wl);else if(st==='turbine')turbine(B,wl,M);else if(st==='lift')lift(B,wl,M);else if(st==='console')consoleP(B,wl,M);
    else B.box('paint','#5d6770',x+w/2,0.5,z+d/2,w,1,d);}
   if(id==='longshot')cliffs(B,M);
   for(const [x,z,r,st] of MP.rocks||[]){const sd=x*5.1+z*2.3;
-   if(st==='dome')dome(B,x,z,r);else if(st==='spire')spire(B,M,x,z,r,sd);else if(st==='tank')fuelTank(B,x,z,r,M);else if(st==='boulder')boulder(B,x,z,r,sd,th.strata[1]);else boulder(B,x,z,r,sd);}
-  for(const [x,z,r,st] of MP.craters||[]){if(st==='scree')scree(B,M,x,z,r);else if(st==='coolant')coolant(B,x,z,r,M);else{if(hi)pebbleRing(B,x,z,r*1.02,r*1.28,Math.round(r*9),x*3+z);B.k.anchors.vents.push([x,z,r,0.05]);}}
+   if(st==='dome')dome(B,x,z,r,M);else if(st==='spire')spire(B,M,x,z,r,sd);else if(st==='tank')fuelTank(B,x,z,r,M);else if(st==='boulder')boulder(B,x,z,r,sd,th.strata[1]);else boulder(B,x,z,r,sd);}
+  for(const [x,z,r,st] of MP.craters||[]){if(st==='scree')scree(B,M,x,z,r);else if(st==='coolant')coolant(B,x,z,r,M);else{if(hi)pebbleRing(B,x,z,r*1.02,r*1.28,Math.round(r*9),x*3+z);B.k.anchors.vents.push([x,z,r,0.05]);
+    if(id==='craters'&&r>2){B.cyl('metal',STEEL_D,x,0.012,z,0.2,0.024,12,{ao:0,noShadow:1});B.cyl('glow','#7df0ff',x,0.03,z,0.11,0.012,10);B.halo(x,0.12,z,2.4,'#39d8e8',0.6,1.5);B.halo(x,0.1,z,0.8,'#d8fbff',0.8,1.5);M.glowSpots.push([x,z,2.1,'57,216,232',0.5]);}}}
   if(MP.bridge){if(MP.bridge.look==='mesa')mesa(B,M,MP.bridge);else steelBridge(B,M,MP.bridge);B.k.anchors.rail=[[MP.bridge.deck[0],DECK,MP.bridge.deck[1]+MP.bridge.deck[3]/2],[MP.bridge.deck[0]+MP.bridge.deck[2],DECK,MP.bridge.deck[1]+MP.bridge.deck[3]/2]];}
   for(const c of MP.crates||[])M.aoBoxes.push([c[0],c[1],c[2],c[3]]);
   // the edge of the arena and the world beyond it
@@ -458,15 +470,14 @@ const ArenaProps=(()=>{
   const fits=(x,z,r)=>x-r>v.x0+0.2&&x+r<v.x1-0.2&&z-r>M.horizon+0.6&&z+r<v.z1-0.2&&(x+r<-0.8||x-r>W+0.8||z+r<-0.8||z-r>H+0.8);
   const put=(x,z,r,fn)=>{if(fits(x,z,r))fn(x,z,dim(x,z));};
   if(id==='classic'||id==='overpass'){
-   put(-4.6,6.5,1.7,(x,z)=>containers(B,x-1.5,z-1,3,2,41));put(W+4.4,25,1.7,(x,z)=>containers(B,x-1.5,z-1,3,2,43));put(-7.6,22,1.5,(x,z)=>dome(B,x,z,1.3));put(W+7.8,9,1.5,(x,z)=>dome(B,x,z,1.3));
-   put(-3.4,27.5,1.2,(x,z)=>{B.box('metal',STEEL_D,x,0.06,z,1.6,0.1,1.6);B.box('paint','#b9a36a',x-0.3,0.3,z-0.2,0.6,0.4,0.6,0.2);B.box('paint','#8f979e',x+0.36,0.24,z+0.3,0.5,0.3,0.5,-0.3);});
-   put(W+3.2,3.5,1.2,(x,z)=>{B.cyl('metal',STEEL_D,x,0.1,z,0.5,0.2,10);B.cyl('metal',STEEL_L,x,1.3,z,0.03,2.4,5,{ao:0});B.glow('#ff5a50',x,2.53,z,0.07,0.07,0.07);B.halo(x,2.53,z,0.9,'#ff4d44',0.6,1.7);for(const a of [0,2.1,4.2])B.cyl('metal',STEEL,x+Math.cos(a)*0.5,0.9,z+Math.sin(a)*0.5,0.012,1.9,4,{rz:Math.cos(a)*0.5,rx:-Math.sin(a)*0.5,ao:0});});
-   put(-11,12,2.4,(x,z)=>{B.cyl('rock','#7d8288',x,0.04,z,2.2,0.08,hi?24:12,{ao:0.1});B.tor('glow',CYAN,x,0.09,z,1.9,0.02,hi?32:16,{ts:4});for(let i=0;i<4;i++){const a=i*PI/2+0.4;B.glow('#ffd27a',x+Math.cos(a)*2.05,0.1,z+Math.sin(a)*2.05,0.12,0.03,0.12);B.halo(x+Math.cos(a)*2.05,0.15,z+Math.sin(a)*2.05,0.8,'#ffcf7a',0.4,1.2);}});
-   put(W+11,20,2.4,(x,z)=>{for(let i=0;i<3;i++)for(let j=0;j<2;j++){B.box('metal','#2c3f66',x-1.4+i*1.4,0.5,z-0.7+j*1.4,1.2,0.04,1.1,0,{rx:-0.5,ao:0,dust:0.1});B.box('metal',STEEL,x-1.4+i*1.4,0.25,z-0.7+j*1.4,0.06,0.5,0.06);}});
+   put(-9.5,6.5,1.9,(x,z)=>containers(B,x-1.5,z-1,3,2,41));put(W+9.6,25,1.9,(x,z)=>containers(B,x-1.5,z-1,3,2,43));put(-13.5,24,1.5,(x,z)=>dome(B,x,z,1.3));put(W+13.5,7.5,1.5,(x,z)=>dome(B,x,z,1.3));
+   put(W+8.2,2.6,1.2,(x,z)=>{B.cyl('metal',STEEL_D,x,0.1,z,0.5,0.2,10);B.cyl('metal',STEEL_L,x,1.3,z,0.03,2.4,5,{ao:0});B.glow('#ff5a50',x,2.53,z,0.07,0.07,0.07);B.halo(x,2.53,z,0.9,'#ff4d44',0.6,1.7);for(const a of [0,2.1,4.2])B.cyl('metal',STEEL,x+Math.cos(a)*0.5,0.9,z+Math.sin(a)*0.5,0.012,1.9,4,{rz:Math.cos(a)*0.5,rx:-Math.sin(a)*0.5,ao:0});});
+   put(-16,13,2.4,(x,z)=>{B.cyl('rock','#7d8288',x,0.04,z,2.2,0.08,hi?24:12,{ao:0.1});B.tor('glow',CYAN,x,0.09,z,1.9,0.02,hi?32:16,{ts:4});for(let i=0;i<4;i++){const a=i*PI/2+0.4;B.glow('#ffd27a',x+Math.cos(a)*2.05,0.1,z+Math.sin(a)*2.05,0.12,0.03,0.12);B.halo(x+Math.cos(a)*2.05,0.15,z+Math.sin(a)*2.05,0.8,'#ffcf7a',0.4,1.2);}});
+   put(W+15.5,18,2.4,(x,z)=>{for(let i=0;i<3;i++)for(let j=0;j<2;j++){B.box('metal','#2c3f66',x-1.4+i*1.4,0.5,z-0.7+j*1.4,1.2,0.04,1.1,0,{rx:-0.5,ao:0,dust:0.1});B.box('metal',STEEL,x-1.4+i*1.4,0.25,z-0.7+j*1.4,0.06,0.5,0.06);}});
   }
   if(id==='craters'){
-   put(-5,9,1.3,(x,z)=>lander(B,x-1.5,z-0.6,3,1.2,55));put(W+5.5,22,1.6,(x,z)=>{B.box('metal',STEEL_D,x,0.3,z,1.5,0.24,0.9,0.4);for(const a of [-1,1])for(const c of [-1,1])B.cyl('metal','#2a2f35',x+a*0.55,0.2,z+c*0.5,0.2,0.14,10,{rx:PI/2,ry:0.4});B.box('metal','#c9a44c',x,0.52,z,0.8,0.2,0.6,0.4);B.cyl('metal',STEEL_L,x+0.3,0.9,z,0.02,0.7,5,{ao:0});B.cyl('metal','#d5dade',x+0.3,1.25,z,0.22,0.07,10,{rt:0.2,rx:0.6,ao:0});});
-   put(-9,24,1,(x,z)=>{B.cyl('metal',STEEL_L,x,0.6,z,0.02,1.2,5,{ao:0});B.box('paint','#d8dde2',x+0.22,1.0,z,0.44,0.28,0.012,0,{ao:0,dust:0});B.box('paint','#c0392b',x+0.22,1.07,z+0.007,0.44,0.05,0.004,0,{ao:0,dust:0});});
+   put(-10,9,1.6,(x,z)=>lander(B,x-1.5,z-0.6,3,1.2,55));put(W+10.5,22,1.6,(x,z)=>{B.box('metal',STEEL_D,x,0.3,z,1.5,0.24,0.9,0.4);for(const a of [-1,1])for(const c of [-1,1])B.cyl('metal','#2a2f35',x+a*0.55,0.2,z+c*0.5,0.2,0.14,10,{rx:PI/2,ry:0.4});B.box('metal','#c89a2e',x,0.52,z,0.8,0.2,0.6,0.4);B.cyl('metal',STEEL_L,x+0.3,0.9,z,0.02,0.7,5,{ao:0});B.cyl('metal','#d5dade',x+0.3,1.25,z,0.22,0.07,10,{rt:0.2,rx:0.6,ao:0});});
+   put(-14,24,1,(x,z)=>{B.cyl('metal',STEEL_L,x,0.6,z,0.02,1.2,5,{ao:0});B.box('paint','#d8dde2',x+0.22,1.0,z,0.44,0.28,0.012,0,{ao:0,dust:0});B.box('paint','#c0392b',x+0.22,1.07,z+0.007,0.44,0.05,0.004,0,{ao:0,dust:0});});
   }
  }
  // sky: stars and the Earth, placed far below the ground along the view so terrain always covers them
@@ -481,7 +492,7 @@ const ArenaProps=(()=>{
    fragmentShader:'varying vec4 vC;uniform float uA;void main(){vec2 d=gl_PointCoord-0.5;float r=length(d)*2.0;if(r>1.0)discard;gl_FragColor=vec4(vC.rgb,vC.a*uA*pow(1.0-r,1.6));}'});
   const stars=new T.Points(sg,sm);stars.frustumCulled=false;stars.renderOrder=-5;g.add(stars);
   // the Earth, over one shoulder of the arena
-  const size=Math.min(3.6,Math.max(2.2,span*0.5)),ex=vis.x0+(vis.x1-vis.x0)*0.24,ez=top+Math.max(size*0.62,span*0.46),Ye=-30;
+  const size=Math.min(2.5,Math.max(1.5,span*0.36)),ex=vis.x0+(vis.x1-vis.x0)*0.22,ez=top+Math.max(size*0.8,span*0.42),Ye=-30;
   const em=new T.MeshBasicMaterial({map:earth,transparent:true,depthWrite:false,toneMapped:false}),e=new T.Mesh(new T.PlaneGeometry(size,size),em);e.rotation.x=-(PI/2-TILT);e.position.set(ex,Ye,ez+Ye*k);e.renderOrder=-4;e.frustumCulled=false;g.add(e);
   return {group:g,stars:sm,earth:em,set(st,ea,t,pxs){sm.uniforms.uA.value=st;sm.uniforms.uT.value=t||0;if(pxs)sm.uniforms.uS.value=pxs;em.opacity=ea;e.visible=ea>0.01;stars.visible=st>0.01;},dispose(){sg.dispose();sm.dispose();e.geometry.dispose();em.dispose();}};
  }

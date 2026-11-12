@@ -13,16 +13,31 @@ const gfxMode=()=>(typeof save!=='undefined'&&save&&save.gfx)||'auto';   // auto
 const want3D=()=>gfxMode()!=='2d'&&!R3.off2d;
 const use3D=()=>R3.ready&&!R3.failed&&want3D();
 function webglOK(){try{const c=document.createElement('canvas');return !!(window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl')));}catch(e){return false;}}
+// The Arcade map modules (js/mapenv.js, js/arena3d.js, js/arenaprops.js) are only needed with the 3D view, so they load
+// here, beside the 3D engine, and not in the page's blocking script list (Session 5E-2c: first paint costs what it did).
+// They run in order; if one fails to load the 3D view still starts and draws the earlier maps.
+const ARENA_JS=['mapenv','arena3d','arenaprops'];
+function loadArena(done){
+ const have=()=>typeof MapEnv!=='undefined'&&typeof Arena3D!=='undefined'&&typeof ArenaProps!=='undefined';
+ if(have()||window.LUNAR_ARENA3D===false||typeof document==='undefined'){done();return;}
+ let left=ARENA_JS.length,fin=false;const end=()=>{if(!fin){fin=true;done();}},one=()=>{if(--left<=0)end();};
+ for(const n of ARENA_JS){let s=document.querySelector('script[data-arena="'+n+'"]');
+  if(!s){s=document.createElement('script');s.src='js/'+n+'.js?v='+(window.BUILD||'dev');s.async=false;s.dataset.arena=n;s.addEventListener('load',()=>{s.dataset.ok=1;});s.addEventListener('error',()=>{s.dataset.ok=0;});document.head.appendChild(s);}
+  if(s.dataset.ok!==undefined)one();else{s.addEventListener('load',one);s.addEventListener('error',one);}}
+ setTimeout(end,8000);
+}
 function load3D(){
  if(R3.ready||R3.loading||R3.failed||!want3D())return;
  if(!webglOK()){R3.failed=true;return;}
- if(typeof THREE!=='undefined'){try{init3D();R3.ready=true;}catch(e){R3.failed=true;}apply3D();return;}
  R3.loading=true;const token=R3.loadToken=(R3.loadToken||0)+1;
+ const start=()=>{if(R3.loadToken!==token||R3.failed||R3.ready)return;R3.loading=false;try{init3D();R3.ready=true;}catch(e){R3.failed=true;try{console.warn('3D unavailable',e);}catch(_){}}apply3D();};
+ if(typeof THREE!=='undefined'){loadArena(start);return;}
  const s=document.createElement('script');s.src='js/vendor/three.lunar.min.js?v='+(window.BUILD||'dev');s.async=true;
  const timeout=setTimeout(()=>{if(R3.loadToken!==token)return;R3.loading=false;R3.failed=true;s.remove();apply3D();},8000);
- s.onload=()=>{clearTimeout(timeout);if(R3.loadToken!==token||R3.failed)return;R3.loading=false;try{init3D();R3.ready=true;}catch(e){R3.failed=true;try{console.warn('3D unavailable',e);}catch(_){}}apply3D();};
+ let n=2;const both=()=>{if(--n===0)start();};
+ s.onload=()=>{clearTimeout(timeout);both();};
  s.onerror=()=>{clearTimeout(timeout);if(R3.loadToken!==token)return;R3.loading=false;R3.failed=true;apply3D();};
- document.head.appendChild(s);
+ document.head.appendChild(s);loadArena(both);
 }
 // switch the 2D layer between "everything" and "overlay on the 3D scene"
 function apply3D(){
@@ -72,7 +87,7 @@ function init3D(){
  RC.up.set(0,GSN,-GKC);RC.position.set(0,GKC*150,GSN*150);RC.lookAt(0,0,0);
  R3.lights=addLights(RS);
  if(arenaOn())ENV=MapEnv.create(THREE,{scene:RS,renderer:RR,lights:R3.lights,emit:(add,p)=>emit(add?PSA:PSN,p),low:()=>R3.q==='low',quiet:()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),
-  cam:()=>({depthOf:z=>150-z*GSN}),sky:(st,ea)=>{if(B3.map&&B3.map.sky)B3.map.sky.set(st,ea,B3.t,RR.getPixelRatio()*(sc||20));}});
+  cam:()=>({depthOf:z=>150-z*GSN}),sky:(st,ea)=>{if(B3.map&&B3.map.sky)B3.map.sky.set(st,ea,typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?0:B3.t,RR.getPixelRatio()*(sc||20));}});
  if(ENV){SMK=Arena3D.marks(900);RS.add(SMK.mesh);}
  if(typeof Equipment3D!=='undefined'&&Equipment3D.enabled){R3.hfRelease=Equipment3D.attach();Equipment3D.quality=R3.q;Equipment3D.configure(RR,RS);Equipment3D.ensure(R3.q).then(()=>apply3D());}
  MT=mkMats();
@@ -278,14 +293,15 @@ function unitObj(u){
  const blob=new THREE.Mesh(D.blob,D.blobM);blob.position.y=0.015;blob.renderOrder=1;T.g.add(blob);
  const sun=new THREE.Mesh(D.shq,shadowMat());sun.position.y=0.016;sun.renderOrder=1;sun.visible=false;T.g.add(sun);
  const ar=arenaOn()&&!!ENV,ug=new THREE.Mesh(ar?D.team:D.glowD,ar?new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.8,depthWrite:false}):new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.32,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:radial()}));ug.position.y=0.02;ug.renderOrder=2;T.g.add(ug);   // sunlit ground: a crisp team ring (an additive glow would wash out)
+ let ud=null;if(ar&&!spec.ghost){ud=new THREE.Mesh(D.glowD,new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.16,depthWrite:false}));ud.position.y=0.018;ud.renderOrder=2;T.g.add(ud);}   // and a faint disc of the team colour inside it
  let aura=null;const av=spec.boss?3:spec.lunar||spec.arch==='moon'?3:Math.max(spec.ct,spec.wt);
  if(av>0){aura=new THREE.Mesh(D.aura,(ar?decMat:addMat)(av>=3?'#e8f4ff':RCOL[av],0.5));aura.position.y=0.03;aura.renderOrder=3;T.g.add(aura);}
  let ring=null;if(u===me){ring=new THREE.Mesh(D.me,(ar?decMat:addMat)('#ffd24a',0.9));ring.position.y=0.035;ring.renderOrder=4;T.g.add(ring);}
  let varc=null;if(spec.vl>=10&&!spec.boss){varc=new THREE.Group();const vm=addMat('#ffcf4a',0.65);for(const a of D.varc){const m=new THREE.Mesh(a,vm);m.renderOrder=4;varc.add(m);}varc.position.y=0.04;varc.mat=vm;T.g.add(varc);}   // Vault level 10: a gold aura ring
- o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,blob,sun,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
+ o=Object.assign(T,{key,spec,mats,aura,av,ring,varc,ug,ud,blob,sun,shield:null,recoil:0,tipI:0,px:u.x,py:u.y,fl:0});
  if(o.motion)o.motion.state.aim=u.ang;RS.add(o.g);B3.units.set(u,o);return o;
 }
-function dropUnit(u,o){if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(o.g);RS.remove(o.g);for(const m of [o.ug,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
+function dropUnit(u,o){if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(o.g);RS.remove(o.g);for(const m of [o.ug,o.ud,o.ring,o.aura])if(m)m.material.dispose();o.mats.lit.dispose();o.mats.shine.dispose();if(o.varc)o.varc.mat.dispose();if(o.shield)o.shield.material.dispose();B3.units.delete(u);}
 function heightAt(u){
  if(!BR||(u.elev||0)!==1)return 0;
  if(inDeck(u.x,u.y))return M3.DECK_H;
@@ -516,7 +532,7 @@ function frame3D(shx,shy){
    novaRing(m.geometry,n.r*(0.25+0.75*k)*(1-ring*0.2),0.12-ring*0.03,k);m.position.set(n.x,0.4+ring*0.15,n.y);m.material.color.set(ring?n.c:'#e9f6ff');m.material.opacity=Math.max(0,1-k);}}
  poolsEnd();
  psStep(PSA,dt);psStep(PSN,dt);if(SFX)SFX.end();psFlush(PSA,pxs);psFlush(PSN,pxs);
- RR.render(RS,RC);
+ RR.render(RS,R3.devCam||RC);   // devCam: a free camera for capture tools (dev/tests/arena-maps-capture.py)
  R3.calls=RR.info.render.calls;
 }
 function novaRing(g,R,w,k){const P=g.attributes.position.array,N=48;let o=0;const pt=[];
