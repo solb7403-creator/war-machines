@@ -54,10 +54,10 @@ const MapEnv=(()=>{
  const hex=h=>{const n=parseInt(String(h).slice(1),16);return [(n>>16)/255,((n>>8)&255)/255,(n&255)/255];};
  // host: {scene, renderer, lights:{hemi,key,fill}, emit(add,p), dot(add,x,y,z,size,r,g,b,a), low(), quiet(), sky:{stars,earth}}
  function create(T,host){
-  const state=copy(base),from=copy(base),to=copy(base);let tw=1,twD=0,preset=copy(base),mapId='classic',flashT=0,flashD=0,flashS=0,flashC=[1,1,1],eid=0,lastDir='';
+  const state=copy(base),from=copy(base),to=copy(base);let tw=1,twD=0,preset=copy(base),mapId='classic',flashT=0,flashD=0,flashS=0,flashC=[1,1,1],eid=0;
   const uniforms={uAmb:{value:new T.Vector3()},uSun:{value:new T.Vector3()},uFogC:{value:new T.Vector3()},uFog:{value:new T.Vector3(0,0,1)},uFlash:{value:new T.Vector3()}};
   const emitters=[],anchors={vents:[],lasers:[],rail:null,drops:[],area:[0,0,20,32]};
-  const env={VERSION,state,uniforms,anchors,onRebake:null,emitters};
+  const env={VERSION,state,uniforms,anchors,onRebake:null,emitters},clearC=new T.Color(),bakedDir=[0,0,0];let haveDir=false;
   env.sunDir=()=>{const d=state.sunDir,l=Math.hypot(d[0],d[1],d[2])||1;return [d[0]/l,d[1]/l,d[2]/l];};
   function sync(){
    const L=host.lights,d=env.sunDir(),fl=flashT>0?flashS*Math.pow(flashT/flashD,1.5):0;
@@ -78,9 +78,11 @@ const MapEnv=(()=>{
      const n=f(state.fogNear),fr=f(state.fogFar);host.scene.fog.near=n;host.scene.fog.far=n+(fr-n)/Math.max(0.02,state.fog);}
     else if(host.scene.fog)host.scene.fog.far=1e9,host.scene.fog.near=1e9-1;
    }
-   if(host.renderer){host.renderer.setClearColor(new T.Color().setRGB(state.clear[0],state.clear[1],state.clear[2]),1);if(host.exposure!==false)host.renderer.toneMappingExposure=state.exposure;}
+   if(host.renderer){host.renderer.setClearColor(clearC.setRGB(state.clear[0],state.clear[1],state.clear[2]),1);if(host.exposure!==false)host.renderer.toneMappingExposure=state.exposure;}
    if(host.sky)host.sky(state.stars,state.earth);
-   const dk=d.map(v=>v.toFixed(3)).join(',');if(dk!==lastDir){const first=!lastDir;lastDir=dk;if(!first&&env.onRebake)env.onRebake(d);}
+   // the baked shadows follow the sun once it has stopped moving (a blend re-bakes once, at its end, not every frame)
+   if(!haveDir){haveDir=true;bakedDir[0]=d[0];bakedDir[1]=d[1];bakedDir[2]=d[2];}
+   else if(tw>=1&&Math.abs(d[0]-bakedDir[0])+Math.abs(d[1]-bakedDir[1])+Math.abs(d[2]-bakedDir[2])>0.002){bakedDir[0]=d[0];bakedDir[1]=d[1];bakedDir[2]=d[2];if(env.onRebake)env.onRebake(d);}
   }
   env.apply=s=>{for(const k of KEYS)if(s[k]!==undefined){state[k]=Array.isArray(s[k])?s[k].slice():s[k];to[k]=state[k];from[k]=state[k];}tw=1;sync();};
   env.set=(patch,sec)=>{for(const k of KEYS){from[k]=Array.isArray(state[k])?state[k].slice():state[k];if(patch[k]!==undefined)to[k]=Array.isArray(patch[k])?patch[k].slice():patch[k];}
@@ -116,7 +118,7 @@ const MapEnv=(()=>{
   env.use=(id,a)=>{mapId=PRESETS[id]?id:'classic';const P=PRESETS[mapId];preset=copy(P);
    anchors.vents=(a&&a.vents)||[];anchors.lasers=(a&&a.lasers)||[];anchors.rail=(a&&a.rail)||null;anchors.drops=(a&&a.drops)||[];anchors.walls=(a&&a.walls)||[];anchors.sparks=(a&&a.sparks)||[];anchors.area=(a&&a.area)||[0,0,20,32];
    env.clearEmitters();for(const o of P.emit||[]){const s=ambient(o.kind,o);if(s)env.addEmitter(s);}
-   flashT=0;lastDir='';env.apply(preset);};
+   flashT=0;haveDir=false;env.apply(preset);};
   env.update=(dt,t)=>{
    if(tw<1){tw=Math.min(1,tw+dt/Math.max(0.001,twD));const f=tw*tw*(3-2*tw);for(const k of KEYS)state[k]=mix(from[k],to[k],f);}
    if(flashT>0)flashT=Math.max(0,flashT-dt);

@@ -286,7 +286,7 @@ function decals(){
 }
 // ground shadows under the sun (arena maps): one shared soft rounded-rectangle material; crates clone it for their own opacity
 function shadowMat(){if(!SHADOW_M)SHADOW_M=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.6,depthWrite:false,alphaMap:Arena3D.shadowTex(RR)});return SHADOW_M;}
-function shadowOff(h){const d=ENV?ENV.sunDir():[-0.5,0.8,-0.34];return [-d[0]/d[1]*h,-d[2]/d[1]*h];}
+const SHOFF=[0,0];function shadowOff(h){const d=R3.sunD||(R3.sunD=ENV?ENV.sunDir():[-0.6,0.66,-0.45]);SHOFF[0]=-d[0]/d[1]*h;SHOFF[1]=-d[2]/d[1]*h;return SHOFF;}   // one scratch pair: read it before the next call
 const SH_VS='varying float vF;void main(){vec3 n=normalize(normalMatrix*normal);vF=1.0-abs(n.z);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
 const SH_FS='uniform float uA;uniform float uT;varying float vF;void main(){float r=pow(vF,2.4);float fl=0.75+0.25*sin(uT*9.0+vF*14.0);gl_FragColor=vec4(vec3(0.35,0.65,1.0)*r*fl+vec3(0.8,0.92,1.0)*pow(vF,7.0),(r*0.85+0.05)*uA);}';
 function unitObj(u){
@@ -295,7 +295,7 @@ function unitObj(u){
  if(o)dropUnit(u,o);
  const mats=unitMats(spec.ghost),T=buildTank(spec,mats),D=decals();
  const blob=new THREE.Mesh(D.blob,D.blobM);blob.position.y=0.015;blob.renderOrder=1;T.g.add(blob);
- const sun=new THREE.Mesh(D.shq,shadowMat());sun.position.y=0.016;sun.renderOrder=1;sun.visible=false;T.g.add(sun);
+ let sun=null;if(arenaOn()&&ENV){sun=new THREE.Mesh(D.shq,shadowMat());sun.position.y=0.016;sun.renderOrder=1;sun.visible=false;T.g.add(sun);}   // without the arena modules the round blob stays
  const ar=arenaOn()&&!!ENV,ug=new THREE.Mesh(ar?D.team:D.glowD,ar?new THREE.MeshBasicMaterial({color:spec.team,transparent:true,vertexColors:true,depthWrite:false,side:THREE.DoubleSide}):new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.32,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:radial()}));ug.position.y=0.02;ug.renderOrder=2;T.g.add(ug);   // sunlit ground: a crisp team ring (an additive glow would wash out)
  const ud=null;
  let aura=null;const av=spec.boss?3:spec.lunar||spec.arch==='moon'?3:Math.max(spec.ct,spec.wt);
@@ -320,21 +320,38 @@ function disposeMap3D(map){
  if(map.dispose){map.dispose();return;}
  map.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o===map.ground){o.material.map?.dispose();o.material.dispose();}});
 }
+const MK={map:'',q:'',vw:0,vh:0,sc:0,ox:0,oy:0,cap:0,soft:null,arena:null,key:'',view:null,dens:0,since:0};
+function mapKeyNow(){   // the key of the map this frame wants; recomputed only when one of its inputs changed
+ const arena=!!(arenaOn()&&ENV),cap=arena?resCap():0,soft=arena?softGL():false,hf=arena?'':(typeof Environment3D!=='undefined'?Environment3D.key():'legacy');
+ if(MK.key&&MK.map===curMap&&MK.q===R3.q&&MK.vw===vw&&MK.vh===vh&&MK.sc===sc&&MK.ox===ox&&MK.oy===oy&&MK.cap===cap&&MK.soft===soft&&MK.arena===arena&&MK.hf===hf)return MK.key;
+ MK.map=curMap;MK.q=R3.q;MK.vw=vw;MK.vh=vh;MK.sc=sc;MK.ox=ox;MK.oy=oy;MK.cap=cap;MK.soft=soft;MK.arena=arena;MK.hf=hf;
+ if(arena){MK.view=arenaView();MK.dens=(sc||20)*cap;MK.key=curMap+'|'+R3.q+'|arena|'+[MK.view.x0,MK.view.x1,MK.view.z0,MK.view.z1].join(',')+'|'+Math.round(MK.dens/8)+'|'+(soft?1:0);}
+ else MK.key=curMap+'|'+R3.q+'|'+hf;
+ return MK.key;
+}
 function ensureMap(){
- const arena=arenaOn()&&ENV,view=arena?arenaView():null,dens=arena?(sc||20)*resCap():0;
- const key=curMap+'|'+R3.q+'|'+(arena?'arena|'+[view.x0,view.x1,view.z0,view.z1].join(',')+'|'+Math.round(dens/8)+'|'+(softGL()?1:0)+'|'+(arenaEnvMap()?1:0):typeof Environment3D!=='undefined'?Environment3D.key():'legacy');
- if(B3.mapKey===key)return;
+ const key=mapKeyNow();
+ if(B3.mapKey===key){MK.since=0;return;}
+ // same map and quality, only the viewport moved (a window drag, a rotation, a sheet sliding): keep drawing the map that is
+ // up and rebuild once the size has held still for a quarter of a second, not on every frame of the drag
+ if(B3.map&&B3.map.arena&&MK.arena&&B3.mapId===curMap&&B3.mapQ===R3.q){const now=performance.now();if(MK.sinceKey!==key){MK.sinceKey=key;MK.since=now;return;}if(now-MK.since<250)return;}
+ MK.since=0;MK.sinceKey='';
+ const arena=MK.arena,view=MK.view,dens=MK.dens;
  if(qualityWatch)GraphicsQuality.reset(qualityWatch,performance.now()/1000);
- if(B3.map){RS.remove(B3.map.group);disposeMap3D(B3.map);}
+ if(B3.map){RS.remove(B3.map.group);disposeMap3D(B3.map);B3.map=null;}
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();if(m.sh)m.sh.material.dispose();}B3.crates.clear();   // crates are drawn in the map's own style
+ R3.sunD=null;R3.arenaEnv=0;
  if(arena){
   try{B3.map=Arena3D.build(curMap,{renderer:RR,q:R3.q,view,env:ENV,soft:softGL(),density:dens,phone:typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches,envMap:R3.q==='high'?arenaEnvMap():null});
-   ENV.onRebake=d=>{if(B3.map&&B3.map.rebake)B3.map.rebake(d);};}
-  catch(e){try{console.warn('Arena3D unavailable',e);}catch(_){}window.LUNAR_ARENA3D=false;B3.map=null;}
+   ENV.onRebake=d=>{R3.sunD=null;if(B3.map&&B3.map.rebake)B3.map.rebake(d);};}
+  catch(e){try{console.warn('Arena3D unavailable',e);}catch(_){}window.LUNAR_ARENA3D=false;B3.map=null;MK.key='';
+   R3.lights.key.position.set(-6,14,-5);RR.setClearColor(0x0a0e17,1);if(RS.fog)RS.fog=null;}   // back to the earlier maps, with their light and sky
  }
  if(!B3.map||!B3.map.arena){if(typeof Environment3D!=='undefined')Environment3D.lightRig(RS,Environment3D.active());B3.map=M3.buildMap(curMap,MT,R3.q);}
- STARS.visible=!B3.map.arena;B3.mapKey=key;RS.add(B3.map.group);
+ STARS.visible=!B3.map.arena;B3.mapKey=B3.map.arena?key:mapKeyNow();B3.mapId=curMap;B3.mapQ=R3.q;RS.add(B3.map.group);
 }
+// build the next match's map while the VS screen is up (the map is known by then), so the first battle frame does not wait for it
+function prewarm3D(){if(!use3D()||!RR||R3.parked)return;try{ensureMap();}catch(e){}}
 const EFFECT_POOL_CAPS=Object.freeze({beam:16,beamc:16,blast:24,bring:24,nova:18,met:32,shell:32,star:12});
 let effectSink=null;
 function poolGet(name,mk){const P=B3.pool[name]||(B3.pool[name]={items:[],n:0});if(P.n>=(EFFECT_POOL_CAPS[name]||64)){if(!effectSink){effectSink=new THREE.Object3D();effectSink.material=new THREE.MeshBasicMaterial();effectSink.geometry=new THREE.BufferGeometry();effectSink.geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(48*6*3),3));}return effectSink;}if(P.n>=P.items.length){const o=mk();P.items.push(o);RS.add(o);}const o=P.items[P.n++];o.visible=true;return o;}
@@ -366,8 +383,9 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
   const pr=new THREE.Mesh(new THREE.RingGeometry(0.78,0.9,6).rotateX(-Math.PI/2),addMat(tcol(u.team),0.6));pr.userData.rangeOwnedGeometry=true;pr.position.set(u.sx,0.065,u.sy);D.add(pr);}
  if(cry){const m=cry.mine,cl=new THREE.Group();
   for(let i=0;i<7;i++){const a=i/7*6.28,r=i?0.55+(i%2)*0.2:0,h=i?0.6+(i%3)*0.25:1.3,c=new THREE.Mesh(G.oct,G.cryM);c.scale.set(0.22,h,0.22);c.position.set(m.x+Math.cos(a)*r,h*0.5,m.y+Math.sin(a)*r);c.rotation.set((i?0.3:0)*Math.cos(a),0,(i?0.3:0)*Math.sin(a));cl.add(c);}
-  const rg=new THREE.Mesh(G.ring,addMat('#c79bff',0.5));rg.scale.setScalar(CRY_MINE_R);rg.position.set(m.x,0.03,m.y);cl.add(rg);
-  const dk=new THREE.Mesh(G.disc,addMat('#b98cff',0.08));dk.scale.setScalar(CRY_MINE_R);dk.position.set(m.x,0.025,m.y);cl.add(dk);D.add(cl);}
+  const cm=B3.map&&B3.map.arena?decMat:addMat;
+  const rg=new THREE.Mesh(G.ring,cm('#c79bff',B3.map&&B3.map.arena?0.85:0.5));rg.scale.setScalar(CRY_MINE_R);rg.position.set(m.x,0.03,m.y);cl.add(rg);
+  const dk=new THREE.Mesh(G.disc,cm('#b98cff',B3.map&&B3.map.arena?0.14:0.08));dk.scale.setScalar(CRY_MINE_R);dk.position.set(m.x,0.025,m.y);cl.add(dk);D.add(cl);}
  if(typeof Environment3D!=='undefined'&&Environment3D.active()&&!(B3.map&&B3.map.arena))D.add(Environment3D.modeContext(matchG,curMap,R3.q,cry?.mine));
  B3.dyn=D;RS.add(D);
 }
@@ -390,7 +408,8 @@ function frame3D(shx,shy){
  if(!quietMap||!B3.map.arena)for(const sp of B3.map.spin)sp.o.rotation[sp.axis]+=sp.spd*dt;
  if(B3.map.arena){   // the environment layer (light, haze, sky, motes), then the map's own lights and small motions
   if(ENV)ENV.update(dt,t);if(SHADOW_M&&ENV)SHADOW_M.opacity=ENV.state.shadow;
-  if(SMK){SMK.limit(R3.q==='low'?320:900);SMK.life(R3.q==='low'?8:14,R3.q==='low'?14:26);SMK.update(t);}
+  if(!R3.arenaEnv&&R3.q==='high'){const em=arenaEnvMap();if(em){Arena3D.setEnvMap(RR,em);R3.arenaEnv=1;}}
+  if(SMK){SMK.limit(R3.q==='low'?320:900,R3.q==='low'?0.7:0.3);SMK.life(R3.q==='low'?8:14,R3.q==='low'?14:26);SMK.update(t);}
   for(const h of B3.map.halos){const k=h[6]&&!quietMap?0.72+0.28*Math.sin(t*h[6]+h[0]*1.7+h[2]):1;once(PSA,h[0],h[1],h[2],h[3]*(0.9+0.1*k),h[4],h[5]*k);}
   for(const an of B3.map.anims){
    if(an.type==='arc'&&SFX&&!quietMap){const ph=Math.floor(t*14);if((ph+an.a[2]|0)%3!==0)SFX.bolt(an.a[0],an.a[1],an.a[2],an.b[0],an.b[1],an.b[2],0.14,7,an.w,FX3D_RGB(an.c),0.9,ph*31+7,0);}
@@ -406,7 +425,7 @@ function frame3D(shx,shy){
  for(const c of crates){let m=B3.crates.get(c);
   if(!m){m=new THREE.Group();
    if(B3.map.arena){const K=Arena3D.crate(RR,R3.q,B3.map.theme.crate),mat=K.mat.clone();m.add(new THREE.Mesh(K.geo,mat));m.material=mat;
-    const sm=shadowMat().clone(),sh=new THREE.Mesh(decals().shq,sm),off=shadowOff(0.85);sh.scale.set((c[2]+Math.abs(off[0]))/c[2]*1.12,1,(c[3]+Math.abs(off[1]))/c[3]*1.12);sh.position.set(off[0]/2/c[2],0.012/0.85,off[1]/2/c[3]);sh.renderOrder=1;m.add(sh);m.sh=sh;}
+    const sm=shadowMat().clone(),sh=new THREE.Mesh(decals().shq,sm),off=shadowOff(0.85),ox0=off[0],oz0=off[1];sh.scale.set((c[2]+Math.abs(ox0))/c[2]*1.12,1,(c[3]+Math.abs(oz0))/c[3]*1.12);sh.position.set(ox0/2/c[2],0.012/0.85,oz0/2/c[3]);sh.renderOrder=1;m.add(sh);m.sh=sh;}
    else{const mat=new THREE.MeshLambertMaterial({vertexColors:true});m.add(new THREE.Mesh(G.crate.lit,mat));m.material=mat;}
    m.scale.set(c[2],0.85,c[3]);m.position.set(c[0]+c[2]/2,0,c[1]+c[3]/2);RS.add(m);B3.crates.set(c,m);}
   const f=c.hp/c.mhp;m.material.emissive.setHex(c.flash>0?0x6a4a20:0x000000);m.material.color.setScalar(0.55+0.45*f);m.rotation.z=(1-f)*0.06*Math.sin(c[0]*7);
@@ -497,9 +516,10 @@ function frame3D(shx,shy){
   m.position.set(c.x,(c.l===1?M3.DECK_H:0)+0.55+0.14*Math.sin(now/320+i),c.y);m.scale.set(0.24*k,0.38*k,0.24*k);m.rotation.y=now/600+i;once(PSA,c.x,m.position.y,c.y,1.1*k,'#b98cff',0.45);});
  // Moon Zones: glowing pad, a light column, the capture ring
  if(gzones)for(const z of gzones){const col=z.own===0?TC[0]:z.own===1?TC[1]:'#c9d6e3';
-  const d=poolGet('zdisc',()=>new THREE.Mesh(G.disc,addMat('#ffffff',0.15)));d.material.color.set(col);d.material.opacity=0.2+0.07*Math.sin(now/300);d.scale.setScalar(z.r);d.position.set(z.x,0.03,z.y);
-  const rg=poolGet('zring',()=>new THREE.Mesh(G.ringT,addMat('#ffffff',0.9)));rg.material.color.set(col);rg.scale.setScalar(z.r);rg.position.set(z.x,0.04,z.y);
-  const mk=poolGet('zmoon',()=>new THREE.Mesh(G.moon,addMat('#ffffff',0.85)));mk.material.color.set(col);mk.position.set(z.x,0.05,z.y);mk.rotation.y=now/1500;
+  const zA=!!B3.map.arena,zm=zA?decMat:addMat;   // sunlit maps: normal blending, so the owner's colour stays the owner's colour
+  const d=poolGet(zA?'zdiscA':'zdisc',()=>new THREE.Mesh(G.disc,zm('#ffffff',0.15)));d.material.color.set(col);d.material.opacity=0.2+0.07*Math.sin(now/300);d.scale.setScalar(z.r);d.position.set(z.x,0.03,z.y);
+  const rg=poolGet(zA?'zringA':'zring',()=>new THREE.Mesh(G.ringT,zm('#ffffff',0.9)));rg.material.color.set(col);rg.scale.setScalar(z.r);rg.position.set(z.x,0.04,z.y);
+  const mk=poolGet(zA?'zmoonA':'zmoon',()=>new THREE.Mesh(G.moon,zm('#ffffff',0.85)));mk.material.color.set(col);mk.position.set(z.x,0.05,z.y);mk.rotation.y=now/1500;
   const cl=poolGet('zcol',()=>new THREE.Mesh(G.col,new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.3,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:vgrad(),side:THREE.DoubleSide})));
   cl.material.color.set(col);cl.material.opacity=typeof Environment3D!=='undefined'&&Environment3D.active()?.13:.45;cl.scale.set(z.r,2.6,z.r);cl.position.set(z.x,1.2,z.y);cl.rotation.y=now/2000;
   if(Math.random()<dt*6){const a=Math.random()*6.28,r=Math.random()*z.r;emit(PSA,{x:z.x+Math.cos(a)*r,y:0.1,z:z.y+Math.sin(a)*r,vy:1.2,life:1.2,s0:0.3,s1:0.05,c:col,a:0.8});}}

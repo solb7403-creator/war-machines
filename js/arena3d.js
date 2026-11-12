@@ -137,6 +137,7 @@ const Arena3D=(()=>{
  const RES=new WeakMap();
  const FS_VS='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}';
  const NOISE=`
+float sq(float x){return x*x;}
 float h21(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
 vec2 h22(vec2 p){vec3 p3=fract(vec3(p.xyx)*vec3(.1031,.1030,.0973));p3+=dot(p3,p3.yzx+33.33);return fract((p3.xx+p3.yz)*p3.zy);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+vec2(1.,1.)),f.x),f.y);}
@@ -188,14 +189,14 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
  vec3 o=(c*.9+spec)*day+vec3(.1,.3,.75)*rim*day+vec3(0.,0.,.004);float l=dot(o,vec3(.3,.55,.15));o=mix(o,vec3(l),.25);
  gl_FragColor=vec4(o,1.);}`;
  function earthTex(renderer,q){
-  const R=res(renderer);if(R.earth)return R.earth.texture;
+  const R=res(renderer),ek='earth|'+q;if(R[ek])return R[ek].texture;
   const n=q==='low'?128:256,rt=mkRT(n,n,true,true,false),m=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:EARTH_FS,depthTest:false,depthWrite:false,toneMapped:false});
-  quadPass(renderer,m,rt);m.dispose();R.earth=rt;return rt.texture;
+  quadPass(renderer,m,rt);m.dispose();R[ek]=rt;return rt.texture;
  }
  const GROUND_VS='uniform vec4 uRect;varying vec2 vUv;varying float vZ;void main(){vUv=(position.xz-uRect.xy)/uRect.zw;vZ=position.z;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
  const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;void main(){vec4 t=texture2D(tMap,vUv);vec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*smoothstep(uFog.y,uFog.z,vZ));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
  function materials(renderer,q,envMap){
-  const R=res(renderer),key=q+'|'+(envMap?envMap.uuid:'');if(R.mats[key])return R.mats[key];
+  const R=res(renderer),key=q;if(R.mats[key]){if(envMap)setEnvMap(renderer,envMap);return R.mats[key];}
   const tl=tiles(renderer,q),high=q!=='low';let M;
   if(high){
    M={rock:new T.MeshStandardMaterial({vertexColors:true,map:tl.gritC.texture,normalMap:tl.gritN.texture,normalScale:new T.Vector2(0.85,0.85),roughness:0.96,metalness:0}),
@@ -205,6 +206,8 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
   M.glow=new T.MeshBasicMaterial({vertexColors:true});
   R.mats[key]=M;return M;
  }
+ // the tanks' studio reflection map, once it has loaded: the steel takes it without a rebuild
+ function setEnvMap(renderer,envMap){const R=RES.get(renderer),M=R&&R.mats.high;if(!M||!envMap||M.metal.envMap===envMap)return;M.metal.envMap=envMap;M.metal.metalness=0.8;M.metal.needsUpdate=true;}
  const UVS={rock:1/2.3,paint:1/1.7,metal:1/1.7,glow:1};
  function meshOf(b,cls,material){
   const n=b.P.length/3;if(!n)return null;
@@ -228,17 +231,17 @@ float sdBox(vec2 p,vec2 c,vec2 h){vec2 d=abs(p-c)-h;return length(max(d,0.))+min
 float arenaD(vec2 P){return sdBox(P,uArena.xy+uArena.zw*.5,uArena.zw*.5);}
 // the craters the rules know (slow zones): a deep bowl, a raised rim
 float macro(vec2 P){float h=0.;for(int i=0;i<`+NCR+`;i++){if(i>=uNc)break;vec4 c=uCr[i];if(c.w>1.5)continue;float d=length(P-c.xy)/c.z;if(d>1.7)continue;
- h+=(d<1.?-.46*c.z*(1.-d*d)*(1.-.25*d*d):0.)+.13*c.z*exp(-pow((d-1.04)/.13,2.));}return h;}
+ h+=(d<1.?-.46*c.z*(1.-d*d)*(1.-.25*d*d):0.)+.13*c.z*exp(-sq((d-1.04)/.13));}return h;}
 float cellCr(vec2 P,float cs,float dens,float rmax,float keepOut){vec2 ip=floor(P/cs);float h=0.;
  for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 c=ip+vec2(float(i),float(j));if(h21(c+uSeed)>dens)continue;
   vec2 ctr=(c+.15+.7*h22(c+uSeed*1.7))*cs;float rq=h21(c*1.3+7.+uSeed);float r=cs*rmax*(rq<.5?.3:rq<.85?.58:1.);
   if(keepOut>0.&&arenaD(ctr)<r*1.35+keepOut)continue;
-  float d=length(P-ctr)/r;if(d>1.6)continue;h+=(d<1.?-.34*r*(1.-d*d)*(1.-.4*d*d):0.)+.018*r*exp(-pow((d-1.08)/.24,2.));}
+  float d=length(P-ctr)/r;if(d>1.6)continue;h+=(d<1.?-.34*r*(1.-d*d)*(1.-.4*d*d):0.)+.018*r*exp(-sq((d-1.08)/.24));}
  return h;}
 float pebDens(vec2 P){float k=.012+.20*smoothstep(.56,.82,fbm(P*.21+31.+uSeed));for(int i=0;i<`+NCR+`;i++){if(i>=uNc)break;vec4 c=uCr[i];float d=length(P-c.xy)/c.z;
- if(c.w>1.5&&c.w<2.5)k=max(k,.95*smoothstep(1.05,.55,d));else if(c.w<1.5)k=max(k,.75*smoothstep(1.55,1.08,d)*smoothstep(.96,1.08,d));}
- for(int i=0;i<`+NCI+`;i++){if(i>=uNi)break;vec3 c=uCir[i];k=max(k,.6*smoothstep(c.z+.75,c.z+.1,length(P-c.xy)));}
- if(uWallPeb>0.)for(int i=0;i<`+NBX+`;i++){if(i>=uNb)break;vec4 b=uBox[i];k=max(k,uWallPeb*smoothstep(.9,.08,sdBox(P,b.xy+b.zw*.5,b.zw*.5)));}return k*uPeb;}
+ if(c.w>1.5&&c.w<2.5)k=max(k,.95*(1.-smoothstep(.55,1.05,d)));else if(c.w<1.5)k=max(k,.75*(1.-smoothstep(1.08,1.55,d))*smoothstep(.96,1.08,d));}
+ for(int i=0;i<`+NCI+`;i++){if(i>=uNi)break;vec3 c=uCir[i];k=max(k,.6*(1.-smoothstep(c.z+.1,c.z+.75,length(P-c.xy))));}
+ if(uWallPeb>0.)for(int i=0;i<`+NBX+`;i++){if(i>=uNb)break;vec4 b=uBox[i];k=max(k,uWallPeb*(1.-smoothstep(.08,.9,sdBox(P,b.xy+b.zw*.5,b.zw*.5))));}return k*uPeb;}
 float pebbles(vec2 P,float cs,float dens){vec2 ip=floor(P/cs);float h=0.;
  for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 c=ip+vec2(float(i),float(j));if(h21(c*1.9+uSeed+3.)>dens)continue;
   vec2 ctr=(c+h22(c+uSeed))*cs;float r=cs*(.14+.32*h21(c+11.));float d=length((P-ctr)*vec2(1.,1.+.6*h21(c+5.)));h=max(h,sqrt(max(0.,r*r-d*d))*.9);}
@@ -246,17 +249,17 @@ float pebbles(vec2 P,float cs,float dens){vec2 ip=floor(P/cs);float h=0.;
 // rock tops (cliffs, mesas): cracked slabs at slightly different levels, no craters
 vec3 vor(vec2 p){vec2 ip=floor(p),fp=fract(p);float d1=8.,d2=8.;vec2 id=vec2(0.);for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 g=vec2(float(i),float(j));float d=length(g+h22(ip+g+uSeed)-fp);if(d<d1){d2=d1;d1=d;id=ip+g;}else if(d<d2)d2=d;}return vec3(d2-d1,id);}
 float slabM(vec2 P){return smoothstep(.42,.62,fbm(P*.33+uSeed*2.));}
-float slabH(vec2 P){vec3 v=vor(P*.52+vec2(fbm(P*.7)*.5));vec3 w=vor(P*1.7+7.);float m=slabM(P);return .018*h21(v.yz)-.03*m*smoothstep(.05,0.,v.x)-.01*(1.-m*.5)*smoothstep(.035,0.,w.x)*step(.5,h21(w.yz))+(fbm(P*1.4+uSeed)-.5)*.07+(vn(P*9.)-.5)*.012+(vn(P*27.)-.5)*.004;}
+float slabH(vec2 P){vec3 v=vor(P*.52+vec2(fbm(P*.7)*.5));vec3 w=vor(P*1.7+7.);float m=slabM(P);return .018*h21(v.yz)-.03*m*(1.-smoothstep(0.,.05,v.x))-.01*(1.-m*.5)*(1.-smoothstep(0.,.035,w.x))*step(.5,h21(w.yz))+(fbm(P*1.4+uSeed)-.5)*.07+(vn(P*9.)-.5)*.012+(vn(P*27.)-.5)*.004;}
 vec2 puv(vec2 P){return (P-uPaintRect.xy)/uPaintRect.zw;}
 float inPaint(vec2 u){return step(0.,u.x)*step(u.x,1.)*step(0.,u.y)*step(u.y,1.);}
 #ifdef PLATES
-float plateH(vec2 P){vec2 pf=fract(P/4.);vec2 pd=min(pf,1.-pf)*4.;float seam=min(pd.x,pd.y);float h=-.03*smoothstep(.045,.0,seam);
- float rx=length(vec2(pd.x-.17,(fract(P.y/.5)-.5)*.5)),rz=length(vec2(pd.y-.17,(fract(P.x/.5)-.5)*.5));h+=.012*(smoothstep(.05,.02,rx)+smoothstep(.05,.02,rz));
+float plateH(vec2 P){vec2 pf=fract(P/4.);vec2 pd=min(pf,1.-pf)*4.;float seam=min(pd.x,pd.y);float h=-.03*(1.-smoothstep(.0,.045,seam));
+ float rx=length(vec2(pd.x-.17,(fract(P.y/.5)-.5)*.5)),rz=length(vec2(pd.y-.17,(fract(P.x/.5)-.5)*.5));h+=.012*((1.-smoothstep(.02,.05,rx))+(1.-smoothstep(.02,.05,rz)));
  return h+(vn(P*9.)-.5)*.004+(fbm(P*1.3)-.5)*.012;}
 vec3 plateA(vec2 P){vec2 ip=floor(P/4.);vec2 pf=fract(P/4.);vec2 pd=min(pf,1.-pf)*4.;float seam=min(pd.x,pd.y);
  float v=.86+.22*h21(ip+uSeed);float grime=fbm(P*.7+uSeed);v*=mix(.66,1.08,smoothstep(.3,.7,grime));v*=.93+.14*vn(P*6.);v*=1.-.3*smoothstep(.62,.8,fbm(P*2.3+7.));
  float scuff=pow(vn(vec2(P.x*1.2,P.y*14.)+3.),4.)+pow(vn(vec2(P.x*14.,P.y*1.2)+8.),4.);v+=.10*scuff;
- v*=1.-.55*smoothstep(.035,.0,seam);v+=.10*smoothstep(.12,.05,seam)*smoothstep(.035,.06,seam);
+ v*=1.-.55*(1.-smoothstep(.0,.035,seam));v+=.10*(1.-smoothstep(.05,.12,seam))*smoothstep(.035,.06,seam);
  return uBase*v*mix(vec3(1.02,1.,.97),vec3(.95,1.,1.05),vn(P*.4+2.));}
 #endif
 float gPeb=0.;
@@ -289,15 +292,15 @@ void main(){
 #ifdef PLATES
  if(top<.5)alb=plateA(P);else
 #endif
- if(top>.5&&uTopKind>.5){vec3 v3=vor(P*.52+vec2(fbm(P*.7)*.5));vec3 w3=vor(P*1.7+7.);float m=slabM(P);float v=(.93+.14*h21(v3.yz+3.))*(.72+.56*fbm(P*.16+uSeed))*(.9+.2*fbm(P*.6+uSeed*3.))*(.94+.12*vn(P*7.))*(.97+.06*vn(P*31.));v*=1.-.42*m*smoothstep(.045,0.,v3.x);v*=1.-.2*(1.-m*.5)*smoothstep(.03,0.,w3.x)*step(.5,h21(w3.yz));alb=uTopBase*v*mix(1.22,1.,step(.3,tm.g));}else
+ if(top>.5&&uTopKind>.5){vec3 v3=vor(P*.52+vec2(fbm(P*.7)*.5));vec3 w3=vor(P*1.7+7.);float m=slabM(P);float v=(.93+.14*h21(v3.yz+3.))*(.72+.56*fbm(P*.16+uSeed))*(.9+.2*fbm(P*.6+uSeed*3.))*(.94+.12*vn(P*7.))*(.97+.06*vn(P*31.));v*=1.-.42*m*(1.-smoothstep(0.,.045,v3.x));v*=1.-.2*(1.-m*.5)*(1.-smoothstep(0.,.03,w3.x))*step(.5,h21(w3.yz));alb=uTopBase*v*mix(1.22,1.,step(.3,tm.g));}else
  {vec3 base=top>.5?uTopBase:uBase;float m=fbm(P*.3+uSeed);float v=1.+uMottle*(m-.5)*2.;v*=.94+.12*vn(P*2.6+3.);v*=.965+.07*vn(P*21.);
   alb=base*v*mix(vec3(1.03,1.,.96),vec3(.96,.99,1.04),vn(P*.5+50.));
 #ifndef LITE
   alb*=1.+.9*pebbles(P,.2,gPeb);
 #endif
   if(top<.5)for(int i=0;i<`+NCR+`;i++){if(i>=uNc)break;vec4 c=uCr[i];vec2 dv=P-c.xy;float d=length(dv)/c.z;
-   if(c.w<1.5){float ray=pow(vn(vec2(atan(dv.y,dv.x)*4.5,c.x*3.)),2.5)*smoothstep(2.5,1.05,d)*step(1.,d);alb*=1.+.26*ray+.2*exp(-pow((d-1.03)/.11,2.))+.10*smoothstep(1.45,1.05,d)*step(1.,d);alb*=1.-.24*smoothstep(1.,.25,d);}
-   else if(c.w<2.5)alb*=1.-.16*smoothstep(1.1,.6,d);}
+   if(c.w<1.5){float ray=pow(vn(vec2(atan(dv.y,dv.x)*4.5,c.x*3.)),2.5)*(1.-smoothstep(1.05,2.5,d))*step(1.,d);alb*=1.+.26*ray+.2*exp(-sq((d-1.03)/.11))+.10*(1.-smoothstep(1.05,1.45,d))*step(1.,d);alb*=1.-.24*(1.-smoothstep(.25,1.,d));}
+   else if(c.w<2.5){alb*=1.-.3*(1.-smoothstep(.93,1.02,d));alb*=1.+.14*exp(-sq((d-1.04)/.05));}}   // scree (a slow zone): a darker gravel bed with a clear edge at its radius
  }
  if(top<.5){
   vec4 pt=texture2D(tPaint,u)*ip;alb*=1.-uTrackK*pt.r;alb*=1.-.75*pt.b;
@@ -307,9 +310,9 @@ void main(){
   ao=1.-.58*min(oc,1.05);
  }else a=mix(a,max(a,.5),uTopLit);
  float od=arenaD(P);float dim=(1.-.48*smoothstep(.25,1.1,od))*(1.-.6*smoothstep(1.1,17.,od))*mix(1.,uOutDim,step(.3,od));
- dim*=1.-.3*smoothstep(-.4,-3.,P.y);   // the strip the HUD sits over (north of the arena) is darker still
+ dim*=1.-.3*(1.-smoothstep(-3.,-.4,P.y));   // the strip the HUD sits over (north of the arena) is darker still
  {float osat=.5*smoothstep(.3,2.5,od);float lum=dot(alb,vec3(.3,.55,.15));alb=mix(alb,vec3(lum)*vec3(.96,.99,1.05),osat);}
- if(top>.5&&tm.g>.3)dim=.62*(1.-.6*smoothstep(0.,15.,od))*(1.-.3*smoothstep(-.4,-3.,P.y));   // wall tops are not playfield: one even, darker value, fading far out
+ if(top>.5&&tm.g>.3)dim=.62*(1.-.6*smoothstep(0.,15.,od))*(1.-.3*(1.-smoothstep(-3.,-.4,P.y)));   // wall tops are not playfield: one even, darker value, fading far out
  vec3 gl=texture2D(tGlow,u).rgb*ip;
  vec3 o=alb*ao*dim*(1.+gl*2.2/max(uAmbRef,vec3(.02)));
  gl_FragColor=vec4(clamp(o,0.,1.),a);
@@ -342,12 +345,16 @@ void main(){
   for(const b of M.aoBoxes)bx.push(new T.Vector4(b[0],b[1],b[2],b[3]));while(bx.length<NBX)bx.push(new T.Vector4(0,0,0,0));
   for(const c of M.aoCircles)ci.push(new T.Vector3(c[0],c[1],c[2]));while(ci.length<NCI)ci.push(new T.Vector3(0,0,0));
   const amb=M.env?M.env.uniforms.uAmb.value:new T.Vector3(0.11,0.135,0.16);
-  const bm=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:BAKE_FS,defines:Object.assign(th.plates?{PLATES:1}:{},M.soft?{LITE:1}:{}),depthTest:false,depthWrite:false,toneMapped:false,uniforms:{
+  const R=res(renderer),bk=(th.plates?'P':'')+(M.soft?'L':'');R.bake=R.bake||{};
+  const U={
    uRect:{value:rectU},uPaintRect:{value:new T.Vector4(pr[0],pr[1],pr[2],pr[3])},uArena:{value:new T.Vector4(0,0,AW,AH)},uTexel:{value:new T.Vector2(rect[2]/w,rect[3]/h)},uL:{value:new T.Vector3(L[0],L[1],L[2])},
    uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uTrackK:{value:th.trackK||0.15},
-   uNc:{value:Math.min(NCR,M.craters.length)},uNb:{value:Math.min(NBX,M.aoBoxes.length)},uNi:{value:Math.min(NCI,M.aoCircles.length)},tShadow:{value:shadow.texture},tTop:{value:top.texture},tPaint:{value:tP},tDecal:{value:tD},tGlow:{value:tG},uCr:{value:cr.slice(0,NCR)},uBox:{value:bx.slice(0,NBX)},uCir:{value:ci.slice(0,NCI)}}});
-  quadPass(renderer,bm,M.rt);
-  bm.dispose();top.dispose();shadow.dispose();tP.dispose();tD.dispose();tG.dispose();
+   uNc:{value:Math.min(NCR,M.craters.length)},uNb:{value:Math.min(NBX,M.aoBoxes.length)},uNi:{value:Math.min(NCI,M.aoCircles.length)},tShadow:{value:shadow.texture},tTop:{value:top.texture},tPaint:{value:tP},tDecal:{value:tD},tGlow:{value:tG},uCr:{value:cr.slice(0,NCR)},uBox:{value:bx.slice(0,NBX)},uCir:{value:ci.slice(0,NCI)}};
+  let bm=R.bake[bk];if(!bm){bm=R.bake[bk]=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:BAKE_FS,defines:Object.assign(th.plates?{PLATES:1}:{},M.soft?{LITE:1}:{}),depthTest:false,depthWrite:false,toneMapped:false,uniforms:U});}
+  else for(const n in U)bm.uniforms[n].value=U[n].value;   // the shader is kept per variant: no recompile per map
+  const dbg=renderer.debug,oldErr=dbg.onShaderError;let bad=false;dbg.onShaderError=()=>{bad=true;};
+  try{quadPass(renderer,bm,M.rt);}finally{dbg.onShaderError=oldErr;top.dispose();shadow.dispose();tP.dispose();tD.dispose();tG.dispose();}
+  if(bad){bm.dispose();delete R.bake[bk];throw Error('Arena3D: the ground bake shader did not compile');}   // the earlier map path takes over
  }
 
  // ---------- build ----------
@@ -388,7 +395,7 @@ void main(){
    uAmb:env?env.uniforms.uAmb:{value:new T.Vector3(0.11,0.135,0.16)},uSun:env?env.uniforms.uSun:{value:new T.Vector3(0.7,0.66,0.6)},uFogC:env?env.uniforms.uFogC:{value:new T.Vector3()},uFog:env?env.uniforms.uFog:{value:new T.Vector3(0,0,1)}}});
   {const tri=[[view.x0,0,view.z0],[view.x1,0,view.z0],[view.x1,0,view.z1],[view.x0,0,view.z0],[view.x1,0,view.z1],[view.x0,0,view.z1]].concat(k.gtop),P=new Float32Array(tri.length*3);for(let i=0;i<tri.length;i++){P[i*3]=tri[i][0];P[i*3+1]=tri[i][1];P[i*3+2]=tri[i][2];}
    const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(P,3));const m=new T.Mesh(g,gm);m.frustumCulled=false;m.matrixAutoUpdate=false;m.renderOrder=-2;meshes.ground=m;G.add(m);}
-  bake(renderer,M);
+  try{bake(renderer,M);}catch(e){G.traverse(x=>{if(x.geometry)x.geometry.dispose();});gm.dispose();M.rt.dispose();throw e;}
   // sky: stars and the Earth sit far below the ground plane along the view, so they only show where no terrain covers them
   const sky=!M.thumb&&ArenaProps.sky?ArenaProps.sky(T,M,earthTex(renderer,q)):null;if(sky)G.add(sky.group);
   if(M.thumb){const K=crate(renderer,q,th.crate);for(const c of M.map.crates||[]){const m=new T.Mesh(K.geo,K.mat);m.scale.set(c[2],0.85,c[3]);m.position.set(c[0]+c[2]/2,0,c[1]+c[3]/2);G.add(m);}}   // a menu picture shows the crates too
@@ -420,8 +427,8 @@ void main(){
  // re-uploaded unless a mark is added. tread(id,x,z,y,width,strength) is called as a tank moves; lift(id) breaks its trail.
  const MARK_VS='attribute vec3 mk;uniform float uT;uniform vec2 uLife;varying vec2 vU;varying vec3 vK;void main(){vU=uv;vK=mk;float life=mk.y<0.5?uLife.x:uLife.y;gl_Position=uT-mk.x>life?vec4(2.0,2.0,2.0,1.0):projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
  const MARK_FS='uniform float uT;uniform vec2 uLife;varying vec2 vU;varying vec3 vK;void main(){float life=vK.y<0.5?uLife.x:uLife.y;float f=1.0-smoothstep(life*0.55,life,uT-vK.x);float a;'+
-  'if(vK.y<0.5){float x=abs(vU.x-0.5)*2.0;float band=smoothstep(0.52,0.60,x)*smoothstep(1.0,0.92,x);float v=fract(vU.y*2.6);a=band*(0.42+0.58*smoothstep(0.18,0.32,v)*smoothstep(0.86,0.72,v));}'+
-  'else{float r=length(vU-0.5)*2.0;float n=fract(sin(dot(floor(vU*11.0),vec2(12.9898,78.233)))*43758.5453);a=smoothstep(1.0,0.2,r)*(0.72+0.28*n);}'+
+  'if(vK.y<0.5){float x=abs(vU.x-0.5)*2.0;float band=smoothstep(0.52,0.60,x)*(1.-smoothstep(0.92,1.0,x));float v=fract(vU.y*2.6);a=band*(0.42+0.58*smoothstep(0.18,0.32,v)*(1.-smoothstep(0.72,0.86,v)));}'+
+  'else{float r=length(vU-0.5)*2.0;float n=fract(sin(dot(floor(vU*11.0),vec2(12.9898,78.233)))*43758.5453);a=(1.-smoothstep(0.2,1.0,r))*(0.72+0.28*n);}'+
   'gl_FragColor=vec4(0.03,0.03,0.035,a*f*vK.z);}';
  function marks(max){
   T=THREE;const n=max||900,P=new Float32Array(n*12),U=new Float32Array(n*8),K=new Float32Array(n*12).fill(-1e6),I=new Uint16Array(n*6);
@@ -430,22 +437,22 @@ void main(){
   g.setAttribute('position',aP);g.setAttribute('uv',aU);g.setAttribute('mk',aK);g.setIndex(new T.BufferAttribute(I,1));
   const m=new T.ShaderMaterial({vertexShader:MARK_VS,fragmentShader:MARK_FS,transparent:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,uniforms:{uT:{value:0},uLife:{value:new T.Vector2(14,26)}}});
   const mesh=new T.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=-1;mesh.matrixAutoUpdate=false;
-  let head=0,time=0,cap=n;const trails=new Map();
-  const quad=(ax,az,bx,bz,cx,cz,dx,dz,y,v0,v1,kind,str)=>{const q=head;head=(head+1)%cap;const o=q*12;P.set([ax,y,az,bx,y,bz,cx,y,cz,dx,y,dz],o);U.set([0,v0,1,v0,1,v1,0,v1],q*8);for(let i=0;i<4;i++)K.set([time,kind,str],o+i*3);
+  const SC=Math.min(48,n>>2);let head=0,sh=0,time=0,cap=n-SC,minStep=0.3;const trails=new Map();   // the last SC quads are scorch's own ring
+  const quad=(ax,az,bx,bz,cx,cz,dx,dz,y,v0,v1,kind,str)=>{let q;if(kind===1){q=n-SC+sh;sh=(sh+1)%SC;}else{q=head;head=(head+1)%cap;}const o=q*12;P.set([ax,y,az,bx,y,bz,cx,y,cz,dx,y,dz],o);U.set([0,v0,1,v0,1,v1,0,v1],q*8);for(let i=0;i<4;i++)K.set([time,kind,str],o+i*3);
    for(const a of [aP,aK]){a.addUpdateRange(o,12);a.needsUpdate=true;}aU.addUpdateRange(q*8,8);aU.needsUpdate=true;};
   return {mesh,
-   limit(c){cap=Math.max(8,Math.min(n,c|0));if(head>=cap)head=0;},
+   limit(c,step){cap=Math.max(8,Math.min(n-SC,c|0));if(head>=cap)head=0;if(step)minStep=step;},
    life(tread,scorch){m.uniforms.uLife.value.set(tread,scorch);},
-   tread(id,x,z,y,w,str){let t=trails.get(id);if(!t){trails.set(id,{x,z,l:null,d:0});return;}const dx=x-t.x,dz=z-t.z,d=Math.hypot(dx,dz);if(d<0.3)return;if(d>1.6){t.x=x;t.z=z;t.l=null;return;}   // a jump (dash, respawn) starts a new trail
+   tread(id,x,z,y,w,str){let t=trails.get(id);if(!t){trails.set(id,{x,z,l:null,d:0});return;}const dx=x-t.x,dz=z-t.z,d=Math.hypot(dx,dz);if(d<minStep)return;if(d>1.6){t.x=x;t.z=z;t.l=null;return;}   // a jump (dash, respawn) starts a new trail
     const nx=-dz/d*w/2,nz=dx/d*w/2,l=t.l||[t.x-nx,t.z-nz,t.x+nx,t.z+nz];quad(l[0],l[1],l[2],l[3],x+nx,z+nz,x-nx,z-nz,y,t.d*3.4,(t.d+d)*3.4,0,str);t.l=[x-nx,z-nz,x+nx,z+nz];t.d+=d;t.x=x;t.z=z;},
    lift(id){trails.delete(id);},
    scorch(x,z,r,y,str){quad(x-r,z-r,x+r,z-r,x+r,z+r,x-r,z+r,y===undefined?0.012:y,0,1,1,str===undefined?0.6:str);},
    update(t){time=t;m.uniforms.uT.value=t;},
-   clear(){K.fill(-1e6);for(const a of [aP,aU,aK])a.clearUpdateRanges();aK.needsUpdate=true;trails.clear();head=0;},
+   clear(){sh=0;K.fill(-1e6);for(const a of [aP,aU,aK])a.clearUpdateRanges();aK.needsUpdate=true;trails.clear();head=0;},
    dispose(){g.dispose();m.dispose();}};
  }
  // free what one renderer holds (context lost, renderer disposed)
  function release(renderer){const R=RES.get(renderer);if(!R)return;for(const q in R.tiles)for(const n in R.tiles[q])R.tiles[q][n].dispose();for(const key in R.mats)for(const n in R.mats[key])R.mats[key][n].dispose();
-  for(const key in R)if(key.startsWith('crate|'))R[key].geo.dispose();if(R.earth)R.earth.dispose();if(R.shTex)R.shTex.dispose();if(R.fsq)R.fsq.geometry.dispose();RES.delete(renderer);}
- return {VERSION,build,prep,crate,shadowTex,marks,release,CLS,lin,hs,vn3,mixc,mul,res,AW,AH};
+  for(const key in R)if(key.startsWith('crate|'))R[key].geo.dispose();for(const key in R)if(key.startsWith('earth|'))R[key].dispose();for(const key in R.bake||{})R.bake[key].dispose();if(R.shTex)R.shTex.dispose();if(R.fsq)R.fsq.geometry.dispose();RES.delete(renderer);}
+ return {VERSION,build,prep,crate,shadowTex,marks,release,setEnvMap,CLS,lin,hs,vn3,mixc,mul,res,AW,AH};
 })();

@@ -1141,6 +1141,7 @@ function vsBuild(){
 function showVS(o){
  const live=!!(o&&o.live),end=Date.now()+(live?o.ms:4000);
  let n=4;
+ if(typeof prewarm3D==='function')setTimeout(()=>{if(state==='vs'||state==='menu')prewarm3D();},150);   // the 3D map is built behind the VS screen
  const ov=openOverlay('full',vsBuild(),{cls:'vs',key:'vs',build:vsBuild,onClose:fromBack=>{clearInterval(vsTimer);vsTimer=null;if(pvpOn()&&state==='vs'){pvpLeave();state='menu';}else if(state==='vs')state='menu';}});
  // live: the server starts the fight for everyone at once; AI: tap START or wait 4 seconds
  const tick=()=>{const el=$('#vsCount');if(!el)return;if(live)el.textContent='Fight starts in '+Math.max(1,Math.ceil((end-Date.now())/1000));else el.textContent=vsTimer?'Starts in '+n:'Tap to start';};

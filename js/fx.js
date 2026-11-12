@@ -86,7 +86,7 @@ function ambience(id){
  if(!id)return;audioInit();if(!AC||AC.state!=='running')return;   // not started yet (no tap): tried again next frame
  try{
   if(!ambBuf){ambBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*2.6),AC.sampleRate);const d=ambBuf.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){b=0.985*b+0.015*(Math.random()*2-1);d[i]=(Math.random()*2-1)*0.5+b*6;}}
-  const S=AMB_SPEC[id],t=AC.currentTime,out=AC.createGain(),src=[];out.gain.setValueAtTime(0,t);out.gain.linearRampToValueAtTime(1,t+2);out.connect(master);
+  var src=[];const S=AMB_SPEC[id],t=AC.currentTime,out=AC.createGain();out.gain.setValueAtTime(0,t);out.gain.linearRampToValueAtTime(1,t+2);out.connect(master);
   const band=(type,fc,q,g,lfo)=>{const n=AC.createBufferSource(),f=AC.createBiquadFilter(),gn=AC.createGain();n.buffer=ambBuf;n.loop=true;n.playbackRate.value=0.8+Math.random()*0.4;f.type=type;f.frequency.value=fc;f.Q.value=q;gn.gain.value=g;n.connect(f);f.connect(gn);gn.connect(out);n.start(t,Math.random()*2);src.push(n);
    if(lfo){const o=AC.createOscillator(),og=AC.createGain();o.frequency.value=lfo;og.gain.value=g*0.6;o.connect(og);og.connect(gn.gain);o.start(t);src.push(o);}};
   band('lowpass',S.rum[0],0.7,S.rum[1],0.05);if(S.air)band('bandpass',S.air[0],S.air[1],S.air[2],0.09);
@@ -94,7 +94,7 @@ function ambience(id){
   const a={id,out,src,timer:0};
   if(S.clank){const go=()=>{if(AMB!==a)return;try{if(AC.state==='running'){burst(0.3,0.022,260,0);tone(190,95,0.22,'triangle',0.008,0.02);}}catch(e){}a.timer=setTimeout(go,6000+Math.random()*9000);};a.timer=setTimeout(go,4000+Math.random()*5000);}
   AMB=a;
- }catch(e){AMB=null;}
+ }catch(e){AMB=null;try{for(const n of src||[])n.stop();}catch(_){}}   // nothing half-started is left playing
 }
 function sfx(n){
  if(!save||save.sound===false||!SND[n])return;

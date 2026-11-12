@@ -2283,3 +2283,43 @@ Proof it works without a rebuild: `dev/tests/arena-maps.mjs` drives blend, haze,
     craters, 14 px per unit) so a map switch costs ~0.5 s there instead of ~2 s. Real GPUs get the full bake.
 15. **Not done as "2 - 3 parallel visual options"** (AGENTS.md agent rule): the look is fixed by the owner's references, so
     the session's own process (one build, a separate critic scoring against the references, iterate) was used instead.
+16. **The next map is built behind the VS screen** (`prewarm3D`, called from `showVS`): the map is known once the match is
+    prepared, so the first battle frame no longer waits for the build (measured: 6 ms instead of the whole build).
+17. **Readability language** (combat reviewer): cyan on the floor now means only "coolant, slows you" in the Bunker (its centre
+    ring and lamps are warm white), scree has a clear edge at its slow radius, zone and crystal-mine markers use normal
+    blending on sunlit ground so the owner's colour never washes to white, both teams' sides get the same light pools.
+
+### What each map is (all on the footprints in `MAPS`; blockout over reference where they differ)
+- **Moonbase** (ref 01): neutral grey regolith, four orange container stacks, the slate command module with lit windows, a
+  turning dish and blinking masts, two lit geodesic domes, two faceted boulders, two slow craters with dark crescents.
+- **Overpass** (ref 02): off-white sand with worn tread marks, the gunmetal bridge with panel seams, teal edge strips, rails,
+  four plate ramps with concrete cheeks, see-through gratings over both tunnels with teal light inside, corner containers.
+- **Longshot** (cliffs from ref 03a): a sunk lane between stepped rock cliffs that run on beyond both ends, warm lamp pools at
+  the cliff feet, four containers, the energy pylon cluster (turning rings), dark plateau beyond.
+- **Crater Field** (refs 05 / 06): the big crater with a beacon light and a pool of cyan, rim stones, two gold-foil landers
+  with cargo and a solar wing, six boulders.
+- **Canyon** (ref 03b floor, 03a walls): cool grey regolith, taupe fractured-ledge walls, fins, spires, scree (slow), a rock
+  mesa split by a cleft with a steel grating across it and two rock ramps, silver crates.
+- **Underground Bunker** (ref 04): deck plates with grime, rivets and worn paint, bulkheads, blast doors with chevrons and
+  status lamps, pillars, two reactor banks each (spinning fans, arcs, cyan glow), cargo lifts, sloped console banks, fuel
+  tanks, coolant pools (slow), tall riveted shell walls on three sides, warm lamp pools.
+- **Every outdoor map on a phone**: the ground runs to two mountain skylines under stars and the Earth; on a desktop the
+  flanks are darker, quieter terrain with nothing that looks like cover.
+
+### Critic loop (step 3): a separate read-only critic, images only, six rounds
+Scores are (closeness to the reference / professional finish and combat readability), phone then desktop.
+
+| Round | Moonbase | Overpass | Longshot | Crater Field | Canyon | Bunker | What changed after it |
+|---|---|---|---|---|---|---|---|
+| 1 | 4/5 · 4/4.5 | 3.5/4.5 · 3.5/4 | 3/4.5 · 2.5/3.5 | 3.5/5 · 3.5/4.5 | 3.5/4 · 3/3.5 | 6/6.5 · 6/6.5 | darker neutral ground, harder longer shadows, crater crescents, kerb border, darker out-of-bounds, slab rock tops, HUD band, bunker warm light |
+| 2 | 5.5/6.5 · 5.5/6 | 6/6.5 · 5.5/5.5 | 4.5/5.5 · 4/4.5 | 5.5/6.5 · 5.5/6 | 5/6 · 4.5/5 | 7/7.5 · 7/7.5 | out-of-bounds muted and emptied, ridge and Earth, irregular tracks, faceted boulders, varied small craters, smooth crater shadows, seams fixed |
+| 3 | 6/7 · 6/6.5 | 6/6.5 · 5.5/5.5 | 5/6 · 4.5/4.5 | 6.5/7 · 6/6.5 | 5.5/6 · 5/5 | 7.5/8 · 7.5/8 | plateaus tall to the screen edge (no bands), stepped cliffs, mountain skyline, bunker centre, wider treads |
+| 4 | 6.5/7 · 6/6.5 | 6.5/7 · 6/6 | 5.5/6.5 · 5/5.5 | 7/7.5 · 6.5/7 | 6/6.5 · 5.5/5.5 | 8/8 · 7.5/8 | stronger key light, fractured ledges, deck panel variants, lamp pools, HUD scrim fade |
+| 5 | 7/7.5 · 6.5/7 | 6.5/7 · 6/6.5 | 6/6.5 · 5.5/6 | 7/7.5 · 6.5/7 | 6/6.5 · 5.5/6 | 8/8 · 7.5/8 | out-of-bounds rocks small and ground-coloured, lighter gratings, quieter ledges and tracks, skyline without outline |
+| 6 | 7/7.5 · 6.5/7.5 | 7/7.5 · 6.5/7 | 6/6.5 · 5.5/6.5 | 7/7.5 · 6.5/7.5 | 6.5/7 · 5.5/6 | 8/8 · 7.5/8 | wedge ramp cheeks, Longshot west lamps and rim, Canyon out-of-bounds stones and grate (its three named items; not re-scored) |
+
+Round 6 verdict: **phone: "another pass would not make a clear difference"** (what is left needs sculpted meshes and authored
+textures, outside this technique). **Desktop: "would, but only a narrow one"**: three named items (Canyon out-of-bounds
+boulders, Longshot west lamp pools, the Canyon grate), which were then fixed. The loop stopped there. The critic's standing
+view: Moonbase, Overpass, Crater Field and Bunker are at the ceiling of baked-texture and vertex-colour art; Longshot and
+Canyon rock is the weakest part against the references (real strata need sculpted meshes).
