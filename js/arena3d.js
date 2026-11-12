@@ -89,6 +89,10 @@ const Arena3D=(()=>{
    sph(cls,c,x,y,z,r,sy,seg,half,o){add(k,cls,sphG(seg||12,half),c,mat(x,y,z,0,o&&o.ry||0,0,r,sy===undefined?r:sy,o&&o.sz||r),o);return B;},
    tor(cls,c,x,y,z,R,r,seg,o){o=o||{};add(k,cls,torG(+(r/R).toFixed(3),seg||16,o.ts),c,mat(x,y,z,o.rx===undefined?Math.PI/2:o.rx,o.ry||0,o.rz||0,R,R*(o.sy||1),R),o);return B;},
    skyline(c,x0,x1,y,z,depth,prof,o){const pts=[new T.Vector2(x0,0)];for(const p of prof)pts.push(new T.Vector2(p[0],p[1]));pts.push(new T.Vector2(x1,0));const g=new T.ExtrudeGeometry(new T.Shape(pts),{depth,bevelEnabled:false,steps:1,curveSegments:1});add(k,o&&o.cls||'rock',g,c,mat(0,y,z-depth),o);g.dispose();return B;},
+   // a solid wedge under a ramp's side: full width from x0 to x1, rising from the ground at zLo to h at zHi
+   wedge(cls,c,x0,x1,zLo,zHi,h,o){const A=[x0,0,zLo],Bq=[x1,0,zLo],C=[x1,0,zHi],D=[x0,0,zHi],E=[x0,h,zHi],F=[x1,h,zHi],out=(x1-x0)*(zHi-zLo)>0,P=[];
+    for(const t of [[A,E,D],[Bq,C,F],[A,Bq,F],[A,F,E],[D,E,F],[D,F,C]]){const q=out?[t[0],t[2],t[1]]:t;for(const v of q)P.push(v[0],v[1],v[2]);}   // faces wound to look outward
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(new Float32Array(P),3));g.computeVertexNormals();add(k,cls,g,c,mat(0,0,0),o);g.dispose();return B;},
    // an upright prism from a footprint polygon [[x,z]..] (local to x,z), h tall, with a small bevel
    prism(cls,c,x,y,z,pts,h,o){o=o||{};const bv=Math.min(o.bevel===undefined?0.03:o.bevel,h*0.45),sh=new T.Shape(pts.map(p=>new T.Vector2(p[0],-p[1]))),g=new T.ExtrudeGeometry(sh,{depth:h-2*bv,bevelEnabled:bv>0,bevelThickness:bv,bevelSize:bv,bevelOffset:-bv,bevelSegments:1,steps:1,curveSegments:1});
     g.rotateX(-Math.PI/2);add(k,cls,g,c,mat(x,y+bv,z,0,o.ry||0,0),o);g.dispose();return B;},
@@ -107,20 +111,21 @@ const Arena3D=(()=>{
    o=o||{};const [x,z,w,d]=rect,sd=o.seed===undefined?x*3.1+z*1.7:o.seed,layers=o.layers||Math.max(2,Math.round(Hh/(k.high?0.3:0.5))),step=o.step||(k.high?0.85:1.4),open=o.open||{W:1,E:1,N:1,S:1},cols=o.cols||k.theme.strata,y0=o.y0||0,ins=o.inset===undefined?0.2:o.inset;
    for(let j=0;j<layers;j++){
     const hh=Hh/layers,yy=y0+j*hh,last=j===layers-1,grow=j/layers*(o.lean===undefined?0.16:o.lean),pts=[];
-    const side=(ax,az,bx,bz,nx,nz,isOpen)=>{const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/step));for(let i=0;i<n;i++){const f=i/n,px=ax+(bx-ax)*f,pz=az+(bz-az)*f,r1=hs(px*1.7+sd+j*5.3,pz*1.3-j*2.1),r2=hs(pz*2.3-sd,px*0.7+j*9.1);
+    const side=(ax,az,bx,bz,nx,nz,isOpen)=>{const L=Math.hypot(bx-ax,bz-az),fs=[0];if(isOpen){let u=0,q=0;for(;;){u+=step*(0.35+1.3*hs(u*1.3+sd+j*3.7,ax+az+q++));if(u>=L-step*0.3)break;fs.push(u/L);}}else{const m=Math.max(1,Math.round(L/step));for(let i=1;i<m;i++)fs.push(i/m);}
+     const n=fs.length;for(let i=0;i<n;i++){const f=fs[i],px=ax+(bx-ax)*f,pz=az+(bz-az)*f,r1=hs(px*1.7+sd+j*5.3,pz*1.3-j*2.1),r2=hs(pz*2.3-sd,px*0.7+j*9.1);
       const edge=Math.min(f,1-f)*L<0.01?0.5:1,inA=isOpen?(0.03+grow+ins*(r1>0.55?1:r1*0.5)*(0.5+0.5*r2))*edge+(i===0?0.06:0):0,tj=isOpen?(r2-0.5)*step*0.6:0;   // big, uneven bites: fractured rock, not rolls
       pts.push([Math.min(x+w,Math.max(x,px+nx*inA+(bx-ax)/L*tj)),Math.min(z+d,Math.max(z,pz+nz*inA+(bz-az)/L*tj))]);}};   // never outside its footprint
     side(x,z,x+w,z,0,1,open.N);side(x+w,z,x+w,z+d,-1,0,open.E);side(x+w,z+d,x,z+d,0,-1,open.S);side(x,z+d,x,z,1,0,open.W);
     const sh=new T.Shape(pts.map(p=>new T.Vector2(p[0],-p[1]))),bv=Math.min(0.022,hh*0.1);
     const g=new T.ExtrudeGeometry(sh,{depth:hh-2*bv,bevelEnabled:true,bevelThickness:bv,bevelSize:bv,bevelOffset:-bv,bevelSegments:1,steps:1,curveSegments:1});g.rotateX(-Math.PI/2);
-    const c0=col(cols[(j+Math.floor(hs(sd,3)*4))%cols.length]),c=mul(c0,0.78),ct=mul(c0,1.18),M=mat(0,yy+bv,0);
+    const c0=col(cols[(j+Math.floor(hs(sd,3)*4))%cols.length]),c=mul(c0,0.88),ct=mul(c0,o.rim||1.06),M=mat(0,yy+bv,0);
     if(last&&o.cap!==false){   // the top face goes to the baked ground, the rest to the rock bucket
      const P=g.attributes.position,N=g.attributes.normal,keep=[],kn=[];
      for(let i=0;i<P.count;i+=3){if(N.getY(i)>0.9&&N.getY(i+1)>0.9&&N.getY(i+2)>0.9&&P.getY(i)>hh-2*bv){for(let q=0;q<3;q++)k.gtop.push([P.getX(i+q),yy+hh,P.getZ(i+q)]);}
       else for(let q=0;q<3;q++){keep.push(P.getX(i+q),P.getY(i+q),P.getZ(i+q));kn.push(N.getX(i+q),N.getY(i+q),N.getZ(i+q));}}
      const g2=new T.BufferGeometry();g2.setAttribute('position',new T.BufferAttribute(new Float32Array(keep),3));g2.setAttribute('normal',new T.BufferAttribute(new Float32Array(kn),3));
-     add(k,'rock',g2,c,M,{ao:o.ao===undefined?0.3:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.15,dim:o.dim,top:ct});g2.dispose();
-    }else add(k,'rock',g,c,M,{ao:o.ao===undefined?0.3:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.15,dim:o.dim,top:ct});
+     add(k,'rock',g2,c,M,{ao:o.ao===undefined?0.2:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.15,dim:o.dim,top:ct});g2.dispose();
+    }else add(k,'rock',g,c,M,{ao:o.ao===undefined?0.2:o.ao,aoH:Hh*0.8,yb:o.yb===undefined?y0:o.yb,dust:0.15,dim:o.dim,top:ct});
     g.dispose();
    }
    return B;
@@ -174,7 +179,7 @@ void main(){vec2 u=vUv;float e=1./uRes;
  const EARTH_FS=`precision highp float;varying vec2 vUv;`+NOISE+`
 float f3(vec3 p){return fbm(p.xy*1.0+p.z*vec2(.7,-.4))*.6+fbm(p.zy*1.3+p.x*vec2(-.5,.6)+7.)*.4;}
 void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3,.52));
- if(r2>1.){float g=max(0.,1.-(r2-1.)/.16);vec3 n=normalize(vec3(u,0.));float day=clamp(dot(n,L)*2.+.5,0.05,1.);gl_FragColor=vec4(.2,.45,.9,g*g*.45*day);return;}
+ if(r2>1.){float g=max(0.,1.-(r2-1.)/.16);vec3 n=normalize(vec3(u,0.));float day=clamp(dot(n,L)*2.+.2,0.,1.);gl_FragColor=vec4(.2,.45,.9,g*g*.4*day);return;}
  float z=sqrt(1.-r2);vec3 p=vec3(u,z);float land=f3(p*1.9+vec3(4.,1.,0.));float arid=fbm(p.xy*3.+p.z*2.+2.);vec2 w=vec2(fbm(p.xy*2.+p.z+7.),fbm(p.yx*2.-p.z+3.))-.5;float cl=fbm(vec2(p.x*2.4+p.z*1.2,p.y*4.4)+w*1.7+9.);
  float ndl=dot(p,L);float day=clamp(ndl*3.2+.12,0.,1.);
  vec3 c=land>.5?(arid>.52?vec3(.40,.33,.2):vec3(.13,.26,.11)):vec3(.012,.07+.05*land,.21+.1*land);if(abs(u.y)>.9-.06*arid)c=vec3(.85,.9,.95);
@@ -339,7 +344,7 @@ void main(){
   const amb=M.env?M.env.uniforms.uAmb.value:new T.Vector3(0.11,0.135,0.16);
   const bm=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:BAKE_FS,defines:Object.assign(th.plates?{PLATES:1}:{},M.soft?{LITE:1}:{}),depthTest:false,depthWrite:false,toneMapped:false,uniforms:{
    uRect:{value:rectU},uPaintRect:{value:new T.Vector4(pr[0],pr[1],pr[2],pr[3])},uArena:{value:new T.Vector4(0,0,AW,AH)},uTexel:{value:new T.Vector2(rect[2]/w,rect[3]/h)},uL:{value:new T.Vector3(L[0],L[1],L[2])},
-   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uTrackK:{value:th.trackK||0.24},
+   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uTrackK:{value:th.trackK||0.15},
    uNc:{value:Math.min(NCR,M.craters.length)},uNb:{value:Math.min(NBX,M.aoBoxes.length)},uNi:{value:Math.min(NCI,M.aoCircles.length)},tShadow:{value:shadow.texture},tTop:{value:top.texture},tPaint:{value:tP},tDecal:{value:tD},tGlow:{value:tG},uCr:{value:cr.slice(0,NCR)},uBox:{value:bx.slice(0,NBX)},uCir:{value:ci.slice(0,NCI)}}});
   quadPass(renderer,bm,M.rt);
   bm.dispose();top.dispose();shadow.dispose();tP.dispose();tD.dispose();tG.dispose();

@@ -10,10 +10,10 @@ const ArenaProps=(()=>{
  const HZ='#d9a92e',HZK='#1d1f23',CYAN='#4fe3ff',STEEL='#8d969e',STEEL_D='#3b424a',STEEL_L='#aab2b9';
  const THEMES={
   classic:{name:'Moonbase',tread:0.36,dustC:'#a9a9aa',ground:'#8a8b8e',dust:'#98999b',strata:['#7c7872','#8a857e','#6a6660','#807b74'],seed:3,pebbles:0.8,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  overpass:{name:'Overpass',tread:0.3,dustC:'#cfc9bf',ground:'#cbc4b9',dust:'#cfc9bf',strata:['#8e8a84','#9a958e'],seed:7,pebbles:0.4,relief:1.3,mottle:0.1,trackK:0.34,outDim:0.7,crate:'tan',crateMat:'crate',accent:'#35e0d2',horizon:1},
-  longshot:{name:'Longshot',tread:0.36,dustC:'#b0a79f',ground:'#9c9289',topGround:'#75695d',topKind:1,wallPeb:0.7,dust:'#978c82',strata:['#6b5848','#8e7660','#a58c72','#7a6654'],seed:11,pebbles:0.7,crate:'tan',crateMat:'crate',accent:'#ffc46a',horizon:1},
-  craters:{name:'Crater Field',tread:0.36,dustC:'#a8a8aa',ground:'#8c8b89',dust:'#999896',strata:['#7c7872','#8a857e'],seed:17,pebbles:1.0,relief:1.7,trackK:0.3,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  canyon:{name:'Canyon',tread:0.36,dustC:'#b3b4b6',ground:'#a4a7ab',topGround:'#7b6e61',topKind:1,wallPeb:0.8,dust:'#9a958e',strata:['#6b5d50','#8a7a69','#a08e7a','#77685a'],seed:23,pebbles:0.8,relief:1.6,crate:'steel',crateMat:'metal',accent:'#ffb066',horizon:1},
+  overpass:{name:'Overpass',tread:0.3,dustC:'#cfc9bf',ground:'#cfcbc4',dust:'#d2cec8',strata:['#8e8a84','#9a958e'],seed:7,pebbles:0.4,relief:1.3,mottle:0.1,trackK:0.16,outDim:0.7,crate:'tan',crateMat:'crate',accent:'#35e0d2',horizon:1},
+  longshot:{name:'Longshot',tread:0.36,dustC:'#b0a79f',ground:'#9c9289',topGround:'#857e75',topKind:1,wallPeb:0.7,dust:'#978c82',strata:['#7b6b5c','#8c7b69','#998772','#847361'],seed:11,pebbles:0.7,crate:'tan',crateMat:'crate',accent:'#ffc46a',horizon:1},
+  craters:{name:'Crater Field',tread:0.36,dustC:'#a8a8aa',ground:'#8c8b89',dust:'#999896',strata:['#7c7872','#8a857e'],seed:17,pebbles:1.0,relief:1.7,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
+  canyon:{name:'Canyon',tread:0.36,dustC:'#b3b4b6',ground:'#a4a7ab',topGround:'#8c857c',topKind:1,wallPeb:0.8,dust:'#9a958e',strata:['#7a6e62','#877a6c','#938575','#7f7265'],seed:23,pebbles:0.8,relief:1.6,crate:'steel',crateMat:'metal',accent:'#ffb066',horizon:1},
   bunker:{name:'Underground Bunker',tread:0.16,dustC:null,ground:'#666a6f',topGround:'#6b6a6c',dust:null,strata:['#5a5a5e','#66666a'],seed:29,plates:true,pebbles:0.6,crate:'steel',crateMat:'metal',accent:CYAN,horizon:1}
  };
  const theme=id=>Object.assign({id},THEMES[id]||THEMES.classic);
@@ -73,9 +73,9 @@ const ArenaProps=(()=>{
  function outland(B,M,o){
   o=o||{};const v=M.view,hi=B.high,sd=M.theme.seed*13.7,dimAt=(x,z)=>{const dx=Math.max(0,-x,x-W),dz=Math.max(0,-z,z-H);return 1-0.45*Math.min(1,Math.hypot(dx,dz)/14);};
   const clear=(x,z,r)=>x<-r-0.6||x>W+r+0.6||z<-r-0.6||z>H+r+0.6;
-  const n=Math.round((hi?0.085:0.035)*((v.x1-v.x0)*(v.z1-v.z0)-W*H));
-  for(let i=0;i<n;i++){const x=v.x0+hs(i,sd)*(v.x1-v.x0),z=Math.max(M.horizon+0.8,v.z0)+hs(sd,i*1.3)*(v.z1-Math.max(M.horizon+0.8,v.z0)),big=hs(i*3.7,sd)>0.86,r=big?0.5+hs(i,7)*0.7:0.1+hs(i,9)*0.22;
-   if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||'#8a8681',x,0,z,r,r*(big?1.1:1.3),i,{dim:dimAt(x,z)});}
+  const n=Math.round((hi?0.045:0.02)*((v.x1-v.x0)*(v.z1-v.z0)-W*H));
+  for(let i=0;i<n;i++){const x=v.x0+hs(i,sd)*(v.x1-v.x0),z=Math.max(M.horizon+0.8,v.z0)+hs(sd,i*1.3)*(v.z1-Math.max(M.horizon+0.8,v.z0)),big=hs(i*3.7,sd)>0.8,r=big?0.28+hs(i,7)*0.2:0.08+hs(i,9)*0.16;
+   if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||M.theme.ground,x,0,z,r,r*(big?0.9:1.2),i,{ao:0.2,punch:0.3});}
  }
  // the far ridge: a chain of low hills on the horizon line (north), so the ground ends in a silhouette under the stars
  function ridge(B,M,y0,c){
@@ -83,9 +83,11 @@ const ArenaProps=(()=>{
   const g=Arena3D.lin(c||M.theme.ground),kh=y0>1?0.5:1,x0=v.x0-1,x1=v.x1+1;
   // two overlapping skylines in the map's own ground hue (textured like the ground); the sun catches their top edges
   const prof=(sd,base,amp,step)=>{const P=[];for(let x=x0;x<=x1;x+=step){const t=x*0.23+sd,r=Math.abs(Math.sin(t)*0.55+Math.sin(t*2.3+1.7)*0.3+Math.sin(t*5.1+0.4)*0.15);P.push([x+(hs(x,sd)-0.5)*step*0.5,base+amp*(0.25+0.75*r)*(0.75+0.5*hs(sd,x))]);}return P;};
-  // unlit, so their value is exact: dark at the foot, paler towards the crest, a light edge on top
-  B.skyline(Arena3D.mul(g,0.2),x0,x1,y0||0,z-0.45,0.16,prof(3.1,0.6*kh,1.9*kh,0.55),{cls:'glow',noShadow:1,grad:[2.3,2.6*kh],top:Arena3D.mul(g,0.62)});
-  B.skyline(Arena3D.mul(g,0.3),x0,x1,y0||0,z+0.45,0.16,prof(9.7,0.25*kh,1.1*kh,0.45),{cls:'glow',noShadow:1,grad:[1.9,1.4*kh],top:Arena3D.mul(g,0.8)});
+  // unlit, so their value is exact: a two-tone fill, darker at the foot and paler towards the crest. They stand on the
+  // floor even where the map's plateaus are raised, so no gap of space shows under them.
+  const up=y0||0;
+  B.skyline(Arena3D.mul(g,0.2),x0,x1,0,z-0.45,0.16,prof(3.1,up+0.6*kh,1.9*kh,0.55),{cls:'glow',noShadow:1,grad:[2.2,up+2.6*kh]});
+  B.skyline(Arena3D.mul(g,0.3),x0,x1,0,z+0.45,0.16,prof(9.7,up+0.25*kh,1.1*kh,0.45),{cls:'glow',noShadow:1,grad:[1.8,up+1.4*kh]});
  }
 
  // ---------- Moonbase / Crater Field / Longshot props ----------
@@ -152,12 +154,12 @@ const ArenaProps=(()=>{
   for(const side of [0,1]){const x0=side?16:0,open=side?{W:1}:{E:1};
    // one mass per side from the horizon to the bottom of the screen: its columns are never playfield, so it can stay tall
    // on the camera's side too. Three thick layers that step back: the ledges read as height from above.
-   B.strata([x0,hz,4,v.z1-hz],Hc,{open,seed:side*31+5,inset:0.34,lean:1.5,layers:hi?3:2,step:hi?0.45:0.9});
+   B.strata([x0,hz,4,v.z1-hz],Hc,{open,seed:side*31+5,inset:0.18,lean:1.5,layers:hi?3:2,step:hi?0.7:1.2,rim:0.9});
    if(side)B.topRect(W-0.15,hz,v.x1,v.z1,Hc+0.004);else B.topRect(v.x0,hz,0.15,v.z1,Hc+0.004);   // the plateau beyond; a hair above the cap so no seam shows
    // loose rock on the rim, scattered (never a row), and work lights looking down into the lane
    const n=hi?11:5;B.yb(Hc);for(let i=0;i<n;i++){const z=0.8+hs(i*1.3,side+2)*(H-1.6),x=side?W-0.5-Math.pow(hs(i,3+side),1.6)*1.7:0.5+Math.pow(hs(i,3+side),1.6)*1.7,r=0.16+Math.pow(hs(i*1.7,side+5),2)*0.5;
     B.rock(th.strata[i%4],x,Hc,z,r,r*(0.7+hs(i,9)*0.7),i+side*9,{sx:1+hs(i,4)*0.6,sz:0.8});}B.yb(0);
-   for(const z of [5,11,21,27]){M.glowSpots.push([side?15.1:4.9,z,1.7,'255,196,120',0.26]);B.halo(side?15.75:4.25,0.5,z,1.3,'#ffcf8a',0.3);B.glow('#ffd9a0',side?15.93:4.07,0.34,z,0.03,0.05,0.3);B.k.anchors.sparks.push([side?15.9:4.1,0.5,z]);}   // work lamps set into the cliff foot
+   for(const z of [5,11,21,27]){M.glowSpots.push([side?15.1:5.0,z,side?1.7:2.1,'255,196,120',side?0.26:0.6]);B.halo(side?15.75:4.25,0.5,z,1.3,'#ffcf8a',0.3);B.k.anchors.sparks.push([side?15.9:4.1,0.5,z]);}   // work lamps set into the cliff foot
   }
  }
 
@@ -177,11 +179,11 @@ const ArenaProps=(()=>{
    }else{
     // over a tunnel: a steel grating you can see through (bars, not glass), on two heavy beams
     for(const s of [-1,1])B.box('metal',slabD,sx+sw/2,DECK-0.1,dy+dh/2+s*(dh/2-0.09),sw,0.2,0.18,0,{ao:0,dust:0.1});
-    const nb=Math.max(2,Math.round(sw/(hi?0.3:0.6)));for(let i=0;i<=nb;i++)B.box('metal',i%4===0?slab:slabD,sx+sw*i/nb,DECK-0.04,dy+dh/2,i%4===0?0.07:0.04,0.07,dh-0.3,0,{ao:0,dust:0});
-    const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal',slab,sx+sw/2,DECK-0.035,dy+dh*j/nz,sw,0.06,0.07,0,{ao:0,dust:0});
+    const nb=Math.max(2,Math.round(sw/(hi?0.3:0.6)));for(let i=0;i<=nb;i++)B.box('metal',i%4===0?'#8d959c':'#7c848b',sx+sw*i/nb,DECK-0.04,dy+dh/2,i%4===0?0.05:0.025,0.06,dh-0.3,0,{ao:0,dust:0,noShadow:i%4?1:0});
+    const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal','#8d959c',sx+sw/2,DECK-0.035,dy+dh*j/nz,sw,0.05,0.045,0,{ao:0,dust:0,noShadow:1});
     // portals: frames with a light bar on both mouths
     for(const s of [-1,1]){const zf=dy+dh/2+s*(dh/2+0.01);for(const e of [0.07,sw-0.07])B.box('metal',dark,sx+e,(DECK-0.1)/2,zf,0.14,DECK-0.1,0.14);B.box('metal',dark,sx+sw/2,DECK-0.24,zf,sw,0.12,0.12);B.glow(CYAN,sx+sw/2,DECK-0.31,zf+s*0.065,sw-0.4,0.03,0.02);if(s>0)B.halo(sx+sw/2,DECK-0.35,zf+0.2,2.2,CYAN,0.3);}
-    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.92]);M.glowSpots.push([sx+sw/2,dy+dh+0.6,1.9,'60,230,215',0.42]);M.glowSpots.push([sx+sw/2,dy-0.6,1.9,'60,230,215',0.34]);
+    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.5]);M.glowSpots.push([sx+sw/2,dy+dh+0.6,1.9,'60,230,215',0.42]);M.glowSpots.push([sx+sw/2,dy-0.6,1.9,'60,230,215',0.34]);M.glowSpots.push([sx+sw/2,dy+dh/2,2.0,'60,230,215',0.3]);
    }
   }
   M.aoBoxes.push([dx,dy+dh-0.05,dw,0.45]);   // a darker foot along the camera side of the deck
@@ -200,8 +202,7 @@ const ArenaProps=(()=>{
    B.box('metal',slab,rx+rw/2,DECK/2-0.04,zc,rw,0.1,len,0,{rx:ang,ao:0.15,dust:0.16});
    for(const sg of [-1,1])B.box('paint',HZ,rx+rw/2+sg*(rw/2-0.2),DECK/2+0.014,zc,0.07,0.012,len-0.1,0,{rx:ang,ao:0,dust:0});B.box('metal',slabD,rx+rw/2,DECK/2+0.012,zc,0.03,0.012,len-0.1,0,{rx:ang,ao:0,dust:0});
    for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;
-    B.box('rock','#8a8f94',xr,DECK/2*0.5,zc,0.2,0.3,len,0,{rx:ang,ao:0.2,yb:0});   // sloped concrete cheek
-    for(let i=1;i<=4;i++){const f=i/4,zz=lo+(hiZ-lo)*(f-0.125);B.box('rock','#80858a',xr,f*DECK*0.5-0.06,zz,0.2,Math.max(0.02,f*DECK-0.12),Math.abs(hiZ-lo)/4,0,{ao:0.3});}   // stepped concrete under the cheek
+    B.wedge('rock','#8a8f94',xr-0.1,xr+0.1,lo,hiZ,DECK+0.1,{ao:0.25,dust:0.1});   // a concrete cheek: one wedge, so its shadow is one clean shape
     B.box('metal',STEEL_L,xr,DECK/2+0.42,zc,0.035,0.035,len,0,{rx:ang,ao:0,dust:0,noShadow:1});for(let i=0;i<=3;i++){const f=i/3;B.box('metal',STEEL,xr,f*DECK+0.21,lo+(hiZ-lo)*f,0.04,0.42,0.04,0,{ao:0,dust:0,noShadow:1});}
     B.glow(CYAN,xr+(s<0?0.11:-0.11),DECK/2+0.03,zc,0.02,0.05,len-0.2,0,{rx:ang});B.halo(xr,0.12,lo,1.1,CYAN,0.35);}
    M.aoBoxes.push([rx-0.2,ry,rw+0.4,rh]);
@@ -231,16 +232,16 @@ const ArenaProps=(()=>{
    if(solid)B.strata([sx,dy,sw,dh],DECK,{seed:sx*2.3,inset:0.14,lean:0.1,layers:hi?4:2,open:{N:1,S:1,W:sx<=dx+0.01,E:sx+sw>=dx+dw-0.01}});
    else{   // the cleft and its grating
     for(const s of [-1,1])B.box('metal','#4d545b',sx+sw/2,DECK-0.09,dy+dh/2+s*(dh/2-0.1),sw+0.3,0.18,0.2,0,{ao:0,dust:0.2});
-    const nb=Math.max(2,Math.round(sw/(hi?0.3:0.6)));for(let i=0;i<=nb;i++)B.box('metal',i%4===0?'#5d646b':'#454b52',sx+sw*i/nb,DECK-0.035,dy+dh/2,i%4===0?0.07:0.04,0.07,dh-0.3,0,{ao:0,dust:0.1});
-    const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal','#5d646b',sx+sw/2,DECK-0.03,dy+dh*j/nz,sw,0.06,0.07,0,{ao:0,dust:0.1});
+    const nb=Math.max(2,Math.round(sw/(hi?0.3:0.6)));for(let i=0;i<=nb;i++)B.box('metal',i%4===0?'#8d959c':'#7c848b',sx+sw*i/nb,DECK-0.035,dy+dh/2,i%4===0?0.05:0.025,0.06,dh-0.3,0,{ao:0,dust:0.1,noShadow:i%4?1:0});
+    const nz=Math.max(2,Math.round(dh/(hi?0.62:1.25)));for(let j=1;j<nz;j++)B.box('metal','#8d959c',sx+sw/2,DECK-0.03,dy+dh*j/nz,sw,0.05,0.045,0,{ao:0,dust:0.1,noShadow:1});
     for(const s of [-1,1]){B.glow('#ffb066',sx+sw/2,DECK-0.24,dy+dh/2+s*(dh/2-0.02),sw-0.5,0.03,0.02);B.halo(sx+sw/2,DECK-0.3,dy+dh/2+s*(dh/2+0.15),1.9,'#ffa860',0.3);}
-    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.9]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.4,'255,170,100',0.28]);M.glowSpots.push([sx+sw/2,dy-0.5,1.4,'255,170,100',0.2]);
+    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.22]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.4,'255,170,100',0.28]);M.glowSpots.push([sx+sw/2,dy-0.5,1.4,'255,170,100',0.2]);M.glowSpots.push([sx+sw/2,dy+dh/2,2.4,'255,190,130',0.5]);
    }
   }
   for(const [rx,ry,rw,rh,o] of BRd.ramps){const lo=o<0?ry:ry+rh,hiZ=o<0?ry+rh:ry;
    B.top([[rx,o<0?0:DECK,ry],[rx+rw,o<0?0:DECK,ry],[rx+rw,o<0?DECK:0,ry+rh],[rx,o<0?DECK:0,ry+rh]]);   // the ramp surface takes the baked ground
    M.rampTracks.push([rx+rw/2,ry-0.6,rx+rw/2,ry+rh+0.6]);
-   for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;for(let t=0.2;t<rh;t+=hi?0.45:0.9){const zz=ry+t,f=Math.abs(zz-lo)/rh,r=0.15+hs(t,xr)*0.07;B.rock(cs[(Math.floor(t*3)+1)%4],xr,0,zz,r,DECK*f+0.2+r,Math.floor(t*7+xr),{ao:0.35});}}
+   for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1,ang=Math.atan2(DECK,rh)*(o<0?-1:1),len=Math.hypot(DECK,rh);B.wedge('rock',cs[1],xr-0.1,xr+0.1,lo,hiZ,DECK+0.14,{ao:0.25,dust:0.15});}   // a rock kerb that rises with the ramp
    M.aoBoxes.push([rx-0.2,ry,rw+0.4,rh]);
   }
  }
@@ -351,7 +352,7 @@ const ArenaProps=(()=>{
   // the reactor hall's floor ring: a flush strip of light and four slow pulses
   B.tor('glow','#49dcff',10,0.016,16,2.55,0.024,hi?56:28,{ts:4});for(const dx of [-0.85,0.85]){B.cyl('glow','#9af1ff',10+dx,0.014,16,0.3,0.012,hi?18:10);B.halo(10+dx,0.25,16,1.9,'#49dcff',0.5,1.7+dx);B.halo(10+dx,0.2,16,0.8,'#d8fbff',0.7,2.3);}for(let i=0;i<4;i++){const a=i*PI/2+PI/4;B.halo(10+Math.cos(a)*2.55,0.1,16+Math.sin(a)*2.55,1.5,'#49dcff',0.5,1.3+i*0.2);}
   M.aoBoxes.push([-t,-0.6,t+0.02,H+1.2],[W-0.02,-0.6,t+0.02,H+1.2],[-t,-t,W+2*t,t+0.02]);
-  for(const [x,z] of [[2.2,22.5],[17.8,22.5],[2.6,29.6],[17.4,29.6],[2.2,9.5],[17.8,9.5]])M.glowSpots.push([x,z,2.5,'255,176,96',0.3]);
+  for(const [x,z] of [[2.2,22.5],[17.8,22.5],[2.6,29.6],[17.4,29.6],[2.2,9.5],[17.8,9.5]])M.glowSpots.push([x,z,2.5,'255,216,172',0.3]);
   // ground level outside the shell
   B.topRect(v.x0,M.horizon,v.x1,-t,Hw);B.topRect(v.x0,-t,-t,H+t,Hw);B.topRect(W+t,-t,v.x1,H+t,Hw);
   B.box('rock','#5a5a5e',(v.x0-t)/2,Hw/2-0.01,H+t,-t-v.x0,Hw-0.02,0.04,0,{ao:0.2});B.box('rock','#5a5a5e',(W+t+v.x1)/2,Hw/2-0.01,H+t,v.x1-W-t,Hw-0.02,0.04,0,{ao:0.2});
@@ -381,7 +382,7 @@ const ArenaProps=(()=>{
   c.strokeStyle='rgba(255,0,0,'+a*0.8+')';c.lineWidth=wd;c.setLineDash([0.11,0.07]);path();c.stroke();
   c.globalCompositeOperation='destination-out';c.setLineDash([]);c.strokeStyle='rgba(0,0,0,1)';c.lineWidth=wd-2*tw;path();c.stroke();
   // old tracks are half gone: soft gaps along the way (about a third of the length), never the same twice
-  const sd=o.seed===undefined?pts[0][0]*3.7+pts[0][1]:o.seed,gaps=o.gaps===undefined?0.33:o.gaps;let L=0;for(let i=1;i<pts.length;i++)L+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+  const sd=o.seed===undefined?pts[0][0]*3.7+pts[0][1]:o.seed,gaps=o.gaps===undefined?0.42:o.gaps;let L=0;for(let i=1;i<pts.length;i++)L+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
   const n=Math.round(L*gaps/1.5);for(let k=0;k<n;k++){let u=hs(sd+k,7.7)*L,i=1;while(i<pts.length-1&&u>Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])){u-=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);i++;}
    const sl=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])||1,f=Math.min(1,u/sl),gx=pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,gz=pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f,r=0.5+hs(k,sd)*0.6,g=c.createRadialGradient(gx,gz,0,gx,gz,r);
    g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(0.6,'rgba(0,0,0,0.8)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.beginPath();c.arc(gx,gz,r,0,PI*2);c.fill();}
@@ -394,20 +395,17 @@ const ArenaProps=(()=>{
  function paint(lay,M){
   const id=M.id,d=lay.decal,sd=M.theme.seed;
   if(id==='overpass'){   // the reference: loops of tread marks on both halves (offset, overlapping, half worn away), runs through the tunnels
-   loop(lay,8.6,7.1,5.4,3.2,0.2,{a:0.75,seed:1,gaps:0.5});
-   track(lay,[[3.5,3.2],[5.6,7.5],[6.9,12],[7,13.5],[7,18.5],[7.6,21.5],[10.5,25],[13.5,29.5]],{a:0.85,gaps:0.2,seed:5});
-   track(lay,[[17,28.5],[14.6,24.5],[13.1,20],[13,18.5],[13,13.5],[12.2,10.5],[9,6.5],[6.5,2.8]],{a:0.75,gaps:0.25,seed:6});
+   track(lay,[[3.5,3.2],[5.6,7.5],[6.9,12],[7,13.5],[7,18.5],[7.6,21.5],[10.5,25],[13.5,29.5]],{a:0.8,gaps:0.4,seed:5});
+   track(lay,[[17,28.5],[14.6,24.5],[13.1,20],[13,18.5],[13,13.5],[12.2,10.5],[9,6.5],[6.5,2.8]],{a:0.7,gaps:0.45,seed:6});
   }else if(id==='longshot'){
    track(lay,[[6.3,-1],[6,5],[5.4,9.2],[5.3,12.5],[5.4,19.5],[6.2,23],[6.6,28],[6.2,33]],{a:0.8,seed:11});
    track(lay,[[13.5,33],[13.9,27],[14.6,22.6],[14.7,19],[14.5,12.5],[13.6,8.5],[12.4,3]],{a:0.7,seed:12});
-   track(lay,[[10.4,-1],[9.6,4],[10.3,8.6]],{a:0.5,seed:13});track(lay,[[9.5,23.5],[10.5,27.5],[9.8,33]],{a:0.5,seed:14});
   }else if(id==='classic'){
    track(lay,[[7.5,30],[6.2,26.5],[8.6,24.6],[10.4,21.8],[10.2,18.6],[12.6,18.2],[13.8,16]],{a:0.8,seed:21});
    track(lay,[[15.5,3.5],[13.2,6.4],[10.6,7.8],[9.6,12],[7.2,13.6],[6.2,16.4]],{a:0.7,seed:22});
-   track(lay,[[17.8,27.5],[18.4,22.5],[17.2,19.6],[18.2,15.5]],{a:0.5,seed:23});
   }else if(id==='craters'){
    track(lay,[[3,29.5],[5.2,26.4],[8.8,25.6],[12.2,27],[15.4,25.4],[17.2,22.5]],{a:0.75,seed:31});
-   track(lay,[[16.5,2.5],[15.2,5.8],[11.6,7.2],[8.2,5.6],[6.4,8.4]],{a:0.65,seed:32});track(lay,[[1.8,10],[2.6,13.4],[1.6,15.2]],{a:0.5,seed:33});
+   track(lay,[[16.5,2.5],[15.2,5.8],[11.6,7.2],[8.2,5.6],[6.4,8.4]],{a:0.65,seed:32});
   }else if(id==='canyon'){
    track(lay,[[10,30.5],[9.2,26],[7.6,22.5],[7.6,21.5]],{a:0.75,seed:41});track(lay,[[10,1.5],[10.8,6],[12.4,9.5],[12.4,10.5]],{a:0.75,seed:42});
    track(lay,[[14.5,29],[16.2,24],[16.6,18],[16.9,13]],{a:0.55,seed:43});track(lay,[[5.5,3],[3.8,8],[3.4,14]],{a:0.5,seed:44});track(lay,[[10,21],[10,11]],{a:0.8,gaps:0,seed:45});
@@ -417,7 +415,7 @@ const ArenaProps=(()=>{
    d.setLineDash([]);d.fillStyle='rgba(24,30,38,0.55)';d.beginPath();d.arc(10,16,2.5,0,PI*2);d.fill();d.strokeStyle='rgba(150,165,178,0.4)';d.lineWidth=0.05;for(let i=0;i<8;i++){const a=i/8*PI*2+PI/8;d.beginPath();d.moveTo(10+Math.cos(a)*1.25,16+Math.sin(a)*1.25);d.lineTo(10+Math.cos(a)*2.45,16+Math.sin(a)*2.45);d.stroke();}
    const br=(x0,z0,x1,z1,cc)=>{d.strokeStyle=cc;d.lineWidth=0.08;for(const [cx,cz,sx,sz] of [[x0,z0,1,1],[x1,z0,-1,1],[x1,z1,-1,-1],[x0,z1,1,-1]]){d.beginPath();d.moveTo(cx+sx*0.9,cz);d.lineTo(cx,cz);d.lineTo(cx,cz+sz*0.9);d.stroke();}};br(5.6,2.0,14.4,5.2,'rgba(255,90,100,0.38)');br(5.6,26.8,14.4,30.0,'rgba(90,160,255,0.38)');
    d.fillStyle='rgba(222,176,58,0.8)';for(const [x0,z0] of [[8.3,9.6],[8.3,22.25]])for(let i=0;i<9;i++){d.save();d.translate(x0+i*0.4,z0);d.transform(1,0,-0.6,1,0,0);d.fillRect(0,0,0.2,0.16);d.restore();}
-   pool(lay,10,16,3.1,'60,195,255',0.3);for(const dx of [-0.85,0.85]){d.fillStyle='rgba(16,20,26,0.85)';d.beginPath();d.arc(10+dx,16,0.62,0,PI*2);d.fill();d.strokeStyle='rgba(120,135,150,0.7)';d.lineWidth=0.06;d.beginPath();d.arc(10+dx,16,0.62,0,PI*2);d.stroke();pool(lay,10+dx,16,0.55,'150,240,255',1);pool(lay,10+dx,16,1.7,'70,210,255',0.45);}lay.paint.save();lay.paint.globalCompositeOperation='lighter';lay.paint.strokeStyle='rgba(0,0,255,0.5)';lay.paint.lineWidth=0.5;lay.paint.beginPath();lay.paint.arc(10,16,2.95,0,PI*2);lay.paint.stroke();lay.paint.restore();pool(lay,10,3.4,3.6,'255,120,110',0.14);pool(lay,10,28.6,3.6,'110,170,255',0.14);
+   d.strokeStyle='rgba(18,22,28,0.8)';d.lineWidth=0.34;d.beginPath();d.arc(10,16,2.25,0,PI*2);d.stroke();pool(lay,10,16,1.6,'60,195,255',0.34);for(const dx of [-0.85,0.85]){d.fillStyle='rgba(16,20,26,0.85)';d.beginPath();d.arc(10+dx,16,0.62,0,PI*2);d.fill();d.strokeStyle='rgba(120,135,150,0.7)';d.lineWidth=0.06;d.beginPath();d.arc(10+dx,16,0.62,0,PI*2);d.stroke();pool(lay,10+dx,16,0.55,'150,240,255',1);pool(lay,10+dx,16,1.7,'70,210,255',0.45);}lay.paint.save();lay.paint.globalCompositeOperation='lighter';lay.paint.strokeStyle='rgba(0,0,255,0.5)';lay.paint.lineWidth=0.5;lay.paint.beginPath();lay.paint.arc(10,16,2.95,0,PI*2);lay.paint.stroke();lay.paint.restore();pool(lay,10,3.4,3.6,'255,120,110',0.14);pool(lay,10,28.6,3.6,'110,170,255',0.14);
    for(const [x,z,a] of [[10,5.5,0.5],[10,26.5,0.5],[2.2,10.5,0.4],[17.8,21.5,0.4],[7,16,0.35],[13,16,0.35]])stain(lay,x,z,2.2,1.4,a);
    for(const x of [8.6,11.4]){track(lay,[[x,30],[x+0.2,25],[x-0.1,20.5]],{a:0.5});track(lay,[[x,2],[x-0.2,7],[x+0.1,11.5]],{a:0.5});}
    track(lay,[[1.9,10],[2.1,13.5],[1.7,18.5],[1.9,22]],{a:0.45});track(lay,[[18.1,22],[17.9,18.5],[18.3,13.5],[18.1,10]],{a:0.45});
@@ -446,7 +444,7 @@ const ArenaProps=(()=>{
   for(const [x,z,r,st] of MP.rocks||[]){const sd=x*5.1+z*2.3;
    if(st==='dome')dome(B,x,z,r,M);else if(st==='spire')spire(B,M,x,z,r,sd);else if(st==='tank')fuelTank(B,x,z,r,M);else if(st==='boulder')boulder(B,x,z,r,sd,th.strata[1]);else boulder(B,x,z,r,sd);}
   for(const [x,z,r,st] of MP.craters||[]){if(st==='scree')scree(B,M,x,z,r);else if(st==='coolant')coolant(B,x,z,r,M);else{if(hi)pebbleRing(B,x,z,r*1.02,r*1.28,Math.round(r*9),x*3+z);B.k.anchors.vents.push([x,z,r,0.05]);
-    if(id==='craters'&&r>2){B.cyl('metal',STEEL_D,x,0.012,z,0.2,0.024,12,{ao:0,noShadow:1});B.cyl('glow','#7df0ff',x,0.03,z,0.11,0.012,10);B.halo(x,0.12,z,2.4,'#39d8e8',0.6,1.5);B.halo(x,0.1,z,0.8,'#d8fbff',0.8,1.5);M.glowSpots.push([x,z,2.1,'57,216,232',0.5]);}}}
+    if(id==='craters'&&r>2){B.cyl('metal',STEEL_D,x,0.012,z,0.2,0.024,12,{ao:0,noShadow:1});B.cyl('glow','#7df0ff',x,0.03,z,0.11,0.012,10);B.halo(x,0.12,z,r*1.5,'#39d8e8',0.42,1.5);B.halo(x,0.1,z,0.8,'#d8fbff',0.8,1.5);M.glowSpots.push([x,z,r*0.95,'57,216,232',0.5]);}}}
   if(MP.bridge){if(MP.bridge.look==='mesa')mesa(B,M,MP.bridge);else steelBridge(B,M,MP.bridge);B.k.anchors.rail=[[MP.bridge.deck[0],DECK,MP.bridge.deck[1]+MP.bridge.deck[3]/2],[MP.bridge.deck[0]+MP.bridge.deck[2],DECK,MP.bridge.deck[1]+MP.bridge.deck[3]/2]];}
   for(const c of MP.crates||[])M.aoBoxes.push([c[0],c[1],c[2],c[3]]);
   // the edge of the arena and the world beyond it
@@ -458,11 +456,11 @@ const ArenaProps=(()=>{
    // the rille runs on to the north between its walls
    B.strata([0,M.horizon,2,0.15-M.horizon],Hc,{open:{E:1},seed:71,inset:0.3,lean:0.44});B.strata([18.5,M.horizon,1.5,0.15-M.horizon],Hc,{open:{W:1},seed:73,inset:0.3,lean:0.33});
    for(let i=0;i<(hi?7:3);i++){const x=3+hs(i,7)*14,z=-0.9-hs(i,3)*3.2,r=0.3+hs(i,5)*0.5;B.rock(th.strata[i%4],x,0,z,r,r*1.2,i+90,{dim:0.8});}
-   const n=hi?16:6;for(let i=0;i<n;i++){const s=i%2,x=s?W+0.8+hs(i,2)*(v.x1-W-1):v.x0+0.5+hs(i,2)*(-v.x0-1.3),z=M.horizon+1+hs(i,4)*(H-M.horizon-2),r=0.25+hs(i,6)*0.55;if(x<v.x0+0.3||x>v.x1-0.3)continue;B.yb(Hc);B.rock(th.strata[i%4],x,Hc,z,r,r*0.8,i);B.yb(0);}
+   const n=hi?8:3;for(let i=0;i<n;i++){const s=i%2,x=s?W+0.8+hs(i,2)*(v.x1-W-1):v.x0+0.5+hs(i,2)*(-v.x0-1.3),z=M.horizon+1+hs(i,4)*(H-M.horizon-2),r=0.12+hs(i,6)*0.18;if(x<v.x0+0.3||x>v.x1-0.3)continue;B.yb(Hc);B.rock(th.topGround,x,Hc,z,r,r*0.8,i,{noShadow:1,ao:0.15,punch:0.25});B.yb(0);}
    B.k.anchors.rail=[[10,0,-1],[10,0,H+1]];
   }else if(id==='longshot'){
    border(B,M,{glow:'#58e6d8'});
-   for(const [cx,cz] of [[6.2,-2.2],[10.4,-3.4],[13.8,-1.9]]){for(let j=0;j<3;j++)B.rock(th.strata[j%4],cx+(j-1)*0.75,0,cz+(hs(cx,j)-0.5)*0.6,0.5,1.5+hs(j,cx)*1.2,Math.floor(cx)+j,{sz:1.7,ry:0.3+0.25*hs(cx,j+2)});if(hi)B.rock(th.strata[1],cx+1.3,0,cz+0.5,0.34,0.4,Math.floor(cx)+9);}
+   for(const [cx,cz] of [[6.2,-3.7],[10.4,-4.6],[13.8,-3.5]]){for(let j=0;j<3;j++)B.rock(th.strata[j%4],cx+(j-1)*0.75,0,cz+(hs(cx,j)-0.5)*0.6,0.5,1.5+hs(j,cx)*1.2,Math.floor(cx)+j,{sz:1.7,ry:0.3+0.25*hs(cx,j+2),dim:0.7});if(hi)B.rock(th.strata[1],cx+1.3,0,cz+0.5,0.34,0.4,Math.floor(cx)+9,{dim:0.7});}
    B.k.anchors.rail=[[10,0,-1],[10,0,H+1]];
   }else{
    border(B,M,{});outland(B,M,{});
@@ -480,15 +478,8 @@ const ArenaProps=(()=>{
   const v=M.view,hi=B.high,id=M.id,dim=(x,z)=>{const dx=Math.max(0,-x,x-W),dz=Math.max(0,-z,z-H);return 1-0.4*Math.min(1,Math.hypot(dx,dz)/14);};
   const vs=v.vis||v,fits=(x,z,r)=>x-r>vs.x0+0.8&&x+r<vs.x1-0.8&&z-r>M.horizon+0.6&&z+r<vs.z1-0.8&&(x+r<-0.8||x-r>W+0.8||z+r<-0.8||z-r>H+0.8);
   const put=(x,z,r,fn)=>{if(fits(x,z,r))fn(x,z,dim(x,z));};
-  if(id==='classic'||id==='overpass'){
-   put(W+9.2,2.6,1.2,(x,z)=>{B.cyl('metal',STEEL_D,x,0.1,z,0.5,0.2,10);B.cyl('metal',STEEL_L,x,1.3,z,0.03,2.4,5,{ao:0});B.glow('#ff5a50',x,2.53,z,0.07,0.07,0.07);B.halo(x,2.53,z,0.9,'#ff4d44',0.6,1.7);});
-   put(-14,13,2.4,(x,z)=>{B.cyl('rock','#7d8288',x,0.03,z,2.2,0.06,hi?24:12,{ao:0.1});B.tor('glow','#2f8f9c',x,0.07,z,1.9,0.02,hi?32:16,{ts:4});for(let i=0;i<4;i++){const a=i*PI/2+0.4;B.halo(x+Math.cos(a)*2.05,0.12,z+Math.sin(a)*2.05,0.7,'#ffcf7a',0.3,1.2);}});
-   put(W+14.5,19,2.4,(x,z)=>{for(let i=0;i<3;i++)for(let j=0;j<2;j++){B.box('metal','#22304e',x-1.4+i*1.4,0.22,z-0.7+j*1.4,1.2,0.04,1.1,0,{rx:-0.25,ao:0,dust:0.1});B.box('metal',STEEL_D,x-1.4+i*1.4,0.1,z-0.7+j*1.4,0.06,0.2,0.06);}});
-  }
-  if(id==='craters'){
-   put(-13,23,1,(x,z)=>{B.cyl('metal',STEEL_L,x,0.6,z,0.02,1.2,5,{ao:0});B.box('paint','#d8dde2',x+0.22,1.0,z,0.44,0.28,0.012,0,{ao:0,dust:0});B.box('paint','#c0392b',x+0.22,1.07,z+0.007,0.44,0.05,0.004,0,{ao:0,dust:0});});
-   put(W+12,8,2.4,(x,z)=>{for(let i=0;i<2;i++)for(let j=0;j<2;j++){B.box('metal','#22304e',x-0.7+i*1.4,0.22,z-0.7+j*1.4,1.2,0.04,1.1,0,{rx:-0.25,ao:0,dust:0.1});B.box('metal',STEEL_D,x-0.7+i*1.4,0.1,z-0.7+j*1.4,0.06,0.2,0.06);}});
-  }
+  if(id==='classic'||id==='overpass')put(-14,13,2.4,(x,z)=>{B.cyl('rock','#7d8288',x,0.03,z,2.2,0.06,hi?24:12,{ao:0.1});B.tor('glow','#2f8f9c',x,0.07,z,1.9,0.02,hi?32:16,{ts:4});for(let i=0;i<4;i++){const a=i*PI/2+0.4;B.halo(x+Math.cos(a)*2.05,0.12,z+Math.sin(a)*2.05,0.7,'#ffcf7a',0.3,1.2);}});   // a flat landing pad
+  if(id==='craters')put(-13,23,1,(x,z)=>{B.cyl('metal',STEEL_L,x,0.6,z,0.02,1.2,5,{ao:0});B.box('paint','#d8dde2',x+0.22,1.0,z,0.44,0.28,0.012,0,{ao:0,dust:0});B.box('paint','#c0392b',x+0.22,1.07,z+0.007,0.44,0.05,0.004,0,{ao:0,dust:0});});   // a flag
  }
  // sky: stars and the Earth, placed far below the ground along the view so terrain always covers them
  function sky(T,M,earth){
