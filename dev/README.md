@@ -13,7 +13,10 @@
 | `js/match.js` | The phone's side of a battle: AI match setup and scoring, and drawing what the sim reports (text, explosions, feed, banners, sound) |
 | `js/pvp.js` | Live matches on the phone: finding pilots, the WebSocket, snapshots, your own tank's prediction, rounds, results |
 | `js/render.js` | Battle canvas, HUD, battle input, and the menu art (tanks, crates, map thumbnails) |
-| `js/fx.js` | Haptics and synthesized sound |
+| `js/fx.js` | Haptics and synthesized sound, the per-map ambience bed |
+| `js/mapenv.js` | `MapEnv`: the Arcade maps' shared environment layer (lights, the baked ground's light terms, haze, sky, ambient particles, hazard anchors); the API a weather / hazard system drives |
+| `js/arena3d.js` | `Arena3D`: the Arcade maps in 3D: prop kit, GPU-made detail textures, the one-time ground bake (albedo + sun term, prop shadows), tread and scorch marks |
+| `js/arenaprops.js` | `ArenaProps`: every map prop and the six map builds on the footprints in `MAPS`, floor paint, sky and ridge |
 | `js/ui.js` | Menus, sheets, start screen, results, between-round screen, and the garage (see below) |
 | `js/showroom.js` | `LunarShowroom`: the live 3D stage (drag to spin, pinch/wheel zoom, preset views, auto-rotate) used by the garage on Telegram and the website, and by the website's preview pages |
 | `js/main.js` | Boot order and the frame loop |
@@ -62,6 +65,7 @@ python3 dev/tests/b11test.py           # the Hyperspace Vault: Shop card, server
 python3 dev/tests/b12test.py           # the match ticket: dropped requests retried, a refusal shows its real reason, no answer still says no connection
 python3 dev/tests/b13test.py           # link quests (news channel, X, wiki): right links, visits that survive Telegram switching away, claims
 node dev/tests/map-layout.mjs          # every map: point symmetry, clear spawns, no bot traps (gaps a sight line fits but a tank doesn't), no unreachable pockets, room for objectives, nav graph size
+node dev/tests/arena-maps.mjs         # the 3D Arcade maps without a renderer: bounded kits, LOW lighter than HIGH, raised art only on solids or outside the arena, low south side, the environment layer (js/mapenv.js)
 node dev/tests/map-nav.mjs 3           # AI on every map, headless: matches finish, no tank inside a solid, stuck seconds, high-ground use, sim cost
 python3 dev/tests/regress.py 3         # every mode x team size x map: stuck tanks, errors, points per minute
 python3 dev/tests/perf.py              # frame times at 4x CPU slowdown
@@ -76,6 +80,8 @@ python3 dev/tests/league-ui.py         # leagues on screen: top-bar chip on ever
 python3 dev/tests/pvp-update.py        # a phone on an old live version is updated and rejoins the same live queue (no AI match); offline it says "Update needed" with Retry; a current phone joins normally
 python3 dev/tests/pvptest.py           # two browser pages play live: matching, VS labels, moves, supers, drops, rounds, quits, AI fill, results
 ```
+
+Arcade map review sheets and cost (not pass/fail): `python3 dev/tests/arena-maps-capture.py` (every map on phone and desktop, gameplay and wide shot, beside the owner's reference; `--quality low`, `--reduced`, `--battle`) and `python3 dev/tests/arena-perf.py --out x.json` (frame time, draw cost and map build time per map; run it on two checkouts with `REPO=` to compare).
 
 Screenshots for eyeballing the 3D models (not pass/fail): `python3 dev/tests/sheet3d.py` (every weapon, chassis, paint and crate) and `python3 dev/tests/look3d.py` (a battle per map and mode, the menus). `python3 dev/gallery3d.py` re-renders the wiki's gear and map pictures (`img/wiki/`) after a model changes.
 

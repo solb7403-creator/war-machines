@@ -2243,3 +2243,43 @@ How the listed hazards map onto it (none of them is built in this session):
 - **Crater vents**: emitters with `pick` on `anchors.vents`; **ceiling lasers**: beams from `anchors.lasers` (FX3D `seg` / `bolt`); **maglev train**: a mesh moved along `anchors.rail`.
 - Moving the sun (`ENV.set({sunDir:[..]})`) re-bakes the ground shadows through `onRebake` (one frame of work, no rebuild).
 Proof it works without a rebuild: `dev/tests/arena-maps.mjs` drives blend, haze, flash, emitters, reset and the re-bake hook.
+
+### Decisions and reasons (changes to the owner's plan are marked CHANGE)
+1. **Procedural maps, no Meshy generation.** The references are pictures, not models; the repo holds no map GLBs. The Meshy
+   connector was available but every generation costs credits and AGENTS.md forbids paid API charges without fresh approval,
+   so nothing was generated. Instead: real geometry on the rules' footprints + a baked ground. Side effect: the maps add
+   **0 bytes of art downloads** (textures are made on the GPU at map load).
+2. **Bake the ground, light only tanks live** (research 2). One texture per map: albedo in rgb, the sun term in alpha.
+   Each frame costs one texture read per ground pixel, cheaper than main's lit, normal-mapped ground. No shadow maps: the
+   custom three build has no shadow constants exported and three compiles shadow code into EVERY lit material once a light
+   casts (tanks included), which would have slowed tanks and added shader variants.
+3. **Prop shadows are drawn flat**: every prop is flattened onto the ground along the sun and drawn into a mask before the
+   bake. Exact hard shadows at bake resolution, no runtime cost. Props do not shadow each other (noted under limits).
+4. **One sun for the five outdoor maps** (`[-0.55, 0.72, -0.42]`: shadows fall right and towards the camera, about as long
+   as the prop is tall; first draft was 0.75 x height, the critic called it washed out). The Bunker has overhead work lights.
+5. **Tanks are never darkened by map shadows** and keep the light rig they had (research 3: readability first). They get a
+   sun-side soft ground shadow that turns with the hull, a crisp team ring and a faint team disc (an additive glow, as on
+   main, washes out on sunlit ground).
+6. **CHANGE: tunnel roofs are steel gratings, not see-through glass.** On main the deck over a tunnel is drawn at 62%
+   opacity (28% when you are inside) so tanks below stay visible. "No see-through" in the brief: the Overpass tunnels and
+   the Canyon's cleft are now spanned by an open grating (bars with real gaps). Tanks below are seen through the gaps, by
+   everyone, exactly as before; nothing fades. The Canyon mesa is two rock tables with a steel grating across the cleft.
+7. **CHANGE: the painted mode label and lane dashes on the floor are gone** (5D's `Environment3D.modeContext`): they sat
+   badly on regolith and the HUD already names the mode. The crystal mine, zones and pads are unchanged.
+8. **South side stays low** (camera rule): boundary walls are tall on the north, east and west and a kerb on the south;
+   plateaus step down south of the arena. `dev/tests/arena-maps.mjs` enforces it, and that raised art only stands on a solid
+   the rules know or outside the arena, and that nothing in the arena is taller than the tallest prop on main.
+9. **Out of bounds is darker at once (x0.6) and fades to x0.23 far out; no containers / domes within ~7 units of the edge**
+   (critic round 1: decoy props near the border read as cover; research 4).
+10. **Phone top strip**: the ground ends in two flat ridge silhouettes under stars and a small Earth; desktop shows the
+    flanks instead (the camera is fixed, so each device gets the scenery it can actually see). The bake covers exactly the
+    ground the screen can show, at the screen's own pixel density, so no texels are wasted on either device.
+11. **Map modules load with the 3D engine** (`load3D`), not in the page's script list: first paint costs what it did on main.
+12. **Ambient sound**: a quiet synthesised bed per map (rumble, a band of moving air, machinery hum; the Bunker adds far-off
+    metal). It follows the Sound setting and fades in 2 s. No audio files.
+13. **Tread prints, dust and scorch** (feel): tanks leave tread prints in the regolith that fade in 14 s (8 s on LOW), kick a
+    little dust, and blasts leave scorch for 26 s. One pooled mesh, one draw call, nothing allocated per frame.
+14. **CPU-rasterised browsers (SwiftShader: CI, GPU-blocklisted desktops)** get a lighter ground bake (no pebbles / micro
+    craters, 14 px per unit) so a map switch costs ~0.5 s there instead of ~2 s. Real GPUs get the full bake.
+15. **Not done as "2 - 3 parallel visual options"** (AGENTS.md agent rule): the look is fixed by the owner's references, so
+    the session's own process (one build, a separate critic scoring against the references, iterate) was used instead.

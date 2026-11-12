@@ -272,11 +272,15 @@ function unitMats(ghost){
  return {lit,shine,glow:MT.glow};
 }
 let DEC=null;
+// the team marker on sunlit ground: a ring at 0.85 alpha with a faint disc inside it, one mesh (alpha rides in the vertex colours)
+function teamGeo(){const N=40,P=[],C=[],I=[];P.push(0,0,0);C.push(1,1,1,0.17);for(let i=0;i<N;i++){const a=i/N*Math.PI*2,c=Math.cos(a),s=Math.sin(a);P.push(c*1.36,0,s*1.36,c*1.36,0,s*1.36,c*1.5,0,s*1.5);C.push(1,1,1,0.17,1,1,1,0.85,1,1,1,0.85);}
+ for(let i=0;i<N;i++){const a=1+i*3,b=1+((i+1)%N)*3;I.push(0,b,a,a+1,b+1,a+2,b+1,b+2,a+2);}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(P),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(C),4));g.setIndex(I);return g;}
 function decals(){
  if(DEC)return DEC;
  const flat=g=>{g.rotateX(-Math.PI/2);return g;};
  const arcs=[0,1,2].map(i=>flat(new THREE.RingGeometry(1.92,2.1,16,1,i*Math.PI*2/3,Math.PI*0.45)));
- DEC={varc:arcs,team:flat(new THREE.RingGeometry(1.36,1.5,40)),blob:flat(new THREE.CircleGeometry(1.35,20)),glowD:flat(new THREE.CircleGeometry(1.4,20)),aura:flat(new THREE.RingGeometry(1.42,1.6,36)),me:flat(new THREE.RingGeometry(1.62,1.8,40)),
+ DEC={varc:arcs,team:teamGeo(),blob:flat(new THREE.CircleGeometry(1.35,20)),glowD:flat(new THREE.CircleGeometry(1.4,20)),aura:flat(new THREE.RingGeometry(1.42,1.6,36)),me:flat(new THREE.RingGeometry(1.62,1.8,40)),
   shield:new THREE.SphereGeometry(4,20,14),shq:flat(new THREE.PlaneGeometry(1,1)),blobM:new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.55,depthWrite:false,alphaMap:radial()})};
  return DEC;
 }
@@ -292,8 +296,8 @@ function unitObj(u){
  const mats=unitMats(spec.ghost),T=buildTank(spec,mats),D=decals();
  const blob=new THREE.Mesh(D.blob,D.blobM);blob.position.y=0.015;blob.renderOrder=1;T.g.add(blob);
  const sun=new THREE.Mesh(D.shq,shadowMat());sun.position.y=0.016;sun.renderOrder=1;sun.visible=false;T.g.add(sun);
- const ar=arenaOn()&&!!ENV,ug=new THREE.Mesh(ar?D.team:D.glowD,ar?new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.8,depthWrite:false}):new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.32,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:radial()}));ug.position.y=0.02;ug.renderOrder=2;T.g.add(ug);   // sunlit ground: a crisp team ring (an additive glow would wash out)
- let ud=null;if(ar&&!spec.ghost){ud=new THREE.Mesh(D.glowD,new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.16,depthWrite:false}));ud.position.y=0.018;ud.renderOrder=2;T.g.add(ud);}   // and a faint disc of the team colour inside it
+ const ar=arenaOn()&&!!ENV,ug=new THREE.Mesh(ar?D.team:D.glowD,ar?new THREE.MeshBasicMaterial({color:spec.team,transparent:true,vertexColors:true,depthWrite:false,side:THREE.DoubleSide}):new THREE.MeshBasicMaterial({color:spec.team,transparent:true,opacity:0.32,depthWrite:false,blending:THREE.AdditiveBlending,alphaMap:radial()}));ug.position.y=0.02;ug.renderOrder=2;T.g.add(ug);   // sunlit ground: a crisp team ring (an additive glow would wash out)
+ const ud=null;
  let aura=null;const av=spec.boss?3:spec.lunar||spec.arch==='moon'?3:Math.max(spec.ct,spec.wt);
  if(av>0){aura=new THREE.Mesh(D.aura,(ar?decMat:addMat)(av>=3?'#e8f4ff':RCOL[av],0.5));aura.position.y=0.03;aura.renderOrder=3;T.g.add(aura);}
  let ring=null;if(u===me){ring=new THREE.Mesh(D.me,(ar?decMat:addMat)('#ffd24a',0.9));ring.position.y=0.035;ring.renderOrder=4;T.g.add(ring);}
@@ -715,7 +719,7 @@ function art3D(ctx,w,h,a){
  return false;
 }
 function mapArt(ctx,w,h,id){
- const A=artR(),q=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.quality:'high',key=id+'|'+q+'|'+(arenaOn()?'arena':typeof Environment3D!=='undefined'?Environment3D.key():'legacy');let m=A.maps.get(key);if(!m){if(arenaOn()){try{m=Arena3D.build(id,{renderer:A.r,q,view:{x0:-1.5,x1:W+1.5,z0:-1.5,z1:H+1.5},env:null,soft:softGL(),density:Math.max(10,Math.min(40,w*dpr/W)),thumb:true});}catch(e){m=null;}}if(!m)m=M3.buildMap(id,A.mats,q);A.maps.set(key,m);if(A.maps.size>4){const old=A.maps.keys().next().value;disposeMap3D(A.maps.get(old));A.maps.delete(old);}}
+ const A=artR(),q=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.quality:'high',key=id+'|'+q+'|'+(arenaOn()?'arena':typeof Environment3D!=='undefined'?Environment3D.key():'legacy');let m=A.maps.get(key);if(!m){if(arenaOn()){try{m=Arena3D.build(id,{renderer:A.r,q:'low',view:{x0:-1.5,x1:W+1.5,z0:-1.5,z1:H+1.5},env:null,soft:true,density:Math.max(10,Math.min(24,w*dpr/W)),thumb:true});}catch(e){m=null;}}if(!m)m=M3.buildMap(id,A.mats,q);A.maps.set(key,m);if(A.maps.size>4){const old=A.maps.keys().next().value;disposeMap3D(A.maps.get(old));A.maps.delete(old);}}
  const cam=new THREE.OrthographicCamera(-1,1,1,-1,1,400),s=Math.min(w/W,h/(H*GKC+1.2)),hw=w/2/s,hh=h/2/s;
  cam.left=-hw;cam.right=hw;cam.top=hh;cam.bottom=-hh;cam.up.set(0,GSN,-GKC);cam.position.set(W/2,GKC*150,H/2+GSN*150);cam.lookAt(W/2,0,H/2);cam.updateProjectionMatrix();
  artShot(ctx,w,h,m.group,{cam},[]);

@@ -26,7 +26,7 @@ const Arena3D=(()=>{
  const mul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
  const col=c=>typeof c==='string'?lin(c):c;
  // everything beyond the arena edge is pushed back in value so the playfield reads first (same curve in the ground bake)
- const sst=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);},outDim=d=>(1-0.40*sst(0.25,1.1,d))*(1-0.62*sst(1.1,17,d));
+ const sst=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);},outDim=d=>(1-0.48*sst(0.25,1.1,d))*(1-0.6*sst(1.1,17,d));
 
  // ---------- the kit: props are pushed into four buckets and merged ----------
  const CLS=['rock','paint','metal','glow'];
@@ -48,7 +48,7 @@ const Arena3D=(()=>{
   {const e=M.elements,a=e[0],b2=e[1],c2=e[2],d=e[4],f=e[5],g=e[6],h=e[8],i2=e[9],j=e[10],A=f*j-g*i2,Bq=g*h-d*j,Cq=d*i2-f*h,det=a*A+b2*Bq+c2*Cq||1,N9=t.n;   // inverse transpose of the upper 3x3 (the custom three build has no Matrix3)
    N9[0]=A/det;N9[1]=Bq/det;N9[2]=Cq/det;N9[3]=(c2*i2-b2*j)/det;N9[4]=(a*j-c2*h)/det;N9[5]=(b2*h-a*i2)/det;N9[6]=(b2*g-c2*f)/det;N9[7]=(c2*d-a*g)/det;N9[8]=(a*f-b2*d)/det;}
   const yb=o.yb===undefined?k.yb:o.yb,ao=glow?0:o.ao===undefined?0.34:o.ao,aoH=o.aoH||0.5,dust=glow||!k.dust?0:o.dust===undefined?0.2:o.dust,c2=o.top?col(o.top):null;
-  const SL=k.sun,punch=glow||!SL?0:o.punch===undefined?(cls==='rock'?0.3:0.14):o.punch;
+  const SL=k.sun,punch=glow||!SL?0:o.punch===undefined?(cls==='rock'?0.5:0.16):o.punch;
   for(let i=0;i<n;i++){const vi=I?I.getX(i):i;
    t.v.fromBufferAttribute(P,vi).applyMatrix4(M);t.w.fromBufferAttribute(N,vi);{const N9=t.n,nx=t.w.x,ny=t.w.y,nz=t.w.z;t.w.set(N9[0]*nx+N9[1]*ny+N9[2]*nz,N9[3]*nx+N9[4]*ny+N9[5]*nz,N9[6]*nx+N9[7]*ny+N9[8]*nz).normalize();}
    let r=cc[0],g=cc[1],bl=cc[2];
@@ -56,7 +56,8 @@ const Arena3D=(()=>{
    if(dust&&t.w.y>0.55){const f=dust*(t.w.y-0.55)/0.45;r+=(k.dust[0]-r)*f;g+=(k.dust[1]-g)*f;bl+=(k.dust[2]-bl)*f;}
    if(ao){const h=Math.max(0,Math.min(1,(t.v.y-yb)/aoH)),f=1-ao*(1-h*h*(3-2*h));r*=f;g*=f;bl*=f;}
    if(punch){const f=1+punch*(Math.max(-0.4,t.w.x*SL[0]+t.w.y*SL[1]+t.w.z*SL[2])-0.35)*1.5;r*=f;g*=f;bl*=f;}
-   {const dx=Math.max(0,-t.v.x,t.v.x-AW),dz=Math.max(0,-t.v.z,t.v.z-AH),dd=Math.hypot(dx,dz);if(dd>0.3&&!o.lit){const f=outDim(dd)*(o.dim||1);r*=f;g*=f;bl*=f;}else if(o.dim){r*=o.dim;g*=o.dim;bl*=o.dim;}}
+   if(o.grad){const f=1+(o.grad[0]-1)*Math.max(0,Math.min(1,(t.v.y-yb)/o.grad[1]));r*=f;g*=f;bl*=f;}   // a value ramp with height (far ridges fade upward)
+   {const dx=Math.max(0,-t.v.x,t.v.x-AW),dz=Math.max(0,-t.v.z,t.v.z-AH),dd=Math.hypot(dx,dz);if(dd>0.3&&!o.lit){const f=outDim(dd)*(o.dim||1),ds=0.55*sst(0.3,2.5,dd),l=0.3*r+0.55*g+0.15*bl;r=(r+(l-r)*ds)*f;g=(g+(l-g)*ds)*f;bl=(bl+(l-bl)*ds)*f;}else if(o.dim){r*=o.dim;g*=o.dim;bl*=o.dim;}}
    b.P.push(t.v.x,t.v.y,t.v.z);b.N.push(t.w.x,t.w.y,t.w.z);b.C.push(r,g,bl);b.Y.push(o.noShadow?-1:yb);}
  }
  const mat=(px,py,pz,rx,ry,rz,sx,sy,sz)=>{const t=tmp();t.e.set(rx||0,ry||0,rz||0);t.q.setFromEuler(t.e);t.p.set(px,py,pz);t.s.set(sx===undefined?1:sx,sy===undefined?1:sy,sz===undefined?1:sz);return t.m.compose(t.p,t.q,t.s);};
@@ -68,8 +69,8 @@ const Arena3D=(()=>{
    for(let i=0;i<n;i+=3){const ax=p.getX(i),ay=p.getY(i),az=p.getZ(i),ux=p.getX(i+1)-ax,uy=p.getY(i+1)-ay,uz=p.getZ(i+1)-az,vx=p.getX(i+2)-ax,vy=p.getY(i+2)-ay,vz=p.getZ(i+2)-az;
     let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
     for(let j=0;j<3;j++){const key=Math.round(p.getX(i+j)*400)+','+Math.round(p.getY(i+j)*400)+','+Math.round(p.getZ(i+j)*400);let a=acc.get(key);if(!a){a=[0,0,0];acc.set(key,a);}a[0]+=nx;a[1]+=ny;a[2]+=nz;N[(i+j)*3]=nx;N[(i+j)*3+1]=ny;N[(i+j)*3+2]=nz;}}
-   for(let i=0;i<n;i++){const key=Math.round(p.getX(i)*400)+','+Math.round(p.getY(i)*400)+','+Math.round(p.getZ(i)*400),a=acc.get(key),l=Math.hypot(a[0],a[1],a[2])||1;   // 60% smooth, 40% faceted: chiselled, not blobby
-    let nx=N[i*3]*0.4+a[0]/l*0.6,ny=N[i*3+1]*0.4+a[1]/l*0.6,nz=N[i*3+2]*0.4+a[2]/l*0.6;const m=Math.hypot(nx,ny,nz)||1;N[i*3]=nx/m;N[i*3+1]=ny/m;N[i*3+2]=nz/m;}
+   for(let i=0;i<n;i++){const key=Math.round(p.getX(i)*400)+','+Math.round(p.getY(i)*400)+','+Math.round(p.getZ(i)*400),a=acc.get(key),l=Math.hypot(a[0],a[1],a[2])||1;   // mostly faceted: cracked planes with a crisp terminator
+    let nx=N[i*3]*0.68+a[0]/l*0.32,ny=N[i*3+1]*0.68+a[1]/l*0.32,nz=N[i*3+2]*0.68+a[2]/l*0.32;const m=Math.hypot(nx,ny,nz)||1;N[i*3]=nx/m;N[i*3+1]=ny/m;N[i*3+2]=nz/m;}
    g.setAttribute('normal',new T.BufferAttribute(N,3));return g;});
  }
  // a spire: a tapering faceted column with a leaning tip
@@ -92,7 +93,7 @@ const Arena3D=(()=>{
     g.rotateX(-Math.PI/2);add(k,cls,g,c,mat(x,y+bv,z,0,o.ry||0,0),o);g.dispose();return B;},
    geo(cls,c,g,x,y,z,rx,ry,rz,sx,sy,sz,o){add(k,cls,g,c,mat(x,y,z,rx,ry,rz,sx,sy,sz),o);return B;},
    rock(c,x,y,z,r,h,seed,o){o=o||{};add(k,o.cls||'rock',rockG(((seed|0)%5+5)%5,k.high&&r>0.3?2:1),c,mat(x,y,z,0,o.ry===undefined?hs(seed,x)*6.28:o.ry,0,r*(o.sx||1),h/1.42,r*(o.sz||1)),Object.assign({ao:0.42,aoH:Math.max(0.25,h*0.6)},o));return B;},
-   spire(c,x,y,z,r,h,seed,o){add(k,o&&o.cls||'rock',spireG(((seed|0)%4+4)%4,k.high?7:5),c,mat(x,y,z,0,hs(seed,z)*6.28,0,r,h,r),Object.assign({ao:0.45,aoH:h*0.5},o||{}));return B;},
+   spire(c,x,y,z,r,h,seed,o){o=o||{};add(k,o.cls||'rock',spireG(((seed|0)%4+4)%4,k.high?7:5),c,mat(x,y,z,0,o.ry===undefined?hs(seed,z)*6.28:o.ry,0,r,h,r*(o.sz||1)),Object.assign({ao:0.45,aoH:h*0.5},o));return B;},
    glow(c,x,y,z,sx,sy,sz,ry,o){add(k,'glow',boxG(),c,mat(x,y,z,o&&o.rx||0,ry||0,o&&o.rz||0,sx,sy,sz),o);return B;},
    halo(x,y,z,size,c,a,pulse){k.halos.push([x,y,z,size,c,a===undefined?0.5:a,pulse||0]);return B;},
    // a horizontal quad that takes the baked ground (plateau tops, ramps): corners clockwise seen from above
@@ -183,6 +184,7 @@ void main(){vec2 u=vUv;float e=1./uRes;
    const spec=land>0.56?0:Math.pow(Math.max(0,ndl),24)*0.35*(1-cm),rim=Math.pow(1-z,3);
    let R0=(c[0]*0.9+spec)*day+0.1*rim*day,G0=(c[1]*0.9+spec)*day+0.3*rim*day,B0=(c[2]*0.9+spec)*day+0.75*rim*day+0.004;
    let a=1;if(r2>1){const g=Math.max(0,1-(r2-1)/0.16);a=g*g*0.5*Math.max(0.05,day);R0=0.2;G0=0.5;B0=1;}
+   {const l=0.3*R0+0.55*G0+0.15*B0;R0+=(l-R0)*0.25;G0+=(l-G0)*0.25;B0+=(l-B0)*0.25;}
    d[o]=Math.min(255,Math.pow(Math.max(0,R0),0.4545)*255);d[o+1]=Math.min(255,Math.pow(Math.max(0,G0),0.4545)*255);d[o+2]=Math.min(255,Math.pow(Math.max(0,B0),0.4545)*255);d[o+3]=a*255;}
   const t=new T.DataTexture(d,n,n,T.RGBAFormat);t.colorSpace=T.SRGBColorSpace;t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;t.generateMipmaps=true;t.flipY=true;t.needsUpdate=true;R.earth=t;return t;
  }
@@ -225,9 +227,9 @@ float macro(vec2 P){float h=0.;for(int i=0;i<`+NCR+`;i++){if(i>=uNc)break;vec4 c
  h+=(d<1.?-.46*c.z*(1.-d*d)*(1.-.25*d*d):0.)+.13*c.z*exp(-pow((d-1.04)/.13,2.));}return h;}
 float cellCr(vec2 P,float cs,float dens,float rmax,float keepOut){vec2 ip=floor(P/cs);float h=0.;
  for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){vec2 c=ip+vec2(float(i),float(j));if(h21(c+uSeed)>dens)continue;
-  vec2 ctr=(c+.15+.7*h22(c+uSeed*1.7))*cs;float r=cs*rmax*(.35+.65*h21(c*1.3+7.+uSeed));
+  vec2 ctr=(c+.15+.7*h22(c+uSeed*1.7))*cs;float rq=h21(c*1.3+7.+uSeed);float r=cs*rmax*(rq<.5?.3:rq<.85?.58:1.);
   if(keepOut>0.&&arenaD(ctr)<r*1.35+keepOut)continue;
-  float d=length(P-ctr)/r;if(d>1.6)continue;h+=(d<1.?-.2*r*(1.-d*d):0.)+.06*r*exp(-pow((d-1.03)/.16,2.));}
+  float d=length(P-ctr)/r;if(d>1.6)continue;h+=(d<1.?-.34*r*(1.-d*d)*(1.-.4*d*d):0.)+.018*r*exp(-pow((d-1.08)/.24,2.));}
  return h;}
 float pebDens(vec2 P){float k=.012+.20*smoothstep(.56,.82,fbm(P*.21+31.+uSeed));for(int i=0;i<`+NCR+`;i++){if(i>=uNc)break;vec4 c=uCr[i];float d=length(P-c.xy)/c.z;
  if(c.w>1.5&&c.w<2.5)k=max(k,.95*smoothstep(1.05,.55,d));else if(c.w<1.5)k=max(k,.75*smoothstep(1.55,1.08,d)*smoothstep(.96,1.08,d));}
@@ -263,19 +265,20 @@ float height(vec2 P,float top){
  h+=cellCr(P,4.2,.4,.33,.5)+cellCr(P,11.,.5,.3,1.5);
  h+=(fbm(P*.42+uSeed)-.5)*.12+(fbm(P*2.1+9.)-.5)*.026;
 #ifndef LITE
- h+=cellCr(P,.9,.16,.2,0.)+(vn(P*13.)-.5)*.007+(vn(P*39.)-.5)*.0035+pebbles(P,.2,gPeb);
+ h+=cellCr(P,1.1,.2,.3,0.)+cellCr(P+31.7,2.1,.13,.21,0.)+cellCr(P-17.3,.55,.1,.3,0.)+(vn(P*13.)-.5)*.007+(vn(P*39.)-.5)*.0035+pebbles(P,.2,gPeb);
 #endif
  if(top<.5){vec2 u=puv(P);h-=texture2D(tPaint,u).r*inPaint(u)*.022;}
  return h;}
 void main(){
  vec2 P=uRect.xy+vUv*uRect.zw;vec4 tm=texture2D(tTop,vUv);float top=step(.5,tm.r);
  gPeb=pebDens(P);float e=max(uTexel.x,.012);float h0=height(P,top),hx=height(P+vec2(e,0.),top),hz=height(P+vec2(0.,e),top);
- vec3 n=normalize(vec3(-(hx-h0)/e*uRelief,1.,-(hz-h0)/e*uRelief));
+ float rl=uRelief*mix(1.,.5,smoothstep(.3,2.5,arenaD(P)));   // beyond the arena the relief is flattened: background, lower contrast
+ vec3 n=normalize(vec3(-(hx-h0)/e*rl,1.,-(hz-h0)/e*rl));
  float a=clamp(.78*max(dot(n,uL),0.)/uL.y,0.,1.);
  // the sun's shadow from props (drawn flat into tShadow) and from crater walls (marched through the height field)
  vec2 t=1./vec2(textureSize(tShadow,0));vec2 s4=texture2D(tShadow,vUv).rg*.4+(texture2D(tShadow,vUv+vec2(t.x,0.)).rg+texture2D(tShadow,vUv-vec2(t.x,0.)).rg+texture2D(tShadow,vUv+vec2(0.,t.y)).rg+texture2D(tShadow,vUv-vec2(0.,t.y)).rg)*.15;
  float sh=top>.5?s4.g:max(s4.r,s4.g);
- if(top<.5){vec2 dir=normalize(uL.xz);float tanE=uL.y/length(uL.xz),m0=macro(P),hs=0.;for(int i=1;i<=9;i++){float tt=.09*float(i)*(1.+.22*float(i));hs=max(hs,clamp((macro(P+dir*tt)-m0-tt*tanE*.5)*14.,0.,1.));}sh=max(sh,hs*.85);}
+ if(top<.5){vec2 dir=normalize(uL.xz);float tanE=uL.y/length(uL.xz),m0=macro(P),hs=0.,jit=.5+h21(P*37.3);for(int i=1;i<=16;i++){float tt=.05*(float(i)-1.+jit)*(1.+.16*float(i));hs=max(hs,smoothstep(0.,.09,macro(P+dir*tt)-m0-tt*tanE*.55));}sh=max(sh,hs*.8);}
  a*=1.-sh;
  // albedo
  vec3 alb;float ao=1.;vec2 u=puv(P);float ip=inPaint(u);
@@ -289,7 +292,7 @@ void main(){
   alb*=1.+.9*pebbles(P,.2,gPeb);
 #endif
   if(top<.5)for(int i=0;i<`+NCR+`;i++){if(i>=uNc)break;vec4 c=uCr[i];vec2 dv=P-c.xy;float d=length(dv)/c.z;
-   if(c.w<1.5){float ray=pow(vn(vec2(atan(dv.y,dv.x)*4.5,c.x*3.)),2.5)*smoothstep(2.5,1.05,d)*step(1.,d);alb*=1.+.26*ray+.2*exp(-pow((d-1.03)/.11,2.));alb*=1.-.24*smoothstep(1.,.25,d);}
+   if(c.w<1.5){float ray=pow(vn(vec2(atan(dv.y,dv.x)*4.5,c.x*3.)),2.5)*smoothstep(2.5,1.05,d)*step(1.,d);alb*=1.+.26*ray+.2*exp(-pow((d-1.03)/.11,2.))+.10*smoothstep(1.45,1.05,d)*step(1.,d);alb*=1.-.24*smoothstep(1.,.25,d);}
    else if(c.w<2.5)alb*=1.-.16*smoothstep(1.1,.6,d);}
  }
  if(top<.5){
@@ -299,8 +302,10 @@ void main(){
   for(int i=0;i<`+NCI+`;i++){if(i>=uNi)break;vec3 c=uCir[i];oc+=.7*exp(-max(length(P-c.xy)-c.z,0.)/.11)+.45*exp(-max(length(P-c.xy)-c.z,0.)/.42);}
   ao=1.-.58*min(oc,1.05);
  }else a=mix(a,max(a,.5),uTopLit);
- float od=arenaD(P);float dim=(1.-.40*smoothstep(.25,1.1,od))*(1.-.62*smoothstep(1.1,17.,od))*mix(1.,uOutDim,step(.3,od));
- if(top>.5&&tm.g>.3)dim=.66*(1.-.62*smoothstep(1.1,17.,od));   // wall tops are not playfield: one even, darker value, fading far out
+ float od=arenaD(P);float dim=(1.-.48*smoothstep(.25,1.1,od))*(1.-.6*smoothstep(1.1,17.,od))*mix(1.,uOutDim,step(.3,od));
+ dim*=1.-.3*smoothstep(-.4,-3.,P.y);   // the strip the HUD sits over (north of the arena) is darker still
+ {float osat=.5*smoothstep(.3,2.5,od);float lum=dot(alb,vec3(.3,.55,.15));alb=mix(alb,vec3(lum)*vec3(.96,.99,1.05),osat);}
+ if(top>.5&&tm.g>.3)dim=.62*(1.-.6*smoothstep(0.,15.,od))*(1.-.3*smoothstep(-.4,-3.,P.y));   // wall tops are not playfield: one even, darker value, fading far out
  vec3 gl=texture2D(tGlow,u).rgb*ip;
  vec3 o=alb*ao*dim*(1.+gl*2.2/max(uAmbRef,vec3(.02)));
  gl_FragColor=vec4(clamp(o,0.,1.),a);
@@ -381,14 +386,15 @@ void main(){
    const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(P,3));const m=new T.Mesh(g,gm);m.frustumCulled=false;m.matrixAutoUpdate=false;m.renderOrder=-2;meshes.ground=m;G.add(m);}
   bake(renderer,M);
   // sky: stars and the Earth sit far below the ground plane along the view, so they only show where no terrain covers them
-  const sky=ArenaProps.sky?ArenaProps.sky(T,M,earthTex(renderer,q)):null;if(sky)G.add(sky.group);
+  const sky=!M.thumb&&ArenaProps.sky?ArenaProps.sky(T,M,earthTex(renderer,q)):null;if(sky)G.add(sky.group);
+  if(M.thumb){const K=crate(renderer,q,th.crate);for(const c of M.map.crates||[]){const m=new T.Mesh(K.geo,K.mat);m.scale.set(c[2],0.85,c[3]);m.position.set(c[0]+c[2]/2,0,c[1]+c[3]/2);G.add(m);}}   // a menu picture shows the crates too
   // moving parts
   for(const s of k.spin){const mk=s.kit,g=new T.Group();for(const c of CLS){const m=meshOf(mk[c],c,mats[c]);if(m){m.matrixAutoUpdate=true;g.add(m);}}g.position.set(s.p[0],s.p[1],s.p[2]);if(s.rot)g.rotation.set(s.rot[0],s.rot[1],s.rot[2]);G.add(g);s.o=g;}
   M.ms=0;
   const out={group:G,id,q,env:true,arena:true,spin:k.spin.map(s=>({o:s.o,axis:s.axis,spd:s.spd})),halos:k.halos,anims:k.anims,anchors:k.anchors,deck:null,theme:th,view,rt:M.rt,sky,disposed:false,sun:M.sun,
    stats:{verts:CLS.reduce((n,c)=>n+k[c].P.length/3,0),bake:[M.bakeW,M.bakeH],ppu},
    rebake(dir){M.sun=dir;out.sun=dir;bake(renderer,M);},
-   dispose(){if(out.disposed)return;out.disposed=true;G.traverse(x=>{if(x.geometry)x.geometry.dispose();});gm.dispose();M.rt.dispose();if(sky)sky.dispose();}};
+   dispose(){if(out.disposed)return;out.disposed=true;const keep=M.thumb?crate(renderer,q,th.crate).geo:null;G.traverse(x=>{if(x.geometry&&x.geometry!==keep)x.geometry.dispose();});gm.dispose();M.rt.dispose();if(sky)sky.dispose();}};
   // the kit's source arrays are only needed again if the sun moves (rebake); keep positions and base heights, drop the rest
   for(const c of CLS){k[c].N=null;k[c].C=null;}
   return out;

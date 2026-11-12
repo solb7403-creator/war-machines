@@ -26,13 +26,14 @@ function solids(M){
 const onSolid=(S,x,z)=>S.rect.some(r=>x>=r[0]-TOL&&x<=r[0]+r[2]+TOL&&z>=r[1]-TOL&&z<=r[1]+r[3]+TOL)||S.circ.some(c=>Math.hypot(x-c[0],z-c[1])<=c[2]+TOL);
 const stats={};
 for(const id of IDS)for(const q of ['high','low'])for(const [vn,view] of Object.entries(VIEWS)){
- const M=A.prep(id,{q,view:{...view},env:null}),k=M.kit,S=solids(maps[id]);let n=0,bad=0,worst='',southTall=0,maxIn=0;
+ const M=A.prep(id,{q,view:{...view},env:null}),k=M.kit,S=solids(maps[id]);
+ const southWall=x=>(maps[id].walls||[]).some(w=>w[1]+w[3]>H-0.01&&x>=w[0]-0.05&&x<=w[0]+w[2]+0.05);   /* a wall on the south edge: its own columns are not playfield */ let n=0,bad=0,worst='',southTall=0,maxIn=0;
  const kits=[k,...k.spin.map(s=>s.kit)];
  for(const kit of kits)for(const cls of A.CLS){const b=kit[cls];assert.ok(b.P.every(Number.isFinite)&&b.N.every(Number.isFinite)&&b.C.every(Number.isFinite),id+' finite '+cls);n+=b.P.length/3;}
  for(const cls of A.CLS){const b=k[cls];for(let i=0;i<b.P.length;i+=3){const x=b.P[i],y=b.P[i+1],z=b.P[i+2],inside=x>0.02&&x<W-0.02&&z>0.02&&z<H-0.02,open=x>EDGE&&x<W-EDGE&&z>EDGE&&z<H-EDGE;
   if(open&&y>0.2&&!onSolid(S,x,z)){bad++;if(!worst)worst=cls+' '+[x,y,z].map(v=>v.toFixed(2)).join(',');}
   if(inside)maxIn=Math.max(maxIn,y);
-  if(z>H+0.05&&x>0.05&&x<W-0.05)southTall=Math.max(southTall,y);}}   // only what stands south of the arena, in its own columns, can hide a tank
+  if(z>H+0.05&&x>0.05&&x<W-0.05&&!southWall(x))southTall=Math.max(southTall,y);}} 
  assert.equal(bad,0,id+' '+q+' '+vn+': '+bad+' raised vertices stand on open floor, e.g. '+worst);
  assert.ok(southTall<=0.75,id+' '+q+': art on the camera side of the arena stays low ('+southTall.toFixed(2)+')');
  assert.ok(maxIn<=2.9,id+' '+q+': nothing in the arena is taller than the tallest prop before (pillar 2.1 + cap) '+maxIn.toFixed(2));
