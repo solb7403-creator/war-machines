@@ -869,10 +869,14 @@ function drawBattle(){
  g.restore();   // end shake
  drawHUD();
 }
+let HUDG=null;   // the band behind the team bars on sunlit maps (built once per layout)
 function drawHUD(){
  const top=oy-HUD*sc,mid=X(W/2),pad=Math.max(8,sc*0.4);
  const hy=top+sc*0.35,bh=Math.max(10,sc*0.62),bw=Math.min(sc*7.2,(vw-pad*2)/2-sc*2.6);
  g.textBaseline='middle';
+ // sunlit maps (Session 5E-2c): a soft dark band behind the team bars so they read over bright ground. It ends at the
+ // arena's north edge, so no tank is ever under it
+ if(D3on()&&typeof B3!=='undefined'&&B3.map&&B3.map.arena){const y0=top-sc*1.6,y1=top+sc*HUD;if(!HUDG||HUDG.y0!==y0||HUDG.y1!==y1){const gr=g.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(6,8,13,0)');gr.addColorStop(0.3,'rgba(6,8,13,0.5)');gr.addColorStop(0.68,'rgba(6,8,13,0.5)');gr.addColorStop(1,'rgba(6,8,13,0)');HUDG={y0,y1,gr};}g.fillStyle=HUDG.gr;g.fillRect(0,y0,vw,y1-y0);}
  const n=MM.n,solo=!!storm,topLine=!!(gzones||cry||storm||matchG==='bounty');
  const side=(t,left)=>{
   const x0=left?pad:vw-pad-bw,col=TC[t];

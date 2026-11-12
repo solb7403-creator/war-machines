@@ -1,0 +1,165 @@
+{
+ "note": "two runs; wireBytes = gzip-9 of text files + raw binary files requested up to the first match frame (the tanks drawn differ per run); device times on software GL, phone CPU throttled 4x",
+ "runs": [
+  {
+   "device": "phone",
+   "requests": 56,
+   "rawBytes": 5755650,
+   "wireBytes": 4077764,
+   "readyMs": 2127,
+   "firstFrameMs": 950,
+   "settledMs": 13254,
+   "arena": false,
+   "bake": null,
+   "at9Mbps_s": 3.62,
+   "at1_6Mbps_s": 20.39,
+   "largest": [
+    [
+     "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+     825712
+    ],
+    [
+     "js/assets/meshy-v1/chassis-scout-0-light.glb",
+     732340
+    ],
+    [
+     "js/assets/meshy-v1/chassis-titan-0-light.glb",
+     713688
+    ],
+    [
+     "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+     343268
+    ],
+    [
+     "js/assets/meshy-v1/weapon-twin-0-light.glb",
+     318104
+    ],
+    [
+     "js/assets/hf-v1/orm-high.png",
+     149128
+    ]
+   ],
+   "mapFiles": []
+  },
+  {
+   "device": "desk",
+   "requests": 56,
+   "rawBytes": 5755650,
+   "wireBytes": 4077764,
+   "readyMs": 878,
+   "firstFrameMs": 265,
+   "settledMs": 15464,
+   "arena": false,
+   "bake": null,
+   "at9Mbps_s": 3.62,
+   "at1_6Mbps_s": 20.39,
+   "largest": [
+    [
+     "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+     825712
+    ],
+    [
+     "js/assets/meshy-v1/chassis-scout-0-light.glb",
+     732340
+    ],
+    [
+     "js/assets/meshy-v1/chassis-titan-0-light.glb",
+     713688
+    ],
+    [
+     "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+     343268
+    ],
+    [
+     "js/assets/meshy-v1/weapon-twin-0-light.glb",
+     318104
+    ],
+    [
+     "js/assets/hf-v1/orm-high.png",
+     149128
+    ]
+   ],
+   "mapFiles": []
+  },
+  {
+   "device": "phone",
+   "requests": 55,
+   "rawBytes": 5131822,
+   "wireBytes": 3453936,
+   "readyMs": 2205,
+   "firstFrameMs": 954,
+   "settledMs": 13606,
+   "arena": false,
+   "bake": null,
+   "at9Mbps_s": 3.07,
+   "at1_6Mbps_s": 17.27,
+   "largest": [
+    [
+     "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+     825712
+    ],
+    [
+     "js/assets/meshy-v1/chassis-scout-0-light.glb",
+     732340
+    ],
+    [
+     "js/assets/meshy-v1/weapon-siege-0-light.glb",
+     407964
+    ],
+    [
+     "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+     343268
+    ],
+    [
+     "js/assets/hf-v1/orm-high.png",
+     149128
+    ],
+    [
+     "js/vendor/three.lunar.min.js",
+     136792
+    ]
+   ],
+   "mapFiles": []
+  },
+  {
+   "device": "desk",
+   "requests": 57,
+   "rawBytes": 6163614,
+   "wireBytes": 4485728,
+   "readyMs": 936,
+   "firstFrameMs": 280,
+   "settledMs": 15634,
+   "arena": false,
+   "bake": null,
+   "at9Mbps_s": 3.99,
+   "at1_6Mbps_s": 22.43,
+   "largest": [
+    [
+     "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+     825712
+    ],
+    [
+     "js/assets/meshy-v1/chassis-scout-0-light.glb",
+     732340
+    ],
+    [
+     "js/assets/meshy-v1/chassis-titan-0-light.glb",
+     713688
+    ],
+    [
+     "js/assets/meshy-v1/weapon-siege-0-light.glb",
+     407964
+    ],
+    [
+     "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+     343268
+    ],
+    [
+     "js/assets/meshy-v1/weapon-twin-0-light.glb",
+     318104
+    ]
+   ],
+   "mapFiles": []
+  }
+ ]
+}

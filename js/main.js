@@ -15,6 +15,7 @@ function frame(now){
    else if(overDraw>0){overDraw-=dt;drawBattle();}   // let the last explosions finish behind the results
   }else{tickHero(now);if(typeof tickEquipmentPreview==='function')tickEquipmentPreview(now);}
  }catch(e){setTimeout(()=>{throw e;});}   // report it, keep the game running
+ try{if(typeof ambience==='function')ambience(!(typeof Conquest!=='undefined'&&Conquest.active)&&!(typeof rangeRun!=='undefined'&&rangeRun)&&inBattle()&&(state==='play'||state==='round'||(typeof pvpOn==='function'&&pvpOn()))?curMap:null);}catch(e){}
  requestAnimationFrame(frame);
 }
 function boot(){

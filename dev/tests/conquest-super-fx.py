@@ -5,13 +5,13 @@ shared effects system (js/fx3d.js).
  3. the super's own effect is drawn by FX3D (charge-up, beam, aftermath), a Parasite hull it destroys breaks apart into
     chunks (destruction), a damaged hull shows cracks;
  4. no page error; the effects add NO shader program (Conquest keeps a 16-program budget) and stop drawing when done.
-Software GL in CI: this proves behaviour, not phone frame rate. usage: python dev/tests/conquest-super-fx.py [--engine chromium|webkit] [--quality high|low]"""
+Software GL in CI: this proves behaviour, not phone frame rate. usage: python dev/tests/conquest-super-fx.py [--engine chromium|webkit] [--quality high|low] [--slow-ms 300]"""
 import argparse,asyncio,json,pathlib,shutil
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 OUT=ROOT/'docs/conquest/super-fx';OUT.mkdir(parents=True,exist_ok=True)
-async def main(engine,quality):
+async def main(engine,quality,slow=0):
  async with async_playwright() as p:
   opts={'headless':True}
   if engine=='chromium':opts.update(executable_path=shutil.which('chromium') or '/opt/pw-browsers/chromium',args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
@@ -36,6 +36,9 @@ async def main(engine,quality):
    mk(live[0],24,0,1);mk(live[1],16,9,live[1].maxHp*.3);B.enemies=[live[0],live[1]];B.charge=SUPER_MAX;window.__k0=B.kills;
    return {enemies:2,programs:v.renderer.info.programs.length,calls:v.renderer.info.render.calls,style:!!v.style,canvas:!!v.renderer.isConquestCanvas};}''')
   assert setup and setup.get('enemies')==2,('the encounter needs two hulls to stage the shot',setup)
+  # --slow-ms N: every frame from here waits N ms more (a phone under 5 fps, or CI software GL on a bad day). The outcome must
+  # still show: the super fires 0.2 s after the stop, so a slower frame used to skip HIT / JACKPOT altogether
+  if slow:await page.evaluate('(ms)=>{const r=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=f=>setTimeout(()=>r(f),ms);}',slow)
   await page.keyboard.down('KeyR');await page.wait_for_timeout(60);await page.keyboard.up('KeyR')
   await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter;return !!(B.superAttack&&B.superAttack.bar);}',timeout=90000)
   bar=await page.evaluate('''()=>{const sb=document.querySelector('#cq-supbar'),B=Conquest.view.battle||Conquest.view.encounter,r=sb.getBoundingClientRect();return {hidden:sb.hidden,w:Math.round(r.width),x:Math.round(r.left),right:Math.round(r.right),y:Math.round(r.top),text:sb.querySelector('.cq-supbar-text').textContent,zone:sb.querySelector('.cq-supbar-zone').style.left,jack:sb.querySelector('.cq-supbar-jack').style.left,bar:B.superAttack.bar,charge:B.charge,vw:innerWidth};}''')
@@ -65,7 +68,7 @@ async def main(engine,quality):
    await page.evaluate('()=>{const B=Conquest.view.battle||Conquest.view.encounter;for(const e of B.enemies)e.hp=e.maxHp;}');await page.wait_for_function('()=>!Conquest.view.fx.glow.visible&&!Conquest.view.fx.debris.visible',timeout=90000)
   assert not errors,errors
   result={'engine':engine,'quality':quality,'status':'PASS','bar':bar,'hud':hud,'programsBefore':setup['programs'],'programsDuring':mid['programs'],'callsBefore':setup['calls'],'callsDuring':mid['calls'],'fxPeak':mid['fx'],'physicalDeviceVerified':False}
-  (OUT/f'{engine}-{quality}-results.json').write_text(json.dumps(result,indent=1));print(json.dumps(result))
+  (OUT/f'{engine}-{quality}{"-slow" if slow else ""}-results.json').write_text(json.dumps(result,indent=1));print(json.dumps(result))
   await browser.close()
 if __name__=='__main__':
- a=argparse.ArgumentParser();a.add_argument('--engine',default='chromium');a.add_argument('--quality',default='high');x=a.parse_args();asyncio.run(main(x.engine,x.quality))
+ a=argparse.ArgumentParser();a.add_argument('--engine',default='chromium');a.add_argument('--quality',default='high');a.add_argument('--slow-ms',type=int,default=0);x=a.parse_args();asyncio.run(main(x.engine,x.quality,x.slow_ms))

@@ -1,7 +1,7 @@
 name: Website layout and login contracts
 on:
   pull_request:
-    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'js/graphics.js', 'dev/tests/graphics*', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/**', 'privacy.html', 'terms.html', 'js/ui.js', 'js/net.js', 'js/core.js', 'dev/tests/signup-browser.cjs', 'dev/tests/webserver.mjs', 'dev/tests/wtest/accounts.mjs', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
+    paths: ['web/**', 'js/models3d.js', 'js/equipment3d.js', 'js/environment3d.js', 'js/graphics.js', 'dev/tests/graphics*', 'css/environment.css', 'dev/tests/environment*', 'js/assets/**', 'js/vendor/**', 'dev/assets/**', 'dev/tests/hf-*', 'js/render3d.js', 'js/mapenv.js', 'js/arena3d.js', 'js/arenaprops.js', 'dev/tests/arena-maps.mjs', 'dev/tests/standard-equipment*', 'dev/tests/legendary*', 'dev/tests/defender-isolation.mjs', 'dev/tests/fixtures/**', 'dev/tests/defender-visual.mjs', 'worker/src/**', 'privacy.html', 'terms.html', 'js/ui.js', 'js/net.js', 'js/core.js', 'dev/tests/signup-browser.cjs', 'dev/tests/webserver.mjs', 'dev/tests/wtest/accounts.mjs', 'worker/package.json', 'dev/tests/web-login.mjs', 'dev/tests/wtest/web-auth.mjs', 'dev/tests/wtest/lunar-identity.mjs', '.github/workflows/website-check.yml']
 permissions:
   contents: read
 jobs:
@@ -30,6 +30,9 @@ jobs:
           node --check js/meshy3d.js
           node --check js/vendor/meshopt_decoder.js
           node --check js/environment3d.js
+          node --check js/mapenv.js
+          node --check js/arena3d.js
+          node --check js/arenaprops.js
           node --check js/render3d.js
           node --check js/render.js
           node --check web/equipment-preview.js
@@ -49,6 +52,7 @@ jobs:
           node dev/tests/hf-foundation.mjs
           node dev/tests/hf-collection.mjs
           node dev/tests/environment.mjs
+          node dev/tests/arena-maps.mjs
           node dev/tests/map-layout.mjs
           node dev/tests/graphics-motion.mjs
           node dev/tests/graphics-release.mjs

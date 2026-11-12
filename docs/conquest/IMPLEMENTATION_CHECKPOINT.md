@@ -2157,3 +2157,293 @@ the blast frame), `seq-jackpot-*.webp` (charge, bar stopped, blast, +0.2 s, +0.5
   was merged into it instead; this record is the only change it carries on top of main.
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build misbehaves,
   revert `521bf2b` on main (the Pages and Worker deploys follow the revert) and note it here.
+
+## Checkpoint 34 — Session 5E-2c: Arcade 3D maps (branch `claude/arcade-3d-maps-rebuild-q1w6vj`, from main `7f358ca`) — IN PROGRESS
+
+Brief: owner's Session 5E-2c prompt (rebuild all six Arcade maps to the Meshy references; one shared environment layer; critic
+loop; phones and desktops equal; release pre-approved once CI is green and two reviewers pass). Owner not monitoring: every
+decision below was made by the lead and is recorded with its reason. Payments stay DISABLED. Not touched: prices, economy,
+airdrop points, save schema, ownership, chassis / weapon stats, supers tuning, `MAPS` (layout, hitboxes, spawns), the Worker,
+`PVP_V`.
+
+### Research that drove the choices (step 1; a research agent, web search, sources named; items it could not open are marked)
+1. **Read order is UI > effects > characters > environment** (Riot's Summoner's Rift rework: value ranges clamped, shapes
+   simplified). => The ground stays in a narrow, low-saturation mid band; the brightest, darkest and most saturated pixels are
+   kept for tanks, shots and pick-ups.
+2. **Static light is baked, only vehicles are lit live** (World of Tanks Blitz: "Only tanks are being dynamically lit.
+   Lighting of the environment is baked"; Unity / Android mobile guidance: baked is the cheapest mode, blob shadows and
+   additive glow sprites instead of real-time shadows and bloom). => The ground carries its light and every prop shadow in one
+   baked texture; tanks keep their own three-light rig and a ground shadow quad; lights glow through additive sprites.
+3. **Characters stay readable by desaturating the world, not by outlining** (Valorant, TF2 rim light, Dota 2 art guide:
+   saturation only at points of interest). => Container orange and bridge cyan are smaller in area and less saturated than the
+   team blue / red; every tank has a crisp team ring; tanks are never darkened inside a prop's shadow.
+4. **Out-of-bounds scenery is richer but pushed back in value and saturation; props are clustered, lanes stay quiet; one
+   landmark per map; background motion small and slow** (Level Design Book, 80.lv set-dressing guides, L4D / 2XKO notes).
+   => Everything beyond the arena edge is drawn 30 - 55% darker; set dressing sits on solids or outside the arena.
+5. **Merge static meshes per material, few shared tiling textures, gate micro-props by tier** (War Robots remaster notes,
+   three.js forum). => A map is 3 lit meshes + 1 glow mesh + the ground; LOW drops small props and normal maps.
+6. **The Moon: hard, dark shadows, albedo 0.07 - 0.16, a low sun hides rocks; realistic lighting reads drab in a game**
+   (NASA Ames / NESC; a Mars devlog). => Stylised: crisp shadows 0.75 x height (short enough not to hide a tank), a cool fill
+   so shadowed sides still read, ground lighter than real regolith.
+Not verified (the agent could not open the pages): Brawl Stars / Squad Busters specifics, the "under 100 - 150 draw calls on
+a mid-range phone" figure, KTX2 savings.
+
+### Architecture (new files; nothing in the sim, rules or Worker changed)
+- `js/mapenv.js` — **MapEnv, the shared environment layer** (API below).
+- `js/arena3d.js` — **Arena3D**: the prop kit (four buckets: rock / paint / metal / glow, merged, box-projected UVs), GPU-made
+  tiling detail textures (no downloads), the ground bake, the ground-mark pool (tread prints, scorch), crate and shadow helpers.
+- `js/arenaprops.js` — **ArenaProps**: every prop and the six map builds, the 2D paint layers (tracks, stains, floor
+  markings, light pools), the sky (stars, Earth), the far ridge.
+- `js/render3d.js` — builds maps through Arena3D, runs MapEnv once a frame, draws the map's lights (additive sprites) and
+  small motions, sun-side ground shadows for tanks and crates, tread prints, dust and scorch.
+- The earlier map code (`Environment3D.buildMap`, `M3.buildMap`, `MapArt`) is still in the tree: it is the fallback if
+  Arena3D fails to build and it is what `dev/tests/environment.mjs` pins byte-for-byte. `window.LUNAR_ARENA3D=false` turns
+  the new maps off.
+
+**How a map is drawn**
+1. Props are merged into at most three lit meshes and one glow mesh.
+2. The ground is baked once per map by a shader into ONE texture: regolith (or deck plates), the craters the rules know as
+   bowls with rims, tracks, pebbles, contact shading round every solid, and the sun's shadow of every prop (the props are
+   flattened onto the ground along the sun and drawn into a mask). rgb = albedo, alpha = the sun term, so MapEnv re-lights
+   it every frame for free: `colour = albedo * (ambient + sun * term)`.
+3. Each frame the ground costs one texture read per pixel. No shadow maps, no extra passes.
+
+### The environment layer: `MapEnv` (`js/mapenv.js`) — API for the weather / hazard session
+One instance per battle scene (`ENV` in `js/render3d.js`). It owns the three scene lights, the two light terms of the baked
+ground, the haze, the sky and the ambient particles. A later session drives it per match; **no map is rebuilt for any of it**.
+
+| Call | What it does |
+|---|---|
+| `ENV.use(mapId, anchors)` | Loads the map's preset (`MapEnv.PRESETS[mapId]`) and its ambient emitters. Arena3D calls it when a map is built. |
+| `ENV.set(patch, seconds)` | Blends any state field to a new value over `seconds` (0 = at once). |
+| `ENV.reset(seconds)` | Back to the map's preset; drops every `'weather'` emitter. |
+| `ENV.flash(rgb, strength, seconds)` | A short pulse of light on ground, props and tanks (lightning, solar flare, a big blast). |
+| `ENV.addEmitter(spec)` -> id, `ENV.removeEmitter(id)`, `ENV.clearEmitters(group)` | Ambient / weather particles, written into the two existing particle batches (no new draw call). |
+| `ENV.update(dt, t)` | Once a frame (render3d does it). |
+| `ENV.state`, `ENV.uniforms`, `ENV.sunDir()`, `ENV.anchors` | Live values; what the ground shader reads; the sun; the map's hazard anchors. |
+| `ENV.onRebake` | Set by render3d. Called once when `state.sunDir` changes: the map re-bakes its ground shadows in one frame. |
+
+State fields (colours are linear `[r,g,b]`): `sunDir[3]`, `sun`, `sunI`, `sky`, `gnd`, `hemiI`, `fill`, `fillI`, `gGain`
+(ground brightness), `gAmb` (how dark ground shadows are; props and tanks unaffected), `fogC`, `fog` (0..1), `fogNear`,
+`fogFar` (ground z where the haze starts / is full), `clear` (space colour), `stars`, `earth`, `exposure`, `shadow` (tank and
+crate ground-shadow strength).
+
+Emitter spec: `{group:'ambient'|'weather', add:true|false, rate, area:[x0,z0,x1,z1], y:[lo,hi], life:[lo,hi], size:[start,end],
+color:'#rrggbb' | [..], alpha, vel:[vx,vy,vz], jitter, gravity, drag, pick:()=>[x,y,z]}`.
+
+Anchors each map publishes (`ENV.anchors`, also `B3.map.anchors`): `vents [[x,z,r,y]]` (crater centres, reactor banks,
+coolant pools, surface vents), `lasers [[x,y,z,dx,dz]]` (the Bunker's side walls carry six dormant emitter housings),
+`rail [[x,y,z],[x,y,z]]` (a straight run for a train: the Overpass deck, the Canyon rille, the Longshot lane), `drops [[x,z]]`
+(lift platforms / map centre), `walls`, `sparks`, `area`.
+
+How the listed hazards map onto it (none of them is built in this session):
+- **Dust storm**: `ENV.set({fog:0.7,fogC:[..],sunI:1.2,gAmb:0.9,stars:0},4)` + a `'weather'` emitter of fast, flat motes; `ENV.reset(4)` ends it.
+- **Rain / ash / meteor shower**: emitters with `vel`, `gravity`; meteors land on `anchors.drops` or anywhere in `anchors.area`; `ENV.flash` on impact.
+- **Solar flare**: `ENV.set({sun:[1,0.8,0.5],sunI:3.4,exposure:1.25},1.5)` + `ENV.flash`.
+- **Crater vents**: emitters with `pick` on `anchors.vents`; **ceiling lasers**: beams from `anchors.lasers` (FX3D `seg` / `bolt`); **maglev train**: a mesh moved along `anchors.rail`.
+- Moving the sun (`ENV.set({sunDir:[..]})`) re-bakes the ground shadows through `onRebake` (one frame of work, no rebuild).
+Proof it works without a rebuild: `dev/tests/arena-maps.mjs` drives blend, haze, flash, emitters, reset and the re-bake hook.
+
+### Decisions and reasons (changes to the owner's plan are marked CHANGE)
+1. **Procedural maps, no Meshy generation.** The references are pictures, not models; the repo holds no map GLBs. The Meshy
+   connector was available but every generation costs credits and AGENTS.md forbids paid API charges without fresh approval,
+   so nothing was generated. Instead: real geometry on the rules' footprints + a baked ground. Side effect: the maps add
+   **0 bytes of art downloads** (textures are made on the GPU at map load).
+2. **Bake the ground, light only tanks live** (research 2). One texture per map: albedo in rgb, the sun term in alpha.
+   Each frame costs one texture read per ground pixel, cheaper than main's lit, normal-mapped ground. No shadow maps: the
+   custom three build has no shadow constants exported and three compiles shadow code into EVERY lit material once a light
+   casts (tanks included), which would have slowed tanks and added shader variants.
+3. **Prop shadows are drawn flat**: every prop is flattened onto the ground along the sun and drawn into a mask before the
+   bake. Exact hard shadows at bake resolution, no runtime cost. Props do not shadow each other (noted under limits).
+4. **One sun for the five outdoor maps** (`[-0.55, 0.72, -0.42]`: shadows fall right and towards the camera, about as long
+   as the prop is tall; first draft was 0.75 x height, the critic called it washed out). The Bunker has overhead work lights.
+5. **Tanks are never darkened by map shadows** and keep the light rig they had (research 3: readability first). They get a
+   sun-side soft ground shadow that turns with the hull, a crisp team ring and a faint team disc (an additive glow, as on
+   main, washes out on sunlit ground).
+6. **CHANGE: tunnel roofs are steel gratings, not see-through glass.** On main the deck over a tunnel is drawn at 62%
+   opacity (28% when you are inside) so tanks below stay visible. "No see-through" in the brief: the Overpass tunnels and
+   the Canyon's cleft are now spanned by an open grating (bars with real gaps). Tanks below are seen through the gaps, by
+   everyone, exactly as before; nothing fades. The Canyon mesa is two rock tables with a steel grating across the cleft.
+7. **CHANGE: the painted mode label and lane dashes on the floor are gone** (5D's `Environment3D.modeContext`): they sat
+   badly on regolith and the HUD already names the mode. The crystal mine, zones and pads are unchanged.
+8. **South side stays low** (camera rule): boundary walls are tall on the north, east and west and a kerb on the south;
+   plateaus step down south of the arena. `dev/tests/arena-maps.mjs` enforces it, and that raised art only stands on a solid
+   the rules know or outside the arena, and that nothing in the arena is taller than the tallest prop on main.
+9. **Out of bounds is darker at once (x0.6) and fades to x0.23 far out; no containers / domes within ~7 units of the edge**
+   (critic round 1: decoy props near the border read as cover; research 4).
+10. **Phone top strip**: the ground ends in two flat ridge silhouettes under stars and a small Earth; desktop shows the
+    flanks instead (the camera is fixed, so each device gets the scenery it can actually see). The bake covers exactly the
+    ground the screen can show, at the screen's own pixel density, so no texels are wasted on either device.
+11. **Map modules load with the 3D engine** (`load3D`), not in the page's script list: first paint costs what it did on main.
+12. **Ambient sound**: a quiet synthesised bed per map (rumble, a band of moving air, machinery hum; the Bunker adds far-off
+    metal). It follows the Sound setting and fades in 2 s. No audio files.
+13. **Tread prints, dust and scorch** (feel): tanks leave tread prints in the regolith that fade in 14 s (8 s on LOW), kick a
+    little dust, and blasts leave scorch for 26 s. One pooled mesh, one draw call, nothing allocated per frame.
+14. **CPU-rasterised browsers (SwiftShader: CI, GPU-blocklisted desktops)** get a lighter ground bake (no pebbles / micro
+    craters, 14 px per unit) so a map switch costs ~0.5 s there instead of ~2 s. Real GPUs get the full bake.
+15. **Not done as "2 - 3 parallel visual options"** (AGENTS.md agent rule): the look is fixed by the owner's references, so
+    the session's own process (one build, a separate critic scoring against the references, iterate) was used instead.
+16. **The next map is built behind the VS screen** (`prewarm3D`, called from `showVS`): the map is known once the match is
+    prepared, so the first battle frame no longer waits for the build (measured: 6 ms instead of the whole build).
+17. **Readability language** (combat reviewer): cyan on the floor now means only "coolant, slows you" in the Bunker (its centre
+    ring and lamps are warm white), scree has a clear edge at its slow radius, zone and crystal-mine markers use normal
+    blending on sunlit ground so the owner's colour never washes to white, both teams' sides get the same light pools.
+
+### What each map is (all on the footprints in `MAPS`; blockout over reference where they differ)
+- **Moonbase** (ref 01): neutral grey regolith, four orange container stacks, the slate command module with lit windows, a
+  turning dish and blinking masts, two lit geodesic domes, two faceted boulders, two slow craters with dark crescents.
+- **Overpass** (ref 02): off-white sand with worn tread marks, the gunmetal bridge with panel seams, teal edge strips, rails,
+  four plate ramps with concrete cheeks, see-through gratings over both tunnels with teal light inside, corner containers.
+- **Longshot** (cliffs from ref 03a): a sunk lane between stepped rock cliffs that run on beyond both ends, warm lamp pools at
+  the cliff feet, four containers, the energy pylon cluster (turning rings), dark plateau beyond.
+- **Crater Field** (refs 05 / 06): the big crater with a beacon light and a pool of cyan, rim stones, two gold-foil landers
+  with cargo and a solar wing, six boulders.
+- **Canyon** (ref 03b floor, 03a walls): cool grey regolith, taupe fractured-ledge walls, fins, spires, scree (slow), a rock
+  mesa split by a cleft with a steel grating across it and two rock ramps, silver crates.
+- **Underground Bunker** (ref 04): deck plates with grime, rivets and worn paint, bulkheads, blast doors with chevrons and
+  status lamps, pillars, two reactor banks each (spinning fans, arcs, cyan glow), cargo lifts, sloped console banks, fuel
+  tanks, coolant pools (slow), tall riveted shell walls on three sides, warm lamp pools.
+- **Every outdoor map on a phone**: the ground runs to two mountain skylines under stars and the Earth; on a desktop the
+  flanks are darker, quieter terrain with nothing that looks like cover.
+
+### Critic loop (step 3): a separate read-only critic, images only, six rounds
+Scores are (closeness to the reference / professional finish and combat readability), phone then desktop.
+
+| Round | Moonbase | Overpass | Longshot | Crater Field | Canyon | Bunker | What changed after it |
+|---|---|---|---|---|---|---|---|
+| 1 | 4/5 · 4/4.5 | 3.5/4.5 · 3.5/4 | 3/4.5 · 2.5/3.5 | 3.5/5 · 3.5/4.5 | 3.5/4 · 3/3.5 | 6/6.5 · 6/6.5 | darker neutral ground, harder longer shadows, crater crescents, kerb border, darker out-of-bounds, slab rock tops, HUD band, bunker warm light |
+| 2 | 5.5/6.5 · 5.5/6 | 6/6.5 · 5.5/5.5 | 4.5/5.5 · 4/4.5 | 5.5/6.5 · 5.5/6 | 5/6 · 4.5/5 | 7/7.5 · 7/7.5 | out-of-bounds muted and emptied, ridge and Earth, irregular tracks, faceted boulders, varied small craters, smooth crater shadows, seams fixed |
+| 3 | 6/7 · 6/6.5 | 6/6.5 · 5.5/5.5 | 5/6 · 4.5/4.5 | 6.5/7 · 6/6.5 | 5.5/6 · 5/5 | 7.5/8 · 7.5/8 | plateaus tall to the screen edge (no bands), stepped cliffs, mountain skyline, bunker centre, wider treads |
+| 4 | 6.5/7 · 6/6.5 | 6.5/7 · 6/6 | 5.5/6.5 · 5/5.5 | 7/7.5 · 6.5/7 | 6/6.5 · 5.5/5.5 | 8/8 · 7.5/8 | stronger key light, fractured ledges, deck panel variants, lamp pools, HUD scrim fade |
+| 5 | 7/7.5 · 6.5/7 | 6.5/7 · 6/6.5 | 6/6.5 · 5.5/6 | 7/7.5 · 6.5/7 | 6/6.5 · 5.5/6 | 8/8 · 7.5/8 | out-of-bounds rocks small and ground-coloured, lighter gratings, quieter ledges and tracks, skyline without outline |
+| 6 | 7/7.5 · 6.5/7.5 | 7/7.5 · 6.5/7 | 6/6.5 · 5.5/6.5 | 7/7.5 · 6.5/7.5 | 6.5/7 · 5.5/6 | 8/8 · 7.5/8 | wedge ramp cheeks, Longshot west lamps and rim, Canyon out-of-bounds stones and grate (its three named items; not re-scored) |
+
+Round 6 verdict: **phone: "another pass would not make a clear difference"** (what is left needs sculpted meshes and authored
+textures, outside this technique). **Desktop: "would, but only a narrow one"**: three named items (Canyon out-of-bounds
+boulders, Longshot west lamp pools, the Canyon grate), which were then fixed. The loop stopped there. The critic's standing
+view: Moonbase, Overpass, Crater Field and Bunker are at the ceiling of baked-texture and vertex-colour art; Longshot and
+Canyon rock is the weakest part against the references (real strata need sculpted meshes).
+
+### Tests
+- New, in CI: `dev/tests/arena-maps.mjs` (website-check.yml and `conquest-regression.sh`): the six kits x HIGH / LOW x phone /
+  desktop views on the real vendored three, no renderer: finite, bounded, LOW under 80% of HIGH; raised art only on solids the
+  rules know or outside the arena; nothing tall south of open floor; nothing in the arena above 2.9 (main reached 3.86);
+  `MAPS` untouched; the sim's `random()` never read; MapEnv presets, blend, haze, flash, emitters, reset, one re-bake per sun
+  move, reduced motion; the ground-mark ring stays bounded. It found two real bugs while it was written (the bake read the
+  previous map's sun; cliff outlines could poke 0.2 outside their footprint).
+- New tools (not pass / fail): `dev/tests/arena-maps-capture.py` (sheets), `dev/tests/arena-perf.py`, `dev/tests/arena-load.py`.
+- Run on the final code: `bash dev/tests/conquest-regression.sh` (all node suites incl. map-layout, map-nav, combat-balance):
+  pass; `wtest/test.mjs` 203 / 0; `wtest/pvp.mjs` 124 / 0; `super-timing.mjs` 165 checks; `super-aim.mjs`; `environment.mjs`
+  (the earlier map path is still byte-identical); `graphics-release.mjs`; `meshy.mjs`; browser: `b3test.py` PASS, `b4test.py`
+  PASS, `qa.py` PASS, `regress.py` (every mode x size x map: 0 stuck tanks, no errors), `b10test.py`: every mode on every map
+  under 160 draw calls, frame cost at 4x CPU slowdown inside the 30 fps budget, aim / tap / joystick on the tilted ground,
+  3D menu pictures, Low, 2D, no-WebGL and lost-context fallbacks all ok.
+- A browser smoke run of all six maps with a fight, then 12 more map loads: no page errors; geometries and textures do not
+  grow. The same run with `window.LUNAR_ARENA3D=false` set before load plays all six on the earlier map path.
+- Already failing on main `7f358ca`, unchanged here (verified by running them on a main checkout): `b10test.py` "Auto: slow
+  frames step down to Low, then to 2D" (the 6 s guard added in 5E-2a makes the synthetic test time out), `b2test.py` (a
+  click on a menu that has since moved), `b9test.py` (garage build-budget texts). `arcade-supers-browser.py` is a long
+  real-time measurement tool, not run to the end.
+
+### Agents used (AGENTS.md)
+- **Research agent** (web): the six findings above; shaped the bake-everything design and the readability rules.
+- **Art critic** (read-only, images only), six rounds: changed the result every round (table above).
+- **Graphics / performance reviewer** (read-only): FAIL first (2 blockers: a crash when the map modules were missing; `pow()`
+  with a negative base in the bake shader, which can give NaN on some phone GPUs) plus rebuild storms on resize, an
+  uncached bake shader, an Earth cached at the wrong quality; all fixed. Re-review: PASS at `cf0862b`; its follow-ups (the
+  kept shader pinned its canvases, a debounce edge, a stale key on a throw, one reversed `smoothstep`) were applied after.
+- **Combat / parity reviewer** (read-only): FAIL first (the same crash) plus the HUD band veiling tanks at the north end, a
+  scree slow zone with no readable edge, zone markers washing out on bright ground, the Bunker's cyan centre ring reading
+  like a slow zone, uneven light pools; all fixed. Re-review: PASS at `cf0862b`. It measured, by ray casting, the open floor
+  hidden behind tall art from the game camera (square units, HIGH): Moonbase 3.0 (main 3.3), Overpass 6.7 (4.9: tunnel
+  lintels and thin rails), Longshot 3.6 (19.9), Crater Field 0.2 (0.2), Canyon 1.7 (8.8), Bunker 25.7 (44.0); and that the
+  gratings leave 75 - 80% of each tunnel floor in clear view (main put a 62%-opaque roof over all of it).
+
+### Risks and limits
+- **No physical iPhone / Android / Telegram check by anyone.** Every frame number is software GL (SwiftShader). The two
+  shader hazards the reviewer named for phone GPUs were removed, but the ground bake has not run on a real Metal / Mali /
+  Adreno driver. If a phone shows a black or broken ground: `window.LUNAR_ARENA3D=false` (or reverting the merge) restores
+  the earlier maps; if the bake shader fails to compile the game now falls back by itself.
+- Props do not cast shadows on each other (only on the ground), and tanks are not shaded by map shadows (by design).
+- Rock faces sit 0.03 - 0.3 inside their hitboxes (ledges), so a shot can stop slightly short of the visible rock.
+- Longshot and Canyon rock is the weakest part against the references: real strata need sculpted meshes (5E-2d's Meshy
+  pipeline, or Graphics 2.0). The other four maps are at this technique's ceiling per the critic.
+- An automatic quality drop during play rebuilds the map once (as on main, but the build is heavier: ~0.1 - 0.3 s).
+- Wiki map pictures (`img/wiki/`) still show the earlier maps; `python3 dev/gallery3d.py` re-renders them.
+- `b2test.py`, `b9test.py` and one `b10test.py` check were already failing on main and still are.
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Play one AI match on each of the six maps. The ground should be sunlit with hard shadows beside every container, rock and
+   wall; at the top of the screen mountains, stars and the Earth. Nothing should look black, flat or pixelated.
+2. Drive in a circle: your tank leaves tread prints that fade in about 14 s and throws a little dust; it has a soft shadow
+   on the side away from the sun and a blue ring. Enemies have red rings.
+3. Overpass: drive through a tunnel. You can see your tank and any enemy through the steel grating; nothing turns
+   see-through. Canyon: the same under the mesa's grating.
+4. Craters (Moonbase, Crater Field), scree (Canyon) and coolant pools (Bunker) still slow you and are easy to tell apart
+   from decoration.
+5. Shoot a crate until it breaks: cracks, then it bursts (tan crates into planks, silver ones into metal). Fire a super: all
+   ten supers look as before, and blasts leave a scorch mark for about 26 s.
+6. Moon Zone and Crystal Rush: the zone ring and the mine ring are clearly blue / red / neutral on every map.
+7. Sound on: each map has a quiet background (a low rumble; machinery hum and far-off clanks in the Bunker). Sound off: silent.
+8. Settings > Graphics LOW: the same maps, lighter detail, no stutter. iPhone Settings > Accessibility > Reduce Motion ON:
+   nothing spins, blinks or drifts.
+9. Time from tapping PLAY to driving: it should feel the same as before (the map is built behind the VS screen).
+
+### Numbers (step 4): main `7f358ca` -> this branch. All of it is software GL (SwiftShader); not phone frame rates
+Tools: `dev/tests/arena-perf.py`, `dev/tests/arena-load.py`; raw data in `docs/maps-5e2c/perf-*.json`, `load-*.json`.
+A 3v3 Arena fight with bots on each map; phone = 390x844 with the CPU throttled 4x, desktop = 1920x1080. "Frame" is the median
+time between frames (the game draws twice per frame in this harness, the same on both builds); "draw" is `drawBattle` CPU time.
+
+| Profile | Frame time, average of six maps | Per map (Moonbase / Overpass / Longshot / Crater Field / Canyon / Bunker), ms | Draw CPU ms | Draw calls | Triangles | Map build ms |
+|---|---|---|---|---|---|---|
+| Phone HIGH | 356 -> 281 ms (2.81 -> 3.56 fps, +27%) | 333>299 / 300>233 / 400>316 / 316>249 / 400>283 / 383>300 | 6.8 -> 8.5 | 61 -> 66 | 157k -> 169k | 533 -> 731 |
+| Phone LOW | 169 -> 164 ms (5.90 -> 6.10 fps, +3%) | 166>166 / 166>150 / 166>166 / 166>150 / 183>166 / 166>183 | 5.7 -> 6.9 | 58 -> 66 | 99k -> 106k | 200 -> 298 |
+| Desktop HIGH | 642 -> 428 ms (1.56 -> 2.34 fps, +50%) | 566>366 / 533>383 / 700>466 / 483>300 / 816>466 / 749>583 | 1.3 -> 1.7 | 58 -> 66 | 157k -> 170k | 356 -> 500 |
+| Desktop LOW | 225 -> 203 ms (4.45 -> 4.93 fps, +11%) | 200>183 / 200>183 / 233>233 / 200>166 / 266>216 / 249>233 | 1.2 -> 1.5 | 58 -> 66 | 99k -> 105k | 169 -> 312 |
+
+- **Frame rate is at least as good as main on all four profiles** (the one map-profile that reads slower, Bunker on phone
+  LOW, is one 16.7 ms timer step: 166 -> 183). Why it is faster: the ground is one texture read per pixel instead of a lit,
+  normal-mapped material. Desktop LOW was first measured SLOWER (222 -> 261 ms: the new out-of-bounds terrain is pixels main
+  never shaded); LOW on a wide screen now draws only the arena and a narrow flank that fades into space, as main did.
+- Draw CPU is +1.7 ms on the 4x-throttled phone profile (+0.4 ms unthrottled): halos, tread prints, shadows, the environment
+  layer. Draw calls +5 to +8 (tank / crate ground shadows, sky, marks, spinning parts); triangles +8% (the maps themselves are
+  12k - 40k triangles; tanks are the rest). Shader programs in a match: 14 - 17 -> 19 - 24.
+- **Map build**: +0.1 to +0.3 s on the throttled phone profile; in play it happens behind the VS screen (first battle frame
+  after the VS screen: 6 ms). The very first map of a session also makes the detail textures (~1 s more on the throttled
+  software renderer, once).
+- **Download size to the first match**: 3.45 - 4.49 MB on main and 3.64 - 4.05 MB on the branch across runs (the spread is which
+  tank models the match happens to draw). **The maps add 44 KB gzipped (three scripts; about 1.1%), and 0 bytes of art.**
+  At 9 Mbps that is 0.04 s; at 1.6 Mbps 0.22 s.
+- **Time to first match**: boot to "3D ready" 2.1 - 2.2 s -> 2.8 - 2.9 s (phone profile), 0.9 s -> 1.6 s (desktop). The three map
+  scripts load beside the 3D engine, not in the page's blocking list, so first paint is unchanged; this harness serves every
+  request one at a time through a Python handler, which is most of that gap (a real host sends them in parallel).
+  A direct start with no VS screen (tests, the coached first match): first battle frame 0.95 s -> 1.1 - 1.25 s (phone
+  profile), 0.27 s -> 0.73 - 0.82 s (desktop, where the software renderer bakes a 2000x1500 ground). In normal play the VS
+  screen hides the build.
+- Memory: one ground texture per map at the screen's own density (phone 3x: 1404x2890; desktop 1080p: 2010x1489; LOW phone:
+  468x963), four 256 px detail tiles, one 256 px Earth. Peak during the bake is about 2.5x the ground texture (two masks),
+  freed at once. 12 map loads in a row: geometries and textures do not grow.
+
+### State at each push (branch `claude/arcade-3d-maps-rebuild-q1w6vj`)
+- `162d368` slice 1: Arena3D, ArenaProps, MapEnv, all six maps building, tread prints, ambience.
+- slice 2: critic round 1 fixes, lazy-loaded modules, `arena-maps.mjs`, capture and perf tools.
+- slice 3: critic rounds 2 - 3, thumbnails, CI wiring, load tool. slice 4: critic round 4. `56e4484` slice 5: rounds 5 - 6.
+- `cf0862b` slice 6: both reviewers' fixes, the VS-screen pre-build (both reviewers PASS at this commit).
+- `540d6dc` final: re-review follow-ups, LOW on wide screens, softer tread prints, sheets, numbers, build stamp (see Release record).
+- CI fix (after `540d6dc`): PR #119's `conquest` job went red in `dev/tests/conquest-super-fx.py` (run
+  [43167575668](https://github.com/solb7403-creator/war-machines/actions/runs/43167575668): 90 s wait for the super bar's outcome).
+  Root cause, in the 5E-2b Conquest HUD and not in the maps: the super fires `SUP_REL` (0.2 s) after the stop and the bar object
+  is dropped with it, so on any frame slower than 0.2 s the HUD never saw the outcome and HIT / JACKPOT / MISS was skipped
+  (a player under 5 fps lost the label too). Reproduced here on the unchanged code (software GL, and again at a forced 3 fps),
+  so it is a race that 5E-2b's one green run happened to win, not a change this branch made. Fix (`js/conquest/app.js`,
+  `combatHUD`): the HUD keeps the bar it was showing and reads the outcome from it when the battle has already fired. No rule,
+  timing, damage or Worker change. The test gained `--slow-ms N` (every frame waits N ms more): with the fix it passes at
+  3 fps, without it it times out. Nothing was skipped or relaxed.
+
+### What is left (not blocking; for the owner or a later session)
+- The owner's iPhone / Telegram playtest (checklist above): the only check no agent could do.
+- Weather and hazards (rain, dust storms, meteor showers, solar flares, crater vents, ceiling lasers, a maglev train): the
+  layer and anchors are in place (API above); nothing of them is built.
+- Longshot / Canyon rock to reference level needs sculpted meshes (Meshy) rather than code-built strata.
+- Wiki map pictures (`python3 dev/gallery3d.py`), and the three stale browser tests that already fail on main.
+- **Proposals only (not shipped; economy untouched):** none were needed for this session.
