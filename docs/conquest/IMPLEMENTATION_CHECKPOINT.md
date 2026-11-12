@@ -2465,7 +2465,7 @@ time between frames (the game draws twice per frame in this harness, the same on
   The live hosts are outside this container's network allowlist, so the Worker figures come from the deploy run's own checks
   and the Pages figure from the deployment record.
 - Post-merge runs on main `434e09a`: Validate Laboratory UI (run [43179555343](https://github.com/solb7403-creator/war-machines/actions/runs/43179555343)): success. Equipment Balance (run
-  [43179555372](https://github.com/solb7403-creator/war-machines/actions/runs/43179555372), the same suite that was green on the PR head): still running when this was written (result added below when it ends).
+  [43179555372](https://github.com/solb7403-creator/war-machines/actions/runs/43179555372), the same suite that was green on the PR head): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
 - Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment), so
   main was merged into it instead; this record and the ROADMAP row are the only changes it carries on top of main.
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build
