@@ -9,12 +9,12 @@ const ArenaProps=(()=>{
  const W=20,H=32,TILT=0.6,GKC=Math.cos(TILT),GSN=Math.sin(TILT),PI=Math.PI,hs=Arena3D.hs;
  const HZ='#d9a92e',HZK='#1d1f23',CYAN='#4fe3ff',STEEL='#8d969e',STEEL_D='#3b424a',STEEL_L='#aab2b9';
  const THEMES={
-  classic:{name:'Moonbase',tread:0.36,dustC:'#a9a9aa',ground:'#8a8b8e',dust:'#98999b',strata:['#7c7872','#8a857e','#6a6660','#807b74'],seed:3,pebbles:0.8,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  overpass:{name:'Overpass',tread:0.3,dustC:'#cfc9bf',ground:'#cfcbc4',dust:'#d2cec8',strata:['#8e8a84','#9a958e'],seed:7,pebbles:0.4,relief:1.3,mottle:0.1,trackK:0.16,outDim:0.7,crate:'tan',crateMat:'crate',accent:'#35e0d2',horizon:1},
-  longshot:{name:'Longshot',tread:0.36,dustC:'#b0a79f',ground:'#9c9289',topGround:'#857e75',topKind:1,wallPeb:0.7,dust:'#978c82',strata:['#7b6b5c','#8c7b69','#998772','#847361'],seed:11,pebbles:0.7,crate:'tan',crateMat:'crate',accent:'#ffc46a',horizon:1},
-  craters:{name:'Crater Field',tread:0.36,dustC:'#a8a8aa',ground:'#8c8b89',dust:'#999896',strata:['#7c7872','#8a857e'],seed:17,pebbles:1.0,relief:1.7,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
-  canyon:{name:'Canyon',tread:0.36,dustC:'#b3b4b6',ground:'#a4a7ab',topGround:'#8c857c',topKind:1,wallPeb:0.8,dust:'#9a958e',strata:['#7a6e62','#877a6c','#938575','#7f7265'],seed:23,pebbles:0.8,relief:1.6,crate:'steel',crateMat:'metal',accent:'#ffb066',horizon:1},
-  bunker:{name:'Underground Bunker',tread:0.16,dustC:null,ground:'#666a6f',topGround:'#6b6a6c',dust:null,strata:['#5a5a5e','#66666a'],seed:29,plates:true,pebbles:0.6,crate:'steel',crateMat:'metal',accent:CYAN,horizon:1}
+  classic:{name:'Moonbase',tread:0.28,dustC:'#a9a9aa',ground:'#8a8b8e',dust:'#98999b',strata:['#7c7872','#8a857e','#6a6660','#807b74'],seed:3,pebbles:0.8,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
+  overpass:{name:'Overpass',zoneN:'#46566b',tread:0.2,dustC:'#cfc9bf',ground:'#cfcbc4',dust:'#d2cec8',strata:['#8e8a84','#9a958e'],seed:7,pebbles:0.4,relief:1.3,mottle:0.1,trackK:0.16,outDim:0.7,crate:'tan',crateMat:'crate',accent:'#35e0d2',horizon:1},
+  longshot:{name:'Longshot',tread:0.28,dustC:'#b0a79f',ground:'#9c9289',topGround:'#857e75',topKind:1,wallPeb:0.7,dust:'#978c82',strata:['#7b6b5c','#8c7b69','#998772','#847361'],seed:11,pebbles:0.7,crate:'tan',crateMat:'crate',accent:'#ffc46a',horizon:1},
+  craters:{name:'Crater Field',tread:0.28,dustC:'#a8a8aa',ground:'#8c8b89',dust:'#999896',strata:['#7c7872','#8a857e'],seed:17,pebbles:1.0,relief:1.7,crate:'tan',crateMat:'crate',accent:CYAN,horizon:1},
+  canyon:{name:'Canyon',tread:0.28,dustC:'#b3b4b6',ground:'#a4a7ab',topGround:'#8c857c',topKind:1,wallPeb:0.8,dust:'#9a958e',strata:['#7a6e62','#877a6c','#938575','#7f7265'],seed:23,pebbles:0.8,relief:1.6,crate:'steel',crateMat:'metal',accent:'#ffb066',horizon:1},
+  bunker:{name:'Underground Bunker',tread:0.13,dustC:null,ground:'#666a6f',topGround:'#6b6a6c',dust:null,strata:['#5a5a5e','#66666a'],seed:29,plates:true,pebbles:0.6,crate:'steel',crateMat:'metal',accent:CYAN,horizon:1}
  };
  const theme=id=>Object.assign({id},THEMES[id]||THEMES.classic);
 

@@ -2323,3 +2323,118 @@ textures, outside this technique). **Desktop: "would, but only a narrow one"**: 
 boulders, Longshot west lamp pools, the Canyon grate), which were then fixed. The loop stopped there. The critic's standing
 view: Moonbase, Overpass, Crater Field and Bunker are at the ceiling of baked-texture and vertex-colour art; Longshot and
 Canyon rock is the weakest part against the references (real strata need sculpted meshes).
+
+### Tests
+- New, in CI: `dev/tests/arena-maps.mjs` (website-check.yml and `conquest-regression.sh`): the six kits x HIGH / LOW x phone /
+  desktop views on the real vendored three, no renderer: finite, bounded, LOW under 80% of HIGH; raised art only on solids the
+  rules know or outside the arena; nothing tall south of open floor; nothing in the arena above 2.9 (main reached 3.86);
+  `MAPS` untouched; the sim's `random()` never read; MapEnv presets, blend, haze, flash, emitters, reset, one re-bake per sun
+  move, reduced motion; the ground-mark ring stays bounded. It found two real bugs while it was written (the bake read the
+  previous map's sun; cliff outlines could poke 0.2 outside their footprint).
+- New tools (not pass / fail): `dev/tests/arena-maps-capture.py` (sheets), `dev/tests/arena-perf.py`, `dev/tests/arena-load.py`.
+- Run on the final code: `bash dev/tests/conquest-regression.sh` (all node suites incl. map-layout, map-nav, combat-balance):
+  pass; `wtest/test.mjs` 203 / 0; `wtest/pvp.mjs` 124 / 0; `super-timing.mjs` 165 checks; `super-aim.mjs`; `environment.mjs`
+  (the earlier map path is still byte-identical); `graphics-release.mjs`; `meshy.mjs`; browser: `b3test.py` PASS, `b4test.py`
+  PASS, `qa.py` PASS, `regress.py` (every mode x size x map: 0 stuck tanks, no errors), `b10test.py`: every mode on every map
+  under 160 draw calls, frame cost at 4x CPU slowdown inside the 30 fps budget, aim / tap / joystick on the tilted ground,
+  3D menu pictures, Low, 2D, no-WebGL and lost-context fallbacks all ok.
+- A browser smoke run of all six maps with a fight, then 12 more map loads: no page errors; geometries and textures do not
+  grow. The same run with `window.LUNAR_ARENA3D=false` set before load plays all six on the earlier map path.
+- Already failing on main `7f358ca`, unchanged here (verified by running them on a main checkout): `b10test.py` "Auto: slow
+  frames step down to Low, then to 2D" (the 6 s guard added in 5E-2a makes the synthetic test time out), `b2test.py` (a
+  click on a menu that has since moved), `b9test.py` (garage build-budget texts). `arcade-supers-browser.py` is a long
+  real-time measurement tool, not run to the end.
+
+### Agents used (AGENTS.md)
+- **Research agent** (web): the six findings above; shaped the bake-everything design and the readability rules.
+- **Art critic** (read-only, images only), six rounds: changed the result every round (table above).
+- **Graphics / performance reviewer** (read-only): FAIL first (2 blockers: a crash when the map modules were missing; `pow()`
+  with a negative base in the bake shader, which can give NaN on some phone GPUs) plus rebuild storms on resize, an
+  uncached bake shader, an Earth cached at the wrong quality; all fixed. Re-review: PASS at `cf0862b`; its follow-ups (the
+  kept shader pinned its canvases, a debounce edge, a stale key on a throw, one reversed `smoothstep`) were applied after.
+- **Combat / parity reviewer** (read-only): FAIL first (the same crash) plus the HUD band veiling tanks at the north end, a
+  scree slow zone with no readable edge, zone markers washing out on bright ground, the Bunker's cyan centre ring reading
+  like a slow zone, uneven light pools; all fixed. Re-review: PASS at `cf0862b`. It measured, by ray casting, the open floor
+  hidden behind tall art from the game camera (square units, HIGH): Moonbase 3.0 (main 3.3), Overpass 6.7 (4.9: tunnel
+  lintels and thin rails), Longshot 3.6 (19.9), Crater Field 0.2 (0.2), Canyon 1.7 (8.8), Bunker 25.7 (44.0); and that the
+  gratings leave 75 - 80% of each tunnel floor in clear view (main put a 62%-opaque roof over all of it).
+
+### Risks and limits
+- **No physical iPhone / Android / Telegram check by anyone.** Every frame number is software GL (SwiftShader). The two
+  shader hazards the reviewer named for phone GPUs were removed, but the ground bake has not run on a real Metal / Mali /
+  Adreno driver. If a phone shows a black or broken ground: `window.LUNAR_ARENA3D=false` (or reverting the merge) restores
+  the earlier maps; if the bake shader fails to compile the game now falls back by itself.
+- Props do not cast shadows on each other (only on the ground), and tanks are not shaded by map shadows (by design).
+- Rock faces sit 0.03 - 0.3 inside their hitboxes (ledges), so a shot can stop slightly short of the visible rock.
+- Longshot and Canyon rock is the weakest part against the references: real strata need sculpted meshes (5E-2d's Meshy
+  pipeline, or Graphics 2.0). The other four maps are at this technique's ceiling per the critic.
+- An automatic quality drop during play rebuilds the map once (as on main, but the build is heavier: ~0.1 - 0.3 s).
+- Wiki map pictures (`img/wiki/`) still show the earlier maps; `python3 dev/gallery3d.py` re-renders them.
+- `b2test.py`, `b9test.py` and one `b10test.py` check were already failing on main and still are.
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Play one AI match on each of the six maps. The ground should be sunlit with hard shadows beside every container, rock and
+   wall; at the top of the screen mountains, stars and the Earth. Nothing should look black, flat or pixelated.
+2. Drive in a circle: your tank leaves tread prints that fade in about 14 s and throws a little dust; it has a soft shadow
+   on the side away from the sun and a blue ring. Enemies have red rings.
+3. Overpass: drive through a tunnel. You can see your tank and any enemy through the steel grating; nothing turns
+   see-through. Canyon: the same under the mesa's grating.
+4. Craters (Moonbase, Crater Field), scree (Canyon) and coolant pools (Bunker) still slow you and are easy to tell apart
+   from decoration.
+5. Shoot a crate until it breaks: cracks, then it bursts (tan crates into planks, silver ones into metal). Fire a super: all
+   ten supers look as before, and blasts leave a scorch mark for about 26 s.
+6. Moon Zone and Crystal Rush: the zone ring and the mine ring are clearly blue / red / neutral on every map.
+7. Sound on: each map has a quiet background (a low rumble; machinery hum and far-off clanks in the Bunker). Sound off: silent.
+8. Settings > Graphics LOW: the same maps, lighter detail, no stutter. iPhone Settings > Accessibility > Reduce Motion ON:
+   nothing spins, blinks or drifts.
+9. Time from tapping PLAY to driving: it should feel the same as before (the map is built behind the VS screen).
+
+### Numbers (step 4): main `7f358ca` -> this branch. All of it is software GL (SwiftShader); not phone frame rates
+Tools: `dev/tests/arena-perf.py`, `dev/tests/arena-load.py`; raw data in `docs/maps-5e2c/perf-*.json`, `load-*.json`.
+A 3v3 Arena fight with bots on each map; phone = 390x844 with the CPU throttled 4x, desktop = 1920x1080. "Frame" is the median
+time between frames (the game draws twice per frame in this harness, the same on both builds); "draw" is `drawBattle` CPU time.
+
+| Profile | Frame time, average of six maps | Per map (Moonbase / Overpass / Longshot / Crater Field / Canyon / Bunker), ms | Draw CPU ms | Draw calls | Triangles | Map build ms |
+|---|---|---|---|---|---|---|
+| Phone HIGH | 356 -> 281 ms (2.81 -> 3.56 fps, +27%) | 333>299 / 300>233 / 400>316 / 316>249 / 400>283 / 383>300 | 6.8 -> 8.5 | 61 -> 66 | 157k -> 169k | 533 -> 731 |
+| Phone LOW | 169 -> 164 ms (5.90 -> 6.10 fps, +3%) | 166>166 / 166>150 / 166>166 / 166>150 / 183>166 / 166>183 | 5.7 -> 6.9 | 58 -> 66 | 99k -> 106k | 200 -> 298 |
+| Desktop HIGH | 642 -> 428 ms (1.56 -> 2.34 fps, +50%) | 566>366 / 533>383 / 700>466 / 483>300 / 816>466 / 749>583 | 1.3 -> 1.7 | 58 -> 66 | 157k -> 170k | 356 -> 500 |
+| Desktop LOW | 225 -> 203 ms (4.45 -> 4.93 fps, +11%) | 200>183 / 200>183 / 233>233 / 200>166 / 266>216 / 249>233 | 1.2 -> 1.5 | 58 -> 66 | 99k -> 105k | 169 -> 312 |
+
+- **Frame rate is at least as good as main on all four profiles** (the one map-profile that reads slower, Bunker on phone
+  LOW, is one 16.7 ms timer step: 166 -> 183). Why it is faster: the ground is one texture read per pixel instead of a lit,
+  normal-mapped material. Desktop LOW was first measured SLOWER (222 -> 261 ms: the new out-of-bounds terrain is pixels main
+  never shaded); LOW on a wide screen now draws only the arena and a narrow flank that fades into space, as main did.
+- Draw CPU is +1.7 ms on the 4x-throttled phone profile (+0.4 ms unthrottled): halos, tread prints, shadows, the environment
+  layer. Draw calls +5 to +8 (tank / crate ground shadows, sky, marks, spinning parts); triangles +8% (the maps themselves are
+  12k - 40k triangles; tanks are the rest). Shader programs in a match: 14 - 17 -> 19 - 24.
+- **Map build**: +0.1 to +0.3 s on the throttled phone profile; in play it happens behind the VS screen (first battle frame
+  after the VS screen: 6 ms). The very first map of a session also makes the detail textures (~1 s more on the throttled
+  software renderer, once).
+- **Download size to the first match**: 3.45 - 4.49 MB on main and 3.64 - 4.05 MB on the branch across runs (the spread is which
+  tank models the match happens to draw). **The maps add 44 KB gzipped (three scripts; about 1.1%), and 0 bytes of art.**
+  At 9 Mbps that is 0.04 s; at 1.6 Mbps 0.22 s.
+- **Time to first match**: boot to "3D ready" 2.1 - 2.2 s -> 2.8 - 2.9 s (phone profile), 0.9 s -> 1.6 s (desktop). The three map
+  scripts load beside the 3D engine, not in the page's blocking list, so first paint is unchanged; this harness serves every
+  request one at a time through a Python handler, which is most of that gap (a real host sends them in parallel).
+  A direct start with no VS screen (tests, the coached first match): first battle frame 0.95 s -> 1.1 - 1.25 s (phone
+  profile), 0.27 s -> 0.73 - 0.82 s (desktop, where the software renderer bakes a 2000x1500 ground). In normal play the VS
+  screen hides the build.
+- Memory: one ground texture per map at the screen's own density (phone 3x: 1404x2890; desktop 1080p: 2010x1489; LOW phone:
+  468x963), four 256 px detail tiles, one 256 px Earth. Peak during the bake is about 2.5x the ground texture (two masks),
+  freed at once. 12 map loads in a row: geometries and textures do not grow.
+
+### State at each push (branch `claude/arcade-3d-maps-rebuild-q1w6vj`)
+- `162d368` slice 1: Arena3D, ArenaProps, MapEnv, all six maps building, tread prints, ambience.
+- slice 2: critic round 1 fixes, lazy-loaded modules, `arena-maps.mjs`, capture and perf tools.
+- slice 3: critic rounds 2 - 3, thumbnails, CI wiring, load tool. slice 4: critic round 4. `56e4484` slice 5: rounds 5 - 6.
+- `cf0862b` slice 6: both reviewers' fixes, the VS-screen pre-build (both reviewers PASS at this commit).
+- final: re-review follow-ups, LOW on wide screens, softer tread prints, sheets, numbers, build stamp (see Release record).
+
+### What is left (not blocking; for the owner or a later session)
+- The owner's iPhone / Telegram playtest (checklist above): the only check no agent could do.
+- Weather and hazards (rain, dust storms, meteor showers, solar flares, crater vents, ceiling lasers, a maglev train): the
+  layer and anchors are in place (API above); nothing of them is built.
+- Longshot / Canyon rock to reference level needs sculpted meshes (Meshy) rather than code-built strata.
+- Wiki map pictures (`python3 dev/gallery3d.py`), and the three stale browser tests that already fail on main.
+- **Proposals only (not shipped; economy untouched):** none were needed for this session.

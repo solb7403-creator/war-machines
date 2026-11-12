@@ -194,7 +194,7 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
   quadPass(renderer,m,rt);m.dispose();R[ek]=rt;return rt.texture;
  }
  const GROUND_VS='uniform vec4 uRect;varying vec2 vUv;varying float vZ;void main(){vUv=(position.xz-uRect.xy)/uRect.zw;vZ=position.z;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
- const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;void main(){vec4 t=texture2D(tMap,vUv);vec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*smoothstep(uFog.y,uFog.z,vZ));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
+ const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;void main(){vec4 t=texture2D(tMap,vUv);vec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*(1.0-smoothstep(uFog.z,uFog.y,vZ)));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
  function materials(renderer,q,envMap){
   const R=res(renderer),key=q;if(R.mats[key]){if(envMap)setEnvMap(renderer,envMap);return R.mats[key];}
   const tl=tiles(renderer,q),high=q!=='low';let M;
@@ -224,7 +224,7 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
  const MASK_VS='uniform vec4 uRect;attribute vec3 color;varying vec3 vC;void main(){vC=color;vec2 p=(position.xz-uRect.xy)/uRect.zw*2.0-1.0;gl_Position=vec4(p,0.0,1.0);}';
  const MASK_FS='varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.0);}';
  const BAKE_FS=`precision highp float;varying vec2 vUv;
-uniform vec4 uRect,uPaintRect,uArena;uniform vec2 uTexel;uniform vec3 uL,uBase,uTopBase,uAmbRef;uniform float uSeed,uRelief,uPeb,uOutDim,uTopLit,uTopKind,uMottle,uWallPeb,uTrackK;
+uniform vec4 uRect,uPaintRect,uArena;uniform vec2 uTexel;uniform vec3 uL,uBase,uTopBase,uAmbRef;uniform float uSeed,uRelief,uPeb,uOutDim,uTopLit,uTopKind,uMottle,uWallPeb,uTrackK,uEdge;
 uniform sampler2D tShadow,tTop,tPaint,tDecal,tGlow;uniform int uNc,uNb,uNi;uniform vec4 uCr[`+NCR+`];uniform vec4 uBox[`+NBX+`];uniform vec3 uCir[`+NCI+`];
 `+NOISE+`
 float sdBox(vec2 p,vec2 c,vec2 h){vec2 d=abs(p-c)-h;return length(max(d,0.))+min(max(d.x,d.y),0.);}
@@ -313,6 +313,7 @@ void main(){
  dim*=1.-.3*(1.-smoothstep(-3.,-.4,P.y));   // the strip the HUD sits over (north of the arena) is darker still
  {float osat=.5*smoothstep(.3,2.5,od);float lum=dot(alb,vec3(.3,.55,.15));alb=mix(alb,vec3(lum)*vec3(.96,.99,1.05),osat);}
  if(top>.5&&tm.g>.3)dim=.62*(1.-.6*smoothstep(0.,15.,od))*(1.-.3*(1.-smoothstep(-3.,-.4,P.y)));   // wall tops are not playfield: one even, darker value, fading far out
+ if(uEdge>.5)dim*=smoothstep(0.,2.6,min(P.x-uRect.x,uRect.x+uRect.z-P.x));   // LOW on a wide screen: the flanks fade into space instead of being drawn
  vec3 gl=texture2D(tGlow,u).rgb*ip;
  vec3 o=alb*ao*dim*(1.+gl*2.2/max(uAmbRef,vec3(.02)));
  gl_FragColor=vec4(clamp(o,0.,1.),a);
@@ -348,12 +349,13 @@ void main(){
   const R=res(renderer),bk=(th.plates?'P':'')+(M.soft?'L':'');R.bake=R.bake||{};
   const U={
    uRect:{value:rectU},uPaintRect:{value:new T.Vector4(pr[0],pr[1],pr[2],pr[3])},uArena:{value:new T.Vector4(0,0,AW,AH)},uTexel:{value:new T.Vector2(rect[2]/w,rect[3]/h)},uL:{value:new T.Vector3(L[0],L[1],L[2])},
-   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uTrackK:{value:th.trackK||0.15},
+   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uEdge:{value:M.edgeFade?1:0},uTrackK:{value:th.trackK||0.15},
    uNc:{value:Math.min(NCR,M.craters.length)},uNb:{value:Math.min(NBX,M.aoBoxes.length)},uNi:{value:Math.min(NCI,M.aoCircles.length)},tShadow:{value:shadow.texture},tTop:{value:top.texture},tPaint:{value:tP},tDecal:{value:tD},tGlow:{value:tG},uCr:{value:cr.slice(0,NCR)},uBox:{value:bx.slice(0,NBX)},uCir:{value:ci.slice(0,NCI)}};
   let bm=R.bake[bk];if(!bm){bm=R.bake[bk]=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:BAKE_FS,defines:Object.assign(th.plates?{PLATES:1}:{},M.soft?{LITE:1}:{}),depthTest:false,depthWrite:false,toneMapped:false,uniforms:U});}
   else for(const n in U)bm.uniforms[n].value=U[n].value;   // the shader is kept per variant: no recompile per map
   const dbg=renderer.debug,oldErr=dbg.onShaderError;let bad=false;dbg.onShaderError=()=>{bad=true;};
-  try{quadPass(renderer,bm,M.rt);}finally{dbg.onShaderError=oldErr;top.dispose();shadow.dispose();tP.dispose();tD.dispose();tG.dispose();}
+  try{quadPass(renderer,bm,M.rt);}finally{dbg.onShaderError=oldErr;for(const n of ['tShadow','tTop','tPaint','tDecal','tGlow'])bm.uniforms[n].value=null;   // the kept shader must not hold the canvases
+   top.dispose();shadow.dispose();tP.dispose();tD.dispose();tG.dispose();}
   if(bad){bm.dispose();delete R.bake[bk];throw Error('Arena3D: the ground bake shader did not compile');}   // the earlier map path takes over
  }
 
@@ -368,7 +370,7 @@ void main(){
   const env=o.env||null;if(env)env.use(id,k.anchors);   // the map's preset first: the sun the bake uses is the layer's sun
   const sun=env?env.sunDir():(()=>{const d=(MapEnv.PRESETS[id]||MapEnv.PRESETS.classic).sunDir,l=Math.hypot(d[0],d[1],d[2]);return [d[0]/l,d[1]/l,d[2]/l];})();
   k.sun=sun;
-  const M={id,q,theme:th,kit:k,view,sun,env,soft:!!o.soft,craters:[],aoBoxes:[],aoCircles:[],cam0:new T.OrthographicCamera(-1,1,1,-1,0,1),map:MP,thumb:!!o.thumb};
+  const M={id,q,theme:th,kit:k,view,sun,env,soft:!!o.soft,edgeFade:!!o.edgeFade,craters:[],aoBoxes:[],aoCircles:[],cam0:new T.OrthographicCamera(-1,1,1,-1,0,1),map:MP,thumb:!!o.thumb};
   // what the rules know: solids give contact shading, craters their bowls
   for(const w of MP.walls||[])M.aoBoxes.push([w[0],w[1],w[2],w[3]]);
   for(const r of MP.rocks||[])M.aoCircles.push([r[0],r[1],r[2]*0.92]);

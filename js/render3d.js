@@ -109,7 +109,10 @@ const softGL=()=>window.LUNAR_SOFT_GL!==undefined?!!window.LUNAR_SOFT_GL:(typeof
 // the ground the screen can show (plus a margin for screen shake and for tops that stand above the floor)
 function arenaView(){
  const s=sc||20,vx0=-ox/s,vx1=(vw-ox)/s,vz0=-oy/(s*GKC),vz1=(vh-oy)/(s*GKC);
- return {x0:Math.floor(vx0-1.2),x1:Math.ceil(vx1+1.2),z0:Math.floor(vz0-1),z1:Math.ceil(vz1+3),vis:{x0:vx0,x1:vx1,z0:vz0,z1:vz1}};
+ // LOW on a wide screen: only the arena and a narrow flank are drawn (the rest stays space, as before this session), so LOW
+ // never shades more pixels than it used to
+ const lowWide=R3.q==='low'&&(vx0<-5.5||vx1>W+5.5),x0=lowWide?Math.max(-4.5,Math.floor(vx0-1.2)):Math.floor(vx0-1.2),x1=lowWide?Math.min(W+4.5,Math.ceil(vx1+1.2)):Math.ceil(vx1+1.2);
+ return {x0,x1,z0:Math.floor(vz0-1),z1:Math.ceil(vz1+3),edge:lowWide,vis:{x0:Math.max(vx0,x0),x1:Math.min(vx1,x1),z0:vz0,z1:vz1}};
 }
 function arenaEnvMap(){try{if(typeof Equipment3D!=='undefined'&&Equipment3D.active()){const m=Equipment3D.material('hf_high_paint');return m&&m.envMap||null;}}catch(e){}return null;}
 function mkMats(){
@@ -331,18 +334,18 @@ function mapKeyNow(){   // the key of the map this frame wants; recomputed only 
 }
 function ensureMap(){
  const key=mapKeyNow();
- if(B3.mapKey===key){MK.since=0;return;}
+ if(B3.mapKey===key){MK.since=0;MK.sinceKey='';return;}
  // same map and quality, only the viewport moved (a window drag, a rotation, a sheet sliding): keep drawing the map that is
  // up and rebuild once the size has held still for a quarter of a second, not on every frame of the drag
  if(B3.map&&B3.map.arena&&MK.arena&&B3.mapId===curMap&&B3.mapQ===R3.q){const now=performance.now();if(MK.sinceKey!==key){MK.sinceKey=key;MK.since=now;return;}if(now-MK.since<250)return;}
  MK.since=0;MK.sinceKey='';
  const arena=MK.arena,view=MK.view,dens=MK.dens;
  if(qualityWatch)GraphicsQuality.reset(qualityWatch,performance.now()/1000);
- if(B3.map){RS.remove(B3.map.group);disposeMap3D(B3.map);B3.map=null;}
+ if(B3.map){RS.remove(B3.map.group);disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();if(m.sh)m.sh.material.dispose();}B3.crates.clear();   // crates are drawn in the map's own style
  R3.sunD=null;R3.arenaEnv=0;
  if(arena){
-  try{B3.map=Arena3D.build(curMap,{renderer:RR,q:R3.q,view,env:ENV,soft:softGL(),density:dens,phone:typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches,envMap:R3.q==='high'?arenaEnvMap():null});
+  try{B3.map=Arena3D.build(curMap,{renderer:RR,q:R3.q,view,env:ENV,soft:softGL(),density:dens,edgeFade:!!view.edge,phone:typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches,envMap:R3.q==='high'?arenaEnvMap():null});
    ENV.onRebake=d=>{R3.sunD=null;if(B3.map&&B3.map.rebake)B3.map.rebake(d);};}
   catch(e){try{console.warn('Arena3D unavailable',e);}catch(_){}window.LUNAR_ARENA3D=false;B3.map=null;MK.key='';
    R3.lights.key.position.set(-6,14,-5);RR.setClearColor(0x0a0e17,1);if(RS.fog)RS.fog=null;}   // back to the earlier maps, with their light and sky
@@ -395,7 +398,7 @@ function frame3D(shx,shy){
  const now=performance.now(),rawDt=B3.last?(now-B3.last)/1000:0.016,dt=B3.step||Math.min(0.05,rawDt);B3.last=now;B3.t+=dt;const t=B3.t;   // B3.step: a fixed frame step (dev/tests/super-vfx-capture.py renders effects frame by frame)
  perfWatch(rawDt);
  if(!use3D())return;
- ensureMap();matchObjs();
+ ensureMap();if(!B3.map)return;matchObjs();
  const lfx=lunarFx();lunarPulse(t,lfx);
  const s=sc,ox2=ox+shx,oy2=oy+shy;
  RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();
@@ -515,7 +518,7 @@ function frame3D(shx,shy){
  if(cry)cry.loose.forEach((c,i)=>{const m=poolGet('cry',()=>new THREE.Mesh(G.oct,G.cryM));const k=Math.min(1,0.3+c.age*2);
   m.position.set(c.x,(c.l===1?M3.DECK_H:0)+0.55+0.14*Math.sin(now/320+i),c.y);m.scale.set(0.24*k,0.38*k,0.24*k);m.rotation.y=now/600+i;once(PSA,c.x,m.position.y,c.y,1.1*k,'#b98cff',0.45);});
  // Moon Zones: glowing pad, a light column, the capture ring
- if(gzones)for(const z of gzones){const col=z.own===0?TC[0]:z.own===1?TC[1]:'#c9d6e3';
+ if(gzones)for(const z of gzones){const col=z.own===0?TC[0]:z.own===1?TC[1]:(B3.map.arena&&B3.map.theme.zoneN)||'#c9d6e3';   // a neutral zone on pale ground is drawn dark so it still reads
   const zA=!!B3.map.arena,zm=zA?decMat:addMat;   // sunlit maps: normal blending, so the owner's colour stays the owner's colour
   const d=poolGet(zA?'zdiscA':'zdisc',()=>new THREE.Mesh(G.disc,zm('#ffffff',0.15)));d.material.color.set(col);d.material.opacity=0.2+0.07*Math.sin(now/300);d.scale.setScalar(z.r);d.position.set(z.x,0.03,z.y);
   const rg=poolGet(zA?'zringA':'zring',()=>new THREE.Mesh(G.ringT,zm('#ffffff',0.9)));rg.material.color.set(col);rg.scale.setScalar(z.r);rg.position.set(z.x,0.04,z.y);
