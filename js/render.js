@@ -27,9 +27,12 @@ const hOf=b=>D3on()?heightAt(b):0;   // how high a tank stands (the deck, a ramp
 // A tank deep under a bridge deck is out of the camera's sight (the deck is solid, nothing is see-through): its health bar
 // and marker hang under the lip of the tunnel's near mouth instead of floating on the deck as if it stood up there.
 // Returns true when pinned. Your own tank is never pinned: the camera goes down to it.
+let WPtop=0,WPslot=0;   // WPtop: where the tank's top is on the screen; WPslot: its place in the stack of bars hanging at one tunnel mouth
+const pinned=b=>{if(!BR||b===me||(b.elev||0)!==0||b.hp<=0)return false;const d=BR.deck;return b.x>d[0]&&b.x<d[0]+d[2]&&b.y>d[1]&&b.y<d[1]+d[3]-0.9;};
 function WPunit(b){
- if(CAM()&&BR&&b!==me&&(b.elev||0)===0&&ArenaCam.C.pitch>30){const d=BR.deck;if(b.x>d[0]&&b.x<d[0]+d[2]&&b.y>d[1]&&b.y<d[1]+d[3]-0.9){WP(b.x,d[1]+d[3]+0.02,(typeof B3!=='undefined'&&B3.map&&B3.map.deckUnder||1.8)-0.1);return true;}}
- WP(b.x,b.y,hOf(b));return false;
+ if(CAM()&&ArenaCam.C.pitch>30&&pinned(b)){const d=BR.deck,t=BR.tunnels.find(t=>b.x>=t[0]&&b.x<=t[0]+t[1]);WPslot=0;for(const u of units)if(u!==b&&u.id<b.id&&pinned(u)&&(!t||u.x>=t[0]&&u.x<=t[0]+t[1]))WPslot++;
+  WP(t?t[0]+t[1]/2:b.x,d[1]+d[3]+0.02,(typeof B3!=='undefined'&&B3.map&&B3.map.deckUnder||1.8)-0.1);WPtop=WPy;return true;}
+ const h=hOf(b);if(CAM()){WP(b.x,b.y,h+1.1*(b.dscale||1)*(b.boss?1.5:1));WPtop=WPy;}WP(b.x,b.y,h);if(!CAM())WPtop=WPy;return false;
 }
 const KU=()=>CAM()?Math.max(sc*0.8,Math.min(sc*1.3,WPk)):sc;   // the size of a label by a tank: it follows the tank's depth, within limits, so far labels stay readable
 const hudTop=()=>CAM()?SAT+Math.max(6,sc*0.3):oy-HUD*sc,hudY0=()=>hudTop()+HUD*sc,hudX0=()=>CAM()?Math.max(8,sc*0.4):X(0);   // the chase camera has no arena rectangle: the HUD hangs from the top of the screen
@@ -119,7 +122,7 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,ski
 }
 function star5(ctx,x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*0.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}
 function drawTank(b,col){
- const pin=WPunit(b),px=WPx,ku=KU(),r=R*(CAM()?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc)*(b.dscale||1)*(pin?0.8:1),py=WPy+(pin?r*3.1:0),hd=b.hd===undefined?b.ang:b.hd;
+ const pin=WPunit(b),px=WPx,ku=KU(),r=R*(CAM()?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc)*(b.dscale||1)*(pin?0.8:1),py=pin?WPy+r*(3.1+WPslot*2.1):CAM()?WPtop+r*1.2:WPy,hd=b.hd===undefined?b.ang:b.hd;   // chase camera: the bar hangs a fixed way above the tank's top, whatever the pitch
  const fl=b.flash>0?(armor(b)>0?BUFF.arm.c:'#ffe27a'):null;
  if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits,b.skin,b.ap);
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
@@ -127,7 +130,7 @@ function drawTank(b,col){
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
   g.fillStyle=b.team!==0?'#ff4d5e':b===me?'#5fe3a1':'#4d9fff';g.fillRect(bx,by,bw*hf,hh);
   g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffcf4a';g.fillRect(bx,by+hh+1,bw*f,sh);
-  if(pin){const s=Math.max(4,r*0.42),cy=by+hh+sh+5;g.fillStyle=b.team!==0?'#ff4d5e':'#4d9fff';g.strokeStyle='rgba(0,0,0,.7)';g.lineWidth=1.5;for(const dx of [-s*1.3,0,s*1.3]){g.beginPath();g.moveTo(px+dx-s*0.55,cy);g.lineTo(px+dx+s*0.55,cy);g.lineTo(px+dx,cy+s*0.8);g.closePath();g.stroke();g.fill();}}   // three small arrows down: this tank is under the deck
+  if(pin){const s=Math.max(6,r*0.7),cy=by+hh+sh+5;g.fillStyle=b.team!==0?'#ff4d5e':'#4d9fff';g.strokeStyle='rgba(0,0,0,.7)';g.lineWidth=1.5;for(const dx of [-s*1.3,0,s*1.3]){g.beginPath();g.moveTo(px+dx-s*0.55,cy);g.lineTo(px+dx+s*0.55,cy);g.lineTo(px+dx,cy+s*0.8);g.closePath();g.stroke();g.fill();}}   // three small arrows down: this tank is under the deck
   // the counter triangle, read from your side: a green ▲ by the bar of a tank you counter, a red ▼ on one that counters you
   if(me&&b!==me&&b.team!==me.team&&!b.boss&&!me.boss&&me.hp>0){const up=COUNTER[me.cls]===b.cls,dn=COUNTER[b.cls]===me.cls;
    if(up||dn){const s=Math.max(5,(hh+sh)*0.95),cx=bx-s-4,cy=by+(hh+sh+1)/2;g.beginPath();
@@ -552,9 +555,10 @@ function drawUnitArt(ctx,w,h,u){
 }
 
 // ---- battle input: floating joystick, SUPER button, keyboard ----
-const btn=()=>({x:vw-62,y:vh-96-SAB,r:40});
-const dashBtn=()=>({x:vw-150,y:vh-70-SAB,r:30});
-const shieldBtn=()=>({x:vw-142,y:vh-158-SAB,r:30});
+const BS=()=>CAM()&&KEYHINT?1.3:1;   // the chase HUD on a desktop: buttons a third bigger (the critic: 60 px on a 1920 px screen)
+const btn=()=>{const s=BS();return {x:vw-62*s,y:vh-96*s-SAB,r:40*s};};
+const dashBtn=()=>{const s=BS();return {x:vw-150*s,y:vh-70*s-SAB,r:30*s};};
+const shieldBtn=()=>{const s=BS();return {x:vw-142*s,y:vh-158*s-SAB,r:30*s};};
 let aim=null;   // {id,sx,sy,x,y,on}: dragging from SUPER to aim it
 let tapFocus=-1,tapCand=null;   // tap-to-target: unit id your cannon is locked onto, and the tap being tracked
 function resetTapFocus(){tapFocus=-1;tapCand=null;}
@@ -609,7 +613,8 @@ function supUiTick(){   // drop the bar when its super is over (or never started
  if(!me.sup&&now-supUI.t0>(SUP_BAR_T+SUP_REL)*1000){supUI=null;return;}   // the server never started it (a slow link still gets the whole sweep to tap in)
  if(now-supUI.t0>(SUP_BAR_T+SUP_REL+0.6)*1000)supShow(0,1);   // live safety: nothing came back from the server
 }
-const supBarRect=()=>{const w=Math.min(300,vw-36),wide=vw>vh*1.2;return {x:(vw-w)/2,y:wide?vh-150-SAB:vh-244-SAB,w,h:22};};
+const supBarRect=()=>{const wide=vw>vh*1.2;if(CAM()&&!wide){const M=miniRect(),w=Math.min(300,vw-2*(M.x+M.w+14));return {x:(vw-w)/2,y:hudY0()+sc*1.25+38,w,h:22};}   // an upright phone under the chase camera: just under the HUD, clear of the fight round your tank
+ const w=Math.min(300,vw-36);return {x:(vw-w)/2,y:wide?vh-150*BS()-SAB:vh-244-SAB,w,h:22};};
 function drawSupBar(g){
  if(!supUI)return;
  const B=supBarRect(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),done=supUI.oc!==undefined;
@@ -821,7 +826,7 @@ function drawBattle(){
   g.restore();}
  // tanks: ground level first (the bridge covers tanks in its tunnels)
  const drawOne=(b,col)=>{
-  const pin=WPunit(b),px=WPx,py=WPy,ku=KU(),r=R*(CH?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc);
+  const pin=WPunit(b),px=WPx,py=WPy,ku=KU(),r=R*(CH?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc),pt=CH&&!pin?WPtop+r*1.2:py;   // pt: labels hang from the tank's top under the chase camera
   if(!D3){
    g.save();g.globalAlpha=0.35;g.fillStyle=col;g.beginPath();g.ellipse(px,py+r*0.95,r*1.2,r*0.5,0,0,7);g.fill();g.restore();   // team underglow
    if(b===me){const pl=0.7+0.3*Math.sin(performance.now()/280);g.save();g.globalAlpha=pl;g.strokeStyle='#ffd24a';g.lineWidth=3;g.beginPath();g.ellipse(px,py+r*0.35,r*1.62,r*1.22,0,0,7);g.stroke();g.restore();}   // your tank wears a pulsing gold ring: find yourself in any cluster
@@ -852,10 +857,10 @@ function drawBattle(){
    g.restore();}
   {const mine=b===me,bob=mine?Math.sin(performance.now()/300)*sc*0.09:0,fs=Math.round(ku*(mine?0.95:0.48));   // floating team chevron over every tank; yours is gold and bigger, the rest stay small and quiet so the map never looks cluttered
    g.save();g.globalAlpha=mine?1:0.55;g.fillStyle=mine?'#ffd24a':b.team!==0?'#ff4d5e':'#4d9fff';g.font=font(fs);g.textAlign='center';g.textBaseline='middle';
-   if(!pin)g.fillText('▼',px,py-r*(mine&&CH?3.05:1.66)*(D3&&b.boss?1.6:1)+bob);g.restore();}
+   if(!pin)g.fillText('▼',px,CH?pt-r*(mine?3.05:1.66):py-r*1.66*(D3&&b.boss?1.6:1)+bob);g.restore();}
   if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(ku*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.vl>=3?'#ffcf4a':'rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
-  if(b.boss){const fs=Math.max(11,Math.round(ku*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,py-r*2.0*(D3?1.6:1)-fs*0.6);g.textBaseline='top';}
-  if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(ku*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':b.vl>=3?'#ffcf4a':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
+  if(b.boss){const fs=Math.max(11,Math.round(ku*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,CH?pt-r*3.4-fs*0.6:py-r*2.0*(D3?1.6:1)-fs*0.6);g.textBaseline='top';}
+  if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(ku*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':b.vl>=3?'#ffcf4a':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,(CH?pt:py)-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
  for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);
@@ -898,7 +903,7 @@ function drawBattle(){
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
  const up=D3?sc*0.6:0;   // in 3D, text floats from the top of the tanks
  for(const q of pops){WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.8));g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(1.4-q.t)*1.2-ku));g.globalAlpha=1;}
- for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.min(ku,sc*1.05):ku)*0.66*(q.z||1)));if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));}g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));g.globalAlpha=1;}
+ for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.max(sc*0.62,Math.min(WPk,sc*1.05)):ku)*0.66*(q.z||1)));if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));}g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));g.globalAlpha=1;}
  g.restore();
  if(CH)drawEdges();   // who and what is outside the frame
  g.restore();   // end shake
@@ -910,10 +915,13 @@ function drawBattle(){
 // their range), a super that is about to reach you a flashing warning, team mates a small blue dot, objectives a gold or
 // purple diamond. Shape and colour both tell them apart. The frame is the screen minus the HUD and the buttons.
 const EDGE={x:0,y:0,a:0},EDL=[];
-function edgeBox(){return {l:16,t:hudY0()+sc*1.5,r:vw-16,b:vh-SAB-18};}
-function edgeFix(e){   // keep a marker off the three buttons in the bottom right corner
- const bx=vw-212,by=vh-SAB-214;if(e.x>bx&&e.y>by){if(vw-16-e.x<vh-SAB-18-e.y)e.y=by;else e.x=bx;}
- const M=miniRect();if(e.x<M.x+M.w+10&&e.y<M.y+M.h+10){if(e.x-M.x<e.y-M.y)e.y=M.y+M.h+10;else e.x=M.x+M.w+10;}return e;}
+const edgeWide=()=>vw>vh*1.2;
+function edgeBox(){return {l:16,t:edgeWide()?14:hudY0()+sc*1.5,r:vw-16,b:vh-SAB-18};}   // a wide screen: the true top edge (the HUD only fills its corners and the middle)
+const btnZone=()=>{const s=BS();return {x:vw-212*s,y:vh-SAB-214*s};};
+function edgeFix(e){   // keep a marker off the buttons, the minimap and the HUD
+ const Z=btnZone();if(e.x>Z.x&&e.y>Z.y){if(vw-16-e.x<vh-SAB-18-e.y)e.y=Z.y;else e.x=Z.x;}
+ const M=miniRect();if(e.x<M.x+M.w+10&&e.y<M.y+M.h+10){if(e.x-M.x<e.y-M.y)e.y=M.y+M.h+10;else e.x=M.x+M.w+10;}
+ if(edgeWide()&&e.y<hudY0()){const pad=Math.max(8,sc*0.4),bw=Math.min(sc*7.2,(vw-pad*2)/2-sc*2.6);if(e.x<pad+bw+14||e.x>vw-pad-bw-14||Math.abs(e.x-vw/2)<sc*2.6)e.y=hudY0()+6;}return e;}
 // a marker whose tip touches the frame's edge. shape 0: a wedge (enemy), 1: a dot with a pointer (team mate), 2: a diamond
 // (objective). Leaves the canvas translated to the marker's middle: the caller draws its extras, then g.restore()
 function edgeChip(e,r,fill,line,shape,a){
@@ -926,9 +934,12 @@ function edgeChip(e,r,fill,line,shape,a){
 }
 function drawEdges(){
  if(state!=='play'&&state!=='round')return;
- const B=edgeBox(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),alive=!!me&&me.hp>0,es=Math.max(1,Math.min(1.9,sc/19.5));   // es: markers grow with the HUD (a desktop's are nearly twice a phone's)
+ const B=edgeBox(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),alive=!!me&&me.hp>0,es=Math.max(1,Math.min(2.4,sc/17));   // es: markers grow with the HUD (a desktop's are nearly twice a phone's)
  let ax,ay;if(alive){WP(me.x,me.y,hOf(me));ax=WPx;ay=WPy;}
- const at=(x,y,h)=>{const e=ArenaCam.pointer(x,y,h,B,ax,ay,EDGE);return e?edgeFix(e):null;};
+ const Z=btnZone();
+ const at=(x,y,h)=>{const e=ArenaCam.pointer(x,y,h,B,ax,ay,EDGE);if(e)return edgeFix(e);
+  if(WP(x,y,h)&&WPx>Z.x+8&&WPy>Z.y+8){if(WPx-Z.x<WPy-Z.y){EDGE.x=Z.x;EDGE.y=Math.min(WPy,vh-SAB-24);EDGE.a=0;}else{EDGE.x=Math.min(WPx,vw-24);EDGE.y=Z.y;EDGE.a=Math.PI/2;}return EDGE;}   // under your own buttons: marked on the edge of the button corner
+  return null;};
  // enemies: the nearest four that are outside the frame
  EDL.length=0;if(me)for(const u of units){if(u.hp<=0||u===me||u.team===me.team)continue;EDL.push([Math.hypot(u.x-me.x,u.y-me.y),u]);}
  EDL.sort((a,b)=>a[0]-b[0]);let shown=0;
@@ -960,18 +971,22 @@ function drawEdges(){
 // The camera follows your tank, so the whole arena is no longer on the screen at once. The minimap gives that back: the
 // arena's solids, the bridge, objectives, every tank that is alive (the same things the full-map view always showed, to
 // every player alike) and the part of the arena your screen is showing.
-const miniRect=()=>{const u=Math.max(2.3,Math.min(5.6,sc*0.15-0.45));return {x:hudX0(),y:hudY0()+sc*0.45,w:W*u,h:H*u,u};};
-const MG=[0,0];
+const miniRect=()=>{const u=sc<25?Math.max(2.3,sc*0.128):Math.min(9,sc*0.235);return {x:hudX0(),y:hudY0()+sc*0.45,w:W*u,h:H*u,u};};
+const MG=[0,0],MINI={key:'',c:null};
 function drawMini(){
  const M=miniRect(),u=M.u,mx=x=>M.x+x*u,my=y=>M.y+y*u,now=performance.now();
  g.save();
- g.fillStyle='rgba(6,10,18,.66)';rr(g,M.x-3,M.y-3,M.w+6,M.h+6,5);g.fill();g.strokeStyle='rgba(223,231,242,.22)';g.lineWidth=1;g.stroke();
+ g.fillStyle=u<4?'rgba(6,10,18,.56)':'rgba(6,10,18,.66)';rr(g,M.x-3,M.y-3,M.w+6,M.h+6,5);g.fill();g.strokeStyle='rgba(223,231,242,.22)';g.lineWidth=1;g.stroke();
  g.beginPath();g.rect(M.x,M.y,M.w,M.h);g.clip();
- g.fillStyle='rgba(255,77,94,.10)';g.fillRect(M.x,M.y,M.w,5*u);g.fillStyle='rgba(77,159,255,.10)';g.fillRect(M.x,my(H-5),M.w,5*u);   // the two ends
- g.fillStyle='rgba(200,210,225,.42)';for(const w of baseWalls)g.fillRect(mx(w[0]),my(w[1]),w[2]*u,w[3]*u);
- for(const r of rocks){g.beginPath();g.arc(mx(r[0]),my(r[1]),r[2]*u,0,7);g.fill();}
- if(BR){const [dx,dy,dw,dh]=BR.deck;g.fillStyle='rgba(120,160,200,.5)';g.fillRect(mx(dx),my(dy),dw*u,dh*u);g.fillStyle='rgba(6,10,18,.75)';for(const [tx,tw] of BR.tunnels)g.fillRect(mx(tx),my(dy),tw*u,dh*u);
-  g.fillStyle='rgba(120,160,200,.3)';for(const [rx,ry,rw,rh] of BR.ramps)g.fillRect(mx(rx),my(ry),rw*u,rh*u);}
+ {   // the solids are drawn once per map (and whenever a crate breaks) into a small picture
+  const key=curMap+'|'+u.toFixed(2)+'|'+baseWalls.length+'|'+dpr;
+  if(MINI.key!==key){MINI.key=key;const c=MINI.c||(MINI.c=document.createElement('canvas'));c.width=Math.ceil(M.w*dpr);c.height=Math.ceil(M.h*dpr);const x=c.getContext('2d');x.setTransform(dpr*u,0,0,dpr*u,0,0);x.clearRect(0,0,W,H);
+   x.fillStyle='rgba(255,77,94,.10)';x.fillRect(0,0,W,5);x.fillStyle='rgba(77,159,255,.10)';x.fillRect(0,H-5,W,5);   // the two ends
+   x.fillStyle='rgba(200,210,225,.42)';for(const w of baseWalls)x.fillRect(w[0],w[1],w[2],w[3]);
+   for(const r of rocks){x.beginPath();x.arc(r[0],r[1],r[2],0,7);x.fill();}
+   if(BR){const [dx,dy,dw,dh]=BR.deck;x.fillStyle='rgba(120,160,200,.5)';x.fillRect(dx,dy,dw,dh);x.fillStyle='rgba(6,10,18,.75)';for(const [tx,tw] of BR.tunnels)x.fillRect(tx,dy,tw,dh);
+    x.fillStyle='rgba(120,160,200,.3)';for(const [rx,ry,rw,rh] of BR.ramps)x.fillRect(rx,ry,rw,rh);}}
+  g.drawImage(MINI.c,M.x,M.y,M.w,M.h);}
  if(storm){g.fillStyle='rgba(104,48,184,.35)';g.beginPath();g.rect(M.x,M.y,M.w,M.h);g.arc(mx(storm.x),my(storm.y),Math.max(0.5,storm.r*u),0,Math.PI*2,true);g.fill('evenodd');g.strokeStyle='#c79bff';g.lineWidth=1;g.beginPath();g.arc(mx(storm.x),my(storm.y),Math.max(0.5,storm.r*u),0,7);g.stroke();}
  if(gzones)for(const z of gzones){const c=z.own===0?TC[0]:z.own===1?TC[1]:'#dfe7f2';g.strokeStyle=c;g.lineWidth=1.5;g.beginPath();g.arc(mx(z.x),my(z.y),z.r*u,0,7);g.stroke();g.globalAlpha=0.25;g.fillStyle=c;g.fill();g.globalAlpha=1;
   if(z.next){g.strokeStyle='#ffcf4a';g.setLineDash([2,2]);g.beginPath();g.arc(mx(z.next.x),my(z.next.y),ZONE_R*u,0,7);g.stroke();g.setLineDash([]);}}
@@ -981,7 +996,7 @@ function drawMini(){
  if(typeof ArenaCam!=='undefined'){const P=[[0,hudY0()],[vw,hudY0()],[vw,vh],[0,vh]];let ok=true;g.beginPath();for(let i=0;i<4;i++){const q=ArenaCam.ground(P[i][0],P[i][1],0,MG);if(!q){ok=false;break;}if(i)g.lineTo(mx(q[0]),my(q[1]));else g.moveTo(mx(q[0]),my(q[1]));}
   if(ok){g.closePath();g.fillStyle='rgba(255,255,255,.07)';g.fill();g.strokeStyle='rgba(255,255,255,.4)';g.lineWidth=1;g.stroke();}}
  // tanks: enemies, then your side, then you
- const dot=(b,c,r)=>{g.fillStyle=c;g.beginPath();g.arc(mx(b.x),my(b.y),r,0,7);g.fill();};
+ const dot=(b,c,r)=>{g.beginPath();g.arc(mx(b.x),my(b.y),r,0,7);g.fillStyle=c;g.fill();g.lineWidth=1;g.strokeStyle='rgba(6,10,18,.9)';g.stroke();};
  const dr=Math.max(2.1,u*0.9);
  for(const b of units)if(b.hp>0&&b.team!==(me?me.team:0))dot(b,'#ff4d5e',b.boss?dr*1.9:dr);
  for(const b of units)if(b.hp>0&&b!==me&&b.team===(me?me.team:0))dot(b,'#4d9fff',dr);
@@ -1030,7 +1045,7 @@ function drawHUD(){
  else if(matchG==='bounty'&&me&&!evt){g.font=font(Math.round(sc*0.6));g.fillStyle='#ffcf4a';g.textAlign='center';g.fillText('Your bounty: '+(me.bty||BTY_START),mid,hy+th+sc*0.55);}
  if(evt&&evt.k!=='drop'){g.font=font(Math.round(sc*0.6));g.fillStyle=EVENTS[evt.k].c;g.textAlign='center';g.fillText((evt.k==='meteor'?'Meteor shower ':'Solar flare ')+Math.ceil(evt.t)+'s',mid,hy+th+sc*0.55);}
  const outRing=!!storm&&me&&me.hp>0&&Math.hypot(me.x-storm.x,me.y-storm.y)>storm.r;
- if(me&&me.hp>0&&state==='play'&&slowAt(me)<1&&!(me.rep>0)&&!outRing){g.fillStyle='#c9b48a';g.font=font(Math.round(sc*0.62));g.textAlign='center';g.fillText('crater: slowed',mx,my+mk*1.4);}
+ if(me&&me.hp>0&&state==='play'&&slowAt(me)<1&&!(me.rep>0)&&!outRing){g.fillStyle='#c9b48a';g.font=font(Math.round(sc*0.62));g.textAlign='center';if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.7)';g.strokeText('crater: slowed',mx,my+mk*1.4);g.fillStyle='#f0dcae';}g.fillText('crater: slowed',mx,my+mk*1.4);}
  if(ffBtnOn()){const F=ffBtn();g.fillStyle=ffwd?'rgba(255,122,47,.92)':'rgba(10,14,23,.88)';rr(g,F.x,F.y,F.w,F.h,F.h/2);g.fill();g.strokeStyle=ffwd?'#ffb37a':'rgba(223,231,242,.4)';g.lineWidth=1.5;rr(g,F.x,F.y,F.w,F.h,F.h/2);g.stroke();
   g.fillStyle=ffwd?'#2a1004':'#dfe7f2';g.font=font(15);g.textAlign='center';g.fillText(ffwd?'Speeding up ×3':'Fast forward',F.x+F.w/2,F.y+F.h/2+1);}
  g.textAlign='center';

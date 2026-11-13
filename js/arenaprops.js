@@ -76,7 +76,7 @@ const ArenaProps=(()=>{
   // the chase camera's ground runs far out: stones are scattered over the band round the arena, a few low hills beyond it
   const bx0=M.chase?Math.max(v.x0,-15):v.x0,bx1=M.chase?Math.min(v.x1,W+15):v.x1,bz0=M.chase?Math.max(M.horizon+0.8,-17):Math.max(M.horizon+0.8,v.z0),bz1=M.chase?Math.min(v.z1,H+13):v.z1;
   const n=Math.round((hi?0.045:0.02)*((bx1-bx0)*(bz1-bz0)-W*H));
-  if(M.chase){const m=hi?46:18;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8,smooth:1});}}
+  if(M.chase){const m=hi?30:14;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8});}}
   for(let i=0;i<n;i++){const x=bx0+hs(i,sd)*(bx1-bx0),z=bz0+hs(sd,i*1.3)*(bz1-bz0),big=hs(i*3.7,sd)>0.8,r=big?0.28+hs(i,7)*0.2:0.08+hs(i,9)*0.16;
    if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||M.theme.ground,x,0,z,r,r*(big?0.9:1.2),i,{ao:0.2,punch:0.3});}
  }
@@ -299,7 +299,7 @@ const ArenaProps=(()=>{
     for(const s of [-1,1]){const zf=zc+s*(dh/2-0.32);B.box('metal','#454c53',sx+sw/2,D-TS/2-0.06,zf,w+0.04,TS+0.14,0.14,0,{ao:0,dust:0.1});
      B.glow('#ffb066',sx+sw/2,U-0.1,zf+s*0.08,sw-0.5,0.035,0.025);B.halo(sx+sw/2,U-0.1,zf+s*0.2,1.2,'#ffa860',0.26);
      B.box('metal',STEEL_L,sx+sw/2,D+0.5,zf,w,0.04,0.04,0,{ao:0,dust:0,noShadow:1});const np=hi?4:2;for(let i=0;i<=np;i++)B.box('metal',STEEL,a+w*i/np,D+0.27,zf,0.045,0.48,0.045,0,{ao:0,dust:0,noShadow:1});
-     for(const e of [sx+0.16,sx+sw-0.16]){B.box('metal','#59616a',e,U/2,zf,0.2,U,0.2,0,{ao:0.35,aoH:0.6,dust:0.1});if(hi)B.box('metal','#3d444b',e,0.06,zf,0.34,0.12,0.34,0,{ao:0.2,dust:0.15});}}
+     for(const e of [sx+0.16,sx+sw-0.16]){B.glow('#ffb066',e+(e<sx+sw/2?0.11:-0.11),U/2,zf+s*0.11,0.03,U-0.5,0.03);B.halo(e,U*0.6,zf+s*0.2,0.9,'#ffa860',0.3);B.box('metal','#59616a',e,U/2,zf,0.2,U,0.2,0,{ao:0.35,aoH:0.6,dust:0.1});if(hi)B.box('metal','#3d444b',e,0.06,zf,0.34,0.12,0.34,0,{ao:0.2,dust:0.15});}}
     if(hi){for(let t=0.4;t<sw;t+=0.8)B.box('metal','#3d444b',sx+t,D+0.012,zc,0.03,0.01,dh-1.2,0,{ao:0,dust:0.1,noShadow:1});for(const e of [sx+0.2,sx+sw-0.2])B.glow('#ffb066',e,U-0.04,zc,0.03,0.03,dh-1.4);}
     M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.2]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.4,'255,170,100',0.24]);M.glowSpots.push([sx+sw/2,dy-0.5,1.4,'255,170,100',0.24]);M.glowSpots.push([sx+sw/2,zc,2.4,'255,190,130',0.5]);
    }
@@ -308,7 +308,9 @@ const ArenaProps=(()=>{
    B.wedge('rock',cs[0],rx+0.02,rx+rw-0.02,lo,hiZ,D-0.02,{ao:0.3,aoH:0.5,dust:0.1});   // the ramp's body; its surface takes the baked ground
    B.top([[rx,o<0?0:D,ry],[rx+rw,o<0?0:D,ry],[rx+rw,o<0?D:0,ry+rh],[rx,o<0?D:0,ry+rh]]);
    M.rampTracks.push([rx+rw/2,ry-0.6,rx+rw/2,ry+rh+0.6]);
-   for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;B.wedge('rock',cs[1],xr-0.1,xr+0.1,lo,hiZ,D+0.16,{ao:0.25,dust:0.15});
+   {const ang=Math.atan2(D,rh)*(o<0?-1:1),len=Math.hypot(D,rh),rc=ry+rh/2;for(const sg of [-1,1])B.box('paint',HZ,rx+rw/2+sg*(rw/2-0.22),D/2+0.03,rc,0.09,0.014,len-0.2,0,{rx:ang,ao:0,dust:0.2,noShadow:1});   // edge stripes: a ramp, not a slab
+    if(hi)for(let i=1;i<7;i++){const f=i/7;B.box('rock',cs[3],rx+rw/2,f*D+0.035,lo+(hiZ-lo)*f,rw-0.8,0.03,0.09,0,{rx:ang,ao:0,dust:0.1,noShadow:1});}}
+   for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;B.glow('#ffb066',xr+(s<0?0.11:-0.11),D/2+0.06,ry+rh/2,0.025,0.05,Math.hypot(D,rh)-0.3,0,{rx:Math.atan2(D,rh)*(o<0?-1:1)});B.halo(xr,0.12,lo,1.0,'#ffa860',0.32);B.wedge('rock',cs[1],xr-0.1,xr+0.1,lo,hiZ,D+0.16,{ao:0.25,dust:0.15});
     if(hi)for(let i=0;i<4;i++){const f=0.15+i*0.24,r=0.1+hs(i,rx+s)*0.07;B.rock(cs[(i+2)%4],xr,0,lo+(hiZ-lo)*f,r,f*D+0.22+r,i+rx*3+s,{ao:0.3});}}   // loose blocks along the kerb, rising with it
    M.aoBoxes.push([rx-0.2,ry,rw+0.4,rh]);
   }

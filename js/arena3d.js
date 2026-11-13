@@ -193,11 +193,24 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
   const n=q==='low'?128:256,rt=mkRT(n,n,true,true,false),m=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:EARTH_FS,depthTest:false,depthWrite:false,toneMapped:false});
   quadPass(renderer,m,rt);m.dispose();R[ek]=rt;return rt.texture;
  }
- const GROUND_VS='uniform vec4 uRect;varying vec2 vUv;varying float vZ;\n#ifdef FINE\nuniform vec4 uRectF;varying vec2 vUf;varying vec2 vP;\n#endif\nvoid main(){vUv=(position.xz-uRect.xy)/uRect.zw;vZ=position.z;\n#ifdef FINE\nvUf=(position.xz-uRectF.xy)/uRectF.zw;vP=position.xz;\n#endif\ngl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
- // Under the chase camera (5E-2b2a) the ground is two bakes: the arena and its margin at the screen's own density (tFine) and
- // everything the camera can see beyond it, coarse (tMap). HIGH adds a tiling grain so the ground stays crisp right under the
- // camera, where a bake texel can cover more than a pixel.
- const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;\n#ifdef FINE\nuniform sampler2D tFine;uniform vec4 uRectF;varying vec2 vUf;varying vec2 vP;\n#endif\n#ifdef GRAIN\nuniform sampler2D tGrain;uniform vec2 uGrain;\n#endif\nvoid main(){vec4 t=texture2D(tMap,vUv);\n#ifdef FINE\nvec2 e=min(vUf,1.0-vUf)*uRectF.zw;float w=clamp(min(e.x,e.y)/0.7,0.0,1.0);t=mix(t,texture2D(tFine,vUf),w);\n#ifdef GRAIN\nfloat g=texture2D(tGrain,vP*uGrain.x).r*0.6+texture2D(tGrain,vP.yx*uGrain.x*0.37+0.31).r*0.4;t.rgb*=1.0+uGrain.y*(g-0.9)*(0.6+0.4*w);\n#endif\n#endif\nvec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*(1.0-smoothstep(uFog.z,uFog.y,vZ)));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
+ // Under the chase camera (5E-2b2a) the ground is two bakes on two meshes: the arena and its margin at the screen's own density,
+ // and everything the camera can see beyond it, coarse. Each pixel still reads ONE bake texel (the floor and every top are
+ // cut along the fine bake's edge, so no pixel needs both). HIGH on a GPU adds a tiling grain (two reads of the grit tile) so
+ // the ground stays crisp right under the camera, where a bake texel can cover more than a pixel.
+ const GROUND_VS='uniform vec4 uRect;varying vec2 vUv;varying float vZ;\n#ifdef GRAIN\nvarying vec2 vP;\n#endif\nvoid main(){vUv=(position.xz-uRect.xy)/uRect.zw;vZ=position.z;\n#ifdef GRAIN\nvP=position.xz;\n#endif\ngl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
+ const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;\n#ifdef GRAIN\nuniform sampler2D tGrain;uniform vec2 uGrain;varying vec2 vP;\n#endif\nvoid main(){vec4 t=texture2D(tMap,vUv);\n#ifdef GRAIN\nfloat g=texture2D(tGrain,vP*uGrain.x).r*0.6+texture2D(tGrain,vP.yx*uGrain.x*0.37+0.31).r*0.4;t.rgb*=1.0+uGrain.y*(g-0.9);\n#endif\nvec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*(1.0-smoothstep(uFog.z,uFog.y,vZ)));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
+ // cut a polygon (a list of [x,y,z]) by the half-plane a*x + b*z <= c
+ function clipPoly(P,a,b,c){const out=[];for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length],dp=a*p[0]+b*p[2]-c,dq=a*q[0]+b*q[2]-c;if(dp<=0)out.push(p);if((dp<0&&dq>0)||(dp>0&&dq<0)){const t=dp/(dp-dq);out.push([p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t]);}}return out;}
+ const fan=(P,to)=>{for(let i=1;i<P.length-1;i++)to.push(P[0],P[i],P[i+1]);};
+ // split triangles ([x,y,z] triples) along a rectangle on the ground: [inside, outside]
+ function splitTris(tri,F){const In=[],Out=[];
+  for(let i=0;i<tri.length;i+=3){const T=[tri[i],tri[i+1],tri[i+2]];
+   if(T.every(p=>p[0]>=F.x0&&p[0]<=F.x1&&p[2]>=F.z0&&p[2]<=F.z1)){In.push(T[0],T[1],T[2]);continue;}
+   if(T.every(p=>p[0]<=F.x0)||T.every(p=>p[0]>=F.x1)||T.every(p=>p[2]<=F.z0)||T.every(p=>p[2]>=F.z1)){Out.push(T[0],T[1],T[2]);continue;}
+   // four cuts; each piece goes to exactly one side
+   const west=clipPoly(T,1,0,F.x0),rest=clipPoly(T,-1,0,-F.x0),east=clipPoly(rest,-1,0,-F.x1),mid=clipPoly(rest,1,0,F.x1),north=clipPoly(mid,0,1,F.z0),mid2=clipPoly(mid,0,-1,-F.z0),south=clipPoly(mid2,0,-1,-F.z1),inside=clipPoly(mid2,0,1,F.z1);
+   fan(west,Out);fan(east,Out);fan(north,Out);fan(south,Out);fan(inside,In);}
+  return [In,Out];}
  function materials(renderer,q,envMap){
   const R=res(renderer),key=q;if(R.mats[key]){if(envMap)setEnvMap(renderer,envMap);return R.mats[key];}
   const tl=tiles(renderer,q),high=q!=='low';let M;
@@ -389,7 +402,7 @@ void main(){
  function build(id,o){
   const M=prep(id,o),k=M.kit,th=M.theme,q=M.q,high=q==='high',view=M.view,env=M.env,renderer=o.renderer;id=M.id;
   // meshes
-  const G=new T.Group();G.name='arena:'+id;const mats=materials(renderer,q,o.envMap||null);
+  const G=new T.Group();G.name='arena:'+id;const mats=materials(renderer,o.soft&&M.chase?'low':q,o.envMap||null);   // a CPU rasteriser under the chase camera (props fill far more of the screen): the Lambert set, as the Conquest style does on software GL
   const meshes={};for(const c of CLS){const m=meshOf(k[c],c,mats[c]);if(m){meshes[c]=m;G.add(m);}}
   if(!high&&meshes.metal&&meshes.paint){/* LOW shares one Lambert material between paint and metal: two draws, one program */}
   // the baked ground: one big floor quad + every top
@@ -408,14 +421,15 @@ void main(){
    M.bakeW=Math.max(64,Math.round(vw_*ppu));M.bakeH=Math.max(64,Math.round(vd_*ppu));
    M.rt=mkRT(M.bakeW,M.bakeH,true,true,false);M.rt.texture.anisotropy=an;
   }
-  const grain=F&&high&&!o.soft?tiles(renderer,q)[th.plates?'paintC':'gritC']:null,defs={};if(F)defs.FINE=1;if(grain)defs.GRAIN=1;
-  const gm=new T.ShaderMaterial({side:T.DoubleSide,defines:defs,vertexShader:GROUND_VS,fragmentShader:GROUND_FS,uniforms:{tMap:{value:M.rt.texture},uRect:{value:new T.Vector4(view.x0,view.z0,vw_,vd_)},
-   tFine:{value:F?M.rtF.texture:null},uRectF:{value:F?new T.Vector4(F.x0,F.z0,F.x1-F.x0,F.z1-F.z0):new T.Vector4(0,0,1,1)},tGrain:{value:grain?grain.texture:null},uGrain:{value:new T.Vector2(th.plates?0.42:0.55,th.grain===undefined?0.42:th.grain)},
-   uAmb:env?env.uniforms.uAmb:{value:new T.Vector3(0.11,0.135,0.16)},uSun:env?env.uniforms.uSun:{value:new T.Vector3(0.7,0.66,0.6)},uFogC:env?env.uniforms.uFogC:{value:new T.Vector3()},uFog:env?env.uniforms.uFog:{value:new T.Vector3(0,0,1)}}});
-  {const tri=[[view.x0,0,view.z0],[view.x1,0,view.z0],[view.x1,0,view.z1],[view.x0,0,view.z0],[view.x1,0,view.z1],[view.x0,0,view.z1]].concat(k.gtop),P=new Float32Array(tri.length*3);for(let i=0;i<tri.length;i++){P[i*3]=tri[i][0];P[i*3+1]=tri[i][1];P[i*3+2]=tri[i][2];}
-   const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(P,3));const m=new T.Mesh(g,gm);m.frustumCulled=false;m.matrixAutoUpdate=false;m.renderOrder=-2;meshes.ground=m;G.add(m);}
+  const grain=F&&high&&!o.soft?tiles(renderer,q)[th.plates?'paintC':'gritC']:null,defs=grain?{GRAIN:1}:{};
+  const envU={uAmb:env?env.uniforms.uAmb:{value:new T.Vector3(0.11,0.135,0.16)},uSun:env?env.uniforms.uSun:{value:new T.Vector3(0.7,0.66,0.6)},uFogC:env?env.uniforms.uFogC:{value:new T.Vector3()},uFog:env?env.uniforms.uFog:{value:new T.Vector3(0,0,1)}};
+  const gmat=(tex,rc)=>new T.ShaderMaterial({side:T.DoubleSide,defines:defs,vertexShader:GROUND_VS,fragmentShader:GROUND_FS,uniforms:Object.assign({tMap:{value:tex},uRect:{value:new T.Vector4(rc[0],rc[1],rc[2],rc[3])},tGrain:{value:grain?grain.texture:null},uGrain:{value:new T.Vector2(th.plates?0.42:0.55,th.grain===undefined?0.42:th.grain)}},envU)});
+  const gmesh=(tri,mat)=>{const P=new Float32Array(tri.length*3);for(let i=0;i<tri.length;i++){P[i*3]=tri[i][0];P[i*3+1]=tri[i][1];P[i*3+2]=tri[i][2];}const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(P,3));const m=new T.Mesh(g,mat);m.frustumCulled=false;m.matrixAutoUpdate=false;m.renderOrder=-2;G.add(m);return m;};
+  const gm=gmat(M.rt.texture,[view.x0,view.z0,vw_,vd_]),gmF=F?gmat(M.rtF.texture,[F.x0,F.z0,F.x1-F.x0,F.z1-F.z0]):null;
+  {const tri=[[view.x0,0,view.z0],[view.x1,0,view.z0],[view.x1,0,view.z1],[view.x0,0,view.z0],[view.x1,0,view.z1],[view.x0,0,view.z1]].concat(k.gtop);
+   if(F){const [In,Out]=splitTris(tri,F);meshes.ground=gmesh(In,gmF);meshes.far=gmesh(Out,gm);}else meshes.ground=gmesh(tri,gm);}
   const bakeAll=()=>{if(levels.length)for(const lv of levels)bake(renderer,M,lv);else bake(renderer,M);};
-  try{bakeAll();}catch(e){G.traverse(x=>{if(x.geometry)x.geometry.dispose();});gm.dispose();M.rt.dispose();if(M.rtF)M.rtF.dispose();throw e;}
+  try{bakeAll();}catch(e){G.traverse(x=>{if(x.geometry)x.geometry.dispose();});gm.dispose();if(gmF)gmF.dispose();M.rt.dispose();if(M.rtF)M.rtF.dispose();throw e;}
   // sky: stars and the Earth sit far below the ground plane along the view, so they only show where no terrain covers them
   const sky=!M.thumb&&ArenaProps.sky?(M.chase&&ArenaProps.skyFar?ArenaProps.skyFar:ArenaProps.sky)(T,M,earthTex(renderer,q)):null;if(sky)G.add(sky.group);
   if(M.thumb){const K=crate(renderer,q,th.crate);for(const c of M.map.crates||[]){const m=new T.Mesh(K.geo,K.mat);m.scale.set(c[2],0.85,c[3]);m.position.set(c[0]+c[2]/2,0,c[1]+c[3]/2);G.add(m);}}   // a menu picture shows the crates too
@@ -425,7 +439,7 @@ void main(){
   const out={group:G,id,q,env:true,arena:true,chase:M.chase,deckH:M.deckH,deckUnder:M.deckH-(M.chase?ArenaProps.DECK_SLAB:0.2),spin:k.spin.map(s=>({o:s.o,axis:s.axis,spd:s.spd})),halos:k.halos,anims:k.anims,anchors:k.anchors,deck:null,theme:th,view,rt:M.rt,sky,disposed:false,sun:M.sun,
    stats:{verts:CLS.reduce((n,c)=>n+k[c].P.length/3,0),bake:[M.bakeW,M.bakeH],ppu,fine:M.rtF?[M.rtF.width,M.rtF.height]:null,ppuF},
    rebake(dir){M.sun=dir;out.sun=dir;bakeAll();},
-   dispose(){if(out.disposed)return;out.disposed=true;const keep=M.thumb?crate(renderer,q,th.crate).geo:null;G.traverse(x=>{if(x.geometry&&x.geometry!==keep)x.geometry.dispose();});gm.dispose();M.rt.dispose();if(M.rtF)M.rtF.dispose();if(sky)sky.dispose();}};
+   dispose(){if(out.disposed)return;out.disposed=true;const keep=M.thumb?crate(renderer,q,th.crate).geo:null;G.traverse(x=>{if(x.geometry&&x.geometry!==keep)x.geometry.dispose();});gm.dispose();if(gmF)gmF.dispose();M.rt.dispose();if(M.rtF)M.rtF.dispose();if(sky)sky.dispose();}};
   // the kit's source arrays are only needed again if the sun moves (rebake); keep positions and base heights, drop the rest
   for(const c of CLS){k[c].N=null;k[c].C=null;}
   return out;

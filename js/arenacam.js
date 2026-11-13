@@ -28,10 +28,10 @@ const ArenaCam=(()=>{
  //  halfH   the same up and down the screen, measured across the view (landscape is limited by this)
  //  down    how far below the screen centre the tank sits, as a fraction of half the screen height
  //  side    how much out-of-bounds may show beside the arena before the camera stops panning
- const DEF={fovP:46,fovL:30,pitchP:48,pitchL:44,halfW:6.9,halfH:7.6,downP:0.16,downL:0.06,side:1.6,
+ const DEF={fovP:46,fovL:30,pitchP:48,pitchL:44,halfW:6.8,halfH:7.6,downP:0.16,downL:0.06,side:1.6,
   follow:0.1,leadT:0.24,leadMax:1.1,leadTime:0.45,pull:0.3,pullX:2.0,pullY:2.6,pullR:10.5,pullTime:0.6,
-  pitchTime:0.3,sightLead:0.3,pitchMin:14,pitchMax:74,barLift:1.7,lowDist:0.6,heightTime:0.22,
-  southKeep:0.42,northKeep:0.74,introT:1.9,introHold:0.22,introPitch:17,introDist:0.36,deadDist:1.16,deadPitch:4,deadTime:0.7,
+  pitchTime:0.3,sightLead:0.3,pitchMin:14,pitchMax:74,lowDist:0.6,heightTime:0.22,
+  southKeep:0.42,northKeep:0.82,introT:1.9,introHold:0.22,introPitch:17,introDist:0.36,deadDist:1.16,deadPitch:4,deadTime:0.7,
   near:1.2,far:420};
  const P=Object.assign({},DEF);
  function tune(o){if(o)for(const k in o)if(k in DEF&&Number.isFinite(+o[k]))P[k]=+o[k];return P;}
@@ -45,7 +45,7 @@ const ArenaCam=(()=>{
  }
  // ---------- state ----------
  const S={ready:false,vw:1,vh:1,fx:sv(AW/2),fy:sv(AH/2),fh:sv(0),lx:sv(0),ly:sv(0),qx:sv(0),qy:sv(0),pitch:sv(52),dist:sv(26),fov:40,yaw:0,
-  intro:0,introOn:false,dead:sv(0),bar:sv(0),lpx:0,lpy:0,vx:0,vy:0,t:0,shx:0,shy:0,key:null,sightP:null,under:false};
+  intro:0,introOn:false,dead:sv(0),lpx:0,lpy:0,vx:0,vy:0,t:0,shx:0,shy:0,key:null,sightP:null,under:false};
  // the solved frame: camera position, axes, focal length in pixels
  const C={x:0,h:0,y:0,tx:0,th:0,ty:0,rx:1,rh:0,ry:0,ux:0,uh:1,uy:0,fx:0,fh:0,fy:-1,f:1,cx:0,cy:0,fov:40,pitch:52,dist:26,near:1.2,far:420};
  // ---------- the map: what can stand between the camera and a tank ----------
@@ -119,8 +119,7 @@ const ArenaCam=(()=>{
   if(quiet){lx=ly=0;}
   if(snap||tele){S.lx.v=lx;S.ly.v=ly;S.qx.v=qx;S.qy.v=qy;S.lx.d=S.ly.d=S.qx.d=S.qy.d=0;}
   else{damp(S.lx,lx,P.leadTime,dt);damp(S.ly,ly,P.leadTime,dt);damp(S.qx,qx,P.pullTime,dt);damp(S.qy,qy,P.pullTime,dt);}
-  damp(S.bar,I.bar&&!dead?1:0,0.35,snap||quiet?1e3:dt);if(snap||quiet)S.bar.v=I.bar&&!dead?1:0;   // your super's timing bar is up: the view slides back so the tank stands clear above it
-  const ox=S.lx.v+S.qx.v,oy=S.ly.v+S.qy.v+P.barLift*S.bar.v*(1-G.t);
+  const ox=S.lx.v+S.qx.v,oy=S.ly.v+S.qy.v;
   // pitch: the rig's own, unless something would hide the tank
   let pT=G.pitch;S.under=false;
   if(!dead){pT=sightPitch(G,px,py,ph,ox,oy);S.under=inLane(px,py,ph);
@@ -138,7 +137,7 @@ const ArenaCam=(()=>{
   if(snap||tele){S.fx.v=tx;S.fy.v=ty;S.fh.v=ph;S.fx.d=S.fy.d=S.fh.d=0;}
   else{const ft=lerp(P.follow,0.5,S.dead.v);damp(S.fx,tx,ft,dt);damp(S.fy,ty,ft,dt);damp(S.fh,dead?0:ph,P.heightTime,dt);}
   S.ready=true;
-  solve(G,S.fx.v,S.fh.v+lerp(0,0.55,e),S.fy.v,pitch,dist,C);
+  solve(G,S.fx.v,S.fh.v+lerp(0,1.7,e),S.fy.v,pitch,dist,C);   // the crane shot looks over the tank, at the arena: the tank stands in the lower third
   return C;
  }
  // where the camera looks for a point of interest (the tank, moved by the look-ahead and the fight): ahead of it, so the tank
@@ -213,7 +212,7 @@ const ArenaCam=(()=>{
  function arc(ctx,x,y,r,a0,a1,ccw,h){
   const full=a0===undefined||Math.abs(a1-a0)>=Math.PI*2-1e-6;if(full){a0=0;a1=Math.PI*2;}
   let da=a1-a0;if(!full){if(ccw){while(da>0)da-=Math.PI*2;if(da<-Math.PI*2)da=-Math.PI*2;}else{while(da<0)da+=Math.PI*2;if(da>Math.PI*2)da=Math.PI*2;}}
-  const n=Math.max(6,Math.min(56,Math.ceil(Math.abs(da)/(Math.PI*2)*(18+r*9))));ARC.length=0;
+  const n=Math.max(6,Math.min(44,Math.ceil(Math.abs(da)/(Math.PI*2)*(16+r*5))));ARC.length=0;
   for(let i=0;i<(full?n:n+1);i++){const a=a0+da*i/n;ARC.push(x+Math.cos(a)*r,y+Math.sin(a)*r,h||0);}
   return path(ctx,ARC,full);
  }
