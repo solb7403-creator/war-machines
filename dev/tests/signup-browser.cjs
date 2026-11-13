@@ -94,6 +94,7 @@ async function leagueCheck(pg,label,name,touch){
  let pass=0;const results=[];
  try{
   if(!engines.length)throw Error('no browser engine installed');
+  const {csProblem}=await import(require('node:url').pathToFileURL(path.join(ROOT,'worker/src/callsign.js')).href);   // the Worker's own call-sign rules
   for(const name of engines){
    const browser=await pw[name].launch(name==='chromium'?{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}:{});
    for(const [label,width,height,touch] of SIZES){
@@ -104,7 +105,9 @@ async function leagueCheck(pg,label,name,touch){
     await ctx.addInitScript(()=>{window.__credCalls=0;try{const c=navigator.credentials;if(c){const wrap=k=>{const f=c[k]&&c[k].bind(c);if(f)c[k]=(...a)=>{window.__credCalls++;return f(...a);};};wrap('create');wrap('get');}}catch{}});
     const pg=await ctx.newPage(),errs=[],logs=[];pg.on('pageerror',e=>errs.push(String(e)));pg.on('console',m=>{if(['error','warning'].includes(m.type()))logs.push(m.type()+': '+m.text());});pg.on('requestfailed',r=>logs.push('failed: '+r.url()+' '+(r.failure()||{}).errorText));
     current={pg,label,name,errs,logs};
-    const cs=('N'+name[0]+width+Date.now().toString(36)).slice(0,16);
+    // the call sign comes from the clock; a clock value can spell a word the name filter blocks (CI, Nov 13 2026:
+    // 'Nc360mweqkkk2'), so take the next value the real filter accepts, for this name and for the renamed one used below
+    let cs='';for(let t=Date.now();;t+=7919){cs=('N'+name[0]+width+t.toString(36)).slice(0,16);if(!csProblem(cs)&&!csProblem(cs.slice(0,12)+'_v2'))break;}
     // 1. landing
     await pg.goto(BASE+'/web/?i=abcd2345');await pg.waitForSelector('.colony-hero');
     assert(await pg.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),label+' landing fits');

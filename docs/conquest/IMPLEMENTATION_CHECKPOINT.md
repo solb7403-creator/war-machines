@@ -2865,6 +2865,11 @@ everyone, revert the merge commit on main.
 - `0ffbe48` slice 7: both reviewers' findings. `6dcdff9` slice 8: critic round 3 (phone).
 - `356f766` slice 9: glow scale, no grain on touch devices, cached text widths, sheets, numbers, this record.
 - slice 10 (owner update): grain back on phones, world-sized glows, full far hills and stones; this record; build stamp.
+- CI on slice 10 (`7e676a1`): 9 of 10 green, `signup-browsers (chromium)` red (run 43396168897). Cause: the test, not the
+  build. `dev/tests/signup-browser.cjs` made its call sign from the clock; at 08:50:01.1 UTC that spelled `Nc360mweqkkk2`,
+  which the Worker's name filter blocks, so "available" never showed. Reproduced locally with that exact name (same step,
+  same output), then fixed in the test: it takes the next clock value the Worker's own `csProblem` accepts. Nothing skipped
+  or relaxed, no game file touched; `signup-browser.cjs chromium` 4 / 4 locally.
 
 ### What is left (for the owner or a later session)
 - **The owner's frame-rate check on a real iPhone (Telegram) and a real computer**, with the playtest checklist above:
