@@ -75,14 +75,14 @@ const ArenaProps=(()=>{
   const clear=(x,z,r)=>x<-r-0.6||x>W+r+0.6||z<-r-0.6||z>H+r+0.6;
   // the chase camera's ground runs far out: stones are scattered over the band round the arena, a few low hills beyond it
   const bx0=M.chase?Math.max(v.x0,-15):v.x0,bx1=M.chase?Math.min(v.x1,W+15):v.x1,bz0=M.chase?Math.max(M.horizon+0.8,-17):Math.max(M.horizon+0.8,v.z0),bz1=M.chase?Math.min(v.z1,H+13):v.z1;
-  const n=Math.round((hi?0.045:0.02)*((bx1-bx0)*(bz1-bz0)-W*H));
-  if(M.chase){const m=hi?30:14;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8});}}
+  const n=Math.round((M.chase?(hi?0.03:0.011):(hi?0.045:0.02))*((bx1-bx0)*(bz1-bz0)-W*H));
+  if(M.chase&&!M.thumb){const m=hi?30:9;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8});}}
   for(let i=0;i<n;i++){const x=bx0+hs(i,sd)*(bx1-bx0),z=bz0+hs(sd,i*1.3)*(bz1-bz0),big=hs(i*3.7,sd)>0.8,r=big?0.28+hs(i,7)*0.2:0.08+hs(i,9)*0.16;
    if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||M.theme.ground,x,0,z,r,r*(big?0.9:1.2),i,{ao:0.2,punch:0.3});}
  }
  // the far ridge: a chain of low hills on the horizon line (north), so the ground ends in a silhouette under the stars
  function ridge(B,M,y0,c){
-  const v=M.view,z=M.horizon;if((v.vis||v).z0>z-0.5)return;
+  const v=M.view,z=M.horizon;if(M.thumb||(v.vis||v).z0>z-0.5)return;
   const g=Arena3D.lin(c||M.theme.ground),kh=(y0>1?0.5:1)*(M.chase?2.1:1),x0=v.x0-1,x1=v.x1+1;
   // two overlapping skylines in the map's own ground hue (textured like the ground); the sun catches their top edges
   const fq=M.chase?0.085:0.23,sk=M.chase?2.4:1,prof=(sd,base,amp,step)=>{step*=sk;const P=[];for(let x=x0;x<=x1;x+=step){const t=x*fq+sd,r=Math.abs(Math.sin(t)*0.55+Math.sin(t*2.3+1.7)*0.3+Math.sin(t*5.1+0.4)*0.15);P.push([x+(hs(x,sd)-0.5)*step*0.5,base+amp*(0.25+0.75*r)*(0.75+0.5*hs(sd,x))]);}return P;};
@@ -521,8 +521,8 @@ const ArenaProps=(()=>{
  // ---------- build one map ----------
  function build(id,B,M){
   const MP=M.map,th=M.theme,v=M.view,hi=B.high;
-  M.horizon=M.chase?Math.max(v.z0+2,v.horizon===undefined?-33:v.horizon):th.horizon?Math.max(v.z0,-5.4):v.z0;M.stains=[];M.glowSpots=[];M.rampTracks=[];
-  v.z0=Math.max(v.z0,M.horizon-(M.chase?2:0));   // the ground ends at the ridge; beyond it is sky. The chase camera sees far: its ridge is a mountain range a long way north
+  M.horizon=M.chase&&!M.thumb?Math.max(v.z0+2,v.horizon===undefined?-33:v.horizon):M.thumb?v.z0:th.horizon?Math.max(v.z0,-5.4):v.z0;M.stains=[];M.glowSpots=[];M.rampTracks=[];
+  v.z0=Math.max(v.z0,M.horizon-(M.chase&&!M.thumb?2:0));   // the ground ends at the ridge; beyond it is sky. The chase camera sees far: its ridge is a mountain range a long way north
   th.paint=paint;
   const outdoor=id!=='bunker';
   for(const wl of MP.walls||[]){const [x,z,w,d,st]=wl,sd=x*7.3+z*3.1;

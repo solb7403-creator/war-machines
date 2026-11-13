@@ -50,7 +50,7 @@ async def main():
         # ...and, measured the other way round with the camera as it stands at the release: the shot's own line on the ground, drawn
         # on the screen, passes under the finger (the tank and the view may have moved a little since the finger was placed)
         sp=await pg.evaluate("(f)=>{if(!me.sup)return null;const a=me.sup.ang,h=hOf(me);WP(me.x,me.y,h);const ax=WPx,ay=WPy;WP(me.x+Math.cos(a)*4,me.y+Math.sin(a)*4,h);const bx=WPx-ax,by=WPy-ay,fx=f[0]-ax,fy=f[1]-ay,l=Math.hypot(bx,by)||1;return {fixed:!!me.sup.fixed,ang:a,off:Math.abs(bx*fy-by*fx)/l,along:(bx*fx+by*fy)/l};}",F)
-        check(sp and sp['fixed'] and abs(sp['ang']-exp)<0.2 and sp['off']<8 and sp['along']>24,'drag-aimed super wrong '+json.dumps(sp)+' expected '+str(exp))
+        check(sp and sp['fixed'] and abs(sp['ang']-exp)<0.12 and sp['off']<6 and sp['along']>24,'drag-aimed super wrong '+json.dumps(sp)+' expected '+str(exp))
         # tap = auto aim
         await pg.evaluate("()=>{for(let i=0;i<30;i++)update(1/30);me.sp=SUPER_MAX;me.sup=null;}")
         await pg.mouse.click(B['x'],B['y']);await pg.wait_for_timeout(50)

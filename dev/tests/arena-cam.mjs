@@ -90,6 +90,9 @@ for(const id of IDS){const M=maps[id],B=M.bridge;C.setMap(M,DECK,UNDER);
    assert.ok(c.pitch>=C.P.pitchMin-1e-6&&c.pitch<=C.P.pitchMax+1e-6,'pitch in range');assert.ok(c.h>0.8,'the camera stays above the ground');}
   sight[id+' '+name]={spots:n,clear,lifted,dropped};
   assert.ok(clear>=n*0.985,id+' '+name+': clear sight on '+clear+' of '+n+' spots');checks+=n;}
+ // on a ramp (driven on the upper level, the tank at the ramp's own height): the tank is in plain view, so the camera must not move
+ if(B)for(const [rx,ry,rw,rh,o] of B.ramps)for(const f of [0.08,0.3,0.5,0.7,0.92])for(const [vw,vh] of [[390,844],[1920,1080]]){const y=ry+rh*f,h=DECK*(o<0?f:1-f),x=rx+rw/2,G=C.rig(vw,vh),c=settle(vw,vh,{x,y,h,alive:true},[],40);
+  assert.ok(Math.abs(c.pitch-G.pitch)<=6,id+': on a ramp the camera keeps its pitch ('+c.pitch.toFixed(1)+' at '+x+','+y.toFixed(1)+')');assert.ok(C.clearLine(c.x,c.h,c.y,x,h+0.62,y),id+': clear sight on a ramp');checks+=2;}
  // on the deck: the rig's own pitch, a clear line
  if(B){const [dx,dy,dw,dh]=B.deck,c=settle(390,844,{x:dx+dw/2,y:dy+dh/2,h:DECK,alive:true});near(c.pitch,C.rig(390,844).pitch,0.01,id+': on the deck the camera keeps its own pitch');assert.ok(C.clearLine(c.x,c.h,c.y,dx+dw/2,DECK+0.62,dy+dh/2));near(c.th,DECK,0.05,id+': the view rides up with the tank');checks+=3;}
 }
@@ -113,6 +116,11 @@ for(const [name,[vw,vh]] of Object.entries(SCREENS)){
 // the stick keeps its meaning while the camera is down in a tunnel
 {C.setMap(maps.overpass,DECK,UNDER);const t=maps.overpass.bridge.tunnels[0],d=maps.overpass.bridge.deck;settle(390,844,{x:10,y:26,h:0,alive:true});const a=C.steer(0.6,-0.6).slice();
  const c=settle(390,844,{x:t[0]+t[1]/2,y:d[1]+2.5,h:0,alive:true});assert.ok(c.pitch<30,'the camera is down in the tunnel');const b=C.steer(0.6,-0.6);near(b[0],a[0],1e-12,'steer x unchanged in a tunnel');near(b[1],a[1],1e-12,'steer y unchanged in a tunnel');checks+=3;}
+// a zero-sized screen (a hidden or collapsing canvas) never poisons the camera
+{C.setMap(maps.classic,DECK,UNDER);settle(390,844,{x:10,y:16,h:0,alive:true});C.update(1/30,{vw:0,vh:844,me:{x:10,y:16,h:0,alive:true},foes:[]});C.update(1/30,{vw:0,vh:0,me:{x:10,y:16,h:0,alive:true},foes:[]});
+ const c=C.update(1/30,{vw:390,vh:844,me:{x:10,y:16,h:0,alive:true},foes:[]});assert.ok([c.x,c.h,c.y,c.tx,c.ty,c.pitch,c.dist,c.f].every(Number.isFinite),'the camera recovers from a zero-sized screen');const p=C.project(10,16,0,{});assert.ok(p.ok&&p.y>844*0.2&&p.y<844*0.8);
+ // a second draw in the same tick (dt = 0) holds the frame instead of cutting
+ const tx=c.tx,ty=c.ty;C.update(0,{vw:390,vh:844,me:{x:10.5,y:16,h:0,alive:true},foes:[]});near(C.C.tx,tx,1e-9,'dt = 0 holds x');near(C.C.ty,ty,1e-9,'dt = 0 holds y');checks+=4;}
 // reduced motion: no crane shot, the camera cuts instead of swinging
 {C.begin({quiet:true});C.update(1/30,{vw:390,vh:844,me:{x:10,y:29.5,h:0,alive:true},foes:[],quiet:true});near(C.C.pitch,C.rig(390,844).pitch,1e-9,'reduced motion: no crane');
  C.update(1/30,{vw:390,vh:844,me:{x:10,y:8,h:0,alive:true},foes:[],quiet:true});const p=C.project(10,8,0,{});assert.ok(p.ok&&p.y>0&&p.y<844,'reduced motion: the view cuts to the tank');checks+=2;}

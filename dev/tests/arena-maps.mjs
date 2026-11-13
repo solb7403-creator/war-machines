@@ -54,6 +54,11 @@ for(const id of IDS)for(const q of ['high','low'])for(const [vn,view] of Object.
   assert.equal(inTun,0,id+' '+q+' '+vn+': '+inTun+' vertices hang in a tunnel, e.g. '+eg);}
  if(!view.chase)assert.equal(M.deckH,P.DECK,id+': the fixed view keeps the low deck');
 }
+// the menu pictures (render3d.mapArt): a small view, the raised bridge, and nothing but the arena (no far mountains in it)
+for(const id of IDS){const M=A.prep(id,{q:'low',view:{x0:-1.5,x1:W+1.5,z0:-1.5,z1:H+1.5},env:null,soft:true,thumb:true,chase:true}),k=M.kit;let top=0,far=0;
+ for(const cls of A.CLS){const b=k[cls];for(let i=0;i<b.P.length;i+=3){const x=b.P[i],y=b.P[i+1],z=b.P[i+2];if(x>0.02&&x<W-0.02&&z>0.02&&z<H-0.02)top=Math.max(top,y);if(y>4)far++;}}
+ assert.ok(top<=2.9,id+' menu picture: nothing taller than a prop inside the arena ('+top.toFixed(2)+')');assert.equal(far,0,id+' menu picture: '+far+' vertices of a far mountain range in it');
+ if(maps[id].bridge)assert.equal(M.deckH,P.DECK_UP,id+' menu picture shows the raised bridge');}
 for(const id of IDS)for(const vn of ['phone','desk','chasePhone','chaseDesk'])assert.ok(stats[id+'|low|'+vn]<stats[id+'|high|'+vn]*0.8,id+' '+vn+' real LOW workload '+stats[id+'|low|'+vn]+' vs '+stats[id+'|high|'+vn]);
 assert.equal(runInContext('JSON.stringify(MAPS)',ctx),ctx.snap,'layout data untouched');
 // themes and crates

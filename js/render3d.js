@@ -122,7 +122,7 @@ const FXR=[1,0,0],FXU=[0,GSN,-GKC],FXF=[0,GKC,GSN];   // the camera's axes for F
 // one camera frame: follow the tank, keep the fight in view, never let the bridge or a wall hide it
 const CULL={x:0,y:0,k:1,d:1,ok:true},CAMF=[],CAMI={vw:0,vh:0,me:null,foes:CAMF,quiet:false},CAMP=[],CAMME={x:0,y:0,h:0,alive:true};
 function chaseFrame(dt,shx,shy){
- let n=0,mine=null;const put=(x,y,w)=>{const o=CAMP[n]||(CAMP[n]={x:0,y:0,w:1});o.x=x;o.y=y;o.w=w;CAMF[n++]=o;};   // pooled: nothing is allocated per frame
+ let n=0,mine=null;const put=(x,y,w)=>{const o=CAMP[n]||(CAMP[n]={x:0,y:0,w:1});o.x=x;o.y=y;o.w=w;CAMF[n++]=o;};   // the foes are pooled objects
  if(me){mine=CAMME;mine.x=me.x;mine.y=me.y;mine.h=heightAt(me);mine.alive=me.hp>0;
   for(const u of units){if(u.hp<=0||u===me)continue;if(me.hp>0){if(u.team===me.team)continue;put(u.x,u.y,typeof tapFocus!=='undefined'&&u.id===tapFocus?2.5:1);}else put(u.x,u.y,1);}}
  CAMF.length=n;
@@ -410,7 +410,7 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
  for(const [c,m] of B3.crates){RS.remove(m);m.material.dispose();if(m.sh)m.sh.material.dispose();}B3.crates.clear();
  for(const w of B3.wrecks)RS.remove(w.g);B3.wrecks=[];PSA.live.length=0;PSN.live.length=0;B3.seen=new WeakSet();if(SFX)SFX.clear();if(SMK)SMK.clear();B3.shellL0.clear();   // a new match starts with no effects, debris or shell arcs left over
  B3.uref=units;const D=new THREE.Group(),G=geos();
- if(typeof ArenaCam!=='undefined')ArenaCam.begin({quiet:typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),noIntro:!!window.LUNAR_NO_CAM_INTRO||!me||(typeof rangeRun!=='undefined'&&!!rangeRun)});
+ if(typeof ArenaCam!=='undefined')ArenaCam.begin({quiet:typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),noIntro:!!window.LUNAR_NO_CAM_INTRO||!me||(typeof rangeRun!=='undefined'&&!!rangeRun)||(typeof elapsed!=='undefined'&&elapsed>1.5)||(typeof series!=='undefined'&&!!series&&series.round>1)});   // the crane shot opens a match: never a later round, never a live match's resync
  const done=new Set();
  for(const u of units){if(u.boss||u.sx===undefined)continue;const k=Math.round(u.sx*2)+','+Math.round(u.sy*2);if(done.has(k))continue;done.add(k);
   const flatPad=chaseOn();   // the chase camera: a spawn point is a team-coloured outline on the ground, not a dark slab that reads as a hole
@@ -435,7 +435,7 @@ function frame3D(shx,shy){
  const s=sc,ox2=ox+shx,oy2=oy+shy,chase=chaseOn()&&!!B3.map.chase;
  let pxs;const pr=RR.getPixelRatio();
  if(chase){const c=chaseFrame(dt,shx,shy);pxs=c.f*pr;const pm=Math.min(R3.ptMax||256,256*Math.max(1,c.f/c.dist/Math.max(8,s)));for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=1;ps.pts.material.uniforms.uMax.value=pm;}}
- else{RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();pxs=s*pr;for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=0;ps.pts.material.uniforms.uMax.value=256;}}
+ else{FXR[0]=1;FXR[1]=0;FXR[2]=0;FXU[0]=0;FXU[1]=GSN;FXU[2]=-GKC;FXF[0]=0;FXF[1]=GKC;FXF[2]=GSN;RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();pxs=s*pr;for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=0;ps.pts.material.uniforms.uMax.value=256;}}
  STARS.material.uniforms.uS.value=pr*18;
  poolsBegin();if(SFX)SFX.begin(dt,t);
  const G=geos(),meUnder=me&&typeof underDeck==='function'&&underDeck(me);
@@ -450,8 +450,8 @@ function frame3D(shx,shy){
   // a tank under the deck cannot be seen through it (nothing is see-through): the tunnel's own lamps say who is inside, in
   // the team's colour, on both mouths
   if(B3.map.chase&&BR){const U=B3.map.deckUnder,[,dy,,dh]=BR.deck;for(const [tx,tw] of BR.tunnels){let foe=0,ally=0;for(const u of units){if(u.hp<=0||(u.elev||0)!==0||u.x<tx||u.x>tx+tw||u.y<dy||u.y>dy+dh)continue;if(me&&u.team===me.team)ally++;else foe++;}
-   if(!foe&&!ally)continue;const k=quietMap?1:0.75+0.25*Math.sin(t*9),c=foe&&ally?(Math.floor(t*3)%2?TC[1]:TC[0]):foe?TC[1]:TC[0];
-   for(const z of [dy-0.12,dy+dh+0.12]){for(let i=0;i<5;i++)once(PSA,tx+0.45+(tw-0.9)*i/4,U+0.02,z,0.62*k,c,0.95);if(foe)once(PSA,tx+tw/2,U+0.05,z,1.5*k,c,0.4);}}}
+   if(!foe&&!ally)continue;const k=quietMap?1:0.75+0.25*Math.sin(t*9),c=foe?TC[1]:TC[0];
+   for(const z of [dy-0.12,dy+dh+0.12]){for(let i=0;i<5;i++)once(PSA,tx+0.45+(tw-0.9)*i/4,U+0.02,z,0.62*k,foe&&ally&&i%2?TC[0]:c,0.95);if(foe)once(PSA,tx+tw/2,U+0.05,z,1.5*k,c,0.4);}}}   // both teams inside: the lamps alternate red and blue along the mouth (nothing flashes)
   for(const an of B3.map.anims){
    if(an.type==='arc'&&SFX&&!quietMap){const ph=Math.floor(t*14);if((ph+an.a[2]|0)%3!==0)SFX.bolt(an.a[0],an.a[1],an.a[2],an.b[0],an.b[1],an.b[2],0.14,7,an.w,FX3D_RGB(an.c),0.9,ph*31+7,0);}
    else if(an.type==='ripple'&&SFX&&!quietMap){const f=(t*0.35+an.p[0]*0.13)%1;SFX.ring(an.p[0],an.p[1],an.p[2],an.r*f,0.03,FX3D_RGB(an.c),0.5*(1-f),28);}}
@@ -465,7 +465,7 @@ function frame3D(shx,shy){
  for(const [c,m] of B3.crates)if(!live.has(c)){RS.remove(m);m.material.dispose();if(m.sh)m.sh.material.dispose();B3.crates.delete(c);}
  for(const c of crates){let m=B3.crates.get(c);
   if(!m){m=new THREE.Group();
-   if(B3.map.arena){const K=Arena3D.crate(RR,R3.q,B3.map.theme.crate),mat=K.mat.clone();m.add(new THREE.Mesh(K.geo,mat));m.material=mat;
+   if(B3.map.arena){const K=Arena3D.crate(RR,softGL()&&B3.map.chase?'low':R3.q,B3.map.theme.crate),mat=K.mat.clone();m.add(new THREE.Mesh(K.geo,mat));m.material=mat;
     const sm=shadowMat().clone(),sh=new THREE.Mesh(decals().shq,sm),off=shadowOff(0.85),ox0=off[0],oz0=off[1];sh.scale.set((c[2]+Math.abs(ox0))/c[2]*1.12,1,(c[3]+Math.abs(oz0))/c[3]*1.12);sh.position.set(ox0/2/c[2],0.012/0.85,oz0/2/c[3]);sh.renderOrder=1;m.add(sh);m.sh=sh;}
    else{const mat=new THREE.MeshLambertMaterial({vertexColors:true});m.add(new THREE.Mesh(G.crate.lit,mat));m.material=mat;}
    m.scale.set(c[2],0.85,c[3]);m.position.set(c[0]+c[2]/2,0,c[1]+c[3]/2);RS.add(m);B3.crates.set(c,m);}

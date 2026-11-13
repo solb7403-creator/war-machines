@@ -40,7 +40,7 @@ const ArenaCam=(()=>{
  const sv=v=>({v,d:0});
  // what a screen of this shape gets
  function rig(vw,vh){
-  const a=vw/Math.max(1,vh),t=sst(0.62,1.5,a),fov=lerp(P.fovP,P.fovL,t),th=Math.tan(fov*RAD/2);
+  vw=Math.max(1,vw||1);vh=Math.max(1,vh||1);const a=vw/vh,t=sst(0.62,1.5,a),fov=lerp(P.fovP,P.fovL,t),th=Math.tan(fov*RAD/2);
   return {vw,vh,a,t,fov,th,pitch:lerp(P.pitchP,P.pitchL,t),dist:Math.max(P.halfW/(th*a),P.halfH/th),down:lerp(P.downP,P.downL,t)};
  }
  // ---------- state ----------
@@ -64,7 +64,7 @@ const ArenaCam=(()=>{
   if(map.bridge){const [dx,dy,dw,dh]=map.bridge.deck,top=deckTop||2,under=deckUnder===undefined?top-0.3:deckUnder;DECK={x0:dx,y0:dy,x1:dx+dw,y1:dy+dh,top,under,tunnels:map.bridge.tunnels.map(t=>[t[0],t[0]+t[1]])};
    OCC.push([dx,dy,dx+dw,dy+dh,under,top+0.12]);   // the slab
    let x0=dx;for(const [tx,tw] of map.bridge.tunnels){OCC.push([x0,dy,tx,dy+dh,0,under]);x0=tx+tw;}OCC.push([x0,dy,dx+dw,dy+dh,0,under]);   // the piers between the tunnels
-   for(const [rx,ry,rw,rh,o] of map.bridge.ramps)for(let i=0;i<3;i++){const f0=i/3,f1=(i+1)/3,z0=ry+rh*f0,z1=ry+rh*f1,hi=top*(o<0?f1:1-f0);OCC.push([rx-0.2,z0,rx+rw+0.2,z1,0,hi]);}}   // ramps: three steps
+   for(const [rx,ry,rw,rh,o] of map.bridge.ramps)for(let i=0;i<3;i++){const f0=i/3,f1=(i+1)/3,z0=ry+rh*f0,z1=ry+rh*f1,hi=top*(o<0?f0:1-f1);if(hi>0.1)OCC.push([rx-0.2,z0,rx+rw+0.2,z1,0,hi]);}}   // ramps: three steps, each as high as its LOW edge (a tank on the ramp stands on top of them, never inside)
  }
  // is the straight line from a to b free of every box? (a slab test per box; the last stretch by the tank is not tested)
  function clearLine(ax,ah,ay,bx,bh,by){
@@ -102,7 +102,7 @@ const ArenaCam=(()=>{
  // I: {vw,vh, me:{x,y,h,alive} or null, foes:[{x,y,w}] (who to keep in frame; w: weight), quiet (reduced motion), shx,shy (shake, px)}
  function update(dt,I){
   const G=rig(I.vw,I.vh),quiet=!!I.quiet,me=I.me;S.vw=I.vw;S.vh=I.vh;S.t+=dt;S.shx=I.shx||0;S.shy=I.shy||0;
-  const snap=!S.ready||!(dt>0)||dt>0.4;
+  const snap=!S.ready||dt>0.4||!Number.isFinite(S.fx.v+S.fy.v+S.fh.v+S.pitch.v);   // dt = 0 (a second draw in one tick) holds the frame; a broken state (a zero-sized screen) is cut clean
   let px=AW/2,py=AH/2,ph=0,alive=false;if(me){px=me.x;py=me.y;ph=me.h||0;alive=me.alive!==false;}
   // your travel (from positions: a live match predicts and corrects them, the camera only ever sees where the tank is drawn)
   if(me&&!snap){const jump=Math.hypot(px-S.lpx,py-S.lpy);if(jump<1.2&&dt>0){const k=1-Math.exp(-dt/0.12);S.vx+=((px-S.lpx)/dt-S.vx)*k;S.vy+=((py-S.lpy)/dt-S.vy)*k;}else{S.vx=0;S.vy=0;}}

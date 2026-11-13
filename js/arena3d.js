@@ -209,7 +209,8 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
    if(T.every(p=>p[0]<=F.x0)||T.every(p=>p[0]>=F.x1)||T.every(p=>p[2]<=F.z0)||T.every(p=>p[2]>=F.z1)){Out.push(T[0],T[1],T[2]);continue;}
    // four cuts; each piece goes to exactly one side
    const west=clipPoly(T,1,0,F.x0),rest=clipPoly(T,-1,0,-F.x0),east=clipPoly(rest,-1,0,-F.x1),mid=clipPoly(rest,1,0,F.x1),north=clipPoly(mid,0,1,F.z0),mid2=clipPoly(mid,0,-1,-F.z0),south=clipPoly(mid2,0,-1,-F.z1),inside=clipPoly(mid2,0,1,F.z1);
-   fan(west,Out);fan(east,Out);fan(north,Out);fan(south,Out);fan(inside,In);}
+   for(const side of [west,east]){fan(clipPoly(side,0,1,F.z0),Out);fan(clipPoly(clipPoly(side,0,-1,-F.z0),0,1,F.z1),Out);fan(clipPoly(side,0,-1,-F.z1),Out);}   // cut at the rect's corners too: every edge is shared, no T-junction
+   fan(north,Out);fan(south,Out);fan(inside,In);}
   return [In,Out];}
  function materials(renderer,q,envMap){
   const R=res(renderer),key=q;if(R.mats[key]){if(envMap)setEnvMap(renderer,envMap);return R.mats[key];}

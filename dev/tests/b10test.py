@@ -54,8 +54,11 @@ async def main():
           WP(me.x,me.y,0);const mx=WPx,my=WPy;WP(me.x+up[0],me.y+up[1],0);const upScreen=[WPx-mx,WPy-my];
           // the super drag: a finger on the ground point 3 east and 4 north of the tank aims exactly at it
           WP(me.x+3,me.y-4,0);aim={id:1,sx:0,sy:0,x:WPx,y:WPy,on:true};const aa=aimAng();aim=null;
+          // the overlay's projection and the WebGL camera are one camera: the same world points land on the same pixels
+          let camErr=0;if(chase)for(const [x,y,h] of [[me.x,me.y,0],[e.x,e.y,0.8],[2,30,0],[18,3,2.1],[10,16,1]]){const v=new THREE.Vector3(x,h,y).project(RCP),p=ArenaCam.project(x,y,h,{});camErr=Math.max(camErr,Math.hypot((v.x+1)*vw/2-p.x,(1-v.y)*vh/2-p.y));}
           paused=false;state='menu';document.body.classList.remove('battle');
-          return {chase,pitch,tapped,tappedNear,tappedFar,up,rt,dg,dgAng:Math.atan2(dg[1],dg[0]),want,mag:Math.hypot(dg[0],dg[1]),upScreen,aa,aWant:Math.atan2(-4,3)};}""")
+          return {camErr,chase,pitch,tapped,tappedNear,tappedFar,up,rt,dg,dgAng:Math.atan2(dg[1],dg[0]),want,mag:Math.hypot(dg[0],dg[1]),upScreen,aa,aWant:Math.atan2(-4,3)};}""")
+        check(r['chase'] and r['camErr']<0.75,'the overlay and the 3D scene share one camera (largest difference '+str(round(r['camErr'],3))+' px)')
         check(r['chase'] and 42<=r['pitch']<=56,'the Arcade battle draws through the chase camera '+json.dumps([r['chase'],r['pitch']]))
         check(r['tapped'] and r['tappedNear'] and not r['tappedFar'],'tapping an enemy where it is drawn locks onto it; a tap well beside it does not '+json.dumps([r['tapped'],r['tappedNear'],r['tappedFar']]))
         check(abs(r['up'][0])<1e-6 and abs(r['up'][1]+1)<1e-6 and abs(r['rt'][0]-1)<1e-6 and abs(r['rt'][1])<1e-6 and abs(r['dgAng']-r['want'])<1e-6 and abs(r['mag']-1)<1e-6 and abs(r['upScreen'][0])<0.5 and r['upScreen'][1]<-5,'joystick drives where your finger points: up is up the screen, right is right '+json.dumps(r))
