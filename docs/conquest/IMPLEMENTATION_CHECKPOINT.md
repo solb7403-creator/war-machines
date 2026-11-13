@@ -2472,7 +2472,7 @@ time between frames (the game draws twice per frame in this harness, the same on
   misbehaves, `window.LUNAR_ARENA3D=false` brings the earlier maps back for one device; for everyone, revert `434e09a` on main
   (the Pages and Worker deploys follow the revert) and note it here.
 
-## Checkpoint 35 — Session 5E-2b2a: Arcade chase camera + raised bridges (branch `claude/arcade-camera-raised-bridges-b9htvw`, from main `57574e7`) — BUILT; MERGE PRE-APPROVED BY THE OWNER (Nov 13, 2026: see "Owner update: stop the performance loop" and "Release status")
+## Checkpoint 35 — Session 5E-2b2a: Arcade chase camera + raised bridges (branch `claude/arcade-camera-raised-bridges-b9htvw`, from main `57574e7`) — RELEASED Nov 13, 2026 (PR #124 squash-merged as `1acff13`, build `20261113084826`; see "Release record")
 
 Brief: owner's Session 5E-2b2a prompt (Arcade uses a Conquest-style perspective chase camera on every map; Overpass and Canyon
 bridges raised on pillars, open underneath; keep all 5E-2c art; phones and desktops equal; release pre-approved once CI is green
@@ -2848,11 +2848,12 @@ reverts. `b10test.py`'s draw-cost budget check still fails on this renderer and 
 `graphics-motion.mjs`, `environment.mjs` PASS, `b3test.py` PASS (every map in 3D, no errors). The two reviewers were not run
 again: each revert restores lines they had read or that an earlier critic round had seen.
 
-### Release status: merge pre-approved by the owner (Nov 13)
+### Release status: released (merge pre-approved by the owner, Nov 13)
 The brief's condition "frame rate at least as good as main" is not met on the software renderer (table above) and was not
 pursued further: the owner ruled that those numbers are a relative check only and that he will judge the frame rate on his
 iPhone and his computer. Everything else in the brief is done, both reviewers passed, and the PR is merged once CI is green
-on its head. The merge commit, deploy runs and the live version check are in the "Release record" below once it exists.
+on its head. The merge commit, deploy runs and the live version check are in the "Release record" at the end of this
+checkpoint.
 If the live build stutters on a real device: `window.LUNAR_CHASECAM=false` brings the fixed view back on one device; for
 everyone, revert the merge commit on main.
 
@@ -2880,3 +2881,29 @@ everyone, revert the merge commit on main.
 - 5E-2b2b (supers and weapons) is to be judged with this camera; the timing bar now sits under the top HUD on phones.
 - Longshot / Canyon rock to reference level still needs sculpted meshes; wiki map pictures still show the 5E-2c maps.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
+
+### Release record (Nov 13, 2026)
+- **RELEASED: PR #124 squash-merged as `1acff13` (head `c6adf50`), build `20261113084826`, `PVP_V` 5 (unchanged).** Payments
+  stay disabled. No price, economy, airdrop, save, ownership, stat or supers-tuning change. Merge approved by the owner in
+  his Nov 13 update (above); the brief's frame-rate condition is his to judge on real devices.
+- CI on `c6adf50`: 10/10 green: conquest and transmission chromium + webkit (run [43397552853](https://github.com/solb7403-creator/war-machines/actions/runs/43397552853)), balance
+  (run [43397553127](https://github.com/solb7403-creator/war-machines/actions/runs/43397553127)), website incl. `arena-cam.mjs` / `arena-maps.mjs` and signup x3 (run
+  [43397552974](https://github.com/solb7403-creator/war-machines/actions/runs/43397552974)), verify (run [43397552909](https://github.com/solb7403-creator/war-machines/actions/runs/43397552909)), asset-integrity (run
+  [43397552907](https://github.com/solb7403-creator/war-machines/actions/runs/43397552907)). No review threads.
+- One CI failure before that head (`7e676a1`, run [43396168897](https://github.com/solb7403-creator/war-machines/actions/runs/43396168897)): `signup-browsers (chromium)`, the test's
+  own clock-made call sign hit the name filter (see "State at each push"). Fixed in the test in `c6adf50`; nothing skipped
+  or relaxed.
+- Worker deploy run [43401304128](https://github.com/solb7403-creator/war-machines/actions/runs/43401304128): success (server tests and the Workers-runtime live-match smoke passed
+  before the deploy); notices `pvp health: {"ok":true,"v":5,"open":0,"waiting":0,"queues":[]}` and
+  `live version: {"v":"20261113084826"} (repo: {"v":"20261113084826"})`, live = repo.
+- Pages run [43401303622](https://github.com/solb7403-creator/war-machines/actions/runs/43401303622): success on the first attempt (deployment of `1acff13`, whose `version.json` is
+  `20261113084826`). The live hosts are outside this container's network allowlist, so the Worker figures come from the
+  deploy run's own checks and the Pages figure from the deployment record.
+- Post-merge runs on main `1acff13`: Validate Laboratory UI (run [43401304276](https://github.com/solb7403-creator/war-machines/actions/runs/43401304276)): success. Equipment
+  Balance (run [43401304322](https://github.com/solb7403-creator/war-machines/actions/runs/43401304322), the same suite that was green on the PR head): still running when this record was written.
+- Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment),
+  so main was merged into it instead; this record and the ROADMAP row are the only changes it carries on top of main, and
+  they are NOT on main until a docs-only PR is merged (the owner's approval covered PR #124 only).
+- Not verified on a physical phone or a real computer: the owner's frame-rate check and the iPhone playtest checklist above
+  are the remaining checks. If the live build misbehaves, `window.LUNAR_CHASECAM=false` brings the fixed view back on one
+  device; for everyone, revert `1acff13` on main (`git revert 1acff13`, push, confirm the redeploy).
