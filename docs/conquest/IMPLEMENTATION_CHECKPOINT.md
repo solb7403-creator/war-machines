@@ -2505,3 +2505,84 @@ search-result summaries of the pages named, not from pages it opened. They are t
    as it was; reduced motion removes the opening crane shot and makes every camera move a cut.
 Not found by the agent: any published camera numbers for Brawl Stars, Squad Busters, Tanks a Lot or WoT Blitz; a sourced
 minimum on-screen character size; whether Brawl Stars flips the map.
+
+### Architecture (one new file; nothing in the sim, rules or Worker changed)
+- `js/arenacam.js` — **ArenaCam, the chase camera.** Pure math, no three.js, no DOM (so `dev/tests/arena-cam.mjs` runs it in
+  node). It owns: the rig for a screen shape (`rig`), one camera frame (`update`: follow, look-ahead, fight pull, the sight
+  solve, the crane shot, the respawn view), screen <-> ground (`project`, `ground`, `steer`), ground shapes for the 2D overlay
+  clipped at the camera plane (`path`, `arc`, `lane`), edge markers (`edge`, `pointer`), and the ground every shot can show
+  (`cover`). It loads beside the 3D engine with the map modules (`ARENA_JS` in `js/render3d.js`), not in the page's script list.
+- `js/render3d.js` — a `PerspectiveCamera` (`RCP`) next to the old orthographic one (`RC`). `chaseFrame()` runs ArenaCam once a
+  frame and copies position / target / lens into `RCP`; screen shake shifts the frustum (`setViewOffset`) by the same pixels the
+  overlay canvas is shifted. Particles switch to perspective sizing. A tank on a ramp follows the slope. The camera's axes are
+  handed to FX3D every frame (its billboards face the camera). The map key includes the chase view, so a resize rebuilds once.
+- `js/render.js` — the 2D overlay no longer assumes one scale: `WP(x,y,h)` puts a world point on the screen (through ArenaCam,
+  or the old `X()` / `Y()` in 2D and in the fixed view), `gArc` / `gLane` draw rings and lanes on the ground through the
+  camera. Input: `tapTarget` measures on the screen in the tank's own scale, `aimAng` casts the finger onto the ground at the
+  tank's height, `inputVec` goes through `ArenaCam.steer`. The HUD hangs from the top of the screen (`hudTop`), below the
+  notch / Telegram header (`--sat`). `drawEdges()` draws the off-screen markers.
+- `js/arena3d.js` — the ground is **two bakes** under the chase camera: everything any shot can show, coarse (12 px per unit on
+  HIGH), and the arena with a 2.5 unit margin at the screen's own density (up to 104 px per unit; 4.6 MP cap on a phone, 6.2 MP
+  on a desktop). The ground shader reads both and blends over the last 0.7 units; HIGH adds a tiling grain (two reads of the
+  existing grit tile) so the ground stays crisp right under the camera. Still no shadow maps and no lit ground.
+- `js/arenaprops.js` — `steelBridgeUp` and `mesaUp` (the raised bridges), mountains on a far horizon (`ridge`), a bounded
+  scatter of stones plus a few low hills beyond it (`outland`), and `skyFar`: stars and the Earth on a far shell that rides
+  with the camera, so the mountains slide against them as the camera travels.
+- **The earlier view is one switch away.** `window.LUNAR_CHASECAM=false` (or `arenacam.js` failing to load) gives the fixed tilted
+  view of 5E-2c with its low bridge, its gratings and its own input mapping, byte for byte the same code paths as before
+  (`b10test.py` pins both). 2D mode and the no-WebGL fallback never touch the camera.
+
+### Decisions and reasons (changes to the owner's plan are marked CHANGE)
+1. **Fixed yaw (the camera always looks north), not a camera that turns with the hull.** Conquest's own camera does not turn
+   with the hull either: it orbits only when the player drags, and in Arcade a drag is the drive stick. A view that turned with
+   the tank would change what "up on the stick" means every moment and would break "firing stays exactly as it is". With a
+   fixed yaw, up on the stick is north and right is east, as today.
+2. **Pitch 53 / 49 from level, a 46 / 34 degree lens, 35 / 28 units away** (phone / desktop; research 1). A phone shows 13.8
+   units across at the tank (the old view: 20), so a tank is about 1.45x the size it was; a 1080p desktop 62 px per unit
+   (old: 37). `arena-cam.mjs` holds: on nine screen shapes from 320x568 to 2560x1080, wherever the tank stands, the weapon's
+   range (6 units) is on screen to both sides and ahead, 4 units behind, and a tank is at least 28 px wide.
+3. **The tank sits a little below the middle** (20% of the half-height on a phone, 14% on a desktop): more of the view is
+   ahead, where the enemy side is. At your own end and at the far end the view stops sliding, so no screen is spent on the
+   ground outside the arena.
+4. **The view stops panning 1.6 units past the arena's sides**; on a screen wider than the arena it drifts with the tank at
+   30% (parallax without losing the overview).
+5. **Sight solve instead of fading** (owner rule: no fading, no see-through). Every frame the camera tests the straight line
+   from where it would stand to your tank against boxes for every wall, rock, crate, pier, ramp and the deck slab. Blocked:
+   it takes the nearest pitch that is clear, upwards (to 74) over walls and the deck's far side, and in a tunnel's lane
+   downwards (to 10.5) while moving in to 60% of its distance, so it looks along the tunnel. It starts that move 0.3 s before
+   the tank is inside (from the tank's own travel), so the tank is not lost on the way in. `arena-cam.mjs`: clear sight on
+   every one of 2,687 sampled standing spots on the six maps, phone and desktop.
+6. **Raised bridges, solid decks.** Deck surface at 2.1 (was 1.0), slab 0.3 thick, so 1.8 clear underneath. Overpass: one slab
+   on two girders; where the rules have solid blocks under the deck there are concrete piers (a recessed bulkhead behind
+   square columns with cross-bracing); where the rules have a tunnel the space is open from mouth to mouth, with a light bar
+   under the girder and light strips along the roof. Canyon: two rock buttes and a steel span on four posts over the cleft.
+   Ramps rise 2.1 over their 3 units (35 degrees), tanks tilt with them. The gratings of 5E-2c are gone (they were the
+   see-through). Deck, tunnel, ramp, elevation and line-of-sight rules are untouched: `MAPS` and `js/game.js` have no diff.
+7. **What a solid deck hides, and what stands in for it.** From 53 degrees a deck 5 units deep hides a tank that is more than
+   about a unit inside a tunnel, and nothing short of a see-through deck changes that. So: (a) your own tank is never hidden
+   (decision 5); (b) every tank keeps its health bar and marker, which the overlay draws regardless; (c) **the tunnel's own
+   lamps turn the team colour of whoever is inside** (red for an enemy, blue for your side, alternating for both) on both
+   mouths. It is the same for every player.
+8. **Off-screen markers** (research 4): enemies a red wedge with a health arc, the nearest four, bigger and brighter when
+   close, pulsing with a white ring while you are inside their range; a super that will reach you from outside the frame a
+   flashing "!" disc; team mates a small blue dot (nearest two); objectives a diamond (Moon Zone in its owner's colour, the
+   next zone gold, the crystal mine purple, the nearest power-up gold "?", the ring's centre when you are outside it). They sit
+   on the edge of the screen minus the HUD and the three buttons. Things behind the camera are pointed at through the ground
+   direction, so a marker never jumps.
+9. **Fairness.** One rig for everybody, a function of the screen's shape only. A live match already turns the map for the
+   far team (`js/pvp.js`), so each side looks north from its own end and the deck hides the same things for both. Bots never
+   had a camera; their sight rules in the sim are unchanged.
+10. **Input: the same input lands on the same ground.** A tap locks the enemy within 1.4 units of where the tank is drawn
+    (a far tank keeps at least the old finger-sized target); the super drag aims from the tank to the ground point under the
+    finger at the tank's own height (so it is right on the deck too); the stick and the keys mean the same thing wherever the
+    tank is on the screen. The timing bar, DASH and SHIELD are screen controls and did not move.
+11. **Opening crane shot** (2.3 s, CHANGE: not in the plan): the match opens low behind your tank, with the far mountains,
+    stars and the Earth above the arena, and rises to the playing view. It is the one place the sky shows (from 53 degrees
+    the top of the screen looks at ground, never at sky), you can drive during it, both sides get it, and reduced motion
+    skips it. Not used in the practice range or between rounds.
+12. **Waiting to respawn**: the view widens by 16% and moves 60% of the way to the fight, so the wait is spent watching it.
+13. **CHANGE: no lens or zoom kick on supers.** The research found none that top competitive games keep in live play, and the
+    brief says supers tuning belongs to 5E-2b2b. Shake is exactly what it was.
+14. **Far terrain instead of a near skyline.** The ground now runs 33 units north to a mountain range (three layers), and the
+    old phone-only skyline strip is gone: with a moving camera a ridge 5 units past the arena read as the edge of a table.
+15. **Menu map pictures show the raised bridge** (same build, the fixed picture camera).

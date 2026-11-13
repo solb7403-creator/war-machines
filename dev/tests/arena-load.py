@@ -40,7 +40,7 @@ async def run(p,dev):
         if not fp.is_file():continue
         d=fp.read_bytes();n=len(d);z=len(gzip.compress(d,9)) if f.endswith(TEXT) else n;raw+=n;wire+=z;big.append((z,f))
     big.sort(reverse=True)
-    out={'device':dev,'requests':len(files),'rawBytes':raw,'wireBytes':wire,'readyMs':round(ready),**r,'at9Mbps_s':round(wire*8/9e6,2),'at1_6Mbps_s':round(wire*8/1.6e6,2),'largest':[(f,z) for z,f in big[:6]],'mapFiles':[(f,len(gzip.compress((pathlib.Path(REPO)/f).read_bytes(),9))) for f in files if any(k in f for k in ('mapenv','arena3d','arenaprops'))]}
+    out={'device':dev,'requests':len(files),'rawBytes':raw,'wireBytes':wire,'readyMs':round(ready),**r,'at9Mbps_s':round(wire*8/9e6,2),'at1_6Mbps_s':round(wire*8/1.6e6,2),'largest':[(f,z) for z,f in big[:6]],'mapFiles':[(f,len(gzip.compress((pathlib.Path(REPO)/f).read_bytes(),9))) for f in files if any(k in f for k in ('mapenv','arena3d','arenaprops','arenacam'))]}
     print(json.dumps(out));print('errors',errs[:3]);await b.close();return out
 async def main():
     start_dev();res=[]

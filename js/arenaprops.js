@@ -176,7 +176,7 @@ const ArenaProps=(()=>{
   let x0=dx;const blocks=[];for(const [tx,tw] of BRd.tunnels){blocks.push([x0,tx-x0,true]);blocks.push([tx,tw,false]);x0=tx+tw;}blocks.push([x0,dx+dw-x0,true]);
   // the deck: one slab on two edge girders, plated on top
   B.box('metal',slab,dx+dw/2,D-TS/2,zc,dw,TS,dh,0,{ao:0,dust:0.14});
-  for(const s of [-1,1]){B.box('metal',slabD,dx+dw/2,D-TS/2-0.07,zc+s*(dh/2-0.06),dw+0.04,TS+0.14,0.14,0,{ao:0,dust:0.06});if(hi)for(let x=dx+0.6;x<dx+dw-0.3;x+=1.2)B.box('metal','#444a50',x,D-TS/2-0.07,zc+s*(dh/2+0.012),0.06,TS+0.06,0.02,0,{ao:0,dust:0,noShadow:1});}
+  for(const s of [-1,1]){B.box('metal',slabD,dx+dw/2,D-TS/2-0.01,zc+s*(dh/2-0.06),dw+0.04,TS+0.06,0.14,0,{ao:0,dust:0.06});if(hi)for(let x=dx+0.6;x<dx+dw-0.3;x+=1.2)B.box('metal','#444a50',x,D-TS/2-0.01,zc+s*(dh/2+0.012),0.06,TS,0.02,0,{ao:0,dust:0,noShadow:1});}
   for(let x=dx+0.9;x<dx+dw-0.6;x+=1.5)B.box('paint',HZ,x,D+0.006,zc,0.7,0.012,0.09,0,{ao:0,dust:0.25,noShadow:1});   // a worn centre line
   if(hi){for(let t=1.2;t<dw-0.3;t+=1.2)B.box('metal',dark,dx+t,D+0.002,zc,0.035,0.01,dh-0.5,0,{ao:0,dust:0,noShadow:1});for(const fz of [0.3,0.7])B.box('metal',dark,dx+dw/2,D+0.002,dy+dh*fz,dw-0.1,0.01,0.03,0,{ao:0,dust:0,noShadow:1});
    for(let t=0.6;t<dw-0.3;t+=1.2){const kq=Math.floor(hs(dx+t,3.3)*3);if(kq===0)B.box('metal',slabD,dx+t,D+0.004,zc,0.7,0.008,dh*0.3,0,{ao:0,dust:0.1,noShadow:1});else if(kq===1){for(const fz of [0.16,0.84])B.box('metal','#7b838a',dx+t,D+0.004,dy+dh*fz,0.9,0.008,0.5,0,{ao:0,dust:0.1,noShadow:1});}else B.box('metal','#5b6166',dx+t,D+0.004,zc,0.36,0.008,dh*0.72,0,{ao:0,dust:0.1,noShadow:1});}}
@@ -196,8 +196,8 @@ const ArenaProps=(()=>{
     for(const s of [-1,1])hazard(B,sx+0.5,zc+s*(dh/2-0.3),sx+sw-0.5,zc+s*(dh/2-0.3),0.11,0.16,[0,s]);
    }else{
     // a tunnel: open from mouth to mouth. A header beam with a light bar over each mouth, light strips along its roof
-    for(const s of [-1,1]){const zf=zc+s*(dh/2-0.08);B.box('metal',dark,sx+sw/2,U-0.11,zf,sw-0.3,0.22,0.2,0,{ao:0,dust:0});B.glow(CY,sx+sw/2,U-0.25,zf+s*0.07,sw-0.7,0.04,0.03);B.halo(sx+sw/2,U-0.3,zf+s*0.3,2.6,CY,0.34);
-     if(hi)for(const e of [sx+0.52,sx+sw-0.52])B.box('paint',HZ,e,U-0.11,zf+s*0.102,0.16,0.16,0.012,0,{ao:0,dust:0,noShadow:1});}
+    for(const s of [-1,1]){const zf=zc+s*(dh/2-0.08);B.glow(CY,sx+sw/2,U-0.03,zf+s*0.07,sw-0.7,0.04,0.03);B.halo(sx+sw/2,U-0.12,zf+s*0.3,2.6,CY,0.34);   // the mouth keeps its full height: only a light bar under the girder
+     if(hi)for(const e of [sx+0.52,sx+sw-0.52])B.box('paint',HZ,e,D-TS/2,zf+s*0.152,0.16,0.16,0.012,0,{ao:0,dust:0,noShadow:1});}
     for(const e of [sx+0.47,sx+sw-0.47])B.glow(CY,e,U-0.05,zc,0.03,0.03,dh-0.9);
     for(const fz of [0.3,0.7])B.halo(sx+sw/2,U-0.3,dy+dh*fz,2.4,CY,0.2);
     M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.34]);M.glowSpots.push([sx+sw/2,dy+dh+0.6,1.9,'60,230,215',0.34]);M.glowSpots.push([sx+sw/2,dy-0.6,1.9,'60,230,215',0.34]);M.glowSpots.push([sx+sw/2,zc,2.2,'60,230,215',0.42]);
@@ -597,7 +597,7 @@ const ArenaProps=(()=>{
    vertexShader:'attribute float size;attribute vec4 rgba;varying vec4 vC;uniform float uS;uniform float uT;void main(){vC=rgba;vC.a*=0.75+0.25*sin(uT*(0.6+rgba.a*1.7)+position.x*0.31);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_PointSize=min(12.0,max(1.5,size*uS));}',
    fragmentShader:'varying vec4 vC;uniform float uA;void main(){vec2 d=gl_PointCoord-0.5;float r=length(d)*2.0;if(r>1.0)discard;gl_FragColor=vec4(vC.rgb,vC.a*uA*pow(1.0-r,1.6));}'});
   const stars=new T.Points(sg,sm);stars.frustumCulled=false;stars.renderOrder=-5;g.add(stars);
-  const size=36,az=-0.075,el=0.098,Re=360,em=new T.MeshBasicMaterial({map:earth,transparent:true,depthWrite:false,toneMapped:false}),e=new T.Mesh(new T.PlaneGeometry(size,size),em);
+  const size=36,az=-0.05,el=0.064,Re=360,em=new T.MeshBasicMaterial({map:earth,transparent:true,depthWrite:false,toneMapped:false}),e=new T.Mesh(new T.PlaneGeometry(size,size),em);
   e.position.set(Math.sin(az)*Math.cos(el)*Re,Math.sin(el)*Re,-Math.cos(az)*Math.cos(el)*Re);e.renderOrder=-4;e.frustumCulled=false;g.add(e);
   return {group:g,stars:sm,earth:em,far:true,set(st,ea,t,pxs,cam){sm.uniforms.uA.value=st;sm.uniforms.uT.value=t||0;if(pxs)sm.uniforms.uS.value=pxs;em.opacity=ea;e.visible=ea>0.01;stars.visible=st>0.01;
     if(cam){g.position.copy(cam.position);g.updateMatrixWorld(true);e.lookAt(cam.position);}},dispose(){sg.dispose();sm.dispose();e.geometry.dispose();em.dispose();}};

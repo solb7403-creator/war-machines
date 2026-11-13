@@ -23,7 +23,7 @@ const CAM=()=>typeof chaseOn==='function'&&chaseOn();
 let WPx=0,WPy=0,WPk=1;const WPo={x:0,y:0,k:1,d:1,ok:true};
 function WP(x,y,h){if(CAM()){ArenaCam.project(x,y,h||0,WPo);WPx=WPo.x;WPy=WPo.y;WPk=WPo.k;return WPo.ok;}WPx=X(x);WPy=Y(y)-(h?h*GSN*sc:0);WPk=sc;return true;}
 const hOf=b=>D3on()?heightAt(b):0;   // how high a tank stands (the deck, a ramp)
-const KU=()=>CAM()?Math.max(sc*0.8,Math.min(sc*1.55,WPk)):sc;   // the size of a label by a tank: it follows the tank's depth, within limits, so far labels stay readable
+const KU=()=>CAM()?Math.max(sc*0.8,Math.min(sc*1.3,WPk)):sc;   // the size of a label by a tank: it follows the tank's depth, within limits, so far labels stay readable
 const hudTop=()=>CAM()?SAT+Math.max(6,sc*0.3):oy-HUD*sc,hudY0=()=>hudTop()+HUD*sc,hudX0=()=>CAM()?Math.max(8,sc*0.4):X(0);   // the chase camera has no arena rectangle: the HUD hangs from the top of the screen
 const gArc=(x,y,r,a0,a1,ccw,h)=>CAM()?ArenaCam.arc(g,x,y,r,a0,a1,ccw,h||0):g.ellipse(X(x),Y(y),Math.max(0,r*sc),Math.max(0,r*sc*GK),0,a0===undefined?0:a0,a1===undefined?Math.PI*2:a1,!!ccw);   // a circle lying on the ground
 // a super's lane on the ground under the chase camera: from (x,y) along a, len long, hw to each side; mid: its centre line

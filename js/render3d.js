@@ -159,7 +159,7 @@ function mkSFX(){
  const glowMat=new THREE.ShaderMaterial({vertexShader:FXG_VS,fragmentShader:FXG_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,side:THREE.DoubleSide});   // premultiplied: colour adds, alpha darkens (one batch for glow and scorch)
  const dot=(add,x,y,z,sz,r,g,b,a)=>{const ps=add?PSA:PSN;if(ps.n>=ps.max)return;const i=ps.n++;ps.P[i*3]=x;ps.P[i*3+1]=y;ps.P[i*3+2]=z;ps.C[i*4]=r;ps.C[i*4+1]=g;ps.C[i*4+2]=b;ps.C[i*4+3]=a;ps.S[i]=sz;};
  return FX3D.create(THREE,{mode:'arcade',scene:RS,low:()=>R3.q==='low',quiet:()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),glowMat,solidMat:MT.lit,glowAttr:'rgba',solidAttr:'color',
-  right:FXR,up:FXU,fwd:FXF,minW:.08,dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:2600,maxVerts:5400,maxParticles:1500,maxDebris:96});
+  right:FXR,up:FXU,fwd:FXF,get slideMax(){return R3.chase?1.4:0;},minW:.08,dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:2600,maxVerts:5400,maxParticles:1500,maxDebris:96});
 }
 // what a tank is made of when it breaks: Parasite-style hulls split like chitin, everything else tears like armour
 const tankMat=u=>'armor';
@@ -411,8 +411,9 @@ function matchObjs(){   // things that live for one match: spawn pads, the cryst
  if(typeof ArenaCam!=='undefined')ArenaCam.begin({quiet:typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),noIntro:!!window.LUNAR_NO_CAM_INTRO||!me||(typeof rangeRun!=='undefined'&&!!rangeRun)});
  const done=new Set();
  for(const u of units){if(u.boss||u.sx===undefined)continue;const k=Math.round(u.sx*2)+','+Math.round(u.sy*2);if(done.has(k))continue;done.add(k);
-  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.95,0.06,6),new THREE.MeshLambertMaterial({color:chaseOn()?0x59616b:0x2a3242}));pad.userData.rangeOwnedGeometry=true;pad.position.set(u.sx,0.03,u.sy);D.add(pad);
-  const pr=new THREE.Mesh(new THREE.RingGeometry(0.78,0.9,6).rotateX(-Math.PI/2),addMat(tcol(u.team),0.6));pr.userData.rangeOwnedGeometry=true;pr.position.set(u.sx,0.065,u.sy);D.add(pr);}
+  const flatPad=chaseOn();   // the chase camera: a spawn point is a team-coloured outline on the ground, not a dark slab that reads as a hole
+  if(!flatPad){const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.85,0.95,0.06,6),new THREE.MeshLambertMaterial({color:0x2a3242}));pad.userData.rangeOwnedGeometry=true;pad.position.set(u.sx,0.03,u.sy);D.add(pad);}
+  const pr=new THREE.Mesh(new THREE.RingGeometry(flatPad?0.84:0.78,0.9,6).rotateX(-Math.PI/2),flatPad?decMat(tcol(u.team),0.45):addMat(tcol(u.team),0.6));pr.userData.rangeOwnedGeometry=true;pr.position.set(u.sx,flatPad?0.02:0.065,u.sy);D.add(pr);}
  if(cry){const m=cry.mine,cl=new THREE.Group();
   for(let i=0;i<7;i++){const a=i/7*6.28,r=i?0.55+(i%2)*0.2:0,h=i?0.6+(i%3)*0.25:1.3,c=new THREE.Mesh(G.oct,G.cryM);c.scale.set(0.22,h,0.22);c.position.set(m.x+Math.cos(a)*r,h*0.5,m.y+Math.sin(a)*r);c.rotation.set((i?0.3:0)*Math.cos(a),0,(i?0.3:0)*Math.sin(a));cl.add(c);}
   const cm=B3.map&&B3.map.arena?decMat:addMat;
@@ -778,7 +779,7 @@ function art3D(ctx,w,h,a){
  return false;
 }
 function mapArt(ctx,w,h,id){
- const A=artR(),q=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.quality:'high',key=id+'|'+q+'|'+(arenaOn()?'arena':typeof Environment3D!=='undefined'?Environment3D.key():'legacy');let m=A.maps.get(key);if(!m){if(arenaOn()){try{m=Arena3D.build(id,{renderer:A.r,q:'low',view:{x0:-1.5,x1:W+1.5,z0:-1.5,z1:H+1.5},env:null,soft:true,density:Math.max(10,Math.min(24,w*dpr/W)),thumb:true});}catch(e){m=null;}}if(!m)m=M3.buildMap(id,A.mats,q);A.maps.set(key,m);if(A.maps.size>4){const old=A.maps.keys().next().value;disposeMap3D(A.maps.get(old));A.maps.delete(old);}}
+ const A=artR(),q=typeof Equipment3D!=='undefined'&&Equipment3D.enabled?Equipment3D.quality:'high',key=id+'|'+q+'|'+(arenaOn()?'arena'+(typeof ArenaCam!=='undefined'&&window.LUNAR_CHASECAM!==false?'c':''):typeof Environment3D!=='undefined'?Environment3D.key():'legacy');let m=A.maps.get(key);if(!m){if(arenaOn()){try{m=Arena3D.build(id,{renderer:A.r,q:'low',view:{x0:-1.5,x1:W+1.5,z0:-1.5,z1:H+1.5},env:null,soft:true,density:Math.max(10,Math.min(24,w*dpr/W)),thumb:true,chase:typeof ArenaCam!=='undefined'&&window.LUNAR_CHASECAM!==false});}catch(e){m=null;}}if(!m)m=M3.buildMap(id,A.mats,q);A.maps.set(key,m);if(A.maps.size>4){const old=A.maps.keys().next().value;disposeMap3D(A.maps.get(old));A.maps.delete(old);}}
  const cam=new THREE.OrthographicCamera(-1,1,1,-1,1,400),s=Math.min(w/W,h/(H*GKC+1.2)),hw=w/2/s,hh=h/2/s;
  cam.left=-hw;cam.right=hw;cam.top=hh;cam.bottom=-hh;cam.up.set(0,GSN,-GKC);cam.position.set(W/2,GKC*150,H/2+GSN*150);cam.lookAt(W/2,0,H/2);cam.updateProjectionMatrix();
  artShot(ctx,w,h,m.group,{cam},[]);
