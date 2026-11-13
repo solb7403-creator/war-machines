@@ -422,7 +422,7 @@ void main(){
    M.bakeW=Math.max(64,Math.round(vw_*ppu));M.bakeH=Math.max(64,Math.round(vd_*ppu));
    M.rt=mkRT(M.bakeW,M.bakeH,true,true,false);M.rt.texture.anisotropy=an;
   }
-  const grain=F&&high&&!o.soft?tiles(renderer,q)[th.plates?'paintC':'gritC']:null,defs=grain?{GRAIN:1}:{};
+  const grain=F&&high&&!o.soft&&!o.phone?tiles(renderer,q)[th.plates?'paintC':'gritC']:null,defs=grain?{GRAIN:1}:{};
   const envU={uAmb:env?env.uniforms.uAmb:{value:new T.Vector3(0.11,0.135,0.16)},uSun:env?env.uniforms.uSun:{value:new T.Vector3(0.7,0.66,0.6)},uFogC:env?env.uniforms.uFogC:{value:new T.Vector3()},uFog:env?env.uniforms.uFog:{value:new T.Vector3(0,0,1)}};
   const gmat=(tex,rc)=>new T.ShaderMaterial({side:T.DoubleSide,defines:defs,vertexShader:GROUND_VS,fragmentShader:GROUND_FS,uniforms:Object.assign({tMap:{value:tex},uRect:{value:new T.Vector4(rc[0],rc[1],rc[2],rc[3])},tGrain:{value:grain?grain.texture:null},uGrain:{value:new T.Vector2(th.plates?0.42:0.55,th.grain===undefined?0.42:th.grain)}},envU)});
   const gmesh=(tri,mat)=>{const P=new Float32Array(tri.length*3);for(let i=0;i<tri.length;i++){P[i*3]=tri[i][0];P[i*3+1]=tri[i][1];P[i*3+2]=tri[i][2];}const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(P,3));const m=new T.Mesh(g,mat);m.frustumCulled=false;m.matrixAutoUpdate=false;m.renderOrder=-2;G.add(m);return m;};

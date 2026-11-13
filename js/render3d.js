@@ -433,8 +433,8 @@ function frame3D(shx,shy){
  ensureMap();if(!B3.map)return;matchObjs();
  const lfx=lunarFx();lunarPulse(t,lfx);
  const s=sc,ox2=ox+shx,oy2=oy+shy,chase=chaseOn()&&!!B3.map.chase;
- let pxs;const pr=RR.getPixelRatio();
- if(chase){const c=chaseFrame(dt,shx,shy);pxs=c.f*pr;const pm=Math.min(R3.ptMax||256,256*Math.max(1,c.f/c.dist/Math.max(8,s)));for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=1;ps.pts.material.uniforms.uMax.value=pm;}}
+ let pxs,HS=1;const pr=RR.getPixelRatio();   // HS: glow sprites under the chase camera are scaled so they cover about the pixels they did in the fixed view (additive fill is the dearest pixel there is)
+ if(chase){const c=chaseFrame(dt,shx,shy);pxs=c.f*pr;HS=Math.max(0.5,Math.min(1,s/(c.f/c.dist)*1.15));const pm=Math.min(R3.ptMax||256,256*Math.max(1,c.f/c.dist/Math.max(8,s)));for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=1;ps.pts.material.uniforms.uMax.value=pm;}}
  else{FXR[0]=1;FXR[1]=0;FXR[2]=0;FXU[0]=0;FXU[1]=GSN;FXU[2]=-GKC;FXF[0]=0;FXF[1]=GKC;FXF[2]=GSN;RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();pxs=s*pr;for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=0;ps.pts.material.uniforms.uMax.value=256;}}
  STARS.material.uniforms.uS.value=pr*18;
  poolsBegin();if(SFX)SFX.begin(dt,t);
@@ -446,7 +446,7 @@ function frame3D(shx,shy){
   if(ENV)ENV.update(dt,t);if(SHADOW_M&&ENV)SHADOW_M.opacity=ENV.state.shadow;
   if(!R3.arenaEnv&&R3.q==='high'){const em=arenaEnvMap();if(em){Arena3D.setEnvMap(RR,em);R3.arenaEnv=1;}}
   if(SMK){SMK.limit(R3.q==='low'?320:900,R3.q==='low'?0.7:0.3);SMK.life(R3.q==='low'?8:14,R3.q==='low'?14:26);SMK.update(t);}
-  for(const h of B3.map.halos){const k=h[6]&&!quietMap?0.72+0.28*Math.sin(t*h[6]+h[0]*1.7+h[2]):1;once(PSA,h[0],h[1],h[2],h[3]*(0.9+0.1*k),h[4],h[5]*k);}
+  for(const h of B3.map.halos){const k=h[6]&&!quietMap?0.72+0.28*Math.sin(t*h[6]+h[0]*1.7+h[2]):1;once(PSA,h[0],h[1],h[2],h[3]*(0.9+0.1*k)*HS,h[4],h[5]*k);}
   // a tank under the deck cannot be seen through it (nothing is see-through): the tunnel's own lamps say who is inside, in
   // the team's colour, on both mouths
   if(B3.map.chase&&BR){const U=B3.map.deckUnder,[,dy,,dh]=BR.deck;for(const [tx,tw] of BR.tunnels){let foe=0,ally=0;for(const u of units){if(u.hp<=0||(u.elev||0)!==0||u.x<tx||u.x>tx+tw||u.y<dy||u.y>dy+dh)continue;if(me&&u.team===me.team)ally++;else foe++;}
@@ -515,8 +515,8 @@ function frame3D(shx,shy){
   if(o.varc){o.varc.rotation.y=-t*0.9;o.varc.mat.opacity=0.45+0.25*Math.sin(now/380);}
   if(vl>=25&&Math.random()<dt*(R3.q==='low'?6:14)){const a=Math.random()*6.28,d=Math.random()*1.3*ds;emit(PSA,{x:u.x+Math.cos(a)*d,y:hgt+0.35+Math.random()*0.9*ds,z:u.y+Math.sin(a)*d,vy:0.6,life:0.6,s0:0.08,s1:0.42,c:['#ffffff','#c79bff','#ffcf4a','#ff7ad9'][(Math.random()*4)|0],a:0.95});}
   // soft glows on lights, orbs and cores (a cheap stand-in for bloom)
-  for(const h of o.meta.halos){const w=wpos(o.body,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6,h[3],0.55);}
-  for(const h of o.wmeta.halos){const w=wpos(o.wg,h);once(PSA,w.x,w.y,w.z,h[4]*o.ws*ds*1.6,h[3],0.55);}
+  if(o.g.visible){for(const h of o.meta.halos){const w=wpos(o.body,h);once(PSA,w.x,w.y,w.z,h[4]*ds*1.6*HS,h[3],0.55);}
+  for(const h of o.wmeta.halos){const w=wpos(o.wg,h);once(PSA,w.x,w.y,w.z,h[4]*o.ws*ds*1.6*HS,h[3],0.55);}}
   // Lunar: 3 small, faint wisps per emitter (<=4), riding the hull; never drawn on Low or with reduced motion
   if(lfx&&o.spec.lunar&&o.meta.lunar){const E=o.meta.lunar.wisps,ph=(u.id||0)*.37;for(let i=0;i<E.length&&i<4;i++)for(let j=0;j<3;j++){const f=(t*1.7+j/3+ph+i*.29)%1,w=wpos(o.body,lunarWisp(E[i],f,.30));once(PSA,w.x,w.y,w.z,(.17*(1-f)+.05)*ds,WISP_C[j],.48*(1-f)*Math.min(1,f*5));}}
   // super charging: each of the ten supers gathers its own light while the timing bar sweeps (FX3D)

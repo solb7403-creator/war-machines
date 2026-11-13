@@ -47,6 +47,8 @@ const gArc=(x,y,r,a0,a1,ccw,h)=>CAM()?ArenaCam.arc(g,x,y,r,a0,a1,ccw,h||0):g.ell
 // floating text under the chase camera: where a text of width w and height fh centred at (x,y) may go. It is pushed clear of
 // the minimap and the buttons, kept on the screen, and lifted line by line off texts already placed this frame (TXO: the result)
 const TXR=[],TXO=[0,0];let TXN=0;
+// a floating text's width at a font size: measured once per text (at 100 px), not every frame
+function txtW(q,fs){if(q.w1===undefined||q.wt!==q.txt){const f=g.font;g.font=font(100);q.w1=g.measureText(q.txt).width/100;q.wt=q.txt;g.font=f;}return q.w1*fs;}
 function txtAt(x,y,w,fh){
  const M=miniRect(),Z=btnZone(),hw=w/2+3;
  if(y<M.y+M.h+6&&x-hw<M.x+M.w+6)x=M.x+M.w+6+hw;
@@ -924,8 +926,8 @@ function drawBattle(){
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
  const up=D3?sc*0.6:0;   // in 3D, text floats from the top of the tanks
  TXN=0;   // chase camera: texts that would land on each other, on the minimap or under the buttons are moved clear (txtAt)
- for(const q of pops){WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.8));let tx=lx(WPx,q.txt),ty=Math.max(ty0,WPy-up-ku*(1.4-q.t)*1.2-ku);if(CH){txtAt(tx,ty,g.measureText(q.txt).width,ku*0.8);tx=TXO[0];ty=TXO[1];}g.fillText(q.txt,tx,ty);g.globalAlpha=1;}
- for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.max(sc*0.62,Math.min(WPk,sc*1.05)):ku)*0.66*(q.z||1)));let tx=lx(WPx,q.txt),ty=Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6);if(CH){txtAt(tx,ty,g.measureText(q.txt).width,Math.max(sc*0.62,Math.min(WPk,sc*1.05))*0.66*(q.z||1));tx=TXO[0];ty=TXO[1];g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,tx,ty);}g.fillText(q.txt,tx,ty);g.globalAlpha=1;}
+ for(const q of pops){WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.8));let tx,ty=Math.max(ty0,WPy-up-ku*(1.4-q.t)*1.2-ku);if(CH){txtAt(WPx,ty,txtW(q,ku*0.8),ku*0.8);tx=TXO[0];ty=TXO[1];}else tx=lx(WPx,q.txt);g.fillText(q.txt,tx,ty);g.globalAlpha=1;}
+ for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.max(sc*0.62,Math.min(WPk,sc*1.05)):ku)*0.66*(q.z||1)));let tx,ty=Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6);if(CH){const fs=Math.max(sc*0.62,Math.min(WPk,sc*1.05))*0.66*(q.z||1);txtAt(WPx,ty,txtW(q,fs),fs);tx=TXO[0];ty=TXO[1];g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,tx,ty);}else tx=lx(WPx,q.txt);g.fillText(q.txt,tx,ty);g.globalAlpha=1;}
  g.restore();
  if(CH)drawEdges();   // who and what is outside the frame
  else if(typeof pvpOn==='function'&&pvpOn()&&me)drawVeil();   // a live match without the chase camera: the same frame, drawn as a veil
