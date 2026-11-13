@@ -21,7 +21,7 @@ let checks=0;
 // ---- the rig ----
 for(const [name,[vw,vh]] of Object.entries(SCREENS)){
  const G=C.rig(vw,vh);
- assert.ok(G.fov>=30&&G.fov<=50,name+' fov '+G.fov);assert.ok(G.pitch>=46&&G.pitch<=58,name+' pitch '+G.pitch);
+ assert.ok(G.fov>=28&&G.fov<=50,name+' fov '+G.fov);assert.ok(G.pitch>=42&&G.pitch<=56,name+' pitch '+G.pitch);
  assert.ok(G.dist*G.th*G.a>=C.P.halfW-1e-6,name+': the frame is at least 2 x '+C.P.halfW+' units wide at the tank');
  assert.ok(G.dist*G.th>=C.P.halfH-1e-6,name+': and tall enough');
  const px=(vh/2/G.th)/G.dist;assert.ok(px*2*R*1.12>=28,name+': a tank is at least 28 px wide ('+(px*2*R*1.12).toFixed(1)+')');checks+=4;

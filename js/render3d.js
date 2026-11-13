@@ -125,7 +125,7 @@ function chaseFrame(dt,shx,shy){
  CAMF.length=0;let mine=null;
  if(me){mine={x:me.x,y:me.y,h:heightAt(me),alive:me.hp>0};
   for(const u of units){if(u.hp<=0||u===me)continue;if(me.hp>0){if(u.team===me.team)continue;CAMF.push({x:u.x,y:u.y,w:typeof tapFocus!=='undefined'&&u.id===tapFocus?2.5:1});}else CAMF.push({x:u.x,y:u.y,w:1});}}
- const c=ArenaCam.update(dt,{vw,vh,me:mine,foes:CAMF,quiet:typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()});
+ const c=ArenaCam.update(dt,{vw,vh,me:mine,foes:CAMF,bar:typeof supBarOn==='function'&&supBarOn(),quiet:typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()});
  RCP.fov=c.fov;RCP.aspect=vw/Math.max(1,vh);RCP.near=c.near;RCP.far=c.far;RCP.position.set(c.x,c.h,c.y);RCP.up.set(0,1,0);RCP.lookAt(c.tx,c.th,c.ty);
  if(shx||shy)RCP.setViewOffset(vw,vh,-shx,-shy,vw,vh);else if(RCP.view)RCP.clearViewOffset();
  RCP.updateProjectionMatrix();RCP.updateMatrixWorld();
@@ -449,7 +449,7 @@ function frame3D(shx,shy){
   // the team's colour, on both mouths
   if(B3.map.chase&&BR){const U=B3.map.deckUnder,[,dy,,dh]=BR.deck;for(const [tx,tw] of BR.tunnels){let foe=0,ally=0;for(const u of units){if(u.hp<=0||(u.elev||0)!==0||u.x<tx||u.x>tx+tw||u.y<dy||u.y>dy+dh)continue;if(me&&u.team===me.team)ally++;else foe++;}
    if(!foe&&!ally)continue;const k=quietMap?1:0.75+0.25*Math.sin(t*9),c=foe&&ally?(Math.floor(t*3)%2?TC[1]:TC[0]):foe?TC[1]:TC[0];
-   for(const z of [dy-0.15,dy+dh+0.15]){once(PSA,tx+tw/2,U-0.2,z,2.6*k,c,foe?0.8:0.5);for(const e of [tx+0.5,tx+tw-0.5])once(PSA,e,U-0.12,z,1.1,c,0.9);}}}
+   for(const z of [dy-0.12,dy+dh+0.12]){for(let i=0;i<5;i++)once(PSA,tx+0.45+(tw-0.9)*i/4,U+0.02,z,0.62*k,c,0.95);if(foe)once(PSA,tx+tw/2,U+0.05,z,1.5*k,c,0.4);}}}
   for(const an of B3.map.anims){
    if(an.type==='arc'&&SFX&&!quietMap){const ph=Math.floor(t*14);if((ph+an.a[2]|0)%3!==0)SFX.bolt(an.a[0],an.a[1],an.a[2],an.b[0],an.b[1],an.b[2],0.14,7,an.w,FX3D_RGB(an.c),0.9,ph*31+7,0);}
    else if(an.type==='ripple'&&SFX&&!quietMap){const f=(t*0.35+an.p[0]*0.13)%1;SFX.ring(an.p[0],an.p[1],an.p[2],an.r*f,0.03,FX3D_RGB(an.c),0.5*(1-f),28);}}

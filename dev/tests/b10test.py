@@ -56,7 +56,7 @@ async def main():
           WP(me.x+3,me.y-4,0);aim={id:1,sx:0,sy:0,x:WPx,y:WPy,on:true};const aa=aimAng();aim=null;
           paused=false;state='menu';document.body.classList.remove('battle');
           return {chase,pitch,tapped,tappedNear,tappedFar,up,rt,dg,dgAng:Math.atan2(dg[1],dg[0]),want,mag:Math.hypot(dg[0],dg[1]),upScreen,aa,aWant:Math.atan2(-4,3)};}""")
-        check(r['chase'] and 46<r['pitch']<58,'the Arcade battle draws through the chase camera '+json.dumps([r['chase'],r['pitch']]))
+        check(r['chase'] and 42<=r['pitch']<=56,'the Arcade battle draws through the chase camera '+json.dumps([r['chase'],r['pitch']]))
         check(r['tapped'] and r['tappedNear'] and not r['tappedFar'],'tapping an enemy where it is drawn locks onto it; a tap well beside it does not '+json.dumps([r['tapped'],r['tappedNear'],r['tappedFar']]))
         check(abs(r['up'][0])<1e-6 and abs(r['up'][1]+1)<1e-6 and abs(r['rt'][0]-1)<1e-6 and abs(r['rt'][1])<1e-6 and abs(r['dgAng']-r['want'])<1e-6 and abs(r['mag']-1)<1e-6 and abs(r['upScreen'][0])<0.5 and r['upScreen'][1]<-5,'joystick drives where your finger points: up is up the screen, right is right '+json.dumps(r))
         check(abs(r['aa']-r['aWant'])<1e-6,'drag-aim angle is measured on the ground, from the tank to the finger '+json.dumps([r['aa'],r['aWant']]))

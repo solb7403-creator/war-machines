@@ -5,11 +5,12 @@
 const cv=document.getElementById('c'),g=cv.getContext('2d');
 const dpr=Math.min(devicePixelRatio||1,2);
 const HUD=2.6;
-let sc=1,ox=0,oy=0,vw=0,vh=0,SAB=0,SAT=0,GK=1;   // GK: how much the ground squashes vertically (1 in 2D; the tilted 3D camera's cosine in 3D)
+let sc=1,ox=0,oy=0,vw=0,vh=0,SAB=0,SAT=0,GK=1,KEYHINT=false;   // GK: how much the ground squashes vertically (1 in 2D; the tilted 3D camera's cosine in 3D)
 function fit(){vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=vw*dpr;cv.height=vh*dpr;
  const pr=document.getElementById('sab');SAB=pr?pr.offsetHeight:0;   // home-indicator height (probe element sized by CSS env())
  {let pt=document.getElementById('sat');if(!pt&&document.body){pt=document.createElement('div');pt.id='sat';pt.style.cssText='position:fixed;left:0;top:0;width:1px;height:var(--sat,0px);visibility:hidden;pointer-events:none';document.body.appendChild(pt);}SAT=pt?pt.offsetHeight:0;}   // the notch / Telegram header, for the chase camera's HUD
  sc=Math.min(vw/W,vh/(H*GK+HUD));ox=(vw-W*sc)/2;oy=(vh-(H*GK+HUD)*sc)/2+HUD*sc;
+ KEYHINT=vw>=900&&typeof matchMedia==='function'&&matchMedia('(pointer:fine)').matches;   // a keyboard is likely: the chase HUD names the keys on its buttons
  if(typeof setPR==='function')setPR();}
 addEventListener('resize',fit);fit();
 const X=x=>ox+x*sc,Y=y=>oy+y*sc*GK;
@@ -23,6 +24,13 @@ const CAM=()=>typeof chaseOn==='function'&&chaseOn();
 let WPx=0,WPy=0,WPk=1;const WPo={x:0,y:0,k:1,d:1,ok:true};
 function WP(x,y,h){if(CAM()){ArenaCam.project(x,y,h||0,WPo);WPx=WPo.x;WPy=WPo.y;WPk=WPo.k;return WPo.ok;}WPx=X(x);WPy=Y(y)-(h?h*GSN*sc:0);WPk=sc;return true;}
 const hOf=b=>D3on()?heightAt(b):0;   // how high a tank stands (the deck, a ramp)
+// A tank deep under a bridge deck is out of the camera's sight (the deck is solid, nothing is see-through): its health bar
+// and marker hang under the lip of the tunnel's near mouth instead of floating on the deck as if it stood up there.
+// Returns true when pinned. Your own tank is never pinned: the camera goes down to it.
+function WPunit(b){
+ if(CAM()&&BR&&b!==me&&(b.elev||0)===0&&ArenaCam.C.pitch>30){const d=BR.deck;if(b.x>d[0]&&b.x<d[0]+d[2]&&b.y>d[1]&&b.y<d[1]+d[3]-0.9){WP(b.x,d[1]+d[3]+0.02,(typeof B3!=='undefined'&&B3.map&&B3.map.deckUnder||1.8)-0.1);return true;}}
+ WP(b.x,b.y,hOf(b));return false;
+}
 const KU=()=>CAM()?Math.max(sc*0.8,Math.min(sc*1.3,WPk)):sc;   // the size of a label by a tank: it follows the tank's depth, within limits, so far labels stay readable
 const hudTop=()=>CAM()?SAT+Math.max(6,sc*0.3):oy-HUD*sc,hudY0=()=>hudTop()+HUD*sc,hudX0=()=>CAM()?Math.max(8,sc*0.4):X(0);   // the chase camera has no arena rectangle: the HUD hangs from the top of the screen
 const gArc=(x,y,r,a0,a1,ccw,h)=>CAM()?ArenaCam.arc(g,x,y,r,a0,a1,ccw,h||0):g.ellipse(X(x),Y(y),Math.max(0,r*sc),Math.max(0,r*sc*GK),0,a0===undefined?0:a0,a1===undefined?Math.PI*2:a1,!!ccw);   // a circle lying on the ground
@@ -111,7 +119,7 @@ function drawTankPx(ctx,px,py,r,hd,ang,col,gems,wtype,flash,parts,paint,fits,ski
 }
 function star5(ctx,x,y,r,c){ctx.fillStyle=c;ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*0.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}
 function drawTank(b,col){
- WP(b.x,b.y,hOf(b));const px=WPx,py=WPy,ku=KU(),r=R*(CAM()?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc)*(b.dscale||1),hd=b.hd===undefined?b.ang:b.hd;
+ const pin=WPunit(b),px=WPx,ku=KU(),r=R*(CAM()?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc)*(b.dscale||1)*(pin?0.8:1),py=WPy+(pin?r*3.1:0),hd=b.hd===undefined?b.ang:b.hd;
  const fl=b.flash>0?(armor(b)>0?BUFF.arm.c:'#ffe27a'):null;
  if(!D3on())drawTankPx(g,px,py,r,hd,b.ang,col,b.gems,b.wtype,fl,3,PAINTS[b.paint],b.fits,b.skin,b.ap);
  if(b.mhp){   // health bar (team colored) with the super meter as a thin strip underneath
@@ -119,6 +127,7 @@ function drawTank(b,col){
   g.fillStyle='rgba(0,0,0,.65)';g.fillRect(bx-1.5,by-1.5,bw+3,hh+sh+4);
   g.fillStyle=b.team!==0?'#ff4d5e':b===me?'#5fe3a1':'#4d9fff';g.fillRect(bx,by,bw*hf,hh);
   g.fillStyle=f>=1?(Math.floor(performance.now()/150)%2?'#ff4d4d':'#ffb3b3'):'#ffcf4a';g.fillRect(bx,by+hh+1,bw*f,sh);
+  if(pin){const s=Math.max(4,r*0.42),cy=by+hh+sh+5;g.fillStyle=b.team!==0?'#ff4d5e':'#4d9fff';g.strokeStyle='rgba(0,0,0,.7)';g.lineWidth=1.5;for(const dx of [-s*1.3,0,s*1.3]){g.beginPath();g.moveTo(px+dx-s*0.55,cy);g.lineTo(px+dx+s*0.55,cy);g.lineTo(px+dx,cy+s*0.8);g.closePath();g.stroke();g.fill();}}   // three small arrows down: this tank is under the deck
   // the counter triangle, read from your side: a green ▲ by the bar of a tank you counter, a red ▼ on one that counters you
   if(me&&b!==me&&b.team!==me.team&&!b.boss&&!me.boss&&me.hp>0){const up=COUNTER[me.cls]===b.cls,dn=COUNTER[b.cls]===me.cls;
    if(up||dn){const s=Math.max(5,(hh+sh)*0.95),cx=bx-s-4,cy=by+(hh+sh+1)/2;g.beginPath();
@@ -812,7 +821,7 @@ function drawBattle(){
   g.restore();}
  // tanks: ground level first (the bridge covers tanks in its tunnels)
  const drawOne=(b,col)=>{
-  WP(b.x,b.y,hOf(b));const px=WPx,py=WPy,ku=KU(),r=R*(CH?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc);
+  const pin=WPunit(b),px=WPx,py=WPy,ku=KU(),r=R*(CH?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc);
   if(!D3){
    g.save();g.globalAlpha=0.35;g.fillStyle=col;g.beginPath();g.ellipse(px,py+r*0.95,r*1.2,r*0.5,0,0,7);g.fill();g.restore();   // team underglow
    if(b===me){const pl=0.7+0.3*Math.sin(performance.now()/280);g.save();g.globalAlpha=pl;g.strokeStyle='#ffd24a';g.lineWidth=3;g.beginPath();g.ellipse(px,py+r*0.35,r*1.62,r*1.22,0,0,7);g.stroke();g.restore();}   // your tank wears a pulsing gold ring: find yourself in any cluster
@@ -824,7 +833,7 @@ function drawBattle(){
     g.beginPath();g.ellipse(px,py+r*0.2,r*1.9,r*1.45,0,0,7);g.stroke();g.restore();}
    if(b.vl>=5&&b.trail&&b.trail.length>2){const a=b.trail[0],z=b.trail[b.trail.length-1];if(Math.hypot(a.x-z.x,a.y-z.y)>0.25)b.trail.forEach((tp,i)=>{g.globalAlpha=0.12+0.08*i;g.fillStyle=i%2?'#fff3c2':'#ffcf4a';g.beginPath();g.arc(X(tp.x),Y(tp.y),r*(0.18+0.05*i),0,7);g.fill();});g.globalAlpha=1;}   // level 5: gold engine trail
   }
-  b.buffs.forEach((bf,i)=>{const rr2=r*(1.6+0.22*i),left=Math.max(0,1-bf.taken/BUFF_LIFE);g.strokeStyle=BUFF[bf.k].c;g.lineWidth=2.5;
+  if(!pin)b.buffs.forEach((bf,i)=>{const rr2=r*(1.6+0.22*i),left=Math.max(0,1-bf.taken/BUFF_LIFE);g.strokeStyle=BUFF[bf.k].c;g.lineWidth=2.5;
    g.globalAlpha=0.2;g.beginPath();g.arc(px,py,rr2,0,7);g.stroke();g.globalAlpha=1;
    g.beginPath();g.arc(px,py,rr2,-Math.PI/2,-Math.PI/2+Math.PI*2*left);g.stroke();});
   if(!D3&&(spdMult(b)>1||b.dash)&&b.trail){b.trail.forEach((t,i)=>{g.globalAlpha=0.08+0.05*i;g.fillStyle=col;g.beginPath();g.arc(X(t.x),Y(t.y),r*0.7,0,7);g.fill();});g.globalAlpha=1;}
@@ -843,7 +852,7 @@ function drawBattle(){
    g.restore();}
   {const mine=b===me,bob=mine?Math.sin(performance.now()/300)*sc*0.09:0,fs=Math.round(ku*(mine?0.95:0.48));   // floating team chevron over every tank; yours is gold and bigger, the rest stay small and quiet so the map never looks cluttered
    g.save();g.globalAlpha=mine?1:0.55;g.fillStyle=mine?'#ffd24a':b.team!==0?'#ff4d5e':'#4d9fff';g.font=font(fs);g.textAlign='center';g.textBaseline='middle';
-   g.fillText('▼',px,py-r*1.66*(D3&&b.boss?1.6:1)+bob);g.restore();}
+   if(!pin)g.fillText('▼',px,py-r*(mine&&CH?3.05:1.66)*(D3&&b.boss?1.6:1)+bob);g.restore();}
   if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(ku*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.vl>=3?'#ffcf4a':'rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
   if(b.boss){const fs=Math.max(11,Math.round(ku*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,py-r*2.0*(D3?1.6:1)-fs*0.6);g.textBaseline='top';}
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(ku*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':b.vl>=3?'#ffcf4a':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,py-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
@@ -889,7 +898,7 @@ function drawBattle(){
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
  const up=D3?sc*0.6:0;   // in 3D, text floats from the top of the tanks
  for(const q of pops){WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.8));g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(1.4-q.t)*1.2-ku));g.globalAlpha=1;}
- for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.66*(q.z||1)));if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));}g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));g.globalAlpha=1;}
+ for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.min(ku,sc*1.05):ku)*0.66*(q.z||1)));if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));}g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));g.globalAlpha=1;}
  g.restore();
  if(CH)drawEdges();   // who and what is outside the frame
  g.restore();   // end shake
@@ -903,7 +912,8 @@ function drawBattle(){
 const EDGE={x:0,y:0,a:0},EDL=[];
 function edgeBox(){return {l:16,t:hudY0()+sc*1.5,r:vw-16,b:vh-SAB-18};}
 function edgeFix(e){   // keep a marker off the three buttons in the bottom right corner
- const bx=vw-212,by=vh-SAB-214;if(e.x>bx&&e.y>by){if(vw-16-e.x<vh-SAB-18-e.y)e.y=by;else e.x=bx;}return e;}
+ const bx=vw-212,by=vh-SAB-214;if(e.x>bx&&e.y>by){if(vw-16-e.x<vh-SAB-18-e.y)e.y=by;else e.x=bx;}
+ const M=miniRect();if(e.x<M.x+M.w+10&&e.y<M.y+M.h+10){if(e.x-M.x<e.y-M.y)e.y=M.y+M.h+10;else e.x=M.x+M.w+10;}return e;}
 // a marker whose tip touches the frame's edge. shape 0: a wedge (enemy), 1: a dot with a pointer (team mate), 2: a diamond
 // (objective). Leaves the canvas translated to the marker's middle: the caller draws its extras, then g.restore()
 function edgeChip(e,r,fill,line,shape,a){
@@ -916,14 +926,14 @@ function edgeChip(e,r,fill,line,shape,a){
 }
 function drawEdges(){
  if(state!=='play'&&state!=='round')return;
- const B=edgeBox(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),alive=!!me&&me.hp>0;
+ const B=edgeBox(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),alive=!!me&&me.hp>0,es=Math.max(1,Math.min(1.9,sc/19.5));   // es: markers grow with the HUD (a desktop's are nearly twice a phone's)
  let ax,ay;if(alive){WP(me.x,me.y,hOf(me));ax=WPx;ay=WPy;}
  const at=(x,y,h)=>{const e=ArenaCam.pointer(x,y,h,B,ax,ay,EDGE);return e?edgeFix(e):null;};
  // enemies: the nearest four that are outside the frame
  EDL.length=0;if(me)for(const u of units){if(u.hp<=0||u===me||u.team===me.team)continue;EDL.push([Math.hypot(u.x-me.x,u.y-me.y),u]);}
  EDL.sort((a,b)=>a[0]-b[0]);let shown=0;
  for(const [d,u] of EDL){if(shown>=4)break;const e=at(u.x,u.y,hOf(u)+0.5);if(!e)continue;shown++;
-  const near=1-Math.max(0,Math.min(1,(d-5)/14)),hot=alive&&d<=STAT.range+0.6,pulse=hot&&!quiet?0.5+0.5*Math.sin(now/110):hot?1:0,r=(u.boss?13:9)+4*near+2*pulse;
+  const near=1-Math.max(0,Math.min(1,(d-5)/14)),hot=alive&&d<=STAT.range+0.6,pulse=hot&&!quiet?0.5+0.5*Math.sin(now/110):hot?1:0,r=((u.boss?14:10)+4*near+2*pulse)*es;
   edgeChip(e,r,hot?'#ff3044':'#e8475a','rgba(8,10,16,.85)',0,0.55+0.4*near+0.05*pulse);
   if(hot){g.strokeStyle='rgba(255,255,255,'+(0.5+0.5*pulse)+')';g.lineWidth=2;g.beginPath();g.arc(0,0,r+6+2*pulse,0,7);g.stroke();}
   {const hf=Math.max(0,Math.min(1,u.hp/u.mhp));g.strokeStyle='rgba(8,10,16,.8)';g.lineWidth=4;g.beginPath();g.arc(0,0,r*0.46,0,7);g.stroke();g.strokeStyle='#ffffff';g.lineWidth=2;g.beginPath();g.arc(0,0,r*0.46,-Math.PI/2,-Math.PI/2+Math.PI*2*hf);g.stroke();}   // its health, as an arc
@@ -933,18 +943,50 @@ function drawEdges(){
   if(S.kind==='nova')hit=Math.hypot(me.x-r.x,me.y-r.y)<S.r+1.6;
   else{const len=S.kind==='beam'?S.len:S.range+(S.r||0),wd=(S.kind==='beam'?S.w:(S.r||1.2))+1.3,dx=me.x-r.x,dy=me.y-r.y,ca=Math.cos(r.sup.ang),sa=Math.sin(r.sup.ang),al=dx*ca+dy*sa,ac=Math.abs(-dx*sa+dy*ca);hit=al>-0.5&&al<len+1&&ac<wd;}
   if(!hit)continue;const e=at(r.x,r.y,hOf(r)+0.5);if(!e)continue;
-  const f=quiet?1:0.5+0.5*Math.sin(now/70),rr2=17+3*f,cx=e.x-Math.cos(e.a)*(rr2+28),cy=e.y-Math.sin(e.a)*(rr2+28);
+  const f=quiet?1:0.5+0.5*Math.sin(now/70),rr2=(17+3*f)*es,cx=e.x-Math.cos(e.a)*(rr2+28),cy=e.y-Math.sin(e.a)*(rr2+28);
   g.save();g.globalAlpha=0.75+0.25*f;g.fillStyle='#ff2a3c';g.strokeStyle='#fff';g.lineWidth=2.5;g.beginPath();g.arc(cx,cy,rr2,0,7);g.fill();g.stroke();
   g.fillStyle='#fff';g.font='700 '+Math.round(rr2*1.3)+'px '+FONT_FAMILY;g.textAlign='center';g.textBaseline='middle';g.fillText('!',cx,cy+1);g.textBaseline='top';g.restore();}
  // team mates: small and quiet, the nearest two
  if(me){EDL.length=0;for(const u of units){if(u.hp<=0||u===me||u.team!==me.team)continue;EDL.push([Math.hypot(u.x-me.x,u.y-me.y),u]);}EDL.sort((a,b)=>a[0]-b[0]);
-  for(let i=0;i<EDL.length&&i<2;i++){const u=EDL[i][1],e=at(u.x,u.y,hOf(u)+0.5);if(!e)continue;edgeChip(e,7,'#4d9fff','rgba(8,10,16,.8)',1,0.6);g.restore();}}
+  for(let i=0;i<EDL.length&&i<2;i++){const u=EDL[i][1],e=at(u.x,u.y,hOf(u)+0.5);if(!e)continue;edgeChip(e,7.5*es,'#4d9fff','rgba(8,10,16,.8)',0,0.7);g.restore();}}
  // objectives
- const obj=(x,y,h,fill,glyph,r,a)=>{const e=at(x,y,h);if(!e)return;edgeChip(e,r||11,fill,'rgba(8,10,16,.85)',2,a===undefined?0.9:a);if(glyph){g.fillStyle='#10161d';g.font='700 '+Math.round((r||11)*1.05)+'px '+FONT_FAMILY;g.textAlign='center';g.textBaseline='middle';g.fillText(glyph,0,1);g.textBaseline='top';}g.restore();};
+ const obj=(x,y,h,fill,glyph,r,a)=>{const e=at(x,y,h);if(!e)return;r=(r||11)*es;edgeChip(e,r,fill,'rgba(8,10,16,.85)',2,a===undefined?0.9:a);if(glyph){g.fillStyle='#10161d';g.font='700 '+Math.round(r*1.05)+'px '+FONT_FAMILY;g.textAlign='center';g.textBaseline='middle';g.fillText(glyph,0,1);g.textBaseline='top';}g.restore();};
  if(gzones)for(const z of gzones){obj(z.x,z.y,0,z.own===0?TC[0]:z.own===1?TC[1]:'#dfe7f2','☾',12);if(z.next)obj(z.next.x,z.next.y,0,'#ffcf4a','☾',10,quiet?0.8:0.55+0.3*Math.sin(now/300));}
  if(cry)obj(cry.mine.x,cry.mine.y,0,'#c79bff','',11);
  if(alive&&boxes.length){let b=null,bd=1e9;for(const q of boxes){const d=Math.hypot(q.x-me.x,q.y-me.y);if(d<bd){bd=d;b=q;}}if(b)obj(b.x,b.y,0.5,'#ffcf4a','?',10,0.85);}
  if(storm&&alive&&Math.hypot(me.x-storm.x,me.y-storm.y)>storm.r)obj(storm.x,storm.y,0,'#c79bff','',12);
+}
+// ---- the minimap (chase camera, Session 5E-2b2a) ----
+// The camera follows your tank, so the whole arena is no longer on the screen at once. The minimap gives that back: the
+// arena's solids, the bridge, objectives, every tank that is alive (the same things the full-map view always showed, to
+// every player alike) and the part of the arena your screen is showing.
+const miniRect=()=>{const u=Math.max(2.3,Math.min(5.6,sc*0.15-0.45));return {x:hudX0(),y:hudY0()+sc*0.45,w:W*u,h:H*u,u};};
+const MG=[0,0];
+function drawMini(){
+ const M=miniRect(),u=M.u,mx=x=>M.x+x*u,my=y=>M.y+y*u,now=performance.now();
+ g.save();
+ g.fillStyle='rgba(6,10,18,.66)';rr(g,M.x-3,M.y-3,M.w+6,M.h+6,5);g.fill();g.strokeStyle='rgba(223,231,242,.22)';g.lineWidth=1;g.stroke();
+ g.beginPath();g.rect(M.x,M.y,M.w,M.h);g.clip();
+ g.fillStyle='rgba(255,77,94,.10)';g.fillRect(M.x,M.y,M.w,5*u);g.fillStyle='rgba(77,159,255,.10)';g.fillRect(M.x,my(H-5),M.w,5*u);   // the two ends
+ g.fillStyle='rgba(200,210,225,.42)';for(const w of baseWalls)g.fillRect(mx(w[0]),my(w[1]),w[2]*u,w[3]*u);
+ for(const r of rocks){g.beginPath();g.arc(mx(r[0]),my(r[1]),r[2]*u,0,7);g.fill();}
+ if(BR){const [dx,dy,dw,dh]=BR.deck;g.fillStyle='rgba(120,160,200,.5)';g.fillRect(mx(dx),my(dy),dw*u,dh*u);g.fillStyle='rgba(6,10,18,.75)';for(const [tx,tw] of BR.tunnels)g.fillRect(mx(tx),my(dy),tw*u,dh*u);
+  g.fillStyle='rgba(120,160,200,.3)';for(const [rx,ry,rw,rh] of BR.ramps)g.fillRect(mx(rx),my(ry),rw*u,rh*u);}
+ if(storm){g.fillStyle='rgba(104,48,184,.35)';g.beginPath();g.rect(M.x,M.y,M.w,M.h);g.arc(mx(storm.x),my(storm.y),Math.max(0.5,storm.r*u),0,Math.PI*2,true);g.fill('evenodd');g.strokeStyle='#c79bff';g.lineWidth=1;g.beginPath();g.arc(mx(storm.x),my(storm.y),Math.max(0.5,storm.r*u),0,7);g.stroke();}
+ if(gzones)for(const z of gzones){const c=z.own===0?TC[0]:z.own===1?TC[1]:'#dfe7f2';g.strokeStyle=c;g.lineWidth=1.5;g.beginPath();g.arc(mx(z.x),my(z.y),z.r*u,0,7);g.stroke();g.globalAlpha=0.25;g.fillStyle=c;g.fill();g.globalAlpha=1;
+  if(z.next){g.strokeStyle='#ffcf4a';g.setLineDash([2,2]);g.beginPath();g.arc(mx(z.next.x),my(z.next.y),ZONE_R*u,0,7);g.stroke();g.setLineDash([]);}}
+ if(cry){diamond(g,mx(cry.mine.x),my(cry.mine.y),Math.max(3,u*1.3),'#c79bff');g.fillStyle='#e2d0ff';for(const c of cry.loose)g.fillRect(mx(c.x)-1,my(c.y)-1,2,2);}
+ g.fillStyle='#ffcf4a';for(const b of boxes)g.fillRect(mx(b.x)-2,my(b.y)-2,4,4);
+ // what your screen shows: the four corners of the screen, cast onto the ground
+ if(typeof ArenaCam!=='undefined'){const P=[[0,hudY0()],[vw,hudY0()],[vw,vh],[0,vh]];let ok=true;g.beginPath();for(let i=0;i<4;i++){const q=ArenaCam.ground(P[i][0],P[i][1],0,MG);if(!q){ok=false;break;}if(i)g.lineTo(mx(q[0]),my(q[1]));else g.moveTo(mx(q[0]),my(q[1]));}
+  if(ok){g.closePath();g.fillStyle='rgba(255,255,255,.07)';g.fill();g.strokeStyle='rgba(255,255,255,.4)';g.lineWidth=1;g.stroke();}}
+ // tanks: enemies, then your side, then you
+ const dot=(b,c,r)=>{g.fillStyle=c;g.beginPath();g.arc(mx(b.x),my(b.y),r,0,7);g.fill();};
+ const dr=Math.max(2.1,u*0.9);
+ for(const b of units)if(b.hp>0&&b.team!==(me?me.team:0))dot(b,'#ff4d5e',b.boss?dr*1.9:dr);
+ for(const b of units)if(b.hp>0&&b!==me&&b.team===(me?me.team:0))dot(b,'#4d9fff',dr);
+ if(me&&me.hp>0){g.fillStyle='#10161d';g.beginPath();g.arc(mx(me.x),my(me.y),dr+2.2,0,7);g.fill();dot(me,'#ffd24a',dr+1);}
+ g.restore();
 }
 let HUDG=null;   // the band behind the team bars on sunlit maps (built once per layout)
 function drawHUD(){
@@ -954,7 +996,7 @@ function drawHUD(){
  g.textBaseline='middle';
  // sunlit maps (Session 5E-2c): a soft dark band behind the team bars so they read over bright ground. It ends at the
  // arena's north edge, so no tank is ever under it
- if(D3on()&&typeof B3!=='undefined'&&B3.map&&B3.map.arena){const y0=top-sc*1.6,y1=top+sc*HUD;if(!HUDG||HUDG.y0!==y0||HUDG.y1!==y1){const gr=g.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(6,8,13,0)');gr.addColorStop(0.3,'rgba(6,8,13,0.5)');gr.addColorStop(0.68,'rgba(6,8,13,0.5)');gr.addColorStop(1,'rgba(6,8,13,0)');HUDG={y0,y1,gr};}g.fillStyle=HUDG.gr;g.fillRect(0,y0,vw,y1-y0);}
+ if(D3on()&&typeof B3!=='undefined'&&B3.map&&B3.map.arena){const y0=top-sc*1.6,y1=top+sc*(HUD+(CH?1.1:0));if(!HUDG||HUDG.y0!==y0||HUDG.y1!==y1){const gr=g.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(6,8,13,0)');gr.addColorStop(0.3,'rgba(6,8,13,0.5)');gr.addColorStop(0.68,'rgba(6,8,13,0.5)');gr.addColorStop(1,'rgba(6,8,13,0)');HUDG={y0,y1,gr};}g.fillStyle=HUDG.gr;g.fillRect(0,y0,vw,y1-y0);}
  const n=MM.n,solo=!!storm,topLine=!!(gzones||cry||storm||matchG==='bounty');
  const side=(t,left)=>{
   const x0=left?pad:vw-pad-bw,col=TC[t];
@@ -979,6 +1021,7 @@ function drawHUD(){
   g.font=font(Math.round(bh*0.85));g.fillStyle='#fff';g.textAlign=left?'left':'right';g.fillText(txt,left?x0+6:x0+bw-6,by+bh/2+1);
  };
  side(0,true);side(1,false);
+ if(CH)drawMini();
  // timer pill
  const tl=Math.max(0,Math.ceil(timeLeft)),mm=Math.floor(tl/60),ss=String(tl%60).padStart(2,'0');
  const tw=sc*3.6,th=sc*1.5;g.fillStyle='rgba(10,14,23,.85)';rr(g,mid-tw/2,hy,tw,th,th/2);g.fill();g.strokeStyle=tl<=10?'#ff6b5e':'rgba(223,231,242,.18)';g.lineWidth=1.5;rr(g,mid-tw/2,hy,tw,th,th/2);g.stroke();
@@ -1003,7 +1046,7 @@ function drawHUD(){
   if(me.hp>0&&me.rep>0){g.fillStyle='#5fe3a1';g.font=font(Math.round(sc*0.62));g.fillText('+ repairing',mx,my+mk*1.4);}
   if(me.hp<=0&&state==='play'){g.fillStyle='rgba(255,255,255,.92)';g.font=font(Math.round(sc*1.1));g.fillText('Back in '+Math.max(1,Math.ceil(respawnFor(me)-(me.dead||0))),mid,CH?vh*0.4:Y(H/2)-sc*2);}}
  // buff chips for you
- me.buffs.forEach((b,i)=>{const w=sc*1.9,h=sc*0.9,x=HX+(CH?0:4)+i*(w+3),y=HY+4;
+ me.buffs.forEach((b,i)=>{const w=sc*1.9,h=sc*0.9,x=HX+(CH?0:4)+i*(w+3),y=CH?miniRect().y+miniRect().h+6:HY+4;
   g.fillStyle=BUFF[b.k].c;rr(g,x,y,w,h,3);g.fill();g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x,y+h-3,w*(1-b.taken/BUFF_LIFE),3);
   g.fillStyle='#10161d';g.textAlign='center';g.font=font(Math.round(sc*0.55));g.fillText(BUFF[b.k].n,x+w/2,y+h/2);});
  // counter banner
@@ -1027,18 +1070,18 @@ function drawHUD(){
  if(state==='play'&&me){const low=me.hp>0&&me.hp/me.mhp<0.3,k=Math.max((me.hurtT||0)/0.3*0.55,low?0.25+0.2*Math.sin(performance.now()/260):0);
   if(k>0.01){const vg=g.createRadialGradient(vw/2,vh/2,Math.min(vw,vh)*0.35,vw/2,vh/2,Math.max(vw,vh)*0.75);vg.addColorStop(0,'rgba(255,40,60,0)');vg.addColorStop(1,'rgba(255,40,60,'+k.toFixed(3)+')');g.fillStyle=vg;g.fillRect(0,0,vw,vh);}}
  // kill feed
- if(feed.length){g.textAlign='left';g.font=font(Math.round(Math.max(11,sc*0.6)));feed.forEach((f,i)=>{g.globalAlpha=Math.min(1,f.t);g.fillStyle='rgba(10,14,23,.75)';const tw3=g.measureText(f.txt).width+14,yy=HY+sc*(topLine?3.0:2.0)+i*(sc*1.05+4);
+ if(feed.length){g.textAlign='left';g.font=font(Math.round(Math.max(11,sc*0.6)));feed.forEach((f,i)=>{g.globalAlpha=Math.min(1,f.t);g.fillStyle='rgba(10,14,23,.75)';const tw3=g.measureText(f.txt).width+14,yy=(CH?miniRect().y+miniRect().h+6+sc*1.1:HY+sc*(topLine?3.0:2.0))+i*(sc*1.05+4);
   rr(g,HX+(CH?0:6),yy,tw3,sc*1.05,6);g.fill();g.fillStyle=f.c;g.fillText(f.txt,HX+(CH?7:13),yy+sc*0.53);});g.globalAlpha=1;}
  // DASH button with a cooldown ring
  if(state==='play'&&me.hp>0){const D=dashBtn(),cd=(me.dashCd||0)/(DASH_CD*(me.dashCdM||1)),ready=cd<=0;
   g.fillStyle=ready?'rgba(77,159,255,.9)':'rgba(30,42,64,.9)';g.beginPath();g.arc(D.x,D.y,D.r,0,7);g.fill();
   if(!ready){g.strokeStyle='#4d9fff';g.lineWidth=4;g.beginPath();g.arc(D.x,D.y,D.r-3,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-cd));g.stroke();}
-  g.fillStyle=ready?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(D.r*0.42));g.fillText('DASH',D.x,D.y+1);}
+  g.fillStyle=ready?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(D.r*0.42));g.fillText('DASH',D.x,D.y+1-(CH&&KEYHINT?D.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(D.r*0.28));g.globalAlpha=0.7;g.fillText('SHIFT',D.x,D.y+D.r*0.4);g.globalAlpha=1;}}
  // SHIELD button with a cooldown ring
  if(state==='play'&&me.hp>0){const H=shieldBtn(),cd=(me.shieldCd||0)/(SHIELD_CD*(me.shieldCdM||1)),on=(me.shieldT||0)>0,ready=cd<=0;
   g.fillStyle=on?'rgba(64,224,208,.95)':ready?'rgba(26,94,104,.9)':'rgba(24,38,52,.9)';g.beginPath();g.arc(H.x,H.y,H.r,0,7);g.fill();
   if(!ready){g.strokeStyle='#40e0d0';g.lineWidth=4;g.beginPath();g.arc(H.x,H.y,H.r-3,-Math.PI/2,-Math.PI*2*(1-cd)-Math.PI/2);g.stroke();}
-  g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1);}
+  g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1-(CH&&KEYHINT?H.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(H.r*0.28));g.globalAlpha=0.7;g.fillText('E',H.x,H.y+H.r*0.4);g.globalAlpha=1;}}
  // SUPER button with a charge ring
  if(state==='play'&&me.hp>0){const B=btn(),f=me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
   g.fillStyle=rdy?'#e0242f':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
@@ -1046,7 +1089,7 @@ function drawHUD(){
   g.strokeStyle=rdy?'#fff':'#ff6b6b';g.beginPath();g.arc(B.x,B.y,B.r-4,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,f));g.stroke();
   if(supBarOn()){const q=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?1:0.5+0.5*Math.sin(performance.now()/70);g.fillStyle='#ffcf4a';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();g.strokeStyle='rgba(255,255,255,'+(0.5+0.5*q)+')';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r+5,0,7);g.stroke();
    g.fillStyle='#2a1c00';g.textAlign='center';g.font='700 '+Math.round(B.r*0.5)+'px '+FONT_FAMILY;g.fillText('TAP!',B.x,B.y+1);}
-  else{g.fillStyle=rdy?'#fff':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1);}
+  else{g.fillStyle=rdy?'#fff':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1-(CH&&KEYHINT?B.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.7;g.fillText('SPACE',B.x,B.y+B.r*0.4);g.globalAlpha=1;}}
   if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-12);}
   if(rdy){g.globalAlpha=0.25+0.25*Math.sin(performance.now()/120);g.strokeStyle='#ff4d4d';g.lineWidth=6;g.beginPath();g.arc(B.x,B.y,B.r+6,0,7);g.stroke();g.globalAlpha=1;}}
  supUiTick();drawSupBar(g);

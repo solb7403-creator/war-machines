@@ -197,7 +197,7 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
  // Under the chase camera (5E-2b2a) the ground is two bakes: the arena and its margin at the screen's own density (tFine) and
  // everything the camera can see beyond it, coarse (tMap). HIGH adds a tiling grain so the ground stays crisp right under the
  // camera, where a bake texel can cover more than a pixel.
- const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;\n#ifdef FINE\nuniform sampler2D tFine;uniform vec4 uRectF;varying vec2 vUf;varying vec2 vP;\n#endif\n#ifdef GRAIN\nuniform sampler2D tGrain;uniform vec2 uGrain;\n#endif\nvoid main(){vec4 t=texture2D(tMap,vUv);\n#ifdef FINE\nvec2 e=min(vUf,1.0-vUf)*uRectF.zw;float w=clamp(min(e.x,e.y)/0.7,0.0,1.0);t=mix(t,texture2D(tFine,vUf),w);\n#ifdef GRAIN\nfloat g=texture2D(tGrain,vP*uGrain.x).r*0.6+texture2D(tGrain,vP.yx*uGrain.x*0.37+0.31).r*0.4;t.rgb*=1.0+uGrain.y*(g-0.9)*w;\n#endif\n#endif\nvec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*(1.0-smoothstep(uFog.z,uFog.y,vZ)));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
+ const GROUND_FS='uniform sampler2D tMap;uniform vec3 uAmb;uniform vec3 uSun;uniform vec3 uFogC;uniform vec3 uFog;varying vec2 vUv;varying float vZ;\n#ifdef FINE\nuniform sampler2D tFine;uniform vec4 uRectF;varying vec2 vUf;varying vec2 vP;\n#endif\n#ifdef GRAIN\nuniform sampler2D tGrain;uniform vec2 uGrain;\n#endif\nvoid main(){vec4 t=texture2D(tMap,vUv);\n#ifdef FINE\nvec2 e=min(vUf,1.0-vUf)*uRectF.zw;float w=clamp(min(e.x,e.y)/0.7,0.0,1.0);t=mix(t,texture2D(tFine,vUf),w);\n#ifdef GRAIN\nfloat g=texture2D(tGrain,vP*uGrain.x).r*0.6+texture2D(tGrain,vP.yx*uGrain.x*0.37+0.31).r*0.4;t.rgb*=1.0+uGrain.y*(g-0.9)*(0.6+0.4*w);\n#endif\n#endif\nvec3 c=t.rgb*(uAmb+uSun*t.a);c=mix(c,uFogC,uFog.x*(1.0-smoothstep(uFog.z,uFog.y,vZ)));gl_FragColor=vec4(c,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}';
  function materials(renderer,q,envMap){
   const R=res(renderer),key=q;if(R.mats[key]){if(envMap)setEnvMap(renderer,envMap);return R.mats[key];}
   const tl=tiles(renderer,q),high=q!=='low';let M;
@@ -227,7 +227,7 @@ void main(){vec2 u=vUv*2.16-1.08;float r2=dot(u,u);vec3 L=normalize(vec3(-.72,.3
  const MASK_VS='uniform vec4 uRect;attribute vec3 color;varying vec3 vC;void main(){vC=color;vec2 p=(position.xz-uRect.xy)/uRect.zw*2.0-1.0;gl_Position=vec4(p,0.0,1.0);}';
  const MASK_FS='varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.0);}';
  const BAKE_FS=`precision highp float;varying vec2 vUv;
-uniform vec4 uRect,uPaintRect,uArena;uniform vec2 uTexel;uniform vec3 uL,uBase,uTopBase,uAmbRef;uniform float uSeed,uRelief,uPeb,uOutDim,uTopLit,uTopKind,uMottle,uWallPeb,uTrackK,uEdge,uHud;
+uniform vec4 uRect,uPaintRect,uArena;uniform vec2 uTexel;uniform vec3 uL,uBase,uTopBase,uAmbRef;uniform float uSeed,uRelief,uPeb,uOutDim,uTopLit,uTopKind,uMottle,uWallPeb,uTrackK,uEdge,uHud,uFar;
 uniform sampler2D tShadow,tTop,tPaint,tDecal,tGlow;uniform int uNc,uNb,uNi;uniform vec4 uCr[`+NCR+`];uniform vec4 uBox[`+NBX+`];uniform vec3 uCir[`+NCI+`];
 `+NOISE+`
 float sdBox(vec2 p,vec2 c,vec2 h){vec2 d=abs(p-c)-h;return length(max(d,0.))+min(max(d.x,d.y),0.);}
@@ -286,7 +286,7 @@ void main(){
  vec3 n=normalize(vec3(-(hx-h0)/e*rl,1.,-(hz-h0)/e*rl));
  float a=clamp(.78*max(dot(n,uL),0.)/uL.y,0.,1.);
  // the sun's shadow from props (drawn flat into tShadow) and from crater walls (marched through the height field)
- vec2 t=1./vec2(textureSize(tShadow,0));vec2 s4=texture2D(tShadow,vUv).rg*.4+(texture2D(tShadow,vUv+vec2(t.x,0.)).rg+texture2D(tShadow,vUv-vec2(t.x,0.)).rg+texture2D(tShadow,vUv+vec2(0.,t.y)).rg+texture2D(tShadow,vUv-vec2(0.,t.y)).rg)*.15;
+ vec2 t=1.25/vec2(textureSize(tShadow,0));vec2 s4=texture2D(tShadow,vUv).rg*.28+(texture2D(tShadow,vUv+vec2(t.x,0.)).rg+texture2D(tShadow,vUv-vec2(t.x,0.)).rg+texture2D(tShadow,vUv+vec2(0.,t.y)).rg+texture2D(tShadow,vUv-vec2(0.,t.y)).rg)*.12+(texture2D(tShadow,vUv+t).rg+texture2D(tShadow,vUv-t).rg+texture2D(tShadow,vUv+vec2(t.x,-t.y)).rg+texture2D(tShadow,vUv+vec2(-t.x,t.y)).rg)*.06;   // nine taps: a shadow's edge is a soft line, not a stair of bake texels
  float sh=top>.5?s4.g:max(s4.r,s4.g);
  if(top<.5){vec2 dir=normalize(uL.xz);float tanE=uL.y/length(uL.xz),m0=macro(P),hs=0.,jit=.5+h21(P*37.3);for(int i=1;i<=16;i++){float tt=.05*(float(i)-1.+jit)*(1.+.16*float(i));hs=max(hs,smoothstep(0.,.09,macro(P+dir*tt)-m0-tt*tanE*.55));}sh=max(sh,hs*.8);}
  a*=1.-sh;
@@ -313,6 +313,7 @@ void main(){
   ao=1.-.58*min(oc,1.05);
  }else a=mix(a,max(a,.5),uTopLit);
  float od=arenaD(P);float dim=(1.-.48*smoothstep(.25,1.1,od))*(1.-.6*smoothstep(1.1,17.,od))*mix(1.,uOutDim,step(.3,od));
+ dim*=1.-uFar*(.22*smoothstep(.3,3.,od)+.45*smoothstep(14.,34.,od));   // the chase camera sees far: the ground beyond the arena steps back at once and fades out towards the mountains
  dim*=1.-.3*uHud*(1.-smoothstep(-3.,-.4,P.y));   // the fixed view: the strip the HUD sits over (north of the arena) is darker still
  {float osat=.5*smoothstep(.3,2.5,od);float lum=dot(alb,vec3(.3,.55,.15));alb=mix(alb,vec3(lum)*vec3(.96,.99,1.05),osat);}
  if(top>.5&&tm.g>.3)dim=.62*(1.-.6*smoothstep(0.,15.,od))*(1.-.3*uHud*(1.-smoothstep(-3.,-.4,P.y)));   // wall tops are not playfield: one even, darker value, fading far out
@@ -353,7 +354,7 @@ void main(){
   const R=res(renderer),bk=(th.plates?'P':'')+(M.soft?'L':'');R.bake=R.bake||{};
   const U={
    uRect:{value:rectU},uPaintRect:{value:new T.Vector4(pr[0],pr[1],pr[2],pr[3])},uArena:{value:new T.Vector4(0,0,AW,AH)},uTexel:{value:new T.Vector2(rect[2]/w,rect[3]/h)},uL:{value:new T.Vector3(L[0],L[1],L[2])},
-   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uEdge:{value:M.edgeFade?1:0},uHud:{value:M.chase?0:1},uTrackK:{value:th.trackK||0.15},
+   uBase:{value:new T.Vector3(...lin(th.ground))},uTopBase:{value:new T.Vector3(...lin(th.topGround||th.ground))},uAmbRef:{value:amb.clone()},uSeed:{value:th.seed||1},uRelief:{value:th.relief||1.5},uPeb:{value:th.pebbles===undefined?1:th.pebbles},uOutDim:{value:th.outDim===undefined?1:th.outDim},uTopLit:{value:th.topLit||0},uTopKind:{value:th.topKind||0},uMottle:{value:th.mottle===undefined?0.2:th.mottle},uWallPeb:{value:th.wallPeb||0},uEdge:{value:M.edgeFade?1:0},uHud:{value:M.chase?0:1},uFar:{value:M.chase?1:0},uTrackK:{value:th.trackK||0.15},
    uNc:{value:Math.min(NCR,M.craters.length)},uNb:{value:Math.min(NBX,M.aoBoxes.length)},uNi:{value:Math.min(NCI,M.aoCircles.length)},tShadow:{value:shadow.texture},tTop:{value:top.texture},tPaint:{value:tP},tDecal:{value:tD},tGlow:{value:tG},uCr:{value:cr.slice(0,NCR)},uBox:{value:bx.slice(0,NBX)},uCir:{value:ci.slice(0,NCI)}};
   let bm=R.bake[bk];if(!bm){bm=R.bake[bk]=new T.ShaderMaterial({vertexShader:FS_VS,fragmentShader:BAKE_FS,defines:Object.assign(th.plates?{PLATES:1}:{},M.soft?{LITE:1}:{}),depthTest:false,depthWrite:false,toneMapped:false,uniforms:U});}
   else for(const n in U)bm.uniforms[n].value=U[n].value;   // the shader is kept per variant: no recompile per map
@@ -397,7 +398,7 @@ void main(){
   if(F){   // the chase camera: a coarse bake of everything in sight, a fine one of the arena and its margin
    const fw=F.x1-F.x0,fd=F.z1-F.z0,capF=o.soft?0.3e6:high?(o.phone?4.6e6:6.2e6):1.1e6;
    ppuF=Math.max(8,Math.min(o.soft?16:high?104:36,o.density||48));if(fw*fd*ppuF*ppuF>capF)ppuF=Math.sqrt(capF/(fw*fd));ppuF=Math.min(ppuF,maxT/fw,maxT/fd);
-   ppu=Math.min(o.soft?5:high?12:8,maxT/vw_,maxT/vd_);
+   ppu=Math.min(o.soft?5:high?16:9,maxT/vw_,maxT/vd_);
    M.bakeW=Math.max(64,Math.round(vw_*ppu));M.bakeH=Math.max(64,Math.round(vd_*ppu));M.rt=mkRT(M.bakeW,M.bakeH,true,true,false);M.rt.texture.anisotropy=an;
    M.rtF=mkRT(Math.max(64,Math.round(fw*ppuF)),Math.max(64,Math.round(fd*ppuF)),true,true,false);M.rtF.texture.anisotropy=an;
    levels.push({rect:[view.x0,view.z0,vw_,vd_],w:M.bakeW,h:M.bakeH,rt:M.rt,ppu:o.soft?10:16},{rect:[F.x0,F.z0,fw,fd],w:M.rtF.width,h:M.rtF.height,rt:M.rtF,ppu:o.soft?16:high?Math.min(64,Math.max(40,Math.round(ppuF*0.8))):28});
