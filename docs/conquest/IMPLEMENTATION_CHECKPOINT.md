@@ -2485,8 +2485,10 @@ Caveat from the agent: every page fetch was blocked by this session's network al
 search-result summaries of the pages named, not from pages it opened. They are treated as direction, not as proof.
 1. **High pitch, narrow lens, camera pulled back** (Riot's 2014 Rift update narrowed the field of view and pulled the camera
    back to even out what the top and bottom of the screen show; Valve's Alien Swarm top-down camera: pitch 60; a Diablo-2-style
-   camera in Grim Dawn: 53; Dota 2 default distance 1134). => pitch 53 (phone) / 49 (desktop) from level, a 46 / 34 degree
-   lens, the camera 28 - 35 units away. A wide lens up close was rejected: it stretches the near ground and shrinks the fight.
+   camera in Grim Dawn: 53; Dota 2 default distance 1134). => a 46 (phone) / 30 (desktop) degree lens with the camera 28 - 35
+   units away; a wide lens up close was rejected: it stretches the near ground and shrinks the fight. The first draft used the
+   researched pitch (53 / 49); the critic found it "the old top-down with bigger tanks", so the shipped pitch is 48 / 44
+   (decision 2).
 2. **Both sides must see the same** (Wild Rift turns the map 180 degrees for the far team so both play "upward"; League raised
    its camera and added a per-side offset because the lower team saw less; Little Big Robots hit the same problem).
    => nothing to add: `js/pvp.js` already turns the map so every player is team 0 at the bottom, and the rig takes the
@@ -2537,19 +2539,22 @@ minimum on-screen character size; whether Brawl Stars flips the map.
    with the hull either: it orbits only when the player drags, and in Arcade a drag is the drive stick. A view that turned with
    the tank would change what "up on the stick" means every moment and would break "firing stays exactly as it is". With a
    fixed yaw, up on the stick is north and right is east, as today.
-2. **Pitch 53 / 49 from level, a 46 / 34 degree lens, 35 / 28 units away** (phone / desktop; research 1). A phone shows 13.8
-   units across at the tank (the old view: 20), so a tank is about 1.45x the size it was; a 1080p desktop 62 px per unit
-   (old: 37). `arena-cam.mjs` holds: on nine screen shapes from 320x568 to 2560x1080, wherever the tank stands, the weapon's
-   range (6 units) is on screen to both sides and ahead, 4 units behind, and a tank is at least 28 px wide.
-3. **The tank sits a little below the middle** (20% of the half-height on a phone, 14% on a desktop): more of the view is
-   ahead, where the enemy side is. At your own end and at the far end the view stops sliding, so no screen is spent on the
-   ground outside the arena.
+2. **Pitch 48 / 44 from level, a 46 / 30 degree lens, 35 / 28 units away** (phone / desktop). CHANGE from the first draft
+   (53 / 49, research 1): the critic's first round said normal play "read as the old top-down with bigger tanks"; 5 degrees
+   lower is where the bridge's side, the containers' faces and the tanks' profiles show, and the sight solve (decision 5) pays
+   for the extra occlusion. A phone shows 13.8 units across at the tank (the old view: 20), so a tank is about 1.45x the size
+   it was; a 1080p desktop 71 px per unit (old: 37) and 27 units across. `arena-cam.mjs` holds: on nine screen shapes from
+   320x568 to 2560x1080, wherever the tank stands, the weapon's range (6 units) is on screen to both sides and ahead, 4 units
+   behind, and a tank is at least 28 px wide.
+3. **The tank sits a little below the middle** (16% of the half-height on a phone, 6% on a desktop, where the critic found
+   the south "a blind spot" at 14%): more of the view is ahead, where the enemy side is. At your own end and at the far end
+   the view stops sliding, so no screen is spent on the ground outside the arena (the critic: "the top 30% is dead regolith").
 4. **The view stops panning 1.6 units past the arena's sides**; on a screen wider than the arena it drifts with the tank at
    30% (parallax without losing the overview).
 5. **Sight solve instead of fading** (owner rule: no fading, no see-through). Every frame the camera tests the straight line
    from where it would stand to your tank against boxes for every wall, rock, crate, pier, ramp and the deck slab. Blocked:
    it takes the nearest pitch that is clear, upwards (to 74) over walls and the deck's far side, and in a tunnel's lane
-   downwards (to 10.5) while moving in to 60% of its distance, so it looks along the tunnel. It starts that move 0.3 s before
+   downwards (to 14; the first draft's 10.5 gave a phone 27% sky) while moving in to 60% of its distance, so it looks along the tunnel. It starts that move 0.3 s before
    the tank is inside (from the tank's own travel), so the tank is not lost on the way in. `arena-cam.mjs`: clear sight on
    every one of 2,687 sampled standing spots on the six maps, phone and desktop.
 6. **Raised bridges, solid decks.** Deck surface at 2.1 (was 1.0), slab 0.3 thick, so 1.8 clear underneath. Overpass: one slab
@@ -2560,9 +2565,10 @@ minimum on-screen character size; whether Brawl Stars flips the map.
    see-through). Deck, tunnel, ramp, elevation and line-of-sight rules are untouched: `MAPS` and `js/game.js` have no diff.
 7. **What a solid deck hides, and what stands in for it.** From 53 degrees a deck 5 units deep hides a tank that is more than
    about a unit inside a tunnel, and nothing short of a see-through deck changes that. So: (a) your own tank is never hidden
-   (decision 5); (b) every tank keeps its health bar and marker, which the overlay draws regardless; (c) **the tunnel's own
-   lamps turn the team colour of whoever is inside** (red for an enemy, blue for your side, alternating for both) on both
-   mouths. It is the same for every player.
+   (decision 5); (b) a hidden tank's health bar hangs under the lip of the tunnel's near mouth with three small arrows
+   pointing down (the critic: a bar floating on the deck "reads as on the bridge"); (c) **the tunnel's own lamps turn the
+   team colour of whoever is inside** (red for an enemy, blue for your side, alternating for both) on both mouths, small
+   and on the structure so they never wash out a hull; (d) the minimap shows every tank. It is the same for every player.
 8. **Off-screen markers** (research 4): enemies a red wedge with a health arc, the nearest four, bigger and brighter when
    close, pulsing with a white ring while you are inside their range; a super that will reach you from outside the frame a
    flashing "!" disc; team mates a small blue dot (nearest two); objectives a diamond (Moon Zone in its owner's colour, the
@@ -2586,3 +2592,11 @@ minimum on-screen character size; whether Brawl Stars flips the map.
 14. **Far terrain instead of a near skyline.** The ground now runs 33 units north to a mountain range (three layers), and the
     old phone-only skyline strip is gone: with a moving camera a ridge 5 units past the arena read as the edge of a table.
 15. **Menu map pictures show the raised bridge** (same build, the fixed picture camera).
+16. **A minimap** (CHANGE: not in the plan; critic round 1: "whole-arena awareness is gone"). The old view showed the whole
+    arena to everyone at all times; a follow camera cannot. A small map under the team bar (50 x 80 px on a phone, 102 x 163
+    on a 1080p desktop) shows the solids, the bridge and its tunnels, zones, the mine, power-ups, the ring, every living tank
+    in its team colour and the part of the arena your screen shows. It adds no information the old view did not give, and it
+    is the same for both sides. Buff chips and the kill feed moved under it.
+17. **Markers and labels scale with the HUD**, so a desktop's are nearly twice a phone's; your own chevron sits above your
+    health bar instead of on it; damage numbers are capped at the old size; the desktop buttons name their keys (SHIFT, E,
+    SPACE); while your super's timing bar is up on a phone the view slides back 1.7 units so the tank stands clear above it.

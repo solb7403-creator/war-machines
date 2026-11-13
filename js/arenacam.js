@@ -31,7 +31,7 @@ const ArenaCam=(()=>{
  const DEF={fovP:46,fovL:30,pitchP:48,pitchL:44,halfW:6.9,halfH:7.6,downP:0.16,downL:0.06,side:1.6,
   follow:0.1,leadT:0.24,leadMax:1.1,leadTime:0.45,pull:0.3,pullX:2.0,pullY:2.6,pullR:10.5,pullTime:0.6,
   pitchTime:0.3,sightLead:0.3,pitchMin:14,pitchMax:74,barLift:1.7,lowDist:0.6,heightTime:0.22,
-  southKeep:0.42,northKeep:0.74,introT:2.3,introHold:0.22,introPitch:17,introDist:0.36,deadDist:1.16,deadPitch:4,deadTime:0.7,
+  southKeep:0.42,northKeep:0.74,introT:1.9,introHold:0.22,introPitch:17,introDist:0.36,deadDist:1.16,deadPitch:4,deadTime:0.7,
   near:1.2,far:420};
  const P=Object.assign({},DEF);
  function tune(o){if(o)for(const k in o)if(k in DEF&&Number.isFinite(+o[k]))P[k]=+o[k];return P;}
@@ -52,10 +52,12 @@ const ArenaCam=(()=>{
  // boxes [x0,y0,x1,y1,h0,h1] in world units. The heights are the props' own (js/arenaprops.js); a little generous is fine.
  const WALL_H={ctr:1.25,cmd:1.35,pylon:1.9,lander:1.2,cliff:1.9,canyon:1.75,fin:1.2,bulk:1.5,door:1.6,pillar:2.3,turbine:1.35,lift:0.45,console:1.0,crate:0.9};
  const ROCK_H={dome:1.0,rock:1.05,boulder:1.05,spire:2.2,tank:1.5};
- let OCC=[],DECK=null;
+ let OCC=[],DECK=null,PX0=0,PX1=AW;   // PX0..PX1: the part of the arena's width a tank can reach (Longshot's lane, the Canyon's rille)
  // map: a MAPS entry (js/game.js); deckTop / deckUnder: the art's deck surface and its underside (ArenaProps.DECK, DECK_UNDER)
  function setMap(map,deckTop,deckUnder){
-  OCC=[];DECK=null;if(!map)return;
+  OCC=[];DECK=null;PX0=0;PX1=AW;if(!map)return;
+  {let w0=1e9,e0=1e9;for(let y=0.5;y<AH;y+=1){let a=0,b=0;for(const w of map.walls||[]){if(y<w[1]||y>w[1]+w[3])continue;if(w[0]<=0.01)a=Math.max(a,w[0]+w[2]);if(w[0]+w[2]>=AW-0.01)b=Math.max(b,AW-w[0]);}w0=Math.min(w0,a);e0=Math.min(e0,b);}
+   PX0=Math.min(w0,AW/2-3);PX1=AW-Math.min(e0,AW/2-3);}   // boundary walls that run the whole length narrow the field: the view pans inside what is left
   for(const w of map.walls||[]){const hh=WALL_H[w[4]]||1.1;if(hh>0.6)OCC.push([w[0],w[1],w[0]+w[2],w[1]+w[3],0,hh]);}
   for(const r of map.rocks||[]){const hh=(ROCK_H[r[3]]||1)*Math.max(0.8,r[2]),q=r[2]*0.8;OCC.push([r[0]-q,r[1]-q,r[0]+q,r[1]+q,0,hh]);}
   for(const c of map.crates||[])OCC.push([c[0],c[1],c[0]+c[2],c[1]+c[3],0,WALL_H.crate]);
@@ -143,9 +145,9 @@ const ArenaCam=(()=>{
  // sits below the screen centre, and kept inside the arena's sides and ends
  const F2=[0,0];
  function focusFor(G,wx,wy,pitch,dist,e,out){
-  const ah=aheadOf(G,pitch,dist)*(1-e),half=dist*G.th*G.a,lo=half-P.side,hi=AW-lo;let tx=wx,ty=wy-ah;
+  const ah=aheadOf(G,pitch,dist)*(1-e),half=dist*G.th*G.a,lo=PX0+half-P.side,hi=PX1-(half-P.side),mid=(PX0+PX1)/2;let tx=wx,ty=wy-ah;
   if(lo<hi){const soft=Math.min(1.2,(hi-lo)/2);tx=tx<lo+soft?lo+soft*softIn((tx-lo)/soft):tx>hi-soft?hi-soft*softIn((hi-tx)/soft):tx;}   // eases to a stop near the sides
-  else tx=AW/2+(tx-AW/2)*0.3;   // a screen wider than the arena: the view drifts a little with the tank, for parallax
+  else tx=mid+(tx-mid)*0.3;   // a screen wider than the field: the view drifts a little with the tank, for parallax
   if(e<1){const sMax=AH-P.southKeep*G.dist*G.th,soft=2;if(ty>sMax-soft)ty=lerp(sMax-soft+soft*easeOut((ty-(sMax-soft))/soft),ty,e);}   // near your own end the view stops sliding south: no screen is spent on the ground behind the arena
   if(e<1){const nMin=P.northKeep*G.dist*G.th,soft=2;if(ty<nMin+soft)ty=lerp(nMin+soft-soft*easeOut((nMin+soft-ty)/soft),ty,e);}   // and the same at the far end: the screen is not spent on the ground beyond it
   out[0]=tx;out[1]=clamp(ty,-3,AH+2);return out;
@@ -158,7 +160,7 @@ const ArenaCam=(()=>{
   C.tx=fx;C.th=fh;C.ty=fy;C.x=fx+sy*cp*dist;C.h=fh+sp*dist;C.y=fy+cy*cp*dist;
   C.fx=-sy*cp;C.fh=-sp;C.fy=-cy*cp;C.rx=cy;C.rh=0;C.ry=-sy;
   C.ux=-sy*sp;C.uh=cp;C.uy=-cy*sp;   // up = back x right
-  C.fov=G.fov;C.pitch=pitch;C.dist=dist;C.f=G.vh/2/G.th;C.cx=G.vw/2;C.cy=G.vh/2;   // screen shake is not in here: the renderer shifts its frustum and the overlay its canvas by the same pixels
+  C.fov=G.fov;C.pitch=pitch;C.base=G.pitch;C.dist=dist;C.f=G.vh/2/G.th;C.cx=G.vw/2;C.cy=G.vh/2;   // screen shake is not in here: the renderer shifts its frustum and the overlay its canvas by the same pixels
   C.near=clamp(dist*0.18,P.near,8);C.far=P.far;C.aspect=G.a;   // the near plane rides out with the camera: depth precision for the ground decals, also on 16-bit depth buffers
  }
  // a new match (or a new round): cut to the tank and, unless motion is reduced, play the crane shot
@@ -177,11 +179,12 @@ const ArenaCam=(()=>{
   const C=F||ArenaCam.C,a=sx-C.cx,b=-(sy-C.cy),dx=C.fx*C.f+C.rx*a+C.ux*b,dh=C.fh*C.f+C.rh*a+C.uh*b,dy=C.fy*C.f+C.ry*a+C.uy*b;
   if(dh>-1e-6)return null;const t=((h||0)-C.h)/dh;out=out||[0,0];out[0]=C.x+dx*t;out[1]=C.y+dy*t;return out;
  }
- // a direction on the screen (a joystick, a key) as a direction on the ground, same length. Measured at the middle of the
+ // a direction on the screen (a joystick, a key) as a direction on the ground, same length. Measured with the rig's own pitch
+ // (not the pitch of the moment: the stick must not change its meaning while the camera drops into a tunnel), at the middle of the
  // view, so the stick means the same thing wherever the tank is on the screen: up is away from the camera, right is right
  function steer(dx,dy,out){
   out=out||[0,0];const m=Math.hypot(dx,dy);if(m<1e-9){out[0]=0;out[1]=0;return out;}
-  const s=Math.max(0.5,Math.sin(C.pitch*RAD)),gx=dx,gy=dy/s,n=Math.hypot(gx,gy),cy=Math.cos(S.yaw),sy=Math.sin(S.yaw),ex=gx/n*m,ey=gy/n*m;
+  const s=Math.max(0.5,Math.sin((C.base||C.pitch)*RAD)),gx=dx,gy=dy/s,n=Math.hypot(gx,gy),cy=Math.cos(S.yaw),sy=Math.sin(S.yaw),ex=gx/n*m,ey=gy/n*m;
   out[0]=ex*cy+ey*sy;out[1]=-ex*sy+ey*cy;return out;
  }
  // ---------- ground shapes for the 2D overlay: drawn through the camera, clipped where they pass behind it ----------
@@ -247,7 +250,7 @@ const ArenaCam=(()=>{
  // (play, waiting to respawn, swung up over a wall, down in a tunnel, the opening crane) and casting the screen's corners
  // onto the ground. Past `horizon` the mountains stand, so rays are stopped there.
  function cover(vw,vh,horizon){
-  const G=rig(vw,vh),F={},g=[0,0],hz=horizon===undefined?-33:horizon;let x0=0,x1=AW,z1=AH;
+  const G=rig(vw,vh),F={},g=[0,0],hz=horizon===undefined?-33:horizon,k0=PX0,k1=PX1;let x0=0,x1=AW,z1=AH;PX0=0;PX1=AW;   // whatever map is up, the cover is for the full width
   const shots=[[G.pitch,G.dist,0],[Math.min(P.pitchMax,G.pitch+P.deadPitch),G.dist*P.deadDist,0],[P.pitchMax,G.dist,0],[P.pitchMin,distAt(G,P.pitchMin),0],[Math.min(P.introPitch,G.fov/2-11),G.dist*P.introDist,1]];
   for(const [pitch,dist,e] of shots)for(const px of [0,AW/2,AW])for(const py of [0,AH/2,AH])for(const ox of [-3.2,3.2])for(const oy of [-3.8,3.8]){
    focusFor(G,px+ox*(1-e),py+oy*(1-e),pitch,dist,e,F2);solve(G,F2[0],0,F2[1],pitch,dist,F);
@@ -256,10 +259,10 @@ const ArenaCam=(()=>{
     const t=dh<-1e-6?-F.h/dh:1e9;Z=F.y+dy*t;X=F.x+dx*t;
     if(!(Z>hz)||t>=1e9){if(dy>=0)continue;const u=(hz-F.y)/dy;X=F.x+dx*u;Z=hz;}   // over the ridge: where the ray crosses the mountains' line
     if(X<x0)x0=X;if(X>x1)x1=X;if(Z>z1)z1=Z;}}
-  const q=v=>Math.round(v/4)*4;
+  const q=v=>Math.round(v/4)*4;PX0=k0;PX1=k1;
   return {x0:Math.max(-46,q(x0-3)),x1:Math.min(AW+46,q(x1+3)),z0:hz-7,z1:Math.min(AH+18,q(z1+3)),horizon:hz,fine:{x0:-2.5,x1:AW+2.5,z0:-2.5,z1:AH+2.5},G};
  }
  return {VERSION,DEF,P,tune,rig,update,begin,introLeft,setMap,project,ground,steer,path,arc,lane,edge,pointer,cover,sightPitch,focusFor,inLane,clearLine,underDeckAt,damp,S,C,WALL_H,ROCK_H,AW,AH,
-  get occluders(){return OCC;},get deck(){return DECK;}};
+  get occluders(){return OCC;},get deck(){return DECK;},get field(){return [PX0,PX1];}};
 })();
 if(typeof module!=='undefined'&&module.exports)module.exports=ArenaCam;

@@ -120,12 +120,13 @@ function chaseView(){const c=ArenaCam.cover(vw,vh);return {x0:c.x0,x1:c.x1,z0:c.
 function chaseDensity(){const G=ArenaCam.rig(vw,vh);return (vh/2/G.th)/G.dist*resCap()*1.2;}
 const FXR=[1,0,0],FXU=[0,GSN,-GKC],FXF=[0,GKC,GSN];   // the camera's axes for FX3D's billboards (refreshed every frame under the chase camera)
 // one camera frame: follow the tank, keep the fight in view, never let the bridge or a wall hide it
-const CAMF=[];
+const CAMF=[],CAMI={vw:0,vh:0,me:null,foes:CAMF,bar:false,quiet:false},CAMP=[],CAMME={x:0,y:0,h:0,alive:true};
 function chaseFrame(dt,shx,shy){
- CAMF.length=0;let mine=null;
- if(me){mine={x:me.x,y:me.y,h:heightAt(me),alive:me.hp>0};
-  for(const u of units){if(u.hp<=0||u===me)continue;if(me.hp>0){if(u.team===me.team)continue;CAMF.push({x:u.x,y:u.y,w:typeof tapFocus!=='undefined'&&u.id===tapFocus?2.5:1});}else CAMF.push({x:u.x,y:u.y,w:1});}}
- const c=ArenaCam.update(dt,{vw,vh,me:mine,foes:CAMF,bar:typeof supBarOn==='function'&&supBarOn(),quiet:typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()});
+ let n=0,mine=null;const put=(x,y,w)=>{const o=CAMP[n]||(CAMP[n]={x:0,y:0,w:1});o.x=x;o.y=y;o.w=w;CAMF[n++]=o;};   // pooled: nothing is allocated per frame
+ if(me){mine=CAMME;mine.x=me.x;mine.y=me.y;mine.h=heightAt(me);mine.alive=me.hp>0;
+  for(const u of units){if(u.hp<=0||u===me)continue;if(me.hp>0){if(u.team===me.team)continue;put(u.x,u.y,typeof tapFocus!=='undefined'&&u.id===tapFocus?2.5:1);}else put(u.x,u.y,1);}}
+ CAMF.length=n;
+ const c=ArenaCam.update(dt,(CAMI.vw=vw,CAMI.vh=vh,CAMI.me=mine,CAMI.bar=typeof supBarOn==='function'&&supBarOn(),CAMI.quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),CAMI));
  RCP.fov=c.fov;RCP.aspect=vw/Math.max(1,vh);RCP.near=c.near;RCP.far=c.far;RCP.position.set(c.x,c.h,c.y);RCP.up.set(0,1,0);RCP.lookAt(c.tx,c.th,c.ty);
  if(shx||shy)RCP.setViewOffset(vw,vh,-shx,-shy,vw,vh);else if(RCP.view)RCP.clearViewOffset();
  RCP.updateProjectionMatrix();RCP.updateMatrixWorld();

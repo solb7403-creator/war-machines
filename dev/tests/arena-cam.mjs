@@ -64,6 +64,10 @@ for(const [vw,vh] of [[390,844],[1920,1080]]){
  const a=settle(vw,vh,{x:4,y:18,h:0,alive:true}),ax=a.x,ay=a.y,ah=a.h,ap=a.pitch,b=settle(vw,vh,{x:W-4,y:18,h:0,alive:true});
  near(b.x,W-ax,1e-6,'mirrored camera x');near(b.y,ay,1e-6,'mirrored camera y');near(b.h,ah,1e-6,'mirrored camera height');near(b.pitch,ap,1e-9,'mirrored pitch');checks+=4;
 }
+// boundary walls that run the whole length narrow the field: the view stays on the lane (Longshot), not on the cliff tops
+{C.setMap(maps.longshot,DECK,UNDER);assert.deepEqual(Array.from(C.field),[4,16],'Longshot: the lane is x 4..16');
+ for(const x of [4.8,10,15.2]){const c=settle(390,844,{x,y:16,h:0,alive:true});assert.ok(Math.abs(c.tx-10)<1.2,'Longshot phone: the view stays near the lane\'s middle ('+c.tx.toFixed(2)+')');const p=C.project(x,16,0,{});assert.ok(p.x>390*0.1&&p.x<390*0.9);checks+=2;}
+ C.setMap(maps.canyon,DECK,UNDER);assert.deepEqual(Array.from(C.field),[1.5,18.5]);C.setMap(maps.classic,DECK,UNDER);assert.deepEqual(Array.from(C.field),[0,20]);checks+=3;}
 // a fight pulls the view towards it, by no more than the rig allows; a far enemy does not
 {C.setMap(maps.classic,DECK,UNDER);const me={x:10,y:16,h:0,alive:true},base=settle(390,844,me,[]),bx=base.tx,by=base.ty;
  const f=settle(390,844,me,[{x:10,y:21,w:1}]);assert.ok(f.ty>by+0.3&&f.ty<=by+C.P.pullY+1e-6,'an enemy behind pulls the view back ('+(f.ty-by).toFixed(2)+')');
@@ -101,11 +105,14 @@ for(const [name,[vw,vh]] of Object.entries(SCREENS)){
    assert.ok(g[0]>=cv.x0-1e-6&&g[0]<=cv.x1+1e-6&&g[1]<=cv.z1+1e-6,name+': screen point '+sx+','+sy+' from '+x+','+y+' sees ground at '+g[0].toFixed(1)+','+g[1].toFixed(1)+' inside '+JSON.stringify([cv.x0,cv.x1,cv.z1]));checks++;}}
  // the opening crane shot too
  C.begin({});for(let i=0;i<4;i++)C.update(1/30,{vw,vh,me:{x:10,y:29.5,h:0,alive:true},foes:[]});
- assert.ok(C.C.pitch<G.fov/2,name+': the crane shot starts low enough to show the sky');assert.ok(C.introLeft()>1.5);
+ assert.ok(C.C.pitch<G.fov/2,name+': the crane shot starts low enough to show the sky');assert.ok(C.introLeft()>1.2);
  for(const sx of [0,vw])for(const sy of [vh*0.5,vh]){const g=C.ground(sx,sy,0);if(!g||g[1]<cv.horizon)continue;assert.ok(g[0]>=cv.x0&&g[0]<=cv.x1&&g[1]<=cv.z1,name+': crane shot ground inside the cover');}
  for(let i=0;i<120;i++)C.update(1/30,{vw,vh,me:{x:10,y:29.5,h:0,alive:true},foes:[]});
  near(C.C.pitch,G.pitch,0.05,name+': the crane shot ends at the playing view');assert.equal(C.introLeft(),0);checks+=3;
 }
+// the stick keeps its meaning while the camera is down in a tunnel
+{C.setMap(maps.overpass,DECK,UNDER);const t=maps.overpass.bridge.tunnels[0],d=maps.overpass.bridge.deck;settle(390,844,{x:10,y:26,h:0,alive:true});const a=C.steer(0.6,-0.6).slice();
+ const c=settle(390,844,{x:t[0]+t[1]/2,y:d[1]+2.5,h:0,alive:true});assert.ok(c.pitch<30,'the camera is down in the tunnel');const b=C.steer(0.6,-0.6);near(b[0],a[0],1e-12,'steer x unchanged in a tunnel');near(b[1],a[1],1e-12,'steer y unchanged in a tunnel');checks+=3;}
 // reduced motion: no crane shot, the camera cuts instead of swinging
 {C.begin({quiet:true});C.update(1/30,{vw:390,vh:844,me:{x:10,y:29.5,h:0,alive:true},foes:[],quiet:true});near(C.C.pitch,C.rig(390,844).pitch,1e-9,'reduced motion: no crane');
  C.update(1/30,{vw:390,vh:844,me:{x:10,y:8,h:0,alive:true},foes:[],quiet:true});const p=C.project(10,8,0,{});assert.ok(p.ok&&p.y>0&&p.y<844,'reduced motion: the view cuts to the tank');checks+=2;}

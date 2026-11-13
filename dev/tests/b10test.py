@@ -49,7 +49,7 @@ async def main():
           WP(e.x,e.y,0);const ex=WPx,ey=WPy,ek=WPk;tapFocus=-1;tapTarget(ex,ey);const tapped=tapFocus===e.id;tapFocus=-1;tapTarget(ex+ek*0.9,ey+ek*0.4);const tappedNear=tapFocus===e.id;
           tapFocus=-1;tapTarget(ex+ek*3.2,ey);const tappedFar=tapFocus===e.id;tapFocus=-1;
           joy.dx=0;joy.dy=-1;const up=inputVec();joy.dx=1;joy.dy=0;const rt=inputVec();joy.dx=Math.SQRT1_2;joy.dy=-Math.SQRT1_2;const dg=inputVec();joy.dx=joy.dy=0;
-          const sq=chase?Math.max(0.5,Math.sin(pitch*Math.PI/180)):GK,want=Math.atan2(-Math.SQRT1_2/sq,Math.SQRT1_2);
+          const sq=chase?Math.max(0.5,Math.sin(ArenaCam.C.base*Math.PI/180)):GK,want=Math.atan2(-Math.SQRT1_2/sq,Math.SQRT1_2);
           // driving "up" moves the tank straight up the screen
           WP(me.x,me.y,0);const mx=WPx,my=WPy;WP(me.x+up[0],me.y+up[1],0);const upScreen=[WPx-mx,WPy-my];
           // the super drag: a finger on the ground point 3 east and 4 north of the tank aims exactly at it
