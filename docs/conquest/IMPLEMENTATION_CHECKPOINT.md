@@ -2472,7 +2472,7 @@ time between frames (the game draws twice per frame in this harness, the same on
   misbehaves, `window.LUNAR_ARENA3D=false` brings the earlier maps back for one device; for everyone, revert `434e09a` on main
   (the Pages and Worker deploys follow the revert) and note it here.
 
-## Checkpoint 35 — Session 5E-2b2a: Arcade chase camera + raised bridges (branch `claude/arcade-camera-raised-bridges-b9htvw`, from main `57574e7`) — BUILT, PR OPEN, NOT MERGED (Nov 13, 2026: one condition of the brief is not met, see "Release status")
+## Checkpoint 35 — Session 5E-2b2a: Arcade chase camera + raised bridges (branch `claude/arcade-camera-raised-bridges-b9htvw`, from main `57574e7`) — BUILT; MERGE PRE-APPROVED BY THE OWNER (Nov 13, 2026: see "Owner update: stop the performance loop" and "Release status")
 
 Brief: owner's Session 5E-2b2a prompt (Arcade uses a Conquest-style perspective chase camera on every map; Overpass and Canyon
 bridges raised on pillars, open underneath; keep all 5E-2c art; phones and desktops equal; release pre-approved once CI is green
@@ -2732,7 +2732,7 @@ Received after round 3 had finished. Three rounds were done and none was in prog
 - **The veil** (decision 19) changes what a 2D-graphics player sees in a live match: the part outside the chase frame is
   dark with dots. That is the point (equal information), but it is new for them.
 - `b10test.py`'s "Auto" check and `b2test.py` / `b9test.py` were already failing on main and still are. `b10test.py`'s
-  draw-cost budget check is a NEW failure on Bunker crystal 3v3 (see Tests): one more reason the merge is the owner's call.
+  draw-cost budget check is a NEW failure on this renderer (see Tests); the owner judges the frame rate on real devices.
 
 ### iPhone playtest checklist (owner, in Telegram)
 1. Start an AI match on any map. For two seconds the camera rises from behind your tank, with mountains, stars and the Earth
@@ -2778,10 +2778,13 @@ game's own clamp on a CPU rasteriser). "Frame" is the median time between frames
   (desktop) larger across, so tanks, props and glows cover 2 to 3.7 times the pixels with the same shaders. Draw calls,
   triangles and shader programs are equal or lower. A CPU rasteriser pays for every pixel; a GPU pays far less, but not
   nothing: a phone that was at its limit on main will be over it here.
-- **What was done about it** (all of it stays): the ground is one bake read per pixel again (two meshes cut along the fine
-  bake); no grain on touch devices; tanks outside the frame are not drawn; the far hills, stones and long walls were
+- **What was done about it** when the table was measured: the ground is one bake read per pixel again (two meshes cut
+  along the fine bake); no grain on touch devices; tanks outside the frame are not drawn; the far hills and stones were
   thinned; the minimap's solids are drawn once; glow sprites are scaled to about the pixel area they had; a CPU rasteriser
   shades props with the Lambert set. The first branch run of the desktop static scene was 517 ms; these took it to 383.
+  **Three of these were taken out again after the table was measured** (owner update below): the grain, the glow scale and
+  the thinning. The table is NOT re-measured; on this renderer the shipped build will be somewhat slower than the table.
+  (An earlier wording of this line also named "long walls"; no such change is in the code.)
 - **What was not done, by rule:** lowering resolution or anti-aliasing on HIGH, or simplifying the tanks' own materials
   (5E-2b2b's and the Meshy pipeline's business).
 - **What a phone will do with the extra cost:** in Auto mode the existing governor lowers the render scale a step while frames
@@ -2799,16 +2802,59 @@ game's own clamp on a CPU rasteriser). "Frame" is the median time between frames
   2047 x 3029; LOW phone: 880 x 1300) and a coarse one (832 x 1264 phone, 1472 x 1264 desktop). About 30 MB on a HIGH phone
   against 22 MB on main; the peak during a bake is about 2.5x one level, freed at once.
 
-### Release status: PR open, NOT merged (lead's decision; needs the owner)
-The owner pre-approved the release "when everything above is done, CI is green and both reviewers pass". Everything is done
-except one stated condition: frame rate at least as good as main. On the only renderer available here the branch is slower
-(table above), and the cause is the camera itself, not a defect that more work in this session would remove. Merging would
-put a known frame-cost on the live game while the owner is away, so the lead stopped at the PR. **The owner's choice:**
-(a) merge as it is and play it on the iPhone the same day (checklist above); if it stutters, reverting the merge commit
-brings the old view back for everyone (the governor absorbs part of the cost on weaker phones in the meantime);
-(b) before merging, have a session add a "Classic view" setting (the fixed view and its veil for live matches already exist
-behind `LUNAR_CHASECAM`) or a wider desktop framing. The lead's recommendation is (a): every other part of the brief is met,
-the critic put all six maps at or above 5E-2c on both devices, and only a real phone can say whether the cost shows.
+### Owner update (Nov 13, after slice 9): stop the performance loop; merge is pre-approved
+The owner's words, in short: the software-renderer frame times are a relative check, not real-device performance; stop the
+performance loop; keep a saving only if it changes nothing anyone can see and revert any that changes how anything looks,
+decided from the code change itself with no new captures; record the measured numbers as they are; open the PR and merge
+it; he will check the frame rate himself on his iPhone and his computer. Done as follows (slice 10).
+
+**Reverted (each changes the picture):**
+- *No ground grain on touch devices* (slice 9). The grain multiplies the ground's colour by a tiling pattern; without it a
+  phone's ground is plainer right under the camera. Back to: grain on every HIGH GPU, phones included (the state both
+  reviewers read).
+- *Glow sprites scaled down to the pixel area they had in the fixed view* (slice 9; down to half size). Lamps and tank
+  lights glowed smaller next to everything else, which the chase camera draws larger. Back to world-sized glows (the state
+  all three critic rounds saw).
+- *Fewer far hills and scattered stones* (slices 6 and 7): hills 46 -> 30 on HIGH and 18 -> 9 on LOW, drawn with fewer
+  faces; stones beyond the walls at two thirds (HIGH) and about half (LOW) of the density. Back to 46 / 18 smooth hills
+  and the 5E-2c stone density (the state critic round 2 saw). Kept from the same lines: no hills or mountain range in the
+  menu pictures (a picture fix, not a saving).
+
+**Kept (nothing on a screen changes):**
+- Tanks more than 4.5 units outside the frame are not drawn, and their light sprites are skipped with them.
+- The minimap's solids are drawn once instead of every frame; floating-text widths are measured once per text; the
+  camera's inputs are pooled objects. Same pixels, less script.
+- Menu pictures and reviewers' fixes: untouched.
+
+**Kept, and named because they are not strictly "no pixel differs":**
+- *One bake read per ground pixel* (slice 6). Before it, a 0.7-unit strip lying 2.5 units outside the walls cross-faded
+  from the sharp bake to the coarse one; now the sharp bake ends on a line there. Both sides are the same baked picture
+  at two sharpnesses, on the darkened ground outside the arena, and neither the critic's round 3 (about 78 frames) nor
+  the graphics reviewer saw a seam. Putting the fade back means rewriting the ground shader and mesh that both reviewers
+  passed, hours before an unattended merge. The lead kept it; if a line shows on a real screen, that is the place.
+- *A CPU rasteriser shades props and crates with the LOW material set* (slices 6 and 7). It changes nothing on any device
+  with a GPU, the owner's iPhone and computer included. It only applies where a browser has no graphics acceleration, where
+  the frame times above ARE the real ones, and it is what the Conquest view already does there.
+
+**What the sheets in `docs/camera-5e2b2a/` show against the shipped build** (not retaken, by the owner's instruction):
+the sheets have the smaller glows and the thinner far hills and stones; the shipped build has the larger glows and the
+fuller ones. No sheet ever showed the grain: the capture browser draws on the CPU, where the grain is off.
+
+**Numbers:** the table above stands as measured (slice 9's tree, with all savings in). Nothing was measured after the
+reverts. `b10test.py`'s draw-cost budget check still fails on this renderer and was neither fixed nor relaxed.
+
+**Tests on the slice 10 tree:** `bash dev/tests/conquest-regression.sh` exit 0 (incl. `arena-cam.mjs` 9,869 checks and
+`arena-maps.mjs`: bounded kits, LOW under 80% of HIGH with the fuller hills and stones), `graphics-release.mjs`,
+`graphics-motion.mjs`, `environment.mjs` PASS, `b3test.py` PASS (every map in 3D, no errors). The two reviewers were not run
+again: each revert restores lines they had read or that an earlier critic round had seen.
+
+### Release status: merge pre-approved by the owner (Nov 13)
+The brief's condition "frame rate at least as good as main" is not met on the software renderer (table above) and was not
+pursued further: the owner ruled that those numbers are a relative check only and that he will judge the frame rate on his
+iPhone and his computer. Everything else in the brief is done, both reviewers passed, and the PR is merged once CI is green
+on its head. The merge commit, deploy runs and the live version check are in the "Release record" below once it exists.
+If the live build stutters on a real device: `window.LUNAR_CHASECAM=false` brings the fixed view back on one device; for
+everyone, revert the merge commit on main.
 
 ### State at each push (branch `claude/arcade-camera-raised-bridges-b9htvw`)
 - `ea8e203` slice 1: ArenaCam, the perspective camera in render3d, the overlay through the camera, raised bridges, two-level
@@ -2817,10 +2863,12 @@ the critic put all six maps at or above 5E-2c on both devices, and only a real p
 - slice 4: critic round 1. `dfde574` slice 5: the view pans inside each map's reachable width, constant stick mapping.
 - `97eb230` slice 6: critic round 2 and the first cost pass (single-read ground, tank culling). `c162c65`: reviewed head.
 - `0ffbe48` slice 7: both reviewers' findings. `6dcdff9` slice 8: critic round 3 (phone).
-- final: glow scale, no grain on touch devices, sheets, numbers, this record, build stamp (see the PR).
+- `356f766` slice 9: glow scale, no grain on touch devices, cached text widths, sheets, numbers, this record.
+- slice 10 (owner update): grain back on phones, world-sized glows, full far hills and stones; this record; build stamp.
 
 ### What is left (for the owner or a later session)
-- **The merge decision above**, and the iPhone / Telegram playtest (checklist above): the checks no agent could do.
+- **The owner's frame-rate check on a real iPhone (Telegram) and a real computer**, with the playtest checklist above:
+  the one check no agent could do.
 - If the cost is too high on real phones: the levers, cheapest first, are the desktop framing (`halfH` in `js/arenacam.js`),
   a "Classic view" setting (the fixed view and its veil for live matches already exist behind `LUNAR_CHASECAM`), and lighter
   tank shading on LOW.

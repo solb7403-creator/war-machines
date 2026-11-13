@@ -732,7 +732,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261113083602"},409),req);
+        return cors(json({error:"update",build:"20261113084826"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

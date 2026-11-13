@@ -75,8 +75,8 @@ const ArenaProps=(()=>{
   const clear=(x,z,r)=>x<-r-0.6||x>W+r+0.6||z<-r-0.6||z>H+r+0.6;
   // the chase camera's ground runs far out: stones are scattered over the band round the arena, a few low hills beyond it
   const bx0=M.chase?Math.max(v.x0,-15):v.x0,bx1=M.chase?Math.min(v.x1,W+15):v.x1,bz0=M.chase?Math.max(M.horizon+0.8,-17):Math.max(M.horizon+0.8,v.z0),bz1=M.chase?Math.min(v.z1,H+13):v.z1;
-  const n=Math.round((M.chase?(hi?0.03:0.011):(hi?0.045:0.02))*((bx1-bx0)*(bz1-bz0)-W*H));
-  if(M.chase&&!M.thumb){const m=hi?30:9;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8});}}
+  const n=Math.round((hi?0.045:0.02)*((bx1-bx0)*(bz1-bz0)-W*H));
+  if(M.chase&&!M.thumb){const m=hi?46:18;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8,smooth:1});}}
   for(let i=0;i<n;i++){const x=bx0+hs(i,sd)*(bx1-bx0),z=bz0+hs(sd,i*1.3)*(bz1-bz0),big=hs(i*3.7,sd)>0.8,r=big?0.28+hs(i,7)*0.2:0.08+hs(i,9)*0.16;
    if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||M.theme.ground,x,0,z,r,r*(big?0.9:1.2),i,{ao:0.2,punch:0.3});}
  }

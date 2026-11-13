@@ -36,3 +36,6 @@ Also here:
 - Markers on the screen's edge point at things outside the frame: red wedge = enemy (with its health), blue dot = team mate,
   diamond = objective, a flashing "!" = a super that will reach you.
 - These frames come from a test browser that draws on the CPU; they show the picture, not the frame rate of a phone.
+- Three small differences from the shipped build (the sheets were not retaken; Checkpoint 35, "Owner update"): in the
+  shipped build the glows round lamps and tank lights are larger, there are more hills and stones beyond the walls, and on
+  a real phone or computer the ground has a fine grain that a CPU-drawn frame never shows.
