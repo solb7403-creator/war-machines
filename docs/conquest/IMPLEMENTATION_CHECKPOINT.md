@@ -2900,7 +2900,8 @@ everyone, revert the merge commit on main.
   `20261113084826`). The live hosts are outside this container's network allowlist, so the Worker figures come from the
   deploy run's own checks and the Pages figure from the deployment record.
 - Post-merge runs on main `1acff13`: Validate Laboratory UI (run [43401304276](https://github.com/solb7403-creator/war-machines/actions/runs/43401304276)): success. Equipment
-  Balance (run [43401304322](https://github.com/solb7403-creator/war-machines/actions/runs/43401304322), the same suite that was green on the PR head): still running when this record was written.
+  Balance (run [43401304322](https://github.com/solb7403-creator/war-machines/actions/runs/43401304322), the same suite that was green on the PR head): success (balance and Laboratory
+  parity, economy / account / PvP / farm regressions, Workers runtime smoke).
 - Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment),
   so main was merged into it instead; this record and the ROADMAP row are the only changes it carries on top of main, and
   they are NOT on main until a docs-only PR is merged (the owner's approval covered PR #124 only).
