@@ -8,11 +8,13 @@
 //  - the environment layer: six presets, blends, flash, emitters, anchors, the rebake hook
 import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createContext,runInContext} from 'node:vm';
 const root=new URL('../../',import.meta.url),ctx=createContext({console,URL,Float32Array,Float64Array,Uint8Array,Uint16Array,Map,WeakMap,Math,HOST:{random(){throw Error('authoritative RNG consumed by visuals');}}});
-for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/game.js','js/mapenv.js','js/arena3d.js','js/arenaprops.js'])runInContext(readFileSync(new URL(f,root),'utf8'),ctx);
+for(const f of ['js/vendor/three.lunar.min.js','js/rules.js','js/game.js','js/mapenv.js','js/arena3d.js','js/arenaprops.js','js/arenacam.js'])runInContext(readFileSync(new URL(f,root),'utf8'),ctx);
 runInContext('globalThis.A=Arena3D;globalThis.P=ArenaProps;globalThis.E=MapEnv;globalThis.maps=MAPS;globalThis.snap=JSON.stringify(MAPS);globalThis.T=THREE;globalThis.DECK=typeof M3!=="undefined"?M3.DECK_H:1;',ctx);
 const {A,P,E,maps,T}=ctx,W=20,H=32,IDS=['classic','overpass','longshot','craters','canyon','bunker'];
 // the views a phone and a desktop ask for (render3d.arenaView)
 const VIEWS={phone:{x0:-2,x1:22,z0:-13,z1:44},desk:{x0:-24,x1:44,z0:-2,z1:36}};
+// the chase camera (Session 5E-2b2a): the ground it asks for on a phone and a desktop (render3d.chaseView), the raised bridges
+{const CAM=runInContext('ArenaCam',ctx);for(const [n,w,h] of [['chasePhone',390,844],['chaseDesk',1920,1080]]){const c=CAM.cover(w,h);VIEWS[n]={x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1,horizon:c.horizon,fine:c.fine,chase:true};}}
 const TOL=0.2;   // how far art may overhang its footprint (ledges, rails, bevels)
 const EDGE=0.32;  // wall-mounted trim (lamps, ribs, pipes on a boundary wall) may reach this far in from the arena edge
 function solids(M){
@@ -26,7 +28,7 @@ function solids(M){
 const onSolid=(S,x,z)=>S.rect.some(r=>x>=r[0]-TOL&&x<=r[0]+r[2]+TOL&&z>=r[1]-TOL&&z<=r[1]+r[3]+TOL)||S.circ.some(c=>Math.hypot(x-c[0],z-c[1])<=c[2]+TOL);
 const stats={};
 for(const id of IDS)for(const q of ['high','low'])for(const [vn,view] of Object.entries(VIEWS)){
- const M=A.prep(id,{q,view:{...view},env:null}),k=M.kit,S=solids(maps[id]);
+ const M=A.prep(id,{q,view:{...view},env:null,chase:!!view.chase}),k=M.kit,S=solids(maps[id]);
  const southWall=x=>(maps[id].walls||[]).some(w=>w[1]+w[3]>H-0.01&&x>=w[0]-0.05&&x<=w[0]+w[2]+0.05);   /* a wall on the south edge: its own columns are not playfield */ let n=0,bad=0,worst='',southTall=0,maxIn=0;
  const kits=[k,...k.spin.map(s=>s.kit)];
  for(const kit of kits)for(const cls of A.CLS){const b=kit[cls];assert.ok(b.P.every(Number.isFinite)&&b.N.every(Number.isFinite)&&b.C.every(Number.isFinite),id+' finite '+cls);n+=b.P.length/3;}
@@ -41,9 +43,18 @@ for(const id of IDS)for(const q of ['high','low'])for(const [vn,view] of Object.
  for(const h of k.halos)assert.ok(h.slice(0,4).every(Number.isFinite)&&/^#[0-9a-f]{6}$/i.test(h[4]),id+' halo');
  const a=k.anchors;assert.ok(Array.isArray(a.vents)&&Array.isArray(a.lasers)&&Array.isArray(a.drops)&&a.drops.length>0&&a.area.length===4,id+' anchors');
  stats[id+'|'+q+'|'+vn]=n;
- assert.ok(n>1500&&n<(q==='high'?(vn==='desk'?260000:150000):90000),id+' '+q+' '+vn+' bounded map '+n);
+ assert.ok(n>1500&&n<(q==='high'?(vn==='desk'||vn==='chaseDesk'?260000:vn==='chasePhone'?180000:150000):vn.startsWith('chase')?110000:90000),id+' '+q+' '+vn+' bounded map '+n);
+ // the chase camera's bridges: the deck is raised, and where the rules have a tunnel the space under it is open from mouth
+ // to mouth (nothing but the floor below tank height, nothing hanging lower than the deck's own beams)
+ if(view.chase&&maps[id].bridge){const B=maps[id].bridge,[dx,dy,dw,dh]=B.deck,D=P.DECK_UP,U=D-P.DECK_SLAB;let top=0,inTun=0,eg='';
+  assert.equal(M.deckH,D,id+': raised deck');
+  for(const cls of ['rock','paint','metal']){const b=k[cls];for(let i=0;i<b.P.length;i+=3){const x=b.P[i],y=b.P[i+1],z=b.P[i+2];if(x>dx&&x<dx+dw&&z>dy&&z<dy+dh)top=Math.max(top,y);
+   for(const [tx,tw] of B.tunnels)if(x>tx+0.62&&x<tx+tw-0.62&&z>dy-0.2&&z<dy+dh+0.2&&y>0.2&&y<U-0.36){inTun++;if(!eg)eg=cls+' '+[x,y,z].map(v=>v.toFixed(2)).join(',');}}}
+  assert.ok(top>=D&&top<=D+0.65,id+' '+q+': the deck stands at '+D+' (top of its rails '+top.toFixed(2)+')');
+  assert.equal(inTun,0,id+' '+q+' '+vn+': '+inTun+' vertices hang in a tunnel, e.g. '+eg);}
+ if(!view.chase)assert.equal(M.deckH,P.DECK,id+': the fixed view keeps the low deck');
 }
-for(const id of IDS)for(const vn of ['phone','desk'])assert.ok(stats[id+'|low|'+vn]<stats[id+'|high|'+vn]*0.8,id+' '+vn+' real LOW workload '+stats[id+'|low|'+vn]+' vs '+stats[id+'|high|'+vn]);
+for(const id of IDS)for(const vn of ['phone','desk','chasePhone','chaseDesk'])assert.ok(stats[id+'|low|'+vn]<stats[id+'|high|'+vn]*0.8,id+' '+vn+' real LOW workload '+stats[id+'|low|'+vn]+' vs '+stats[id+'|high|'+vn]);
 assert.equal(runInContext('JSON.stringify(MAPS)',ctx),ctx.snap,'layout data untouched');
 // themes and crates
 for(const id of IDS){const th=P.theme(id);assert.ok(/^#[0-9a-f]{6}$/i.test(th.ground)&&['crate','metal'].includes(th.crateMat)&&['tan','steel'].includes(th.crate),id+' theme');}

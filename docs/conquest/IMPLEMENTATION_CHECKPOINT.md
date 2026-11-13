@@ -2471,3 +2471,37 @@ time between frames (the game draws twice per frame in this harness, the same on
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. If the live build
   misbehaves, `window.LUNAR_ARENA3D=false` brings the earlier maps back for one device; for everyone, revert `434e09a` on main
   (the Pages and Worker deploys follow the revert) and note it here.
+
+## Checkpoint 35 — Session 5E-2b2a: Arcade chase camera + raised bridges (branch `claude/arcade-camera-raised-bridges-b9htvw`, from main `57574e7`) — IN PROGRESS
+
+Brief: owner's Session 5E-2b2a prompt (Arcade uses a Conquest-style perspective chase camera on every map; Overpass and Canyon
+bridges raised on pillars, open underneath; keep all 5E-2c art; phones and desktops equal; release pre-approved once CI is green
+and two reviewers pass). Owner not monitoring: every decision below was made by the lead and is recorded with its reason.
+Payments stay DISABLED. Not touched: prices, economy, airdrop points, save schema, ownership, chassis / weapon stats, supers
+tuning, timing-bar speed, `MAPS` (layout, hitboxes, spawns), `js/game.js`, `js/rules.js`, the Worker, `PVP_V`.
+
+### Research that drove the choices (step 1; a research agent, web search)
+Caveat from the agent: every page fetch was blocked by this session's network allowlist, so the findings below come from
+search-result summaries of the pages named, not from pages it opened. They are treated as direction, not as proof.
+1. **High pitch, narrow lens, camera pulled back** (Riot's 2014 Rift update narrowed the field of view and pulled the camera
+   back to even out what the top and bottom of the screen show; Valve's Alien Swarm top-down camera: pitch 60; a Diablo-2-style
+   camera in Grim Dawn: 53; Dota 2 default distance 1134). => pitch 53 (phone) / 49 (desktop) from level, a 46 / 34 degree
+   lens, the camera 28 - 35 units away. A wide lens up close was rejected: it stretches the near ground and shrinks the fight.
+2. **Both sides must see the same** (Wild Rift turns the map 180 degrees for the far team so both play "upward"; League raised
+   its camera and added a per-side offset because the lower team saw less; Little Big Robots hit the same problem).
+   => nothing to add: `js/pvp.js` already turns the map so every player is team 0 at the bottom, and the rig takes the
+   screen's shape as its only input (no team, no player). `dev/tests/arena-cam.mjs` holds that.
+3. **Follow without overshoot; look ahead a little** (Unity SmoothDamp, a critically damped spring, 0.3 s in its example;
+   Cinemachine look-ahead 0.2 - 0.5 s; Keren's "Scroll Back": camera window, forward focus). => SmoothDamp-form follow at 0.1 s
+   (tight: a loose camera reads as input lag on a phone), 0.24 s of look-ahead capped at 1.1 units, a pull of up to 2.6 units
+   towards the enemies within 10.5 units, each eased over 0.45 - 0.6 s.
+4. **Edge markers: wedges beat plain arrows; never colour alone; only what matters** (Wedge, CHI 2008, more accurate than Halo
+   rings; Riot's patent shows only objects in a band outside the view; game accessibility guidelines). => wedge markers on the
+   frame's edge, four nearest enemies, shape and colour both differ by kind, a health arc on each, pulse only for a threat.
+5. **Occlusion: move the camera, do not ghost the wall** (Cinemachine Deoccluder: pull forward / keep height; Unreal spring arm;
+   "50 Game Camera Mistakes": swing or raise to clear). => the camera solves a clear line to your tank every frame: it swings up
+   over a wall or the deck, and in a tunnel's lane it drops and moves in to look along the tunnel. Nothing fades.
+6. **Shake and motion** (Xbox accessibility guideline 117, WCAG 2.3.3, Eiserloh's decaying trauma). => the existing shake is kept
+   as it was; reduced motion removes the opening crane shot and makes every camera move a cut.
+Not found by the agent: any published camera numbers for Brawl Stars, Squad Busters, Tanks a Lot or WoT Blitz; a sourced
+minimum on-screen character size; whether Brawl Stars flips the map.
