@@ -42,17 +42,35 @@ async def main():
             worst.append(r)
         await cdp.send('Emulation.setCPUThrottlingRate',{'rate':1})
         check(all(w['med']<12 and w['p95']<25 for w in worst),'3D frame cost at 4x CPU slowdown fits a 30fps frame (median under 12ms, p95 under 25ms) '+json.dumps(worst))
-        # ---------- aiming on the tilted ground ----------
-        r=await pg.evaluate("""()=>{save.gtype='arena';save.mode='1v1';save.map='craters';prepareMatch();startMatch();document.body.classList.add('battle');fit();
-          const e=units.find(u=>u.team!==0);e.x=14;e.y=9;me.x=6;me.y=24;tapFocus=-1;tapTarget(X(e.x),Y(e.y));const tapped=tapFocus===e.id;
-          joy.dx=0;joy.dy=-1;const up=inputVec();joy.dx=Math.SQRT1_2;joy.dy=-Math.SQRT1_2;const dg=inputVec();joy.dx=joy.dy=0;
-          const want=Math.atan2(-Math.SQRT1_2/GK,Math.SQRT1_2);
-          aim={id:1,sx:0,sy:0,x:X(me.x)+100,y:Y(me.y)-100,on:true};const aa=aimAng();aim=null;
-          state='menu';document.body.classList.remove('battle');
-          return {tapped,up,dg,dgAng:Math.atan2(dg[1],dg[0]),want,mag:Math.hypot(dg[0],dg[1]),aa,aWant:Math.atan2(-100/GK,100)};}""")
-        check(r['tapped'],'tapping an enemy on the 3D ground locks onto it')
-        check(abs(r['up'][0])<1e-6 and abs(r['up'][1]+1)<1e-6 and abs(r['dgAng']-r['want'])<1e-6 and abs(r['mag']-1)<1e-6,'joystick drives where your finger points on the tilted ground '+json.dumps(r))
-        check(abs(r['aa']-r['aWant'])<1e-6,'drag-aim angle is measured on the ground '+json.dumps([r['aa'],r['aWant']]))
+        # ---------- aiming through the chase camera (Session 5E-2b2a): taps, the stick and the super drag land where they are drawn ----------
+        r=await pg.evaluate("""()=>{window.LUNAR_NO_CAM_INTRO=1;save.gtype='arena';save.mode='1v1';save.map='craters';prepareMatch();startMatch();document.body.classList.add('battle');fit();paused=true;
+          const e=units.find(u=>u.team!==0);e.x=14;e.y=9;me.x=6;me.y=24;B3.step=1/30;for(let i=0;i<45;i++)drawBattle();B3.step=0;
+          const chase=CAM(),pitch=chase?ArenaCam.C.pitch:0;
+          WP(e.x,e.y,0);const ex=WPx,ey=WPy,ek=WPk;tapFocus=-1;tapTarget(ex,ey);const tapped=tapFocus===e.id;tapFocus=-1;tapTarget(ex+ek*0.9,ey+ek*0.4);const tappedNear=tapFocus===e.id;
+          tapFocus=-1;tapTarget(ex+ek*3.2,ey);const tappedFar=tapFocus===e.id;tapFocus=-1;
+          joy.dx=0;joy.dy=-1;const up=inputVec();joy.dx=1;joy.dy=0;const rt=inputVec();joy.dx=Math.SQRT1_2;joy.dy=-Math.SQRT1_2;const dg=inputVec();joy.dx=joy.dy=0;
+          const sq=chase?Math.max(0.5,Math.sin(ArenaCam.C.base*Math.PI/180)):GK,want=Math.atan2(-Math.SQRT1_2/sq,Math.SQRT1_2);
+          // driving "up" moves the tank straight up the screen
+          WP(me.x,me.y,0);const mx=WPx,my=WPy;WP(me.x+up[0],me.y+up[1],0);const upScreen=[WPx-mx,WPy-my];
+          // the super drag: a finger on the ground point 3 east and 4 north of the tank aims exactly at it
+          WP(me.x+3,me.y-4,0);aim={id:1,sx:0,sy:0,x:WPx,y:WPy,on:true};const aa=aimAng();aim=null;
+          // the overlay's projection and the WebGL camera are one camera: the same world points land on the same pixels
+          let camErr=0;if(chase)for(const [x,y,h] of [[me.x,me.y,0],[e.x,e.y,0.8],[2,30,0],[18,3,2.1],[10,16,1]]){const v=new THREE.Vector3(x,h,y).project(RCP),p=ArenaCam.project(x,y,h,{});camErr=Math.max(camErr,Math.hypot((v.x+1)*vw/2-p.x,(1-v.y)*vh/2-p.y));}
+          paused=false;state='menu';document.body.classList.remove('battle');
+          return {camErr,chase,pitch,tapped,tappedNear,tappedFar,up,rt,dg,dgAng:Math.atan2(dg[1],dg[0]),want,mag:Math.hypot(dg[0],dg[1]),upScreen,aa,aWant:Math.atan2(-4,3)};}""")
+        check(r['chase'] and r['camErr']<0.75,'the overlay and the 3D scene share one camera (largest difference '+str(round(r['camErr'],3))+' px)')
+        check(r['chase'] and 42<=r['pitch']<=56,'the Arcade battle draws through the chase camera '+json.dumps([r['chase'],r['pitch']]))
+        check(r['tapped'] and r['tappedNear'] and not r['tappedFar'],'tapping an enemy where it is drawn locks onto it; a tap well beside it does not '+json.dumps([r['tapped'],r['tappedNear'],r['tappedFar']]))
+        check(abs(r['up'][0])<1e-6 and abs(r['up'][1]+1)<1e-6 and abs(r['rt'][0]-1)<1e-6 and abs(r['rt'][1])<1e-6 and abs(r['dgAng']-r['want'])<1e-6 and abs(r['mag']-1)<1e-6 and abs(r['upScreen'][0])<0.5 and r['upScreen'][1]<-5,'joystick drives where your finger points: up is up the screen, right is right '+json.dumps(r))
+        check(abs(r['aa']-r['aWant'])<1e-6,'drag-aim angle is measured on the ground, from the tank to the finger '+json.dumps([r['aa'],r['aWant']]))
+        # the earlier fixed view is one switch away (window.LUNAR_CHASECAM=false), with its own low bridge and its own input mapping
+        r=await pg.evaluate("""()=>{window.LUNAR_CHASECAM=false;apply3D();save.gtype='arena';save.mode='1v1';save.map='overpass';prepareMatch();startMatch();document.body.classList.add('battle');fit();paused=true;
+          for(let i=0;i<3;i++)drawBattle();const e=units.find(u=>u.team!==0);e.x=14;e.y=9;tapFocus=-1;tapTarget(X(e.x),Y(e.y));const tapped=tapFocus===e.id;tapFocus=-1;
+          joy.dx=Math.SQRT1_2;joy.dy=-Math.SQRT1_2;const dg=inputVec();joy.dx=joy.dy=0;
+          const out={chase:CAM(),mapChase:!!B3.map.chase,deck:B3.map.deckH,tapped,dgAng:Math.atan2(dg[1],dg[0]),want:Math.atan2(-Math.SQRT1_2/GK,Math.SQRT1_2)};
+          paused=false;state='menu';exitBattle();document.body.classList.remove('battle');delete window.LUNAR_CHASECAM;apply3D();
+          save.map='overpass';prepareMatch();startMatch();document.body.classList.add('battle');fit();paused=true;for(let i=0;i<3;i++)drawBattle();out.back=CAM()&&!!B3.map.chase;out.deckUp=B3.map.deckH;paused=false;state='menu';exitBattle();document.body.classList.remove('battle');return out;}""")
+        check(not r['chase'] and not r['mapChase'] and r['deck']==1 and r['tapped'] and abs(r['dgAng']-r['want'])<1e-6 and r['back'] and r['deckUp']>1.5,'LUNAR_CHASECAM=false: the fixed tilted view, its low bridge and its input mapping; back on, the chase camera returns '+json.dumps(r))
         # ---------- menu pictures in 3D: every weapon and chassis at every tier, crates, gems, maps, the hero ----------
         r=await pg.evaluate("""()=>{const c=document.createElement('canvas');c.width=c.height=120;const x=c.getContext('2d');const res=[];
           const lit=()=>{const d=x.getImageData(0,0,120,120).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>20)n++;return n;};

@@ -1,0 +1,114 @@
+[
+ {
+  "device": "phone",
+  "requests": 59,
+  "rawBytes": 5400549,
+  "wireBytes": 3638626,
+  "readyMs": 3023,
+  "firstFrameMs": 1293,
+  "settledMs": 10428,
+  "arena": true,
+  "bake": [
+   336,
+   692
+  ],
+  "at9Mbps_s": 3.23,
+  "at1_6Mbps_s": 18.19,
+  "largest": [
+   [
+    "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+    825712
+   ],
+   [
+    "js/assets/meshy-v1/chassis-scout-0-light.glb",
+    732340
+   ],
+   [
+    "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+    343268
+   ],
+   [
+    "js/assets/meshy-v1/weapon-twin-0-light.glb",
+    318104
+   ],
+   [
+    "icon.png",
+    224708
+   ],
+   [
+    "js/assets/hf-v1/orm-high.png",
+    149128
+   ]
+  ],
+  "mapFiles": [
+   [
+    "js/arena3d.js",
+    19003
+   ],
+   [
+    "js/arenaprops.js",
+    19846
+   ],
+   [
+    "js/mapenv.js",
+    5317
+   ]
+  ]
+ },
+ {
+  "device": "desk",
+  "requests": 60,
+  "rawBytes": 5808513,
+  "wireBytes": 4046590,
+  "readyMs": 1738,
+  "firstFrameMs": 759,
+  "settledMs": 13732,
+  "arena": true,
+  "bake": [
+   756,
+   560
+  ],
+  "at9Mbps_s": 3.6,
+  "at1_6Mbps_s": 20.23,
+  "largest": [
+   [
+    "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+    825712
+   ],
+   [
+    "js/assets/meshy-v1/chassis-scout-0-light.glb",
+    732340
+   ],
+   [
+    "js/assets/meshy-v1/weapon-siege-0-light.glb",
+    407964
+   ],
+   [
+    "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+    343268
+   ],
+   [
+    "js/assets/meshy-v1/weapon-twin-0-light.glb",
+    318104
+   ],
+   [
+    "icon.png",
+    224708
+   ]
+  ],
+  "mapFiles": [
+   [
+    "js/arena3d.js",
+    19003
+   ],
+   [
+    "js/arenaprops.js",
+    19846
+   ],
+   [
+    "js/mapenv.js",
+    5317
+   ]
+  ]
+ }
+]

@@ -4,7 +4,7 @@ This file is the common engineering contract for Codex, Claude Code and other au
 
 ## Project reality
 - This is an existing production-oriented, phone-first web/Telegram game, **not** a greenfield React app. Preserve the current architecture.
-- Browser/game: global-scope JavaScript in explicit load order (`index.html`, `web/boot.js`), canvas HUD, Three.js 3D with 2D fallback. Render code: `js/render3d.js`, `js/models3d.js`, `js/equipment3d.js`, `js/environment3d.js`, `js/graphics.js`, `js/showroom.js`; the Arcade maps: `js/arena3d.js`, `js/arenaprops.js`, `js/mapenv.js` (loaded with the 3D engine by `load3D`, not in the page's script list). Current shared PBR atlas: `js/assets/hf-v1/manifest.json`.
+- Browser/game: global-scope JavaScript in explicit load order (`index.html`, `web/boot.js`), canvas HUD, Three.js 3D with 2D fallback. Render code: `js/render3d.js`, `js/models3d.js`, `js/equipment3d.js`, `js/environment3d.js`, `js/graphics.js`, `js/showroom.js`; the Arcade maps and their chase camera: `js/arena3d.js`, `js/arenaprops.js`, `js/mapenv.js`, `js/arenacam.js` (loaded with the 3D engine by `load3D`, not in the page's script list). Current shared PBR atlas: `js/assets/hf-v1/manifest.json`.
 - Rules and shared simulation: `js/rules.js`, `js/game.js`. Cloudflare Worker/Firebase server-authoritative economy and combat live in `worker/`. Conquest code spans `js/conquest/`, `worker/src/`, and corresponding tests.
 - Begin with `dev/README.md`, existing workflows in `.github/workflows/`, and relevant `docs/` before assuming dependencies or designing replacements.
 

@@ -1,0 +1,122 @@
+[
+ {
+  "device": "phone",
+  "requests": 59,
+  "rawBytes": 4998854,
+  "wireBytes": 3190717,
+  "readyMs": 2785,
+  "firstFrameMs": 1328,
+  "settledMs": 12356,
+  "arena": true,
+  "bake": [
+   260,
+   395
+  ],
+  "at9Mbps_s": 2.84,
+  "at1_6Mbps_s": 15.95,
+  "largest": [
+   [
+    "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+    825712
+   ],
+   [
+    "js/assets/meshy-v1/weapon-siege-0-light.glb",
+    407964
+   ],
+   [
+    "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+    343268
+   ],
+   [
+    "js/assets/meshy-v1/weapon-twin-0-light.glb",
+    318104
+   ],
+   [
+    "icon.png",
+    224708
+   ],
+   [
+    "js/vendor/three.lunar.min.js",
+    136792
+   ]
+  ],
+  "mapFiles": [
+   [
+    "js/arena3d.js",
+    20894
+   ],
+   [
+    "js/arenacam.js",
+    9971
+   ],
+   [
+    "js/arenaprops.js",
+    22795
+   ],
+   [
+    "js/mapenv.js",
+    5317
+   ]
+  ]
+ },
+ {
+  "device": "desk",
+  "requests": 60,
+  "rawBytes": 5148222,
+  "wireBytes": 3339980,
+  "readyMs": 1680,
+  "firstFrameMs": 722,
+  "settledMs": 15980,
+  "arena": true,
+  "bake": [
+   460,
+   395
+  ],
+  "at9Mbps_s": 2.97,
+  "at1_6Mbps_s": 16.7,
+  "largest": [
+   [
+    "js/assets/meshy-v1/chassis-vanguard-0-light.glb",
+    825712
+   ],
+   [
+    "js/assets/meshy-v1/weapon-siege-0-light.glb",
+    407964
+   ],
+   [
+    "js/assets/meshy-v1/weapon-pulse-0-light.glb",
+    343268
+   ],
+   [
+    "js/assets/meshy-v1/weapon-twin-0-light.glb",
+    318104
+   ],
+   [
+    "icon.png",
+    224708
+   ],
+   [
+    "js/assets/hf-v1/orm-high.png",
+    149128
+   ]
+  ],
+  "mapFiles": [
+   [
+    "js/arena3d.js",
+    20894
+   ],
+   [
+    "js/arenacam.js",
+    9971
+   ],
+   [
+    "js/arenaprops.js",
+    22795
+   ],
+   [
+    "js/mapenv.js",
+    5317
+   ]
+  ]
+ }
+]

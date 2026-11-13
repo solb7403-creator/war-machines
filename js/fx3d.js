@@ -68,6 +68,7 @@ function create(T,host){
  //        uv(u,v,out) (canonical -1..1 -> the host material's uv), lin:bool (convert sRGB to linear), solidAttr:'color'|'aCol',
  //        dot(add,x,y,z,size,r,g,b,a) (one particle sprite this frame; absent: drawn as billboards in the glow batch),
  //        right:[x,y,z], up:[x,y,z] (camera axes, refreshed by the host before begin()), eye(x,y,z,out) (unit vector point -> camera),
+ //        slideMax (a perspective host: the furthest a sprite may be slid towards the camera to clear the ground; read every call),
  //        shake(m,seconds), order:{glow,solid}}
  const QMAX=host.maxQuads||2600,VMAX=host.maxVerts||6000,PMAX=host.maxParticles||1500,DMAX=host.maxDebris||96,EMAX=40,SMAX=28;
  // ---------- glow batch: quads (position, colour rgb + occlusion a, soft-edge uv, optional billboard corner) ----------
@@ -114,7 +115,7 @@ function create(T,host){
  function disc(x,y,z,r,col,a,o){quad(x-r,y,z-r,x+r,y,z-r,x+r,y,z+r,x-r,y,z+r,-1,-1,1,-1,1,1,-1,1,col[0],col[1],col[2],a,o);}
  function sprite(x,y,z,r,col,a,o){
   if(qB){if(qn>=QMAX)return;const p=qn*12;quad(x,y,z,x,y,z,x,y,z,x,y,z,-1,-1,1,-1,1,1,-1,1,col[0],col[1],col[2],a,o);qB[p]=-r;qB[p+1]=-r;qB[p+2]=1;qB[p+3]=r;qB[p+4]=-r;qB[p+5]=1;qB[p+6]=r;qB[p+7]=r;qB[p+8]=1;qB[p+9]=-r;qB[p+10]=r;qB[p+11]=1;return;}
-  const R=host.right,U=host.up;if(FW){const t=Math.max(0,(r*U[1]-y+.04)/FW[1]);x+=FW[0]*t;y+=FW[1]*t;z+=FW[2]*t;}   // slid towards the camera until its lower edge clears the ground: same place on screen, never cut off
+  const R=host.right,U=host.up;if(FW){const t=Math.min(host.slideMax||1e9,Math.max(0,(r*U[1]-y+.04)/Math.max(.05,FW[1])));x+=FW[0]*t;y+=FW[1]*t;z+=FW[2]*t;}   // slid towards the camera until its lower edge clears the ground: same place on screen, never cut off
   quad(x-(R[0]+U[0])*r,y-(R[1]+U[1])*r,z-(R[2]+U[2])*r,x+(R[0]-U[0])*r,y+(R[1]-U[1])*r,z+(R[2]-U[2])*r,x+(R[0]+U[0])*r,y+(R[1]+U[1])*r,z+(R[2]+U[2])*r,x-(R[0]-U[0])*r,y-(R[1]-U[1])*r,z-(R[2]-U[2])*r,-1,-1,1,-1,1,1,-1,1,col[0],col[1],col[2],a,o);
  }
  // a flat ring on the ground (radius r, half-width w), optionally jagged (electric) and partial (a0..a1: arcs, spiral arms)

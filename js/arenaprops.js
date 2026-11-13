@@ -73,21 +73,25 @@ const ArenaProps=(()=>{
  function outland(B,M,o){
   o=o||{};const v=M.view,hi=B.high,sd=M.theme.seed*13.7,dimAt=(x,z)=>{const dx=Math.max(0,-x,x-W),dz=Math.max(0,-z,z-H);return 1-0.45*Math.min(1,Math.hypot(dx,dz)/14);};
   const clear=(x,z,r)=>x<-r-0.6||x>W+r+0.6||z<-r-0.6||z>H+r+0.6;
-  const n=Math.round((hi?0.045:0.02)*((v.x1-v.x0)*(v.z1-v.z0)-W*H));
-  for(let i=0;i<n;i++){const x=v.x0+hs(i,sd)*(v.x1-v.x0),z=Math.max(M.horizon+0.8,v.z0)+hs(sd,i*1.3)*(v.z1-Math.max(M.horizon+0.8,v.z0)),big=hs(i*3.7,sd)>0.8,r=big?0.28+hs(i,7)*0.2:0.08+hs(i,9)*0.16;
+  // the chase camera's ground runs far out: stones are scattered over the band round the arena, a few low hills beyond it
+  const bx0=M.chase?Math.max(v.x0,-15):v.x0,bx1=M.chase?Math.min(v.x1,W+15):v.x1,bz0=M.chase?Math.max(M.horizon+0.8,-17):Math.max(M.horizon+0.8,v.z0),bz1=M.chase?Math.min(v.z1,H+13):v.z1;
+  const n=Math.round((hi?0.045:0.02)*((bx1-bx0)*(bz1-bz0)-W*H));
+  if(M.chase&&!M.thumb){const m=hi?46:18;for(let i=0;i<m;i++){const x=v.x0+1+hs(i*1.9,sd+4)*(v.x1-v.x0-2),z=M.horizon+2+hs(sd+9,i*2.3)*(v.z1-M.horizon-4),far=Math.max(0,-x-15,x-W-15,-z-17,z-H-13);if(far<=0)continue;const r=1.1+hs(i,sd+2)*2.4;B.rock(o.rock||M.theme.ground,x,-r*0.25,z,r,r*(0.35+hs(i,5)*0.4),i+40,{ao:0.25,aoH:r*0.5,punch:0.4,sx:1+hs(i,8)*0.8,smooth:1});}}
+  for(let i=0;i<n;i++){const x=bx0+hs(i,sd)*(bx1-bx0),z=bz0+hs(sd,i*1.3)*(bz1-bz0),big=hs(i*3.7,sd)>0.8,r=big?0.28+hs(i,7)*0.2:0.08+hs(i,9)*0.16;
    if(!clear(x,z,r)||z>H+2&&r>0.3||(big&&(x>-5&&x<W+5&&z>-5)))continue;if(o.avoid&&o.avoid(x,z,r))continue;B.rock(o.rock||M.theme.ground,x,0,z,r,r*(big?0.9:1.2),i,{ao:0.2,punch:0.3});}
  }
  // the far ridge: a chain of low hills on the horizon line (north), so the ground ends in a silhouette under the stars
  function ridge(B,M,y0,c){
-  const v=M.view,z=M.horizon;if((v.vis||v).z0>z-0.5)return;
-  const g=Arena3D.lin(c||M.theme.ground),kh=y0>1?0.5:1,x0=v.x0-1,x1=v.x1+1;
+  const v=M.view,z=M.horizon;if(M.thumb||(v.vis||v).z0>z-0.5)return;
+  const g=Arena3D.lin(c||M.theme.ground),kh=(y0>1?0.5:1)*(M.chase?2.1:1),x0=v.x0-1,x1=v.x1+1;
   // two overlapping skylines in the map's own ground hue (textured like the ground); the sun catches their top edges
-  const prof=(sd,base,amp,step)=>{const P=[];for(let x=x0;x<=x1;x+=step){const t=x*0.23+sd,r=Math.abs(Math.sin(t)*0.55+Math.sin(t*2.3+1.7)*0.3+Math.sin(t*5.1+0.4)*0.15);P.push([x+(hs(x,sd)-0.5)*step*0.5,base+amp*(0.25+0.75*r)*(0.75+0.5*hs(sd,x))]);}return P;};
+  const fq=M.chase?0.085:0.23,sk=M.chase?2.4:1,prof=(sd,base,amp,step)=>{step*=sk;const P=[];for(let x=x0;x<=x1;x+=step){const t=x*fq+sd,r=Math.abs(Math.sin(t)*0.55+Math.sin(t*2.3+1.7)*0.3+Math.sin(t*5.1+0.4)*0.15);P.push([x+(hs(x,sd)-0.5)*step*0.5,base+amp*(0.25+0.75*r)*(0.75+0.5*hs(sd,x))]);}return P;};
   // unlit, so their value is exact: a two-tone fill, darker at the foot and paler towards the crest. They stand on the
   // floor even where the map's plateaus are raised, so no gap of space shows under them.
   const up=y0||0;
-  B.skyline(Arena3D.mul(g,0.2),x0,x1,0,z-0.45,0.16,prof(3.1,up+0.6*kh,1.9*kh,0.55),{cls:'glow',noShadow:1,grad:[2.2,up+2.6*kh]});
-  B.skyline(Arena3D.mul(g,0.3),x0,x1,0,z+0.45,0.16,prof(9.7,up+0.25*kh,1.1*kh,0.45),{cls:'glow',noShadow:1,grad:[1.8,up+1.4*kh]});
+  B.skyline(Arena3D.mul(g,M.chase?0.3:0.2),x0,x1,0,z-0.45,0.16,prof(3.1,up+0.6*kh,1.9*kh,0.55),{cls:'glow',noShadow:1,grad:[2.2,up+2.6*kh]});
+  B.skyline(Arena3D.mul(g,M.chase?0.42:0.3),x0,x1,0,z+0.45,0.16,prof(9.7,up+0.25*kh,1.1*kh,0.45),{cls:'glow',noShadow:1,grad:[1.8,up+1.4*kh]});
+  if(M.chase)B.skyline(Arena3D.mul(g,0.2),x0,x1,0,z-1.6,0.16,prof(17.3,up+0.9*kh,1.55*kh,0.6),{cls:'glow',noShadow:1,grad:[2.4,up+2.5*kh]});   // a taller, darker range behind
  }
 
  // ---------- Moonbase / Crater Field / Longshot props ----------
@@ -164,7 +168,64 @@ const ArenaProps=(()=>{
  }
 
  // ---------- Overpass: the steel bridge, its ramps and tunnels ----------
- const DECK=1.0;
+ // DECK: the low deck of the fixed tilted view (kept for that view). DECK_UP: the deck under the chase camera (5E-2b2a): raised
+ // on piers, open underneath wherever the rules have a tunnel, so a tank below it is in plain sight. DECK_SLAB: its thickness.
+ const DECK=1.0,DECK_UP=2.1,DECK_SLAB=0.3;
+ function steelBridgeUp(B,M,BRd){
+  const [dx,dy,dw,dh]=BRd.deck,hi=B.high,D=M.deckH,TS=DECK_SLAB,U=D-TS,slab='#7d8387',slabD='#54595e',dark='#2c3136',conc='#a3a19b',concD='#74777a',CY=M.theme.accent,zc=dy+dh/2;
+  let x0=dx;const blocks=[];for(const [tx,tw] of BRd.tunnels){blocks.push([x0,tx-x0,true]);blocks.push([tx,tw,false]);x0=tx+tw;}blocks.push([x0,dx+dw-x0,true]);
+  // the deck: one slab on two edge girders, plated on top
+  B.box('metal',slab,dx+dw/2,D-TS/2,zc,dw,TS,dh,0,{ao:0,dust:0.14});
+  for(const s of [-1,1]){B.box('metal',slabD,dx+dw/2,D-TS/2-0.01,zc+s*(dh/2-0.06),dw+0.04,TS+0.06,0.14,0,{ao:0,dust:0.06});if(hi)for(let x=dx+0.6;x<dx+dw-0.3;x+=1.2)B.box('metal','#444a50',x,D-TS/2-0.01,zc+s*(dh/2+0.012),0.06,TS,0.02,0,{ao:0,dust:0,noShadow:1});}
+  for(let x=dx+0.9;x<dx+dw-0.6;x+=1.5)B.box('paint',HZ,x,D+0.006,zc,0.7,0.012,0.09,0,{ao:0,dust:0.25,noShadow:1});   // a worn centre line
+  if(hi){for(let t=1.2;t<dw-0.3;t+=1.2)B.box('metal',dark,dx+t,D+0.002,zc,0.035,0.01,dh-0.5,0,{ao:0,dust:0,noShadow:1});for(const fz of [0.3,0.7])B.box('metal',dark,dx+dw/2,D+0.002,dy+dh*fz,dw-0.1,0.01,0.03,0,{ao:0,dust:0,noShadow:1});
+   for(let t=0.6;t<dw-0.3;t+=1.2){const kq=Math.floor(hs(dx+t,3.3)*3);if(kq===0)B.box('metal',slabD,dx+t,D+0.004,zc,0.7,0.008,dh*0.3,0,{ao:0,dust:0.1,noShadow:1});else if(kq===1){for(const fz of [0.16,0.84])B.box('metal','#7b838a',dx+t,D+0.004,dy+dh*fz,0.9,0.008,0.5,0,{ao:0,dust:0.1,noShadow:1});}else B.box('metal','#5b6166',dx+t,D+0.004,zc,0.36,0.008,dh*0.72,0,{ao:0,dust:0.1,noShadow:1});}}
+  for(const [sx,sw,solid] of blocks){
+   if(solid){
+    // a pier (the solid the rules have under the deck): a recessed bulkhead behind a row of square columns on both long faces
+    B.box('paint','#5d646b',sx+sw/2,U/2,zc,sw-0.36,U,dh-0.62,0,{ao:0.5,aoH:1.1,dust:0});
+    const nc=Math.max(2,Math.round(sw/(hi?1.2:1.9)));
+    for(const s of [-1,1])for(let i=0;i<=nc;i++){const cx=sx+0.23+(sw-0.46)*i/nc,cz=zc+s*(dh/2-0.25);
+     B.box('rock',conc,cx,U/2,cz,0.42,U,0.42,0,{ao:0.42,aoH:0.8,dust:0.04});B.box('rock','#b3b1ab',cx,U-0.08,cz,0.58,0.16,0.58,0,{ao:0,dust:0});
+     if(hi)B.box('rock','#8b8c8a',cx,0.07,cz,0.56,0.14,0.56,0,{ao:0.3,aoH:0.14,dust:0.12});}
+    // the faces that look into a tunnel: two more columns each
+    for(const e of [sx+0.23,sx+sw-0.23])for(let j=1;j<3;j++){const cz=dy+0.25+(dh-0.5)*j/3;B.box('rock',conc,e,U/2,cz,0.42,U,0.42,0,{ao:0.42,aoH:0.8,dust:0.04});B.box('rock','#b3b1ab',e,U-0.08,cz,0.58,0.16,0.58,0,{ao:0,dust:0});}
+    // steel cross-bracing between the columns and a hazard band along the foot
+    if(hi)for(const s of [-1,1])for(let i=0;i<nc;i++){const a=sx+0.23+(sw-0.46)*i/nc,b=sx+0.23+(sw-0.46)*(i+1)/nc,span=b-a-0.42,hh=U-0.5,L=Math.hypot(span,hh),an=Math.atan2(hh,span),cz=zc+s*(dh/2-0.27);
+     for(const q of [-1,1])B.box('metal','#59616a',(a+b)/2,0.2+hh/2,cz,L,0.05,0.04,0,{rz:q*an,ao:0,dust:0,noShadow:1});}
+    for(const s of [-1,1])hazard(B,sx+0.5,zc+s*(dh/2-0.3),sx+sw-0.5,zc+s*(dh/2-0.3),0.11,0.16,[0,s]);
+   }else{
+    // a tunnel: open from mouth to mouth. A header beam with a light bar over each mouth, light strips along its roof
+    for(const s of [-1,1]){const zf=zc+s*(dh/2-0.08);B.glow(CY,sx+sw/2,U-0.03,zf+s*0.07,sw-0.7,0.04,0.03);B.halo(sx+sw/2,U-0.06,zf+s*0.2,1.3,CY,0.26);   // the mouth keeps its full height: only a light bar under the girder
+     if(hi)for(const e of [sx+0.52,sx+sw-0.52])B.box('paint',HZ,e,D-TS/2,zf+s*0.152,0.16,0.16,0.012,0,{ao:0,dust:0,noShadow:1});}
+    for(const e of [sx+0.47,sx+sw-0.47])B.glow(CY,e,U-0.05,zc,0.03,0.03,dh-0.9);
+    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.34]);M.glowSpots.push([sx+sw/2,dy+dh+0.6,1.9,'60,230,215',0.34]);M.glowSpots.push([sx+sw/2,dy-0.6,1.9,'60,230,215',0.34]);M.glowSpots.push([sx+sw/2,zc,2.2,'60,230,215',0.42]);
+   }
+  }
+  for(const [sx,sw,solid] of blocks)if(solid)M.aoBoxes.push([sx+0.1,dy+0.1,sw-0.2,dh-0.2]);
+  // edge light strips and railings wherever no ramp joins
+  const ramps=BRd.ramps;
+  for(const s of [-1,1]){const zf=zc+s*(dh/2-0.04);B.box('metal',slabD,dx+dw/2,D+0.05,zf,dw,0.1,0.08,0,{ao:0,dust:0.1,noShadow:1});
+   const gaps=ramps.filter(r=>(s<0?r[4]<0:r[4]>0)).map(r=>[r[0],r[0]+r[2]]).sort((a,b)=>a[0]-b[0]);let a=dx;const runs=[];for(const [u,v] of gaps){if(u>a)runs.push([a,u]);a=v;}if(a<dx+dw)runs.push([a,dx+dw]);
+   for(const [u,v] of runs){B.glow(CY,(u+v)/2,D+0.108,zf,v-u-0.1,0.02,0.06);B.glow(CY,(u+v)/2,D-TS-0.04,zf+s*0.045,v-u-0.2,0.03,0.02);
+    B.box('metal',STEEL_L,(u+v)/2,D+0.5,zf,v-u,0.04,0.04,0,{ao:0,dust:0,noShadow:1});if(hi)B.box('metal',STEEL_L,(u+v)/2,D+0.3,zf,v-u,0.028,0.028,0,{ao:0,dust:0,noShadow:1});
+    const np=Math.max(1,Math.round((v-u)/(hi?0.8:1.6)));for(let i=0;i<=np;i++)B.box('metal',STEEL,u+(v-u)*i/np,D+0.3,zf,0.045,0.42,0.045,0,{ao:0,dust:0,noShadow:1});
+    for(let x=u+0.6;x<v-0.3;x+=hi?1.6:3.2)B.halo(x,D+0.14,zf,1.15,CY,0.42);}
+  }
+  for(const e of [dx+0.04,dx+dw-0.04]){B.box('metal',slabD,e,D+0.05,zc,0.08,0.1,dh,0,{ao:0,dust:0.1,noShadow:1});B.box('metal',STEEL_L,e,D+0.5,zc,0.04,0.04,dh,0,{ao:0,noShadow:1});for(let i=0;i<=4;i++)B.box('metal',STEEL,e,D+0.3,dy+dh*i/4,0.045,0.42,0.045,0,{ao:0,noShadow:1});B.glow(CY,e,D+0.105,zc,0.03,0.014,dh-0.2);}
+  // ramps: a plate on a solid body between two concrete cheeks (the cheeks are the solids the rules have), rails and light strips
+  for(const [rx,ry,rw,rh,o] of ramps){const lo=o<0?ry:ry+rh,hiZ=o<0?ry+rh:ry,ang=Math.atan2(D,rh)*(o<0?-1:1),len=Math.hypot(D,rh),rc=ry+rh/2;
+   B.wedge('rock',concD,rx+0.02,rx+rw-0.02,lo,hiZ,D-0.06,{ao:0.3,aoH:0.5,dust:0.05});
+   B.box('metal',slab,rx+rw/2,D/2-0.02,rc,rw,0.07,len,0,{rx:ang,ao:0,dust:0.16});
+   for(const sg of [-1,1])B.box('paint',HZ,rx+rw/2+sg*(rw/2-0.2),D/2+0.022,rc,0.07,0.012,len-0.1,0,{rx:ang,ao:0,dust:0,noShadow:1});
+   if(hi)for(let i=1;i<9;i++){const f=i/9;B.box('metal',dark,rx+rw/2,f*D+0.03,lo+(hiZ-lo)*f,rw-0.7,0.022,0.06,0,{rx:ang,ao:0,dust:0,noShadow:1});}   // grip bars
+   for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;
+    B.wedge('rock',conc,xr-0.1,xr+0.1,lo,hiZ,D+0.12,{ao:0.25,dust:0.1});
+    B.box('metal',STEEL_L,xr,D/2+0.5,rc,0.04,0.04,len,0,{rx:ang,ao:0,dust:0,noShadow:1});for(let i=0;i<=3;i++){const f=i/3;B.box('metal',STEEL,xr,f*D+0.28,lo+(hiZ-lo)*f,0.045,0.5,0.045,0,{ao:0,dust:0,noShadow:1});}
+    B.glow(CY,xr+(s<0?0.11:-0.11),D/2+0.05,rc,0.02,0.05,len-0.2,0,{rx:ang});B.halo(xr,0.12,lo,1.1,CY,0.35);}
+   M.aoBoxes.push([rx-0.2,ry,rw+0.4,rh]);
+  }
+ }
  function steelBridge(B,M,BRd){
   const [dx,dy,dw,dh]=BRd.deck,hi=B.high,slab='#6a6f74',slabD='#54595e',dark='#2c3136',CYAN=M.theme.accent;
   let x0=dx;const blocks=[];for(const [tx,tw] of BRd.tunnels){blocks.push([x0,tx-x0,true]);blocks.push([tx,tw,false]);x0=tx+tw;}blocks.push([x0,dx+dw-x0,true]);
@@ -225,6 +286,35 @@ const ArenaProps=(()=>{
  function spire(B,M,x,z,r,sd){const cs=M.theme.strata;B.spire(cs[1],x,0,z,r*0.92,r*2.35,sd,{top:'#9a8f83'});B.spire(cs[1],x+r*0.42,0,z+r*0.3,r*0.42,r*1.25,sd+1);B.spire(cs[3],x-r*0.4,0,z+r*0.38,r*0.33,r*0.85,sd+2);if(B.high)B.rock(cs[2],x+r*0.1,0,z-r*0.55,r*0.34,r*0.3,sd+3);}
  function scree(B,M,x,z,r){const n=B.high?26:10;for(let i=0;i<n;i++){const a=hs(i,x)*6.283,dd=Math.sqrt(hs(z,i))*r*0.95,q=0.04+hs(i,i+z)*0.075;B.rock(M.theme.strata[i%4],x+Math.cos(a)*dd,0,z+Math.sin(a)*dd,q,q*1.2,i+x,{ao:0.5,aoH:0.1});}}
  // the mesa: the same rules as the Overpass bridge, drawn as a rock table split by a cleft; a steel grating spans the cleft
+ // the mesa under the chase camera: two rock buttes (the solids the rules have) and, over the cleft between them, a steel
+ // span on four posts, open underneath from mouth to mouth
+ function mesaUp(B,M,BRd){
+  const [dx,dy,dw,dh]=BRd.deck,cs=M.theme.strata,hi=B.high,D=M.deckH,TS=DECK_SLAB,U=D-TS,zc=dy+dh/2;let x0=dx;
+  const blocks=[];for(const [tx,tw] of BRd.tunnels){blocks.push([x0,tx-x0,true]);blocks.push([tx,tw,false]);x0=tx+tw;}blocks.push([x0,dx+dw-x0,true]);
+  for(const [sx,sw,solid] of blocks){
+   if(solid)B.strata([sx,dy,sw,dh],D,{seed:sx*2.3,inset:0.16,lean:0.12,layers:hi?6:3,open:{N:1,S:1,W:1,E:1}});
+   else{
+    const a=sx-0.22,w=sw+0.44;   // the span rests a little way onto both buttes
+    B.box('metal','#5b6168',sx+sw/2,D-TS/2+0.01,zc,w,TS,dh-0.5,0,{ao:0,dust:0.2});
+    for(const s of [-1,1]){const zf=zc+s*(dh/2-0.32);B.box('metal','#454c53',sx+sw/2,D-TS/2-0.06,zf,w+0.04,TS+0.14,0.14,0,{ao:0,dust:0.1});
+     B.glow('#ffb066',sx+sw/2,U-0.1,zf+s*0.08,sw-0.5,0.035,0.025);B.halo(sx+sw/2,U-0.1,zf+s*0.2,1.2,'#ffa860',0.26);
+     B.box('metal',STEEL_L,sx+sw/2,D+0.5,zf,w,0.04,0.04,0,{ao:0,dust:0,noShadow:1});const np=hi?4:2;for(let i=0;i<=np;i++)B.box('metal',STEEL,a+w*i/np,D+0.27,zf,0.045,0.48,0.045,0,{ao:0,dust:0,noShadow:1});
+     for(const e of [sx+0.16,sx+sw-0.16]){B.glow('#ffb066',e+(e<sx+sw/2?0.11:-0.11),U/2,zf+s*0.11,0.03,U-0.5,0.03);B.halo(e,U*0.6,zf+s*0.2,0.9,'#ffa860',0.3);B.box('metal','#59616a',e,U/2,zf,0.2,U,0.2,0,{ao:0.35,aoH:0.6,dust:0.1});if(hi)B.box('metal','#3d444b',e,0.06,zf,0.34,0.12,0.34,0,{ao:0.2,dust:0.15});}}
+    if(hi){for(let t=0.4;t<sw;t+=0.8)B.box('metal','#3d444b',sx+t,D+0.012,zc,0.03,0.01,dh-1.2,0,{ao:0,dust:0.1,noShadow:1});for(const e of [sx+0.2,sx+sw-0.2])B.glow('#ffb066',e,U-0.04,zc,0.03,0.03,dh-1.4);}
+    M.stains.push([sx+0.05,dy+0.05,sw-0.1,dh-0.1,0.2]);M.glowSpots.push([sx+sw/2,dy+dh+0.5,1.4,'255,170,100',0.24]);M.glowSpots.push([sx+sw/2,dy-0.5,1.4,'255,170,100',0.24]);M.glowSpots.push([sx+sw/2,zc,2.4,'255,190,130',0.5]);
+   }
+  }
+  for(const [rx,ry,rw,rh,o] of BRd.ramps){const lo=o<0?ry:ry+rh,hiZ=o<0?ry+rh:ry;
+   B.wedge('rock',cs[0],rx+0.02,rx+rw-0.02,lo,hiZ,D-0.02,{ao:0.3,aoH:0.5,dust:0.1});   // the ramp's body; its surface takes the baked ground
+   B.top([[rx,o<0?0:D,ry],[rx+rw,o<0?0:D,ry],[rx+rw,o<0?D:0,ry+rh],[rx,o<0?D:0,ry+rh]]);
+   M.rampTracks.push([rx+rw/2,ry-0.6,rx+rw/2,ry+rh+0.6]);
+   {const ang=Math.atan2(D,rh)*(o<0?-1:1),len=Math.hypot(D,rh),rc=ry+rh/2;for(const sg of [-1,1])B.box('paint',HZ,rx+rw/2+sg*(rw/2-0.22),D/2+0.03,rc,0.09,0.014,len-0.2,0,{rx:ang,ao:0,dust:0.2,noShadow:1});   // edge stripes: a ramp, not a slab
+    if(hi)for(let i=1;i<7;i++){const f=i/7;B.box('rock',cs[3],rx+rw/2,f*D+0.035,lo+(hiZ-lo)*f,rw-0.8,0.03,0.09,0,{rx:ang,ao:0,dust:0.1,noShadow:1});}}
+   for(const s of [-1,1]){const xr=s<0?rx-0.1:rx+rw+0.1;B.glow('#ffb066',xr+(s<0?0.11:-0.11),D/2+0.06,ry+rh/2,0.025,0.05,Math.hypot(D,rh)-0.3,0,{rx:Math.atan2(D,rh)*(o<0?-1:1)});B.halo(xr,0.12,lo,1.0,'#ffa860',0.32);B.wedge('rock',cs[1],xr-0.1,xr+0.1,lo,hiZ,D+0.16,{ao:0.25,dust:0.15});
+    if(hi)for(let i=0;i<4;i++){const f=0.15+i*0.24,r=0.1+hs(i,rx+s)*0.07;B.rock(cs[(i+2)%4],xr,0,lo+(hiZ-lo)*f,r,f*D+0.22+r,i+rx*3+s,{ao:0.3});}}   // loose blocks along the kerb, rising with it
+   M.aoBoxes.push([rx-0.2,ry,rw+0.4,rh]);
+  }
+ }
  function mesa(B,M,BRd){
   const [dx,dy,dw,dh]=BRd.deck,cs=M.theme.strata,hi=B.high;let x0=dx;
   const blocks=[];for(const [tx,tw] of BRd.tunnels){blocks.push([x0,tx-x0,true]);blocks.push([tx,tw,false]);x0=tx+tw;}blocks.push([x0,dx+dw-x0,true]);
@@ -431,8 +521,8 @@ const ArenaProps=(()=>{
  // ---------- build one map ----------
  function build(id,B,M){
   const MP=M.map,th=M.theme,v=M.view,hi=B.high;
-  M.horizon=th.horizon?Math.max(v.z0,-5.4):v.z0;M.stains=[];M.glowSpots=[];M.rampTracks=[];
-  v.z0=Math.max(v.z0,M.horizon);   // the ground ends at the ridge; beyond it is sky
+  M.horizon=M.chase&&!M.thumb?Math.max(v.z0+2,v.horizon===undefined?-33:v.horizon):M.thumb?v.z0:th.horizon?Math.max(v.z0,-5.4):v.z0;M.stains=[];M.glowSpots=[];M.rampTracks=[];
+  v.z0=Math.max(v.z0,M.horizon-(M.chase&&!M.thumb?2:0));   // the ground ends at the ridge; beyond it is sky. The chase camera sees far: its ridge is a mountain range a long way north
   th.paint=paint;
   const outdoor=id!=='bunker';
   for(const wl of MP.walls||[]){const [x,z,w,d,st]=wl,sd=x*7.3+z*3.1;
@@ -445,7 +535,7 @@ const ArenaProps=(()=>{
    if(st==='dome')dome(B,x,z,r,M);else if(st==='spire')spire(B,M,x,z,r,sd);else if(st==='tank')fuelTank(B,x,z,r,M);else if(st==='boulder')boulder(B,x,z,r,sd,th.strata[1]);else boulder(B,x,z,r,sd);}
   for(const [x,z,r,st] of MP.craters||[]){if(st==='scree')scree(B,M,x,z,r);else if(st==='coolant')coolant(B,x,z,r,M);else{if(hi)pebbleRing(B,x,z,r*1.02,r*1.28,Math.round(r*9),x*3+z);B.k.anchors.vents.push([x,z,r,0.05]);
     if(id==='craters'&&r>2){B.cyl('metal',STEEL_D,x,0.012,z,0.2,0.024,12,{ao:0,noShadow:1});B.cyl('glow','#7df0ff',x,0.03,z,0.11,0.012,10);B.halo(x,0.12,z,r*1.5,'#39d8e8',0.42,1.5);B.halo(x,0.1,z,0.8,'#d8fbff',0.8,1.5);M.glowSpots.push([x,z,r*0.95,'57,216,232',0.5]);}}}
-  if(MP.bridge){if(MP.bridge.look==='mesa')mesa(B,M,MP.bridge);else steelBridge(B,M,MP.bridge);B.k.anchors.rail=[[MP.bridge.deck[0],DECK,MP.bridge.deck[1]+MP.bridge.deck[3]/2],[MP.bridge.deck[0]+MP.bridge.deck[2],DECK,MP.bridge.deck[1]+MP.bridge.deck[3]/2]];}
+  if(MP.bridge){const DK=M.deckH||DECK;if(MP.bridge.look==='mesa')(M.chase?mesaUp:mesa)(B,M,MP.bridge);else(M.chase?steelBridgeUp:steelBridge)(B,M,MP.bridge);B.k.anchors.rail=[[MP.bridge.deck[0],DK,MP.bridge.deck[1]+MP.bridge.deck[3]/2],[MP.bridge.deck[0]+MP.bridge.deck[2],DK,MP.bridge.deck[1]+MP.bridge.deck[3]/2]];}
   for(const c of MP.crates||[])M.aoBoxes.push([c[0],c[1],c[2],c[3]]);
   // the edge of the arena and the world beyond it
   if(id==='bunker')bunkerShell(B,M);
@@ -464,7 +554,7 @@ const ArenaProps=(()=>{
    B.k.anchors.rail=[[10,0,-1],[10,0,H+1]];
   }else{
    border(B,M,{});outland(B,M,{});
-   if(id==='overpass'){B.k.anchors.rail=[[2,DECK,16],[18,DECK,16]];}
+   if(id==='overpass'){B.k.anchors.rail=[[2,M.deckH||DECK,16],[18,M.deckH||DECK,16]];}
   }
   ridge(B,M,id==='canyon'?1.6:id==='longshot'?0:id==='bunker'?2.0:0,id==='bunker'?th.topGround:id==='canyon'?th.topGround:null);
   if(outdoor&&(id==='classic'||id==='craters'||id==='overpass'))baseClutter(B,M);
@@ -497,5 +587,20 @@ const ArenaProps=(()=>{
   const em=new T.MeshBasicMaterial({map:earth,transparent:true,depthWrite:false,toneMapped:false}),e=new T.Mesh(new T.PlaneGeometry(size,size),em);e.rotation.x=-(PI/2-TILT);e.position.set(ex,Ye,ez+Ye*k);e.renderOrder=-4;e.frustumCulled=false;g.add(e);
   return {group:g,stars:sm,earth:em,set(st,ea,t,pxs){sm.uniforms.uA.value=st;sm.uniforms.uT.value=t||0;if(pxs)sm.uniforms.uS.value=pxs;em.opacity=ea;e.visible=ea>0.01;stars.visible=st>0.01;},dispose(){sg.dispose();sm.dispose();e.geometry.dispose();em.dispose();}};
  }
- return {THEMES,theme,build,crate,sky,DECK,TILT};
+ // the chase camera's sky: stars and the Earth a long way off to the north. The group rides with the camera (set() moves it),
+ // so they never slide against each other however the camera travels, while the mountains in front of them do
+ function skyFar(T,M,earth){
+  const g=new T.Group(),n=M.q==='low'?110:300,P=new Float32Array(n*3),C=new Float32Array(n*4),S=new Float32Array(n),R=380;
+  for(let i=0;i<n;i++){const az=(hs(i,1.1)-0.5)*2.9,el=-0.5+hs(i,2.7)*1.5,b=0.45+hs(i,5)*0.55,ce=Math.cos(el);P[i*3]=Math.sin(az)*ce*R;P[i*3+1]=Math.sin(el)*R;P[i*3+2]=-Math.cos(az)*ce*R;C[i*4]=b;C[i*4+1]=b;C[i*4+2]=0.9+0.1*hs(i,8);C[i*4+3]=0.3+hs(i,9)*0.7;S[i]=0.05+Math.pow(hs(i,3),3)*0.13;}
+  const sg=new T.BufferGeometry();sg.setAttribute('position',new T.BufferAttribute(P,3));sg.setAttribute('rgba',new T.BufferAttribute(C,4));sg.setAttribute('size',new T.BufferAttribute(S,1));
+  const sm=new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,uniforms:{uS:{value:20},uA:{value:1},uT:{value:0}},
+   vertexShader:'attribute float size;attribute vec4 rgba;varying vec4 vC;uniform float uS;uniform float uT;void main(){vC=rgba;vC.a*=0.75+0.25*sin(uT*(0.6+rgba.a*1.7)+position.x*0.31);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_PointSize=min(12.0,max(1.5,size*uS));}',
+   fragmentShader:'varying vec4 vC;uniform float uA;void main(){vec2 d=gl_PointCoord-0.5;float r=length(d)*2.0;if(r>1.0)discard;gl_FragColor=vec4(vC.rgb,vC.a*uA*pow(1.0-r,1.6));}'});
+  const stars=new T.Points(sg,sm);stars.frustumCulled=false;stars.renderOrder=-5;g.add(stars);
+  const size=30,az=0.1,el=0.11,Re=360,em=new T.MeshBasicMaterial({map:earth,transparent:true,depthWrite:false,toneMapped:false}),e=new T.Mesh(new T.PlaneGeometry(size,size),em);
+  e.position.set(Math.sin(az)*Math.cos(el)*Re,Math.sin(el)*Re,-Math.cos(az)*Math.cos(el)*Re);e.renderOrder=-4;e.frustumCulled=false;g.add(e);
+  return {group:g,stars:sm,earth:em,far:true,set(st,ea,t,pxs,cam){sm.uniforms.uA.value=st;sm.uniforms.uT.value=t||0;if(pxs)sm.uniforms.uS.value=pxs;em.opacity=ea;e.visible=ea>0.01;stars.visible=st>0.01;
+    if(cam){g.position.copy(cam.position);g.updateMatrixWorld(true);e.lookAt(cam.position);}},dispose(){sg.dispose();sm.dispose();e.geometry.dispose();em.dispose();}};
+ }
+ return {THEMES,theme,build,crate,sky,skyFar,DECK,DECK_UP,DECK_SLAB,TILT};
 })();
