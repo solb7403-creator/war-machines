@@ -857,7 +857,7 @@ function drawBattle(){
    g.restore();}
   {const mine=b===me,bob=mine?Math.sin(performance.now()/300)*sc*0.09:0,fs=Math.round(ku*(mine?0.95:0.48));   // floating team chevron over every tank; yours is gold and bigger, the rest stay small and quiet so the map never looks cluttered
    g.save();g.globalAlpha=mine?1:0.55;g.fillStyle=mine?'#ffd24a':b.team!==0?'#ff4d5e':'#4d9fff';g.font=font(fs);g.textAlign='center';g.textBaseline='middle';
-   if(!pin)g.fillText('▼',px,CH?pt-r*(mine?3.05:1.66):py-r*1.66*(D3&&b.boss?1.6:1)+bob);g.restore();}
+   if(!pin)g.fillText('▼',px,CH?pt-r*(mine?2.8:1.66)+bob:py-r*1.66*(D3&&b.boss?1.6:1)+bob);g.restore();}
   if(b.gh&&!b.boss){const fs=Math.max(9,Math.round(ku*0.42));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.vl>=3?'#ffcf4a':'rgba(190,215,255,.8)';g.fillText(b.name,px,py+r*1.75+fs*0.6);g.textBaseline='top';}   // ghosts are always labeled
   if(b.boss){const fs=Math.max(11,Math.round(ku*0.62));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle='#ff8a7e';g.fillText(b.bt&&b.bt.enr?'MEGATANK · ENRAGED':'MEGATANK',px,CH?pt-r*3.4-fs*0.6:py-r*2.0*(D3?1.6:1)-fs*0.6);g.textBaseline='top';}
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(ku*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':b.vl>=3?'#ffcf4a':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,(CH?pt:py)-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
