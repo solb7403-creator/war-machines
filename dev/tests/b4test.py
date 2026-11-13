@@ -1,4 +1,5 @@
 # Batch 4 test: sound engine, drag-to-aim supers, dash, bot dodges, kill feed, damage vignette, reminders
+import math
 import os, asyncio, sys, json, os
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from harness import start_dev, open_game, dev
@@ -29,7 +30,7 @@ async def main():
             ntf=dev('/__dump').get('ntf',{}).get('tg_990401')
             check(bool(ntf and ntf.get('on')==1),'server did not record the reminder opt-in: '+json.dumps(ntf))
         # 2) a 1v1 Arena round: dash, drag-to-aim super, kill feed, hurt vignette
-        await pg.evaluate("()=>{save.gtype='arena';save.mode='1v1';save.map='craters';store();prepareMatch();startMatch();for(let i=0;i<30;i++)update(1/30);}")
+        await pg.evaluate("()=>{window.LUNAR_NO_CAM_INTRO=1;save.gtype='arena';save.mode='1v1';save.map='craters';store();prepareMatch();startMatch();for(let i=0;i<30;i++)update(1/30);}")   # no opening crane shot: this test aims while the camera stands still
         await pg.wait_for_timeout(200)
         D=await pg.evaluate("()=>dashBtn()")
         await pg.mouse.click(D['x'],D['y']);await pg.wait_for_timeout(50)
@@ -37,13 +38,19 @@ async def main():
         check(d['dash'],'dash did not fire '+json.dumps(d))
         await pg.evaluate("()=>{me.sp=SUPER_MAX;}")
         B=await pg.evaluate("()=>btn()")
-        await pg.mouse.move(B['x'],B['y']);await pg.mouse.down();await pg.mouse.move(B['x']-60,B['y']-90,steps=6);await pg.wait_for_timeout(120)
+        # the super goes where the line from your tank to your finger points, on the ground: the finger is dragged to where a
+        # ground point 2.5 east and 3.5 north of the tank is drawn (through the chase camera, or the fixed view's tilt), so the
+        # shot must leave at exactly that bearing
+        await pg.wait_for_timeout(500)
+        F=await pg.evaluate("()=>{drawBattle();WP(me.x+2.5,me.y-3.5,hOf(me));return [WPx,WPy];}")
+        await pg.mouse.move(B['x'],B['y']);await pg.mouse.down();await pg.mouse.move(F[0],F[1],steps=6);await pg.wait_for_timeout(120)
         await pg.screenshot(path=OUT+'aim_preview.png')
-        # the super goes where the line from your tank to your finger points, on the ground (the 3D view tilts it by GK)
-        exp=await pg.evaluate("(f)=>Math.atan2((f[1]-(Y(me.y)-liftOf(me)))/GK,f[0]-X(me.x))",[B['x']-60,B['y']-90])
+        exp=math.atan2(-3.5,2.5)
         await pg.mouse.up();await pg.wait_for_timeout(50)
-        sp=await pg.evaluate("()=>me.sup?{fixed:!!me.sup.fixed,ang:me.sup.ang}:null")
-        check(sp and sp['fixed'] and abs(sp['ang']-exp)<0.08,'drag-aimed super wrong '+json.dumps(sp)+' expected '+str(exp))
+        # ...and, measured the other way round with the camera as it stands at the release: the shot's own line on the ground, drawn
+        # on the screen, passes under the finger (the tank and the view may have moved a little since the finger was placed)
+        sp=await pg.evaluate("(f)=>{if(!me.sup)return null;const a=me.sup.ang,h=hOf(me);WP(me.x,me.y,h);const ax=WPx,ay=WPy;WP(me.x+Math.cos(a)*4,me.y+Math.sin(a)*4,h);const bx=WPx-ax,by=WPy-ay,fx=f[0]-ax,fy=f[1]-ay,l=Math.hypot(bx,by)||1;return {fixed:!!me.sup.fixed,ang:a,off:Math.abs(bx*fy-by*fx)/l,along:(bx*fx+by*fy)/l};}",F)
+        check(sp and sp['fixed'] and abs(sp['ang']-exp)<0.2 and sp['off']<8 and sp['along']>24,'drag-aimed super wrong '+json.dumps(sp)+' expected '+str(exp))
         # tap = auto aim
         await pg.evaluate("()=>{for(let i=0;i<30;i++)update(1/30);me.sp=SUPER_MAX;me.sup=null;}")
         await pg.mouse.click(B['x'],B['y']);await pg.wait_for_timeout(50)

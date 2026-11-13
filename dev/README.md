@@ -16,7 +16,8 @@
 | `js/fx.js` | Haptics and synthesized sound, the per-map ambience bed |
 | `js/mapenv.js` | `MapEnv`: the Arcade maps' shared environment layer (lights, the baked ground's light terms, haze, sky, ambient particles, hazard anchors); the API a weather / hazard system drives |
 | `js/arena3d.js` | `Arena3D`: the Arcade maps in 3D: prop kit, GPU-made detail textures, the one-time ground bake (albedo + sun term, prop shadows), tread and scorch marks |
-| `js/arenaprops.js` | `ArenaProps`: every map prop and the six map builds on the footprints in `MAPS`, floor paint, sky and ridge |
+| `js/arenaprops.js` | `ArenaProps`: every map prop and the six map builds on the footprints in `MAPS`, floor paint, sky and ridge; the raised bridges of the chase camera |
+| `js/arenacam.js` | `ArenaCam`: the Arcade chase camera (pure math): the rig by screen shape, follow / look-ahead, the sight solve (over walls, along tunnels), projection for the overlay and input, the ground the maps must cover |
 | `js/ui.js` | Menus, sheets, start screen, results, between-round screen, and the garage (see below) |
 | `js/showroom.js` | `LunarShowroom`: the live 3D stage (drag to spin, pinch/wheel zoom, preset views, auto-rotate) used by the garage on Telegram and the website, and by the website's preview pages |
 | `js/main.js` | Boot order and the frame loop |

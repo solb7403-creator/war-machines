@@ -180,7 +180,7 @@ const ArenaCam=(()=>{
  // view, so the stick means the same thing wherever the tank is on the screen: up is away from the camera, right is right
  function steer(dx,dy,out){
   out=out||[0,0];const m=Math.hypot(dx,dy);if(m<1e-9){out[0]=0;out[1]=0;return out;}
-  const s=Math.max(0.2,Math.sin(C.pitch*RAD)),gx=dx,gy=dy/s,n=Math.hypot(gx,gy),cy=Math.cos(S.yaw),sy=Math.sin(S.yaw),ex=gx/n*m,ey=gy/n*m;
+  const s=Math.max(0.5,Math.sin(C.pitch*RAD)),gx=dx,gy=dy/s,n=Math.hypot(gx,gy),cy=Math.cos(S.yaw),sy=Math.sin(S.yaw),ex=gx/n*m,ey=gy/n*m;
   out[0]=ex*cy+ey*sy;out[1]=-ex*sy+ey*cy;return out;
  }
  // ---------- ground shapes for the 2D overlay: drawn through the camera, clipped where they pass behind it ----------
