@@ -31,7 +31,7 @@ const ArenaCam=(()=>{
  const DEF={fovP:46,fovL:30,pitchP:48,pitchL:44,halfW:6.8,halfH:7.6,downP:0.16,downL:0.06,side:1.6,
   follow:0.1,leadT:0.24,leadMax:1.1,leadTime:0.45,pull:0.3,pullX:2.0,pullY:2.6,pullR:10.5,pullTime:0.6,
   pitchTime:0.3,sightLead:0.3,pitchMin:14,pitchMax:74,lowDist:0.6,heightTime:0.22,
-  southKeep:0.42,northKeep:0.82,introT:1.9,introHold:0.22,introPitch:17,introDist:0.36,deadDist:1.16,deadPitch:4,deadTime:0.7,
+  southKeep:0.42,northKeep:0.95,introT:1.9,introHold:0.22,introPitch:17,introDist:0.36,deadDist:1.16,deadPitch:4,deadTime:0.7,
   near:1.2,far:420};
  const P=Object.assign({},DEF);
  function tune(o){if(o)for(const k in o)if(k in DEF&&Number.isFinite(+o[k]))P[k]=+o[k];return P;}

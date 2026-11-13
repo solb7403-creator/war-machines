@@ -2523,10 +2523,12 @@ minimum on-screen character size; whether Brawl Stars flips the map.
   camera. Input: `tapTarget` measures on the screen in the tank's own scale, `aimAng` casts the finger onto the ground at the
   tank's height, `inputVec` goes through `ArenaCam.steer`. The HUD hangs from the top of the screen (`hudTop`), below the
   notch / Telegram header (`--sat`). `drawEdges()` draws the off-screen markers.
-- `js/arena3d.js` — the ground is **two bakes** under the chase camera: everything any shot can show, coarse (12 px per unit on
-  HIGH), and the arena with a 2.5 unit margin at the screen's own density (up to 104 px per unit; 4.6 MP cap on a phone, 6.2 MP
-  on a desktop). The ground shader reads both and blends over the last 0.7 units; HIGH adds a tiling grain (two reads of the
-  existing grit tile) so the ground stays crisp right under the camera. Still no shadow maps and no lit ground.
+- `js/arena3d.js` — the ground is **two bakes on two meshes** under the chase camera: everything any shot can show, coarse (16 px
+  per unit on HIGH), and the arena with a 2.5 unit margin at the screen's own density (up to 104 px per unit; 4.6 MP cap on a
+  phone, 6.2 MP on a desktop). The floor and every plateau / ramp top are cut along the fine bake's edge (`splitTris`), so each
+  pixel still reads ONE bake texel, as on main. HIGH on a GPU adds a tiling grain (two reads of the existing grit tile) so the
+  ground stays crisp right under the camera. Still no shadow maps and no lit ground. A CPU rasteriser (SwiftShader) shades
+  props and crates with the LOW (Lambert) set under the chase camera, as the Conquest style does on software GL.
 - `js/arenaprops.js` — `steelBridgeUp` and `mesaUp` (the raised bridges), mountains on a far horizon (`ridge`), a bounded
   scatter of stones plus a few low hills beyond it (`outland`), and `skyFar`: stars and the Earth on a far shell that rides
   with the camera, so the mountains slide against them as the camera travels.
@@ -2581,11 +2583,15 @@ minimum on-screen character size; whether Brawl Stars flips the map.
 10. **Input: the same input lands on the same ground.** A tap locks the enemy within 1.4 units of where the tank is drawn
     (a far tank keeps at least the old finger-sized target); the super drag aims from the tank to the ground point under the
     finger at the tank's own height (so it is right on the deck too); the stick and the keys mean the same thing wherever the
-    tank is on the screen. The timing bar, DASH and SHIELD are screen controls and did not move.
-11. **Opening crane shot** (2.3 s, CHANGE: not in the plan): the match opens low behind your tank, with the far mountains,
-    stars and the Earth above the arena, and rises to the playing view. It is the one place the sky shows (from 53 degrees
-    the top of the screen looks at ground, never at sky), you can drive during it, both sides get it, and reduced motion
-    skips it. Not used in the practice range or between rounds.
+    tank is on the screen and whatever the camera is doing (the stick is read with the rig's own pitch, not the pitch of the
+    moment). A tap on the bar of a tank under the deck locks that tank. DASH, SHIELD and SUPER are where they were on a phone;
+    on a desktop they are a third bigger (decision 17). The timing bar's timing is untouched; its place on an upright phone
+    moved (decision 17).
+11. **Opening crane shot** (1.9 s, CHANGE: not in the plan): the match opens low behind your tank, with the far mountains,
+    stars and the Earth above the arena, and rises to the playing view. It is the one place the sky shows (from 48 degrees
+    the top of the screen looks at ground, never at sky), you can drive during it, the minimap is up throughout, both sides
+    get it, and reduced motion skips it. It opens a match only: not the practice range, not a later round of a best of 3,
+    not a live match's resync.
 12. **Waiting to respawn**: the view widens by 16% and moves 60% of the way to the fight, so the wait is spent watching it.
 13. **CHANGE: no lens or zoom kick on supers.** The research found none that top competitive games keep in live play, and the
     brief says supers tuning belongs to 5E-2b2b. Shake is exactly what it was.
@@ -2598,5 +2604,18 @@ minimum on-screen character size; whether Brawl Stars flips the map.
     in its team colour and the part of the arena your screen shows. It adds no information the old view did not give, and it
     is the same for both sides. Buff chips and the kill feed moved under it.
 17. **Markers and labels scale with the HUD**, so a desktop's are nearly twice a phone's; your own chevron sits above your
-    health bar instead of on it; damage numbers are capped at the old size; the desktop buttons name their keys (SHIFT, E,
-    SPACE); while your super's timing bar is up on a phone the view slides back 1.7 units so the tank stands clear above it.
+    health bar instead of on it; damage numbers are capped at the old size; the desktop buttons are a third bigger and name
+    their keys (SHIFT, E, SPACE). On an upright phone the super's timing bar sits just under the top HUD instead of at 71%
+    of the screen's height, where under the new framing it covered the fight round your tank (critic round 2); its width
+    follows the room beside the minimap (254 px at 390 px wide, was 300). Its sweep, zones and judgement are untouched.
+18. **Danger is drawn at the height it lands on** (combat reviewer). With the deck at 2.1 a ring drawn on the ground under a
+    tank on the deck no longer surrounds it on the screen. Meteor and stomp rings are drawn on the deck or ramp where there
+    is one (the sim hits the tank on the deck, never the one in the tunnel), an enemy's lane or nova is drawn on your own
+    level whenever the sim lets it reach you across levels, and the Last Standing ring at your own height.
+19. **A live match without the chase camera is veiled** (combat reviewer: "vision now depends on a client setting"). 2D
+    graphics, no WebGL, the automatic step-down to 2D and `LUNAR_CHASECAM=false` all still show the whole arena. In a live
+    match those views veil what the chase camera would not show (the same rig, run for that screen) and draw the tanks under
+    the veil as dots, which is what the minimap gives everyone else. AI matches are not veiled: a bot has no camera.
+20. **The camera only ever does what a clear view needs** (graphics reviewer). Ramp steps in the sight solve are as high as
+    their low edge (a tank on a ramp stood inside its own step and sent the camera to 74 degrees); a zero-sized screen or a
+    second draw in one tick cannot disturb it; a tank more than 4.5 units outside the frame is not drawn.

@@ -44,6 +44,17 @@ function WPunit(b){
 const KU=()=>CAM()?Math.max(sc*0.8,Math.min(sc*1.3,WPk)):sc;   // the size of a label by a tank: it follows the tank's depth, within limits, so far labels stay readable
 const hudTop=()=>CAM()?SAT+Math.max(6,sc*0.3):oy-HUD*sc,hudY0=()=>hudTop()+HUD*sc,hudX0=()=>CAM()?Math.max(8,sc*0.4):X(0);   // the chase camera has no arena rectangle: the HUD hangs from the top of the screen
 const gArc=(x,y,r,a0,a1,ccw,h)=>CAM()?ArenaCam.arc(g,x,y,r,a0,a1,ccw,h||0):g.ellipse(X(x),Y(y),Math.max(0,r*sc),Math.max(0,r*sc*GK),0,a0===undefined?0:a0,a1===undefined?Math.PI*2:a1,!!ccw);   // a circle lying on the ground
+// floating text under the chase camera: where a text of width w and height fh centred at (x,y) may go. It is pushed clear of
+// the minimap and the buttons, kept on the screen, and lifted line by line off texts already placed this frame (TXO: the result)
+const TXR=[],TXO=[0,0];let TXN=0;
+function txtAt(x,y,w,fh){
+ const M=miniRect(),Z=btnZone(),hw=w/2+3;
+ if(y<M.y+M.h+6&&x-hw<M.x+M.w+6)x=M.x+M.w+6+hw;
+ if(y+fh>Z.y&&x+hw>Z.x)y=Z.y-fh;
+ x=Math.max(hw+2,Math.min(vw-hw-2,x));
+ for(let pass=0;pass<5;pass++){let hit=false;for(let i=0;i<TXN;i++){const r=TXR[i];if(Math.abs(x-r[0])<hw+r[2]&&Math.abs(y-r[1])<(fh+r[3])*0.5){y=r[1]-(fh+r[3])*0.5-1;hit=true;}}if(!hit)break;}
+ const r=TXR[TXN]||(TXR[TXN]=[0,0,0,0]);r[0]=x;r[1]=y;r[2]=hw;r[3]=fh;TXN++;TXO[0]=x;TXO[1]=y;
+}
 // a super's lane on the ground under the chase camera: from (x,y) along a, len long, hw to each side; mid: its centre line
 function gLane(x,y,h,a,len,hw,fill,mid,dash){
  if(fill){g.beginPath();ArenaCam.lane(g,x,y,a,len,hw,h);g.fill();}
@@ -872,7 +883,7 @@ function drawBattle(){
   if(pvpOn()&&b!==me&&!b.ai){const fs=Math.max(10,Math.round(ku*0.5));g.font=font(fs);g.textAlign='center';g.textBaseline='middle';g.fillStyle=b.away?'rgba(223,231,242,.45)':b.vl>=3?'#ffcf4a':'rgba(223,231,242,.85)';g.fillText(b.name+(b.away?' (AI)':''),px,(CH?pt:py)-2.25*r*(b.dscale||1)-fs*(cry&&b.cry||matchG==='bounty'?1.9:0.9));g.textBaseline='top';}   // live pilots wear their name
  };
  for(const u of units)if(u.team!==0&&(u.elev||0)===0&&u.hp>0)drawOne(u,tcol(u.team));
- for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0)drawOne(u,TC[0]);
+ for(const u of units)if(u.team===0&&(u.elev||0)===0&&u.hp>0&&!(CH&&u===me))drawOne(u,TC[0]);
  // the bridge goes OVER ground tanks; tunnel stretches are see-through so you can track tanks under it
  if(BR&&!D3&&BR.look==='mesa')drawMesa2D(me&&underDeck(me));
  else if(BR&&!D3){
@@ -896,7 +907,8 @@ function drawBattle(){
  }
  if(cry&&!D3)cry.loose.forEach((c,i)=>{if(c.l===1)drawCrystal(c,i);});   // crystals on the bridge deck
  for(const u of units)if(u.team!==0&&(u.elev||0)===1&&u.hp>0)drawOne(u,tcol(u.team));
- for(const u of units)if(u.team===0&&(u.elev||0)===1&&u.hp>0)drawOne(u,TC[0]);
+ for(const u of units)if(u.team===0&&(u.elev||0)===1&&u.hp>0&&!(CH&&u===me))drawOne(u,TC[0]);
+ if(CH&&me&&me.hp>0&&me.team===0)drawOne(me,TC[0]);   // chase camera: your own tank's bar and chevron are drawn over every other
  const fu=tapFocus>=0?units.find(u=>u.id===tapFocus&&u.hp>0):null;   // your locked target wears gold brackets
  if(fu){WP(fu.x,fu.y,hOf(fu));const px=WPx,py=WPy,rr=R*(CH?Math.max(sc*0.62,Math.min(sc*1.9,WPk)):sc)*(fu.dscale||1)*1.5,k=rr*0.42;g.save();g.strokeStyle='#ffd24a';g.globalAlpha=0.72+0.28*Math.sin(performance.now()/160);g.lineWidth=3;g.beginPath();
   for(const [cx,cy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){g.moveTo(px+cx*rr,py+cy*rr-cy*k);g.lineTo(px+cx*rr,py+cy*rr);g.lineTo(px+cx*rr-cx*k,py+cy*rr);}
@@ -911,8 +923,9 @@ function drawBattle(){
  g.save();g.beginPath();if(CH)g.rect(-40,-40,vw+80,vh+80);else g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
  const up=D3?sc*0.6:0;   // in 3D, text floats from the top of the tanks
- for(const q of pops){WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.8));g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(1.4-q.t)*1.2-ku));g.globalAlpha=1;}
- for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.max(sc*0.62,Math.min(WPk,sc*1.05)):ku)*0.66*(q.z||1)));if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));}g.fillText(q.txt,lx(WPx,q.txt),Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6));g.globalAlpha=1;}
+ TXN=0;   // chase camera: texts that would land on each other, on the minimap or under the buttons are moved clear (txtAt)
+ for(const q of pops){WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round(ku*0.8));let tx=lx(WPx,q.txt),ty=Math.max(ty0,WPy-up-ku*(1.4-q.t)*1.2-ku);if(CH){txtAt(tx,ty,g.measureText(q.txt).width,ku*0.8);tx=TXO[0];ty=TXO[1];}g.fillText(q.txt,tx,ty);g.globalAlpha=1;}
+ for(const q of nums){if(!q.txt)continue;WP(q.x,q.y,0);const ku=KU();g.globalAlpha=Math.min(1,q.t/0.4)*(q.g?0.7:1);g.fillStyle=q.c;g.textAlign='center';g.font=font(Math.round((CH?Math.max(sc*0.62,Math.min(WPk,sc*1.05)):ku)*0.66*(q.z||1)));let tx=lx(WPx,q.txt),ty=Math.max(ty0,WPy-up-ku*(0.9-q.t)*1.6);if(CH){txtAt(tx,ty,g.measureText(q.txt).width,Math.max(sc*0.62,Math.min(WPk,sc*1.05))*0.66*(q.z||1));tx=TXO[0];ty=TXO[1];g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.55)';g.strokeText(q.txt,tx,ty);}g.fillText(q.txt,tx,ty);g.globalAlpha=1;}
  g.restore();
  if(CH)drawEdges();   // who and what is outside the frame
  else if(typeof pvpOn==='function'&&pvpOn()&&me)drawVeil();   // a live match without the chase camera: the same frame, drawn as a veil
@@ -1031,7 +1044,7 @@ function drawMini(){
   if(ok){g.closePath();g.fillStyle='rgba(255,255,255,.07)';g.fill();g.strokeStyle='rgba(255,255,255,.4)';g.lineWidth=1;g.stroke();}}
  // tanks: enemies, then your side, then you
  const dot=(b,c,r)=>{g.beginPath();g.arc(mx(b.x),my(b.y),r,0,7);g.fillStyle=c;g.fill();g.lineWidth=1;g.strokeStyle='rgba(6,10,18,.9)';g.stroke();};
- const dr=Math.max(2.1,u*0.9);
+ const dr=Math.max(3,u*1.05);
  for(const b of units)if(b.hp>0&&b.team!==(me?me.team:0))dot(b,'#ff4d5e',b.boss?dr*1.9:dr);
  for(const b of units)if(b.hp>0&&b!==me&&b.team===(me?me.team:0))dot(b,'#4d9fff',dr);
  if(me&&me.hp>0){g.fillStyle='#10161d';g.beginPath();g.arc(mx(me.x),my(me.y),dr+2.2,0,7);g.fill();dot(me,'#ffd24a',dr+1);}
