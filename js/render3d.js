@@ -166,7 +166,7 @@ const FXG_FS=['uniform float uT;varying vec4 vC;varying vec2 vU;varying vec3 vW;
  'float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x),f.y);}',
  'float fbm(vec2 p){return vn(p)*0.55+vn(p*2.13+7.1)*0.3+vn(p*4.37+3.7)*0.15;}',
  'void main(){float m=floor((vU.x+2.0)/4.0);vec2 u=vec2(vU.x-m*4.0,vU.y);float d=length(u);float f=clamp(1.0-d,0.0,1.0);f=f*f*(3.0-2.0*f);float gain=1.9-0.9*smoothstep(0.0,0.55,d);',
- ' if(m>0.5&&m<1.5){float n=fbm(vW.xz*1.5+vec2(vW.y*0.8,-uT*1.25+vW.y*0.6));float e=smoothstep(0.16,0.74,f*(0.5+1.05*n));gain=0.85+1.5*n*e;f=e;}',
+ ' if(m>0.5&&m<1.5){float n=fbm(vW.xz*2.3+vec2(vW.y*1.1,-uT*1.6+vW.y*0.8));float e=smoothstep(0.26,0.66,f*(0.45+1.2*n));gain=0.8+1.7*n*e;f=e;}',   // finer, firmer lobes: flame and smoke with edges, not a smudge
  ' else if(m>1.5&&m<2.5){float v=u.y;f=smoothstep(1.0,0.84,v)*pow(clamp((v+1.0)*0.5,0.0,1.0),3.4);gain=1.0+1.3*smoothstep(0.4,0.85,v);}',
  ' else if(m>2.5){float c=1.0-abs(u.y);c=c*c*(3.0-2.0*c);float s=fbm(vec2(u.x*11.0-uT*8.0,u.y*5.0))*0.6+fbm(vec2(u.x*31.0-uT*15.0,u.y*11.0+3.0))*0.4;f=c*(0.8+0.4*s);gain=1.0+1.1*smoothstep(0.5,1.0,c)*s;}',
  ' gl_FragColor=vec4(vC.rgb*f*gain,vC.a*f);}'].join('\n');

@@ -566,7 +566,7 @@ function create(T,host){
    if(flash)disc(e.x,e.y+.07,e.z,R*1.5,Wg,flash*.5);
    churn(e.x,e.y+.05,e.z,R*1.7*(.4+.6*ex),B,.5*fade);
    // the dome: an orange rim round a gold body with a small white heart (never a white-out: the target and its ring stay readable)
-   puff(e.x,e.y+R*.38*ex,e.z,R*(.62+.95*ex),Or,.8*fb*ht);puff(e.x,e.y+R*.42*ex,e.z,R*(.44+.66*ex),G,.7*fb*ht);if(oc>0)sprite(e.x,e.y+R*.5*ex,e.z,R*(.14+.16*ex)*(oc===2?.8:1),Wg,.6*fb*CQ);
+   puff(e.x,e.y+R*.38*ex,e.z,R*(.62+.95*ex),Or,.62*fb*ht);puff(e.x,e.y+R*.42*ex,e.z,R*(.36+.5*ex),G,.45*fb*ht);if(oc>0)sprite(e.x,e.y+R*.5*ex,e.z,R*(.14+.16*ex)*(oc===2?.8:1),Wg,.6*fb*CQ);
    if(hot){sprite(e.x,e.y+R*.45*ex,e.z,R*(.16+.1*hot),W1,hot*.8*CQ);shock(e.x,y+.03,e.z,R*(.3+1.1*(1-hot)),.5*u,W1,hot*.9,44);}   // jackpot: a white-hot heart and a third, sharp front
    {const rise=Math.min(1,t/(e.d*.7)),ch=R*(oc===0?1.3:2.4)*rise,cw=R*(oc===0?.16:.24),ca2=(oc===0?.4:.75)*fade;   // the column: a narrow stack rising well clear of the dome, its cap, and embers orbiting it
     for(let i=0;i<5;i++){const f=i/4;puff(e.x,e.y+R*.6+ch*f,e.z,cw*(1.25-.45*f)*(1+.3*k),i%2?G:Wg,ca2);}
