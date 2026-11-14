@@ -39,7 +39,7 @@ async def main():
         check(r['re']==0 and e['upc']['vanguard']['reactor']==0 and e['pts']==120000-62500,'15th level refused (phone and server) '+json.dumps(r))
         await pg.evaluate("()=>ACT.respec()");await pg.wait_for_timeout(300)
         txt=await pg.evaluate("()=>{const o=findOv('respec');return o?o.box.textContent:''}")
-        check('31,250' in txt and 'Reset your build' in txt,'reset build asks first, shows the refund: '+txt[:140])
+        check('31,250' in txt and "Reset the Vanguard's build" in txt and 'other chassis keep theirs' in txt,'reset build asks first, names the chassis, shows the refund: '+txt[:140])
         check('385 ⭐' in txt and 'get all 62,500 back' in txt,'paid reset offered: $5 in Stars keeps every point: '+txt[:220])
         await pg.evaluate("()=>ACT.respeccur('ton')");await pg.wait_for_timeout(300)
         txt=await pg.evaluate("()=>{const o=findOv('respec');return o?o.box.textContent:''}")
