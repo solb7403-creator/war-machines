@@ -1,204 +1,32 @@
 {
- "rateStarsToPoints": 24,
+ "generatedBy": "node dev/tools/chassis-kit-model.mjs",
+ "rules": "js/rules.js",
+ "targetDays": 84,
+ "gemPtsStar": 120,
+ "corePtsStar": 175,
  "gemCachePts": [
-  6000,
-  12000,
-  36000
+  30000,
+  60000,
+  180000
  ],
  "chosenCorePts": [
-  9000,
-  18000,
-  54000
+  43750,
+  87500,
+  262500
  ],
  "coreShards": [
   2,
   4,
   14
  ],
- "calibration": [
-  {
-   "rate": 10,
-   "firstKitDays": 28,
-   "firstKitRange": [
-    26,
-    30
-   ],
-   "allThreeDays": 84,
-   "allThreeRange": [
-    79,
-    95
-   ]
-  },
-  {
-   "rate": 12,
-   "firstKitDays": 33,
-   "firstKitRange": [
-    30,
-    37
-   ],
-   "allThreeDays": 93,
-   "allThreeRange": [
-    88,
-    96
-   ]
-  },
-  {
-   "rate": 14,
-   "firstKitDays": 36,
-   "firstKitRange": [
-    33,
-    39
-   ],
-   "allThreeDays": 104,
-   "allThreeRange": [
-    97,
-    111
-   ]
-  },
-  {
-   "rate": 16,
-   "firstKitDays": 39,
-   "firstKitRange": [
-    36,
-    40
-   ],
-   "allThreeDays": 112,
-   "allThreeRange": [
-    108,
-    115
-   ]
-  },
-  {
-   "rate": 18,
-   "firstKitDays": 43,
-   "firstKitRange": [
-    39,
-    47
-   ],
-   "allThreeDays": 128,
-   "allThreeRange": [
-    119,
-    139
-   ]
-  },
-  {
-   "rate": 20,
-   "firstKitDays": 49,
-   "firstKitRange": [
-    46,
-    53
-   ],
-   "allThreeDays": 143,
-   "allThreeRange": [
-    135,
-    152
-   ]
-  },
-  {
-   "rate": 22,
-   "firstKitDays": 55,
-   "firstKitRange": [
-    50,
-    63
-   ],
-   "allThreeDays": 153,
-   "allThreeRange": [
-    136,
-    167
-   ]
-  },
-  {
-   "rate": 24,
-   "firstKitDays": 52,
-   "firstKitRange": [
-    49,
-    56
-   ],
-   "allThreeDays": 158,
-   "allThreeRange": [
-    148,
-    168
-   ]
-  },
-  {
-   "rate": 26,
-   "firstKitDays": 63,
-   "firstKitRange": [
-    59,
-    69
-   ],
-   "allThreeDays": 176,
-   "allThreeRange": [
-    159,
-    188
-   ]
-  },
-  {
-   "rate": 28,
-   "firstKitDays": 60,
-   "firstKitRange": [
-    55,
-    64
-   ],
-   "allThreeDays": 175,
-   "allThreeRange": [
-    166,
-    199
-   ]
-  },
-  {
-   "rate": 30,
-   "firstKitDays": 61,
-   "firstKitRange": [
-    58,
-    62
-   ],
-   "allThreeDays": 185,
-   "allThreeRange": [
-    179,
-    191
-   ]
-  },
-  {
-   "rate": 32,
-   "firstKitDays": 64,
-   "firstKitRange": [
-    56,
-    73
-   ],
-   "allThreeDays": 192,
-   "allThreeRange": [
-    175,
-    228
-   ]
-  },
-  {
-   "rate": 36,
-   "firstKitDays": 71,
-   "firstKitRange": [
-    67,
-    74
-   ],
-   "allThreeDays": 210,
-   "allThreeRange": [
-    195,
-    219
-   ]
-  },
-  {
-   "rate": 40,
-   "firstKitDays": 83,
-   "firstKitRange": [
-    77,
-    93
-   ],
-   "allThreeDays": 242,
-   "allThreeRange": [
-    231,
-    256
-   ]
-  }
+ "dailyQuestPts": [
+  3500
  ],
+ "weeklyQuestPts": [
+  12500
+ ],
+ "allFourBonus": 1000,
+ "weeklyChest": 5000,
  "seeds": [
   1,
   2,
@@ -206,354 +34,368 @@
   4,
   5
  ],
- "near56": 22,
+ "reference": {
+  "minutes": 20,
+  "firstKitDays": 83,
+  "firstKitRange": [
+   77,
+   97
+  ],
+  "allThreeDays": 249,
+  "allThreeRange": [
+   236,
+   274
+  ],
+  "perDay": 35454,
+  "vsTarget": -1
+ },
  "profiles": [
   {
    "minutes": 10,
-   "firstKitDays": 67,
+   "firstKitDays": 96,
    "firstKitRange": [
-    61,
-    74
+    91,
+    104
    ],
-   "allThreeDays": 194,
+   "allThreeDays": 294,
    "allThreeRange": [
-    188,
-    198
+    272,
+    313
    ],
-   "perDay": 11556,
+   "perDay": 31955,
    "kits": [
     {
      "chassis": "titan",
-     "days": 68,
-     "weeks": 9.7,
-     "endDay": 68,
-     "league": "Elite",
-     "power": 158
-    },
-    {
-     "chassis": "vanguard",
-     "days": 64,
-     "weeks": 9.1,
-     "endDay": 132,
-     "league": "Elite",
-     "power": 158
-    },
-    {
-     "chassis": "scout",
-     "days": 76,
-     "weeks": 10.9,
-     "endDay": 208,
-     "league": "Elite",
-     "power": 142
-    }
-   ],
-   "sources": {
-    "match": 754571,
-    "quests": 1238450,
-    "login": 143425,
-    "chest": 194500,
-    "pass": 40250
-   },
-   "spend": {
-    "up": 187500,
-    "cache": 1692000,
-    "core": 486000
-   },
-   "shards": {
-    "free": 267,
-    "cache": 574,
-    "core": 122,
-    "wasted": 176
-   }
-  },
-  {
-   "minutes": 15,
-   "firstKitDays": 61,
-   "firstKitRange": [
-    52,
-    66
-   ],
-   "allThreeDays": 174,
-   "allThreeRange": [
-    154,
-    185
-   ],
-   "perDay": 13342,
-   "kits": [
-    {
-     "chassis": "titan",
-     "days": 58,
-     "weeks": 8.3,
-     "endDay": 58,
-     "league": "Elite",
-     "power": 158
-    },
-    {
-     "chassis": "vanguard",
-     "days": 56,
-     "weeks": 8,
-     "endDay": 114,
-     "league": "Elite",
-     "power": 158
-    },
-    {
-     "chassis": "scout",
-     "days": 57,
-     "weeks": 8.1,
-     "endDay": 171,
-     "league": "Elite",
-     "power": 142
-    }
-   ],
-   "sources": {
-    "match": 949399,
-    "quests": 1018750,
-    "login": 117000,
-    "chest": 155500,
-    "pass": 33750
-   },
-   "spend": {
-    "up": 187500,
-    "cache": 1692000,
-    "core": 387000
-   },
-   "shards": {
-    "free": 217,
-    "cache": 586,
-    "core": 96,
-    "wasted": 121
-   }
-  },
-  {
-   "minutes": 20,
-   "firstKitDays": 52,
-   "firstKitRange": [
-    49,
-    56
-   ],
-   "allThreeDays": 158,
-   "allThreeRange": [
-    148,
-    168
-   ],
-   "perDay": 15097,
-   "kits": [
-    {
-     "chassis": "titan",
-     "days": 56,
-     "weeks": 8,
-     "endDay": 56,
-     "league": "Elite",
-     "power": 156
-    },
-    {
-     "chassis": "vanguard",
-     "days": 53,
-     "weeks": 7.6,
-     "endDay": 109,
-     "league": "Elite",
-     "power": 158
-    },
-    {
-     "chassis": "scout",
-     "days": 58,
-     "weeks": 8.3,
-     "endDay": 167,
-     "league": "Ace",
-     "power": 142
-    }
-   ],
-   "sources": {
-    "match": 1201072,
-    "quests": 1003150,
-    "login": 114950,
-    "chest": 155500,
-    "pass": 32900
-   },
-   "spend": {
-    "up": 187500,
-    "cache": 1728000,
-    "core": 585000
-   },
-   "shards": {
-    "free": 212,
-    "cache": 589,
-    "core": 148,
-    "wasted": 183
-   }
-  },
-  {
-   "minutes": 30,
-   "firstKitDays": 42,
-   "firstKitRange": [
-    40,
-    46
-   ],
-   "allThreeDays": 133,
-   "allThreeRange": [
-    129,
-    139
-   ],
-   "perDay": 18598,
-   "kits": [
-    {
-     "chassis": "titan",
-     "days": 45,
-     "weeks": 6.4,
-     "endDay": 45,
+     "days": 124,
+     "weeks": 17.7,
+     "endDay": 124,
      "league": "Elite",
      "power": 155
     },
     {
      "chassis": "vanguard",
-     "days": 39,
-     "weeks": 5.6,
-     "endDay": 84,
+     "days": 89,
+     "weeks": 12.7,
+     "endDay": 213,
      "league": "Elite",
      "power": 158
     },
     {
      "chassis": "scout",
-     "days": 45,
-     "weeks": 6.4,
-     "endDay": 129,
+     "days": 103,
+     "weeks": 14.7,
+     "endDay": 316,
+     "league": "Elite",
+     "power": 142
+    }
+   ],
+   "sources": {
+    "match": 1133025,
+    "quests": 8338125,
+    "login": 230925,
+    "chest": 292000,
+    "pass": 60100
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 7920000,
+    "core": 1925000
+   },
+   "shards": {
+    "free": 399,
+    "cache": 541,
+    "core": 96,
+    "wasted": 175
+   }
+  },
+  {
+   "minutes": 15,
+   "firstKitDays": 87,
+   "firstKitRange": [
+    84,
+    93
+   ],
+   "allThreeDays": 271,
+   "allThreeRange": [
+    265,
+    284
+   ],
+   "perDay": 33771,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 90,
+     "weeks": 12.9,
+     "endDay": 90,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "vanguard",
+     "days": 76,
+     "weeks": 10.9,
+     "endDay": 166,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 93,
+     "weeks": 13.3,
+     "endDay": 259,
      "league": "Ace",
      "power": 142
     }
    ],
    "sources": {
-    "match": 1385322,
-    "quests": 765900,
-    "login": 88150,
-    "chest": 116500,
-    "pass": 25550
+    "match": 1425009,
+    "quests": 6836625,
+    "login": 188825,
+    "chest": 240000,
+    "pass": 50100
    },
    "spend": {
     "up": 187500,
-    "cache": 1692000,
-    "core": 495000
+    "cache": 6300000,
+    "core": 2231250
    },
    "shards": {
-    "free": 166,
-    "cache": 598,
-    "core": 122,
-    "wasted": 124
+    "free": 330,
+    "cache": 435,
+    "core": 112,
+    "wasted": 69
+   }
+  },
+  {
+   "minutes": 20,
+   "firstKitDays": 83,
+   "firstKitRange": [
+    77,
+    97
+   ],
+   "allThreeDays": 249,
+   "allThreeRange": [
+    236,
+    274
+   ],
+   "perDay": 35454,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 93,
+     "weeks": 13.3,
+     "endDay": 93,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "vanguard",
+     "days": 100,
+     "weeks": 14.3,
+     "endDay": 193,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 110,
+     "weeks": 15.7,
+     "endDay": 303,
+     "league": "Elite",
+     "power": 142
+    }
+   ],
+   "sources": {
+    "match": 2243428,
+    "quests": 7987125,
+    "login": 221275,
+    "chest": 279000,
+    "pass": 59050
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 8100000,
+    "core": 2493750
+   },
+   "shards": {
+    "free": 374,
+    "cache": 561,
+    "core": 128,
+    "wasted": 230
+   }
+  },
+  {
+   "minutes": 30,
+   "firstKitDays": 79,
+   "firstKitRange": [
+    76,
+    82
+   ],
+   "allThreeDays": 243,
+   "allThreeRange": [
+    235,
+    256
+   ],
+   "perDay": 39166,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 91,
+     "weeks": 13,
+     "endDay": 91,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "vanguard",
+     "days": 85,
+     "weeks": 12.1,
+     "endDay": 176,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 88,
+     "weeks": 12.6,
+     "endDay": 264,
+     "league": "Ace",
+     "power": 142
+    }
+   ],
+   "sources": {
+    "match": 2925051,
+    "quests": 6934125,
+    "login": 192025,
+    "chest": 246500,
+    "pass": 53950
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 8100000,
+    "core": 2056250
+   },
+   "shards": {
+    "free": 334,
+    "cache": 551,
+    "core": 104,
+    "wasted": 166
    }
   },
   {
    "minutes": 45,
-   "firstKitDays": 35,
+   "firstKitDays": 75,
    "firstKitRange": [
-    28,
-    38
+    63,
+    79
    ],
-   "allThreeDays": 108,
+   "allThreeDays": 233,
    "allThreeRange": [
-    104,
-    112
+    217,
+    242
    ],
-   "perDay": 24297,
+   "perDay": 44445,
    "kits": [
     {
      "chassis": "titan",
-     "days": 34,
-     "weeks": 4.9,
-     "endDay": 34,
+     "days": 81,
+     "weeks": 11.6,
+     "endDay": 81,
      "league": "Elite",
-     "power": 152
+     "power": 155
     },
     {
      "chassis": "vanguard",
-     "days": 33,
-     "weeks": 4.7,
-     "endDay": 67,
+     "days": 70,
+     "weeks": 10,
+     "endDay": 151,
      "league": "Elite",
      "power": 158
     },
     {
      "chassis": "scout",
-     "days": 37,
-     "weeks": 5.3,
-     "endDay": 104,
+     "days": 65,
+     "weeks": 9.3,
+     "endDay": 216,
      "league": "Elite",
      "power": 142
     }
    ],
    "sources": {
-    "match": 1654943,
-    "quests": 624200,
-    "login": 70525,
-    "chest": 97000,
-    "pass": 23500
+    "match": 3595688,
+    "quests": 5705625,
+    "login": 156625,
+    "chest": 201000,
+    "pass": 43700
    },
    "spend": {
     "up": 187500,
-    "cache": 1908000,
-    "core": 360000
+    "cache": 6840000,
+    "core": 2668750
    },
    "shards": {
-    "free": 150,
-    "cache": 663,
-    "core": 88,
-    "wasted": 160
+    "free": 279,
+    "cache": 477,
+    "core": 136,
+    "wasted": 112
    }
   },
   {
    "minutes": 60,
-   "firstKitDays": 29,
+   "firstKitDays": 68,
    "firstKitRange": [
-    27,
-    32
+    64,
+    73
    ],
-   "allThreeDays": 88,
+   "allThreeDays": 202,
    "allThreeRange": [
-    85,
-    96
+    188,
+    217
    ],
-   "perDay": 29335,
+   "perDay": 50459,
    "kits": [
     {
      "chassis": "titan",
-     "days": 28,
-     "weeks": 4,
-     "endDay": 28,
+     "days": 64,
+     "weeks": 9.1,
+     "endDay": 64,
      "league": "Elite",
-     "power": 154
+     "power": 155
     },
     {
      "chassis": "vanguard",
-     "days": 26,
-     "weeks": 3.7,
-     "endDay": 54,
+     "days": 64,
+     "weeks": 9.1,
+     "endDay": 128,
      "league": "Elite",
      "power": 158
     },
     {
      "chassis": "scout",
-     "days": 36,
-     "weeks": 5.1,
-     "endDay": 90,
+     "days": 71,
+     "weeks": 10.1,
+     "endDay": 199,
      "league": "Elite",
      "power": 142
     }
    ],
    "sources": {
-    "match": 1928178,
-    "quests": 539050,
-    "login": 61175,
-    "chest": 84000,
-    "pass": 22200
+    "match": 4385473,
+    "quests": 5227875,
+    "login": 144425,
+    "chest": 181500,
+    "pass": 45050
    },
    "spend": {
     "up": 187500,
-    "cache": 1728000,
-    "core": 693000
+    "cache": 7920000,
+    "core": 1837500
    },
    "shards": {
-    "free": 128,
-    "cache": 607,
-    "core": 172,
-    "wasted": 165
+    "free": 267,
+    "cache": 543,
+    "core": 90,
+    "wasted": 133
    }
   }
  ],
@@ -562,55 +404,144 @@
    "minutes": 5,
    "dailies": 2,
    "weeklies": 1,
-   "first": 175,
+   "first": 221,
    "firstRange": [
-    147,
-    199
+    198,
+    252
    ],
-   "all": 512,
+   "all": 663,
    "allRange": [
-    475,
-    531
+    607,
+    741
    ],
-   "perDay": 4455
+   "perDay": 14040
   },
   {
    "minutes": 10,
    "dailies": 2,
    "weeklies": 1,
-   "first": 136,
+   "first": 196,
    "firstRange": [
-    116,
-    148
+    176,
+    214
    ],
-   "all": 385,
+   "all": 589,
    "allRange": [
-    347,
-    412
+    573,
+    602
    ],
-   "perDay": 6300
+   "perDay": 15987
   }
  ],
- "ownerCheck": [
+ "conquest": [
   {
-   "minutesPerDay": 5,
-   "league": "Lunar Legend",
-   "twoWeeks": 77378
+   "tier": 0,
+   "tierName": "none",
+   "ppm": 259.771,
+   "mult": 1,
+   "yieldPts": 0,
+   "minutes": 20,
+   "first": 85,
+   "firstRange": [
+    78,
+    97
+   ],
+   "all": 248,
+   "allRange": [
+    241,
+    261
+   ],
+   "perDay": 39355
   },
   {
-   "minutesPerDay": 10,
-   "league": "Lunar Legend",
-   "twoWeeks": 125616
+   "tier": 3,
+   "tierName": "III",
+   "ppm": 259.771,
+   "mult": 1.15,
+   "yieldPts": 1800,
+   "minutes": 20,
+   "first": 75,
+   "firstRange": [
+    66,
+    89
+   ],
+   "all": 223,
+   "allRange": [
+    216,
+    238
+   ],
+   "perDay": 45019
   },
   {
-   "minutesPerDay": 15,
-   "league": "Lunar Legend",
-   "twoWeeks": 192482
+   "tier": 5,
+   "tierName": "V",
+   "ppm": 259.771,
+   "mult": 1.25,
+   "yieldPts": 2600,
+   "minutes": 20,
+   "first": 71,
+   "firstRange": [
+    68,
+    75
+   ],
+   "all": 209,
+   "allRange": [
+    201,
+    214
+   ],
+   "perDay": 47656
+  }
+ ],
+ "sensitivity": [
+  {
+   "gemPtsStar": 80,
+   "corePtsStar": 116.67,
+   "firstKitDays": 72,
+   "firstKitRange": [
+    65,
+    89
+   ],
+   "allThreeDays": 205
   },
   {
-   "minutesPerDay": 20,
-   "league": "Lunar Legend",
-   "twoWeeks": 242850
+   "gemPtsStar": 100,
+   "corePtsStar": 145.83,
+   "firstKitDays": 79,
+   "firstKitRange": [
+    72,
+    84
+   ],
+   "allThreeDays": 239
+  },
+  {
+   "gemPtsStar": 120,
+   "corePtsStar": 175,
+   "firstKitDays": 83,
+   "firstKitRange": [
+    77,
+    97
+   ],
+   "allThreeDays": 249
+  },
+  {
+   "gemPtsStar": 140,
+   "corePtsStar": 204.17,
+   "firstKitDays": 96,
+   "firstKitRange": [
+    86,
+    107
+   ],
+   "allThreeDays": 291
+  },
+  {
+   "gemPtsStar": 160,
+   "corePtsStar": 233.33,
+   "firstKitDays": 99,
+   "firstKitRange": [
+    92,
+    104
+   ],
+   "allThreeDays": 305
   }
  ],
  "assumptions": {
@@ -659,6 +590,7 @@
   "weeklies": "3 of 5",
   "chest": "every week",
   "pass": "free track",
-  "freeCachesTo": "the chassis being kitted"
+  "freeCachesTo": "the chassis being kitted",
+  "conquest": "Rare kit at 259.771 base points a minute at Rookie (economy-model.json conquestPpm, modeled), x CQ_BASE_MULT, + the Daily Base Yield points, x league base pay and the league bonus; no match pass XP; quests counted done"
  }
 }
