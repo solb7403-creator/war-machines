@@ -83,5 +83,5 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
     const R = await superRounds({ seeds: +(process.env.SEEDS || 2), pilot: process.env.PILOT || 'human', kits: RR_SETS[s], modes: process.env.MODES ? RR_MODES.filter(([g, m]) => process.env.MODES.split(',').includes(g + ' ' + m) || process.env.MODES.split(',').includes(g)) : RR_MODES });
     printRounds(R, s); out[s] = R; }
   console.log('elapsed', ((Date.now() - t0) / 1000).toFixed(0), 's');
-  if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify(out, null, 1));
+  if (process.argv[2]) fs.writeFileSync(process.argv[2], JSON.stringify(out));
 }

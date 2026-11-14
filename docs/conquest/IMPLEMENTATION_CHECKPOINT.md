@@ -3226,3 +3226,48 @@ and touch-screen jitter) plus a part that follows the marker's speed; at 1.0 s i
   15.9%; Ace 29.7 / 50.5 / 19.8 -> 34.6 / 47.7 / 17.7%; Elite 24.3 / 53.0 / 22.7 -> 29.2 / 50.7 / 20.1%; Master 21.5 / 54.2 /
   24.4 -> 26.0 / 52.3 / 21.7%; Lunar Legend 18.7 / 55.0 / 26.3 -> 22.9 / 53.7 / 23.5%. Every league still jackpots less often
   than an average person (28%) and none is perfect.
+
+### Super visuals (Arcade and live matches; Conquest's supers are the 5E-2b code, word for word)
+**Owner messages during the session (Nov 13), all built in:** (a) Moonfall's jackpot: the red electricity must spark off the blue
+beam and look like real electricity, no ring or circle going round the beam (this replaced an earlier "wrap around the beam");
+(b) the Super level from the timing bar is concentration and richness, not mainly size; (c) rarity must read: rare stronger
+than common, epic than rare, Moonfall the most intricate and unique; (d) Conquest supers stay completely unchanged.
+
+**How it is built** (`js/fx3d.js` "how a super is staged"; `js/render3d.js` `FXG_FS`):
+- **One glow shader, four looks, still one draw call and one program.** Each quad picks its look: soft glow (as before);
+  *turbulent* (the falloff broken up by flowing noise: fire, smoke and energy clouds are never flat blobs); *shock* (a wave
+  front: a hard bright leading edge with a soft tail, not a hoop); *flow* (a beam body with streaks of energy racing along it).
+  Reduced motion holds the shader's clock still.
+- **New drawing tools:** soft round ends on every ribbon (no hard-edged slabs), lightning with a three-octave path, a
+  tapering stroke, a white-hot core and tapered forks (never a ruler zig-zag), flame and smoke as billowing sprites.
+- **Staging:** anticipation (the charge-up, now with the rarity's sigil gathering under the tank), a 2-3 frame flash, the body
+  with ONE primary shape carrying the brightest and sharpest edge, then a long dissipation (the beam narrows to a thread,
+  embers shed along it, a mark stays on the ground).
+- **Super level (owner b).** Size steps only a little: x0.8 / x1 / x1.15 (it was x0.62 / x1 / x1.38), so a drawn radius stays
+  close to the radius that really hits and nothing grows until it looks ridiculous. What changes with the level:
+  - *miss*: diffuse. Beams: a wide dim halo, a washed body, a soft core that sputters and loses its hold towards the far end.
+    Waves: a thin, faint front that rolls out slowly. Blasts: dim fire under more smoke, no flash rays. The fewest effects.
+  - *hit*: focused: a defined core and the super's own structures.
+  - *jackpot*: concentrated: the halo pulls in, the core is narrower and white-hot with a white needle down its middle; waves
+    snap out faster with a thick bright front and a second hard edge behind it; blasts get a white-hot heart and an extra
+    sharp front; and each super's own jackpot effects (below).
+- **Rarity (owner c): intricacy, not size.** One mark every family shares makes the ladder readable at a glance: the **sigil**
+  on the ground under the tank (and where a shell lands): common none; rare a broken ring with six ticks; epic two rings
+  turning against each other, eight spokes and four diamonds; legendary the lunar sigil (three rings, twelve marks, six
+  turning arcs, the eight phases of the moon, three orbiting motes). And per family:
+
+  | | Common: ONE structure + one accent | Rare: + a second structure, a second colour | Epic: + a third layer of ornament |
+  |---|---|---|---|
+  | Pulse (beam) | Pierce Lance: rail + shock diamonds (jackpot: two sonic fronts) | Arc Lance: + a lightning coil round the beam (jackpot: chain lightning to the ground) | Sunlance: + muzzle star, weaving solar filaments, prominences, heat chevrons (jackpot: flame columns) |
+  | Twin (wave) | Static Nova: jagged front + static, four short spokes (jackpot: a second front, forked spokes) | Storm Nova: + storm cloud and spiral arms, lightning flickering inside (jackpot: strikes from the sky) | Helix Nova: + dome of turning coils, ribs, tongues of flame on the front, ground cracks (jackpot: fire rain) |
+  | Siege (blast) | Siege Blast: fireball + smoke + one front (jackpot: six secondary blasts) | Rail Blast: + implosion lens and inrushing streaks, crawling forked lightning (jackpot: three EMP fronts) | Titanfall: + column and cap, crown of flame spikes, double fronts, ground cracks (jackpot: star rays, fire rain) |
+
+  A missed rare keeps its second structure and its sigil (dimmer), so it stays more intricate than a perfect common, which is
+  larger and brighter but still one structure.
+- **Moonfall (legendary; owner a):** miss = a thinner, diffuse beam; normal = the blue beam with thin blue electricity hugging
+  it, falling stars racing down inside it, the lunar sigil under the tank, an eclipse (a dark moon with a bright rim) where
+  it lands on a tank; jackpot = a thicker beam with a concentrated core and **red electricity sparking off it**: forked red
+  arcs leap from the beam's surface, most out and down to the ground beside it, some over the surface back onto the beam;
+  each holds its footing for a tenth of a second while its shape writhes, then strikes somewhere else; short crackles hug
+  the surface between them. Nothing red is a ring; the sigil and the charge-up stay blue and white. Removed: the red arcs
+  that ran beside the beam (5E-2b), a red coil round the beam (this session's first draft), the ring arcs at the muzzle.
