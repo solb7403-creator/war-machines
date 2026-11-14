@@ -21,7 +21,7 @@ OUT=pathlib.Path(args[0] if args else os.environ.get('SHOTS','/tmp/lunar-shots')
 TILE=int(opt('tile',260))
 WEAPONS=[('pulse',0,'Pulse Cannon'),('pulse',1,'Arc Pulse'),('pulse',2,'Nova Pulse'),('twin',0,'Twin Repeater'),('twin',1,'Storm Repeater'),('twin',2,'Helix Repeater'),
  ('siege',0,'Siege Breaker'),('siege',1,'Rail Breaker'),('siege',2,'Titanfall'),('moon',2,'Moonbeam')]
-ONLY=opt('only');WEAPONS=[w for w in WEAPONS if not isinstance(ONLY,str) or w[0] in ONLY.split(',')]
+ONLY=opt('only');CLS=opt('class');CLASSES=[c for c in ('scout','vanguard','titan') if not isinstance(CLS,str) or c in CLS.split(',')];WEAPONS=[w for w in WEAPONS if not isinstance(ONLY,str) or w[0] in ONLY.split(',')]
 CN={'scout':['Scout','Strider','Phantom'],'vanguard':['Vanguard','Sentinel','Paladin'],'titan':['Titan','Bulwark','Colossus']}
 JS=r"""async (o)=>{
  const cvs=document.createElement('canvas'),r=new THREE.WebGLRenderer({canvas:cvs,antialias:true,preserveDrawingBuffer:true,alpha:false});
@@ -41,11 +41,11 @@ JS=r"""async (o)=>{
  const meas=hb&&wb?{scale:f(T.ws),meshyHull:!!T.meta.meshy,meshyWeapon:!!T.wmeta.meshy,hullLen:f(hb.max.x-hb.min.x),hullW:f(hb.max.z-hb.min.z),hullH:f(hb.max.y),ring:f(T.meta.ty),
   wLen:f(wb.max.x-wb.min.x),wW:f(wb.max.z-wb.min.z),wTop:f(wb.max.y),wBottom:f(wb.min.y),wRear:f(wb.min.x),wTip:f(wb.max.x),
   widthRatio:f((wb.max.z-wb.min.z)/(hb.max.z-hb.min.z)),topRatio:f(wb.max.y/hb.max.y),pastNose:f(wb.max.x-hb.max.x),pastTail:f(hb.min.x-wb.min.x),lenRatio:f((wb.max.x-wb.min.x)/(hb.max.x-hb.min.x)),seat:f(wb.min.y-T.meta.ty)}:null;
- const out={};
+ const out={},zf=(hb?hb.max.x-hb.min.x:1.84)*k/(1.84*R*.9*TANK_VIS);   // every class is framed the same: the camera backs off by the hull's own length
  for(const v of o.views){
   r.setPixelRatio(1);r.setSize(v.px,v.px,false);let cam;
-  if(v.side){const hw=1.45;cam=new THREE.OrthographicCamera(-hw,hw,hw*.78,-hw*.78,.1,100);cam.position.set(20,.5,0);cam.up.set(0,1,0);cam.lookAt(0,.42,0);r.setSize(v.px,Math.round(v.px*.78),false);}
-  else{const el=v.pitch*Math.PI/180,d=v.dist;cam=new THREE.PerspectiveCamera(v.fov,1,.1,200);cam.position.set(0,Math.sin(el)*d+.3,Math.cos(el)*d);cam.up.set(0,1,0);cam.lookAt(0,.3,-.05);}
+  if(v.side){const hw=.9*zf;cam=new THREE.OrthographicCamera(-hw,hw,hw*.78,-hw*.78,.1,100);cam.position.set(20,.3*zf,0);cam.up.set(0,1,0);cam.lookAt(0,.25*zf,0);r.setSize(v.px,Math.round(v.px*.78),false);}
+  else{const el=v.pitch*Math.PI/180,d=v.dist*zf;cam=new THREE.PerspectiveCamera(v.fov,1,.1,200);cam.position.set(0,Math.sin(el)*d+.2,Math.cos(el)*d-.1);cam.up.set(0,1,0);cam.lookAt(0,.2,-.1);}
   cam.updateProjectionMatrix();r.render(s,cam);out[v.name]=cvs.toDataURL('image/png');
  }
  if(typeof Equipment3D!=='undefined')Equipment3D.releaseTree(T.g);if(typeof Meshy3D!=='undefined')Meshy3D.release(T.g);r.dispose();
@@ -57,9 +57,9 @@ async def main():
         b,pg,errs=await open_game(p,900,900,init="window.LUNAR_NO_AUTOGFX=1;")
         await pg.wait_for_function("()=>typeof R3!=='undefined'&&(R3.ready||R3.failed)",timeout=60000)
         # distance: the tank fills about 70% of a tile at each lens (a tile is a crop of the match view, not a different camera)
-        views=[dict(name='phone',px=TILE,pitch=48,fov=46,dist=3.3),dict(name='desktop',px=TILE,pitch=44,fov=30,dist=5.0),dict(name='side',px=TILE,side=True)]
+        views=[dict(name='phone',px=TILE,pitch=48,fov=46,dist=1.75),dict(name='desktop',px=TILE,pitch=44,fov=30,dist=2.7),dict(name='side',px=TILE,side=True)]
         meas={};tiles={}
-        for cls in ('scout','vanguard','titan'):
+        for cls in CLASSES:
             for ct in range(3):
                 for arch,wt,wname in WEAPONS:
                     res=await pg.evaluate(JS,dict(cls=cls,ct=ct,arch=arch,wt=wt,views=views))
@@ -70,7 +70,7 @@ async def main():
         lab=22
         for v in ('phone','desktop','side'):
             th=TILE if v!='side' else round(TILE*.78)
-            for cls in ('scout','vanguard','titan'):
+            for cls in CLASSES:
                 sheet=Image.new('RGB',(TILE*len(WEAPONS)+90,(th+lab)*3+lab),(10,14,22));d=ImageDraw.Draw(sheet)
                 for c,(arch,wt,wname) in enumerate(WEAPONS):d.text((90+c*TILE+6,4),wname,fill=(223,231,242))
                 for ct in range(3):

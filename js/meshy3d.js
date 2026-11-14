@@ -305,6 +305,24 @@ const Meshy3D=(()=>{
  // whole weapon never wider than the hull. Applied once on the weapon group; muzzle points are weapon-local, so flashes,
  // halos and recoil stay on the visible muzzles. Visual only: the simulation never reads any of this.
  const FIT_K=[.58,.65,.72],FIT_H=[1,1.08,1.16],FIT_FLOOR=[.5,.54,.58],FIT_TOP=1.35,FIT_MAX=[.98,1.04,1.1];let fitOn=true;
+ // FIT_ADJ (Session 5E-2b2b, owner: "every weapon's proportions must look good on every chassis; the Moonbeam on the Phantom is
+ // the reference"): what the measured rule above cannot see. It sizes a turret by its body's width and height, so a weapon whose
+ // body is small for its class (Twin Repeater) came out as a toy on every hull, one with a bulbous body (Nova Pulse) came out
+ // top-heavy, and one that is mostly barrel (Rail Breaker) hung far past a Scout's nose while its turret was lost on a
+ // Colossus. Judged on side and chase-camera views of all 90 pairs (dev/tests/weapon-fit-capture.py, docs/supers-5e2b2b/
+ // weapon-fit-*.webp) against the reference: the weapon about as long as the hull, its body 55-75% of the hull's width, a low
+ // seat, the muzzle near the nose. Per weapon item, per chassis class, [Common, Rare, Epic hull]; 1 where the rule was right.
+ // Uniform scale only: models, colours, sockets and muzzle points are untouched (muzzle points are weapon-local and scale with it).
+ const FIT_ADJ={
+  'pulse:0':{titan:[1,1,1.08]},
+  'pulse:1':{scout:[.93,.93,.93],titan:[1,1,1.08]},
+  'pulse:2':{scout:[.88,.88,.88],vanguard:[.86,.86,.86],titan:[.86,.86,.88]},
+  'twin:0':{scout:[1.2,1.2,1.2],vanguard:[1.25,1.25,1.22],titan:[1.28,1.3,1.3]},
+  'twin:1':{titan:[1,1,1.08]},
+  'siege:0':{scout:[1.06,1.06,1.08],titan:[1,1,.92]},
+  'siege:1':{scout:[.86,.86,.86],vanguard:[.93,.93,.95],titan:[1.05,1.08,1.1]},
+  'siege:2':{scout:[.92,.92,.92]}};
+ const fitAdj=(arch,t,cls,tc)=>{const r=arch==='moon'?null:FIT_ADJ[arch+':'+t],v=r&&r[cls];return v?v[tc]:1;};
  function bodyHeight(asset){
   if(asset.fitH)return asset.fitH;const p=asset.geometry.attributes.position.array,tip=(asset.info.meta.visual&&asset.info.meta.visual.tip)||asset.geometry.boundingBox.max.x,ys=[];
   for(let i=0;i<p.length;i+=3)if(p[i]<tip*.4)ys.push(p[i+1]);ys.sort((a,b)=>a-b);return asset.fitH=ys.length?ys[Math.floor(ys.length*.97)]:asset.geometry.boundingBox.max.y;   // antennas and periscopes do not count
@@ -320,7 +338,7 @@ const Meshy3D=(()=>{
   const bw=2*(wv.width||.5),bh=bodyHeight(asset),floor=Math.min((moon?.5:FIT_FLOOR[t])*hullW/bw,FIT_TOP*hv.ring/bh);
   let sc=Math.min(Math.min(k*hullW/bw,Math.max(h*hv.ring/bh,floor)),.98*hullW/(bb.max.z-bb.min.z),.96*-hv.x0/Math.max(.1,-bb.min.x));
   if(moon&&typeof M3!=='undefined')sc=Math.min(sc,M3.weaponScale('moon',cls,tc));
-  return Math.max(.35,Math.min(moon?1:FIT_MAX[t],sc));   // upper cap per tier: wide four-pod hulls must not get an oversized gun
+  return Math.max(.35,Math.min(moon?1:FIT_MAX[t],sc))*fitAdj(arch,t,cls,tc);   // upper cap per tier: wide four-pod hulls must not get an oversized gun; then the eye's correction (FIT_ADJ)
  }
  function weaponKit(arch,tier,P,team,lunar,cls,ct){
   const asset=best(itemId.weapon(arch,tier));if(!asset)return null;

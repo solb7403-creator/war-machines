@@ -3056,3 +3056,33 @@ Reactor levels); the owner's-case table uses his kit as he flies it (Reactor 2).
 | supers' share of the damage the pilot dealt | 58% -> 27% | 58% -> 26% | 57% -> 23% | 56% -> 22% | 29% -> 12% | 33% -> 13% | |
 | hull removed per super | 1645 -> 1279 | 1600 -> 1235 | 1351 -> 1084 | 1235 -> 1008 | 281 -> 202 | | |
 | charge offered before the cap, bars a round (from dealt + received) | 2.9 + 1.2 | 2.9 + 1.1 | 2.6 + 0.7 | 2.6 + 0.5 | 3.4 + 1.5 | 2.4 + 1.6 | dealt 74% |
+
+### Weapon proportions on every chassis (visual only; models, colours, stats, sockets and muzzle points untouched)
+- **How it was judged.** `dev/tests/weapon-fit-capture.py` builds every one of the 90 pairs (10 weapons x 9 hulls) with the game's
+  own tank builder and draws each under the chase camera's own angle and lens (phone: pitch 48, 46 degree lens; desktop: pitch
+  44, 30 degree lens) and from the side at one scale, and measures each pair (weapon scale, turret width against hull width,
+  weapon length against hull length, how far the muzzle passes the nose). Reference (owner): the Moonbeam on the Phantom: the
+  weapon about as long as the hull (0.99), its body 71% of the hull's width, a low seat, the muzzle a little past the nose.
+- **What was wrong.** The fit rule of 5E-1 sizes a turret from its body's width and height. It cannot see three cases:
+  the **Twin Repeater**'s body is small for its class, so it came out as a toy on every hull (body 41-56% of the hull's width,
+  the smallest of all ten, length 0.65-0.81); the **Nova Pulse**'s bulbous body made it top-heavy (its top at 1.7-2.2 hull
+  heights on the Scout class, covering most of a Titan's deck); the **Rail Breaker** is mostly barrel, so it hung 0.46-0.56
+  past a Scout hull's nose (the reference: 0.30) while its turret was lost on the wide Colossus (42% of the width).
+  Smaller cases: the Siege Breaker a little small on the Scout class and a little large on the Colossus, Arc Pulse and
+  Titanfall a little large on the Scout class, three turrets a little small on the Colossus.
+- **What changed.** One table of corrections after the measured rule (`js/meshy3d.js` `FIT_ADJ`), per weapon item and chassis
+  class, [Common, Rare, Epic hull]; uniform scale only, 1 where the rule was already right (Pulse Cannon, Storm Repeater,
+  Helix Repeater and the Moonbeam are untouched on every hull except the Colossus rows named):
+
+  | Weapon | Scout class | Vanguard class | Titan class |
+  |---|---|---|---|
+  | Pulse Cannon | - | - | Colossus x1.08 |
+  | Arc Pulse | x0.93 | - | Colossus x1.08 |
+  | Nova Pulse | x0.88 | x0.86 | x0.86 (Colossus x0.88) |
+  | Twin Repeater | x1.20 | x1.25 (Paladin x1.22) | x1.28 / x1.30 / x1.30 |
+  | Storm Repeater | - | - | Colossus x1.08 |
+  | Siege Breaker | x1.06 (Phantom x1.08) | - | Colossus x0.92 |
+  | Rail Breaker | x0.86 | x0.93 (Paladin x0.95) | x1.05 / x1.08 / x1.10 |
+  | Titanfall | x0.92 | - | - |
+
+- Sheets before and after: `docs/supers-5e2b2b/weapon-fit-*` (side view of all 90 pairs; chase-camera views per class).
