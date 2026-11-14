@@ -4061,3 +4061,148 @@ Findings and what round 1 did (`fb9c664`, plus the range sound and test commits 
   add a reverse migration first (the home chassis's tables back to `up` / `gemLvl` / `gemShards`). Reverting also takes
   `PVP_V` back to 6 (phones asked to reload once more).
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check.
+
+## Checkpoint 38 — quest rewards + core points prices (branch `claude/quest-rewards-core-prices-51idq8`, from main `e22ac7e`)
+
+Brief: the owner's session prompt of Nov 14, 2026 (Opus 5.5; record every decision with evidence here; no questions to the
+owner; no live players yet, owner testing only; phone and computer equal; at most 2 review rounds; release pre-approved: PR,
+merge on green checks, deploy, release record). The owner set every number; this session applies them and reports what they give.
+Not touched: money prices (Stars / TON / SOL), weapon caches and chassis crates (20,000 / 80,000 points), the streak bonus, pass
+XP, the daily cap, the all-4 bonus (1,000), the weekly chest (5,000), free caches (no new ones), payments (still disabled).
+
+### The owner's numbers, as shipped (`js/rules.js`)
+| Rule | Before (main `e22ac7e`) | After |
+|---|---:|---:|
+| Every daily quest (Easy, Medium, Hard) | 500 | **3,500** (`DQ_PTS`) |
+| Every weekly quest (all 16 in the pool, plus the 6 legacy ids still readable) | 2,500-5,000 | **12,500** (`WQ_Q_PTS`) |
+| All-4 daily bonus / weekly chest | 1,000 / 5,000 | 1,000 / 5,000 (unchanged) |
+| Random gem cache, points a Star (`GEM_PTS_STAR`) | 24 | **120** |
+| Common / Rare / Epic gem cache (250 / 500 / 1,500 Stars) | 6,000 / 12,000 / 36,000 | **30,000 / 60,000 / 180,000** |
+| Chosen core, points a Star of the same cache's price (`CORE_PTS_STAR`, new) | 36 (1.5 x 24) | **175** |
+| Chosen core Common / Rare / Epic | 9,000 / 18,000 / 54,000 | **43,750 / 87,500 / 262,500** |
+| Chosen core in Stars | 375 / 750 / 2,250 (1.5x the cache) | unchanged (`CORE_X` 1.5 now applies to money only) |
+| Weapon cache / chassis crate for points | 20,000 / 80,000 | unchanged |
+- `corePts(ri) = RSTARS[ri] x CORE_PTS_STAR`; the chosen core's points price no longer derives from `GEM_PTS x CORE_X`. The
+  money price (`ecoPrice` kind `core`) still uses `CORE_X`, so the Stars invoice is unchanged (tested: 2,250 Stars for an Epic).
+- Quest points are paid through `ecoAward(..., free)`, outside the 50,000 daily cap, exactly as before (no rule change); the login
+  streak's +5%..+30% applies to the new amounts as it did to the old ones.
+- The server charges and pays from the same `js/rules.js` (bundled into the Worker), so phone and server agree; no protocol
+  change, `PVP_V` stays 7. The release bumps the build so phones reload the new prices.
+
+### Shown in the game (item 5)
+- Quest cards, the all-4 row and the weekly chest read their numbers from the rules (no copy change needed); Points shop gem caches
+  (30K / 60K / 180K), "Chosen core ... from 43,750", the Epic cache sheet ("Use 180,000 points"), the Store sheet's "Or 180,000
+  points in the Points shop" and the chosen-core rows read `GEM_PTS` / `corePts` too.
+- Copy changed: the chosen-core sheet (points) now says "Costs 175 points a Star of a gem cache's price, where a random cache
+  costs 120" (it said 1.5x, which is no longer true in points: 175 / 120 = 1.46x); the Store sheet keeps "1.5x the full price"
+  (money). The shop's Odds help line says 1.5x the Stars price, 175 a Star instead of 120 in points.
+- Wiki: the Quests paragraph now lists 3,500 a daily, 1,000 for all four, 12,500 a weekly, 5,000 for the chest; the Cores
+  paragraph and the Points shop prices line carry the new prices and "about 12 weeks".
+- A chosen-core tile for a core already at level 5 still shows "Max" and opens nothing (Store and Points shop; tested).
+
+### The 12-week model (`node dev/tools/chassis-kit-model.mjs --json docs/economy/chassis-kit-model.json`)
+Changes to the tool: the target is 84 days; it no longer searches for a rate (the owner set the numbers; it reports them, with a
+sensitivity sweep marked "not applied"); `--rules <file>` runs it on another `rules.js` (the before column ran it on main's);
+a Conquest mode (below). Everything else (the pilot, the policy, five seeds 1-5, the measured match lengths) is Checkpoint 37's.
+**Check of the tool:** on main's rules it gives 52 days (49-56) / 158 days for the 20-minute pilot, exactly Checkpoint 37's table.
+
+**Result: the reference pilot (20 minutes of Arcade a day plus the four dailies) kits the first chassis in 83 days (77-97 over
+five seeds): 1 day under the 84-day target.** The owner's pre-check (about 83, 77-97) is reproduced exactly. All three: 249 days.
+
+| Minutes of matches a day | Points a day before | First chassis before | All three before | Points a day after | **First chassis after** | All three after |
+|---:|---:|---:|---:|---:|---:|---:|
+| 10 | 11,600 | 67 days (61-74) | 194 | 32,000 | 96 days (91-104) | 294 |
+| 15 | 13,300 | 61 days (52-66) | 174 | 33,800 | 87 days (84-93) | 271 |
+| **20 (reference)** | **15,100** | **52 days (49-56)** | **158** | **35,500** | **83 days, 11.9 weeks (77-97)** | **249 (236-274)** |
+| 30 | 18,600 | 42 days (40-46) | 133 | 39,200 | 79 days (76-82) | 243 |
+| 45 | 24,300 | 35 days (28-38) | 108 | 44,400 | 75 days (63-79) | 233 |
+| 60 | 29,300 | 29 days (27-32) | 88 | 50,500 | 68 days (64-73) | 202 |
+| *Light: 5 min, 2 dailies, 1 weekly* | *4,500* | *175 days* | *512* | *14,000* | *221 days (198-252)* | *663* |
+| *Light: 10 min, 2 dailies, 1 weekly* | *6,300* | *136 days* | *385* | *16,000* | *196 days (176-214)* | *589* |
+
+Where the 20-minute pilot's points come from (seed 7, the whole run): **quests 74%** (was 40%), matches 21% (was 48%), the chest
+3%, the daily reward 2%, the pass 1%. Spending (seed 7, three chassis): build 187,500, gem caches 8.1 M, chosen cores 2.5 M.
+
+**What this means (reported, numbers unchanged as the brief says):**
+1. The target is met for the reference pilot (83 vs 84 days; the seed range 77-97 is wide because a 180,000-point Epic cache is a
+   big step and its rolls land on maxed cores 0-30% of the time).
+2. **Play time now matters much less than the daily quests.** With quests at 74% of income, 10 minutes a day takes 96 days and
+   60 minutes 68 days (1.4x faster for 6x the play; before it was 2.3x). This rewards coming back every day (good for retention)
+   but gives a long-session player little extra; the quests also need Arcade matches to finish, which the model does not charge
+   time for (it counts all four done even at 10 minutes).
+3. A light pilot (the owner's own pace) takes 28-32 weeks for one chassis, longer than before (25 weeks), because cores now cost
+   5x while the light pilot only collects half the dailies.
+4. Sensitivity (not applied): gem rate 80 / 100 / 120 / 140 / 160 a Star (chosen core at the same 175:120 ratio) gives 72 / 79 /
+   83 / 96 / 99 days. The curve is noisy at this step size.
+
+### Conquest check (item 4; report only, no numbers changed)
+The same pilot spends the 20 minutes in Conquest instead of Arcade. Rate: the Rare kit's Conquest points a minute,
+**259.8 base points a minute at Rookie, no base** (`docs/economy/economy-model.json` `conquestPpm.rare`; RESOURCE_ECONOMY.md 3.3:
+modeled from par minutes, **not measured** with a scripted pilot; the Arcade side of the same table, measured, is 268.8), times
+the Command Base multiplier, plus that tier's Daily Base Yield points, credited as `eco.js creditConquest` does (league base pay,
+then the league bonus, through `ecoPlayAward`). **Typical level: Command Base III** (CC5-6, x1.15, yield 1,800 a day), the middle
+column of the economy table. Conquest gives no match pass XP (only quests do); the dailies and weeklies are still counted done.
+
+| 20 minutes a day in | Points a day | First chassis | All three |
+|---|---:|---:|---:|
+| **Arcade (reference)** | 35,500 | **83 days (77-97)** | 249 days |
+| Conquest, no Command Base | 39,400 | 85 days (78-97) | 248 days |
+| **Conquest, Command Base III (typical)** | 45,000 | **75 days (66-89)** | 223 days |
+| Conquest, Command Base V | 47,700 | 71 days (68-75) | 209 days |
+(Before, on main's numbers: Arcade 52 days; Conquest no base 48, Base III 37, Base V 34.)
+A Base III Conquest pilot kits a chassis about 8 days sooner than the Arcade pilot: Conquest's modeled rate has no VS-screen /
+results overhead and no losses (par minutes assume completed operations), and the base adds 15% plus the yield. Caveat: the
+Conquest-only pilot could not finish Arcade dailies (they count Arcade matches), so a real Conquest pilot also plays a few Arcade
+matches; the model gives both runs the same four dailies.
+
+### Independent reviews, round 1 (two read-only agents that did not build; given the branch, head `fcf87a9`, the brief and this checkpoint)
+| Owner rule | Economy / security | Gameplay / UI | After round 1 |
+|---|---|---|---|
+| 1 Quests: 3,500 a daily, 12,500 a weekly; all-4 1,000 and chest 5,000 unchanged; streak, pass XP, cap unchanged | **PASS** (probe on the server's rules: 3,500 / 1,000 / 12,500 / 5,000; streak +5% -> 3,675 / 13,125 / 5,250, +30% -> 4,550 / 16,250 / 6,500; pass XP 50 / 100 / 150, `DAILY_CAP` 50,000 and `QB_*` equal to main; quests stay outside the cap) | **PASS** (cards +3,500 x4, +12,500 x5, +1,000, chest 5,000; a claim paid 3,500 on the server) | |
+| 2 Core prices 120 / 175 a Star; money, crates, free caches unchanged | **PASS** (`ecoPrice` main vs head, 270 cases, 0 differences; grant money counts, refunds and the Stars invoice path unchanged; `RPTS` 20,000 / 80,000) | **PASS** on screen (30K / 60K / 180K; 43,750 / 87,500 / 262,500; Stars 250 / 500 / 1,500 and 375 / 750 / 2,250) | |
+| 3 12-week model, before/after table | **PASS** (re-run: 83 days (77-97), 249; on main's rules 52 (49-56), 158; JSON identical) | | |
+| 4 Conquest run, report only | **PASS with caveats** (method equals `creditConquest`; the rate is modeled; the run counts Arcade dailies) | | caveats stated above (already in the Conquest section) |
+| 5 Every shown number and its tests; "Max" tile | | **PASS** (no old number left in js/, web/, index.html, wiki, admin, terms, worker; Max works on both tabs) | |
+| 6 Captures, phone and desktop | | **PARTIAL FAIL**: the four wiki captures were taken mid smooth-scroll (one blank) | **fixed** (`dbc6c66` + re-capture): smooth scroll off in the test, the prices paragraph checked on screen; 35 captures in `docs/quest-prices-38/` |
+
+Findings and what round 1 did:
+1. **(Economy, major; owner decision, NOT changed: the brief says everything else stays.) Quest points also feed the referral 5%
+   and the airdrop score, outside the daily cap** (`ecoClaimDaily` / `ecoClaimWeekly` pay through `ecoAward(..., free)`;
+   `ecoRefTrack` counts them in the referrer's base; `credit()` moves them into `S.ac`). One account doing the four dailies at
+   +30% now earns 19,500 a day (was 3,900); a referrer's 5% per recruit rises from 195 to 975 a day, so about 3 farmed alt accounts
+   reach the 2,000-a-day 5% cap (was about 11). Quests are 74% of a daily pilot's points, so the airdrop pool mostly rewards
+   finishing dailies, which suits multi-account farms. **Owner decision needed:** keep, or count quest points at a lower weight
+   (or not at all) for the referral 5% and the airdrop score. No live players yet, so nothing is exposed today.
+2. (Economy, minor) The model completes all four dailies every day; at 20 minutes (about 9.3 matches) some Hard dailies ("Win 6",
+   "Win 3 in a row") often can't be finished, so 83 days is a best case unless "plus the daily quests" means extra time. Stated.
+3. (Economy, minor) The Conquest run counts Arcade dailies for a Conquest-only pilot; stated in the Conquest section.
+4. (Economy, minor) The build was not bumped on the branch: a cached phone would show the old prices while the server charges the
+   new. **Done at release** (`dev/bump.sh`), below.
+5. (Economy, minor) The six legacy weekly ids (`WQ_OLD`) now pay 12,500 too; unreachable (`S.wk` is rebuilt every week). Kept.
+6. (UI, minor) Fixed: the all-4 and chest rows are now captured on phones (`*_quests_bonus`, `*_quests_chest`); the points
+   chosen-core sheet now says "Costs about 1.46x the points of a random gem cache of the same size" (the 175 / 120 a Star wording
+   had no unit there); the Points shop header says "from 43,750 points"; the Odds help line "about 1.46x in points"; the test now
+   taps the Points shop's Max tile too.
+7. (UI, minor; not changed) "Use 180,000 points (you have 12,345,678)" fills a 320 px button at 8-digit balances (no overflow).
+8. (UI, pre-existing on main, not changed) The wiki scrolls sideways on phones (two wide tables); outside this brief.
+No round 2: no blocker; every fix is covered by a test and re-captured in the same run.
+
+### Tests (local, this branch)
+- Node, all PASS: `wtest/test` 204 (new: the owner's quest rewards pinned; dailies + all-4 paid once at 3,500), `wtest/chassis`
+  68 (new: gem caches 30,000 / 60,000 / 180,000 at 120 a Star; chosen cores 43,750 / 87,500 / 262,500 at 175 a Star; money
+  prices and crate points prices unchanged), `wtest/pvp` 133, `wtest/farm` 55, `wtest/owner` 81, `wtest/referrals` 29,
+  `wtest/lab`, `lab-battle`, `lab-parity`, `range`, `range-comparison`, `wtest/conquest`, `wtest/conquest-airdrop` 20,
+  `conquest-airdrop` 30, `wtest/hull-plating` 24, `web-auth`, `lunar-identity`, `accounts` 18, `ticket-reliability` 37,
+  `conquest-economy`, `conquest-session`, `web-login`, `gear-balance`, `gear-combat`, `combat-balance` 2,594, `fair-arcade`
+  11,665, `super-aim` 48, `super-timing` 335, `lab-ui`, `garage-rules`, `gem-ui`, `velocity`, `conquest-regression.sh`.
+- Browser (Chromium): `chassis-ui.py` PASS (its pinned prices moved to the new numbers), new `quest-prices-ui.py` PASS (quest cards,
+  a server claim paying 3,500, Points shop, Store, both sheets, the Max tile on both tabs, the wiki; 320 / 390 / 1366; captures at
+  scale 2 in `docs/quest-prices-38/`). One run of it at scale 2 under a parallel test load missed the claim's 6 s wait; the wait is
+  now 12 s a tap (first tap succeeded in every other run).
+- Build bumped to `20261114200718` (`dev/bump.sh`) so phones reload the new prices.
+
+### Agents used (AGENTS.md)
+1. Economy / security reviewer: all four economy rules PASS; found the referral / airdrop effect of quest points (owner decision)
+   and the missing build bump (done). Changed the result: yes (the release bumps the build; a decision is surfaced).
+2. Gameplay / UI reviewer: rules 1, 2, 5 PASS, rule 6 partial fail (wiki captures mid-scroll). Changed the result: yes (fixed
+   captures, clearer copy with units, one more test check).

@@ -3,7 +3,7 @@
 #  1. the Shop has a Store / Points shop switch; the Store has no salvage yard; both have "Cores for" (owned chassis only), the gem
 #     caches and the seven chosen cores; the Points shop has every gem cache for points (Epic too) at one points-per-Star rate,
 #     chosen cores, weapon / chassis crates for points, the salvage yard and the per-chassis builds;
-#  2. buying with points lands on the chassis picked: an Epic gem cache (36,000) for the Titan, a Rare chosen core for the Titan;
+#  2. buying with points lands on the chassis picked: an Epic gem cache (180,000) for the Titan, a Rare chosen core for the Titan;
 #     the Vanguard's cores never move; free caches follow the pick;
 #  3. a chosen core sold for money: the invoice names the core, the size and the chassis, at 1.5x the cache;
 #  4. the Garage: the Upgrades section shows one chassis's build with chips for every owned chassis, a level bought for the
@@ -53,7 +53,7 @@ async def main():
             await pg.click('.shopseg [data-arg=pts]'); await pg.wait_for_timeout(400)
             ps = await pg.evaluate("""()=>({gem:[...document.querySelectorAll('[data-act=ptscrate][data-arg^="gem:"] .p')].map(e=>e.textContent),gear:document.querySelectorAll('[data-act=ptscrate]:not([data-arg^="gem:"])').length,
               salv:document.querySelectorAll('[data-act=salvage]').length,picks:document.querySelectorAll('.cpick').length,builds:document.querySelectorAll('.ptsbuilds>div').length,bal:(document.querySelector('.shopseg [data-arg=pts] small')||{}).textContent,card:!!document.querySelector('.ptsbal')})""")
-            ok(ps['gem'] == ['6K', '12K', '36K'] and ps['gear'] == 4 and ps['salv'] == 4 and ps['picks'] == 7 and ps['builds'] == 3 and 'points' in (ps['bal'] or '') and not ps['card'], nm + ': the Points shop: gem caches 6K / 12K / 36K (Epic too), 4 gear crates, the salvage yard, chosen cores, 3 builds, the balance once (in its tab) ' + json.dumps(ps))
+            ok(ps['gem'] == ['30K', '60K', '180K'] and ps['gear'] == 4 and ps['salv'] == 4 and ps['picks'] == 7 and ps['builds'] == 3 and 'points' in (ps['bal'] or '') and not ps['card'], nm + ': the Points shop: gem caches 30K / 60K / 180K (Epic too), 4 gear crates, the salvage yard, chosen cores, 3 builds, the balance once (in its tab) ' + json.dumps(ps))
             ok(not await wide(pg), nm + ': Points shop fits the width ' + json.dumps(await wide(pg)))
             await pg.evaluate("()=>{document.querySelector('#screen')&&(document.querySelector('#screen').scrollTop=0);scrollTo(0,0);}"); await pg.wait_for_timeout(100)
             await pg.screenshot(path=OUT + nm + '_points_top.png')
@@ -74,17 +74,17 @@ async def main():
         await pg.screenshot(path=OUT + 'phone_points_epic_sheet.png')
         await pg.click('[data-act=buypts][data-arg="gem:2"]'); await pg.wait_for_function("save.pts<%d" % before['pts'], timeout=15000); await pg.wait_for_timeout(400)
         after = await pg.evaluate("()=>({pts:save.pts,t:JSON.stringify([save.glc.titan,save.gsc.titan]),v:JSON.stringify([save.glc.vanguard,save.gsc.vanguard])})")
-        ok(before['pts'] - after['pts'] == 36000 and after['t'] != before['t'] and after['v'] == before['v'], 'an Epic gem cache for 36,000 points: shards for the Titan, the Vanguard untouched ' + json.dumps([before['pts'], after['pts']]))
+        ok(before['pts'] - after['pts'] == 180000 and after['t'] != before['t'] and after['v'] == before['v'], 'an Epic gem cache for 180,000 points: shards for the Titan, the Vanguard untouched ' + json.dumps([before['pts'], after['pts']]))
         await pg.screenshot(path=OUT + 'phone_reveal_epic.png')
         await pg.evaluate("()=>{closeAll();}"); await pg.wait_for_timeout(300)
         await pg.evaluate("()=>document.querySelector('.cpick[data-arg=\"rof:p\"]').scrollIntoView({block:'center'})"); await pg.click('.cpick[data-arg="rof:p"]'); await pg.wait_for_timeout(400)
         sheet = await pg.evaluate("()=>({h:document.querySelector('.sheet h3').textContent,rows:document.querySelectorAll('.cprow').length,btn:[...document.querySelectorAll('[data-act=buycorepts]')].map(b=>b.textContent)})")
-        ok('Fire rate core for your Titan' in sheet['h'] and sheet['rows'] == 3 and sheet['btn'] == ['9,000', '18,000', '54,000'], 'the chosen-core sheet (points): the core, the chassis, three sizes at 9,000 / 18,000 / 54,000 ' + json.dumps(sheet))
+        ok('Fire rate core for your Titan' in sheet['h'] and sheet['rows'] == 3 and sheet['btn'] == ['43,750', '87,500', '262,500'], 'the chosen-core sheet (points): the core, the chassis, three sizes at 43,750 / 87,500 / 262,500 ' + json.dumps(sheet))
         await pg.screenshot(path=OUT + 'phone_corepick_points.png')
         b2 = await pg.evaluate("()=>({pts:save.pts,s:(save.gsc.titan.rof|0)+100*save.glc.titan.rof,v:JSON.stringify(save.gsc.vanguard)})")
         await pg.click('[data-act=buycorepts][data-arg="rof:1"]'); await pg.wait_for_function("save.pts<%d" % b2['pts'], timeout=15000); await pg.wait_for_timeout(300)
         a2 = await pg.evaluate("()=>({pts:save.pts,s:(save.gsc.titan.rof|0)+100*save.glc.titan.rof,v:JSON.stringify(save.gsc.vanguard)})")
-        ok(b2['pts'] - a2['pts'] == 18000 and a2['s'] != b2['s'] and a2['v'] == b2['v'], 'a Rare chosen core: 18,000 points, 4 Fire rate shards on the Titan ' + json.dumps([b2, a2]))
+        ok(b2['pts'] - a2['pts'] == 87500 and a2['s'] != b2['s'] and a2['v'] == b2['v'], 'a Rare chosen core: 87,500 points, 4 Fire rate shards on the Titan ' + json.dumps([b2, a2]))
         await pg.evaluate("()=>closeAll()"); await pg.wait_for_timeout(300)
         # 4. a chosen core for money: the invoice names the core, the size and the chassis, at 1.5x the cache
         await pg.evaluate("()=>{save.termsOk=true;save.payCur='stars';store();closeAll();shopTab='store';setTab('shop');}"); await pg.wait_for_timeout(300)

@@ -434,13 +434,15 @@ const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
 // Gem caches with points (Session 5E-2b3, owner Nov 14: "cores are bought with points using the same gem caches as the paid version,
 // Epic included; the amount of points equals the amount of money: one fixed points-per-Star rate for every gem cache"). GEM_PTS_STAR
-// is that rate, set by the 8-week model (docs/economy/chassis-kit-model.json, Checkpoint 37): a free pilot who plays every day kits
-// one chassis (14 upgrade levels and all seven cores at level 5) in about 8 weeks. Weapon caches and chassis crates keep RPTS.
+// is that rate. Owner's numbers (Nov 14, 2026, Checkpoint 38): 120 points a Star for a random gem cache, CORE_PTS_STAR = 175 a Star
+// (of the same cache's Stars price) for a chosen core; the 12-week model (docs/economy/chassis-kit-model.json) reports what they
+// give: a free pilot who plays 20 minutes a day plus the daily quests kits one chassis (14 upgrade levels and all seven cores at
+// level 5) in about 12 weeks. Weapon caches and chassis crates keep RPTS.
 // A gem cache or chosen core bought with points does not raise that day's money price (the +25% a buy counts money buys only).
 // The chosen core (owner-approved): pick the core and the chassis; CORE_N shards of it (the top of the cache's range) for CORE_X
-// times the cache's price, in points and in money, so no roll can land on a core you have already maxed.
-const GEM_PTS_STAR=24,GEM_PTS=RSTARS.map(s=>s*GEM_PTS_STAR),CORE_X=1.5,CORE_N=[2,4,14];   // 6,000 / 12,000 / 36,000 points; chosen cores 9,000 / 18,000 / 54,000
-const corePts=ri=>Math.round(GEM_PTS[ri]*CORE_X);
+// times the cache's money price, and CORE_PTS_STAR points a Star in points, so no roll can land on a core you have already maxed.
+const GEM_PTS_STAR=120,CORE_PTS_STAR=175,GEM_PTS=RSTARS.map(s=>s*GEM_PTS_STAR),CORE_X=1.5,CORE_N=[2,4,14];   // 30,000 / 60,000 / 180,000 points; chosen cores 43,750 / 87,500 / 262,500
+const corePts=ri=>Math.round(RSTARS[ri]*CORE_PTS_STAR);   // points: CORE_PTS_STAR a Star of the same cache's price. Money: CORE_X (1.5x) the cache's price
 // Lunar Skin: owner-set price (Nov 2, 2026), just under Moonbeam's: measured with human pilots its edge alone (59.3%) is a
 // little below Moonbeam's alone (62.0%) (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
 const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=45;
@@ -486,62 +488,65 @@ const MS_BY={};QUESTS.forEach(q=>MS_BY[q.id]=q);
 // daily quests: 4 a day (2 easy, 1 medium, 1 hard), picked per player per day; finish all 4 for a bonus.
 // 1 free swap a day (2 with the premium pass). Weekly: 5 quests a week, plus a chest for claiming 20 dailies.
 // Your login streak boosts every quest's points (ecoBoost). Stats come from each finished match (ecoAfterMatch).
-// every daily quest pays 500 points (Easy, Medium and Hard alike), before the quest streak bonus
+// every daily quest pays DQ_PTS (Easy, Medium and Hard alike), before the quest streak bonus; every weekly quest pays WQ_Q_PTS.
+// Owner's numbers (Nov 14, 2026, Checkpoint 38): 3,500 a daily and 12,500 a weekly (were 500 and 2,500-5,000); the all-4 bonus
+// (DQ_ALL_BONUS) and the weekly chest (WQ_PTS) are unchanged
+const DQ_PTS=3500,WQ_Q_PTS=12500;
 const DQ_POOL=[
- {id:'play4',lv:0,t:'Play 4 matches',goal:4,pts:500,st:'plays'},
- {id:'win2',lv:0,t:'Win 2 matches',goal:2,pts:500,st:'wins'},
- {id:'box3',lv:0,t:'Grab 3 mystery boxes',goal:3,pts:500,st:'boxes'},
- {id:'sup3',lv:0,t:'Fire 3 supers',goal:3,pts:500,st:'sups'},
- {id:'dmg6k',lv:0,t:'Deal 6,000 damage',goal:6000,pts:500,st:'dmg'},
- {id:'kill4',lv:0,t:'Destroy 4 enemy tanks',goal:4,pts:500,st:'kills'},
- {id:'feat1',lv:0,t:'Play a featured-mode match',goal:1,pts:500,st:'featured'},
- {id:'quick1',lv:0,t:'Play a Quick Match',goal:1,pts:500,st:'quick'},
- {id:'win4',lv:1,t:'Win 4 matches',goal:4,pts:500,st:'wins'},
- {id:'kill10',lv:1,t:'Destroy 10 enemy tanks',goal:10,pts:500,st:'kills'},
- {id:'dmg15k',lv:1,t:'Deal 15,000 damage',goal:15000,pts:500,st:'dmg'},
- {id:'kill4m',lv:1,t:'Destroy 4 tanks in one match',goal:4,pts:500,st:'kills',mx:1},
- {id:'nodie',lv:1,t:'Win without being destroyed',goal:1,pts:500,st:'cleanWins'},
- {id:'zwin',lv:1,t:'Win a Moon Zone match',goal:1,pts:500,st:'zoneWins'},
- {id:'cap3',lv:1,t:'Capture the Moon Zone 3 times',goal:3,pts:500,st:'caps'},
- {id:'cry10',lv:1,t:'Collect 10 crystals in Crystal Rush',goal:10,pts:500,st:'crystals'},
- {id:'bnt5',lv:1,t:'Earn 5 bounty stars',goal:5,pts:500,st:'stars'},
- {id:'top3',lv:1,t:'Finish top 3 in Last Standing',goal:1,pts:500,st:'top3'},
- {id:'twin',lv:1,t:'Win a 2v2 or 3v3 match',goal:1,pts:500,st:'teamWins'},
- {id:'ovpw',lv:1,t:'Win a match on Overpass',goal:1,pts:500,st:'ovpWins'},
- {id:'win6',lv:2,t:'Win 6 matches',goal:6,pts:500,st:'wins'},
- {id:'row3',lv:2,t:'Win 3 matches in a row',goal:3,pts:500,st:'streak',mx:1},
- {id:'nodie2',lv:2,t:'Win 2 matches without being destroyed',goal:2,pts:500,st:'cleanWins'},
- {id:'sweep',lv:2,t:'Win a 1v1 Arena match 2-0',goal:1,pts:500,st:'sweeps'},
- {id:'ls1',lv:2,t:'Win a Last Standing match',goal:1,pts:500,st:'royaleWins'},
- {id:'featw3',lv:2,t:'Win 3 featured-mode matches',goal:3,pts:500,st:'featWins'},
- {id:'bntw2',lv:2,t:'Win 2 Bounty matches',goal:2,pts:500,st:'bountyWins'},
- {id:'cryw2',lv:2,t:'Win 2 Crystal Rush matches',goal:2,pts:500,st:'crystalWins'}];
+ {id:'play4',lv:0,t:'Play 4 matches',goal:4,pts:DQ_PTS,st:'plays'},
+ {id:'win2',lv:0,t:'Win 2 matches',goal:2,pts:DQ_PTS,st:'wins'},
+ {id:'box3',lv:0,t:'Grab 3 mystery boxes',goal:3,pts:DQ_PTS,st:'boxes'},
+ {id:'sup3',lv:0,t:'Fire 3 supers',goal:3,pts:DQ_PTS,st:'sups'},
+ {id:'dmg6k',lv:0,t:'Deal 6,000 damage',goal:6000,pts:DQ_PTS,st:'dmg'},
+ {id:'kill4',lv:0,t:'Destroy 4 enemy tanks',goal:4,pts:DQ_PTS,st:'kills'},
+ {id:'feat1',lv:0,t:'Play a featured-mode match',goal:1,pts:DQ_PTS,st:'featured'},
+ {id:'quick1',lv:0,t:'Play a Quick Match',goal:1,pts:DQ_PTS,st:'quick'},
+ {id:'win4',lv:1,t:'Win 4 matches',goal:4,pts:DQ_PTS,st:'wins'},
+ {id:'kill10',lv:1,t:'Destroy 10 enemy tanks',goal:10,pts:DQ_PTS,st:'kills'},
+ {id:'dmg15k',lv:1,t:'Deal 15,000 damage',goal:15000,pts:DQ_PTS,st:'dmg'},
+ {id:'kill4m',lv:1,t:'Destroy 4 tanks in one match',goal:4,pts:DQ_PTS,st:'kills',mx:1},
+ {id:'nodie',lv:1,t:'Win without being destroyed',goal:1,pts:DQ_PTS,st:'cleanWins'},
+ {id:'zwin',lv:1,t:'Win a Moon Zone match',goal:1,pts:DQ_PTS,st:'zoneWins'},
+ {id:'cap3',lv:1,t:'Capture the Moon Zone 3 times',goal:3,pts:DQ_PTS,st:'caps'},
+ {id:'cry10',lv:1,t:'Collect 10 crystals in Crystal Rush',goal:10,pts:DQ_PTS,st:'crystals'},
+ {id:'bnt5',lv:1,t:'Earn 5 bounty stars',goal:5,pts:DQ_PTS,st:'stars'},
+ {id:'top3',lv:1,t:'Finish top 3 in Last Standing',goal:1,pts:DQ_PTS,st:'top3'},
+ {id:'twin',lv:1,t:'Win a 2v2 or 3v3 match',goal:1,pts:DQ_PTS,st:'teamWins'},
+ {id:'ovpw',lv:1,t:'Win a match on Overpass',goal:1,pts:DQ_PTS,st:'ovpWins'},
+ {id:'win6',lv:2,t:'Win 6 matches',goal:6,pts:DQ_PTS,st:'wins'},
+ {id:'row3',lv:2,t:'Win 3 matches in a row',goal:3,pts:DQ_PTS,st:'streak',mx:1},
+ {id:'nodie2',lv:2,t:'Win 2 matches without being destroyed',goal:2,pts:DQ_PTS,st:'cleanWins'},
+ {id:'sweep',lv:2,t:'Win a 1v1 Arena match 2-0',goal:1,pts:DQ_PTS,st:'sweeps'},
+ {id:'ls1',lv:2,t:'Win a Last Standing match',goal:1,pts:DQ_PTS,st:'royaleWins'},
+ {id:'featw3',lv:2,t:'Win 3 featured-mode matches',goal:3,pts:DQ_PTS,st:'featWins'},
+ {id:'bntw2',lv:2,t:'Win 2 Bounty matches',goal:2,pts:DQ_PTS,st:'bountyWins'},
+ {id:'cryw2',lv:2,t:'Win 2 Crystal Rush matches',goal:2,pts:DQ_PTS,st:'crystalWins'}];
 const DQ_SLOTS=[0,0,1,2],DQ_LV=['Easy','Medium','Hard'],DQ_ALL_BONUS=1000,DQ_SWAPS=1;
 // Weekly quests are the same for every pilot: the first WQ_FIXED every week, plus WQ_N-WQ_FIXED picked by the week.
 // u: counts different values (days played, modes won), not a total. mx: best single match (or current win streak).
 // pd: on how many different days you reached pd of it (N a day on M days); goal counts days
 const WQ_POOL=[
- {id:'wdays',t:'Play on 5 different days',goal:5,pts:3000,st:'day',u:1},
- {id:'wquick30',t:'Play 30 Quick Matches',goal:30,pts:5000,st:'quick'},
- {id:'wwin20',t:'Win 20 matches',goal:20,pts:4000,st:'wins'},
- {id:'wplay35',t:'Play 35 matches',goal:35,pts:3500,st:'plays'},
- {id:'wkill50',t:'Destroy 50 enemy tanks',goal:50,pts:3000,st:'kills'},
- {id:'wdmg',t:'Deal 80,000 damage',goal:80000,pts:3000,st:'dmg'},
- {id:'wmodes',t:'Win in 4 different modes',goal:4,pts:3000,st:'winMode',u:1},
- {id:'wzone6',t:'Win 6 Moon Zone matches',goal:6,pts:3000,st:'zoneWins'},
- {id:'wteam8',t:'Win 8 team matches (2v2 or 3v3)',goal:8,pts:3000,st:'teamWins'},
- {id:'wls3d',t:'Win Last Standing on 3 different days',goal:3,pts:4000,st:'royaleWins',pd:1},
- {id:'wrow5',t:'Win 5 matches in a row',goal:5,pts:3000,st:'streak',mx:1},
- {id:'wfeat16',t:'Play 16 featured-mode matches',goal:16,pts:4000,st:'featured'},
- {id:'wsup60',t:'Fire 60 supers',goal:60,pts:3500,st:'sups'},
- {id:'wbox30',t:'Grab 30 mystery boxes',goal:30,pts:2500,st:'boxes'},
- {id:'wclean4d',t:'Win 2 matches without being destroyed on 4 different days',goal:4,pts:4000,st:'cleanWins',pd:2},
- {id:'wcap30',t:'Capture the Moon Zone 30 times',goal:30,pts:4000,st:'caps'}];
+ {id:'wdays',t:'Play on 5 different days',goal:5,pts:WQ_Q_PTS,st:'day',u:1},
+ {id:'wquick30',t:'Play 30 Quick Matches',goal:30,pts:WQ_Q_PTS,st:'quick'},
+ {id:'wwin20',t:'Win 20 matches',goal:20,pts:WQ_Q_PTS,st:'wins'},
+ {id:'wplay35',t:'Play 35 matches',goal:35,pts:WQ_Q_PTS,st:'plays'},
+ {id:'wkill50',t:'Destroy 50 enemy tanks',goal:50,pts:WQ_Q_PTS,st:'kills'},
+ {id:'wdmg',t:'Deal 80,000 damage',goal:80000,pts:WQ_Q_PTS,st:'dmg'},
+ {id:'wmodes',t:'Win in 4 different modes',goal:4,pts:WQ_Q_PTS,st:'winMode',u:1},
+ {id:'wzone6',t:'Win 6 Moon Zone matches',goal:6,pts:WQ_Q_PTS,st:'zoneWins'},
+ {id:'wteam8',t:'Win 8 team matches (2v2 or 3v3)',goal:8,pts:WQ_Q_PTS,st:'teamWins'},
+ {id:'wls3d',t:'Win Last Standing on 3 different days',goal:3,pts:WQ_Q_PTS,st:'royaleWins',pd:1},
+ {id:'wrow5',t:'Win 5 matches in a row',goal:5,pts:WQ_Q_PTS,st:'streak',mx:1},
+ {id:'wfeat16',t:'Play 16 featured-mode matches',goal:16,pts:WQ_Q_PTS,st:'featured'},
+ {id:'wsup60',t:'Fire 60 supers',goal:60,pts:WQ_Q_PTS,st:'sups'},
+ {id:'wbox30',t:'Grab 30 mystery boxes',goal:30,pts:WQ_Q_PTS,st:'boxes'},
+ {id:'wclean4d',t:'Win 2 matches without being destroyed on 4 different days',goal:4,pts:WQ_Q_PTS,st:'cleanWins',pd:2},
+ {id:'wcap30',t:'Capture the Moon Zone 30 times',goal:30,pts:WQ_Q_PTS,st:'caps'}];
 const WQ_N=5,WQ_FIXED=2,PASS_XP_WQ=150,WQ_GOAL=20,WQ_PTS=5000;   // WQ_GOAL dailies open the weekly chest
 // weekly quests from before Oct 19, 2026 (per-pilot lists): kept only so a list started that week still shows. Safe to delete after Oct 26
-const WQ_OLD=[{id:'wls2',t:'Win 2 Last Standing matches',goal:2,pts:1250,st:'royaleWins'},{id:'wquick8',t:'Play 8 Quick Matches',goal:8,pts:1000,st:'quick'},
- {id:'wfeat8',t:'Play 8 featured-mode matches',goal:8,pts:1000,st:'featured'},{id:'wsup25',t:'Fire 25 supers',goal:25,pts:750,st:'sups'},
- {id:'wclean5',t:'Win 5 matches without being destroyed',goal:5,pts:1000,st:'cleanWins'},{id:'wcap15',t:'Capture the Moon Zone 15 times',goal:15,pts:1000,st:'caps'}];
+const WQ_OLD=[{id:'wls2',t:'Win 2 Last Standing matches',goal:2,pts:WQ_Q_PTS,st:'royaleWins'},{id:'wquick8',t:'Play 8 Quick Matches',goal:8,pts:WQ_Q_PTS,st:'quick'},
+ {id:'wfeat8',t:'Play 8 featured-mode matches',goal:8,pts:WQ_Q_PTS,st:'featured'},{id:'wsup25',t:'Fire 25 supers',goal:25,pts:WQ_Q_PTS,st:'sups'},
+ {id:'wclean5',t:'Win 5 matches without being destroyed',goal:5,pts:WQ_Q_PTS,st:'cleanWins'},{id:'wcap15',t:'Capture the Moon Zone 15 times',goal:15,pts:WQ_Q_PTS,st:'caps'}];
 const DQ_BY={},WQ_BY={};DQ_POOL.forEach(q=>DQ_BY[q.id]=q);WQ_POOL.concat(WQ_OLD).forEach(q=>WQ_BY[q.id]=q);
 // login streak bonus on quest points: day 2 of your streak +5%, up to +30% from day 7. Counts once today's daily reward is claimed
 const QB_STEP=0.05,QB_MAX=0.3;

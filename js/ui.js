@@ -599,7 +599,7 @@ function openCorePick(k,pts){
    return '<div class="up cprow"><div class="grow"><div class="nm" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+' pick: '+n+' shards</div><div class="d">'+(over?(over===n?'All past level 5: nothing to gain':over+' of them past level 5 (kept as surplus)'):'All '+n+' go to '+GEM[k].name)+'. A random '+TIER_N[ri].toLowerCase()+' gem cache: '+(pts?fmtNum(cache)+' points':fmtNum(cache)+' ⭐'+(now<cache?' ('+fmtNum(now)+' ⭐ with today’s deal)':''))+'.</div></div>'+
     (pts?'<button class="btn sm '+((save.pts||0)>=pr?'btn-gold':'btn-quiet')+'" data-act="buycorepts" data-arg="'+k+':'+ri+'"'+(need?'':' disabled')+'>'+coin()+fmtNum(pr)+'</button>':
      '<button class="btn sm btn-go" data-act="buycore" data-arg="'+k+':'+ri+'"'+(need&&pr?'':' disabled')+'>'+(pr?priceLabel(pr.ton,pr.stars):'Not sold')+'</button>')+'</div>';};
-  return '<div class="row cphead">'+gemIcon(k)+'<div class="grow"><h3>'+GEM[k].name+' core for your '+esc(N)+'</h3><p class="mut">Pick the core and the size: every shard goes to this core on the '+esc(N)+'. No random roll, nothing lands on a core you have already maxed. Costs 1.5× the full price of a gem cache of the same size'+(pts?'':' (deals don’t apply to chosen cores)')+'.</p></div></div>'+
+  return '<div class="row cphead">'+gemIcon(k)+'<div class="grow"><h3>'+GEM[k].name+' core for your '+esc(N)+'</h3><p class="mut">Pick the core and the size: every shard goes to this core on the '+esc(N)+'. No random roll, nothing lands on a core you have already maxed. '+(pts?'Costs about '+(CORE_PTS_STAR/GEM_PTS_STAR).toFixed(2)+'× the points of a random gem cache of the same size':'Costs 1.5× the full price of a gem cache of the same size (deals don’t apply to chosen cores)')+'.</p></div></div>'+
    '<p class="cpnow">'+esc(N)+' · level '+lv+' of 5'+(lv<5?' · '+need+' shards to level 5':' · maxed')+'</p>'+gemProgress(k,c)+
    '<div class="ups list" style="margin-top:10px">'+[0,1,2].map(row).join('')+'</div>'+
    (pts?'<p class="dimtxt" style="margin-top:8px">You have '+fmtNum(save.pts||0)+' points.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for points in the Points shop.</p>');
@@ -673,7 +673,7 @@ function renderPtsShop(){
  return '<p class="dimtxt ptsnote">Everything here is bought with points: matches, quests, the daily reward and your squad earn them.</p>'+
   sec('Cores','Per chassis')+coreForChips()+
   '<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri,true)).join('')+'</div>'+
-  '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum(corePts(0))+'</h4>'+corePickGrid(true)+
+  '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum(corePts(0))+' points</h4>'+corePickGrid(true)+
   sec('Gear')+'<div class="crates c2">'+[0,1].map(ri=>crate('weapon',ri,true)).join('')+'</div><div class="crates c2" style="margin-top:8px">'+[0,1].map(ri=>crate('chassis',ri,true)).join('')+'</div>'+
   '<p class="dimtxt" style="margin-top:6px">Epic weapons and chassis come from the Store, the Lunar Pass and packs.</p>'+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
@@ -989,7 +989,7 @@ const INFO={
  crates:()=>['Crates',[
   ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
   ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 14% stronger than Common stock, Epic 34%. Rolled power is 105–110% (Common), 119.7–125.4% (Rare), 140.7–147.4% (Epic). Legendary Moonbeam is fixed above the strongest Epic weapon.'],
-  ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 7 core types, 1 in 7 each. A chosen core skips the roll: you pick the core, for 1.5× the price.'],
+  ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 7 core types, 1 in 7 each. A chosen core skips the roll: you pick the core, for 1.5× the Stars price (about '+(CORE_PTS_STAR/GEM_PTS_STAR).toFixed(2)+'× in points).'],
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
   ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 11 to 14, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],

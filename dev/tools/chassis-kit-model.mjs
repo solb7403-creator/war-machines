@@ -1,8 +1,11 @@
-// The 8-week chassis kit model (Session 5E-2b3, owner Nov 14 2026): "a free player who plays daily fully kits one chassis (all its
-// cores and upgrades) in about 8 weeks, so all three takes about 6 months". It runs the game's own economy code (js/rules.js:
-// ecoLogin, ecoMatchPts, ecoAfterMatch, ecoClaimDaily, ecoClaimWeekly, ecoChest, ecoClaimPass, ecoUp, ecoCratePts, ecoCorePts,
-// power and leagues) day by day for a free pilot, and spends every point on the chassis being kitted. A full kit = the 14-level
-// build at its dearest (Hull, Cannon and Engine maxed, Targeting 2: 62,500 points) and all seven cores at level 5 (238 shards).
+// The chassis kit model. Session 5E-2b3 (Checkpoint 37) set it up for an 8-week target; owner, Nov 14 2026 (Checkpoint 38): the
+// target is now about 12 weeks (84 days): "a free player who plays 20 minutes a day plus the daily quests fully kits one chassis
+// (all seven cores at level 5 plus the full build) in about 12 weeks". The owner set the numbers (3,500 a daily quest, 12,500 a
+// weekly quest, 120 points a Star for a random gem cache, 175 a Star for a chosen core); this tool REPORTS what they give, it
+// does not pick a rate. It runs the game's own economy code (js/rules.js: ecoLogin, ecoMatchPts, ecoAfterMatch, ecoClaimDaily,
+// ecoClaimWeekly, ecoChest, ecoClaimPass, ecoUp, ecoCratePts, ecoCorePts, ecoPlayAward, power and leagues) day by day for a free
+// pilot, and spends every point on the chassis being kitted. A full kit = the 14-level build at its dearest (Hull, Cannon and
+// Engine maxed, Targeting 2: 62,500 points) and all seven cores at level 5 (238 shards).
 // Assumptions (each one printed in the output): the pilot plays M minutes of matches a day across every mode and team size, wins
 // 55% (5% draws in modes that have them; 2nd on average in Last Standing), finishes the four daily quests every day, three of five
 // weekly quests, opens the weekly chest, claims the daily reward and the free Lunar Pass track, and flies Rare gear (a Rare Pulse
@@ -10,18 +13,26 @@
 // (Checkpoint 36) plus 30 s of VS screen, results and menus. Free gem caches go to the chassis being kitted (the Shop's "Cores for").
 // Points policy: the cheapest next upgrade level when it is affordable; then Epic gem caches with points while four or more cores
 // are below level 5; then chosen cores (the smallest pick that still fits) to finish without waste.
-// usage: node dev/tools/chassis-kit-model.mjs [--rate N] [--json docs/economy/chassis-kit-model.json]
+// Conquest run (owner, Checkpoint 38; report only): the same pilot spends the M minutes in Conquest instead, at Conquest's points a
+// minute for the Rare kit (docs/economy/economy-model.json conquestPpm, RESOURCE_ECONOMY.md 3.3: modeled from par minutes, not
+// measured), times the Command Base multiplier (CQ_BASE_MULT) at a typical tier, plus that tier's Daily Base Yield points,
+// credited as the server does (eco.js creditConquest: league base pay, then the league bonus, through ecoPlayAward). Conquest pays
+// no match pass XP; the daily and weekly quests are still counted done (as in the Arcade run).
+// usage: node dev/tools/chassis-kit-model.mjs [--rules js/rules.js] [--minutes 20] [--json docs/economy/chassis-kit-model.json]
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-function world(rate) {
+// rules: a rules.js to load (default: this checkout's; --rules takes e.g. main's, for the before column). rate / coreRate: points a
+// Star for gem caches / chosen cores (sensitivity only; the shipped numbers are the owner's)
+function world(rules, rate, coreRate) {
   const ctx = vm.createContext({ console, Math });
-  let src = fs.readFileSync(path.join(repo, 'js', 'rules.js'), 'utf8').replace(/^'use strict';[^\n]*\n/m, '');
+  let src = fs.readFileSync(rules, 'utf8').replace(/^'use strict';[^\n]*\n/m, '');
   if (rate !== undefined) src = src.replace(/const GEM_PTS_STAR=[\d.]+,/, 'const GEM_PTS_STAR=' + rate + ',');
-  vm.runInContext(src + '\n;globalThis.R={ecoNorm,ecoLogin,ecoMatchPts,ecoAfterMatch,ecoClaimDaily,ecoClaimWeekly,ecoChest,ecoClaimPass,ecoPassState,ecoPassTier,ecoUp,ecoCratePts,ecoCorePts,ecoLoadout,powerOf,ecoLeague,leagueInfo,DQ_BY,WQ_BY,GORDER,UORDER,UPS,SHARD_NEED,GEM_PTS,CORE_N,corePts,GEM_PTS_STAR,RSTARS,MODES,GTYPES,GT_ORDER,isSolo,featuredOn,passTiers,PASS_XP,LEAGUE,BUILD_MAX,upLevels,chUp,chGl,chGs};', ctx);
+  if (coreRate !== undefined) src = src.replace(/CORE_PTS_STAR=[\d.]+,/, 'CORE_PTS_STAR=' + coreRate + ',');
+  vm.runInContext(src + '\n;globalThis.R={CORE_PTS_STAR:typeof CORE_PTS_STAR==="undefined"?undefined:CORE_PTS_STAR,CORE_X,ecoPlayAward,ecoPlayDay,ecoDailyRows,ecoWeeklyRows,CQ_BASE_MULT,CQ_YIELD,DQ_POOL,WQ_POOL,DQ_ALL_BONUS,WQ_PTS,ecoNorm,ecoLogin,ecoMatchPts,ecoAfterMatch,ecoClaimDaily,ecoClaimWeekly,ecoChest,ecoClaimPass,ecoPassState,ecoPassTier,ecoUp,ecoCratePts,ecoCorePts,ecoLoadout,powerOf,ecoLeague,leagueInfo,DQ_BY,WQ_BY,GORDER,UORDER,UPS,SHARD_NEED,GEM_PTS,CORE_N,corePts,GEM_PTS_STAR,RSTARS,MODES,GTYPES,GT_ORDER,isSolo,featuredOn,passTiers,PASS_XP,LEAGUE,BUILD_MAX,upLevels,chUp,chGl,chGs};', ctx);
   return ctx.R;
 }
 // measured round lengths (s), Checkpoint 36 "after" column; Arena 1v1 is a best of 3 (about 2.5 rounds)
@@ -49,6 +60,10 @@ function simulate(R, M, order, opt = {}) {
     const shardsOn = () => R.GORDER.reduce((a, g) => { const lv = R.chGl(S, c)[g] | 0; let n = R.chGs(S, c)[g] | 0; for (let l = 1; l < lv; l++) n += R.SHARD_NEED[l]; return a + n; }, 0), sh0 = shardsOn();
     track(() => R.ecoLogin(S, X, c), 'login');
     let secs = M * 60, plays = 0;
+    if (opt.conquest) {   // the M minutes in Conquest: points a minute x Command Base multiplier, plus the Daily Base Yield (flat), as eco.js creditConquest credits them
+      const C = opt.conquest, raw = C.ppm * M * R.CQ_BASE_MULT[C.tier] + (R.CQ_YIELD.pts[C.tier] || 0), L = R.leagueInfo(lg), b = Math.round(raw * L.pay);
+      track(() => { R.ecoPlayAward(S, b, Math.round(b * L.mult), X); R.ecoPlayDay(S, X); }, 'match'); R.ecoDailyRows(S, X); R.ecoWeeklyRows(S, X); secs = 0;
+    }
     while (secs > 0) {
       const [g, m] = MIX[Math.floor(rnd() * MIX.length)], len = LEN[g][m] + OVERHEAD; if (secs < len * 0.5) break; secs -= len; plays++;
       const solo = R.isSolo(g), x = rnd(), hasDraw = ['zone', 'crystal', 'boss'].includes(g);
@@ -78,37 +93,37 @@ function simulate(R, M, order, opt = {}) {
   }
   return { kits: out, totalDays: day, spend, src, shards, pts: Math.round(S.pts), earnedPerDay: Math.round((S.earned || 0) / Math.max(1, day)) };
 }
-const ORDER = ['titan', 'vanguard', 'scout'];
+const ORDER = ['titan', 'vanguard', 'scout'], TARGET = 84;   // owner, Nov 14 2026: about 12 weeks for the first chassis
 const main = () => {
-  const fixed = arg('--rate'), M = +arg('--minutes', 20);   // the reference pilot: 20 minutes of matches a day, every day
-  // calibrate: the rate (points per Star) at which the 20-minute daily pilot kits the first chassis closest to 56 days, on average over
-  // five seeds (review: one seed swings it 49-56 days). The shipped rate stays while its average is within a week of 56 (7 to 9 weeks)
+  const rules = path.resolve(arg('--rules', path.join(repo, 'js', 'rules.js'))), M = +arg('--minutes', 20);   // the reference pilot: 20 minutes of matches a day, every day
+  // every figure: the average of five seeds (Checkpoint 37 review: one seed swings it about a week), with the range
   const SEEDS = [1, 2, 3, 4, 5], avg = (xs) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length), span = (xs) => [Math.min(...xs), Math.max(...xs)];
   const runs = (R, m, opt = {}) => SEEDS.map((seed) => simulate(R, m, ORDER, { ...opt, seed }));
   const sumUp = (rs) => { const f = rs.map((r) => (r.kits[0] ? r.kits[0].days : 800)), a = rs.map((r) => (r.kits.length === 3 ? r.totalDays : 800)); return { first: avg(f), firstRange: span(f), all: avg(a), allRange: span(a), perDay: avg(rs.map((r) => r.earnedPerDay)) }; };
-  const cand = [];
-  for (const rate of fixed ? [+fixed] : [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40]) { const R = world(rate), r = simulate(R, M, ORDER), m = sumUp(runs(R, M)); cand.push({ rate, first: m.first, all: m.all, firstRange: m.firstRange, allRange: m.allRange, seed7: [r.kits[0] && r.kits[0].days, r.totalDays], r }); }
-  const near56 = cand.reduce((a, b) => (Math.abs((b.first || 1e9) - 56) < Math.abs((a.first || 1e9) - 56) ? b : a));
-  const shipped = +((fs.readFileSync(path.join(repo, 'js', 'rules.js'), 'utf8').match(/const GEM_PTS_STAR=([\d.]+),/) || [])[1]);
-  const best = cand.find((c) => c.rate === shipped && c.first >= 49 && c.first <= 63) || near56;
-  const R = world(best.rate);
+  const R = world(rules), GSTAR = R.GEM_PTS_STAR, CSTAR = R.CORE_PTS_STAR || R.GEM_PTS_STAR * R.CORE_X;
+  const prices = { gemPtsStar: GSTAR, corePtsStar: CSTAR, gemCachePts: R.GEM_PTS, chosenCorePts: [0, 1, 2].map((ri) => R.corePts(ri)), coreShards: R.CORE_N,
+    dailyQuestPts: [...new Set(R.DQ_POOL.map((q) => q.pts))], weeklyQuestPts: [...new Set(R.WQ_POOL.map((q) => q.pts))], allFourBonus: R.DQ_ALL_BONUS, weeklyChest: R.WQ_PTS };
   const profiles = [10, 15, 20, 30, 45, 60].map((m) => { const r = simulate(R, m, ORDER), a = sumUp(runs(R, m)); return { minutes: m, firstKitDays: a.first, firstKitRange: a.firstRange, allThreeDays: a.all, allThreeRange: a.allRange, perDay: a.perDay, kits: r.kits, sources: r.src, spend: r.spend, shards: r.shards }; });
-  // a light pilot like the owner's data point (about 5 minutes a day, half the dailies, one weekly): the 8-week target is not this pace
+  const ref = profiles.find((p) => p.minutes === M) || profiles[2];
+  // sensitivity (report only, not applied): the gem cache rate with the chosen core rate kept at the owner's ratio
+  const sens = [80, 100, 120, 140, 160].map((g) => { const W = world(rules, g, Math.round(g * CSTAR / GSTAR * 100) / 100), a = sumUp(runs(W, M)); return { gemPtsStar: g, corePtsStar: Math.round(g * CSTAR / GSTAR * 100) / 100, firstKitDays: a.first, firstKitRange: a.firstRange, allThreeDays: a.all }; });
+  // a light pilot like the owner's data point (about 5 minutes a day, half the dailies, one weekly): the 12-week target is not this pace
   const light = [5, 10].map((m) => ({ minutes: m, dailies: 2, weeklies: 1, ...sumUp(runs(R, m, { dq: 2, wk: 1 })) }));
-  // the owner's data point: 83,000 points in two weeks of light play on his maxed account (league multiplier applies)
-  const ownerCheck = [5, 10, 15, 20].map((m) => { const W = world(best.rate), S = W.ecoNorm({ mig: 1 }); S.mp = 300; S.lwr = 0.6; const rnd = rng(3); let pts = 0;
-    for (let d = 0; d < 14; d++) { const X = { day: 21000 + d, week: Math.floor((21000 + d - 4) / 7), rnd, pk: 'owner' }; const p0 = S.pts; W.ecoLogin(S, X); let secs = m * 60;
-      while (secs > 0) { const [g, mm] = MIX[Math.floor(rnd() * MIX.length)], len = LEN[g][mm] + OVERHEAD; if (secs < len * 0.5) break; secs -= len; const x = rnd(), solo = W.isSolo(g); const o = { won: solo ? x < 0.4 : x < 0.75, drawn: false, place: solo ? (x < 0.4 ? 1 : 2) : 0, top3: solo, g, m: solo ? '1v1' : mm, feat: g === W.featuredOn(X.day), series: g === 'arena' && mm === '1v1', st: {} }; W.ecoMatchPts(S, o, 6, X); W.ecoAfterMatch(S, o, X); }
-      for (const id of S.dq.ids.slice(0, 2)) { const Q = W.DQ_BY[id]; if (Q) { S.dq.p[id] = Q.goal; W.ecoClaimDaily(S, id, X); } }   // light play: about half the dailies
-      pts += S.pts - p0; }
-    return { minutesPerDay: m, league: 'Lunar Legend', twoWeeks: Math.round(pts) }; });
-  const res = { rateStarsToPoints: best.rate, gemCachePts: R.GEM_PTS, chosenCorePts: [0, 1, 2].map((ri) => R.corePts(ri)), coreShards: R.CORE_N, calibration: cand.map((c) => ({ rate: c.rate, firstKitDays: c.first, firstKitRange: c.firstRange, allThreeDays: c.all, allThreeRange: c.allRange })), seeds: SEEDS, near56: near56.rate,
-    profiles, light, ownerCheck, assumptions: { matchSeconds: LEN, overheadSeconds: OVERHEAD, winRate: WIN, drawRate: DRAW, gear: 'Rare Pulse Cannon and a Rare chassis', fullBuild: FULL_UP, dailies: '4 a day', weeklies: '3 of 5', chest: 'every week', pass: 'free track', freeCachesTo: 'the chassis being kitted' } };
+  // Conquest instead of Arcade (report only): the Rare kit's Conquest points a minute at Rookie with no base (league pay is applied
+  // per day by the pilot's league, as creditConquest does), Command Base tiers none / III (typical: CC5-6) / V
+  const eco = JSON.parse(fs.readFileSync(path.join(repo, 'docs', 'economy', 'economy-model.json'), 'utf8')), ppm = eco.conquestPpm.rare[0][0];
+  const conquest = [0, 3, 5].map((tier) => ({ tier, tierName: ['none', 'I', 'II', 'III', 'IV', 'V'][tier], ppm, mult: R.CQ_BASE_MULT[tier], yieldPts: R.CQ_YIELD.pts[tier], minutes: M, ...sumUp(runs(R, M, { conquest: { ppm, tier } })) }));
+  const res = { generatedBy: 'node dev/tools/chassis-kit-model.mjs', rules: path.relative(repo, rules), targetDays: TARGET, ...prices, seeds: SEEDS,
+    reference: { minutes: M, firstKitDays: ref.firstKitDays, firstKitRange: ref.firstKitRange, allThreeDays: ref.allThreeDays, allThreeRange: ref.allThreeRange, perDay: ref.perDay, vsTarget: ref.firstKitDays - TARGET },
+    profiles, light, conquest, sensitivity: sens,
+    assumptions: { matchSeconds: LEN, overheadSeconds: OVERHEAD, winRate: WIN, drawRate: DRAW, gear: 'Rare Pulse Cannon and a Rare chassis', fullBuild: FULL_UP, dailies: '4 a day', weeklies: '3 of 5', chest: 'every week', pass: 'free track', freeCachesTo: 'the chassis being kitted',
+      conquest: 'Rare kit at ' + ppm + ' base points a minute at Rookie (economy-model.json conquestPpm, modeled), x CQ_BASE_MULT, + the Daily Base Yield points, x league base pay and the league bonus; no match pass XP; quests counted done' } };
   const out = arg('--json'); if (out) { fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, JSON.stringify(res, null, 1)); console.log('wrote', out); }
-  console.log('calibration (points per Star -> days to kit the first chassis / all three):', res.calibration.map((c) => c.rate + ':' + c.firstKitDays + '/' + c.allThreeDays).join('  '));
-  console.log('chosen rate', res.rateStarsToPoints, 'gem caches', res.gemCachePts.join(' / '), 'chosen cores', res.chosenCorePts.join(' / '));
-  for (const p of light) console.log('light pilot ' + p.minutes + ' min/day, 2 dailies: first kit ' + p.first + ' d ' + JSON.stringify(p.firstRange) + ', all three ' + p.all + ' d, ~' + p.perDay + ' pts/day');
-  for (const p of profiles) console.log(p.minutes + ' min/day: first kit ' + p.firstKitDays + ' d ' + JSON.stringify(p.firstKitRange) + ', all three ' + p.allThreeDays + ' d ' + JSON.stringify(p.allThreeRange) + ', ~' + p.perDay + ' pts/day; seed 7 kits', JSON.stringify(p.kits.map((k) => [k.chassis, k.days, k.league])), 'sources', JSON.stringify(p.sources), 'shards', JSON.stringify(p.shards));
-  console.log('owner check (two weeks at Lunar Legend):', JSON.stringify(ownerCheck));
+  console.log('rules', res.rules, '| gem caches', R.GEM_PTS.join(' / '), '(' + GSTAR + ' a Star) | chosen cores', res.chosenCorePts.join(' / '), '(' + CSTAR + ' a Star) | dailies', res.dailyQuestPts.join(','), 'weeklies', res.weeklyQuestPts.join(','));
+  console.log('reference pilot (' + M + ' min/day + dailies): first kit ' + ref.firstKitDays + ' d ' + JSON.stringify(ref.firstKitRange) + ' vs the ' + TARGET + '-day target (' + (ref.firstKitDays - TARGET >= 0 ? '+' : '') + (ref.firstKitDays - TARGET) + '), all three ' + ref.allThreeDays + ' d');
+  for (const p of profiles) console.log(p.minutes + ' min/day: first kit ' + p.firstKitDays + ' d ' + JSON.stringify(p.firstKitRange) + ', all three ' + p.allThreeDays + ' d ' + JSON.stringify(p.allThreeRange) + ', ~' + p.perDay + ' pts/day; seed 7 kits', JSON.stringify(p.kits.map((k) => [k.chassis, k.days, k.league])), 'sources', JSON.stringify(p.sources), 'spend', JSON.stringify(p.spend), 'shards', JSON.stringify(p.shards));
+  for (const p of light) console.log('light pilot ' + p.minutes + ' min/day, 2 dailies, 1 weekly: first kit ' + p.first + ' d ' + JSON.stringify(p.firstRange) + ', all three ' + p.all + ' d, ~' + p.perDay + ' pts/day');
+  for (const c of conquest) console.log('Conquest ' + M + ' min/day, Command Base ' + c.tierName + ' (x' + c.mult + ', yield ' + c.yieldPts + '): first kit ' + c.first + ' d ' + JSON.stringify(c.firstRange) + ', all three ' + c.all + ' d ' + JSON.stringify(c.allRange) + ', ~' + c.perDay + ' pts/day');
+  console.log('sensitivity (not applied):', sens.map((x) => x.gemPtsStar + '/' + x.corePtsStar + ': ' + x.firstKitDays + ' d ' + JSON.stringify(x.firstKitRange)).join('  '));
 };
 main();

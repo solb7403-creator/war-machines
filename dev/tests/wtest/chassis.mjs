@@ -66,7 +66,11 @@ t(E(pp).pts === 400000 - 2 * 62500, 'each full build cost its own 62,500 points 
 [s, r] = await act(P, 'respec', { c: 'titan' }); t(r.out.c === 'titan' && R.upLevels(r.E.upc.titan) === 0 && R.upLevels(r.E.upc.vanguard) === 14 && r.out.back === 31250, 'a reset clears one chassis\'s build only ' + J(r.out));
 
 // ---- 3. gem caches with points (every rarity, Epic included) and the chosen core ----
+db.root.eco[pp].pts = 1500000;   // enough for one of each gem cache and one of each chosen core at the Checkpoint 38 prices
 const P0 = E(pp).pts, buys0 = J(E(pp).buys || {});
+t(J(R.GEM_PTS) === J([30000, 60000, 180000]) && R.GEM_PTS_STAR === 120, 'owner\'s gem cache prices (Checkpoint 38): 120 points a Star, 30,000 / 60,000 / 180,000 ' + J(R.GEM_PTS));
+t(J([0, 1, 2].map(R.corePts)) === J([43750, 87500, 262500]) && R.CORE_PTS_STAR === 175 && [0, 1, 2].every((ri) => R.corePts(ri) === R.RSTARS[ri] * R.CORE_PTS_STAR), 'owner\'s chosen core prices (Checkpoint 38): 175 points a Star of the cache\'s price, 43,750 / 87,500 / 262,500 ' + J([0, 1, 2].map(R.corePts)));
+t(J(R.RSTARS) === J([250, 500, 1500]) && J(R.RPRICE) === J([4, 8, 23]) && J(R.RPTS) === J([20000, 80000, 0]) && R.CORE_X === 1.5, 'money prices and the weapon / chassis crate points prices unchanged');
 t(R.GEM_PTS.length === 3 && R.GEM_PTS.every((p, i) => p === R.RSTARS[i] * R.GEM_PTS_STAR) && R.GEM_PTS[2] > 0, 'one points-per-Star rate for every gem cache: ' + J(R.GEM_PTS));
 let spent = 0;
 for (const ri of [0, 1, 2]) { const before = E(pp).pts; [s, r] = await act(P, 'crate', { tk: 'gem', ri, c: 'titan' }); t(r.out.gem && r.out.c === 'titan' && before - E(pp).pts === R.GEM_PTS[ri], (['Common', 'Rare', 'Epic'][ri]) + ' gem cache for points: ' + R.GEM_PTS[ri] + ' points, shards for the Titan ' + J(r.out)); spent += R.GEM_PTS[ri]; }
@@ -75,7 +79,7 @@ t(sum(E(pp).gsc.vanguard) === 0 && R.GORDER.every((k) => E(pp).glc.vanguard[k] =
 [s, r] = await act(P, 'crate', { tk: 'gem', ri: 1, c: 'scout' }); t(r.out.err === 'chassis', 'no gem cache for a chassis you don\'t own');
 const T0 = J(E(pp).glc.titan) + J(E(pp).gsc.titan);
 for (const ri of [0, 1, 2]) { const before = E(pp).pts, sh = (E(pp).gsc.vanguard.lck | 0), lv = E(pp).glc.vanguard.lck; [s, r] = await act(P, 'core', { k: 'lck', ri, c: 'vanguard' });
-  t(r.out.tk === 'core' && r.out.gem === 'lck' && r.out.n === R.CORE_N[ri] && r.out.c === 'vanguard' && before - E(pp).pts === Math.round(R.GEM_PTS[ri] * R.CORE_X), 'chosen core (' + ['Common', 'Rare', 'Epic'][ri] + '): ' + R.CORE_N[ri] + ' Luck shards for the Vanguard at 1.5x the cache ' + J(r.out)); }
+  t(r.out.tk === 'core' && r.out.gem === 'lck' && r.out.n === R.CORE_N[ri] && r.out.c === 'vanguard' && before - E(pp).pts === R.corePts(ri), 'chosen core (' + ['Common', 'Rare', 'Epic'][ri] + '): ' + R.CORE_N[ri] + ' Luck shards for the Vanguard for ' + R.corePts(ri) + ' points ' + J(r.out)); }
 t(J(E(pp).glc.titan) + J(E(pp).gsc.titan) === T0, 'chosen cores for the Vanguard leave the Titan alone');
 db.root.eco[pp].glc.vanguard.dmg = 5; [s, r] = await act(P, 'core', { k: 'dmg', ri: 2, c: 'vanguard' }); t(r.out.err === 'max', 'a chosen core already at level 5 is refused (nothing wasted)');
 [s, r] = await act(P, 'core', { k: 'dmg', ri: 2, c: 'scout' }); t(r.out.err === 'chassis', 'no chosen core for a chassis you don\'t own');
