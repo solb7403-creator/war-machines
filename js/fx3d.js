@@ -171,6 +171,9 @@ function create(T,host){
  }
  // an n-pointed star flare lying flat (muzzle stars, glints)
  function star(x,y,z,r,n,rot,col,a,w){w=Math.max(w||r*.12,MW*.9);for(let i=0;i<n;i++){const t=rot+i/n*Math.PI,c=Math.cos(t)*r,s=Math.sin(t)*r;seg(x,y,z,x+c,y,z+s,w*1.5,w*.08,col,a);seg(x,y,z,x-c,y,z-s,w*1.5,w*.08,col,a);}}   // wedges that taper to a point: never ruler lines
+ // an upright sliver of light from (x,y0,z) up to y1: half-widths w0 at the foot, w1 at the tip, soft across; it faces the camera (the host's right axis)
+ function spire(x,y0,z,y1,w0,w1,col,a){const r=host.right||XAX,rx=r[0],ry=r[1],rz=r[2];quad(x-rx*w0,y0-ry*w0,z-rz*w0,x-rx*w1,y1-ry*w1,z-rz*w1,x+rx*w1,y1+ry*w1,z+rz*w1,x+rx*w0,y0+ry*w0,z+rz*w0,0,-1,0,-1,0,1,0,1,col[0],col[1],col[2],a,0);}
+ const XAX=[1,0,0];
  // a ground crack: a dark jagged line with an optional glowing core (molten, veins, crystal), growing from the centre
  function crack(x,y,z,ang,len,seed,dark,glow,a,w){
   const n=6;let px=x,pz=z,dir=ang;
@@ -566,19 +569,37 @@ function create(T,host){
     const nt=oc===0?3:oc===1?6:9,reach=R*(oc===2?1.75:1.3)*(.4+.6*bx);
     for(let i=0;i<nt;i++){if(hsh(fs*5+i)<.85){const a=e.ang+i/nt*TAU+(hsh(e.seed+i)-.5)*.3;bolt(e.x,e.y+.25,e.z,e.x+Math.cos(a)*reach,e.y+.06,e.z+Math.sin(a)*reach,.42*u,7,.085*u,i%2?X:C,bf,fs*9+i,.3);}}}
    if(!(e.f&1)&&t>=T0){e.f|=1;sparks(e.x,e.y+.4,e.z,oc===0?6:oc===1?16:26,(5+2*oc)*u,X,.3*u,.5,1.2,e.y);}
-  }else{   // TITANFALL: a white-gold flash and fire dome, a rising column, shock fronts, the ground splits (jackpot: and it rains fire). No smoke: pure light
-   const fb=Math.max(0,1-t/(e.d*.7)),G=col('#ffc400'),Wg=col('#fff3b0'),Or=col('#ff6a14');
-   if(flash)disc(e.x,e.y+.07,e.z,R*1.3,Wg,flash*.35);
-   churn(e.x,e.y+.05,e.z,R*1.7*(.4+.6*ex),B,.42*fade);
-   // the dome: an orange rim round a gold body with a small white heart (never a white-out: the target and its ring stay readable)
-   puff(e.x,e.y+R*.38*ex,e.z,R*(.62+.95*ex)*(oc===2?.92:1),Or,.58*fb*ht);puff(e.x,e.y+R*.42*ex,e.z,R*(.34+.44*ex),col('#ffa51e'),.3*fb*ht);if(oc>0)sprite(e.x,e.y+R*.5*ex,e.z,R*(.09+.09*ex),Wg,.4*fb*CQ);
-   if(hot){sprite(e.x,e.y+R*.45*ex,e.z,R*(.16+.1*hot),W1,hot*.8*CQ);shock(e.x,y+.03,e.z,R*(.3+1.1*(1-hot)),.5*u,W1,hot*.9,44);}   // jackpot: a white-hot heart and a third, sharp front
-   {const rise=Math.min(1,t/(e.d*.7)),ch=R*(oc===0?1.3:oc===2?3.0:2.2)*rise,cw=R*(oc===0?.16:oc===2?.19:.24),ca2=(oc===0?.4:.75)*fade;   // the column: a narrow stack rising well clear of the dome, its cap, and embers orbiting it
-    for(let i=0;i<5;i++){const f=i/4;puff(e.x,e.y+R*.6+ch*f,e.z,cw*(1.25-.45*f)*(1+.3*k),i%2?G:Wg,ca2);}
-    if(oc>0){puff(e.x,e.y+R*.6+ch+R*.15,e.z,R*(oc===2?.4:.5)*(1+k*.5),G,.75*fade);sprite(e.x,e.y+R*.6+ch+R*.15,e.z,R*.16,Wg,fade*CQ);
-     for(let i=0;i<(oc===2?8:5);i++){const a=e.ang+i*TAU/(oc===2?8:5)+(q?0:t*4),hh=e.y+R*.6+ch*(.25+.6*((i*.37)%1));sprite(e.x+Math.cos(a)*R*.55,hh,e.z+Math.sin(a)*R*.55,.16*u,i%2?G:Wg,.9*fade*CQ);}}}
-   {const nc=oc===0?4:6;for(let i=0;i<nc;i++){const a=e.ang+(i+.5*hsh(e.seed+i*11))/nc*TAU,r0=R*(.6+.5*ex),r1=r0+R*(.22+.42*hsh(e.seed+i))*fb;segc(e.x+Math.cos(a)*r0,y+.03,e.z+Math.sin(a)*r0,e.x+Math.cos(a)*r1,y+.03,e.z+Math.sin(a)*r1,(.14+.12*hsh(e.seed+i*5))*u,.02*u,i%2?G:Wg,(oc===0?.5:.85)*fb,0,1);}}   // epic: a crown of flame spikes, uneven and tapered (no ruled rays)
-   shock(e.x,y,e.z,R*(.2+1.4*ex),(1.0-.6*ex)*u*(oc===0?.6:1),G,fade*fade*(oc===0?.5:.9),48,.08,e.seed);if(oc===2){const f2=Math.min(1,t/(e.d*.7));shock(e.x,y+.02,e.z,R*(.1+2.0*f2),(.8-.4*f2)*u,Or,fade*.7,48,.08,e.seed+9);}
+  }else{   // TITANFALL: a golden seal strikes the ground and breaks it. Engraved light, not a fireball: a bezel of two rings and ticks, a star of straight
+   // lines turning inside it, spires of light standing on its points, a lance up the middle ringed by halos, molten fissures; the fire is only its heart.
+   // Level: a miss is the whole seal drawn wide, thin and dim, with short spires, one halo and no heart; normal is brighter with taller spires, two halos
+   // and a white-gold heart; a jackpot adds a white-hot heart, turning outer arcs, three halos, lit spire tips and fire rain. No smoke: pure light
+   const fb=Math.max(0,1-t/(e.d*.7)),G=col('#ffc400'),Wg=col('#fff3b0'),Or=col('#ff6a14'),L=oc===2?Wg:G;
+   const sp=e.ang+(q?0:t*.5),Rs=R*(.55+.6*ex),Rp=Rs*.84,la=Math.min(1,fade*1.6)*(oc===0?.8:1),lw=(oc===0?.04:oc===2?.06:.05)*u,yg=e.y+.06,rise=Math.min(1,t/.1);
+   disc(e.x,e.y+.045,e.z,Rs*1.12,BLK,.02,(oc===0?.3:.45)*Math.min(1,t/.05)*fade);   // the ground under the seal darkens first, so gold lines read as gold (light added to pale ground washes out)
+   if(flash)disc(e.x,e.y+.07,e.z,R*1.3,Wg,flash*.3);
+   churn(e.x,e.y+.05,e.z,Rs*(oc===0?1.1:.9),B,(oc===0?.22:.3)*fade);
+   // the heart: a small fire dome (an orange rim round a gold body), widest and faintest on a miss, tightest on a jackpot. Never a white-out
+   {const fr=oc===0?1.25:oc===2?.85:1;puff(e.x,e.y+R*.3*ex,e.z,R*(.3+.4*ex)*fr,Or,.55*fb*ht);puff(e.x,e.y+R*.34*ex,e.z,R*(.17+.22*ex)*fr,col('#ffa51e'),.32*fb*ht);if(oc>0)sprite(e.x,e.y+R*.4*ex,e.z,R*(.08+.07*ex),Wg,.45*fb*CQ);}
+   if(hot){sprite(e.x,e.y+R*.38*ex,e.z,R*(.14+.08*hot),W1,hot*.8*CQ);shock(e.x,y+.03,e.z,R*(.3+1.1*(1-hot)),.5*u,W1,hot*.9,44);}   // jackpot: a white-hot heart and a third, sharp front
+   // the seal: two rings, a bezel of ticks between them (every fourth one long), and a figure of straight lines inscribed in the inner ring
+   ring(e.x,yg,e.z,Rs,lw,G,la,40,0,0);ring(e.x,yg,e.z,Rp,lw*.75,Wg,la*.85,36,0,0);
+   {const nT=oc===0?24:oc===1?32:40;for(let i=0;i<nT;i++){const a=-sp*.8+i/nT*TAU,c=Math.cos(a),s=Math.sin(a),r0=Rs*(i%4?.93:.885);seg(e.x+c*r0,yg,e.z+s*r0,e.x+c*Rs*.985,yg,e.z+s*Rs*.985,lw*.8,lw*.35,Wg,la*.9);}}
+   for(let i=0;i<6;i++){const a0=sp+i*TAU/6,a1=a0+TAU/3;seg(e.x+Math.cos(a0)*Rp,yg,e.z+Math.sin(a0)*Rp,e.x+Math.cos(a1)*Rp,yg,e.z+Math.sin(a1)*Rp,lw,lw,L,la);}   // two triangles: a six-pointed star
+   if(oc===2)for(let i=0;i<6;i++){const a0=-sp*1.6+i*TAU/6;ring(e.x,yg,e.z,Rs*1.13,lw*.8,Or,la*.9,6,0,0,a0,a0+.6);}   // jackpot: six arcs outside the seal, turning against it
+   // molten fissures run out from the centre between the star's points (they stay put: the ground does not turn)
+   {const nf=oc===0?6:oc===1?8:10,gr=Math.min(1,t/.14);for(let i=0;i<nf;i++)crack(e.x,yg-.01,e.z,e.ang+(i+.5)/nf*TAU+(hsh(e.seed+i)-.5)*.3,Rs*1.12*gr*(.8+.3*hsh(e.seed+i*3)),e.seed+i*101,null,i%2?G:Wg,la*fb*(oc===0?.7:1),(oc===2?.09:.07)*u);}
+   // spires of light stand on the star's six points, each on a four-pointed glint (a miss: short ones; a jackpot: the tallest, with lit tips)
+   {const hs=R*(oc===0?.45:oc===2?1.1:.8)*rise*(.6+.4*fade),sa=la*(oc===0?.8:1);
+    for(let i=0;i<6;i++){const a=sp+i*TAU/6,px=e.x+Math.cos(a)*Rp,pz=e.z+Math.sin(a)*Rp;
+     spire(px,yg,pz,yg+hs,.2*u,.03*u,G,sa*.4);spire(px,yg,pz,yg+hs,.07*u,.012*u,Wg,sa);star(px,yg+.01,pz,.34*u,2,a,Wg,sa*.9,.05*u);if(oc===2)sprite(px,yg+hs,pz,.08*u,Wg,sa*.8*CQ);}}
+   // the lance: a needle of light up the middle, ringed by halos that widen as they fade
+   {const ch=R*(oc===0?1.3:oc===2?3.0:2.2)*Math.min(1,t/(e.d*.35)),nh=oc+1,ca=la*(oc===0?.7:1),y0=e.y+R*.3;
+    spire(e.x,y0,e.z,y0+ch,(oc===2?.16:.22)*u,.04*u,G,ca*.45);spire(e.x,y0,e.z,y0+ch,(oc===2?.06:.08)*u,.015*u,Wg,ca);
+    for(let i=0;i<nh;i++){const f=(i+1)/(nh+1);ring(e.x,y0+ch*f,e.z,R*(.3-.16*f)*(1+.35*k),lw*.8,i%2?Wg:G,ca*.9,18,0,0);}
+    if(oc>0)sprite(e.x,y0+ch,e.z,R*.07,Wg,ca*CQ);}
+   // glints circle the seal, against its turn
+   {const ng=oc===0?4:oc===1?6:10;for(let i=0;i<ng;i++){const a=-sp*2.2+i*TAU/ng,gx=e.x+Math.cos(a)*Rs*1.06,gz=e.z+Math.sin(a)*Rs*1.06;star(gx,yg+.02,gz,.22*u,2,a+.8,Wg,la,.04*u);}}
+   shock(e.x,y,e.z,R*(.2+1.3*ex),(.8-.5*ex)*u*(oc===0?.6:1),G,fade*fade*(oc===0?.4:.75),48,.08,e.seed);if(oc===2){const f2=Math.min(1,t/(e.d*.7));shock(e.x,y+.02,e.z,R*(.1+1.9*f2),(.7-.4*f2)*u,Or,fade*.6,48,.08,e.seed+9);}
    if(oc===2&&t>.15&&t<e.d*.85){const n=Math.round(60*lastDt*10*amt());for(let i=0;i<n;i++){const a=rnd()*TAU,d=Math.sqrt(rnd())*R*1.4;part(1,e.x+Math.cos(a)*d+.5*u,e.y+4.5*u,e.z+Math.sin(a)*d-.4*u,-.9*u,-11*u,.7*u,.42,.5*u,.12*u,rnd()<.5?G:col(P.x),1,0,0,e.y);}}   // jackpot: fire rain, small embers
    if(!(e.f&1)){e.f|=1;sparks(e.x,e.y+.4,e.z,oc===0?10:oc===1?26:40,(7+3*oc)*u,G,.36*u,.8,1.7,e.y);
     for(let i=0;i<(oc===0?5:16)*amt();i++)part(1,e.x+(rnd()-.5)*R*.7,e.y+.3,e.z+(rnd()-.5)*R*.7,(rnd()-.5)*2,4+rnd()*6,(rnd()-.5)*2,.7+rnd()*.5,.8*u,.14*u,i%2?G:Wg,1,2,.5,e.y);}

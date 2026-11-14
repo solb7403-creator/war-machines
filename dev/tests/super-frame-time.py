@@ -2,7 +2,7 @@
 between two builds on the same machine: not a phone frame rate). The frame loop is stopped; for each super the scene of
 super-vfx-capture.py is set up, the super is fired with a jackpot, and the frame 0.1 s after it lands is drawn 12 times with
 a one-pixel readback (so the renderer has to finish it); the median is reported next to the same scene with no effect on screen.
-usage: [REPO=<another checkout>] python3 dev/tests/super-frame-time.py [out.json] [--quality high|low]
+usage: [REPO=<another checkout>] python3 dev/tests/super-frame-time.py [out.json] [--quality high|low] [--only siege2,moon]
 """
 import asyncio, json, os, sys
 REPO=os.environ.get('REPO',os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..')))
@@ -12,6 +12,7 @@ from playwright.async_api import async_playwright
 QUALITY=sys.argv[sys.argv.index('--quality')+1] if '--quality' in sys.argv else 'high'
 OUT=next((a for a in sys.argv[1:] if a.endswith('.json')),None)
 KEYS=['pulse0','pulse2','twin0','twin2','siege0','siege2','moon']
+if '--only' in sys.argv:KEYS=sys.argv[sys.argv.index('--only')+1].split(',')   # one super only (a fix to one super is checked alone)
 SCENE='''([key,quality])=>{
  const arch=key==='moon'?'moon':key.slice(0,-1),tier=key==='moon'?2:+key.slice(-1);
  window.myLoadout=()=>({w:{a:arch,t:tier,q:1,s:false},c:{c:'vanguard',t:Math.min(2,tier),q:1,s:false},up:{hull:0,cannon:0,engine:0,target:0,reactor:0},cores:['dmg','rof','arm'],gl:{},skin:'default',paint:'stock'});
