@@ -1,0 +1,31 @@
+{
+ "note": "Titanfall jackpot only, one relative check on the software renderer (dev/tests/super-frame-time.py --only siege2): main 1acff13 against the Titanfall fix. Not a phone frame rate.",
+ "main 1acff13": {
+  "phone siege2": {
+   "idle": 46.2,
+   "jackpot": 47.3,
+   "fired": true
+  },
+  "phone errors": [],
+  "desktop siege2": {
+   "idle": 143.6,
+   "jackpot": 163.6,
+   "fired": true
+  },
+  "desktop errors": []
+ },
+ "titanfall fix": {
+  "phone siege2": {
+   "idle": 47.3,
+   "jackpot": 58.5,
+   "fired": true
+  },
+  "phone errors": [],
+  "desktop siege2": {
+   "idle": 165.6,
+   "jackpot": 196.7,
+   "fired": true
+  },
+  "desktop errors": []
+ }
+}

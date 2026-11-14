@@ -2881,7 +2881,7 @@ everyone, revert the merge commit on main.
 - Longshot / Canyon rock to reference level still needs sculpted meshes; wiki map pictures still show the 5E-2c maps.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
 
-## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`, build `20261114090839`) — BUILT; RELEASE PRE-APPROVED BY THE OWNER (Nov 14, 2026: see "Release status")
+## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`, build `20261114090839`) — RELEASED Nov 14, 2026 (PR #127, merge `c55d425`); Titanfall redrawn after the release (build `20261114110530`: see "Owner fix after the release" and "Release record")
 
 Brief: the owner's Session 5E-2b2b prompt (supers: about 3 per player per round, never more than 3, charge from damage only and
 measured against the tank's own strength, 20-25% less damage, a faster timing bar, more professional looks; weapon proportions
@@ -3235,7 +3235,7 @@ than common, epic than rare, Moonfall the most intricate and unique; (d) Conques
   |---|---|---|---|
   | Pulse (beam) | Pierce Lance: rail + shock diamonds (jackpot: two sonic fronts) | Arc Lance: + a lightning coil round the beam (jackpot: chain lightning to the ground) | Sunlance: + muzzle star, weaving solar filaments, prominences, heat chevrons (jackpot: flame columns) |
   | Twin (wave) | Static Nova: jagged front + static, four short spokes (jackpot: a second front, forked spokes) | Storm Nova: + storm cloud and spiral arms, lightning flickering inside (jackpot: strikes from the sky) | Helix Nova: + dome of turning coils, ribs, tongues of flame on the front, ground cracks (jackpot: fire rain) |
-  | Siege (blast) | Siege Blast: fireball + smoke + one front (jackpot: six secondary blasts) | Rail Blast: + implosion lens and inrushing streaks, crawling forked lightning (jackpot: three EMP fronts) | Titanfall: + column and cap, crown of flame spikes, double fronts, ground cracks (jackpot: star rays, fire rain) |
+  | Siege (blast) | Siege Blast: fireball + smoke + one front (jackpot: six secondary blasts) | Rail Blast: + implosion lens and inrushing streaks, crawling forked lightning (jackpot: three EMP fronts) | Titanfall (redrawn Nov 14, see "Owner fix after the release"): a golden seal: two rings and a bezel of ticks, a six-pointed star of straight lines, spires of light on its points, a lance ringed by halos, molten fissures, a small fire heart (jackpot: white-hot heart, turning outer arcs, a second front, fire rain) |
 
   A missed rare keeps its second structure and its sigil (dimmer), so it stays more intricate than a perfect common, which is
   larger and brighter but still one structure.
@@ -3538,6 +3538,94 @@ scale in this session; all ten weapons were re-captured on all nine hulls on the
 9. **Conquest:** fire a super there. It should look and charge exactly as before.
 10. **Frame rate** while two or three supers are on screen (HIGH, then LOW in Settings if it stutters).
 
+### Owner fix after the release (Nov 14): Titanfall redrawn to the rarity rule (build `20261114110530`)
+**The owner's report** (Nov 14, from the RARITY LADDER and SIEGE family phone sheets): Titanfall (epic) read as a bigger,
+brighter fireball, not as more intricate than Siege Blast (common), and a MISSED Titanfall was less intricate than a PERFECT
+Rail Blast (rare). The rule: rare looks stronger than common, epic stronger than rare; a perfect lower rarity may look larger
+than a missed higher one, but the higher rarity must be the more intricate; a higher Super level is more concentrated and has
+more effects, and may get larger but never ridiculous. Intricacy is more distinct detail and structure, not size or
+brightness. Change only Titanfall; one fix pass, not a new review round.
+
+**Order of events, stated plainly.** PR #127 was merged (`c55d425`) on the owner's "merge" message before this request
+reached the session, so the fix could not go into #127: it ships as its own pull request from the same branch, and 5E-2b2b
+was live with the earlier Titanfall in between. The release was not reverted: nothing was broken, and a revert would have
+taken `PVP_V` back to 5 and forward again (two forced reloads for every player).
+
+**What Titanfall is now** (`js/fx3d.js`, the `siege2` branch of `fxBlast`: the Arcade recipe of the blast only).
+Before: a fire dome of two large billowing sprites, a stacked column of puffs, a crown of flame spikes and one or two
+fronts; what structure it had sat under the fire. Now: *a golden seal strikes the ground and breaks it*, drawn as line work,
+with the fire as its small heart:
+1. the seal: two rings with a bezel of ticks between them (every fourth one long), turning slowly;
+2. a six-pointed star of straight lines inscribed in the inner ring (no other super has straight-line geometry);
+3. six spires of light standing on the star's points, each on a four-pointed glint;
+4. a lance up the middle, ringed by halos that widen as they fade;
+5. molten fissures running out from the centre between the star's points (they stay put: the ground does not turn);
+6. glints circling the seal against its turn;
+7. the ground under the seal goes dark first, so gold lines read as gold on pale regolith.
+Kept: the epic sigil under it, the shock front, the gold cracks left on the ground, sparks and embers.
+
+| Super level (size x0.8 / x1 / x1.15, as before) | miss | normal | jackpot |
+|---|---|---|---|
+| Lines | thin and dim (80%) | brighter | thickest, white-gold |
+| Fire heart | widest and faintest, no white | gold with a white-gold core | tightest, white-hot, with a sharp white front |
+| Bezel ticks / fissures / halos / glints | 24 / 6 / 1 / 4 | 32 / 8 / 2 / 6 | 40 / 10 / 3 / 10 |
+| Spires (height against the blast radius) | 0.45 | 0.8 | 1.1, with lit tips |
+| Jackpot only | | | six arcs outside the seal turning against it, a second orange front, fire rain |
+
+Not changed: Titanfall's shell in flight, its charge-up, damage, radius, duration, ground marks and screen shake. LOW draws
+the same structure as plain glows; with Reduce Motion nothing turns. The seal's outer ring ends at 1.15x the blast radius
+(the earlier glow reached 1.7x) and the tallest spire is 1.1x the radius: larger effects, not a larger super.
+
+**The owner's pass test, checked by the lead on the re-captured sheets** (phone and desktop side by side, same scale; the
+owner's own eye on his devices is the final judge):
+- *Against Siege Blast at the same level* (`family-siege-*.webp`): Siege Blast is one fireball with tongues, smoke and one
+  front. Titanfall shows seven structures at every level. More intricate at miss, normal and jackpot.
+- *Against Rail Blast at the same level:* Rail Blast is a lens, inrushing streaks, lightning and fronts. Titanfall has the
+  seal, the star, the upright spires and the halos on top of its own fissures and fronts. More intricate at every level;
+  the closest call is the jackpot, where Rail Blast is at its busiest (24 streaks, 9 bolts, 3 fronts).
+- *A MISSED Titanfall against a PERFECT Rail Blast* (`ladder-*.webp`, last row): the Rail Blast is the larger and brighter
+  of the two; the missed Titanfall is smaller and dimmer and still shows the seal, the bezel, the star, six spires,
+  fissures and glints.
+
+**Only Titanfall changed, confirmed two ways:**
+1. *Code:* against the released `c55d425`, `js/fx3d.js` differs in the `siege2` branch of `fxBlast` (13 lines out, 31 in)
+   and one new helper, `spire` (an upright sliver of light), which only that branch calls. Byte-identical: the recipes of
+   Siege Blast and Rail Blast (5,406 bytes), the code the three share (`superShell`, `superBlast`, the head of `fxBlast`),
+   and the whole Conquest block (24,097 bytes).
+2. *Captures:* `docs/supers-5e2b2b/titanfall-fix-phone.webp` and `titanfall-fix-desktop.webp` show the released build
+   beside this one at every level. Siege Blast and Rail Blast were captured on both builds with the same seeded random
+   numbers (`super-vfx-capture.py --seed 7`): the same shapes, sparks and angles. **They are not pixel-identical** (0 of 72
+   frames): seeding did not make the capture repeatable to the pixel (most likely the glow shader's clock and the camera
+   run on real time; not chased), so the byte-identical code is the proof and the sheet is the picture.
+
+**Sheets re-captured: the Siege family only, phone and desktop together** (18 scenes at HIGH, plus Titanfall on LOW and
+with Reduce Motion on the phone; no page errors, no draw-call or program rise: 40 calls / 21 programs at the peak, as
+before). `super-sheets.py --patch` redraws only the tiles the new capture has: `family-siege-*`, the Siege row and the
+Rail Blast / Titanfall pair of `ladder-*`, the three Siege rows of `sequence-*`, and Titanfall's row of the LOW and Reduce
+Motion sheets. Every other tile is the released one (re-encoded once).
+
+**Frame cost: one relative check, Titanfall's jackpot only** (owner rule: software-renderer numbers are a relative check,
+no optimisation loop, no other super re-measured; `docs/supers-5e2b2b/frame-time-titanfall-fix.json`):
+
+| Titanfall jackpot, 0.1 s after it lands | main `1acff13` | this build | change | the same scene with no effect: main -> this build |
+|---|---|---|---|---|
+| Phone 390x844 | 47.3 ms | 58.5 ms | +24% | 46.2 -> 47.3 ms (+2%) |
+| Desktop 1920x1080 | 163.6 ms | 196.7 ms | +20% | 143.6 -> 165.6 ms (+15%) |
+
+The new Titanfall costs more at its peak frame on this renderer: about a fifth more than main (on the desktop most of
+that is inside the run-to-run drift of the idle scene; on the phone it is not). Glow quads at the peak went 198 / 236 / 313
+to 403 / 480 / 649 (miss / normal / jackpot), all in the same single draw call; Rail Blast's jackpot is at 716-799. Nothing
+was tuned after the measurement. A second baseline on the released build did not start (the dev server) and was not
+repeated. **The owner judges the frame rate on his real devices.**
+
+**Tools:** `super-vfx-capture.py --seed N` (seeded randoms for a like-for-like picture) and `REPO=<checkout>`,
+`super-sheets.py --patch`, `super-frame-time.py --only <super>`.
+
+**Tests on this build:** `node --check js/fx3d.js`; `super-timing.mjs` PASS (335 checks); `graphics-motion.mjs`,
+`graphics-release.mjs`, `lab-ui.mjs`, `web-login.mjs` PASS; `conquest-super-fx.py` PASS (Conquest's supers unchanged);
+`b4test.py` PASS; `super-vfx-capture.py` PASS on every capture above. CI on the pull request: see
+"Release record".
+
 ### Release status: release pre-approved by the owner (Nov 14, 2026)
 The owner's message of Nov 14 pre-approved the release: open the PR, merge once checks pass, deploy, add the release
 record. Payments stay DISABLED. The merge commit, the deploy runs and the live version check are in the "Release record"
@@ -3554,6 +3642,8 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
 - `a19dfbf`, `66e36f0` re-measured on the final rules. `84b473d` critic round 3 and its patches.
 - `ee245df` the graphics review's fixes, the frame-time tool and data.
 - Release tree (Nov 14): the two corrections above, the final sheets in `docs/supers-5e2b2b/`, this record, the build stamp.
+- `1c51b58` (on the pull request): the website's boot sync sends protocol version 6 (see "Release record").
+- After the merge: the Titanfall fix, its sheets, this record, build `20261114110530` (its own pull request).
 
 ### What is left (for the owner or a later session)
 - **The owner's iPhone check** with the checklist above.
@@ -3568,3 +3658,31 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
      earned from the pass or sold. Fair: looks only.
   3. *A "supers left" readout for the enemy team in live matches* (three small pips over each enemy bar), so the cap
      becomes something to play around.
+
+### Release record (Nov 14, 2026)
+- **RELEASED: PR #127 squash-merged as `c55d425` (head `1c51b58`), build `20261114090839`, `PVP_V` 6.** Payments stay
+  disabled. No price, economy, airdrop, save or ownership change. Merged on the owner's "merge" message (Nov 14).
+- CI on `1c51b58`: 9/9 green: conquest and transmission chromium + webkit (run [43582085138](https://github.com/solb7403-creator/war-machines/actions/runs/43582085138)), balance (run
+  [43582085126](https://github.com/solb7403-creator/war-machines/actions/runs/43582085126)), website and signup x3 (run [43582085123](https://github.com/solb7403-creator/war-machines/actions/runs/43582085123)), verify (run [43582085102](https://github.com/solb7403-creator/war-machines/actions/runs/43582085102)). No review threads, mergeable `clean`.
+- One CI failure before that head (`36d7c71`: signup-browsers chromium, webkit and firefox, run [43581451251](https://github.com/solb7403-creator/war-machines/actions/runs/43581451251), and
+  conquest's `conquest-desktop-keys.py`, run [43581451454](https://github.com/solb7403-creator/war-machines/actions/runs/43581451454)). Cause: this session raised `PVP_V` from 5 to 6, but
+  `web/boot.js` sends the protocol version as a literal on the website's first `/api/sync` (it runs before `js/rules.js`
+  loads) and still sent 5. The server answered 409 "update", so the website stopped at CONNECTION PAUSED in every browser:
+  **merged as it was, nobody on the website would have got past the loading screen.** Reproduced locally (same 409), fixed
+  in `1c51b58` (`web/boot.js` sends 6), and `dev/tests/web-login.mjs` now fails if that literal and `PVP_V` drift apart
+  (it runs in the website check and before the Worker deploy). No test skipped or relaxed. The session's own local test
+  list did not include the website sign-up journey; CI caught it.
+- Worker deploy run [43585206662](https://github.com/solb7403-creator/war-machines/actions/runs/43585206662): success (server tests and the Workers-runtime live-match smoke passed before the
+  deploy); notices `pvp health: {"ok":true,"v":6,"open":0,"waiting":0,"queues":[]}` and
+  `live version: {"v":"20261114090839"} (repo: {"v":"20261114090839"})`, live = repo.
+- Pages run [43585206474](https://github.com/solb7403-creator/war-machines/actions/runs/43585206474): success (deployment of `c55d425`). The live hosts are outside this container's network
+  allowlist, so the Worker figures come from the deploy run's own checks and the Pages figure from the deployment record.
+- Post-merge runs on main `c55d425`: Validate Laboratory UI (run [43585206723](https://github.com/solb7403-creator/war-machines/actions/runs/43585206723)): success. Equipment Balance (run
+  [43585206659](https://github.com/solb7403-creator/war-machines/actions/runs/43585206659)): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
+- Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment),
+  so main was merged into it instead (`4b15a8b`, no content difference from main at that point).
+- **Titanfall fix** ("Owner fix after the release" above): its own pull request from the same branch, build
+  `20261114110530`. Its merge commit, CI and deploy runs are added below once they exist.
+- Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. Roll back: revert
+  the merge commit(s) on main (Pages and the Worker deploy follow; reverting `c55d425` takes `PVP_V` back to 5, so phones
+  are asked to reload once more).

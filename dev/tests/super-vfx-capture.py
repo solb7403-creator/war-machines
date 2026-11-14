@@ -4,7 +4,8 @@ hand at 1/30 s, so every capture is the same on any machine (software GL include
 and the effects: it fails on any page error, on a missing bar or outcome, and on a draw-call or shader-program rise.
 usage: python3 dev/tests/super-vfx-capture.py [outdir] [--only pulse0,moon] [--view phone|desktop|both] [--quality high|low] [--reduced] [--destroy] [--seed 7]
   --seed N: the page's Math.random is a seeded generator, restarted at N for every scene (the effects draw their sparks, angles and
-            jitter from it), so two builds whose recipe for a super is the same give the same pixels: a before / after proof
+            jitter from it), so two builds draw a super with the same sparks and angles: a like-for-like before / after picture.
+            NOT a pixel proof: the glow shader's clock and the camera still run on real time, so no two runs match pixel for pixel
   REPO=<another checkout> serves that tree's game files (dev/tests/harness.py), with this tool
   phone = 390x844 portrait at 3x (iPhone in Telegram), desktop = 1920x1080.
 Writes <outdir>/<view>-<quality>/<key>-<outcome>-<frame>.png, sheet-<view>-<quality>.webp (10 x 3, the blast frame) and
