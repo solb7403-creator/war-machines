@@ -36,7 +36,7 @@ const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;   //
 // The split is the owner's starting point, kept after calibration: in a measured average round about 70% of the charge comes from
 // damage dealt and 30% from damage received. The numbers differ by mode because a round's fighting differs (a 24 s duel, a
 // 180 s Moon Zone with respawns, a megatank with a huge hull): each row is fitted on seeded rounds of that mode so the pilot's
-// uncapped charge is about 4.4 bars a round (1v1 Arena: 2.7), which the cap turns into "about 3, never more".
+// uncapped charge is about 4 bars a round (1v1 Arena: 2.7), which the cap turns into "about 3, never more".
 // dev/tests/super-rounds.mjs measures every cell; dev/tests/super-timing.mjs holds the rules.
 const SUP_ROUND_CAP=3,SUP_TAKEN_MAX=2;   // SUP_TAKEN_MAX: damage received fills at most this many bars a round (the third super of a round always needs damage dealt)
 const SUP_FILL={arena:{1:[5,0.8],2:[7,0.5],3:[16,0.6]},zone:{1:[10,0.9],2:[19,0.75],3:[27,0.75]},crystal:{1:[8.5,0.8],2:[11,0.55],3:[17,0.6]},
