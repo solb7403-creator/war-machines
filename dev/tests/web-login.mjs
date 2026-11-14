@@ -62,4 +62,8 @@ assert.match(gamePage,/manifest\.webmanifest/);
 const manifest=JSON.parse(fs.readFileSync(new URL('../../web/manifest.webmanifest',import.meta.url),'utf8'));
 assert.equal(manifest.display,'standalone');assert.ok(manifest.icons.some(i=>i.sizes==='512x512')&&manifest.icons.some(i=>i.sizes==='192x192'));
 assert.ok(fs.existsSync(new URL('../../privacy.html',import.meta.url)),'privacy policy page');
+// The website's first sync runs before js/rules.js loads, so web/boot.js carries the protocol version as a literal. It
+// must equal PVP_V, or the server answers "update" and nobody on the website gets past the loading screen (Nov 14 2026).
+{const pv=/\bconst PVP_V=(\d+);/.exec(fs.readFileSync(new URL('../../js/rules.js',import.meta.url),'utf8')),gv=/\{gv:(\d+),lab:1\}/.exec(fs.readFileSync(new URL('../../web/boot.js',import.meta.url),'utf8'));
+ assert.ok(pv&&gv,'PVP_V and the boot sync version are both found');assert.equal(gv[1],pv[1],'web/boot.js sends the current protocol version (PVP_V)');}
 console.log('PASS call sign + password entry, optional passkey/Telegram/Google, settings, manifest, privacy');
