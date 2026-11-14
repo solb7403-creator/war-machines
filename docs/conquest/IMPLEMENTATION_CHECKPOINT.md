@@ -4206,3 +4206,25 @@ No round 2: no blocker; every fix is covered by a test and re-captured in the sa
    and the missing build bump (done). Changed the result: yes (the release bumps the build; a decision is surfaced).
 2. Gameplay / UI reviewer: rules 1, 2, 5 PASS, rule 6 partial fail (wiki captures mid-scroll). Changed the result: yes (fixed
    captures, clearer copy with units, one more test check).
+
+### Release record (Nov 14, 2026)
+- **RELEASED: PR [#132](https://github.com/solb7403-creator/war-machines/pull/132) squash-merged as `d6c2b0f` (head `a46bacb`),
+  build `20261114200718`, `PVP_V` 7 (unchanged).** Merged on green checks under the owner's pre-approval in the session brief.
+  Payments stay disabled.
+- CI on `a46bacb`: 10/10 green: verify, asset-integrity, website, signup-browsers chromium / firefox / webkit (run
+  [43635824474](https://github.com/solb7403-creator/war-machines/actions/runs/43635824474)), transmission chromium + webkit and
+  conquest (run [43635824517](https://github.com/solb7403-creator/war-machines/actions/runs/43635824517)), balance (run
+  [43635824460](https://github.com/solb7403-creator/war-machines/actions/runs/43635824460)). No review threads; main had not moved.
+- Worker deploy run [43639264249](https://github.com/solb7403-creator/war-machines/actions/runs/43639264249): success (server
+  tests and the Workers-runtime live-match smoke passed before the deploy); notices `pvp health: {"ok":true,"v":7,...}` and
+  `live version: {"v":"20261114200718"} (repo: {"v":"20261114200718"})`, live = repo.
+- Pages run [43639263725](https://github.com/solb7403-creator/war-machines/actions/runs/43639263725): success (`d6c2b0f`).
+- Post-merge on main: Validate Laboratory UI (run [43639264203](https://github.com/solb7403-creator/war-machines/actions/runs/43639264203))
+  and Equipment Balance (run [43639264243](https://github.com/solb7403-creator/war-machines/actions/runs/43639264243)): success.
+- The Graphify review bot posted that its reviews are paused (informational, not a check).
+- Roll back: a plain revert of `d6c2b0f` is safe (numbers only, no data migration). Points already paid at the new quest rates
+  and caches already bought stay where they are.
+- **Open owner decision** (review finding 1): quest points now dominate income and also feed the referral 5% and the airdrop
+  score, outside the daily cap. Not changed in this release.
+- Not verified on a physical phone. Owner check (Telegram, iPhone): Quests shows +3,500 / +12,500; Shop > Points shop shows
+  30K / 60K / 180K and chosen cores from 43,750 points; a maxed core's tile says Max.
