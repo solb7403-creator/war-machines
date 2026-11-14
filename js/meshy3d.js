@@ -314,7 +314,7 @@ const Meshy3D=(()=>{
  // seat, the muzzle near the nose. Per weapon item, per chassis class, [Common, Rare, Epic hull]; 1 where the rule was right.
  // Uniform scale only: models, colours, sockets and muzzle points are untouched (muzzle points are weapon-local and scale with it).
  const FIT_ADJ={
-  'pulse:0':{titan:[1,1,1.08]},
+  'pulse:0':{titan:[1,1,1.14]},
   'pulse:1':{scout:[.93,.93,.93],titan:[1,1,1.08]},
   'pulse:2':{scout:[.88,.88,.88],vanguard:[.86,.86,.86],titan:[.82,.82,.86]},
   'twin:0':{scout:[1.2,1.2,1.2],vanguard:[1.3,1.3,1.27],titan:[1.4,1.42,1.42]},

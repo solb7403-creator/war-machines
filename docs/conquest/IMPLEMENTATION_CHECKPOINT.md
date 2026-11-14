@@ -3279,6 +3279,7 @@ its rarity; and whether it is better than before.
 | Round | Pierce Lance | Arc Lance | Sunlance | Static Nova | Storm Nova | Helix Nova | Siege Blast | Rail Blast | Titanfall | Moonfall |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | 6.5 / 7 / 7, better | 7 / 8 / 7.5, better | 6.5 / 6 / 6, better | 7 / 7.5 / 7, better | 6.5 / 7 / 6.5, better | 5.5 / 6 / 7, same | 6 / 7 / 6.5, better | 6.5 / 5.5 / 7, same | 5 / 5.5 / 5, same | 7 / 7 / 7, better |
+| 2 | 7 / 6 / 7, better | 7.5 / 7.5 / 8, better | 7 / 7 / 6.5, better | 6.5 / 7 / 7, better | 7 / 7 / 6.5, better | 6.5 / 6.5 / 7, better | 5.5 / 6 / 6, better | 7 / 7 / 7.5, better | 7 / 6.5 / 7, better | 7 / 7.5 / 7, better |
 
 **Round 1 verdicts.** Rarity ladder: Pulse passes at a normal stop, shaky at jackpot (Arc Lance busier than Sunlance); Twin
 passes; Siege fails at epic (Titanfall "only brighter: a white-yellow blob"); Moonfall "most intricate and unique": narrow fail
@@ -3311,3 +3312,30 @@ Breaker and Moonbeam still small on the Titan-class hulls, Nova Pulse a touch bu
 - *Arc Lance*: violet strands with a pale core (it went white on desktop), small bolt tips.
 - *Weapons*: Twin Repeater x1.40-1.42 and Rail Breaker x1.15-1.20 on the Titan class, Moonbeam x1.15 / x1.15 / x1.12 on
   Titan / Bulwark / Colossus, Nova Pulse x0.82 on Titan and Bulwark.
+
+**Round 2 verdicts** (a fresh critic; it also saw round 1's sheets). Nothing worse than before or than round 1; Titanfall
+"much better". Rarity ladder: Pulse, Twin and Siege pass; Moonfall "most intricate and unique": still failing on intricacy
+("a soft, featureless beam with six or so red zigzags and a ground sigil"). The owner's test passed on two of four pairs (was
+none): a missed Sunlance and a missed Storm Nova still lost too much. Moonfall: the red electricity reads as electricity with
+no hoops; rooted on the beam on the phone, **not on the desktop** (arcs 40-100 px off the beam ending in white dots); normal's
+electricity thinner but still pale. Still clearly below professional: Siege Blast (blurry fire, a yellow-green centre, a
+white oval). Borderline: Helix Nova's jackpot and the Twin family's blotchy ground fog. Weapons: better again; Twin Repeater
+still light on the Titan-class hulls, Rail Breaker and Pulse Cannon a little slender on the Colossus.
+
+**Changed after round 2.**
+- *Siege Blast* redrawn: the ground under the fire goes dark first (light added to pale ground washed out to yellow-green),
+  the fire graded white - yellow - orange - dark red, sharp uneven tongues of flame instead of soft blobs, a ragged orange
+  front at every level instead of a pale hoop, five secondary bursts close in as standing flames.
+- *Moonfall*: every red arc now starts on the bright core and crosses the sheath outward (no far-end beads, more varied
+  paths, more forks); a cold white core in a darker blue sheath; six hair-thin saturated blue filaments at a normal stop;
+  the phases of the moon ride down the inside of the beam; the impact's rim is two turning crescents, not an oval.
+- *Miss tier*: Sunlance keeps a clear small star and six flares; Storm Nova keeps thin, clearly drawn arms.
+- *Twin family fog* halved (thinner still at jackpot); the fire / smoke noise is finer and firmer for every super.
+- *Helix Nova*: four coils graded thick at the base to thin at the top, fire rain as short falling streaks, smaller tongues.
+- *Arc Lance*: its jackpot's chain lightning stays within a tank's width of the coil (concentrated); lightning cores less white.
+- *Titanfall*: a smaller heart so the target shows, one ragged gold front (a second only on a jackpot), gold cracks without
+  dark needles, the same crown at every level: a jackpot differs by a taller, tighter column and brighter, longer cracks.
+- *Weapons*: Pulse Cannon x1.14 on the Colossus. **Not changed, with the reason:** the Twin Repeater on the Titan class is
+  already as long as the hull (1.01-1.08) with its barrels 0.65-0.85 past the nose, and the Rail Breaker on the Colossus is
+  0.83 past the nose: any larger and they overhang further. Their slender look there is the models' own (a low flat turret,
+  thin barrels), and models are not to be changed in this session.
