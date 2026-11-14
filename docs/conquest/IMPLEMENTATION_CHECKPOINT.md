@@ -3690,7 +3690,7 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
     and `live version: {"v":"20261114110530"} (repo: {"v":"20261114110530"})`, live = repo.
   - Pages run [43590937909](https://github.com/solb7403-creator/war-machines/actions/runs/43590937909): success (deployment of `ae37dd7`).
   - Post-merge runs on main `ae37dd7`: Validate Laboratory UI (run [43590938171](https://github.com/solb7403-creator/war-machines/actions/runs/43590938171)): success. Equipment Balance (run
-    [43590938146](https://github.com/solb7403-creator/war-machines/actions/runs/43590938146)): in progress when this was written (the same suite was green on the pull request head).
+    [43590938146](https://github.com/solb7403-creator/war-machines/actions/runs/43590938146)): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
   - `qa.py` finished after the pull request was opened: PASS (no layout issue at any of its screen sizes).
   - The branch was merged with main again afterwards (`3783cbd`); this record is the only change it carries on top of main.
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. Roll back: revert
