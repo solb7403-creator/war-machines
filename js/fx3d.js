@@ -279,7 +279,7 @@ function create(T,host){
  function superCharge(key,k,x,y,z,ang,oc,dim,u){
   const P=PAL[key]||PAL.pulse0,K=KIND[key],A=col(P.a),C=col(P.c),B=col(P.b),X=col(P.x),q=quiet(),pulse=q?1:.8+.2*Math.sin(time*26),grow=.35+.65*k,boost=oc===2?1.5:oc===0?.55:1;
   const mx=x+Math.cos(ang)*1.15*u,mz=z+Math.sin(ang)*1.15*u;
-  {const T=TIER[key]|0;sigil(x,y+.045,z,sigR(T,u)*(.7+.3*k),T,A,X,(.35+.65*k)*boost,q?0:time*(.6+1.2*k),u);}   // the rarity's sigil gathers under the tank (5E-2b2b)
+  {const T=TIER[key]|0;sigil(x,y+.045,z,sigR(T,u)*(.7+.3*k),T,A,T===3?C:X,(.35+.65*k)*boost,q?0:time*(.6+1.2*k),u);}   // the rarity's sigil gathers under the tank (5E-2b2b)
   if(K==='nova'){   // a ring closes in on the tank again and again, faster as it fills
    const ph=(time*(1.4+2.2*k))%1,r=dim*(1-ph*.82);ring(x,y+.05,z,r,.1*u*boost,A,(.25+.55*k)*(1-ph*.3)*boost,40,key==='twin0'?.1:0,frame>>2);
    disc(x,y+.04,z,dim*.55*grow,B,.22*grow*boost);sprite(x,y+.7*u,z,(.5+.9*k)*u*boost*pulse,A,.8*CQ);sprite(x,y+.7*u,z,(.22+.4*k)*u*boost,C,CQ);
@@ -287,9 +287,9 @@ function create(T,host){
    if(key==='twin2')for(let i=0;i<2;i++)ring(x,y+.3*u+i*.5*u,z,(1.0-i*.25)*u*grow,.06*u,X,.6*k*boost,22,0,0);
   }else{
    disc(mx,y+.04,mz,(1.2+1.6*k)*u*boost,B,.3*grow*boost);sprite(mx,y+.55*u,mz,(.55+1.1*k)*u*boost*pulse,A,.85*CQ);sprite(mx,y+.55*u,mz,(.22+.45*k)*u*boost,C,CQ);
-   if(key==='pulse1'||key==='siege1'||key==='moon'){const fq=q?frame>>5:frame>>1,a=hsh(fq)*TAU,r=(1+k)*u;bolt(mx+Math.cos(a)*r,y+.5*u,mz+Math.sin(a)*r,mx,y+.55*u,mz,.3*u,4,.045*u,key==='moon'&&oc===2?col('#ff5a4a'):X,.9,fq);}   // reduced motion: the same arc held still, never a flash
+   if(key==='pulse1'||key==='siege1'||key==='moon'){const fq=q?frame>>5:frame>>1,a=hsh(fq)*TAU,r=(1+k)*u;bolt(mx+Math.cos(a)*r,y+.5*u,mz+Math.sin(a)*r,mx,y+.55*u,mz,.3*u,4,.045*u,key==='moon'?(oc===2?col('#ff5a4a'):col('#bfe6ff')):X,.9,fq);}   // reduced motion: the same arc held still, never a flash
    if(key==='pulse2'||key==='siege2')star(mx,y+.56*u,mz,(.8+1.5*k)*u*boost,4,time*1.5,X,.75*grow,.06*u);
-   if(key==='moon'){const a0=ang+2.2,a1=ang+TAU-2.2;ring(mx,y+.06,mz,(1.5-.5*k)*u,.07*u,A,.8*grow,18,0,0,a0,a1);ring(mx,y+.06,mz,(2.1-.7*k)*u,.05*u,oc===2?col('#ff3b3b'):B,.6*grow,18,0,0,a0+.3,a1-.3);}
+   if(key==='moon'){const a0=ang+2.2,a1=ang+TAU-2.2;ring(mx,y+.06,mz,(1.5-.5*k)*u,.07*u,A,.8*grow,18,0,0,a0,a1);ring(mx,y+.06,mz,(2.1-.7*k)*u,.05*u,B,.6*grow,18,0,0,a0+.3,a1-.3);}
    if(key==='pulse0')for(let i=0;i<2;i++){const d=(1.6+i*1.1)*u,w=(.5-.12*i)*u*grow;seg(mx+Math.cos(ang)*d-Math.sin(ang)*w,y+.5*u,mz+Math.sin(ang)*d+Math.cos(ang)*w,mx+Math.cos(ang)*d+Math.sin(ang)*w,y+.5*u,mz+Math.sin(ang)*d-Math.cos(ang)*w,.05*u,.05*u,X,.7*k);}
   }
   // motes drawn in towards the muzzle
@@ -377,10 +377,9 @@ function create(T,host){
    sprite(ax,y,az,W*bw*1.5,A,.4*env*CQ);return;}
   flow(ax,y,az,bx,yb,bz,W*bw,W*bw*.86,A,(oc===2?.74:.62)*env*fl,0);cap(bx,yb,bz,ca,0,sa,W*bw*.86,A,.4*env*fl);
   flow(ax,y,az,bx,yb,bz,W*cw*hw,W*cw*hw*.82,C,Math.min(1,.9*ht)*env,9);cap(bx,yb,bz,ca,0,sa,W*cw*hw*.82,C,.6*env);
-  if(oc===2){   // a jackpot: concentrated. A white needle down the middle and a hard bright line along each edge of the body
-   const nd=Math.max(W*cw*.2,MW*.6),ed=Math.max(W*.045,MW*.5),ew=W*bw*.9;
-   seg(ax,y+.01,az,bx,yb+.01,bz,nd,nd*.8,col('#ffffff'),env);
-   for(const sd of [-1,1])seg(ax-sa*ew*sd,y,az+ca*ew*sd,bx-sa*ew*.86*sd,yb,bz+ca*ew*.86*sd,ed,ed,C,.55*env);}
+  if(oc===2){   // a jackpot: concentrated. A white needle down the middle of a narrow, white-hot core (no hard lines along the edges: they read as ruled)
+   const nd=Math.max(W*cw*.2,MW*.6);
+   seg(ax,y+.01,az,bx,yb+.01,bz,nd,nd*.8,col('#ffffff'),env);}
   sprite(ax,y,az,W*bw*1.4,A,.55*env*CQ);sprite(ax,y,az,Math.max(W*cw*1.9,.28*u),C,.85*env*CQ);
   sprite(bx,yb,bz,W*bw*1.1,A,.4*env*CQ);
  }
@@ -421,7 +420,7 @@ function create(T,host){
   const W=e.b*OCA[oc]*thin*punch,y=e.y+.55*u,ax=e.x+ca*1.1*u,az=e.z+sa*1.1*u,bx=e.x+ca*L,bz=e.z+sa*L,yb=y+(e.dy||0),A=col(P.a),B=col(P.b),C=col(P.c),X=col(P.x);
   const fs=frame>>(q?4:1);   // lightning re-draws every other frame (every 16th with reduced motion: no flicker)
   const flash=t<.09&&oc>0?1-t/.09:0,T=TIER[key]|0;
-  sigil(e.x,e.y+.045,e.z,sigR(T,u),T,A,X,env*(oc===0?.4:1),q?0:t*2.2+e.seed,u);
+  sigil(e.x,e.y+.045,e.z,sigR(T,u),T,A,T===3?C:X,env*(oc===0?.4:1),q?0:t*2.2+e.seed,u);
   if(key==='pulse0'){   // PIERCE LANCE: a needle-straight teal rail shot, white-hot core, shock diamonds racing down it
    beamBody(e,W,A,B,C,env,fl,1.5,.62,.2);
    if(flash)star(ax,y+.02,az,(1.6+1.2*flash)*u,4,e.ang+.39,C,flash,.12*u);

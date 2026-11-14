@@ -187,6 +187,11 @@ async def main():
             for v in (['phone','desktop'] if VIEW=='both' else [VIEW]):allerrs+=await run_view(p,v,report)
     finally:
         if dev:dev.terminate()
+    if isinstance(opt('only'),str) and (OUT/'report.json').exists():   # a partial re-capture (--only) keeps the rest of an earlier report
+        old=json.loads((OUT/'report.json').read_text())
+        for tag,rep in report.items():
+            if tag in old and isinstance(old[tag],dict) and 'supers' in old[tag]:merged=dict(old[tag]['supers']);merged.update(rep['supers']);rep['supers']=merged
+        for tag in old:report.setdefault(tag,old[tag])
     (OUT/'report.json').write_text(json.dumps(report,indent=1))
     bad=[]
     for tag,r in report.items():
