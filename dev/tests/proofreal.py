@@ -13,7 +13,7 @@ PLAY="""(c)=>{
  window.__res=null;const ME=window.matchEnd;window.matchEnd=r=>{window.__res=r;};
  save.gfx='2d';if(typeof apply3D==='function')apply3D();
  closeAll();save.gtype=c.g;save.mode=c.m;save.map=c.map;save.mp=c.mp;
- if(c.max){save.up={hull:4,cannon:4,engine:2,target:2,reactor:2};}else save.up={hull:0,cannon:0,engine:0,target:0,reactor:0};
+ {const h=homeChassis(save);save.upc=save.upc||{};save.upc[h]=c.max?{hull:4,cannon:4,engine:2,target:2,reactor:2}:{hull:0,cannon:0,engine:0,target:0,reactor:0};}   // per-chassis builds (5E-2b3)
  store();prepareMatch();startMatch();
  if(!me.brain){me.brain={mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0};me.strafe=1;me.strafeT=1.5;}
  const dt=1/30;let t=0,sim=0;

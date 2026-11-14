@@ -29,7 +29,7 @@ function initData(user, age = 0, sp = '') {
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
   return p.toString();
 }
-const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:6,...body}) }), env); return [r.status, await r.json()]; };
+const call = async (path, body, ip) => { const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }; if (ip) h['CF-Connecting-IP'] = ip; const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:7,...body}) }), env); return [r.status, await r.json()]; };
 const A = { id: 111, username: 'alice' }, B = { id: 222, first_name: 'Bob <script>' }, J = { id: 999, username: 'LunarBattle' }, C = { id: 333, username: 'carol' };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const sec = await mod.webhookSecret(env);
@@ -49,7 +49,7 @@ t(s === 200 && r.rec.pts === 0 && r.E.pts === 0 && r.migOk === true && Array.isA
 t(r.league === 'ROOKIE' && db.get('/players/tg_111/league') === 'ROOKIE' && db.get('/players/tg_111/power') < 150, 'forged power/league ignored: power from owned gear ' + r.power);
 t(db.get('/meta/n') === 1, 'player count');
 [s, r] = await call('/api/sync', { initData: initData(A), earned: 5e8, mig: { pts: 1e9, earned: 1e9, up: { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 } } });
-t(r.rec.pts === 0 && r.E.pts === 0 && r.E.up.hull === 0, 'a brand-new pilot cannot "move" a forged save in');
+t(r.rec.pts === 0 && r.E.pts === 0 && r.E.upc.vanguard.hull === 0, 'a brand-new pilot cannot "move" a forged save in');
 
 // ---- login reward: once per UTC day ----
 [s, r] = await act(A, 'login'); t(r.ok && r.out.pts === 125 && r.E.pts === 125 && r.E.earned === 125, 'login reward credited by the server ' + JSON.stringify(r.out));
@@ -176,7 +176,7 @@ setEco('tg_111', (S) => { S.roll[got1.k + ':1'] = 1.06; });   // the crate can r
 [s, r] = await act(A, 'tune', { w: 1, k: got1.k, t: 1 }); t(r.ok && typeof r.out.better === 'boolean' && r.E.pts === 60000, 'tune-up on the server');
 [s, r] = await act(A, 'tune', { w: 1, k: 'pulse', t: 0 }); t(r.out.err === 'crate', 'starter gear cannot be tuned');
 [s, r] = await act(A, 'salvage', { tk: 'chassis', ri: 2 }); t(r.out.sal && r.E.pts === 40000, 'salvage on the server');
-[s, r] = await act(A, 'up', { k: 'hull' }); t(r.out.lv === 1 && r.E.up.hull === 1 && r.E.pts === 39500, 'upgrade bought with server points');
+[s, r] = await act(A, 'up', { k: 'hull' }); t(r.out.lv === 1 && r.E.upc.vanguard.hull === 1 && r.E.upc.titan.hull === 0 && r.E.pts === 39500, 'upgrade bought with server points (for the chassis flown: the Vanguard; the Titan keeps its own build)');
 [s, r] = await act(A, 'up', { k: 'nope' }); t(s === 400, 'unknown upgrade refused');
 [s, r] = await act(A, 'hack', {}); t(s === 400, 'unknown action refused');
 // power and league come from what you own
@@ -369,31 +369,31 @@ t(!JSON.stringify(db.root.lb).includes('iph') && !db.get('/players/tg_111/iph'),
   let n = 0;
   for (const k of ['hull', 'cannon', 'engine']) for (let i = 0; i < 4; i++) { [s, r] = await act(D, 'up', { k }); if (r.out && r.out.lv) n++; }
   for (let i = 0; i < 2; i++) { [s, r] = await act(D, 'up', { k: 'target' }); if (r.out && r.out.lv) n++; }
-  t(n === 14 && R.upLevels(E(pd).up) === 14, 'build: 14 levels bought ' + JSON.stringify(E(pd).up));
-  [s, r] = await act(D, 'up', { k: 'reactor' }); t(r.out.err === 'budget' && E(pd).up.reactor === 0 && E(pd).pts === 100000 - 62500, 'build budget full: a 15th level is refused, nothing charged ' + JSON.stringify(r.out));
+  t(n === 14 && R.upLevels(E(pd).upc.vanguard) === 14, 'build: 14 levels bought ' + JSON.stringify(E(pd).upc));
+  [s, r] = await act(D, 'up', { k: 'reactor' }); t(r.out.err === 'budget' && E(pd).upc.vanguard.reactor === 0 && E(pd).pts === 100000 - 62500, 'build budget full: a 15th level is refused, nothing charged ' + JSON.stringify(r.out));
   const pw14 = db.get('/players/tg_4444/power');
-  [s, r] = await act(D, 'respec'); t(r.out.back === 31250 && r.out.lost === 31250 && R.upLevels(r.E.up) === 0 && r.E.pts === 100000 - 62500 + 31250, 'reset build: every level to 0, half the points back ' + JSON.stringify(r.out));
+  [s, r] = await act(D, 'respec'); t(r.out.back === 31250 && r.out.lost === 31250 && R.upLevels(r.E.upc.vanguard) === 0 && r.E.pts === 100000 - 62500 + 31250, 'reset build: every level to 0, half the points back ' + JSON.stringify(r.out));
   t(db.get('/players/tg_4444/power') < pw14 && r.E.earned === 100000, 'power drops with the build; lifetime points (rank) untouched');
   [s, r] = await act(D, 'respec'); t(r.out.err === 'empty', 'nothing to reset');
   // a pilot who bought more than 14 levels before the budget: the top levels come off, paid back in full
-  setEco(pd, (S) => { S.up = { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 }; S.pts = 0; });
-  [s, r] = await act(D, 'login'); t(R.upLevels(r.E.up) === 14 && r.E.pts - (r.out.pts || 0) === 67500 && r.E.up.hull === 3 && r.E.up.reactor === 2, 'over the budget: trimmed to 14, refunded in full ' + JSON.stringify(r.E.up) + ' ' + r.E.pts);
+  setEco(pd, (S) => { S.upc.vanguard = { hull: 4, cannon: 4, engine: 4, target: 4, reactor: 4 }; S.pts = 0; });
+  [s, r] = await act(D, 'login'); t(R.upLevels(r.E.upc.vanguard) === 14 && r.E.pts - (r.out.pts || 0) === 67500 && r.E.upc.vanguard.hull === 3 && r.E.upc.vanguard.reactor === 2, 'over the budget: trimmed to 14, refunded in full ' + JSON.stringify(r.E.upc.vanguard) + ' ' + r.E.pts);
   // paid reset: the points fee (half the build) priced at 6,250 points per $1 in $0.50 tiers, $1 to $5; every point comes back
   t(R.respecTier(16500) === 1.5 && R.respecTier(62500) === 5 && R.respecTier(9375) === 1 && R.respecTier(6250) === 0, 'paid reset tiers: 16,500 → $1.50, full → $5, small builds points only');
-  setEco(pd, (S) => { S.up = { hull: 4, cannon: 4, engine: 4, target: 2, reactor: 0 }; S.pts = 0; S.ptsSpent = 62500; });
+  setEco(pd, (S) => { S.upc.vanguard = { hull: 4, cannon: 4, engine: 4, target: 2, reactor: 0 }; S.pts = 0; S.ptsSpent = 62500; });
   [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec', price: 0.01 }); t(s === 200 && r.stars === 385 && /Build reset/.test(tgCalls.filter(c => c[0] === 'createInvoiceLink').pop()[1].title), 'paid reset invoice: full build is $5 = 385 Stars ' + JSON.stringify(r));
   const rpay = (ch, g) => hook({ message: { from: { id: 4444, username: 'dana' }, chat: { id: 4444, type: 'private' }, successful_payment: { total_amount: 385, telegram_payment_charge_id: ch, invoice_payload: JSON.stringify({ u: 4444, k: 'respec', g, n: 'rs' + ch }) } } });
   const pw0 = db.get('/players/tg_4444/power');
   await rpay('rs1', 6.25);
-  t(R.upLevels(E(pd).up) === 0 && E(pd).pts === 62500 && E(pd).ptsSpent === 0 && db.get('/players/tg_4444/power') < pw0, 'paid reset: levels to 0, all 62,500 points back, power follows ' + E(pd).pts);
+  t(R.upLevels(E(pd).upc.vanguard) === 0 && E(pd).pts === 62500 && E(pd).ptsSpent === 0 && db.get('/players/tg_4444/power') < pw0, 'paid reset: levels to 0, all 62,500 points back, power follows ' + E(pd).pts);
   await rpay('rs1', 6.25); t(E(pd).pts === 62500, 'paid reset granted once');
   [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); t(s === 400, 'nothing to reset: no invoice');
   await hook({ message: { from: { id: 4444 }, chat: { id: 4444, type: 'private' }, refunded_payment: { total_amount: 385, telegram_payment_charge_id: 'rs1', invoice_payload: '{}' } } });
-  t(E(pd).pts === 31250 && R.upLevels(E(pd).up) === 0, 'refunded paid reset: the extra half goes back, like a points reset ' + E(pd).pts);
+  t(E(pd).pts === 31250 && R.upLevels(E(pd).upc.vanguard) === 0, 'refunded paid reset: the extra half goes back, like a points reset ' + E(pd).pts);
   // paid with nothing left to clear (reset with points in between): it waits for the next reset
   await rpay('rs2', 1.25); t(E(pd).rsCr === 1, 'paid reset with an empty build is saved for later');
   [s, r] = await call('/api/stars-invoice', { initData: initData(D), kind: 'respec' }); t(s >= 400, 'a saved paid reset is not sold twice');
-  setEco(pd, (S) => { S.up = { hull: 4, cannon: 0, engine: 0, target: 0, reactor: 0 }; S.pts = 0; });
+  setEco(pd, (S) => { S.upc.vanguard = { hull: 4, cannon: 0, engine: 0, target: 0, reactor: 0 }; S.pts = 0; });
   [s, r] = await act(D, 'respec'); t(r.out.back === 10000 + 7813 && r.E.rsCr === 0, 'next reset uses it: half back plus $1 of fee covered ' + JSON.stringify(r.out));
 }
 

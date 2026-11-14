@@ -3,7 +3,7 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=6;   // game/reward and live-match protocol version: 6 is the 5E-2b2b supers (charge from damage only, measured against the tank's own strength; at most 3 a round; faster timing bar; supers used in the snapshot); 5 is the 5E-2b supers (timing bar, the tap message and the wider snapshot); 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
+const PVP_V=7;   // game/reward and live-match protocol version: 7 is 5E-2b3 (each chassis its own build and cores: the loadout, the economy actions and purchases carry the chassis); 6 is the 5E-2b2b supers (charge from damage only, measured against the tank's own strength; at most 3 a round; faster timing bar; supers used in the snapshot); 5 is the 5E-2b supers (timing bar, the tap message and the wider snapshot); 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
@@ -119,6 +119,22 @@ function respecTier(inv){const t=Math.round(respecFee(inv)/RESPEC_PTS_USD*2)/2;r
 const respecTierOfTon=ton=>Math.min(RESPEC_USD_MAX,Math.max(RESPEC_USD_MIN,Math.round((Number(ton)||0)/RESPEC_TON_USD*2)/2));
 const upLevels=U=>UORDER.reduce((a,k)=>a+((U&&U[k])|0),0);
 const upInvested=U=>UORDER.reduce((a,k)=>{let s=0;for(let i=0;i<((U&&U[k])|0);i++)s+=UPS[k].costs[i];return a+s;},0);
+// ---- per-chassis builds and cores (Session 5E-2b3, owner Nov 14 2026: "each chassis class needs its own set of full cores and its
+// own full set of custom upgrades") ----
+// Each chassis class (Scout, Vanguard, Titan) has its own upgrade build S.upc[class] (hull..reactor 0-4, the BUILD_MAX budget and
+// the reset per chassis) and its own seven cores: levels S.glc[class] (1-5) and shards S.gsc[class]. Points stay one wallet. A
+// loadout carries its chassis's build and core levels (up, gl, as before) and every chassis it can swap to in a match carries its
+// own (chs[i].up, chs[i].gl): loadoutFor() swaps all three together. A record from before (one shared up / gemLvl / gemShards)
+// moves to the chassis of its active machine (ecoNorm); the owner's account copies it to all three (eco.js, owner rule Nov 14).
+const UP0=()=>({hull:0,cannon:0,engine:0,target:0,reactor:0});
+// own names only: a plain CH[c] / GEM[k] lookup also takes 'constructor', '__proto__' or 'toString' from a forged request (review, 5E-2b3)
+const isCh=c=>typeof c==='string'&&CHORDER.includes(c),isGem=k=>typeof k==='string'&&GORDER.includes(k);
+const chKey=c=>isCh(c)?c:'vanguard';
+const chUp=(S,c)=>(S&&S.upc&&S.upc[chKey(c)])||UP0();
+const chGl=(S,c)=>(S&&S.glc&&S.glc[chKey(c)])||{};
+const chGs=(S,c)=>(S&&S.gsc&&S.gsc[chKey(c)])||{};
+const upLevelsAll=S=>CHORDER.reduce((a,c)=>a+upLevels(chUp(S,c)),0);
+function loadoutFor(L,c){if(!L||!c)return L;const o={...L,c:{c:c.c,t:c.t,q:c.q,s:!!c.s}};if(c.up)o.up={...c.up};if(c.gl)o.gl={...c.gl};return o;}   // swap a loadout to one of its chs entries
 // ---- chassis classes & weapons ----
 // hb: the class's hittable body radius (x R) for shots, supers, shells and hazards; one value for all three tiers.
 // Movement and wall collisions stay on R for every class.
@@ -328,7 +344,7 @@ function aiLevel(pw,e,lg,n){const a=aiPowerFor(pw,lg,n);let i=0;for(let k=1;k<AI
 function aiBossLevel(pw,lg,n){return aiLevel(pw,undefined,lg,n);}
 function aiLoadout(i,arch,cls){
  const A=AI_TIERS[Math.max(0,Math.min(AI_TIERS.length-1,i|0))];
- return {w:{a:WORDER.includes(arch)?arch:'pulse',t:A.t,q:A.q,s:false},c:{c:CH[cls]?cls:'vanguard',t:A.t,q:A.q,s:false},up:{hull:A.h,cannon:A.h,engine:A.e,target:A.x.tg|0,reactor:A.x.rc|0},
+ return {w:{a:WORDER.includes(arch)?arch:'pulse',t:A.t,q:A.q,s:false},c:{c:isCh(cls)?cls:'vanguard',t:A.t,q:A.q,s:false},up:{hull:A.h,cannon:A.h,engine:A.e,target:A.x.tg|0,reactor:A.x.rc|0},
   cores:['dmg','rof','arm'],gl:{dmg:A.g[0],rof:A.g[1],arm:A.g[2]},skin:'default',paint:'stock',...(A.x.m?{mods:{...A.x.m}}:{})};
 }
 // ghosts in AI matches: offline pilots' real tanks in AI seats, only when clearly weaker than you AND no stronger than the match's
@@ -416,6 +432,15 @@ const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a core from level L to
 const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];   // DUP_PTS: a crate roll that doesn't beat what you have
 // shop prices (the server charges these; TON, Stars, points)
 const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
+// Gem caches with points (Session 5E-2b3, owner Nov 14: "cores are bought with points using the same gem caches as the paid version,
+// Epic included; the amount of points equals the amount of money: one fixed points-per-Star rate for every gem cache"). GEM_PTS_STAR
+// is that rate, set by the 8-week model (docs/economy/chassis-kit-model.json, Checkpoint 37): a free pilot who plays every day kits
+// one chassis (14 upgrade levels and all seven cores at level 5) in about 8 weeks. Weapon caches and chassis crates keep RPTS.
+// A gem cache or chosen core bought with points does not raise that day's money price (the +25% a buy counts money buys only).
+// The chosen core (owner-approved): pick the core and the chassis; CORE_N shards of it (the top of the cache's range) for CORE_X
+// times the cache's price, in points and in money, so no roll can land on a core you have already maxed.
+const GEM_PTS_STAR=24,GEM_PTS=RSTARS.map(s=>s*GEM_PTS_STAR),CORE_X=1.5,CORE_N=[2,4,14];   // 6,000 / 12,000 / 36,000 points; chosen cores 9,000 / 18,000 / 54,000
+const corePts=ri=>Math.round(GEM_PTS[ri]*CORE_X);
 // Lunar Skin: owner-set price (Nov 2, 2026), just under Moonbeam's: measured with human pilots its edge alone (59.3%) is a
 // little below Moonbeam's alone (62.0%) (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
 const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=45;
@@ -597,11 +622,11 @@ function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 
 // what the server owns (the phone copies these from every server reply)
-const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','up','gemLvl','gemShards','wOwn','cOwn','roll','salv',
+const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','upc','glc','gsc','wOwn','cOwn','roll','salv',
  'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn'];
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
-function ecoNorm(S){
+function ecoNorm(S,opt){
  if(S.lab&&S.lab.v===1&&S.lab.machines)for(const M of Object.values(S.lab.machines)){
   if(M&&M.spec){const c=M.spec.cores;M.spec.cores=[0,1,2].map(i=>c&&GEM[c[i]]?c[i]:null);}
  }
@@ -609,10 +634,22 @@ function ecoNorm(S){
  if(typeof S.vgg!=='number'&&GENESIS_OPEN)S.vgg=Number(S.vg)||0;   // Gold deposited before Genesis Gold was tracked: all of it was pre-launch
  if(typeof S.lwr!=='number'||!Number.isFinite(S.lwr))S.lwr=0.5;S.lgi=Math.max(0,Math.min(LEAGUE.length-1,S.lgi|0));S.lg=LEAGUE[S.lgi].key;
  for(const k of ['pts','earned','dailyPts','weeklyPts','streak','wins','losses','mp','ptsSpent','spendGram','days','sk','rsCr','vg','vgg','vd','rfe','lgb'])if(typeof S[k]!=='number'||!Number.isFinite(S[k]))S[k]=k==='earned'?(Number(S.pts)||0):0;
- const up=obj('up');for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
- // over the build budget (levels bought before it existed): the top levels come off, paid back in full
- while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
- const gl=obj('gemLvl'),gs=obj('gemShards');for(const k of GORDER){gl[k]=Math.max(1,Math.min(5,gl[k]|0||1));gs[k]=Math.max(0,gs[k]|0);}
+ // per-chassis builds and cores (5E-2b3). A record from before: its one shared build and cores move to the chassis of its active
+ // machine (opt.allChassis: copied to all three, the owner's account); the old fields are then gone for good
+ if(!S.upc||typeof S.upc!=='object'||Array.isArray(S.upc)){
+  const home=homeChassis(S),up0=S.up&&typeof S.up==='object'?S.up:{},gl0=S.gemLvl&&typeof S.gemLvl==='object'?S.gemLvl:{},gs0=S.gemShards&&typeof S.gemShards==='object'?S.gemShards:{};
+  S.upc={};S.glc={};S.gsc={};for(const c of (opt&&opt.allChassis?CHORDER:[home])){S.upc[c]={...up0};S.glc[c]={...gl0};S.gsc[c]={...gs0};}
+ }
+ delete S.up;delete S.gemLvl;delete S.gemShards;
+ const upc=obj('upc'),glc=obj('glc'),gsc=obj('gsc'),tab=(T,c)=>T[c]&&typeof T[c]==='object'&&!Array.isArray(T[c])?T[c]:(T[c]={});
+ for(const T of [upc,glc,gsc])for(const c in T)if(!CHORDER.includes(c))delete T[c];
+ for(const c of CHORDER){
+  const up=tab(upc,c);for(const k in up)if(!UORDER.includes(k))delete up[k];for(const k of UORDER)up[k]=Math.max(0,Math.min(4,up[k]|0));
+  // over the build budget (levels bought before it existed): the top levels come off, paid back in full
+  while(upLevels(up)>BUILD_MAX){let k=UORDER[0];for(const j of UORDER)if(up[j]>=up[k])k=j;up[k]--;S.pts+=UPS[k].costs[up[k]];S.ptsSpent=Math.max(0,S.ptsSpent-UPS[k].costs[up[k]]);}
+  const gl=tab(glc,c),gs=tab(gsc,c);for(const T of [gl,gs])for(const k in T)if(!GORDER.includes(k))delete T[k];
+  for(const k of GORDER){gl[k]=Math.max(1,Math.min(5,gl[k]|0||1));gs[k]=Math.max(0,gs[k]|0);}
+ }
  const wo=obj('wOwn'),co=obj('cOwn');
  for(const k of WORDER)wo[k]=[...new Set(listOf(wo[k]).map(Number).filter(t=>t>=0&&t<=2))];
  for(const k of CHORDER)co[k]=[...new Set(listOf(co[k]).map(Number).filter(t=>t>=0&&t<=2))];
@@ -627,6 +664,14 @@ function ecoNorm(S){
  return S;
 }
 // ---- gear in the state ----
+// the chassis a record flies now: its active machine's (the Lab), else its last loadout's, else its old garage pick
+function homeChassis(S){const M=S&&S.lab&&S.lab.machines&&S.lab.machines[S.lab.active],c=(M&&M.spec&&M.spec.c&&M.spec.c.c)||(S&&S.L&&S.L.c&&S.L.c.c)||(S&&S.chassis);
+ if(!isCh(c)||c==='vanguard')return 'vanguard';
+ // a chassis no longer owned (refunded) is not home: the fielded loadout falls back to the Vanguard, so free caches and builds do too
+ let own=false;try{own=!!(S.cOwn&&typeof S.cOwn==='object'&&bestOf(S,false,c));}catch(e){own=false;}return own?c:'vanguard';}
+const ownsCh=(S,c)=>isCh(c)&&!!bestOf(S,false,c);
+// the chassis an economy action is for: the one asked for if the pilot owns it, else the one they fly now
+const chFor=(S,c)=>ownsCh(S,c)?c:homeChassis(S);
 const hasW=(S,k,t)=>!!(S.wOwn&&S.wOwn[k]&&S.wOwn[k].indexOf(t)>=0);
 const hasC=(S,k,t)=>!!(S.cOwn&&S.cOwn[k]&&S.cOwn[k].indexOf(t)>=0);
 const rollIn=(S,k,t)=>(S.roll&&S.roll[k+':'+t])||1;
@@ -653,12 +698,12 @@ function ecoLoadout(S,L0){
   return isW?{a:k,t,q,s}:{c:k,t,q,s};
  };
  const w=pick(true,L0.w),c=pick(false,L0.c);
- const seen={},cores=[0,1,2].map(i=>{const k=L0.cores&&L0.cores[i];if(!GEM[k]||seen[k])return null;seen[k]=1;return k;});
- const chs=CHORDER.filter(k=>bestOf(S,false,k)).map(k=>k===c.c?{...c}:pick(false,{c:k,t:-9}));
+ const seen={},cores=[0,1,2].map(i=>{const k=L0.cores&&L0.cores[i];if(!isGem(k)||seen[k])return null;seen[k]=1;return k;});
+ const chs=CHORDER.filter(k=>bestOf(S,false,k)).map(k=>({...(k===c.c?{...c}:pick(false,{c:k,t:-9})),up:{...chUp(S,k)},gl:{...chGl(S,k)}}));   // each with its own build and cores
  const paint=PAINTS[L0.paint]&&S.paints&&S.paints[L0.paint]?L0.paint:'stock';
  const mods=fittingSelection(S.lab?L0.mods:undefined),f=fittingStats(mods);
  const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
- return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...S.up},cores,gl:{...S.gemLvl},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg),ap:apOf(S.ap)};   // vl: Vault level, looks only; ap: owned Hull Plating (never from the client)
+ return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...chUp(S,c.c)},cores,gl:{...chGl(S,c.c)},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg),ap:apOf(S.ap)};   // vl: Vault level, looks only; ap: owned Hull Plating (never from the client)
 }
 // ---- points ----
 function ecoRoll(S,X){if(S.dailyDay!==X.day){S.dailyDay=X.day;S.dailyPts=0;}if(S.weeklyNum!==X.week){S.weeklyNum=X.week;S.weeklyPts=0;}}
@@ -690,7 +735,8 @@ function ecoPrice(S,d,X){
  if(d.kind==='paint'){const P=PAINTS[d.id];return P&&P.stars?{ton:P.ton,stars:P.stars}:null;}
  if(d.kind==='pass')return {ton:PASS_PRICE.ton,stars:PASS_PRICE.stars};
  if(d.kind==='vault'){const B=VAULT[d.tk];return B?{ton:B.ton,stars:B.stars}:null;}
- if(d.kind==='respec'){const t=respecTier(upInvested(S.up));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
+ if(d.kind==='respec'){const t=respecTier(upInvested(chUp(S,chFor(S,d.c))));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
+ if(d.kind==='core'){if(!isGem(d.tk)||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,'gem',d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the gem cache's price right now (before any deal)
  return PREMIUM[d.kind]?{ton:PREMIUM[d.kind].ton,stars:PREMIUM[d.kind].stars}:null;
 }
 // already owned (one-time items): selling it again would charge for nothing
@@ -698,17 +744,21 @@ function ecoOwned(S,d,X){
  if(d.kind==='starter')return S.starter;if(d.kind==='founder')return S.founder||!FOUNDER_OPEN;if(d.kind==='moonbeam')return S.moonbeam;
  if(d.kind==='skin')return S.skin==='lunar';if(d.kind==='paint')return !!(S.paints&&S.paints[d.id]);if(d.kind==='pass')return ecoPassState(S,X).prem;
  if(d.kind==='respec')return !!S.rsCr;   // a paid reset is already waiting
+ if(d.kind==='core')return !isGem(d.tk)||!ownsCh(S,d.c)||(chGl(S,d.c)[d.tk]|0)>=5;
+ if(d.kind==='box'&&d.tk==='gem'&&d.c&&!ownsCh(S,d.c))return true;   // a gem cache named for a chassis you don't own: refused, never moved to another   // a chosen core for a chassis you don't own, or one already at level 5: nothing to sell
  return false;
 }
 // open a crate. Returns what came out (the phone words it): gem {gem,n,lv,up}; gear {isW,k,tier,roll,kind: new|up|dup,old,pts}
-function ecoOpenBox(S,tk,ri,X){const r=ecoOpenBoxRaw(S,tk,ri,X);labGain(S,r);return r;}
-function ecoOpenBoxRaw(S,tk,ri,X){
+// c: the chassis a gem cache's shards are for (owned; else the one the pilot flies now)
+function ecoOpenBox(S,tk,ri,X,c){const r=ecoOpenBoxRaw(S,tk,ri,X,c);labGain(S,r);return r;}
+// n shards of core k for chassis c: level-ups as they fill (shards past level 5 stay as surplus)
+function coreShards(S,c,k,n){const gl=S.glc[c],gs=S.gsc[c];gs[k]+=n;let lv=gl[k],up=0;while(lv<5&&gs[k]>=SHARD_NEED[lv]){gs[k]-=SHARD_NEED[lv];lv++;up++;}gl[k]=lv;return {lv,up,sh:gs[k]};}
+function ecoOpenBoxRaw(S,tk,ri,X,c){
  const R=X.rnd;
  if(tk==='gem'){
-  const k=GORDER[(R()*GORDER.length)|0],n=ri===0?1+((R()*2)|0):ri===1?3+((R()*2)|0):11+((R()*4)|0);
-  S.gemShards[k]+=n;let lv=S.gemLvl[k],up=0;
-  while(lv<5&&S.gemShards[k]>=SHARD_NEED[lv]){S.gemShards[k]-=SHARD_NEED[lv];lv++;up++;}
-  S.gemLvl[k]=lv;return {tk,ri,gem:k,n,lv,up,sh:S.gemShards[k]};
+  c=chFor(S,c);
+  const k=GORDER[(R()*GORDER.length)|0],n=ri===0?1+((R()*2)|0):ri===1?3+((R()*2)|0):11+((R()*4)|0),o=coreShards(S,c,k,n);
+  return {tk,ri,gem:k,n,lv:o.lv,up:o.up,sh:o.sh,c};
  }
  const isW=tk==='weapon',keys=isW?WORDER:CHORDER,own=isW?S.wOwn:S.cOwn;
  const roll=Math.round((ROLL_MIN+R()*(ROLL_MAX-ROLL_MIN))*100)/100;
@@ -719,12 +769,26 @@ function ecoOpenBoxRaw(S,tk,ri,X){
  if(roll>old){S.roll[k+':'+ri]=roll;return {tk,ri,isW,k,tier:ri,roll,old,kind:'up'};}
  return {tk,ri,isW,k,tier:ri,roll,old,kind:'dup',pts:ecoAward(S,DUP_PTS[ri],X)};
 }
-function ecoCratePts(S,tk,ri,X){
- const c=RPTS[ri]||0;
+// a crate or cache for points. Gem caches: GEM_PTS (every rarity, Epic included), for chassis ch, and they don't raise the money price
+function ecoCratePts(S,tk,ri,X,ch){
+ const gem=tk==='gem',c=gem?GEM_PTS[ri]||0:RPTS[ri]||0;
  if(!c)return {err:'paid'};
+ if(gem&&ch!==undefined&&!ownsCh(S,ch))return {err:'chassis'};
  if(S.pts<c)return {err:'pts',need:c-S.pts};
- S.pts-=c;const bk=ecoBuyKey(tk,ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.ptsSpent+=c;
- return ecoOpenBox(S,tk,ri,X);
+ S.pts-=c;S.ptsSpent+=c;if(!gem){const bk=ecoBuyKey(tk,ri,X);S.buys[bk]=(S.buys[bk]||0)+1;}
+ return ecoOpenBox(S,tk,ri,X,ch);
+}
+// the chosen core: CORE_N[ri] shards of core k for chassis c
+// a chosen core already at level 5 when the payment lands (two invoices paid one after the other): its shards go to that chassis's
+// lowest core still below 5 instead of sitting as surplus (all at 5: surplus, as a cache's)
+function ecoCoreAdd(S,k,ri,c){c=chFor(S,c);const gl=S.glc[c];let to=k;if((gl[k]|0)>=5){const low=GORDER.filter(j=>(gl[j]|0)<5).sort((a,b)=>(gl[a]|0)-(gl[b]|0))[0];if(low)to=low;}
+ const n=CORE_N[ri]||0,o=coreShards(S,c,to,n);return {tk:'core',ri,gem:to,n,lv:o.lv,up:o.up,sh:o.sh,c,...(to!==k?{was:k}:{})};}
+function ecoCorePts(S,k,ri,c,X){
+ if(!isGem(k)||!(ri>=0&&ri<=2))return {err:'item'};
+ if(!ownsCh(S,c))return {err:'chassis'};
+ if((chGl(S,c)[k]|0)>=5)return {err:'max'};
+ const p=corePts(ri);if(S.pts<p)return {err:'pts',need:p-S.pts};
+ S.pts-=p;S.ptsSpent+=p;return ecoCoreAdd(S,k,ri,c);
 }
 function ecoSalvage(S,tk,ri,X){const r=ecoSalvageRaw(S,tk,ri,X);labGain(S,r);return r;}
 function ecoSalvageRaw(S,tk,ri,X){
@@ -748,12 +812,15 @@ function ecoTune(S,isW,k,t,X){
  if(better)S.roll[k+':'+t]=roll;
  return {isW,k,t,better,old,roll};
 }
-function ecoUp(S,k){
+// one upgrade level for chassis c's own build (the 14-level budget is per chassis)
+function ecoUp(S,k,c){
  if(!UPS[k])return {err:'item'};
- const lvl=S.up[k];if(lvl>=4)return {err:'max'};
- if(upLevels(S.up)>=BUILD_MAX)return {err:'budget'};
+ if(c!==undefined&&!ownsCh(S,c))return {err:'chassis'};
+ c=chFor(S,c);const U=S.upc[c];
+ const lvl=U[k];if(lvl>=4)return {err:'max'};
+ if(upLevels(U)>=BUILD_MAX)return {err:'budget'};
  const cost=UPS[k].costs[lvl];if(S.pts<cost)return {err:'pts',need:cost-S.pts};
- S.pts-=cost;S.ptsSpent+=cost;S.up[k]++;return {k,lv:S.up[k]};
+ S.pts-=cost;S.ptsSpent+=cost;U[k]++;return {k,lv:U[k],c};
 }
 // Fabricate a Hull Plating plate in a slot (0 FRONT, 1 LEFT, 2 RIGHT, 3 TURRET). Instant, from the account wallet and
 // spendable points. Upgrading absorbs the plate already there (no refund); a plate is permanent (never lost, never traded).
@@ -784,26 +851,29 @@ function ecoMatchMinerals(S,o,lg,X){
 }
 // clear the build: every level to 0, half the points back. A paid reset (tier in $) also covers the points fee, so every
 // point comes back; it covers any fee that rounds to that tier. A paid reset with nothing to clear waits for the next one (rsCr)
-function ecoRespec(S,paid){
- const inv=upInvested(S.up);
+// c: the chassis whose build is reset (a paid reset with nothing to clear on it waits for the next reset, on any chassis)
+function ecoRespec(S,paid,c){
+ if(c!==undefined&&c!==null&&c!==''&&!ownsCh(S,c))return {err:'chassis'};   // a reset named for a chassis you don't own: refused, never another's
+ c=chFor(S,c);const U=S.upc[c],inv=upInvested(U);
  if(!paid&&S.rsCr){paid=S.rsCr;S.rsCr=0;}
- if(!inv){if(paid){S.rsCr=paid;return {tk:'respec',credit:paid};}return {err:'empty'};}
+ if(!inv){if(paid){S.rsCr=paid;return {tk:'respec',credit:paid,c};}return {err:'empty'};}
  const half=Math.floor(inv*RESPEC_BACK),back=paid?Math.min(inv,half+Math.ceil((paid+0.25)*RESPEC_PTS_USD)):half;
- for(const k of UORDER)S.up[k]=0;
+ for(const k of UORDER)U[k]=0;
  S.pts+=back;S.ptsSpent=Math.max(0,S.ptsSpent-back);
- return paid?{tk:'respec',back,lost:inv-back,extra:back-half,usd:paid}:{back,lost:inv-back};
+ return paid?{tk:'respec',back,lost:inv-back,extra:back-half,usd:paid,c}:{back,lost:inv-back,c};
 }
 // ---- purchases (only after the payment is verified). Returns what each part gave, so a refund can take it back ----
 function ecoGrant(S,d,X){
  const outs=[];
  if(d.kind==='box'){const bk=ecoBuyKey(d.tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;if(d.deal==='d')S.dealD=X.day;else if(d.deal==='w')S.dealW=X.week;
-  S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push(ecoOpenBox(S,d.tk,d.ri,X));}
- else if(d.kind==='starter'){if(!S.starter){S.starter=true;S.spendGram+=STARTER.ton;outs.push(ecoOpenBox(S,'weapon',1,X),ecoOpenBox(S,'chassis',1,X),ecoOpenBox(S,'gem',1,X));}}
- else if(d.kind==='founder'){if(!S.founder){S.founder=true;S.spendGram+=FOUNDER.ton;S.paints.founder=1;outs.push({tk:'paint',id:'founder'},ecoOpenBox(S,'weapon',2,X),ecoOpenBox(S,'gem',1,X),ecoOpenBox(S,'gem',1,X));}}
+  S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push(ecoOpenBox(S,d.tk,d.ri,X,d.c));}
+ else if(d.kind==='core'){const bk=ecoBuyKey('gem',d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push(ecoCoreAdd(S,d.tk,d.ri,d.c));}   // counts toward the day's gem-cache price steps, like a cache
+ else if(d.kind==='starter'){if(!S.starter){S.starter=true;S.spendGram+=STARTER.ton;outs.push(ecoOpenBox(S,'weapon',1,X),ecoOpenBox(S,'chassis',1,X),ecoOpenBox(S,'gem',1,X,d.c));}}
+ else if(d.kind==='founder'){if(!S.founder){S.founder=true;S.spendGram+=FOUNDER.ton;S.paints.founder=1;outs.push({tk:'paint',id:'founder'},ecoOpenBox(S,'weapon',2,X),ecoOpenBox(S,'gem',1,X,d.c),ecoOpenBox(S,'gem',1,X,d.c));}}
  else if(d.kind==='moonbeam'){if(!S.moonbeam){S.moonbeam=true;S.spendGram+=MOONBEAM_PRICE;outs.push({tk:'moonbeam'});}}
  else if(d.kind==='skin'){if(S.skin!=='lunar'){S.skin='lunar';S.spendGram+=SKIN_PRICE;outs.push({tk:'skin'});}}
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
- else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t));}
+ else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t,d.c));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
  else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
   if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
@@ -815,7 +885,7 @@ function ecoRefund(S,kind,outs){
  if(kind==='starter')S.starter=false;
  for(const o of listOf(outs)){
   if(!o||typeof o!=='object')continue;
-  if(o.gem&&GEM[o.gem]){const k=o.gem;S.gemShards[k]-=o.n||0;while(S.gemShards[k]<0&&S.gemLvl[k]>1){S.gemLvl[k]--;S.gemShards[k]+=SHARD_NEED[S.gemLvl[k]];}S.gemShards[k]=Math.max(0,S.gemShards[k]);}
+  if(o.gem&&isGem(o.gem)){const k=o.gem,c=isCh(o.c)?o.c:homeChassis(S),gl=S.glc[c],gs=S.gsc[c];gs[k]-=o.n||0;while(gs[k]<0&&gl[k]>1){gl[k]--;gs[k]+=SHARD_NEED[gl[k]];}gs[k]=Math.max(0,gs[k]);}
   else if(o.kind==='new'){const own=o.isW?S.wOwn:S.cOwn;own[o.k]=(own[o.k]||[]).filter(t=>t!==o.tier);delete S.roll[o.k+':'+o.tier];if(!S.wOwn.pulse.includes(0))S.wOwn.pulse.unshift(0);if(!S.cOwn.vanguard.includes(0))S.cOwn.vanguard.unshift(0);}
   else if(o.kind==='up'){if(rollIn(S,o.k,o.tier)===o.roll)S.roll[o.k+':'+o.tier]=o.old;}
   else if(o.kind==='dup'){const p=o.pts||0;S.pts=Math.max(0,S.pts-p);S.earned=Math.max(0,S.earned-p);}
@@ -843,11 +913,11 @@ function ecoLoginState(S,X){
 const GIFT_RI=1;
 const ecoGiftReady=(S,X)=>!S.g2&&typeof S.fd==='number'&&X.day>S.fd;
 const ecoGiftPending=(S,X)=>!S.g2&&(typeof S.fd!=='number'||X.day<=S.fd);   // still to come: shown as "come back tomorrow"
-function ecoLogin(S,X){
+function ecoLogin(S,X,c){
  const s=ecoLoginState(S,X);if(s.claimedToday)return null;
  S.login={last:X.day,n:s.next};
- const pts=ecoAward(S,s.reward,X,1),box=s.slot===6?ecoOpenBox(S,'gem',0,X):null;   // day 7: a free gem cache too
- const gift=ecoGiftReady(S,X)?(S.g2=X.day,ecoOpenBox(S,'gem',GIFT_RI,X)):null;   // once ever: come back the day after your first day
+ const pts=ecoAward(S,s.reward,X,1),box=s.slot===6?ecoOpenBox(S,'gem',0,X,c):null;   // day 7: a free gem cache too (c: the chassis it is for, else the one you fly)
+ const gift=ecoGiftReady(S,X)?(S.g2=X.day,ecoOpenBox(S,'gem',GIFT_RI,X,c)):null;   // once ever: come back the day after your first day
  return {pts,box,gift,day:s.slot+1};
 }
 // ---- daily and weekly quests ----
@@ -913,18 +983,18 @@ function ecoClaimWeekly(S,id,X){
  S.wk.c[id]=true;const n=ecoAward(S,ecoQPts(S,Q.pts,X),X,1);ecoPassXP(S,PASS_XP_WQ,X);
  return {pts:n};
 }
-function ecoChest(S,X){
+function ecoChest(S,X,c){
  ecoQuests(S,X);
  if(S.wq.claimed||(S.wq.n||0)<WQ_GOAL)return null;
  S.wq.claimed=true;const n=ecoAward(S,ecoQPts(S,WQ_PTS,X),X,1);
- return {pts:n,box:ecoOpenBox(S,'gem',1,X)};
+ return {pts:n,box:ecoOpenBox(S,'gem',1,X,c)};
 }
 // ---- Lunar Pass ----
 const ecoSeason=X=>X.day<PASS_S2?1:2+Math.floor((X.day-PASS_S2)/PASS_LEN);
 function ecoPassState(S,X){const s=ecoSeason(X);if(!S.pass||S.pass.s!==s)S.pass={s,xp:0,prem:false,cf:[],cp:[]};S.pass.cf=S.pass.cf||[];S.pass.cp=S.pass.cp||[];return S.pass;}
 const ecoPassTier=(S,X)=>{const P=ecoPassState(S,X);return Math.min(passTiers(P.s),Math.floor(P.xp/PASS_XP));};
 function ecoPassXP(S,n,X){if(!n)return 0;const P=ecoPassState(S,X),b=ecoPassTier(S,X);P.xp=Math.min(passTiers(P.s)*PASS_XP,P.xp+n);return ecoPassTier(S,X)-b;}
-function ecoClaimPass(S,track,i,X){
+function ecoClaimPass(S,track,i,X,c){
  const P=ecoPassState(S,X);i=+i;
  if(!(i>=1&&i<=ecoPassTier(S,X)))return null;
  const prem=track==='p',list=prem?P.cp:P.cf,r=(prem?PASS_PREM:PASS_FREE)[i];
@@ -932,7 +1002,7 @@ function ecoClaimPass(S,track,i,X){
  list.push(i);
  if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1)};   // free track only: the premium track never gives points
  if(r.k==='paint'){S.paints[r.id]=1;labGain(S,{tk:'paint',id:r.id});return {paint:r.id};}
- return {box:ecoOpenBox(S,r.tk,r.ri,X)};
+ return {box:ecoOpenBox(S,r.tk,r.ri,X,c)};
 }
 // ---- matches ----
 // points for a finished match: mode pay, best of 3, featured, win streak, then the league: base pay and the spendable multiplier
@@ -1045,7 +1115,7 @@ function labValidate(S,p){
   if(isW&&k==='moon'){if(!S.moonbeam||x.t!==2||x.s)return 'owned';}
   else if(!(isW?WORDER:CHORDER).includes(k)||(x.s?!(x.t>=1&&salvIn(S,k,x.t)>0):!(isW?hasW(S,k,x.t):hasC(S,k,x.t))))return 'owned';
  }
- if(!Array.isArray(p.cores)||p.cores.length!==3||p.cores.some(k=>k!==null&&!GEM[k])||new Set(p.cores.filter(Boolean)).size!==p.cores.filter(Boolean).length)return 'cores';
+ if(!Array.isArray(p.cores)||p.cores.length!==3||p.cores.some(k=>k!==null&&!isGem(k))||new Set(p.cores.filter(Boolean)).size!==p.cores.filter(Boolean).length)return 'cores';
  if(typeof p.paint!=='string'||!PAINTS[p.paint]||!S.paints[p.paint])return 'paint';
  return null;
 }
@@ -1119,7 +1189,7 @@ function machineMetrics(L){const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].am
 // legal loadout, and anything already bought or set (upgrade levels, a paid reset, fitted mods) keeps its section open.
 const GARAGE_UP_AT=2,GARAGE_FIT_AT=5;
 function garageOpen(S,sec){
- if(sec==='up')return (S.mp|0)>=GARAGE_UP_AT||upLevels(S.up)>0||(S.rsCr|0)>0;
+ if(sec==='up')return (S.mp|0)>=GARAGE_UP_AT||upLevelsAll(S)>0||(S.rsCr|0)>0;
  if(sec==='fit')return (S.mp|0)>=GARAGE_FIT_AT||!!(S.lab&&S.lab.machines&&Object.values(S.lab.machines).some(M=>M&&M.spec&&FIT_ORDER.some(k=>fittingSelection(M.spec.mods)[k]!=='stock')));
  return true;
 }

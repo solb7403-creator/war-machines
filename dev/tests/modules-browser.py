@@ -36,7 +36,7 @@ async def main():
    assert await pg.evaluate('()=>save.lab.active')=='m_spare'
    # A server-side upgrade from another device changes stats without lab revision.
    dev('/__set',{'path':f'eco/tg_{UID}/up/hull','value':1})
-   actual=await pg.evaluate('async()=>{save.up.hull=0;prepareMatch();await mTicket.p;return me.mhp;}')
+   actual=await pg.evaluate('async()=>{save.upc[homeChassis(save)].hull=0;prepareMatch();await mTicket.p;return me.mhp;}')
    assert actual==1946,actual
    await pg.evaluate('()=>{state="menu";}')
    dev('/__set',{'path':f'eco/tg_{UID}/up/hull','value':0})
@@ -45,9 +45,9 @@ async def main():
    assert await pg.evaluate('()=>{const E=ecoCopy();E._rev=0;E.lab.active="m_legacy";applyEco(E);return save.lab.active;}')=='m_spare'
    # Actual fight object and counterpick use captured equipment, not mutated garage.
    for g in ['arena','zone','crystal','bounty','royale','boss']:
-    o=await pg.evaluate('''g=>{closeAll();save.gtype=g;save.mode='1v1';prepareMatch();const hp=me.mhp,w=me.wtype;save.up.hull=4;save.weapon='moon';switchChassis('vanguard');return {same:me.mhp===hp&&me.wtype===w,g:matchG};}''',g)
+    o=await pg.evaluate('''g=>{closeAll();save.gtype=g;save.mode='1v1';prepareMatch();const hp=me.mhp,w=me.wtype;save.upc[homeChassis(save)].hull=4;save.weapon='moon';switchChassis('vanguard');return {same:me.mhp===hp&&me.wtype===w,g:matchG};}''',g)
     assert o['same'],o
-    await pg.evaluate('()=>{state="menu";save.up.hull=0;save.weapon="pulse";}')
+    await pg.evaluate('()=>{state="menu";save.upc[homeChassis(save)].hull=0;save.weapon="pulse";}')
    round_end=await pg.evaluate("""()=>{state='menu';save.gtype='arena';save.mode='1v1';save.mp=25;prepareMatch();startMatch();const rnd=Math.random;Math.random=()=>0;units[1].cls='scout';units[1].hp=0;update(1/30);Math.random=rnd;return {state,k:PR.k,hp:PR.buf[(PR.k-1)*PR.sz+5]};}""")
    assert round_end['state']=='round' and round_end['hp']==0,round_end
    await pg.evaluate('()=>{state="menu";closeAll();}')

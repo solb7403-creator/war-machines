@@ -163,7 +163,7 @@ class View {
  if(root.ConquestControl){if(!this.controlStepped){const i=this.controlInput(dt);this.p=root.ConquestControl.advance(B,this.p,i,dt,!this.battle);}this.controlStepped=false;
  {const yaw=B.turretYaw,lock=B.lockId;this.aimPoint=root.ConquestControl.aim(B,this.renderP||this.p,this.controlInput(0),0);this.shownLock=B.lockId;B.turretYaw=yaw;B.lockId=lock;}if(this.selectedId&&!this.shownLock)this.selectedId=null;
  }else{this.aimPoint={x:this.p.x+Math.sin(this.aimYaw)*160,y:this.p.y+2.2,z:this.p.z+Math.cos(this.aimYaw)*160};B.tick(dt,this.p,{aim:this.aimPoint,fire:this.firing||!!this.keys.Space});}
- if(Number.isFinite(this.audioShots)&&(B.playerShots||0)>this.audioShots&&typeof fx==='function')fx('shot',B.playerStats.wtype);this.audioShots=Math.max(this.audioShots||0,B.playerShots||0);this.simMs=(this.controlSimMs||0)+performance.now()-before;this.controlSimMs=0;this.fireTap=false;this.pendingAbilities={};this.flushHealth();
+ if(Number.isFinite(this.audioShots)&&(B.playerShots||0)>this.audioShots&&typeof fx==='function')fx('shot',B.playerStats.wtype,B.playerStats.wtier);this.audioShots=Math.max(this.audioShots||0,B.playerShots||0);this.simMs=(this.controlSimMs||0)+performance.now()-before;this.controlSimMs=0;this.fireTap=false;this.pendingAbilities={};this.flushHealth();
  if(this.gun){const a=Number.isFinite(this.alpha)?this.alpha:1,from=Number.isFinite(this.shownTurret)?this.shownTurret:B.turretYaw,to=B.turretYaw??this.aimYaw,yaw=Number.isFinite(from)&&Number.isFinite(to)?from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*a:to;this.gun.rotation.y=yaw-(this.heading||0);}
  if(!this.authority&&this.battle&&B.state==='victory'&&!this.resultHandled){this.progress?.complete(root.ConquestCombat.mission.id);this.resultHandled=true;}
  }

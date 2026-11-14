@@ -17,7 +17,7 @@ async def main():
   await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
   await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
   await page.get_by_role('button',name='ACKNOWLEDGE · BEGIN EXPLORATION').click();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000)
-  await page.evaluate('()=>{window.accountBefore=JSON.stringify({pts:save.pts,buys:save.buys,up:save.up});window.samples=[];const v=Conquest.view,original=v.tick.bind(v);v.tick=function(dt){const t=performance.now();original(dt);samples.push({wallMs:t-(window.lastFrame||t),cpuMs:performance.now()-t,simMs:this.simMs,calls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,geometries:this.renderer.info.memory.geometries});window.lastFrame=t;};}')
+  await page.evaluate('()=>{window.accountBefore=JSON.stringify({pts:save.pts,buys:save.buys,upc:save.upc});window.samples=[];const v=Conquest.view,original=v.tick.bind(v);v.tick=function(dt){const t=performance.now();original(dt);samples.push({wallMs:t-(window.lastFrame||t),cpuMs:performance.now()-t,simMs:this.simMs,calls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,geometries:this.renderer.info.memory.geometries});window.lastFrame=t;};}')
   async def drive(key,condition,timeout=90000):
    await page.keyboard.down(key)
    try:await page.wait_for_function(condition,timeout=timeout)
@@ -74,7 +74,7 @@ async def main():
   await page.get_by_role('button',name='RECOVER VEHICLE',exact=True).click();await page.wait_for_timeout(100)
   recovered=await page.evaluate('({version:Conquest.view.discovery.version,p:Conquest.view.p})');assert recovered['version']==before['version'];assert math.dist([before['p']['x'],before['p']['z']],[recovered['p']['x'],recovered['p']['z']])>=6
   await page.screenshot(path=str(OUT/'recovered.png'))
-  assert await page.evaluate('JSON.stringify({pts:save.pts,buys:save.buys,up:save.up})===accountBefore')
+  assert await page.evaluate('JSON.stringify({pts:save.pts,buys:save.buys,upc:save.upc})===accountBefore')
   cleanup=await page.evaluate('''()=>{const v=Conquest.view,checks=[];for(let i=0;i<3;i++){v.jump(15000,8000);for(let j=0;j<45;j++)v.tick(.016);if(v.enemyMeshes.size)throw Error('remote enemy mesh leak');v.jump(1240,893);for(let j=0;j<45;j++)v.tick(.016);checks.push({geometries:v.renderer.info.memory.geometries,meshes:v.enemyMeshes.size,cleared:Object.keys(v.encounter.cleared).length});}if(checks[2].geometries>checks[0].geometries+3)throw Error('unbounded geometry growth');return checks;}''')
   perf=await page.evaluate('({samples,heap:performance.memory?.usedJSHeapSize,geometries:Conquest.view.renderer.info.memory.geometries})')
   assert not errors,errors

@@ -1,25 +1,26 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const ui=readFileSync('js/ui.js','utf8'),core=readFileSync('js/core.js','utf8'),rules=readFileSync('js/rules.js','utf8');
-const state={gemLvl:{dmg:2,reg:5},gemShards:{dmg:4,reg:123}};
+const state={glc:{vanguard:{dmg:2,reg:5}},gsc:{vanguard:{dmg:4,reg:123}}};   // per-chassis cores (5E-2b3): the Vanguard's
+const MY=core.match(/const myGl=[^\n]+/)[0]+'\nconst esc=x=>String(x);\n';
 const helpers=ui.slice(ui.indexOf('function gemIcon('),ui.indexOf('const G_BODY='));
 assert.ok(helpers.includes('function gemProgress('),'shared gem presentation helpers exist');
-const R=new Function('save',rules+"\nconst fmtCore="+core.match(/const fmtCore=([^;]+);/)[1]+"; const CORE_UNIT={dmg:'damage',rof:'fire rate',arm:'armor',spd:'speed',lck:'crit chance',reg:'repair per second',vel:'projectile travel speed'};\n"+helpers+'\nreturn {gemProgress,gemCollection};')(state);
+const R=new Function('save',rules+'\n'+MY+"\nconst fmtCore="+core.match(/const fmtCore=([^;]+);/)[1]+"; const CORE_UNIT={dmg:'damage',rof:'fire rate',arm:'armor',spd:'speed',lck:'crit chance',reg:'repair per second',vel:'projectile travel speed'};\n"+helpers+'\nreturn {gemProgress,gemCollection};')(state);
 let h=R.gemProgress('dmg');
 assert.match(h,/4 \/ 6 shards/);assert.match(h,/aria-valuenow="4"/);assert.match(h,/66.666/);
 h=R.gemProgress('reg');assert.match(h,/MAXED/);assert.match(h,/Surplus: 123 shards/);assert.ok(!h.includes('undefined'));
-h=R.gemCollection({cores:['dmg',null,'reg']});
+h=R.gemCollection({cores:['dmg',null,'reg'],c:{c:'vanguard'}});
 assert.equal((h.match(/class="gem-card/g)||[]).length,7);
 assert.match(h,/Equipped · Socket 1/);assert.match(h,/Not equipped/);assert.match(h,/0.23%/);
 const reveal=core.slice(core.indexOf('function revealOf('),core.indexOf('function afterGain('));
-const revealOf=new Function('save',rules+'\n'+reveal+'\nreturn revealOf;')(state);
+const revealOf=new Function('save',rules+'\n'+MY+reveal+'\nreturn revealOf;')(state);
 assert.equal(revealOf({gem:'dmg',lv:2,n:3,up:1}).up,1);
 assert.equal(revealOf({gem:'dmg',lv:2,n:1,up:0}).up,0);
 console.log('PASS gem UI: seven cores, exact progress, max surplus, bonuses, equipment, level-up metadata');
 
 // The legacy socket locator must remain unique alongside the seven collection cards.
-const coresSource=ui.slice(ui.indexOf('cores:(spec)=>'),ui.indexOf('\n up:(spec,L)=>'));
-const renderCores=new Function('save',rules+'\nconst fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+"; const CORE_UNIT={};\n"+helpers+'\nreturn '+coresSource.slice('cores:'.length).replace(/,\s*$/,'' )+';')(state);
+const coresSource=ui.slice(ui.indexOf('cores:(spec)=>'),ui.indexOf('\n up:(spec,L0)=>'));
+const renderCores=new Function('save',rules+'\n'+MY+'\nconst fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+"; const CORE_UNIT={};\n"+helpers+'\nreturn '+coresSource.slice('cores:'.length).replace(/,\s*$/,'' )+';')(state);
 const openBayCoreCalls=[];
 const actions=Object.fromEntries(['core','gemcore'].map(action=>{
  const source=ui.match(new RegExp(' '+action+':([^,]+),'));
@@ -27,7 +28,7 @@ const actions=Object.fromEntries(['core','gemcore'].map(action=>{
  return [action,new Function('openBayCore','return '+source[1])(i=>openBayCoreCalls.push(i))];
 }));
 for(const cores of [['dmg',null,'reg'],['dmg','rof','arm'],[null,null,null]]){
- const html=renderCores({cores});
+ const html=renderCores({cores,c:{c:'vanguard'}});
  const buttons=[...html.matchAll(/<button\b[^>]*>/g)].map(m=>m[0]);
  const sockets=buttons.filter(b=>b.includes('data-act="core"'));
  const cards=buttons.filter(b=>b.includes('class="gem-card'));
@@ -45,9 +46,9 @@ for(const cores of [['dmg',null,'reg'],['dmg','rof','arm'],[null,null,null]]){
 }
 console.log('PASS gem/socket selectors and shared picker routing for empty, partial and full loadouts');
 
-const coreInfo=new Function('save',rules+'\nconst fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+';\n'+ui.slice(ui.indexOf('function coreInfo('),ui.indexOf('function showInfo('))+'\nreturn coreInfo;')(state);
+const coreInfo=new Function('save',rules+'\n'+MY+'\nconst fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+';\n'+ui.slice(ui.indexOf('function coreInfo('),ui.indexOf('function showInfo('))+'\nreturn coreInfo;')(state);
 for(const k of ['dmg','rof','arm','spd','lck','reg','vel'])assert.ok(!JSON.stringify(coreInfo(k)).includes('undefined'));
 assert.match(JSON.stringify(coreInfo('vel')),/projectile travel speed/);
-assert.match(h=R.gemCollection({cores:['vel',null,null]}),/Velocity/);
+assert.match(h=R.gemCollection({cores:['vel',null,null],c:{c:'vanguard'}}),/Velocity/);
 assert.match(h,/15% projectile travel speed/);
 console.log('PASS all seven core descriptions and Velocity bonus');

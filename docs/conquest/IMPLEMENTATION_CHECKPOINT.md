@@ -3696,3 +3696,344 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. Roll back: revert
   the merge commit(s) on main (Pages and the Worker deploy follow; reverting `c55d425` takes `PVP_V` back to 5, so phones
   are asked to reload once more).
+
+## Checkpoint 37 — Session 5E-2b3: weapon sounds + per-chassis cores and upgrades (branch `claude/weapon-sounds-chassis-cores-6uzr5z`, from main `a63f1b2`) — IN PROGRESS
+
+Brief: the owner's session prompt of Nov 14, 2026 (Opus 5.5; the lead is creative director and records every change with its
+evidence here; no questions to the owner; release pre-approved: PR, merge on green checks, deploy, release record). Part A:
+every weapon's shot and every Arcade super's charge, fire and impact get their own synthesized sound (rarity ladder, the timing
+result's three levels, an owner-only sound test page, a balanced mix, iPhone audio unlock). Part B: each chassis class (Scout,
+Vanguard, Titan) gets its own complete upgrade build and its own complete set of cores, everywhere cores and upgrades are used;
+points purchases of every gem cache at one points-per-Star rate, a Points shop, a direct core buy, pricing modelled on 8 weeks
+per chassis for a free daily player; the owner's account keeps its setup on all three chassis. Not touched: Conquest supers
+(sound and look), payments (still disabled; no new payment plumbing), every economy number other than the ones the brief names.
+
+### Research (one research agent, web search; page fetches were blocked by the network allowlist, so the findings rest on search-result summaries)
+1. **Rarity adds layers, the line keeps its identity.** Valorant gates audio by skin tier (base shot for the low tiers, custom
+   fire audio at Premium, the fullest set at Exclusive / Ultra); Bungie gives each Exotic its own "sonic signature"; Borderlands 3
+   builds each shot from modules tied to the gun's parts; Warframe's remaster added a mechanical layer and reworked the tails.
+   => each line here is a set of modules (transient, body, mechanism, tail); a higher rarity ADDS modules on the same core.
+2. **Rapid fire:** per-shot events with a voice cap, a minimum retrigger gap, round-robin variants and short decays (long decays
+   smear); FMOD's max-instances / cooldown controls do exactly this. No published pitch-randomisation figure (±3-5% is ours).
+3. **Mixing by importance:** DICE's HDR audio treats loudness as priority and culls inaudible voices; Overwatch weights enemy
+   sounds by threat; Apex's 2025 mix adds sidechain ducking. => a super near you ducks the gunfire; far voices are culled.
+4. **Phones:** mobile mixes sit near -16 to -18 LUFS with a -1 dBTP limiter; phone speakers cannot play sub-bass, so heavy
+   weapons carry their weight in 100-400 Hz harmonics (saturation). => every bass layer here is soft-clipped.
+5. **Ultimates:** Riot lets ultimates take more of the mix; Valorant and Overwatch give enemies a distinct warning of an ult.
+   => an enemy super's charge is heard (quieter, by distance); its jackpot verdict is a warning.
+6. **Perfect timing:** Gears' active reload, Tekken's just-frame and SF6's Perfect Parry each have their own confirmation sound.
+   => the jackpot verdict is a gold "ka-ching" with a power surge and a bass thump, plus a haptic.
+7. **Web Audio / iOS:** no noise node (pre-build noise buffers); gunshot = noise through a falling filter with a fast attack;
+   lasers = swept saw / FM; iOS needs resume() inside touchend / click and has an "interrupted" state after app switches;
+   Web Audio's default "ambient" session obeys the silent switch ("playback" would ignore it).
+8. **Per-class builds** (Topic 2, for Part B): Brawl Stars, War Robots and Mech Arena level each unit separately from SHARED
+   currencies; Clash Royale caps levels by league; CoD shares parts across a weapon family; WoT Blitz converts 5% of battle XP to
+   Free XP usable on any tank. Time to max (unofficial): Clash Royale one deck 12-18 months free; Brawl Stars one Legendary 3-4
+   months. Chosen items: Hearthstone crafts at 4-8x the disenchant value; Marvel Snap sells chosen cards next to duplicate-free
+   random packs; no published "1.5-3x premium" benchmark. Regulation: show odds (Apple 3.1.1, China), real-money prices (EU CPC
+   2025), PEGI 16 for paid random items in new titles from June 2026, Brazil bans them for minors (Mar 2026); a deterministic
+   alternative is the safe pattern. => one shared points currency, a per-chassis grind with an explicit time target (8 weeks),
+   a direct core buy at a modest, disclosed premium.
+
+### Part A: what shipped (js/fx.js `LW`; hooks in js/game.js, js/match.js, js/pvp.js, js/render.js, js/conquest/view.js)
+1. **Ten weapon shots, all synthesized** (no files). Lines keep their core layers; each rarity adds layers on top:
+   - **Pulse Cannon line** (energy bolt, "thwump-pew"): square + saw sweep 560 -> 150 Hz, a noise puff, a click. Arc Pulse adds a
+     snapping electric arc (crackle + FM zap); Nova Pulse adds a star-bright FM ring, a soft-clipped bass punch and an echo.
+   - **Twin Repeater line** (a gun, owner: "physical rounds sound like a gun"): a 26 ms crack, a body, a soft-clipped punch; the
+     two barrels alternate left / right and every round is pitched within ±4%. Storm Repeater adds a heavier body, the bolt's
+     metal tick and a charged-tracer fizz; Helix Repeater a rotary whirr, a bigger punch and an air layer on the other barrel.
+   - **Siege Breaker line** (a heavy cannon): a falling blast, a soft-clipped 155 -> 48 Hz boom, a crack, the breech clunk. Rail
+     Breaker adds the rail's electric zing and crackle; Titanfall a golden metal ring, sub-bass, falling grit and an echo.
+   - **Moonbeam** (owner: "an electrical laser"): an FM laser sweep 1,850 -> 620 Hz, an electric bite, crackling arcs in two
+     bands, a power hum on a fifth, a bass body, a buzzing tail and a stereo shimmer: the richest shot (10 layers).
+   - Your hits get your weapon's own small confirmation (a crit adds its sparkle).
+2. **Ten Arcade supers x miss / hit / jackpot, four stages each.** Charge from the press (the outcome is not known yet): Lances a
+   rail capacitor filling (a rising whine with a quickening pulse), Novas static building up, Shells a breech loading (two clanks
+   and a hydraulic whine), **Moonfall a hyper-power electromagnet cannon loading up** (an EM hum climbing an octave as its filter
+   opens, the magnet's whine rising, capacitor pulses quickening, arcs thickening, a pulsing magnetic sub and a lunar shimmer).
+   The verdict at the tap in the family's own voice (miss: a dull drop; hit: a clack and a chime; jackpot: a gold ka-ching, a
+   power surge and a bass thump). The fire: a rail beam's discharge and roar; a nova's electric discharge, shockwave and thump;
+   a cannon blast with the shell's whistle; **Moonfall the most powerful sound in the game** (two EM discharges, the beam's roar
+   on three detuned saws, a sub boom, arcs in both ears, a lunar chime, a whoosh). The impact: a beam's bite; a nova settling;
+   **a bomb** (owner: "bombs should sound like bombs": a crack, a deep soft-clipped boom, the blast, falling debris and a long
+   rumble; a jackpot adds a second blast); Moonfall's lunar crater with crystal chimes that ring on.
+   - Rarity: Arc Lance arcs along the beam, Sunlance a solar chord and a shimmer; Storm Nova thunder, Helix Nova a high spiral
+     that swirls between the ears; Rail Blast the rail's zing and crackle, Titanfall a gong, a bigger sub and an echo.
+   - Outcome: a miss keeps every rarity layer but loses its crack and 40% of its punch, and the whole voice is duller (2.6 kHz
+     low-pass), 20% quieter, 20% shorter, with no echo; a jackpot adds its own layers, 12% more level, 28% longer tails and more echo.
+3. **Every tank's weapon is heard**, not only yours: other tanks' shots by distance (full at your side, a quarter at ~14 units)
+   inside a shared budget of about 9 shots a second; another tank's super charge is a warning by distance, and its jackpot verdict
+   too. A super you fire ducks the gunfire by 55% for about half a second (a near enemy super by 30%).
+4. **The mix**: buses for your shots, other tanks' shots (a little darker) and supers, a shared echo send for the epic and
+   legendary sounds, the existing master gain and limiter. Voice caps: 6 of your shots, 6 others', 8 supers at once; your own
+   shots keep a per-weapon minimum gap (Twin 40 ms, under its 90 ms cadence).
+5. **iPhone**: audio wakes on pointerdown, pointerup, touchend, click or keydown, and the first gesture plays one silent sample
+   (older iOS); an interrupted context resumes on the next tap; the "ambient" session stays (the silent switch still mutes the
+   game, the player's music keeps playing). Sound off (Settings) silences everything and stops a charge in flight.
+6. **Owner sound test page** (Admin sheet -> "Sound test: every weapon and super"): every shot (Shot, Burst = 8 rounds at the
+   weapon's real fire rate) and every super at Miss / Hit / Jackpot, one tap each, played as in a match (charge, verdict at the
+   tap time, fire, impact). The button shows only for the owner's account; the page opens after the server's isOwner check
+   (`worker/src/owner.js` `ownerCheck`, action `owner_check` on /api/admin and /api/owner); a local test page with no account
+   opens it straight away. Stop cancels everything.
+7. **Conquest**: your shots there now use the same weapon sounds with their rarity; Conquest supers are untouched (their bar
+   chime `jackpot` / `supgood` / `supmiss` and the legacy `super` / `impact` sounds are kept word for word in `SND`).
+
+### Part A decisions and reasons (changes to the brief's wording are marked CHANGE)
+1. **A miss keeps every rarity layer (CHANGE from the lead's first design).** The first version dropped a rarity tier on a miss:
+   an Epic miss then had a Rare's layers, which broke "epic richer than rare" at that outcome. Now a miss is thinner by losing
+   its crack and 40% of its punch and by being duller, quieter and shorter; the ladder holds at every outcome (measured below).
+2. **Other tanks' weapons make sound (CHANGE: before, only your own shots did; another tank's super was a beep).** The owner asked
+   for every weapon's sound wherever it fires; an enemy's charge is also the warning research item 5 describes. Kept from becoming
+   noise by distance, the shared budget, the darker bus and the voice caps.
+3. **The damage cue was raised** (`hurt` 0.05 -> 0.09): your own fire is now fuller, and taking damage must stay audible over it
+   (measured: hurt -44.2 dB vs a Pulse shot -41.1 dB on a phone speaker).
+4. **A Web Audio click found and fixed (also in the old `tone` / `burst`).** A GainNode outputs its default 1.0 until its first
+   automation event; when a source's start and that event round to different samples (any start time like 0.29000000000000004 s)
+   one sample goes out at full level: a click about 6x louder than the sound. Every envelope is now set to 0 before scheduling.
+   Found by the offline renders (a burst's fourth round peaked at 0.217 instead of 0.035).
+5. **Shells: the whistle is part of the launch sound** (a falling 1,500 -> 900 Hz tone for ~0.6 s), not a voice that follows the
+   shell: a shell's flight time is not known at launch and the sim gives the landing no shell id.
+6. **The beams' and a shell's impacts of one super are one sound**: every impact of one super lands in the same sim tick (a
+   beam's end and each tank it hits); they are merged (the hit count adds a layer) so a beam through three tanks is not four booms.
+
+### Part A measurements (`node dev/tests/weapon-sounds.cjs --json docs/sounds-5e2b3/levels.json`; offline renders of the real
+### `js/fx.js` in Chromium, 48 kHz, through the live master gain 0.5; "phone dB" = the loudest 50 ms through a 250 Hz high-pass)
+| Shot | Layers | Peak | Phone dB | Length s |
+|---|---:|---:|---:|---:|
+| Pulse Cannon / Arc Pulse / Nova Pulse | 4 / 6 / 8 | 0.035 / 0.043 / 0.070 | -41.1 / -40.9 / -39.9 | 0.07 / 0.07 / 0.35 |
+| Twin / Storm / Helix Repeater | 3 / 6 / 9 | 0.041 / 0.039 / 0.058 | -47.7 / -47.2 / -44.3 | 0.03 each |
+| Siege Breaker / Rail Breaker / Titanfall | 4 / 6 / 9 | 0.062 / 0.066 / 0.099 | -38.2 / -37.7 / -36.8 | 0.17 / 0.23 / 0.39 |
+| Moonbeam | 10 | 0.060 | -40.1 | 0.52 |
+
+| Super (whole sequence) | Layers miss / hit / jackpot | Fire phone dB miss / hit / jackpot | Peak (jackpot) | Length s (jackpot) |
+|---|---|---|---:|---:|
+| Pierce / Arc / Sunlance | 12-14-22 / 19-21-29 / 28-30-38 | -33.6 -29.7 -26.4 / -33.0 -28.9 -25.9 / -32.6 -28.5 -25.7 | 0.38 / 0.38 / 0.44 | 1.1 / 1.2 / 1.3 |
+| Static / Storm / Helix Nova | 13-15-23 / 17-19-27 / 23-25-33 | -37.1 -30.9 -27.7 / -35.8 -30.3 -27.2 / -35.1 -29.3 -26.5 | 0.32 / 0.34 / 0.36 | 1.0 / 1.2 / 1.3 |
+| Siege / Rail Blast / Titanfall | 15-18-27 / 20-23-32 / 26-29-38 | -34.6 -29.3 -27.1 / -33.9 -28.7 -26.5 / -32.8 -28.3 -25.9 | 0.21 / 0.27 / 0.40 | 2.1 / 2.1 / 2.1 |
+| **Moonfall** | **29-33-45** | **-29.6 -26.2 -23.8** | **0.48** | **2.2** |
+Other sounds for scale (phone dB): your hit -44.8 to -49.7 by weapon, taking damage -44.2, a kill -35.6, your destruction -35.4,
+the old Conquest super press -32.7 and impact -31.4. Twelve Twin rounds at full cadence: -47.0 (under one Siege shot, -38.2),
+with the level falling at least 12 dB between rounds.
+The test (479 checks, PASS) holds: audible, unclipped, within length; rare > common and epic > rare in layers AND in sound (each
+step lifts a frequency band by 1.5 dB or more and loses none by more than 1 dB) for every shot and every super at every
+outcome; Moonbeam the richest shot; Moonfall's jackpot the most layers, the most energy and the longest ring of any sound; miss <
+hit < jackpot in layers and fire energy for all ten; rapid fire stays separate and under a heavy shot; every shot within 9 dB of
+the Pulse Cannon; no shot louder than any super's fire; the damage cue within 6 dB of your Pulse fire; kills above any light shot.
+
+### Part A tests (local)
+- `node dev/tests/weapon-sounds.cjs` PASS (479). `python3 dev/tests/weapon-sounds-browser.py` PASS: the first tap starts the
+  audio; both tanks' shots reach the engine, the other tank inside its budget (synchronous and real-time runs); all 10 supers x 3
+  outcomes play charge -> verdict -> fire -> impact in order with their own key and the bar's outcome, the charge stops at the
+  fire; an enemy super is heard; Sound off silences everything and stops a charge, the Settings toggle too; the sound test page:
+  a non-owner never sees it, 50 buttons, every one plays, Stop, nothing wider than the screen, 44 px buttons, a finger swipe
+  reaches the last button at 390x700 and 320x568, desktop 1366x768 (screens: `$SHOTS/sounds/`).
+- `python3 dev/tests/b4test.py` PASS (updated: supers are now counted through `LW`, not the old `super` beep).
+- `node dev/tests/wtest/owner.mjs` passed 75 (7 new: the sound test check for the owner on Telegram and the website, 403 for
+  others, the record untouched). `super-timing.mjs` PASS (335), `wtest/pvp.mjs` 130 passed, `wtest/test.mjs` 203 passed.
+
+### Part B: what shipped (js/rules.js, js/core.js, js/ui.js, js/match.js, js/net.js, worker/src/eco.js, index.js, pvp.js, owner.js)
+1. **Each chassis class has its own build and its own cores.** The record keeps `upc[class]` (Hull, Cannon, Engine, Targeting,
+   Reactor 0-4; the 14-level budget and the reset are per chassis), `glc[class]` (core levels 1-5) and `gsc[class]` (shards) for
+   Scout, Vanguard and Titan; points stay one wallet. A loadout carries its chassis's build and core levels (`up`, `gl`, as
+   before) and every chassis it can swap to carries its own (`chs[i].up`, `chs[i].gl`); `loadoutFor()` swaps all three together.
+2. **Everywhere it applies:** Arcade AI matches (your tank, the counter-pick swap between rounds, the match ticket, the
+   proof-of-play variants), live PvP (the server's loadout check reads the record per chassis; a swap in a live room moves the
+   build and cores with the chassis), Conquest (its loadout is the server's per-chassis one), the Lab (each bay's chassis decides
+   its build and core levels; two bays on the same chassis share them), power and leagues (they follow the chassis fielded: the
+   deployed bay), the ghost pool, and the 5D fair-AI rule (below).
+3. **Server-authoritative as before**: `/api/act` `up`, `respec`, `crate` (gem) and the new `core` take the chassis (`c`); the
+   server refuses a chassis the pilot doesn't own; Stars invoices, the webhook, TON / SOL logs and refunds carry the chassis of a
+   gem cache, a chosen core, a pack's gem caches or a paid reset (`descOf`, the invoice payload `c`, `starsPaid.c`).
+4. **Gem caches with points at one rate, Epic included**; **the chosen core** for points and money; **the Points shop** (a tab in
+   the Shop: gem caches, chosen cores, common / rare crates for points, the salvage yard moved from the Store, and each chassis's
+   build progress with a link to the Garage). Both Shop tabs have "Cores for" (the chassis your shards go to; the one you fly by
+   default; kept on the device).
+5. **Garage:** the Upgrades section shows one chassis's build, with a chip per owned chassis (the bay's chassis by default), so a
+   chassis that is in no bay can still be upgraded; the compare card and the reset name the chassis. The Cores section names
+   whose cores they are and links to the Points shop. Texts, info cards and the wiki say "per chassis".
+6. **Migration:** an old record's one shared build and cores move to the chassis it flies (its active bay); the other two chassis
+   start fresh. **The owner's account (OWNER_PID) copies them to all three** on its first read after the release (owner rule:
+   keep his test setup). Nothing else changes and no points move.
+7. **The fair-AI rule (5D) with per-chassis builds:** your chassis can now differ a lot in power, so a chassis swap on the VS
+   screen or between rounds re-levels every AI pilot, the megatank and any ghost to the tank you now field (`relevelAI`); the
+   match's pay league stays, and a swap UP lifts the AI to the stronger chassis's league (review round 1, below). `dev/tests/fair-arcade.mjs` now checks it (a full Titan and a stock Scout, 5 modes x 2
+   leagues: after the swap every AI is at or under the Scout; the megatank follows; swapping back never puts the AI above the Titan).
+8. `PVP_V` 7 (the loadout, the economy actions and purchases carry the chassis): phones on the old build are asked to update;
+   `web/boot.js` sends 7 (the Checkpoint 36 lesson; `web-login.mjs` guards the drift); every test's literal moved to 7.
+
+### Part B prices (every price this session sets; everything else unchanged)
+**The rate: 24 points per Star, for every gem cache** (owner: "the amount of points equals the amount of money"). Set by the
+8-week model below. Money prices are the existing ones (not changed).
+
+| Item | Points (new) | Points (before) | Stars | TON |
+|---|---:|---:|---:|---:|
+| Common gem cache (1-2 shards, random core) | **6,000** | 20,000 | 250 (unchanged) | 4 |
+| Rare gem cache (3-4 shards) | **12,000** | 80,000 | 500 (unchanged) | 8 |
+| Epic gem cache (11-14 shards) | **36,000** | not sold for points | 1,500 (unchanged) | 23 |
+| Chosen core, Common pick (2 shards of the core you pick) | **9,000** | new | **375** | **6** |
+| Chosen core, Rare pick (4 shards) | **18,000** | new | **750** | **12** |
+| Chosen core, Epic pick (14 shards) | **54,000** | new | **2,250** | **34.5** |
+| Unchanged, for reference: common / rare weapon cache or chassis crate | 20,000 / 80,000 | same | 250 / 500 | 4 / 8 |
+| Unchanged: salvaged rare / epic gear; tune-ups; one upgrade level (now per chassis) | 10,000 / 20,000; 3,000 / 10,000 / 30,000; 500 / 2,000 / 5,000 / 12,500 | same | | |
+- A chosen core costs **1.5x** the gem cache of the same size in points and in money; its money price is 1.5x the cache's price
+  *right now* (the day's +25% steps included, no deal), so it is always dearer than the random cache; buying one counts toward the
+  day's gem price steps like a cache. A chosen core for a core already at level 5 is not sold.
+- **CHANGE (rule, not a number): gem caches bought with points don't count toward that day's money price steps.** Gem caches were
+  never sold for points before (Epic not at all), so no existing rule covered them; weapon caches and chassis crates keep theirs.
+  Counting them would make a pilot who grinds pay more in Stars the same day, and the brief fixes the points price at one rate
+  (no steps). The economy reviewer flagged it as a rule the brief didn't ask for; kept, with this reason, for the owner's review.
+- Chosen cores cost 1.5x the cache's **full** price: the day's deal (30% / 25% off a cache) doesn't apply to them. The sheet says
+  so and shows the deal price next to it (review round 1: the comparison read as 2.14x on a deal day).
+- Why 1.5x and the top of each range: the research found chosen items sold at a modest, disclosed premium next to random ones
+  (Hearthstone crafting 4-8x the disenchant value; Marvel Snap's token shop), no published 1.5-3x benchmark. In the model a pilot
+  buying random Epic caches loses 19-29% of the shards to cores already maxed by the end of a chassis; at 1.5x the random cache
+  stays the better buy early and the chosen core is the finisher, which is the owner's purpose ("for players who don't want to
+  risk a duplicate").
+
+### The 8-week model (`node dev/tools/chassis-kit-model.mjs --json docs/economy/chassis-kit-model.json`)
+It runs the game's own economy code day by day (ecoLogin, ecoMatchPts with leagues, ecoAfterMatch, the daily and weekly quest
+claims, the weekly chest, the free Lunar Pass track, ecoUp, ecoCratePts, ecoCorePts, power and leagues) for a free pilot who
+spends every point on the chassis being kitted. **A full kit** = the dearest 14-level build (Hull, Cannon, Engine maxed,
+Targeting 2: 62,500 points) and all seven cores at level 5 (238 shards). **Assumptions:** M minutes of matches a day across every
+mode and team size (measured round lengths, Checkpoint 36, plus 30 s of VS screen, results and menus); wins 55% (5% draws where
+there are draws, 2nd on average in Last Standing); the four daily quests every day, three of five weeklies, the weekly chest,
+the daily reward, the free pass; Rare gear; free gem caches go to the chassis being kitted ("Cores for"). Policy: the cheapest
+next build level first, then Epic gem caches with points while four or more cores are below level 5, then chosen cores.
+**Every figure is the average of five seeds (1-5), with the range** (review round 1: one seed swung the first chassis 49-56 days).
+**Reference pilot (calibration): 20 minutes of matches a day plus the daily quests.** Rate search (points per Star -> days for
+the first chassis / all three): 10: 28 / 84, 14: 36 / 104, 18: 43 / 128, 20: 49 / 143, 22: 55 / 153, **24: 52 / 158**, 26: 63 /
+176, 28: 60 / 175, 30: 61 / 185, 32: 64 / 192, 40: 83 / 242. The curve is noisy at this step size (cache rolls, 36,000-point Epic
+steps), so the tool keeps the shipped rate while its average stays within a week of 8 weeks (49-63 days); 24 does (52).
+
+| Minutes of matches a day | Points a day (all sources) | First chassis (range) | All three (range) | Points per chassis (build + caches + chosen cores, seed 7) |
+|---:|---:|---:|---:|---|
+| 10 | 11,600 | 67 days (61-74) | 194 days (188-198) | 62,500 + 564,000 + 162,000 |
+| 15 | 13,300 | 61 days (52-66) | 174 days (154-185) | 62,500 + 564,000 + 129,000 |
+| **20 (reference)** | **15,100** | **52 days, 7.4 weeks (49-56)** | **158 days, 5.2 months (148-168)** | **62,500 + 576,000 + 195,000** |
+| 30 | 18,600 | 42 days (40-46) | 133 days (129-139) | 62,500 + 564,000 + 165,000 |
+| 45 | 24,300 | 35 days (28-38) | 108 days (104-112) | 62,500 + 636,000 + 120,000 |
+| 60 | 29,300 | 29 days (27-32) | 88 days (85-96) | 62,500 + 576,000 + 231,000 |
+| *Light pilot: 5 min, 2 dailies, 1 weekly* | *4,500* | *175 days, 25 weeks (147-199)* | *512 days* | |
+| *Light pilot: 10 min, 2 dailies, 1 weekly* | *6,300* | *136 days, 19 weeks (116-148)* | *385 days* | |
+"All three in about 6 months" is the owner's 3 x 8 weeks = 24 weeks; the reference pilot takes 22.6 weeks (5.2 months). Where a
+20-minute pilot's points come from (seed 7): matches 1.20 M (48%), quests 1.00 M (40%), the chest 0.16 M, the daily reward
+0.11 M, the pass 0.03 M. **The owner's data point** (83,000 points in two weeks of light play on his maxed account, league
+multiplier applies): the model gives 77,000 in two weeks at Lunar Legend for **5 minutes of matches a day and half the daily
+quests**, so "light play" is about 5 minutes a day. **The 8-week target is for a daily player (20 minutes and the dailies); at
+the owner's own light pace one chassis takes about 25 weeks** (economy review, round 1; said plainly so the owner can judge it).
+To hit 8 weeks at the light pace the rate would have to drop to about 8-9 points per Star (an Epic cache ~13,000 points), which
+would make the reference pilot kit a chassis in about 3 weeks; the brief's "expensive enough to encourage spending real money"
+argues for the daily-player reading. **What it means in money**: one chassis's kit at list Stars is about 35,000 Stars of gem
+caches (the rate is the same both ways); an Epic gem cache (1,500 Stars) saves the reference pilot about 2.4 days of play.
+**Limits of the model** (review round 1): win rate, minutes and quest completion are assumptions, not data (no live players
+yet); quests are 40% of income and the model completes every daily regardless of minutes (Quick Match quests too, though it
+plays no Quick Match); PvP, Conquest, squad and milestone income are left out, so real pilots who play those kit faster. The
+owner reviews the prices after the release (brief). One lever if a real pilot's pace is off: `GEM_PTS_STAR` in `js/rules.js`.
+
+### Independent reviews, round 1 (two read-only agents that did not build; given the branch, the brief and this checkpoint)
+Economy / security (reviewed `6cc049e`; probes in the session scratchpad) and gameplay / audio / UI / performance (reviewed
+`6cc049e`; offline and real-time Chromium probes). Their verdicts on the owner's rules:
+
+| Owner rule | Economy / security | Gameplay / audio / UI | After round 1 |
+|---|---|---|---|
+| A1 Every shot and every Arcade super has its own sound, wherever fired | | PARTIAL: practice-range shots silent (also on main) | fixed: the range's shots play (its engine frame sends them as events) |
+| A2 Code only, no audio files | | PASS | |
+| A3 Rarity ladder, line identity, Moonfall the biggest | | PASS (layers 4/6/8, 3/6/9, 4/6/9, 10; Moonfall jackpot 45 layers, 2.2 s) | |
+| A4 Miss thinner, hit fuller, jackpot biggest | | PASS for all 10 | |
+| A5 Owner-only sound test page, phone and computer | PASS (server `ownerCheck`, 403 for others) | PASS (50 buttons, 44 px, fits 320 / 390 / 1366) | Stop pinned to the bottom |
+| A6 Balanced mix, Twin not noise, mute / volume, iPhone unlock | | PASS, minor: super voice cap not enforced | fixed: cap enforced (yours always play), far shots cost no budget, lighter tier on LOW / 2D |
+| B1 Each chassis its own build, budget and reset | PASS | PASS | |
+| B2 Each chassis its own cores; a purchase names its chassis | PASS | PASS | free caches now say which chassis on the claim |
+| B3 Everywhere, server-authoritative; AI never above the pilot | PARTIAL: a VS-screen swap beats the PvP mismatch cap | BLOCKER: the same swap escapes matchmaking and the match league | fixed (below) |
+| B4 Gem caches for points at one rate, Epic included | PASS (24 / Star: 6,000 / 12,000 / 36,000) | | |
+| B5 Points shop: points purchases, salvage moved, anything else points buy | PARTIAL: upgrades, tune-ups, Hull Plating only linked | PASS | decision kept (below) |
+| B6 Direct core buy, dearer than a cache, existing payment paths only | PASS (invoice -> webhook -> refund exact) | PASS, major: the price comparison misled on deal days | fixed: full price stated, deals excluded, "from" price shown |
+| B7 Prices modelled on 8 weeks; change no other economy numbers | PARTIAL: one rule change (points buys and the Stars steps), model caveats | | rule kept with reason; model on 5 seeds, light pilot, caveats stated |
+| B8 Owner's account: his setup on all three chassis | PASS (probe: one sync copies, a second changes nothing) | | |
+
+Findings and what round 1 did (`fb9c664`, plus the range sound and test commits after it):
+1. **The chassis swap and fairness (both reviewers, the top finding).** Pilots are matched on the deployed bay, and the VS-screen
+   swap moved a whole build: a stock Scout (88) swapping to a kitted Titan (206) had a 0.93 live win chance against a cap of
+   0.80; in AI matches the swap kept the low league's AI. **Decision:** keep matching on the deployed chassis (so a pilot can fly
+   a stock Scout in Scout-level rooms, which the per-chassis grind needs) and police the swap instead. **Live rooms**
+   (`worker/src/pvp.js` `swapOdds`): a swap UP that takes the room past `MM_CAP` (every seat's real power, AI and ghost seats
+   included) is refused and the phone says "too strong for this room"; a swap down, or one inside the cap, goes through.
+   **AI matches** (`js/match.js` `aiLgNow`): a swap up lifts the AI to that chassis's league (never down, never above you, since
+   `aiPowerFor` caps the AI at your power); the pay stays the match's league. Rejected alternative: matching everyone on their
+   strongest chassis, which would move existing pilots' leagues and push anyone flying a weaker chassis into stronger rooms.
+   Tests: `wtest/pvp` (refused up past the cap, told, down and inside-cap allowed), `fair-arcade` 5b (4 modes: the lift, never
+   above the pilot, no weaker after).
+2. **A forged chassis name crashed the Stars grant** (`constructor` passed a plain `CH[c]` lookup; Stars charged, nothing granted).
+   Every chassis and core name from a request is now checked against `CHORDER` / `GORDER` (`isCh`, `isGem` in `js/rules.js`, used
+   by the client, `eco.js`, `index.js`, `owner.js`), including two older core checks with the same hole. The webhook's grant is
+   wrapped: one that throws rolls the record back and the payment is still logged, with the error, for the owner; a database
+   failure still throws so Telegram retries.
+3. A reset or a paid gem cache naming a chassis you don't own is refused (it used to land on the flown chassis); a chosen core
+   already at level 5 when its payment lands (two invoices paid one after the other) puts its shards on that chassis's lowest
+   core and the reveal says so; a refund re-runs the stored loadout and power (box refunds had the same gap); a chassis no longer
+   owned is never the "home" chassis. TON / SOL logs still skip the owned-check (crypto checkout is off; Session 8 certifies it).
+4. UI: shard counts on Store caches, one balance on the Points shop (it was there three times), "from" prices on chosen cores,
+   "The Titan's one level", free caches name their chassis on the daily reward and the weekly chest. **Not changed:** a swap between
+   series rounds can turn an over-cap ghost into a renamed bot (the fair-AI rule wins over the name); the practice range's
+   hits already had sound.
+5. **Decision on B5:** build levels, tune-ups, Hull Plating and resets stay in the Garage, with each chassis's build progress
+   and a Garage button in the Points shop: they are bought for one machine or one chassis while looking at it (stats, compare
+   card, budget). Everything the Shop sells for points (gem caches, chosen cores, crates, salvage) is in the Points shop.
+6. Performance (not measured on a phone): Web Audio voices per shot rose from 2 to 12-33; a busy Last Standing moment used 9.3%
+   of a desktop core. The LOW / 2D tier caps voices (4 / 3 / 5), drops the echo on your gun and halves other tanks' budget;
+   the recipes are unchanged. A real low-end Android check is on the owner's checklist.
+7. **CHANGE outside the brief, fixing a false flag:** the proof-of-play check rejected an honest Arena draw before the clock (both
+   last tanks down at once, which the game scores as a draw) and added a bot-watch flag to that pilot. It now accepts such a draw
+   when the record shows every tank down (`worker/src/proof.js`; the real record that failed is the fixture
+   `dev/tests/wtest/fixtures/proof-mutual-kill.json`; a forged early draw with a tank still up still fails).
+
+### Tests (local; the head before the release bump)
+- Node, all PASS: `wtest/chassis` **65** (16 new: forged names on invoices, acts and the webhook; resets and caches for unowned
+  chassis; the maxed chosen core; the refund's loadout; the home chassis; the mutual-kill draw), `wtest/pvp` **133** (3 new),
+  `wtest/test` 203, `wtest/owner` 81, `wtest/farm` 55, `wtest/lab`, `lab-battle`, `lab-parity`, `referrals` 29,
+  `ticket-reliability` 37, `accounts` 18, `wtest/conquest`; `fair-arcade` **11,665** (12 new), `combat-balance` 2,594,
+  `super-timing` 335, `super-aim` 48, `gear-balance`, `gem-ui`, `garage-rules`, `velocity`, `lab-ui`, `weapon-sounds.cjs` 479,
+  `conquest-regression.sh` (all 29; `conquest-travel` and `conquest-view-travel` fixed for per-chassis fields), `s2/pool`,
+  `s2/legend` (spend), `proofcheck` on 288 real matches: 0 failed. `worker/smoke-runtime.mjs` through wrangler 4 (real workerd,
+  Durable Objects, WebSockets): SMOKE OK, WEB RUNTIME OK, ACCOUNTS RUNTIME OK.
+- Browser, this branch, first pass: PASS `b1`, `b3`, `b4`, `b7`, `b8`, `b11`, `b12`, `b13`, `owner-ui`, `garage-layout`,
+  `league-ui`, `qa`, `chassis-ui`, `weapon-sounds-browser`, `conquest-super-fx`; `proofreal 3`: 287 of 288 (the mutual-kill draw,
+  fixed; 288 of 288 on the saved records after). **After round 1, all PASS:** `owner-ui`, `qa`, `b1`, `b3`, `b4`, `b7`, `b8`,
+  `garage-layout`, `league-ui`, `conquest-super-fx`, `proofreal 1`, `chassis-ui` (scale 2: phone, 320 px, desktop; screens in
+  `docs/chassis-5e2b3/`) and `weapon-sounds-browser` (its new checks: 20 supers stay under the cap and yours still plays; far
+  shots cost nothing; the last button clears the pinned Stop; **leaving a match while a tank charges stops that charge**, a leak
+  the longer real-time check exposed and fixed in round 1, `fx('supstop','all')` at match start, round start and exit; the
+  practice range's shots play, with the AI flying your tank; screens of the sound test in `docs/sounds-5e2b3/`). At scale 2 the
+  software renderer runs the live loop too slowly for its real-time shot count (0 shots in 4 s); that check now waits for three
+  rounds (up to 15 s) and scales the other-tank budget by the time measured.
+- **Failing on pristine main `a63f1b2` too, the same way** (none is in CI; not fixed here): `b2test` (a click times out), `b6test`
+  (the Garage paints button `data-act="paints"` is gone since the garage redesign), `b9test` (garage section selectors; its
+  rapid upgrade taps land 7-9 of 14), `gear-browser` ("WEAPON · Moonbeam", a stale super value), `lab-browser` ("Mods"),
+  `modules-browser` ("two machine cards"), `range-browser` (the Garage's `labedit` button is gone; the range's sound check lives
+  in `weapon-sounds-browser`). `conquest-server.mjs` is a local browser harness (a server that waits), not a test.
+
+### Agents used (AGENTS.md)
+1. One research agent (web search; page fetches blocked): rarity layering, rapid fire, mixing by importance, phone loudness,
+   ultimates, perfect-timing cues, Web Audio / iOS, per-class progression (section above).
+2. Two independent read-only reviewers (round 1), above. No round 2 was needed: every blocker and major was fixed and covered by
+   a test, and the changed screens were re-captured in the same run.
+
+### Risks and limits
+- The sounds were judged by measurement (levels, layers, timing) and by recipe, not by ear on a real phone; iPhone audio unlock
+  is tested in Chromium only. Audio CPU is not measured on a phone.
+- Prices rest on a model of an assumed daily player; at the owner's light pace a chassis takes about 25 weeks. One number moves it.
+- TON / SOL purchase logs don't run the owned-check (crypto checkout stays off until Session 8 certifies it).
+- Old records migrate on first read: the shared build and cores go to the chassis flown; the owner's to all three.
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Settings > Sound on. Tap once: the first shot is heard. Shop > Sound test (owner only): play every shot, every super at miss /
+   hit / jackpot; Stop stays at the bottom. Sound off silences everything, mid-charge too.
+2. An Arcade match with Twin Repeater: rapid fire reads as shots, not noise; an enemy super is heard as a warning.
+3. Garage > Upgrades: the chassis chips; buy a level for a chassis not in a bay; reset one chassis, the others keep theirs.
+4. Shop > Points shop: gem caches 6K / 12K / 36K for the chassis in "Cores for"; a chosen core; the salvage yard.
+5. The VS screen in a live room with a kitted and a stock chassis: swapping to the kitted one is refused only when it would be a
+   mismatch ("too strong for this room").
+6. Your account: the same build and cores on Scout, Vanguard and Titan.
+
+### Resume next (if this session's context runs out)
+1. Release (pre-approved): `dev/bump.sh`, PR, CI green, merge, deploy runs, release record here, ROADMAP row to Shipped.

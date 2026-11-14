@@ -21,7 +21,8 @@ function liveSetup(cfg){
  const gq=(cfg.ghosts||[]).slice();   // offline pilots' tanks take the first AI seats (enemies first)
  const order=units.map((u,i)=>i).filter(i=>!units[i]).sort((a,b)=>(team(b)!==0)-(team(a)!==0));
  const gseat={};for(const i of order){if(!gq.length)break;gseat[i]=gq.shift();}
- units=units.map((u,i)=>u||(gseat[i]?mkGhost(team(i),pos[i].x,pos[i].y,gseat[i],cfg.lg|0):mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop(),ai)));
+ // pw on every seat: the room holds a chassis swap to the mismatch cap it was matched under (worker/src/pvp.js swapOdds, 5E-2b3)
+ units=units.map((u,i)=>u||(gseat[i]?Object.assign(mkGhost(team(i),pos[i].x,pos[i].y,gseat[i],cfg.lg|0),{pw:Number(gseat[i].pw)||powerOf(gseat[i].L)}):Object.assign(mkBot(team(i),pos[i].x,pos[i].y,ref,names.pop(),ai),{pw:ai.p})));
  units.forEach((u,i)=>{u.id=i;if(u.hum)u.nbar=supBar(random);});   // each live pilot's first timing bar
  me=null;series=null;state='vs';
 }

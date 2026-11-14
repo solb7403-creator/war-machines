@@ -74,7 +74,11 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 
 // ---- combat rules, gear math, paints and the whole economy (points, quests, crates, pass, squad) live in rules.js:
 // shared with the server, which runs them for every pilot in Telegram ----
-const gemMult=k=>gemLvMult(save.gemLvl&&save.gemLvl[k]);
+const gemMult=(k,c)=>gemLvMult(chGl(save,c||save.chassis)[k]);   // a core's multiplier on a chassis (cores are per chassis, 5E-2b3)
+const myGl=c=>chGl(save,c),myGs=c=>chGs(save,c),myUp=c=>chUp(save,c);   // the build and cores of one chassis on this save
+// the chassis gem caches and chosen cores are for: the Shop's "Cores for" pick (kept on this device), else the one you fly. Free
+// caches (the 7th daily reward, the welcome-back gift, the weekly chest, the pass) go there too
+const coresFor=()=>{const c=save&&save.coreFor;return CH[c]&&ownsCh(save,c)?c:homeChassis(save);};
 const fmtCore=(k,v)=>'+'+(k==='reg'?(v*100).toFixed(2):(k==='vel'?Math.round(v*10000)/100:Math.round(v*1000)/10))+'%';
 const SUPER_DESC={pulse:'Pierce Lance: a rail beam that goes through cover and hits every enemy in a line.',
  twin:'Static Nova: an electric shockwave that hits every enemy near you.',
@@ -134,16 +138,16 @@ const SKINS={default:{n:'Standard',c:'#3fd0c9',price:0},lunar:{n:'Lunar',c:'#e8f
 // everything that sets your tank's stats, in the form the server checks (see ecoLoadout in rules.js)
 function myLoadout(){
  if(save.lab)return labLoadout(save);
- const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal});
- return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:Object.assign({},save.up),cores:(save.cores||[]).slice(0,3),gl:Object.assign({},save.gemLvl),
-  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>ch(getC(c))),vl:vaultLevel(save.vg),ap:apOf(save.ap)};   // Hull Plating counts everywhere (power/league/PvP)
+ const W0=getW(save.weapon),C0=getC(save.chassis),ch=x=>({c:x.cls,t:x.tier,q:x.q,s:!!x.sal}),own=x=>({...ch(x),up:{...myUp(x.cls)},gl:{...myGl(x.cls)}});
+ return {w:{a:W0.arch,t:W0.tier,q:W0.q,s:!!W0.sal},c:ch(C0),up:{...myUp(C0.cls)},cores:(save.cores||[]).slice(0,3),gl:{...myGl(C0.cls)},
+  skin:save.skin==='lunar'?'lunar':'default',paint:save.paint||'stock',chs:ownedChassisClasses().map(c=>own(getC(c))),vl:vaultLevel(save.vg),ap:apOf(save.ap)};   // Hull Plating counts everywhere (power/league/PvP); each chassis its own build and cores
 }
 const calcPower=()=>powerOf(myLoadout());
 // your league right now: the server's record (lgi, form lwr) with the tank you'd field, the same rule the server applies (rules.js)
 const myLeague=pw=>leagueInfo(leagueIdx(leagueRating(pw===undefined?calcPower():pw,save.lwr,save.mp),save.lgi));
 function buildStats(){
- const U=save.up,W=getW(save.weapon),Cc=getC(save.chassis),lun=save.skin==='lunar',skin=lun?SKIN_HP:1,skinD=lun?SKIN_DMG:1;
- const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k):0),0);
+ const U=myUp(save.chassis),W=getW(save.weapon),Cc=getC(save.chassis),lun=save.skin==='lunar',skin=lun?SKIN_HP:1,skinD=lun?SKIN_DMG:1;
+ const gb=k=>(save.cores||[]).reduce((a,g)=>a+(g===k?GEM[k].amt*gemMult(k,save.chassis):0),0);
  const out={hp:Math.round(STAT.hp*(1+0.08*U.hull)*Cc.hp*skin),dps:Math.round(W.dps*(1+0.08*U.cannon)*(1+gb('dmg'))*(1+gb('rof'))*skinD*((save.cores||[]).includes('vel')?1+GEM.vel.impact*gemMult('vel'):1)),
   spd:+(STAT.speed*(1+0.06*U.engine)*Cc.spd*(1+gb('spd'))).toFixed(1),armor:Math.round(Math.min(0.7,gb('arm'))*100),crit:Math.round((CRIT_BASE+0.02*U.target+gb('lck'))*100)};
  if(save.lab)Object.assign(out,machineMetrics(myLoadout()));return out;
@@ -158,11 +162,10 @@ function loadSave(obj){
   const cached=save||{},E=window.LUNAR_WEB.snapshot?.E;
   // Browser storage supplies preferences and already-signed pending results only, never equipment or balances.
   save=E?JSON.parse(JSON.stringify(E)):null;
-  if(save){for(const k of ['gfx','sound','haptics','gtype','mode','map','welcomed','gSeen','gHint'])if(cached[k]!==undefined)save[k]=cached[k];
+  if(save){for(const k of ['gfx','sound','haptics','gtype','mode','map','welcomed','gSeen','gHint','coreFor'])if(cached[k]!==undefined)save[k]=cached[k];
    save.mq=Array.isArray(cached.mq)?cached.mq.slice(-20):[];save.migOk=1;}
  }
- if(!save||typeof save.pts!=='number')save={pts:0,up:{hull:0,cannon:0,engine:0,target:0,reactor:0},q:{},chassis:'vanguard',weapon:'pulse',
-  gemLvl:{dmg:1,rof:1,arm:1,spd:1,lck:1,reg:1,vel:1},gemShards:{dmg:0,rof:0,arm:0,spd:0,lck:0,reg:0,vel:0},
+ if(!save||typeof save.pts!=='number')save={pts:0,q:{},chassis:'vanguard',weapon:'pulse',   // each chassis's build and cores: ecoNorm (upc, glc, gsc)
   wTier:{pulse:0,twin:-1,siege:-1},cTier:{scout:-1,vanguard:0,titan:-1},wOwn:{pulse:[0],twin:[],siege:[]},cOwn:{scout:[],vanguard:[0],titan:[]},fresh:true};
  if(typeof save.earned!=='number'){let sp=0;for(const k in (save.up||{}))for(let i=0;i<save.up[k];i++)sp+=(UPS[k]?UPS[k].costs[i]:0);save.earned=(save.pts||0)+sp;}
  if(save.streak===undefined)save.streak=0;
@@ -224,7 +227,7 @@ function waitMig(){
 function ecoErr(r){   // a toast for an action that didn't go through
  if(!r||!r.err)return false;
  const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'Epic crates are paid only',
-  join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.',empty:'Nothing to reset yet',have:'That slot already has this plate or better',mn:'Not enough '+((MINERALS[r.k]||{}).s||'minerals')+(r.need?': '+r.need+' more':''),offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
+  join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels on this chassis. Reset its build to move them.',chassis:'Get that chassis first: its build and cores come with it',item:'That item isn’t sold',empty:'Nothing to reset yet',have:'That slot already has this plate or better',mn:'Not enough '+((MINERALS[r.k]||{}).s||'minerals')+(r.need?': '+r.need+' more':''),offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
  if(m&&typeof showToast==='function')showToast(r.err==='max'&&r.k?'Already at max level':m);
  return true;
 }
@@ -247,8 +250,8 @@ function bankPts(n){
 // what a crate, purchase or reward gave, in words for the reveal card (raw: from rules.js ecoOpenBox / ecoGrant / ecoSalvage)
 function revealOf(r){
  if(!r)return null;
- if(r.gem){const G=GEM[r.gem],lv=r.lv;return {tk:r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,lv:r.lv,up:r.up||0,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards'),
-  sub:r.up>0?G.name+' core reached level '+lv+'!':G.name+' core: level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:save.gemShards[r.gem])+'/'+SHARD_NEED[lv]+' shards to next)':' (max)')};}
+ if(r.gem){const G=GEM[r.gem],lv=r.lv,cn=isCh(r.c)?' for your '+CH[r.c].n:'';return {tk:r.tk==='core'?'gem':r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,lv:r.lv,up:r.up||0,c:r.c,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards')+cn,
+  sub:(r.was&&GEM[r.was]?GEM[r.was].name+' was already at level 5, so these went to '+G.name+'. ':'')+(r.up>0?G.name+' core'+cn+' reached level '+lv+'!':G.name+' core'+cn+': level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:myGs(r.c)[r.gem]|0)+'/'+SHARD_NEED[lv]+' shards to next)':' (max)'))};}
  if(r.tk==='paint'){const P=PAINTS[r.id]||PAINTS.stock;return r.id==='founder'?{tk:'paint',rar:2,color:P.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'}:
   {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
  if(r.tk==='moonbeam')return {tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'};
@@ -287,8 +290,8 @@ function showOuts(outs){
  const rv=list.map(revealOf).filter(Boolean);
  if(rv.length&&typeof showReveal==='function')showReveal(rv);
 }
-function respecBuild(){
- return when(ecoRun('respec',{},S=>ecoRespec(S)),r=>{
+function respecBuild(c){
+ return when(ecoRun('respec',{c},S=>ecoRespec(S,undefined,c)),r=>{
   if(ecoErr(r))return false;
   fx('buy');showToast('Build cleared. +'+fmtNum(r.back)+' points back');return true;
  });
@@ -306,10 +309,10 @@ function fabPlate(slot,tier){
   fx('buy');showToast(PLATE.slots[slot]+' '+MINERALS[MN_ORDER[tier-1]].s+' plate fabricated'+(r.set>=tier?': full set':''));return true;
  });
 }
-function buyUp(k){
- return when(ecoRun('up',{k},S=>ecoUp(S,k)),r=>{
+function buyUp(k,c){
+ return when(ecoRun('up',{k,c},S=>ecoUp(S,k,c)),r=>{
   if(ecoErr(r))return false;
-  fx('buy');showToast(UPS[k].n+' upgraded to level '+r.lv);return true;
+  fx('buy');showToast((CH[r.c]?CH[r.c].n+' ':'')+UPS[k].n+' upgraded to level '+r.lv);return true;
  });
 }
 function tuneItem(isW,k,t){
@@ -370,7 +373,7 @@ function claimWeeklyQuest(id){
 function claimWeekly(){
  dailyQuests();
  if(save.wq.claimed||(save.wq.n||0)<WQ_GOAL)return null;
- return when(ecoRun('chest',{},(S,X)=>ecoChest(S,X)||{err:'no'}),r=>{if(!r||r.err)return null;afterGain(r.box);store();fx('claim');return {pts:r.pts,reveal:revealOf(r.box)};});
+ const c=coresFor();return when(ecoRun('chest',{c},(S,X)=>ecoChest(S,X,c)||{err:'no'}),r=>{if(!r||r.err)return null;afterGain(r.box);store();fx('claim');return {pts:r.pts,reveal:revealOf(r.box)};});
 }
 // ---- Lunar Pass (rules.js): free track for everyone, premium track for pass owners. The premium track never gives points ----
 const seasonNo=()=>ecoSeason(ecoX());
@@ -392,7 +395,7 @@ function rewardLabel(r){
 const passReady=()=>{const P=passState(),t=passTier();let n=0;for(let i=1;i<=t;i++){if(!P.cf.includes(i))n++;if(P.prem&&!P.cp.includes(i))n++;}return n;};
 function claimPass(track,i){
  i=+i;
- return when(ecoRun('pass',{t:track,i},(S,X)=>ecoClaimPass(S,track,i,X)||{err:'no'}),r=>{
+ const c=coresFor();return when(ecoRun('pass',{t:track,i,c},(S,X)=>ecoClaimPass(S,track,i,X,c)||{err:'no'}),r=>{
   if(!r||r.err)return null;
   if(r.pts!==undefined){fx('claim');return {pts:r.pts};}
   if(r.paint){save.paint=r.paint;store();fx('buy');return {reveal:{tk:'paint',rar:2,color:PAINTS[r.paint].trim,paint:r.paint,title:PAINTS[r.paint].n+' paint',sub:'Equipped. Change it in the Garage.'}};}
@@ -409,7 +412,7 @@ function loginState(){return ecoLoginState(save,ecoX());}
 const giftReady=()=>ecoGiftReady(save,ecoX()),giftPending=()=>ecoGiftPending(save,ecoX());   // the one-time welcome-back Rare gem cache
 function claimLogin(){
  if(loginState().claimedToday)return null;
- return when(ecoRun('login',{},(S,X)=>ecoLogin(S,X)||{err:'claimed'}),r=>{if(!r||r.err)return null;afterGain(r.box);afterGain(r.gift);store();fx('claim');return {pts:r.pts,reveal:r.box?revealOf(r.box):null,gift:r.gift?revealOf(r.gift):null,day:r.day};});
+ const c=coresFor();return when(ecoRun('login',{c},(S,X)=>ecoLogin(S,X,c)||{err:'claimed'}),r=>{if(!r||r.err)return null;afterGain(r.box);afterGain(r.gift);store();fx('claim');return {pts:r.pts,reveal:r.box?revealOf(r.box):null,gift:r.gift?revealOf(r.gift):null,day:r.day};});
 }
 
 // ---- squad (referrals): you get paid when your recruits keep playing ----
@@ -468,13 +471,20 @@ const dealX=(tk,ri)=>dealMult(dealOf(tk,ri));
 function markDeal(k){if(k==='d')save.dealD=dayNum();else if(k==='w')save.dealW=weekNum();}
 function boxPrice(tk,ri,full){return Math.round(RPRICE[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri))*100)/100;}   // TON. full: before the deal
 function boxStars(tk,ri,full){return Math.round(RSTARS[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri)));}
-function boxPts(tk,ri){return RPTS[ri]||0;} // points price is flat
+function boxPts(tk,ri){return tk==='gem'?GEM_PTS[ri]||0:RPTS[ri]||0;} // points price is flat (gem caches: one points-per-Star rate, every rarity)
 function crateFound(tk,ri){if(tk==='gem')return 0;const ks=tk==='weapon'?WORDER:CHORDER;return ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;}
-function openBoxWithPoints(tk,ri){
+// ch: the chassis a gem cache is for
+function openBoxWithPoints(tk,ri,ch){
  const c=boxPts(tk,ri);
  if(!c){showToast('Epic crates are paid only');return null;}
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
- return when(ecoRun('crate',{tk,ri},(S,X)=>ecoCratePts(S,tk,ri,X)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
+ return when(ecoRun('crate',{tk,ri,c:ch},(S,X)=>ecoCratePts(S,tk,ri,X,ch)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
+}
+// a chosen core for points: CORE_N[ri] shards of core k for chassis ch
+function buyCorePts(k,ri,ch){
+ const c=corePts(ri);
+ if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
+ return when(ecoRun('core',{k,ri,c:ch},(S,X)=>ecoCorePts(S,k,ri,ch,X)),r=>{if(ecoErr(r))return null;store();return revealOf(r);});
 }
 // opens a crate on this device (local play and tests only: in Telegram every crate is opened by the server)
 function doOpenBox(tk,ri){const r=ecoOpenBox(save,tk,ri,ecoX());afterGain(r);store();return revealOf(r);}
@@ -487,7 +497,7 @@ function buySalvage(tk,ri){
 function grantPurchase(desc){
  if(WEB_EDITION)return; // Website purchases are unavailable; no local grant path.
  if(!desc)return;
- const outs=ecoGrant(save,{kind:desc.kind,tk:desc.tk,ri:desc.ri,id:desc.id,deal:desc.deal,price:desc.price},ecoX());
+ const outs=ecoGrant(save,{kind:desc.kind,tk:desc.tk,ri:desc.ri,id:desc.id,deal:desc.deal,price:desc.price,c:desc.c},ecoX());
  save.pendingTx=null;
  if(typeof syncPlayer==='function')syncPlayer();
  showOuts(outs);

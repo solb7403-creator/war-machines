@@ -18,7 +18,7 @@ const {RULES:R}=await import('../../../worker/src/sim.gen.js');
 const {checkLoadout}=await import('../../../worker/src/pvp.js');
 const env={BOT_TOKEN:'local-test',FIREBASE_DB_SECRET:'SECRET'};
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id,first_name:'Lab'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://local'+path,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://solb7403-creator.github.io'},body:JSON.stringify({gv:6,initData:auth(id),...body})}),env);return {status:r.status,...await r.json()};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://local'+path,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://solb7403-creator.github.io'},body:JSON.stringify({gv:7,initData:auth(id),...body})}),env);return {status:r.status,...await r.json()};}
 const sync=(id,body={})=>call(id,'/api/sync',{lab:1,...body});
 const act=(id,a,body={})=>call(id,'/api/act',{a,...body});
 const S=id=>db.get('/eco/tg_'+id);
@@ -31,7 +31,7 @@ const first=JSON.stringify(S(7001).lab);await sync(7001);assert.equal(JSON.strin
 await Promise.all([sync(7002),sync(7002)]);assert.equal(Object.keys(S(7002).lab.machines).length,2);
 // Existing canonical gear wins over stale device selection; global assets stay global.
 await call(7003,'/api/sync');
-let old=S(7003);old.pts=12345;old.earned=54321;old.wOwn.twin=[1];old.cOwn.scout=[1];old.roll['twin:1']=1.08;old.roll['scout:1']=1.06;old.up.engine=2;old.spendGram=9;old.refC={tg_99:{m:1}};old.L=R.ecoLoadout(old,{w:{a:'twin',t:1},c:{c:'scout',t:1},cores:['spd','reg','dmg'],paint:'stock'});
+let old=S(7003);old.pts=12345;old.earned=54321;old.wOwn.twin=[1];old.cOwn.scout=[1];old.roll['twin:1']=1.08;old.roll['scout:1']=1.06;old.upc.scout.engine=2;old.spendGram=9;old.refC={tg_99:{m:1}};old.L=R.ecoLoadout(old,{w:{a:'twin',t:1},c:{c:'scout',t:1},cores:['spd','reg','dmg'],paint:'stock'});
 const protectedKeys=R.ECO_KEYS.filter(k=>!['lab','lg','lgi'].includes(k));/* lg, lgi: the league, derived from power and form */const before=Object.fromEntries(protectedKeys.map(k=>[k,old[k]]));
 r=await sync(7003,{L:R.STOCK_L});
 assert.equal(r.E.lab.machines.m_legacy.spec.w.a,'twin');assert.equal(r.E.lab.machines.m_spare.spec.w.a,'twin');
@@ -53,7 +53,7 @@ failPlayers=true;r=await sync(7005);failPlayers=false;assert.ok(r.status>=500);a
 // Six-mode snapshots must retain start-time gear/upgrades despite editing and sync.
 const oldClient=await eco.matchStart(env,{g:'arena',m:'1v1',map:'classic',pv:1,L:R.STOCK_L},{id:7003},'tg_7003',Date.now());
 assert.equal(oldClient.body.error,'update','old clients must update before a Lab fight, not receive false proof flags');
-for(const g of R.GT_ORDER){const now=Date.now();let start=await eco.matchStart(env,{g,m:'1v1',map:'classic',L:R.STOCK_L,labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',now);assert.ok(start.body.ok);const ticket=structuredClone(S(7003).mt);assert.equal(ticket.rv,'lab-fittings-v1');assert.ok(ticket.L.chs.length);old=S(7003);old.up.engine=4;await sync(7003);assert.deepEqual(S(7003).mt.L,ticket.L);assert.equal(S(7003).mt.mult,ticket.mult);}
+for(const g of R.GT_ORDER){const now=Date.now();let start=await eco.matchStart(env,{g,m:'1v1',map:'classic',L:R.STOCK_L,labRev:S(7003).lab.rev,pv:1},{id:7003},'tg_7003',now);assert.ok(start.body.ok);const ticket=structuredClone(S(7003).mt);assert.equal(ticket.rv,'lab-fittings-v1');assert.ok(ticket.L.chs.length);old=S(7003);old.upc[R.homeChassis(old)].engine=4;await sync(7003);assert.deepEqual(S(7003).mt.L,ticket.L);assert.equal(S(7003).mt.mult,ticket.mult);}
 const canonical=await checkLoadout(env,R,{...R.STOCK_L,w:{a:'moon'}},S(7003));assert.equal(canonical.w.a,S(7003).L.w.a,'PvP fields active machine not raw spoof');
 // Legacy migration awaiting reconciliation must not be marked complete by Lab.
 db.root.players.tg_7006={pts:900,days:3};r=await sync(7006);assert.equal(S(7006).mig,0);assert.equal(r.E.lab,undefined);

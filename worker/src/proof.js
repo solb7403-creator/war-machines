@@ -182,7 +182,9 @@ export function checkProof(pf, c) {
     }
     if (left.length && !timeWin) return fail("result");
   }
-  if ((c.g === "arena" || c.g === "boss") && c.drawn && !c.series && simT < ((L.GTYPES[c.g] || {}).t || 180) - 6) return fail("result");
+  // a draw before the clock: only Arena's "both last tanks down at once" (game.js outcome), which the record must show
+  if ((c.g === "arena" || c.g === "boss") && c.drawn && !c.series && simT < ((L.GTYPES[c.g] || {}).t || 180) - 6 &&
+    !(c.g === "arena" && h.every((u, i) => !alive(last, i)))) return fail("result");
   if (c.g === "royale") {
     let kd = -1;
     for (let s = 1; s < k; s++) if (alive(s - 1, 0) && !alive(s, 0)) { kd = s; break; }

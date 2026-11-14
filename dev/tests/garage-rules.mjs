@@ -78,7 +78,7 @@ assert.equal(R.GARAGE_UP_AT,2);assert.equal(R.GARAGE_FIT_AT,5);
 for(const sec of ['loadout','cores','style'])assert.ok(R.garageOpen(S(0),sec),sec+' open from match 0');
 assert.ok(!R.garageOpen(S(1),'up')&&R.garageOpen(S(2),'up'),'Upgrades open after 2 matches');
 assert.ok(!R.garageOpen(S(4),'fit')&&R.garageOpen(S(5),'fit'),'Mods open after 5 matches');
-assert.ok(R.garageOpen({...S(0),up:{...S(0).up,hull:1}},'up'),'bought levels keep Upgrades open');
+assert.ok(R.garageOpen({...S(0),upc:{titan:{...S(0).up,hull:1}}},'up'),'bought levels (on any chassis) keep Upgrades open');
 assert.ok(R.garageOpen({...S(0),rsCr:1},'up'),'a paid reset keeps Upgrades open');
 const fitted={...S(0),lab:{machines:{a:{spec:{mods:{hull:'plates'}}},b:{spec:{mods:{}}}}}};
 assert.ok(R.garageOpen(fitted,'fit'),'a fitted mod keeps Mods open');

@@ -162,5 +162,44 @@ for (const i in pool) { const P = pool[i], a = { win: P.a.w / P.a.n, ratio: P.a.
   const left = L => { const B = new C.Battle(L, p), e = B.enemies.find(x => x.kind === 'sentinel') || B.enemies[0]; Object.assign(e, { x: 1175, z: 1048, y: Wd.groundAt(1175, 1048), hp: 1e9, maxHp: 1e9, vx: 0, vz: 0 }); B.enemies = [e]; let t = 0; while (B.playerHp > 0 && t < 60) { B.tick(1 / 30, p, {}); t += 1 / 30; } return B.playerHp / B.playerMax; };
   const hs = left(stock), hl = left(legend); ok(hl > hs + 0.1, 'Conquest: after a minute under the same enemy fire the Legendary kit keeps more of its hull than stock (' + (hl * 100).toFixed(0) + '% vs ' + (hs * 100).toFixed(0) + '%)'); }
 
+// ---- 5. per-chassis builds (Session 5E-2b3): each chassis has its own build and cores, so one pilot's chassis can be far apart
+// (a full Titan, a stock Scout). A swap on the VS screen re-levels every AI pilot, the megatank and any ghost to the tank fielded:
+// the AI is never above the pilot, whichever chassis that is; swapping back raises it again (never above the pilot either) ----
+{
+  const UP0 = { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }, F = GEAR.legend;
+  const L = { ...F, chs: [{ c: 'titan', t: 2, q: 1.1, s: false, up: { ...F.up }, gl: { ...F.gl } }, { c: 'scout', t: 0, q: 1, s: false, up: UP0, gl: {} }] };
+  for (const [g, m] of [['arena', '1v1'], ['arena', '3v3'], ['bounty', '2v2'], ['boss', '2v2'], ['royale', '1v1']]) for (const lg of [3, 6]) {
+    const r = W.eval(`(()=>{setMap('classic');matchG=${J(g)};battleLoadout=${J(L)};battlePower=powerOf(battleLoadout);battleLg=${lg};MM={n:MODES[${J(m)}].n,series:false,mp:50,cp:true};populatePreparedMatch();state='vs';
+      const ai=()=>units.filter(u=>u.aiL).map(u=>AI_TIERS[u.aiL.i].p),bossRef=()=>{const b=units.find(u=>u.boss);return b?b.bt.ref:null;};
+      const pwT=powerOf(battleLoadout),aiT=ai();switchChassis('scout');const pwS=powerOf(battleLoadout),aiS=ai(),bS=bossRef(),meS=[me.cls,me.mhp];
+      const want=tankOf(loadoutFor(${J(L)},${J(L.chs[1])}),hpScale()).mhp,refS=MM.n&&matchG==='boss'?tankOf(aiLoadout(aiBossLevel(pwS,${lg},MM.n).i,'pulse','vanguard'),BOSS_HP).mhp:null;
+      switchChassis('titan');const aiB=ai();state='menu';return {pwT,pwS,aiT,aiS,aiB,bS,refS,meS,want};})()`);
+    const nm = g + ' ' + m + ' ' + LGN[lg];
+    ok(r.meS[0] === 'scout' && r.meS[1] === r.want, nm + ': the swap fields the Scout with ITS own (stock) build (' + r.meS[1] + ' hp, expected ' + r.want + ')');
+    ok(r.pwS < r.pwT, nm + ': the stock Scout is weaker than the full Titan (' + r.pwS + ' vs ' + r.pwT + ')');
+    ok(r.aiS.every(p => p <= r.pwS), nm + ': after the swap every AI pilot is at or under the Scout (' + J(r.aiS) + ' vs ' + r.pwS + ')');
+    ok(r.aiT.every(p => p <= r.pwT) && r.aiB.every(p => p <= r.pwT), nm + ': before and after swapping back the AI is never above the Titan either');
+    if (g === 'boss') ok(r.bS === r.refS, nm + ': the megatank follows the fielded chassis\'s league AI (' + r.bS + ' vs ' + r.refS + ')');
+  }
+}
+
+// ---- 5b. a swap UP (a stock bay deployed, the kitted chassis swapped in on the VS screen) lifts the AI to that chassis's league, so
+// the kitted tank never meets a low league's AI (review, 5E-2b3); the pay stays the match's league; never above the pilot ----
+{
+  const UP0 = { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }, F = GEAR.legend;
+  W.eval("var myLeague=pw=>leagueInfo(leagueIdx(leagueRating(pw,0.55,60),0));");   // core.js's, for a pilot with a 55% form
+  const L = { ...F, c: { c: 'scout', t: 0, q: 1, s: false }, up: UP0, gl: {}, chs: [{ c: 'scout', t: 0, q: 1, s: false, up: UP0, gl: {} }, { c: 'titan', t: 2, q: 1.1, s: false, up: { ...F.up }, gl: { ...F.gl } }] };
+  for (const [g, m] of [['arena', '1v1'], ['arena', '3v3'], ['boss', '2v2'], ['royale', '1v1']]) {
+    const r = W.eval(`(()=>{setMap('classic');matchG=${J(g)};battleLoadout=${J(L)};battleDeployC='scout';battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;MM={n:MODES[${J(m)}].n,series:false,mp:50,cp:true};populatePreparedMatch();state='vs';
+      const ai=()=>units.filter(u=>u.aiL).map(u=>AI_TIERS[u.aiL.i].p);const lg0=aiLgNow(),a0=ai();switchChassis('titan');const pw=powerOf(battleLoadout),lg1=aiLgNow(),want=myLeague(pw).i,a1=ai(),pay=battleLg;
+      battleDeployC=null;state='menu';return {lg0,lg1,want,pw,a0,a1,pay};})()`);
+    const nm = g + ' ' + m;
+    ok(r.lg0 === r.pay && r.lg1 === Math.max(r.pay, r.want) && r.lg1 > r.lg0, nm + ': the swap up lifts the AI to the Titan\'s league (' + LGN[r.lg0] + ' -> ' + LGN[r.lg1] + '), the pay stays ' + LGN[r.pay]);
+    ok(r.a1.every((p) => p <= r.pw), nm + ': after the lift every AI pilot is still at or under the pilot (' + J(r.a1) + ' vs ' + r.pw + ')');
+    ok(!r.a1.length || Math.max(...r.a1) >= Math.max(...r.a0), nm + ': the AI is no weaker after the swap up (' + J(r.a0) + ' -> ' + J(r.a1) + ')');
+  }
+  W.eval('myLeague=undefined;');
+}
+
 if (fails.length) { console.log('\nFAIL fair arcade: ' + fails.length + ' of ' + checks + ' checks failed'); process.exit(1); }
 console.log('PASS fair arcade:', checks, 'checks');

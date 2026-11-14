@@ -35,8 +35,8 @@ function initData(user) {
   p.set('hash', createHmac('sha256', createHmac('sha256', 'WebAppData').update(env.BOT_TOKEN).digest()).update(dcs).digest('hex'));
   return p.toString();
 }
-const tg = async (path, user, body = {}) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ gv:6, initData: initData(user), ...body }) }), env); return [r.status, await r.json()]; };
-const web = async (path, sess, body = {}) => { const r = await worker.fetch(new Request(env.WEB_ORIGIN + path, { method: 'POST', headers: { Origin: env.WEB_ORIGIN, 'Content-Type': 'application/json', Cookie: sess.cookie.split(';')[0], 'X-Lunar-CSRF': sess.csrf }, body: JSON.stringify({gv:6,...body}) }), env); return [r.status, await r.json()]; };
+const tg = async (path, user, body = {}) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ gv:7, initData: initData(user), ...body }) }), env); return [r.status, await r.json()]; };
+const web = async (path, sess, body = {}) => { const r = await worker.fetch(new Request(env.WEB_ORIGIN + path, { method: 'POST', headers: { Origin: env.WEB_ORIGIN, 'Content-Type': 'application/json', Cookie: sess.cookie.split(';')[0], 'X-Lunar-CSRF': sess.csrf }, body: JSON.stringify({gv:7,...body}) }), env); return [r.status, await r.json()]; };
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log('FAIL', m); } };
 const E = () => JSON.parse(JSON.stringify(db.get('/eco/' + OWNER_PID)));
 const OPEN = { a: 'owner_gem_epic' };
@@ -56,11 +56,11 @@ const payBefore = JSON.stringify(db.root.payments), starsBefore = JSON.stringify
 
 // replay the outs on the before-record with the shared rules' own shard table: must land exactly where the server did
 function replay(S0, outs) {
-  const gl = { ...S0.gemLvl }, gs = { ...S0.gemShards };
+  const hc = R.homeChassis(S0), gl = { ...S0.glc[hc] }, gs = { ...S0.gsc[hc] };   // per-chassis cores (5E-2b3): the caches go to the chassis he flies
   for (const o of outs) { gs[o.gem] += o.n; while (gl[o.gem] < 5 && gs[o.gem] >= R.SHARD_NEED[gl[o.gem]]) { gs[o.gem] -= R.SHARD_NEED[gl[o.gem]]; gl[o.gem]++; } }
   return { gl, gs };
 }
-const SAME = ['pts', 'earned', 'spendGram', 'ptsSpent', 'buys', 'starter', 'founder', 'ac', 'dailyPts', 'weeklyPts', 'wOwn', 'cOwn', 'roll', 'up', 'paints', 'moonbeam', 'skin', 'pass', 'rsCr', 'vg', 'mp'];
+const SAME = ['pts', 'earned', 'spendGram', 'ptsSpent', 'buys', 'starter', 'founder', 'ac', 'dailyPts', 'weeklyPts', 'wOwn', 'cOwn', 'roll', 'upc', 'paints', 'moonbeam', 'skin', 'pass', 'rsCr', 'vg', 'mp'];
 async function openAndCheck(label, call, n) {
   const S0 = E();
   const randomBefore=Math.random; let st,res;
@@ -72,11 +72,13 @@ async function openAndCheck(label, call, n) {
   t(outs.every((o) => o.tk === 'gem' && o.ri === 2 && R.GORDER.includes(o.gem) && o.n >= 11 && o.n <= 14), label + ': every result an Epic gem cache roll (11-14 shards)');
   t(outs.every(o=>o.gem==='vel'),label+': owner caches support Velocity');
   const rp = replay(S0, outs);
-  t(JSON.stringify(rp.gl) === JSON.stringify(S1.gemLvl) && JSON.stringify(rp.gs) === JSON.stringify(S1.gemShards), label + ': core levels and shards exactly as ecoOpenBox gives ' + JSON.stringify(S1.gemLvl));
+  const hc = R.homeChassis(S1), others = R.CHORDER.filter((c) => c !== hc);
+  t(JSON.stringify(rp.gl) === JSON.stringify(S1.glc[hc]) && JSON.stringify(rp.gs) === JSON.stringify(S1.gsc[hc]), label + ': core levels and shards exactly as ecoOpenBox gives, on the chassis he flies ' + JSON.stringify(S1.glc[hc]));
+  t(others.every((c) => JSON.stringify(S0.glc[c]) === JSON.stringify(S1.glc[c]) && JSON.stringify(S0.gsc[c]) === JSON.stringify(S1.gsc[c])), label + ': the other chassis\' cores untouched');
   t(SAME.every((k) => JSON.stringify(S0[k]) === JSON.stringify(S1[k])), label + ': no points, payment, spend, buys or gear fields changed ' + SAME.filter((k) => JSON.stringify(S0[k]) !== JSON.stringify(S1[k])).join(','));
   t(S1.rev === S0.rev + 1, label + ': rev +1 (' + S0.rev + ' -> ' + S1.rev + ')');
   t(S1.grants.owner_gem.n === (S0.grants.owner_gem ? S0.grants.owner_gem.n : 0) + n && S1.grants.owner_gem.paid === 0 && S1.grants['owner-four-gear-20261031'], label + ': audit count on the record, earlier grant kept');
-  t(res.E._rev === S1.rev && JSON.stringify(res.E.gemLvl) === JSON.stringify(S1.gemLvl), label + ': reply carries the saved record');
+  t(res.E._rev === S1.rev && JSON.stringify(res.E.glc) === JSON.stringify(S1.glc), label + ': reply carries the saved record');
   { const N = R.ecoNorm(S1), spec = { ...N.lab.machines[N.lab.active].spec, cores: R.GORDER.slice(0, 3) }; const v = R.labValidate(N, spec); t(v === null, label + ': a build with three levelled cores passes labValidate ' + v); }
 }
 await openAndCheck('owner Telegram, 1', () => tg('/api/admin', J, OPEN), 1);
@@ -101,8 +103,8 @@ t(JSON.stringify(db.root.payments) === payBefore && JSON.stringify(db.get('/star
 { const N = R.ecoNorm(E());
   [s, r] = await tg('/api/match/start', J, { g: 'arena', m: '1v1', map: 'classic', pv: 1, labRev: N.lab.rev, fv: R.FIT_VERSION });
   t(s === 200 && r.ok && r.tok, 'AI match ticket issued after owner caches ' + s + ' ' + JSON.stringify(r).slice(0, 160));
-  t(r.L && JSON.stringify(r.L.gl) === JSON.stringify(N.gemLvl), 'the ticket loadout carries the server core levels ' + JSON.stringify(r.L && r.L.gl)); }
-{ const L = await checkLoadout(env, R, {}, E()); t(JSON.stringify(L.gl) === JSON.stringify(E().gemLvl) && L.cores.length === 3, 'live PvP join loadout check: server core levels pass ' + JSON.stringify(L.cores)); }
+  t(r.L && JSON.stringify(r.L.gl) === JSON.stringify(N.glc[r.L.c.c]), 'the ticket loadout carries the server core levels of its chassis ' + JSON.stringify(r.L && r.L.gl)); }
+{ const L = await checkLoadout(env, R, {}, E()); t(JSON.stringify(L.gl) === JSON.stringify(E().glc[L.c.c]) && L.cores.length === 3, 'live PvP join loadout check: server core levels pass ' + JSON.stringify(L.cores)); }
 t(!db.get('/flags/' + OWNER_PID), 'no spend or farm flag raised');
 
 // ---- everyone else: 403, record untouched ----
@@ -147,6 +149,21 @@ t(JSON.stringify(E()) === f2, 'record untouched');
 db.root.lunarAccounts[OWNER_PID].telegramId = 999;
 // an unknown action on /api/owner
 [s] = await web('/api/owner', mine, { a: 'grant_everything' }); t(s === 400, 'unknown owner action: 400');
+
+// caches for a chassis he names (he owns a Titan): only the Titan's cores move (5E-2b3)
+{ db.root.eco[OWNER_PID].cOwn.titan = [1]; db.root.eco[OWNER_PID].roll['titan:1'] = 1.07; const S0 = R.ecoNorm(E());
+  const [st, res] = await tg('/api/admin', J, { ...OPEN, n: 2, c: 'titan' }); const S1 = E(), J2 = (S, c) => JSON.stringify([S.glc[c], S.gsc[c]]);
+  t(st === 200 && res.out.outs.length === 2 && res.out.outs.every((o) => o.c === 'titan'), 'owner caches for the Titan: every result says Titan ' + st);
+  t(['scout', 'vanguard'].every((c) => J2(S0, c) === J2(S1, c)) && J2(S0, 'titan') !== J2(S1, 'titan'), 'owner caches for the Titan: only the Titan\'s cores moved'); }
+// the owner-only sound test page (Session 5E-2b3): the server only confirms the owner; nothing on the record changes
+{ const f3 = JSON.stringify(E()), CHK = { a: 'owner_check' };
+  let [st, r] = await tg('/api/admin', J, CHK); t(st === 200 && r.ok === true, 'owner Telegram: sound test check ok via /api/admin ' + st);
+  [st, r] = await tg('/api/owner', J, CHK); t(st === 200 && r.ok === true, 'owner Telegram: sound test check ok via /api/owner ' + st);
+  [st, r] = await web('/api/owner', mine, CHK); t(st === 200 && r.ok === true, 'owner website session: sound test check ok ' + st);
+  [st] = await tg('/api/admin', { id: 111, username: 'alice' }, CHK); t(st === 403, 'non-owner Telegram user: sound test check 403');
+  [st] = await tg('/api/owner', { id: 111, username: 'alice' }, CHK); t(st === 403, 'non-owner Telegram user: sound test check 403 (/api/owner)');
+  [st] = await web('/api/owner', other, CHK); t(st === 403, 'another website account: sound test check 403');
+  t(JSON.stringify(E()) === f3, 'the sound test check changes nothing on the record'); }
 
 console.log(`passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

@@ -35,7 +35,7 @@
   save.chassis=o.c||'vanguard';save.cTier[save.chassis]=o.ct||0;
   save.paints=Object.assign(save.paints||{},{hyper:1,gold:1,void:1,nebula:1,ember:1,founder:1});save.paint=o.paint||'stock';
   save.skin=o.skin?'lunar':'default';if(o.skin)save.skinOwned=true;
-  save.vg=o.vg||0;save.up={hull:4,cannon:4,engine:4,target:4,reactor:4};
+  save.vg=o.vg||0;save.upc={};for(const c of ['scout','vanguard','titan'])save.upc[c]={hull:4,cannon:4,engine:4,target:4,reactor:4};
   store();
  };
  D.match=(g,m,mp)=>{if(typeof inBattle==='function'&&inBattle()){state='menu';try{exitBattle();}catch(e){}}closeAll();save.gtype=g;save.mode=m;save.map=mp;store();prepareMatch();startMatch();D.saveBase();};

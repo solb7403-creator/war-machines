@@ -134,6 +134,15 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   t(room.sim.units[1].cls === 'titan' && last(A, 'u'), 'VS chassis swap reaches everyone');
   say(room, 'b', B, { k: 'c', c: 'scout' });
   t(room.sim.units[1].cls === 'titan', 'chassis you do not own refused');
+  // 5E-2b3 review: each chassis has its own build and cores, so a swap UP may not take the room past its mismatch cap; down always goes
+  say(room, 'b', B, { k: 'c', c: 'vanguard' }); t(room.sim.units[1].cls === 'vanguard', 'a swap down goes through');
+  const kit = { hull: 4, cannon: 4, engine: 4, target: 2, reactor: 0 }, gl5 = Object.fromEntries(R.GORDER.map((k) => [k, 5]));
+  room.seats[1].L = { ...room.seats[1].L, cores: ['dmg', 'rof', 'arm'], chs: [{ c: 'vanguard', t: 0, q: 1, s: false }, { c: 'titan', t: 2, q: 1.15, s: false, up: kit, gl: gl5 }] };
+  const pBig = R.powerOf(R.loadoutFor(room.seats[1].L, room.seats[1].L.chs[1])), pA = room.sim.units[0].pw;
+  say(room, 'b', B, { k: 'c', c: 'titan' });
+  t(room.sim.units[1].cls === 'vanguard' && last(B, 'cx') && last(B, 'cx').c === 'titan' && R.powerWin(pBig, pA, 0, true) > 0.8, 'a swap up past the mismatch cap is refused, the pilot is told (' + pBig + ' vs ' + pA + ')');
+  room.seats[1].L = { ...room.seats[1].L, chs: Lb.chs };
+  say(room, 'b', B, { k: 'c', c: 'titan' }); t(room.sim.units[1].cls === 'titan', 'a swap up inside the cap goes through');
   await run(PVP.VS_MS);
   t(room.phase === 'play' && last(A, 'f') && last(B, 's'), 'fight starts with snapshots');
   const n0 = A.msgs.filter((m) => m.k === 's').length;
@@ -372,7 +381,7 @@ function PVP_BANK() { return 0.6; }
     p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
     return p.toString();
   };
-  const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:6,...body}) }), env); return [r.status, await r.json()]; };
+  const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:7,...body}) }), env); return [r.status, await r.json()]; };
   const U1 = { id: 501, username: 'livea' }, U2 = { id: 502, username: 'liveb' };
   db.root.players = { tg_501: { pts: 900, dailyPts: 100, weeklyPts: 100, d: Math.floor(Date.now() / 864e5), w: Math.floor((Date.now() - 4 * 864e5) / (7 * 864e5)), days: 1, ld: Math.floor(Date.now() / 864e5), sk: 1, name: 'livea' } };
   let [s, r] = await call('/api/pvp/join', { initData: 'bad', v: R.PVP_V, g: 'arena', m: '1v1', L: L0() });

@@ -31,13 +31,19 @@ export async function isOwner(env, a, admins) {
   return admins.includes(un) && un === OWNER_ADMIN && String(a.user.id) === String(pin);
 }
 
+// the owner-only sound test page (Session 5E-2b3): the page plays sounds on the phone only; the server just confirms it is the owner
+export async function ownerCheck(env, a, admins) {
+  return (await isOwner(env, a, admins)) ? { status: 200, body: { ok: true, owner: true } } : deny();
+}
+
 export async function ownerGemEpic(env, a, admins, now = Date.now()) {
   if (!(await isOwner(env, a, admins))) return deny();
   const n = Math.max(1, Math.min(OWNER_GEM_MAX, Math.floor(Number(a.b && a.b.n) || 1)));
   const t = await tx(env, OWNER_PID, (S, X) => {
     who(S, a.user);
     const outs = [];
-    for (let i = 0; i < n; i++) outs.push(R.ecoOpenBox(S, "gem", 2, X));   // each one its own real roll
+    const ch = R.isCh(a.b && a.b.c) ? a.b.c : undefined;   // the chassis the caches are for (5E-2b3: cores are per chassis); else the one he flies
+    for (let i = 0; i < n; i++) outs.push(R.ecoOpenBox(S, "gem", 2, X, ch));   // each one its own real roll
     const g = S.grants && typeof S.grants === "object" && !Array.isArray(S.grants) ? S.grants : {};
     const prev = g.owner_gem && typeof g.owner_gem === "object" ? g.owner_gem : {};
     S.grants = { ...g, owner_gem: { n: (Number(prev.n) || 0) + n, last: now, paid: 0 } };

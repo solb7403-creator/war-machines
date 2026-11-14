@@ -10,7 +10,7 @@ const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
 function winPoints(gk,mk){return leaguePay(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1),myLeague().i).pts;}   // with league base pay and the league bonus (spendable points)
 
 // ---- your tank and the AI match ----
-let battleLoadout=null,battlePower=null,battleLg=0;   // battleLg: the league the AI is set for (leagueIdx, rules.js)
+let battleLoadout=null,battlePower=null,battleLg=0,battleDeployC=null;   // battleLg: the match's league (its pay; the AI's, see aiLgNow); battleDeployC: the chassis deployed   // battleLg: the league the AI is set for (leagueIdx, rules.js)
 function battleChassisClasses(){if(typeof pvpOn==='function'&&pvpOn())return pvp.chs||ownedChassisClasses();return battleLoadout?(battleLoadout.chs||[battleLoadout.c]).map(c=>c.c):ownedChassisClasses();}
 function buildMe(){
  const m=Object.assign(tankOf(battleLoadout||myLoadout(),hpScale()),{x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:IN_TG?tgName(TG_USER):'You'});
@@ -20,7 +20,7 @@ function buildMe(){
 function prepareMatch(gOver){   // gOver: a game type already picked (a live queue that fell back to AI)
  {const pk=mapKey();setMap(pk==='random'?MAP_REAL[(Math.random()*MAP_REAL.length)|0]:pk);}
  {const gk=gOver||gtypeKey();matchG=gk==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk;}
- battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;
+ battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;battleDeployC=battleLoadout.c.c;
  const mp=save.mp||0;
  MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // cp: you can counter-pick back between rounds
  populatePreparedMatch();
@@ -33,12 +33,12 @@ let aiLv=null;
 function populatePreparedMatch(){
  const mp=MM.mp;
  me=buildMe();
- const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n);   // the league step is on top of the base AI curve
+ const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw,undefined,aiLgNow(),isSolo(matchG)?'solo':MM.n);   // the league step is on top of the base AI curve
  const modeN=MM.n,names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  units=[me];
  if(matchG==='boss'){   // Survival: you (and AI wingmen in 2v2 and 3v3) against one megatank
   for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop(),aiLv));
-  units.push(mkBoss(me,modeN,aiBossLevel(pw,battleLg,modeN)));   // the megatank of this league (never tuned to your tank)
+  units.push(mkBoss(me,modeN,aiBossLevel(pw,aiLgNow(),modeN)));   // the megatank of this league (never tuned to your tank)
  }else if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
   const sp=royaleSpawns();
   for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y,me,names.pop(),aiLv));
@@ -68,9 +68,27 @@ function switchChassis(cls){
  if(typeof pvpOn==='function'&&pvpOn()){pvpSend({k:'c',c:cls});return;}
  if(!battleLoadout||!['vs','round'].includes(state))return;
  const c=(battleLoadout.chs||[battleLoadout.c]).find(c=>c.c===cls);if(!c)return;
- battleLoadout={...battleLoadout,c:{...c}};
+ battleLoadout=loadoutFor(battleLoadout,c);   // the chassis with its own build and cores (5E-2b3)
  const keep={x:me.x,y:me.y,sx:me.sx,sy:me.sy,deaths:me.deaths||0,zo:me.zo||0,id:me.id,st:me.st};me=buildMe();Object.assign(me,keep);units[0]=me;
+ relevelAI();
 }
+// The 5D rule, "the AI is never above you", with per-chassis builds (5E-2b3): your chassis can now differ a lot in power (one
+// fully upgraded, one stock), so a swap on the VS screen or between rounds re-levels every AI pilot, the megatank and any ghost
+// to the tank you now field: the pay stays the match's league; the AI follows aiLevel for this chassis's power, and a swap UP also
+// lifts it to that chassis's league (aiLgNow), so a stock bay deployed then a kitted one swapped in meets a fair fight. In
+// place, so nothing that holds a tank (focus, the 3D view, the match record) loses it.
+function relevelAI(){
+ const pw=powerOf(battleLoadout);battlePower=pw;const lg=aiLgNow();
+ const lv=aiLevel(pw,undefined,lg,isSolo(matchG)?'solo':MM.n),hs=hpScale(),cap=aiGhostCap(pw,lv.p);aiLv=lv;
+ units.forEach((u,i)=>{if(!u||u===me||u.hum)return;
+  if(u.boss){const b=mkBoss(me,MM.n,aiBossLevel(pw,lg,MM.n));Object.assign(u,{mhp:b.mhp,hp:b.mhp,wdps:b.wdps,bt:{...u.bt,ref:b.bt.ref}});return;}
+  if(u.gh){if((u.gpw||Infinity)<=cap)return;const b=mkBot(u.team,u.x,u.y,me,BOT_NAMES[i%BOT_NAMES.length],lv);Object.assign(u,b,{id:u.id,gh:0,gid:undefined});return;}
+  if(u.aiL){const T=tankOf(aiLoadout(lv.i,u.wtype,u.cls),hs),k=u.aiL.k;
+   Object.assign(u,{gems:T.gems,gemM:T.gemM,mhp:Math.round(T.mhp*k),dmgM:T.dmgM,spdM:T.spdM,critB:T.critB,fillM:T.fillM,turnM:T.turnM,wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:lv.i,k,lg}});u.hp=u.mhp;}});
+}
+// a swap UP lifts the AI to that chassis's league, so a stock bay deployed then a kitted one swapped in can't meet a low league's AI
+// (review, 5E-2b3). Never above you (aiPowerFor caps the AI at your power) and never below the match's league; the pay stays battleLg's
+function aiLgNow(){return Math.max(battleLg|0,battleLoadout&&battleDeployC&&battleLoadout.c.c!==battleDeployC&&typeof myLeague==='function'?myLeague(powerOf(battleLoadout)).i:0);}
 function matchup(){   // how your chassis fares against the enemy lineup
  const foes=units.filter(u=>u.team!==me.team&&!u.boss),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
  return {adv,dis,foes};
@@ -118,8 +136,8 @@ function matchStart(){
    if(r&&r.tok){T.tok=r.tok;T.err=null;
     if(mTicket===T&&state==='vs'&&r.L){
      const chosen=battleLoadout&&battleLoadout.c.c;
-     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;if(Number.isInteger(r.lgi))battleLg=r.lgi;   // the server's league sets this match's AI
-     const c=(battleLoadout.chs||[]).find(c=>c.c===chosen);if(c)battleLoadout.c={...c};
+     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;if(Number.isInteger(r.lgi))battleLg=r.lgi;battleDeployC=battleLoadout.c.c;   // the server's league sets this match's AI
+     const c=(battleLoadout.chs||[]).find(c=>c.c===chosen);if(c&&c.c!==battleLoadout.c.c){battleLoadout=loadoutFor(battleLoadout,c);battlePower=powerOf(battleLoadout);}   // swapped before the ticket came: that chassis, its own build and cores, its power for the AI
      if(r.E)applyEco(r.E);populatePreparedMatch();
      const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
     }
@@ -140,11 +158,11 @@ function matchStart(){
 // Only ghosts clearly weaker than your tank and no stronger than this match's AI (aiGhostCap, rules.js), and at most one on the enemy team: after the first enemy
 // seat they fill your team's seats, so a ghost can't turn an AI match into a hidden fight against stronger pilots
 function placeGhosts(list){
- const pw=battlePower||powerOf(battleLoadout||myLoadout()),cap=aiGhostCap(pw,(aiLv||aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n)).p);
+ const pw=battlePower||powerOf(battleLoadout||myLoadout()),cap=aiGhostCap(pw,(aiLv||aiLevel(pw,undefined,aiLgNow(),isSolo(matchG)?'solo':MM.n)).p);
  const free=units.map((u,i)=>i).filter(i=>i>0&&!units[i].hum&&!units[i].boss&&!units[i].gh);
  const foeSeats=free.filter(i=>units[i].team!==me.team),allySeats=free.filter(i=>units[i].team===me.team);
  const seats=foeSeats.slice(0,1).concat(allySeats);
- list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g,battleLg);}catch(e){}});
+ list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g,aiLgNow());units[i].gpw=powerOf(g.L);}catch(e){}});
  const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
 }
 // results waiting for the server: sent in order, each counts once (the server gives a resent one the same answer).
@@ -261,14 +279,14 @@ function onSimEv(a){
   case 'h':{const t=U(a[1]),amt=a[2],kind=a[3],cr=!!a[4],dir=!!a[5],s=U(a[6]);if(!t)return;
    t.flash=0.08;
    if(t===me&&amt>0){me.hurtT=0.3;sndF('hit',amt);}
-   if(!kind){if(s===me)sndF('dealt',cr);
+   if(!kind){if(s===me)sndF('dealt',{cr,k:supKey(s.wtype,s.wtier)});   // your hit: your weapon's own confirmation (fx.js LW.hit)
     dmgNum({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:cr?1.6:dir?1:0.75,g:!dir,txt:'',c:cr?'#ffd24a':tcol(s?s.team:1)},t,amt,cr);
     if(live&&a[7])pvpBulletHit(a[7]);}
    else{const K=HIT_TXT[kind],jk=kind===1&&s&&s.supOc===2;nums.push({x:t.x,y:t.y-R,t:jk?1.2:K.t,z:jk?2.6:K.z,txt:(jk?'JACKPOT':K.txt)+' '+Math.round(amt),c:jk?'#ffcf4a':K.c});}
    return;}
   case 'k':{const r=U(a[1]),s=U(a[2]),why=a[3];if(!r)return;
    feedPush(s?(s===me?'You':s.name)+' destroyed '+(r===me?'you':r.name):(r===me?'You':r.name)+(why==='storm'?' got caught in the storm':' got hit by a meteor'),s?tcol(s.team):why==='storm'?'#c79bff':'#ff8a3d');
-   sndF(r===me?'die':s===me?'kill':'boom');
+   sndF(r===me?'die':s===me?'kill':'boom');sndF('supstop',r.id);   // a tank destroyed mid-charge: its super's charge stops
    if(!d3){blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});blasts.push({x:r.x,y:r.y,r:1.4,t:0.4,t0:0.4,c:'#ffd24a'});}shake(10,0.5);   // in 3D the break-up and its explosion are FX3D's (two batches instead of four meshes)
    nums.push({x:r.x,y:r.y-R,t:1.1,z:1.4,txt:r===me?'YOU ARE DOWN':'DESTROYED',c:r===me?'#ff6b6b':'#ffd24a'});
    return;}
@@ -277,16 +295,17 @@ function onSimEv(a){
   // supers: the 3D view draws each of the ten supers itself (render3d.js ev3D -> FX3D); these lists are the 2D fallback.
   // The colour is the super's own (FX3D palette), the size follows the timing-bar outcome (a[..] oc: 0 miss, 1 hit, 2 jackpot)
   case 'B':if(a[6]&&d3)return;blasts.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4],c:a[5]});return;
-  case 'M':if(d3)return;beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:supCol(a[7],tcol(a[5])),w:a[6]*[0.7,1,1.3][a[8]===undefined?1:a[8]],k:a[7],oc:a[8]});return;
-  case 'V':if(d3)return;novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:supCol(a[5],tcol(a[4]))});return;
+  case 'M':sndF('supfire',{u:U(a[9]),k:a[7],oc:a[8],x:a[1],y:a[2]});if(d3)return;beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:supCol(a[7],tcol(a[5])),w:a[6]*[0.7,1,1.3][a[8]===undefined?1:a[8]],k:a[7],oc:a[8]});return;
+  case 'V':sndF('supfire',{u:U(a[7]),k:a[5],oc:a[6],x:a[1],y:a[2]});if(d3)return;novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:supCol(a[5],tcol(a[4]))});return;
   case 'I':{const C=IMPACT[a[3]]||IMPACT.pulse,x=a[1],y=a[2],oc=a[6]===undefined?1:a[6],sz=[0.7,1,1.3][oc];   // a super landing: an explosion, a shake and the impact sound
    if(!d3){blasts.push({x,y,r:C.r*sz,t:0.55,t0:0.55,c:supCol(a[5],C.c)});blasts.push({x,y,r:C.r*0.55*sz,t:0.35,t0:0.35,c:C.c2});
     if(typeof GraphicsMotion==='undefined'||!GraphicsMotion.reduced())shake((a[4]===(me?me.team:0)?7:10)*sz,0.4);}
-   sndF('impact',a[3]);return;}
+   sndF('supimpact',{k:a[5]||supKey(a[3],0),oc:a[6],kind:a[7],x,y,team:a[4]});return;}   // one sound per super landing (fx.js LW.impact)
+  case 'L':{const r=U(a[1]);if(r)sndF('supfire',{u:r,k:a[2],oc:a[3]});return;}   // a Siege Blast / Rail Blast / Titanfall shell leaves the barrel
   case 'S':shake(a[1],a[2]);return;
   case 'Z':{const r=U(a[1]);if(!r)return;r.supOc=a[2];   // a timing bar was stopped: 0 miss, 1 hit, 2 jackpot (the hit numbers and the 3D effects read it)
    if(r===me){if(typeof supShow==='function')supShow(a[2]);}
-   else if(a[2]===2){nums.push({x:r.x,y:r.y-1.9,t:1.0,z:1.5,txt:'JACKPOT!',c:'#ffcf4a'});sndF('warn');}
+   else{if(a[2]===2)nums.push({x:r.x,y:r.y-1.9,t:1.0,z:1.5,txt:'JACKPOT!',c:'#ffcf4a'});sndF('suplock',{u:r,oc:a[2],k:a[3]});}   // someone else's jackpot is a warning you can hear (fx.js plays others' jackpots only)
    return;}
   case 'z':if(a[1]==='cap'){if(a[2]===0){pop(a[3],a[4],'ZONE CAPTURED!',TC[0]);sndF('cap');}else pop(a[3],a[4],'ENEMY TOOK THE ZONE',TC[1]);}
    else pop(a[3],a[4],a[2]===0?'ZONE LOST':'ZONE NEUTRAL',a[2]===0?'#ff9d9d':'#c9d6e3');
@@ -299,7 +318,7 @@ function onSimEv(a){
    feedPush(u.name+(a[2]==='drop'?' lost connection. AI is driving':a[2]==='back'?' is back':a[2]==='leftvs'?' left. An AI pilot took the seat':' left. An AI pilot took over'),'#c9d6e3');
    if(a[2]==='left'||a[2]==='leftvs')u.ai=true;return;}
   case 'T':{const s=U(a[1]);if(s)feedPush((s===me?'You have':s.name+' has')+' the top bounty: 7 stars','#ffcf4a');return;}
-  case 'u':{const r=U(a[1]);if(r===me&&live)return;sndF(r===me?'super':'warn');return;}   // live: your own super already played when you pressed it
+  case 'u':{const r=U(a[1]);if(!r||(r===me&&live))return;sndF('supcharge',{u:r,k:r.sup&&r.sup.k||supKey(r.wtype,r.wtier)});return;}   // a super starts charging: yours loud, anyone else's a warning by distance (live: yours already started at the press)
   case 'g':{const u=U(a[1]),B=BUFF[a[2]];if(B)pop(a[3],a[4],B.txt,B.c);if(u===me)sndF('box');return;}
   case 'r':{const u=U(a[1]);if(u)pop(u.x,u.y-1,u===me?'BACK IN THE FIGHT':'RESPAWNED',tcol(u.team));return;}
   case 'C':if(U(a[1])===me)sndF('crystal');return;
@@ -309,7 +328,7 @@ function onSimEv(a){
   case 'e':{const E=EVENTS[a[1]];if(E){banner={t:3.2,txt:E.txt,c:E.c};sndF('event');}return;}
   case 'w':if(live)warns.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4]});sndF('warn');return;
   case 'm':{const x=a[1],y=a[2],r=a[3];blasts.push({x,y,r:r*1.25,t:0.5,t0:0.5,c:'#ff8a3d'});sndF('meteor');blasts.push({x,y,r:r*0.6,t:0.3,t0:0.3,c:'#ffe08a'});shake(7,0.35);return;}
-  case 'b':if(live)pvpShot(a);return;
+  case 'b':if(live)pvpShot(a);else if(typeof rangeRun!=='undefined'&&rangeRun&&rangeRun.sim){const o=units[a[2]];if(o)sndF('shot',o);}return;   // the practice range's engine runs in its own frame: its shots come here (review, 5E-2b3)
  }
 }
 // visuals that run on their own clocks (both in AI and live matches)

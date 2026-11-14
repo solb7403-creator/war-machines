@@ -844,3 +844,49 @@ button.q{display:flex;width:100%;text-align:left}
 /* Conquest is its own page in the bar (Nov 8): six tabs; the Conquest tab glows like the mode's green. */
 .tab-cq{color:#7dffb0}.tab-cq svg{color:#43e08a}.tab-cq.on{color:#c9ffe0}
 @media (max-width:360px){.tab{font-size:10px;letter-spacing:0}.tab svg{width:22px;height:22px}}
+
+/* owner sound test (Session 5E-2b3) */
+.sndlab{display:grid;gap:8px}
+.snd-stop{position:sticky;bottom:8px;z-index:3;margin-top:14px;background:var(--rock2);box-shadow:0 -6px 18px rgba(0,0,0,.45)}
+.snd-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--rock2);border:1px solid var(--edge)}
+.snd-n{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.snd-n b{font:600 15px var(--disp);color:var(--dust)}
+.snd-n small{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;color:var(--dim);font:500 12px var(--body)}
+.snd-b{display:grid;gap:6px}
+.snd-b.c2{grid-template-columns:repeat(2,minmax(66px,auto))}
+.snd-b.c3{grid-template-columns:repeat(3,minmax(66px,auto))}
+.snd-b .btn.sm{padding:0 10px}
+.snd-b .btn.sm{min-height:44px}
+.sndwarn{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0;padding:10px 12px;border-radius:12px;background:rgba(255,107,94,.12);border:1px solid rgba(255,107,94,.45)}
+@media (max-width:360px){.snd-row{grid-template-columns:1fr}.snd-b.c2{grid-template-columns:repeat(2,1fr)}.snd-b.c3{grid-template-columns:repeat(3,1fr)}}
+/* per-chassis cores and builds, the Points shop (Session 5E-2b3) */
+.shopseg{grid-template-columns:1fr 1fr;margin:4px 0 12px}
+.shopseg button{min-height:52px}
+.corefor{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0 10px}
+.corefor>span{font:600 13px var(--disp);color:var(--dust)}
+.gchip .gthis,.gchip small{font:500 11px var(--body);color:var(--dim);font-style:normal}
+.gchip.on .gthis,.gchip.on small{color:var(--dust)}
+.gchip.on{background:var(--rock3);border-color:var(--moon);color:var(--moon)}
+.gupch{margin:6px 0 8px}
+.ptsh{font:600 14px var(--disp);color:var(--dust);margin:12px 0 6px}
+.cpicks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cpick{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:76px;padding:8px 4px;border-radius:12px;background:var(--rock2);border:1px solid var(--edge);color:var(--dust);text-align:center}
+.cpick .gem-crystal{width:22px;height:26px}
+.cpick b{font:600 12px var(--disp);color:var(--moon)}
+.cpick span{font:500 11px var(--body);color:var(--dim)}
+.cpick.is-max{opacity:.55}
+.cpick:not(.is-max):active{transform:scale(.97)}
+.cphead{gap:10px;align-items:flex-start}
+.cphead .gem-crystal{width:30px;height:36px;flex:none;margin-top:4px}
+.cpnow{font:600 13px var(--disp);color:var(--dust);margin:8px 0 4px}
+.cprow .nm{font:700 14px var(--disp)}
+.ptsnote{margin:2px 0 8px}
+.ptsgarage{display:grid;gap:8px}
+.ptsbuilds{display:grid;gap:6px}
+.ptsbuilds>div{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ptsbuilds b{font:600 14px var(--disp)}
+.ptsbuilds span{font:500 12px var(--body);color:var(--dim)}
+.ptslink{margin-top:14px}
+.gcore-links{display:flex;flex-wrap:wrap;gap:4px 14px}
+@media (max-width:360px){.cpicks{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:700px){.cpicks{grid-template-columns:repeat(7,minmax(0,1fr))}}
