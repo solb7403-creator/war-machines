@@ -46,7 +46,7 @@ async def main(engine,quality,slow=0):
   assert bar['charge']==0 and bar['zone'] and bar['jack'],bar
   await page.screenshot(path=str(OUT/f'{engine}-{quality}-bar.png'))
   # stop it inside the zone (frame rate in software GL decides whether it lands on the jackpot circle or just the zone)
-  await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter,s=B.superAttack;return !s||s.oc!==undefined||s.el>=(s.bar.jc-0.03)*SUP_BAR_T;}',timeout=90000)
+  await page.wait_for_function('()=>{const B=Conquest.view.battle||Conquest.view.encounter,s=B.superAttack;return !s||s.oc!==undefined||s.el>=(s.bar.jc-0.03)*SUP_BAR_T_CQ;}',timeout=90000)
   await page.keyboard.down('KeyR');await page.wait_for_timeout(60);await page.keyboard.up('KeyR')
   await page.wait_for_function('()=>{const sb=document.querySelector("#cq-supbar");return sb.getAttribute("data-oc")==="0"||sb.getAttribute("data-oc")==="1"||sb.getAttribute("data-oc")==="2";}',timeout=90000)
   hud=await page.evaluate('''()=>{const sb=document.querySelector('#cq-supbar');return {oc:sb.getAttribute('data-oc'),text:sb.querySelector('.cq-supbar-text').textContent,note:sb.querySelector('.cq-supbar-note').textContent};}''')

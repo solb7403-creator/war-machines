@@ -439,7 +439,8 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     if (!onTime) S.lt.n++;
     S.iv = ivs.concat([[Math.round(start / 1000), Math.round(end / 1000)]]).slice(-ECO.IV_KEEP);   // this match's time span
     const kmax = T.g === "arena" ? (T.series ? 5 : R.MODES[T.m].n) : solo ? 5 : Math.ceil(el / 4) + 2;
-    const st = { dmg: lim(s.dmg, el * 450), kills: lim(s.kills, kmax), box: lim(s.box, 30), sup: lim(s.sup, Math.ceil(el / 6) + 2), caps: T.g === "zone" ? lim(s.caps, Math.ceil(el / 5)) : 0,
+    const st = { dmg: lim(s.dmg, el * 450), kills: lim(s.kills, kmax), box: lim(s.box, 30), sup: lim(s.sup, Math.min(Math.ceil(el / 6) + 2, (R.SUP_ROUND_CAP || 3) * (T.series ? 5 : 1))),   // never more than 3 a round (Session 5E-2b2b)
+      caps: T.g === "zone" ? lim(s.caps, Math.ceil(el / 5)) : 0,
       cry: T.g === "crystal" ? lim(s.cry, Math.ceil(el / 3)) : 0, stars: T.g === "bounty" ? lim(s.stars, Math.ceil(el / 2) + 7) : 0, low: Math.max(0, Math.min(1, Number(s.low) || 0)) };
     const sw = T.series && Array.isArray(r0.seriesW) ? [lim(r0.seriesW[0], 3), lim(r0.seriesW[1], 3)] : null;
     // how the ghosts in this match did (seat numbers from the ticket; anything else is ignored)

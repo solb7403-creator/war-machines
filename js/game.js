@@ -118,8 +118,26 @@ const respawns=()=>!!(GTYPES[matchG]&&GTYPES[matchG].respawn);
 const hpScale=()=>isSolo(matchG)?ROYALE_HP:matchG==='boss'?BOSS_HP:MM.n*(matchG==='bounty'?BTY_HP:1);
 // ---- Survival: your team against one megatank. No respawns. Destroy it to win; still alive at the horn is a draw ----
 const BOSS_HP=1.5;                  // your team's tanks: x1.5 health
-// super charge from a hit (5E-2b): the damage as a share of the target's hull at 1v1 scale (rules.js FILL_HULL_*)
-const supFill=(dmg,t)=>dmg/Math.max(1,((t.boss&&t.bt&&t.bt.ref)||t.mhp||STAT.hp)/(hpScale()||1))*SUPER_MAX;
+// ---- super charge (Session 5E-2b2b; the rules and their reasons are in rules.js above SUP_FILL) ----
+// supDps: a tank's OWN strength right now: the damage per second its cannon does with clean hits on this target: its gear
+// (weapon, cannon levels, damage / fire-rate / luck cores, skin, velocity impact, Targeting), the mystery-box buffs it holds
+// and its chassis counter against the target (t). So a damage box, a fire-rate box or a counter-pick makes the cannon hit
+// harder but never makes the super come sooner (review finding: with permanent gear only, two boxes charged x2.1).
+const supDps=(u,t)=>Math.max(1,(u.wdps||STAT.dps)*dmgMult(u)*rofMult(u)*projectileImpactMult(u)*(1+(CRIT_MULT-1)*Math.min(1,CRIT_BASE+(u.critB||0)+gsum(u,'lck')+bsum(u,'lck')))*(t?cmult(u,t):1));
+let supF=[10,1];   // this match's [seconds of own fire, own hulls lost] per bar (rules.js SUP_FILL), set in simStart
+// one place adds charge: nothing once the round's cap is reached (the bar stays empty: SUP_ROUND_CAP)
+function supAdd(u,pts,side){if(u.boss||(u.supN||0)>=SUP_ROUND_CAP||!(pts>0))return;u.sp=Math.min(SUPER_MAX,u.sp+pts);}   // side: 0 dealt, 1 received (the measurement tools read it)
+// called by takeHit for every hit, with the hull it really removed (rem: never more than the target had left).
+// Only combat damage between opposing tanks charges: src must be an enemy tank, kind 0 (a shot) or 1 (a super, a megatank
+// stomp or shell); the storm, meteors and crates never get here with a source. A super's own damage does not charge its owner.
+function supCharge(t,src,rem,kind){
+ if(!(rem>0)||!src||src===t||src.team===t.team||kind>1)return;
+ const fl=flareMult();
+ if(!t.boss){const c=Math.min(rem,Math.max(0,t.mhp-(t.tkn||0)));t.tkn=(t.tkn||0)+c;   // received: at most one full hull per life counts...
+  const pts=Math.min(c/t.mhp/supF[1]*SUPER_MAX*(t.fillM||1)*(t.hitChg||1)*fl,Math.max(0,SUP_TAKEN_MAX*SUPER_MAX-(t.rcv||0)));t.rcv=(t.rcv||0)+pts;   // ...and at most SUP_TAKEN_MAX bars a round, whatever the lives (dying on purpose cannot earn the round's three supers)
+  supAdd(t,pts,1);}
+ if(kind===0&&!src.boss)supAdd(src,rem/supDps(src,t)/supF[0]*SUPER_MAX*(src.fillM||1)*fl,0);
+}
 const BOSS_SECS=110,BOSS_TEAM=1.0;   // megatank health: your cannon's damage per second x this many seconds, +100% per extra tank on your side
 const BOSS_KILL=100,BOSS_TEAM_DPS=0.5;   // its cannon alone wrecks a lone tank in about this many seconds of hits (+50% firepower per extra tank on your side)
 const BOSS_SIZE=1.9;                // drawn (and hit) this much bigger than a tank
@@ -184,7 +202,7 @@ function respawnTick(dt){
    continue;
   }
   u.dead=(u.dead||0)+dt;
-  if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;
+  if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.tkn=0;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;
    u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;   // teleported: live players snap to the spawn
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
    ev('r',u.id);}
@@ -273,7 +291,8 @@ function simStart(){
  bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;simT=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;supTeamAt={};
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=EVT_KEYS[(random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
- units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
+ supF=supFillOf(matchG,MM.n);
+ units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
   u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
@@ -395,7 +414,7 @@ function moveBullets(dt){
    const owner=q.o,isCrit=direct&&random()<CRIT_BASE+bsum(owner,'lck')+gsum(owner,'lck')+(owner.critB||0);
    const aT=armor(t),gross=q.dps*q.shot*q.dm*(direct?(isCrit?CRIT_MULT:1):q.eg||GRAZE)*cmult(owner,t),dmg=gross*(1-aT);
    if(t.st)t.st.arm+=gross*aT;
-   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);owner.sp=Math.min(SUPER_MAX,owner.sp+(supFill(dmg,t)*FILL_HULL_DEALT+(isCrit?FILL_HULL_CRIT:0))*(owner.fillM||1)*flareMult());t.sp=Math.min(SUPER_MAX,t.sp+supFill(dmg,t)*FILL_HULL_TAKEN*(t.fillM||1)*(t.hitChg||1)*flareMult());if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
+   takeHit(t,dmg,owner,null,0,isCrit,direct,q.id);if(owner.st){owner.st.dmg+=dmg;if(dmg>owner.st.best)owner.st.best=dmg;}q.life=0;}
   }
   q.life-=dt;
  }
@@ -416,7 +435,9 @@ function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const wasAlive=r.hp>0;
  if(r.shieldT>0&&(kind||0)<2){if(r.st)r.st.shd+=amt*(1-SHIELD_MULT);amt*=SHIELD_MULT;}   // shielded: combat damage cut before it lands
  amt*=plateCut(r,src,why,kind||0);
+ const h0=Math.max(0,r.hp);
  r.hp-=amt;r.flash=0.08;r.calm=0;
+ supCharge(r,src,h0-Math.max(0,r.hp),kind||0);
  if(r.st){r.st.taken+=amt;const f=Math.max(0,r.hp)/r.mhp;if(f<r.st.low)r.st.low=f;}
  ev('h',r.id,amt,kind||0,crit?1:0,direct?1:0,src?src.id:-1,bid||0);
  for(const b of r.buffs)b.taken+=amt;
@@ -449,24 +470,24 @@ function spawnBox(){
  for(let s=0;s<n;s++){if(boxes.length>=cap)break;placeBox(false);}   // the cap stops unclaimed boxes piling up
 }
 // ---- super attacks: one per weapon. All telegraphed so they can be dodged ----
-// Damage (Session 5E-2b). The charge now fills by share of hull (rules.js FILL_HULL_*), so every pilot fires about 3 supers a
-// match whatever they fly (on main: 3.6 on a stock tank, 9.8 with the Moonbeam kit, because the charge followed damage). Each
-// super hits proportionally harder so a kit's super damage over a match stays where it was: the damage now rises with the
-// tank's own gear multiplier (weapon tier and roll, cannon upgrades, damage cores, Lunar Skin) to the power SUP_GEAR (rules.js)
-// instead of 1. Measured needed step per kit: stock x1.1, Rare x1.5, Epic x2.5, Moonbeam kit x2.95 per super; gear^2.2 gives
-// x1.1 / x1.6 / x2.3 / x2.95. So a higher tier weapon's super hits much harder (owner: supers differ by tier, same direction
-// as the tier multipliers) and every upgrade still counts. Owner rule: a slow weapon's super hits harder per use than a fast
-// one's (Siege Breaker 0.45 s a shot > Pulse Cannon 0.2 s > Twin Repeater 0.09 s); Moonfall keeps its premium number.
+// Damage. Every pilot fires at most 3 supers a round whatever they fly (the charge rule: supCharge above, rules.js SUP_FILL), so
+// gear shows in how hard each super hits, never in how often it comes: the damage rises with the tank's own gear multiplier
+// (weapon tier and roll, cannon upgrades, damage cores, Lunar Skin) to the power SUP_GEAR (rules.js). Owner rule: a slow weapon's
+// super hits harder per use than a fast one's (Siege Breaker 0.45 s a shot > Pulse Cannon 0.2 s > Twin Repeater 0.09 s);
+// Moonfall keeps its premium number. Session 5E-2b2b (owner: "supers do way too much damage, each 20-25% less"): every base
+// is 22.5% lower (335 / 380 / 320 / 385 -> 260 / 295 / 248 / 298) and so is the most one super can take from a full hull
+// (rules.js SUP_HULL_CAP 0.5 -> 0.39), so the cut also reaches the hits that were already capped (top gear against lighter tanks).
 // The hit shapes (width, length, radius, telegraph) are unchanged. dmg is a NORMAL stop of the timing bar (SUP_OC scales it).
 // SUP_CQ: Conquest keeps its own charge rule and super damage exactly as they were (350 / 375 / 350 / 400, charge per point of
 // damage, rules.js FILL_DEALT): it has no matches to count supers in, its enemies are authored and many of them are small, so
 // a twice-as-strong super half as often would mostly be wasted on overkill (measured: dev/tests/conquest-raids.mjs lost a raid
-// it must be able to win). Conquest gets the timing bar and its three outcomes (x0.65 / x1 / x1.25) and the new looks.
+// it must be able to win). Conquest has the timing bar and its three outcomes (x0.65 / x1 / x1.25) as 5E-2b built them, and
+// nothing of 5E-2b2b: its own 1.0 s sweep, its charge rule, its damage and its looks are unchanged (owner, Nov 13).
 const SUP={
- pulse:{kind:'beam',dmg:335,charge:0.7,w:1.2,len:16},          // PIERCE LANCE: railbeam that goes through cover
- siege:{kind:'shell',dmg:380,charge:0.7,r:3.2,spd:11,range:13},  // SIEGE BLAST: huge shell, big AoE explosion
- twin:{kind:'nova',dmg:320,charge:0.55,r:4.6},                 // STATIC NOVA: vibrating electric shockwave
- moon:{kind:'beam',dmg:385,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
+ pulse:{kind:'beam',dmg:260,charge:0.7,w:1.2,len:16},          // PIERCE LANCE: railbeam that goes through cover
+ siege:{kind:'shell',dmg:295,charge:0.7,r:3.2,spd:11,range:13},  // SIEGE BLAST: huge shell, big AoE explosion
+ twin:{kind:'nova',dmg:248,charge:0.55,r:4.6},                 // STATIC NOVA: vibrating electric shockwave
+ moon:{kind:'beam',dmg:298,charge:0.8,w:2.0,len:20}};          // MOONFALL: massive lunar beam
 const SUP_CQ={pulse:350,siege:375,twin:350,moon:400};
 // a tank's super multiplier: its permanent gear to the power SUP_GEAR, a mystery-box damage buff on top as before
 const supCap=(dmg,e)=>e.boss?dmg:Math.min(dmg,SUP_HULL_CAP*(e.mhp||STAT.hp));   // rules.js SUP_HULL_CAP (before the outcome multiplier)
@@ -479,7 +500,7 @@ function beamLen(a,ang){   // beam stops at cover (siege telegraph only; pulse p
  return SUPER_LEN;
 }
 function useSuper(r,aimAng){
- if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0||r.boss)return false;   // the megatank has its own attacks (bossAI)
+ if(state!=='play'||r.sup||r.sp<SUPER_MAX||r.hp<=0||r.boss||(r.supN||0)>=SUP_ROUND_CAP)return false;   // the megatank has its own attacks (bossAI); never more than SUP_ROUND_CAP supers a round (rules.js)
  const S=SUP[r.wtype||'pulse'],e=supFocus(r)||nearestFoe(r),aimed=aimAng!==undefined&&aimAng!==null;   // a locked target (tap-to-target, a bot's objective) is who the super wants
  if(!aimed){
   if(!e)return false;
@@ -488,7 +509,7 @@ function useSuper(r,aimAng){
    return false;
   }
  }
- r.sp=0;
+ r.sp=0;r.supN=(r.supN||0)+1;   // supN: supers used this round. Only a new round clears it (simStart, simRound): not a respawn, not a chassis swap
  if(r.st)r.st.sup++;
  ev('u',r.id);   // your super whooshes, anyone else's beeps as it charges
  // the timing bar (5E-2b): the sim draws the bar, the marker sweeps for SUP_BAR_T; supTap() stops it. t: seconds until it fires
@@ -580,7 +601,7 @@ function botDodge(u){
 function fireSuper(r,S){
  const oc=r.sup.oc||0,om=SUP_OC[oc],K=r.sup.k,D=S.dmg;   // outcome of the timing bar: damage x0.65 / x1 / x1.25; K: which of the ten supers (looks only)
  const hurt=(e,dmg)=>{if(!lvOK(r,e))return;const aE=armor(e),pre=supCap(dmg*supMult(r)*cmult(r,e)*(e.supTk||1),e)*om;   // supTk: Reinforced plates take less from supers; supCap: never more than half a full hull
- if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);const h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
+ if(e.st)e.st.arm+=pre*aE;dmg=pre*(1-aE);const h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);
   if(r.st){const d=h0-Math.max(0,e.hp);r.st.dmg+=d;if(d>r.st.best)r.st.best=d;}};   // the damage stat counts hull really removed (no overkill, nothing a shield soaked): the proof-of-play check compares it with the hull the enemies lost
  if(S.kind==='beam'){
   const ang=r.sup.ang;
@@ -628,7 +649,7 @@ function explode(s){
   const d=Math.hypot(e.x-s.x,e.y-s.y);
   if(d<s.r+bodyR(e)&&lvOK(r,e)){
    const fall=1-0.65*(d/(s.r+bodyR(e)));
-   const aE=armor(e),pre=supCap(s.dmg*fall*supMult(r)*cmult(r,e)*(e.supTk||1),e)*SUP_OC[s.oc||0];if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE),h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);e.sp=Math.min(SUPER_MAX,e.sp+supFill(dmg,e)*FILL_HULL_TAKEN*(e.fillM||1)*(e.hitChg||1));
+   const aE=armor(e),pre=supCap(s.dmg*fall*supMult(r)*cmult(r,e)*(e.supTk||1),e)*SUP_OC[s.oc||0];if(e.st)e.st.arm+=pre*aE;const dmg=pre*(1-aE),h0=Math.max(0,e.hp);takeHit(e,dmg,r,null,1);
    if(r.st){const d=h0-Math.max(0,e.hp);r.st.dmg+=d;if(d>r.st.best)r.st.best=d;}
   }
  }
@@ -1164,7 +1185,7 @@ function startRound(){
 function simRound(){
  setMap(curMap);   // fresh crates
  bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
- for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
+ for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
   u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  state='play';

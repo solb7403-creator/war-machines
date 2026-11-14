@@ -26,7 +26,7 @@ function initData(user) {
   p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
   return p.toString();
 }
-const call = async (body) => { const r = await worker.fetch(new Request('https://x/api/match/start', { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:5,...body}) }), env); return r.json(); };
+const call = async (body) => { const r = await worker.fetch(new Request('https://x/api/match/start', { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:6,...body}) }), env); return r.json(); };
 // a pilot with a record and power, and 40 offline pilots in the ghost pool around that power
 const U = { id: 4242, username: 'tester' }, pid = 'tg_4242', L = structuredClone(R.STOCK_L), pw = R.powerOf(L);
 db.root.players = { [pid]: { power: pw, pts: 100 } };

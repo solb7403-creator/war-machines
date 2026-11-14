@@ -15,15 +15,16 @@ export async function fairGrid({ pilots = ['standard'], lgs = [0, 1, 2, 3, 4, 5,
   }
   const res = await runJobs(jobs, { patch }), T = {};
   res.forEach((r, i) => {
-    const [p, lg, s, k] = keys[i], c = (((T[p] ||= {})[lg] ||= {})[s] ||= {})[k] ||= { n: 0, w: 0, dmg: 0, taken: 0, secs: 0, place: 0, meSup: 0, meDash: 0, aiSup: 0, aiDash: 0, aiShield: 0, foeMin: 0, meMin: 0, aiSupGap: 1e9, aiDashGap: 1e9, aiShieldGap: 1e9, aiSupLowSp: 1e9, aiDashCd: 0, aiShieldCd: 0 };
+    const [p, lg, s, k] = keys[i], c = (((T[p] ||= {})[lg] ||= {})[s] ||= {})[k] ||= { n: 0, w: 0, dmg: 0, taken: 0, secs: 0, place: 0, meSup: 0, meDash: 0, aiSup: 0, aiDash: 0, aiShield: 0, foeMin: 0, meMin: 0, rounds: 0, foeRounds: 0, aiSupGap: 1e9, aiDashGap: 1e9, aiShieldGap: 1e9, aiSupLowSp: 1e9, aiDashCd: 0, aiShieldCd: 0 };
     c.n++; c.w += r.out; c.dmg += r.dmg; c.taken += r.taken; c.secs += r.secs; c.place += r.place || 0; c.kills = (c.kills || 0) + (r.kills || 0); c.deaths = (c.deaths || 0) + (r.deaths || 0);
-    const a = r.ab; c.meSup += a.meSup; c.meDash += a.meDash; c.aiSup += a.aiSup; c.aiDash += a.aiDash; c.aiShield += a.aiShield; c.foeMin += a.foeMin; c.meMin += a.meMin;
+    const a = r.ab; c.meSup += a.meSup; c.meDash += a.meDash; c.aiSup += a.aiSup; c.aiDash += a.aiDash; c.aiShield += a.aiShield; c.foeMin += a.foeMin; c.meMin += a.meMin; c.rounds += a.rounds || 1; c.foeRounds += (a.rounds || 1) * (a.foes || 0);
     c.aiSupGap = Math.min(c.aiSupGap, a.aiSupGap); c.aiDashGap = Math.min(c.aiDashGap, a.aiDashGap); c.aiShieldGap = Math.min(c.aiShieldGap, a.aiShieldGap); c.aiSupLowSp = Math.min(c.aiSupLowSp, a.aiSupLowSp); c.aiDashCd = Math.max(c.aiDashCd, a.aiDashCd); c.aiShieldCd = Math.max(c.aiShieldCd, a.aiShieldCd);
   });
   for (const p in T) for (const lg in T[p]) for (const s in T[p][lg]) for (const k in T[p][lg][s]) {
     const c = T[p][lg][s][k];
     Object.assign(c, { win: +(c.w / c.n).toFixed(3), ratio: +(c.taken / Math.max(1, c.dmg)).toFixed(3), dmg: Math.round(c.dmg / c.n), taken: Math.round(c.taken / c.n), secs: Math.round(c.secs / c.n), place: +(c.place / c.n).toFixed(2),
       // a minute of one tank's life: the pilot's own rate, and the enemy AI pilots' rate per tank
+      meSupPR: +(c.meSup / Math.max(1, c.rounds)).toFixed(2), aiSupPR: +(c.aiSup / Math.max(1, c.foeRounds)).toFixed(2),   // supers per tank per round (5E-2b2b: the cap and the target are per round)
       meSupPM: +(c.meSup / Math.max(0.01, c.meMin)).toFixed(2), meDashPM: +(c.meDash / Math.max(0.01, c.meMin)).toFixed(2), aiSupPM: +(c.aiSup / Math.max(0.01, c.foeMin)).toFixed(2), aiDashPM: +(c.aiDash / Math.max(0.01, c.foeMin)).toFixed(2), aiShieldPM: +(c.aiShield / Math.max(0.01, c.foeMin)).toFixed(2) });
   }
   return T;

@@ -141,7 +141,7 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
   const n1 = A.msgs.filter((m) => m.k === 's').length;
   t(n1 - n0 >= 13 && n1 - n0 <= 17, 'about 15 snapshots a second: ' + (n1 - n0));
   const s1 = last(A, 's');
-  t(Array.isArray(s1.s.u) && s1.s.u.length === 2 && s1.s.u[0].length === 17 && typeof s1.s.tl === 'number', 'snapshot layout');
+  t(Array.isArray(s1.s.u) && s1.s.u.length === 2 && s1.s.u[0].length === 18 && s1.s.u[0][17] === 0 && typeof s1.s.tl === 'number', 'snapshot layout (the 18th field: supers used this round)');
   // claims: B is at (10,4); in B's view that's (10,28). B drives "up" its screen to (10,26) = canonical (10,6)
   const ub = room.sim.units[1], ua = room.sim.units[0];
   for (let i = 0; i < 6; i++) { say(room, 'b', B, { k: 'm', x: 10, y: 28 - (i + 1) * 0.35, tp: 0 }); await run(100); }
@@ -190,11 +190,19 @@ const say = (room, pid, s, o) => room.onMessage(pid, s, JSON.stringify(o));
     say(room, 'a', A, { k: 'z', oc: 2, p: 'x' }); t(ua.sup.oc === 0, 'an outcome sent by the phone is ignored; a malformed tap falls back to the server clock');
     await run(1500);
     t(!ua.sup && !ub.sup, 'both supers fired');
-    ua.sp = 1000; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); const jc = ua.sup.bar.jc;
+    ua.sp = 1000; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); const jc = ua.sup.bar.jc * R.SUP_BAR_T;   // seconds after the press
     while (ua.sup && ua.sup.el < jc - 0.02) await run(34);
     say(room, 'a', A, { k: 'z', p: ua.sup.el }); t(ua.sup && ua.sup.oc >= 1, 'an honest tap in the zone is a HIT or a JACKPOT (' + (ua.sup && ua.sup.oc) + ', at ' + (ua.sup && ua.sup.el.toFixed(2)) + ' s of ' + jc + ')');
     say(room, 'a', A, { k: 'z', p: 0.1 }); await run(900); t(!ua.sup, 'it fires after the stop');
-    say(room, 'a', A, { k: 'z', p: 0.6 }); t(!ua.sup, 'a tap with no super charging does nothing'); }
+    say(room, 'a', A, { k: 'z', p: 0.6 }); t(!ua.sup, 'a tap with no super charging does nothing');
+    // the round cap (5E-2b2b): A has fired 2 supers; the server's sim allows a 3rd and refuses the 4th, whatever the phone sends
+    t(ua.supN === 2 && last(A, 's').s.u[0][17] === 2, 'the server counts the supers used this round and shows them in the snapshot (' + ua.supN + ')');
+    ua.sp = 1000; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); t(!!ua.sup && ua.supN === 3, 'the third super of the round fires'); await run(1500);
+    ua.sp = 1000; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); t(!ua.sup && ua.supN === 3 && ua.sp === 1000, 'the 4th super of a round is refused by the server (cap ' + R.SUP_ROUND_CAP + ')');
+    ua.sp = 0; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); await run(100); t(!ua.sup && last(A, 's').s.u[0][17] === 3, 'the snapshot shows all three used');
+    // an AI pilot taking the tank over (the player dropped) and handing it back does not give supers back
+    room.sim.setCtl(ua, 'bot'); ua.sp = 1000; t(room.sim.useSuper(ua, 0) === false && ua.supN === 3, 'an AI pilot flying a dropped player\'s tank is held to the same count');
+    room.sim.setCtl(ua, 'net'); ua.sp = 1000; say(room, 'a', A, { k: 's', a: -Math.PI / 2 }); t(!ua.sup && ua.supN === 3, 'and so is the player on reconnecting'); ua.sp = 0; ua.supN = 0; }
   await run(600);
   say(room, 'b', B, { k: 'd', x: 0, y: -1 });
   t(ub.dash && ub.dash.dy > 0.9 && ub.dashCd > 3.5, 'dash turned into the server frame');
@@ -364,7 +372,7 @@ function PVP_BANK() { return 0.6; }
     p.set('hash', createHmac('sha256', secret).update(dcs).digest('hex'));
     return p.toString();
   };
-  const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:5,...body}) }), env); return [r.status, await r.json()]; };
+  const call = async (path, body) => { const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({gv:6,...body}) }), env); return [r.status, await r.json()]; };
   const U1 = { id: 501, username: 'livea' }, U2 = { id: 502, username: 'liveb' };
   db.root.players = { tg_501: { pts: 900, dailyPts: 100, weeklyPts: 100, d: Math.floor(Date.now() / 864e5), w: Math.floor((Date.now() - 4 * 864e5) / (7 * 864e5)), days: 1, ld: Math.floor(Date.now() / 864e5), sk: 1, name: 'livea' } };
   let [s, r] = await call('/api/pvp/join', { initData: 'bad', v: R.PVP_V, g: 'arena', m: '1v1', L: L0() });

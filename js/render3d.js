@@ -153,14 +153,29 @@ function mkMats(){
 // and dark scorch in one draw) and one debris batch drawn with the map's own lit material (no new program); its particles
 // go into the two particle batches below. Arcade adds at most 2 draw calls while something is on screen, 0 otherwise ----------
 let SFX=null;
-const FXG_VS='attribute vec4 rgba;varying vec4 vC;varying vec2 vU;void main(){vC=rgba;vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
-const FXG_FS='varying vec4 vC;varying vec2 vU;void main(){float d=length(vU);float f=clamp(1.0-d,0.0,1.0);f=f*f*(3.0-2.0*f);gl_FragColor=vec4(vC.rgb*f*(1.9-0.9*smoothstep(0.0,0.55,d)),vC.a*f);}';
+// The glow batch's one program draws four looks (Session 5E-2b2b), picked per quad by which band of 4 its uv.x lies in
+// (js/fx3d.js mode()), so the batch stays ONE draw call and ONE program:
+//  0  soft glow (as before): bright in the middle, fading to the quad's edge
+//  1  turbulent: the same falloff broken up by flowing noise in world space: fire, smoke, energy clouds (never a flat blob)
+//  2  shock: a wave front: a hard bright leading edge on the outer side (v=+1) and a long soft tail inward
+//  3  flow: a beam body: soft across (v), with streaks of energy racing along it (uv.x = distance along the beam)
+// uT: seconds (held still under reduced motion: no flicker). vW: world position (the noise is fixed to the ground, not the quad).
+const FXG_VS='attribute vec4 rgba;varying vec4 vC;varying vec2 vU;varying vec3 vW;void main(){vC=rgba;vU=uv;vW=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
+const FXG_FS=['uniform float uT;varying vec4 vC;varying vec2 vU;varying vec3 vW;',
+ 'float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}',
+ 'float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x),f.y);}',
+ 'float fbm(vec2 p){return vn(p)*0.62+vn(p*2.13+7.1)*0.38;}',   // two octaves (review: three cost a third more per pixel for a difference nobody sees)
+ 'void main(){float m=floor((vU.x+2.0)/4.0);vec2 u=vec2(vU.x-m*4.0,vU.y);float d=length(u);float f=clamp(1.0-d,0.0,1.0);f=f*f*(3.0-2.0*f);float gain=1.9-0.9*smoothstep(0.0,0.55,d);',
+ ' if(m>0.5&&m<1.5){float n=fbm(vW.xz*2.3+vec2(vW.y*1.1,-uT*1.6+vW.y*0.8));float e=smoothstep(0.26,0.66,f*(0.45+1.2*n));gain=0.8+1.7*n*e;f=e;}',   // firm lobes: flame and smoke with edges, not a smudge
+ ' else if(m>1.5&&m<2.5){float v=u.y;f=(1.0-smoothstep(0.7,1.0,v))*pow(clamp((v+1.0)*0.5,0.0,1.0),3.4);gain=1.0+1.3*smoothstep(0.35,0.8,v);}',   // (smoothstep with its edges in order; a front edge wide enough not to stair-step on a thin ring)
+ ' else if(m>2.5){float c=1.0-abs(u.y);c=c*c*(3.0-2.0*c);float s=fbm(vec2(u.x*13.0-uT*9.0,u.y*6.0));f=c*(0.8+0.4*s);gain=1.0+1.1*smoothstep(0.5,1.0,c)*s;}',   // one noise read (it was two)
+ ' gl_FragColor=vec4(vC.rgb*f*gain,vC.a*f);}'].join('\n');
 function mkSFX(){
  if(typeof FX3D==='undefined')return null;
- const glowMat=new THREE.ShaderMaterial({vertexShader:FXG_VS,fragmentShader:FXG_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,side:THREE.DoubleSide});   // premultiplied: colour adds, alpha darkens (one batch for glow and scorch)
+ const glowMat=new THREE.ShaderMaterial({uniforms:{uT:{value:0}},vertexShader:FXG_VS,fragmentShader:FXG_FS,transparent:true,premultipliedAlpha:true,depthWrite:false,side:THREE.DoubleSide});   // premultiplied: colour adds, alpha darkens (one batch for glow and scorch)
  const dot=(add,x,y,z,sz,r,g,b,a)=>{const ps=add?PSA:PSN;if(ps.n>=ps.max)return;const i=ps.n++;ps.P[i*3]=x;ps.P[i*3+1]=y;ps.P[i*3+2]=z;ps.C[i*4]=r;ps.C[i*4+1]=g;ps.C[i*4+2]=b;ps.C[i*4+3]=a;ps.S[i]=sz;};
  return FX3D.create(THREE,{mode:'arcade',scene:RS,low:()=>R3.q==='low',quiet:()=>typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),glowMat,solidMat:MT.lit,glowAttr:'rgba',solidAttr:'color',
-  right:FXR,up:FXU,fwd:FXF,get slideMax(){return R3.chase?1.4:0;},minW:.08,dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:2600,maxVerts:5400,maxParticles:1500,maxDebris:96});
+  right:FXR,up:FXU,fwd:FXF,get slideMax(){return R3.chase?1.4:0;},minW:.08,modes:true,dot,shake:(m,t)=>{if(typeof shake==='function')shake(m,t);},order:{glow:18,solid:0},maxQuads:4600,maxVerts:5400,maxParticles:1500,maxDebris:96});
 }
 // what a tank is made of when it breaks: Parasite-style hulls split like chitin, everything else tears like armour
 const tankMat=u=>'armor';
@@ -437,7 +452,7 @@ function frame3D(shx,shy){
  if(chase){const c=chaseFrame(dt,shx,shy);pxs=c.f*pr;const pm=Math.min(R3.ptMax||256,256*Math.max(1,c.f/c.dist/Math.max(8,s)));for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=1;ps.pts.material.uniforms.uMax.value=pm;}}
  else{FXR[0]=1;FXR[1]=0;FXR[2]=0;FXU[0]=0;FXU[1]=GSN;FXU[2]=-GKC;FXF[0]=0;FXF[1]=GKC;FXF[2]=GSN;RC.left=-ox2/s;RC.right=(vw-ox2)/s;RC.top=oy2/s;RC.bottom=-(vh-oy2)/s;RC.updateProjectionMatrix();pxs=s*pr;for(const ps of [PSA,PSN]){ps.pts.material.uniforms.uP.value=0;ps.pts.material.uniforms.uMax.value=256;}}
  STARS.material.uniforms.uS.value=pr*18;
- poolsBegin();if(SFX)SFX.begin(dt,t);
+ poolsBegin();if(SFX){SFX.begin(dt,t);if(!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()))SFX.glow.material.uniforms.uT.value=t%600;}   // the glow shader's clock (held still with reduced motion)
  const G=geos(),meUnder=me&&typeof underDeck==='function'&&underDeck(me);
  // map: spinning pylons, deck fades while you're under it, pulsing energy
  const quietMap=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced();
@@ -453,7 +468,7 @@ function frame3D(shx,shy){
    if(!foe&&!ally)continue;const k=quietMap?1:0.75+0.25*Math.sin(t*9),c=foe?TC[1]:TC[0];
    for(const z of [dy-0.12,dy+dh+0.12]){for(let i=0;i<5;i++)once(PSA,tx+0.45+(tw-0.9)*i/4,U+0.02,z,0.62*k,foe&&ally&&i%2?TC[0]:c,0.95);if(foe)once(PSA,tx+tw/2,U+0.05,z,1.5*k,c,0.4);}}}   // both teams inside: the lamps alternate red and blue along the mouth (nothing flashes)
   for(const an of B3.map.anims){
-   if(an.type==='arc'&&SFX&&!quietMap){const ph=Math.floor(t*14);if((ph+an.a[2]|0)%3!==0)SFX.bolt(an.a[0],an.a[1],an.a[2],an.b[0],an.b[1],an.b[2],0.14,7,an.w,FX3D_RGB(an.c),0.9,ph*31+7,0);}
+   if(an.type==='arc'&&SFX&&!quietMap){const ph=Math.floor(t*14);if((ph+an.a[2]|0)%3!==0)SFX.bolt(an.a[0],an.a[1],an.a[2],an.b[0],an.b[1],an.b[2],0.14,7,an.w,FX3D_RGB(an.c),0.9,ph*31+7,0,1);}
    else if(an.type==='ripple'&&SFX&&!quietMap){const f=(t*0.35+an.p[0]*0.13)%1;SFX.ring(an.p[0],an.p[1],an.p[2],an.r*f,0.03,FX3D_RGB(an.c),0.5*(1-f),28);}}
  }
  if(SMK)SMK.mesh.visible=!!B3.map.arena;
@@ -739,7 +754,7 @@ function haloList(o,parts,t){const out=[];o.g.updateMatrixWorld(true);for(const 
 // Menu framing for a whole tank with the Moonbeam. At its per-chassis scale (0.61-0.92) the muzzle (kit tip 2.35 × ws) reaches
 // 1.43-2.16; the longest (Colossus, 2.16) sits on the largest hull, which TANK_FRAME already sizes for, so one small margin
 // for the taller cradle and halo still frames every chassis (garage, cards, hero, Engineer).
-const moonFrame=T=>T.spec&&T.spec.arch==='moon'&&!T.spec.boss?1.04:1;
+const moonFrame=T=>T.spec&&!T.spec.boss?(T.spec.arch==='moon'?1.04:1)*Math.max(1,(T.ws||1)*((T.wmeta&&T.wmeta.tips&&T.wmeta.tips[0]&&T.wmeta.tips[0][0])||0)/2.33):1;   // and for any weapon whose muzzle now reaches further than the frame was sized for (2.33 model units; Session 5E-2b2b's fit corrections)
 // One framing for every chassis picture (garage, cards, hero, Engineer), sized so the largest (Colossus, Bulwark's ram)
 // fits. Never per-model zoom: a Scout reads small and a Titan big, exactly as in battle (which adds the class ds).
 const TANK_FRAME=1.8,TANK_CY=.40;

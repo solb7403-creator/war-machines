@@ -194,7 +194,7 @@ class View {
   F.begin(dt);
   if(B){const U=3,p=this.renderP||this.p,ang=y=>Math.atan2(Math.cos(y),Math.sin(y)),sa=B.superAttack,seen=this.fxSeen||(this.fxSeen=new Map());
    if(sa&&sa.bar){const S=SUP[sa.weapon],k=sa.k||supKey(sa.weapon,B.playerStats.wtier);   // the charge-up while the timing bar sweeps
-    F.superCharge(k,Math.min(1,sa.el/SUP_BAR_T),p.x-ox,p.y+.4,p.z-oz,ang(sa.yaw),sa.oc,(S.kind==='nova'?S.r:S.kind==='beam'?S.len:S.range)*U,S.kind==='nova'?U:U*.55);   // the chase camera sits right behind the muzzle: a smaller gather, so the view ahead stays clear
+    F.superCharge(k,Math.min(1,sa.el/SUP_BAR_T_CQ),p.x-ox,p.y+.4,p.z-oz,ang(sa.yaw),sa.oc,(S.kind==='nova'?S.r:S.kind==='beam'?S.len:S.range)*U,S.kind==='nova'?U:U*.55);   // the chase camera sits right behind the muzzle: a smaller gather, so the view ahead stays clear
     if(sa.oc!==undefined&&this.fxOc===undefined)F.superLock(k,sa.oc,p.x-ox,p.y+.4,p.z-oz,U);this.fxOc=sa.oc;}else this.fxOc=undefined;
    for(const q of B.superShells||[])F.superShell(q.k||'siege0',q.oc||0,q.x-ox,q.y,q.z-oz,U);
    for(const e of B.effects||[]){if(e.at===undefined)continue;const id=(Math.round(e.at*100)%1e6)*4194304+((Math.round(e.x)&2047)*2048+(Math.round(e.z)&2047))+(e.kind==='beam'?.1:e.kind==='nova'?.2:.3);if(seen.has(id))continue;seen.set(id,now);   // a number, not a string: nothing allocated per effect per frame   // each effect once (a reconciled battle re-creates the objects)

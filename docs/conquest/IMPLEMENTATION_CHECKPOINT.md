@@ -2880,3 +2880,691 @@ everyone, revert the merge commit on main.
 - 5E-2b2b (supers and weapons) is to be judged with this camera; the timing bar now sits under the top HUD on phones.
 - Longshot / Canyon rock to reference level still needs sculpted meshes; wiki map pictures still show the 5E-2c maps.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
+
+## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`, build `20261114090839`) — BUILT; RELEASE PRE-APPROVED BY THE OWNER (Nov 14, 2026: see "Release status")
+
+Brief: the owner's Session 5E-2b2b prompt (supers: about 3 per player per round, never more than 3, charge from damage only and
+measured against the tank's own strength, 20-25% less damage, a faster timing bar, more professional looks; weapon proportions
+on every chassis) plus two owner messages during the session (Nov 13): the Moonfall jackpot's red electricity must wrap AROUND
+the blue beam, and a higher rarity must look more intricate (rare > common, epic > rare, Moonfall the most intricate and
+unique); **Conquest supers stay completely unchanged**. Owner not monitoring: every decision below was made by the lead and is
+recorded with its reason. Payments stay DISABLED. Not touched: prices, economy, airdrop points, save schema, ownership,
+chassis / weapon stats (other than super tuning), the camera, firing, Conquest super charging / damage / bar / looks.
+
+**Branch note.** The brief names `claude/super-spawn-rate-clarification-v0jid5`; this session's harness may only push to
+`claude/super-spawn-rate-clarification-v0jid5-gdurn6`. That branch was fast-forwarded to the named branch's head (`eebfe8d`, the
+roadmap note, which sits directly on main `1acff13`), so it holds the same history. The named branch held no measurement files;
+the baseline was re-measured here against a pristine checkout of main (below).
+
+### Research that drove the choices (step 1; a research agent, web search)
+Caveat from the agent: every page fetch was blocked by this session's network allowlist, so the findings come from search-result
+summaries of the pages named, not from pages it opened. Direction, not proof.
+1. **Charge sources.** Overwatch: 1 point per point of damage, plus a passive trickle; no charge from non-player targets, from
+   self-damage, from the ultimate's own damage or while it is active (Overwatch Wiki, 2016 PTR notes). Brawl Stars: a fixed share
+   per HIT per brawler, tuned as hits-to-charge and independent of damage ("Crow stays at 10 hits" after a damage change); the
+   Tank trait charges from damage taken (Bull: 2.4x his max health for a full Super). Valorant: points from kills, deaths, orbs,
+   no passive gain. Fighting games give the defender a smaller share than the attacker (SF6 throw: 2,000 vs 1,400 = 70%; Yomi
+   Hustle: damage taken / 3). => damage-only charge with no passive part is established practice; the charge excludes props and
+   the super's own damage; the receiver's share is smaller than the dealer's (here about a quarter of a bar-for-bar exchange);
+   charge measured in the attacker's own units (hits, or here seconds of own fire), not in the target's health.
+2. **Frequency.** Every live game the agent found tunes ultimate frequency DOWN over time (Overwatch +25% cost in 2016, +10% in
+   2023; Valorant raised costs "to reduce their overall frequency"; Marvel Rivals -20% charge). No published hard caps per round
+   were found. => a cap is this game's own rule (owner); the precedent supports fewer, not more.
+3. **Damage share.** No published share of damage from ultimates. Valorant's design lead: "guns provide the vast majority of
+   kills". => the cannon should stay the main source: supers went from 43% of a pilot's damage to 19% (tables below).
+4. **Timing windows.** Paper Mario's Superguard is 3 frames at 60 fps (50 ms) and is its "hard" window; DDR's Perfect is 33 ms;
+   osu!'s best window is 80 - 6 x OD ms; visual reaction to a tap is about 230-290 ms; a phone's touch latency varies by about
+   one 60 Hz frame (16 ms). => a 53 ms jackpot window (0.667 s sweep) is "hard but not too hard"; a 40 ms window (2x) sits at
+   rhythm-game "perfect" difficulty before a phone's own jitter is added; the jackpot must not come sooner than ~300 ms after
+   the bar appears.
+5. **Professional VFX** (Riot's VFX style guide; Keyser / Chamberlain GDC 2017 as summarised): gameplay clarity first; ONE
+   primary element with the highest contrast and the sharpest edge, secondaries dimmer and smaller; avoid pure white and pure
+   black fills; anticipation -> climax -> long fall-off; a flash layer lasts 2-3 frames. => how the ten supers are now staged
+   (js/fx3d.js "how a super is staged").
+Not found by the agent: supers per match in Brawl Stars, any game's ultimate share of damage, Bassin anticipation-timer errors
+in ms, golf-meter or Gears active-reload window sizes.
+
+### What was wrong (measured on main `1acff13`, `dev/tests/super-rounds.mjs`, seeded, all six maps, every Arcade mode and size)
+The game's turret aims and fires by itself for every pilot, so the measurement pilot is the "standard" stand-in (the game's own
+auto-turret accuracy; a person only drives). Checkpoint 33's "about 3 a match" was measured with the "human" stand-in, which
+adds an aim lag the real game does not have and hits about a third as often: it under-counted.
+- A pilot fired **5.5 supers a round** on average (the "human" stand-in: 3.0): Arena 3v3 5.9 (up to 10), Moon Zone 3v3 12.5 (up
+  to 18), Bounty 3v3 8 (up to 10). **The owner's 7-8 in a 3v3 match is the normal case, not an outlier.**
+- AI pilots: 5.6 a round, up to 17 in one round (Moon Zone 3v3).
+- The owner's case (Legendary kit, Reactor 2): Bounty 3v3 against Rookie AI **15.3 a round (up to 18) against 7.6 for a stock
+  tank**; Bounty 1v1 9.9 against 4.9: twice a stock tank's count, three times in single rounds. Cause (as the owner found):
+  `supFill` charged by the share of the TARGET's hull, with the mode's hull scale taken out, so a strong kit against the
+  Arcade's weaker AI and a 3x team hull refilled several times faster.
+- Supers were 29% of a stock pilot's damage and **55-58% of the Legendary kit's** (up to 74% in Survival).
+
+### What shipped (gameplay; Arcade and live matches only)
+1. **Charge from damage only, measured against the tank's own strength** (`js/game.js` `supCharge`, `supDps`; `js/rules.js`
+   `SUP_FILL`). Damage dealt counts in seconds of the tank's OWN clean cannon fire (its permanent damage per second: weapon and
+   roll, cannon levels, damage / fire-rate / luck cores, Lunar Skin, velocity impact, Targeting's crit chance); damage received
+   counts as a share of the tank's OWN full hull. The target's health is not in the formula at all. Nothing passive, nothing
+   per second, nothing per crit (the old flat +30 a crit is gone: a crit's doubled damage already counts).
+2. **What never charges** (one function decides, called from `takeHit` with the hull really removed): crates and props, terrain,
+   the storm ring, meteors, a team mate's or your own fire, damage past the target's remaining health, a super's own damage
+   (for its owner), and anything once the round's cap is reached.
+3. **No farming by soaking damage:** damage received counts for at most ONE full hull per life; repairs and regeneration do not
+   refill that allowance; a respawn does (a new life), and the cap bounds it anyway.
+4. **Hard cap: 3 supers per player per round** (`SUP_ROUND_CAP`). The sim refuses the 4th press and the bar stops charging; the
+   count survives a respawn and a chassis swap; only a new round clears it (`simStart`, `simRound`). Live matches: the server
+   runs that sim, so the cap is the server's (`worker/src/pvp.js` passes the press to it; the snapshot carries the count for
+   the HUD). AI matches: the server's proof-of-play check counts the presses per round in the match record and refuses a
+   record with more than 3 (`worker/src/proof.js`, reason `supers`). AI pilots and ghosts obey the same cap.
+5. **About 3 a round in every mode** (1v1 Arena about 2): one fill row per mode and team size, each fitted on seeded rounds of
+   that mode so the pilot is offered about 4 bars a round (1v1 Arena: 2.7), 70% from damage dealt and 30% from damage
+   received; the cap turns that into "about 3, never more". 1v1 Arena rounds last 24 s on average (measured), which is why its
+   target is 2.
+6. **The Reactor keeps +10% a level** (and the charge mods their effect) on top, for both sources.
+7. **Each super does 22.5% less** (bases 335 / 380 / 320 / 385 -> 260 / 295 / 248 / 298), and the most one super can take from
+   a full hull dropped by the same 22% (50% -> 39% on a normal stop; 25% on a miss, 49% on a jackpot).
+8. **Timing bar 1.5x faster** (1.0 s -> 0.667 s sweep), the zone a little later along the bar (44-62% instead of 36-56%).
+9. **HUD:** three gold pips on the SUPER button show the round's supers (a spent one is hollow); with none left the button
+   dims and reads NONE LEFT, and a tap says "All 3 Supers used this round". Help and wiki text updated.
+10. `PVP_V` 6: phones on the old build are asked to update before a match (the bar's speed, the charge rule, the cap and the
+    snapshot changed; an old phone's AI-match record could hold more than 3 supers a round and would be refused).
+
+### Decisions and reasons (changes to the owner's plan are marked CHANGE)
+1. **Own strength = damage per second of clean fire from permanent gear.** Mystery-box buffs are not gear and are not in it, so
+   a damage box still speeds the charge a little while it lasts (the same for every kit). Crit chance IS in it (Targeting and
+   Luck cores would otherwise charge faster).
+2. **A super's own damage does not charge its owner.** Otherwise a kit whose supers hit harder (gear ^2.2) would charge faster
+   again, which is the exact thing the owner ruled out; Overwatch excludes it for the same reason (research 1).
+3. **Megatank (Survival):** its stomps and shells are combat damage from an opposing tank, so they charge the tank they hit; the
+   megatank itself has no super and charges nothing.
+4. **Solar flare event kept:** it doubles the charge from damage while it lasts; it adds nothing by itself (still damage only).
+5. **One fill row per mode, not one number.** A 24 s duel, a 180 s Moon Zone with respawns and a megatank with a huge hull
+   produce very different amounts of fighting; one number gave 1v1 Arena under 1 super a round or Moon Zone 3v3 over 10. Each
+   row is "d seconds of your own fire fill a bar; h of your own hulls lost fill a bar" (`rules.js SUP_FILL`).
+6. **The split is 70 / 30 as measured, not as a fixed ratio per hit.** In a bar-for-bar exchange of one hull the dealer gets about
+   three quarters and the receiver a quarter; over a measured round that comes to 70% dealt / 30% received (table below).
+7. **The cap binds on purpose.** The reference pilot is offered about 4 bars a round so that an average round ends near 3;
+   a rule tuned to "exactly 3 offered" would leave an average pilot at 2.3. The price: a strong round's third super can come
+   before the round's last quarter. The pips make that visible.
+8. **Top gear lands slightly UNDER the lowest gear (x0.9), not over it.** Against the Arcade's weaker AI a top kit's enemies
+   have less hull to shoot (in seconds of its own fire) and it loses less of its own hull, so its rounds are shorter and offer
+   less charge. That is the direct consequence of the owner's rule and it stays; the criterion "the best gear within 1.2x of
+   the lowest" is met in every mode.
+9. **Bar speed: 1.5x, not 2x.** At 2x the jackpot circle is on screen for 1.2 frames on a 30 fps phone (2.4 at 1x, 1.6 at 1.5x):
+   luck and device speed, not skill; and the earliest jackpot would come 215-255 ms after the bar appears, under a person's
+   tap reaction. What makes a jackpot hard: (a) the marker's speed, (b) the circle's random place, (c) how soon it can come.
+   (a) rose 50%, (b) is unchanged, (c) is held at 340 ms by starting the zone later. Hit rates below.
+10. **AI tap spread x1.125** so every league's AI still taps worse than an average person at the new speed.
+11. **Latency allowance stays 0.06 s** (it is network jitter plus a server tick; it does not scale with the bar).
+12. **Conquest keeps its own bar** (`SUP_BAR_T_CQ` 1.0 s, its zone at 36-56%): its taps are judged in 50 ms command steps, too
+    coarse for a 53 ms window, and the owner froze Conquest supers. Its charge rule, damage and looks are untouched.
+13. **`fair-arcade.mjs`: "an AI pilot never out-supers the pilot" is now judged per tank per ROUND** (the unit the cap is in),
+    with the same tolerance (5% + 0.3). Per minute alive it failed 24 of 11,471 checks for a reason that is not unfairness: a
+    tank destroyed early in Last Standing after two supers shows a higher rate a minute than a pilot who used all three and
+    survived. No gear-ladder rule changed; all pass (11,611 checks).
+
+### Numbers: supers per player per round, before (main `1acff13`) -> after (this branch, final rules)
+Tool: `dev/tests/super-rounds.mjs` (the real phone code, seeded, six maps, two seeds a cell; a round = one round of a best of 3
+in 1v1 Arena, the whole match elsewhere). Raw data: `docs/supers-5e2b2b/rounds-*.json`. "standard" = the game's own auto-turret
+accuracy (what a phone does); "human" = the low-accuracy stand-in of Checkpoint 33 (about a third of the hits), shown as the
+lower bound. Kits in the ladder and the weapon / chassis tables are at **Reactor 0** (the gear-fairness check compares equal
+Reactor levels); the owner's-case table uses his kit as he flies it (Reactor 2). Measured after the review fixes (boxes and
+counters inside a tank's strength, damage received capped per round).
+
+**ladder** (pilot: standard; 960 matches before, 960 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | stock | common | rare | epic | legend | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|
+| arena 1v1 (24 -> 24) | 1.82 -> 2.56 (2 -> 3) | 1.58 -> 2.04 (2 -> 3) | 1.54 -> 1.75 (2 -> 3) | 1.48 -> 2.00 (2 -> 3) | 1.36 -> 1.42 (2 -> 2) | 1.07 -> 1.78 (2 -> 3) | 1.80 |
+| arena 2v2 (47 -> 50) | 3.58 -> 3.00 (4 -> 3) | 3.58 -> 3.00 (5 -> 3) | 3.58 -> 2.92 (4 -> 3) | 3.17 -> 2.75 (4 -> 3) | 2.25 -> 2.25 (3 -> 3) | 2.86 -> 2.84 (4 -> 3) | 1.33 |
+| arena 3v3 (75 -> 91) | 5.92 -> 3.00 (7 -> 3) | 6.33 -> 3.00 (8 -> 3) | 6.75 -> 2.92 (10 -> 3) | 5.50 -> 2.75 (8 -> 3) | 4.75 -> 2.33 (7 -> 3) | 4.35 -> 2.82 (7 -> 3) | 1.29 |
+| zone 1v1 (105 -> 106) | 5.33 -> 2.83 (7 -> 3) | 5.75 -> 2.92 (10 -> 3) | 5.83 -> 2.75 (11 -> 3) | 4.92 -> 3.00 (7 -> 3) | 4.83 -> 2.75 (7 -> 3) | 4.78 -> 2.78 (9 -> 3) | 1.09 |
+| zone 2v2 (131 -> 139) | 8.42 -> 3.00 (10 -> 3) | 9.83 -> 3.00 (13 -> 3) | 8.50 -> 3.00 (11 -> 3) | 8.75 -> 2.92 (13 -> 3) | 8.00 -> 2.67 (13 -> 3) | 8.03 -> 2.92 (14 -> 3) | 1.12 |
+| zone 3v3 (156 -> 173) | 13.08 -> 3.00 (17 -> 3) | 12.17 -> 3.00 (16 -> 3) | 13.67 -> 3.00 (16 -> 3) | 12.17 -> 3.00 (18 -> 3) | 10.83 -> 3.00 (15 -> 3) | 10.62 -> 3.00 (17 -> 3) | 1.00 |
+| crystal 1v1 (98 -> 95) | 4.67 -> 2.83 (7 -> 3) | 3.75 -> 2.67 (7 -> 3) | 3.58 -> 2.67 (6 -> 3) | 4.50 -> 2.67 (7 -> 3) | 4.58 -> 2.58 (6 -> 3) | 3.97 -> 2.65 (7 -> 3) | 1.10 |
+| crystal 2v2 (106 -> 102) | 6.33 -> 2.75 (9 -> 3) | 5.50 -> 2.58 (9 -> 3) | 5.33 -> 2.75 (8 -> 3) | 5.25 -> 2.75 (9 -> 3) | 5.25 -> 2.67 (10 -> 3) | 5.49 -> 2.78 (10 -> 3) | 1.07 |
+| crystal 3v3 (106 -> 102) | 6.50 -> 2.50 (10 -> 3) | 7.00 -> 2.25 (11 -> 3) | 6.67 -> 2.50 (9 -> 3) | 6.83 -> 2.42 (10 -> 3) | 7.08 -> 2.83 (11 -> 3) | 6.62 -> 2.85 (11 -> 3) | 1.26 |
+| bounty 1v1 (120 -> 120) | 4.92 -> 2.92 (7 -> 3) | 5.17 -> 2.83 (7 -> 3) | 5.50 -> 2.83 (7 -> 3) | 4.75 -> 3.00 (6 -> 3) | 5.67 -> 2.67 (7 -> 3) | 4.70 -> 2.85 (6 -> 3) | 1.12 |
+| bounty 2v2 (120 -> 120) | 6.67 -> 3.00 (8 -> 3) | 6.92 -> 3.00 (8 -> 3) | 7.00 -> 3.00 (8 -> 3) | 6.50 -> 3.00 (8 -> 3) | 7.08 -> 2.83 (8 -> 3) | 6.24 -> 2.89 (9 -> 3) | 1.06 |
+| bounty 3v3 (120 -> 120) | 7.58 -> 2.92 (9 -> 3) | 7.67 -> 3.00 (9 -> 3) | 8.33 -> 3.00 (10 -> 3) | 7.92 -> 3.00 (9 -> 3) | 8.75 -> 2.83 (10 -> 3) | 7.10 -> 2.88 (10 -> 3) | 1.06 |
+| royale 1v1 (53 -> 60) | 3.67 -> 2.92 (5 -> 3) | 4.92 -> 3.00 (6 -> 3) | 5.25 -> 3.00 (7 -> 3) | 4.83 -> 3.00 (7 -> 3) | 4.58 -> 2.92 (6 -> 3) | 2.69 -> 2.52 (6 -> 3) | 1.03 |
+| boss 1v1 (52 -> 69) | 5.17 -> 3.00 (6 -> 3) | 4.83 -> 2.92 (5 -> 3) | 3.92 -> 2.92 (5 -> 3) | 3.67 -> 2.92 (4 -> 3) | 2.83 -> 1.92 (4 -> 3) | 0.00 -> 0.00 (0 -> 0) | 1.56 |
+| boss 2v2 (70 -> 90) | 5.67 -> 3.00 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 4.92 -> 3.00 (6 -> 3) | 4.08 -> 2.58 (5 -> 3) | 3.63 -> 2.47 (6 -> 3) | 1.16 |
+| boss 3v3 (75 -> 95) | 5.42 -> 3.00 (8 -> 3) | 5.75 -> 2.92 (7 -> 3) | 5.92 -> 3.00 (7 -> 3) | 5.00 -> 3.00 (6 -> 3) | 4.58 -> 2.75 (6 -> 3) | 4.11 -> 2.47 (7 -> 3) | 1.09 |
+| **all modes** | **5.61 -> 2.87** (17 -> 3) | **5.76 -> 2.77** (16 -> 3) | **5.80 -> 2.75** (16 -> 3) | **5.37 -> 2.76** (18 -> 3) | **5.15 -> 2.50** (15 -> 3) | **5.59 -> 2.75** (17 -> 3) | **1.15** |
+| supers' share of the damage the pilot dealt | 29% -> 12% | 33% -> 14% | 37% -> 16% | 44% -> 19% | 55% -> 26% | 32% -> 13% | |
+| hull removed per super | 281 -> 203 | 380 -> 282 | 541 -> 418 | 963 -> 671 | 1715 -> 1313 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 3.0 + 1.5 | 3.0 + 1.3 | 2.9 + 1.1 | 2.7 + 1.1 | 2.3 + 1.0 | 2.6 + 1.5 | dealt 69% |
+
+**owner** (pilot: standard; 960 matches before, 960 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | legend @Lunar Legend | legend @Elite | legend @Veteran | legend @Rookie | stock @Rookie | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|
+| arena 1v1 (19 -> 20) | 1.56 -> 1.77 (2 -> 3) | 1.54 -> 1.46 (2 -> 2) | 1.21 -> 1.04 (2 -> 2) | 1.21 -> 1.00 (2 -> 1) | 1.82 -> 2.56 (2 -> 3) | 0.96 -> 1.44 (2 -> 3) | 2.56 |
+| arena 2v2 (37 -> 43) | 2.75 -> 2.67 (4 -> 3) | 2.83 -> 2.75 (5 -> 3) | 3.17 -> 2.08 (4 -> 3) | 2.92 -> 1.92 (4 -> 3) | 3.58 -> 3.00 (4 -> 3) | 2.11 -> 2.50 (4 -> 3) | 1.56 |
+| arena 3v3 (56 -> 75) | 4.75 -> 2.67 (7 -> 3) | 5.50 -> 2.83 (7 -> 3) | 4.83 -> 1.92 (6 -> 2) | 5.00 -> 1.67 (7 -> 2) | 5.92 -> 3.00 (7 -> 3) | 3.30 -> 2.46 (7 -> 3) | 1.80 |
+| zone 1v1 (87 -> 90) | 6.00 -> 2.83 (8 -> 3) | 4.25 -> 2.75 (6 -> 3) | 4.33 -> 1.92 (6 -> 3) | 5.83 -> 1.67 (11 -> 2) | 5.33 -> 2.83 (7 -> 3) | 4.08 -> 2.58 (8 -> 3) | 1.69 |
+| zone 2v2 (104 -> 120) | 9.33 -> 2.83 (13 -> 3) | 7.92 -> 2.92 (13 -> 3) | 8.00 -> 2.58 (11 -> 3) | 7.83 -> 2.42 (11 -> 3) | 8.42 -> 3.00 (10 -> 3) | 6.17 -> 2.69 (12 -> 3) | 1.24 |
+| zone 3v3 (118 -> 154) | 11.75 -> 3.00 (16 -> 3) | 11.75 -> 2.92 (17 -> 3) | 10.08 -> 2.83 (13 -> 3) | 10.33 -> 2.67 (15 -> 3) | 13.08 -> 3.00 (17 -> 3) | 7.91 -> 2.81 (16 -> 3) | 1.12 |
+| crystal 1v1 (92 -> 94) | 5.08 -> 2.75 (8 -> 3) | 4.42 -> 2.75 (7 -> 3) | 5.00 -> 2.50 (7 -> 3) | 4.08 -> 1.83 (7 -> 3) | 4.67 -> 2.83 (7 -> 3) | 3.75 -> 2.58 (6 -> 3) | 1.55 |
+| crystal 2v2 (96 -> 101) | 5.92 -> 2.92 (9 -> 3) | 5.75 -> 2.50 (8 -> 3) | 6.42 -> 2.42 (10 -> 3) | 6.50 -> 2.58 (9 -> 3) | 6.33 -> 2.75 (9 -> 3) | 4.93 -> 2.78 (10 -> 3) | 1.21 |
+| crystal 3v3 (99 -> 99) | 7.92 -> 2.75 (12 -> 3) | 8.00 -> 2.58 (14 -> 3) | 7.67 -> 2.42 (12 -> 3) | 8.17 -> 2.17 (11 -> 3) | 6.50 -> 2.50 (10 -> 3) | 6.16 -> 2.80 (12 -> 3) | 1.27 |
+| bounty 1v1 (120 -> 120) | 6.42 -> 2.83 (7 -> 3) | 6.25 -> 2.92 (8 -> 3) | 8.58 -> 2.75 (10 -> 3) | 9.92 -> 2.58 (12 -> 3) | 4.92 -> 2.92 (7 -> 3) | 5.13 -> 2.77 (7 -> 3) | 1.13 |
+| bounty 2v2 (120 -> 120) | 8.67 -> 3.00 (11 -> 3) | 9.08 -> 3.00 (11 -> 3) | 11.00 -> 2.92 (13 -> 3) | 12.00 -> 3.00 (15 -> 3) | 6.67 -> 3.00 (8 -> 3) | 6.55 -> 2.91 (10 -> 3) | 1.03 |
+| bounty 3v3 (120 -> 120) | 10.50 -> 3.00 (13 -> 3) | 10.83 -> 3.00 (13 -> 3) | 13.50 -> 3.00 (16 -> 3) | 15.25 -> 3.00 (18 -> 3) | 7.58 -> 2.92 (9 -> 3) | 7.29 -> 2.85 (11 -> 3) | 1.03 |
+| royale 1v1 (45 -> 55) | 5.33 -> 2.92 (7 -> 3) | 5.67 -> 2.75 (7 -> 3) | 5.67 -> 2.67 (8 -> 3) | 5.50 -> 2.58 (7 -> 3) | 3.67 -> 2.92 (5 -> 3) | 2.21 -> 2.35 (5 -> 3) | 1.13 |
+| boss 1v1 (34 -> 51) | 2.75 -> 2.25 (3 -> 3) | 2.75 -> 2.08 (4 -> 3) | 2.17 -> 1.42 (3 -> 2) | 2.00 -> 1.17 (2 -> 2) | 5.17 -> 3.00 (6 -> 3) | 0.00 -> 0.00 (0 -> 0) | 2.56 |
+| boss 2v2 (48 -> 70) | 4.33 -> 2.92 (5 -> 3) | 4.42 -> 2.58 (5 -> 3) | 3.92 -> 2.00 (5 -> 2) | 3.83 -> 2.08 (5 -> 3) | 5.67 -> 3.00 (7 -> 3) | 2.28 -> 1.80 (6 -> 3) | 1.50 |
+| boss 3v3 (53 -> 78) | 5.17 -> 3.00 (7 -> 3) | 5.25 -> 2.92 (6 -> 3) | 4.75 -> 2.42 (6 -> 3) | 4.83 -> 2.17 (6 -> 3) | 5.42 -> 3.00 (8 -> 3) | 2.60 -> 1.89 (7 -> 3) | 1.38 |
+| **all modes** | **5.85 -> 2.69** (16 -> 3) | **5.75 -> 2.60** (17 -> 3) | **5.97 -> 2.23** (16 -> 3) | **6.26 -> 2.09** (18 -> 3) | **5.61 -> 2.87** (17 -> 3) | **4.79 -> 2.56** (16 -> 3) | **1.37** |
+| supers' share of the damage the pilot dealt | 58% -> 27% | 58% -> 28% | 57% -> 22% | 56% -> 21% | 29% -> 12% | 33% -> 13% | |
+| hull removed per super | 1645 -> 1310 | 1600 -> 1306 | 1351 -> 1093 | 1235 -> 1028 | 281 -> 203 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 2.8 + 1.2 | 2.6 + 1.1 | 2.4 + 0.7 | 2.3 + 0.6 | 3.0 + 1.5 | 2.3 + 1.5 | dealt 72% |
+
+**weapons** (pilot: standard; 1920 matches before, 1920 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | pulse0 | twin0 | siege0 | pulse1 | twin1 | siege1 | pulse2 | twin2 | siege2 | moon | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| arena 1v1 (24 -> 24) | 1.81 -> 2.32 (2 -> 3) | 1.93 -> 2.52 (2 -> 3) | 1.52 -> 2.08 (2 -> 3) | 1.50 -> 1.92 (2 -> 3) | 1.29 -> 2.08 (2 -> 3) | 1.13 -> 1.54 (2 -> 2) | 1.42 -> 1.96 (2 -> 3) | 1.60 -> 2.04 (2 -> 3) | 1.21 -> 1.71 (2 -> 3) | 1.36 -> 1.42 (2 -> 2) | 0.97 -> 1.72 (2 -> 3) | 1.77 |
+| arena 2v2 (49 -> 55) | 3.58 -> 3.00 (4 -> 3) | 3.75 -> 3.00 (5 -> 3) | 3.25 -> 3.00 (4 -> 3) | 3.50 -> 2.92 (4 -> 3) | 3.83 -> 3.00 (5 -> 3) | 3.50 -> 3.00 (5 -> 3) | 2.92 -> 2.92 (5 -> 3) | 3.67 -> 2.92 (5 -> 3) | 3.00 -> 2.92 (4 -> 3) | 2.25 -> 2.25 (3 -> 3) | 2.93 -> 2.92 (5 -> 3) | 1.33 |
+| arena 3v3 (76 -> 94) | 6.00 -> 3.00 (7 -> 3) | 6.67 -> 3.00 (9 -> 3) | 5.92 -> 3.00 (7 -> 3) | 6.00 -> 2.92 (8 -> 3) | 7.42 -> 3.00 (10 -> 3) | 6.17 -> 2.92 (8 -> 3) | 5.75 -> 2.75 (7 -> 3) | 6.08 -> 2.83 (8 -> 3) | 5.25 -> 2.92 (8 -> 3) | 4.75 -> 2.33 (7 -> 3) | 4.45 -> 2.84 (7 -> 3) | 1.29 |
+| zone 1v1 (98 -> 103) | 5.00 -> 2.92 (7 -> 3) | 5.58 -> 2.75 (8 -> 3) | 5.25 -> 2.75 (8 -> 3) | 4.83 -> 2.75 (7 -> 3) | 5.67 -> 2.92 (9 -> 3) | 4.50 -> 2.50 (7 -> 3) | 4.50 -> 2.75 (6 -> 3) | 4.92 -> 2.83 (8 -> 3) | 4.92 -> 2.92 (9 -> 3) | 4.83 -> 2.75 (7 -> 3) | 4.47 -> 2.77 (9 -> 3) | 1.17 |
+| zone 2v2 (127 -> 139) | 9.33 -> 3.00 (11 -> 3) | 9.33 -> 3.00 (14 -> 3) | 8.67 -> 3.00 (14 -> 3) | 8.08 -> 3.00 (10 -> 3) | 8.08 -> 3.00 (12 -> 3) | 8.67 -> 3.00 (13 -> 3) | 8.33 -> 3.00 (11 -> 3) | 8.33 -> 2.92 (11 -> 3) | 8.58 -> 3.00 (11 -> 3) | 8.00 -> 2.67 (13 -> 3) | 7.78 -> 2.93 (14 -> 3) | 1.12 |
+| zone 3v3 (153 -> 171) | 12.58 -> 3.00 (16 -> 3) | 13.17 -> 3.00 (16 -> 3) | 10.58 -> 3.00 (14 -> 3) | 12.58 -> 3.00 (15 -> 3) | 12.08 -> 3.00 (15 -> 3) | 11.25 -> 3.00 (15 -> 3) | 12.83 -> 3.00 (17 -> 3) | 11.00 -> 2.83 (15 -> 3) | 12.50 -> 3.00 (17 -> 3) | 10.83 -> 3.00 (15 -> 3) | 10.33 -> 2.96 (17 -> 3) | 1.06 |
+| crystal 1v1 (95 -> 93) | 4.50 -> 2.83 (7 -> 3) | 4.67 -> 2.83 (7 -> 3) | 4.00 -> 2.67 (6 -> 3) | 3.92 -> 2.67 (6 -> 3) | 3.83 -> 2.58 (6 -> 3) | 3.92 -> 2.67 (5 -> 3) | 4.50 -> 2.67 (11 -> 3) | 3.83 -> 2.67 (7 -> 3) | 4.00 -> 2.83 (7 -> 3) | 4.58 -> 2.58 (6 -> 3) | 3.79 -> 2.73 (10 -> 3) | 1.10 |
+| crystal 2v2 (104 -> 104) | 5.67 -> 2.83 (10 -> 3) | 5.33 -> 2.75 (9 -> 3) | 5.75 -> 2.67 (8 -> 3) | 6.08 -> 2.67 (9 -> 3) | 5.83 -> 2.58 (12 -> 3) | 5.08 -> 2.83 (7 -> 3) | 5.33 -> 2.75 (8 -> 3) | 5.83 -> 2.92 (9 -> 3) | 5.50 -> 2.50 (8 -> 3) | 5.25 -> 2.67 (10 -> 3) | 5.46 -> 2.80 (10 -> 3) | 1.17 |
+| crystal 3v3 (104 -> 105) | 6.75 -> 2.50 (10 -> 3) | 7.42 -> 2.50 (12 -> 3) | 7.00 -> 2.42 (11 -> 3) | 6.67 -> 2.42 (11 -> 3) | 6.83 -> 2.50 (11 -> 3) | 6.50 -> 2.75 (10 -> 3) | 6.00 -> 2.42 (9 -> 3) | 7.00 -> 2.67 (10 -> 3) | 7.17 -> 2.67 (11 -> 3) | 7.08 -> 2.83 (11 -> 3) | 6.62 -> 2.86 (11 -> 3) | 1.17 |
+| bounty 1v1 (120 -> 120) | 5.08 -> 2.83 (6 -> 3) | 5.08 -> 2.83 (6 -> 3) | 5.25 -> 3.00 (7 -> 3) | 5.67 -> 2.92 (6 -> 3) | 5.67 -> 2.67 (6 -> 3) | 5.67 -> 2.83 (7 -> 3) | 5.08 -> 2.92 (7 -> 3) | 5.25 -> 3.00 (7 -> 3) | 5.08 -> 3.00 (6 -> 3) | 5.67 -> 2.67 (7 -> 3) | 4.58 -> 2.81 (7 -> 3) | 1.12 |
+| bounty 2v2 (120 -> 120) | 6.33 -> 3.00 (8 -> 3) | 6.33 -> 3.00 (8 -> 3) | 6.67 -> 2.92 (8 -> 3) | 7.50 -> 2.92 (9 -> 3) | 6.92 -> 2.83 (8 -> 3) | 7.50 -> 3.00 (9 -> 3) | 6.58 -> 2.92 (8 -> 3) | 6.25 -> 3.00 (7 -> 3) | 6.75 -> 2.92 (8 -> 3) | 7.08 -> 2.83 (8 -> 3) | 6.20 -> 2.91 (9 -> 3) | 1.06 |
+| bounty 3v3 (120 -> 120) | 7.50 -> 3.00 (9 -> 3) | 7.50 -> 2.83 (10 -> 3) | 8.00 -> 3.00 (10 -> 3) | 8.33 -> 3.00 (10 -> 3) | 8.00 -> 2.92 (9 -> 3) | 8.00 -> 3.00 (9 -> 3) | 8.08 -> 3.00 (10 -> 3) | 7.50 -> 3.00 (9 -> 3) | 8.33 -> 3.00 (10 -> 3) | 8.75 -> 2.83 (10 -> 3) | 7.02 -> 2.87 (10 -> 3) | 1.06 |
+| royale 1v1 (54 -> 61) | 4.08 -> 2.75 (6 -> 3) | 4.08 -> 2.67 (7 -> 3) | 3.83 -> 2.83 (6 -> 3) | 5.33 -> 2.92 (6 -> 3) | 5.92 -> 3.00 (8 -> 3) | 5.42 -> 2.92 (8 -> 3) | 4.83 -> 3.00 (6 -> 3) | 4.75 -> 2.92 (6 -> 3) | 4.50 -> 3.00 (6 -> 3) | 4.58 -> 2.92 (6 -> 3) | 2.73 -> 2.56 (5 -> 3) | 1.12 |
+| boss 1v1 (57 -> 73) | 4.92 -> 3.00 (6 -> 3) | 6.17 -> 3.00 (7 -> 3) | 4.92 -> 3.00 (5 -> 3) | 4.00 -> 2.83 (5 -> 3) | 5.33 -> 2.92 (6 -> 3) | 4.00 -> 2.75 (5 -> 3) | 3.75 -> 2.83 (4 -> 3) | 5.00 -> 2.92 (6 -> 3) | 3.83 -> 2.67 (4 -> 3) | 2.83 -> 1.92 (4 -> 3) | 0.00 -> 0.00 (0 -> 0) | 1.56 |
+| boss 2v2 (73 -> 92) | 5.50 -> 3.00 (7 -> 3) | 6.83 -> 3.00 (9 -> 3) | 5.67 -> 3.00 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 6.00 -> 2.92 (7 -> 3) | 5.42 -> 3.00 (6 -> 3) | 4.92 -> 3.00 (6 -> 3) | 5.50 -> 3.00 (7 -> 3) | 5.42 -> 3.00 (7 -> 3) | 4.08 -> 2.58 (5 -> 3) | 3.88 -> 2.51 (8 -> 3) | 1.16 |
+| boss 3v3 (78 -> 97) | 5.33 -> 2.92 (7 -> 3) | 5.67 -> 2.92 (8 -> 3) | 6.08 -> 3.00 (7 -> 3) | 5.92 -> 3.00 (7 -> 3) | 6.50 -> 2.92 (8 -> 3) | 6.17 -> 3.00 (7 -> 3) | 5.58 -> 2.92 (7 -> 3) | 6.00 -> 3.00 (7 -> 3) | 5.08 -> 3.00 (6 -> 3) | 4.58 -> 2.75 (6 -> 3) | 4.38 -> 2.45 (8 -> 3) | 1.09 |
+| **all modes** | **5.60 -> 2.83** (16 -> 3) | **5.91 -> 2.82** (16 -> 3) | **5.50 -> 2.79** (14 -> 3) | **5.71 -> 2.75** (15 -> 3) | **5.91 -> 2.76** (15 -> 3) | **5.53 -> 2.72** (15 -> 3) | **5.40 -> 2.74** (17 -> 3) | **5.52 -> 2.79** (15 -> 3) | **5.43 -> 2.75** (17 -> 3) | **5.15 -> 2.50** (15 -> 3) | **5.56 -> 2.76** (17 -> 3) | **1.13** |
+| supers' share of the damage the pilot dealt | 30% -> 12% | 35% -> 14% | 29% -> 12% | 37% -> 16% | 42% -> 16% | 35% -> 15% | 42% -> 18% | 49% -> 22% | 39% -> 17% | 55% -> 26% | 32% -> 12% | |
+| hull removed per super | 312 -> 223 | 311 -> 209 | 326 -> 233 | 540 -> 415 | 556 -> 368 | 570 -> 428 | 866 -> 619 | 954 -> 680 | 907 -> 681 | 1715 -> 1313 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 3.0 + 1.5 | 2.7 + 1.6 | 3.1 + 1.4 | 2.9 + 1.1 | 2.7 + 1.2 | 3.0 + 1.1 | 2.8 + 1.1 | 2.6 + 1.2 | 3.1 + 1.1 | 2.3 + 1.0 | 2.7 + 1.5 | dealt 69% |
+
+**chassis** (pilot: standard; 1728 matches before, 1728 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | stock scout | stock vanguard | stock titan | epic scout | epic vanguard | epic titan | legend scout | legend vanguard | legend titan | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| arena 1v1 (23 -> 24) | 1.77 -> 2.71 (3 -> 3) | 1.82 -> 2.56 (2 -> 3) | 1.44 -> 2.46 (2 -> 3) | 1.48 -> 2.04 (2 -> 3) | 1.54 -> 1.92 (2 -> 3) | 1.48 -> 2.00 (2 -> 3) | 1.36 -> 1.67 (2 -> 3) | 1.17 -> 1.25 (2 -> 2) | 1.50 -> 1.46 (2 -> 2) | 1.09 -> 1.81 (2 -> 3) | 2.17 |
+| arena 2v2 (46 -> 50) | 3.42 -> 3.00 (4 -> 3) | 3.58 -> 3.00 (4 -> 3) | 3.67 -> 3.00 (5 -> 3) | 3.17 -> 3.00 (5 -> 3) | 3.08 -> 2.92 (4 -> 3) | 3.17 -> 2.75 (4 -> 3) | 2.58 -> 2.67 (3 -> 3) | 2.83 -> 2.67 (5 -> 3) | 2.25 -> 2.25 (3 -> 3) | 2.76 -> 2.80 (5 -> 3) | 1.33 |
+| arena 3v3 (72 -> 89) | 5.83 -> 3.00 (8 -> 3) | 5.92 -> 3.00 (7 -> 3) | 6.67 -> 3.00 (8 -> 3) | 6.33 -> 3.00 (8 -> 3) | 5.92 -> 3.00 (8 -> 3) | 5.50 -> 2.75 (8 -> 3) | 5.00 -> 2.75 (6 -> 3) | 5.75 -> 2.58 (7 -> 3) | 4.75 -> 2.33 (7 -> 3) | 4.32 -> 2.81 (7 -> 3) | 1.29 |
+| zone 1v1 (103 -> 104) | 5.50 -> 2.92 (8 -> 3) | 5.33 -> 2.83 (7 -> 3) | 5.17 -> 2.83 (7 -> 3) | 5.33 -> 2.75 (8 -> 3) | 5.08 -> 2.83 (7 -> 3) | 4.92 -> 3.00 (7 -> 3) | 6.50 -> 2.75 (10 -> 3) | 5.92 -> 2.50 (9 -> 3) | 4.83 -> 2.75 (7 -> 3) | 4.81 -> 2.77 (9 -> 3) | 1.20 |
+| zone 2v2 (128 -> 138) | 9.58 -> 3.00 (12 -> 3) | 8.42 -> 3.00 (10 -> 3) | 8.75 -> 3.00 (12 -> 3) | 10.00 -> 3.00 (14 -> 3) | 9.08 -> 3.00 (11 -> 3) | 8.75 -> 2.92 (13 -> 3) | 7.08 -> 3.00 (13 -> 3) | 7.92 -> 2.92 (12 -> 3) | 8.00 -> 2.67 (13 -> 3) | 8.03 -> 2.91 (14 -> 3) | 1.12 |
+| zone 3v3 (152 -> 168) | 12.58 -> 3.00 (15 -> 3) | 13.08 -> 3.00 (17 -> 3) | 12.25 -> 3.00 (15 -> 3) | 12.17 -> 2.92 (15 -> 3) | 12.42 -> 2.92 (17 -> 3) | 12.17 -> 3.00 (18 -> 3) | 12.50 -> 2.75 (18 -> 3) | 12.33 -> 2.92 (16 -> 3) | 10.83 -> 3.00 (15 -> 3) | 10.60 -> 2.94 (17 -> 3) | 1.09 |
+| crystal 1v1 (99 -> 94) | 4.50 -> 2.75 (6 -> 3) | 4.67 -> 2.83 (7 -> 3) | 3.75 -> 2.83 (7 -> 3) | 4.75 -> 2.67 (7 -> 3) | 4.25 -> 2.75 (6 -> 3) | 4.50 -> 2.67 (7 -> 3) | 4.33 -> 2.42 (7 -> 3) | 4.17 -> 2.50 (6 -> 3) | 4.58 -> 2.58 (6 -> 3) | 4.06 -> 2.62 (7 -> 3) | 1.17 |
+| crystal 2v2 (104 -> 102) | 5.58 -> 2.67 (10 -> 3) | 6.33 -> 2.75 (9 -> 3) | 4.92 -> 2.58 (8 -> 3) | 6.00 -> 2.92 (9 -> 3) | 5.50 -> 2.75 (8 -> 3) | 5.25 -> 2.75 (9 -> 3) | 6.00 -> 2.67 (9 -> 3) | 5.58 -> 2.67 (10 -> 3) | 5.25 -> 2.67 (10 -> 3) | 5.62 -> 2.82 (10 -> 3) | 1.13 |
+| crystal 3v3 (103 -> 102) | 6.42 -> 2.83 (10 -> 3) | 6.50 -> 2.50 (10 -> 3) | 6.00 -> 2.67 (10 -> 3) | 7.25 -> 2.83 (11 -> 3) | 7.92 -> 2.67 (12 -> 3) | 6.83 -> 2.42 (10 -> 3) | 6.83 -> 2.42 (11 -> 3) | 6.83 -> 2.50 (9 -> 3) | 7.08 -> 2.83 (11 -> 3) | 6.66 -> 2.84 (12 -> 3) | 1.17 |
+| bounty 1v1 (120 -> 120) | 4.75 -> 3.00 (6 -> 3) | 4.92 -> 2.92 (7 -> 3) | 4.58 -> 3.00 (6 -> 3) | 5.50 -> 3.00 (7 -> 3) | 4.83 -> 3.00 (7 -> 3) | 4.75 -> 3.00 (6 -> 3) | 5.83 -> 2.92 (7 -> 3) | 5.50 -> 2.75 (7 -> 3) | 5.67 -> 2.67 (7 -> 3) | 4.63 -> 2.82 (6 -> 3) | 1.12 |
+| bounty 2v2 (120 -> 120) | 6.42 -> 3.00 (8 -> 3) | 6.67 -> 3.00 (8 -> 3) | 5.83 -> 2.92 (7 -> 3) | 7.17 -> 3.00 (9 -> 3) | 6.92 -> 2.92 (8 -> 3) | 6.50 -> 3.00 (8 -> 3) | 8.42 -> 3.00 (10 -> 3) | 7.83 -> 2.83 (9 -> 3) | 7.08 -> 2.83 (8 -> 3) | 6.25 -> 2.93 (10 -> 3) | 1.06 |
+| bounty 3v3 (120 -> 120) | 7.92 -> 3.00 (10 -> 3) | 7.58 -> 2.92 (9 -> 3) | 7.08 -> 3.00 (10 -> 3) | 8.58 -> 3.00 (11 -> 3) | 8.25 -> 2.92 (10 -> 3) | 7.92 -> 3.00 (9 -> 3) | 8.50 -> 2.92 (10 -> 3) | 9.25 -> 2.83 (10 -> 3) | 8.75 -> 2.83 (10 -> 3) | 7.26 -> 2.87 (11 -> 3) | 1.06 |
+| royale 1v1 (53 -> 60) | 4.75 -> 2.92 (6 -> 3) | 3.67 -> 2.92 (5 -> 3) | 4.08 -> 2.92 (6 -> 3) | 5.25 -> 3.00 (8 -> 3) | 5.17 -> 2.92 (7 -> 3) | 4.83 -> 3.00 (7 -> 3) | 5.00 -> 2.92 (6 -> 3) | 5.42 -> 2.92 (8 -> 3) | 4.58 -> 2.92 (6 -> 3) | 2.74 -> 2.56 (6 -> 3) | 1.03 |
+| boss 1v1 (52 -> 69) | 4.58 -> 2.92 (6 -> 3) | 5.17 -> 3.00 (6 -> 3) | 5.17 -> 3.00 (6 -> 3) | 4.08 -> 2.58 (5 -> 3) | 4.00 -> 2.50 (5 -> 3) | 3.67 -> 2.92 (4 -> 3) | 2.92 -> 2.00 (5 -> 3) | 3.08 -> 1.83 (4 -> 2) | 2.83 -> 1.92 (4 -> 3) | 0.00 -> 0.00 (0 -> 0) | 1.64 |
+| boss 2v2 (67 -> 87) | 6.50 -> 3.00 (8 -> 3) | 5.67 -> 3.00 (7 -> 3) | 5.50 -> 3.00 (8 -> 3) | 5.08 -> 2.92 (6 -> 3) | 5.08 -> 3.00 (6 -> 3) | 4.92 -> 3.00 (6 -> 3) | 4.42 -> 2.42 (5 -> 3) | 4.17 -> 2.67 (5 -> 3) | 4.08 -> 2.58 (5 -> 3) | 3.48 -> 2.37 (8 -> 3) | 1.24 |
+| boss 3v3 (72 -> 92) | 5.75 -> 3.00 (7 -> 3) | 5.42 -> 3.00 (8 -> 3) | 6.08 -> 3.00 (8 -> 3) | 5.58 -> 3.00 (7 -> 3) | 5.42 -> 2.92 (7 -> 3) | 5.00 -> 3.00 (6 -> 3) | 5.00 -> 2.83 (6 -> 3) | 4.50 -> 2.58 (5 -> 3) | 4.58 -> 2.75 (6 -> 3) | 3.85 -> 2.38 (7 -> 3) | 1.16 |
+| **all modes** | **5.63 -> 2.90** (15 -> 3) | **5.61 -> 2.87** (17 -> 3) | **5.38 -> 2.86** (15 -> 3) | **5.73 -> 2.80** (15 -> 3) | **5.65 -> 2.75** (17 -> 3) | **5.37 -> 2.76** (18 -> 3) | **5.49 -> 2.57** (18 -> 3) | **5.50 -> 2.48** (16 -> 3) | **5.15 -> 2.50** (15 -> 3) | **5.60 -> 2.74** (17 -> 3) | **1.17** |
+| supers' share of the damage the pilot dealt | 30% -> 12% | 29% -> 12% | 28% -> 12% | 42% -> 18% | 43% -> 19% | 44% -> 19% | 56% -> 25% | 55% -> 25% | 55% -> 26% | 34% -> 13% | |
+| hull removed per super | 290 -> 203 | 281 -> 203 | 291 -> 219 | 820 -> 604 | 890 -> 648 | 963 -> 671 | 1637 -> 1227 | 1607 -> 1249 | 1707 -> 1318 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 3.1 + 1.5 | 3.0 + 1.5 | 3.1 + 1.4 | 2.8 + 1.3 | 2.7 + 1.2 | 2.7 + 1.1 | 2.4 + 1.1 | 2.3 + 1.1 | 2.3 + 1.0 | 2.6 + 1.5 | dealt 68% |
+
+**reactor** (pilot: standard; 1152 matches before, 1152 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | rare reactor 0 | rare reactor 2 | rare reactor 4 | legend reactor 0 | legend reactor 2 | legend reactor 4 | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|---|
+| arena 1v1 (20 -> 20) | 1.38 -> 1.67 (2 -> 2) | 1.54 -> 2.00 (2 -> 3) | 1.88 -> 2.13 (3 -> 3) | 1.33 -> 1.54 (2 -> 2) | 1.35 -> 1.42 (2 -> 3) | 1.67 -> 2.20 (3 -> 3) | 0.92 -> 1.53 (2 -> 2) | 1.55 |
+| arena 2v2 (42 -> 50) | 3.58 -> 3.00 (5 -> 3) | 4.33 -> 3.00 (5 -> 3) | 4.25 -> 3.00 (5 -> 3) | 2.75 -> 2.50 (4 -> 3) | 3.00 -> 3.00 (4 -> 3) | 3.42 -> 2.75 (5 -> 3) | 2.59 -> 2.82 (5 -> 3) | 1.20 |
+| arena 3v3 (67 -> 90) | 6.25 -> 3.00 (8 -> 3) | 7.17 -> 3.00 (9 -> 3) | 8.17 -> 3.00 (11 -> 3) | 4.67 -> 2.42 (6 -> 3) | 5.50 -> 2.58 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 4.12 -> 2.78 (7 -> 3) | 1.24 |
+| zone 1v1 (95 -> 93) | 5.42 -> 2.83 (8 -> 3) | 5.33 -> 3.00 (10 -> 3) | 7.17 -> 2.92 (12 -> 3) | 5.33 -> 2.50 (8 -> 3) | 5.92 -> 2.75 (10 -> 3) | 6.17 -> 2.92 (9 -> 3) | 4.61 -> 2.64 (9 -> 3) | 1.20 |
+| zone 2v2 (115 -> 135) | 8.08 -> 2.92 (10 -> 3) | 10.17 -> 3.00 (16 -> 3) | 11.67 -> 3.00 (16 -> 3) | 7.67 -> 2.83 (9 -> 3) | 7.67 -> 2.75 (11 -> 3) | 10.33 -> 2.92 (16 -> 3) | 7.32 -> 2.89 (12 -> 3) | 1.09 |
+| zone 3v3 (139 -> 164) | 11.50 -> 2.92 (17 -> 3) | 14.50 -> 3.00 (18 -> 3) | 15.25 -> 3.00 (22 -> 3) | 11.00 -> 2.58 (15 -> 3) | 11.67 -> 3.00 (17 -> 3) | 15.08 -> 2.92 (20 -> 3) | 9.84 -> 2.88 (18 -> 3) | 1.16 |
+| crystal 1v1 (93 -> 93) | 3.67 -> 2.83 (6 -> 3) | 5.25 -> 2.75 (9 -> 3) | 4.58 -> 2.75 (8 -> 3) | 4.17 -> 2.75 (6 -> 3) | 5.42 -> 2.75 (10 -> 3) | 4.83 -> 2.75 (7 -> 3) | 3.88 -> 2.72 (9 -> 3) | 1.03 |
+| crystal 2v2 (97 -> 100) | 5.33 -> 2.67 (8 -> 3) | 6.58 -> 2.83 (9 -> 3) | 6.75 -> 2.83 (10 -> 3) | 5.17 -> 2.67 (9 -> 3) | 6.25 -> 2.67 (9 -> 3) | 6.67 -> 2.75 (10 -> 3) | 5.18 -> 2.72 (9 -> 3) | 1.06 |
+| crystal 3v3 (101 -> 103) | 6.50 -> 2.42 (9 -> 3) | 7.83 -> 2.67 (12 -> 3) | 9.00 -> 2.67 (13 -> 3) | 7.08 -> 2.50 (11 -> 3) | 7.42 -> 2.58 (12 -> 3) | 10.08 -> 2.75 (16 -> 3) | 6.69 -> 2.84 (15 -> 3) | 1.14 |
+| bounty 1v1 (120 -> 120) | 5.67 -> 3.00 (8 -> 3) | 6.50 -> 3.00 (8 -> 3) | 7.42 -> 3.00 (9 -> 3) | 5.50 -> 2.50 (7 -> 3) | 6.08 -> 3.00 (8 -> 3) | 7.17 -> 3.00 (9 -> 3) | 4.67 -> 2.71 (6 -> 3) | 1.20 |
+| bounty 2v2 (120 -> 120) | 6.83 -> 3.00 (8 -> 3) | 8.08 -> 3.00 (9 -> 3) | 9.92 -> 2.92 (11 -> 3) | 7.08 -> 3.00 (9 -> 3) | 9.00 -> 3.00 (11 -> 3) | 9.83 -> 3.00 (11 -> 3) | 6.50 -> 2.91 (9 -> 3) | 1.03 |
+| bounty 3v3 (120 -> 120) | 8.08 -> 3.00 (10 -> 3) | 9.58 -> 3.00 (11 -> 3) | 11.50 -> 3.00 (13 -> 3) | 8.33 -> 2.92 (10 -> 3) | 10.00 -> 3.00 (12 -> 3) | 11.75 -> 3.00 (13 -> 3) | 7.46 -> 2.88 (11 -> 3) | 1.03 |
+| royale 1v1 (52 -> 63) | 5.00 -> 3.00 (6 -> 3) | 6.58 -> 3.00 (8 -> 3) | 6.83 -> 3.00 (8 -> 3) | 4.58 -> 2.83 (6 -> 3) | 4.92 -> 2.83 (7 -> 3) | 6.00 -> 3.00 (9 -> 3) | 2.65 -> 2.53 (6 -> 3) | 1.06 |
+| boss 1v1 (39 -> 55) | 4.17 -> 2.75 (5 -> 3) | 4.50 -> 2.83 (5 -> 3) | 4.67 -> 3.00 (5 -> 3) | 2.58 -> 2.08 (3 -> 3) | 3.08 -> 2.33 (4 -> 3) | 3.25 -> 2.50 (4 -> 3) | 0.00 -> 0.00 (0 -> 0) | 1.44 |
+| boss 2v2 (56 -> 79) | 5.75 -> 3.00 (7 -> 3) | 6.50 -> 3.00 (8 -> 3) | 7.08 -> 3.00 (8 -> 3) | 4.25 -> 2.58 (6 -> 3) | 4.42 -> 2.92 (6 -> 3) | 4.83 -> 3.00 (6 -> 3) | 2.72 -> 2.18 (4 -> 3) | 1.16 |
+| boss 3v3 (61 -> 84) | 6.58 -> 3.00 (8 -> 3) | 6.67 -> 3.00 (8 -> 3) | 8.00 -> 3.00 (10 -> 3) | 4.75 -> 2.58 (5 -> 3) | 5.33 -> 3.00 (6 -> 3) | 5.67 -> 3.00 (7 -> 3) | 3.25 -> 2.12 (6 -> 3) | 1.16 |
+| **all modes** | **5.60 -> 2.75** (17 -> 3) | **6.63 -> 2.83** (18 -> 3) | **7.41 -> 2.84** (22 -> 3) | **5.15 -> 2.49** (15 -> 3) | **5.74 -> 2.65** (17 -> 3) | **6.71 -> 2.80** (20 -> 3) | **5.39 -> 2.69** (18 -> 3) | **1.14** |
+| supers' share of the damage the pilot dealt | 37% -> 16% | 42% -> 17% | 46% -> 17% | 54% -> 24% | 58% -> 27% | 63% -> 28% | 36% -> 14% | |
+| hull removed per super | 555 -> 421 | 562 -> 435 | 564 -> 422 | 1696 -> 1179 | 1640 -> 1266 | 1703 -> 1267 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 2.8 + 1.2 | 3.4 + 1.4 | 4.0 + 1.5 | 2.3 + 1.0 | 2.7 + 1.2 | 3.1 + 1.4 | 2.5 + 1.5 | dealt 70% |
+
+**ladder** (pilot: human; 960 matches before, 960 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | stock | common | rare | epic | legend | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|
+| arena 1v1 (37 -> 35) | 0.92 -> 1.00 (1 -> 1) | 0.96 -> 1.00 (1 -> 1) | 1.00 -> 1.00 (1 -> 1) | 0.88 -> 1.00 (1 -> 1) | 1.25 -> 1.24 (2 -> 3) | 1.27 -> 2.36 (3 -> 3) | 1.24 |
+| arena 2v2 (63 -> 66) | 2.25 -> 2.33 (3 -> 3) | 2.33 -> 2.25 (4 -> 3) | 2.50 -> 2.42 (4 -> 3) | 2.42 -> 2.42 (4 -> 3) | 1.92 -> 1.75 (3 -> 3) | 3.21 -> 2.95 (5 -> 3) | 1.38 |
+| arena 3v3 (83 -> 100) | 3.33 -> 1.92 (5 -> 3) | 3.42 -> 1.92 (5 -> 3) | 3.67 -> 1.92 (6 -> 3) | 3.42 -> 1.67 (5 -> 3) | 3.50 -> 1.67 (6 -> 3) | 4.70 -> 2.86 (8 -> 3) | 1.15 |
+| zone 1v1 (96 -> 96) | 1.92 -> 1.42 (4 -> 2) | 2.50 -> 1.58 (5 -> 3) | 2.33 -> 1.33 (5 -> 3) | 2.00 -> 1.25 (4 -> 3) | 2.58 -> 1.50 (4 -> 3) | 3.40 -> 2.60 (7 -> 3) | 1.26 |
+| zone 2v2 (131 -> 132) | 5.00 -> 1.33 (8 -> 3) | 4.83 -> 1.58 (10 -> 3) | 4.75 -> 1.58 (7 -> 3) | 4.67 -> 1.50 (6 -> 2) | 4.75 -> 1.67 (7 -> 3) | 7.86 -> 2.92 (13 -> 3) | 1.26 |
+| zone 3v3 (153 -> 168) | 6.92 -> 1.67 (10 -> 3) | 6.92 -> 1.75 (11 -> 3) | 6.75 -> 1.58 (11 -> 3) | 7.17 -> 1.67 (11 -> 3) | 6.58 -> 1.67 (10 -> 3) | 10.39 -> 2.99 (16 -> 3) | 1.11 |
+| crystal 1v1 (94 -> 95) | 1.75 -> 1.42 (3 -> 2) | 2.00 -> 1.67 (4 -> 3) | 1.75 -> 1.50 (4 -> 3) | 1.50 -> 1.25 (4 -> 2) | 1.75 -> 1.58 (4 -> 3) | 2.65 -> 2.73 (5 -> 3) | 1.34 |
+| crystal 2v2 (103 -> 101) | 4.08 -> 2.08 (8 -> 3) | 3.58 -> 2.00 (8 -> 3) | 3.42 -> 2.25 (7 -> 3) | 3.33 -> 2.17 (6 -> 3) | 3.67 -> 2.00 (6 -> 3) | 5.58 -> 2.93 (10 -> 3) | 1.13 |
+| crystal 3v3 (103 -> 103) | 4.17 -> 1.75 (7 -> 3) | 4.33 -> 1.75 (7 -> 3) | 4.58 -> 1.42 (7 -> 3) | 3.67 -> 1.67 (7 -> 3) | 3.92 -> 1.42 (6 -> 3) | 6.36 -> 2.77 (11 -> 3) | 1.23 |
+| bounty 1v1 (120 -> 120) | 3.25 -> 2.17 (4 -> 3) | 3.33 -> 2.17 (5 -> 3) | 3.17 -> 2.00 (4 -> 3) | 3.00 -> 1.92 (5 -> 3) | 2.75 -> 2.08 (5 -> 3) | 4.48 -> 2.88 (7 -> 3) | 1.13 |
+| bounty 2v2 (120 -> 120) | 4.25 -> 2.33 (5 -> 3) | 3.92 -> 2.08 (6 -> 3) | 3.83 -> 2.00 (6 -> 3) | 3.33 -> 1.83 (5 -> 3) | 3.58 -> 2.00 (5 -> 3) | 6.19 -> 2.98 (9 -> 3) | 1.27 |
+| bounty 3v3 (120 -> 120) | 4.50 -> 2.00 (6 -> 3) | 4.75 -> 2.00 (7 -> 3) | 4.58 -> 2.00 (7 -> 3) | 3.67 -> 1.67 (5 -> 3) | 4.00 -> 1.50 (6 -> 2) | 7.01 -> 2.85 (10 -> 3) | 1.33 |
+| royale 1v1 (60 -> 68) | 2.17 -> 1.50 (3 -> 3) | 2.33 -> 1.50 (3 -> 3) | 2.50 -> 2.00 (4 -> 3) | 2.67 -> 1.92 (4 -> 3) | 3.00 -> 1.75 (5 -> 3) | 2.99 -> 2.59 (6 -> 3) | 1.33 |
+| boss 1v1 (109 -> 119) | 2.67 -> 2.50 (5 -> 3) | 3.08 -> 2.58 (5 -> 3) | 3.17 -> 2.58 (5 -> 3) | 2.75 -> 2.42 (5 -> 3) | 2.75 -> 2.08 (4 -> 3) | 0.00 -> 0.00 (0 -> 0) | 1.24 |
+| boss 2v2 (133 -> 150) | 1.17 -> 1.75 (2 -> 2) | 1.25 -> 1.67 (2 -> 2) | 1.08 -> 1.75 (2 -> 2) | 1.00 -> 1.83 (2 -> 2) | 1.25 -> 1.83 (2 -> 2) | 8.73 -> 3.00 (12 -> 3) | 1.10 |
+| boss 3v3 (102 -> 122) | 2.42 -> 2.25 (5 -> 3) | 2.58 -> 2.33 (5 -> 3) | 3.17 -> 2.25 (5 -> 3) | 2.25 -> 2.17 (4 -> 3) | 2.42 -> 2.00 (4 -> 3) | 5.95 -> 2.83 (11 -> 3) | 1.17 |
+| **all modes** | **3.04 -> 1.79** (10 -> 3) | **3.12 -> 1.81** (11 -> 3) | **3.13 -> 1.80** (11 -> 3) | **2.86 -> 1.73** (11 -> 3) | **2.90 -> 1.69** (10 -> 3) | **5.75 -> 2.83** (16 -> 3) | **1.07** |
+| supers' share of the damage the pilot dealt | 44% -> 24% | 46% -> 25% | 49% -> 27% | 58% -> 34% | 65% -> 41% | 31% -> 12% | |
+| hull removed per super | 288 -> 221 | 380 -> 280 | 561 -> 408 | 978 -> 716 | 1781 -> 1365 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 0.8 + 1.6 | 0.9 + 1.6 | 0.9 + 1.5 | 0.8 + 1.5 | 0.8 + 1.4 | 3.0 + 1.3 | dealt 36% |
+
+**Reading the tables.**
+- **About 3 a round, never more than 3:** every kit, weapon and chassis lands at 2.48-2.90 a round with the game's own
+  turret accuracy (1v1 Arena 1.42-2.56, average 1.95, on rounds of 24 s); the most anyone fired in one round fell from
+  18 to 3, for the pilot and for every AI pilot (5.59 -> 2.75 a round).
+- **Gear:** at equal Reactor levels the Legendary kit fires 2.50 against a stock tank's 2.87 (x0.87); highest /
+  lowest across the ladder x1.15, across the ten weapons x1.13, across the nine chassis x1.17. The best gear is never ahead of
+  the lowest by more than 1.2x in any mode; where the ratio column is above 1.2 (1v1 Arena, Survival 1v1, the stress columns
+  of the owner table) it is the STOCK tank that is ahead, because a top kit ends those rounds in seconds (decision 8).
+- **The owner's case** (his kit, Reactor 2, in his own league): 5.85 -> 2.69 a round overall; Arena 3v3 4.75 -> 2.67;
+  Bounty 3v3 against Rookie AI 15.25 -> 3.00 (a stock tank there: 7.58 -> 2.92). The Veteran and Rookie columns are a
+  stress case: the league follows power, so that kit cannot meet that AI in play.
+- **Reactor:** still worth having: the Legendary kit goes 2.49 / 2.65 / 2.80 at Reactor 0 / 2 / 4, the Rare kit 2.75 / 2.83 /
+  2.84 (the cap holds it at 3).
+- **Supers' share of a pilot's damage:** 29% -> 12% on a stock tank, 55% -> 26% on the Legendary kit at Reactor 0, 58% -> 27%
+  on the owner's kit, 43% -> 19% overall. Hull removed per super: stock 281 -> 203, the owner's kit 1645 -> 1310
+  (the 22.5% cut, the lower cap, slightly fewer jackpots at the faster bar).
+- **Charge sources as measured:** 69% from damage dealt, 31% from damage received for the standard pilot (3.99 bars offered a
+  round before the cap); the low-accuracy pilot charges mostly from damage received, a top kit against weak AI mostly from
+  damage dealt.
+- **Lower bound:** the low-accuracy "human" stand-in (a third of the hits) goes 3.01 -> 1.76 a round. A real phone aims by
+  itself, and the owner's own count (7-8 in a 3v3 match) matches the standard stand-in's on main (5.9, up to 10), not the
+  low-accuracy one's (3.3), so the standard stand-in is the one the tuning follows; a pilot who rarely gets shots off will
+  see about 2 a round.
+
+### Timing bar: hit rates at the old and the new speed (`dev/tests/super-tap-rates.mjs`, `docs/supers-5e2b2b/tap-rates.json`)
+Drawn on the real bar (200,000 taps a cell). People: a timing error of sqrt(45 ms^2 + (0.09 x sweep)^2), a fixed part (finger
+and touch-screen jitter) plus a part that follows the marker's speed; at 1.0 s it gives the 0.10 of the sweep that Checkpoint
+33's tables were measured with. Careful = 0.7x that spread, casual = 1.5x. **A model, not a measurement of real people.**
+
+| Sweep | Careful: miss / hit / jackpot | Average | Casual | Jackpot window | Frames inside the jackpot (60 / 30 fps) | Jackpot comes after the press |
+|---|---|---|---|---|---|---|
+| 1.0 s (before) | 5.5 / 51.3 / 43.2% | 13.2 / 55.7 / 31.1% | 27.3 / 51.7 / 21.0% | 80 ms | 4.8 / 2.4 | 430-850 ms |
+| 0.8 s (1.25x) | 6.3 / 52.4 / 41.3% | 14.7 / 55.7 / 29.6% | 29.5 / 50.6 / 19.9% | 64 ms | 3.8 / 1.9 | 408-728 ms |
+| **0.667 s (1.5x, shipped)** | **7.4 / 53.5 / 39.1%** | **16.5 / 55.5 / 28.0%** | **31.9 / 49.2 / 18.8%** | **53 ms** | **3.2 / 1.6** | **340-607 ms** |
+| 0.5 s (2x) | 10.0 / 55.1 / 34.9% | 20.7 / 54.4 / 24.9% | 37.1 / 46.2 / 16.7% | 40 ms | 2.4 / 1.2 | 255-455 ms |
+
+- An average person's supers average x1.03 damage at the old speed and x1.01 at the new one (0.65 / 1 / 1.25 weighted).
+- **The 65% worst-tap floor is unchanged** (`SUP_OC` 0.65 / 1 / 1.25; `super-timing.mjs` part 1).
+- **AI tap skill by league, miss / hit / jackpot, before -> after** (their spread x1.125, the later zone): Rookie 46.8 / 39.9 /
+  13.2 -> 51.6 / 36.6 / 11.8%; Pilot 41.2 / 43.6 / 15.2 -> 45.9 / 40.5 / 13.6%; Veteran 34.6 / 47.7 / 17.7 -> 39.1 / 45.0 /
+  15.9%; Ace 29.7 / 50.5 / 19.8 -> 34.6 / 47.7 / 17.7%; Elite 24.3 / 53.0 / 22.7 -> 29.2 / 50.7 / 20.1%; Master 21.5 / 54.2 /
+  24.4 -> 26.0 / 52.3 / 21.7%; Lunar Legend 18.7 / 55.0 / 26.3 -> 22.9 / 53.7 / 23.5%. Every league still jackpots less often
+  than an average person (28%) and none is perfect.
+
+### Super visuals (Arcade and live matches; Conquest's supers are the 5E-2b code, word for word)
+**Owner messages during the session (Nov 13), all built in:** (a) Moonfall's jackpot: the red electricity must spark off the blue
+beam and look like real electricity, no ring or circle going round the beam (this replaced an earlier "wrap around the beam");
+(b) the Super level from the timing bar is concentration and richness, not mainly size; (c) rarity must read: rare stronger
+than common, epic than rare, Moonfall the most intricate and unique; (d) Conquest supers stay completely unchanged.
+
+**How it is built** (`js/fx3d.js` "how a super is staged"; `js/render3d.js` `FXG_FS`):
+- **One glow shader, four looks, still one draw call and one program.** Each quad picks its look: soft glow (as before);
+  *turbulent* (the falloff broken up by flowing noise: fire, smoke and energy clouds are never flat blobs); *shock* (a wave
+  front: a hard bright leading edge with a soft tail, not a hoop); *flow* (a beam body with streaks of energy racing along it).
+  Reduced motion holds the shader's clock still.
+- **New drawing tools:** soft round ends on every ribbon (no hard-edged slabs), lightning with a three-octave path, a
+  tapering stroke, a white-hot core and tapered forks (never a ruler zig-zag), flame and smoke as billowing sprites.
+- **Staging:** anticipation (the charge-up, now with the rarity's sigil gathering under the tank), a 2-3 frame flash, the body
+  with ONE primary shape carrying the brightest and sharpest edge, then a long dissipation (the beam narrows to a thread,
+  embers shed along it, a mark stays on the ground).
+- **Super level (owner b).** Size steps only a little: x0.8 / x1 / x1.15 (it was x0.62 / x1 / x1.38), so a drawn radius stays
+  close to the radius that really hits and nothing grows until it looks ridiculous. What changes with the level:
+  - *miss*: diffuse. Beams: a wide dim halo, a washed body, a soft core that sputters and loses its hold towards the far end.
+    Waves: a thin, faint front that rolls out slowly. Blasts: dim fire under more smoke, no flash rays. The fewest effects.
+  - *hit*: focused: a defined core and the super's own structures.
+  - *jackpot*: concentrated: the halo pulls in, the core is narrower and white-hot with a white needle down its middle; waves
+    snap out faster with a thick bright front and a second hard edge behind it; blasts get a white-hot heart and an extra
+    sharp front; and each super's own jackpot effects (below).
+- **Rarity (owner c): intricacy, not size.** One mark every family shares makes the ladder readable at a glance: the **sigil**
+  on the ground under the tank (and where a shell lands): common none; rare a broken ring with six ticks; epic two rings
+  turning against each other, eight spokes and four diamonds; legendary the lunar sigil (three rings, twelve marks, six
+  turning arcs, the eight phases of the moon, three orbiting motes). And per family:
+
+  | | Common: ONE structure + one accent | Rare: + a second structure, a second colour | Epic: + a third layer of ornament |
+  |---|---|---|---|
+  | Pulse (beam) | Pierce Lance: rail + shock diamonds (jackpot: two sonic fronts) | Arc Lance: + a lightning coil round the beam (jackpot: chain lightning to the ground) | Sunlance: + muzzle star, weaving solar filaments, prominences, heat chevrons (jackpot: flame columns) |
+  | Twin (wave) | Static Nova: jagged front + static, four short spokes (jackpot: a second front, forked spokes) | Storm Nova: + storm cloud and spiral arms, lightning flickering inside (jackpot: strikes from the sky) | Helix Nova: + dome of turning coils, ribs, tongues of flame on the front, ground cracks (jackpot: fire rain) |
+  | Siege (blast) | Siege Blast: fireball + smoke + one front (jackpot: six secondary blasts) | Rail Blast: + implosion lens and inrushing streaks, crawling forked lightning (jackpot: three EMP fronts) | Titanfall: + column and cap, crown of flame spikes, double fronts, ground cracks (jackpot: star rays, fire rain) |
+
+  A missed rare keeps its second structure and its sigil (dimmer), so it stays more intricate than a perfect common, which is
+  larger and brighter but still one structure.
+- **Moonfall (legendary; owner a):** miss = a thinner, diffuse beam; normal = the blue beam with thin blue electricity hugging
+  it, falling stars racing down inside it, the lunar sigil under the tank, an eclipse (a dark moon with a bright rim) where
+  it lands on a tank; jackpot = a thicker beam with a concentrated core and **red electricity sparking off it**: forked red
+  arcs leap from the beam's surface, most out and down to the ground beside it, some over the surface back onto the beam;
+  each holds its footing for a tenth of a second while its shape writhes, then strikes somewhere else; short crackles hug
+  the surface between them. Nothing red is a ring; the sigil and the charge-up stay blue and white. Removed: the red arcs
+  that ran beside the beam (5E-2b), a red coil round the beam (this session's first draft), the ring arcs at the muzzle.
+
+### Critic loop (step 3): a separate read-only critic, images only, phone and desktop judged together, against the "before" sheets
+Scores out of 10: professional polish / the Super-level ladder (miss -> hit -> jackpot by concentration and richness) / reads as
+its rarity; and whether it is better than before.
+
+| Round | Pierce Lance | Arc Lance | Sunlance | Static Nova | Storm Nova | Helix Nova | Siege Blast | Rail Blast | Titanfall | Moonfall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 6.5 / 7 / 7, better | 7 / 8 / 7.5, better | 6.5 / 6 / 6, better | 7 / 7.5 / 7, better | 6.5 / 7 / 6.5, better | 5.5 / 6 / 7, same | 6 / 7 / 6.5, better | 6.5 / 5.5 / 7, same | 5 / 5.5 / 5, same | 7 / 7 / 7, better |
+| 2 | 7 / 6 / 7, better | 7.5 / 7.5 / 8, better | 7 / 7 / 6.5, better | 6.5 / 7 / 7, better | 7 / 7 / 6.5, better | 6.5 / 6.5 / 7, better | 5.5 / 6 / 6, better | 7 / 7 / 7.5, better | 7 / 6.5 / 7, better | 7 / 7.5 / 7, better |
+| 3 | 7.5 / 7.5 / 7, better | 7.5 / 8 / 8, better | 8 / 7 / 7.5, better | 7 / 8 / 7, better | 7.5 / 7.5 / 7.5, better | 7.5 / 6 / 7.5, better | 6.5 / 7 / 6.5, better | 8 / 7.5 / 8, better | 7 / 7.5 / 7.5, better | 8 / 8.5 / 8, much better |
+
+**Round 1 verdicts.** Rarity ladder: Pulse passes at a normal stop, shaky at jackpot (Arc Lance busier than Sunlance); Twin
+passes; Siege fails at epic (Titanfall "only brighter: a white-yellow blob"); Moonfall "most intricate and unique": narrow fail
+(same silhouette as Arc Lance's jackpot in another colour). The owner's test (a missed higher rarity must stay more intricate
+than a perfect lower one) failed on all four pairs shown, because the miss tier stripped each super's signature structure.
+Moonfall: the red electricity "reads as real jagged, branching lightning, not rings", but on the phone the arcs were sparse and
+not rooted on the beam at the blast frame, and a thin red ellipse round the target read as a circle. Clearly below
+professional: Titanfall (white-out) and Helix Nova's jackpot (clutter). Weapons: better than before; Twin Repeater, Rail
+Breaker and Moonbeam still small on the Titan-class hulls, Nova Pulse a touch bulky on Titan and Bulwark.
+
+**Changed after round 1.**
+- *Miss tier keeps every signature structure*, looser, thinner and dimmer (Arc Lance's full coil, Storm Nova's three arms,
+  Sunlance's star and flares, Helix Nova's coils, Titanfall's cracks and a thin column, Pierce Lance's diamonds).
+- *Titanfall* redrawn: an orange-rimmed gold dome with a small white heart instead of a white fill (the target stays
+  readable), a narrow column rising clear of the dome with its cap and embers orbiting it, an uneven tapered crown instead of
+  ruled rays, cracks that reach past the dome and show from the first frame.
+- *Helix Nova*: five coils instead of seven, each thick and bright on the near side and thin behind (a dome, not hoops), the
+  straight ribs removed, the fire rain as small embers.
+- *Moonfall*: thirteen shorter arcs rooted along the beam's edge with small sparks (was nine long ones), the thin blue
+  electricity kept inside the shaft at jackpot, a denser core, a thinner miss; impact in blue and white only with the
+  eclipse as its one ring; and two things no other super has: shafts of moonlight standing up out of the beam, and the
+  phases of the moon lighting up along both sides of the lane.
+- *Storm Nova*: the strike bloom cut by more than half, thinner tapered forked bolts in violet.
+- *Sunlance / Pierce Lance*: no ruled edge lines; Sunlance's wobbly filaments became flares rooted on the beam; Pierce Lance's
+  translucent sonic ovals became sharper, brighter diamonds and two hard flares.
+- *Rail Blast*: uneven inrushing streaks that curl inward (not a dartboard), a steadier lens size across levels, static
+  crawling on its rim from the start.
+- *Siege Blast*: warm fire colours (no green cast), lobes of fire, a ragged front instead of a clean hoop, secondaries with a
+  core and smoke, the smoke gone by the time the fire is.
+- *Arc Lance*: violet strands with a pale core (it went white on desktop), small bolt tips.
+- *Weapons*: Twin Repeater x1.40-1.42 and Rail Breaker x1.15-1.20 on the Titan class, Moonbeam x1.15 / x1.15 / x1.12 on
+  Titan / Bulwark / Colossus, Nova Pulse x0.82 on Titan and Bulwark.
+
+**Round 2 verdicts** (a fresh critic; it also saw round 1's sheets). Nothing worse than before or than round 1; Titanfall
+"much better". Rarity ladder: Pulse, Twin and Siege pass; Moonfall "most intricate and unique": still failing on intricacy
+("a soft, featureless beam with six or so red zigzags and a ground sigil"). The owner's test passed on two of four pairs (was
+none): a missed Sunlance and a missed Storm Nova still lost too much. Moonfall: the red electricity reads as electricity with
+no hoops; rooted on the beam on the phone, **not on the desktop** (arcs 40-100 px off the beam ending in white dots); normal's
+electricity thinner but still pale. Still clearly below professional: Siege Blast (blurry fire, a yellow-green centre, a
+white oval). Borderline: Helix Nova's jackpot and the Twin family's blotchy ground fog. Weapons: better again; Twin Repeater
+still light on the Titan-class hulls, Rail Breaker and Pulse Cannon a little slender on the Colossus.
+
+**Changed after round 2.**
+- *Siege Blast* redrawn: the ground under the fire goes dark first (light added to pale ground washed out to yellow-green),
+  the fire graded white - yellow - orange - dark red, sharp uneven tongues of flame instead of soft blobs, a ragged orange
+  front at every level instead of a pale hoop, five secondary bursts close in as standing flames.
+- *Moonfall*: every red arc now starts on the bright core and crosses the sheath outward (no far-end beads, more varied
+  paths, more forks); a cold white core in a darker blue sheath; six hair-thin saturated blue filaments at a normal stop;
+  the phases of the moon ride down the inside of the beam; the impact's rim is two turning crescents, not an oval.
+- *Miss tier*: Sunlance keeps a clear small star and six flares; Storm Nova keeps thin, clearly drawn arms.
+- *Twin family fog* halved (thinner still at jackpot); the fire / smoke noise is finer and firmer for every super.
+- *Helix Nova*: four coils graded thick at the base to thin at the top, fire rain as short falling streaks, smaller tongues.
+- *Arc Lance*: its jackpot's chain lightning stays within a tank's width of the coil (concentrated); lightning cores less white.
+- *Titanfall*: a smaller heart so the target shows, one ragged gold front (a second only on a jackpot), gold cracks without
+  dark needles, the same crown at every level: a jackpot differs by a taller, tighter column and brighter, longer cracks.
+- *Weapons*: Pulse Cannon x1.14 on the Colossus. **Not changed, with the reason:** the Twin Repeater on the Titan class is
+  already as long as the hull (1.01-1.08) with its barrels 0.65-0.85 past the nose, and the Rail Breaker on the Colossus is
+  0.83 past the nose: any larger and they overhang further. Their slender look there is the models' own (a low flat turret,
+  thin barrels), and models are not to be changed in this session.
+
+**Round 3 verdict** (a fresh critic; it also saw round 2's sheets): **"Supers: ship all ten; none is clearly below professional,
+so no 4th round is required. Weapons: ship."** Every super better than before (Moonfall "much better"), none worse than round
+2. Rarity ladder: Pulse, Twin and Siege pass (Siege the weakest: Titanfall's normal "bigger and brighter than Rail Blast but
+not obviously more intricate"); Moonfall most intricate and unique: narrow pass ("the widest beam, the only two-colour super,
+braided strands and the largest sigil"; its jackpot silhouette is still a beam with sideways forks). The owner's test: three of
+four pairs pass (was two, then none); a missed Sunlance still read as a plain gold beam. Moonfall: "red electricity: yes on
+both devices; irregular and branching, no longer sawtooth, most arcs leave the beam edge"; no ring round the beam; normal's
+strands thin and saturated blue; a few red fragments still floated beside the beam on the desktop at +0.2 s. Closest to the
+line: Siege Blast (6.5: an olive-green centre, round secondary balls). Weapons: all ten OK on all nine hulls; the Twin
+Repeater on the Titan class "acceptable, not clearly wrong" (only its barrels are pencil-thin: the model's own).
+**No 4th round was run** (owner: a 4th only for a super or weapon still clearly below professional; the critic named none).
+
+**Patched after round 3** (the critic's list; checked on the final sheets by the lead, not scored again):
+- *Siege Blast*: its smoke is now drawn over the fire's edge in a warm black instead of under the fire (yellow light on grey
+  smoke was the green), and the jackpot's secondaries are three bursts of different sizes made of flame tongues.
+- *Helix Nova*: a jackpot is visibly more than a hit: brighter inner coils, fire rain as long streaks with a splash where
+  each lands; the apex orb removed.
+- *Sunlance*: a miss carries a clear white-gold star and one bright filament down the beam.
+- *Titanfall*: gold-orange instead of lemon, lighter over the target, a slightly tighter dome on a jackpot.
+- *Moonfall*: the arcs' bodies are saturated red (pink-white only where they leave the beam); the short crackles are rooted
+  on the core as well (they were the fragments floating beside the beam); the blue strands have kinks and forks and stay
+  inside the beam's width; nothing is drawn round the target (the ground under it goes dark for a moment).
+- *Fog* under Static and Storm Nova halved again; Storm Nova's strike flash smaller; Arc Lance's chain bolts violet, no end blobs.
+
+### Independent reviews (2 read-only agents, given only the branch, the head, the owner's requirements and this checkpoint)
+**Gameplay / balance / server authority / parity (head `801e1d3`): FAIL on the first pass, 4 majors, 6 minors, 4 nits.** It ran
+`super-timing.mjs` (248 checks) and `wtest/pvp.mjs` (128), reproduced six cells of the tables exactly, and found sound: the
+only writes to the charge are the rule's own; storm, meteors, crates, self and team hits, overkill and a super's own damage
+charge nothing; the cap has one gate in live rooms and survives a respawn, an AI takeover and a chassis swap; the snapshot
+field and `PVP_V` 6 on both sides; no early fire, forged taps refused, AI taps looser than a person's, the 65% floor; Conquest's
+code differs only by `SUP_BAR_T` -> `SUP_BAR_T_CQ` and `supBar(rnd,1)` (numerically identical), its effects block is main's
+line for line; no economy, price, save, stat or camera file changed. **Its findings and what was done:**
+1. *MAJOR: the AI-match record check could be sidestepped.* A "new round" mark clears the per-round count and was only
+   validated for tickets with bound equipment; a made-up mark before every third press passed on older tickets. And the
+   super-count stat was allowed up to (seconds / 6) + 2. **Fixed:** round marks are now held to the rules for every ticket
+   (only a best of 3 Arena has rounds, at most 5, each ending with a side down or on the clock; reason `rounds`); the stat is
+   cut to the record and to 3 a round in `proof.js` and capped at 3 a round in `eco.js`. Tests added (forged marks, an
+   inflated count). **Not changed, on purpose:** (a) a modified client can leave its presses out of the record; an AI match
+   runs on the phone, and what such a client gains is bounded by the same damage checks as any other cheat (damage against
+   hull lost, damage out of reach); tying every damage sample to a press needs the cannon's exact reach of damage per half
+   second and risks refusing honest matches; (b) in the default proof mode a failing record is flagged and still scored, as
+   every other proof failure is: that is the server economy's standing policy, not this session's to change. Both belong
+   to Session 7C (Integrity).
+2. *MAJOR: charge was not normalised under boxes and counters* (measured with real shots: a damage box x1.40, damage +
+   fire-rate x2.14, a counter +15%). **Fixed:** a tank's own strength now includes the boxes it holds and its counter against
+   the target (`supDps`), so neither speeds the charge. Tests with real shots added (Legendary vs stock x0.78-1.25, with both
+   boxes x0.72-1.25; the spread left is fire-rate rounding to the sim's ticks).
+3. *MINOR: damage received was limited per life, so dying on purpose refilled it.* **Fixed:** it also fills at most
+   `SUP_TAKEN_MAX` = 2 bars a round across all lives: the third super of a round always needs damage dealt. Test added.
+4. *MAJOR: tests asserted less than the claims.* **Fixed:** real-shot charge tests; every kit in every mode asserted (about
+   3, 1v1 Arena 1.2-2.8), the per-mode gear check tightened to 1.2x + 0.1; the live-room test now covers an AI takeover and
+   a reconnect at the cap.
+5. *MAJOR: build stamp not bumped* while `PVP_V` went to 6: **done:** build `20261114090839` (release tree).
+6. *MINOR: the gold jackpot circle was drawn up to a third wider than the window that is judged* (older than this session,
+   but it matters more at the faster sweep). **Fixed:** the circle is drawn exactly as wide as the judged window.
+7. *MINOR: `RANGE_ENGINE_VERSION` not bumped* although combat changed: bumped. The practice range allows 3 supers a trial,
+   as a round does.
+8. *MAJOR, kept with the reason (OWNER PLEASE NOTE):* (a) 1v1 Arena gives a stock tank 2.6 supers a round (it was 1.8 on
+   main) and the Legendary kit 1.5: the average is the 2 the owner asked for, but the two ends sit 0.5 either side, because an
+   even duel lasts longer and both tanks lose most of a hull, while a top kit ends the round in seconds. One row cannot
+   bring both ends to 2; lowering it would take the top kit under 1.3. (b) The reviewer's worst cells (the Legendary kit
+   against ROOKIE AI: Arena 3v3 2.0, 1v1 1.0) are a stress case that cannot occur in play: the league follows power, so that
+   kit meets Elite to Lunar Legend AI, where it fires 2.7 a round (Arena 3v3 2.9).
+9. *MINOR, disclosed:* the cap binds in most rounds outside 1v1 Arena (decision 7); the 70 / 30 split is the standard pilot's
+   (a pilot who rarely lands shots charges mostly from damage received; a top kit against weak AI mostly from damage dealt);
+   hull removed per super fell 21-32% in play (the 22.5% cut, the lower cap, and slightly fewer jackpots at the faster bar).
+10. *NITS:* comments corrected (24 s rounds, 4.4 / 2.7 bars offered). Left as they are: fast weapons lose a little charge to
+    fire-rate rounding at the sim's tick (the Twin Repeater most), and Moonbeam edge hits give about 4% more charge per hit;
+    both are within the measured 1.12x spread between weapons.
+
+**Graphics / performance review (the second reviewer; after critic round 3). Its fixes are commit `ee245df`.** The reviewer's
+own report was not written down here before the session's worker restarted (Nov 14, 08:31 UTC), so its verdict line, and
+anything it raised that the lead chose to leave, are NOT on record. What is on record is every change that commit made, read
+back from its diff:
+1. *Glow batch 2,600 -> 4,600 quads.* The richer supers draw more quads (the largest jackpot on main: 551; here Moonfall's:
+   1,147), and quads past the batch limit are silently not drawn; three supers in one 3v3 frame now fit.
+2. *Lighter glow shader:* the fire / smoke noise reads two octaves instead of three, the beam-flow look reads the noise once
+   instead of twice, and the wave-front look calls `smoothstep` with its edges in order (the reverse order is undefined in
+   GLSL and differs between phones) with a front edge wide enough not to stair-step on a thin ring.
+3. *LOW graphics draws every glow as a plain soft glow* (no fire, wave-front or beam-flow shading: those cost several times
+   more per pixel). Every structure of every super is still drawn (`all-supers-phone-low.webp`).
+4. *Weapon fit:* the two geometric limits (never wider than the hull, the rear inside the deck) are applied again AFTER the
+   per-pair correction (`FIT_ADJ`), which used to come after every limit. One pair changes: Moonbeam on the Titan 0.966 -> 0.933.
+5. *Timing bar:* the jackpot mark is a gold capsule exactly as wide as the judged window and taller than the track (a circle
+   that wide is under 15 px on a 320 px phone and was hard to see).
+6. *Lunar sigil and the moon phases:* fewer segments per ring (40 -> 24, 26 -> 18), and the phases run from crescent to
+   gibbous, never a closed circle.
+7. *Moonfall's thin blue strands are one pass each* (no halo pass); the map's own lightning arcs keep their earlier look
+   (no white core).
+8. *Reduce Motion:* a shell in flight is a plain glow (the fire noise is fixed to the ground; a moving puff crawled through it).
+9. *No per-frame array allocations* in the Moonfall and Siege Blast recipes.
+10. *Menu pictures:* the framing widens for any weapon whose muzzle now reaches further than the frame was sized for.
+11. New tool `dev/tests/super-frame-time.py` and its data (below).
+
+### Frame cost of a jackpot: main `1acff13` -> this branch (`docs/supers-5e2b2b/frame-time-*.json`)
+Software GL (SwiftShader) on this container: a RELATIVE check between two builds on the same machine, never a phone frame
+rate. For each super the capture scene is set up, a jackpot is fired, and the frame 0.1 s after it lands is drawn 12 times
+with a readback; the median is shown beside the same scene with nothing on screen. Measured on `ee245df`.
+
+| Super (jackpot) | Phone 390x844 @3x: main -> branch, ms | change | idle (no effect) main -> branch | Desktop 1920x1080: main -> branch, ms | change | idle main -> branch |
+|---|---|---|---|---|---|---|
+| Pierce Lance | 39.0 -> 48.9 | +25% | 41.6 -> 42.4 | 135.0 -> 129.6 | -4% | 128.7 -> 126.5 |
+| Sunlance | 38.8 -> 45.0 | +16% | 39.6 -> 45.8 | 142.9 -> 151.2 | +6% | 180.6 -> 189.2 |
+| Static Nova | 39.5 -> 43.9 | +11% | 45.1 -> 44.7 | 133.4 -> 155.5 | +17% | 197.2 -> 180.1 |
+| Helix Nova | 38.6 -> 42.5 | +10% | 46.0 -> 48.8 | 134.5 -> 148.2 | +10% | 182.2 -> 202.9 |
+| Siege Blast | 46.4 -> 43.6 | -6% | 48.5 -> 42.2 | 152.3 -> 182.3 | +20% | 194.5 -> 177.1 |
+| Titanfall | 44.1 -> 41.7 | -5% | 41.9 -> 44.2 | 142.5 -> 157.5 | +11% | 173.0 -> 183.4 |
+| Moonfall | 43.2 -> 44.9 | +4% | 49.8 -> 49.2 | 142.3 -> 156.3 | +10% | 179.9 -> 186.1 |
+
+- A jackpot frame costs between 6% less and 25% more than on main; the same scene with NO effect on screen moves by -13% to
+  +16% between the two runs, so most of the spread is the measurement's own noise. The honest reading: about the same to
+  roughly 10% more per jackpot frame on this renderer.
+- **Draw calls and shader programs are unchanged:** 35-37 calls / 17 programs idle, 40 / 21 at the peak of a super, on main
+  and here (the capture tool fails on a rise). What rose is the number of glow quads in one draw call (peak 551 -> 1,147).
+- On a slow phone the frame-time governor (5E-2a) steps the resolution down, and LOW draws plain glows (item 3 above).
+- **Not measured: a real iPhone.** That is the owner's check (checklist below).
+
+### Final sheets and the lead's check of the owner's requirements (Nov 14; `docs/supers-5e2b2b/`, `README.md` there)
+Captured on the release tree: all ten supers x miss / normal / jackpot, phone (390x844 @3x) and desktop (1920x1080)
+together, plus LOW and Reduce Motion on the phone: 4 x 30 scenes, no page errors, no draw-call or program rise, nothing
+left drawing 5 s after the last super. Round 3's patches and the graphics-review fixes had not been seen on a sheet before
+(the worker restart came first); the lead checked them here, as round 3 said, and **no new critic round was run** (owner).
+
+Two of round 3's patches did not hold up on the sheets and were corrected (both in `js/fx3d.js`, Arcade recipes only):
+- *Moonfall:* the forks added to the thin blue strands were sized by the beam's LENGTH, so they fanned out far beyond the
+  beam at a normal stop and a jackpot and competed with the red electricity. A fork on those strands is now at most a third
+  of the beam's width: everything blue stays inside the beam, and the red arcs are the only thing that leaves it.
+- *Siege Blast:* the "warm black" smoke over the fire's edge drew as heavy black blots that hid the tanks behind them. It
+  is now translucent (opacity 0.82 -> 0.5): it reads as smoke, and the fire stays the primary shape.
+Also corrected: a sheet caption and a code comment that still described the red electricity as "wound round" the beam
+(wording from this session's first draft; the effect itself was already the sparking arcs).
+
+The owner's three requirements, checked on the final phone and desktop sheets:
+1. **Moonfall's red electricity** (`moonfall-*.webp`): on a jackpot, forked red arcs leave the blue beam's core, most out
+   to the ground beside it and some back onto the beam; jagged and branching, different every tenth of a second. Nothing
+   red forms a ring or circle round the beam, on either device, in the blast frame or 0.2 s later. (The red ring under an
+   enemy tank is the game's target marker and is there with no super on screen.) PRESENT.
+2. **Super level** (`family-*.webp`, every row left to right): a miss is thinner, dimmer and washed out with the fewest
+   effects; a normal stop has a defined core and the super's own structures; a jackpot has the narrowest, white-hot core
+   and the most effects (extra fronts, strikes, flame columns, fire rain, secondaries, the red electricity). Sizes step
+   x0.8 / x1 / x1.15: no super outgrows the lane or the blast it really makes. PRESENT.
+3. **Rarity order** (`ladder-*.webp`): at a normal stop each family reads common < rare < epic by the number of
+   structures and colours and by the sigil under the tank (none / broken ring / double ring with spokes), and Moonfall
+   (the only super with a second colour of electricity, moon phases, moonlight shafts, falling stars and the lunar sigil)
+   is the most intricate and the only one of its kind. Rows 4-5: a perfect common is larger and brighter than a missed
+   rare, a perfect rare than a missed epic, and the missed higher rarity still shows its second (or third) structure and
+   its sigil. The weakest pair is the same one round 3 named: a missed Sunlance beside a perfect Arc Lance (the Sunlance
+   keeps its star, flares and sigil but is clearly the dimmer of the two). PRESENT.
+**Conquest supers: unchanged.** The Conquest effects block in `js/fx3d.js` is byte-identical before and after today's two
+corrections, and `conquest-super-fx.py` passes (below).
+
+Weapons (`fit-*.webp`, `fit-measurements.json`; `before/fit-*.webp` is main): 42 of the 90 weapon / chassis pairs changed
+scale in this session; all ten weapons were re-captured on all nine hulls on the release tree.
+
+### Tests (local, on the release tree: build `20261114090839`, unless noted)
+- `super-timing.mjs` PASS (335 checks: the charge rule with real shots, the cap, every kit in every mode, the bar, taps, the
+  65% floor); `fair-arcade.mjs` PASS (11,611 checks); `combat-balance.mjs` PASS (2,594); `super-aim.mjs` PASS (48);
+  `wtest/pvp.mjs` 130 passed, 0 failed (live rooms: the cap, an AI takeover, a reconnect at the cap);
+  `gear-combat.mjs` PASS (656 paired duels, 3,420 client / server parity cases); `combat-sim.mjs` and
+  `fair-arcade-grid.mjs` (tables, not pass / fail) ran clean.
+- Server and economy (the Worker's code, run locally): `wtest/test` 203 passed, `farm` 55, `owner` 68, `accounts` 18,
+  0 failed; `lab`, `lab-battle`, `lab-parity`, `range`, `range-comparison` PASS.
+- Graphics and maps: `graphics-release.mjs`, `graphics-motion.mjs`, `environment.mjs` PASS; `meshy.mjs` PASS (1,802 checks);
+  `arena-cam.mjs` ok (9,869 checks); `arena-maps.mjs` PASS; `lab-ui.mjs` PASS (it also checks that `index.html` and
+  `version.json` carry the same build).
+- Browser (Chromium, the real page): `b3test.py` PASS, `b4test.py` PASS, `qa.py` PASS (no layout issues at five screen
+  sizes), **`conquest-super-fx.py` PASS** (Conquest's supers and its own bar, unchanged).
+  `proofreal.py` exit 0 (real AI-match records pass the server's proof check; 90 of 90 distinct).
+- **`b10test.py` RESULT FAIL, one check, the same on main:** "Auto: slow frames step down to Low, then to 2D, and say so"
+  fails with identical values on a pristine checkout of main `1acff13` and here (the automatic step-down does not fire in
+  this test browser); its other checks pass on both (3D loads by default, every mode on every map under 160 draw calls,
+  lost GPU context falls back to 2D). Older than this session, not in CI, neither fixed nor relaxed here.
+- `super-vfx-capture.py`: 4 x 30 scenes PASS (phone HIGH, desktop HIGH, phone LOW, phone Reduce Motion): every super fired
+  at every outcome, no page error, no draw-call or program rise, nothing drawn 5 s after the last super.
+- **`pvptest.py` does not run in this container, on main or here:** it fails at its first step on both, identically (two
+  browser pages are never matched into a live room; it needs the local live-match server). Not counted either way; the
+  live-room rules are covered by `wtest/pvp.mjs` and by CI's Workers-runtime smoke.
+- CI on the PR head: see "Release record".
+
+### Agents used (AGENTS.md)
+- 1 research agent (step 1; web search): gave the charge-source, cap, damage-share and timing-window precedents that the
+  rules follow. Changed the result (damage-only charge, the 53 ms window instead of 40 ms).
+- 3 critics, a fresh read-only one each round, images only: changed the result every round (scores 5-7 -> 6.5-8.5; Titanfall,
+  Helix Nova, Siege Blast and Moonfall were redrawn on their findings).
+- 2 independent reviewers: gameplay / balance / server authority (4 majors found and fixed, 1 kept with its reason) and
+  graphics / performance (its fixes are `ee245df`). Both changed the result.
+- Nov 14 (after the worker restart): no agents. The lead rebuilt the state from the repository, ran the final captures and
+  tests, and made the two corrections above.
+
+### Risks and limits
+- **No real phone.** Every picture and frame time here is from a test browser that draws on the CPU. The owner's iPhone
+  check (below) is the one check no agent could do.
+- **Two visual corrections were made after both reviewers and all three critic rounds** (Moonfall's blue forks, Siege
+  Blast's smoke: one clamp and one opacity in the Arcade recipes of `js/fx3d.js`). They were checked by the lead on the
+  final sheets and by the tests above, not by a reviewer.
+- **The graphics reviewer's report is not on record** (lost with the worker restart); its fixes are.
+- **1v1 Arena:** the average is the 2 supers a round the owner asked for, but a stock tank gets about 2.6 and the
+  Legendary kit about 1.4-1.5 (review item 8). One fill row cannot bring both ends to 2.
+- **The cap binds in most rounds outside 1v1 Arena** (decision 7): a strong round's third super can come before the round's
+  last quarter. The pips show how many are left.
+- **Hit rates on the timing bar are a model**, not a measurement of real people. If jackpots feel too rare or too common on
+  a real phone, the lever is `SUP_BAR_T` (0.667 s) in `js/rules.js`; it needs a `PVP_V` step.
+- **AI matches run on the phone:** a modified client can leave its super presses out of the match record (review item 1);
+  what it gains is bounded by the existing damage checks. Session 7C (Integrity).
+- **`PVP_V` 6:** a phone still on the old build is asked to update before its next match.
+- The Twin Repeater (Titan class) and the Rail Breaker (Colossus) still look slender: that is the models' own barrels,
+  and models were not to be changed in this session.
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Open the game: if it asks to update, reload once (build `20261114090839`).
+2. **Count your supers.** Play a 3v3 Arena and a Bounty: you should get about 3 a round and never a 4th. The SUPER
+   button shows three gold pips; after the third it dims and reads NONE LEFT.
+3. **Standing still under fire should not farm supers:** taking damage fills at most 2 bars a round.
+4. **Timing bar:** it sweeps 1.5x faster. The jackpot is the gold capsule. Is a jackpot hard but fair? (Target: about 1 in
+   4 taps for an average player.)
+5. **Moonfall jackpot:** red electricity should spark OFF the blue beam, like real lightning. No red ring.
+6. **Miss vs normal vs jackpot** on any super: a miss should look washed out, a jackpot tight, bright and busiest.
+7. **Rarity:** fire a common, a rare and an epic of one family back to back: each should look clearly richer than the last.
+8. **Garage:** look at a few weapons on a Titan, a Bulwark and a Colossus, and the Moonbeam on the Phantom.
+9. **Conquest:** fire a super there. It should look and charge exactly as before.
+10. **Frame rate** while two or three supers are on screen (HIGH, then LOW in Settings if it stutters).
+
+### Release status: release pre-approved by the owner (Nov 14, 2026)
+The owner's message of Nov 14 pre-approved the release: open the PR, merge once checks pass, deploy, add the release
+record. Payments stay DISABLED. The merge commit, the deploy runs and the live version check are in the "Release record"
+below once it exists. **Roll back:** revert the merge commit on main (Pages and the Worker deploy follow the revert; the
+revert takes `PVP_V` back to 5, so phones are asked to reload once more).
+
+### State at each push (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`)
+- `eebfe8d` the roadmap note (about 3 supers per player per round). `6904889` slice 1: charge from damage only, the cap,
+  22.5% less damage, the 1.5x bar. `177120a` slice 2: Arcade super effects by level and rarity; Conquest's supers restored
+  word for word. `098353e` slice 3: weapon proportions on every chassis.
+- `2cc358f` after-measurements and hit rates. `be00193` Moonfall's sigil and charge-up stay blue. `4d58e37` the visual
+  design on record.
+- `85da273`, `801e1d3` critic round 1. `904f4b0` critic round 2. `e8c4249`, `edf77f9` the gameplay review's fixes.
+- `a19dfbf`, `66e36f0` re-measured on the final rules. `84b473d` critic round 3 and its patches.
+- `ee245df` the graphics review's fixes, the frame-time tool and data.
+- Release tree (Nov 14): the two corrections above, the final sheets in `docs/supers-5e2b2b/`, this record, the build stamp.
+
+### What is left (for the owner or a later session)
+- **The owner's iPhone check** with the checklist above.
+- **Owner decision, 1v1 Arena:** keep the one fill row (average 2 a round, stock 2.6, Legendary 1.4-1.5), or accept a
+  lower floor for top kits to pull the stock tank down.
+- Session 7C (Integrity): tie super presses to damage samples in the AI-match record.
+- Thicker barrels for the Twin Repeater: a model change (Meshy), not a scale.
+- **Proposals only (not shipped; economy untouched; each needs the owner's approval):**
+  1. *Jackpot streak:* three jackpots in one round show a short "PERFECT ROUND" banner and count towards a weekly quest.
+     A reason to master the bar, no power attached.
+  2. *Super finishers as cosmetics:* alternate colourways or sigils for a super (same size, same clarity, same damage),
+     earned from the pass or sold. Fair: looks only.
+  3. *A "supers left" readout for the enemy team in live matches* (three small pips over each enemy bar), so the cap
+     becomes something to play around.

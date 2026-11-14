@@ -112,6 +112,15 @@ export function checkProof(pf, c) {
   }
   if (badMe > PROOF.MOVE_BAD) return fail("move");
   if (badOther > Math.max(3, stepsOther * PROOF.OTHER_BAD)) return fail("others");
+  // new-round marks: they clear the per-round super count below, so they are held to the rules for EVERY ticket (review finding:
+  // tickets without bound equipment skipped this, and a made-up mark before every third press reset the count). Only a best
+  // of 3 Arena has rounds, at most 5, and a round only ends with a side down or on the clock
+  if (!c.variants) { let lastRound = 0, rounds = 1;
+    for (let sample = 1; sample < k; sample++) if (b[sample * sz + n * 3 + 2] & 64) {
+      if (!c.series || c.g !== "arena" || ++rounds > 5) return fail("rounds");
+      const hp = (i) => b[(sample - 1) * sz + i * 3 + 2], down = (team) => h.every((u, i) => u[0] !== team || hp(i) <= PROOF.LAST_HP);
+      if (!down(0) && !down(1) && (sample - lastRound) * PROOF.DT < L.ROUND_T - 6) return fail("rounds");
+      lastRound = sample; } }
   // walls: your tank never sits inside one (the Overpass deck is a level, not a wall)
   const M = L.MAPS[c.map] || {}, br = M.bridge, inR = (x, y, r, e) => x > r[0] + e && x < r[0] + r[2] - e && y > r[1] + e && y < r[1] + r[3] - e;
   let inWall = 0;
@@ -124,10 +133,11 @@ export function checkProof(pf, c) {
   if (inWall > PROOF.WALL_BAD) return fail("walls");
   // damage: what you report matches the record, it was dealt with an enemy in reach, and the enemies lost that health
   const enemy = h.map((u, i) => i > 0 && (c.g === "royale" ? true : u[0] !== h[0][0]));
-  let total = 0, bad = 0, lost = 0, kills = 0, sups = 0, boxes = 0, low = 1;
+  let total = 0, bad = 0, lost = 0, kills = 0, sups = 0, boxes = 0, low = 1, roundSups = 0, mostSups = 0, roundsSeen = 1;
   for (let s = 0; s < k; s++) {
     const d = DM(s), fl = FL(s);
-    if (fl & 8) sups++;
+    if (fl & 64 && s > 0) { roundSups = 0; roundsSeen++; }   // a new round clears the count (rules.js SUP_ROUND_CAP); a respawn does not
+    if (fl & 8) { sups++; mostSups = Math.max(mostSups, ++roundSups); }
     if (fl & 16) boxes++;
     if (HP(s, 0) > 0 || s === 0) low = Math.min(low, HP(s, 0) / 100);
     else low = 0;
@@ -146,6 +156,9 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) > 0 && HP(s, i) === 0) { let mineHit = false; for (let j = Math.max(0, s - 4); j <= s; j++) if (DM(j) > 0) mineHit = true; if (mineHit) kills++; }
     }
   }
+  // supers: never more than the cap in one round (Session 5E-2b2b). The phone's sim refuses the press past the cap, so an
+  // honest record cannot hold more; a record that does was not made by the game's own rules
+  if (mostSups > (L.SUP_ROUND_CAP || 3)) return fail("supers");
   const rep = Math.max(0, Number(c.st.dmg) || 0);
   if (rep > total + PROOF.DMG_PLUS + total * PROOF.DMG_X) return fail("dmg");
   if (total > 600 && bad > total * PROOF.REACH_BAD) return fail("reach");
@@ -180,7 +193,7 @@ export function checkProof(pf, c) {
   // the result passes. Stats held to what the record shows (quests read them)
   const st = c.st, fix = {};
   if ((st.kills || 0) > kills + 1) fix.kills = kills + 1;
-  if ((st.sup || 0) > sups + 1) fix.sup = sups + 1;
+  { const supTop = Math.min(sups + 1, (L.SUP_ROUND_CAP || 3) * roundsSeen); if ((st.sup || 0) > supTop) fix.sup = supTop; }   // never more than the record shows, nor than 3 a round
   if ((st.box || 0) > boxes + 1) fix.box = boxes + 1;
   if (typeof st.low === "number" && st.low > low + 0.03) fix.low = Math.round(low * 1000) / 1000;
   // signals for the bot-pattern flags: did you move without touching the controls, and how your inputs look

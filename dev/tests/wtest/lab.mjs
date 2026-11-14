@@ -18,7 +18,7 @@ const {RULES:R}=await import('../../../worker/src/sim.gen.js');
 const {checkLoadout}=await import('../../../worker/src/pvp.js');
 const env={BOT_TOKEN:'local-test',FIREBASE_DB_SECRET:'SECRET'};
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(Date.now()/1000)),user:JSON.stringify({id,first_name:'Lab'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://local'+path,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://solb7403-creator.github.io'},body:JSON.stringify({gv:5,initData:auth(id),...body})}),env);return {status:r.status,...await r.json()};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://local'+path,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://solb7403-creator.github.io'},body:JSON.stringify({gv:6,initData:auth(id),...body})}),env);return {status:r.status,...await r.json()};}
 const sync=(id,body={})=>call(id,'/api/sync',{lab:1,...body});
 const act=(id,a,body={})=>call(id,'/api/act',{a,...body});
 const S=id=>db.get('/eco/tg_'+id);

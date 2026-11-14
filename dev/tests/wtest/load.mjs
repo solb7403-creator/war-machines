@@ -39,7 +39,7 @@ let reqs = 0, cpuUs = 0;
 async function call(path, body, ip) {
   const h = { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json', 'CF-Connecting-IP': ip };
   const t0 = performance.now(), c0 = process.cpuUsage();
-  const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:5,...body}) }), env);
+  const r = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: h, body: JSON.stringify({gv:6,...body}) }), env);
   const out = await r.json().catch(() => null);
   const c1 = process.cpuUsage(c0); cpuUs += c1.user + c1.system;   // includes other requests running at once: an upper bound
   lat.push(performance.now() - t0); reqs++;

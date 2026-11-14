@@ -602,6 +602,7 @@ const superFire=a=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('
 // tap (the SUPER button, the bar itself, or Space) stops the marker: MISS / HIT / JACKPOT. Driving is never blocked.
 // supUI: {t0 (ms, my press), bar {z0,jc}, live, p (where the marker stopped), oc, at (ms, when it stopped)}
 let supUI=null;
+const supUsed=()=>me?Math.min(SUP_ROUND_CAP,me.supN||0):0;   // supers I have used this round (the sim's count; in a live match the server's)
 const supBarOn=()=>!!supUI&&supUI.oc===undefined;
 function superGo(a){
  if(supBarOn())return supStop();   // the same control stops the bar
@@ -641,7 +642,7 @@ function drawSupBar(g){
  if(!supUI)return;
  const B=supBarRect(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),done=supUI.oc!==undefined;
  const p=done?supUI.p:Math.min(1,supEl()/SUP_BAR_T),age=done?(now-supUI.at)/1000:0,fade=done?Math.max(0,1-Math.max(0,age-0.55)/0.35):1;
- const zx=B.x+B.w*supUI.bar.z0,zw=B.w*SUP_ZONE_W,jx=B.x+B.w*supUI.bar.jc,jr=Math.max(B.h*0.6,B.w*SUP_JACK_W/2),cy=B.y+B.h/2;
+ const zx=B.x+B.w*supUI.bar.z0,zw=B.w*SUP_ZONE_W,jx=B.x+B.w*supUI.bar.jc,jr=B.w*SUP_JACK_W/2,cy=B.y+B.h/2;   // the gold circle is EXACTLY as wide as the window that is judged (it used to be drawn up to a third wider: a marker inside the gold could score a HIT)
  g.save();g.globalAlpha=fade;
  // track
  g.fillStyle='rgba(6,10,18,.82)';g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=2;rr(g,B.x-4,B.y-4,B.w+8,B.h+8,(B.h+8)/2);g.fill();g.stroke();
@@ -650,10 +651,12 @@ function drawSupBar(g){
  g.fillStyle='rgba(255,255,255,.35)';g.fillRect(zx+2,B.y+2,zw-4,Math.max(2,B.h*0.28));
  // jackpot: a gold circle that stands proud of the track
  const pulse=quiet||done?1:1+0.10*Math.sin(now/90);
- g.fillStyle='#1a1204';g.beginPath();g.arc(jx,cy,jr+3,0,7);g.fill();
- g.fillStyle=done&&supUI.oc!==2?'#b08a2e':'#ffcf4a';g.beginPath();g.arc(jx,cy,jr*pulse,0,7);g.fill();
- g.fillStyle='#fff6cf';g.beginPath();g.arc(jx,cy,jr*0.42*pulse,0,7);g.fill();
- if(!done&&!quiet){g.globalAlpha=fade*(0.35+0.35*Math.sin(now/90));g.strokeStyle='#ffe9a0';g.lineWidth=2;g.beginPath();g.arc(jx,cy,jr+6+2*Math.sin(now/90),0,7);g.stroke();g.globalAlpha=fade;}
+ // (Session 5E-2b2b: a capsule exactly as wide as the judged window and taller than the track, so it stays readable on a
+ // 320 px phone where that width is under 15 px, and what is drawn is what is judged)
+ {const jh=(B.h+12)*pulse,jw=2*jr;g.fillStyle='#1a1204';rr(g,jx-jr-2.5,cy-jh/2-2.5,jw+5,jh+5,Math.min(jr+2.5,9));g.fill();
+  g.fillStyle=done&&supUI.oc!==2?'#b08a2e':'#ffcf4a';rr(g,jx-jr,cy-jh/2,jw,jh,Math.min(jr,7));g.fill();
+  g.fillStyle='#fff6cf';rr(g,jx-jr*0.4,cy-jh*0.3,jw*0.4,jh*0.6,Math.min(jr*0.4,4));g.fill();
+  if(!done&&!quiet){g.globalAlpha=fade*(0.35+0.35*Math.sin(now/90));g.strokeStyle='#ffe9a0';g.lineWidth=2;rr(g,jx-jr-5,cy-jh/2-5,jw+10,jh+10,Math.min(jr+5,11));g.stroke();g.globalAlpha=fade;}}
  // marker: a white needle with a dark edge, taller than the track
  const mx=B.x+B.w*p;
  // the marker is the thing to watch: the brightest, tallest shape on the bar, with an arrow above and below
@@ -685,6 +688,7 @@ cv.addEventListener('pointerdown',e=>combatView(()=>{
  const B=btn();
  if(supBarOn()&&me.hp>0){const R=supBarRect();if(Math.hypot(L.x-B.x,L.y-B.y)<=B.r+26||(L.x>=R.x-10&&L.x<=R.x+R.w+10&&L.y>=R.y-16&&L.y<=R.y+R.h+16)){supStop();return;}}   // second tap: stop the timing bar (the SUPER button or the bar itself)
  if(me.hp>0&&Math.hypot(L.x-B.x,L.y-B.y)<=B.r+16){
+  if(supUsed()>=SUP_ROUND_CAP&&!me.sup){nums.push({x:me.x,y:me.y-1.6,t:1.1,z:1,txt:'All '+SUP_ROUND_CAP+' Supers used this round',c:'#c0cad4'});return;}
   if(me.sp<SUPER_MAX||me.sup){nums.push({x:me.x,y:me.y-1.6,t:0.9,z:1,txt:'Super '+Math.round(me.sp/SUPER_MAX*100)+'%',c:'#ff9d9d'});return;}
   aim={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,on:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}return;}
  const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();dashGo(ix,iy);return;}
@@ -1147,14 +1151,20 @@ function drawHUD(){
   if(!ready){g.strokeStyle='#40e0d0';g.lineWidth=4;g.beginPath();g.arc(H.x,H.y,H.r-3,-Math.PI/2,-Math.PI*2*(1-cd)-Math.PI/2);g.stroke();}
   g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1-(CH&&KEYHINT?H.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(H.r*0.28));g.globalAlpha=0.7;g.fillText('E',H.x,H.y+H.r*0.4);g.globalAlpha=1;}}
  // SUPER button with a charge ring
- if(state==='play'&&me.hp>0){const B=btn(),f=me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
-  g.fillStyle=rdy?'#e0242f':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
+ if(state==='play'&&me.hp>0){const B=btn(),used=supUsed(),out=used>=SUP_ROUND_CAP&&!me.sup,f=out?0:me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
+  g.fillStyle=rdy?'#e0242f':out?'#22262c':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
   g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r-4,0,7);g.stroke();
   g.strokeStyle=rdy?'#fff':'#ff6b6b';g.beginPath();g.arc(B.x,B.y,B.r-4,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,f));g.stroke();
   if(supBarOn()){const q=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?1:0.5+0.5*Math.sin(performance.now()/70);g.fillStyle='#ffcf4a';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();g.strokeStyle='rgba(255,255,255,'+(0.5+0.5*q)+')';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r+5,0,7);g.stroke();
    g.fillStyle='#2a1c00';g.textAlign='center';g.font='700 '+Math.round(B.r*0.5)+'px '+FONT_FAMILY;g.fillText('TAP!',B.x,B.y+1);}
-  else{g.fillStyle=rdy?'#fff':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1-(CH&&KEYHINT?B.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.7;g.fillText('SPACE',B.x,B.y+B.r*0.4);g.globalAlpha=1;}}
-  if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-12);}
+  else{g.fillStyle=rdy?'#fff':out?'rgba(255,255,255,.4)':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1-(out||(CH&&KEYHINT)?B.r*0.14:0));
+   if(out){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.75;g.fillText('NONE LEFT',B.x,B.y+B.r*0.4);g.globalAlpha=1;}else if(CH&&KEYHINT){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.7;g.fillText('SPACE',B.x,B.y+B.r*0.4);g.globalAlpha=1;}}
+  // the round's supers (rules.js SUP_ROUND_CAP): one pip each along the top of the button; a spent one is hollow
+  {const n=SUP_ROUND_CAP,pr=Math.max(3.5,B.r*0.115),a0=-Math.PI/2,da=0.36;for(let i=0;i<n;i++){const a=a0+(i-(n-1)/2)*da,x=B.x+Math.cos(a)*(B.r+pr+5),y=B.y+Math.sin(a)*(B.r+pr+5);
+    g.fillStyle='rgba(6,10,18,.85)';g.beginPath();g.arc(x,y,pr+2,0,7);g.fill();
+    if(i<n-used){g.fillStyle='#ffcf4a';g.beginPath();g.arc(x,y,pr,0,7);g.fill();g.fillStyle='#fff6cf';g.beginPath();g.arc(x-pr*0.25,y-pr*0.25,pr*0.38,0,7);g.fill();}
+    else{g.strokeStyle='rgba(255,255,255,.38)';g.lineWidth=1.5;g.beginPath();g.arc(x,y,pr-0.5,0,7);g.stroke();}}}
+  if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-26);}
   if(rdy){g.globalAlpha=0.25+0.25*Math.sin(performance.now()/120);g.strokeStyle='#ff4d4d';g.lineWidth=6;g.beginPath();g.arc(B.x,B.y,B.r+6,0,7);g.stroke();g.globalAlpha=1;}}
  supUiTick();drawSupBar(g);
  g.textBaseline='top';

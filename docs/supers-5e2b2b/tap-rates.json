@@ -1,0 +1,203 @@
+{
+ "people": {
+  "old 1.0 s (1x)": {
+   "careful (0.7x)": [
+    5.5,
+    51.3,
+    43.2
+   ],
+   "average": [
+    13.2,
+    55.7,
+    31.1
+   ],
+   "casual (1.5x)": [
+    27.3,
+    51.7,
+    21
+   ],
+   "sdMs": 101,
+   "sdFrac": 0.1006
+  },
+  "0.8 s (1.25x)": {
+   "careful (0.7x)": [
+    6.3,
+    52.4,
+    41.3
+   ],
+   "average": [
+    14.7,
+    55.7,
+    29.6
+   ],
+   "casual (1.5x)": [
+    29.5,
+    50.6,
+    19.9
+   ],
+   "sdMs": 85,
+   "sdFrac": 0.1061
+  },
+  "0.667 s (1.5x)": {
+   "careful (0.7x)": [
+    7.4,
+    53.5,
+    39.1
+   ],
+   "average": [
+    16.5,
+    55.5,
+    28
+   ],
+   "casual (1.5x)": [
+    31.9,
+    49.2,
+    18.8
+   ],
+   "sdMs": 75,
+   "sdFrac": 0.1125
+  },
+  "0.5 s (2x)": {
+   "careful (0.7x)": [
+    10,
+    55.1,
+    34.9
+   ],
+   "average": [
+    20.7,
+    54.4,
+    24.9
+   ],
+   "casual (1.5x)": [
+    37.1,
+    46.2,
+    16.7
+   ],
+   "sdMs": 64,
+   "sdFrac": 0.1273
+  }
+ },
+ "ai": {
+  "old": {
+   "Rookie": [
+    46.8,
+    39.9,
+    13.2
+   ],
+   "Pilot": [
+    41.2,
+    43.6,
+    15.2
+   ],
+   "Veteran": [
+    34.6,
+    47.7,
+    17.7
+   ],
+   "Ace": [
+    29.7,
+    50.5,
+    19.8
+   ],
+   "Elite": [
+    24.3,
+    53,
+    22.7
+   ],
+   "Master": [
+    21.5,
+    54.2,
+    24.4
+   ],
+   "Lunar Legend": [
+    18.7,
+    55,
+    26.3
+   ]
+  },
+  "now": {
+   "Rookie": [
+    51.6,
+    36.6,
+    11.8
+   ],
+   "Pilot": [
+    45.9,
+    40.5,
+    13.6
+   ],
+   "Veteran": [
+    39.1,
+    45,
+    15.9
+   ],
+   "Ace": [
+    34.6,
+    47.7,
+    17.7
+   ],
+   "Elite": [
+    29.2,
+    50.7,
+    20.1
+   ],
+   "Master": [
+    26,
+    52.3,
+    21.7
+   ],
+   "Lunar Legend": [
+    22.9,
+    53.7,
+    23.5
+   ]
+  }
+ },
+ "frames": {
+  "old 1.0 s (1x)": {
+   "jackpotMs": 80,
+   "zoneMs": 360,
+   "framesInJackpot60": 4.8,
+   "framesInJackpot30": 2.4,
+   "earliestJackpotMs": 430,
+   "latestJackpotMs": 850
+  },
+  "0.8 s (1.25x)": {
+   "jackpotMs": 64,
+   "zoneMs": 288,
+   "framesInJackpot60": 3.8,
+   "framesInJackpot30": 1.9,
+   "earliestJackpotMs": 408,
+   "latestJackpotMs": 728
+  },
+  "0.667 s (1.5x)": {
+   "jackpotMs": 53,
+   "zoneMs": 240,
+   "framesInJackpot60": 3.2,
+   "framesInJackpot30": 1.6,
+   "earliestJackpotMs": 340,
+   "latestJackpotMs": 607
+  },
+  "0.5 s (2x)": {
+   "jackpotMs": 40,
+   "zoneMs": 180,
+   "framesInJackpot60": 2.4,
+   "framesInJackpot30": 1.2,
+   "earliestJackpotMs": 255,
+   "latestJackpotMs": 455
+  }
+ },
+ "now": {
+  "SUP_BAR_T": 0.667,
+  "SUP_TAP_HUMAN": 0.1125,
+  "LG_AI_TAP": [
+   0.27,
+   0.235,
+   0.2,
+   0.18,
+   0.158,
+   0.146,
+   0.135
+  ]
+ }
+}

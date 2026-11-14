@@ -24,7 +24,7 @@ export function buildSim(out = join(here, 'src', 'sim.gen.js')) {
   // match record never has to build a sim (that costs ~15-25 ms of CPU on a cold start)
   const api = new Function('HOST', '"use strict";\n' + read('js/rules.js') + read('js/game.js') + read('worker/sim-api.js'))({ ev() {}, end() {}, round() {}, death() {} });
   const pick = (o, ks) => Object.fromEntries(ks.map((k) => [k, o[k]]));
-  src += 'export const LIM = ' + JSON.stringify(pick(api.R, ['STAT', 'DASH_SPD', 'DASH_T', 'MAPS', 'MODES', 'GTYPES', 'MAP_REAL', 'ROUND_T'])) + ';\n';
+  src += 'export const LIM = ' + JSON.stringify(pick(api.R, ['STAT', 'DASH_SPD', 'DASH_T', 'MAPS', 'MODES', 'GTYPES', 'MAP_REAL', 'ROUND_T', 'SUP_ROUND_CAP'])) + ';\n';
   // Conquest uses the same authored world/combat in an isolated lexical scope.
   // Terrain caches are bounded; per-pilot battle state is never module-global.
   src += 'export const CONQUEST = (function(){\n"use strict";\n' +

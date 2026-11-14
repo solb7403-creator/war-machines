@@ -67,13 +67,13 @@ function __run(cfg){
  me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;if(cfg.pilot==='human')me.hu={};__tapS(cfg);if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];   // expert: holds long range in fights (shots fly further, more of theirs miss); objectives come first in the others
  const roster=units.map(u=>({team:u.team,cls:u.cls,w:u.wtype,mhp:u.mhp,dps:Math.round(u.wdps*dmgMult(u)*rofMult(u)),gh:!!u.gh,boss:!!u.boss,ai:u!==me,aiP:u.aiL?AI_TIERS[u.aiL.i].p:null,wmult:u.wmult||null,aura:u.aura|0}));   // aiP: the authored AI power this pilot flies
  startMatch();if(typeof proofBegin==='function')proofBegin();
- const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0;
+ const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0,__rounds=1;
  const enemyDmgOnMe=[0],enemyDmgTotal=[0],allyDmg=[0],meDmg=[0],enemyHpLost=[0];let foeAlive=0;
  while(steps++<Math.ceil(30000/(60*DT))){
   if(state==='round'){   // between rounds a sensible pilot answers a counter with the chassis that beats it, if they own it
    const foe=units.find(u=>u.team!==me.team),fix=foe&&beatenBy(foe.cls);
    if(fix&&fix!==me.cls&&(battleLoadout.chs||[]).some(c=>c.c===fix)&&typeof switchChassis==='function'){switchChassis(fix);me.ctl='pilot';me.hum=true;me.pid='me';me.brain=newBrain();me.strafe=1;me.strafeT=1.5;}
-   startRound();me=units[0];__tapS(cfg);if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];continue;}
+   startRound();__rounds++;me=units[0];__tapS(cfg);if(__expert&&['arena','royale','bounty','boss'].includes(cfg.g))me.kite=[4.6,5.6];continue;}
   if(state!=='play'||(cfg.maxSteps&&steps>cfg.maxSteps))break;
   if(me.hp>0){if(__casual){me.brain.mode='press';me.brain.t=99;me.brain.hideCd=99;}   // casual: drives at the target, no peeking or cover play
    botAI(DT,me);
@@ -106,7 +106,7 @@ function __run(cfg){
  if(bad.length)throw new Error('non-finite unit');
  // abilities: counts for the pilot and for the enemy AI pilots (not the megatank: its attacks are its own), the shortest gap
  // between two uses by one AI tank, and the lowest charge / highest leftover cooldown any AI use saw (0 and 0 when the rules held)
- const foeIds=new Set(units.filter(u=>u.team!==me.team&&!u.boss&&!u.hum).map(u=>u.id)),ab={meSup:0,meDash:0,meShield:0,aiSup:0,aiDash:0,aiShield:0,aiSupGap:1e9,aiDashGap:1e9,aiShieldGap:1e9,aiSupLowSp:SUPER_MAX,aiDashCd:0,aiShieldCd:0,foeMin:+(foeAlive/60).toFixed(2),meMin:+(meAlive*15*DT/60).toFixed(2)};
+ const foeIds=new Set(units.filter(u=>u.team!==me.team&&!u.boss&&!u.hum).map(u=>u.id)),ab={meSup:0,meDash:0,meShield:0,aiSup:0,aiDash:0,aiShield:0,aiSupGap:1e9,aiDashGap:1e9,aiShieldGap:1e9,aiSupLowSp:SUPER_MAX,aiDashCd:0,aiShieldCd:0,foeMin:+(foeAlive/60).toFixed(2),meMin:+(meAlive*15*DT/60).toFixed(2),rounds:__rounds,foes:foeIds.size};   // rounds, foes: for supers per tank per ROUND (the unit the 5E-2b2b cap is in)
  const last={};
  for(const [k,id,t,v,isMe] of __abl){
   if(isMe){ab[k==='sup'?'meSup':k==='dash'?'meDash':'meShield']++;continue;}
