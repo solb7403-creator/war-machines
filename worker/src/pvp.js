@@ -90,6 +90,14 @@ export class RoomCore {
     this.deaths = []; this.tick = 0; this.sim = null;
   }
   humans() { return this.seats.filter(Boolean); }
+  // the gear-predicted chance for the stronger side if unit me flew at power p: teams compare average power, Last Standing any pair with me
+  swapOdds(me, p) {
+    const R = this.R, us = (this.sim.units || []).filter((x) => x && !x.boss), pw = (x) => Math.max(1, x === me ? p : Number(x.pw) || 0);
+    if (this.q.g === "royale") { let w = 0.5; for (const o of us) if (o !== me) w = Math.max(w, R.powerWin(pw(me), pw(o), 0, true)); return w; }
+    const avg = (t) => { const xs = us.filter((x) => x.team === t); return xs.reduce((a, x) => a + pw(x), 0) / Math.max(1, xs.length); };
+    const a = avg(0), b = avg(1);
+    return Math.max(R.powerWin(a, b, 0, true), R.powerWin(b, a, 0, true));
+  }
   later(ms, f) { const h = this.io.setTimeout(() => { this.timers.delete(h); f(); }, ms); this.timers.add(h); return h; }
   sendTo(s, o) { if (s && s.on && s.sock) try { s.sock.send(typeof o === "string" ? o : JSON.stringify(o)); } catch (e) {} }
   all(o) { const m = JSON.stringify(o); for (const s of this.humans()) this.sendTo(s, m); }
@@ -162,7 +170,13 @@ export class RoomCore {
       case "t": if (live) this.sim.netTarget(u, m.v | 0); break;   // tap-to-target lock (unit id, -1 clears)
       case "c": if ((this.phase === "vs" || this.phase === "round") && u && !s.done) {   // chassis swap
         const c = (s.L.chs || []).find((x) => x.c === m.c);
-        if (c && c.c !== s.L.c.c) { s.L = this.R.loadoutFor(s.L, c); this.sim.setTank(u, s.L); this.all({ k: "u", units: this.sim.roster() }); }   // its own build and cores travel with it (5E-2b3)
+        if (c && c.c !== s.L.c.c) {   // its own build and cores travel with it (5E-2b3)
+          const L2 = this.R.loadoutFor(s.L, c), p2 = this.R.powerOf(L2);
+          // bays can now differ a lot (one chassis kitted, one stock): a swap UP may not take the room past the mismatch cap it was matched
+          // under (MM_CAP, the live curve). A swap down, or one that stays inside the cap, goes through as before (review, 5E-2b3)
+          if (p2 > (Number(u.pw) || 0) && this.swapOdds(u, p2) > MM_CAP) { this.sendTo(s, { k: "cx", c: c.c }); break; }
+          s.L = L2; this.sim.setTank(u, s.L); this.all({ k: "u", units: this.sim.roster() });
+        }
       } break;
       case "q": this.quit(s); break;
       case "p": this.sendTo(s, { k: "P", i: m.i, t: this.tick }); break;

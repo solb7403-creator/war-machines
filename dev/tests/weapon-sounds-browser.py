@@ -81,6 +81,13 @@ async def main():
         # the Settings toggle stops a charge in flight too
         tog = await pg.evaluate("""()=>{exitBattle();prepareMatch();startMatch();me.sp=SUPER_MAX;me.supN=0;superGo(-Math.PI/2);update(1/60);const a=LW.stats().charging;ACT.sound();const b=LW.stats().charging,off=save.sound===false;ACT.sound();exitBattle();return {a,b,off,back:save.sound!==false};}""")
         ok(tog['a'] == 1 and tog['b'] == 0 and tog['off'] and tog['back'], 'the Sound toggle stops a charge and comes back on ' + json.dumps(tog))
+        # voice limits (review): 20 other tanks' supers at once stay under the cap and yours still plays; shots too far to hear cost the shared budget nothing
+        cap = await pg.evaluate("""()=>{exitBattle();prepareMatch();startMatch();LW.stopAll();me.x=10;me.y=22;
+          for(let i=0;i<20;i++)LW.fire('moon',1,1000+i,false,10+(i%5),20-(i%4));const a=LW.stats().active.sup,s0=LW.stats().made.sup;
+          LW.fire('pulse0',2,me.id,true,me.x,me.y);const s1=LW.stats().made.sup,b=LW.stats().active.sup,m0=LW.stats().made.other;
+          for(let i=0;i<6;i++)LW.shot('siege0',false,me.x+60,me.y+60);const m1=LW.stats().made.other;LW.shot('siege0',false,me.x+1,me.y);const m2=LW.stats().made.other;LW.stopAll();
+          return {a,b,own:s1-s0,far:m1-m0,near:m2-m1};}""")
+        ok(cap['a'] <= 8 and cap['b'] <= 8 and cap['own'] == 1 and cap['far'] == 0 and cap['near'] == 1, 'voice limits: supers capped at 8 with yours playing, far shots free ' + json.dumps(cap))
         # 4. the owner's sound test page
         for (w, h, nm) in [(390, 700, 'phone'), (320, 568, 'small'), (1366, 768, 'desktop')]:
             await pg.set_viewport_size({'width': w, 'height': h})

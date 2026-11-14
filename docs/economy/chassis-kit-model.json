@@ -17,16 +17,210 @@
  ],
  "calibration": [
   {
+   "rate": 10,
+   "firstKitDays": 28,
+   "firstKitRange": [
+    26,
+    30
+   ],
+   "allThreeDays": 84,
+   "allThreeRange": [
+    79,
+    95
+   ]
+  },
+  {
+   "rate": 12,
+   "firstKitDays": 33,
+   "firstKitRange": [
+    30,
+    37
+   ],
+   "allThreeDays": 93,
+   "allThreeRange": [
+    88,
+    96
+   ]
+  },
+  {
+   "rate": 14,
+   "firstKitDays": 36,
+   "firstKitRange": [
+    33,
+    39
+   ],
+   "allThreeDays": 104,
+   "allThreeRange": [
+    97,
+    111
+   ]
+  },
+  {
+   "rate": 16,
+   "firstKitDays": 39,
+   "firstKitRange": [
+    36,
+    40
+   ],
+   "allThreeDays": 112,
+   "allThreeRange": [
+    108,
+    115
+   ]
+  },
+  {
+   "rate": 18,
+   "firstKitDays": 43,
+   "firstKitRange": [
+    39,
+    47
+   ],
+   "allThreeDays": 128,
+   "allThreeRange": [
+    119,
+    139
+   ]
+  },
+  {
+   "rate": 20,
+   "firstKitDays": 49,
+   "firstKitRange": [
+    46,
+    53
+   ],
+   "allThreeDays": 143,
+   "allThreeRange": [
+    135,
+    152
+   ]
+  },
+  {
+   "rate": 22,
+   "firstKitDays": 55,
+   "firstKitRange": [
+    50,
+    63
+   ],
+   "allThreeDays": 153,
+   "allThreeRange": [
+    136,
+    167
+   ]
+  },
+  {
    "rate": 24,
-   "firstKitDays": 56,
-   "allThreeDays": 167
+   "firstKitDays": 52,
+   "firstKitRange": [
+    49,
+    56
+   ],
+   "allThreeDays": 158,
+   "allThreeRange": [
+    148,
+    168
+   ]
+  },
+  {
+   "rate": 26,
+   "firstKitDays": 63,
+   "firstKitRange": [
+    59,
+    69
+   ],
+   "allThreeDays": 176,
+   "allThreeRange": [
+    159,
+    188
+   ]
+  },
+  {
+   "rate": 28,
+   "firstKitDays": 60,
+   "firstKitRange": [
+    55,
+    64
+   ],
+   "allThreeDays": 175,
+   "allThreeRange": [
+    166,
+    199
+   ]
+  },
+  {
+   "rate": 30,
+   "firstKitDays": 61,
+   "firstKitRange": [
+    58,
+    62
+   ],
+   "allThreeDays": 185,
+   "allThreeRange": [
+    179,
+    191
+   ]
+  },
+  {
+   "rate": 32,
+   "firstKitDays": 64,
+   "firstKitRange": [
+    56,
+    73
+   ],
+   "allThreeDays": 192,
+   "allThreeRange": [
+    175,
+    228
+   ]
+  },
+  {
+   "rate": 36,
+   "firstKitDays": 71,
+   "firstKitRange": [
+    67,
+    74
+   ],
+   "allThreeDays": 210,
+   "allThreeRange": [
+    195,
+    219
+   ]
+  },
+  {
+   "rate": 40,
+   "firstKitDays": 83,
+   "firstKitRange": [
+    77,
+    93
+   ],
+   "allThreeDays": 242,
+   "allThreeRange": [
+    231,
+    256
+   ]
   }
  ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "near56": 22,
  "profiles": [
   {
    "minutes": 10,
-   "firstKitDays": 68,
-   "allThreeDays": 208,
+   "firstKitDays": 67,
+   "firstKitRange": [
+    61,
+    74
+   ],
+   "allThreeDays": 194,
+   "allThreeRange": [
+    188,
+    198
+   ],
+   "perDay": 11556,
    "kits": [
     {
      "chassis": "titan",
@@ -53,7 +247,6 @@
      "power": 142
     }
    ],
-   "perDay": 11400,
    "sources": {
     "match": 754571,
     "quests": 1238450,
@@ -75,8 +268,17 @@
   },
   {
    "minutes": 15,
-   "firstKitDays": 58,
-   "allThreeDays": 171,
+   "firstKitDays": 61,
+   "firstKitRange": [
+    52,
+    66
+   ],
+   "allThreeDays": 174,
+   "allThreeRange": [
+    154,
+    185
+   ],
+   "perDay": 13342,
    "kits": [
     {
      "chassis": "titan",
@@ -103,7 +305,6 @@
      "power": 142
     }
    ],
-   "perDay": 13301,
    "sources": {
     "match": 949399,
     "quests": 1018750,
@@ -125,8 +326,17 @@
   },
   {
    "minutes": 20,
-   "firstKitDays": 56,
-   "allThreeDays": 167,
+   "firstKitDays": 52,
+   "firstKitRange": [
+    49,
+    56
+   ],
+   "allThreeDays": 158,
+   "allThreeRange": [
+    148,
+    168
+   ],
+   "perDay": 15097,
    "kits": [
     {
      "chassis": "titan",
@@ -153,7 +363,6 @@
      "power": 142
     }
    ],
-   "perDay": 15015,
    "sources": {
     "match": 1201072,
     "quests": 1003150,
@@ -175,8 +384,17 @@
   },
   {
    "minutes": 30,
-   "firstKitDays": 45,
-   "allThreeDays": 129,
+   "firstKitDays": 42,
+   "firstKitRange": [
+    40,
+    46
+   ],
+   "allThreeDays": 133,
+   "allThreeRange": [
+    129,
+    139
+   ],
+   "perDay": 18598,
    "kits": [
     {
      "chassis": "titan",
@@ -203,7 +421,6 @@
      "power": 142
     }
    ],
-   "perDay": 18461,
    "sources": {
     "match": 1385322,
     "quests": 765900,
@@ -225,8 +442,17 @@
   },
   {
    "minutes": 45,
-   "firstKitDays": 34,
-   "allThreeDays": 104,
+   "firstKitDays": 35,
+   "firstKitRange": [
+    28,
+    38
+   ],
+   "allThreeDays": 108,
+   "allThreeRange": [
+    104,
+    112
+   ],
+   "perDay": 24297,
    "kits": [
     {
      "chassis": "titan",
@@ -253,7 +479,6 @@
      "power": 142
     }
    ],
-   "perDay": 23752,
    "sources": {
     "match": 1654943,
     "quests": 624200,
@@ -275,8 +500,17 @@
   },
   {
    "minutes": 60,
-   "firstKitDays": 28,
-   "allThreeDays": 90,
+   "firstKitDays": 29,
+   "firstKitRange": [
+    27,
+    32
+   ],
+   "allThreeDays": 88,
+   "allThreeRange": [
+    85,
+    96
+   ],
+   "perDay": 29335,
    "kits": [
     {
      "chassis": "titan",
@@ -303,7 +537,6 @@
      "power": 142
     }
    ],
-   "perDay": 29273,
    "sources": {
     "match": 1928178,
     "quests": 539050,
@@ -322,6 +555,40 @@
     "core": 172,
     "wasted": 165
    }
+  }
+ ],
+ "light": [
+  {
+   "minutes": 5,
+   "dailies": 2,
+   "weeklies": 1,
+   "first": 175,
+   "firstRange": [
+    147,
+    199
+   ],
+   "all": 512,
+   "allRange": [
+    475,
+    531
+   ],
+   "perDay": 4455
+  },
+  {
+   "minutes": 10,
+   "dailies": 2,
+   "weeklies": 1,
+   "first": 136,
+   "firstRange": [
+    116,
+    148
+   ],
+   "all": 385,
+   "allRange": [
+    347,
+    412
+   ],
+   "perDay": 6300
   }
  ],
  "ownerCheck": [

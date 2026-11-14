@@ -125,5 +125,39 @@ t(R.powerOf(Lv) !== R.powerOf({ ...Lv, up: S.upc.titan }), 'power reads the fiel
 // free gem caches (login day 7, the gift, the chest, the pass) go to the chassis you fly
 { const day = Math.floor(Date.now() / 864e5); db.root.eco[pp].login = { last: day - 1, n: 6 }; const g1 = J(E(pp).gsc.vanguard);
   [s, r] = await act(P, 'login'); t(r.out.box && r.out.box.c === 'titan' && J(E(pp).gsc.vanguard) === g1, 'the day-7 gem cache went to the Titan, the chassis flown ' + J(r.out.box)); }
+// ---- 6. review round 1: forged names, unowned chassis, a maxed chosen core, the refund's loadout, the home chassis ----
+for (const c of ['constructor', '__proto__', 'toString']) {
+  [st, res, pl] = await inv({ kind: 'box', tk: 'gem', ri: 2, c });
+  t(st === 200 && pl && pl.c === undefined, 'a forged chassis name is dropped from a gem cache invoice (' + c + ') ' + J(pl));
+}
+[st, res] = await call('/api/stars-invoice', { initData: initData(P), kind: 'core', tk: 'toString', ri: 2, c: 'titan' }); t(st === 400, 'a forged core name is refused (' + st + ')');
+{ const hr = await pay('pf1', { u: 702, k: 'box', t: 'gem', r: 2, c: 'constructor', g: 23, n: 'n9' }, 1500), sp = db.get('/starsPaid/tg_702/pf1');
+  t(hr.status === 200 && sp && sp.o && sp.o[0] && R.CHORDER.includes(sp.o[0].c) && !sp.err, 'a payment naming a forged chassis is granted to a real one and recorded ' + J(sp && sp.o)); }
+{ const pts0 = E(pp).pts; [s, r] = await act(P, 'core', { k: 'toString', ri: 2, c: 'titan' });
+  t(s < 500 && E(pp).pts === pts0 && R.CHORDER.every((c) => Object.keys(E(pp).gsc[c]).every((k) => R.GORDER.includes(k))), 'a forged core name takes no points and writes nothing (' + s + ')');
+  [s, r] = await act(P, 'core', { k: 'dmg', ri: 0, c: 'constructor' }); t(s < 500 && E(pp).pts === pts0, 'a forged chassis on a chosen core is not a server error (' + s + ')'); }
+{ const up0 = J(E(pp).upc); [s, r] = await act(P, 'respec', { c: 'scout' });
+  t(r.out && r.out.err === 'chassis' && J(E(pp).upc) === up0, 'a reset named for a chassis you don\'t own is refused, no build is touched ' + J(r.out)); }
+[st] = await inv({ kind: 'box', tk: 'gem', ri: 1, c: 'scout' }); t(st === 409, 'no paid gem cache for a chassis you don\'t own (' + st + ')');
+{ // a chosen core already at level 5 when its payment lands: the shards go to the chassis's lowest core still below 5
+  db.root.eco[pp].glc.titan.dmg = 5; const gl0 = { ...E(pp).glc.titan }, low = R.GORDER.filter((k) => gl0[k] < 5).sort((a, b) => gl0[a] - gl0[b])[0];
+  await pay('pm1', { u: 702, k: 'core', t: 'dmg', r: 1, c: 'titan', g: 12, n: 'n10' }, 750);
+  const o = (db.get('/starsPaid/tg_702/pm1') || {}).o || [];
+  t(o[0] && o[0].gem === low && o[0].was === 'dmg' && E(pp).glc.titan.dmg === 5, 'a maxed chosen core\'s shards went to the lowest core instead (' + J(o[0]) + ')'); }
+{ // the refund puts the stored loadout and power back too
+  await pay('pr1', { u: 702, k: 'core', t: 'rof', r: 2, c: 'titan', g: 34.5, n: 'n11' }, 2250);
+  const Lg = E(pp).L; t(Lg.c.c === 'titan' && J(Lg.gl) === J(E(pp).glc.titan), 'a paid chosen core updates the deployed loadout\'s cores');
+  await hook({ message: { from: { id: 702 }, chat: { id: 702, type: 'private' }, refunded_payment: { total_amount: 2250, telegram_payment_charge_id: 'pr1', invoice_payload: '{}' } } });
+  const L2 = E(pp).L; t(J(L2.gl) === J(E(pp).glc.titan) && E(pp).pw === R.powerOf(L2), 'after its refund the stored loadout and power match the cores again ' + J(L2.gl)); }
+{ // a chassis no longer owned is not home
+  const S2 = R.ecoNorm({}); S2.L = { c: { c: 'titan', t: 0 } }; t(R.homeChassis(S2) === 'vanguard', 'an unowned chassis in the record is not the home chassis');
+  S2.cOwn.titan = [0]; t(R.homeChassis(S2) === 'titan', 'an owned one is'); }
+{ // a mutual kill before the clock is an honest Arena draw (proof of play): the record shows every tank down
+  const { checkProof } = await import('../../../worker/src/proof.js'), fs = await import('node:fs');
+  const rec = JSON.parse(fs.readFileSync(new URL('./fixtures/proof-mutual-kill.json', import.meta.url), 'utf8'));
+  t(checkProof(rec.pf, rec.c).ok, 'a mutual-kill Arena draw before the clock passes the proof check');
+  const raw = atob(rec.pf.s), b = Uint8Array.from(raw, (ch) => ch.charCodeAt(0)), n = rec.pf.n, sz = n * 3 + 6, k = b.length / sz;
+  b[(k - 1) * sz + 1 * 3 + 2] = 60; b[(k - 2) * sz + 1 * 3 + 2] = 60;   // the enemy still up at the end: a draw claim before the clock fails
+  { const o = checkProof({ ...rec.pf, s: btoa(String.fromCharCode(...b)) }, rec.c); t(!o.ok && o.why === 'result', 'an early draw with a tank still up fails (' + o.why + ')'); } }
 console.log(`chassis: passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

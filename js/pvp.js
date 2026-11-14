@@ -128,7 +128,8 @@ function pvpMsg(m){
   case 'solo':pvpFallback('No live pilots right now. Playing AI pilots.');return;
   case 'x':if(P.phase==='find')pvpFallback('Live match unavailable right now. Playing AI pilots.');else{pvpClose();exitBattle();showToast('That live match is over.');}return;
   case 'go':pvpGo(m);return;
-  case 'u':pvpRoster(m.units);uiDirty();return;   // a chassis swap: the VS screen or the round screen redraws
+  case 'u':pvpRoster(m.units);uiDirty();return;
+  case 'cx':showToast('Your '+(isCh(m.c)?CH[m.c].n:'other chassis')+' is too strong for this room. Fly it from your next match.');return;   // the room refused a swap up past its mismatch cap (5E-2b3)   // a chassis swap: the VS screen or the round screen redraws
   case 'f':pvpFight(m);return;
   case 's':pvpSnap(m);return;
   case 'r':pvpRound(m);return;

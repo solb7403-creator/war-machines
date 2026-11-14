@@ -104,7 +104,7 @@ async function auth(req, env) {
 
 function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
-  if (k === "core") return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen core: " + ((RULES.GEM[tk] || {}).name || "Core");
+  if (k === "core") return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen core: " + (RULES.isGem(tk) ? RULES.GEM[tk].name : "Core");
   if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
   if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
   if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
@@ -291,9 +291,9 @@ async function solValueOk(sol, ton) {
 const descOf = (d) => {
   d = d && typeof d === "object" ? d : {};
   const kind = String(d.kind || "");
-  const c = RULES.CH[d.c] ? d.c : null;   // the chassis a gem cache, chosen core, pack's gem caches or reset is for (5E-2b3)
+  const c = RULES.isCh(d.c) ? d.c : null;   // the chassis a gem cache, chosen core, pack's gem caches or reset is for (5E-2b3)
   if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null, c } : null;
-  if (kind === "core") return RULES.GEM[d.tk] && [0, 1, 2].includes(Number(d.ri)) && c ? { kind, tk: d.tk, ri: Number(d.ri), c } : null;
+  if (kind === "core") return RULES.isGem(d.tk) && [0, 1, 2].includes(Number(d.ri)) && c ? { kind, tk: d.tk, ri: Number(d.ri), c } : null;
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
@@ -351,7 +351,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
 // ================= /api/stars-invoice =================
 // the price comes from the server's own record: repeat-buy pricing, and a deal only if it's still unused this period
 async function starsInvoice(env, b, user, pid, now = Date.now()) {
-  const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0), c = RULES.CH[b.c] ? b.c : undefined;
+  const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0), c = RULES.isCh(b.c) ? b.c : undefined;
   if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
   const desc = descOf({ kind: k, tk, ri, id: tk, deal: b.deal, c });
   if (!desc) return { status: 400, body: { error: "item" } };
@@ -580,16 +580,21 @@ async function webhook(req, env) {
     const t = desc ? await tx(env, pid, (S, X) => {
       S.gout = S.gout || {};
       if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
-      const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
+      // a grant that throws (it shouldn't: names are checked in descOf) never loses the paid record: the record goes back as it was and the
+      // payment is logged below with the error for the owner. A database failure still throws, so Telegram retries the webhook
+      let outs;
+      const S0 = JSON.parse(JSON.stringify(S));
+      try { outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X); }
+      catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = [{ none: 1, err: String((e && e.message) || e).slice(0, 80) }]; }
       if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "box") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
       const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
       return { outs };
     }, now) : { outs: [] };
-    const outs = (t.outs || []).filter((o) => o && !o.none);
-    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
+    const gerr = ((t.outs || []).find((o) => o && o.err) || {}).err || null, outs = (t.outs || []).filter((o) => o && !o.none);
+    await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, ...(gerr ? { err: gerr } : {}), t: { ".sv": "timestamp" } });
     await revAdd(env, sp.total_amount * 1.3);   // the liquidity fund (Stars at ~1.3 cents each)
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, c: p.c || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
+    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, c: p.c || null, stars: sp.total_amount, n: p.n || "", o: outs, ...(gerr ? { err: gerr } : {}), ts: { ".sv": "timestamp" } });
     return new Response("ok");
   }
   if (m && m.refunded_payment) {
@@ -603,6 +608,7 @@ async function webhook(req, env) {
         if (S.rfd.includes(charge)) return { abort: true };
         S.rfd = S.rfd.concat(charge).slice(-40);
         RULES.ecoRefund(S, sp.k, sp.o || []);
+        if ((S.lab || ["respec", "vault", "core", "box"].includes(sp.k)) && S.L) setLoadout(S, S.L);   // the stored loadout and power follow the refund, as they follow a grant
         S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(sp.g) || 0));   // a refunded purchase isn't spending
         n = S.rfd.length;
         return {};

@@ -183,5 +183,23 @@ for (const i in pool) { const P = pool[i], a = { win: P.a.w / P.a.n, ratio: P.a.
   }
 }
 
+// ---- 5b. a swap UP (a stock bay deployed, the kitted chassis swapped in on the VS screen) lifts the AI to that chassis's league, so
+// the kitted tank never meets a low league's AI (review, 5E-2b3); the pay stays the match's league; never above the pilot ----
+{
+  const UP0 = { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }, F = GEAR.legend;
+  W.eval("var myLeague=pw=>leagueInfo(leagueIdx(leagueRating(pw,0.55,60),0));");   // core.js's, for a pilot with a 55% form
+  const L = { ...F, c: { c: 'scout', t: 0, q: 1, s: false }, up: UP0, gl: {}, chs: [{ c: 'scout', t: 0, q: 1, s: false, up: UP0, gl: {} }, { c: 'titan', t: 2, q: 1.1, s: false, up: { ...F.up }, gl: { ...F.gl } }] };
+  for (const [g, m] of [['arena', '1v1'], ['arena', '3v3'], ['boss', '2v2'], ['royale', '1v1']]) {
+    const r = W.eval(`(()=>{setMap('classic');matchG=${J(g)};battleLoadout=${J(L)};battleDeployC='scout';battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;MM={n:MODES[${J(m)}].n,series:false,mp:50,cp:true};populatePreparedMatch();state='vs';
+      const ai=()=>units.filter(u=>u.aiL).map(u=>AI_TIERS[u.aiL.i].p);const lg0=aiLgNow(),a0=ai();switchChassis('titan');const pw=powerOf(battleLoadout),lg1=aiLgNow(),want=myLeague(pw).i,a1=ai(),pay=battleLg;
+      battleDeployC=null;state='menu';return {lg0,lg1,want,pw,a0,a1,pay};})()`);
+    const nm = g + ' ' + m;
+    ok(r.lg0 === r.pay && r.lg1 === Math.max(r.pay, r.want) && r.lg1 > r.lg0, nm + ': the swap up lifts the AI to the Titan\'s league (' + LGN[r.lg0] + ' -> ' + LGN[r.lg1] + '), the pay stays ' + LGN[r.pay]);
+    ok(r.a1.every((p) => p <= r.pw), nm + ': after the lift every AI pilot is still at or under the pilot (' + J(r.a1) + ' vs ' + r.pw + ')');
+    ok(!r.a1.length || Math.max(...r.a1) >= Math.max(...r.a0), nm + ': the AI is no weaker after the swap up (' + J(r.a0) + ' -> ' + J(r.a1) + ')');
+  }
+  W.eval('myLeague=undefined;');
+}
+
 if (fails.length) { console.log('\nFAIL fair arcade: ' + fails.length + ' of ' + checks + ' checks failed'); process.exit(1); }
 console.log('PASS fair arcade:', checks, 'checks');

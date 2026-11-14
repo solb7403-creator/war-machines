@@ -10,7 +10,7 @@ const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
 function winPoints(gk,mk){return leaguePay(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1),myLeague().i).pts;}   // with league base pay and the league bonus (spendable points)
 
 // ---- your tank and the AI match ----
-let battleLoadout=null,battlePower=null,battleLg=0;   // battleLg: the league the AI is set for (leagueIdx, rules.js)
+let battleLoadout=null,battlePower=null,battleLg=0,battleDeployC=null;   // battleLg: the match's league (its pay; the AI's, see aiLgNow); battleDeployC: the chassis deployed   // battleLg: the league the AI is set for (leagueIdx, rules.js)
 function battleChassisClasses(){if(typeof pvpOn==='function'&&pvpOn())return pvp.chs||ownedChassisClasses();return battleLoadout?(battleLoadout.chs||[battleLoadout.c]).map(c=>c.c):ownedChassisClasses();}
 function buildMe(){
  const m=Object.assign(tankOf(battleLoadout||myLoadout(),hpScale()),{x:10,y:28,flash:0,ang:-Math.PI/2,cd:0.3,lk:null,buffs:[],sp:0,sup:null,team:0,hum:true,ctl:'me',name:IN_TG?tgName(TG_USER):'You'});
@@ -20,7 +20,7 @@ function buildMe(){
 function prepareMatch(gOver){   // gOver: a game type already picked (a live queue that fell back to AI)
  {const pk=mapKey();setMap(pk==='random'?MAP_REAL[(Math.random()*MAP_REAL.length)|0]:pk);}
  {const gk=gOver||gtypeKey();matchG=gk==='random'?GT_ORDER[(Math.random()*GT_ORDER.length)|0]:gk;}
- battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;
+ battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;battleDeployC=battleLoadout.c.c;
  const mp=save.mp||0;
  MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // cp: you can counter-pick back between rounds
  populatePreparedMatch();
@@ -33,12 +33,12 @@ let aiLv=null;
 function populatePreparedMatch(){
  const mp=MM.mp;
  me=buildMe();
- const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n);   // the league step is on top of the base AI curve
+ const pw=battlePower||powerOf(battleLoadout||myLoadout());aiLv=aiLevel(pw,undefined,aiLgNow(),isSolo(matchG)?'solo':MM.n);   // the league step is on top of the base AI curve
  const modeN=MM.n,names=BOT_NAMES.slice().sort(()=>Math.random()-0.5);
  units=[me];
  if(matchG==='boss'){   // Survival: you (and AI wingmen in 2v2 and 3v3) against one megatank
   for(let i=1;i<modeN;i++)units.push(mkBot(0,i===1?6:14,26,me,names.pop(),aiLv));
-  units.push(mkBoss(me,modeN,aiBossLevel(pw,battleLg,modeN)));   // the megatank of this league (never tuned to your tank)
+  units.push(mkBoss(me,modeN,aiBossLevel(pw,aiLgNow(),modeN)));   // the megatank of this league (never tuned to your tank)
  }else if(isSolo(matchG)){   // Last Standing: you and 5 AI pilots, each on their own team
   const sp=royaleSpawns();
   for(let i=1;i<GTYPES[matchG].solo;i++)units.push(mkBot(i,sp[i].x,sp[i].y,me,names.pop(),aiLv));
@@ -74,17 +74,21 @@ function switchChassis(cls){
 }
 // The 5D rule, "the AI is never above you", with per-chassis builds (5E-2b3): your chassis can now differ a lot in power (one
 // fully upgraded, one stock), so a swap on the VS screen or between rounds re-levels every AI pilot, the megatank and any ghost
-// to the tank you now field: the league stays the match's (its pay too), the AI follows aiLevel for this chassis's power. In
+// to the tank you now field: the pay stays the match's league; the AI follows aiLevel for this chassis's power, and a swap UP also
+// lifts it to that chassis's league (aiLgNow), so a stock bay deployed then a kitted one swapped in meets a fair fight. In
 // place, so nothing that holds a tank (focus, the 3D view, the match record) loses it.
 function relevelAI(){
- const pw=powerOf(battleLoadout);battlePower=pw;
- const lv=aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n),hs=hpScale(),cap=aiGhostCap(pw,lv.p);aiLv=lv;
+ const pw=powerOf(battleLoadout);battlePower=pw;const lg=aiLgNow();
+ const lv=aiLevel(pw,undefined,lg,isSolo(matchG)?'solo':MM.n),hs=hpScale(),cap=aiGhostCap(pw,lv.p);aiLv=lv;
  units.forEach((u,i)=>{if(!u||u===me||u.hum)return;
-  if(u.boss){const b=mkBoss(me,MM.n,aiBossLevel(pw,battleLg,MM.n));Object.assign(u,{mhp:b.mhp,hp:b.mhp,wdps:b.wdps,bt:{...u.bt,ref:b.bt.ref}});return;}
+  if(u.boss){const b=mkBoss(me,MM.n,aiBossLevel(pw,lg,MM.n));Object.assign(u,{mhp:b.mhp,hp:b.mhp,wdps:b.wdps,bt:{...u.bt,ref:b.bt.ref}});return;}
   if(u.gh){if((u.gpw||Infinity)<=cap)return;const b=mkBot(u.team,u.x,u.y,me,BOT_NAMES[i%BOT_NAMES.length],lv);Object.assign(u,b,{id:u.id,gh:0,gid:undefined});return;}
   if(u.aiL){const T=tankOf(aiLoadout(lv.i,u.wtype,u.cls),hs),k=u.aiL.k;
-   Object.assign(u,{gems:T.gems,gemM:T.gemM,mhp:Math.round(T.mhp*k),dmgM:T.dmgM,spdM:T.spdM,critB:T.critB,fillM:T.fillM,turnM:T.turnM,wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:lv.i,k,lg:u.aiL.lg}});u.hp=u.mhp;}});
+   Object.assign(u,{gems:T.gems,gemM:T.gemM,mhp:Math.round(T.mhp*k),dmgM:T.dmgM,spdM:T.spdM,critB:T.critB,fillM:T.fillM,turnM:T.turnM,wdps:Math.round(T.wdps*k),wpspd:T.wpspd,wtier:T.wtier,wmult:T.wmult,chm:T.chm,aura:T.aura,aiL:{i:lv.i,k,lg}});u.hp=u.mhp;}});
 }
+// a swap UP lifts the AI to that chassis's league, so a stock bay deployed then a kitted one swapped in can't meet a low league's AI
+// (review, 5E-2b3). Never above you (aiPowerFor caps the AI at your power) and never below the match's league; the pay stays battleLg's
+function aiLgNow(){return Math.max(battleLg|0,battleLoadout&&battleDeployC&&battleLoadout.c.c!==battleDeployC&&typeof myLeague==='function'?myLeague(powerOf(battleLoadout)).i:0);}
 function matchup(){   // how your chassis fares against the enemy lineup
  const foes=units.filter(u=>u.team!==me.team&&!u.boss),adv=foes.filter(f=>COUNTER[me.cls]===f.cls).length,dis=foes.filter(f=>COUNTER[f.cls]===me.cls).length;
  return {adv,dis,foes};
@@ -132,7 +136,7 @@ function matchStart(){
    if(r&&r.tok){T.tok=r.tok;T.err=null;
     if(mTicket===T&&state==='vs'&&r.L){
      const chosen=battleLoadout&&battleLoadout.c.c;
-     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;if(Number.isInteger(r.lgi))battleLg=r.lgi;   // the server's league sets this match's AI
+     battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;if(Number.isInteger(r.lgi))battleLg=r.lgi;battleDeployC=battleLoadout.c.c;   // the server's league sets this match's AI
      const c=(battleLoadout.chs||[]).find(c=>c.c===chosen);if(c&&c.c!==battleLoadout.c.c){battleLoadout=loadoutFor(battleLoadout,c);battlePower=powerOf(battleLoadout);}   // swapped before the ticket came: that chassis, its own build and cores, its power for the AI
      if(r.E)applyEco(r.E);populatePreparedMatch();
      const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
@@ -154,11 +158,11 @@ function matchStart(){
 // Only ghosts clearly weaker than your tank and no stronger than this match's AI (aiGhostCap, rules.js), and at most one on the enemy team: after the first enemy
 // seat they fill your team's seats, so a ghost can't turn an AI match into a hidden fight against stronger pilots
 function placeGhosts(list){
- const pw=battlePower||powerOf(battleLoadout||myLoadout()),cap=aiGhostCap(pw,(aiLv||aiLevel(pw,undefined,battleLg,isSolo(matchG)?'solo':MM.n)).p);
+ const pw=battlePower||powerOf(battleLoadout||myLoadout()),cap=aiGhostCap(pw,(aiLv||aiLevel(pw,undefined,aiLgNow(),isSolo(matchG)?'solo':MM.n)).p);
  const free=units.map((u,i)=>i).filter(i=>i>0&&!units[i].hum&&!units[i].boss&&!units[i].gh);
  const foeSeats=free.filter(i=>units[i].team!==me.team),allySeats=free.filter(i=>units[i].team===me.team);
  const seats=foeSeats.slice(0,1).concat(allySeats);
- list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g,battleLg);units[i].gpw=powerOf(g.L);}catch(e){}});
+ list.filter(g=>g&&g.L&&(()=>{try{return powerOf(g.L)<=cap;}catch(e){return false;}})()).slice(0,seats.length).forEach((g,k)=>{const i=seats[k],o=units[i];try{units[i]=mkGhost(o.team,o.x,o.y,g,aiLgNow());units[i].gpw=powerOf(g.L);}catch(e){}});
  const ov=typeof findOv==='function'&&findOv('vs');if(ov&&ov.re)ov.re();
 }
 // results waiting for the server: sent in order, each counts once (the server gives a resent one the same answer).

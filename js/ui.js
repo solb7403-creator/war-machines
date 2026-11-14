@@ -575,9 +575,10 @@ function payNote(){
 function crate(tk,ri,pts){const f=crateFound(tk,ri),dk=pts?null:dealOf(tk,ri),pp=boxPts(tk,ri);
  if(pts&&!pp)return '';
  return '<button class="crate" data-act="'+(pts?'ptscrate':'crate')+'" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
-  '<div class="p">'+(pts?coin()+fmtK(pp):priceLabel(boxPrice(tk,ri),boxStars(tk,ri)))+'</div><div class="f">'+(dk?'<span class="dealf">'+(dk==='d'?'30':'25')+'% off</span>':tk==='gem'?(pts?['1-2','3-4','11-14'][ri]+' shards':boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';}
+  '<div class="p">'+(pts?coin()+fmtK(pp):priceLabel(boxPrice(tk,ri),boxStars(tk,ri)))+'</div><div class="f">'+(dk?'<span class="dealf">'+(dk==='d'?'30':'25')+'% off</span>':tk==='gem'?(pts?['1-2','3-4','11-14'][ri]+' shards':boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':['1-2','3-4','11-14'][ri]+' shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';}
 // ---------- cores are per chassis (5E-2b3): every gem cache and chosen core names the chassis it is for ----------
 let shopTab='store';
+const cachesFor=()=>{const c=coresFor();return isCh(c)?' for your '+CH[c].n:'';};   // free caches land on the Cores-for chassis: the claim says which (review)
 const shopCh=()=>coresFor();   // the chassis the Shop's cores are for (core.js: the pick, else the one you fly)
 function coreForChips(){
  const own=ownedChassisClasses(),c=shopCh();
@@ -594,11 +595,11 @@ const coreNeed=(lv,sh)=>{let n=-(sh|0);for(let l=lv;l<5;l++)n+=SHARD_NEED[l];ret
 function openCorePick(k,pts){
  const c=shopCh();
  sheet('corepick',()=>{const lv=myGl(c)[k]||1,sh=myGs(c)[k]|0,need=coreNeed(lv,sh),N=CH[c].n;
-  const row=ri=>{const n=CORE_N[ri],pr=pts?corePts(ri):ecoPrice(save,{kind:'core',tk:k,ri,c},ecoX()),cache=pts?GEM_PTS[ri]:boxStars('gem',ri,true),over=Math.max(0,n-need);
-   return '<div class="up cprow"><div class="grow"><div class="nm" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+' pick: '+n+' shards</div><div class="d">'+(over?(over===n?'All past level 5: nothing to gain':over+' of them past level 5 (kept as surplus)'):'All '+n+' go to '+GEM[k].name)+'. A random '+TIER_N[ri].toLowerCase()+' gem cache: '+(pts?fmtNum(cache)+' points':fmtNum(cache)+' ⭐')+'.</div></div>'+
+  const row=ri=>{const n=CORE_N[ri],pr=pts?corePts(ri):ecoPrice(save,{kind:'core',tk:k,ri,c},ecoX()),cache=pts?GEM_PTS[ri]:boxStars('gem',ri,true),now=pts?cache:boxStars('gem',ri),over=Math.max(0,n-need);
+   return '<div class="up cprow"><div class="grow"><div class="nm" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+' pick: '+n+' shards</div><div class="d">'+(over?(over===n?'All past level 5: nothing to gain':over+' of them past level 5 (kept as surplus)'):'All '+n+' go to '+GEM[k].name)+'. A random '+TIER_N[ri].toLowerCase()+' gem cache: '+(pts?fmtNum(cache)+' points':fmtNum(cache)+' ⭐'+(now<cache?' ('+fmtNum(now)+' ⭐ with today’s deal)':''))+'.</div></div>'+
     (pts?'<button class="btn sm '+((save.pts||0)>=pr?'btn-gold':'btn-quiet')+'" data-act="buycorepts" data-arg="'+k+':'+ri+'"'+(need?'':' disabled')+'>'+coin()+fmtNum(pr)+'</button>':
      '<button class="btn sm btn-go" data-act="buycore" data-arg="'+k+':'+ri+'"'+(need&&pr?'':' disabled')+'>'+(pr?priceLabel(pr.ton,pr.stars):'Not sold')+'</button>')+'</div>';};
-  return '<div class="row cphead">'+gemIcon(k)+'<div class="grow"><h3>'+GEM[k].name+' core for your '+esc(N)+'</h3><p class="mut">Pick the core and the size: every shard goes to this core on the '+esc(N)+'. No random roll, nothing lands on a core you have already maxed. Costs 1.5× a gem cache of the same size.</p></div></div>'+
+  return '<div class="row cphead">'+gemIcon(k)+'<div class="grow"><h3>'+GEM[k].name+' core for your '+esc(N)+'</h3><p class="mut">Pick the core and the size: every shard goes to this core on the '+esc(N)+'. No random roll, nothing lands on a core you have already maxed. Costs 1.5× the full price of a gem cache of the same size'+(pts?'':' (deals don’t apply to chosen cores)')+'.</p></div></div>'+
    '<p class="cpnow">'+esc(N)+' · level '+lv+' of 5'+(lv<5?' · '+need+' shards to level 5':' · maxed')+'</p>'+gemProgress(k,c)+
    '<div class="ups list" style="margin-top:10px">'+[0,1,2].map(row).join('')+'</div>'+
    (pts?'<p class="dimtxt" style="margin-top:8px">You have '+fmtNum(save.pts||0)+' points.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for points in the Points shop.</p>');
@@ -669,10 +670,10 @@ function shopSeg(){
 function renderPtsShop(){
  const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const builds=ownedChassisClasses().map(c=>'<div><b>'+esc(CH[c].n)+'</b><span>'+upLevels(myUp(c))+' of '+BUILD_MAX+' levels · cores '+GORDER.filter(k=>(myGl(c)[k]||1)>=5).length+' of 7 maxed</span></div>').join('');
- return '<div class="ptsbal"><b class="num">'+coin()+fmtNum(save.pts||0)+'</b><span>points to spend. Matches, quests, the daily reward and your squad earn them.</span></div>'+
+ return '<p class="dimtxt ptsnote">Everything here is bought with points: matches, quests, the daily reward and your squad earn them.</p>'+
   sec('Cores','Per chassis')+coreForChips()+
   '<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri,true)).join('')+'</div>'+
-  '<h4 class="ptsh">Chosen core · pick it, no random roll</h4>'+corePickGrid(true)+
+  '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum(corePts(0))+'</h4>'+corePickGrid(true)+
   sec('Gear')+'<div class="crates c2">'+[0,1].map(ri=>crate('weapon',ri,true)).join('')+'</div><div class="crates c2" style="margin-top:8px">'+[0,1].map(ri=>crate('chassis',ri,true)).join('')+'</div>'+
   '<p class="dimtxt" style="margin-top:6px">Epic weapons and chassis come from the Store, the Lunar Pass and packs.</p>'+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
@@ -698,7 +699,7 @@ function renderShop(){
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
   sec('Cores','Per chassis')+coreForChips()+'<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
-  '<h4 class="ptsh">Chosen core · pick it, no random roll</h4>'+corePickGrid(false)+
+  '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum((ecoPrice(save,{kind:'core',tk:'dmg',ri:0,c:shopCh()},ecoX())||{stars:0}).stars)+' ⭐</h4>'+corePickGrid(false)+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
   sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   '<button class="q ptslink" data-act="shoptab" data-arg="pts"><div class="grow"><div class="t">Points shop</div><div class="p">Gem caches (Epic too), chosen cores, crates and the salvage yard, for points</div></div><span class="chev">›</span></button>'+
@@ -756,7 +757,7 @@ function renderQuests(){
   return qRow({id:Q.id,t:Q.n,goal:Q.goal,p,done:e.done,claimed:e.claimed,pts:Q.pts},'claimq',Q.d+(Q.goal>1&&!e.done?' ('+fmtNum(p)+' / '+fmtNum(Q.goal)+')':''));}).join('');
  return passCard()+sec('Daily reward','Streak: '+L.streak+(L.streak===1?' day':' days'))+
   '<div class="cal">'+cal+'</div>'+
-  (L.claimedToday?'<button class="btn btn-quiet block off">Next reward in '+fmtDur(msToDailyReset())+'</button>':'<button class="btn btn-gold block" data-act="login">'+(giftReady()?'Claim +'+fmtNum(L.reward)+' and a Rare gem cache':'Claim day '+(L.slot+1)+': +'+fmtNum(L.reward)+' points'+(L.slot===6?' and a gem cache':''))+'</button>')+
+  (L.claimedToday?'<button class="btn btn-quiet block off">Next reward in '+fmtDur(msToDailyReset())+'</button>':'<button class="btn btn-gold block" data-act="login">'+(giftReady()?'Claim +'+fmtNum(L.reward)+' and a Rare gem cache'+cachesFor():'Claim day '+(L.slot+1)+': +'+fmtNum(L.reward)+' points'+(L.slot===6?' and a gem cache'+cachesFor():''))+'</button>')+
   (giftPending()?'<div class="gift"><b>🎁 Come back tomorrow</b><span>A free Rare gem cache unlocks in '+fmtDur(msToDailyReset())+'. One time, for new pilots.</span></div>':'')+
   '<div class="boost'+(qb?' on':'')+'"><b>'+(qb?'+'+Math.round(qb*100)+'% quest points today':L.claimedToday?'Come back tomorrow for +5% quest points':nb?'Claim to get +'+Math.round(nb*100)+'% quest points today':'Log in tomorrow for +5% quest points')+'</b>'+
    '<span>Each streak day adds +5% to every daily and weekly quest, up to +30% from day 7. Missing a day restarts the streak. Higher tiers add +'+TDAILY[t]+' a day to the reward.</span></div>'+
@@ -765,7 +766,7 @@ function renderQuests(){
    '<div class="q'+(allDone?' done':'')+'"><div class="grow"><div class="t">Finish all '+DQ_SLOTS.length+'</div><div class="p">Bonus on top of each quest'+(sw?'. '+sw+(sw===1?' swap':' swaps')+' left today':'')+'</div></div><span class="num" style="color:'+(allDone?'var(--dust)':'var(--gold)')+'">'+(allDone?'Claimed':'+'+fmtNum(qPts(DQ_ALL_BONUS)))+'</span></div></div>'+
   sec('Weekly quests','Resets in '+fmtDur(msToWeeklyReset()))+
   '<div class="panel list">'+wk.map(q=>qRow(q,'claimwq',wkSub(q),qPts(q.pts))).join('')+
-   '<div class="q'+(wq.claimed?' done':'')+'"><div class="grow"><div class="t">Weekly chest: claim '+WQ_GOAL+' daily quests</div><div class="bar"><i style="width:'+Math.round(Math.min(1,(wq.n||0)/WQ_GOAL)*100)+'%;background:var(--gold)"></i></div><div class="p">'+Math.min(wq.n||0,WQ_GOAL)+' / '+WQ_GOAL+'. '+fmtNum(qPts(WQ_PTS))+' points and a rare gem cache</div></div>'+
+   '<div class="q'+(wq.claimed?' done':'')+'"><div class="grow"><div class="t">Weekly chest: claim '+WQ_GOAL+' daily quests</div><div class="bar"><i style="width:'+Math.round(Math.min(1,(wq.n||0)/WQ_GOAL)*100)+'%;background:var(--gold)"></i></div><div class="p">'+Math.min(wq.n||0,WQ_GOAL)+' / '+WQ_GOAL+'. '+fmtNum(qPts(WQ_PTS))+' points and a rare gem cache'+cachesFor()+'</div></div>'+
   (wq.claimed?'<span class="mut">Claimed</span>':'<button class="btn sm '+((wq.n||0)>=WQ_GOAL?'btn-gold':'btn-quiet')+'" data-act="weekly">Open</button>')+'</div></div>'+
   sec('Your squad','','squad')+sqHtml+
   sec('Milestones','One time')+'<div class="panel list">'+ms+'</div>';
@@ -1123,7 +1124,7 @@ function sndLabSheet(){
    (save.sound===false?'<div class="sndwarn"><span>Sound is off in Settings.</span><button class="btn sm btn-go" data-act="sound">Turn on</button></div>':'<p class="dimtxt">On iPhone the silent switch mutes game sound.</p>')+
    '<h4 class="vsec">Weapon shots</h4><p class="dimtxt">Burst: 8 rounds at the weapon\'s real fire rate.</p><div class="sndlab">'+shots+'</div>'+
    '<h4 class="vsec">Supers (Arcade)</h4><div class="sndlab">'+sups+'</div>'+
-   '<button class="btn btn-quiet block" style="margin-top:14px" data-act="sndstop">Stop</button>';
+   '<button class="btn btn-quiet block snd-stop" data-act="sndstop">Stop</button>';   // pinned to the bottom while the list scrolls (review)
  });
 }
 function sndLabClear(){for(const t of sndLabT)clearTimeout(t);sndLabT=[];}
@@ -1471,9 +1472,9 @@ const ACT={
  weekly:()=>{const v=claimWeekly();if(!v){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}when(v,r=>{if(!r)return;showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);uiDirty();});},
  share:()=>shareRef(),copy:()=>copyRef(),claimref:()=>{when(claimRefs(),()=>uiDirty('quests'));},
  respec:a=>{const ch=CH[a]?a:respecCh&&CH[respecCh]?respecCh:homeChassis(save),U=myUp(ch),inv=upInvested(U);if(!inv)return;respecCh=ch;
-  const half=Math.floor(inv*RESPEC_BACK),fee=inv-half,pr=ecoPrice(save,{kind:'respec',c:ch},ecoX()),cur=save.payCur,N=esc(CH[ch].n);
-  const body=save.rsCr?'<p class="mut">All '+upLevels(U)+' of the '+N+'\'s levels go back to 0. Your paid reset is ready, so all <b>'+fmtNum(inv)+'</b> points come back.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-gold" data-act="respecok">Reset</button></div>':
-   '<p class="mut">All '+upLevels(U)+' of the '+N+'\'s levels go back to 0 (your other chassis keep theirs). The reset fee is '+fmtNum(fee)+' points.</p>'+
+  const half=Math.floor(inv*RESPEC_BACK),fee=inv-half,pr=ecoPrice(save,{kind:'respec',c:ch},ecoX()),cur=save.payCur,N=esc(CH[ch].n),nl=upLevels(U),lvGo=nl===1?'The '+N+'\'s one level goes':'All '+nl+' of the '+N+'\'s levels go';
+  const body=save.rsCr?'<p class="mut">'+lvGo+' back to 0. Your paid reset is ready, so all <b>'+fmtNum(inv)+'</b> points come back.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-gold" data-act="respecok">Reset</button></div>':
+   '<p class="mut">'+lvGo+' back to 0 (your other chassis keep theirs). The reset fee is '+fmtNum(fee)+' points.</p>'+
    '<div style="display:grid;gap:8px;margin-top:14px"><button class="btn btn-ghost block" data-act="respecok">Pay '+fmtNum(fee)+' points · get '+fmtNum(half)+' back</button>'+
    (pr?'<button class="btn btn-gold block" data-act="respecpay">Pay '+priceLabel(pr.ton,pr.stars)+' · get all '+fmtNum(inv)+' back</button>'+
     (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':''):

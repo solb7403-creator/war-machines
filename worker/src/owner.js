@@ -42,7 +42,7 @@ export async function ownerGemEpic(env, a, admins, now = Date.now()) {
   const t = await tx(env, OWNER_PID, (S, X) => {
     who(S, a.user);
     const outs = [];
-    const ch = R.CH[a.b && a.b.c] ? a.b.c : undefined;   // the chassis the caches are for (5E-2b3: cores are per chassis); else the one he flies
+    const ch = R.isCh(a.b && a.b.c) ? a.b.c : undefined;   // the chassis the caches are for (5E-2b3: cores are per chassis); else the one he flies
     for (let i = 0; i < n; i++) outs.push(R.ecoOpenBox(S, "gem", 2, X, ch));   // each one its own real roll
     const g = S.grants && typeof S.grants === "object" && !Array.isArray(S.grants) ? S.grants : {};
     const prev = g.owner_gem && typeof g.owner_gem === "object" ? g.owner_gem : {};

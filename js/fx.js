@@ -390,11 +390,20 @@ const LW=(()=>{
  }
  // ---------------- live playback: buses, priorities, voice limits ----------------
  const st={act:{shot:[],other:[],sup:[]},charge:new Map(),tok:4,tokT:0,alt:false,imp:null,lastFire:null,duckT:0,made:{shot:0,other:0,sup:0}};
- const CAP={shot:6,other:6,sup:8};
+ const CAP={shot:6,other:6,sup:8},CAP_LITE={shot:4,other:3,sup:5};
+ // LOW graphics (or 2D, picked for speed): fewer voices at once, no echo on your gun, a smaller budget for other tanks (review: Web Audio
+ // costs ~2% of a desktop core typically, ~9% in a full Last Standing fight; older phones are several times slower). Same recipes
+ const lite=()=>typeof R3!=='undefined'&&(R3.q==='low'||R3.auto==='2d'||(typeof gfxMode==='function'&&gfxMode()==='2d'));
+ const capOf=cat=>(lite()?CAP_LITE:CAP)[cat];
  const ready=()=>!!(save&&save.sound!==false&&BUS&&AC&&AC.state==='running');
  function admit(cat,V){const a=st.act[cat],now=AC.currentTime;for(let i=a.length-1;i>=0;i--)if(a[i].end<now)a.splice(i,1);a.push(V);st.made[cat]++;}
- function full(cat){const a=st.act[cat],now=AC.currentTime;let n=0;for(const V of a)if(V.end>=now)n++;return n>=CAP[cat];}
+ function full(cat){const a=st.act[cat],now=AC.currentTime;let n=0;for(const V of a)if(V.end>=now)n++;return n>=capOf(cat);}
  function busOf(cat){return {node:BUS[cat],echo:BUS.echo};}
+ // supers at the cap (CAP.sup voices): yours always play and the farthest other tank's super stops for it; another tank's plays only if
+ // it is nearer than the farthest one playing
+ function supRoom(g,own){const a=st.act.sup,now=AC.currentTime;let n=0,far=null;for(const V of a)if(V.end>=now&&!V.stopped){n++;if(!V.own&&(!far||V.g<far.g))far=V;}
+  if(n<capOf('sup'))return true;if(far&&(own||g>far.g)){stop(far);return true;}return !!own;}
+ function admitS(V,g,own){V.g=g;V.own=!!own;admit('sup',V);return V;}
  // how loud another tank is from yours: full at your side, a quarter at ~14 units, never silent (it stays a cue)
  function near(x,y){if(typeof me==='undefined'||!me||x===undefined)return 0.5;const d=Math.hypot(x-me.x,y-me.y);return Math.max(0.07,1/(1+(d/8)*(d/8)));}
  // a super firing near you ducks the gunfire for a moment, so the moment reads
@@ -403,24 +412,24 @@ const LW=(()=>{
  function shot(k,own,x,y){
   if(!ready())return;const now=AC.currentTime,arch=archOf(k);
   if(own){if(now-(lastOwn[arch]||0)<(gapOwn[arch]||0.05))return;lastOwn[arch]=now;if(full('shot'))return;
-   st.alt=!st.alt;admit('shot',play(AC,busOf('shot'),now+0.002,'shot',k,1,{alt:st.alt,jit:0.96+Math.random()*0.08}));return;}
-  // other tanks: a shared budget (about 9 shots a second, bursts of 4), quieter with distance
-  st.tok=Math.min(4,st.tok+(now-st.tokT)*9);st.tokT=now;if(st.tok<1||full('other'))return;st.tok--;
+   st.alt=!st.alt;admit('shot',play(AC,busOf('shot'),now+0.002,'shot',k,1,{alt:st.alt,jit:0.96+Math.random()*0.08,noEcho:lite()}));return;}
+  // other tanks: a shared budget (about 9 shots a second, bursts of 4), quieter with distance. Too far to hear costs nothing from it
   const g=near(x,y);if(g<0.08)return;
+  const L=lite();st.tok=Math.min(L?3:4,st.tok+(now-st.tokT)*(L?6:9));st.tokT=now;if(st.tok<1||full('other'))return;st.tok--;
   admit('other',play(AC,busOf('other'),now+0.002,'shot',k,1,{g,alt:Math.random()<0.5,jit:0.95+Math.random()*0.1,noEcho:true}));
  }
  function hit(k,crit){if(!ready())return;const now=AC.currentTime;if(now-(lastOwn.hit||0)<0.05)return;lastOwn.hit=now;if(full('shot'))return;admit('shot',play(AC,busOf('shot'),now+0.002,'hit',k,1,{crit}));}
  // supers. own: your tank (full level); id: the tank, so its charge can be cut when it fires
  function charge(k,id,own,x,y){
-  if(!ready())return;stopCharge(id);const g=own?1:0.7*near(x,y);if(!own&&g<0.1)return;
-  const V=play(AC,busOf('sup'),AC.currentTime+0.003,'charge',k,1,{g});st.charge.set(id,V);admit('sup',V);
+  if(!ready())return;stopCharge(id);const g=own?1:0.7*near(x,y);if(!own&&g<0.1)return;if(!supRoom(g,own))return;
+  const V=play(AC,busOf('sup'),AC.currentTime+0.003,'charge',k,1,{g});st.charge.set(id,V);admitS(V,g,own);
  }
  function stopCharge(id,at){const V=st.charge.get(id);if(V){stop(V,at);st.charge.delete(id);}}
- function lockS(k,oc,own,x,y){if(!ready())return;const g=own?1:0.6*near(x,y);if(!own&&(oc!==2||g<0.12))return;admit('sup',play(AC,busOf('sup'),AC.currentTime+0.002,'lock',k,oc,{g}));}
+ function lockS(k,oc,own,x,y){if(!ready())return;const g=own?1:0.6*near(x,y);if(!own&&(oc!==2||g<0.12))return;if(!supRoom(g,own))return;admitS(play(AC,busOf('sup'),AC.currentTime+0.002,'lock',k,oc,{g}),g,own);}
  function fire(k,oc,id,own,x,y){
   if(!ready()){st.charge.delete(id);return;}const now=AC.currentTime;stopCharge(id,now+0.01);
   const g=own?1:0.85*Math.pow(near(x,y),0.7);if(own){st.lastFire={k,t:now};duck(0.55);}else if(g>0.4)duck(0.3);
-  admit('sup',play(AC,busOf('sup'),now+0.004,'fire',k,oc,{g}));
+  if(!supRoom(g,own))return;admitS(play(AC,busOf('sup'),now+0.004,'fire',k,oc,{g}),g,own);
  }
  // every impact of one super lands in the same sim tick (a beam's end and each tank it hits): one sound, the hit count inside it
  function impact(k,oc,kind,x,y,team,own){
@@ -435,8 +444,8 @@ const LW=(()=>{
   if(!ready())return;const now=AC.currentTime,L=st.lastFire;
   const own=v.own||!!(L&&L.k===v.k&&now-L.t<2.2&&typeof me!=='undefined'&&me&&v.team===me.team);
   const g=own?1:0.85*Math.pow(near(v.x,v.y),0.7);if(g<0.08)return;
-  if(archOf(v.k)==='twin'&&!own&&g<0.2)return;
-  admit('sup',play(AC,busOf('sup'),now+0.003,'impact',v.k,v.oc,{g,hits:v.hits}));
+  if(archOf(v.k)==='twin'&&!own&&g<0.2)return;if(!supRoom(g,own))return;
+  admitS(play(AC,busOf('sup'),now+0.003,'impact',v.k,v.oc,{g,hits:v.hits}),g,own);
  }
  function stopAll(){for(const id of [...st.charge.keys()])stopCharge(id);for(const a of Object.values(st.act))for(const V of a)stop(V);for(const a of Object.values(st.act))a.length=0;}
  // offline rendering for the measurement test (and anything else that wants a sound in its own context)

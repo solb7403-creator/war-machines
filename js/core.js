@@ -250,8 +250,8 @@ function bankPts(n){
 // what a crate, purchase or reward gave, in words for the reveal card (raw: from rules.js ecoOpenBox / ecoGrant / ecoSalvage)
 function revealOf(r){
  if(!r)return null;
- if(r.gem){const G=GEM[r.gem],lv=r.lv,cn=CH[r.c]?' for your '+CH[r.c].n:'';return {tk:r.tk==='core'?'gem':r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,lv:r.lv,up:r.up||0,c:r.c,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards')+cn,
-  sub:r.up>0?G.name+' core'+cn+' reached level '+lv+'!':G.name+' core'+cn+': level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:myGs(r.c)[r.gem]|0)+'/'+SHARD_NEED[lv]+' shards to next)':' (max)')};}
+ if(r.gem){const G=GEM[r.gem],lv=r.lv,cn=isCh(r.c)?' for your '+CH[r.c].n:'';return {tk:r.tk==='core'?'gem':r.tk||'gem',ri:r.ri,rar:r.ri||0,color:G.c,gem:r.gem,lv:r.lv,up:r.up||0,c:r.c,title:'+'+r.n+' '+G.name+(r.n===1?' shard':' shards')+cn,
+  sub:(r.was&&GEM[r.was]?GEM[r.was].name+' was already at level 5, so these went to '+G.name+'. ':'')+(r.up>0?G.name+' core'+cn+' reached level '+lv+'!':G.name+' core'+cn+': level '+lv+(lv<5?' ('+(r.sh!==undefined?r.sh:myGs(r.c)[r.gem]|0)+'/'+SHARD_NEED[lv]+' shards to next)':' (max)'))};}
  if(r.tk==='paint'){const P=PAINTS[r.id]||PAINTS.stock;return r.id==='founder'?{tk:'paint',rar:2,color:P.trim,paint:'founder',title:'Founder paint',sub:'Yours for good. It’s never sold again.'}:
   {tk:'paint',rar:2,color:P.trim,paint:r.id,title:P.n+' paint',sub:'Equipped. Change it in the Garage.'};}
  if(r.tk==='moonbeam')return {tk:'moonbeam',rar:2,color:'#e8f4ff',title:'Moonbeam unlocked',sub:'Equipped. Its super is Moonfall.'};

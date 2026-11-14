@@ -724,7 +724,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     const S = await readEco(env, pid);
     return { status: 200, body: { ok: true, out: hit && hit.o !== undefined ? { outs: hit.o || [] } : { pending: true }, E: pub(S) } };
   }
-  const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri), ch = R.CH[b.c] ? b.c : undefined;   // ch: the chassis a build, reset or gem is for (5E-2b3)
+  const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri), ch = R.isCh(b.c) ? b.c : undefined;   // ch: the chassis a build, reset or gem is for (5E-2b3)
   let F = null;
   if (["lab_read", "lab_save", "lab_rename", "lab_activate"].includes(a)) F = (S) => R.labAction(S, a, b);
   switch (a) {
@@ -737,7 +737,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     case "visit": F = (S) => (R.ecoVisit(S, id, sp === "wikiread") ? { ok: 1 } : { err: "no" }); break;   // the wiki counts only from its end-of-page button
     case "pass": F = (S, X) => R.ecoClaimPass(S, b.t === "p" ? "p" : "f", Number(b.i), X, ch) || { err: "no" }; break;
     case "crate": if (!tk || ri === null) break; F = (S, X) => R.ecoCratePts(S, tk, ri, X, tk === "gem" ? ch : undefined); break;
-    case "core": { const k = String(b.k || ""); if (!R.GEM[k] || ri === null || !ch) break; F = (S, X) => R.ecoCorePts(S, k, ri, ch, X); break; }   // a chosen core for points (5E-2b3)
+    case "core": { const k = String(b.k || ""); if (!R.isGem(k) || ri === null || !ch) break; F = (S, X) => R.ecoCorePts(S, k, ri, ch, X); break; }   // a chosen core for points (5E-2b3)
     case "salvage": if (tk !== "weapon" && tk !== "chassis" || !(ri === 1 || ri === 2)) break; F = (S, X) => R.ecoSalvage(S, tk, ri, X); break;
     case "tune": { const isW = !!b.w, k = String(b.k || ""), t = riOf(b.t); if (t === null || !(isW ? R.WORDER : R.CHORDER).includes(k)) break; F = (S, X) => R.ecoTune(S, isW, k, t, X); break; }
     case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k, ch); break; }

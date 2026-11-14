@@ -56,10 +56,10 @@ function simulate(R, M, order, opt = {}) {
       const o = { won, drawn, place, top3: solo && place <= 3, g, m: solo ? '1v1' : m, feat: g === R.featuredOn(X.day), series: g === 'arena' && m === '1v1', quick: false, st: { dmg: 3000, sup: 2, box: 1, kills: 1 } };
       track(() => { R.ecoMatchPts(S, o, lg, X); R.ecoAfterMatch(S, o, X); }, 'match');
     }
-    // the four daily quests, every day
-    track(() => { for (const id of S.dq.ids.slice()) { const Q = R.DQ_BY[id]; if (!Q) continue; S.dq.p[id] = Q.goal; R.ecoClaimDaily(S, id, X); } }, 'quests');
+    // the four daily quests, every day (opt.dq: fewer, for a light pilot)
+    track(() => { for (const id of S.dq.ids.slice(0, opt.dq ?? 4)) { const Q = R.DQ_BY[id]; if (!Q) continue; S.dq.p[id] = Q.goal; R.ecoClaimDaily(S, id, X); } }, 'quests');
     // three weekly quests by the week's last day; the chest as soon as it opens
-    if ((d0 + day - 4) % 7 === 6) track(() => { for (const id of S.wk.ids.slice(0, 3)) { const Q = R.WQ_BY[id]; if (!Q) continue; S.wk.p[id] = Q.goal; R.ecoClaimWeekly(S, id, X); } }, 'quests');
+    if ((d0 + day - 4) % 7 === 6) track(() => { for (const id of S.wk.ids.slice(0, opt.wk ?? 3)) { const Q = R.WQ_BY[id]; if (!Q) continue; S.wk.p[id] = Q.goal; R.ecoClaimWeekly(S, id, X); } }, 'quests');
     track(() => R.ecoChest(S, X, c), 'chest');
     track(() => { const P = R.ecoPassState(S, X), tier = R.ecoPassTier(S, X); for (let i = 1; i <= tier; i++) if (!P.cf.includes(i)) R.ecoClaimPass(S, 'f', i, X, c); }, 'pass');
     shards.free += shardsOn() - sh0;
@@ -81,12 +81,20 @@ function simulate(R, M, order, opt = {}) {
 const ORDER = ['titan', 'vanguard', 'scout'];
 const main = () => {
   const fixed = arg('--rate'), M = +arg('--minutes', 20);   // the reference pilot: 20 minutes of matches a day, every day
-  // calibrate: the rate (points per Star) at which the 30-minute daily pilot kits the first chassis closest to 56 days
+  // calibrate: the rate (points per Star) at which the 20-minute daily pilot kits the first chassis closest to 56 days, on average over
+  // five seeds (review: one seed swings it 49-56 days). The shipped rate stays while its average is within a week of 56 (7 to 9 weeks)
+  const SEEDS = [1, 2, 3, 4, 5], avg = (xs) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length), span = (xs) => [Math.min(...xs), Math.max(...xs)];
+  const runs = (R, m, opt = {}) => SEEDS.map((seed) => simulate(R, m, ORDER, { ...opt, seed }));
+  const sumUp = (rs) => { const f = rs.map((r) => (r.kits[0] ? r.kits[0].days : 800)), a = rs.map((r) => (r.kits.length === 3 ? r.totalDays : 800)); return { first: avg(f), firstRange: span(f), all: avg(a), allRange: span(a), perDay: avg(rs.map((r) => r.earnedPerDay)) }; };
   const cand = [];
-  for (const rate of fixed ? [+fixed] : [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40]) { const R = world(rate), r = simulate(R, M, ORDER); cand.push({ rate, first: r.kits[0] && r.kits[0].days, all: r.totalDays, r }); }
-  const best = cand.reduce((a, b) => (Math.abs((b.first || 1e9) - 56) < Math.abs((a.first || 1e9) - 56) ? b : a));
+  for (const rate of fixed ? [+fixed] : [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40]) { const R = world(rate), r = simulate(R, M, ORDER), m = sumUp(runs(R, M)); cand.push({ rate, first: m.first, all: m.all, firstRange: m.firstRange, allRange: m.allRange, seed7: [r.kits[0] && r.kits[0].days, r.totalDays], r }); }
+  const near56 = cand.reduce((a, b) => (Math.abs((b.first || 1e9) - 56) < Math.abs((a.first || 1e9) - 56) ? b : a));
+  const shipped = +((fs.readFileSync(path.join(repo, 'js', 'rules.js'), 'utf8').match(/const GEM_PTS_STAR=([\d.]+),/) || [])[1]);
+  const best = cand.find((c) => c.rate === shipped && c.first >= 49 && c.first <= 63) || near56;
   const R = world(best.rate);
-  const profiles = [10, 15, 20, 30, 45, 60].map((m) => { const r = simulate(R, m, ORDER); return { minutes: m, firstKitDays: r.kits[0] && r.kits[0].days, allThreeDays: r.kits.length === 3 ? r.totalDays : null, kits: r.kits, perDay: r.earnedPerDay, sources: r.src, spend: r.spend, shards: r.shards }; });
+  const profiles = [10, 15, 20, 30, 45, 60].map((m) => { const r = simulate(R, m, ORDER), a = sumUp(runs(R, m)); return { minutes: m, firstKitDays: a.first, firstKitRange: a.firstRange, allThreeDays: a.all, allThreeRange: a.allRange, perDay: a.perDay, kits: r.kits, sources: r.src, spend: r.spend, shards: r.shards }; });
+  // a light pilot like the owner's data point (about 5 minutes a day, half the dailies, one weekly): the 8-week target is not this pace
+  const light = [5, 10].map((m) => ({ minutes: m, dailies: 2, weeklies: 1, ...sumUp(runs(R, m, { dq: 2, wk: 1 })) }));
   // the owner's data point: 83,000 points in two weeks of light play on his maxed account (league multiplier applies)
   const ownerCheck = [5, 10, 15, 20].map((m) => { const W = world(best.rate), S = W.ecoNorm({ mig: 1 }); S.mp = 300; S.lwr = 0.6; const rnd = rng(3); let pts = 0;
     for (let d = 0; d < 14; d++) { const X = { day: 21000 + d, week: Math.floor((21000 + d - 4) / 7), rnd, pk: 'owner' }; const p0 = S.pts; W.ecoLogin(S, X); let secs = m * 60;
@@ -94,12 +102,13 @@ const main = () => {
       for (const id of S.dq.ids.slice(0, 2)) { const Q = W.DQ_BY[id]; if (Q) { S.dq.p[id] = Q.goal; W.ecoClaimDaily(S, id, X); } }   // light play: about half the dailies
       pts += S.pts - p0; }
     return { minutesPerDay: m, league: 'Lunar Legend', twoWeeks: Math.round(pts) }; });
-  const res = { rateStarsToPoints: best.rate, gemCachePts: R.GEM_PTS, chosenCorePts: [0, 1, 2].map((ri) => R.corePts(ri)), coreShards: R.CORE_N, calibration: cand.map((c) => ({ rate: c.rate, firstKitDays: c.first, allThreeDays: c.r.kits.length === 3 ? c.all : null })),
-    profiles, ownerCheck, assumptions: { matchSeconds: LEN, overheadSeconds: OVERHEAD, winRate: WIN, drawRate: DRAW, gear: 'Rare Pulse Cannon and a Rare chassis', fullBuild: FULL_UP, dailies: '4 a day', weeklies: '3 of 5', chest: 'every week', pass: 'free track', freeCachesTo: 'the chassis being kitted' } };
+  const res = { rateStarsToPoints: best.rate, gemCachePts: R.GEM_PTS, chosenCorePts: [0, 1, 2].map((ri) => R.corePts(ri)), coreShards: R.CORE_N, calibration: cand.map((c) => ({ rate: c.rate, firstKitDays: c.first, firstKitRange: c.firstRange, allThreeDays: c.all, allThreeRange: c.allRange })), seeds: SEEDS, near56: near56.rate,
+    profiles, light, ownerCheck, assumptions: { matchSeconds: LEN, overheadSeconds: OVERHEAD, winRate: WIN, drawRate: DRAW, gear: 'Rare Pulse Cannon and a Rare chassis', fullBuild: FULL_UP, dailies: '4 a day', weeklies: '3 of 5', chest: 'every week', pass: 'free track', freeCachesTo: 'the chassis being kitted' } };
   const out = arg('--json'); if (out) { fs.mkdirSync(path.dirname(out), { recursive: true }); fs.writeFileSync(out, JSON.stringify(res, null, 1)); console.log('wrote', out); }
   console.log('calibration (points per Star -> days to kit the first chassis / all three):', res.calibration.map((c) => c.rate + ':' + c.firstKitDays + '/' + c.allThreeDays).join('  '));
   console.log('chosen rate', res.rateStarsToPoints, 'gem caches', res.gemCachePts.join(' / '), 'chosen cores', res.chosenCorePts.join(' / '));
-  for (const p of profiles) console.log(p.minutes + ' min/day: first kit ' + p.firstKitDays + ' d, all three ' + p.allThreeDays + ' d, ~' + p.perDay + ' pts/day; kits', JSON.stringify(p.kits.map((k) => [k.chassis, k.days, k.league])), 'sources', JSON.stringify(p.sources), 'shards', JSON.stringify(p.shards));
+  for (const p of light) console.log('light pilot ' + p.minutes + ' min/day, 2 dailies: first kit ' + p.first + ' d ' + JSON.stringify(p.firstRange) + ', all three ' + p.all + ' d, ~' + p.perDay + ' pts/day');
+  for (const p of profiles) console.log(p.minutes + ' min/day: first kit ' + p.firstKitDays + ' d ' + JSON.stringify(p.firstKitRange) + ', all three ' + p.allThreeDays + ' d ' + JSON.stringify(p.allThreeRange) + ', ~' + p.perDay + ' pts/day; seed 7 kits', JSON.stringify(p.kits.map((k) => [k.chassis, k.days, k.league])), 'sources', JSON.stringify(p.sources), 'shards', JSON.stringify(p.shards));
   console.log('owner check (two weeks at Lunar Legend):', JSON.stringify(ownerCheck));
 };
 main();

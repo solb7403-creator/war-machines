@@ -847,6 +847,7 @@ button.q{display:flex;width:100%;text-align:left}
 
 /* owner sound test (Session 5E-2b3) */
 .sndlab{display:grid;gap:8px}
+.snd-stop{position:sticky;bottom:8px;z-index:3;margin-top:14px;background:var(--rock2);box-shadow:0 -6px 18px rgba(0,0,0,.45)}
 .snd-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--rock2);border:1px solid var(--edge)}
 .snd-n{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
 .snd-n b{font:600 15px var(--disp);color:var(--dust)}
@@ -879,9 +880,7 @@ button.q{display:flex;width:100%;text-align:left}
 .cphead .gem-crystal{width:30px;height:36px;flex:none;margin-top:4px}
 .cpnow{font:600 13px var(--disp);color:var(--dust);margin:8px 0 4px}
 .cprow .nm{font:700 14px var(--disp)}
-.ptsbal{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:14px;background:var(--rock2);border:1px solid var(--edge);margin-bottom:6px}
-.ptsbal b{font:700 22px var(--disp);color:var(--gold)}
-.ptsbal span{font:500 12px var(--body);color:var(--dim)}
+.ptsnote{margin:2px 0 8px}
 .ptsgarage{display:grid;gap:8px}
 .ptsbuilds{display:grid;gap:6px}
 .ptsbuilds>div{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
