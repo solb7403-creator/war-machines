@@ -126,7 +126,11 @@ for (const i in pool) { const P = pool[i], a = { win: P.a.w / P.a.n, ratio: P.a.
     // owner, Nov 10: an AI pilot's supers keep the league's minimum spacing and never come faster than the pilot's own under the same rules
     const gapRule = has('LG_AI_SUP_GAP') ? W.eval('LG_AI_SUP_GAP[' + lg + ']') : 99;
     ok(c.aiSupGap >= gapRule - 0.1, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': an AI pilot keeps at least ' + gapRule + ' s between its supers (shortest seen ' + c.aiSupGap.toFixed(2) + ' s)');
-    ok(c.aiSupPM <= c.meSupPM * 1.05 + 0.3 || c.aiSup <= 1, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': an AI pilot never out-supers the pilot under the same rules (AI ' + c.aiSupPM + ' vs pilot ' + c.meSupPM + ' a minute per tank)');
+    // Session 5E-2b2b: supers are now counted and capped per ROUND (at most 3 for every tank, AI included), so the comparison is per
+    // tank per round. Per minute alive no longer says anything: a tank that is destroyed early in Last Standing after two supers
+    // shows a higher rate a minute than a pilot who used all three and survived. Same tolerance as before (5% + 0.3)
+    ok(c.aiSupPR <= c.meSupPR * 1.05 + 0.3 || c.aiSup <= 1, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': an AI pilot never out-supers the pilot under the same rules (AI ' + c.aiSupPR + ' vs pilot ' + c.meSupPR + ' a round per tank)');
+    ok(c.aiSupPR <= 3 + 1e-9 && c.meSupPR <= 3 + 1e-9, LGN[lg] + ' ' + g + ' ' + m + ' ' + k + ': nobody averages more than the 3-a-round cap (AI ' + c.aiSupPR + ', pilot ' + c.meSupPR + ')');
     aiSup += c.aiSup; aiMin += c.foeMin; meSup += c.meSup; meMin += c.meMin; aiDash += c.aiDash; meDash += c.meDash; }
   const aiPM = aiSup / aiMin, mePM = meSup / meMin;
   console.log('abilities a minute of one tank: AI supers ' + aiPM.toFixed(2) + ' (pilot ' + mePM.toFixed(2) + '), AI dashes ' + (aiDash / aiMin).toFixed(2) + ' (pilot ' + (meDash / meMin).toFixed(2) + ', rule maximum ' + (60 / DASH_CD).toFixed(0) + ')');

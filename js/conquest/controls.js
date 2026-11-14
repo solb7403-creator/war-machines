@@ -41,7 +41,7 @@ C.Battle.prototype.abilityStep=function(dt){
  // the timing bar (Session 5E-2b, rules.js SUP_BAR_T...): the first SUPER press starts the charge and the sweep, a second
  // press stops it (advance() below); nobody pressing by the end of the sweep is a MISS. It fires SUP_REL after the stop
  if(this.superAttack){const sa=this.superAttack;if(sa.el===undefined||!sa.bar){sa.el=sa.el||0;sa.oc=1;}   // a super saved mid-charge by an older build fires as it was (a normal hit)
-  sa.el+=dt;if(sa.oc===undefined&&sa.el>=SUP_BAR_T){sa.oc=0;sa.t=SUP_REL;}}
+  sa.el+=dt;if(sa.oc===undefined&&sa.el>=SUP_BAR_T_CQ){sa.oc=0;sa.t=SUP_REL;}}
  if(this.superAttack){this.superAttack.t-=dt;if(this.superAttack.t<=0){this.superAttack.origin={x:this.player.x,y:this.player.y-2.2,z:this.player.z};fireSuper(this,this.superAttack);this.superAttack=null;}}
  for(const q of this.superShells){const n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vz)*dt/.3));for(let i=0;i<n&&q.life>0;i++){q.x+=q.vx*dt/n;q.z+=q.vz*dt/n;q.y+=q.vy*dt/n;
  const hit=this.enemies.some(e=>e.hp>0&&Math.hypot(e.x-q.x,e.z-q.z)<2.5&&Math.abs(e.y+2.2-q.y)<3);
@@ -70,9 +70,9 @@ function advance(B,p,input,dt,exploration){
  // is drawn from the battle clock, the same on the phone and on the Worker that replays the command). A bar sweeping: it stops
  // it. A command is STEP long, so the stop is judged at the middle of the step it arrived in (fair to an early and a late thumb)
  if(first&&input.super){
-  if(B.superAttack){const sa=B.superAttack;if(sa.oc===undefined&&sa.bar){sa.oc=supJudge(sa.bar,sa.el+STEP/2);sa.t=Math.max(SUP_REL,SUP[sa.weapon].charge-sa.el);}}
+  if(B.superAttack){const sa=B.superAttack;if(sa.oc===undefined&&sa.bar){sa.oc=supJudge(sa.bar,sa.el+STEP/2,SUP_BAR_T_CQ);sa.t=Math.max(SUP_REL,SUP[sa.weapon].charge-sa.el);}}
   else if(B.charge>=SUPER_MAX){B.charge=0;const weapon=B.playerStats.wtype;let h=(Math.round(B.time*1000)*2654435761+(B.kills|0)*40503)>>>0;const rnd=()=>{h=(Math.imul(h^(h>>>15),0x2c1b3c6d)+0x9e3779b9)>>>0;return ((h^(h>>>13))>>>0)/4294967296;};
-   B.superAttack={weapon,k:supKey(weapon,B.playerStats.wtier),t:SUP_BAR_T+SUP_REL,el:0,bar:supBar(rnd),yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}}
+   B.superAttack={weapon,k:supKey(weapon,B.playerStats.wtier),t:SUP_BAR_T_CQ+SUP_REL,el:0,bar:supBar(rnd,1),yaw:B.turretYaw,pitch:Math.atan2(target.y-p.y-2.2,160),origin:{...p}};}}
  B.tick(h,p,{aim:target,fire:(!!input.fire||first&&!!input.tapFire)&&!(B.superAttack&&B.superAttack.oc!==undefined)});first=false;   // the cannon keeps firing while the timing bar sweeps; it holds only for the release
  }
  return p;

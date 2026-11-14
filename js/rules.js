@@ -3,25 +3,44 @@
 // rules: pure game data and stat math, shared by the phone and the PvP server
 // (no save, no DOM: worker/build-sim.mjs bundles this file with game.js for the server)
 // =====================================================================
-const PVP_V=5;   // game/reward and live-match protocol version: 5 is the 5E-2b supers (timing bar, charge by share of hull, the tap message and the wider snapshot); 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
+const PVP_V=6;   // game/reward and live-match protocol version: 6 is the 5E-2b2b supers (charge from damage only, measured against the tank's own strength; at most 3 a round; faster timing bar; supers used in the snapshot); 5 is the 5E-2b supers (timing bar, the tap message and the wider snapshot); 4 adds Velocity; the phone and server must agree (2: Canyon and Bunker joined the live map pool; 3: Session 2 mods, Moonbeam Precision and Moonfall hit width, leagues)
 // ---- combat tuning ----
 const STAT={hp:1700,speed:4.4,range:6,dps:70,shot:0.2,bspd:13,turn:3.4};
 // mystery box buffs: each lasts until its holder takes BUFF_LIFE damage; same-stat buffs stack
 const BUFF={dmg:{n:'DMG',c:'#ff6b5e',amt:0.4,txt:'+40% DAMAGE'},arm:{n:'ARM',c:'#5aa9ff',amt:0.35,txt:'+35% ARMOR'},rof:{n:'ROF',c:'#ffd24a',amt:0.4,txt:'+40% FIRE RATE'},spd:{n:'SPD',c:'#7be07b',amt:0.3,txt:'+30% SPEED'},lck:{n:'LCK',c:'#c28bff',amt:0.1,txt:'+10% CRIT CHANCE'},reg:{n:'REG',c:'#4be3a0',amt:0.003,txt:'+0.3% HP/SEC'}};
 const BUFF_KEYS=Object.keys(BUFF);
 const CRIT_BASE=0.1,CRIT_MULT=2,GRAZE=0.75,DIRECT=0.4;
-// Supers (Session 5E-2b, owner Nov 10-11 2026): fewer, bigger moments. Measured on main with seeded sims
-// (dev/tests/super-report.mjs, dev/tests/fixtures/super-baseline.json): a pilot fired 5.94 supers a match, 2,406 super damage
-// a match. Arcade and live matches now charge by share of hull (below) so every pilot fires about 3 a match, and each super
-// hits proportionally harder (game.js SUP, SUP_GEAR), so the total stays where it was. dev/tests/super-timing.mjs holds both.
+// Supers. Session 5E-2b (owner, Nov 10-11 2026) made them fewer, bigger moments with a timing bar; Session 5E-2b2b (owner, Nov
+// 12-14) set the charge rule, the 3-a-round cap, 20-25% less damage per super and the faster bar (everything below).
+// Measured with dev/tests/super-rounds.mjs (docs/supers-5e2b2b/): before, a pilot fired 5.5 supers a ROUND (up to 18, the AI up
+// to 17, top gear against weaker AI up to 3x a stock tank's count); now about 2.8 (1v1 Arena about 1.9), never more than 3.
+// dev/tests/super-timing.mjs holds every rule here.
 const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;   // Conquest only (charge per point of damage): unchanged, see game.js SUP_CQ
-// Arcade and live matches charge by SHARE OF HULL, not by raw damage: destroying one whole enemy hull fills FILL_HULL_DEALT of
-// the bar, losing your own whole hull fills FILL_HULL_TAKEN, a critical hit adds FILL_HULL_CRIT points. With raw damage the charge
-// followed gear (measured on main: 3.6 supers a match on a stock tank, 9.8 with the Moonbeam kit), so one number could not give
-// every pilot "about 3". By share of hull every gear level lands near 3; gear still shows where it should: in how hard each
-// super hits (SUP_GEAR) and in winning more fights. The megatank counts as its reference tank's hull, and a mode's
-// health scale (team modes, Bounty, Last Standing) is taken out, so every mode charges as a 1v1 does (game.js supFill).
-const FILL_HULL_DEALT=1.4,FILL_HULL_TAKEN=1.0,FILL_HULL_CRIT=30;
+// ---- Super charge in the Arcade and in live matches (Session 5E-2b2b, owner Nov 12-14 2026) ----
+// Owner rules: (1) the charge comes ONLY from damage dealt to enemy tanks and damage received from them: nothing passive, nothing
+// per second, nothing per crit; (2) it is measured against the tank's OWN strength, not the target's health: damage dealt counts
+// in seconds of the tank's own clean cannon fire (its permanent damage per second: weapon, cannon levels, cores, skin, crit
+// chance), damage received as a share of the tank's own full hull. So a Legendary kit shooting a weak tank charges exactly as
+// fast, per second of fire landed, as a stock tank shooting its equal (on main the charge was the share of the TARGET's hull: a
+// strong kit against the Arcade's weaker AI, with bigger team hulls, refilled several times faster: measured 7-8 supers a 3v3
+// round, the AI up to 16); (3) about 3 supers per player per ROUND in every mode (about 2 in a 1v1 Arena round, which lasts about
+// 35 s), and NEVER more than SUP_ROUND_CAP: the sim refuses the 4th press, the count survives a respawn and only a new round
+// clears it (live matches: the server's sim; AI matches: the server's proof-of-play check counts the presses per round);
+// (4) the Reactor (+10% a level) and the charge mods multiply the result as before.
+// What never charges: crates and props, terrain, the storm ring, meteors, your own or a team mate's fire (the rules have none),
+// damage past the target's remaining health (overkill), a super's own damage (its owner), and anything once the cap is reached.
+// No farming by soaking damage: damage received counts for at most ONE full hull per life (repairs and regeneration do not
+// refill that allowance), and it is the smaller source by design.
+// SUP_FILL[mode][team size] = [d, h]: d seconds of the tank's own clean fire fill one bar; h of its own hulls lost fill one bar.
+// The split is the owner's starting point, kept after calibration: in a measured average round about 70% of the charge comes from
+// damage dealt and 30% from damage received. The numbers differ by mode because a round's fighting differs (a 35 s duel, a
+// 180 s Moon Zone with respawns, a megatank with a huge hull): each row is fitted on seeded rounds of that mode so the pilot's
+// uncapped charge is about 3.6 bars a round (1v1 Arena: 2.2), which the cap turns into "about 3, never more".
+// dev/tests/super-rounds.mjs measures every cell; dev/tests/super-timing.mjs holds the rules.
+const SUP_ROUND_CAP=3;
+const SUP_FILL={arena:{1:[5,0.8],2:[7,0.5],3:[16,0.6]},zone:{1:[10,0.9],2:[19,0.75],3:[27,0.75]},crystal:{1:[8.5,0.8],2:[11,0.55],3:[17,0.6]},
+ bounty:{1:[9.5,1.7],2:[14,1.15],3:[17,1]},royale:{1:[9.5,0.65]},boss:{1:[15,0.5],2:[17,0.5],3:[18,0.6]}};
+const supFillOf=(g,n)=>{const F=SUP_FILL[g]||SUP_FILL.arena;return F[n]||F[1];};
 // SUP_GEAR: a super's damage rises with the tank's gear multiplier (weapon tier x roll, cannon upgrades, damage cores, Lunar
 // Skin) to this power. It was 1 while better gear also fired more supers; now that every pilot fires about 3, the step that
 // used to come from firing more often is in each super's damage (fitted on the measured kits, game.js SUP)
@@ -44,17 +63,30 @@ const SUP_GEAR=2.2,SUP_GEAR_AI=1.8;
 // The press and the tap reach the server the same way, so steady lag cancels out: the allowance only has to cover jitter
 // and one 33 ms server tick (0.06 s). A cheat that times its taps perfectly cannot be told from a perfect player; the
 // jackpot bonus is capped at +25% for that reason.
-// SUP_HULL_CAP: one super never takes more than this share of the target's FULL hull on a normal stop (x0.65 on a miss, x1.25
-// = 62.5% on a jackpot), before the target's armour and shield. With about 3 big supers a match, an uncapped hit could
+// SUP_HULL_CAP: one super never takes more than this share of the target's FULL hull on a normal stop (39%; x0.65 = 25% on a
+// miss, x1.25 = 49% on a jackpot; it was 50 / 32.5 / 62.5% before 5E-2b2b), before the target's armour and shield. With about 3 big supers a match, an uncapped hit could
 // delete an equal tank outright where a mode halves the hulls (Bounty 1v1) or against lighter gear: the moment must be
 // big, never a one-shot from full health. The megatank is too big for the cap to matter.
 // LG_AI_TAP: an AI pilot stops the bar with a timing spread set by its league (seconds of error, as a fraction of the sweep):
 // every league taps worse than an average person and none is ever perfect.
-const SUP_BAR_T=1.0,SUP_ZONE_W=0.36,SUP_JACK_W=0.08,SUP_REL=0.2,SUP_TAP_TOL=0.06;
-const SUP_OC=[0.65,1,1.25],SUP_OC_TXT=['MISS','HIT','JACKPOT'],SUP_HULL_CAP=0.5;
-const SUP_TAP_HUMAN=0.10,LG_AI_TAP=[0.24,0.21,0.18,0.16,0.14,0.13,0.12];
-function supBar(rnd){const z0=0.36+0.2*rnd(),m=0.03+SUP_JACK_W/2;return {z0:Math.round(z0*1000)/1000,jc:Math.round((z0+m+(SUP_ZONE_W-2*m)*rnd())*1000)/1000};}   // the zone starts 36-56% along; the jackpot sits anywhere inside it
-function supJudge(bar,el){const p=el/SUP_BAR_T;return Math.abs(p-bar.jc)<=SUP_JACK_W/2+1e-9?2:p>=bar.z0-1e-9&&p<=bar.z0+SUP_ZONE_W+1e-9?1:0;}   // 0 miss, 1 normal, 2 jackpot
+// Session 5E-2b2b (owner: "the bar moves way too slowly: 25-50% faster, 2x only if that is the sweet spot"): the Arcade and live
+// sweep is 1.5x faster (1.0 s -> 0.667 s). Why 1.5x and not 2x, in numbers: the jackpot circle is 8% of the bar, so the marker is
+// inside it for 80 ms at 1x, 53 ms at 1.5x and 40 ms at 2x. A phone drawing 30 frames a second shows the marker inside the circle
+// on 2.4 / 1.6 / 1.2 frames: at 2x the jackpot is one frame wide on a slow phone, i.e. luck and device speed, not skill. And the
+// circle must be seen before it can be timed: the earliest jackpot centre is 340 ms after the press here (430 ms at 1x; it would
+// be 215-255 ms at 2x, under a person's ~250 ms reaction to a new picture). What makes the jackpot hard is therefore (a) the
+// marker's speed, (b) the circle's random place, (c) how soon after the press it can come. (a) went up 50%; (b) is unchanged;
+// (c) is held at a fair minimum by starting the zone a little later along the bar (44-62% instead of 36-56%).
+// SUP_TAP_HUMAN: an average person's tap spread as a fraction of the sweep. Model: timing error (s) = sqrt(0.045^2 + (0.09 T)^2):
+// a fixed part (finger and touch-screen jitter) and a part that follows the marker's speed; T = 1.0 gives 0.10 (the value the
+// 5E-2b tables were measured with), T = 0.667 gives 0.075 s = 0.1125 of the sweep. LG_AI_TAP rose by the same 1.125 so every
+// league's AI still taps worse than an average person. Conquest keeps its own 1.0 s sweep and zone (SUP_BAR_T_CQ, supBar(rnd,1)):
+// its taps are judged in 50 ms command steps, too coarse for a 53 ms window, and its super tuning is frozen (owner).
+const SUP_BAR_T=0.667,SUP_BAR_T_CQ=1.0,SUP_ZONE_W=0.36,SUP_JACK_W=0.08,SUP_REL=0.2,SUP_TAP_TOL=0.06;
+const SUP_OC=[0.65,1,1.25],SUP_OC_TXT=['MISS','HIT','JACKPOT'],SUP_HULL_CAP=0.39;
+const SUP_TAP_HUMAN=0.1125,LG_AI_TAP=[0.27,0.235,0.20,0.18,0.158,0.146,0.135];
+function supBar(rnd,cq){const z0=cq?0.36+0.2*rnd():0.44+0.18*rnd(),m=0.03+SUP_JACK_W/2;return {z0:Math.round(z0*1000)/1000,jc:Math.round((z0+m+(SUP_ZONE_W-2*m)*rnd())*1000)/1000};}   // the zone starts 44-62% along (Conquest: 36-56%); the jackpot sits anywhere inside it
+function supJudge(bar,el,T){const p=el/(T||SUP_BAR_T);return Math.abs(p-bar.jc)<=SUP_JACK_W/2+1e-9?2:p>=bar.z0-1e-9&&p<=bar.z0+SUP_ZONE_W+1e-9?1:0;}   // 0 miss, 1 normal, 2 jackpot. T: the sweep (Conquest passes its own)
 // one super per weapon item (ten): the key picks its look (js/fx3d.js); the hit shape stays the archetype's (SUP)
 const supKey=(arch,tier)=>arch==='moon'?'moon':(WEAPONS[arch]?arch:'pulse')+Math.max(0,Math.min(2,tier|0));
 const SUP_KEYS=['pulse0','pulse1','pulse2','twin0','twin1','twin2','siege0','siege1','siege2','moon'];

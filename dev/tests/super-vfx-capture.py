@@ -42,17 +42,19 @@ SCENE='''([key,quality,reduced])=>{
  window.__e=e;window.__errs=[];B3.step=1/30;timeLeft=85;
  window.__step=(n)=>{for(let i=0;i<n;i++){me.cd=99;e.cd=99;me.sp=Math.min(me.sp,SUPER_MAX);timeLeft=85;update(1/30);fxTick(1/30);}if(window.__clean){nums.length=0;pops.length=0;}drawBattle();
   return {calls:R3.calls,programs:RR.info.programs.length,tris:RR.info.render.triangles,fx:SFX?SFX.stats():null,sup:me.sup?{el:me.sup.el,t:me.sup.t,oc:me.sup.oc}:null,ui:supUI?{oc:supUI.oc,p:supUI.p}:null,hp:e.hp,shells:shells.length};};
- return {key,k:supKey(me.wtype,me.wtier),name:SUP_NAMES[supKey(me.wtype,me.wtier)],gfx:R3.q,me:[me.x,me.y],e:[e.x,e.y],sc,ox,oy};
+ window.__scr=()=>{const P=u=>{WP(u.x,u.y,0);return [WPx,WPy];};return {me:P(me),e:P(e)};};   // where the two tanks are drawn (css px) under the camera of the moment
+ return {key,k:supKey(me.wtype,me.wtier),name:SUP_NAMES[supKey(me.wtype,me.wtier)],gfx:R3.q,me:[me.x,me.y],e:[e.x,e.y]};
 }'''
 FIRE='''(oc)=>{me.sp=SUPER_MAX;const ok=superGo();if(!ok)return {ok:false};
  const bar={z0:0.40,jc:0.60};me.sup.bar=bar;supUI.bar={z0:bar.z0,jc:bar.jc};me.sup.tapAt=undefined;
- return {ok:true,tapAt:oc===2?0.6:oc===1?0.46:0.22};}'''
-def crop_box(info,w,h,scale,pad_units=5.2):
-    # the action in css px: between my tank and the target, a little towards the target
-    sc,ox,oy=info['sc'],info['ox'],info['oy'];mx,my=info['me'];ex,ey=info['e']
-    cx=ox+(mx+ex)/2*sc;cy=oy+((my+ey)/2-1.0)*sc*0.86;r=pad_units*sc
-    x0=max(0,cx-r);y0=max(0,cy-r*1.15);x1=min(w,cx+r);y1=min(h,cy+r*1.15)
-    return tuple(int(v*scale) for v in (x0,y0,x1,y1))
+ return {ok:true,tapAt:oc===2?0.4:oc===1?0.3:0.1334};}'''   # seconds after the press on the 0.667 s sweep: 60% (the jackpot), 45% (the zone), 20% (a miss), each on a 1/30 s step
+def crop_box(scr,w,h,scale,nova=False):
+    # the action in css px under the chase camera: from above the target to below my tank, one tile shape (1 : 1.15)
+    (mx,my),(ex,ey)=scr['me'],scr['e'];d=max(60,abs(my-ey))
+    top=ey-d*(1.5 if nova else 0.55);bot=my+d*(1.2 if nova else 0.3);hh=bot-top;ww=hh/1.15;cx=(mx+ex)/2
+    if ww>w:ww=w;cx=w/2
+    x0=min(max(0,cx-ww/2),w-ww);y0=max(0,top);y1=min(h,bot)
+    return tuple(int(v*scale) for v in (x0,y0,x0+ww,y1))
 async def run_view(p,name,report):
     w,h,scale=VIEWS[name];tag=name+'-'+QUALITY+('-reduced' if REDUCED else '');d=OUT/tag;d.mkdir(exist_ok=True)
     b,pg,errs=await open_game(p,w,h,scale=scale)
@@ -92,7 +94,7 @@ async def run_view(p,name,report):
                     elif dt>40:break
             assert fired is not None,key+' never fired'
             rep['supers'][key+'-'+OC[oc]]={'name':info['name'],'peak':peak,'firedAt':round(fired/30,2)}
-            box=crop_box(info,w,h,scale,6.0 if key.startswith('twin') else 5.6)
+            box=crop_box(await pg.evaluate('__scr()'),w,h,scale,key.startswith('twin'))
             tiles[(key,oc)]={k:v.crop(box) for k,v in shots.items()}
             print(tag,key,OC[oc],info['name'],'fired',round(fired/30,2),'peak',peak,flush=True)
     rep['pageErrors']=errs;rep['idleAfter']=await pg.evaluate('(()=>{for(const c of crates)c.hp=c.mhp;for(const u of units)u.hp=u.mhp;for(let i=0;i<150;i++)__step(1);const s=__step(1);return {calls:s.calls,programs:s.programs,tris:s.tris,fxOn:SFX.glow.visible||SFX.debris.visible,fx:s.fx};})()')

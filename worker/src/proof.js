@@ -124,10 +124,11 @@ export function checkProof(pf, c) {
   if (inWall > PROOF.WALL_BAD) return fail("walls");
   // damage: what you report matches the record, it was dealt with an enemy in reach, and the enemies lost that health
   const enemy = h.map((u, i) => i > 0 && (c.g === "royale" ? true : u[0] !== h[0][0]));
-  let total = 0, bad = 0, lost = 0, kills = 0, sups = 0, boxes = 0, low = 1;
+  let total = 0, bad = 0, lost = 0, kills = 0, sups = 0, boxes = 0, low = 1, roundSups = 0, mostSups = 0;
   for (let s = 0; s < k; s++) {
     const d = DM(s), fl = FL(s);
-    if (fl & 8) sups++;
+    if (fl & 64) roundSups = 0;   // a new round clears the count (rules.js SUP_ROUND_CAP); a respawn does not
+    if (fl & 8) { sups++; mostSups = Math.max(mostSups, ++roundSups); }
     if (fl & 16) boxes++;
     if (HP(s, 0) > 0 || s === 0) low = Math.min(low, HP(s, 0) / 100);
     else low = 0;
@@ -146,6 +147,9 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) > 0 && HP(s, i) === 0) { let mineHit = false; for (let j = Math.max(0, s - 4); j <= s; j++) if (DM(j) > 0) mineHit = true; if (mineHit) kills++; }
     }
   }
+  // supers: never more than the cap in one round (Session 5E-2b2b). The phone's sim refuses the press past the cap, so an
+  // honest record cannot hold more; a record that does was not made by the game's own rules
+  if (mostSups > (L.SUP_ROUND_CAP || 3)) return fail("supers");
   const rep = Math.max(0, Number(c.st.dmg) || 0);
   if (rep > total + PROOF.DMG_PLUS + total * PROOF.DMG_X) return fail("dmg");
   if (total > 600 && bad > total * PROOF.REACH_BAD) return fail("reach");

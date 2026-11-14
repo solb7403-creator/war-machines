@@ -233,6 +233,7 @@ function pvpApply(rt){
   u.hp=cur[4];u.sp=cur[5];u.rep=cur[6]&4?0.3:0;u.away=!!(cur[6]&16);u.cry=cur[7];u.bty=cur[8];u.deaths=cur[10];u.dead=cur[11]/10;u.mhp=cur[15];
   u.buffs=cur[13]?cur[13].map(([ki,tk])=>({k:BUFF_KEYS[ki],taken:tk})):[];
   u.sup=cur[14]?{t:cur[14][0],ang:pvA(cur[14][1]),w:u.wtype,el:cur[14][2],bar:{z0:cur[14][3],jc:cur[14][4]},oc:cur[14][5]?cur[14][5]-1:undefined,k:SUP_KEYS[cur[14][6]]||supKey(u.wtype,u.wtier)}:null;
+  u.supN=cur[17]|0;   // supers used this round (the server's count; it refuses the next one at SUP_ROUND_CAP)
   if(u===me&&cur[16])me.nbar={z0:cur[16][0],jc:cur[16][1]};   // my next timing bar, drawn by the server before I press
  });
  timeLeft=B?lerp(s.tl,B.s.tl,k):s.tl;elapsed=B?lerp(s.el,B.s.el,k):s.el;
@@ -305,7 +306,7 @@ function pvpFrame(dt){
 const pvpLag=()=>!!pvp&&pvp.live&&pvp.phase==='play'&&(!pvp.sock||performance.now()-pvp.lastSnapAt>800);   // drawHUD shows "Reconnecting"
 // your controls, sent to the server (the super and dash buttons, keyboard)
 function pvpSuper(a){
- if(!me||me.hp<=0||me.sup||me.sp<SUPER_MAX)return false;
+ if(!me||me.hp<=0||me.sup||me.sp<SUPER_MAX||(me.supN||0)>=SUP_ROUND_CAP)return false;
  if(a===undefined||a===null){const e=nearestFoe(me);if(!e)return false;if(SUP[me.wtype||'pulse'].kind!=='nova'&&!los(me,e)){showToast('No line of sight. Drag from Super to aim it yourself.');return false;}}
  pvpSend({k:'s',a:a===undefined||a===null?null:Math.round(a*1000)/1000});fx('super');return true;
 }

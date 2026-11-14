@@ -11,7 +11,7 @@ const {earn}=await import('../../../worker/src/conquest-airdrop.js');const {week
 const env={BOT_TOKEN:'conquest-dev-test',FIREBASE_DB_SECRET:'SECRET'};let now=Date.UTC(2026,10,10,12);Date.now=()=>now;
 const OWNER='ln_6392735208728',PIN=999;
 function auth(id,username){const u={id,first_name:'Pilot'+id};if(username)u.username=username;const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify(u)});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(who,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:5,initData:auth(who.id,who.u),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
+async function call(who,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:6,initData:auth(who.id,who.u),...body})}),env);const t=await r.text();return {status:r.status,...(t.startsWith('{')?JSON.parse(t):{error:t})};}
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
 db.root.cfg={admin:{lunarbattle:PIN}};db.root.telegramLinks={[PIN]:OWNER};db.root.lunarAccounts={[OWNER]:{id:OWNER,type:'password',name:'Lunar',telegramId:PIN}};
 const owner={id:PIN,u:'LunarBattle'},other={id:7301},fake={id:7302,u:'LunarBattle'};   // fake: the admin username on another Telegram id

@@ -7,7 +7,7 @@ const {default:worker}=await import('../../../worker/src/index.js');
 const env={BOT_TOKEN:'conquest-test',FIREBASE_DB_SECRET:'SECRET'};
 let now=Date.now();const clock=Date.now;Date.now=()=>now;
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify({id,first_name:'Pilot'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:5,initData:id?auth(id):'',...body})}),env);const text=await r.text();return {status:r.status,...(text.startsWith('{')?JSON.parse(text):{error:text})};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:6,initData:id?auth(id):'',...body})}),env);const text=await r.text();return {status:r.status,...(text.startsWith('{')?JSON.parse(text):{error:text})};}
 assert.equal((await call(null,'/api/conquest/session')).status,401);
 await call(8101,'/api/sync');await call(8102,'/api/sync');
 let r=await call(8101,'/api/conquest/session');assert.equal(r.status,200);assert(r.state,'authenticated server state created');

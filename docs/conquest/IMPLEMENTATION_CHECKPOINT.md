@@ -2880,3 +2880,46 @@ everyone, revert the merge commit on main.
 - 5E-2b2b (supers and weapons) is to be judged with this camera; the timing bar now sits under the top HUD on phones.
 - Longshot / Canyon rock to reference level still needs sculpted meshes; wiki map pictures still show the 5E-2c maps.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
+
+## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`) — IN PROGRESS
+
+Brief: the owner's Session 5E-2b2b prompt (supers: about 3 per player per round, never more than 3, charge from damage only and
+measured against the tank's own strength, 20-25% less damage, a faster timing bar, more professional looks; weapon proportions
+on every chassis) plus two owner messages during the session (Nov 13): the Moonfall jackpot's red electricity must wrap AROUND
+the blue beam, and a higher rarity must look more intricate (rare > common, epic > rare, Moonfall the most intricate and
+unique); **Conquest supers stay completely unchanged**. Owner not monitoring: every decision below was made by the lead and is
+recorded with its reason. Payments stay DISABLED. Not touched: prices, economy, airdrop points, save schema, ownership,
+chassis / weapon stats (other than super tuning), the camera, firing, Conquest super charging / damage / bar / looks.
+
+**Branch note.** The brief names `claude/super-spawn-rate-clarification-v0jid5`; this session's harness may only push to
+`claude/super-spawn-rate-clarification-v0jid5-gdurn6`. That branch was fast-forwarded to the named branch's head (`eebfe8d`, the
+roadmap note, which sits directly on main `1acff13`), so it holds the same history. The named branch held no measurement files;
+the baseline was re-measured here against a pristine checkout of main (below).
+
+### Research that drove the choices (step 1; a research agent, web search)
+Caveat from the agent: every page fetch was blocked by this session's network allowlist, so the findings come from search-result
+summaries of the pages named, not from pages it opened. Direction, not proof.
+1. **Charge sources.** Overwatch: 1 point per point of damage, plus a passive trickle; no charge from non-player targets, from
+   self-damage, from the ultimate's own damage or while it is active (Overwatch Wiki, 2016 PTR notes). Brawl Stars: a fixed share
+   per HIT per brawler, tuned as hits-to-charge and independent of damage ("Crow stays at 10 hits" after a damage change); the
+   Tank trait charges from damage taken (Bull: 2.4x his max health for a full Super). Valorant: points from kills, deaths, orbs,
+   no passive gain. Fighting games give the defender a smaller share than the attacker (SF6 throw: 2,000 vs 1,400 = 70%; Yomi
+   Hustle: damage taken / 3). => damage-only charge with no passive part is established practice; the charge excludes props and
+   the super's own damage; the receiver's share is smaller than the dealer's (here about a quarter of a bar-for-bar exchange);
+   charge measured in the attacker's own units (hits, or here seconds of own fire), not in the target's health.
+2. **Frequency.** Every live game the agent found tunes ultimate frequency DOWN over time (Overwatch +25% cost in 2016, +10% in
+   2023; Valorant raised costs "to reduce their overall frequency"; Marvel Rivals -20% charge). No published hard caps per round
+   were found. => a cap is this game's own rule (owner); the precedent supports fewer, not more.
+3. **Damage share.** No published share of damage from ultimates. Valorant's design lead: "guns provide the vast majority of
+   kills". => the cannon should stay the main source: supers went from 43% of a pilot's damage to 19% (tables below).
+4. **Timing windows.** Paper Mario's Superguard is 3 frames at 60 fps (50 ms) and is its "hard" window; DDR's Perfect is 33 ms;
+   osu!'s best window is 80 - 6 x OD ms; visual reaction to a tap is about 230-290 ms; a phone's touch latency varies by about
+   one 60 Hz frame (16 ms). => a 53 ms jackpot window (0.667 s sweep) is "hard but not too hard"; a 40 ms window (2x) sits at
+   rhythm-game "perfect" difficulty before a phone's own jitter is added; the jackpot must not come sooner than ~300 ms after
+   the bar appears.
+5. **Professional VFX** (Riot's VFX style guide; Keyser / Chamberlain GDC 2017 as summarised): gameplay clarity first; ONE
+   primary element with the highest contrast and the sharpest edge, secondaries dimmer and smaller; avoid pure white and pure
+   black fills; anticipation -> climax -> long fall-off; a flash layer lasts 2-3 frames. => how the ten supers are now staged
+   (js/fx3d.js "how a super is staged").
+Not found by the agent: supers per match in Brawl Stars, any game's ultimate share of damage, Bassin anticipation-timer errors
+in ms, golf-meter or Gears active-reload window sizes.

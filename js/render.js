@@ -602,6 +602,7 @@ const superFire=a=>typeof rangeRun!=='undefined'&&rangeRun?rangeRun.sim.action('
 // tap (the SUPER button, the bar itself, or Space) stops the marker: MISS / HIT / JACKPOT. Driving is never blocked.
 // supUI: {t0 (ms, my press), bar {z0,jc}, live, p (where the marker stopped), oc, at (ms, when it stopped)}
 let supUI=null;
+const supUsed=()=>me?Math.min(SUP_ROUND_CAP,me.supN||0):0;   // supers I have used this round (the sim's count; in a live match the server's)
 const supBarOn=()=>!!supUI&&supUI.oc===undefined;
 function superGo(a){
  if(supBarOn())return supStop();   // the same control stops the bar
@@ -685,6 +686,7 @@ cv.addEventListener('pointerdown',e=>combatView(()=>{
  const B=btn();
  if(supBarOn()&&me.hp>0){const R=supBarRect();if(Math.hypot(L.x-B.x,L.y-B.y)<=B.r+26||(L.x>=R.x-10&&L.x<=R.x+R.w+10&&L.y>=R.y-16&&L.y<=R.y+R.h+16)){supStop();return;}}   // second tap: stop the timing bar (the SUPER button or the bar itself)
  if(me.hp>0&&Math.hypot(L.x-B.x,L.y-B.y)<=B.r+16){
+  if(supUsed()>=SUP_ROUND_CAP&&!me.sup){nums.push({x:me.x,y:me.y-1.6,t:1.1,z:1,txt:'All '+SUP_ROUND_CAP+' Supers used this round',c:'#c0cad4'});return;}
   if(me.sp<SUPER_MAX||me.sup){nums.push({x:me.x,y:me.y-1.6,t:0.9,z:1,txt:'Super '+Math.round(me.sp/SUPER_MAX*100)+'%',c:'#ff9d9d'});return;}
   aim={id:e.pointerId,sx:L.x,sy:L.y,x:L.x,y:L.y,on:false};try{cv.setPointerCapture(e.pointerId);}catch(_){}return;}
  const D=dashBtn();if(me.hp>0&&Math.hypot(L.x-D.x,L.y-D.y)<=D.r+12){const [ix,iy]=inputVec();dashGo(ix,iy);return;}
@@ -1147,14 +1149,20 @@ function drawHUD(){
   if(!ready){g.strokeStyle='#40e0d0';g.lineWidth=4;g.beginPath();g.arc(H.x,H.y,H.r-3,-Math.PI/2,-Math.PI*2*(1-cd)-Math.PI/2);g.stroke();}
   g.fillStyle=ready||on?'#fff':'rgba(255,255,255,.5)';g.textAlign='center';g.font=font(Math.round(H.r*0.34));g.fillText('SHIELD',H.x,H.y+1-(CH&&KEYHINT?H.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(H.r*0.28));g.globalAlpha=0.7;g.fillText('E',H.x,H.y+H.r*0.4);g.globalAlpha=1;}}
  // SUPER button with a charge ring
- if(state==='play'&&me.hp>0){const B=btn(),f=me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
-  g.fillStyle=rdy?'#e0242f':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
+ if(state==='play'&&me.hp>0){const B=btn(),used=supUsed(),out=used>=SUP_ROUND_CAP&&!me.sup,f=out?0:me.sp/SUPER_MAX,rdy=f>=1&&!me.sup&&me.hp>0;
+  g.fillStyle=rdy?'#e0242f':out?'#22262c':'#3a1a1d';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();
   g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r-4,0,7);g.stroke();
   g.strokeStyle=rdy?'#fff':'#ff6b6b';g.beginPath();g.arc(B.x,B.y,B.r-4,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,f));g.stroke();
   if(supBarOn()){const q=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?1:0.5+0.5*Math.sin(performance.now()/70);g.fillStyle='#ffcf4a';g.beginPath();g.arc(B.x,B.y,B.r,0,7);g.fill();g.strokeStyle='rgba(255,255,255,'+(0.5+0.5*q)+')';g.lineWidth=5;g.beginPath();g.arc(B.x,B.y,B.r+5,0,7);g.stroke();
    g.fillStyle='#2a1c00';g.textAlign='center';g.font='700 '+Math.round(B.r*0.5)+'px '+FONT_FAMILY;g.fillText('TAP!',B.x,B.y+1);}
-  else{g.fillStyle=rdy?'#fff':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1-(CH&&KEYHINT?B.r*0.14:0));if(CH&&KEYHINT){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.7;g.fillText('SPACE',B.x,B.y+B.r*0.4);g.globalAlpha=1;}}
-  if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-12);}
+  else{g.fillStyle=rdy?'#fff':out?'rgba(255,255,255,.4)':'rgba(255,255,255,.55)';g.textAlign='center';g.font=font(Math.round(B.r*0.42));g.fillText('SUPER',B.x,B.y+1-(out||(CH&&KEYHINT)?B.r*0.14:0));
+   if(out){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.75;g.fillText('NONE LEFT',B.x,B.y+B.r*0.4);g.globalAlpha=1;}else if(CH&&KEYHINT){g.font=font(Math.round(B.r*0.25));g.globalAlpha=0.7;g.fillText('SPACE',B.x,B.y+B.r*0.4);g.globalAlpha=1;}}
+  // the round's supers (rules.js SUP_ROUND_CAP): one pip each along the top of the button; a spent one is hollow
+  {const n=SUP_ROUND_CAP,pr=Math.max(3.5,B.r*0.115),a0=-Math.PI/2,da=0.36;for(let i=0;i<n;i++){const a=a0+(i-(n-1)/2)*da,x=B.x+Math.cos(a)*(B.r+pr+5),y=B.y+Math.sin(a)*(B.r+pr+5);
+    g.fillStyle='rgba(6,10,18,.85)';g.beginPath();g.arc(x,y,pr+2,0,7);g.fill();
+    if(i<n-used){g.fillStyle='#ffcf4a';g.beginPath();g.arc(x,y,pr,0,7);g.fill();g.fillStyle='#fff6cf';g.beginPath();g.arc(x-pr*0.25,y-pr*0.25,pr*0.38,0,7);g.fill();}
+    else{g.strokeStyle='rgba(255,255,255,.38)';g.lineWidth=1.5;g.beginPath();g.arc(x,y,pr-0.5,0,7);g.stroke();}}}
+  if(rdy&&(save.mp||0)<6&&!aim){g.font=font(11);g.fillStyle='rgba(255,255,255,.7)';g.fillText('tap or drag to aim',B.x-6,B.y-B.r-26);}
   if(rdy){g.globalAlpha=0.25+0.25*Math.sin(performance.now()/120);g.strokeStyle='#ff4d4d';g.lineWidth=6;g.beginPath();g.arc(B.x,B.y,B.r+6,0,7);g.stroke();g.globalAlpha=1;}}
  supUiTick();drawSupBar(g);
  g.textBaseline='top';

@@ -50,7 +50,7 @@ function makePhone(user, net) {
     if (plan.fail !== undefined) { ctx.setTimeout(() => fail(new TypeError('Load failed')), plan.fail); return; }   // never reached the server
     ctx.setTimeout(async () => {   // the server gets it and does the work, whether or not the reply makes it back
       inflight++;
-      const res = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ gv:5, initData: initData(user) }, body)) }), env);
+      const res = await worker.fetch(new Request('https://x' + path, { method: 'POST', headers: { Origin: 'https://solb7403-creator.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ gv:6, initData: initData(user) }, body)) }), env);
       const txt = await res.text(); if (process.env.DBG) console.log('  net', path, k, res.status, txt.slice(0, 160));
       inflight--;
       if (plan.lose) return;   // the reply is lost on the way back

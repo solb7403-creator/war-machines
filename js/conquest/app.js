@@ -283,7 +283,7 @@ function combatHUD(){if(!view)return;guidance();root.ConquestPlotView?.tankBanne
   // outcome is read from the bar this HUD was showing (the same object the battle judged), and HIT / JACKPOT still shows
   if(!(sa&&sa.bar)&&H.sa&&H.oc===undefined&&H.sa.oc!==undefined)sa=H.sa;
   if(sb&&sa&&sa.bar){H.sa=sa;if(H.at!==sa.bar.jc+sa.bar.z0){H.at=sa.bar.jc+sa.bar.z0;H.oc=undefined;css(sb.querySelector('.cq-supbar-zone'),'left',sa.bar.z0*100+'%');css(sb.querySelector('.cq-supbar-zone'),'width',SUP_ZONE_W*100+'%');css(sb.querySelector('.cq-supbar-jack'),'left',sa.bar.jc*100+'%');}
-   if(sa.oc===undefined){H.p=Math.min(1,sa.el/SUP_BAR_T);put(sb.querySelector('.cq-supbar-text'),(SUP_NAMES[sa.k]||'SUPER').toUpperCase()+': TAP TO STOP');put(sb.querySelector('.cq-supbar-note'),'blue zone = hit · gold circle = jackpot');}
+   if(sa.oc===undefined){H.p=Math.min(1,sa.el/SUP_BAR_T_CQ);put(sb.querySelector('.cq-supbar-text'),(SUP_NAMES[sa.k]||'SUPER').toUpperCase()+': TAP TO STOP');put(sb.querySelector('.cq-supbar-note'),'blue zone = hit · gold circle = jackpot');}
    else if(H.oc===undefined){H.oc=sa.oc;H.until=Date.now()+900;put(sb.querySelector('.cq-supbar-text'),sa.oc===2?'JACKPOT!':sa.oc===1?'HIT':'MISS');put(sb.querySelector('.cq-supbar-note'),Math.round(SUP_OC[sa.oc]*100)+'% damage');if(typeof fx==='function')fx(sa.oc===2?'jackpot':sa.oc===1?'supgood':'supmiss');}
    css(sb.querySelector('.cq-supbar-mark'),'left',(H.p||0)*100+'%');attr(sb,'data-oc',H.oc===undefined?'':String(H.oc));prop(sb,'hidden',false);}
   else if(sb&&!(H.until>Date.now())){prop(sb,'hidden',true);H.at=undefined;H.sa=null;}}

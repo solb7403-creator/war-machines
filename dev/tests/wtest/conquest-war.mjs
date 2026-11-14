@@ -7,7 +7,7 @@ const {default:worker}=await import('../../../worker/src/index.js');
 const {CONQUEST:{Combat:C}}=await import('../../../worker/src/sim.gen.js');
 const env={BOT_TOKEN:'conquest-war-test',FIREBASE_DB_SECRET:'SECRET'};let now=Date.now();const original=Date.now;Date.now=()=>now;
 function auth(id){const p=new URLSearchParams({auth_date:String(Math.floor(now/1000)),user:JSON.stringify({id,first_name:'Pilot'})});const d=[...p].sort(([a],[b])=>a<b?-1:1).map(([k,v])=>k+'='+v).join('\n');p.set('hash',createHmac('sha256',createHmac('sha256','WebAppData').update(env.BOT_TOKEN).digest()).update(d).digest('hex'));return p.toString();}
-async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test/api/conquest/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:5,initData:id?auth(id):'',...body})}),env);return {status:r.status,...await r.json()};}
+async function call(id,path,body={}){const r=await worker.fetch(new Request('https://test/api/conquest/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gv:6,initData:id?auth(id):'',...body})}),env);return {status:r.status,...await r.json()};}
 assert.equal((await call(null,'session')).status,401);
 const pilot=9111;const first=await call(pilot,'session');assert.equal(first.status,200);assert.equal(first.state.warfront.participants,0);
 let s=db.get('conquest/tg_'+pilot);s.position={x:C.baseDefinition.x,z:C.baseDefinition.z,y:0,surface:'ground'};s.base.tier=1;s.base.builtAt=now;s.base.defense.alertAt=now;s.battle.enemies=[];
