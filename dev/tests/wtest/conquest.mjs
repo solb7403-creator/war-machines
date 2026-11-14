@@ -26,7 +26,7 @@ assert.equal(db.get('conquest/tg_8102'),null,'cannot mutate another account');
 const stored=db.get('conquest/tg_8101');stored.hp=87;stored.battle.playerHp=87;
 r=await call(8101,'/api/conquest/session');assert.equal(r.state.hp,87,'re-entering does not reset HP');
 assert.equal(r.state.position.x,stored.position.x);assert.equal(r.state.seq,1);
-for(const key of ['pts','earned','up','buys','wOwn','cOwn','gemLvl','gemShards'])assert.deepEqual(db.get('eco/tg_8101')[key],protectedBefore[key],key+' unchanged');
+for(const key of ['pts','earned','upc','buys','wOwn','cOwn','glc','gsc'])assert.deepEqual(db.get('eco/tg_8101')[key],protectedBefore[key],key+' unchanged');
 assert.equal((await call(null,'/api/conquest/action',{seq:1,action:'start-mission'})).status,401);
 assert.equal((await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'})).status,409,'server position controls activation');
 const near=db.get('conquest/tg_8101');near.position={x:1163,z:1132,y:0,surface:'ground'};

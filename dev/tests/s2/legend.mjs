@@ -40,14 +40,14 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   if (tests.includes('spend')) {   // equal spend: the kit's Stars spent on gem caches instead (expected value, Monte Carlo over cache rolls)
     const budget = +(process.env.BUDGET || 6600), base = +(process.env.BASE_LV || 2), draws = 24, outs = [];
     const rng = R.rng32(4242), lvls = [];
-    for (let d = 0; d < draws; d++) { const S = R.ecoNorm({}); for (const k of R.GORDER) S.gemLvl[k] = base; let left = budget, day = 30000, spent = 0;
+    for (let d = 0; d < draws; d++) { const S = R.ecoNorm({}), GL = S.glc[R.homeChassis(S)]; for (const k of R.GORDER) GL[k] = base; /* per-chassis cores (5E-2b3): caches without a chassis go to the home one */ let left = budget, day = 30000, spent = 0;
       // one UTC day at a time, cheapest Stars per shard first: the 30%-off deal cache, then repeat buys at +25% each; stop when the next buy no longer fits
       while (left > 0) { const X = { day, week: Math.floor(day / 7), rnd: rng, pk: 'x' };
         const opts = [0, 1, 2].map((ri) => { const deal = R.ecoDealOf(S, 'gem', ri, X), p = R.ecoPrice(S, { kind: 'box', tk: 'gem', ri, deal }, X); return { ri, deal, stars: p.stars, per: p.stars / [1.5, 3.5, 12.5][ri] }; }).filter((o) => o.stars <= left).sort((a, b) => a.per - b.per);
         if (!opts.length) break; const o = opts[0];
         if (o.per > 120 && left >= 1050) { day++; continue; }   // better value tomorrow (the daily deal) while the budget still covers one
         R.ecoGrant(S, { kind: 'box', tk: 'gem', ri: o.ri, deal: o.deal, price: 0 }, X); left -= o.stars; spent += o.stars; }
-      lvls.push(['dmg', 'rof', 'arm'].map((k) => S.gemLvl[k])); }
+      lvls.push(['dmg', 'rof', 'arm'].map((k) => GL[k])); }
     const avg = [0, 1, 2].map((i) => +(lvls.reduce((a, l) => a + l[i], 0) / draws).toFixed(2));
     const pairs = lvls.map((l) => [kit({ w: 'moon', skin: true, lv: base }), kit({ w: W, glv: { dmg: l[0], rof: l[1], arm: l[2], spd: base, lck: base, reg: base } })]);
     const r = await compare(pairs, Math.max(2, Math.round(S / 4)));
