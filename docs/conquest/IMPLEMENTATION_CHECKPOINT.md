@@ -978,30 +978,6 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 6. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
    - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
 
-**Round 3 verdict** (a fresh critic; it also saw round 2's sheets): **"Supers: ship all ten; none is clearly below professional,
-so no 4th round is required. Weapons: ship."** Every super better than before (Moonfall "much better"), none worse than round
-2. Rarity ladder: Pulse, Twin and Siege pass (Siege the weakest: Titanfall's normal "bigger and brighter than Rail Blast but
-not obviously more intricate"); Moonfall most intricate and unique: narrow pass ("the widest beam, the only two-colour super,
-braided strands and the largest sigil"; its jackpot silhouette is still a beam with sideways forks). The owner's test: three of
-four pairs pass (was two, then none); a missed Sunlance still read as a plain gold beam. Moonfall: "red electricity: yes on
-both devices; irregular and branching, no longer sawtooth, most arcs leave the beam edge"; no ring round the beam; normal's
-strands thin and saturated blue; a few red fragments still floated beside the beam on the desktop at +0.2 s. Closest to the
-line: Siege Blast (6.5: an olive-green centre, round secondary balls). Weapons: all ten OK on all nine hulls; the Twin
-Repeater on the Titan class "acceptable, not clearly wrong" (only its barrels are pencil-thin: the model's own).
-**No 4th round was run** (owner: a 4th only for a super or weapon still clearly below professional; the critic named none).
-
-**Patched after round 3** (the critic's list; checked on the final sheets by the lead, not scored again):
-- *Siege Blast*: its smoke is now drawn over the fire's edge in a warm black instead of under the fire (yellow light on grey
-  smoke was the green), and the jackpot's secondaries are three bursts of different sizes made of flame tongues.
-- *Helix Nova*: a jackpot is visibly more than a hit: brighter inner coils, fire rain as long streaks with a splash where
-  each lands; the apex orb removed.
-- *Sunlance*: a miss carries a clear white-gold star and one bright filament down the beam.
-- *Titanfall*: gold-orange instead of lemon, lighter over the target, a slightly tighter dome on a jackpot.
-- *Moonfall*: the arcs' bodies are saturated red (pink-white only where they leave the beam); the short crackles are rooted
-  on the core as well (they were the fragments floating beside the beam); the blue strands have kinks and forks and stay
-  inside the beam's width; nothing is drawn round the target (the ground under it goes dark for a moment).
-- *Fog* under Static and Storm Nova halved again; Storm Nova's strike flash smaller; Arc Lance's chain bolts violet, no end blobs.
-
 ### Independent reviews (2 read-only agents, given only the branch, head SHA, briefs and this checkpoint)
 Neither reviewer found a blocker or any way to mint or duplicate points or minerals. Both changed the result: every valid finding below was fixed and tested.
 
@@ -2905,7 +2881,7 @@ everyone, revert the merge commit on main.
 - Longshot / Canyon rock to reference level still needs sculpted meshes; wiki map pictures still show the 5E-2c maps.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
 
-## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`) — IN PROGRESS
+## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`, build `20261114090839`) — BUILT; RELEASE PRE-APPROVED BY THE OWNER (Nov 14, 2026: see "Release status")
 
 Brief: the owner's Session 5E-2b2b prompt (supers: about 3 per player per round, never more than 3, charge from damage only and
 measured against the tank's own strength, 20-25% less damage, a faster timing bar, more professional looks; weapon proportions
@@ -3340,6 +3316,30 @@ still light on the Titan-class hulls, Rail Breaker and Pulse Cannon a little sle
   0.83 past the nose: any larger and they overhang further. Their slender look there is the models' own (a low flat turret,
   thin barrels), and models are not to be changed in this session.
 
+**Round 3 verdict** (a fresh critic; it also saw round 2's sheets): **"Supers: ship all ten; none is clearly below professional,
+so no 4th round is required. Weapons: ship."** Every super better than before (Moonfall "much better"), none worse than round
+2. Rarity ladder: Pulse, Twin and Siege pass (Siege the weakest: Titanfall's normal "bigger and brighter than Rail Blast but
+not obviously more intricate"); Moonfall most intricate and unique: narrow pass ("the widest beam, the only two-colour super,
+braided strands and the largest sigil"; its jackpot silhouette is still a beam with sideways forks). The owner's test: three of
+four pairs pass (was two, then none); a missed Sunlance still read as a plain gold beam. Moonfall: "red electricity: yes on
+both devices; irregular and branching, no longer sawtooth, most arcs leave the beam edge"; no ring round the beam; normal's
+strands thin and saturated blue; a few red fragments still floated beside the beam on the desktop at +0.2 s. Closest to the
+line: Siege Blast (6.5: an olive-green centre, round secondary balls). Weapons: all ten OK on all nine hulls; the Twin
+Repeater on the Titan class "acceptable, not clearly wrong" (only its barrels are pencil-thin: the model's own).
+**No 4th round was run** (owner: a 4th only for a super or weapon still clearly below professional; the critic named none).
+
+**Patched after round 3** (the critic's list; checked on the final sheets by the lead, not scored again):
+- *Siege Blast*: its smoke is now drawn over the fire's edge in a warm black instead of under the fire (yellow light on grey
+  smoke was the green), and the jackpot's secondaries are three bursts of different sizes made of flame tongues.
+- *Helix Nova*: a jackpot is visibly more than a hit: brighter inner coils, fire rain as long streaks with a splash where
+  each lands; the apex orb removed.
+- *Sunlance*: a miss carries a clear white-gold star and one bright filament down the beam.
+- *Titanfall*: gold-orange instead of lemon, lighter over the target, a slightly tighter dome on a jackpot.
+- *Moonfall*: the arcs' bodies are saturated red (pink-white only where they leave the beam); the short crackles are rooted
+  on the core as well (they were the fragments floating beside the beam); the blue strands have kinks and forks and stay
+  inside the beam's width; nothing is drawn round the target (the ground under it goes dark for a moment).
+- *Fog* under Static and Storm Nova halved again; Storm Nova's strike flash smaller; Arc Lance's chain bolts violet, no end blobs.
+
 ### Independent reviews (2 read-only agents, given only the branch, the head, the owner's requirements and this checkpoint)
 **Gameplay / balance / server authority / parity (head `801e1d3`): FAIL on the first pass, 4 majors, 6 minors, 4 nits.** It ran
 `super-timing.mjs` (248 checks) and `wtest/pvp.mjs` (128), reproduced six cells of the tables exactly, and found sound: the
@@ -3368,7 +3368,7 @@ line for line; no economy, price, save, stat or camera file changed. **Its findi
 4. *MAJOR: tests asserted less than the claims.* **Fixed:** real-shot charge tests; every kit in every mode asserted (about
    3, 1v1 Arena 1.2-2.8), the per-mode gear check tightened to 1.2x + 0.1; the live-room test now covers an AI takeover and
    a reconnect at the cap.
-5. *MAJOR: build stamp not bumped* while `PVP_V` went to 6: done at release (below).
+5. *MAJOR: build stamp not bumped* while `PVP_V` went to 6: **done:** build `20261114090839` (release tree).
 6. *MINOR: the gold jackpot circle was drawn up to a third wider than the window that is judged* (older than this session,
    but it matters more at the faster sweep). **Fixed:** the circle is drawn exactly as wide as the judged window.
 7. *MINOR: `RANGE_ENGINE_VERSION` not bumped* although combat changed: bumped. The practice range allows 3 supers a trial,
@@ -3385,3 +3385,186 @@ line for line; no economy, price, save, stat or camera file changed. **Its findi
 10. *NITS:* comments corrected (24 s rounds, 4.4 / 2.7 bars offered). Left as they are: fast weapons lose a little charge to
     fire-rate rounding at the sim's tick (the Twin Repeater most), and Moonbeam edge hits give about 4% more charge per hit;
     both are within the measured 1.12x spread between weapons.
+
+**Graphics / performance review (the second reviewer; after critic round 3). Its fixes are commit `ee245df`.** The reviewer's
+own report was not written down here before the session's worker restarted (Nov 14, 08:31 UTC), so its verdict line, and
+anything it raised that the lead chose to leave, are NOT on record. What is on record is every change that commit made, read
+back from its diff:
+1. *Glow batch 2,600 -> 4,600 quads.* The richer supers draw more quads (the largest jackpot on main: 551; here Moonfall's:
+   1,147), and quads past the batch limit are silently not drawn; three supers in one 3v3 frame now fit.
+2. *Lighter glow shader:* the fire / smoke noise reads two octaves instead of three, the beam-flow look reads the noise once
+   instead of twice, and the wave-front look calls `smoothstep` with its edges in order (the reverse order is undefined in
+   GLSL and differs between phones) with a front edge wide enough not to stair-step on a thin ring.
+3. *LOW graphics draws every glow as a plain soft glow* (no fire, wave-front or beam-flow shading: those cost several times
+   more per pixel). Every structure of every super is still drawn (`all-supers-phone-low.webp`).
+4. *Weapon fit:* the two geometric limits (never wider than the hull, the rear inside the deck) are applied again AFTER the
+   per-pair correction (`FIT_ADJ`), which used to come after every limit. One pair changes: Moonbeam on the Titan 0.966 -> 0.933.
+5. *Timing bar:* the jackpot mark is a gold capsule exactly as wide as the judged window and taller than the track (a circle
+   that wide is under 15 px on a 320 px phone and was hard to see).
+6. *Lunar sigil and the moon phases:* fewer segments per ring (40 -> 24, 26 -> 18), and the phases run from crescent to
+   gibbous, never a closed circle.
+7. *Moonfall's thin blue strands are one pass each* (no halo pass); the map's own lightning arcs keep their earlier look
+   (no white core).
+8. *Reduce Motion:* a shell in flight is a plain glow (the fire noise is fixed to the ground; a moving puff crawled through it).
+9. *No per-frame array allocations* in the Moonfall and Siege Blast recipes.
+10. *Menu pictures:* the framing widens for any weapon whose muzzle now reaches further than the frame was sized for.
+11. New tool `dev/tests/super-frame-time.py` and its data (below).
+
+### Frame cost of a jackpot: main `1acff13` -> this branch (`docs/supers-5e2b2b/frame-time-*.json`)
+Software GL (SwiftShader) on this container: a RELATIVE check between two builds on the same machine, never a phone frame
+rate. For each super the capture scene is set up, a jackpot is fired, and the frame 0.1 s after it lands is drawn 12 times
+with a readback; the median is shown beside the same scene with nothing on screen. Measured on `ee245df`.
+
+| Super (jackpot) | Phone 390x844 @3x: main -> branch, ms | change | idle (no effect) main -> branch | Desktop 1920x1080: main -> branch, ms | change | idle main -> branch |
+|---|---|---|---|---|---|---|
+| Pierce Lance | 39.0 -> 48.9 | +25% | 41.6 -> 42.4 | 135.0 -> 129.6 | -4% | 128.7 -> 126.5 |
+| Sunlance | 38.8 -> 45.0 | +16% | 39.6 -> 45.8 | 142.9 -> 151.2 | +6% | 180.6 -> 189.2 |
+| Static Nova | 39.5 -> 43.9 | +11% | 45.1 -> 44.7 | 133.4 -> 155.5 | +17% | 197.2 -> 180.1 |
+| Helix Nova | 38.6 -> 42.5 | +10% | 46.0 -> 48.8 | 134.5 -> 148.2 | +10% | 182.2 -> 202.9 |
+| Siege Blast | 46.4 -> 43.6 | -6% | 48.5 -> 42.2 | 152.3 -> 182.3 | +20% | 194.5 -> 177.1 |
+| Titanfall | 44.1 -> 41.7 | -5% | 41.9 -> 44.2 | 142.5 -> 157.5 | +11% | 173.0 -> 183.4 |
+| Moonfall | 43.2 -> 44.9 | +4% | 49.8 -> 49.2 | 142.3 -> 156.3 | +10% | 179.9 -> 186.1 |
+
+- A jackpot frame costs between 6% less and 25% more than on main; the same scene with NO effect on screen moves by -13% to
+  +16% between the two runs, so most of the spread is the measurement's own noise. The honest reading: about the same to
+  roughly 10% more per jackpot frame on this renderer.
+- **Draw calls and shader programs are unchanged:** 35-37 calls / 17 programs idle, 40 / 21 at the peak of a super, on main
+  and here (the capture tool fails on a rise). What rose is the number of glow quads in one draw call (peak 551 -> 1,147).
+- On a slow phone the frame-time governor (5E-2a) steps the resolution down, and LOW draws plain glows (item 3 above).
+- **Not measured: a real iPhone.** That is the owner's check (checklist below).
+
+### Final sheets and the lead's check of the owner's requirements (Nov 14; `docs/supers-5e2b2b/`, `README.md` there)
+Captured on the release tree: all ten supers x miss / normal / jackpot, phone (390x844 @3x) and desktop (1920x1080)
+together, plus LOW and Reduce Motion on the phone: 4 x 30 scenes, no page errors, no draw-call or program rise, nothing
+left drawing 5 s after the last super. Round 3's patches and the graphics-review fixes had not been seen on a sheet before
+(the worker restart came first); the lead checked them here, as round 3 said, and **no new critic round was run** (owner).
+
+Two of round 3's patches did not hold up on the sheets and were corrected (both in `js/fx3d.js`, Arcade recipes only):
+- *Moonfall:* the forks added to the thin blue strands were sized by the beam's LENGTH, so they fanned out far beyond the
+  beam at a normal stop and a jackpot and competed with the red electricity. A fork on those strands is now at most a third
+  of the beam's width: everything blue stays inside the beam, and the red arcs are the only thing that leaves it.
+- *Siege Blast:* the "warm black" smoke over the fire's edge drew as heavy black blots that hid the tanks behind them. It
+  is now translucent (opacity 0.82 -> 0.5): it reads as smoke, and the fire stays the primary shape.
+Also corrected: a sheet caption and a code comment that still described the red electricity as "wound round" the beam
+(wording from this session's first draft; the effect itself was already the sparking arcs).
+
+The owner's three requirements, checked on the final phone and desktop sheets:
+1. **Moonfall's red electricity** (`moonfall-*.webp`): on a jackpot, forked red arcs leave the blue beam's core, most out
+   to the ground beside it and some back onto the beam; jagged and branching, different every tenth of a second. Nothing
+   red forms a ring or circle round the beam, on either device, in the blast frame or 0.2 s later. (The red ring under an
+   enemy tank is the game's target marker and is there with no super on screen.) PRESENT.
+2. **Super level** (`family-*.webp`, every row left to right): a miss is thinner, dimmer and washed out with the fewest
+   effects; a normal stop has a defined core and the super's own structures; a jackpot has the narrowest, white-hot core
+   and the most effects (extra fronts, strikes, flame columns, fire rain, secondaries, the red electricity). Sizes step
+   x0.8 / x1 / x1.15: no super outgrows the lane or the blast it really makes. PRESENT.
+3. **Rarity order** (`ladder-*.webp`): at a normal stop each family reads common < rare < epic by the number of
+   structures and colours and by the sigil under the tank (none / broken ring / double ring with spokes), and Moonfall
+   (the only super with a second colour of electricity, moon phases, moonlight shafts, falling stars and the lunar sigil)
+   is the most intricate and the only one of its kind. Rows 4-5: a perfect common is larger and brighter than a missed
+   rare, a perfect rare than a missed epic, and the missed higher rarity still shows its second (or third) structure and
+   its sigil. The weakest pair is the same one round 3 named: a missed Sunlance beside a perfect Arc Lance (the Sunlance
+   keeps its star, flares and sigil but is clearly the dimmer of the two). PRESENT.
+**Conquest supers: unchanged.** The Conquest effects block in `js/fx3d.js` is byte-identical before and after today's two
+corrections, and `conquest-super-fx.py` passes (below).
+
+Weapons (`fit-*.webp`, `fit-measurements.json`; `before/fit-*.webp` is main): 42 of the 90 weapon / chassis pairs changed
+scale in this session; all ten weapons were re-captured on all nine hulls on the release tree.
+
+### Tests (local, on the release tree: build `20261114090839`, unless noted)
+- `super-timing.mjs` PASS (335 checks: the charge rule with real shots, the cap, every kit in every mode, the bar, taps, the
+  65% floor); `fair-arcade.mjs` PASS (11,611 checks); `combat-balance.mjs` PASS (2,594); `super-aim.mjs` PASS (48);
+  `wtest/pvp.mjs` 130 passed, 0 failed (live rooms: the cap, an AI takeover, a reconnect at the cap);
+  `gear-combat.mjs` PASS (656 paired duels, 3,420 client / server parity cases); `combat-sim.mjs` and
+  `fair-arcade-grid.mjs` (tables, not pass / fail) ran clean.
+- Server and economy (the Worker's code, run locally): `wtest/test` 203 passed, `farm` 55, `owner` 68, `accounts` 18,
+  0 failed; `lab`, `lab-battle`, `lab-parity`, `range`, `range-comparison` PASS.
+- Graphics and maps: `graphics-release.mjs`, `graphics-motion.mjs`, `environment.mjs` PASS; `meshy.mjs` PASS (1,802 checks);
+  `arena-cam.mjs` ok (9,869 checks); `arena-maps.mjs` PASS; `lab-ui.mjs` PASS (it also checks that `index.html` and
+  `version.json` carry the same build).
+- Browser (Chromium, the real page): `b3test.py` PASS, `b4test.py` PASS, `qa.py` PASS (no layout issues at five screen
+  sizes), **`conquest-super-fx.py` PASS** (Conquest's supers and its own bar, unchanged).
+  `proofreal.py` exit 0 (real AI-match records pass the server's proof check; 90 of 90 distinct).
+- **`b10test.py` RESULT FAIL, one check, the same on main:** "Auto: slow frames step down to Low, then to 2D, and say so"
+  fails with identical values on a pristine checkout of main `1acff13` and here (the automatic step-down does not fire in
+  this test browser); its other checks pass on both (3D loads by default, every mode on every map under 160 draw calls,
+  lost GPU context falls back to 2D). Older than this session, not in CI, neither fixed nor relaxed here.
+- `super-vfx-capture.py`: 4 x 30 scenes PASS (phone HIGH, desktop HIGH, phone LOW, phone Reduce Motion): every super fired
+  at every outcome, no page error, no draw-call or program rise, nothing drawn 5 s after the last super.
+- **`pvptest.py` does not run in this container, on main or here:** it fails at its first step on both, identically (two
+  browser pages are never matched into a live room; it needs the local live-match server). Not counted either way; the
+  live-room rules are covered by `wtest/pvp.mjs` and by CI's Workers-runtime smoke.
+- CI on the PR head: see "Release record".
+
+### Agents used (AGENTS.md)
+- 1 research agent (step 1; web search): gave the charge-source, cap, damage-share and timing-window precedents that the
+  rules follow. Changed the result (damage-only charge, the 53 ms window instead of 40 ms).
+- 3 critics, a fresh read-only one each round, images only: changed the result every round (scores 5-7 -> 6.5-8.5; Titanfall,
+  Helix Nova, Siege Blast and Moonfall were redrawn on their findings).
+- 2 independent reviewers: gameplay / balance / server authority (4 majors found and fixed, 1 kept with its reason) and
+  graphics / performance (its fixes are `ee245df`). Both changed the result.
+- Nov 14 (after the worker restart): no agents. The lead rebuilt the state from the repository, ran the final captures and
+  tests, and made the two corrections above.
+
+### Risks and limits
+- **No real phone.** Every picture and frame time here is from a test browser that draws on the CPU. The owner's iPhone
+  check (below) is the one check no agent could do.
+- **Two visual corrections were made after both reviewers and all three critic rounds** (Moonfall's blue forks, Siege
+  Blast's smoke: one clamp and one opacity in the Arcade recipes of `js/fx3d.js`). They were checked by the lead on the
+  final sheets and by the tests above, not by a reviewer.
+- **The graphics reviewer's report is not on record** (lost with the worker restart); its fixes are.
+- **1v1 Arena:** the average is the 2 supers a round the owner asked for, but a stock tank gets about 2.6 and the
+  Legendary kit about 1.4-1.5 (review item 8). One fill row cannot bring both ends to 2.
+- **The cap binds in most rounds outside 1v1 Arena** (decision 7): a strong round's third super can come before the round's
+  last quarter. The pips show how many are left.
+- **Hit rates on the timing bar are a model**, not a measurement of real people. If jackpots feel too rare or too common on
+  a real phone, the lever is `SUP_BAR_T` (0.667 s) in `js/rules.js`; it needs a `PVP_V` step.
+- **AI matches run on the phone:** a modified client can leave its super presses out of the match record (review item 1);
+  what it gains is bounded by the existing damage checks. Session 7C (Integrity).
+- **`PVP_V` 6:** a phone still on the old build is asked to update before its next match.
+- The Twin Repeater (Titan class) and the Rail Breaker (Colossus) still look slender: that is the models' own barrels,
+  and models were not to be changed in this session.
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Open the game: if it asks to update, reload once (build `20261114090839`).
+2. **Count your supers.** Play a 3v3 Arena and a Bounty: you should get about 3 a round and never a 4th. The SUPER
+   button shows three gold pips; after the third it dims and reads NONE LEFT.
+3. **Standing still under fire should not farm supers:** taking damage fills at most 2 bars a round.
+4. **Timing bar:** it sweeps 1.5x faster. The jackpot is the gold capsule. Is a jackpot hard but fair? (Target: about 1 in
+   4 taps for an average player.)
+5. **Moonfall jackpot:** red electricity should spark OFF the blue beam, like real lightning. No red ring.
+6. **Miss vs normal vs jackpot** on any super: a miss should look washed out, a jackpot tight, bright and busiest.
+7. **Rarity:** fire a common, a rare and an epic of one family back to back: each should look clearly richer than the last.
+8. **Garage:** look at a few weapons on a Titan, a Bulwark and a Colossus, and the Moonbeam on the Phantom.
+9. **Conquest:** fire a super there. It should look and charge exactly as before.
+10. **Frame rate** while two or three supers are on screen (HIGH, then LOW in Settings if it stutters).
+
+### Release status: release pre-approved by the owner (Nov 14, 2026)
+The owner's message of Nov 14 pre-approved the release: open the PR, merge once checks pass, deploy, add the release
+record. Payments stay DISABLED. The merge commit, the deploy runs and the live version check are in the "Release record"
+below once it exists. **Roll back:** revert the merge commit on main (Pages and the Worker deploy follow the revert; the
+revert takes `PVP_V` back to 5, so phones are asked to reload once more).
+
+### State at each push (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`)
+- `eebfe8d` the roadmap note (about 3 supers per player per round). `6904889` slice 1: charge from damage only, the cap,
+  22.5% less damage, the 1.5x bar. `177120a` slice 2: Arcade super effects by level and rarity; Conquest's supers restored
+  word for word. `098353e` slice 3: weapon proportions on every chassis.
+- `2cc358f` after-measurements and hit rates. `be00193` Moonfall's sigil and charge-up stay blue. `4d58e37` the visual
+  design on record.
+- `85da273`, `801e1d3` critic round 1. `904f4b0` critic round 2. `e8c4249`, `edf77f9` the gameplay review's fixes.
+- `a19dfbf`, `66e36f0` re-measured on the final rules. `84b473d` critic round 3 and its patches.
+- `ee245df` the graphics review's fixes, the frame-time tool and data.
+- Release tree (Nov 14): the two corrections above, the final sheets in `docs/supers-5e2b2b/`, this record, the build stamp.
+
+### What is left (for the owner or a later session)
+- **The owner's iPhone check** with the checklist above.
+- **Owner decision, 1v1 Arena:** keep the one fill row (average 2 a round, stock 2.6, Legendary 1.4-1.5), or accept a
+  lower floor for top kits to pull the stock tank down.
+- Session 7C (Integrity): tie super presses to damage samples in the AI-match record.
+- Thicker barrels for the Twin Repeater: a model change (Meshy), not a scale.
+- **Proposals only (not shipped; economy untouched; each needs the owner's approval):**
+  1. *Jackpot streak:* three jackpots in one round show a short "PERFECT ROUND" banner and count towards a weekly quest.
+     A reason to master the bar, no power attached.
+  2. *Super finishers as cosmetics:* alternate colourways or sigils for a super (same size, same clarity, same damage),
+     earned from the pass or sold. Fair: looks only.
+  3. *A "supers left" readout for the enemy team in live matches* (three small pips over each enemy bar), so the cap
+     becomes something to play around.

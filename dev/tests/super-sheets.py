@@ -5,7 +5,9 @@ For each device (phone 390x844 at 3x, desktop 1920x1080), under the chase camera
   ladder-<view>.webp                      the rarity ladder at a NORMAL stop (common, rare, epic per family; Moonfall), and the
                                           owner's test: a PERFECT common beside a MISSED rare, a PERFECT rare beside a MISSED epic
   sequence-<view>.webp                    every super's jackpot: charge, bar stopped, blast, +0.2 s, +0.5 s, aftermath
-usage: python3 dev/tests/super-sheets.py <capture dir> <out dir> [--tag high] [--boxes <report.json of another capture>]
+  all-supers-<view>-<tag>.webp            with --overview only (and nothing else): all ten supers (rows) x miss / normal / jackpot,
+                                          one sheet: for a LOW (--tag low) or Reduce Motion (--tag high-reduced) capture
+usage: python3 dev/tests/super-sheets.py <capture dir> <out dir> [--tag high] [--boxes <report.json of another capture>] [--overview]
 """
 import json, os, sys, pathlib
 from PIL import Image, ImageDraw, ImageFont
@@ -34,12 +36,15 @@ def grid(cells,tw,th,path,head=None):
     sh.save(path,quality=86);print(path,sh.size)
 for view in ('phone','desktop'):
     if not (SRC/(view+'-'+TAG)).exists():continue
+    if '--overview' in sys.argv:
+        grid([[(tile(view,k,oc,'blast',300,345),(NAMES[k].split(' (')[0]+': ' if oc==0 else '')+OC[oc].upper()) for oc in range(3)] for k in NAMES],300,345,OUT/f'all-supers-{view}-{TAG}.webp','All ten supers, '+view+', '+TAG+': miss / normal / jackpot')
+        continue
     tw,th=(430,494) if view=='phone' else (430,494)
     dev='phone 390x844 @3x' if view=='phone' else 'desktop 1920x1080'
     for fam in ('pulse','twin','siege'):
         grid([[(tile(view,fam+str(t),oc,'blast',tw,th),NAMES[fam+str(t)]+': '+OC[oc].upper()) for oc in range(3)] for t in range(3)],tw,th,OUT/f'family-{fam}-{view}.webp',fam.upper()+' family, '+dev+', chase camera: rows common / rare / epic, columns miss / normal / jackpot (the blast frame)')
     grid([[(tile(view,'moon',oc,'blast',tw,th),NAMES['moon']+': '+OC[oc].upper()) for oc in range(3)],
-          [(tile(view,'moon',2,l,tw,th),'jackpot: '+l) for l in ('charge','after02','aftermath')]],tw,th,OUT/f'moonfall-{view}.webp','MOONFALL, '+dev+': miss thinner beam / normal blue beam + thin blue electricity / jackpot thicker + RED electricity wound round it')
+          [(tile(view,'moon',2,l,tw,th),'jackpot: '+l) for l in ('charge','after02','aftermath')]],tw,th,OUT/f'moonfall-{view}.webp','MOONFALL, '+dev+': miss thinner / normal + thin blue electricity / jackpot + RED electricity sparking off the beam')
     grid([[(tile(view,fam+str(t),1,'blast',tw,th),NAMES[fam+str(t)]+': NORMAL') for t in range(3)]+[(tile(view,'moon',1,'blast',tw,th),NAMES['moon']+': NORMAL') if fam=='pulse' else (Image.new('RGB',(tw,th),BG),'')] for fam in ('pulse','twin','siege')]
          +[[(tile(view,'pulse0',2,'blast',tw,th),'PERFECT common (Pierce Lance)'),(tile(view,'pulse1',0,'blast',tw,th),'MISSED rare (Arc Lance)'),(tile(view,'pulse1',2,'blast',tw,th),'PERFECT rare (Arc Lance)'),(tile(view,'pulse2',0,'blast',tw,th),'MISSED epic (Sunlance)')],
            [(tile(view,'twin0',2,'blast',tw,th),'PERFECT common (Static Nova)'),(tile(view,'twin1',0,'blast',tw,th),'MISSED rare (Storm Nova)'),(tile(view,'siege1',2,'blast',tw,th),'PERFECT rare (Rail Blast)'),(tile(view,'siege2',0,'blast',tw,th),'MISSED epic (Titanfall)')]],
