@@ -316,13 +316,14 @@ const Meshy3D=(()=>{
  const FIT_ADJ={
   'pulse:0':{titan:[1,1,1.08]},
   'pulse:1':{scout:[.93,.93,.93],titan:[1,1,1.08]},
-  'pulse:2':{scout:[.88,.88,.88],vanguard:[.86,.86,.86],titan:[.86,.86,.88]},
-  'twin:0':{scout:[1.2,1.2,1.2],vanguard:[1.25,1.25,1.22],titan:[1.28,1.3,1.3]},
+  'pulse:2':{scout:[.88,.88,.88],vanguard:[.86,.86,.86],titan:[.82,.82,.86]},
+  'twin:0':{scout:[1.2,1.2,1.2],vanguard:[1.3,1.3,1.27],titan:[1.4,1.42,1.42]},
   'twin:1':{titan:[1,1,1.08]},
   'siege:0':{scout:[1.06,1.06,1.08],titan:[1,1,.92]},
-  'siege:1':{scout:[.86,.86,.86],vanguard:[.93,.93,.95],titan:[1.05,1.08,1.1]},
-  'siege:2':{scout:[.92,.92,.92]}};
- const fitAdj=(arch,t,cls,tc)=>{const r=arch==='moon'?null:FIT_ADJ[arch+':'+t],v=r&&r[cls];return v?v[tc]:1;};
+  'siege:1':{scout:[.86,.86,.86],vanguard:[.93,.93,1],titan:[1.15,1.18,1.2]},
+  'siege:2':{scout:[.92,.92,.92]},
+  'moon:2':{titan:[1.15,1.15,1.12]}};   // the Moonbeam's own table (models3d.js MOON_SCALE) left it the same absolute size on a Titan hull as on a Scout: it looked weaker than Titanfall there
+ const fitAdj=(arch,t,cls,tc)=>{const r=FIT_ADJ[arch+':'+(arch==='moon'?2:t)],v=r&&r[cls];return v?v[tc]:1;};
  function bodyHeight(asset){
   if(asset.fitH)return asset.fitH;const p=asset.geometry.attributes.position.array,tip=(asset.info.meta.visual&&asset.info.meta.visual.tip)||asset.geometry.boundingBox.max.x,ys=[];
   for(let i=0;i<p.length;i+=3)if(p[i]<tip*.4)ys.push(p[i+1]);ys.sort((a,b)=>a-b);return asset.fitH=ys.length?ys[Math.floor(ys.length*.97)]:asset.geometry.boundingBox.max.y;   // antennas and periscopes do not count

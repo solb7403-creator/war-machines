@@ -3271,3 +3271,43 @@ than common, epic than rare, Moonfall the most intricate and unique; (d) Conques
   each holds its footing for a tenth of a second while its shape writhes, then strikes somewhere else; short crackles hug
   the surface between them. Nothing red is a ring; the sigil and the charge-up stay blue and white. Removed: the red arcs
   that ran beside the beam (5E-2b), a red coil round the beam (this session's first draft), the ring arcs at the muzzle.
+
+### Critic loop (step 3): a separate read-only critic, images only, phone and desktop judged together, against the "before" sheets
+Scores out of 10: professional polish / the Super-level ladder (miss -> hit -> jackpot by concentration and richness) / reads as
+its rarity; and whether it is better than before.
+
+| Round | Pierce Lance | Arc Lance | Sunlance | Static Nova | Storm Nova | Helix Nova | Siege Blast | Rail Blast | Titanfall | Moonfall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 6.5 / 7 / 7, better | 7 / 8 / 7.5, better | 6.5 / 6 / 6, better | 7 / 7.5 / 7, better | 6.5 / 7 / 6.5, better | 5.5 / 6 / 7, same | 6 / 7 / 6.5, better | 6.5 / 5.5 / 7, same | 5 / 5.5 / 5, same | 7 / 7 / 7, better |
+
+**Round 1 verdicts.** Rarity ladder: Pulse passes at a normal stop, shaky at jackpot (Arc Lance busier than Sunlance); Twin
+passes; Siege fails at epic (Titanfall "only brighter: a white-yellow blob"); Moonfall "most intricate and unique": narrow fail
+(same silhouette as Arc Lance's jackpot in another colour). The owner's test (a missed higher rarity must stay more intricate
+than a perfect lower one) failed on all four pairs shown, because the miss tier stripped each super's signature structure.
+Moonfall: the red electricity "reads as real jagged, branching lightning, not rings", but on the phone the arcs were sparse and
+not rooted on the beam at the blast frame, and a thin red ellipse round the target read as a circle. Clearly below
+professional: Titanfall (white-out) and Helix Nova's jackpot (clutter). Weapons: better than before; Twin Repeater, Rail
+Breaker and Moonbeam still small on the Titan-class hulls, Nova Pulse a touch bulky on Titan and Bulwark.
+
+**Changed after round 1.**
+- *Miss tier keeps every signature structure*, looser, thinner and dimmer (Arc Lance's full coil, Storm Nova's three arms,
+  Sunlance's star and flares, Helix Nova's coils, Titanfall's cracks and a thin column, Pierce Lance's diamonds).
+- *Titanfall* redrawn: an orange-rimmed gold dome with a small white heart instead of a white fill (the target stays
+  readable), a narrow column rising clear of the dome with its cap and embers orbiting it, an uneven tapered crown instead of
+  ruled rays, cracks that reach past the dome and show from the first frame.
+- *Helix Nova*: five coils instead of seven, each thick and bright on the near side and thin behind (a dome, not hoops), the
+  straight ribs removed, the fire rain as small embers.
+- *Moonfall*: thirteen shorter arcs rooted along the beam's edge with small sparks (was nine long ones), the thin blue
+  electricity kept inside the shaft at jackpot, a denser core, a thinner miss; impact in blue and white only with the
+  eclipse as its one ring; and two things no other super has: shafts of moonlight standing up out of the beam, and the
+  phases of the moon lighting up along both sides of the lane.
+- *Storm Nova*: the strike bloom cut by more than half, thinner tapered forked bolts in violet.
+- *Sunlance / Pierce Lance*: no ruled edge lines; Sunlance's wobbly filaments became flares rooted on the beam; Pierce Lance's
+  translucent sonic ovals became sharper, brighter diamonds and two hard flares.
+- *Rail Blast*: uneven inrushing streaks that curl inward (not a dartboard), a steadier lens size across levels, static
+  crawling on its rim from the start.
+- *Siege Blast*: warm fire colours (no green cast), lobes of fire, a ragged front instead of a clean hoop, secondaries with a
+  core and smoke, the smoke gone by the time the fire is.
+- *Arc Lance*: violet strands with a pale core (it went white on desktop), small bolt tips.
+- *Weapons*: Twin Repeater x1.40-1.42 and Rail Breaker x1.15-1.20 on the Titan class, Moonbeam x1.15 / x1.15 / x1.12 on
+  Titan / Bulwark / Colossus, Nova Pulse x0.82 on Titan and Bulwark.
