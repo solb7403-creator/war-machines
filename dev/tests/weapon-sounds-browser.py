@@ -20,7 +20,7 @@ INSTR = """()=>{window.__lw=[];for(const k of ['shot','charge','lock','fire','im
 async def main():
     start_dev()
     async with async_playwright() as p:
-        b, pg, errs = await open_game(p, 390, 740, scale=1, user={'id': 990511, 'username': 'pilotsnd', 'first_name': 'S'})
+        b, pg, errs = await open_game(p, 390, 740, scale=float(os.environ.get('SCALE', 1)), user={'id': 990511, 'username': 'pilotsnd', 'first_name': 'S'})
         await pg.add_style_tag(content='#toast{display:none!important}')
         await pg.evaluate("()=>{save.welcomed=true;save.mp=12;save.sound=true;store();closeAll();}")
         await pg.mouse.click(12, 300); await pg.wait_for_timeout(250)

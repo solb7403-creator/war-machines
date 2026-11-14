@@ -104,6 +104,7 @@ async function auth(req, env) {
 
 function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
+  if (k === "core") return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen core: " + ((RULES.GEM[tk] || {}).name || "Core");
   if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
   if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
   if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
@@ -290,10 +291,12 @@ async function solValueOk(sol, ton) {
 const descOf = (d) => {
   d = d && typeof d === "object" ? d : {};
   const kind = String(d.kind || "");
-  if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null } : null;
+  const c = RULES.CH[d.c] ? d.c : null;   // the chassis a gem cache, chosen core, pack's gem caches or reset is for (5E-2b3)
+  if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null, c } : null;
+  if (kind === "core") return RULES.GEM[d.tk] && [0, 1, 2].includes(Number(d.ri)) && c ? { kind, tk: d.tk, ri: Number(d.ri), c } : null;
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
-  return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind } : null;
+  return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {
   const cur = b.cur === "SOL" ? "SOL" : b.cur === "TON" ? "TON" : null;
@@ -327,7 +330,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
     const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
+    if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "box") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
@@ -348,9 +351,9 @@ async function payLog(env, b, user, pid, now = Date.now()) {
 // ================= /api/stars-invoice =================
 // the price comes from the server's own record: repeat-buy pricing, and a deal only if it's still unused this period
 async function starsInvoice(env, b, user, pid, now = Date.now()) {
-  const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0);
+  const k = String(b.kind || ""), tk = String(b.tk || ""), ri = Number(b.ri ?? 0), c = RULES.CH[b.c] ? b.c : undefined;
   if (k === "pass" && tk && !/^\d{1,3}$/.test(tk)) return { status: 400, body: { error: "item" } };
-  const desc = descOf({ kind: k, tk, ri, id: tk, deal: b.deal });
+  const desc = descOf({ kind: k, tk, ri, id: tk, deal: b.deal, c });
   if (!desc) return { status: 400, body: { error: "item" } };
   if (k === "founder" && !RULES.FOUNDER_OPEN) return { status: 400, body: { error: "closed" } };   // sold only until $LUNAR launches
   const S = await readEco(env, pid), X = ctxOf(pid, now);
@@ -359,7 +362,7 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
   if (!pr) return { status: 400, body: { error: "item" } };
   if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
   const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined });
+  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" || k === "core" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" || k === "core" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined, c: desc.c || undefined });   // c: the chassis (gem caches, chosen cores, packs, resets)
   const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
@@ -573,12 +576,12 @@ async function webhook(req, env) {
     const pid = (await resolveTelegramAccount(env,m.from.id))||"tg_" + m.from.id, now = Date.now();
     const charge = safeKey(sp.telegram_payment_charge_id);
     const item = itemLabel(p.k, p.t, p.r);
-    const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x });
+    const desc = descOf({ kind: p.k, tk: p.t, ri: p.r, id: p.t, deal: p.x, c: p.c });
     const t = desc ? await tx(env, pid, (S, X) => {
       S.gout = S.gout || {};
       if (S.gout[charge]) return { outs: S.gout[charge] };   // Telegram sent this one twice
       const outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X);
-      if ((S.lab || desc.kind === "respec" || desc.kind === "vault") && S.L) setLoadout(S, S.L);
+      if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "box") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
       const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
       return { outs };
@@ -586,7 +589,7 @@ async function webhook(req, env) {
     const outs = (t.outs || []).filter((o) => o && !o.none);
     await dbPut(env, `payments/LWM_${pid}_stars_${charge}`.slice(0, 120), { pid, name: cleanName(m.from), cur: "STARS", amt: sp.total_amount, gram: p.g || 0, usd: Math.round(sp.total_amount * 1.3) / 100, item, memo: "STARS|" + (p.n || ""), proof: charge, verified: true, t: { ".sv": "timestamp" } });
     await revAdd(env, sp.total_amount * 1.3);   // the liquidity fund (Stars at ~1.3 cents each)
-    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
+    await dbPut(env, `starsPaid/${pid}/${charge}`, { k: p.k || null, t: p.t || null, r: p.r ?? null, g: p.g || 0, x: p.x || null, c: p.c || null, stars: sp.total_amount, n: p.n || "", o: outs, ts: { ".sv": "timestamp" } });
     return new Response("ok");
   }
   if (m && m.refunded_payment) {
@@ -732,7 +735,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261114142239"},409),req);
+        return cors(json({error:"update",build:"20261114145936"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

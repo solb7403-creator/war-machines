@@ -20,6 +20,10 @@ on:
       - 'dev/tests/gear-browser.py'
       - 'js/range-engine.js'
       - 'dev/tests/lab-ui.mjs'
+      - 'dev/tests/gem-ui.mjs'
+      - 'dev/tests/wtest/chassis.mjs'
+      - 'dev/tests/wtest/owner.mjs'
+      - 'worker/src/**'
       - '.github/workflows/equipment-balance.yml'
   push:
     branches:
@@ -74,6 +78,7 @@ jobs:
           node dev/tests/super-timing.mjs
           node dev/tests/lab-ui.mjs
           node dev/tests/garage-rules.mjs
+          node dev/tests/gem-ui.mjs
       - name: Build authoritative Workers simulation
         run: node worker/build-sim.mjs
       - name: Economy, account, PvP and farm regressions
@@ -86,6 +91,8 @@ jobs:
           node dev/tests/wtest/lab-parity.mjs
           node dev/tests/wtest/range.mjs
           node dev/tests/wtest/range-comparison.mjs
+          node dev/tests/wtest/chassis.mjs
+          node dev/tests/wtest/owner.mjs
       - name: Real Workers runtime smoke (isolated test environment)
         working-directory: worker
         env:

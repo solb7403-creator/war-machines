@@ -9,7 +9,7 @@ assert.equal(R.GEM.vel.impact,0.05);
 for(const [i,v] of [0.05,0.06,0.0725,0.09,0.1125].entries())assert.ok(Math.abs(R.GEM.vel.impact*R.gemLvMult(i+1)-v)<1e-12);
 for(const [i,v] of [0.15,0.18,0.2175,0.27,0.3375].entries())assert.ok(Math.abs(R.coreVal('vel',i+1)-v)<1e-12);
 const old={cores:['dmg','rof','arm'],gemLvl:{dmg:4},gemShards:{dmg:9}};
-R.ecoNorm(old);assert.equal(old.gemLvl.vel,1);assert.equal(old.gemShards.vel,0);assert.equal(old.gemLvl.dmg,4);assert.equal(old.gemShards.dmg,9);assert.deepEqual(old.cores,['dmg','rof','arm']);
+R.ecoNorm(old);assert.equal(old.glc.vanguard.vel,1);assert.equal(old.gsc.vanguard.vel,0);assert.equal(old.glc.vanguard.dmg,4);assert.equal(old.gsc.vanguard.dmg,9);assert.deepEqual(old.cores,['dmg','rof','arm']);   // per-chassis cores (5E-2b3): an old record's go to the chassis it flies
 for(let i=0;i<7;i++){const S=R.ecoNorm({});let n=0;const out=R.ecoOpenBox(S,'gem',0,{rnd:()=>n++===0?(i+.5)/7:0,day:1,week:1});assert.equal(out.gem,R.GORDER[i]);assert.equal(out.n,1);}
 const L=structuredClone(R.STOCK_L);L.cores=[null,null,null];const base=R.tankOf(L,1);
 L.cores=['vel',null,null];L.gl.vel=5;const fast=R.tankOf(L,1);
@@ -60,7 +60,7 @@ assert.equal(ghost.wpspd,sim.units[0].wpspd);
 const practice=new Function(fs.readFileSync('js/range-host.js','utf8')+rules+game+fs.readFileSync('js/range-engine.js','utf8')+';return {setup:rangeSetup,tank:()=>me};')();
 practice.setup({g:'arena',map:'classic',seed:1,preset:'equipped',control:'player',L:velocity});
 assert.equal(practice.tank().wpspd,sim.units[0].wpspd);
-const refund=R.ecoNorm({});const out=R.ecoOpenBox(refund,'gem',2,{rnd:()=>.999,day:1,week:1});assert.equal(out.gem,'vel');R.ecoRefund(refund,'box',[out]);assert.equal(refund.gemLvl.vel,1);assert.equal(refund.gemShards.vel,0);
+const refund=R.ecoNorm({});const out=R.ecoOpenBox(refund,'gem',2,{rnd:()=>.999,day:1,week:1});assert.equal(out.gem,'vel');R.ecoRefund(refund,'box',[out]);assert.equal(refund.glc[out.c].vel,1);assert.equal(refund.gsc[out.c].vel,0);
 console.log('PASS actual shot/Siege speeds, range, collision, impact damage, AI/PvP/practice parity and refund');
 
 const instant=new Function('HOST',rules+'\n'+game+`;

@@ -64,7 +64,7 @@ function recoverStars(list){
   if(!save.starsDone[it.n]){
    save.starsDone[it.n]=1;n++;
    if(SRV_ECO)showOuts(it.o||[]);
-   else grantPurchase(it.k==='box'?{kind:'box',tk:it.t,ri:it.r,price:it.g,deal:it.x||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k});
+   else grantPurchase(it.k==='box'||it.k==='core'?{kind:it.k,tk:it.t,ri:it.r,price:it.g,deal:it.x||null,c:it.c||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k,c:it.c||null});
   }
   starsAckQ.push(it.n);
  }
@@ -119,7 +119,8 @@ let tonConnectUI=null,tonWallet=null,tonLoading=false;
 function newMemo(){return 'LWM|'+playerKey()+'|'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function descLabel(d){
  if(!d)return 'Purchase';
- if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache');
+ if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache'+(CH[d.c]?' for '+CH[d.c].n:''));
+ if(d.kind==='core')return TIER_N[d.ri]+' chosen core: '+((GEM[d.tk]||{}).name||'Core')+(CH[d.c]?' for '+CH[d.c].n:'');
  if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
  return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():d.kind==='respec'?'Build reset':d.kind==='vault'?'Hyperspace Vault: '+((VAULT[d.tk]||{}).n||'Gold'):'Purchase';
 }
@@ -181,7 +182,7 @@ async function payWithStars(ton,desc){
  if(!IN_TG||!TG.openInvoice){showToast('Open the game in Telegram to pay with Stars');return;}
  if(starsBusy)return;starsBusy=true;showToast('Opening Stars checkout…');
  try{
-  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.kind==='paint'?desc.id:desc.kind==='pass'?String(seasonNo()):desc.tk,ri:desc.ri,price:ton,deal:desc.deal||''});
+  const d=await api('/api/stars-invoice',{kind:desc.kind,tk:desc.kind==='paint'?desc.id:desc.kind==='pass'?String(seasonNo()):desc.tk,ri:desc.ri,price:ton,deal:desc.deal||'',c:desc.c||''});   // c: the chassis (gem caches, chosen cores, packs, resets)
   if(!d.link)throw new Error(d.error||'invoice');
   TG.openInvoice(d.link,status=>{
    starsBusy=false;

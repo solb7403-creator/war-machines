@@ -31,12 +31,12 @@ async def main():
                 await pg.evaluate("(k)=>ACT.up(k)",k);await pg.wait_for_timeout(260)
         await pg.wait_for_timeout(500)
         pw14=await pg.evaluate("()=>calcPower()")
-        r=await pg.evaluate("()=>({up:save.up,pts:save.pts,full:[...document.querySelectorAll('#s-garage .ups .mut')].map(e=>e.textContent),aside:[...document.querySelectorAll('#s-garage h3.sec')].map(h=>h.textContent).join('|')})")
+        r=await pg.evaluate("()=>({up:save.upc.vanguard,pts:save.pts,full:[...document.querySelectorAll('#s-garage .ups .mut')].map(e=>e.textContent),aside:[...document.querySelectorAll('#s-garage h3.sec')].map(h=>h.textContent).join('|')})")
         check(sum(r['up'].values())==14 and r['pts']==120000-62500 and '14 of 14 levels' in r['aside'] and 'Budget full' in r['full'],'14 levels bought, the rest say Budget full '+json.dumps(r))
         await pg.screenshot(path=OUT+'garage_full.png',full_page=True)
         await pg.evaluate("()=>ACT.up('reactor')");await pg.wait_for_timeout(500)
-        r=await pg.evaluate("()=>({re:save.up.reactor,pts:save.pts})");e=dump()['eco'][pid]
-        check(r['re']==0 and e['up']['reactor']==0 and e['pts']==120000-62500,'15th level refused (phone and server) '+json.dumps(r))
+        r=await pg.evaluate("()=>({re:save.upc.vanguard.reactor,pts:save.pts})");e=dump()['eco'][pid]
+        check(r['re']==0 and e['upc']['vanguard']['reactor']==0 and e['pts']==120000-62500,'15th level refused (phone and server) '+json.dumps(r))
         await pg.evaluate("()=>ACT.respec()");await pg.wait_for_timeout(300)
         txt=await pg.evaluate("()=>{const o=findOv('respec');return o?o.box.textContent:''}")
         check('31,250' in txt and 'Reset your build' in txt,'reset build asks first, shows the refund: '+txt[:140])
@@ -49,7 +49,7 @@ async def main():
         check('$5.00' in g,'garage reset row mentions the paid option: '+g)
         await pg.screenshot(path=OUT+'respec_confirm.png')
         await pg.evaluate("()=>ACT.respecok()");await pg.wait_for_timeout(900)
-        r=await pg.evaluate("()=>({up:save.up,pts:save.pts,earned:save.earned,pw:calcPower()})");e=dump()['eco'][pid]
+        r=await pg.evaluate("()=>({up:save.upc.vanguard,pts:save.pts,earned:save.earned,pw:calcPower()})");e=dump()['eco'][pid]
         check(sum(r['up'].values())==0 and r['pts']==120000-62500+31250 and e['pts']==r['pts'] and r['earned']==120000 and r['pw']<pw14,'reset: all levels back to 0, half the points back, rank untouched, power down '+json.dumps(r))
         r=await pg.evaluate("()=>{let m=null;const st=window.showToast;window.showToast=x=>m=x;ecoErr({err:'join'});window.showToast=st;return m;}")
         check(r=='Join the channel first, then claim.','channel quest: join-first message')

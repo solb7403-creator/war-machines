@@ -74,7 +74,7 @@ function questsAlert(){
  if(QUESTS.some(q=>{const e=save.q[q.id];return e&&e.done&&!e.claimed;}))return true;
  return refPending()>0;
 }
-const nextUp=()=>UORDER.map(k=>({k,lv:save.up[k],c:save.up[k]<4&&upLevels(save.up)<BUILD_MAX?UPS[k].costs[save.up[k]]:Infinity})).sort((a,b)=>a.c-b.c)[0];
+const nextUp=()=>{const ch=homeChassis(save),U=myUp(ch);return {...UORDER.map(k=>({k,lv:U[k],c:U[k]<4&&upLevels(U)<BUILD_MAX?UPS[k].costs[U[k]]:Infinity})).sort((a,b)=>a.c-b.c)[0],ch};};   // the chassis you fly (builds are per chassis)
 const garageAlert=()=>{if(garageNew())return true;if(!garageOpen(save,'up'))return false;const u=nextUp();return u.c<=(save.pts||0);};   // a newly opened section, or an upgrade you can afford
 let topFit='';
 function renderTop(){
@@ -186,7 +186,7 @@ function playNudge(){
   if(dealDayFree()&&save.dealSeen!==dayNum())return {gem:'%',b:'Daily gem deal: 30% off',s:DEAL_TXT.d.on,act:'deals',arg:'d'};
  }
  const u=nextUp();
- if(garageOpen(save,'up')&&u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k};
+ if(garageOpen(save,'up')&&u.c<=(save.pts||0))return {gem:'+',b:'Upgrade ready',s:CH[u.ch].n+' '+UPS[u.k].n+' to level '+(u.lv+1)+' for '+fmtNum(u.c)+' points',act:'up',arg:u.k+'|'+u.ch};
  if((save.mp||0)>=3&&squad().length<3)return {gem:'↗',b:'Invite friends',s:'Up to 7,500 points (×'+squadPhaseX()+' at launch) for each friend who keeps playing',act:'share'};
  return null;
 }
@@ -234,16 +234,17 @@ function renderPlay(){
 // ---------- GARAGE ----------
 // One garage for Telegram and the website. Every choice edits the selected bay's spec (save.lab.machines[id].spec) and is
 // saved at once through the server-checked lab save (lab_save, rev-checked); the legacy save.weapon/chassis/cores/paint
-// fields are only a mirror of the active bay (labApplySelection). Upgrades stay account-wide: both bays share them.
+// fields are only a mirror of the active bay (labApplySelection). Upgrades and core levels belong to each chassis (5E-2b3): every bay
+// with that chassis shares them.
 // Every number on this screen comes from the rules tables (machineView, machineDelta, legendaryEdge, buildTag, FITS).
 let gBay=null,gCmp=null,gMore=false,gShowroom=null,gStageEl=null,gStaticKey='',gShare=null;
 const gOpen=new Set(['loadout']);
-const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Shared by both bays'],['plate','Hull Plating','Armor from minerals, in every mode'],
+const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Each chassis its own build'],['plate','Hull Plating','Armor from minerals, in every mode'],
  ['fit','Mods','Free trade-offs within a budget'],['style','Style','Looks only, except Lunar Skin']];
 const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
 const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
- cores:'Tap a socket, then a core, to see what it changes before you fit it.',
- up:'Levels cost points and count for both bays: '+BUILD_MAX+' levels in all, spread them how you like.',
+ cores:'Tap a socket, then a core, to see what it changes before you fit it. Core levels belong to the chassis.',
+ up:'Each chassis has its own build: '+BUILD_MAX+' levels, spread them how you like. Every bay with that chassis uses it; the chips switch chassis.',
  plate:'Plates add max hull HP on both bays and in every mode. Minerals come from Conquest deposits, Meteor Strikes and Arcade/PvP results.',
  fit:'Mods are free. Each one trades one stat for another and adds one effect that changes how you fight; mix them within the weight and power budget.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
@@ -257,7 +258,10 @@ const gM=()=>{const id=gBayId();return id?save.lab.machines[id]:null;};
 const gL=spec=>ecoLoadout(save,spec||gM().spec);
 const gLetter=id=>'AB'.charAt(Math.max(0,gIds().indexOf(id)));
 const gNarrow=()=>innerWidth<768;
-function gSelect(id){if(gIds().includes(id)){gBay=id;gCmp=null;}}
+function gSelect(id){if(gIds().includes(id)){gBay=id;gCmp=null;gUpCh=null;}}
+// the Upgrades section shows one chassis's build: the bay's, unless a chip picked another chassis you own (5E-2b3)
+let gUpCh=null,respecCh=null;
+const gUpC=spec=>gUpCh&&CH[gUpCh]&&ownsCh(save,gUpCh)?gUpCh:spec.c.c;
 const gItem=(isW,x)=>isW?(x.a==='moon'?getW('moon'):getW(x.a,x.t,!!x.s)):getC(x.c,x.t,!!x.s);
 const gEqId=(isW,spec)=>{const x=isW?spec.w:spec.c,k=isW?x.a:x.c;return k==='moon'?'moon':k+':'+x.t+(x.s?'s':'');};
 function gCand(spec,slot,iid){   // the spec with one weapon or chassis swapped in
@@ -383,34 +387,37 @@ function gemIcon(k){
  return '<span class="gem-crystal" style="--gem:'+GEM[k].c+'" aria-hidden="true"><svg viewBox="0 0 40 48"><path fill="currentColor" d="M20 1 36 13 32 34 20 47 8 34 4 13Z"/><path fill="#fff" opacity=".45" d="m20 1-6 15 6 7 6-7Z"/><path fill="#fff" opacity=".2" d="M4 13 14 16 20 47 8 34Z"/><path fill="#000" opacity=".25" d="m26 16 10-3-4 21-12 13Z"/><path fill="none" stroke="#fff" opacity=".45" d="m4 13 16 10 16-10M20 23v24"/></svg></span>';
 }
 function coreBonus(k,lv){return fmtCore(k,coreVal(k,lv))+' '+CORE_UNIT[k]+(k==='vel'?' · '+fmtCore(k,GEM.vel.impact*gemLvMult(lv))+' projectile impact damage':'');}
-function gemProgress(k){
- const lv=save.gemLvl[k]||1,sh=save.gemShards[k]||0,max=lv>=5,need=SHARD_NEED[lv];
+function gemProgress(k,c){
+ const lv=myGl(c)[k]||1,sh=myGs(c)[k]||0,max=lv>=5,need=SHARD_NEED[lv];
  return '<div class="gem-progress'+(max?' is-max':'')+'">'+(max?'<b class="gem-max">MAXED</b><div class="gem-track"><i style="width:100%"></i></div><span>Surplus: '+sh+' shards</span>':
   '<span>'+sh+' / '+need+' shards · next: Lv '+(lv+1)+'</span><div class="gem-track" role="progressbar" aria-label="'+GEM[k].name+' shards to level '+(lv+1)+'" aria-valuemin="0" aria-valuemax="'+need+'" aria-valuenow="'+Math.min(sh,need)+'"><i style="width:'+Math.min(100,sh/need*100)+'%"></i></div>')+'</div>';
 }
 function gemCollection(spec){
- return '<div class="gem-collection" aria-label="All seven cores">'+GORDER.map(k=>{
-  const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k);
+ const c=spec.c.c;
+ return '<div class="gem-collection" aria-label="All seven cores of the '+CH[c].n+'">'+GORDER.map(k=>{
+  const lv=myGl(c)[k]||1,j=spec.cores.indexOf(k);
   return '<button class="gem-card'+(lv>=5?' is-max':'')+(j>=0?' equipped':'')+'" style="--gem:'+GEM[k].c+'" data-act="gemcore" data-arg="'+(j>=0?j:Math.max(0,spec.cores.indexOf(null)))+'">'+
    '<div class="gem-heading">'+gemIcon(k)+'<div><b>'+GEM[k].name+'</b><span>Lv '+lv+' / 5</span></div></div>'+
    '<div class="gem-bonus">'+coreBonus(k,lv)+'</div>'+
-   '<span class="gem-equipped">'+(j>=0?'Equipped · Socket '+(j+1):'Not equipped')+'</span>'+gemProgress(k)+'</button>';
+   '<span class="gem-equipped">'+(j>=0?'Equipped · Socket '+(j+1):'Not equipped')+'</span>'+gemProgress(k,c)+'</button>';
  }).join('')+'</div>';
 }
 const G_BODY={
  loadout:(spec)=>gGearRow(true,gItem(true,spec.w))+(spec.w.a==='moon'?gEdgeLine('moon',spec):'')+gGearRow(false,gItem(false,spec.c))+'<p class="gnote">Tap either one to compare and swap. Only gear you own fits; the list shows where to find the rest.</p>',
  cores:(spec)=>'<div class="cores">'+[0,1,2].map(i=>{const k=spec.cores[i];
    if(!k)return '<button class="core empty" data-act="core" data-arg="'+i+'"><div class="gemi" style="border:1.5px dashed var(--dim);box-shadow:none"></div><b>Empty</b><span>Add a core</span></button>';
-   const lv=save.gemLvl[k]||1;return '<button class="core'+(lv>=5?' is-max':'')+'" data-act="core" data-arg="'+i+'">'+gemIcon(k)+'<b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';}).join('')+
-   '</div>'+gemCollection(spec)+'<p class="gnote">Each core type fits once. Core levels count for both bays; shards from gem caches level them up.</p><button class="linkbtn" data-act="info" data-arg="cores">What does each core do?</button>',
- up:(spec,L)=>{
-  const used=upLevels(save.up),full=used>=BUILD_MAX,inv=upInvested(save.up);
-  return '<p class="gshared">Shared by both bays</p><div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div><p class="mut gnote">'+used+' of '+BUILD_MAX+' levels used <button class="info" data-act="info" data-arg="build" aria-label="About the build budget">?</button></p>'+
-   '<div class="ups list">'+UORDER.map(k=>{const U=UPS[k],lv=save.up[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&!full&&(save.pts||0)>=c,sel=gCmp==='up|'+k;
+   const lv=myGl(spec.c.c)[k]||1;return '<button class="core'+(lv>=5?' is-max':'')+'" data-act="core" data-arg="'+i+'">'+gemIcon(k)+'<b>'+GEM[k].name+'</b><span>Lv '+lv+', '+fmtCore(k,coreVal(k,lv))+'</span></button>';}).join('')+
+   '</div><p class="gshared">'+esc(CH[spec.c.c].n)+'\'s cores · every bay with a '+esc(CH[spec.c.c].n)+' shares their levels</p>'+gemCollection(spec)+'<p class="gnote">Each core type fits once. Each chassis levels its own seven cores: shards from gem caches and chosen cores (Shop) go to the chassis you pick.</p><div class="gcore-links"><button class="linkbtn" data-act="info" data-arg="cores">What does each core do?</button><button class="linkbtn" data-act="ptsshop">Get shards: Points shop</button></div>',
+ up:(spec,L0)=>{
+  const ch=gUpC(spec),N=CH[ch].n,UL=myUp(ch),L=ch===spec.c.c?L0:gL({...spec,c:{c:ch,t:-1,s:false}}),used=upLevels(UL),full=used>=BUILD_MAX,inv=upInvested(UL);
+  const chips=ownedChassisClasses().map(c=>'<button class="gchip'+(c===ch?' on':'')+'" data-act="gupch" data-arg="'+c+'" aria-pressed="'+(c===ch)+'">'+esc(CH[c].n)+' <small>'+upLevels(myUp(c))+'/'+BUILD_MAX+'</small>'+(c===spec.c.c?' <i class="gthis">this bay</i>':'')+'</button>').join('');
+  return '<p class="gshared">Each chassis has its own build. '+esc(N)+'\'s build: every bay with a '+esc(N)+' uses it</p><div class="gchips gupch" role="group" aria-label="Whose build">'+chips+'</div>'+
+   '<div class="bar14" aria-label="'+used+' of '+BUILD_MAX+' build levels used">'+Array.from({length:BUILD_MAX},(_,i)=>'<i class="'+(i<used?'f':'')+'"></i>').join('')+'</div><p class="mut gnote">'+esc(N)+': '+used+' of '+BUILD_MAX+' levels used <button class="info" data-act="info" data-arg="build" aria-label="About the build budget">?</button></p>'+
+   '<div class="ups list">'+UORDER.map(k=>{const U=UPS[k],lv=UL[k],max=lv>=4,c=max?0:U.costs[lv],ok=!max&&!full&&(save.pts||0)>=c,sel=gCmp==='up|'+k;
     return '<div class="up'+(sel?' picked':'')+'"><div class="grow"><div class="nm">'+U.n+' <span class="dimtxt">level '+lv+' of 4</span></div><div class="d">'+U.d+'</div><div class="bar4">'+[0,1,2,3].map(i=>'<i class="'+(i<lv?'f':'')+'"></i>').join('')+'</div></div>'+
-     (max?'<span class="mut">Maxed</span>':full?'<span class="mut">Budget full</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="gupc" data-arg="'+k+'" aria-label="'+U.n+' level '+(lv+1)+', '+fmtNum(c)+' points: compare first">'+coin()+fmtNum(c)+'</button>')+'</div>'+
-     (sel&&!max&&!full?gCmpCard(L,{...L,up:{...L.up,[k]:lv+1}},'up',k,'Buy level '+(lv+1)+' for '+fmtNum(c)+' points','<p class="gnote">Applies to both bays.</p>'):'');}).join('')+'</div>'+
-   (inv?'<button class="q respec" data-act="respec"><div class="grow"><div class="t">Reset build</div><div class="p">'+(save.rsCr?'Paid reset ready: every level back to 0 and all '+fmtNum(inv)+' points back.':'Every level back to 0. Pay the fee in points and get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' back'+(respecTier(inv)?', or pay $'+respecTier(inv).toFixed(2)+' and keep all of them.':'.'))+'</div></div><span class="mut">Reset</span></button>':'');
+     (max?'<span class="mut">Maxed</span>':full?'<span class="mut">Budget full</span>':'<button class="btn sm '+(ok?'btn-gold':'btn-quiet')+'" data-act="gupc" data-arg="'+k+'" aria-label="'+esc(N)+' '+U.n+' level '+(lv+1)+', '+fmtNum(c)+' points: compare first">'+coin()+fmtNum(c)+'</button>')+'</div>'+
+     (sel&&!max&&!full?gCmpCard(L,{...L,up:{...L.up,[k]:lv+1}},'up',k+'|'+ch,'Buy level '+(lv+1)+' for '+fmtNum(c)+' points','<p class="gnote">For the '+esc(N)+': every bay with a '+esc(N)+' gets it.</p>'):'');}).join('')+'</div>'+
+   (inv?'<button class="q respec" data-act="respec" data-arg="'+ch+'"><div class="grow"><div class="t">Reset the '+esc(N)+'\'s build</div><div class="p">'+(save.rsCr?'Paid reset ready: every level back to 0 and all '+fmtNum(inv)+' points back.':'Every level back to 0. Pay the fee in points and get '+fmtNum(Math.floor(inv*RESPEC_BACK))+' of the '+fmtNum(inv)+' back'+(respecTier(inv)?', or pay $'+respecTier(inv).toFixed(2)+' and keep all of them.':'.'))+'</div></div><span class="mut">Reset</span></button>':'');
  },
  plate:(spec,L)=>gPlateBody(L),
  fit:(spec,L)=>{
@@ -451,7 +458,7 @@ function gPlateBody(L){
 function gSum(k,spec){
  if(k==='loadout')return esc(gItem(true,spec.w).name)+' · '+esc(gItem(false,spec.c).name);
  if(k==='cores')return spec.cores.map(c=>c?GEM[c].name:'Empty').join(' · ');
- if(k==='up')return upLevels(save.up)+' of '+BUILD_MAX+' levels used';
+ if(k==='up')return esc(CH[spec.c.c].n)+': '+upLevels(myUp(spec.c.c))+' of '+BUILD_MAX+' levels used';
  if(k==='plate'){const P=plateStats(save.ap),n=P.ap.filter(Boolean).length;return n?n+' of 4 plated · +'+(Math.round(P.hp*1000)/10)+'% hull'+(P.set?' · '+esc(MINERALS[MN_ORDER[P.set-1]].s)+' set':''):'No plates yet · first plate: '+PLATE.cost[1].fe+' Ferrite';}
  if(k==='fit'){const m=fittingSelection(spec.mods),n=FIT_ORDER.filter(s=>m[s]!=='stock').map(s=>FITS[s][m[s]].n);return n.length?esc(n.join(' · ')):'All standard parts';}
  return esc((PAINTS[spec.paint]||PAINTS.stock).n)+' paint'+(save.skin==='lunar'?' · Lunar Skin':'');
@@ -491,9 +498,9 @@ function gGearSheet(isW){
 function gCoreSheet(i){
  const id=gBayId(),M=gM();if(!M)return '<h3>Loading…</h3>';
  const spec=M.spec,L=gL(spec);
- const rows=GORDER.map(k=>{const lv=save.gemLvl[k]||1,j=spec.cores.indexOf(k),on=j===i,sel=gCmp==='core|'+i+'|'+k;
+ const rows=GORDER.map(k=>{const lv=myGl(spec.c.c)[k]||1,j=spec.cores.indexOf(k),on=j===i,sel=gCmp==='core|'+i+'|'+k;
   return '<button style="--gem:'+GEM[k].c+'" class="gear gem-row'+(lv>=5?' is-max':'')+(on?' equipped':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="core|'+i+'|'+k+'" aria-pressed="'+(on||sel)+'"><div class="ico">'+gemIcon(k)+'</div>'+
-   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+coreBonus(k,lv)+'</div>'+gemProgress(k)+'</div>'+
+   '<div class="grow"><div class="nm">'+GEM[k].name+' <span class="dimtxt">Lv '+lv+'</span></div><div class="meta">'+coreBonus(k,lv)+'</div>'+gemProgress(k,spec.c.c)+'</div>'+
    (on?'<span class="eq">In this socket</span>':j>=0?'<span class="eq dim">Socket '+(j+1)+', swaps</span>':'')+'</button>'+
    (sel?gCmpCard(L,gL(gCoreCand(spec,i,k)),'gcore',i+':'+k,'Put in socket '+(i+1),'','core'+i):'');}).join('');
  return '<h3>Socket '+(i+1)+' · Bay '+gLetter(id)+'</h3><p class="mut">Tap a core to see what it changes. Picking one from another socket swaps the two.</p><div class="glist">'+rows+'</div>'+
@@ -564,9 +571,39 @@ function payNote(){
  const w=SOL_WALLETS[save.solWallet]?save.solWallet:'phantom';
  return px.sol?'Pays from '+SOL_WALLETS[w].n:'Loading the SOL price…';
 }
-function crate(tk,ri){const f=crateFound(tk,ri),dk=dealOf(tk,ri);
- return '<button class="crate" data-act="crate" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
-  '<div class="p">'+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</div><div class="f">'+(dk?'<span class="dealf">'+(dk==='d'?'30':'25')+'% off</span>':tk==='gem'?(boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';}
+// a crate card. pts: the Points shop's card (its points price; tapping opens the points sheet)
+function crate(tk,ri,pts){const f=crateFound(tk,ri),dk=pts?null:dealOf(tk,ri),pp=boxPts(tk,ri);
+ if(pts&&!pp)return '';
+ return '<button class="crate" data-act="'+(pts?'ptscrate':'crate')+'" data-arg="'+tk+':'+ri+'"><div class="r" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+'</div><canvas data-art="crate:'+tk+':'+ri+'"></canvas>'+
+  '<div class="p">'+(pts?coin()+fmtK(pp):priceLabel(boxPrice(tk,ri),boxStars(tk,ri)))+'</div><div class="f">'+(dk?'<span class="dealf">'+(dk==='d'?'30':'25')+'% off</span>':tk==='gem'?(pts?['1-2','3-4','11-14'][ri]+' shards':boxMult(tk,ri)>1?'+'+Math.round((boxMult(tk,ri)-1)*100)+'% today':'Core shards'):(f>=3?'All 3 found':'Found '+f+' of 3'))+'</div></button>';}
+// ---------- cores are per chassis (5E-2b3): every gem cache and chosen core names the chassis it is for ----------
+let shopTab='store';
+const shopCh=()=>coresFor();   // the chassis the Shop's cores are for (core.js: the pick, else the one you fly)
+function coreForChips(){
+ const own=ownedChassisClasses(),c=shopCh();
+ return '<div class="corefor"><span>Cores for</span><div class="gchips" role="group" aria-label="Which chassis the cores are for">'+own.map(k=>'<button class="gchip'+(k===c?' on':'')+'" data-act="corefor" data-arg="'+k+'" aria-pressed="'+(k===c)+'">'+esc(CH[k].n)+(k===homeChassis(save)?' <i class="gthis">you fly it</i>':'')+'</button>').join('')+'</div></div>';
+}
+// the seven cores of the shop's chassis, each with its level: tap one to buy its shards outright (pts: with points)
+function corePickGrid(pts){
+ const c=shopCh(),gl=myGl(c),gs=myGs(c);
+ return '<div class="cpicks">'+GORDER.map(k=>{const lv=gl[k]||1,max=lv>=5;
+  return '<button class="cpick'+(max?' is-max':'')+'" style="--gem:'+GEM[k].c+'" data-act="'+(max?'gnop':'corepick')+'" data-arg="'+k+(pts?':p':'')+'"'+(max?' aria-disabled="true"':'')+'>'+gemIcon(k)+'<b>'+GEM[k].name+'</b><span>'+(max?'Max':'Lv '+lv+' · '+(gs[k]|0)+'/'+SHARD_NEED[lv])+'</span></button>';}).join('')+'</div>';
+}
+// shards a core still needs to reach level 5
+const coreNeed=(lv,sh)=>{let n=-(sh|0);for(let l=lv;l<5;l++)n+=SHARD_NEED[l];return Math.max(0,n);};
+function openCorePick(k,pts){
+ const c=shopCh();
+ sheet('corepick',()=>{const lv=myGl(c)[k]||1,sh=myGs(c)[k]|0,need=coreNeed(lv,sh),N=CH[c].n;
+  const row=ri=>{const n=CORE_N[ri],pr=pts?corePts(ri):ecoPrice(save,{kind:'core',tk:k,ri,c},ecoX()),cache=pts?GEM_PTS[ri]:boxStars('gem',ri,true),over=Math.max(0,n-need);
+   return '<div class="up cprow"><div class="grow"><div class="nm" style="color:'+RCOL[ri]+'">'+TIER_N[ri]+' pick: '+n+' shards</div><div class="d">'+(over?(over===n?'All past level 5: nothing to gain':over+' of them past level 5 (kept as surplus)'):'All '+n+' go to '+GEM[k].name)+'. A random '+TIER_N[ri].toLowerCase()+' gem cache: '+(pts?fmtNum(cache)+' points':fmtNum(cache)+' ⭐')+'.</div></div>'+
+    (pts?'<button class="btn sm '+((save.pts||0)>=pr?'btn-gold':'btn-quiet')+'" data-act="buycorepts" data-arg="'+k+':'+ri+'"'+(need?'':' disabled')+'>'+coin()+fmtNum(pr)+'</button>':
+     '<button class="btn sm btn-go" data-act="buycore" data-arg="'+k+':'+ri+'"'+(need&&pr?'':' disabled')+'>'+(pr?priceLabel(pr.ton,pr.stars):'Not sold')+'</button>')+'</div>';};
+  return '<div class="row cphead">'+gemIcon(k)+'<div class="grow"><h3>'+GEM[k].name+' core for your '+esc(N)+'</h3><p class="mut">Pick the core and the size: every shard goes to this core on the '+esc(N)+'. No random roll, nothing lands on a core you have already maxed. Costs 1.5× a gem cache of the same size.</p></div></div>'+
+   '<p class="cpnow">'+esc(N)+' · level '+lv+' of 5'+(lv<5?' · '+need+' shards to level 5':' · maxed')+'</p>'+gemProgress(k,c)+
+   '<div class="ups list" style="margin-top:10px">'+[0,1,2].map(row).join('')+'</div>'+
+   (pts?'<p class="dimtxt" style="margin-top:8px">You have '+fmtNum(save.pts||0)+' points.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for points in the Points shop.</p>');
+ });
+}
 // the two deals (rules.js): daily gem cache 30% off, weekly epic crate 25% off. Each is once per period, per pilot
 const DEAL_TXT={d:{n:'Daily gem deal',off:'30% off',on:'Your first rare or epic gem cache today',full:'Your first rare or epic gem cache each day is 30% off. It resets at 00:00 UTC.',art:'crate:gem:2'},
  w:{n:'Weekly epic deal',off:'25% off',on:'One epic crate this week, your pick',full:'One epic crate a week is 25% off: weapon, chassis or gem, your pick. It resets Monday 00:00 UTC.',art:'crate:weapon:2'}};
@@ -623,29 +660,48 @@ function openVault(){
    '<button class="btn btn-quiet block" style="margin-top:14px" data-act="vaultboard">See the Vault board</button>';
  });
 }
+function shopSeg(){
+ return '<div class="seg c2 shopseg" role="tablist" aria-label="Shop sections">'+[['store','Store','Stars'+(CRYPTO_PAY?', TON, SOL':'')],['pts','Points shop',fmtNum(save.pts||0)+' points']].map(([k,l,sm])=>'<button role="tab" aria-selected="'+(shopTab===k)+'" class="'+(shopTab===k?'on':'')+'" data-act="shoptab" data-arg="'+k+'">'+l+'<small>'+sm+'</small></button>').join('')+'</div>';
+}
+// the Points shop (owner, Nov 14: "a separate section for just points purchases, with salvaged gear moved there, along with anything
+// else points are used to buy"): gem caches and chosen cores for points, weapon caches and chassis crates for points, the salvage
+// yard, and what the Garage sells for points (each chassis's build, tune-ups, Hull Plating)
+function renderPtsShop(){
+ const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
+ const builds=ownedChassisClasses().map(c=>'<div><b>'+esc(CH[c].n)+'</b><span>'+upLevels(myUp(c))+' of '+BUILD_MAX+' levels · cores '+GORDER.filter(k=>(myGl(c)[k]||1)>=5).length+' of 7 maxed</span></div>').join('');
+ return '<div class="ptsbal"><b class="num">'+coin()+fmtNum(save.pts||0)+'</b><span>points to spend. Matches, quests, the daily reward and your squad earn them.</span></div>'+
+  sec('Cores','Per chassis')+coreForChips()+
+  '<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri,true)).join('')+'</div>'+
+  '<h4 class="ptsh">Chosen core · pick it, no random roll</h4>'+corePickGrid(true)+
+  sec('Gear')+'<div class="crates c2">'+[0,1].map(ri=>crate('weapon',ri,true)).join('')+'</div><div class="crates c2" style="margin-top:8px">'+[0,1].map(ri=>crate('chassis',ri,true)).join('')+'</div>'+
+  '<p class="dimtxt" style="margin-top:6px">Epic weapons and chassis come from the Store, the Lunar Pass and packs.</p>'+
+  sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
+  sec('In the Garage','Points too')+'<div class="panel ptsgarage"><div class="ptsbuilds">'+builds+'</div><p class="mut">Each chassis buys its own '+BUILD_MAX+'-level build. Tune-ups, Hull Plating and build resets are in the Garage too.</p><button class="btn btn-quiet block" data-act="tab" data-arg="garage">Open the Garage</button></div>';
+}
 function renderShop(){
+ if(shopTab==='pts')return '<h2 class="title" data-act="devtap">Shop</h2>'+shopSeg()+renderPtsShop();
  const cur=save.payCur;
  const prem=(id,nm,d,ton,stars,owned)=>'<button class="premium" data-act="premium" data-arg="'+id+'"'+(owned?' disabled':'')+'><canvas data-art="'+(id==='moonbeam'?'gear:w:moon:2:0':'tank:lunar')+'"></canvas><b>'+nm+'</b><span>'+d+'</span><div class="p">'+(owned?'Owned':priceLabel(ton,stars))+'</div></button>';
- const salv=(tk,ri)=>'<div class="up"><div class="grow"><div class="nm">Salvaged '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+'</div><div class="d">A random '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' at '+pct1(SALV_MIN[ri])+' to '+pct1(SALV_MAX[ri])+' power. Crate gear starts at 105%.</div></div><button class="btn sm '+((save.pts||0)>=SALV_PTS[ri]?'btn-gold':'btn-quiet')+'" data-act="salvage" data-arg="'+tk+':'+ri+'">'+coin()+fmtK(SALV_PTS[ri])+'</button></div>';
  const pend=save.pendingSol||save.pendingTx;
- return '<h2 class="title" data-act="devtap">Shop</h2>'+
+ return '<h2 class="title" data-act="devtap">Shop</h2>'+shopSeg()+
   (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="paycur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':'')+
   '<div class="paybar"><span class="mut">'+payNote()+'</span>'+(cur==='ton'?'<button class="btn sm btn-quiet" data-act="tonwallet">'+(tonWallet?'Disconnect':'Connect')+'</button>':cur==='sol'?'<button class="btn sm btn-quiet" data-act="solwallet">Change wallet</button>':'')+'</div>'+
   '<p class="dimtxt" style="margin:6px 0 10px">'+lpPct()+'% of every sale goes into the $LUNAR launch liquidity pool'+(lbMeta&&lbMeta.lpf>0?' ($'+fmtNum(lbMeta.lpf)+' so far)':'')+'. The other '+(100-lpPct())+'% funds the game: development, servers and promotion. <button class="linkbtn inl" data-act="lpwallet">Verify</button></p>'+
   '<div class="deals">'+dealCard('d')+dealCard('w')+'</div>'+
   (FOUNDER_OPEN&&!save.founder?'<div class="founder"><canvas data-art="tank:paint:founder"></canvas><span class="tag">Until $LUNAR launches</span><h4>Founder pack</h4>'+
-   '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches</li></ul>'+
+   '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches for your '+esc(CH[shopCh()].n)+'</li></ul>'+
    '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and doesn’t buy $LUNAR.</p></div>':'')+
-  (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
+  (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache for your '+esc(CH[shopCh()].n)+'</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
   (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
   vaultCard()+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
-  sec('Gem caches','Level up your cores')+'<div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
+  sec('Cores','Per chassis')+coreForChips()+'<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
+  '<h4 class="ptsh">Chosen core · pick it, no random roll</h4>'+corePickGrid(false)+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
   sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
-  sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
+  '<button class="q ptslink" data-act="shoptab" data-arg="pts"><div class="grow"><div class="t">Points shop</div><div class="p">Gem caches (Epic too), chosen cores, crates and the salvage yard, for points</div></div><span class="chev">›</span></button>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
 
@@ -921,18 +977,18 @@ const INFO={
   ['Win streaks','Each win in a row adds 20 more points, up to +100 (more in 2v2 and 3v3).'],
   ['Teammates','In 2v2 and 3v3, AI pilots fight on your side.']]],
  build:()=>['Build',[
-  ['Your budget','Each stat has 4 levels, but your tank can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how you fight.'],
+  ['Your budget','Each chassis has its own build. Each stat has 4 levels, and a chassis can hold '+BUILD_MAX+' levels in total: 3 stats maxed and 2 levels to spare, or spread out. Pick what fits how each one fights.'],
   ['Cost','Each level costs points: '+UPS.hull.costs.map(fmtNum).join(', ')+' for levels 1 to 4.'],
-  ['Reset build','Clears every level so you can build again. You get half the points the levels cost back; the other half is gone.'],
-  ['Power','Your power and league come from the levels in your build.']]],
+  ['Reset build','Clears one chassis\'s levels so you can build it again. You get half the points the levels cost back; the other half is gone. Your other chassis keep theirs.'],
+  ['Power','Your power and league come from the build of the chassis you field.']]],
  cores:()=>['Cores',[
   ['What they do','Cores are permanent boosts. You have 3 sockets and each core type fits once.'],
-  ['Leveling','Gem caches in the Shop give shards. Enough shards level a core up, to level 5.'],
+  ['Leveling','Each chassis levels its own seven cores. Gem caches and chosen cores in the Shop give shards to the chassis you pick (Cores for); free caches from the daily reward, the weekly chest and the pass go there too. Enough shards level a core up, to level 5.'],
   ['Stacking','Cores add on top of mystery-box boosts of the same type.']]],
  crates:()=>['Crates',[
   ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
   ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 14% stronger than Common stock, Epic 34%. Rolled power is 105–110% (Common), 119.7–125.4% (Rare), 140.7–147.4% (Epic). Legendary Moonbeam is fixed above the strongest Epic weapon.'],
-  ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 6 core types, 1 in 6 each.'],
+  ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 7 core types, 1 in 7 each. A chosen core skips the roll: you pick the core, for 1.5× the price.'],
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
   ['Collection done','Once you own all 3, a crate re-rolls one of them. You keep the better roll, or get points back.'],
   ['Gem caches','Common gives 1 to 2 shards, Rare 3 to 4, Epic 11 to 14, for a random core. Rare and Epic caches rise 25% with each buy that day and reset at 00:00 UTC. Common stays 250 Stars.'],
@@ -961,8 +1017,8 @@ const INFO={
 function coreInfo(k){
  const I={dmg:['Every shot hits harder, your super too.','damage'],rof:['Your cannon fires faster.','fire rate'],arm:['You take less damage from every hit. Armor from cores and boxes adds up, to 70% at most.','less damage taken'],
   spd:['Your tank drives faster: dodge more, reach boxes first.','speed'],lck:['More critical hits. Crits need a direct hit and deal double damage.','crit chance'],reg:['Slowly repairs your tank during every fight.','health repaired per second'],vel:['Shots and physical Siege Blast shells travel faster with the same maximum range and deal more impact damage. Instant beams and unrelated AoE are unchanged. Travel speed stacks multiplicatively with shot speed fittings.','projectile travel speed']}[k];
- const lv=save.gemLvl[k]||1,sh=save.gemShards[k]||0;
- const s=[['What it does',I[0]],['Level '+lv,fmtCore(k,coreVal(k,lv))+' '+I[1]+'.']];
+ const c=typeof gBayId==='function'&&gBayId()?gM().spec.c.c:homeChassis(save),lv=myGl(c)[k]||1,sh=myGs(c)[k]||0;
+ const s=[['What it does',I[0]],[CH[c].n+', level '+lv,fmtCore(k,coreVal(k,lv))+' '+I[1]+'.']];
  if(k==='vel')s.push(['Impact damage',fmtCore(k,GEM.vel.impact*gemLvMult(lv))+' to normal projectile hits and traveling Siege Blast shells only.']);
  if(lv<5)s.push(['Next level',fmtCore(k,coreVal(k,lv+1))+' '+I[1]+'. Shards: '+sh+' of '+SHARD_NEED[lv]+'.']);
  return [GEM[k].name+' core',s];
@@ -975,22 +1031,23 @@ function showInfo(id){
 // ---------- garage sheets: see the GARAGE section (openBayGear, openBayCore) ----------
 const CORE_UNIT={dmg:'damage',rof:'fire rate',arm:'armor',spd:'speed',lck:'crit chance',reg:'repair per second',vel:'projectile travel speed'};
 // ---------- shop sheets ----------
-function openCrate(tk,ri){
+function openCrate(tk,ri,pts){
  sheet('crate',()=>{
   const isGem=tk==='gem',keys=tk==='weapon'?WORDER:CHORDER;
   const items=isGem?'':'<div class="list" style="margin-top:10px">'+keys.map(k=>{const own=tk==='weapon'?ownW(k,ri):ownC(k,ri),it=tk==='weapon'?getW(k,ri,false):getC(k,ri,false);
    return '<div class="q"><div class="ico sm"><canvas data-art="gear:'+(tk==='weapon'?'w':'c')+':'+k+':'+ri+':0"'+(own?'':' data-locked="1"')+'></canvas></div><div class="grow"><div class="t">'+esc(it.name)+'</div><div class="p">'+gearMeta(tk==='weapon',it)+'</div></div><span class="nowrap '+(own?'mut':'dimtxt')+'">'+(own?'Owned, '+pct(it.q):'Not found')+'</span></div>';}).join('')+'</div>';
-  const found=crateFound(tk,ri),pts=boxPts(tk,ri);
-  const what=isGem?['1 to 2','3 to 4','11 to 14'][ri]+' shards for a random core. Price rises 25% with each buy today and resets at 00:00 UTC.'
+  const found=crateFound(tk,ri),pp=boxPts(tk,ri),N=esc(CH[shopCh()].n);
+  const what=isGem?['1 to 2','3 to 4','11 to 14'][ri]+' shards for a random core of your '+N+'.'+(pts?'':' Price rises 25% with each buy today and resets at 00:00 UTC.')
    :found>=3?'You own all 3. Opening re-rolls one: you keep the better roll, or get '+[50,150,400][ri]+' points.'
    :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
-  const odds=isGem?'Odds: each of the 7 core types is 1 in 7, and every shard count in the range is equally likely.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
-  return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+'</h3><p class="mut">'+what+'</p></div></div>'+items+
-   (dealOf(tk,ri)?'<p class="dealnote">'+DEAL_TXT[dealOf(tk,ri)].n+': '+DEAL_TXT[dealOf(tk,ri)].off+'. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
-   '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
-   (pts?'<button class="btn btn-quiet block" style="margin-top:8px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pts)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic crates can’t be bought with points.</p>')+
+  const odds=isGem?'Odds: each of the 7 core types is 1 in 7, and every shard count in the range is equally likely. The shards go to the chassis you picked.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
+  return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+(isGem?' for your '+N:'')+'</h3><p class="mut">'+what+'</p></div></div>'+(isGem?coreForChips():'')+items+
+   (pts?(pp?'<button class="btn btn-go block" style="margin-top:14px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pp)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic weapons and chassis can’t be bought with points.</p>'):
+    (dealOf(tk,ri)?'<p class="dealnote">'+DEAL_TXT[dealOf(tk,ri)].n+': '+DEAL_TXT[dealOf(tk,ri)].off+'. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
+    '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
+    (pp?'<button class="linkbtn" style="margin-top:6px" data-act="ptscrate" data-arg="'+tk+':'+ri+'">Or '+fmtNum(pp)+' points in the Points shop</button>':''))+
    '<p class="dimtxt odds">'+odds+'</p>'+
-   (ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each purchase of this crate raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'.</p>':'');
+   (pts?(isGem?'<p class="dimtxt" style="margin-top:8px">The points price never changes. Want one core in particular? Chosen cores are in the Points shop too.</p>':''):ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each purchase of this crate raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'.</p>':'');
  });
 }
 function openPaints(){
@@ -1041,8 +1098,8 @@ function ownerGemHtml(){
  if(!isOwnerUI())return '';
  return '<h3 style="margin-top:4px;font-size:16px">Owner test tools</h3>'+
   '<div class="seg" style="grid-template-columns:1fr 1fr 1fr;margin-top:8px">'+[1,5,10].map(k=>'<button class="'+(ownerGemN===k?'on':'')+'" data-act="ownergemn" data-arg="'+k+'">'+k+'</button>').join('')+'</div>'+
-  '<button class="btn sm btn-go block" style="margin-top:8px" data-act="ownergem"'+(ownerGemBusy?' disabled':'')+'>Open Epic gem cache (owner)'+(ownerGemN>1?' ×'+ownerGemN:'')+'</button>'+
-  '<p class="dimtxt" style="margin-top:6px">Free, real rolls on your own account only. No points, no purchases counted.</p>'+sndLabBtn();
+  '<button class="btn sm btn-go block" style="margin-top:8px" data-act="ownergem"'+(ownerGemBusy?' disabled':'')+'>Open Epic gem cache (owner)'+(ownerGemN>1?' ×'+ownerGemN:'')+' · '+esc(CH[coresFor()].n)+'</button>'+
+  '<p class="dimtxt" style="margin-top:6px">Free, real rolls on your own account only. No points, no purchases counted. The shards go to the chassis picked in Shop → Cores for.</p>'+sndLabBtn();
 }
 // ---------- owner sound test (Session 5E-2b3): every weapon shot and every Arcade super at miss / hit / jackpot, one tap each.
 // Owner only: the button shows for the owner's account (isOwnerUI) and the page opens once the server's isOwner check (worker/src/
@@ -1082,7 +1139,7 @@ function sndLabSuper(k,oc){
 function ownerGemOpen(){
  if(!isOwnerUI()||ownerGemBusy)return;
  ownerGemBusy=true;uiDirty('admin');
- api(IN_TG?'/api/admin':'/api/owner',{a:'owner_gem_epic',n:ownerGemN}).then(r=>{
+ api(IN_TG?'/api/admin':'/api/owner',{a:'owner_gem_epic',n:ownerGemN,c:coresFor()}).then(r=>{   // cores are per chassis (5E-2b3): the Shop's "Cores for" pick
   ownerGemBusy=false;if(r&&r.E)applyEco(r.E);
   const outs=r&&r.out&&r.out.outs;if(outs&&outs.length)showOuts(outs);else showToast('Nothing opened');
   uiDirty();
@@ -1408,27 +1465,27 @@ const ACT={
  claimwq:a=>{const q0=weeklyQuests().find(x=>x.id===a);if(q0&&!q0.done){showToast(q0.t+': '+fmtNum(q0.p)+' of '+fmtNum(q0.goal));return;}when(claimWeeklyQuest(a),n=>{if(n)showToast('+'+fmtNum(n)+' points');uiDirty();});},
  swapdq:a=>{const left=swapsLeft();when(swapDaily(a),N=>{if(N)showToast('New quest: '+N.t);else showToast(left?'No other quest to swap in':'No swaps left today');uiDirty();});},
  deals:a=>{if(a==='w')save.wdealSeen=weekNum();else save.dealSeen=dayNum();store();openDeals(a==='w'?'w':'d');},
- founder:()=>{if(save.founder||!FOUNDER_OPEN)return;pay(FOUNDER.ton,{kind:'founder'});},
+ founder:()=>{if(save.founder||!FOUNDER_OPEN)return;pay(FOUNDER.ton,{kind:'founder',c:shopCh()});},
  claimq:a=>{const Q=QUESTS.find(q=>q.id===a),e=save.q[a];if(!e||!e.done){showToast(Q?Q.d:'Not done yet');return;}when(claimQuest(a),n=>{if(n)showToast('+'+n+' points: '+Q.n);uiDirty();});},
  visit:a=>{when(visitLinkQuest(a),()=>uiDirty('quests'));},
  weekly:()=>{const v=claimWeekly();if(!v){showToast('Claim '+(WQ_GOAL-(save.wq.n||0))+' more daily quests to open it');return;}when(v,r=>{if(!r)return;showToast('+'+fmtNum(r.pts)+' points');showReveal([r.reveal]);uiDirty();});},
  share:()=>shareRef(),copy:()=>copyRef(),claimref:()=>{when(claimRefs(),()=>uiDirty('quests'));},
- respec:()=>{const inv=upInvested(save.up);if(!inv)return;
-  const half=Math.floor(inv*RESPEC_BACK),fee=inv-half,pr=ecoPrice(save,{kind:'respec'},ecoX()),cur=save.payCur;
-  const body=save.rsCr?'<p class="mut">All '+upLevels(save.up)+' levels go back to 0. Your paid reset is ready, so all <b>'+fmtNum(inv)+'</b> points come back.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-gold" data-act="respecok">Reset</button></div>':
-   '<p class="mut">All '+upLevels(save.up)+' levels go back to 0. The reset fee is '+fmtNum(fee)+' points.</p>'+
+ respec:a=>{const ch=CH[a]?a:respecCh&&CH[respecCh]?respecCh:homeChassis(save),U=myUp(ch),inv=upInvested(U);if(!inv)return;respecCh=ch;
+  const half=Math.floor(inv*RESPEC_BACK),fee=inv-half,pr=ecoPrice(save,{kind:'respec',c:ch},ecoX()),cur=save.payCur,N=esc(CH[ch].n);
+  const body=save.rsCr?'<p class="mut">All '+upLevels(U)+' of the '+N+'\'s levels go back to 0. Your paid reset is ready, so all <b>'+fmtNum(inv)+'</b> points come back.</p><div class="acts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px"><button class="btn btn-quiet" data-act="respeccancel">Keep it</button><button class="btn btn-gold" data-act="respecok">Reset</button></div>':
+   '<p class="mut">All '+upLevels(U)+' of the '+N+'\'s levels go back to 0 (your other chassis keep theirs). The reset fee is '+fmtNum(fee)+' points.</p>'+
    '<div style="display:grid;gap:8px;margin-top:14px"><button class="btn btn-ghost block" data-act="respecok">Pay '+fmtNum(fee)+' points · get '+fmtNum(half)+' back</button>'+
    (pr?'<button class="btn btn-gold block" data-act="respecpay">Pay '+priceLabel(pr.ton,pr.stars)+' · get all '+fmtNum(inv)+' back</button>'+
     (CRYPTO_PAY?'<div class="seg c3">'+[['stars','Stars'],['ton','TON'],['sol','SOL']].map(([k,l])=>'<button class="'+(cur===k?'on':'')+'" data-act="respeccur" data-arg="'+k+'">'+l+'</button>').join('')+'</div>':''):
     '<p class="mut" style="margin:0">Builds worth under 9,375 points reset with points only.</p>')+
    '<button class="btn btn-quiet block" data-act="respeccancel">Keep it</button></div>';
   const ov=findOv('respec');if(ov)closeOverlay(ov);
-  openOverlay('modal','<h3>Reset your build?</h3>'+body,{key:'respec'});},
- respeccur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec();},
- respecpay:()=>{const pr=ecoPrice(save,{kind:'respec'},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec'});},
+  openOverlay('modal','<h3>Reset the '+N+'\'s build?</h3>'+body,{key:'respec'});},
+ respeccur:a=>{if(!CRYPTO_PAY)a='stars';save.payCur=a;store();if(a==='sol')fetchPrices();if(a==='ton')initTonConnect();fx('tap');ACT.respec(respecCh);},
+ respecpay:()=>{const ch=respecCh||homeChassis(save),pr=ecoPrice(save,{kind:'respec',c:ch},ecoX());const ov=findOv('respec');if(ov)closeOverlay(ov);if(pr)pay(pr.ton,{kind:'respec',c:ch});},
  respeccancel:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);},
- respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(),ok=>{if(ok)syncPlayer();uiDirty();});},
- up:a=>{gCmp=null;const lv=save.up[a];if(lv<4&&upLevels(save.up)>=BUILD_MAX){showToast('Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset your build to move them.');return;}if(lv<4&&(save.pts||0)<UPS[a].costs[lv]){showToast('You need '+fmtNum(UPS[a].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(a),ok=>{if(ok)syncPlayer();uiDirty();});},
+ respecok:()=>{const ov=findOv('respec');if(ov)closeOverlay(ov);when(respecBuild(respecCh||homeChassis(save)),ok=>{if(ok)syncPlayer();uiDirty();});},
+ up:a=>{gCmp=null;const [k,c0]=String(a).split('|'),ch=CH[c0]?c0:homeChassis(save),U=myUp(ch),lv=U[k];if(!UPS[k])return;if(lv<4&&upLevels(U)>=BUILD_MAX){showToast('The '+CH[ch].n+'\'s build is full: '+BUILD_MAX+' of '+BUILD_MAX+' levels. Reset it to move them.');return;}if(lv<4&&(save.pts||0)<UPS[k].costs[lv]){showToast('You need '+fmtNum(UPS[k].costs[lv]-(save.pts||0))+' more points');return;}if(lv>=4){showToast('Already at max level');return;}when(buyUp(k,ch),ok=>{if(ok)syncPlayer();uiDirty();});},
  gear:a=>openBayGear(a==='w'),
  core:a=>openBayCore(+a),
  gemcore:a=>openBayCore(+a),
@@ -1437,10 +1494,17 @@ const ACT={
  solwallet:()=>openSolWallets(),
  setsolw:a=>{save.solWallet=a;store();const ov=findOv('solw');if(ov)closeOverlay(ov);},
  crate:a=>{const [tk,ri]=a.split(':');openCrate(tk,+ri);},
- buybox:a=>{const [tk,ri]=a.split(':'),p=boxPrice(tk,+ri);pay(p,{kind:'box',tk,ri:+ri,price:p,deal:dealOf(tk,+ri)});},
- buypts:a=>{const [tk,ri]=a.split(':');when(openBoxWithPoints(tk,+ri),r=>{if(r){const ov=findOv('crate');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}uiDirty();});},
+ ptscrate:a=>{const [tk,ri]=a.split(':');openCrate(tk,+ri,true);},
+ buybox:a=>{const [tk,ri]=a.split(':'),p=boxPrice(tk,+ri);pay(p,{kind:'box',tk,ri:+ri,price:p,deal:dealOf(tk,+ri),c:tk==='gem'?shopCh():undefined});},
+ buypts:a=>{const [tk,ri]=a.split(':');when(openBoxWithPoints(tk,+ri,tk==='gem'?shopCh():undefined),r=>{if(r){const ov=findOv('crate');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}uiDirty();});},
+ shoptab:a=>{shopTab=a==='pts'?'pts':'store';fx('tap');closeAll();setTab('shop');},
+ ptsshop:()=>{shopTab='pts';closeAll();setTab('shop');},
+ corefor:a=>{if(!CH[a]||!ownsCh(save,a))return;save.coreFor=a;store();fx('tap');for(const k of ['crate','corepick']){const ov=findOv(k);if(ov&&ov.re)ov.re();}},
+ corepick:a=>{const [k,m]=a.split(':');if(GEM[k])openCorePick(k,m==='p');},
+ buycore:a=>{const [k,ri]=a.split(':'),c=shopCh(),pr=ecoPrice(save,{kind:'core',tk:k,ri:+ri,c},ecoX());if(!pr)return;pay(pr.ton,{kind:'core',tk:k,ri:+ri,c,price:pr.ton});},
+ buycorepts:a=>{const [k,ri]=a.split(':'),c=shopCh();when(buyCorePts(k,+ri,c),r=>{if(r){const ov=findOv('corepick');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}uiDirty();});},
  salvage:a=>{const [tk,ri]=a.split(':');when(buySalvage(tk,+ri),r=>{if(r){fx('buy');showReveal([r]);}uiDirty();});},
- starter:()=>{if(save.starter)return;pay(STARTER.ton,{kind:'starter'});},
+ starter:()=>{if(save.starter)return;pay(STARTER.ton,{kind:'starter',c:shopCh()});},
  premium:a=>{if(a==='moonbeam'){if(save.moonbeam)return;pay(MOONBEAM_PRICE,{kind:'moonbeam'});}else{if(save.skin==='lunar')return;pay(SKINS.lunar.price,{kind:'skin'});}},
  revealok:()=>{if(revealOv)closeOverlay(revealOv);},
  lbscope:a=>{lbScope=a;fx('tap');uiDirty('ranks');},
@@ -1560,7 +1624,7 @@ function labItemBars(key,spec){
   add('Item level',c.tier+1,3);
  }else if(key.startsWith('core')){
   const k=spec.cores[Number(key.slice(4))];
-  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
+  if(k&&GEM[k]){const lv=myGl(spec.c.c)[k]||1;add('Core level',lv,GEM_LV.length);add('Effect',100*coreVal(k,lv),100*coreVal(k,GEM_LV.length),'%');}
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],f=FITS[k][v];
   if(f){for(const [n,v] of [['HP',f.hp],['Speed',f.spd],['DPS',f.dps]])add(n+' change',+((v||0)*100).toFixed(1),20,'%');
@@ -1615,7 +1679,7 @@ function labItemFacts(key,spec){
   }
  }else if(key.startsWith('core')){
   const k=spec.cores[Number(key.slice(4))];
-  if(k&&GEM[k]){const lv=save.gemLvl?.[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',coreBonus(k,lv));}else line('Core slot','Empty');
+  if(k&&GEM[k]){const lv=myGl(spec.c.c)[k]||1;line('Core type',GEM[k].name);line('Core level',lv+' / '+GEM_LV.length);line('Actual bonus',coreBonus(k,lv));}else line('Core slot','Empty');
  }else if(key.startsWith('fit')){
   const k=key.slice(3),v=fittingSelection(spec.mods)[k],fit=FITS[k][v];
   if(fit){line('Fitting',fit.n);for(const f of FIT_FIELDS)if(fit[f]||['hp','spd','dps'].includes(f)){const w=(typeof MOD_WORD!=='undefined'&&MOD_WORD[f])||f;line(w[0].toUpperCase()+w.slice(1),(fit[f]>0?'+':'')+pct(fit[f]||0));}line('Weight cost',fit.weight+'/'+FIT_BUDGET.weight);line('Power cost',fit.power+'/'+FIT_BUDGET.power);}
@@ -1666,6 +1730,7 @@ const gShowCmp=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const c=
 ACT.gcmp=a=>{gCmp=gCmp===a?null:a;fx('tap');if(gCmp)gShowCmp();};
 ACT.gcmpx=()=>{gCmp=null;};
 ACT.gupc=k=>{gCmp=gCmp==='up|'+k?null:'up|'+k;fx('tap');if(gCmp)gShowCmp();};
+ACT.gupch=c=>{if(!CH[c]||!ownsCh(save,c))return;gUpCh=c===gM().spec.c.c?null:c;gCmp=null;fx('tap');};   // whose build the Upgrades section shows
 ACT.gplc=a=>{gCmp=gCmp==='plate|'+a?null:'plate|'+a;fx('tap');if(gCmp)gShowCmp();};
 ACT.plate=a=>{gCmp=null;const [sl,t]=String(a).split('|').map(Number),C=PLATE.cost[t],mn=mnOf(save.mn);if(!C)return;
  const miss=MN_ORDER.filter(k=>C[k]&&mn[k]<C[k]);if(miss.length){showToast('You need '+miss.map(k=>(C[k]-mn[k])+' more '+MINERALS[k].s).join(' and ')+'. Find them in Conquest, Meteor Strikes and matches.');return;}

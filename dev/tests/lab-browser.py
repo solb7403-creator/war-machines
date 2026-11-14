@@ -66,7 +66,7 @@ async def main():
    assert await pg.locator('#gs-cores .gsec-b').count()==0,'phones: one section open at a time'
    await pg.locator('[data-act="gupc"][data-arg="hull"]').click();assert 'Toughness' in await pg.locator('#gs-up .gcmp').inner_text()
    await pg.locator('#gs-up .gcmp [data-act="up"]').click();await pg.wait_for_timeout(500)
-   assert await pg.evaluate('()=>save.up.hull')==1
+   assert await pg.evaluate('()=>save.upc[gM().spec.c.c].hull')==1   # the bay's chassis's own build (5E-2b3)
    assert await pg.locator('#gs-up.new').count()==0,'New shown once'
    # 7. Mods: plain-words trade-offs from FITS, budget, options that don't fit are disabled with the reason
    await pg.locator('#gs-fit .gsec-h').click();await pg.wait_for_timeout(150)

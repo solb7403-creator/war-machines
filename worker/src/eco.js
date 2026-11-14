@@ -2,6 +2,7 @@
 // The phone says what happened (a match ticket and its result, a claim, a crate to open); the server runs the shared
 // rules (js/rules.js, bundled as RULES) on its own copy and sends its record back. Points are never taken from the phone.
 // Writes are conditional (Firebase ETags): read, change, write only if nobody else wrote in between, else retry.
+import { OWNER_PID } from "./owner.js";
 import { RULES as R, LIM } from "./sim.gen.js";
 import { DAY_MS, dayOf, weekOf, hex, hmac, dbUrl, dbGet, dbPatch, cleanName } from "./db.js";
 import { checkProof, proofSpan } from "./proof.js";
@@ -121,9 +122,12 @@ async function freshEco(env, pid) {
   S._new = !rec;
   return S;
 }
+// per-chassis builds and cores (5E-2b3): a record from before moves its one shared build to the chassis it flies; the owner's
+// account (OWNER_PID) copies it to all three chassis so his test setup is kept (owner, Nov 14). Only on that first move.
+const normOpt = (pid) => (pid === OWNER_PID ? { allChassis: true } : undefined);
 export async function readEco(env, pid) {
   const v = await dbGet(env, `eco/${pid}`);
-  const S = v ? R.ecoNorm(v) : await freshEco(env, pid);
+  const S = v ? R.ecoNorm(v, normOpt(pid)) : await freshEco(env, pid);
   delete S._new;
   return S;
 }
@@ -133,7 +137,7 @@ export async function tx(env, pid, fn, now = Date.now(), opt = {}) {
   await cfg(env, now);   // settings, cached a minute (the new-account line, proof-of-play mode)
   for (let i = 0; i < 8; i++) {
     const { v, tag } = await readTag(env, `eco/${pid}`);
-    const S = v ? R.ecoNorm(v) : await freshEco(env, pid);
+    const S = v ? R.ecoNorm(v, normOpt(pid)) : await freshEco(env, pid);
     const isNew = !!S._new; delete S._new;
     const X = ctxOf(pid, now);
     X.rx = R.refPhaseX((CFG || {}).rph);   // the launch phase right now (pinned on what's earned in this write)
@@ -426,7 +430,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       const proofL = T.L || S.L; // old pending tickets retain their legacy fallback
       const me0 = proofL ? R.tankOf(proofL, 1) : null;
       const scale = T.g === "royale" ? R.ROYALE_HP : T.g === "boss" ? 1.5 : R.MODES[T.m].n * (T.g === "bounty" ? R.BTY_HP : 1);
-      const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf({...proofL,c},scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
+      const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf(R.loadoutFor(proofL,c),scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
       pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minS, spdM: me0 ? me0.spdM : 1, st: s });
       if (!pr.ok) {
         S.pfw = pr.why;
@@ -591,10 +595,11 @@ export async function paidRecords(env, pid) {
 // save, checked against what the pilot paid for and what their lifetime points could have bought. Anything that can't
 // be explained is kept, not deleted, and flagged for Jake to review (flagged pilots sit out the snapshot until cleared).
 const sumUp = (up) => R.UORDER.reduce((a, k) => a + R.UPS[k].costs.slice(0, up[k] || 0).reduce((x, y) => x + y, 0), 0);
+const sumUpAll = (S) => R.CHORDER.reduce((a, c) => a + sumUp(R.chUp(S, c)), 0);
 export function migrate(S, m, P, X) {
   const C = R.ecoNorm(JSON.parse(JSON.stringify(m && typeof m === "object" ? m : {})));
   const why = {};
-  for (const k of ["up", "gemLvl", "gemShards", "wOwn", "cOwn", "paints"]) S[k] = C[k];
+  for (const k of ["upc", "glc", "gsc", "wOwn", "cOwn", "paints"]) S[k] = C[k];   // per-chassis builds and cores (5E-2b3)
   S.roll = {}; S.salv = {};
   for (const [k, v] of Object.entries(C.roll)) { const n = Number(v); if (Number.isFinite(n)) S.roll[safeKey(k)] = Math.max(R.ROLL_MIN, Math.min(R.ROLL_MAX, n)); }
   for (const [k, v] of Object.entries(C.salv)) { const t = Number(String(k).split(":")[1]), n = Number(v); if ((t === 1 || t === 2) && Number.isFinite(n)) S.salv[safeKey(k)] = n < 1 ? n : Math.max(R.SALV_MIN[t], Math.min(R.SALV_MAX[t], n)); }
@@ -642,10 +647,10 @@ export function migrate(S, m, P, X) {
   }
   if (epic) why.epic = epic + " epic item(s) without a payment";
   for (const k of Object.keys(S.salv)) spend += R.SALV_PTS[Number(k.split(":")[1])] || 0;
-  spend += sumUp(S.up);
+  spend += sumUpAll(S);
   // cores: shards above what gem caches on record could give are priced as common gem caches bought with points (max 2 shards each)
   let shards = 0;
-  for (const k of R.GORDER) { for (let l = 1; l < S.gemLvl[k]; l++) shards += R.SHARD_NEED[l]; shards += S.gemShards[k]; }
+  for (const c of R.CHORDER) { const gl = R.chGl(S, c), gs = R.chGs(S, c); for (const k of R.GORDER) { for (let l = 1; l < (gl[k] || 1); l++) shards += R.SHARD_NEED[l]; shards += gs[k] || 0; } }
   const gemSrc = (P.box.gem0 || 0) * 2 + (P.box.gem1 || 0) * 4 + (P.box.gem2 || 0) * 14 + (S.g2 ? 4 : 0) + gemFree.n + (Math.floor((S.days || 0) / 7) + 1) * 2 + (S.wq && S.wq.claimed ? 4 : 0);
   if (shards > gemSrc) spend += Math.ceil((shards - gemSrc) / 2) * R.RPTS[0];
   if (spend > S.earned + 15000) why.spend = "Gear worth about " + spend.toLocaleString("en-US") + " points, " + S.earned.toLocaleString("en-US") + " earned";
@@ -719,25 +724,26 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     const S = await readEco(env, pid);
     return { status: 200, body: { ok: true, out: hit && hit.o !== undefined ? { outs: hit.o || [] } : { pending: true }, E: pub(S) } };
   }
-  const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri);
+  const tk = TKS.includes(b.tk) ? b.tk : null, ri = riOf(b.ri), ch = R.CH[b.c] ? b.c : undefined;   // ch: the chassis a build, reset or gem is for (5E-2b3)
   let F = null;
   if (["lab_read", "lab_save", "lab_rename", "lab_activate"].includes(a)) F = (S) => R.labAction(S, a, b);
   switch (a) {
-    case "login": F = (S, X) => R.ecoLogin(S, X) || { err: "claimed" }; break;
+    case "login": F = (S, X) => R.ecoLogin(S, X, ch) || { err: "claimed" }; break;
     case "daily": F = (S, X) => R.ecoClaimDaily(S, id, X) || { err: "no" }; break;
     case "weekly": F = (S, X) => R.ecoClaimWeekly(S, id, X) || { err: "no" }; break;
-    case "chest": F = (S, X) => R.ecoChest(S, X) || { err: "no" }; break;
+    case "chest": F = (S, X) => R.ecoChest(S, X, ch) || { err: "no" }; break;
     case "swap": F = (S, X) => { const N = R.ecoSwap(S, id, X); return N ? { id: N.id } : { err: "none" }; }; break;
     case "ms": F = (S, X) => R.ecoMsClaim(S, id, X) || { err: "no" }; break;
     case "visit": F = (S) => (R.ecoVisit(S, id, sp === "wikiread") ? { ok: 1 } : { err: "no" }); break;   // the wiki counts only from its end-of-page button
-    case "pass": F = (S, X) => R.ecoClaimPass(S, b.t === "p" ? "p" : "f", Number(b.i), X) || { err: "no" }; break;
-    case "crate": if (!tk || ri === null) break; F = (S, X) => R.ecoCratePts(S, tk, ri, X); break;
+    case "pass": F = (S, X) => R.ecoClaimPass(S, b.t === "p" ? "p" : "f", Number(b.i), X, ch) || { err: "no" }; break;
+    case "crate": if (!tk || ri === null) break; F = (S, X) => R.ecoCratePts(S, tk, ri, X, tk === "gem" ? ch : undefined); break;
+    case "core": { const k = String(b.k || ""); if (!R.GEM[k] || ri === null || !ch) break; F = (S, X) => R.ecoCorePts(S, k, ri, ch, X); break; }   // a chosen core for points (5E-2b3)
     case "salvage": if (tk !== "weapon" && tk !== "chassis" || !(ri === 1 || ri === 2)) break; F = (S, X) => R.ecoSalvage(S, tk, ri, X); break;
     case "tune": { const isW = !!b.w, k = String(b.k || ""), t = riOf(b.t); if (t === null || !(isW ? R.WORDER : R.CHORDER).includes(k)) break; F = (S, X) => R.ecoTune(S, isW, k, t, X); break; }
-    case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k); break; }
+    case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k, ch); break; }
     case "plate": { const sl = Number(b.k), tr = Number(b.t); if (!(Number.isInteger(sl) && sl >= 0 && sl <= 3 && Number.isInteger(tr) && tr >= 1 && tr <= 6)) break; F = (S) => R.ecoPlate(S, sl, tr); break; }   // Hull Plating (RESOURCE_ECONOMY.md §6.2)
     case "bstore": { const m = b.m; if (!m || typeof m !== "object" || Array.isArray(m) || Object.keys(m).some((k) => !R.MN_ORDER.includes(k))) break; F = (S) => R.ecoBaseStore(S, m); break; }   // wallet minerals to the Conquest base stores (Session 5)
-    case "respec": F = (S) => R.ecoRespec(S); break;
+    case "respec": F = (S) => R.ecoRespec(S, undefined, ch); break;
     case "squad": {
       // recruits flagged for review (a shared device or network, or anything else) don't pay out until Jake clears them
       const [rows, fh, rec] = await Promise.all([squadRows(env, pid), dbGet(env, "fh").catch(() => null), dbGet(env, `players/${pid}`).catch(() => null)]);

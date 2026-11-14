@@ -1,0 +1,397 @@
+{
+ "rateStarsToPoints": 24,
+ "gemCachePts": [
+  6000,
+  12000,
+  36000
+ ],
+ "chosenCorePts": [
+  9000,
+  18000,
+  54000
+ ],
+ "coreShards": [
+  2,
+  4,
+  14
+ ],
+ "calibration": [
+  {
+   "rate": 24,
+   "firstKitDays": 56,
+   "allThreeDays": 167
+  }
+ ],
+ "profiles": [
+  {
+   "minutes": 10,
+   "firstKitDays": 68,
+   "allThreeDays": 208,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 68,
+     "weeks": 9.7,
+     "endDay": 68,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "vanguard",
+     "days": 64,
+     "weeks": 9.1,
+     "endDay": 132,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 76,
+     "weeks": 10.9,
+     "endDay": 208,
+     "league": "Elite",
+     "power": 142
+    }
+   ],
+   "perDay": 11400,
+   "sources": {
+    "match": 754571,
+    "quests": 1238450,
+    "login": 143425,
+    "chest": 194500,
+    "pass": 40250
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 1692000,
+    "core": 486000
+   },
+   "shards": {
+    "free": 267,
+    "cache": 574,
+    "core": 122,
+    "wasted": 176
+   }
+  },
+  {
+   "minutes": 15,
+   "firstKitDays": 58,
+   "allThreeDays": 171,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 58,
+     "weeks": 8.3,
+     "endDay": 58,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "vanguard",
+     "days": 56,
+     "weeks": 8,
+     "endDay": 114,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 57,
+     "weeks": 8.1,
+     "endDay": 171,
+     "league": "Elite",
+     "power": 142
+    }
+   ],
+   "perDay": 13301,
+   "sources": {
+    "match": 949399,
+    "quests": 1018750,
+    "login": 117000,
+    "chest": 155500,
+    "pass": 33750
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 1692000,
+    "core": 387000
+   },
+   "shards": {
+    "free": 217,
+    "cache": 586,
+    "core": 96,
+    "wasted": 121
+   }
+  },
+  {
+   "minutes": 20,
+   "firstKitDays": 56,
+   "allThreeDays": 167,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 56,
+     "weeks": 8,
+     "endDay": 56,
+     "league": "Elite",
+     "power": 156
+    },
+    {
+     "chassis": "vanguard",
+     "days": 53,
+     "weeks": 7.6,
+     "endDay": 109,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 58,
+     "weeks": 8.3,
+     "endDay": 167,
+     "league": "Ace",
+     "power": 142
+    }
+   ],
+   "perDay": 15015,
+   "sources": {
+    "match": 1201072,
+    "quests": 1003150,
+    "login": 114950,
+    "chest": 155500,
+    "pass": 32900
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 1728000,
+    "core": 585000
+   },
+   "shards": {
+    "free": 212,
+    "cache": 589,
+    "core": 148,
+    "wasted": 183
+   }
+  },
+  {
+   "minutes": 30,
+   "firstKitDays": 45,
+   "allThreeDays": 129,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 45,
+     "weeks": 6.4,
+     "endDay": 45,
+     "league": "Elite",
+     "power": 155
+    },
+    {
+     "chassis": "vanguard",
+     "days": 39,
+     "weeks": 5.6,
+     "endDay": 84,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 45,
+     "weeks": 6.4,
+     "endDay": 129,
+     "league": "Ace",
+     "power": 142
+    }
+   ],
+   "perDay": 18461,
+   "sources": {
+    "match": 1385322,
+    "quests": 765900,
+    "login": 88150,
+    "chest": 116500,
+    "pass": 25550
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 1692000,
+    "core": 495000
+   },
+   "shards": {
+    "free": 166,
+    "cache": 598,
+    "core": 122,
+    "wasted": 124
+   }
+  },
+  {
+   "minutes": 45,
+   "firstKitDays": 34,
+   "allThreeDays": 104,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 34,
+     "weeks": 4.9,
+     "endDay": 34,
+     "league": "Elite",
+     "power": 152
+    },
+    {
+     "chassis": "vanguard",
+     "days": 33,
+     "weeks": 4.7,
+     "endDay": 67,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 37,
+     "weeks": 5.3,
+     "endDay": 104,
+     "league": "Elite",
+     "power": 142
+    }
+   ],
+   "perDay": 23752,
+   "sources": {
+    "match": 1654943,
+    "quests": 624200,
+    "login": 70525,
+    "chest": 97000,
+    "pass": 23500
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 1908000,
+    "core": 360000
+   },
+   "shards": {
+    "free": 150,
+    "cache": 663,
+    "core": 88,
+    "wasted": 160
+   }
+  },
+  {
+   "minutes": 60,
+   "firstKitDays": 28,
+   "allThreeDays": 90,
+   "kits": [
+    {
+     "chassis": "titan",
+     "days": 28,
+     "weeks": 4,
+     "endDay": 28,
+     "league": "Elite",
+     "power": 154
+    },
+    {
+     "chassis": "vanguard",
+     "days": 26,
+     "weeks": 3.7,
+     "endDay": 54,
+     "league": "Elite",
+     "power": 158
+    },
+    {
+     "chassis": "scout",
+     "days": 36,
+     "weeks": 5.1,
+     "endDay": 90,
+     "league": "Elite",
+     "power": 142
+    }
+   ],
+   "perDay": 29273,
+   "sources": {
+    "match": 1928178,
+    "quests": 539050,
+    "login": 61175,
+    "chest": 84000,
+    "pass": 22200
+   },
+   "spend": {
+    "up": 187500,
+    "cache": 1728000,
+    "core": 693000
+   },
+   "shards": {
+    "free": 128,
+    "cache": 607,
+    "core": 172,
+    "wasted": 165
+   }
+  }
+ ],
+ "ownerCheck": [
+  {
+   "minutesPerDay": 5,
+   "league": "Lunar Legend",
+   "twoWeeks": 77378
+  },
+  {
+   "minutesPerDay": 10,
+   "league": "Lunar Legend",
+   "twoWeeks": 125616
+  },
+  {
+   "minutesPerDay": 15,
+   "league": "Lunar Legend",
+   "twoWeeks": 192482
+  },
+  {
+   "minutesPerDay": 20,
+   "league": "Lunar Legend",
+   "twoWeeks": 242850
+  }
+ ],
+ "assumptions": {
+  "matchSeconds": {
+   "arena": {
+    "1v1": 60,
+    "2v2": 50,
+    "3v3": 91
+   },
+   "zone": {
+    "1v1": 106,
+    "2v2": 139,
+    "3v3": 173
+   },
+   "crystal": {
+    "1v1": 95,
+    "2v2": 102,
+    "3v3": 102
+   },
+   "bounty": {
+    "1v1": 120,
+    "2v2": 120,
+    "3v3": 120
+   },
+   "royale": {
+    "1v1": 60
+   },
+   "boss": {
+    "1v1": 73,
+    "2v2": 92,
+    "3v3": 97
+   }
+  },
+  "overheadSeconds": 30,
+  "winRate": 0.55,
+  "drawRate": 0.05,
+  "gear": "Rare Pulse Cannon and a Rare chassis",
+  "fullBuild": {
+   "hull": 4,
+   "cannon": 4,
+   "engine": 4,
+   "target": 2,
+   "reactor": 0
+  },
+  "dailies": "4 a day",
+  "weeklies": "3 of 5",
+  "chest": "every week",
+  "pass": "free track",
+  "freeCachesTo": "the chassis being kitted"
+ }
+}

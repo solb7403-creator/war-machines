@@ -6,7 +6,7 @@ let rangeOptions={g:'arena',map:'classic',seed:104729,preset:'standard',control:
 const rangeCopy=x=>JSON.parse(JSON.stringify(x));
 const rangeLocalKey=k=>'lunar_range_'+k+'_v1:'+playerKey();
 function rangeRemember(S){
- const keys=['up','gemLvl','wOwn','cOwn','roll','salv','paints','moonbeam','skin','vg'];
+ const keys=['upc','glc','wOwn','cOwn','roll','salv','paints','moonbeam','skin','vg'];   // per-chassis builds and core levels (5E-2b3)
  const owned={lab:{v:1}};for(const k of keys)if(S[k]!==undefined)owned[k]=rangeCopy(S[k]);
  rangeOwnedLive={owned,at:Date.now()};
  try{localStorage.setItem(rangeLocalKey('owned'),JSON.stringify(rangeOwnedLive));}catch(e){}

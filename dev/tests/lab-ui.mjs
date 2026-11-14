@@ -16,7 +16,7 @@ const begin=ui.indexOf('const labStatRows=');
 const end=ui.indexOf('function labInspect(key)',begin);
 assert.ok(begin>0&&end>begin,'UI helper anchors');
 const core=readFileSync('js/core.js','utf8');
-const funcs='const fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+';\n'+ui.match(/const CORE_UNIT=([^;]+);/)[0]+'\n'+ui.slice(ui.indexOf('function coreBonus('),ui.indexOf('function gemProgress('))+'\n'+ui.slice(begin,end);
+const funcs=core.match(/const myGl=[^\n]+/)[0]+'\nconst fmtCore='+core.match(/const fmtCore=([^;]+);/)[1]+';\n'+ui.match(/const CORE_UNIT=([^;]+);/)[0]+'\n'+ui.slice(ui.indexOf('function coreBonus('),ui.indexOf('function gemProgress('))+'\n'+ui.slice(begin,end);
 // the garage: one editor (the sections), saved through the server-checked lab save; the Engineer sheet is gone
 for(const gone of ['openLabEditor','labFormSpec','labeditor','labsave','rangedraft','Engineer'])assert.ok(!ui.includes(gone),'removed: '+gone);
 assert.ok(/function baySave\(/.test(ui)&&ui.includes("labRequest('lab_save'")&&ui.includes("labRequest('lab_rename'")&&ui.includes("labRequest('lab_activate'"),'every change goes through the lab save');
@@ -32,14 +32,14 @@ const test=`
 const SUP={pulse:{dmg:350,charge:.7},twin:{dmg:350,charge:.55},siege:{dmg:375,charge:.7},moon:{dmg:400,charge:.8}};
 const spec=(a,c)=>({w:{a,t:0,s:false},c:{c,t:0,s:false},
  cores:['dmg',null,null],mods:{hull:'stock',mobility:'stock',mount:'stock'},looks:{},paint:'stock'});
-const save={gemLvl:{dmg:3},paints:{stock:true},lab:{active:'a',machines:{
+const save={glc:{scout:{dmg:3},titan:{dmg:3}},paints:{stock:true},lab:{active:'a',machines:{
  a:{name:'Scout Pilot',spec:spec('pulse','scout')},
  b:{name:'Titan Pilot',spec:spec('siege','titan')}}}};
 const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
 const fmtNum=n=>String(n),WNAMES={pulse:['Pulse'],siege:['Siege'],twin:['Twin']};
 ecoLoadout=(_,p)=>({...STOCK_L,w:{...p.w,q:1.06},c:{...p.c,q:1.07},
- cores:p.cores,mods:p.mods,looks:p.looks,gl:save.gemLvl});
+ cores:p.cores,mods:p.mods,looks:p.looks,gl:chGl(save,p.c.c)});
 const rowsA=labStatRows(save.lab.machines.a.spec),rowsB=labStatRows(save.lab.machines.b.spec);
 if(rowsA[0][1]===rowsB[0][1])throw Error('Different chassis produced identical HP');
 if(rowsA.some(r=>!Number.isFinite(r[1])||!Number.isFinite(r[2])||r[2]<=0))throw Error('Invalid telemetry');
