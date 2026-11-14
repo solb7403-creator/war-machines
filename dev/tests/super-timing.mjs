@@ -33,13 +33,13 @@ function sim(seed = 7) {
   let s = seed; const rand = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
   const body = '"use strict";\nconst Math=Object.create(globalThis.Math);Math.random=RAND;\n' + rd('js/rules.js') + rd('js/game.js') +
     'const __api=(function(){' + rd('worker/sim-api.js') + '})();\n' +
-    'return Object.assign(__api,{los:(a,b)=>los(a,b),SUPS:SUP,setState:v=>{state=v;},walls:()=>walls,rocks:()=>rocks,supMult:r=>supMult(r),K:{SUP_BAR_T,SUP_BAR_T_CQ,SUP_ZONE_W,SUP_JACK_W,SUP_REL,SUP_TAP_TOL,SUP_OC,SUP_TAP_HUMAN,LG_AI_TAP,SUP_KEYS,SUPER_MAX,SUP_GEAR,SUP_GEAR_AI,SUP_ROUND_CAP,SUP_FILL,SUP_HULL_CAP},supBar,supJudge,supKey,hit:(t,amt,src,why,kind)=>takeHit(t,amt,src,why,kind),supDps:u=>supDps(u),supF:()=>supF.slice(),crates:()=>crates,hitCrate:(c,d)=>hitCrate(c,d),respawnTick:dt=>respawnTick(dt),setEvt:v=>{evt=v;},tankOf:(L,n)=>tankOf(L,n),fireSuper:(r)=>fireSuper(r,SUP[r.sup.w]),superTick:dt=>superTick(dt),shells:()=>shells,startRound:()=>startRound(),endRoundNow:()=>{state="round";},seriesOn:()=>{series={w:[0,0],round:1};}});';
+    'return Object.assign(__api,{los:(a,b)=>los(a,b),SUPS:SUP,setState:v=>{state=v;},walls:()=>walls,rocks:()=>rocks,supMult:r=>supMult(r),K:{SUP_BAR_T,SUP_BAR_T_CQ,SUP_ZONE_W,SUP_JACK_W,SUP_REL,SUP_TAP_TOL,SUP_OC,SUP_TAP_HUMAN,LG_AI_TAP,SUP_KEYS,SUPER_MAX,SUP_GEAR,SUP_GEAR_AI,SUP_ROUND_CAP,SUP_FILL,SUP_HULL_CAP,SUP_TAKEN_MAX},supBar,supJudge,supKey,hit:(t,amt,src,why,kind)=>takeHit(t,amt,src,why,kind),supDps:(u,t)=>supDps(u,t),supF:()=>supF.slice(),crates:()=>crates,hitCrate:(c,d)=>hitCrate(c,d),respawnTick:dt=>respawnTick(dt),setEvt:v=>{evt=v;},tankOf:(L,n)=>tankOf(L,n),fireSuper:(r)=>fireSuper(r,SUP[r.sup.w]),superTick:dt=>superTick(dt),shells:()=>shells,startRound:()=>startRound(),endRoundNow:()=>{state="round";},seriesOn:()=>{series={w:[0,0],round:1};}});';
   return new Function('HOST', 'RAND', body)({ ev() {}, end() {}, round() {}, death() {}, random: rand }, rand);
 }
 const L = (w = 'pulse', t = 0) => ({ w: { a: w, t: w === 'moon' ? 2 : t, q: 1, s: false }, c: { c: 'vanguard', t: 0, q: 1, s: false }, up: { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }, cores: ['dmg', 'rof', 'arm'], gl: {}, skin: 'default', paint: 'stock' });
-function match(wpn = 'pulse', tier = 0, seats = ['h', 'h'], lg = 3, g = 'arena', m = '1v1') {
+function match(wpn = 'pulse', tier = 0, seats = ['h', 'h'], lg = 3, g = 'arena', m = '1v1', kit = null) {
   const S = sim();
-  S.setup({ map: 'craters', g, m, seats: seats.map((x, i) => x ? { pid: 'p' + i, name: 'P' + i, L: L(wpn, tier) } : null), lg });
+  S.setup({ map: 'craters', g, m, seats: seats.map((x, i) => x ? { pid: 'p' + i, name: 'P' + i, L: i === 0 && kit ? kit : L(wpn, tier) } : null), lg });
   S.start(); S.setState('play'); S.walls().length = 0; S.rocks().length = 0;
   const U = S.units; for (const u of U) { u.sp = 0; u.cd = 99; u.shieldT = 0; u.mhp = u.hp = 1e6; }
   const put = (u, x, y) => { u.x = x; u.y = y; u.px = x; u.py = y; u.ox = x; u.oy = y; u.claim = null; u.vx = u.vy = 0; u.avx = u.avy = 0; };
@@ -185,12 +185,17 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
     for (let i = 4; i < k && i < 4 + 2 * 6; i += 2) bytes[i * sz + nU * 3 + 2] |= 8;   // six presses in the first 8 seconds
     const forged = checkProof({ ...r.pf, s: btoa(String.fromCharCode(...bytes)) }, c);
     ok(honest.ok && had <= 3 && r.st.sup <= 3, 'an honest Moon Zone record passes and holds at most 3 super presses (' + had + '; ' + (honest.why || 'ok') + ')');
-    ok(!forged.ok && forged.why === 'supers', 'the server refuses a record with more than 3 supers in one round (' + (forged.ok ? 'accepted' : forged.why) + ')'); }
+    ok(!forged.ok && forged.why === 'supers', 'the server refuses a record with more than 3 supers in one round (' + (forged.ok ? 'accepted' : forged.why) + ')');
+    // the same six presses with a made-up "new round" mark before every third: Moon Zone has no rounds, so the marks are refused
+    const b2 = Uint8Array.from(bytes); for (let i = 4; i < k && i < 4 + 2 * 6; i += 2) if (((i - 4) / 2) % 3 === 0 && i > 4) b2[i * sz + nU * 3 + 2] |= 64;
+    const marks = checkProof({ ...r.pf, s: btoa(String.fromCharCode(...b2)) }, c);
+    ok(!marks.ok && marks.why === 'rounds', 'made-up round marks cannot reset the count (' + (marks.ok ? 'accepted' : marks.why) + ')');
+    const fx = checkProof(r.pf, { ...c, st: { ...c.st, sup: 9 } }); ok(fx.ok && fx.fix.sup <= 3, 'a reported super count above 3 a round is cut back to the record (' + JSON.stringify(fx.fix) + ')'); }
   ok(n === 45 && !bad.length, 'the server accepts the record of every honest Epic / Legendary match (' + (n - bad.length) + ' of ' + n + (bad.length ? '; refused: ' + bad.slice(0, 4).join(' | ') : '') + ')'); }
 
 // ---- 5. the charge rule: damage only, against the tank's OWN strength and hull; what never charges; the round cap ----
 { const M = match('pulse', 0, ['h', 'h'], 3, 'zone', '1v1'), S = M.S, K = S.K, [a, b] = M.U, F = S.supF();
-  const reset = () => { for (const u of S.units) { u.sp = 0; u.supN = 0; u.tkn = 0; u.hp = u.mhp = 1e6; u.buffs = []; u.shieldT = 0; } };
+  const reset = () => { for (const u of S.units) { u.sp = 0; u.supN = 0; u.tkn = 0; u.rcv = 0; u.hp = u.mhp = 1e6; u.buffs = []; u.shieldT = 0; } };
   ok(F.length === 2 && F[0] === K.SUP_FILL.zone[1][0] && F[1] === K.SUP_FILL.zone[1][1], 'the match uses its mode\'s fill row (Moon Zone 1v1: ' + F + ')');
   // nothing passive: 30 s with nobody firing
   reset(); for (let i = 0; i < 900; i++) { for (const u of S.units) u.cd = 99; S.step(DT); }
@@ -211,20 +216,34 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   reset(); const cr = S.crates()[0]; if (cr) { S.hitCrate(cr, 5000); ok(a.sp === 0 && b.sp === 0, 'breaking a crate charges nothing'); }
   reset(); S.hit(b, 400, a, null, 1); ok(a.sp === 0 && b.sp > 0, 'a super\'s own damage does not charge its owner; the tank it hits does charge (' + b.sp.toFixed(1) + ')');
   // equal seconds of own fire = equal charge, whatever the gear; Reactor +10% a level
-  const kit = (Lk) => { const t = S.tankOf(Lk, 1); t.buffs = []; return t; }, own = t => { const d = { ...t, team: 0, id: 50, sp: 0, supN: 0, buffs: [] }; reset(); S.hit(b, S.supDps(t) * 5, d, null, 0); return d.sp; };
+  const kit = (Lk) => { const t = S.tankOf(Lk, 1); t.buffs = []; return t; }, own = t => { const d = { ...t, team: 0, id: 50, sp: 0, supN: 0, buffs: [] }; reset(); S.hit(b, S.supDps(d, b) * 5, d, null, 0); return d.sp; };   // five seconds of its own clean fire on this target
   const stock = kit(GEAR.stock), leg = kit({ ...GEAR.legend, up: { ...GEAR.legend.up, reactor: 0 } }), r2 = kit({ ...GEAR.stock, up: { ...GEAR.stock.up, reactor: 2 } }), r4 = kit({ ...GEAR.stock, up: { ...GEAR.stock.up, reactor: 4 } });
   ok(S.supDps(leg) > S.supDps(stock) * 2.2, 'setup: the Legendary kit\'s own damage per second is far above the stock tank\'s (' + Math.round(S.supDps(stock)) + ' vs ' + Math.round(S.supDps(leg)) + ')');
   ok(near(own(stock), own(leg), 1e-6) && near(own(stock), 5 / F[0] * 1000, 1e-6), 'five seconds of a tank\'s own clean fire fill the same share of the bar on a stock tank and on the Legendary kit (' + own(stock).toFixed(1) + ' points)');
   ok(near(own(r2) / own(stock), 1.2, 1e-6) && near(own(r4) / own(stock), 1.4, 1e-6), 'the Reactor still adds 10% charge a level (x' + (own(r2) / own(stock)).toFixed(2) + ' at 2, x' + (own(r4) / own(stock)).toFixed(2) + ' at 4)');
   { const tk = t => { reset(); const d = Object.assign(b, { fillM: t.fillM }); S.hit(d, 0.1 * d.mhp, a, null, 0); const v = d.sp; d.fillM = 1; return v; }; ok(near(tk(r2) / tk(stock), 1.2, 1e-6), 'the Reactor also lifts the charge from damage received (x' + (tk(r2) / tk(stock)).toFixed(2) + ')'); }
   // a mystery-box damage buff is not gear: it is not in the tank's own strength
-  { const t = { ...stock, buffs: [] }, d0 = S.supDps(t); t.buffs = [{ k: 'dmg', taken: 0 }]; ok(S.supDps(t) === d0, 'a mystery-box buff does not change a tank\'s own strength'); }
+  // boxes and counters are part of a tank's strength right now: they make the cannon hit harder, never the super come sooner
+  { const t = { ...stock, team: 0, id: 51, sp: 0, supN: 0, buffs: [], cls: 'vanguard' }; reset(); b.cls = 'vanguard'; S.hit(b, 300, t, null, 0); const plain = t.sp;
+    t.sp = 0; t.buffs = [{ k: 'dmg', taken: 0 }, { k: 'rof', taken: 0 }]; reset(); S.hit(b, 300 * 1.4, t, null, 0);   // each shot 1.4x harder, and 1.4x as many of them
+    ok(near(t.sp * 1.4, plain, 1e-6), 'a damage box and a fire-rate box together do not speed the charge (a second of fire still fills ' + plain.toFixed(1) + ' points per 300 damage-equivalent)');
+    t.sp = 0; t.buffs = []; t.cls = 'vanguard'; b.cls = 'scout'; reset(); S.hit(b, 300 * 1.15, t, null, 0); ok(near(t.sp, plain, 1e-6), 'a chassis counter (+15% damage) does not speed the charge'); b.cls = 'vanguard'; }
+  // the same with REAL shots: the turret fires for 6 s at a parked target; charge a second must not follow gear or boxes
+  { const fire = (kit, boxes) => { const M2 = match('pulse', 0, ['h', 'h'], 3, 'zone', '1v1', kit), a2 = M2.U[0], b2 = M2.U[1]; a2.x = 10; a2.y = 20; b2.x = 10; b2.y = 15.5; a2.px = a2.ox = 10; a2.py = a2.oy = 20; b2.px = b2.ox = 10; b2.py = b2.oy = 15.5; a2.ang = -Math.PI / 2; a2.cd = 0; a2.buffs = boxes.map(k => ({ k, taken: 0 })); a2.sp = 0;
+      for (let i = 0; i < 180; i++) { b2.cd = 99; b2.hp = b2.mhp = 1e7; b2.shieldT = 0; b2.buffs = []; b2.x = 10; b2.y = 15.5; a2.x = 10; a2.y = 20; M2.S.step(DT); } return a2.sp; };
+    const st0 = fire(GEAR.stock, []), lg0 = fire({ ...GEAR.legend, up: { ...GEAR.legend.up, reactor: 0 } }, []), bx = fire(GEAR.stock, ['dmg', 'rof']), nominal = 6 / K.SUP_FILL.zone[1][0] * 1000;
+    ok(st0 > nominal * 0.6 && st0 < nominal * 1.15, 'real shots: 6 s of a stock tank\'s fire fills about 6 s worth of the bar (' + Math.round(st0) + ' of ' + Math.round(nominal) + ' points)');
+    ok(lg0 / st0 > 0.78 && lg0 / st0 < 1.25, 'real shots: the Legendary kit charges as fast per second of fire as a stock tank (x' + (lg0 / st0).toFixed(2) + '; its shots do ' + (S.supDps(kit({ ...GEAR.legend, up: { ...GEAR.legend.up, reactor: 0 } })) / S.supDps(stock)).toFixed(1) + 'x the damage)');
+    ok(bx / st0 > 0.72 && bx / st0 < 1.25, 'real shots: holding a damage box and a fire-rate box does not speed the charge (x' + (bx / st0).toFixed(2) + '; it was x2.1 when boxes were left out of a tank\'s strength)'); }
   // soaking damage: at most one full hull per life counts, repairs do not refill it; a respawn does
   reset(); b.mhp = 2000; b.hp = 2000; let soak = 0; for (let i = 0; i < 8; i++) { b.hp = 2000; S.hit(b, 600, a, null, 1); soak = b.sp; if (b.sp >= 1000) b.sp = 0; }
   reset(); b.mhp = 2000; let got = 0; for (let i = 0; i < 8; i++) { b.hp = 2000; const s0 = b.sp; S.hit(b, 600, a, null, 1); got += b.sp - s0; b.sp = 0; }
   ok(near(got, 1 / F[1] * 1000, 1e-6), 'soaking damage and repairing: only one full hull per life counts (' + got.toFixed(0) + ' points from 4,800 damage on a 2,000 hull = ' + (1 / F[1]).toFixed(2) + ' bars)');
   b.hp = 0; b.dead = 0; for (let i = 0; i < 400 && b.hp <= 0; i++) S.respawnTick(DT); const s0 = b.sp; S.hit(b, 600, a, null, 1);
   ok(b.hp > 0 && b.sp > s0, 'after a respawn damage received counts again (a new life)');
+  // ...but never more than SUP_TAKEN_MAX bars a round across all lives: dying on purpose cannot earn the round's three supers
+  { reset(); b.mhp = 2000; let total = 0; for (let life = 0; life < 8; life++) { b.hp = 2000; b.tkn = 0; for (let i = 0; i < 4; i++) { b.sp = 0; S.hit(b, 500, a, null, 1); total += b.sp; } }
+    ok(near(total, K.SUP_TAKEN_MAX * 1000, 1e-6), 'eight lost hulls in one round fill only ' + K.SUP_TAKEN_MAX + ' bars from damage received (' + Math.round(total) + ' points)'); }
   // solar flare event: still damage only (x2 while it lasts)
   reset(); S.hit(b, 300, a, null, 0); const plain = a.sp; reset(); S.setEvt({ k: 'flare', t: 5 }); S.hit(b, 300, a, null, 0); ok(near(a.sp, plain * 2, 1e-6), 'the solar flare doubles the charge from damage, and adds nothing by itself'); S.setEvt(null);
   // the megatank charges nothing for itself
@@ -255,10 +274,11 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
     ok(c.max <= 3 && c.aiMax <= 3, m + ': never more than 3 (pilot ' + c.max + ', AI ' + c.aiMax + ')');
     if (one) ok(c.supers >= 1.5 && c.supers <= 2.5, m + ': about 2 supers a round (a round lasts ' + c.secs + ' s): ' + c.supers);
     else ok(c.supers >= 2.3 && c.supers <= 3, m + ': about 3 supers a round: ' + c.supers);
+    for (const kk of Object.keys(R.kits)) { const q = R.cells[kk + '|' + m]; ok(q.max <= 3 && (one ? q.supers >= 1.2 && q.supers <= 2.8 : q.supers >= 1.9 && q.supers <= 3), m + ' ' + kk + ': ' + (one ? 'about 2' : 'about 3') + ' a round for this kit too (' + q.supers + ')'); }
     if (m !== 'boss 1v1') ok(c.ai >= (one ? 1.2 : 2.0) && c.ai <= 3, m + ': the AI pilots too (' + c.ai + ')'); }   // Survival 1v1 has no AI pilot (the megatank has its own attacks)
   const ks = Object.keys(R.kits).map(k => R.kits[k].supers), lo = Math.min(...ks), hi = Math.max(...ks);
   ok(R.kits.legend.supers <= R.kits.stock.supers * 1.2 && hi <= lo * 1.2, 'the best kit fires within 1.2x of the lowest kit\'s count at equal Reactor levels (stock ' + R.kits.stock.supers + ', Legendary ' + R.kits.legend.supers + '; highest ' + hi + ' / lowest ' + lo + ' = x' + (hi / lo).toFixed(2) + ')');
-  for (const m in R.modes) { const s = Object.keys(R.kits).map(k => R.cells[k + '|' + m].supers); ok(R.cells['legend|' + m].supers <= Math.min(...s) * 1.3 + 0.35, m + ': the Legendary kit is not ahead of the lowest kit (' + s.map(v => v.toFixed(1)).join(' ') + ')'); }
+  for (const m in R.modes) { const s = Object.keys(R.kits).map(k => R.cells[k + '|' + m].supers); ok(R.cells['legend|' + m].supers <= Math.min(...s) * 1.2 + 0.1, m + ': the Legendary kit is within 1.2x of the lowest kit (' + s.map(v => v.toFixed(1)).join(' ') + ')'); }
   ok(R.all.share < before.all.share && R.kits.legend.share < before.kits.legend.share, 'supers are a smaller share of a pilot\'s damage than before (' + Math.round(before.all.share * 100) + '% -> ' + Math.round(R.all.share * 100) + '%; Legendary kit ' + Math.round(before.kits.legend.share * 100) + '% -> ' + Math.round(R.kits.legend.share * 100) + '%)');
   const dealt = R.all.barsDealt / (R.all.barsDealt + R.all.barsTaken);
   ok(dealt >= 0.6 && dealt <= 0.8, 'about 70% of a pilot\'s charge comes from damage dealt, 30% from damage received (' + Math.round(dealt * 100) + ' / ' + Math.round((1 - dealt) * 100) + ')'); }

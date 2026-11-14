@@ -3339,3 +3339,49 @@ still light on the Titan-class hulls, Rail Breaker and Pulse Cannon a little sle
   already as long as the hull (1.01-1.08) with its barrels 0.65-0.85 past the nose, and the Rail Breaker on the Colossus is
   0.83 past the nose: any larger and they overhang further. Their slender look there is the models' own (a low flat turret,
   thin barrels), and models are not to be changed in this session.
+
+### Independent reviews (2 read-only agents, given only the branch, the head, the owner's requirements and this checkpoint)
+**Gameplay / balance / server authority / parity (head `801e1d3`): FAIL on the first pass, 4 majors, 6 minors, 4 nits.** It ran
+`super-timing.mjs` (248 checks) and `wtest/pvp.mjs` (128), reproduced six cells of the tables exactly, and found sound: the
+only writes to the charge are the rule's own; storm, meteors, crates, self and team hits, overkill and a super's own damage
+charge nothing; the cap has one gate in live rooms and survives a respawn, an AI takeover and a chassis swap; the snapshot
+field and `PVP_V` 6 on both sides; no early fire, forged taps refused, AI taps looser than a person's, the 65% floor; Conquest's
+code differs only by `SUP_BAR_T` -> `SUP_BAR_T_CQ` and `supBar(rnd,1)` (numerically identical), its effects block is main's
+line for line; no economy, price, save, stat or camera file changed. **Its findings and what was done:**
+1. *MAJOR: the AI-match record check could be sidestepped.* A "new round" mark clears the per-round count and was only
+   validated for tickets with bound equipment; a made-up mark before every third press passed on older tickets. And the
+   super-count stat was allowed up to (seconds / 6) + 2. **Fixed:** round marks are now held to the rules for every ticket
+   (only a best of 3 Arena has rounds, at most 5, each ending with a side down or on the clock; reason `rounds`); the stat is
+   cut to the record and to 3 a round in `proof.js` and capped at 3 a round in `eco.js`. Tests added (forged marks, an
+   inflated count). **Not changed, on purpose:** (a) a modified client can leave its presses out of the record; an AI match
+   runs on the phone, and what such a client gains is bounded by the same damage checks as any other cheat (damage against
+   hull lost, damage out of reach); tying every damage sample to a press needs the cannon's exact reach of damage per half
+   second and risks refusing honest matches; (b) in the default proof mode a failing record is flagged and still scored, as
+   every other proof failure is: that is the server economy's standing policy, not this session's to change. Both belong
+   to Session 7C (Integrity).
+2. *MAJOR: charge was not normalised under boxes and counters* (measured with real shots: a damage box x1.40, damage +
+   fire-rate x2.14, a counter +15%). **Fixed:** a tank's own strength now includes the boxes it holds and its counter against
+   the target (`supDps`), so neither speeds the charge. Tests with real shots added (Legendary vs stock x0.78-1.25, with both
+   boxes x0.72-1.25; the spread left is fire-rate rounding to the sim's ticks).
+3. *MINOR: damage received was limited per life, so dying on purpose refilled it.* **Fixed:** it also fills at most
+   `SUP_TAKEN_MAX` = 2 bars a round across all lives: the third super of a round always needs damage dealt. Test added.
+4. *MAJOR: tests asserted less than the claims.* **Fixed:** real-shot charge tests; every kit in every mode asserted (about
+   3, 1v1 Arena 1.2-2.8), the per-mode gear check tightened to 1.2x + 0.1; the live-room test now covers an AI takeover and
+   a reconnect at the cap.
+5. *MAJOR: build stamp not bumped* while `PVP_V` went to 6: done at release (below).
+6. *MINOR: the gold jackpot circle was drawn up to a third wider than the window that is judged* (older than this session,
+   but it matters more at the faster sweep). **Fixed:** the circle is drawn exactly as wide as the judged window.
+7. *MINOR: `RANGE_ENGINE_VERSION` not bumped* although combat changed: bumped. The practice range allows 3 supers a trial,
+   as a round does.
+8. *MAJOR, kept with the reason (OWNER PLEASE NOTE):* (a) 1v1 Arena gives a stock tank 2.6 supers a round (it was 1.8 on
+   main) and the Legendary kit 1.5: the average is the 2 the owner asked for, but the two ends sit 0.5 either side, because an
+   even duel lasts longer and both tanks lose most of a hull, while a top kit ends the round in seconds. One row cannot
+   bring both ends to 2; lowering it would take the top kit under 1.3. (b) The reviewer's worst cells (the Legendary kit
+   against ROOKIE AI: Arena 3v3 2.0, 1v1 1.0) are a stress case that cannot occur in play: the league follows power, so that
+   kit meets Elite to Lunar Legend AI, where it fires 2.7 a round (Arena 3v3 2.9).
+9. *MINOR, disclosed:* the cap binds in most rounds outside 1v1 Arena (decision 7); the 70 / 30 split is the standard pilot's
+   (a pilot who rarely lands shots charges mostly from damage received; a top kit against weak AI mostly from damage dealt);
+   hull removed per super fell 21-32% in play (the 22.5% cut, the lower cap, and slightly fewer jackpots at the faster bar).
+10. *NITS:* comments corrected (24 s rounds, 4.4 / 2.7 bars offered). Left as they are: fast weapons lose a little charge to
+    fire-rate rounding at the sim's tick (the Twin Repeater most), and Moonbeam edge hits give about 4% more charge per hit;
+    both are within the measured 1.12x spread between weapons.

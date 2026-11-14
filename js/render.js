@@ -642,7 +642,7 @@ function drawSupBar(g){
  if(!supUI)return;
  const B=supBarRect(),now=performance.now(),quiet=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced(),done=supUI.oc!==undefined;
  const p=done?supUI.p:Math.min(1,supEl()/SUP_BAR_T),age=done?(now-supUI.at)/1000:0,fade=done?Math.max(0,1-Math.max(0,age-0.55)/0.35):1;
- const zx=B.x+B.w*supUI.bar.z0,zw=B.w*SUP_ZONE_W,jx=B.x+B.w*supUI.bar.jc,jr=Math.max(B.h*0.6,B.w*SUP_JACK_W/2),cy=B.y+B.h/2;
+ const zx=B.x+B.w*supUI.bar.z0,zw=B.w*SUP_ZONE_W,jx=B.x+B.w*supUI.bar.jc,jr=B.w*SUP_JACK_W/2,cy=B.y+B.h/2;   // the gold circle is EXACTLY as wide as the window that is judged (it used to be drawn up to a third wider: a marker inside the gold could score a HIT)
  g.save();g.globalAlpha=fade;
  // track
  g.fillStyle='rgba(6,10,18,.82)';g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=2;rr(g,B.x-4,B.y-4,B.w+8,B.h+8,(B.h+8)/2);g.fill();g.stroke();

@@ -24,20 +24,21 @@ const SUPER_MAX=1000,SUPER_LEN=14,FILL_DEALT=1,FILL_TAKEN=0.7,FILL_CRIT=60;   //
 // fast, per second of fire landed, as a stock tank shooting its equal (on main the charge was the share of the TARGET's hull: a
 // strong kit against the Arcade's weaker AI, with bigger team hulls, refilled several times faster: measured 7-8 supers a 3v3
 // round, the AI up to 16); (3) about 3 supers per player per ROUND in every mode (about 2 in a 1v1 Arena round, which lasts about
-// 35 s), and NEVER more than SUP_ROUND_CAP: the sim refuses the 4th press, the count survives a respawn and only a new round
+// 24 s), and NEVER more than SUP_ROUND_CAP: the sim refuses the 4th press, the count survives a respawn and only a new round
 // clears it (live matches: the server's sim; AI matches: the server's proof-of-play check counts the presses per round);
-// (4) the Reactor (+10% a level) and the charge mods multiply the result as before.
+// (4) the Reactor (+10% a level) and the charge mods multiply the result as before. "Own strength" includes the mystery-box
+// buffs a tank holds and its chassis counter against the target, so neither speeds the charge (game.js supDps).
 // What never charges: crates and props, terrain, the storm ring, meteors, your own or a team mate's fire (the rules have none),
 // damage past the target's remaining health (overkill), a super's own damage (its owner), and anything once the cap is reached.
 // No farming by soaking damage: damage received counts for at most ONE full hull per life (repairs and regeneration do not
-// refill that allowance), and it is the smaller source by design.
+// refill that allowance) and fills at most SUP_TAKEN_MAX bars a round across all lives, and it is the smaller source by design.
 // SUP_FILL[mode][team size] = [d, h]: d seconds of the tank's own clean fire fill one bar; h of its own hulls lost fill one bar.
 // The split is the owner's starting point, kept after calibration: in a measured average round about 70% of the charge comes from
-// damage dealt and 30% from damage received. The numbers differ by mode because a round's fighting differs (a 35 s duel, a
+// damage dealt and 30% from damage received. The numbers differ by mode because a round's fighting differs (a 24 s duel, a
 // 180 s Moon Zone with respawns, a megatank with a huge hull): each row is fitted on seeded rounds of that mode so the pilot's
-// uncapped charge is about 3.6 bars a round (1v1 Arena: 2.2), which the cap turns into "about 3, never more".
+// uncapped charge is about 4.4 bars a round (1v1 Arena: 2.7), which the cap turns into "about 3, never more".
 // dev/tests/super-rounds.mjs measures every cell; dev/tests/super-timing.mjs holds the rules.
-const SUP_ROUND_CAP=3;
+const SUP_ROUND_CAP=3,SUP_TAKEN_MAX=2;   // SUP_TAKEN_MAX: damage received fills at most this many bars a round (the third super of a round always needs damage dealt)
 const SUP_FILL={arena:{1:[5,0.8],2:[7,0.5],3:[16,0.6]},zone:{1:[10,0.9],2:[19,0.75],3:[27,0.75]},crystal:{1:[8.5,0.8],2:[11,0.55],3:[17,0.6]},
  bounty:{1:[9.5,1.7],2:[14,1.15],3:[17,1]},royale:{1:[9.5,0.65]},boss:{1:[15,0.5],2:[17,0.5],3:[18,0.6]}};
 const supFillOf=(g,n)=>{const F=SUP_FILL[g]||SUP_FILL.arena;return F[n]||F[1];};

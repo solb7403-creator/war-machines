@@ -119,9 +119,11 @@ const hpScale=()=>isSolo(matchG)?ROYALE_HP:matchG==='boss'?BOSS_HP:MM.n*(matchG=
 // ---- Survival: your team against one megatank. No respawns. Destroy it to win; still alive at the horn is a draw ----
 const BOSS_HP=1.5;                  // your team's tanks: x1.5 health
 // ---- super charge (Session 5E-2b2b; the rules and their reasons are in rules.js above SUP_FILL) ----
-// supDps: a tank's OWN strength: the damage per second its cannon does with clean hits, from its permanent gear only (weapon,
-// cannon levels, damage / fire-rate / luck cores, skin, velocity impact, Targeting). Mystery-box buffs are not gear and are not in it.
-const supDps=u=>Math.max(1,(u.wdps||STAT.dps)*(u.dmgM||1)*(1+gsum(u,'dmg'))*(1+gsum(u,'rof'))*projectileImpactMult(u)*(1+(CRIT_MULT-1)*Math.min(1,CRIT_BASE+(u.critB||0)+gsum(u,'lck'))));
+// supDps: a tank's OWN strength right now: the damage per second its cannon does with clean hits on this target: its gear
+// (weapon, cannon levels, damage / fire-rate / luck cores, skin, velocity impact, Targeting), the mystery-box buffs it holds
+// and its chassis counter against the target (t). So a damage box, a fire-rate box or a counter-pick makes the cannon hit
+// harder but never makes the super come sooner (review finding: with permanent gear only, two boxes charged x2.1).
+const supDps=(u,t)=>Math.max(1,(u.wdps||STAT.dps)*dmgMult(u)*rofMult(u)*projectileImpactMult(u)*(1+(CRIT_MULT-1)*Math.min(1,CRIT_BASE+(u.critB||0)+gsum(u,'lck')+bsum(u,'lck')))*(t?cmult(u,t):1));
 let supF=[10,1];   // this match's [seconds of own fire, own hulls lost] per bar (rules.js SUP_FILL), set in simStart
 // one place adds charge: nothing once the round's cap is reached (the bar stays empty: SUP_ROUND_CAP)
 function supAdd(u,pts,side){if(u.boss||(u.supN||0)>=SUP_ROUND_CAP||!(pts>0))return;u.sp=Math.min(SUPER_MAX,u.sp+pts);}   // side: 0 dealt, 1 received (the measurement tools read it)
@@ -131,9 +133,10 @@ function supAdd(u,pts,side){if(u.boss||(u.supN||0)>=SUP_ROUND_CAP||!(pts>0))retu
 function supCharge(t,src,rem,kind){
  if(!(rem>0)||!src||src===t||src.team===t.team||kind>1)return;
  const fl=flareMult();
- if(!t.boss){const c=Math.min(rem,Math.max(0,t.mhp-(t.tkn||0)));t.tkn=(t.tkn||0)+c;   // received: at most one full hull per life counts
-  supAdd(t,c/t.mhp/supF[1]*SUPER_MAX*(t.fillM||1)*(t.hitChg||1)*fl,1);}
- if(kind===0&&!src.boss)supAdd(src,rem/supDps(src)/supF[0]*SUPER_MAX*(src.fillM||1)*fl,0);
+ if(!t.boss){const c=Math.min(rem,Math.max(0,t.mhp-(t.tkn||0)));t.tkn=(t.tkn||0)+c;   // received: at most one full hull per life counts...
+  const pts=Math.min(c/t.mhp/supF[1]*SUPER_MAX*(t.fillM||1)*(t.hitChg||1)*fl,Math.max(0,SUP_TAKEN_MAX*SUPER_MAX-(t.rcv||0)));t.rcv=(t.rcv||0)+pts;   // ...and at most SUP_TAKEN_MAX bars a round, whatever the lives (dying on purpose cannot earn the round's three supers)
+  supAdd(t,pts,1);}
+ if(kind===0&&!src.boss)supAdd(src,rem/supDps(src,t)/supF[0]*SUPER_MAX*(src.fillM||1)*fl,0);
 }
 const BOSS_SECS=110,BOSS_TEAM=1.0;   // megatank health: your cannon's damage per second x this many seconds, +100% per extra tank on your side
 const BOSS_KILL=100,BOSS_TEAM_DPS=0.5;   // its cannon alone wrecks a lone tank in about this many seconds of hits (+50% firepower per extra tank on your side)
@@ -289,7 +292,7 @@ function simStart(){
  evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=EVT_KEYS[(random()*EVT_KEYS.length)|0];
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  supF=supFillOf(matchG,MM.n);
- units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
+ units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
   u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
@@ -1182,7 +1185,7 @@ function startRound(){
 function simRound(){
  setMap(curMap);   // fresh crates
  bullets=[];boxes=[];pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];warns=[];feed=[];shakeT=0;shakeM=0;sidx=0;sched=boxSchedule();timeLeft=ROUND_T;elapsed=0;ffwd=false;
- for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.supN=0;u.tkn=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
+ for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
   u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
  state='play';
