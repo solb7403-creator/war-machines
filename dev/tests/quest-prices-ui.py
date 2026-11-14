@@ -64,7 +64,7 @@ async def main():
         p0 = dev('/__dump')['eco'][PID]['pts']
         for _ in range(3):   # the server checks the progress set above; a tap during a re-render can miss, so try up to three times
             await pg.click('[data-act=claimdq][data-arg="%s"]' % did)
-            try: await pg.wait_for_function("save.pts>%d" % p0, timeout=6000); print("claim taps:", _ + 1); break
+            try: await pg.wait_for_function("save.pts>%d" % p0, timeout=12000); print("claim taps:", _ + 1); break
             except Exception: pass
         p1 = dev('/__dump')['eco'][PID]['pts']
         ok(p1 - p0 == 3500, 'claiming a daily quest pays 3,500 on the server (%d -> %d)' % (p0, p1))

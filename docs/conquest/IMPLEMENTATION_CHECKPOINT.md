@@ -4154,3 +4154,35 @@ A Base III Conquest pilot kits a chassis about 8 days sooner than the Arcade pil
 results overhead and no losses (par minutes assume completed operations), and the base adds 15% plus the yield. Caveat: the
 Conquest-only pilot could not finish Arcade dailies (they count Arcade matches), so a real Conquest pilot also plays a few Arcade
 matches; the model gives both runs the same four dailies.
+
+### Independent reviews, round 1 (two read-only agents that did not build; given the branch, head `fcf87a9`, the brief and this checkpoint)
+| Owner rule | Economy / security | Gameplay / UI | After round 1 |
+|---|---|---|---|
+| 1 Quests: 3,500 a daily, 12,500 a weekly; all-4 1,000 and chest 5,000 unchanged; streak, pass XP, cap unchanged | **PASS** (probe on the server's rules: 3,500 / 1,000 / 12,500 / 5,000; streak +5% -> 3,675 / 13,125 / 5,250, +30% -> 4,550 / 16,250 / 6,500; pass XP 50 / 100 / 150, `DAILY_CAP` 50,000 and `QB_*` equal to main; quests stay outside the cap) | **PASS** (cards +3,500 x4, +12,500 x5, +1,000, chest 5,000; a claim paid 3,500 on the server) | |
+| 2 Core prices 120 / 175 a Star; money, crates, free caches unchanged | **PASS** (`ecoPrice` main vs head, 270 cases, 0 differences; grant money counts, refunds and the Stars invoice path unchanged; `RPTS` 20,000 / 80,000) | **PASS** on screen (30K / 60K / 180K; 43,750 / 87,500 / 262,500; Stars 250 / 500 / 1,500 and 375 / 750 / 2,250) | |
+| 3 12-week model, before/after table | **PASS** (re-run: 83 days (77-97), 249; on main's rules 52 (49-56), 158; JSON identical) | | |
+| 4 Conquest run, report only | **PASS with caveats** (method equals `creditConquest`; the rate is modeled; the run counts Arcade dailies) | | caveats stated above (already in the Conquest section) |
+| 5 Every shown number and its tests; "Max" tile | | **PASS** (no old number left in js/, web/, index.html, wiki, admin, terms, worker; Max works on both tabs) | |
+| 6 Captures, phone and desktop | | **PARTIAL FAIL**: the four wiki captures were taken mid smooth-scroll (one blank) | **fixed** (`dbc6c66` + re-capture): smooth scroll off in the test, the prices paragraph checked on screen; 35 captures in `docs/quest-prices-38/` |
+
+Findings and what round 1 did:
+1. **(Economy, major; owner decision, NOT changed: the brief says everything else stays.) Quest points also feed the referral 5%
+   and the airdrop score, outside the daily cap** (`ecoClaimDaily` / `ecoClaimWeekly` pay through `ecoAward(..., free)`;
+   `ecoRefTrack` counts them in the referrer's base; `credit()` moves them into `S.ac`). One account doing the four dailies at
+   +30% now earns 19,500 a day (was 3,900); a referrer's 5% per recruit rises from 195 to 975 a day, so about 3 farmed alt accounts
+   reach the 2,000-a-day 5% cap (was about 11). Quests are 74% of a daily pilot's points, so the airdrop pool mostly rewards
+   finishing dailies, which suits multi-account farms. **Owner decision needed:** keep, or count quest points at a lower weight
+   (or not at all) for the referral 5% and the airdrop score. No live players yet, so nothing is exposed today.
+2. (Economy, minor) The model completes all four dailies every day; at 20 minutes (about 9.3 matches) some Hard dailies ("Win 6",
+   "Win 3 in a row") often can't be finished, so 83 days is a best case unless "plus the daily quests" means extra time. Stated.
+3. (Economy, minor) The Conquest run counts Arcade dailies for a Conquest-only pilot; stated in the Conquest section.
+4. (Economy, minor) The build was not bumped on the branch: a cached phone would show the old prices while the server charges the
+   new. **Done at release** (`dev/bump.sh`), below.
+5. (Economy, minor) The six legacy weekly ids (`WQ_OLD`) now pay 12,500 too; unreachable (`S.wk` is rebuilt every week). Kept.
+6. (UI, minor) Fixed: the all-4 and chest rows are now captured on phones (`*_quests_bonus`, `*_quests_chest`); the points
+   chosen-core sheet now says "Costs about 1.46x the points of a random gem cache of the same size" (the 175 / 120 a Star wording
+   had no unit there); the Points shop header says "from 43,750 points"; the Odds help line "about 1.46x in points"; the test now
+   taps the Points shop's Max tile too.
+7. (UI, minor; not changed) "Use 180,000 points (you have 12,345,678)" fills a 320 px button at 8-digit balances (no overflow).
+8. (UI, pre-existing on main, not changed) The wiki scrolls sideways on phones (two wide tables); outside this brief.
+No round 2: no blocker; every fix is covered by a test and re-captured in the same run.
