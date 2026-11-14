@@ -60,9 +60,9 @@ async def main():
    assert await pg.locator('#gs-up.new .newchip').count()==1 and await pg.locator('#gs-fit.new').count()==1
    assert await pg.locator('.tab[data-arg="garage"].alert').count()==1,'Garage tab badge'
    await pg.screenshot(path=OUT+'/tg-unlocked.png')
-   # 6. Upgrades (shared by both bays): compare, then buy
+   # 6. Upgrades (each chassis its own build, 5E-2b3): compare, then buy
    await pg.locator('#gs-up .gsec-h').click();await pg.wait_for_timeout(150)
-   assert 'Shared by both bays' in await pg.locator('#gs-up').inner_text()
+   assert 'Each chassis has its own build' in await pg.locator('#gs-up').inner_text()
    assert await pg.locator('#gs-cores .gsec-b').count()==0,'phones: one section open at a time'
    await pg.locator('[data-act="gupc"][data-arg="hull"]').click();assert 'Toughness' in await pg.locator('#gs-up .gcmp').inner_text()
    await pg.locator('#gs-up .gcmp [data-act="up"]').click();await pg.wait_for_timeout(500)
