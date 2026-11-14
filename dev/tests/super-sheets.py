@@ -7,7 +7,9 @@ For each device (phone 390x844 at 3x, desktop 1920x1080), under the chase camera
   sequence-<view>.webp                    every super's jackpot: charge, bar stopped, blast, +0.2 s, +0.5 s, aftermath
   all-supers-<view>-<tag>.webp            with --overview only (and nothing else): all ten supers (rows) x miss / normal / jackpot,
                                           one sheet: for a LOW (--tag low) or Reduce Motion (--tag high-reduced) capture
-usage: python3 dev/tests/super-sheets.py <capture dir> <out dir> [--tag high] [--boxes <report.json of another capture>] [--overview]
+usage: python3 dev/tests/super-sheets.py <capture dir> <out dir> [--tag high] [--boxes <report.json of another capture>] [--overview] [--patch]
+  --patch: the capture holds only some supers (--only): each sheet already in <out dir> keeps every tile the capture has no
+           frame for and gets the others redrawn (a sheet with no new tile is left untouched)
 """
 import json, os, sys, pathlib
 from PIL import Image, ImageDraw, ImageFont
@@ -17,23 +19,28 @@ REP=json.load(open(SRC/'report.json'))
 BOX=json.load(open(sys.argv[sys.argv.index('--boxes')+1])) if '--boxes' in sys.argv else REP   # crops from another capture of the same scenes (a capture made before the tool saved them)
 NAMES={'pulse0':'Pierce Lance (common)','pulse1':'Arc Lance (rare)','pulse2':'Sunlance (epic)','twin0':'Static Nova (common)','twin1':'Storm Nova (rare)','twin2':'Helix Nova (epic)',
  'siege0':'Siege Blast (common)','siege1':'Rail Blast (rare)','siege2':'Titanfall (epic)','moon':'Moonfall (legendary)'}
-OC=['miss','normal','jackpot'];BG=(8,10,16);FG=(223,231,242)
+OC=['miss','normal','jackpot'];BG=(8,10,16);FG=(223,231,242);PATCH='--patch' in sys.argv
 try:FONT=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',18)
 except Exception:FONT=ImageFont.load_default()
 def tile(view,key,oc,label,tw,th):
     d=SRC/(view+'-'+TAG);f=d/f'{key}-{OC[oc]}-{label}.png'
-    if not f.exists():return Image.new('RGB',(tw,th),BG)
+    if not f.exists():return None if PATCH else Image.new('RGB',(tw,th),BG)
     im=Image.open(f).convert('RGB').crop(tuple(BOX[view+'-'+TAG]['supers'][key+'-'+OC[oc]]['box']))
     im.thumbnail((tw,th),Image.LANCZOS);c=Image.new('RGB',(tw,th),BG);c.paste(im,((tw-im.width)//2,(th-im.height)//2));return c
 def grid(cells,tw,th,path,head=None):
     # cells: rows of (image, caption)
     lab=26;rows=len(cells);cols=max(len(r) for r in cells);hh=30 if head else 0
-    sh=Image.new('RGB',(cols*tw,rows*(th+lab)+hh),BG);d=ImageDraw.Draw(sh)
-    if head:d.text((8,5),head,fill=(255,207,74),font=FONT)
+    size=(cols*tw,rows*(th+lab)+hh);old=PATCH and pathlib.Path(path).exists()
+    if PATCH and not any(im is not None for row in cells for im,_ in row):return
+    sh=Image.open(path).convert('RGB') if old else Image.new('RGB',size,BG);d=ImageDraw.Draw(sh)
+    assert sh.size==size,f'{path}: the sheet to patch is {sh.size}, this layout is {size}'
+    if head and not old:d.text((8,5),head,fill=(255,207,74),font=FONT)
     for r,row in enumerate(cells):
         for c,(im,cap) in enumerate(row):
-            sh.paste(im,(c*tw,hh+r*(th+lab)+lab));d.text((c*tw+8,hh+r*(th+lab)+3),cap,fill=FG,font=FONT)
-    sh.save(path,quality=86);print(path,sh.size)
+            if im is None:continue
+            sh.paste(im,(c*tw,hh+r*(th+lab)+lab))
+            if not old:d.text((c*tw+8,hh+r*(th+lab)+3),cap,fill=FG,font=FONT)
+    sh.save(path,quality=86);print(path,sh.size,'patched' if old else '')
 for view in ('phone','desktop'):
     if not (SRC/(view+'-'+TAG)).exists():continue
     if '--overview' in sys.argv:
