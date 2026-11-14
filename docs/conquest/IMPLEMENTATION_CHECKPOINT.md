@@ -3697,7 +3697,7 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
   the merge commit(s) on main (Pages and the Worker deploy follow; reverting `c55d425` takes `PVP_V` back to 5, so phones
   are asked to reload once more).
 
-## Checkpoint 37 — Session 5E-2b3: weapon sounds + per-chassis cores and upgrades (branch `claude/weapon-sounds-chassis-cores-6uzr5z`, from main `a63f1b2`) — IN PROGRESS
+## Checkpoint 37 — Session 5E-2b3: weapon sounds + per-chassis cores and upgrades (branch `claude/weapon-sounds-chassis-cores-6uzr5z`, from main `a63f1b2`) — RELEASED (PR #130, merge `10b6a6a`, build `20261114164815`)
 
 Brief: the owner's session prompt of Nov 14, 2026 (Opus 5.5; the lead is creative director and records every change with its
 evidence here; no questions to the owner; release pre-approved: PR, merge on green checks, deploy, release record). Part A:
@@ -4035,5 +4035,29 @@ Findings and what round 1 did (`fb9c664`, plus the range sound and test commits 
    mismatch ("too strong for this room").
 6. Your account: the same build and cores on Scout, Vanguard and Titan.
 
-### Resume next (if this session's context runs out)
-1. Release (pre-approved): `dev/bump.sh`, PR, CI green, merge, deploy runs, release record here, ROADMAP row to Shipped.
+### Release record (Nov 14, 2026)
+- **RELEASED: PR [#130](https://github.com/solb7403-creator/war-machines/pull/130) squash-merged as `10b6a6a` (head `96c9138`),
+  build `20261114164815`, `PVP_V` 7.** Payments stay disabled; no new payment plumbing. Merged on green checks under the owner's
+  pre-approval in the session brief.
+- CI on `96c9138`: 10/10 green: transmission chromium + webkit and conquest (run [43619759630](https://github.com/solb7403-creator/war-machines/actions/runs/43619759630)), balance (run
+  [43619759623](https://github.com/solb7403-creator/war-machines/actions/runs/43619759623)), website and signup x3 (run [43619759640](https://github.com/solb7403-creator/war-machines/actions/runs/43619759640)), verify (run [43619759698](https://github.com/solb7403-creator/war-machines/actions/runs/43619759698)), asset-integrity (run
+  [43619759618](https://github.com/solb7403-creator/war-machines/actions/runs/43619759618)). No review threads; main had not moved.
+- One CI failure before that head (`1799c24`): transmission (chromium), run [43617652786](https://github.com/solb7403-creator/war-machines/actions/runs/43617652786): `conquest-session-032.py` at
+  393x852 tapped `#cq-mission-access` while it was still 0x0. Cause: the test's fixture ends on a fixed 250 ms wait and a slow
+  runner outran it (the same step passed at 390 just before; locally all four sizes passed). Fixed in `96c9138`: the test waits
+  for the button to be drawn; the tap's own checks (on screen, not covered) are unchanged. No test skipped or relaxed.
+- Worker deploy run [43622447250](https://github.com/solb7403-creator/war-machines/actions/runs/43622447250): success (server tests and the Workers-runtime live-match smoke passed before the
+  deploy); notices `pvp health: {"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}` and
+  `live version: {"v":"20261114164815"} (repo: {"v":"20261114164815"})`, live = repo.
+- Pages run [43622446824](https://github.com/solb7403-creator/war-machines/actions/runs/43622446824): success (deployment of `10b6a6a`).
+- Post-merge runs on main `10b6a6a`: Validate Laboratory UI (run [43622447201](https://github.com/solb7403-creator/war-machines/actions/runs/43622447201)): success. Equipment Balance (run
+  [43622447259](https://github.com/solb7403-creator/war-machines/actions/runs/43622447259)): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
+- The Graphify review bot posted that its reviews are paused for the workspace (no use in 7 days); informational, not a check.
+- Branch note: the branch could not be restarted from main (a force push is blocked here), so main was merged into it
+  (`e1c845b`, no content difference); this record is the only change on top.
+- **Roll back with care:** on its first read after the release the server moves each record's one build and cores into the
+  per-chassis tables and deletes the old fields. A plain revert of `10b6a6a` would leave the old code reading fields that are
+  gone (every pilot's build and cores would look reset; the data stays in `upc` / `glc` / `gsc`). Fix forward instead, or
+  add a reverse migration first (the home chassis's tables back to `up` / `gemLvl` / `gemShards`). Reverting also takes
+  `PVP_V` back to 6 (phones asked to reload once more).
+- Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check.
