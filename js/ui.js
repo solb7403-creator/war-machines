@@ -1042,7 +1042,42 @@ function ownerGemHtml(){
  return '<h3 style="margin-top:4px;font-size:16px">Owner test tools</h3>'+
   '<div class="seg" style="grid-template-columns:1fr 1fr 1fr;margin-top:8px">'+[1,5,10].map(k=>'<button class="'+(ownerGemN===k?'on':'')+'" data-act="ownergemn" data-arg="'+k+'">'+k+'</button>').join('')+'</div>'+
   '<button class="btn sm btn-go block" style="margin-top:8px" data-act="ownergem"'+(ownerGemBusy?' disabled':'')+'>Open Epic gem cache (owner)'+(ownerGemN>1?' ×'+ownerGemN:'')+'</button>'+
-  '<p class="dimtxt" style="margin-top:6px">Free, real rolls on your own account only. No points, no purchases counted.</p>';
+  '<p class="dimtxt" style="margin-top:6px">Free, real rolls on your own account only. No points, no purchases counted.</p>'+sndLabBtn();
+}
+// ---------- owner sound test (Session 5E-2b3): every weapon shot and every Arcade super at miss / hit / jackpot, one tap each.
+// Owner only: the button shows for the owner's account (isOwnerUI) and the page opens once the server's isOwner check (worker/src/
+// owner.js ownerCheck) says yes, in Telegram and on the website alike. Only a local test page with no account opens it straight away.
+// It plays through the game's own sound engine (LW).
+let sndLabOk=false,sndLabT=[];
+const sndLabBtn=()=>!ACCOUNT_OK||isOwnerUI()?'<button class="btn sm btn-quiet block" style="margin-top:8px" data-act="sndlab">Sound test: every weapon and super</button>':'';
+const sndName=k=>k==='moon'?'Moonbeam':(WNAMES[LW.archOf(k)]||WNAMES.pulse)[LW.tierOf(k)];
+const sndRar=k=>k==='moon'?'<span class="rar leg">Legendary</span>':'<span class="rar" style="background:'+RCOL[LW.tierOf(k)]+'">'+TIER_N[LW.tierOf(k)]+'</span>';
+function openSoundLab(){
+ if(!ACCOUNT_OK){sndLabSheet();return;}   // a local test page: no account, nothing to protect
+ if(!isOwnerUI())return;
+ if(sndLabOk){sndLabSheet();return;}
+ api(IN_TG?'/api/admin':'/api/owner',{a:'owner_check'}).then(r=>{if(r&&r.ok){sndLabOk=true;sndLabSheet();}else showToast('Owner only');}).catch(()=>showToast('Owner only'));
+}
+function sndLabSheet(){
+ sheet('sndlab',()=>{
+  const shots=LW.KEYS.map(k=>'<div class="snd-row"><div class="snd-n"><b>'+esc(sndName(k))+'</b>'+sndRar(k)+'</div><div class="snd-b c2"><button class="btn sm btn-quiet" data-act="sndshot" data-arg="'+k+'" aria-label="'+esc(sndName(k))+': one shot">Shot</button><button class="btn sm btn-quiet" data-act="sndburst" data-arg="'+k+'" aria-label="'+esc(sndName(k))+': 8 rounds at its fire rate">Burst</button></div></div>').join('');
+  const sups=LW.KEYS.map(k=>'<div class="snd-row"><div class="snd-n"><b>'+esc(SUP_NAMES[k])+'</b><small>'+esc(sndName(k))+' '+sndRar(k)+'</small></div><div class="snd-b c3">'+[[0,'Miss'],[1,'Hit'],[2,'Jackpot']].map(([oc,n])=>'<button class="btn sm '+(oc===2?'btn-gold':'btn-quiet')+'" data-act="sndsup" data-arg="'+k+':'+oc+'" aria-label="'+esc(SUP_NAMES[k])+': '+n+'">'+n+'</button>').join('')+'</div></div>').join('');
+  return '<h3>Sound test</h3><p class="mut">Owner only. Every weapon and every Arcade super, made live in code. Tap to play. A super plays as in a match: the charge from the press, the verdict at the tap, the fire and the impact.</p>'+
+   (save.sound===false?'<div class="sndwarn"><span>Sound is off in Settings.</span><button class="btn sm btn-go" data-act="sound">Turn on</button></div>':'<p class="dimtxt">On iPhone the silent switch mutes game sound.</p>')+
+   '<h4 class="vsec">Weapon shots</h4><p class="dimtxt">Burst: 8 rounds at the weapon\'s real fire rate.</p><div class="sndlab">'+shots+'</div>'+
+   '<h4 class="vsec">Supers (Arcade)</h4><div class="sndlab">'+sups+'</div>'+
+   '<button class="btn btn-quiet block" style="margin-top:14px" data-act="sndstop">Stop</button>';
+ });
+}
+function sndLabClear(){for(const t of sndLabT)clearTimeout(t);sndLabT=[];}
+function sndLabGo(f){sndLabClear();audioResume();if(!AC)return;if(AC.state==='running')f();else AC.resume().then(f).catch(()=>{});}   // the first tap may still be waking the audio
+function sndLabShot(k,n){const dt=(WEAPONS[LW.archOf(k)]||WEAPONS.pulse).shot;sndLabGo(()=>{for(let i=0;i<n;i++)sndLabT.push(setTimeout(()=>LW.shot(k,true),i*dt*1000));});}
+function sndLabSuper(k,oc){
+ const T=LW.timeline(k,oc),at=(s,f)=>sndLabT.push(setTimeout(f,s*1000)),a=LW.archOf(k);
+ sndLabGo(()=>{LW.stopAll();haptic('i','rigid');LW.charge(k,'lab',true);
+  at(T.lock,()=>{LW.lock(k,oc,true);if(oc===2){haptic('n','success');haptic('i','heavy');}else haptic('i',oc===1?'medium':'soft');});
+  at(T.fire,()=>LW.fire(k,oc,'lab',true));
+  at(T.impact,()=>{haptic('i','heavy');LW.impact(k,oc,a==='siege'?2:a==='twin'?0:1,0,0,0,true);});});
 }
 function ownerGemOpen(){
  if(!isOwnerUI()||ownerGemBusy)return;
@@ -1058,7 +1093,7 @@ function openAdmin(){
  loadAdmin();
  sheet('admin',()=>{
   const A=adminData||{loading:true},R=A.revenue||{},pw=calcPower();
-  return '<h3>Admin</h3>'+ownerGemHtml()+
+  return '<h3>Admin</h3>'+(ownerGemHtml()||sndLabBtn())+
    (A.loading?'<p class="mut">Loading server stats…</p>':A.error?'<p class="mut">Server stats: '+esc(A.error)+'</p>':
    '<div class="kv"><div><b class="num">'+fmtNum(A.players)+'</b><span>Players</span></div><div><b class="num">'+fmtNum(A.activeToday)+'</b><span>Active today</span></div><div><b class="num">$'+fmtNum(R.USD)+'</b><span>Revenue</span></div></div>'+
    '<p class="mut" style="margin-top:8px">'+fmtNum(R.STARS||0)+' Stars, '+(R.TON||0)+' TON, '+(R.SOL||0)+' SOL from '+fmtNum(R.count||0)+' payments'+(R.unverified?'. '+R.unverified+' need checking':'')+'</p>'+
@@ -1415,7 +1450,7 @@ const ACT={
  wiki:()=>openLink(WIKI_URL),
  lpwallet:()=>openLink('https://solscan.io/account/'+LP_WALLET),
  haptics:()=>{save.haptics=!save.haptics;store();if(save.haptics)fx('tap');},
- sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}},
+ sound:()=>{save.sound=save.sound===false;store();if(save.sound){audioResume();setTimeout(()=>fx('tap'),60);}else{sndLabClear();LW.stopAll();}const ov=findOv('sndlab');if(ov&&ov.re)ov.re();},
  remind:()=>setReminders(!save.remind),
  remindyes:()=>{const ov=findOv('remind');if(ov)closeOverlay(ov);setReminders(true);},
  remindno:()=>{save.remindAsked=true;store();const ov=findOv('remind');if(ov)closeOverlay(ov);},
@@ -1432,6 +1467,7 @@ const ACT={
   store();showToast('Granted on this device (test)');},
  ownergemn:a=>{ownerGemN=[1,5,10].includes(+a)?+a:1;uiDirty('admin');},
  ownergem:()=>ownerGemOpen(),
+ sndlab:()=>openSoundLab(),sndshot:k=>sndLabShot(k,1),sndburst:k=>sndLabShot(k,8),sndsup:a=>{const [k,oc]=a.split(':');sndLabSuper(k,+oc);},sndstop:()=>{sndLabClear();LW.stopAll();},
  flagclear:a=>{loadAdmin({clear:a});showToast('Cleared: '+a+' counts for the snapshot again');},
  clclear:a=>{loadAdmin({clearCl:a});showToast('Cleared: every account in that group counts again');},
  adminproof:a=>{loadAdmin({proof:a});showToast(a==='flag'?'Match records: flag only':'Match records: enforced');},

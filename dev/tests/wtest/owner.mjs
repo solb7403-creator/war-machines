@@ -148,5 +148,15 @@ db.root.lunarAccounts[OWNER_PID].telegramId = 999;
 // an unknown action on /api/owner
 [s] = await web('/api/owner', mine, { a: 'grant_everything' }); t(s === 400, 'unknown owner action: 400');
 
+// the owner-only sound test page (Session 5E-2b3): the server only confirms the owner; nothing on the record changes
+{ const f3 = JSON.stringify(E()), CHK = { a: 'owner_check' };
+  let [st, r] = await tg('/api/admin', J, CHK); t(st === 200 && r.ok === true, 'owner Telegram: sound test check ok via /api/admin ' + st);
+  [st, r] = await tg('/api/owner', J, CHK); t(st === 200 && r.ok === true, 'owner Telegram: sound test check ok via /api/owner ' + st);
+  [st, r] = await web('/api/owner', mine, CHK); t(st === 200 && r.ok === true, 'owner website session: sound test check ok ' + st);
+  [st] = await tg('/api/admin', { id: 111, username: 'alice' }, CHK); t(st === 403, 'non-owner Telegram user: sound test check 403');
+  [st] = await tg('/api/owner', { id: 111, username: 'alice' }, CHK); t(st === 403, 'non-owner Telegram user: sound test check 403 (/api/owner)');
+  [st] = await web('/api/owner', other, CHK); t(st === 403, 'another website account: sound test check 403');
+  t(JSON.stringify(E()) === f3, 'the sound test check changes nothing on the record'); }
+
 console.log(`passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

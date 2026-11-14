@@ -625,12 +625,12 @@ function supShow(oc,p){
  if(!supUI)return;
  const first=supUI.oc===undefined;if(!first&&supUI.oc===oc)return;
  supUI.oc=oc;supUI.at=performance.now();if(p!==undefined)supUI.p=p;else if(supUI.p===undefined)supUI.p=Math.min(1,supEl()/SUP_BAR_T);
- if(typeof fx==='function')fx(oc===2?'jackpot':oc===1?'supgood':'supmiss');
+ if(typeof fx==='function')fx('suplock',{u:me,oc,k:supUI.k});   // the verdict in your super's own voice (fx.js LW.lock); Conquest keeps its own chime
 }
 function supUiTick(){   // drop the bar when its super is over (or never started: the server refused the press)
  if(!supUI)return;
  const now=performance.now();
- if(!me||me.hp<=0||state!=='play'){supUI=null;return;}
+ if(!me||me.hp<=0||state!=='play'){if(typeof fx==='function'&&me)fx('supstop',me.id);supUI=null;return;}
  if(supUI.oc!==undefined){if(now-supUI.at>900)supUI=null;return;}
  if(!supUI.live){if(!me.sup)supUI=null;return;}   // AI match: the sim on this phone ends the bar itself (its 'Z' event)
  if(!me.sup&&now-supUI.t0>(SUP_BAR_T+SUP_REL)*1000){supUI=null;return;}   // the server never started it (a slow link still gets the whole sweep to tap in)

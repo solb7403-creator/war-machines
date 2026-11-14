@@ -261,14 +261,14 @@ function onSimEv(a){
   case 'h':{const t=U(a[1]),amt=a[2],kind=a[3],cr=!!a[4],dir=!!a[5],s=U(a[6]);if(!t)return;
    t.flash=0.08;
    if(t===me&&amt>0){me.hurtT=0.3;sndF('hit',amt);}
-   if(!kind){if(s===me)sndF('dealt',cr);
+   if(!kind){if(s===me)sndF('dealt',{cr,k:supKey(s.wtype,s.wtier)});   // your hit: your weapon's own confirmation (fx.js LW.hit)
     dmgNum({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:cr?1.6:dir?1:0.75,g:!dir,txt:'',c:cr?'#ffd24a':tcol(s?s.team:1)},t,amt,cr);
     if(live&&a[7])pvpBulletHit(a[7]);}
    else{const K=HIT_TXT[kind],jk=kind===1&&s&&s.supOc===2;nums.push({x:t.x,y:t.y-R,t:jk?1.2:K.t,z:jk?2.6:K.z,txt:(jk?'JACKPOT':K.txt)+' '+Math.round(amt),c:jk?'#ffcf4a':K.c});}
    return;}
   case 'k':{const r=U(a[1]),s=U(a[2]),why=a[3];if(!r)return;
    feedPush(s?(s===me?'You':s.name)+' destroyed '+(r===me?'you':r.name):(r===me?'You':r.name)+(why==='storm'?' got caught in the storm':' got hit by a meteor'),s?tcol(s.team):why==='storm'?'#c79bff':'#ff8a3d');
-   sndF(r===me?'die':s===me?'kill':'boom');
+   sndF(r===me?'die':s===me?'kill':'boom');sndF('supstop',r.id);   // a tank destroyed mid-charge: its super's charge stops
    if(!d3){blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});blasts.push({x:r.x,y:r.y,r:1.4,t:0.4,t0:0.4,c:'#ffd24a'});}shake(10,0.5);   // in 3D the break-up and its explosion are FX3D's (two batches instead of four meshes)
    nums.push({x:r.x,y:r.y-R,t:1.1,z:1.4,txt:r===me?'YOU ARE DOWN':'DESTROYED',c:r===me?'#ff6b6b':'#ffd24a'});
    return;}
@@ -277,16 +277,17 @@ function onSimEv(a){
   // supers: the 3D view draws each of the ten supers itself (render3d.js ev3D -> FX3D); these lists are the 2D fallback.
   // The colour is the super's own (FX3D palette), the size follows the timing-bar outcome (a[..] oc: 0 miss, 1 hit, 2 jackpot)
   case 'B':if(a[6]&&d3)return;blasts.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4],c:a[5]});return;
-  case 'M':if(d3)return;beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:supCol(a[7],tcol(a[5])),w:a[6]*[0.7,1,1.3][a[8]===undefined?1:a[8]],k:a[7],oc:a[8]});return;
-  case 'V':if(d3)return;novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:supCol(a[5],tcol(a[4]))});return;
+  case 'M':sndF('supfire',{u:U(a[9]),k:a[7],oc:a[8],x:a[1],y:a[2]});if(d3)return;beams.push({ax:a[1],ay:a[2],bx:a[3],by:a[4],t:0.3,c:supCol(a[7],tcol(a[5])),w:a[6]*[0.7,1,1.3][a[8]===undefined?1:a[8]],k:a[7],oc:a[8]});return;
+  case 'V':sndF('supfire',{u:U(a[7]),k:a[5],oc:a[6],x:a[1],y:a[2]});if(d3)return;novas.push({x:a[1],y:a[2],r:a[3],t:0.45,t0:0.45,c:supCol(a[5],tcol(a[4]))});return;
   case 'I':{const C=IMPACT[a[3]]||IMPACT.pulse,x=a[1],y=a[2],oc=a[6]===undefined?1:a[6],sz=[0.7,1,1.3][oc];   // a super landing: an explosion, a shake and the impact sound
    if(!d3){blasts.push({x,y,r:C.r*sz,t:0.55,t0:0.55,c:supCol(a[5],C.c)});blasts.push({x,y,r:C.r*0.55*sz,t:0.35,t0:0.35,c:C.c2});
     if(typeof GraphicsMotion==='undefined'||!GraphicsMotion.reduced())shake((a[4]===(me?me.team:0)?7:10)*sz,0.4);}
-   sndF('impact',a[3]);return;}
+   sndF('supimpact',{k:a[5]||supKey(a[3],0),oc:a[6],kind:a[7],x,y,team:a[4]});return;}   // one sound per super landing (fx.js LW.impact)
+  case 'L':{const r=U(a[1]);if(r)sndF('supfire',{u:r,k:a[2],oc:a[3]});return;}   // a Siege Blast / Rail Blast / Titanfall shell leaves the barrel
   case 'S':shake(a[1],a[2]);return;
   case 'Z':{const r=U(a[1]);if(!r)return;r.supOc=a[2];   // a timing bar was stopped: 0 miss, 1 hit, 2 jackpot (the hit numbers and the 3D effects read it)
    if(r===me){if(typeof supShow==='function')supShow(a[2]);}
-   else if(a[2]===2){nums.push({x:r.x,y:r.y-1.9,t:1.0,z:1.5,txt:'JACKPOT!',c:'#ffcf4a'});sndF('warn');}
+   else{if(a[2]===2)nums.push({x:r.x,y:r.y-1.9,t:1.0,z:1.5,txt:'JACKPOT!',c:'#ffcf4a'});sndF('suplock',{u:r,oc:a[2],k:a[3]});}   // someone else's jackpot is a warning you can hear (fx.js plays others' jackpots only)
    return;}
   case 'z':if(a[1]==='cap'){if(a[2]===0){pop(a[3],a[4],'ZONE CAPTURED!',TC[0]);sndF('cap');}else pop(a[3],a[4],'ENEMY TOOK THE ZONE',TC[1]);}
    else pop(a[3],a[4],a[2]===0?'ZONE LOST':'ZONE NEUTRAL',a[2]===0?'#ff9d9d':'#c9d6e3');
@@ -299,7 +300,7 @@ function onSimEv(a){
    feedPush(u.name+(a[2]==='drop'?' lost connection. AI is driving':a[2]==='back'?' is back':a[2]==='leftvs'?' left. An AI pilot took the seat':' left. An AI pilot took over'),'#c9d6e3');
    if(a[2]==='left'||a[2]==='leftvs')u.ai=true;return;}
   case 'T':{const s=U(a[1]);if(s)feedPush((s===me?'You have':s.name+' has')+' the top bounty: 7 stars','#ffcf4a');return;}
-  case 'u':{const r=U(a[1]);if(r===me&&live)return;sndF(r===me?'super':'warn');return;}   // live: your own super already played when you pressed it
+  case 'u':{const r=U(a[1]);if(!r||(r===me&&live))return;sndF('supcharge',{u:r,k:r.sup&&r.sup.k||supKey(r.wtype,r.wtier)});return;}   // a super starts charging: yours loud, anyone else's a warning by distance (live: yours already started at the press)
   case 'g':{const u=U(a[1]),B=BUFF[a[2]];if(B)pop(a[3],a[4],B.txt,B.c);if(u===me)sndF('box');return;}
   case 'r':{const u=U(a[1]);if(u)pop(u.x,u.y-1,u===me?'BACK IN THE FIGHT':'RESPAWNED',tcol(u.team));return;}
   case 'C':if(U(a[1])===me)sndF('crystal');return;

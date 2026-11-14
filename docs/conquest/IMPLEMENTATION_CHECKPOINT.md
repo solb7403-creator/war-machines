@@ -3696,3 +3696,137 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. Roll back: revert
   the merge commit(s) on main (Pages and the Worker deploy follow; reverting `c55d425` takes `PVP_V` back to 5, so phones
   are asked to reload once more).
+
+## Checkpoint 37 — Session 5E-2b3: weapon sounds + per-chassis cores and upgrades (branch `claude/weapon-sounds-chassis-cores-6uzr5z`, from main `a63f1b2`) — IN PROGRESS
+
+Brief: the owner's session prompt of Nov 14, 2026 (Opus 5.5; the lead is creative director and records every change with its
+evidence here; no questions to the owner; release pre-approved: PR, merge on green checks, deploy, release record). Part A:
+every weapon's shot and every Arcade super's charge, fire and impact get their own synthesized sound (rarity ladder, the timing
+result's three levels, an owner-only sound test page, a balanced mix, iPhone audio unlock). Part B: each chassis class (Scout,
+Vanguard, Titan) gets its own complete upgrade build and its own complete set of cores, everywhere cores and upgrades are used;
+points purchases of every gem cache at one points-per-Star rate, a Points shop, a direct core buy, pricing modelled on 8 weeks
+per chassis for a free daily player; the owner's account keeps its setup on all three chassis. Not touched: Conquest supers
+(sound and look), payments (still disabled; no new payment plumbing), every economy number other than the ones the brief names.
+
+### Research (one research agent, web search; page fetches were blocked by the network allowlist, so the findings rest on search-result summaries)
+1. **Rarity adds layers, the line keeps its identity.** Valorant gates audio by skin tier (base shot for the low tiers, custom
+   fire audio at Premium, the fullest set at Exclusive / Ultra); Bungie gives each Exotic its own "sonic signature"; Borderlands 3
+   builds each shot from modules tied to the gun's parts; Warframe's remaster added a mechanical layer and reworked the tails.
+   => each line here is a set of modules (transient, body, mechanism, tail); a higher rarity ADDS modules on the same core.
+2. **Rapid fire:** per-shot events with a voice cap, a minimum retrigger gap, round-robin variants and short decays (long decays
+   smear); FMOD's max-instances / cooldown controls do exactly this. No published pitch-randomisation figure (±3-5% is ours).
+3. **Mixing by importance:** DICE's HDR audio treats loudness as priority and culls inaudible voices; Overwatch weights enemy
+   sounds by threat; Apex's 2025 mix adds sidechain ducking. => a super near you ducks the gunfire; far voices are culled.
+4. **Phones:** mobile mixes sit near -16 to -18 LUFS with a -1 dBTP limiter; phone speakers cannot play sub-bass, so heavy
+   weapons carry their weight in 100-400 Hz harmonics (saturation). => every bass layer here is soft-clipped.
+5. **Ultimates:** Riot lets ultimates take more of the mix; Valorant and Overwatch give enemies a distinct warning of an ult.
+   => an enemy super's charge is heard (quieter, by distance); its jackpot verdict is a warning.
+6. **Perfect timing:** Gears' active reload, Tekken's just-frame and SF6's Perfect Parry each have their own confirmation sound.
+   => the jackpot verdict is a gold "ka-ching" with a power surge and a bass thump, plus a haptic.
+7. **Web Audio / iOS:** no noise node (pre-build noise buffers); gunshot = noise through a falling filter with a fast attack;
+   lasers = swept saw / FM; iOS needs resume() inside touchend / click and has an "interrupted" state after app switches;
+   Web Audio's default "ambient" session obeys the silent switch ("playback" would ignore it).
+8. **Per-class builds** (Topic 2, for Part B): Brawl Stars, War Robots and Mech Arena level each unit separately from SHARED
+   currencies; Clash Royale caps levels by league; CoD shares parts across a weapon family; WoT Blitz converts 5% of battle XP to
+   Free XP usable on any tank. Time to max (unofficial): Clash Royale one deck 12-18 months free; Brawl Stars one Legendary 3-4
+   months. Chosen items: Hearthstone crafts at 4-8x the disenchant value; Marvel Snap sells chosen cards next to duplicate-free
+   random packs; no published "1.5-3x premium" benchmark. Regulation: show odds (Apple 3.1.1, China), real-money prices (EU CPC
+   2025), PEGI 16 for paid random items in new titles from June 2026, Brazil bans them for minors (Mar 2026); a deterministic
+   alternative is the safe pattern. => one shared points currency, a per-chassis grind with an explicit time target (8 weeks),
+   a direct core buy at a modest, disclosed premium.
+
+### Part A: what shipped (js/fx.js `LW`; hooks in js/game.js, js/match.js, js/pvp.js, js/render.js, js/conquest/view.js)
+1. **Ten weapon shots, all synthesized** (no files). Lines keep their core layers; each rarity adds layers on top:
+   - **Pulse Cannon line** (energy bolt, "thwump-pew"): square + saw sweep 560 -> 150 Hz, a noise puff, a click. Arc Pulse adds a
+     snapping electric arc (crackle + FM zap); Nova Pulse adds a star-bright FM ring, a soft-clipped bass punch and an echo.
+   - **Twin Repeater line** (a gun, owner: "physical rounds sound like a gun"): a 26 ms crack, a body, a soft-clipped punch; the
+     two barrels alternate left / right and every round is pitched within ±4%. Storm Repeater adds a heavier body, the bolt's
+     metal tick and a charged-tracer fizz; Helix Repeater a rotary whirr, a bigger punch and an air layer on the other barrel.
+   - **Siege Breaker line** (a heavy cannon): a falling blast, a soft-clipped 155 -> 48 Hz boom, a crack, the breech clunk. Rail
+     Breaker adds the rail's electric zing and crackle; Titanfall a golden metal ring, sub-bass, falling grit and an echo.
+   - **Moonbeam** (owner: "an electrical laser"): an FM laser sweep 1,850 -> 620 Hz, an electric bite, crackling arcs in two
+     bands, a power hum on a fifth, a bass body, a buzzing tail and a stereo shimmer: the richest shot (10 layers).
+   - Your hits get your weapon's own small confirmation (a crit adds its sparkle).
+2. **Ten Arcade supers x miss / hit / jackpot, four stages each.** Charge from the press (the outcome is not known yet): Lances a
+   rail capacitor filling (a rising whine with a quickening pulse), Novas static building up, Shells a breech loading (two clanks
+   and a hydraulic whine), **Moonfall a hyper-power electromagnet cannon loading up** (an EM hum climbing an octave as its filter
+   opens, the magnet's whine rising, capacitor pulses quickening, arcs thickening, a pulsing magnetic sub and a lunar shimmer).
+   The verdict at the tap in the family's own voice (miss: a dull drop; hit: a clack and a chime; jackpot: a gold ka-ching, a
+   power surge and a bass thump). The fire: a rail beam's discharge and roar; a nova's electric discharge, shockwave and thump;
+   a cannon blast with the shell's whistle; **Moonfall the most powerful sound in the game** (two EM discharges, the beam's roar
+   on three detuned saws, a sub boom, arcs in both ears, a lunar chime, a whoosh). The impact: a beam's bite; a nova settling;
+   **a bomb** (owner: "bombs should sound like bombs": a crack, a deep soft-clipped boom, the blast, falling debris and a long
+   rumble; a jackpot adds a second blast); Moonfall's lunar crater with crystal chimes that ring on.
+   - Rarity: Arc Lance arcs along the beam, Sunlance a solar chord and a shimmer; Storm Nova thunder, Helix Nova a high spiral
+     that swirls between the ears; Rail Blast the rail's zing and crackle, Titanfall a gong, a bigger sub and an echo.
+   - Outcome: a miss keeps every rarity layer but loses its crack and 40% of its punch, and the whole voice is duller (2.6 kHz
+     low-pass), 20% quieter, 20% shorter, with no echo; a jackpot adds its own layers, 12% more level, 28% longer tails and more echo.
+3. **Every tank's weapon is heard**, not only yours: other tanks' shots by distance (full at your side, a quarter at ~14 units)
+   inside a shared budget of about 9 shots a second; another tank's super charge is a warning by distance, and its jackpot verdict
+   too. A super you fire ducks the gunfire by 55% for about half a second (a near enemy super by 30%).
+4. **The mix**: buses for your shots, other tanks' shots (a little darker) and supers, a shared echo send for the epic and
+   legendary sounds, the existing master gain and limiter. Voice caps: 6 of your shots, 6 others', 8 supers at once; your own
+   shots keep a per-weapon minimum gap (Twin 40 ms, under its 90 ms cadence).
+5. **iPhone**: audio wakes on pointerdown, pointerup, touchend, click or keydown, and the first gesture plays one silent sample
+   (older iOS); an interrupted context resumes on the next tap; the "ambient" session stays (the silent switch still mutes the
+   game, the player's music keeps playing). Sound off (Settings) silences everything and stops a charge in flight.
+6. **Owner sound test page** (Admin sheet -> "Sound test: every weapon and super"): every shot (Shot, Burst = 8 rounds at the
+   weapon's real fire rate) and every super at Miss / Hit / Jackpot, one tap each, played as in a match (charge, verdict at the
+   tap time, fire, impact). The button shows only for the owner's account; the page opens after the server's isOwner check
+   (`worker/src/owner.js` `ownerCheck`, action `owner_check` on /api/admin and /api/owner); a local test page with no account
+   opens it straight away. Stop cancels everything.
+7. **Conquest**: your shots there now use the same weapon sounds with their rarity; Conquest supers are untouched (their bar
+   chime `jackpot` / `supgood` / `supmiss` and the legacy `super` / `impact` sounds are kept word for word in `SND`).
+
+### Part A decisions and reasons (changes to the brief's wording are marked CHANGE)
+1. **A miss keeps every rarity layer (CHANGE from the lead's first design).** The first version dropped a rarity tier on a miss:
+   an Epic miss then had a Rare's layers, which broke "epic richer than rare" at that outcome. Now a miss is thinner by losing
+   its crack and 40% of its punch and by being duller, quieter and shorter; the ladder holds at every outcome (measured below).
+2. **Other tanks' weapons make sound (CHANGE: before, only your own shots did; another tank's super was a beep).** The owner asked
+   for every weapon's sound wherever it fires; an enemy's charge is also the warning research item 5 describes. Kept from becoming
+   noise by distance, the shared budget, the darker bus and the voice caps.
+3. **The damage cue was raised** (`hurt` 0.05 -> 0.09): your own fire is now fuller, and taking damage must stay audible over it
+   (measured: hurt -44.2 dB vs a Pulse shot -41.1 dB on a phone speaker).
+4. **A Web Audio click found and fixed (also in the old `tone` / `burst`).** A GainNode outputs its default 1.0 until its first
+   automation event; when a source's start and that event round to different samples (any start time like 0.29000000000000004 s)
+   one sample goes out at full level: a click about 6x louder than the sound. Every envelope is now set to 0 before scheduling.
+   Found by the offline renders (a burst's fourth round peaked at 0.217 instead of 0.035).
+5. **Shells: the whistle is part of the launch sound** (a falling 1,500 -> 900 Hz tone for ~0.6 s), not a voice that follows the
+   shell: a shell's flight time is not known at launch and the sim gives the landing no shell id.
+6. **The beams' and a shell's impacts of one super are one sound**: every impact of one super lands in the same sim tick (a
+   beam's end and each tank it hits); they are merged (the hit count adds a layer) so a beam through three tanks is not four booms.
+
+### Part A measurements (`node dev/tests/weapon-sounds.cjs --json docs/sounds-5e2b3/levels.json`; offline renders of the real
+### `js/fx.js` in Chromium, 48 kHz, through the live master gain 0.5; "phone dB" = the loudest 50 ms through a 250 Hz high-pass)
+| Shot | Layers | Peak | Phone dB | Length s |
+|---|---:|---:|---:|---:|
+| Pulse Cannon / Arc Pulse / Nova Pulse | 4 / 6 / 8 | 0.035 / 0.043 / 0.070 | -41.1 / -40.9 / -39.9 | 0.07 / 0.07 / 0.35 |
+| Twin / Storm / Helix Repeater | 3 / 6 / 9 | 0.041 / 0.039 / 0.058 | -47.7 / -47.2 / -44.3 | 0.03 each |
+| Siege Breaker / Rail Breaker / Titanfall | 4 / 6 / 9 | 0.062 / 0.066 / 0.099 | -38.2 / -37.7 / -36.8 | 0.17 / 0.23 / 0.39 |
+| Moonbeam | 10 | 0.060 | -40.1 | 0.52 |
+
+| Super (whole sequence) | Layers miss / hit / jackpot | Fire phone dB miss / hit / jackpot | Peak (jackpot) | Length s (jackpot) |
+|---|---|---|---:|---:|
+| Pierce / Arc / Sunlance | 12-14-22 / 19-21-29 / 28-30-38 | -33.6 -29.7 -26.4 / -33.0 -28.9 -25.9 / -32.6 -28.5 -25.7 | 0.38 / 0.38 / 0.44 | 1.1 / 1.2 / 1.3 |
+| Static / Storm / Helix Nova | 13-15-23 / 17-19-27 / 23-25-33 | -37.1 -30.9 -27.7 / -35.8 -30.3 -27.2 / -35.1 -29.3 -26.5 | 0.32 / 0.34 / 0.36 | 1.0 / 1.2 / 1.3 |
+| Siege / Rail Blast / Titanfall | 15-18-27 / 20-23-32 / 26-29-38 | -34.6 -29.3 -27.1 / -33.9 -28.7 -26.5 / -32.8 -28.3 -25.9 | 0.21 / 0.27 / 0.40 | 2.1 / 2.1 / 2.1 |
+| **Moonfall** | **29-33-45** | **-29.6 -26.2 -23.8** | **0.48** | **2.2** |
+Other sounds for scale (phone dB): your hit -44.8 to -49.7 by weapon, taking damage -44.2, a kill -35.6, your destruction -35.4,
+the old Conquest super press -32.7 and impact -31.4. Twelve Twin rounds at full cadence: -47.0 (under one Siege shot, -38.2),
+with the level falling at least 12 dB between rounds.
+The test (479 checks, PASS) holds: audible, unclipped, within length; rare > common and epic > rare in layers AND in sound (each
+step lifts a frequency band by 1.5 dB or more and loses none by more than 1 dB) for every shot and every super at every
+outcome; Moonbeam the richest shot; Moonfall's jackpot the most layers, the most energy and the longest ring of any sound; miss <
+hit < jackpot in layers and fire energy for all ten; rapid fire stays separate and under a heavy shot; every shot within 9 dB of
+the Pulse Cannon; no shot louder than any super's fire; the damage cue within 6 dB of your Pulse fire; kills above any light shot.
+
+### Part A tests (local)
+- `node dev/tests/weapon-sounds.cjs` PASS (479). `python3 dev/tests/weapon-sounds-browser.py` PASS: the first tap starts the
+  audio; both tanks' shots reach the engine, the other tank inside its budget (synchronous and real-time runs); all 10 supers x 3
+  outcomes play charge -> verdict -> fire -> impact in order with their own key and the bar's outcome, the charge stops at the
+  fire; an enemy super is heard; Sound off silences everything and stops a charge, the Settings toggle too; the sound test page:
+  a non-owner never sees it, 50 buttons, every one plays, Stop, nothing wider than the screen, 44 px buttons, a finger swipe
+  reaches the last button at 390x700 and 320x568, desktop 1366x768 (screens: `$SHOTS/sounds/`).
+- `python3 dev/tests/b4test.py` PASS (updated: supers are now counted through `LW`, not the old `super` beep).
+- `node dev/tests/wtest/owner.mjs` passed 75 (7 new: the sound test check for the owner on Telegram and the website, 403 for
+  others, the record untouched). `super-timing.mjs` PASS (335), `wtest/pvp.mjs` 130 passed, `wtest/test.mjs` 203 passed.

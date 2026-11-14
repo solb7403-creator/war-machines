@@ -394,7 +394,7 @@ function turret(a,dt){
  let r=Math.atan2(b.y-a.y,b.x-a.x)-a.ang;r=Math.atan2(Math.sin(r),Math.cos(r));
  const dist=Math.hypot(b.x-a.x,b.y-a.y);
  if(a.cd<=0&&seen&&Math.abs(r)<0.14&&dist<=STAT.range){
-  a.cd=a.wshot/rofMult(a);if(a===me&&typeof fx==='function')fx('shot',a.wtype);
+  a.cd=a.wshot/rofMult(a);if(typeof fx==='function')fx('shot',a);   // every tank's own weapon sound: yours at full level, the others by distance (fx.js LW)
   const q={id:++bid,x:a.x,y:a.y,hi:(a.elev||0)===1||(b.elev||0)===1,vx:Math.cos(a.ang)*a.wpspd,vy:Math.sin(a.ang)*a.wpspd,o:a,dps:a.wdps,shot:a.wshot,dm:dmgMult(a)*projectileImpactMult(a),eg:a.wedge||GRAZE,life:(STAT.range+1)/a.wpspd};
   bullets.push(q);
   if(SRV)SRV.ev(['b',q.id,a.id,q.x,q.y,q.vx,q.vy,q.hi?1:0,q.dm,q.life]);   // live players draw the shot themselves

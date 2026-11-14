@@ -262,7 +262,7 @@ function pvpShot(a){
  const o=units[a[2]];if(!o)return;
  const mine=o===me;
  bullets.push({id:a[1],o,x:mine?me.x:a[3],y:mine?me.y:a[4],vx:a[5],vy:a[6],hi:!!a[7],dm:a[8],life:a[9]});
- if(mine)fx('shot',o.wtype);
+ fx('shot',o);   // every tank's weapon sound (yours full, others by distance)
 }
 function pvpBulletHit(id){const i=bullets.findIndex(q=>q.id===id);if(i>=0)bullets.splice(i,1);}
 function pvpShots(dt){
@@ -308,7 +308,7 @@ const pvpLag=()=>!!pvp&&pvp.live&&pvp.phase==='play'&&(!pvp.sock||performance.no
 function pvpSuper(a){
  if(!me||me.hp<=0||me.sup||me.sp<SUPER_MAX||(me.supN||0)>=SUP_ROUND_CAP)return false;
  if(a===undefined||a===null){const e=nearestFoe(me);if(!e)return false;if(SUP[me.wtype||'pulse'].kind!=='nova'&&!los(me,e)){showToast('No line of sight. Drag from Super to aim it yourself.');return false;}}
- pvpSend({k:'s',a:a===undefined||a===null?null:Math.round(a*1000)/1000});fx('super');return true;
+ pvpSend({k:'s',a:a===undefined||a===null?null:Math.round(a*1000)/1000});fx('supcharge',{u:me,k:supKey(me.wtype,me.wtier)});return true;   // your super starts charging at the press (the server's 'u' for you is skipped)
 }
 // stop the timing bar: el is the seconds since my press on my own clock; the server's clock judges it (rules.js SUP_TAP_TOL)
 function pvpTap(el){pvpSend({k:'z',p:Math.round(el*1000)/1000});return true;}

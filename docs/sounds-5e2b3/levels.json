@@ -1,0 +1,2596 @@
+{
+ "shots": {
+  "pulse0": {
+   "peak": 0.035,
+   "energy": -50.9,
+   "phone": -41.1,
+   "phoneE": -54.1,
+   "dur": 0.073,
+   "layers": 4,
+   "bands": {
+    "bass": -66.2,
+    "body": -54.5,
+    "bite": -65.3,
+    "air": -76.9
+   }
+  },
+  "pulse1": {
+   "peak": 0.043,
+   "energy": -50.6,
+   "phone": -40.9,
+   "phoneE": -53.9,
+   "dur": 0.069,
+   "layers": 6,
+   "bands": {
+    "bass": -66.2,
+    "body": -54.5,
+    "bite": -63.3,
+    "air": -74.8
+   }
+  },
+  "pulse2": {
+   "peak": 0.07,
+   "energy": -47.2,
+   "phone": -39.9,
+   "phoneE": -52.9,
+   "dur": 0.35,
+   "layers": 8,
+   "bands": {
+    "bass": -54,
+    "body": -53.8,
+    "bite": -60.3,
+    "air": -71.7
+   }
+  },
+  "twin0": {
+   "peak": 0.041,
+   "energy": -53.7,
+   "phone": -47.7,
+   "phoneE": -60.7,
+   "dur": 0.027,
+   "layers": 3,
+   "bands": {
+    "bass": -59.4,
+    "body": -63.9,
+    "bite": -70.1,
+    "air": -64.6
+   }
+  },
+  "twin1": {
+   "peak": 0.039,
+   "energy": -53.4,
+   "phone": -47.2,
+   "phoneE": -60.2,
+   "dur": 0.03,
+   "layers": 6,
+   "bands": {
+    "bass": -59.3,
+    "body": -63.4,
+    "bite": -68.2,
+    "air": -64.5
+   }
+  },
+  "twin2": {
+   "peak": 0.058,
+   "energy": -50,
+   "phone": -44.3,
+   "phoneE": -57.3,
+   "dur": 0.031,
+   "layers": 9,
+   "bands": {
+    "bass": -55.8,
+    "body": -59.5,
+    "bite": -68.1,
+    "air": -62.3
+   }
+  },
+  "siege0": {
+   "peak": 0.062,
+   "energy": -41.6,
+   "phone": -38.2,
+   "phoneE": -50.9,
+   "dur": 0.169,
+   "layers": 4,
+   "bands": {
+    "bass": -46,
+    "body": -51.3,
+    "bite": -62.3,
+    "air": -67.7
+   }
+  },
+  "siege1": {
+   "peak": 0.066,
+   "energy": -41.5,
+   "phone": -37.7,
+   "phoneE": -50.4,
+   "dur": 0.227,
+   "layers": 6,
+   "bands": {
+    "bass": -46,
+    "body": -51.2,
+    "bite": -59.1,
+    "air": -66.6
+   }
+  },
+  "siege2": {
+   "peak": 0.099,
+   "energy": -39,
+   "phone": -36.8,
+   "phoneE": -49.3,
+   "dur": 0.387,
+   "layers": 9,
+   "bands": {
+    "bass": -44,
+    "body": -49.9,
+    "bite": -59,
+    "air": -66.6
+   }
+  },
+  "moon": {
+   "peak": 0.06,
+   "energy": -47.8,
+   "phone": -40.1,
+   "phoneE": -53,
+   "dur": 0.522,
+   "layers": 10,
+   "bands": {
+    "bass": -55.1,
+    "body": -54.5,
+    "bite": -58.6,
+    "air": -72.1
+   }
+  }
+ },
+ "supers": {
+  "pulse0": {
+   "0": {
+    "charge": {
+     "peak": 0.039,
+     "energy": -38.5,
+     "phone": -37.9,
+     "phoneE": -43.5,
+     "dur": 1.218,
+     "layers": 2,
+     "bands": {
+      "bass": -46.6,
+      "body": -44.5,
+      "bite": -50.1,
+      "air": -68
+     }
+    },
+    "lock": {
+     "peak": 0.047,
+     "energy": -47.8,
+     "phone": -40,
+     "phoneE": -52.9,
+     "dur": 0.135,
+     "layers": 3,
+     "bands": {
+      "bass": -55,
+      "body": -53.1,
+      "bite": -67.7,
+      "air": -75.7
+     }
+    },
+    "fire": {
+     "peak": 0.127,
+     "energy": -39.5,
+     "phone": -33.6,
+     "phoneE": -46.4,
+     "dur": 0.184,
+     "layers": 4,
+     "bands": {
+      "bass": -45.2,
+      "body": -46.9,
+      "bite": -56.7,
+      "air": -74.3
+     }
+    },
+    "impact": {
+     "peak": 0.053,
+     "energy": -46.9,
+     "phone": -40.9,
+     "phoneE": -53.8,
+     "dur": 0.093,
+     "layers": 3,
+     "bands": {
+      "bass": -52.2,
+      "body": -54.1,
+      "bite": -67,
+      "air": -79.2
+     }
+    },
+    "seq": {
+     "peak": 0.148,
+     "energy": -35.5,
+     "phone": -31.8,
+     "phoneE": -41.3,
+     "dur": 1.05,
+     "layers": 12,
+     "bands": {
+      "bass": -42.3,
+      "body": -42,
+      "bite": -49.6,
+      "air": -66.8
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.039,
+     "energy": -38.5,
+     "phone": -37.9,
+     "phoneE": -43.5,
+     "dur": 1.218,
+     "layers": 2,
+     "bands": {
+      "bass": -46.6,
+      "body": -44.5,
+      "bite": -50.1,
+      "air": -68
+     }
+    },
+    "lock": {
+     "peak": 0.037,
+     "energy": -51.3,
+     "phone": -41.3,
+     "phoneE": -54.3,
+     "dur": 0.092,
+     "layers": 4,
+     "bands": {
+      "bass": -76.6,
+      "body": -54.9,
+      "bite": -63.6,
+      "air": -73.2
+     }
+    },
+    "fire": {
+     "peak": 0.222,
+     "energy": -33.8,
+     "phone": -29.7,
+     "phoneE": -42.4,
+     "dur": 0.217,
+     "layers": 5,
+     "bands": {
+      "bass": -38.7,
+      "body": -43.2,
+      "bite": -53.1,
+      "air": -54
+     }
+    },
+    "impact": {
+     "peak": 0.097,
+     "energy": -40.3,
+     "phone": -34.6,
+     "phoneE": -47.5,
+     "dur": 0.111,
+     "layers": 3,
+     "bands": {
+      "bass": -45.5,
+      "body": -47.7,
+      "bite": -61.6,
+      "air": -66.9
+     }
+    },
+    "seq": {
+     "peak": 0.249,
+     "energy": -32.3,
+     "phone": -28.3,
+     "phoneE": -40,
+     "dur": 0.901,
+     "layers": 14,
+     "bands": {
+      "bass": -37.6,
+      "body": -40.6,
+      "bite": -51.1,
+      "air": -53.7
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.039,
+     "energy": -38.5,
+     "phone": -37.9,
+     "phoneE": -43.5,
+     "dur": 1.218,
+     "layers": 2,
+     "bands": {
+      "bass": -46.6,
+      "body": -44.5,
+      "bite": -50.1,
+      "air": -68
+     }
+    },
+    "lock": {
+     "peak": 0.138,
+     "energy": -36,
+     "phone": -34.9,
+     "phoneE": -45.7,
+     "dur": 0.356,
+     "layers": 8,
+     "bands": {
+      "bass": -40.9,
+      "body": -46.8,
+      "bite": -52.4,
+      "air": -66
+     }
+    },
+    "fire": {
+     "peak": 0.344,
+     "energy": -28.7,
+     "phone": -26.4,
+     "phoneE": -38.8,
+     "dur": 0.397,
+     "layers": 8,
+     "bands": {
+      "bass": -34,
+      "body": -39.7,
+      "bite": -48.3,
+      "air": -49.7
+     }
+    },
+    "impact": {
+     "peak": 0.106,
+     "energy": -37.9,
+     "phone": -32,
+     "phoneE": -44.7,
+     "dur": 0.358,
+     "layers": 4,
+     "bands": {
+      "bass": -43.3,
+      "body": -45,
+      "bite": -58.7,
+      "air": -64.9
+     }
+    },
+    "seq": {
+     "peak": 0.379,
+     "energy": -27.6,
+     "phone": -25.7,
+     "phoneE": -37,
+     "dur": 1.098,
+     "layers": 22,
+     "bands": {
+      "bass": -33,
+      "body": -37.8,
+      "bite": -46.3,
+      "air": -49.5
+     }
+    }
+   }
+  },
+  "pulse1": {
+   "0": {
+    "charge": {
+     "peak": 0.051,
+     "energy": -38.1,
+     "phone": -37,
+     "phoneE": -42.9,
+     "dur": 1.187,
+     "layers": 4,
+     "bands": {
+      "bass": -46.6,
+      "body": -44.4,
+      "bite": -48.7,
+      "air": -59.6
+     }
+    },
+    "lock": {
+     "peak": 0.047,
+     "energy": -47.8,
+     "phone": -40,
+     "phoneE": -52.9,
+     "dur": 0.135,
+     "layers": 3,
+     "bands": {
+      "bass": -55,
+      "body": -53.1,
+      "bite": -67.7,
+      "air": -75.7
+     }
+    },
+    "fire": {
+     "peak": 0.15,
+     "energy": -39.2,
+     "phone": -33,
+     "phoneE": -45.9,
+     "dur": 0.184,
+     "layers": 8,
+     "bands": {
+      "bass": -45.1,
+      "body": -46.5,
+      "bite": -54.8,
+      "air": -68.6
+     }
+    },
+    "impact": {
+     "peak": 0.053,
+     "energy": -46.8,
+     "phone": -40.8,
+     "phoneE": -53.8,
+     "dur": 0.097,
+     "layers": 4,
+     "bands": {
+      "bass": -52.2,
+      "body": -54,
+      "bite": -66.3,
+      "air": -78.5
+     }
+    },
+    "seq": {
+     "peak": 0.165,
+     "energy": -35.2,
+     "phone": -31.5,
+     "phoneE": -40.9,
+     "dur": 1.039,
+     "layers": 19,
+     "bands": {
+      "bass": -42.3,
+      "body": -41.9,
+      "bite": -48.2,
+      "air": -59.3
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.051,
+     "energy": -38.1,
+     "phone": -37,
+     "phoneE": -42.9,
+     "dur": 1.187,
+     "layers": 4,
+     "bands": {
+      "bass": -46.6,
+      "body": -44.4,
+      "bite": -48.7,
+      "air": -59.6
+     }
+    },
+    "lock": {
+     "peak": 0.037,
+     "energy": -51.3,
+     "phone": -41.3,
+     "phoneE": -54.3,
+     "dur": 0.092,
+     "layers": 4,
+     "bands": {
+      "bass": -76.6,
+      "body": -54.9,
+      "bite": -63.6,
+      "air": -73.2
+     }
+    },
+    "fire": {
+     "peak": 0.263,
+     "energy": -33.5,
+     "phone": -28.9,
+     "phoneE": -41.5,
+     "dur": 0.36,
+     "layers": 9,
+     "bands": {
+      "bass": -38.6,
+      "body": -42.7,
+      "bite": -49.5,
+      "air": -52.2
+     }
+    },
+    "impact": {
+     "peak": 0.097,
+     "energy": -40.3,
+     "phone": -34.5,
+     "phoneE": -47.5,
+     "dur": 0.226,
+     "layers": 4,
+     "bands": {
+      "bass": -45.4,
+      "body": -47.7,
+      "bite": -61,
+      "air": -66.6
+     }
+    },
+    "seq": {
+     "peak": 0.25,
+     "energy": -32.1,
+     "phone": -27.9,
+     "phoneE": -39.5,
+     "dur": 1.061,
+     "layers": 21,
+     "bands": {
+      "bass": -37.6,
+      "body": -40.4,
+      "bite": -48.7,
+      "air": -52.2
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.051,
+     "energy": -38.1,
+     "phone": -37,
+     "phoneE": -42.9,
+     "dur": 1.187,
+     "layers": 4,
+     "bands": {
+      "bass": -46.6,
+      "body": -44.4,
+      "bite": -48.7,
+      "air": -59.6
+     }
+    },
+    "lock": {
+     "peak": 0.138,
+     "energy": -36,
+     "phone": -34.9,
+     "phoneE": -45.7,
+     "dur": 0.356,
+     "layers": 8,
+     "bands": {
+      "bass": -40.9,
+      "body": -46.8,
+      "bite": -52.4,
+      "air": -66
+     }
+    },
+    "fire": {
+     "peak": 0.39,
+     "energy": -28.3,
+     "phone": -25.9,
+     "phoneE": -38,
+     "dur": 0.529,
+     "layers": 12,
+     "bands": {
+      "bass": -33.8,
+      "body": -39.2,
+      "bite": -46,
+      "air": -48.6
+     }
+    },
+    "impact": {
+     "peak": 0.106,
+     "energy": -37.8,
+     "phone": -31.9,
+     "phoneE": -44.7,
+     "dur": 0.378,
+     "layers": 5,
+     "bands": {
+      "bass": -43.3,
+      "body": -44.9,
+      "bite": -58.2,
+      "air": -64.6
+     }
+    },
+    "seq": {
+     "peak": 0.38,
+     "energy": -27.3,
+     "phone": -25.4,
+     "phoneE": -36.5,
+     "dur": 1.229,
+     "layers": 29,
+     "bands": {
+      "bass": -32.9,
+      "body": -37.5,
+      "bite": -44.8,
+      "air": -48.5
+     }
+    }
+   }
+  },
+  "pulse2": {
+   "0": {
+    "charge": {
+     "peak": 0.097,
+     "energy": -31.6,
+     "phone": -35.5,
+     "phoneE": -41.8,
+     "dur": 1.206,
+     "layers": 8,
+     "bands": {
+      "bass": -38.7,
+      "body": -42.9,
+      "bite": -48.5,
+      "air": -59.4
+     }
+    },
+    "lock": {
+     "peak": 0.047,
+     "energy": -47.8,
+     "phone": -40,
+     "phoneE": -52.9,
+     "dur": 0.135,
+     "layers": 3,
+     "bands": {
+      "bass": -55,
+      "body": -53.1,
+      "bite": -67.7,
+      "air": -75.7
+     }
+    },
+    "fire": {
+     "peak": 0.145,
+     "energy": -38.9,
+     "phone": -32.6,
+     "phoneE": -45.3,
+     "dur": 0.218,
+     "layers": 12,
+     "bands": {
+      "bass": -45.1,
+      "body": -46,
+      "bite": -53.4,
+      "air": -66.1
+     }
+    },
+    "impact": {
+     "peak": 0.058,
+     "energy": -46.6,
+     "phone": -40.3,
+     "phoneE": -53.2,
+     "dur": 0.119,
+     "layers": 5,
+     "bands": {
+      "bass": -52.2,
+      "body": -53.9,
+      "bite": -61.7,
+      "air": -71.9
+     }
+    },
+    "seq": {
+     "peak": 0.207,
+     "energy": -31.1,
+     "phone": -30.8,
+     "phoneE": -40,
+     "dur": 1.068,
+     "layers": 28,
+     "bands": {
+      "bass": -37.9,
+      "body": -40.9,
+      "bite": -47.5,
+      "air": -58.7
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.097,
+     "energy": -31.6,
+     "phone": -35.5,
+     "phoneE": -41.8,
+     "dur": 1.206,
+     "layers": 8,
+     "bands": {
+      "bass": -38.7,
+      "body": -42.9,
+      "bite": -48.5,
+      "air": -59.4
+     }
+    },
+    "lock": {
+     "peak": 0.037,
+     "energy": -51.3,
+     "phone": -41.3,
+     "phoneE": -54.3,
+     "dur": 0.092,
+     "layers": 4,
+     "bands": {
+      "bass": -76.6,
+      "body": -54.9,
+      "bite": -63.6,
+      "air": -73.2
+     }
+    },
+    "fire": {
+     "peak": 0.272,
+     "energy": -33.1,
+     "phone": -28.5,
+     "phoneE": -40.8,
+     "dur": 0.533,
+     "layers": 13,
+     "bands": {
+      "bass": -38.5,
+      "body": -42.2,
+      "bite": -48,
+      "air": -51.8
+     }
+    },
+    "impact": {
+     "peak": 0.108,
+     "energy": -40,
+     "phone": -34,
+     "phoneE": -46.8,
+     "dur": 0.365,
+     "layers": 5,
+     "bands": {
+      "bass": -45.4,
+      "body": -47.6,
+      "bite": -55.5,
+      "air": -63.1
+     }
+    },
+    "seq": {
+     "peak": 0.303,
+     "energy": -30.9,
+     "phone": -27.1,
+     "phoneE": -38.6,
+     "dur": 1.228,
+     "layers": 30,
+     "bands": {
+      "bass": -36.9,
+      "body": -39.7,
+      "bite": -46.4,
+      "air": -51.6
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.097,
+     "energy": -31.6,
+     "phone": -35.5,
+     "phoneE": -41.8,
+     "dur": 1.206,
+     "layers": 8,
+     "bands": {
+      "bass": -38.7,
+      "body": -42.9,
+      "bite": -48.5,
+      "air": -59.4
+     }
+    },
+    "lock": {
+     "peak": 0.138,
+     "energy": -36,
+     "phone": -34.9,
+     "phoneE": -45.7,
+     "dur": 0.356,
+     "layers": 8,
+     "bands": {
+      "bass": -40.9,
+      "body": -46.8,
+      "bite": -52.4,
+      "air": -66
+     }
+    },
+    "fire": {
+     "peak": 0.4,
+     "energy": -27.9,
+     "phone": -25.7,
+     "phoneE": -37.4,
+     "dur": 0.588,
+     "layers": 16,
+     "bands": {
+      "bass": -33.5,
+      "body": -38.7,
+      "bite": -44.8,
+      "air": -48.3
+     }
+    },
+    "impact": {
+     "peak": 0.12,
+     "energy": -37.5,
+     "phone": -31.5,
+     "phoneE": -44.1,
+     "dur": 0.53,
+     "layers": 6,
+     "bands": {
+      "bass": -43.2,
+      "body": -44.8,
+      "bite": -53.3,
+      "air": -61.1
+     }
+    },
+    "seq": {
+     "peak": 0.436,
+     "energy": -26.6,
+     "phone": -24.8,
+     "phoneE": -35.7,
+     "dur": 1.27,
+     "layers": 38,
+     "bands": {
+      "bass": -32.4,
+      "body": -36.9,
+      "bite": -43.2,
+      "air": -48.1
+     }
+    }
+   }
+  },
+  "twin0": {
+   "0": {
+    "charge": {
+     "peak": 0.053,
+     "energy": -37.2,
+     "phone": -40.1,
+     "phoneE": -46.3,
+     "dur": 1.099,
+     "layers": 3,
+     "bands": {
+      "bass": -42,
+      "body": -48.4,
+      "bite": -51.6,
+      "air": -57.4
+     }
+    },
+    "lock": {
+     "peak": 0.036,
+     "energy": -48,
+     "phone": -40.3,
+     "phoneE": -53.2,
+     "dur": 0.141,
+     "layers": 3,
+     "bands": {
+      "bass": -55,
+      "body": -53.2,
+      "bite": -78.3,
+      "air": -87.4
+     }
+    },
+    "fire": {
+     "peak": 0.085,
+     "energy": -39.9,
+     "phone": -37.1,
+     "phoneE": -49.9,
+     "dur": 0.156,
+     "layers": 5,
+     "bands": {
+      "bass": -44.4,
+      "body": -51.1,
+      "bite": -56.4,
+      "air": -68.2
+     }
+    },
+    "impact": {
+     "peak": 0.042,
+     "energy": -44.1,
+     "phone": -45.5,
+     "phoneE": -58.4,
+     "dur": 0.144,
+     "layers": 2,
+     "bands": {
+      "bass": -48.4,
+      "body": -58.5,
+      "bite": -80.6,
+      "air": -97.6
+     }
+    },
+    "seq": {
+     "peak": 0.108,
+     "energy": -33.8,
+     "phone": -35.2,
+     "phoneE": -44.1,
+     "dur": 1.029,
+     "layers": 13,
+     "bands": {
+      "bass": -38.4,
+      "body": -45.4,
+      "bite": -50.6,
+      "air": -57.5
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.053,
+     "energy": -37.2,
+     "phone": -40.1,
+     "phoneE": -46.3,
+     "dur": 1.099,
+     "layers": 3,
+     "bands": {
+      "bass": -42,
+      "body": -48.4,
+      "bite": -51.6,
+      "air": -57.4
+     }
+    },
+    "lock": {
+     "peak": 0.032,
+     "energy": -51.5,
+     "phone": -41.6,
+     "phoneE": -54.5,
+     "dur": 0.095,
+     "layers": 4,
+     "bands": {
+      "bass": -76.7,
+      "body": -55,
+      "bite": -64.8,
+      "air": -75.1
+     }
+    },
+    "fire": {
+     "peak": 0.168,
+     "energy": -32.9,
+     "phone": -30.9,
+     "phoneE": -43.7,
+     "dur": 0.193,
+     "layers": 6,
+     "bands": {
+      "bass": -37.2,
+      "body": -44.7,
+      "bite": -51.4,
+      "air": -56.1
+     }
+    },
+    "impact": {
+     "peak": 0.05,
+     "energy": -41.2,
+     "phone": -42.9,
+     "phoneE": -55.6,
+     "dur": 0.202,
+     "layers": 2,
+     "bands": {
+      "bass": -45.6,
+      "body": -55.6,
+      "bite": -78.1,
+      "air": -93.7
+     }
+    },
+    "seq": {
+     "peak": 0.167,
+     "energy": -32.7,
+     "phone": -31,
+     "phoneE": -42.7,
+     "dur": 0.882,
+     "layers": 15,
+     "bands": {
+      "bass": -37.3,
+      "body": -43.7,
+      "bite": -50.3,
+      "air": -56.1
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.053,
+     "energy": -37.2,
+     "phone": -40.1,
+     "phoneE": -46.3,
+     "dur": 1.099,
+     "layers": 3,
+     "bands": {
+      "bass": -42,
+      "body": -48.4,
+      "bite": -51.6,
+      "air": -57.4
+     }
+    },
+    "lock": {
+     "peak": 0.12,
+     "energy": -36,
+     "phone": -34.9,
+     "phoneE": -45.7,
+     "dur": 0.365,
+     "layers": 8,
+     "bands": {
+      "bass": -40.9,
+      "body": -46.8,
+      "bite": -52.5,
+      "air": -66.4
+     }
+    },
+    "fire": {
+     "peak": 0.301,
+     "energy": -28,
+     "phone": -27.7,
+     "phoneE": -39.9,
+     "dur": 0.396,
+     "layers": 9,
+     "bands": {
+      "bass": -32.6,
+      "body": -40.7,
+      "bite": -48.3,
+      "air": -53.8
+     }
+    },
+    "impact": {
+     "peak": 0.112,
+     "energy": -34.9,
+     "phone": -38.4,
+     "phoneE": -50.6,
+     "dur": 0.394,
+     "layers": 3,
+     "bands": {
+      "bass": -39.9,
+      "body": -50.6,
+      "bite": -74.3,
+      "air": -89.7
+     }
+    },
+    "seq": {
+     "peak": 0.317,
+     "energy": -26.1,
+     "phone": -26.8,
+     "phoneE": -38,
+     "dur": 1.049,
+     "layers": 23,
+     "bands": {
+      "bass": -30.8,
+      "body": -38.7,
+      "bite": -46.7,
+      "air": -54.4
+     }
+    }
+   }
+  },
+  "twin1": {
+   "0": {
+    "charge": {
+     "peak": 0.106,
+     "energy": -33.3,
+     "phone": -35.9,
+     "phoneE": -43.4,
+     "dur": 1.16,
+     "layers": 4,
+     "bands": {
+      "bass": -38.4,
+      "body": -44.3,
+      "bite": -51.6,
+      "air": -57.4
+     }
+    },
+    "lock": {
+     "peak": 0.036,
+     "energy": -48,
+     "phone": -40.3,
+     "phoneE": -53.2,
+     "dur": 0.141,
+     "layers": 3,
+     "bands": {
+      "bass": -55,
+      "body": -53.2,
+      "bite": -78.3,
+      "air": -87.4
+     }
+    },
+    "fire": {
+     "peak": 0.085,
+     "energy": -38.5,
+     "phone": -35.8,
+     "phoneE": -47.6,
+     "dur": 0.4,
+     "layers": 7,
+     "bands": {
+      "bass": -43.9,
+      "body": -48.3,
+      "bite": -56,
+      "air": -67.4
+     }
+    },
+    "impact": {
+     "peak": 0.058,
+     "energy": -41.7,
+     "phone": -44.4,
+     "phoneE": -56.8,
+     "dur": 0.233,
+     "layers": 3,
+     "bands": {
+      "bass": -46.1,
+      "body": -56.8,
+      "bite": -79.8,
+      "air": -97.1
+     }
+    },
+    "seq": {
+     "peak": 0.152,
+     "energy": -31.2,
+     "phone": -33.6,
+     "phoneE": -41.7,
+     "dur": 1.194,
+     "layers": 17,
+     "bands": {
+      "bass": -36.1,
+      "body": -42.4,
+      "bite": -50.4,
+      "air": -57.4
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.106,
+     "energy": -33.3,
+     "phone": -35.9,
+     "phoneE": -43.4,
+     "dur": 1.16,
+     "layers": 4,
+     "bands": {
+      "bass": -38.4,
+      "body": -44.3,
+      "bite": -51.6,
+      "air": -57.4
+     }
+    },
+    "lock": {
+     "peak": 0.032,
+     "energy": -51.5,
+     "phone": -41.6,
+     "phoneE": -54.5,
+     "dur": 0.095,
+     "layers": 4,
+     "bands": {
+      "bass": -76.7,
+      "body": -55,
+      "bite": -64.8,
+      "air": -75.1
+     }
+    },
+    "fire": {
+     "peak": 0.168,
+     "energy": -32.4,
+     "phone": -30.3,
+     "phoneE": -42,
+     "dur": 0.427,
+     "layers": 8,
+     "bands": {
+      "bass": -37.3,
+      "body": -43.3,
+      "bite": -50.6,
+      "air": -50.9
+     }
+    },
+    "impact": {
+     "peak": 0.071,
+     "energy": -38.8,
+     "phone": -41.5,
+     "phoneE": -53.4,
+     "dur": 0.295,
+     "layers": 3,
+     "bands": {
+      "bass": -43.2,
+      "body": -53.4,
+      "bite": -77.4,
+      "air": -93.1
+     }
+    },
+    "seq": {
+     "peak": 0.182,
+     "energy": -31.5,
+     "phone": -30.3,
+     "phoneE": -40.9,
+     "dur": 1.087,
+     "layers": 19,
+     "bands": {
+      "bass": -36.6,
+      "body": -41.9,
+      "bite": -49.7,
+      "air": -52.4
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.106,
+     "energy": -33.3,
+     "phone": -35.9,
+     "phoneE": -43.4,
+     "dur": 1.16,
+     "layers": 4,
+     "bands": {
+      "bass": -38.4,
+      "body": -44.3,
+      "bite": -51.6,
+      "air": -57.4
+     }
+    },
+    "lock": {
+     "peak": 0.12,
+     "energy": -36,
+     "phone": -34.9,
+     "phoneE": -45.7,
+     "dur": 0.365,
+     "layers": 8,
+     "bands": {
+      "bass": -40.9,
+      "body": -46.8,
+      "bite": -52.5,
+      "air": -66.4
+     }
+    },
+    "fire": {
+     "peak": 0.301,
+     "energy": -27.4,
+     "phone": -27.2,
+     "phoneE": -38.3,
+     "dur": 0.569,
+     "layers": 11,
+     "bands": {
+      "bass": -32.3,
+      "body": -39.4,
+      "bite": -47.6,
+      "air": -48.8
+     }
+    },
+    "impact": {
+     "peak": 0.136,
+     "energy": -34.5,
+     "phone": -37.6,
+     "phoneE": -49.4,
+     "dur": 0.519,
+     "layers": 4,
+     "bands": {
+      "bass": -39.4,
+      "body": -49.4,
+      "bite": -73.8,
+      "air": -89.4
+     }
+    },
+    "seq": {
+     "peak": 0.34,
+     "energy": -25.8,
+     "phone": -26.2,
+     "phoneE": -36.9,
+     "dur": 1.2,
+     "layers": 27,
+     "bands": {
+      "bass": -30.8,
+      "body": -37.6,
+      "bite": -46.2,
+      "air": -51.6
+     }
+    }
+   }
+  },
+  "twin2": {
+   "0": {
+    "charge": {
+     "peak": 0.111,
+     "energy": -33,
+     "phone": -34.6,
+     "phoneE": -42,
+     "dur": 1.221,
+     "layers": 6,
+     "bands": {
+      "bass": -38.4,
+      "body": -42.9,
+      "bite": -50,
+      "air": -57.1
+     }
+    },
+    "lock": {
+     "peak": 0.036,
+     "energy": -48,
+     "phone": -40.3,
+     "phoneE": -53.2,
+     "dur": 0.141,
+     "layers": 3,
+     "bands": {
+      "bass": -55,
+      "body": -53.2,
+      "bite": -78.3,
+      "air": -87.4
+     }
+    },
+    "fire": {
+     "peak": 0.111,
+     "energy": -38.2,
+     "phone": -35.1,
+     "phoneE": -46.8,
+     "dur": 0.36,
+     "layers": 11,
+     "bands": {
+      "bass": -43.9,
+      "body": -47.6,
+      "bite": -54.6,
+      "air": -66.1
+     }
+    },
+    "impact": {
+     "peak": 0.058,
+     "energy": -41.7,
+     "phone": -44.4,
+     "phoneE": -56.8,
+     "dur": 0.233,
+     "layers": 3,
+     "bands": {
+      "bass": -46.1,
+      "body": -56.8,
+      "bite": -79.8,
+      "air": -97.1
+     }
+    },
+    "seq": {
+     "peak": 0.168,
+     "energy": -31,
+     "phone": -32.6,
+     "phoneE": -40.5,
+     "dur": 1.205,
+     "layers": 23,
+     "bands": {
+      "bass": -36.1,
+      "body": -41.3,
+      "bite": -48.9,
+      "air": -57.1
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.111,
+     "energy": -33,
+     "phone": -34.6,
+     "phoneE": -42,
+     "dur": 1.221,
+     "layers": 6,
+     "bands": {
+      "bass": -38.4,
+      "body": -42.9,
+      "bite": -50,
+      "air": -57.1
+     }
+    },
+    "lock": {
+     "peak": 0.032,
+     "energy": -51.5,
+     "phone": -41.6,
+     "phoneE": -54.5,
+     "dur": 0.095,
+     "layers": 4,
+     "bands": {
+      "bass": -76.7,
+      "body": -55,
+      "bite": -64.8,
+      "air": -75.1
+     }
+    },
+    "fire": {
+     "peak": 0.199,
+     "energy": -31.9,
+     "phone": -29.3,
+     "phoneE": -40.8,
+     "dur": 0.569,
+     "layers": 12,
+     "bands": {
+      "bass": -37.1,
+      "body": -42.7,
+      "bite": -49.1,
+      "air": -47.5
+     }
+    },
+    "impact": {
+     "peak": 0.071,
+     "energy": -38.8,
+     "phone": -41.5,
+     "phoneE": -53.4,
+     "dur": 0.519,
+     "layers": 3,
+     "bands": {
+      "bass": -43.2,
+      "body": -53.4,
+      "bite": -77.4,
+      "air": -93.1
+     }
+    },
+    "seq": {
+     "peak": 0.221,
+     "energy": -31,
+     "phone": -29,
+     "phoneE": -39.6,
+     "dur": 1.229,
+     "layers": 25,
+     "bands": {
+      "bass": -36.5,
+      "body": -40.9,
+      "bite": -47.6,
+      "air": -49.5
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.111,
+     "energy": -33,
+     "phone": -34.6,
+     "phoneE": -42,
+     "dur": 1.221,
+     "layers": 6,
+     "bands": {
+      "bass": -38.4,
+      "body": -42.9,
+      "bite": -50,
+      "air": -57.1
+     }
+    },
+    "lock": {
+     "peak": 0.12,
+     "energy": -36,
+     "phone": -34.9,
+     "phoneE": -45.7,
+     "dur": 0.365,
+     "layers": 8,
+     "bands": {
+      "bass": -40.9,
+      "body": -46.8,
+      "bite": -52.5,
+      "air": -66.4
+     }
+    },
+    "fire": {
+     "peak": 0.315,
+     "energy": -26.7,
+     "phone": -26.5,
+     "phoneE": -37.2,
+     "dur": 0.702,
+     "layers": 15,
+     "bands": {
+      "bass": -31.9,
+      "body": -38.6,
+      "bite": -46,
+      "air": -45.5
+     }
+    },
+    "impact": {
+     "peak": 0.136,
+     "energy": -34.4,
+     "phone": -37.6,
+     "phoneE": -49.3,
+     "dur": 0.531,
+     "layers": 4,
+     "bands": {
+      "bass": -39.3,
+      "body": -49.3,
+      "bite": -73.7,
+      "air": -89.4
+     }
+    },
+    "seq": {
+     "peak": 0.358,
+     "energy": -25.4,
+     "phone": -25.9,
+     "phoneE": -36.1,
+     "dur": 1.349,
+     "layers": 33,
+     "bands": {
+      "bass": -30.5,
+      "body": -36.9,
+      "bite": -45,
+      "air": -49.6
+     }
+    }
+   }
+  },
+  "siege0": {
+   "0": {
+    "charge": {
+     "peak": 0.043,
+     "energy": -42.4,
+     "phone": -43.7,
+     "phoneE": -49.5,
+     "dur": 1.048,
+     "layers": 5,
+     "bands": {
+      "bass": -47.6,
+      "body": -49.6,
+      "bite": -71.6,
+      "air": -79.4
+     }
+    },
+    "lock": {
+     "peak": 0.051,
+     "energy": -47.2,
+     "phone": -40.2,
+     "phoneE": -53.1,
+     "dur": 0.132,
+     "layers": 3,
+     "bands": {
+      "bass": -53.3,
+      "body": -53.1,
+      "bite": -78.4,
+      "air": -92.9
+     }
+    },
+    "fire": {
+     "peak": 0.1,
+     "energy": -38.6,
+     "phone": -34.6,
+     "phoneE": -47.2,
+     "dur": 0.237,
+     "layers": 3,
+     "bands": {
+      "bass": -43.4,
+      "body": -48,
+      "bite": -55,
+      "air": -68
+     }
+    },
+    "impact": {
+     "peak": 0.124,
+     "energy": -32.3,
+     "phone": -32,
+     "phoneE": -44.3,
+     "dur": 0.4,
+     "layers": 4,
+     "bands": {
+      "bass": -36.7,
+      "body": -44.6,
+      "bite": -55.7,
+      "air": -70.1
+     }
+    },
+    "seq": {
+     "peak": 0.142,
+     "energy": -31,
+     "phone": -32.4,
+     "phoneE": -41.8,
+     "dur": 1.967,
+     "layers": 15,
+     "bands": {
+      "bass": -35.6,
+      "body": -42.2,
+      "bite": -52.3,
+      "air": -65.8
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.043,
+     "energy": -42.4,
+     "phone": -43.7,
+     "phoneE": -49.5,
+     "dur": 1.048,
+     "layers": 5,
+     "bands": {
+      "bass": -47.6,
+      "body": -49.6,
+      "bite": -71.6,
+      "air": -79.4
+     }
+    },
+    "lock": {
+     "peak": 0.054,
+     "energy": -49.5,
+     "phone": -41.3,
+     "phoneE": -54.2,
+     "dur": 0.086,
+     "layers": 4,
+     "bands": {
+      "bass": -57.7,
+      "body": -54.7,
+      "bite": -64.9,
+      "air": -75.3
+     }
+    },
+    "fire": {
+     "peak": 0.174,
+     "energy": -32,
+     "phone": -29.3,
+     "phoneE": -41.8,
+     "dur": 0.263,
+     "layers": 4,
+     "bands": {
+      "bass": -36.4,
+      "body": -42.4,
+      "bite": -51.5,
+      "air": -56.8
+     }
+    },
+    "impact": {
+     "peak": 0.173,
+     "energy": -29.3,
+     "phone": -29.4,
+     "phoneE": -41.3,
+     "dur": 0.486,
+     "layers": 5,
+     "bands": {
+      "bass": -33.8,
+      "body": -41.8,
+      "bite": -52.7,
+      "air": -54.3
+     }
+    },
+    "seq": {
+     "peak": 0.173,
+     "energy": -27.4,
+     "phone": -29.4,
+     "phoneE": -38.4,
+     "dur": 1.886,
+     "layers": 18,
+     "bands": {
+      "bass": -31.9,
+      "body": -39,
+      "bite": -48.9,
+      "air": -52.3
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.043,
+     "energy": -42.4,
+     "phone": -43.7,
+     "phoneE": -49.5,
+     "dur": 1.048,
+     "layers": 5,
+     "bands": {
+      "bass": -47.6,
+      "body": -49.6,
+      "bite": -71.6,
+      "air": -79.4
+     }
+    },
+    "lock": {
+     "peak": 0.116,
+     "energy": -36.2,
+     "phone": -35.1,
+     "phoneE": -45.8,
+     "dur": 0.365,
+     "layers": 8,
+     "bands": {
+      "bass": -41.2,
+      "body": -46.9,
+      "bite": -52.5,
+      "air": -66.4
+     }
+    },
+    "fire": {
+     "peak": 0.218,
+     "energy": -28.9,
+     "phone": -27.1,
+     "phoneE": -39.1,
+     "dur": 0.436,
+     "layers": 6,
+     "bands": {
+      "bass": -33.3,
+      "body": -39.8,
+      "bite": -50,
+      "air": -50.6
+     }
+    },
+    "impact": {
+     "peak": 0.197,
+     "energy": -27.3,
+     "phone": -27.8,
+     "phoneE": -38.7,
+     "dur": 0.74,
+     "layers": 8,
+     "bands": {
+      "bass": -31.8,
+      "body": -39.3,
+      "bite": -49.5,
+      "air": -52.2
+     }
+    },
+    "seq": {
+     "peak": 0.213,
+     "energy": -24.6,
+     "phone": -27.6,
+     "phoneE": -35.5,
+     "dur": 2.14,
+     "layers": 27,
+     "bands": {
+      "bass": -29.1,
+      "body": -36.2,
+      "bite": -45.7,
+      "air": -48.3
+     }
+    }
+   }
+  },
+  "siege1": {
+   "0": {
+    "charge": {
+     "peak": 0.049,
+     "energy": -37.3,
+     "phone": -34.2,
+     "phoneE": -41.2,
+     "dur": 1.087,
+     "layers": 7,
+     "bands": {
+      "bass": -47.6,
+      "body": -43.8,
+      "bite": -44.8,
+      "air": -59.9
+     }
+    },
+    "lock": {
+     "peak": 0.051,
+     "energy": -47.2,
+     "phone": -40.2,
+     "phoneE": -53.1,
+     "dur": 0.132,
+     "layers": 3,
+     "bands": {
+      "bass": -53.3,
+      "body": -53.1,
+      "bite": -78.4,
+      "air": -92.9
+     }
+    },
+    "fire": {
+     "peak": 0.106,
+     "energy": -38.4,
+     "phone": -33.9,
+     "phoneE": -46.5,
+     "dur": 0.233,
+     "layers": 5,
+     "bands": {
+      "bass": -43.4,
+      "body": -47.8,
+      "bite": -52.5,
+      "air": -65.5
+     }
+    },
+    "impact": {
+     "peak": 0.124,
+     "energy": -32.3,
+     "phone": -32,
+     "phoneE": -44.3,
+     "dur": 0.4,
+     "layers": 5,
+     "bands": {
+      "bass": -36.7,
+      "body": -44.6,
+      "bite": -55.7,
+      "air": -70.1
+     }
+    },
+    "seq": {
+     "peak": 0.142,
+     "energy": -30.3,
+     "phone": -31.7,
+     "phoneE": -38.8,
+     "dur": 1.967,
+     "layers": 20,
+     "bands": {
+      "bass": -35.6,
+      "body": -40.4,
+      "bite": -43.9,
+      "air": -58.4
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.049,
+     "energy": -37.3,
+     "phone": -34.2,
+     "phoneE": -41.2,
+     "dur": 1.087,
+     "layers": 7,
+     "bands": {
+      "bass": -47.6,
+      "body": -43.8,
+      "bite": -44.8,
+      "air": -59.9
+     }
+    },
+    "lock": {
+     "peak": 0.054,
+     "energy": -49.5,
+     "phone": -41.3,
+     "phoneE": -54.2,
+     "dur": 0.086,
+     "layers": 4,
+     "bands": {
+      "bass": -57.7,
+      "body": -54.7,
+      "bite": -64.9,
+      "air": -75.3
+     }
+    },
+    "fire": {
+     "peak": 0.195,
+     "energy": -31.9,
+     "phone": -28.7,
+     "phoneE": -41.2,
+     "dur": 0.346,
+     "layers": 6,
+     "bands": {
+      "bass": -36.4,
+      "body": -42.3,
+      "bite": -48.7,
+      "air": -55.9
+     }
+    },
+    "impact": {
+     "peak": 0.173,
+     "energy": -29.3,
+     "phone": -29.4,
+     "phoneE": -41.3,
+     "dur": 0.486,
+     "layers": 6,
+     "bands": {
+      "bass": -33.8,
+      "body": -41.8,
+      "bite": -52.6,
+      "air": -54.3
+     }
+    },
+    "seq": {
+     "peak": 0.19,
+     "energy": -27.3,
+     "phone": -28.5,
+     "phoneE": -37.5,
+     "dur": 1.886,
+     "layers": 23,
+     "bands": {
+      "bass": -31.8,
+      "body": -38.4,
+      "bite": -45.5,
+      "air": -51.8
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.049,
+     "energy": -37.3,
+     "phone": -34.2,
+     "phoneE": -41.2,
+     "dur": 1.087,
+     "layers": 7,
+     "bands": {
+      "bass": -47.6,
+      "body": -43.8,
+      "bite": -44.8,
+      "air": -59.9
+     }
+    },
+    "lock": {
+     "peak": 0.116,
+     "energy": -36.2,
+     "phone": -35.1,
+     "phoneE": -45.8,
+     "dur": 0.365,
+     "layers": 8,
+     "bands": {
+      "bass": -41.2,
+      "body": -46.9,
+      "bite": -52.5,
+      "air": -66.4
+     }
+    },
+    "fire": {
+     "peak": 0.244,
+     "energy": -28.7,
+     "phone": -26.5,
+     "phoneE": -38.6,
+     "dur": 0.529,
+     "layers": 8,
+     "bands": {
+      "bass": -33.3,
+      "body": -39.7,
+      "bite": -46.7,
+      "air": -50.2
+     }
+    },
+    "impact": {
+     "peak": 0.197,
+     "energy": -27.2,
+     "phone": -27.8,
+     "phoneE": -38.7,
+     "dur": 0.762,
+     "layers": 9,
+     "bands": {
+      "bass": -31.8,
+      "body": -39.3,
+      "bite": -49.4,
+      "air": -52.2
+     }
+    },
+    "seq": {
+     "peak": 0.267,
+     "energy": -24.5,
+     "phone": -26.7,
+     "phoneE": -35,
+     "dur": 2.098,
+     "layers": 32,
+     "bands": {
+      "bass": -29,
+      "body": -35.9,
+      "bite": -43.5,
+      "air": -48
+     }
+    }
+   }
+  },
+  "siege2": {
+   "0": {
+    "charge": {
+     "peak": 0.105,
+     "energy": -30.8,
+     "phone": -32.5,
+     "phoneE": -39.8,
+     "dur": 1.243,
+     "layers": 9,
+     "bands": {
+      "bass": -38.9,
+      "body": -41.5,
+      "bite": -44.8,
+      "air": -59.9
+     }
+    },
+    "lock": {
+     "peak": 0.051,
+     "energy": -47.2,
+     "phone": -40.2,
+     "phoneE": -53.1,
+     "dur": 0.132,
+     "layers": 3,
+     "bands": {
+      "bass": -53.3,
+      "body": -53.1,
+      "bite": -78.4,
+      "air": -92.9
+     }
+    },
+    "fire": {
+     "peak": 0.17,
+     "energy": -34.7,
+     "phone": -32.8,
+     "phoneE": -45.4,
+     "dur": 0.26,
+     "layers": 7,
+     "bands": {
+      "bass": -40.6,
+      "body": -46.4,
+      "bite": -52.5,
+      "air": -65.5
+     }
+    },
+    "impact": {
+     "peak": 0.198,
+     "energy": -30.4,
+     "phone": -30.6,
+     "phoneE": -42.6,
+     "dur": 0.442,
+     "layers": 7,
+     "bands": {
+      "bass": -35.3,
+      "body": -42.8,
+      "bite": -55.6,
+      "air": -70
+     }
+    },
+    "seq": {
+     "peak": 0.211,
+     "energy": -26.8,
+     "phone": -30.1,
+     "phoneE": -37.3,
+     "dur": 2.02,
+     "layers": 26,
+     "bands": {
+      "bass": -32.8,
+      "body": -38.5,
+      "bite": -43.9,
+      "air": -58.4
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.105,
+     "energy": -30.8,
+     "phone": -32.5,
+     "phoneE": -39.8,
+     "dur": 1.243,
+     "layers": 9,
+     "bands": {
+      "bass": -38.9,
+      "body": -41.5,
+      "bite": -44.8,
+      "air": -59.9
+     }
+    },
+    "lock": {
+     "peak": 0.054,
+     "energy": -49.5,
+     "phone": -41.3,
+     "phoneE": -54.2,
+     "dur": 0.086,
+     "layers": 4,
+     "bands": {
+      "bass": -57.7,
+      "body": -54.7,
+      "bite": -64.9,
+      "air": -75.3
+     }
+    },
+    "fire": {
+     "peak": 0.275,
+     "energy": -30,
+     "phone": -28.3,
+     "phoneE": -40.6,
+     "dur": 0.396,
+     "layers": 8,
+     "bands": {
+      "bass": -35.2,
+      "body": -41.4,
+      "bite": -48.7,
+      "air": -55.9
+     }
+    },
+    "impact": {
+     "peak": 0.268,
+     "energy": -27.4,
+     "phone": -28.3,
+     "phoneE": -39.8,
+     "dur": 0.61,
+     "layers": 8,
+     "bands": {
+      "bass": -32.2,
+      "body": -40.2,
+      "bite": -52.4,
+      "air": -54.3
+     }
+    },
+    "seq": {
+     "peak": 0.313,
+     "energy": -24.9,
+     "phone": -28,
+     "phoneE": -36.5,
+     "dur": 1.976,
+     "layers": 29,
+     "bands": {
+      "bass": -30.1,
+      "body": -37.2,
+      "bite": -45.5,
+      "air": -51.8
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.105,
+     "energy": -30.8,
+     "phone": -32.5,
+     "phoneE": -39.8,
+     "dur": 1.243,
+     "layers": 9,
+     "bands": {
+      "bass": -38.9,
+      "body": -41.5,
+      "bite": -44.8,
+      "air": -59.9
+     }
+    },
+    "lock": {
+     "peak": 0.116,
+     "energy": -36.2,
+     "phone": -35.1,
+     "phoneE": -45.8,
+     "dur": 0.365,
+     "layers": 8,
+     "bands": {
+      "bass": -41.2,
+      "body": -46.9,
+      "bite": -52.5,
+      "air": -66.4
+     }
+    },
+    "fire": {
+     "peak": 0.32,
+     "energy": -27.1,
+     "phone": -25.9,
+     "phoneE": -37.7,
+     "dur": 0.56,
+     "layers": 10,
+     "bands": {
+      "bass": -32.3,
+      "body": -38.6,
+      "bite": -46.7,
+      "air": -50.2
+     }
+    },
+    "impact": {
+     "peak": 0.305,
+     "energy": -25.1,
+     "phone": -27.1,
+     "phoneE": -37.5,
+     "dur": 0.773,
+     "layers": 11,
+     "bands": {
+      "bass": -30,
+      "body": -38,
+      "bite": -49.3,
+      "air": -52.2
+     }
+    },
+    "seq": {
+     "peak": 0.403,
+     "energy": -22.4,
+     "phone": -26.1,
+     "phoneE": -34.1,
+     "dur": 2.133,
+     "layers": 38,
+     "bands": {
+      "bass": -27.5,
+      "body": -34.8,
+      "bite": -43.4,
+      "air": -48
+     }
+    }
+   }
+  },
+  "moon": {
+   "0": {
+    "charge": {
+     "peak": 0.131,
+     "energy": -27.6,
+     "phone": -31.2,
+     "phoneE": -36.3,
+     "dur": 1.267,
+     "layers": 8,
+     "bands": {
+      "bass": -34.1,
+      "body": -37.9,
+      "bite": -41.6,
+      "air": -53
+     }
+    },
+    "lock": {
+     "peak": 0.08,
+     "energy": -42.3,
+     "phone": -39.9,
+     "phoneE": -52.8,
+     "dur": 0.123,
+     "layers": 4,
+     "bands": {
+      "bass": -47.7,
+      "body": -52.9,
+      "bite": -76.4,
+      "air": -86.7
+     }
+    },
+    "fire": {
+     "peak": 0.173,
+     "energy": -32.9,
+     "phone": -29.6,
+     "phoneE": -41.8,
+     "dur": 0.413,
+     "layers": 10,
+     "bands": {
+      "bass": -39.1,
+      "body": -42.4,
+      "bite": -50.6,
+      "air": -66.6
+     }
+    },
+    "impact": {
+     "peak": 0.138,
+     "energy": -30,
+     "phone": -31.2,
+     "phoneE": -42.1,
+     "dur": 0.783,
+     "layers": 7,
+     "bands": {
+      "bass": -35.1,
+      "body": -43,
+      "bite": -49.4,
+      "air": -64
+     }
+    },
+    "seq": {
+     "peak": 0.215,
+     "energy": -25.3,
+     "phone": -27.3,
+     "phoneE": -34.5,
+     "dur": 1.554,
+     "layers": 29,
+     "bands": {
+      "bass": -31.4,
+      "body": -35.7,
+      "bite": -40.9,
+      "air": -53.1
+     }
+    }
+   },
+   "1": {
+    "charge": {
+     "peak": 0.131,
+     "energy": -27.6,
+     "phone": -31.2,
+     "phoneE": -36.3,
+     "dur": 1.267,
+     "layers": 8,
+     "bands": {
+      "bass": -34.1,
+      "body": -37.9,
+      "bite": -41.6,
+      "air": -53
+     }
+    },
+    "lock": {
+     "peak": 0.081,
+     "energy": -42.8,
+     "phone": -40.4,
+     "phoneE": -53.4,
+     "dur": 0.094,
+     "layers": 5,
+     "bands": {
+      "bass": -48.5,
+      "body": -53.8,
+      "bite": -64.6,
+      "air": -74
+     }
+    },
+    "fire": {
+     "peak": 0.298,
+     "energy": -27.1,
+     "phone": -26.2,
+     "phoneE": -37.6,
+     "dur": 0.708,
+     "layers": 11,
+     "bands": {
+      "bass": -32.6,
+      "body": -38.4,
+      "bite": -47.3,
+      "air": -50.7
+     }
+    },
+    "impact": {
+     "peak": 0.189,
+     "energy": -26.6,
+     "phone": -29,
+     "phoneE": -39.2,
+     "dur": 0.887,
+     "layers": 9,
+     "bands": {
+      "bass": -31.7,
+      "body": -40.1,
+      "bite": -47.3,
+      "air": -53.2
+     }
+    },
+    "seq": {
+     "peak": 0.319,
+     "energy": -23.7,
+     "phone": -24.2,
+     "phoneE": -33.3,
+     "dur": 1.607,
+     "layers": 33,
+     "bands": {
+      "bass": -29.8,
+      "body": -34.2,
+      "bite": -41.1,
+      "air": -48
+     }
+    }
+   },
+   "2": {
+    "charge": {
+     "peak": 0.131,
+     "energy": -27.6,
+     "phone": -31.2,
+     "phoneE": -36.3,
+     "dur": 1.267,
+     "layers": 8,
+     "bands": {
+      "bass": -34.1,
+      "body": -37.9,
+      "bite": -41.6,
+      "air": -53
+     }
+    },
+    "lock": {
+     "peak": 0.168,
+     "energy": -35.1,
+     "phone": -34.6,
+     "phoneE": -45.5,
+     "dur": 0.353,
+     "layers": 9,
+     "bands": {
+      "bass": -40,
+      "body": -46.5,
+      "bite": -52.5,
+      "air": -66.2
+     }
+    },
+    "fire": {
+     "peak": 0.476,
+     "energy": -22.4,
+     "phone": -23.8,
+     "phoneE": -34.3,
+     "dur": 0.757,
+     "layers": 16,
+     "bands": {
+      "bass": -28.5,
+      "body": -35.3,
+      "bite": -44,
+      "air": -44.7
+     }
+    },
+    "impact": {
+     "peak": 0.251,
+     "energy": -22.7,
+     "phone": -27,
+     "phoneE": -35.3,
+     "dur": 1.856,
+     "layers": 12,
+     "bands": {
+      "bass": -28.3,
+      "body": -36.6,
+      "bite": -41.5,
+      "air": -49.4
+     }
+    },
+    "seq": {
+     "peak": 0.477,
+     "energy": -18.9,
+     "phone": -22.3,
+     "phoneE": -30.6,
+     "dur": 2.204,
+     "layers": 45,
+     "bands": {
+      "bass": -25.3,
+      "body": -31.8,
+      "bite": -38,
+      "air": -43.1
+     }
+    }
+   }
+  }
+ },
+ "burst": {
+  "pulse0": {
+   "peak": 0.041,
+   "energy": -40,
+   "phone": -41,
+   "phoneE": -43.3,
+   "dur": 2.289,
+   "layers": 48,
+   "bands": {
+    "bass": -55.5,
+    "body": -43.7,
+    "bite": -54.3,
+    "air": -66
+   }
+  },
+  "twin0": {
+   "peak": 0.042,
+   "energy": -43,
+   "phone": -47,
+   "phoneE": -49.6,
+   "dur": 1.037,
+   "layers": 36,
+   "bands": {
+    "bass": -48.8,
+    "body": -52.4,
+    "bite": -59.4,
+    "air": -53.8
+   }
+  },
+  "twin2": {
+   "peak": 0.089,
+   "energy": -37.6,
+   "phone": -42.8,
+   "phoneE": -45.7,
+   "dur": 1.04,
+   "layers": 108,
+   "bands": {
+    "bass": -43,
+    "body": -47.4,
+    "bite": -57.2,
+    "air": -51.6
+   }
+  },
+  "siege0": {
+   "peak": 0.062,
+   "energy": -30.9,
+   "phone": -37.7,
+   "phoneE": -40.2,
+   "dur": 5.14,
+   "layers": 48,
+   "bands": {
+    "bass": -35.2,
+    "body": -40.6,
+    "bite": -51.4,
+    "air": -56.9
+   }
+  },
+  "moon": {
+   "peak": 0.066,
+   "energy": -37,
+   "phone": -39.9,
+   "phoneE": -42.2,
+   "dur": 2.299,
+   "layers": 120,
+   "bands": {
+    "bass": -44.3,
+    "body": -43.8,
+    "bite": -47.7,
+    "air": -60.6
+   }
+  }
+ },
+ "legacy": {
+  "hit": {
+   "peak": 0.016,
+   "energy": -62.6,
+   "phone": -53,
+   "phoneE": -66,
+   "dur": 0.03,
+   "layers": 0,
+   "bands": {
+    "bass": -80.1,
+    "body": -67,
+    "bite": -72.8,
+    "air": -86.5
+   }
+  },
+  "crit": {
+   "peak": 0.027,
+   "energy": -54.9,
+   "phone": -44.9,
+   "phoneE": -58,
+   "dur": 0.053,
+   "layers": 0,
+   "bands": {
+    "bass": -80.7,
+    "body": -59.6,
+    "bite": -63.2,
+    "air": -77.3
+   }
+  },
+  "hurt": {
+   "peak": 0.033,
+   "energy": -51.2,
+   "phone": -44.2,
+   "phoneE": -57.2,
+   "dur": 0.081,
+   "layers": 0,
+   "bands": {
+    "bass": -57.3,
+    "body": -57.7,
+    "bite": -68.1,
+    "air": -72.7
+   }
+  },
+  "kill": {
+   "peak": 0.109,
+   "energy": -36,
+   "phone": -35.6,
+   "phoneE": -47.3,
+   "dur": 0.28,
+   "layers": 0,
+   "bands": {
+    "bass": -40.1,
+    "body": -47.6,
+    "bite": -58.1,
+    "air": -71.9
+   }
+  },
+  "boom": {
+   "peak": 0.089,
+   "energy": -38.5,
+   "phone": -39.4,
+   "phoneE": -51.7,
+   "dur": 0.257,
+   "layers": 0,
+   "bands": {
+    "bass": -42.5,
+    "body": -52,
+    "bite": -64.6,
+    "air": -79.3
+   }
+  },
+  "die": {
+   "peak": 0.056,
+   "energy": -42.1,
+   "phone": -35.4,
+   "phoneE": -46.7,
+   "dur": 0.411,
+   "layers": 0,
+   "bands": {
+    "bass": -50.2,
+    "body": -47.1,
+    "bite": -58.5,
+    "air": -64.2
+   }
+  },
+  "ready": {
+   "peak": 0.018,
+   "energy": -52.5,
+   "phone": -44,
+   "phoneE": -56.1,
+   "dur": 0.273,
+   "layers": 0,
+   "bands": {
+    "bass": -64.9,
+    "body": -56.7,
+    "bite": -66.3,
+    "air": -70.9
+   }
+  },
+  "super": {
+   "peak": 0.186,
+   "energy": -29.8,
+   "phone": -32.7,
+   "phoneE": -44.6,
+   "dur": 0.31,
+   "layers": 0,
+   "bands": {
+    "bass": -36.4,
+    "body": -47.4,
+    "bite": -49.4,
+    "air": -52.5
+   }
+  },
+  "impact": {
+   "peak": 0.244,
+   "energy": -27.1,
+   "phone": -31.4,
+   "phoneE": -43,
+   "dur": 0.391,
+   "layers": 0,
+   "bands": {
+    "bass": -32.2,
+    "body": -44.9,
+    "bite": -48.5,
+    "air": -54.2
+   }
+  },
+  "jackpot": {
+   "peak": 0.217,
+   "energy": -31.9,
+   "phone": -34.8,
+   "phoneE": -44.1,
+   "dur": 0.281,
+   "layers": 0,
+   "bands": {
+    "bass": -36.5,
+    "body": -45.4,
+    "bite": -51.1,
+    "air": -57
+   }
+  },
+  "hit_pulse0": {
+   "peak": 0.024,
+   "energy": -57.2,
+   "phone": -47.2,
+   "phoneE": -60.2,
+   "dur": 0.037,
+   "layers": 2,
+   "bands": {
+    "bass": -80.4,
+    "body": -61.1,
+    "bite": -68.6,
+    "air": -74
+   }
+  },
+  "hit_twin0": {
+   "peak": 0.033,
+   "energy": -59.7,
+   "phone": -49.7,
+   "phoneE": -62.7,
+   "dur": 0.016,
+   "layers": 2,
+   "bands": {
+    "bass": -111.5,
+    "body": -77.9,
+    "bite": -69.2,
+    "air": -63.9
+   }
+  },
+  "hit_siege0": {
+   "peak": 0.041,
+   "energy": -48.4,
+   "phone": -44.8,
+   "phoneE": -57.8,
+   "dur": 0.061,
+   "layers": 2,
+   "bands": {
+    "bass": -52.8,
+    "body": -57.9,
+    "bite": -74.4,
+    "air": -88
+   }
+  },
+  "hit_moon": {
+   "peak": 0.017,
+   "energy": -58.9,
+   "phone": -48.9,
+   "phoneE": -61.9,
+   "dur": 0.04,
+   "layers": 2,
+   "bands": {
+    "bass": -98.6,
+    "body": -65.3,
+    "bite": -64.7,
+    "air": -79.3
+   }
+  }
+ }
+}

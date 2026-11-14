@@ -15,7 +15,7 @@ async def main():
         await pg.add_style_tag(content='#toast{display:none!important}')
         await pg.evaluate("()=>{save.welcomed=true;save.mp=12;store();closeAll();}")
         # count sounds played
-        await pg.evaluate("()=>{window.__snd={};const o=window.sfx;window.sfx=function(n){__snd[n]=(__snd[n]||0)+1;return o(n);};}")
+        await pg.evaluate("()=>{window.__snd={};const o=window.sfx;window.sfx=function(n){__snd[n]=(__snd[n]||0)+1;return o(n);};for(const k of ['shot','charge','lock','fire','impact']){const f=LW[k];LW[k]=function(){__snd['lw_'+k]=(__snd['lw_'+k]||0)+1;return f.apply(this,arguments);};}}")   # Session 5E-2b3: weapon shots and Arcade supers play through LW (fx.js)
         await pg.mouse.click(10,300)   # a tap unlocks audio
         await pg.wait_for_timeout(200)
         ac=await pg.evaluate("()=>AC?AC.state:'none'")
@@ -71,7 +71,7 @@ async def main():
         check(0.25<rate<0.8,'bot dodge rate off: '+str(rate))
         snd=await pg.evaluate("()=>__snd")
         print('sounds:',snd)
-        check(snd.get('dash',0)>=1 and snd.get('super',0)>=1,'sounds not triggered '+json.dumps(snd))
+        check(snd.get('dash',0)>=1 and snd.get('lw_charge',0)>=1 and snd.get('lw_fire',0)>=1,'sounds not triggered '+json.dumps(snd))
         # 4) settings: sound + reminder toggles
         await pg.evaluate("()=>{exitBattle();setTab('play');}")
         await pg.click('#btnSettings');await pg.wait_for_timeout(400)

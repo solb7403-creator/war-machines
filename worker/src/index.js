@@ -11,7 +11,7 @@ import {webAuth,webIdentity,hasWebCookie,WebSession,approveBotWebsiteLogin} from
 import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar-identity.js";
 import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from "./accounts.js";
 import {ACCOUNT_TYPES} from "./web-auth.js";
-import { ownerGemEpic } from "./owner.js";
+import { ownerGemEpic, ownerCheck } from "./owner.js";
 import {conquestSession,conquestInput,conquestAction} from "./conquest.js";
 import {conquestVisit} from "./conquest-visit.js";
 export {WebSession};
@@ -667,8 +667,8 @@ const ROUTES = {
   "/api/pay-log": async (env, a) => ({ status: 200, body: await payLog(env, a.b, a.user, a.pid) }),
   "/api/stars-invoice": async (env, a) => starsInvoice(env, a.b, a.user, a.pid),
   "/api/notify-optin": async (env, a) => ({ status: 200, body: await notifyOptin(env, a.pid, a.user, a.b.on !== false) }),
-  "/api/admin": async (env, a) => (a.b && a.b.a === "owner_gem_epic" ? ownerGemEpic(env, a, ADMINS) : admin(env, a.user, a.b)),
-  "/api/owner": async (env, a) => (a.b && a.b.a === "owner_gem_epic" ? ownerGemEpic(env, a, ADMINS) : { status: 400, body: { error: "action" } }),   // owner only (owner.js); also open to his website session
+  "/api/admin": async (env, a) => (a.b && a.b.a === "owner_gem_epic" ? ownerGemEpic(env, a, ADMINS) : a.b && a.b.a === "owner_check" ? ownerCheck(env, a, ADMINS) : admin(env, a.user, a.b)),
+  "/api/owner": async (env, a) => (a.b && a.b.a === "owner_gem_epic" ? ownerGemEpic(env, a, ADMINS) : a.b && a.b.a === "owner_check" ? ownerCheck(env, a, ADMINS) : { status: 400, body: { error: "action" } }),   // owner only (owner.js); also open to his website session   // owner only (owner.js); also open to his website session
   "/api/pvp/join": async (env, a) => pvpJoin(env, a),
   "/api/callsign": async (env, a) => apiCallsign(env, a),
   "/api/tglink": async (env, a) => apiTelegramLink(env, a, a.ip),
@@ -732,7 +732,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261114110530"},409),req);
+        return cors(json({error:"update",build:"20261114142239"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);
