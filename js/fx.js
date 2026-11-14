@@ -425,6 +425,7 @@ const LW=(()=>{
   const V=play(AC,busOf('sup'),AC.currentTime+0.003,'charge',k,1,{g});st.charge.set(id,V);admitS(V,g,own);
  }
  function stopCharge(id,at){const V=st.charge.get(id);if(V){stop(V,at);st.charge.delete(id);}}
+ function stopCharges(){for(const id of [...st.charge.keys()])stopCharge(id);}   // a match or round starts, or the battle is left: no charge carries over
  function lockS(k,oc,own,x,y){if(!ready())return;const g=own?1:0.6*near(x,y);if(!own&&(oc!==2||g<0.12))return;if(!supRoom(g,own))return;admitS(play(AC,busOf('sup'),AC.currentTime+0.002,'lock',k,oc,{g}),g,own);}
  function fire(k,oc,id,own,x,y){
   if(!ready()){st.charge.delete(id);return;}const now=AC.currentTime;stopCharge(id,now+0.01);
@@ -457,8 +458,8 @@ const LW=(()=>{
   const tap=oc===0?bar:oc===2?0.47*bar+0.14:0.55*bar+0.12,fireT=Math.max(chg,tap+rel),imp=fireT+(arch==='siege'?0.7:0.02);
   return {lock:tap,fire:fireT,impact:imp};
  }
- const stats=()=>({made:{...st.made},charging:st.charge.size,active:Object.fromEntries(Object.entries(st.act).map(([k,a])=>[k,a.filter(V=>AC&&V.end>=AC.currentTime&&!V.stopped).length]))});   // the browser test reads it
- return {shot,hit,charge,stopCharge,lock:lockS,fire,impact,stopAll,render,play,timeline,stats,tierOf,archOf,FAM,KEYS:['pulse0','pulse1','pulse2','twin0','twin1','twin2','siege0','siege1','siege2','moon']};
+ const stats=()=>({made:{...st.made},charging:st.charge.size,chIds:[...st.charge.keys()],active:Object.fromEntries(Object.entries(st.act).map(([k,a])=>[k,a.filter(V=>AC&&V.end>=AC.currentTime&&!V.stopped).length]))});   // the browser test reads it
+ return {shot,hit,charge,stopCharge,stopCharges,lock:lockS,fire,impact,stopAll,render,play,timeline,stats,tierOf,archOf,FAM,KEYS:['pulse0','pulse1','pulse2','twin0','twin1','twin2','siege0','siege1','siege2','moon']};
 })();
 // ---------- ambience (Session 5E-2c): a quiet bed under each Arcade map, synthesised (no downloads). Follows the Sound setting.
 // rum: low rumble [cutoff Hz, gain]; air: band of moving air [centre Hz, Q, gain]; hum: machinery [Hz, gain]; clank: far-off metal
@@ -504,7 +505,7 @@ function fx(name,arg,arg2){
   case 'suplock':{const u=arg&&arg.u,own=typeof me!=='undefined'&&u===me,oc=arg.oc|0;if(own){if(oc===2){haptic('n','success');haptic('i','heavy');}else haptic('i',oc===1?'medium':'soft');}lw(()=>LW.lock(arg.k||unitKey(u),oc,own,u&&u.x,u&&u.y));break;}
   case 'supfire':{const u=arg&&arg.u,own=typeof me!=='undefined'&&u===me;lw(()=>LW.fire(arg.k||unitKey(u),arg.oc===undefined?1:arg.oc,u?u.id:-1,own,arg.x!==undefined?arg.x:u&&u.x,arg.y!==undefined?arg.y:u&&u.y));break;}
   case 'supimpact':{const o=arg||{};haptic('i','heavy');lw(()=>LW.impact(o.k||'pulse0',o.oc===undefined?1:o.oc,o.kind|0,o.x,o.y,o.team));break;}
-  case 'supstop':lw(()=>LW.stopCharge(arg));break;
+  case 'supstop':lw(()=>arg==='all'?LW.stopCharges():LW.stopCharge(arg));break;
   case 'kill':haptic('i','heavy');sfx('kill');break;
   case 'die':haptic('n','error');sfx('die');break;
   case 'boom':sfx('boom');break;

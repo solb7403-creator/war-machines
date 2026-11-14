@@ -3996,13 +3996,21 @@ Findings and what round 1 did (`fb9c664`, plus the range sound and test commits 
   `conquest-regression.sh` (all 29; `conquest-travel` and `conquest-view-travel` fixed for per-chassis fields), `s2/pool`,
   `s2/legend` (spend), `proofcheck` on 288 real matches: 0 failed. `worker/smoke-runtime.mjs` through wrangler 4 (real workerd,
   Durable Objects, WebSockets): SMOKE OK, WEB RUNTIME OK, ACCOUNTS RUNTIME OK.
-- Browser, this branch: PASS `b1`, `b3`, `b4`, `b7`, `b8`, `b11`, `b12`, `b13`, `owner-ui`, `garage-layout`, `league-ui`, `qa`,
-  `chassis-ui`, `weapon-sounds-browser`, `conquest-super-fx`, `proofreal 3` (287 of 288 before the draw fix; 288 after);
-  round-1 re-run in the next section.
+- Browser, this branch, first pass: PASS `b1`, `b3`, `b4`, `b7`, `b8`, `b11`, `b12`, `b13`, `owner-ui`, `garage-layout`,
+  `league-ui`, `qa`, `chassis-ui`, `weapon-sounds-browser`, `conquest-super-fx`; `proofreal 3`: 287 of 288 (the mutual-kill draw,
+  fixed; 288 of 288 on the saved records after). **After round 1, all PASS:** `owner-ui`, `qa`, `b1`, `b3`, `b4`, `b7`, `b8`,
+  `garage-layout`, `league-ui`, `conquest-super-fx`, `proofreal 1`, `chassis-ui` (scale 2: phone, 320 px, desktop; screens in
+  `docs/chassis-5e2b3/`) and `weapon-sounds-browser` (its new checks: 20 supers stay under the cap and yours still plays; far
+  shots cost nothing; the last button clears the pinned Stop; **leaving a match while a tank charges stops that charge**, a leak
+  the longer real-time check exposed and fixed in round 1, `fx('supstop','all')` at match start, round start and exit; the
+  practice range's shots play, with the AI flying your tank; screens of the sound test in `docs/sounds-5e2b3/`). At scale 2 the
+  software renderer runs the live loop too slowly for its real-time shot count (0 shots in 4 s); that check now waits for three
+  rounds (up to 15 s) and scales the other-tank budget by the time measured.
 - **Failing on pristine main `a63f1b2` too, the same way** (none is in CI; not fixed here): `b2test` (a click times out), `b6test`
   (the Garage paints button `data-act="paints"` is gone since the garage redesign), `b9test` (garage section selectors; its
   rapid upgrade taps land 7-9 of 14), `gear-browser` ("WEAPON · Moonbeam", a stale super value), `lab-browser` ("Mods"),
-  `modules-browser` ("two machine cards"). `conquest-server.mjs` is a local browser harness (a server that waits), not a test.
+  `modules-browser` ("two machine cards"), `range-browser` (the Garage's `labedit` button is gone; the range's sound check lives
+  in `weapon-sounds-browser`). `conquest-server.mjs` is a local browser harness (a server that waits), not a test.
 
 ### Agents used (AGENTS.md)
 1. One research agent (web search; page fetches blocked): rarity layering, rapid fire, mixing by importance, phone loudness,

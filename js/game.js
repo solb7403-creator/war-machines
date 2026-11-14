@@ -279,7 +279,7 @@ function setCtl(u,ctl){
  u.claim=null;u.mb=0;
 }
 function startMatch(){
- simStart();
+ simStart();if(typeof fx==='function')fx('supstop','all');   // no super charge carries over from a match left mid-charge (phone only)
  if(SRV)return;
  mstat=me?me.st:null;
  if(typeof startBanners==='function')startBanners();
@@ -1175,7 +1175,7 @@ function endRound(){
  if(typeof onRoundEnd==='function')setTimeout(()=>onRoundEnd(info),700);
 }
 function startRound(){
- if(!series||state!=='round')return;
+ if(!series||state!=='round')return;if(typeof fx==='function')fx('supstop','all');
  simRound();
  if(SRV)return;
  me=units[0];

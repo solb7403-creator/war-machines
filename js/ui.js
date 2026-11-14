@@ -1384,6 +1384,7 @@ function forfeit(){
  exitBattle();
 }
 function exitBattle(){
+ if(typeof fx==='function')fx('supstop','all');   // leaving mid-charge: every super charge stops (fx.js)
  if(pvp)pvpClose();   // leaving the results of a live match (or a lost one)
  closeAll();if(leaveFn){dropBack(leaveFn);leaveFn=null;}
  if(state!=='play')state='menu';

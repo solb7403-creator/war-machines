@@ -38,12 +38,14 @@ async def main():
         # the sim ran 12 s in one burst of script time: the other-tank budget (9 a second, bursts of 4) caps what plays
         ok(st['madeOther'] <= 4 + 9 * 2, 'other tanks stay inside the shot budget ' + json.dumps(st))
         # the same match in real time (the game's own loop): every one of your rounds plays, the other tank stays in budget
-        rt0 = await pg.evaluate("()=>{const m=LW.stats().made;__lw.length=0;units[1].x=10;units[1].y=16;me.x=10;me.y=22;me.hp=me.mhp=1e6;units[1].hp=units[1].mhp=1e6;return m;}")
-        await pg.wait_for_timeout(4000)
-        rt = await pg.evaluate("(m0)=>{const m=LW.stats().made;return {calls:__lw.filter(c=>c[0]==='shot'&&c[2]===true).length,own:m.shot-m0.shot,other:m.other-m0.other,state};}", rt0)
+        rt0 = await pg.evaluate("()=>{const m=LW.stats().made;__lw.length=0;units[1].x=10;units[1].y=16;me.x=10;me.y=22;me.hp=me.mhp=1e6;units[1].hp=units[1].mhp=1e6;window.__rt0=performance.now();return m;}")
+        # the software renderer runs the live loop slowly: wait for three of your rounds (up to 15 s), not a fixed 4 s
+        try: await pg.wait_for_function("()=>__lw.filter(c=>c[0]==='shot'&&c[2]===true).length>=3", timeout=15000)
+        except Exception: pass
+        rt = await pg.evaluate("(m0)=>{const m=LW.stats().made;return {calls:__lw.filter(c=>c[0]==='shot'&&c[2]===true).length,own:m.shot-m0.shot,other:m.other-m0.other,state,secs:Math.round((performance.now()-__rt0)/100)/10};}", rt0)
         print('real time', rt)
         ok(rt['calls'] >= 3 and rt['own'] >= rt['calls'] * 0.9, 'real time: your shots all play ' + json.dumps(rt))
-        ok(rt['other'] <= 4 + 9 * 4.5, 'real time: the other tank stays in the shot budget ' + json.dumps(rt))
+        ok(rt['other'] <= 4 + 9 * (rt['secs'] + 0.5), 'real time: the other tank stays in the shot budget ' + json.dumps(rt))
         # 2. every super at every outcome
         res = await pg.evaluate("""async()=>{const out=[];const W=k=>k==='moon'?['moon',2]:[k.replace(/\\d$/,''),+k.slice(-1)];
           for(const k of LW.KEYS)for(const oc of [0,1,2]){
@@ -55,7 +57,7 @@ async def main():
             for(let i=0;i<120;i++)update(1/60);
             await new Promise(r=>setTimeout(r,0));
             const seq=__lw.filter(c=>c[0]!=='shot'&&c[0]!=='hit'&&(c[0]!=='charge'||c[2]===me.id||c[3]===true));
-            out.push({k,oc,seq:seq.map(c=>c.slice(0,3)),charging:LW.stats().charging});}
+            out.push({k,oc,seq:seq.map(c=>c.slice(0,3)),charging:LW.stats().charging,chIds:LW.stats().chIds,meId:me.id});}
           return out;}""")
         for r in res:
             k, oc = r['k'], r['oc']
@@ -68,7 +70,10 @@ async def main():
             lk = [c for c in r['seq'] if c[0] == 'lock']; fi = [c for c in r['seq'] if c[0] == 'fire']
             ok(bool(lk) and lk[0][2] == oc, k + ': the verdict sound has the bar\'s outcome ' + str(oc) + ' ' + json.dumps(lk))
             ok(bool(fi) and fi[0][2] == oc, k + ': the fire has the bar\'s outcome ' + str(oc) + ' ' + json.dumps(fi))
-            ok(r['charging'] == 0, k + ' oc ' + str(oc) + ': the charge stopped when the super fired')
+            ok(r['meId'] not in (r.get('chIds') or []), k + ' oc ' + str(oc) + ': your charge stopped when your super fired (still charging: ' + json.dumps(r.get('chIds')) + ')')
+        left = await pg.evaluate("""()=>{exitBattle();prepareMatch();startMatch();for(let i=0;i<4;i++)update(1/30);const e=units[1];e.x=10;e.y=14;me.x=10;me.y=20;e.sp=SUPER_MAX;e.supN=0;
+          useSuper(e,Math.PI/2);update(1/60);const a=LW.stats().chIds.includes(e.id);exitBattle();return {a,b:LW.stats().charging};}""")
+        ok(left['a'] and left['b'] == 0, 'leaving a match while a tank charges its super stops that charge ' + json.dumps(left))
         # another tank's super is a warning you hear (its charge, not full level)
         en = await pg.evaluate("""()=>{exitBattle();prepareMatch();startMatch();for(let i=0;i<4;i++)update(1/30);const e=units[1];e.x=10;e.y=14;me.x=10;me.y=20;e.sp=SUPER_MAX;e.supN=0;__lw.length=0;
           useSuper(e,Math.PI/2);for(let i=0;i<90;i++)update(1/60);return __lw.filter(c=>c[0]==='charge'||c[0]==='fire').map(c=>[c[0],c[1],c[3]===undefined?c[2]:c[3]]);}""")
@@ -134,6 +139,20 @@ async def main():
         await pg.click('[data-act=sndstop]'); await pg.wait_for_timeout(100)
         ok(await pg.evaluate("()=>LW.stats().charging===0"), 'Stop leaves nothing charging')
         ok(not errs, 'no page errors: ' + json.dumps(errs[:5]))
+        await b.close()
+        # 5. the practice range (review round 1, A1): its engine runs in its own frame; its shots reach the page as events and play
+        # there. The range loads the server's owned machines, so this part signs in with a server account (as range-browser does)
+        b, pg, errs = await open_game(p, 390, 740, eco='server', user={'id': 990514, 'username': 'pilotrange', 'first_name': 'R'})
+        await pg.wait_for_function('!!save.lab', timeout=30000); await pg.wait_for_timeout(500)
+        await pg.evaluate("()=>{save.welcomed=true;closeAll();setTab('garage');}"); await pg.wait_for_timeout(700)
+        await pg.locator('[data-act="rangecard"]').first.click(); await pg.wait_for_timeout(500)
+        await pg.locator('#range-control').select_option('ai')   # the AI flies your tank, so both tanks fire
+        await pg.locator('[data-act="rangestart"]').click()
+        await pg.wait_for_function('!!rangeRun?.sim', timeout=30000)
+        rs = await pg.evaluate('''()=>{const calls=[],f0=fx;fx=(k,a)=>{if(k==='shot')calls.push(a&&a.wtype);return f0(k,a);};
+          try{for(let i=0;i<900&&rangeRun.sim.view().state==='play';i++)rangeFrame(1/60);}finally{fx=f0;}return calls;}''')
+        ok(len(rs) > 0 and all(rs), 'practice range: its shots play their weapon sound ' + json.dumps(rs[:6]))
+        ok(not errs, 'range: no page errors: ' + json.dumps(errs[:5]))
         await b.close()
     print('RESULT', 'PASS' if not fails else 'FAIL (%d)' % len(fails))
     sys.exit(1 if fails else 0)
