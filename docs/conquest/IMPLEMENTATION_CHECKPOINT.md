@@ -4228,3 +4228,76 @@ No round 2: no blocker; every fix is covered by a test and re-captured in the sa
   score, outside the daily cap. Not changed in this release.
 - Not verified on a physical phone. Owner check (Telegram, iPhone): Quests shows +3,500 / +12,500; Shop > Points shop shows
   30K / 60K / 180K and chosen cores from 43,750 points; a maxed core's tile says Max.
+
+## Checkpoint 39 — weapon / chassis crates priced like cores + chosen gear (branch `claude/weapon-chassis-chosen-gear-grhoil`, from main `1e10316`)
+
+Brief: the owner's session prompt of Nov 14, 2026 (Opus 5.5; record every decision with evidence here; no questions to the owner;
+no live players yet, owner testing only; phone and computer equal; at most 2 review rounds; release pre-approved: PR, merge on
+green checks, deploy, release record). The owner set every number. Not touched: money prices (Stars / TON / SOL), gem caches and
+chosen cores (Checkpoint 38), the salvage ladder (10,000 / 20,000), Starter and Founder packs, free cache sources, the repeat-buy
+rules (crates x1 / x2 / x3 for money, gem caches +25% a day), payments (still disabled; Session 8 certifies them).
+
+### The owner's numbers, as shipped (`js/rules.js`)
+| Rule | Before (main `1e10316`) | After |
+|---|---:|---:|
+| Weapon cache / chassis crate for points, Common / Rare / Epic (`RPTS`) | 20,000 / 80,000 / not sold | **30,000 / 60,000 / 180,000** (= `GEM_PTS`, 120 a Star of 250 / 500 / 1,500) |
+| Chosen weapon or chassis for points (`gearPts`, new) | did not exist | **43,750 / 87,500 / 262,500** (= `corePts`, 175 a Star) |
+| Chosen weapon or chassis for money (`ecoPrice` kind `gear`, new) | did not exist | **1.5x (`CORE_X`) the crate's price right now**: 375 / 750 / 2,250 Stars at x1 |
+| Crate money prices | 250 / 500 / 1,500 Stars, 4 / 8 / 23 TON | unchanged |
+| A crate bought with points | counted toward the crate's x2 / x3 money step | **no longer counts** (rule 3: "points purchases do not raise money price steps") |
+
+Decisions (with the reason):
+1. **What a "specific weapon / chassis" is:** each line has its own item per rarity (Pulse Cannon / Arc Pulse / Nova Pulse ...), so a
+   chosen item is (line, rarity): 9 weapons and 9 chassis. The player picks one; it is added exactly as a crate adds it (owned at
+   that rarity, `S.roll[k:ri]` = a fresh 105-110% roll from the same formula as `ecoOpenBoxRaw`). Moonbeam is premium, not crate
+   gear: not sellable as chosen gear (`gearTk('moon')` is null; tested).
+2. **Owned:** an item owned at that rarity shows "Owned" (Store, Points shop, both grids) and opens nothing; the server refuses it
+   (`ecoGearPts` err `owned`; `ecoOwned` kind `gear` -> the Stars invoice returns 409). The starter Pulse Cannon / Vanguard count.
+3. **Same process as cores (rule 3):** a points buy never touches `S.buys` (tested on the server and on screen); a Stars / TON / SOL
+   buy of a chosen item counts as a buy of its crate (x1 -> x2), as a paid chosen core counts toward its gem cache's day step
+   (`ecoGrant`). Deals don't apply to chosen items (as chosen cores). Two invoices for the same item paid one after the other: the
+   second re-rolls it like a crate re-roll (better roll kept, else the crate's duplicate points), never a duplicate entry (tested).
+4. **Crate points buys stop raising the money price** (they used to: `ecoCratePts` incremented `S.buys`). This is rule 3 applied to
+   crates; the repeat-buy rule itself (x1 / x2 / x3 money) is unchanged. `wtest/test` pins it (1st paid Rare crate 500 Stars after a
+   points buy, then x2 = 1,000).
+5. **Payment paths:** no new plumbing. The new kind `gear` rides the existing `descOf` -> `ecoOwned` / `ecoPrice` -> Stars invoice ->
+   webhook -> `ecoGrant` -> refund (`ecoRefund` already handles `new` / `up` / `dup` outs) path, and the TON / SOL `pay-log` path
+   uses the same `descOf` and `ecoPrice`. The invoice names the exact item ("Epic chosen chassis: Paladin"); for that the item
+   names `WNAMES` / `CNAMES` moved from `js/core.js` to `js/rules.js` (bundled into the Worker; same text).
+6. **The one-time migration audit** of old phone records (`worker/src/eco.js migrate`) priced unsourced gear at the points prices of
+   that time (20,000 / 80,000; Epic not buyable). It now keeps those numbers as `OLD_RPTS` instead of following `RPTS`, so the audit
+   of old records doesn't change with today's prices.
+7. **Reveal:** a chosen item shows itself (no crate-opening shake), since nothing is random but its quality roll.
+
+### Shown in the game (rule 4)
+- Store: under **Weapon caches** and under **Chassis crates**, a "Chosen weapon / chassis · pick it, no random roll · from 375 ⭐"
+  grid of 9 tiles (rarity rows, colored by rarity; price or "Owned"). Points shop: the same layout with Epic crates now sold
+  (30K / 60K / 180K) and "from 43,750 points". Tapping a tile opens the item's sheet: its 3D art, stats, "Use 262,500 points" or
+  "Buy for 2,250 ⭐", and the comparison with the random crate. The crate sheet lists each item not owned yet with a "Pick it"
+  button. The Store's link to the Points shop and the crate sheet's price-step line ("Each Stars, TON or SOL purchase of this crate,
+  or of a chosen item from it, raises its price ... Points purchases don't") were updated; "Epic ... can't be bought with points"
+  is gone.
+- Wiki: the Shop table has a "Chosen weapon or chassis" row (375 / 750 / 2,250 Stars, 6 / 12 / 34.5 TON); the Points shop prices
+  line lists crates 30,000 / 60,000 / 180,000 (Epic included) and chosen gear 43,750 / 87,500 / 262,500; "nothing bought with points
+  ever raises a Stars price".
+
+### The kit model (rule 5; report only, no numbers changed)
+`node dev/tools/chassis-kit-model.mjs --json docs/economy/chassis-kit-model.json` on this branch: **the 20-minute pilot kits the
+first chassis in 83 days (77-97 over five seeds), the same as Checkpoint 38's 83 days**; all three 249 days; the JSON is
+byte-identical. Why identical: the model's kit is the 14-level build plus all seven cores at level 5 on one chassis, and the pilot
+already flies Rare gear; it never buys weapon caches or chassis crates, so their price doesn't enter it. For scale only (not in the
+model): a chosen Rare weapon plus a chosen Rare chassis would cost 175,000 points, about 5 days of the reference pilot's 35,500 a day.
+
+### Tests (local, this branch)
+- Node, all PASS: `wtest/chassis` 105 (new section 7, 37 checks: the owner's crate and chosen-gear prices; every crate rarity for
+  points with no money step; four chosen items for points, exact item and roll in range; owned / starter / forged / Moonbeam / not
+  enough points refused with nothing taken; the Stars invoice names the item at 1.5x the crate; no invoice for an owned item; the
+  webhook grants exactly that item and steps its crate; the same payment twice grants once; a second paid invoice re-rolls; a refund
+  takes it back and the loadout follows; TON price 1.5x), `wtest/test` 204 (pins moved to the new prices and the no-step rule),
+  `wtest/pvp` 133, `wtest/farm` 55, `wtest/owner` 81, `wtest/referrals` 29, `wtest/lab`, `lab-battle`, `lab-parity`, `range`,
+  `accounts` 18, `hull-plating` 24, `web-auth`, `lunar-identity`, `ticket-reliability` 37, `conquest-airdrop` 20, `gem-ui`,
+  `lab-ui`, `garage-rules` (both read the item names from rules.js now), `velocity`.
+- Browser (Chromium), new `dev/tests/gear-pick-ui.py`: 54 PASS on the server economy (the real Worker through the local stand-in):
+  Points shop and Store at 320 / 390 / 1366, a real points purchase of a chosen weapon (Titanfall, 262,500) and a chosen chassis
+  (Strider, 87,500), a real Stars purchase of each (Helix Repeater, Paladin: tile -> server invoice 2,250 -> Telegram payment webhook
+  -> grant), Owned tiles, crate x1 -> x2 after the Stars buy, the wiki; captures at scale 2 in `docs/gear-pick-39/` (29).

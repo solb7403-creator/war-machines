@@ -605,6 +605,29 @@ function openCorePick(k,pts){
    (pts?'<p class="dimtxt" style="margin-top:8px">You have '+fmtNum(save.pts||0)+' points.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for points in the Points shop.</p>');
  });
 }
+// ---------- chosen gear (Checkpoint 39, owner: "same as cores"): pick the exact weapon or chassis, no random roll ----------
+// the nine items of a crate type (3 lines x Common / Rare / Epic); an owned item shows Owned and opens nothing (pts: with points)
+const gearPrice=(k,ri)=>ecoPrice(save,{kind:'gear',tk:k,ri},ecoX());
+const ownGear=(k,ri)=>gearTk(k)==='weapon'?ownW(k,ri):ownC(k,ri);
+function gearPickGrid(tk,pts){
+ const keys=tk==='weapon'?WORDER:CHORDER,isW=tk==='weapon';
+ return '<div class="gpicks" role="group" aria-label="Chosen '+(isW?'weapons':'chassis')+'">'+[0,1,2].map(ri=>keys.map(k=>{const own=ownGear(k,ri),nm=(isW?WNAMES:CNAMES)[k][ri],pr=pts?null:gearPrice(k,ri);
+  return '<button class="gpick'+(own?' is-own':'')+'" style="--rc:'+RCOL[ri]+'" data-act="'+(own?'gnop':'gearpick')+'" data-arg="'+k+':'+ri+(pts?':p':'')+'"'+(own?' aria-disabled="true"':'')+'><i>'+TIER_N[ri]+'</i><b>'+esc(nm)+'</b><span>'+(own?'Owned':pts?coin()+fmtK(gearPts(ri)):pr?priceLabel(pr.ton,pr.stars):'')+'</span></button>';}).join('')).join('')+'</div>';
+}
+function gearPickHead(tk,pts){const isW=tk==='weapon',from=pts?fmtNum(gearPts(0))+' points':fmtNum((gearPrice(isW?'twin':'scout',0)||{stars:0}).stars)+' ⭐';
+ return '<h4 class="ptsh">Chosen '+(isW?'weapon':'chassis')+' · pick it, no random roll · from '+from+'</h4>';}
+function openGearPick(k,ri,pts){
+ const tk=gearTk(k);if(!tk||!(ri>=0&&ri<=2))return;
+ sheet('gearpick',()=>{const isW=tk==='weapon',own=ownGear(k,ri),it=isW?getW(k,ri,false):getC(k,ri,false),nm=(isW?WNAMES:CNAMES)[k][ri],pp=gearPts(ri),pr=gearPrice(k,ri),cache=pts?fmtNum(boxPts(tk,ri))+' points':priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true));
+  return '<div class="row"><canvas class="crateart" data-art="gear:'+(isW?'w':'c')+':'+k+':'+ri+':0"></canvas><div class="grow"><h3 style="color:'+RCOL[ri]+'">'+esc(nm)+'</h3><p class="mut">'+TIER_N[ri]+' '+(isW?'weapon':'chassis')+'. '+esc(gearMeta(isW,it))+'.</p></div></div>'+
+   '<p class="mut" style="margin-top:8px">Pick the exact '+(isW?'weapon':'chassis')+': no random roll. It arrives rolled at 105 to 110%, like one from a crate, and is equipped if it beats your current one. '+
+   (pts?'Costs about '+(CORE_PTS_STAR/GEM_PTS_STAR).toFixed(2)+'× the points of a random '+crateName(tk,ri).toLowerCase()+' ('+cache+').':'Costs 1.5× the '+crateName(tk,ri).toLowerCase()+'’s price right now ('+cache+'; deals don’t apply) and counts as a purchase of that crate.')+'</p>'+
+   (own?'<p class="cpnow" style="margin-top:12px">Owned. You can tune its roll in the Garage.</p>':
+    pts?'<button class="btn btn-go block" style="margin-top:14px" data-act="buygearpts" data-arg="'+k+':'+ri+'">Use '+fmtNum(pp)+' points <span class="dimtxt">(you have '+fmtNum(save.pts||0)+')</span></button>':
+     '<button class="btn btn-go block" style="margin-top:14px" data-act="buygear" data-arg="'+k+':'+ri+'"'+(pr?'':' disabled')+'>'+(pr?'Buy for '+priceLabel(pr.ton,pr.stars):'Not sold')+'</button>')+
+   (pts?'<p class="dimtxt" style="margin-top:8px">The points price never changes.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for '+fmtNum(pp)+' points in the Points shop.</p>');
+ });
+}
 // the two deals (rules.js): daily gem cache 30% off, weekly epic crate 25% off. Each is once per period, per pilot
 const DEAL_TXT={d:{n:'Daily gem deal',off:'30% off',on:'Your first rare or epic gem cache today',full:'Your first rare or epic gem cache each day is 30% off. It resets at 00:00 UTC.',art:'crate:gem:2'},
  w:{n:'Weekly epic deal',off:'25% off',on:'One epic crate this week, your pick',full:'One epic crate a week is 25% off: weapon, chassis or gem, your pick. It resets Monday 00:00 UTC.',art:'crate:weapon:2'}};
@@ -674,8 +697,8 @@ function renderPtsShop(){
   sec('Cores','Per chassis')+coreForChips()+
   '<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri,true)).join('')+'</div>'+
   '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum(corePts(0))+' points</h4>'+corePickGrid(true)+
-  sec('Gear')+'<div class="crates c2">'+[0,1].map(ri=>crate('weapon',ri,true)).join('')+'</div><div class="crates c2" style="margin-top:8px">'+[0,1].map(ri=>crate('chassis',ri,true)).join('')+'</div>'+
-  '<p class="dimtxt" style="margin-top:6px">Epic weapons and chassis come from the Store, the Lunar Pass and packs.</p>'+
+  sec('Weapon caches','Points')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri,true)).join('')+'</div>'+gearPickHead('weapon',true)+gearPickGrid('weapon',true)+
+  sec('Chassis crates','Points')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri,true)).join('')+'</div>'+gearPickHead('chassis',true)+gearPickGrid('chassis',true)+
   sec('Salvage yard','Points only')+'<div class="ups list panel">'+salv('weapon',1)+salv('chassis',1)+salv('weapon',2)+salv('chassis',2)+'</div>'+
   sec('In the Garage','Points too')+'<div class="panel ptsgarage"><div class="ptsbuilds">'+builds+'</div><p class="mut">Each chassis buys its own '+BUILD_MAX+'-level build. Tune-ups, Hull Plating and build resets are in the Garage too.</p><button class="btn btn-quiet block" data-act="tab" data-arg="garage">Open the Garage</button></div>';
 }
@@ -696,13 +719,13 @@ function renderShop(){
   (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
   vaultCard()+
-  sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+
-  sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+
+  sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+gearPickHead('weapon',false)+gearPickGrid('weapon',false)+
+  sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+gearPickHead('chassis',false)+gearPickGrid('chassis',false)+
   sec('Cores','Per chassis')+coreForChips()+'<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
   '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum((ecoPrice(save,{kind:'core',tk:'dmg',ri:0,c:shopCh()},ecoX())||{stars:0}).stars)+' ⭐</h4>'+corePickGrid(false)+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
   sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
-  '<button class="q ptslink" data-act="shoptab" data-arg="pts"><div class="grow"><div class="t">Points shop</div><div class="p">Gem caches (Epic too), chosen cores, crates and the salvage yard, for points</div></div><span class="chev">›</span></button>'+
+  '<button class="q ptslink" data-act="shoptab" data-arg="pts"><div class="grow"><div class="t">Points shop</div><div class="p">Every cache and crate (Epic too), chosen cores, weapons and chassis, and the salvage yard, for points</div></div><span class="chev">›</span></button>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
 
@@ -1036,7 +1059,7 @@ function openCrate(tk,ri,pts){
  sheet('crate',()=>{
   const isGem=tk==='gem',keys=tk==='weapon'?WORDER:CHORDER;
   const items=isGem?'':'<div class="list" style="margin-top:10px">'+keys.map(k=>{const own=tk==='weapon'?ownW(k,ri):ownC(k,ri),it=tk==='weapon'?getW(k,ri,false):getC(k,ri,false);
-   return '<div class="q"><div class="ico sm"><canvas data-art="gear:'+(tk==='weapon'?'w':'c')+':'+k+':'+ri+':0"'+(own?'':' data-locked="1"')+'></canvas></div><div class="grow"><div class="t">'+esc(it.name)+'</div><div class="p">'+gearMeta(tk==='weapon',it)+'</div></div><span class="nowrap '+(own?'mut':'dimtxt')+'">'+(own?'Owned, '+pct(it.q):'Not found')+'</span></div>';}).join('')+'</div>';
+   return '<div class="q"><div class="ico sm"><canvas data-art="gear:'+(tk==='weapon'?'w':'c')+':'+k+':'+ri+':0"'+(own?'':' data-locked="1"')+'></canvas></div><div class="grow"><div class="t">'+esc(it.name)+'</div><div class="p">'+gearMeta(tk==='weapon',it)+'</div></div>'+(own?'<span class="nowrap mut">Owned, '+pct(it.q)+'</span>':'<button class="btn sm btn-quiet nowrap" data-act="gearpick" data-arg="'+k+':'+ri+(pts?':p':'')+'" aria-label="Pick '+esc(it.name)+'">Pick it · '+(pts?coin()+fmtK(gearPts(ri)):(p=>p?priceLabel(p.ton,p.stars):'')(gearPrice(k,ri)))+'</button>')+'</div>';}).join('')+'</div>';
   const found=crateFound(tk,ri),pp=boxPts(tk,ri),N=esc(CH[shopCh()].n);
   const what=isGem?['1 to 2','3 to 4','11 to 14'][ri]+' shards for a random core of your '+N+'.'+(pts?'':' Price rises 25% with each buy today and resets at 00:00 UTC.')
    :found>=3?'You own all 3. Opening re-rolls one: you keep the better roll, or get '+[50,150,400][ri]+' points.'
@@ -1048,7 +1071,7 @@ function openCrate(tk,ri,pts){
     '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
     (pp?'<button class="linkbtn" style="margin-top:6px" data-act="ptscrate" data-arg="'+tk+':'+ri+'">Or '+fmtNum(pp)+' points in the Points shop</button>':''))+
    '<p class="dimtxt odds">'+odds+'</p>'+
-   (pts?(isGem?'<p class="dimtxt" style="margin-top:8px">The points price never changes. Want one core in particular? Chosen cores are in the Points shop too.</p>':''):ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each purchase of this crate raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'.</p>':'');
+   (pts?'<p class="dimtxt" style="margin-top:8px">The points price never changes. '+(isGem?'Want one core in particular? Chosen cores are in the Points shop too.':'Want one in particular? Tap Pick it above: no random roll.')+'</p>':ri===0?'<p class="dimtxt" style="margin-top:8px">Common crates are always this price.</p>':!isGem?'<p class="dimtxt" style="margin-top:8px">Each Stars, TON or SOL purchase of this crate, or of a chosen item from it, raises its price: ×1, then ×2, then ×3. Now ×'+boxMult(tk,ri)+'. Points purchases don’t.</p>':'');
  });
 }
 function openPaints(){
@@ -1192,7 +1215,7 @@ function itemArt(r){
 }
 function nextReveal(){
  const r=revealQ.shift();if(!r){revealOv=null;uiDirty();return;}
- const isCrate=r.tk==='weapon'||r.tk==='chassis'||r.tk==='gem';
+ const isCrate=(r.tk==='weapon'||r.tk==='chassis'||r.tk==='gem')&&!r.pick;   // a chosen item shows itself, no crate to open
  revealOv=openOverlay('modal','<div class="reveal" style="--gem:'+(r.color||'var(--moon)')+'"><canvas data-art="'+(isCrate?'crate:'+r.tk+':'+(r.ri||0):itemArt(r))+'" class="'+(isCrate?'shake':'pop')+'"></canvas>'+
   '<div class="rtext'+(isCrate?' wait':'')+'">'+(r.gem&&r.up>0?'<div class="gem-levelup" role="status">CORE LEVEL UP · Lv '+r.lv+'</div>':'')+'<div class="ttl" style="color:'+(r.color||'var(--moon)')+'">'+esc(r.title)+'</div><div class="sub">'+esc(r.sub||'')+'</div></div>'+
   '<button class="btn btn-go block" style="margin-top:16px" data-act="revealok">'+(revealQ.length?'Next':'Nice')+'</button></div>',{cls:'rv',onClose:()=>setTimeout(nextReveal,140)});
@@ -1503,6 +1526,9 @@ const ACT={
  ptsshop:()=>{shopTab='pts';closeAll();setTab('shop');},
  corefor:a=>{if(!CH[a]||!ownsCh(save,a))return;save.coreFor=a;store();fx('tap');for(const k of ['crate','corepick']){const ov=findOv(k);if(ov&&ov.re)ov.re();}},
  corepick:a=>{const [k,m]=a.split(':');if(GEM[k])openCorePick(k,m==='p');},
+ gearpick:a=>{const [k,ri,m]=a.split(':');if(gearTk(k))openGearPick(k,+ri,m==='p');},
+ buygear:a=>{const [k,ri]=a.split(':'),pr=gearTk(k)&&!ownGear(k,+ri)?gearPrice(k,+ri):null;if(!pr)return;pay(pr.ton,{kind:'gear',tk:k,ri:+ri,price:pr.ton});},
+ buygearpts:a=>{const [k,ri]=a.split(':');when(buyGearPts(k,+ri),r=>{if(r){for(const key of ['gearpick','crate']){const ov=findOv(key);if(ov)closeOverlay(ov);}fx('buy');showReveal([r]);}uiDirty();});},
  buycore:a=>{const [k,ri]=a.split(':'),c=shopCh(),pr=ecoPrice(save,{kind:'core',tk:k,ri:+ri,c},ecoX());if(!pr)return;pay(pr.ton,{kind:'core',tk:k,ri:+ri,c,price:pr.ton});},
  buycorepts:a=>{const [k,ri]=a.split(':'),c=shopCh();when(buyCorePts(k,+ri,c),r=>{if(r){const ov=findOv('corepick');if(ov)closeOverlay(ov);fx('buy');showReveal([r]);}uiDirty();});},
  salvage:a=>{const [tk,ri]=a.split(':');when(buySalvage(tk,+ri),r=>{if(r){fx('buy');showReveal([r]);}uiDirty();});},

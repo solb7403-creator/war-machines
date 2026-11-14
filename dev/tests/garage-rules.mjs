@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs';
 const R=new Function(readFileSync('js/rules.js','utf8')+'\nreturn {STOCK_L,BUILD_TAGS,buildTag,buildAxes,garageOpen,GARAGE_UP_AT,GARAGE_FIT_AT,machineView,machineDelta,machineMetrics,powerOf,tankOf,legendaryEdge,ecoNorm,labEnsure,ecoLoadout,FITS,FIT_ORDER,FIT_BUDGET,fittingStats,UORDER,GORDER,WORDER,CHORDER,BUILD_MAX,GTYPES,LEAGUES,TIERS,PAINTS,ROLL_MAX};')();
 const core=readFileSync('js/core.js','utf8');
 const names=src=>[...src.matchAll(/'([^']+)'/g)].map(m=>m[1].toLowerCase());
-const CNAMES=names(core.match(/const CNAMES=\{[^\n]+/)[0]),WNAMES=names(core.match(/const WNAMES=\{[^\n]+/)[0]);
+const rulesSrc=readFileSync('js/rules.js','utf8');   // the item names live in rules.js (Checkpoint 39)
+const CNAMES=names(rulesSrc.match(/const CNAMES=\{[^\n]+/)[0]),WNAMES=names(rulesSrc.match(/const WNAMES=\{[^\n]+/)[0]);
 const reserved=new Set([...CNAMES,...WNAMES,...Object.values(R.GTYPES).map(g=>g.label.toLowerCase()),...R.LEAGUES.map(s=>s.toLowerCase()),
  ...R.TIERS.map(s=>s.toLowerCase()),...Object.values(R.PAINTS).map(p=>p.n.toLowerCase()),'moonbeam','lunar','legendary','epic','rare','common']);
 

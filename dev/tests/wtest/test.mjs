@@ -168,9 +168,9 @@ const xp = E('tg_111').pass.xp;
 
 // ---- spending points: crates, salvage, tune-up, upgrades ----
 setEco('tg_111', (S) => { S.pts = 1000; });
-[s, r] = await act(A, 'crate', { tk: 'weapon', ri: 0 }); t(r.out.err === 'pts' && r.out.need === 19000 && r.E.pts === 1000, 'not enough points for a crate');
-[s, r] = await act(A, 'crate', { tk: 'weapon', ri: 2 }); t(r.out.err === 'paid', 'epic crates are paid only');
-setEco('tg_111', (S) => { S.pts = 150000; });
+[s, r] = await act(A, 'crate', { tk: 'weapon', ri: 0 }); t(r.out.err === 'pts' && r.out.need === 29000 && r.E.pts === 1000, 'not enough points for a crate (30,000 a Common, Checkpoint 39)');
+[s, r] = await act(A, 'crate', { tk: 'weapon', ri: 2 }); t(r.out.err === 'pts' && r.out.need === 179000, 'epic crates are sold for points too: 180,000 (Checkpoint 39) ' + JSON.stringify(r.out));
+setEco('tg_111', (S) => { S.pts = 130000; });   // a Rare crate is 60,000 points (Checkpoint 39)
 [s, r] = await act(A, 'crate', { tk: 'weapon', ri: 1 }); const got1 = r.out;
 t(got1.kind === 'new' && got1.tier === 1 && r.E.pts === 70000 && r.E.wOwn[got1.k].includes(1) && r.E.roll[got1.k + ':1'] >= 1.05, 'rare weapon cache opened on the server ' + JSON.stringify(got1));
 setEco('tg_111', (S) => { S.roll[got1.k + ':1'] = 1.06; });   // the crate can roll 110%, which can't be tuned
@@ -187,7 +187,7 @@ const S1 = E('tg_111'), ownsC = Lc.s ? R.salvIn(S1, Lc.c, Lc.t) === Lc.q : R.has
 t(Lw.a === got1.k && Lw.t === 1 && Lw.q === S1.roll[got1.k + ':1'] && ownsC && !(Lc.c === 'titan' && Lc.t === 2 && !Lc.s) && S1.L.skin === 'default', 'loadout: owned rare weapon with the server roll; the unowned crate epic chassis falls back to what they own; no skin ' + JSON.stringify(S1.L).slice(0, 160));
 
 // ---- Stars: invoice priced by the server, webhook grants, recovery, refunds ----
-[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1, price: 0.01 }); t(s === 200 && r.stars === 1000 && r.nonce, 'stars invoice: the server sets the price (2nd rare weapon cache x2; a forged price is ignored) ' + JSON.stringify(r));
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1, price: 0.01 }); t(s === 200 && r.stars === 500 && r.nonce, 'stars invoice: the server sets the price (1st paid rare weapon cache x1: the points buy above no longer counts, Checkpoint 39; a forged price is ignored) ' + JSON.stringify(r));
 const nonce = r.nonce;
 const payBody = (charge, payload, amount) => ({ message: { from: { id: 111, username: 'alice' }, chat: { id: 111, type: 'private' }, successful_payment: { total_amount: amount, telegram_payment_charge_id: charge, invoice_payload: JSON.stringify(payload) } } });
 const w0 = JSON.stringify(E('tg_111').wOwn);
@@ -195,11 +195,11 @@ let wr = await hook(payBody('ch.1', { u: 111, k: 'box', t: 'weapon', r: 1, g: 8,
 t(JSON.stringify(E('tg_111').wOwn) !== w0 || E('tg_111').roll, 'webhook granted the crate on the server');
 t(Array.isArray(db.get('/starsPaid/tg_111/ch_1/o')) && db.get('/starsPaid/tg_111/ch_1/o').length === 1, 'what it gave is stored with the payment');
 await hook(payBody('ch.1', { u: 111, k: 'box', t: 'weapon', r: 1, g: 8, n: nonce }, 500));
-t(E('tg_111').buys.weapon1 === 2, 'Telegram resending the same payment grants once (buys ' + E('tg_111').buys.weapon1 + ')');
+t(E('tg_111').buys.weapon1 === 1, 'Telegram resending the same payment grants once (buys ' + E('tg_111').buys.weapon1 + ')');
 [s, r] = await act(A, 'paid', { n: nonce }); t(r.ok && r.out.outs && r.out.outs.length === 1, 'the phone fetches what its Stars purchase gave');
 [s, r] = await call('/api/sync', { initData: initData(A), boot: true }); t(r.stars.length === 1 && r.stars[0].n === nonce && r.stars[0].o.length === 1, 'undelivered stars listed with what they gave');
 [s, r] = await call('/api/sync', { initData: initData(A), boot: true, starsAck: [nonce] }); t(r.stars.length === 0, 'acked stars hidden');
-[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1 }); t(r.stars === 1500, 'repeat-buy price from the server record (3rd rare weapon cache x3) ' + r.stars);
+[s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'box', tk: 'weapon', ri: 1 }); t(r.stars === 1000, 'repeat-buy price from the server record (2nd paid rare weapon cache x2) ' + r.stars);
 // moonbeam: buy, field it, refund takes it back
 [s, r] = await call('/api/stars-invoice', { initData: initData(A), kind: 'moonbeam' }); t(r.stars === 3300, 'moonbeam invoice');
 await hook(payBody('ch.mb', { u: 111, k: 'moonbeam', n: 'mb1' }, 3300));

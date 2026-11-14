@@ -633,8 +633,10 @@ export function migrate(S, m, P, X) {
   if (pass.prem && !P.pass) why.pass = "Premium pass without a payment";
   const unpaidPaint = Object.keys(S.paints).filter((k) => R.PAINTS[k] && R.PAINTS[k].stars && !P.paint[k]);
   if (unpaidPaint.length) why.paint = "Paints without a payment: " + unpaidPaint.join(", ");
-  // gear: every crate item needs a source. Paid crates, packs and the pass first; the rest priced as points crates
-  // (common 20,000, rare 80,000). Epic gear can't be bought with points
+  // gear: every crate item needs a source. Paid crates, packs and the pass first; the rest priced as points crates at the prices of
+  // the time these phone records were kept (common 20,000, rare 80,000; Epic gear couldn't be bought with points then). Fixed here
+  // so this one-time check of old records doesn't move with today's points prices (Checkpoint 39)
+  const OLD_RPTS = [20000, 80000];
   const free = { weapon: [0, 0, 0], chassis: [0, 0, 0] }, gemFree = { n: 0 };
   if (P.starter) { free.weapon[1]++; free.chassis[1]++; gemFree.n += 4; }
   if (P.founder) { free.weapon[2]++; gemFree.n += 8; }
@@ -643,7 +645,7 @@ export function migrate(S, m, P, X) {
   for (const [tk, own] of [["weapon", S.wOwn], ["chassis", S.cOwn]]) for (let t = 0; t <= 2; t++) {
     const n = Object.entries(own).filter(([k, ts]) => ts.includes(t) && !(t === 0 && (k === "pulse" || k === "vanguard"))).length;
     const extra = n - (P.box[tk + t] || 0) - free[tk][t];
-    if (extra > 0) { if (t === 2) epic += extra; else spend += extra * R.RPTS[t]; }
+    if (extra > 0) { if (t === 2) epic += extra; else spend += extra * OLD_RPTS[t]; }
   }
   if (epic) why.epic = epic + " epic item(s) without a payment";
   for (const k of Object.keys(S.salv)) spend += R.SALV_PTS[Number(k.split(":")[1])] || 0;
@@ -652,7 +654,7 @@ export function migrate(S, m, P, X) {
   let shards = 0;
   for (const c of R.CHORDER) { const gl = R.chGl(S, c), gs = R.chGs(S, c); for (const k of R.GORDER) { for (let l = 1; l < (gl[k] || 1); l++) shards += R.SHARD_NEED[l]; shards += gs[k] || 0; } }
   const gemSrc = (P.box.gem0 || 0) * 2 + (P.box.gem1 || 0) * 4 + (P.box.gem2 || 0) * 14 + (S.g2 ? 4 : 0) + gemFree.n + (Math.floor((S.days || 0) / 7) + 1) * 2 + (S.wq && S.wq.claimed ? 4 : 0);
-  if (shards > gemSrc) spend += Math.ceil((shards - gemSrc) / 2) * R.RPTS[0];
+  if (shards > gemSrc) spend += Math.ceil((shards - gemSrc) / 2) * OLD_RPTS[0];
   if (spend > S.earned + 15000) why.spend = "Gear worth about " + spend.toLocaleString("en-US") + " points, " + S.earned.toLocaleString("en-US") + " earned";
   // spendable points: what the phone had, never more than lifetime points minus what that gear cost
   S.pts = Math.max(0, Math.min(Math.round(Number(C.pts) || 0), S.earned - Math.min(spend, S.earned)));
@@ -738,6 +740,7 @@ export async function act(env, b, user, pid, now = Date.now(), sp = "") {
     case "pass": F = (S, X) => R.ecoClaimPass(S, b.t === "p" ? "p" : "f", Number(b.i), X, ch) || { err: "no" }; break;
     case "crate": if (!tk || ri === null) break; F = (S, X) => R.ecoCratePts(S, tk, ri, X, tk === "gem" ? ch : undefined); break;
     case "core": { const k = String(b.k || ""); if (!R.isGem(k) || ri === null || !ch) break; F = (S, X) => R.ecoCorePts(S, k, ri, ch, X); break; }   // a chosen core for points (5E-2b3)
+    case "gear": { const k = String(b.k || ""); if (!R.gearTk(k) || ri === null) break; F = (S, X) => R.ecoGearPts(S, k, ri, X); break; }   // a chosen weapon or chassis for points (Checkpoint 39)
     case "salvage": if (tk !== "weapon" && tk !== "chassis" || !(ri === 1 || ri === 2)) break; F = (S, X) => R.ecoSalvage(S, tk, ri, X); break;
     case "tune": { const isW = !!b.w, k = String(b.k || ""), t = riOf(b.t); if (t === null || !(isW ? R.WORDER : R.CHORDER).includes(k)) break; F = (S, X) => R.ecoTune(S, isW, k, t, X); break; }
     case "up": { const k = String(b.k || ""); if (!R.UPS[k]) break; F = (S) => R.ecoUp(S, k, ch); break; }

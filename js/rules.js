@@ -156,6 +156,9 @@ const WEAPONS={
  siege:{n:'Siege Breaker',d:'Slow, heavy hits',dps:74,shot:0.45,c:'#ff6b5e',sup:'Siege Blast'},
  moon:{n:'Moonbeam',d:'Lunar precision laser',dps:118,shot:0.16,c:'#e8f4ff',sup:'Moonfall',premium:true}};
 const WORDER=['pulse','twin','siege'];
+// each item's own name, Common / Rare / Epic (the server names a chosen item on its invoice)
+const WNAMES={pulse:['Pulse Cannon','Arc Pulse','Nova Pulse'],twin:['Twin Repeater','Storm Repeater','Helix Repeater'],siege:['Siege Breaker','Rail Breaker','Titanfall']};
+const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
 const TIER_MULT=[1.0,1.14,1.34];
 // Legendary is a distinct, fixed premium power step, not an Epic roll or tuneable quality.
 // Its super scales above the strongest normal Epic roll, while shot cadence limits super farming.
@@ -431,18 +434,25 @@ const tierOfPts=p=>{let t=0;for(let i=0;i<TPTS.length;i++)if((p||0)>=TPTS[i])t=i
 const SHARD_NEED={1:3,2:6,3:10,4:15};   // shards to take a core from level L to L+1
 const SALV_PTS=[0,10000,20000],TUNE_PTS=[3000,10000,30000],DUP_PTS=[50,150,400];   // DUP_PTS: a crate roll that doesn't beat what you have
 // shop prices (the server charges these; TON, Stars, points)
-const RPRICE=[4,8,23],RSTARS=[250,500,1500],RPTS=[20000,80000,0];
+const RPRICE=[4,8,23],RSTARS=[250,500,1500];
 // Gem caches with points (Session 5E-2b3, owner Nov 14: "cores are bought with points using the same gem caches as the paid version,
 // Epic included; the amount of points equals the amount of money: one fixed points-per-Star rate for every gem cache"). GEM_PTS_STAR
 // is that rate. Owner's numbers (Nov 14, 2026, Checkpoint 38): 120 points a Star for a random gem cache, CORE_PTS_STAR = 175 a Star
 // (of the same cache's Stars price) for a chosen core; the 12-week model (docs/economy/chassis-kit-model.json) reports what they
 // give: a free pilot who plays 20 minutes a day plus the daily quests kits one chassis (14 upgrade levels and all seven cores at
-// level 5) in about 12 weeks. Weapon caches and chassis crates keep RPTS.
+// level 5) in about 12 weeks.
+// Weapon caches and chassis crates (owner, Nov 14, 2026, Checkpoint 39): the same 120 points a Star of the crate's price as a gem
+// cache, Epic included (RPTS). Chosen gear (same as cores): pick the exact weapon or chassis and its rarity, no random roll, for
+// CORE_PTS_STAR (175) points a Star of the same crate's price, or CORE_X (1.5x) the crate's money price; it gets the same 105-110%
+// quality roll a crate gives it. An item you already own can't be bought again. A points buy never raises a money price step.
 // A gem cache or chosen core bought with points does not raise that day's money price (the +25% a buy counts money buys only).
 // The chosen core (owner-approved): pick the core and the chassis; CORE_N shards of it (the top of the cache's range) for CORE_X
 // times the cache's money price, and CORE_PTS_STAR points a Star in points, so no roll can land on a core you have already maxed.
 const GEM_PTS_STAR=120,CORE_PTS_STAR=175,GEM_PTS=RSTARS.map(s=>s*GEM_PTS_STAR),CORE_X=1.5,CORE_N=[2,4,14];   // 30,000 / 60,000 / 180,000 points; chosen cores 43,750 / 87,500 / 262,500
 const corePts=ri=>Math.round(RSTARS[ri]*CORE_PTS_STAR);   // points: CORE_PTS_STAR a Star of the same cache's price. Money: CORE_X (1.5x) the cache's price
+const RPTS=GEM_PTS;   // weapon caches and chassis crates for points: 30,000 / 60,000 / 180,000 (was 20,000 / 80,000 / paid only)
+const gearPts=corePts;   // a chosen weapon or chassis for points: 43,750 / 87,500 / 262,500, the chosen core's rate
+const gearTk=k=>WORDER.indexOf(k)>=0?'weapon':CHORDER.indexOf(k)>=0?'chassis':null;   // which crate a chosen item comes from (never a prototype name)
 // Lunar Skin: owner-set price (Nov 2, 2026), just under Moonbeam's: measured with human pilots its edge alone (59.3%) is a
 // little below Moonbeam's alone (62.0%) (docs/EQUIPMENT_BALANCE_VALIDATION.md, Session 2)
 const STARTER={ton:6,stars:399},FOUNDER={ton:19,stars:1199},MOONBEAM_PRICE=50,SKIN_PRICE=45;
@@ -741,6 +751,7 @@ function ecoPrice(S,d,X){
  if(d.kind==='pass')return {ton:PASS_PRICE.ton,stars:PASS_PRICE.stars};
  if(d.kind==='vault'){const B=VAULT[d.tk];return B?{ton:B.ton,stars:B.stars}:null;}
  if(d.kind==='respec'){const t=respecTier(upInvested(chUp(S,chFor(S,d.c))));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
+ if(d.kind==='gear'){const tk=gearTk(d.tk);if(!tk||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,tk,d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the crate's price right now (before any deal)
  if(d.kind==='core'){if(!isGem(d.tk)||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,'gem',d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the gem cache's price right now (before any deal)
  return PREMIUM[d.kind]?{ton:PREMIUM[d.kind].ton,stars:PREMIUM[d.kind].stars}:null;
 }
@@ -750,6 +761,7 @@ function ecoOwned(S,d,X){
  if(d.kind==='skin')return S.skin==='lunar';if(d.kind==='paint')return !!(S.paints&&S.paints[d.id]);if(d.kind==='pass')return ecoPassState(S,X).prem;
  if(d.kind==='respec')return !!S.rsCr;   // a paid reset is already waiting
  if(d.kind==='core')return !isGem(d.tk)||!ownsCh(S,d.c)||(chGl(S,d.c)[d.tk]|0)>=5;
+ if(d.kind==='gear'){const tk=gearTk(d.tk);return !tk||(tk==='weapon'?hasW(S,d.tk,d.ri):hasC(S,d.tk,d.ri));}   // a chosen item you already own: nothing to sell
  if(d.kind==='box'&&d.tk==='gem'&&d.c&&!ownsCh(S,d.c))return true;   // a gem cache named for a chassis you don't own: refused, never moved to another   // a chosen core for a chassis you don't own, or one already at level 5: nothing to sell
  return false;
 }
@@ -780,8 +792,26 @@ function ecoCratePts(S,tk,ri,X,ch){
  if(!c)return {err:'paid'};
  if(gem&&ch!==undefined&&!ownsCh(S,ch))return {err:'chassis'};
  if(S.pts<c)return {err:'pts',need:c-S.pts};
- S.pts-=c;S.ptsSpent+=c;if(!gem){const bk=ecoBuyKey(tk,ri,X);S.buys[bk]=(S.buys[bk]||0)+1;}
+ S.pts-=c;S.ptsSpent+=c;   // a points buy never raises the crate's money price (Checkpoint 39; it used to count toward x2 / x3)
  return ecoOpenBox(S,tk,ri,X,ch);
+}
+// the chosen weapon or chassis k at rarity ri: it is added with a fresh 105-110% roll, exactly as a crate adds it. Already owned when
+// a payment lands (two invoices paid one after the other): re-rolled like a crate re-roll, the better roll kept, else DUP_PTS points
+function ecoGearAdd(S,k,ri,X){
+ const tk=gearTk(k),isW=tk==='weapon',own=isW?S.wOwn:S.cOwn,R=X.rnd;
+ const roll=Math.round((ROLL_MIN+R()*(ROLL_MAX-ROLL_MIN))*100)/100;
+ if(!(own[k]||[]).includes(ri)){own[k]=(own[k]||[]).concat(ri);S.roll[k+':'+ri]=roll;return {tk,ri,isW,k,tier:ri,roll,kind:'new',pick:1};}
+ const old=rollIn(S,k,ri);
+ if(roll>old){S.roll[k+':'+ri]=roll;return {tk,ri,isW,k,tier:ri,roll,old,kind:'up',pick:1};}
+ return {tk,ri,isW,k,tier:ri,roll,old,kind:'dup',pick:1,pts:ecoAward(S,DUP_PTS[ri],X)};
+}
+function ecoGear(S,k,ri,X){const r=ecoGearAdd(S,k,ri,X);labGain(S,r);return r;}
+// a chosen weapon or chassis for points (gearPts); refused if you own it
+function ecoGearPts(S,k,ri,X){
+ const tk=gearTk(k);if(!tk||!(ri>=0&&ri<=2))return {err:'item'};
+ if(tk==='weapon'?hasW(S,k,ri):hasC(S,k,ri))return {err:'owned'};
+ const p=gearPts(ri);if(S.pts<p)return {err:'pts',need:p-S.pts};
+ S.pts-=p;S.ptsSpent+=p;return ecoGear(S,k,ri,X);
 }
 // the chosen core: CORE_N[ri] shards of core k for chassis c
 // a chosen core already at level 5 when the payment lands (two invoices paid one after the other): its shards go to that chassis's
@@ -873,6 +903,7 @@ function ecoGrant(S,d,X){
  if(d.kind==='box'){const bk=ecoBuyKey(d.tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;if(d.deal==='d')S.dealD=X.day;else if(d.deal==='w')S.dealW=X.week;
   S.spendGram+=Number(d.price)||RPRICE[d.ri]||0;outs.push(ecoOpenBox(S,d.tk,d.ri,X,d.c));}
  else if(d.kind==='core'){const bk=ecoBuyKey('gem',d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push(ecoCoreAdd(S,d.tk,d.ri,d.c));}   // counts toward the day's gem-cache price steps, like a cache
+ else if(d.kind==='gear'){const tk=gearTk(d.tk);if(tk){const bk=ecoBuyKey(tk,d.ri,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||RPRICE[d.ri]*CORE_X||0;outs.push(ecoGearAdd(S,d.tk,d.ri,X));}}   // counts toward that crate's price steps, like a crate (as a chosen core does for its cache)
  else if(d.kind==='starter'){if(!S.starter){S.starter=true;S.spendGram+=STARTER.ton;outs.push(ecoOpenBox(S,'weapon',1,X),ecoOpenBox(S,'chassis',1,X),ecoOpenBox(S,'gem',1,X,d.c));}}
  else if(d.kind==='founder'){if(!S.founder){S.founder=true;S.spendGram+=FOUNDER.ton;S.paints.founder=1;outs.push({tk:'paint',id:'founder'},ecoOpenBox(S,'weapon',2,X),ecoOpenBox(S,'gem',1,X,d.c),ecoOpenBox(S,'gem',1,X,d.c));}}
  else if(d.kind==='moonbeam'){if(!S.moonbeam){S.moonbeam=true;S.spendGram+=MOONBEAM_PRICE;outs.push({tk:'moonbeam'});}}

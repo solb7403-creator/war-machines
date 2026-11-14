@@ -75,8 +75,8 @@ async def main():
             await pg.evaluate("()=>{closeAll();shopTab='pts';setTab('shop');}"); await pg.wait_for_timeout(400)
             ps = await pg.evaluate("""()=>({gem:[...document.querySelectorAll('[data-act=ptscrate][data-arg^="gem:"] .p')].map(e=>e.textContent),from:[...document.querySelectorAll('.ptsh')].map(e=>e.textContent).find(t=>/Chosen core/.test(t))||'',
               gear:[...document.querySelectorAll('[data-act=ptscrate]:not([data-arg^="gem:"]) .p')].map(e=>e.textContent),max:[...document.querySelectorAll('.cpick.is-max')].map(e=>e.dataset.arg+':'+e.dataset.act+':'+(e.textContent.endsWith('Max')?'Max':e.textContent))})""")
-            ok(ps['gem'] == ['30K', '60K', '180K'] and 'from 43,750 points' in ps['from'] and ps['gear'] == ['20K', '80K', '20K', '80K'] and ps['max'] == ['dmg:p:gnop:Max'],
-               nm + ': Points shop: gem caches 30K / 60K / 180K, chosen cores from 43,750, crates 20K / 80K unchanged, the maxed Damage core shows Max ' + json.dumps(ps))
+            ok(ps['gem'] == ['30K', '60K', '180K'] and 'from 43,750 points' in ps['from'] and ps['gear'] == ['30K', '60K', '180K', '30K', '60K', '180K'] and ps['max'] == ['dmg:p:gnop:Max'],
+               nm + ': Points shop: gem caches 30K / 60K / 180K, chosen cores from 43,750, crates 30K / 60K / 180K (Checkpoint 39), the maxed Damage core shows Max ' + json.dumps(ps))
             ok(not await wide(pg), nm + ': Points shop fits the width ' + json.dumps(await wide(pg)))
             await pg.evaluate("()=>document.querySelector('.corefor').scrollIntoView({block:'start'})"); await pg.wait_for_timeout(150)
             await pg.screenshot(path=OUT + nm + '_points_cores.png')

@@ -53,7 +53,7 @@ async def main():
             await pg.click('.shopseg [data-arg=pts]'); await pg.wait_for_timeout(400)
             ps = await pg.evaluate("""()=>({gem:[...document.querySelectorAll('[data-act=ptscrate][data-arg^="gem:"] .p')].map(e=>e.textContent),gear:document.querySelectorAll('[data-act=ptscrate]:not([data-arg^="gem:"])').length,
               salv:document.querySelectorAll('[data-act=salvage]').length,picks:document.querySelectorAll('.cpick').length,builds:document.querySelectorAll('.ptsbuilds>div').length,bal:(document.querySelector('.shopseg [data-arg=pts] small')||{}).textContent,card:!!document.querySelector('.ptsbal')})""")
-            ok(ps['gem'] == ['30K', '60K', '180K'] and ps['gear'] == 4 and ps['salv'] == 4 and ps['picks'] == 7 and ps['builds'] == 3 and 'points' in (ps['bal'] or '') and not ps['card'], nm + ': the Points shop: gem caches 30K / 60K / 180K (Epic too), 4 gear crates, the salvage yard, chosen cores, 3 builds, the balance once (in its tab) ' + json.dumps(ps))
+            ok(ps['gem'] == ['30K', '60K', '180K'] and ps['gear'] == 6 and ps['salv'] == 4 and ps['picks'] == 7 and ps['builds'] == 3 and 'points' in (ps['bal'] or '') and not ps['card'], nm + ': the Points shop: gem caches 30K / 60K / 180K (Epic too), 6 gear crates (Epic too, Checkpoint 39), the salvage yard, chosen cores, 3 builds, the balance once (in its tab) ' + json.dumps(ps))
             ok(not await wide(pg), nm + ': Points shop fits the width ' + json.dumps(await wide(pg)))
             await pg.evaluate("()=>{document.querySelector('#screen')&&(document.querySelector('#screen').scrollTop=0);scrollTo(0,0);}"); await pg.wait_for_timeout(100)
             await pg.screenshot(path=OUT + nm + '_points_top.png')
