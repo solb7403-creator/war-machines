@@ -2881,7 +2881,7 @@ everyone, revert the merge commit on main.
 - Longshot / Canyon rock to reference level still needs sculpted meshes; wiki map pictures still show the 5E-2c maps.
 - **Proposals only (not shipped; economy untouched):** none were needed for this session.
 
-## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`, build `20261114090839`) — RELEASED Nov 14, 2026 (PR #127, merge `c55d425`); Titanfall redrawn after the release (build `20261114110530`: see "Owner fix after the release" and "Release record")
+## Checkpoint 36 — Session 5E-2b2b: supers + weapons (branch `claude/super-spawn-rate-clarification-v0jid5-gdurn6`, from main `1acff13`, build `20261114090839`) — RELEASED Nov 14, 2026 (PR #127, merge `c55d425`); Titanfall redrawn after the release (PR #128, merge `ae37dd7`, build `20261114110530`: see "Owner fix after the release" and "Release record")
 
 Brief: the owner's Session 5E-2b2b prompt (supers: about 3 per player per round, never more than 3, charge from damage only and
 measured against the tank's own strength, 20-25% less damage, a faster timing bar, more professional looks; weapon proportions
@@ -3623,7 +3623,7 @@ repeated. **The owner judges the frame rate on his real devices.**
 
 **Tests on this build:** `node --check js/fx3d.js`; `super-timing.mjs` PASS (335 checks); `graphics-motion.mjs`,
 `graphics-release.mjs`, `lab-ui.mjs`, `web-login.mjs` PASS; `conquest-super-fx.py` PASS (Conquest's supers unchanged);
-`b4test.py` PASS; `super-vfx-capture.py` PASS on every capture above. CI on the pull request: see
+`b4test.py` PASS; `qa.py` PASS; `super-vfx-capture.py` PASS on every capture above. CI on the pull request: see
 "Release record".
 
 ### Release status: release pre-approved by the owner (Nov 14, 2026)
@@ -3681,8 +3681,18 @@ revert takes `PVP_V` back to 5, so phones are asked to reload once more).
   [43585206659](https://github.com/solb7403-creator/war-machines/actions/runs/43585206659)): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
 - Branch note: after the merge the branch could not be restarted from main (a force push is blocked in this environment),
   so main was merged into it instead (`4b15a8b`, no content difference from main at that point).
-- **Titanfall fix** ("Owner fix after the release" above): its own pull request from the same branch, build
-  `20261114110530`. Its merge commit, CI and deploy runs are added below once they exist.
+- **Titanfall fix RELEASED: PR #128 squash-merged as `ae37dd7` (head `fd72aed`), build `20261114110530`, `PVP_V` 6
+  (unchanged).** Visual only ("Owner fix after the release" above). Approved by the owner (Nov 14).
+  - CI on `fd72aed`: 9/9 green on the first run: conquest and transmission chromium + webkit (run [43588572479](https://github.com/solb7403-creator/war-machines/actions/runs/43588572479)),
+    balance (run [43588572447](https://github.com/solb7403-creator/war-machines/actions/runs/43588572447)), website and signup x3 (run [43588572588](https://github.com/solb7403-creator/war-machines/actions/runs/43588572588)), verify (run [43588572550](https://github.com/solb7403-creator/war-machines/actions/runs/43588572550)).
+    No review threads; main had not moved.
+  - Worker deploy run [43590938131](https://github.com/solb7403-creator/war-machines/actions/runs/43590938131): success; notices `pvp health: {"ok":true,"v":6,"open":0,"waiting":0,"queues":[]}`
+    and `live version: {"v":"20261114110530"} (repo: {"v":"20261114110530"})`, live = repo.
+  - Pages run [43590937909](https://github.com/solb7403-creator/war-machines/actions/runs/43590937909): success (deployment of `ae37dd7`).
+  - Post-merge runs on main `ae37dd7`: Validate Laboratory UI (run [43590938171](https://github.com/solb7403-creator/war-machines/actions/runs/43590938171)): success. Equipment Balance (run
+    [43590938146](https://github.com/solb7403-creator/war-machines/actions/runs/43590938146)): in progress when this was written (the same suite was green on the pull request head).
+  - `qa.py` finished after the pull request was opened: PASS (no layout issue at any of its screen sizes).
+  - The branch was merged with main again afterwards (`3783cbd`); this record is the only change it carries on top of main.
 - Not verified on a physical phone: the owner's iPhone playtest checklist above is the remaining check. Roll back: revert
   the merge commit(s) on main (Pages and the Worker deploy follow; reverting `c55d425` takes `PVP_V` back to 5, so phones
   are asked to reload once more).
