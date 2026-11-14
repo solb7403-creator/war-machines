@@ -50,6 +50,10 @@ async def main():
             await pg.screenshot(path=OUT + nm + '_quests_daily.png')
             await pg.evaluate("()=>[...document.querySelectorAll('.sec')].find(e=>/Weekly quests/.test(e.textContent)).scrollIntoView({block:'start'})"); await pg.wait_for_timeout(150)
             await pg.screenshot(path=OUT + nm + '_quests_weekly.png')
+            await pg.evaluate("()=>[...document.querySelectorAll('.q .t')].find(e=>/Weekly chest/.test(e.textContent)).scrollIntoView({block:'end'})"); await pg.wait_for_timeout(150)
+            await pg.screenshot(path=OUT + nm + '_quests_chest.png')   # the weekly chest row (the all-4 row is in _quests_daily on desktop, _quests_bonus on phones)
+            await pg.evaluate("()=>[...document.querySelectorAll('.q .t')].find(e=>/Finish all/.test(e.textContent)).scrollIntoView({block:'center'})"); await pg.wait_for_timeout(150)
+            await pg.screenshot(path=OUT + nm + '_quests_bonus.png')
         await pg.set_viewport_size({'width': 390, 'height': 740})
         # a finished daily pays 3,500 on the server
         dq = await pg.evaluate("()=>JSON.parse(JSON.stringify(save.dq))"); did = dq['ids'][0]
@@ -71,11 +75,14 @@ async def main():
             await pg.evaluate("()=>{closeAll();shopTab='pts';setTab('shop');}"); await pg.wait_for_timeout(400)
             ps = await pg.evaluate("""()=>({gem:[...document.querySelectorAll('[data-act=ptscrate][data-arg^="gem:"] .p')].map(e=>e.textContent),from:[...document.querySelectorAll('.ptsh')].map(e=>e.textContent).find(t=>/Chosen core/.test(t))||'',
               gear:[...document.querySelectorAll('[data-act=ptscrate]:not([data-arg^="gem:"]) .p')].map(e=>e.textContent),max:[...document.querySelectorAll('.cpick.is-max')].map(e=>e.dataset.arg+':'+e.dataset.act+':'+(e.textContent.endsWith('Max')?'Max':e.textContent))})""")
-            ok(ps['gem'] == ['30K', '60K', '180K'] and 'from 43,750' in ps['from'] and ps['gear'] == ['20K', '80K', '20K', '80K'] and ps['max'] == ['dmg:p:gnop:Max'],
+            ok(ps['gem'] == ['30K', '60K', '180K'] and 'from 43,750 points' in ps['from'] and ps['gear'] == ['20K', '80K', '20K', '80K'] and ps['max'] == ['dmg:p:gnop:Max'],
                nm + ': Points shop: gem caches 30K / 60K / 180K, chosen cores from 43,750, crates 20K / 80K unchanged, the maxed Damage core shows Max ' + json.dumps(ps))
             ok(not await wide(pg), nm + ': Points shop fits the width ' + json.dumps(await wide(pg)))
             await pg.evaluate("()=>document.querySelector('.corefor').scrollIntoView({block:'start'})"); await pg.wait_for_timeout(150)
             await pg.screenshot(path=OUT + nm + '_points_cores.png')
+            await pg.click('.cpick.is-max', force=True); await pg.wait_for_timeout(300)
+            ok(await pg.evaluate("()=>!document.querySelector('.sheet .cprow')"), nm + ': Points shop: tapping the Max tile opens no chosen-core sheet')
+            await pg.evaluate("()=>closeAll()"); await pg.wait_for_timeout(200)
             # the Epic gem cache sheet (points)
             await pg.click('[data-act=ptscrate][data-arg="gem:2"]'); await pg.wait_for_timeout(400)
             t = await pg.evaluate("()=>(document.querySelector('[data-act=buypts]')||{}).textContent||''")
@@ -85,8 +92,8 @@ async def main():
             # the chosen-core sheet (points)
             await pg.evaluate("()=>document.querySelector('.cpick[data-arg=\"rof:p\"]').scrollIntoView({block:'center'})"); await pg.click('.cpick[data-arg="rof:p"]'); await pg.wait_for_timeout(400)
             sh = await pg.evaluate("()=>({btn:[...document.querySelectorAll('[data-act=buycorepts]')].map(b=>b.textContent),txt:document.querySelector('.cphead .mut').textContent,cache:[...document.querySelectorAll('.cprow .d')].map(e=>e.textContent.split('A random ')[1]||'')})")
-            ok(sh['btn'] == ['43,750', '87,500', '262,500'] and '175 points a Star' in sh['txt'] and 'costs 120' in sh['txt'] and [c.endswith(x + ' points.') for c, x in zip(sh['cache'], ['30,000', '60,000', '180,000'])] == [True] * 3,
-               nm + ': the chosen-core sheet (points): 43,750 / 87,500 / 262,500, 175 a Star vs 120, next to 30,000 / 60,000 / 180,000 caches ' + json.dumps(sh))
+            ok(sh['btn'] == ['43,750', '87,500', '262,500'] and 'about 1.46× the points of a random gem cache' in sh['txt'] and [c.endswith(x + ' points.') for c, x in zip(sh['cache'], ['30,000', '60,000', '180,000'])] == [True] * 3,
+               nm + ': the chosen-core sheet (points): 43,750 / 87,500 / 262,500 (about 1.46x a random cache), next to 30,000 / 60,000 / 180,000 caches ' + json.dumps(sh))
             ok(not await wide(pg), nm + ': the chosen-core sheet fits the width')
             await pg.screenshot(path=OUT + nm + '_corepick_points.png')
             await pg.evaluate("()=>closeAll()"); await pg.wait_for_timeout(250)
@@ -115,12 +122,14 @@ async def main():
         for (w, h, nm) in [(390, 740, 'phone'), (1366, 768, 'desktop')]:
             wp = await pg.context.new_page(); await wp.set_viewport_size({'width': w, 'height': h})
             await wp.goto(pg.url.split('index.html')[0] + 'wiki.html'); await wp.wait_for_timeout(500)
+            await wp.add_style_tag(content='html{scroll-behavior:auto!important}')   # the wiki scrolls smoothly: a capture right after scrollIntoView caught it mid-scroll (review round 1)
             txt = await wp.evaluate("()=>document.body.innerText")
             ok('Every daily quest pays 3,500 points' in txt and 'every weekly quest pays 12,500' in txt and 'gem caches 30,000 / 60,000 / 180,000 points' in txt and 'chosen cores 43,750 / 87,500 / 262,500' in txt and 'about 12 weeks' in txt and '6,000 / 12,000' not in txt,
                nm + ': the wiki shows the new quest rewards and Points shop prices')
-            await wp.evaluate("()=>[...document.querySelectorAll('p')].find(e=>/Every daily quest pays/.test(e.textContent)).scrollIntoView({block:'start'})"); await wp.wait_for_timeout(150)
+            await wp.evaluate("()=>[...document.querySelectorAll('p')].find(e=>/Every daily quest pays/.test(e.textContent)).scrollIntoView({block:'center'})"); await wp.wait_for_timeout(600)
             await wp.screenshot(path=OUT + nm + '_wiki_quests.png')
-            await wp.evaluate("()=>[...document.querySelectorAll('p')].find(e=>/Points shop prices/.test(e.textContent)).scrollIntoView({block:'center'})"); await wp.wait_for_timeout(150)
+            await wp.evaluate("()=>[...document.querySelectorAll('p')].find(e=>/Points shop prices/.test(e.textContent)).scrollIntoView({block:'center'})"); await wp.wait_for_timeout(600)
+            ok(await wp.evaluate("()=>{const e=[...document.querySelectorAll('p')].find(e=>/Points shop prices/.test(e.textContent)).getBoundingClientRect();return e.top<innerHeight&&e.bottom>0;}"), nm + ': the wiki prices paragraph is on screen in its capture')
             await wp.screenshot(path=OUT + nm + '_wiki_prices.png')
             await wp.close()
         ok(not errs, 'no page errors: ' + json.dumps(errs[:5]))
