@@ -280,5 +280,14 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   ok(none.dmg > 0 && near(jack.dmg / none.dmg, K.SUP_OC[2] / K.SUP_OC[0], 0.01), 'Conquest: jackpot / miss damage = ' + (K.SUP_OC[2] / K.SUP_OC[0]).toFixed(2) + ' (' + Math.round(jack.dmg) + ' / ' + Math.round(none.dmg) + ')');
   ok(hit.oc >= 1 && near(none.fired, K.SUP_BAR_T + K.SUP_REL, 0.11), 'Conquest: a press inside the zone is at least a HIT; an untapped bar fires at the end of the sweep (' + none.fired.toFixed(2) + ' s)'); }
 
+// ---- 8. Conquest's super LOOKS are the 5E-2b code, word for word (owner, Nov 13: Conquest supers stay completely unchanged) ----
+// The Conquest host of js/fx3d.js is handed the block between the two markers below; its fingerprint was taken when the block
+// was verified byte-identical to main (1acff13) after the renames. A deliberate change to Conquest's supers must update it.
+{ const fx = fs.readFileSync(path.join(repo, 'js/fx3d.js'), 'utf8'), a = fx.indexOf(' // ======================= CONQUEST: the supers exactly as Session 5E-2b drew them'), b = fx.indexOf(' // ======================= DESTRUCTION =======================');
+  const { createHash } = await import('node:crypto'), h = a > 0 && b > a ? createHash('sha256').update(fx.slice(a, b)).digest('hex').slice(0, 16) : 'missing';
+  ok(h === '46c83f6294da75c2', 'the Conquest supers block in js/fx3d.js is unchanged (fingerprint ' + h + ')');
+  ok(/const SUP_API=CQO\?\{superCharge:superChargeO,superLock:superLockO,superBeam:superBeamO,superNova:superNovaO,superShell:superShellO,superBlast:superBlastO,superImpact:superImpactO\}/.test(fx) && /const CQO=host\.mode==='conquest';/.test(fx) && /bolt:CQO\?boltO:bolt/.test(fx), 'the Conquest host is handed the 5E-2b supers and lightning, the Arcade the new ones');
+  ok(/const MODES=!!host\.modes&&!host\.uv;/.test(fx), 'the new shader looks are off for a host that does not declare them (Conquest)'); }
+
 if (fails.length) { console.log('\nFAIL supers: ' + fails.length + ' of ' + checks + ' checks failed'); process.exit(1); }
 console.log('PASS supers:', checks, 'checks');

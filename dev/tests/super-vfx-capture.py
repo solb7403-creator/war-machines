@@ -95,6 +95,7 @@ async def run_view(p,name,report):
             assert fired is not None,key+' never fired'
             rep['supers'][key+'-'+OC[oc]]={'name':info['name'],'peak':peak,'firedAt':round(fired/30,2)}
             box=crop_box(await pg.evaluate('__scr()'),w,h,scale,key.startswith('twin'))
+            rep['supers'][key+'-'+OC[oc]]['box']=list(box)   # the crop (device px) the sheets use: dev/tests/super-sheets.py
             tiles[(key,oc)]={k:v.crop(box) for k,v in shots.items()}
             print(tag,key,OC[oc],info['name'],'fired',round(fired/30,2),'peak',peak,flush=True)
     rep['pageErrors']=errs;rep['idleAfter']=await pg.evaluate('(()=>{for(const c of crates)c.hp=c.mhp;for(const u of units)u.hp=u.mhp;for(let i=0;i<150;i++)__step(1);const s=__step(1);return {calls:s.calls,programs:s.programs,tris:s.tris,fxOn:SFX.glow.visible||SFX.debris.visible,fx:s.fx};})()')

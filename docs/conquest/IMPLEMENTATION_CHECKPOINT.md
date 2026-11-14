@@ -2923,3 +2923,136 @@ summaries of the pages named, not from pages it opened. Direction, not proof.
    (js/fx3d.js "how a super is staged").
 Not found by the agent: supers per match in Brawl Stars, any game's ultimate share of damage, Bassin anticipation-timer errors
 in ms, golf-meter or Gears active-reload window sizes.
+
+### What was wrong (measured on main `1acff13`, `dev/tests/super-rounds.mjs`, seeded, all six maps, every Arcade mode and size)
+The game's turret aims and fires by itself for every pilot, so the measurement pilot is the "standard" stand-in (the game's own
+auto-turret accuracy; a person only drives). Checkpoint 33's "about 3 a match" was measured with the "human" stand-in, which
+adds an aim lag the real game does not have and hits about a third as often: it under-counted.
+- A pilot fired **5.5 supers a round** on average (the "human" stand-in: 3.0): Arena 3v3 5.9 (up to 10), Moon Zone 3v3 12.5 (up
+  to 18), Bounty 3v3 8 (up to 10). **The owner's 7-8 in a 3v3 match is the normal case, not an outlier.**
+- AI pilots: 5.6 a round, up to 17 in one round (Moon Zone 3v3).
+- The owner's case (Legendary kit, Reactor 2): Bounty 3v3 against Rookie AI **15.3 a round (up to 18) against 7.6 for a stock
+  tank**; Bounty 1v1 9.9 against 4.9: twice a stock tank's count, three times in single rounds. Cause (as the owner found):
+  `supFill` charged by the share of the TARGET's hull, with the mode's hull scale taken out, so a strong kit against the
+  Arcade's weaker AI and a 3x team hull refilled several times faster.
+- Supers were 29% of a stock pilot's damage and **55-58% of the Legendary kit's** (up to 74% in Survival).
+
+### What shipped (gameplay; Arcade and live matches only)
+1. **Charge from damage only, measured against the tank's own strength** (`js/game.js` `supCharge`, `supDps`; `js/rules.js`
+   `SUP_FILL`). Damage dealt counts in seconds of the tank's OWN clean cannon fire (its permanent damage per second: weapon and
+   roll, cannon levels, damage / fire-rate / luck cores, Lunar Skin, velocity impact, Targeting's crit chance); damage received
+   counts as a share of the tank's OWN full hull. The target's health is not in the formula at all. Nothing passive, nothing
+   per second, nothing per crit (the old flat +30 a crit is gone: a crit's doubled damage already counts).
+2. **What never charges** (one function decides, called from `takeHit` with the hull really removed): crates and props, terrain,
+   the storm ring, meteors, a team mate's or your own fire, damage past the target's remaining health, a super's own damage
+   (for its owner), and anything once the round's cap is reached.
+3. **No farming by soaking damage:** damage received counts for at most ONE full hull per life; repairs and regeneration do not
+   refill that allowance; a respawn does (a new life), and the cap bounds it anyway.
+4. **Hard cap: 3 supers per player per round** (`SUP_ROUND_CAP`). The sim refuses the 4th press and the bar stops charging; the
+   count survives a respawn and a chassis swap; only a new round clears it (`simStart`, `simRound`). Live matches: the server
+   runs that sim, so the cap is the server's (`worker/src/pvp.js` passes the press to it; the snapshot carries the count for
+   the HUD). AI matches: the server's proof-of-play check counts the presses per round in the match record and refuses a
+   record with more than 3 (`worker/src/proof.js`, reason `supers`). AI pilots and ghosts obey the same cap.
+5. **About 3 a round in every mode** (1v1 Arena about 2): one fill row per mode and team size, each fitted on seeded rounds of
+   that mode so the pilot is offered about 4.4 bars a round (1v1 Arena: 2.7), 70% from damage dealt and 30% from damage
+   received; the cap turns that into "about 3, never more". 1v1 Arena rounds last 24 s on average (measured), which is why its
+   target is 2.
+6. **The Reactor keeps +10% a level** (and the charge mods their effect) on top, for both sources.
+7. **Each super does 22.5% less** (bases 335 / 380 / 320 / 385 -> 260 / 295 / 248 / 298), and the most one super can take from
+   a full hull dropped by the same 22% (50% -> 39% on a normal stop; 25% on a miss, 49% on a jackpot).
+8. **Timing bar 1.5x faster** (1.0 s -> 0.667 s sweep), the zone a little later along the bar (44-62% instead of 36-56%).
+9. **HUD:** three gold pips on the SUPER button show the round's supers (a spent one is hollow); with none left the button
+   dims and reads NONE LEFT, and a tap says "All 3 Supers used this round". Help and wiki text updated.
+10. `PVP_V` 6: phones on the old build are asked to update before a match (the bar's speed, the charge rule, the cap and the
+    snapshot changed; an old phone's AI-match record could hold more than 3 supers a round and would be refused).
+
+### Decisions and reasons (changes to the owner's plan are marked CHANGE)
+1. **Own strength = damage per second of clean fire from permanent gear.** Mystery-box buffs are not gear and are not in it, so
+   a damage box still speeds the charge a little while it lasts (the same for every kit). Crit chance IS in it (Targeting and
+   Luck cores would otherwise charge faster).
+2. **A super's own damage does not charge its owner.** Otherwise a kit whose supers hit harder (gear ^2.2) would charge faster
+   again, which is the exact thing the owner ruled out; Overwatch excludes it for the same reason (research 1).
+3. **Megatank (Survival):** its stomps and shells are combat damage from an opposing tank, so they charge the tank they hit; the
+   megatank itself has no super and charges nothing.
+4. **Solar flare event kept:** it doubles the charge from damage while it lasts; it adds nothing by itself (still damage only).
+5. **One fill row per mode, not one number.** A 24 s duel, a 180 s Moon Zone with respawns and a megatank with a huge hull
+   produce very different amounts of fighting; one number gave 1v1 Arena under 1 super a round or Moon Zone 3v3 over 10. Each
+   row is "d seconds of your own fire fill a bar; h of your own hulls lost fill a bar" (`rules.js SUP_FILL`).
+6. **The split is 70 / 30 as measured, not as a fixed ratio per hit.** In a bar-for-bar exchange of one hull the dealer gets about
+   three quarters and the receiver a quarter; over a measured round that comes to 70% dealt / 30% received (table below).
+7. **The cap binds on purpose.** The reference pilot is offered about 4.4 bars a round so that an average round ends near 3;
+   a rule tuned to "exactly 3 offered" would leave an average pilot at 2.3. The price: a strong round's third super can come
+   before the round's last quarter. The pips make that visible.
+8. **Top gear lands slightly UNDER the lowest gear (x0.9), not over it.** Against the Arcade's weaker AI a top kit's enemies
+   have less hull to shoot (in seconds of its own fire) and it loses less of its own hull, so its rounds are shorter and offer
+   less charge. That is the direct consequence of the owner's rule and it stays; the criterion "the best gear within 1.2x of
+   the lowest" is met in every mode.
+9. **Bar speed: 1.5x, not 2x.** At 2x the jackpot circle is on screen for 1.2 frames on a 30 fps phone (2.4 at 1x, 1.6 at 1.5x):
+   luck and device speed, not skill; and the earliest jackpot would come 215-255 ms after the bar appears, under a person's
+   tap reaction. What makes a jackpot hard: (a) the marker's speed, (b) the circle's random place, (c) how soon it can come.
+   (a) rose 50%, (b) is unchanged, (c) is held at 340 ms by starting the zone later. Hit rates below.
+10. **AI tap spread x1.125** so every league's AI still taps worse than an average person at the new speed.
+11. **Latency allowance stays 0.06 s** (it is network jitter plus a server tick; it does not scale with the bar).
+12. **Conquest keeps its own bar** (`SUP_BAR_T_CQ` 1.0 s, its zone at 36-56%): its taps are judged in 50 ms command steps, too
+    coarse for a 53 ms window, and the owner froze Conquest supers. Its charge rule, damage and looks are untouched.
+13. **`fair-arcade.mjs`: "an AI pilot never out-supers the pilot" is now judged per tank per ROUND** (the unit the cap is in),
+    with the same tolerance (5% + 0.3). Per minute alive it failed 24 of 11,471 checks for a reason that is not unfairness: a
+    tank destroyed early in Last Standing after two supers shows a higher rate a minute than a pilot who used all three and
+    survived. No gear-ladder rule changed; all pass (11,611 checks).
+
+### Numbers: supers per player per round, before (main `1acff13`) -> after (this branch)
+Tool: `dev/tests/super-rounds.mjs` (the real phone code, seeded, six maps, two seeds a cell; a round = one round of a best of 3
+in 1v1 Arena, the whole match elsewhere). Raw data: `docs/supers-5e2b2b/rounds-*.json`. "standard" = the game's own auto-turret
+accuracy (what a phone does); "human" = the low-accuracy stand-in of Checkpoint 33 (about a third of the hits), shown as the
+lower bound. Kits in the ladder and the weapon / chassis tables are at **Reactor 0** (the gear-fairness check compares equal
+Reactor levels); the owner's-case table uses his kit as he flies it (Reactor 2).
+
+**ladder** (pilot: standard; 960 matches before, 960 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | stock | common | rare | epic | legend | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|
+| arena 1v1 (24 -> 24) | 1.82 -> 2.60 (2 -> 3) | 1.58 -> 2.00 (2 -> 3) | 1.54 -> 1.79 (2 -> 3) | 1.48 -> 1.93 (2 -> 3) | 1.36 -> 1.50 (2 -> 2) | 1.07 -> 1.76 (2 -> 3) | 1.73 |
+| arena 2v2 (47 -> 54) | 3.58 -> 3.00 (4 -> 3) | 3.58 -> 3.00 (5 -> 3) | 3.58 -> 2.92 (4 -> 3) | 3.17 -> 2.92 (4 -> 3) | 2.25 -> 2.67 (3 -> 3) | 2.86 -> 2.90 (4 -> 3) | 1.12 |
+| arena 3v3 (75 -> 92) | 5.92 -> 3.00 (7 -> 3) | 6.33 -> 3.00 (8 -> 3) | 6.75 -> 3.00 (10 -> 3) | 5.50 -> 3.00 (8 -> 3) | 4.75 -> 2.67 (7 -> 3) | 4.35 -> 2.89 (7 -> 3) | 1.12 |
+| zone 1v1 (105 -> 104) | 5.33 -> 3.00 (7 -> 3) | 5.75 -> 2.92 (10 -> 3) | 5.83 -> 2.92 (11 -> 3) | 4.92 -> 3.00 (7 -> 3) | 4.83 -> 2.50 (7 -> 3) | 4.78 -> 2.82 (9 -> 3) | 1.20 |
+| zone 2v2 (131 -> 140) | 8.42 -> 3.00 (10 -> 3) | 9.83 -> 3.00 (13 -> 3) | 8.50 -> 3.00 (11 -> 3) | 8.75 -> 2.92 (13 -> 3) | 8.00 -> 2.83 (13 -> 3) | 8.03 -> 2.94 (14 -> 3) | 1.06 |
+| zone 3v3 (156 -> 170) | 13.08 -> 3.00 (17 -> 3) | 12.17 -> 3.00 (16 -> 3) | 13.67 -> 3.00 (16 -> 3) | 12.17 -> 3.00 (18 -> 3) | 10.83 -> 3.00 (15 -> 3) | 10.62 -> 2.97 (17 -> 3) | 1.00 |
+| crystal 1v1 (98 -> 94) | 4.67 -> 2.75 (7 -> 3) | 3.75 -> 2.67 (7 -> 3) | 3.58 -> 2.67 (6 -> 3) | 4.50 -> 2.67 (7 -> 3) | 4.58 -> 2.58 (6 -> 3) | 3.97 -> 2.70 (7 -> 3) | 1.07 |
+| crystal 2v2 (106 -> 104) | 6.33 -> 2.75 (9 -> 3) | 5.50 -> 2.50 (9 -> 3) | 5.33 -> 2.67 (8 -> 3) | 5.25 -> 2.75 (9 -> 3) | 5.25 -> 2.75 (10 -> 3) | 5.49 -> 2.76 (10 -> 3) | 1.10 |
+| crystal 3v3 (106 -> 104) | 6.50 -> 2.42 (10 -> 3) | 7.00 -> 2.67 (11 -> 3) | 6.67 -> 2.67 (9 -> 3) | 6.83 -> 2.67 (10 -> 3) | 7.08 -> 2.33 (11 -> 3) | 6.62 -> 2.87 (11 -> 3) | 1.15 |
+| bounty 1v1 (120 -> 120) | 4.92 -> 3.00 (7 -> 3) | 5.17 -> 3.00 (7 -> 3) | 5.50 -> 2.92 (7 -> 3) | 4.75 -> 3.00 (6 -> 3) | 5.67 -> 3.00 (7 -> 3) | 4.70 -> 2.92 (6 -> 3) | 1.03 |
+| bounty 2v2 (120 -> 120) | 6.67 -> 3.00 (8 -> 3) | 6.92 -> 3.00 (8 -> 3) | 7.00 -> 3.00 (8 -> 3) | 6.50 -> 3.00 (8 -> 3) | 7.08 -> 3.00 (8 -> 3) | 6.24 -> 2.94 (9 -> 3) | 1.00 |
+| bounty 3v3 (120 -> 120) | 7.58 -> 2.92 (9 -> 3) | 7.67 -> 3.00 (9 -> 3) | 8.33 -> 3.00 (10 -> 3) | 7.92 -> 3.00 (9 -> 3) | 8.75 -> 2.92 (10 -> 3) | 7.10 -> 2.89 (10 -> 3) | 1.03 |
+| royale 1v1 (53 -> 63) | 3.67 -> 2.92 (5 -> 3) | 4.92 -> 2.92 (6 -> 3) | 5.25 -> 3.00 (7 -> 3) | 4.83 -> 3.00 (7 -> 3) | 4.58 -> 2.92 (6 -> 3) | 2.69 -> 2.58 (6 -> 3) | 1.03 |
+| boss 1v1 (52 -> 67) | 5.17 -> 3.00 (6 -> 3) | 4.83 -> 3.00 (5 -> 3) | 3.92 -> 3.00 (5 -> 3) | 3.67 -> 3.00 (4 -> 3) | 2.83 -> 2.08 (4 -> 3) | 0.00 -> 0.00 (0 -> 0) | 1.44 |
+| boss 2v2 (70 -> 90) | 5.67 -> 3.00 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 4.92 -> 3.00 (6 -> 3) | 4.08 -> 2.75 (5 -> 3) | 3.63 -> 2.65 (6 -> 3) | 1.09 |
+| boss 3v3 (75 -> 93) | 5.42 -> 3.00 (8 -> 3) | 5.75 -> 3.00 (7 -> 3) | 5.92 -> 3.00 (7 -> 3) | 5.00 -> 2.92 (6 -> 3) | 4.58 -> 2.83 (6 -> 3) | 4.11 -> 2.75 (7 -> 3) | 1.06 |
+| **all modes** | **5.61 -> 2.88** (17 -> 3) | **5.76 -> 2.80** (16 -> 3) | **5.80 -> 2.78** (16 -> 3) | **5.37 -> 2.79** (18 -> 3) | **5.15 -> 2.58** (15 -> 3) | **5.59 -> 2.79** (17 -> 3) | **1.12** |
+| supers' share of the damage the pilot dealt | 29% -> 12% | 33% -> 14% | 37% -> 16% | 44% -> 20% | 55% -> 25% | 32% -> 12% | |
+| hull removed per super | 281 -> 202 | 380 -> 289 | 541 -> 435 | 963 -> 683 | 1715 -> 1260 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 3.4 + 1.5 | 3.4 + 1.3 | 3.2 + 1.2 | 3.0 + 1.1 | 2.5 + 1.0 | 2.9 + 1.6 | dealt 71% |
+
+**owner** (pilot: standard; 960 matches before, 960 after). Cell: supers per round before -> after (most in one round before -> after).
+
+| Mode (round, s) | legend @Lunar Legend | legend @Elite | legend @Veteran | legend @Rookie | stock @Rookie | AI pilots | highest / lowest kit after |
+|---|---|---|---|---|---|---|---|
+| arena 1v1 (19 -> 19) | 1.56 -> 1.67 (2 -> 3) | 1.54 -> 1.63 (2 -> 2) | 1.21 -> 1.04 (2 -> 2) | 1.21 -> 1.00 (2 -> 1) | 1.82 -> 2.60 (2 -> 3) | 0.96 -> 1.36 (2 -> 3) | 2.60 |
+| arena 2v2 (37 -> 44) | 2.75 -> 2.75 (4 -> 3) | 2.83 -> 2.67 (5 -> 3) | 3.17 -> 2.33 (4 -> 3) | 2.92 -> 2.17 (4 -> 3) | 3.58 -> 3.00 (4 -> 3) | 2.11 -> 2.53 (4 -> 3) | 1.38 |
+| arena 3v3 (56 -> 76) | 4.75 -> 2.92 (7 -> 3) | 5.50 -> 2.75 (7 -> 3) | 4.83 -> 2.42 (6 -> 3) | 5.00 -> 2.00 (7 -> 2) | 5.92 -> 3.00 (7 -> 3) | 3.30 -> 2.52 (7 -> 3) | 1.50 |
+| zone 1v1 (87 -> 87) | 6.00 -> 3.00 (8 -> 3) | 4.25 -> 2.67 (6 -> 3) | 4.33 -> 2.08 (6 -> 3) | 5.83 -> 2.08 (11 -> 3) | 5.33 -> 3.00 (7 -> 3) | 4.08 -> 2.55 (8 -> 3) | 1.44 |
+| zone 2v2 (104 -> 117) | 9.33 -> 2.83 (13 -> 3) | 7.92 -> 2.92 (13 -> 3) | 8.00 -> 2.75 (11 -> 3) | 7.83 -> 2.33 (11 -> 3) | 8.42 -> 3.00 (10 -> 3) | 6.17 -> 2.76 (12 -> 3) | 1.29 |
+| zone 3v3 (118 -> 158) | 11.75 -> 3.00 (16 -> 3) | 11.75 -> 3.00 (17 -> 3) | 10.08 -> 2.83 (13 -> 3) | 10.33 -> 2.75 (15 -> 3) | 13.08 -> 3.00 (17 -> 3) | 7.91 -> 2.85 (16 -> 3) | 1.09 |
+| crystal 1v1 (92 -> 95) | 5.08 -> 2.83 (8 -> 3) | 4.42 -> 2.83 (7 -> 3) | 5.00 -> 2.42 (7 -> 3) | 4.08 -> 2.17 (7 -> 3) | 4.67 -> 2.75 (7 -> 3) | 3.75 -> 2.55 (6 -> 3) | 1.30 |
+| crystal 2v2 (96 -> 102) | 5.92 -> 2.67 (9 -> 3) | 5.75 -> 2.75 (8 -> 3) | 6.42 -> 2.83 (10 -> 3) | 6.50 -> 2.67 (9 -> 3) | 6.33 -> 2.75 (9 -> 3) | 4.93 -> 2.78 (10 -> 3) | 1.06 |
+| crystal 3v3 (99 -> 102) | 7.92 -> 2.58 (12 -> 3) | 8.00 -> 2.75 (14 -> 3) | 7.67 -> 2.67 (12 -> 3) | 8.17 -> 2.42 (11 -> 3) | 6.50 -> 2.42 (10 -> 3) | 6.16 -> 2.82 (12 -> 3) | 1.14 |
+| bounty 1v1 (120 -> 120) | 6.42 -> 2.92 (7 -> 3) | 6.25 -> 3.00 (8 -> 3) | 8.58 -> 2.67 (10 -> 3) | 9.92 -> 2.92 (12 -> 3) | 4.92 -> 3.00 (7 -> 3) | 5.13 -> 2.82 (7 -> 3) | 1.12 |
+| bounty 2v2 (120 -> 120) | 8.67 -> 2.92 (11 -> 3) | 9.08 -> 3.00 (11 -> 3) | 11.00 -> 3.00 (13 -> 3) | 12.00 -> 3.00 (15 -> 3) | 6.67 -> 3.00 (8 -> 3) | 6.55 -> 2.94 (10 -> 3) | 1.03 |
+| bounty 3v3 (120 -> 120) | 10.50 -> 3.00 (13 -> 3) | 10.83 -> 3.00 (13 -> 3) | 13.50 -> 3.00 (16 -> 3) | 15.25 -> 3.00 (18 -> 3) | 7.58 -> 2.92 (9 -> 3) | 7.29 -> 2.88 (11 -> 3) | 1.03 |
+| royale 1v1 (45 -> 55) | 5.33 -> 2.92 (7 -> 3) | 5.67 -> 3.00 (7 -> 3) | 5.67 -> 2.83 (8 -> 3) | 5.50 -> 2.92 (7 -> 3) | 3.67 -> 2.92 (5 -> 3) | 2.21 -> 2.36 (5 -> 3) | 1.06 |
+| boss 1v1 (34 -> 51) | 2.75 -> 2.42 (3 -> 3) | 2.75 -> 2.08 (4 -> 3) | 2.17 -> 1.50 (3 -> 2) | 2.00 -> 1.17 (2 -> 2) | 5.17 -> 3.00 (6 -> 3) | 0.00 -> 0.00 (0 -> 0) | 2.56 |
+| boss 2v2 (48 -> 68) | 4.33 -> 2.92 (5 -> 3) | 4.42 -> 2.92 (5 -> 3) | 3.92 -> 2.08 (5 -> 3) | 3.83 -> 2.08 (5 -> 3) | 5.67 -> 3.00 (7 -> 3) | 2.28 -> 1.82 (6 -> 3) | 1.44 |
+| boss 3v3 (53 -> 78) | 5.17 -> 2.83 (7 -> 3) | 5.25 -> 3.00 (6 -> 3) | 4.75 -> 2.75 (6 -> 3) | 4.83 -> 2.17 (6 -> 3) | 5.42 -> 3.00 (8 -> 3) | 2.60 -> 2.25 (7 -> 3) | 1.38 |
+| **all modes** | **5.85 -> 2.70** (16 -> 3) | **5.75 -> 2.68** (17 -> 3) | **5.97 -> 2.37** (16 -> 3) | **6.26 -> 2.23** (18 -> 3) | **5.61 -> 2.88** (17 -> 3) | **4.79 -> 2.60** (16 -> 3) | **1.29** |
+| supers' share of the damage the pilot dealt | 58% -> 27% | 58% -> 26% | 57% -> 23% | 56% -> 22% | 29% -> 12% | 33% -> 13% | |
+| hull removed per super | 1645 -> 1279 | 1600 -> 1235 | 1351 -> 1084 | 1235 -> 1008 | 281 -> 202 | | |
+| charge offered before the cap, bars a round (from dealt + received) | 2.9 + 1.2 | 2.9 + 1.1 | 2.6 + 0.7 | 2.6 + 0.5 | 3.4 + 1.5 | 2.4 + 1.6 | dealt 74% |
