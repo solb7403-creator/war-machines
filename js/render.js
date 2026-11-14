@@ -651,10 +651,12 @@ function drawSupBar(g){
  g.fillStyle='rgba(255,255,255,.35)';g.fillRect(zx+2,B.y+2,zw-4,Math.max(2,B.h*0.28));
  // jackpot: a gold circle that stands proud of the track
  const pulse=quiet||done?1:1+0.10*Math.sin(now/90);
- g.fillStyle='#1a1204';g.beginPath();g.arc(jx,cy,jr+3,0,7);g.fill();
- g.fillStyle=done&&supUI.oc!==2?'#b08a2e':'#ffcf4a';g.beginPath();g.arc(jx,cy,jr*pulse,0,7);g.fill();
- g.fillStyle='#fff6cf';g.beginPath();g.arc(jx,cy,jr*0.42*pulse,0,7);g.fill();
- if(!done&&!quiet){g.globalAlpha=fade*(0.35+0.35*Math.sin(now/90));g.strokeStyle='#ffe9a0';g.lineWidth=2;g.beginPath();g.arc(jx,cy,jr+6+2*Math.sin(now/90),0,7);g.stroke();g.globalAlpha=fade;}
+ // (Session 5E-2b2b: a capsule exactly as wide as the judged window and taller than the track, so it stays readable on a
+ // 320 px phone where that width is under 15 px, and what is drawn is what is judged)
+ {const jh=(B.h+12)*pulse,jw=2*jr;g.fillStyle='#1a1204';rr(g,jx-jr-2.5,cy-jh/2-2.5,jw+5,jh+5,Math.min(jr+2.5,9));g.fill();
+  g.fillStyle=done&&supUI.oc!==2?'#b08a2e':'#ffcf4a';rr(g,jx-jr,cy-jh/2,jw,jh,Math.min(jr,7));g.fill();
+  g.fillStyle='#fff6cf';rr(g,jx-jr*0.4,cy-jh*0.3,jw*0.4,jh*0.6,Math.min(jr*0.4,4));g.fill();
+  if(!done&&!quiet){g.globalAlpha=fade*(0.35+0.35*Math.sin(now/90));g.strokeStyle='#ffe9a0';g.lineWidth=2;rr(g,jx-jr-5,cy-jh/2-5,jw+10,jh+10,Math.min(jr+5,11));g.stroke();g.globalAlpha=fade;}}
  // marker: a white needle with a dark edge, taller than the track
  const mx=B.x+B.w*p;
  // the marker is the thing to watch: the brightest, tallest shape on the bar, with an arrow above and below

@@ -1,0 +1,74 @@
+{
+ "phone pulse0": {
+  "idle": 41.6,
+  "jackpot": 39,
+  "fired": true
+ },
+ "phone pulse2": {
+  "idle": 39.6,
+  "jackpot": 38.8,
+  "fired": true
+ },
+ "phone twin0": {
+  "idle": 45.1,
+  "jackpot": 39.5,
+  "fired": true
+ },
+ "phone twin2": {
+  "idle": 46,
+  "jackpot": 38.6,
+  "fired": true
+ },
+ "phone siege0": {
+  "idle": 48.5,
+  "jackpot": 46.4,
+  "fired": true
+ },
+ "phone siege2": {
+  "idle": 41.9,
+  "jackpot": 44.1,
+  "fired": true
+ },
+ "phone moon": {
+  "idle": 49.8,
+  "jackpot": 43.2,
+  "fired": true
+ },
+ "phone errors": [],
+ "desktop pulse0": {
+  "idle": 128.7,
+  "jackpot": 135,
+  "fired": true
+ },
+ "desktop pulse2": {
+  "idle": 180.6,
+  "jackpot": 142.9,
+  "fired": true
+ },
+ "desktop twin0": {
+  "idle": 197.2,
+  "jackpot": 133.4,
+  "fired": true
+ },
+ "desktop twin2": {
+  "idle": 182.2,
+  "jackpot": 134.5,
+  "fired": true
+ },
+ "desktop siege0": {
+  "idle": 194.5,
+  "jackpot": 152.3,
+  "fired": true
+ },
+ "desktop siege2": {
+  "idle": 173,
+  "jackpot": 142.5,
+  "fired": true
+ },
+ "desktop moon": {
+  "idle": 179.9,
+  "jackpot": 142.3,
+  "fired": true
+ },
+ "desktop errors": []
+}

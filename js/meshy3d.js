@@ -339,7 +339,9 @@ const Meshy3D=(()=>{
   const bw=2*(wv.width||.5),bh=bodyHeight(asset),floor=Math.min((moon?.5:FIT_FLOOR[t])*hullW/bw,FIT_TOP*hv.ring/bh);
   let sc=Math.min(Math.min(k*hullW/bw,Math.max(h*hv.ring/bh,floor)),.98*hullW/(bb.max.z-bb.min.z),.96*-hv.x0/Math.max(.1,-bb.min.x));
   if(moon&&typeof M3!=='undefined')sc=Math.min(sc,M3.weaponScale('moon',cls,tc));
-  return Math.max(.35,Math.min(moon?1:FIT_MAX[t],sc))*fitAdj(arch,t,cls,tc);   // upper cap per tier: wide four-pod hulls must not get an oversized gun; then the eye's correction (FIT_ADJ)
+  // upper cap per tier (wide four-pod hulls must not get an oversized gun), then the eye's correction (FIT_ADJ), and after it the two
+  // geometric caps again: never wider than the hull, the rear inside the deck (review: the correction used to come after every cap)
+  return Math.min(Math.max(.35,Math.min(moon?1:FIT_MAX[t],sc))*fitAdj(arch,t,cls,tc),.98*hullW/(bb.max.z-bb.min.z),.96*-hv.x0/Math.max(.1,-bb.min.x));
  }
  function weaponKit(arch,tier,P,team,lunar,cls,ct){
   const asset=best(itemId.weapon(arch,tier));if(!asset)return null;

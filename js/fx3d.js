@@ -85,7 +85,7 @@ function create(T,host){
  dg.setAttribute('position',dAttr.position);dg.setAttribute('normal',dAttr.normal);dg.setAttribute(host.solidAttr||'color',dAttr.col);
  for(const k in dAttr)dAttr[k].setUsage(35048);
  const dMesh=new T.Mesh(dg,host.solidMat);dMesh.frustumCulled=false;dMesh.userData.noPick=true;dMesh.name='fx3d-debris';if(host.order)dMesh.renderOrder=host.order.solid;host.scene.add(dMesh);
- let qn=0,dn=0,time=0,frame=0,lastDt=0.016,QM=0;   // QM: the look of the quads being written (0 soft glow, 1 turbulent, 2 shock front, 3 flowing beam: the host's glow shader, render3d.js FXG_FS)
+ let qn=0,dn=0,time=0,frame=0,lastDt=0.016,QM=0,lowQ=false;   // lowQ: LOW quality this frame: every quad is drawn as soft glow (the looks cost several times more per pixel)   // QM: the look of the quads being written (0 soft glow, 1 turbulent, 2 shock front, 3 flowing beam: the host's glow shader, render3d.js FXG_FS)
  const CQO=host.mode==='conquest';   // Conquest keeps the 5E-2b supers and lightning (owner, Nov 13)
  const MODES=!!host.modes&&!host.uv;   // a host whose glow material does not know the looks (Conquest's style material) draws everything as soft glow
  const CQ=host.mode==='conquest'?.45:1,GLW=host.mode==='conquest'?1.5:2.8,GAIN=host.gain||1,MW=host.minW||.08,FW=host.fwd||null,uvT=[0,0],G=host.lin?2.2:1,cc=(v)=>G===1?v:Math.pow(v,G),tmp=[0,0,0];
@@ -98,7 +98,7 @@ function create(T,host){
   qP[p]=x0;qP[p+1]=y0;qP[p+2]=z0;qP[p+3]=x1;qP[p+4]=y1;qP[p+5]=z1;qP[p+6]=x2;qP[p+7]=y2;qP[p+8]=z2;qP[p+9]=x3;qP[p+10]=y3;qP[p+11]=z3;
   r=cc(r)*a*GAIN;g=cc(g)*a*GAIN;b=cc(b)*a*GAIN;o=o||0;for(let i=0;i<16;i+=4){qC[c+i]=r;qC[c+i+1]=g;qC[c+i+2]=b;qC[c+i+3]=o;}
   if(host.uv){host.uv(u0,v0,uvT);qU[u]=uvT[0];qU[u+1]=uvT[1];host.uv(u1,v1,uvT);qU[u+2]=uvT[0];qU[u+3]=uvT[1];host.uv(u2,v2,uvT);qU[u+4]=uvT[0];qU[u+5]=uvT[1];host.uv(u3,v3,uvT);qU[u+6]=uvT[0];qU[u+7]=uvT[1];}
-  else{const m=MODES?QM*4:0;qU[u]=u0+m;qU[u+1]=v0;qU[u+2]=u1+m;qU[u+3]=v1;qU[u+4]=u2+m;qU[u+5]=v2;qU[u+6]=u3+m;qU[u+7]=v3;}
+  else{const m=MODES&&!lowQ?QM*4:0;qU[u]=u0+m;qU[u+1]=v0;qU[u+2]=u1+m;qU[u+3]=v1;qU[u+4]=u2+m;qU[u+5]=v2;qU[u+6]=u3+m;qU[u+7]=v3;}
   if(qB){for(let i=0;i<12;i++)qB[p+i]=0;}
  }
  // side vector for a ribbon from a to b (unit, perpendicular to it): flat on the ground in the Arcade's top-down view,
@@ -126,7 +126,7 @@ function create(T,host){
  // a beam body from a to b: soft across, with streaks of energy racing along it (look 3; plain soft ribbon where the host has no looks).
  // s0: where along the whole beam this piece starts (world units), so the streaks run on through consecutive pieces
  function flow(ax,ay,az,bx,by,bz,w0,w1,col,a,s0){
-  if(!MODES){seg(ax,ay,az,bx,by,bz,w0,w1,col,a);return;}
+  if(!MODES||lowQ){seg(ax,ay,az,bx,by,bz,w0,w1,col,a);return;}
   const s=sideOf(bx-ax,by-ay,bz-az,(ax+bx)/2,(ay+by)/2,(az+bz)/2),sx=s[0],sy=s[1],sz=s[2],u0=Math.min(.999,(s0||0)/24),u1=Math.min(.999,((s0||0)+Math.hypot(bx-ax,by-ay,bz-az))/24);
   QM=3;quad(ax-sx*w0,ay-sy*w0,az-sz*w0,bx-sx*w1,by-sy*w1,bz-sz*w1,bx+sx*w1,by+sy*w1,bz+sz*w1,ax+sx*w0,ay+sy*w0,az+sz*w0,u0,-1,u1,-1,u1,1,u0,1,col[0],col[1],col[2],a,0);QM=0;
  }
@@ -146,6 +146,7 @@ function create(T,host){
  }
  // turbulent looks: a billowing sprite (fire, smoke, an energy cloud) and a churning ground disc
  function puff(x,y,z,r,col,a,o){QM=1;sprite(x,y,z,r,col,a,o);QM=0;}
+ const puffT=puff;
  function churn(x,y,z,r,col,a,o){QM=1;disc(x,y,z,r,col,a,o);QM=0;}
  // a shock wave on the ground: a hard bright front at radius r with a soft tail of width w behind it
  function shock(x,y,z,r,w,col,a,n,jag,seed){w=Math.min(w,r*.22);QM=2;ring(x,y,z,Math.max(.01,r-w),w,col,a,n||44,jag||0,seed||0);QM=0;}   // the tail is never deeper than 60% of the radius: a young front is a ring, not a filled disc
@@ -161,7 +162,7 @@ function create(T,host){
    BX[i]=ax+dx*t+sx*e;BY[i]=ay+dy*t+sy*e+(host.eye?0:lift*.4);BZ[i]=az+dz*t+sz*e;}
   HOT[0]=col[0]+(1-col[0])*.55;HOT[1]=col[1]+(1-col[1])*.55;HOT[2]=col[2]+(1-col[2])*.55;
   for(let i=1;i<=n;i++){const t0=(i-1)/n,t1=i/n,w0=wc*(1.12-.62*t0),w1=wc*(1.12-.62*t1);
-   seg(BX[i-1],BY[i-1],BZ[i-1],BX[i],BY[i],BZ[i],w0*3,w1*3,col,a*.3);seg(BX[i-1],BY[i-1],BZ[i-1],BX[i],BY[i],BZ[i],w0*1.15,w1*1.15,col,a*.9);
+   if(thin!==2)seg(BX[i-1],BY[i-1],BZ[i-1],BX[i],BY[i],BZ[i],w0*3,w1*3,col,a*.3);seg(BX[i-1],BY[i-1],BZ[i-1],BX[i],BY[i],BZ[i],w0*1.15,w1*1.15,col,a*.9);   // thin 1: no hot core; thin 2: a hair (one pass)
    if(!thin)seg(BX[i-1],BY[i-1],BZ[i-1],BX[i],BY[i],BZ[i],w0*.5,w1*.5,HOT,a);}
   if(fork){const ux=dx/L,uz=dz/L;for(let i=2;i<n-1;i++){if(hsh(seed+i*31)>=fork)continue;
     const fl=L*(.14+hsh(seed+i*57)*.2),fa=(hsh(seed+i*91)<.5?-1:1)*(.45+hsh(seed+i*17)*.6),ca=Math.cos(fa),sa=Math.sin(fa),ex=BX[i]+(ux*ca-uz*sa)*fl,ez=BZ[i]+(ux*sa+uz*ca)*fl,mx=(BX[i]+ex)/2+(hsh(seed+i*3)-.5)*fl*.35,mz=(BZ[i]+ez)/2+(hsh(seed+i*9)-.5)*fl*.35,fw=wc*(1-.6*i/n);
@@ -335,11 +336,11 @@ function create(T,host){
    for(let i=0;i<4;i++){const t=sp+i*TAU/4+.6,c=Math.cos(t),sn=Math.sin(t),d=.11*u,cx=x+c*r,cz=z+sn*r;quad(cx-c*d*1.6,y+.005,cz-sn*d*1.6,cx-sn*d,y+.005,cz+c*d,cx+c*d*1.6,y+.005,cz+sn*d*1.6,cx+sn*d,y+.005,cz-c*d,0,0,0,0,0,0,0,0,X[0],X[1],X[2],a*.8);}
    disc(x,y-.005,z,r*.72,A,a*.12);return;}
   // legendary: the lunar sigil: three rings, twelve marks, six turning arcs, the eight phases of the moon, three orbiting motes
-  ring(x,y,z,r,w,A,a,40,0,0);ring(x,y,z,r*1.12,w*.5,X,a*.7,40,0,0);
+  ring(x,y,z,r,w,A,a,24,0,0);ring(x,y,z,r*1.12,w*.5,X,a*.7,24,0,0);
   for(let i=0;i<12;i++){const t=sp*.4+i*TAU/12,c=Math.cos(t),sn=Math.sin(t),l=i%3===0?.2:.1;seg(x+c*r*1.14,y,z+sn*r*1.14,x+c*r*(1.14+l),y,z+sn*r*(1.14+l),w*(i%3===0?1.2:.7),w*.25,X,a);}
   for(let i=0;i<6;i++){const a0=-sp+i*TAU/6;ring(x,y,z,r*.8,w*1.1,A,a*.9,6,0,0,a0,a0+.62);}
-  ring(x,y,z,r*.5,w*.6,X,a*.8,26,0,0);
-  for(let i=0;i<8;i++){const t=sp*.8+i*TAU/8,cx=x+Math.cos(t)*r*.65,cz=z+Math.sin(t)*r*.65;ring(cx,y+.005,cz,.13*u,.045*u,X,a,8,0,0,t,t+1.5+4.78*i/7);}   // crescent to full moon
+  ring(x,y,z,r*.5,w*.6,X,a*.8,18,0,0);
+  for(let i=0;i<8;i++){const t=sp*.8+i*TAU/8,cx=x+Math.cos(t)*r*.65,cz=z+Math.sin(t)*r*.65;ring(cx,y+.005,cz,.13*u,.045*u,X,a,8,0,0,t,t+1.5+2.9*i/7);}   // crescent to gibbous (never a closed circle)
   for(let i=0;i<3;i++){const t=-sp*1.6+i*TAU/3;sprite(x+Math.cos(t)*r,y+.25*u,z+Math.sin(t)*r,.16*u,X,a*CQ);}
   disc(x,y-.005,z,r*.8,A,a*.12);
  }
@@ -453,10 +454,10 @@ function create(T,host){
    const wb=oc===0?.68:oc===2?1.25:1,Wm=e.b*wb*thin*punch,R1=col('#ff2020'),R2=col('#ff5a3a'),Wc=col('#dbeafe'),Bl=col('#7fc8ff');
    beamBody(e,Wm,col('#3f8cff'),B,Wc,env,fl,1.45,.8,oc===2?.3:.2);
    if(flash)star(ax,y+.02,az,(1.8+1.6*flash)*u,4,e.ang+.39,Wc,flash,.14*u);
-   if(oc>0){const nf=oc===2?4:6;for(let i=0;i<nf;i++){const off=((i+.5)/nf-.5)*Wm*.85;bolt(ax-sa*off,y+.03,az+ca*off,bx-sa*off,yb+.03,bz+ca*off,Wm*.3,Math.round(L/u/.7),.03*u,i%2?col('#3fa0ff'):col('#62b8ff'),env,fs*17+i*101+e.seed,.22,1);}   // hair-thin, saturated blue filaments hugging the beam
-    const ng=oc===2?7:5;for(let i=0;i<ng;i++){const f=((i/ng)+t*.9)%1,ed=Math.min(1,f*6,(1-f)*6),gx=ax+(bx-ax)*f,gz=az+(bz-az)*f,op=.6+2.5*i/(ng-1);ring(gx,y+.045,gz,.24*u,.06*u,Wc,.95*env*ed,8,0,0,e.ang+Math.PI/2-op,e.ang+Math.PI/2+op);}}   // the phases of the moon ride down the beam, new moon to full (inside it: nothing goes round it)
+   if(oc>0){const nf=oc===2?4:6;for(let i=0;i<nf;i++){const off=((i+.5)/nf-.5)*Wm*.85;bolt(ax-sa*off,y+.03,az+ca*off,bx-sa*off,yb+.03,bz+ca*off,Wm*.3,Math.round(L/u/.7),.04*u,i%2?col('#3fa0ff'):col('#62b8ff'),env,fs*17+i*101+e.seed,.22,2);}   // hair-thin, saturated blue filaments hugging the beam
+    const ng=oc===2?7:5;for(let i=0;i<ng;i++){const f=((i/ng)+t*.9)%1,ed=Math.min(1,f*6,(1-f)*6),gx=ax+(bx-ax)*f,gz=az+(bz-az)*f,op=.6+1.6*i/(ng-1);ring(gx,y+.045,gz,.24*u,.06*u,Wc,.95*env*ed,8,0,0,e.ang+Math.PI/2-op,e.ang+Math.PI/2+op);}}   // the phases of the moon ride down the beam, new moon to full (inside it: nothing goes round it)
    if(oc>0){const n=oc===2?6:4;for(let i=0;i<n;i++){const f=(i+.5)/n,px=ax+(bx-ax)*f,pz=az+(bz-az)*f,h=(2.1+1.1*hsh(e.seed+i*5))*u*Math.min(1,t/.12)*thin;for(let j=1;j<4;j++)sprite(px,y+h*j/3,pz,(.4-.08*j)*u,j>1?A:Wc,.42*env*(1-.2*j)*CQ);}   // legendary: shafts of moonlight stand up out of the beam
-    const m=oc===2?5:4;for(let i=0;i<m;i++){const f=(i+.7)/(m+.4),on=clamp((t-.03*i)/.08,0,1);if(on<=0)continue;for(const sd of [-1,1]){const gx=ax+(bx-ax)*f-sa*e.b*wb*1.85*sd,gz=az+(bz-az)*f+ca*e.b*wb*1.85*sd,a0=e.ang+(sd>0?Math.PI/2:-Math.PI/2),op=.5+2.3*i/(m-1);ring(gx,e.y+.05,gz,.28*u,.07*u,Wc,.8*env*on,8,0,0,a0-op,a0+op);}}}   // and the phases of the moon light up along both sides of the lane, new moon to full
+    const m=oc===2?5:4;for(let i=0;i<m;i++){const f=(i+.7)/(m+.4),on=clamp((t-.03*i)/.08,0,1);if(on<=0)continue;for(let sd=-1;sd<=1;sd+=2){const gx=ax+(bx-ax)*f-sa*e.b*wb*1.85*sd,gz=az+(bz-az)*f+ca*e.b*wb*1.85*sd,a0=e.ang+(sd>0?Math.PI/2:-Math.PI/2),op=.5+1.7*i/(m-1);ring(gx,e.y+.05,gz,.28*u,.07*u,Wc,.8*env*on,8,0,0,a0-op,a0+op);}}}   // and the phases of the moon light up along both sides of the lane, new moon to full
    if(oc===2&&env>.08)arcsOff(e,y,e.b*wb*punch*(.6+.4*thin),low()?8:13,R1,R2,Math.min(1,env*1.3),fs);   // red electricity sparking off the beam
    if(oc>0){const n=oc===2?6:4;for(let i=0;i<n;i++){const f=((i/n)+t*1.7+hsh(e.seed+i)*.3)%1,ed=Math.min(1,f*6,(1-f)*6),off=(hsh(e.seed+i*7)-.5)*Wm*1.1,hx=ax+(bx-ax)*f-sa*off,hz=az+(bz-az)*f+ca*off,tl=1.7*u;   // legendary: falling stars race down inside the beam
      segc(hx-ca*tl,y+.04,hz-sa*tl,hx,y+.04,hz,.02*u,.11*u,C,.85*env*ed,0,2);sprite(hx,y+.04,hz,.2*u,C,env*ed*CQ);}}
@@ -512,7 +513,7 @@ function create(T,host){
  }
  // ---- shells (Siege x3): the shot in flight (every frame) and where it lands ----
  function superShell(key,oc,x,y,z,u){
-  const P=PAL[key]||PAL.siege0,A=col(P.a),C=col(P.c),B=col(P.b),X=col(P.x),s=OCA[oc],q=quiet();
+  const P=PAL[key]||PAL.siege0,A=col(P.a),C=col(P.c),B=col(P.b),X=col(P.x),s=OCA[oc],q=quiet(),puff=q?sprite:puffT;   // reduced motion: a shell in flight is a plain glow (the fire noise is fixed to the ground: a moving puff would crawl through it)
   if(key==='siege1'){sprite(x,y,z,1.0*u*s,A,.8);sprite(x,y,z,.42*u*s,C,1);{const fq=q?frame>>5:frame;for(let i=0;i<(oc===0?1:2);i++){const a=hsh(fq*3+i)*TAU;bolt(x,y,z,x+Math.cos(a)*1.3*u*s,y-.3*u,z+Math.sin(a)*1.3*u*s,.3*u,4,.06*u,X,.9,fq+i,0,1);}}
    if(rnd()<lastDt*50*amt())part(1,x,y,z,(rnd()-.5),0,(rnd()-.5),.3,.5*u*s,.05*u,A,.8,0,0);}
   else if(key==='siege2'){puff(x,y,z,1.6*u*s,B,.75);sprite(x,y,z,.95*u*s,A,.95);sprite(x,y,z,.42*u*s,C,1);star(x,y+.01,z,1.5*u*s,2,time*6,col('#fff3b0'),.7,.08*u);
@@ -545,7 +546,7 @@ function create(T,host){
    {const sn=oc===2?9:7,sg=Math.min(1,t/(e.d*.9));for(let i=0;i<sn;i++){const a=e.ang+i/sn*TAU+t*.5,d=R*(.95+.7*sg)*(.85+.3*hsh(e.seed+i));puff(e.x+Math.cos(a)*d,e.y+R*(.3+.8*sg),e.z+Math.sin(a)*d,R*(.36+.5*sg),K,.03,.82*Math.min(1,t/.08)*(1-Math.max(0,k-.4)/.5));}}   // black smoke rolls out round the fire's edge, drawn over it (gone by the time the fire is)
    if(hot)sprite(e.x,e.y+R*.42*ex,e.z,R*(.16+.1*hot),W1,hot*.9*CQ);   // jackpot: a white-hot heart
    shock(e.x,y,e.z,R*(.2+1.3*ex),(.8-.45*ex)*u*(oc===0?.6:1),F2,fade*fade*(oc===0?.5:oc===2?1:.8),44,.12,e.seed);   // a ragged orange front at every level (never a clean pale hoop)
-   if(oc===2)for(let i=0;i<3;i++){const at=.05+i*.07,lt=t-at;if(lt>=0){const a=e.ang+i*2.3+.6,sz0=[1,.72,.5][i],sx=e.x+Math.cos(a)*R*(.6+.12*i),sz=e.z+Math.sin(a)*R*(.6+.12*i),f=Math.max(0,1-lt/.45);   // jackpot: three secondary bursts of different sizes close in round it, each a clump of flame tongues
+   if(oc===2)for(let i=0;i<3;i++){const at=.05+i*.07,lt=t-at;if(lt>=0){const a=e.ang+i*2.3+.6,sz0=i===0?1:i===1?.72:.5,sx=e.x+Math.cos(a)*R*(.6+.12*i),sz=e.z+Math.sin(a)*R*(.6+.12*i),f=Math.max(0,1-lt/.45);   // jackpot: three secondary bursts of different sizes close in round it, each a clump of flame tongues
       for(let j=0;j<4;j++){const b2=a+j*1.57+hsh(e.seed+i*7+j),ln=R*sz0*(.3+.25*hsh(e.seed+i*3+j))*(.5+.5*f);segc(sx,e.y+.35*u,sz,sx+Math.cos(b2)*ln,e.y+.3*u+ln*.5,sz+Math.sin(b2)*ln,.2*u*sz0,.02*u,j%2?F2:F1,.9*f,0,1);}
       puff(sx,e.y+.5*u,sz,R*.22*sz0*(1.3-f*.4),F1,f);sprite(sx,e.y+.5*u,sz,R*.08*sz0,F3,f*f*CQ);if(!(e.f&(2<<i))){e.f|=(2<<i);sparks(sx,e.y+.3,sz,8,5*u,X,.3*u,.5,1.4,e.y);mark(0,1.6,sx,e.y+.025,sz,R*.3*sz0,0,0);shake(7,.18);}}}
    if(!(e.f&1)){e.f|=1;sparks(e.x,e.y+.4,e.z,oc===0?8:oc===1?22:34,(6+3*oc)*u,X,.34*u,.7,1.6,e.y);smoke(e.x,e.y+.5,e.z,oc===0?5:oc===1?12:18,R*.5,K,1.7*u,oc===2?2.4:1.8,1.5);
@@ -849,7 +850,7 @@ function create(T,host){
  // the world origin moved under the camera (Conquest rebases it): everything alive moves with it instead of popping out
  function shift(dx,dz){for(const e of E)if(e.on){e.x+=dx;e.z+=dz;}for(const m of S)if(m.on){m.x+=dx;m.z+=dz;}for(let i=0;i<pn;i++){pX[i]+=dx;pZ[i]+=dz;}for(let i=0;i<cn;i++){cX[i]+=dx;cZ[i]+=dz;}}
  // ---------- frame ----------
- function begin(dt,t){lastDt=Math.min(.05,dt||.016);time=t===undefined?time+lastDt:t;frame++;qn=0;dn=0;frameChunks=0;}
+ function begin(dt,t){lastDt=Math.min(.05,dt||.016);time=t===undefined?time+lastDt:t;frame++;qn=0;dn=0;frameChunks=0;lowQ=low();}
  function end(){
   marksDraw(lastDt);
   for(const e of E){if(!e.on)continue;if(e.t>=e.d){e.on=0;continue;}try{e.fn(e,lastDt);}catch(err){e.on=0;}e.t+=lastDt;}   // an effect that fails is dropped: it never takes the frame down
