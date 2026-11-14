@@ -2,7 +2,10 @@
 (index.html, the shipped client) frame by frame: the frame loop is stopped and the sim, the HUD and the 3D view are stepped by
 hand at 1/30 s, so every capture is the same on any machine (software GL included). Also the smoke test for the timing bar
 and the effects: it fails on any page error, on a missing bar or outcome, and on a draw-call or shader-program rise.
-usage: python3 dev/tests/super-vfx-capture.py [outdir] [--only pulse0,moon] [--view phone|desktop|both] [--quality high|low] [--reduced] [--destroy]
+usage: python3 dev/tests/super-vfx-capture.py [outdir] [--only pulse0,moon] [--view phone|desktop|both] [--quality high|low] [--reduced] [--destroy] [--seed 7]
+  --seed N: the page's Math.random is a seeded generator, restarted at N for every scene (the effects draw their sparks, angles and
+            jitter from it), so two builds whose recipe for a super is the same give the same pixels: a before / after proof
+  REPO=<another checkout> serves that tree's game files (dev/tests/harness.py), with this tool
   phone = 390x844 portrait at 3x (iPhone in Telegram), desktop = 1920x1080.
 Writes <outdir>/<view>-<quality>/<key>-<outcome>-<frame>.png, sheet-<view>-<quality>.webp (10 x 3, the blast frame) and
 seq-<view>-<quality>.webp (every super, jackpot: charge, lock, blast, +0.2 s, +0.5 s, aftermath), and report.json.
@@ -23,7 +26,8 @@ def opt(name,default=None):
 ONLY=opt('only');ONLY=ONLY.split(',') if isinstance(ONLY,str) else KEYS
 VIEWS={'phone':(390,844,3),'desktop':(1920,1080,1)}
 CLEAN=not bool(opt('numbers',False));   # the sheets leave the floating damage numbers out (pass --numbers to keep them)
-VIEW=opt('view','both');QUALITY=opt('quality','high');REDUCED=bool(opt('reduced',False));DESTROY=bool(opt('destroy',False))
+VIEW=opt('view','both');QUALITY=opt('quality','high');REDUCED=bool(opt('reduced',False));DESTROY=bool(opt('destroy',False));SEED=int(opt('seed',0) or 0)
+SEEDJS='(()=>{let s=1;Math.random=()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};window.__reseed=n=>{s=n|0;};})()'
 # one scene: my tank low in the arena, one enemy ahead; nobody drives or shoots unless the capture says so
 SCENE='''([key,quality,reduced])=>{
  const arch=key==='moon'?'moon':key.slice(0,-1),tier=key==='moon'?2:+key.slice(-1);
@@ -57,7 +61,7 @@ def crop_box(scr,w,h,scale,nova=False):
     return tuple(int(v*scale) for v in (x0,y0,x0+ww,y1))
 async def run_view(p,name,report):
     w,h,scale=VIEWS[name];tag=name+'-'+QUALITY+('-reduced' if REDUCED else '');d=OUT/tag;d.mkdir(exist_ok=True)
-    b,pg,errs=await open_game(p,w,h,scale=scale)
+    b,pg,errs=await open_game(p,w,h,scale=scale,init=SEEDJS if SEED else None)
     await pg.wait_for_function('typeof prepareMatch==="function"&&typeof save!=="undefined"&&typeof FX3D!=="undefined"',timeout=60000)
     await pg.evaluate('closeAll();save.welcomed=true;uiDirty();')
     try:await pg.wait_for_function('typeof use3D==="function"&&(R3.ready||R3.failed)',timeout=90000)
@@ -65,10 +69,12 @@ async def run_view(p,name,report):
     tiles={};rep=report.setdefault(tag,{'supers':{},'idle':None})
     for key in ONLY:
         for oc in range(3):
+            if SEED:await pg.evaluate('__reseed(%d)'%SEED)
             info=await pg.evaluate(SCENE,[key,QUALITY,REDUCED])
             for _ in range(40):   # models and textures settle (Meshy kits load asynchronously)
                 st=await pg.evaluate('__step(1)')
             idle=st;rep['idle']=rep['idle'] or {'calls':idle['calls'],'programs':idle['programs'],'tris':idle['tris']}
+            if SEED:await pg.evaluate('__reseed(%d)'%SEED)
             await pg.evaluate('window.__clean=%s'%('true' if CLEAN else 'false'));f=await pg.evaluate(FIRE,oc);assert f['ok'],'super did not start for '+key
             shots={};tick=0;tapped=False;fired=None;peak={'calls':0,'programs':0,'quads':0,'particles':0,'chunks':0}
             async def snap(label):
