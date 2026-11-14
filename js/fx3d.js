@@ -406,12 +406,12 @@ function create(T,host){
    if(hsh(sd0+5)<.12)continue;
    const f=(i+hsh(sd0))/n,side=hsh(sd0+1)<.5?-1:1,px=ax+ca*len*f,pz=az+sa*len*f,sx=px-sa*W*.22*side,sz=pz+ca*W*.22*side,c=i%2?c2:c1,kind=hsh(sd0+2);   // every arc starts on the bright core
    if(kind<.3){const f2=Math.min(.98,f+.1+hsh(sd0+3)*.14),qx=ax+ca*len*f2-sa*W*.3*side,qz=az+sa*len*f2+ca*W*.3*side;   // over the surface, back onto the beam
-    bolt(sx,y+.1*u,sz,qx,y+.1*u,qz,W*(.5+.5*hsh(sd0+6)),9,.1*u,c,a,sd0+fs,.4);}
+    bolt(sx,y+.1*u,sz,qx,y+.1*u,qz,W*(.5+.5*hsh(sd0+6)),9,.13*u,c,a,sd0+fs,.4,1);}
    else{const reach=W*(.95+.75*hsh(sd0+3)),lean=(hsh(sd0+4)-.35)*W*1.1,gx=sx-sa*reach*side+ca*lean,gz=sz+ca*reach*side+sa*lean;   // out and down to the ground
-    bolt(sx,y+.15*u,sz,gx,e.y+.06,gz,W*(.2+.3*hsh(sd0+6)),10,.12*u,c,a,sd0+fs,.5);disc(gx,e.y+.05,gz,.4*u,c1,.3*a);}
+    bolt(sx,y+.15*u,sz,gx,e.y+.06,gz,W*(.2+.3*hsh(sd0+6)),10,.15*u,c,a,sd0+fs,.5,1);disc(gx,e.y+.05,gz,.4*u,c1,.3*a);}
    sprite(sx,y+.1*u,sz,.12*u,HOTR,a*CQ);}   // a small spark where it leaves the beam (no glowing beads at the far ends)
-  for(let i=0;i<n;i++){const sd0=fs*17+i*71+e.seed;if(hsh(sd0)<.4)continue;const f=hsh(sd0+1),side=hsh(sd0+2)<.5?-1:1,l=(.5+hsh(sd0+3))*u,px=ax+ca*len*f-sa*W*.85*side,pz=az+sa*len*f+ca*W*.85*side;
-   bolt(px,y+.1*u,pz,px+ca*l-sa*W*.25*side,y+.1*u,pz+sa*l+ca*W*.25*side,.22*u,4,.06*u,i%2?c1:c2,a*.9,sd0,0,1);}
+  for(let i=0;i<n;i++){const sd0=fs*17+i*71+e.seed;if(hsh(sd0)<.5)continue;const f=hsh(sd0+1),side=hsh(sd0+2)<.5?-1:1,l=(.5+hsh(sd0+3))*u,px=ax+ca*len*f-sa*W*.2*side,pz=az+sa*len*f+ca*W*.2*side;
+   bolt(px,y+.1*u,pz,px+ca*l-sa*W*.6*side,y+.1*u,pz+sa*l+ca*W*.6*side,.2*u,5,.07*u,i%2?c1:c2,a*.9,sd0,0,1);}   // short crackles, each rooted on the core too (none floats beside the beam)
  }
  function fxBeam(e,dt){
   const P=e.P,key=e.k,oc=e.oc,u=e.u,L=e.a,t=e.t,k=t/e.d,ca=Math.cos(e.ang),sa=Math.sin(e.ang),q=quiet();
@@ -434,12 +434,13 @@ function create(T,host){
    if(flash)star(ax,y+.02,az,(1.4+1.2*flash)*u,3,e.ang,X,flash,.1*u);
    coil(e,y-.1*u,W*(oc===2?1.2:oc===0?1.05:.95),3.4*u,2,(oc===2?.12:oc===0?.05:.09)*u,A,X,env*(oc===0?.55:1),q?0:-t*20,fs,VIO);
    if(oc===2){for(let i=0;i<6;i++){const f=(i+.5)/6,sx=ax+(bx-ax)*f,sz=az+(bz-az)*f,sd=(i%2?1:-1)*(1.4+hsh(e.seed+i)*.9)*u,gx=sx-sa*sd+ca*(hsh(e.seed+i*3)-.5)*1.4*u,gz=sz+ca*sd+sa*(hsh(e.seed+i*3)-.5)*1.4*u;   // jackpot: chain lightning forks to the ground on both sides
-     if(hsh(fs*7+i)<.75){bolt(sx,y,sz,gx,e.y+.05,gz,.55*u,6,.085*u,X,env,fs*13+i,.3);disc(gx,e.y+.05,gz,1.0*u,A,.55*env);sprite(gx,e.y+.2*u,gz,.2*u,C,env*CQ);}}
+     if(hsh(fs*7+i)<.75){bolt(sx,y,sz,gx,e.y+.05,gz,.55*u,6,.085*u,A,env,fs*13+i,.3);disc(gx,e.y+.05,gz,.5*u,A,.3*env);}}
     if(!(e.f&2)&&t>.05){e.f|=2;for(let i=0;i<6;i++){const f=(i+.5)/6,sd=(i%2?1:-1)*(1.4+hsh(e.seed+i)*.9)*u,gx=ax+(bx-ax)*f-sa*sd,gz=az+(bz-az)*f+ca*sd;sparks(gx,e.y+.1,gz,5,3*u,X,.28*u,.4,1,e.y);}}}
   }else if(key==='pulse2'){   // SUNLANCE: a fat golden solar beam with a star at the muzzle and heat fronts rolling down it
    const pw=q?1:1+.08*Math.sin(time*38),G=col('#ffcf4a');
    beamBody(e,W*pw,A,B,C,env,1,2.0,1.1,.4);
-   star(ax,y+.02,az,(oc===0?1.7:2.4+1.4*Math.sin(Math.min(1,k*1.4)*Math.PI))*u*(oc===2?1.3:1)*thin,4,.39+t*1.2,G,env*(oc===0?.85:1),(oc===0?.14:.22)*u);if(oc>0){sprite(ax,y,az,1.2*u*env,C,.8*env*CQ);
+   star(ax,y+.02,az,(oc===0?2.3:2.4+1.4*Math.sin(Math.min(1,k*1.4)*Math.PI))*u*(oc===2?1.3:1)*thin,4,.39+t*1.2,oc===0?C:G,env,(oc===0?.16:.22)*u);if(oc===0){sprite(ax,y,az,.7*u,C,.8*env*CQ);let px=ax,pz=az;for(let i=1;i<=12;i++){const f=i/12,off=Math.sin(f*17-t*8)*e.b*.25,x=ax+(bx-ax)*f-sa*off,z=az+(bz-az)*f+ca*off;seg(px,y+.03,pz,x,y+.03,z,.05*u,.05*u,C,.7*env);px=x;pz=z;}}   // a miss still carries the epic's star, and one bright filament down the beam
+   if(oc>0){sprite(ax,y,az,1.2*u*env,C,.8*env*CQ);
     for(let i=0;i<(oc===2?4:3);i++){const n=oc===2?4:3,f=((i/n)+t*1.25)%1,cx=ax+(bx-ax)*f,cz=az+(bz-az)*f,ed=Math.min(1,f*5,(1-f)*5);   // heat fronts: short bright chevrons of light riding the beam, not hoops
      segc(cx-sa*W*1.25-ca*W*.5,y+.02,cz+ca*W*1.25-sa*W*.5,cx+ca*W*.35,y+.02,cz+sa*W*.35,.1*u,.26*u,G,.8*env*ed,0,3);segc(cx+sa*W*1.25-ca*W*.5,y+.02,cz-ca*W*1.25-sa*W*.5,cx+ca*W*.35,y+.02,cz+sa*W*.35,.1*u,.26*u,G,.8*env*ed,0,3);}}
    {const n=oc===2?12:oc===1?8:6;for(let i=0;i<n;i++){const sd=i%2?1:-1,f=((i+.5)/n+t*.35+hsh(e.seed+i)*.05)%1,ed=Math.min(1,f*7,(1-f)*7)*(oc===0?.75:1),rx=ax+(bx-ax)*f-sa*W*.95*sd,rz=az+(bz-az)*f+ca*W*.95*sd,ln=W*(1.1+.9*hsh(e.seed+i*3))*(.7+.3*Math.sin(t*9+i)),lean=.55+.3*hsh(e.seed+i*7);   // epic: solar flares, tongues of fire rooted on the beam's edge and swept forward
@@ -452,7 +453,7 @@ function create(T,host){
    const wb=oc===0?.68:oc===2?1.25:1,Wm=e.b*wb*thin*punch,R1=col('#ff2020'),R2=col('#ff5a3a'),Wc=col('#dbeafe'),Bl=col('#7fc8ff');
    beamBody(e,Wm,col('#3f8cff'),B,Wc,env,fl,1.45,.8,oc===2?.3:.2);
    if(flash)star(ax,y+.02,az,(1.8+1.6*flash)*u,4,e.ang+.39,Wc,flash,.14*u);
-   if(oc>0){const nf=oc===2?4:6;for(let i=0;i<nf;i++){const off=((i+.5)/nf-.5)*Wm*(oc===2?.9:1.3);bolt(ax-sa*off,y+.03,az+ca*off,bx-sa*off,yb+.03,bz+ca*off,Wm*.22,Math.round(L/u/1.1),.028*u,i%2?col('#3fa0ff'):col('#62b8ff'),env,fs*17+i*101+e.seed,0,1);}   // hair-thin, saturated blue filaments hugging the beam
+   if(oc>0){const nf=oc===2?4:6;for(let i=0;i<nf;i++){const off=((i+.5)/nf-.5)*Wm*.85;bolt(ax-sa*off,y+.03,az+ca*off,bx-sa*off,yb+.03,bz+ca*off,Wm*.3,Math.round(L/u/.7),.03*u,i%2?col('#3fa0ff'):col('#62b8ff'),env,fs*17+i*101+e.seed,.22,1);}   // hair-thin, saturated blue filaments hugging the beam
     const ng=oc===2?7:5;for(let i=0;i<ng;i++){const f=((i/ng)+t*.9)%1,ed=Math.min(1,f*6,(1-f)*6),gx=ax+(bx-ax)*f,gz=az+(bz-az)*f,op=.6+2.5*i/(ng-1);ring(gx,y+.045,gz,.24*u,.06*u,Wc,.95*env*ed,8,0,0,e.ang+Math.PI/2-op,e.ang+Math.PI/2+op);}}   // the phases of the moon ride down the beam, new moon to full (inside it: nothing goes round it)
    if(oc>0){const n=oc===2?6:4;for(let i=0;i<n;i++){const f=(i+.5)/n,px=ax+(bx-ax)*f,pz=az+(bz-az)*f,h=(2.1+1.1*hsh(e.seed+i*5))*u*Math.min(1,t/.12)*thin;for(let j=1;j<4;j++)sprite(px,y+h*j/3,pz,(.4-.08*j)*u,j>1?A:Wc,.42*env*(1-.2*j)*CQ);}   // legendary: shafts of moonlight stand up out of the beam
     const m=oc===2?5:4;for(let i=0;i<m;i++){const f=(i+.7)/(m+.4),on=clamp((t-.03*i)/.08,0,1);if(on<=0)continue;for(const sd of [-1,1]){const gx=ax+(bx-ax)*f-sa*e.b*wb*1.85*sd,gz=az+(bz-az)*f+ca*e.b*wb*1.85*sd,a0=e.ang+(sd>0?Math.PI/2:-Math.PI/2),op=.5+2.3*i/(m-1);ring(gx,e.y+.05,gz,.28*u,.07*u,Wc,.8*env*on,8,0,0,a0-op,a0+op);}}}   // and the phases of the moon light up along both sides of the lane, new moon to full
@@ -480,7 +481,7 @@ function create(T,host){
   sigil(e.x,e.y+.045,e.z,Math.max(sigR(T,u),R*.42)*(.8+.2*ex),T,A,X,fade*(oc===0?.4:1),q?0:t*2.2+e.seed,u);
   if(key==='twin0'){   // STATIC NOVA: a jagged tracer-yellow wave front snaps outward with lightning spokes to the rim; nothing smooth
    const Y=col(P.a),I=col('#fffbe0'),ns=oc===0?0:oc===1?4:6;   // the Twin Repeater's own tracer yellow with a white-hot edge
-   churn(e.x,e.y+.05,e.z,R*(.5+.6*ex),col('#b89b00'),(oc===2?.14:.2)*fade);if(flash&&oc>0)disc(e.x,e.y+.06,e.z,rr*(oc===2?1.2:1),oc===2?I:Y,(oc===2?.75:.45)*flash);   // a filled flash under the wave
+   churn(e.x,e.y+.05,e.z,R*(.5+.6*ex),col('#b89b00'),(oc===2?.08:.11)*fade);if(flash&&oc>0)disc(e.x,e.y+.06,e.z,rr*(oc===2?1.2:1),oc===2?I:Y,(oc===2?.75:.45)*flash);   // a filled flash under the wave
    shock(e.x,y,e.z,rr,fw,Y,fa,48,.14,fs);ring(e.x,y+.02,e.z,rr,.07*u,I,fa,48,.2,fs);if(oc===2)ring(e.x,y+.03,e.z,Math.max(.1,rr-.34*u),.045*u,I,fade,48);   // the front, and static crawling along it
    if(oc===2){const f2=clamp((t-.1)/(e.d*.45),0,1);if(f2>0&&f2<1)shock(e.x,y+.05,e.z,R*(.3+1.0*f2),(1.2-.6*f2)*u,I,(1-f2)*(1-f2),48,.1,fs+7);}   // jackpot: a second, white front follows the first
    for(let i=0;i<ns;i++){if(hsh(fs*3+i)<.85){const a=e.ang+i/ns*TAU,rch=rr*(oc===2?1.15:.72);bolt(e.x+Math.cos(a)*.9*u,y+.3,e.z+Math.sin(a)*.9*u,e.x+Math.cos(a)*rch,y,e.z+Math.sin(a)*rch,.45*u,6,(oc===2?.1:.08)*u,i%2?Y:I,fade,fs*11+i,oc===2?.28:0);}}
@@ -488,24 +489,24 @@ function create(T,host){
    if(!(e.f&1)){e.f|=1;const n=(oc===0?10:oc===1?24:36)*amt();for(let i=0;i<n;i++){const a=i/n*TAU;part(1,e.x,y+.3,e.z,Math.cos(a)*R*2.4,.6+rnd(),Math.sin(a)*R*2.4,.42,.45*u,.07*u,i%2?I:Y,1,2,2.6,e.y);}}
   }else if(key==='twin1'){   // STORM NOVA: a violet storm cloud with thick spiral arms sweeping round; jackpot calls lightning down from the sky
    const V=col('#7c3aed'),Lv=col('#c084fc'),Rm=col('#a855f7'),arms=3,spin=e.ang+(q?0:t*(TAU*.75/.6));
-   churn(e.x,e.y+.05,e.z,rr*1.12,V,(oc===2?.24:.32)*fade);
+   churn(e.x,e.y+.05,e.z,rr*1.12,V,(oc===2?.15:.19)*fade);
    for(let i=0;i<arms;i++){const a0=spin+i/arms*TAU,N=9;let px=0,pz=0,pw=0;for(let j=0;j<=N;j++){const f=j/N,a=a0+f*2.4,r2=rr*(.14+.86*f),x=e.x+Math.cos(a)*r2,z=e.z+Math.sin(a)*r2,w=(.44-.34*f)*u*(oc===0?.6:OCA[oc]);   // each arm tapers from the hub to the rim (a miss: thin, but drawn)
      if(j){segc(px,y+.03,pz,x,y+.03,z,pw*1.9,w*1.9,Lv,.5*Math.max(fa,.8*fade),0,j===N?2:0);seg(px,y+.04,pz,x,y+.04,z,pw*.6,w*.6,C,Math.max(fa,.85*fade));}px=x;pz=z;pw=w;}}
    shock(e.x,y,e.z,rr,fw*.8,Rm,fa,44,.04,fs);ring(e.x,y+.01,e.z,rr,.05*u,C,fa*.9,44,.05,fs);if(oc===2)ring(e.x,y+.03,e.z,Math.max(.1,rr-.34*u),.045*u,C,fade,44);
    sprite(e.x,e.y+.6*u,e.z,(.7+.6*flash)*u,C,(.45+.55*flash)*fade*CQ);
    if(oc>0)for(let i=0;i<3;i++){if(hsh(fs*7+i)<.7){const a=hsh(fs*13+i)*TAU,d=rr*(.3+.5*hsh(fs*3+i)),a2=a+1+hsh(fs*5+i);bolt(e.x+Math.cos(a)*d,y+.2,e.z+Math.sin(a)*d,e.x+Math.cos(a2)*d,y+.2,e.z+Math.sin(a2)*d,.3*u,4,.06*u,X,fade,fs*17+i,0,1);}}   // rare: lightning flickers inside the storm
    if(oc===2){for(let i=0;i<8;i++){const at=(i<2?0:.05+(i-2)*.09),lt=t-at;if(lt>=0&&lt<.3){const a=hsh(e.seed+i*5)*TAU,d=R*(.3+.6*hsh(e.seed+i*9)),sx=e.x+Math.cos(a)*d,sz=e.z+Math.sin(a)*d,al=1-lt/.3;
-      bolt(sx+(hsh(e.seed+i)-.5)*1.5*u,e.y+7*u,sz-2*u,sx,e.y+.1,sz,.45*u,9,.1*u,i%2?Lv:col('#d8b4fe'),al,fs*5+i,.4);disc(sx,e.y+.06,sz,1.4*u,Lv,.4*al);sprite(sx,e.y+.4,sz,(.25+.35*al)*u,C,al*CQ);
+      bolt(sx+(hsh(e.seed+i)-.5)*1.5*u,e.y+7*u,sz-2*u,sx,e.y+.1,sz,.45*u,9,.1*u,i%2?Lv:col('#d8b4fe'),al,fs*5+i,.4);disc(sx,e.y+.06,sz,1.0*u,Lv,.3*al);sprite(sx,e.y+.4,sz,(.14+.2*al)*u,C,al*CQ);
       if(!(e.f&(2<<i))){e.f|=(2<<i);sparks(sx,e.y+.2,sz,7,4*u,X,.3*u,.4,1.2,e.y);mark(0,.9,sx,e.y+.025,sz,.9*u,0,0);shake(6,.15);}}}}
    if(!(e.f&1)){e.f|=1;const n=(oc===0?6:18)*amt();for(let i=0;i<n;i++){const a=rnd()*TAU;part(1,e.x,y+.4,e.z,Math.cos(a)*R*1.6-Math.sin(a)*3,1+rnd()*2,Math.sin(a)*R*1.6+Math.cos(a)*3,.5,.4*u,.06*u,i%3?Lv:X,1,2,2,e.y);}}
   }else{   // HELIX NOVA: an orange-to-red dome of stacked coil rings rises from a molten ground ring; jackpot rains fire inside it
    const O=col('#ff8a00'),Rd=col('#ff3d00'),layers=oc===0?4:5;
    churn(e.x,e.y+.05,e.z,R*(.55+.6*ex),Rd,(oc===2?.2:.26)*fade);if(flash&&oc>0)disc(e.x,e.y+.06,e.z,rr,col(P.x),.5*flash);
    shock(e.x,y,e.z,rr*1.02,fw,Rd,fa*.95,44,.04,fs>>2);ring(e.x,y+.01,e.z,rr*1.02,.07*u,col(P.x),fa,44);if(oc===2)ring(e.x,y+.03,e.z,Math.max(.1,rr-.34*u),.045*u,C,fade,44);
-   for(let i=1;i<layers;i++){const h=i/layers,rad=rr*Math.cos(h*1.4),yy=e.y+.15+Math.sin(h*1.4)*R*.8*ex,w=(.26-.045*i)*u*(oc===0?.5:oc===2?1.15:1),c=i%2?O:col(P.x),al=fa*(1-.12*i);ring(e.x,yy,e.z,rad,w*1.2,c,al,18,0,0,.12,Math.PI-.12);ring(e.x,yy,e.z,rad,w*.45,c,al*.4,18,0,0,Math.PI+.12,TAU-.12);}   // a dome of coils: each thick and bright on the near side, thin and dim behind, so it reads as a dome and not as hoops
-   puff(e.x,e.y+R*.8*ex,e.z,(oc===0?.5:.7)*u,O,fa*.8);if(oc>0)sprite(e.x,e.y+R*.8*ex,e.z,.5*u,C,fade*CQ);
-   if(oc>0)for(let i=0;i<(oc===2?8:6);i++){const a=e.ang*2+i/(oc===2?8:6)*TAU-(q?0:t*1.4);puff(e.x+Math.cos(a)*rr,e.y+.4*u,e.z+Math.sin(a)*rr,(.28+.12*hsh(e.seed+i))*u,i%2?O:col('#ffd66b'),.7*fade);}   // epic: tongues of flame stand on the front
-   if(oc===2&&t>.03&&t<e.d*.85){const n=low()?8:16,Yc=col('#ffd66b');for(let i=0;i<n;i++){const ph=(t*2.4+hsh(e.seed+i*7))%1,a=hsh(e.seed+i*3+((t*2.4+hsh(e.seed+i*7))|0)*13)*TAU,d=Math.sqrt(hsh(e.seed+i*5))*R*.9,fx=e.x+Math.cos(a)*d,fz=e.z+Math.sin(a)*d,fy=e.y+(1-ph)*4.2*u;segc(fx+.12*u,fy+.75*u,fz,fx,fy,fz,.02*u,.085*u,i%2?O:Yc,.9*Math.min(1,(1-ph)*4),0,2);}}   // jackpot: fire rain, short falling streaks inside the ring
+   for(let i=1;i<layers;i++){const h=i/layers,rad=rr*Math.cos(h*1.4),yy=e.y+.15+Math.sin(h*1.4)*R*.8*ex,w=(.26-.045*i)*u*(oc===0?.5:oc===2?1.15:1),c=i%2?O:col(P.x),al=fa*(oc===2?1.25-.08*i:1-.12*i);ring(e.x,yy,e.z,rad,w*1.2,c,al,18,0,0,.12,Math.PI-.12);ring(e.x,yy,e.z,rad,w*.45,c,al*.4,18,0,0,Math.PI+.12,TAU-.12);}   // a dome of coils: each thick and bright on the near side, thin and dim behind, so it reads as a dome and not as hoops
+   puff(e.x,e.y+R*.8*ex,e.z,(oc===0?.5:.7)*u,O,fa*.8);
+   if(oc>0)for(let i=0;i<(oc===2?8:6);i++){const a=e.ang*2+i/(oc===2?8:6)*TAU-(q?0:t*1.4);puff(e.x+Math.cos(a)*rr,e.y+.4*u,e.z+Math.sin(a)*rr,(.2+.08*hsh(e.seed+i))*u,i%2?O:Rd,.7*fade);}   // epic: tongues of flame stand on the front
+   if(oc===2&&t>.03&&t<e.d*.85){const n=low()?10:22,Yc=col('#ffd66b');for(let i=0;i<n;i++){const ph=(t*2.4+hsh(e.seed+i*7))%1,a=hsh(e.seed+i*3+((t*2.4+hsh(e.seed+i*7))|0)*13)*TAU,d=Math.sqrt(hsh(e.seed+i*5))*R*.9,fx=e.x+Math.cos(a)*d,fz=e.z+Math.sin(a)*d,fy=e.y+(1-ph)*4.2*u;segc(fx+.2*u,fy+1.3*u,fz,fx,fy,fz,.03*u,.14*u,i%2?O:Yc,Math.min(1,(1-ph)*5),0,2);if(ph>.86){const sp2=(ph-.86)/.14;shock(fx,e.y+.06,fz,(.2+.5*sp2)*u,.2*u,Yc,(1-sp2),10);}}}   // jackpot: fire rain: falling streaks inside the ring, each with a small splash where it lands
    if(!(e.f&1)){e.f|=1;const n=(oc===0?8:20)*amt();for(let i=0;i<n;i++){const a=rnd()*TAU;part(1,e.x+Math.cos(a)*R*.3,y+.3,e.z+Math.sin(a)*R*.3,Math.cos(a)*R*1.3,3+rnd()*4,Math.sin(a)*R*1.3,.6,.45*u,.08*u,i%2?O:Rd,1,7,1,e.y);}}
   }
  }
@@ -534,18 +535,19 @@ function create(T,host){
   const ex=1-Math.pow(1-Math.min(1,t/(e.d*.4)),2.4),flash=t<.075&&oc>0?1-t/.075:0,T=TIER[key]|0,ht=oc===0?.55:1,hot=oc===2?Math.max(0,1-t/.2):0,W1=col('#ffffff');   // level: ht dims a miss's fire; hot: a jackpot's white-hot heart in its first 0.2 s
   sigil(e.x,e.y+.045,e.z,Math.max(sigR(T,u),e.a*.9)*(.75+.25*ex),T,A,X,fade*(oc===0?.4:1),q?0:t*2.2+e.seed,u);
   if(key==='siege0'){   // SIEGE BLAST: a rolling orange-red fireball under a growing pall of black smoke, a hard shock front, shrapnel
-   const fb=Math.max(0,1-t/(e.d*.62)),K=col('#1a1a1a'),F0=col('#c2260a'),F1=col('#ff4a10'),F2=col('#ff7e14'),F3=col('#ffd9a8');
+   const fb=Math.max(0,1-t/(e.d*.62)),K=col('#170b07'),F0=col('#c2260a'),F1=col('#ff4a10'),F2=col('#ff7412'),F3=col('#ffd2a0');
    disc(e.x,e.y+.045,e.z,R*1.25*(.5+.5*ex),BLK,.02,.55*Math.min(1,t/.05)*fade);   // the ground under the fire goes dark first, so the fire is saturated on it (light added to pale ground washed out to yellow-green)
    churn(e.x,e.y+.05,e.z,R*1.5*(.4+.6*ex),F0,.5*fade);
    if(flash){disc(e.x,e.y+.07,e.z,R*(1.1+.3*oc),F3,.6*flash);if(oc>0)star(e.x,e.y+R*.3,e.z,R*(1.2+.8*flash),5,e.ang,F3,flash,.12*u);}
-   {const sn=oc===2?9:7,sg=Math.min(1,t/(e.d*.9));for(let i=0;i<sn;i++){const a=e.ang+i/sn*TAU+t*.5,d=R*(.75+.75*sg)*(.8+.3*hsh(e.seed+i));puff(e.x+Math.cos(a)*d,e.y+R*(.3+.8*sg),e.z+Math.sin(a)*d,R*(.42+.6*sg),K,.03,.82*Math.min(1,t/.08)*(1-Math.max(0,k-.4)/.5));}}   // black smoke rolls out around the fire (gone by the time the fire is)
    puff(e.x,e.y+R*.35*ex,e.z,R*(.5+.8*ex),F0,.9*fb*ht);puff(e.x,e.y+R*.4*ex,e.z,R*(.4+.62*ex),F1,.95*fb*ht);puff(e.x,e.y+R*.45*ex,e.z,R*(.26+.4*ex),F2,.9*fb*ht);
    {const nt=oc===2?12:oc===1?9:5;for(let i=0;i<nt;i++){const a=e.ang+(i+.6*hsh(e.seed+i*7))/nt*TAU,r0=R*(.25+.3*ex),r1=r0+R*(.45+.5*hsh(e.seed+i*3))*(.4+.6*ex)*fb;segc(e.x+Math.cos(a)*r0,e.y+.35*u,e.z+Math.sin(a)*r0,e.x+Math.cos(a)*r1,e.y+.25*u,e.z+Math.sin(a)*r1,(.2+.14*hsh(e.seed+i))*u,.02*u,i%3?F2:F1,.85*fb*ht,0,1);}}   // tongues of flame lick outward: sharp, uneven, tapered
    if(oc>0)sprite(e.x,e.y+R*.45*ex,e.z,R*(.13+.14*ex),F3,fb*fb*CQ);
+   {const sn=oc===2?9:7,sg=Math.min(1,t/(e.d*.9));for(let i=0;i<sn;i++){const a=e.ang+i/sn*TAU+t*.5,d=R*(.95+.7*sg)*(.85+.3*hsh(e.seed+i));puff(e.x+Math.cos(a)*d,e.y+R*(.3+.8*sg),e.z+Math.sin(a)*d,R*(.36+.5*sg),K,.03,.82*Math.min(1,t/.08)*(1-Math.max(0,k-.4)/.5));}}   // black smoke rolls out round the fire's edge, drawn over it (gone by the time the fire is)
    if(hot)sprite(e.x,e.y+R*.42*ex,e.z,R*(.16+.1*hot),W1,hot*.9*CQ);   // jackpot: a white-hot heart
    shock(e.x,y,e.z,R*(.2+1.3*ex),(.8-.45*ex)*u*(oc===0?.6:1),F2,fade*fade*(oc===0?.5:oc===2?1:.8),44,.12,e.seed);   // a ragged orange front at every level (never a clean pale hoop)
-   if(oc===2)for(let i=0;i<5;i++){const at=.04+i*.04,lt=t-at;if(lt>=0){const a=e.ang+i/5*TAU,sx=e.x+Math.cos(a)*R*.72,sz=e.z+Math.sin(a)*R*.72,f=Math.max(0,1-lt/.42);   // jackpot: five secondary bursts close in round it, each a standing flame
-      puff(sx,e.y+.45*u,sz,R*.3*(1.3-f*.4),F1,f);puff(sx,e.y+1.0*u,sz,R*.22*(1.3-f*.4),F2,f);sprite(sx,e.y+.5*u,sz,R*.1,F3,f*f*CQ);if(!(e.f&(2<<i))){e.f|=(2<<i);sparks(sx,e.y+.3,sz,8,5*u,X,.3*u,.5,1.4,e.y);mark(0,1.6,sx,e.y+.025,sz,R*.3,0,0);shake(7,.18);}}}
+   if(oc===2)for(let i=0;i<3;i++){const at=.05+i*.07,lt=t-at;if(lt>=0){const a=e.ang+i*2.3+.6,sz0=[1,.72,.5][i],sx=e.x+Math.cos(a)*R*(.6+.12*i),sz=e.z+Math.sin(a)*R*(.6+.12*i),f=Math.max(0,1-lt/.45);   // jackpot: three secondary bursts of different sizes close in round it, each a clump of flame tongues
+      for(let j=0;j<4;j++){const b2=a+j*1.57+hsh(e.seed+i*7+j),ln=R*sz0*(.3+.25*hsh(e.seed+i*3+j))*(.5+.5*f);segc(sx,e.y+.35*u,sz,sx+Math.cos(b2)*ln,e.y+.3*u+ln*.5,sz+Math.sin(b2)*ln,.2*u*sz0,.02*u,j%2?F2:F1,.9*f,0,1);}
+      puff(sx,e.y+.5*u,sz,R*.22*sz0*(1.3-f*.4),F1,f);sprite(sx,e.y+.5*u,sz,R*.08*sz0,F3,f*f*CQ);if(!(e.f&(2<<i))){e.f|=(2<<i);sparks(sx,e.y+.3,sz,8,5*u,X,.3*u,.5,1.4,e.y);mark(0,1.6,sx,e.y+.025,sz,R*.3*sz0,0,0);shake(7,.18);}}}
    if(!(e.f&1)){e.f|=1;sparks(e.x,e.y+.4,e.z,oc===0?8:oc===1?22:34,(6+3*oc)*u,X,.34*u,.7,1.6,e.y);smoke(e.x,e.y+.5,e.z,oc===0?5:oc===1?12:18,R*.5,K,1.7*u,oc===2?2.4:1.8,1.5);
     for(let i=0;i<(oc===0?4:12)*amt();i++)part(1,e.x+(rnd()-.5)*R*.6,e.y+.3,e.z+(rnd()-.5)*R*.6,(rnd()-.5)*2,3+rnd()*5,(rnd()-.5)*2,.6+rnd()*.5,.7*u,.12*u,A,1,2,.6,e.y);}
   }else if(key==='siege1'){   // RAIL BLAST: the air folds inward to a point through a dark lens, then a violet sphere bursts and lightning crawls over the ground
@@ -565,10 +567,10 @@ function create(T,host){
    if(!(e.f&1)&&t>=T0){e.f|=1;sparks(e.x,e.y+.4,e.z,oc===0?6:oc===1?16:26,(5+2*oc)*u,X,.3*u,.5,1.2,e.y);}
   }else{   // TITANFALL: a white-gold flash and fire dome, a rising column, shock fronts, the ground splits (jackpot: and it rains fire). No smoke: pure light
    const fb=Math.max(0,1-t/(e.d*.7)),G=col('#ffc400'),Wg=col('#fff3b0'),Or=col('#ff6a14');
-   if(flash)disc(e.x,e.y+.07,e.z,R*1.5,Wg,flash*.5);
-   churn(e.x,e.y+.05,e.z,R*1.7*(.4+.6*ex),B,.5*fade);
+   if(flash)disc(e.x,e.y+.07,e.z,R*1.3,Wg,flash*.35);
+   churn(e.x,e.y+.05,e.z,R*1.7*(.4+.6*ex),B,.42*fade);
    // the dome: an orange rim round a gold body with a small white heart (never a white-out: the target and its ring stay readable)
-   puff(e.x,e.y+R*.38*ex,e.z,R*(.62+.95*ex),Or,.62*fb*ht);puff(e.x,e.y+R*.42*ex,e.z,R*(.36+.5*ex),G,.45*fb*ht);if(oc>0)sprite(e.x,e.y+R*.5*ex,e.z,R*(.09+.09*ex),Wg,.4*fb*CQ);
+   puff(e.x,e.y+R*.38*ex,e.z,R*(.62+.95*ex)*(oc===2?.92:1),Or,.58*fb*ht);puff(e.x,e.y+R*.42*ex,e.z,R*(.34+.44*ex),col('#ffa51e'),.3*fb*ht);if(oc>0)sprite(e.x,e.y+R*.5*ex,e.z,R*(.09+.09*ex),Wg,.4*fb*CQ);
    if(hot){sprite(e.x,e.y+R*.45*ex,e.z,R*(.16+.1*hot),W1,hot*.8*CQ);shock(e.x,y+.03,e.z,R*(.3+1.1*(1-hot)),.5*u,W1,hot*.9,44);}   // jackpot: a white-hot heart and a third, sharp front
    {const rise=Math.min(1,t/(e.d*.7)),ch=R*(oc===0?1.3:oc===2?3.0:2.2)*rise,cw=R*(oc===0?.16:oc===2?.19:.24),ca2=(oc===0?.4:.75)*fade;   // the column: a narrow stack rising well clear of the dome, its cap, and embers orbiting it
     for(let i=0;i<5;i++){const f=i/4;puff(e.x,e.y+R*.6+ch*f,e.z,cw*(1.25-.45*f)*(1+.3*k),i%2?G:Wg,ca2);}
@@ -590,7 +592,7 @@ function create(T,host){
  }
  function fxImpact(e){const P=e.P,k=e.t/e.d,u=e.u,s=e.a*OCA[e.oc],f=1-k,A=col(P.a),C=col(P.c),fl=e.t<.06?1-e.t/.06:0,moon=e.k==='moon';
   disc(e.x,e.y+.05,e.z,(moon?2.2:3.0)*u*s,col(P.b),(moon?.22:.36)*f);
-  if(moon&&e.oc>0&&e.a>=1){disc(e.x,e.y+.052,e.z,1.25*u*s,BLK,.02,.8*f);for(let i=0;i<2;i++){const a0=e.ang+i*Math.PI+e.t*2;ring(e.x,e.y+.06,e.z,1.27*u*s,.1*u,C,f,12,0,0,a0-.85,a0+.85);}}   // legendary: an eclipse where it lands (a dark moon with a bright rim), and no other ring round the target
+  if(moon&&e.oc>0&&e.a>=1)disc(e.x,e.y+.052,e.z,1.25*u*s,BLK,.02,.7*f);   // legendary: the ground under the target goes dark for a moment (an eclipse); no rim, nothing round the target   // legendary: an eclipse where it lands (a dark moon with a bright rim), and no other ring round the target
   puff(e.x,e.y+.55*u,e.z,(1.0+1.4*k)*u*s,A,.9*f);sprite(e.x,e.y+.55*u,e.z,(.42+.4*k+.5*fl)*u*s,C,f*f*CQ);if(!moon)shock(e.x,e.y+.07,e.z,(.5+2.6*k)*u*s,(.5-.3*k)*u*s,A,f*.6,30,.08,e.seed);
   if(e.oc===2)star(e.x,e.y+.6*u,e.z,(1.6+1.6*k)*u,4,e.ang,C,f,.07*u);}
 

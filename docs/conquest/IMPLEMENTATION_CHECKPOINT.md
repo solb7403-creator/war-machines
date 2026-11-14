@@ -978,6 +978,30 @@ Nothing was half-done. Polish candidates stay for the later look session: crop r
 6. **`conquest-frontier-recovery`.** The test bot drove over a normal 18 CP kill-salvage drop mid-fight.
    - The test now separates verified mid-fight kill salvage from the settlement, and asserts the settlement equals the authored reward.
 
+**Round 3 verdict** (a fresh critic; it also saw round 2's sheets): **"Supers: ship all ten; none is clearly below professional,
+so no 4th round is required. Weapons: ship."** Every super better than before (Moonfall "much better"), none worse than round
+2. Rarity ladder: Pulse, Twin and Siege pass (Siege the weakest: Titanfall's normal "bigger and brighter than Rail Blast but
+not obviously more intricate"); Moonfall most intricate and unique: narrow pass ("the widest beam, the only two-colour super,
+braided strands and the largest sigil"; its jackpot silhouette is still a beam with sideways forks). The owner's test: three of
+four pairs pass (was two, then none); a missed Sunlance still read as a plain gold beam. Moonfall: "red electricity: yes on
+both devices; irregular and branching, no longer sawtooth, most arcs leave the beam edge"; no ring round the beam; normal's
+strands thin and saturated blue; a few red fragments still floated beside the beam on the desktop at +0.2 s. Closest to the
+line: Siege Blast (6.5: an olive-green centre, round secondary balls). Weapons: all ten OK on all nine hulls; the Twin
+Repeater on the Titan class "acceptable, not clearly wrong" (only its barrels are pencil-thin: the model's own).
+**No 4th round was run** (owner: a 4th only for a super or weapon still clearly below professional; the critic named none).
+
+**Patched after round 3** (the critic's list; checked on the final sheets by the lead, not scored again):
+- *Siege Blast*: its smoke is now drawn over the fire's edge in a warm black instead of under the fire (yellow light on grey
+  smoke was the green), and the jackpot's secondaries are three bursts of different sizes made of flame tongues.
+- *Helix Nova*: a jackpot is visibly more than a hit: brighter inner coils, fire rain as long streaks with a splash where
+  each lands; the apex orb removed.
+- *Sunlance*: a miss carries a clear white-gold star and one bright filament down the beam.
+- *Titanfall*: gold-orange instead of lemon, lighter over the target, a slightly tighter dome on a jackpot.
+- *Moonfall*: the arcs' bodies are saturated red (pink-white only where they leave the beam); the short crackles are rooted
+  on the core as well (they were the fragments floating beside the beam); the blue strands have kinks and forks and stay
+  inside the beam's width; nothing is drawn round the target (the ground under it goes dark for a moment).
+- *Fog* under Static and Storm Nova halved again; Storm Nova's strike flash smaller; Arc Lance's chain bolts violet, no end blobs.
+
 ### Independent reviews (2 read-only agents, given only the branch, head SHA, briefs and this checkpoint)
 Neither reviewer found a blocker or any way to mint or duplicate points or minerals. Both changed the result: every valid finding below was fixed and tested.
 
@@ -3280,6 +3304,7 @@ its rarity; and whether it is better than before.
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | 6.5 / 7 / 7, better | 7 / 8 / 7.5, better | 6.5 / 6 / 6, better | 7 / 7.5 / 7, better | 6.5 / 7 / 6.5, better | 5.5 / 6 / 7, same | 6 / 7 / 6.5, better | 6.5 / 5.5 / 7, same | 5 / 5.5 / 5, same | 7 / 7 / 7, better |
 | 2 | 7 / 6 / 7, better | 7.5 / 7.5 / 8, better | 7 / 7 / 6.5, better | 6.5 / 7 / 7, better | 7 / 7 / 6.5, better | 6.5 / 6.5 / 7, better | 5.5 / 6 / 6, better | 7 / 7 / 7.5, better | 7 / 6.5 / 7, better | 7 / 7.5 / 7, better |
+| 3 | 7.5 / 7.5 / 7, better | 7.5 / 8 / 8, better | 8 / 7 / 7.5, better | 7 / 8 / 7, better | 7.5 / 7.5 / 7.5, better | 7.5 / 6 / 7.5, better | 6.5 / 7 / 6.5, better | 8 / 7.5 / 8, better | 7 / 7.5 / 7.5, better | 8 / 8.5 / 8, much better |
 
 **Round 1 verdicts.** Rarity ladder: Pulse passes at a normal stop, shaky at jackpot (Arc Lance busier than Sunlance); Twin
 passes; Siege fails at epic (Titanfall "only brighter: a white-yellow blob"); Moonfall "most intricate and unique": narrow fail
