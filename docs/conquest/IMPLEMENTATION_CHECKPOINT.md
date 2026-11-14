@@ -4186,3 +4186,23 @@ Findings and what round 1 did:
 7. (UI, minor; not changed) "Use 180,000 points (you have 12,345,678)" fills a 320 px button at 8-digit balances (no overflow).
 8. (UI, pre-existing on main, not changed) The wiki scrolls sideways on phones (two wide tables); outside this brief.
 No round 2: no blocker; every fix is covered by a test and re-captured in the same run.
+
+### Tests (local, this branch)
+- Node, all PASS: `wtest/test` 204 (new: the owner's quest rewards pinned; dailies + all-4 paid once at 3,500), `wtest/chassis`
+  68 (new: gem caches 30,000 / 60,000 / 180,000 at 120 a Star; chosen cores 43,750 / 87,500 / 262,500 at 175 a Star; money
+  prices and crate points prices unchanged), `wtest/pvp` 133, `wtest/farm` 55, `wtest/owner` 81, `wtest/referrals` 29,
+  `wtest/lab`, `lab-battle`, `lab-parity`, `range`, `range-comparison`, `wtest/conquest`, `wtest/conquest-airdrop` 20,
+  `conquest-airdrop` 30, `wtest/hull-plating` 24, `web-auth`, `lunar-identity`, `accounts` 18, `ticket-reliability` 37,
+  `conquest-economy`, `conquest-session`, `web-login`, `gear-balance`, `gear-combat`, `combat-balance` 2,594, `fair-arcade`
+  11,665, `super-aim` 48, `super-timing` 335, `lab-ui`, `garage-rules`, `gem-ui`, `velocity`, `conquest-regression.sh`.
+- Browser (Chromium): `chassis-ui.py` PASS (its pinned prices moved to the new numbers), new `quest-prices-ui.py` PASS (quest cards,
+  a server claim paying 3,500, Points shop, Store, both sheets, the Max tile on both tabs, the wiki; 320 / 390 / 1366; captures at
+  scale 2 in `docs/quest-prices-38/`). One run of it at scale 2 under a parallel test load missed the claim's 6 s wait; the wait is
+  now 12 s a tap (first tap succeeded in every other run).
+- Build bumped to `20261114200718` (`dev/bump.sh`) so phones reload the new prices.
+
+### Agents used (AGENTS.md)
+1. Economy / security reviewer: all four economy rules PASS; found the referral / airdrop effect of quest points (owner decision)
+   and the missing build bump (done). Changed the result: yes (the release bumps the build; a decision is surfaced).
+2. Gameplay / UI reviewer: rules 1, 2, 5 PASS, rule 6 partial fail (wiki captures mid-scroll). Changed the result: yes (fixed
+   captures, clearer copy with units, one more test check).
