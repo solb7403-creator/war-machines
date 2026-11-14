@@ -4051,7 +4051,7 @@ Findings and what round 1 did (`fb9c664`, plus the range sound and test commits 
   `live version: {"v":"20261114164815"} (repo: {"v":"20261114164815"})`, live = repo.
 - Pages run [43622446824](https://github.com/solb7403-creator/war-machines/actions/runs/43622446824): success (deployment of `10b6a6a`).
 - Post-merge runs on main `10b6a6a`: Validate Laboratory UI (run [43622447201](https://github.com/solb7403-creator/war-machines/actions/runs/43622447201)): success. Equipment Balance (run
-  [43622447259](https://github.com/solb7403-creator/war-machines/actions/runs/43622447259)): still running when this record was first written (updated below once it ends).
+  [43622447259](https://github.com/solb7403-creator/war-machines/actions/runs/43622447259)): success (balance and Laboratory parity, economy / account / PvP / farm regressions, Workers runtime smoke).
 - The Graphify review bot posted that its reviews are paused for the workspace (no use in 7 days); informational, not a check.
 - Branch note: the branch could not be restarted from main (a force push is blocked here), so main was merged into it
   (`e1c845b`, no content difference); this record is the only change on top.
