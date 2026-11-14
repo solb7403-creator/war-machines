@@ -3856,7 +3856,7 @@ the Pulse Cannon; no shot louder than any super's fire; the damage cue within 6 
    keep his test setup). Nothing else changes and no points move.
 7. **The fair-AI rule (5D) with per-chassis builds:** your chassis can now differ a lot in power, so a chassis swap on the VS
    screen or between rounds re-levels every AI pilot, the megatank and any ghost to the tank you now field (`relevelAI`); the
-   match's league (and its pay) stays. `dev/tests/fair-arcade.mjs` now checks it (a full Titan and a stock Scout, 5 modes x 2
+   match's pay league stays, and a swap UP lifts the AI to the stronger chassis's league (review round 1, below). `dev/tests/fair-arcade.mjs` now checks it (a full Titan and a stock Scout, 5 modes x 2
    leagues: after the swap every AI is at or under the Scout; the megatank follows; swapping back never puts the AI above the Titan).
 8. `PVP_V` 7 (the loadout, the economy actions and purchases carry the chassis): phones on the old build are asked to update;
    `web/boot.js` sends 7 (the Checkpoint 36 lesson; `web-login.mjs` guards the drift); every test's literal moved to 7.
@@ -3878,9 +3878,12 @@ the Pulse Cannon; no shot louder than any super's fire; the damage cue within 6 
 - A chosen core costs **1.5x** the gem cache of the same size in points and in money; its money price is 1.5x the cache's price
   *right now* (the day's +25% steps included, no deal), so it is always dearer than the random cache; buying one counts toward the
   day's gem price steps like a cache. A chosen core for a core already at level 5 is not sold.
-- **CHANGE (rule, not a number): gem caches and chosen cores bought with points no longer raise that day's money price.** Before,
-  a points purchase counted toward the +25%-a-buy step of the Stars / TON price; with points prices now in reach that would make a
-  pilot who grinds pay more for the same cache in money the same day. Weapon caches and chassis crates keep the old rule.
+- **CHANGE (rule, not a number): gem caches bought with points don't count toward that day's money price steps.** Gem caches were
+  never sold for points before (Epic not at all), so no existing rule covered them; weapon caches and chassis crates keep theirs.
+  Counting them would make a pilot who grinds pay more in Stars the same day, and the brief fixes the points price at one rate
+  (no steps). The economy reviewer flagged it as a rule the brief didn't ask for; kept, with this reason, for the owner's review.
+- Chosen cores cost 1.5x the cache's **full** price: the day's deal (30% / 25% off a cache) doesn't apply to them. The sheet says
+  so and shows the deal price next to it (review round 1: the comparison read as 2.14x on a deal day).
 - Why 1.5x and the top of each range: the research found chosen items sold at a modest, disclosed premium next to random ones
   (Hearthstone crafting 4-8x the disenchant value; Marvel Snap's token shop), no published 1.5-3x benchmark. In the model a pilot
   buying random Epic caches loses 19-29% of the shards to cores already maxed by the end of a chassis; at 1.5x the random cache
@@ -3896,53 +3899,133 @@ mode and team size (measured round lengths, Checkpoint 36, plus 30 s of VS scree
 there are draws, 2nd on average in Last Standing); the four daily quests every day, three of five weeklies, the weekly chest,
 the daily reward, the free pass; Rare gear; free gem caches go to the chassis being kitted ("Cores for"). Policy: the cheapest
 next build level first, then Epic gem caches with points while four or more cores are below level 5, then chosen cores.
+**Every figure is the average of five seeds (1-5), with the range** (review round 1: one seed swung the first chassis 49-56 days).
 **Reference pilot (calibration): 20 minutes of matches a day plus the daily quests.** Rate search (points per Star -> days for
-the first chassis / all three): 10: 27 / 88, 14: 39 / 113, 18: 41 / 118, 20: 47 / 143, **24: 56 / 167**, 28: 61 / 173, 32: 63 /
-181, 40: 72 / 227.
+the first chassis / all three): 10: 28 / 84, 14: 36 / 104, 18: 43 / 128, 20: 49 / 143, 22: 55 / 153, **24: 52 / 158**, 26: 63 /
+176, 28: 60 / 175, 30: 61 / 185, 32: 64 / 192, 40: 83 / 242. The curve is noisy at this step size (cache rolls, 36,000-point Epic
+steps), so the tool keeps the shipped rate while its average stays within a week of 8 weeks (49-63 days); 24 does (52).
 
-| Minutes of matches a day | Points a day (all sources) | First chassis | All three | Points per chassis (build + caches + chosen cores) |
+| Minutes of matches a day | Points a day (all sources) | First chassis (range) | All three (range) | Points per chassis (build + caches + chosen cores, seed 7) |
 |---:|---:|---:|---:|---|
-| 10 | 11,400 | 68 days (9.7 weeks) | 208 days (6.8 months) | 62,500 + 564,000 + 162,000 |
-| 15 | 13,300 | 58 days (8.3 weeks) | 171 days (5.6 months) | 62,500 + 564,000 + 129,000 |
-| **20 (reference)** | **15,000** | **56 days (8.0 weeks)** | **167 days (5.5 months)** | **62,500 + 576,000 + 195,000** |
-| 30 | 18,500 | 45 days (6.4 weeks) | 129 days (4.2 months) | 62,500 + 564,000 + 165,000 |
-| 45 | 23,800 | 34 days | 104 days | 62,500 + 636,000 + 120,000 |
-| 60 | 29,300 | 28 days | 90 days | 62,500 + 576,000 + 231,000 |
-Where a 20-minute pilot's points come from over the 167 days: matches 1.20 M (48%), quests 1.00 M (40%), the chest 0.16 M, the
-daily reward 0.11 M, the pass 0.03 M. Leagues reached: Elite on the first two chassis, Ace on the third (the model flies the
-first kitted chassis while kitting the next). **The owner's data point** (83,000 points in two weeks of light play on his maxed
-account, league multiplier applies): the model gives 77,000 in two weeks at Lunar Legend for **5 minutes of matches a day and half
-the daily quests**, so "light play" is about 5 minutes a day; the reference pilot (20 minutes and every daily) earns 2.5x that.
-**What it means in money**: one chassis's kit at list Stars is about 35,000 Stars of gem caches (the rate is the same both ways);
-an Epic gem cache (1,500 Stars) saves the reference pilot about 2.4 days of play, a full chassis about 7 weeks.
-**Limits of the model:** win rate, minutes and quest completion are assumptions, not data (no live players yet); the owner reviews
-the prices after the release (brief). Levers if a real pilot's pace is off: `GEM_PTS_STAR` (one number) in `js/rules.js`.
+| 10 | 11,600 | 67 days (61-74) | 194 days (188-198) | 62,500 + 564,000 + 162,000 |
+| 15 | 13,300 | 61 days (52-66) | 174 days (154-185) | 62,500 + 564,000 + 129,000 |
+| **20 (reference)** | **15,100** | **52 days, 7.4 weeks (49-56)** | **158 days, 5.2 months (148-168)** | **62,500 + 576,000 + 195,000** |
+| 30 | 18,600 | 42 days (40-46) | 133 days (129-139) | 62,500 + 564,000 + 165,000 |
+| 45 | 24,300 | 35 days (28-38) | 108 days (104-112) | 62,500 + 636,000 + 120,000 |
+| 60 | 29,300 | 29 days (27-32) | 88 days (85-96) | 62,500 + 576,000 + 231,000 |
+| *Light pilot: 5 min, 2 dailies, 1 weekly* | *4,500* | *175 days, 25 weeks (147-199)* | *512 days* | |
+| *Light pilot: 10 min, 2 dailies, 1 weekly* | *6,300* | *136 days, 19 weeks (116-148)* | *385 days* | |
+"All three in about 6 months" is the owner's 3 x 8 weeks = 24 weeks; the reference pilot takes 22.6 weeks (5.2 months). Where a
+20-minute pilot's points come from (seed 7): matches 1.20 M (48%), quests 1.00 M (40%), the chest 0.16 M, the daily reward
+0.11 M, the pass 0.03 M. **The owner's data point** (83,000 points in two weeks of light play on his maxed account, league
+multiplier applies): the model gives 77,000 in two weeks at Lunar Legend for **5 minutes of matches a day and half the daily
+quests**, so "light play" is about 5 minutes a day. **The 8-week target is for a daily player (20 minutes and the dailies); at
+the owner's own light pace one chassis takes about 25 weeks** (economy review, round 1; said plainly so the owner can judge it).
+To hit 8 weeks at the light pace the rate would have to drop to about 8-9 points per Star (an Epic cache ~13,000 points), which
+would make the reference pilot kit a chassis in about 3 weeks; the brief's "expensive enough to encourage spending real money"
+argues for the daily-player reading. **What it means in money**: one chassis's kit at list Stars is about 35,000 Stars of gem
+caches (the rate is the same both ways); an Epic gem cache (1,500 Stars) saves the reference pilot about 2.4 days of play.
+**Limits of the model** (review round 1): win rate, minutes and quest completion are assumptions, not data (no live players
+yet); quests are 40% of income and the model completes every daily regardless of minutes (Quick Match quests too, though it
+plays no Quick Match); PvP, Conquest, squad and milestone income are left out, so real pilots who play those kit faster. The
+owner reviews the prices after the release (brief). One lever if a real pilot's pace is off: `GEM_PTS_STAR` in `js/rules.js`.
 
-### Part B tests (local, this branch)
-- Node, all PASS: `wtest/test` 203, `wtest/pvp` 130, `wtest/farm` 55, `wtest/owner` 81 (owner caches per chassis, the sound
-  test check), `wtest/lab`, `lab-battle`, `lab-parity`, `range`, `range-comparison`, `hull-plating` 24, `accounts` 18, **new
-  `wtest/chassis` 49** (old record -> its chassis, owner -> all three; upgrades / budget / reset per chassis; gem caches for
-  points at 6,000 / 12,000 / 36,000 on the chassis named, no money-price step from points buys; chosen cores for points and in
-  Stars at 1.5x, refused when maxed or for an unowned chassis; invoice -> webhook -> grant -> refund carry the chassis;
-  loadouts, the Lab, power and the match ticket follow the fielded chassis; the day-7 cache goes to the chassis named),
-  `referrals`, `ticket-reliability`, `web-auth`, `lunar-identity`, `conquest*`; `fair-arcade` 11,653 (42 new: the chassis swap
-  re-levels the AI), `combat-balance` 2,594, `gear-combat`, `gear-balance`, `super-timing` 335, `super-aim` 48, `lab-ui`,
-  `garage-rules`, `gem-ui`, `velocity`, `web-login` (the website boot sends protocol 7), `environment`, `graphics-*`.
-- Browser: **new `chassis-ui.py` PASS** (the Store / Points shop at 390x740, 320x568, 1366x768: switch, Cores for, gem caches
-  6K / 12K / 36K, chosen cores, salvage moved, fits the width, a finger swipe reaches the bottom; an Epic cache for 36,000 lands
-  on the Titan; a Rare chosen core 18,000; the Stars invoice for an Epic chosen Armor core for the Titan at 2,250; the Garage's
-  chassis chips, a Titan level bought from a Vanguard bay, the per-chassis reset). Older browser tests updated to the new fields
-  (b1, b8, b9, lab-browser, modules-browser, owner-ui, proofreal, cleanshots, conquest-session-02 / 025 / 031 / 032).
-  **b2test and b9test fail on pristine main `a63f1b2` too** (b9: "Cannot read properties of null (reading 'textContent')", stale
-  garage selectors; b2: "Element is not visible"); neither is in CI; not fixed here.
+### Independent reviews, round 1 (two read-only agents that did not build; given the branch, the brief and this checkpoint)
+Economy / security (reviewed `6cc049e`; probes in the session scratchpad) and gameplay / audio / UI / performance (reviewed
+`6cc049e`; offline and real-time Chromium probes). Their verdicts on the owner's rules:
+
+| Owner rule | Economy / security | Gameplay / audio / UI | After round 1 |
+|---|---|---|---|
+| A1 Every shot and every Arcade super has its own sound, wherever fired | | PARTIAL: practice-range shots silent (also on main) | fixed: the range's shots play (its engine frame sends them as events) |
+| A2 Code only, no audio files | | PASS | |
+| A3 Rarity ladder, line identity, Moonfall the biggest | | PASS (layers 4/6/8, 3/6/9, 4/6/9, 10; Moonfall jackpot 45 layers, 2.2 s) | |
+| A4 Miss thinner, hit fuller, jackpot biggest | | PASS for all 10 | |
+| A5 Owner-only sound test page, phone and computer | PASS (server `ownerCheck`, 403 for others) | PASS (50 buttons, 44 px, fits 320 / 390 / 1366) | Stop pinned to the bottom |
+| A6 Balanced mix, Twin not noise, mute / volume, iPhone unlock | | PASS, minor: super voice cap not enforced | fixed: cap enforced (yours always play), far shots cost no budget, lighter tier on LOW / 2D |
+| B1 Each chassis its own build, budget and reset | PASS | PASS | |
+| B2 Each chassis its own cores; a purchase names its chassis | PASS | PASS | free caches now say which chassis on the claim |
+| B3 Everywhere, server-authoritative; AI never above the pilot | PARTIAL: a VS-screen swap beats the PvP mismatch cap | BLOCKER: the same swap escapes matchmaking and the match league | fixed (below) |
+| B4 Gem caches for points at one rate, Epic included | PASS (24 / Star: 6,000 / 12,000 / 36,000) | | |
+| B5 Points shop: points purchases, salvage moved, anything else points buy | PARTIAL: upgrades, tune-ups, Hull Plating only linked | PASS | decision kept (below) |
+| B6 Direct core buy, dearer than a cache, existing payment paths only | PASS (invoice -> webhook -> refund exact) | PASS, major: the price comparison misled on deal days | fixed: full price stated, deals excluded, "from" price shown |
+| B7 Prices modelled on 8 weeks; change no other economy numbers | PARTIAL: one rule change (points buys and the Stars steps), model caveats | | rule kept with reason; model on 5 seeds, light pilot, caveats stated |
+| B8 Owner's account: his setup on all three chassis | PASS (probe: one sync copies, a second changes nothing) | | |
+
+Findings and what round 1 did (`fb9c664`, plus the range sound and test commits after it):
+1. **The chassis swap and fairness (both reviewers, the top finding).** Pilots are matched on the deployed bay, and the VS-screen
+   swap moved a whole build: a stock Scout (88) swapping to a kitted Titan (206) had a 0.93 live win chance against a cap of
+   0.80; in AI matches the swap kept the low league's AI. **Decision:** keep matching on the deployed chassis (so a pilot can fly
+   a stock Scout in Scout-level rooms, which the per-chassis grind needs) and police the swap instead. **Live rooms**
+   (`worker/src/pvp.js` `swapOdds`): a swap UP that takes the room past `MM_CAP` (every seat's real power, AI and ghost seats
+   included) is refused and the phone says "too strong for this room"; a swap down, or one inside the cap, goes through.
+   **AI matches** (`js/match.js` `aiLgNow`): a swap up lifts the AI to that chassis's league (never down, never above you, since
+   `aiPowerFor` caps the AI at your power); the pay stays the match's league. Rejected alternative: matching everyone on their
+   strongest chassis, which would move existing pilots' leagues and push anyone flying a weaker chassis into stronger rooms.
+   Tests: `wtest/pvp` (refused up past the cap, told, down and inside-cap allowed), `fair-arcade` 5b (4 modes: the lift, never
+   above the pilot, no weaker after).
+2. **A forged chassis name crashed the Stars grant** (`constructor` passed a plain `CH[c]` lookup; Stars charged, nothing granted).
+   Every chassis and core name from a request is now checked against `CHORDER` / `GORDER` (`isCh`, `isGem` in `js/rules.js`, used
+   by the client, `eco.js`, `index.js`, `owner.js`), including two older core checks with the same hole. The webhook's grant is
+   wrapped: one that throws rolls the record back and the payment is still logged, with the error, for the owner; a database
+   failure still throws so Telegram retries.
+3. A reset or a paid gem cache naming a chassis you don't own is refused (it used to land on the flown chassis); a chosen core
+   already at level 5 when its payment lands (two invoices paid one after the other) puts its shards on that chassis's lowest
+   core and the reveal says so; a refund re-runs the stored loadout and power (box refunds had the same gap); a chassis no longer
+   owned is never the "home" chassis. TON / SOL logs still skip the owned-check (crypto checkout is off; Session 8 certifies it).
+4. UI: shard counts on Store caches, one balance on the Points shop (it was there three times), "from" prices on chosen cores,
+   "The Titan's one level", free caches name their chassis on the daily reward and the weekly chest. **Not changed:** a swap between
+   series rounds can turn an over-cap ghost into a renamed bot (the fair-AI rule wins over the name); the practice range's
+   hits already had sound.
+5. **Decision on B5:** build levels, tune-ups, Hull Plating and resets stay in the Garage, with each chassis's build progress
+   and a Garage button in the Points shop: they are bought for one machine or one chassis while looking at it (stats, compare
+   card, budget). Everything the Shop sells for points (gem caches, chosen cores, crates, salvage) is in the Points shop.
+6. Performance (not measured on a phone): Web Audio voices per shot rose from 2 to 12-33; a busy Last Standing moment used 9.3%
+   of a desktop core. The LOW / 2D tier caps voices (4 / 3 / 5), drops the echo on your gun and halves other tanks' budget;
+   the recipes are unchanged. A real low-end Android check is on the owner's checklist.
+7. **CHANGE outside the brief, fixing a false flag:** the proof-of-play check rejected an honest Arena draw before the clock (both
+   last tanks down at once, which the game scores as a draw) and added a bot-watch flag to that pilot. It now accepts such a draw
+   when the record shows every tank down (`worker/src/proof.js`; the real record that failed is the fixture
+   `dev/tests/wtest/fixtures/proof-mutual-kill.json`; a forged early draw with a tank still up still fails).
+
+### Tests (local; the head before the release bump)
+- Node, all PASS: `wtest/chassis` **65** (16 new: forged names on invoices, acts and the webhook; resets and caches for unowned
+  chassis; the maxed chosen core; the refund's loadout; the home chassis; the mutual-kill draw), `wtest/pvp` **133** (3 new),
+  `wtest/test` 203, `wtest/owner` 81, `wtest/farm` 55, `wtest/lab`, `lab-battle`, `lab-parity`, `referrals` 29,
+  `ticket-reliability` 37, `accounts` 18, `wtest/conquest`; `fair-arcade` **11,665** (12 new), `combat-balance` 2,594,
+  `super-timing` 335, `super-aim` 48, `gear-balance`, `gem-ui`, `garage-rules`, `velocity`, `lab-ui`, `weapon-sounds.cjs` 479,
+  `conquest-regression.sh` (all 29; `conquest-travel` and `conquest-view-travel` fixed for per-chassis fields), `s2/pool`,
+  `s2/legend` (spend), `proofcheck` on 288 real matches: 0 failed. `worker/smoke-runtime.mjs` through wrangler 4 (real workerd,
+  Durable Objects, WebSockets): SMOKE OK, WEB RUNTIME OK, ACCOUNTS RUNTIME OK.
+- Browser, this branch: PASS `b1`, `b3`, `b4`, `b7`, `b8`, `b11`, `b12`, `b13`, `owner-ui`, `garage-layout`, `league-ui`, `qa`,
+  `chassis-ui`, `weapon-sounds-browser`, `conquest-super-fx`, `proofreal 3` (287 of 288 before the draw fix; 288 after);
+  round-1 re-run in the next section.
+- **Failing on pristine main `a63f1b2` too, the same way** (none is in CI; not fixed here): `b2test` (a click times out), `b6test`
+  (the Garage paints button `data-act="paints"` is gone since the garage redesign), `b9test` (garage section selectors; its
+  rapid upgrade taps land 7-9 of 14), `gear-browser` ("WEAPON · Moonbeam", a stale super value), `lab-browser` ("Mods"),
+  `modules-browser` ("two machine cards"). `conquest-server.mjs` is a local browser harness (a server that waits), not a test.
+
+### Agents used (AGENTS.md)
+1. One research agent (web search; page fetches blocked): rarity layering, rapid fire, mixing by importance, phone loudness,
+   ultimates, perfect-timing cues, Web Audio / iOS, per-class progression (section above).
+2. Two independent read-only reviewers (round 1), above. No round 2 was needed: every blocker and major was fixed and covered by
+   a test, and the changed screens were re-captured in the same run.
+
+### Risks and limits
+- The sounds were judged by measurement (levels, layers, timing) and by recipe, not by ear on a real phone; iPhone audio unlock
+  is tested in Chromium only. Audio CPU is not measured on a phone.
+- Prices rest on a model of an assumed daily player; at the owner's light pace a chassis takes about 25 weeks. One number moves it.
+- TON / SOL purchase logs don't run the owned-check (crypto checkout stays off until Session 8 certifies it).
+- Old records migrate on first read: the shared build and cores go to the chassis flown; the owner's to all three.
+
+### iPhone playtest checklist (owner, in Telegram)
+1. Settings > Sound on. Tap once: the first shot is heard. Shop > Sound test (owner only): play every shot, every super at miss /
+   hit / jackpot; Stop stays at the bottom. Sound off silences everything, mid-charge too.
+2. An Arcade match with Twin Repeater: rapid fire reads as shots, not noise; an enemy super is heard as a warning.
+3. Garage > Upgrades: the chassis chips; buy a level for a chassis not in a bay; reset one chassis, the others keep theirs.
+4. Shop > Points shop: gem caches 6K / 12K / 36K for the chassis in "Cores for"; a chosen core; the salvage yard.
+5. The VS screen in a live room with a kitted and a stock chassis: swapping to the kitted one is refused only when it would be a
+   mismatch ("too strong for this room").
+6. Your account: the same build and cores on Scout, Vanguard and Titan.
 
 ### Resume next (if this session's context runs out)
-1. Finish the browser suite on this branch (`/tmp/.../py-suite.sh` list: b1-b13, owner-ui, lab-browser, garage-layout,
-   gear-browser, league-ui, modules-browser, qa, chassis-ui, weapon-sounds-browser, conquest-super-fx, proofreal 3); compare any
-   failure with pristine main before treating it as ours.
-2. Captures for the reviewers at phone (scale 2) and desktop: `SCALE=2 SHOTS=<dir> python3 dev/tests/chassis-ui.py` and
-   `weapon-sounds-browser.py`; copy the key screens to `docs/chassis-5e2b3/` and `docs/sounds-5e2b3/`.
-3. Review round 1 (two read-only agents, AGENTS.md): economy / security (Part B, payments descriptors, migration, owner copy,
-   prices, refunds) and gameplay / audio / UI / performance (Part A, the screens, the AI re-level). Each checks every owner rule
-   as pass / fail; record the table here. At most 2 rounds.
-4. Release (pre-approved): `dev/bump.sh`, PR, CI green, merge, deploy runs, release record here, ROADMAP row.
+1. Release (pre-approved): `dev/bump.sh`, PR, CI green, merge, deploy runs, release record here, ROADMAP row to Shipped.

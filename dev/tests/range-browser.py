@@ -47,6 +47,10 @@ async def main():
    assert 'unsaved draft' in await pg.locator('.sheet').last.inner_text()
    await pg.screenshot(path=OUT+'/setup-320.png',full_page=True)
    await start(pg,'arena')
+   # 5E-2b3 review: the engine's frame has no audio, so its shots reach the page as events and play there (every shot, every tank)
+   snd=await pg.evaluate('''()=>{const calls=[],f0=fx;fx=(k,a)=>{if(k==='shot')calls.push(a&&a.wtype);return f0(k,a);};
+     try{for(let i=0;i<240&&rangeRun.sim.view().state==='play';i++)rangeFrame(1/60);}finally{fx=f0;}return calls;}''')
+   assert len(snd)>0 and all(snd),'practice range shots play their weapon sound '+str(snd[:6])
    assert await pg.evaluate('()=>rangeRun.sim.view().me.fits.hull')=='plates'
    assert await pg.evaluate('()=>rangeRun.sim.view().me.spdM')==.91
    assert await pg.evaluate('()=>state')=='menu','main ranked state never becomes practice'

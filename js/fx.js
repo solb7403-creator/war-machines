@@ -385,7 +385,7 @@ const LW=(()=>{
  }
  // cut a voice short (a charge when its super fires): a 40 ms fade, then its sources stop
  function stop(V,at){
-  if(!V||V.stopped)return;V.stopped=true;const c=V.ctx,t=Math.max(at||c.currentTime,c.currentTime);
+  if(!V||V.stopped)return;V.stopped=true;const c=V.ctx,t=Math.max(at||c.currentTime,c.currentTime);V.end=Math.min(V.end||t+0.06,t+0.06);   // out of every count once it fades
   try{const p=V.in.gain;p.cancelScheduledValues(t);p.setValueAtTime(p.value,t);p.linearRampToValueAtTime(0,t+0.04);for(const s of V.srcs)try{s.stop(t+0.06);}catch(e){}}catch(e){}
  }
  // ---------------- live playback: buses, priorities, voice limits ----------------
@@ -397,7 +397,7 @@ const LW=(()=>{
  const capOf=cat=>(lite()?CAP_LITE:CAP)[cat];
  const ready=()=>!!(save&&save.sound!==false&&BUS&&AC&&AC.state==='running');
  function admit(cat,V){const a=st.act[cat],now=AC.currentTime;for(let i=a.length-1;i>=0;i--)if(a[i].end<now)a.splice(i,1);a.push(V);st.made[cat]++;}
- function full(cat){const a=st.act[cat],now=AC.currentTime;let n=0;for(const V of a)if(V.end>=now)n++;return n>=capOf(cat);}
+ function full(cat){const a=st.act[cat],now=AC.currentTime;let n=0;for(const V of a)if(V.end>=now&&!V.stopped)n++;return n>=capOf(cat);}
  function busOf(cat){return {node:BUS[cat],echo:BUS.echo};}
  // supers at the cap (CAP.sup voices): yours always play and the farthest other tank's super stops for it; another tank's plays only if
  // it is nearer than the farthest one playing
@@ -457,7 +457,7 @@ const LW=(()=>{
   const tap=oc===0?bar:oc===2?0.47*bar+0.14:0.55*bar+0.12,fireT=Math.max(chg,tap+rel),imp=fireT+(arch==='siege'?0.7:0.02);
   return {lock:tap,fire:fireT,impact:imp};
  }
- const stats=()=>({made:{...st.made},charging:st.charge.size,active:Object.fromEntries(Object.entries(st.act).map(([k,a])=>[k,a.filter(V=>AC&&V.end>=AC.currentTime).length]))});   // the browser test reads it
+ const stats=()=>({made:{...st.made},charging:st.charge.size,active:Object.fromEntries(Object.entries(st.act).map(([k,a])=>[k,a.filter(V=>AC&&V.end>=AC.currentTime&&!V.stopped).length]))});   // the browser test reads it
  return {shot,hit,charge,stopCharge,lock:lockS,fire,impact,stopAll,render,play,timeline,stats,tierOf,archOf,FAM,KEYS:['pulse0','pulse1','pulse2','twin0','twin1','twin2','siege0','siege1','siege2','moon']};
 })();
 // ---------- ambience (Session 5E-2c): a quiet bed under each Arcade map, synthesised (no downloads). Follows the Sound setting.

@@ -105,6 +105,8 @@ async def main():
             ok(small == 0, nm + ': every button at least 44 px tall')
             await pg.screenshot(path=OUT + 'lab_' + nm + '_top.png')
             if nm != 'desktop':
+                stop0 = await pg.evaluate("()=>{const r=document.querySelector('[data-act=sndstop]').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}")
+                ok(stop0, nm + ': Stop is on screen before any scroll (pinned to the bottom)')
                 ctx = pg.context; cdp = await ctx.new_cdp_session(pg)
                 sx, sy = w / 2, h * 0.7
                 for _ in range(8):
@@ -112,8 +114,8 @@ async def main():
                     for k in range(1, 13):
                         await cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': sx, 'y': sy - k * 30}]}); await pg.wait_for_timeout(12)
                     await cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); await pg.wait_for_timeout(150)
-                vis = await pg.evaluate("()=>{const r=document.querySelector('[data-act=sndstop]').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}")
-                ok(vis, nm + ': a finger swipe reaches the last button (Stop)')
+                vis = await pg.evaluate("()=>{const b=[...document.querySelectorAll('.sndlab [data-act=sndsup]')].pop(),r=b.getBoundingClientRect(),s=document.querySelector('[data-act=sndstop]').getBoundingClientRect();return r.top>=0&&r.bottom<=s.top+1&&s.bottom<=innerHeight;}")
+                ok(vis, nm + ': a finger swipe reaches the last super button, clear of the pinned Stop')
                 await pg.screenshot(path=OUT + 'lab_' + nm + '_bottom.png')
             else:
                 await pg.evaluate("()=>document.querySelector('[data-act=sndstop]').scrollIntoView()")
