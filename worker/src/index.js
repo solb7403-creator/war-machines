@@ -105,6 +105,7 @@ async function auth(req, env) {
 function itemLabel(k, tk, ri) {
   if (k === "box") return ["Common", "Rare", "Epic"][ri ?? 0] + " " + (tk === "weapon" ? "Weapon Cache" : tk === "chassis" ? "Chassis Crate" : "Gem Cache");
   if (k === "core") return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen core: " + (RULES.isGem(tk) ? RULES.GEM[tk].name : "Core");
+  if (k === "gear") { const g = RULES.gearTk(tk); return ["Common", "Rare", "Epic"][ri ?? 0] + " chosen " + (g === "weapon" ? "weapon: " + RULES.WNAMES[tk][ri ?? 0] : g === "chassis" ? "chassis: " + RULES.CNAMES[tk][ri ?? 0] : "item"); }
   if (k === "paint") return "Paint: " + (PAINT_NAMES[tk] || "Paint");
   if (k === "pass") return "Lunar Pass" + (tk ? ", season " + tk : "");
   if (k === "vault") return "Hyperspace Vault: " + ((RULES.VAULT[tk] || {}).n || "Gold");
@@ -294,6 +295,7 @@ const descOf = (d) => {
   const c = RULES.isCh(d.c) ? d.c : null;   // the chassis a gem cache, chosen core, pack's gem caches or reset is for (5E-2b3)
   if (kind === "box") return ["gem", "weapon", "chassis"].includes(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri), deal: d.deal === "d" || d.deal === "w" ? d.deal : null, c } : null;
   if (kind === "core") return RULES.isGem(d.tk) && [0, 1, 2].includes(Number(d.ri)) && c ? { kind, tk: d.tk, ri: Number(d.ri), c } : null;
+  if (kind === "gear") return RULES.gearTk(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri) } : null;   // a chosen weapon or chassis (Checkpoint 39)
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
@@ -330,7 +332,7 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
     const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
-    if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "box") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
+    if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
@@ -362,7 +364,7 @@ async function starsInvoice(env, b, user, pid, now = Date.now()) {
   if (!pr) return { status: 400, body: { error: "item" } };
   if (desc.deal && pr.deal !== desc.deal) return { status: 409, body: { error: "deal_used" } };
   const nonce = Math.random().toString(36).slice(2, 10);
-  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" || k === "core" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" || k === "core" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined, c: desc.c || undefined });   // c: the chassis (gem caches, chosen cores, packs, resets)
+  const payload = JSON.stringify({ u: user.id, k, t: k === "paint" || k === "box" || k === "vault" || k === "core" || k === "gear" ? tk : k === "pass" ? String(RULES.ecoSeason(X)) : undefined, r: k === "box" || k === "core" || k === "gear" ? ri : undefined, g: pr.ton, n: nonce, x: pr.deal || undefined, c: desc.c || undefined });   // c: the chassis (gem caches, chosen cores, packs, resets)
   const label = itemLabel(k, k === "pass" ? String(RULES.ecoSeason(X)) : tk, ri);
   const r = await tg(env, "createInvoiceLink", { title: label, description: `LUNAR: War Machines · ${label}`, payload, currency: "XTR", prices: [{ label, amount: pr.stars }] });
   if (!r.ok) return { status: 502, body: { error: r.description || "telegram" } };
@@ -586,7 +588,7 @@ async function webhook(req, env) {
       const S0 = JSON.parse(JSON.stringify(S));
       try { outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X); }
       catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = [{ none: 1, err: String((e && e.message) || e).slice(0, 80) }]; }
-      if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "box") && S.L) setLoadout(S, S.L);
+      if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
       const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
       return { outs };
@@ -608,7 +610,7 @@ async function webhook(req, env) {
         if (S.rfd.includes(charge)) return { abort: true };
         S.rfd = S.rfd.concat(charge).slice(-40);
         RULES.ecoRefund(S, sp.k, sp.o || []);
-        if ((S.lab || ["respec", "vault", "core", "box"].includes(sp.k)) && S.L) setLoadout(S, S.L);   // the stored loadout and power follow the refund, as they follow a grant
+        if ((S.lab || ["respec", "vault", "core", "gear", "box"].includes(sp.k)) && S.L) setLoadout(S, S.L);   // the stored loadout and power follow the refund, as they follow a grant
         S.spendGram = Math.max(0, (S.spendGram || 0) - (Number(sp.g) || 0));   // a refunded purchase isn't spending
         n = S.rfd.length;
         return {};
@@ -741,7 +743,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261114200718"},409),req);
+        return cors(json({error:"update",build:"20261115000921"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

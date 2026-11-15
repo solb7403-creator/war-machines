@@ -36,8 +36,7 @@ const save={glc:{scout:{dmg:3},titan:{dmg:3}},paints:{stock:true},lab:{active:'a
  a:{name:'Scout Pilot',spec:spec('pulse','scout')},
  b:{name:'Titan Pilot',spec:spec('siege','titan')}}}};
 const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
-const fmtNum=n=>String(n),WNAMES={pulse:['Pulse'],siege:['Siege'],twin:['Twin']};
+const fmtNum=n=>String(n);   // WNAMES / CNAMES come from rules.js (Checkpoint 39)
 ecoLoadout=(_,p)=>({...STOCK_L,w:{...p.w,q:1.06},c:{...p.c,q:1.07},
  cores:p.cores,mods:p.mods,looks:p.looks,gl:chGl(save,p.c.c)});
 const rowsA=labStatRows(save.lab.machines.a.spec),rowsB=labStatRows(save.lab.machines.b.spec);

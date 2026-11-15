@@ -70,7 +70,7 @@ db.root.eco[pp].pts = 1500000;   // enough for one of each gem cache and one of 
 const P0 = E(pp).pts, buys0 = J(E(pp).buys || {});
 t(J(R.GEM_PTS) === J([30000, 60000, 180000]) && R.GEM_PTS_STAR === 120, 'owner\'s gem cache prices (Checkpoint 38): 120 points a Star, 30,000 / 60,000 / 180,000 ' + J(R.GEM_PTS));
 t(J([0, 1, 2].map(R.corePts)) === J([43750, 87500, 262500]) && R.CORE_PTS_STAR === 175 && [0, 1, 2].every((ri) => R.corePts(ri) === R.RSTARS[ri] * R.CORE_PTS_STAR), 'owner\'s chosen core prices (Checkpoint 38): 175 points a Star of the cache\'s price, 43,750 / 87,500 / 262,500 ' + J([0, 1, 2].map(R.corePts)));
-t(J(R.RSTARS) === J([250, 500, 1500]) && J(R.RPRICE) === J([4, 8, 23]) && J(R.RPTS) === J([20000, 80000, 0]) && R.CORE_X === 1.5, 'money prices and the weapon / chassis crate points prices unchanged');
+t(J(R.RSTARS) === J([250, 500, 1500]) && J(R.RPRICE) === J([4, 8, 23]) && R.CORE_X === 1.5, 'money prices unchanged');
 t(R.GEM_PTS.length === 3 && R.GEM_PTS.every((p, i) => p === R.RSTARS[i] * R.GEM_PTS_STAR) && R.GEM_PTS[2] > 0, 'one points-per-Star rate for every gem cache: ' + J(R.GEM_PTS));
 let spent = 0;
 for (const ri of [0, 1, 2]) { const before = E(pp).pts; [s, r] = await act(P, 'crate', { tk: 'gem', ri, c: 'titan' }); t(r.out.gem && r.out.c === 'titan' && before - E(pp).pts === R.GEM_PTS[ri], (['Common', 'Rare', 'Epic'][ri]) + ' gem cache for points: ' + R.GEM_PTS[ri] + ' points, shards for the Titan ' + J(r.out)); spent += R.GEM_PTS[ri]; }
@@ -163,5 +163,62 @@ for (const c of ['constructor', '__proto__', 'toString']) {
   const raw = atob(rec.pf.s), b = Uint8Array.from(raw, (ch) => ch.charCodeAt(0)), n = rec.pf.n, sz = n * 3 + 6, k = b.length / sz;
   b[(k - 1) * sz + 1 * 3 + 2] = 60; b[(k - 2) * sz + 1 * 3 + 2] = 60;   // the enemy still up at the end: a draw claim before the clock fails
   { const o = checkProof({ ...rec.pf, s: btoa(String.fromCharCode(...b)) }, rec.c); t(!o.ok && o.why === 'result', 'an early draw with a tank still up fails (' + o.why + ')'); } }
+
+// ---- 7. weapon caches and chassis crates priced like gem caches, and chosen gear (owner, Nov 14 2026, Checkpoint 39) ----
+{ const X = () => ({ day: Math.floor(Date.now() / 864e5), week: Math.floor((Date.now() - 4 * 864e5) / (7 * 864e5)), rnd: Math.random });
+  t(J(R.RPTS) === J([30000, 60000, 180000]) && R.RPTS.every((p, i) => p === R.RSTARS[i] * R.GEM_PTS_STAR), 'owner: weapon caches and chassis crates at 120 points a Star, 30,000 / 60,000 / 180,000 (Epic buyable) ' + J(R.RPTS));
+  t(J([0, 1, 2].map(R.gearPts)) === J([43750, 87500, 262500]) && [0, 1, 2].every((ri) => R.gearPts(ri) === R.RSTARS[ri] * R.CORE_PTS_STAR), 'owner: chosen weapons and chassis at 175 points a Star, 43,750 / 87,500 / 262,500 ' + J([0, 1, 2].map(R.gearPts)));
+  t(R.gearTk('twin') === 'weapon' && R.gearTk('titan') === 'chassis' && R.gearTk('moon') === null && R.gearTk('toString') === null && R.gearTk('gem') === null, 'only the six crate lines can be chosen (no Moonbeam, no prototype names)');
+  const G = { id: 703, username: 'gear' }, gp = 'tg_703';
+  await call('/api/sync', { initData: initData(G), lab: 1, boot: true });
+  db.root.eco[gp].pts = 2000000; db.root.eco[gp].earned = 2000000;
+  // crates for points: every rarity, Epic included; a points buy never raises the money price step
+  const b0 = J(E(gp).buys || {});
+  for (const tk of ['weapon', 'chassis']) for (const ri of [0, 1, 2]) { const before = E(gp).pts; [s, r] = await act(G, 'crate', { tk, ri });
+    t(r.out.k && r.out.tier === ri && before - E(gp).pts === R.RPTS[ri], ['Common', 'Rare', 'Epic'][ri] + ' ' + tk + ' crate for points: ' + R.RPTS[ri] + ' ' + J(r.out)); }
+  t(J(E(gp).buys || {}) === b0, 'crates bought with points don\'t raise their money price (x1 / x2 / x3 counts money buys only) ' + J(E(gp).buys));
+  // the chosen item: exactly the one picked, rolled 105-110% like a crate's
+  const pick = (k, ri) => (R.gearTk(k) === 'weapon' ? E(gp).wOwn : E(gp).cOwn)[k] || [];
+  for (const [k, ri] of [['twin', 2], ['siege', 1], ['titan', 2], ['scout', 0]]) {
+    if (pick(k, ri).includes(ri)) { const tk = R.gearTk(k); db.root.eco[gp][tk === 'weapon' ? 'wOwn' : 'cOwn'][k] = pick(k, ri).filter((x) => x !== ri); delete db.root.eco[gp].roll[k + ':' + ri]; }
+    const before = E(gp).pts, buys = J(E(gp).buys || {}); [s, r] = await act(G, 'gear', { k, ri }); const roll = E(gp).roll[k + ':' + ri];
+    t(s === 200 && r.out.kind === 'new' && r.out.k === k && r.out.tier === ri && pick(k, ri).includes(ri) && before - E(gp).pts === R.gearPts(ri) && roll >= R.ROLL_MIN && roll <= R.ROLL_MAX && roll === r.out.roll && J(E(gp).buys || {}) === buys,
+      'chosen ' + k + ' (' + ['Common', 'Rare', 'Epic'][ri] + ') for ' + R.gearPts(ri) + ' points: that exact item, roll ' + roll + ', no money price step ' + J(r.out)); }
+  { const before = E(gp).pts; [s, r] = await act(G, 'gear', { k: 'twin', ri: 2 }); t(r.out.err === 'owned' && E(gp).pts === before, 'a chosen item you own is refused, nothing taken'); }
+  { const before = E(gp).pts; [s, r] = await act(G, 'gear', { k: 'pulse', ri: 0 }); t(r.out.err === 'owned' && E(gp).pts === before, 'the starter Pulse Cannon counts as owned'); }
+  for (const k of ['moon', 'toString', 'constructor', '__proto__', 'gem']) { const before = E(gp).pts; [s, r] = await act(G, 'gear', { k, ri: 2 }); t(s === 400 && E(gp).pts === before, 'a forged or premium item name is refused (' + k + ', ' + s + ')'); }
+  { db.root.eco[gp].pts = 10; delete db.root.eco[gp].cOwn.vanguard; db.root.eco[gp].cOwn.vanguard = [0];
+    [s, r] = await act(G, 'gear', { k: 'vanguard', ri: 2 }); t(r.out.err === 'pts' && !E(gp).cOwn.vanguard.includes(2), 'not enough points: refused, nothing given'); db.root.eco[gp].pts = 2000000; }
+  // Stars: 1.5x the crate's price right now; an owned item has no invoice; webhook grants the exact item; a refund takes it back
+  const ginv = async (body) => { tgCalls.length = 0; const [st, res] = await call('/api/stars-invoice', { initData: initData(G), ...body }); const c = tgCalls.find((x) => x[0] === 'createInvoiceLink'); return [st, res, c ? JSON.parse(c[1].payload) : null, c && c[1]]; };
+  const gpay = (ch, payload, amt) => hook({ message: { from: { id: 703, username: 'gear' }, chat: { id: 703, type: 'private' }, successful_payment: { total_amount: amt, telegram_payment_charge_id: ch, invoice_payload: J(payload) } } });
+  let [st, res, pl, iv] = await ginv({ kind: 'box', tk: 'chassis', ri: 2 }); const crateStars = res.stars;
+  [st, res, pl, iv] = await ginv({ kind: 'gear', tk: 'vanguard', ri: 2 });
+  t(st === 200 && pl.k === 'gear' && pl.t === 'vanguard' && pl.r === 2 && iv.title === 'Epic chosen chassis: Paladin' && res.stars === Math.round(crateStars * R.CORE_X) && res.stars === 2250, 'a chosen-chassis invoice: the item, 1.5x the crate (' + crateStars + ' -> ' + res.stars + ' Stars) ' + J(pl) + ' ' + (iv && iv.title));
+  [st] = await ginv({ kind: 'gear', tk: 'titan', ri: 2 }); t(st === 409, 'no invoice for a chosen item you own (' + st + ')');
+  [st] = await ginv({ kind: 'gear', tk: 'moon', ri: 2 }); t(st === 400, 'Moonbeam is not chosen gear (' + st + ')');
+  [st] = await ginv({ kind: 'gear', tk: 'toString', ri: 1 }); t(st === 400, 'a forged item name has no invoice (' + st + ')');
+  const pr = R.ecoPrice(E(gp), { kind: 'gear', tk: 'storm', ri: 1 }, X()); t(pr === null, 'no price for an unknown item');
+  const m0 = R.ecoBoxMult(R.ecoNorm(JSON.parse(J(E(gp)))), 'chassis', 2, X());
+  await gpay('pg1', { u: 703, k: 'gear', t: 'vanguard', r: 2, g: 34.5, n: 'g1' }, 2250);
+  { const S3 = E(gp), o = (db.get('/starsPaid/tg_703/pg1') || {}).o || [], roll = S3.roll['vanguard:2'];
+    t(S3.cOwn.vanguard.includes(2) && o[0] && o[0].kind === 'new' && o[0].k === 'vanguard' && o[0].tier === 2 && roll >= R.ROLL_MIN && roll <= R.ROLL_MAX, 'the paid chosen chassis: exactly the Paladin, rolled ' + roll + ' ' + J(o[0]));
+    t(R.ecoBoxMult(R.ecoNorm(JSON.parse(J(S3))), 'chassis', 2, X()) === Math.min(3, m0 + 1), 'a paid chosen item counts as a buy of its crate (x' + m0 + ' -> x' + R.ecoBoxMult(R.ecoNorm(JSON.parse(J(S3))), 'chassis', 2, X()) + '), as a chosen core does for its cache');
+    t(S3.L && S3.pw === R.powerOf(S3.L), 'the stored loadout and power follow the paid item'); }
+  { const S3 = J(E(gp)); await gpay('pg1', { u: 703, k: 'gear', t: 'vanguard', r: 2, g: 34.5, n: 'g1' }, 2250); const S4 = E(gp); t(J(S4.cOwn) === J(JSON.parse(S3).cOwn) && J(S4.roll) === J(JSON.parse(S3).roll), 'the same payment twice grants once'); }
+  { // two invoices for the same item paid one after the other: the second re-rolls it like a crate, keeps the better roll
+    db.root.eco[gp].roll['vanguard:2'] = 1.05; const pts0 = E(gp).pts;
+    await gpay('pg2', { u: 703, k: 'gear', t: 'vanguard', r: 2, g: 34.5, n: 'g2' }, 2250); const o = (db.get('/starsPaid/tg_703/pg2') || {}).o || [];
+    t(o[0] && (o[0].kind === 'up' && E(gp).roll['vanguard:2'] === o[0].roll || o[0].kind === 'dup' && E(gp).pts === pts0 + o[0].pts) && E(gp).cOwn.vanguard.filter((x) => x === 2).length === 1, 'an item already owned when its payment lands is re-rolled, never duplicated ' + J(o[0])); }
+  await hook({ message: { from: { id: 703 }, chat: { id: 703, type: 'private' }, refunded_payment: { total_amount: 2250, telegram_payment_charge_id: 'pg1', invoice_payload: '{}' } } });
+  t(!E(gp).cOwn.vanguard.includes(2) && E(gp).roll['vanguard:2'] === undefined && E(gp).cOwn.vanguard.includes(0), 'a refund takes the chosen chassis back (the starter Vanguard stays)');
+  { const L = E(gp).L; t(!L || L.c.c !== 'vanguard' || L.c.t !== 2, 'and the deployed loadout no longer fields it ' + J(L && L.c)); }
+  // TON / SOL: the same order description and price (the payments route; checkout stays as Session 8 leaves it)
+  { const { RULES } = await import('../../../worker/src/sim.gen.js'); const S5 = R.ecoNorm(JSON.parse(J(E(gp)))), p5 = RULES.ecoPrice(S5, { kind: 'gear', tk: 'twin', ri: 1 }, X()), c5 = RULES.ecoPrice(S5, { kind: 'box', tk: 'weapon', ri: 1 }, X());
+    t(p5 && Math.abs(p5.ton - Math.round(c5.ton * 1.5 * 100) / 100) < 0.011 && p5.stars === Math.round(c5.stars * 1.5), 'TON / SOL price: 1.5x the crate\'s TON price (' + c5.ton + ' -> ' + p5.ton + ')');
+    const G0 = R.ecoNorm({}); t(R.ecoOwned(G0, { kind: 'gear', tk: 'pulse', ri: 0 }) && !R.ecoOwned(G0, { kind: 'gear', tk: 'pulse', ri: 1 }) && R.ecoOwned(G0, { kind: 'gear', tk: 'moon', ri: 2 }), 'ecoOwned: the starter item is owned, a new one is not, an unknown one is never sold'); }
+  // the migration check of old phone records keeps the old crate prices (it audits records kept under them)
+  { const eco = await import('../../../worker/src/eco.js'); t(typeof eco.migrate === 'function', 'the migration check is still there'); }
+}
 console.log(`chassis: passed ${ok}, failed ${bad}`);
 if (bad) process.exitCode = 1;

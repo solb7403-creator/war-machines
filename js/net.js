@@ -64,7 +64,7 @@ function recoverStars(list){
   if(!save.starsDone[it.n]){
    save.starsDone[it.n]=1;n++;
    if(SRV_ECO)showOuts(it.o||[]);
-   else grantPurchase(it.k==='box'||it.k==='core'?{kind:it.k,tk:it.t,ri:it.r,price:it.g,deal:it.x||null,c:it.c||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k,c:it.c||null});
+   else grantPurchase(it.k==='box'||it.k==='core'||it.k==='gear'?{kind:it.k,tk:it.t,ri:it.r,price:it.g,deal:it.x||null,c:it.c||null}:it.k==='paint'?{kind:'paint',id:it.t}:{kind:it.k,c:it.c||null});
   }
   starsAckQ.push(it.n);
  }
@@ -120,6 +120,7 @@ function newMemo(){return 'LWM|'+playerKey()+'|'+Date.now().toString(36)+Math.ra
 function descLabel(d){
  if(!d)return 'Purchase';
  if(d.kind==='box')return TIER_N[d.ri]+' '+(d.tk==='weapon'?'Weapon Cache':d.tk==='chassis'?'Chassis Crate':'Gem Cache'+(CH[d.c]?' for '+CH[d.c].n:''));
+ if(d.kind==='gear')return TIER_N[d.ri]+' chosen '+(gearTk(d.tk)==='weapon'?'weapon: '+((WNAMES[d.tk]||[])[d.ri]||'Weapon'):'chassis: '+((CNAMES[d.tk]||[])[d.ri]||'Chassis'));
  if(d.kind==='core')return TIER_N[d.ri]+' chosen core: '+((GEM[d.tk]||{}).name||'Core')+(CH[d.c]?' for '+CH[d.c].n:'');
  if(d.kind==='paint')return 'Paint: '+((PAINTS[d.id]||{}).n||d.id);
  return d.kind==='moonbeam'?'Moonbeam':d.kind==='skin'?'Lunar Skin':d.kind==='starter'?'Starter Pack':d.kind==='founder'?'Founder Pack':d.kind==='pass'?'Lunar Pass, season '+seasonNo():d.kind==='respec'?'Build reset':d.kind==='vault'?'Hyperspace Vault: '+((VAULT[d.tk]||{}).n||'Gold'):'Purchase';

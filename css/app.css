@@ -890,3 +890,13 @@ button.q{display:flex;width:100%;text-align:left}
 .gcore-links{display:flex;flex-wrap:wrap;gap:4px 14px}
 @media (max-width:360px){.cpicks{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (min-width:700px){.cpicks{grid-template-columns:repeat(7,minmax(0,1fr))}}
+/* chosen gear (Checkpoint 39): the nine items of a crate type, Common / Rare / Epic rows */
+.gpicks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.gpick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:68px;padding:8px 4px;border-radius:12px;background:var(--rock2);border:1px solid var(--edge);border-top:3px solid var(--rc);color:var(--dust);text-align:center}
+.gpick i{font:600 10px var(--body);font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--rc)}
+.gpick b{font:600 12px var(--disp);color:var(--moon);line-height:1.15}
+.gpick span{font:500 11px var(--body);color:var(--dim);white-space:nowrap}
+.gpick.is-own{opacity:.55}
+.gpick.is-own span{color:var(--moon)}
+.gpick:not(.is-own):active{transform:scale(.97)}
+@media (min-width:700px){.gpick{min-height:60px}.gpick b{font-size:13px}}

@@ -88,8 +88,6 @@ const TIER_N=['Common','Rare','Epic'];
 const RCOL=['#9fb3c8','#b78bff','#ffcf4a'];
 const TIERC=['#c08a54','#c3ccd6','#ffcf4a','#7be3e0','#c79bff'];
 // 9 weapons + 9 chassis: each line has one named item per rarity, each drops only from its own rarity's crate
-const WNAMES={pulse:['Pulse Cannon','Arc Pulse','Nova Pulse'],twin:['Twin Repeater','Storm Repeater','Helix Repeater'],siege:['Siege Breaker','Rail Breaker','Titanfall']};
-const CNAMES={scout:['Scout','Strider','Phantom'],vanguard:['Vanguard','Sentinel','Paladin'],titan:['Titan','Bulwark','Colossus']};
 const ownW=(k,t)=>hasW(save,k,t);
 const ownC=(k,t)=>hasC(save,k,t);
 // Power ladder (stat multiplier vs stock gear). Every crate item beats every salvaged item:
@@ -226,7 +224,7 @@ function waitMig(){
 }
 function ecoErr(r){   // a toast for an action that didn't go through
  if(!r||!r.err)return false;
- const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'Epic crates are paid only',
+ const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'That item isn’t sold',owned:'You already own this',
   join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels on this chassis. Reset its build to move them.',chassis:'Get that chassis first: its build and cores come with it',item:'That item isn’t sold',empty:'Nothing to reset yet',have:'That slot already has this plate or better',mn:'Not enough '+((MINERALS[r.k]||{}).s||'minerals')+(r.need?': '+r.need+' more':''),offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
  if(m&&typeof showToast==='function')showToast(r.err==='max'&&r.k?'Already at max level':m);
  return true;
@@ -268,7 +266,7 @@ function revealOf(r){
    {tk:r.tk,ri:r.ri,rar:t,color:SALV_COL,item,title:'Rolled '+pw(r.q),sub:'You kept your '+pw(r.old)+' '+nm};}
  const nm=isW?WNAMES[k][t]:CNAMES[k][t],item={isW,k,tier:t};
  if(r.kind==='new'){const w0=getW(k,t,false),c0=getC(k,t,false);
-  return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,title:'New '+TIER_N[t]+': '+nm,sub:'Roll '+pct(r.roll)+(isW?', '+w0.dps+' damage per second':', '+c0.hp+'× health, '+c0.spd+'× speed')};}
+  return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,pick:!!r.pick,title:'New '+TIER_N[t]+': '+nm,sub:'Roll '+pct(r.roll)+(isW?', '+w0.dps+' damage per second':', '+c0.hp+'× health, '+c0.spd+'× speed')};}
  if(r.kind==='up')return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,title:'Roll upgraded!',sub:nm+': '+pct(r.old)+' → '+pct(r.roll)};
  return {tk:r.tk,ri:r.ri,rar:t,color:RCOL[t],item,title:'Rolled '+pct(r.roll),sub:'You kept your '+pct(r.old)+' '+nm+' and got +'+(r.pts||0)+' points'};
 }
@@ -286,6 +284,7 @@ function afterGain(r){
 function showOuts(outs){
  const list=(outs||[]).filter(Boolean);
  list.forEach(afterGain);fixEquip();store();
+ if(list.some(o=>o&&o.pick)&&typeof findOv==='function')for(const k of ['gearpick','crate']){const ov=findOv(k);if(ov)closeOverlay(ov);}   // a paid chosen item: its sheets close, as after a points buy (review round 1)
  if(typeof fx==='function')fx('buy');
  const rv=list.map(revealOf).filter(Boolean);
  if(rv.length&&typeof showReveal==='function')showReveal(rv);
@@ -471,12 +470,12 @@ const dealX=(tk,ri)=>dealMult(dealOf(tk,ri));
 function markDeal(k){if(k==='d')save.dealD=dayNum();else if(k==='w')save.dealW=weekNum();}
 function boxPrice(tk,ri,full){return Math.round(RPRICE[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri))*100)/100;}   // TON. full: before the deal
 function boxStars(tk,ri,full){return Math.round(RSTARS[ri]*boxMult(tk,ri)*(full?1:dealX(tk,ri)));}
-function boxPts(tk,ri){return tk==='gem'?GEM_PTS[ri]||0:RPTS[ri]||0;} // points price is flat (gem caches: one points-per-Star rate, every rarity)
+function boxPts(tk,ri){return tk==='gem'?GEM_PTS[ri]||0:RPTS[ri]||0;} // points price is flat: 120 points a Star for every cache and crate, every rarity (Checkpoint 39)
 function crateFound(tk,ri){if(tk==='gem')return 0;const ks=tk==='weapon'?WORDER:CHORDER;return ks.filter(k=>tk==='weapon'?ownW(k,ri):ownC(k,ri)).length;}
 // ch: the chassis a gem cache is for
 function openBoxWithPoints(tk,ri,ch){
  const c=boxPts(tk,ri);
- if(!c){showToast('Epic crates are paid only');return null;}
+ if(!c){showToast('That item isn’t sold');return null;}
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
  return when(ecoRun('crate',{tk,ri,c:ch},(S,X)=>ecoCratePts(S,tk,ri,X,ch)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
 }
@@ -485,6 +484,13 @@ function buyCorePts(k,ri,ch){
  const c=corePts(ri);
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
  return when(ecoRun('core',{k,ri,c:ch},(S,X)=>ecoCorePts(S,k,ri,ch,X)),r=>{if(ecoErr(r))return null;store();return revealOf(r);});
+}
+// a chosen weapon or chassis for points (gearPts): the exact item, rolled 105-110% like a crate's
+function buyGearPts(k,ri){
+ const c=gearPts(ri),tk=gearTk(k);if(!tk)return null;
+ if(tk==='weapon'?ownW(k,ri):ownC(k,ri)){showToast('You already own this');return null;}
+ if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
+ return when(ecoRun('gear',{k,ri},(S,X)=>ecoGearPts(S,k,ri,X)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
 }
 // opens a crate on this device (local play and tests only: in Telegram every crate is opened by the server)
 function doOpenBox(tk,ri){const r=ecoOpenBox(save,tk,ri,ecoX());afterGain(r);store();return revealOf(r);}
