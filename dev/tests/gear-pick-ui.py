@@ -128,11 +128,17 @@ async def main():
             m1 = await pg.evaluate("(tk)=>boxMult(tk,2)", tk)
             ok(ri in e1[own].get(k, []) and roll and 1.05 <= roll <= 1.10 and e1['pts'] == e0['pts'] and ('New Epic: ' + name) in rv and m1 == min(3, m0 + 1),
                'Stars purchase granted by the server: exactly ' + name + ', roll %s, no points taken, its crate x%s -> x%s; the reveal: %s' % (roll, m0, m1, json.dumps(rv[:100])))
+            ok(await pg.evaluate("()=>!findOv('gearpick')&&!findOv('crate')"), 'after the Stars buy the item\'s sheet closed, as after a points buy (review round 1)')
             await pg.screenshot(path=OUT + 'phone_reveal_stars_' + k + '.png')
             await pg.evaluate("()=>closeAll()"); await pg.wait_for_timeout(400)
         await pg.evaluate("()=>{closeAll();shopTab='store';setTab('shop');}"); await pg.wait_for_timeout(400)
         wt = await pg.evaluate(tiles_js('weapons'))
         ok('twin:2=gnop=Owned' in wt and 'pulse:2=gearpick=4,500 ⭐' in wt, 'after the Stars buy: Helix Repeater Owned; the next Epic chosen weapon follows its crate (x2: 4,500 Stars) ' + json.dumps(wt))
+        await pg.evaluate("()=>{save.payCur='ton';}")
+        await pg.evaluate("()=>{closeAll();shopTab='store';setTab('shop');}"); await pg.wait_for_timeout(400)
+        hd = await pg.evaluate("()=>[...document.querySelectorAll('.ptsh')].map(e=>e.textContent).filter(t=>/Chosen (weapon|chassis)/.test(t))")
+        ok(hd == ['Chosen weapon · pick it, no random roll · from 6 TON', 'Chosen chassis · pick it, no random roll · from 6 TON'], 'the chosen-gear headers follow the currency picked (TON) ' + json.dumps(hd))
+        await pg.evaluate("()=>{save.payCur='stars';store();}")
         r = await pg.evaluate("()=>api('/api/stars-invoice',{kind:'gear',tk:'twin',ri:2}).then(r=>r,e=>({error:String(e&&e.message)}))")
         ok('owned' in json.dumps(r), 'no Stars invoice for a chosen item already owned ' + json.dumps(r))
         # 5. the wiki

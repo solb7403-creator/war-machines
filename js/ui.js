@@ -614,7 +614,7 @@ function gearPickGrid(tk,pts){
  return '<div class="gpicks" role="group" aria-label="Chosen '+(isW?'weapons':'chassis')+'">'+[0,1,2].map(ri=>keys.map(k=>{const own=ownGear(k,ri),nm=(isW?WNAMES:CNAMES)[k][ri],pr=pts?null:gearPrice(k,ri);
   return '<button class="gpick'+(own?' is-own':'')+'" style="--rc:'+RCOL[ri]+'" data-act="'+(own?'gnop':'gearpick')+'" data-arg="'+k+':'+ri+(pts?':p':'')+'"'+(own?' aria-disabled="true"':'')+'><i>'+TIER_N[ri]+'</i><b>'+esc(nm)+'</b><span>'+(own?'Owned':pts?coin()+fmtK(gearPts(ri)):pr?priceLabel(pr.ton,pr.stars):'')+'</span></button>';}).join('')).join('')+'</div>';
 }
-function gearPickHead(tk,pts){const isW=tk==='weapon',from=pts?fmtNum(gearPts(0))+' points':fmtNum((gearPrice(isW?'twin':'scout',0)||{stars:0}).stars)+' ⭐';
+function gearPickHead(tk,pts){const isW=tk==='weapon',p0=gearPrice(isW?'twin':'scout',0),from=pts?fmtNum(gearPts(0))+' points':p0?priceLabel(p0.ton,p0.stars):'';   // in the currency picked (review round 1)
  return '<h4 class="ptsh">Chosen '+(isW?'weapon':'chassis')+' · pick it, no random roll · from '+from+'</h4>';}
 function openGearPick(k,ri,pts){
  const tk=gearTk(k);if(!tk||!(ri>=0&&ri<=2))return;
@@ -625,7 +625,7 @@ function openGearPick(k,ri,pts){
    (own?'<p class="cpnow" style="margin-top:12px">Owned. You can tune its roll in the Garage.</p>':
     pts?'<button class="btn btn-go block" style="margin-top:14px" data-act="buygearpts" data-arg="'+k+':'+ri+'">Use '+fmtNum(pp)+' points <span class="dimtxt">(you have '+fmtNum(save.pts||0)+')</span></button>':
      '<button class="btn btn-go block" style="margin-top:14px" data-act="buygear" data-arg="'+k+':'+ri+'"'+(pr?'':' disabled')+'>'+(pr?'Buy for '+priceLabel(pr.ton,pr.stars):'Not sold')+'</button>')+
-   (pts?'<p class="dimtxt" style="margin-top:8px">The points price never changes.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for '+fmtNum(pp)+' points in the Points shop.</p>');
+   (own?'':pts?'<p class="dimtxt" style="margin-top:8px">The points price never changes.</p>':'<p class="dimtxt" style="margin-top:8px">Also sold for '+fmtNum(pp)+' points in the Points shop.</p>');
  });
 }
 // the two deals (rules.js): daily gem cache 30% off, weekly epic crate 25% off. Each is once per period, per pilot
@@ -1010,7 +1010,7 @@ const INFO={
   ['Leveling','Each chassis levels its own seven cores. Gem caches and chosen cores in the Shop give shards to the chassis you pick (Cores for); free caches from the daily reward, the weekly chest and the pass go there too. Enough shards level a core up, to level 5.'],
   ['Stacking','Cores add on top of mystery-box boosts of the same type.']]],
  crates:()=>['Crates',[
-  ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet, so Rare and Epic crates cost ×1, then ×2, then ×3 as you collect them. Common crates are always 250 Stars.'],
+  ['Gear','Each rarity has 3 weapons and 3 chassis. A crate always gives one you don’t own yet. Each Stars purchase of a Rare or Epic crate, or of a chosen item from it, raises that crate’s Stars price: ×1, then ×2, then ×3. Common crates are always 250 Stars. In points every crate is 30,000 / 60,000 / 180,000 and never rises. Want one item in particular? Chosen weapons and chassis, just under the crates, let you pick it: no random roll, 1.5× a crate in Stars or 43,750 / 87,500 / 262,500 points.'],
   ['Rolls','Every crate item rolls 105 to 110% of its rarity’s stats, any value equally likely. Rare is 14% stronger than Common stock, Epic 34%. Rolled power is 105–110% (Common), 119.7–125.4% (Rare), 140.7–147.4% (Epic). Legendary Moonbeam is fixed above the strongest Epic weapon.'],
   ['Odds','Each item you don’t own yet is equally likely. Gem caches pick one of the 7 core types, 1 in 7 each. A chosen core skips the roll: you pick the core, for 1.5× the Stars price (about '+(CORE_PTS_STAR/GEM_PTS_STAR).toFixed(2)+'× in points).'],
   ['Tune-up','In the Garage, pay points to re-roll a crate item: 3,000 for Common, 10,000 for Rare, 30,000 for Epic. You keep the better roll.'],
@@ -1066,7 +1066,7 @@ function openCrate(tk,ri,pts){
    :'One '+TIER_N[ri].toLowerCase()+' '+(tk==='weapon'?'weapon':'chassis')+' you don’t own yet, rolled at 105 to 110%. It’s equipped if it beats your current one.';
   const odds=isGem?'Odds: each of the 7 core types is 1 in 7, and every shard count in the range is equally likely. The shards go to the chassis you picked.':found>=3?'Odds: each of the 3 items is 1 in 3. Every roll from 105 to 110% is equally likely.':'Odds: each item you don’t own yet is 1 in '+(3-found)+'. Every roll from 105 to 110% is equally likely.';
   return '<div class="row"><canvas class="crateart" data-art="crate:'+tk+':'+ri+'"></canvas><div class="grow"><h3>'+crateName(tk,ri)+(isGem?' for your '+N:'')+'</h3><p class="mut">'+what+'</p></div></div>'+(isGem?coreForChips():'')+items+
-   (pts?(pp?'<button class="btn btn-go block" style="margin-top:14px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pp)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':'<p class="dimtxt" style="margin-top:8px">Epic weapons and chassis can’t be bought with points.</p>'):
+   (pts?'<button class="btn btn-go block" style="margin-top:14px" data-act="buypts" data-arg="'+tk+':'+ri+'">Use '+fmtNum(pp)+' points <span class="dimtxt">(you have '+fmtNum(save.pts)+')</span></button>':
     (dealOf(tk,ri)?'<p class="dealnote">'+DEAL_TXT[dealOf(tk,ri)].n+': '+DEAL_TXT[dealOf(tk,ri)].off+'. Normally '+priceLabel(boxPrice(tk,ri,true),boxStars(tk,ri,true))+'.</p>':'')+
     '<button class="btn btn-go block" style="margin-top:14px" data-act="buybox" data-arg="'+tk+':'+ri+'">Buy for '+priceLabel(boxPrice(tk,ri),boxStars(tk,ri))+'</button>'+
     (pp?'<button class="linkbtn" style="margin-top:6px" data-act="ptscrate" data-arg="'+tk+':'+ri+'">Or '+fmtNum(pp)+' points in the Points shop</button>':''))+

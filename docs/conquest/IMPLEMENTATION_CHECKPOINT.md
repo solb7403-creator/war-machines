@@ -4301,3 +4301,45 @@ model): a chosen Rare weapon plus a chosen Rare chassis would cost 175,000 point
   Points shop and Store at 320 / 390 / 1366, a real points purchase of a chosen weapon (Titanfall, 262,500) and a chosen chassis
   (Strider, 87,500), a real Stars purchase of each (Helix Repeater, Paladin: tile -> server invoice 2,250 -> Telegram payment webhook
   -> grant), Owned tiles, crate x1 -> x2 after the Stars buy, the wiki; captures at scale 2 in `docs/gear-pick-39/` (29).
+
+### Independent reviews, round 1 (two read-only agents that did not build; given the branch, head `f755f84`, the brief and this checkpoint)
+| Owner rule | Economy / security | Gameplay / UI | After round 1 |
+|---|---|---|---|
+| 1 Crates 30,000 / 60,000 / 180,000 points (Epic buyable); money unchanged | **PASS** (`RPTS = GEM_PTS`; server took 180,000 for an Epic weapon cache, 30,000 a Common chassis crate; `ecoPrice` main vs head on 3,480 cases: every money price identical) | **PASS** on screen (30K / 60K / 180K; "Use 180,000 points"; no 20,000 / 80,000 text left in js/, index, wiki, terms, admin) | |
+| 2 Chosen gear 43,750 / 87,500 / 262,500 points, 1.5x money, Owned, crate roll | **PASS** (exact charges; exact item, roll 1.05-1.10; Stars 750 / 1,500 / 2,250 / 4,500 at x1 / x2; TON 34.5 / 69; owned refused, 409 on invoice; forged names and rarities 400, nothing taken) | **PASS** (tiles, sheets and invoices agree; Owned tiles open nothing; reveal "New Rare: Arc Pulse") | |
+| 3 Same process as cores; nothing else changed | **PASS** (points buys leave `S.buys`; money buys step the crate; gem caches, chosen cores, salvage, packs, paints, vault, pass, respec, free caches byte-identical main vs head; `OLD_RPTS` gives main's audit) | | decision 4 (crate points buys no longer step the money price) flagged for the owner to confirm: it is the brief's rule 3 as written |
+| 4 Shop next to crates, every price shown, tests | | **PASS** (header + 3x3 grid right under each crate row in Store and Points shop at 320 / 390 / 1366; "Pick it" in crate sheets; wiki row and line) with 4 minor findings | **fixed** (below) |
+| 5 Kit model vs 83 days | **PASS** (re-run: 83 days (77-97), 249; JSON identical; same on main's rules) | | |
+| 6 Real purchases on the test server + captures | **PASS** (own script on the dev stand-in, 36 checks: points twin:2 + scout:1; Stars siege:1 750 "Rare chosen weapon: Rail Breaker" + titan:2 2,250 "Epic chosen chassis: Colossus"; duplicate charge granted once; refund takes it back; TON pay-log refuses underpayment, grants a verified tx once) | **PASS** (own Playwright script, through taps: points Arc Pulse + Sentinel, Stars Nova Pulse + Paladin, each checked on the server record and equipped; 44 captures at scale 2, phone / small / desktop, Stars / TON / SOL) | |
+
+Findings and what round 1 did:
+1. (Economy, major; **inherited payment-path gap, not changed: Session 8 certifies payments and the brief forbids new payment
+   plumbing**) Telegram `pre_checkout_query` doesn't re-check ownership or price: two invoices for the same chosen item paid one
+   after the other give the second as a re-roll / duplicate points (not a second copy), and still step the crate; invoices opened
+   up front at x1 can all be paid at x1 (crates and chosen cores have the same gap today). **For Session 8:** run `ecoOwned` and
+   compare `total_amount` with the current `ecoPrice` in pre-checkout, and refuse on a mismatch.
+2. (Economy, minor; inherited, for Session 8) TON / SOL `payLog` doesn't check ownership (the client's Owned tile is the only stop;
+   a stale client paying for an owned chosen item gets a re-roll / duplicate points); a refund doesn't undo the price step; the
+   webhook's replay guard remembers 12 charges (it doesn't read the existing `starsPaid` record). Payments are disabled; no live
+   players.
+3. (Economy, note) `wtest/test` failed 2 tests in the reviewer's run ("daily cap", "play spread over 20+ hours"); they fail on main
+   `1e10316` too and depend on the time of day. Re-run here at 00:04 UTC: 204 / 204 PASS.
+4. (UI, minor) Fixed: the in-game Crates help ("?" by Weapon caches) still said crates step x1 / x2 / x3 "as you collect them"; it
+   now says Stars purchases (and paid chosen items) step it, points never do, and points / chosen-gear prices.
+5. (UI, minor) Fixed: the chosen-gear header said "from 375 ⭐" in TON / SOL mode; it uses the picked currency now (tested: "from 6
+   TON"). The chosen-core header has the same pattern and is left as it was (outside this brief).
+6. (UI, minor) Fixed: after a Stars purchase the item's sheet (and the crate sheet under it) stayed open; they close as after a
+   points buy (tested), and an owned item's sheet no longer says "Also sold for ... points".
+7. (UI, minor) Fixed: dead "Epic ... can't be bought with points" / "Epic crates are paid only" text removed.
+Round 2 (the second and last allowed): the lead re-ran every suite on the fixed code: `gear-pick-ui.py` 57 PASS (3 new checks for
+fixes 5-6), `chassis-ui.py` and `quest-prices-ui.py` PASS, `wtest/chassis` 105, `wtest/test` 204, `pvp` 133, `farm` 55, `owner` 81,
+`lab-ui`, `garage-rules`, `gem-ui` PASS; captures re-taken (29 in `docs/gear-pick-39/`). No blocker was found, so no second
+reviewer pass was needed.
+
+### Agents used (AGENTS.md)
+1. Economy / security reviewer: rules 1, 2, 3, 5 and its own server purchase test PASS; found the inherited pre-checkout gaps
+   (recorded for Session 8) and confirmed every number. Changed the result: yes (decision 4 surfaced for the owner; Session 8 items).
+2. Gameplay / UI reviewer: rules 2, 4, 6 PASS with its own UI purchase test and captures; 4 minor findings, all fixed and tested.
+   Changed the result: yes.
+
+Build bumped to `20261115000921` (`dev/bump.sh`) so phones reload the new prices.

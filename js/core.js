@@ -224,7 +224,7 @@ function waitMig(){
 }
 function ecoErr(r){   // a toast for an action that didn't go through
  if(!r||!r.err)return false;
- const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'Epic crates are paid only',owned:'You already own this',
+ const m={pts:'You need '+fmtNum(r.need||0)+' more points',max:'Already at the best it gets',crate:'Only crate gear can be tuned',paid:'That item isn’t sold',owned:'You already own this',
   join:'Join the channel first, then claim.',budget:'Build budget full: '+BUILD_MAX+' of '+BUILD_MAX+' levels on this chassis. Reset its build to move them.',chassis:'Get that chassis first: its build and cores come with it',item:'That item isn’t sold',empty:'Nothing to reset yet',have:'That slot already has this plate or better',mn:'Not enough '+((MINERALS[r.k]||{}).s||'minerals')+(r.need?': '+r.need+' more':''),offline:'No connection. Try again in a moment.',server:'The server is busy. Try again in a moment.'}[r.err];
  if(m&&typeof showToast==='function')showToast(r.err==='max'&&r.k?'Already at max level':m);
  return true;
@@ -284,6 +284,7 @@ function afterGain(r){
 function showOuts(outs){
  const list=(outs||[]).filter(Boolean);
  list.forEach(afterGain);fixEquip();store();
+ if(list.some(o=>o&&o.pick)&&typeof findOv==='function')for(const k of ['gearpick','crate']){const ov=findOv(k);if(ov)closeOverlay(ov);}   // a paid chosen item: its sheets close, as after a points buy (review round 1)
  if(typeof fx==='function')fx('buy');
  const rv=list.map(revealOf).filter(Boolean);
  if(rv.length&&typeof showReveal==='function')showReveal(rv);
@@ -474,7 +475,7 @@ function crateFound(tk,ri){if(tk==='gem')return 0;const ks=tk==='weapon'?WORDER:
 // ch: the chassis a gem cache is for
 function openBoxWithPoints(tk,ri,ch){
  const c=boxPts(tk,ri);
- if(!c){showToast('Epic crates are paid only');return null;}
+ if(!c){showToast('That item isn’t sold');return null;}
  if((save.pts||0)<c){showToast('You need '+fmtNum(c-(save.pts||0))+' more points');return null;}
  return when(ecoRun('crate',{tk,ri,c:ch},(S,X)=>ecoCratePts(S,tk,ri,X,ch)),r=>{if(ecoErr(r))return null;afterGain(r);store();return revealOf(r);});
 }
