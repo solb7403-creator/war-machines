@@ -390,7 +390,7 @@ class View {
  if(free){this.safeHistory.push({...this.p});if(this.safeHistory.length>10)this.safeHistory.shift();}
  }
  }
- reset(){this.resume=true;this.keys={};this.stick={x:0,z:0};this.firing=false;this.fireTap=false;this.pendingAbilities={};this.edgeLatch={};}
+ reset(){this.releaseStick?.();this.resume=true;this.keys={};this.stick={x:0,z:0};this.firing=false;this.fireTap=false;this.pendingAbilities={};this.edgeLatch={};}
  // 5D (5C leftover 2): a tank that stands on the town model (a session that starts in the courtyard centre, an arrival on the model's
  // edge) drives itself south onto clear courtyard ground through the normal input path (the Worker replays it like any drive), for
  // at most 4 s, and stops the moment the pilot steers. force: just built or just arrived; otherwise only after a position jump
