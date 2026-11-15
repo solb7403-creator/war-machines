@@ -4343,3 +4343,27 @@ reviewer pass was needed.
    Changed the result: yes.
 
 Build bumped to `20261115000921` (`dev/bump.sh`) so phones reload the new prices.
+
+### Release record (Nov 15, 2026)
+- **RELEASED: PR [#134](https://github.com/solb7403-creator/war-machines/pull/134) squash-merged as `d643ee5` (head `bfdca80`),
+  build `20261115000921`, `PVP_V` 7 (unchanged).** Merged on green checks under the owner's pre-approval in the session brief.
+  Payments stay disabled.
+- CI on `bfdca80`: 9/9 green: website, signup-browsers chromium / firefox / webkit (run
+  [43656820367](https://github.com/solb7403-creator/war-machines/actions/runs/43656820367)), transmission chromium + webkit and
+  conquest (run [43656820314](https://github.com/solb7403-creator/war-machines/actions/runs/43656820314)), balance (run
+  [43656820311](https://github.com/solb7403-creator/war-machines/actions/runs/43656820311)), verify (run
+  [43656820270](https://github.com/solb7403-creator/war-machines/actions/runs/43656820270)). No review threads; main had not moved.
+- Worker deploy run [43659547965](https://github.com/solb7403-creator/war-machines/actions/runs/43659547965): success (server
+  tests and the Workers-runtime live-match smoke passed before the deploy); notices `pvp health: {"ok":true,"v":7,...}` and
+  `live version: {"v":"20261115000921"} (repo: {"v":"20261115000921"})`, live = repo.
+- Pages run [43659547470](https://github.com/solb7403-creator/war-machines/actions/runs/43659547470): success (`d643ee5`).
+- Post-merge on main: Validate Laboratory UI (run [43659547877](https://github.com/solb7403-creator/war-machines/actions/runs/43659547877)):
+  success; Equipment Balance (run [43659547958](https://github.com/solb7403-creator/war-machines/actions/runs/43659547958)): still running when this record was written (the same suite passed on the PR head as the `balance` check).
+- The Graphify review bot posted that its reviews are paused (informational, not a check).
+- Roll back: a plain revert of `d643ee5` is safe (numbers and a new item kind; no data migration). Items already bought as chosen
+  gear stay owned (they are ordinary crate items with a roll); a reverted server simply stops selling them.
+- **Owner decision to confirm:** crate points buys no longer raise the crate's Stars x2 / x3 step (brief rule 3 as written).
+- **For Session 8 (payments):** pre-checkout should re-check `ecoOwned` and the current `ecoPrice`; TON / SOL `payLog` should check
+  ownership (review finding 1-2 above; inherited by crates and chosen cores too).
+- Not verified on a physical phone. Owner check (Telegram, iPhone): Shop > Store and Shop > Points shop show a "Chosen weapon" and
+  a "Chosen chassis" grid under the crates; items you own say Owned; the Points shop sells Epic crates for 180K.
