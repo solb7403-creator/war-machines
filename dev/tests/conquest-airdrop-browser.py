@@ -48,8 +48,8 @@ async def main():
    await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
    if await page.locator('.cq-transmission').count():await tap('.cq-story-start')
    await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=60000)
-   await page.wait_for_function("(document.querySelector('.cq-net')?.textContent||'').startsWith('AIRDROP TODAY')",timeout=20000)
-   line0=await page.locator('.cq-net').text_content();print('HUD',line0,flush=True)
+   await page.wait_for_timeout(1500)   # Session 6 progressive HUD (Checkpoint 40 Decision 10): no AIRDROP line before the first credit
+   line0=await page.locator('.cq-net').text_content();print('HUD',line0,flush=True);assert not (line0 or '').startswith('AIRDROP TODAY'),'minute 0: the AIRDROP line waits for the first credit'
    assert abs((await page.evaluate('Conquest.view.p.x'))-972)<3,'scenario placement applied'
    # ---- a real kill: tap the visible hull to lock, hold FIRE (Space), close in with WASD ----
    held=set();killed=None
@@ -76,7 +76,8 @@ async def main():
    for k in held:await page.keyboard.up(k)
    if killed is None:await page.screenshot(path=str(OUT/'debug-fight-failure-390.png'))
    assert killed is not None,'the patrol was not destroyed in time'
-   await page.wait_for_function("/\\+\\d[\\d,]* PENDING/.test(document.querySelector('.cq-net').textContent)||/AIRDROP TODAY [1-9]/.test(document.querySelector('.cq-net').textContent)",timeout=15000)
+   # Session 6 progressive HUD: the AIRDROP line appears with the first credit, so the pending entry is read from the verified state
+   await page.wait_for_function("(()=>{const a=Conquest.view.authority.state?.airdrop;return (a?.out&&Object.keys(a.out).length>0)||a?.view?.dailyPts>0||/AIRDROP TODAY [1-9]/.test(document.querySelector('.cq-net').textContent);})()",timeout=30000)
    pending=await page.locator('.cq-net').text_content();print('HUD after the kill',pending,flush=True)
    await page.screenshot(path=str(OUT/'hud-pending-390.png'))
    # the Worker credits a lone kill after 20 s; the HUD then shows the account's own number for today

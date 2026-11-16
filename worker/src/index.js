@@ -12,7 +12,8 @@ import {lunarAuth,resolveTelegramAccount,approveTelegramLunarLink} from "./lunar
 import {accountAuth,googleAuth,apiCallsign,apiTelegramLink,csOf,funnelDays} from "./accounts.js";
 import {ACCOUNT_TYPES} from "./web-auth.js";
 import { ownerGemEpic, ownerCheck } from "./owner.js";
-import {conquestSession,conquestInput,conquestAction} from "./conquest.js";
+import {conquestSession,conquestInput,conquestAction,conquestEvent} from "./conquest.js";
+import {analyticsDays} from "./conquest-analytics.js";
 import {conquestVisit} from "./conquest-visit.js";
 export {WebSession};
 const GAME_ORIGINS = ["https://solb7403-creator.github.io"];
@@ -429,7 +430,7 @@ async function admin(env, user, b = {}) {
   const flagged = Object.entries(fl).filter(([, f]) => isFlagged(f)).map(([id, f]) => ({ id, n: f.n || id, why: flagReasons(f).map((k) => k + (f.r[k].v && f.r[k].v !== 1 ? ": " + f.r[k].v : "")) })).slice(0, 60);
   const [clu, conf, lkok] = await Promise.all([dbGet(env, "clu").catch(() => null), dbGet(env, "cfg/proof").catch(() => null), dbGet(env, "lkok").catch(() => null)]);
   const clusters = (Array.isArray(clu) ? clu : Object.values(clu || {})).filter(Boolean).slice(0, 40).map((c) => Object.assign({}, c, { ok: !!(lkok && lkok[c.sig]) }));   // a cluster cleared a moment ago shows as cleared
-  const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []) };
+  const body0 = { flagged, channel: await channelReady(env), proof: conf === "enforce" ? "enforce" : "flag", clusters, funnel: await funnelDays(env, 7).catch(() => []), conquest: await analyticsDays(env, 7).catch(() => null) };
   // the airdrop snapshot: the top 1,000 by lifetime points with days active, flagged pilots left out
   if (b.snap) body0.snapshot = await snapshot(env, fl);
   return { status: 200, body: { ok: true, ...body0, players: n || 0, activeToday: Object.keys(dly || {}).length, buyersStars: Object.keys(stars || {}).length, stats,
@@ -664,6 +665,7 @@ const ROUTES = {
   "/api/conquest/session": conquestSession,
   "/api/conquest/input": conquestInput,
   "/api/conquest/action": conquestAction,
+  "/api/conquest/an": conquestEvent,
   "/api/conquest/visit": conquestVisit,
   "/api/sync": async (env, a) => { const r = await sync(env, a.b, a.user, a.pid, Date.now(), a.ip, a.sp); return { status: r.error === "rate" ? 429 : 200, body: r }; },
   "/api/act": async (env, a) => act(env, a.b, a.user, a.pid, Date.now(), a.sp),
@@ -709,7 +711,7 @@ async function lbFile(req, env) {
 }
 // per pilot, for the endpoints that reach outside services (Telegram invoices, TON and Solana lookups) or read a lot:
 // a soft cap per server instance, far above what playing ever needs
-const PID_RL = { "/api/conquest/visit": 30, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
+const PID_RL = { "/api/conquest/visit": 30, "/api/conquest/an": 12, "/api/callsign": 60, "/api/tglink": 10, "/api/stars-invoice": 20, "/api/pay-log": 30, "/api/squad": 30, "/api/pvp/join": 40, "/api/notify-optin": 10, "/api/admin": 60, "/api/owner": 30 }, PIDS = new Map();
 function pidLimited(path, pid) {
   const lim = PID_RL[path];
   if (!lim) return false;   // sync, actions and match tickets are limited inside the pilot's record (90 a minute)
@@ -743,7 +745,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261115004342"},409),req);
+        return cors(json({error:"update",build:"20261116112502"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

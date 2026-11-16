@@ -88,7 +88,13 @@ const SND={
  tap:()=>tone(1150,950,0.03,'sine',0.025),
  claim:()=>{tone(988,988,0.07,'triangle',0.07);tone(1319,1319,0.14,'triangle',0.07,0.06);},
  crystal:()=>{tone(1568,1568,0.06,'sine',0.06);tone(2093,2093,0.1,'sine',0.05,0.05);},
- buy:()=>[659,880,1175].forEach((f,i)=>tone(f,f,0.12,'triangle',0.07,i*0.07))};
+ buy:()=>[659,880,1175].forEach((f,i)=>tone(f,f,0.12,'triangle',0.07,i*0.07)),
+ // Session 6: Conquest loot by rarity (the Arcade ladder's language: each step adds a layer). 0 common .. 4 legendary
+ loot0:()=>{tone(880,1046,0.07,'triangle',0.05);},
+ loot1:()=>{tone(784,1046,0.08,'triangle',0.06);tone(1318,1318,0.1,'sine',0.04,0.06);},
+ loot2:()=>{tone(988,1318,0.09,'triangle',0.07);tone(1568,2093,0.16,'sine',0.05,0.07);burst(0.06,0.05,5200,0.02);},
+ loot3:()=>{[784,988,1318].forEach((f,i)=>tone(f,f,0.16,'triangle',0.06,i*0.06));tone(2093,2637,0.3,'sine',0.045,0.2);tone(110,55,0.3,'sine',0.08);},
+ loot4:()=>{[659,880,1175,1568].forEach((f,i)=>tone(f,f,0.18,'triangle',0.07,i*0.07));tone(2349,3136,0.45,'sine',0.05,0.3);tone(90,40,0.45,'sine',0.16);burst(0.14,0.14,6500,0.05);}};
 const SND_GAP={impact:0.09,crystal:0.05,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1};
 
 // =====================================================================
@@ -529,6 +535,9 @@ function fx(name,arg,arg2){
   case 'draw':haptic('n','warning');sfx('draw');break;
   case 'buy':haptic('n','success');sfx('buy');break;
   case 'claim':haptic('n','success');sfx('claim');break;
+  // Session 6 (Conquest feel): a kill is a light haptic (owner brief); loot plays its rarity; a rare+ drop adds a success haptic
+  case 'cqkill':haptic('i','light');sfx('kill');break;
+  case 'loot':{const r=Math.max(0,Math.min(4,arg|0));if(r>=2)haptic('n','success');else haptic('i','soft');sfx('loot'+r);break;}
   case 'tap':case 'tick':haptic('s');sfx('tap');break;
  }
 }

@@ -529,7 +529,7 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
   const t = await tx(env, pid, (S, X) => {
     const w = Number.isSafeInteger(S.cqw) ? S.cqw : 0;
     const fresh = (Array.isArray(out) ? out : []).filter((e) => e && Number.isSafeInteger(e.id) && e.id > w && e.id <= 1e12).sort((a, b) => a.id - b.id);
-    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay, mn: R.mnOf(S.mn), ap: R.apOf(S.ap) });
+    const L = R.leagueInfo(S.lgi | 0), view = () => ({ cqw: Number.isSafeInteger(S.cqw) ? S.cqw : 0, day: X.day, dailyPts: S.dailyPts || 0, cqToday: S.cqd && S.cqd.d === X.day ? S.cqd.b : 0, lgi: S.lgi | 0, pay: L.pay, mn: R.mnOf(S.mn), ap: R.apOf(S.ap), pts: Math.max(0, Math.round(Number(S.pts) || 0)) });
     if (!fresh.length) return { abort: true, ...view(), base: 0, awarded: 0, capped: false };
     let base = 0, spend = 0, ms = 0, op = false;const mn = {};
     for (const e of fresh) {
@@ -546,7 +546,7 @@ export async function creditConquest(env, pid, out, now = Date.now()) {
     return { ...view(), base: aw.base, awarded: aw.awarded, capped: aw.base < base, minerals: got };
   }, now);
   if (flags.length) await addFlags(env, pid, t.S.nm, flags, now).catch(() => {});
-  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped, mn: t.mn, ap: t.ap, minerals: t.minerals || {} };
+  return { cqw: t.cqw, day: t.day, dailyPts: t.dailyPts, cqToday: t.cqToday, lgi: t.lgi, pay: t.pay, base: t.base || 0, awarded: t.awarded || 0, capped: !!t.capped, mn: t.mn, ap: t.ap, pts: t.pts, minerals: t.minerals || {} };
 }
 // Conquest anomaly flags (flag only: a flagged pilot keeps playing and sits out the airdrop snapshot until cleared)
 function watchConquest(S, X, now) {

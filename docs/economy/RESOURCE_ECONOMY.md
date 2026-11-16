@@ -205,6 +205,17 @@ How the yield works:
 - **Where it goes:** materials are banked straight into the base vault. Minerals go to the account wallet.
 - **Cap:** the points count inside the 50,000 cap (owner decision).
 
+**Session 6 (owner Decisions 2a and 3a; `js/rules.js` CQ_YIELD_STEP, CQ_FIELD_TAPER):**
+- **Daily Base Yield points in steps.** Each verified operation in a UTC day unlocks 25% of the points part; a harvest (bio-flora or a
+  mineral pull) counts half, and harvests together unlock at most half (otherwise eight five-second pulls would open what four
+  operations open, and the decision exists to quarter the alt yield). A collect pays the share unlocked since the last collect that day
+  and drains the meter by that share; the locked rest keeps filling. Materials are never locked. HUD: "YIELD POINTS 50% · 2 operations to go".
+- **Field-mission points taper on repeats**: 100% for the first three completions of the same mission in a UTC day, then 60%, then 40%.
+  Raids, strikes and defenses unchanged; CP keeps its own first / daily / repeat taper.
+- **Sortie chain** (spec §5.7): owner fix (Nov 16, 2026): **no CP and no salvage** (`LIVING.chain.per` 0); a win with k links already made (max 3) has a k × 10% chance (10/20/30%) of one bonus consumable (`LIVING.chain.item` 0.10, server-seeded, account-bound within the cap, pity untouched); no minerals, parts, trophies, fragments or points. Ladder with every change on = the 0% sweep below: median CC5 day 5.8 / CC10 day 28.8, mean 5.8 / 27.3. History of the earlier correction (Nov 16; was +10% / +30%, then +0.25% / +0.75%): with every Session 6 change on (production x3, storage x2, the chain, War Orders), the town ladder must stay within ±10% of the audit table (regular 60 min/day: CC5 day 5.4-6.6, CC10 day 25.9-31.7). With War Orders on the result depends on the pilot (orders are drawn from the pilot's seed), so `dev/tests/conquest-ladder-check.mjs` judges a fixed panel of 101 modelled pilots who fight (6 kills a sortie, a Defense Drill a session) and fails the build unless both the median and the mean sit in the band. +0.25% is the largest quarter-percent step that passes: median CC5 day 5.8 / CC10 day 26.8, mean 5.7 / 26.0 (93% / 74% of pilots inside); at +0.5% the mean CC10 is 24.7, at +10% the ladder was CC5 4.8 / CC10 15.8. The chain's main reward is now the raid chest's rarity step at three links.
+- **War Orders** pay CP and loot only (never points). **Capped copy**: at 50,000 the HUD says "DAILY CAP REACHED · loot, minerals and
+  CP still drop" (Decision 7a; the cap itself is unchanged).
+
 ### 3.3 Points a minute: Arcade vs Conquest
 
 Base points a minute (= airdrop points), standard pilot, for the kit that settles in each league:
@@ -413,14 +424,36 @@ These apply to server-verified results only: AI-match tickets (`matchEnd`) and l
 
 ### 5.6 Daily mineral income by player type (model)
 
-Day 1 / day 10 / day 45. The rare zones open as gear improves (Appendix).
+Day 1 / day 10 / day 45. The rare zones open as gear improves (Appendix). Session 6: includes the loot minerals of §5.7.
 
 | Profile | Ferrite | Ilmenite | Armalcolite | Tranquillityite | Selenite | Moonheart |
 |---|---:|---:|---:|---:|---:|---:|
-| Regular, Conquest-focused (45 min/day) | 49 / 47 / 44 | 18 / 20 / 15 | 1.5 / 4.8 / 7.2 | 0.16 / 0.23 / 1.5 | 0.08 / 0.11 / 0.14 | 0.02 / 0.02 / 0.03 |
-| Regular, mixed (30 Conquest + 15 Arcade) | 46 / 49 / 50 | 13 / 15 / 13 | 1.4 / 3.6 / 5.5 | 0.13 / 0.18 / 1.1 | 0.06 / 0.08 / 0.10 | 0.01 / 0.02 / 0.02 |
+| Regular, Conquest-focused (45 min/day) | 51 / 38 / 32 | 20 / 20 / 14 | 1.9 / 5.3 / 7.6 | 0.16 / 0.23 / 1.7 | 0.08 / 0.11 / 0.14 | 0.02 / 0.02 / 0.03 |
+| Regular, mixed (30 Conquest + 15 Arcade) | 47 / 40 / 37 | 14 / 15 / 12 | 1.7 / 4.0 / 5.8 | 0.13 / 0.18 / 1.2 | 0.06 / 0.08 / 0.10 | 0.01 / 0.02 / 0.02 |
 | Regular, Arcade/PvP only (45 min/day) | 33 / 34 / 36 | 3.5 / 4.2 / 4.9 | 0.96 / 0.96 / 1.2 | 0 / 0 / 0.04 | 0 | 0 |
-| Dedicated, Conquest-focused (150 min/day) | 169 / 137 / 114 | 60 / 64 / 44 | 4.5 / 15 / 23 | 0.43 / 0.60 / 4.9 | 0.20 / 0.28 / 0.37 | 0.04 / 0.06 / 0.07 |
+| Dedicated, Conquest-focused (150 min/day) | 169 / 128 / 105 | 65 / 67 / 47 | 5.6 / 15 / 24 | 0.43 / 0.60 / 5.4 | 0.20 / 0.28 / 0.37 | 0.04 / 0.06 / 0.07 |
+
+### 5.7 Loot (Session 6, spec §4; the tables in `js/rules.js` LOOT, rolled by `worker/src/conquest-loot.js`)
+
+Every drop is rolled by the Worker the moment a kill or completion is verified: a hash of the pilot's server-only seed and the kill id
+(spawn generation or mission wave slot) or the attempt / strike slot, so a reload or a retry never re-rolls it. Kills pay loot only where
+they pay salvage (once per spawn generation, once per UTC day per mission slot; raid reinforcements and doctrine garrisons never).
+
+| Source | Chance drops (independent rolls) | Pity |
+|---|---|---|
+| Interceptors, saboteurs | 12% 1 Ferrite · 3% 1 Ilmenite · 4% a consumable · 0.5% a common fragment | — |
+| Heavy sentinels, fire coordinators | 25% 1 Ilmenite · 6% 1 Armalcolite · 8% a consumable · 3% a research part · 1% an uncommon fragment | at most 20 without a part |
+| Raid commanders (5 doctrines) | 12% a research part · 10% that commander's trophy · 5% a rare fragment · VETERAN +8% 1 Tranquillityite | at most 10 without a trophy (type fought most) |
+| Raid completion chest | always 1 consumable · 8% a rare fragment (epic at a 3-link Sortie chain) | the 25-shard blueprint |
+| Meteor Strike secured | 15% a research part · 10% a rare fragment · the Strike Core trophy at every 12th | Resonance |
+| Town / sector defense held | 6% two consumables · 4% an uncommon fragment | — |
+| War Orders (Part E) | each daily 1 consumable · the day's third 1 uncommon fragment · the weekly 1 Armalcolite + 1 rare fragment | — |
+
+Minerals in a kill cache are cargo (half lost on death, banked to the wallet through the outbox). Consumables (Repair Kit 40%, Shield Cell
+25%, Scanner Charge 20%, Decoy Beacon 15%; cap 10 each), research parts (cap 50 each), fragments and trophies are account-bound the moment
+they are picked up (Decision 5a): never lost, never raided, never sold. No roll pays airdrop points; nothing in a loot table is in any
+store, crate or catalog (`dev/tests/conquest-loot.mjs` asserts both). Model assumption (Appendix): kills that pay a cache average 0.30
+light + 0.10 heavy per Conquest minute; one commander roll per won raid; the weekly War Order's Armalcolite counts 1 a week.
 
 ---
 
@@ -521,11 +554,15 @@ The armor ladder runs from a small first step to a long-term goal. At the top it
 
 | Profile | Ferrite | Ilmenite | Armalcolite | Tranquillityite | Selenite Glass | Moonheart |
 |---|---:|---:|---:|---:|---:|---:|
-| **Regular, Conquest-focused** | **3 d** (1 d) | **10 d** (3 d) | **4.3 wk** (11 d) | **2.6 mo** (5.4 wk) | 6.0 mo (2.8 mo) | 15.5 mo (6.9 mo) |
-| Regular, mixed | 3 d (1 d) | 12 d (4 d) | 5.0 wk (2.0 wk) | 3.3 mo (6.3 wk) | 7.8 mo (3.6 mo) | 20 mo (9.1 mo) |
+| **Regular, Conquest-focused** | **3 d** (1 d) | **9 d** (3 d) | **3.9 wk** (10 d) | **2.5 mo** (5.3 wk) | 6.0 mo (2.7 mo) | 15.5 mo (6.9 mo) |
+| Regular, mixed | 3 d (1 d) | 12 d (3 d) | 4.7 wk (13 d) | 3.1 mo (6.1 wk) | 7.8 mo (3.4 mo) | 20 mo (9.1 mo) |
 | **Regular, Arcade/PvP only** | **5 d** (2 d) | **5.3 wk** (11 d) | **3.1 mo** (6.0 wk) | 2.5+ yr (19 mo) | needs Conquest or top competitive rewards | needs Conquest or top competitive rewards |
-| Dedicated, Conquest-focused (2 sessions) | 1 d (1 d) | 3 d (1 d) | 13 d (6 d) | 6.3 wk (3.3 wk) | 2.4 mo (6.6 wk) | 6.0 mo (2.7 mo) |
-| Grinder, 6 h a day in 3 sessions (vein cap check, Session 5) | 1 d (1 d) | 2 d (1 d) | 8 d (4 d) | 4.7 wk (2.3 wk) | 5.6 wk (4.9 wk) | 2.8 mo (6.0 wk) |
+| Dedicated, Conquest-focused (2 sessions) | 1 d (1 d) | 3 d (1 d) | 12 d (5 d) | 6.1 wk (3.3 wk) | 2.4 mo (6.4 wk) | 6.0 mo (2.7 mo) |
+| Grinder, 6 h a day in 3 sessions (vein cap check, Session 5) | 1 d (1 d) | 2 d (1 d) | 8 d (3 d) | 4.6 wk (2.3 wk) | 5.4 wk (4.9 wk) | 2.8 mo (6.0 wk) |
+
+Session 6 note (loot v1, §5.7): kill caches, VETERAN commanders and the weekly War Order add minerals. Before → after for the regular
+Conquest-focused pilot: Ilmenite 10 → 9 days, Armalcolite 4.3 → 3.9 weeks (−9%), Tranquillityite 2.6 → 2.5 months; Ferrite, Selenite and
+Moonheart unchanged. Every owner target still holds (`node dev/tools/economy-model.mjs --no-loot` prints the Session 5 table).
 
 Session 5 note: the table is regenerated with the vein rules (5.2) and without Base Yield minerals, which the Session 4 model had assumed but were never approved or built. That moves the regular Ilmenite set from 9 to 10 days; every owner target still holds (`dev/tests/conquest-vein-economy.mjs`).
 
@@ -797,7 +834,7 @@ One builder: one construction at a time. A second builder and speed-ups are stor
 | CC10 | 9000 CP + 500 alloy + 320 biomass + 45 He-3 + 30 Ilmenite + 6 Armalcolite | 8 h | V (×1.25) |
 
 ### 13.3 Production, storage, power
-- Production per level an hour: Refinery 0.8 alloy, Biodome 0.6 biomass, Helium Extractor 0.15 He-3 (site bonuses on top). It accrues on the Worker clock into the plot store and stops at the Storage Depot cap: alloy and biomass 30 + 40 × Depot level, He-3 8 + 10 × Depot level (Ferrite rim deposits 30). Collect inside the plot: whole units go to banked materials (Ferrite to the wallet through the outbox).
+- Production per level an hour (Session 6, owner Decision 10a: ×3): Refinery 2.4 alloy, Biodome 1.8 biomass, Helium Extractor 0.45 He-3 (site bonuses on top; Session 5 had 0.8 / 0.6 / 0.15). It accrues on the Worker clock into the plot store and stops at the Storage Depot cap (×2): alloy and biomass 60 + 80 × Depot level, He-3 16 + 20 × Depot level (Ferrite rim deposits 60). The hub shows what waited "since you left". Collect inside the plot: whole units go to banked materials (Ferrite to the wallet through the outbox).
 - Power: supply 12 + 3 × CC + 14 a Reactor level. Draw per level: Refinery, Biodome, Helium Extractor, Radar, Uplink, Science Lab 2; Storage Depot, Hangar, Trophy Hall, turrets 1; Shield Generator 3. A build over the budget is refused. A full CC10 base cannot max every building and turret at once (a real trade-off).
 - Old modules map onto buildings (Reactor, Hangar, Shield Generator = defense, Storage Depot = vault, Radar, Uplink), capped at III for the old formulas, so CP production, field repair, the protective field, base banking, scan range and radar contacts work exactly as before.
 

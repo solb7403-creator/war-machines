@@ -20,9 +20,9 @@ async def journey(b,width,height,label,results):
  await pg.wait_for_url('**/web/play.html**',timeout=30000);await pg.wait_for_function('()=>typeof save!=="undefined"&&!!save?.lab&&typeof Conquest!=="undefined"',timeout=30000)
  await pg.evaluate('()=>{save.welcomed=true;closeAll();uiDirty&&uiDirty();}')
  assert await pg.evaluate('SRV_ECO&&IN_WEB&&!IN_TG'),'website edition'
- # the real flow: mouse on the Conquest tab, ENTER CONQUEST, ACKNOWLEDGE the briefing. Nothing focuses anything for the test.
+ # the real flow: mouse on the Conquest tab, ENTER CONQUEST, skip the radio with Escape. Nothing focuses anything for the test.
  await pg.locator('[data-act="conquest"]:visible').first.click();await pg.locator('.cq-enter').first.click()   # the sidebar button on a wide window, the tabbar's on a narrow one (the other is display:none)
- await pg.locator('.cq-story-start').click(timeout=30000)
+ await pg.locator('.cq-radio').wait_for(timeout=30000);await pg.keyboard.press('Escape')   # Session 6: the opening is a 15 s HUD radio; Escape skips it (real key)
  await pg.wait_for_timeout(400);hint0=await pg.evaluate('!!document.querySelector(".cq-keys")')
  try:
   await pg.wait_for_function('Conquest.view?.authority?.connected',timeout=90000)

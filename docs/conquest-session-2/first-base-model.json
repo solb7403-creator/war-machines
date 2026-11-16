@@ -1,10 +1,10 @@
 {
   "generatedBy": "dev/tests/conquest-first-base.mjs",
   "recipe": {
-    "cp": 2550,
-    "alloy": 110,
-    "biomass": 65,
-    "helium": 8
+    "cp": 600,
+    "alloy": 30,
+    "biomass": 15,
+    "helium": 2
   },
   "rows": [
     {
@@ -21,15 +21,15 @@
       },
       "old": {
         "rule": "old",
-        "baseMinute": 24.5,
-        "raidsAttempted": 7,
-        "fieldMissionsCleared": 6
+        "baseMinute": 5,
+        "raidsAttempted": 1,
+        "fieldMissionsCleared": 2
       },
       "new": {
         "rule": "new",
-        "baseMinute": 33,
-        "raidsAttempted": 6,
-        "fieldMissionsCleared": 6
+        "baseMinute": 4.5,
+        "raidsAttempted": 0,
+        "fieldMissionsCleared": 3
       }
     },
     {
@@ -46,15 +46,15 @@
       },
       "old": {
         "rule": "old",
-        "baseMinute": 32.67,
-        "raidsAttempted": 7,
-        "fieldMissionsCleared": 6
+        "baseMinute": 6.67,
+        "raidsAttempted": 1,
+        "fieldMissionsCleared": 2
       },
       "new": {
         "rule": "new",
-        "baseMinute": 44,
-        "raidsAttempted": 6,
-        "fieldMissionsCleared": 6
+        "baseMinute": 6,
+        "raidsAttempted": 0,
+        "fieldMissionsCleared": 3
       }
     }
   ],

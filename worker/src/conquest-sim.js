@@ -4,7 +4,13 @@ import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js
 import {CONQUEST,RULES} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
 import {played,settleOpKills,discardOpKills,earn} from './conquest-airdrop.js';
-import {veins,readyVeins,pull,reveal} from './conquest-veins.js';
+import {veins,readyVeins,pull,reveal,revealSector} from './conquest-veins.js';
+import {inventory,itemReady,spend} from './conquest-loot.js';
+import {living,livingStep,ambushRoll,chainBreak} from './conquest-living.js';
+import {orders,orderEvent,claimOrder,ORDER_ACTIONS} from './conquest-orders.js';
+import {track,played as anPlayed,secondsBucket,carryingOf} from './conquest-analytics.js';
+// Session 6 analytics: one end event per operation attempt (victory, defeat or retreat), raids with a seconds bucket.
+function opEnd(s,B,outcome){if(!s.mission||s.anEnd===s.attempt)return;s.anEnd=s.attempt;const raid=!!C.operations[s.mission]?.raid;track(s,raid?'raid_end':'mission_end',s.mission,outcome,raid?secondsBucket(B.time):undefined);}
 import {PLOT_ACTIONS,REMOTE_PLOT_ACTIONS,plotAction} from './conquest-plot.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
 // Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
@@ -21,8 +27,10 @@ export function validateCommands(input){
  if(c.lockId!=null&&(!Number.isSafeInteger(c.lockId)||c.lockId<1||c.lockId>1e9))fail('invalid target');
  return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};});
 }
+// Session 6: every pilot starts (and respawns) at the Refuge spawn (ConquestWorld.spawn), ~40 m from the supply terminal.
+export const spawnPoint=()=>({x:W.spawn.x,z:W.spawn.z,y:W.groundAt(W.spawn.x,W.spawn.z),surface:'ground'});
 export function createState(loadout,now){
- if(!Number.isSafeInteger(now)||now<0)fail('invalid server clock');const position={x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'},B=new C.Encounter(loadout,position);K.ensure(B);
+ if(!Number.isSafeInteger(now)||now<0)fail('invalid server clock');const position=spawnPoint(),B=new C.Encounter(loadout,position);K.ensure(B);
  const s={v:1,seq:0,lastWall:now,creditMs:0,position,hp:B.playerHp,loadout:copy(B.snapshot),mission:null,battle:copy(B),checkpoint:{...position},safe:[{...position}],stuckMs:0,recoveryAt:0};refreshState(s,now);return s;
 }
 function stats(v){v.gems=list(v.gems);v.buffs=list(v.buffs);return v;}
@@ -46,7 +54,7 @@ function migrateRegion(s,now){
  if(s.death?.position&&embedded(s.death.position))s.death.position=repair(s.death.position);
  s.regionRevision=2;if(changed)s.notice={kind:'world-migration',at:now};
 }
-export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);inventory(s);orders(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
  // A patrol whose authored route moved is re-homed only while it is calm and far outside the player's view.
@@ -58,24 +66,26 @@ export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now
  if(s.territory[e.base?.id]?.owner==='humanity'||e.base?.kind!=='patrol'&&s.territory[W.frontierSectorAt(e.home.x,e.home.z).id]?.owner==='humanity'&&s.territory[W.frontierSectorAt(e.home.x,e.home.z).id]?.capturedAt)continue;
  const patrol=e.base?.kind==='patrol',ready=patrol?now-(m.deadAt||now)>=POLICY.patrolRefresh:m.generation<day;
  if(ready){const replacement=fresh.enemies.find(x=>x.key===e.key);if(replacement){for(const key of Object.keys(e))delete e[key];Object.assign(e,copy(replacement));s.spawns[e.key]={generation:patrol?m.generation+1:day};if(s.territory[e.base?.id])s.territory[e.base.id].awaitingReinforcements=false;if(s.battle.cleared)delete s.battle.cleared[e.key];}}}
+ living(s,now);   // Session 6: hunter packs by held sectors and hour; old incursion / ambush units leave
 }
 function footing(s,p){if(p.surface==='ground'&&W.solidAt(p.x,p.z))return false;const f=W.speedFactor(p);return [[2,0],[-2,0],[0,2],[0,-2]].every(([x,z])=>{const q=W.advance(p,x,z);return Math.hypot(q.x-p.x-x*f,q.z-p.z-z*f)<.1;});}
-export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-898,s.position.z-1024)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;s.loadout=copy(L);s.battle=copy(B);}
+export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-W.spawn.x,s.position.z-W.spawn.z)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;s.loadout=copy(L);s.battle=copy(B);}
 function time(previous,seq,now){if(previous?.v!==1||!Number.isSafeInteger(seq)||seq!==previous.seq+1)fail('stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)fail('invalid server clock');}
 export function applyCommands(previous,request,now){
  if(!record(request)||Object.keys(request).some(k=>!['seq','commands'].includes(k)))fail('invalid request');const commands=validateCommands(request.commands);time(previous,request.seq,now);
  const credit=Math.min(MAX_CREDIT_MS,previous.creditMs+now-previous.lastWall),cost=commands.length*STEP_MS;if(cost>credit)fail('simulation exceeds elapsed time');
- const s=copy(previous);refreshState(s,now);const B=hydrate(s);played(s,cost);
+ const s=copy(previous);refreshState(s,now);const B=hydrate(s);played(s,cost);anPlayed(s,cost);
  for(const input of commands){const running=B.state==='active',old=s.position,hpBefore=B.playerHp;s.position=K.advance(B,s.position,input,STEP_MS/1000,!s.mission);s.hp=B.playerHp;// Quiet time is simulated play since the last hit (a paused client earns none).
  if(B.playerHp<hpBefore){s.lastHitAt=now;s.quietMs=0;}else if(s.lastHitAt)s.quietMs=Math.min(60000,(s.quietMs||0)+STEP_MS);if(s.recall){if(B.playerHp<hpBefore||s.mission||B.playerHp<=0){delete s.recall;s.notice={kind:'recall-broken'};}else if((s.recall.simMs=(s.recall.simMs||0)+STEP_MS)>=C.RECALL.channelMs)completeRecall(s,B,now);}
  if(!s.mission&&s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<18){const hangar=s.base.modules.hangar||0;if(hangar&&B.playerHp>0)B.playerHp=Math.min(B.playerMax,B.playerHp+B.playerMax*.002*hangar);s.hp=B.playerHp;}
  const wanted=running?Math.hypot(input.x,input.z):0,moved=Math.hypot(old.x-s.position.x,old.z-s.position.z);s.stuckMs=wanted>.1&&moved<B.combatSpeed*.05*.15?(s.stuckMs||0)+STEP_MS:wanted>.1?0:s.stuckMs||0;
- harvestStep(s,B,input,moved,B.playerHp<hpBefore,now);scanStep(s,B,input,now);
+ harvestStep(s,B,input,moved,B.playerHp<hpBefore,now);scanStep(s,B,input,now);livingStep(s,B,B.playerHp<hpBefore,now);
  if(s.hp>0){const last=s.safe.at(-1);if((!last||Math.hypot(last.x-s.position.x,last.z-s.position.z)>=8)&&footing(s,s.position)){s.safe.push({...s.position});s.safe=s.safe.slice(-10);}for(const e of B.enemies)if(e.hp<=0)killLoot(s,e,now);pickups(s,now);}
- if(s.hp<=0){delete s.recall;death(s,now);break;}
+ if(s.hp<=0){delete s.recall;const by=B.hitBy,foe=by===-1?'hazard':B.enemies.find(e=>e.id===by)?.kind||'unknown';track(s,'death',foe,carryingOf(s));if(s.mission)opEnd(s,B,'defeat');death(s,now);break;}
  }
  if(!s.mission)for(const site of C.installations){const guards=B.enemies.filter(e=>e.base?.id===site.id);if(guards.length&&guards.every(e=>e.hp<=0)&&s.territory[site.id]?.owner!=='humanity'&&!s.territory[site.id]?.awaitingReinforcements){const first=!s.territory[site.id]?.capturedAt;capture(s,site.id,now);if(first){s.reputation+=50;s.campaignScore+=2;}}}
- if(s.mission&&B.state==='victory'&&!s.settlement){if(s.mission==='base-defense'){defenseOutcome(s,'victory',now);s.settlement={kind:'defense',...s.base.defense.report};}else if(C.operations[s.mission].defense)s.settlement=sectorDefenseOutcome(s,'victory',now);else s.settlement=missionReward(s,now);s.completed=s.completed||{};s.completed[s.mission]=s.completed[s.mission]||{at:now,attempt:s.attempt};if(s.mission!=='base-defense'&&!C.operations[s.mission].defense&&!C.operations[s.mission].strike){capture(s,C.operations[s.mission].site,now);if(C.operations[s.mission].sector)capture(s,C.operations[s.mission].sector,now);}}
+ if(s.mission&&B.state==='victory'&&!s.settlement){opEnd(s,B,'victory');if(s.mission==='base-defense'){defenseOutcome(s,'victory',now);s.settlement={kind:'defense',...s.base.defense.report};}else if(C.operations[s.mission].defense)s.settlement=sectorDefenseOutcome(s,'victory',now);else s.settlement=missionReward(s,now);s.completed=s.completed||{};s.completed[s.mission]=s.completed[s.mission]||{at:now,attempt:s.attempt};if(s.mission!=='base-defense'&&!C.operations[s.mission].defense&&!C.operations[s.mission].strike){capture(s,C.operations[s.mission].site,now);if(C.operations[s.mission].sector)capture(s,C.operations[s.mission].sector,now);}}
+ if(s.mission&&B.state==='defeat')opEnd(s,B,'defeat');
  if(s.mission==='base-defense'&&B.state==='defeat')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission].defense&&B.state==='defeat')sectorDefenseOutcome(s,'defeat',now);else if(s.mission&&B.state==='defeat'){restoreContest(s);settleOpKills(s,now);}
  cosmetics(s,now);
  s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);return s;
@@ -95,34 +105,46 @@ export function gatherTarget(s,now){const p=s.position,r=W.HARVEST.radius;let be
 export function harvestStep(s,B,input,moved,hit,now){const H=W.HARVEST;
  if(!input.gather||s.mission||B.playerHp<=0||moved>.05||hit||B.state!=='active'){if(s.channel)delete s.channel;return;}
  const g=gatherTarget(s,now);if(!g){if(s.channel)delete s.channel;return;}const node=g.node;
- const ch=s.channel?.node===node.id?s.channel:(s.channel={node:node.id,ms:0});ch.ms+=STEP_MS;
+ const ch=s.channel?.node===node.id?s.channel:(s.channel={node:node.id,ms:0});ch.ms+=STEP_MS;if(ch.ms===STEP_MS&&g.slot)ambushRoll(s,g.slot,node);   // Session 6 vein ambush (ring 3+, 35%, once a vein)
  if(ch.ms%1000===0){const e=B.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<H.noiseRadius).sort((a,b)=>Math.hypot(a.x-s.position.x,a.z-s.position.z)-Math.hypot(b.x-s.position.x,b.z-s.position.z))[0];if(e)B.alert?.(e);}
  if(ch.ms<g.ms)return;delete s.channel;
  if(g.flora){s.harvest=s.harvest||{};s.harvest[node.id]=now+H.respawnMs;
-  s.ledger.cargo.biomass+=H.biomass;s.daily.biomass+=H.biomass;const ptsRaw=earn(s,'gather',RULES.CQ_PTS.gather.flora,now,{act:true});
+  s.ledger.cargo.biomass+=H.biomass;s.daily.biomass+=H.biomass;track(s,'gather','flora');const ptsRaw=earn(s,'gather',RULES.CQ_PTS.gather.flora,now,{act:true});
   s.notice={kind:'harvest',node:node.id,biomass:H.biomass,ptsRaw};return;}
  const G=RULES.MN_GATHER[node.m],k=node.mineral,rolled=G.min+Math.floor(roll(node.id,now,'u')*(G.max-G.min+1)),vein=G.vein&&roll(node.id,now,'v')<G.vein?1:0;
  let units=rolled,left=null,cap=null,exhausted=false,regrowMs=0;
  if(G.once){s.deposits=s.deposits||{};s.deposits[node.id]=1;}else{const r=pull(s,g.slot,rolled,now);units=r.got;left=r.left;cap=r.cap;exhausted=r.exhausted;regrowMs=r.regrowMs;}
- const mn=s.ledger.mn;mn[k]=(mn[k]||0)+units;if(vein)mn.se=(mn.se||0)+1;
+ const mn=s.ledger.mn;mn[k]=(mn[k]||0)+units;if(vein)mn.se=(mn.se||0)+1;track(s,'gather',k);if(units>0)orderEvent(s,'mine',units);
  const ptsRaw=earn(s,'gather',RULES.CQ_PTS.gather[k],now,{act:true});
  s.notice={kind:'mineral',node:node.id,mineral:k,units,vein,ptsRaw,starter:!!G.once,...(G.once?{}:{left,cap,exhausted,...(exhausted?{regrowMs}:{})})};}
 // Scanner pulse (RESOURCE_ECONOMY.md §5.3): free, 30 s cooldown; reveals this pilot's live veins within 150 m (+50 m per Radar
 // module level) and the Starter Vein. Scanned veins stay on the MAP with what they hold; an exhausted vein shows EXHAUSTED for
 // MN_VEIN.dryShowMs and disappears; its replacement elsewhere in the sector needs a new SCAN.
-export function scanStep(s,B,input,now){const S=RULES.MN_SCAN;if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<S.cooldownMs)return;
- const r=S.radius+S.perRadar*(s.base?.modules?.radar|0);s.scanAt=now;s.found=s.found||{};let fresh=0,near=0;
+export function scanStep(s,B,input,now){if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<RULES.MN_SCAN.cooldownMs)return;scanPulse(s,now);}
+// One pulse. A Scanner Charge (Session 6 consumable) adds CQ_ITEMS.scanner.extra metres and finds every vein in this sector.
+function scanPulse(s,now,extra=0,sector=false){const S=RULES.MN_SCAN,r=S.radius+S.perRadar*(s.base?.modules?.radar|0)+extra;s.scanAt=now;s.found=s.found||{};let fresh=0,near=0;
  for(const d of W.deposits){if(d.m!=='starter'||s.deposits?.[d.id]||Math.hypot(d.x-s.position.x,d.z-s.position.z)>r)continue;near++;if(!s.found[d.id]){s.found[d.id]=1;fresh++;}}
- const v=reveal(s,s.position,r,now);fresh+=v.fresh;near+=v.near;
- s.notice={kind:'scan',radius:r,found:fresh,near};}
+ const v=reveal(s,s.position,r,now);fresh+=v.fresh;near+=v.near;if(sector){const w=revealSector(s,W.frontierSectorAt(s.position.x,s.position.z).id,now);fresh+=w.fresh;near+=w.near;}
+ s.notice={kind:'scan',radius:r,found:fresh,near,...(sector?{charge:1}:{})};}
 export const TRAVEL_ACTIONS=['fast-travel','recall-start','recall-cancel'];
+// Session 6 consumables (RULES.CQ_ITEMS): used from the field or inside an operation, never inside your town (the Home Sector).
+export const LOOT_ACTIONS=['use-item',...ORDER_ACTIONS];
+function useItem(s,B,request,now){
+ const k=request.item;if(Object.keys(request).some(x=>!['seq','action','item'].includes(x))||typeof k!=='string'||!own(RULES.CQ_ITEMS,k))fail('invalid item');
+ const I=itemReady(s,k,now);if(s.hp<=0||B.playerHp<=0||B.state!=='active')fail('Machine disabled');
+ if(s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<=C.baseDefinition.radius)fail('consumables work in the field, not inside your town');   // spec §4.3: never in the Home Sector, a live defense included
+ if(k==='repair'){if(B.playerHp>=B.playerMax-.5)fail('hull already full');if(B.mend?.t>0)fail('a Repair Kit is already working');B.mend={t:I.healS,rate:B.playerMax*I.heal/I.healS};}
+ else if(k==='shield'){if(!(B.shieldCd>0))fail('SHIELD is already ready');B.shieldCd=0;}
+ else if(k==='scanner')scanPulse(s,now,I.extra,true);
+ else if(k==='decoy'){if(B.decoy?.t>0)fail('a Decoy Beacon is already out');B.decoy={x:s.position.x,y:s.position.y,z:s.position.z,t:I.s,r:I.radius};}
+ const left=spend(s,k,now);s.notice={...(k==='scanner'?s.notice:{}),kind:k==='scanner'?'scan':'item-used',item:k,left};}
 // The channel completes inside verified command replay once 15 s of simulated play pass without damage.
 function completeRecall(s,B,now){const node=C.travelNodes(s.territory,s.base?.tier||0).find(n=>n.id==='base'),blocked=p=>K.baseBlocked({...B,baseTier:s.base?.tier||0},p),cooldown=s.recall.cooldownMs;if(!node){delete s.recall;return;}
- arrive(s,B,C.travelArrival(node,B.enemies,blocked)||node.arrivals.find(p=>!blocked(p))||node.arrivals[0],{kind:'recalled'});s.recallReadyAt=now+cooldown;}
+ arrive(s,B,C.travelArrival(node,B.enemies,blocked)||node.arrivals.find(p=>!blocked(p))||node.arrivals[0],{kind:'recalled'});s.recallReadyAt=now+cooldown;chainBreak(s);}   // the Sortie chain ends on RECALL (spec §5.7)
 function arrive(s,B,p,notice){s.position={x:p.x,z:p.z,y:p.y,surface:p.surface||'ground'};s.safe=[{...s.position}];s.stuckMs=0;delete s.recall;B.projectiles=[];B.superShells=[];B.superAttack=null;B.dashState=null;B.lockId=null;s.notice=notice;}
 function mergeResidents(from,to){for(const e of from.enemies.filter(e=>e.resident)){const old=to.enemies.find(x=>x.key===e.key);if(old){const id=old.id;Object.assign(old,copy(e),{id,resident:false});if(old.hp<=0){to.cleared=to.cleared||{};to.cleared[old.key]=true;}}}}
 export function applyAction(previous,request,now,ctx={}){
- if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
+ if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
  if(request.action==='start-mission'||request.action==='start-defense'||request.action==='start-sector-defense'){
  const defense=request.action==='start-defense',sectorDefense=request.action==='start-sector-defense';if(defense){const d=s.base.defense;if(!s.base.tier||s.mission||!d.alertAt||d.active||now<d.nextAt)fail('defense unavailable');}
  const op=C.operations[defense?'base-defense':request.mission||'oxygen-line'];if(!own(C.operations,defense?'base-defense':request.mission||'oxygen-line')||!op||Object.keys(request).some(k=>!['seq','action',...(defense?[]:['mission'])].includes(k)))fail('invalid mission');
@@ -131,9 +153,9 @@ export function applyAction(previous,request,now,ctx={}){
  // roll is made once, at the first start in the slot, by the server, so a retry or reload can never re-roll it.
  if(op.strike){const M=C.meteorStrike(now);if(M.phase!=='open'||M.site.id!==op.id)fail('no meteor strike here right now');s.strikes=s.strikes&&typeof s.strikes==='object'?s.strikes:{};if(s.strikes[M.slot]?.claimed)fail('strike core already extracted');
   if(!s.strikes[M.slot]){const r=new Uint32Array(3);crypto.getRandomValues(r);s.strikes[M.slot]={roll:{tq:r[0]/4294967296,se:r[1]/4294967296,mh:r[2]/4294967296}};}for(const k of Object.keys(s.strikes))if(Number(k)<M.slot-3)delete s.strikes[k];s.strikeSlot=M.slot;}
- if(op.raid&&!C.raidsUnlocked(s.completed))fail('raids unlock after all six field missions ('+C.fieldProgress(s.completed)+'/'+C.fieldMissionIds.length+' complete)');if(s.mission||s.hp<=0||Math.hypot(s.position.x-op.x,s.position.z-op.z)>op.activationRadius)fail('mission unavailable');delete s.recall;settleOpKills(s,now);s.explorationBattle=copy(B);s.attempt=(s.attempt||0)+1;s.mission=op.id;s.featuredMission=s.contracts.ids.includes(op.id);s.settlement=null;if(op.raid){const a=new Uint32Array(1);do{crypto.getRandomValues(a);}while(a[0]>=4294960000);s.raidRoll={attempt:s.attempt,value:a[0]%10000};}if(defense)s.base.defense.active=true;else if(sectorDefense){s.sectorDefense={sector:op.sector,attempt:s.attempt,active:true};contest(s,op.sector);}else if(!op.strike)beginContest(s,[op.site,op.sector]);/* a Meteor Strike never contests or captures territory */const fresh=op.id==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,op.id);K.carry(B,fresh);if(defense){fresh.defenseConfig=s.base.defense.config;fresh.baseDamage=s.base.defense.damage;fresh.objectiveHp=Math.floor(fresh.objectiveMax*(1-fresh.baseDamage*.003));}B=fresh;B.enemies.push(...s.explorationBattle.enemies.map(e=>({...copy(e),id:100000000+e.id,resident:true})));B.playerHp=Math.min(B.playerMax,s.hp);B.lockId=null;
+ if(op.raid&&!C.raidsUnlocked(s.completed))fail('raids unlock after all six field missions ('+C.fieldProgress(s.completed)+'/'+C.fieldMissionIds.length+' complete)');if(s.mission||s.hp<=0||Math.hypot(s.position.x-op.x,s.position.z-op.z)>op.activationRadius)fail('mission unavailable');delete s.recall;settleOpKills(s,now);s.explorationBattle=copy(B);s.attempt=(s.attempt||0)+1;s.mission=op.id;track(s,op.raid?'raid_start':'mission_start',op.id);s.featuredMission=s.contracts.ids.includes(op.id);s.settlement=null;if(op.raid){const a=new Uint32Array(1);do{crypto.getRandomValues(a);}while(a[0]>=4294960000);s.raidRoll={attempt:s.attempt,value:a[0]%10000};}if(defense)s.base.defense.active=true;else if(sectorDefense){s.sectorDefense={sector:op.sector,attempt:s.attempt,active:true};contest(s,op.sector);}else if(!op.strike)beginContest(s,[op.site,op.sector]);/* a Meteor Strike never contests or captures territory */const fresh=op.id==='oxygen-line'?new C.Battle(s.loadout,s.position):new C.Operation(s.loadout,s.position,op.id);K.carry(B,fresh);if(defense){fresh.defenseConfig=s.base.defense.config;fresh.baseDamage=s.base.defense.damage;fresh.objectiveHp=Math.floor(fresh.objectiveMax*(1-fresh.baseDamage*.003));}B=fresh;B.enemies.push(...s.explorationBattle.enemies.filter(e=>!e.hunt&&!e.base?.solo).map(e=>({...copy(e),id:100000000+e.id,resident:true})));/* Session 6: hunters and the new solo patrols stay outside operations (authored difficulty unchanged) */B.playerHp=Math.min(B.playerMax,s.hp);B.lockId=null;
  }else if(request.action==='return-exploration'){
- if(!s.mission)fail('no active mission');if(s.mission==='base-defense')defenseOutcome(s,B.state,now);else if(C.operations[s.mission]?.defense)sectorDefenseOutcome(s,B.state,now);else if(B.state!=='victory')restoreContest(s);if(B.state==='victory')discardOpKills(s);else settleOpKills(s,now);delete s.contestPrevious;s.lastMission={id:s.mission,attempt:s.attempt,outcome:B.state==='active'?'retreated':B.state,at:now,settlement:s.settlement||null};const fresh=new C.Encounter(s.loadout,s.position);Object.assign(fresh,s.explorationBattle||{});mergeResidents(B,fresh);K.carry(B,fresh);B=fresh;B.playerHp=s.hp;B.state=s.hp>0?'active':'defeat';B.projectiles=[];B.lockId=null;delete s.explorationBattle;s.mission=null;
+ if(!s.mission)fail('no active mission');if(B.state==='active')opEnd(s,B,'retreated');if(s.mission==='base-defense')defenseOutcome(s,B.state,now);else if(C.operations[s.mission]?.defense)sectorDefenseOutcome(s,B.state,now);else if(B.state!=='victory')restoreContest(s);if(B.state==='victory')discardOpKills(s);else settleOpKills(s,now);delete s.contestPrevious;s.lastMission={id:s.mission,attempt:s.attempt,outcome:B.state==='active'?'retreated':B.state,at:now,settlement:s.settlement||null};const fresh=new C.Encounter(s.loadout,s.position);Object.assign(fresh,s.explorationBattle||{});mergeResidents(B,fresh);K.carry(B,fresh);B=fresh;B.playerHp=s.hp;B.state=s.hp>0?'active':'defeat';B.projectiles=[];B.lockId=null;delete s.explorationBattle;s.mission=null;
  }else if(request.action==='fast-travel'){
  // Position-only move inside the secured network; cargo stays unbanked, nothing else changes.
  if(Object.keys(request).some(k=>!['seq','action','destination'].includes(k))||typeof request.destination!=='string')fail('invalid travel');
@@ -166,11 +188,13 @@ export function applyAction(previous,request,now,ctx={}){
  // Capacity changes preserve the absolute heat debt and latch. Never refill HP or abilities.
  B.engineering=copy(s.engineering);const capacity=C.engineeringValues(B.playerStats,B.engineering).capacity,total=(B.heat||0)+(B.heatOverflow||0);C.setHeat(B,total,capacity);if(total>=capacity)B.overheated=true;
  s.notice={kind:'engineering-saved'};
+ }else if(request.action==='use-item'){useItem(s,B,request,now);
+ }else if(ORDER_ACTIONS.includes(request.action)){claimOrder(s,request,now);
  }else if(request.action==='bank'){bank(s,now);
  }else if(request.action==='repair'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('repair requires safe Refuge terminal');s.hp=B.playerHp=B.playerMax;s.notice={kind:'repaired'};
  }else if(request.action==='respawn'){
- if(s.hp>0||!s.death?.active)fail('no verified defeat');if(s.mission==='base-defense')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission]?.defense)sectorDefenseOutcome(s,'defeat',now);else if(s.mission)restoreContest(s);if(s.mission)settleOpKills(s,now);delete s.contestPrevious;const old=B;B=new C.Encounter(s.loadout,s.checkpoint||{x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'});Object.assign(B,s.explorationBattle||s.battle);mergeResidents(old,B);K.carry(old,B);s.position={...(s.checkpoint||{x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'})};s.hp=B.playerHp=B.playerMax;B.state='active';B.projectiles=[];B.superShells=[];B.superAttack=null;B.shieldT=0;B.lockId=null;s.mission=null;delete s.explorationBattle;s.death.active=false;s.notice={kind:'respawned'};
+ if(s.hp>0||!s.death?.active)fail('no verified defeat');if(s.mission==='base-defense')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission]?.defense)sectorDefenseOutcome(s,'defeat',now);else if(s.mission)restoreContest(s);if(s.mission)settleOpKills(s,now);delete s.contestPrevious;const old=B;B=new C.Encounter(s.loadout,s.checkpoint||spawnPoint());Object.assign(B,s.explorationBattle||s.battle);mergeResidents(old,B);K.carry(old,B);s.position={...(s.checkpoint||spawnPoint())};s.hp=B.playerHp=B.playerMax;B.state='active';B.projectiles=[];B.superShells=[];B.superAttack=null;B.shieldT=0;B.lockId=null;s.mission=null;delete s.explorationBattle;s.death.active=false;s.notice={kind:'respawned'};
  }else{
  if(s.hp<=0||B.state!=='active'||(s.stuckMs||0)<1500||now<(s.recoveryAt||0))fail('recovery unavailable');let p=[...s.safe].reverse().find(p=>{const d=Math.hypot(p.x-s.position.x,p.z-s.position.z);return d>=6&&d<=80&&footing(s,p);});
  if(!p)for(const r of [8,12,20,32]){for(let i=0;i<16;i++){const q=W.advance(s.position,Math.cos(i*Math.PI/8)*r,Math.sin(i*Math.PI/8)*r);if(Math.hypot(q.x-s.position.x,q.z-s.position.z)>=6&&footing(s,q)){p=q;break;}}if(p)break;}

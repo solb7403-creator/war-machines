@@ -86,7 +86,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
 
 <nav>
  <a href="#story">The story</a><a href="#mission">The mission</a><a href="#start">How to play</a><a href="#combat">Combat</a><a href="#modes">Modes</a><a href="#points">Points</a>
- <a href="#garage">Garage</a><a href="#minerals">Minerals &amp; plating</a><a href="#pass">Lunar Pass</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#vault">Vault</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
+ <a href="#garage">Garage</a><a href="#minerals">Minerals &amp; plating</a><a href="#loot">Loot</a><a href="#pass">Lunar Pass</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#vault">Vault</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
 </nav>
 
 <section id="story">
@@ -211,7 +211,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
   <p><b>Conquest earns points too.</b> Every verified Conquest operation pays airdrop points, at about the same rate a minute as Arcade in your league. The server checks every result; points are never paid for idling.</p>
   <table>
    <tr><th>Conquest (base points at Rookie)</th><th class="n">Points</th></tr>
-   <tr><td>Field mission (any of the six)</td><td class="n">450</td></tr>
+   <tr><td>Field mission (any of the six): your first 3 runs of a mission each day, then 60%, then 40%</td><td class="n">450</td></tr>
    <tr><td>Raid victory, HARD / VETERAN</td><td class="n">900 / 1,300</td></tr>
    <tr><td>Base or sector defense victory</td><td class="n">675</td></tr>
    <tr><td>World kill: light / heavy</td><td class="n">35 / 90</td></tr>
@@ -220,9 +220,11 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Meteor Strike secured</td><td class="n">1,075</td></tr>
   </table>
   <p class="mut" style="margin-top:10px">Your league's base pay multiplies them (×1.00 Rookie to ×1.60 Lunar Legend), and your Command Base adds up to ×1.25 (×1.05 at Base I, +0.05 a tier). Kills inside an operation are paid by its result; if the operation fails, the kills you made still count. At most 120 paying results an hour.</p>
-  <p><b>Daily Base Yield.</b> Your Command Base fills with points, CP and materials over 24 hours (1,000 points at Base I up to 2,600 at Base V). Collect it at the base terminal from 10%; it stops filling when full. The points part needs one verified operation or bio-flora harvest that day.</p>
+  <p><b>Daily Base Yield.</b> Your Command Base fills with points, CP and materials over 24 hours (1,000 points at Base I up to 2,600 at Base V). Collect it at the base terminal from 10%; it stops filling when full. The points part unlocks in steps: each verified operation that UTC day unlocks 25% (four operations unlock it all); a harvest counts half, and harvests together unlock at most half. Collecting pays the unlocked share; the rest keeps filling for later that day. Materials are never locked.</p>
+  <p><b>War Orders.</b> Every UTC day you get three War Orders (for example "Destroy 15 Parasites", "Mine 12 ore", "Win 2 raids"), and one weekly order every Monday, chosen from what you can do right now. Claim them at the Refuge terminal or your Command Gate: each daily pays 150–300 CP and a consumable, the day's third also an uncommon blueprint fragment, the weekly 1,500 CP + 1 Armalcolite + a rare fragment. War Orders never pay airdrop points: the points come from the activities themselves.</p>
+  <p><b>Sortie chain.</b> Win operations back to back, each within 10 minutes of the last: every link gives your next win a chance at one bonus consumable (Repair Kit, Shield Cell, Scanner Charge or Decoy Beacon): 10% at one link, 20% at two, 30% at three. Command rolls it once per win, so a retry never changes it. A raid chest at three links also steps its fragment up a rarity. The chain pays no extra CP, salvage, minerals or points. Dying, RECALL or leaving Conquest ends it.</p>
  </div>
- <div class="note">Matches and Conquest together can earn up to <b>50,000 points a day</b> (resets 00:00 UTC). Quests, milestones, the daily reward and the Lunar Pass pay on top. Spending points never lowers your rank: the board counts lifetime points earned.</div>
+ <div class="note">Matches and Conquest together can earn up to <b>50,000 points a day</b> (resets 00:00 UTC). Once you reach it, Conquest still drops loot, minerals and CP. Quests, milestones, the daily reward and the Lunar Pass pay on top. Spending points never lowers your rank: the board counts lifetime points earned.</div>
 </section>
 
 <section id="minerals">
@@ -230,7 +232,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
  <p class="kick">Ore from the war zone, armor on your hull, in every mode.</p>
  <div class="card">
   <p><b>Six minerals</b>, from common to legendary: <b>Ferrite Regolith</b>, <b>Ilmenite</b>, <b>Armalcolite</b>, <b>Tranquillityite</b>, <b>Selenite Glass</b> and <b>Moonheart</b>. They live in your account wallet, shared by Arcade, PvP and Conquest.</p>
-  <p><b>Your town (Command Base).</b> Drive to the Command Gate (or RECALL / fast travel home) and tap <b>ENTER BASE</b>: your own private town. It grows with the Command Center, from 45×45 cells at CC1 to 77×77 at CC10 (about three times the area), and settler homes fill the new districts. Pick one of seven sites: Crater Rim (+15% alloy, rim deposits, the rim is a natural inner wall), River Delta (+15% biomass, islands joined by fords), Ridge (+10% turret range, cliffs guard the terraces), Canyon (two narrow lanes), Highland Plateau (+12% wall strength, a summit and an escarpment ring), Ice Basin (+15% Helium-3; frozen lakes slow raiders to half speed) or Ash Field (+20% reactor power, the most open site). Build and upgrade the Command Center (CC1–CC10), Refinery, Storage Depot, Reactor, Foundry, Biodome, Hangar, Helium Extractor, Radar, Shield Generator, Science Lab (research arrives later), Uplink, Trophy Hall, gates and eleven turret types (Cannon, Twin-Barrel MG, Laser, Rocket Pod, Missile, Mortar, Flame Projector, Heavy Siege Cannon, Tesla Arc Coil, Laser Cannon, Railgun) that unlock with the Command Center. One builder works on real timers. Production stops when the store is full. Your Command Center level still sets the Conquest points multiplier (×1.05 at CC1–2 up to ×1.25 at CC9–10).</p>
+  <p><b>Your town (Command Base).</b> Drive to the Command Gate (or RECALL / fast travel home) and tap <b>ENTER BASE</b>: your own private town. It grows with the Command Center, from 45×45 cells at CC1 to 77×77 at CC10 (about three times the area), and settler homes fill the new districts. Pick one of seven sites: Crater Rim (+15% alloy, rim deposits, the rim is a natural inner wall), River Delta (+15% biomass, islands joined by fords), Ridge (+10% turret range, cliffs guard the terraces), Canyon (two narrow lanes), Highland Plateau (+12% wall strength, a summit and an escarpment ring), Ice Basin (+15% Helium-3; frozen lakes slow raiders to half speed) or Ash Field (+20% reactor power, the most open site). Build and upgrade the Command Center (CC1–CC10), Refinery, Storage Depot, Reactor, Foundry, Biodome, Hangar, Helium Extractor, Radar, Shield Generator, Science Lab (research arrives later), Uplink, Trophy Hall, gates and eleven turret types (Cannon, Twin-Barrel MG, Laser, Rocket Pod, Missile, Mortar, Flame Projector, Heavy Siege Cannon, Tesla Arc Coil, Laser Cannon, Railgun) that unlock with the Command Center. Production per level and hour: Refinery 2.4 alloy, Biodome 1.8 biomass, Helium Extractor 0.45 Helium-3; the Storage Depot holds 60 alloy and biomass and 16 Helium-3, +80 / +80 / +20 per level (production stops when full; the hub shows what waited for you since you left). One builder works on real timers. Production stops when the store is full. Your Command Center level still sets the Conquest points multiplier (×1.05 at CC1–2 up to ×1.25 at CC9–10).</p>
   <p><b>Walls and vitals.</b> Walls are as large as you want: 600 cells at CC1 up to 2,000 at CC10, plus up to +50% extensions earned with Foundry research, Defense Drill milestones and real base defenses (an extension pack is planned for the store; it adds capacity only). Every wall cell costs one wall composite (you start with 200; the Foundry turns alloy you load into more). Blend a section with an ore (Ferrite, Ilmenite, Armalcolite, Tranquillityite, Selenite, Moonheart) at light, medium or heavy: strength, durability and reflection rise with the ore and the amount, up to Moonheart heavy (5× the HP, 40% less damage, 35% bounced back). Ore comes from the minerals you move from your wallet to the base stores (one way). Draw with LINE, RECT and RING, copy and paste a section, erase, undo, then confirm. The Command Center is the raid's objective; the Reactor, Storage Depot and Science Lab are vitals too, so place them where your walls and turrets cover them. The <b>Defense Drill</b> is a simulated Parasite raid on your whole town: raiders path to your Command Center through your weakest wall and attack what they pass; watch it, see the breaches and what fell. It never pays rewards. Design a banner, pick a theme, visit the top 20 towns and your squad, and share your town. Store items (extension packs, skins, Foundry speed-up, second builder) are not on sale yet: checkout opens only after payments are certified; points and rare-or-better ores are never sold.</p>
   <p><b>Conquest veins.</b> Ore comes in veins that run dry. Tap <b>SCAN</b> (free, every 30 s) to reveal the live veins within 150 m (+50 m per Radar module level); they stay on your MAP with what they still hold. Stop within 6 m and hold <b>GATHER</b> for each pull: the channel makes noise and Parasites come to look, and taking damage or moving resets it. After a few pulls a vein is <b>EXHAUSTED</b> (it never refills at the same spot). Later a new vein of that mineral surfaces somewhere else in the same sector, hidden until you SCAN for it. Your veins and clocks are your own; no other pilot can empty them.</p>
   <table>
@@ -257,6 +259,38 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Moonheart</td><td class="n">+4%</td><td class="n">3 Moonheart + 4 Selenite + 25,000 pts</td><td>+16% hull, −10% energy and −10% area damage taken</td></tr>
   </table>
   <p class="mut" style="margin-top:10px">Energy: Pulse Cannon shots, Pierce Lance, Static Nova and Conquest pulse and plasma fire. Area: Static Nova, Siege Blast, meteors, the Survival megatank's stomps and shells, and Conquest artillery, orbital strikes and plasma splash. Moonbeam and Moonfall are not reduced. AI pilots never carry plates. Plates are never sold for real money.</p>
+ </div>
+</section>
+
+<section id="loot">
+ <h2>Loot</h2>
+ <p class="kick">Conquest drops: every rate, every pity counter. Nothing that drops is ever sold.</p>
+ <div class="card">
+  <p><b>How it works.</b> Command rolls every drop the moment a kill or a completion is verified, from your own server-side seed and that kill or attempt, so reloading or retrying never re-rolls it. A drop glows in its rarity colour (<b style="color:#c9d2dc">common</b>, <b style="color:#5fe08a">uncommon</b>, <b style="color:#46d9ff">rare</b>, <b style="color:#c18cff">epic</b>, <b style="color:#ffc94a">legendary</b>) with a one-word label; drive over it to pick it up. Minerals in a drop join your cargo (half is lost if your War Machine is destroyed, until you bank them). Consumables, research parts, blueprint fragments and trophies are <b>yours the moment you pick them up</b>: never lost on death, never raided, never sold. Loot never pays airdrop points.</p>
+  <table>
+   <tr><th>Source</th><th>Chance drops (each rolled on its own)</th><th>Pity</th></tr>
+   <tr><td>Interceptors and saboteurs (world and mission kills)</td><td>12% 1 Ferrite · 3% 1 Ilmenite · 4% a consumable · 0.5% a common fragment</td><td>—</td></tr>
+   <tr><td>Heavy sentinels and fire coordinators</td><td>25% 1 Ilmenite · 6% 1 Armalcolite · 8% a consumable · 3% a research part · 1% an uncommon fragment</td><td>never more than 20 of them without a research part</td></tr>
+   <tr><td>Raid commanders (ambush, shield, artillery, carrier, plasma)</td><td>12% a research part · 10% that commander's trophy · 5% a rare fragment · VETERAN raids also 8% 1 Tranquillityite</td><td>never more than 10 commanders without a trophy (the type you fought most)</td></tr>
+   <tr><td>Raid completion chest</td><td>always 1 consumable · 8% a rare fragment (the 25-shard blueprint and the 3.5% elite blueprint stay)</td><td>25 shards = the blueprint</td></tr>
+   <tr><td>Meteor Strike secured</td><td>15% a research part · 10% a rare fragment; every 12th strike you secure also gives the Strike Core trophy</td><td>Strike Resonance</td></tr>
+   <tr><td>Town or sector defense held live</td><td>6% two consumables · 4% an uncommon fragment</td><td>—</td></tr>
+   <tr><td>War Orders</td><td>every daily order 1 consumable · the day's third order 1 uncommon fragment · the weekly order 1 Armalcolite + 1 rare fragment</td><td>—</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Kills pay loot only where they pay salvage: once per spawn generation in the world, once per UTC day per mission slot. When a roll says "a consumable" it is a Repair Kit 40%, Shield Cell 25%, Scanner Charge 20% or Decoy Beacon 15%; a research part is one of the four, evenly.</p>
+ </div>
+ <div class="card">
+  <p><b>Consumables</b> (Conquest only, up to 10 of each; use them in the field or in an operation, never inside your town, Arcade or PvP). Tap the green slot above HEAT, long-press SHIELD, or press T (1–4 for each one) on a computer.</p>
+  <table>
+   <tr><th>Item</th><th>Effect</th><th class="n">Cooldown</th></tr>
+   <tr><td>Repair Kit</td><td>+40% hull over 6 seconds (the field has no hull regeneration)</td><td class="n">60 s</td></tr>
+   <tr><td>Shield Cell</td><td>SHIELD ready again at once</td><td class="n">30 s</td></tr>
+   <tr><td>Scanner Charge</td><td>a SCAN 100 m wider that also finds every vein in this sector</td><td class="n">30 s</td></tr>
+   <tr><td>Decoy Beacon</td><td>every Parasite within 120 m drives to the beacon and shoots it for 8 seconds</td><td class="n">45 s</td></tr>
+  </table>
+  <p><b>Research parts</b>: Thermal Core, Ballistic Coil, Drive Servo, Field Capacitor (up to 50 of each). The Science Lab uses these soon (Tank Lab update).</p>
+  <p><b>Blueprint fragments</b>: ten fragments of one pool give you a new cosmetic from that pool, picked by Command, never one you already own: common = five matte plate finishes, uncommon = five banner standards, rare = five muzzle trails, epic = five town ornaments (only from a raid chest at a three-win Sortie chain until the Hive Titan arrives). These pieces are earn-only: they are never sold.</p>
+  <p><b>Trophy Hall</b>: one trophy for each raid-commander doctrine plus the Strike Core. Each trophy type you hold adds +15 Town Score; the full set unlocks the earn-only Hive banner emblem. MORE → LOOT &amp; TROPHY HALL shows your trophies, parts, fragments and both pity counters.</p>
  </div>
 </section>
 

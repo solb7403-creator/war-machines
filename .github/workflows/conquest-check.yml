@@ -48,6 +48,15 @@ jobs:
           node dev/tests/conquest-frontline.mjs
           node dev/tests/conquest-adaptive.mjs
           node dev/tests/conquest-opening.mjs
+          node dev/tests/conquest-first-hour.mjs
+          node dev/tests/conquest-cc-ladder.mjs
+          node dev/tests/conquest-loot.mjs
+          node dev/tests/conquest-living-world.mjs
+          node dev/tests/conquest-sortie-chain.mjs
+          node dev/tests/conquest-contracts.mjs
+          node dev/tests/conquest-yield-steps.mjs
+          node dev/tests/conquest-ladder-check.mjs
+          node dev/tests/conquest-analytics.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs
           node dev/tests/conquest-raid-layouts.mjs
@@ -86,6 +95,8 @@ jobs:
       - name: Portrait player journey
         run: |
           python dev/tests/conquest-onboarding.py
+          python dev/tests/conquest-session6-feel.py
+          python dev/tests/conquest-session6-loot.py
           python dev/tests/conquest-earned-browser.py
           python dev/tests/conquest-earned-end-to-end.py
           python dev/tests/conquest-preview.py

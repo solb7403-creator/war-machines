@@ -1,24 +1,24 @@
 {
- "hint": "TAP SCAN: A STARTER VEIN LIES BESIDE THE REFUGE",
+ "hint": "SCAN FOR ORE \u00b7 Tap SCAN: the Starter Vein lies on the Refuge road",
  "scanFound": 1,
  "gatherLabel": "HOLD \u00b7 GATHER STARTER VEIN",
  "carried": "MINERALS CARRIED \u00b7 35 FERRITE \u00b7 BANK AT THE REFUGE",
  "walletFe": 40,
  "hullBefore": 1700,
  "hullAfter": 1717,
- "vehicleVertsBefore": 16552,
- "vehicleVertsAfter": 16588,
+ "vehicleVertsBefore": 40406,
+ "vehicleVertsAfter": 40478,
  "plates": [
   1,
   0,
   0,
   0
  ],
- "strike": "\u2604 METEOR STRIKE \u00b7 ASH REDOUBT \u00b7 IMPACT IN 2:59",
+ "strike": "",
  "threat": "\u27a4\nUNDER FIRE \u00b7 RAIDER \u00b7 40 m",
  "lowHull": "HULL 20% \u00b7 TAP: ROUTE TO REFUGE REPAIR",
  "lowHullRoute": "refuge",
  "pageErrors": [],
  "scanHint": "SCAN \u00b7 FIND ORE|true",
- "oreRoute": "starter-01|STARTER VEIN ORE|4 m \u00b7 IN RANGE \u00b7 HOLD GATHER|SCAN \u00b7 28s"
+ "oreRoute": "coach|GATHER THE STARTER VEIN|2 m \u00b7 IN RANGE \u00b7 HOLD GATHER|SCAN \u00b7 28s"
 }

@@ -35,6 +35,6 @@ now=1800000000000;s=createState(structuredClone(R.STOCK_L),now);
 for(const id of C.raidIds){const o=C.operations[id];s.territory[o.sector]={owner:'humanity',status:'secured',capturedAt:now,defenseAt:now+1200000};}
 for(const e of s.battle.enemies){e.hp=0;s.spawns[e.key]={generation:Math.floor(now/86400000),deadAt:now};}
 s.position=point(5000,5000);refreshState(s,now+2*86400000);
-const patrols=s.battle.enemies.filter(e=>e.base?.kind==='patrol'),garrisons=s.battle.enemies.filter(e=>e.base?.kind!=='patrol'&&s.territory[W.frontierSectorAt(e.home.x,e.home.z).id]?.capturedAt);
+const patrols=s.battle.enemies.filter(e=>e.base?.kind==='patrol'),garrisons=s.battle.enemies.filter(e=>e.base?.kind!=='patrol'&&e.base?.kind!=='hunter'&&s.territory[W.frontierSectorAt(e.home.x,e.home.z).id]?.capturedAt);
 assert(patrols.length>=4&&patrols.every(e=>e.hp>0),'patrols repopulate captured sectors');assert(garrisons.length&&garrisons.every(e=>e.hp<=0),'captured-sector garrisons stay down');
 console.log('PASS captured frontier keeps',patrols.length,'live patrols while',garrisons.length,'captured garrisons stay suppressed');

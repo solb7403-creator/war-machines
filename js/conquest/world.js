@@ -32,6 +32,32 @@ const sectors=Object.freeze([
  {id:'ridge',name:'REFUGE RIDGE',x:1270,z:1175,radius:130,threat:'drone carriers and hunter armor',architecture:'ridge signal arrays',reward:'commander telemetry'}
 ].map(Object.freeze));
 function frontierSectorAt(x,z){return sectors.reduce((a,b)=>Math.hypot(x-a.x,z-a.z)<Math.hypot(x-b.x,z-b.z)?a:b);}
+// ---- Session 6 (Conquest Core Fun): the pilot's spawn and the per-zone ring table. World DATA, not art: 5E-2d1 rebuilds the
+// buildings around these points without moving them, and Session 7's Living Front adds its 20 territories as more zones here.
+// The spawn: the Refuge's north approach on the Refuge road, ~40 m from the supply terminal, facing the oxygen towers
+// (yaw 0 = the camera looks north, -Z). Server-authoritative: the Worker's createState and respawn use it for every save.
+const spawn=Object.freeze({x:1162,z:1130,yaw:0});   // on the main road, 40 m from the terminal, between the colony power pylons (no pole between the chase camera and the tank)
+// Rings (docs/conquest/CONQUEST_BLUEPRINT.md §5): 1 Heartland, 2 Rear, 3 Frontier (today's HARD sectors), 4 Warfront (today's
+// VETERAN sectors), 5 Inner Ring. Hunter packs, vein ambushes, incursions and the loot tables read ringAt(); nothing reads gear.
+// Heartland circles are checked first (they overlap the front sectors' circles); then the nearest zone edge; beyond 400 m of
+// every zone the barren reaches are Rear (ring 2).
+const zones=Object.freeze([
+ {id:'colony',name:'REFUGE COLONY',ring:1,x:1150,z:1130,r:95},     // the Refuge terminal, the oxygen towers, the colony town and the Command Gate
+ {id:'refuge',name:'REFUGE CORRIDOR',ring:1,x:1010,z:1100,r:115},
+ {id:'reservoir',name:'RESERVOIR FLATS',ring:1,x:860,z:1290,r:110},
+ {id:'western',name:'WESTERN SALVAGE REACH',ring:3,x:920,z:925,r:120},
+ {id:'helium',name:'HELIUM BASIN',ring:3,x:1080,z:835,r:110},
+ {id:'crossroads',name:'DUST CROSSROADS',ring:3,x:1100,z:954,r:60},
+ {id:'oxygen',name:'OXYGEN SPEAR',ring:4,x:1230,z:1020,r:100},
+ {id:'ridge',name:'REFUGE RIDGE',ring:4,x:1270,z:1175,r:130},
+ {id:'ash',name:'ASH REDOUBT',ring:4,x:1250,z:900,r:120},
+ {id:'east',name:'EASTERN RIM',ring:5,x:1398,z:1074,r:70}
+].map(Object.freeze));
+const RINGS=Object.freeze(['','HEARTLAND','REAR','FRONTIER','WARFRONT','INNER RING']);
+function zoneAt(x,z){for(const q of zones)if(q.ring===1&&Math.hypot(x-q.x,z-q.z)<=q.r)return q;let best=null,bd=Infinity;
+ for(const q of zones){const d=Math.hypot(x-q.x,z-q.z)-q.r;if(d<bd){bd=d;best=q;}}return bd<=400?best:WILDS;}
+const WILDS=Object.freeze({id:'wilds',name:'BARREN REACHES',ring:2,x:0,z:0,r:0});
+function ringAt(x,z){return zoneAt(x,z).ring;}
 // ---- The terraformed south (docs/economy/RESOURCE_ECONOMY.md; Checkpoint 23). Authored and deterministic, shared by the
 // phone and the Worker; never random noise. Atmosphere pylons sustain the green from the Refuge and the oxygen complex
 // south-west across the Command Base to the ice-mining crater and down the real south-west valley to the dammed Refuge
@@ -101,7 +127,7 @@ const HARVEST=Object.freeze({radius:6,channelMs:4000,respawnMs:900000,biomass:3,
 // and hive edges; the Starter Vein beside the Refuge terminal. Every node is reachable and clear of structures, water,
 // forests and flora (conquest-minerals test). Gathering rules live in rules.js (MN_GATHER, MN_SCAN).
 const deposits=Object.freeze([
- ['starter',[[1189,1170]]],
+ ['starter',[[1180,1150]]],   // Session 6: on the Refuge road, 19 m from the supply terminal (the coach chain's GATHER step)
  ['fe',[[1031,1087],[948,1102],[1173,921],[1249,872],[1168,1070],[1245,1053],[893,945],[946,907],[1130,879],[1096,814],[1201,1140],[1258,1206],[1013,1114],[1153,1159],[1025,1046],[874,1038],[889,1004],[895,902],
   [989,1085],[893,1060],[991,1130],[956,1075],[1056,1174],[1129,1097],[1090,1123],[1133,1132],[1131,1069],[1137,1188],[1200,1193],[975,1108],[936,1129],[923,889],[1179,1100],[912,1037],[1090,1186],[994,1049]]],
  ['il',[[1299,1001],[1011,800],[940,1003],[1211,842],[1091,899],[941,862],[902,986],[1019,861],[826,908],[1132,788],[895,879],[976,1005],[1309,870],[1144,824],[1052,931],[983,886],[819,945],[1042,888],[1277,1014]]],
@@ -287,5 +313,5 @@ function route(from,to,opts){const job=routeJob(from,to,opts);while(!job.done)jo
 // The point the arrow should aim at: the farthest route point within 10 m that the tank can reach in a straight line.
 function routeAim(p,path,from=0){let best=from,bd=Infinity;for(let k=Math.max(0,from-3);k<Math.min(path.length,from+14);k++){const d=Math.hypot(path[k].x-p.x,path[k].z-p.z);if(d<bd){bd=d;best=k;}}
  let aim=Math.min(best+1,path.length-1);for(let k=best+1;k<path.length;k++){if(Math.hypot(path[k].x-p.x,path[k].z-p.z)>10)break;if(routeClear(p,path[k]))aim=k;}return {index:best,aim,off:bd,point:path[aim]};}
-root.ConquestWorld=Object.freeze({id:'moon',version:1,route,routeJob,routeAim,routeClear,knownOre,speedFactor,waterTopAt,baseHeight,floraNodes,HARVEST,deposits,COLONY,ROAD_FAST,colonyLotAt,roadAt,clearedAt,structureSolidAt,flora,forestTrees,legacyGreen,pylons,blightSources,terraformAt,terraZone,blightAt,TERRA,water,waterAt,creekNearest,creekBridge,forests,forestAt,FOREST_CANOPY,raidObstacles,sectors,frontierSectorAt,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,chunkJob,horizonJob,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
+root.ConquestWorld=Object.freeze({id:'moon',version:1,route,routeJob,routeAim,routeClear,knownOre,speedFactor,waterTopAt,baseHeight,floraNodes,HARVEST,deposits,COLONY,ROAD_FAST,colonyLotAt,roadAt,clearedAt,structureSolidAt,flora,forestTrees,legacyGreen,pylons,blightSources,terraformAt,terraZone,blightAt,TERRA,water,waterAt,creekNearest,creekBridge,forests,forestAt,FOREST_CANOPY,raidObstacles,sectors,frontierSectorAt,spawn,zones,zoneAt,ringAt,RINGS,SEED,WIDTH,LENGTH,SPEED,CHUNK,STEP,installations,surfaceNormal,solidAt,blockedAt,installationOccludes,horizon,scenery,travelSpeed,frameSeconds,advance,chunkJob,horizonJob,heightAt,groundAt,normalAt,biomeAt,surfacesAt,deckAt,move,chunk,chunkKeys,landmarks,mapPoint:(x,z)=>({u:x/WIDTH,v:1-z/LENGTH}),sectorAt:(x,z)=>({theater:'moon',id:Math.floor(x/2400)+':'+Math.floor(z/2400)}),warpNodes:Object.freeze([])});
 })(globalThis);

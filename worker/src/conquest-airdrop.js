@@ -22,7 +22,7 @@ const multiplier=s=>R.CQ_BASE_MULT[Math.max(0,Math.min(R.CQ_BASE_MULT.length-1,s
 export function earn(s,kind,value,now,{op=false,act=false,flat=false}={}){
  if(s.dev?.used)return 0;   // owner dev-mode test record: never earns airdrop points (conquest.js DEV_ACTIONS)
  const a=airdrop(s),h=Math.floor(now/3600000),v=Math.max(0,Number(value)||0);if(!v)return 0;
- if(a.hr.h!==h)a.hr={h,n:0};if(op||act)a.act=Math.floor(now/DAY);   // verified activity counts even when the points are rate-limited
+ if(a.hr.h!==h)a.hr={h,n:0};if(op||act){const d=Math.floor(now/DAY);a.act=d;const y=a.yd&&a.yd.d===d?a.yd:(a.yd={d,op:0,hv:0});if(op)y.op++;else y.hv++;}   // verified activity counts even when the points are rate-limited; Session 6: yd counts the day's operations and harvests (Daily Base Yield steps)
  if(a.hr.n>=R.CQ_PTS.hourMax){a.limited=(a.limited||0)+1;return 0;}   // rate limit: no points beyond the hourly outcome limit
  a.hr.n++;const raw=Math.round(v*(flat?1:multiplier(s))*100)/100,p=a.pend||(a.pend={raw:0,n:{},op:0});
  p.raw=Math.round((p.raw+raw)*100)/100;p.n[kind]=(p.n[kind]||0)+1;if(op)p.op=1;

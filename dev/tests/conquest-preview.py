@@ -1,5 +1,5 @@
 """Real local HTTP preview, no request routing or production services."""
-import asyncio,json,os,pathlib,shutil
+import asyncio,math,json,os,pathlib,shutil
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 async def main():
@@ -18,9 +18,10 @@ async def main():
    expected=json.loads(pathlib.Path(os.environ['CQ_EARNED_SAVE']).read_text())['final'] if os.getenv('CQ_EARNED_SAVE') else {'ledger':{'cp':0},'base':{'tier':0}}
    assert await page.evaluate('Conquest.view.authority.state.ledger.cp')==expected['ledger']['cp']
    assert await page.evaluate('Conquest.view.authority.state.base.tier')==expected['base']['tier']
-   before=await page.evaluate('Conquest.view.authority.state.position.x')
+   before=await page.evaluate('[Conquest.view.authority.state.position.x,Conquest.view.authority.state.position.z]')
    await page.keyboard.down('w');await page.wait_for_timeout(1500);await page.keyboard.up('w');await page.wait_for_timeout(1500)
-   assert await page.evaluate('Conquest.view.authority.state.position.x')>before+3
+   after=await page.evaluate('[Conquest.view.authority.state.position.x,Conquest.view.authority.state.position.z]')
+   assert math.hypot(after[0]-before[0],after[1]-before[1])>3,(before,after)   # Session 6: the spawn faces north (W drives along z), any direction counts
    assert not errors,errors
    assert all(u.startswith(base) or u.startswith('data:') for u in requests),[u for u in requests if not u.startswith(base)]
    assert (await page.request.get(base+'/.git/config')).status==404

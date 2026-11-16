@@ -24,23 +24,30 @@
     },
     {
       "minute": 30,
-      "base": 0,
-      "modules": {},
-      "cp": 1395,
+      "base": 1,
+      "modules": {
+        "vault": 1,
+        "reactor": 1,
+        "hangar": 0,
+        "radar": 0,
+        "defense": 0,
+        "uplink": 0
+      },
+      "cp": 656,
       "banked": {
-        "alloy": 186,
-        "biomass": 124,
-        "helium": 39
+        "alloy": 148,
+        "biomass": 109,
+        "helium": 36
       },
       "raidClears": 0,
       "shards": 0,
       "blueprint": false,
-      "reputation": 480,
+      "reputation": 481,
       "campaignScore": 57,
       "choices": [
-        "Hold Oxygen Line",
-        "Patrol and bank salvage",
-        "Pursue a field contract and engineering"
+        "Choose another authored raid family/layout",
+        "Respond to real sector or base invasion",
+        "Build a module or equip an earned permanent cosmetic"
       ]
     },
     {
@@ -54,16 +61,16 @@
         "defense": 0,
         "uplink": 0
       },
-      "cp": 55,
+      "cp": 2006,
       "banked": {
-        "alloy": 248,
-        "biomass": 179,
-        "helium": 60
+        "alloy": 328,
+        "biomass": 229,
+        "helium": 66
       },
       "raidClears": 0,
       "shards": 0,
       "blueprint": false,
-      "reputation": 930,
+      "reputation": 931,
       "campaignScore": 147,
       "choices": [
         "Choose another authored raid family/layout",
@@ -82,7 +89,7 @@
         "defense": 2,
         "uplink": 2
       },
-      "cp": 2711,
+      "cp": 2845,
       "banked": {
         "alloy": 2003,
         "biomass": 1462,
@@ -91,7 +98,7 @@
       "raidClears": 110,
       "shards": 110,
       "blueprint": true,
-      "reputation": 6142,
+      "reputation": 6173,
       "campaignScore": 1247,
       "choices": [
         "Choose another authored raid family/layout",
@@ -110,7 +117,7 @@
         "defense": 3,
         "uplink": 3
       },
-      "cp": 54177,
+      "cp": 54955,
       "banked": {
         "alloy": 14818,
         "biomass": 9844,
@@ -119,7 +126,7 @@
       "raidClears": 750,
       "shards": 750,
       "blueprint": true,
-      "reputation": 30543,
+      "reputation": 30708,
       "campaignScore": 7647,
       "choices": [
         "Choose another authored raid family/layout",

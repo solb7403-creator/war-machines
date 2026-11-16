@@ -1,55 +1,50 @@
 {
   "scope": "Continue exact legitimate starter earning+defense save through real HTTP/Worker.\nNo bank/position/equipment/health fixtures. Earlier combat was authoritative input\nreplay; this continuation uses native keys/UI, bank/equip, concurrent HTTP and reload.\n",
   "initialSource": "conquest-earned-journey -> conquest-earned-defense exact save; no direct resource/loadout/position grant",
-  "baseMinute": 73.66,
+  "baseMinute": 5.97,
   "nativeMovementAndUI": true,
   "realHTTPAuthWorker": true,
   "concurrentIdenticalActionsExactlyOnce": true,
   "persistent": {
-    "cp": 197,
+    "cp": 371,
     "banked": {
-      "alloy": 234,
-      "biomass": 164,
-      "helium": 53
+      "alloy": 104,
+      "biomass": 79,
+      "helium": 23
     },
     "owned": {
       "armor-brass": {
-        "at": 1800000131700,
+        "at": 1800000043450,
         "source": "earned",
         "milestone": "Earn 100 Conquest reputation"
       },
-      "armor-ceramic": {
-        "at": 1800001168300,
-        "source": "earned",
-        "milestone": "Earn 500 Conquest reputation"
-      },
       "base-bastion": {
-        "at": 1800004420050,
+        "at": 1800000358550,
         "source": "earned",
         "milestone": "Build Command Base I"
       },
       "command-standard": {
-        "at": 1800004991150,
+        "at": 1800000431400,
         "source": "earned",
         "milestone": "Win one real base defense"
       }
     },
     "completed": {
       "oxygen-line": {
-        "at": 1800000131700,
+        "at": 1800000040800,
         "attempt": 1
       },
-      "relay": {
-        "at": 1800000236750,
+      "recon": {
+        "at": 1800000238450,
         "attempt": 2
       },
-      "recon": {
-        "at": 1800000374700,
+      "convoy": {
+        "at": 1800000311800,
         "attempt": 3
       },
       "base-defense": {
-        "at": 1800004991150,
-        "attempt": 43
+        "at": 1800000431400,
+        "attempt": 4
       }
     },
     "defense": {
@@ -57,18 +52,27 @@
       "damage": 0,
       "wins": 1,
       "alertAt": 0,
-      "nextAt": 1800006191150,
+      "nextAt": 1800001631400,
       "active": false,
       "report": {
         "outcome": "victory",
-        "at": 1800004991150,
-        "cp": 160,
-        "alloy": 15,
-        "biomass": 10,
-        "helium": 2,
+        "at": 1800000431400,
+        "ptsRaw": 708.75,
+        "mn": {
+          "fe": 2,
+          "il": 1
+        },
+        "cp": 208,
+        "alloy": 20,
+        "biomass": 13,
+        "helium": 3,
         "reputation": 60,
         "stolen": 0,
-        "damage": 0
+        "damage": 0,
+        "chain": {
+          "links": 3,
+          "bonus": 0.30000000000000004
+        }
       }
     }
   },

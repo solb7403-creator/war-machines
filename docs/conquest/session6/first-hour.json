@@ -1,0 +1,39 @@
+{
+ "spawn": {
+  "x": 1162,
+  "z": 1130,
+  "toTerminal": 40
+ },
+ "missions": [
+  {
+   "mode": "follow",
+   "outcome": "victory",
+   "seconds": 41,
+   "firstKillSeconds": 3,
+   "hullMin": 33,
+   "objective": 92,
+   "kind": "first-clear",
+   "cp": 250
+  },
+  {
+   "mode": "stay",
+   "outcome": "victory",
+   "seconds": 45,
+   "firstKillSeconds": 3,
+   "hullMin": 100,
+   "objective": 75,
+   "kind": "first-clear",
+   "cp": 250
+  },
+  {
+   "mode": "rush",
+   "outcome": "victory",
+   "seconds": 42,
+   "firstKillSeconds": 3,
+   "hullMin": 59,
+   "objective": 80,
+   "kind": "first-clear",
+   "cp": 250
+  }
+ ]
+}

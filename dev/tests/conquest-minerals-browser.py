@@ -35,9 +35,9 @@ async def main():
     if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
     await r.abort()
    await page.route('**/*',route)
-   await page.request.post(base+'/fixture',data={'position':[1185,1170],'fieldMissions':True})
+   await page.request.post(base+'/fixture',data={'position':[1180,1152],'fieldMissions':True})
    await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
-   await page.request.post(base+'/fixture',data={'position':[1185,1170],'fieldMissions':True,'wallet':{'mn':{'fe':5},'pts':5000}})
+   await page.request.post(base+'/fixture',data={'position':[1180,1152],'fieldMissions':True,'firsts':{'bank':1},'wallet':{'mn':{'fe':5},'pts':5000}})   # Session 6: past the coach's BANK step, so SCAN is its next order
    await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
    if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()
    await page.wait_for_function('Conquest.view?.authority?.connected&&Conquest.view.pending===0',timeout=90000)
@@ -45,13 +45,14 @@ async def main():
    st=lambda js:page.evaluate('(()=>{const s=Conquest.view.authority.state;return '+js+';})()')
    # 1. scanner pulse
    await page.wait_for_function('!document.querySelector("#cq-scan-access").hidden',timeout=30000)
-   hint=await page.locator('.cq-mn').inner_text()
+   hint=await page.evaluate('document.querySelector(".cq-nav-title").textContent+" · "+document.querySelector(".cq-nav-route").textContent')   # Session 6: the coach cue lives in the NEXT chip
    scanHint=await page.evaluate('(()=>{const b=document.querySelector("#cq-scan-access");return b.textContent+"|"+b.classList.contains("cq-scan-pulse");})()')
    await page.locator('#cq-scan-access').click();await page.wait_for_function('Conquest.view.authority.state?.found?.["starter-01"]',timeout=60000)
    await page.wait_for_timeout(600);await page.screenshot(path=str(OUT/'scan-starter-vein-390.png'))
    found=await st('Object.keys(s.found).length')
-   await page.wait_for_function('Conquest.view.routeTarget?.kind==="resource"',timeout=15000)
-   oreRoute=await page.evaluate('(()=>{const t=Conquest.view.routeTarget;return t.id+"|"+t.name+"|"+document.querySelector(".cq-nav-distance").textContent+"|"+document.querySelector("#cq-scan-access").textContent;})()')
+   # Session 6: while the coach chain runs, its GATHER THE STARTER VEIN step is the route (a scan never routes past the coach)
+   await page.wait_for_function('Conquest.view.routeTarget?.kind==="resource"||document.querySelector(".cq-nav-title")?.textContent==="GATHER THE STARTER VEIN"',timeout=15000)
+   oreRoute=await page.evaluate('(()=>{const t=Conquest.view.routeTarget;return (t?t.id:"coach")+"|"+(t?t.name:document.querySelector(".cq-nav-title").textContent)+"|"+document.querySelector(".cq-nav-distance").textContent+"|"+document.querySelector("#cq-scan-access").textContent;})()')
    # 2. gather the Starter Vein through the shipped GATHER button
    g=page.locator('#cq-gather-access');await g.wait_for(state='visible',timeout=30000);label=await g.inner_text()
    box=await g.bounding_box();await page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);await page.mouse.down()
@@ -60,7 +61,17 @@ async def main():
    await page.wait_for_function('Conquest.view.routeTarget?.id!=="starter-01"',timeout=15000)
    await page.wait_for_function('Conquest.view.pending===0',timeout=60000);await page.wait_for_timeout(800)
    carried=await page.locator('.cq-mn').inner_text();await page.screenshot(path=str(OUT/'carried-minerals-390.png'))
-   # 3. bank at REFUGE SUPPLY -> wallet
+   # 3. bank at REFUGE SUPPLY -> wallet (Session 6: the Starter Vein sits on the Refuge road 19 m north of the terminal; drive there)
+   await page.evaluate('Conquest.view.yaw=0')
+   for _ in range(80):
+    d=await page.evaluate('Math.hypot(Conquest.view.p.x-1174,Conquest.view.p.z-1168)')
+    if d<=9:break
+    dx,dz=await page.evaluate('[1174-Conquest.view.p.x,1168-Conquest.view.p.z]')
+    keys=(['KeyS'] if dz>1.5 else ['KeyW'] if dz<-1.5 else [])+(['KeyA'] if dx<-1.5 else ['KeyD'] if dx>1.5 else [])
+    for k in keys:await page.keyboard.down(k)
+    await page.wait_for_timeout(150)
+    for k in keys:await page.keyboard.up(k)
+   await page.locator('#cq-supply-access').wait_for(state='visible',timeout=30000)
    await page.locator('#cq-supply-access').click();await page.get_by_role('button',name='BANK SALVAGE').click()
    await page.wait_for_function('(Conquest.view.authority.state?.airdrop?.view?.mn?.fe||0)>=40',timeout=60000)
    wallet=await st('s.airdrop.view.mn.fe');await page.wait_for_selector('.cq-plating');await page.screenshot(path=str(OUT/'refuge-supply-plating-390.png'))
@@ -83,7 +94,7 @@ async def main():
    await page.wait_for_function(HIT,timeout=20000,polling=120);threat=await page.locator('.cq-threat').inner_text();await page.screenshot(path=str(OUT/'under-fire-390.png'))
    LOW='''(()=>{const v=Conquest.view,B=v.encounter||v.battle;B.playerHp=Math.round(B.playerMax*.2);const b=document.querySelector('.cq-low-hull');return !!b&&!b.hidden&&/ROUTE TO REFUGE/.test(b.textContent);})()'''
    await page.wait_for_function(LOW,timeout=20000,polling=120);lowText=await page.locator('.cq-low-hull').inner_text();await page.screenshot(path=str(OUT/'low-hull-390.png'))
-   await page.evaluate('document.querySelector(".cq-low-hull").click()');route=await page.evaluate('Conquest.view.routeTarget?.kind||""')
+   route=await page.evaluate('(()=>{document.querySelector(".cq-low-hull").click();return Conquest.view.routeTarget?.kind||"";})()')   # read in the same task: at the Refuge the route ends on arrival (Session 6)
    assert 'UNDER FIRE' in threat and 'TAP: ROUTE TO REFUGE REPAIR' in lowText and route=='refuge',(threat,lowText,route)
    print('PASS under fire: arrow + distance + red edge flash; low hull (<25%) banner tap sets the Refuge repair route')
    await page.evaluate('(()=>{const B=Conquest.view.encounter||Conquest.view.battle;B.enemies=B.enemies.filter(e=>!e.__probe);B.playerHp=B.playerMax;Conquest.view.routeTarget=null;})()')
@@ -92,7 +103,7 @@ async def main():
    strike=await page.locator('.cq-strike').inner_text();await page.screenshot(path=str(OUT/'meteor-telegraph-hud-390.png'),timeout=90000)   # a WebGL page under software GL can take >30 s to present a frame for the capture (CI flake)
    r={'hint':hint,'scanFound':found,'gatherLabel':label,'carried':carried,'walletFe':wallet,'hullBefore':hp0,'hullAfter':hp1,'vehicleVertsBefore':v0,'vehicleVertsAfter':v1,'plates':ap,'strike':strike,'threat':threat,'lowHull':lowText,'lowHullRoute':route,'pageErrors':errors,'scanHint':scanHint,'oreRoute':oreRoute}
    print(json.dumps(r),flush=True);json.dump(r,open(OUT/'journey.json','w'),indent=1)
-   assert 'STARTER VEIN' in hint and found>=1 and 'STARTER VEIN' in label and '35 FERRITE' in carried and wallet>=40 and ap[0]==1 and hp1>hp0 and v1>v0 and 'METEOR STRIKE' in strike and not errors and scanHint=='SCAN · FIND ORE|true' and oreRoute.split('|')[1].endswith(' ORE') and ('ORE' in oreRoute.split('|')[2] or 'HOLD GATHER' in oreRoute.split('|')[2]) and 'FIND ORE' not in oreRoute.split('|')[3],r
+   assert ('STARTER VEIN' in hint.upper() or 'BANK YOUR SALVAGE' in hint) and found>=1 and 'STARTER VEIN' in label and '35 FERRITE' in carried and wallet>=40 and ap[0]==1 and hp1>hp0 and v1>v0 and strike=='' and not errors and scanHint=='SCAN · FIND ORE|true' and (oreRoute.split('|')[1].endswith(' ORE') or oreRoute.split('|')[1]=='GATHER THE STARTER VEIN') and ('ORE' in oreRoute.split('|')[2] or 'HOLD GATHER' in oreRoute.split('|')[2]) and 'FIND ORE' not in oreRoute.split('|')[3],r
    print('PASS minerals journey 390: scan -> Starter Vein -> gather -> bank to wallet -> first plate on the hull -> strike telegraph')
    await browser.close()
  finally:

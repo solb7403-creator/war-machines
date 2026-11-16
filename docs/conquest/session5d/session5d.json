@@ -2,7 +2,7 @@
  "gateCentre1": {
   "start": {
    "x": 1080,
-   "z": 1148.999999999993,
+   "z": 1148.1199999999924,
    "nudge": false,
    "dio": true,
    "half": 10.5,
@@ -10,7 +10,7 @@
   },
   "after": {
    "x": 1080,
-   "z": 1148.999999999993,
+   "z": 1148.1199999999924,
    "nudge": false
   },
   "meshes": 8,
@@ -25,27 +25,27 @@
   "ccAhead": 1,
   "face": true,
   "info": {
-   "calls": 25,
-   "triangles": 54592,
-   "programs": 13
+   "calls": 15,
+   "triangles": 58910,
+   "programs": 11
   }
  },
  "gateCentre10": {
   "start": {
    "x": 1080,
-   "z": 1154.2799999999963,
-   "nudge": true,
+   "z": 1145.919999999991,
+   "nudge": false,
    "dio": true,
    "half": 13.166666666666666,
    "connected": true
   },
   "after": {
    "x": 1080,
-   "z": 1148.1199999999924,
-   "nudge": true
+   "z": 1145.919999999991,
+   "nudge": false
   },
-  "meshes": 13,
-  "startedOnModel": true,
+  "meshes": 14,
+  "startedOnModel": false,
   "keyStrip": false
  },
  "spawn10": {
@@ -56,9 +56,9 @@
   "ccAhead": 1,
   "face": false,
   "info": {
-   "calls": 67,
-   "triangles": 252450,
-   "programs": 13
+   "calls": 57,
+   "triangles": 246958,
+   "programs": 11
   }
  },
  "hub1": {
@@ -107,20 +107,20 @@
  },
  "cannonSprite": {
   "key": "t:cannon:1",
-  "luminance": 40.49117476851852
+  "luminance": 41.44783868635652
  },
  "dioramaSlices": {
   "slices": 9,
   "ms": [
-   37.5,
+   32.1,
    0.6,
-   3.9,
-   19.9,
-   6,
-   16.4,
-   1.9,
-   5.9,
-   8.3
+   4,
+   19.2,
+   4.3,
+   12.9,
+   1.5,
+   4.4,
+   4.9
   ],
   "counts": {
    "walls": 2000,
@@ -130,6 +130,6 @@
    "homes": 50,
    "builds": 26
   },
-  "programs": 13
+  "programs": 11
  }
 }

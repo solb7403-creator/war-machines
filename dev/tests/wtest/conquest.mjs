@@ -28,6 +28,7 @@ r=await call(8101,'/api/conquest/session');assert.equal(r.state.hp,87,'re-enteri
 assert.equal(r.state.position.x,stored.position.x);assert.equal(r.state.seq,1);
 for(const key of ['pts','earned','upc','buys','wOwn','cOwn','glc','gsc'])assert.deepEqual(db.get('eco/tg_8101')[key],protectedBefore[key],key+' unchanged');
 assert.equal((await call(null,'/api/conquest/action',{seq:1,action:'start-mission'})).status,401);
+{const far=db.get('conquest/tg_8101');far.position={x:898,z:1024,y:0,surface:'ground'};}/* Session 6: the spawn itself is in range of the first mission */
 assert.equal((await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'})).status,409,'server position controls activation');
 const near=db.get('conquest/tg_8101');near.position={x:1163,z:1132,y:0,surface:'ground'};
 r=await call(8101,'/api/conquest/action',{seq:2,action:'start-mission'});assert.equal(r.status,200);assert.equal(r.state.hp,87);assert.equal(r.state.battle.playerHp,87);

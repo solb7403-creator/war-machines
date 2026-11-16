@@ -45,12 +45,12 @@ async def main():
     await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
     await page.request.post(base+'/fixture',data={'position':[1080,1160],'baseFunds':True,'base':{'tier':2}})
     await page.evaluate('closeAll();save.welcomed=true;uiDirty();')
-    firstPaint=await page.evaluate('''(()=>{const t=performance.now();document.querySelector('[data-act="conquest"]').click();const ok=document.querySelectorAll('.cq-hub-card').length===3&&document.querySelectorAll('.cq-hub-actions button').length===4;return ok?performance.now()-t:-1;})()''')
+    firstPaint=await page.evaluate('''(()=>{const t=performance.now();document.querySelector('[data-act="conquest"]').click();const ok=document.querySelectorAll('.cq-hub-card').length===4&&document.querySelectorAll('.cq-hub-actions button').length===4;return ok?performance.now()-t:-1;})()''')
     await page.wait_for_function('ConquestHub.state?.state',timeout=60000);await page.wait_for_function('ConquestHub.state?.info?.calls>0',timeout=60000);await page.wait_for_timeout(1500)
     info=await page.evaluate('({...ConquestHub.state.info,tankError:ConquestHub.state.tankError||null,tankMeshes:(()=>{let n=0;ConquestHub.state.scene.traverse(o=>{if(o.isMesh)n++;});return n;})()})');text=await page.locator('.cq-hub-status').inner_text();acts=await page.evaluate('[...document.querySelectorAll(".cq-hub-actions button")].map(b=>b.textContent+(b.disabled?" (disabled)":""))')
     await page.screenshot(path=str(OUT/f'hub-{w}.png'));results[f'{w}x{h}']={'firstPaintMs':round(firstPaint,1),'render':info,'status':text[:400],'actions':acts,'pageErrors':errors}
     print(json.dumps(results[f'{w}x{h}']),flush=True)
-    assert 0<=firstPaint<300 and 'WARFRONT' in text and 'YOUR BASE' in text and 'CC3' in text and 'LIVE EVENTS' in text and acts==['ENTER CONQUEST','FAST TRAVEL','MY BASE','RESEARCH · COMING SOON (disabled)'] and info['programs']<=12 and not errors,results[f'{w}x{h}']
+    assert 0<=firstPaint<300 and 'WARFRONT' in text and 'YOUR BASE' in text and 'CC3' in text and 'WAR ORDERS' in text and 'LIVE EVENTS' in text and acts==['ENTER CONQUEST','FAST TRAVEL','MY BASE','RESEARCH · COMING SOON (disabled)'] and info['programs']<=12 and not errors,results[f'{w}x{h}']
     if mobile:
      await page.get_by_role('button',name='MY BASE').click()
      if await page.locator('.cq-transmission').count():await page.locator('.cq-story-start').click()

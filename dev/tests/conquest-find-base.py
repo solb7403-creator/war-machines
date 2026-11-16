@@ -47,7 +47,7 @@ async def main():
     if u.netloc=='telegram.org':return await r.fulfill(body='',content_type='application/javascript')
     await r.abort()
    await page.route('**/*',route)
-   refuge=[1174,1168];fixture={'position':refuge,'fieldMissions':True}
+   refuge=[1174,1168];fixture={'position':refuge,'fieldMissions':True,'firsts':{'bank':1},'baseFunds':True}   # Session 6: the first-visit pulse waits until the town is affordable (the chip then says CLAIM YOUR TOWN)
    await page.request.post(base+'/fixture',data=fixture)
    await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
    await page.request.post(base+'/fixture',data=fixture)

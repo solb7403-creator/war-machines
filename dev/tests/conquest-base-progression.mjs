@@ -2,8 +2,9 @@
 // claim and plot functions on the Worker clock, scripted ordinary play. It answers "neither instant nor a wall": time to CC2,
 // CC5 and CC10 in the first hour, first day and first weeks. Explicit assumptions (estimates, not a human playtest):
 //  - one completed sortie every 90 s of play (field missions for the first 75 min, then the authored raids in rotation);
-//  - all CP goes to the first base (as conquest-first-base); after it, half of all CP goes to engineering and other sinks,
-//    half to the base; materials all to the base;
+//  - all CP goes to the town until 2,550 CP are spent on it (the old Command Center 1 claim: Session 6 split the claim, and this
+//    trigger keeps the pilot's behaviour the same across that change); after it, half of all CP goes to engineering and other
+//    sinks, half to the base; materials all to the base;
 //  - each day: one session at 18:00 UTC (regular 45 min, dedicated 150 min split in two sessions), Daily Base Yield and plot
 //    production collected at its start; the builder is given the next job after every sortie (Command Center first, then the
 //    cheapest affordable building or upgrade), so real timers run while the pilot is away.
@@ -15,11 +16,12 @@ const {campaign,baseAction}=await import('../../worker/src/conquest-campaign.js'
 const {plotAction}=await import('../../worker/src/conquest-plot.js');
 const DAY=86400000,start=Date.UTC(2026,10,9,0);
 const at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
-function run(profile){const s=createState(R.STOCK_L,start),hit={},legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,other=0;
+function run(profile){const s=createState(R.STOCK_L,start),hit={},legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,other=0,spent=0;
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:P.MNS.includes(k)?true:s.ledger.banked[k]>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]={day:+((now-start)/DAY).toFixed(2),playMin:played};};
  const atGate=()=>{s.position=at(C.baseDefinition.x,C.baseDefinition.z);s.battle.enemies=[];};
- const build=now=>{campaign(s,now);if(!s.base.tier){if(afford(C.baseDefinition.recipe)){atGate();baseAction(s,{action:'build-base',plot:{site:'crater'}},now);mark('CC1',now);}return;}
+ const build=now=>{const cp0=s.ledger.cp;try{build0(now);}finally{spent+=Math.max(0,cp0-s.ledger.cp);}};
+ const build0=now=>{campaign(s,now);if(!s.base.tier){if(afford(C.baseDefinition.recipe)){atGate();baseAction(s,{action:'build-base',plot:{site:'crater'}},now);mark('CC1',now);}return;}
   const p=s.plot;for(const k of [2,3,5,7,9,10])if(p.cc>=k)mark('CC'+k,now);if(p.job)return;atGate();
   if(p.cc<P.CC.max&&afford(P.costOf('cc',p.cc+1))){try{plotAction(s,{action:'plot-upgrade',plot:{id:'cc'}},now,{bmn:{il:99,ar:99}});return;}catch(e){}}
   // cheapest legal build or upgrade the pilot can afford (turrets capped at 6 in this model)
@@ -30,7 +32,7 @@ function run(profile){const s=createState(R.STOCK_L,start),hit={},legacy=['oxyge
  for(let day=0;day<120;day++){for(const [h,mins] of profile.sessions){let now=start+day*DAY+h*3600000;
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);
   for(let m=0;m<mins;m+=1.5){now+=90000;played+=1.5;const id=played<=75?legacy[serial%legacy.length]:C.raidIds[serial%C.raidIds.length];serial++;
-   s.mission=id;s.attempt=serial;s.featuredMission=false;const cp0=s.ledger.cp;missionReward(s,now);s.mission=null;const half=s.base.tier?Math.floor((s.ledger.cp-cp0)/2):0;s.ledger.cp-=half;other+=half;
+   s.mission=id;s.attempt=serial;s.featuredMission=false;const cp0=s.ledger.cp;missionReward(s,now);s.mission=null;const half=spent>=2550?Math.floor((s.ledger.cp-cp0)/2):0;s.ledger.cp-=half;other+=half;
    s.position=at(1174,1168);bank(s,now);build(now);}}
   build(start+(day+1)*DAY-1000);if(hit.CC10&&day>hit.CC10.day+2)break;}
  return {profile:profile.label,hit,finalCC:s.plot?.cc,buildings:s.plot?Object.values(s.plot.b).map(b=>b.t+(b.t==='cc'?s.plot.cc:b.l)).join(' '):'',power:s.plot?.power,otherSinksCP:other};}
@@ -40,9 +42,11 @@ mkdirSync('docs/conquest/session5',{recursive:true});writeFileSync('docs/conques
 console.log(JSON.stringify(out,null,1));
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
 const r=regular.hit,d=dedicated.hit;
-ok(r.CC1&&r.CC1.playMin>=45&&r.CC1.playMin<=75,'first base (CC1) after '+r.CC1?.playMin+' min of play (target 45-75, existing recipe)');
-ok(r.CC2&&r.CC2.playMin<=r.CC1.playMin+90&&r.CC2.day<=3,'CC2 soon after: '+r.CC2?.playMin+' play-min, day '+r.CC2?.day+' (not a wall)');
+ok(r.CC1&&r.CC1.playMin<=25,'first town (CC1 claim, 600 CP: owner Decision 1) after '+r.CC1?.playMin+' min of play (target: inside the first session, <= 22 min in the scripted journey)');
+ok(r.CC2&&r.CC2.day<=3,'CC2 by day '+r.CC2?.day+' ('+r.CC2?.playMin+' play-min; it carries the rest of the old claim, so it lands when the old CC2 did)');
 ok(r.CC5&&r.CC5.day>=4&&r.CC5.day<=21,'regular CC5 on day '+r.CC5?.day+' (about 1-3 weeks: not instant)');
+// Owner fix (Nov 16): the Sortie chain pays a bonus consumable, no CP or salvage (was +10%, then +0.25%), so the ladder keeps main's floor;
+// dev/tests/conquest-ladder-check.mjs holds the +-10% band with every Session 6 change on.
 ok(r.CC10&&r.CC10.day>=21&&r.CC10.day<=100,'regular CC10 on day '+r.CC10?.day+' (a long-term goal, reachable in months)');
 ok(r.CC9&&r.CC9.day<=35,'regular CC9 (tier V, points ×1.25) on day '+r.CC9?.day+' (the Session 4 model had Base V on day 20 with every CP on the base)');
 ok(d.CC10&&d.CC10.day<r.CC10.day&&r.CC10.day/d.CC10.day<=3.5,'dedicated CC10 on day '+d.CC10?.day+' ('+(r.CC10.day/d.CC10.day).toFixed(1)+'x faster, never 10x)');

@@ -21,7 +21,10 @@ function engineeringValues(stats,e){
  shieldDuration:3*(1+bonus('shieldDuration')+benefit(t.shield)),shieldCooldown:Math.max(5,25*(stats.shieldCdM||1)*(1+bonus('shieldCooldown')+cost(t.shield)))};
 }
 
-const mission=Object.freeze({id:'oxygen-line',x:1160,z:1048,name:'HOLD THE OXYGEN LINE',activationRadius:150});
+// Session 6 (first hour): the first mission is staged at the new Refuge spawn (ConquestWorld.spawn, 33 m south of this marker):
+// it is in range at once (activation 60 m, was 150 m), the first wave is in sight of the spawn and every wave is in sight of a
+// pilot who follows the HUD arrow (it points at the nearest living attacker during any defense mission). World data only.
+const mission=Object.freeze({id:'oxygen-line',x:1152,z:1098,name:'HOLD THE OXYGEN LINE',activationRadius:60});
 // Authored constants, deliberately independent of the pilot's equipment and performance.
 const archetypes=Object.freeze({
  raider:Object.freeze({name:'Parasite interceptor',cls:'scout',arch:'twin',hp:180,dps:18,shot:.45,speed:2.8,range:43,role:'player'}),
@@ -35,14 +38,14 @@ const plateTaken=(st,energy,area)=>(energy?1-(st?.enR||0):1)*(area?1-(st?.arR||0
 const droneDefinition=Object.freeze({altitude:15,takeoffSeconds:1.2,speed:4.2,maxPerCarrier:2,tellSeconds:1.1,burstSeconds:2,cycleSeconds:6});
 const installations=W.installations;
 // Stable authored identities preserve production v1 locks and spawn keys as the region expands.
-const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
+const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014,'patrol-03':10015,'patrol-04':10016,'patrol-05':10017,'patrol-06':10018,'patrol-07':10019,'patrol-08':10020,'patrol-09':10021,'patrol-10':10022});
 const legacyOperations=[
- {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
- {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
- {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
- {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
- {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
- {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
+ {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',firstCp:250,brief:'Protect the oxygen processor through three assault waves.'},
+ {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',firstCp:140,brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
+ {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',firstCp:130,brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
+ {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',firstCp:100,brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
+ {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',firstCp:150,brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
+ {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',firstCp:220,brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
  ];
 // Five spatial layouts with different approach angles, routes and objective order.
 const raidLayouts=freeze([
@@ -79,18 +82,33 @@ const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperation
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 // The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
 const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
-const baseDefinition=freeze({x:1080,z:1160,radius:30,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
+const baseDefinition=freeze({x:1080,z:1160,radius:30,recipe:{cp:600,alloy:30,biomass:15,helium:2},   // = ConquestPlot.CC.claim (Session 6, Decision 1)
+ 
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
 function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=modules.radar||0;return {radius:Math.max(18+6*defense,tier>=5?30:tier>=4?24:0),mitigation:Math.min(.5,defense*.1+(tier>=4?.1:0)+(tier>=5?.05:0)),radar:Math.max(radar,tier>=5?1:0),radarRange:120+100*Math.max(radar,tier>=5?1:0)+(tier>=5?100:0)};}
 // road-intercept patrols the south road just outside the home perimeter, where the Helium, Ash and Crossroads routes leave
 // home (it previously doubled up on the Crossroads garrison camp). It stays >=150 m from the base and Refuge terminal.
-const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]},
+ // Session 6 living world (spec §5.6): 4 -> 12 routes, two per sector, authored and drivable (searched loops), every waypoint >=150 m
+ // from the Refuge terminal, the spawn, the Command Gate and the first mission, >=30 m from installations, operations and other routes.
+ // solo: the new routes (like every hunter) never join an operation as residents, so no raid, field mission, strike or defense
+ // changes difficulty (blueprint §5); they wait outside the operation exactly where they were.
+ {id:'patrol-03',solo:true,kind:'breacher',x:1315,z:1068,route:[[1315,1068],[1299,1068],[1299,1052],[1315,1052]]},{id:'patrol-04',solo:true,kind:'raider',x:1353,z:1153,route:[[1353,1153],[1337,1153],[1337,1137],[1353,1137]]},
+ {id:'patrol-05',solo:true,kind:'sentinel',x:1216,z:875,route:[[1216,875],[1200,881],[1194,865],[1210,859]]},{id:'patrol-06',solo:true,kind:'command',x:1317,z:890,route:[[1317,890],[1305,902],[1293,890],[1305,878]]},
+ {id:'patrol-07',solo:true,kind:'raider',x:882,z:975,route:[[882,975],[870,987],[858,975],[870,963]]},{id:'patrol-08',solo:true,kind:'breacher',x:972,z:865,route:[[972,865],[960,877],[948,865],[960,853]]},
+ {id:'patrol-09',solo:true,kind:'command',x:1042,z:812,route:[[1042,812],[1018,822],[1008,798],[1032,788]]},{id:'patrol-10',solo:true,kind:'raider',x:1143,z:808,route:[[1143,808],[1127,808],[1127,792],[1143,792]]}]);
+// HOLD THE OXYGEN LINE, re-staged for the first hour (Session 6; authored, never matched to the pilot's gear). Wave 1: two
+// interceptors strafing the towers 35-40 m in front of the spawn (role 'facility': they shoot the tower, not you; the first kill
+// inside seconds). Wave 2: the heavy sentinel that
+// broke through the colony's north gate comes down the main street, 90 m away and in sight the whole way (the first enemy that
+// hurts). Wave 3: a raider, a saboteur and a coordinator flank the processor from the north-west. Tuned with scripted pilots:
+// one that follows the arrow, one that never moves and one that rushes in all win on stock gear (dev/tests/conquest-first-hour.mjs).
 const formations=Object.freeze([
- Object.freeze([['raider',1218,995],['breacher',1230,995]]),
- Object.freeze([['raider',1218,995],['breacher',1230,995]]),
- Object.freeze([['raider',1218,995],['breacher',1230,995],['command',1240,995]])
+ Object.freeze([['raider',1172,1098,'facility'],['raider',1184,1104,'facility']]),
+ Object.freeze([['sentinel',1064,1128]]),
+ Object.freeze([['raider',1124,1098],['breacher',1118,1104],['command',1112,1110]])
 ]);
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}
@@ -107,6 +125,18 @@ function blocked(x,y,z){
 }
 function lineClear(a,b,allowObjective=false){if(W.installationOccludes?.(a,b))return false;const d=dist(a,b),n=Math.max(1,Math.ceil(d/.5));for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(allowObjective&&Math.hypot(x-1150,z-1080)<12)continue;if(blocked(x,y,z))return false;}return true;}
 function enemyStats(a){return {cls:a.cls,gems:[],gemM:{},buffs:[],dmgM:1,critB:0,wdps:a.dps,wshot:a.shot,wpspd:42,wedge:.75};}
+// Session 6 living world (spec §5.6): one authored hunter (hunter packs, incursions, vein ambushes). Archetype stats only, never the
+// pilot's gear. hunt = {r: aggro m, leash: m from home, heart: may chase into the Heartland}; ids are the Worker's fixed ranges.
+function hunter(kind,key,id,x,z,hunt,route=null){const a=archetypes[kind];return {id,key,base:{kind:'hunter',id:key},route,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(id%10)*.03,cd:2,vx:0,vz:0,role:'guard',hunt};}
+// Hunter pack anchors in the order they open (1 + floor(held sectors / 2), spec §5.6): rings 3-4. Two loops sit 21-27 m from a
+// field mission, so packs never start a hunt within 150 m of a field-mission marker (nearFieldMission, Battle.choose).
+let FIELD_MARKS=null;
+function nearFieldMission(p){FIELD_MARKS=FIELD_MARKS||fieldMissionIds.map(id=>[operations[id].x,operations[id].z]);for(const [x,z] of FIELD_MARKS)if(Math.hypot(p.x-x,p.z-z)<150)return true;return false;}
+const LIVING=Object.freeze({packs:Object.freeze([{x:1270,z:946,route:[[1294,946],[1270,970],[1246,946],[1270,922]]},{x:850,z:870,route:[[866,886],[834,886],[834,854],[866,854]]},{x:1320,z:1175,route:[[1334,1189],[1306,1189],[1306,1161],[1334,1161]]},{x:1170,z:863,route:[[1186,879],[1154,879],[1154,847],[1186,847]]}].map(Object.freeze)),   // searched drivable loops: Ash north, Western, Ridge east, Helium-Ash saddle
+ pack:Object.freeze(['raider','raider','command']),hardExtra:'sentinel',aggro:200,leash:300,regenMs:3600000,
+ ambush:Object.freeze({chance:.35,afterMs:20000,ring:3,stay:40,kinds:Object.freeze(['sentinel','sentinel']),from:65}),
+ incursion:Object.freeze({calmMs:600000,kinds:Object.freeze(['raider','raider','raider']),from:120,refuge:60,fightR:70}),
+ ids:Object.freeze({pack:10100,ambush:10200,incursion:10210}),chain:Object.freeze({windowMs:600000,per:0,item:.10,max:3})});   // Sortie chain (owner, Nov 16): no CP and no salvage (per 0); a win with k earlier links has a k x 10% chance (10/20/30%) of one bonus consumable, rolled on the Worker from the loot seed (worker/src/conquest-living.js chainItem)
 class Battle {
  constructor(loadout,playerPosition){
  this.snapshot=freeze(JSON.parse(JSON.stringify(loadout)));this.playerStats={...tankOf(this.snapshot,1),buffs:[]};this.playerStats.wshot=(profiles[this.playerStats.wtype]||profiles.pulse).interval;this.engineering=engineeringDefaults();this.heat=0;this.overheated=false;this.combatSpeed=machineSpeed(this.snapshot,this.playerStats);
@@ -114,7 +144,7 @@ class Battle {
  this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.approachGrace=Math.hypot(playerPosition.x-mission.x,playerPosition.z-mission.z)>65?60:0;this.spawnWave();
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
- spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
+ spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z,role]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:role||a.role});}this.wave++;this.nextWave=0;}
  shoot(from,to,stats,team,kind,owner){
  if(this.projectiles.length>=96)return false;if(team==='enemy'&&this.enemies.some(e=>e.id===owner&&e.resident&&(e.target===e.home||e.target===e.navGoal)))return false;let d=dist(from,to);if(d<.01)return false;const values=engineeringValues(stats,this.engineering),speed=team==='player'?values.velocity:stats.wpspd;
  if(kind==='twin'){const side=this.shots%2?1:-1,ax=(to.z-from.z)/d*.55*side,az=-(to.x-from.x)/d*.55*side;from={x:from.x+ax,y:from.y,z:from.z+az};}
@@ -122,7 +152,7 @@ class Battle {
  }
  choose(e){
  const a=archetypes[e.kind],p=this.player,ec=center(e),pd=dist(ec,p);
- e.target=e.guardReturning?(e.navGoal||e.home):a.role==='player'&&pd<90||a.role==='support'&&pd<38?p:this.objective;
+ const role=e.role||a.role;e.target=e.guardReturning?(e.navGoal||e.home):role==='player'&&pd<90||role==='support'&&pd<38?p:this.objective;
  const target=e.target,dx=target.x-e.x,dz=target.z-e.z,d=Math.hypot(dx,dz),visible=lineClear(ec,target,target===this.objective),desired=e.guardReturning?0:a.range*.72;
  e.vx=e.vz=0;if(visible&&d<desired+4&&d>desired-10)return;
  const heading=Math.atan2(dx,dz)+(visible&&d<desired-10?Math.PI:0);let best=-Infinity;
@@ -142,7 +172,7 @@ class Battle {
  if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,q.kind==='pulse',false);const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
  if(q.team==='player'&&t.pattern==='shield'&&this.time%8<3)damage*=.35;
  if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7,at:this.time});}}
- else if(t===this.player){this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
+ else if(t===this.player){this.hitBy=q.owner;this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
  if(q.kind==='siege'&&q.team==='player')for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){const dealt=Math.min(e.hp,damage*.3);this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}}
@@ -172,7 +202,7 @@ class Battle {
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
- for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
+ for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(this.lure(e));else if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
  const p=this.enemyAdvance?this.enemyAdvance(e,dt):W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
  const target=e.target||this.objective,ec=center(e),want=Math.atan2(target.x-e.x,target.z-e.z),delta=Math.atan2(Math.sin(want-e.turret),Math.cos(want-e.turret));e.turret+=clamp(delta,-2*dt,2*dt);
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
@@ -182,6 +212,10 @@ class Battle {
  if(!this.localEncounter&&!this.enemies.some(e=>!e.resident&&e.hp>0)){if(this.wave===formations.length){this.state='victory';this.projectiles=[];}else{this.nextWave+=dt;if(this.nextWave>=3)this.spawnWave();}}
  if(!this.localEncounter&&Math.hypot(this.player.x-mission.x,this.player.z-mission.z)>240){this.state='defeat';this.reason='Retreated beyond the defense perimeter';this.projectiles=[];}
  }
+ // Decoy Beacon (Session 6 consumable, rules.js CQ_ITEMS.decoy): while it lives, every Parasite within its radius drives to the
+ // beacon and fires at it instead of the pilot. Position only: it never reads the pilot's gear (the 5D fairness rule).
+ lure(e){const d=this.decoy;if(!d||!(d.t>0)||Math.hypot(e.x-d.x,e.z-d.z)>d.r)return false;const a=archetypes[e.kind],dx=d.x-e.x,dz=d.z-e.z,l=Math.hypot(dx,dz)||1;
+  e.target={x:d.x,y:(d.y||0)+2.2,z:d.z};e.vx=l>9?dx/l*a.speed:0;e.vz=l>9?dz/l*a.speed:0;return true;}
  dispose(){this.projectiles=[];this.enemies=[];this.effects=[];}
 }
 // A small local theater uses the same projectiles, damage, models and steering as missions.
@@ -199,6 +233,13 @@ class Encounter extends Battle {
  spawnWave(){} // guard lifecycle is independent of mission waves
  choose(e){
   const d=Math.hypot(this.player.x-e.x,this.player.z-e.z),homeDistance=Math.hypot(this.player.x-e.home.x,this.player.z-e.home.z);
+  // Session 6 hunters (packs, incursions, vein ambushes): authored aggro and leash, never gear (spec §5.6). A pack never follows
+  // the pilot into the Heartland (ring 1: the first hour stays the incursions' ground only), and never hunts within 150 m of a
+  // field-mission marker (packs 0 and 3 loop 21-27 m from BREAK THE REDOUBT and BEACON EXTRACTION: no ambush on the way in or on
+  // RETURN TO EXPLORATION). Positions only: the same on the Worker and the client.
+  if(e.hunt){const H=e.hunt,inHeart=!H.heart&&(W.ringAt(this.player.x,this.player.z)===1||nearFieldMission(this.player));if(!inHeart&&(d<H.r||e.hp<e.maxHp)&&homeDistance<H.leash){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
+   else {e.guardReturning=true;if(e.route){e.routeIndex=e.routeIndex||0;if(Math.hypot(e.x-e.route[e.routeIndex][0],e.z-e.route[e.routeIndex][1])<3)e.routeIndex=(e.routeIndex+1)%e.route.length;const [x,z]=e.route[e.routeIndex];e.navGoal={x,z,y:W.groundAt(x,z)+2.2};}else e.navGoal=e.home;super.choose(e);e.guardReturning=false;}
+   const q=W.advance(e,e.vx,e.vz);if(Math.hypot(q.x-e.home.x,q.z-e.home.z)>H.leash)e.vx=e.vz=0;return;}
   const alerted=d<65||e.hp<e.maxHp||(e.radioUntil||0)>this.time;
   if(e.hp<e.maxHp*.2&&d<40&&homeDistance>30){e.guardReturning=true;e.navGoal=e.home;super.choose(e);e.guardReturning=false;return;}
   if(alerted&&homeDistance<100){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
@@ -251,7 +292,7 @@ class Operation extends Battle {
  deployCommander(){const o=this.operation;this.deploy(o.commander==='ambush'?'raider':o.commander==='carrier'?'command':'sentinel',o.x+12,o.z-38,'commander');const e=this.enemies.at(-1);e.commander=true;e.pattern=o.commander;e.hp=e.maxHp=o.commander==='ambush'?460:680;e.nextPattern=this.time+4;e.drones=0;this.commanderId=e.id;this.harden(e);}
  defenseStep(dt){if(this.defenseConfig==='drone')this.objectiveHp=Math.min(this.objectiveMax,this.objectiveHp+12*dt);if(this.defenseConfig!=='turret')return;this.turretClock=(this.turretClock||0)-dt;if(this.turretClock>0)return;this.turretClock=.6;const from={x:this.operation.x,y:W.groundAt(this.operation.x,this.operation.z)+6,z:this.operation.z},e=this.enemies.find(e=>!e.resident&&e.hp>0&&Math.hypot(e.x-from.x,e.z-from.z)<65&&lineClear(from,center(e)));if(!e)return;const damage=18+3*(this.baseTier||0);e.hp=Math.max(0,e.hp-damage);this.effects.push({kind:'beam',weapon:'pulse',x:from.x,y:from.y,z:from.z,ex:e.x,ey:e.y+2.2,ez:e.z,life:.15});if(!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}}
  deployDefense(){this.defenseWave++;for(let i=0;i<3;i++){this.deploy(i===2?'breacher':'raider',this.operation.x-30+i*20,this.operation.z-40,'defense:'+this.defenseWave+':'+i);this.enemies.at(-1).role=i===2?'facility':'player';}this.objectiveDamageable=true;}
- hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,h.kind==='plasma',h.kind==='plasma'||h.kind==='orbital');const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
+ hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){this.hitBy=-1;let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,h.kind==='plasma',h.kind==='plasma'||h.kind==='orbital');const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
   for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;{const D=doctrineOf(this.operation);e.nextPattern=this.time+(e.pattern==='artillery'?6:8)*(D?D.cadence*(e.enraged?D.enrageCadence:1):e.enraged?.65:1);}e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<droneDefinition.maxPerCarrier&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);const drone=this.enemies.at(-1);this.harden(drone);drone.drone=true;drone.launchedAt=this.time;drone.surface='air';drone.cd=droneDefinition.takeoffSeconds;drone.telegraph=true;e.drones++;}}}
   if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+(doctrineOf(this.operation)?.hazardEvery||11);this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
  }
@@ -340,5 +381,5 @@ function travelBlock(state,p,enemies,now){if(!state)return 'Online connection re
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
  if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
-root.ConquestCombat=Object.freeze({strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

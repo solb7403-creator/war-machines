@@ -1,0 +1,18 @@
+{
+ "quiet": {
+  "label": "spawn (first hour)",
+  "medianMs": 18.94,
+  "p90Ms": 55.03,
+  "near": 14,
+  "total": 22
+ },
+ "pack": {
+  "label": "beside a hunter pack, all packs out (16 hunters, 12 patrols)",
+  "medianMs": 76.4,
+  "p90Ms": 202.57,
+  "near": 18,
+  "total": 38
+ },
+ "ratio": 4.03,
+ "note": "applyCommands with 20 commands (one second of play); median of 40 requests; this machine, relative only"
+}

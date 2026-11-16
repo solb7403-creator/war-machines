@@ -18,7 +18,7 @@ function model(rule){const start=1800000000000,s=createState(R.STOCK_L,start);le
  return {rule,baseMinute:null};}
 const rows=Object.entries(PACES).map(([pace,a])=>{ASSUME=a;return {pace,assumptions:a,old:model('old'),new:model('new')};});
 console.log(JSON.stringify({recipe,rows,modeled:true,physicalHumanPlaytest:false},null,2));
-for(const r of rows){assert(r.old.baseMinute&&r.new.baseMinute,'both rules reach Base I');assert(r.new.baseMinute>r.old.baseMinute,'gated, harder raids slow the first base');}
+for(const r of rows){assert(r.old.baseMinute&&r.new.baseMinute,'both rules reach Base I');assert(r.new.baseMinute<=25&&r.old.baseMinute<=25,'the 600 CP claim (owner Decision 1) lands inside the first session under both raid rules');/* Session 6: the claim lands before raids open, so the raid gating no longer moves it */}
 // Owner kept raid rewards unchanged; the remaining gap to the 45-75 minute target is reported, not hidden or forced.
 writeFileSync('docs/conquest-session-2/first-base-model.json',JSON.stringify({generatedBy:'dev/tests/conquest-first-base.mjs',recipe,rows,target:'45-75 min',note:'Raid rewards unchanged by owner decision; kill salvage, featured bonuses and production excluded (slower than real).',modeled:true,physicalHumanPlaytest:false},null,2)+'\n');
 console.log('PASS first Command Base (modeled): '+rows.map(r=>r.pace+' '+r.old.baseMinute+' -> '+r.new.baseMinute+' min').join(' · ')+' (old rule -> owner rule)');
