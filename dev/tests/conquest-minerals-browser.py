@@ -94,7 +94,7 @@ async def main():
    await page.wait_for_function(HIT,timeout=20000,polling=120);threat=await page.locator('.cq-threat').inner_text();await page.screenshot(path=str(OUT/'under-fire-390.png'))
    LOW='''(()=>{const v=Conquest.view,B=v.encounter||v.battle;B.playerHp=Math.round(B.playerMax*.2);const b=document.querySelector('.cq-low-hull');return !!b&&!b.hidden&&/ROUTE TO REFUGE/.test(b.textContent);})()'''
    await page.wait_for_function(LOW,timeout=20000,polling=120);lowText=await page.locator('.cq-low-hull').inner_text();await page.screenshot(path=str(OUT/'low-hull-390.png'))
-   await page.evaluate('document.querySelector(".cq-low-hull").click()');route=await page.evaluate('Conquest.view.routeTarget?.kind||""')
+   route=await page.evaluate('(()=>{document.querySelector(".cq-low-hull").click();return Conquest.view.routeTarget?.kind||"";})()')   # read in the same task: at the Refuge the route ends on arrival (Session 6)
    assert 'UNDER FIRE' in threat and 'TAP: ROUTE TO REFUGE REPAIR' in lowText and route=='refuge',(threat,lowText,route)
    print('PASS under fire: arrow + distance + red edge flash; low hull (<25%) banner tap sets the Refuge repair route')
    await page.evaluate('(()=>{const B=Conquest.view.encounter||Conquest.view.battle;B.enemies=B.enemies.filter(e=>!e.__probe);B.playerHp=B.playerMax;Conquest.view.routeTarget=null;})()')

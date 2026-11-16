@@ -15,8 +15,9 @@ function create(view,panel){
  for(let i=0;i<3;i++){const n=document.createElement('b');n.className='cq-dmg';n.hidden=true;layer.append(n);F.nums.push({el:n,id:null,sum:0,until:0});}
  // Session 6 loot v1: one-word labels over the nearest four loot caches (rarity colour), so a drop reads before you reach it
  F.tags=[];for(let i=0;i<4;i++){const n=document.createElement('i');n.className='cq-drop-tag';n.hidden=true;layer.append(n);F.tags.push(n);}
- const project=(x,y,z)=>{const T=view.T,c=view.camera;if(!T||!c||!view.origin||!view.host)return null;const v=new T.Vector3(x-view.origin.x,y,z-view.origin.z).project(c);
-  if(v.z>1||Math.abs(v.x)>1.05||Math.abs(v.y)>1.05)return null;const r=view.host.getBoundingClientRect();return {x:(v.x+1)*r.width/2,y:(1-v.y)*r.height/2};};
+ // one Vector3 and one screen rect a frame (frame() reads the rect before any write: no forced layout per projection)
+ const project=(x,y,z)=>{const T=view.T,c=view.camera;if(!T||!c||!view.origin||!view.host)return null;const v=(F.v3||(F.v3=new T.Vector3())).set(x-view.origin.x,y,z-view.origin.z).project(c);
+  if(v.z>1||Math.abs(v.x)>1.05||Math.abs(v.y)>1.05)return null;const r=F.rect||(F.rect=view.host.getBoundingClientRect());return {x:(v.x+1)*r.width/2,y:(1-v.y)*r.height/2};};
  // at most three numbers on screen, merged per target inside 0.7 s; the oldest slot is reused
  function number(e,amount,crit,now){let slot=F.nums.find(s=>s.id===e.id&&s.until>now);if(!slot){slot=F.nums.reduce((a,b)=>a.until<b.until?a:b);slot.id=e.id;slot.sum=0;slot.crit=false;}
   slot.sum+=amount;slot.crit=slot.crit||crit;slot.until=now+700;slot.e=e;const n=slot.el;n.textContent=String(Math.max(1,Math.round(slot.sum)));
@@ -37,9 +38,13 @@ function create(view,panel){
   const k=document.createElement('small');k.textContent=(['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'][top.r]||'RARE')+' FIND';c.append(k,document.createTextNode(top.t.replace(/^RARE · /,'')));panel.append(c);setTimeout(()=>c.remove(),2400);
   const t=panel.querySelector('.cq-reward-ticker');if(t){t.textContent=L.text(d.loot);t.__cqText=t.textContent;view.tickerUntil=Date.now()+2600;}}
  return {flyout,card,
-  frame(B,state){const now=performance.now();unflash(now);if(!B)return;
+  frame(B,state){const now=performance.now();unflash(now);F.rect=null;if(!B)return;F.rect=view.host?.getBoundingClientRect?.()||null;
+   // enemy ids repeat (every operation numbers its units from 20001; patrols, packs and incursions keep fixed ids): a new fight starts
+   // clean, or a reused id would print a phantom number from the last fight's hull and never pop when it dies
+   const fight=view.battle?'b:'+(B.operation?.id||'line')+':'+(state?.attempt|0):'e';if(fight!==F.fight){F.fight=fight;F.hp.clear();F.dead.clear();unflash(now,true);}
    const superLive=(B.effects||[]).some(x=>x.k&&(x.kind==='beam'||x.kind==='nova'||x.kind==='destroy'));   // a SUPER hit prints gold
-   for(const e of B.enemies||[]){const old=F.hp.get(e.id);F.hp.set(e.id,e.hp);if(old===undefined||!(e.hp<old-.5))continue;const d=Math.hypot(e.x-view.p.x,e.z-view.p.z);if(d>160)continue;
+   for(const e of B.enemies||[]){if(e.hp>0&&F.dead.size)F.dead.delete(e.id);const old=F.hp.get(e.id);F.hp.set(e.id,e.hp);   // an id alive again (a respawned patrol, the next incursion) pops again
+    if(old===undefined||!(e.hp<old-.5))continue;const d=Math.hypot(e.x-view.p.x,e.z-view.p.z);if(d>160)continue;
     flash(e.id,now);number(e,old-e.hp,superLive,now);if(now-F.lastHit>70){F.lastHit=now;snd('dealt',{k:typeof supKey==='function'?supKey(B.playerStats?.wtype||'pulse',B.playerStats?.wtier|0):null,cr:superLive});}
     if(e.hp<=0&&old>0&&!F.dead.has(e.id)){F.dead.add(e.id);killPop(e,now);}}
    if(F.hp.size>400){const live=new Set((B.enemies||[]).map(e=>e.id));for(const k of F.hp.keys())if(!live.has(k))F.hp.delete(k);}
@@ -49,7 +54,7 @@ function create(view,panel){
    for(const h of B.hazards||[]){const key=Math.round(h.x)+':'+Math.round(h.z)+':'+(h.wave??h.kind);if(h.remaining<=.08&&!F.hazards.has(key)&&Math.hypot(h.x-view.p.x,h.z-view.p.z)<120){F.hazards.add(key);snd('boom');}}if(F.hazards.size>64)F.hazards.clear();
    {const near=(state?.drops||[]).filter(d=>d.loot&&d.expires>Date.now()&&Math.hypot(d.x-view.p.x,d.z-view.p.z)<70).sort((a,b)=>Math.hypot(a.x-view.p.x,a.z-view.p.z)-Math.hypot(b.x-view.p.x,b.z-view.p.z));
     F.tags.forEach((n,i)=>{const d=near[i],p=d&&project(d.x,(d.y||0)+4.2,d.z);if(!p){n.hidden=true;return;}if(n.textContent!==d.label)n.textContent=d.label;n.style.color=RARITY_COLORS[d.r|0]||RARITY_COLORS[0];n.style.left=Math.round(p.x)+'px';n.style.top=Math.round(p.y)+'px';n.hidden=false;});}
-   const drops=new Map((state?.drops||[]).map(d=>[d.id,d]));for(const [id,d] of F.drops)if(!drops.has(id)&&Math.hypot(d.x-view.p.x,d.z-view.p.z)<9){flyout(d,d.r|0,d.label||'SALVAGE');card(d);}F.drops=drops;},
+   if(state?.drops!==F.dropSrc){F.dropSrc=state?.drops;const drops=new Map((state?.drops||[]).map(d=>[d.id,d]));for(const [id,d] of F.drops)if(!drops.has(id)&&Math.hypot(d.x-view.p.x,d.z-view.p.z)<9){flyout(d,d.r|0,d.label||'SALVAGE');card(d);}F.drops=drops;}},   // only when the server's drop list changed
   warn(){const now=performance.now();if(now-F.lastWarn>4000){F.lastWarn=now;snd('warn');}},
   dispose(){unflash(0,true);layer.remove();}};}
 root.ConquestFeel=Object.freeze({create,RARITY_COLORS,NAMES});

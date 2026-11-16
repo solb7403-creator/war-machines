@@ -132,7 +132,7 @@ export const LOOT_ACTIONS=['use-item',...ORDER_ACTIONS];
 function useItem(s,B,request,now){
  const k=request.item;if(Object.keys(request).some(x=>!['seq','action','item'].includes(x))||typeof k!=='string'||!own(RULES.CQ_ITEMS,k))fail('invalid item');
  const I=itemReady(s,k,now);if(s.hp<=0||B.playerHp<=0||B.state!=='active')fail('Machine disabled');
- if(!s.mission&&s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<=C.baseDefinition.radius)fail('consumables work in the field, not inside your town');
+ if(s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<=C.baseDefinition.radius)fail('consumables work in the field, not inside your town');   // spec §4.3: never in the Home Sector, a live defense included
  if(k==='repair'){if(B.playerHp>=B.playerMax-.5)fail('hull already full');if(B.mend?.t>0)fail('a Repair Kit is already working');B.mend={t:I.healS,rate:B.playerMax*I.heal/I.healS};}
  else if(k==='shield'){if(!(B.shieldCd>0))fail('SHIELD is already ready');B.shieldCd=0;}
  else if(k==='scanner')scanPulse(s,now,I.extra,true);

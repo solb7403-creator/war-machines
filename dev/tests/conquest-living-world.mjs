@@ -68,7 +68,7 @@ console.log('PASS incursion: after 10 calm minutes three interceptors arrive ~12
 {const s=fresh();s.ledger.cp=0;const ops=C.fieldMissionIds;let t=now0;const pays=[];for(let i=0;i<5;i++){s.mission=ops[i];s.attempt=i+1;t+=120000;const r=missionReward(s,t);pays.push([r.cp,r.chain?.links||0,r.ptsRaw]);}
  const base=pays.map(p=>p[0]);assert.deepEqual(pays.map(p=>p[1]),[0,1,2,3,3],'links found by each win');
  const firstCp=ops.slice(0,5).map(id=>C.operations[id].firstCp||250);assert.deepEqual(base,firstCp.map((c,i)=>Math.round(c*(1+L.chain.per*Math.min(3,i)))+(i===2?100:0)),'+'+(+(L.chain.per*100).toFixed(2))+'% per link, max +'+(+(L.chain.per*300).toFixed(2))+'% (the third field order of the day adds its usual +100 CP, unchained)');
- assert.equal(L.chain.per,.0125,'owner correction Nov 16: +1.25% CP and salvage a link (was +10%)');
+ assert.equal(L.chain.per,.0025,'owner correction Nov 16: +0.25% CP and salvage a link (was +10%)');
  const pts=pays.map(p=>p[2]);assert(pts.every(p=>p===pts[0]),'airdrop points never multiplied');
  // the raid chest: one rarity step at three links
  const r=fresh();r.chain={n:3,at:now0};r.mission=Object.values(C.operations).find(o=>o.raid).id;r.attempt=1;let epic=0;for(let i=0;i<400;i++){const q=structuredClone(r);q.lseed=i;q.attempt=i;const rc=missionReward(q,now0+1000);if(rc.loot?.fr?.e)epic++;if(rc.loot?.fr?.r)assert.fail('a three-link chest never pays a rare fragment (it stepped up)');}assert(epic>10,'epic fragments from a three-link chest: '+epic);

@@ -14,7 +14,7 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  H={panel,o,raf:0,disposed:false,state:null};
  const top=el('div','cq-top',null,panel);top.append(button('← RETURN TO ARCADE',o.exit));
  // Session 6: one scroller holds the hero and the status cards; the actions sit below it and never cover card text
- const scroll=el('div','cq-hub-scroll',null,panel);const hero=el('div','cq-hub-hero',null,scroll);H.hero=hero;const art=el('div','cq-hub-art',null,hero);art.setAttribute('aria-hidden','true');
+ const scroll=el('div','cq-hub-scroll',null,panel);scroll.prepend(top);   // RETURN rides the scroller (over the hero art at the top) and scrolls away with it: never over card textconst hero=el('div','cq-hub-hero',null,scroll);H.hero=hero;const art=el('div','cq-hub-art',null,hero);art.setAttribute('aria-hidden','true');
  const copy=el('div','cq-hub-copy',null,hero);el('p','cq-kicker','LUNAR / CONQUEST COMMAND',copy);el('h1','','CONQUEST',copy);el('p','cq-premise','EARTH HAS FALLEN.\nWE HOLD THE MOON.',copy);
  const col=el('div','cq-hub-status',null,scroll);H.col=col;   // not a live region: it refreshes every second
  const acts=el('div','cq-hub-actions',null,panel);

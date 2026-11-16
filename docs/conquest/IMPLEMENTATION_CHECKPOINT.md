@@ -4394,16 +4394,16 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   Raid difficulty re-checked after the fix: identical (starter HARD 8/10, VETERAN 0/15, Epic VETERAN 13/15, same hull list).
   Pre-existing on main, NOT fixed (out of scope, report it): worker/src/conquest-plot.js line ~76 has code after a `//` comment
   ("re-blending a damaged wall keeps its damage (REPAIR fixes it)for(...)"): the wall-stock deduction on that path never runs.
-- NEXT (in order; no PR exists yet, CI runs on pull_request only):
-  1. Browser journey test `dev/tests/conquest-session6-journey.py` (fixture server dev/tests/conquest-server.mjs; options inv/drops/
-     noEnemies added in slice 3): brand-new account, real keys: radio -> first fight (follow the arrow) -> kill pop + loot flyout ->
-     bank -> SCAN -> Starter Vein -> plate -> field missions -> CLAIM YOUR TOWN (<= 22 simulated min), a consumable used, a War Order
-     claimed, hub at 390x844; screens fit/scroll at 390x700, 390x844, 320x568 AND desktop 1366x768, 1920x1080 (real keyboard/mouse).
-     Existing: dev/tests/conquest-session6-loot.py PASS (3 sizes), conquest-session6-feel.py, conquest-onboarding.py.
-  2. Captures to docs/conquest/session6/ (minute 0, kill pop, loot card, after-action with drops, War Orders card, yield steps,
-     capped HUD, 320/390 pairs, desktop). 3. At most 2 critic rounds. 4. Two independent read-only reviewers (security/economy +
-     gameplay/performance), each with every owner rule pass/fail. 5. PR -> CI green -> merge -> deploy Worker + Pages -> verify
-     /pvp/health and version.json = repo -> record -> ROADMAP row 6 -> final report (plain words; the ladder speed-up is item 1).
+- DONE (Nov 16, after slice 5): browser journey `dev/tests/conquest-session6-journey.py` (brand-new account on the shipped client
+  against the real Worker reducer: 390x844 touch journey, scan-route run, smoke at 390x700 / 320x568 / 1366x768 / 1920x1080, desktop
+  keys 1366x768; `--only journey,route,smoke,keys`, `--merge`). Its first run found 6 UI bugs, fixed in a5ae24b (see "Journey fixes");
+  the second found a 7th (9c1ade6). OWNER CORRECTION (Nov 16) applied: Sortie chain +0.25% a link and a hard ladder gate (see
+  "Owner correction: the Sortie chain and the ladder gate"). Two independent reviewers ran (both FAIL on first pass); every blocking
+  finding is fixed (see "Independent reviews"). CI suites that were red before this pass (conquest-living-world since 43f2a1e) are
+  green; conquest-regression.sh passes.
+- NEXT (in order; no PR exists yet, CI runs on pull_request only): 1. browser re-run on the final code (journey + route + smoke +
+  keys, plus find-base, minerals, plot-ui, onboarding, feel, loot), captures committed; 2. PR -> CI green -> merge -> deploy Worker +
+  Pages -> verify /pvp/health and version.json = repo -> record here -> ROADMAP row 6 -> final report (plain words).
 - Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
   `chromium`); the wtest suites need `npm install --prefix worker --no-audit --no-fund --package-lock=false`; never run node suites
   in parallel when you care about timing files (`docs/conquest/session5b/town-rules.json` records ms: restore it with git checkout).
@@ -4462,6 +4462,84 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
 | First town (CLAIM YOUR TOWN) | 72.43 (CC1 2,550 CP) | 5.97 (CC1 600 CP) |
 The audit's human-like pilot (follows the HUD arrow) LOST the first mission on main; the arrow-following bot wins on this branch.
 Browser timings (real keys, phone + desktop) come with the journey test later in the session.
+
+### Browser first-hour moments (shipped client, real keys/touch, real Worker reducer; simulated minutes = Worker s.an.p)
+| Moment | Run 1 (a few UI bugs) | Run 2 (a5ae24b) |
+|---|---:|---:|
+| Radio / first fight (one tap, no briefing) | 0.11 | 0.10 / 0.11 (8 s real) |
+| First kill (DESTROYED pop) | 0.15 | 0.14 (11 s) |
+| First loot | 0.93 | 0.97 (62 s) |
+| First bank | 1.33 | 1.53 (96 s) |
+| Starter Vein (35 Ferrite) | 1.55 | 1.75 (110 s) |
+| First plate (FRONT Ferrite, hull 1700 -> 1717) | 3.58 | 2.21 (140 s) |
+| CLAIM YOUR TOWN (target <= 22) | 7.06 | 6.09 (380 s) |
+Final-code numbers: see "Release record" once the last browser run is in.
+
+### Journey fixes (Nov 16; a5ae24b, 9c1ade6)
+1. CLAIM TOWN off-screen at 390x844 (the claim sheet collapsed to 14 px): `.cq-plot-claim` drawer takes its own height (max 72%),
+   the site list above scrolls (and scrolls by touch: `.cq-plot-stage.cq-plot-sites{touch-action:pan-y}`).
+2. A SCAN route (nearest vein) outranked the coach chain in the NEXT chip and hid every order up to the town in 2 runs: while the coach
+   chain runs a scan routes nowhere (the coach's own SCAN / GATHER steps lead to the Starter Vein); a scan route ends on gather, dry or
+   after 3 min. Routes the pilot chose end on arrival (the Refuge inside its terminal radius, an operation once in range or running).
+3. MORE menu cut off at 390x700 / 320x568: it scrolls inside the screen.
+4. FRONT plate card greyed out while affordable (Conquest never refreshed save.pts): the wallet view carries `pts` (eco.js
+   creditConquest view, conquest.js canonical + settleAirdrop); the client copies it.
+5. Base hint + MY BASE pulse over the opening radio: they wait until the town is affordable (or claimed), no dialog, ticker free.
+6. NEXT chip under MAP / MY BASE on phones: own full-width row on portrait <= 600 px wide (faint backdrop), lines below moved 40 px;
+   wide screens reserve 240 px for the top-bar buttons.
+7. (9c1ade6, narrowed after review) a cleared FIELD mission in range (the Oxygen Line is 59 m from the Starter Vein) no longer takes the
+   chip; Meteor Strikes and sector defenses reuse their ids per event, so an open one always does ("✓ SECURED" follows the same rule).
+
+### Owner correction: the Sortie chain and the ladder gate (Nov 16)
+Owner: with EVERY Session 6 change on, the ladder must stay within +-10% of the audit table (regular 60 min/day: CC5 day 5.4-6.6,
+CC10 day 25.9-31.7); reduce the chain's bonus per link by the smallest amount that does it; keep the chain and War Orders as built;
+restore the CC10 floor to 21; make the ladder check fail outside the band.
+- **Before:** chain +10% a link: CC5 day 4.8 / CC10 day 15.8 (one modelled pilot who never fights).
+- **Method found on the way** (each step changed the answer, so it is recorded): (a) with War Orders on the result depends on the pilot
+  (orders are drawn from the pilot's seed; the greedy builder turns a few hundred CP into another build order), so one run is noise:
+  the gate judges a fixed panel of 101 pilot seeds; (b) createState drew day 0's orders from a random seed before the panel pinned it:
+  fixed (deterministic, two runs identical); (c) the security reviewer showed the modelled pilot never fights, so "Destroy 15 Parasites"
+  never completed: the panel pilot now books 6 kills a sortie (10 gives the same ladder) and a Defense Drill a session once it has a
+  town; (d) CC10 is bimodal (a fast cohort near day 18-20 from lucky War Orders draws): its median stays on the slow mode until half
+  the pilots are fast, so the gate requires the MEDIAN and the MEAN inside the band.
+- **After:** chain **+0.25% a link (max +0.75%)**, the largest quarter-percent step that passes: median CC5 day 5.8 / CC10 day 26.8, mean
+  5.7 / 26.0 (93% / 74% of the 101 pilots inside the band; CC10 range 18.8-29.8). Production x3 + storage x2 alone: 5.8 / 30.8; + the
+  chain: 5.8 / 29.8. Sweep (fighting pilot): +0.5% mean CC10 24.7 (out); +0.75% median in but mean 24.5 (out); +1.0% median CC5 5.0
+  (out); 0%: median 5.8 / 28.8, mean 5.8 / 27.3. `docs/conquest/session6/ladder.json` holds the run.
+- Kept: three links, the 10-minute window, the HUD meter (now "NEXT WIN +0.5% CP & SALVAGE"), the raid-chest rarity step at three,
+  the reset rules, points never multiplied; War Orders exactly as built (the reviewer's point that the `ops15` weekly is not in spec
+  §6.1 is answered by the owner's "leave War Orders exactly as built"). conquest-base-progression CC10 floor back to 21 days.
+- For the owner (final report): at +0.25% the chain's real reward is the chest's rarity step; a chain that pays loot rarity or a
+  consumable instead of CP would move the ladder by nothing (PROPOSAL). One pilot in four still reaches CC10 by ~day 23 (p25 22.8)
+  because of War Orders draws: an owner decision if the tail should be tighter.
+
+### Independent reviews (Nov 16; both read-only, both FAIL on first pass, every blocking finding fixed)
+Security/economy (base a5ae24b): 1 ladder gate foolable (FIXED: fighting pilot, median + mean, deterministic); 2 `ops15` weekly and
+the harvest 50% cap not in the spec (KEPT: owner "leave War Orders exactly as built" / "everything built stays"; harvest cap is the
+stricter anti-farm reading flagged since slice 5); 3 CI red (conquest-living-world string check; FIXED 2894414); 4 CC10 floor (FIXED);
+5 consumables usable inside the town during a live defense (FIXED: never in the Home Sector, spec §4.3); 6 incursion/ambush bookkeeping
+never pruned, the pilot record grows for life (FIXED: dropped with the unit); 7 /api/conquest/an only weakly rate-limited (FIXED: 6 a
+minute a pilot in PID_RL); 8 the 32-bit loot seed is recoverable from public drops (cosmetics/consumables only; PROPOSAL: a 128-bit or
+HMAC seed and completion rolls keyed on a value drawn at start-mission). The `pts` wallet view passes (own balance only, cannot mint).
+Gameplay/performance (base 79b472d): 1 CI red (FIXED); 2 NEXT chip stuck on refuge / map routes forever (FIXED: routes end on
+arrival); 3 kill pops silent from the second operation on, phantom damage numbers (FIXED: feel state resets per fight, a respawned id
+pops again); 4 cleared-op rule wrong for strikes / sector defenses (FIXED: field missions only); 5 the coach's "2 MORE FERRITE" could
+send a 2-minute pilot to a ring-4 vein ambush (FIXED: Heartland veins only); 6 hunter packs 0 and 3 loop 21-27 m from field missions
+(FIXED: packs never start a hunt within 150 m of a field-mission marker); 7 line-of-sight ray every frame (FIXED: 250 ms per
+attacker); 8 hunter AI roughly triples the step cost (DEFERRED to 6B: AI change in shared client/Worker code; 21-24 ms a second of
+play at the spawn, 112 ms beside a pack, inside the Worker budget); 9 feel.frame forced layouts / allocations (FIXED: one rect and one
+Vector3 a frame, drop map only when the server list changes); 10 site list not touch-scrollable (FIXED), item picker collapsed in short
+landscape (FIXED: centred at the bottom), threat arrow over the moved lines at 320x568 (FIXED), hub RETURN over card text at 320x568
+(FIXED: RETURN rides the scroller and scrolls away with the hero); 11 SCAN pulsed at minute 0 beside DEFEND (FIXED: only during the coach's SCAN step), MY BASE pulse during the coach
+chain (FIXED: when the town is affordable); 12 cleared-map growth (FIXED with security 6).
+
+Owner rules after the fixes (both reviewers' tables merged): payments disabled, no price/Stars/TON/SOL/referral change PASS ·
+DAILY_CAP 50,000 and CQ_PTS / quest rewards unchanged PASS · every reward decided on the Worker PASS · loot account-bound, capped, never
+raided or lost PASS · no AFK points PASS · gear, plating, leagues, RECALL, Arcade untouched PASS · analytics hold no personal data PASS
+· no guard loosened (CC10 floor restored) PASS · 50% carried loss and the 600 s wreck PASS · ladder +-10% with every change on PASS
+(owner correction) · owner numbers as decided PASS (War Orders kept as built by owner instruction) · first hour (town 6.09 sim min)
+PASS · minute-0 HUD and one guidance channel PASS (after fixes 2, 4, 11) · every screen fits or scrolls PASS · gear-blind living world PASS · smoothness PASS with 8 deferred (measured, in budget) ·
+presentation-only feel PASS · no new 3D models PASS · no migration code PASS.
 
 ### Tests (this slice)
 New: `dev/tests/conquest-first-hour.mjs` (spawn, 60 m activation, wave 1 in sight, arrow = nearest attacker, three pilots win via

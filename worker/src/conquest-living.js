@@ -31,7 +31,7 @@ export function living(s,now){const B=s.battle;if(!B||!Array.isArray(B.enemies))
    const [ox,oz]=offsets[j%offsets.length],u=fresh(kinds[j],key,id,a.x+ox,a.z+oz,{r:L.aggro,leash:L.leash,heart:false},a.route,now);
    if(e)B.enemies[at]=u;else B.enemies.push(u);s.spawns[key]={generation:h};}}
  for(let k=B.enemies.length-1;k>=0;k--){const e=B.enemies[k];if(!/^(incursion|ambush):/.test(e.key||''))continue;
-  const d=Math.hypot(e.x-p.x,e.z-p.z);if(e.hp<=0&&d>120||d>400||e.hp>0&&now-(e.born||now)>600000&&d>120)B.enemies.splice(k,1);}
+  const d=Math.hypot(e.x-p.x,e.z-p.z);if(e.hp<=0&&d>120||d>400||e.hp>0&&now-(e.born||now)>600000&&d>120){B.enemies.splice(k,1);delete s.spawns[e.key];if(B.cleared)delete B.cleared[e.key];}}   // each incursion / ambush key is new: drop its bookkeeping with it, or the saved record grows for life
  B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));}
 // The first GATHER of a vein generation (not the Starter Vein, not flora) in ring 3+: the 35% roll, once, keyed by the server seed.
 export function ambushRoll(s,slot,node){const A=L.ambush,v=s.lodes?.slots?.[slot];if(!v||s.mission)return;s.ambushed=record(s.ambushed)?s.ambushed:{};const gen=(v.gen|0)+1;if(s.ambushed[slot]===gen)return;s.ambushed[slot]=gen;

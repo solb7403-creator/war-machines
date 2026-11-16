@@ -266,15 +266,26 @@ const platesOf=s=>typeof apOf==='function'?apOf(s?.airdrop?.view?.ap||(typeof sa
 function coachStep(s){return view?.authority?G.coachStep(s,view.p,{kb:keyboardPilot(),wallet:walletOf(s),plates:platesOf(s)}):null;}
 function boardOrder(s){return G.boardOrder(s,view.p,{pay:airdropNumbers(s).pay});}
 function nextOrder(s){if(view.battle)return null;return view.routeTarget||coachStep(s)||boardOrder(s)||root.ConquestCombat?.mission;}
+// The red arrow's line of sight to the nearest attacker, at most every 250 ms per attacker (one long ray costs up to ~1 ms a frame).
+function sightTo(foe,p){const c=view.__sight||(view.__sight={id:null,at:0,clear:true}),now=performance.now();if(c.id!==foe.id||now-c.at>250){c.id=foe.id;c.at=now;c.clear=root.ConquestCombat.lineClear({x:p.x,y:p.y+2.2,z:p.z},{x:foe.x,y:foe.y+2.2,z:foe.z});}return c.clear;}
+// A field mission this pilot has cleared (strikes and sector defenses reuse their ids per event, so they are never "secured").
+function secured(s,o){return !!o&&root.ConquestCombat.fieldMissionIds.includes(o.id)&&!!(s?.completed?.[o.id]||view.progress?.completed(o.id));}
+// A route the pilot chose ends on arrival, so the NEXT chip returns to the coach chain and the board: the Refuge inside its terminal
+// radius, an operation once it is in range (its ACT button takes over) or running. Base routes end in homeHud, scan routes in
+// resourceGuide.
+function routeDone(B){const t=view.routeTarget;if(!t||t.kind==='base'||t.kind==='resource')return;const d=Math.hypot(view.p.x-t.x,view.p.z-t.z);
+ if(t.kind==='refuge'?d<=(t.radius||30):B?.operation?.id===t.id||!!t.activationRadius&&d<=t.activationRadius)view.routeTarget=null;}
 function guidance(){
  if(!view)return;const nav=panel.querySelector('#cq-navigation');if(!nav)return;const C=root.ConquestCombat,s=view.authority?.state,B=view.battle,active=B?.state==='active';
- // a cleared operation in range (a replay) never takes the chip from the coach or the board; its ACT button still offers the replay
- const nop=view.nearOperation,near=!B&&nop&&!contractWait(s,nop)&&!raidLock(s,nop)&&!(s?.completed?.[nop.id]||view.progress?.completed(nop.id))?nop:null;
+ routeDone(B);
+ // a cleared FIELD mission in range (a replay) never takes the chip from the coach or the board (its ACT button still offers the
+ // replay); Meteor Strikes and sector defenses reuse their ids for every new event, so an open one always does
+ const nop=view.nearOperation,near=!B&&nop&&!contractWait(s,nop)&&!raidLock(s,nop)&&!secured(s,nop)?nop:null;
  const m=B?(B.operation||C.mission):(view.routeTarget||near||nextOrder(s));if(!m)return;
- const p=view.p,isBase=m.kind==='base',isRefuge=m.kind==='refuge',completed=!m.coach&&!!(s?.completed?.[m.id]||view.progress?.completed(m.id)),radius=m.activationRadius||m.radius||45;
+ const p=view.p,isBase=m.kind==='base',isRefuge=m.kind==='refuge',completed=!m.coach&&(secured(s,m)||!!m.raid&&!!(s?.completed?.[m.id]||view.progress?.completed(m.id))),radius=m.activationRadius||m.radius||45;
  let target=m,route=m.line||(isBase?'Follow the arrow and the gold beacon · enter through the gate':isRefuge?'Follow the cyan beacon to the Refuge supply terminal · bank salvage and repair':'Follow the objective beacon');if(m.kind==='resource'&&!m.line)route='Drive onto the ore, stop, then HOLD GATHER';
  // a defense (the Oxygen Line, a sector or base defense): the arrow leads to the nearest living attacker
- const foe=G.arrowTarget(B,p);if(foe){target=foe;if(Math.hypot(foe.x-p.x,foe.z-p.z)>30&&!C.lineClear({x:p.x,y:p.y+2.2,z:p.z},{x:foe.x,y:foe.y+2.2,z:foe.z})){const aim=homeAim({kind:'foe',x:Math.round(foe.x/12)*12,z:Math.round(foe.z/12)*12},p,14);if(aim)target=aim;}}   // out of sight behind buildings: the red arrow follows a drivable route to it
+ const foe=G.arrowTarget(B,p);if(foe){target=foe;if(Math.hypot(foe.x-p.x,foe.z-p.z)>30&&!sightTo(foe,p)){const aim=homeAim({kind:'foe',x:Math.round(foe.x/12)*12,z:Math.round(foe.z/12)*12},p,14);if(aim)target=aim;}}   // out of sight behind buildings: the red arrow follows a drivable route to it
  const far=Math.hypot(p.x-m.x,p.z-m.z)>radius;
  const home=!B&&p.surface!=='bridge'&&far&&!(m.kind==='coach'&&Math.hypot(p.x-m.x,p.z-m.z)<=radius)?homeAim(m,p,Math.min(radius,45)):null;if(home)target=home;
  // the viaduct deck has two exits only: never point a pilot on the deck through a rail
@@ -363,7 +374,7 @@ function combatHUD(){if(!view)return;guidance();root.ConquestPlotView?.tankBanne
   const sc=panel.querySelector('#cq-scan-access'),left=Math.max(0,(state?.scanAt||0)+MN_SCAN.cooldownMs-Date.now()),ctx=!!node&&B.playerHp>0;
   if(ctx&&g.hidden&&!sc.hidden){const r=sc.getBoundingClientRect(),b=panel.getBoundingClientRect();if(r.width){css(g,'left',Math.round(r.left-b.left)+'px');css(g,'top',Math.round(r.top-b.top)+'px');css(g,'bottom','auto');}}
   prop(g,'hidden',!ctx);if(node){const ms=state?.channel?.node===node.id?state.channel.ms:0;put(g,T.d>root.ConquestWorld.HARVEST.radius?'GATHER · DRIVE '+Math.ceil(T.d-root.ConquestWorld.HARVEST.radius+.5)+' M CLOSER':Date.now()-(view.lastHitAt||0)<2500?'UNDER FIRE · CLEAR ENEMIES, THEN GATHER':view.gathering?'GATHERING · '+Math.min(99,Math.round(100*ms/T.ms))+'%':'HOLD · GATHER '+T.label);}
-  prop(sc,'hidden',!!view.battle||B.playerHp<=0||!view.authority||ctx);put(sc,left>0?'SCAN · '+Math.ceil(left/1000)+'s':state?.scanAt?'SCAN':'SCAN · FIND ORE');if(sc.classList.contains('cq-scan-pulse')!==!state?.scanAt)sc.classList.toggle('cq-scan-pulse',!state?.scanAt);
+  prop(sc,'hidden',!!view.battle||B.playerHp<=0||!view.authority||ctx);put(sc,left>0?'SCAN · '+Math.ceil(left/1000)+'s':state?.scanAt?'SCAN':'SCAN · FIND ORE');{const cue=!state?.scanAt&&coachStep(state)?.coach==='scan';if(sc.classList.contains('cq-scan-pulse')!==cue)sc.classList.toggle('cq-scan-pulse',cue);}   // pulses only while the coach says SCAN (never beside DEFEND at minute 0)
   const carried=state?.ledger?.mn;put(panel.querySelector('.cq-mn'),mnText(carried)?'MINERALS CARRIED · '+mnText(carried)+' · BANK AT THE REFUGE':'');
   put(panel.querySelector('.cq-strike'),hudOpen(state,'meteor')?strikeLine(state):'');
   {const M=root.ConquestCombat?.meteorStrike?.(Date.now());if(M&&M.phase==='telegraph'&&view.strikeAlert!==M.slot&&hudOpen(state,'meteor')){view.strikeAlert=M.slot;if(typeof fx==='function')fx('meteor');if(typeof showToast==='function')showToast('Meteor Strike inbound: '+M.site.name+' in '+Math.max(1,Math.ceil((M.impactAt-Date.now())/60000))+' min. Check your MAP.');try{root.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('warning');}catch(_){}}}   // the strike alert, once per slot
@@ -439,14 +450,16 @@ async function myBase(){if(!view)return;try{localStorage.setItem(HOME_SEEN,'1');
  if(!view.battle&&view.authority?.connected){if(s?.base?.tier){if(await view.requestAction('fast-travel',{destination:'base'}))return;}else if(d>300&&await view.requestAction('fast-travel',{destination:'refuge'})){navigate('base');return;}}
  navigate('base');}
 const HOME_SEEN='lunar-cq-my-base-found-v1';const homeSeen=()=>{try{return localStorage.getItem(HOME_SEEN)==='1';}catch(_){return true;}};
+const townReady=s=>{const R=root.ConquestCombat.baseDefinition.recipe,L=s?.ledger;if(!L)return false;for(const k in R)if((k==='cp'?L.cp:L.banked?.[k]||0)<R[k])return false;return true;};
 // Every frame: the HUD button's distance, the first-visit route, and the arrival zone opening the plot by itself.
 function homeHud(){if(!view||!panel)return;const D=root.ConquestCombat.baseDefinition,s=view.authority?.state,d=Math.hypot(view.p.x-D.x,view.p.z-D.z),btn=panel.querySelector('#cq-home-btn');
  if(view.__wantBase&&!mapOpen&&!panel.querySelector('.cq-dialog')){view.__wantBase=false;if(d<=D.radius&&!view.battle)baseTerminal();}
  if(btn){prop(btn,'hidden',!!view.battle);put(btn.querySelector('.cq-home-d'),d<=D.radius?'HERE':(d>100?Math.round(d/10)*10:Math.round(d))+' m');}
  // Session 5C: the button carries a live mini-map of the town (red ring when damaged), so it is visible while away
  if(btn&&root.ConquestTownKit&&s!==view.__thumbState){view.__thumbState=s;const p=s?.plot,k=p?JSON.stringify([p.cc,p.site,p.w,p.b,p.dmg]):'';if(k!==view.__thumbKey){view.__thumbKey=k;let c=btn.querySelector('.cq-home-thumb');if(p){if(!c){c=document.createElement('canvas');c.className='cq-home-thumb';c.setAttribute('aria-hidden','true');btn.prepend(c);}root.ConquestTownKit.thumb(p,48,c);btn.classList.add('cq-home-has-thumb');const hurt=Object.keys(p.dmg||{}).length>0;btn.classList.toggle('cq-home-damaged',hurt);btn.setAttribute('aria-label','MY BASE'+(hurt?' · town damaged, repair it':'')+' · find, fast travel or open your base');}else if(c){c.remove();btn.classList.remove('cq-home-has-thumb');}}}
- // first visits, once the BASE line has opened (the first bank: never over the opening radio), with no dialog open and the ticker free (never over a receipt)
- if(view.authority?.connected&&!view.__homeFirst&&hudOpen(s,'base')&&Date.now()>(view.tickerUntil||0)&&!panel.querySelector('.cq-dialog')){view.__homeFirst=1;if(!homeSeen()&&btn){btn.classList.add('cq-home-new');const ticker=panel.querySelector('.cq-reward-ticker');if(ticker&&!s?.base?.tier){put(ticker,'⌂ YOUR BASE GATE IS '+Math.round(d)+' m WEST OF THE REFUGE · TAP ⌂ MY BASE ANYTIME');view.tickerUntil=Date.now()+6000;}}}   // first visits: the gold button pulses until used; the mission guidance is never taken over
+ // first visits, once the town is affordable (the chip then says CLAIM YOUR TOWN) or already claimed: never over the opening radio
+ // or the coach chain; with no dialog open and the ticker free (never over a receipt)
+ if(view.authority?.connected&&!view.__homeFirst&&(s?.base?.tier||townReady(s))&&Date.now()>(view.tickerUntil||0)&&!panel.querySelector('.cq-dialog')){view.__homeFirst=1;if(!homeSeen()&&btn){btn.classList.add('cq-home-new');const ticker=panel.querySelector('.cq-reward-ticker');if(ticker&&!s?.base?.tier){put(ticker,'⌂ YOUR BASE GATE IS '+Math.round(d)+' m WEST OF THE REFUGE · TAP ⌂ MY BASE ANYTIME');view.tickerUntil=Date.now()+6000;}}}   // first visits: the gold button pulses until used; the mission guidance is never taken over
  const inside=d<=D.radius&&!view.battle;if(view.__inBase===undefined){if(view.authority?.connected)view.__inBase=inside;return;}   // only ARRIVING opens it (not a session that starts at the gate)
  if(inside&&!view.__inBase&&view.authority?.connected){view.__inBase=true;try{localStorage.setItem(HOME_SEEN,'1');}catch(_){}btn?.classList.remove('cq-home-new');const routed=view.routeTarget?.kind==='base';if(routed)view.routeTarget=null;
   // Session 5C: the Command Gate is a portal: arriving in its ring loads your town around your tank (Home Sector)

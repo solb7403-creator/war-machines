@@ -129,7 +129,7 @@ Parts → research → mods (power you can see). Fragments → cosmetics on tank
 - All authored, never gear-matched (`enemyStats` stays archetype-only; the 5D regression test covers Conquest).
 
 ### 5.7 Sortie chain (Session 6)
-Consecutive operation wins within 10 minutes: +1.25% CP and salvage per link, cap +3.75% at three (owner correction Nov 16, 2026; was +10% / +30%: keeps the town ladder within ±10% of the audit with every Session 6 change on), one rarity step on loot at three; resets on death, RECALL or leaving Conquest. A HUD meter shows it. Airdrop points are not multiplied by the chain (the cap and league factors stay the only points levers).
+Consecutive operation wins within 10 minutes: +0.25% CP and salvage per link, cap +0.75% at three (owner correction Nov 16, 2026; was +10% / +30%: keeps the town ladder within ±10% of the audit with every Session 6 change on), one rarity step on loot at three; resets on death, RECALL or leaving Conquest. A HUD meter shows it. Airdrop points are not multiplied by the chain (the cap and league factors stay the only points levers).
 
 ### 5.8 Terraform-zone modes (Session 7B, roadmap list; one engine each)
 Colony Defense (town-raid engine on the frontier wall and farms; place colony turrets from a budget; 675 pts), Bridge Assault (hold three bridge points against waves, 900 pts), Convoy Run (escort along colony roads under ambush, 900 pts), Blight Purge (destroy five blight sources, the zone recovers visibly, 450 pts), Forest Hunt (three hunter packs in the forest, line-of-sight fights, 675 pts). Values follow the economy spec's par method (225 base a minute × danger). Each pays settler reputation.

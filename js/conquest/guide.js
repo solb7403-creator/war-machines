@@ -31,7 +31,7 @@ function coachStep(s,p,opts={}){if(!s||!s.completed?.['oxygen-line']||typeof PLA
  // The Starter Vein (35) and the first clear's cache (3) leave a new pilot 2 short of the 40 a plate needs. The nearest Ferrite
  // vein this pilot has scanned closes the gap; with none in reach, the next field mission does (every field mission pays 3
  // Ferrite): never a dead end, never a guess about unscanned veins (they are server-only).
- if(need>0){const at=p||refuge,ore=nearestOf(W.knownOre(s,opts.now||Date.now()).filter(o=>o.ready&&o.d.mineral==='fe'&&o.d.m!=='starter').map(o=>({...o.d,left:o.left})),at);
+ if(need>0){const at=p||refuge,ore=nearestOf(W.knownOre(s,opts.now||Date.now()).filter(o=>o.ready&&o.d.mineral==='fe'&&o.d.m!=='starter'&&W.ringAt(o.d.x,o.d.z)===1).map(o=>({...o.d,left:o.left})),at);   // Heartland veins only: a vein ambush (ring 3+) is no place for a pilot two minutes in
   if(ore&&Math.hypot(ore.x-at.x,ore.z-at.z)<=220)return {coach:'more',kind:'resource',id:ore.id,name:need+' MORE FERRITE',x:ore.x,z:ore.z,radius:6,line:'GATHER this Ferrite vein ('+ore.left+' left), then bank it'};
   const field=nearestOf(C.fieldMissionIds.filter(id=>!s.completed?.[id]).map(id=>C.operations[id]),at);
   if(field)return {...field,coach:'more',name:need+' MORE FERRITE',line:'Every field mission pays 3 Ferrite: '+field.name,reward:orderReward(field,s,opts.pay||1)};

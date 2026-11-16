@@ -128,12 +128,15 @@ function enemyStats(a){return {cls:a.cls,gems:[],gemM:{},buffs:[],dmgM:1,critB:0
 // Session 6 living world (spec §5.6): one authored hunter (hunter packs, incursions, vein ambushes). Archetype stats only, never the
 // pilot's gear. hunt = {r: aggro m, leash: m from home, heart: may chase into the Heartland}; ids are the Worker's fixed ranges.
 function hunter(kind,key,id,x,z,hunt,route=null){const a=archetypes[kind];return {id,key,base:{kind:'hunter',id:key},route,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(id%10)*.03,cd:2,vx:0,vz:0,role:'guard',hunt};}
-// Hunter pack anchors in the order they open (1 + floor(held sectors / 2), spec §5.6): rings 3-4, away from the field missions.
+// Hunter pack anchors in the order they open (1 + floor(held sectors / 2), spec §5.6): rings 3-4. Two loops sit 21-27 m from a
+// field mission, so packs never start a hunt within 150 m of a field-mission marker (nearFieldMission, Battle.choose).
+let FIELD_MARKS=null;
+function nearFieldMission(p){FIELD_MARKS=FIELD_MARKS||fieldMissionIds.map(id=>[operations[id].x,operations[id].z]);for(const [x,z] of FIELD_MARKS)if(Math.hypot(p.x-x,p.z-z)<150)return true;return false;}
 const LIVING=Object.freeze({packs:Object.freeze([{x:1270,z:946,route:[[1294,946],[1270,970],[1246,946],[1270,922]]},{x:850,z:870,route:[[866,886],[834,886],[834,854],[866,854]]},{x:1320,z:1175,route:[[1334,1189],[1306,1189],[1306,1161],[1334,1161]]},{x:1170,z:863,route:[[1186,879],[1154,879],[1154,847],[1186,847]]}].map(Object.freeze)),   // searched drivable loops: Ash north, Western, Ridge east, Helium-Ash saddle
  pack:Object.freeze(['raider','raider','command']),hardExtra:'sentinel',aggro:200,leash:300,regenMs:3600000,
  ambush:Object.freeze({chance:.35,afterMs:20000,ring:3,stay:40,kinds:Object.freeze(['sentinel','sentinel']),from:65}),
  incursion:Object.freeze({calmMs:600000,kinds:Object.freeze(['raider','raider','raider']),from:120,refuge:60,fightR:70}),
- ids:Object.freeze({pack:10100,ambush:10200,incursion:10210}),chain:Object.freeze({windowMs:600000,per:.0125,max:3})});   // Sortie chain: +1.25% CP and salvage a link, max +3.75% (owner correction Nov 16: was +10%; keeps the town ladder within +-10% of the audit with every Session 6 change on, dev/tests/conquest-ladder-check.mjs)
+ ids:Object.freeze({pack:10100,ambush:10200,incursion:10210}),chain:Object.freeze({windowMs:600000,per:.0025,max:3})});   // Sortie chain: +0.25% CP and salvage a link, max +0.75% (owner correction Nov 16: was +10%; keeps the town ladder within +-10% of the audit with every Session 6 change on, dev/tests/conquest-ladder-check.mjs)
 class Battle {
  constructor(loadout,playerPosition){
  this.snapshot=freeze(JSON.parse(JSON.stringify(loadout)));this.playerStats={...tankOf(this.snapshot,1),buffs:[]};this.playerStats.wshot=(profiles[this.playerStats.wtype]||profiles.pulse).interval;this.engineering=engineeringDefaults();this.heat=0;this.overheated=false;this.combatSpeed=machineSpeed(this.snapshot,this.playerStats);
@@ -231,8 +234,10 @@ class Encounter extends Battle {
  choose(e){
   const d=Math.hypot(this.player.x-e.x,this.player.z-e.z),homeDistance=Math.hypot(this.player.x-e.home.x,this.player.z-e.home.z);
   // Session 6 hunters (packs, incursions, vein ambushes): authored aggro and leash, never gear (spec §5.6). A pack never follows
-  // the pilot into the Heartland (ring 1: the first hour stays the incursions' ground only).
-  if(e.hunt){const H=e.hunt,inHeart=!H.heart&&W.ringAt(this.player.x,this.player.z)===1;if(!inHeart&&(d<H.r||e.hp<e.maxHp)&&homeDistance<H.leash){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
+  // the pilot into the Heartland (ring 1: the first hour stays the incursions' ground only), and never hunts within 150 m of a
+  // field-mission marker (packs 0 and 3 loop 21-27 m from BREAK THE REDOUBT and BEACON EXTRACTION: no ambush on the way in or on
+  // RETURN TO EXPLORATION). Positions only: the same on the Worker and the client.
+  if(e.hunt){const H=e.hunt,inHeart=!H.heart&&(W.ringAt(this.player.x,this.player.z)===1||nearFieldMission(this.player));if(!inHeart&&(d<H.r||e.hp<e.maxHp)&&homeDistance<H.leash){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
    else {e.guardReturning=true;if(e.route){e.routeIndex=e.routeIndex||0;if(Math.hypot(e.x-e.route[e.routeIndex][0],e.z-e.route[e.routeIndex][1])<3)e.routeIndex=(e.routeIndex+1)%e.route.length;const [x,z]=e.route[e.routeIndex];e.navGoal={x,z,y:W.groundAt(x,z)+2.2};}else e.navGoal=e.home;super.choose(e);e.guardReturning=false;}
    const q=W.advance(e,e.vx,e.vz);if(Math.hypot(q.x-e.home.x,q.z-e.home.z)>H.leash)e.vx=e.vz=0;return;}
   const alerted=d<65||e.hp<e.maxHp||(e.radioUntil||0)>this.time;
