@@ -76,7 +76,8 @@ async def main():
    for k in held:await page.keyboard.up(k)
    if killed is None:await page.screenshot(path=str(OUT/'debug-fight-failure-390.png'))
    assert killed is not None,'the patrol was not destroyed in time'
-   await page.wait_for_function("/\\+\\d[\\d,]* PENDING/.test(document.querySelector('.cq-net').textContent)||/AIRDROP TODAY [1-9]/.test(document.querySelector('.cq-net').textContent)",timeout=15000)
+   # Session 6 progressive HUD: the AIRDROP line appears with the first credit, so the pending entry is read from the verified state
+   await page.wait_for_function("(()=>{const a=Conquest.view.authority.state?.airdrop;return (a?.out&&Object.keys(a.out).length>0)||a?.view?.dailyPts>0||/AIRDROP TODAY [1-9]/.test(document.querySelector('.cq-net').textContent);})()",timeout=30000)
    pending=await page.locator('.cq-net').text_content();print('HUD after the kill',pending,flush=True)
    await page.screenshot(path=str(OUT/'hud-pending-390.png'))
    # the Worker credits a lone kill after 20 s; the HUD then shows the account's own number for today

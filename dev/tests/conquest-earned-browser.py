@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'docs/conquest-living-war'
 async def main():
  save=pathlib.Path('/tmp/lunar-earned-journey.json');assert save.is_file(),'run conquest-earned-journey.mjs first'
- earned=json.loads(save.read_text());assert earned['baseMinute']>=45 and earned['baseMinute']<=75
+ earned=json.loads(save.read_text());assert 0<earned['baseMinute']<=22,earned['baseMinute']   # Session 6 (owner Decision 1): the town at minute ~6, inside the first session
  server=await asyncio.create_subprocess_exec('node','dev/tests/conquest-server.mjs',cwd=ROOT,env={**os.environ,'CQ_EARNED_SAVE':str(save)},stdout=asyncio.subprocess.PIPE)
  ready=json.loads(await server.stdout.readline());base='http://127.0.0.1:'+str(ready['port'])
  try:
