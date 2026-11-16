@@ -4403,9 +4403,35 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   green; conquest-regression.sh passes.
 - DONE: browser re-run on the final code (journey.json PASS, 79 checks; find-base, minerals, plot-ui PASS), captures committed;
   critic round 1 PASS. All 68 CI node suites + conquest-regression.sh PASS.
-- NEXT (in order): build stamp bump (version.json, index.html, web/play.html, worker/src/index.js) -> PR -> CI green -> merge ->
-  deploy Worker + Pages -> verify /pvp/health and version.json = repo -> record here ("Release record") -> ROADMAP row 6 -> final
-  report (plain words).
+- DONE: build stamp 20261116083933 (2173820); PR #139 open (https://github.com/solb7403-creator/war-machines/pull/139), head
+  08dc0c7. CI fixes pushed: the CI transmission job's tests followed the slice-1 opening (radio SKIP 44 px; north-facing spawn;
+  ConquestWorld.spawn; one-tap first defense; fixture option `completed`) and conquest-super-fx locks its staged hull (the new
+  spawn is on a slope). Local PASS (chromium): transmission, occluder, session-032, session-033 (+fallback), super-fx, desktop-keys.
+- RESUME HERE (Nov 16, ~09:40 UTC; this session stopped at its context limit):
+  1. Read PR #139 check runs on head 08dc0c7. Known on 6e15822: `transmission (webkit)` passed transmission / occluder / 032 /
+     033 and then FAILED in `dev/tests/conquest-living-war.py` line 190 (`Conquest.view.performanceReport()`): "TargetClosedError:
+     Target page, context or browser has been closed" (the WebKit page closed: a crash, not an assertion; WebKit cannot run in the
+     cloud container). If it fails again on 08dc0c7, find the cause (memory under software GL with the denser Session 6 world? the
+     test's own timeout?) before merging; one re-run at most. `signup-browsers (webkit)` failed once on ea57d33 (passed on 2173820;
+     website signup, untouched by Session 6): check it on the new head. The `conquest` job: node suites green, portrait browser
+     list green except super-fx (fixed in 08dc0c7).
+  2. CI green -> merge PR #139 (pre-approved by the owner) -> the Worker deploy runs on push to main (deploy-worker.yml), GitHub
+     Pages serves main -> verify /pvp/health ok and live version.json = {"v":"20261116083933"} -> write "Release record" here ->
+     ROADMAP row 6 RELEASED (PR, merge SHA, build) -> final report. A fallback check-in is scheduled for 10:27 UTC
+     (trig_01SuLN3PT84JS6GbFYMgH6Up; delete it if done first).
+  3. Final report (plain words, for the owner's phone): first hour (main -> final: first fight 0.65 -> 0.12 sim min, first kill
+     1.21 -> 0.16, first loot 1.21 -> 0.97, first plate ~12 -> 1.88, first town 72.4 -> 5.31); the ladder correction (chain +0.25%
+     a link; with every change on median CC5 5.8 / CC10 26.8, mean 5.7 / 26.0, band 5.4-6.6 / 25.9-31.7; before 4.8 / 15.8; CI
+     gate); loot tables as shipped (js/rules.js LOOT: interceptor/saboteur 12% Ferrite, 3% Ilmenite, 4% consumable, 0.5% common
+     fragment; sentinel/coordinator 25% Ilmenite, 6% Armalcolite, 8% consumable, 3% part (pity 20), 1% uncommon fragment; raid
+     commander 12% part, 10% trophy (pity 10), 5% rare fragment, +8% Tranquillityite at VETERAN; raid chest 1 consumable + 8% rare
+     fragment (epic at 3 links); strike 15% part, 10% rare fragment; live defense 6% two consumables, 4% uncommon fragment; War
+     Orders daily 1 consumable, the day's 3rd +1 uncommon fragment, weekly 1 Armalcolite + rare fragment); War Orders pool (dailies:
+     raids2 300, bank60 200, mine12 200, drill1 200, strike1 300, kills15 150, sectors3 250 CP; weeklies 1,500 CP: raids10, hold4,
+     strikes3, ops15); minerals model (Ilmenite set 10 -> 9 days, Armalcolite 4.3 -> 3.9 weeks, Tranquillityite 2.6 -> 2.5 months);
+     analytics (Firebase an/<day>/...; admin sheet tab; no personal data); proposals (chain pays loot rarity instead of CP; Starter
+     Vein 35 -> 40; tighten the War Orders fast tail; 128-bit loot seed; hunter AI cost in 6B); Graphify reviews are paused for the
+     workspace (resume on the Graphify Repositories page); next session 6B Tank Lab.
 - Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
   `chromium`); the wtest suites need `npm install --prefix worker --no-audit --no-fund --package-lock=false`; never run node suites
   in parallel when you care about timing files (`docs/conquest/session5b/town-rules.json` records ms: restore it with git checkout).
