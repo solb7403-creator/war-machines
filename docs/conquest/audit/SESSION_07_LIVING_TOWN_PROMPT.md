@@ -1,5 +1,16 @@
 LUNAR: War Machines — SESSION 7: LIVING TOWN (raids on your town while away, live defense, alerts, Strike Beacon, streak, then player raids)
 
+> **OWNER OVERRIDES (Nov 16, 2026). These win over anything below in this brief.** This brief was written Nov 10 and parts are out of date.
+> - **Scope:** this brief now feeds roadmap row 7T (7T Living Town (this brief is the audit's Session 7, reshaped)). Where it disagrees with `docs/ROADMAP.md` row 7T or `docs/conquest/CONQUEST_BLUEPRINT.md` §11, the roadmap and blueprint win.
+> - **Model and effort:** as listed in `docs/ROADMAP.md` row 7T, not "Opus · Extra".
+> - **Release is PRE-APPROVED (owner).** Do not ask. When every gate passes, CI is green and the independent reviewers pass: merge, deploy (Worker + GitHub Pages), verify `/pvp/health` and `version.json` = repo, record it, update the roadmap. Revert if broken after deploy.
+> - **Never stop to ask the owner anything.** The session is creative director: choose what best serves the goal, record the choice and the reason in the checkpoint, keep going.
+> - **No live players.** Write no migration, grandfathering, legacy-fallback or "existing saves" code.
+> - **Phone and computer are equal, on the website and in Telegram.** Every browser check and capture adds desktop 1366×768 and 1920×1080 with real keyboard and mouse next to the phone sizes listed below.
+> - **Review caps:** visual work 3 critic rounds (a 4th only for an item clearly below its reference), non-visual at most 2 (a 3rd only for something clearly broken); phone and desktop judged in the same round. Two independent reviewers check every owner rule as pass/fail in a table in the checkpoint.
+> - **Economy:** prices, points, the cap, quests and payments change only as the owner decided in the session prompt; anything else is a labeled proposal in the final report. Never loosen a test or a guard to make it pass.
+> - The session prompt for this row is written in chat with the owner (grill-me), and its decisions win over this brief.
+
 Run at Opus · Extra effort. Read first: CLAUDE.md, AGENTS.md, docs/ROADMAP.md, docs/economy/RESOURCE_ECONOMY.md (§14, esp. §14.10 hooks: `applyRaidDamage`, `loot()`, `plot.gar`, `plot.shieldUntil`, `plot.alerts`), docs/conquest/SESSION_05B_TOWN_DEFENSE_FULL_PROMPT.txt (raid engine), docs/conquest/IMPLEMENTATION_CHECKPOINT.md (6B checkpoint), docs/conquest/audit/CONQUEST_1_0_SPEC.md (§5.3 Strike Beacon, §6.3, §6.4, §7), docs/conquest/audit/AUDIT_REPORT.md (§4, §6, §8, §14), DECISIONS.md answers for 4, 5, 6, 8, the Telegram bot code in `worker/` (reminders, `ntf/`), `worker/src/conquest-visit.js` (snapshots). New branch from current main. Commit and push every tested slice; append a checkpoint.
 
 Release: ask the owner once whether PRE-APPROVED; if yes, merge/deploy/verify when all gates pass and two independent reviewers have passed; otherwise stop at the PR. Payments stay disabled; raid shields are never sold in this session.

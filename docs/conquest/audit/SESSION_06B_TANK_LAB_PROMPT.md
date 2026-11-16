@@ -1,5 +1,16 @@
 LUNAR: War Machines — SESSION 6B: TANK LAB (mods + Science Lab research, plate visuals, POWER chip, audio and weather)
 
+> **OWNER OVERRIDES (Nov 16, 2026). These win over anything below in this brief.** This brief was written Nov 10 and parts are out of date.
+> - **Scope:** this brief now feeds roadmap row 6B (6B Tank Lab). Where it disagrees with `docs/ROADMAP.md` row 6B or `docs/conquest/CONQUEST_BLUEPRINT.md` §11, the roadmap and blueprint win.
+> - **Model and effort:** as listed in `docs/ROADMAP.md` row 6B, not "Opus · Extra".
+> - **Release is PRE-APPROVED (owner).** Do not ask. When every gate passes, CI is green and the independent reviewers pass: merge, deploy (Worker + GitHub Pages), verify `/pvp/health` and `version.json` = repo, record it, update the roadmap. Revert if broken after deploy.
+> - **Never stop to ask the owner anything.** The session is creative director: choose what best serves the goal, record the choice and the reason in the checkpoint, keep going.
+> - **No live players.** Write no migration, grandfathering, legacy-fallback or "existing saves" code.
+> - **Phone and computer are equal, on the website and in Telegram.** Every browser check and capture adds desktop 1366×768 and 1920×1080 with real keyboard and mouse next to the phone sizes listed below.
+> - **Review caps:** visual work 3 critic rounds (a 4th only for an item clearly below its reference), non-visual at most 2 (a 3rd only for something clearly broken); phone and desktop judged in the same round. Two independent reviewers check every owner rule as pass/fail in a table in the checkpoint.
+> - **Economy:** prices, points, the cap, quests and payments change only as the owner decided in the session prompt; anything else is a labeled proposal in the final report. Never loosen a test or a guard to make it pass.
+> - The session prompt for this row is written in chat with the owner (grill-me), and its decisions win over this brief.
+
 Run at Opus · Extra effort. Read first: CLAUDE.md, AGENTS.md, docs/ROADMAP.md (Standing owner decisions: never weaken gear, every chassis kept, plating on top, fairness from leagues), docs/economy/RESOURCE_ECONOMY.md (§6 plating, §11 "Tank"), docs/conquest/IMPLEMENTATION_CHECKPOINT.md (Session 6 checkpoint), docs/conquest/audit/CONQUEST_1_0_SPEC.md (§3.1, §13, §14), docs/conquest/audit/AUDIT_REPORT.md (§7, §12), the garage Mods system (`js/rules.js` `FITS`, `js/ui.js` garage sections, `dev/tests/garage-rules.mjs`, `lab-ui.mjs`) and the 5E model notes (plate sockets per chassis). New branch from current main. Commit and push every tested slice; append a checkpoint.
 
 Release: ask the owner once whether PRE-APPROVED; if yes, merge/deploy/verify when all gates pass and two independent reviewers have passed; otherwise stop at the PR. Payments stay disabled.
