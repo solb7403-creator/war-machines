@@ -4408,7 +4408,11 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   ConquestWorld.spawn; one-tap first defense; fixture option `completed`) and conquest-super-fx locks its staged hull (the new
   spawn is on a slope). Local PASS (chromium): transmission, occluder, session-032, session-033 (+fallback), super-fx, desktop-keys.
 - RESUME HERE (Nov 16, ~09:40 UTC; this session stopped at its context limit):
-  1. Read PR #139 check runs on head 08dc0c7. Known on 6e15822: `transmission (webkit)` passed transmission / occluder / 032 /
+  1. Read PR #139 check runs on head 1ab0a07 / 08dc0c7. `transmission (chromium)` ALSO failed on 6e15822: its step runs more
+     tests after the five run locally (at least `conquest-living-war.py`): run the WHOLE step of .github/workflows/conquest-check.yml
+     job `transmission` ("Visible acknowledgement and independent story scrolling") locally with chromium first (put the system
+     browser on PATH: `ln -sf /opt/pw-browsers/chromium <dir>/chromium`, PATH=<dir>:$PATH, LIBGL_ALWAYS_SOFTWARE=1).
+     Known on 6e15822: `transmission (webkit)` passed transmission / occluder / 032 /
      033 and then FAILED in `dev/tests/conquest-living-war.py` line 190 (`Conquest.view.performanceReport()`): "TargetClosedError:
      Target page, context or browser has been closed" (the WebKit page closed: a crash, not an assertion; WebKit cannot run in the
      cloud container). If it fails again on 08dc0c7, find the cause (memory under software GL with the denser Session 6 world? the
