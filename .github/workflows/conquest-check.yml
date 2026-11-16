@@ -17,7 +17,7 @@ jobs:
       - run: |
           pip install playwright==1.55.0
           python -m playwright install --with-deps webkit
-      - name: Whole CI step in order, browser log on the living-war runs
+      - name: Whole CI step in order (keepalive fix)
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
@@ -25,12 +25,10 @@ jobs:
           E=webkit
           python dev/tests/conquest-transmission.py --engine $E > /dev/null; echo "EXIT transmission $?"
           python dev/tests/conquest-occluder.py --engine $E > /dev/null; echo "EXIT occluder $?"
-          python dev/tests/conquest-session-032.py --engine $E > /dev/null; echo "EXIT 032 $?"
+          python dev/tests/conquest-session-032.py --engine $E 2>&1 | tail -4; echo "EXIT 032 ${PIPESTATUS[0]}"
           python dev/tests/conquest-session-033.py --engine $E > /dev/null; echo "EXIT 033 $?"
           python dev/tests/conquest-session-033.py --engine $E --fallback > /dev/null; echo "EXIT 033f $?"
-          DEBUG=pw:browser python dev/tests/conquest-living-war.py --engine $E --quality high 2>&1 | grep -v "ALSA\|pw.conf\|PipeWire\|GStreamer\|is-controlled" | tail -60; echo "EXIT lw-high ${PIPESTATUS[0]}"
-          free -m; ps aux --sort=-rss | head -12
-          DEBUG=pw:browser python dev/tests/conquest-living-war.py --engine $E --fallback 2>&1 | grep -v "ALSA\|pw.conf\|PipeWire\|GStreamer\|is-controlled" | tail -80; echo "EXIT lw-fallback ${PIPESTATUS[0]}"
-          free -m; ps aux --sort=-rss | head -12
-          python dev/tests/conquest-flagship-browser.py --engine $E --width 390 2>&1 | tail -15; echo "EXIT flagship390 ${PIPESTATUS[0]}"
-          python dev/tests/conquest-flagship-browser.py --engine $E --width 320 --family siege --no-defense 2>&1 | tail -15; echo "EXIT flagship320 ${PIPESTATUS[0]}"
+          python dev/tests/conquest-living-war.py --engine $E --quality high 2>&1 | tail -4; echo "EXIT lw-high ${PIPESTATUS[0]}"
+          DEBUG=pw:browser python dev/tests/conquest-living-war.py --engine $E --fallback 2>&1 | grep -v "ALSA\|pw.conf\|PipeWire\|GStreamer\|is-controlled" | tail -40; echo "EXIT lw-fallback ${PIPESTATUS[0]}"
+          python dev/tests/conquest-flagship-browser.py --engine $E --width 390 2>&1 | tail -6; echo "EXIT flagship390 ${PIPESTATUS[0]}"
+          python dev/tests/conquest-flagship-browser.py --engine $E --width 320 --family siege --no-defense 2>&1 | tail -6; echo "EXIT flagship320 ${PIPESTATUS[0]}"
