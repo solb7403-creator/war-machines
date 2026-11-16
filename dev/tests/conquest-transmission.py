@@ -29,19 +29,22 @@ async def main(engine):
    async def assert_tappable():
     r=await button_bounds();assert r['y']>=r['top'] and r['y']+r['h']<=r['bottom'] and r['h']>=44 and r['hit'],(engine,width,height,'button offscreen/covered',r)
     return r
-   await enter();await page.get_by_role('heading',name='THE LAST AIR WE BREATHE').wait_for()
-   first=await assert_tappable()
+   # Session 6: the first entry plays the 15 s HUD radio over gameplay (two lines at a time, SKIP); the full transmission opens from
+   # HELP -> REPLAY OPENING TRANSMISSION (checked below). SKIP must be visible, uncovered and a 44 px touch target at every size.
+   await enter();await page.locator('.cq-radio').wait_for()
+   first=await page.locator('.cq-radio-skip').evaluate('''e=>{const r=e.getBoundingClientRect(),v=visualViewport;return {x:r.x,y:r.y,w:r.width,h:r.height,top:v.offsetTop,bottom:v.offsetTop+v.height,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===e};}''')
+   assert first['y']>=first['top'] and first['y']+first['h']<=first['bottom'] and first['h']>=44 and first['hit'],(engine,width,height,'radio SKIP offscreen/covered',first)
    await page.screenshot(path=str(OUT/f'{engine}-{width}x{height}-initial.png'))
    # Tap immediately at visible coordinates, with no scrolling first.
    await page.touchscreen.tap(first['x']+first['w']/2,first['y']+first['h']/2)
-   await page.wait_for_function('!document.querySelector(".cq-transmission")&&Conquest.view?.pending===0',timeout=60000)
+   await page.wait_for_function('!document.querySelector(".cq-radio")&&Conquest.view?.pending===0',timeout=60000)
    assert await page.evaluate('localStorage.getItem("lunar-conquest-onboarding-v1")==="1"')
    # hold W until the tank has moved (software GL in CI renders a few frames a second and can stall for a second: a fixed 400 ms hold was a flake); dead = nothing in 8 s
    before=await page.evaluate('Conquest.view.p.x');await page.keyboard.down('w')
    try:await page.wait_for_function('b=>Conquest.view.p.x>b',arg=before,timeout=8000)
    except Exception:pass
    await page.keyboard.up('w');assert await page.evaluate('Conquest.view.p.x')>before,'dismissal must enter responsive exploration'
-   await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000);assert await page.locator('.cq-transmission').count()==0,'dismissal must persist across reload'
+   await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000);assert await page.locator('.cq-transmission, .cq-radio').count()==0,'dismissal must persist across reload'
    await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
    body=page.locator('.cq-transmission-scroll');await body.wait_for()
    assert await body.evaluate('e=>e.scrollTop')==0
