@@ -5,8 +5,8 @@
 const API=IN_WEB?location.origin:'https://lunar-api.solb7403.workers.dev';
 const DB_PUBLIC='https://warmachines-a6034-default-rtdb.firebaseio.com';   // only the public leaderboard file is readable
 let srvOff=0,srv=null,syncBusy=false,syncWant=false,syncTimer=null,lastSyncAt=0,starsAckQ=[],syncFails=0,lastCredit=null;
-function apiFetch(path,body,signal){
- return fetch(API+path,{method:'POST',credentials:IN_WEB?'same-origin':'omit',headers:{'Content-Type':'application/json',...(IN_WEB?{'X-Lunar-CSRF':window.LUNAR_WEB.csrf}:{})},body:JSON.stringify(Object.assign({gv:PVP_V,initData:IN_TG?TG.initData:''},body||{})),signal});
+function apiFetch(path,body,signal,keepalive){   // keepalive: the request outlives the page (a pagehide / navigation does not cancel it)
+ return fetch(API+path,{method:'POST',...(keepalive?{keepalive:true}:{}),credentials:IN_WEB?'same-origin':'omit',headers:{'Content-Type':'application/json',...(IN_WEB?{'X-Lunar-CSRF':window.LUNAR_WEB.csrf}:{})},body:JSON.stringify(Object.assign({gv:PVP_V,initData:IN_TG?TG.initData:''},body||{})),signal});
 }
 function api(path,body){
  return apiFetch(path,body).then(r=>r.json().then(j=>{if(!r.ok){if(j.error==='update'){const q=new URLSearchParams(location.search);q.set('v',j.build||Date.now());location.replace(location.pathname+'?'+q.toString()+location.hash);}if(IN_WEB&&r.status===401)window.dispatchEvent(new Event('lunar-session-expired'));throw new Error(j.error||('http '+r.status));}return j;}));
