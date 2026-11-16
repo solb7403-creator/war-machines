@@ -8,6 +8,9 @@
    guide.js coachStep / boardOrder): BANK at REFUGE SUPPLY -> SCAN -> GATHER the Starter Vein (35 Ferrite) -> BANK -> FABRICATE
    the FRONT plate -> field missions -> CLAIM YOUR TOWN at the Command Gate. Simulated minutes (the Worker's s.an.p: simulated
    play ms, 50 ms a command) at each first-hour moment; owner target: the town by 22 simulated minutes.
+1b. ROUTE 390x844 (touch), deterministic repro: bank on the west side of the REFUGE terminal, tap SCAN as the coach says; the
+   NEXT chip must lead to the Starter Vein, then name BANK THE FERRITE (placements: position, completed field missions, cargo,
+   a fresh placement until the Worker's vein seed puts the Ridge Ferrite vein at fe-14).
 2. SMOKE 390x700 / 320x568 (touch, real CDP swipes) and 1366x768 / 1920x1080 (no touch: keyboard, mouse, wheel), scenario
    placements: the HUD fits (nothing outside the viewport, no horizontal scroll), MORE opens and its last button is reachable,
    LOOT & TROPHY HALL's last button is reachable, REFUGE SUPPLY's primary action is reachable, a War Order (Bank 60 alloy, drawn
@@ -15,7 +18,7 @@
 3. KEYS 1366x768 real keyboard: WASD for 2 s moves the tank (client and server); 1 uses a Repair Kit (server count drops).
 Scenario placements in 2-3 only (position, cargo, consumables, hull, completed field missions, a claimed town). Software GL:
 relative look and speed only, not a physical iPhone. Captures: docs/conquest/session6/journey-*.png; results: journey.json.
-Usage: python3 dev/tests/conquest-session6-journey.py [--only journey,smoke,keys] [--sizes 390x700,...] [--out DIR]
+Usage: python3 dev/tests/conquest-session6-journey.py [--only journey,route,smoke,keys] [--sizes 390x700,...] [--out DIR] [--merge]
 """
 import argparse,asyncio,json,math,pathlib,shutil,sys,time,traceback
 from urllib.parse import urlparse
@@ -54,7 +57,7 @@ J.drive=(t,stop,title,fight)=>{const v=V(),p=v.p,B=v.battle||v.encounter,s=v.aut
  const out={p:{x:p.x,z:p.z},sp:s?.position?{x:s.position.x,z:s.position.z}:null,d,keys:[],chip,hp:s?.hp??B?.playerHp,max:B?.playerMax,mode:null,lock:null,dialog:q('.cq-dialog')?(q('.cq-dialog h2')?.textContent||q('.cq-dialog')?.className):null,shieldReady:B?!(B.shieldCd>0)&&!(B.shieldT>0):false,mission:s?.mission||null,recover:shown(q('#cq-recover'))};
  if(fight){const e=J.hostile();if(e){if(v.selectedId!==e.id)v.selectedId=e.id;out.lock=e.id;out.lockD=D(p,e);}}
  if(d<=stop)return out;
- if(titles.includes(chip)){const a=J.arrow();out.follow=1;if(a!==null){out.keys=J.angleKeys(a);out.mode='arrow';return out;}}
+ const rt=v.routeTarget;if(titles.includes(chip)&&(!rt||D(rt,t)<12)){const a=J.arrow();out.follow=1;if(a!==null){out.keys=J.angleKeys(a);out.mode='arrow';return out;}}
  const a=J.aim(t,stop);out.keys=J.dirKeys(a.x-p.x,a.z-p.z);out.mode=a.mode;return out;};
 // an operation's target, as dev/tests/conquest-earned-journey.mjs fight() picks it (the carrier, the nearest required hostile,
 // the recon scan site, the relay approach); the nearest visible hostile is locked (what a tap on its hull does)
@@ -90,12 +93,22 @@ J.snap=()=>{const v=V();if(!v)return null;const a=v.authority,s=a?.state,B=v.bat
   inv:s?.inv?.it||{},anp:s?.an?.p||0};};
 // the progressive HUD at a glance: which status lines are on, and what the NEXT chip / vitals show
 J.hud=()=>{const t=s=>{const e=q(s);return e&&shown(e)?(e.textContent||'').trim():'';};
- return {radio:t('.cq-radio'),nav:t('#cq-navigation'),title:J.chip(),hull:t('#cq-hull-row'),heat:t('#cq-heat'),o2:t('#cq-oxygen-row'),airdrop:t('.cq-net'),base:t('.cq-base-goal'),meteor:t('.cq-strike'),contracts:t('.cq-orders'),chain:t('.cq-chain'),wave:t('.cq-wave'),minerals:t('.cq-mn'),item:t('#cq-item')};};
+ return {radio:t('.cq-radio'),nav:t('#cq-navigation'),title:J.chip(),hull:t('#cq-hull-row'),heat:t('#cq-heat'),o2:t('#cq-oxygen-row'),airdrop:t('.cq-net'),base:t('.cq-base-goal'),meteor:t('.cq-strike'),contracts:t('.cq-orders'),chain:t('.cq-chain'),wave:t('.cq-wave'),minerals:t('.cq-mn'),item:t('#cq-item'),ticker:t('.cq-reward-ticker'),homeButton:t('#cq-home-btn'),homePulse:!!q('#cq-home-btn')?.classList.contains('cq-home-new')};};
 // nothing of the world HUD outside the viewport, no horizontal page scroll (world-anchored damage numbers / cache tags excluded)
 J.hudFit=()=>{const panel=q('.cq');if(!panel)return {error:'no panel'};const out=[];
  for(const e of panel.querySelectorAll('*')){if(e.closest('.cq-dialog,.cq-more-panel,.cq-feel,.cq-item-picker')||!shown(e))continue;const r=e.getBoundingClientRect();if(r.width<1||r.height<1)continue;
   if(r.left<-1||r.top<-1||r.right>innerWidth+1||r.bottom>innerHeight+1)out.push({el:(e.id?'#'+e.id:'')+'.'+String(e.className||e.tagName).split(' ').join('.'),text:(e.textContent||'').trim().slice(0,40),rect:[r.left,r.top,r.right,r.bottom].map(Math.round)});}
  const de=document.documentElement;return {outside:out.slice(0,12),count:out.length,scrollW:Math.max(de.scrollWidth,document.body.scrollWidth),vw:innerWidth,vh:innerHeight,overflowX:Math.max(de.scrollWidth,document.body.scrollWidth)>innerWidth+1};};
+// the NEXT chip (the HUD's single guidance channel) must not sit under another control: the drawn text of its title,
+// distance and route lines (a Range box, clipped to the line's own box) against the top bar's buttons
+J.navCover=()=>{const nav=q('#cq-navigation');if(!shown(nav))return {error:'no chip'};const out={hits:[],truncated:false,lines:{}};
+ const tops=[...document.querySelectorAll('.cq-top button,#cq-home-btn')].filter(shown).map(e=>({e,r:e.getBoundingClientRect()}));
+ for(const sel of ['.cq-nav-title','.cq-nav-distance','.cq-nav-route']){const e=nav.querySelector(sel);if(!e||!shown(e)||!(e.textContent||'').trim())continue;
+  const rg=document.createRange();rg.selectNodeContents(e);const a=rg.getBoundingClientRect(),c=e.getBoundingClientRect(),t={left:Math.max(a.left,c.left),right:Math.min(a.right,c.right),top:Math.max(a.top,c.top),bottom:Math.min(a.bottom,c.bottom)};
+  if(e.scrollWidth>e.clientWidth+1)out.truncated=true;out.lines[sel]=[t.left,t.top,t.right,t.bottom].map(Math.round);
+  for(const b of tops){const w=Math.min(t.right,b.r.right)-Math.max(t.left,b.r.left),h=Math.min(t.bottom,b.r.bottom)-Math.max(t.top,b.r.top);
+   if(w>2&&h>2)out.hits.push({line:sel,text:e.textContent.trim().slice(0,32),under:(b.e.id?'#'+b.e.id:b.e.getAttribute('aria-label')||b.e.textContent||'').trim().slice(0,24),overlapPx:[Math.round(w),Math.round(h)]});}}
+ const r=nav.getBoundingClientRect();out.rect=[r.left,r.top,r.right,r.bottom].map(Math.round);out.text=J.chip();return out;};
 // reachable = inside the viewport and the topmost element at its centre (not covered)
 J.reach=e=>{if(typeof e==='string')e=q(e);if(!e)return {ok:false,why:'missing'};const r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,inView=r.top>=-1&&r.left>=-1&&r.bottom<=innerHeight+1&&r.right<=innerWidth+1;
  const top=inView?document.elementFromPoint(x,y):null,hit=!!top&&(top===e||e.contains(top));return {ok:inView&&hit,inView,covered:inView&&!hit?(top?.className||top?.tagName||null):null,rect:[r.left,r.top,r.right,r.bottom].map(Math.round),text:(e.textContent||'').trim().slice(0,48)};};
@@ -133,7 +146,7 @@ class Pilot:
     def __init__(self,pw,srv,w,h,mobile,name,onboarded=True,out=None):
         self.pw,self.srv,self.w,self.h,self.mobile,self.name,self.onboarded,self.out=pw,srv,w,h,mobile,name,onboarded,out
         self.held=set();self.touch=None;self.errors=[];self.moments={};self.t_enter=time.monotonic();self.skip=set();self.chip={'match':0,'other':0,'samples':[]}
-        self.missions=[];self.loot={'flyouts':[],'cards':[],'aarDrops':[]};self.trace=[]
+        self.missions=[];self.loot={'flyouts':[],'cards':[],'aarDrops':[]};self.trace=[];self.deaths=[]
     async def open(self):
         opts={'headless':True,'args':ARGS};exe=shutil.which('chromium') or ('/opt/pw-browsers/chromium' if pathlib.Path('/opt/pw-browsers/chromium').exists() else None)
         if exe:opts['executable_path']=exe
@@ -258,13 +271,15 @@ class Pilot:
         if tries>=2:await self.page.keyboard.press('ShiftLeft')
         await self.keys(set())
     async def drive(self,t,stop,title=None,budget=180,fight=True,label=''):
-        t0=time.monotonic();last=None;lastAt=t0;tries=0;r={}
+        t0=time.monotonic();last=None;lastAt=t0;tries=0;r={};beat=t0
         while time.monotonic()-t0<budget:
             r=await self.js('([t,s,n,f])=>__J.drive(t,s,n,f)',[t,stop,title,fight])
+            if time.monotonic()-beat>20:beat=time.monotonic();log(self.name,'driving',label,'d',round(r['d']),'at',[round(r['p']['x']),round(r['p']['z'])],r.get('mode'),r.get('chip'))
             if r['d']<=stop:break
+            if r.get('dialog') and 'DISABLED' in str(r['dialog']):await self.respawn(label);continue
             if r.get('dialog') and 'cq-plot' not in str(r['dialog']):
                 log(self.name,'dialog while driving',r['dialog']);await self.stop_all();await self.page.keyboard.press('Escape');await asyncio.sleep(.5);continue
-            if r.get('hp') is not None and r['hp']<=0:break
+            if r.get('hp') is not None and r['hp']<=0:await asyncio.sleep(.5);continue
             if title:
                 want=title if isinstance(title,list) else [title]
                 if r['chip'] in want:self.chip['match']+=1
@@ -280,6 +295,13 @@ class Pilot:
             await asyncio.sleep(.08)
         await self.stop_all()
         return r
+    async def respawn(self,where=''):
+        await self.stop_all();self.deaths.append({'where':where,'real':round(time.monotonic()-self.t_enter,1)});log(self.name,'DISABLED while',where,'-> RESPAWN AT REFUGE')
+        b=self.page.get_by_role('button',name='RESPAWN AT REFUGE',exact=True)
+        try:
+            await b.wait_for(timeout=20000);await self.press(b)
+            await self.page.wait_for_function('Conquest.view.authority.state.hp>0&&!document.querySelector(".cq-result")',timeout=60000)
+        except Exception as e:log(self.name,'respawn failed',repr(e))
     async def fight(self,op_id,budget=600):
         t0=time.monotonic();res='timeout';last=None;lastAt=t0;tries=0;f={}
         while time.monotonic()-t0<budget:
@@ -335,7 +357,9 @@ class Pilot:
             for _ in range(10):
                 await asyncio.sleep(.5);s2=await self.snap()
                 if not any(x['id']==d['id'] for x in s2['drops']):gone=True;break
-            if gone:picked+=1;await self.moment('first-loot',label=d['label'],rarity=d['r'],loot=d['loot'],cp=s2['cp']-cp)
+            if gone:
+                picked+=1;await self.moment('first-loot',label=d['label'],rarity=d['r'],loot=d['loot'],cp=s2['cp']-cp)
+                if d['loot']:await self.moment('first-loot-item',label=d['label'],rarity=d['r'])
             else:self.skip.add(d['id'])
         return picked
     async def supply_open(self,title=None):
@@ -369,7 +393,7 @@ class Pilot:
     async def op(self,op_id):return await self.js('id=>{const o=ConquestCombat.operations[id];return {id,x:o.x,z:o.z,r:o.activationRadius,name:o.name}}',op_id)
     async def start_mission(self,op_id,title=None):
         o=await self.op(op_id);page=self.page
-        await self.drive({'x':o['x'],'z':o['z']},stop=max(8,min(o['r']-8,30)),title=title,budget=260,label=op_id)
+        await self.drive({'x':o['x'],'z':o['z']},stop=max(8,min(o['r']-8,30)),title=[t for t in [title,o['name']] if t],budget=260,label=op_id)
         loc=page.locator('#cq-mission-access')
         for attempt in range(3):
             try:await loc.wait_for(state='visible',timeout=8000);break
@@ -400,6 +424,8 @@ async def journey(pw,R,out):
         lines=['airdrop','base','meteor','contracts','chain','minerals','o2']
         R.check('minute0-radio','Parasite armor is on the oxygen line' in hud0['radio'] or 'Tap DEFEND' in hud0['radio'],hud0['radio'])
         R.check('minute0-hud-only-next-hull-heat',bool(hud0['nav']) and bool(hud0['hull']) and bool(hud0['heat']) and hud0['title']=='HOLD THE OXYGEN LINE' and not any(hud0[k] for k in lines),{k:hud0[k] for k in ['title','hull','heat',*lines]})
+        tickers=await P.js('__J.log.ticker.map(x=>x.t)')
+        R.check('minute0-no-base-ticker',not any('BASE' in t for t in tickers+[hud0['ticker']]),{'ticker':hud0['ticker'] or tickers[:3],'homeButton':hud0['homeButton'],'pulse':hud0['homePulse'],'source':'js/conquest/app.js:442 homeHud first-visit hint'})
         for _ in range(40):   # the capture once the terrain is in, while the radio still plays (15 s)
             if await P.js('Conquest.view.pending===0'):break
             await page.wait_for_timeout(500)
@@ -425,11 +451,12 @@ async def journey(pw,R,out):
         if aar['drops']:await P.moment('first-loot-drop-row',drops=aar['drops'])
         await P.sweep()
         # ---- the coach chain, read from the NEXT chip's own rules (BANK -> SCAN -> GATHER -> BANK -> more Ferrite -> PLATE)
-        plate_blocked=None
+        plate_blocked=None;steps=[];res['steps']=steps
         for guard in range(24):
-            s=await P.snap();c=s['coach']
+            await page.wait_for_timeout(700);s=await P.snap();c=s['coach']
             if not c:break
-            log('journey','COACH',c['coach'],c['name'],'chip:',s['chip']['title'])
+            log('journey','COACH',c['coach'],c['name'],'chip:',s['chip']['title'],'route:',(s['route'] or {}).get('id'))
+            steps.append({'step':'coach-'+c['coach'],'want':c['name'],'wantId':c.get('id'),'chip':s['chip']['title'],'routeTarget':(s['route'] or {}).get('id'),'sim':round(s['anp']/60000,2)})
             if c['coach'] in ('bank','bank2'):
                 b=await P.bank(title=c['name']);await P.moment('first-bank' if c['coach']=='bank' else 'ferrite-banked',wallet=b['wallet'],claimRows=b['claimRows'])
             elif c['coach']=='scan' or (c['coach']=='more' and c['kind']=='coach'):
@@ -458,9 +485,10 @@ async def journey(pw,R,out):
         # ---- the board: field missions until the town is affordable, then CLAIM YOUR TOWN at the Command Gate
         claimed=False;t_board=time.monotonic()
         for guard in range(10):
-            s=await P.snap();o=s['board']
+            await page.wait_for_timeout(700);s=await P.snap();o=s['board']
             if not o:R.notes.append('the board has no order before the town');break
-            log('journey','BOARD',o['name'],'chip:',s['chip']['title'],'cp',s['cp'],'banked',json.dumps(s['banked']))
+            log('journey','BOARD',o['name'],'chip:',s['chip']['title'],'route:',(s['route'] or {}).get('id'),'cp',s['cp'],'banked',json.dumps(s['banked']))
+            steps.append({'step':'board','want':o['name'],'chip':s['chip']['title'],'routeTarget':(s['route'] or {}).get('id'),'sim':round(s['anp']/60000,2)})
             if o['name']=='CLAIM YOUR TOWN':
                 if s['hp'] is not None and s['max'] and s['hp']<.5*s['max']:await P.bank(repair=True)
                 await claim_town(P,R);claimed=True;break
@@ -468,12 +496,15 @@ async def journey(pw,R,out):
                 await mission(P,R,o['id'],o['name']);b=await P.bank(repair=True);await P.moment('field-'+str(len(P.missions)),wallet=b['wallet'])
             else:R.notes.append('board order is not a field mission: '+json.dumps(o));break
             if time.monotonic()-P.t_enter>40*60:R.notes.append('real-time budget (40 min) spent before the town');break
+        # the NEXT chip must name each order of the chain (a route to the same ore is the same order)
+        bad=[x for x in steps if x['chip']!=x['want'] and not (x['step']=='coach-gather' and x['chip']=='STARTER VEIN ORE') and not (x['routeTarget'] and x['routeTarget']==x.get('wantId'))]
+        R.check('next-chip-names-each-order',not bad,{'mismatches':bad,'chipPolls':{'match':P.chip['match'],'other':P.chip['other']},'source':'js/conquest/app.js:266 nextOrder puts view.routeTarget before coachStep/boardOrder; app.js:323-330 resourceGuide sets it to the nearest known vein after a SCAN and clears it only when that vein is dry'})
         R.check('town-claimed',claimed,{'cp':s.get('cp'),'banked':s.get('banked'),'missions':P.missions})
         if claimed:
             town=P.moments.get('first-town',{}).get('sim')
             R.check('town-by-22-simulated-minutes',town is not None and town<=TOWN_TARGET_MIN,{'townSim':town,'target':TOWN_TARGET_MIN})
         s=await P.snap();res['final']={k:s[k] for k in ['cp','banked','completed','wallet','plates','pts','base','wo','inv']}
-        res['chipAgreement']=P.chip;res['missions']=P.missions
+        res['chipAgreement']=P.chip;res['missions']=P.missions;res['deaths']=P.deaths
         res['loot']={'flyouts':await P.js('__J.log.flyouts'),'cards':await P.js('__J.log.cards'),'aarDrops':P.loot['aarDrops']}
         res['lootSeen']=bool(res['loot']['flyouts'] or res['loot']['cards'] or res['loot']['aarDrops'])
         if not res['lootSeen']:R.notes.append('no loot drop flyout or after-action DROPS row appeared in this journey')
@@ -493,7 +524,7 @@ async def gather(P,R,c):
     """Stop on the ore and HOLD GATHER (a real touch) until the Worker's channel pays; enemies first if they interrupt."""
     page=P.page;node={'x':c['x'],'z':c['z']};mineral='fe';t0=time.monotonic();tries=[]
     while time.monotonic()-t0<180:
-        await P.drive(node,stop=1.6,title=c['name'] if c['coach']=='gather' else None,budget=90,label='ore')
+        await P.drive(node,stop=1.6,title=[c['name'],'STARTER VEIN ORE','FERRITE ORE'],budget=90,label='ore')
         await P.stop_all();await page.wait_for_timeout(900)
         g=page.locator('#cq-gather-access')
         if not await g.is_visible():
@@ -502,17 +533,16 @@ async def gather(P,R,c):
         if 'DRIVE' in txt:await P.drive(node,stop=0.8,budget=20,label='ore-close');continue
         before=(await P.snap())['mn'].get(mineral,0)
         await P.hold('#cq-gather-access')
-        gained=False
+        gained=False;hp0=(await P.snap())['hp']
         for _ in range(60):
             await page.wait_for_timeout(500);s=await P.snap()
             if s['mn'].get(mineral,0)>before:gained=True;break
-            if s['hostile'] and s['hostile']['d']<60:break
             gt=await g.inner_text() if await g.is_visible() else ''
-            if 'UNDER FIRE' in gt:break
+            if 'UNDER FIRE' in gt or (s['hp'] or 0)<(hp0 or 0)-1:tries.append('interrupted: '+gt);break
         await P.release()
         if gained:return {'tries':tries,'label':txt}
         s=await P.snap()
-        if s['hostile']:   # an attacker interrupts the channel: fight it off, then gather again
+        if s['hostile'] and s['hostile']['d']<70:   # an attacker interrupts the channel: fight it off, then gather again
             log('journey','gather interrupted by',json.dumps(s['hostile']))
             t1=time.monotonic()
             while time.monotonic()-t1<60:
@@ -523,21 +553,29 @@ async def gather(P,R,c):
     R.notes.append('gather did not pay within 180 s: '+json.dumps(tries[-6:]));return {'tries':tries,'failed':True}
 
 async def fabricate(P,R):
+    """REFUGE SUPPLY -> the FRONT Ferrite plate card. A muted card is still a button (the server decides, /api/act plate):
+    the pilot taps it when the wallet holds the Ferrite, and the muted look is reported separately."""
     page=P.page;await P.supply_open('FABRICATE YOUR FIRST PLATE')
     b=page.locator('.cq-plating button').first;await b.wait_for(timeout=20000)
-    cls=await b.get_attribute('class') or '';label=(await b.inner_text()).strip();s=await P.snap()
-    info={'button':label,'wallet':s['wallet'],'pts':s['pts'],'hint':await page.locator('.cq-first-plate').inner_text() if await page.locator('.cq-first-plate').count() else ''}
-    if 'cq-muted' in cls:
-        need=await P.js('PLATE.cost[1]');info['need']=need;info['why']=('Ferrite '+str(s['wallet'].get('fe',0))+'/'+str(need['fe']) if s['wallet'].get('fe',0)<need['fe'] else '')+(' points '+str(s['pts'])+'/'+str(need['pts']) if s['pts']<need['pts'] else '')
-        await P.close_supply();return False,info
+    cls=await b.get_attribute('class') or '';label=(await b.inner_text()).strip();s=await P.snap();need=await P.js('PLATE.cost[1]')
+    info={'button':label,'muted':'cq-muted' in cls,'wallet':s['wallet'],'clientPts':s['pts'],'need':need,'hint':await page.locator('.cq-first-plate').inner_text() if await page.locator('.cq-first-plate').count() else ''}
+    if info['muted']:info['mutedWhy']=('Ferrite '+str(s['wallet'].get('fe',0))+'/'+str(need['fe']) if s['wallet'].get('fe',0)<need['fe'] else '')+(' client save.pts '+str(s['pts'])+'/'+str(need['pts']) if s['pts']<need['pts'] else '')
+    if s['wallet'].get('fe',0)<need['fe']:info['why']='not enough Ferrite in the wallet';await P.close_supply();return False,info
     hp0=await P.js('(Conquest.view.battle||Conquest.view.encounter).playerMax')
     await P.press(b)
-    try:await page.wait_for_function('Conquest.view.authority.state?.loadout?.ap?.[0]===1',timeout=60000)
-    except Exception as e:info['error']=repr(e);info['ticker']=(await P.js('__J.log.ticker.map(x=>x.t)'))[-4:];await P.close_supply();return False,info
+    try:await page.wait_for_function('Conquest.view.authority.state?.loadout?.ap?.[0]===1',timeout=45000)
+    except Exception as e:
+        info['error']=repr(e)[:200];info['toast']=await P.js('document.querySelector("#toast")?.textContent||""');info['ticker']=(await P.js('__J.log.ticker.map(x=>x.t)'))[-4:]
+        if await page.locator('.cq-dialog').count():await P.close_supply()
+        return False,info
     await page.wait_for_function('Conquest.view.pending===0',timeout=60000);await page.wait_for_timeout(800)
+    info['toast']=await P.js('document.querySelector("#toast")?.textContent||""');info['clientPtsAfter']=await P.js('save.pts|0')
     info['hullBefore']=hp0;info['hullAfter']=await P.js('(Conquest.view.battle||Conquest.view.encounter).playerMax')
     if await page.locator('.cq-dialog').count():await P.close_supply()
-    R.check('first-plate-raises-hull',info['hullAfter']>hp0,info);return True,info
+    R.check('first-plate-raises-hull',info['hullAfter']>hp0,info)
+    R.check('plate-card-not-muted-when-affordable',not info['muted'],{'muted':info['muted'],'why':info.get('mutedWhy'),'hint':info['hint'],'serverAccepted':True,'clientPtsBefore':info['clientPts'],'clientPtsAfter':info['clientPtsAfter'],
+        'source':'js/conquest/app.js:144 platingCards compares save.pts (never refreshed in Conquest: the airdrop view carries mn/ap, not pts)'})
+    return True,info
 
 async def mission(P,R,op_id,title):
     s=await P.snap()
@@ -557,18 +595,63 @@ async def mission(P,R,op_id,title):
 
 async def claim_town(P,R):
     page=P.page
-    await P.drive({'x':GATE['x'],'z':GATE['z']-20},stop=8,title='CLAIM YOUR TOWN',budget=240,label='gate')
+    await P.drive(GATE,stop=24,title='CLAIM YOUR TOWN',budget=240,label='gate')   # ENTER BASE shows inside the gate's 30 m ring
     loc=page.locator('#cq-base-access')
     for attempt in range(3):
         try:await loc.wait_for(state='visible',timeout=8000);break
         except Exception:await P.drive(GATE,stop=10,budget=60,label='gate-close')
     await P.press(loc)
-    claim=page.locator('button.cq-plot-primary',has_text='CLAIM TOWN');await claim.wait_for(timeout=90000)
+    claim=page.locator('button.cq-plot-primary',has_text='CLAIM TOWN');await claim.wait_for(timeout=90000);await page.wait_for_timeout(1200)
     need=await page.locator('.cq-plot-need').inner_text() if await page.locator('.cq-plot-need').count() else ''
-    await P.shot('town-claim');await P.press(claim)
+    await P.shot('town-claim')
+    # the claim button must be on screen, or reachable by a real swipe of its sheet (Playwright's own tap would scroll any box)
+    target='[...document.querySelectorAll("button.cq-plot-primary")].find(b=>b.textContent.startsWith("CLAIM TOWN"))'
+    reach=await P.js('(()=>{const e='+target+';return __J.reach(e);})()')
+    if not reach.get('ok'):reach=await P.reveal('.cq-plot-sheet',target,tries=6)
+    reach['layout']=await P.js('(()=>{const r=e=>{if(!e)return null;const b=e.getBoundingClientRect();return [b.left,b.top,b.right,b.bottom].map(Math.round);},sh=document.querySelector(".cq-plot-sheet"),dr=document.querySelector(".cq-plot-drawer");return {sheet:r(sh),sheetScroll:sh?[sh.scrollTop,sh.scrollHeight,sh.clientHeight]:null,drawer:r(dr),stage:r(document.querySelector(".cq-plot-stage")),button:r('+target+'),vh:innerHeight};})()')
+    P.claim_reach=reach
+    R.check('claim-town-button-reachable',reach.get('ok'),reach)
+    await P.shot('town-claim-button')
+    await P.press(claim)
     await page.wait_for_function('(Conquest.view.authority.state?.base?.tier|0)>=1',timeout=60000)
     s=await P.snap();await P.moment('first-town',need=need,cp=s['cp'],banked=s['banked'])
     await page.wait_for_timeout(1500);await P.shot('town')
+
+async def scan_route(pw,R,out):
+    """1b. Deterministic repro of the scan route on the NEXT chip (390x844, touch): the pilot banks on the west side of the REFUGE
+    terminal and taps SCAN there as the coach says. The chip must then lead to the coach's Starter Vein, and once it is gathered,
+    name BANK THE FERRITE. Scenario placements: position, completed field missions (the coach chain is on), 6 alloy of cargo,
+    and a fresh placement until the Worker's own vein seed has put this pilot's Ridge Ferrite vein at fe-14 (1153,1159)."""
+    srv=await Server().start(pw);P=Pilot(pw,srv,390,844,True,'route-390x844',onboarded=True,out=out);res={'size':'390x844','touch':True}
+    try:
+        await P.open();page=P.page;gv=await P.js('PVP_V')
+        fx={'position':[1166,1163],'noEnemies':True,'fieldMissions':True,'cargo':{'alloy':6,'biomass':0,'helium':0}};spot=None
+        for i in range(30):
+            await srv.fixture(fx);await srv.session(gv);st=await srv.inspect();spot=(((st.get('lodes') or {}).get('slots') or {}).get('fe:ridge:0') or {}).get('spot')
+            if spot=='fe-14':break
+        res['ridgeVein']=spot;res['placements']=i+1
+        if spot!='fe-14':R.notes.append('the Ridge Ferrite vein never landed on fe-14 in 30 placements: repro skipped');return res
+        await P.enter();await P.ready();await page.wait_for_timeout(1200)
+        s=await P.snap();res['start']={'coach':(s['coach'] or {}).get('name'),'chip':s['chip']['title'],'p':s['p']}
+        await P.press(page.locator('#cq-supply-access'));await page.locator('.cq-dialog h2',has_text='REFUGE SUPPLY').wait_for(timeout=30000)
+        await P.press(page.get_by_role('button',name='BANK SALVAGE',exact=True));await page.wait_for_function('!!Conquest.view.authority.state.firsts?.bank',timeout=30000);await P.close_supply()
+        await page.wait_for_timeout(900);s=await P.snap();res['afterBank']={'coach':(s['coach'] or {}).get('name'),'chip':s['chip']['title']}
+        sc=page.locator('#cq-scan-access');await sc.wait_for(state='visible',timeout=30000);before=s['scanAt'];await P.press(sc)
+        await page.wait_for_function(f'(Conquest.view.authority.state?.scanAt||0)>{before}',timeout=30000);await page.wait_for_timeout(1500)
+        s=await P.snap();p=s['p']
+        res['afterScan']={'coach':(s['coach'] or {}).get('name'),'chip':s['chip']['title'],'route':s['route'],'at':[round(p['x'],1),round(p['z'],1)],'dStarter':round(math.hypot(p['x']-1180,p['z']-1150),1),'dFe14':round(math.hypot(p['x']-1153,p['z']-1159),1)}
+        res['afterScan']['capture']=await P.shot('scan-route')
+        R.check('scan-route-leads-to-starter-vein',s['chip']['title'] in ('STARTER VEIN ORE','GATHER THE STARTER VEIN'),{**res['afterScan'],'source':'js/conquest/app.js:323-330 resourceGuide routes to the nearest known vein, not the coach order'})
+        c=s['coach'];g=await gather(P,R,c);await page.wait_for_timeout(1500);s=await P.snap()
+        res['afterGather']={'coach':(s['coach'] or {}).get('name'),'chip':s['chip']['title'],'route':(s['route'] or {}).get('id'),'carried':s['mn'],'gather':g}
+        res['afterGather']['capture']=await P.shot('scan-route-after-gather')
+        R.check('chip-names-bank-the-ferrite-after-starter-vein',s['chip']['title']==(s['coach'] or {}).get('name'),{**{k:res['afterGather'][k] for k in ['coach','chip','route','carried']},'source':'js/conquest/app.js:266 nextOrder: view.routeTarget outranks coachStep; app.js:325 clears a resource route only when the vein is dry'})
+        R.check('no-page-errors',not P.errors,P.errors[:5])
+    except Exception as e:
+        R.check('route-exception',False,{'error':repr(e),'trace':traceback.format_exc()[-1500:]})
+    finally:
+        res['pageErrors']=P.errors[:10];await P.close();await srv.stop()
+    return res
 
 async def smoke(pw,w,h,mobile,R,out):
     """2. The UI reachability smoke at one size, with scenario placements: a War Order completed and claimed."""
@@ -611,17 +694,22 @@ async def smoke(pw,w,h,mobile,R,out):
         R.check('contracts-line-after-first-order',hud['contracts'].startswith('WAR ORDERS'),hud)
         fit=await P.js('__J.hudFit()');res['hudFit']=fit
         R.check('hud-fits-full',not fit['count'] and not fit['overflowX'],fit)
+        nav=await P.js('__J.navCover()');res['navCover']=nav
+        R.check('next-chip-not-covered',not nav.get('hits') and not nav.get('error'),nav)
         res['hudCapture']=await P.shot('hud')
         # MORE: opens, its last button reachable
         await P.press(page.get_by_role('button',name='MORE',exact=True))
         await page.wait_for_function('!document.querySelector(".cq-more-panel").hidden',timeout=10000)
         more=await P.reveal('.cq-more-panel','__J.last(".cq-more-panel button")')
+        more['panel']=await P.js('(()=>{const m=document.querySelector(".cq-more-panel"),r=m.getBoundingClientRect();return {buttons:[...m.querySelectorAll("button")].map(b=>b.textContent),rect:[r.left,r.top,r.right,r.bottom].map(Math.round),scrollH:m.scrollHeight,clientH:m.clientHeight,overflowY:getComputedStyle(m).overflowY,maxHeight:getComputedStyle(m).maxHeight,vh:innerHeight};})()')
         res['more']=more;R.check('more-last-button-reachable',more.get('ok'),more)
         res['moreCapture']=await P.shot('more')
         # LOOT & TROPHY HALL: the dialog's last button reachable
-        loot=page.locator('.cq-loot-open')
-        if not await loot.is_visible():await P.reveal('.cq-more-panel','document.querySelector(".cq-loot-open")')
-        await P.press(loot);await page.locator('.cq-dialog.cq-loot').wait_for(timeout=20000)
+        loot=page.locator('.cq-loot-open');lr=await P.js('__J.reach(".cq-loot-open")')
+        if not lr.get('ok'):lr=await P.reveal('.cq-more-panel','document.querySelector(".cq-loot-open")')
+        if lr.get('ok'):await P.press(loot)
+        else:R.check('more-loot-button-reachable',False,lr);await P.js('document.querySelector(".cq-loot-open").click()')   # to go on with the other checks
+        await page.locator('.cq-dialog.cq-loot').wait_for(timeout=20000)
         lt=await P.reveal('.cq-dialog.cq-loot','__J.last(".cq-dialog.cq-loot button")')
         res['loot']=lt;R.check('loot-hall-last-button-reachable',lt.get('ok'),lt)
         res['lootCapture']=await P.shot('loot')
@@ -667,8 +755,13 @@ async def desktop_keys(pw,R,out):
         for _ in range(40):
             await page.wait_for_timeout(750);s2=await srv.inspect();n1=s2['inv']['it'].get('repair',0)
             if n1<n0:break
-        res['key1']={'repairBefore':n0,'repairAfter':n1,'hpBefore':hp0,'hpAfter':s2['hp'],'ticker':(await P.js('__J.log.ticker.map(x=>x.t)'))[-3:]}
-        R.check('key1-uses-repair-kit',n0==1 and n1==0 and s2['hp']>hp0,res['key1'])
+        res['key1']={'repairBefore':n0,'repairAfter':n1,'hpBefore':hp0,'ticker':(await P.js('__J.log.ticker.map(x=>x.t)'))[-3:]}
+        R.check('key1-uses-repair-kit',n0==1 and n1==0,res['key1'])
+        for _ in range(40):   # the kit mends +40% hull over 6 s of simulated play (software GL runs the sim at ~0.5x here)
+            s3=await srv.inspect()
+            if s3['hp']>hp0+100:break
+            await page.wait_for_timeout(750)
+        res['key1']['hpAfter']=s3['hp'];R.check('repair-kit-mends-hull',s3['hp']>hp0+100,res['key1'])
         res['capture']=await P.shot('keys')
         R.check('no-page-errors',not P.errors,P.errors[:5])
     except Exception as e:
@@ -678,26 +771,34 @@ async def desktop_keys(pw,R,out):
     return res
 
 async def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--only',default='journey,smoke,keys');ap.add_argument('--sizes',default='390x700,320x568,1366x768,1920x1080');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session6'))
+    ap=argparse.ArgumentParser();ap.add_argument('--only',default='journey,route,smoke,keys');ap.add_argument('--sizes',default='390x700,320x568,1366x768,1920x1080');ap.add_argument('--out',default=str(ROOT/'docs/conquest/session6'));ap.add_argument('--merge',action='store_true',help='keep the other runs already in journey.json')
     a=ap.parse_args();only=a.only.split(',');out=pathlib.Path(a.out);out.mkdir(parents=True,exist_ok=True)
     report={'scope':__doc__.strip().split('\n')[0],'source':'working tree','started':time.strftime('%Y-%m-%dT%H:%M:%S'),'runs':{}}
-    runs=[]
+    runs=[];kept={}
+    if a.merge and (out/'journey.json').exists():
+        try:kept=json.loads((out/'journey.json').read_text()).get('runs',{})
+        except Exception:kept={}
     async with async_playwright() as pw:
         if 'journey' in only:
             R=Run('journey-390x844');runs.append(R);t=time.monotonic();res=await journey(pw,R,out);res['realSeconds']=round(time.monotonic()-t);report['runs']['journey-390x844']={**res,'checks':R.checks,'notes':R.notes}
+        if 'route' in only:
+            R=Run('route-390x844');runs.append(R);t=time.monotonic();res=await scan_route(pw,R,out);res['realSeconds']=round(time.monotonic()-t);report['runs']['route-390x844']={**res,'checks':R.checks,'notes':R.notes}
         if 'smoke' in only:
             for sz in a.sizes.split(','):
                 w,h=map(int,sz.split('x'));R=Run('smoke-'+sz);runs.append(R);t=time.monotonic();res=await smoke(pw,w,h,w<800,R,out);res['realSeconds']=round(time.monotonic()-t);report['runs']['smoke-'+sz]={**res,'checks':R.checks,'notes':R.notes}
         if 'keys' in only:
             R=Run('keys-1366x768');runs.append(R);t=time.monotonic();res=await desktop_keys(pw,R,out);res['realSeconds']=round(time.monotonic()-t);report['runs']['keys-1366x768']={**res,'checks':R.checks,'notes':R.notes}
+    for k,v in kept.items():report['runs'].setdefault(k,v)
+    report['runs']=dict(sorted(report['runs'].items(),key=lambda kv:['journey','route','smoke','keys'].index(kv[0].split('-')[0]) if kv[0].split('-')[0] in ['journey','route','smoke','keys'] else 9))
     j=report['runs'].get('journey-390x844',{});m=j.get('moments',{})
     report['firstHour']={'unit':'simulated minutes (Worker s.an.p) / real seconds since ENTER CONQUEST','targetTownMin':TOWN_TARGET_MIN,
-        'moments':{k:m.get(k) for k in ['first-fight','first-kill','first-loot','first-loot-drop-row','first-bank','first-scan','starter-vein','ferrite-banked','second-mission','first-plate','first-town'] if k in m}}
-    fails=[{'run':R.name,**f} for R in runs for f in R.failures]
+        'moments':{k:m.get(k) for k in ['first-fight','first-kill','first-loot','first-loot-item','first-loot-drop-row','first-bank','first-scan','starter-vein','ferrite-banked','second-mission','first-plate','first-town'] if k in m}}
+    fails=[{'run':name,'check':k,'detail':v['detail']} for name,run in report['runs'].items() for k,v in (run.get('checks') or {}).items() if not v['pass']]
     report['status']='PASS' if not fails else 'FAIL';report['failures']=fails
-    (out/'journey.json').write_text(json.dumps(report,indent=1,default=str)+'\n')
     for R in runs:
         for k,v in R.checks.items():print(('PASS' if v['pass'] else 'FAIL'),R.name,k)
+    report['summary']={name:{k:('PASS' if v['pass'] else 'FAIL') for k,v in (run.get('checks') or {}).items()} for name,run in report['runs'].items()}
+    (out/'journey.json').write_text(json.dumps(report,indent=1,default=str)+'\n')
     print(json.dumps({'status':report['status'],'firstHour':report['firstHour'],'failures':[{'run':f['run'],'check':f['check']} for f in fails]},indent=1))
     sys.exit(0 if not fails else 1)
 
