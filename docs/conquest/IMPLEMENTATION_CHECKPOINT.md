@@ -4607,6 +4607,27 @@ consumable; nothing else from the chain; War Orders exactly as built; ladder che
 - `transmission (chromium)` on 4cc6cf1: `conquest-flagship-browser.py:199` expects exactly 20 disabled CHECKOUT buttons in the
   PERMANENT COLLECTION; Session 6's 20 earn-only fragment pieces (`earnOnly`, never priced) added 20 more. **Fix (code, test
   unchanged):** the collection shows no checkout row on earn-only pieces (they are never sold; the row hinted at a price).
+- `transmission (webkit)` on 11c575f and earlier: `conquest-flagship-browser.py:229` page errors "/api/conquest/an due to access
+  control checks" (4 at 390, 2 at 320). **Cause:** Session 6's screen analytics (quit_point, session_minutes) are sent when the world
+  closes, including on `pagehide`; the test reloads the page inside Conquest, and WebKit cancels a plain fetch when the page unloads
+  (the same happens on an iPhone, Safari or the Telegram webview: those events were lost on every close or reload). **Fix (code, test
+  unchanged, 2084b6b):** `apiFetch(path, body, signal, keepalive)`; `cqEvent` sends with `keepalive:true`. Verified on WebKit in CI
+  (diagnostic run 43853374470 on the session branch `claude/inspiring-wozniak-bpb47v`, the job's whole step in order): transmission,
+  occluder, 032, 033, 033 fallback, living-war high, living-war fallback, flagship 390, flagship 320 siege: all 9 PASS. Before the fix
+  the same run (43851101041) failed only the two flagship runs.
+- The earlier WebKit "TargetClosedError" in `conquest-living-war.py --fallback` (6e15822 / 4cc6cf1): not reproduced since. WebKit ran
+  the fallback alone 3x (diagnostic 43849522300, sound on and off: PASS, 16 ms frames) and the whole step 3x (two diagnostics + the
+  PR run on 11c575f): both living-war runs PASS every time, memory 12 GB free. Recorded as unexplained; the PR's own runs are the gate.
+  WebKit could not be installed in this container (the Playwright CDN is not allowed), so every WebKit run was in CI.
+- `transmission (chromium)` on 45b701b: `conquest-session-032.py:199` geometry 116/116/121 after three far/near trips (allowed +3).
+  Not reproduced locally (114/114/114 and 115/115/115 with 14 samples per trip while the garrison fired; the scene diff shows units
+  rebuilt with the same count) and green on the later runs of the same test (local chromium step and every WebKit run). New Session 6
+  patrols pass that test spot (patrol-05 sentinel 30 m, patrol-06 coordinator 53 m from 1240,893). Watched on the final head.
+- Local chromium, the job's whole step: every test PASS (living-war `--quality high` once hit "travel blocked" while two other browser
+  tests shared the 4 CPUs; alone it PASS, as in CI).
+- Release build stamped **20261116112502** (dev/bump.sh: version.json, index.html, web/play.html, Worker update gate). The unrelated
+  captures re-written by local runs (docs/conquest-living-war, -ios-onboarding, -session-032/033/2) were restored from 4cc6cf1
+  (reviewer note).
 
 ### Independent reviews (Nov 16; both read-only, both FAIL on first pass, every blocking finding fixed)
 Security/economy (base a5ae24b): 1 ladder gate foolable (FIXED: fighting pilot, median + mean, deterministic); 2 `ops15` weekly and
