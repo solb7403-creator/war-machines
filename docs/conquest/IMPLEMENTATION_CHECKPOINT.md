@@ -4416,8 +4416,8 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
      033 and then FAILED in `dev/tests/conquest-living-war.py` line 190 (`Conquest.view.performanceReport()`): "TargetClosedError:
      Target page, context or browser has been closed" (the WebKit page closed: a crash, not an assertion; WebKit cannot run in the
      cloud container). If it fails again on 08dc0c7, find the cause (memory under software GL with the denser Session 6 world? the
-     test's own timeout?) before merging; one re-run at most. `signup-browsers (webkit)` failed once on ea57d33 (passed on 2173820;
-     website signup, untouched by Session 6): check it on the new head. The `conquest` job: node suites green, portrait browser
+     test's own timeout?) before merging; one re-run at most. `signup-browsers (webkit)` failed on ea57d33 AND on b7f9153 (passed on
+     2173820; website signup, untouched by Session 6 code): read its job log (workflow website-check.yml) and find the cause. The `conquest` job: node suites green, portrait browser
      list green except super-fx (fixed in 08dc0c7).
   2. CI green -> merge PR #139 (pre-approved by the owner) -> the Worker deploy runs on push to main (deploy-worker.yml), GitHub
      Pages serves main -> verify /pvp/health ok and live version.json = {"v":"20261116083933"} -> write "Release record" here ->
