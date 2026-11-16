@@ -88,6 +88,7 @@ jobs:
       - name: Portrait player journey
         run: |
           python dev/tests/conquest-onboarding.py
+          python dev/tests/conquest-session6-feel.py
           python dev/tests/conquest-earned-browser.py
           python dev/tests/conquest-earned-end-to-end.py
           python dev/tests/conquest-preview.py

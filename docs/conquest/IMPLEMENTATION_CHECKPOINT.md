@@ -4376,6 +4376,15 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
 
 ### Resume here (next session reads this first)
 - DONE and pushed in slice 1 (Part A, first hour): see "Part A" below. Node suites green (list under "Tests").
+- DONE in slice 2 (Part B, feel): `js/conquest/feel.js` (hit flash = `MAT.solid` -> `MAT.solidHit` uniform swap for 80 ms; damage
+  numbers pooled max 3, 0.7 s, merged per target, gold while a SUPER effect is live; kill pop ticker "DESTROYED · NAME (xN in 4 s)"
+  + `fx('cqkill')` light haptic; loot flyout to the cargo line in rarity colour + `fx('loot',r)`; dash/shield/ready/boom/warn
+  sounds), app.js hooks (claim on bank/collect, meteor on the telegraph, win/lose/die on results, warn on UNDER FIRE/low hull),
+  MORE: SOUND · ON/OFF (the Settings flag) and LOCATE ME ON THE MAP; SCAN/GATHER = one context slot (GATHER within 8 m, "DRIVE N M
+  CLOSER" at 6-8 m; ids and G/C keys kept). New `fx.js` sounds loot0..loot4 and the 'cqkill'/'loot' cases. Browser test
+  `dev/tests/conquest-session6-feel.py` PASS at 390x844 and 1366x768 (flash seen, numbers 1-3, ticker DESTROYED · INTERCEPTOR,
+  SOUND flips save.sound, LOCATE ME opens the map). `conquest-minerals-browser.py` fixtures moved to the new Starter Vein
+  (1180,1152): re-run it first thing in the next slice. NEXT: Part C (loot v1) per "Plan for B-F".
 - NEXT: Part B (feel) -> C (loot v1) -> D (living world + Sortie chain) -> E (War Orders, yield steps, taper, production x3, cap
   copy) -> F (analytics) -> browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) ->
   captures to `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).

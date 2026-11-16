@@ -148,7 +148,7 @@ void main(){
  // HIGH tints each vertex's rim by the nearest friendly / Parasite site; LOW keeps the neutral rim (no per-vertex loop).
  if(uHigh>.5){vec2 w=wp.xz+uOrigin;float best=0.;for(int i=0;i<8;i++){vec4 s=uSite[i];if(s.z<=0.)continue;float f=1.-smoothstep(s.z*.6,s.z*1.25,length(w-s.xy));if(f>best){best=f;rc=mix(uRimCol*2.2,s.w>0.?vec3(.06,.62,.8):vec3(.85,.05,.55),f);}}}
  vRim=rc;}`;
-const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV;uniform float uTime,uGlow,uHigh;
+const SOLID_FS=`uniform vec3 uSunCol,uAmbUp,uAmbDn,uSunV,uRimV,uUpV,uDaySun,uDayAmbUp,uDayAmbDn,uDaySunV;uniform float uTime,uGlow,uHigh,uFlash;
 varying vec3 vN;varying vec3 vV;varying vec4 vCol;varying vec3 vRim;varying vec3 vWP;varying float vAtm;varying float vShd;
 #include <common>
 #include <fog_pars_fragment>
@@ -157,7 +157,7 @@ void main(){vec3 N=normalize(vN),L=uSunV,R=uRimV,UP=uUpV; // view-space light di
  vec3 lit=base*(sunC*ndl*(1.-.8*vShd)+mix(aD,aU,dot(N,UP)*.5+.5));float rl=max(dot(N,R),0.)*(1.-.7*at);lit+=base*vRim*rl*.5;
  if(uHigh>.5){vec3 V=normalize(vV);float fr=pow(1.-max(dot(N,V),0.),3.);lit+=mix(vRim,vec3(.55,.7,.9),at)*fr*(.25+.75*rl)*(.45-.3*at);vec3 H=normalize(L+V);lit+=sunC*pow(max(dot(N,H),0.),56.)*.16;}
  float a=vCol.a,em=clamp(a>1.?a-1.:a,0.,1.);float pulse=a>1.?.5+.5*sin(uTime*3.+dot(vWP,vec3(.37,.61,.23))):1.;
- vec3 col=mix(lit,base*uGlow*(.45+.55*pulse),em);gl_FragColor=vec4(col,1.);
+ vec3 col=mix(lit,base*uGlow*(.45+.55*pulse),em);col=mix(col,vec3(1.,.62,.36)*1.35,uFlash*.6);gl_FragColor=vec4(col,1.);   // uFlash: the 80 ms hit flash (Session 6)
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 #include <fog_fragment>
@@ -345,7 +345,8 @@ function create(T,opts={}){
  G.octF=r=>fr['o'+r]||(fr['o'+r]=flat(new T.CylinderGeometry(r,1,1,8,1,false,Math.PI/8)).translate(0,.5,0));G.cylF=r=>fr['c'+r]||(fr['c'+r]=new T.CylinderGeometry(r,1,1,20,1).translate(0,.5,0));
  const tex={atlas:texMemo(T,'atlas'+high,()=>makeAtlas(T,high?512:256)),earth:texMemo(T,'earth'+high,()=>makeEarth(T,high?256:128,high?128:64)),detail:texMemo(T,'detail'+high,()=>makeDetail(T,high?256:128))};
  const mk=(vs,fs,extra,o)=>{const m=new T.ShaderMaterial(Object.assign({uniforms:Object.assign({},U,extra||{}),vertexShader:vs,fragmentShader:fs,fog:true},o||{}));m.userData.motionSkip=true;m.userData.conquestStyle=true;return m;};
- const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS),
+ const MAT={terrain:mk(TERRAIN_VS,TERRAIN_FS,{uDetail:{value:tex.detail}},{vertexColors:true}),solid:mk(SOLID_VS,SOLID_FS,{uFlash:{value:0}}),solidHit:mk(SOLID_VS,SOLID_FS,{uFlash:{value:1}}),   // Session 6: the hit flash swaps solid -> solidHit for 80 ms (same shaders: one program, a uniform swap)
+
   fx:mk(FX_VS,FX_FS,{uMap:{value:tex.atlas},uKind:{value:[V3(.1,.68,1).multiplyScalar(.6),V3(.3,1,.5).multiplyScalar(.5),V3(.6,.95,1).multiplyScalar(.9),V3(1,.1,.7).multiplyScalar(.7)]}},
    {transparent:true,premultipliedAlpha:true,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-8}),
   sky:mk(SKY_VS,SKY_FS,{uEarth:{value:tex.earth},uEarthDir:{value:V3(.86,.15,.48).normalize()},uEarthSize:{value:.068},uEarthL:{value:V3(-.62,.34,.7).normalize()},uSpin:{value:2.2},

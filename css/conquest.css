@@ -331,3 +331,11 @@
 @media (max-height:680px){.cq-radio{top:calc(150px + env(safe-area-inset-top,0px))}}
 @media (prefers-reduced-motion:reduce){.cq-radio{animation:none}}
 .cq-aar-cause{color:#ffb3a8;font-weight:700}.cq-aar-fix{color:#bfefff}.cq-aar-fix:before{content:'FIX · ';color:#5fe1ff;font-weight:700}
+/* Session 6 part B: damage numbers, loot flyout */
+.cq-feel{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}
+.cq-dmg{position:absolute;transform:translate(-50%,-50%);font:800 15px/1 'Chakra Petch',sans-serif;color:#f4f8ff;text-shadow:0 1px 0 #000,0 0 4px #000,0 0 8px #000a;animation:cq-dmg-up .7s ease-out forwards;white-space:nowrap}
+.cq-dmg.cq-dmg-crit{color:#ffd24a;font-size:19px;text-shadow:0 1px 0 #000,0 0 6px #ff9a1a}
+.cq-dmg.cq-dmg-still{animation:cq-dmg-fade .7s linear forwards}
+@keyframes cq-dmg-up{0%{opacity:0;margin-top:4px}12%{opacity:1}100%{opacity:0;margin-top:-26px}}
+@keyframes cq-dmg-fade{0%{opacity:1}100%{opacity:0}}
+.cq-flyout{position:absolute;transform:translate(-50%,-50%);font:800 12px/1 'Chakra Petch',sans-serif;letter-spacing:.06em;padding:4px 7px;border:1px solid currentColor;border-radius:3px;background:#05101acc;text-shadow:0 0 6px currentColor;transition:transform .8s cubic-bezier(.5,0,.7,1),opacity .8s ease-in;white-space:nowrap}
