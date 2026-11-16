@@ -14,7 +14,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4.000533404453958
+    "fps": 4
    },
    "ArrowLeft": {
     "keys": [
@@ -28,7 +28,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 4.09053722388877
+    "fps": 4
    },
    "KeyS": {
     "keys": [
@@ -128,7 +128,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 8.571918395336887
+    "fps": 9.678668215253607
    },
    "ArrowLeft": {
     "keys": [
@@ -142,7 +142,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 8.573388203017823
+    "fps": 9.089256498818422
    },
    "KeyS": {
     "keys": [
@@ -156,7 +156,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 9.09090909090909
+    "fps": 9.678668215253573
    },
    "KeyD": {
     "keys": [
@@ -170,7 +170,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 8.333333333333334
+    "fps": 8.573388203017823
    },
    "ArrowUp": {
     "keys": [
@@ -184,7 +184,7 @@
     "prompts": 0,
     "active": "DIV",
     "pending": 0,
-    "fps": 8.333333333333334
+    "fps": 8.573388203017823
    }
   },
   "viewport": [
@@ -204,11 +204,11 @@
    "hint": true
   },
   "moved": {
-   "KeyW": 3.036000000001877,
+   "KeyW": 3.54200000000219,
    "ArrowLeft": 3.54200000000219,
-   "KeyS": 4.048000000002503,
-   "KeyD": 3.54200000000219,
-   "ArrowUp": 4.048000000002503
+   "KeyS": 3.036000000001877,
+   "KeyD": 3.036000000001877,
+   "ArrowUp": 3.036000000001877
   },
   "spaceFires": true,
   "shiftRightDash": true,
@@ -219,8 +219,8 @@
    "connected": true,
    "keys": [],
    "p": {
-    "x": 1162,
-    "z": 1117.493899999999
+    "x": 1161.4939999999997,
+    "z": 1117.0928999999992
    },
    "hint": false
   },

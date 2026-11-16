@@ -33,7 +33,7 @@ async def main(engine,quality,slow=0):
   setup=await page.evaluate('''()=>{const v=Conquest.view,B=v.battle||v.encounter,W=ConquestWorld,p=v.p,yaw=B.turretYaw||0;if(!B)return null;
    const mk=(src,d,side,hp)=>{const e=src,x=p.x+Math.sin(yaw)*d+Math.cos(yaw)*side,z=p.z+Math.cos(yaw)*d-Math.sin(yaw)*side;Object.assign(e,{x,z,y:W.groundAt(x,z),hp,decision:1e9,cd:1e9,vx:0,vz:0,navGoal:null});return e;};
    const live=B.enemies.filter(e=>e.hp>0);if(live.length<2)return {enemies:live.length};
-   mk(live[0],24,0,1);mk(live[1],16,9,live[1].maxHp*.3);B.enemies=[live[0],live[1]];B.charge=SUPER_MAX;window.__k0=B.kills;
+   mk(live[0],24,0,1);mk(live[1],16,9,live[1].maxHp*.3);B.enemies=[live[0],live[1]];B.charge=SUPER_MAX;window.__k0=B.kills;v.selectedId=live[0].id;/* lock it, as a pilot taps a red hull: the Session 6 spawn sits on a slope (the hull 24 m out stands 2.6 m higher), so an unlocked level shot passes under it */
    return {enemies:2,programs:v.renderer.info.programs.length,calls:v.renderer.info.render.calls,style:!!v.style,canvas:!!v.renderer.isConquestCanvas};}''')
   assert setup and setup.get('enemies')==2,('the encounter needs two hulls to stage the shot',setup)
   # --slow-ms N: every frame from here waits N ms more (a phone under 5 fps, or CI software GL on a bad day). The outcome must
