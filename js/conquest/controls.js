@@ -37,6 +37,10 @@ function fireSuper(B,s){
 }
 C.Battle.prototype.abilityStep=function(dt){
  ensure(this);this.dashCd=Math.max(0,this.dashCd-dt);this.shieldCd=Math.max(0,this.shieldCd-dt);this.shieldT=Math.max(0,this.shieldT-dt);
+ // Session 6 consumables (rules.js CQ_ITEMS), started by the Worker's use-item action and stepped here on both sides:
+ // a Repair Kit mends over its seconds; a Decoy Beacon counts down (combat.js lure() reads it).
+ if(this.mend){const h=Math.min(this.mend.t,dt);if(h>0&&this.playerHp>0)this.playerHp=Math.min(this.playerMax,this.playerHp+this.mend.rate*h);this.mend.t-=h;if(!(this.mend.t>1e-8))this.mend=null;}
+ if(this.decoy){this.decoy.t-=dt;if(!(this.decoy.t>1e-8))this.decoy=null;}
  if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=1e-8)this.dashState=null;}
  // the timing bar (Session 5E-2b, rules.js SUP_BAR_T...): the first SUPER press starts the charge and the sweep, a second
  // press stops it (advance() below); nobody pressing by the end of the sweep is a MISS. It fires SUP_REL after the stop
@@ -94,6 +98,6 @@ function preview(B,p,input,dt,exploration){
  if(dash){dash.t-=h;if(dash.t<=1e-8)dash=null;}}
  return p;
 }
-function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
+function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells','mend','decoy'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
 root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,command,validated,preview,STEP,CONFIG});
 })(globalThis);

@@ -4,7 +4,8 @@ import {cosmetics,cosmeticAction,COSMETIC_ACTIONS} from './conquest-cosmetics.js
 import {CONQUEST,RULES} from './sim.gen.js';
 import {POLICY,ledger,killLoot,pickups,death,missionReward,atTerminal,bank} from './conquest-economy.js';
 import {played,settleOpKills,discardOpKills,earn} from './conquest-airdrop.js';
-import {veins,readyVeins,pull,reveal} from './conquest-veins.js';
+import {veins,readyVeins,pull,reveal,revealSector} from './conquest-veins.js';
+import {inventory,itemReady,spend} from './conquest-loot.js';
 import {PLOT_ACTIONS,REMOTE_PLOT_ACTIONS,plotAction} from './conquest-plot.js';
 const {World:W,Combat:C,Control:K}=CONQUEST,STEP_MS=50,MAX_FRAMES=40,MAX_CREDIT_MS=4000;
 // Credit is real elapsed wall time, so simulated time can never exceed it. A 4s reserve lets a phone that stalled on a slow link
@@ -48,7 +49,7 @@ function migrateRegion(s,now){
  if(s.death?.position&&embedded(s.death.position))s.death.position=repair(s.death.position);
  s.regionRevision=2;if(changed)s.notice={kind:'world-migration',at:now};
 }
-export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
+export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now);inventory(s);s.engineering=C.engineeringDefaults(s.engineering);s.drops=list(s.drops);s.wrecks=list(s.wrecks);s.safe=list(s.safe);ledger(s,now);migrateRegion(s,now);s.daily.missionKills=list(s.daily.missionKills);s.battle.enemies=list(s.battle.enemies);s.battle.id=Math.max(Number(s.battle.id)||0,...s.battle.enemies.map(e=>e.id));s.battle.playerStats.wshot=(C.profiles[s.battle.playerStats.wtype]||C.profiles.pulse).interval;
  if(s.mission)return;const day=Math.floor(now/POLICY.day),fresh=new C.Encounter(s.loadout,s.position);
  for(const e of fresh.enemies)if(!s.battle.enemies.some(old=>old.key===e.key))s.battle.enemies.push(copy(e));
  // A patrol whose authored route moved is re-homed only while it is calm and far outside the player's view.
@@ -112,19 +113,31 @@ export function harvestStep(s,B,input,moved,hit,now){const H=W.HARVEST;
 // Scanner pulse (RESOURCE_ECONOMY.md §5.3): free, 30 s cooldown; reveals this pilot's live veins within 150 m (+50 m per Radar
 // module level) and the Starter Vein. Scanned veins stay on the MAP with what they hold; an exhausted vein shows EXHAUSTED for
 // MN_VEIN.dryShowMs and disappears; its replacement elsewhere in the sector needs a new SCAN.
-export function scanStep(s,B,input,now){const S=RULES.MN_SCAN;if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<S.cooldownMs)return;
- const r=S.radius+S.perRadar*(s.base?.modules?.radar|0);s.scanAt=now;s.found=s.found||{};let fresh=0,near=0;
+export function scanStep(s,B,input,now){if(!input.scan||B.playerHp<=0||now-(s.scanAt||0)<RULES.MN_SCAN.cooldownMs)return;scanPulse(s,now);}
+// One pulse. A Scanner Charge (Session 6 consumable) adds CQ_ITEMS.scanner.extra metres and finds every vein in this sector.
+function scanPulse(s,now,extra=0,sector=false){const S=RULES.MN_SCAN,r=S.radius+S.perRadar*(s.base?.modules?.radar|0)+extra;s.scanAt=now;s.found=s.found||{};let fresh=0,near=0;
  for(const d of W.deposits){if(d.m!=='starter'||s.deposits?.[d.id]||Math.hypot(d.x-s.position.x,d.z-s.position.z)>r)continue;near++;if(!s.found[d.id]){s.found[d.id]=1;fresh++;}}
- const v=reveal(s,s.position,r,now);fresh+=v.fresh;near+=v.near;
- s.notice={kind:'scan',radius:r,found:fresh,near};}
+ const v=reveal(s,s.position,r,now);fresh+=v.fresh;near+=v.near;if(sector){const w=revealSector(s,W.frontierSectorAt(s.position.x,s.position.z).id,now);fresh+=w.fresh;near+=w.near;}
+ s.notice={kind:'scan',radius:r,found:fresh,near,...(sector?{charge:1}:{})};}
 export const TRAVEL_ACTIONS=['fast-travel','recall-start','recall-cancel'];
+// Session 6 consumables (RULES.CQ_ITEMS): used from the field or inside an operation, never inside your town (the Home Sector).
+export const LOOT_ACTIONS=['use-item'];
+function useItem(s,B,request,now){
+ const k=request.item;if(Object.keys(request).some(x=>!['seq','action','item'].includes(x))||typeof k!=='string'||!own(RULES.CQ_ITEMS,k))fail('invalid item');
+ const I=itemReady(s,k,now);if(s.hp<=0||B.playerHp<=0||B.state!=='active')fail('Machine disabled');
+ if(!s.mission&&s.base?.tier&&Math.hypot(s.position.x-C.baseDefinition.x,s.position.z-C.baseDefinition.z)<=C.baseDefinition.radius)fail('consumables work in the field, not inside your town');
+ if(k==='repair'){if(B.playerHp>=B.playerMax-.5)fail('hull already full');if(B.mend?.t>0)fail('a Repair Kit is already working');B.mend={t:I.healS,rate:B.playerMax*I.heal/I.healS};}
+ else if(k==='shield'){if(!(B.shieldCd>0))fail('SHIELD is already ready');B.shieldCd=0;}
+ else if(k==='scanner')scanPulse(s,now,I.extra,true);
+ else if(k==='decoy'){if(B.decoy?.t>0)fail('a Decoy Beacon is already out');B.decoy={x:s.position.x,y:s.position.y,z:s.position.z,t:I.s,r:I.radius};}
+ const left=spend(s,k,now);s.notice={...(k==='scanner'?s.notice:{}),kind:k==='scanner'?'scan':'item-used',item:k,left};}
 // The channel completes inside verified command replay once 15 s of simulated play pass without damage.
 function completeRecall(s,B,now){const node=C.travelNodes(s.territory,s.base?.tier||0).find(n=>n.id==='base'),blocked=p=>K.baseBlocked({...B,baseTier:s.base?.tier||0},p),cooldown=s.recall.cooldownMs;if(!node){delete s.recall;return;}
  arrive(s,B,C.travelArrival(node,B.enemies,blocked)||node.arrivals.find(p=>!blocked(p))||node.arrivals[0],{kind:'recalled'});s.recallReadyAt=now+cooldown;}
 function arrive(s,B,p,notice){s.position={x:p.x,z:p.z,y:p.y,surface:p.surface||'ground'};s.safe=[{...s.position}];s.stuckMs=0;delete s.recall;B.projectiles=[];B.superShells=[];B.superAttack=null;B.dashState=null;B.lockId=null;s.notice=notice;}
 function mergeResidents(from,to){for(const e of from.enemies.filter(e=>e.resident)){const old=to.enemies.find(x=>x.key===e.key);if(old){const id=old.id;Object.assign(old,copy(e),{id,resident:false});if(old.hp<=0){to.cleared=to.cleared||{};to.cleared[old.key]=true;}}}}
 export function applyAction(previous,request,now,ctx={}){
- if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
+ if(!record(request)||Object.keys(request).some(k=>!['seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'].includes(k))||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(request.action))fail('invalid action');if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS].includes(request.action)&&Object.keys(request).some(k=>!['seq','action'].includes(k)))fail('invalid action fields');time(previous,request.seq,now);const s=copy(previous);refreshState(s,now);let B=hydrate(s);
  if(request.action==='start-mission'||request.action==='start-defense'||request.action==='start-sector-defense'){
  const defense=request.action==='start-defense',sectorDefense=request.action==='start-sector-defense';if(defense){const d=s.base.defense;if(!s.base.tier||s.mission||!d.alertAt||d.active||now<d.nextAt)fail('defense unavailable');}
  const op=C.operations[defense?'base-defense':request.mission||'oxygen-line'];if(!own(C.operations,defense?'base-defense':request.mission||'oxygen-line')||!op||Object.keys(request).some(k=>!['seq','action',...(defense?[]:['mission'])].includes(k)))fail('invalid mission');
@@ -168,6 +181,7 @@ export function applyAction(previous,request,now,ctx={}){
  // Capacity changes preserve the absolute heat debt and latch. Never refill HP or abilities.
  B.engineering=copy(s.engineering);const capacity=C.engineeringValues(B.playerStats,B.engineering).capacity,total=(B.heat||0)+(B.heatOverflow||0);C.setHeat(B,total,capacity);if(total>=capacity)B.overheated=true;
  s.notice={kind:'engineering-saved'};
+ }else if(LOOT_ACTIONS.includes(request.action)){useItem(s,B,request,now);
  }else if(request.action==='bank'){bank(s,now);
  }else if(request.action==='repair'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('repair requires safe Refuge terminal');s.hp=B.playerHp=B.playerMax;s.notice={kind:'repaired'};

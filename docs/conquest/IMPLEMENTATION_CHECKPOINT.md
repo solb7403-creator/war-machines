@@ -4384,10 +4384,15 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   CLOSER" at 6-8 m; ids and G/C keys kept). New `fx.js` sounds loot0..loot4 and the 'cqkill'/'loot' cases. Browser test
   `dev/tests/conquest-session6-feel.py` PASS at 390x844 and 1366x768 (flash seen, numbers 1-3, ticker DESTROYED · INTERCEPTOR,
   SOUND flips save.sound, LOCATE ME opens the map). `conquest-minerals-browser.py` fixtures moved to the new Starter Vein
-  (1180,1152): re-run it first thing in the next slice. NEXT: Part C (loot v1) per "Plan for B-F".
-- NEXT: Part B (feel) -> C (loot v1) -> D (living world + Sortie chain) -> E (War Orders, yield steps, taper, production x3, cap
-  copy) -> F (analytics) -> browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) ->
-  captures to `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).
+  (1180,1152): re-run it first thing in the next slice. (Done: commit 180d0fe, green.)
+- DONE in slice 3 (Part C, loot v1): see "Part C" below. `dev/tests/conquest-loot.mjs` (10 checks) and
+  `dev/tests/conquest-session6-loot.py` (390x700, 320x568, 1366x768 with real keys) PASS; every CI node suite passes locally.
+- NEXT: D (living world + Sortie chain) -> E (War Orders, yield steps, taper, production x3, cap copy) -> F (analytics) ->
+  browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) -> captures to
+  `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).
+- Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
+  `chromium`); the wtest suites need `npm install --prefix worker --no-audit --no-fund --package-lock=false`; never run node suites
+  in parallel when you care about timing files (`docs/conquest/session5b/town-rules.json` records ms: restore it with git checkout).
 - Design notes already settled for B-F are in "Plan for B-F" below; follow them.
 
 ### Decisions (with the reason)
@@ -4453,6 +4458,36 @@ earning-model, first-base, wtest/conquest, conquest-onboarding.py (radio). All C
 Model note for Part E: with the claim at minute 6 the progression models start their "half the CP to other sinks after the first
 base" rule ~53 minutes earlier, which moves CC5 by +13% in the audit model; Part E aligns that trigger to the old claim's 2,550 CP
 spent (behavior held constant across the change) before the +-10% check.
+
+### Part C — loot v1 (built, slice 3)
+- **Data** (`js/rules.js`): `LOOT` (mob, elite, commander + a ring-4 row, chest, strike, defense, order; `titan:null`), rates exactly spec
+  §4.1; `CQ_ITEMS` (Repair Kit +40% hull over 6 s / 60 s, Shield Cell = SHIELD ready / 30 s, Scanner Charge = SCAN +100 m + every vein
+  of the sector / 30 s, Decoy Beacon = Parasites within 120 m drive to it and shoot it for 8 s / 45 s; weights 40/25/20/15; cap 10),
+  `CQ_PARTS` (4, cap 50), `CQ_FRAG` (pools c/u/r/e -> catalog slots armor/commander/trail/base, 10 = a piece), `CQ_TROPHY` (5 doctrines +
+  Strike Core; `hive-titan` reserved), `CQ_MN_RARITY`. One rarity ladder (grey, green, cyan, violet, gold).
+- **Keyed by ring**: rows + ring rows from that ring outward; a world kill's ring is `ConquestWorld.ringAt`, a raid commander's is its
+  danger (HARD 3, VETERAN 4). Only the commander table differs by ring (VETERAN +8% Tranquillityite) because §4.1 is one table; any other
+  ring scaling would be a new economic number (PROPOSAL in the final report: richer loot in rings 3-5).
+- **Worker** (`worker/src/conquest-loot.js`): rolls = FNV-1a + murmur finaliser of `s.lseed` (server-only, stripped by `publicState`)
+  + source + kill drop id / `attempt:n` / `slot:n`; hard pity at the roll (elite part 20, commander trophy 10 of the type fought most);
+  `bind()` = account-bound grant with caps (items 10, parts 50; overflow reported as FULL), fragments -> a piece the pilot does not own
+  (seeded, no repeats; a complete pool holds at 10/10), trophies counted. `s.inv={it,pt,fr,tr,pity,cd,log}` rebuilt on every load.
+- **Where rolls happen**: `killLoot` (the drop carries `loot`, `r`, `label`; same generation gating as salvage, raid reinforcements and
+  doctrine garrisons never), `pickups` (minerals -> cargo, the rest bound; `s.lootRun` = finds of this attempt), raid chest in
+  `missionReward` (stored with the raid receipt per attempt; a 3-link Sortie chain steps the fragment up: hook `chestSteps`, Part D),
+  `strikeReward` (+ Strike Core every 12th), `defenseOutcome` / `sectorDefenseOutcome` victories.
+- **use-item** (`LOOT_ACTIONS`, fields seq/action/item): never inside your town (gate radius) outside operations; Repair Kit = `B.mend`,
+  Decoy = `B.decoy`, both stepped in the shared `abilityStep` and carried across battles (`carry`), the decoy steering is `Battle.lure()`
+  (position only, no gear read). Town Score = `P.power + 15 x trophy types held`; the earn-only `hive` banner emblem needs the full set.
+- **Client**: `js/conquest/loot.js` (lines, rarity, the LOOT & TROPHY HALL screen: consumables USE / SET SLOT, research parts "the Science
+  Lab uses these soon", fragment pools, Trophy Hall, both pity counters, the published odds, recent finds); HUD slot `#cq-item` above HEAT
+  (shown once a consumable is owned, hidden in town; tap = use, T = use, 1-4 = each, long press SHIELD = quick picker); rarity glow on
+  caches (`style.cache(wreck, rarity)`), one-word tags over the four nearest loot caches, the rare+ card (2.4 s, fx('loot') haptic),
+  ticker lines, after-action DROPS row (receipt loot + this attempt's pickups). Wiki "Loot" section (every rate and pity counter; the
+  test compares it with the tables). 20 earn-only catalog pieces (`frag-*`, `earnOnly`, never priced, never auto-eligible).
+- **Economy re-run**: regular Conquest pilot Ilmenite set 10 -> 9 d, Armalcolite 4.3 -> 3.9 wk (-9%), Tranquillityite 2.6 -> 2.5 mo,
+  others unchanged; grinder < 6x (vein test PASS). `economy-model.mjs --no-loot` prints the Session 5 table. RESOURCE_ECONOMY §5.6,
+  §5.7 (new), §7.2 and spec §4.1/§16 updated.
 
 ### Plan for B-F (settled; build exactly this)
 - B: sounds via `fx()` in view/app (hit=LW.hit own weapon via 'dealt', kill, boom for other deaths/hazards, dash, shield, claim on

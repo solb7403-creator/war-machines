@@ -423,6 +423,43 @@ const MN_VEIN={fe:{cap:12,regrowMs:21600000,live:1,more:{refuge:2}},il:{cap:6,re
 const MN_SCAN={cooldownMs:30000,radius:150,perRadar:50};
 const MN_CACHE={field:{fe:3,il:0.5},HARD:{il:2,ar:0.4},VETERAN:{ar:1.5,tq:0.3},defense:{fe:2,il:1}};
 const STRIKE={everyMs:7200000,telegraphMs:300000,windowMs:1200000,channelMs:16000,cp:120,guaranteed:{il:2,ar:2},tq:0.5,se:0.15,mh:0.025,resonance:{se:12,mh:40}};
+// ---- Conquest loot v1 (Session 6; docs/conquest/audit/CONQUEST_1_0_SPEC.md §4, tables and pity exactly as §4.1) ----
+// Every roll is made by the Worker (worker/src/conquest-loot.js) from the pilot's server-only seed and the kill id or attempt,
+// so a reload can never re-roll; the client never sends an amount. Nothing here is ever sold (dev/tests/conquest-loot.mjs
+// checks every id against the stores and catalogs) and no roll pays airdrop points. One rarity ladder for the whole game:
+// grey, green, cyan, violet, gold (ConquestFeel.RARITY_COLORS).
+const CQ_RARITY=['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'];
+const CQ_MN_RARITY={fe:0,il:1,ar:2,tq:3,se:3,mh:4};
+// Conquest-only consumables: account-bound on pickup, at most CQ_ITEM_MAX of each, never usable in Arcade, PvP or the Home
+// Sector, never sold. w = weight when a roll pays "a consumable"; cdMs = cooldown after a use (server clock).
+const CQ_ITEMS={repair:{n:'Repair Kit',w1:'REPAIR',d:'+40% hull over 6 s',w:40,cdMs:60000,r:1,heal:0.4,healS:6},
+ shield:{n:'Shield Cell',w1:'SHIELD',d:'Recharges SHIELD at once',w:25,cdMs:30000,r:1},
+ scanner:{n:'Scanner Charge',w1:'SCANNER',d:'A SCAN 100 m wider that also finds every vein in this sector',w:20,cdMs:30000,r:1,extra:100},
+ decoy:{n:'Decoy Beacon',w1:'DECOY',d:'Pulls Parasites within 120 m to a beacon for 8 s',w:15,cdMs:45000,r:1,radius:120,s:8}};
+const CQ_ITEM_ORDER=['repair','shield','scanner','decoy'],CQ_ITEM_MAX=10;
+// Research parts: the Science Lab's inputs (Session 6B). They drop and are stored now; 50 of each at most.
+const CQ_PARTS={thermal:{n:'Thermal Core',w1:'THERMAL'},coil:{n:'Ballistic Coil',w1:'COIL'},servo:{n:'Drive Servo',w1:'SERVO'},cap:{n:'Field Capacitor',w1:'CAPACITOR'}};
+const CQ_PART_ORDER=['thermal','coil','servo','cap'],CQ_PART_MAX=50,CQ_PART_R=2;
+// Blueprint fragments: 10 of a pool = one cosmetic of that pool (ConquestCatalog), server-picked without repeats. Earn-only
+// pools, disjoint from every store: common = plate finishes, uncommon = banner standards, rare = muzzle trails, epic = town
+// ornaments (the Titan's epic rows arrive in 7B).
+const CQ_FRAG={need:10,order:['c','u','r','e'],pools:{c:{n:'COMMON',r:0,slot:'armor'},u:{n:'UNCOMMON',r:1,slot:'commander'},r:{n:'RARE',r:2,slot:'trail'},e:{n:'EPIC',r:3,slot:'base'}}};
+// Trophies for the Trophy Hall: one per raid-commander doctrine and the Strike Core (every 12th secured Meteor Strike). Each
+// trophy type held adds +15 Town Score once; the full set unlocks the earn-only Hive banner emblem. 'hive-titan' is reserved (7B).
+const CQ_TROPHY={ambush:{n:'Ambush Commander',r:3},shield:{n:'Shield Commander',r:3},artillery:{n:'Artillery Commander',r:3},carrier:{n:'Carrier Commander',r:3},plasma:{n:'Plasma Siege General',r:3},core:{n:'Strike Core',r:4}};
+const CQ_TROPHY_ORDER=['ambush','shield','artillery','carrier','plasma','core'],CQ_TROPHY_SCORE=15,CQ_TROPHY_RESERVED=['hive-titan'];
+// The drop tables. rows: independent rolls (p = chance) of a mineral unit (mn), consumables (item = how many), a research part,
+// a fragment (frag = pool) or the commander's trophy. ring: extra rows from that ring outward (ConquestWorld.ringAt; a raid's
+// ring is its danger: HARD 3, VETERAN 4). always: paid every time. pity: hard pity, never more than that many rolls without.
+const LOOT={
+ mob:{rows:[{p:0.12,mn:'fe'},{p:0.03,mn:'il'},{p:0.04,item:1},{p:0.005,frag:'c'}]},                       // interceptor, saboteur
+ elite:{rows:[{p:0.25,mn:'il'},{p:0.06,mn:'ar'},{p:0.08,item:1},{p:0.03,part:1},{p:0.01,frag:'u'}],pity:{part:20}},   // sentinel, fire coordinator
+ commander:{rows:[{p:0.12,part:1},{p:0.10,trophy:1},{p:0.05,frag:'r'}],ring:{4:[{p:0.08,mn:'tq'}]},pity:{trophy:10}},   // the five raid commanders; +8% Tranquillityite at VETERAN
+ chest:{always:{item:1},rows:[{p:0.08,frag:'r'}]},                                                       // raid completion chest (the 25-shard blueprint and 3.5% elite roll stay)
+ strike:{rows:[{p:0.15,part:1},{p:0.10,frag:'r'}]},                                                      // Meteor Strike secured (its minerals and Resonance unchanged)
+ defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'}]},                                                     // invasion / town defense held live (the defense cache unchanged)
+ order:{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}},                                    // War Orders (Part E): every daily, the day's third, the weekly
+ titan:null};                                                                                            // Hive Titan rows: Session 7B
 const MN_WEEKLY_N=20,MN_WEEKLY=[{fe:20},{fe:30,il:5},{fe:40,il:10,ar:2,tq:0.25},{il:12,ar:4,tq:0.25},{il:15,ar:5,tq:0.5},{ar:6,tq:1},{ar:8,tq:2}];
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
 const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile

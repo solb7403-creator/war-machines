@@ -74,6 +74,11 @@ export const P = {
   opMinerals: {                 // minerals in an operation's reward cache (victory only)
     field: { fe: 3, il: 0.5 }, raid_hard: { il: 2, ar: 0.4 }, raid_veteran: { ar: 1.5, tq: 0.3 }, defense: { fe: 2, il: 1 },
   },
+  // Session 6 loot v1 (js/rules.js LOOT, spec §4.1): minerals that ride kill caches (cargo, banked like ore). Kills that pay a
+  // cache, per Conquest minute (generation-gated world kills + the first clear of each mission wave slot in a UTC day; raid
+  // reinforcements never pay): light 0.30, heavy 0.10 a minute. One commander per won raid (its first clear of the day pays the
+  // commander roll); VETERAN commanders add 8% Tranquillityite. War Orders: the weekly order pays 1 Armalcolite (Part E).
+  loot: { killsPerMin: { light: 0.30, heavy: 0.10 }, mob: { fe: 0.12, il: 0.03 }, elite: { il: 0.25, ar: 0.06 }, commanderTq: 0.08, weeklyAr: 1 },
   strike: { everyMin: 120, telegraphMin: 5, windowMin: 20, guaranteed: { il: 2, ar: 2, tq: 0.5 }, se: 0.15, mh: 0.025, resonance: { se: 12, mh: 40 } },
   arcade: {                     // per server-verified Arcade/PvP result (AI tickets and live rooms alike)
     win: { fe: 1.5, il: 0.2, ar: 0.06 }, draw: { fe: 1, il: 0.1 }, loss: { fe: 0.5 },   // owner: Arcade-only rare set in about 3 months
@@ -91,6 +96,7 @@ export const P = {
     energyShare: 0.35, areaShare: 0.15,
   },
 };
+const NO_LOOT = process.argv.includes('--no-loot');   // the Session 5 economy (no loot minerals), for the before/after table
 const TIER_NAMES = ['none', ...P.minerals.map(m => m.name)];
 const MIN_IDS = P.minerals.map(m => m.id);
 
@@ -180,10 +186,13 @@ function dayIncome(pr, d) {
     // operations: 45% of Conquest time
     const ops = 0.45 * m, mix = d < 1 ? { field: 1 } : d < 7 ? { field: .5, raid_hard: .5 } : d < 30 ? { field: .2, raid_hard: .6, defense: .2 } : { raid_hard: .4 * (1 - aVet) + .1, raid_veteran: .4 * aVet + .1 * (1 - aVet), defense: .2, field: .3 * (1 - aVet) + .0 };
     const mixTot = Object.values(mix).reduce((a, b) => a + b, 0);
+    let vetWins = 0;
     for (const [id, f] of Object.entries(mix)) {
       const n = ops * (f / mixTot) / A[id].par, win = id === 'raid_hard' ? (d < 7 ? 0.7 : 0.9) : id === 'raid_veteran' ? 0.8 : 1;
-      add(P.opMinerals[id], n * win);
+      add(P.opMinerals[id], n * win); if (id === 'raid_veteran') vetWins += n * win;
     }
+    // Session 6 loot v1: kill-cache minerals, VETERAN commander Tranquillityite, the weekly War Order's Armalcolite
+    if (!NO_LOOT) { const Lt = P.loot; add(Lt.mob, Lt.killsPerMin.light * m); add(Lt.elite, Lt.killsPerMin.heavy * m); inc.tq += vetWins * Lt.commanderTq; inc.ar += Lt.weeklyAr / 7; }
     // Meteor Strikes: one every everyMin, contestable for windowMin after impact
     const strikes = Math.min(1440 / P.strike.everyMin, (m + P.strike.windowMin) / P.strike.everyMin), ok = d < 7 ? 0.6 : d < 21 ? 0.85 : 0.95, s = strikes * ok;
     add(P.strike.guaranteed, s); inc.se += s * (P.strike.se + 1 / P.strike.resonance.se); inc.mh += s * (P.strike.mh + 1 / P.strike.resonance.mh);

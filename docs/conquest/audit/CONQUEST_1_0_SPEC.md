@@ -88,6 +88,8 @@ Random drops that never compete with the store. Server-rolled at the moment of t
 
 Mineral timelines (RESOURCE_ECONOMY §7.2) move by at most ~15% for Ilmenite/Armalcolite and less for the rest; the vein caps still bind grinders. The model is re-run in Session 6 and the spec table updated.
 
+**Built in Session 6 (Checkpoint 40, model re-run):** the regular Conquest-focused pilot's Ilmenite set 10 → 9 days, Armalcolite 4.3 → 3.9 weeks (−9%), Tranquillityite 2.6 → 2.5 months; Ferrite, Selenite and Moonheart unchanged; grinder still under 6× the regular pace. Tables in RESOURCE_ECONOMY §5.6, §5.7 and §7.2.
+
 ### 4.2 Rarity and the loot pop
 Common (grey), Uncommon (green), Rare (cyan), Epic (violet), Legendary (gold), using the existing Arcade rarity colors so the whole game speaks one language. A drop is a glowing sprite on the ground with its rarity color and a one-word label; picking it up plays the rarity sound and a 0.8 s flyout to the HUD; rare and above also pause the ticker for a "RARE · THERMAL CORE" card and a Telegram haptic. The after-action lists drops under the tiles.
 
@@ -232,4 +234,6 @@ Session 5E: your tank with plate sockets, the four Parasite archetypes with dist
 Session 6 Core Fun: §2, §4 (v1: tables, pop, consumables, fragments, pity; parts stored for 6B), §5.6, §5.7, §6.1, §6.2, §11, §12, Decisions 1/2/3/10/13. Session 6B Tank Lab: §3.1 mods and research, plate visuals, POWER chip, §13. Session 7 Living Town: §7.1–7.3, §6.3, §5.3 Strike Beacon, §6.4. Session 7B Competitive & Social: §5.2 Gambits, §5.4 Titan, §5.8, §5.9, §8, trust line, live standing. Session 7.5, 7.8, 8 (§9), 9, 10 as in the roadmap.
 
 ## 16. Changes to RESOURCE_ECONOMY.md when built
+
+Session 6 status: §5 loot tables (new §5.7), consumables, parts, fragments and the loot/store disjointness rule are written; §3.2 taper, yield steps, §4 production ×3 / storage ×2 and the CC1/CC2 + CC3/CC4 changes are recorded as Part E and Part A land (Checkpoint 40).
 §3.2: field-mission repeat taper; yield points in steps; Titan 1,600 base points; Gambit cap +60%. §4: production ×3 and storage ×2; CC1/CC2 split; CC3/CC4 2,200. §5: loot tables (new §5.7), consumables, parts, fragments; Titan rewards and the weekly board as the top competitive rewards. §9: the loot/store disjointness rule, the first wave. §3.4: the new flags. Each session re-runs `dev/tools/economy-model.mjs` and the vein/base progression tests and updates the tables.

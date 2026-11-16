@@ -182,7 +182,7 @@ class Battle {
  this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
- for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
+ for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(this.lure(e));else if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
  const p=this.enemyAdvance?this.enemyAdvance(e,dt):W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
  const target=e.target||this.objective,ec=center(e),want=Math.atan2(target.x-e.x,target.z-e.z),delta=Math.atan2(Math.sin(want-e.turret),Math.cos(want-e.turret));e.turret+=clamp(delta,-2*dt,2*dt);
  if(e.cd<=0&&Math.abs(delta)<.15&&dist(ec,target)<archetypes[e.kind].range&&lineClear(ec,target,target===this.objective)){this.shoot(ec,target,e.stats,'enemy',e.arch,e.id);e.cd=e.stats.wshot;}
@@ -192,6 +192,10 @@ class Battle {
  if(!this.localEncounter&&!this.enemies.some(e=>!e.resident&&e.hp>0)){if(this.wave===formations.length){this.state='victory';this.projectiles=[];}else{this.nextWave+=dt;if(this.nextWave>=3)this.spawnWave();}}
  if(!this.localEncounter&&Math.hypot(this.player.x-mission.x,this.player.z-mission.z)>240){this.state='defeat';this.reason='Retreated beyond the defense perimeter';this.projectiles=[];}
  }
+ // Decoy Beacon (Session 6 consumable, rules.js CQ_ITEMS.decoy): while it lives, every Parasite within its radius drives to the
+ // beacon and fires at it instead of the pilot. Position only: it never reads the pilot's gear (the 5D fairness rule).
+ lure(e){const d=this.decoy;if(!d||!(d.t>0)||Math.hypot(e.x-d.x,e.z-d.z)>d.r)return false;const a=archetypes[e.kind],dx=d.x-e.x,dz=d.z-e.z,l=Math.hypot(dx,dz)||1;
+  e.target={x:d.x,y:(d.y||0)+2.2,z:d.z};e.vx=l>9?dx/l*a.speed:0;e.vz=l>9?dz/l*a.speed:0;return true;}
  dispose(){this.projectiles=[];this.enemies=[];this.effects=[];}
 }
 // A small local theater uses the same projectiles, damage, models and steering as missions.

@@ -7,7 +7,7 @@ import {readEco,readTag,writeIf,creditConquest} from './eco.js';
 import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
-import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS} from './conquest-sim.js';
+import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS,LOOT_ACTIONS} from './conquest-sim.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
 import {publicVeins} from './conquest-veins.js';
@@ -40,7 +40,8 @@ export function devAction(previous,r,now){if(previous?.v!==1||r.seq!==previous.s
  else{if(!s.dev?.on)throw Error('conquest: dev mode is off');if(!s.plot?.job)throw Error('conquest: nothing is building');s.plot.job.ready=now;refreshState(s,now);}
  s.notice={kind:'dev',action:r.action};s.seq=r.seq;return s;}
 // Server-only fields never leave the Worker: the vein seed and unscanned veins (s.lodes) become the scanned-only s.veins view.
-export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};out.veins=publicVeins(s,s.lastWall||0);
+// lseed: the loot seed (Session 6) never leaves the Worker either.
+export function publicState(s){const {lastDigest,rate,raidRoll,raidReceipts,lodes,lseed,...out}=s;if(s.base)out.base={...s.base,modules:s.base.modules||{}};out.veins=publicVeins(s,s.lastWall||0);
  // Meteor Strike core rolls stay server-side until the strike is secured; the client only needs whether a slot is claimed.
  if(s.strikes&&typeof s.strikes==='object')out.strikes=Object.fromEntries(Object.entries(s.strikes).map(([k,v])=>[k,{claimed:v?.claimed?1:0}]));return out;}
 async function transaction(env,pid,fn,now){
@@ -97,8 +98,8 @@ export async function conquestAction(env,a,now=Date.now()){
   if(!allowed(a.b,['gv','initData','seq','action'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest action fields');
   if(a.pid!==OWNER_PID||!(await isOwner(env,a,[OWNER_ADMIN])))return response(403,'owner only');
   return submit(env,a,{seq:a.b.seq,action:a.b.action},devAction,now);}
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
- if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
  const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.

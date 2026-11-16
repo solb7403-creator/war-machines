@@ -86,7 +86,7 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
 
 <nav>
  <a href="#story">The story</a><a href="#mission">The mission</a><a href="#start">How to play</a><a href="#combat">Combat</a><a href="#modes">Modes</a><a href="#points">Points</a>
- <a href="#garage">Garage</a><a href="#minerals">Minerals &amp; plating</a><a href="#pass">Lunar Pass</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#vault">Vault</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
+ <a href="#garage">Garage</a><a href="#minerals">Minerals &amp; plating</a><a href="#loot">Loot</a><a href="#pass">Lunar Pass</a><a href="#squad">Squad</a><a href="#shop">Shop</a><a href="#vault">Vault</a><a href="#airdrop">Airdrop</a><a href="#token">Tokenomics</a><a href="#faq">FAQ</a>
 </nav>
 
 <section id="story">
@@ -257,6 +257,38 @@ footer{text-align:center;color:var(--dust);font-size:13px;margin-top:36px}
    <tr><td>Moonheart</td><td class="n">+4%</td><td class="n">3 Moonheart + 4 Selenite + 25,000 pts</td><td>+16% hull, −10% energy and −10% area damage taken</td></tr>
   </table>
   <p class="mut" style="margin-top:10px">Energy: Pulse Cannon shots, Pierce Lance, Static Nova and Conquest pulse and plasma fire. Area: Static Nova, Siege Blast, meteors, the Survival megatank's stomps and shells, and Conquest artillery, orbital strikes and plasma splash. Moonbeam and Moonfall are not reduced. AI pilots never carry plates. Plates are never sold for real money.</p>
+ </div>
+</section>
+
+<section id="loot">
+ <h2>Loot</h2>
+ <p class="kick">Conquest drops: every rate, every pity counter. Nothing that drops is ever sold.</p>
+ <div class="card">
+  <p><b>How it works.</b> Command rolls every drop the moment a kill or a completion is verified, from your own server-side seed and that kill or attempt, so reloading or retrying never re-rolls it. A drop glows in its rarity colour (<b style="color:#c9d2dc">common</b>, <b style="color:#5fe08a">uncommon</b>, <b style="color:#46d9ff">rare</b>, <b style="color:#c18cff">epic</b>, <b style="color:#ffc94a">legendary</b>) with a one-word label; drive over it to pick it up. Minerals in a drop join your cargo (half is lost if your War Machine is destroyed, until you bank them). Consumables, research parts, blueprint fragments and trophies are <b>yours the moment you pick them up</b>: never lost on death, never raided, never sold. Loot never pays airdrop points.</p>
+  <table>
+   <tr><th>Source</th><th>Chance drops (each rolled on its own)</th><th>Pity</th></tr>
+   <tr><td>Interceptors and saboteurs (world and mission kills)</td><td>12% 1 Ferrite · 3% 1 Ilmenite · 4% a consumable · 0.5% a common fragment</td><td>—</td></tr>
+   <tr><td>Heavy sentinels and fire coordinators</td><td>25% 1 Ilmenite · 6% 1 Armalcolite · 8% a consumable · 3% a research part · 1% an uncommon fragment</td><td>never more than 20 of them without a research part</td></tr>
+   <tr><td>Raid commanders (ambush, shield, artillery, carrier, plasma)</td><td>12% a research part · 10% that commander's trophy · 5% a rare fragment · VETERAN raids also 8% 1 Tranquillityite</td><td>never more than 10 commanders without a trophy (the type you fought most)</td></tr>
+   <tr><td>Raid completion chest</td><td>always 1 consumable · 8% a rare fragment (the 25-shard blueprint and the 3.5% elite blueprint stay)</td><td>25 shards = the blueprint</td></tr>
+   <tr><td>Meteor Strike secured</td><td>15% a research part · 10% a rare fragment; every 12th strike you secure also gives the Strike Core trophy</td><td>Strike Resonance</td></tr>
+   <tr><td>Town or sector defense held live</td><td>6% two consumables · 4% an uncommon fragment</td><td>—</td></tr>
+   <tr><td>War Orders</td><td>every daily order 1 consumable · the day's third order 1 uncommon fragment · the weekly order 1 Armalcolite + 1 rare fragment</td><td>—</td></tr>
+  </table>
+  <p class="mut" style="margin-top:10px">Kills pay loot only where they pay salvage: once per spawn generation in the world, once per UTC day per mission slot. When a roll says "a consumable" it is a Repair Kit 40%, Shield Cell 25%, Scanner Charge 20% or Decoy Beacon 15%; a research part is one of the four, evenly.</p>
+ </div>
+ <div class="card">
+  <p><b>Consumables</b> (Conquest only, up to 10 of each; use them in the field or in an operation, never inside your town, Arcade or PvP). Tap the green slot above HEAT, long-press SHIELD, or press T (1–4 for each one) on a computer.</p>
+  <table>
+   <tr><th>Item</th><th>Effect</th><th class="n">Cooldown</th></tr>
+   <tr><td>Repair Kit</td><td>+40% hull over 6 seconds (the field has no hull regeneration)</td><td class="n">60 s</td></tr>
+   <tr><td>Shield Cell</td><td>SHIELD ready again at once</td><td class="n">30 s</td></tr>
+   <tr><td>Scanner Charge</td><td>a SCAN 100 m wider that also finds every vein in this sector</td><td class="n">30 s</td></tr>
+   <tr><td>Decoy Beacon</td><td>every Parasite within 120 m drives to the beacon and shoots it for 8 seconds</td><td class="n">45 s</td></tr>
+  </table>
+  <p><b>Research parts</b>: Thermal Core, Ballistic Coil, Drive Servo, Field Capacitor (up to 50 of each). The Science Lab uses these soon (Tank Lab update).</p>
+  <p><b>Blueprint fragments</b>: ten fragments of one pool give you a new cosmetic from that pool, picked by Command, never one you already own: common = five matte plate finishes, uncommon = five banner standards, rare = five muzzle trails, epic = five town ornaments (only from a raid chest at a three-win Sortie chain until the Hive Titan arrives). These pieces are earn-only: they are never sold.</p>
+  <p><b>Trophy Hall</b>: one trophy for each raid-commander doctrine plus the Strike Core. Each trophy type you hold adds +15 Town Score; the full set unlocks the earn-only Hive banner emblem. MORE → LOOT &amp; TROPHY HALL shows your trophies, parts, fragments and both pity counters.</p>
  </div>
 </section>
 

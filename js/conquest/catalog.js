@@ -4,6 +4,8 @@
 const freeze=o=>{Object.freeze(o);Object.values(o).forEach(v=>{if(v&&typeof v==='object'&&!Object.isFrozen(v))freeze(v);});return o;};
 const checkout=freeze({enabled:false,blocker:'COMMERCE NOT YET AVAILABLE: Stars/TON/SOL Conquest SKU pricing, authenticated receipts, replay, refunds and cross-device entitlement delivery have not received end-to-end certification. No live purchase or acceleration is enabled.'});
 const item=(id,name,slot,design,color,accent,earn,earnText,proposedUsd)=>({id,name,slot,design,color,accent,earn,earnText,proposedUsd,priceStatus:'Illustrative USD concept only; no live price or checkout',permanent:true,preview:true,competitive:false});
+const POOL_NAME={c:'COMMON',u:'UNCOMMON',r:'RARE',e:'EPIC'};
+const frag=(id,name,slot,design,color,accent,pool)=>({id,name,slot,design,color,accent,earn:{frag:pool},earnText:'Ten '+POOL_NAME[pool].toLowerCase()+' blueprint fragments (loot drops)',pool,earnOnly:true,proposedUsd:null,priceStatus:'Earn-only: never sold',permanent:true,preview:true,competitive:false});
 const items=freeze([
  item('base-bastion','Bastion Ramparts','base',0,0x283b4b,0xd2aa55,{base:1},'Build Command Base I',7.99),
  item('base-lancer','Lancer Gantries','base',1,0x334854,0x84d9d8,{base:2},'Build Command Base II',12.99),
@@ -24,10 +26,21 @@ const items=freeze([
  item('command-wings','Guardian Wings','commander',1,0xadb8bd,0x6cd8e7,{defenses:3},'Win three real base defenses',4.99),
  item('command-orrery','Warfront Orrery','commander',2,0x4b5a6f,0xd2bbf8,{campaign:250},'Contribute 250 verified campaign score',7.99),
  item('command-beacon','Humanity Beacon','commander',3,0x5b563e,0xf7d580,{campaign:1000},'Contribute 1,000 verified campaign score',9.99),
- item('command-parasite','Captured Parasite Sigil','commander',4,0x493d59,0xb2e4a0,{eliteBlueprint:1},'Earn the disclosed rare raid blueprint (3.5% eligible raid chance)',9.99)
+ item('command-parasite','Captured Parasite Sigil','commander',4,0x493d59,0xb2e4a0,{eliteBlueprint:1},'Earn the disclosed rare raid blueprint (3.5% eligible raid chance)',9.99),
+ // Session 6 loot v1: fragment pools (rules.js CQ_FRAG). EARN-ONLY: never priced, never sold, never in a store or crate (the
+ // loot test checks it). Ten fragments of a pool give one piece of that pool, picked by the Worker without repeats.
+ frag('frag-c-basalt','Basalt Matte Chevrons','armor',0,0x3d4146,0x8a9199,'c'),frag('frag-c-regolith','Regolith Matte Guards','armor',1,0x8b7d63,0xc9b68f,'c'),
+ frag('frag-c-olive','Olive Drab Heat Sinks','armor',2,0x4f5a3c,0x9fae73,'c'),frag('frag-c-slate','Slate Matte Fins','armor',3,0x46505e,0x9db0c4,'c'),frag('frag-c-oxide','Oxide Matte Crest','armor',4,0x6b3f2c,0xc07a52,'c'),
+ frag('frag-u-vanguard','Vanguard Field Standard','commander',0,0x2e4a3a,0x7fe0a0,'u'),frag('frag-u-aegis','Aegis Wings','commander',1,0x3b4656,0x9fd6ff,'u'),
+ frag('frag-u-orbit','Lunar Orbit Standard','commander',2,0x353a52,0xb8c4ff,'u'),frag('frag-u-frontier','Frontier Beacon','commander',3,0x4c4632,0xffe08a,'u'),frag('frag-u-scarab','Scarab Sigil','commander',4,0x3d2f45,0xd99cff,'u'),
+ frag('frag-r-ember','Ember Muzzle Halo','trail',0,0x7a2f22,0xff6a3d,'r'),frag('frag-r-tide','Tidal Wake Vanes','trail',1,0x1f4d5c,0x3df2ff,'r'),
+ frag('frag-r-aurora','Aurora Convergence','trail',2,0x2f4a3a,0x9dff9a,'r'),frag('frag-r-solar','Solar Coil Rings','trail',3,0x6a4a1a,0xffd23d,'r'),frag('frag-r-void','Void Comet Fins','trail',4,0x231d3a,0xb06bff,'r'),
+ frag('frag-e-dawn','Dawnline Ramparts','base',0,0x3a3038,0xffb070,'e'),frag('frag-e-glacier','Glacier Gantries','base',1,0x2b4656,0xbaf3ff,'e'),
+ frag('frag-e-nebula','Nebula Cathedral','base',2,0x3c2c52,0xf08cff,'e'),frag('frag-e-titanbone','Titan-Bone Crown','base',3,0x4a463c,0xe8e0c8,'e'),frag('frag-e-umbra','Umbra Monolith','base',4,0x1e1f2a,0xffd36e,'e')
 ]);
-const byId=freeze(Object.fromEntries(items.map(i=>[i.id,i]))),slots=freeze(['base','trail','armor','commander']);
-function eligible(i,s){if(typeof i==='string')i=byId[i];if(!i||!s)return false;const e=i.earn,r=s.raidProgress||{};return Object.entries(e).every(([k,n])=>({base:s.base?.tier||0,clears:r.clears||0,blueprint:r.blueprint?1:0,eliteBlueprint:r.eliteBlueprint?1:0,reputation:s.reputation||0,defenses:s.base?.defense?.wins||0,campaign:s.campaignScore||0}[k]||0)>=n);}
+const byId=freeze(Object.fromEntries(items.map(i=>[i.id,i]))),slots=freeze(['base','trail','armor','commander']),pools=freeze(Object.fromEntries(['c','u','r','e'].map(p=>[p,items.filter(i=>i.pool===p).map(i=>i.id)])));
+function eligible(i,s){if(typeof i==='string')i=byId[i];if(!i||!s||i.pool)return false;   // fragment pieces are granted by the Worker's fragment rule only
+ const e=i.earn,r=s.raidProgress||{};return Object.entries(e).every(([k,n])=>({base:s.base?.tier||0,clears:r.clears||0,blueprint:r.blueprint?1:0,eliteBlueprint:r.eliteBlueprint?1:0,reputation:s.reputation||0,defenses:s.base?.defense?.wins||0,campaign:s.campaignScore||0}[k]||0)>=n);}
 function state(s){const c=s?.cosmetics||{},owned=c.owned||{},equipped=c.equipped||{};return {owned,equipped,available:items.filter(i=>owned[i.id]||eligible(i,s)),checkout};}
 function build(T,id,options={}){
  const i=typeof id==='string'?byId[id]:id;if(!i||!byId[i.id])throw Error('unknown Conquest cosmetic');const g=new T.Group(),segments=options.low?6:12;
@@ -74,5 +87,5 @@ function draw2D(ctx,id,x,y,scale=1){const i=typeof id==='string'?byId[id]:id;if(
  if(i.slot==='trail'){ctx.fillRect(-26,-4,15,8);for(let n=0;n<i.design+2;n++){ctx.beginPath();ctx.ellipse(-5+n*8,0,3,6+n,0,0,Math.PI*2);ctx.stroke();}ctx.beginPath();ctx.moveTo(-10,0);ctx.lineTo(27,0);ctx.stroke();}
  if(i.slot==='commander'){ctx.fillRect(-20,17,40,6);ctx.fillRect(-2,-18,4,36);for(let n=0;n<i.design+2;n++){ctx.beginPath();ctx.moveTo(-18+n*36/(i.design+1),-7);ctx.lineTo(0,-25+i.design);ctx.lineTo(18-n*36/(i.design+1),-7);ctx.stroke();}ctx.strokeRect(-6,-13,12,12);}
  ctx.restore();}
-root.ConquestCatalog=freeze({items,byId,slots,checkout,eligible,state,build,draw2D});
+root.ConquestCatalog=freeze({items,byId,slots,pools,checkout,eligible,state,build,draw2D});
 })(globalThis);

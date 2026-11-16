@@ -978,7 +978,9 @@ const billGeo=(r,col,o=0)=>{const X=new Fx();X.keep=true;X.bill(0,0,0,1,r,col,o)
  S.holoMarker=(color,{height=10,radius=1.4,icon=true}={})=>{const X=new Fx();X.flat(0,.15,0,radius*2.2,radius*2.2,AT.HEX,E(color,.9),0);X.band(0,0,.2,radius,radius*.55,height,E(color,.55),[0,0,0],12);if(icon){X.quadV(0,height+1.6,0,2.6,2.6,0,AT.ICON,E(color,1.2));X.quadV(0,height+1.6,0,2.6,2.6,Math.PI/2,AT.ICON,E(color,.8));}
   const m=X.mesh();m.renderOrder=2;return m;};
  const cacheGeo={};
- S.cache=(wreck)=>{const key=wreck?'w':'l';if(!cacheGeo[key]){const Sb=new Bld(),X=new Fx(),c=wreck?K.cyan:K.amber,col=wreck?0x8ee6ef:0xffd58a;Sb.box(0,.7,0,2,1.4,2,K.dark2);Sb.box(0,1.45,0,2.1,.12,2.1,c,1);for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x*1.02,.7,z*1.02,.1,1.4,.1,c,1);
+ // Session 6 loot v1: a cache holding loot glows in its rarity colour (grey, green, cyan, violet, gold); plain salvage stays amber.
+ const LOOT_GLOW=[0xc9d2dc,0x5fe08a,0x46d9ff,0xc18cff,0xffc94a];
+ S.cache=(wreck,rarity=-1)=>{const r=wreck?-1:Math.max(-1,Math.min(4,rarity|0)),key=wreck?'w':'l'+r;if(!cacheGeo[key]){const Sb=new Bld(),X=new Fx(),c=wreck?K.cyan:K.amber,col=wreck?0x8ee6ef:r>=0?LOOT_GLOW[r]:0xffd58a;Sb.box(0,.7,0,2,1.4,2,K.dark2);Sb.box(0,1.45,0,2.1,.12,2.1,c,1);for(const [x,z] of [[-1,-1],[1,-1],[-1,1],[1,1]])Sb.box(x*1.02,.7,z*1.02,.1,1.4,.1,c,1);
   X.band(0,0,1.5,.5,.2,5,E(col,.6),[0,0,0],10);X.bill(0,2.2,0,1.6,AT.BLOB,E(col,.8));X.flat(0,.06,0,2.4,2.4,AT.BLOB,E(col,.4),0);cacheGeo[key]={s:keep(Sb.geometry()),f:keep(X.geometry())};}
   const g=new T.Group();g.add(new T.Mesh(cacheGeo[key].s,MAT.solid),fxMesh(cacheGeo[key].f));return g;};
  S.flag=(owned,friendly)=>{const Sb=new Bld(),X=new Fx(),c=owned?K.teal:friendly?K.cyan:K.mag,col=owned?0x2dffc4:friendly?0x22e6ff:0xff2bd6;Sb.box(0,7,0,.2,14,.2,K.mid);Sb.box(0,.3,0,.9,.6,.9,K.dark);
