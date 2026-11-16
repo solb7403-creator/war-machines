@@ -1,5 +1,5 @@
 {
- "hint": "BANK YOUR SALVAGE \u00b7 Drive into the Refuge, tap REFUGE SUPPLY, then BANK SALVAGE",
+ "hint": "SCAN FOR ORE \u00b7 Tap SCAN: the Starter Vein lies on the Refuge road",
  "scanFound": 1,
  "gatherLabel": "HOLD \u00b7 GATHER STARTER VEIN",
  "carried": "MINERALS CARRIED \u00b7 35 FERRITE \u00b7 BANK AT THE REFUGE",
@@ -7,7 +7,7 @@
  "hullBefore": 1700,
  "hullAfter": 1717,
  "vehicleVertsBefore": 40406,
- "vehicleVertsAfter": 40442,
+ "vehicleVertsAfter": 40478,
  "plates": [
   1,
   0,
@@ -20,5 +20,5 @@
  "lowHullRoute": "refuge",
  "pageErrors": [],
  "scanHint": "SCAN \u00b7 FIND ORE|true",
- "oreRoute": "starter-01|STARTER VEIN ORE|2 m \u00b7 IN RANGE \u00b7 HOLD GATHER|SCAN \u00b7 28s"
+ "oreRoute": "coach|GATHER THE STARTER VEIN|2 m \u00b7 IN RANGE \u00b7 HOLD GATHER|SCAN \u00b7 28s"
 }
