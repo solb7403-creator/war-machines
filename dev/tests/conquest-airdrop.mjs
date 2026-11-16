@@ -1,6 +1,6 @@
 // Conquest airdrop points inside the authoritative Conquest sim (no account): which outcomes pay, the Command Base
 // multiplier, the hourly outcome limit, held operation kills, immutable outbox entries with a spill, and the Daily Base
-// Yield clocks (fill, 10% minimum, 24 h stop, points need the day's first operation). docs/economy/RESOURCE_ECONOMY.md §3.
+// Yield clocks (fill, 10% minimum, 24 h stop, points unlock 25% per operation that day: Session 6, Decision 2a). docs/economy/RESOURCE_ECONOMY.md §3.
 import assert from 'node:assert/strict';import {buildSim} from '../../worker/build-sim.mjs';buildSim();
 const {RULES:R,CONQUEST:{World:W,Combat:C}}=await import('../../worker/src/sim.gen.js');
 const {createState,applyAction,applyCommands,refreshState}=await import('../../worker/src/conquest-sim.js');
@@ -66,10 +66,18 @@ const raw=s=>(A.airdrop(s).pend?.raw||0);
  ok(a.base.pointsAt===t0&&a.base.claimedAt===t0+43200000,'the points clock keeps filling while it waits (materials clock reset)');
  A.earn(a,'field',450,t0+43300000,{op:true});A.seal(a,t0+43300000);const p0=raw(a)+A.airdrop(a).out.reduce((x,e)=>x+e.raw,0);
  a=applyAction(a,{seq:3,action:'base-claim'},t0+43400000);A.seal(a,t0+43400000);const got=A.airdrop(a).out.at(-1);   // the Worker seals every request
- ok(got.n.yield===1&&got.raw===Math.floor(R.CQ_YIELD.pts[1]*(43400000/86400000))&&a.base.pointsAt===t0+43400000,'after the day\'s first operation the held points part pays ('+got.raw+' of '+R.CQ_YIELD.pts[1]+' at 50%)');
+ // Session 6 (Decision 2a): one operation unlocks 25% of the points part; the collect pays that share and leaves the rest filling
+ const meter=R.CQ_YIELD.pts[1]*(43400000/86400000);
+ ok(got.n.yield===1&&got.raw===Math.floor(meter*.25)&&Math.abs(C.baseYield(a.base,a.reputation,t0+43400000).pointsFill-(43400000/86400000)*.75)<1e-6,'one operation today: the points part pays 25% ('+got.raw+' of '+Math.floor(meter)+' in the meter) and the locked 75% keeps filling');
+ assert.throws(()=>applyAction(structuredClone(a),{seq:4,action:'base-claim'},t0+43500000),/produ|unlock/);ok(true,'nothing more to collect until another operation');
+ for(let i=0;i<3;i++)A.earn(a,'field',450,t0+43600000+i*1000,{op:true});A.seal(a,t0+43700000);
+ a=applyAction(a,{seq:4,action:'base-claim'},t0+43800000);A.seal(a,t0+43800000);const rest=A.airdrop(a).out.at(-1);
+ ok(rest.n.yield===1&&Math.abs(rest.raw-Math.floor(R.CQ_YIELD.pts[1]*((43800000/86400000)-(43400000/86400000)*.25)))<=1,'four operations: the rest of the meter pays ('+rest.raw+'); the day pays the whole points part, never more');
+ {const h=structuredClone(a);h.airdrop.yd={d:Math.floor((t0+43800000)/86400000),op:0,hv:12};ok(R.cqYieldUnlock(h.airdrop.yd,h.airdrop.yd.d).u===.5,'harvests count half and together unlock at most half (12 harvests = 50%)');
+  ok(R.cqYieldUnlock({d:1,op:2,hv:0},1).toGo===2&&R.cqYieldUnlock({d:1,op:4,hv:0},1).u===1,'YIELD POINTS 50% · 2 operations to go');}
  const late=structuredClone(a);late.base.claimedAt=t0-5*86400000;late.base.pointsAt=t0-5*86400000;const y=C.baseYield(late.base,late.reputation,t0+43500000);
  ok(y.fill===1&&y.pointsFill===1&&y.pts===R.CQ_YIELD.pts[1],'five days away: each clock stops at one full 24 h fill (no stockpile)');
- const far=structuredClone(a);far.position=at(d.x+60,d.z);assert.throws(()=>applyAction(far,{seq:4,action:'base-claim'},t0+86400000*2),/terminal/);ok(true,'collection needs the physical Command Base terminal (not the MAP)');
+ const far=structuredClone(a);far.position=at(d.x+60,d.z);assert.throws(()=>applyAction(far,{seq:5,action:'base-claim'},t0+86400000*2),/terminal/);ok(true,'collection needs the physical Command Base terminal (not the MAP)');
  const legacy=createState(R.STOCK_L,t0);legacy.base={tier:2,modules:{},builtAt:t0-9e8,claimedAt:t0-1000};delete legacy.base.pointsAt;refreshState(legacy,t0);ok(legacy.base.pointsAt===t0-1000,'existing bases migrate: the points clock starts at the old claim time');}
 
 console.log(`conquest airdrop (sim): passed ${passed}`);

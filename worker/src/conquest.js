@@ -11,6 +11,7 @@ import {createState,applyCommands,applyAction,validateCommands,refreshState,refi
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
 import {publicVeins} from './conquest-veins.js';
+import {entered,takeQueue,flush,clientEvent} from './conquest-analytics.js';
 import {publishBase} from './conquest-visit.js';
 import {cleanName} from './db.js';
 import {isOwner,OWNER_PID,OWNER_ADMIN} from './owner.js';
@@ -76,7 +77,9 @@ function result(r){return r.error?response(r.status||409,r.error,r.state):{statu
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
  const {loadout:L,legacy,view}=await canonical(env,a.pid,now);
- const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const state=s||legacy||createState(L,now);if(state.chain&&now-(state.lastWall||0)>60000)delete state.chain;   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);refitState(state,L);seal(state,now);airdrop(state).view=view;return {state};},now),now,true),now);
+ const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);refitState(state,L);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state);return {state,anq};},now);
+ if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
+ const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r0,now,true),now);
  if(out.status===200&&out.body?.state?.plot)await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // builder jobs settle on open
  return out;
 }
@@ -85,9 +88,12 @@ async function submit(env,a,request,reduce,now){
  const r=await transaction(env,a.pid,previous=>{
   if(previous?.v!==1)return {abort:true,error:'open conquest session first'};
   if(request.seq===previous.seq){if(digest===previous.lastDigest)return {abort:true,state:previous,replayed:true};return {abort:true,error:'sequence already used',state:previous};}
-  try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;return {state};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
- },now);return projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
+  try{const state=reduce(previous,request,now);seal(state,now);state.lastDigest=digest;const anq=takeQueue(state);return {state,anq};}catch(e){return {abort:true,error:String(e.message).slice(0,120),state:previous};}
+ },now);if(!r.abort&&r.anq?.length)await flush(env,r.anq,r.state?.an?.f,now);   // Session 6 analytics: counted only after the CAS write
+ return projected(env,a.pid,await settleAirdrop(env,a.pid,r,now),now);
 }
+// Session 6 analytics: the phone's screen events (the opening radio, where a session ended, its length). Fixed enums only.
+export async function conquestEvent(env,a,now=Date.now()){if(!allowed(a.b,['gv','initData','e','k']))return response(400,'invalid event');const q=clientEvent(a.b,a.pid,now);if(q)await flush(env,q,null,now);return {status:200,body:{ok:true}};}
 export async function conquestInput(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData','seq','commands'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest input');
  let commands;try{commands=validateCommands(a.b.commands);}catch{return response(400,'invalid conquest command');}
@@ -98,10 +104,10 @@ export async function conquestAction(env,a,now=Date.now()){
   if(!allowed(a.b,['gv','initData','seq','action'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest action fields');
   if(a.pid!==OWNER_PID||!(await isOwner(env,a,[OWNER_ADMIN])))return response(403,'owner only');
   return submit(env,a,{seq:a.b.seq,action:a.b.action},devAction,now);}
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
  if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
  const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:{};const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);

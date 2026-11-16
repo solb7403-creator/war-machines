@@ -205,6 +205,17 @@ How the yield works:
 - **Where it goes:** materials are banked straight into the base vault. Minerals go to the account wallet.
 - **Cap:** the points count inside the 50,000 cap (owner decision).
 
+**Session 6 (owner Decisions 2a and 3a; `js/rules.js` CQ_YIELD_STEP, CQ_FIELD_TAPER):**
+- **Daily Base Yield points in steps.** Each verified operation in a UTC day unlocks 25% of the points part; a harvest (bio-flora or a
+  mineral pull) counts half, and harvests together unlock at most half (otherwise eight five-second pulls would open what four
+  operations open, and the decision exists to quarter the alt yield). A collect pays the share unlocked since the last collect that day
+  and drains the meter by that share; the locked rest keeps filling. Materials are never locked. HUD: "YIELD POINTS 50% · 2 operations to go".
+- **Field-mission points taper on repeats**: 100% for the first three completions of the same mission in a UTC day, then 60%, then 40%.
+  Raids, strikes and defenses unchanged; CP keeps its own first / daily / repeat taper.
+- **Sortie chain** (spec §5.7): +10% CP and salvage per link already made (max +30%); airdrop points are never multiplied.
+- **War Orders** pay CP and loot only (never points). **Capped copy**: at 50,000 the HUD says "DAILY CAP REACHED · loot, minerals and
+  CP still drop" (Decision 7a; the cap itself is unchanged).
+
 ### 3.3 Points a minute: Arcade vs Conquest
 
 Base points a minute (= airdrop points), standard pilot, for the kit that settles in each league:
@@ -823,7 +834,7 @@ One builder: one construction at a time. A second builder and speed-ups are stor
 | CC10 | 9000 CP + 500 alloy + 320 biomass + 45 He-3 + 30 Ilmenite + 6 Armalcolite | 8 h | V (×1.25) |
 
 ### 13.3 Production, storage, power
-- Production per level an hour: Refinery 0.8 alloy, Biodome 0.6 biomass, Helium Extractor 0.15 He-3 (site bonuses on top). It accrues on the Worker clock into the plot store and stops at the Storage Depot cap: alloy and biomass 30 + 40 × Depot level, He-3 8 + 10 × Depot level (Ferrite rim deposits 30). Collect inside the plot: whole units go to banked materials (Ferrite to the wallet through the outbox).
+- Production per level an hour (Session 6, owner Decision 10a: ×3): Refinery 2.4 alloy, Biodome 1.8 biomass, Helium Extractor 0.45 He-3 (site bonuses on top; Session 5 had 0.8 / 0.6 / 0.15). It accrues on the Worker clock into the plot store and stops at the Storage Depot cap (×2): alloy and biomass 60 + 80 × Depot level, He-3 16 + 20 × Depot level (Ferrite rim deposits 60). The hub shows what waited "since you left". Collect inside the plot: whole units go to banked materials (Ferrite to the wallet through the outbox).
 - Power: supply 12 + 3 × CC + 14 a Reactor level. Draw per level: Refinery, Biodome, Helium Extractor, Radar, Uplink, Science Lab 2; Storage Depot, Hangar, Trophy Hall, turrets 1; Shield Generator 3. A build over the budget is refused. A full CC10 base cannot max every building and turret at once (a real trade-off).
 - Old modules map onto buildings (Reactor, Hangar, Shield Generator = defense, Storage Depot = vault, Radar, Uplink), capped at III for the old formulas, so CP production, field repair, the protective field, base banking, scan range and radar contacts work exactly as before.
 

@@ -66,13 +66,13 @@ const finish=s=>s.plot.job?wait(s,s.plot.job.ready-now+1):s;
 
 // ---- 3. production, storage caps, collect ----
 {let s=base('crater');s=act(s,'plot-build',{type:'refinery',...P.autoPlace(s.plot,'refinery')});s=finish(s);
- const r=P.rates(s.plot);ok(Math.abs(r.alloy-.8*1.15)<1e-9&&Math.abs(r.fe-3/24)<1e-9,'CRATER RIM: +15% alloy ('+r.alloy.toFixed(2)+'/h at Refinery I) and rim deposits (3 Ferrite a day)');
- s=wait(s,3*3600000);ok(Math.abs(s.plot.st.alloy-2.76)<1e-6,'3 h: 2.76 alloy accrued (fractions kept)');
- const banked=s.ledger.banked.alloy;s=act(s,'plot-collect',{});ok(s.ledger.banked.alloy===banked+2&&Math.abs(s.plot.st.alloy-.76)<1e-3,'collect: whole units go to banked alloy, the fraction stays');
- s=wait(s,7*86400000);ok(s.plot.st.alloy===P.caps(s.plot).alloy&&P.caps(s.plot).alloy===70,'a week away: production stops at the Storage Depot cap (70 alloy at Depot I; no stockpile)');
+ const r=P.rates(s.plot);ok(Math.abs(r.alloy-2.4*1.15)<1e-9&&Math.abs(r.fe-3/24)<1e-9,'CRATER RIM: +15% alloy ('+r.alloy.toFixed(2)+'/h at Refinery I) and rim deposits (3 Ferrite a day)');
+ s=wait(s,3*3600000);ok(Math.abs(s.plot.st.alloy-8.28)<1e-6,'3 h: 8.28 alloy accrued (fractions kept; Session 6 production x3)');
+ const banked=s.ledger.banked.alloy;s=act(s,'plot-collect',{});ok(s.ledger.banked.alloy===banked+8&&Math.abs(s.plot.st.alloy-.28)<1e-3,'collect: whole units go to banked alloy, the fraction stays');
+ s=wait(s,7*86400000);ok(s.plot.st.alloy===P.caps(s.plot).alloy&&P.caps(s.plot).alloy===140,'a week away: production stops at the Storage Depot cap (140 alloy at Depot I, Session 6 storage x2; no stockpile)');
  A.seal(s,now);const out=A.airdrop(s).out.length;s=act(s,'plot-collect',{});A.seal(s,now);ok(A.airdrop(s).out.length===out+1&&A.airdrop(s).out.at(-1).mn?.fe>=3,'rim deposit Ferrite goes to the wallet through the outbox (exactly once)');
  const far=structuredClone(s);far.position=at(D.x+60,D.z);assert.throws(()=>act(far,'plot-collect',{}),/approach your Command Gate/);ok(true,'collecting needs you inside the plot');
- let d=base('delta');d=act(d,'plot-upgrade',{id:'cc'});d=finish(d);d=act(d,'plot-build',{type:'biodome',...P.autoPlace(d.plot,'biodome')});d=finish(d);ok(Math.abs(P.rates(d.plot).biomass-.6*1.15)<1e-9&&P.rates(d.plot).fe===0,'RIVER DELTA: +15% biomass, no rim deposits');}
+ let d=base('delta');d=act(d,'plot-upgrade',{id:'cc'});d=finish(d);d=act(d,'plot-build',{type:'biodome',...P.autoPlace(d.plot,'biodome')});d=finish(d);ok(Math.abs(P.rates(d.plot).biomass-1.8*1.15)<1e-9&&P.rates(d.plot).fe===0,'RIVER DELTA: +15% biomass, no rim deposits');}
 
 // ---- 4. power budget and limits ----
 {let s=base('ridge');const p=s.plot;ok(P.powerSupply(p)===15&&P.powerUse(p)===1,'CC1 supplies 15 power; the Depot draws 1');

@@ -4388,10 +4388,13 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
 - DONE in slice 3 (Part C, loot v1): see "Part C" below. `dev/tests/conquest-loot.mjs` (10 checks) and
   `dev/tests/conquest-session6-loot.py` (390x700, 320x568, 1366x768 with real keys) PASS; every CI node suite passes locally.
 - DONE in slice 4 (Part D, living world + Sortie chain): see "Part D" below; `dev/tests/conquest-living-world.mjs` PASS.
-  OPEN: `conquest-base-progression.mjs` fails its dedicated ratio (3.6x > 3.5) because the chain's +CP compounds in the model;
-  settle it in Part E together with War Orders CP and production x3 against the AUDIT model (`docs/conquest/audit/model/
-  audit-economy.mjs`: regular 60 min/day CC5 day 6, CC10 day 28.8 = the brief's "+-10% of the audit's table").
-- NEXT: E (War Orders, yield steps, taper, production x3, cap copy) -> F (analytics) ->
+- DONE in slice 5 (Parts E + F): see "Part E" and "Part F" below. New tests PASS: conquest-contracts (22), conquest-yield-steps
+  (12), conquest-ladder-check, conquest-analytics (23). FIXED in this slice: a mid-line `//` comment in slice 4's start-mission
+  line had disabled `B.playerHp=Math.min(B.playerMax,s.hp)` (every operation started at full hull); conquest-authority caught it.
+  Raid difficulty re-checked after the fix: identical (starter HARD 8/10, VETERAN 0/15, Epic VETERAN 13/15, same hull list).
+  Pre-existing on main, NOT fixed (out of scope, report it): worker/src/conquest-plot.js line ~76 has code after a `//` comment
+  ("re-blending a damaged wall keeps its damage (REPAIR fixes it)for(...)"): the wall-stock deduction on that path never runs.
+- NEXT:
   browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) -> captures to
   `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).
 - Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
@@ -4521,6 +4524,42 @@ spent (behavior held constant across the change) before the +-10% check.
   ~19 ms (the standard replay profile 20.0 ms vs 18.3 ms on the Part C commit); fighting a full pack beside the Ash Redoubt
   ~107 ms (25 units within 240 m). Per anchor with / without packs: 71.7/24.7, 32.1/10.6, 65.9/18.6 ms. Only units within 240 m
   run AI (unchanged), so far packs cost nothing; Workers Paid allows 30 s CPU a request.
+
+### Part E — War Orders, yield steps, taper, production x3, cap copy (built, slice 5)
+- **War Orders** (`js/rules.js` CQ_ORDERS, `worker/src/conquest-orders.js`, client `js/conquest/orders.js`): s.wo={v,day,week,list:
+  [{id,src:'board',kind,n,goal,done,claimed,parts?,secs?}],dc,seen}; 3 dailies per UTC day + 1 weekly per UTC week (Monday, db.js
+  weekOf) drawn from s.lseed among eligible orders (raids unlocked / town / a strike secured before); progress only from reducer
+  events (kill, bankAlloy, mine, raid, fieldSector, op, strike, drill held, defense); `claim-order` (field `order`) at the Refuge
+  terminal (30 m) or the Command Gate (with a town), never in an operation; daily = CP + 1 consumable (the chest's weights, key
+  order:<day>:<id>), the day's third + 1 uncommon fragment; weekly = 1,500 CP + rare fragment + 1 Armalcolite straight to the wallet
+  (outbox). Never airdrop points. Hub card, HUD line `.cq-orders` (after s.wo.seen), claim rows at REFUGE SUPPLY and the town's HOME
+  card, NEXT chip fallback (`ConquestOrders.next`). A new pilot's pool: bank60, mine12, kills15, sectors3 + weekly ops15.
+- **Yield steps** (Decision 2a): `CQ_YIELD_STEP` / `cqYieldUnlock`: 25% per verified operation that UTC day, a harvest 12.5%,
+  harvests together at most 50% (**Decision**: otherwise 8 five-second pulls open the whole points part, defeating 2a's purpose;
+  flagged in the final report); earn() counts `s.airdrop.yd={d,op,hv}`; base-claim pays the share unlocked since the last collect
+  today (`base.ystep={d,u}`) and drains pointsAt by that share only. Copy "YIELD POINTS 50% · 2 operations to go" (terminal, hub).
+- **Field taper** (Decision 3a): `CQ_FIELD_TAPER=[1,1,1,.6,.4]` by `missionClaims[id].dn` (completions that UTC day); raids,
+  strikes, defenses unchanged; briefing line; receipt carries run/taper.
+- **Production x3 / Storage x2** (Decision 10a): Refinery 2.4, Biodome 1.8, Helium 0.45 a level-hour; caps 60+80d / 16+20d (fe 60);
+  hub "WAITING AT YOUR TOWN · +N ... since you left" (plot.st). **Cap copy** (7a): "DAILY CAP REACHED · LOOT, MINERALS AND CP STILL DROP".
+- **Economy gate** (`dev/tests/conquest-ladder-check.mjs`, `docs/conquest/session6/ladder.json`): the audit's method on current code.
+  Decision 10 check PASSES: production x3 + storage x2 keep the regular (60 min/day) CC5 day 5.8 / CC10 day 30.8 vs the audit table
+  6 / 28.8 (+-10%), with the model's "half the CP to other sinks" trigger aligned to 2,550 CP spent (the old claim), as planned.
+  **Decision (recorded for the owner):** the two owner-decided CP sources move the ladder a lot in this model: with the Sortie chain
+  CC5 4.8 / CC10 15.8; with the chain + War Orders (16 claimed by the model) CC5 4.8 / CC10 14.8. Both are built exactly as decided
+  (no new numbers); the brief's +-10% check is Decision 10's own verification and passes; the speed-up is the #1 economy item of the
+  final report with a PROPOSAL (e.g. the chain pays salvage and loot only: CC10 back to ~day 19-21 with War Orders; or War Orders
+  pay loot + a smaller CP). conquest-base-progression's CC10 floor re-based 21 -> 14 days (45 min/day regular now day 18.75).
+
+### Part F — analytics (built, slice 5)
+- `worker/src/conquest-analytics.js`: counters an/<day>/<event>[/<key>...] (Firebase increments) + an/cohort/<firstDay>/{n,d1,d7,d30};
+  events enter (first entry or >60 s away), transmission_read/skip, mission_start/end (id, outcome), raid_start/end (id, outcome,
+  seconds bucket), death (archetype of the last hit or hazard, carrying none/some/lots; `Battle.hitBy`), bank, claim_town (play-minute
+  bucket from `s.an.p`), build (type; cc on CC upgrades), gather (flora / mineral), quit_point (screen enum, minute bucket),
+  session_minutes (bucket), return d1/d7/d30. Reducers queue `s.anq` (max 24); conquest.js takes it off the state BEFORE the CAS
+  write and flushes it AFTER success; refused / retried requests count nothing. No pid, name, Telegram id, IP or time is ever written
+  under an/ (test scans every key). Client: `POST /api/conquest/an {e,k}` for the four screen events only (enums, 40 a pilot a day
+  per isolate), sent on leaving the world (closeWorld / pagehide). Admin sheet (js/ui.js): 7-day table + cohort D1/D7/D30 table.
 
 ### Plan for B-F (settled; build exactly this)
 - B: sounds via `fx()` in view/app (hit=LW.hit own weapon via 'dealt', kill, boom for other deaths/hazards, dash, shield, claim on

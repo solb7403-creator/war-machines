@@ -460,6 +460,29 @@ const LOOT={
  defense:{rows:[{p:0.06,item:2},{p:0.04,frag:'u'}]},                                                     // invasion / town defense held live (the defense cache unchanged)
  order:{daily:{item:1},third:{frag:'u'},weekly:{mn:{ar:1},frag:'r'}},                                    // War Orders (Part E): every daily, the day's third, the weekly
  titan:null};                                                                                            // Hive Titan rows: Session 7B
+// ---- Session 6 Part E (owner Decisions 2a, 3a; spec §6.1, §6.2) ----
+// Daily Base Yield points unlock in steps: each verified operation that UTC day unlocks 25% of the points part; a harvest (bio-flora
+// or a mineral pull) counts half, and harvests together unlock at most half (so 8 five-second pulls cannot open what 4 operations
+// open: the decision's purpose is to quarter the alt yield). Materials part unchanged. A collect pays the unlocked share of the
+// meter and leaves the rest filling; later operations that day unlock it.
+const CQ_YIELD_STEP={op:0.25,harvest:0.125,harvestMax:0.5};
+function cqYieldUnlock(yd,day){const y=yd&&yd.d===day?yd:{op:0,hv:0},S=CQ_YIELD_STEP,u=Math.min(1,S.op*(y.op|0)+Math.min(S.harvestMax,S.harvest*(y.hv|0)));return {u,ops:y.op|0,hv:y.hv|0,toGo:Math.max(0,Math.ceil((1-u)/S.op-1e-9))};}
+// Field-mission airdrop points on repeats (Decision 3a): 100% for the first three completions of a mission in a UTC day, then 60%,
+// then 40%. CP keeps its own taper; raids, strikes and defenses unchanged.
+const CQ_FIELD_TAPER=[1,1,1,0.6,0.4];
+const cqFieldTaper=n=>CQ_FIELD_TAPER[Math.min(CQ_FIELD_TAPER.length-1,Math.max(0,(n|0)-1))];
+// War Orders (the contracts board, spec §6.1, stored with a source so the war can feed it later): three daily orders drawn per UTC
+// day and one weekly per UTC week (Monday) from the pilot's server seed, among the orders the pilot can do now (elig: raids =
+// raids unlocked, town = a town claimed, striker = a Meteor Strike secured before). Claimed at the Refuge terminal or the Command
+// Gate. Rewards: CP + LOOT.order (a consumable each daily, an uncommon fragment for the day's third, the weekly's Armalcolite + rare
+// fragment). Never airdrop points: points come only from the activities themselves.
+const CQ_ORDERS={claimR:30,daily:3,
+ pool:[{id:'raids2',t:'Win 2 raids',ev:'raid',goal:2,cp:300,elig:'raids'},{id:'bank60',t:'Bank 60 alloy',ev:'bankAlloy',goal:60,cp:200},
+  {id:'mine12',t:'Mine 12 ore',ev:'mine',goal:12,cp:200},{id:'drill1',t:'Hold a Defense Drill',ev:'drill',goal:1,cp:200,elig:'town'},
+  {id:'strike1',t:'Secure a Meteor Strike',ev:'strike',goal:1,cp:300,elig:'striker'},{id:'kills15',t:'Destroy 15 Parasites',ev:'kill',goal:15,cp:150},
+  {id:'sectors3',t:'Finish a field mission in 3 sectors',ev:'fieldSector',goal:3,cp:250}],
+ weekly:[{id:'raids10',t:'Win 10 raids',ev:'raid',goal:10,cp:1500,elig:'raids'},{id:'hold4',t:'Hold 3 drills and 1 live defense',ev:'hold',goal:4,cp:1500,elig:'town',parts:{drill:3,defense:1}},
+  {id:'strikes3',t:'Secure 3 Meteor Strikes',ev:'strike',goal:3,cp:1500,elig:'striker'},{id:'ops15',t:'Win 15 operations',ev:'op',goal:15,cp:1500}]};
 const MN_WEEKLY_N=20,MN_WEEKLY=[{fe:20},{fe:30,il:5},{fe:40,il:10,ar:2,tq:0.25},{il:12,ar:4,tq:0.25},{il:15,ar:5,tq:0.5},{ar:6,tq:1},{ar:8,tq:2}];
 const WIKI_URL='https://solb7403-creator.github.io/war-machines/wiki.html';
 const X_URL='https://x.com/thelunarmeme';   // X/Twitter profile

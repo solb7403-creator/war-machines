@@ -1,0 +1,20 @@
+{
+ "scope": "audit method (60 min/day regular), current code; not a human playtest",
+ "audit": {
+  "CC5": 6,
+  "CC10": 28.8
+ },
+ "decision10": {
+  "CC5": 5.8,
+  "CC10": 30.8
+ },
+ "withChain": {
+  "CC5": 4.8,
+  "CC10": 15.8
+ },
+ "withChainAndOrders": {
+  "CC5": 4.8,
+  "CC10": 15.8,
+  "ordersClaimed": 12
+ }
+}
