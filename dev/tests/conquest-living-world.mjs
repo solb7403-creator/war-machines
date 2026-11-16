@@ -76,7 +76,7 @@ console.log('PASS incursion: after 10 calm minutes three interceptors arrive ~12
  assert.equal(Lv.chainLinks({chain:{n:2,at:now0}},now0+L.chain.windowMs+1),0,'10 minutes without a win: the chain lapses');
  const d=fresh();d.chain={n:2,at:now0};death(d,now0);assert(!d.chain,'death ends the chain');
  assert(fs.readFileSync(new URL('../../worker/src/conquest-sim.js',import.meta.url),'utf8').includes("chainBreak(s);}   // the Sortie chain ends on RECALL"),'RECALL ends the chain');
- assert(fs.readFileSync(new URL('../../worker/src/conquest.js',import.meta.url),'utf8').includes('if(state.chain&&now-(state.lastWall||0)>60000)delete state.chain;'),'leaving Conquest ends the chain');}
+ {const src=fs.readFileSync(new URL('../../worker/src/conquest.js',import.meta.url),'utf8');assert(src.includes('const away=!s||now-(s.lastWall||0)>60000')&&src.includes('if(state.chain&&away)delete state.chain;'),'leaving Conquest (away > 60 s) ends the chain');}}
 console.log('PASS Sortie chain: +'+[0,1,2,3,3].map(k=>+(k*L.chain.per*100).toFixed(2)).join('/')+'% CP and salvage on consecutive wins inside 10 min, epic chest fragment at three links, points untouched, breaks on lapse/death/RECALL/leaving');
 
 // ---- 6. Worker step time with the denser world (relative, this machine) ----

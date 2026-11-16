@@ -21,7 +21,8 @@ const {plotAction}=await import('../../worker/src/conquest-plot.js');
 const {claimOrder}=await import('../../worker/src/conquest-orders.js');
 const DAY=86400000,start=Date.UTC(2026,10,10,0),at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
 const AUDIT=JSON.parse(readFileSync(new URL('../../docs/conquest/audit/model/audit-economy.json',import.meta.url),'utf8')).profiles.regular.base.hit;
-function run(sessions,{chain,orders,seed}){const s=createState(R.STOCK_L,start);s.lseed=seed;const hit={},legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0,claimed=0;
+function run(sessions,{chain,orders,seed}){const s=createState(R.STOCK_L,start);s.lseed=seed;delete s.wo;const hit={},   // a fixed pilot seed; createState already drew day 0's War Orders from a random one, so they are redrawn from this seed
+ legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,spent=0,claimed=0;
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:P.MNS.includes(k)?true:s.ledger.banked[k]>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]={day:+((now-start)/DAY).toFixed(1),playMin:Math.round(played)};};
  const atGate=()=>{s.position=at(C.baseDefinition.x,C.baseDefinition.z);s.battle.enemies=[];};

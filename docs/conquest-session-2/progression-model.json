@@ -33,16 +33,16 @@
         "defense": 0,
         "uplink": 0
       },
-      "cp": 940,
+      "cp": 694,
       "banked": {
-        "alloy": 192,
-        "biomass": 134,
-        "helium": 40
+        "alloy": 150,
+        "biomass": 110,
+        "helium": 36
       },
       "raidClears": 0,
       "shards": 0,
       "blueprint": false,
-      "reputation": 565,
+      "reputation": 484,
       "campaignScore": 57,
       "choices": [
         "Choose another authored raid family/layout",
@@ -61,16 +61,16 @@
         "defense": 0,
         "uplink": 0
       },
-      "cp": 2710,
+      "cp": 2104,
       "banked": {
-        "alloy": 432,
-        "biomass": 284,
-        "helium": 70
+        "alloy": 330,
+        "biomass": 230,
+        "helium": 66
       },
       "raidClears": 0,
       "shards": 0,
       "blueprint": false,
-      "reputation": 1135,
+      "reputation": 934,
       "campaignScore": 147,
       "choices": [
         "Choose another authored raid family/layout",
@@ -83,22 +83,22 @@
       "base": 3,
       "modules": {
         "vault": 2,
-        "reactor": 2,
+        "reactor": 3,
         "hangar": 2,
         "radar": 2,
         "defense": 2,
         "uplink": 2
       },
-      "cp": 2437,
+      "cp": 798,
       "banked": {
-        "alloy": 2499,
-        "biomass": 1758,
-        "helium": 700
+        "alloy": 1965,
+        "biomass": 1429,
+        "helium": 534
       },
       "raidClears": 110,
       "shards": 110,
       "blueprint": true,
-      "reputation": 7892,
+      "reputation": 6330,
       "campaignScore": 1247,
       "choices": [
         "Choose another authored raid family/layout",
@@ -117,16 +117,16 @@
         "defense": 3,
         "uplink": 3
       },
-      "cp": 81622,
+      "cp": 57615,
       "banked": {
-        "alloy": 19872,
-        "biomass": 13199,
-        "helium": 4827
+        "alloy": 15570,
+        "biomass": 10295,
+        "helium": 3623
       },
       "raidClears": 750,
       "shards": 750,
       "blueprint": true,
-      "reputation": 39458,
+      "reputation": 31576,
       "campaignScore": 7647,
       "choices": [
         "Choose another authored raid family/layout",
