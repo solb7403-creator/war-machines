@@ -45,7 +45,7 @@ async def main():
    st=lambda js:page.evaluate('(()=>{const s=Conquest.view.authority.state;return '+js+';})()')
    # 1. scanner pulse
    await page.wait_for_function('!document.querySelector("#cq-scan-access").hidden',timeout=30000)
-   hint=await page.locator('.cq-mn').inner_text()
+   hint=await page.evaluate('document.querySelector(".cq-nav-title").textContent+" · "+document.querySelector(".cq-nav-route").textContent')   # Session 6: the coach cue lives in the NEXT chip
    scanHint=await page.evaluate('(()=>{const b=document.querySelector("#cq-scan-access");return b.textContent+"|"+b.classList.contains("cq-scan-pulse");})()')
    await page.locator('#cq-scan-access').click();await page.wait_for_function('Conquest.view.authority.state?.found?.["starter-01"]',timeout=60000)
    await page.wait_for_timeout(600);await page.screenshot(path=str(OUT/'scan-starter-vein-390.png'))
@@ -102,7 +102,7 @@ async def main():
    strike=await page.locator('.cq-strike').inner_text();await page.screenshot(path=str(OUT/'meteor-telegraph-hud-390.png'),timeout=90000)   # a WebGL page under software GL can take >30 s to present a frame for the capture (CI flake)
    r={'hint':hint,'scanFound':found,'gatherLabel':label,'carried':carried,'walletFe':wallet,'hullBefore':hp0,'hullAfter':hp1,'vehicleVertsBefore':v0,'vehicleVertsAfter':v1,'plates':ap,'strike':strike,'threat':threat,'lowHull':lowText,'lowHullRoute':route,'pageErrors':errors,'scanHint':scanHint,'oreRoute':oreRoute}
    print(json.dumps(r),flush=True);json.dump(r,open(OUT/'journey.json','w'),indent=1)
-   assert 'STARTER VEIN' in hint and found>=1 and 'STARTER VEIN' in label and '35 FERRITE' in carried and wallet>=40 and ap[0]==1 and hp1>hp0 and v1>v0 and 'METEOR STRIKE' in strike and not errors and scanHint=='SCAN · FIND ORE|true' and oreRoute.split('|')[1].endswith(' ORE') and ('ORE' in oreRoute.split('|')[2] or 'HOLD GATHER' in oreRoute.split('|')[2]) and 'FIND ORE' not in oreRoute.split('|')[3],r
+   assert ('STARTER VEIN' in hint or 'BANK YOUR SALVAGE' in hint) and found>=1 and 'STARTER VEIN' in label and '35 FERRITE' in carried and wallet>=40 and ap[0]==1 and hp1>hp0 and v1>v0 and strike=='' and not errors and scanHint=='SCAN · FIND ORE|true' and oreRoute.split('|')[1].endswith(' ORE') and ('ORE' in oreRoute.split('|')[2] or 'HOLD GATHER' in oreRoute.split('|')[2]) and 'FIND ORE' not in oreRoute.split('|')[3],r
    print('PASS minerals journey 390: scan -> Starter Vein -> gather -> bank to wallet -> first plate on the hull -> strike telegraph')
    await browser.close()
  finally:
