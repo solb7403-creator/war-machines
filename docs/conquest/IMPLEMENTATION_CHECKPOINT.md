@@ -4368,13 +4368,27 @@ Build bumped to `20261115000921` (`dev/bump.sh`) so phones reload the new prices
 - Not verified on a physical phone. Owner check (Telegram, iPhone): Shop > Store and Shop > Points shop show a "Chosen weapon" and
   a "Chosen chassis" grid under the crates; items you own say Owned; the Points shop sells Epic crates for 180K.
 
-## Checkpoint 40 — Session 6: Conquest Core Fun (branch `claude/conquest-core-fun-session-6-lscug4`, from main `6294297`) — IN PROGRESS
+## Checkpoint 40 — Session 6: Conquest Core Fun (branch `claude/conquest-core-fun-session-6-lscug4`, from main `6294297`) — RELEASED Nov 16 (PR #139, merge `0c98015`, build `20261116112502`)
 
 Brief: `docs/conquest/audit/SESSION_06_CORE_FUN_PROMPT.md` plus the owner's Session 6 prompt of Nov 16, 2026 (Opus · Max; the
 owner's decisions 1, 2, 3, 5, 7, 9, 10, 11, 13 settled Nov 15; release PRE-APPROVED; no live players, so no migration or legacy
 fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Research: `docs/conquest/session6/RESEARCH.md`.
 
+### Release record (Nov 16, 2026)
+- PR #139 merged 11:58 UTC as `0c98015` (merge commit; head `36c42c1`), all 10 checks green on the head (conquest, transmission
+  chromium + webkit, signup-browsers chromium/webkit/firefox, website, balance, verify, asset-integrity). Release pre-approved by the owner.
+- Worker: `Deploy Stars server (Cloudflare)` run 43862419311 SUCCESS (server tests, live-match smoke test, deploy, webhook):
+  `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`; live `version.json` = `{"v":"20261116112502"}` = repo.
+- GitHub Pages: `pages build and deployment` run 43862417032 SUCCESS on `0c98015` (its version.json is 20261116112502). This cloud
+  container cannot reach github.io or workers.dev (network policy), so the live values come from the deploy job's own checks.
+- No live players: no migration code. Revert plan if broken: revert `0c98015` on main (both deploys follow main). Not needed.
+- Choices made without asking (owner: "never stop to ask"): worked on the PR branch the owner named (the session's default branch
+  `claude/inspiring-wozniak-bpb47v` carried only throwaway WebKit diagnostics, never merged); the bonus item uses the usual consumable
+  weights; the item is named on the after-action chain line; the analytics fetch became keepalive (a real WebKit/iPhone loss, found by
+  CI); earn-only cosmetics lose the "CHECKOUT DISABLED" row. ROADMAP row 6 RELEASED.
+
 ### Resume here (next session reads this first)
+- SESSION 6 IS RELEASED (see "Release record" above). Next: 5E-2d1 / 5E-2d2, then 6B Tank Lab (ROADMAP).
 - DONE and pushed in slice 1 (Part A, first hour): see "Part A" below. Node suites green (list under "Tests").
 - DONE in slice 2 (Part B, feel): `js/conquest/feel.js` (hit flash = `MAT.solid` -> `MAT.solidHit` uniform swap for 80 ms; damage
   numbers pooled max 3, 0.7 s, merged per target, gold while a SUPER effect is live; kill pop ticker "DESTROYED · NAME (xN in 4 s)"
