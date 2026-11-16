@@ -21,8 +21,10 @@ export function validateCommands(input){
  if(c.lockId!=null&&(!Number.isSafeInteger(c.lockId)||c.lockId<1||c.lockId>1e9))fail('invalid target');
  return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.atan2(Math.sin(c.aimYaw||0),Math.cos(c.aimYaw||0)),lockId:c.lockId??null,fire:!!c.fire,tapFire:!!c.tapFire,super:!!c.super,dash:!!c.dash,shield:!!c.shield,gather:!!c.gather,scan:!!c.scan};});
 }
+// Session 6: every pilot starts (and respawns) at the Refuge spawn (ConquestWorld.spawn), ~40 m from the supply terminal.
+export const spawnPoint=()=>({x:W.spawn.x,z:W.spawn.z,y:W.groundAt(W.spawn.x,W.spawn.z),surface:'ground'});
 export function createState(loadout,now){
- if(!Number.isSafeInteger(now)||now<0)fail('invalid server clock');const position={x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'},B=new C.Encounter(loadout,position);K.ensure(B);
+ if(!Number.isSafeInteger(now)||now<0)fail('invalid server clock');const position=spawnPoint(),B=new C.Encounter(loadout,position);K.ensure(B);
  const s={v:1,seq:0,lastWall:now,creditMs:0,position,hp:B.playerHp,loadout:copy(B.snapshot),mission:null,battle:copy(B),checkpoint:{...position},safe:[{...position}],stuckMs:0,recoveryAt:0};refreshState(s,now);return s;
 }
 function stats(v){v.gems=list(v.gems);v.buffs=list(v.buffs);return v;}
@@ -60,7 +62,7 @@ export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now
  if(ready){const replacement=fresh.enemies.find(x=>x.key===e.key);if(replacement){for(const key of Object.keys(e))delete e[key];Object.assign(e,copy(replacement));s.spawns[e.key]={generation:patrol?m.generation+1:day};if(s.territory[e.base?.id])s.territory[e.base.id].awaitingReinforcements=false;if(s.battle.cleared)delete s.battle.cleared[e.key];}}}
 }
 function footing(s,p){if(p.surface==='ground'&&W.solidAt(p.x,p.z))return false;const f=W.speedFactor(p);return [[2,0],[-2,0],[0,2],[0,-2]].every(([x,z])=>{const q=W.advance(p,x,z);return Math.hypot(q.x-p.x-x*f,q.z-p.z-z*f)<.1;});}
-export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-898,s.position.z-1024)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;s.loadout=copy(L);s.battle=copy(B);}
+export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-W.spawn.x,s.position.z-W.spawn.z)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;s.loadout=copy(L);s.battle=copy(B);}
 function time(previous,seq,now){if(previous?.v!==1||!Number.isSafeInteger(seq)||seq!==previous.seq+1)fail('stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)fail('invalid server clock');}
 export function applyCommands(previous,request,now){
  if(!record(request)||Object.keys(request).some(k=>!['seq','commands'].includes(k)))fail('invalid request');const commands=validateCommands(request.commands);time(previous,request.seq,now);
@@ -170,7 +172,7 @@ export function applyAction(previous,request,now,ctx={}){
  }else if(request.action==='repair'){
  if(!atTerminal(s)||B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80))fail('repair requires safe Refuge terminal');s.hp=B.playerHp=B.playerMax;s.notice={kind:'repaired'};
  }else if(request.action==='respawn'){
- if(s.hp>0||!s.death?.active)fail('no verified defeat');if(s.mission==='base-defense')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission]?.defense)sectorDefenseOutcome(s,'defeat',now);else if(s.mission)restoreContest(s);if(s.mission)settleOpKills(s,now);delete s.contestPrevious;const old=B;B=new C.Encounter(s.loadout,s.checkpoint||{x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'});Object.assign(B,s.explorationBattle||s.battle);mergeResidents(old,B);K.carry(old,B);s.position={...(s.checkpoint||{x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'})};s.hp=B.playerHp=B.playerMax;B.state='active';B.projectiles=[];B.superShells=[];B.superAttack=null;B.shieldT=0;B.lockId=null;s.mission=null;delete s.explorationBattle;s.death.active=false;s.notice={kind:'respawned'};
+ if(s.hp>0||!s.death?.active)fail('no verified defeat');if(s.mission==='base-defense')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission]?.defense)sectorDefenseOutcome(s,'defeat',now);else if(s.mission)restoreContest(s);if(s.mission)settleOpKills(s,now);delete s.contestPrevious;const old=B;B=new C.Encounter(s.loadout,s.checkpoint||spawnPoint());Object.assign(B,s.explorationBattle||s.battle);mergeResidents(old,B);K.carry(old,B);s.position={...(s.checkpoint||spawnPoint())};s.hp=B.playerHp=B.playerMax;B.state='active';B.projectiles=[];B.superShells=[];B.superAttack=null;B.shieldT=0;B.lockId=null;s.mission=null;delete s.explorationBattle;s.death.active=false;s.notice={kind:'respawned'};
  }else{
  if(s.hp<=0||B.state!=='active'||(s.stuckMs||0)<1500||now<(s.recoveryAt||0))fail('recovery unavailable');let p=[...s.safe].reverse().find(p=>{const d=Math.hypot(p.x-s.position.x,p.z-s.position.z);return d>=6&&d<=80&&footing(s,p);});
  if(!p)for(const r of [8,12,20,32]){for(let i=0;i<16;i++){const q=W.advance(s.position,Math.cos(i*Math.PI/8)*r,Math.sin(i*Math.PI/8)*r);if(Math.hypot(q.x-s.position.x,q.z-s.position.z)>=6&&footing(s,q)){p=q;break;}}if(p)break;}

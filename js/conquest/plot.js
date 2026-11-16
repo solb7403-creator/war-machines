@@ -138,8 +138,13 @@ const VITALS=T({cc:'primary',reactor:'secondary',storage:'secondary',lab:'second
 const VITAL_EFFECT=T({cc:'the raid wins',reactor:'power cut: turrets fire slower, shields weaken',storage:'production store exposed (player raids can take a share)',lab:'research paused'});
 // Command Center levels. The cumulative cost to CC3/5/7/9 equals the old Command Base II/III/IV/V costs, so the Conquest
 // points multiplier (tier) arrives exactly as before.
-const CC=T({max:10,claim:{cp:2550,alloy:110,biomass:65,helium:8},
- cost:[null,null,{cp:1800,alloy:50,biomass:30,helium:4},{cp:2700,alloy:110,biomass:65,helium:8},{cp:1700,alloy:100,biomass:60,helium:8},{cp:2500,alloy:150,biomass:90,helium:12},
+// Session 6 (owner Decisions 1 and 13, Nov 15 2026): CC1 "claim your town" is 600 CP + 30 alloy + 15 biomass + 2 He-3 (the first
+// "this is mine" moment inside the first session; it keeps x1.05). CC2 takes the rest of the old claim (1,950 CP + 80 alloy + 50
+// biomass + 6 He-3) ON TOP of its own old price, so the cumulative cost to CC2 and every later level, and every points
+// multiplier, is unchanged (the owner's rule; dev/tests/conquest-cc-ladder.mjs). CC3 and CC4 are 2,200 CP each (the old 2,700 /
+// 1,700 zig-zag; cumulative to CC5 unchanged).
+const CC=T({max:10,claim:{cp:600,alloy:30,biomass:15,helium:2},
+ cost:[null,null,{cp:3750,alloy:130,biomass:80,helium:10},{cp:2200,alloy:110,biomass:65,helium:8},{cp:2200,alloy:100,biomass:60,helium:8},{cp:2500,alloy:150,biomass:90,helium:12},
   {cp:2600,alloy:150,biomass:95,helium:12},{cp:3900,alloy:230,biomass:145,helium:20},{cp:4000,alloy:220,biomass:140,helium:20},{cp:6000,alloy:330,biomass:210,helium:30},{cp:9000,alloy:500,biomass:320,helium:45,il:30,ar:6}],
  time:[0,0,30*SEC,3*MIN,10*MIN,30*MIN,HOUR,2*HOUR,3*HOUR,5*HOUR,8*HOUR],w:4,d:4});
 

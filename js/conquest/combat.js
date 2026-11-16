@@ -21,7 +21,10 @@ function engineeringValues(stats,e){
  shieldDuration:3*(1+bonus('shieldDuration')+benefit(t.shield)),shieldCooldown:Math.max(5,25*(stats.shieldCdM||1)*(1+bonus('shieldCooldown')+cost(t.shield)))};
 }
 
-const mission=Object.freeze({id:'oxygen-line',x:1160,z:1048,name:'HOLD THE OXYGEN LINE',activationRadius:150});
+// Session 6 (first hour): the first mission is staged at the new Refuge spawn (ConquestWorld.spawn, 33 m south of this marker):
+// it is in range at once (activation 60 m, was 150 m), the first wave is in sight of the spawn and every wave is in sight of a
+// pilot who follows the HUD arrow (it points at the nearest living attacker during any defense mission). World data only.
+const mission=Object.freeze({id:'oxygen-line',x:1152,z:1098,name:'HOLD THE OXYGEN LINE',activationRadius:60});
 // Authored constants, deliberately independent of the pilot's equipment and performance.
 const archetypes=Object.freeze({
  raider:Object.freeze({name:'Parasite interceptor',cls:'scout',arch:'twin',hp:180,dps:18,shot:.45,speed:2.8,range:43,role:'player'}),
@@ -37,12 +40,12 @@ const installations=W.installations;
 // Stable authored identities preserve production v1 locks and spawn keys as the region expands.
 const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
 const legacyOperations=[
- {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',brief:'Protect the oxygen processor through three assault waves.'},
- {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
- {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
- {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
- {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
- {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
+ {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',firstCp:250,brief:'Protect the oxygen processor through three assault waves.'},
+ {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',firstCp:140,brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
+ {id:'relay',name:'SABOTAGE THE RELAY',family:'sabotage',site:'west-depot',x:994,z:944,danger:'STANDARD',firstCp:130,brief:'Destroy the guarded relay, then remain at its terminal for eight seconds to disable the uplink.'},
+ {id:'recon',name:'SIGNAL RECOVERY',family:'recon',site:'signal-ridge',x:950,z:1110,danger:'STANDARD',firstCp:100,brief:'Scan three marked physical sites. Each scan needs three seconds nearby; recover data while scouts hunt you.'},
+ {id:'rescue',name:'BEACON EXTRACTION',family:'rescue',site:'rescue-site',x:1150,z:900,danger:'HARD',firstCp:150,brief:'Reach the stranded repair crawler and escort it to extraction. Stay close to keep it moving; defend its hull.'},
+ {id:'redoubt',name:'BREAK THE REDOUBT',family:'siege',site:'redoubt-01',x:1240,z:920,danger:'VETERAN',firstCp:220,brief:'Breach the gate garrison, defeat the armored commander and occupy the command platform.'}
  ];
 // Five spatial layouts with different approach angles, routes and objective order.
 const raidLayouts=freeze([
@@ -79,7 +82,8 @@ const operations=freeze(Object.fromEntries([...legacyOperations,...raidOperation
 // Explicit finite schema, shared previews and server debits; all costs use Conquest-only balances.
 // The Refuge supply terminal: physical banking/repair point (same coordinates as the Worker POLICY.terminal).
 const refuge=freeze({id:'refuge',x:1174,z:1168,radius:12,name:'REFUGE SUPPLY'});
-const baseDefinition=freeze({x:1080,z:1160,radius:30,recipe:{cp:2550,alloy:110,biomass:65,helium:8},
+const baseDefinition=freeze({x:1080,z:1160,radius:30,recipe:{cp:600,alloy:30,biomass:15,helium:2},   // = ConquestPlot.CC.claim (Session 6, Decision 1)
+ 
  tiers:[{cp:2550,alloy:110,biomass:65,helium:8},{cp:4500,alloy:160,biomass:95,helium:12},{cp:4200,alloy:250,biomass:150,helium:20},{cp:6500,alloy:380,biomass:240,helium:32},{cp:10000,alloy:550,biomass:350,helium:50}],
  modules:{reactor:'Claimable CP production',hangar:'Field repair station',defense:'Protective field at your base',vault:'Protected banking at your base',radar:'Regional signal intelligence',uplink:'Operations production capacity'},
  moduleCosts:[{cp:180,alloy:12,biomass:8,helium:1},{cp:400,alloy:25,biomass:16,helium:3},{cp:850,alloy:50,biomass:30,helium:6}],buildSeconds:[60,180,360],maxTier:5});
@@ -87,10 +91,16 @@ function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=
 // road-intercept patrols the south road just outside the home perimeter, where the Helium, Ash and Crossroads routes leave
 // home (it previously doubled up on the Crossroads garrison camp). It stays >=150 m from the base and Refuge terminal.
 const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+// HOLD THE OXYGEN LINE, re-staged for the first hour (Session 6; authored, never matched to the pilot's gear). Wave 1: two
+// interceptors strafing the towers 35-40 m in front of the spawn (role 'facility': they shoot the tower, not you; the first kill
+// inside seconds). Wave 2: the heavy sentinel that
+// broke through the colony's north gate comes down the main street, 90 m away and in sight the whole way (the first enemy that
+// hurts). Wave 3: a raider, a saboteur and a coordinator flank the processor from the north-west. Tuned with scripted pilots:
+// one that follows the arrow, one that never moves and one that rushes in all win on stock gear (dev/tests/conquest-first-hour.mjs).
 const formations=Object.freeze([
- Object.freeze([['raider',1218,995],['breacher',1230,995]]),
- Object.freeze([['raider',1218,995],['breacher',1230,995]]),
- Object.freeze([['raider',1218,995],['breacher',1230,995],['command',1240,995]])
+ Object.freeze([['raider',1172,1098,'facility'],['raider',1184,1104,'facility']]),
+ Object.freeze([['sentinel',1064,1128]]),
+ Object.freeze([['raider',1124,1098],['breacher',1118,1104],['command',1112,1110]])
 ]);
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function freeze(o){Object.values(o).forEach(v=>{if(v&&typeof v==='object')freeze(v);});return Object.freeze(o);}
@@ -114,7 +124,7 @@ class Battle {
  this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.approachGrace=Math.hypot(playerPosition.x-mission.x,playerPosition.z-mission.z)>65?60:0;this.spawnWave();
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
- spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:a.role});}this.wave++;this.nextWave=0;}
+ spawnWave(){if(this.wave>=formations.length)return;for(const [slot,[kind,x,z,role]] of formations[this.wave].entries()){const a=archetypes[kind];this.enemies.push({id:++this.id,rewardKey:'wave:'+(this.wave+1)+':'+slot,kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:Math.PI,turret:Math.PI,stats:enemyStats(a),decision:(this.id%10)*.03,cd:1.5+this.enemies.length*.18,vx:0,vz:0,role:role||a.role});}this.wave++;this.nextWave=0;}
  shoot(from,to,stats,team,kind,owner){
  if(this.projectiles.length>=96)return false;if(team==='enemy'&&this.enemies.some(e=>e.id===owner&&e.resident&&(e.target===e.home||e.target===e.navGoal)))return false;let d=dist(from,to);if(d<.01)return false;const values=engineeringValues(stats,this.engineering),speed=team==='player'?values.velocity:stats.wpspd;
  if(kind==='twin'){const side=this.shots%2?1:-1,ax=(to.z-from.z)/d*.55*side,az=-(to.x-from.x)/d*.55*side;from={x:from.x+ax,y:from.y,z:from.z+az};}
@@ -122,7 +132,7 @@ class Battle {
  }
  choose(e){
  const a=archetypes[e.kind],p=this.player,ec=center(e),pd=dist(ec,p);
- e.target=e.guardReturning?(e.navGoal||e.home):a.role==='player'&&pd<90||a.role==='support'&&pd<38?p:this.objective;
+ const role=e.role||a.role;e.target=e.guardReturning?(e.navGoal||e.home):role==='player'&&pd<90||role==='support'&&pd<38?p:this.objective;
  const target=e.target,dx=target.x-e.x,dz=target.z-e.z,d=Math.hypot(dx,dz),visible=lineClear(ec,target,target===this.objective),desired=e.guardReturning?0:a.range*.72;
  e.vx=e.vz=0;if(visible&&d<desired+4&&d>desired-10)return;
  const heading=Math.atan2(dx,dz)+(visible&&d<desired-10?Math.PI:0);let best=-Infinity;

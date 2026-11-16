@@ -24,7 +24,7 @@ export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.mi
  if(op?.strike)return strikeReward(s,op,now);
  if(raid&&s.raidReceipts?.[s.attempt])return s.raidReceipts[s.attempt];
  if(claim&&now-(claim.lastAt||claim.firstAt)<POLICY.missionRepeat)return {kind:'cooldown',cp:0,alloy:0,biomass:0,helium:0};
- const first=!claim,daily=claim?.day!==s.daily.day,amount=raid?{...op.reward,cp:Math.floor(op.reward.cp*(first?1:daily?.7:.45))}:first?{...POLICY.first,cp:({convoy:140,relay:130,recon:100,rescue:150,redoubt:220})[id]||250}:daily?POLICY.replay:{cp:45,alloy:6,biomass:4,helium:1};
+ const first=!claim,daily=claim?.day!==s.daily.day,amount=raid?{...op.reward,cp:Math.floor(op.reward.cp*(first?1:daily?.7:.45))}:first?{...POLICY.first,cp:op?.firstCp||250}:daily?POLICY.replay:{cp:45,alloy:6,biomass:4,helium:1};
  const awarded=grant(s,{...amount,cp:amount.cp+(s.featuredMission?20:0)},true);
  discardOpKills(s);const pts=earn(s,raid?'raid':'field',raid?RULES.CQ_PTS.raid[op.danger]||RULES.CQ_PTS.raid.HARD:RULES.CQ_PTS.field,now,{op:true});s.missionClaims[id]={firstAt:claim?.firstAt||now,lastAt:now,day:s.daily.day,count:(claim?.count||0)+1};
  s.orders=s.orders?.day===s.daily.day?s.orders:{day:s.daily.day,completed:0};s.orders.completed++;
@@ -45,7 +45,8 @@ function strikeReward(s,op,now){const T=RULES.STRIKE,slot=s.strikeSlot,rec=s.str
  for(const [k,v] of Object.entries(mn))s.ledger.mn[k]=(s.ledger.mn[k]||0)+v;s.reputation=(s.reputation||0)+40;s.campaignScore=(s.campaignScore||0)+8;
  return {kind:'strike',slot,cp:T.cp,alloy:0,biomass:0,helium:0,mn,core,resonance:n,ptsRaw};}
 export function atTerminal(s){return !s.mission&&s.hp>0&&(Math.hypot(s.position.x-POLICY.terminal.x,s.position.z-POLICY.terminal.z)<=POLICY.terminal.r||s.base?.modules?.vault&&Math.hypot(s.position.x-CONQUEST.Combat.baseDefinition.x,s.position.z-CONQUEST.Combat.baseDefinition.z)<=CONQUEST.Combat.baseDefinition.radius);}   // the gate zone (30 m, Find My Base): the plot screen's BANK / REPAIR work wherever it opens
-export function bank(s,now){ledger(s,now);if(!atTerminal(s))throw Error('conquest: approach Refuge supply terminal');for(const k of MATERIALS){s.ledger.banked[k]+=s.ledger.cargo[k];s.ledger.cargo[k]=0;}
+export function bank(s,now){ledger(s,now);if(!atTerminal(s))throw Error('conquest: approach Refuge supply terminal');s.firsts=s.firsts&&typeof s.firsts==='object'?s.firsts:{};if(!s.firsts.bank)s.firsts.bank=now;   // Session 6: the HUD's BASE line and the coach chain read the first bank (state in the save)
+ for(const k of MATERIALS){s.ledger.banked[k]+=s.ledger.cargo[k];s.ledger.cargo[k]=0;}
  const mn=bankMinerals(s,s.ledger.mn);s.ledger.mn={};s.notice={kind:'banked',...(Object.keys(mn).length?{mn}:{})};}   // minerals: to the account wallet through the outbox (RESOURCE_ECONOMY.md §5.3)
 // Mineral caches on a verified operation victory (§5, the approved model): fractions are a chance of +1, rolled by the server
 const cacheRoll=(key,k)=>{let h=2166136261;const t=key+':'+k;for(let i=0;i<t.length;i++)h=Math.imul(h^t.charCodeAt(i),16777619);return (h>>>0)/4294967296;};

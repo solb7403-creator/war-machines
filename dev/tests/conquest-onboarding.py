@@ -19,10 +19,12 @@ async def main():
    await page.goto('https://lunar.test/index.html');await page.wait_for_function('typeof Conquest!=="undefined"')
    await page.evaluate('closeAll();save.welcomed=true;uiDirty();');await page.locator('[data-act="conquest"]').click();await page.get_by_role('button',name='ENTER CONQUEST',exact=True).click()
   await enter()
-  await page.get_by_role('heading',name='THE LAST AIR WE BREATHE').wait_for()
-  assert await page.locator('.cq-transmission').get_by_text('Earth did not fall to an army from the stars. It fell through our blood.').is_visible()
+  # Session 6: the opening is a 15-second HUD radio over gameplay (two lines, SKIP); the full transmission lives in HELP
+  radio=page.locator('.cq-radio');await radio.wait_for()
+  assert 'Parasite armor is on the oxygen line' in await radio.inner_text()
+  assert await page.locator('.cq-transmission').count()==0,'the opening is a radio over gameplay, not a dialog'
   await page.screenshot(path=str(OUT/'story.png'))
-  await page.get_by_role('button',name='ACKNOWLEDGE · BEGIN EXPLORATION').click()
+  await page.get_by_role('button',name='SKIP',exact=True).click()
   await page.wait_for_function('Conquest.view?.pending===0',timeout=60000)
   assert await page.locator('#cq-navigation').is_visible()
   assert await page.locator('#cq-navigation').get_by_text('HOLD THE OXYGEN LINE',exact=True).is_visible()

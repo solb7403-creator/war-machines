@@ -18,7 +18,7 @@ for(const cycleSeconds of [75,90]){
    s.position={x:C.baseDefinition.x,z:C.baseDefinition.z,y:0,surface:'ground'};s.battle.enemies=[];baseAction(s,{action:'build-base'},now);baseMinute=(now-start)/60000;
   }
  }
- assert(baseMinute>=45&&baseMinute<=75,`first base at ${baseMinute}min with ${cycleSeconds}s cycles`);assert(s.ledger.cp>recipe.cp,'progress continues for three hours');
+ assert(baseMinute>0&&baseMinute<=25,`first town (600 CP claim, owner Decision 1) at ${baseMinute}min with ${cycleSeconds}s cycles: inside the first session`);assert(s.ledger.cp>recipe.cp,'progress continues for three hours');
  rows.push({cycleSeconds,firstUpgradeMinute:firstUpgrade,baseMinute,after3h:{cp:s.ledger.cp,banked:s.ledger.banked},assumptions:'Four standard contracts, 75–90s each including travel/combat/banking; no world kill loot, featured bonuses, production, purchases, referrals or rank spending. Model settlement only; physical travel is separately tested.'});
 }
 console.log(JSON.stringify({recipe,modeled:true,physicalHumanPlaytest:false,rows},null,2));

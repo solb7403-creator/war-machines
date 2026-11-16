@@ -1,0 +1,18 @@
+{
+ "scope": "continuous shared-reducer journey with accelerated trusted test clock; orders chosen by the HUD NEXT chip rules (js/conquest/guide.js); automated target/routing controller; no resource/equipment/position/outcome fixtures; not a rendered native-input or human playthrough",
+ "moments": {
+  "first-fight": 0.08,
+  "first-kill": 0.13,
+  "first-loot": 0.71,
+  "first-bank": 2.47,
+  "first-scan": 2.48,
+  "starter-vein": 3.09,
+  "ferrite-banked": 3.12,
+  "second-mission": 4.49,
+  "first-plate": 4.49,
+  "field-2": 5.75,
+  "first-town": 5.97
+ },
+ "baseMinute": 5.97,
+ "completed": 2
+}

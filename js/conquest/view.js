@@ -40,11 +40,11 @@ function canvasRenderer(v){
 function planarUv(positions,ox,oz){const uv=new Float32Array(positions.length/3*2);for(let i=0,j=0;i<positions.length;i+=3,j+=2){uv[j]=(positions[i]+ox)/24;uv[j+1]=(positions[i+2]+oz)/24;}return uv;}
 class View {
  constructor(host,onError){
- const T=root.THREE;this.T=T;this.lifecycle=new AbortController();this.host=host;this.onError=onError;this.chunks=new Map();this.keys={};this.stick={x:0,z:0};this.yaw=-Math.PI/2;this.pitch=.42;this.distance=23;this.frames=0;this.fps=0;this.elapsed=0;this.builds=0;this.disposed=false;
- this.p={x:898,z:1024,y:W.groundAt(898,1024),surface:'ground'};
+ const T=root.THREE;this.T=T;this.lifecycle=new AbortController();this.host=host;this.onError=onError;this.chunks=new Map();this.keys={};this.stick={x:0,z:0};this.yaw=W.spawn.yaw;this.pitch=.42;this.distance=23;this.frames=0;this.fps=0;this.elapsed=0;this.builds=0;this.disposed=false;
+ this.p={x:W.spawn.x,z:W.spawn.z,y:W.groundAt(W.spawn.x,W.spawn.z),surface:'ground'};
  try{const p=JSON.parse(localStorage.getItem('lunar-conquest-position-v1'));if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z)){this.jump(p.x,p.z);if(p.surface==='bridge'){const deck=W.deckAt(this.p.x,this.p.z);if(deck!==null){this.p.surface='bridge';this.p.y=deck;}}}}catch(_){}
  this.discovery=root.ConquestDiscovery?.create();
- if(this.p.x===898&&this.p.z===1024)this.discovery?.spawn(this.p);
+ if(this.p.x===W.spawn.x&&this.p.z===W.spawn.z)this.discovery?.spawn(this.p);
  try{if(typeof gfxMode==='function'&&gfxMode()==='2d')throw Error('2d selected');const lowGfx=typeof gfxMode==='function'&&gfxMode()==='low',GR=typeof GraphicsResolution!=='undefined'?GraphicsResolution:null;this.renderer=new T.WebGLRenderer({antialias:GR?GR.antialias(lowGfx?'low':'high'):false,powerPreference:lowGfx?'low-power':'high-performance'});}catch(_){this.renderer=canvasRenderer(this);}if(typeof Meshy3D!=='undefined')Meshy3D.hostRenderer(this.renderer);this.setupResolution();host.append(this.renderer.domElement);if(!this.renderer.isConquestCanvas&&typeof park3D==='function')park3D(true);   /* the Arcade battle canvas frees its buffers while Conquest is open (5E-2a) */
  this.hfRelease=typeof Equipment3D!=='undefined'?Equipment3D.attach():null;if(typeof Equipment3D!=='undefined')Equipment3D.configure(this.renderer);
  this.scene=new T.Scene();

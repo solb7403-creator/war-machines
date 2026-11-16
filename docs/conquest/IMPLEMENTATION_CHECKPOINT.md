@@ -4367,3 +4367,106 @@ Build bumped to `20261115000921` (`dev/bump.sh`) so phones reload the new prices
   ownership (review finding 1-2 above; inherited by crates and chosen cores too).
 - Not verified on a physical phone. Owner check (Telegram, iPhone): Shop > Store and Shop > Points shop show a "Chosen weapon" and
   a "Chosen chassis" grid under the crates; items you own say Owned; the Points shop sells Epic crates for 180K.
+
+## Checkpoint 40 — Session 6: Conquest Core Fun (branch `claude/conquest-core-fun-session-6-lscug4`, from main `6294297`) — IN PROGRESS
+
+Brief: `docs/conquest/audit/SESSION_06_CORE_FUN_PROMPT.md` plus the owner's Session 6 prompt of Nov 16, 2026 (Opus · Max; the
+owner's decisions 1, 2, 3, 5, 7, 9, 10, 11, 13 settled Nov 15; release PRE-APPROVED; no live players, so no migration or legacy
+fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Research: `docs/conquest/session6/RESEARCH.md`.
+
+### Resume here (next session reads this first)
+- DONE and pushed in slice 1 (Part A, first hour): see "Part A" below. Node suites green (list under "Tests").
+- NEXT: Part B (feel) -> C (loot v1) -> D (living world + Sortie chain) -> E (War Orders, yield steps, taper, production x3, cap
+  copy) -> F (analytics) -> browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) ->
+  captures to `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).
+- Design notes already settled for B-F are in "Plan for B-F" below; follow them.
+
+### Decisions (with the reason)
+1. **CC2 price (owner Decision 1 had an arithmetic slip).** The decision lists CC2 = 1,950 CP + 80 alloy + 50 biomass + 6 He-3 AND
+   "cumulative cost to CC2 and every later level unchanged". Old CC1 2,550 + CC2 1,800 = 4,350 CP to CC2; 600 + 1,950 = 2,550
+   would cut every later cumulative cost by 1,800 CP. The 1,950 / 80 / 50 / 6 is exactly the rest of the old claim, so CC2 takes it
+   ON TOP of its own old price: **CC2 = 3,750 CP + 130 alloy + 80 biomass + 10 He-3**. This is the only reading that satisfies the
+   owner's stated invariant, the required node test and Decision 13's "cumulative to CC5 unchanged"; it keeps the economy identical
+   from CC2 up (the audit's own reason for 1a). CC3 = CC4 = 2,200 CP (materials unchanged): cumulative to CC3 is 500 CP lower
+   (Decision 13 itself), to CC4..CC10 identical. Test: `dev/tests/conquest-cc-ladder.mjs`.
+2. **Spawn (1162, 1130)**, on the main road 40 m from the Refuge terminal, facing the oxygen towers (yaw 0 = north). Chosen by a LOS
+   search: the colony is dense; this is the spot with the widest view of the processor and the waves, and no colony power pole
+   between the chase camera and the tank (first try at x 1154 had a pylon in the middle of the screen). World data
+   (`ConquestWorld.spawn`), used by the Worker's `createState`/respawn (`spawnPoint()`), the view and tests.
+3. **HOLD THE OXYGEN LINE re-staged** (authored, gear-blind): marker (1152,1098), activation 60 m (in range at the spawn). Wave 1: two
+   interceptors 35-40 m ahead with role `facility` (they strafe the tower, so the first fight is safe and readable); wave 2: the
+   heavy sentinel through the colony's north gate, down the main street, 90 m away and in sight the whole way; wave 3: raider +
+   saboteur + coordinator from the north-west. Formations may now carry a per-unit role (4th element); `Battle.choose` reads
+   `e.role||a.role` (identical for every existing unit). Three scripted pilots on stock gear (follow the arrow / never move /
+   rush) all win through the real Worker reducer: first kill 3 s, mission ~42 s, hull min 33-59-100%.
+4. **The red arrow**: during any defense (Oxygen Line, sector, base) the NEXT chip's arrow points at the nearest living attacker
+   (`ConquestGuide.arrowTarget`); out of sight behind buildings it follows a drivable route (A*, cached per 12 m cell).
+5. **Radio** replaces the 7-paragraph dialog on first entry: 15 s, two lines at a time, SKIP (Esc); same onboarding flag; full text
+   in HELP -> REPLAY OPENING TRANSMISSION. The separate touch hint ("DRIVE to move...") was folded into the radio (one channel).
+6. **One tap starts the very first defense** (research: at most one tap before the first shot); later runs show the briefing.
+7. **The NEXT chip is the single guidance channel** (`js/conquest/guide.js`, pure, shared with node tests): operation in progress ->
+   route the pilot chose -> operation in range -> coach chain -> board (claim the town when affordable, else nearest field mission,
+   else War Orders hook `ConquestOrders.next`). Removed competing hints: the resource TIP toast and the "TAP SCAN" line.
+8. **Coach chain**: BANK -> SCAN -> GATHER the Starter Vein -> BANK -> FABRICATE. Found while building: Starter Vein 35 + the first
+   clear's guaranteed 3 Ferrite = 38, two short of the plate's 40. Not shipped as a number change (owner: economics beyond the
+   decisions are proposals): the chain adds one adaptive step "2 MORE FERRITE" (a scanned Ferrite vein within 220 m, else the next
+   field mission, which pays 3 Ferrite). PROPOSAL for the final report: Starter Vein 35 -> 40 (one plate by itself).
+9. **Starter Vein moved** to the Refuge road (1180,1150), 19 m from the terminal; same id `starter-01`, no migration.
+10. **Progressive HUD** from the save (never a timer): AIRDROP after the first credit (`airdrop.ack>0`), BASE after the first bank
+    (new `s.firsts.bank`, set by the Worker's bank()), METEOR (line + toast) once the town exists, CONTRACTS after the first War Order
+    (`s.wo.seen`, Part E).
+11. **Failed operation**: cause + fix, one line each (`guide.failureLines`: where the attackers came from, measured from the objective).
+12. **Hub**: one scroller (hero + cards), actions below it, never sticky over card text; NO BASE card "Claim your town: n / 600 CP".
+13. **Per-zone ring table** (blueprint §5): `ConquestWorld.zones/zoneAt/ringAt/RINGS` — Heartland 1 (colony, Refuge Corridor,
+    Reservoir Flats), Frontier 3 (Western, Helium, Crossroads), Warfront 4 (Oxygen Spear, Ridge, Ash), Inner 5 (Eastern Rim); Rear 2
+    = the barren reaches beyond 400 m. Living-world spawns and loot tables (Parts C, D) read it.
+14. First-clear CP moved into the shared operation data (`firstCp`) so the chip and the Worker read one number (same values).
+
+### First-hour moments (simulated minutes; node journey through the Worker reducer, bots, not a human)
+| Moment | Before (main `6294297`, same bot, A* to attackers) | After |
+|---|---:|---:|
+| First fight (operation start) | 0.65 (after an 88 s drive in the audit) | 0.08 |
+| First kill | 1.21 | 0.13 |
+| First loot picked up | 1.21 | 0.71 |
+| First bank | 2.58 | 2.47 |
+| Starter Vein gathered | n/a (audit model: min ~9) | 3.09 |
+| First plate | n/a (economy model: min 12) | 4.49 |
+| First town (CLAIM YOUR TOWN) | 72.43 (CC1 2,550 CP) | 5.97 (CC1 600 CP) |
+The audit's human-like pilot (follows the HUD arrow) LOST the first mission on main; the arrow-following bot wins on this branch.
+Browser timings (real keys, phone + desktop) come with the journey test later in the session.
+
+### Tests (this slice)
+New: `dev/tests/conquest-first-hour.mjs` (spawn, 60 m activation, wave 1 in sight, arrow = nearest attacker, three pilots win via
+the Worker, radio, coach chain, progressive HUD, failure lines, board), `dev/tests/conquest-cc-ladder.mjs`. Rewritten for the new
+opening: `conquest-opening.mjs`, `conquest-earned-journey.mjs` (follows the NEXT chip; writes docs/conquest/session6/first-hour-journey.json).
+Updated expectations (old spawn / old 45-75 min first-base target): authority, combat, economy, garrisons, plot, base-progression,
+earning-model, first-base, wtest/conquest, conquest-onboarding.py (radio). All Conquest node suites pass locally; onboarding.py PASS.
+Model note for Part E: with the claim at minute 6 the progression models start their "half the CP to other sinks after the first
+base" rule ~53 minutes earlier, which moves CC5 by +13% in the audit model; Part E aligns that trigger to the old claim's 2,550 CP
+spent (behavior held constant across the change) before the +-10% check.
+
+### Plan for B-F (settled; build exactly this)
+- B: sounds via `fx()` in view/app (hit=LW.hit own weapon via 'dealt', kill, boom for other deaths/hazards, dash, shield, claim on
+  bank/collect, meteor on telegraph, warn on UNDER FIRE/low hull, win/lose on result, ready on SUPER full); MORE: SOUND ON/OFF
+  (same `save.sound` as Settings) and LOCATE ME (opens the map on you); hit flash 80 ms = swap `MAT.solid` for `MAT.solidHit`
+  (same shaders + `uFlash` uniform: no new program); damage numbers = pooled DOM (max 3, 0.7 s, merged per target, gold when a
+  super effect is live); kill pop = existing shatter/blast + ticker "DESTROYED · INTERCEPTOR (x2 inside 4 s)" + light haptic;
+  loot flyout DOM chip to the cargo line in rarity colour; SCAN/GATHER one context button (GATHER within 8 m, SCAN otherwise; G/C
+  keys kept). All presentation-only, client-side from hp deltas; fair-arcade regression must stay green.
+- C: `js/rules.js` LOOT (sources mob/elite/commander/chest/strike/defense/contract, keyed by ring 1-5, titan rows reserved),
+  CQ_ITEMS (repair, shield, scanner, decoy + cooldowns), CQ_FRAG pools (c/u/r/e -> new earn-only catalog items reusing the 4 slot
+  designs with new colours, equippable through the existing cosmetic system), parts (thermal/coil/servo/cap, cap 50), trophies
+  (5 commanders + strike core); rolls on the Worker (new `worker/src/conquest-loot.js`) keyed by FNV(server seed `s.lseed` + source +
+  kill id/attempt), stored on the drop/receipt; minerals ride cargo/outbox; items account-bound in `s.inv` (capped, never raided,
+  never lost on death); `use-item` action; pity counters; wiki "Loot" section; `dev/tests/conquest-loot.mjs` incl. disjointness.
+- D: 12 patrols (2 per sector, spawn ids 10015-10022), hunter packs 1+floor(held/2) from the ring table (hourly gen, aggro 200,
+  leash 300), vein ambush 35% sentinel pair 20 s after a pull starts in ring >= 3, incursion after 10 min calm (3 raiders 120 m away,
+  never within 60 m of the Refuge/gate), Sortie chain (+10%/link CP+salvage, cap +30%, raid chest +1 rarity at 3; resets on death,
+  RECALL, session open; points untouched); measure Worker step time.
+- E: War Orders `s.wo` {day, week, list:[{id, source:'board', ...}]} drawn per UTC day/week from the pilot seed with eligibility;
+  claim at Refuge/gate; rewards CP + consumable (+ fragment on the 3rd daily; weekly 1,500 CP + 1 Armalcolite + rare fragment);
+  yield points unlock 25%/op (harvest 0.5) with partial collect draining the meter by what was paid; field taper 1/1/1/.6/.4 by
+  per-day count; production x3 / storage x2; hub "+N since you left"; cap copy "DAILY CAP REACHED · loot, minerals and CP still drop".
+- F: Worker counters `an/<day>/<event>[/<key>]` + cohorts `an/cohort/<firstDay>/{n,d1,d7,d30}`; events from reducers via a
+  non-persisted queue fired after the CAS write; client `/api/conquest/an` for transmission_read/skip and quit_point/session_minutes;
+  admin sheet tab; `dev/tests/conquest-analytics.mjs`.

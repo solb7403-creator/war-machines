@@ -11,7 +11,7 @@ const initial=JSON.stringify(s);
 assert.throws(()=>applyCommands(s,{seq:1,commands:Array(20).fill({x:1,z:0})},now),'102-meter exploit cannot buy simulation time');
 assert.equal(JSON.stringify(s),initial,'invalid input changes nothing');
 const a=applyCommands(s,{seq:1,commands:[{x:1,z:0}]},now+50);
-assert(a.position.x>s.position.x);assert(a.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*.05+1e-6);
+assert(a.position.x>s.position.x);assert(a.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*CONQUEST.World.speedFactor(s.position)*.05+1e-6);   // Session 6: the spawn is on a paved road (x1.15)
 assert.throws(()=>applyCommands(a,{seq:1,commands:[{x:1,z:0}]},now+100),'sequence cannot replay movement');
 assert.throws(()=>applyCommands(a,{seq:3,commands:[{x:1,z:0}]},now+100),'out of order command rejected');
 assert.throws(()=>applyCommands(a,{seq:2,commands:[{x:1,z:0}],hp:999999},now+100),'client HP never accepted');
@@ -34,18 +34,18 @@ const firebase=JSON.parse(JSON.stringify(a));delete firebase.battle.projectiles;
 for(const e of firebase.battle.enemies){delete e.stats.gems;delete e.stats.buffs;}
 assert.doesNotThrow(()=>applyCommands(firebase,{seq:2,commands:[{x:0,z:0}]},now+100),'Firebase empty collection normalization');
 const {applyAction}=await import('../../worker/src/conquest-sim.js');
-assert.throws(()=>applyAction(s,{seq:1,action:'start-mission'},now+100),'activation uses server position');
+{const far=JSON.parse(JSON.stringify(s));far.position={x:898,z:1024,y:CONQUEST.World.groundAt(898,1024),surface:'ground'};assert.throws(()=>applyAction(far,{seq:1,action:'start-mission'},now+100),'activation uses server position');}   // Session 6: the spawn itself is now in range of the first mission
 const missionStart=JSON.parse(JSON.stringify(s));missionStart.position={x:1163,z:1132,y:CONQUEST.World.groundAt(1163,1132),surface:'ground'};missionStart.hp=456;missionStart.battle.playerHp=456;
 const mission=applyAction(missionStart,{seq:1,action:'start-mission'},now+100);assert.equal(mission.hp,456);assert.equal(mission.battle.playerHp,456);assert.equal(mission.mission,'oxygen-line');
 const retreatState=applyAction(mission,{seq:2,action:'return-exploration'},now+200);assert.equal(retreatState.hp,456);assert(!retreatState.completed?.['oxygen-line'],'retreat cannot complete mission');
 assert.throws(()=>applyAction(mission,{seq:2,action:'return-exploration',victory:true},now+200),'client cannot report mission outcome');
-let sortie=createState(L,now);sortie.position={x:1160,z:1048,y:CONQUEST.World.groundAt(1160,1048),surface:'ground'};sortie=applyAction(sortie,{seq:1,action:'start-mission'},now);
+let sortie=createState(L,now);/* Session 6: the first defense starts at the Refuge spawn */sortie=applyAction(sortie,{seq:1,action:'start-mission'},now);
 let seconds=0;while(sortie.battle.state==='active'&&seconds<150){const e=sortie.battle.enemies.find(e=>!e.resident&&e.hp>0),yaw=e?Math.atan2(e.x-sortie.position.x,e.z-sortie.position.z):0;sortie=applyCommands(sortie,{seq:sortie.seq+1,commands:Array(20).fill({x:0,z:0,aimYaw:yaw,lockId:e?.id,fire:!!e})},now+(++seconds)*1000);}
-assert.equal(sortie.battle.state,'victory','server computes the full three-wave victory');assert.equal(sortie.battle.kills,7);
+assert.equal(sortie.battle.state,'victory','server computes the full three-wave victory');assert.equal(sortie.battle.kills,6);
 const completed=applyAction(sortie,{seq:sortie.seq+1,action:'return-exploration'},now+(seconds+1)*1000);assert(completed.completed['oxygen-line']);assert.equal(completed.hp,sortie.hp);
 console.log('PASS authoritative mission activation, HP continuity, retreat rejection and real three-wave victory:',seconds,'seconds');
 // Arrival jitter consumes previously earned reserve; it never creates movement time.
-let jitter=createState(L,now),elapsed=1500;for(let i=0;i<8;i++){if(i)elapsed+=i%2?970:1030;jitter=applyCommands(jitter,{seq:jitter.seq+1,commands:Array(20).fill({x:1,z:0})},now+elapsed);}assert(jitter.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*elapsed/1000+1e-6);assert(jitter.creditMs<=4000);console.log('PASS bounded earned timing reserve handles ordinary HTTP arrival jitter');
+let jitter=createState(L,now),elapsed=1500;for(let i=0;i<8;i++){if(i)elapsed+=i%2?970:1030;jitter=applyCommands(jitter,{seq:jitter.seq+1,commands:Array(20).fill({x:1,z:0})},now+elapsed);}assert(jitter.position.x-s.position.x<=CONQUEST.World.travelSpeed(L)*CONQUEST.World.ROAD_FAST*elapsed/1000+1e-6);/* the spawn's road is 15% faster */assert(jitter.creditMs<=4000);console.log('PASS bounded earned timing reserve handles ordinary HTTP arrival jitter');
 const wonPosition=structuredClone(sortie.position);const afterVictory=applyCommands(sortie,{seq:sortie.seq+1,commands:Array(20).fill({x:1,z:0,dash:true,shield:true,fire:true})},now+(seconds+1)*1000);assert.deepEqual(afterVictory.position,wonPosition,'real verified victory freezes movement until returning to exploration');assert.equal(afterVictory.ledger.cp,sortie.ledger.cp,'ended-state inputs cannot duplicate mission credit, including a latched featured bonus');console.log('PASS authoritative terminal mission state freezes traversal without reward duplication');
 const stuckWon=structuredClone(afterVictory);stuckWon.stuckMs=2000;assert.throws(()=>applyAction(stuckWon,{seq:stuckWon.seq+1,action:'recover'},now+(seconds+2)*1000),'recovery cannot bypass terminal mission freeze');console.log('PASS terminal mission cannot recover into invulnerable exploration');
 assert.equal(afterVictory.stuckMs,sortie.stuckMs,'terminal inputs cannot manufacture stuck history');const wonRoam=applyAction(afterVictory,{seq:afterVictory.seq+1,action:'return-exploration'},now+(seconds+2)*1000);assert.throws(()=>applyAction(wonRoam,{seq:wonRoam.seq+1,action:'recover'},now+(seconds+3)*1000),'returning cannot turn terminal inputs into a recovery teleport');console.log('PASS terminal inputs cannot synthesize recovery eligibility across transitions');

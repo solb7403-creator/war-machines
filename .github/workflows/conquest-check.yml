@@ -48,6 +48,8 @@ jobs:
           node dev/tests/conquest-frontline.mjs
           node dev/tests/conquest-adaptive.mjs
           node dev/tests/conquest-opening.mjs
+          node dev/tests/conquest-first-hour.mjs
+          node dev/tests/conquest-cc-ladder.mjs
           node dev/tests/conquest-operations.mjs
           node dev/tests/conquest-base.mjs
           node dev/tests/conquest-raid-layouts.mjs

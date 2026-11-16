@@ -248,7 +248,10 @@
 .cq .cq-pagenav .tab.tab-cq.on svg{color:#43e08a}
 /* Owner rule (Nov 8): a page fits the screen, or it scrolls. The hub's actions are pinned just above the bottom bar so ENTER
    CONQUEST is always on screen; the status above them scrolls when it is taller than the screen. */
-.cq.cq-hub.cq-with-nav .cq-hub-actions{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:6;padding-top:10px;padding-bottom:10px;background:linear-gradient(180deg,#05070d00,#05070dee 14px,#05070d)}
+/* Session 6: the hub never covers card text (audit: the pinned row hid YOUR BASE at 390x844). The page is a fixed column: one
+   scroller (hero + status cards), then the actions and WORLD INTEL, then the app's bottom bar. Nothing is sticky over the cards. */
+.cq.cq-command{overflow:hidden}.cq-hub-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+.cq.cq-hub.cq-with-nav .cq-hub-actions{position:relative;flex:none;z-index:6;padding-top:10px;padding-bottom:8px;background:#05070d;box-shadow:0 -10px 14px #05070d}.cq-hub-foot{flex:none}
 /* Session 5B Town Defense: wall tools, blend picker, draft, raid report */
 .cq-plot-pan{position:absolute;right:10px;top:110px;width:44px;height:44px;padding:0;font-size:18px;background:#0b1623cc;display:none}.cq-plot-walls .cq-plot-pan{display:block}.cq-plot-pan.on{border-color:#ffd36b;color:#ffd36b}
 .cq-plot-wallcount{font-size:12px;color:#eaf8ff;letter-spacing:.04em}
@@ -315,3 +318,16 @@
 .cq-supbar[data-oc="0"] .cq-supbar-text{color:#ff8f8f}.cq-supbar[data-oc="0"] .cq-supbar-mark{background:#ff8f8f}.cq-supbar[data-oc="0"] .cq-supbar-zone{background:rgba(120,150,170,.6)}
 @media (min-width:900px){.cq-supbar{bottom:calc(max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)) + 160px)}}
 @media (prefers-reduced-motion:reduce){.cq-supbar-jack{box-shadow:0 0 0 3px #1a1204}.cq-supbar-mark{transition:none}}
+/* ---- Session 6 (Conquest Core Fun): the NEXT chip, the opening radio, failure lines ---- */
+.cq-navigation:not(.cq-nav-foe) .cq-nav-title:before{content:'NEXT · ';color:#7fe9ff;font-weight:700}
+.cq-nav-row{display:flex;align-items:center;gap:6px}.cq-nav-reward{margin-left:auto;font-weight:700;font-size:10px;color:#ffd77a;letter-spacing:.04em;white-space:nowrap}.cq-nav-reward:empty{display:none}
+.cq-navigation.cq-nav-foe{border-left-color:#ff5a52}.cq-nav-foe .cq-nav-arrow{color:#ff6b62;text-shadow:0 0 6px #ff3b30}
+.cq-radio{position:absolute;left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));max-width:460px;top:calc(196px + env(safe-area-inset-top,0px));z-index:7;padding:8px 64px 8px 12px;background:#06131df0;border:1px solid #2bd9ff55;border-left:3px solid #2bd9ff;border-radius:4px;pointer-events:none;animation:cq-radio-in .25s ease-out}
+.cq-radio-tag{display:block;font-size:9px;font-weight:700;letter-spacing:.16em;color:#58e2ff;margin-bottom:3px}
+.cq-radio-line{margin:2px 0;font-size:12px;font-weight:600;line-height:1.35;color:#e8f6ff;text-shadow:0 1px 2px #000}
+.cq .cq-radio .cq-radio-skip{pointer-events:auto;position:absolute;top:6px;right:6px;min-height:36px;min-width:52px;padding:4px 10px;font-size:11px}
+.cq-radio-out{opacity:0;transition:opacity .3s}
+@keyframes cq-radio-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (max-height:680px){.cq-radio{top:calc(150px + env(safe-area-inset-top,0px))}}
+@media (prefers-reduced-motion:reduce){.cq-radio{animation:none}}
+.cq-aar-cause{color:#ffb3a8;font-weight:700}.cq-aar-fix{color:#bfefff}.cq-aar-fix:before{content:'FIX · ';color:#5fe1ff;font-weight:700}

@@ -24,13 +24,20 @@
     },
     {
       "minute": 30,
-      "base": 0,
-      "modules": {},
-      "cp": 1395,
+      "base": 1,
+      "modules": {
+        "vault": 1,
+        "reactor": 1,
+        "hangar": 0,
+        "radar": 0,
+        "defense": 0,
+        "uplink": 0
+      },
+      "cp": 655,
       "banked": {
-        "alloy": 186,
-        "biomass": 124,
-        "helium": 39
+        "alloy": 148,
+        "biomass": 109,
+        "helium": 36
       },
       "raidClears": 0,
       "shards": 0,
@@ -38,9 +45,9 @@
       "reputation": 480,
       "campaignScore": 57,
       "choices": [
-        "Hold Oxygen Line",
-        "Patrol and bank salvage",
-        "Pursue a field contract and engineering"
+        "Choose another authored raid family/layout",
+        "Respond to real sector or base invasion",
+        "Build a module or equip an earned permanent cosmetic"
       ]
     },
     {
@@ -54,11 +61,11 @@
         "defense": 0,
         "uplink": 0
       },
-      "cp": 55,
+      "cp": 2005,
       "banked": {
-        "alloy": 248,
-        "biomass": 179,
-        "helium": 60
+        "alloy": 328,
+        "biomass": 229,
+        "helium": 66
       },
       "raidClears": 0,
       "shards": 0,

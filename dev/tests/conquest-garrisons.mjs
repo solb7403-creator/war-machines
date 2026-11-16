@@ -15,8 +15,9 @@ const e=a.enemies[0];let fired=false;for(let i=0;i<120;i++){a.tick(1/30,p,{});if
 assert(fired,'guards actually defend');assert.equal(e.hp,0,'actual weapon destroys guard');assert(cleared[e.key]);
 const b=new C.Encounter(stock,p,JSON.parse(JSON.stringify(cleared)));assert.equal(b.enemies[0].hp,0,'cleared guard survives reload');
 const oldObjective=a.objectiveHp;assert(oldObjective>1e8);assert.equal(a.state,'active');
-for(const [x,z] of [[1163,1132],[1160,1197],[1011,1048]]){const B=new C.Battle(stock,point(x,z));assert.equal(B.approachGrace,60);for(let i=0;i<30;i++)B.tick(.25,point(x,z),{});assert.equal(B.objectiveHp,B.objectiveMax,'far activation protects approach');}
-for(const f of C.formations)for(const [,x,z] of f){assert(Math.hypot(x-1230,z-995)<25,'waves originate at staging');assert(!W.solidAt(x,z));}
+for(const [x,z] of [[1152,1170],[1160,1197],[1011,1048]]){const B=new C.Battle(stock,point(x,z));assert.equal(B.approachGrace,60);/* Session 6: more than 65 m from the re-staged mission marker */for(let i=0;i<30;i++)B.tick(.25,point(x,z),{});assert.equal(B.objectiveHp,B.objectiveMax,'far activation protects approach');}
+for(const f of C.formations)for(const [,x,z] of f){assert(Math.hypot(x-C.mission.x,z-C.mission.z)<100,'waves are staged around the oxygen line (Session 6: in sight of the Refuge spawn)');assert(!W.solidAt(x,z));}
+for(const [,x,z] of C.formations[0])assert(C.lineClear({x:W.spawn.x,y:W.groundAt(W.spawn.x,W.spawn.z)+2.2,z:W.spawn.z},{x,y:W.groundAt(x,z)+2.2,z}),'wave 1 is in sight of the spawn');
 console.log('PASS guards: authored placement, remote dormancy, bounded defense, real kill, coherent reload, safe mission approach and staging deployment');
 for(const invalid of [true,'broken',4,[],null]){const normalized=new C.Encounter(stock,p,invalid);assert.equal(typeof normalized.cleared,'object','malformed local cleared data normalizes');assert(!Array.isArray(normalized.cleared));normalized.enemies[0].hp=0;normalized.tick(.016,p,{});assert(normalized.cleared[normalized.enemies[0].key]);}
 console.log('PASS malformed local guard state normalization');
