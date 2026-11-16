@@ -11,7 +11,7 @@ const fail=m=>{throw Error('conquest: '+m);};
 export function lootSeed(){try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]>>>0;}catch{return (Date.now()*2654435761)>>>0;}}
 // FNV-1a over the key, then the murmur3 finaliser so keys that differ in one character still give independent values.
 export function u32(t){let h=2166136261;for(let i=0;i<t.length;i++)h=Math.imul(h^t.charCodeAt(i),16777619);h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h^=h>>>16;return h>>>0;}
-const unit=t=>u32(t)/4294967296;
+export const unit=t=>u32(t)/4294967296;
 const list=v=>Array.isArray(v)?v.filter(record):record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]).filter(record):[];
 const fill=(o,keys)=>{const m={};for(const k of keys)m[k]=int(record(o)?o[k]:0);return m;};
 // The pilot's loot record (additive; Firebase drops empty maps, so every field is rebuilt on each load).
@@ -26,7 +26,7 @@ export function inventory(s){
  v.cd=Object.fromEntries(Object.entries(record(v.cd)?v.cd:{}).filter(([k,t])=>R.CQ_ITEMS[k]&&Number(t)>0).map(([k,t])=>[k,Number(t)]));
  v.log=list(v.log).slice(-12);
  return v;}
-const pickItem=key=>{const total=R.CQ_ITEM_ORDER.reduce((a,k)=>a+R.CQ_ITEMS[k].w,0);let x=u32(key)%total;for(const k of R.CQ_ITEM_ORDER){x-=R.CQ_ITEMS[k].w;if(x<0)return k;}return R.CQ_ITEM_ORDER[0];};
+export const pickItem=key=>{const total=R.CQ_ITEM_ORDER.reduce((a,k)=>a+R.CQ_ITEMS[k].w,0);let x=u32(key)%total;for(const k of R.CQ_ITEM_ORDER){x-=R.CQ_ITEMS[k].w;if(x<0)return k;}return R.CQ_ITEM_ORDER[0];};
 // A rarity step (the Sortie chain at three links): a fragment of the next pool up.
 export const stepPool=(pool,steps=0)=>{const o=R.CQ_FRAG.order;return o[Math.min(o.length-1,o.indexOf(pool)+Math.max(0,steps|0))]||pool;};
 export function rows(src,ring=1){const T=R.LOOT[src];if(!T)return [];const out=[...(T.rows||[])];for(const [r,extra] of Object.entries(T.ring||{}))if(ring>=Number(r))out.push(...extra);return out;}

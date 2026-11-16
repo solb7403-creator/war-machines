@@ -45,7 +45,7 @@ const r=regular.hit,d=dedicated.hit;
 ok(r.CC1&&r.CC1.playMin<=25,'first town (CC1 claim, 600 CP: owner Decision 1) after '+r.CC1?.playMin+' min of play (target: inside the first session, <= 22 min in the scripted journey)');
 ok(r.CC2&&r.CC2.day<=3,'CC2 by day '+r.CC2?.day+' ('+r.CC2?.playMin+' play-min; it carries the rest of the old claim, so it lands when the old CC2 did)');
 ok(r.CC5&&r.CC5.day>=4&&r.CC5.day<=21,'regular CC5 on day '+r.CC5?.day+' (about 1-3 weeks: not instant)');
-// Owner correction (Nov 16): the Sortie chain pays +1.25% CP and salvage a link (was +10%), so the ladder keeps main's floor;
+// Owner fix (Nov 16): the Sortie chain pays a bonus consumable, no CP or salvage (was +10%, then +0.25%), so the ladder keeps main's floor;
 // dev/tests/conquest-ladder-check.mjs holds the +-10% band with every Session 6 change on.
 ok(r.CC10&&r.CC10.day>=21&&r.CC10.day<=100,'regular CC10 on day '+r.CC10?.day+' (a long-term goal, reachable in months)');
 ok(r.CC9&&r.CC9.day<=35,'regular CC9 (tier V, points ×1.25) on day '+r.CC9?.day+' (the Session 4 model had Base V on day 20 with every CP on the base)');

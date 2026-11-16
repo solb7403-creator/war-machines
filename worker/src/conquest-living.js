@@ -7,11 +7,12 @@
 //    play at that vein later two heavy sentinels arrive 65 m away. Leaving the vein (40 m) calls it off.
 //  - Incursion: after 10 minutes of simulated play without a fight, three interceptors arrive 120 m from the pilot (never within 60 m
 //    of the Refuge terminal or inside the Command Gate zone; it waits while the pilot is at either).
-//  - Sortie chain: consecutive operation wins, each within 10 minutes of the last: +10% CP and salvage per link already made (max
-//    +30%), one rarity step on the raid chest at three links; airdrop points are never multiplied. Breaks on death, RECALL or a
-//    session opened after more than a minute away.
+//  - Sortie chain: consecutive operation wins, each within 10 minutes of the last. A win with k links already made (max 3) has a
+//    k x 10% chance of ONE bonus consumable (owner, Nov 16: no CP, salvage, minerals, parts, trophies, fragments or points), rolled
+//    from the server loot seed keyed by the win (a retry cannot re-roll it), bound within the item cap, pity counters untouched;
+//    one rarity step on the raid chest at three links. Breaks on death, RECALL or a session opened after more than a minute away.
 import {CONQUEST} from './sim.gen.js';
-import {u32} from './conquest-loot.js';
+import {u32,unit,pickItem,bind,inventory} from './conquest-loot.js';
 const W=CONQUEST.World,C=CONQUEST.Combat,L=C.LIVING,R=C.refuge,HOUR=3600000,VISIBLE=350;   // R: the Refuge supply terminal
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const near=(a,x,z,r)=>Math.hypot(a.x-x,a.z-z)<=r;
@@ -56,3 +57,11 @@ export function chainLinks(s,now){const c=s.chain;return record(c)&&now-(Number(
 export function chainWin(s,now){const k=chainLinks(s,now);s.chain={n:Math.min(L.chain.max,k+1),at:now};return k;}   // the meter holds at three links
 export const chainBonus=k=>Math.min(L.chain.max,Math.max(0,k|0))*L.chain.per;
 export function chainBreak(s){delete s.chain;}
+// The chain's only reward (owner, Nov 16): links (0-3, what chainWin returned) x LIVING.chain.item = the chance of one bonus
+// consumable, weighted like every other consumable roll. key names the win (mission + attempt, strike slot, defense attempt), so
+// the same win always gives the same answer. Bound through bind() (item cap 10; a full slot is reported, nothing else is paid).
+// Returns the receipt's chain record: {links, bonus:0, chance, item?, full?}.
+export const chainChance=k=>Math.min(L.chain.max,Math.max(0,k|0))*L.chain.item;
+export function chainItem(s,key,links,now){const chance=chainChance(links),out={links,bonus:chainBonus(links),chance};if(!(chance>0))return out;
+ inventory(s);const base=s.lseed+':chain:'+key;if(unit(base)>=chance)return out;const item=pickItem(base+':it'),got=bind(s,{it:{[item]:1}},now,{where:'sortie chain'});
+ out.item=item;if(!got.it?.[item])out.full=true;return out;}

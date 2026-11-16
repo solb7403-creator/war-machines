@@ -67,8 +67,9 @@ console.log('PASS incursion: after 10 calm minutes three interceptors arrive ~12
 // ---- 5. Sortie chain ----
 {const s=fresh();s.ledger.cp=0;const ops=C.fieldMissionIds;let t=now0;const pays=[];for(let i=0;i<5;i++){s.mission=ops[i];s.attempt=i+1;t+=120000;const r=missionReward(s,t);pays.push([r.cp,r.chain?.links||0,r.ptsRaw]);}
  const base=pays.map(p=>p[0]);assert.deepEqual(pays.map(p=>p[1]),[0,1,2,3,3],'links found by each win');
- const firstCp=ops.slice(0,5).map(id=>C.operations[id].firstCp||250);assert.deepEqual(base,firstCp.map((c,i)=>Math.round(c*(1+L.chain.per*Math.min(3,i)))+(i===2?100:0)),'+'+(+(L.chain.per*100).toFixed(2))+'% per link, max +'+(+(L.chain.per*300).toFixed(2))+'% (the third field order of the day adds its usual +100 CP, unchained)');
- assert.equal(L.chain.per,.0025,'owner correction Nov 16: +0.25% CP and salvage a link (was +10%)');
+ const firstCp=ops.slice(0,5).map(id=>C.operations[id].firstCp||250);assert.deepEqual(base,firstCp.map((c,i)=>Math.round(c*(1+L.chain.per*Math.min(3,i)))+(i===2?100:0)),'no chain CP: each win pays its own CP (the third field order of the day adds its usual +100 CP, unchained)');
+ assert.equal(L.chain.per,0,'owner fix Nov 16: the chain pays 0% CP and salvage a link (was +10%, then +0.25%)');
+ assert.equal(L.chain.item,.10,'owner fix Nov 16: a 10% a link chance of one bonus consumable (10/20/30%)');
  const pts=pays.map(p=>p[2]);assert(pts.every(p=>p===pts[0]),'airdrop points never multiplied');
  // the raid chest: one rarity step at three links
  const r=fresh();r.chain={n:3,at:now0};r.mission=Object.values(C.operations).find(o=>o.raid).id;r.attempt=1;let epic=0;for(let i=0;i<400;i++){const q=structuredClone(r);q.lseed=i;q.attempt=i;const rc=missionReward(q,now0+1000);if(rc.loot?.fr?.e)epic++;if(rc.loot?.fr?.r)assert.fail('a three-link chest never pays a rare fragment (it stepped up)');}assert(epic>10,'epic fragments from a three-link chest: '+epic);
@@ -77,7 +78,7 @@ console.log('PASS incursion: after 10 calm minutes three interceptors arrive ~12
  const d=fresh();d.chain={n:2,at:now0};death(d,now0);assert(!d.chain,'death ends the chain');
  assert(fs.readFileSync(new URL('../../worker/src/conquest-sim.js',import.meta.url),'utf8').includes("chainBreak(s);}   // the Sortie chain ends on RECALL"),'RECALL ends the chain');
  {const src=fs.readFileSync(new URL('../../worker/src/conquest.js',import.meta.url),'utf8');assert(src.includes('const away=!s||now-(s.lastWall||0)>60000')&&src.includes('if(state.chain&&away)delete state.chain;'),'leaving Conquest (away > 60 s) ends the chain');}}
-console.log('PASS Sortie chain: +'+[0,1,2,3,3].map(k=>+(k*L.chain.per*100).toFixed(2)).join('/')+'% CP and salvage on consecutive wins inside 10 min, epic chest fragment at three links, points untouched, breaks on lapse/death/RECALL/leaving');
+console.log('PASS Sortie chain: +'+[0,1,2,3,3].map(k=>+(k*L.chain.per*100).toFixed(2)).join('/')+'% CP and salvage, '+[0,1,2,3,3].map(k=>+(k*L.chain.item*100).toFixed(2)).join('/')+'% bonus item chance on consecutive wins inside 10 min, epic chest fragment at three links, points untouched, breaks on lapse/death/RECALL/leaving');
 
 // ---- 6. Worker step time with the denser world (relative, this machine) ----
 function measure(setup,label){let s=fresh();s.lastWall=now0;setup(s);refreshState(s,now0);const ms=[];for(let i=0;i<40;i++){const t=performance.now();s=applyCommands(s,{seq:s.seq+1,commands:Array(20).fill({x:Math.sin(i/4),z:Math.cos(i/4),fire:true})},s.lastWall+1000);ms.push(performance.now()-t);}

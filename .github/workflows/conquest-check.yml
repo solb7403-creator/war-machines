@@ -52,6 +52,7 @@ jobs:
           node dev/tests/conquest-cc-ladder.mjs
           node dev/tests/conquest-loot.mjs
           node dev/tests/conquest-living-world.mjs
+          node dev/tests/conquest-sortie-chain.mjs
           node dev/tests/conquest-contracts.mjs
           node dev/tests/conquest-yield-steps.mjs
           node dev/tests/conquest-ladder-check.mjs

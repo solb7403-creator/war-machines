@@ -1,7 +1,7 @@
 import {CONQUEST,RULES} from './sim.gen.js';
 import {earn,opKill,discardOpKills,bankMinerals} from './conquest-airdrop.js';
 import {roll,face,bind,empty as noLoot,runLoot} from './conquest-loot.js';
-import {chainWin,chainBonus,chainBreak} from './conquest-living.js';
+import {chainWin,chainBonus,chainBreak,chainItem} from './conquest-living.js';
 import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
 // Separate Conquest ledger. Nothing here modifies Arcade, airdrop or paid inventory.
@@ -36,7 +36,7 @@ export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.mi
  if(raid&&s.raidReceipts?.[s.attempt])return s.raidReceipts[s.attempt];
  if(claim&&now-(claim.lastAt||claim.firstAt)<POLICY.missionRepeat)return {kind:'cooldown',cp:0,alloy:0,biomass:0,helium:0};
  const first=!claim,daily=claim?.day!==s.daily.day,amount=raid?{...op.reward,cp:Math.floor(op.reward.cp*(first?1:daily?.7:.45))}:first?{...POLICY.first,cp:op?.firstCp||250}:daily?POLICY.replay:{cp:45,alloy:6,biomass:4,helium:1};
- // Sortie chain (§5.7): this win's bonus is +10% CP and salvage per link already made (max +30%); points are never multiplied.
+ // Sortie chain (§5.7, owner Nov 16): no CP or salvage bonus (LIVING.chain.per 0); the win's chain record rolls the bonus consumable (chainItem).
  const links=chainWin(s,now);
  const awarded=grant(s,chained({...amount,cp:amount.cp+(s.featuredMission?20:0)},links),true);
  // Session 6 (Decision 3a): a field mission's points taper on repeats the same UTC day: 100% x3, then 60%, then 40% (raids unchanged).
@@ -46,7 +46,7 @@ export function missionReward(s,now){ledger(s,now);const id=s.mission,claim=s.mi
  if(s.orders.completed===3){s.ledger.cp+=100;s.reputation+=50;s.achievements=s.achievements||{};s.achievements['field-veteran']=s.achievements['field-veteran']||now;awarded.cp+=100;}
  s.campaignScore=(s.campaignScore||0)+(raid?10:3);orderEvent(s,'op');if(raid)orderEvent(s,'raid');else orderEvent(s,'fieldSector',1,{sector:op?.sector||CONQUEST.World.frontierSectorAt(op?.x||0,op?.z||0).id});
  const mn=cacheMinerals(s,raid?(op.danger==='VETERAN'?'VETERAN':'HARD'):'field',id+':'+(s.attempt||0)+':'+now);
- const receipt={kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:(s.reputation||0)-reputationBefore,...awarded,ptsRaw:pts,...(raid?{}:{run:dn,taper}),...(Object.keys(mn).length?{mn}:{}),...(links?{chain:{links,bonus:chainBonus(links)}}:{})};
+ const receipt={kind:first?'first-clear':daily?'daily-replay':'repeat',reputation:(s.reputation||0)-reputationBefore,...awarded,ptsRaw:pts,...(raid?{}:{run:dn,taper}),...(Object.keys(mn).length?{mn}:{}),...(links?{chain:chainItem(s,'op:'+id+':'+(s.attempt|0),links,now)}:{})};
  if(raid){const p=s.raidProgress||(s.raidProgress={shards:0,clears:0,blueprint:false,eliteBlueprint:false});p.shards++;p.clears++;p.blueprint=p.blueprint||p.shards>=25;const elite=s.raidRoll?.attempt===s.attempt&&s.raidRoll.value<350;p.eliteBlueprint=p.eliteBlueprint||elite;receipt.shards=1;receipt.eliteBlueprint=elite;receipt.rareChance=.035;
   // Session 6: the raid completion chest (1 consumable + 8% rare fragment), keyed by this attempt, account-bound at once.
   const chest=bind(s,roll(s,'chest','attempt:'+(s.attempt|0),{steps:links>=3?1:0}),now,{where:'raid chest'});if(!noLoot(chest)||chest.pieces)receipt.loot=chest;s.raidReceipts=s.raidReceipts||{};s.raidReceipts[s.attempt]=receipt;const keys=Object.keys(s.raidReceipts).sort((a,b)=>a-b);for(const key of keys.slice(0,-32))delete s.raidReceipts[key];}
@@ -62,8 +62,8 @@ function strikeReward(s,op,now){const T=RULES.STRIKE,slot=s.strikeSlot,rec=s.str
  for(const [k,v] of Object.entries(mn))s.ledger.mn[k]=(s.ledger.mn[k]||0)+v;s.reputation=(s.reputation||0)+40;s.campaignScore=(s.campaignScore||0)+8;orderEvent(s,'op');orderEvent(s,'strike');
  // Session 6: 15% research part + 10% rare fragment, keyed by the slot; every 12th secured strike also gives the Strike Core trophy.
  const found=roll(s,'strike','slot:'+slot);if(n%T.resonance.se===0)(found.tr||(found.tr={})).core=1;const loot=bind(s,found,now,{where:'meteor strike'});
- return {kind:'strike',slot,cp,alloy:0,biomass:0,helium:0,mn,core,resonance:n,ptsRaw,...(links?{chain:{links,bonus:chainBonus(links)}}:{}),...(noLoot(loot)&&!loot.pieces?{}:{loot})};}
-// Sortie chain (§5.7): CP and salvage (alloy, biomass, helium) of a win, +10% per link already made, max +30%. Minerals and points unchanged.
+ return {kind:'strike',slot,cp,alloy:0,biomass:0,helium:0,mn,core,resonance:n,ptsRaw,...(links?{chain:chainItem(s,'strike:'+slot,links,now)}:{}),...(noLoot(loot)&&!loot.pieces?{}:{loot})};}
+// Sortie chain (§5.7): CP and salvage x (1 + links x LIVING.chain.per); per is 0 since the owner's Nov 16 fix, so this pays nothing extra.
 export function chained(amount,links){const k=1+chainBonus(links),o={...amount};for(const x of ['cp',...MATERIALS])if(o[x])o[x]=Math.round(o[x]*k);return o;}
 export function atTerminal(s){return !s.mission&&s.hp>0&&(Math.hypot(s.position.x-POLICY.terminal.x,s.position.z-POLICY.terminal.z)<=POLICY.terminal.r||s.base?.modules?.vault&&Math.hypot(s.position.x-CONQUEST.Combat.baseDefinition.x,s.position.z-CONQUEST.Combat.baseDefinition.z)<=CONQUEST.Combat.baseDefinition.radius);}   // the gate zone (30 m, Find My Base): the plot screen's BANK / REPAIR work wherever it opens
 export function bank(s,now){ledger(s,now);if(!atTerminal(s))throw Error('conquest: approach Refuge supply terminal');s.firsts=s.firsts&&typeof s.firsts==='object'?s.firsts:{};if(!s.firsts.bank)s.firsts.bank=now;   // Session 6: the HUD's BASE line and the coach chain read the first bank (state in the save)
