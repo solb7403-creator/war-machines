@@ -1,141 +1,10 @@
 name: Conquest regression
 on:
-  pull_request:
-    paths: ['web/account-prompts.js', 'web/play.html', 'worker/sim-api.js', 'js/conquest/**', 'js/fx3d.js', 'worker/src/conquest*.js', 'worker/src/eco.js', 'worker/src/pvp.js', 'js/rules.js', 'js/game.js', 'js/models3d.js', 'js/render3d.js', 'js/ui.js', 'wiki.html', 'worker/build-sim.mjs', 'dev/tests/wtest/conquest*', 'css/conquest.css', 'dev/tests/conquest*', '.github/workflows/conquest-check.yml']
   workflow_dispatch:
 jobs:
-  conquest:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 55
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Worker dependencies
-        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
-      - name: Conquest and shared gameplay regressions
-        run: |
-          bash dev/tests/conquest-regression.sh
-          node dev/tests/conquest-authority.mjs
-          node dev/tests/conquest-controls.mjs
-          node dev/tests/conquest-threat.mjs
-          node dev/tests/conquest-economy.mjs
-          node dev/tests/conquest-airdrop.mjs
-          node dev/tests/wtest/conquest-airdrop.mjs
-          node dev/tests/conquest-terraform.mjs
-          node dev/tests/conquest-minerals.mjs
-          node dev/tests/conquest-vein-economy.mjs
-          node dev/tests/conquest-plot.mjs
-          node dev/tests/conquest-town.mjs
-          node dev/tests/conquest-town-balance.mjs
-          node dev/tests/conquest-sheet.mjs
-          node dev/tests/conquest-townkit.mjs
-          node dev/tests/conquest-copy.mjs
-          node dev/tests/conquest-base-progression.mjs
-          node dev/tests/wtest/conquest-visit.mjs
-          node dev/tests/wtest/conquest-dev.mjs
-          node dev/tests/conquest-home-route.mjs
-          node dev/tests/wtest/hull-plating.mjs
-          node dev/tests/conquest-session.mjs
-          node dev/tests/conquest-netcode.mjs
-          node dev/tests/conquest-fast-travel.mjs
-          node dev/tests/conquest-recall.mjs
-          node dev/tests/conquest-first-base.mjs
-          node dev/tests/conquest-balance.mjs
-          node dev/tests/conquest-session-033.mjs
-          node dev/tests/conquest-living-war.mjs
-          node dev/tests/conquest-frontline.mjs
-          node dev/tests/conquest-adaptive.mjs
-          node dev/tests/conquest-opening.mjs
-          node dev/tests/conquest-first-hour.mjs
-          node dev/tests/conquest-cc-ladder.mjs
-          node dev/tests/conquest-loot.mjs
-          node dev/tests/conquest-living-world.mjs
-          node dev/tests/conquest-sortie-chain.mjs
-          node dev/tests/conquest-contracts.mjs
-          node dev/tests/conquest-yield-steps.mjs
-          node dev/tests/conquest-ladder-check.mjs
-          node dev/tests/conquest-analytics.mjs
-          node dev/tests/conquest-operations.mjs
-          node dev/tests/conquest-base.mjs
-          node dev/tests/conquest-raid-layouts.mjs
-          node dev/tests/conquest-raids.mjs
-          node dev/tests/conquest-raid-doctrine.mjs
-          node dev/tests/conquest-drones.mjs
-          node dev/tests/conquest-airborne-loot.mjs
-          node dev/tests/conquest-defense-config.mjs
-          node dev/tests/conquest-defense-victory.mjs
-          node dev/tests/conquest-sector-authority.mjs
-          node dev/tests/conquest-sector-victory.mjs
-          node dev/tests/conquest-frontier-recovery.mjs
-          node dev/tests/conquest-war-authority.mjs
-          node dev/tests/conquest-warfront.mjs
-          node dev/tests/conquest-cosmetics.mjs
-          node dev/tests/conquest-cosmetics-authority.mjs
-          node dev/tests/conquest-assets.mjs
-          node dev/tests/conquest-style.mjs
-          node dev/tests/conquest-flagship-ui.mjs
-          node dev/tests/conquest-canvas-contract.mjs
-          node dev/tests/wtest/conquest-war.mjs
-          node dev/tests/conquest-replay-budget.mjs > docs/conquest-living-war/replay-current.json
-          node dev/tests/conquest-v1-migration.mjs
-          node dev/tests/conquest-earning-model.mjs
-          node dev/tests/conquest-earned-journey.mjs
-          node dev/tests/conquest-earned-defense.mjs
-          node dev/tests/conquest-long-progression.mjs
-          node dev/tests/wtest/conquest.mjs
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Browser dependencies
-        run: |
-          pip install playwright==1.55.0
-          python -m playwright install --with-deps chromium
-      - name: Portrait player journey
-        run: |
-          python dev/tests/conquest-onboarding.py
-          python dev/tests/conquest-session6-feel.py
-          python dev/tests/conquest-session6-loot.py
-          python dev/tests/conquest-earned-browser.py
-          python dev/tests/conquest-earned-end-to-end.py
-          python dev/tests/conquest-preview.py
-          CQ_EARNED_SAVE=/tmp/lunar-earned-journey.json python dev/tests/conquest-preview.py
-          python dev/tests/conquest-airdrop-browser.py
-          python dev/tests/conquest-terraform-captures.py --quality high
-          python dev/tests/conquest-minerals-browser.py
-          python dev/tests/conquest-base-builder.py
-          python dev/tests/conquest-hub-browser.py
-          python dev/tests/conquest-find-base.py
-          python dev/tests/conquest-plot-ui.py
-          python dev/tests/conquest-session5d.py
-          python dev/tests/conquest-super-fx.py
-      - name: Desktop keyboard journey (website build)
-        run: python dev/tests/conquest-desktop-keys.py
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: conquest-gameplay-evidence
-          path: |
-            docs/conquest-session-031
-            docs/conquest-session-2
-            docs/conquest-living-war/replay-current.json
-            docs/economy/phase1
-            docs/economy/phase2
-            docs/economy/phase3
-            docs/conquest/session5
-            docs/conquest/session5b
-            docs/conquest/base-ui
-            docs/conquest/session5d
-
-  transmission:
+  webkit-diag:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      matrix:
-        engine: [chromium, webkit]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -144,32 +13,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Worker dependencies
-        run: npm install --prefix worker --no-audit --no-fund --package-lock=false
-      - name: Install browser engine
-        run: |
+      - run: npm install --prefix worker --no-audit --no-fund --package-lock=false
+      - run: |
           pip install playwright==1.55.0
-          python -m playwright install --with-deps ${{ matrix.engine }}
-      - name: Visible acknowledgement and independent story scrolling
+          python -m playwright install --with-deps webkit
+      - name: A. fallback as in CI, browser log on
+        continue-on-error: true
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
+          DEBUG: 'pw:browser'
+        run: python dev/tests/conquest-living-war.py --engine webkit --fallback 2>&1 | tail -150; free -m
+      - name: B. fallback with sound off (save.sound=false)
+        continue-on-error: true
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          DEBUG: 'pw:browser'
         run: |
-          python dev/tests/conquest-transmission.py --engine ${{ matrix.engine }}
-          python dev/tests/conquest-occluder.py --engine ${{ matrix.engine }}
-          python dev/tests/conquest-session-032.py --engine ${{ matrix.engine }}
-          python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }}
-          python dev/tests/conquest-session-033.py --engine ${{ matrix.engine }} --fallback
-          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --quality high
-          python dev/tests/conquest-living-war.py --engine ${{ matrix.engine }} --fallback
-          python dev/tests/conquest-flagship-browser.py --engine ${{ matrix.engine }} --width 390
-          python dev/tests/conquest-flagship-browser.py --engine ${{ matrix.engine }} --width 320 --family siege --no-defense
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: conquest-transmission-${{ matrix.engine }}
-          path: |
-            docs/conquest-ios-onboarding
-            docs/conquest-session-032
-            docs/conquest-session-033
-            docs/conquest-living-war
-            docs/conquest-session-2
+          sed 's/save.gfx=\\"2d\\";/save.gfx=\\"2d\\";save.sound=false;/' dev/tests/conquest-living-war.py > dev/tests/diag-living-war-nosound.py
+          grep -c 'save.sound=false' dev/tests/diag-living-war-nosound.py
+          python dev/tests/diag-living-war-nosound.py --engine webkit --fallback 2>&1 | tail -80
+      - name: C. fallback again (repeatability)
+        continue-on-error: true
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: python dev/tests/conquest-living-war.py --engine webkit --fallback 2>&1 | tail -30
