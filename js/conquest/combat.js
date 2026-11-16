@@ -133,7 +133,7 @@ const LIVING=Object.freeze({packs:Object.freeze([{x:1270,z:946,route:[[1294,946]
  pack:Object.freeze(['raider','raider','command']),hardExtra:'sentinel',aggro:200,leash:300,regenMs:3600000,
  ambush:Object.freeze({chance:.35,afterMs:20000,ring:3,stay:40,kinds:Object.freeze(['sentinel','sentinel']),from:65}),
  incursion:Object.freeze({calmMs:600000,kinds:Object.freeze(['raider','raider','raider']),from:120,refuge:60,fightR:70}),
- ids:Object.freeze({pack:10100,ambush:10200,incursion:10210}),chain:Object.freeze({windowMs:600000,per:.1,max:3})});
+ ids:Object.freeze({pack:10100,ambush:10200,incursion:10210}),chain:Object.freeze({windowMs:600000,per:.0125,max:3})});   // Sortie chain: +1.25% CP and salvage a link, max +3.75% (owner correction Nov 16: was +10%; keeps the town ladder within +-10% of the audit with every Session 6 change on, dev/tests/conquest-ladder-check.mjs)
 class Battle {
  constructor(loadout,playerPosition){
  this.snapshot=freeze(JSON.parse(JSON.stringify(loadout)));this.playerStats={...tankOf(this.snapshot,1),buffs:[]};this.playerStats.wshot=(profiles[this.playerStats.wtype]||profiles.pulse).interval;this.engineering=engineeringDefaults();this.heat=0;this.overheated=false;this.combatSpeed=machineSpeed(this.snapshot,this.playerStats);

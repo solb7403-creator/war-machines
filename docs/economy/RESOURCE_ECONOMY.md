@@ -212,7 +212,7 @@ How the yield works:
   and drains the meter by that share; the locked rest keeps filling. Materials are never locked. HUD: "YIELD POINTS 50% · 2 operations to go".
 - **Field-mission points taper on repeats**: 100% for the first three completions of the same mission in a UTC day, then 60%, then 40%.
   Raids, strikes and defenses unchanged; CP keeps its own first / daily / repeat taper.
-- **Sortie chain** (spec §5.7): +10% CP and salvage per link already made (max +30%); airdrop points are never multiplied.
+- **Sortie chain** (spec §5.7): +1.25% CP and salvage per link already made (max +3.75%); airdrop points are never multiplied. Owner correction (Nov 16, 2026; was +10% / +30%): with every Session 6 change on (production x3, storage x2, the chain, War Orders), the town ladder must stay within ±10% of the audit table (regular 60 min/day: CC5 day 5.4-6.6, CC10 day 25.9-31.7). +1.25% is the largest quarter-percent step that keeps the median of 101 modelled pilots inside (CC5 day 5.8, CC10 day 26.8); +10% gave CC5 4.8 / CC10 15.8. Enforced by `dev/tests/conquest-ladder-check.mjs` (fails the build outside the band).
 - **War Orders** pay CP and loot only (never points). **Capped copy**: at 50,000 the HUD says "DAILY CAP REACHED · loot, minerals and
   CP still drop" (Decision 7a; the cap itself is unchanged).
 

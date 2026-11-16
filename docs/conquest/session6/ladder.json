@@ -1,20 +1,44 @@
 {
  "scope": "audit method (60 min/day regular), current code; not a human playtest",
+ "chainPerLink": 0.0125,
  "audit": {
   "CC5": 6,
   "CC10": 28.8
+ },
+ "band": {
+  "CC5": [
+   5.4,
+   6.6
+  ],
+  "CC10": [
+   25.92,
+   31.68
+  ]
  },
  "decision10": {
   "CC5": 5.8,
   "CC10": 30.8
  },
  "withChain": {
-  "CC5": 4.8,
-  "CC10": 15.8
+  "CC5": 5.8,
+  "CC10": 27.8
  },
  "withChainAndOrders": {
-  "CC5": 4.8,
-  "CC10": 15.8,
-  "ordersClaimed": 12
+  "pilots": 101,
+  "CC5": 5.8,
+  "CC10": 26.8,
+  "CC5range": [
+   5,
+   5.8
+  ],
+  "CC10range": [
+   17.8,
+   26.8
+  ],
+  "inBandPct": {
+   "CC5": 71,
+   "CC10": 66
+  },
+  "ordersClaimed": 21
  }
 }
