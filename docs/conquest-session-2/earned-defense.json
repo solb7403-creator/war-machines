@@ -1,7 +1,7 @@
 {
   "scope": "Exact continuation of the continuous canonical starter earned save. No new resource/equipment/health/position/outcome fixture. Shared authoritative input replay, not a native browser combat recording.",
   "initial": {
-    "cp": 130,
+    "cp": 126,
     "loadout": {
       "w": {
         "a": "pulse",
@@ -48,8 +48,8 @@
       "fe": 2,
       "il": 1
     },
-    "cp": 166,
-    "alloy": 16,
+    "cp": 161,
+    "alloy": 15,
     "biomass": 10,
     "helium": 2,
     "reputation": 60,
@@ -57,11 +57,11 @@
     "damage": 0,
     "chain": {
       "links": 3,
-      "bonus": 0.037500000000000006
+      "bonus": 0.0075
     }
   },
   "hp": 1523.705000000001,
-  "cp": 296,
+  "cp": 287,
   "loadout": {
     "w": {
       "a": "pulse",

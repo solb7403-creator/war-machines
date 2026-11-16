@@ -33,16 +33,16 @@
         "defense": 0,
         "uplink": 0
       },
-      "cp": 694,
+      "cp": 656,
       "banked": {
-        "alloy": 150,
-        "biomass": 110,
+        "alloy": 148,
+        "biomass": 109,
         "helium": 36
       },
       "raidClears": 0,
       "shards": 0,
       "blueprint": false,
-      "reputation": 484,
+      "reputation": 481,
       "campaignScore": 57,
       "choices": [
         "Choose another authored raid family/layout",
@@ -61,16 +61,16 @@
         "defense": 0,
         "uplink": 0
       },
-      "cp": 2104,
+      "cp": 2006,
       "banked": {
-        "alloy": 330,
-        "biomass": 230,
+        "alloy": 328,
+        "biomass": 229,
         "helium": 66
       },
       "raidClears": 0,
       "shards": 0,
       "blueprint": false,
-      "reputation": 934,
+      "reputation": 931,
       "campaignScore": 147,
       "choices": [
         "Choose another authored raid family/layout",
@@ -83,22 +83,22 @@
       "base": 3,
       "modules": {
         "vault": 2,
-        "reactor": 3,
+        "reactor": 2,
         "hangar": 2,
         "radar": 2,
         "defense": 2,
         "uplink": 2
       },
-      "cp": 798,
+      "cp": 2845,
       "banked": {
-        "alloy": 1965,
-        "biomass": 1429,
-        "helium": 534
+        "alloy": 2003,
+        "biomass": 1462,
+        "helium": 546
       },
       "raidClears": 110,
       "shards": 110,
       "blueprint": true,
-      "reputation": 6330,
+      "reputation": 6173,
       "campaignScore": 1247,
       "choices": [
         "Choose another authored raid family/layout",
@@ -117,16 +117,16 @@
         "defense": 3,
         "uplink": 3
       },
-      "cp": 57615,
+      "cp": 54955,
       "banked": {
-        "alloy": 15570,
-        "biomass": 10295,
+        "alloy": 14818,
+        "biomass": 9844,
         "helium": 3623
       },
       "raidClears": 750,
       "shards": 750,
       "blueprint": true,
-      "reputation": 31576,
+      "reputation": 30708,
       "campaignScore": 7647,
       "choices": [
         "Choose another authored raid family/layout",

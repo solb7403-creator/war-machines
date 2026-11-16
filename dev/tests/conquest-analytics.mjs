@@ -38,11 +38,13 @@ r=await call(A,'/api/conquest/action',{seq:++seq,action:'bank'});ok(r.status===2
 let died=false;for(let i=0;i<20&&!died;i++){now+=1000;r=await call(A,'/api/conquest/input',{seq:++seq,commands:Array(20).fill({x:0,z:0})});if(r.status!==200){seq--;continue;}died=r.state.hp<=0;}
 ok(died&&Object.keys(today().death||{}).length===1&&JSON.stringify(today().death).includes('some'),'death by cause and carrying: '+JSON.stringify(today().death));
 // the phone's screen events
-for(const [e,k] of [['transmission_read'],['transmission_skip'],['quit_point','map:7'],['session_minutes','12']])r=await call(A,'/api/conquest/an',{e,...(k?{k}:{})});
+// (the clock steps 10 s a call: /api/conquest/an is also limited to 12 calls a minute a pilot, checked below)
+for(const [e,k] of [['transmission_read'],['transmission_skip'],['quit_point','map:7'],['session_minutes','12']]){now+=10000;r=await call(A,'/api/conquest/an',{e,...(k?{k}:{})});}
 ok(today().transmission_read===1&&today().transmission_skip===1&&today().quit_point?.map?.['5-10m']===1&&today().session_minutes?.['10-20m']===1,'screen events: radio read / skip, quit point by screen and minute bucket, session minutes');
-for(const [e,k] of [['quit_point','<script>:1'],['session_minutes','-4'],['enter'],['mission_end','x'],['quit_point','map:99999']])r=await call(A,'/api/conquest/an',{e,...(k?{k}:{})});
-assert.equal((await call(A,'/api/conquest/an',{e:'session_minutes',k:'3',pid:'tg_1'})).status,400);ok(JSON.stringify(today().quit_point)==='{"map":{"5-10m":1}}'&&today().enter===1,'invalid screen events and extra fields are refused; the phone cannot send outcome events');
-for(let i=0;i<60;i++)await call(B2,'/api/conquest/an',{e:'transmission_read'});ok(today().transmission_read===1+40,'at most 40 screen events a pilot a UTC day');
+for(const [e,k] of [['quit_point','<script>:1'],['session_minutes','-4'],['enter'],['mission_end','x'],['quit_point','map:99999']]){now+=10000;r=await call(A,'/api/conquest/an',{e,...(k?{k}:{})});}
+now+=10000;assert.equal((await call(A,'/api/conquest/an',{e:'session_minutes',k:'3',pid:'tg_1'})).status,400);ok(JSON.stringify(today().quit_point)==='{"map":{"5-10m":1}}'&&today().enter===1,'invalid screen events and extra fields are refused; the phone cannot send outcome events');
+for(let i=0;i<60;i++){now+=10000;await call(B2,'/api/conquest/an',{e:'transmission_read'});}ok(today().transmission_read===1+40,'at most 40 screen events a pilot a UTC day');
+{now=Math.ceil(now/60000)*60000;const codes=[];for(let i=0;i<14;i++)codes.push((await call(B2,'/api/conquest/an',{e:'transmission_read'})).status);ok(codes.filter(c=>c===429).length===2&&codes.slice(0,12).every(c=>c!==429),'at most 12 screen-event calls a minute a pilot (the 13th and 14th get 429)');}
 // cohorts: D1, D7, D30 by the day the pilot comes back
 for(const [dd,k] of [[1,'d1'],[7,'d7'],[30,'d30']]){now=Date.UTC(2026,10,16,12)+dd*DAY;await call(A,'/api/conquest/session',{});ok(an().cohort?.[first]?.[k]===1&&today().return?.[k]===1,k+': a return on day +'+dd+' counts once in the cohort and in that day\'s returns');}
 now+=DAY;await call(A,'/api/conquest/session',{});ok(an().cohort[first].d30===1,'never twice');

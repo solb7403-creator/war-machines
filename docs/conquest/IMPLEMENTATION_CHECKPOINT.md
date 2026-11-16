@@ -4518,8 +4518,8 @@ Security/economy (base a5ae24b): 1 ladder gate foolable (FIXED: fighting pilot, 
 the harvest 50% cap not in the spec (KEPT: owner "leave War Orders exactly as built" / "everything built stays"; harvest cap is the
 stricter anti-farm reading flagged since slice 5); 3 CI red (conquest-living-world string check; FIXED 2894414); 4 CC10 floor (FIXED);
 5 consumables usable inside the town during a live defense (FIXED: never in the Home Sector, spec §4.3); 6 incursion/ambush bookkeeping
-never pruned, the pilot record grows for life (FIXED: dropped with the unit); 7 /api/conquest/an only weakly rate-limited (FIXED: 6 a
-minute a pilot in PID_RL); 8 the 32-bit loot seed is recoverable from public drops (cosmetics/consumables only; PROPOSAL: a 128-bit or
+never pruned, the pilot record grows for life (FIXED: dropped with the unit); 7 /api/conquest/an only weakly rate-limited (FIXED: 12 a
+minute a pilot in PID_RL; the client sends at most 4 a world exit); 8 the 32-bit loot seed is recoverable from public drops (cosmetics/consumables only; PROPOSAL: a 128-bit or
 HMAC seed and completion rolls keyed on a value drawn at start-mission). The `pts` wallet view passes (own balance only, cannot mint).
 Gameplay/performance (base 79b472d): 1 CI red (FIXED); 2 NEXT chip stuck on refuge / map routes forever (FIXED: routes end on
 arrival); 3 kill pops silent from the second operation on, phantom damage numbers (FIXED: feel state resets per fight, a respawned id
