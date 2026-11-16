@@ -1,8 +1,8 @@
 {
  "engine": "chromium",
  "status": "PASS",
- "setupPrograms": 14,
- "fadedPrograms": 14,
+ "setupPrograms": 10,
+ "fadedPrograms": 11,
  "fadedOpacity": 0.22,
  "ownTankGhostMeshes": 0,
  "physicalDeviceVerified": false

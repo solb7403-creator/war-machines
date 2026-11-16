@@ -40,10 +40,11 @@ async def main(engine):
    await page.wait_for_function('!document.querySelector(".cq-radio")&&Conquest.view?.pending===0',timeout=60000)
    assert await page.evaluate('localStorage.getItem("lunar-conquest-onboarding-v1")==="1"')
    # hold W until the tank has moved (software GL in CI renders a few frames a second and can stall for a second: a fixed 400 ms hold was a flake); dead = nothing in 8 s
-   before=await page.evaluate('Conquest.view.p.x');await page.keyboard.down('w')
-   try:await page.wait_for_function('b=>Conquest.view.p.x>b',arg=before,timeout=8000)
+   # Session 6: the spawn faces north (W drives along z), so the check is the distance driven, not x
+   before=await page.evaluate('[Conquest.view.p.x,Conquest.view.p.z]');await page.keyboard.down('w')
+   try:await page.wait_for_function('b=>Math.hypot(Conquest.view.p.x-b[0],Conquest.view.p.z-b[1])>0.5',arg=before,timeout=8000)
    except Exception:pass
-   await page.keyboard.up('w');assert await page.evaluate('Conquest.view.p.x')>before,'dismissal must enter responsive exploration'
+   await page.keyboard.up('w');assert await page.evaluate('b=>Math.hypot(Conquest.view.p.x-b[0],Conquest.view.p.z-b[1])',before)>0.5,'dismissal must enter responsive exploration'
    await enter();await page.wait_for_function('Conquest.view?.pending===0',timeout=60000);assert await page.locator('.cq-transmission, .cq-radio').count()==0,'dismissal must persist across reload'
    await page.get_by_role('button',name='MORE',exact=True).click();await page.get_by_role('button',name='HELP',exact=True).click();await page.get_by_role('button',name='REPLAY OPENING TRANSMISSION').click()
    body=page.locator('.cq-transmission-scroll');await body.wait_for()
