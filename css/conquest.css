@@ -361,3 +361,7 @@
 .cq-aar-drops{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin:8px 0 2px;font:700 12px/1.3 'Chakra Petch',sans-serif;letter-spacing:.04em}
 .cq-aar-drops b{color:#e8f4ff;margin-right:2px}
 .cq-drop-tag{position:absolute;transform:translate(-50%,-100%);font:800 10px/1 'Chakra Petch',sans-serif;font-style:normal;letter-spacing:.08em;padding:2px 5px;border:1px solid currentColor;border-radius:3px;background:#040b12c8;text-shadow:0 0 5px currentColor;white-space:nowrap}
+/* Session 6 part D: Sortie chain meter, chain line in the after-action */
+.cq-chain{display:block;color:#ffd36b;font:800 10px/1.3 'Chakra Petch',sans-serif;letter-spacing:.06em}
+.cq-chain:empty{display:none}
+.cq-aar-chain{color:#ffd36b;font-weight:700;letter-spacing:.04em}

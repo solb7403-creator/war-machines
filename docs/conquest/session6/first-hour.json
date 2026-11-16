@@ -10,8 +10,8 @@
    "outcome": "victory",
    "seconds": 41,
    "firstKillSeconds": 3,
-   "hullMin": 33,
-   "objective": 92,
+   "hullMin": 40,
+   "objective": 96,
    "kind": "first-clear",
    "cp": 250
   },
@@ -21,7 +21,7 @@
    "seconds": 45,
    "firstKillSeconds": 3,
    "hullMin": 100,
-   "objective": 75,
+   "objective": 79,
    "kind": "first-clear",
    "cp": 250
   },
@@ -30,8 +30,8 @@
    "outcome": "victory",
    "seconds": 42,
    "firstKillSeconds": 3,
-   "hullMin": 59,
-   "objective": 80,
+   "hullMin": 60,
+   "objective": 86,
    "kind": "first-clear",
    "cp": 250
   }

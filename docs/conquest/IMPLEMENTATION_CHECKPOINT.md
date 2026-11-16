@@ -4387,7 +4387,11 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   (1180,1152): re-run it first thing in the next slice. (Done: commit 180d0fe, green.)
 - DONE in slice 3 (Part C, loot v1): see "Part C" below. `dev/tests/conquest-loot.mjs` (10 checks) and
   `dev/tests/conquest-session6-loot.py` (390x700, 320x568, 1366x768 with real keys) PASS; every CI node suite passes locally.
-- NEXT: D (living world + Sortie chain) -> E (War Orders, yield steps, taper, production x3, cap copy) -> F (analytics) ->
+- DONE in slice 4 (Part D, living world + Sortie chain): see "Part D" below; `dev/tests/conquest-living-world.mjs` PASS.
+  OPEN: `conquest-base-progression.mjs` fails its dedicated ratio (3.6x > 3.5) because the chain's +CP compounds in the model;
+  settle it in Part E together with War Orders CP and production x3 against the AUDIT model (`docs/conquest/audit/model/
+  audit-economy.mjs`: regular 60 min/day CC5 day 6, CC10 day 28.8 = the brief's "+-10% of the audit's table").
+- NEXT: E (War Orders, yield steps, taper, production x3, cap copy) -> F (analytics) ->
   browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) -> captures to
   `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).
 - Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
@@ -4488,6 +4492,35 @@ spent (behavior held constant across the change) before the +-10% check.
 - **Economy re-run**: regular Conquest pilot Ilmenite set 10 -> 9 d, Armalcolite 4.3 -> 3.9 wk (-9%), Tranquillityite 2.6 -> 2.5 mo,
   others unchanged; grinder < 6x (vein test PASS). `economy-model.mjs --no-loot` prints the Session 5 table. RESOURCE_ECONOMY §5.6,
   §5.7 (new), §7.2 and spec §4.1/§16 updated.
+
+### Part D — living world + Sortie chain (built, slice 4)
+- **12 patrols** (`ConquestCombat.patrols`): the 4 old routes + `patrol-03..10` (spawn ids 10015-10022), two per sector, loops
+  found by a drivability search (every 1.5 m step advances), every waypoint >=150 m from the Refuge terminal, the spawn, the Command
+  Gate and the first mission. **Decision:** the new routes carry `solo:true` and every hunter has `hunt`; neither joins an
+  operation as a resident (`start-mission` filters them), so no raid, field mission, strike or defense changes difficulty
+  (blueprint §5 "No raid changes difficulty"). Verified: `conquest-raids.mjs` gives the identical result on the Part C commit and
+  now (starter HARD 8/10, starter VETERAN 0/15, Epic VETERAN 13/15, same hull-left list). Without the filter a scripted HARD raid lost.
+- **Hunter packs** (`worker/src/conquest-living.js`, `ConquestCombat.LIVING`): 1 + floor(held sectors / 2) (1,2,2,3,3,4 for 1..6
+  held), anchors in rings 3-4 with searched drivable loops (Ash north, Western, Ridge east, Helium-Ash saddle), 2 interceptors + 1
+  coordinator + a heavy sentinel (rings 3-4); aggro 200 m, leash 300 m from the anchor, never chase into the Heartland (ring 1);
+  spawn and return only out of sight (>350 m), a fallen member returns the next UTC hour (`s.spawns[key].generation` = hour); kills
+  are world kills (points under the hourly limit, patrol-size salvage, mob/elite loot). Ids 10100+.
+- **Vein ambush**: the first GATHER of a vein generation in ring 3+ rolls 35% once (server seed); 20 s of simulated play within 40 m
+  of the vein later two heavy sentinels arrive 65 m away (ids 10200-10201); leaving calls it off. ("20 s into a pull": a single pull
+  channel is 5-16 s, so the clock runs over the pilot's time at the vein.)
+- **Incursion**: `s.calm` = simulated ms without a fight (damage taken or a living enemy within 70 m resets it); at 10 min, three
+  interceptors arrive ~120 m out (ids 10210-10212), never within 60 m of the Refuge terminal or inside the gate zone, and never
+  while the pilot is within 80 m of the terminal or inside the gate zone (it waits). Old incursion / ambush units leave when the
+  pilot is far (dead and >120 m, alive and >400 m, or 10 min old and >120 m).
+- **Sortie chain**: `s.chain={n,at}`; a win finds `links` (wins already chained, 0 if >10 min since the last) and pays +10% CP and
+  salvage per link (max +30%), the raid chest's fragment steps up a rarity at 3 links; points and minerals unchanged. Field,
+  raid, strike, base and sector defense wins all chain. Breaks: death, RECALL, a session opened >60 s after the last request
+  (a reconnect inside a minute keeps it), and the 10-minute lapse. HUD: `.cq-chain` "SORTIE CHAIN ●●○ · NEXT WIN +20% CP · 7:41";
+  after-action line; incursion / ambush ticker lines + the warn sound.
+- **Worker step time** (`docs/conquest/session6/living-world.json`, this machine, relative): one second of play at the spawn
+  ~19 ms (the standard replay profile 20.0 ms vs 18.3 ms on the Part C commit); fighting a full pack beside the Ash Redoubt
+  ~107 ms (25 units within 240 m). Per anchor with / without packs: 71.7/24.7, 32.1/10.6, 65.9/18.6 ms. Only units within 240 m
+  run AI (unchanged), so far packs cost nothing; Workers Paid allows 30 s CPU a request.
 
 ### Plan for B-F (settled; build exactly this)
 - B: sounds via `fx()` in view/app (hit=LW.hit own weapon via 'dealt', kill, boom for other deaths/hazards, dash, shield, claim on

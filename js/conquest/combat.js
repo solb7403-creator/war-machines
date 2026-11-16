@@ -38,7 +38,7 @@ const plateTaken=(st,energy,area)=>(energy?1-(st?.enR||0):1)*(area?1-(st?.arR||0
 const droneDefinition=Object.freeze({altitude:15,takeoffSeconds:1.2,speed:4.2,maxPerCarrier:2,tellSeconds:1.1,burstSeconds:2,cycleSeconds:6});
 const installations=W.installations;
 // Stable authored identities preserve production v1 locks and spawn keys as the region expands.
-const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014});
+const spawnIds=Object.freeze({'redoubt-01:0':10001,'redoubt-01:1':10002,'staging-01:0':10003,'staging-01:1':10004,'patrol-01':10005,'patrol-02':10006,'redoubt-01:2':10007,'redoubt-01:3':10008,'west-depot:0':10009,'west-depot:1':10010,'crossroads:0':10011,'crossroads:1':10012,'refuge-scout':10013,'road-intercept':10014,'patrol-03':10015,'patrol-04':10016,'patrol-05':10017,'patrol-06':10018,'patrol-07':10019,'patrol-08':10020,'patrol-09':10021,'patrol-10':10022});
 const legacyOperations=[
  {...mission,family:'defense',site:'oxygen-01',danger:'STANDARD',firstCp:250,brief:'Protect the oxygen processor through three assault waves.'},
  {id:'convoy',name:'INTERCEPT THE PARASITE CONVOY',family:'convoy',site:'convoy-lane',x:1090,z:944,danger:'STANDARD',firstCp:140,brief:'Intercept the moving armored carrier before it reaches the north exit. Escorts cover its escape.'},
@@ -90,7 +90,15 @@ const baseDefinition=freeze({x:1080,z:1160,radius:30,recipe:{cp:600,alloy:30,bio
 function baseBenefits(tier=0,modules={}){const defense=modules.defense||0,radar=modules.radar||0;return {radius:Math.max(18+6*defense,tier>=5?30:tier>=4?24:0),mitigation:Math.min(.5,defense*.1+(tier>=4?.1:0)+(tier>=5?.05:0)),radar:Math.max(radar,tier>=5?1:0),radarRange:120+100*Math.max(radar,tier>=5?1:0)+(tier>=5?100:0)};}
 // road-intercept patrols the south road just outside the home perimeter, where the Helium, Ash and Crossroads routes leave
 // home (it previously doubled up on the Crossroads garrison camp). It stays >=150 m from the base and Refuge terminal.
-const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]}]);
+const patrols=Object.freeze([{id:'refuge-scout',kind:'raider',x:956,z:1100,route:[[956,1100],[978,1090],[994,1105],[970,1120]]},{id:'road-intercept',kind:'raider',x:1078,z:1008,route:[[1078,1008],[1100,1004],[1104,990],[1082,992]]},{id:'patrol-01',kind:'raider',x:1260,z:970,route:[[1260,970],[1290,970],[1280,1000],[1255,995]]},{id:'patrol-02',kind:'sentinel',x:1300,z:1150,route:[[1300,1150],[1270,1140],[1260,1110],[1290,1120]]},
+ // Session 6 living world (spec §5.6): 4 -> 12 routes, two per sector, authored and drivable (searched loops), every waypoint >=150 m
+ // from the Refuge terminal, the spawn, the Command Gate and the first mission, >=30 m from installations, operations and other routes.
+ // solo: the new routes (like every hunter) never join an operation as residents, so no raid, field mission, strike or defense
+ // changes difficulty (blueprint §5); they wait outside the operation exactly where they were.
+ {id:'patrol-03',solo:true,kind:'breacher',x:1315,z:1068,route:[[1315,1068],[1299,1068],[1299,1052],[1315,1052]]},{id:'patrol-04',solo:true,kind:'raider',x:1353,z:1153,route:[[1353,1153],[1337,1153],[1337,1137],[1353,1137]]},
+ {id:'patrol-05',solo:true,kind:'sentinel',x:1216,z:875,route:[[1216,875],[1200,881],[1194,865],[1210,859]]},{id:'patrol-06',solo:true,kind:'command',x:1317,z:890,route:[[1317,890],[1305,902],[1293,890],[1305,878]]},
+ {id:'patrol-07',solo:true,kind:'raider',x:882,z:975,route:[[882,975],[870,987],[858,975],[870,963]]},{id:'patrol-08',solo:true,kind:'breacher',x:972,z:865,route:[[972,865],[960,877],[948,865],[960,853]]},
+ {id:'patrol-09',solo:true,kind:'command',x:1042,z:812,route:[[1042,812],[1018,822],[1008,798],[1032,788]]},{id:'patrol-10',solo:true,kind:'raider',x:1143,z:808,route:[[1143,808],[1127,808],[1127,792],[1143,792]]}]);
 // HOLD THE OXYGEN LINE, re-staged for the first hour (Session 6; authored, never matched to the pilot's gear). Wave 1: two
 // interceptors strafing the towers 35-40 m in front of the spawn (role 'facility': they shoot the tower, not you; the first kill
 // inside seconds). Wave 2: the heavy sentinel that
@@ -117,6 +125,15 @@ function blocked(x,y,z){
 }
 function lineClear(a,b,allowObjective=false){if(W.installationOccludes?.(a,b))return false;const d=dist(a,b),n=Math.max(1,Math.ceil(d/.5));for(let i=1;i<n;i++){const t=i/n,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(allowObjective&&Math.hypot(x-1150,z-1080)<12)continue;if(blocked(x,y,z))return false;}return true;}
 function enemyStats(a){return {cls:a.cls,gems:[],gemM:{},buffs:[],dmgM:1,critB:0,wdps:a.dps,wshot:a.shot,wpspd:42,wedge:.75};}
+// Session 6 living world (spec §5.6): one authored hunter (hunter packs, incursions, vein ambushes). Archetype stats only, never the
+// pilot's gear. hunt = {r: aggro m, leash: m from home, heart: may chase into the Heartland}; ids are the Worker's fixed ranges.
+function hunter(kind,key,id,x,z,hunt,route=null){const a=archetypes[kind];return {id,key,base:{kind:'hunter',id:key},route,home:{x,z,y:W.groundAt(x,z)+2.2},kind,cls:a.cls,arch:a.arch,x,z,y:W.groundAt(x,z),surface:'ground',hp:a.hp,maxHp:a.hp,heading:0,turret:0,stats:enemyStats(a),decision:(id%10)*.03,cd:2,vx:0,vz:0,role:'guard',hunt};}
+// Hunter pack anchors in the order they open (1 + floor(held sectors / 2), spec §5.6): rings 3-4, away from the field missions.
+const LIVING=Object.freeze({packs:Object.freeze([{x:1270,z:946,route:[[1294,946],[1270,970],[1246,946],[1270,922]]},{x:850,z:870,route:[[866,886],[834,886],[834,854],[866,854]]},{x:1320,z:1175,route:[[1334,1189],[1306,1189],[1306,1161],[1334,1161]]},{x:1170,z:863,route:[[1186,879],[1154,879],[1154,847],[1186,847]]}].map(Object.freeze)),   // searched drivable loops: Ash north, Western, Ridge east, Helium-Ash saddle
+ pack:Object.freeze(['raider','raider','command']),hardExtra:'sentinel',aggro:200,leash:300,regenMs:3600000,
+ ambush:Object.freeze({chance:.35,afterMs:20000,ring:3,stay:40,kinds:Object.freeze(['sentinel','sentinel']),from:65}),
+ incursion:Object.freeze({calmMs:600000,kinds:Object.freeze(['raider','raider','raider']),from:120,refuge:60,fightR:70}),
+ ids:Object.freeze({pack:10100,ambush:10200,incursion:10210}),chain:Object.freeze({windowMs:600000,per:.1,max:3})});
 class Battle {
  constructor(loadout,playerPosition){
  this.snapshot=freeze(JSON.parse(JSON.stringify(loadout)));this.playerStats={...tankOf(this.snapshot,1),buffs:[]};this.playerStats.wshot=(profiles[this.playerStats.wtype]||profiles.pulse).interval;this.engineering=engineeringDefaults();this.heat=0;this.overheated=false;this.combatSpeed=machineSpeed(this.snapshot,this.playerStats);
@@ -213,6 +230,11 @@ class Encounter extends Battle {
  spawnWave(){} // guard lifecycle is independent of mission waves
  choose(e){
   const d=Math.hypot(this.player.x-e.x,this.player.z-e.z),homeDistance=Math.hypot(this.player.x-e.home.x,this.player.z-e.home.z);
+  // Session 6 hunters (packs, incursions, vein ambushes): authored aggro and leash, never gear (spec §5.6). A pack never follows
+  // the pilot into the Heartland (ring 1: the first hour stays the incursions' ground only).
+  if(e.hunt){const H=e.hunt,inHeart=!H.heart&&W.ringAt(this.player.x,this.player.z)===1;if(!inHeart&&(d<H.r||e.hp<e.maxHp)&&homeDistance<H.leash){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
+   else {e.guardReturning=true;if(e.route){e.routeIndex=e.routeIndex||0;if(Math.hypot(e.x-e.route[e.routeIndex][0],e.z-e.route[e.routeIndex][1])<3)e.routeIndex=(e.routeIndex+1)%e.route.length;const [x,z]=e.route[e.routeIndex];e.navGoal={x,z,y:W.groundAt(x,z)+2.2};}else e.navGoal=e.home;super.choose(e);e.guardReturning=false;}
+   const q=W.advance(e,e.vx,e.vz);if(Math.hypot(q.x-e.home.x,q.z-e.home.z)>H.leash)e.vx=e.vz=0;return;}
   const alerted=d<65||e.hp<e.maxHp||(e.radioUntil||0)>this.time;
   if(e.hp<e.maxHp*.2&&d<40&&homeDistance>30){e.guardReturning=true;e.navGoal=e.home;super.choose(e);e.guardReturning=false;return;}
   if(alerted&&homeDistance<100){const objective=this.objective;this.objective=this.player;super.choose(e);this.objective=objective;e.target=this.player;}
@@ -354,5 +376,5 @@ function travelBlock(state,p,enemies,now){if(!state)return 'Online connection re
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
  if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
-root.ConquestCombat=Object.freeze({strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+root.ConquestCombat=Object.freeze({hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

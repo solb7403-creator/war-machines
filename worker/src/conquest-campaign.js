@@ -1,7 +1,8 @@
 // Additive per-pilot campaign ledger. Called inside the existing ETag/CAS transaction.
 import {CONQUEST,RULES} from './sim.gen.js';
 import {earn,activeToday,settleOpKills,discardOpKills} from './conquest-airdrop.js';
-import {cacheMinerals} from './conquest-economy.js';
+import {cacheMinerals,chained} from './conquest-economy.js';
+import {chainWin,chainBonus} from './conquest-living.js';
 import {roll,bind,empty} from './conquest-loot.js';
 import {plotSync,legacyModule,upgrade as plotUpgrade} from './conquest-plot.js';
 const D=CONQUEST.Combat.baseDefinition,DAY=86400000;
@@ -54,12 +55,12 @@ export function capture(s,site,now){campaign(s,now);s.territory[site]={...s.terr
 
 export function defenseOutcome(s,outcome,now){
  const d=s.base.defense;if(!d.active)return;d.active=false;d.alertAt=0;d.nextAt=now+1200000;
- const won=outcome==='victory',reward=CONQUEST.Combat.operations['base-defense'].reward;let ptsRaw=0;if(won){discardOpKills(s);ptsRaw=earn(s,'defense',RULES.CQ_PTS.defense,now,{op:true});}else settleOpKills(s,now);if(won){d.wins++;s.ledger.cp+=reward.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=reward[k]||0;s.reputation+=60;s.campaignScore+=15;s.achievements['base-defender']=s.achievements['base-defender']||now;d.damage=Math.max(0,d.damage-20);}
+ const won=outcome==='victory',reward=CONQUEST.Combat.operations['base-defense'].reward;let ptsRaw=0;if(won){discardOpKills(s);ptsRaw=earn(s,'defense',RULES.CQ_PTS.defense,now,{op:true});}else settleOpKills(s,now);const links=won?chainWin(s,now):0,pay=chained(reward,links);if(won){d.wins++;s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=pay[k]||0;s.reputation+=60;s.campaignScore+=15;s.achievements['base-defender']=s.achievements['base-defender']||now;d.damage=Math.max(0,d.damage-20);}
  else d.damage=Math.min(100,d.damage+25);
  const mn=won?cacheMinerals(s,'defense','base-defense:'+(s.attempt||0)+':'+now):{};
  // Session 6: a town defense held live also rolls 6% two consumables + 4% an uncommon fragment (keyed by the attempt).
  const loot=won?bind(s,roll(s,'defense','base:'+(s.attempt|0)),now,{where:'town defense'}):{};
- d.report={outcome,at:now,ptsRaw,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),cp:won?reward.cp:0,alloy:won?reward.alloy:0,biomass:won?reward.biomass:0,helium:won?reward.helium:0,reputation:won?60:0,stolen:0,damage:d.damage};s.notice={kind:won?'base-defended':'base-damaged',...d.report};
+ d.report={outcome,at:now,ptsRaw,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),cp:won?pay.cp:0,alloy:won?pay.alloy:0,biomass:won?pay.biomass:0,helium:won?pay.helium:0,reputation:won?60:0,stolen:0,damage:d.damage,...(links?{chain:{links,bonus:chainBonus(links)}}:{})};s.notice={kind:won?'base-defended':'base-damaged',...d.report};
 }
 export function contest(s,site){if(!site)return;s.territory[site]={...s.territory[site],owner:s.territory[site]?.owner||'parasites',status:'contested'};}
 export function failedContest(s,site,now){const t=s.territory[site];if(!t||t.status!=='contested')return;t.owner='parasites';t.status='recaptured';t.lostAt=now;t.awaitingReinforcements=true;for(const e of Object.values(s.battle.enemies||{}))if(e.base?.id===site&&s.spawns[e.key])s.spawns[e.key].generation=Math.floor(now/DAY)-1;}
@@ -70,9 +71,9 @@ export function sectorDefenseOutcome(s,outcome,now){
  const active=s.sectorDefense;if(!active?.active)return s.territory[active?.sector]?.defenseReport;active.active=false;
  const sector=active.sector,t=s.territory[sector],won=outcome==='victory',reward=CONQUEST.Combat.operations['sector-defense-'+sector].reward;
  let ptsRaw=0;if(won){discardOpKills(s);ptsRaw=earn(s,'defense',RULES.CQ_PTS.defense,now,{op:true});}else settleOpKills(s,now);
- if(won){capture(s,sector,now);s.territory[sector].defenseWins=(t.defenseWins||0)+1;s.ledger.cp+=reward.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=reward[k]||0;s.reputation+=40;s.campaignScore+=12;s.achievements['defended-'+sector]=s.achievements['defended-'+sector]||now;}
+ const links=won?chainWin(s,now):0,pay=chained(reward,links);if(won){capture(s,sector,now);s.territory[sector].defenseWins=(t.defenseWins||0)+1;s.ledger.cp+=pay.cp;for(const k of ['alloy','biomass','helium'])s.ledger.cargo[k]+=pay[k]||0;s.reputation+=40;s.campaignScore+=12;s.achievements['defended-'+sector]=s.achievements['defended-'+sector]||now;}
  else failedContest(s,sector,now);
  const mn=won?cacheMinerals(s,'defense','sector-defense:'+sector+':'+(s.attempt||0)+':'+now):{};
  const loot=won?bind(s,roll(s,'defense','sector:'+sector+':'+(s.attempt|0)),now,{where:'sector defense'}):{};
- const receipt={kind:'sector-defense',sector,outcome,at:now,ptsRaw,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),cp:won?reward.cp:0,alloy:won?reward.alloy:0,biomass:won?reward.biomass:0,helium:won?reward.helium:0,reputation:won?40:0,stolen:0};s.territory[sector].defenseReport=receipt;s.notice=receipt;return receipt;
+ const receipt={kind:'sector-defense',sector,outcome,at:now,ptsRaw,...(Object.keys(mn).length?{mn}:{}),...(empty(loot)&&!loot.pieces?{}:{loot}),cp:won?pay.cp:0,alloy:won?pay.alloy:0,biomass:won?pay.biomass:0,helium:won?pay.helium:0,reputation:won?40:0,stolen:0,...(links?{chain:{links,bonus:chainBonus(links)}}:{})};s.territory[sector].defenseReport=receipt;s.notice=receipt;return receipt;
 }

@@ -2,8 +2,9 @@
 // claim and plot functions on the Worker clock, scripted ordinary play. It answers "neither instant nor a wall": time to CC2,
 // CC5 and CC10 in the first hour, first day and first weeks. Explicit assumptions (estimates, not a human playtest):
 //  - one completed sortie every 90 s of play (field missions for the first 75 min, then the authored raids in rotation);
-//  - all CP goes to the first base (as conquest-first-base); after it, half of all CP goes to engineering and other sinks,
-//    half to the base; materials all to the base;
+//  - all CP goes to the town until 2,550 CP are spent on it (the old Command Center 1 claim: Session 6 split the claim, and this
+//    trigger keeps the pilot's behaviour the same across that change); after it, half of all CP goes to engineering and other
+//    sinks, half to the base; materials all to the base;
 //  - each day: one session at 18:00 UTC (regular 45 min, dedicated 150 min split in two sessions), Daily Base Yield and plot
 //    production collected at its start; the builder is given the next job after every sortie (Command Center first, then the
 //    cheapest affordable building or upgrade), so real timers run while the pilot is away.
@@ -15,11 +16,12 @@ const {campaign,baseAction}=await import('../../worker/src/conquest-campaign.js'
 const {plotAction}=await import('../../worker/src/conquest-plot.js');
 const DAY=86400000,start=Date.UTC(2026,10,9,0);
 const at=(x,z)=>({x,z,y:W.groundAt(x,z),surface:'ground'});
-function run(profile){const s=createState(R.STOCK_L,start),hit={},legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,other=0;
+function run(profile){const s=createState(R.STOCK_L,start),hit={},legacy=['oxygen-line','relay','recon','convoy','rescue','redoubt'];let serial=0,played=0,other=0,spent=0;
  const afford=c=>Object.entries(c||{}).every(([k,n])=>k==='cp'?s.ledger.cp>=n:P.MNS.includes(k)?true:s.ledger.banked[k]>=n);
  const mark=(k,now)=>{if(hit[k]===undefined)hit[k]={day:+((now-start)/DAY).toFixed(2),playMin:played};};
  const atGate=()=>{s.position=at(C.baseDefinition.x,C.baseDefinition.z);s.battle.enemies=[];};
- const build=now=>{campaign(s,now);if(!s.base.tier){if(afford(C.baseDefinition.recipe)){atGate();baseAction(s,{action:'build-base',plot:{site:'crater'}},now);mark('CC1',now);}return;}
+ const build=now=>{const cp0=s.ledger.cp;try{build0(now);}finally{spent+=Math.max(0,cp0-s.ledger.cp);}};
+ const build0=now=>{campaign(s,now);if(!s.base.tier){if(afford(C.baseDefinition.recipe)){atGate();baseAction(s,{action:'build-base',plot:{site:'crater'}},now);mark('CC1',now);}return;}
   const p=s.plot;for(const k of [2,3,5,7,9,10])if(p.cc>=k)mark('CC'+k,now);if(p.job)return;atGate();
   if(p.cc<P.CC.max&&afford(P.costOf('cc',p.cc+1))){try{plotAction(s,{action:'plot-upgrade',plot:{id:'cc'}},now,{bmn:{il:99,ar:99}});return;}catch(e){}}
   // cheapest legal build or upgrade the pilot can afford (turrets capped at 6 in this model)
@@ -30,7 +32,7 @@ function run(profile){const s=createState(R.STOCK_L,start),hit={},legacy=['oxyge
  for(let day=0;day<120;day++){for(const [h,mins] of profile.sessions){let now=start+day*DAY+h*3600000;
   if(s.base.tier){atGate();try{baseAction(s,{action:'base-claim'},now);}catch(e){}try{plotAction(s,{action:'plot-collect',plot:{}},now);}catch(e){}}build(now);
   for(let m=0;m<mins;m+=1.5){now+=90000;played+=1.5;const id=played<=75?legacy[serial%legacy.length]:C.raidIds[serial%C.raidIds.length];serial++;
-   s.mission=id;s.attempt=serial;s.featuredMission=false;const cp0=s.ledger.cp;missionReward(s,now);s.mission=null;const half=s.base.tier?Math.floor((s.ledger.cp-cp0)/2):0;s.ledger.cp-=half;other+=half;
+   s.mission=id;s.attempt=serial;s.featuredMission=false;const cp0=s.ledger.cp;missionReward(s,now);s.mission=null;const half=spent>=2550?Math.floor((s.ledger.cp-cp0)/2):0;s.ledger.cp-=half;other+=half;
    s.position=at(1174,1168);bank(s,now);build(now);}}
   build(start+(day+1)*DAY-1000);if(hit.CC10&&day>hit.CC10.day+2)break;}
  return {profile:profile.label,hit,finalCC:s.plot?.cc,buildings:s.plot?Object.values(s.plot.b).map(b=>b.t+(b.t==='cc'?s.plot.cc:b.l)).join(' '):'',power:s.plot?.power,otherSinksCP:other};}
