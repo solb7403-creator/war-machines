@@ -4394,9 +4394,16 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   Raid difficulty re-checked after the fix: identical (starter HARD 8/10, VETERAN 0/15, Epic VETERAN 13/15, same hull list).
   Pre-existing on main, NOT fixed (out of scope, report it): worker/src/conquest-plot.js line ~76 has code after a `//` comment
   ("re-blending a damaged wall keeps its damage (REPAIR fixes it)for(...)"): the wall-stock deduction on that path never runs.
-- NEXT:
-  browser journeys (phone 390x700/390x844/320x568 AND desktop 1366x768/1920x1080, real keys) -> captures to
-  `docs/conquest/session6/` -> 2 critic rounds max -> 2 independent reviewers -> release (pre-approved).
+- NEXT (in order; no PR exists yet, CI runs on pull_request only):
+  1. Browser journey test `dev/tests/conquest-session6-journey.py` (fixture server dev/tests/conquest-server.mjs; options inv/drops/
+     noEnemies added in slice 3): brand-new account, real keys: radio -> first fight (follow the arrow) -> kill pop + loot flyout ->
+     bank -> SCAN -> Starter Vein -> plate -> field missions -> CLAIM YOUR TOWN (<= 22 simulated min), a consumable used, a War Order
+     claimed, hub at 390x844; screens fit/scroll at 390x700, 390x844, 320x568 AND desktop 1366x768, 1920x1080 (real keyboard/mouse).
+     Existing: dev/tests/conquest-session6-loot.py PASS (3 sizes), conquest-session6-feel.py, conquest-onboarding.py.
+  2. Captures to docs/conquest/session6/ (minute 0, kill pop, loot card, after-action with drops, War Orders card, yield steps,
+     capped HUD, 320/390 pairs, desktop). 3. At most 2 critic rounds. 4. Two independent read-only reviewers (security/economy +
+     gameplay/performance), each with every owner rule pass/fail. 5. PR -> CI green -> merge -> deploy Worker + Pages -> verify
+     /pvp/health and version.json = repo -> record -> ROADMAP row 6 -> final report (plain words; the ladder speed-up is item 1).
 - Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
   `chromium`); the wtest suites need `npm install --prefix worker --no-audit --no-fund --package-lock=false`; never run node suites
   in parallel when you care about timing files (`docs/conquest/session5b/town-rules.json` records ms: restore it with git checkout).
