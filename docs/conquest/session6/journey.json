@@ -1,7 +1,7 @@
 {
  "scope": "Session 6 first hour, end to end in the shipped client (Chromium) against the real Worker reducer on a disposable local DB",
  "source": "working tree",
- "started": "2026-11-16T08:12:17",
+ "started": "2026-11-16T08:31:40",
  "runs": {
   "journey-390x844": {
    "size": "390x844",
@@ -30,7 +30,7 @@
    "killPop": "DESTROYED \u00b7 INTERCEPTOR",
    "firstAAR": {
     "title": "OXYGEN LINE SECURED",
-    "stats": "OPERATION SECURED \u00b7 6 HOSTILES DESTROYED \u00b7 0:47 \u00b7 HULL 29%",
+    "stats": "OPERATION SECURED \u00b7 6 HOSTILES DESTROYED \u00b7 0:47 \u00b7 HULL 21%",
     "kicker": "FIRST CLEAR \u00b7 VERIFIED BY COMMAND",
     "drops": [],
     "dropsRow": false,
@@ -54,7 +54,7 @@
      "wantId": null,
      "chip": "BANK YOUR SALVAGE",
      "routeTarget": null,
-     "sim": 1.24
+     "sim": 1.17
     },
     {
      "step": "coach-scan",
@@ -62,7 +62,7 @@
      "wantId": null,
      "chip": "SCAN FOR ORE",
      "routeTarget": null,
-     "sim": 1.46
+     "sim": 1.38
     },
     {
      "step": "coach-gather",
@@ -70,7 +70,7 @@
      "wantId": "starter-01",
      "chip": "GATHER THE STARTER VEIN",
      "routeTarget": null,
-     "sim": 1.53
+     "sim": 1.45
     },
     {
      "step": "coach-bank2",
@@ -78,15 +78,15 @@
      "wantId": null,
      "chip": "BANK THE FERRITE",
      "routeTarget": null,
-     "sim": 1.69
+     "sim": 1.6
     },
     {
      "step": "coach-more",
      "want": "2 MORE FERRITE",
-     "wantId": "fe-33",
+     "wantId": "fe-14",
      "chip": "2 MORE FERRITE",
      "routeTarget": null,
-     "sim": 1.74
+     "sim": 1.64
     },
     {
      "step": "coach-bank2",
@@ -94,7 +94,7 @@
      "wantId": null,
      "chip": "BANK THE FERRITE",
      "routeTarget": null,
-     "sim": 1.98
+     "sim": 1.82
     },
     {
      "step": "coach-plate",
@@ -102,57 +102,58 @@
      "wantId": null,
      "chip": "FABRICATE YOUR FIRST PLATE",
      "routeTarget": null,
-     "sim": 2.1
+     "sim": 1.87
+    },
+    {
+     "step": "board",
+     "want": "SIGNAL RECOVERY",
+     "chip": "SIGNAL RECOVERY",
+     "routeTarget": null,
+     "sim": 1.9
+    },
+    {
+     "step": "board",
+     "want": "INTERCEPT THE PARASITE CONVOY",
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "routeTarget": null,
+     "sim": 3.32
+    },
+    {
+     "step": "board",
+     "want": "CLAIM YOUR TOWN",
+     "chip": "CLAIM YOUR TOWN",
+     "routeTarget": null,
+     "sim": 5.16
     }
    ],
-   "atFailure": {
-    "p": {
-     "x": 1175.3295097463233,
-     "z": 1162.3455020963677,
-     "y": -2.4976083660223294,
-     "surface": "ground"
-    },
-    "yaw": 0,
-    "connected": true,
-    "pending": 4,
-    "chip": {
-     "title": "SIGNAL RECOVERY",
-     "route": "STANDARD \u00b7 FIRST CLEAR \u00b7 TOWN 394 / 600 CP",
-     "dist": "231 m \u00b7 OBJECTIVE",
-     "reward": "450 PTS \u00b7 100 CP",
-     "foe": false
-    },
-    "mission": null,
-    "bstate": "active",
-    "hp": 1700,
-    "max": 1717,
-    "cp": 394,
-    "banked": {
-     "alloy": 45,
-     "biomass": 30,
-     "helium": 8
-    },
-    "cargo": {
-     "alloy": 0,
-     "biomass": 0,
-     "helium": 0
-    },
-    "mn": {},
-    "completed": [
-     "oxygen-line"
-    ],
-    "firsts": {
-     "bank": 1794816837553
-    },
-    "found": [
-     "starter-01"
-    ],
-    "deposits": {
-     "starter-01": 1
-    },
+   "plate": {
+    "fitted": true,
+    "blocked": null,
     "wallet": {
      "fe": 2,
-     "il": 1,
+     "il": 0,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "pts": 350
+   },
+   "final": {
+    "cp": 311,
+    "banked": {
+     "alloy": 91,
+     "biomass": 65,
+     "helium": 20
+    },
+    "completed": [
+     "oxygen-line",
+     "recon",
+     "convoy"
+    ],
+    "wallet": {
+     "fe": 9,
+     "il": 2,
      "ar": 0,
      "tq": 0,
      "se": 0,
@@ -164,130 +165,221 @@
      0,
      0
     ],
-    "pts": 350,
-    "base": 0,
-    "scanAt": 1794816840095,
-    "ap": [
-     1,
-     0,
-     0,
-     0
-    ],
-    "coach": null,
-    "board": {
-     "name": "SIGNAL RECOVERY",
-     "coach": null,
-     "kind": null,
-     "id": "recon",
-     "x": 950,
-     "z": 1110,
-     "radius": 45,
-     "act": 45
-    },
-    "route": null,
-    "near": null,
-    "btn": {
-     "access": null,
-     "supply": "REFUGE SUPPLY",
-     "scan": "SCAN",
-     "gather": null,
-     "base": null,
-     "recover": null,
-     "item": null
-    },
-    "dialog": "REFUGE SUPPLY",
-    "result": false,
-    "drops": [
-     {
-      "id": "m:20773:wave:1:0",
-      "x": 1172,
-      "z": 1098,
-      "y": 14.49006146225436,
-      "label": "FRAGMENT",
-      "r": 0,
-      "loot": true,
-      "d": 64.43158600550292
-     }
-    ],
-    "hostile": null,
+    "pts": 1570,
+    "base": 1,
     "wo": [
-     {
-      "id": "kills15",
-      "kind": "daily",
-      "n": 6,
-      "goal": 15,
-      "done": false,
-      "claimed": false
-     },
-     {
-      "id": "sectors3",
-      "kind": "daily",
-      "n": 1,
-      "goal": 3,
-      "done": false,
-      "claimed": false
-     },
      {
       "id": "bank60",
       "kind": "daily",
-      "n": 45,
+      "n": 60,
       "goal": 60,
-      "done": false,
+      "done": true,
+      "claimed": false
+     },
+     {
+      "id": "kills15",
+      "kind": "daily",
+      "n": 15,
+      "goal": 15,
+      "done": true,
+      "claimed": false
+     },
+     {
+      "id": "mine12",
+      "kind": "daily",
+      "n": 12,
+      "goal": 12,
+      "done": true,
       "claimed": false
      },
      {
       "id": "ops15",
       "kind": "weekly",
-      "n": 1,
+      "n": 3,
       "goal": 15,
       "done": false,
       "claimed": false
      }
     ],
     "inv": {
-     "repair": 0,
+     "repair": 1,
      "shield": 0,
      "scanner": 0,
      "decoy": 0
-    },
-    "anp": 126900,
-    "captured": "journey-failure-390x844.png"
+    }
    },
+   "chipAgreement": {
+    "match": 946,
+    "other": 0,
+    "samples": []
+   },
+   "missions": [
+    {
+     "op": "oxygen-line",
+     "result": "victory",
+     "seconds": 48.8
+    },
+    {
+     "op": "recon",
+     "result": "victory",
+     "seconds": 27.0,
+     "button": "ACT \u00b7 SIGNAL RECOVERY",
+     "attempt": 1,
+     "sim": 2.7591666666666668
+    },
+    {
+     "op": "convoy",
+     "result": "victory",
+     "seconds": 30.8,
+     "button": "ACT \u00b7 INTERCEPT THE PARASITE CONVOY",
+     "attempt": 1,
+     "sim": 4.455
+    }
+   ],
+   "deaths": [],
+   "loot": {
+    "flyouts": [
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794817972134
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794817975426
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794817976469
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794817982894
+     },
+     {
+      "t": "REPAIR",
+      "c": "rgb(95, 224, 138)",
+      "at": 1794818087985
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818088848
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818091094
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818191144
+     },
+     {
+      "t": "ILMENITE",
+      "c": "rgb(95, 224, 138)",
+      "at": 1794818193342
+     },
+     {
+      "t": "FERRITE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818194404
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818196504
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818199767
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794818208317
+     }
+    ],
+    "cards": [],
+    "aarDrops": []
+   },
+   "lootSeen": true,
+   "tickerSample": [
+    "DESTROYED \u00b7 COORDINATOR",
+    "DESTROYED \u00b7 SABOTEUR",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "+450 AIRDROP POINTS SECURED",
+    "+45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "SALVAGE SECURED \u00b7 3 FERRITE TO YOUR WALLET",
+    "HULL REPAIRED",
+    "SCAN 150 M \u00b7 6 NEW VEINS ON YOUR MAP",
+    "+35 FERRITE (CARRIED) \u00b7 +100 AIRDROP POINTS PENDING",
+    "+100 AIRDROP POINTS SECURED",
+    "+4 FERRITE (CARRIED) \u00b7 VEIN 8/12 \u00b7 +100 AIRDROP POINTS PENDING",
+    "+100 AIRDROP POINTS SECURED",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "DESTROYED \u00b7 INTERCEPTOR \u00d72",
+    "+35 AIRDROP POINTS SECURED",
+    "+450 AIRDROP POINTS SECURED",
+    "REPAIR KIT \u00b7 +7 CP \u00b7 +2 ALLOY \u00b7 +1 BIOMASS",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "SALVAGE SECURED \u00b7 3 FERRITE \u00b7 1 ILMENITE TO YOUR WALLET",
+    "HULL REPAIRED",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "+70 AIRDROP POINTS SECURED",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "DESTROYED \u00b7 COORDINATOR",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "DESTROYED \u00b7 COORDINATOR",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "+575 AIRDROP POINTS SECURED",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+1 ILMENITE (CARRIED) \u00b7 +45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "+1 FERRITE (CARRIED) \u00b7 +18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "DESTROYED \u00b7 COORDINATOR",
+    "+45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+7 CP \u00b7 +2 ALLOY \u00b7 +1 BIOMASS",
+    "+90 AIRDROP POINTS SECURED",
+    "SALVAGE SECURED \u00b7 4 FERRITE \u00b7 1 ILMENITE TO YOUR WALLET",
+    "HULL REPAIRED"
+   ],
    "moments": {
     "radio": {
      "sim": 0.09,
-     "real": 7.1
+     "real": 7.7
     },
     "first-fight": {
-     "sim": 0.11,
-     "real": 7.8,
+     "sim": 0.12,
+     "real": 8.4,
      "op": "oxygen-line"
     },
     "first-kill": {
-     "sim": 0.14,
-     "real": 10.9,
+     "sim": 0.16,
+     "real": 11.3,
      "op": "oxygen-line"
     },
     "first-loot": {
      "sim": 0.97,
-     "real": 61.7,
+     "real": 62.2,
      "label": "SALVAGE",
      "rarity": 0,
      "loot": false,
      "cp": 45
     },
-    "first-loot-item": {
-     "sim": 1.22,
-     "real": 76.4,
-     "label": "ILMENITE",
-     "rarity": 1
-    },
     "first-bank": {
-     "sim": 1.46,
-     "real": 90.9,
+     "sim": 1.38,
+     "real": 86.5,
      "wallet": {
       "fe": 3,
-      "il": 1,
+      "il": 0,
       "ar": 0,
       "tq": 0,
       "se": 0,
@@ -296,8 +388,8 @@
      "claimRows": 0
     },
     "first-scan": {
-     "sim": 1.51,
-     "real": 94.8,
+     "sim": 1.43,
+     "real": 89.9,
      "found": [
       "starter-01"
      ],
@@ -305,813 +397,878 @@
      "chip": "GATHER THE STARTER VEIN"
     },
     "starter-vein": {
-     "sim": 1.69,
-     "real": 105.3,
+     "sim": 1.59,
+     "real": 99.2,
      "carried": 35
     },
     "ferrite-banked": {
-     "sim": 1.74,
-     "real": 108.4,
+     "sim": 1.64,
+     "real": 102.2,
      "wallet": {
       "fe": 38,
-      "il": 1,
+      "il": 0,
       "ar": 0,
       "tq": 0,
       "se": 0,
       "mh": 0
      },
-     "claimRows": 0
+     "claimRows": 1
     },
     "second-ferrite": {
-     "sim": 1.96,
-     "real": 122.4,
+     "sim": 1.8,
+     "real": 113.1,
      "carried": 4
+    },
+    "first-plate": {
+     "sim": 1.88,
+     "real": 119.2,
+     "button": "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS",
+     "muted": false,
+     "wallet": {
+      "fe": 42,
+      "il": 0,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     },
+     "clientPts": 650,
+     "need": {
+      "fe": 40,
+      "pts": 300
+     },
+     "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+     "toast": "FRONT Ferrite plate fabricated",
+     "clientPtsAfter": 350,
+     "hullBefore": 1700,
+     "hullAfter": 1717
+    },
+    "first-loot-item": {
+     "sim": 2.82,
+     "real": 177.7,
+     "label": "REPAIR",
+     "rarity": 1
+    },
+    "field-2": {
+     "sim": 3.32,
+     "real": 207.7,
+     "wallet": {
+      "fe": 5,
+      "il": 1,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     }
+    },
+    "field-3": {
+     "sim": 5.16,
+     "real": 320.1,
+     "wallet": {
+      "fe": 9,
+      "il": 2,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     }
+    },
+    "first-town": {
+     "sim": 5.31,
+     "real": 331.3,
+     "need": "600/600 CP \u00b7 30/30 ALLOY \u00b7 15/15 BIOMASS \u00b7 2/2 HELIUM-3 \u00b7 you start with 200 wall composite",
+     "cp": 311,
+     "banked": {
+      "alloy": 91,
+      "biomass": 65,
+      "helium": 20
+     }
     }
    },
    "trace": [
     {
-     "op": "oxygen-line",
-     "t": 18.4,
-     "hp": 1509.56,
+     "op": "convoy",
+     "t": 0.4,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1100,
+      972
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 123m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 0.4,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1100,
+      972
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 123m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.0,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.1,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.2,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.2,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.3,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.4,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 3.4,
+     "hp": 1717,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 6.0,
+     "hp": 1563.3275000000003,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.0,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1092,
+      972
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.1,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1092,
+      972
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.2,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1092,
+      972
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.2,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      971
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.3,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      971
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.4,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      971
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 9.5,
+     "hp": 1511.0875000000005,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1091,
+      971
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.1,
+     "hp": 1399.3362500000007,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 173 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.1,
+     "hp": 1399.3362500000007,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 173 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.2,
+     "hp": 1399.3362500000007,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 173 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.3,
+     "hp": 1399.3362500000007,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 173 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.3,
+     "hp": 1399.3362500000007,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 110 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.4,
+     "hp": 1399.3362500000007,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 110 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.5,
+     "hp": 1360.4662500000009,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 110 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 15.1,
+     "hp": 1253.573750000001,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 15 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 15.1,
+     "hp": 1253.573750000001,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 15 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 15.2,
+     "hp": 1253.573750000001,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 15 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 15.3,
+     "hp": 1253.573750000001,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 15 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 15.3,
+     "hp": 1253.573750000001,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 15 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 15.4,
+     "hp": 1253.573750000001,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 15 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 18.0,
+     "hp": 1078.6587500000014,
+     "alive": 2,
+     "kills": 2,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 18.1,
+     "hp": 1078.6587500000014,
+     "alive": 2,
+     "kills": 2,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 18.2,
+     "hp": 1078.6587500000014,
      "alive": 1,
      "kills": 2,
      "p": [
-      1122,
-      1122
+      1090,
+      970
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
-     "t": 18.4,
-     "hp": 1509.56,
+     "op": "convoy",
+     "t": 21.0,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1122,
-      1122
+      1084,
+      972
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 21.1,
-     "hp": 1319.12,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1112,
-      1122
+      1084,
+      972
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 21.1,
-     "hp": 1319.12,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1112,
-      1122
+      1084,
+      972
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 21.2,
-     "hp": 1319.12,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1112,
-      1122
+      1084,
+      971
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
-     "t": 21.2,
-     "hp": 1319.12,
-     "alive": 1,
-     "kills": 2,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 21.3,
-     "hp": 1319.12,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1112,
-      1122
+      1084,
+      971
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
+     "t": 21.3,
+     "hp": 1019.7412500000016,
+     "alive": 1,
+     "kills": 3,
+     "p": [
+      1085,
+      971
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
      "t": 21.4,
-     "hp": 1128.6799999999998,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1112,
-      1122
+      1085,
+      970
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
-     "t": 21.4,
-     "hp": 1128.6799999999998,
+     "op": "convoy",
+     "t": 21.5,
+     "hp": 1019.7412500000016,
      "alive": 1,
-     "kills": 2,
+     "kills": 3,
      "p": [
-      1112,
-      1122
+      1085,
+      970
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
-     "t": 27.0,
-     "hp": 776.3659999999998,
+     "op": "convoy",
+     "t": 24.1,
+     "hp": 1006.1367500000017,
      "alive": 1,
-     "kills": 2,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      959
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
+     "t": 24.2,
+     "hp": 1006.1367500000017,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      959
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 24.2,
+     "hp": 1006.1367500000017,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      958
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 24.3,
+     "hp": 1006.1367500000017,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      958
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 24.4,
+     "hp": 1006.1367500000017,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      958
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 24.4,
+     "hp": 1006.1367500000017,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      957
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 24.5,
+     "hp": 1006.1367500000017,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      957
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
      "t": 27.1,
-     "hp": 776.3659999999998,
+     "hp": 978.7992500000018,
      "alive": 1,
-     "kills": 2,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
+     "t": 27.1,
+     "hp": 978.7992500000018,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      957
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
      "t": 27.2,
-     "hp": 776.3659999999998,
+     "hp": 978.7992500000018,
      "alive": 1,
-     "kills": 2,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
-     "t": 27.2,
-     "hp": 776.3659999999998,
-     "alive": 1,
-     "kills": 2,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 27.3,
-     "hp": 776.3659999999998,
-     "alive": 0,
-     "kills": 2,
+     "hp": 978.7992500000018,
+     "alive": 1,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 0 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
+     "t": 27.4,
+     "hp": 964.2192500000019,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      957
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.4,
+     "hp": 964.2192500000019,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      957
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.5,
+     "hp": 964.2192500000019,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1085,
+      957
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
      "t": 30.1,
-     "hp": 743.0389999999998,
+     "hp": 927.7692500000021,
      "alive": 0,
-     "kills": 3,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 0 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 0 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 30.1,
-     "hp": 743.0389999999998,
+     "hp": 927.7692500000021,
      "alive": 0,
-     "kills": 3,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 0 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 0 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 30.2,
-     "hp": 743.0389999999998,
+     "hp": 927.7692500000021,
      "alive": 0,
-     "kills": 3,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 2/3 \u00b7 0 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 0 ESCORTS"
     },
     {
-     "op": "oxygen-line",
+     "op": "convoy",
      "t": 30.3,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.0,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.1,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.2,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.2,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.3,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.4,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.4,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 33.5,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.0,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.1,
-     "hp": 743.0389999999998,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.1,
-     "hp": 709.0239999999999,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.2,
-     "hp": 709.0239999999999,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.3,
-     "hp": 709.0239999999999,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.3,
-     "hp": 709.0239999999999,
-     "alive": 3,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 3 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.4,
-     "hp": 709.0239999999999,
-     "alive": 2,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 36.5,
-     "hp": 709.0239999999999,
-     "alive": 2,
-     "kills": 3,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.0,
-     "hp": 660.4290000000001,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.1,
-     "hp": 660.4290000000001,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.2,
-     "hp": 660.4290000000001,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.2,
-     "hp": 660.4290000000001,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.3,
-     "hp": 638.5590000000002,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.4,
-     "hp": 638.5590000000002,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.4,
-     "hp": 638.5590000000002,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 39.5,
-     "hp": 638.5590000000002,
-     "alive": 2,
-     "kills": 4,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 2 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.1,
-     "hp": 594.8190000000002,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.1,
-     "hp": 594.8190000000002,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.2,
-     "hp": 594.8190000000002,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.3,
-     "hp": 594.8190000000002,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.3,
-     "hp": 594.8190000000002,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.4,
-     "hp": 572.9490000000003,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 42.5,
-     "hp": 572.9490000000003,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.1,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.1,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.2,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.2,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.3,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.4,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 45.4,
-     "hp": 536.4990000000005,
-     "alive": 1,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 1 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 48.3,
-     "hp": 485.4690000000005,
+     "hp": 927.7692500000021,
      "alive": 0,
-     "kills": 5,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 0 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 0 ESCORTS"
     },
     {
-     "op": "oxygen-line",
-     "t": 48.3,
-     "hp": 485.4690000000005,
+     "op": "convoy",
+     "t": 30.3,
+     "hp": 927.7692500000021,
      "alive": 0,
-     "kills": 5,
+     "kills": 4,
      "p": [
-      1112,
-      1122
+      1085,
+      957
      ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 0 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 48.4,
-     "hp": 485.4690000000005,
-     "alive": 0,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 0 ATTACKERS"
-    },
-    {
-     "op": "oxygen-line",
-     "t": 48.5,
-     "hp": 485.4690000000005,
-     "alive": 0,
-     "kills": 5,
-     "p": [
-      1112,
-      1122
-     ],
-     "chip": "HOLD THE OXYGEN LINE",
-     "wave": "WAVE 3/3 \u00b7 0 ATTACKERS"
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 0 ESCORTS"
     }
    ],
    "pageErrors": [],
-   "realSeconds": 201,
+   "realSeconds": 343,
    "checks": {
     "minute0-radio": {
      "pass": true,
@@ -1155,8 +1312,8 @@
      "pass": true,
      "detail": {
       "result": "victory",
-      "seconds": 48.9,
-      "hp": 485.4690000000005,
+      "seconds": 48.8,
+      "hp": 364.2119999999996,
       "alive": 0,
       "kills": 6,
       "chip": "HOLD THE OXYGEN LINE",
@@ -1187,12 +1344,161 @@
       }
      }
     },
-    "journey-exception": {
-     "pass": false,
+    "first-plate-raises-hull": {
+     "pass": true,
      "detail": {
-      "error": "TimeoutError('Page.wait_for_function: Timeout 60000ms exceeded.')",
-      "trace": "Traceback (most recent call last):\n  File \"/home/user/war-machines/dev/tests/conquest-session6-journey.py\", line 478, in journey\n    ok,info=await fabricate(P,R)\n            ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/user/war-machines/dev/tests/conquest-session6-journey.py\", line 571, in fabricate\n    await page.wait_for_function('Conquest.view.pending===0',timeout=60000);await page.wait_for_timeout(800)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/site-packages/playwright/async_api/_generated.py\", line 11479, in wait_for_function\n    await self._impl_obj.wait_for_function(\n    ...<4 lines>...\n    )\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_page.py\", line 1113, in wait_for_function\n    return await self._main_frame.wait_for_function(**locals_to_params(locals()))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_frame.py\", line 860, in wait_for_function\n    await self._channel.send(\"waitForFunction\", self._timeout, params)\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_connection.py\", line 69, in send\n    return await self._connection.wrap_api_call(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_connection.py\", line 558, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.TimeoutError: Page.wait_for_function: Timeout 60000ms exceeded.\n"
+      "button": "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS",
+      "muted": false,
+      "wallet": {
+       "fe": 42,
+       "il": 0,
+       "ar": 0,
+       "tq": 0,
+       "se": 0,
+       "mh": 0
+      },
+      "clientPts": 650,
+      "need": {
+       "fe": 40,
+       "pts": 300
+      },
+      "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+      "toast": "FRONT Ferrite plate fabricated",
+      "clientPtsAfter": 350,
+      "hullBefore": 1700,
+      "hullAfter": 1717
      }
+    },
+    "plate-card-not-muted-when-affordable": {
+     "pass": true,
+     "detail": {
+      "muted": false,
+      "why": null,
+      "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+      "serverAccepted": true,
+      "clientPtsBefore": 650,
+      "clientPtsAfter": 350,
+      "source": "js/conquest/app.js:144 platingCards compares save.pts (never refreshed in Conquest: the airdrop view carries mn/ap, not pts)"
+     }
+    },
+    "first-plate-fitted": {
+     "pass": true,
+     "detail": {
+      "fitted": true,
+      "blocked": null,
+      "wallet": {
+       "fe": 2,
+       "il": 0,
+       "ar": 0,
+       "tq": 0,
+       "se": 0,
+       "mh": 0
+      },
+      "pts": 350
+     }
+    },
+    "claim-town-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       12,
+       778,
+       378,
+       834
+      ],
+      "text": "CLAIM TOWN \u00b7 600 CP + 30 ALLOY + 15 BIOMASS + 2 ",
+      "layout": {
+       "sheet": [
+        0,
+        742,
+        390,
+        844
+       ],
+       "sheetScroll": [
+        0,
+        102,
+        102
+       ],
+       "drawer": [
+        0,
+        741,
+        390,
+        844
+       ],
+       "stage": [
+        0,
+        61,
+        390,
+        741
+       ],
+       "button": [
+        12,
+        778,
+        378,
+        834
+       ],
+       "vh": 844
+      }
+     }
+    },
+    "next-chip-names-each-order": {
+     "pass": true,
+     "detail": {
+      "mismatches": [],
+      "chipPolls": {
+       "match": 946,
+       "other": 0
+      },
+      "source": "js/conquest/app.js:266 nextOrder puts view.routeTarget before coachStep/boardOrder; app.js:323-330 resourceGuide sets it to the nearest known vein after a SCAN and clears it only when that vein is dry"
+     }
+    },
+    "town-claimed": {
+     "pass": true,
+     "detail": {
+      "cp": 911,
+      "banked": {
+       "alloy": 121,
+       "biomass": 80,
+       "helium": 22
+      },
+      "missions": [
+       {
+        "op": "oxygen-line",
+        "result": "victory",
+        "seconds": 48.8
+       },
+       {
+        "op": "recon",
+        "result": "victory",
+        "seconds": 27.0,
+        "button": "ACT \u00b7 SIGNAL RECOVERY",
+        "attempt": 1,
+        "sim": 2.7591666666666668
+       },
+       {
+        "op": "convoy",
+        "result": "victory",
+        "seconds": 30.8,
+        "button": "ACT \u00b7 INTERCEPT THE PARASITE CONVOY",
+        "attempt": 1,
+        "sim": 4.455
+       }
+      ]
+     }
+    },
+    "town-by-22-simulated-minutes": {
+     "pass": true,
+     "detail": {
+      "townSim": 5.31,
+      "target": 22
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
     }
    },
    "notes": []
@@ -3045,35 +3351,35 @@
   "targetTownMin": 22,
   "moments": {
    "first-fight": {
-    "sim": 0.11,
-    "real": 7.8,
+    "sim": 0.12,
+    "real": 8.4,
     "op": "oxygen-line"
    },
    "first-kill": {
-    "sim": 0.14,
-    "real": 10.9,
+    "sim": 0.16,
+    "real": 11.3,
     "op": "oxygen-line"
    },
    "first-loot": {
     "sim": 0.97,
-    "real": 61.7,
+    "real": 62.2,
     "label": "SALVAGE",
     "rarity": 0,
     "loot": false,
     "cp": 45
    },
    "first-loot-item": {
-    "sim": 1.22,
-    "real": 76.4,
-    "label": "ILMENITE",
+    "sim": 2.82,
+    "real": 177.7,
+    "label": "REPAIR",
     "rarity": 1
    },
    "first-bank": {
-    "sim": 1.46,
-    "real": 90.9,
+    "sim": 1.38,
+    "real": 86.5,
     "wallet": {
      "fe": 3,
-     "il": 1,
+     "il": 0,
      "ar": 0,
      "tq": 0,
      "se": 0,
@@ -3082,8 +3388,8 @@
     "claimRows": 0
    },
    "first-scan": {
-    "sim": 1.51,
-    "real": 94.8,
+    "sim": 1.43,
+    "real": 89.9,
     "found": [
      "starter-01"
     ],
@@ -3091,36 +3397,62 @@
     "chip": "GATHER THE STARTER VEIN"
    },
    "starter-vein": {
-    "sim": 1.69,
-    "real": 105.3,
+    "sim": 1.59,
+    "real": 99.2,
     "carried": 35
    },
    "ferrite-banked": {
-    "sim": 1.74,
-    "real": 108.4,
+    "sim": 1.64,
+    "real": 102.2,
     "wallet": {
      "fe": 38,
-     "il": 1,
+     "il": 0,
      "ar": 0,
      "tq": 0,
      "se": 0,
      "mh": 0
     },
-    "claimRows": 0
+    "claimRows": 1
+   },
+   "first-plate": {
+    "sim": 1.88,
+    "real": 119.2,
+    "button": "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS",
+    "muted": false,
+    "wallet": {
+     "fe": 42,
+     "il": 0,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "clientPts": 650,
+    "need": {
+     "fe": 40,
+     "pts": 300
+    },
+    "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+    "toast": "FRONT Ferrite plate fabricated",
+    "clientPtsAfter": 350,
+    "hullBefore": 1700,
+    "hullAfter": 1717
+   },
+   "first-town": {
+    "sim": 5.31,
+    "real": 331.3,
+    "need": "600/600 CP \u00b7 30/30 ALLOY \u00b7 15/15 BIOMASS \u00b7 2/2 HELIUM-3 \u00b7 you start with 200 wall composite",
+    "cp": 311,
+    "banked": {
+     "alloy": 91,
+     "biomass": 65,
+     "helium": 20
+    }
    }
   }
  },
- "status": "FAIL",
- "failures": [
-  {
-   "run": "journey-390x844",
-   "check": "journey-exception",
-   "detail": {
-    "error": "TimeoutError('Page.wait_for_function: Timeout 60000ms exceeded.')",
-    "trace": "Traceback (most recent call last):\n  File \"/home/user/war-machines/dev/tests/conquest-session6-journey.py\", line 478, in journey\n    ok,info=await fabricate(P,R)\n            ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/user/war-machines/dev/tests/conquest-session6-journey.py\", line 571, in fabricate\n    await page.wait_for_function('Conquest.view.pending===0',timeout=60000);await page.wait_for_timeout(800)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/site-packages/playwright/async_api/_generated.py\", line 11479, in wait_for_function\n    await self._impl_obj.wait_for_function(\n    ...<4 lines>...\n    )\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_page.py\", line 1113, in wait_for_function\n    return await self._main_frame.wait_for_function(**locals_to_params(locals()))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_frame.py\", line 860, in wait_for_function\n    await self._channel.send(\"waitForFunction\", self._timeout, params)\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_connection.py\", line 69, in send\n    return await self._connection.wrap_api_call(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<3 lines>...\n    )\n    ^\n  File \"/usr/local/lib/python3.13/site-packages/playwright/_impl/_connection.py\", line 558, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.TimeoutError: Page.wait_for_function: Timeout 60000ms exceeded.\n"
-   }
-  }
- ],
+ "status": "PASS",
+ "failures": [],
  "summary": {
   "journey-390x844": {
    "minute0-radio": "PASS",
@@ -3131,7 +3463,14 @@
    "first-fight-won": "PASS",
    "kill-pop-destroyed": "PASS",
    "starter-vein-35-ferrite": "PASS",
-   "journey-exception": "FAIL"
+   "first-plate-raises-hull": "PASS",
+   "plate-card-not-muted-when-affordable": "PASS",
+   "first-plate-fitted": "PASS",
+   "claim-town-button-reachable": "PASS",
+   "next-chip-names-each-order": "PASS",
+   "town-claimed": "PASS",
+   "town-by-22-simulated-minutes": "PASS",
+   "no-page-errors": "PASS"
   },
   "route-390x844": {
    "scan-route-leads-to-starter-vein": "PASS",

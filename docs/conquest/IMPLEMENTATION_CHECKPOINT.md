@@ -4401,9 +4401,11 @@ fallback code; phone and computer equal; 5E-2d1/2d2 run after this session). Res
   "Owner correction: the Sortie chain and the ladder gate"). Two independent reviewers ran (both FAIL on first pass); every blocking
   finding is fixed (see "Independent reviews"). CI suites that were red before this pass (conquest-living-world since 43f2a1e) are
   green; conquest-regression.sh passes.
-- NEXT (in order; no PR exists yet, CI runs on pull_request only): 1. browser re-run on the final code (journey + route + smoke +
-  keys, plus find-base, minerals, plot-ui, onboarding, feel, loot), captures committed; 2. PR -> CI green -> merge -> deploy Worker +
-  Pages -> verify /pvp/health and version.json = repo -> record here -> ROADMAP row 6 -> final report (plain words).
+- DONE: browser re-run on the final code (journey.json PASS, 79 checks; find-base, minerals, plot-ui PASS), captures committed;
+  critic round 1 PASS. All 68 CI node suites + conquest-regression.sh PASS.
+- NEXT (in order): build stamp bump (version.json, index.html, web/play.html, worker/src/index.js) -> PR -> CI green -> merge ->
+  deploy Worker + Pages -> verify /pvp/health and version.json = repo -> record here ("Release record") -> ROADMAP row 6 -> final
+  report (plain words).
 - Local tooling notes: Python Playwright is not preinstalled (`pip install playwright==1.55.0`, then the tests use the system
   `chromium`); the wtest suites need `npm install --prefix worker --no-audit --no-fund --package-lock=false`; never run node suites
   in parallel when you care about timing files (`docs/conquest/session5b/town-rules.json` records ms: restore it with git checkout).
@@ -4464,16 +4466,20 @@ The audit's human-like pilot (follows the HUD arrow) LOST the first mission on m
 Browser timings (real keys, phone + desktop) come with the journey test later in the session.
 
 ### Browser first-hour moments (shipped client, real keys/touch, real Worker reducer; simulated minutes = Worker s.an.p)
-| Moment | Run 1 (a few UI bugs) | Run 2 (a5ae24b) |
-|---|---:|---:|
-| Radio / first fight (one tap, no briefing) | 0.11 | 0.10 / 0.11 (8 s real) |
-| First kill (DESTROYED pop) | 0.15 | 0.14 (11 s) |
-| First loot | 0.93 | 0.97 (62 s) |
-| First bank | 1.33 | 1.53 (96 s) |
-| Starter Vein (35 Ferrite) | 1.55 | 1.75 (110 s) |
-| First plate (FRONT Ferrite, hull 1700 -> 1717) | 3.58 | 2.21 (140 s) |
-| CLAIM YOUR TOWN (target <= 22) | 7.06 | 6.09 (380 s) |
-Final-code numbers: see "Release record" once the last browser run is in.
+| Moment | Run 1 (a few UI bugs) | Run 2 (a5ae24b) | FINAL code (66cb725 + journey re-run) |
+|---|---:|---:|---:|
+| Radio / first fight (one tap, no briefing) | 0.11 | 0.10 / 0.11 (8 s real) | 0.12 (8 s) |
+| First kill (DESTROYED pop) | 0.15 | 0.14 (11 s) | 0.16 (11 s) |
+| First loot | 0.93 | 0.97 (62 s) | 0.97 (62 s) |
+| First bank | 1.33 | 1.53 (96 s) | 1.38 (87 s) |
+| Starter Vein (35 Ferrite) | 1.55 | 1.75 (110 s) | 1.59 (99 s) |
+| First plate (FRONT Ferrite, hull 1700 -> 1717) | 3.58 | 2.21 (140 s) | 1.88 (119 s) |
+| CLAIM YOUR TOWN (target <= 22) | 7.06 | 6.09 (380 s) | **5.31 (331 s)** |
+Final browser run: journey.json PASS, 79 checks, 0 failures (journey 16, scan route 3, smoke 14 x 4 sizes, desktop keys 4); also
+PASS on the final code: conquest-find-base.py, conquest-minerals-browser.py, conquest-plot-ui.py. One run (run 4) timed out once
+after the plate refit waiting for `view.pending` (the terrain streaming backlog at the colony, software GL); the re-run passed.
+Critic round 1 (lead, final captures minute 0 / HUD 320x568 / hub 320x568): PASS; minor pre-existing: the HULL label is faint over
+bright buildings (not changed this session). No second round needed.
 
 ### Journey fixes (Nov 16; a5ae24b, 9c1ade6)
 1. CLAIM TOWN off-screen at 390x844 (the claim sheet collapsed to 14 px): `.cq-plot-claim` drawer takes its own height (max 72%),
