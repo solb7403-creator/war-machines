@@ -13,29 +13,29 @@
    },
    "CC3": {
     "day": 2.77,
-    "playMin": 114
+    "playMin": 115.5
    },
    "CC5": {
     "day": 7,
     "playMin": 315
    },
    "CC7": {
-    "day": 12,
-    "playMin": 540
+    "day": 11,
+    "playMin": 495
    },
    "CC9": {
-    "day": 19,
-    "playMin": 855
+    "day": 33,
+    "playMin": 1485
    },
    "CC10": {
-    "day": 34.75,
-    "playMin": 1530
+    "day": 42.75,
+    "playMin": 1890
    }
   },
   "finalCC": 10,
-  "buildings": "cc10 storage4 refinery5 cannon5 cannon5 cannon5 reactor4 cannon5 cannon4 foundry4 biodome4 hangar3 cannon4 reactor4 helium3 radar3 shield3 lab3 uplink3 refinery5 reactor4 trophy3 biodome4 shield3 foundry4 reactor4 helium3 refinery5 reactor4 shield3 biodome4 helium3",
-  "power": 4922,
-  "otherSinksCP": 94509
+  "buildings": "cc10 storage4 refinery5 cannon5 cannon5 cannon5 reactor4 cannon5 cannon5 foundry4 biodome4 hangar4 cannon5 reactor4 helium4 radar4 shield4 lab3 uplink4 refinery5 reactor4 trophy3 biodome4 shield4 foundry4 reactor4 helium4 refinery5 reactor4 shield3 biodome4 helium4",
+  "power": 5358,
+  "otherSinksCP": 112114
  },
  "dedicated": {
   "profile": "Dedicated (150 min/day in two sessions)",
@@ -46,19 +46,19 @@
    },
    "CC2": {
     "day": 0.8,
-    "playMin": 87
+    "playMin": 88.5
    },
    "CC3": {
     "day": 0.83,
-    "playMin": 126
+    "playMin": 129
    },
    "CC5": {
-    "day": 2.79,
-    "playMin": 375
+    "day": 2.82,
+    "playMin": 411
    },
    "CC7": {
-    "day": 6.79,
-    "playMin": 975
+    "day": 7,
+    "playMin": 1050
    },
    "CC9": {
     "day": 9.5,
@@ -70,8 +70,8 @@
    }
   },
   "finalCC": 10,
-  "buildings": "cc10 storage4 refinery5 cannon4 cannon4 cannon4 reactor4 cannon4 cannon4 foundry4 biodome4 hangar3 cannon4 reactor4 helium3 radar3 shield3 lab3 uplink3 refinery5 reactor4 trophy3 biodome3 shield3 foundry4 reactor4 helium3 refinery5 reactor4 shield3 biodome3 helium3",
-  "power": 4582,
-  "otherSinksCP": 103623
+  "buildings": "cc10 storage4 refinery5 cannon4 cannon4 cannon4 reactor4 cannon4 cannon4 foundry4 biodome3 hangar3 cannon4 reactor4 helium3 radar3 shield3 lab3 uplink3 refinery5 reactor4 trophy3 biodome3 shield3 foundry4 reactor4 helium3 refinery4 reactor4 shield3 biodome3 helium3",
+  "power": 4500,
+  "otherSinksCP": 100665
  }
 }
