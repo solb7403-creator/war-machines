@@ -268,7 +268,8 @@ function boardOrder(s){return G.boardOrder(s,view.p,{pay:airdropNumbers(s).pay})
 function nextOrder(s){if(view.battle)return null;return view.routeTarget||coachStep(s)||boardOrder(s)||root.ConquestCombat?.mission;}
 function guidance(){
  if(!view)return;const nav=panel.querySelector('#cq-navigation');if(!nav)return;const C=root.ConquestCombat,s=view.authority?.state,B=view.battle,active=B?.state==='active';
- const near=!B&&view.nearOperation&&!contractWait(s,view.nearOperation)&&!raidLock(s,view.nearOperation)?view.nearOperation:null;
+ // a cleared operation in range (a replay) never takes the chip from the coach or the board; its ACT button still offers the replay
+ const nop=view.nearOperation,near=!B&&nop&&!contractWait(s,nop)&&!raidLock(s,nop)&&!(s?.completed?.[nop.id]||view.progress?.completed(nop.id))?nop:null;
  const m=B?(B.operation||C.mission):(view.routeTarget||near||nextOrder(s));if(!m)return;
  const p=view.p,isBase=m.kind==='base',isRefuge=m.kind==='refuge',completed=!m.coach&&!!(s?.completed?.[m.id]||view.progress?.completed(m.id)),radius=m.activationRadius||m.radius||45;
  let target=m,route=m.line||(isBase?'Follow the arrow and the gold beacon · enter through the gate':isRefuge?'Follow the cyan beacon to the Refuge supply terminal · bank salvage and repair':'Follow the objective beacon');if(m.kind==='resource'&&!m.line)route='Drive onto the ore, stop, then HOLD GATHER';
