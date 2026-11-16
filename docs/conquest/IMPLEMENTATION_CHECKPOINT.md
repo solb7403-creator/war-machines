@@ -4542,12 +4542,71 @@ restore the CC10 floor to 21; make the ladder check fail outside the band.
   5.7 / 26.0 (93% / 74% of the 101 pilots inside the band; CC10 range 18.8-29.8). Production x3 + storage x2 alone: 5.8 / 30.8; + the
   chain: 5.8 / 29.8. Sweep (fighting pilot): +0.5% mean CC10 24.7 (out); +0.75% median in but mean 24.5 (out); +1.0% median CC5 5.0
   (out); 0%: median 5.8 / 28.8, mean 5.8 / 27.3. `docs/conquest/session6/ladder.json` holds the run.
-- Kept: three links, the 10-minute window, the HUD meter (now "NEXT WIN +0.5% CP & SALVAGE"), the raid-chest rarity step at three,
+- Kept: three links, the 10-minute window, the HUD meter (then "NEXT WIN +0.5% CP & SALVAGE"; superseded by the owner fix below), the raid-chest rarity step at three,
   the reset rules, points never multiplied; War Orders exactly as built (the reviewer's point that the `ops15` weekly is not in spec
   §6.1 is answered by the owner's "leave War Orders exactly as built"). conquest-base-progression CC10 floor back to 21 days.
 - For the owner (final report): at +0.25% the chain's real reward is the chest's rarity step; a chain that pays loot rarity or a
   consumable instead of CP would move the ladder by nothing (PROPOSAL). One pilot in four still reaches CC10 by ~day 23 (p25 22.8)
   because of War Orders draws: an owner decision if the tail should be tighter.
+
+### Owner fix: the Sortie chain pays a bonus consumable, not CP (owner, Nov 16; commits 45b701b, 11c575f)
+Owner: set `LIVING.chain.per` to 0 and add `LIVING.chain.item = 0.10`; a win with k earlier links (max 3) has a k x 10% chance of one
+consumable; nothing else from the chain; War Orders exactly as built; ladder check assertions unchanged.
+- **Built:** `js/conquest/combat.js` LIVING.chain `{windowMs:600000, per:0, item:.10, max:3}`. `worker/src/conquest-living.js`
+  `chainChance(k)` and `chainItem(s,key,links,now)`: roll = `unit(lseed + ':chain:' + key)` (the loot module's u32), item =
+  `pickItem(... + ':it')`, granted with `bind()` (cap 10, a full slot is reported `full`, nothing paid in its place), pity never read
+  or written. Keys name the win, never the clock: `op:<mission>:<attempt>` (field missions and raids), `strike:<slot>`,
+  `base:<attempt>`, `sector:<id>:<attempt>`; a re-sent completion hits the cooldown / stored raid receipt / inactive defense first.
+  Receipts carry `chain:{links, bonus:0, chance, item?, full?}`. `chainBonus`/`chained` stay (multiply by 1; tested to pay 0).
+- **Decisions:** (1) the item is drawn with the consumable weights every other consumable roll uses (Repair Kit 40, Shield Cell 25,
+  Scanner Charge 20, Decoy Beacon 15: one rule for "a consumable"; the chest and War Orders use the same `pickItem`). (2) The item is
+  named on the after-action's chain line (not added to the DROPS row) so the player sees it came from the chain. (3) No migration:
+  raid receipts stored before this change have no `chance` (no live players).
+- **Copy:** HUD "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 7:41"; after-action "SORTIE CHAIN ×2 · BONUS ITEM: SCANNER CHARGE"
+  ("(STORAGE FULL)" when capped) or "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME". Wiki "Sortie chain", spec §5.7 and
+  RESOURCE_ECONOMY §Sortie chain describe the new chain.
+- **Before / after (ladder, `docs/conquest/session6/ladder.json`, 101-pilot panel, every Session 6 change on):**
+  | | chain per link | median CC5 / CC10 | mean CC5 / CC10 | pilots in band CC5 / CC10 |
+  |---|---|---:|---:|---:|
+  | Before (owner correction) | +0.25% CP & salvage | 5.8 / 26.8 | 5.7 / 26.0 | 93% / 74% |
+  | **After (this fix)** | 0% CP; 10% a link bonus item | **5.8 / 28.8** | **5.8 / 27.3** | 99% / 85% |
+  Equal to the 0% sweep recorded above, as expected. Band CC5 5.4-6.6, CC10 25.9-31.7: PASS. CC10 range 18.8-29.8, p25 26.8.
+- **Tests:** new `dev/tests/conquest-sortie-chain.mjs` (in CI): 3-link win vs the same win unchained on field / raid / strike / base
+  / sector defense x 300 seeds: identical CP, cargo, banked, minerals, airdrop points, daily, parts, trophies, fragments (raid:
+  same count, the chest's rarity step kept), cosmetics, pity; exactly one consumable or nothing; chance 9.6 / 19.5 / 29.8% (expected
+  10/20/30, 6,000 seeds each); replay, later clock, re-sent completion and raid retry give no re-roll; full slot stays at 10.
+  `conquest-living-world.mjs` asserts `per 0` and `item .10` (the CP check now expects each win's own CP); `conquest-ladder-check.mjs`
+  labels only (every assertion unchanged) PASS; `conquest-base-progression.mjs` CC10 floor 21 unchanged (comment only) PASS. All 69
+  commands of the CI conquest node step PASS locally. Browser: `dev/tests/conquest-session6-chain.py` PASS at 390x844 (touch),
+  320x568 (touch), 1366x768, 1920x1080 (keys): meter and after-action line inside the screen, not clipped; a real Oxygen Line win
+  through the Worker at each size (1366x768 won a Scanner Charge). Captures `docs/conquest/session6/journey-chain-hud-*.png`,
+  `journey-aar-chain-*.png`, report `chain.json`.
+- **Independent review (read-only, round 1 of max 2): PASS, no blocking defects.**
+  | # | Owner requirement | Result |
+  |---|---|---|
+  | 1 | `chain.per` = 0; no CP or materials; points never multiplied | PASS |
+  | 2 | `chain.item` = 0.10; k x 10% (10/20/30%); one of the four CQ_ITEMS | PASS |
+  | 3 | rolled on the Worker from the seeded loot roll (u32); a retry cannot re-roll | PASS |
+  | 4 | bound through bind() within the caps | PASS |
+  | 5 | never advances or resets pity | PASS |
+  | 6 | every win that adds a link (field, raid, strike, base, sector defense) | PASS |
+  | 7 | nothing else (CP, salvage, minerals, parts, trophies, fragments, points) | PASS |
+  | 8 | chest rarity step at 3 links, three links, 10-minute window, resets kept | PASS |
+  | 9 | HUD + after-action copy fit at 390x844, 320x568, 1366x768, 1920x1080; captures | PASS |
+  | 10 | War Orders exactly as built | PASS |
+  | 11 | ladder-check assertions unchanged and passing; CC10 floor 21 | PASS |
+  | 12 | old chain tests now assert 0 CP + the item chance; new test | PASS |
+  | 13 | ladder.json = the 0% sweep (5.8 / 28.8, mean 5.8 / 27.3) | PASS |
+  | 14 | every description of the chain updated (wiki, spec, economy doc, in-game) | PASS |
+  | — | no test skipped, deleted, disabled or loosened | PASS |
+  | — | earn-only pieces lose the CHECKOUT DISABLED row (CI fix below) | PASS, honest fix |
+  Non-blocking notes taken: unrelated living-war captures re-captured by local runs (restored from 4cc6cf1); no capture shows
+  "(STORAGE FULL)" (the copy path is covered by the node test's `full` flag); this checkpoint updated here.
+
+### CI on PR #139 (this session)
+- `transmission (chromium)` on 4cc6cf1: `conquest-flagship-browser.py:199` expects exactly 20 disabled CHECKOUT buttons in the
+  PERMANENT COLLECTION; Session 6's 20 earn-only fragment pieces (`earnOnly`, never priced) added 20 more. **Fix (code, test
+  unchanged):** the collection shows no checkout row on earn-only pieces (they are never sold; the row hinted at a price).
 
 ### Independent reviews (Nov 16; both read-only, both FAIL on first pass, every blocking finding fixed)
 Security/economy (base a5ae24b): 1 ladder gate foolable (FIXED: fighting pilot, median + mean, deterministic); 2 `ops15` weekly and
