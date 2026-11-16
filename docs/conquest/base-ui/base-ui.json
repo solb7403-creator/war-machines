@@ -18,8 +18,7 @@
    "onTop": true,
    "enterVisible": true,
    "scroll": {
-    "scrollable": true,
-    "scrolledBy": 201
+    "scrollable": false
    }
   },
   "leftTo": {
@@ -47,8 +46,7 @@
    "onTop": true,
    "enterVisible": true,
    "scroll": {
-    "scrollable": true,
-    "scrolledBy": 176
+    "scrollable": false
    }
   },
   "leftTo": {
@@ -68,7 +66,7 @@
    "LOCKED \u00b7 UNLOCK WITH THE COMMAND CENTER"
   ],
   "tags": [
-   "+0.8 ALLOY/H",
+   "+2.4 ALLOY/H",
    "\u25c6 VITAL \u00b7 +14 \u26a1 POWER",
    "CC2",
    "CC2",
@@ -80,7 +78,7 @@
    "CC5"
   ],
   "afterSwipe": {
-   "scrollTop": 720,
+   "scrollTop": 704,
    "lastVisible": true
   }
  },
@@ -135,7 +133,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1447,
+    "scrollTop": 1431,
     "confirmOnScreen": true
    },
    "pageErrors": []
@@ -168,7 +166,7 @@
    "turretList": {
     "turrets": 11,
     "lastVisible": true,
-    "scrollTop": 1721,
+    "scrollTop": 1705,
     "confirmOnScreen": true
    },
    "pageErrors": []
