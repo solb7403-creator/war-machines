@@ -60,7 +60,17 @@ async def main():
    await page.wait_for_function('Conquest.view.routeTarget?.id!=="starter-01"',timeout=15000)
    await page.wait_for_function('Conquest.view.pending===0',timeout=60000);await page.wait_for_timeout(800)
    carried=await page.locator('.cq-mn').inner_text();await page.screenshot(path=str(OUT/'carried-minerals-390.png'))
-   # 3. bank at REFUGE SUPPLY -> wallet
+   # 3. bank at REFUGE SUPPLY -> wallet (Session 6: the Starter Vein sits on the Refuge road 19 m north of the terminal; drive there)
+   await page.evaluate('Conquest.view.yaw=0')
+   for _ in range(80):
+    d=await page.evaluate('Math.hypot(Conquest.view.p.x-1174,Conquest.view.p.z-1168)')
+    if d<=9:break
+    dx,dz=await page.evaluate('[1174-Conquest.view.p.x,1168-Conquest.view.p.z]')
+    keys=(['KeyS'] if dz>1.5 else ['KeyW'] if dz<-1.5 else [])+(['KeyA'] if dx<-1.5 else ['KeyD'] if dx>1.5 else [])
+    for k in keys:await page.keyboard.down(k)
+    await page.wait_for_timeout(150)
+    for k in keys:await page.keyboard.up(k)
+   await page.locator('#cq-supply-access').wait_for(state='visible',timeout=30000)
    await page.locator('#cq-supply-access').click();await page.get_by_role('button',name='BANK SALVAGE').click()
    await page.wait_for_function('(Conquest.view.authority.state?.airdrop?.view?.mn?.fe||0)>=40',timeout=60000)
    wallet=await st('s.airdrop.view.mn.fe');await page.wait_for_selector('.cq-plating');await page.screenshot(path=str(OUT/'refuge-supply-plating-390.png'))

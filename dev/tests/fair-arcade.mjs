@@ -158,8 +158,8 @@ for (const i in pool) { const P = pool[i], a = { win: P.a.w / P.a.n, ratio: P.a.
   const ks = kill(stock), kl = kill(legend); ok(kl < ks * 0.6, 'Conquest: the Legendary kit kills a heavy sentinel far faster than stock (' + kl.toFixed(1) + ' s vs ' + ks.toFixed(1) + ' s)');
   // a redoubt commander's patterns keep their authored cadence (doctrine), never the player's
   ok(Object.isFrozen(C.raidDoctrine.VETERAN) && C.raidDoctrine.VETERAN.hull === 1.55 && C.raidDoctrine.VETERAN.damage === 1.5 && J(C.raidDoctrine.VETERAN.garrison) === J(['raider', 'command']), 'raid doctrine is authored and frozen (VETERAN hull 1.55, damage 1.5, garrison raider + command)');
-  // the same enemy fire, taken: the Legendary kit survives longer under a sentinel's gun
-  const left = L => { const B = new C.Battle(L, p), e = B.enemies.find(x => x.kind === 'sentinel') || B.enemies[0]; Object.assign(e, { x: 1175, z: 1048, y: Wd.groundAt(1175, 1048), hp: 1e9, maxHp: 1e9, vx: 0, vz: 0 }); B.enemies = [e]; let t = 0; while (B.playerHp > 0 && t < 60) { B.tick(1 / 30, p, {}); t += 1 / 30; } return B.playerHp / B.playerMax; };
+  // the same enemy fire, taken: the Legendary kit survives longer under a sentinel's gun (role 'player': Session 6's first wave strafes the tower, so the shooter is told to aim at the pilot)
+  const left = L => { const B = new C.Battle(L, p), e = B.enemies.find(x => x.kind === 'sentinel') || B.enemies[0]; Object.assign(e, { x: 1175, z: 1048, y: Wd.groundAt(1175, 1048), hp: 1e9, maxHp: 1e9, vx: 0, vz: 0, role: 'player' }); B.enemies = [e]; let t = 0; while (B.playerHp > 0 && t < 60) { B.tick(1 / 30, p, {}); t += 1 / 30; } return B.playerHp / B.playerMax; };
   const hs = left(stock), hl = left(legend); ok(hl > hs + 0.1, 'Conquest: after a minute under the same enemy fire the Legendary kit keeps more of its hull than stock (' + (hl * 100).toFixed(0) + '% vs ' + (hs * 100).toFixed(0) + '%)'); }
 
 // ---- 5. per-chassis builds (Session 5E-2b3): each chassis has its own build and cores, so one pilot's chassis can be far apart
