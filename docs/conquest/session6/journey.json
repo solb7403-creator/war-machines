@@ -1,0 +1,3585 @@
+{
+ "scope": "Session 6 first hour, end to end in the shipped client (Chromium) against the real Worker reducer on a disposable local DB",
+ "source": "working tree",
+ "started": "2026-11-16T06:31:58",
+ "runs": {
+  "journey-390x844": {
+   "size": "390x844",
+   "touch": true,
+   "minute0": {
+    "radio": "\u25c9 RADIO \u00b7 REFUGE COMMANDREFUGE COMMAND \u00b7 Parasite armor is on the oxygen line.Those towers are the air we breathe. Your tank is fueled.SKIP",
+    "nav": "HOLD THE OXYGEN LINE\u219134 m \u00b7 BRIEFING AVAILABLEIN RANGE \u00b7 tap DEFEND for the operation",
+    "title": "HOLD THE OXYGEN LINE",
+    "hull": "HULL1700 / 1700",
+    "heat": "HEAT 0%",
+    "o2": "",
+    "airdrop": "",
+    "base": "",
+    "meteor": "",
+    "contracts": "",
+    "chain": "",
+    "wave": "",
+    "minerals": "",
+    "item": "",
+    "ticker": "",
+    "homeButton": "\u2302 MY BASE87 m",
+    "homePulse": false,
+    "capture": "journey-minute0-390x844.png",
+    "radioInCapture": true
+   },
+   "killPop": "DESTROYED \u00b7 INTERCEPTOR",
+   "firstAAR": {
+    "title": "OXYGEN LINE SECURED",
+    "stats": "OPERATION SECURED \u00b7 6 HOSTILES DESTROYED \u00b7 0:47 \u00b7 HULL 21%",
+    "kicker": "FIRST CLEAR \u00b7 VERIFIED BY COMMAND",
+    "drops": [],
+    "dropsRow": false,
+    "tiles": [
+     "+450AIRDROP PTS",
+     "+250CP",
+     "+24ALLOY",
+     "+16BIOMASS",
+     "+6HELIUM-3",
+     "+83REPUTATION"
+    ],
+    "buttons": [
+     "RETURN TO EXPLORATION"
+    ],
+    "capture": "journey-aar-390x844.png"
+   },
+   "steps": [
+    {
+     "step": "coach-bank",
+     "want": "BANK YOUR SALVAGE",
+     "wantId": null,
+     "chip": "BANK YOUR SALVAGE",
+     "routeTarget": null,
+     "sim": 1.33
+    },
+    {
+     "step": "coach-scan",
+     "want": "SCAN FOR ORE",
+     "wantId": null,
+     "chip": "SCAN FOR ORE",
+     "routeTarget": null,
+     "sim": 1.53
+    },
+    {
+     "step": "coach-gather",
+     "want": "GATHER THE STARTER VEIN",
+     "wantId": "starter-01",
+     "chip": "GATHER THE STARTER VEIN",
+     "routeTarget": null,
+     "sim": 1.6
+    },
+    {
+     "step": "coach-bank2",
+     "want": "BANK THE FERRITE",
+     "wantId": null,
+     "chip": "BANK THE FERRITE",
+     "routeTarget": null,
+     "sim": 1.75
+    },
+    {
+     "step": "coach-more",
+     "want": "2 MORE FERRITE",
+     "wantId": "fe-29",
+     "chip": "2 MORE FERRITE",
+     "routeTarget": null,
+     "sim": 1.82
+    },
+    {
+     "step": "coach-bank2",
+     "want": "BANK THE FERRITE",
+     "wantId": null,
+     "chip": "BANK THE FERRITE",
+     "routeTarget": null,
+     "sim": 2.06
+    },
+    {
+     "step": "coach-plate",
+     "want": "FABRICATE YOUR FIRST PLATE",
+     "wantId": null,
+     "chip": "FABRICATE YOUR FIRST PLATE",
+     "routeTarget": null,
+     "sim": 2.21
+    },
+    {
+     "step": "board",
+     "want": "SIGNAL RECOVERY",
+     "chip": "SIGNAL RECOVERY",
+     "routeTarget": null,
+     "sim": 2.23
+    },
+    {
+     "step": "board",
+     "want": "INTERCEPT THE PARASITE CONVOY",
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "routeTarget": null,
+     "sim": 3.67
+    },
+    {
+     "step": "board",
+     "want": "CLAIM YOUR TOWN",
+     "chip": "CLAIM YOUR TOWN",
+     "routeTarget": null,
+     "sim": 5.94
+    }
+   ],
+   "plate": {
+    "fitted": true,
+    "blocked": null,
+    "wallet": {
+     "fe": 2,
+     "il": 0,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "pts": 350
+   },
+   "final": {
+    "cp": 411,
+    "banked": {
+     "alloy": 107,
+     "biomass": 76,
+     "helium": 23
+    },
+    "completed": [
+     "oxygen-line",
+     "recon",
+     "convoy"
+    ],
+    "wallet": {
+     "fe": 9,
+     "il": 1,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "plates": [
+     1,
+     0,
+     0,
+     0
+    ],
+    "pts": 1660,
+    "base": 1,
+    "wo": [
+     {
+      "id": "mine12",
+      "kind": "daily",
+      "n": 12,
+      "goal": 12,
+      "done": true,
+      "claimed": false
+     },
+     {
+      "id": "bank60",
+      "kind": "daily",
+      "n": 60,
+      "goal": 60,
+      "done": true,
+      "claimed": false
+     },
+     {
+      "id": "sectors3",
+      "kind": "daily",
+      "n": 3,
+      "goal": 3,
+      "done": true,
+      "claimed": false
+     },
+     {
+      "id": "ops15",
+      "kind": "weekly",
+      "n": 3,
+      "goal": 15,
+      "done": false,
+      "claimed": false
+     }
+    ],
+    "inv": {
+     "repair": 0,
+     "shield": 1,
+     "scanner": 0,
+     "decoy": 1
+    }
+   },
+   "chipAgreement": {
+    "match": 867,
+    "other": 111,
+    "samples": [
+     {
+      "want": "INTERCEPT THE PARASITE CONVOY",
+      "chip": "HOLD THE OXYGEN LINE",
+      "at": [
+       1144,
+       1124
+      ],
+      "label": "convoy"
+     }
+    ]
+   },
+   "missions": [
+    {
+     "op": "oxygen-line",
+     "result": "victory",
+     "seconds": 48.2
+    },
+    {
+     "op": "recon",
+     "result": "victory",
+     "seconds": 26.7,
+     "button": "ACT \u00b7 SIGNAL RECOVERY",
+     "attempt": 1,
+     "sim": 3.1083333333333334
+    },
+    {
+     "op": "convoy",
+     "result": "victory",
+     "seconds": 49.7,
+     "button": "ACT \u00b7 INTERCEPT THE PARASITE CONVOY",
+     "attempt": 1,
+     "sim": 4.945833333333334
+    }
+   ],
+   "deaths": [],
+   "loot": {
+    "flyouts": [
+     {
+      "t": "SHIELD",
+      "c": "rgb(95, 224, 138)",
+      "at": 1794810791535
+     },
+     {
+      "t": "DECOY",
+      "c": "rgb(95, 224, 138)",
+      "at": 1794810804407
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794810805422
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794810812039
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794810930047
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794810931121
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794810933225
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811040392
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811043848
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811045792
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811048024
+     },
+     {
+      "t": "ILMENITE",
+      "c": "rgb(95, 224, 138)",
+      "at": 1794811051121
+     },
+     {
+      "t": "FERRITE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811059508
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811069942
+     },
+     {
+      "t": "SALVAGE",
+      "c": "rgb(201, 210, 220)",
+      "at": 1794811074339
+     }
+    ],
+    "cards": [],
+    "aarDrops": []
+   },
+   "lootSeen": true,
+   "tickerSample": [
+    "+450 AIRDROP POINTS SECURED",
+    "SHIELD CELL \u00b7 +45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "DECOY BEACON \u00b7 +18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "SALVAGE SECURED \u00b7 3 FERRITE TO YOUR WALLET",
+    "HULL REPAIRED",
+    "SCAN 150 M \u00b7 4 NEW VEINS ON YOUR MAP",
+    "\u2302 YOUR BASE GATE IS 97 m WEST OF THE REFUGE \u00b7 TAP \u2302 MY BASE ANYTIME",
+    "+35 FERRITE (CARRIED) \u00b7 +100 AIRDROP POINTS PENDING",
+    "+100 AIRDROP POINTS SECURED",
+    "+4 FERRITE (CARRIED) \u00b7 VEIN 8/12 \u00b7 +100 AIRDROP POINTS PENDING",
+    "+100 AIRDROP POINTS SECURED",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "DESTROYED \u00b7 INTERCEPTOR \u00d72",
+    "+35 AIRDROP POINTS SECURED",
+    "+450 AIRDROP POINTS SECURED",
+    "+7 CP \u00b7 +2 ALLOY \u00b7 +1 BIOMASS",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "SALVAGE SECURED \u00b7 3 FERRITE TO YOUR WALLET",
+    "HULL REPAIRED",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "+35 AIRDROP POINTS SECURED",
+    "DESTROYED \u00b7 COORDINATOR",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "+125 AIRDROP POINTS SECURED",
+    "DESTROYED \u00b7 INTERCEPTOR",
+    "+485 AIRDROP POINTS SECURED",
+    "DESTROYED \u00b7 COORDINATOR",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "DESTROYED \u00b7 COORDINATOR",
+    "+1 ILMENITE (CARRIED) \u00b7 +18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+1 FERRITE (CARRIED) \u00b7 +7 CP \u00b7 +2 ALLOY \u00b7 +1 BIOMASS",
+    "DESTROYED \u00b7 COORDINATOR",
+    "+18 CP \u00b7 +3 ALLOY \u00b7 +2 BIOMASS",
+    "+180 AIRDROP POINTS SECURED",
+    "+45 CP \u00b7 +6 ALLOY \u00b7 +4 BIOMASS \u00b7 +1 HELIUM-3",
+    "SALVAGE SECURED \u00b7 4 FERRITE \u00b7 1 ILMENITE TO YOUR WALLET",
+    "HULL REPAIRED"
+   ],
+   "moments": {
+    "radio": {
+     "sim": 0.1,
+     "real": 7.2
+    },
+    "first-fight": {
+     "sim": 0.11,
+     "real": 7.9,
+     "op": "oxygen-line"
+    },
+    "first-kill": {
+     "sim": 0.14,
+     "real": 10.8,
+     "op": "oxygen-line"
+    },
+    "first-loot": {
+     "sim": 0.97,
+     "real": 61.9,
+     "label": "SHIELD",
+     "rarity": 1,
+     "loot": true,
+     "cp": 45
+    },
+    "first-loot-item": {
+     "sim": 0.97,
+     "real": 61.9,
+     "label": "SHIELD",
+     "rarity": 1
+    },
+    "first-bank": {
+     "sim": 1.53,
+     "real": 95.9,
+     "wallet": {
+      "fe": 3,
+      "il": 0,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     },
+     "claimRows": 0
+    },
+    "first-scan": {
+     "sim": 1.58,
+     "real": 99.4,
+     "found": [
+      "starter-01"
+     ],
+     "route": null,
+     "chip": "GATHER THE STARTER VEIN"
+    },
+    "starter-vein": {
+     "sim": 1.75,
+     "real": 109.8,
+     "carried": 35
+    },
+    "ferrite-banked": {
+     "sim": 1.81,
+     "real": 113.0,
+     "wallet": {
+      "fe": 38,
+      "il": 0,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     },
+     "claimRows": 1
+    },
+    "second-ferrite": {
+     "sim": 2.05,
+     "real": 127.9,
+     "carried": 4
+    },
+    "first-plate": {
+     "sim": 2.21,
+     "real": 139.9,
+     "button": "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS",
+     "muted": false,
+     "wallet": {
+      "fe": 42,
+      "il": 0,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     },
+     "clientPts": 650,
+     "need": {
+      "fe": 40,
+      "pts": 300
+     },
+     "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+     "toast": "FRONT Ferrite plate fabricated",
+     "clientPtsAfter": 350,
+     "hullBefore": 1700,
+     "hullAfter": 1717
+    },
+    "field-2": {
+     "sim": 3.67,
+     "real": 229.7,
+     "wallet": {
+      "fe": 5,
+      "il": 0,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     }
+    },
+    "field-3": {
+     "sim": 5.93,
+     "real": 368.1,
+     "wallet": {
+      "fe": 9,
+      "il": 1,
+      "ar": 0,
+      "tq": 0,
+      "se": 0,
+      "mh": 0
+     }
+    },
+    "first-town": {
+     "sim": 6.09,
+     "real": 379.8,
+     "need": "600/600 CP \u00b7 30/30 ALLOY \u00b7 15/15 BIOMASS \u00b7 2/2 HELIUM-3 \u00b7 you start with 200 wall composite",
+     "cp": 411,
+     "banked": {
+      "alloy": 107,
+      "biomass": 76,
+      "helium": 23
+     }
+    }
+   },
+   "trace": [
+    {
+     "op": "convoy",
+     "t": 12.3,
+     "hp": 1189.1700000000014,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.3,
+     "hp": 1189.1700000000014,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.4,
+     "hp": 1189.1700000000014,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 12.5,
+     "hp": 1189.1700000000014,
+     "alive": 3,
+     "kills": 0,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 330 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.0,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.1,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.2,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.3,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.3,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.4,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 21.5,
+     "hp": 908.790500000002,
+     "alive": 3,
+     "kills": 1,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER 141 HP \u00b7 120m TO EXIT"
+    },
+    {
+     "op": "convoy",
+     "t": 27.0,
+     "hp": 709.5592500000025,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.1,
+     "hp": 709.5592500000025,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.1,
+     "hp": 709.5592500000025,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.2,
+     "hp": 709.5592500000025,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.3,
+     "hp": 709.5592500000025,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.4,
+     "hp": 702.2692500000026,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 27.4,
+     "hp": 702.2692500000026,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1090,
+      970
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 30.1,
+     "hp": 622.0980000000027,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1095,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 30.2,
+     "hp": 622.0980000000027,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1099,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 30.2,
+     "hp": 622.0980000000027,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1099,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 30.3,
+     "hp": 622.0980000000027,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1103,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 30.4,
+     "hp": 622.0980000000027,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1103,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 30.4,
+     "hp": 622.0980000000027,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1103,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.0,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.1,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.2,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.2,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.3,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.4,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.4,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 33.5,
+     "hp": 585.6517500000028,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.1,
+     "hp": 549.201750000003,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.1,
+     "hp": 527.3317500000031,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.2,
+     "hp": 527.3317500000031,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.3,
+     "hp": 527.3317500000031,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.3,
+     "hp": 527.3317500000031,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.4,
+     "hp": 527.3317500000031,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 36.5,
+     "hp": 527.3317500000031,
+     "alive": 2,
+     "kills": 3,
+     "p": [
+      1106,
+      975
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 2 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 39.0,
+     "hp": 498.17175000000316,
+     "alive": 1,
+     "kills": 3,
+     "p": [
+      1107,
+      974
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 39.1,
+     "hp": 498.17175000000316,
+     "alive": 1,
+     "kills": 3,
+     "p": [
+      1107,
+      974
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 39.2,
+     "hp": 498.17175000000316,
+     "alive": 1,
+     "kills": 3,
+     "p": [
+      1108,
+      974
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 39.2,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1108,
+      974
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 39.3,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1108,
+      973
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 39.4,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 4,
+     "p": [
+      1108,
+      973
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.0,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.1,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.2,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.2,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.3,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.4,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 42.5,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 45.1,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 45.1,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 45.2,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 45.3,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 45.3,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1115,
+      966
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 48.4,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1111,
+      956
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 48.4,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1111,
+      956
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    },
+    {
+     "op": "convoy",
+     "t": 48.5,
+     "hp": 476.3017500000031,
+     "alive": 1,
+     "kills": 5,
+     "p": [
+      1111,
+      956
+     ],
+     "chip": "INTERCEPT THE PARASITE CONVOY",
+     "wave": "CARRIER DESTROYED \u00b7 1 ESCORTS"
+    }
+   ],
+   "pageErrors": [],
+   "realSeconds": 392,
+   "checks": {
+    "minute0-radio": {
+     "pass": true,
+     "detail": "\u25c9 RADIO \u00b7 REFUGE COMMANDREFUGE COMMAND \u00b7 Parasite armor is on the oxygen line.Those towers are the air we breathe. Your tank is fueled.SKIP"
+    },
+    "minute0-hud-only-next-hull-heat": {
+     "pass": true,
+     "detail": {
+      "title": "HOLD THE OXYGEN LINE",
+      "hull": "HULL1700 / 1700",
+      "heat": "HEAT 0%",
+      "airdrop": "",
+      "base": "",
+      "meteor": "",
+      "contracts": "",
+      "chain": "",
+      "minerals": "",
+      "o2": ""
+     }
+    },
+    "minute0-no-base-ticker": {
+     "pass": true,
+     "detail": {
+      "ticker": [],
+      "homeButton": "\u2302 MY BASE87 m",
+      "pulse": false,
+      "source": "js/conquest/app.js:442 homeHud first-visit hint"
+     }
+    },
+    "defend-in-range-at-spawn": {
+     "pass": true,
+     "detail": "DEFEND THE OXYGEN LINE"
+    },
+    "first-defense-one-tap-no-briefing": {
+     "pass": true,
+     "detail": {
+      "briefingOpen": 0
+     }
+    },
+    "first-fight-won": {
+     "pass": true,
+     "detail": {
+      "result": "victory",
+      "seconds": 48.2,
+      "hp": 356.9219999999996,
+      "alive": 0,
+      "kills": 6,
+      "chip": "HOLD THE OXYGEN LINE",
+      "route": "IN RANGE \u00b7 tap DEFEND for the operation"
+     }
+    },
+    "kill-pop-destroyed": {
+     "pass": true,
+     "detail": [
+      "DESTROYED \u00b7 INTERCEPTOR",
+      "DESTROYED \u00b7 INTERCEPTOR \u00d72",
+      "DESTROYED \u00b7 HEAVY SENTINEL",
+      "DESTROYED \u00b7 COORDINATOR",
+      "DESTROYED \u00b7 SABOTEUR",
+      "DESTROYED \u00b7 INTERCEPTOR"
+     ]
+    },
+    "starter-vein-35-ferrite": {
+     "pass": true,
+     "detail": {
+      "before": 0,
+      "after": 35,
+      "gather": {
+       "tries": [
+        "HOLD \u00b7 GATHER STARTER VEIN"
+       ],
+       "label": "HOLD \u00b7 GATHER STARTER VEIN"
+      }
+     }
+    },
+    "first-plate-raises-hull": {
+     "pass": true,
+     "detail": {
+      "button": "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS",
+      "muted": false,
+      "wallet": {
+       "fe": 42,
+       "il": 0,
+       "ar": 0,
+       "tq": 0,
+       "se": 0,
+       "mh": 0
+      },
+      "clientPts": 650,
+      "need": {
+       "fe": 40,
+       "pts": 300
+      },
+      "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+      "toast": "FRONT Ferrite plate fabricated",
+      "clientPtsAfter": 350,
+      "hullBefore": 1700,
+      "hullAfter": 1717
+     }
+    },
+    "plate-card-not-muted-when-affordable": {
+     "pass": true,
+     "detail": {
+      "muted": false,
+      "why": null,
+      "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+      "serverAccepted": true,
+      "clientPtsBefore": 650,
+      "clientPtsAfter": 350,
+      "source": "js/conquest/app.js:144 platingCards compares save.pts (never refreshed in Conquest: the airdrop view carries mn/ap, not pts)"
+     }
+    },
+    "first-plate-fitted": {
+     "pass": true,
+     "detail": {
+      "fitted": true,
+      "blocked": null,
+      "wallet": {
+       "fe": 2,
+       "il": 0,
+       "ar": 0,
+       "tq": 0,
+       "se": 0,
+       "mh": 0
+      },
+      "pts": 350
+     }
+    },
+    "claim-town-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       12,
+       778,
+       378,
+       834
+      ],
+      "text": "CLAIM TOWN \u00b7 600 CP + 30 ALLOY + 15 BIOMASS + 2 ",
+      "layout": {
+       "sheet": [
+        0,
+        742,
+        390,
+        844
+       ],
+       "sheetScroll": [
+        0,
+        102,
+        102
+       ],
+       "drawer": [
+        0,
+        741,
+        390,
+        844
+       ],
+       "stage": [
+        0,
+        61,
+        390,
+        741
+       ],
+       "button": [
+        12,
+        778,
+        378,
+        834
+       ],
+       "vh": 844
+      }
+     }
+    },
+    "next-chip-names-each-order": {
+     "pass": true,
+     "detail": {
+      "mismatches": [],
+      "chipPolls": {
+       "match": 867,
+       "other": 111
+      },
+      "source": "js/conquest/app.js:266 nextOrder puts view.routeTarget before coachStep/boardOrder; app.js:323-330 resourceGuide sets it to the nearest known vein after a SCAN and clears it only when that vein is dry"
+     }
+    },
+    "town-claimed": {
+     "pass": true,
+     "detail": {
+      "cp": 1011,
+      "banked": {
+       "alloy": 137,
+       "biomass": 91,
+       "helium": 25
+      },
+      "missions": [
+       {
+        "op": "oxygen-line",
+        "result": "victory",
+        "seconds": 48.2
+       },
+       {
+        "op": "recon",
+        "result": "victory",
+        "seconds": 26.7,
+        "button": "ACT \u00b7 SIGNAL RECOVERY",
+        "attempt": 1,
+        "sim": 3.1083333333333334
+       },
+       {
+        "op": "convoy",
+        "result": "victory",
+        "seconds": 49.7,
+        "button": "ACT \u00b7 INTERCEPT THE PARASITE CONVOY",
+        "attempt": 1,
+        "sim": 4.945833333333334
+       }
+      ]
+     }
+    },
+    "town-by-22-simulated-minutes": {
+     "pass": true,
+     "detail": {
+      "townSim": 6.09,
+      "target": 22
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  },
+  "route-390x844": {
+   "size": "390x844",
+   "touch": true,
+   "ridgeVein": "fe-14",
+   "placements": 7,
+   "start": {
+    "coach": "BANK YOUR SALVAGE",
+    "chip": "BANK YOUR SALVAGE",
+    "p": {
+     "x": 1166,
+     "z": 1163,
+     "y": -0.5745434991374267,
+     "surface": "ground"
+    }
+   },
+   "afterBank": {
+    "coach": "SCAN FOR ORE",
+    "chip": "SCAN FOR ORE"
+   },
+   "afterScan": {
+    "coach": "GATHER THE STARTER VEIN",
+    "chip": "GATHER THE STARTER VEIN",
+    "route": null,
+    "at": [
+     1166,
+     1163
+    ],
+    "dStarter": 19.1,
+    "dFe14": 13.6,
+    "capture": "journey-scan-route-390x844.png"
+   },
+   "afterGather": {
+    "coach": "BANK THE FERRITE",
+    "chip": "HOLD THE OXYGEN LINE",
+    "route": null,
+    "carried": {
+     "fe": 35
+    },
+    "gather": {
+     "tries": [
+      "HOLD \u00b7 GATHER STARTER VEIN"
+     ],
+     "label": "HOLD \u00b7 GATHER STARTER VEIN"
+    },
+    "capture": "journey-scan-route-after-gather-390x844.png"
+   },
+   "pageErrors": [],
+   "realSeconds": 38,
+   "checks": {
+    "scan-route-leads-to-starter-vein": {
+     "pass": true,
+     "detail": {
+      "coach": "GATHER THE STARTER VEIN",
+      "chip": "GATHER THE STARTER VEIN",
+      "route": null,
+      "at": [
+       1166,
+       1163
+      ],
+      "dStarter": 19.1,
+      "dFe14": 13.6,
+      "capture": "journey-scan-route-390x844.png",
+      "source": "js/conquest/app.js:323-330 resourceGuide routes to the nearest known vein, not the coach order"
+     }
+    },
+    "chip-names-bank-the-ferrite-after-starter-vein": {
+     "pass": false,
+     "detail": {
+      "coach": "BANK THE FERRITE",
+      "chip": "HOLD THE OXYGEN LINE",
+      "route": null,
+      "carried": {
+       "fe": 35
+      },
+      "source": "js/conquest/app.js:266 nextOrder: view.routeTarget outranks coachStep; app.js:325 clears a resource route only when the vein is dry"
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  },
+  "smoke-390x700": {
+   "size": "390x700",
+   "touch": true,
+   "orders": [
+    "mine12",
+    "sectors3",
+    "bank60",
+    "ops15"
+   ],
+   "placements": 1,
+   "hudFitStart": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 390,
+    "vw": 390,
+    "vh": 700,
+    "overflowX": false
+   },
+   "supplyPrimary": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     34,
+     273,
+     155,
+     317
+    ],
+    "text": "BANK SALVAGE",
+    "swipes": 0
+   },
+   "claimRow": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     283,
+     369,
+     337,
+     409
+    ],
+    "text": "CLAIM",
+    "swipes": 0
+   },
+   "claimRowText": "WAR ORDERS READY\nBank 60 alloy\n+200 CP + CONSUMABLE\nCLAIM",
+   "ticker": [
+    "SALVAGE SECURED",
+    "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 REPAIR KIT"
+   ],
+   "hud": {
+    "radio": "",
+    "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTTap SCAN: the Starter Vein lies on the Refuge road",
+    "title": "SCAN FOR ORE",
+    "hull": "HULL700 / 1700",
+    "heat": "HEAT 0%",
+    "o2": "",
+    "airdrop": "",
+    "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+    "meteor": "",
+    "contracts": "WAR ORDERS 1/3 \u00b7 MINE 12 ORE \u00b7 0/12",
+    "chain": "",
+    "wave": "",
+    "minerals": "",
+    "item": "REPAIR\u00d73",
+    "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 REPAIR KIT",
+    "homeButton": "\u2302 MY BASE94 m",
+    "homePulse": true
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 390,
+    "vw": 390,
+    "vh": 700,
+    "overflowX": false
+   },
+   "navCover": {
+    "hits": [],
+    "truncated": false,
+    "lines": {
+     ".cq-nav-title": [
+      57,
+      58,
+      125,
+      70
+     ],
+     ".cq-nav-distance": [
+      38,
+      75,
+      80,
+      85
+     ]
+    },
+    "rect": [
+     14,
+     56,
+     376,
+     92
+    ],
+    "text": "SCAN FOR ORE"
+   },
+   "hudCapture": "journey-hud-390x700.png",
+   "more": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     197,
+     635,
+     369,
+     679
+    ],
+    "text": "LARGE HUD TEXT",
+    "swipes": 1,
+    "panel": {
+     "buttons": [
+      "NAVIGATE \u00b7 REFUGE",
+      "\u2302 MY BASE",
+      "RECALL TO BASE",
+      "FAST TRAVEL \u00b7 BASE COMMAND",
+      "HELP",
+      "INVENTORY / SUPPLY",
+      "PERMANENT COLLECTION",
+      "LOOT & TROPHY HALL",
+      "ZOOM IN",
+      "ZOOM OUT",
+      "LOCATE ME ON THE MAP",
+      "SOUND \u00b7 ON",
+      "LARGE HUD TEXT"
+     ],
+     "rect": [
+      188,
+      60,
+      378,
+      688
+     ],
+     "scrollH": 666,
+     "clientH": 626,
+     "overflowY": "auto",
+     "maxHeight": "calc(100% - 72px)",
+     "vh": 700
+    }
+   },
+   "moreCapture": "journey-more-390x700.png",
+   "loot": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     227,
+     622,
+     297,
+     666
+    ],
+    "text": "CLOSE",
+    "swipes": 3
+   },
+   "lootCapture": "journey-loot-390x700.png",
+   "hubCard": {
+    "reach": {
+     "ok": true,
+     "inView": true,
+     "covered": null,
+     "rect": [
+      14,
+      131,
+      376,
+      283
+     ],
+     "text": "WAR ORDERS\u25cb Mine 12 ore \u00b7 0/12\u25cb Finish a field m",
+     "swipes": 2
+    },
+    "text": "WAR ORDERS\n\n\u25cb Mine 12 ore \u00b7 0/12\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+   },
+   "ordersCapture": "journey-orders-390x700.png",
+   "pageErrors": [],
+   "realSeconds": 48,
+   "checks": {
+    "war-order-bank60-drawn": {
+     "pass": true,
+     "detail": [
+      "mine12",
+      "sectors3",
+      "bank60",
+      "ops15"
+     ]
+    },
+    "hud-fits-start": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 390,
+      "vw": 390,
+      "vh": 700,
+      "overflowX": false
+     }
+    },
+    "supply-primary-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       34,
+       273,
+       155,
+       317
+      ],
+      "text": "BANK SALVAGE",
+      "swipes": 0
+     }
+    },
+    "war-order-claim-row-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       283,
+       369,
+       337,
+       409
+      ],
+      "text": "CLAIM",
+      "swipes": 0
+     }
+    },
+    "war-order-claimed-on-server": {
+     "pass": true,
+     "detail": {
+      "id": "bank60",
+      "src": "board",
+      "kind": "daily",
+      "n": 60,
+      "goal": 60,
+      "done": 1,
+      "claimed": 1
+     }
+    },
+    "supply-close-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       34,
+       622,
+       155,
+       666
+      ],
+      "text": "CLOSE SUPPLY",
+      "swipes": 1
+     }
+    },
+    "contracts-line-after-first-order": {
+     "pass": true,
+     "detail": {
+      "radio": "",
+      "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTTap SCAN: the Starter Vein lies on the Refuge road",
+      "title": "SCAN FOR ORE",
+      "hull": "HULL700 / 1700",
+      "heat": "HEAT 0%",
+      "o2": "",
+      "airdrop": "",
+      "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+      "meteor": "",
+      "contracts": "WAR ORDERS 1/3 \u00b7 MINE 12 ORE \u00b7 0/12",
+      "chain": "",
+      "wave": "",
+      "minerals": "",
+      "item": "REPAIR\u00d73",
+      "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 REPAIR KIT",
+      "homeButton": "\u2302 MY BASE94 m",
+      "homePulse": true
+     }
+    },
+    "hud-fits-full": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 390,
+      "vw": 390,
+      "vh": 700,
+      "overflowX": false
+     }
+    },
+    "next-chip-not-covered": {
+     "pass": true,
+     "detail": {
+      "hits": [],
+      "truncated": false,
+      "lines": {
+       ".cq-nav-title": [
+        57,
+        58,
+        125,
+        70
+       ],
+       ".cq-nav-distance": [
+        38,
+        75,
+        80,
+        85
+       ]
+      },
+      "rect": [
+       14,
+       56,
+       376,
+       92
+      ],
+      "text": "SCAN FOR ORE"
+     }
+    },
+    "more-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       197,
+       635,
+       369,
+       679
+      ],
+      "text": "LARGE HUD TEXT",
+      "swipes": 1,
+      "panel": {
+       "buttons": [
+        "NAVIGATE \u00b7 REFUGE",
+        "\u2302 MY BASE",
+        "RECALL TO BASE",
+        "FAST TRAVEL \u00b7 BASE COMMAND",
+        "HELP",
+        "INVENTORY / SUPPLY",
+        "PERMANENT COLLECTION",
+        "LOOT & TROPHY HALL",
+        "ZOOM IN",
+        "ZOOM OUT",
+        "LOCATE ME ON THE MAP",
+        "SOUND \u00b7 ON",
+        "LARGE HUD TEXT"
+       ],
+       "rect": [
+        188,
+        60,
+        378,
+        688
+       ],
+       "scrollH": 666,
+       "clientH": 626,
+       "overflowY": "auto",
+       "maxHeight": "calc(100% - 72px)",
+       "vh": 700
+      }
+     }
+    },
+    "loot-hall-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       227,
+       622,
+       297,
+       666
+      ],
+      "text": "CLOSE",
+      "swipes": 3
+     }
+    },
+    "hub-war-orders-card": {
+     "pass": true,
+     "detail": {
+      "reach": {
+       "ok": true,
+       "inView": true,
+       "covered": null,
+       "rect": [
+        14,
+        131,
+        376,
+        283
+       ],
+       "text": "WAR ORDERS\u25cb Mine 12 ore \u00b7 0/12\u25cb Finish a field m",
+       "swipes": 2
+      },
+      "text": "WAR ORDERS\n\n\u25cb Mine 12 ore \u00b7 0/12\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+     }
+    },
+    "hub-no-horizontal-scroll": {
+     "pass": true,
+     "detail": {
+      "scrollW": 390,
+      "vw": 390
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  },
+  "smoke-320x568": {
+   "size": "320x568",
+   "touch": true,
+   "orders": [
+    "sectors3",
+    "bank60",
+    "kills15",
+    "ops15"
+   ],
+   "placements": 1,
+   "hudFitStart": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 320,
+    "vw": 320,
+    "vh": 568,
+    "overflowX": false
+   },
+   "supplyPrimary": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     34,
+     315,
+     155,
+     359
+    ],
+    "text": "BANK SALVAGE",
+    "swipes": 0
+   },
+   "claimRow": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     213,
+     411,
+     267,
+     451
+    ],
+    "text": "CLAIM",
+    "swipes": 0
+   },
+   "claimRowText": "WAR ORDERS READY\nBank 60 alloy\n+200 CP + CONSUMABLE\nCLAIM",
+   "ticker": [
+    "SALVAGE SECURED",
+    "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 REPAIR KIT"
+   ],
+   "hud": {
+    "radio": "",
+    "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTTap SCAN: the Starter Vein lies on the Refuge road",
+    "title": "SCAN FOR ORE",
+    "hull": "HULL700 / 1700",
+    "heat": "HEAT 0%",
+    "o2": "",
+    "airdrop": "",
+    "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+    "meteor": "",
+    "contracts": "WAR ORDERS 1/3 \u00b7 FINISH A FIELD MISSION IN 3 SECTORS \u00b7 0/3",
+    "chain": "",
+    "wave": "",
+    "minerals": "",
+    "item": "REPAIR\u00d73",
+    "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 REPAIR KIT",
+    "homeButton": "\u2302 MY BASE94 m",
+    "homePulse": true
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 320,
+    "vw": 320,
+    "vh": 568,
+    "overflowX": false
+   },
+   "navCover": {
+    "hits": [],
+    "truncated": false,
+    "lines": {
+     ".cq-nav-title": [
+      57,
+      58,
+      125,
+      70
+     ],
+     ".cq-nav-distance": [
+      38,
+      75,
+      80,
+      85
+     ]
+    },
+    "rect": [
+     14,
+     56,
+     306,
+     92
+    ],
+    "text": "SCAN FOR ORE"
+   },
+   "hudCapture": "journey-hud-320x568.png",
+   "more": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     127,
+     503,
+     299,
+     547
+    ],
+    "text": "LARGE HUD TEXT",
+    "swipes": 1,
+    "panel": {
+     "buttons": [
+      "NAVIGATE \u00b7 REFUGE",
+      "\u2302 MY BASE",
+      "RECALL TO BASE",
+      "FAST TRAVEL \u00b7 BASE COMMAND",
+      "HELP",
+      "INVENTORY / SUPPLY",
+      "PERMANENT COLLECTION",
+      "LOOT & TROPHY HALL",
+      "ZOOM IN",
+      "ZOOM OUT",
+      "LOCATE ME ON THE MAP",
+      "SOUND \u00b7 ON",
+      "LARGE HUD TEXT"
+     ],
+     "rect": [
+      118,
+      60,
+      308,
+      556
+     ],
+     "scrollH": 666,
+     "clientH": 494,
+     "overflowY": "auto",
+     "maxHeight": "calc(100% - 72px)",
+     "vh": 568
+    }
+   },
+   "moreCapture": "journey-more-320x568.png",
+   "loot": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     34,
+     515,
+     104,
+     559
+    ],
+    "text": "CLOSE",
+    "swipes": 5
+   },
+   "lootCapture": "journey-loot-320x568.png",
+   "hubCard": {
+    "reach": {
+     "ok": true,
+     "inView": true,
+     "covered": null,
+     "rect": [
+      14,
+      115,
+      306,
+      267
+     ],
+     "text": "WAR ORDERS\u25cb Finish a field mission in 3 sectors ",
+     "swipes": 3
+    },
+    "text": "WAR ORDERS\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\n\u25cb Destroy 15 Parasites \u00b7 0/15\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+   },
+   "ordersCapture": "journey-orders-320x568.png",
+   "pageErrors": [],
+   "realSeconds": 51,
+   "checks": {
+    "war-order-bank60-drawn": {
+     "pass": true,
+     "detail": [
+      "sectors3",
+      "bank60",
+      "kills15",
+      "ops15"
+     ]
+    },
+    "hud-fits-start": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 320,
+      "vw": 320,
+      "vh": 568,
+      "overflowX": false
+     }
+    },
+    "supply-primary-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       34,
+       315,
+       155,
+       359
+      ],
+      "text": "BANK SALVAGE",
+      "swipes": 0
+     }
+    },
+    "war-order-claim-row-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       213,
+       411,
+       267,
+       451
+      ],
+      "text": "CLAIM",
+      "swipes": 0
+     }
+    },
+    "war-order-claimed-on-server": {
+     "pass": true,
+     "detail": {
+      "id": "bank60",
+      "src": "board",
+      "kind": "daily",
+      "n": 60,
+      "goal": 60,
+      "done": 1,
+      "claimed": 1
+     }
+    },
+    "supply-close-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       34,
+       523,
+       155,
+       567
+      ],
+      "text": "CLOSE SUPPLY",
+      "swipes": 2
+     }
+    },
+    "contracts-line-after-first-order": {
+     "pass": true,
+     "detail": {
+      "radio": "",
+      "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTTap SCAN: the Starter Vein lies on the Refuge road",
+      "title": "SCAN FOR ORE",
+      "hull": "HULL700 / 1700",
+      "heat": "HEAT 0%",
+      "o2": "",
+      "airdrop": "",
+      "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+      "meteor": "",
+      "contracts": "WAR ORDERS 1/3 \u00b7 FINISH A FIELD MISSION IN 3 SECTORS \u00b7 0/3",
+      "chain": "",
+      "wave": "",
+      "minerals": "",
+      "item": "REPAIR\u00d73",
+      "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 REPAIR KIT",
+      "homeButton": "\u2302 MY BASE94 m",
+      "homePulse": true
+     }
+    },
+    "hud-fits-full": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 320,
+      "vw": 320,
+      "vh": 568,
+      "overflowX": false
+     }
+    },
+    "next-chip-not-covered": {
+     "pass": true,
+     "detail": {
+      "hits": [],
+      "truncated": false,
+      "lines": {
+       ".cq-nav-title": [
+        57,
+        58,
+        125,
+        70
+       ],
+       ".cq-nav-distance": [
+        38,
+        75,
+        80,
+        85
+       ]
+      },
+      "rect": [
+       14,
+       56,
+       306,
+       92
+      ],
+      "text": "SCAN FOR ORE"
+     }
+    },
+    "more-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       127,
+       503,
+       299,
+       547
+      ],
+      "text": "LARGE HUD TEXT",
+      "swipes": 1,
+      "panel": {
+       "buttons": [
+        "NAVIGATE \u00b7 REFUGE",
+        "\u2302 MY BASE",
+        "RECALL TO BASE",
+        "FAST TRAVEL \u00b7 BASE COMMAND",
+        "HELP",
+        "INVENTORY / SUPPLY",
+        "PERMANENT COLLECTION",
+        "LOOT & TROPHY HALL",
+        "ZOOM IN",
+        "ZOOM OUT",
+        "LOCATE ME ON THE MAP",
+        "SOUND \u00b7 ON",
+        "LARGE HUD TEXT"
+       ],
+       "rect": [
+        118,
+        60,
+        308,
+        556
+       ],
+       "scrollH": 666,
+       "clientH": 494,
+       "overflowY": "auto",
+       "maxHeight": "calc(100% - 72px)",
+       "vh": 568
+      }
+     }
+    },
+    "loot-hall-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       34,
+       515,
+       104,
+       559
+      ],
+      "text": "CLOSE",
+      "swipes": 5
+     }
+    },
+    "hub-war-orders-card": {
+     "pass": true,
+     "detail": {
+      "reach": {
+       "ok": true,
+       "inView": true,
+       "covered": null,
+       "rect": [
+        14,
+        115,
+        306,
+        267
+       ],
+       "text": "WAR ORDERS\u25cb Finish a field mission in 3 sectors ",
+       "swipes": 3
+      },
+      "text": "WAR ORDERS\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\n\u25cb Destroy 15 Parasites \u00b7 0/15\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+     }
+    },
+    "hub-no-horizontal-scroll": {
+     "pass": true,
+     "detail": {
+      "scrollW": 320,
+      "vw": 320
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  },
+  "smoke-1366x768": {
+   "size": "1366x768",
+   "touch": false,
+   "orders": [
+    "bank60",
+    "sectors3",
+    "kills15",
+    "ops15"
+   ],
+   "placements": 2,
+   "hudFitStart": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 1366,
+    "vw": 1366,
+    "vh": 768,
+    "overflowX": false
+   },
+   "supplyPrimary": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     380,
+     189,
+     501,
+     233
+    ],
+    "text": "BANK SALVAGE",
+    "swipes": 0
+   },
+   "claimRow": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     913,
+     285,
+     967,
+     325
+    ],
+    "text": "CLAIM",
+    "swipes": 0
+   },
+   "claimRowText": "WAR ORDERS READY\nBank 60 alloy\n+200 CP + CONSUMABLE\nCLAIM",
+   "ticker": [
+    "SALVAGE SECURED",
+    "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 DECOY BEACON"
+   ],
+   "hud": {
+    "radio": "",
+    "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTPress C: the Starter Vein lies on the Refuge road",
+    "title": "SCAN FOR ORE",
+    "hull": "HULL700 / 1700",
+    "heat": "HEAT 0%",
+    "o2": "",
+    "airdrop": "",
+    "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+    "meteor": "",
+    "contracts": "WAR ORDERS 1/3 \u00b7 FINISH A FIELD MISSION IN 3 SECTORS \u00b7 0/3",
+    "chain": "",
+    "wave": "",
+    "minerals": "",
+    "item": "REPAIR\u00d72",
+    "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 DECOY BEACON",
+    "homeButton": "\u2302 MY BASE94 m",
+    "homePulse": true
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 1366,
+    "vw": 1366,
+    "vh": 768,
+    "overflowX": false
+   },
+   "navCover": {
+    "hits": [],
+    "truncated": false,
+    "lines": {
+     ".cq-nav-title": [
+      97,
+      11,
+      165,
+      23
+     ],
+     ".cq-nav-distance": [
+      78,
+      28,
+      120,
+      38
+     ]
+    },
+    "rect": [
+     65,
+     10,
+     1126,
+     44
+    ],
+    "text": "SCAN FOR ORE"
+   },
+   "hudCapture": "journey-hud-1366x768.png",
+   "more": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     1173,
+     675,
+     1345,
+     719
+    ],
+    "text": "LARGE HUD TEXT",
+    "swipes": 0,
+    "panel": {
+     "buttons": [
+      "NAVIGATE \u00b7 REFUGE",
+      "\u2302 MY BASE",
+      "RECALL TO BASE",
+      "FAST TRAVEL \u00b7 BASE COMMAND",
+      "HELP",
+      "INVENTORY / SUPPLY",
+      "PERMANENT COLLECTION",
+      "LOOT & TROPHY HALL",
+      "ZOOM IN",
+      "ZOOM OUT",
+      "LOCATE ME ON THE MAP",
+      "SOUND \u00b7 ON",
+      "LARGE HUD TEXT"
+     ],
+     "rect": [
+      1164,
+      60,
+      1354,
+      728
+     ],
+     "scrollH": 666,
+     "clientH": 666,
+     "overflowY": "auto",
+     "maxHeight": "calc(100% - 72px)",
+     "vh": 768
+    }
+   },
+   "moreCapture": "journey-more-1366x768.png",
+   "loot": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     573,
+     690,
+     643,
+     734
+    ],
+    "text": "CLOSE",
+    "swipes": 3
+   },
+   "lootCapture": "journey-loot-1366x768.png",
+   "hubCard": {
+    "reach": {
+     "ok": true,
+     "inView": true,
+     "covered": null,
+     "rect": [
+      337,
+      249,
+      1029,
+      386
+     ],
+     "text": "WAR ORDERS\u2713 Bank 60 alloy \u00b7 CLAIMED\u25cb Finish a fi",
+     "swipes": 1
+    },
+    "text": "WAR ORDERS\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u25cb Destroy 15 Parasites \u00b7 0/15\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+   },
+   "ordersCapture": "journey-orders-1366x768.png",
+   "pageErrors": [],
+   "realSeconds": 104,
+   "checks": {
+    "war-order-bank60-drawn": {
+     "pass": true,
+     "detail": [
+      "bank60",
+      "sectors3",
+      "kills15",
+      "ops15"
+     ]
+    },
+    "hud-fits-start": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 1366,
+      "vw": 1366,
+      "vh": 768,
+      "overflowX": false
+     }
+    },
+    "supply-primary-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       380,
+       189,
+       501,
+       233
+      ],
+      "text": "BANK SALVAGE",
+      "swipes": 0
+     }
+    },
+    "war-order-claim-row-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       913,
+       285,
+       967,
+       325
+      ],
+      "text": "CLAIM",
+      "swipes": 0
+     }
+    },
+    "war-order-claimed-on-server": {
+     "pass": true,
+     "detail": {
+      "id": "bank60",
+      "src": "board",
+      "kind": "daily",
+      "n": 60,
+      "goal": 60,
+      "done": 1,
+      "claimed": 1
+     }
+    },
+    "supply-close-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       380,
+       690,
+       501,
+       734
+      ],
+      "text": "CLOSE SUPPLY",
+      "swipes": 1
+     }
+    },
+    "contracts-line-after-first-order": {
+     "pass": true,
+     "detail": {
+      "radio": "",
+      "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTPress C: the Starter Vein lies on the Refuge road",
+      "title": "SCAN FOR ORE",
+      "hull": "HULL700 / 1700",
+      "heat": "HEAT 0%",
+      "o2": "",
+      "airdrop": "",
+      "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+      "meteor": "",
+      "contracts": "WAR ORDERS 1/3 \u00b7 FINISH A FIELD MISSION IN 3 SECTORS \u00b7 0/3",
+      "chain": "",
+      "wave": "",
+      "minerals": "",
+      "item": "REPAIR\u00d72",
+      "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 DECOY BEACON",
+      "homeButton": "\u2302 MY BASE94 m",
+      "homePulse": true
+     }
+    },
+    "hud-fits-full": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 1366,
+      "vw": 1366,
+      "vh": 768,
+      "overflowX": false
+     }
+    },
+    "next-chip-not-covered": {
+     "pass": true,
+     "detail": {
+      "hits": [],
+      "truncated": false,
+      "lines": {
+       ".cq-nav-title": [
+        97,
+        11,
+        165,
+        23
+       ],
+       ".cq-nav-distance": [
+        78,
+        28,
+        120,
+        38
+       ]
+      },
+      "rect": [
+       65,
+       10,
+       1126,
+       44
+      ],
+      "text": "SCAN FOR ORE"
+     }
+    },
+    "more-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       1173,
+       675,
+       1345,
+       719
+      ],
+      "text": "LARGE HUD TEXT",
+      "swipes": 0,
+      "panel": {
+       "buttons": [
+        "NAVIGATE \u00b7 REFUGE",
+        "\u2302 MY BASE",
+        "RECALL TO BASE",
+        "FAST TRAVEL \u00b7 BASE COMMAND",
+        "HELP",
+        "INVENTORY / SUPPLY",
+        "PERMANENT COLLECTION",
+        "LOOT & TROPHY HALL",
+        "ZOOM IN",
+        "ZOOM OUT",
+        "LOCATE ME ON THE MAP",
+        "SOUND \u00b7 ON",
+        "LARGE HUD TEXT"
+       ],
+       "rect": [
+        1164,
+        60,
+        1354,
+        728
+       ],
+       "scrollH": 666,
+       "clientH": 666,
+       "overflowY": "auto",
+       "maxHeight": "calc(100% - 72px)",
+       "vh": 768
+      }
+     }
+    },
+    "loot-hall-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       573,
+       690,
+       643,
+       734
+      ],
+      "text": "CLOSE",
+      "swipes": 3
+     }
+    },
+    "hub-war-orders-card": {
+     "pass": true,
+     "detail": {
+      "reach": {
+       "ok": true,
+       "inView": true,
+       "covered": null,
+       "rect": [
+        337,
+        249,
+        1029,
+        386
+       ],
+       "text": "WAR ORDERS\u2713 Bank 60 alloy \u00b7 CLAIMED\u25cb Finish a fi",
+       "swipes": 1
+      },
+      "text": "WAR ORDERS\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u25cb Destroy 15 Parasites \u00b7 0/15\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+     }
+    },
+    "hub-no-horizontal-scroll": {
+     "pass": true,
+     "detail": {
+      "scrollW": 1366,
+      "vw": 1366
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  },
+  "smoke-1920x1080": {
+   "size": "1920x1080",
+   "touch": false,
+   "orders": [
+    "bank60",
+    "sectors3",
+    "mine12",
+    "ops15"
+   ],
+   "placements": 1,
+   "hudFitStart": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 1920,
+    "vw": 1920,
+    "vh": 1080,
+    "overflowX": false
+   },
+   "supplyPrimary": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     657,
+     189,
+     778,
+     233
+    ],
+    "text": "BANK SALVAGE",
+    "swipes": 0
+   },
+   "claimRow": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     1190,
+     285,
+     1244,
+     325
+    ],
+    "text": "CLAIM",
+    "swipes": 0
+   },
+   "claimRowText": "WAR ORDERS READY\nBank 60 alloy\n+200 CP + CONSUMABLE\nCLAIM",
+   "ticker": [
+    "SALVAGE SECURED",
+    "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 DECOY BEACON"
+   ],
+   "hud": {
+    "radio": "",
+    "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTPress C: the Starter Vein lies on the Refuge road",
+    "title": "SCAN FOR ORE",
+    "hull": "HULL700 / 1700",
+    "heat": "HEAT 0%",
+    "o2": "",
+    "airdrop": "",
+    "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+    "meteor": "",
+    "contracts": "WAR ORDERS 1/3 \u00b7 FINISH A FIELD MISSION IN 3 SECTORS \u00b7 0/3",
+    "chain": "",
+    "wave": "",
+    "minerals": "",
+    "item": "REPAIR\u00d72",
+    "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 DECOY BEACON",
+    "homeButton": "\u2302 MY BASE94 m",
+    "homePulse": true
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 1920,
+    "vw": 1920,
+    "vh": 1080,
+    "overflowX": false
+   },
+   "navCover": {
+    "hits": [],
+    "truncated": false,
+    "lines": {
+     ".cq-nav-title": [
+      97,
+      11,
+      165,
+      23
+     ],
+     ".cq-nav-distance": [
+      78,
+      28,
+      120,
+      38
+     ]
+    },
+    "rect": [
+     65,
+     10,
+     1680,
+     44
+    ],
+    "text": "SCAN FOR ORE"
+   },
+   "hudCapture": "journey-hud-1920x1080.png",
+   "more": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     1727,
+     675,
+     1899,
+     719
+    ],
+    "text": "LARGE HUD TEXT",
+    "swipes": 0,
+    "panel": {
+     "buttons": [
+      "NAVIGATE \u00b7 REFUGE",
+      "\u2302 MY BASE",
+      "RECALL TO BASE",
+      "FAST TRAVEL \u00b7 BASE COMMAND",
+      "HELP",
+      "INVENTORY / SUPPLY",
+      "PERMANENT COLLECTION",
+      "LOOT & TROPHY HALL",
+      "ZOOM IN",
+      "ZOOM OUT",
+      "LOCATE ME ON THE MAP",
+      "SOUND \u00b7 ON",
+      "LARGE HUD TEXT"
+     ],
+     "rect": [
+      1718,
+      60,
+      1908,
+      728
+     ],
+     "scrollH": 666,
+     "clientH": 666,
+     "overflowY": "auto",
+     "maxHeight": "calc(100% - 72px)",
+     "vh": 1080
+    }
+   },
+   "moreCapture": "journey-more-1920x1080.png",
+   "loot": {
+    "ok": true,
+    "inView": true,
+    "covered": null,
+    "rect": [
+     850,
+     1002,
+     920,
+     1046
+    ],
+    "text": "CLOSE",
+    "swipes": 2
+   },
+   "lootCapture": "journey-loot-1920x1080.png",
+   "hubCard": {
+    "reach": {
+     "ok": true,
+     "inView": true,
+     "covered": null,
+     "rect": [
+      614,
+      708,
+      1306,
+      845
+     ],
+     "text": "WAR ORDERS\u2713 Bank 60 alloy \u00b7 CLAIMED\u25cb Finish a fi",
+     "swipes": 0
+    },
+    "text": "WAR ORDERS\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u25cb Mine 12 ore \u00b7 0/12\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+   },
+   "ordersCapture": "journey-orders-1920x1080.png",
+   "pageErrors": [],
+   "realSeconds": 165,
+   "checks": {
+    "war-order-bank60-drawn": {
+     "pass": true,
+     "detail": [
+      "bank60",
+      "sectors3",
+      "mine12",
+      "ops15"
+     ]
+    },
+    "hud-fits-start": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 1920,
+      "vw": 1920,
+      "vh": 1080,
+      "overflowX": false
+     }
+    },
+    "supply-primary-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       657,
+       189,
+       778,
+       233
+      ],
+      "text": "BANK SALVAGE",
+      "swipes": 0
+     }
+    },
+    "war-order-claim-row-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       1190,
+       285,
+       1244,
+       325
+      ],
+      "text": "CLAIM",
+      "swipes": 0
+     }
+    },
+    "war-order-claimed-on-server": {
+     "pass": true,
+     "detail": {
+      "id": "bank60",
+      "src": "board",
+      "kind": "daily",
+      "n": 60,
+      "goal": 60,
+      "done": 1,
+      "claimed": 1
+     }
+    },
+    "supply-close-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       657,
+       950,
+       778,
+       994
+      ],
+      "text": "CLOSE SUPPLY",
+      "swipes": 0
+     }
+    },
+    "contracts-line-after-first-order": {
+     "pass": true,
+     "detail": {
+      "radio": "",
+      "nav": "SCAN FOR ORE\u219113 m \u00b7 NEXTPress C: the Starter Vein lies on the Refuge road",
+      "title": "SCAN FOR ORE",
+      "hull": "HULL700 / 1700",
+      "heat": "HEAT 0%",
+      "o2": "",
+      "airdrop": "",
+      "base": "MY BASE \u00b7 CC1 \u00b7 YIELD 0% \u00b7 BUILDER FREE \u00b7 TOWN SCORE 120",
+      "meteor": "",
+      "contracts": "WAR ORDERS 1/3 \u00b7 FINISH A FIELD MISSION IN 3 SECTORS \u00b7 0/3",
+      "chain": "",
+      "wave": "",
+      "minerals": "",
+      "item": "REPAIR\u00d72",
+      "ticker": "WAR ORDER COMPLETE \u00b7 +200 CP \u00b7 DECOY BEACON",
+      "homeButton": "\u2302 MY BASE94 m",
+      "homePulse": true
+     }
+    },
+    "hud-fits-full": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 1920,
+      "vw": 1920,
+      "vh": 1080,
+      "overflowX": false
+     }
+    },
+    "next-chip-not-covered": {
+     "pass": true,
+     "detail": {
+      "hits": [],
+      "truncated": false,
+      "lines": {
+       ".cq-nav-title": [
+        97,
+        11,
+        165,
+        23
+       ],
+       ".cq-nav-distance": [
+        78,
+        28,
+        120,
+        38
+       ]
+      },
+      "rect": [
+       65,
+       10,
+       1680,
+       44
+      ],
+      "text": "SCAN FOR ORE"
+     }
+    },
+    "more-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       1727,
+       675,
+       1899,
+       719
+      ],
+      "text": "LARGE HUD TEXT",
+      "swipes": 0,
+      "panel": {
+       "buttons": [
+        "NAVIGATE \u00b7 REFUGE",
+        "\u2302 MY BASE",
+        "RECALL TO BASE",
+        "FAST TRAVEL \u00b7 BASE COMMAND",
+        "HELP",
+        "INVENTORY / SUPPLY",
+        "PERMANENT COLLECTION",
+        "LOOT & TROPHY HALL",
+        "ZOOM IN",
+        "ZOOM OUT",
+        "LOCATE ME ON THE MAP",
+        "SOUND \u00b7 ON",
+        "LARGE HUD TEXT"
+       ],
+       "rect": [
+        1718,
+        60,
+        1908,
+        728
+       ],
+       "scrollH": 666,
+       "clientH": 666,
+       "overflowY": "auto",
+       "maxHeight": "calc(100% - 72px)",
+       "vh": 1080
+      }
+     }
+    },
+    "loot-hall-last-button-reachable": {
+     "pass": true,
+     "detail": {
+      "ok": true,
+      "inView": true,
+      "covered": null,
+      "rect": [
+       850,
+       1002,
+       920,
+       1046
+      ],
+      "text": "CLOSE",
+      "swipes": 2
+     }
+    },
+    "hub-war-orders-card": {
+     "pass": true,
+     "detail": {
+      "reach": {
+       "ok": true,
+       "inView": true,
+       "covered": null,
+       "rect": [
+        614,
+        708,
+        1306,
+        845
+       ],
+       "text": "WAR ORDERS\u2713 Bank 60 alloy \u00b7 CLAIMED\u25cb Finish a fi",
+       "swipes": 0
+      },
+      "text": "WAR ORDERS\n\n\u2713 Bank 60 alloy \u00b7 CLAIMED\n\n\u25cb Finish a field mission in 3 sectors \u00b7 0/3\n\n\u25cb Mine 12 ore \u00b7 0/12\n\nWEEKLY \u00b7 Win 15 operations \u00b7 0/15\n\nClaim at the Refuge terminal or your Command Gate \u00b7 1/3 claimed today \u00b7 new orders at 00:00 UTC"
+     }
+    },
+    "hub-no-horizontal-scroll": {
+     "pass": true,
+     "detail": {
+      "scrollW": 1920,
+      "vw": 1920
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  },
+  "keys-1366x768": {
+   "size": "1366x768",
+   "touch": false,
+   "wasd": {
+    "view": [
+     {
+      "x": 1162,
+      "z": 1130,
+      "yaw": 0
+     },
+     {
+      "x": 1162,
+      "z": 1119.0262352941108
+     }
+    ],
+    "server": [
+     {
+      "x": 1162,
+      "z": 1130,
+      "y": 14.905780973948637,
+      "surface": "ground"
+     },
+     {
+      "x": 1162,
+      "z": 1119.0262352941108,
+      "y": 14.635279636943528,
+      "surface": "ground"
+     }
+    ],
+    "viewMoved": 10.97,
+    "serverMoved": 10.97,
+    "northward": 10.97
+   },
+   "key1": {
+    "repairBefore": 1,
+    "repairAfter": 0,
+    "hpBefore": 700,
+    "ticker": [
+     "REPAIR KIT \u00b7 +40% HULL OVER 6 S \u00b7 0 LEFT"
+    ],
+    "hpAfter": 841.6666666666686
+   },
+   "capture": "journey-keys-1366x768.png",
+   "pageErrors": [],
+   "realSeconds": 101,
+   "checks": {
+    "wasd-2s-moves-tank": {
+     "pass": true,
+     "detail": {
+      "view": [
+       {
+        "x": 1162,
+        "z": 1130,
+        "yaw": 0
+       },
+       {
+        "x": 1162,
+        "z": 1119.0262352941108
+       }
+      ],
+      "server": [
+       {
+        "x": 1162,
+        "z": 1130,
+        "y": 14.905780973948637,
+        "surface": "ground"
+       },
+       {
+        "x": 1162,
+        "z": 1119.0262352941108,
+        "y": 14.635279636943528,
+        "surface": "ground"
+       }
+      ],
+      "viewMoved": 10.97,
+      "serverMoved": 10.97,
+      "northward": 10.97
+     }
+    },
+    "key1-uses-repair-kit": {
+     "pass": true,
+     "detail": {
+      "repairBefore": 1,
+      "repairAfter": 0,
+      "hpBefore": 700,
+      "ticker": [
+       "REPAIR KIT \u00b7 +40% HULL OVER 6 S \u00b7 0 LEFT"
+      ],
+      "hpAfter": 841.6666666666686
+     }
+    },
+    "repair-kit-mends-hull": {
+     "pass": true,
+     "detail": {
+      "repairBefore": 1,
+      "repairAfter": 0,
+      "hpBefore": 700,
+      "ticker": [
+       "REPAIR KIT \u00b7 +40% HULL OVER 6 S \u00b7 0 LEFT"
+      ],
+      "hpAfter": 841.6666666666686
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "notes": []
+  }
+ },
+ "firstHour": {
+  "unit": "simulated minutes (Worker s.an.p) / real seconds since ENTER CONQUEST",
+  "targetTownMin": 22,
+  "moments": {
+   "first-fight": {
+    "sim": 0.11,
+    "real": 7.9,
+    "op": "oxygen-line"
+   },
+   "first-kill": {
+    "sim": 0.14,
+    "real": 10.8,
+    "op": "oxygen-line"
+   },
+   "first-loot": {
+    "sim": 0.97,
+    "real": 61.9,
+    "label": "SHIELD",
+    "rarity": 1,
+    "loot": true,
+    "cp": 45
+   },
+   "first-loot-item": {
+    "sim": 0.97,
+    "real": 61.9,
+    "label": "SHIELD",
+    "rarity": 1
+   },
+   "first-bank": {
+    "sim": 1.53,
+    "real": 95.9,
+    "wallet": {
+     "fe": 3,
+     "il": 0,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "claimRows": 0
+   },
+   "first-scan": {
+    "sim": 1.58,
+    "real": 99.4,
+    "found": [
+     "starter-01"
+    ],
+    "route": null,
+    "chip": "GATHER THE STARTER VEIN"
+   },
+   "starter-vein": {
+    "sim": 1.75,
+    "real": 109.8,
+    "carried": 35
+   },
+   "ferrite-banked": {
+    "sim": 1.81,
+    "real": 113.0,
+    "wallet": {
+     "fe": 38,
+     "il": 0,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "claimRows": 1
+   },
+   "first-plate": {
+    "sim": 2.21,
+    "real": 139.9,
+    "button": "FRONT \u00b7 FERRITE (+1% HULL) \u00b7 40 FERRITE + 300 PTS",
+    "muted": false,
+    "wallet": {
+     "fe": 42,
+     "il": 0,
+     "ar": 0,
+     "tq": 0,
+     "se": 0,
+     "mh": 0
+    },
+    "clientPts": 650,
+    "need": {
+     "fe": 40,
+     "pts": 300
+    },
+    "hint": "YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).",
+    "toast": "FRONT Ferrite plate fabricated",
+    "clientPtsAfter": 350,
+    "hullBefore": 1700,
+    "hullAfter": 1717
+   },
+   "first-town": {
+    "sim": 6.09,
+    "real": 379.8,
+    "need": "600/600 CP \u00b7 30/30 ALLOY \u00b7 15/15 BIOMASS \u00b7 2/2 HELIUM-3 \u00b7 you start with 200 wall composite",
+    "cp": 411,
+    "banked": {
+     "alloy": 107,
+     "biomass": 76,
+     "helium": 23
+    }
+   }
+  }
+ },
+ "status": "FAIL",
+ "failures": [
+  {
+   "run": "route-390x844",
+   "check": "chip-names-bank-the-ferrite-after-starter-vein",
+   "detail": {
+    "coach": "BANK THE FERRITE",
+    "chip": "HOLD THE OXYGEN LINE",
+    "route": null,
+    "carried": {
+     "fe": 35
+    },
+    "source": "js/conquest/app.js:266 nextOrder: view.routeTarget outranks coachStep; app.js:325 clears a resource route only when the vein is dry"
+   }
+  }
+ ],
+ "summary": {
+  "journey-390x844": {
+   "minute0-radio": "PASS",
+   "minute0-hud-only-next-hull-heat": "PASS",
+   "minute0-no-base-ticker": "PASS",
+   "defend-in-range-at-spawn": "PASS",
+   "first-defense-one-tap-no-briefing": "PASS",
+   "first-fight-won": "PASS",
+   "kill-pop-destroyed": "PASS",
+   "starter-vein-35-ferrite": "PASS",
+   "first-plate-raises-hull": "PASS",
+   "plate-card-not-muted-when-affordable": "PASS",
+   "first-plate-fitted": "PASS",
+   "claim-town-button-reachable": "PASS",
+   "next-chip-names-each-order": "PASS",
+   "town-claimed": "PASS",
+   "town-by-22-simulated-minutes": "PASS",
+   "no-page-errors": "PASS"
+  },
+  "route-390x844": {
+   "scan-route-leads-to-starter-vein": "PASS",
+   "chip-names-bank-the-ferrite-after-starter-vein": "FAIL",
+   "no-page-errors": "PASS"
+  },
+  "smoke-390x700": {
+   "war-order-bank60-drawn": "PASS",
+   "hud-fits-start": "PASS",
+   "supply-primary-reachable": "PASS",
+   "war-order-claim-row-reachable": "PASS",
+   "war-order-claimed-on-server": "PASS",
+   "supply-close-reachable": "PASS",
+   "contracts-line-after-first-order": "PASS",
+   "hud-fits-full": "PASS",
+   "next-chip-not-covered": "PASS",
+   "more-last-button-reachable": "PASS",
+   "loot-hall-last-button-reachable": "PASS",
+   "hub-war-orders-card": "PASS",
+   "hub-no-horizontal-scroll": "PASS",
+   "no-page-errors": "PASS"
+  },
+  "smoke-320x568": {
+   "war-order-bank60-drawn": "PASS",
+   "hud-fits-start": "PASS",
+   "supply-primary-reachable": "PASS",
+   "war-order-claim-row-reachable": "PASS",
+   "war-order-claimed-on-server": "PASS",
+   "supply-close-reachable": "PASS",
+   "contracts-line-after-first-order": "PASS",
+   "hud-fits-full": "PASS",
+   "next-chip-not-covered": "PASS",
+   "more-last-button-reachable": "PASS",
+   "loot-hall-last-button-reachable": "PASS",
+   "hub-war-orders-card": "PASS",
+   "hub-no-horizontal-scroll": "PASS",
+   "no-page-errors": "PASS"
+  },
+  "smoke-1366x768": {
+   "war-order-bank60-drawn": "PASS",
+   "hud-fits-start": "PASS",
+   "supply-primary-reachable": "PASS",
+   "war-order-claim-row-reachable": "PASS",
+   "war-order-claimed-on-server": "PASS",
+   "supply-close-reachable": "PASS",
+   "contracts-line-after-first-order": "PASS",
+   "hud-fits-full": "PASS",
+   "next-chip-not-covered": "PASS",
+   "more-last-button-reachable": "PASS",
+   "loot-hall-last-button-reachable": "PASS",
+   "hub-war-orders-card": "PASS",
+   "hub-no-horizontal-scroll": "PASS",
+   "no-page-errors": "PASS"
+  },
+  "smoke-1920x1080": {
+   "war-order-bank60-drawn": "PASS",
+   "hud-fits-start": "PASS",
+   "supply-primary-reachable": "PASS",
+   "war-order-claim-row-reachable": "PASS",
+   "war-order-claimed-on-server": "PASS",
+   "supply-close-reachable": "PASS",
+   "contracts-line-after-first-order": "PASS",
+   "hud-fits-full": "PASS",
+   "next-chip-not-covered": "PASS",
+   "more-last-button-reachable": "PASS",
+   "loot-hall-last-button-reachable": "PASS",
+   "hub-war-orders-card": "PASS",
+   "hub-no-horizontal-scroll": "PASS",
+   "no-page-errors": "PASS"
+  },
+  "keys-1366x768": {
+   "wasd-2s-moves-tank": "PASS",
+   "key1-uses-repair-kit": "PASS",
+   "repair-kit-mends-hull": "PASS",
+   "no-page-errors": "PASS"
+  }
+ }
+}

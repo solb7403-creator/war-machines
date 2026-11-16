@@ -4552,7 +4552,8 @@ spent (behavior held constant across the change) before the +-10% check.
 - **Economy gate** (`dev/tests/conquest-ladder-check.mjs`, `docs/conquest/session6/ladder.json`): the audit's method on current code.
   Decision 10 check PASSES: production x3 + storage x2 keep the regular (60 min/day) CC5 day 5.8 / CC10 day 30.8 vs the audit table
   6 / 28.8 (+-10%), with the model's "half the CP to other sinks" trigger aligned to 2,550 CP spent (the old claim), as planned.
-  **Decision (recorded for the owner):** the two owner-decided CP sources move the ladder a lot in this model: with the Sortie chain
+  **RESOLVED by the owner correction of Nov 16 (see "Owner correction: Sortie chain +1.25% a link" below; the chain now pays +1.25%
+  a link and the ladder check fails the build outside +-10% with every change on).** Original note: the two owner-decided CP sources move the ladder a lot in this model: with the Sortie chain
   CC5 4.8 / CC10 15.8; with the chain + War Orders (16 claimed by the model) CC5 4.8 / CC10 14.8. Both are built exactly as decided
   (no new numbers); the brief's +-10% check is Decision 10's own verification and passes; the speed-up is the #1 economy item of the
   final report with a PROPOSAL (e.g. the chain pays salvage and loot only: CC10 back to ~day 19-21 with War Orders; or War Orders
