@@ -1,0 +1,451 @@
+{
+ "scope": "Session 6 owner fix (Nov 16): the Sortie chain meter and the after-action chain line on the shipped client, real Worker reducer.",
+ "runs": {
+  "chain-390x844": {
+   "size": "390x844",
+   "touch": true,
+   "hud": {
+    "found": true,
+    "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 9:47",
+    "x": 14,
+    "y": 124.5,
+    "w": 362,
+    "h": 13,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 390,
+    "vw": 390,
+    "vh": 844,
+    "overflowX": false
+   },
+   "hudCapture": "journey-chain-hud-390x844.png",
+   "fight": {
+    "result": "victory",
+    "seconds": 47.5,
+    "kills": 6
+   },
+   "aar": {
+    "found": true,
+    "text": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME",
+    "x": 31,
+    "y": 427.25,
+    "w": 328,
+    "h": 42,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "receiptChain": {},
+   "aarCapture": "journey-aar-chain-390x844.png",
+   "errors": [],
+   "checks": {
+    "hud-meter-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 9:47"
+    },
+    "hud-meter-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 9:47",
+      "x": 14,
+      "y": 124.5,
+      "w": 362,
+      "h": 13,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "hud-fits": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 390,
+      "vw": 390,
+      "vh": 844,
+      "overflowX": false
+     }
+    },
+    "server-chain-two-links": {
+     "pass": true,
+     "detail": {
+      "n": 2,
+      "at": 1794825132390
+     }
+    },
+    "won-oxygen-line": {
+     "pass": true,
+     "detail": {
+      "result": "victory",
+      "seconds": 47.5,
+      "kills": 6
+     }
+    },
+    "aar-chain-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME"
+    },
+    "aar-chain-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME",
+      "x": 31,
+      "y": 427.25,
+      "w": 328,
+      "h": 42,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   }
+  },
+  "chain-320x568": {
+   "size": "320x568",
+   "touch": true,
+   "hud": {
+    "found": true,
+    "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 9:49",
+    "x": 14,
+    "y": 124.5,
+    "w": 292,
+    "h": 13,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 320,
+    "vw": 320,
+    "vh": 568,
+    "overflowX": false
+   },
+   "hudCapture": "journey-chain-hud-320x568.png",
+   "fight": {
+    "result": "victory",
+    "seconds": 46.6,
+    "kills": 6
+   },
+   "aar": {
+    "found": true,
+    "text": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME",
+    "x": 31,
+    "y": 355,
+    "w": 258,
+    "h": 42,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "receiptChain": {},
+   "aarCapture": "journey-aar-chain-320x568.png",
+   "errors": [],
+   "checks": {
+    "hud-meter-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 9:49"
+    },
+    "hud-meter-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 9:49",
+      "x": 14,
+      "y": 124.5,
+      "w": 292,
+      "h": 13,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "hud-fits": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 320,
+      "vw": 320,
+      "vh": 568,
+      "overflowX": false
+     }
+    },
+    "server-chain-two-links": {
+     "pass": true,
+     "detail": {
+      "n": 2,
+      "at": 1794825200889
+     }
+    },
+    "won-oxygen-line": {
+     "pass": true,
+     "detail": {
+      "result": "victory",
+      "seconds": 46.6,
+      "kills": 6
+     }
+    },
+    "aar-chain-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME"
+    },
+    "aar-chain-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME",
+      "x": 31,
+      "y": 355,
+      "w": 258,
+      "h": 42,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   }
+  },
+  "chain-1366x768": {
+   "size": "1366x768",
+   "touch": false,
+   "hud": {
+    "found": true,
+    "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 8:58",
+    "x": 14,
+    "y": 84.5,
+    "w": 1338,
+    "h": 13,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 1366,
+    "vw": 1366,
+    "vh": 768,
+    "overflowX": false
+   },
+   "hudCapture": "journey-chain-hud-1366x768.png",
+   "fight": {
+    "result": "victory",
+    "seconds": 62.7,
+    "kills": 6
+   },
+   "aar": {
+    "found": true,
+    "text": "SORTIE CHAIN ×2 · BONUS ITEM: SCANNER CHARGE",
+    "x": 377,
+    "y": 382.75,
+    "w": 612,
+    "h": 21,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "receiptChain": {},
+   "aarCapture": "journey-aar-chain-1366x768.png",
+   "errors": [],
+   "checks": {
+    "hud-meter-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 8:58"
+    },
+    "hud-meter-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 8:58",
+      "x": 14,
+      "y": 84.5,
+      "w": 1338,
+      "h": 13,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "hud-fits": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 1366,
+      "vw": 1366,
+      "vh": 768,
+      "overflowX": false
+     }
+    },
+    "server-chain-two-links": {
+     "pass": true,
+     "detail": {
+      "n": 2,
+      "at": 1794825267040
+     }
+    },
+    "won-oxygen-line": {
+     "pass": true,
+     "detail": {
+      "result": "victory",
+      "seconds": 62.7,
+      "kills": 6
+     }
+    },
+    "aar-chain-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ×2 · BONUS ITEM: SCANNER CHARGE"
+    },
+    "aar-chain-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ×2 · BONUS ITEM: SCANNER CHARGE",
+      "x": 377,
+      "y": 382.75,
+      "w": 612,
+      "h": 21,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   }
+  },
+  "chain-1920x1080": {
+   "size": "1920x1080",
+   "touch": false,
+   "hud": {
+    "found": true,
+    "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 8:19",
+    "x": 14,
+    "y": 84.5,
+    "w": 1892,
+    "h": 13,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "hudFit": {
+    "outside": [],
+    "count": 0,
+    "scrollW": 1920,
+    "vw": 1920,
+    "vh": 1080,
+    "overflowX": false
+   },
+   "hudCapture": "journey-chain-hud-1920x1080.png",
+   "fight": {
+    "result": "victory",
+    "seconds": 96.7,
+    "kills": 6
+   },
+   "aar": {
+    "found": true,
+    "text": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME",
+    "x": 654,
+    "y": 538.75,
+    "w": 612,
+    "h": 21,
+    "inside": true,
+    "oneLine": true,
+    "clipped": false
+   },
+   "receiptChain": {},
+   "aarCapture": "journey-aar-chain-1920x1080.png",
+   "errors": [],
+   "checks": {
+    "hud-meter-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 8:19"
+    },
+    "hud-meter-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ●●○ · NEXT WIN 20% BONUS ITEM · 8:19",
+      "x": 14,
+      "y": 84.5,
+      "w": 1892,
+      "h": 13,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "hud-fits": {
+     "pass": true,
+     "detail": {
+      "outside": [],
+      "count": 0,
+      "scrollW": 1920,
+      "vw": 1920,
+      "vh": 1080,
+      "overflowX": false
+     }
+    },
+    "server-chain-two-links": {
+     "pass": true,
+     "detail": {
+      "n": 2,
+      "at": 1794825403359
+     }
+    },
+    "won-oxygen-line": {
+     "pass": true,
+     "detail": {
+      "result": "victory",
+      "seconds": 96.7,
+      "kills": 6
+     }
+    },
+    "aar-chain-copy": {
+     "pass": true,
+     "detail": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME"
+    },
+    "aar-chain-inside-screen": {
+     "pass": true,
+     "detail": {
+      "found": true,
+      "text": "SORTIE CHAIN ×2 · 20% BONUS ITEM ROLL · NONE THIS TIME",
+      "x": 654,
+      "y": 538.75,
+      "w": 612,
+      "h": 21,
+      "inside": true,
+      "oneLine": true,
+      "clipped": false
+     }
+    },
+    "no-page-errors": {
+     "pass": true,
+     "detail": []
+    }
+   }
+  }
+ },
+ "status": "PASS",
+ "failures": []
+}
