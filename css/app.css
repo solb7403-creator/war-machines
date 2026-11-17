@@ -924,7 +924,7 @@ button.q{display:flex;width:100%;text-align:left}
 .pfx-embers i{width:4px;height:4px;border-radius:50%;background:#ffb35a;box-shadow:0 0 6px 2px rgba(255,120,40,.8);bottom:22%;animation:pfxRise 2.4s linear infinite}
 .pfx-embers i:nth-child(1){left:28%}.pfx-embers i:nth-child(2){left:44%;animation-delay:-.7s;animation-duration:2s}.pfx-embers i:nth-child(3){left:57%;animation-delay:-1.3s}.pfx-embers i:nth-child(4){left:66%;animation-delay:-.4s;animation-duration:2.8s}.pfx-embers i:nth-child(5){left:38%;animation-delay:-1.8s;animation-duration:3.1s}
 /* rail: a band of maglev light running along the hull */
-.pfx-rail i{top:0;bottom:0;width:34%;background:linear-gradient(100deg,transparent,rgba(90,235,255,.55),rgba(220,255,255,.75),rgba(90,235,255,.55),transparent);mix-blend-mode:screen;animation:pfxSweep 1.9s cubic-bezier(.4,0,.2,1) infinite}
+.pfx-rail i{top:-10%;bottom:-10%;width:38%;background:linear-gradient(90deg,transparent,rgba(90,235,255,.5) 30%,rgba(220,255,255,.75) 50%,rgba(90,235,255,.5) 70%,transparent);mix-blend-mode:screen;transform:skewX(-12deg);animation:pfxSweep 1.9s cubic-bezier(.4,0,.2,1) infinite}
 .pfx-rail i:nth-child(n+2){display:none}
 /* arcs: little bolts crackling over the plates */
 .pfx-arcs{background:radial-gradient(50% 40% at 50% 55%,rgba(150,210,255,.16),transparent 70%)}

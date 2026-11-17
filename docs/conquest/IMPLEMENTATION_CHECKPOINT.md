@@ -4911,14 +4911,17 @@ premium LIVE store entries that are not on sale. Owner not monitoring: every cho
 
 ### Critic rounds (one independent visual critic per round; phone 390x844 and desktop 1920x1080 judged together)
 
-| Map | Round 1 | What it found | What changed |
-|---|---|---|---|
-| Moonbase | 5 | four streaks at once too loud; ground rings read as team rings; no flash on the hit; haze looks like smears | salvos of three, two in the air at a time; the rock's dark shadow inside ONE amber ring; white-hot flash and a dust ring on impact; lighter, thicker, billowing haze |
-| Overpass | 5 | rail lights tiny; the train looks like placeholder boxes; flare washes out the HUD | chasing pulse on lit lane edges, headlight beam; train with lit windows, light strips, underglow, a streak behind it; glare kept under the HUD band and the combat text |
-| Longshot | 7.5 | bolts pure white and flat; core bloom hides the pylon; flare shafts stripe the field | cyan-violet bolts ending in a splash of light on the floor, smaller core, ground flash; shorter, fainter shafts |
-| Crater Field | 6.5 | best warning; the teal column reads as a heal beam | amber cracks and ring; the eruption is a ragged steam-and-ash column with thrown rock, hot at its root |
-| Canyon | 4.5 | funnel see-through hoops, same colour as the ground and the haze; forming cone unreadable | three-layer funnel with a dark core and wound streaks, dust skirt, stones, a shadow; forming = a ground swirl with a thin thread; lighter haze so the funnel is the darkest thing on screen |
-| Bunker | 6 | warning too faint; beam hair-thin, starts in mid-air | dashed flicker along the row, brighter wall and ceiling mounts with light on the floor; beam three layers thick from above the picture, a glowing trail on the floor; the flicker strobes |
+| Map | R1 | R2 | R3 | R4 | What the critics found, and what changed |
+|---|---|---|---|---|---|
+| Moonbase | 5 | 7 | 7.5 ship | | R1: four streaks at once too loud, rings read as team rings, no flash, haze smears. Changed: salvos of three (two in the air at a time), the rock's dark shadow inside one amber ring, white flash, dust ring, thrown rock, crisper scorch, pale billowing haze |
+| Overpass | 5 | 6.5 | 7 ship | | R1-R2: rail lights tiny, train "placeholder boxes", flare washes the HUD. Changed: a pulse chasing along lit lane edges, headlight beam, train with a tapered nose, lit window band, roof light bar, underglow and streak (five draw calls); glare kept under the HUD lines and trimmed twice |
+| Longshot | 7.5 | 7.5 | 7.5 ship | | Bolts pure white and sprayed everywhere; glow sat off the coils. Changed: violet-cyan arcs running down the lane both ways, each ending in a splash of light; glow on the coil; brighter warning ring |
+| Crater Field | 6.5 | 6 | 6 fix first | by review B | R1: teal column reads as a heal beam. R2-R3: white disc, then a hard pillar. Changed: amber jagged cracks; the eruption is soft clouds stacked up a column with ash in its lower half, an amber flash at its root, thrown rock; soft steam |
+| Canyon | 4.5 | 6.5 | 7 ship | | R1: funnel see-through hoops in the ground's colour. Changed: three-layer funnel with a dark core, wound streaks, feathered top, dust skirt, stones, shadow; forming = a ground swirl and a thin thread; lighter haze, soft tan streaks |
+| Bunker | 6 | 7.5 | 8.5 ship | | R1: warning too faint, beam hair-thin. Changed: ceiling mounts on a rail blinking faster as it comes, a dashed line marching along the row, a three-layer beam that fades out upwards, a wide glowing floor trail; the flicker strobes |
+
+Round 3 named Crater Field's eruption clearly below the others, so it alone got a fourth capture (`docs/weather-5e2e/round4/`),
+judged by review B. Sheets: `docs/weather-5e2e/round1..4/`, final five-size sets in `docs/weather-5e2e/final/`.
 
 Also from round 1: the weather label overlapped Bounty's "Most stars wins" (moved under it); a red wash in half the frames
 was the game's own damage vignette (the capture now heals the pilot before each frame so the weather is judged alone).

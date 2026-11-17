@@ -257,7 +257,7 @@ const SERIES_X=2,ROUND_T=90;
 // non-damaging vision effect (WX_MAP). The roll (wxRoll) and the whole timetable (wxPlan) are pure functions of (seed, map,
 // round): no sim state, no random(), no trigonometry, only + - * / and sqrt, so the phone, a desktop, the live-match room
 // (worker/src/pvp.js) and the proof-of-play check (worker/src/proof.js) all work out exactly the same plan. The sim
-// (game.js weatherTick) decides every hit from that plan; the 3D layer (js/weatherfx.js) only draws it.
+// (game.js weatherTick) decides every hit from that plan; the presentation layer (js/weather.js) only draws it.
 // Rules for every damaging hazard: seeded; point-mirrored so both halves of the map are threatened equally (twin strikes,
 // alternating which half goes first); always warned before it can hit (WX_HZ warn: sound + light, the same every time);
 // never more than WX_CAP of a full hull per hit; a hazard that finishes a tank credits the last enemy who hit it within
@@ -275,12 +275,12 @@ const WX_MAP={
 // dmg: hull damage of one hit at 1v1 hull scale (x the mode's hull scale, armor and plates apply, never above WX_CAP of the
 // tank's full hull); warn: seconds of warning before it can hit; res: the Hull Plating trait that cuts it (a area, e energy)
 const WX_HZ={
- meteor:{dmg:300,warn:1.6,r:2,txt:'METEOR',res:'a',how:'Watch for the streak and the glow on the ground: drive off the spot'},
- train:{dmg:420,warn:2.8,hw:1.25,len:8,v:20,shove:2.2,txt:'TRAIN',res:'a',how:'Rail lights and a horn: leave the deck or hug its railing. Tunnels and ramps are safe'},
- arc:{dmg:320,warn:3,txt:'ARC',res:'e',how:'Three pulses of the coils, then it fires: break line of sight behind a container'},
- vent:{dmg:340,warn:2.2,txt:'VENT',res:'a',how:'A hiss and wisps from the cracks: get out of the crater'},
+ meteor:{dmg:300,warn:1.6,r:2,txt:'METEOR',res:'a',how:'Streak and glow: drive off the spot'},
+ train:{dmg:420,warn:2.8,hw:1.25,len:8,v:20,shove:2.2,txt:'TRAIN',res:'a',how:'Horn and rail lights: get off the deck'},
+ arc:{dmg:320,warn:3,txt:'ARC',res:'e',how:'Three pulses: hide behind a container'},
+ vent:{dmg:340,warn:2.2,txt:'VENT',res:'a',how:'Hiss and glowing cracks: leave the crater'},
  tornado:{dmg:70,warn:2.6,r:1.35,v:1.7,life:20,tick:0.5,push:0.9,txt:'TORNADO',res:'a',how:'Slow and loud: drive around it'},
- laser:{dmg:380,warn:2,r:1.1,v:8,txt:'LASER',res:'e',how:'The mounts glow and the row flickers: step off the row'}};
+ laser:{dmg:380,warn:2,r:1.1,v:8,txt:'LASER',res:'e',how:'Glowing mounts: step off the row'}};
 // how far a tank can see (lock on and fire) while the effect is on it. local: only tanks inside a cloud, or looking into one
 const WX_VIS={haze:{r:3.2,local:1,cr:2.8,life:9},flare:{r:4.6,len:20},steam:{r:3.2,local:1},dust:{r:4.2,len:22},flicker:{r:4.4}};
 const WX_ARC_BL=[[7,10,6,2],[7,20,6,2]],WX_ARC_AT=[10,16];   // Longshot: the two containers that block the arcs; the pylon

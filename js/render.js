@@ -748,7 +748,7 @@ function drawBattle(){
  let shx=0,shy=0;
  if(shakeT>0&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
  const D3=D3on(),AH=Y(H)-Y(0);   // D3: the world is drawn by render3d.js underneath; this canvas adds the overlay
- const WXF=typeof WeatherFX!=='undefined'?WeatherFX:null;if(WXF){const n=performance.now();WXF.step(Math.min(0.05,drawBattle.wt?(n-drawBattle.wt)/1000:0.016));drawBattle.wt=n;}   // the weather's cues and strength (5E-2e)
+ const WXF=typeof WeatherFX!=='undefined'?WeatherFX:null;if(WXF){WXF.in3D=false;const n=performance.now();WXF.step(Math.min(0.05,drawBattle.wt?(n-drawBattle.wt)/1000:0.016));drawBattle.wt=n;}   // the weather's cues and strength (5E-2e)
  if(D3){g.clearRect(0,0,vw,vh);frame3D(shx,shy);}
  else{g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);}
  g.save();g.translate(shx,shy);
@@ -927,6 +927,7 @@ function drawBattle(){
   g.strokeStyle='rgba(199,155,255,.9)';g.lineWidth=3;g.setLineDash([10,7]);g.lineDashOffset=-t*20;g.beginPath();gArc(storm.x,storm.y,storm.r,undefined,undefined,false,CH&&me&&me.hp>0?hOf(me):0);g.stroke();g.setLineDash([]);g.lineDashOffset=0;g.restore();}
  g.restore();   // end arena clip
  if(!D3){g.strokeStyle='#59607a';g.lineWidth=2;g.strokeRect(X(0),Y(0),W*sc,AH);}
+ if(WXF&&(!D3||!WXF.in3D))WXF.draw2D(g,true);   // the 2D fallback's train, laser and arcs: over the deck, the walls and the tanks
  if(WXF)WXF.overlay(g,vw,vh,CH?hudY0()+sc*2.1:0);   // glare, dust or dimmed lights over the world: under the floating text, the edge markers and the HUD, and never over the HUD band
  // floating text: labels stay on screen, damage numbers merge
  g.save();g.beginPath();if(CH)g.rect(-40,-40,vw+80,vh+80);else g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
@@ -1100,7 +1101,7 @@ function drawHUD(){
  if(series){g.font=font(Math.round(sc*0.6));g.fillStyle='rgba(223,231,242,.7)';g.textAlign='center';g.fillText('Round '+series.round,mid,hy+th+sc*0.55);}
  else if(matchG==='bounty'&&me){g.font=font(Math.round(sc*0.6));g.fillStyle='#ffcf4a';g.textAlign='center';g.fillText('Your bounty: '+(me.bty||BTY_START),mid,hy+th+sc*0.55);}
  {const wc=typeof WeatherFX!=='undefined'?WeatherFX.chip():null;   // this match's weather, under the clock (the flare counts down while it lasts)
-  if(wc){const line2=!!series||(matchG==='bounty'&&me),fs=Math.round(sc*0.52),wy=line2?HY+sc*(matchG==='bounty'?1.5:0.7):hy+th+sc*0.6;g.font=font(fs);g.textAlign='center';const tw2=g.measureText(wc.txt).width+fs*1.2;
+  if(wc){const line2=!!series||(matchG==='bounty'&&me),fs=Math.max(10,Math.round(sc*0.52)),wy=line2?HY+sc*(matchG==='bounty'?1.5:0.7):hy+th+sc*0.6;g.font=font(fs);g.textAlign='center';const tw2=g.measureText(wc.txt).width+fs*1.2;
    g.fillStyle='rgba(8,12,20,.72)';rr(g,mid-tw2/2,wy-fs*0.78,tw2,fs*1.5,fs*0.75);g.fill();g.fillStyle=wc.c;g.fillText(wc.txt,mid,wy);}}   // on a dark pill, so it reads on a bright map and under a flare   // under the round / bounty line and the mode's own line when those are there
  const outRing=!!storm&&me&&me.hp>0&&Math.hypot(me.x-storm.x,me.y-storm.y)>storm.r;
  if(me&&me.hp>0&&state==='play'&&slowAt(me)<1&&!(me.rep>0)&&!outRing){g.fillStyle='#c9b48a';g.font=font(Math.round(sc*0.62));g.textAlign='center';if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.7)';g.strokeText('crater: slowed',mx,my+mk*1.4);g.fillStyle='#f0dcae';}g.fillText('crater: slowed',mx,my+mk*1.4);}
@@ -1123,7 +1124,8 @@ function drawHUD(){
   g.fillStyle=BUFF[b.k].c;rr(g,x,y,w,h,3);g.fill();g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x,y+h-3,w*(1-b.taken/BUFF_LIFE),3);
   g.fillStyle='#10161d';g.textAlign='center';g.font=font(Math.round(sc*0.55));g.fillText(BUFF[b.k].n,x+w/2,y+h/2);});
  // counter banner
- if(banner){g.globalAlpha=Math.min(1,banner.t*2);g.font=font(Math.round(sc*0.72));const bw2=g.measureText(banner.txt).width+26,bh2=sc*1.3,bx2=mid-bw2/2,by2=HY+sc*(topLine?1.5:0.5);
+ if(banner){g.globalAlpha=Math.min(1,banner.t*2);let bf=Math.round(sc*0.72);g.font=font(bf);const bw0=g.measureText(banner.txt).width+26;if(bw0>vw-10){bf=Math.max(9,Math.floor(bf*(vw-10)/bw0));g.font=font(bf);}   // a line wider than the screen is set smaller, never cut off
+  const bw2=g.measureText(banner.txt).width+26,bh2=sc*1.3,bx2=mid-bw2/2,by2=HY+sc*(topLine?1.5:0.5);
   g.fillStyle='rgba(8,12,18,.88)';rr(g,bx2,by2,bw2,bh2,bh2/2);g.fill();g.strokeStyle=banner.c;g.lineWidth=1.5;rr(g,bx2,by2,bw2,bh2,bh2/2);g.stroke();
   g.fillStyle=banner.c;g.textAlign='center';g.fillText(banner.txt,mid,by2+bh2/2+1);g.globalAlpha=1;}
  if(pvpLag()){const tw4=sc*6,th4=sc*1.2,yy=CH?vh*0.3:Y(H/2)-sc*4;g.fillStyle='rgba(10,14,23,.88)';rr(g,mid-tw4/2,yy,tw4,th4,th4/2);g.fill();g.strokeStyle='#ffcf4a';g.lineWidth=1.5;rr(g,mid-tw4/2,yy,tw4,th4,th4/2);g.stroke();

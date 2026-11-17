@@ -25,7 +25,7 @@ const WeatherFX=(()=>{
  const VCOL={haze:'#cdbfa8',flare:'#ffcf6a',steam:'#cfeef2',dust:'#e0b877',flicker:'#9fb6ff'};
  const PYH=1.55,BEAM_H=9,LEAN=0.03;   // LEAN: the glow batch lays a ribbon flat along its ground direction, so a beam that goes straight up leans a hair away from the camera to get its width across the screen   // the Longshot pylon's coil; where a ceiling laser comes down from
  const cues=new WeakMap(),pend=[],RG={},BLK=[0,0,0];
- let visS=0,flick=1,tdN=0,mk='',envOn=false,M3=null,arcT=null,tipAt=-99;
+ let visS=0,flick=1,tdN=0,mk='',envOn=false,M3=null,arcT=null,tipAt=-99,fr=0,d3=-9,PRE=null,PREk='';const LOOP={wind:0,buzz:0};
  const cl=(v,a,b)=>v<a?a:v>b?b:v,rnd=(a,b)=>a+(b-a)*Math.random(),hsh=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
  const plan=()=>typeof wx!=='undefined'&&wx&&(state==='play'||state==='round')&&!(typeof rangeRun!=='undefined'&&rangeRun)?wx.P:null;   // never over the practice range (its engine has no weather)
  const flip=()=>typeof pvpOn==='function'&&pvpOn()&&typeof pvp!=='undefined'&&!!pvp&&!!pvp.flip;   // a live match on team 1: the whole map is turned for you
@@ -37,9 +37,10 @@ const WeatherFX=(()=>{
  function step(dt){
   // a live match: this phone works the plan out itself from the room's seed (pvp.js put it in MM), round by round
   if(typeof pvpOn==='function'&&pvpOn()&&typeof MM!=='undefined'&&MM&&Number.isInteger(MM.wx)&&(state==='play'||state==='round')){
-   const rd=series?series.round:0;if(typeof wx==='undefined'||!wx||wx.round!==rd||wx.P.map!==curMap||wx.seed!==MM.wx)wxStart();}
+   const rd=series?series.round:0;if(WX_MAP[curMap]&&(typeof wx==='undefined'||!wx||wx.round!==rd||wx.P.map!==curMap||wx.seed!==MM.wx))wxStart();}
+  if(++fr-d3>2)pend.length=0;   // the 3D view is not drawing (2D fallback, not loaded yet): impacts are not saved up for it
   const p=plan();
-  if(!p){visS=0;flick=1;pend.length=0;if(typeof fx==='function')fx('wxloop',{wind:0,buzz:0});return;}
+  if(!p){visS=0;flick=1;pend.length=0;LOOP.wind=LOOP.buzz=0;if(typeof fx==='function')fx('wxloop',LOOP);return;}
   const key=wx.seed+'|'+curMap;if(key!==mk){mk=key;tdN=0;tipAt=-99;}
   const t=elapsed,fresh=at=>t-at<0.7&&state==='play';
   let wind=0,buzz=0;
@@ -61,9 +62,9 @@ const WeatherFX=(()=>{
   visS+=(s-visS)*Math.min(1,dt*6);
   flick=1;
   if(p.vis==='flicker'&&visS>0.02&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())){const w=p.win.find(w=>t>=w.t0-2&&t<w.t1+1.5),a=w?t-(w.t0-2):9;
-   flick=a<2?(hsh(Math.floor(t*17))<0.5?0.15:1):hsh(Math.floor(t*12)+7)<0.13?0.15:1;}   // the lights stutter on their way down, then hold dim with the odd blink
+   flick=a<2?(hsh(Math.floor(t*6))<0.5?0.5:1):hsh(Math.floor(t*4)+7)<0.13?0.5:1;}   // at most 6 changes a second while it stutters, 4 while it holds, and never more than half way back   // the lights stutter on their way down, then hold dim with the odd blink
   if(p.vis==='dust')wind=Math.max(wind,visS*0.55);
-  if(typeof fx==='function')fx('wxloop',{wind,buzz});
+  LOOP.wind=wind;LOOP.buzz=buzz;if(typeof fx==='function')fx('wxloop',LOOP);
  }
  // the first times a pilot meets a hazard, one line says how to dodge it (three times per hazard, then never again)
  function tip(hz){
@@ -124,16 +125,16 @@ const WeatherFX=(()=>{
    G.visible=false;H.scene.add(G);torn.push({G,parts});}
   return M3={scene:H.scene,train,torn,tex};
  }
- function dispose(){if(M3){try{M3.scene.remove(M3.train);for(const t of M3.torn)M3.scene.remove(t.G);M3.tex.dispose();}catch(e){}M3=null;}envOn=false;}
+ function dispose(){if(M3){try{const free=o=>o.traverse(m=>{if(m.geometry)m.geometry.dispose();if(m.material)m.material.dispose();});M3.scene.remove(M3.train);free(M3.train);for(const t of M3.torn){M3.scene.remove(t.G);free(t.G);}M3.tex.dispose();}catch(e){}M3=null;}envOn=false;PRE=null;}
  function draw3D(H){
   const p=plan();envDrive(H,p);
-  if(!p){if(M3){M3.train.visible=false;for(const t of M3.torn)t.G.visible=false;}pend.length=0;return;}
-  const t=elapsed,M=meshes(H);let ti=0,trainOn=false;
+  if(!p){d3=fr;if(M3){M3.train.visible=false;for(const t of M3.torn)t.G.visible=false;}pend.length=0;return;}
+  d3=fr;const t=elapsed,M=p.haz==='train'||p.haz==='tornado'?meshes(H):M3&&M3.scene===H.scene?M3:null;let ti=0,trainOn=false;   // the train and the funnels are built on the maps that have them
   for(const z of p.hz){
    if(z.w>t+0.02)break;if(t>wxEnd(z)+2.5)continue;
-   if(z.k==='c'){if(z.vent)vent3(H,z,t);else meteor3(H,z,t);}else if(z.k==='a')arc3(H,z,t);else if(z.k==='t')trainOn=train3(H,z,t,M)||trainOn;
-   else if(z.k==='l')laser3(H,z,t);else if(z.k==='n'&&ti<2)tornado3(H,z,t,M.torn[ti++]);}
-  for(;ti<2;ti++)M.torn[ti].G.visible=false;M.train.visible=trainOn;
+   if(z.k==='c'){if(z.vent)vent3(H,z,t);else meteor3(H,z,t);}else if(z.k==='a')arc3(H,z,t);else if(z.k==='t'&&M)trainOn=train3(H,z,t,M)||trainOn;
+   else if(z.k==='l')laser3(H,z,t);else if(z.k==='n'&&M&&ti<2)tornado3(H,z,t,M.torn[ti++]);}
+  if(M){for(;ti<2;ti++)M.torn[ti].G.visible=false;M.train.visible=trainOn;}
   for(const z of pend)impact3(H,z);pend.length=0;
   clouds3(H,p,t);
   if(p.vis==='dust'&&visS>0.05&&me&&!H.quiet){const n=cnt(H,(H.low?1.5:4)*visS);   // grit streaking across the view
@@ -149,11 +150,11 @@ const WeatherFX=(()=>{
   const pw=cl((t-z.w)/warnT(z),0,1);
   if(!soft){const hot=pw>0.8&&!H.quiet?0.7+0.3*Math.sin(t*40):1;
    S.disc(x,0.028,y,z.r*(0.25+0.75*pw),BLK,1,(0.3+0.5*pw)*hot);S.disc(x,0.029,y,z.r*(0.12+0.5*pw*pw),BLK,1,0.25+0.45*pw);S.ring(x,0.035,y,z.r,0.05,C,(0.5+0.4*pw)*hot,44,0,0,0,undefined,0.55+0.3*pw);
-   if(!H.quiet&&Math.random()<0.25+pw*0.5)H.emit(true,{x:x+rnd(-1,1)*z.r*0.6,y:0.05,z:y+rnd(-1,1)*z.r*0.6,vy:0.7+Math.random(),life:0.6,s0:0.1,s1:0.02,c:'#ffb35a',a:0.7});}
+   if(!H.quiet&&cnt(H,0.25+pw*0.5))H.emit(true,{x:x+rnd(-1,1)*z.r*0.6,y:0.05,z:y+rnd(-1,1)*z.r*0.6,vy:0.7+Math.random(),life:0.6,s0:0.1,s1:0.02,c:'#ffb35a',a:0.7});}
   const k=1-pw,dx=-0.3,dy=0.93,dz=-0.2,hx=x+dx*16*k,hy=0.35+dy*16*k,hz=y+dz*16*k,L=soft?1.2:2.2;
   S.seg(hx,hy,hz,hx+dx*L,hy+dy*L,hz+dz*L,soft?0.04:0.2,0.015,rgbOf(H,soft?COL.meteor:'#ff7a2a'),soft?0.4:0.85);
   if(!soft){S.seg(hx,hy,hz,hx+dx*L*0.5,hy+dy*L*0.5,hz+dz*L*0.5,0.09,0.012,rgbOf(H,'#ffe9c4'),1);S.sprite(hx,hy,hz,0.42,rgbOf(H,'#ffd9a0'),1);S.sprite(hx,hy,hz,0.2,Wt,1);
-   if(!H.low&&!H.quiet)H.emit(false,{x:hx+dx*L,y:hy+dy*L,z:hz+dz*L,life:0.8,s0:0.2,s1:0.7,c:'#4a423c',a:0.22});}
+   if(!H.low&&!H.quiet&&cnt(H,1))H.emit(false,{x:hx+dx*L,y:hy+dy*L,z:hz+dz*L,life:0.8,s0:0.2,s1:0.7,c:'#4a423c',a:0.22});}
   else S.sprite(hx,hy,hz,0.1,C,0.6);
  }
  // a crater vent: the cracks in the floor light up from below and steam wisps out; then it blows: a ragged column of steam
@@ -169,7 +170,7 @@ const WeatherFX=(()=>{
      px=nx;pz=nz;r+=st;}}
    if(!H.quiet){const n=cnt(H,(H.low?0.4:1)*(8+44*pw)/20);for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*z.r*0.8;
      H.emit(false,{x:x+Math.cos(a)*r,y:0.05,z:y+Math.sin(a)*r,vy:0.6+pw*2,life:1,s0:0.2,s1:0.85,c:'#e6f0ec',a:0.4});}
-    if(Math.random()<pw*0.5){const a=Math.random()*6.283,r=Math.random()*z.r*0.6;H.once(x+Math.cos(a)*r,0.06,y+Math.sin(a)*r,0.3,'#ffe0a8',0.5*pw);}}
+    if(cnt(H,pw*0.5)){const a=Math.random()*6.283,r=Math.random()*z.r*0.6;H.once(x+Math.cos(a)*r,0.06,y+Math.sin(a)*r,0.3,'#ffe0a8',0.5*pw);}}
    return;}
   const te=t-z.t;if(te>1.5)return;const k=te/1.5,f=1-k*k,Wt=rgbOf(H,'#f4f6f2'),ASH=rgbOf(H,'#6a655e');
   if(te<0.3)S.sprite(x,0.5,y,z.r*0.75,rgbOf(H,'#ffb060'),1-te/0.3,0.2);S.disc(x,0.04,y,z.r*0.55,HOT,0.7*f,0.2*f);   // an amber flash at its root
@@ -220,7 +221,7 @@ const WeatherFX=(()=>{
   S.seg(tail,dh+0.6,yz,far,dh+0.6,yz,0.9,0.05,rgbOf(H,'#dff8ff'),0.22);
   S.sprite(front+dir*0.1,dh+0.6,yz,1.1,rgbOf(H,'#f4ffff'),1);S.seg(front,dh+0.5,yz,front+dir*7,dh+0.2,yz,0.3,1.5,C,0.3);
   for(let i=0;i<4;i++)S.disc(front-dir*(1+i*2.2),dh+0.05,yz,1.5,C,0.4,0.12);   // the glow under it
-  if(!H.quiet&&front>x0-2&&tail<x1+2)for(let i=0;i<(H.low?1:3);i++){const px=tail+dir*Math.random()*z.len;H.emit(true,{x:px,y:dh+0.1,z:yz+(Math.random()<0.5?-1.2:1.2),vx:-dir*(4+Math.random()*5),vy:0.6+Math.random()*1.5,life:0.35,s0:0.09,s1:0.02,c:'#bff6ff',a:0.9});}
+  if(!H.quiet&&front>x0-2&&tail<x1+2)for(let i=cnt(H,H.low?1:3);i>0;i--){const px=tail+dir*Math.random()*z.len;H.emit(true,{x:px,y:dh+0.1,z:yz+(Math.random()<0.5?-1.2:1.2),vx:-dir*(4+Math.random()*5),vy:0.6+Math.random()*1.5,life:0.35,s0:0.09,s1:0.02,c:'#bff6ff',a:0.9});}
   return true;
  }
  function laser3(H,z,t){
@@ -242,7 +243,7 @@ const WeatherFX=(()=>{
   for(let i=0;i<4;i++){const y0=BEAM_H+i*1.5,a=0.7*(1-(i+1)/5);S.seg(cx,y0+1.5,rz-LEAN*1.2,cx,y0,rz-LEAN,0.26,0.3,C,a);S.seg(cx,y0+1.5,rz-LEAN*1.2,cx,y0,rz-LEAN,0.08,0.1,Wt,a);}   // it fades out upwards: no end in mid-air
   S.disc(cx,floor+0.02,rz,z.r*1.15,C,0.6,0.1);S.sprite(cx,floor+0.3,rz,0.75,Wt,1);S.sprite(cx,floor+0.3,rz,1.5,C,0.5);
   const back=Math.min(7,Math.abs(cx-fX(z.x0)));S.seg(cx,0.045,rz,cx-sg*back,0.045,rz,0.5,0.1,rgbOf(H,'#ff6a2a'),0.85,0.3);S.seg(cx,0.05,rz,cx-sg*back*0.55,0.05,rz,0.2,0.04,rgbOf(H,'#ffd9a0'),0.9);   // the floor it has just crossed still glows
-  if(!H.quiet){S.sparks(cx,floor+0.1,rz,H.low?1:3,3.6,C,0.13,0.35,1,floor);
+  if(!H.quiet){const ns=cnt(H,H.low?1:3);if(ns)S.sparks(cx,floor+0.1,rz,ns,3.6,C,0.13,0.35,1,floor);
    const c=cue(z);if(floor<0.1&&(c.sx===null||Math.abs(cx-c.sx)>0.5)){c.sx=cx;H.scorch(cx,rz,0.4,0.013,0.5);}}
  }
  // a sand tornado: while it forms, a swirl of dust on the ground with a thin thread rising out of it (no body yet: it cannot
@@ -253,14 +254,14 @@ const WeatherFX=(()=>{
   const D=rgbOf(H,'#5a4024'),Lt=rgbOf(H,'#c8a26c'),sp=H.quiet?0:t*3.2;
   S.disc(x,0.03,y,z.r*(on?1.35:0.6+0.6*form),BLK,1,(on?0.34:0.22*form)*fade);   // its shadow: where it is, how wide
   for(let i=0;i<3;i++){const a0=sp*(1+i*0.25)+i*2.1,r=z.r*(on?0.55+i*0.3:0.3+0.35*form+i*0.18);S.ring(x,0.04,y,r,on?0.13:0.07,i%2?Lt:D,(on?0.7:0.3+0.4*form)*fade,20,0,0,a0,a0+3.4,0.6);}   // dust dragged round its foot
-  O.G.visible=true;O.G.position.set(x,0,y);const sw=H.quiet?0:Math.sin(t*1.3+z.id)*0.07,wd=on?1:0.05+0.12*form*form,ht=on?1:0.25+0.75*form;
+  O.G.visible=true;O.G.position.set(x,0,y);const sw=H.quiet?0:Math.sin(t*1.3+z.id)*0.07,wd=on?1:0.04+0.1*form*form,ht=on?1:0.1+0.45*form*form;   // while it forms: a short thin wisp that grows (the swirl on the ground carries the warning)
   O.G.rotation.set(sw,0,sw*0.7);O.G.scale.set(wd*(0.4+0.6*fade),ht,wd*(0.4+0.6*fade));
-  O.parts.forEach((m,i)=>{if(!H.quiet)m.rotation.y+=H.dt*(i%2?-8:6);m.material.opacity=m.userData.op*(on?1:0.55+0.4*form)*fade;});
+  O.parts.forEach((m,i)=>{m.visible=!(H.low&&i===1);if(!H.quiet)m.rotation.y+=H.dt*(i%2?-8:6);m.material.opacity=m.userData.op*(on?1:0.3+0.5*form)*fade;});   // LOW: two skins, not three
   if(!H.quiet)M3.tex.offset.x=(t*0.35)%1;
   if(H.quiet)return;
-  const n=cnt(H,(H.low?1.5:4)*(on?1:0.4)*g);for(let i=0;i<n;i++){const a=Math.random()*6.283,h=Math.random()*4.4*ht,r=(0.35+h*0.34)*wd+0.1;   // grit carried round the funnel
+  const n=cnt(H,(H.low?2:4)*(on?1:0.7)*g);for(let i=0;i<n;i++){const a=Math.random()*6.283,h=Math.random()*4.4*ht,r=(0.35+h*0.34)*wd+0.1;   // grit carried round the funnel
    H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*3.4,vy:0.9+Math.random(),vz:Math.cos(a)*3.4,life:0.75,s0:0.4,s1:1.25,c:Math.random()<0.5?'#8c6a42':'#b08a5a',a:0.5*g});}
-  if(on)for(let i=cnt(H,H.low?1.2:3);i>0;i--){const a=Math.random()*6.283;H.emit(false,{x:x+Math.cos(a)*1.3,y:0.12,z:y+Math.sin(a)*1.3,vx:-Math.sin(a)*2.6+Math.cos(a)*0.9,vz:Math.cos(a)*2.6+Math.sin(a)*0.9,vy:0.35,life:1.1,s0:0.6,s1:1.8,c:Math.random()<0.5?'#8c6c46':'#6f5434',a:0.55*fade});}   // the skirt
+  for(let i=cnt(H,(H.low?2:3)*(on?1:0.6*form));i>0;i--){const a=Math.random()*6.283;H.emit(false,{x:x+Math.cos(a)*1.3,y:0.12,z:y+Math.sin(a)*1.3,vx:-Math.sin(a)*2.6+Math.cos(a)*0.9,vz:Math.cos(a)*2.6+Math.sin(a)*0.9,vy:0.35,life:1.1,s0:0.6,s1:1.8,c:Math.random()<0.5?'#8c6c46':'#6f5434',a:0.55*fade});}   // the skirt
   if(on&&cnt(H,0.5)){const a=Math.random()*6.283,h=0.4+Math.random()*2.6,r=0.5+h*0.36;H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*4,vy:0.6,vz:Math.cos(a)*4,life:0.6,s0:0.12,s1:0.1,c:'#3d2f20',a:0.9});}   // stones caught in it
  }
  // one-shot effects when a strike lands (queued by step, drawn here because they need the 3D host)
@@ -268,17 +269,17 @@ const WeatherFX=(()=>{
   const x=fX(z.x===undefined?10:z.x),y=fY(z.y===undefined?16:z.y),S=H.SFX;
   if(z.k==='c'&&!z.vent){
    if(z.soft){for(let i=0;i<3;i++)H.emit(false,{x:x+rnd(-0.3,0.3),y:0.1,z:y+rnd(-0.3,0.3),vy:0.5+Math.random()*0.6,life:1.4,s0:0.2,s1:0.9,c:'#a59d90',a:0.22});return;}
-   S.blast(x,0.15,y,1.35,1);if(H.env)H.env.flash([1,0.8,0.55],1,0.35);H.scorch(x,y,z.r*0.5,0.013,1);H.scorch(x,y,z.r*0.85,0.0135,0.55);
+   S.blast(x,0.15,y,1.35,1);if(H.env&&!H.quiet)H.env.flash([1,0.8,0.55],1,0.35);H.scorch(x,y,z.r*0.5,0.013,1);H.scorch(x,y,z.r*0.85,0.0135,0.55);
    for(let i=0;i<(H.low?8:18);i++){const a=Math.random()*6.283,sp=3+Math.random()*6;H.emit(false,{x,y:0.2,z:y,vx:Math.cos(a)*sp,vy:3+Math.random()*6,vz:Math.sin(a)*sp,life:0.7+Math.random()*0.5,s0:0.14,s1:0.08,c:'#2c2826',a:0.95,g:18});}   // rock thrown out of the crater
    const n=H.low?6:14;for(let i=0;i<n;i++){const a=Math.random()*6.283,sp=0.6+Math.random()*1.6;   // regolith thrown up: this is what hangs as haze
     H.emit(false,{x:x+Math.cos(a)*0.4,y:0.25,z:y+Math.sin(a)*0.4,vx:Math.cos(a)*sp,vy:0.7+Math.random()*1.5,vz:Math.sin(a)*sp,life:2+Math.random()*1.8,s0:0.6,s1:2.3,c:Math.random()<0.5?'#c4bdb0':'#a9a295',a:0.4,drag:0.9});}
   }else if(z.vent){
-   if(H.env)H.env.flash([0.7,1,0.9],0.5,0.3);const n=H.low?10:24;
+   if(H.env&&!H.quiet)H.env.flash([0.7,1,0.9],0.5,0.3);const n=H.low?10:24;
    for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.random()*z.r*0.5;H.emit(false,{x:x+Math.cos(a)*r,y:0.2,z:y+Math.sin(a)*r,vx:Math.cos(a)*(0.5+Math.random()*2),vy:5+Math.random()*5,vz:Math.sin(a)*(0.5+Math.random()*2),life:1.2+Math.random(),s0:0.6,s1:2.2,c:'#eef4f1',a:0.26,drag:1.4});}
    for(let i=0;i<(H.low?5:12);i++){const a=Math.random()*6.283;H.emit(true,{x,y:0.3,z:y,vx:Math.cos(a)*3,vy:4+Math.random()*5,vz:Math.sin(a)*3,life:0.8,s0:0.14,s1:0.03,c:'#ffb070',a:0.9,g:9});}
    for(let i=0;i<(H.low?5:9);i++){const a=Math.random()*6.283,sp=2+Math.random()*5;H.emit(false,{x,y:0.3,z:y,vx:Math.cos(a)*sp,vy:6+Math.random()*7,vz:Math.sin(a)*sp,life:1.1+Math.random()*0.5,s0:0.34,s1:0.24,c:'#2e2a27',a:1,g:17});}   // rock thrown out of it
    S.sparks(x,0.3,y,10,5,rgbOf(H,COL.vent),0.16,0.6,1.6,0);
-  }else if(z.k==='a'){if(H.env)H.env.flash([0.72,0.9,1],1.5,0.4);S.sparks(x,PYH,y,16,6,rgbOf(H,COL.arc),0.14,0.5,1.2,0);}
+  }else if(z.k==='a'){if(H.env&&!H.quiet)H.env.flash([0.72,0.9,1],1.5,0.4);S.sparks(x,PYH,y,16,6,rgbOf(H,COL.arc),0.14,0.5,1.2,0);}
  }
  function clouds3(H,p,t){
   if(!p.clouds.length)return;const steam=p.vis==='steam',tint=rgbOf(H,steam?'#e6f0f0':'#cfc8bb');
@@ -294,7 +295,7 @@ const WeatherFX=(()=>{
  function envDrive(H,p){
   const E=H.env;if(!E)return;const V=p&&p.vis?WX_VIS[p.vis]:null,L=V&&!V.local?visS*flick:0;
   if(L<=0.004){if(envOn){envOn=false;E.reset(0.5);}return;}
-  envOn=true;const B=E.preset(),mx=(a,b)=>a+(b-a)*L,m3=(a,b)=>[mx(a[0],b[0]),mx(a[1],b[1]),mx(a[2],b[2])],my=me?me.y:16;
+  envOn=true;if(!PRE||PREk!==E.mapId()){PRE=E.preset();PREk=E.mapId();}const B=PRE,mx=(a,b)=>a+(b-a)*L,m3=(a,b)=>[mx(a[0],b[0]),mx(a[1],b[1]),mx(a[2],b[2])],my=me?me.y:16;
   if(p.vis==='flare')E.set({sunI:mx(B.sunI,B.sunI*1.35),sun:m3(B.sun,[1,0.88,0.62]),exposure:mx(B.exposure,B.exposure*1.08),gGain:mx(B.gGain,B.gGain*1.03),fog:0.36*L,fogC:[0.96,0.82,0.6],fogNear:my-3.5,fogFar:my-14,stars:mx(B.stars,0)},0);
   else if(p.vis==='dust')E.set({sunI:mx(B.sunI,B.sunI*0.78),hemiI:mx(B.hemiI,B.hemiI*0.95),sun:m3(B.sun,[1,0.84,0.6]),sky:m3(B.sky,[0.66,0.56,0.42]),fog:0.66*L,fogC:[0.62,0.52,0.37],fogNear:my-2.5,fogFar:my-10.5,stars:mx(B.stars,0),earth:mx(B.earth,0.1),clear:m3(B.clear,[0.17,0.13,0.09])},0);
   else if(p.vis==='flicker')E.set({sunI:mx(B.sunI,B.sunI*0.34),hemiI:mx(B.hemiI,B.hemiI*0.55),fillI:mx(B.fillI,B.fillI*0.6),gGain:mx(B.gGain,B.gGain*0.86),shadow:mx(B.shadow,0.25)},0);
@@ -310,9 +311,10 @@ const WeatherFX=(()=>{
    for(let i=1;i<=3;i++){const k=i*0.2,gx=sx+(vw*0.4-sx)*k*2,gy=sy+(h*0.55-sy)*k*2,rr=Math.min(vw,h)*(0.03+0.018*i);gr=g.createRadialGradient(gx,gy,0,gx,gy,rr);gr.addColorStop(0,'rgba(255,220,170,'+0.12*L+')');gr.addColorStop(0.7,'rgba(255,190,120,'+0.05*L+')');gr.addColorStop(1,'rgba(255,190,120,0)');g.fillStyle=gr;g.fillRect(gx-rr,gy-rr,rr*2,rr*2);}   // lens ghosts
   }else if(p.vis==='dust'){
    const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(206,178,132,0)');gr.addColorStop(f0,'rgba(206,178,132,'+0.26*L+')');gr.addColorStop(0.5,'rgba(200,172,128,'+0.1*L+')');gr.addColorStop(1,'rgba(190,164,122,'+0.04*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,h);
-   g.lineCap='round';g.lineWidth=Math.max(1.5,vw/300);   // grit blown across: soft, tan, long
-   for(let i=0;i<34;i++){const sp=0.3+hsh(i*3.3)*0.45,x=((hsh(i)*1.4+tt*sp)%1.4-0.2)*vw,y=(0.04+hsh(i*7.1)*0.96)*h,l=vw*(0.1+hsh(i*1.9)*0.16),gl=g.createLinearGradient(x,y,x+l,y);
-    gl.addColorStop(0,'rgba(214,186,140,0)');gl.addColorStop(0.5,'rgba(214,186,140,'+0.2*L+')');gl.addColorStop(1,'rgba(214,186,140,0)');g.strokeStyle=gl;g.beginPath();g.moveTo(x,y);g.lineTo(x+l,y+l*0.05);g.stroke();}
+   g.lineCap='round';   // grit blown across: soft, tan, long
+   g.strokeStyle='rgba(214,186,140,'+0.11*L+')';g.beginPath();   // one path, two passes (a wide faint one under a thin one): soft streaks without a gradient each
+   for(let i=0;i<34;i++){const sp=0.3+hsh(i*3.3)*0.45,x=((hsh(i)*1.4+tt*sp)%1.4-0.2)*vw,y=(0.04+hsh(i*7.1)*0.96)*h,l=vw*(0.1+hsh(i*1.9)*0.16);g.moveTo(x,y);g.lineTo(x+l,y+l*0.05);}
+   g.lineWidth=Math.max(3,vw/130);g.stroke();g.lineWidth=Math.max(1,vw/420);g.stroke();
   }else if(p.vis==='flicker'){
    let gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(2,4,10,0)');gr.addColorStop(f0,'rgba(2,4,10,'+0.2*L+')');gr.addColorStop(1,'rgba(2,4,10,'+0.2*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,h);
    gr=g.createRadialGradient(vw/2,h*0.56,Math.min(vw,h)*0.2,vw/2,h*0.56,Math.max(vw,h)*0.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,6,'+0.42*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,h);
@@ -320,14 +322,15 @@ const WeatherFX=(()=>{
   g.restore();
  }
  // ---- the 2D fallback: the same hazards, flat (X, Y, sc: render.js) ----
- function draw2D(g){
-  const p=plan();if(!p)return;const t=elapsed,px=x=>X(fX(x)),py=y=>Y(fY(y)),A=(c,a)=>{const n=parseInt(c.slice(1),16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')';};
+  function draw2D(g,over){
+  const p=plan();if(!p)return;over=!!over;const t=elapsed,px=x=>X(fX(x)),py=y=>Y(fY(y)),A=(c,a)=>{const n=parseInt(c.slice(1),16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')';};
   g.save();
-  for(const c of p.clouds){if(t<c.t0||t>=c.t1)continue;const gr=g.createRadialGradient(px(c.x),py(c.y),0,px(c.x),py(c.y),c.r*sc);gr.addColorStop(0,A(p.vis==='steam'?'#dbeaee':'#a59d90',0.5));gr.addColorStop(1,A(p.vis==='steam'?'#dbeaee':'#a59d90',0));g.fillStyle=gr;g.beginPath();g.arc(px(c.x),py(c.y),c.r*sc,0,7);g.fill();}
+  if(!over)for(const c of p.clouds){if(t<c.t0||t>=c.t1)continue;const gr=g.createRadialGradient(px(c.x),py(c.y),0,px(c.x),py(c.y),c.r*sc);gr.addColorStop(0,A(p.vis==='steam'?'#dbeaee':'#a59d90',0.5));gr.addColorStop(1,A(p.vis==='steam'?'#dbeaee':'#a59d90',0));g.fillStyle=gr;g.beginPath();g.arc(px(c.x),py(c.y),c.r*sc,0,7);g.fill();}
   for(const z of p.hz){
    if(z.w>t+0.02)break;const end=wxEnd(z);if(t>end+1.2||z.soft)continue;const pw=cl((t-z.w)/warnT(z),0,1),col=COL[p.haz||'meteor'];
+   if(over!==(z.k==='t'||z.k==='l'||(z.k==='a'&&t>=z.t)))continue;   // the train rides the deck, a laser comes from the ceiling, the arcs fly over cover
    if(z.k==='c'){const x=px(z.x),y=py(z.y),r=z.r*sc;
-    if(t<z.t){g.fillStyle=A(col,0.06+0.22*pw*pw);g.beginPath();g.arc(x,y,r*(0.45+0.55*pw),0,7);g.fill();g.strokeStyle=A(col,0.15+0.35*pw);g.lineWidth=1.5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();
+    if(t<z.t){g.fillStyle=z.vent?A(col,0.06+0.22*pw*pw):'rgba(0,0,0,'+(0.12+0.3*pw)+')';g.beginPath();g.arc(x,y,r*(z.vent?0.45+0.55*pw:0.25+0.75*pw),0,7);g.fill();g.strokeStyle=A(col,0.3+0.4*pw);g.lineWidth=1.5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();   // a meteor: its shadow inside one thin amber ring, as in 3D (never a red disc)
      if(!z.vent){const k=1-pw;g.strokeStyle=A('#ffe2b0',0.9);g.lineWidth=3;g.beginPath();g.moveTo(x-k*sc*5,y-k*sc*12);g.lineTo(x-k*sc*5-sc*0.9,y-k*sc*12-sc*2.2);g.stroke();}}
     else{const k=(t-z.t)/1.1;if(k<1){g.strokeStyle=A(col,0.8*(1-k));g.lineWidth=4;g.beginPath();g.arc(x,y,r*Math.min(1,k*3.4),0,7);g.stroke();g.fillStyle=A('#ffffff',0.5*(1-k));g.beginPath();g.arc(x,y,r*0.3,0,7);g.fill();}}}
    else if(z.k==='a'){const x=px(z.x),y=py(z.y);
@@ -337,13 +340,14 @@ const WeatherFX=(()=>{
     if(t<z.t+0.35){g.fillStyle=A(col,0.2+0.6*pw);for(let i=0;i<=16;i++)for(const e of [-1,1]){const b=Math.pow(0.5+0.5*Math.sin(((dir>0?i:16-i)-t*(10+10*pw))*0.9),2);g.globalAlpha=0.3+0.7*b;g.fillRect(X(2+i)-2,y+e*(z.hw+0.12)*sc*GK-2,4,4);}g.globalAlpha=1;}
     const a=Math.max(2,Math.min(front,front-dir*z.len)),b=Math.min(18,Math.max(front,front-dir*z.len));if(b>a){g.fillStyle='#cfd8e2';g.fillRect(X(a),y-z.hw*sc*GK,(b-a)*sc,z.hw*2*sc*GK);g.fillStyle=A(col,0.9);g.fillRect(X(a),y-z.hw*sc*GK,(b-a)*sc,3);g.fillRect(X(a),y+z.hw*sc*GK-3,(b-a)*sc,3);}}
    else if(z.k==='l'){const y=py(z.y);
-    if(t<z.t){g.strokeStyle=A(col,(0.1+0.3*pw)*(hsh(Math.floor(t*18))<0.8?1:0.2));g.lineWidth=1.5;g.beginPath();g.moveTo(X(0),y);g.lineTo(X(W),y);g.stroke();}
+    if(t<z.t){g.strokeStyle=A(col,(0.3+0.4*pw)*(hsh(Math.floor(t*6))<0.8?1:0.5));g.lineWidth=3;g.setLineDash([sc*0.5,sc*0.4]);g.lineDashOffset=-t*sc*1.5;g.beginPath();g.moveTo(X(0),y);g.lineTo(X(W),y);g.stroke();g.setLineDash([]);   // a dashed line marching along the row, and the row's mounts glowing at both walls
+     for(const ex of [X(0.3),X(W-0.3)]){const gr=g.createRadialGradient(ex,y,0,ex,y,sc*(0.7+0.5*pw));gr.addColorStop(0,A(col,0.5+0.4*pw));gr.addColorStop(1,A(col,0));g.fillStyle=gr;g.beginPath();g.arc(ex,y,sc*(0.7+0.5*pw),0,7);g.fill();}}
     else if(t<=end){const q=wxPos(z,t),x=px(q[0]);g.strokeStyle=A(col,0.25);g.lineWidth=1.5;g.beginPath();g.moveTo(X(0),y);g.lineTo(X(W),y);g.stroke();g.fillStyle=A(col,0.55);g.beginPath();g.arc(x,y,z.r*sc,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(x,y,z.r*sc*0.4,0,7);g.fill();}}
    else if(z.k==='n'){const q=wxPos(z,Math.max(t,z.t)),x=px(q[0]),y=py(q[1]),k=(t<z.t?0.25+0.5*pw:1)*(t>z.e?Math.max(0,1-(t-z.e)/1.5):1);
     for(let i=0;i<4;i++){g.strokeStyle=A(i%2?'#e3c79a':'#c9a271',0.55*k);g.lineWidth=sc*0.16;g.beginPath();g.arc(x,y,z.r*sc*(0.3+i*0.24),t*(5+i)+i,t*(5+i)+i+4.2);g.stroke();}}
   }
   g.restore();
  }
- return {step,draw3D,draw2D,overlay,chip,sees,takedown,progress,dispose,COL,SHORT,VCOL,get vis(){return visS*flick;},get td(){return tdN;}};
+ return {step,draw3D,draw2D,overlay,chip,sees,takedown,progress,dispose,in3D:false,COL,SHORT,VCOL,get vis(){return visS*flick;},get td(){return tdN;}};
 })();
 function wxTakedown(){WeatherFX.takedown();}

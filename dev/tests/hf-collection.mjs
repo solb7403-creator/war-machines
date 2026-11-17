@@ -58,7 +58,7 @@ for(const paint of Object.values(ctx.A.PAINTS))for(const cls of classes)for(cons
 for(const cls of classes)for(let ct=0;ct<3;ct++)for(const hull of Object.keys(ctx.A.FITS.hull))for(const mobility of Object.keys(ctx.A.FITS.mobility))for(const mount of Object.keys(ctx.A.FITS.mount)){
  for(const part of ['body','mount'])for(const g of Object.values(M.bake(M.fittingKit({hull,mobility,mount},'#45aaff',part,{cls,ct,arch:'siege',wt:2,lunar:true}).k)))if(g)assert.ok(g.attributes.position.array.every(Number.isFinite));fittings++;
 }
-assert.equal(JSON.stringify(ctx.A.STOCK_L),untouched);assert.equal(JSON.stringify(ctx.A.tankOf(ctx.A.STOCK_L,1)),stats);assert.equal(appearances,72);assert.equal(fittings,243);
+assert.equal(JSON.stringify(ctx.A.STOCK_L),untouched);assert.equal(JSON.stringify(ctx.A.tankOf(ctx.A.STOCK_L,1)),stats);assert.equal(appearances,144);   // 24 paints (12 + the six hazard finishes and their six LIVE versions, Session 5E-2e) x 2 teams x 3assert.equal(fittings,243);
 
 if(process.env.LUNAR_HF_RESULTS)writeFileSync(process.env.LUNAR_HF_RESULTS,JSON.stringify({standardPairingsPerQuality:81,legendaryPairingsPerQuality:99,models:results,appearances,fittings,cache:H.stats()},null,2));
-console.log('PASS 9+9 HIGH/LOW, nine adaptive skins, one Moonbeam, 81+99 pairings per quality, exact sockets/tips, 72 paint/team/core and 243 fittings, UV/normals/tangents, distinct geometry, LOW budgets, leases, legacy stock');
+console.log('PASS 9+9 HIGH/LOW, nine adaptive skins, one Moonbeam, 81+99 pairings per quality, exact sockets/tips, 144 paint/team/core and 243 fittings, UV/normals/tangents, distinct geometry, LOW budgets, leases, legacy stock');
