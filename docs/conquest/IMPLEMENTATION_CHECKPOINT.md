@@ -4802,3 +4802,96 @@ spent (behavior held constant across the change) before the +-10% check.
 - F: Worker counters `an/<day>/<event>[/<key>]` + cohorts `an/cohort/<firstDay>/{n,d1,d7,d30}`; events from reducers via a
   non-persisted queue fired after the CAS write; client `/api/conquest/an` for transmission_read/skip and quit_point/session_minutes;
   admin sheet tab; `dev/tests/conquest-analytics.mjs`.
+
+## Checkpoint 42 — Session 5E-2e: Arcade weather + map hazards (branch `claude/arcade-weather-map-hazards-ysbkxs`, from main `4659c04`) — IN PROGRESS
+
+Brief: the owner's Session 5E-2e prompt (Nov 17, 2026): each Arcade map gets exactly one damaging hazard and one vision effect,
+rolled per match from a server seed (25% clear / 35% vision / 20% hazard / 20% both), with six earned hazard finishes and six
+premium LIVE store entries that are not on sale. Owner not monitoring: every choice below is the lead's, with its reason.
+(Checkpoint 41 belongs to Session 6B on `claude/tank-lab-logic-half-nm0485`, unfinished; this session does not touch it.)
+
+### Resume here (kept current)
+
+- **Done and pushed:** slice 1 (shared rules, the sim, the server, the test). See "What is built".
+- **Next, in order:** (2) presentation: `js/weather.js` (hazard looks in 3D and 2D, vision effects, sounds in `js/fx.js`, HUD chip,
+  hidden-enemy markers, the PvP client's plan) → (3) finishes in the Garage / Shop and the takedown counters → (4) browser
+  checks and captures to `docs/weather-5e2e/` → (5) three critic rounds → (6) two independent reviewers → (7) release.
+- **Run before pushing anything:** `node dev/tests/arcade-weather.mjs` (2-3 min), `node dev/tests/fair-arcade.mjs`,
+  `node dev/tests/arena-maps.mjs`, `node dev/tests/wtest/test.mjs`, `node dev/tests/wtest/pvp.mjs` (the Worker tests need
+  `npm install --prefix worker` once and `node worker/build-web.mjs`).
+
+### Research: comparable games (one web-research agent; what we take from each)
+
+| Game | What it did | What we take |
+|---|---|---|
+| Brawl Stars (closest: phone, 3-minute, top-down) | Meteor modifier: a large red circle, impact 3 s later, 2,000 damage plus knockback. Ranked modifiers were removed in Feb 2025 ("complex for casual players… restricted the viable meta") | Warn every hit; keep the hit small (never a one-shot); one hazard per map, never stacked; first matches clear so new pilots are not confused |
+| Team Fortress 2 | A death to the world (trains included) credits the last damager within 5.0 s | Our kill credit is the same 5 s rule |
+| League of Legends | No enemy damage in the window = an "execution", nobody's kill | A hazard kill with nobody recent is nobody's |
+| Halo (Terminal train, Breaker's plasma cutter) | Periodic, central, team-neutral, on a visible schedule | Hazards sit on the centre line or come as mirrored twins; the same warning every time |
+| Apex Legends | The World's Edge train and Storm Point wildlife were removed for blocking routes and distracting from PvP | Hazards never close a route for long (the deck has railings, the lane has container shadows); frequency kept moderate |
+| Fortnite | Storm damage ramps slowly; lava did chip damage and a bounce | Chip-and-push for the tornado rather than burst |
+| Rocket League / Smash | Competitive play standardised on hazard-free arenas | Hazards are seeded and identical for both sides, never luck; the future tournament mode (owner, Nov 14) can run clear weather with one flag (`MM.wxc`) |
+| CoD camo challenges / Halo Infinite challenges | ~50 kills a camo; mode-specific challenges caused quitting | 25 a map is modest; the pilot picks the map; assists count, so nobody has to throw a match to farm |
+
+### Decisions (each with its reason)
+
+1. **One timetable, three users.** `wxRoll(seed)` and `wxPlan(seed, map, round, T)` in `js/rules.js` are pure functions: no sim
+   state, no `random()`, no trigonometry (only + - * / and sqrt, which every JS engine rounds the same). The sim hits from the
+   plan, the 3D layer draws from the plan, the server's proof check re-derives the plan. Reason: owner rule 4a (no luck, no
+   desync) and the only way the server can verify an AI match's takedowns without replaying it.
+2. **Hazards are never aimed at a tank.** The old meteor shower aimed 60% of its meteors at a random tank. Reason: an aimed
+   strike is luck for the one it picks and cannot be mirrored; a timetable can be learned.
+3. **Mirror fairness by construction.** Meteors: every meteor has a point-mirrored twin 0.3 s apart, the leading half
+   alternates salvo by salvo, and a salvo's line stays in its own half. Vents: the centre crater, then the flank pair with the
+   lead alternating. Tornadoes: always a pair on point-mirrored paths. Lasers: the middle row (direction alternating), then the
+   two outer rows in opposite directions. Train and pylon sit on the centre line; the train alternates direction.
+4. **Damage:** a flat number at 1v1 hull scale, multiplied by the mode's hull scale, cut by armor and by Hull Plating (area
+   for meteor / train / vent / tornado, energy for arc / laser), never above 34% of the tank's full hull. Reason: flat damage
+   keeps hull upgrades and plates worth having against hazards (standing rule: never weaken gear); the cap is rule 4d.
+   Numbers: meteor 300, train 420 (+ shove), arc 320, vent 340, tornado 70 twice a second (+ push), laser 380. Measured worst
+   case 29% of a stock Scout's hull (train).
+5. **Shields do not stop hazards** (as the storm and the old meteors already ignored them). Reason: one rule for all "world" damage.
+6. **The megatank is not a hazard target.** Reason: its hull is ~100x a tank's, so the damage would be noise, and every hit on
+   it would be a free takedown (you are always shooting it): a farm.
+7. **Spawn safety 2.5 s** after a respawn or a round start, and a quiet opening of 8+ s. Reason: rows 6 and 26 of the Bunker
+   run through the team spawns; nothing may hit a tank that has just appeared.
+8. **Takedown = one per strike and victim** (a tornado: one per 5 s of contact). Reason: the tornado ticks twice a second;
+   counting ticks would make Canyon five times faster than any other map.
+9. **Vision effects are rules, not only looks.** Under an effect no turret (pilot's or AI's) can lock on or fire further than
+   the sight radius: flare 4.6, dust 4.2, flicker 4.4 (weapon range is 6), haze and steam 3.2 for a tank inside a cloud or
+   looking into one. Reason: owner rule 4f ("the AI is limited by dust and glare like a player"); a look-only effect would
+   blind the person and not the AI.
+10. **Solar flare:** one 20-second flare a round, only on Overpass and Longshot, only when the roll says vision; supers charge
+    twice as fast while it lasts (the old effect). It now also happens in best-of-3 rounds (the old event pool never ran there).
+11. **Supply drop "unchanged" = same odds.** The old pool was drop / meteor / flare, one in three each. The drop keeps one in
+    three (`EVT_DROP`); the other two thirds of team matches have no pool event. Reason: every-match drops would triple the
+    boxes and change balance.
+12. **AI matches: the server seeds, the phone plays, the server counts.** The ticket carries `wx: [seed, clear]` (seed drawn
+    by the Worker, stored on the ticket, the same if the phone asks again: no re-rolling). The result says which seed it
+    played (`wxs`). The proof check counts a takedown only where the record shows an enemy losing at least half a hazard hit
+    (or going down) in the sample a strike was live on its spot, with the pilot's own damage in the 5 s before; the phone's
+    count is then held to that (`fix.td`). A match that started before its ticket arrived plays the phone's own roll and
+    counts nothing. Reason: rule 5 ("only from server-verified match results; nothing trusts the client").
+13. **Live rooms:** the room draws the seed, passes it to its sim, sends it in the `go` message; a room is clear if any pilot
+    in it has played fewer than 3 matches (their `mp` comes from the server's record at seat time). Takedowns are the room
+    sim's own count.
+14. **AI awareness:** an AI pilot reads a warning 50-85% of the time by league (`LG_AI_HZ`, drawn once per strike), needs
+    0.35 s to react, then drives out the way a person would (out of the circle, to the railing, off the row, behind a
+    container). It prefers a target that is standing where a hazard is about to land. Reason: 4f; never perfect, so hazards
+    stay a way to beat it.
+15. **Finishes:** Meteor Scorch (Moonbase), Maglev Runner (Overpass), Arc Charge (Longshot), Vent Breaker (Crater Field),
+    Dust Devil (Canyon), Laser Grid (Bunker). The premium animated versions are "<name> LIVE", `only:'soon'`, with a `soon`
+    proposal (7.2 TON / 450 Stars each) and no `ton` / `stars` field, so `ecoPrice` returns null and neither the phone nor
+    the server can sell them.
+
+### What is built (slice 1)
+
+- `js/rules.js`: `WX_ODDS`, `WX_MAP`, `WX_HZ`, `WX_VIS`, `wxRoll`, `wxPlan`, `wxEnd`, `wxPos`, `wxIn`, `wxArcSees`, `wxWinOn`,
+  `wxSight`; twelve `PAINTS` entries; `ecoHazard` (called by `ecoAfterMatch`), `hz` in `ECO_KEYS`.
+- `js/game.js`: `wx` state, `wxStart` (match and round), `weatherTick`, `hzDmg` / `hzShove` / `hzLevel`, `wxSees` in the turret,
+  the AI's sight and its super; `hzSteer` / `hzEscape` / `hzPinned` for the AI; `r.lh` (last enemy hit) in `takeHit`;
+  the event pool change; `st.td`.
+- `js/match.js`: the weather seed from the ticket, `wxs` and `td` in the result, kill-feed wording, the takedown pop.
+- `worker/sim-api.js`, `worker/src/pvp.js`, `worker/src/eco.js`, `worker/src/proof.js`: seed, clear rule, takedowns, the record check.
+- `dev/tests/arcade-weather.mjs`: 8,700+ checks (see its header); `dev/tests/combat-sim.mjs`: every seeded match now rolls
+  weather from its own seed and reports hazard hits, kills and takedowns.

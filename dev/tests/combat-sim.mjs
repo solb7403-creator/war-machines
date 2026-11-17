@@ -56,7 +56,8 @@ function __run(cfg){
  setMap(cfg.map);matchG=cfg.g;
  battleLoadout=JSON.parse(JSON.stringify(cfg.L));battlePower=powerOf(battleLoadout);
  const mk=cfg.g==='royale'?'1v1':cfg.m;
- MM={n:MODES[mk].n,series:cfg.g==='arena'&&mk==='1v1'&&cfg.mp>0,mp:cfg.mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // as prepareMatch sets it (older code ignores cp)
+ MM={n:MODES[mk].n,series:cfg.g==='arena'&&mk==='1v1'&&cfg.mp>0,mp:cfg.mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1,
+  wx:cfg.wx===null?null:Number.isInteger(cfg.wx)?cfg.wx:Math.imul(cfg.seed|0,0x2545F491)|0,wxc:typeof WX_FIRST_CLEAR!=='undefined'&&cfg.mp<WX_FIRST_CLEAR};   // 5E-2e: every seeded match rolls its weather from its own seed (cfg.wx: a fixed weather seed, null: none)   // as prepareMatch sets it (older code ignores cp)
  save.mp=cfg.mp;
  if(typeof aiLevel==='function'){if(!__aiLevel)__aiLevel=aiLevel;   // exploration only: pin the AI (an authored level, or another AI_EXP for the bots)
   aiLevel=cfg.forceTier!==undefined?(pw,e,lg)=>({i:cfg.forceTier,p:AI_TIERS[cfg.forceTier].p,lg:lg|0}):__aiLevel;}   // (cfg.aiExp, the old curve exponent, no longer exists)
@@ -69,6 +70,7 @@ function __run(cfg){
  startMatch();if(typeof proofBegin==='function')proofBegin();
  const DT=cfg.dt||1/60,focusSamples=[0,0,0,0,0];let firstK=null;let steps=0,samples=0,meAlive=0,__rounds=1;
  const enemyDmgOnMe=[0],enemyDmgTotal=[0],allyDmg=[0],meDmg=[0],enemyHpLost=[0];let foeAlive=0;
+ const __hz={hits:0,dmg:0,most:0,onUs:0,onThem:0,credited:0,td:0,tdMe:0,kills:0,killsCredited:0,killsMe:0};
  while(steps++<Math.ceil(30000/(60*DT))){
   if(state==='round'){   // between rounds a sensible pilot answers a counter with the chassis that beats it, if they own it
    const foe=units.find(u=>u.team!==me.team),fix=foe&&beatenBy(foe.cls);
@@ -95,6 +97,9 @@ function __run(cfg){
     if(src.team===me.team&&src!==me&&tgt.team!==me.team)allyDmg[0]+=amt;
     if(src===me)meDmg[0]+=amt;
     if(src.team===me.team&&tgt.team!==me.team)enemyHpLost[0]+=amt;}
+   if(e[0]==='h'&&e[3]===3){const tgt=units[e[1]];if(tgt){__hz.hits++;__hz.dmg+=e[2];__hz.most=Math.max(__hz.most,e[2]/tgt.mhp);if(tgt.team===me.team)__hz.onUs++;else __hz.onThem++;if(e[6]>=0)__hz.credited++;}}   // 5E-2e: map hazard hits
+   if(e[0]==='D'){__hz.td++;if(units[e[1]]===me)__hz.tdMe++;}
+   if(e[0]==='k'&&typeof WX_HZ!=='undefined'&&WX_HZ[e[3]]){__hz.kills++;if(e[2]>=0)__hz.killsCredited++;if(units[e[2]]===me)__hz.killsMe++;}
    if(e[0]==='k'&&firstK===null){const v=units[e[1]];firstK={t:+(steps*DT).toFixed(1),who:v===me?'me':v.team===me.team?'ally':'enemy'};}
   }
   __events.length=0;
@@ -119,7 +124,7 @@ function __run(cfg){
  return {pf,st:{dmg:Math.round(me.st.dmg||0),kills:me.st.kills||0,sup:me.st.sup||0,box:me.st.box||0,low:typeof me.st.low==='number'?Math.round(me.st.low*1000)/1000:1},won:!!o.won,drawn:!!o.drawn,spdM:me.spdM||1,
   out:o.won?'win':o.drawn?'draw':'loss',place:o.place,score:o.score,secs:+(steps*DT).toFixed(1),dmg:Math.round(meDmg[0]),taken:Math.round(me.st.taken),ab,
   allyDmg:Math.round(allyDmg[0]),teamDmg:Math.round(enemyHpLost[0]),onMe:Math.round(enemyDmgOnMe[0]),enemyDmg:Math.round(enemyDmgTotal[0]),
-  focus:focusSamples,focusN:samples,firstK,deaths:me.deaths||0,kills:me.st.kills,series:series?series.w.slice():null,roster,bossLeft:boss?Math.max(0,Math.round(boss.hp)):null};
+  hz:__hz,td:me.st.td||0,wx:typeof wx!=='undefined'&&wx?{k:wx.P.k,haz:wx.P.haz,vis:wx.P.vis}:null,focus:focusSamples,focusN:samples,firstK,deaths:me.deaths||0,kills:me.st.kills,series:series?series.w.slice():null,roster,bossLeft:boss?Math.max(0,Math.round(boss.hp)):null};
 }
 `;
 // proof: also load js/proof.js (the phone's match record), so a run returns the record the server's proof-of-play check reads

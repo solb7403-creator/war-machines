@@ -10,6 +10,7 @@ const gtypeKey=()=>(save.gtype&&GT_PICK[save.gtype])?save.gtype:'arena';
 function winPoints(gk,mk){return leaguePay(winBase(gk,mk)*(gk===featuredMode()?FEATURED_X:1),myLeague().i).pts;}   // with league base pay and the league bonus (spendable points)
 
 // ---- your tank and the AI match ----
+let battleWx=null;   // the server's weather seed for this match, once its ticket has brought it (null: this phone's own roll)
 let battleLoadout=null,battlePower=null,battleLg=0,battleDeployC=null;   // battleLg: the match's league (its pay; the AI's, see aiLgNow); battleDeployC: the chassis deployed   // battleLg: the league the AI is set for (leagueIdx, rules.js)
 function battleChassisClasses(){if(typeof pvpOn==='function'&&pvpOn())return pvp.chs||ownedChassisClasses();return battleLoadout?(battleLoadout.chs||[battleLoadout.c]).map(c=>c.c):ownedChassisClasses();}
 function buildMe(){
@@ -23,6 +24,10 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
  battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;battleDeployC=battleLoadout.c.c;
  const mp=save.mp||0;
  MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // cp: you can counter-pick back between rounds
+ // weather (Session 5E-2e): every match has some. The server's seed comes with the ticket on the VS screen (matchStart) and
+ // replaces this one; a match that starts before the ticket arrives plays this phone's own roll, and its hazard takedowns do
+ // not count (the server only counts a match it seeded). A pilot's first three matches are always clear
+ MM.wx=(Math.random()*4294967296)|0;MM.wxc=mp<WX_FIRST_CLEAR;battleWx=null;
  populatePreparedMatch();
  state='vs';
  matchStart();
@@ -134,6 +139,7 @@ function matchStart(){
    try{out=await apiTimed('/api/match/start',body,TICKET_TRY_MS);}catch(e){out=null;}   // no answer: network
    const r=out&&out.j;
    if(r&&r.tok){T.tok=r.tok;T.err=null;
+    if(mTicket===T&&state==='vs'&&Array.isArray(r.wx)&&Number.isInteger(r.wx[0])){MM.wx=r.wx[0];MM.wxc=!!r.wx[1];battleWx=r.wx[0];}   // the server's weather for this match
     if(mTicket===T&&state==='vs'&&r.L){
      const chosen=battleLoadout&&battleLoadout.c.c;
      battleLoadout=JSON.parse(JSON.stringify(r.L));battlePower=r.power;if(Number.isInteger(r.lgi))battleLg=r.lgi;battleDeployC=battleLoadout.c.c;   // the server's league sets this match's AI
@@ -214,7 +220,7 @@ function matchEnd(res){
  const T=mTicket;mTicket=null;
  if(!SRV_ECO)return;
  const lt='p'+Math.random().toString(36).slice(2),endAt=Date.now();if(lastResult&&!res.quit)lastResult.tok=lt;
- const r=Object.assign({},res,{g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout()});
+ const r=Object.assign({},res,{g:matchG,m:modeKey(),map:curMap,quick:!!lastQuick,L:battleLoadout||myLoadout(),wxs:battleWx});   // wxs: the server's weather seed this match was played on (takedowns count only then)
  const queue=()=>{if(T)T.done=true;
   save.mq=(save.mq||[]).concat({tok:(T&&T.tok)||null,cid:T?T.cid:newCid(),lt,r,endAt});store();
   flushMatches();};
@@ -233,7 +239,7 @@ function localEnd(forced){
  afterMatch({won,drawn,place,score,mode:mk,feat,top3,base:r.base,basePts:r.basePts,lgBonus:r.lgBonus,modeX:r.modeX,featX:r.featX,league:brk,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded,before,st:mstat,quick:mo.quick,mn:IN_WEB||SRV_ECO?null:r.mn});
  const st=mstat||{};
  const gh=units.filter(u=>u.gh&&u.gid!==undefined).map(u=>{const g=outcome(u,forced),s=u.st||{};return {i:u.gid,won:g.won?1:0,drawn:g.drawn?1:0,dmg:Math.round(s.dmg||0),kills:s.kills||0};});
- matchEnd({won,drawn,place,gh,pf:proofData(),seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
+ matchEnd({won,drawn,place,gh,pf:proofData(),seriesW:series?series.w.slice():null,stats:{dmg:Math.round(st.dmg||0),kills:st.kills||0,box:st.box||0,sup:st.sup||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,td:st.td||0,low:typeof st.low==='number'?Math.round(st.low*1000)/1000:0}});
  if(!SRV_ECO&&typeof syncPlayer==='function')syncPlayer();
 }
 // everything after the points: wins and losses, pass XP, quests, the results screen. Shared with live matches
@@ -266,7 +272,11 @@ function dmgNum(q,t,dmg,isCrit){
  if(!isCrit){for(const o of nums)if(o.tg===t&&!o.crit&&o.t>0.65&&o.c===q.c){o.v+=dmg;o.txt=String(Math.round(o.v));o.t=0.9;return;}}
  q.tg=t;q.v=dmg;q.crit=isCrit;q.txt=(isCrit?'CRIT ':'')+Math.round(dmg);nums.push(q);
 }
-const HIT_TXT=[null,{txt:'SUPER',t:0.9,z:2,c:'#ff4d4d'},{txt:'STORM',t:0.7,z:0.8,c:'#c79bff'},{txt:'METEOR',t:0.9,z:1.6,c:'#ff8a3d'}];
+const HIT_TXT=[null,{txt:'SUPER',t:0.9,z:2,c:'#ff4d4d'},{txt:'STORM',t:0.7,z:0.8,c:'#c79bff'},{txt:'HAZARD',t:0.9,z:1.6,c:'#ff8a3d'}];
+// the map's own hazard (5E-2e): its name on the hit number, its colour, and how the kill feed words a tank it finished
+const HZ_TXT={meteor:{c:'#ff8a3d',by:'a meteor',with:'with a meteor strike'},train:{c:'#7fe9ff',by:'the maglev train',with:'under the maglev train'},arc:{c:'#b8f1ff',by:'the pylon',with:'with the pylon overload'},
+ vent:{c:'#8ff5d2',by:'a crater vent',with:'on a crater vent'},tornado:{c:'#e8c48a',by:'a sand tornado',with:'in a sand tornado'},laser:{c:'#ff5a46',by:'a ceiling laser',with:'under a ceiling laser'}};
+const hzNow=()=>typeof WX_MAP!=='undefined'&&WX_MAP[curMap]?WX_MAP[curMap].hz:'meteor';
 // super impacts, per weapon: blast size and colors (match.js 2D overlay; render3d.js adds the 3D explosion)
 const IMPACT={pulse:{r:2.2,c:'#ffb35a',c2:'#ffe08a'},twin:{r:2.6,c:'#7fd4ff',c2:'#e2f4ff'},siege:{r:3.0,c:'#ff7a2f',c2:'#ffd24a'},moon:{r:2.8,c:'#bfe6ff',c2:'#ffffff'}};
 const evColor=c=>typeof c==='number'?tcol(c):c;
@@ -282,10 +292,12 @@ function onSimEv(a){
    if(!kind){if(s===me)sndF('dealt',{cr,k:supKey(s.wtype,s.wtier)});   // your hit: your weapon's own confirmation (fx.js LW.hit)
     dmgNum({x:t.x+(Math.random()-0.5)*1.2,y:t.y-R,t:0.9,z:cr?1.6:dir?1:0.75,g:!dir,txt:'',c:cr?'#ffd24a':tcol(s?s.team:1)},t,amt,cr);
     if(live&&a[7])pvpBulletHit(a[7]);}
+   else if(kind===3){const hz=hzNow();nums.push({x:t.x,y:t.y-R,t:0.9,z:1.6,txt:WX_HZ[hz].txt+' '+Math.round(amt),c:HZ_TXT[hz].c});sndF('hzhit',{hz,me:t===me,x:t.x,y:t.y});}   // the map's hazard landed on a tank
    else{const K=HIT_TXT[kind],jk=kind===1&&s&&s.supOc===2;nums.push({x:t.x,y:t.y-R,t:jk?1.2:K.t,z:jk?2.6:K.z,txt:(jk?'JACKPOT':K.txt)+' '+Math.round(amt),c:jk?'#ffcf4a':K.c});}
    return;}
   case 'k':{const r=U(a[1]),s=U(a[2]),why=a[3];if(!r)return;
-   feedPush(s?(s===me?'You':s.name)+' destroyed '+(r===me?'you':r.name):(r===me?'You':r.name)+(why==='storm'?' got caught in the storm':' got hit by a meteor'),s?tcol(s.team):why==='storm'?'#c79bff':'#ff8a3d');
+   {const HZ=HZ_TXT[why];   // a hazard that finished a tank: the last enemy to hit it gets the kill, and the feed says how
+    feedPush(s?(s===me?'You':s.name)+(HZ?' finished ':' destroyed ')+(r===me?'you':r.name)+(HZ?' '+HZ.with:''):(r===me?'You':r.name)+(why==='storm'?' got caught in the storm':HZ?(r===me?' were':' was')+' destroyed by '+HZ.by:' was destroyed'),s?tcol(s.team):why==='storm'?'#c79bff':HZ?HZ.c:'#ff8a3d');}
    sndF(r===me?'die':s===me?'kill':'boom');sndF('supstop',r.id);   // a tank destroyed mid-charge: its super's charge stops
    if(!d3){blasts.push({x:r.x,y:r.y,r:2.2,t:0.6,t0:0.6,c:'#ff6b3c'});blasts.push({x:r.x,y:r.y,r:1.4,t:0.4,t0:0.4,c:'#ffd24a'});}shake(10,0.5);   // in 3D the break-up and its explosion are FX3D's (two batches instead of four meshes)
    nums.push({x:r.x,y:r.y-R,t:1.1,z:1.4,txt:r===me?'YOU ARE DOWN':'DESTROYED',c:r===me?'#ff6b6b':'#ffd24a'});
@@ -326,6 +338,7 @@ function onSimEv(a){
    if(!d3)blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);sndF('crate');
    pop(x,y-0.8,a[4]?'MYSTERY BOX':'CRATE DESTROYED',a[4]?'#ffd24a':'#c9d6e3');return;}
   case 'e':{const E=EVENTS[a[1]];if(E){banner={t:3.2,txt:E.txt,c:E.c};sndF('event');}return;}
+  case 'D':{const s=U(a[1]),t=U(a[2]);if(s===me&&t){nums.push({x:t.x,y:t.y-2.1,t:1.2,z:1.5,txt:'HAZARD TAKEDOWN',c:'#ffcf4a'});sndF('takedown');if(typeof wxTakedown==='function')wxTakedown();}return;}   // an enemy you hit in the last 5 s took the map's hazard
   case 'w':if(live)warns.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4]});sndF('warn');return;
   case 'm':{const x=a[1],y=a[2],r=a[3];blasts.push({x,y,r:r*1.25,t:0.5,t0:0.5,c:'#ff8a3d'});sndF('meteor');blasts.push({x,y,r:r*0.6,t:0.3,t0:0.3,c:'#ffe08a'});shake(7,0.35);return;}
   case 'b':if(live)pvpShot(a);else if(typeof rangeRun!=='undefined'&&rangeRun&&rangeRun.sim){const o=units[a[2]];if(o)sndF('shot',o);}return;   // the practice range's engine runs in its own frame: its shots come here (review, 5E-2b3)

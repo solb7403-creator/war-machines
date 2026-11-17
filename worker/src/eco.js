@@ -321,7 +321,8 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
       for (const k of Object.keys(o)) if (now - o[k].t0 > ECO.TICKET_MS) delete o[k];
       const ks = Object.keys(o).sort((a, c) => o[a].t0 - o[c].t0); for (const k of ks.slice(0, Math.max(0, ks.length - 6))) delete o[k]; }
     S.mt = { n, cid, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
-      L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, lgi: brk.i, pw: S.pw, gh: ghosts.map((x) => x.id) };
+      L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, lgi: brk.i, pw: S.pw, gh: ghosts.map((x) => x.id),
+      ws: crypto.getRandomValues(new Uint32Array(1))[0] | 0, wc: (S.mp || 0) < R.WX_FIRST_CLEAR ? 1 : 0 };   // ws: this match's weather seed (rules.js wxPlan); wc: clear, the pilot's first three matches (Session 5E-2e)
     // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
     const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
     if (gap < 600) bp.g = (bp.g || []).concat(Math.round(gap * 10) / 10).slice(-30);
@@ -331,13 +332,13 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
     if (!dy[X.day]) dy[X.day] = [dm, dm, 0];
     dy[X.day][2]++;
     for (const k of Object.keys(dy)) if (Number(k) < X.day - 9) delete dy[k];
-    return { lg: brk.key, lgi: brk.i, mult: brk.mult, power: S.pw, L, ghosts };
+    return { lg: brk.key, lgi: brk.i, mult: brk.mult, power: S.pw, L, ghosts, wx: [S.mt.ws, S.mt.wc] };
   }, now, { rl: 1 });
   if (t.rate) return { status: 429, body: { error: "rate" } };
   if (t.error) return { status: 409, body: { error: t.error } };
   if (t.same) {   // the same match asking again: the same ticket (no ghosts this time; they're optional)
     const T = t.same, brk = R.leagueInfo(T.lgi);
-    return { status: 200, body: { ok: true, tok: T.n + "." + (await sign(env, `${pid}|${T.n}|${T.t0}`)), league: brk.key, lgi: brk.i, mult: T.mult, power: T.pw, L: T.L, E: pub(t.S), gh: [], same: true } };
+    return { status: 200, body: { ok: true, tok: T.n + "." + (await sign(env, `${pid}|${T.n}|${T.t0}`)), league: brk.key, lgi: brk.i, mult: T.mult, power: T.pw, L: T.L, E: pub(t.S), gh: [], same: true, wx: Number.isInteger(T.ws) ? [T.ws, T.wc ? 1 : 0] : null } };
   }
   // a new session: who started playing this minute, on which network and device (accounts that always start together)
   const sessP = sess ? (async () => {
@@ -347,7 +348,7 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
   })().catch(() => {}) : null;
   const [tok] = await Promise.all([sign(env, `${pid}|${n}|${now}`), sessP]);
   // ghosts go to the phone by seat number only (never the owner's id)
-  return { status: 200, body: { ok: true, tok: n + "." + tok, league: t.lg, lgi: t.lgi, mult: t.mult, power: t.power, L: t.L, E: pub(t.S),
+  return { status: 200, body: { ok: true, tok: n + "." + tok, league: t.lg, lgi: t.lgi, mult: t.mult, power: t.power, L: t.L, E: pub(t.S), wx: t.wx,
     gh: t.ghosts.map((x, i) => ({ i, n: x.n, L: x.L })) } };
 }
 // the pilot's open tickets: the latest, and older ones whose results may still be on their way
@@ -431,7 +432,8 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       const me0 = proofL ? R.tankOf(proofL, 1) : null;
       const scale = T.g === "royale" ? R.ROYALE_HP : T.g === "boss" ? 1.5 : R.MODES[T.m].n * (T.g === "bounty" ? R.BTY_HP : 1);
       const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf(R.loadoutFor(proofL,c),scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
-      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minS, spdM: me0 ? me0.spdM : 1, st: s });
+      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minS, spdM: me0 ? me0.spdM : 1, st: s, hs: scale,
+        wx: Number.isInteger(T.ws) && r0.wxs === T.ws ? { seed: T.ws, clear: !!T.wc } : null });   // hazard takedowns count only when the phone played the weather this ticket gave it
       if (!pr.ok) {
         S.pfw = pr.why;
         flags = watch(S, { pf: true, why: pr.why }, X, now);
@@ -445,6 +447,7 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
     const kmax = T.g === "arena" ? (T.series ? 5 : R.MODES[T.m].n) : solo ? 5 : Math.ceil(el / 4) + 2;
     const st = { dmg: lim(s.dmg, el * 450), kills: lim(s.kills, kmax), box: lim(s.box, 30), sup: lim(s.sup, Math.min(Math.ceil(el / 6) + 2, (R.SUP_ROUND_CAP || 3) * (T.series ? 5 : 1))),   // never more than 3 a round (Session 5E-2b2b)
       caps: T.g === "zone" ? lim(s.caps, Math.ceil(el / 5)) : 0,
+      td: pr && pr.ok ? lim(s.td, Math.ceil(el / 3) + 2) : 0,   // map hazard takedowns: only what a verified match record shows (proof.js fix.td)
       cry: T.g === "crystal" ? lim(s.cry, Math.ceil(el / 3)) : 0, stars: T.g === "bounty" ? lim(s.stars, Math.ceil(el / 2) + 7) : 0, low: Math.max(0, Math.min(1, Number(s.low) || 0)) };
     const sw = T.series && Array.isArray(r0.seriesW) ? [lim(r0.seriesW[0], 3), lim(r0.seriesW[1], 3)] : null;
     // how the ghosts in this match did (seat numbers from the ticket; anything else is ignored)

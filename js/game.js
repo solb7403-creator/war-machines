@@ -129,7 +129,7 @@ let supF=[10,1];   // this match's [seconds of own fire, own hulls lost] per bar
 function supAdd(u,pts,side){if(u.boss||(u.supN||0)>=SUP_ROUND_CAP||!(pts>0))return;u.sp=Math.min(SUPER_MAX,u.sp+pts);}   // side: 0 dealt, 1 received (the measurement tools read it)
 // called by takeHit for every hit, with the hull it really removed (rem: never more than the target had left).
 // Only combat damage between opposing tanks charges: src must be an enemy tank, kind 0 (a shot) or 1 (a super, a megatank
-// stomp or shell); the storm, meteors and crates never get here with a source. A super's own damage does not charge its owner.
+// stomp or shell); the storm and crates never get here with a source, and a map hazard's credited hit (kind 3, 5E-2e) never charges. A super's own damage does not charge its owner.
 function supCharge(t,src,rem,kind){
  if(!(rem>0)||!src||src===t||src.team===t.team||kind>1)return;
  const fl=flareMult();
@@ -146,12 +146,15 @@ let boss=null;   // team matches scale health with team size so fights last
 // ---- 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most) ----
 let series=null;
 const isSeriesMode=()=>!!MM.series;   // set when the match is set up (the coached first match is a single round)
-// ---- one random event per team match or Moon Zone match ----
-const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},meteor:{txt:'Meteor shower! Stay out of the red circles',c:'#ff6b5e'},flare:{txt:'Solar flare: supers charge twice as fast',c:'#ffb347'}};
-const EVT_KEYS=Object.keys(EVENTS),METEOR_DMG=260;
+// ---- the random match event: a supply drop, one team match or Moon Zone match in three (as before). Session 5E-2e (owner,
+// Nov 17 2026): the meteor shower left the event pool (meteors are Moonbase's map hazard now, with subtle warnings, no red
+// circles) and the solar flare is the vision effect of Overpass and Longshot in the weather roll (rules.js WX_MAP), with
+// its old effect (supers charge twice as fast). EVENTS.flare is the banner the flare shows when it starts ----
+const EVENTS={drop:{txt:'Supply drop: boxes landing mid-map',c:'#ffd24a'},flare:{txt:'Solar flare: supers charge twice as fast',c:'#ffb347'}};
+const EVT_DROP=1/3;   // the supply drop keeps the share it had in the old three-event pool
 let evt=null,evtAt=0,evtKind='drop',warns=[],ffwd=false,elapsed=0,feed=[];
 let supTeamAt={},simT=0;   // simT: match clock that runs across rounds (elapsed restarts each round). supTeamAt: simT of the last AI super per team (AI_SUP_TEAM_GAP); u.supAt likewise. Reset every match, held across rounds so a series never shortens the league spacing
-const flareMult=()=>evt&&evt.k==='flare'?2:1;
+const flareMult=()=>wx&&wx.P.vis==='flare'&&wxWinOn(wx.P,elapsed)?2:1;   // the solar flare (Overpass, Longshot): supers charge twice as fast while it lasts
 const boxSchedule=()=>{const a=[];let tt=0;for(let i=0;i<BOX_COUNT;i++){tt+=i===0?5+random()*3:15+random()*15;a.push(tt);}return a;};   // first box lands early
 // One zone that jumps to a random spot every 20-28s (6s warning shows where it goes next).
 // Score while you hold it uncontested, +5 per kill, respawn gets longer each death, tanks repair when out of combat.
@@ -203,7 +206,7 @@ function respawnTick(dt){
   }
   u.dead=(u.dead||0)+dt;
   if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.tkn=0;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;
-   u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;   // teleported: live players snap to the spawn
+   u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.hzT=WX_SPAWN_SAFE;u.lh=null;   // teleported: live players snap to the spawn. hzT: no map hazard touches a tank that has just come back
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
    ev('r',u.id);}
  }
@@ -289,16 +292,17 @@ function simStart(){
  series=MM.series?{w:[0,0],round:1}:null;
  const G=GTYPES[matchG];
  bullets=[];timeLeft=series?ROUND_T:G.t;state='play';elapsed=0;simT=0;ffwd=false;warns=[];evt=null;feed=[];banner=null;bid=0;supTeamAt={};
- evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=EVT_KEYS[(random()*EVT_KEYS.length)|0];
+ evtAt=series?0:(matchG==='zone'||matchG==='crystal'?50:matchG==='royale'?40:26)+random()*14;evtKind=random()<EVT_DROP?'drop':null;
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  supF=supFillOf(matchG,MM.n);
  units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
-  u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
+  u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1,td:0}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
  if(matchG==='royale'){const c=freeSpot(10+(random()-0.5)*4,16+(random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
  boxes=[];sidx=0;pops=[];nums=[];beams=[];shells=[];blasts=[];novas=[];shakeT=0;shakeM=0;sched=boxSchedule();
  if(storm)for(let i=0;i<6;i++)placeBox(true);   // Last Standing: loot is already on the ground
+ wxStart();
 }
 
 // ---- physics helpers ----
@@ -382,7 +386,7 @@ function turret(a,dt){
  let b=nearestFoe(a);
  if(!b||a.hp<=0)return;
  const f=a.focus;if(f&&f!==b&&f.hp>0&&f.team!==a.team&&dist2(a,f)<=STAT.range&&los(a,f))b=f;   // bots lock onto their objective target once it's in reach
- const seen=los(a,b);
+ const seen=los(a,b)&&wxSees(a,b);   // dust, glare, haze: nobody locks on or fires further than they can see (rules.js wxSight)
  if(seen)a.lk={x:b.x,y:b.y};            // remember where the enemy was last seen
  const aim=a.hum?b:a.lk;   // a human always sees the enemy; the bot only knows where it last saw you
  if(aim){
@@ -428,9 +432,10 @@ const dmgMult=r=>(1+bsum(r,'dmg'))*(1+gsum(r,'dmg'))*(r.dmgM||1),rofMult=r=>(1+b
 // Hull Plating set traits (rules.js plateStats; RESOURCE_ECONOMY.md §6.1): energy = Pulse Cannon shots, Pierce Lance and
 // Static Nova; area = Static Nova, Siege Blast, meteors and the megatank's stomps and shells. Moonbeam and Moonfall are exempt
 const plateCut=(r,src,why,kind)=>{if(!r.enR&&!r.arR)return 1;const w=src&&src.wtype;let e=false,a=false;
- if(kind===3||why==='meteor'||why==='stomp'||why==='shell')a=true;else if(kind===0)e=w==='pulse';else if(kind===1){e=w==='pulse'||w==='twin';a=w==='twin'||w==='siege';}
+ if(kind===3){if(why==='arc'||why==='laser')e=true;else a=true;}   // map hazards (5E-2e): arcs and lasers are energy, the rest area
+ else if(why==='stomp'||why==='shell')a=true;else if(kind===0)e=w==='pulse';else if(kind===1){e=w==='pulse'||w==='twin';a=w==='twin'||w==='siege';}
  return (e?1-(r.enR||0):1)*(a?1-(r.arR||0):1);};
-// every hit goes through here. kind: 0 shot, 1 super, 2 storm, 3 meteor (sets the floating number); bid: the shot that hit
+// every hit goes through here. kind: 0 shot, 1 super, 2 storm, 3 the map's hazard (sets the floating number); bid: the shot that hit
 function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const wasAlive=r.hp>0;
  if(r.shieldT>0&&(kind||0)<2){if(r.st)r.st.shd+=amt*(1-SHIELD_MULT);amt*=SHIELD_MULT;}   // shielded: combat damage cut before it lands
@@ -438,6 +443,7 @@ function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const h0=Math.max(0,r.hp);
  r.hp-=amt;r.flash=0.08;r.calm=0;
  supCharge(r,src,h0-Math.max(0,r.hp),kind||0);
+ if(src&&src!==r&&src.team!==r.team&&(kind||0)<2)r.lh={s:src,t:simT};   // the last enemy who hit this tank: a hazard that finishes it within WX_CREDIT s credits them (hzDmg)
  if(r.st){r.st.taken+=amt;const f=Math.max(0,r.hp)/r.mhp;if(f<r.st.low)r.st.low=f;}
  ev('h',r.id,amt,kind||0,crit?1:0,direct?1:0,src?src.id:-1,bid||0);
  for(const b of r.buffs)b.taken+=amt;
@@ -693,7 +699,7 @@ function superTick(dt){
   const lg=aiLgOf(u),wait=LG_AI_SUP_WAIT[lg],gap=LG_AI_SUP_GAP[lg];   // league skill: a Rookie AI holds a ready super longer; the charge rule itself is the player's (useSuper)
   // minimum time between an AI pilot's supers, and between AI teammates' supers (owner, Nov 10): never faster than the charge rule allows a player
   const spaced=simT-(u.supAt===undefined?-1e9:u.supAt)>=gap&&simT-(supTeamAt[u.team]===undefined?-1e9:supTeamAt[u.team])>=AI_SUP_TEAM_GAP;
-  if(u.rdy>wait&&spaced&&tgt&&los(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng&&useSuper(u)){u.supAt=simT;supTeamAt[u.team]=simT;}
+  if(u.rdy>wait&&spaced&&tgt&&los(u,tgt)&&wxSees(u,tgt)&&Math.hypot(tgt.x-u.x,tgt.y-u.y)<=brng&&useSuper(u)){u.supAt=simT;supTeamAt[u.team]=simT;}
  }
 }
 function heading(dt){   // hull turns toward the direction of travel; the turret aims on its own
@@ -792,7 +798,7 @@ function botAI(dt,u){
  u.focus=tgt;
  botDodge(u);if(dashStep(u,dt))return;
  u.brain.shT=(u.brain.shT||0)-dt;if(u.brain.shT<=0&&u.hp/u.mhp<0.35&&u.calm<0.8&&(u.shieldCd||0)<=0&&(u.shieldT||0)<=0){useShield(u);u.brain.shT=2;}
- const b=u.brain,d=dist2(u,tgt),seen=los(u,tgt),hurt=u.hp/u.mhp<0.5&&u.hp<tgt.hp;
+ const b=u.brain,d=dist2(u,tgt),seen=los(u,tgt)&&wxSees(u,tgt),hurt=u.hp/u.mhp<0.5&&u.hp<tgt.hp;
  u.strafeT-=dt;if(u.strafeT<=0){u.strafe=-u.strafe;u.strafeT=1+random()*1.8;}
  b.t-=dt;b.age+=dt;b.hideCd-=dt;
  b.chk=(b.chk||0)+dt;   // stuck breaker: barely moved for 0.5s while it should be moving -> flip strafe side and re-plan
@@ -851,6 +857,7 @@ function botAI(dt,u){
   if((!u.wp||u.wpT<=0||!u.wpG||Math.hypot(u.wpG.x-goal.x,u.wpG.y-goal.y)>1||Math.hypot(u.wp.x-u.x,u.wp.y-u.y)<0.6)&&(!u.wp||planBudget>0)){planBudget--;u.wp=waypoint(u,goal);u.wpG={x:goal.x,y:goal.y};u.wpT=0.25;}
   tx=u.wp.x;ty=u.wp.y;}
  for(const w of warns){const dx=u.x-w.x,dy=u.y-w.y,d=Math.hypot(dx,dy);if(d<w.r+R+0.4){const k=d||1;tx=u.x+(d?dx/k:1)*2;ty=u.y+(d?dy/k:0)*2;break;}}
+ const hv=hzSteer(u);if(hv){tx=hv.x;ty=hv.y;}   // a map hazard it has noticed: get out of its way first
  // on a ramp: pick up or down once and drive it to the end. Without this, strafing and re-planning
  // make bots rock up and down the ramp (they'd flip between "go to the deck" and "go to the ground" every few frames)
  // the ramp plus its lips while up there; on the ground, the 1.6-unit mouth in front of its open end
@@ -1003,6 +1010,7 @@ function botTarget(u){
   let s=dist2(u,v)+(v.hp/v.mhp)*4+taken(v);
   if(v.focus===u)s-=2.5;
   if(u.focus===v)s-=1.5;
+  if(hzPinned(v))s-=1.5;   // a foe caught where a map hazard is about to land is worth keeping under fire
   if(s<bs){bs=s;best=v;}}
  return best;
 }
@@ -1104,7 +1112,7 @@ function update(dt){
  moveBullets(dt);
  for(const u of units)u.flash=Math.max(0,u.flash-dt);
  for(const c of crates)c.flash=Math.max(0,(c.flash||0)-dt);
- timeLeft-=dt;elapsed+=dt;simT+=dt;eventTick(dt);
+ timeLeft-=dt;elapsed+=dt;simT+=dt;eventTick(dt);weatherTick(dt);
  if(gzones){zoneTick(dt);respawnTick(dt);if(gscore[0]>=ZONE_WIN||gscore[1]>=ZONE_WIN||timeLeft<=0)endMatch();}
  else if(cry){crystalTick(dt);respawnTick(dt);if((cry.cd&&cry.cd.t<=0)||timeLeft<=0)endMatch();}
  else if(matchG==='bounty'){respawnTick(dt);if(timeLeft<=0)endMatch();}
@@ -1114,18 +1122,14 @@ function update(dt){
 }
 // ---- events ----
 function eventTick(dt){
- if(!evt&&evtAt&&elapsed>=evtAt){evtAt=0;startEvent(evtKind);}
- if(evt){evt.t-=dt;
-  if(evt.k==='meteor'){evt.next-=dt;if(evt.next<=0&&evt.t>1.3){evt.next=0.55+random()*0.35;meteorWarn();}}
-  if(evt.t<=0)evt=null;}
- for(const w of warns){w.t-=dt;if(w.t<=0)meteorHit(w);}
+ if(!evt&&evtAt&&elapsed>=evtAt){evtAt=0;if(evtKind)startEvent(evtKind);}
+ if(evt){evt.t-=dt;if(evt.t<=0)evt=null;}
+ for(const w of warns){w.t-=dt;if(w.t<=0)bossHit(w);}   // the megatank's stomps and shells (the only red circles left)
  if(warns.length)warns=warns.filter(w=>w.t>0);
 }
 function startEvent(k){
  ev('e',k);
- if(k==='drop'){evt={k,t:3};for(let i=0;i<3;i++)dropBoxNear(10+(random()-0.5)*6,16+(random()-0.5)*7);}
- else if(k==='meteor')evt={k,t:10,next:0.9};
- else evt={k,t:20};
+ evt={k,t:3};for(let i=0;i<3;i++)dropBoxNear(10+(random()-0.5)*6,16+(random()-0.5)*7);
 }
 function dropBoxNear(x0,y0){
  for(let i=0;i<80;i++){
@@ -1134,21 +1138,103 @@ function dropBoxNear(x0,y0){
   boxes.push({x,y,life:22,age:0});ev('p',x,y,'SUPPLY DROP','#ffd24a');return;
  }
 }
-function meteorWarn(){
- const alive=units.filter(u=>u.hp>0);let x,y;
- if(alive.length&&random()<0.6){const u=alive[(random()*alive.length)|0];x=u.x+(random()-0.5)*4;y=u.y+(random()-0.5)*4;}
- else{x=2+random()*(W-4);y=4+random()*(H-8);}
- const w={x:Math.max(1,Math.min(W-1,x)),y:Math.max(1,Math.min(H-1,y)),r:1.6,t:1.3,t0:1.3};warns.push(w);ev('w',w.x,w.y,w.r,w.t);
+// ---- Arcade weather and map hazards (Session 5E-2e; the rules, the odds and the timetable are in rules.js above WX_ODDS) ----
+// MM.wx: the match's weather seed (an integer; the server's for a ticketed AI match and for a live room). MM.wxc: clear
+// whatever the seed says (a pilot in their first three matches). No seed: no weather (the practice range, older callers).
+// Everything that can hurt a tank is decided here, from the plan and the sim's own clock; nothing here calls random()
+// except an AI pilot's own "did it read the warning" draw (hzSteer), so two sims with the same seed agree hit for hit.
+let wx=null;   // {seed, round, P: this round's plan (rules.js wxPlan), on: the whole-map vision effect is on, act: strikes warned or live}
+function wxStart(){
+ for(const u of units){u.hzT=WX_SPAWN_SAFE;u.lh=null;u.hzH=null;u.hzK=null;u.hzC=null;}
+ if(!MM||!Number.isInteger(MM.wx)||!WX_MAP[curMap]){wx=null;return;}
+ const rd=series?series.round:0;
+ wx={seed:MM.wx,round:rd,P:wxPlan(MM.wx,curMap,rd,series?ROUND_T:GTYPES[matchG].t,!!MM.wxc),on:false,act:[]};
 }
-function meteorHit(w){
- if(w.boss){bossHit(w);return;}
- ev('m',w.x,w.y,w.r);
- for(const u of units){
-  if(u.hp<=0||underDeck(u))continue;
-  if(Math.hypot(u.x-w.x,u.y-w.y)<w.r+bodyR(u)*0.5){if(u.st)u.st.arm+=METEOR_DMG*armor(u);takeHit(u,METEOR_DMG*(1-armor(u)),null,'meteor',3);}
+// dust, glare, haze, steam, dimmed lights: how far a can see b right now (the same rule for people and AI pilots)
+const wxSees=(a,b)=>!wx||!wx.P.vis||Math.hypot(a.x-b.x,a.y-b.y)<=wxSight(wx.P,elapsed,a.x,a.y,b.x,b.y);
+// can this strike touch this tank at all: never the megatank (hazards are for tanks), never a tank that has just spawned,
+// and only on the strike's own level
+function hzLevel(u,s){
+ if(s.k==='t')return (u.elev||0)===1&&inDeck(u.x,u.y);   // the train runs on the deck: tunnels and ramps are safe
+ if(s.k==='n'||s.vent)return (u.elev||0)===0&&!underDeck(u);   // ground level only (a tornado passes the mesa by; vents are in the craters)
+ return !underDeck(u);   // meteors, arcs, lasers: a tank under a deck is covered
+}
+const hzCan=(u,s)=>u.hp>0&&!u.boss&&!(u.hzT>0)&&hzLevel(u,s);
+const hzIn=(u,s,t)=>wxIn(s,t,u.x,u.y,bodyR(u)*0.5);
+// one hazard hit. Never a one-shot: at most WX_CAP of the tank's full hull (before armor and plates cut it further).
+// Skill, not luck: if an enemy hit this tank in the last WX_CREDIT seconds, the hit is their takedown and, if it finishes
+// the tank, their kill (a normal kill: the same stars, zone points and quest progress, nothing extra). Nobody recent: nobody's
+function hzDmg(u,s){
+ const hz=wx.P.haz,lh=u.lh,c=lh&&simT-lh.t<=WX_CREDIT&&lh.s.team!==u.team&&units.includes(lh.s)?lh.s:null;
+ const a=armor(u),gross=Math.min(WX_HZ[hz].dmg*hpScale(),WX_CAP*u.mhp);
+ if(u.st)u.st.arm+=gross*a;
+ if(c&&c.st){const K=u.hzC||(u.hzC={});   // one takedown per strike and victim (a tornado: one per WX_CREDIT seconds of contact)
+  if(!(simT-(K[s.id]===undefined?-99:K[s.id])<WX_CREDIT)){K[s.id]=simT;c.st.td=(c.st.td||0)+1;ev('D',c.id,u.id);}}
+ takeHit(u,gross*(1-a),c,hz,3);
+}
+function hzShove(u,s,t){   // the train throws a tank along the deck; a tornado spins it round and out
+ if(u.hp<=0)return;let dx,dy;
+ if(s.k==='t'){dx=s.dir*WX_HZ.train.shove;dy=0;}
+ else{const c=wxPos(s,t),ex=u.x-c[0],ey=u.y-c[1],d=Math.hypot(ex,ey)||1,k=WX_HZ.tornado.push;dx=(-ey/d*0.8+ex/d*0.6)*k;dy=(ex/d*0.8+ey/d*0.6)*k;}
+ for(let i=0;i<3;i++){u.x+=dx/3;u.y+=dy/3;push(u);}
+ u.wp=null;if(u.ctl==='net')netResync(u);   // a live pilot's phone snaps to where the hazard left the tank
+}
+function weatherTick(dt){
+ for(const u of units)if(u.hzT>0)u.hzT=Math.max(0,u.hzT-dt);
+ if(!wx)return;const P=wx.P,t=elapsed;
+ if(P.win.length){const on=wxWinOn(P,t);if(on!==wx.on){wx.on=on;if(on&&P.vis==='flare')ev('e','flare');}}
+ if(!P.haz)return;
+ const act=wx.act;act.length=0;
+ for(const s of P.hz){
+  if(s.w>t)break;   // sorted by warning time
+  if(s.done||s.soft)continue;
+  if(t<s.t){act.push(s);continue;}   // still only a warning
+  if(s.k==='c'||s.k==='a'){s.done=1;   // meteors, vents, the pylon: one hit, now
+   for(const u of units)if(hzCan(u,s)&&hzIn(u,s,t))hzDmg(u,s);
+   if(s.k==='c'&&!s.vent)hitCratesNear(s.x,s.y,s.r,WX_HZ.meteor.dmg);   // a meteor breaks supply crates, as meteors always did
+   continue;}
+  if(t-dt>wxEnd(s)){s.done=1;continue;}
+  act.push(s);
+  for(const u of units){if(!hzCan(u,s)||!hzIn(u,s,t))continue;
+   const H=u.hzH||(u.hzH={});
+   if(s.k==='n'){if(t-(H[s.id]===undefined?-9:H[s.id])<WX_HZ.tornado.tick)continue;H[s.id]=t;hzDmg(u,s);hzShove(u,s,t);}   // chip and push, twice a second
+   else{if(H[s.id]!==undefined)continue;H[s.id]=t;hzDmg(u,s);if(s.k==='t')hzShove(u,s,t);}}   // the train and a laser hit a tank once a pass
  }
- hitCratesNear(w.x,w.y,w.r,METEOR_DMG);
 }
+// ---- the AI and the hazards: the same rules as a person. It gets the same warning, reads it LG_AI_HZ of the time (by
+// league, drawn once per strike), needs HZ_REACT to react, and then drives out the way a person would. It also keeps a foe
+// who is standing where a hazard is about to land under fire (botTarget: hzPinned) ----
+const LG_AI_HZ=[0.5,0.56,0.62,0.68,0.74,0.8,0.85],HZ_REACT=0.35;
+const WX_ARC_SAFE=[[8,8.9],[12,8.9],[5.6,7.6],[14.4,7.6],[8,23.1],[12,23.1],[5.6,24.4],[14.4,24.4]];   // Longshot: spots the containers hide from the pylon
+// is the tank standing where this strike will land (or is landing)
+function hzThreat(u,s,t){
+ if(u.hp<=0||u.boss||!hzLevel(u,s))return false;
+ if(s.k==='c')return wxIn(s,t,u.x,u.y,R+0.5);
+ if(s.k==='a')return wxArcSees(s,u.x,u.y);
+ if(s.k==='t'){if(Math.abs(u.y-s.y)>=s.hw+R+0.2)return false;
+  if(t<s.t)return true;const f=s.dir>0?s.x0+s.v*(t-s.t):s.x1-s.v*(t-s.t);return s.dir>0?u.x>f-s.len-R:u.x<f+s.len+R;}   // until its tail has gone by
+ if(s.k==='l'){if(Math.abs(u.y-s.y)>=s.r+R+0.3)return false;
+  const c=wxPos(s,Math.max(t,s.t));return s.x1>s.x0?u.x>c[0]-s.r-R:u.x<c[0]+s.r+R;}   // until the spot has gone by
+ const c=wxPos(s,Math.max(t,s.t)+0.6);return Math.hypot(u.x-c[0],u.y-c[1])<s.r+R+0.9;   // a tornado: where it will be in a moment
+}
+function hzEscape(u,s,t){
+ if(s.k==='a'){let best=null,bd=1e9;for(const p of WX_ARC_SAFE){const d=Math.hypot(p[0]-u.x,p[1]-u.y);if(d<bd){bd=d;best=p;}}
+  const w=waypoint(u,{x:best[0],y:best[1],l:0});return {x:w.x,y:w.y};}
+ if(s.k==='t')return {x:u.x,y:u.y<s.y?s.y-s.hw-R-0.6:s.y+s.hw+R+0.6};   // to the railing (push() holds it on the deck)
+ if(s.k==='l'){const off=s.r+R+1,up={x:u.x,y:s.y-off},dn={x:u.x,y:s.y+off},a=u.y<s.y?up:dn,b=u.y<s.y?dn:up;return groundOk(a.x,a.y)||!groundOk(b.x,b.y)?a:b;}
+ const c=s.k==='n'?wxPos(s,Math.max(t,s.t)+0.6):[s.x,s.y],dx=u.x-c[0],dy=u.y-c[1],d=Math.hypot(dx,dy);
+ return d>0.01?{x:u.x+dx/d*2.5,y:u.y+dy/d*2.5}:{x:u.x+2.5,y:u.y};
+}
+function hzSteer(u){   // where an AI pilot drives to get out of a hazard it has noticed (null: nothing to dodge)
+ if(!wx||!wx.act.length||u.boss)return null;const t=elapsed;
+ for(const s of wx.act){
+  if(s.w>t-HZ_REACT||!hzThreat(u,s,t))continue;
+  const K=u.hzK||(u.hzK={});if(K[s.id]===undefined)K[s.id]=random()<LG_AI_HZ[aiLgOf(u)]?1:0;
+  if(K[s.id])return hzEscape(u,s,t);
+ }
+ return null;
+}
+const hzPinned=v=>!!wx&&wx.act.length>0&&wx.act.some(s=>hzThreat(v,s,elapsed));
 // ---- best-of-3 rounds ----
 function roundWinner(){
  const a0=aliveCount(0),a1=aliveCount(1);
@@ -1188,7 +1274,7 @@ function simRound(){
  for(const u of units){u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.ox=u.x;u.oy=u.y;u.elev=0;u.hp=u.mhp;u.buffs=[];u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.sup=null;u.flash=0;u.trail=[];u.wp=null;u.lk=null;u.cd=0.5;
   u.ang=u.team===0?-Math.PI/2:Math.PI/2;u.hd=u.ang;u.rdyShown=false;u.dash=null;u.dashCd=0;u.shieldT=0;u.shieldCd=0;u.hurtT=0;u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;
   if(u.brain){u.brain.mode='press';u.brain.t=1.5;u.brain.spot=null;u.brain.out=false;}}
- state='play';
+ state='play';wxStart();
 }
 // how the match went for the team of unit u: won, drawn, Last Standing place, score as [theirs, the other side's]
 function outcome(u,forced){

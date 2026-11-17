@@ -184,7 +184,25 @@ const PAINTS={
  gold:{n:'Gold plate',hull:'#7a5c16',tur:'#9a7720',trim:'#ffe08a',ton:4.8,stars:300,shine:true},
  void:{n:'Void',hull:'#07080d',tur:'#121522',trim:'#4d9fff',ton:4.8,stars:300,shine:true},
  founder:{n:'Founder',hull:'#aab2c0',tur:'#d3d9e3',trim:'#ffcf4a',shine:true,only:'founder'},   // Founder pack only, never sold on its own
- hyper:{n:'Hyperspace',hull:'#171140',tur:'#261c63',trim:'#ffd46a',shine:true,only:'vault'}};   // Hyperspace Vault level 7, never sold
+ hyper:{n:'Hyperspace',hull:'#171140',tur:'#261c63',trim:'#ffd46a',shine:true,only:'vault'},   // Hyperspace Vault level 7, never sold
+ // Hazard finishes (Session 5E-2e): one per Arcade map, earned by WX_FINISH_N hazard takedowns on that map (hz: the map;
+ // counted by the server only: ecoAfterMatch). Never sold.
+ scorch:{n:'Meteor Scorch',hull:'#1c1614',tur:'#2b211d',trim:'#ff7a2e',only:'hazard',hz:'classic'},
+ maglev:{n:'Maglev Runner',hull:'#8e9aa8',tur:'#aab6c4',trim:'#39e6ff',shine:true,only:'hazard',hz:'overpass'},
+ arc:{n:'Arc Charge',hull:'#1b2356',tur:'#27317a',trim:'#b8f1ff',only:'hazard',hz:'longshot'},
+ vent:{n:'Vent Breaker',hull:'#4a4f52',tur:'#5f666a',trim:'#8ff5d2',only:'hazard',hz:'craters'},
+ devil:{n:'Dust Devil',hull:'#8a6a45',tur:'#a88458',trim:'#ffd9a0',only:'hazard',hz:'canyon'},
+ grid:{n:'Laser Grid',hull:'#23272e',tur:'#343a44',trim:'#ff3b30',only:'hazard',hz:'bunker'},
+ // The animated LIVE version of each finish: a premium store entry, NOT ON SALE (owner, Nov 17 2026: checkout stays off in
+ // every currency until Session 8 certifies payments). soon holds the PROPOSED prices for the owner (TON; SOL follows TON at
+ // the live rate, js/net.js; Stars only in Telegram). There is deliberately no ton / stars field: ecoPrice only prices a
+ // paint that has one, so neither the phone nor the server can sell these. live: the earned finish it animates; fx: the look
+ scorch_live:{n:'Meteor Scorch LIVE',hull:'#1c1614',tur:'#2b211d',trim:'#ff7a2e',shine:true,only:'soon',live:'scorch',fx:'embers',soon:{ton:7.2,stars:450}},
+ maglev_live:{n:'Maglev Runner LIVE',hull:'#8e9aa8',tur:'#aab6c4',trim:'#39e6ff',shine:true,only:'soon',live:'maglev',fx:'rail',soon:{ton:7.2,stars:450}},
+ arc_live:{n:'Arc Charge LIVE',hull:'#1b2356',tur:'#27317a',trim:'#b8f1ff',shine:true,only:'soon',live:'arc',fx:'arcs',soon:{ton:7.2,stars:450}},
+ vent_live:{n:'Vent Breaker LIVE',hull:'#4a4f52',tur:'#5f666a',trim:'#8ff5d2',shine:true,only:'soon',live:'vent',fx:'steam',soon:{ton:7.2,stars:450}},
+ devil_live:{n:'Dust Devil LIVE',hull:'#8a6a45',tur:'#a88458',trim:'#ffd9a0',shine:true,only:'soon',live:'devil',fx:'dust',soon:{ton:7.2,stars:450}},
+ grid_live:{n:'Laser Grid LIVE',hull:'#23272e',tur:'#343a44',trim:'#ff3b30',shine:true,only:'soon',live:'grid',fx:'scan',soon:{ton:7.2,stars:450}}};
 // ---- featured mode: one mode a day pays +25% and gets a live queue ----
 const FEATURE_ROT=['crystal','royale','bounty','crystal','bounty','royale','zone'],FEATURED_X=1.25;   // by UTC day; season 1 opens with Crystal Rush
 const featuredOn=day=>FEATURE_ROT[((day%7)+7)%7];
@@ -233,6 +251,142 @@ function streakPts(gk,mk,streak){
 }
 // 1v1 Arena is a best of 3: first to 2 round wins pays ×2. A drawn round doesn't count (5 rounds at most)
 const SERIES_X=2,ROUND_T=90;
+// ---- Arcade weather and map hazards (Session 5E-2e, owner decisions Nov 17 2026) ----
+// Every Arcade match rolls its weather from one seed: clear / the map's vision effect only / its damaging hazard only / both
+// (WX_ODDS). A pilot's first WX_FIRST_CLEAR matches are always clear. Each map has exactly ONE damaging hazard and one
+// non-damaging vision effect (WX_MAP). The roll (wxRoll) and the whole timetable (wxPlan) are pure functions of (seed, map,
+// round): no sim state, no random(), no trigonometry, only + - * / and sqrt, so the phone, a desktop, the live-match room
+// (worker/src/pvp.js) and the proof-of-play check (worker/src/proof.js) all work out exactly the same plan. The sim
+// (game.js weatherTick) decides every hit from that plan; the 3D layer (js/weatherfx.js) only draws it.
+// Rules for every damaging hazard: seeded; point-mirrored so both halves of the map are threatened equally (twin strikes,
+// alternating which half goes first); always warned before it can hit (WX_HZ warn: sound + light, the same every time);
+// never more than WX_CAP of a full hull per hit; a hazard that finishes a tank credits the last enemy who hit it within
+// WX_CREDIT seconds, and pays exactly what any kill pays (no new points source).
+const WX_ODDS=[0.25,0.35,0.20,0.20];   // clear, vision only, hazard only, both
+const WX_FIRST_CLEAR=3,WX_CREDIT=5,WX_CAP=0.34,WX_SPAWN_SAFE=2.5,WX_FINISH_N=25,WX_W=20,WX_H=32;
+// hz: the damaging hazard; vis: the vision effect; fin: the paint finish 25 hazard takedowns on this map unlock
+const WX_MAP={
+ classic:{hz:'meteor',hn:'Meteor strikes',vis:'haze',vn:'Regolith haze',fin:'scorch'},
+ overpass:{hz:'train',hn:'Maglev train',vis:'flare',vn:'Solar flare',fin:'maglev'},
+ longshot:{hz:'arc',hn:'Pylon overload',vis:'flare',vn:'Solar flare',fin:'arc'},
+ craters:{hz:'vent',hn:'Crater vents',vis:'steam',vn:'Vent steam',fin:'vent'},
+ canyon:{hz:'tornado',hn:'Sand tornadoes',vis:'dust',vn:'Dust storm',fin:'devil'},
+ bunker:{hz:'laser',hn:'Ceiling lasers',vis:'flicker',vn:'Power flicker',fin:'grid'}};
+// dmg: hull damage of one hit at 1v1 hull scale (x the mode's hull scale, armor and plates apply, never above WX_CAP of the
+// tank's full hull); warn: seconds of warning before it can hit; res: the Hull Plating trait that cuts it (a area, e energy)
+const WX_HZ={
+ meteor:{dmg:300,warn:1.6,r:1.7,txt:'METEOR',res:'a',how:'Watch for the streak and the glow on the ground: drive off the spot'},
+ train:{dmg:420,warn:2.8,hw:1.25,len:8,v:20,shove:2.2,txt:'TRAIN',res:'a',how:'Rail lights and a horn: leave the deck or hug its railing. Tunnels and ramps are safe'},
+ arc:{dmg:320,warn:3,txt:'ARC',res:'e',how:'Three pulses of the coils, then it fires: break line of sight behind a container'},
+ vent:{dmg:340,warn:2.2,txt:'VENT',res:'a',how:'A hiss and wisps from the cracks: get out of the crater'},
+ tornado:{dmg:70,warn:2.6,r:1.35,v:1.7,life:20,tick:0.5,push:0.9,txt:'TORNADO',res:'a',how:'Slow and loud: drive around it'},
+ laser:{dmg:380,warn:2,r:0.9,v:8,txt:'LASER',res:'e',how:'The mounts glow and the row flickers: step off the row'}};
+// how far a tank can see (lock on and fire) while the effect is on it. local: only tanks inside a cloud, or looking into one
+const WX_VIS={haze:{r:3.2,local:1,cr:2.5,life:9},flare:{r:4.6,len:20},steam:{r:3.2,local:1},dust:{r:4.2,len:22},flicker:{r:4.4}};
+const WX_ARC_BL=[[7,10,6,2],[7,20,6,2]],WX_ARC_AT=[10,16];   // Longshot: the two containers that block the arcs; the pylon
+const WX_VENTS={c:[10,16,3.0],f:[[15.5,14.5,2.2],[4.5,17.5,2.2]]};   // Crater Field: centre crater, the flank pair (blast radius)
+const WX_STEAM=[[10,16,3.4],[15.5,14.5,2.3],[4.5,17.5,2.3]];
+const WX_ROWS=[6,16,26];   // Bunker: the rows under the six emitter housings 5E-2c left
+// Canyon: one tornado takes a path, its twin the point mirror. 'through' runs the rille end to end past the mesa, 'loop' circles a half
+const WX_TORN=[[[10,2.5],[6,6],[5.5,11],[3.9,13.5],[3.9,18.5],[5,22],[9,25],[10,29.5]],
+ [[4.5,3.5],[10,2.8],[16,6.5],[13.5,9],[7,7.2],[5.6,10.8],[5.6,5],[4.5,3.5]]];
+const WX_DIR8=[[1,0],[0.7,0.7],[0,1],[-0.7,0.7],[-1,0],[-0.7,-0.7],[0,-1],[0.7,-0.7]];
+function wxRoll(seed,clear){
+ if(clear||!Number.isInteger(seed))return {k:0,vis:false,haz:false};
+ const r=rng32((seed^0x57A7E5)|0)(),k=r<WX_ODDS[0]?0:r<WX_ODDS[0]+WX_ODDS[1]?1:r<WX_ODDS[0]+WX_ODDS[1]+WX_ODDS[2]?2:3;
+ return {k,vis:k===1||k===3,haz:k>=2};
+}
+// The timetable of one round (round 0: a match without rounds; best of 3: 1..5), on the round's own clock. T: its length.
+// hz: strikes, each {k, id, w: warning starts, t: it can hit from here, ...}:
+//  c  circle (meteor, vent): hits once at t inside r of (x,y). soft: harmless grit (the haze effect without the hazard)
+//  a  arc: hits once at t, every tank with a clear line to (x,y); bl: the boxes that block it
+//  t  train: front enters the deck at t, runs x0..x1 (dir) at v, length len, half width hw around y
+//  l  laser: a spot of radius r runs the row y from x0 to x1 at v, from t
+//  n  tornado: forms at w, hits from t to e while it follows pts at v; radius r
+// win: [{t0,t1}] when the whole-map vision effect is on (flare, dust, flicker); clouds: [{x,y,r,t0,t1}] (haze, steam)
+function wxPlan(seed,map,round,T,clear){
+ const roll=wxRoll(seed,clear),M=WX_MAP[map],P={k:roll.k,map,vis:roll.vis&&M?M.vis:null,haz:roll.haz&&M?M.hz:null,hz:[],win:[],clouds:[]};
+ if(!M||!roll.k)return P;
+ const mix=s=>rng32((Math.imul(((seed|0)+(round|0)*7919)|0,0x9E3779B1)^hashStr(map+s))|0),q=v=>Math.round(v*100)/100,cl=(v,a,b)=>v<a?a:v>b?b:v;
+ let id=0;const hz=P.hz,H=WX_HZ[M.hz];
+ {const rnd=mix('hz'),rr=(a,b)=>a+(b-a)*rnd();
+  if(M.hz==='meteor'&&(roll.haz||roll.vis)){   // salvos of four walking a line, each with its mirrored twin 0.3 s apart
+   const soft=!roll.haz;let t=rr(8,13),n=(rnd()*2)|0;
+   while(t<T-4){const sx=rr(3.5,16.5),sy=rr(5.5,15),d0=(rnd()*8)|0,first=n%2;let d=WX_DIR8[d0];
+    // the line stays inside its own half (its twin walks the other), so which half is hit first alternates exactly, salvo by salvo
+    for(let j=0;j<8;j++){const c=WX_DIR8[(d0+j)%8],ex=sx+c[0]*6.9,ey=sy+c[1]*6.9;if(ex>=1.5&&ex<=WX_W-1.5&&ey>=2&&ey<=15.4){d=c;break;}}
+    for(let i=0;i<4;i++){const x=cl(sx+d[0]*2.3*i,1.5,WX_W-1.5),y=cl(sy+d[1]*2.3*i,2,15.4);
+     for(const m of [0,1]){const w=t+i*0.45+(m===first?0:0.3),s={k:'c',id:++id,w:q(w),t:q(w+H.warn),x:q(m?WX_W-x:x),y:q(m?WX_H-y:y),r:H.r};if(soft)s.soft=1;hz.push(s);
+      if(roll.vis&&i%2===0)P.clouds.push({x:s.x,y:s.y,r:WX_VIS.haze.cr,t0:s.t,t1:q(s.t+WX_VIS.haze.life)});}}
+    n++;t+=rr(12,17);}
+  }
+  if(M.hz==='train'&&roll.haz){let t=rr(9,14),n=(rnd()*2)|0;   // alternate directions: the point mirror of a pass is the pass the other way
+   while(t<T-5){hz.push({k:'t',id:++id,w:q(t),t:q(t+H.warn),dir:n%2?-1:1,y:16,hw:H.hw,x0:2,x1:18,len:H.len,v:H.v});n++;t+=rr(15,21);}}
+  if(M.hz==='arc'&&roll.haz){let t=rr(11,16);
+   while(t<T-5){hz.push({k:'a',id:++id,w:q(t),t:q(t+H.warn),x:WX_ARC_AT[0],y:WX_ARC_AT[1],bl:WX_ARC_BL});t+=rr(20,27);}}
+  if(M.hz==='vent'&&roll.haz){let t=rr(8,13),n=(rnd()*4)|0;   // centre crater, then the flank pair (alternating which flank goes first)
+   while(t<T-4){
+    if(n%2===0)hz.push({k:'c',id:++id,w:q(t),t:q(t+H.warn),x:WX_VENTS.c[0],y:WX_VENTS.c[1],r:WX_VENTS.c[2],vent:1});
+    else for(const m of [0,1]){const c=WX_VENTS.f[m],w=t+(m===((n>>1)&1)?0:0.6);hz.push({k:'c',id:++id,w:q(w),t:q(w+H.warn),x:c[0],y:c[1],r:c[2],vent:1});}
+    n++;t+=rr(9,13);}}
+  if(M.hz==='tornado'&&roll.haz){let t=rr(8,13);
+   while(t<T-8){const base=WX_TORN[(rnd()*WX_TORN.length)|0],pts=rnd()<0.5?base:base.slice().reverse(),e=Math.min(T,t+H.warn+H.life);
+    hz.push({k:'n',id:++id,w:q(t),t:q(t+H.warn),e:q(e),pts,v:H.v,r:H.r});
+    hz.push({k:'n',id:++id,w:q(t),t:q(t+H.warn),e:q(e),pts:pts.map(p=>[q(WX_W-p[0]),q(WX_H-p[1])]),v:H.v,r:H.r});
+    t+=H.warn+H.life+rr(8,12);}}
+  if(M.hz==='laser'&&roll.haz){let t=rr(8,13),n=(rnd()*4)|0;   // the middle row, then the two outer rows in opposite directions (point mirrors)
+   const L=(y,d)=>({k:'l',id:++id,w:q(t),t:q(t+H.warn),y,x0:d>0?0:WX_W,x1:d>0?WX_W:0,v:H.v,r:H.r});
+   while(t<T-5){const d=(n>>1)&1?-1:1;
+    if(n%2===0)hz.push(L(WX_ROWS[1],d));else{hz.push(L(WX_ROWS[0],d));hz.push(L(WX_ROWS[2],-d));}
+    n++;t+=rr(9,13);}}
+  hz.sort((a,b)=>a.w-b.w||a.id-b.id);
+ }
+ if(roll.vis){const rnd=mix('vis'),rr=(a,b)=>a+(b-a)*rnd();
+  if(M.vis==='flare'){const t=rr(12,24);P.win.push({t0:q(t),t1:q(t+WX_VIS.flare.len)});}   // one flare a round: supers charge twice as fast while it lasts
+  if(M.vis==='dust'){let t=rr(10,18);while(t<T-10){P.win.push({t0:q(t),t1:q(t+WX_VIS.dust.len)});t+=WX_VIS.dust.len+rr(34,48);}}
+  if(M.vis==='flicker'){let t=rr(8,14);while(t<T-6){const d=rr(6,8);P.win.push({t0:q(t),t1:q(t+d)});t+=d+rr(13,19);}}
+  if(M.vis==='steam')for(const c of WX_STEAM)P.clouds.push({x:c[0],y:c[1],r:c[2],t0:5,t1:1e9});
+ }
+ return P;
+}
+// when a strike stops being able to hit
+const wxEnd=s=>s.k==='t'?s.t+(s.x1-s.x0+s.len)/s.v:s.k==='l'?s.t+Math.abs(s.x1-s.x0)/s.v:s.k==='n'?s.e:s.t;
+// the moving centre of a laser spot or a tornado at round time tau (a tornado holds its path's end once it gets there)
+function wxPos(s,tau){
+ const d=Math.max(0,tau-s.t)*s.v;
+ if(s.k==='l'){const L=Math.abs(s.x1-s.x0),k=Math.min(L,d);return [s.x0+(s.x1>s.x0?k:-k),s.y];}
+ let left=d;const p=s.pts;
+ for(let i=1;i<p.length;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],l=Math.sqrt(dx*dx+dy*dy);
+  if(left<=l){const f=l?left/l:0;return [p[i-1][0]+dx*f,p[i-1][1]+dy*f];}left-=l;}
+ return [p[p.length-1][0],p[p.length-1][1]];
+}
+function wxSegRect(ax,ay,bx,by,r){   // does the segment cross the box (slab test)
+ let t0=0,t1=1;const dx=bx-ax,dy=by-ay;
+ const clip=(p,q)=>{if(p===0)return q>0;const k=q/p;if(p<0){if(k>t1)return false;if(k>t0)t0=k;}else{if(k<t0)return false;if(k<t1)t1=k;}return true;};
+ if(!clip(-dx,ax-r[0])||!clip(dx,r[0]+r[2]-ax)||!clip(-dy,ay-r[1])||!clip(dy,r[1]+r[3]-ay))return false;
+ return t1-t0>1e-6;
+}
+const wxArcSees=(s,x,y)=>!s.bl.some(r=>wxSegRect(s.x,s.y,x,y,r));   // a clear line from the pylon to the point
+// is the point inside the strike's footprint at round time tau (pad widens it: a tank's body, or a check's tolerance).
+// For a circle or an arc tau does not matter (they hit once, at t); the sim adds its own level rules (deck, tunnels)
+function wxIn(s,tau,x,y,pad){
+ pad=pad||0;
+ if(s.k==='c'){const dx=x-s.x,dy=y-s.y,r=s.r+pad;return dx*dx+dy*dy<r*r;}
+ if(s.k==='a')return wxArcSees(s,x,y);
+ if(s.k==='t'){const f=s.dir>0?s.x0+s.v*(tau-s.t):s.x1-s.v*(tau-s.t),a=Math.max(s.x0,s.dir>0?f-s.len:f),b=Math.min(s.x1,s.dir>0?f:f+s.len);
+  return Math.abs(y-s.y)<s.hw+pad&&x>a-pad&&x<b+pad;}
+ const c=wxPos(s,tau),dx=x-c[0],dy=y-c[1],r=s.r+pad;return dx*dx+dy*dy<r*r;
+}
+// the whole-map vision effect: is it on at round time t (flare, dust storm, power flicker)
+const wxWinOn=(P,t)=>P.win.some(w=>t>=w.t0&&t<w.t1);
+// how far a tank at (ax,ay) can see a tank at (bx,by) at round time t: Infinity when nothing limits it
+function wxSight(P,t,ax,ay,bx,by){
+ if(!P||!P.vis)return Infinity;const V=WX_VIS[P.vis];
+ if(!V.local)return wxWinOn(P,t)?V.r:Infinity;
+ for(const c of P.clouds){if(t<c.t0||t>=c.t1)continue;const r2=c.r*c.r;
+  if((ax-c.x)*(ax-c.x)+(ay-c.y)*(ay-c.y)<r2||(bx-c.x)*(bx-c.x)+(by-c.y)*(by-c.y)<r2)return V.r;}
+ return Infinity;
+}
 // LEAGUES: 7 steps from Rookie to Lunar Legend, set by your league rating = power x (0.8 + 0.4 x form). Form (S.lwr) is a
 // moving average of your results (win 1, draw or Last Standing top 3 0.5, loss or quit 0, over about the last 20 matches); it
 // counts from your 10th match (0.5 before). The steps are equal percentages (power is multiplicative), so every league is the
@@ -698,7 +852,7 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','upc','glc','gsc','wOwn','cOwn','roll','salv',
- 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn','hz'];   // hz: hazard takedowns per Arcade map (5E-2e)
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S,opt){
@@ -730,7 +884,7 @@ function ecoNorm(S,opt){
  for(const k of CHORDER)co[k]=[...new Set(listOf(co[k]).map(Number).filter(t=>t>=0&&t<=2))];
  for(const k in wo)if(!WORDER.includes(k))delete wo[k];for(const k in co)if(!CHORDER.includes(k))delete co[k];
  if(!wo.pulse.includes(0))wo.pulse.unshift(0);if(!co.vanguard.includes(0))co.vanguard.unshift(0);   // starter gear
- obj('roll');obj('salv');obj('q');obj('buys');obj('refC');const pa=obj('paints');pa.stock=1;if(vaultLevel(S.vg)>=VAULT_PAINT_LV)pa.hyper=1;else delete pa.hyper;
+ obj('roll');obj('salv');obj('q');obj('buys');obj('refC');obj('hz');const pa=obj('paints');pa.stock=1;if(vaultLevel(S.vg)>=VAULT_PAINT_LV)pa.hyper=1;else delete pa.hyper;
  if(S.skin!=='lunar')S.skin='default';S.moonbeam=!!S.moonbeam;S.starter=!!S.starter;S.founder=!!S.founder;
  if(S.dq&&typeof S.dq==='object'){S.dq.ids=listOf(S.dq.ids);S.dq.p=S.dq.p||{};S.dq.c=S.dq.c||{};S.dq.was=listOf(S.dq.was);}
  if(S.wk&&typeof S.wk==='object'){S.wk.ids=listOf(S.wk.ids);S.wk.p=S.wk.p||{};S.wk.u=S.wk.u||{};S.wk.c=S.wk.c||{};for(const id in S.wk.u)S.wk.u[id]=listOf(S.wk.u[id]);}
@@ -1143,6 +1297,16 @@ function ecoAfterMatch(S,o,X){
   crystals:st.cry||0,stars:st.stars||0,top3:top3?1:0,featured:o.feat?1:0,featWins:won&&o.feat?1:0,quick:o.quick?1:0,
   cleanWins:clean?1:0,streak:won?(o.streak||0):0,ovpWins:won&&o.map==='overpass'?1:0,sweeps:won&&sw&&sw[0]>=2&&sw[1]===0?1:0,
   royaleWins:W('royale'),bountyWins:W('bounty'),crystalWins:W('crystal'),day:X.day,winMode:won?o.g:null},X);
+ ecoHazard(S,o.map,st.td);
+}
+// Hazard takedowns (Session 5E-2e): counted per Arcade map, only here, from a match the server settled itself (a live room's
+// own sim: worker/src/pvp.js; an AI match: the count the match record shows, worker/src/proof.js). WX_FINISH_N on a map unlock
+// that map's finish for good. Looks only: no points, no pass XP, no quest progress
+function ecoHazard(S,map,n){
+ const M=WX_MAP[map];n=Math.floor(Number(n)||0);if(!M||!(n>0))return;
+ if(!S.hz||typeof S.hz!=='object')S.hz={};
+ S.hz[map]=Math.min(WX_FINISH_N*400,(S.hz[map]|0)+n);
+ if(S.hz[map]>=WX_FINISH_N){if(!S.paints)S.paints={stock:1};S.paints[M.fin]=1;}
 }
 // ---- squad payouts: milestones your recruits reach + 5% of what they earn (max 2,000 a day from the 5%; the rest carries over) ----
 // a verified match day: the server settled a real match today (counted once a day)

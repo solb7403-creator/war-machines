@@ -5,7 +5,7 @@
 // move, where the walls are, how far a shot reaches, whether the damage landed on anyone, and whether the result
 // (a win, a place, a draw) is what the record shows. A made-up result needs a made-up fight that passes all of it.
 // Returns {ok, why, fix (stats held to what the record shows), sig (signals for the bot-pattern flags)}.
-import { LIM } from "./sim.gen.js";
+import { LIM, RULES } from "./sim.gen.js";
 const lim = () => LIM;   // the game's fixed limits, worked out at build time (worker/build-sim.mjs)
 
 export const PROOF = {
@@ -24,6 +24,8 @@ export const PROOF = {
   DMG_PLUS: 700, DMG_X: 0.03,  // reported damage vs the record (the last half second isn't sampled)
   IH_N: 60,         // the controls fingerprint: your first 30 seconds of input (a script replaying its moves gives the same one)
   LAST_HP: 30,      // in the last sample, a tank under this much health (%) can be the one that went down at the end
+  HZ_PAD: 1.2,      // map hazards: how far outside a strike's footprint a sampled position may be (half a second of driving, rounding)
+  HZ_MINE: 11,      // samples back in which your own damage must show (the 5 s credit window, plus one sample)
 };
 function decode(pf) {
   if (!pf || typeof pf !== "object" || pf.v !== 1 || typeof pf.s !== "string" || !Array.isArray(pf.h)) return null;
@@ -156,6 +158,43 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) > 0 && HP(s, i) === 0) { let mineHit = false; for (let j = Math.max(0, s - 4); j <= s; j++) if (DM(j) > 0) mineHit = true; if (mineHit) kills++; }
     }
   }
+  // Map hazard takedowns (Session 5E-2e). The server gave this match its weather seed with the ticket, so it works out the
+  // same timetable the phone played (rules.js wxPlan) and counts, from the record alone, how often an enemy lost at least
+  // half a hazard hit's worth of health (or went down) in the very sample a strike was live on the spot where it stood, AND
+  // you had damaged someone in the 5 s before. An enemy who dodged while you were shooting it does not pass (c.hs: the mode's hull scale). The phone's own
+  // count is then held to this one (fix.td): nothing the phone reports can add a takedown the record does not show.
+  let td = 0;
+  if (c.wx && Number.isInteger(c.wx.seed) && RULES.WX_MAP[c.map]) {
+    const T = c.series ? L.ROUND_T : (L.GTYPES[c.g] || {}).t || 180, plan = (r) => RULES.wxPlan(c.wx.seed, c.map, r, T, !!c.wx.clear);
+    let round = c.series ? 1 : 0, r0 = -1, Pl = plan(round), seen = {};
+    const hzD = Pl.haz ? RULES.WX_HZ[Pl.haz].dmg * (c.hs || 1) : 0, need = (i) => Math.max(1, (Math.min(hzD, RULES.WX_CAP * mhp[i]) / mhp[i]) * 50 - 1);   // half the hit, in % of the hull
+    for (let s = 1; s < k && Pl.haz; s++) {
+      if (FL(s) & 64) { round++; r0 = s; Pl = plan(round); seen = {}; }
+      let mineHit = false;
+      for (let j = Math.max(0, s - PROOF.HZ_MINE); j <= s; j++) if (DM(j) > 0) mineHit = true;
+      if (!mineHit) continue;
+      const t1 = (s - r0) * PROOF.DT;   // the round's clock at this sample, within half a second
+      for (let i = 1; i < n; i++) {
+        const drop = HP(s - 1, i) - HP(s, i);
+        if (!enemy[i] || i === bossI || !(drop > 0) || (drop < need(i) && HP(s, i) > 0)) continue;
+        for (const z of Pl.hz) {
+          if (z.w > t1 + 1) break;
+          const end = RULES.wxEnd(z);
+          if (z.soft || end < t1 - 1.5) continue;
+          let inside = false;
+          for (let tau = t1 - 1; tau <= t1 + 0.51 && !inside; tau += 0.25) {
+            if (tau < z.t - 0.5 || tau > end + 0.5) continue;
+            const tt = Math.max(z.t, Math.min(end, tau));
+            inside = RULES.wxIn(z, tt, X(s, i), Y(s, i), PROOF.HZ_PAD) || RULES.wxIn(z, tt, X(s - 1, i), Y(s - 1, i), PROOF.HZ_PAD);
+          }
+          if (!inside) continue;
+          const key = z.id + ":" + i, last = seen[key];
+          if (last === undefined || (z.k === "n" && s - last >= RULES.WX_CREDIT / PROOF.DT)) { seen[key] = s; td++; }
+          break;
+        }
+      }
+    }
+  }
   // supers: never more than the cap in one round (Session 5E-2b2b). The phone's sim refuses the press past the cap, so an
   // honest record cannot hold more; a record that does was not made by the game's own rules
   if (mostSups > (L.SUP_ROUND_CAP || 3)) return fail("supers");
@@ -195,6 +234,7 @@ export function checkProof(pf, c) {
   // the result passes. Stats held to what the record shows (quests read them)
   const st = c.st, fix = {};
   if ((st.kills || 0) > kills + 1) fix.kills = kills + 1;
+  fix.td = Math.max(0, Math.min(Math.floor(Number(st.td) || 0), td));   // hazard takedowns: never more than the record shows (none without the server's weather seed)
   { const supTop = Math.min(sups + 1, (L.SUP_ROUND_CAP || 3) * roundsSeen); if ((st.sup || 0) > supTop) fix.sup = supTop; }   // never more than the record shows, nor than 3 a round
   if ((st.box || 0) > boxes + 1) fix.box = boxes + 1;
   if (typeof st.low === "number" && st.low > low + 0.03) fix.low = Math.round(low * 1000) / 1000;
