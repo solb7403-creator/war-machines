@@ -4880,7 +4880,28 @@ roadmap row 6B-V.
   (29) and `dev/tests/lab-store-ui.mjs` (20) PASS; conquest-copy scans labstore.js; conquest-research, lab-ui, garage-rules,
   fair-arcade, mod-behaviors, wtest lab / chassis (105) / web-auth / conquest / conquest-research / conquest-airdrop / pvp (133) /
   test (204) / farm / hull-plating PASS.
-- NEXT: slice 7 — owner-rules CI check (DAILY_CAP 50,000; CQ_PTS; DQ_PTS 3,500; DQ_ALL_BONUS 1,000; WQ_Q_PTS 12,500; WQ_PTS 5,000;
-  chassis kit model first chassis 77–97 days; conquest-ladder-check ±10%; guard-test limits in one checked-in file), a lint for code
-  after a `//` comment, the wall-storage fix (`worker/src/conquest-plot.js` plot-wall p.ws loop) + its test, all new tests in CI.
+- DONE slice 7 (owner rules, wall fix, research weeks): `docs/owner-rules.json` (only an owner-decided prompt may change it; AGENTS.md
+  gate 6) + `dev/tests/owner-rules.mjs` (25 checks, 6 s; its own workflow `owner-rules.yml` on every pull request and push to main,
+  also in conquest-check and before every Worker deploy): DAILY_CAP 50,000, CQ_PTS, DQ_PTS 3,500, DQ_ALL_BONUS 1,000, WQ_Q_PTS
+  12,500, WQ_PTS 5,000, LG_MULT, the Sortie chain (per 0, item .10); research = parts + time only, Worker clock 20 min / 2 h / 8 h,
+  1 slot + 1 at Lab III, lab max 3 from CC3; chassis kit model first kit day 83 inside 77–97; the earned tree median 7.9 weeks
+  inside 6–10; best research build +8.33% over best free (legend kit 240 -> 260; owner about +8%, ±1 point); guard limits never
+  looser (ladder-check ±10% and CC10 >= day 7, base-progression CC10 floor 21 and CC5 >= 4); 15 CP lines in 6 files pinned (a new
+  CP source or sink fails); a lint for code hidden after a `//` comment (proved on the four known cases; 0 in 267 files); the
+  premium pass track, Lab purchases and research jobs never award points. Mutation-tested: DAILY_CAP 60,000 and a ±15% ladder band
+  both fail it (exit 1). Wall-storage fix: `worker/src/conquest-plot.js` plot-wall now spends stored cells (the loop sat after a
+  comment); `conquest-town.mjs` +3 checks that always run (the old one sat behind `if(st0)` with nothing stored), failing on the
+  old code (4 -> 4) and passing now. The lint also revived three dead test checks: `conquest-economy.mjs:13` (western patrols
+  refresh), `conquest-garrisons.mjs:8` (no guard inside a solid, finite HP), `conquest-copy.mjs:19` (the base screen copy loop
+  had been running its PASS log as its body); all pass. Research part counts tuned by `dev/tools/economy-model.mjs researchModel`
+  (real drop tables, Lab I/II day 4, Lab III day 7, both slots, 201 seeds): RTREE.cost [2,3,4,7] (64 parts) gave a median 11.9
+  weeks, so -> [1,2,2,5] (40 parts): free 60 min/day median 7.9 weeks (6.6–9.6), 30 min/day 15.3; premium pass parts moved to tiers
+  10/20/30 (12 a season): 5.9 weeks, about 25% faster (five tiers halved the tree: too far ahead of free pilots). New tests wired:
+  conquest-check (research, mod behaviors, POWER chip, Lab store UI + Worker, owner rules), deploy-worker (wtest research + Lab
+  store, owner rules), website-check (audio). Inventory heading now "RESEARCH PARTS · FOR THE SCIENCE LAB".
+  Note: `docs/conquest/session5/base-progression-model.json` is already stale on main (CC3 playMin 115.5 vs 117 when re-run at
+  4659c04); left as committed, the test passes either way.
+- NEXT: slice 8 — the economy model and kit model reports (written), mod-power --write, browser checks at 390x700, 390x844,
+  320x568, 1366x768, 1920x1080 with captures in docs/conquest/session6b/, at most 2 critic rounds, two independent reviewers,
+  Checkpoint 41 complete (research findings, decisions, tables), release.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.

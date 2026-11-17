@@ -173,6 +173,17 @@ const plain=(site,cc=1)=>{const p=P.newPlot(site,t0);p.cc=cc;p.b.cc.l=cc;return 
 // ---- 14. addendum review fixes ----
 {let s=toCC(base('ridge'),3);s=act(s,'plot-wall',{s:[{k:'line',a:[30,30],b:[37,30],o:0,l:0}]});s=act(s,'plot-layout',{op:'save',k:0});s=act(s,'plot-remove',{w:[{k:'line',a:[30,30],b:[33,30]}]});s=act(s,'plot-wall',{s:[{k:'line',a:[30,34],b:[37,34],o:0,l:0}]});s=act(s,'plot-layout',{op:'apply',k:0});
  const st=Object.values(s.plot.ws).reduce((a,n)=>a+n,0),fb=JSON.parse(JSON.stringify(s));fb.plot.ws=[null,st];campaign(fb,now);ok(st>0&&fb.plot.ws['1']===st,'stored walls survive Firebase turning {"1":n} into an array ('+st+' stored cells)');
+ // Session 6B (owner fix-queue): placing stored cells spends them. The deduction loop once sat after a // comment and never ran, so
+ // stored cells were free forever; the check above this scenario only ran when storage was non-empty, and it never was.
+ {assert(st>0,'this scenario stores wall cells');const u=structuredClone(s),cm0=u.plot.cm,code=+Object.keys(u.plot.ws)[0],{o,l}=P.wdecode(code),n0=u.plot.ws[code];
+  const free=[];for(let i=26;i<=40&&free.length<n0+2;i++)for(let j=40;j<=44&&free.length<n0+2;j++){const kk=P.key(i,j);if(!u.plot.w[kk]&&P.wallPlan(u.plot,[{k:'cells',c:[i,j],o,l}]).cells?.length)free.push([i,j]);}
+  assert(free.length>=n0+2,'room for the stored cells and two more');
+  const u1=act(u,'plot-wall',{s:[{k:'cells',c:free[0],o,l}]},{bmn:{}});
+  ok((u1.plot.ws[code]|0)===n0-1&&u1.plot.cm===cm0&&Object.values(u1.plot.ws).reduce((a,n)=>a+n,0)===st-1,'placing a stored wall cell takes it out of storage ('+n0+' -> '+(u1.plot.ws[code]|0)+' of that blend) and costs nothing');
+  let u2=structuredClone(u);for(let x=0;x<n0;x++)u2=act(u2,'plot-wall',{s:[{k:'cells',c:free[x],o,l}]},{bmn:{}});
+  ok(!u2.plot.ws[code]&&u2.plot.cm===cm0,'all '+n0+' stored cells of that blend placed: its storage is empty');
+  const pl=P.wallPlan(u2.plot,[{k:'cells',c:free[n0],o,l}]),u3=act(u2,'plot-wall',{s:[{k:'cells',c:free[n0],o,l}]},{bmn:{fe:99,il:99,ar:99,cr:99,ti:99,he:99}});
+  ok(pl.fresh===1&&!pl.used[code]&&pl.cost.cm>0&&u3.plot.cm===u2.plot.cm-pl.cost.cm,'the next cell is a new wall and is paid for ('+pl.cost.cm+' composite): no free walls once storage is spent');}
  const q=structuredClone(s.plot),k=Object.keys(q.w)[0];q.dmg={['w:'+k]:300};const t=structuredClone(s);t.plot=q;const t2=act(t,'plot-wall',{s:[{k:'cells',c:k.split(',').map(Number),o:1,l:1}]},{bmn:{fe:9}});ok(t2.plot.dmg['w:'+k]===300,'re-blending a damaged wall keeps its damage (no free repair)');
  const t3=act(structuredClone(t),'plot-remove',{w:[{k:'cells',c:k.split(',').map(Number)}]});ok(t3.plot.cm===t.plot.cm+Math.floor(.5*(300/600)),'a damaged wall returns 50% of what is left of it');
  const r=structuredClone(t);r.plot.dmg={['w:'+k]:300};const rr=act(r,'plot-repair',{});rr.plot.dmg['w:'+k]=450;const done=finish(rr);ok(done.plot.dmg['w:'+k]===150,'damage taken during a repair is not erased (450 − 300 repaired = 150 left)');

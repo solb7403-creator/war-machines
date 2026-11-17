@@ -14,6 +14,7 @@ This file is the common engineering contract for Codex, Claude Code and other au
 3. Keep existing player flows working on iPhone, Android, desktop browsers and Telegram Mini App. Preserve responsive HUD/input, accessibility, HIGH/LOW/2D fallback and context-loss behavior.
 4. Never commit keys, tokens, private credentials, generated customer data or production database snapshots. Use local fixtures and isolated test endpoints.
 5. Do not run destructive commands, install paid services, incur paid API/GPU charges, or invoke third-party reverse engineering outside owned/authorized targets without approval.
+6. **Owner rules (owner, Nov 16 2026):** `docs/owner-rules.json` pins the owner-decided numbers (DAILY_CAP, CQ_PTS, quest rewards, LG_MULT, the Sortie chain, the research rules) and the guard-test limits. **Only an owner-decided prompt may change that file**; `dev/tests/owner-rules.mjs` (its own workflow, every pull request) fails the build when code or a guard test drifts from it, a CP source or sink is added, or code hides after a `//` comment.
 
 ## Efficient, accurate agent workflow
 1. Identify the current branch and commit; inspect only the relevant entry points, function definitions, dependencies and nearby tests before editing.

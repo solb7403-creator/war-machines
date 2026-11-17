@@ -2,7 +2,7 @@
 // CHECKOUT IS OFF in every currency: no Stars invoice, a Telegram-confirmed payment naming a Lab item grants nothing, a TON payment
 // log grants nothing, and a phone can never sync the server-owned ownership (Legendary set mods, bonus parts, finish credits).
 // The grants themselves (for the day the owner opens checkout) only ever run from ecoGrant, give no points, and a Legendary set mod
-// is on sale only after its track's earned set mod. Lunar Pass premium tiers 6/12/18/24/30 add research parts, never points.
+// is on sale only after its track's earned set mod. Lunar Pass premium tiers 10/20/30 add research parts, never points.
 import { createHmac } from 'node:crypto';
 import { makeDB } from './fakedb.mjs';
 import { buildSim } from '../../../worker/build-sim.mjs';
@@ -90,14 +90,14 @@ for (const pl of [{ u: P.id, k: 'rsleg', t: 'sunfire', g: 9.6 }, { u: P.id, k: '
 { const Xn = { day: Math.floor(Date.now() / 864e5) }, sn = R.ecoSeason ? R.ecoSeason(Xn) : null;
   E().pass = { s: sn, xp: R.PASS_XP * 12, prem: true, cf: [], cp: [] };
   const bp0 = { ...(E().bpt || {}) }, pts0 = E().pts;
-  let [st, res] = await act(P, 'pass', { t: 'p', i: 6, c: 'vanguard' });
+  let [st, res] = await act(P, 'pass', { t: 'p', i: 10, c: 'vanguard' });
   const got = R.CQ_PART_ORDER.map(k => (E().bpt?.[k] | 0) - (bp0[k] | 0));
-  t(st === 200 && got.every(v => v === 1) && E().pts === pts0, 'premium tier 6: its reward plus 1 of each research part, no points (' + got.join(',') + ')');
+  t(st === 200 && got.every(v => v === 1) && E().pts === pts0, 'premium tier 10: its reward plus 1 of each research part, no points (' + got.join(',') + ')');
   [st, res] = await act(P, 'pass', { t: 'p', i: 5, c: 'vanguard' });
   t(st === 200 && R.CQ_PART_ORDER.every(k => (E().bpt?.[k] | 0) - (bp0[k] | 0) === 1), 'premium tier 5 gives its reward only');
-  [st, res] = await act(P, 'pass', { t: 'f', i: 6, c: 'vanguard' });
+  [st, res] = await act(P, 'pass', { t: 'f', i: 10, c: 'vanguard' });
   t(st === 200 && R.CQ_PART_ORDER.every(k => (E().bpt?.[k] | 0) - (bp0[k] | 0) === 1), 'the free track never gives research parts');
-  t(J(Object.keys(R.PASS_PREM_PARTS).map(Number)) === J([6, 12, 18, 24, 30]) && R.RTREE.slots.pass === 1 && R.RTREE.passTime === 0.75, 'premium perks: tiers 6, 12, 18, 24, 30; +1 research slot; jobs 25% faster');
+  t(J(Object.keys(R.PASS_PREM_PARTS).map(Number)) === J([10, 20, 30]) && R.RTREE.slots.pass === 1 && R.RTREE.passTime === 0.75, 'premium perks: research parts on tiers 10, 20, 30; +1 research slot; jobs 25% faster');
   t(R.PASS_PREM.every(r => !r || r.k !== 'pts'), 'the premium track still never gives points'); }
 console.log((bad ? 'FAIL' : 'PASS') + ' wtest lab-store: ' + ok + ' passed, ' + bad + ' failed');
 process.exit(bad ? 1 : 0);

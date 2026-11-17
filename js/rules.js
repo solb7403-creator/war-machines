@@ -1404,7 +1404,7 @@ const RTREE={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Ke
  order:['thermal','coil','servo','cap'],locked:{id:'role',n:'Role Cores',lab:4,d:'Coming with Science Lab level IV (battalions).'},
  mods:{thermal:['vent','overclock','heatsink','inferno'],coil:['pierce','marksman','predictor','rail'],servo:['traction','ram','momentum','overdrive'],cap:['capacitor','reflector','reflex','aegis']},
  legendary:{thermal:'sunfire',coil:'starfall',servo:'hyperdrive',cap:'aegisp'},
- cost:[2,3,4,7],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3};
+ cost:[1,2,2,5],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3};   // cost: parts for a track's 1st/2nd/3rd mod and its set mod (10 a track, 40 in all), tuned by dev/tools/economy-model.mjs researchModel: a regular 60-min/day pilot finishes the earned tree in a median 7.9 weeks (6.6-9.6), owner target 6-10
 const RTREE_ALL=RTREE.order.flatMap(t=>RTREE.mods[t]);
 const rsTierOf=id=>{const r=rmodOf(id);return r?(r.F.set?3:RTREE.tracks[r.F.rs].lab):0;};
 // the job a mod needs right now for this record (rs: the Conquest record's s.rs; labLv: the Science Lab's level; premium: the
@@ -1441,8 +1441,10 @@ const rsPackKey=(tk,X)=>'rsp:'+tk+'|'+X.week;
 const RS_LEG_PRICE=Object.freeze({stars:599,ton:9.6});
 const rsLegSet=id=>{const r=rmodOf(id);return r&&r.F.leg?RTREE.mods[r.F.rs][3]:null;};
 // Lunar Pass premium (season perks while premium is active: +1 research slot, jobs 25% faster: RTREE.slots.pass / passTime) and
-// research parts on these premium tiers: tier -> that many of each part, on top of the tier's own reward. Never points.
-const PASS_PREM_PARTS=Object.freeze({6:1,12:1,18:1,24:1,30:1});
+// research parts on these premium tiers: tier -> that many of each part, on top of the tier's own reward. Never points. Tiers
+// 10/20/30 (12 parts a season) make the tree about 25% faster than free (economy model: 5.9 vs 7.9 weeks), near the genre's
+// pass research boosts (Clash of Clans' Gold Pass: about 20%); five tiers (20 parts) halved it, too far ahead of free pilots.
+const PASS_PREM_PARTS=Object.freeze({10:1,20:1,30:1});
 function ecoAddParts(S,n){S.bpt=S.bpt&&typeof S.bpt==='object'?S.bpt:{};const o={};for(const k of CQ_PART_ORDER){S.bpt[k]=Math.min(1e5,(S.bpt[k]|0)+n);o[k]=n;}return o;}
 // ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
 // on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest
