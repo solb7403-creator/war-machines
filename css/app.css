@@ -900,3 +900,9 @@ button.q{display:flex;width:100%;text-align:left}
 .gpick.is-own span{color:var(--moon)}
 .gpick:not(.is-own):active{transform:scale(.97)}
 @media (min-width:700px){.gpick{min-height:60px}.gpick b{font-size:13px}}
+/* Session 6B: Science Lab research options in the garage Mods section (track colour edge, lock line, Legendary gold) */
+.gopt.grs{border-left:3px solid var(--tc,var(--edge))}
+.gopt.gleg{border-left-color:#ffcf4a;background:linear-gradient(90deg,rgba(255,207,74,.08),var(--rock2) 40%)}
+.gopt.glock{opacity:.72}
+.gopt .grs-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;font:700 10px var(--disp);letter-spacing:.06em;color:var(--tc,#fff);border:1px solid var(--tc,#fff);vertical-align:2px}
+.gopt.gleg .grs-tag{color:#ffcf4a;border-color:#ffcf4a}

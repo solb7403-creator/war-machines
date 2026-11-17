@@ -25,7 +25,7 @@ async function pilot(id,cc,lv,pt){await call(id,'/api/sync',{lab:1});let r=await
 // ---- a Thermal I job end to end: parts -> job -> Worker clock -> the account record -> the garage fits it -> power rises ----
 const P=9401;let s=await pilot(P,5,1,{thermal:5});const cp0=s.ledger.cp,b0=JSON.stringify(s.ledger.banked);
 let r=await call(P,'/api/conquest/action',{seq:s.seq+1,action:'research-start',mod:'vent'});ok(r.status===200&&r.state.rs.jobs[0].mod==='vent',JSON.stringify(r.error||'research-start: Vent Barrel running'));
-ok(r.state.ledger.cp===cp0&&JSON.stringify(r.state.ledger.banked)===b0&&r.state.inv.pt.thermal===5-R.RS.cost[0],'only research parts were spent (CP and banked materials unchanged)');
+ok(r.state.ledger.cp===cp0&&JSON.stringify(r.state.ledger.banked)===b0&&r.state.inv.pt.thermal===5-R.RTREE.cost[0],'only research parts were spent (CP and banked materials unchanged)');
 ok(!eco(P).rm||!eco(P).rm.vent,'not on the account before the job finishes');
 now+=21*MIN;r=await call(P,'/api/conquest/session');ok(r.status===200&&r.state.rs.done.vent,'20 minutes later the session open finishes the job (Worker clock)');
 ok(eco(P).rm&&eco(P).rm.vent===1,'the account record now holds Vent Barrel (credited from the outbox)');
@@ -46,7 +46,7 @@ ok(r.out?.err==='owned','the garage refuses a mod that was never researched (own
 // ---- the premium Lunar Pass on the account: -25% time and an extra slot; bonus parts after earned ones ----
 const Q=9402;s=await pilot(Q,5,1,{thermal:1,coil:5});{const e=eco(Q);const season=R.ecoSeason({day:Math.floor(now/86400000)});e.pass={s:season,xp:0,prem:true,cf:[],cp:[]};e.bpt={thermal:4,coil:0,servo:0,cap:0};putEco(Q,e);}
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'vent'});ok(r.status===200&&r.state.rs.jobs[0].ms===15*MIN,JSON.stringify(r.error||'premium pass: the Lab I job takes 15 minutes'));
-ok(r.state.rs.jobs[0].paid.e===1&&r.state.rs.jobs[0].paid.b===R.RS.cost[0]-1&&r.state.rs.bs.thermal===R.RS.cost[0]-1,'earned Thermal Core first, then bonus parts from the account');
+ok(r.state.rs.jobs[0].paid.e===1&&r.state.rs.jobs[0].paid.b===R.RTREE.cost[0]-1&&r.state.rs.bs.thermal===R.RTREE.cost[0]-1,'earned Thermal Core first, then bonus parts from the account');
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'pierce'});ok(r.status===200&&r.state.rs.jobs.length===2,JSON.stringify(r.error||'premium pass: a second slot at Science Lab I'));
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'marksman'});ok(r.status===409&&/slot/.test(r.error),'no third slot below Lab III ('+r.error+')');
 // pass gone (a new season): one slot again, full time

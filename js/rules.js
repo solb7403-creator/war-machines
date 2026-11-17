@@ -1382,10 +1382,10 @@ function fittingPe(v){const o={h:0,d:0,s:0};for(const [b,x] of Object.entries(fi
 // ---- the Science Lab research tree (Session 6B owner decision 1): research parts + time only, never CP, alloy, biomass or
 // helium. A job runs on the Worker clock (I 20 min for the Lab I tracks, II 2 h for the Lab II tracks, III 8 h for a set mod),
 // one at a time and a second slot at Science Lab III; a ruined Science Lab pauses research. Parts: the n-th mod a pilot researches
-// in a track costs RS.cost[n] of that track's part, the set mod (needs the track's other three) RS.cost[3]; tuned in
+// in a track costs RTREE.cost[n] of that track's part, the set mod (needs the track's other three) RTREE.cost[3]; tuned in
 // dev/tools/economy-model.mjs so the whole tree takes 6-10 weeks for a regular 60-minute pilot using both slots. The fifth track
 // slot (Role Cores) is shown locked: Session 6C adds Science Lab level IV with it.
-const RS={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Keep firing: heat becomes damage.'},
+const RTREE={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Keep firing: heat becomes damage.'},
   coil:{n:'Ballistics',part:'coil',lab:1,c:'#e8f4ff',d:'Precision: every hit counts.'},
   servo:{n:'Drive',part:'servo',lab:2,c:'#7be07b',d:'Movement is your weapon and your armor.'},
   cap:{n:'Field',part:'cap',lab:2,c:'#5aa9ff',d:'Your shield blocks, stores and strikes back.'}},
@@ -1393,20 +1393,20 @@ const RS={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Keep 
  mods:{thermal:['vent','overclock','heatsink','inferno'],coil:['pierce','marksman','predictor','rail'],servo:['traction','ram','momentum','overdrive'],cap:['capacitor','reflector','reflex','aegis']},
  legendary:{thermal:'sunfire',coil:'starfall',servo:'hyperdrive',cap:'aegisp'},
  cost:[2,3,4,7],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3};
-const RS_ALL=RS.order.flatMap(t=>RS.mods[t]);
-const rsTierOf=id=>{const r=rmodOf(id);return r?(r.F.set?3:RS.tracks[r.F.rs].lab):0;};
+const RTREE_ALL=RTREE.order.flatMap(t=>RTREE.mods[t]);
+const rsTierOf=id=>{const r=rmodOf(id);return r?(r.F.set?3:RTREE.tracks[r.F.rs].lab):0;};
 // the job a mod needs right now for this record (rs: the Conquest record's s.rs; labLv: the Science Lab's level; premium: the
 // current-season premium Lunar Pass on the account). Returns {err} or {part, n, ms, tier}
 function rsQuote(rs,id,labLv,premium){
- const r=rmodOf(id);if(!r||r.F.leg)return {err:'not a research mod'};const F=r.F,T=RS.tracks[F.rs],done=rs&&rs.done||{},jobs=(rs&&rs.jobs)||[];
+ const r=rmodOf(id);if(!r||r.F.leg)return {err:'not a research mod'};const F=r.F,T=RTREE.tracks[F.rs],done=rs&&rs.done||{},jobs=(rs&&rs.jobs)||[];
  if(done[id])return {err:'already researched'};if(jobs.some(j=>j&&j.mod===id))return {err:'already researching'};
  const need=F.set?3:T.lab;if((labLv|0)<need)return {err:'needs Science Lab '+['','I','II','III'][need]};
- const own=RS.mods[F.rs].filter(m=>m!==id&&!FITS[rmodOf(m).slot][m].set),k=own.filter(m=>done[m]||jobs.some(j=>j&&j.mod===m)).length;
+ const own=RTREE.mods[F.rs].filter(m=>m!==id&&!FITS[rmodOf(m).slot][m].set),k=own.filter(m=>done[m]||jobs.some(j=>j&&j.mod===m)).length;
  if(F.set&&!own.every(m=>done[m]))return {err:'research the other three '+T.n+' mods first'};
- const tier=F.set?3:T.lab;return {part:T.part,n:RS.cost[F.set?3:k],ms:Math.round(RS.timeMs[tier]*(premium?RS.passTime:1)),tier};}
-const rsSlots=(labLv,premium)=>(labLv>=1?RS.slots.base:0)+(labLv>=3?RS.slots.lab3:0)+(premium&&labLv>=1?RS.slots.pass:0);
+ const tier=F.set?3:T.lab;return {part:T.part,n:RTREE.cost[F.set?3:k],ms:Math.round(RTREE.timeMs[tier]*(premium?RTREE.passTime:1)),tier};}
+const rsSlots=(labLv,premium)=>(labLv>=1?RTREE.slots.base:0)+(labLv>=3?RTREE.slots.lab3:0)+(premium&&labLv>=1?RTREE.slots.pass:0);
 // the parts a whole tree costs (the economy model and the lab screen read it)
-const rsTreeCost=()=>RS.order.reduce((a,t)=>(a[RS.tracks[t].part]=RS.cost.reduce((x,y)=>x+y,0),a),{});
+const rsTreeCost=()=>RTREE.order.reduce((a,t)=>(a[RTREE.tracks[t].part]=RTREE.cost.reduce((x,y)=>x+y,0),a),{});
 // ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
 // on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest
 // saves it with the battle). Every trigger is a count or a timer, never a chance. The engines feed it what happened (a shot left,

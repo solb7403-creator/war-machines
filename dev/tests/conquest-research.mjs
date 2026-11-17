@@ -1,4 +1,4 @@
-// Session 6B: Science Lab research through the real Worker reducer (worker/src/conquest-research.js + js/rules.js RS) and the
+// Session 6B: Science Lab research through the real Worker reducer (worker/src/conquest-research.js + js/rules.js RTREE) and the
 // research mods in the gear rating and the loadout checks. Owner decisions (Nov 16, 2026): research parts + time only (no CP,
 // alloy, biomass or helium), jobs on the Worker clock (I 20 min, II 2 h, III 8 h) separate from the builder, one slot and a second
 // at Science Lab III, the premium Lunar Pass +1 slot and -25% time, a ruined lab pauses research, Lab I opens Thermal and
@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';import {buildSim} from '../../worker/bui
 const {RULES:R,CONQUEST}=await import('../../worker/src/sim.gen.js');const {Combat:C,World:W,Plot:P}=CONQUEST;
 const {createState,applyAction,refreshState}=await import('../../worker/src/conquest-sim.js');
 const A=await import('../../worker/src/conquest-airdrop.js');
-const RS=await import('../../worker/src/conquest-research.js');
+const RTREE=await import('../../worker/src/conquest-research.js');
 const {checkLoadout}=await import('../../worker/src/pvp.js');
 const {GEAR}=await import('./combat-sim.mjs');
 let passed=0;const ok=(c,m)=>{assert(c,m);passed++;console.log('PASS '+m);};
@@ -26,21 +26,21 @@ const throws=(f,re,m)=>{let e=null;try{f();}catch(x){e=x;}ok(!!e&&re.test(String
 const money=s=>JSON.stringify({cp:s.ledger.cp,b:s.ledger.banked,mn:s.plot?.mnSpent,cm:s.plot?.cm});
 
 // ---- 1. the tree: 4 tracks x (3 mods + 1 set mod) = 16, a locked fifth slot, the lab levels, the slots ----
-{const all=R.RS_ALL;ok(all.length===16&&new Set(all).size===16,'16 research unlocks, all distinct: '+all.join(', '));
- for(const t of R.RS.order){const ms=R.RS.mods[t],F=ms.map(id=>R.rmodOf(id).F);ok(F.filter(f=>f.set).length===1&&F.filter(f=>!f.set).length===3&&F.every(f=>f.rs===t&&!f.leg),R.RS.tracks[t].n+': three mods and one set mod, all on its own part');}
- ok(R.RS.tracks.thermal.lab===1&&R.RS.tracks.coil.lab===1&&R.RS.tracks.servo.lab===2&&R.RS.tracks.cap.lab===2&&R.RS_ALL.filter(id=>R.rmodOf(id).F.set).every(id=>R.rsTierOf(id)===3),'Lab I opens Thermal and Ballistics, Lab II Drive and Field, Lab III the set mods');
- ok(R.RS.locked&&R.RS.locked.lab===4&&/Role Cores/.test(R.RS.locked.n),'a fifth track slot for Role Cores, shown locked (Science Lab level IV, Session 6C)');
+{const all=R.RTREE_ALL;ok(all.length===16&&new Set(all).size===16,'16 research unlocks, all distinct: '+all.join(', '));
+ for(const t of R.RTREE.order){const ms=R.RTREE.mods[t],F=ms.map(id=>R.rmodOf(id).F);ok(F.filter(f=>f.set).length===1&&F.filter(f=>!f.set).length===3&&F.every(f=>f.rs===t&&!f.leg),R.RTREE.tracks[t].n+': three mods and one set mod, all on its own part');}
+ ok(R.RTREE.tracks.thermal.lab===1&&R.RTREE.tracks.coil.lab===1&&R.RTREE.tracks.servo.lab===2&&R.RTREE.tracks.cap.lab===2&&R.RTREE_ALL.filter(id=>R.rmodOf(id).F.set).every(id=>R.rsTierOf(id)===3),'Lab I opens Thermal and Ballistics, Lab II Drive and Field, Lab III the set mods');
+ ok(R.RTREE.locked&&R.RTREE.locked.lab===4&&/Role Cores/.test(R.RTREE.locked.n),'a fifth track slot for Role Cores, shown locked (Science Lab level IV, Session 6C)');
  ok(P.BUILDINGS.lab.max===3&&P.BUILDINGS.lab.cc===3,'the Science Lab stays max level 3, built from CC3');
- ok(R.RS.timeMs[1]===20*MIN&&R.RS.timeMs[2]===2*HOUR&&R.RS.timeMs[3]===8*HOUR,'job times I 20 min, II 2 h, III 8 h');
+ ok(R.RTREE.timeMs[1]===20*MIN&&R.RTREE.timeMs[2]===2*HOUR&&R.RTREE.timeMs[3]===8*HOUR,'job times I 20 min, II 2 h, III 8 h');
  ok(R.rsSlots(1,false)===1&&R.rsSlots(2,false)===1&&R.rsSlots(3,false)===2&&R.rsSlots(1,true)===2&&R.rsSlots(3,true)===3&&R.rsSlots(0,true)===0,'slots: one, a second at Science Lab III, +1 with the premium pass (none without a lab)');
- for(const t of R.RS.order){const L=R.RS.legendary[t],F=R.rmodOf(L).F;ok(F.leg&&F.set&&F.rs===t&&R.rmodOf(R.RS.mods[t][3]).slot===R.rmodOf(L).slot,'Legendary set mod for '+R.RS.tracks[t].n+': '+F.n+' (same slot as the earned set mod, bought, never researched)');}
- for(const id of R.RS_ALL.concat(Object.values(R.RS.legendary))){const F=R.rmodOf(id).F;const low=new Set(['dashCd','shieldCd','supTaken']);ok(typeof F.d==='string'&&F.d.length>30&&F.role&&F.cue&&F.b&&R.FIT_FIELDS.some(k=>low.has(k)?(F[k]||0)>0:(F[k]||0)<0),F.n+': a name, a role, one behavior in plain words ('+F.b+') and a felt trade-off');}
- ok(new Set(R.RS_ALL.map(id=>R.rmodOf(id).F.b)).size===16,'every earned mod has its own behavior (no two the same)');}
+ for(const t of R.RTREE.order){const L=R.RTREE.legendary[t],F=R.rmodOf(L).F;ok(F.leg&&F.set&&F.rs===t&&R.rmodOf(R.RTREE.mods[t][3]).slot===R.rmodOf(L).slot,'Legendary set mod for '+R.RTREE.tracks[t].n+': '+F.n+' (same slot as the earned set mod, bought, never researched)');}
+ for(const id of R.RTREE_ALL.concat(Object.values(R.RTREE.legendary))){const F=R.rmodOf(id).F;const low=new Set(['dashCd','shieldCd','supTaken']);ok(typeof F.d==='string'&&F.d.length>30&&F.role&&F.cue&&F.b&&R.FIT_FIELDS.some(k=>low.has(k)?(F[k]||0)>0:(F[k]||0)<0),F.n+': a name, a role, one behavior in plain words ('+F.b+') and a felt trade-off');}
+ ok(new Set(R.RTREE_ALL.map(id=>R.rmodOf(id).F.b)).size===16,'every earned mod has its own behavior (no two the same)');}
 
 // ---- 2. a job: parts + time only, never CP or materials; Worker clock; reveal; the outbox unlock ----
 {let s=pilot(5,1);const before=money(s),pt0={...s.inv.pt};
  s=act(s,'research-start','vent');const j=s.rs.jobs[0];
- ok(j&&j.mod==='vent'&&j.ms===20*MIN&&j.part==='thermal'&&s.inv.pt.thermal===pt0.thermal-R.RS.cost[0],'Vent Barrel: '+R.RS.cost[0]+' Thermal Cores and a 20-minute job');
+ ok(j&&j.mod==='vent'&&j.ms===20*MIN&&j.part==='thermal'&&s.inv.pt.thermal===pt0.thermal-R.RTREE.cost[0],'Vent Barrel: '+R.RTREE.cost[0]+' Thermal Cores and a 20-minute job');
  ok(money(s)===before,'no CP, alloy, biomass, helium, base minerals or composite spent (only parts)');
  ok(Object.keys(s.inv.pt).every(k=>k==='thermal'||s.inv.pt[k]===pt0[k]),'only that track\'s part');
  throws(()=>act(s,'research-start','overclock'),/slot is busy/,'one job at a time below Science Lab III');
@@ -55,20 +55,20 @@ const money=s=>JSON.stringify({cp:s.ledger.cp,b:s.ledger.banked,mn:s.plot?.mnSpe
 {let s=pilot(5,1);throws(()=>act(s,'research-start','traction'),/Science Lab II/,'Drive needs Science Lab II');
  throws(()=>act(s,'research-start','inferno'),/Science Lab III/,'a set mod needs Science Lab III');
  s=pilot(9,3);s=act(s,'research-start','vent');s=act(s,'research-start','overclock');
- ok(s.rs.jobs.length===2&&s.rs.jobs[1].part==='thermal'&&s.rs.jobs[1].paid.e===R.RS.cost[1],'Science Lab III: a second slot; the second Thermal mod costs '+R.RS.cost[1]);
+ ok(s.rs.jobs.length===2&&s.rs.jobs[1].part==='thermal'&&s.rs.jobs[1].paid.e===R.RTREE.cost[1],'Science Lab III: a second slot; the second Thermal mod costs '+R.RTREE.cost[1]);
  throws(()=>act(s,'research-start','heatsink'),/slot is busy/,'two slots at Lab III without the pass');
  throws(()=>act(s,'research-start','inferno'),/other three Thermal/,'the set mod needs the track\'s other three researched');
- s=wait(s,21*MIN);s=act(s,'research-start','heatsink');ok(s.rs.jobs[0].paid.e===R.RS.cost[2],'the third Thermal mod costs '+R.RS.cost[2]);
- s=wait(s,21*MIN);s=act(s,'research-start','inferno');const j=s.rs.jobs[0];ok(j.mod==='inferno'&&j.ms===8*HOUR&&j.paid.e===R.RS.cost[3],'the Thermal set mod: '+R.RS.cost[3]+' Thermal Cores, 8 hours');
+ s=wait(s,21*MIN);s=act(s,'research-start','heatsink');ok(s.rs.jobs[0].paid.e===R.RTREE.cost[2],'the third Thermal mod costs '+R.RTREE.cost[2]);
+ s=wait(s,21*MIN);s=act(s,'research-start','inferno');const j=s.rs.jobs[0];ok(j.mod==='inferno'&&j.ms===8*HOUR&&j.paid.e===R.RTREE.cost[3],'the Thermal set mod: '+R.RTREE.cost[3]+' Thermal Cores, 8 hours');
  s=wait(s,8*HOUR+1000);ok(s.rs.done.inferno,'Inferno Core researched');}
 
 // ---- 4. the premium Lunar Pass: +1 slot and -25% time; parts from bonus once earned run out ----
 {let s=pilot(5,1,{thermal:1,coil:20,servo:20,cap:20});const ctx={premium:true,bpt:{thermal:9,coil:0,servo:0,cap:0}};
  s=act(s,'research-start','vent',ctx);const j=s.rs.jobs[0];ok(j.ms===15*MIN&&j.pass===1,'premium pass: a Lab I job takes 15 minutes (-25%)');
- ok(j.paid.e===1&&j.paid.b===R.RS.cost[0]-1&&s.inv.pt.thermal===0&&s.rs.bs.thermal===R.RS.cost[0]-1,'earned parts first, then bonus parts (pass tiers, packs) from the account');
+ ok(j.paid.e===1&&j.paid.b===R.RTREE.cost[0]-1&&s.inv.pt.thermal===0&&s.rs.bs.thermal===R.RTREE.cost[0]-1,'earned parts first, then bonus parts (pass tiers, packs) from the account');
  s=act(s,'research-start','pierce',ctx);ok(s.rs.jobs.length===2,'premium pass: a second slot below Lab III');
  throws(()=>act(s,'research-start','marksman',ctx),/slot is busy/,'pass slots are capped (two below Lab III)');
- const s2=pilot(5,1,{thermal:0,coil:0,servo:0,cap:0});throws(()=>act(s2,'research-start','vent',{premium:false,bpt:{thermal:R.RS.cost[0]-1}}),/needs \d+ Thermal Core/,'not enough parts: refused, nothing spent');
+ const s2=pilot(5,1,{thermal:0,coil:0,servo:0,cap:0});throws(()=>act(s2,'research-start','vent',{premium:false,bpt:{thermal:R.RTREE.cost[0]-1}}),/needs \d+ Thermal Core/,'not enough parts: refused, nothing spent');
  const s3=pilot(5,1,{thermal:0,coil:0,servo:0,cap:0});s3.rs.bs.thermal=5;throws(()=>act(s3,'research-start','vent',{bpt:{thermal:5}}),/needs/,'bonus parts already spent here cannot be spent twice (account total minus spent)');}
 
 // ---- 5. a ruined Science Lab pauses research; repair resumes it ----
@@ -82,8 +82,8 @@ const money=s=>JSON.stringify({cp:s.ledger.cp,b:s.ledger.banked,mn:s.plot?.mnSpe
  q=wait(q,40*MIN);ok(Math.abs((l0-q.rs.jobs[0].left)-30*MIN)<2000,'repair done 10 min into a 40 min wait: 30 min of research ran');}
 
 // ---- 6. instant-finish credits (a verified purchase only; checkout is off) ----
-{let s=pilot(5,1);s=act(s,'research-start','pierce');const id=s.rs.jobs[0].id;RS.account(s,{bpt:{},rsx:{[id]:now}},now);ok(s.rs.done.pierce&&s.rs.fx[id]===1,'a finish credit on the account completes that job at once');
- s=act(s,'research-start','marksman');const id2=s.rs.jobs[0].id;RS.account(s,{bpt:{},rsx:{[id]:now}},now);ok(!s.rs.done.marksman&&s.rs.jobs[0].id===id2,'a credit finishes only its own job, once');}
+{let s=pilot(5,1);s=act(s,'research-start','pierce');const id=s.rs.jobs[0].id;RTREE.account(s,{bpt:{},rsx:{[id]:now}},now);ok(s.rs.done.pierce&&s.rs.fx[id]===1,'a finish credit on the account completes that job at once');
+ s=act(s,'research-start','marksman');const id2=s.rs.jobs[0].id;RTREE.account(s,{bpt:{},rsx:{[id]:now}},now);ok(!s.rs.done.marksman&&s.rs.jobs[0].id===id2,'a credit finishes only its own job, once');}
 
 // ---- 7. the account: ownership comes from the server record only ----
 {const S=R.ecoNorm({});R.labEnsure(S);const L=R.ecoLoadout(S,{mods:{mount:'vent',hull:'aegis',mobility:'hyperdrive'}});
@@ -103,8 +103,8 @@ const money=s=>JSON.stringify({cp:s.ledger.cp,b:s.ledger.banked,mn:s.plot?.mnSpe
  ok(g>0.07&&g<0.09,'top kit: the best research build is +'+(g*100).toFixed(1)+'% gear rating over the best build without research (target about +8%; '+JSON.stringify(res)+' vs '+JSON.stringify(free)+')');
  for(const slot of R.FIT_ORDER){const ids=Object.keys(R.FITS[slot]).filter(id=>R.FITS[slot][id].rs&&!R.FITS[slot][id].leg),one=id=>gain({[slot]:id},{}),sets=ids.filter(id=>R.FITS[slot][id].set),regs=ids.filter(id=>!R.FITS[slot][id].set),free2=Object.keys(R.FITS[slot]).filter(id=>!R.FITS[slot][id].rs);
   ok(sets.every(s=>regs.every(r=>one(s)>one(r))&&free2.every(f=>one(s)>one(f))),slot+': the set mod'+(sets.length>1?'s are':' is')+' stronger than every other option in the slot ('+sets.map(s=>R.FITS[slot][s].n+' +'+(one(s)*100).toFixed(1)+'%').join(', ')+')');}
- for(const t of R.RS.order){const e=R.RS.mods[t][3],l=R.RS.legendary[t],se=R.rmodOf(e).slot,ge=gain({[se]:e},{}),gl=gain({[se]:l},{});ok(gl>ge+0.01,R.rmodOf(l).F.n+' is a step stronger than '+R.rmodOf(e).F.n+': +'+(gl*100).toFixed(1)+'% vs +'+(ge*100).toFixed(1)+'%');}
- const S=R.ecoNorm({rm:Object.fromEntries(R.RS_ALL.map(k=>[k,1]))});R.labEnsure(S);const M=S.lab.machines[S.lab.active],p0=R.powerOf(R.labLoadout(S));M.spec.mods={...res};const p1=R.powerOf(R.labLoadout(S));
+ for(const t of R.RTREE.order){const e=R.RTREE.mods[t][3],l=R.RTREE.legendary[t],se=R.rmodOf(e).slot,ge=gain({[se]:e},{}),gl=gain({[se]:l},{});ok(gl>ge+0.01,R.rmodOf(l).F.n+' is a step stronger than '+R.rmodOf(e).F.n+': +'+(gl*100).toFixed(1)+'% vs +'+(ge*100).toFixed(1)+'%');}
+ const S=R.ecoNorm({rm:Object.fromEntries(R.RTREE_ALL.map(k=>[k,1]))});R.labEnsure(S);const M=S.lab.machines[S.lab.active],p0=R.powerOf(R.labLoadout(S));M.spec.mods={...res};const p1=R.powerOf(R.labLoadout(S));
  ok(p1>p0&&p1===R.powerOf({...R.labLoadout(S),mods:res}),'the fitted research mods raise the bay\'s power through the server loadout ('+p0+' -> '+p1+'; league and matchmaking read it)');}
 
 console.log('PASS conquest-research ('+passed+' checks)');

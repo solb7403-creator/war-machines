@@ -1,5 +1,5 @@
 // Science Lab research (Session 6B, owner decisions Nov 16 2026). Server-authoritative, on the Worker clock, separate from the
-// builder. A job costs research parts only (js/rules.js RS, rsQuote): never CP, alloy, biomass or helium. One job at a time, a
+// builder. A job costs research parts only (js/rules.js RTREE, rsQuote): never CP, alloy, biomass or helium. One job at a time, a
 // second slot once the Science Lab reaches level III, one more while the current season's premium Lunar Pass is owned (and 25%
 // shorter jobs). A ruined Science Lab pauses every running job (js/conquest/plot.js VITAL_EFFECT lab: 'research paused'): the
 // clock only runs while the lab stands. A finished job adds the mod to the Conquest record (s.rs.done) and rides this request's
@@ -15,7 +15,7 @@ export const RESEARCH_ACTIONS=['research-start','research-seen'];
 const fail=m=>{throw Error('conquest: '+m);};
 const record=v=>v&&typeof v==='object'&&!Array.isArray(v),int=v=>Math.max(0,Math.floor(Number(v)||0));
 const list=v=>Array.isArray(v)?v.filter(record):record(v)?Object.keys(v).sort((a,b)=>Number(a)-Number(b)).map(k=>v[k]).filter(record):[];
-const isMod=id=>typeof id==='string'&&R.RS_ALL.includes(id);
+const isMod=id=>typeof id==='string'&&R.RTREE_ALL.includes(id);
 // The pilot's research record (additive; Firebase drops empty lists and maps, so every field is rebuilt on each load).
 // jobs: [{id, mod, part, paid:{e,b}, ms (whole job), left (ms still to run), at (last tick, server clock), st (start), pass}]
 // done: {mod: finished at} · bs: bonus parts spent per part · fx: instant-finish credits used (job ids) · seen: reveal cards shown

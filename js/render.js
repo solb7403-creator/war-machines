@@ -1184,7 +1184,7 @@ function modChips(g){
  const v=me.mfv,m=me.mf||{},mf=v?{st:v.st,ovc:v.ovc,cool:v.cool,inf:v.inf?1:0,sc:v.n,hc:v.n,lost:v.lost,mom:v.mom,fast:0,still:v.cap?99:0,tr:m.tr||0,dq:m.dq!==undefined?m.dq:v.dq,osh:v.osh}:m;
  const chips=mfHud(me,mf);if(!chips.length)return;const D=dashBtn(),w=Math.max(70,Math.min(96,D.r*2.1)),h=Math.max(15,Math.min(19,D.r*0.4)),x=D.x-w/2;let y=D.y-D.r-10-h;
  g.save();g.textAlign='center';g.font='700 '+Math.round(h*0.58)+'px '+FONT_FAMILY;
- for(const c of chips){const col=c.leg?'#ffcf4a':(RS.tracks[c.tr]||{}).c||'#9fb0c2';   // a Legendary set mod's chip is gold
+ for(const c of chips){const col=c.leg?'#ffcf4a':(RTREE.tracks[c.tr]||{}).c||'#9fb0c2';   // a Legendary set mod's chip is gold
   g.globalAlpha=0.92;g.fillStyle=c.on>0?'rgba(18,26,40,.95)':'rgba(10,14,23,.78)';rr(g,x,y,w,h,h/2);g.fill();g.strokeStyle=col;g.lineWidth=c.on>0?2:1;g.stroke();
   const f=c.b==='overdrive'?0:Math.max(0,Math.min(1,c.on>0&&c.b!=='overclock'?1:c.v||0));if(f>0){g.globalAlpha=c.on>0?0.55:0.35;g.fillStyle=col;rr(g,x+2,y+2,(w-4)*f,h-4,(h-4)/2);g.fill();}
   g.globalAlpha=1;g.fillStyle=c.on<0?'#9fb0c2':'#fff';const word=c.b==='overdrive'?'DASH '+'●'.repeat(Math.max(0,c.v|0))+'○'.repeat(Math.max(0,(c.n||0)-(c.v|0))):c.w;g.fillText(word,D.x,y+h*0.7);y-=h+4;}

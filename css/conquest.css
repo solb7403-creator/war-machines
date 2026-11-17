@@ -395,3 +395,27 @@
 .cq .cq-modpop.show{animation:cq-modpop .9s ease-out forwards}
 @keyframes cq-modpop{0%{opacity:0;transform:translate(-50%,-30%) scale(.9)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%)}}
 @media(prefers-reduced-motion:reduce){.cq .cq-modpop.show{animation:none;opacity:1}}
+/* Session 6B: the Science Lab screen and the research-complete reveal card */
+.cq .cq-lab .cq-lab-status{font:800 12px/1.35 'Chakra Petch',sans-serif;color:#cfe8ff;margin:4px 0}
+.cq .cq-lab .cq-lab-pass{display:block;color:#ffd36b;font-size:11px;margin-bottom:6px}
+.cq .cq-lab .cq-lab-explain,.cq .cq-lab .cq-lab-why{font-size:12px;color:#a9c3d6;margin:4px 0 8px}
+.cq .cq-lab-parts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0 10px}
+.cq .cq-lab-part{display:flex;align-items:baseline;gap:6px;padding:6px 8px;border:1px solid var(--tc,#5a7590);border-radius:8px;background:#0b1622d9;min-width:0}
+.cq .cq-lab-part b{font:800 16px/1 'Chakra Petch',sans-serif;color:var(--tc,#fff)}.cq .cq-lab-part small{font-size:10px;color:#cfe0ee;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis}
+.cq .cq-lab-job{border:1px solid var(--tc,#5a7590);border-radius:8px;padding:8px;margin:6px 0;background:#0d1a27e6}.cq .cq-lab-job b{display:block;font:800 12px 'Chakra Petch',sans-serif;color:#fff}.cq .cq-lab-job progress{width:100%;accent-color:var(--tc,#7fe8ff)}
+.cq .cq-lab-track>summary{border-left:3px solid var(--tc,#5a7590);padding-left:8px}
+.cq .cq-lab-uses{display:block;color:#9fb6c9;font-size:11px;margin:4px 0 6px}
+.cq .cq-lab-node{border:1px solid #2c4256;border-radius:8px;padding:8px;margin:6px 0;background:#0a141ed9}
+.cq .cq-lab-node h3{margin:0;font:800 13px 'Chakra Petch',sans-serif;color:var(--tc,#fff)}
+.cq .cq-lab-node .cq-lab-meta{display:block;font-size:10px;color:#9fb6c9;letter-spacing:.05em}
+.cq .cq-lab-node .cq-lab-what{font-size:12px;line-height:1.35;color:#e7f2fb;margin:4px 0}
+.cq .cq-lab-node .cq-lab-cost{display:block;font-size:11px;color:#ff9d8a}
+.cq .cq-lab-node .cq-lab-lock{display:block;font-size:11px;color:#a7b6c4;margin-top:4px}
+.cq .cq-lab-node .cq-lab-tag{display:block;margin-top:4px;font:800 11px 'Chakra Petch',sans-serif;color:#7cf0a8}
+.cq .cq-lab-node.cq-lab-running .cq-lab-tag{color:#ffd36b}
+.cq .cq-lab-node .cq-lab-go{margin-top:6px;width:100%;min-height:40px}
+.cq .cq-lab-node.cq-lab-legendary{border-color:#7a6326;background:linear-gradient(90deg,#2a220c66,#0a141ed9 50%)}.cq .cq-lab-node.cq-lab-legendary h3{color:#ffcf4a}
+.cq .cq-lab-locked>summary{opacity:.75}
+.cq .cq-lab-reveal{border-top:4px solid var(--tc,#7fe8ff)}.cq .cq-lab-reveal h2{color:var(--tc,#fff)}
+.cq .cq-lab-reveal .cq-lab-what{font-size:14px;line-height:1.4}.cq .cq-lab-reveal .cq-lab-cost{color:#ff9d8a;font-size:12px}.cq .cq-lab-reveal .cq-lab-power{font:800 14px 'Chakra Petch',sans-serif;color:#7cf0a8}
+.cq .cq-hub-research-line{display:block;color:#b8f3ff}

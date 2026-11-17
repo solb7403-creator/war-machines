@@ -240,13 +240,13 @@ function renderPlay(){
 let gBay=null,gCmp=null,gMore=false,gShowroom=null,gStageEl=null,gStaticKey='',gShare=null;
 const gOpen=new Set(['loadout']);
 const G_SECS=[['loadout','Loadout','Your weapon and chassis'],['cores','Cores','Three sockets, one core type each'],['up','Upgrades','Each chassis its own build'],['plate','Hull Plating','Armor from minerals, in every mode'],
- ['fit','Mods','Free trade-offs within a budget'],['style','Style','Looks only, except Lunar Skin']];
+ ['fit','Mods','Trade-offs and Science Lab mods within a budget'],['style','Style','Looks only, except Lunar Skin']];
 const G_LOCK={up:GARAGE_UP_AT,fit:GARAGE_FIT_AT};
 const G_HINT={loadout:'Your weapon decides how you fight; your chassis sets health and speed. Tap one to compare before you swap.',
  cores:'Tap a socket, then a core, to see what it changes before you fit it. Core levels belong to the chassis.',
  up:'Each chassis has its own build: '+BUILD_MAX+' levels, spread them how you like. Every bay with that chassis uses it; the chips switch chassis.',
  plate:'Plates add max hull HP on both bays and in every mode. Minerals come from Conquest deposits, Meteor Strikes and Arcade/PvP results.',
- fit:'Mods are free. Each one trades one stat for another and adds one effect that changes how you fight; mix them within the weight and power budget.',
+ fit:'The free mods trade one stat for another. Science Lab mods (researched in your Conquest town) each add one strong behavior with a cost. One mod per slot, within the weight and power budget; they work in every mode.',
  style:'Paint and looks never change stats. Lunar Skin is the one exception.'};
 const G_STATS=[['tough','Toughness',''],['fire','Firepower',''],['speed','Speed',''],['power','Power','']];
 const G_MORE=[['armor','Armor','%'],['crit','Crit chance','%'],['charge','Super charge','%'],['repair','Repair','% a second'],['super','Super damage',''],['edge','Edge-hit damage','%']];
@@ -353,6 +353,7 @@ const MOD_WORD={hp:'health',spd:'speed',dps:'damage per second',supTaken:'damage
 // effects where a smaller number is the upside (shown first with the other upsides)
 const MOD_LOWGOOD=new Set(['supTaken','dashCd','shieldCd']);
 function modText(F){   // a mod's full trade-off in plain words, straight from its FITS entry (new fields show up on their own)
+ if(F&&F.rs)return F.d+' Trade-off: '+FIT_FIELDS.filter(k=>F[k]).map(k=>(F[k]>0?'+':'−')+(Math.abs(F[k])*100).toFixed(0)+'% '+MOD_WORD[k]).join(', ')+'.';   // a research mod (Session 6B): its one behavior, then its cost
  const out=[];
  for(const [k,v] of Object.entries(F)){if(MOD_SKIP.has(k))continue;
   if(typeof v==='number'&&v)out.push([MOD_LOWGOOD.has(k)?-v:v,(v>0?'+':'−')+(Math.abs(v)<1?+(Math.abs(v)*100).toFixed(1)+'%':gNum(Math.abs(v)))+' '+(MOD_WORD[k]||k.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' ').toLowerCase())]);
@@ -426,15 +427,17 @@ const G_BODY={
   return '<div class="gbuds" aria-label="Mod budget">'+bud('Weight','weight')+bud('Power','power')+'</div>'+FIT_ORDER.map(slot=>'<h4 class="gsub">'+FIT_SLOT_N[slot]+'</h4><div class="gopts">'+Object.entries(FITS[slot]).map(([vid,F])=>{
    const on=cur[slot]===vid,tf=fittingStats({...cur,[slot]:vid}),sel=gCmp==='fit|'+slot+'|'+vid,base=FITS[slot][cur[slot]];
    const need=[['weight','weight'],['power','power']].filter(([k])=>tf[k]>FIT_BUDGET[k]).map(([k,n])=>'needs '+F[k]+' '+n+', '+(FIT_BUDGET[k]-(f[k]-base[k]))+' free');
+   const own=rmodOwned(save,slot,vid),T=F.rs&&RTREE.tracks[F.rs];   // Session 6B: research mods once researched, Legendary set mods once bought (the server record)
+   const lock=own?'':F.leg?'Legendary set mod · in the Lab store (checkout off)':'Research it in the Science Lab (Conquest town): '+T.n+(F.set?' set mod · Science Lab III':' · Science Lab '+['','I','II','III'][T.lab]);
    const cost=F.weight||F.power?'Weight '+F.weight+' · Power '+F.power:'Free: no weight or power';
-   return '<button class="gopt'+(on?' on':'')+(sel?' picked':'')+'" data-act="'+(on?'gnop':'gcmp')+'" data-arg="fit|'+slot+'|'+vid+'"'+(need.length?' disabled':'')+' aria-pressed="'+on+'"><b>'+esc(F.n)+(on?' <span class="eq">Fitted</span>':'')+'</b><span>'+esc(modText(F))+'</span><small>'+cost+(need.length?'. Doesn’t fit: '+need.join(' and '):'')+'</small></button>'+
+   return '<button class="gopt'+(on?' on':'')+(sel?' picked':'')+(F.rs?' grs':'')+(F.leg?' gleg':'')+(lock?' glock':'')+'"'+(T?' style="--tc:'+T.c+'"':'')+' data-act="'+(on?'gnop':'gcmp')+'" data-arg="fit|'+slot+'|'+vid+'"'+(need.length||lock?' disabled':'')+' aria-pressed="'+on+'"><b>'+(F.leg?'★ ':F.set?'◆ ':'')+esc(F.n)+(on?' <span class="eq">Fitted</span>':'')+(F.rs?' <span class="grs-tag">'+esc(F.leg?'LEGENDARY':F.set?T.n.toUpperCase()+' SET':T.n.toUpperCase())+'</span>':'')+'</b><span>'+esc(modText(F))+'</span><small>'+(lock?esc(lock):cost+(need.length?'. Doesn’t fit: '+need.join(' and '):''))+'</small></button>'+
     (sel?gCmpCard(L,gL(gFitCand(spec,slot,vid)),'gfit',slot+'|'+vid,'Fit '+F.n,'','fit'+slot):'');}).join('')+'</div>').join('')+'<p class="gnote">Speed means driving speed. Dash and supers stay the same.</p>';
  },
  style:(spec)=>{
   const own=save.skin==='lunar',looks=spec.looks||{};
   return '<p class="gshared">Looks only: paint and looks never change stats</p><h4 class="gsub">Paint</h4><div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id]&&(id!=='founder'||FOUNDER_OPEN||(save.paints&&save.paints.founder))).map(id=>gPaintCard(id,spec.paint)).join('')+'</div>'+
    '<h4 class="gsub">Lunar Skin</h4><div class="gskin"><div class="grow"><b>Lunar Skin <span class="rar leg">Legendary</span></b><p class="mut">'+(own?'On for both bays, always. The one look that changes stats:':'Not owned yet. The one look that changes stats:')+'</p>'+gEdgeLine('skin',spec)+'</div>'+(own?'':'<button class="btn sm btn-quiet" data-act="premium" data-arg="skin">Buy · '+fmtNum(PSTARS.skin)+' ⭐</button>')+'</div>'+
-   FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
+   FIT_ORDER.map(slot=>{const v=looks[slot]||'auto';return '<h4 class="gsub">'+LOOK_N[slot]+'</h4><div class="gchips">'+[['auto','Follow mod']].concat(Object.entries(FITS[slot]).filter(([k])=>isLook(slot,k)).map(([k,F])=>[k,F.n])).map(([k,n])=>'<button class="gchip'+(v===k?' on':'')+'" data-act="glook" data-arg="'+slot+'|'+k+'" aria-pressed="'+(v===k)+'">'+esc(n)+'</button>').join('')+'</div>';}).join('');
  }};
 function gPaintCard(id,cur){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=cur===id;

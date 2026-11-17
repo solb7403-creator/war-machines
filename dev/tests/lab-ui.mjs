@@ -73,4 +73,16 @@ return {inspected:6,actualHealth:[rowsA[0][1],rowsB[0][1]]};
 `;
 const result=new Function(rules+'\n'+funcs+'\n'+test)();
 assert.ok(ui.includes('itemSheet.re=null'),'Artwork must survive UI refresh');
+// Session 6B: Science Lab research options in the Mods section: their one behavior and cost in plain words, locked (never
+// fitted) until the server record holds them, Legendary set mods only once bought, and looks limited to the free options' visuals
+{const R=new Function(rules+'\nreturn {FITS,FIT_FIELDS,RTREE,rmodOwned,isLook,ecoNorm,labEnsure,ecoLoadout};')();
+ const mt2=new Function('gNum','fmtNum','FIT_FIELDS',mt+'\nreturn modText;')(v=>String(v),v=>String(v),R.FIT_FIELDS);
+ const vent=mt2(R.FITS.mount.vent);assert.ok(vent.startsWith(R.FITS.mount.vent.d)&&/Trade-off: −7% damage per second\./.test(vent),'a research mod shows its behavior, then its cost: '+vent);
+ const tr=mt2(R.FITS.mobility.traction);assert.ok(/\+15% dash cooldown/.test(tr),'Traction Servo shows its longer dash recharge: '+tr);
+ const body=ui.slice(ui.indexOf(' fit:(spec,L)=>{'),ui.indexOf(' style:(spec)=>{'));
+ assert.ok(body.includes('rmodOwned(save,slot,vid)')&&body.includes("Research it in the Science Lab")&&body.includes("(need.length||lock?' disabled':'')"),'unresearched mods show where to research them and cannot be tapped to fit');
+ assert.ok(body.includes('Legendary set mod · in the Lab store (checkout off)'),'unbought Legendary set mods point to the store, checkout off');
+ const style=ui.slice(ui.indexOf(' style:(spec)=>{'),ui.indexOf('function gPaintCard('));assert.ok(style.includes('filter(([k])=>isLook(slot,k))'),'looks: only the free options\' visuals (research mods borrow one)');
+ const S=R.ecoNorm({});R.labEnsure(S);for(const slot of ['hull','mobility','mount'])for(const [id,F] of Object.entries(R.FITS[slot])){if(!F.rs)continue;assert.ok(!R.rmodOwned(S,slot,id),id+' not owned on a new record');assert.ok(!R.isLook(slot,id),id+' is not a look');}
+ const n=Object.values(R.FITS).reduce((a,o)=>a+Object.values(o).filter(F=>F.rs).length,0);assert.equal(n,20,'16 research mods and 4 Legendary set mods in the Mods section');}
 console.log('LUNAR garage UI: PASS',result);

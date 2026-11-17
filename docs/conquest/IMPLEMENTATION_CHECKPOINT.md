@@ -4827,6 +4827,15 @@ roadmap row 6B-V.
   Traction's speed and Overdrive's dash charges (`worker/src/proof.js`). Tests: `dev/tests/mod-behaviors.mjs` (53) PASS; fair-arcade,
   combat-balance, gear-combat, wtest pvp (snapshot layout assertion updated to 19 fields), lab-battle, conquest raids/first-hour/
   living-world/session/recall PASS. Measurements: `dev/tools/mod-power.mjs` (bot and human-profile duels, 240 a mod a kit).
-- NEXT: slice 3 — Science Lab screen in the town sheet (`js/conquest/plotview.js`), reveal card, hub RESEARCH button live, garage
-  research options + lock/compare (`js/ui.js` modText fix), lab-ui/conquest-copy tests.
+- DONE slice 3 (Science Lab screen + garage): `js/conquest/lab.js` (ConquestLab: screen / reveal / line / nodeOf), loaded by
+  index.html + web/boot.js; the screen in the town sheet (HOME tab fold `lab` + OPEN RESEARCH on the lab's card,
+  `plotview.js labFold`), as its own dialog (MORE -> SCIENCE LAB · RESEARCH, hub RESEARCH button -> `o.enter('research')`), the
+  reveal card once per mod (`research-seen`, FIT ON MY TANK through the garage's own `baySave`); hub YOUR BASE card research line;
+  lab card description updated (`plot.js`); garage Mods section lists research options with track tags, lock lines (unresearched
+  -> where to research; Legendary -> Lab store, checkout off), looks only from free options (`isLook`). Renamed the tree constant
+  RS -> RTREE (render3d.js owns a global `RS`). Tests: lab-ui (+ research text/lock/looks), garage-rules (+ section 7), conquest-copy
+  scans lab.js; conquest-server.mjs fixture `research:{cc,lv,parts,done,seen,pass,lsm}`. Browser smoke 390x844: reveal card + lab
+  screen render, no page errors, the lab dialog scrolls.
+- NEXT: slice 4 — POWER chip (generic rating chip, Conquest HUD + hub, delta on change), engineering bonus line in Refuge Supply,
+  Refuge Supply order (BANK, REPAIR, plating first), zone bands on the region map and briefings.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.
