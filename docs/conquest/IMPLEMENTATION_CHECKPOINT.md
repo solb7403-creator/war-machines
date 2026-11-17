@@ -4923,6 +4923,54 @@ premium LIVE store entries that are not on sale. Owner not monitoring: every cho
 Also from round 1: the weather label overlapped Bounty's "Most stars wins" (moved under it); a red wash in half the frames
 was the game's own damage vignette (the capture now heals the pilot before each frame so the weather is judged alone).
 
+### Review A: PvP sync, fairness, security (independent, read-only; head `c9c1327`, re-reviewed at `8e8939a`)
+
+First pass: **FAIL, 2 blockers.** Re-review after the fixes: **PASS, 0 blockers.**
+
+| Owner rule | Verdict | Evidence (the reviewer's) |
+|---|---|---|
+| One hazard and one vision effect per map, as listed; no rain | PASS | `WX_MAP`; the train only on the deck (`hzLevel`); `WX_ARC_BL` equals Longshot's two containers |
+| Meteor event removed; flare only on Overpass / Longshot as weather, same effect; supply drop unchanged | PASS | `EVENTS={drop,flare}`; the drop keeps 1 in 3 on the same single draw; `flareMult` 2 only inside the flare window |
+| 25 / 35 / 20 / 20, server-seeded; first 3 clear; PvP clear if either pilot is in their first 3 | PASS (was PARTIAL) | 262k seeds: 25.09 / 34.89 / 20.09 / 19.93; the seed and "first 3" are the server's; a match with no ticket is clear; no free re-roll |
+| 4a seeded, in the shared match code, presentation never decides a hit | PASS | only `rng32`, `imul`, `sqrt` in the plan; `js/weather.js` never writes sim state |
+| 4b fair to both halves | PASS | 400 hazard seeds x 3 rounds a map: footprint-time north = south exactly; lead 16704 / 16812 (Moonbase), 3494 / 3481 (Craters); train 4925 / 4925 |
+| 4c always warned, dodgeable | PASS | every strike `t - w >= warn`, 8 s quiet opening; spawn seats safe (fixed: was SHOULD FIX) |
+| 4d no one-shots | PASS | cap 34%; worst stock case 29.1% (train on a Scout); at most 1 hit in 0.35 s on walkable ground |
+| 4e kill credit to the last attacker within 5 s | PASS | probes: enemy's last hit gets the kill; friendly fire and self get none |
+| 4f the AI follows the same rules | PASS | `wxSees` gates turret, AI and AI supers for everyone; AI reads 0.5-0.85 + 0.35 s |
+| Finishes: 25 takedowns, server-verified, LIVE entries not on sale | PASS (was FAIL) | no price path sells them; `CRYPTO_PAY=false`; claims checked one by one against the record; migration cannot bring one in |
+| No new points source; cap, points table, quests, leagues unchanged | PASS | the `js/rules.js` diff is additive only |
+| PvP stays in sync; a test proves it | PASS | 108 seeded rooms compared event for event; the live client re-plans from snapshots |
+| No test skipped, deleted or loosened | PASS | the 4 to 6 seed change judged a legitimate sample increase (tolerances and all 54 checks unchanged); `b3test.py` / `super-timing.mjs` at least as strict |
+| No migration / legacy-fallback code | PASS | only defensive defaults |
+
+What the first pass found, and what was done:
+
+1. **BLOCKER: a phone that only raised its takedown count gained unearned takedowns in team modes** (up to +36 over 14 honest in
+   six Canyon matches): the record check counted any enemy health drop near a strike. Fixed: the record now lists each
+   takedown as [sample, tank] and the server accepts a claim only if that tank lost at least half a hazard hit **beyond all
+   the damage the pilot dealt in that sample**, stood in a live strike's footprint, and the pilot demonstrably hit that same
+   tank in the 5 s before. Measured after: raising the count gains 0; a phone that claims every tank at every strike gains 0-1
+   in 24 1v1 matches and about one a match in team modes, each of them a real hazard hit beside its own fight (the half-second
+   grain of the record; the reviewer judged this residual acceptable, in line with the existing kills+1 tolerance).
+2. **BLOCKER: the legacy save migration took `paints` from the phone** (only priced paints were checked). Fixed: hazard and
+   LIVE finishes are dropped there.
+3. The train's shove could trip the record's speed check on an honest match (never observed in 72 matches). Fixed: excused
+   for a tank that was at a live train or tornado strike.
+4. Hazards could land on spawn seats (Canyon's through-path, Bunker rows 6 / 26). Fixed: `WX_HOME`, a tank within 2.2 of its
+   own seat is never touched.
+5. A late ticket played the phone's own roll, and abandoning the VS screen re-rolled the server seed. Fixed: with the server
+   economy there is no phone roll (no ticket by the start: clear), and the seed is an HMAC of the pilot and their match
+   count, so it only moves when a match is finished (or quit: a recorded loss).
+6. Hazard kills credited 2-5 s after the last hit were clipped by the record's kill count. Fixed.
+7. (note) The sync test compares the Worker bundle with the same sources in one JS engine: it proves determinism and
+   bundling; the live client is covered by plan equality in `weather-browser.py` (both phones and the room, in a real browser).
+8. (note) The AI gave a 20 s tornado one look for its whole life. Fixed: a fresh look every 3 s.
+
+Owner-rule change that came out of this review: the sim now gives the takedown to **every** enemy who hit the tank within 5 s
+(the owner's own wording of the assist), and the kill to the last. Before, only the last attacker got both. This makes team
+modes faster for takedowns (see the pace table, re-measured after it).
+
 ### The six maps (what a pilot meets)
 
 | Map | Hazard: what it does | Its warning (sound, then light) | How to dodge | Vision effect |
@@ -4943,23 +4991,27 @@ under a deck is covered from meteors; the first three times a pilot meets a haza
 
 **Takedown pace** for a pilot who picks one map and plays 20 minutes a day (about 10 matches: 82 s a match plus 35 s between
 matches), mode mix 30% Arena 1v1, 15% Arena 2v2, 15% Moon Zone 2v2, 15% Bounty 1v1, 10% Crystal Rush 2v2, 15% Last Standing,
-Veteran league, rare kit, 300 matches a map. The stand-in pilot is the game's own AI with a person's timing: it fights and
-dodges but never plays for takedowns, so these are the slow end; a pilot who holds an enemy in a hazard on purpose is faster.
+Veteran league, rare kit, 240 matches a map, the final rules (every attacker inside 5 s gets the takedown). The stand-in pilot
+is the game's own AI with a person's timing: it fights and dodges but never plays for takedowns, so these are the slow end; a
+pilot who holds an enemy in a hazard on purpose is faster.
 
 | Map | Finish | Takedowns a match | In a hazard match | Takedowns a day | Days to 25 |
 |---|---|---|---|---|---|
-| Longshot | Arc Charge | 0.47 | 1.08 | 4.8 | **5** |
-| Canyon | Dust Devil | 0.33 | 0.84 | 3.4 | **7** |
-| Bunker | Laser Grid | 0.24 | 0.57 | 2.5 | **10** |
-| Moonbase | Meteor Scorch | 0.23 | 0.57 | 2.3 | **11** |
-| Crater Field | Vent Breaker | 0.20 | 0.48 | 2.0 | **12** |
-| Overpass | Maglev Runner | 0.10 | 0.26 | 1.1 | **24** |
+| Longshot | Arc Charge | 0.66 | 1.55 | 6.7 | **4** |
+| Canyon | Dust Devil | 0.47 | 1.12 | 4.8 | **5** |
+| Crater Field | Vent Breaker | 0.33 | 0.71 | 3.3 | **8** |
+| Bunker | Laser Grid | 0.30 | 0.66 | 3.1 | **8** |
+| Moonbase | Meteor Scorch | 0.30 | 0.73 | 3.0 | **8** |
+| Overpass | Maglev Runner | 0.13 | 0.35 | 1.3 | **19** |
 
-Best modes for takedowns: Moon Zone and Crystal Rush (the objective holds tanks in one place: 0.4-1.0 a match); worst: Arena
-(short rounds). Overpass is the long one because the train only reaches the deck: the way to speed it up is to bait an enemy
-onto the deck (the AI follows you up) and leave by a ramp when the horn sounds. The 25 was not changed (owner: fixed); the
-first measurement (Overpass 70 days, Crater Field 20) is why decisions 16 and 17 were made. All six finishes: about 70 days
-of 20 minutes a day for a pilot who never plays for them.
+Best mode for takedowns: Moon Zone (the zone holds tanks in one place: 0.3-1.9 a match, Longshot the most), then Crystal Rush;
+worst: Arena 1v1 (short rounds, 0.03-0.3). Overpass is the long one because the train only reaches the deck: the way to speed
+it up is to bait an enemy onto the deck (the AI follows you up) and leave by a ramp when the horn sounds. The 25 was not
+changed (owner: fixed). History of the measurement: first build Overpass 70 days and Crater Field 20 (why decisions 16 and 17
+were made); after the tuning 5 / 7 / 10 / 11 / 12 / 24; after the assist rule from review A the table above. All six finishes:
+about 52 days of 20 minutes a day for a pilot who never plays for them. For the owner to judge: a pilot who only plays Moon
+Zone on Longshot gets about 1.9 a match, so Arc Charge in about 13 matches of that; if that is too fast the lever is the
+hazard's frequency on that map, not the 25.
 
 ### What is built (slice 1)
 

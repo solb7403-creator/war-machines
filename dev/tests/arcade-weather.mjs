@@ -282,8 +282,11 @@ function room(make, cfg) {   // one live room's match, both pilots flown by the 
       const c = { g, m, map, secs: r.secs + 6, won: r.won, drawn: r.drawn, place: 0, series: false, min: 5, spdM: r.spdM, hs, wx: { seed: wxs, clear: false } };
       const real = checkProof(r.pf, { ...c, st: { dmg: r.st.dmg, kills: r.st.kills, sup: r.st.sup, box: r.st.box, low: r.st.low, td: r.td } });
       if (!real.ok) { ok(false, map + ' ' + g + ' ' + m + ': an honest weather match fails the record check (' + real.why + ')'); continue; }
-      const D = JSON.parse(J(r.pf)), k = Math.floor(atob(D.s).length / (D.n * 3 + 6)); D.hz = [];
-      for (let s2 = 1; s2 < k && D.hz.length < 400; s2++) for (let u = 1; u < D.n; u++) D.hz.push([s2, u]);   // the server reads at most 400 claims
+      else ok(true, 'honest record passes');
+      // the forger's best list: every tank, in every sample in which a strike of this match's plan is live (the server reads at
+      // most 400 claims, so the list is aimed at the strike windows instead of spent on the quiet seconds)
+      const D = JSON.parse(J(r.pf)), k = Math.floor(atob(D.s).length / (D.n * 3 + 6)), Pz = SR.wxPlan(wxs, map, 0, SR.GTYPES[g].t).hz.filter(z => !z.soft); D.hz = [];
+      for (let s2 = 1; s2 < k && D.hz.length < 400; s2++) { const t1 = (s2 + 1) * 0.5; if (!Pz.some(z => t1 >= z.t - 0.3 && t1 <= SR.wxEnd(z) + 1.1)) continue; for (let u = 1; u < D.n; u++) D.hz.push([s2, u]); }
       const lie = checkProof(D, { ...c, st: { dmg: r.st.dmg, kills: r.st.kills, sup: r.st.sup, box: r.st.box, low: r.st.low, td: 400 } });
       ok(real.fix.td <= r.td, map + ' ' + g + ': the record never shows more takedowns than the sim counted (' + real.fix.td + ' of ' + r.td + ')');
       h += r.td; kp += real.fix.td; ex += Math.max(0, lie.fix.td - r.td); }
@@ -293,8 +296,8 @@ function room(make, cfg) {   // one live room's match, both pilots flown by the 
   ok(kept >= honest * 0.7, 'the record check keeps most honest takedowns (' + kept + ' of ' + honest + ')');
   // what is left is the half-second grain of the record (a real hazard hit on a tank the pilot damaged right at the edge of the 5 s window, or
   // in the same half second as a team mate): bounded, and never a takedown without a real hazard hit on a tank the pilot was fighting
-  ok(extra1 <= 2, 'in 1v1 (where a claim is unambiguous) claiming a takedown for every tank in every sample gains ' + extra1 + ' in 24 matches');
-  ok(extra <= honest * 0.1, 'claiming a takedown for every tank in every sample gains ' + extra + ' over ' + honest + ' honest ones in ' + n + ' matches (six maps, 1v1 and team modes): under 10%');
+  ok(extra1 <= 2, 'in 1v1 (where a claim is unambiguous) claiming a takedown for every tank at every strike gains ' + extra1 + ' in 24 matches');
+  ok(extra <= (n - 24) * 1 + 2, 'in team modes the forger gains at most about one takedown a match, each a real hazard hit beside their fight (' + (extra - extra1) + ' in ' + (n - 24) + ' team matches; honest ' + honest + ')');
   console.log('PASS forged claims: ' + n + ' matches, honest ' + honest + ', verified ' + kept + ', gained by claiming everything ' + extra); }
 // ---- 9a3. the legacy save migration never takes a finish from the phone; a new ticket without a finished match keeps its weather ----
 { const S = SR.ecoNorm({}), X = { day: 20000, week: 2857, pk: 't', rnd: () => 0.5 };

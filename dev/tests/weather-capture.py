@@ -7,7 +7,7 @@ sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from harness import open_game, start_dev, REPO
 from playwright.async_api import async_playwright
 ap=argparse.ArgumentParser();ap.add_argument('--out',default=os.environ.get('SHOTS','/tmp/lunar-shots')+'/weather');ap.add_argument('--maps',default='classic,overpass,longshot,craters,canyon,bunker')
-ap.add_argument('--views',default='p390x844,d1920');ap.add_argument('--quality',default='high');ap.add_argument('--kinds',default='both');ap.add_argument('--soft',action='store_true');ap.add_argument('--mode',default='2v2')
+ap.add_argument('--views',default='p390x844,d1920');ap.add_argument('--quality',default='high');ap.add_argument('--kinds',default='both');ap.add_argument('--soft',action='store_true');ap.add_argument('--mode',default='2v2');ap.add_argument('--shots',default='1,2,3,4,5')
 A=ap.parse_args();OUT=pathlib.Path(A.out);OUT.mkdir(parents=True,exist_ok=True)
 VIEWS={'p390x844':(390,844,2),'p390x700':(390,700,2),'p320x568':(320,568,2),'d1366':(1366,768,1),'d1920':(1920,1080,1)}
 async def ov(u):
@@ -40,13 +40,13 @@ async def run(p,name):
                 shots+=[('1warn-start',z['w']+warn*0.25),('2warn-late',z['w']+warn*0.85),('3hit',z['t']+(0.14 if z['k']=='a' else 0.3 if z['k']=='c' else 1.25 if z['k']=='l' else 3.0 if z['k']=='n' else 0.45)),('4after',(z['t']+7 if z['k']=='n' else z['e']+0.9))]
             if P['win']: shots+=[('5vision',P['win'][0]['t0']+4)]
             elif P['clouds']: shots+=[('5vision',max(12,(P['hz'][0]['t']+2.5) if P['hz'] else 12))]
-            shots.sort(key=lambda s:s[1])
+            shots=[x for x in shots if x[0][0] in A.shots.split(',')];shots.sort(key=lambda s:s[1])
             for nm,t in shots:
                 r=await pg.evaluate(RUN,t)
                 if r['state']!='play': print(tag,nm,'match ended at',r);break
                 await pg.wait_for_timeout(120);await pg.evaluate("()=>{banner=null;me.hurtT=0;if(me.hp<me.mhp*0.5)me.hp=me.mhp*0.8;for(let i=0;i<2;i++)drawBattle();}")   # no damage vignette in the sheet: it is the weather that is being judged
-                await pg.screenshot(path=str(OUT/(tag+'_'+nm+'.png')))
-            st=await pg.evaluate("()=>({t:+elapsed.toFixed(1),td:me.st?me.st.td:0,hits:units.map(u=>Math.round(u.mhp-u.hp)),chip:WeatherFX.chip(),calls:R3.calls,q:R3.q,arena:!!(B3.map&&B3.map.arena)})")
+                await pg.screenshot(path=str(OUT/(tag+'_'+nm+'.png')),timeout=180000)
+            st=await pg.evaluate("()=>({t:+elapsed.toFixed(1),td:me.st?me.st.td:0,hits:units.map(u=>Math.round(u.mhp-u.hp)),chip:WeatherFX.chip(),calls:R3.calls,q:save.gfx==='2d'?'2d':R3.q,arena:!!(typeof B3!=='undefined'&&B3.map&&B3.map.arena)})")
             print(tag,json.dumps(P['hz'][:1]),json.dumps(st))
             await pg.evaluate("()=>{paused=false;state='menu';exitBattle();}")
     print(name,'errors',errs[:8]);await b.close()

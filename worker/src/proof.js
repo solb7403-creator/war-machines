@@ -101,9 +101,10 @@ export function checkProof(pf, c) {
     for (let s = 1; s < k && rounds.length < 6; s++) if (b[s * sz + n * 3 + 2] & 64) rounds.push({ r0: s, P: RULES.wxPlan(c.wx.seed, c.map, ++rd, T, !!c.wx.clear) }); }
   const roundAt = (s) => { let r = rounds[0]; for (const x of rounds) if (x.r0 <= s) r = x; return r; };
   // the train throws a tank along the deck and a tornado spins it out: further than it can drive. Allowed while one is live
-  const shoveAt = (s) => { if (!wxOn) return 0; const r = roundAt(s), Pl = r.P; if (Pl.haz !== "train" && Pl.haz !== "tornado") return 0;
-    const t1 = (s - r.r0) * PROOF.DT, H = RULES.WX_HZ[Pl.haz];
-    for (const z of Pl.hz) { if (z.w > t1 + 1.5) break; if (t1 >= z.t - 0.75 && t1 <= RULES.wxEnd(z) + 1.25) return (Pl.haz === "train" ? H.shove : H.push) * 1.15; }
+  const shoveAt = (s, i) => { if (!wxOn) return 0; const r = roundAt(s), Pl = r.P; if (Pl.haz !== "train" && Pl.haz !== "tornado") return 0;
+    const t1 = (s - r.r0) * PROOF.DT, H = RULES.WX_HZ[Pl.haz], x0 = b[(s - 1) * sz + i * 3] / 10, y0 = b[(s - 1) * sz + i * 3 + 1] / 7.5;
+    for (const z of Pl.hz) { if (z.w > t1 + 1.5) break; const end = RULES.wxEnd(z); if (t1 < z.t - 0.75 || t1 > end + 1.25) continue;
+      for (let tau = t1 - 1; tau <= t1 + 0.76; tau += 0.25) if (RULES.wxIn(z, Math.max(z.t, Math.min(end, tau)), x0, y0, 1.5)) return (Pl.haz === "train" ? H.shove : H.push) * 1.15; }   // only for a tank that was at the strike
     return 0; };
   // movement: no tank goes faster than the game allows (a dash, a respawn or a new round excused)
   const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15;
@@ -118,10 +119,10 @@ export function checkProof(pf, c) {
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
         const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
-        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s);
+        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s, i);
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
-      } else { stepsOther++; if (d > vAny + dash + shoveAt(s)) badOther++; }
+      } else { stepsOther++; if (d > vAny + dash + shoveAt(s, i)) badOther++; }
     }
   }
   if (badMe > PROOF.MOVE_BAD) return fail("move");
