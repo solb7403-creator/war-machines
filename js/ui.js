@@ -982,7 +982,9 @@ const INFO={
   ['Crits','Direct hits can crit for double damage. Shots that only clip the edge do less.'],
   ['Counters','Scout beats Titan, Titan beats Vanguard, Vanguard beats Scout. The winning side deals 15% more damage and takes 10% less.'],
   ['Map objects','Rocks, domes and containers block shots and movement. Orange supply crates break under fire and sometimes drop a box. Craters slow you down.'],
-  ['Events','Most matches get one surprise: a supply drop, a meteor shower (stay out of the red circles) or a solar flare that charges supers twice as fast.'],
+  ['Weather','Most matches roll some weather. Each map has one hazard that hurts (meteors, a maglev train, the pylon, crater vents, sand tornadoes, ceiling lasers): it always warns first with its own sound and light, and it never destroys a full-health tank. Each map also has a vision effect (haze, a solar flare that charges supers twice as fast, steam, dust, a power flicker) that cuts how far every tank can see. Your first three matches are clear.'],
+  ['Hazard takedowns','Hit an enemy, then let the map\'s hazard catch it within 5 seconds: that is a takedown, and if the hazard finishes it the kill is yours. 25 takedowns on a map unlock that map\'s paint finish.'],
+  ['Events','Some team matches get a supply drop: boxes land mid-map.'],
   ['Points','Every match pays points. They rank you on the leaderboard and buy upgrades and crates. Spending never lowers your rank.']]],
  gtypes:()=>['Game types',[
   ['Arena','Destroy the enemy team, or have more health left when time runs out. One life each.'],

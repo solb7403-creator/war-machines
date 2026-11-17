@@ -16,7 +16,7 @@ async def ov(u):
     return None
 # drive the real sim to a round time (the pilot's tank is flown by the game's own AI so there is a fight on screen)
 RUN="""(to)=>{if(me&&!me.brain){me.brain={mode:'press',t:2,spot:null,out:false,w:0,side:1,age:0,hideCd:0};me.strafe=1;me.strafeT=1.5;}
- let n=0;while(elapsed<to&&state==='play'&&n++<6000){if(me.hp>0&&!window.__hold)botAI(1/30,me);update(1/30);fxTick(1/30);if(n%2===0)drawBattle();}
+ let n=0;while(elapsed<to&&state==='play'&&n++<6000){if(me.hp>0&&!window.__hold)botAI(1/30,me);update(1/30);fxTick(1/30);if(to-elapsed<1.1&&n%2===0)drawBattle();}   // only the last second is drawn (the particles of that second), the rest is simulated
  for(let i=0;i<3;i++)drawBattle();return {t:elapsed,state};}"""
 async def run(p,name):
     w,h,scale=VIEWS[name]

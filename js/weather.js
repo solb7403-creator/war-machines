@@ -153,7 +153,9 @@ const WeatherFX=(()=>{
   const te=t-z.t;if(te>1.1)return;const k=te/1.1,h=6.5*Math.min(1,te*6);   // the eruption: a column, a ring running out to the edge of the blast
   const f=1-k*k,Wt=rgbOf(H,'#f2fffb');
   S.seg(x,0.05,y,x,h,y,z.r*0.34*(1-k*0.4),z.r*0.2,C,0.9*f,0.55*f);S.seg(x,0.05,y,x,h*0.85,y,z.r*0.14,0.06,Wt,f,0.6*f);S.sprite(x,0.5,y,z.r*0.55,Wt,0.9*f,0.3*f);
-  S.shock(x,0.05,y,z.r*Math.min(1,te*3.4),0.6,C,0.9*(1-k),48);S.disc(x,0.04,y,z.r,C,0.45*(1-k),0.2*(1-k));
+  S.shock(x,0.05,y,z.r*Math.min(1,te*3.4),0.6,C,0.9*(1-k),48);S.churn(x,0.04,y,z.r*Math.min(1,0.35+te*2.6),Wt,0.75*f,0.5*f);S.disc(x,0.045,y,z.r,C,0.5*(1-k),0.2*(1-k));
+  if(!H.quiet&&te<0.7)for(let i=0;i<(H.low?1:3);i++){const a=Math.random()*6.283,r=z.r*(0.2+0.6*Math.random());   // steam boiling out over the whole blast, as long as it lasts
+   H.emit(false,{x:x+Math.cos(a)*r,y:0.15,z:y+Math.sin(a)*r,vx:Math.cos(a)*2.4,vy:1.5+Math.random()*2.5,vz:Math.sin(a)*2.4,life:1.1,s0:0.5,s1:1.9,c:'#e9f6f3',a:0.42,drag:1.2});}
  }
  function arcTargets(){   // where the arcs run to: the far end of every clear line from the pylon, down the lane (plan coordinates)
   if(arcT)return arcT;arcT=[];const s={x:WX_ARC_AT[0],y:WX_ARC_AT[1],bl:WX_ARC_BL};
@@ -234,12 +236,14 @@ const WeatherFX=(()=>{
   }else if(z.k==='a'){if(H.env)H.env.flash([0.72,0.9,1],1.5,0.4);S.sparks(x,PYH,y,16,6,rgbOf(H,COL.arc),0.14,0.5,1.2,0);}
  }
  function clouds3(H,p,t){
-  if(!p.clouds.length||H.quiet)return;const steam=p.vis==='steam';
-  for(const c of p.clouds){if(t<c.t0||t>=c.t1)continue;const x=fX(c.x),y=fY(c.y),k=steam?1:cl((c.t1-t)/3,0,1)*cl((t-c.t0)/0.6+0.3,0,1);
-   const n=(H.low?0.45:1)*c.r*c.r*(steam?0.75:0.9)/60;
+  if(!p.clouds.length)return;const steam=p.vis==='steam',tint=rgbOf(H,steam?'#dcecee':'#a39b8e');
+  for(const c of p.clouds){if(t<c.t0||t>=c.t1)continue;const x=fX(c.x),y=fY(c.y),k=steam?cl((t-c.t0)/2,0,1):cl((c.t1-t)/3,0,1)*cl((t-c.t0)/0.6+0.3,0,1);
+   H.SFX.churn(x,0.05,y,c.r*1.05,tint,0.2*k,0.3*k);   // the cloud's own footprint on the ground: where it hides a tank
+   if(H.quiet)continue;
+   const n=(H.low?0.5:1)*c.r*c.r*(steam?1.5:1.7)/60;
    for(let i=0;i<3;i++)if(Math.random()<n){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*c.r;
-    H.emit(false,steam?{x:x+Math.cos(a)*r,y:0.2+Math.random()*0.6,z:y+Math.sin(a)*r,vx:0.25,vy:0.35+Math.random()*0.4,life:3,s0:1.1,s1:2.5,c:Math.random()<0.5?'#dbeaee':'#c2d6dc',a:0.2*k}
-     :{x:x+Math.cos(a)*r,y:0.3+Math.random()*1.1,z:y+Math.sin(a)*r,vx:0.18,vy:0.08,life:3.2,s0:1.3,s1:2.4,c:Math.random()<0.5?'#a59d90':'#8f887c',a:0.22*k});}}
+    H.emit(false,steam?{x:x+Math.cos(a)*r,y:0.2+Math.random()*0.6,z:y+Math.sin(a)*r,vx:0.25,vy:0.3+Math.random()*0.35,life:3,s0:1.2,s1:2.7,c:Math.random()<0.5?'#e4f0f2':'#c9dade',a:0.36*k}
+     :{x:x+Math.cos(a)*r,y:0.3+Math.random()*1.1,z:y+Math.sin(a)*r,vx:0.18,vy:0.08,life:3.2,s0:1.4,s1:2.6,c:Math.random()<0.5?'#aaa295':'#8f887c',a:0.38*k});}}
  }
  // the whole-map vision effect drives the map's own light and haze (MapEnv): nothing is rebuilt
  function envDrive(H,p){

@@ -5,6 +5,12 @@ on:
       - 'js/rules.js'
       - 'js/game.js'
       - 'js/match.js'
+      - 'js/weather.js'
+      - 'dev/tests/arcade-weather.mjs'
+      - 'worker/src/proof.js'
+      - 'worker/src/eco.js'
+      - 'worker/src/pvp.js'
+      - 'worker/sim-api.js'
       - 'js/core.js'
       - 'js/ui.js'
       - 'wiki.html'
@@ -33,6 +39,12 @@ on:
       - 'js/rules.js'
       - 'js/game.js'
       - 'js/match.js'
+      - 'js/weather.js'
+      - 'dev/tests/arcade-weather.mjs'
+      - 'worker/src/proof.js'
+      - 'worker/src/eco.js'
+      - 'worker/src/pvp.js'
+      - 'worker/sim-api.js'
       - 'js/core.js'
       - 'js/ui.js'
       - 'dev/tests/gear-balance.mjs'
@@ -85,6 +97,7 @@ jobs:
         run: |
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/pvp.mjs
+          node dev/tests/arcade-weather.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/lab.mjs
           node dev/tests/wtest/lab-battle.mjs

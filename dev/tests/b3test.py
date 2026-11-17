@@ -23,15 +23,14 @@ async def main():
         r=await pg.evaluate("""()=>{exitBattle();save.map='craters';store();prepareMatch();startMatch();const n0=crates.length,w0=walls.length,c=crates[0];
             hitCrate(c,9999);return {n0,n1:crates.length,w0,w1:walls.length,inWalls:walls.includes(c),nav:nav.length}}""")
         check(r['n1']==r['n0']-1 and r['w1']==r['w0']-1 and not r['inWalls'],'crate did not break cleanly '+json.dumps(r))
-        # 3) meteor shower: warnings, hits, bots dodge
-        await pg.evaluate("()=>{startEvent('meteor');for(let i=0;i<30*2.2;i++)update(1/30);}")
+        # 3) meteors are Moonbase's map hazard now (Session 5E-2e): seeded strikes with subtle warnings, no red circles, no event
+        w=await pg.evaluate("()=>{exitBattle();let s=1;while(wxRoll(s).k!==2)s++;window.LUNAR_WX=s;save.map='classic';store();prepareMatch();startMatch();const z=wx.P.hz[0];while(elapsed<z.w+0.8)update(1/30);return {haz:wx.P.haz,warns:warns.length,evt:evt&&evt.k,live:wx.act.length,pool:Object.keys(EVENTS).join()}}")
         await pg.wait_for_timeout(250);await pg.screenshot(path=OUT+'event_meteor.png')
-        w=await pg.evaluate("()=>({warns:warns.length,evt:evt&&evt.k})")
-        check(w['evt']=='meteor','meteor event not running '+json.dumps(w))
+        check(w['haz']=='meteor' and w['warns']==0 and w['evt']!='meteor' and w['live']>0 and w['pool']=='drop,flare','meteor strikes are the Moonbase hazard, not an event '+json.dumps(w))
         await pg.evaluate("()=>{for(let i=0;i<30*10;i++)update(1/30);}")
-        # 4) solar flare doubles super charge
-        f=await pg.evaluate("()=>{startEvent('flare');return flareMult()}")
-        check(f==2,'flare multiplier wrong')
+        # 4) the solar flare is weather on Overpass and Longshot: supers charge twice as fast while it lasts
+        f=await pg.evaluate("()=>{exitBattle();let s=1;while(wxRoll(s).k!==1)s++;window.LUNAR_WX=s;save.map='longshot';store();prepareMatch();startMatch();const w=wx.P.win[0],a=flareMult();while(elapsed<w.t0+1)update(1/30);const b=flareMult();window.LUNAR_WX=undefined;return [a,b,wx.P.vis]}")
+        check(f==[1,2,'flare'],'flare multiplier wrong '+json.dumps(f))
         # 5) fast-forward after you die in a team match
         await pg.evaluate("()=>{exitBattle();save.gtype='arena';save.mode='3v3';save.map='classic';store();prepareMatch();startMatch();for(let i=0;i<30*3;i++)update(1/30);takeHit(me,99999,null);update(1/30);}")
         on=await pg.evaluate("()=>ffBtnOn()")

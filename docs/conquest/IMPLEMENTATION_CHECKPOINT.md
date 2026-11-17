@@ -4812,13 +4812,19 @@ premium LIVE store entries that are not on sale. Owner not monitoring: every cho
 
 ### Resume here (kept current)
 
-- **Done and pushed:** slice 1 (shared rules, the sim, the server, the test). See "What is built".
-- **Next, in order:** (2) presentation: `js/weather.js` (hazard looks in 3D and 2D, vision effects, sounds in `js/fx.js`, HUD chip,
-  hidden-enemy markers, the PvP client's plan) → (3) finishes in the Garage / Shop and the takedown counters → (4) browser
-  checks and captures to `docs/weather-5e2e/` → (5) three critic rounds → (6) two independent reviewers → (7) release.
+- **Done and pushed:** slice 1 (shared rules, the sim, the server, the test) and slice 2 (presentation: `js/weather.js`,
+  sounds in `js/fx.js`, HUD chip, hidden-enemy markers, the live client's plan, finishes in the Garage / Shop, results line,
+  CI wiring, `b3test.py` and `super-timing.mjs` updated to the new event rule). See "What is built".
+- **In progress:** browser captures of every hazard (`dev/tests/weather-capture.py`, slow on the software renderer: run it in
+  the background, two processes of three maps), then the looks are tuned from the sheets.
+- **Next, in order:** (4) `python3 dev/tests/weather-browser.py` (server-seeded AI match, store with no checkout, a live 1v1;
+  about 6 real minutes) → (5) takedown pace: `node dev/tests/weather-pace.mjs` → (6) captures at the five sizes, HIGH and
+  LOW, to `docs/weather-5e2e/` → (7) three critic rounds → (8) two independent reviewers → (9) release.
 - **Run before pushing anything:** `node dev/tests/arcade-weather.mjs` (2-3 min), `node dev/tests/fair-arcade.mjs`,
-  `node dev/tests/arena-maps.mjs`, `node dev/tests/wtest/test.mjs`, `node dev/tests/wtest/pvp.mjs` (the Worker tests need
-  `npm install --prefix worker` once and `node worker/build-web.mjs`).
+  `node dev/tests/arena-maps.mjs`, `node dev/tests/super-timing.mjs`, `node dev/tests/wtest/test.mjs`,
+  `node dev/tests/wtest/pvp.mjs` (the Worker tests need `npm install --prefix worker` once and `node worker/build-web.mjs`).
+- **Browser tests in this container:** `pip install playwright==1.63.0` (the Python client only; the browser is already at
+  `/opt/pw-browsers/chromium`), then `CHROMIUM_PATH=/opt/pw-browsers/chromium SHOTS=<dir> python3 dev/tests/<test>.py`.
 
 ### Research: comparable games (one web-research agent; what we take from each)
 

@@ -339,7 +339,7 @@ function onSimEv(a){
    if(!d3)blasts.push({x,y,r:1.3,t:0.35,t0:0.35,c:'#ffb347'});shake(3,0.2);sndF('crate');
    pop(x,y-0.8,a[4]?'MYSTERY BOX':'CRATE DESTROYED',a[4]?'#ffd24a':'#c9d6e3');return;}
   case 'e':{const E=EVENTS[a[1]];if(E){banner={t:3.2,txt:E.txt,c:E.c};sndF('event');}return;}
-  case 'D':{const s=U(a[1]),t=U(a[2]);if(s===me&&t){nums.push({x:t.x,y:t.y-2.1,t:1.2,z:1.5,txt:'HAZARD TAKEDOWN',c:'#ffcf4a'});sndF('takedown');if(typeof wxTakedown==='function')wxTakedown();}return;}   // an enemy you hit in the last 5 s took the map's hazard
+  case 'D':{const s=U(a[1]),t=U(a[2]);if(s===me&&t){nums.push({x:t.x,y:t.y-2.1,t:1.2,z:1.5,txt:'HAZARD TAKEDOWN',c:'#ffcf4a'});sndF('takedown');if(typeof wxTakedown==='function'){wxTakedown();const pr=WeatherFX.progress();if(pr&&pr.counted&&!pr.done)feedPush(pr.n.toUpperCase()+' '+pr.have+'/'+pr.need+(pr.have>=pr.need?' UNLOCKED':''),'#ffcf4a');}}return;}   // an enemy you hit in the last 5 s took the map's hazard
   case 'w':if(live)warns.push({x:a[1],y:a[2],r:a[3],t:a[4],t0:a[4]});sndF('warn');return;
   case 'm':{const x=a[1],y=a[2],r=a[3];blasts.push({x,y,r:r*1.25,t:0.5,t0:0.5,c:'#ff8a3d'});sndF('meteor');blasts.push({x,y,r:r*0.6,t:0.3,t0:0.3,c:'#ffe08a'});shake(7,0.35);return;}
   case 'b':if(live)pvpShot(a);else if(typeof rangeRun!=='undefined'&&rangeRun&&rangeRun.sim){const o=units[a[2]];if(o)sndF('shot',o);}return;   // the practice range's engine runs in its own frame: its shots come here (review, 5E-2b3)
