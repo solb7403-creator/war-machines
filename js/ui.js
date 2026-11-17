@@ -1096,6 +1096,7 @@ function openSettings(){
  sheet('settings',()=>'<h3>Settings</h3>'+
   '<div class="list" style="margin-top:8px">'+
   '<div class="q"><div class="grow"><div class="t">Sound</div><div class="p">Follows your phone’s silent switch</div></div><button class="toggle'+(save.sound!==false?' on':'')+'" data-act="sound" aria-pressed="'+(save.sound!==false)+'"><i></i></button></div>'+
+  '<div class="q vol'+(save.sound===false?' off':'')+'"><div class="grow"><div class="t">Volume</div><div class="p" id="vol-p">'+volLabel()+'</div></div><input type="range" class="volr" id="vol-r" min="0" max="100" step="5" value="'+Math.round(volLevel()*100)+'" aria-label="Volume"'+(save.sound===false?' disabled':'')+'></div>'+
   '<div class="q"><div class="grow"><div class="t">Vibration</div><div class="p">Buzz on hits, kills and rewards</div></div><button class="toggle'+(save.haptics?' on':'')+'" data-act="haptics" aria-pressed="'+(save.haptics?'true':'false')+'"><i></i></button></div>'+
   '<div class="q gfx"><div class="grow"><div class="t">Graphics</div><div class="p">'+gfxNote()+'</div></div></div>'+
   '<div class="seg c4" style="margin:-4px 0 6px">'+[['auto','Auto'],['high','High'],['low','Low'],['2d','2D']].map(([k,l])=>'<button class="'+(gfxMode()===k?'on':'')+'" data-act="gfx" data-arg="'+k+'">'+l+'</button>').join('')+'</div>'+
@@ -1782,6 +1783,10 @@ ACT.gcore=a=>{const id=gBayId(),[i,k0]=a.split(':'),k=k0==='-'?null:k0;
 ACT.gfit=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.mods={...fittingSelection(p.mods),[slot]:v};},FITS[slot][v].n+' fitted on Bay '+gLetter(id));};
 ACT.glook=a=>{const id=gBayId(),[slot,v]=a.split('|');baySave(id,p=>{p.looks={...(p.looks||{}),[slot]:v};});};
 document.addEventListener('change',e=>{if(e.target.id==='g-name')gRename(e.target.value);});
+// Session 6B: the volume slider (Settings, beside Sound): live while dragging, saved when released, with one tap so you hear the level
+const volLabel=()=>save.sound===false?'Sound is off':Math.round(volLevel()*100)+'%'+(volLevel()===0?' · silent':'');
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='vol-r'){setVolume(e.target.value/100);const p=document.getElementById('vol-p');if(p)p.textContent=volLabel();}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='vol-r'){setVolume(e.target.value/100);store();fx('tap');}});
 document.addEventListener('keydown',e=>{if(e.target.id==='g-name'&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
 ACT.gshare=()=>{
  const M=gM();if(!M)return;const L={...gL(),vl:vaultLevel(save.vg)},v=machineView(L),tag=buildTag(L),brk=myLeague(v.power),cv=gCardCanvas(M,L,v,tag,brk),url=cv.toDataURL('image/png'),link=refLink();

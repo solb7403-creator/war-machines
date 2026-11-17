@@ -906,3 +906,6 @@ button.q{display:flex;width:100%;text-align:left}
 .gopt.glock{opacity:.72}
 .gopt .grs-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;font:700 10px var(--disp);letter-spacing:.06em;color:var(--tc,#fff);border:1px solid var(--tc,#fff);vertical-align:2px}
 .gopt.gleg .grs-tag{color:#ffcf4a;border-color:#ffcf4a}
+/* Session 6B: the Settings volume slider beside the Sound toggle */
+.q.vol .volr{flex:none;width:46%;max-width:220px;height:32px;margin:0;accent-color:var(--ok);touch-action:pan-y;cursor:pointer}
+.q.vol.off{opacity:.55}.q.vol .volr:disabled{cursor:default}

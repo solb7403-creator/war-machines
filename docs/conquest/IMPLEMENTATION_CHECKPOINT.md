@@ -4850,7 +4850,23 @@ roadmap row 6B-V.
   `dev/tests/conquest-power-chip.mjs` (18) PASS; conquest-copy / flagship-ui / sheet / authority / session / first-hour / raids /
   living-world / recall, mod-behaviors, conquest-research, lab-ui, garage-rules, fair-arcade PASS. Browser 390x844: hub chip, HUD
   chip, Supply order, map bands and a briefing band render with no page errors.
-- NEXT: slice 5 — audio: Conquest zone ambience (barren / terraformed / colony core) in `js/fx.js`, the reward sounds wired to their
-  events (bank, build complete, research complete, plate mounted, War Order claimed), stingers (raid, invasion, strike, victory),
-  the Settings volume slider beside the sound toggle, one AudioContext (resume on first input, silent when hidden), an audio test.
+- DONE slice 5 (audio, code-made only, `js/fx.js`): zone beds `cq-barren` (near-silence: a low rumble, the suit's hum and air
+  recycler, a far impact every 9–17 s), `cq-terra` (wind in the grass with gusts, high air, running water with bubbles, a far
+  machinery hum, settler life: a whistle or a knock every 4.5–10 s), `cq-core` (machinery, voices and traffic, metal work every
+  2–5 s, loader servos, settler life); `ConquestWorld.soundZone(x,z,base)` picks the bed (the Refuge colony circle and a built
+  Command Base = core, grass/lush = terraformed, else barren), `Conquest.ambience()` holds a new zone 2.5 s before the crossfade,
+  `main.js` plays it while Conquest is open (Arcade map beds unchanged). Reward sounds wired: bank (Supply button + Worker
+  `banked` notice share one 4 s cue), build complete (`plot-built` notice), research complete (reveal card), plate mounted
+  (`fabPlate`, garage and Supply), War Order claimed; stingers: raid launch, invasion (sector/base defense start + incursion
+  alert; the ambush keeps its warning), the Meteor Strike warning (replaces the impact sound there), every operation secured
+  (replaces the Arcade win sound in Conquest). Settings: a Volume slider right after the Sound toggle (`save.vol`, default 1 =
+  the shipped mix, master = 0.5 x vol², 0 silent; live while dragging, saved on release; kept by the website's preference list;
+  disabled and "Sound is off" when muted). One AudioContext (made on the first input), suspended on `visibilitychange` and
+  `pagehide`. No storm or rain sounds. Test: `dev/tests/audio.cjs` (40, Chromium offline renders: barren −54.6 / terraformed
+  −51.3 / core −44.9 dBFS; on a phone −68.3 / −59.4 / −57.7 dB, all under the shipped Arcade beds and 16 dB under a Pulse
+  Cannon shot) PASS, in `website-check.yml` beside weapon-sounds; weapon-sounds (479) PASS. Browser 390x844: the slider (40% ->
+  saved, muted -> disabled), the bed at a green point, a barren point and the spawn, Sound off/on stops and restores it.
+- NEXT: slice 6 — revenue hooks as real store entries with checkout OFF in every currency: instant finish (priced by time left),
+  research part packs, Lunar Pass premium perks (+1 slot, −25% research time, research parts on some premium tiers, never points),
+  four Legendary set mods; TON / SOL-at-live-rate / Stars proposals; shown on the website and in Telegram; a store test.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.

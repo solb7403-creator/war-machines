@@ -13,6 +13,11 @@ function haptic(kind,style){
 // a super can duck the gunfire for a moment and other tanks' fire sits under your own. A shared echo send gives the epic and
 // legendary sounds their space without a reverb per sound.
 let AC=null,master=null,noiseBuf=null,BUS=null;const lastSnd={};
+// Session 6B: the Settings volume (save.vol 0..1, default 1 = the mix as it shipped before). Squared, so the slider's middle sounds
+// like half as loud rather than barely quieter; 0 is silent. The Sound toggle stays the mute.
+const volLevel=()=>{const v=save&&save.vol!==undefined?+save.vol:1;return Number.isFinite(v)?Math.max(0,Math.min(1,v)):1;};
+const volGain=()=>0.5*volLevel()*volLevel();
+function setVolume(v){if(save)save.vol=Math.round(Math.max(0,Math.min(1,Number(v)||0))*100)/100;if(AC&&master){try{const t=AC.currentTime;master.gain.cancelScheduledValues(t);master.gain.setTargetAtTime(volGain(),t,0.03);}catch(e){master.gain.value=volGain();}}}
 function mkBuses(ctx,out){
  const g=v=>{const n=ctx.createGain();n.gain.value=v;return n;};
  const shot=g(1),other=g(0.62),sup=g(1),echo=g(1),eOut=g(0.55);
@@ -29,7 +34,7 @@ function audioInit(){
  try{
   const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
   try{if(navigator.audioSession)navigator.audioSession.type='ambient';}catch(e){}   // obey the silent switch, don't stop the player's music
-  AC=new C();master=AC.createGain();master.gain.value=0.5;
+  AC=new C();master=AC.createGain();master.gain.value=volGain();
   // a limiter at the end, so stacked explosions get loud without crackling
   let out=AC.destination;try{const L=AC.createDynamicsCompressor();L.threshold.value=-10;L.knee.value=6;L.ratio.value=12;L.attack.value=0.003;L.release.value=0.2;L.connect(AC.destination);out=L;}catch(e){}
   master.connect(out);BUS=mkBuses(AC,master);
@@ -43,7 +48,11 @@ function audioResume(){
  if(!AC.__unl){AC.__unl=1;try{const b=AC.createBuffer(1,1,22050),s=AC.createBufferSource();s.buffer=b;s.connect(AC.destination);s.start(0);}catch(e){}}
 }
 for(const ev of ['pointerdown','pointerup','touchend','click','keydown'])addEventListener(ev,audioResume,{capture:true,passive:true});
-document.addEventListener('visibilitychange',()=>{if(!AC)return;if(document.hidden){LW.stopAll();AC.suspend().catch(()=>{});}else if(save&&save.sound!==false)AC.resume().catch(()=>{});});
+// One AudioContext for the whole game (Arcade, Conquest, the menus). Hidden page = silent: suspended, so nothing plays or drains the
+// battery behind another app; it comes back when the page is shown again (or on the next tap).
+function audioHide(){if(!AC)return;try{LW.stopAll();}catch(e){}AC.suspend().catch(()=>{});}
+document.addEventListener('visibilitychange',()=>{if(!AC)return;if(document.hidden)audioHide();else if(save&&save.sound!==false)AC.resume().catch(()=>{});});
+addEventListener('pagehide',audioHide);
 function noise(){
  if(!noiseBuf){noiseBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*0.6),AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
  return noiseBuf;
@@ -498,24 +507,45 @@ const LW=(()=>{
  return {shot,hit,charge,stopCharge,stopCharges,lock:lockS,fire,impact,stopAll,render,play,timeline,stats,tierOf,archOf,FAM,KEYS:['pulse0','pulse1','pulse2','twin0','twin1','twin2','siege0','siege1','siege2','moon']};
 })();
 // ---------- ambience (Session 5E-2c): a quiet bed under each Arcade map, synthesised (no downloads). Follows the Sound setting.
-// rum: low rumble [cutoff Hz, gain]; air: band of moving air [centre Hz, Q, gain]; hum: machinery [Hz, gain]; clank: far-off metal
+// rum: low rumble [cutoff Hz, gain]; air: band of moving air [centre Hz, Q, gain, gust rate Hz]; hum: machinery [Hz, gain]; clank:
+// far-off metal (1 = every 6-15 s, or [min ms, max ms]). Session 6B adds the Conquest zone beds (owner decision 7) and their parts:
+// hiss: high air [Hz, gain]; suit: the suit's air recycler breathing [rate Hz, gain]; water: running water [centre Hz, gain] with
+// small bubbles; murmur: far voices and traffic [centre Hz, Q, gain]; impact / life / servo: events every [min ms, max ms] (a far
+// impact; settler life: a whistle or a knock; a crane or loader servo). No storm or rain sounds: weather is roadmap row 6B-V.
 const AMB_SPEC={classic:{rum:[70,0.05],air:[520,0.9,0.011],hum:[110,0.005]},overpass:{rum:[80,0.045],air:[700,1.2,0.009],hum:[100,0.010]},longshot:{rum:[60,0.05],air:[380,0.7,0.018]},
- craters:{rum:[55,0.055],air:[450,0.8,0.013]},canyon:{rum:[60,0.05],air:[320,0.6,0.026]},bunker:{rum:[90,0.04],air:[1100,1.4,0.010],hum:[55,0.028],hum2:[110,0.011],clank:1}};
+ craters:{rum:[55,0.055],air:[450,0.8,0.013]},canyon:{rum:[60,0.05],air:[320,0.6,0.026]},bunker:{rum:[90,0.04],air:[1100,1.4,0.010],hum:[55,0.028],hum2:[110,0.011],clank:1},
+ // Conquest: barren = near-silence, the suit's hum, distant impacts; terraformed = wind in the grass, water, settler life, machinery;
+ // the colony core = activity (machinery, voices and traffic, metal work, loaders)
+ 'cq-barren':{rum:[45,0.010],hum:[118,0.0030],hum2:[237,0.0011],suit:[0.17,0.0034],impact:[9000,17000]},
+ 'cq-terra':{rum:[60,0.012],air:[1700,0.45,0.008,0.07],hiss:[5200,0.0022],water:[900,0.0045],hum:[56,0.0035],life:[4500,10000]},
+ 'cq-core':{rum:[72,0.022],air:[900,0.7,0.008],hum:[60,0.010],hum2:[120,0.0045],murmur:[430,0.9,0.012],clank:[2200,5200],servo:[6500,12000],life:[7000,14000]}};
+const AMB_EVENT={
+ clank:()=>{if(Math.random()<0.5){burst(0.3,0.022,260,0);tone(190,95,0.22,'triangle',0.008,0.02);}else{const f=1400+Math.random()*800;tone(f,f*0.97,0.06,'triangle',0.004);tone(f*1.08,f*1.05,0.05,'triangle',0.003,0.16);}},
+ impact:()=>{burst(0.7,0.026,140,0);tone(52,30,0.6,'sine',0.017,0.03);},
+ servo:()=>{tone(320,520,0.5,'sawtooth',0.0022);tone(520,300,0.45,'sawtooth',0.0018,0.6);},
+ life:()=>{if(Math.random()<0.55){const f=1350+Math.random()*350;tone(f,f*1.2,0.09,'sine',0.0026);tone(f*0.84,f*0.84,0.12,'sine',0.0022,0.15);}else{burst(0.05,0.012,520,0);burst(0.05,0.010,480,0.2);}},
+ bubble:()=>{const f=500+Math.random()*600;tone(f,f*1.6,0.05,'sine',0.0032);}};
 let AMB=null,ambBuf=null;
 function ambience(id){
  if(!save||save.sound===false||!AMB_SPEC[id])id=null;
  if((AMB?AMB.id:null)===id)return;
- if(AMB){const a=AMB;AMB=null;clearTimeout(a.timer);try{const t=AC.currentTime;a.out.gain.cancelScheduledValues(t);a.out.gain.setValueAtTime(a.out.gain.value,t);a.out.gain.linearRampToValueAtTime(0,t+1.2);for(const n of a.src)n.stop(t+1.3);}catch(e){}}
+ if(AMB){const a=AMB;AMB=null;for(const tm of a.timers)clearTimeout(tm);try{const t=AC.currentTime;a.out.gain.cancelScheduledValues(t);a.out.gain.setValueAtTime(a.out.gain.value,t);a.out.gain.linearRampToValueAtTime(0,t+1.2);for(const n of a.src)n.stop(t+1.3);}catch(e){}}
  if(!id)return;audioInit();if(!AC||AC.state!=='running')return;   // not started yet (no tap): tried again next frame
  try{
   if(!ambBuf){ambBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*2.6),AC.sampleRate);const d=ambBuf.getChannelData(0);let b=0;for(let i=0;i<d.length;i++){b=0.985*b+0.015*(Math.random()*2-1);d[i]=(Math.random()*2-1)*0.5+b*6;}}
   var src=[];const S=AMB_SPEC[id],t=AC.currentTime,out=AC.createGain();out.gain.setValueAtTime(0,t);out.gain.linearRampToValueAtTime(1,t+2);out.connect(master);
   const band=(type,fc,q,g,lfo)=>{const n=AC.createBufferSource(),f=AC.createBiquadFilter(),gn=AC.createGain();n.buffer=ambBuf;n.loop=true;n.playbackRate.value=0.8+Math.random()*0.4;f.type=type;f.frequency.value=fc;f.Q.value=q;gn.gain.value=g;n.connect(f);f.connect(gn);gn.connect(out);n.start(t,Math.random()*2);src.push(n);
    if(lfo){const o=AC.createOscillator(),og=AC.createGain();o.frequency.value=lfo;og.gain.value=g*0.6;o.connect(og);og.connect(gn.gain);o.start(t);src.push(o);}};
-  band('lowpass',S.rum[0],0.7,S.rum[1],0.05);if(S.air)band('bandpass',S.air[0],S.air[1],S.air[2],0.09);
+  band('lowpass',S.rum[0],0.7,S.rum[1],0.05);if(S.air)band('bandpass',S.air[0],S.air[1],S.air[2],S.air[3]||0.09);
+  if(S.hiss)band('highpass',S.hiss[0],0.5,S.hiss[1],0.13);
+  if(S.suit)band('bandpass',900,1.2,S.suit[1],S.suit[0]);
+  if(S.water){band('bandpass',S.water[0],1.6,S.water[1],0.31);band('bandpass',S.water[0]*2.1,2.2,S.water[1]*0.5,0.47);}
+  if(S.murmur){band('bandpass',S.murmur[0],S.murmur[1],S.murmur[2],0.7);band('bandpass',S.murmur[0]*1.4,1.1,S.murmur[2]*0.6,0.43);}
   for(const h of [S.hum,S.hum2])if(h){const o=AC.createOscillator(),gn=AC.createGain();o.type='sine';o.frequency.value=h[0];gn.gain.value=h[1];o.connect(gn);gn.connect(out);o.start(t);src.push(o);}
-  const a={id,out,src,timer:0};
-  if(S.clank){const go=()=>{if(AMB!==a)return;try{if(AC.state==='running'){burst(0.3,0.022,260,0);tone(190,95,0.22,'triangle',0.008,0.02);}}catch(e){}a.timer=setTimeout(go,6000+Math.random()*9000);};a.timer=setTimeout(go,4000+Math.random()*5000);}
+  const a={id,out,src,timers:[]};
+  const every=(k,mn,mx,first)=>{const go=()=>{if(AMB!==a)return;try{if(AC.state==='running')AMB_EVENT[k]();}catch(e){}a.timers.push(setTimeout(go,mn+Math.random()*(mx-mn)));if(a.timers.length>12)a.timers.splice(0,a.timers.length-12);};a.timers.push(setTimeout(go,first));};
+  for(const k of ['clank','impact','servo','life'])if(S[k]){const [mn,mx]=S[k]===1?[6000,15000]:S[k];every(k,mn,mx,mn*0.6+Math.random()*mn*0.5);}
+  if(S.water)every('bubble',250,1100,400);
   AMB=a;
  }catch(e){AMB=null;try{for(const n of src||[])n.stop();}catch(_){}}   // nothing half-started is left playing
 }
