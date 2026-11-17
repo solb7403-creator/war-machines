@@ -4824,7 +4824,7 @@ roadmap row 6B-V.
   abilityStep/advance/aim/carry); live rooms: roster `rm`, snapshot field 19 (PVP_V unchanged: append-only), `js/pvp.js` decode;
   cues: Arcade `ev('m',id,cue)` -> `match.js` pop + `fx('mod')`, Conquest `B.mf.q` -> `app.js modHud` pop + chips; HUD chips
   (`render.js modChips`, `.cq-mods`); 19 synthesized cue sounds + UI/reward/stinger sounds in `js/fx.js`. Proof-of-play allows
-  Traction's speed and Overdrive's dash charges (`worker/src/proof.js`). Tests: `dev/tests/mod-behaviors.mjs` (53) PASS; fair-arcade,
+  Traction's speed and Overdrive's dash charges (`worker/src/proof.js`). Tests: `dev/tests/mod-behaviors.mjs` (51) PASS; fair-arcade,
   combat-balance, gear-combat, wtest pvp (snapshot layout assertion updated to 19 fields), lab-battle, conquest raids/first-hour/
   living-world/session/recall PASS. Measurements: `dev/tools/mod-power.mjs` (bot and human-profile duels, 240 a mod a kit).
 - DONE slice 3 (Science Lab screen + garage): `js/conquest/lab.js` (ConquestLab: screen / reveal / line / nodeOf), loaded by
@@ -4836,6 +4836,21 @@ roadmap row 6B-V.
   RS -> RTREE (render3d.js owns a global `RS`). Tests: lab-ui (+ research text/lock/looks), garage-rules (+ section 7), conquest-copy
   scans lab.js; conquest-server.mjs fixture `research:{cc,lv,parts,done,seen,pass,lsm}`. Browser smoke 390x844: reveal card + lab
   screen render, no page errors, the lab dialog scrolls.
-- NEXT: slice 4 — POWER chip (generic rating chip, Conquest HUD + hub, delta on change), engineering bonus line in Refuge Supply,
-  Refuge Supply order (BANK, REPAIR, plating first), zone bands on the region map and briefings.
+- DONE slice 4 (POWER chip, zone bands, Refuge Supply): `js/conquest/rating.js` (ConquestRating.chip/update: a generic rating chip,
+  label + number, a 4 s "92 → 94" delta, the last value per key kept on the device so a mod fitted in the garage shows its delta on
+  the next Conquest screen; FORCE and DEFENSE reuse it with their own keys) on the Conquest HUD (under the hull bar, updated each
+  frame from `powerOf(state.loadout)`: plating + research mods included) and the hub hero; Refuge Supply now opens on the POWER chip,
+  BANK SALVAGE, REPAIR HULL and the plating cards, then one ENGINEERING line with the real tuned values (`engineeringValues` against
+  an untuned tank: "+18% heat capacity, +9% range"), then War Orders, then the CP / mineral ledger; zone bands in `combat.js`
+  (`DANGER_BAND` STANDARD 55–100, HARD 75–135, VETERAN 140–220; a zone = its ring's authored tier from CONQUEST_BLUEPRINT §5:
+  Heartland/Rear STANDARD, Frontier HARD, Warfront + Inner Ring VETERAN; a briefing = its operation's own danger tier), shown on every
+  briefing ("ZONE 55–100 POWER · YOUR POWER 59 · a guide only") and in the region map's ZONE BANDS fold (rows above your POWER are
+  marked). Informational only: nothing in combat, spawns or rewards reads a band or `powerOf`. Why 55: a brand-new account is
+  power 59 (no cores owned yet; STOCK_L with its three cores is 68), so the Heartland must read as in band. Test:
+  `dev/tests/conquest-power-chip.mjs` (18) PASS; conquest-copy / flagship-ui / sheet / authority / session / first-hour / raids /
+  living-world / recall, mod-behaviors, conquest-research, lab-ui, garage-rules, fair-arcade PASS. Browser 390x844: hub chip, HUD
+  chip, Supply order, map bands and a briefing band render with no page errors.
+- NEXT: slice 5 — audio: Conquest zone ambience (barren / terraformed / colony core) in `js/fx.js`, the reward sounds wired to their
+  events (bank, build complete, research complete, plate mounted, War Order claimed), stingers (raid, invasion, strike, victory),
+  the Settings volume slider beside the sound toggle, one AudioContext (resume on first input, silent when hidden), an audio test.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.

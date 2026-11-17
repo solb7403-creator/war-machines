@@ -419,3 +419,14 @@
 .cq .cq-lab-reveal{border-top:4px solid var(--tc,#7fe8ff)}.cq .cq-lab-reveal h2{color:var(--tc,#fff)}
 .cq .cq-lab-reveal .cq-lab-what{font-size:14px;line-height:1.4}.cq .cq-lab-reveal .cq-lab-cost{color:#ff9d8a;font-size:12px}.cq .cq-lab-reveal .cq-lab-power{font:800 14px 'Chakra Petch',sans-serif;color:#7cf0a8}
 .cq .cq-hub-research-line{display:block;color:#b8f3ff}
+/* Session 6B: the generic rating chip (POWER now; FORCE and DEFENSE reuse it), Refuge Supply's first row, zone bands */
+.cq .cq-rating{display:inline-flex;align-items:baseline;gap:6px;padding:2px 8px;border:1px solid #5d7b93;border-radius:10px;background:#0a1420d9;font:800 11px/16px 'Chakra Petch',sans-serif;letter-spacing:.06em;color:#cfe8ff;white-space:nowrap;max-width:100%}
+.cq .cq-rating b{color:#8fb4cc;font-weight:800}.cq .cq-rating .cq-rating-v{color:#fff}
+.cq .cq-rating.up{border-color:#5fe08a;box-shadow:0 0 8px #5fe08a66}.cq .cq-rating.up .cq-rating-v{color:#7cf0a8}
+.cq .cq-rating.down{border-color:#ff8065}.cq .cq-rating.down .cq-rating-v{color:#ff9d8a}
+.cq .cq-combat-hud .cq-rating{margin:2px 0}
+.cq .cq-hub-copy .cq-rating{margin-top:6px;font-size:12px}
+.cq .cq-supply-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 10px}.cq .cq-supply-top .cq-supply-act{flex:1 1 140px;min-height:44px}
+.cq .cq-supply-eng{font:800 11px/1.4 'Chakra Petch',sans-serif;color:#9ff0e6;letter-spacing:.04em;margin:8px 0}
+.cq .cq-zone-band{font:800 12px/1.35 'Chakra Petch',sans-serif;color:#ffd36b}
+.cq .cq-zone-bands .cq-zone-row{display:block;font-size:11px;color:#cfe0ee;padding:2px 0}.cq .cq-zone-bands .cq-zone-hard{color:#ffb08a}.cq .cq-zone-bands .cq-zone-note{display:block;color:#8fa6b8;font-size:10px;margin-top:4px}

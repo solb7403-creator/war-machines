@@ -408,5 +408,17 @@ function travelBlock(state,p,enemies,now){if(!state)return 'Online connection re
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
  if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
-root.ConquestCombat=Object.freeze({hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+// Session 6B zone bands (owner decision 6): the gear rating (POWER) a zone's authored threat asks for, shown on the region map and
+// every briefing. Informational only: no enemy ever reads it (the 5D fair-world rule). A zone's band is its ring's authored tier
+// (docs/conquest/CONQUEST_BLUEPRINT.md §5: Heartland and Rear STANDARD, Frontier the HARD sectors, Warfront the VETERAN sectors, the
+// Inner Ring beyond them); a briefing shows its own operation's authored danger tier. The numbers are the kits that clear each tier in
+// the scripted-pilot tests (dev/tests/conquest-raids.mjs: the stock tank, power 68, clears STANDARD and 8 of 10 HARD raids; an Epic
+// kit, power 164, clears 13 of 15 VETERAN raids where the stock tank clears none). STANDARD starts at 55 so a brand-new account
+// (power 59: no cores owned yet) reads as in band in the Heartland.
+const DANGER_BAND=Object.freeze({STANDARD:Object.freeze([55,100]),HARD:Object.freeze([75,135]),VETERAN:Object.freeze([140,220])});
+const RING_TIER=Object.freeze(['','STANDARD','STANDARD','HARD','VETERAN','VETERAN']);
+const zoneBands=()=>Object.freeze(Object.fromEntries([1,2,3,4,5].map(r=>[r,DANGER_BAND[RING_TIER[r]]])));
+const zoneBand=ring=>DANGER_BAND[RING_TIER[ring]]||DANGER_BAND.STANDARD;
+const operationBand=o=>o&&DANGER_BAND[o.danger]?DANGER_BAND[o.danger]:zoneBand(o?W.ringAt(o.x,o.z):1);
+root.ConquestCombat=Object.freeze({DANGER_BAND,zoneBand,zoneBands,operationBand,hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

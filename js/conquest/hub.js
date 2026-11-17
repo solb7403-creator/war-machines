@@ -16,6 +16,7 @@ function render(panel,o){close();const {el,button}=o;panel.className='cq cq-hub 
  // Session 6: one scroller holds the hero and the status cards; the actions sit below it and never cover card text
  const scroll=el('div','cq-hub-scroll',null,panel);scroll.prepend(top);/* RETURN rides the scroller (over the hero art at the top) and scrolls away with it: never over card text */const hero=el('div','cq-hub-hero',null,scroll);H.hero=hero;const art=el('div','cq-hub-art',null,hero);art.setAttribute('aria-hidden','true');
  const copy=el('div','cq-hub-copy',null,hero);el('p','cq-kicker','LUNAR / CONQUEST COMMAND',copy);el('h1','','CONQUEST',copy);el('p','cq-premise','EARTH HAS FALLEN.\nWE HOLD THE MOON.',copy);
+ {const L=typeof myLoadout==='function'?myLoadout():null;if(L&&typeof powerOf==='function'&&root.ConquestRating){let pw=null;try{pw=powerOf(L);}catch(_){}if(pw)root.ConquestRating.chip(el,copy,{key:'power',label:'POWER',value:pw,title:'Your tank\'s gear rating: plating and research mods included'});}}   // Session 6B: the POWER chip
  const col=el('div','cq-hub-status',null,scroll);H.col=col;   // not a live region: it refreshes every second
  const acts=el('div','cq-hub-actions',null,panel);
  const deploy=button('ENTER CONQUEST',()=>o.enter(),'cq-enter cq-hub-deploy');acts.append(deploy);
