@@ -275,18 +275,18 @@ const WX_MAP={
 // dmg: hull damage of one hit at 1v1 hull scale (x the mode's hull scale, armor and plates apply, never above WX_CAP of the
 // tank's full hull); warn: seconds of warning before it can hit; res: the Hull Plating trait that cuts it (a area, e energy)
 const WX_HZ={
- meteor:{dmg:300,warn:1.6,r:1.7,txt:'METEOR',res:'a',how:'Watch for the streak and the glow on the ground: drive off the spot'},
+ meteor:{dmg:300,warn:1.6,r:2,txt:'METEOR',res:'a',how:'Watch for the streak and the glow on the ground: drive off the spot'},
  train:{dmg:420,warn:2.8,hw:1.25,len:8,v:20,shove:2.2,txt:'TRAIN',res:'a',how:'Rail lights and a horn: leave the deck or hug its railing. Tunnels and ramps are safe'},
  arc:{dmg:320,warn:3,txt:'ARC',res:'e',how:'Three pulses of the coils, then it fires: break line of sight behind a container'},
  vent:{dmg:340,warn:2.2,txt:'VENT',res:'a',how:'A hiss and wisps from the cracks: get out of the crater'},
  tornado:{dmg:70,warn:2.6,r:1.35,v:1.7,life:20,tick:0.5,push:0.9,txt:'TORNADO',res:'a',how:'Slow and loud: drive around it'},
- laser:{dmg:380,warn:2,r:0.9,v:8,txt:'LASER',res:'e',how:'The mounts glow and the row flickers: step off the row'}};
+ laser:{dmg:380,warn:2,r:1.1,v:8,txt:'LASER',res:'e',how:'The mounts glow and the row flickers: step off the row'}};
 // how far a tank can see (lock on and fire) while the effect is on it. local: only tanks inside a cloud, or looking into one
-const WX_VIS={haze:{r:3.2,local:1,cr:2.5,life:9},flare:{r:4.6,len:20},steam:{r:3.2,local:1},dust:{r:4.2,len:22},flicker:{r:4.4}};
+const WX_VIS={haze:{r:3.2,local:1,cr:2.8,life:9},flare:{r:4.6,len:20},steam:{r:3.2,local:1},dust:{r:4.2,len:22},flicker:{r:4.4}};
 const WX_ARC_BL=[[7,10,6,2],[7,20,6,2]],WX_ARC_AT=[10,16];   // Longshot: the two containers that block the arcs; the pylon
-const WX_VENTS={c:[10,16,3.0],f:[[15.5,14.5,2.2],[4.5,17.5,2.2]]};   // Crater Field: centre crater, the flank pair (blast radius)
-const WX_STEAM=[[10,16,3.4],[15.5,14.5,2.3],[4.5,17.5,2.3]];
-const WX_ROWS=[6,16,26];   // Bunker: the rows under the six emitter housings 5E-2c left
+const WX_VENTS={c:[10,16,3.6],f:[[15.5,14.5,2.8],[4.5,17.5,2.8]]};   // Crater Field: centre crater, the flank pair (blast radius: the crater and a wide rim)
+const WX_STEAM=[[10,16,3.8],[15.5,14.5,2.9],[4.5,17.5,2.9]];
+const WX_ROWS=[6,11,16,21,26];   // Bunker: the rows under the six wall housings 5E-2c left (6, 16, 26) and two rows of ceiling mounts between the blast doors and the reactor pillars (11, 21)
 // Canyon: one tornado takes a path, its twin the point mirror. 'through' runs the rille end to end past the mesa, 'loop' circles a half
 const WX_TORN=[[[10,2.5],[6,6],[5.5,11],[3.9,13.5],[3.9,18.5],[5,22],[9,25],[10,29.5]],
  [[4.5,3.5],[10,2.8],[16,6.5],[13.5,9],[7,7.2],[5.6,10.8],[5.6,5],[4.5,3.5]]];
@@ -310,35 +310,35 @@ function wxPlan(seed,map,round,T,clear){
  const mix=s=>rng32((Math.imul(((seed|0)+(round|0)*7919)|0,0x9E3779B1)^hashStr(map+s))|0),q=v=>Math.round(v*100)/100,cl=(v,a,b)=>v<a?a:v>b?b:v;
  let id=0;const hz=P.hz,H=WX_HZ[M.hz];
  {const rnd=mix('hz'),rr=(a,b)=>a+(b-a)*rnd();
-  if(M.hz==='meteor'&&(roll.haz||roll.vis)){   // salvos of four walking a line, each with its mirrored twin 0.3 s apart
+  if(M.hz==='meteor'&&(roll.haz||roll.vis)){   // salvos of three walking a line 0.8 s apart (two in the air at a time), each with its mirrored twin 0.3 s behind or ahead
    const soft=!roll.haz;let t=rr(8,13),n=(rnd()*2)|0;
    while(t<T-4){const sx=rr(3.5,16.5),sy=rr(5.5,15),d0=(rnd()*8)|0,first=n%2;let d=WX_DIR8[d0];
     // the line stays inside its own half (its twin walks the other), so which half is hit first alternates exactly, salvo by salvo
-    for(let j=0;j<8;j++){const c=WX_DIR8[(d0+j)%8],ex=sx+c[0]*6.9,ey=sy+c[1]*6.9;if(ex>=1.5&&ex<=WX_W-1.5&&ey>=2&&ey<=15.4){d=c;break;}}
-    for(let i=0;i<4;i++){const x=cl(sx+d[0]*2.3*i,1.5,WX_W-1.5),y=cl(sy+d[1]*2.3*i,2,15.4);
-     for(const m of [0,1]){const w=t+i*0.45+(m===first?0:0.3),s={k:'c',id:++id,w:q(w),t:q(w+H.warn),x:q(m?WX_W-x:x),y:q(m?WX_H-y:y),r:H.r};if(soft)s.soft=1;hz.push(s);
-      if(roll.vis&&i%2===0)P.clouds.push({x:s.x,y:s.y,r:WX_VIS.haze.cr,t0:s.t,t1:q(s.t+WX_VIS.haze.life)});}}
-    n++;t+=rr(12,17);}
+    for(let j=0;j<8;j++){const c=WX_DIR8[(d0+j)%8],ex=sx+c[0]*5.6,ey=sy+c[1]*5.6;if(ex>=1.5&&ex<=WX_W-1.5&&ey>=2&&ey<=15.4){d=c;break;}}
+    for(let i=0;i<3;i++){const x=cl(sx+d[0]*2.8*i,1.5,WX_W-1.5),y=cl(sy+d[1]*2.8*i,2,15.4);
+     for(const m of [0,1]){const w=t+i*0.8+(m===first?0:0.3),s={k:'c',id:++id,w:q(w),t:q(w+H.warn),x:q(m?WX_W-x:x),y:q(m?WX_H-y:y),r:H.r};if(soft)s.soft=1;hz.push(s);
+      if(roll.vis&&i!==1)P.clouds.push({x:s.x,y:s.y,r:WX_VIS.haze.cr,t0:s.t,t1:q(s.t+WX_VIS.haze.life)});}}
+    n++;t+=rr(10,14);}
   }
   if(M.hz==='train'&&roll.haz){let t=rr(9,14),n=(rnd()*2)|0;   // alternate directions: the point mirror of a pass is the pass the other way
-   while(t<T-5){hz.push({k:'t',id:++id,w:q(t),t:q(t+H.warn),dir:n%2?-1:1,y:16,hw:H.hw,x0:2,x1:18,len:H.len,v:H.v});n++;t+=rr(15,21);}}
+   while(t<T-5){hz.push({k:'t',id:++id,w:q(t),t:q(t+H.warn),dir:n%2?-1:1,y:16,hw:H.hw,x0:2,x1:18,len:H.len,v:H.v});n++;t+=rr(11,16);}}
   if(M.hz==='arc'&&roll.haz){let t=rr(11,16);
    while(t<T-5){hz.push({k:'a',id:++id,w:q(t),t:q(t+H.warn),x:WX_ARC_AT[0],y:WX_ARC_AT[1],bl:WX_ARC_BL});t+=rr(20,27);}}
   if(M.hz==='vent'&&roll.haz){let t=rr(8,13),n=(rnd()*4)|0;   // centre crater, then the flank pair (alternating which flank goes first)
    while(t<T-4){
     if(n%2===0)hz.push({k:'c',id:++id,w:q(t),t:q(t+H.warn),x:WX_VENTS.c[0],y:WX_VENTS.c[1],r:WX_VENTS.c[2],vent:1});
     else for(const m of [0,1]){const c=WX_VENTS.f[m],w=t+(m===((n>>1)&1)?0:0.6);hz.push({k:'c',id:++id,w:q(w),t:q(w+H.warn),x:c[0],y:c[1],r:c[2],vent:1});}
-    n++;t+=rr(9,13);}}
+    n++;t+=rr(8,11);}}
   if(M.hz==='tornado'&&roll.haz){let t=rr(8,13);
    while(t<T-8){const base=WX_TORN[(rnd()*WX_TORN.length)|0],pts=rnd()<0.5?base:base.slice().reverse(),e=Math.min(T,t+H.warn+H.life);
     hz.push({k:'n',id:++id,w:q(t),t:q(t+H.warn),e:q(e),pts,v:H.v,r:H.r});
     hz.push({k:'n',id:++id,w:q(t),t:q(t+H.warn),e:q(e),pts:pts.map(p=>[q(WX_W-p[0]),q(WX_H-p[1])]),v:H.v,r:H.r});
     t+=H.warn+H.life+rr(8,12);}}
-  if(M.hz==='laser'&&roll.haz){let t=rr(8,13),n=(rnd()*4)|0;   // the middle row, then the two outer rows in opposite directions (point mirrors)
+  if(M.hz==='laser'&&roll.haz){let t=rr(8,13),n=(rnd()*4)|0,md=rnd()<0.5?1:-1,pd=rnd()<0.5?1:-1;   // the middle row (its direction alternating), then a pair of rows in opposite directions (point mirrors): the inner pair, the outer pair
    const L=(y,d)=>({k:'l',id:++id,w:q(t),t:q(t+H.warn),y,x0:d>0?0:WX_W,x1:d>0?WX_W:0,v:H.v,r:H.r});
-   while(t<T-5){const d=(n>>1)&1?-1:1;
-    if(n%2===0)hz.push(L(WX_ROWS[1],d));else{hz.push(L(WX_ROWS[0],d));hz.push(L(WX_ROWS[2],-d));}
-    n++;t+=rr(9,13);}}
+   while(t<T-5){const c=n%4;
+    if(c%2===0){hz.push(L(WX_ROWS[2],md));md=-md;}else{const a=c===1?1:0;hz.push(L(WX_ROWS[a],pd));hz.push(L(WX_ROWS[4-a],-pd));pd=-pd;}
+    n++;t+=rr(8,11);}}
   hz.sort((a,b)=>a.w-b.w||a.id-b.id);
  }
  if(roll.vis){const rnd=mix('vis'),rr=(a,b)=>a+(b-a)*rnd();

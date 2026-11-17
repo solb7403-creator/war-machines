@@ -810,6 +810,7 @@ function botAI(dt,u){
   const prev=b.mode,r=random();
   let m=r<0.35?'press':r<0.65?'flank':'peek';
   if(m===prev)m=m==='press'?'flank':'press';           // never repeat the same tactic
+  if(BR&&BR.look!=='mesa'&&prev!=='high'&&random()<0.3)m='high';   // Overpass (5E-2e): take the bridge deck now and then, as a person does for the high ground (and where the maglev runs)
   if(hurt&&b.hideCd<=0){m='hide';b.hideCd=9;}           // retreat is short and on cooldown
   b.mode=m;b.t=m==='hide'?3:2.5+random()*2.5;b.side=random()<0.5?-1:1;b.spot=null;b.out=false;b.w=0;b.age=0;
  }
@@ -818,6 +819,8 @@ function botAI(dt,u){
  if(b.mode==='flank'){
   goal=clampP(tgt.x-ny*b.side*6,tgt.y+nx*b.side*6);       // swing wide to the target's side
   if(dist2(u,goal)<1.5){b.mode='press';b.t=Math.max(b.t,2);}
+ }else if(b.mode==='high'&&BR){   // up on the deck, on the target's side of it, above the target
+  const [dx,dy,dw,dh]=BR.deck;goal={x:Math.max(dx+R+0.4,Math.min(dx+dw-R-0.4,tgt.x)),y:tgt.y<dy+dh/2?dy+R+0.9:dy+dh-R-0.9,l:1};
  }else if(b.mode==='hide'||b.mode==='peek'){
   if(!b.spot)b.spot=coverSpot(u,tgt);
   if(b.spot&&!b.out){

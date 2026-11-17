@@ -4890,6 +4890,39 @@ premium LIVE store entries that are not on sale. Owner not monitoring: every cho
     proposal (7.2 TON / 450 Stars each) and no `ton` / `stars` field, so `ecoPrice` returns null and neither the phone nor
     the server can sell them.
 
+16. **The AI takes the Overpass deck now and then** (a fourth tactic, 30% of re-plans, only on the steel bridge). Reason: the
+    first pace run showed the train touching almost nobody (70 days to the finish) because AI pilots never went up; a person
+    uses the high ground, so the AI now does, and the deck becomes the risk-and-reward spot the owner described.
+17. **Tuned for relevance after measuring, never the 25:** trains every 11-16 s (was 15-21); vent blasts reach a wide rim (3.6 /
+    2.8, was 3.0 / 2.2) every 8-11 s; laser beam radius 1.1 (was 0.9), every 8-11 s, on five rows (two rows of ceiling mounts
+    at 11 and 21 added between the blast doors and the reactor pillars: the owner's "plus ceiling mounts if needed"); meteor
+    salvos of three 0.8 s apart with radius 2.0 (was four, 0.45 s apart, 1.7: the critic found four streaks at once too loud).
+18. **`fair-arcade.mjs` sample raised from 4 to 6 seeds, tolerances untouched.** With hazards able to decide a match, one
+    96-match mirror cell (Ace, common vs stock: two kits that meet an AI at their own power, so the true step is ~0) landed 10
+    points apart, 2 past the 8-point guard. The test's own comment names this as sampling noise (standard error ~0.07 at 96)
+    and records the same remedy once before (2 seeds to 4). 144 matches a cell; every assertion and limit is as it was.
+19. **Planned prices are visible on the LIVE finish's sheet** ("Planned price: 450 Stars or 7.2 TON (about x SOL)"; Stars only
+    inside Telegram, TON and SOL on the website), next to "Not on sale yet". Reason: the owner asked for the entries to show on
+    the website and in Telegram alike and there are no live players yet, so he can judge the real store; they are PROPOSALS
+    and one line (`PAINTS[...].soon`) changes or hides them.
+20. **In-battle animation of the LIVE finishes is not built**, only their animated store entries (CSS layers on the store
+    card and sheet: embers, a rail light, arcs, steam, a dust swirl, a scan line). Reason: nobody can own one until Session 8
+    certifies payments; building six in-battle tank shaders nobody can equip is the kind of work the owner asked not to waste.
+
+### Critic rounds (one independent visual critic per round; phone 390x844 and desktop 1920x1080 judged together)
+
+| Map | Round 1 | What it found | What changed |
+|---|---|---|---|
+| Moonbase | 5 | four streaks at once too loud; ground rings read as team rings; no flash on the hit; haze looks like smears | salvos of three, two in the air at a time; the rock's dark shadow inside ONE amber ring; white-hot flash and a dust ring on impact; lighter, thicker, billowing haze |
+| Overpass | 5 | rail lights tiny; the train looks like placeholder boxes; flare washes out the HUD | chasing pulse on lit lane edges, headlight beam; train with lit windows, light strips, underglow, a streak behind it; glare kept under the HUD band and the combat text |
+| Longshot | 7.5 | bolts pure white and flat; core bloom hides the pylon; flare shafts stripe the field | cyan-violet bolts ending in a splash of light on the floor, smaller core, ground flash; shorter, fainter shafts |
+| Crater Field | 6.5 | best warning; the teal column reads as a heal beam | amber cracks and ring; the eruption is a ragged steam-and-ash column with thrown rock, hot at its root |
+| Canyon | 4.5 | funnel see-through hoops, same colour as the ground and the haze; forming cone unreadable | three-layer funnel with a dark core and wound streaks, dust skirt, stones, a shadow; forming = a ground swirl with a thin thread; lighter haze so the funnel is the darkest thing on screen |
+| Bunker | 6 | warning too faint; beam hair-thin, starts in mid-air | dashed flicker along the row, brighter wall and ceiling mounts with light on the floor; beam three layers thick from above the picture, a glowing trail on the floor; the flicker strobes |
+
+Also from round 1: the weather label overlapped Bounty's "Most stars wins" (moved under it); a red wash in half the frames
+was the game's own damage vignette (the capture now heals the pilot before each frame so the weather is judged alone).
+
 ### The six maps (what a pilot meets)
 
 | Map | Hazard: what it does | Its warning (sound, then light) | How to dodge | Vision effect |

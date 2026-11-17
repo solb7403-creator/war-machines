@@ -124,7 +124,7 @@ console.log('PASS plans: ' + nPlans + ' (6 maps x 3 weather kinds x 14 seeds x 5
     report.push('meteor ' + worst.worst.toFixed(2) + ' s of ' + H.warn + ' s'); ok(worst.stuck === 0 && worst.worst <= H.warn - REACT, 'Moonbase meteors: the slowest tank is clear of any landing spot in ' + worst.worst.toFixed(2) + ' s (warning ' + H.warn + ' s)'); }
   for (const z of SR.wxPlan(seedOf(2), 'craters', 0, 180).hz.slice(0, 6)) check('craters', 'vent(' + z.x + ',' + z.y + ')', WX.HZ.vent.warn, (x, y) => SR.wxIn(z, z.t, x, y, body));
   { const z = SR.wxPlan(seedOf(2), 'longshot', 0, 180).hz[0]; check('longshot', 'pylon arc', WX.HZ.arc.warn, (x, y) => SR.wxIn(z, z.t, x, y, body)); }
-  for (const y0 of [6, 16, 26]) { const z = { k: 'l', y: y0, r: WX.HZ.laser.r }; check('bunker', 'laser row ' + y0, WX.HZ.laser.warn, (x, y) => Math.abs(y - z.y) < z.r + body); }
+  for (const y0 of SR.WX_ROWS) { const z = { k: 'l', y: y0, r: WX.HZ.laser.r }; check('bunker', 'laser row ' + y0, WX.HZ.laser.warn, (x, y) => Math.abs(y - z.y) < z.r + body); }
   { const dk = W.eval('MAPS.overpass.bridge.deck'), R0 = W.eval('R'), H = WX.HZ.train, strip = dk[3] / 2 - R0 - (H.hw + body);
     ok(strip > 0.1, 'Overpass train: a tank at the railing is clear of it (' + strip.toFixed(2) + ' of room past the widest body), and the tunnels and ramps are never touched');
     ok((H.hw + body + 0.2) / speed <= H.warn - REACT, 'Overpass train: the railing is ' + ((H.hw + body + 0.2) / speed).toFixed(2) + ' s away from the middle of the rail (warning ' + H.warn + ' s)'); report.push('train ' + ((H.hw + body + 0.2) / speed).toFixed(2) + ' s of ' + H.warn + ' s'); }

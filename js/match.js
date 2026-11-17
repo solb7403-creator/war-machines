@@ -276,7 +276,7 @@ function dmgNum(q,t,dmg,isCrit){
 const HIT_TXT=[null,{txt:'SUPER',t:0.9,z:2,c:'#ff4d4d'},{txt:'STORM',t:0.7,z:0.8,c:'#c79bff'},{txt:'HAZARD',t:0.9,z:1.6,c:'#ff8a3d'}];
 // the map's own hazard (5E-2e): its name on the hit number, its colour, and how the kill feed words a tank it finished
 const HZ_TXT={meteor:{c:'#ff8a3d',by:'a meteor',with:'with a meteor strike'},train:{c:'#7fe9ff',by:'the maglev train',with:'under the maglev train'},arc:{c:'#b8f1ff',by:'the pylon',with:'with the pylon overload'},
- vent:{c:'#8ff5d2',by:'a crater vent',with:'on a crater vent'},tornado:{c:'#e8c48a',by:'a sand tornado',with:'in a sand tornado'},laser:{c:'#ff5a46',by:'a ceiling laser',with:'under a ceiling laser'}};
+ vent:{c:'#ffc48a',by:'a crater vent',with:'on a crater vent'},tornado:{c:'#e8c48a',by:'a sand tornado',with:'in a sand tornado'},laser:{c:'#ff5a46',by:'a ceiling laser',with:'under a ceiling laser'}};
 const hzNow=()=>typeof WX_MAP!=='undefined'&&WX_MAP[curMap]?WX_MAP[curMap].hz:'meteor';
 // super impacts, per weapon: blast size and colors (match.js 2D overlay; render3d.js adds the 3D explosion)
 const IMPACT={pulse:{r:2.2,c:'#ffb35a',c2:'#ffe08a'},twin:{r:2.6,c:'#7fd4ff',c2:'#e2f4ff'},siege:{r:3.0,c:'#ff7a2f',c2:'#ffd24a'},moon:{r:2.8,c:'#bfe6ff',c2:'#ffffff'}};

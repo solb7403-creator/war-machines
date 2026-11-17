@@ -927,6 +927,7 @@ function drawBattle(){
   g.strokeStyle='rgba(199,155,255,.9)';g.lineWidth=3;g.setLineDash([10,7]);g.lineDashOffset=-t*20;g.beginPath();gArc(storm.x,storm.y,storm.r,undefined,undefined,false,CH&&me&&me.hp>0?hOf(me):0);g.stroke();g.setLineDash([]);g.lineDashOffset=0;g.restore();}
  g.restore();   // end arena clip
  if(!D3){g.strokeStyle='#59607a';g.lineWidth=2;g.strokeRect(X(0),Y(0),W*sc,AH);}
+ if(WXF)WXF.overlay(g,vw,vh,CH?hudY0():0);   // glare, dust or dimmed lights over the world: under the floating text, the edge markers and the HUD, and never over the HUD band
  // floating text: labels stay on screen, damage numbers merge
  g.save();g.beginPath();if(CH)g.rect(-40,-40,vw+80,vh+80);else g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
@@ -938,7 +939,6 @@ function drawBattle(){
  if(CH)drawEdges();   // who and what is outside the frame
  else if(typeof pvpOn==='function'&&pvpOn()&&me)drawVeil();   // a live match without the chase camera: the same frame, drawn as a veil
  g.restore();   // end shake
- if(WXF)WXF.overlay(g,vw,vh);   // glare, dust or dimmed lights over the whole picture, under the HUD
  drawHUD();
 }
 // ---- off-screen indicators (chase camera, Session 5E-2b2a) ----
@@ -1100,7 +1100,8 @@ function drawHUD(){
  if(series){g.font=font(Math.round(sc*0.6));g.fillStyle='rgba(223,231,242,.7)';g.textAlign='center';g.fillText('Round '+series.round,mid,hy+th+sc*0.55);}
  else if(matchG==='bounty'&&me){g.font=font(Math.round(sc*0.6));g.fillStyle='#ffcf4a';g.textAlign='center';g.fillText('Your bounty: '+(me.bty||BTY_START),mid,hy+th+sc*0.55);}
  {const wc=typeof WeatherFX!=='undefined'?WeatherFX.chip():null;   // this match's weather, under the clock (the flare counts down while it lasts)
-  if(wc){const line2=!!series||(matchG==='bounty'&&me);g.font=font(Math.round(sc*(wc.hot?0.6:0.5)));g.globalAlpha=wc.hot?1:0.85;g.fillStyle=wc.c;g.textAlign='center';g.fillText(wc.txt,mid,hy+th+sc*(line2?1.2:0.55));g.globalAlpha=1;}}
+  if(wc){const line2=!!series||(matchG==='bounty'&&me),fs=Math.round(sc*0.52),wy=line2?HY+sc*(matchG==='bounty'?1.5:0.7):hy+th+sc*0.6;g.font=font(fs);g.textAlign='center';const tw2=g.measureText(wc.txt).width+fs*1.2;
+   g.fillStyle='rgba(8,12,20,.72)';rr(g,mid-tw2/2,wy-fs*0.78,tw2,fs*1.5,fs*0.75);g.fill();g.fillStyle=wc.c;g.fillText(wc.txt,mid,wy);}}   // on a dark pill, so it reads on a bright map and under a flare   // under the round / bounty line and the mode's own line when those are there
  const outRing=!!storm&&me&&me.hp>0&&Math.hypot(me.x-storm.x,me.y-storm.y)>storm.r;
  if(me&&me.hp>0&&state==='play'&&slowAt(me)<1&&!(me.rep>0)&&!outRing){g.fillStyle='#c9b48a';g.font=font(Math.round(sc*0.62));g.textAlign='center';if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.7)';g.strokeText('crater: slowed',mx,my+mk*1.4);g.fillStyle='#f0dcae';}g.fillText('crater: slowed',mx,my+mk*1.4);}
  if(ffBtnOn()){const F=ffBtn();g.fillStyle=ffwd?'rgba(255,122,47,.92)':'rgba(10,14,23,.88)';rr(g,F.x,F.y,F.w,F.h,F.h/2);g.fill();g.strokeStyle=ffwd?'#ffb37a':'rgba(223,231,242,.4)';g.lineWidth=1.5;rr(g,F.x,F.y,F.w,F.h,F.h/2);g.stroke();
