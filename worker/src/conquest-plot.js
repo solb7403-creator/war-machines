@@ -10,6 +10,7 @@ import {bankMinerals} from './conquest-airdrop.js';
 import {trophyScore,trophySet} from './conquest-loot.js';
 import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
+import {tick as researchTick} from './conquest-research.js';
 const P=CONQUEST.Plot,DAY=86400000;
 export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.
@@ -31,10 +32,12 @@ export function plotSync(s,now){const b=s.base;if(!b?.tier&&!s.plot)return null;
  p.ext=record(p.ext)?p.ext:{};p.ext.r=p.ext.r|0;p.ext.d=p.ext.d|0;p.ext.w=Math.max(p.ext.w|0,b?.defense?.wins|0);p.cm=Math.max(0,Number(p.cm)||0);p.fh=Math.max(0,Number(p.fh)||0);
  if(p.theme&&typeof p.theme==='object')p.theme.decor=Array.isArray(p.theme.decor)?p.theme.decor:Object.values(p.theme.decor||{});   // Firebase drops an empty list
  if(!p.b.cc)p.b.cc={t:'cc',...(P.autoPlace(p,'cc')||{i:37,j:37,r:0}),l:p.cc|0};
+ if(p.job?.t==='repair'&&p.job.ready<=now)researchTick(s,p.job.ready);   // Session 6B: a ruined Science Lab pauses research until the repair crews finish, not until the next request
  const done=P.settle(p,now);if(done)s.notice={kind:'plot-built',type:done.t,level:done.l};
  for(const k of Object.keys(p.dmg))if(!P.maxHpOf(p,k)||!(Number(p.dmg[k])>0))delete p.dmg[k];   // damage of a structure that no longer exists
  P.accrue(p,now);b.tier=P.tierOf(p.cc);b.modules=P.modulesOf(p);p.power=P.power(p)+trophyScore(s);p.def=P.defenseRating(p);   // Session 6: +15 Town Score per trophy type held
  p.gar={n:P.garrisonSlots(p),t:Array.isArray(p.gar?.t)?p.gar.t:Object.values(p.gar?.t||{})};   // garrison hook: Hangar defenders (Session 7)
+ researchTick(s,now);   // Session 6B: Science Lab jobs run on the Worker clock while the lab stands
  return p;}
 function mnAvail(s,ctx){const have=RULES.mnOf(ctx?.bmn),spent=s.plot?.mnSpent||{},o={};for(const k of P.MNS)o[k]=Math.max(0,(have[k]||0)-(spent[k]||0));return o;}
 // 'cm' is the town's wall composite (whole units); minerals come from the base stores; everything else is banked.

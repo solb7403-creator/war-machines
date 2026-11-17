@@ -287,8 +287,8 @@ const POWER_W={h:6.61,a:6.95,d:5.80,c:6.31,su:1.50,fi:1.84,s:3.59,r:1.27,hc:1.61
 const POWER_WPN={pulse:0,twin:0.34,siege:0.21,moon:1.20};   // weapon type (its super's base damage included: Siege Blast 375, Moonfall 400 at full width, the others 350; Moonbeam refit on 90 pairs)
 const POWER_BASE=68,POWER_K=13.75,COUNTER_EDGE=1.72;
 function powerZ(L){
- const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log;
- const h=ln(t.mhp*plateEhp(t.enR,t.arR)/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)/STAT.dps),s=ln(t.spdM*(1+g('spd')));
+ const t=tankOf(L,1),g=k=>t.gems.includes(k)?GEM[k].amt*t.gemM[k]:0,W=POWER_W,ln=Math.log,pe=fittingPe(L.mods);   // pe: the research mods' behaviors (rmodPe), 0 without them
+ const h=ln(t.mhp*plateEhp(t.enR,t.arR)*(1+pe.h)/STAT.hp),d=ln(t.wdps*t.dmgM*(1+g('dmg'))*(1+g('rof'))*projectileImpactMult(t)*(1+pe.d)/STAT.dps),s=ln(t.spdM*(1+g('spd'))*(1+pe.s));
  return W.h*h+W.a*-ln(1-Math.min(0.7,g('arm')))+W.d*d+W.c*ln(1+CRIT_BASE+t.critB+g('lck'))+W.su*ln((t.wmult||TIER_MULT[Math.max(0,t.wtier|0)])*t.dmgM*(1+g('dmg'))*(t.wtype==='siege'?projectileImpactMult(t):1))
   +W.fi*ln(t.fillM)+W.s*s+W.r*g('reg')*100+W.hc*ln(t.hitChg||1)+W.tu*ln(t.turnM)+W.ps*ln(t.wpspd/22)+(t.cls==='scout'?W.sc:t.cls==='titan'?W.ti:0)
   +(POWER_WPN[t.wtype]||0)+W.hh*h*h+W.ss*s*s+W.dd*d*d+W.hd*h*d+W.hs*h*s+W.ds*d*s;
@@ -365,6 +365,8 @@ function tankOf(L,n){
  if(T.gems.includes('vel'))T.wpspd*=1+coreVal('vel',L.gl&&L.gl.vel);
  // Hull Plating: max hull HP per plate and the set traits (energy / area damage taken), the same in every mode
  const Pl=plateStats(L.ap);if(Pl.hp){T.mhp=Math.round(T.mhp*(1+Pl.hp));T.ap=Pl.ap;}if(Pl.e)T.enR=Pl.e;if(Pl.a)T.arR=Pl.a;
+ // Science Lab research mods (Session 6B): their behaviors and numbers, read by both combat engines (RMOD_B below)
+ {const B=fittingBehaviors(L.mods);if(Object.keys(B).length)T.rm=B;}
  if(hasFittings(L))T.fits=fittingVisuals(L);return T;
 }
 function legacyTankOf(L,n){
@@ -698,7 +700,8 @@ function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt
 
 // what the server owns (the phone copies these from every server reply)
 const ECO_KEYS=['pts','earned','dailyPts','weeklyPts','dailyDay','weeklyNum','days','sk','ld','fd','upc','glc','gsc','wOwn','cOwn','roll','salv',
- 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn'];
+ 'lab','paints','skin','moonbeam','starter','founder','pass','dq','wk','wq','q','login','streak','buys','dealD','dealW','refC','refPD','refWelcome','vd','vdl','rfe','rb','rms','vac','mbx','wins','losses','mp','ptsSpent','spendGram','rsCr','vg','vgg','fx','g2','lwr','lgi','lg','lgb','mn','ap','mnw','bmn',
+ 'rm','lsm','bpt','rsx'];   // Session 6B: researched mods, Legendary set mods owned, bonus research parts (pass tiers, packs; monotonic), instant-finish credits
 const listOf=v=>Array.isArray(v)?v.filter(x=>x!==null&&x!==undefined):v&&typeof v==='object'?Object.values(v):[];
 // fill in anything missing: new pilots, old saves, and database copies (the database drops empty lists and objects)
 function ecoNorm(S,opt){
@@ -735,6 +738,12 @@ function ecoNorm(S,opt){
  if(S.dq&&typeof S.dq==='object'){S.dq.ids=listOf(S.dq.ids);S.dq.p=S.dq.p||{};S.dq.c=S.dq.c||{};S.dq.was=listOf(S.dq.was);}
  if(S.wk&&typeof S.wk==='object'){S.wk.ids=listOf(S.wk.ids);S.wk.p=S.wk.p||{};S.wk.u=S.wk.u||{};S.wk.c=S.wk.c||{};for(const id in S.wk.u)S.wk.u[id]=listOf(S.wk.u[id]);}
  if(S.pass&&typeof S.pass==='object'){S.pass.cf=listOf(S.pass.cf);S.pass.cp=listOf(S.pass.cp);S.pass.xp=Number(S.pass.xp)||0;S.pass.prem=!!S.pass.prem;}
+ // Session 6B research: the mods the Science Lab finished (credited from the Conquest record's outbox), Legendary set mods
+ // bought, bonus parts (Lunar Pass premium tiers and part packs: a running total that only grows) and instant-finish credits
+ {const rm=obj('rm'),ls=obj('lsm'),bp=obj('bpt'),rx=obj('rsx');for(const k in rm)if(!rmodOf(k)||rmodOf(k).F.leg||!rm[k])delete rm[k];else rm[k]=1;
+  for(const k in ls)if(!rmodOf(k)||!rmodOf(k).F.leg||!ls[k])delete ls[k];else ls[k]=1;
+  for(const k in bp)if(!CQ_PARTS[k])delete bp[k];for(const k of CQ_PART_ORDER)bp[k]=Math.max(0,Math.min(1e5,Math.floor(Number(bp[k])||0)));
+  for(const k of Object.keys(rx))if(!/^j\d{1,6}$/.test(k)||!(Number(rx[k])>0))delete rx[k];}
  S.mn=mnOf(S.mn);S.ap=apOf(S.ap);if(S.bmn!==undefined)S.bmn=mnOf(S.bmn);if(S.mnw&&typeof S.mnw==='object'){S.mnw={w:S.mnw.w|0,n:Math.max(0,S.mnw.n|0),p:S.mnw.p?1:0};}else delete S.mnw;   // minerals, Hull Plating, weekly league minerals
  return S;
 }
@@ -776,7 +785,7 @@ function ecoLoadout(S,L0){
  const seen={},cores=[0,1,2].map(i=>{const k=L0.cores&&L0.cores[i];if(!isGem(k)||seen[k])return null;seen[k]=1;return k;});
  const chs=CHORDER.filter(k=>bestOf(S,false,k)).map(k=>({...(k===c.c?{...c}:pick(false,{c:k,t:-9})),up:{...chUp(S,k)},gl:{...chGl(S,k)}}));   // each with its own build and cores
  const paint=PAINTS[L0.paint]&&S.paints&&S.paints[L0.paint]?L0.paint:'stock';
- const mods=fittingSelection(S.lab?L0.mods:undefined),f=fittingStats(mods);
+ const mods=fittingOwned(S,S.lab?L0.mods:undefined),f=fittingStats(mods);   // research mods only once researched (S.rm), Legendary set mods once bought (S.lsm): the server record, never the client
  const legal=f.weight<=FIT_BUDGET.weight&&f.power<=FIT_BUDGET.power;
  return {mods:legal?mods:fittingSelection(),looks:fittingValid(L0.looks,true)?{...(L0.looks||{})}:{},catalog:FIT_VERSION,w,c,up:{...chUp(S,c.c)},cores,gl:{...chGl(S,c.c)},skin:S.skin==='lunar'?'lunar':'default',paint,chs,vl:vaultLevel(S.vg),ap:apOf(S.ap)};   // vl: Vault level, looks only; ap: owned Hull Plating (never from the client)
 }
@@ -1206,6 +1215,7 @@ function labValidate(S,p){
  if(!fittingValid(p.mods)||!fittingValid(p.looks,true)||(p.catalog!==undefined&&p.catalog!==FIT_VERSION))return 'modules';
  if(FIT_ORDER.some(k=>fittingSelection(p.mods)[k]!=='stock')&&p.catalog!==FIT_VERSION)return 'modules';
  const f=fittingStats(p.mods);if(f.weight>FIT_BUDGET.weight||f.power>FIT_BUDGET.power)return 'budget';
+ {const m=fittingSelection(p.mods);if(FIT_ORDER.some(k=>!rmodOwned(S,k,m[k])))return 'owned';}   // Session 6B: a research mod not yet researched, a Legendary set mod not bought
  for(const [isW,x,k] of [[true,p.w,p.w.a],[false,p.c,p.c.c]]){
   if(!Number.isInteger(x.t)||x.t<0||x.t>2||typeof x.s!=='boolean')return 'gear';
   if(isW&&k==='moon'){if(!S.moonbeam||x.t!==2||x.s)return 'owned';}
@@ -1254,27 +1264,149 @@ function labGain(S,r){
 // supers, dashCd dash cooldown, turn turret turn rate, shotSpd shot speed, shieldCd shield cooldown, charge super charge,
 // hitCharge super charge from hits taken.
 // Measured on the real sim (dev/tests/s2/mods.mjs): every legal set wins 42-58% against the field on its chassis and weapon.
+// Session 6B (owner, Nov 16 2026) adds the Science Lab research options below the free ones in each slot. FIT_VERSION stays 2: the
+// catalog only grew (every existing option and id is unchanged), and only the server record can make a research option legal.
 const FIT_VERSION=2,FIT_BUDGET={weight:3,power:3};
 const FIT_FIELDS=['hp','spd','dps','supTaken','dashCd','turn','shotSpd','shieldCd','charge','hitCharge'];
+// ---- Science Lab research mods (Session 6B, owner decisions Nov 16 2026) ----
+// Research unlocks NEW options in the same three slots: a pilot still fits one option per slot, within the same budget. Four
+// tracks, one per research part (rules.js CQ_PARTS): Thermal (Thermal Core), Ballistics (Ballistic Coil), Drive (Drive Servo),
+// Field (Field Capacitor); each track has three mods and one set mod (the strongest option in its slot). Slots follow what each
+// track is about (the reason, recorded in Checkpoint 41): Thermal and Ballistics are the gun (two mount mods each, their set mods
+// on the mount), Drive is movement (two mobility mods and its set mod on mobility), Field is the shield (two hull mods and its set
+// mod on the hull); each track's third mod sits in another slot, so every slot holds five or six research choices.
+// Fields as above, plus: rs track, lab the Science Lab level that opens it (I Thermal/Ballistics, II Drive/Field, III the set
+// mods), set/leg (set mod, Legendary set mod: bought, never researched), b behavior (RMOD_B, one per mod; every trigger is
+// deterministic: no mod is a chance to deal damage), x its numbers, cue the HUD word, look the existing visual it borrows (no new
+// models), role, d what it does in plain words. Behaviors run identically in the Arcade/PvP sim (js/game.js) and in Conquest
+// (js/conquest/combat.js + controls.js), on the phone and on the Worker; a mod's damage is counted in seconds of the tank's own
+// damage per second, so it is worth the same on every weapon and in both engines. Gear rating: rmodPe (below) values each behavior
+// as effective health / damage / speed, the way the plate traits are valued (plateEhp); powerZ reads it.
 const FITS={
  hull:{stock:{n:'Stock',weight:0,power:0},
   plates:{n:'Reinforced plates',hp:.05,spd:-.16,shieldCd:-.40,weight:2,power:0},
-  light:{n:'Light frame',hp:-.05,spd:.15,dashCd:-.40,weight:0,power:1}},
+  light:{n:'Light frame',hp:-.05,spd:.15,dashCd:-.40,weight:0,power:1},
+  heatsink:{n:'Heat Sink Plating',rs:'thermal',lab:1,b:'heatsink',role:'Frontliner',cue:'HEAT RING',look:'plates',spd:-.07,weight:1,power:0,x:{every:.2,dmg:.45},
+   d:'Every time you lose a fifth of your hull, the plating dumps its heat: a HEAT RING hits every enemy in your range and sight.'},
+  momentum:{n:'Momentum Plating',rs:'servo',lab:2,b:'momentum',role:'Runner',cue:'MOMENTUM',look:'light',hp:-.04,weight:1,power:0,x:{after:1,at:.85,cut:.2,hold:.3},
+   d:'Drive flat out for a second and MOMENTUM builds: shots hit you 20% softer for as long as you keep moving fast.'},
+  capacitor:{n:'Capacitor Bank',rs:'cap',lab:2,b:'capacitor',role:'Anchor',cue:'CHARGING',look:'plates',spd:-.04,weight:0,power:1,x:{after:.5,rate:5},
+   d:'Stand still and your shield recharges five times as fast for as long as you hold your ground.'},
+  reflector:{n:'Reflector Field',rs:'cap',lab:2,b:'reflector',role:'Bulwark',cue:'REFLECT',look:'plates',spd:-.03,weight:0,power:1,x:{share:1},
+   d:'While your shield is up, all the damage it blocks flies straight back at the shooter.'},
+  aegis:{n:'Aegis Matrix',rs:'cap',lab:3,set:true,b:'aegis',role:'Guardian',cue:'OVERSHIELD',look:'plates',spd:-.04,weight:1,power:1,x:{share:.11,t:6},
+   d:'When your shield ends it leaves an OVERSHIELD worth 11% of your hull that takes the next hits first (it fades after 6 s).'},
+  aegisp:{n:'Aegis Prime',rs:'cap',lab:3,set:true,leg:true,b:'aegis',role:'Guardian',cue:'OVERSHIELD',look:'plates',spd:-.04,weight:1,power:1,x:{share:.15,t:8},
+   d:'Legendary Aegis: when your shield ends it leaves an OVERSHIELD worth 15% of your hull that takes the next hits first (it fades after 8 s).'}},
  mobility:{stock:{n:'Stock',weight:0,power:0},
   sprint:{n:'Sprint gearing',spd:.11,dps:-.09,turn:.30,weight:0,power:2},
-  stable:{n:'Stable gearing',spd:-.15,dps:.07,shotSpd:.10,weight:1,power:1}},
+  stable:{n:'Stable gearing',spd:-.15,dps:.07,shotSpd:.10,weight:1,power:1},
+  predictor:{n:'Predictor Gyro',rs:'coil',lab:1,b:'predictor',role:'Hunter',cue:'LEAD',look:'stable',spd:-.05,weight:1,power:0,x:{lead:1},
+   d:'Your turret leads moving targets: it aims where the enemy will be when the shot lands (your locked target in Conquest).'},
+  traction:{n:'Traction Servo',rs:'servo',lab:2,b:'traction',role:'Skirmisher',cue:'TRACTION',look:'sprint',dashCd:.15,weight:0,power:1,x:{spd:.6,t:2},
+   d:'Every dash ends in a TRACTION BOOST: 60% more speed for 2 s.'},
+  ram:{n:'Ram Servo',rs:'servo',lab:2,b:'ram',role:'Breaker',cue:'RAM',look:'stable',hp:-.03,weight:1,power:0,x:{dmg:1.5,jam:1.5},
+   d:'Dash into an enemy to RAM it: it takes one and a half seconds of your damage and its cannon jams for 1.5 s.'},
+  reflex:{n:'Reflex Skirts',rs:'cap',lab:2,b:'reflex',role:'Survivor',cue:'REFLEX',look:'sprint',dps:-.02,weight:0,power:1,x:{lead:.5},
+   d:'Your shield raises itself (when it is ready) the instant an enemy super or a marked strike is about to hit you.'},
+  overdrive:{n:'Overdrive',rs:'servo',lab:3,set:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.03,weight:1,power:1,x:{charges:2},
+   d:'TWO DASH CHARGES: dash twice in a row; each charge refills on its own.'},
+  hyperdrive:{n:'Hyperdrive',rs:'servo',lab:3,set:true,leg:true,b:'overdrive',role:'Phantom',cue:'DASH',look:'sprint',hp:-.03,weight:1,power:1,x:{charges:3},
+   d:'Legendary Overdrive: THREE DASH CHARGES: dash three times in a row; each charge refills on its own.'}},
  mount:{stock:{n:'Stock',weight:0,power:0},
   hardened:{n:'Hardened mount',hp:.06,dps:-.14,hitCharge:.20,weight:2,power:0},
-  firing:{n:'Firing mount',hp:-.08,dps:.12,charge:.08,weight:1,power:2}}
+  firing:{n:'Firing mount',hp:-.08,dps:.12,charge:.08,weight:1,power:2},
+  vent:{n:'Vent Barrel',rs:'thermal',lab:1,b:'vent',role:'Brawler',cue:'VENT',look:'firing',dps:-.07,weight:0,power:1,x:{after:3,bonus:.5,splash:.4},
+   d:'Keep firing for 3 s and your next shot is a VENT ROUND: it carries half a second of extra damage and bursts on the enemies beside its target.'},
+  overclock:{n:'Overclock Breech',rs:'thermal',lab:1,b:'overclock',role:'Suppressor',cue:'OVERCLOCK',look:'firing',dps:-.05,weight:0,power:1,x:{after:3.5,rate:1.3,cool:1.5,slow:.7},
+   d:'Keep firing for 3.5 s and the breech OVERCLOCKS: 30% faster fire until you let go, then it cools for 1.5 s at a slower rate.'},
+  inferno:{n:'Inferno Core',rs:'thermal',lab:3,set:true,b:'inferno',role:'Inferno',cue:'INFERNO',look:'firing',dps:-.04,weight:1,power:1,x:{after:2.5,dur:3,burn:.32,burnT:2,stack:2},
+   d:'Keep firing for 2.5 s to ignite INFERNO for 3 s: every hit sets its target BURNING (more damage over 2 s, two burns at once).'},
+  sunfire:{n:'Sunfire Core',rs:'thermal',lab:3,set:true,leg:true,b:'inferno',role:'Inferno',cue:'SUNFIRE',look:'firing',dps:-.04,weight:1,power:1,x:{after:2,dur:3.5,burn:.25,burnT:2,stack:3},
+   d:'Legendary Inferno: keep firing for 2 s to ignite SUNFIRE for 3.5 s: every hit sets its target BURNING (three burns at once).'},
+  pierce:{n:'Penetrator Coil',rs:'coil',lab:1,b:'pierce',role:'Shield-breaker',cue:'PIERCE',look:'hardened',dps:-.02,weight:0,power:1,x:{keep:.8},
+   d:'Your shots punch through energy shields: a raised shield stops only a fifth as much of your damage (in Conquest the shield commander\'s barrier too).'},
+  marksman:{n:'Marksman Coil',rs:'coil',lab:1,b:'marksman',role:'Duelist',cue:'COIL',look:'hardened',dps:-.05,weight:0,power:1,x:{n:3},
+   d:'Land three direct hits in a row on the same target and the third is a sure CRITICAL (double damage). A graze, a miss or a new target restarts the count.'},
+  rail:{n:'Rail Driver',rs:'coil',lab:3,set:true,b:'rail',role:'Marksman',cue:'RAIL',look:'hardened',dps:-.04,weight:1,power:1,x:{n:6,mult:1.5,spd:2,through:2},
+   d:'Every 6th shot is a RAIL SLUG: half again the damage, twice as fast, straight through shields and through the first tank into the next.'},
+  starfall:{n:'Starfall Driver',rs:'coil',lab:3,set:true,leg:true,b:'rail',role:'Marksman',cue:'STARFALL',look:'hardened',dps:-.04,weight:1,power:1,x:{n:5,mult:1.6,spd:2,through:3},
+   d:'Legendary Rail: every 5th shot is a STARFALL SLUG: more damage, twice as fast, straight through shields and through two tanks.'}}
 };
 const FIT_ORDER=['hull','mobility','mount'];
+// a research option (earned in the Science Lab) or a Legendary set mod (bought); the free options and Stock are neither
+const isRmod=(slot,id)=>!!(FITS[slot]&&Object.prototype.hasOwnProperty.call(FITS[slot],id)&&FITS[slot][id].rs);
+const rmodOf=id=>{for(const k of FIT_ORDER)if(isRmod(k,id))return {slot:k,id,F:FITS[k][id]};return null;};
+// looks: the free options' visuals only (research mods borrow one of them: no new models this session)
+const isLook=(slot,id)=>!!(FITS[slot]&&Object.prototype.hasOwnProperty.call(FITS[slot],id)&&!FITS[slot][id].rs);
 function fittingValid(v,visual){
  if(v===undefined)return true;
- return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>FIT_ORDER.includes(k))&&FIT_ORDER.every(k=>v[k]===undefined||(visual&&v[k]==='auto')||Object.prototype.hasOwnProperty.call(FITS[k],v[k]));
+ return !!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).every(k=>FIT_ORDER.includes(k))&&FIT_ORDER.every(k=>v[k]===undefined||(visual&&v[k]==='auto')||(visual?isLook(k,v[k]):Object.prototype.hasOwnProperty.call(FITS[k],v[k])));
 }
 function fittingSelection(v){return Object.fromEntries(FIT_ORDER.map(k=>[k,v&&Object.prototype.hasOwnProperty.call(FITS[k],v[k])?v[k]:'stock']));}
 function fittingStats(v){const m=fittingSelection(v),f={weight:0,power:0};for(const s of FIT_FIELDS)f[s]=0;for(const k of FIT_ORDER)for(const s of Object.keys(f))f[s]+=FITS[k][m[k]][s]||0;for(const s of FIT_FIELDS)f[s]=Math.round(f[s]*1000)/1000;return f;}
-function fittingVisuals(L){const m=fittingSelection(L.mods);return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&Object.prototype.hasOwnProperty.call(FITS[k],L.looks[k])?L.looks[k]:m[k]]));}
+// who may fit an option: the free ones always; a research mod once the server record holds it (S.rm, credited by the Worker when
+// the Science Lab finishes it); a Legendary set mod once bought (S.lsm). Never the client's word (ecoLoadout, labValidate, PvP).
+const rmodOwned=(S,slot,id)=>!isRmod(slot,id)||(FITS[slot][id].leg?!!(S&&S.lsm&&S.lsm[id]):!!(S&&S.rm&&S.rm[id]));
+function fittingOwned(S,v){const m=fittingSelection(v);for(const k of FIT_ORDER)if(!rmodOwned(S,k,m[k]))m[k]='stock';return m;}
+// the behaviors a fitted set carries: {behavior: params}, read by game.js and the Conquest engine through tankOf (T.rm)
+function fittingBehaviors(v){const m=fittingSelection(v),o={};for(const k of FIT_ORDER){const F=FITS[k][m[k]];if(F&&F.b)o[F.b]={...F.x,id:m[k],slot:k};}return o;}
+function fittingVisuals(L){const m=fittingSelection(L.mods),look=(k,id)=>isRmod(k,id)?FITS[k][id].look||'stock':id;
+ return Object.fromEntries(FIT_ORDER.map(k=>[k,L.looks&&L.looks[k]&&L.looks[k]!=='auto'&&isLook(k,L.looks[k])?L.looks[k]:look(k,m[k])]));}
+// ---- Research mods in the gear rating: each behavior valued as effective health (h), damage (d) or speed (s), the way the
+// plate traits are valued as effective health (plateEhp). An estimate from a pilot model (MOD_USE, the numbers a human pilot's
+// fights show), then checked against measured duels on the real sim (dev/tools/mod-power.mjs, Checkpoint 41). powerZ adds them.
+const MOD_USE={L:4,fight:22,lost:.6,multi:.25,eShield:.12,direct:.62,miss:.14,dashMin:6,ramMin:1.5,still:.2,fast:.5,shUp:.11,shCut:.65,blast:.3,catch:.45,shield:1};
+function rmodPe(b,x){const U=MOD_USE,ex=Math.exp,p=t=>ex(-t/U.L);x=x||{};
+ switch(b){
+  case 'vent':{const q=p(x.after);return {d:q/(U.L*(1-q))*x.bonus*(1+U.multi*x.splash)};}
+  case 'overclock':{const q=p(x.after);return {d:(x.rate-1)*q-(q/U.L)*x.cool*(1-x.slow)*.5};}
+  case 'inferno':{const q=p(x.after),win=q*(x.dur+x.burnT/2)/(x.after+x.dur);return {d:win*x.stack*x.burn/x.burnT*(1+U.multi*.5)};}
+  case 'heatsink':return {d:U.lost/x.every*x.dmg/U.fight*(1+U.multi)};
+  case 'pierce':{const s=SHIELD_KEEP,k=s+x.keep*(1-s);return {d:U.eShield*(k-s)/(1-U.eShield*(1-s))};}
+  case 'marksman':{const c=U.direct,n=x.n,f=Math.pow(c,n)/[...Array(n).keys()].reduce((a,i)=>a+Math.pow(c,i),0);return {d:f*(1-CRIT_BASE)*(CRIT_MULT-1)};}
+  case 'predictor':return {d:U.miss*x.lead*.6};
+  case 'rail':return {d:(x.mult-1)/x.n+U.eShield*(1-SHIELD_KEEP)/x.n+U.miss*.5/x.n+U.multi*.5*(x.through-1)/x.n};
+  case 'traction':{const F=FITS[x.slot]&&FITS[x.slot][x.id];return {s:U.dashMin/60*x.t*x.spd/(1+((F&&F.dashCd)||0))};}
+  case 'ram':return {d:U.ramMin/60*x.dmg,h:U.ramMin/60*x.jam};
+  case 'momentum':return {h:1/(1-U.fast*x.cut*(1-U.blast))-1};
+  case 'overdrive':{const k=2*(1-Math.pow(.5,x.charges-1));return {h:U.blast*U.catch*.7*k,s:U.dashMin/60*.2*k};}
+  case 'capacitor':{const base=SHIELD_T_S/(SHIELD_CD_S+SHIELD_T_S),cd=SHIELD_CD_S/(1+U.still*(x.rate-1)),up=SHIELD_T_S/(cd+SHIELD_T_S);return {h:(1-U.shCut*base)/(1-U.shCut*up)-1};}
+  case 'reflector':return {d:U.shUp*U.shCut*x.share};
+  case 'reflex':return {h:1/(1-U.blast*U.catch*U.shCut*.6)-1};
+  case 'aegis':return {h:x.share*U.shield*(SHIELD_T_S+x.t)/U.fight*1.6};
+ }
+ return {};}
+const SHIELD_T_S=3,SHIELD_CD_S=25,SHIELD_KEEP=0.35;   // the plasma shield (game.js SHIELD_T / SHIELD_CD / SHIELD_MULT; one source for the valuation)
+function fittingPe(v){const o={h:0,d:0,s:0};for(const [b,x] of Object.entries(fittingBehaviors(v))){const e=rmodPe(b,x);for(const k of ['h','d','s'])o[k]+=e[k]||0;}return o;}
+// ---- the Science Lab research tree (Session 6B owner decision 1): research parts + time only, never CP, alloy, biomass or
+// helium. A job runs on the Worker clock (I 20 min for the Lab I tracks, II 2 h for the Lab II tracks, III 8 h for a set mod),
+// one at a time and a second slot at Science Lab III; a ruined Science Lab pauses research. Parts: the n-th mod a pilot researches
+// in a track costs RS.cost[n] of that track's part, the set mod (needs the track's other three) RS.cost[3]; tuned in
+// dev/tools/economy-model.mjs so the whole tree takes 6-10 weeks for a regular 60-minute pilot using both slots. The fifth track
+// slot (Role Cores) is shown locked: Session 6C adds Science Lab level IV with it.
+const RS={tracks:{thermal:{n:'Thermal',part:'thermal',lab:1,c:'#ff8a3d',d:'Keep firing: heat becomes damage.'},
+  coil:{n:'Ballistics',part:'coil',lab:1,c:'#e8f4ff',d:'Precision: every hit counts.'},
+  servo:{n:'Drive',part:'servo',lab:2,c:'#7be07b',d:'Movement is your weapon and your armor.'},
+  cap:{n:'Field',part:'cap',lab:2,c:'#5aa9ff',d:'Your shield blocks, stores and strikes back.'}},
+ order:['thermal','coil','servo','cap'],locked:{id:'role',n:'Role Cores',lab:4,d:'Coming with Science Lab level IV (battalions).'},
+ mods:{thermal:['vent','overclock','heatsink','inferno'],coil:['pierce','marksman','predictor','rail'],servo:['traction','ram','momentum','overdrive'],cap:['capacitor','reflector','reflex','aegis']},
+ legendary:{thermal:'sunfire',coil:'starfall',servo:'hyperdrive',cap:'aegisp'},
+ cost:[2,3,4,7],timeMs:[0,1200000,7200000,28800000],passTime:0.75,slots:{base:1,lab3:1,pass:1},labMax:3};
+const RS_ALL=RS.order.flatMap(t=>RS.mods[t]);
+const rsTierOf=id=>{const r=rmodOf(id);return r?(r.F.set?3:RS.tracks[r.F.rs].lab):0;};
+// the job a mod needs right now for this record (rs: the Conquest record's s.rs; labLv: the Science Lab's level; premium: the
+// current-season premium Lunar Pass on the account). Returns {err} or {part, n, ms, tier}
+function rsQuote(rs,id,labLv,premium){
+ const r=rmodOf(id);if(!r||r.F.leg)return {err:'not a research mod'};const F=r.F,T=RS.tracks[F.rs],done=rs&&rs.done||{},jobs=(rs&&rs.jobs)||[];
+ if(done[id])return {err:'already researched'};if(jobs.some(j=>j&&j.mod===id))return {err:'already researching'};
+ const need=F.set?3:T.lab;if((labLv|0)<need)return {err:'needs Science Lab '+['','I','II','III'][need]};
+ const own=RS.mods[F.rs].filter(m=>m!==id&&!FITS[rmodOf(m).slot][m].set),k=own.filter(m=>done[m]||jobs.some(j=>j&&j.mod===m)).length;
+ if(F.set&&!own.every(m=>done[m]))return {err:'research the other three '+T.n+' mods first'};
+ const tier=F.set?3:T.lab;return {part:T.part,n:RS.cost[F.set?3:k],ms:Math.round(RS.timeMs[tier]*(premium?RS.passTime:1)),tier};}
+const rsSlots=(labLv,premium)=>(labLv>=1?RS.slots.base:0)+(labLv>=3?RS.slots.lab3:0)+(premium&&labLv>=1?RS.slots.pass:0);
+// the parts a whole tree costs (the economy model and the lab screen read it)
+const rsTreeCost=()=>RS.order.reduce((a,t)=>(a[RS.tracks[t].part]=RS.cost.reduce((x,y)=>x+y,0),a),{});
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
 // Unrounded permanent travel speed, shared by Garage metrics and Conquest physics.
 function machineSpeed(L,t=tankOf(L,1)){return STAT.speed*t.spdM*(1+(t.gems.includes('spd')?GEM.spd.amt*t.gemM.spd:0));}

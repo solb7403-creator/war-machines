@@ -4802,3 +4802,21 @@ spent (behavior held constant across the change) before the +-10% check.
 - F: Worker counters `an/<day>/<event>[/<key>]` + cohorts `an/cohort/<firstDay>/{n,d1,d7,d30}`; events from reducers via a
   non-persisted queue fired after the CAS write; client `/api/conquest/an` for transmission_read/skip and quit_point/session_minutes;
   admin sheet tab; `dev/tests/conquest-analytics.mjs`.
+
+## Checkpoint 41 — Session 6B: Tank Lab, logic half (branch `claude/tank-lab-logic-half-nm0485`, from main `4659c04`)
+
+Brief: the owner's Session 6B prompt of Nov 16, 2026 (it wins over `docs/conquest/audit/SESSION_06B_TANK_LAB_PROMPT.md`): Science Lab
+research + 16 mods, POWER chip, zone bands, Refuge Supply order, audio, revenue hooks with checkout off, owner-rules CI check, the
+wall-storage fix. Release PRE-APPROVED. No live players: no migration code. Weather, plate visuals and mod 3D/particle effects go to
+roadmap row 6B-V.
+
+### Resume here (next session reads this first)
+- DONE slice 1 (research engine + mods, Worker): `js/rules.js` FITS research options (16 earned + 4 Legendary), RS tree, rsQuote /
+  rsSlots, ownership (S.rm researched, S.lsm Legendary, S.bpt bonus parts, S.rsx finish credits; ecoLoadout/labValidate/PvP read
+  them from the server record), rmodPe valuation in powerZ; `worker/src/conquest-research.js` (jobs, parts, Worker clock, pause,
+  Lab III/pass slots, finish credits), outbox `e.rm` -> eco `S.rm` (creditConquest). Tests: `dev/tests/conquest-research.mjs` (82),
+  `dev/tests/wtest/conquest-research.mjs` (18) PASS; garage-rules, lab-ui, combat-balance, gear-combat, fair-arcade, wtest lab /
+  chassis / hull-plating / web-auth / conquest / conquest-airdrop PASS.
+- NEXT: slice 2 — mod behaviors in both engines (`js/game.js`, `js/conquest/combat.js`/`controls.js`), shared engine in rules.js,
+  PvP snapshot/roster (PVP_V 8), HUD/sound cues; measured duels (`dev/tools/mod-power.mjs`) to check rmodPe.
+- Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.
