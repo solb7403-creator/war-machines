@@ -27,7 +27,7 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
  // weather (Session 5E-2e): every match has some. The server's seed comes with the ticket on the VS screen (matchStart) and
  // replaces this one; a match that starts before the ticket arrives plays this phone's own roll, and its hazard takedowns do
  // not count (the server only counts a match it seeded). A pilot's first three matches are always clear
- MM.wx=(Math.random()*4294967296)|0;MM.wxc=mp<WX_FIRST_CLEAR;battleWx=null;
+ MM.wx=Number.isInteger(window.LUNAR_WX)?window.LUNAR_WX:(Math.random()*4294967296)|0;MM.wxc=mp<WX_FIRST_CLEAR&&!Number.isInteger(window.LUNAR_WX);battleWx=null;   // LUNAR_WX: a fixed roll for captures and tests (this phone's own roll never counts takedowns)
  populatePreparedMatch();
  state='vs';
  matchStart();
@@ -255,9 +255,10 @@ function afterMatch(o){
  const dqNew=dailyQuests().filter(q=>q.done&&!dqBefore.includes(q.id)).concat(weeklyQuests().filter(q=>q.done&&!wqBefore.includes(q.id)));
  const milestones=QUESTS.filter(q=>!wasDone[q.id]&&save.q[q.id]&&save.q[q.id].done);
  lastResult={won,drawn,mode:o.mode,gtype:matchG,map:curMap,score:o.score,base:o.base,modeX:o.modeX,featured:feat,featX:o.featX,place:o.place,league:o.league,leagueMult:o.league.mult,basePts:o.basePts,lgBonus:o.lgBonus,streak:o.streak,streakBonus:o.streakBonus,pts:o.pts,awarded:o.awarded,capped:o.awarded<o.pts,
-  before:o.before,after:ecoBase(save),stats:{dmg:Math.round(st.dmg),kills:st.kills,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),arm:Math.round(st.arm||0),shd:Math.round(st.shd||0),best:Math.round(st.best||0),low:typeof st.low==='number'?st.low:1,cry:st.cry,stars:st.stars},
+  before:o.before,after:ecoBase(save),stats:{dmg:Math.round(st.dmg),kills:st.kills,td:st.td|0,boxes:st.box,sups:st.sup,taken:Math.round(st.taken),arm:Math.round(st.arm||0),shd:Math.round(st.shd||0),best:Math.round(st.best||0),low:typeof st.low==='number'?st.low:1,cry:st.cry,stars:st.stars},
   quests:milestones.map(q=>q.n).concat(dqNew.map(q=>q.t)),countered:matchup().dis>0&&!won&&!storm,meCls:me.cls,series:series?{w:o.seriesW||series.w.slice()}:null,
-  live:!!o.live,quit:!!o.quit,n:units.length,mn:o.mn||null};
+  live:!!o.live,quit:!!o.quit,n:units.length,mn:o.mn||null,
+  hzOff:!o.live&&SRV_ECO&&(st.td|0)>0&&battleWx===null};   // takedowns on this phone's own weather roll (no ticket in time): the server does not count them
  store();
  if(typeof fx==='function')fx(won?'win':drawn?'draw':'lose');
  if(typeof onMatchEnd==='function')setTimeout(()=>onMatchEnd(lastResult),won?650:900);

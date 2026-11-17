@@ -489,6 +489,57 @@ function ambience(id){
   AMB=a;
  }catch(e){AMB=null;try{for(const n of src||[])n.stop();}catch(_){}}   // nothing half-started is left playing
 }
+// ---- weather and map hazards (Session 5E-2e): code-made, the same cue every time. Each warning is its hazard's own sound,
+// so a pilot learns it by ear: a falling whistle (meteor), a two-tone horn (train), three rising pulses (pylon), a hiss
+// (vent), wind (tornado), a rising whine (laser). k: the cue; x, y: where it is on the map (quieter further from your tank)
+const WXS=(()=>{
+ let loop=null;
+ const near=(x,y)=>{if(typeof me==='undefined'||!me||x===undefined)return 1;const d=Math.hypot(x-me.x,y-me.y);return Math.max(0.4,Math.min(1,1.25-d/16));};
+ // filtered noise with its own envelope: a hiss, a whoosh, a wind gust (type: lowpass / bandpass / highpass)
+ function wash(type,f0,f1,q,dur,vol,atk,delay){
+  const t=AC.currentTime+(delay||0),s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();g.gain.value=0;
+  s.buffer=noise();s.loop=true;f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+Math.max(0.01,atk));g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(master);s.start(t);s.stop(t+dur+0.05);
+ }
+ const CUE={
+  meteorWarn:v=>{tone(2100,520,1.5,'sine',0.045*v);tone(1050,260,1.5,'triangle',0.02*v);wash('bandpass',3200,900,2,1.55,0.03*v,1.2);},
+  meteorHit:v=>{burst(0.6,0.42*v,950);tone(95,34,0.5,'sine',0.3*v);burst(1.1,0.12*v,300,0.08);},
+  trainHorn:v=>{for(const f of [311,415]){tone(f,f,0.55,'sawtooth',0.035*v);tone(f*2,f*2,0.55,'triangle',0.012*v);}tone(52,150,2.6,'sawtooth',0.018*v);},
+  trainPass:v=>{wash('bandpass',500,2600,0.8,0.55,0.3*v,0.3);wash('bandpass',2600,300,0.8,0.9,0.3*v,0.02,0.5);tone(88,60,1.3,'sawtooth',0.12*v);tone(1300,700,1.2,'sine',0.02*v);},
+  arcPulse0:v=>{tone(196,294,0.5,'sawtooth',0.045*v);tone(98,98,0.5,'sine',0.05*v);wash('highpass',4000,7000,1,0.3,0.02*v,0.05);},
+  arcPulse1:v=>{tone(247,370,0.5,'sawtooth',0.06*v);tone(123,123,0.5,'sine',0.06*v);wash('highpass',4000,7500,1,0.35,0.03*v,0.05);},
+  arcPulse2:v=>{tone(311,494,0.6,'sawtooth',0.08*v);tone(155,155,0.6,'sine',0.07*v);wash('highpass',4000,8000,1,0.45,0.045*v,0.05);},
+  arcHit:v=>{wash('highpass',6500,1500,0.7,0.3,0.5*v,0.004);tone(1900,80,0.3,'square',0.16*v);burst(1.3,0.3*v,260,0.06);tone(60,38,0.9,'sine',0.2*v,0.05);},
+  ventWarn:v=>{wash('bandpass',1800,5200,1.4,2.2,0.07*v,1.9);tone(70,96,2.2,'sine',0.035*v);},
+  ventHit:v=>{wash('bandpass',900,3800,0.7,1.1,0.42*v,0.02);burst(0.8,0.3*v,700);tone(78,40,0.8,'sine',0.26*v);},
+  tornadoForm:v=>{wash('bandpass',250,800,2.2,2.6,0.09*v,2.2);},
+  tornadoUp:v=>{wash('bandpass',700,380,1.8,1.2,0.16*v,0.3);},
+  laserWarn:v=>{tone(520,2300,2,'sine',0.03*v);tone(523,2310,2,'triangle',0.012*v);for(let i=0;i<5;i++)tone(3200,3200,0.03,'square',0.012*v,i*0.4);},
+  laserFire:v=>{tone(2300,180,0.22,'sawtooth',0.1*v);wash('highpass',5000,9000,1,0.35,0.1*v,0.01);},
+  hit:v=>{burst(0.3,0.3*v,1400);tone(140,60,0.25,'triangle',0.16*v);},
+  takedown:()=>{tone(880,880,0.09,'triangle',0.1);tone(1320,1320,0.11,'triangle',0.1,0.08);tone(1760,1760,0.2,'triangle',0.09,0.17);}
+ };
+ function play(k,o){
+  if(!save||save.sound===false||!CUE[k])return;audioInit();if(!AC||AC.state!=='running')return;
+  try{CUE[k]((o&&o.v||1)*near(o&&o.x,o&&o.y));}catch(e){}
+ }
+ // two beds that follow the scene: wind (a tornado nearby, a dust storm) and the buzz of a laser sweeping. 0 = silent
+ function beds(o){
+  const want=(o&&(o.wind>0.01||o.buzz>0.01))&&save&&save.sound!==false;
+  if(!want&&!loop)return;audioInit();if(!AC||AC.state!=='running')return;
+  try{
+   if(!loop){const t=AC.currentTime,mk=(type,fc,q)=>{const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=noise();s.loop=true;f.type=type;f.frequency.value=fc;f.Q.value=q;g.gain.value=0;s.connect(f);f.connect(g);g.connect(master);s.start(t);return {s,f,g};};
+    const wind=mk('bandpass',420,1.6),o2=AC.createOscillator(),g2=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain();
+    lfo.frequency.value=0.35;lg.gain.value=170;lfo.connect(lg);lg.connect(wind.f.frequency);lfo.start(t);
+    o2.type='sawtooth';o2.frequency.value=118;g2.gain.value=0;o2.connect(g2);g2.connect(master);o2.start(t);
+    loop={wind,o2,g2,lfo};}
+   const t=AC.currentTime;loop.wind.g.gain.setTargetAtTime(want?Math.min(0.2,(o.wind||0)*0.2):0,t,0.25);loop.g2.gain.setTargetAtTime(want?Math.min(0.05,(o.buzz||0)*0.05):0,t,0.08);
+   if(!want){const L=loop;loop=null;setTimeout(()=>{try{L.wind.s.stop();L.o2.stop();L.lfo.stop();}catch(e){}},1500);}
+  }catch(e){loop=null;}
+ }
+ return {play,beds,CUE};
+})();
 function sfx(n){
  if(!save||save.sound===false||!SND[n])return;
  audioInit();if(!AC||AC.state!=='running')return;
@@ -526,6 +577,10 @@ function fx(name,arg,arg2){
   case 'cap':haptic('n','success');sfx('cap');break;
   case 'event':haptic('n','warning');sfx('event');break;
   case 'meteor':haptic('i','medium');sfx('meteor');break;
+  case 'wx':WXS.play(arg&&arg.k,arg);break;   // a weather / hazard cue (js/weather.js)
+  case 'wxloop':WXS.beds(arg);break;
+  case 'hzhit':if(arg&&arg.me)haptic('i','heavy');WXS.play('hit',{x:arg&&arg.x,y:arg&&arg.y,v:arg&&arg.me?1.2:0.7});break;   // the map's hazard landed on a tank
+  case 'takedown':haptic('n','success');WXS.play('takedown',{});break;
   case 'warn':sfx('warn');break;
   case 'crate':sfx('crate');break;
   case 'dash':haptic('i','light');sfx('dash');break;

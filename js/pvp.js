@@ -162,6 +162,7 @@ function pvpGo(m){
  if(!MAPS[m.map]||MAPS[m.map].isRandom){pvpUpdate(P.q.g);return;}   // a map this build doesn't have: never guess one, update instead
  if(fresh||curMap!==m.map){setMap(m.map);P.crates=null;}
  matchG=m.g;MM={n:isSolo(m.g)?1:MODES[m.m].n,series:!!m.series,mp:save.mp||0};
+ if(Array.isArray(m.wx)&&Number.isInteger(m.wx[0])){MM.wx=m.wx[0];MM.wxc=!!m.wx[1];}   // the room's weather seed: this phone works out the same plan (rules.js wxPlan) and only draws it; every hit is the room's
  if(fresh)units=[];
  pvpRoster(m.units);
  pvpCrateMap();
@@ -187,7 +188,7 @@ function pvpFight(m){
  gzones=null;cry=null;storm=null;
  pops=[];nums=[];beams=[];blasts=[];novas=[];feed=[];shakeT=0;shakeM=0;
  P.phase='play';P.snaps=[];P.evq=[];P.off=null;P.tp=0;P.sent=null;
- state='play';
+ state='play';wxStart();
  startBanners();
  onMatchStart();
 }
@@ -348,7 +349,7 @@ function pvpResult(r){
  const st=r.stats||{};
  afterMatch({won:r.won,drawn:r.drawn,place:r.place,score:r.score,mode:r.m==='solo'?modeKey():r.m,feat:r.featured,top3:r.top3,base:r.base,modeX:r.modeX,featX:r.featX,
   league:r.league,streak:r.streak,streakBonus:r.streakBonus,pts:r.pts,awarded:r.awarded||0,before,live:true,quit:r.quit,seriesW:r.series&&r.series.w,mn:r.mn||null,
-  st:{dmg:st.dmg||0,sup:st.sups||0,box:st.boxes||0,taken:st.taken||0,arm:st.arm||0,shd:st.shd||0,best:st.best||0,kills:st.kills||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,low:typeof st.low==='number'?st.low:0},quick:!!r.quick});
+  st:{dmg:st.dmg||0,sup:st.sups||0,box:st.boxes||0,taken:st.taken||0,arm:st.arm||0,shd:st.shd||0,best:st.best||0,kills:st.kills||0,caps:st.caps||0,cry:st.cry||0,stars:st.stars||0,td:st.td||0,low:typeof st.low==='number'?st.low:0},quick:!!r.quick});
  if(SRV_ECO)applyEcoSoon();   // the server's record of this match replaces the phone's preview
 }
 // leaving mid-match: a loss, no points. On the VS screen it costs nothing (an AI pilot takes the seat)

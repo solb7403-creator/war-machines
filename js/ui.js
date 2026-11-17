@@ -438,7 +438,7 @@ const G_BODY={
  }};
 function gPaintCard(id,cur){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=cur===id;
- const how=on?'On this bay':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'Buy · '+fmtNum(P.stars)+' ⭐';
+ const how=on?'On this bay':own?'Owned':paintLock(P)||(P.pass==='free'?'Lunar Pass tier 30':P.pass==='prem'?'Lunar Pass premium':'Buy · '+fmtNum(P.stars)+' ⭐');
  return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'" aria-pressed="'+on+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
 // Hull Plating (RESOURCE_ECONOMY.md §6): the mineral wallet, then each slot's next plate with its exact cost; compare, then fabricate
@@ -724,6 +724,8 @@ function renderShop(){
   sec('Cores','Per chassis')+coreForChips()+'<h4 class="ptsh">Gem caches · random core</h4><div class="crates">'+[0,1,2].map(ri=>crate('gem',ri)).join('')+'</div>'+
   '<h4 class="ptsh">Chosen core · pick it, no random roll · from '+fmtNum((ecoPrice(save,{kind:'core',tk:'dmg',ri:0,c:shopCh()},ecoX())||{stars:0}).stars)+' ⭐</h4>'+corePickGrid(false)+
   sec('Paints','Looks only, no stats')+'<div class="paints">'+PAINT_ORDER.filter(id=>PAINTS[id].stars).map(paintCard).join('')+'</div>'+
+  sec('Hazard finishes','Earned in Arcade, never sold')+'<p class="mut hzp">'+WX_FINISH_N+' hazard takedowns on a map unlock its finish: hit an enemy, then let the map\'s hazard catch it within '+WX_CREDIT+' seconds.</p><div class="paints">'+PAINT_HZ.map(paintCard).join('')+'</div>'+
+  sec('LIVE finishes','Animated · not on sale yet')+'<div class="paints">'+PAINT_LIVE.map(paintCard).join('')+'</div>'+
   sec('Lunar premium')+'<div class="prem">'+prem('moonbeam','Moonbeam','Laser cannon. Precision: shots never graze. Moonfall super',MOONBEAM_PRICE,PSTARS.moonbeam,save.moonbeam)+prem('skin','Lunar skin',SKINS.lunar.d,SKINS.lunar.price,PSTARS.skin,save.skin==='lunar')+'</div>'+
   '<button class="q ptslink" data-act="shoptab" data-arg="pts"><div class="grow"><div class="t">Points shop</div><div class="p">Every cache and crate (Epic too), chosen cores, weapons and chassis, and the salvage yard, for points</div></div><span class="chev">›</span></button>'+
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
@@ -731,8 +733,8 @@ function renderShop(){
 
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
- const how=on?'Equipped':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
- return '<button class="paint'+(on?' on':'')+(own?' own':'')+'" data-act="paint" data-arg="'+id+'"><canvas data-art="tank:paint:'+id+'"></canvas><b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
+ const how=on?'Equipped':own?'Owned':paintLock(P)||(P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars));
+ return '<button class="paint'+(on?' on':'')+(own?' own':'')+(P.fx?' live':'')+'" data-act="paint" data-arg="'+id+'"><canvas data-art="tank:paint:'+id+'"></canvas>'+paintFx(P)+'<b>'+esc(P.n)+'</b><span class="p">'+how+'</span></button>';
 }
 
 // ---------- LUNAR PASS ----------
@@ -1308,10 +1310,19 @@ function lgChangeLine(r){
  const N=leagueInfo(to),up=to>r.league.i;
  return '<div class="lgchg '+(up?'up':'down')+'" style="--lc:'+N.c+'" role="status">'+lgShield(N.c)+'<span>'+(up?'Promoted to ':'Dropped to ')+N.n+'</span></div>';
 }
+// the map's finish on the results screen: only when this match had takedowns. The count is the server's (save.hz, updated
+// by its reply); a match on this phone's own weather roll says that it did not count
+function hzLine(r){
+ const M=WX_MAP[r.map],td=(r.stats&&r.stats.td)|0;if(!M||!td)return '';
+ const P=PAINTS[M.fin],own=!!(save.paints&&save.paints[M.fin]),n=hzCount(r.map);
+ return '<div class="hzres"><div class="row"><b>'+esc(P.n)+'</b><span class="grow"></span><span>'+(own?'Unlocked':n+'/'+WX_FINISH_N)+'</span></div><div class="track"><i style="width:'+Math.round((own?1:n/WX_FINISH_N)*100)+'%"></i></div>'+
+  '<p class="mut">'+(r.hzOff?'This match started before the server answered, so its hazard '+(td===1?'takedown':'takedowns')+' did not count.':own?'Finish unlocked: put it on in the Garage.':'Hazard takedowns on '+esc(MAPS[r.map].n)+' count towards this finish.')+'</p></div>';
+}
 function resultsHTML(r){
  const M=MODES[r.mode],solo=isSolo(r.gtype),G=GTYPES[r.gtype];
  const title=r.won?'Victory':solo&&r.place<=3?ORD[r.place-1]+' place':r.drawn?(r.gtype==='boss'?'Survived':'Draw'):'Defeat',cls=r.won?'win':r.drawn||(solo&&r.place<=3)?'draw':'lose';
  const lines=solo?[[ORD[r.place-1]+' of '+units.length,fmtNum(r.base)]]:[[(r.won?'Win':r.drawn?'Draw':'Loss')+' in '+r.mode,fmtNum(r.won?M.win:r.drawn?M.draw:M.loss)]];
+ const hzL=hzLine(r);
  if(r.series)lines.push(['Best of 3 ('+r.series.w[0]+' to '+r.series.w[1]+')','×'+r.modeX]);
  else if(r.modeX!==1)lines.push([G.label,'×'+r.modeX]);
  if(r.featured)lines.push(['Featured mode','×'+r.featX]);
@@ -1341,11 +1352,26 @@ function resultsHTML(r){
   '<div class="sub">'+(r.live?'Live ':'')+(r.gtype==='zone'?'Moon Zone '+r.mode+', '+r.score[0]+' to '+r.score[1]:r.gtype==='crystal'?'Crystal Rush '+r.mode+', '+r.score[0]+' to '+r.score[1]+' crystals':r.gtype==='bounty'?'Bounty '+r.mode+', '+r.score[0]+' to '+r.score[1]+' stars':r.gtype==='boss'?'Survival '+r.mode+', megatank '+r.score[0]+'% down':solo?'Last Standing, '+ORD[r.place-1]+' of '+units.length:r.series?'Arena 1v1, rounds '+r.series.w[0]+' to '+r.series.w[1]:'Arena '+r.mode)+' on '+esc(MAPS[r.map].n)+'</div>'+
   '<div class="gain num">+'+fmtNum(r.awarded)+'<small>points</small></div>'+lgChangeLine(r)+
   '<div class="lines">'+lines.map(([a,b])=>'<div class="line"><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
-  '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+fmtNum(st.taken||0)+'</b>taken</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span><span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span>'+(st.best?'<span class="chip"><b>'+fmtNum(st.best)+'</b>best hit</span>':'')+(st.arm?'<span class="chip"><b>'+fmtNum(st.arm)+'</b>armor blocked</span>':'')+(st.shd?'<span class="chip"><b>'+fmtNum(st.shd)+'</b>shield blocked</span>':'')+(r.won&&r.streak>=2?'<span class="chip"><b>'+r.streak+'</b>win streak</span>':'')+(st.low>0&&st.low<=0.25?'<span class="chip"><b>'+Math.round(st.low*100)+'%</b>lowest HP</span>':'')+'</div>'+
+  '<div class="chips">'+(r.gtype==='crystal'?'<span class="chip"><b>'+(st.cry||0)+'</b>'+(st.cry===1?'crystal':'crystals')+'</span>':'')+(r.gtype==='bounty'?'<span class="chip"><b>'+(st.stars||0)+'</b>stars</span>':'')+'<span class="chip"><b>'+fmtNum(st.dmg)+'</b>damage</span><span class="chip"><b>'+fmtNum(st.taken||0)+'</b>taken</span><span class="chip"><b>'+st.kills+'</b>'+(st.kills===1?'kill':'kills')+'</span>'+(st.td?'<span class="chip hz"><b>'+st.td+'</b>hazard '+(st.td===1?'takedown':'takedowns')+'</span>':'')+'<span class="chip"><b>'+st.boxes+'</b>'+(st.boxes===1?'box':'boxes')+'</span><span class="chip"><b>'+st.sups+'</b>'+(st.sups===1?'super':'supers')+'</span>'+(st.best?'<span class="chip"><b>'+fmtNum(st.best)+'</b>best hit</span>':'')+(st.arm?'<span class="chip"><b>'+fmtNum(st.arm)+'</b>armor blocked</span>':'')+(st.shd?'<span class="chip"><b>'+fmtNum(st.shd)+'</b>shield blocked</span>':'')+(r.won&&r.streak>=2?'<span class="chip"><b>'+r.streak+'</b>win streak</span>':'')+(st.low>0&&st.low<=0.25?'<span class="chip"><b>'+Math.round(st.low*100)+'%</b>lowest HP</span>':'')+'</div>'+
   '<div class="progress"><div class="row"><span style="color:'+TIERC[t]+';font:600 15px var(--disp)">'+TIERS[t]+'</span>'+vbadge(myVl())+'<span class="grow"></span><span class="mut">'+(hi?fmtNum(hi-r.after)+' to '+TIERS[t+1]:'Top tier')+'</span></div><div class="track"><i id="resBar" style="width:'+Math.round(Math.max(0,(r.before-lo)/((hi||r.after)-lo||1))*100)+'%;background:'+TIERC[t]+'" data-to="'+Math.round(f*100)+'"></i></div>'+(rank?'<div class="mut" style="margin-top:8px">'+rank+'</div>':'')+'</div>'+
-  '<div class="tip">'+esc(tip)+'</div>'+
+  hzL+'<div class="tip">'+esc(tip)+'</div>'+
   '<div class="grow"></div><div class="acts"><button class="fight" data-act="again"><span class="big">PLAY AGAIN</span><span class="small">'+(lastQuick?'Another quick match':'Win '+rangeTxt(winRange(gtypeKey(),modeKey()))+' points')+'</span></button>'+
   '<div class="two">'+(r.won&&refLink()?'<button class="btn btn-quiet" data-act="sharewin">Share win</button>':'<button class="btn btn-quiet" data-act="tabmenu" data-arg="garage">Garage</button>')+'<button class="btn btn-ghost" data-act="menu">Menu</button></div></div>';
+}
+// a hazard finish or its LIVE version: how it is earned, how far along you are, and (LIVE) that it is not on sale yet.
+// There is no buy button here and no price the shop or the server can charge (rules.js PAINTS: no ton / stars field)
+function openFinish(id){
+ const P=PAINTS[id];if(!P)return;const F=P.live?PAINTS[P.live]:P,map=F.hz,M=MAPS[map],hz=WX_MAP[map].hz,n=hzCount(map),own=!!(save.paints&&save.paints[P.live||id]);
+ if(P.soon&&typeof fetchPrices==='function')fetchPrices();
+ sheet('finish',()=>{const sol=P.soon&&typeof solFor==='function'?solFor(P.soon.ton):0;
+  return '<h3>'+esc(P.n)+'</h3><div class="finbig'+(P.fx?' live':'')+'"><canvas data-art="tank:paint:'+id+'"></canvas>'+paintFx(P)+'</div>'+
+  (P.soon?'<p class="finsoon">Not on sale yet</p><p class="mut">The animated version of '+esc(F.n)+'. Looks only, no stats. It goes on sale when payments open.</p>'+
+    '<p class="mut finprice">Planned price: '+(IN_TG?fmtNum(P.soon.stars)+' ⭐ or ':'')+P.soon.ton+' TON'+(sol?' (about '+sol+' SOL)':' (SOL at the live rate)')+'</p>'
+   :'<p class="mut">Looks only, no stats. Earned in Arcade, never sold.</p>')+
+  '<div class="finprog"><div class="row"><b>'+esc(F.n)+'</b><span class="grow"></span><span>'+(own?'Unlocked':n+'/'+WX_FINISH_N)+'</span></div><div class="track"><i style="width:'+Math.round((own?1:n/WX_FINISH_N)*100)+'%"></i></div>'+
+  '<p class="mut">'+(own?'You earned it on '+esc(M.n)+'.':WX_FINISH_N+' hazard takedowns on '+esc(M.n)+' ('+esc(WX_MAP[map].hn)+'). A takedown: an enemy you hit in the last '+WX_CREDIT+' seconds takes the hazard, or is finished by it. AI and live matches both count.')+'</p>'+
+  '<p class="mut">'+esc(WX_HZ[hz].how)+'.</p></div>'+
+  (own&&!P.soon?'<button class="btn block" data-act="paint" data-arg="'+id+'">Use this finish</button>':'<button class="btn btn-quiet block" data-act="hzplay" data-arg="'+map+'">Play '+esc(M.short||M.n)+'</button>');});
 }
 function onMatchEnd(r){
  if(!r)return;
@@ -1463,10 +1489,12 @@ const ACT={
  claimpass:a=>{const [tr,i]=a.split(':');when(claimPass(tr,+i),r=>{if(!r)return;if(r.pts)showToast('+'+fmtNum(r.pts)+' points');if(r.reveal)showReveal([r.reveal]);uiDirty();});},
  buypass:()=>{if(passState().prem)return;pay(PASS_PRICE.ton,{kind:'pass'});},
  paints:()=>openPaints(),
+ hzplay:a=>{if(!MAPS[a])return;save.map=a;store();closeAll();setTab('play');showToast(MAPS[a].n+' selected');},
  paint:a=>{const P=PAINTS[a];if(!P)return;
   if(save.paints&&save.paints[a]){const id=gBayId();if(id)baySave(id,p=>{p.paint=a;},P.n+' paint on Bay '+gLetter(id));return;}
   if(P.pass){openPass();return;}
   if(P.only==='vault'){showToast('Unlocks at Hyperspace Vault level '+VAULT_PAINT_LV);openVault();return;}
+  if(P.only==='hazard'||P.only==='soon'){openFinish(a);return;}   // earned in Arcade / not on sale yet: never a checkout
   if(P.only){showToast('Only in the Founder pack');if(FOUNDER_OPEN){closeAll();setTab('shop');}return;}
   pay(P.ton,{kind:'paint',id:a});},
  tune:a=>{const [sl,k,t]=a.split('|');when(tuneItem(sl==='w',k,+t),r=>{if(!r)return;showToast(r.better?'New roll '+pct(r.roll)+', up from '+pct(r.old):'Rolled '+pct(r.roll)+'. You kept '+pct(r.old));syncPlayer();uiDirty();});},
