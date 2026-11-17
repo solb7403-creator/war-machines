@@ -33,7 +33,7 @@ function sim(seed = 7) {
   let s = seed; const rand = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
   const body = '"use strict";\nconst Math=Object.create(globalThis.Math);Math.random=RAND;\n' + rd('js/rules.js') + rd('js/game.js') +
     'const __api=(function(){' + rd('worker/sim-api.js') + '})();\n' +
-    'return Object.assign(__api,{los:(a,b)=>los(a,b),SUPS:SUP,setState:v=>{state=v;},walls:()=>walls,rocks:()=>rocks,supMult:r=>supMult(r),K:{SUP_BAR_T,SUP_BAR_T_CQ,SUP_ZONE_W,SUP_JACK_W,SUP_REL,SUP_TAP_TOL,SUP_OC,SUP_TAP_HUMAN,LG_AI_TAP,SUP_KEYS,SUPER_MAX,SUP_GEAR,SUP_GEAR_AI,SUP_ROUND_CAP,SUP_FILL,SUP_HULL_CAP,SUP_TAKEN_MAX},supBar,supJudge,supKey,hit:(t,amt,src,why,kind)=>takeHit(t,amt,src,why,kind),supDps:(u,t)=>supDps(u,t),supF:()=>supF.slice(),crates:()=>crates,hitCrate:(c,d)=>hitCrate(c,d),respawnTick:dt=>respawnTick(dt),setEvt:v=>{evt=v;},tankOf:(L,n)=>tankOf(L,n),fireSuper:(r)=>fireSuper(r,SUP[r.sup.w]),superTick:dt=>superTick(dt),shells:()=>shells,startRound:()=>startRound(),endRoundNow:()=>{state="round";},seriesOn:()=>{series={w:[0,0],round:1};}});';
+    'return Object.assign(__api,{los:(a,b)=>los(a,b),SUPS:SUP,setState:v=>{state=v;},walls:()=>walls,rocks:()=>rocks,supMult:r=>supMult(r),K:{SUP_BAR_T,SUP_BAR_T_CQ,SUP_ZONE_W,SUP_JACK_W,SUP_REL,SUP_TAP_TOL,SUP_OC,SUP_TAP_HUMAN,LG_AI_TAP,SUP_KEYS,SUPER_MAX,SUP_GEAR,SUP_GEAR_AI,SUP_ROUND_CAP,SUP_FILL,SUP_HULL_CAP,SUP_TAKEN_MAX},supBar,supJudge,supKey,hit:(t,amt,src,why,kind)=>takeHit(t,amt,src,why,kind),supDps:(u,t)=>supDps(u,t),supF:()=>supF.slice(),crates:()=>crates,hitCrate:(c,d)=>hitCrate(c,d),respawnTick:dt=>respawnTick(dt),setEvt:v=>{evt=v;},setWx:v=>{wx=v;},tankOf:(L,n)=>tankOf(L,n),fireSuper:(r)=>fireSuper(r,SUP[r.sup.w]),superTick:dt=>superTick(dt),shells:()=>shells,startRound:()=>startRound(),endRoundNow:()=>{state="round";},seriesOn:()=>{series={w:[0,0],round:1};}});';
   return new Function('HOST', 'RAND', body)({ ev() {}, end() {}, round() {}, death() {}, random: rand }, rand);
 }
 const L = (w = 'pulse', t = 0) => ({ w: { a: w, t: w === 'moon' ? 2 : t, q: 1, s: false }, c: { c: 'vanguard', t: 0, q: 1, s: false }, up: { hull: 0, cannon: 0, engine: 0, target: 0, reactor: 0 }, cores: ['dmg', 'rof', 'arm'], gl: {}, skin: 'default', paint: 'stock' });
@@ -244,8 +244,8 @@ for (const [w, t] of [['pulse', 0], ['twin', 1], ['siege', 2], ['moon', 2]]) {
   // ...but never more than SUP_TAKEN_MAX bars a round across all lives: dying on purpose cannot earn the round's three supers
   { reset(); b.mhp = 2000; let total = 0; for (let life = 0; life < 8; life++) { b.hp = 2000; b.tkn = 0; for (let i = 0; i < 4; i++) { b.sp = 0; S.hit(b, 500, a, null, 1); total += b.sp; } }
     ok(near(total, K.SUP_TAKEN_MAX * 1000, 1e-6), 'eight lost hulls in one round fill only ' + K.SUP_TAKEN_MAX + ' bars from damage received (' + Math.round(total) + ' points)'); }
-  // solar flare event: still damage only (x2 while it lasts)
-  reset(); S.hit(b, 300, a, null, 0); const plain = a.sp; reset(); S.setEvt({ k: 'flare', t: 5 }); S.hit(b, 300, a, null, 0); ok(near(a.sp, plain * 2, 1e-6), 'the solar flare doubles the charge from damage, and adds nothing by itself'); S.setEvt(null);
+  // solar flare (weather on Overpass and Longshot since 5E-2e): still damage only (x2 while it lasts)
+  reset(); S.hit(b, 300, a, null, 0); const plain = a.sp; reset(); S.setWx({ P: { vis: 'flare', win: [{ t0: -1, t1: 1e9 }], hz: [], clouds: [] }, act: [] }); S.hit(b, 300, a, null, 0); ok(near(a.sp, plain * 2, 1e-6), 'the solar flare doubles the charge from damage, and adds nothing by itself'); S.setWx(null);   // Session 5E-2e: the flare is weather now (Overpass, Longshot), with the same effect
   // the megatank charges nothing for itself
   // ---- the round cap ----
   reset(); ok(K.SUP_ROUND_CAP === 3, 'the cap is 3 supers a round');

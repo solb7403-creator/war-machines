@@ -206,8 +206,11 @@ function applyEco(E){
  if(Number.isFinite(E._rev))ecoSeenRev=E._rev;
  const S=ecoNorm(JSON.parse(JSON.stringify(E)));
  if(typeof rangeRemember==='function')rangeRemember(S);
+ const had=typeof PAINT_HZ!=='undefined'&&save.paints?PAINT_HZ.filter(k=>save.paints[k]):null;
  for(const k of ECO_KEYS)if(S[k]!==undefined)save[k]=S[k];
  fixEquip();labApplySelection();store();
+ // a hazard finish the server has just unlocked (25 takedowns on its map): say so once
+ if(had&&save.paints)for(const k of PAINT_HZ)if(save.paints[k]&&!had.includes(k)&&typeof showToast==='function'){showToast(PAINTS[k].n+' finish unlocked. Put it on in the Garage.');if(typeof fx==='function')fx('claim');}
 }
 const ecoCopy=()=>{const o={};for(const k of ECO_KEYS)if(save[k]!==undefined)o[k]=save[k];return JSON.parse(JSON.stringify(o));};
 // one economy action. local(S, X) runs it on this save; in Telegram the server runs the same thing as action a
@@ -402,7 +405,14 @@ function claimPass(track,i){
  });
 }
 // ---- paints: looks only, no stats. Your team color still shows on the tracks, turret core and health bar ----
-const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora','founder','hyper'];
+const PAINT_HZ=['scorch','maglev','arc','vent','devil','grid'],PAINT_LIVE=PAINT_HZ.map(k=>k+'_live');   // hazard finishes (earned) and their LIVE versions (store entries, not on sale): Session 5E-2e
+const PAINT_ORDER=['stock','nebula','ember','arctic','venom','gold','void','regolith','eclipse','aurora','founder','hyper'].concat(PAINT_HZ);
+// hazard takedowns on a map, as the server last told this phone (the server's record is the only count)
+const hzCount=m=>Math.max(0,Math.min(WX_FINISH_N,(save.hz&&save.hz[m])|0));
+// what a paint card says when the paint is not yours: how it is earned, or its price
+function paintLock(P){return P.only==='hazard'?hzCount(P.hz)+'/'+WX_FINISH_N+' · '+(MAPS[P.hz].short||MAPS[P.hz].n):P.only==='soon'?'Not on sale yet':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:null;}
+// the animated layer of a LIVE finish (CSS, css/app.css .pfx-*): shown wherever its store entry is
+const paintFx=P=>P&&P.fx?'<span class="pfx pfx-'+P.fx+'" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>':'';
 const myPaint=()=>PAINTS[save.paint]||PAINTS.stock;
 // ---- featured mode: one mode a day pays +25% and gets a live queue ----
 const featuredMode=()=>featuredOn(dayNum());   // FEATURE_ROT is in rules.js

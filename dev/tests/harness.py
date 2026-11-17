@@ -4,6 +4,9 @@ DEV='http://127.0.0.1:8787'
 REPO=os.environ.get('REPO',os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..'))).replace(os.sep,'/')
 REPO_URL='file://'+REPO+'/'
 GAME='http://127.0.0.1:8899/index.html'
+# newer Chromium blocks a page's WebSocket to a local address (the live-match server stand-in) unless this check is off;
+# older builds ignore the unknown feature names
+CHROME_ARGS=['--no-sandbox','--disable-features=LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights']
 os.makedirs(os.environ.get('SHOTS','/tmp/lunar-shots'),exist_ok=True)
 def start_dev():
     try: urllib.request.urlopen(DEV+'/__dump',timeout=1);return None
@@ -40,7 +43,7 @@ import urllib.parse
 async def open_game(p, w=390, h=740, user=None, start_param=None, scale=1, url=GAME, color_scheme='dark', pvp=False, browser=None, eco='local', init=None, autogfx=False, override=None, cs=False):
     # override: async fn(url) -> None (serve normally), 'abort', or (bytes, content type): lets a test play an old build or go offline
     user=user or {'id':777001,'username':'jaketest','first_name':'Jake'}
-    b=browser or await p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
+    b=browser or await p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),args=CHROME_ARGS)
     ctx=await b.new_context(viewport={'width':w,'height':h},device_scale_factor=scale,color_scheme=color_scheme)
     pg=await ctx.new_page()
     errs=[]

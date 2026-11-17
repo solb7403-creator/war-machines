@@ -4802,3 +4802,360 @@ spent (behavior held constant across the change) before the +-10% check.
 - F: Worker counters `an/<day>/<event>[/<key>]` + cohorts `an/cohort/<firstDay>/{n,d1,d7,d30}`; events from reducers via a
   non-persisted queue fired after the CAS write; client `/api/conquest/an` for transmission_read/skip and quit_point/session_minutes;
   admin sheet tab; `dev/tests/conquest-analytics.mjs`.
+
+## Checkpoint 42 — Session 5E-2e: Arcade weather + map hazards (branch `claude/arcade-weather-map-hazards-ysbkxs`, from main `4659c04`) — IN PROGRESS
+
+Brief: the owner's Session 5E-2e prompt (Nov 17, 2026): each Arcade map gets exactly one damaging hazard and one vision effect,
+rolled per match from a server seed (25% clear / 35% vision / 20% hazard / 20% both), with six earned hazard finishes and six
+premium LIVE store entries that are not on sale. Owner not monitoring: every choice below is the lead's, with its reason.
+(Checkpoint 41 belongs to Session 6B on `claude/tank-lab-logic-half-nm0485`, unfinished; this session does not touch it.)
+
+### Resume here (kept current)
+
+- **Built, tested, reviewed, pushed.** Both independent reviews PASS (A at `8e8939a`, B at `f7fd48b`). Everything in the
+  owner's prompt is built except what "Open items" names.
+- **What is left is the release** (pre-approved in the prompt): `dev/bump.sh`, PR to main, CI green, merge, the Worker and
+  Pages deploys verified, then the release record at the bottom of this checkpoint and `docs/ROADMAP.md` row 5E-2e.
+- **Run before pushing anything:** `node dev/tests/arcade-weather.mjs` (about 3 min), `node dev/tests/fair-arcade.mjs` (about
+  8 min), `node dev/tests/arena-maps.mjs`, `node dev/tests/super-timing.mjs`, `node dev/tests/hf-collection.mjs`,
+  `node dev/tests/defender-isolation.mjs`, `node dev/tests/wtest/test.mjs`, `node dev/tests/wtest/pvp.mjs` (the Worker tests
+  need `npm install --prefix worker` once and `node worker/build-web.mjs`).
+- **Browser tests in this container:** `pip install playwright==1.63.0` (the Python client only; the browser is already at
+  `/opt/pw-browsers/chromium`), then `CHROMIUM_PATH=/opt/pw-browsers/chromium SHOTS=<dir> python3 dev/tests/<test>.py`:
+  `weather-browser.py` (the journey, about 6 min), `weather-capture.py` (review sheets; slow, run two in the background),
+  `weather-perf.py` (frame cost). Stop the dev server (`pkill -f devserver.mjs`) after changing the rules or the Worker.
+- **Do not touch** `claude/tank-lab-logic-half-nm0485` (Session 6B, Checkpoint 41).
+
+### Research: comparable games (one web-research agent; what we take from each)
+
+| Game | What it did | What we take |
+|---|---|---|
+| Brawl Stars (closest: phone, 3-minute, top-down) | Meteor modifier: a large red circle, impact 3 s later, 2,000 damage plus knockback. Ranked modifiers were removed in Feb 2025 ("complex for casual players… restricted the viable meta") | Warn every hit; keep the hit small (never a one-shot); one hazard per map, never stacked; first matches clear so new pilots are not confused |
+| Team Fortress 2 | A death to the world (trains included) credits the last damager within 5.0 s | Our kill credit is the same 5 s rule |
+| League of Legends | No enemy damage in the window = an "execution", nobody's kill | A hazard kill with nobody recent is nobody's |
+| Halo (Terminal train, Breaker's plasma cutter) | Periodic, central, team-neutral, on a visible schedule | Hazards sit on the centre line or come as mirrored twins; the same warning every time |
+| Apex Legends | The World's Edge train and Storm Point wildlife were removed for blocking routes and distracting from PvP | Hazards never close a route for long (the deck has railings, the lane has container shadows); frequency kept moderate |
+| Fortnite | Storm damage ramps slowly; lava did chip damage and a bounce | Chip-and-push for the tornado rather than burst |
+| Rocket League / Smash | Competitive play standardised on hazard-free arenas | Hazards are seeded and identical for both sides, never luck; the future tournament mode (owner, Nov 14) can run clear weather with one flag (`MM.wxc`) |
+| CoD camo challenges / Halo Infinite challenges | ~50 kills a camo; mode-specific challenges caused quitting | 25 a map is modest; the pilot picks the map; assists count, so nobody has to throw a match to farm |
+
+### Decisions (each with its reason)
+
+1. **One timetable, three users.** `wxRoll(seed)` and `wxPlan(seed, map, round, T)` in `js/rules.js` are pure functions: no sim
+   state, no `random()`, no trigonometry (only + - * / and sqrt, which every JS engine rounds the same). The sim hits from the
+   plan, the 3D layer draws from the plan, the server's proof check re-derives the plan. Reason: owner rule 4a (no luck, no
+   desync) and the only way the server can verify an AI match's takedowns without replaying it.
+2. **Hazards are never aimed at a tank.** The old meteor shower aimed 60% of its meteors at a random tank. Reason: an aimed
+   strike is luck for the one it picks and cannot be mirrored; a timetable can be learned.
+3. **Mirror fairness by construction.** Meteors: every meteor has a point-mirrored twin 0.3 s apart, the leading half
+   alternates salvo by salvo, and a salvo's line stays in its own half. Vents: the centre crater, then the flank pair with the
+   lead alternating. Tornadoes: always a pair on point-mirrored paths. Lasers: the middle row (direction alternating), then the
+   two outer rows in opposite directions. Train and pylon sit on the centre line; the train alternates direction.
+4. **Damage:** a flat number at 1v1 hull scale, multiplied by the mode's hull scale, cut by armor and by Hull Plating (area
+   for meteor / train / vent / tornado, energy for arc / laser), never above 34% of the tank's full hull. Reason: flat damage
+   keeps hull upgrades and plates worth having against hazards (standing rule: never weaken gear); the cap is rule 4d.
+   Numbers: meteor 300, train 420 (+ shove), arc 320, vent 340, tornado 70 twice a second (+ push), laser 380. Measured worst
+   case 29% of a stock Scout's hull (train).
+5. **Shields do not stop hazards** (as the storm and the old meteors already ignored them). Reason: one rule for all "world" damage.
+6. **The megatank is not a hazard target.** Reason: its hull is ~100x a tank's, so the damage would be noise, and every hit on
+   it would be a free takedown (you are always shooting it): a farm.
+7. **Spawn safety 2.5 s** after a respawn or a round start, and a quiet opening of 8+ s. Reason: rows 6 and 26 of the Bunker
+   run through the team spawns; nothing may hit a tank that has just appeared.
+8. **Takedown = one per strike and victim** (a tornado: one per 5 s of contact). Reason: the tornado ticks twice a second;
+   counting ticks would make Canyon five times faster than any other map.
+9. **Vision effects are rules, not only looks.** Under an effect no turret (pilot's or AI's) can lock on or fire further than
+   the sight radius: flare 4.6, dust 4.2, flicker 4.4 (weapon range is 6), haze and steam 3.2 for a tank inside a cloud or
+   looking into one. Reason: owner rule 4f ("the AI is limited by dust and glare like a player"); a look-only effect would
+   blind the person and not the AI.
+10. **Solar flare:** one 20-second flare a round, only on Overpass and Longshot, only when the roll says vision; supers charge
+    twice as fast while it lasts (the old effect). It now also happens in best-of-3 rounds (the old event pool never ran there).
+11. **Supply drop "unchanged" = same odds.** The old pool was drop / meteor / flare, one in three each. The drop keeps one in
+    three (`EVT_DROP`); the other two thirds of team matches have no pool event. Reason: every-match drops would triple the
+    boxes and change balance.
+12. **AI matches: the server seeds, the phone plays, the server counts.** The ticket carries `wx: [seed, clear]` (seed drawn
+    by the Worker, stored on the ticket, the same if the phone asks again: no re-rolling). The result says which seed it
+    played (`wxs`). The proof check counts a takedown only where the record shows an enemy losing at least half a hazard hit
+    (or going down) in the sample a strike was live on its spot, with the pilot's own damage in the 5 s before; the phone's
+    count is then held to that (`fix.td`). A match that started before its ticket arrived plays the phone's own roll and
+    counts nothing. Reason: rule 5 ("only from server-verified match results; nothing trusts the client").
+13. **Live rooms:** the room draws the seed, passes it to its sim, sends it in the `go` message; a room is clear if any pilot
+    in it has played fewer than 3 matches (their `mp` comes from the server's record at seat time). Takedowns are the room
+    sim's own count.
+14. **AI awareness:** an AI pilot reads a warning 50-85% of the time by league (`LG_AI_HZ`, drawn once per strike), needs
+    0.35 s to react, then drives out the way a person would (out of the circle, to the railing, off the row, behind a
+    container). It prefers a target that is standing where a hazard is about to land. Reason: 4f; never perfect, so hazards
+    stay a way to beat it.
+15. **Finishes:** Meteor Scorch (Moonbase), Maglev Runner (Overpass), Arc Charge (Longshot), Vent Breaker (Crater Field),
+    Dust Devil (Canyon), Laser Grid (Bunker). The premium animated versions are "<name> LIVE", `only:'soon'`, with a `soon`
+    proposal (7.2 TON / 450 Stars each) and no `ton` / `stars` field, so `ecoPrice` returns null and neither the phone nor
+    the server can sell them.
+
+16. **The AI takes the Overpass deck now and then** (a fourth tactic, 30% of re-plans, only on the steel bridge). Reason: the
+    first pace run showed the train touching almost nobody (70 days to the finish) because AI pilots never went up; a person
+    uses the high ground, so the AI now does, and the deck becomes the risk-and-reward spot the owner described.
+17. **Tuned for relevance after measuring, never the 25:** trains every 11-16 s (was 15-21); vent blasts reach a wide rim (3.6 /
+    2.8, was 3.0 / 2.2) every 8-11 s; laser beam radius 1.1 (was 0.9), every 8-11 s, on five rows (two rows of ceiling mounts
+    at 11 and 21 added between the blast doors and the reactor pillars: the owner's "plus ceiling mounts if needed"); meteor
+    salvos of three 0.8 s apart with radius 2.0 (was four, 0.45 s apart, 1.7: the critic found four streaks at once too loud).
+18. **`fair-arcade.mjs` sample raised from 4 to 6 seeds, tolerances untouched.** With hazards able to decide a match, one
+    96-match mirror cell (Ace, common vs stock: two kits that meet an AI at their own power, so the true step is ~0) landed 10
+    points apart, 2 past the 8-point guard. The test's own comment names this as sampling noise (standard error ~0.07 at 96)
+    and records the same remedy once before (2 seeds to 4). 144 matches a cell; every assertion and limit is as it was.
+19. **Planned prices are visible on the LIVE finish's sheet** ("Planned price: 450 Stars or 7.2 TON (about x SOL)"; Stars only
+    inside Telegram, TON and SOL on the website), next to "Not on sale yet". Reason: the owner asked for the entries to show on
+    the website and in Telegram alike and there are no live players yet, so he can judge the real store; they are PROPOSALS
+    and one line (`PAINTS[...].soon`) changes or hides them.
+20. **In-battle animation of the LIVE finishes is not built**, only their animated store entries (CSS layers on the store
+    card and sheet: embers, a rail light, arcs, steam, a dust swirl, a scan line). Reason: nobody can own one until Session 8
+    certifies payments; building six in-battle tank shaders nobody can equip is the kind of work the owner asked not to waste.
+
+### Critic rounds (one independent visual critic per round; phone 390x844 and desktop 1920x1080 judged together)
+
+| Map | R1 | R2 | R3 | R4 | What the critics found, and what changed |
+|---|---|---|---|---|---|
+| Moonbase | 5 | 7 | 7.5 ship | | R1: four streaks at once too loud, rings read as team rings, no flash, haze smears. Changed: salvos of three (two in the air at a time), the rock's dark shadow inside one amber ring, white flash, dust ring, thrown rock, crisper scorch, pale billowing haze |
+| Overpass | 5 | 6.5 | 7 ship | | R1-R2: rail lights tiny, train "placeholder boxes", flare washes the HUD. Changed: a pulse chasing along lit lane edges, headlight beam, train with a tapered nose, lit window band, roof light bar, underglow and streak (five draw calls); glare kept under the HUD lines and trimmed twice |
+| Longshot | 7.5 | 7.5 | 7.5 ship | | Bolts pure white and sprayed everywhere; glow sat off the coils. Changed: violet-cyan arcs running down the lane both ways, each ending in a splash of light; glow on the coil; brighter warning ring |
+| Crater Field | 6.5 | 6 | 6 fix first | 6.5 ship (review B) | R1: teal column reads as a heal beam. R2-R3: white disc, then a hard pillar. Changed: amber jagged cracks; the eruption is soft clouds stacked up a column with ash in its lower half, an amber flash at its root, thrown rock; soft steam |
+| Canyon | 4.5 | 6.5 | 7 ship | 7 ship (review B, after its fixes) | R1: funnel see-through hoops in the ground's colour. Changed: three-layer funnel with a dark core, wound streaks, feathered top, dust skirt, stones, shadow; forming = a ground swirl and a thin thread; lighter haze, soft tan streaks |
+| Bunker | 6 | 7.5 | 8.5 ship | | R1: warning too faint, beam hair-thin. Changed: ceiling mounts on a rail blinking faster as it comes, a dashed line marching along the row, a three-layer beam that fades out upwards, a wide glowing floor trail; the flicker strobes |
+
+Round 3 named Crater Field's eruption clearly below the others, so it alone got a fourth capture (`docs/weather-5e2e/round4/`),
+judged by review B. Sheets: `docs/weather-5e2e/round1..4/`, final five-size sets in `docs/weather-5e2e/final/`.
+
+Also from round 1: the weather label overlapped Bounty's "Most stars wins" (moved under it); a red wash in half the frames
+was the game's own damage vignette (the capture now heals the pilot before each frame so the weather is judged alone).
+
+### Review A: PvP sync, fairness, security (independent, read-only; head `c9c1327`, re-reviewed at `8e8939a`)
+
+First pass: **FAIL, 2 blockers.** Re-review after the fixes: **PASS, 0 blockers.**
+
+| Owner rule | Verdict | Evidence (the reviewer's) |
+|---|---|---|
+| One hazard and one vision effect per map, as listed; no rain | PASS | `WX_MAP`; the train only on the deck (`hzLevel`); `WX_ARC_BL` equals Longshot's two containers |
+| Meteor event removed; flare only on Overpass / Longshot as weather, same effect; supply drop unchanged | PASS | `EVENTS={drop,flare}`; the drop keeps 1 in 3 on the same single draw; `flareMult` 2 only inside the flare window |
+| 25 / 35 / 20 / 20, server-seeded; first 3 clear; PvP clear if either pilot is in their first 3 | PASS (was PARTIAL) | 262k seeds: 25.09 / 34.89 / 20.09 / 19.93; the seed and "first 3" are the server's; a match with no ticket is clear; no free re-roll |
+| 4a seeded, in the shared match code, presentation never decides a hit | PASS | only `rng32`, `imul`, `sqrt` in the plan; `js/weather.js` never writes sim state |
+| 4b fair to both halves | PASS | 400 hazard seeds x 3 rounds a map: footprint-time north = south exactly; lead 16704 / 16812 (Moonbase), 3494 / 3481 (Craters); train 4925 / 4925 |
+| 4c always warned, dodgeable | PASS | every strike `t - w >= warn`, 8 s quiet opening; spawn seats safe (fixed: was SHOULD FIX) |
+| 4d no one-shots | PASS | cap 34%; worst stock case 29.1% (train on a Scout); at most 1 hit in 0.35 s on walkable ground |
+| 4e kill credit to the last attacker within 5 s | PASS | probes: enemy's last hit gets the kill; friendly fire and self get none |
+| 4f the AI follows the same rules | PASS | `wxSees` gates turret, AI and AI supers for everyone; AI reads 0.5-0.85 + 0.35 s |
+| Finishes: 25 takedowns, server-verified, LIVE entries not on sale | PASS (was FAIL) | no price path sells them; `CRYPTO_PAY=false`; claims checked one by one against the record; migration cannot bring one in |
+| No new points source; cap, points table, quests, leagues unchanged | PASS | the `js/rules.js` diff is additive only |
+| PvP stays in sync; a test proves it | PASS | 108 seeded rooms compared event for event; the live client re-plans from snapshots |
+| No test skipped, deleted or loosened | PASS | the 4 to 6 seed change judged a legitimate sample increase (tolerances and all 54 checks unchanged); `b3test.py` / `super-timing.mjs` at least as strict |
+| No migration / legacy-fallback code | PASS | only defensive defaults |
+
+What the first pass found, and what was done:
+
+1. **BLOCKER: a phone that only raised its takedown count gained unearned takedowns in team modes** (up to +36 over 14 honest in
+   six Canyon matches): the record check counted any enemy health drop near a strike. Fixed: the record now lists each
+   takedown as [sample, tank] and the server accepts a claim only if that tank lost at least half a hazard hit **beyond all
+   the damage the pilot dealt in that sample**, stood in a live strike's footprint, and the pilot demonstrably hit that same
+   tank in the 5 s before. Measured after: raising the count gains 0; a phone that claims every tank at every strike gains 0-1
+   in 24 1v1 matches and about one a match in team modes, each of them a real hazard hit beside its own fight (the half-second
+   grain of the record; the reviewer judged this residual acceptable, in line with the existing kills+1 tolerance).
+2. **BLOCKER: the legacy save migration took `paints` from the phone** (only priced paints were checked). Fixed: hazard and
+   LIVE finishes are dropped there.
+3. The train's shove could trip the record's speed check on an honest match (never observed in 72 matches). Fixed: excused
+   for a tank that was at a live train or tornado strike.
+4. Hazards could land on spawn seats (Canyon's through-path, Bunker rows 6 / 26). Fixed: `WX_HOME`, a tank within 2.2 of its
+   own seat is never touched.
+5. A late ticket played the phone's own roll, and abandoning the VS screen re-rolled the server seed. Fixed: with the server
+   economy there is no phone roll (no ticket by the start: clear), and the seed is an HMAC of the pilot and their match
+   count, so it only moves when a match is finished (or quit: a recorded loss).
+6. Hazard kills credited 2-5 s after the last hit were clipped by the record's kill count. Fixed.
+7. (note) The sync test compares the Worker bundle with the same sources in one JS engine: it proves determinism and
+   bundling; the live client is covered by plan equality in `weather-browser.py` (both phones and the room, in a real browser).
+8. (note) The AI gave a 20 s tornado one look for its whole life. Fixed: a fresh look every 3 s.
+
+Owner-rule change that came out of this review: the sim now gives the takedown to **every** enemy who hit the tank within 5 s
+(the owner's own wording of the assist), and the kill to the last. Before, only the last attacker got both. This makes team
+modes faster for takedowns (see the pace table, re-measured after it).
+
+### The six maps (what a pilot meets)
+
+| Map | Hazard: what it does | Its warning (sound, then light) | How to dodge | Vision effect |
+|---|---|---|---|---|
+| Moonbase | **Meteor strikes.** Salvos of three meteors walk a line 0.8 s apart, with a mirrored twin salvo on the other half 0.3 s apart. 300 damage each (17% of a stock hull) inside 2.0 | 1.6 s: a falling whistle; a fiery streak down the same slanted line every time; the rock's shadow and an amber ring grow on the landing spot and flicker just before impact | Drive off the spot (0.87 s for the slowest tank); the line keeps walking, so move across it | **Regolith haze**: every other impact leaves a cloud (radius 2.5, 9 s). A tank in a cloud, or looking into one, sees 3.2 instead of 6 |
+| Overpass | **Maglev train** along the deck's centre rail, alternating direction. 420 damage (25%) and a shove along the deck | 2.8 s: a two-tone horn, twice; rail lights run along both edges of its lane, faster and brighter; its headlight far down the line | Leave the deck by a ramp, or hug the railing. Tunnels and ramps are never touched | **Solar flare**: one 20 s flare a round. Sight 4.6 for everyone; supers charge twice as fast |
+| Longshot | **Pylon overload.** The centre pylon arcs into every tank with a clear line to it. 320 damage (19%) | 3 s: three rising pulses of the coils (hum + glow + a ring on the ground), then it fires on the fourth beat | Break line of sight: get behind a container (1.4 s from the worst spot) | **Solar flare** (as Overpass), washing out the long sight lines |
+| Crater Field | **Crater vents.** The centre crater, then the flank pair (the lead alternates). 340 damage (20%) inside the crater and its rim | 2.2 s: a rising hiss; the cracks in the crater floor light up from below; wisps of steam | Get out of the crater (1.3 s for the slowest tank from the middle of the big one) | **Vent steam**: a cloud over each crater all match. A tank in the steam is hidden from further than 3.2, and sees no further |
+| Canyon | **Sand tornadoes.** A pair on point-mirrored paths, 20 s each, speed 1.7 (a tank does 4.4). 70 damage twice a second while inside, each tick a jolt that spins the tank out | 2.6 s: it forms where it will start, thin and harmless; wind that gets louder the closer it is; its shadow on the ground | Drive round it: it is slower than the slowest tank in scree. The mesa top and the tunnel are out of its reach | **Dust storm**: 22 s storms. Sight 4.2 for everyone |
+| Underground Bunker | **Ceiling lasers.** A beam sweeps a row end to end in 2.5 s. Five rows: the middle row (direction alternating), then the inner pair in opposite directions, the middle again, then the outer pair. 380 damage (22%) | 2 s: a rising whine; the row's wall mounts and ceiling mounts glow red; a faint flicker along the whole row | Step off the row (0.3-0.5 s) | **Power flicker**: the lights stutter and hold dim for 6-8 s. Sight 4.4 for everyone |
+
+Shared rules: nothing hits in the first 8 s of a round or within 2.5 s of a respawn; the megatank is never a target; a tank
+under a deck is covered from meteors; the first three times a pilot meets a hazard one line on screen says how to dodge it.
+
+### Measured (real code, seeded; `node dev/tests/arcade-weather.mjs`, `node dev/tests/weather-pace.mjs 50 2`)
+
+**The roll**, over 400,000 seeds: clear 25.05%, vision only 34.87%, hazard only 19.96%, both 20.12%.
+
+**Takedown pace** for a pilot who picks one map and plays 20 minutes a day (about 10 matches: 82 s a match plus 35 s between
+matches), mode mix 30% Arena 1v1, 15% Arena 2v2, 15% Moon Zone 2v2, 15% Bounty 1v1, 10% Crystal Rush 2v2, 15% Last Standing,
+Veteran league, rare kit, 240 matches a map, the final rules (every attacker inside 5 s gets the takedown). The stand-in pilot
+is the game's own AI with a person's timing: it fights and dodges but never plays for takedowns, so these are the slow end; a
+pilot who holds an enemy in a hazard on purpose is faster.
+
+| Map | Finish | Takedowns a match | In a hazard match | Takedowns a day | Days to 25 |
+|---|---|---|---|---|---|
+| Longshot | Arc Charge | 0.66 | 1.55 | 6.7 | **4** |
+| Canyon | Dust Devil | 0.47 | 1.12 | 4.8 | **5** |
+| Crater Field | Vent Breaker | 0.33 | 0.71 | 3.3 | **8** |
+| Bunker | Laser Grid | 0.30 | 0.66 | 3.1 | **8** |
+| Moonbase | Meteor Scorch | 0.30 | 0.73 | 3.0 | **8** |
+| Overpass | Maglev Runner | 0.13 | 0.35 | 1.3 | **19** |
+
+Best mode for takedowns: Moon Zone (the zone holds tanks in one place: 0.3-1.9 a match, Longshot the most), then Crystal Rush;
+worst: Arena 1v1 (short rounds, 0.03-0.3). Overpass is the long one because the train only reaches the deck: the way to speed
+it up is to bait an enemy onto the deck (the AI follows you up) and leave by a ramp when the horn sounds. The 25 was not
+changed (owner: fixed). History of the measurement: first build Overpass 70 days and Crater Field 20 (why decisions 16 and 17
+were made); after the tuning 5 / 7 / 10 / 11 / 12 / 24; after the assist rule from review A the table above. All six finishes:
+about 52 days of 20 minutes a day for a pilot who never plays for them. For the owner to judge: a pilot who only plays Moon
+Zone on Longshot gets about 1.9 a match, so Arc Charge in about 13 matches of that; if that is too fast the lever is the
+hazard's frequency on that map, not the 25.
+
+### What is built (slice 1)
+
+- `js/rules.js`: `WX_ODDS`, `WX_MAP`, `WX_HZ`, `WX_VIS`, `wxRoll`, `wxPlan`, `wxEnd`, `wxPos`, `wxIn`, `wxArcSees`, `wxWinOn`,
+  `wxSight`; twelve `PAINTS` entries; `ecoHazard` (called by `ecoAfterMatch`), `hz` in `ECO_KEYS`.
+- `js/game.js`: `wx` state, `wxStart` (match and round), `weatherTick`, `hzDmg` / `hzShove` / `hzLevel`, `wxSees` in the turret,
+  the AI's sight and its super; `hzSteer` / `hzEscape` / `hzPinned` for the AI; `r.lh` (last enemy hit) in `takeHit`;
+  the event pool change; `st.td`.
+- `js/match.js`: the weather seed from the ticket, `wxs` and `td` in the result, kill-feed wording, the takedown pop.
+- `worker/sim-api.js`, `worker/src/pvp.js`, `worker/src/eco.js`, `worker/src/proof.js`: seed, clear rule, takedowns, the record check.
+- `dev/tests/arcade-weather.mjs`: 8,700+ checks (see its header); `dev/tests/combat-sim.mjs`: every seeded match now rolls
+  weather from its own seed and reports hazard hits, kills and takedowns.
+
+### What is built (slice 2: what the pilot sees and hears)
+
+- `js/weather.js` (new): `WeatherFX`. Reads the plan and the round clock and draws it; never writes match state. 3D: meteor
+  streak, shadow, ring, impact; the maglev train (one mesh per material) with rail lights and a headlight; pylon pulses and
+  arcs; crater cracks, eruption column and steam; three-skin tornado funnels with a dust skirt (two skins on LOW); ceiling
+  mounts, the dashed row line and the beam. A 2D fallback in two passes (ground effects under the solids; the train, the
+  lasers and the arcs over them). Whole-map vision overlays (flare glare, dust streaks, power flicker), the HUD weather label,
+  the first-three-times dodge tip, the takedown counter.
+- `js/fx.js`: sixteen synthesized cues (one warning sound per hazard, the same every time), wind and buzz loops.
+- `js/render.js`, `js/render3d.js`: the hooks; enemies hidden by a vision effect drop off the edge markers and the minimap.
+- `js/match.js`, `js/pvp.js`: kill feed ("You finished Kilo with the pylon overload"), the HAZARD TAKEDOWN pop, "ARC CHARGE
+  12/25", results line and chip.
+- `js/core.js`, `js/ui.js`, `css/app.css`: the six earned finishes with per-map progress in the Garage and the Shop, the six
+  LIVE finishes as animated store entries with "Not on sale yet" and the planned price, a sheet for each with how to dodge
+  and a "Play <map>" button; Help entries (Weather, Hazard takedowns, Events).
+- `js/proof.js`, `worker/src/proof.js`, `worker/src/eco.js`: each takedown claim is checked one by one against the record.
+
+### Review B: visuals, feel, performance (independent, read-only; head `2e87a35`, re-reviewed at `f7fd48b`)
+
+First pass: **FAIL, 1 blocker.** Re-review after the fixes: **PASS, 0 blockers.**
+
+| Owner rule | Verdict | Evidence (the reviewer's) |
+|---|---|---|
+| Each map's hazard fits its terrain, as listed | PASS | all six in `final/*_phone_390x844_high.jpg`; the plan in `js/rules.js` |
+| One vision effect per map, no rain | PASS | haze, flare, steam, dust, dimmed lights all visible; no rain in the code |
+| Warnings subtle but readable, the same every time, sound + light; no red circles | PASS (was PARTIAL) | six distinct cues at the warning's start, never silent; the meteor spot is a shadow in a thin amber ring; the forming tornado was a rigid pole, now a ground swirl with a short wisp |
+| Works on a phone, on LOW and in the 2D fallback | PASS (was FAIL) | 3D fine at 390x844, 390x700, 320x568 LOW; in 2D the train was painted under the deck and the laser warning was invisible, both fixed (`overpass_phone_390x700_2d.jpg`, `bunker_phone_390x700_2d.jpg`) |
+| Phone and desktop equal | PASS | same cues and strength on both |
+| Exceptional look | PARTIAL | Longshot 8.5, Overpass 8, Bunker 8, Moonbase 7.5, Canyon 7 (was 6), Crater Field 6.5: all "ship", the last two the mildest |
+| Playable under every vision effect | PASS | tanks, bars, HUD and the label readable; the power flicker slowed to at most 6 changes a second, never below half brightness |
+| Kill credit and the counter are shown | PASS | `ui/kill_credit.jpg`, `ui/ai_results.jpg`, `ui/shop_390.jpg` |
+| Finishes and store entries; nothing on sale | PASS | six earned, six LIVE "Not on sale yet", no buy button, reduced motion handled |
+| Nothing lowered, no map rebuilt | PASS | only hook lines in `render.js` / `render3d.js`; the map and graphics modules untouched |
+| Performance | PARTIAL | code fixes confirmed (per-second emitters, cached preset, no per-frame gradients, full cleanup); the Canyon LOW cost was not yet re-measured at review time: measured after, see "Frame cost" |
+
+What the first pass found, and what was done (all in `f7fd48b`):
+
+1. **BLOCKER: in the 2D fallback the train (and its rail lights) was drawn under the deck.** Fixed: two passes.
+2. Bunker's 2D laser warning was a hairline under the walls. Fixed: a 3 px dashed marching line and glowing mounts.
+3. The first-time dodge tip was 78-86 characters, cut off on a phone. Fixed: 30-41 characters each, and any banner wider
+   than the screen is now set smaller instead of cut.
+4. The forming tornado was a hard pole; the LOW funnel a flat cone. Fixed: forming is a swirl, a dust skirt and a short
+   wisp; LOW has two skins. (The LOW funnel still has a clean outline: accepted by the reviewer.)
+5. The power flicker stuttered at 17 changes a second down to 15% brightness. Fixed: 6 a second, never below 50%.
+6. Some emitters ran per frame (more particles on a 120 Hz phone). Fixed: per second.
+7. The Maglev Runner LIVE sweep had hard edges. Fixed.
+8. Cleanup: meshes built only on the maps that use them and freed on exit; no per-frame allocations in the overlays; the 2D
+   meteor marker matches 3D; the light flash is off under reduced motion.
+
+Notes left as they are: on 320x568 LOW the forming tornado is at the subtle limit (the wind cue carries it); the 2D train,
+lasers and arcs do not shake with the camera.
+
+### Tests (local, head `f7fd48b`)
+
+| Test | Result |
+|---|---|
+| `node dev/tests/arcade-weather.mjs` | PASS, 9,754 checks: roll rates, one hazard and one vision effect per map, 1,260 plans identical in the phone build and the Worker bundle, mirror and lead balance, every strike dodgeable by the slowest tank (meteor 0.87 s of 1.6 s, centre vent 1.43 of 2.2, pylon 1.44 of 3, laser row 0.39 of 2), no one-shot, kill credit and assists, spawn safety, no new points, finishes and prices, **108 seeded live-room matches: Worker bundle = phone build event for event** (213 hazard hits, 13 hazard kills, 187 takedowns), forged claims, migration, the ticket seed, six ticketed AI matches end to end |
+| `node dev/tests/fair-arcade.mjs` | PASS, 11,665 checks (6 seeds a cell; tolerances and all 54 assertions unchanged) |
+| `node dev/tests/arena-maps.mjs`, `super-timing.mjs`, `hf-collection.mjs`, `defender-isolation.mjs` | PASS (the collection tests now count 144 paints; the 432 older fixture entries are byte-identical) |
+| `node dev/tests/wtest/test.mjs`, `wtest/pvp.mjs` and the rest of the CI list (39 tests) | PASS |
+| `python3 dev/tests/weather-browser.py` | PASS, 43 checks: the server seeds the AI match and a re-open does not re-roll; no ticket = clear; the store at 390x700, 320x568 and 1366x768 has no checkout and the server refuses a Stars invoice for a LIVE finish; a live 1v1 where both phones and the room hold the same plan; a desktop pilot dodges a strike with the keyboard; kill credit and the counter |
+
+Tests changed because a decision in the prompt changed their rule (nothing skipped, deleted or loosened): `super-timing.mjs`
+and `b3test.py` (the flare is weather now, the meteor a hazard), `hf-collection.mjs` and the defender fixture (12 more
+paints), `fair-arcade.mjs` (sample 4 to 6 seeds, decision 18).
+
+### Browser checks (five sizes, HIGH / LOW / 2D)
+
+Sheets of five frames a map (warning start, warning late, hit, after, vision) in `docs/weather-5e2e/final/`:
+
+| Size | Quality | Result |
+|---|---|---|
+| Phone 390x844 | HIGH | all six hazards and vision effects drawn; HUD, bars and the weather label readable; no page errors |
+| Phone 390x700 | HIGH and the 2D fallback | as above; 2D shows every warning and hit over the deck and walls |
+| Phone 320x568 | LOW | as above; label font never under 10 px; the dodge tip fits |
+| Desktop 1366x768 | LOW | as above |
+| Desktop 1920x1080 | HIGH | as above; real keyboard and mouse used in `weather-browser.py` (W/A/S/D dodge, mouse on the store) |
+
+The container draws WebGL on the CPU, so these prove layout, layering and readability, not a real phone's frame rate.
+**No physical phone was used.**
+
+### Frame cost (`python3 dev/tests/weather-perf.py`; software renderer, so RELATIVE only: the same seeded match clear vs hazard + vision)
+
+| View | Moonbase | Overpass | Longshot | Crater Field | Canyon | Bunker |
+|---|---|---|---|---|---|---|
+| Phone 390x844 HIGH | +15%, +5 calls | +18%, +7 | -22%, -4 | -22%, -2 | +15%, +19 | -13%, +0 |
+| Phone 390x844 LOW | +24%, -6 | +5%, +1 | +11%, -3 | +5%, -2 | +36%, +9 | +13%, +7 |
+| Desktop 1920x1080 HIGH | +21%, -8 | -28%, +0 | -29%, -7 | -45%, -2 | +13%, +12 | +42%, +7 |
+| Desktop 1920x1080 LOW | +10%, -1 | -5%, -1 | +0%, +5 | +0%, +3 | +0%, -3 | +17%, +3 |
+
+Run-to-run noise is about ±25% (several cells are negative), so only Canyon and Bunker stand out, and only mildly. Canyon and
+Bunker are from the final code (`f7fd48b`); the other four maps from `2e87a35` (their draw code did not change after). Before
+review B's fixes Canyon LOW was +83% on the phone view and +144% on desktop. Draw calls: 0 to +19 on a base of 45-80.
+
+### The finishes and the store entries
+
+| Map | Earned finish (25 hazard takedowns on that map) | LIVE finish (store entry, "Not on sale yet") | PROPOSED price |
+|---|---|---|---|
+| Moonbase | Meteor Scorch | Meteor Scorch LIVE (embers) | 7.2 TON (SOL at the live rate) · 450 Stars in Telegram |
+| Overpass | Maglev Runner | Maglev Runner LIVE (a light sweep) | same |
+| Longshot | Arc Charge | Arc Charge LIVE (arcs) | same |
+| Crater Field | Vent Breaker | Vent Breaker LIVE (steam) | same |
+| Canyon | Dust Devil | Dust Devil LIVE (blowing dust) | same |
+| Underground Bunker | Laser Grid | Laser Grid LIVE (scan lines) | same |
+
+Checkout is off in every currency: the LIVE paints carry no `ton` / `stars` price, so no price path can sell them; the
+Worker refuses a Stars invoice for one; `CRYPTO_PAY` stays false. The website shows TON and SOL, Telegram also Stars.
+
+### Agents used (AGENTS.md)
+
+| Agent | Job | Did it change the result? |
+|---|---|---|
+| Research (web) | hazards and weather in comparable games | yes: telegraph length, "never aimed at a player", one hazard a map |
+| Visual critic, rounds 1-3 (a fresh one each round) | score every map on phone and desktop | yes: every map reworked at least once (table above) |
+| Reviewer A (PvP, fairness, security) | every owner rule pass/fail | yes: 2 blockers (unearned takedowns in team modes; finishes through the migration) and 6 smaller fixes |
+| Reviewer B (visuals, feel, performance) | every owner rule pass/fail | yes: 1 blocker (2D train under the deck) and 7 fixes |
+
+Graphify did not connect in this container (proxy 403), so the code was read directly.
+
+### Open items (for the owner)
+
+1. **LIVE finishes animate in the store only.** Their in-battle animation is not built (decision 20): build it with the
+   checkout in Session 8, when they go on sale.
+2. **Prices are proposals:** 7.2 TON / 450 Stars each, SOL following TON at the live rate. Nothing can be bought.
+3. **No physical phone was used.** Looks, layout and controls were checked in a browser at phone sizes; the real frame
+   rate on a phone is unmeasured. Worth ten minutes on the owner's iPhone, Canyon on LOW first.
+4. **Takedown pace is uneven:** 4 days (Longshot) to 19 days (Overpass) at 20 minutes a day; a pilot who only plays Moon Zone
+   on Longshot needs about 13 matches. The 25 was not changed. If Longshot is too fast, the lever is how often the pylon fires.
+5. **Team modes:** a modified phone that claims every tank at every strike can gain about 0.4 takedowns a match (0 in 1v1),
+   each a real hazard hit next to its own fight. Reviewer A judged it acceptable; PvP has no such gap (the server runs it).
+6. **Crater Field and Canyon** are the two mildest looks (6.5 and 7 of 10). Both "ship"; first candidates for a later polish.

@@ -900,3 +900,51 @@ button.q{display:flex;width:100%;text-align:left}
 .gpick.is-own span{color:var(--moon)}
 .gpick:not(.is-own):active{transform:scale(.97)}
 @media (min-width:700px){.gpick{min-height:60px}.gpick b{font-size:13px}}
+
+/* ---- hazard finishes and their LIVE (animated) store entries: Session 5E-2e ---- */
+.hzp{margin:-2px 0 8px}
+.paint.live,.finbig.live{position:relative;overflow:hidden}
+.paint.live .p{color:var(--dust)}
+.finbig{border-radius:14px;background:var(--rock2);border:1px solid var(--edge);margin:8px 0 10px}
+.finbig canvas{display:block;width:100%;height:150px}
+.finsoon{display:inline-block;font:700 13px var(--disp);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:3px 10px;margin:0 0 8px}
+.finprice{margin-top:6px}
+.finprog,.hzres{border-radius:12px;background:var(--rock2);border:1px solid var(--edge);padding:10px 12px;margin:10px 0}
+.finprog .row,.hzres .row{display:flex;align-items:center;font:700 14px var(--disp)}
+.finprog .track,.hzres .track{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:8px 0 6px;overflow:hidden}
+.finprog .track i,.hzres .track i{display:block;height:100%;border-radius:3px;background:var(--gold)}
+.finprog p,.hzres p{margin:4px 0 0}
+.hzres{margin:8px 0 0;text-align:left}
+.chip.hz b{color:var(--gold)}
+.pfx{position:absolute;left:6px;right:6px;top:6px;height:64px;pointer-events:none;overflow:hidden;border-radius:10px}
+.finbig .pfx{left:0;right:0;top:0;height:150px}
+.pfx i{position:absolute;display:block}
+/* embers: sparks rising off the scorched plates */
+.pfx-embers{background:radial-gradient(60% 50% at 50% 70%,rgba(255,110,30,.22),transparent 70%);animation:pfxGlow 2.2s ease-in-out infinite}
+.pfx-embers i{width:4px;height:4px;border-radius:50%;background:#ffb35a;box-shadow:0 0 6px 2px rgba(255,120,40,.8);bottom:22%;animation:pfxRise 2.4s linear infinite}
+.pfx-embers i:nth-child(1){left:28%}.pfx-embers i:nth-child(2){left:44%;animation-delay:-.7s;animation-duration:2s}.pfx-embers i:nth-child(3){left:57%;animation-delay:-1.3s}.pfx-embers i:nth-child(4){left:66%;animation-delay:-.4s;animation-duration:2.8s}.pfx-embers i:nth-child(5){left:38%;animation-delay:-1.8s;animation-duration:3.1s}
+/* rail: a band of maglev light running along the hull */
+.pfx-rail i{top:-10%;bottom:-10%;width:38%;background:linear-gradient(90deg,transparent,rgba(90,235,255,.5) 30%,rgba(220,255,255,.75) 50%,rgba(90,235,255,.5) 70%,transparent);mix-blend-mode:screen;transform:skewX(-12deg);animation:pfxSweep 1.9s cubic-bezier(.4,0,.2,1) infinite}
+.pfx-rail i:nth-child(n+2){display:none}
+/* arcs: little bolts crackling over the plates */
+.pfx-arcs{background:radial-gradient(50% 40% at 50% 55%,rgba(150,210,255,.16),transparent 70%)}
+.pfx-arcs i{width:38%;height:2px;background:linear-gradient(90deg,transparent,#e8faff,#9fdcff,transparent);box-shadow:0 0 8px 2px rgba(150,220,255,.8);opacity:0;animation:pfxZap 1.5s steps(1,end) infinite}
+.pfx-arcs i:nth-child(1){left:22%;top:38%;transform:rotate(-24deg)}.pfx-arcs i:nth-child(2){left:42%;top:52%;transform:rotate(18deg);animation-delay:-.45s}.pfx-arcs i:nth-child(3){left:30%;top:64%;transform:rotate(-8deg);animation-delay:-.9s}.pfx-arcs i:nth-child(4){left:48%;top:32%;transform:rotate(38deg);animation-delay:-1.2s}.pfx-arcs i:nth-child(5){left:18%;top:54%;transform:rotate(52deg);animation-delay:-.2s}
+/* steam: vents breathing off the hull */
+.pfx-steam i{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,rgba(220,255,245,.55),rgba(160,245,220,.18) 55%,transparent 72%);bottom:26%;animation:pfxPuff 2.6s ease-out infinite}
+.pfx-steam i:nth-child(1){left:26%}.pfx-steam i:nth-child(2){left:52%;animation-delay:-.9s}.pfx-steam i:nth-child(3){left:40%;animation-delay:-1.7s}.pfx-steam i:nth-child(4){left:62%;animation-delay:-.4s;animation-duration:3.2s}.pfx-steam i:nth-child(5){display:none}
+/* dust: a swirl turning round the tank */
+.pfx-dust i{left:50%;top:54%;width:120%;height:86%;margin:-43% 0 0 -60%;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 18%,rgba(255,217,160,.42) 30%,transparent 46% 62%,rgba(214,170,110,.36) 76%,transparent 92%);filter:blur(3px);animation:pfxSpin 3.2s linear infinite}
+.pfx-dust i:nth-child(2){width:80%;height:56%;margin:-28% 0 0 -40%;animation-duration:2.1s;animation-direction:reverse;opacity:.8}.pfx-dust i:nth-child(n+3){display:none}
+/* scan: a laser line sweeping the hull */
+.pfx-scan i{left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#ff5a46 20%,#ffd0c8 50%,#ff5a46 80%,transparent);box-shadow:0 0 10px 3px rgba(255,60,48,.75);animation:pfxScan 2.2s ease-in-out infinite}
+.pfx-scan i:nth-child(n+2){display:none}
+.pfx-scan{background:linear-gradient(180deg,transparent,rgba(255,50,40,.06),transparent)}
+@keyframes pfxGlow{50%{opacity:.55}}
+@keyframes pfxRise{0%{transform:translate(0,0) scale(1);opacity:0}12%{opacity:1}100%{transform:translate(10px,-46px) scale(.3);opacity:0}}
+@keyframes pfxSweep{0%{left:-40%}100%{left:106%}}
+@keyframes pfxZap{0%,8%{opacity:1}9%,14%{opacity:0}15%,19%{opacity:.8}20%,100%{opacity:0}}
+@keyframes pfxPuff{0%{transform:translateY(0) scale(.4);opacity:0}20%{opacity:.9}100%{transform:translateY(-40px) scale(1.5);opacity:0}}
+@keyframes pfxSpin{to{transform:rotate(360deg)}}
+@keyframes pfxScan{0%,100%{top:22%}50%{top:78%}}
+@media (prefers-reduced-motion:reduce){.pfx,.pfx i{animation:none!important}.pfx-arcs i{opacity:.7}.pfx-rail i{left:33%}.pfx-scan i{top:50%}.pfx-steam i,.pfx-embers i{opacity:.8}}

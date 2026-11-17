@@ -7,7 +7,7 @@ const SEAT_XY=[[[10,28],[6,26],[14,26]],[[10,4],[6,6],[14,6]]];
 function liveSetup(cfg){
  setMap(cfg.map);matchG=cfg.g;
  const solo=isSolo(matchG),n=solo?1:MODES[cfg.m].n,team=i=>solo?i:(i<n?0:1);
- MM={n,series:!!cfg.series,mp:99};
+ MM={n,series:!!cfg.series,mp:99,wx:Number.isInteger(cfg.wx)?cfg.wx:null,wxc:!!cfg.wxc};   // wx: the room's weather seed; wxc: clear (a pilot in their first three matches). Session 5E-2e
  const hs=hpScale(),pos=solo?royaleSpawns():SEAT_XY[0].slice(0,n).concat(SEAT_XY[1].slice(0,n)).map(([x,y])=>({x,y}));
  const taken=cfg.seats.filter(Boolean).map(s=>s.name),names=BOT_NAMES.filter(nm=>!taken.includes(nm)).sort(()=>random()-0.5);
  const hums=[];
@@ -54,8 +54,8 @@ function netTarget(u,id){const v=units[id];u.focus=(v&&v.team!==u.team)?v:null;r
 return {
  R:{STOCK_L,PVP_V,UPS,UORDER,CH,CHORDER,WEAPONS,WORDER,TIER_MULT,ROLL_MIN,ROLL_MAX,SALV_MIN,SALV_MAX,GEM,GORDER,PAINTS,LEAGUES,FEATURED_X,
   MODES,GTYPES,GT_ORDER,ROYALE_PTS,SERIES_X,MAP_REAL,ROUND_T,powerOf,powerWin,tankOf,leagueInfo,leaguePay,leagueIdx,leagueRating,LEAGUE,featuredOn,liveModes,isSolo,
-  STAT,DASH_SPD,DASH_T,MAPS,AW:W,AH:H,RAD:R,SUP,GEM,SUP_ROUND_CAP,SUP_BAR_T,SUP_TAKEN_MAX},   // the last row: limits the server checks AI match records against (worker/src/proof.js)
+  STAT,DASH_SPD,DASH_T,MAPS,AW:W,AH:H,RAD:R,SUP,GEM,SUP_ROUND_CAP,SUP_BAR_T,SUP_TAKEN_MAX,WX_MAP,WX_HZ,WX_CAP,WX_CREDIT,WX_FIRST_CLEAR,wxRoll,wxPlan},   // the last row: limits the server checks AI match records against (worker/src/proof.js)
  setup:liveSetup,setTank:liveTank,roster,snap:snapState,start:startMatch,startRound,step:update,
  outcome,placeOf,useSuper,supTap,netClaim,netDash,netShield,netTarget,setCtl,hit:takeHit,plateCutOf:plateCut,
- get state(){return state;},get units(){return units;},get series(){return series;},get map(){return curMap;},get g(){return matchG;},get storm(){return storm;}
+ get state(){return state;},get units(){return units;},get series(){return series;},get map(){return curMap;},get g(){return matchG;},get storm(){return storm;},get wx(){return wx;}
 };

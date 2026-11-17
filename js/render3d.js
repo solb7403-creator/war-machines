@@ -16,6 +16,7 @@ function webglOK(){try{const c=document.createElement('canvas');return !!(window
 // The Arcade map modules (js/mapenv.js, js/arena3d.js, js/arenaprops.js) are only needed with the 3D view, so they load
 // here, beside the 3D engine, and not in the page's blocking script list (Session 5E-2c: first paint costs what it did).
 // They run in order; if one fails to load the 3D view still starts and draws the earlier maps.
+let WXH=null;   // the host js/weather.js draws the map hazards through (5E-2e)
 const ARENA_JS=['mapenv','arena3d','arenaprops','arenacam'];   // arenacam: the chase camera (5E-2b2a); without it the maps still build and the earlier fixed view draws them
 function loadArena(done){
  const have=()=>typeof MapEnv!=='undefined'&&typeof Arena3D!=='undefined'&&typeof ArenaProps!=='undefined';
@@ -74,7 +75,7 @@ function setPR(){if(!RR||R3.parked)return;const cap=resCap(),auto=gfxMode()==='a
 // (about 80 MB on a 390x844 phone), and comes back at its own size when that view closes
 function park3D(on){R3.parked=!!on;if(!RR)return;if(on){RR.setPixelRatio(1);RR.setSize(1,1,false);}else setPR();}
 function disposeBattle3D(){
- if(!RR)return;clearRange3D();if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}for(const P of Object.values(B3.pool))for(const o of P.items){o.material?.dispose();if(o.geometry?.attributes.position?.count===48*6)o.geometry.dispose();}B3.pool={};if(SFX){SFX.dispose();SFX.glow.material.dispose();SFX=null;}for(const p of [PSA,PSN]){p.g.dispose();p.pts.material.dispose();}STARS.geometry.dispose();STARS.material.dispose();for(const m of Object.values(MT))m.dispose();for(const [c,m] of B3.crates){m.material.dispose();if(m.sh)m.sh.material.dispose();}B3.crates.clear();if(SHADOW_M){SHADOW_M.dispose();SHADOW_M=null;}if(SMK){SMK.dispose();SMK=null;}if(typeof Arena3D!=='undefined')Arena3D.release(RR);ENV=null;R3.hfRelease?.();R3.hfRelease=null;RR.dispose();CV3?.remove();RR=null;RS=null;R3.ready=false;
+ if(!RR)return;clearRange3D();if(typeof WeatherFX!=='undefined')WeatherFX.dispose();if(B3.map){disposeMap3D(B3.map);B3.map=null;B3.mapKey=null;}for(const P of Object.values(B3.pool))for(const o of P.items){o.material?.dispose();if(o.geometry?.attributes.position?.count===48*6)o.geometry.dispose();}B3.pool={};if(SFX){SFX.dispose();SFX.glow.material.dispose();SFX=null;}for(const p of [PSA,PSN]){p.g.dispose();p.pts.material.dispose();}STARS.geometry.dispose();STARS.material.dispose();for(const m of Object.values(MT))m.dispose();for(const [c,m] of B3.crates){m.material.dispose();if(m.sh)m.sh.material.dispose();}B3.crates.clear();if(SHADOW_M){SHADOW_M.dispose();SHADOW_M=null;}if(SMK){SMK.dispose();SMK=null;}if(typeof Arena3D!=='undefined')Arena3D.release(RR);ENV=null;R3.hfRelease?.();R3.hfRelease=null;RR.dispose();CV3?.remove();RR=null;RS=null;R3.ready=false;
 }
 function init3D(){
  CV3=document.createElement('canvas');CV3.id='c3';document.body.insertBefore(CV3,document.getElementById('c'));
@@ -467,6 +468,10 @@ function frame3D(shx,shy){
   if(B3.map.chase&&BR){const U=B3.map.deckUnder,[,dy,,dh]=BR.deck;for(const [tx,tw] of BR.tunnels){let foe=0,ally=0;for(const u of units){if(u.hp<=0||(u.elev||0)!==0||u.x<tx||u.x>tx+tw||u.y<dy||u.y>dy+dh)continue;if(me&&u.team===me.team)ally++;else foe++;}
    if(!foe&&!ally)continue;const k=quietMap?1:0.75+0.25*Math.sin(t*9),c=foe?TC[1]:TC[0];
    for(const z of [dy-0.12,dy+dh+0.12]){for(let i=0;i<5;i++)once(PSA,tx+0.45+(tw-0.9)*i/4,U+0.02,z,0.62*k,foe&&ally&&i%2?TC[0]:c,0.95);if(foe)once(PSA,tx+tw/2,U+0.05,z,1.5*k,c,0.4);}}}   // both teams inside: the lamps alternate red and blue along the mouth (nothing flashes)
+  if(typeof WeatherFX!=='undefined'){   // weather and the map's hazard (js/weather.js): drawn from the plan and the round clock
+   WeatherFX.in3D=!!SFX;
+   if(SFX){WXH=WXH||{T:THREE,emit:(add,p)=>emit(add?PSA:PSN,p),once:(x,y,z,s,c,a)=>once(PSA,x,y,z,s,c,a),rgb:FX3D_RGB,scorch:(x,z,r,y,a)=>{if(SMK)SMK.scorch(x,z,r,y,a);}};
+    WXH.scene=RS;WXH.SFX=SFX;WXH.env=ENV;WXH.low=R3.q==='low';WXH.quiet=quietMap;WXH.deckH=deckH();WXH.dt=dt;WXH.t=t;WeatherFX.draw3D(WXH);}}
   for(const an of B3.map.anims){
    if(an.type==='arc'&&SFX&&!quietMap){const ph=Math.floor(t*14);if((ph+an.a[2]|0)%3!==0)SFX.bolt(an.a[0],an.a[1],an.a[2],an.b[0],an.b[1],an.b[2],0.14,7,an.w,FX3D_RGB(an.c),0.9,ph*31+7,0,1);}
    else if(an.type==='ripple'&&SFX&&!quietMap){const f=(t*0.35+an.p[0]*0.13)%1;SFX.ring(an.p[0],an.p[1],an.p[2],an.r*f,0.03,FX3D_RGB(an.c),0.5*(1-f),28);}}

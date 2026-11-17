@@ -104,7 +104,7 @@ export class RoomCore {
   info() { return { phase: this.phase, q: this.q, humans: this.humans().map((s) => ({ name: s.name, on: s.on, quit: s.quit, done: s.done })), tick: this.tick }; }
 
   // a seat for a pilot the lobby sent here (the worker has checked their login and loadout)
-  seatPlayer({ pid, name, q, L, power, league }) {
+  seatPlayer({ pid, name, q, L, power, league, mp }) {
     L = JSON.parse(JSON.stringify(L));
     const now = this.io.now();
     if (this.phase === "new") {
@@ -121,7 +121,7 @@ export class RoomCore {
     if (have) { Object.assign(have, { name }); return { ok: true, seat: have.idx, wait: this.t0 + this.o.WAIT_MS - now }; }
     const idx = this.order.find((i) => !this.seats[i]);
     if (idx === undefined) return { ok: false, err: "full" };
-    this.seats[idx] = { rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
+    this.seats[idx] = { rv: this.R.LAB_RULES_VERSION, pid, name, L, power, league, mp: Number.isFinite(Number(mp)) ? Number(mp) : 99, idx, sock: null, on: false, quit: false, offAt: null, done: false, flip: false, quick: q.g === "quick" };
     // offline pilots' tanks for the AI seats, looked up while the room waits (at the first pilot's power)
     if (!this.ghP && this.io.ghosts) this.ghP = Promise.resolve().then(() => this.io.ghosts(power, [pid])).then((g) => { this.gh = g || []; }).catch(() => { this.gh = []; });
     return { ok: true, seat: idx, wait: this.t0 + this.o.WAIT_MS - now };
@@ -230,7 +230,11 @@ export class RoomCore {
     const pws = this.humans().map((s) => Number(s.power) || 0).sort((a, b) => a - b), pw = pws[(pws.length - 1) >> 1] || 0, RR = this.R;
     const ghCap = RR.aiGhostCap(pw, RR.aiLevel(pw, undefined, lg, this.q.g === "royale" ? "solo" : (RR.MODES[this.q.m] || RR.MODES["1v1"]).n).p);
     const ghosts = (this.gh || []).filter((x) => !hp.includes(x.id)).filter((x) => { try { return (Number(x.pw) || RR.powerOf(x.L)) <= ghCap; } catch (e) { return false; } }).slice(0, Math.min(ECO.GHOST_MAX, Math.ceil(empty / 2)));
-    this.sim.setup({ map, g: this.q.g, m: this.q.g === "royale" ? "1v1" : this.q.m, series: this.series, seats, ghosts, lg });
+    // weather (Session 5E-2e): the room draws the seed; the sim, every phone and the results all work from it (rules.js wxPlan).
+    // A match is clear if any pilot in it is in their first three matches. Tests can fix the seed (opts.WX)
+    this.wx = Number.isInteger(this.o.WX) ? this.o.WX : (crypto.getRandomValues(new Uint32Array(1))[0] | 0);
+    this.wxc = this.humans().some((s) => (s.mp | 0) < R.WX_FIRST_CLEAR);
+    this.sim.setup({ map, g: this.q.g, m: this.q.g === "royale" ? "1v1" : this.q.m, series: this.series, seats, ghosts, lg, wx: this.wx, wxc: this.wxc });
     for (const s of this.humans()) { const u = this.sim.units[s.idx]; s.flip = this.q.g === "royale" ? u.y < 16 : u.team === 1; }
     this.vsAt = now + this.o.VS_MS;
     for (const s of this.humans()) this.sendTo(s, this.goMsg(s));
@@ -239,7 +243,7 @@ export class RoomCore {
   goMsg(s) {
     const u = this.sim.units[s.idx];
     return { k: "go", chs: (s.L.chs || [s.L.c]).map(c => c.c), me: s.idx, team: u.team, flip: s.flip, map: this.sim.map, g: this.q.g, m: this.q.m, series: !!this.series, phase: this.phase,
-      units: this.sim.roster(), vs: Math.max(0, (this.vsAt || 0) - this.io.now()), feat: this.q.g === this.R.featuredOn(this.io.day()), t: this.tick };
+      wx: [this.wx, this.wxc ? 1 : 0], units: this.sim.roster(), vs: Math.max(0, (this.vsAt || 0) - this.io.now()), feat: this.q.g === this.R.featuredOn(this.io.day()), t: this.tick };
   }
   startFight() {
     if (this.phase !== "vs") return;
@@ -332,12 +336,12 @@ export class RoomCore {
     const st = u.st || {}, se = this.sim.series;
     const res = { live: true, quick: !!s.quick, won, drawn, quit, place: o.place, top3, score: o.score, g, m, base, modeX: zx, featured: feat, featX: fxm,
       league: { n: brk.n, key: brk.key, mult: brk.mult, pay: brk.pay, c: brk.c, i: brk.i },
-      stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), arm: Math.round(st.arm || 0), shd: Math.round(st.shd || 0), best: Math.round(st.best || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0, low: Math.round((st.low ?? 1) * 1000) / 1000 },
+      stats: { dmg: Math.round(st.dmg || 0), kills: st.kills || 0, boxes: st.box || 0, sups: st.sup || 0, taken: Math.round(st.taken || 0), arm: Math.round(st.arm || 0), shd: Math.round(st.shd || 0), best: Math.round(st.best || 0), cry: st.cry || 0, stars: st.stars || 0, caps: st.caps || 0, low: Math.round((st.low ?? 1) * 1000) / 1000, td: st.td || 0 },   // td: map hazard takedowns, counted by this room's own sim (5E-2e)
       series: se ? { w: u.team === 0 ? [se.w[0], se.w[1]] : [se.w[1], se.w[0]] } : null, cls: u.cls };
     // the match as the server saw it: quests, pass XP and stats on the pilot's record come from this (eco.js creditMatch)
     const mt = quit ? { quit: true } : { won, drawn, top3, feat, quick: !!s.quick, g, m, map: this.sim.map, seriesW: res.series && res.series.w,
       secs: this.startedAt ? (this.io.now() - this.startedAt) / 1000 : 0,
-      st: { dmg: res.stats.dmg, sup: res.stats.sups, box: res.stats.boxes, kills: res.stats.kills, caps: res.stats.caps, cry: res.stats.cry, stars: res.stats.stars, low: res.stats.low, taken: res.stats.taken, arm: res.stats.arm, shd: res.stats.shd, best: res.stats.best } };
+      st: { dmg: res.stats.dmg, sup: res.stats.sups, box: res.stats.boxes, kills: res.stats.kills, caps: res.stats.caps, cry: res.stats.cry, stars: res.stats.stars, low: res.stats.low, taken: res.stats.taken, arm: res.stats.arm, shd: res.stats.shd, best: res.stats.best, td: res.stats.td } };
     const opp = this.humans().filter((x) => x !== s && x.pid && this.sim.units[x.idx] && (g === "royale" || this.sim.units[x.idx].team !== u.team)).map((x) => x.pid);   // live opponents (win-trading check)
     const calc = (rec) => {
       const pvs = won ? (rec.pvs || 0) + 1 : quit || (!drawn && !top3) ? 0 : rec.pvs || 0;   // Last Standing: 2nd and 3rd keep the streak
@@ -465,7 +469,7 @@ export async function pvpJoin(env, a) {
   const power = R.powerOf(L), league = R.leagueIdx(R.leagueRating(power, S.lwr, S.mp), S.lgi), name = cleanName(a.user), q = g + "." + m, lobby = lobbyStub(env);
   for (let i = 0; i < 3; i++) {
     const asg = await (await lobby.fetch("https://lobby/assign", post({ q, league, power, pid: a.pid, seats: seatsFor(g, m) }))).json();
-    const r = await (await roomStub(env, asg.room).fetch("https://room/seat", post({ room: asg.room, pid: a.pid, name, q: { g, m }, L, power, league }))).json();
+    const r = await (await roomStub(env, asg.room).fetch("https://room/seat", post({ room: asg.room, pid: a.pid, name, q: { g, m }, L, power, league, mp: S.mp | 0 }))).json();
     if (r.ok) return { status: 200, body: { ok: true, room: asg.room, tok: await makeToken(env, a.pid, asg.room, now, a.web), seat: r.seat, wait: r.wait, power, league: R.LEAGUES[league], lgi: league } };
     await lobby.fetch("https://lobby/close", post({ room: asg.room }));
   }

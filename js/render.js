@@ -748,6 +748,7 @@ function drawBattle(){
  let shx=0,shy=0;
  if(shakeT>0&&!(typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced())){const m=shakeM*Math.min(1,shakeT*3);shx=(Math.random()-0.5)*m;shy=(Math.random()-0.5)*m;}
  const D3=D3on(),AH=Y(H)-Y(0);   // D3: the world is drawn by render3d.js underneath; this canvas adds the overlay
+ const WXF=typeof WeatherFX!=='undefined'?WeatherFX:null;if(WXF){WXF.in3D=false;const n=performance.now();WXF.step(Math.min(0.05,drawBattle.wt?(n-drawBattle.wt)/1000:0.016));drawBattle.wt=n;}   // the weather's cues and strength (5E-2e)
  if(D3){g.clearRect(0,0,vw,vh);frame3D(shx,shy);}
  else{g.fillStyle='#0a0e17';g.fillRect(0,0,vw,vh);}
  g.save();g.translate(shx,shy);
@@ -778,7 +779,8 @@ function drawBattle(){
   if(cry){const mx=X(cry.mine.x),my=Y(cry.mine.y),t=performance.now()/1000;
    g.save();g.globalAlpha=0.1;g.fillStyle='#b98cff';g.beginPath();g.arc(mx,my,CRY_MINE_R*sc,0,7);g.fill();g.globalAlpha=0.45;g.strokeStyle='#c79bff';g.lineWidth=2;g.setLineDash([6,8]);g.lineDashOffset=-t*8;g.beginPath();g.arc(mx,my,CRY_MINE_R*sc,0,7);g.stroke();g.restore();}
  }
- // meteor / stomp warnings: rings on the ground
+ if(WXF&&(!D3||!WXF.in3D))WXF.draw2D(g);   // the map's hazard, flat (the 3D view draws its own)
+ // the megatank's stomp and shell warnings: rings on the ground
  for(const wn of warns){const k=1-wn.t/wn.t0,wh=CH?hTop(wn.x,wn.y):0;
   g.fillStyle='rgba(255,77,94,'+(0.08+0.3*k)+')';g.beginPath();gArc(wn.x,wn.y,wn.r,undefined,undefined,false,wh);g.fill();
   g.strokeStyle='rgba(255,107,94,'+(0.5+0.5*Math.abs(Math.sin(performance.now()/90)))+')';g.lineWidth=2;g.setLineDash([5,4]);g.beginPath();gArc(wn.x,wn.y,wn.r,undefined,undefined,false,wh);g.stroke();g.setLineDash([]);
@@ -925,6 +927,8 @@ function drawBattle(){
   g.strokeStyle='rgba(199,155,255,.9)';g.lineWidth=3;g.setLineDash([10,7]);g.lineDashOffset=-t*20;g.beginPath();gArc(storm.x,storm.y,storm.r,undefined,undefined,false,CH&&me&&me.hp>0?hOf(me):0);g.stroke();g.setLineDash([]);g.lineDashOffset=0;g.restore();}
  g.restore();   // end arena clip
  if(!D3){g.strokeStyle='#59607a';g.lineWidth=2;g.strokeRect(X(0),Y(0),W*sc,AH);}
+ if(WXF&&(!D3||!WXF.in3D))WXF.draw2D(g,true);   // the 2D fallback's train, laser and arcs: over the deck, the walls and the tanks
+ if(WXF)WXF.overlay(g,vw,vh,CH?hudY0()+sc*2.1:0);   // glare, dust or dimmed lights over the world: under the floating text, the edge markers and the HUD, and never over the HUD band
  // floating text: labels stay on screen, damage numbers merge
  g.save();g.beginPath();if(CH)g.rect(-40,-40,vw+80,vh+80);else g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
@@ -970,7 +974,7 @@ function drawEdges(){
   if(WP(x,y,h)&&WPx>Z.x+8&&WPy>Z.y+8){if(WPx-Z.x<WPy-Z.y){EDGE.x=Z.x;EDGE.y=Math.min(WPy,vh-SAB-24);EDGE.a=0;}else{EDGE.x=Math.min(WPx,vw-24);EDGE.y=Z.y;EDGE.a=Math.PI/2;}return EDGE;}   // under your own buttons: marked on the edge of the button corner
   return null;};
  // enemies: the nearest four that are outside the frame
- EDL.length=0;if(me)for(const u of units){if(u.hp<=0||u===me||u.team===me.team)continue;EDL.push([Math.hypot(u.x-me.x,u.y-me.y),u]);}
+ EDL.length=0;if(me)for(const u of units){if(u.hp<=0||u===me||u.team===me.team||(typeof WeatherFX!=='undefined'&&!WeatherFX.sees(u)))continue;EDL.push([Math.hypot(u.x-me.x,u.y-me.y),u]);}
  EDL.sort((a,b)=>a[0]-b[0]);let shown=0;
  for(const [d,u] of EDL){if(shown>=4)break;const e=at(u.x,u.y,hOf(u)+0.5);if(!e)continue;shown++;
   const near=1-Math.max(0,Math.min(1,(d-5)/14)),hot=alive&&d<=STAT.range+0.6,pulse=hot&&!quiet?0.5+0.5*Math.sin(now/110):hot?1:0,r=((u.boss?14:10)+4*near+2*pulse)*es;
@@ -1051,7 +1055,7 @@ function drawMini(){
  // tanks: enemies, then your side, then you
  const dot=(b,c,r)=>{g.beginPath();g.arc(mx(b.x),my(b.y),r,0,7);g.fillStyle=c;g.fill();g.lineWidth=1;g.strokeStyle='rgba(6,10,18,.9)';g.stroke();};
  const dr=Math.max(3,u*1.05);
- for(const b of units)if(b.hp>0&&b.team!==(me?me.team:0))dot(b,'#ff4d5e',b.boss?dr*1.9:dr);
+ for(const b of units)if(b.hp>0&&b.team!==(me?me.team:0)&&(typeof WeatherFX==='undefined'||WeatherFX.sees(b)))dot(b,'#ff4d5e',b.boss?dr*1.9:dr);   // dust, glare, a cloud: an enemy your side cannot see is not on the map
  for(const b of units)if(b.hp>0&&b!==me&&b.team===(me?me.team:0))dot(b,'#4d9fff',dr);
  if(me&&me.hp>0){g.fillStyle='#10161d';g.beginPath();g.arc(mx(me.x),my(me.y),dr+2.2,0,7);g.fill();dot(me,'#ffd24a',dr+1);}
  g.restore();
@@ -1095,8 +1099,10 @@ function drawHUD(){
  const tw=sc*3.6,th=sc*1.5;g.fillStyle='rgba(10,14,23,.85)';rr(g,mid-tw/2,hy,tw,th,th/2);g.fill();g.strokeStyle=tl<=10?'#ff6b5e':'rgba(223,231,242,.18)';g.lineWidth=1.5;rr(g,mid-tw/2,hy,tw,th,th/2);g.stroke();
  g.fillStyle=tl<=10?'#ff8a7e':'#dfe7f2';g.textAlign='center';g.font=font(Math.round(sc*1.05));g.fillText(mm+':'+ss,mid,hy+th/2+1);
  if(series){g.font=font(Math.round(sc*0.6));g.fillStyle='rgba(223,231,242,.7)';g.textAlign='center';g.fillText('Round '+series.round,mid,hy+th+sc*0.55);}
- else if(matchG==='bounty'&&me&&!evt){g.font=font(Math.round(sc*0.6));g.fillStyle='#ffcf4a';g.textAlign='center';g.fillText('Your bounty: '+(me.bty||BTY_START),mid,hy+th+sc*0.55);}
- if(evt&&evt.k!=='drop'){g.font=font(Math.round(sc*0.6));g.fillStyle=EVENTS[evt.k].c;g.textAlign='center';g.fillText((evt.k==='meteor'?'Meteor shower ':'Solar flare ')+Math.ceil(evt.t)+'s',mid,hy+th+sc*0.55);}
+ else if(matchG==='bounty'&&me){g.font=font(Math.round(sc*0.6));g.fillStyle='#ffcf4a';g.textAlign='center';g.fillText('Your bounty: '+(me.bty||BTY_START),mid,hy+th+sc*0.55);}
+ {const wc=typeof WeatherFX!=='undefined'?WeatherFX.chip():null;   // this match's weather, under the clock (the flare counts down while it lasts)
+  if(wc){const line2=!!series||(matchG==='bounty'&&me),fs=Math.max(10,Math.round(sc*0.52)),wy=line2?HY+sc*(matchG==='bounty'?1.5:0.7):hy+th+sc*0.6;g.font=font(fs);g.textAlign='center';const tw2=g.measureText(wc.txt).width+fs*1.2;
+   g.fillStyle='rgba(8,12,20,.72)';rr(g,mid-tw2/2,wy-fs*0.78,tw2,fs*1.5,fs*0.75);g.fill();g.fillStyle=wc.c;g.fillText(wc.txt,mid,wy);}}   // on a dark pill, so it reads on a bright map and under a flare   // under the round / bounty line and the mode's own line when those are there
  const outRing=!!storm&&me&&me.hp>0&&Math.hypot(me.x-storm.x,me.y-storm.y)>storm.r;
  if(me&&me.hp>0&&state==='play'&&slowAt(me)<1&&!(me.rep>0)&&!outRing){g.fillStyle='#c9b48a';g.font=font(Math.round(sc*0.62));g.textAlign='center';if(CH){g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.7)';g.strokeText('crater: slowed',mx,my+mk*1.4);g.fillStyle='#f0dcae';}g.fillText('crater: slowed',mx,my+mk*1.4);}
  if(ffBtnOn()){const F=ffBtn();g.fillStyle=ffwd?'rgba(255,122,47,.92)':'rgba(10,14,23,.88)';rr(g,F.x,F.y,F.w,F.h,F.h/2);g.fill();g.strokeStyle=ffwd?'#ffb37a':'rgba(223,231,242,.4)';g.lineWidth=1.5;rr(g,F.x,F.y,F.w,F.h,F.h/2);g.stroke();
@@ -1118,7 +1124,8 @@ function drawHUD(){
   g.fillStyle=BUFF[b.k].c;rr(g,x,y,w,h,3);g.fill();g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x,y+h-3,w*(1-b.taken/BUFF_LIFE),3);
   g.fillStyle='#10161d';g.textAlign='center';g.font=font(Math.round(sc*0.55));g.fillText(BUFF[b.k].n,x+w/2,y+h/2);});
  // counter banner
- if(banner){g.globalAlpha=Math.min(1,banner.t*2);g.font=font(Math.round(sc*0.72));const bw2=g.measureText(banner.txt).width+26,bh2=sc*1.3,bx2=mid-bw2/2,by2=HY+sc*(topLine?1.5:0.5);
+ if(banner){g.globalAlpha=Math.min(1,banner.t*2);let bf=Math.round(sc*0.72);g.font=font(bf);const bw0=g.measureText(banner.txt).width+26;if(bw0>vw-10){bf=Math.max(9,Math.floor(bf*(vw-10)/bw0));g.font=font(bf);}   // a line wider than the screen is set smaller, never cut off
+  const bw2=g.measureText(banner.txt).width+26,bh2=sc*1.3,bx2=mid-bw2/2,by2=HY+sc*(topLine?1.5:0.5);
   g.fillStyle='rgba(8,12,18,.88)';rr(g,bx2,by2,bw2,bh2,bh2/2);g.fill();g.strokeStyle=banner.c;g.lineWidth=1.5;rr(g,bx2,by2,bw2,bh2,bh2/2);g.stroke();
   g.fillStyle=banner.c;g.textAlign='center';g.fillText(banner.txt,mid,by2+bh2/2+1);g.globalAlpha=1;}
  if(pvpLag()){const tw4=sc*6,th4=sc*1.2,yy=CH?vh*0.3:Y(H/2)-sc*4;g.fillStyle='rgba(10,14,23,.88)';rr(g,mid-tw4/2,yy,tw4,th4,th4/2);g.fill();g.strokeStyle='#ffcf4a';g.lineWidth=1.5;rr(g,mid-tw4/2,yy,tw4,th4,th4/2);g.stroke();
