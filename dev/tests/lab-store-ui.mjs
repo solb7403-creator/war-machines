@@ -22,7 +22,7 @@ for(const mode of ['tg','web']){const W=world(mode),h=W.labShopSec(),btns=h.matc
  ok(btns.length>=6&&btns.every(b=>/ disabled/.test(b)&&!/data-act=/.test(b)),mode+': every Lab button is disabled and has no action ('+btns.length+' buttons)');
  ok(/Not on sale yet/.test(h)&&/never give points/.test(h),mode+': says plainly it is not on sale and never gives points');
  const N=id=>vm.runInContext('rmodOf('+JSON.stringify(id)+').F.n',W);
- ok(h.includes(N('starfall')+'</b><span>Ballistics · Owned')&&h.includes(N('sunfire')+'</b><span>Thermal · A step stronger than '+N('inferno'))&&h.includes(N('hyperdrive')+'</b><span>Drive · On sale once you research '+N('overdrive')),mode+': Legendary lines follow the server record (owned, on sale after its set mod)');
+ ok(h.includes(N('starfall')+'</b><span>Ballistics · Owned')&&h.includes(N('sunfire')+'</b><span>Thermal · A step stronger than '+N('inferno'))&&h.includes(N('hyperdrive')+'</b><span>Drive · Needs '+N('overdrive')+' first'),mode+': Legendary lines follow the server record (owned, on sale after its set mod)');
  if(mode==='tg')ok(/>99 ⭐</.test(h)&&/>599 ⭐</.test(h)&&!/TON/.test(h.replace(/LUNAR/g,'')),'Telegram shows Stars only: '+(h.match(/>[\d,]+ ⭐</g)||[]).slice(0,4).join(' '));
  else ok(/1\.6 TON · 0\.032 SOL/.test(h)&&/9\.6 TON · 0\.192 SOL/.test(h)&&!/⭐/.test(h),'the website shows TON and SOL at the live rate (1.6 TON = 0.032 SOL at $3 / $150), no Stars');}
 {const W=world('web');vm.runInContext('px={ton:0,sol:0,t:0};fetched=0;',W);const h=W.labShopSec();ok(/… SOL/.test(h)&&W.fetched>0,'the website asks for the live SOL rate when it has none yet');}
@@ -34,7 +34,7 @@ for(const mode of ['tg','web']){const W=world(mode),h=W.labShopSec(),btns=h.matc
  const r1=mk('div');W.ConquestLabStore.row(r1,'rsfin',{job:{id:'j2'},left:2*3600e3},{el,button,state});
  const b1=all(r1).find(n=>n.tag==='button');ok(b1&&b1.disabled&&/FINISH NOW · 31 ⭐/.test(b1.textContent)&&all(r1).some(n=>/Not on sale yet · priced by the time left/.test(n.textContent)),'a running job shows FINISH NOW · 31 ⭐ (2 h left), disabled');
  const r2=mk('div');W.ConquestLabStore.row(r2,'rsleg',{id:'sunfire'},{el,button,state});const b2=all(r2).find(n=>n.tag==='button');ok(b2&&b2.disabled&&/LEGENDARY · 599 ⭐/.test(b2.textContent),'Sunfire (Inferno researched): LEGENDARY · 599 ⭐, disabled');
- const r3=mk('div');W.ConquestLabStore.row(r3,'rsleg',{id:'hyperdrive'},{el,button,state});ok(!all(r3).some(n=>n.tag==='button')&&all(r3).some(n=>/On sale once you research /.test(n.textContent)&&n.textContent.includes(vm.runInContext("rmodOf('overdrive').F.n",W))),'Hyperdrive before Overdrive: a line, no button');
+ const r3=mk('div');W.ConquestLabStore.row(r3,'rsleg',{id:'hyperdrive'},{el,button,state});ok(!all(r3).some(n=>n.tag==='button')&&all(r3).some(n=>/^Needs /.test(n.textContent)&&n.textContent.includes(vm.runInContext("rmodOf('overdrive').F.n",W)+' first')),'Hyperdrive before Overdrive: a line, no button');
  const r4=mk('div');W.ConquestLabStore.row(r4,'rsleg',{id:'starfall'},{el,button,state});ok(all(r4).some(n=>/OWNED/.test(n.textContent)),'an owned Legendary says so');
  const r5=mk('div');W.ConquestLabStore.row(r5,'rspack',{},{el,button,state});const bs=all(r5).filter(n=>n.tag==='button');ok(bs.length===3&&bs.every(b=>b.disabled)&&all(r5).some(n=>/One of each pack a week/.test(n.textContent)),'the Lab store fold: three packs, all disabled, one of each a week');
  clicks.forEach(f=>f());ok(true,'pressing a Lab button does nothing (no handler sends anything)');}

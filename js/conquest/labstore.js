@@ -14,7 +14,7 @@ function row(parent,kind,info,ctx){const {el,button,state}=ctx||{};if(!el||!butt
  if(kind==='rsfin'){const left=Number(info?.left)||0,p=rsFinPrice(left);if(!p)return null;return offer(el,button,parent,'FINISH NOW',p,'priced by the time left');}
  if(kind==='rsleg'){const id=info?.id,set=rsLegSet(id);if(!set)return null;const done=!!(state?.rs?.done?.[set]||typeof save!=='undefined'&&save?.rm?.[set]);
   if(ownedLsm(id)){el('b','cq-lab-tag','★ OWNED · in your garage',parent);return null;}
-  if(!done){el('small','cq-lab-lock','On sale once you research '+rmodOf(set).F.n+' (its track\'s set mod) · '+label(RS_LEG_PRICE),parent);return null;}
+  if(!done){el('small','cq-lab-lock','Needs '+rmodOf(set).F.n+' first (its track\'s set mod) · '+label(RS_LEG_PRICE),parent);return null;}
   return offer(el,button,parent,'LEGENDARY',RS_LEG_PRICE,'yours for good, every mode');}
  if(kind==='rspack'){const f=el('details','cq-map-fold cq-lab-store',null,parent),sm=el('summary','','LAB STORE · RESEARCH PART PACKS',f);sm.dataset.k='lab-store';
   el('small','cq-lab-uses','Each pack adds parts of all four kinds to your Science Lab. One of each pack a week.',f);

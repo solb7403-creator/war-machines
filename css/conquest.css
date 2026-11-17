@@ -435,3 +435,16 @@
 .cq-lab-off{display:block;margin-top:3px;font-size:11px;opacity:.75}
 .cq-lab-store .cq-lab-pack h3{color:var(--tc,#e8f4ff)}
 .cq-rating .cq-rating-next{display:block;font-size:10px;letter-spacing:.04em;opacity:.85;color:#9fe8b0;white-space:nowrap}
+/* Session 6B critic round 1: the reveal card fits its content and is centred; FIT is the main button; a CLOSE stays in view at the
+   top of the long Lab screen; 44 px Lab buttons; the pending POWER line is amber (not yet earned); the transient reward ticker reads
+   as a pill over whatever HUD line sits beneath it; the desktop key hint hides under an open dialog; Supply's chip on its own line */
+.cq-dialog.cq-lab-reveal{top:50%;bottom:auto;transform:translateY(-50%);max-height:calc(100% - 24px)}
+.cq .cq-lab-fit{background:#1d6b4f;border-color:#5fe3a1;color:#eafff3;font-weight:800}
+.cq-dialog .cq-lab-close-top{position:sticky;top:-8px;float:right;margin:-8px -8px 4px 8px;z-index:3}
+.cq .cq-lab-go,.cq .cq-lab-buy{min-height:44px}
+.cq .cq-rating .cq-rating-next{color:#ffcf6a;opacity:1}
+.cq-reward-ticker:not(:empty){width:fit-content;max-width:calc(100% - 24px);margin:0 auto;padding:3px 10px;border-radius:9px;background:#08121df0;box-shadow:0 0 0 1px #e0c27a55;z-index:6}
+.cq:has(.cq-dialog) .cq-keys{display:none}
+.cq-supply .cq-supply-power{margin:0 0 8px}
+.cq-supply .cq-plating button{font-size:12px;line-height:1.35}
+

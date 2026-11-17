@@ -739,13 +739,12 @@ function labShopSec(){
  const off='<span class="labshop-off">Not on sale yet</span>',btn=p=>'<button class="btn sm btn-quiet" disabled aria-disabled="true">'+labPriceLabel(p)+'</button>';
  const packs=RS_PACK_ORDER.map(k=>{const P=RS_PACKS[k];return '<div class="labshop-item"><div class="grow"><b>'+esc(P.n)+'</b><span>+'+P.each+' of every research part</span></div>'+btn(P)+off+'</div>';}).join('');
  const legs=RTREE.order.map(t=>{const id=RTREE.legendary[t],F=rmodOf(id).F,set=rsLegSet(id),own=!!(save.lsm&&save.lsm[id]),done=!!(save.rm&&save.rm[set]);
-  return '<div class="labshop-item leg"><div class="grow"><b>★ '+esc(F.n)+'</b><span>'+esc(RTREE.tracks[t].n)+' · '+(own?'Owned':done?'A step stronger than '+esc(rmodOf(set).F.n):'On sale once you research '+esc(rmodOf(set).F.n))+'</span></div>'+(own?'':btn(RS_LEG_PRICE)+off)+'</div>';}).join('');
+  return '<div class="labshop-item leg"><div class="grow"><b>★ '+esc(F.n)+'</b><span>'+esc(RTREE.tracks[t].n)+' · '+(own?'Owned':done?'A step stronger than '+esc(rmodOf(set).F.n):'Needs '+esc(rmodOf(set).F.n)+' first')+'</span></div>'+(own?'':btn(RS_LEG_PRICE)+off)+'</div>';}).join('');
  const f=[20*60e3,2*3600e3,8*3600e3].map(ms=>labPriceLabel(rsFinPrice(ms)));
- return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
+ return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="labshop-note">Not on sale yet: nothing in this section can be bought.</p><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
   '<h4 class="ptsh">Research part packs · one of each a week</h4>'+packs+
   '<h4 class="ptsh">Legendary set mods · a step stronger than the earned set mod</h4>'+legs+
-  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min '+f[0]+' · 2 h '+f[1]+' · 8 h '+f[2]+'. Shown on a running job in the Science Lab.</p>'+
-  '<p class="labshop-note">Not on sale yet: nothing in this section can be bought.</p></div>';
+  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min '+f[0]+' · 2 h '+f[1]+' · 8 h '+f[2]+'. Shown on a running job in the Science Lab.</p></div>';
 }
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;

@@ -28,7 +28,7 @@ function nodeOf(s,id,now=Date.now()){const r=rsOf(s),L=labOf(s),prem=!!r.acct?.p
  if(L.ruined)return {st:'locked',why:'the Science Lab is ruined: repair it'};if((r.jobs||[]).length>=rsSlots(L.lv,prem))return {st:'busy',q};return {st:'ready',q};}
 // the first finished mod whose reveal card has not been shown
 const toReveal=s=>{const r=rsOf(s);return RTREE_ALL.find(id=>r.done?.[id]&&!r.seen?.[id])||null;};
-function partChip(el,parent,k,P){const c=el('span','cq-lab-part',null,parent);c.style.setProperty('--tc',RTREE.tracks[Object.keys(RTREE.tracks).find(t=>RTREE.tracks[t].part===k)].c);el('b','',P.total+'',c);el('small','',CQ_PARTS[k].n.toUpperCase()+(P.bonus?' · '+P.bonus+' BONUS':''),c);return c;}
+function partChip(el,parent,k,P){const c=el('span','cq-lab-part',null,parent);c.style.setProperty('--tc',RTREE.tracks[Object.keys(RTREE.tracks).find(t=>RTREE.tracks[t].part===k)].c);el('b','',P.total+'',c);el('small','',CQ_PARTS[k].n.toUpperCase()+(P.total===1?'':'S')+(P.bonus?' · '+P.bonus+' BONUS':''),c);return c;}
 // the whole screen (d: a container; ctx: {el, button, act(mod) -> Promise<boolean>, close, store(row, kind, info)})
 function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(s),prem=!!r.acct?.prem,slots=rsSlots(L.lv,prem),parts=partsOf(s);
  d.classList.add('cq-lab');el('p','cq-kicker','SCIENCE LAB · RESEARCH · TANK MODS',d);el('h2','',L.any?'SCIENCE LAB '+ROMAN[L.lv]:'SCIENCE LAB',d);
@@ -45,7 +45,7 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
  // the tree: one fold per track, then the locked fifth track
  for(const t of RTREE.order){const T=RTREE.tracks[t],open=L.lv>=T.lab,f=el('details','cq-map-fold cq-lab-track',null,d),sm=el('summary','',T.n.toUpperCase()+' · '+(open?T.d:'opens at Science Lab '+ROMAN[T.lab]),f);sm.dataset.k='lab-'+t;f.style.setProperty('--tc',T.c);
   if(open&&RTREE.mods[t].some(id=>{const n=nodeOf(s,id,now).st;return n==='ready'||n==='running';}))f.open=true;
-  el('small','cq-lab-uses','Uses '+CQ_PARTS[T.part].n+'s · Science Lab '+ROMAN[T.lab]+' for its mods, III for its set mod',f);
+  el('small','cq-lab-uses','Uses '+CQ_PARTS[T.part].n+'s: '+RTREE.cost.slice(0,3).join(', then ')+' for its mods in the order you research them, '+RTREE.cost[3]+' for the set mod · Science Lab '+ROMAN[T.lab]+' for its mods, III for its set mod',f);
   for(const id of [...RTREE.mods[t],RTREE.legendary[t]]){const R0=rmodOf(id),F=R0.F,n=F.leg?{st:'legendary'}:nodeOf(s,id,now),row=el('article','cq-lab-node cq-lab-'+n.st,null,f);
    el('h3','',(F.leg?'★ ':F.set?'◆ ':'')+F.n.toUpperCase(),row);el('small','cq-lab-meta',SLOT_N[R0.slot]+' MOD · '+F.role.toUpperCase()+(F.set?' · SET MOD':'')+(F.leg?' · LEGENDARY':''),row);
    el('p','cq-lab-what',F.d,row);el('small','cq-lab-cost','Trade-off: '+tradeOff(F),row);

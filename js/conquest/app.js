@@ -152,7 +152,7 @@ function platingCards(d,s){if(typeof PLATE==='undefined'||typeof fabPlate!=='fun
  if(!P.ap.some(Boolean))el('p','cq-first-plate',w.fe>=PLATE.cost[1].fe?'YOUR FIRST PLATE IS READY: FABRICATE THE FRONT FERRITE PLATE (+1% HULL, VISIBLE ON YOUR WAR MACHINE).':'FIRST PLATE: '+PLATE.cost[1].fe+' FERRITE + '+PLATE.cost[1].pts+' PTS. SCAN FOR THE STARTER VEIN BESIDE THE REFUGE, THEN BANK IT HERE.',box);}
 function supply(){if(!view||panel.querySelector('.cq-dialog'))return;const d=dialog(),s=view.authority?.state,L=s?.ledger;d.classList.add('cq-supply');el('h2','','REFUGE SUPPLY',d);
  // Session 6B (owner decision 6): it opens on the two actions a pilot needs (BANK, REPAIR) and the plating cards; the ledger lines move below
- {const top=el('div','cq-supply-top',null,d);root.ConquestRating?.chip(el,top,{key:'power',label:'POWER',value:tankPower(s)});
+ {root.ConquestRating?.chip(el,el('div','cq-supply-power',null,d),{key:'power-field',label:'POWER',value:tankPower(s),next:fitPending(s),note:'at the Refuge'});const top=el('div','cq-supply-top',null,d);
   for(const [action,label] of [['bank','BANK SALVAGE'],['repair','REPAIR HULL']])top.append(button(label,async e=>{const ok=await view.requestAction(action);if(ok){cue(action==='bank'?'bank':'claim');d.remove();supply();}else{const p=d.querySelector('.cq-supply-error')||el('p','cq-supply-error','',d);p.textContent=view.authority?.error||'Approach the safe Refuge supply terminal.';}},'cq-supply-act'));}
  platingCards(d,s);
  {const ln=engineeringLine(s);if(ln)el('p','cq-supply-eng',ln,d);}
@@ -241,7 +241,7 @@ function engineeringCards(d,s){
  const C=root.ConquestCombat,B=view.battle||view.encounter;if(!B)return;
  const saved=C.engineeringDefaults(s?.engineering),values=C.engineeringValues(B.playerStats,saved),L=s?.ledger;
  const eligible=!!s&&!s.mission&&s.hp>0&&Math.hypot(s.position.x-1174,s.position.z-1168)<=12&&!B.enemies.some(e=>e.hp>0&&Math.hypot(e.x-s.position.x,e.z-s.position.z)<80);
- el('p','','Thermal capacity holds heat; cooling removes it continuously. At full heat, venting lasts about five seconds to 35%. Refit and respawn preserve heat debt.',d);el('p','',eligible?'COMBAT ENGINEERING · terminal online':'Combat engineering requires the safe physical Refuge terminal, outside a mission.',d);
+ el('p','','Your cannon heats up as it fires and cools on its own. At full heat it vents for about five seconds before it fires again.',d);el('p','',eligible?'COMBAT ENGINEERING · terminal online':'Combat engineering requires the safe physical Refuge terminal, outside a mission.',d);
  const names={heatCapacity:['Heat capacity','capacity'],heatCooling:['Cooling / sec','cooling'],bulletVelocity:['Velocity / sec','velocity'],bulletRange:['Maximum range','range'],dashDistance:['Dash distance','dashSpeed'],dashCooldown:['Dash cooldown','dashCooldown'],shieldDuration:['Shield duration','shieldDuration'],shieldCooldown:['Shield cooldown','shieldCooldown']};
  const format=(v,k)=>k==='dashSpeed'?(v*B.combatSpeed*.4).toFixed(1)+' m':v.toFixed(2)+(k.includes('Cooldown')||k==='shieldDuration'?' s':'');
  const submit=async(action,args)=>{d.querySelectorAll('button,input').forEach(e=>e.disabled=true);const ok=await view.requestAction(action,args);if(!d.isConnected)return;d.remove();supply();const next=panel.querySelector('.cq-dialog');const message=el('p','cq-supply-error',ok?'Engineering saved.':view.authority?.error||'Action unavailable',next);message.setAttribute('role','status');};
@@ -424,7 +424,7 @@ function lootScreen(){if(!view||panel.querySelector('.cq-dialog'))return;view.re
 // Session 6B: the Science Lab screen (js/conquest/lab.js draws it; the Worker runs every job) and the reveal card when one finishes
 function researchScreen(){if(!view||panel.querySelector('.cq-dialog'))return;view.reset();const d=dialog(),s=view.authority?.state,Lb=root.ConquestLab;if(!Lb)return;
  Lb.screen(d,s,{el,button,store:labStore,act:async id=>{const ok=await view.requestAction('research-start',{mod:id});if(ok){if(typeof fx==='function')fx('rstart');d.remove();researchScreen();}else say(String(view.authority?.error||'UNAVAILABLE').replace(/^conquest: /,'').toUpperCase());return ok;}});
- d.append(button('CLOSE',()=>d.remove()));}
+ d.prepend(button('CLOSE',()=>d.remove(),'cq-lab-close-top'));d.append(button('CLOSE',()=>d.remove()));}   // a long screen: CLOSE at the top too (it stays in view while scrolling)
 function labStore(row,kind,info){root.ConquestLabStore?.row(row,kind,info,{el,button,state:view?.authority?.state});}   // the store entries (checkout off)
 // a finished job's reveal card: once per mod (the Worker keeps 'seen'), never over a fight or another screen
 function revealStep(state){const Lb=root.ConquestLab;if(!Lb||!state||!view||view.battle||panel.querySelector('.cq-dialog,.cq-plot,.cq-map,.cq-radio'))return;const id=Lb.toReveal(state);if(!id||view.revealing===id)return;view.revealing=id;

@@ -915,3 +915,13 @@ button.q{display:flex;width:100%;text-align:left}
 .labshop-item .grow{min-width:0;flex:1 1 150px}.labshop-item b{display:block}.labshop-item span{color:var(--dust);font-size:12px}
 .labshop-item.leg b{color:var(--gold)}.labshop-item button[disabled]{opacity:.75;cursor:default}
 .labshop-off{flex-basis:100%;text-align:right;font-size:11px;color:var(--dust)}.labshop-note{margin:10px 0 0;font-size:12px;color:var(--dust)}
+/* critic round 1: a 28 px volume knob (touch), dimmer disabled store buttons, the store note first */
+.q.vol .volr{-webkit-appearance:none;appearance:none;background:transparent}
+.q.vol .volr::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--rock4)}
+.q.vol .volr::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-11px;border-radius:50%;background:var(--ok);border:2px solid #0b1a12}
+.q.vol .volr::-moz-range-track{height:6px;border-radius:3px;background:var(--rock4)}
+.q.vol .volr::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--ok);border:2px solid #0b1a12}
+.q.vol .volr:disabled::-webkit-slider-thumb{background:var(--dust)}
+.labshop-item button[disabled]{opacity:.5}
+.labshop .labshop-note{margin:0 0 8px;color:var(--gold)}
+

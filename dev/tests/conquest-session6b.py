@@ -90,6 +90,9 @@ async def steps(browser,base,ready,w,h,R):
  # fitted away from the Refuge: the HUD chip keeps the tank in the field and shows the pending line until the terminal refits it
  try:await page.wait_for_selector('.cq-rating-power-field .cq-rating-next',timeout=15000)
  except Exception:pass
+ try:await page.wait_for_function('!document.querySelector(".cq-lab-reveal")',timeout=15000)   # FIT closes the card once the server took it
+ except Exception:pass
+ await page.wait_for_timeout(300)
  R['powerPending']=await page.evaluate('({garage:powerOf(myLoadout()),mods:JSON.stringify(myLoadout().mods),chip:document.querySelector(".cq-rating-power-field")?.textContent||null,toast:document.querySelector(".toast,#toast")?.textContent||null})')
  await shot('power-pending')
  # fast travel to the Refuge (MORE -> FAST TRAVEL · BASE COMMAND -> the map's REFUGE SUPPLY): the terminal refits the tank, the chip rises
