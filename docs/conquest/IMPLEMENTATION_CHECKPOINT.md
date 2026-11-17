@@ -4901,7 +4901,89 @@ roadmap row 6B-V.
   store, owner rules), website-check (audio). Inventory heading now "RESEARCH PARTS · FOR THE SCIENCE LAB".
   Note: `docs/conquest/session5/base-progression-model.json` is already stale on main (CC3 playMin 115.5 vs 117 when re-run at
   4659c04); left as committed, the test passes either way.
-- NEXT: slice 8 — the economy model and kit model reports (written), mod-power --write, browser checks at 390x700, 390x844,
-  320x568, 1366x768, 1920x1080 with captures in docs/conquest/session6b/, at most 2 critic rounds, two independent reviewers,
-  Checkpoint 41 complete (research findings, decisions, tables), release.
+- DONE slice 8a (reports + browser): `docs/economy/economy-model.json` (+ `research`, `researchPower`; no existing key changed),
+  `docs/economy/chassis-kit-model.json` (unchanged: first kit day 83), RESOURCE_ECONOMY §6.5 (research power table, best builds,
+  measured duels), §7.5 (tree weeks), §9.3 (Lab store prices); `docs/conquest/session6b/mod-power.json` (bot + human-profile duels,
+  240 a mod a kit). Browser: `dev/tests/conquest-session6b.py` PASS at 390x700, 390x844, 320x568 (touch) and 1366x768, 1920x1080
+  (mouse + keyboard): hub POWER chip + live RESEARCH button; RESEARCH -> the Lab screen; Thermal I end to end (Vent Barrel, 1 part,
+  20 min; running job with FINISH NOW · 8 ⭐ disabled; job ends; reveal card; FIT ON MY TANK; "POWER 59 · → 60 at the Refuge";
+  fast travel to REFUGE SUPPLY; the terminal refit; "POWER 59 → 60"); Refuge Supply order; the colony-core bed playing; the volume
+  slider (touch / arrow keys) saved; Sound off mutes the bed and disables the slider; the Shop's Science Lab entries in Stars, all
+  disabled. `dev/tests/web-labstore.py` PASS on the real website build at 1366x768 and 1920x1080: TON + SOL at the live rate, all
+  disabled; volume by keyboard; mute by Shift+Tab + Space. Captures + `journey.json` + `web-labstore.json` in
+  `docs/conquest/session6b/`. Fixes found by these runs: the HUD chip now separates the tank in the field (key `power-field`) from the
+  garage (hub `power`), shows the pending line and asks for the terminal refit sync; the Lab opens from the hub without waiting for
+  terrain; `/api/rates` (Worker, cached 5 min) feeds the website's SOL label (its security policy blocks third-party price calls);
+  the Sound toggle updates the Volume row in place (the website's panel does not redraw); the research fixture resets the account's
+  Conquest credit watermark with the record (test placement only).
+- NEXT: critic round (at most 2), two independent read-only reviewers (security/economy, gameplay/performance) with the owner-rule
+  pass/fail table, fixes, CI green, release (bump, merge, deploy, verify, ROADMAP).
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.
+
+### Research: comparable games (recorded before design; sources searched this session)
+- **War Robots modules** (warrobots.com posts 281-283, 388; the 2024 passive-module rework): passive modules are perks that fire in
+  a situation, active ones have cooldowns; the rework folded them into specializations. Lesson: a mod is a TRIGGER the player can
+  feel, not a stat stick; keep one trigger per mod.
+- **Destiny 2 armor mods** (Charged with Light, Elemental Wells; retired for complexity in Lightfall): trigger chains between mods
+  became unreadable. Lesson: no mod feeds another mod's trigger; every trigger has its own HUD chip and sound.
+- **MechWarrior Online heat** (ghost heat penalizes alpha strikes): heat is a resource the player manages. Lesson used: the Thermal
+  track turns sustained fire into a reward (Vent, Overclock, Inferno) with a cool-down or a slower phase as the price.
+- **Clash of Clans Laboratory** (one research at a time, no cancel, finish early with gems or a book; time-to-gem skips about 20 gems
+  for 1 h and 260 for 1 day, cheaper per hour the longer the skip; the Gold Pass research boost is about 20%). Lessons used: one job
+  a slot, parts + time gates, a concave instant-finish price, a pass perk near +20-25% speed.
+- **Telegram Stars**: about $0.02 a Star at retail (App Store, Mar 2026: 100 Stars $1.99). The shop's own rates (77 Stars and 1.25
+  TON a dollar) are kept for every proposal.
+
+### Decisions and why (the owner's prompt left these to the lead)
+- **Track -> slot mapping:** each track has a home slot where its identity lives (Thermal and Ballistics: the mount, the weapon;
+  Drive: mobility; Field: the hull) plus one mod in another slot (Heat Sink and Momentum on the hull, Predictor and Reflex on
+  mobility), so a single track never fills a tank and builds mix tracks. The two weapon capstones (Inferno, Rail) compete for the
+  mount; the best research build mixes three tracks (Aegis hull / Overdrive mobility / Inferno mount).
+- **Numbers:** best research build on the legend kit 240 -> 260 (+8.33%, owner "about +8%"); each set mod is the strongest option in
+  its slot; each Legendary a step above it (best Legendary build 278, +6.9% over research; live win 55.2% vs research, 61.2% vs no
+  research). Mods are valued in `powerZ` from their numbers (`rmodPe`), so gear rating, league and matchmaking see them.
+- **Tree pace:** part counts 1/2/2/5 a track (40 parts) after the model showed the first draft 2/3/4/7 (64) at a median 11.9 weeks;
+  now a free 60-min/day pilot finishes in a median 7.9 weeks (6.6-9.6), inside the owner's 6-10. The first mod costs one part so
+  the first reveal comes in the first session with a Lab.
+- **Lunar Pass perks:** +1 research slot, jobs 25% faster (RTREE.slots.pass / passTime) and 1 of each part on premium tiers 10/20/30.
+  Five tiers (20 parts a season) made premium pilots finish in 4.4 weeks, half the free time: too far ahead. Three tiers: 5.9 weeks
+  (25% faster), close to the genre's pass research boosts. The premium track still pays no points; season dates untouched.
+- **Store (checkout off):** instant finish $0.22 x hours^0.85 (20 min 8 Stars, 2 h 31, 8 h 100); part packs 99 / 249 / 599 Stars
+  (1.6 / 4 / 9.6 TON) for +1 / +3 / +8 of every part, ONE OF EACH A WEEK (a payer can speed up, not skip; a free pilot is never more
+  than a few weeks behind); each Legendary 599 Stars / 9.6 TON and ON SALE ONLY AFTER its track's earned set mod (a step up, never a
+  skip of the tree). Telegram shows Stars, the website TON + SOL at the live rate. Revenue logic: the pass gains a concrete research
+  reason to buy; packs are an impulse buy at the 99-Star entry point; Legendaries are the end-game spend for invested pilots.
+- **Zone bands:** a zone = its ring's authored tier (CONQUEST_BLUEPRINT §5), a briefing = its operation's tier; STANDARD 55-100 (a
+  brand-new account is POWER 59), HARD 75-135, VETERAN 140-220 (from the scripted kits that clear each tier). Informational only.
+- **POWER in Conquest:** the HUD chip shows the tank in the field; a mod fitted away from the Refuge shows "→ 60 at the Refuge" and
+  the terminal refit (an existing rule: refits happen at the terminal or the spawn) applies it, the chip then reads "59 → 60". The
+  client asks for that refit sync at the terminal (three tries per change). The Lab opens from the hub without waiting for the
+  terrain to stream (a 2D screen).
+- **Audio:** the three beds use the existing code-made ambience engine; the core's activity is the loudest, barren is near-silence
+  on a phone (-68 dB) and every bed stays under the shipped Arcade beds; the volume is squared (50% = a quarter of the power) with
+  the default at the shipped mix.
+- **Owner rules:** one checked-in file (`docs/owner-rules.json`) holds every owner number and guard limit; the check also pins the
+  CP-changing lines (a tripwire for new CP sources or sinks) and lints for code swallowed by a `//` comment (the class of bug behind
+  the wall-storage report, which had also silently disabled three test checks).
+
+### The 16 mods (plain words; trade-off = the stat it costs)
+| Track | Mod | Slot | What it does | Trade-off |
+|---|---|---|---|---|
+| Thermal | Vent Barrel | mount | 3 s of fire -> a VENT ROUND: +0.5 s of damage and a burst on enemies beside the target | -7% DPS |
+| Thermal | Overclock Breech | mount | 3.5 s of fire -> 30% faster fire until you let go, then 1.5 s slower | -5% DPS |
+| Thermal | Heat Sink Plating | hull | every fifth of hull lost -> a HEAT RING hits every enemy in range and sight | -7% speed |
+| Thermal | ◆ Inferno Core | mount | 2.5 s of fire -> INFERNO 3 s: hits set targets BURNING (two burns at once) | -4% DPS |
+| Ballistics | Penetrator Coil | mount | a raised shield stops only a fifth as much of your damage | -2% DPS |
+| Ballistics | Marksman Coil | mount | three direct hits in a row on one target: the third is a sure CRITICAL | -5% DPS |
+| Ballistics | Predictor Gyro | mobility | the turret leads moving targets | -5% speed |
+| Ballistics | ◆ Rail Driver | mount | every 6th shot a RAIL SLUG: x1.5 damage, twice as fast, through shields and the first tank | -4% DPS |
+| Drive | Traction Servo | mobility | every dash ends in +60% speed for 2 s | +15% dash recharge |
+| Drive | Ram Servo | mobility | dash into an enemy: 1.5 s of your damage and its cannon jams 1.5 s | -3% hull |
+| Drive | Momentum Plating | hull | after 1 s flat out, hits land 20% softer while you keep moving fast | -4% hull |
+| Drive | ◆ Overdrive | mobility | two dash charges | -3% hull |
+| Field | Capacitor Bank | hull | standing still, the shield recharges five times as fast | -4% speed |
+| Field | Reflector Field | hull | damage your raised shield blocks flies back at the shooter | -3% speed |
+| Field | Reflex Skirts | mobility | the shield raises itself when a super or marked strike is about to hit | -2% DPS |
+| Field | ◆ Aegis Matrix | hull | a shield's end leaves an OVERSHIELD of 11% hull for 6 s | -4% speed |
+Legendary set mods (bought, checkout off): ★ Sunfire Core (Inferno: 2 s to ignite, 3.5 s, three burns), ★ Starfall Driver (every 5th
+shot, x1.6, through two tanks), ★ Hyperdrive (three dash charges), ★ Aegis Prime (overshield 15% for 8 s).

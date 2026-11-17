@@ -1,0 +1,82 @@
+[
+ {
+  "size": "1366x768",
+  "web": true,
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "1.6 TON \u00b7 0.032 SOL",
+    "4 TON \u00b7 0.08 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL"
+   ],
+   "allDisabled": true,
+   "finish": "20 min 0.13 TON \u00b7 0.0026 SOL \u00b7 2 h 0.5 TON \u00b7 0.01 SOL \u00b7 8 h 1.61 TON \u00b7 0.0322 SOL. Shown on a running job in the Science Lab.",
+   "note": "Purchases happen in the Telegram edition with Telegram Stars for now. Everything you own works here, and points crates work on both.",
+   "fits": true
+  },
+  "sliderFocusedByTab": true,
+  "volume": {
+   "vol": 0.7,
+   "label": "70%"
+  },
+  "soundFocused": true,
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off"
+  },
+  "errors": []
+ },
+ {
+  "size": "1920x1080",
+  "web": true,
+  "shop": {
+   "items": [
+    "Field kit",
+    "Lab crate",
+    "Research cache",
+    "\u2605 Sunfire Core",
+    "\u2605 Starfall Driver",
+    "\u2605 Hyperdrive",
+    "\u2605 Aegis Prime"
+   ],
+   "prices": [
+    "1.6 TON \u00b7 0.032 SOL",
+    "4 TON \u00b7 0.08 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL",
+    "9.6 TON \u00b7 0.192 SOL"
+   ],
+   "allDisabled": true,
+   "finish": "20 min 0.13 TON \u00b7 0.0026 SOL \u00b7 2 h 0.5 TON \u00b7 0.01 SOL \u00b7 8 h 1.61 TON \u00b7 0.0322 SOL. Shown on a running job in the Science Lab.",
+   "note": "Purchases happen in the Telegram edition with Telegram Stars for now. Everything you own works here, and points crates work on both.",
+   "fits": true
+  },
+  "sliderFocusedByTab": true,
+  "volume": {
+   "vol": 0.7,
+   "label": "70%"
+  },
+  "soundFocused": true,
+  "muted": {
+   "sound": false,
+   "slider": true,
+   "label": "Sound is off"
+  },
+  "errors": []
+ }
+]

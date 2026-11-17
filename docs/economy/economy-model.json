@@ -891,6 +891,474 @@
    }
   }
  ],
+ "researchPower": {
+  "rows": [
+   {
+    "id": "heatsink",
+    "name": "Heat Sink Plating",
+    "slot": "hull",
+    "track": "thermal",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "momentum",
+    "name": "Momentum Plating",
+    "slot": "hull",
+    "track": "servo",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "capacitor",
+    "name": "Capacitor Bank",
+    "slot": "hull",
+    "track": "cap",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 240,
+     "gain": 0.021,
+     "liveWin": 0.516
+    }
+   },
+   {
+    "id": "reflector",
+    "name": "Reflector Field",
+    "slot": "hull",
+    "track": "cap",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 240,
+     "gain": 0.021,
+     "liveWin": 0.516
+    }
+   },
+   {
+    "id": "aegis",
+    "name": "Aegis Matrix",
+    "slot": "hull",
+    "track": "cap",
+    "set": true,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 70,
+     "gain": 0.029,
+     "liveWin": 0.522
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 243,
+     "gain": 0.034,
+     "liveWin": 0.526
+    }
+   },
+   {
+    "id": "aegisp",
+    "name": "Aegis Prime",
+    "slot": "hull",
+    "track": "cap",
+    "set": true,
+    "leg": true,
+    "stock": {
+     "p0": 68,
+     "p1": 71,
+     "gain": 0.044,
+     "liveWin": 0.533
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 249,
+     "gain": 0.06,
+     "liveWin": 0.545
+    }
+   },
+   {
+    "id": "predictor",
+    "name": "Predictor Gyro",
+    "slot": "mobility",
+    "track": "coil",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 240,
+     "gain": 0.021,
+     "liveWin": 0.516
+    }
+   },
+   {
+    "id": "traction",
+    "name": "Traction Servo",
+    "slot": "mobility",
+    "track": "servo",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 70,
+     "gain": 0.029,
+     "liveWin": 0.522
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "ram",
+    "name": "Ram Servo",
+    "slot": "mobility",
+    "track": "servo",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "reflex",
+    "name": "Reflex Skirts",
+    "slot": "mobility",
+    "track": "cap",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 241,
+     "gain": 0.026,
+     "liveWin": 0.52
+    }
+   },
+   {
+    "id": "overdrive",
+    "name": "Overdrive",
+    "slot": "mobility",
+    "track": "servo",
+    "set": true,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 70,
+     "gain": 0.029,
+     "liveWin": 0.522
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 244,
+     "gain": 0.038,
+     "liveWin": 0.529
+    }
+   },
+   {
+    "id": "hyperdrive",
+    "name": "Hyperdrive",
+    "slot": "mobility",
+    "track": "servo",
+    "set": true,
+    "leg": true,
+    "stock": {
+     "p0": 68,
+     "p1": 72,
+     "gain": 0.059,
+     "liveWin": 0.544
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 250,
+     "gain": 0.064,
+     "liveWin": 0.548
+    }
+   },
+   {
+    "id": "vent",
+    "name": "Vent Barrel",
+    "slot": "mount",
+    "track": "thermal",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "overclock",
+    "name": "Overclock Breech",
+    "slot": "mount",
+    "track": "thermal",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "inferno",
+    "name": "Inferno Core",
+    "slot": "mount",
+    "track": "thermal",
+    "set": true,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 71,
+     "gain": 0.044,
+     "liveWin": 0.533
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 243,
+     "gain": 0.034,
+     "liveWin": 0.526
+    }
+   },
+   {
+    "id": "sunfire",
+    "name": "Sunfire Core",
+    "slot": "mount",
+    "track": "thermal",
+    "set": true,
+    "leg": true,
+    "stock": {
+     "p0": 68,
+     "p1": 72,
+     "gain": 0.059,
+     "liveWin": 0.544
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 248,
+     "gain": 0.055,
+     "liveWin": 0.542
+    }
+   },
+   {
+    "id": "pierce",
+    "name": "Penetrator Coil",
+    "slot": "mount",
+    "track": "coil",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "marksman",
+    "name": "Marksman Coil",
+    "slot": "mount",
+    "track": "coil",
+    "set": false,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 69,
+     "gain": 0.015,
+     "liveWin": 0.511
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 239,
+     "gain": 0.017,
+     "liveWin": 0.513
+    }
+   },
+   {
+    "id": "rail",
+    "name": "Rail Driver",
+    "slot": "mount",
+    "track": "coil",
+    "set": true,
+    "leg": false,
+    "stock": {
+     "p0": 68,
+     "p1": 70,
+     "gain": 0.029,
+     "liveWin": 0.522
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 242,
+     "gain": 0.03,
+     "liveWin": 0.523
+    }
+   },
+   {
+    "id": "starfall",
+    "name": "Starfall Driver",
+    "slot": "mount",
+    "track": "coil",
+    "set": true,
+    "leg": true,
+    "stock": {
+     "p0": 68,
+     "p1": 72,
+     "gain": 0.059,
+     "liveWin": 0.544
+    },
+    "legend": {
+     "p0": 235,
+     "p1": 247,
+     "gain": 0.051,
+     "liveWin": 0.539
+    }
+   }
+  ],
+  "builds": {
+   "stock": {
+    "free": {
+     "p": 70,
+     "mods": {
+      "hull": "light",
+      "mobility": "stock",
+      "mount": "firing"
+     }
+    },
+    "research": {
+     "p": 75,
+     "mods": {
+      "hull": "aegis",
+      "mobility": "overdrive",
+      "mount": "inferno"
+     }
+    },
+    "legendary": {
+     "p": 80,
+     "mods": {
+      "hull": "aegisp",
+      "mobility": "hyperdrive",
+      "mount": "sunfire"
+     }
+    },
+    "researchGain": 0.071,
+    "legendaryGain": 0.067,
+    "researchLiveWin": 0.553,
+    "legendaryLiveWin": 0.55,
+    "legendaryVsFreeLiveWin": 0.602
+   },
+   "legend": {
+    "free": {
+     "p": 240,
+     "mods": {
+      "hull": "plates",
+      "mobility": "stable",
+      "mount": "stock"
+     }
+    },
+    "research": {
+     "p": 260,
+     "mods": {
+      "hull": "aegis",
+      "mobility": "overdrive",
+      "mount": "inferno"
+     }
+    },
+    "legendary": {
+     "p": 278,
+     "mods": {
+      "hull": "aegisp",
+      "mobility": "hyperdrive",
+      "mount": "sunfire"
+     }
+    },
+    "researchGain": 0.083,
+    "legendaryGain": 0.069,
+    "researchLiveWin": 0.562,
+    "legendaryLiveWin": 0.552,
+    "legendaryVsFreeLiveWin": 0.612
+   }
+  }
+ },
  "reference": {
   "lunarSkin": {
    "gain": 0.083,
@@ -1322,5 +1790,88 @@
    "plates": 1
   }
  ],
- "firstBaseMinute": 59
+ "firstBaseMinute": 59,
+ "research": {
+  "free": {
+   "minutes": 60,
+   "premium": false,
+   "seeds": 201,
+   "labDays": {
+    "I": 4,
+    "III": 7
+   },
+   "treeParts": 40,
+   "cost": [
+    1,
+    2,
+    2,
+    5
+   ],
+   "partsPerDay": 0.95,
+   "days": {
+    "median": 55.1,
+    "p10": 46.1,
+    "p90": 67.1
+   },
+   "weeks": {
+    "median": 7.9,
+    "p10": 6.6,
+    "p90": 9.6
+   }
+  },
+  "pass": {
+   "minutes": 60,
+   "premium": true,
+   "seeds": 201,
+   "labDays": {
+    "I": 4,
+    "III": 7
+   },
+   "treeParts": 40,
+   "cost": [
+    1,
+    2,
+    2,
+    5
+   ],
+   "partsPerDay": 0.95,
+   "days": {
+    "median": 41,
+    "p10": 34,
+    "p90": 53
+   },
+   "weeks": {
+    "median": 5.9,
+    "p10": 4.9,
+    "p90": 7.6
+   }
+  },
+  "light": {
+   "minutes": 30,
+   "premium": false,
+   "seeds": 201,
+   "labDays": {
+    "I": 4,
+    "III": 7
+   },
+   "treeParts": 40,
+   "cost": [
+    1,
+    2,
+    2,
+    5
+   ],
+   "partsPerDay": 0.49,
+   "days": {
+    "median": 107.1,
+    "p10": 88.1,
+    "p90": 132.1
+   },
+   "weeks": {
+    "median": 15.3,
+    "p10": 12.6,
+    "p90": 18.9
+   }
+  }
+ }
 }

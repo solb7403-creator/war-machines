@@ -434,3 +434,4 @@
 .cq-lab-buy[disabled]{opacity:.72;cursor:default}
 .cq-lab-off{display:block;margin-top:3px;font-size:11px;opacity:.75}
 .cq-lab-store .cq-lab-pack h3{color:var(--tc,#e8f4ff)}
+.cq-rating .cq-rating-next{display:block;font-size:10px;letter-spacing:.04em;opacity:.85;color:#9fe8b0;white-space:nowrap}

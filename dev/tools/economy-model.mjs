@@ -15,7 +15,7 @@ const read = f => fs.readFileSync(path.join(repo, f), 'utf8');
 const R = new Function(read('js/rules.js') + `;
  const __tankOf = tankOf;
  tankOf = function (L, n) { const T = __tankOf(L, n); if (L.__hp) T.mhp = Math.round(T.mhp * L.__hp); return T; };
- return { RTREE, RTREE_ALL, rsQuote, rsSlots, rmodOf, LOOT, CQ_PART_ORDER, PASS_PREM_PARTS, RS_PACKS, LEAGUE, LG_BASE_PAY, LG_MULT, DAILY_CAP, MODES, teamX, isSolo, ROYALE_PTS, streakPts, powerOf, powerWin, STOCK_L, POWER_K_LIVE };`)();
+ return { RTREE, RTREE_ALL, rsQuote, rsSlots, rmodOf, LOOT, CQ_PART_ORDER, PASS_PREM_PARTS, RS_PACKS, RS_LEG_PRICE, rsFinPrice, FITS, FIT_BUDGET, fittingStats, LEAGUE, LG_BASE_PAY, LG_MULT, DAILY_CAP, MODES, teamX, isSolo, ROYALE_PTS, streakPts, powerOf, powerWin, STOCK_L, POWER_K_LIVE };`)();
 
 // ===================================================================================================================
 // PROPOSAL (owner decisions applied; everything else is the lead's proposal)
@@ -152,6 +152,23 @@ const platingPower = [1, 2, 3, 4, 5, 6].map(t => {
   return row;
 });
 const legendNoSkin = { ...GEAR.legend, skin: 'default' }, legendNoMoon = { ...GEAR.legend, w: { a: 'pulse', t: 2, q: 1.1, s: false } };
+// 3b. Session 6B research mods: each mod against the same tank with Stock in that slot (gear rating, live win chance), and the best
+// build with research vs the best build without it on the top kit (owner decision 3: about +8%), and with the Legendary set mods.
+const researchPower = (() => {
+  const rows = [];
+  for (const slot of ['hull', 'mobility', 'mount']) for (const [id, F] of Object.entries(R.FITS[slot])) {
+    if (!F.rs) continue; const row = { id, name: F.n, slot, track: F.rs, set: !!F.set, leg: !!F.leg };
+    for (const k of ['stock', 'legend']) { const L = { ...GEAR[k], mods: {} }, p0 = R.powerOf(L), p1 = R.powerOf({ ...L, mods: { [slot]: id } }); row[k] = { p0, p1, gain: p1 / p0 - 1, liveWin: R.powerWin(p1, p0, 0, true) }; }
+    rows.push(row);
+  }
+  const best = (L, allow) => { let top = null; const opts = sl => Object.keys(R.FITS[sl]).filter(id => allow(R.FITS[sl][id]));
+    for (const h of opts('hull')) for (const m of opts('mobility')) for (const t of opts('mount')) { const mods = { hull: h, mobility: m, mount: t }, f = R.fittingStats(mods); if (f.weight > R.FIT_BUDGET.weight || f.power > R.FIT_BUDGET.power) continue; const p = R.powerOf({ ...L, mods }); if (!top || p > top.p) top = { p, mods }; }
+    return top; };
+  const builds = {};
+  for (const k of ['stock', 'legend']) { const L = GEAR[k], free = best(L, F => !F.rs), rs = best(L, F => !F.leg), leg = best(L, () => true);
+    builds[k] = { free, research: rs, legendary: leg, researchGain: rs.p / free.p - 1, legendaryGain: leg.p / rs.p - 1, researchLiveWin: R.powerWin(rs.p, free.p, 0, true), legendaryLiveWin: R.powerWin(leg.p, rs.p, 0, true), legendaryVsFreeLiveWin: R.powerWin(leg.p, free.p, 0, true) }; }
+  return { rows, builds };
+})();
 const reference = {
   lunarSkin: { gain: R.powerOf(GEAR.legend) / R.powerOf(legendNoSkin) - 1, liveWin: R.powerWin(R.powerOf(GEAR.legend), R.powerOf(legendNoSkin), 0, true) },
   moonbeam: { gain: R.powerOf(GEAR.legend) / R.powerOf(legendNoMoon) - 1, liveWin: R.powerWin(R.powerOf(GEAR.legend), R.powerOf(legendNoMoon), 0, true) },
@@ -340,6 +357,10 @@ out.push('| Full set | Max HP | Trait | Power gain, stock kit | Power gain, lege
 for (const p of platingPower) out.push(`| ${p.name} | +${pct(p.setHp)} | ${p.traits ? Object.entries(p.traits).map(([k, v]) => '-' + v * 100 + '% ' + k).join(', ') : '-'} | +${pct(p.stock.gain)} | +${pct(p.legend.gain)} | ${pct(p.legend.liveWin)} |`);
 out.push(`| (reference) Lunar Skin | | | | +${pct(reference.lunarSkin.gain)} | ${pct(reference.lunarSkin.liveWin)} |`);
 out.push(`| (reference) Moonbeam vs Epic Pulse | | | | +${pct(reference.moonbeam.gain)} | ${pct(reference.moonbeam.liveWin)} |`);
+out.push('\n## Research mods: gear rating and live win chance (Session 6B; each vs the same tank with Stock in that slot)\n');
+out.push('| Mod | Slot | Track | Gear rating gain, stock kit | Gear rating gain, top kit | Live win vs the same tank without it |'); out.push('|---|---|---|---:|---:|---:|');
+for (const r of researchPower.rows) out.push(`| ${r.leg ? '★ ' : r.set ? '◆ ' : ''}${r.name}${r.leg ? ' (Legendary)' : ''} | ${r.slot} | ${R.RTREE.tracks[r.track].n} | +${pct(r.stock.gain)} | +${pct(r.legend.gain)} | ${pct(r.legend.liveWin)} |`);
+for (const [k, B] of Object.entries(researchPower.builds)) out.push(`\n${k === 'legend' ? 'Top' : 'Stock'} kit, best builds: without research ${B.free.p} (${Object.values(B.free.mods).join(' / ')}), with research ${B.research.p} (${Object.values(B.research.mods).join(' / ')}, +${pct(B.researchGain)}, live win ${pct(B.researchLiveWin)}), with the Legendary set mods ${B.legendary.p} (${Object.values(B.legendary.mods).join(' / ')}, +${pct(B.legendaryGain)} over research, live win ${pct(B.legendaryLiveWin)}; ${pct(B.legendaryVsFreeLiveWin)} vs the best build without research).`);
 out.push('\n## Time to each full armor set (first plate in brackets)\n');
 out.push('| Profile | ' + [1, 2, 3, 4, 5, 6].map(t => TIER_NAMES[t]).join(' | ') + ' |'); out.push('|---|' + '---:|'.repeat(6));
 for (const T of Object.values(timelines)) out.push(`| ${T.label} | ` + [1, 2, 3, 4, 5, 6].map(t => `${daysTxt(T.full[t])} (${daysTxt(T.first[t])})`).join(' | ') + ' |');
@@ -359,7 +380,7 @@ if (isMain) console.log(out.join('\n'));
 if (isMain && process.argv.includes('--write')) {
   const model = {
     generatedBy: 'dev/tools/economy-model.mjs', status: 'PROPOSAL for owner approval (Phase 0); modeled, not playtested',
-    proposal: P, kitModel: KIT_MODEL, arcadePpm, conquestPpm, settled: SETTLED, platingPower, reference, timelines, dailyIncome, firstHour: hour, firstBaseMinute, research,
+    proposal: P, kitModel: KIT_MODEL, arcadePpm, conquestPpm, settled: SETTLED, platingPower, researchPower, reference, timelines, dailyIncome, firstHour: hour, firstBaseMinute, research,
   };
   fs.mkdirSync(path.join(repo, 'docs/economy'), { recursive: true });
   fs.writeFileSync(path.join(repo, 'docs/economy/economy-model.json'), JSON.stringify(model, (k, v) => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v, 1) + '\n');
