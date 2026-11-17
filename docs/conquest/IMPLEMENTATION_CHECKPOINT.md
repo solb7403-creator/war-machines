@@ -4937,6 +4937,30 @@ was the game's own damage vignette (the capture now heals the pilot before each 
 Shared rules: nothing hits in the first 8 s of a round or within 2.5 s of a respawn; the megatank is never a target; a tank
 under a deck is covered from meteors; the first three times a pilot meets a hazard one line on screen says how to dodge it.
 
+### Measured (real code, seeded; `node dev/tests/arcade-weather.mjs`, `node dev/tests/weather-pace.mjs 50 2`)
+
+**The roll**, over 400,000 seeds: clear 25.05%, vision only 34.87%, hazard only 19.96%, both 20.12%.
+
+**Takedown pace** for a pilot who picks one map and plays 20 minutes a day (about 10 matches: 82 s a match plus 35 s between
+matches), mode mix 30% Arena 1v1, 15% Arena 2v2, 15% Moon Zone 2v2, 15% Bounty 1v1, 10% Crystal Rush 2v2, 15% Last Standing,
+Veteran league, rare kit, 300 matches a map. The stand-in pilot is the game's own AI with a person's timing: it fights and
+dodges but never plays for takedowns, so these are the slow end; a pilot who holds an enemy in a hazard on purpose is faster.
+
+| Map | Finish | Takedowns a match | In a hazard match | Takedowns a day | Days to 25 |
+|---|---|---|---|---|---|
+| Longshot | Arc Charge | 0.47 | 1.08 | 4.8 | **5** |
+| Canyon | Dust Devil | 0.33 | 0.84 | 3.4 | **7** |
+| Bunker | Laser Grid | 0.24 | 0.57 | 2.5 | **10** |
+| Moonbase | Meteor Scorch | 0.23 | 0.57 | 2.3 | **11** |
+| Crater Field | Vent Breaker | 0.20 | 0.48 | 2.0 | **12** |
+| Overpass | Maglev Runner | 0.10 | 0.26 | 1.1 | **24** |
+
+Best modes for takedowns: Moon Zone and Crystal Rush (the objective holds tanks in one place: 0.4-1.0 a match); worst: Arena
+(short rounds). Overpass is the long one because the train only reaches the deck: the way to speed it up is to bait an enemy
+onto the deck (the AI follows you up) and leave by a ramp when the horn sounds. The 25 was not changed (owner: fixed); the
+first measurement (Overpass 70 days, Crater Field 20) is why decisions 16 and 17 were made. All six finishes: about 70 days
+of 20 minutes a day for a pilot who never plays for them.
+
 ### What is built (slice 1)
 
 - `js/rules.js`: `WX_ODDS`, `WX_MAP`, `WX_HZ`, `WX_VIS`, `wxRoll`, `wxPlan`, `wxEnd`, `wxPos`, `wxIn`, `wxArcSees`, `wxWinOn`,

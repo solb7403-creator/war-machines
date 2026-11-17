@@ -322,7 +322,9 @@ export async function matchStart(env, b, user, pid, now = Date.now(), ip = "") {
       const ks = Object.keys(o).sort((a, c) => o[a].t0 - o[c].t0); for (const k of ks.slice(0, Math.max(0, ks.length - 6))) delete o[k]; }
     S.mt = { n, cid, g, m: g === "royale" ? "1v1" : m, map, t0: now, feat: g === R.featuredOn(X.day), quick: !!b.quick, pv: 1,
       L: JSON.parse(JSON.stringify(L)), rv: S.lab ? R.LAB_RULES_VERSION : "legacy-v1", series: g === "arena" && m === "1v1" && (S.mp || 0) > 0, mult: brk.mult, lg: brk.key, lgi: brk.i, pw: S.pw, gh: ghosts.map((x) => x.id),
-      ws: crypto.getRandomValues(new Uint32Array(1))[0] | 0, wc: (S.mp || 0) < R.WX_FIRST_CLEAR ? 1 : 0 };   // ws: this match's weather seed (rules.js wxPlan); wc: clear, the pilot's first three matches (Session 5E-2e)
+      ws: parseInt((await sign(env, `wx|${pid}|${S.mp || 0}|${S.wins || 0}|${S.losses || 0}`)).slice(0, 8), 16) | 0, wc: (S.mp || 0) < R.WX_FIRST_CLEAR ? 1 : 0 };
+    // ws: this match's weather seed (rules.js wxPlan), from the server's secret and the pilot's match count: asking for another
+    // ticket without finishing a match gets the same weather (no re-rolling), and nobody can work it out. wc: clear (first three matches)
     // bot-pattern bookkeeping: time since your last result (menus, results screen), your day's first start
     const bp = (S.bp = S.bp || {}), gap = bp.le ? (now - bp.le) / 1000 : 1e9;
     if (gap < 600) bp.g = (bp.g || []).concat(Math.round(gap * 10) / 10).slice(-30);
@@ -603,6 +605,7 @@ export function migrate(S, m, P, X) {
   const C = R.ecoNorm(JSON.parse(JSON.stringify(m && typeof m === "object" ? m : {})));
   const why = {};
   for (const k of ["upc", "glc", "gsc", "wOwn", "cOwn", "paints"]) S[k] = C[k];   // per-chassis builds and cores (5E-2b3)
+  for (const k of Object.keys(S.paints)) if (R.PAINTS[k] && (R.PAINTS[k].only === "hazard" || R.PAINTS[k].only === "soon")) delete S.paints[k];   // hazard finishes are earned on the server only and their LIVE versions are not on sale: never taken from a phone's save (5E-2e)
   S.roll = {}; S.salv = {};
   for (const [k, v] of Object.entries(C.roll)) { const n = Number(v); if (Number.isFinite(n)) S.roll[safeKey(k)] = Math.max(R.ROLL_MIN, Math.min(R.ROLL_MAX, n)); }
   for (const [k, v] of Object.entries(C.salv)) { const t = Number(String(k).split(":")[1]), n = Number(v); if ((t === 1 || t === 2) && Number.isFinite(n)) S.salv[safeKey(k)] = n < 1 ? n : Math.max(R.SALV_MIN[t], Math.min(R.SALV_MAX[t], n)); }

@@ -93,19 +93,25 @@ const WeatherFX=(()=>{
  }
  // ---- 3D ----
  const rgbOf=(H,h)=>RG[h]||(RG[h]=H.rgb(h));
+ // how many particles to emit this frame for a rate of n per 1/60 s: the same amount of dust per second on a 30, 60 or 120 Hz screen
+ const cnt=(H,n)=>{const v=n*Math.min(3,H.dt*60);return Math.floor(v)+(Math.random()<v-Math.floor(v)?1:0);};
  function meshes(H){
   if(M3&&M3.scene===H.scene)return M3;
   const T=H.T,train=new T.Group(),g=new T.Group();train.visible=false;train.add(g);g.scale.x=0.8;g.position.x=-0.6;   // g: the model, nose first along -x; fitted to the sim's train (front at 0, 8 long)
   // the maglev: three cars and a nose, white steel with a dark window band; its lights are drawn in the glow batch
-  const lit=c=>new T.MeshLambertMaterial({color:c}),box=(m,w,h,d,x,y,z)=>{const b=new T.Mesh(new T.BoxGeometry(w,h,d),m);b.position.set(x,y,z);g.add(b);return b;};
+  // every part is baked into ONE geometry per material (five draw calls for the whole train, not one per box)
+  const lit=c=>new T.MeshLambertMaterial({color:c}),bins=new Map(),put=(m,G)=>{const N=G.index?G.toNonIndexed():G;let b=bins.get(m);if(!b){b={P:[],N:[]};bins.set(m,b);}b.P.push(...N.attributes.position.array);b.N.push(...N.attributes.normal.array);};
+  const box=(m,w,h,d,x,y,z,rz)=>{const G=new T.BoxGeometry(w,h,d);if(rz)G.rotateZ(rz);G.translate(x,y,z);put(m,G);};
   const body=lit('#d7dee8'),dark=lit('#10161f'),trim=lit('#1f8fb0'),roof=lit('#aab6c4'),lamp=new T.MeshBasicMaterial({color:'#9ff3ff'});
   for(let i=0;i<3;i++){const x=-2.2-i*2.62;box(body,2.5,0.95,2.3,x,0.64,0);box(trim,2.52,0.12,2.36,x,0.3,0);box(dark,2.56,0.16,2.2,x,0.1,0);box(roof,2.4,0.08,1.9,x,1.15,0);
-   for(const e of [-1,1]){box(dark,2.5,0.3,0.03,x,0.84,e*1.16);box(lamp,2.44,0.2,0.02,x,0.84,e*1.18);box(lamp,2.5,0.05,0.03,x,0.52,e*1.165);}   // one lit window band and a light line down each flank
+   box(lamp,2.2,0.03,0.14,x,1.2,0);for(const e of [-1,1])box(trim,2.4,0.05,0.16,x,1.14,e*1.0);   // a light bar and two blue lines on the roof: what the camera above sees
+   for(const e of [-1,1]){box(dark,2.5,0.36,0.03,x,0.84,e*1.16);box(lamp,2.44,0.28,0.02,x,0.84,e*1.18);box(lamp,2.5,0.05,0.03,x,0.52,e*1.165);}   // one lit window band and a light line down each flank
    if(i<2)box(dark,0.14,0.8,1.9,x-1.31,0.6,0);}
-  // a tapered nose and tail: a four-sided cone laid along the track (the vendored THREE has no wedge)
-  const cone=(m,len,x,dir)=>{const G=new T.CylinderGeometry(0.2,1.414,len,4,1);G.rotateY(Math.PI/4);G.scale(0.48,1,1.15);const c=new T.Mesh(G,m);c.rotation.z=dir*Math.PI/2;c.position.set(x,0.62,0);g.add(c);return c;};   // its square section turned flat: 2.3 wide, 0.96 tall where it meets the car
+  // a tapered nose and tail: a four-sided cone laid along the track, its square section turned flat (2.3 wide, 0.96 tall where it meets the car)
+  const cone=(m,len,x,dir)=>{const G=new T.CylinderGeometry(0.2,1.414,len,4,1);G.rotateY(Math.PI/4);G.scale(0.48,1,1.15);G.rotateZ(dir*Math.PI/2);G.translate(x,0.62,0);put(m,G);};
   cone(body,2.1,0.1,-1);cone(body,1.3,-9.05,1);
-  for(const e of [-1,1])box(lamp,0.08,0.12,0.3,1.0,0.5,e*0.22);box(dark,0.9,0.22,1.3,-0.35,0.95,0).rotation.z=-0.42;
+  for(const e of [-1,1])box(lamp,0.08,0.12,0.3,1.0,0.5,e*0.22);box(dark,0.9,0.22,1.3,-0.35,0.95,0,-0.42);
+  for(const [m,b] of bins){const G=new T.BufferGeometry();G.setAttribute('position',new T.Float32BufferAttribute(b.P,3));G.setAttribute('normal',new T.Float32BufferAttribute(b.N,3));g.add(new T.Mesh(G,m));}
   H.scene.add(train);
   // a sand tornado: two nested open funnels with a streaked skin, turning against each other
   const cv=document.createElement('canvas');cv.width=128;cv.height=128;const c=cv.getContext('2d');c.fillStyle='rgba(255,255,255,0.9)';c.fillRect(0,0,128,128);
@@ -114,7 +120,7 @@ const WeatherFX=(()=>{
   {const gd=c.createLinearGradient(0,0,0,128);gd.addColorStop(0,'rgba(0,0,0,1)');gd.addColorStop(0.3,'rgba(0,0,0,0)');c.globalCompositeOperation='destination-out';c.fillStyle=gd;c.fillRect(0,0,128,128);c.globalCompositeOperation='source-over';}   // the top of the funnel feathers out (no hard rim)
   const tex=new T.CanvasTexture(cv);tex.wrapS=T.RepeatWrapping;tex.repeat.set(2,1);
   const torn=[];for(let i=0;i<2;i++){const G=new T.Group(),parts=[];
-   for(const [rt,rb,h,col,op] of [[1.8,0.4,5.2,'#8a6238',0.78],[1.3,0.26,4.9,'#5f4326',0.9],[0.75,0.14,4.6,'#33240f',0.97]]){const m=new T.Mesh(new T.CylinderGeometry(rt,rb,h,24,6,true),new T.MeshBasicMaterial({map:tex,color:col,transparent:true,opacity:op,depthWrite:false,side:T.DoubleSide}));m.position.y=h/2;m.userData.op=op;m.renderOrder=17;G.add(m);parts.push(m);}
+   for(const [rt,rb,h,col,op] of [[1.8,0.4,5.2,'#7a5430',0.8],[1.3,0.26,4.9,'#4f361c',0.92],[0.75,0.14,4.6,'#2a1c0c',0.98]]){const m=new T.Mesh(new T.CylinderGeometry(rt,rb,h,24,6,true),new T.MeshBasicMaterial({map:tex,color:col,transparent:true,opacity:op,depthWrite:false,side:T.DoubleSide}));m.position.y=h/2;m.userData.op=op;m.renderOrder=17;G.add(m);parts.push(m);}
    G.visible=false;H.scene.add(G);torn.push({G,parts});}
   return M3={scene:H.scene,train,torn,tex};
  }
@@ -130,7 +136,7 @@ const WeatherFX=(()=>{
   for(;ti<2;ti++)M.torn[ti].G.visible=false;M.train.visible=trainOn;
   for(const z of pend)impact3(H,z);pend.length=0;
   clouds3(H,p,t);
-  if(p.vis==='dust'&&visS>0.05&&me&&!H.quiet){const n=Math.round((H.low?2:5)*visS);   // grit streaking across the view
+  if(p.vis==='dust'&&visS>0.05&&me&&!H.quiet){const n=cnt(H,(H.low?1.5:4)*visS);   // grit streaking across the view
    for(let i=0;i<n;i++)H.emit(false,{x:me.x-11+Math.random()*20,y:0.15+Math.random()*2.4,z:me.y-10+Math.random()*13,vx:9+Math.random()*6,vz:Math.random()-0.5,life:0.55,s0:0.1,s1:0.34,c:'#c9a878',a:0.3});}
  }
  // a meteor: it always comes down the same slanted line (from high in the north-west), so the streak points at the spot.
@@ -161,17 +167,20 @@ const WeatherFX=(()=>{
     for(let k=0;k<5&&r<R1;k++){a+=(hsh(i*7.3+k*3.1+z.id)-0.5)*1.1;const st=z.r*(0.1+0.1*hsh(i+k*5.7)),nx=px+Math.cos(a)*st,nz=pz+Math.sin(a)*st,w=0.055*(1-k*0.14);S.seg(px,0.04,pz,nx,0.04,nz,w,w*0.8,AM,al,0.45*pw);
      if(k===2){const a2=a+(hsh(i*3.3)<0.5?0.9:-0.9);S.seg(nx,0.04,nz,nx+Math.cos(a2)*st*1.3,0.04,nz+Math.sin(a2)*st*1.3,w*0.7,0.01,AM,al*0.8,0.3*pw);}
      px=nx;pz=nz;r+=st;}}
-   if(!H.quiet){const n=(H.low?0.4:1)*(8+44*pw)/60;for(let i=0;i<3;i++)if(Math.random()<n){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*z.r*0.8;
+   if(!H.quiet){const n=cnt(H,(H.low?0.4:1)*(8+44*pw)/20);for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*z.r*0.8;
      H.emit(false,{x:x+Math.cos(a)*r,y:0.05,z:y+Math.sin(a)*r,vy:0.6+pw*2,life:1,s0:0.2,s1:0.85,c:'#e6f0ec',a:0.4});}
     if(Math.random()<pw*0.5){const a=Math.random()*6.283,r=Math.random()*z.r*0.6;H.once(x+Math.cos(a)*r,0.06,y+Math.sin(a)*r,0.3,'#ffe0a8',0.5*pw);}}
    return;}
-  const te=t-z.t;if(te>1.3)return;const k=te/1.3,f=1-k*k,Wt=rgbOf(H,'#f4f6f2');
+  const te=t-z.t;if(te>1.5)return;const k=te/1.5,f=1-k*k,Wt=rgbOf(H,'#f4f6f2'),ASH=rgbOf(H,'#6a655e');
   if(te<0.3)S.sprite(x,0.5,y,z.r*0.75,rgbOf(H,'#ffb060'),1-te/0.3,0.2);S.disc(x,0.04,y,z.r*0.55,HOT,0.7*f,0.2*f);   // an amber flash at its root
-  const ht=8*Math.min(1,te*5);S.seg(x,0.1,y,x,ht,y-LEAN*ht/8,z.r*0.2*(1-k*0.3),z.r*0.32,rgbOf(H,'#3a3632'),0.25*f,0.8*f);S.seg(x,0.1,y,x,ht*0.9,y-LEAN*ht/8,z.r*0.1,z.r*0.16,Wt,0.5*f,0.35*f);   // the column: a dark ash core in pale steam
   S.shock(x,0.05,y,z.r*Math.min(1,te*3),0.6,rgbOf(H,'#ece6da'),0.85*(1-k),48);
-  if(!H.quiet&&te<0.9){const n=H.low?3:8;for(let i=0;i<n;i++){const a=Math.random()*6.283,r=z.r*0.32*Math.sqrt(Math.random()),up=7+Math.random()*7;   // the column: steam and ash driven straight up, spreading as it slows
-    H.emit(false,{x:x+Math.cos(a)*r,y:0.2,z:y+Math.sin(a)*r,vx:Math.cos(a)*1.2,vy:up,vz:Math.sin(a)*1.2,life:0.9+Math.random()*0.7,s0:0.45,s1:1.9,c:Math.random()<0.45?'#4a4541':Math.random()<0.5?'#f1f4f0':'#cfd6d0',a:0.6,drag:1.6});}
-   for(let i=0;i<(H.low?1:2);i++){const a=Math.random()*6.283,r=z.r*(0.25+0.6*Math.random());H.emit(false,{x:x+Math.cos(a)*r,y:0.15,z:y+Math.sin(a)*r,vx:Math.cos(a)*2.4,vy:1.5+Math.random()*2.5,vz:Math.sin(a)*2.4,life:1.1,s0:0.5,s1:1.9,c:'#e9f0ec',a:0.4,drag:1.2});}}
+  // the column: soft clouds stacked up it, widening and thinning towards the top (no beam, no edges), ash in the lower half
+  const ht=7.5*Math.min(1,te*4.5),wob=H.quiet?0:te*2;
+  for(let i=0;i<8;i++){const u=(i+0.5)/8,hh=0.3+ht*u,r=z.r*(0.2+0.26*u)*(0.8+0.4*Math.min(1,te*3)),sx=Math.sin(i*2.4+wob)*0.18*u*z.r,a=f*(1-u*0.75);
+   S.sprite(x+sx,hh,y-LEAN*hh,r,i%3===1&&u<0.6?ASH:Wt,0.55*a,0.5*a);}
+  if(!H.quiet&&te<0.9){const n=cnt(H,H.low?1.5:4);for(let i=0;i<n;i++){const a=Math.random()*6.283,r=z.r*0.3*Math.sqrt(Math.random()),up=6+Math.random()*6;   // steam driven up it, spreading as it slows
+    H.emit(false,{x:x+Math.cos(a)*r,y:0.2,z:y+Math.sin(a)*r,vx:Math.cos(a)*1.2,vy:up,vz:Math.sin(a)*1.2,life:1+Math.random()*0.6,s0:0.7,s1:2.2,c:Math.random()<0.25?'#8a857d':Math.random()<0.5?'#f1f4f0':'#d9dfda',a:0.34,drag:1.6});}
+   for(let i=cnt(H,H.low?0.7:1.5);i>0;i--){const a=Math.random()*6.283,r=z.r*(0.25+0.6*Math.random());H.emit(false,{x:x+Math.cos(a)*r,y:0.15,z:y+Math.sin(a)*r,vx:Math.cos(a)*2.4,vy:1.5+Math.random()*2.5,vz:Math.sin(a)*2.4,life:1.1,s0:0.6,s1:2,c:'#e9f0ec',a:0.32,drag:1.2});}}
  }
  function arcTargets(){   // where the arcs run to: down the lane both ways (the far end of each clear line from the pylon), and a short one to each cliff
   if(arcT)return arcT;arcT=[];const s={x:WX_ARC_AT[0],y:WX_ARC_AT[1],bl:WX_ARC_BL},D=[];
@@ -185,7 +194,7 @@ const WeatherFX=(()=>{
   if(t<z.t){const pw=cl((t-z.w)/warnT(z),0,1);
    S.sprite(x,PYH,y,0.25+0.4*pw,C,0.3+0.5*pw);
    for(let i=0;i<3;i++){const age=t-(z.w+i);if(age<0||age>0.95)continue;const f=1-age/0.95;   // pulse i: brighter and wider each time
-    S.sprite(x,PYH,y,(0.45+0.3*i)*(1+age*0.5),Wt,f*(0.4+0.18*i));S.ring(x,0.05,y,1.2+age*(6+i*1.5),0.05,C,0.3*f*(0.6+0.25*i),48);
+    S.sprite(x,PYH,y,(0.45+0.3*i)*(1+age*0.5),Wt,f*(0.4+0.18*i));S.ring(x,0.05,y,1.2+age*(6+i*1.5),0.09,C,0.5*f*(0.6+0.25*i),48,0,0,0,undefined,0.25*f);
     if(!H.quiet)for(let j=0;j<2+i;j++){const sd=Math.floor(t*22)*7+j*13+i,a=hsh(sd)*6.283,r=0.5+0.35*i;S.bolt(x,PYH,y,x+Math.cos(a)*r,PYH-0.2-hsh(sd+3)*0.9,y+Math.sin(a)*r,0.14,5,0.03,C,0.8*f,sd,0,1);}}
    return;}
   const te=t-z.t;if(te>0.45)return;const f=1-te/0.45,sd=H.quiet?z.id*31:Math.floor(t*26)*17;
@@ -230,6 +239,7 @@ const WeatherFX=(()=>{
   for(const w of walls)if(cx>w[0]&&cx<w[0]+w[2]&&rz>w[1]&&rz<w[1]+w[3]){floor=w.mhp?0.85:1.25;break;}   // it stops on top of whatever stands in the row
   // the beam comes down from above the picture: a wide soft glow, the beam, a white core
   S.seg(cx,BEAM_H,rz-LEAN,cx,floor,rz,0.75,0.9,C,0.22);S.seg(cx,BEAM_H,rz-LEAN,cx,floor,rz,0.3,0.38,C,0.95);S.seg(cx,BEAM_H,rz-LEAN,cx,floor,rz,0.1,0.14,Wt,1);
+  for(let i=0;i<4;i++){const y0=BEAM_H+i*1.5,a=0.7*(1-(i+1)/5);S.seg(cx,y0+1.5,rz-LEAN*1.2,cx,y0,rz-LEAN,0.26,0.3,C,a);S.seg(cx,y0+1.5,rz-LEAN*1.2,cx,y0,rz-LEAN,0.08,0.1,Wt,a);}   // it fades out upwards: no end in mid-air
   S.disc(cx,floor+0.02,rz,z.r*1.15,C,0.6,0.1);S.sprite(cx,floor+0.3,rz,0.75,Wt,1);S.sprite(cx,floor+0.3,rz,1.5,C,0.5);
   const back=Math.min(7,Math.abs(cx-fX(z.x0)));S.seg(cx,0.045,rz,cx-sg*back,0.045,rz,0.5,0.1,rgbOf(H,'#ff6a2a'),0.85,0.3);S.seg(cx,0.05,rz,cx-sg*back*0.55,0.05,rz,0.2,0.04,rgbOf(H,'#ffd9a0'),0.9);   // the floor it has just crossed still glows
   if(!H.quiet){S.sparks(cx,floor+0.1,rz,H.low?1:3,3.6,C,0.13,0.35,1,floor);
@@ -248,10 +258,10 @@ const WeatherFX=(()=>{
   O.parts.forEach((m,i)=>{if(!H.quiet)m.rotation.y+=H.dt*(i%2?-8:6);m.material.opacity=m.userData.op*(on?1:0.55+0.4*form)*fade;});
   if(!H.quiet)M3.tex.offset.x=(t*0.35)%1;
   if(H.quiet)return;
-  const n=(H.low?2:5)*(on?1:0.4);for(let i=0;i<n;i++)if(Math.random()<g){const a=Math.random()*6.283,h=Math.random()*4.4*ht,r=(0.35+h*0.34)*wd+0.1;   // grit carried round the funnel
+  const n=cnt(H,(H.low?1.5:4)*(on?1:0.4)*g);for(let i=0;i<n;i++){const a=Math.random()*6.283,h=Math.random()*4.4*ht,r=(0.35+h*0.34)*wd+0.1;   // grit carried round the funnel
    H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*3.4,vy:0.9+Math.random(),vz:Math.cos(a)*3.4,life:0.75,s0:0.4,s1:1.25,c:Math.random()<0.5?'#8c6a42':'#b08a5a',a:0.5*g});}
-  if(on)for(let i=0;i<(H.low?2:4);i++){const a=Math.random()*6.283;H.emit(false,{x:x+Math.cos(a)*1.3,y:0.12,z:y+Math.sin(a)*1.3,vx:-Math.sin(a)*2.6+Math.cos(a)*0.9,vz:Math.cos(a)*2.6+Math.sin(a)*0.9,vy:0.35,life:1.1,s0:0.6,s1:1.8,c:Math.random()<0.5?'#8c6c46':'#6f5434',a:0.55*fade});}   // the skirt
-  if(on&&Math.random()<0.5){const a=Math.random()*6.283,h=0.4+Math.random()*2.6,r=0.5+h*0.36;H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*4,vy:0.6,vz:Math.cos(a)*4,life:0.6,s0:0.12,s1:0.1,c:'#3d2f20',a:0.9});}   // stones caught in it
+  if(on)for(let i=cnt(H,H.low?1.2:3);i>0;i--){const a=Math.random()*6.283;H.emit(false,{x:x+Math.cos(a)*1.3,y:0.12,z:y+Math.sin(a)*1.3,vx:-Math.sin(a)*2.6+Math.cos(a)*0.9,vz:Math.cos(a)*2.6+Math.sin(a)*0.9,vy:0.35,life:1.1,s0:0.6,s1:1.8,c:Math.random()<0.5?'#8c6c46':'#6f5434',a:0.55*fade});}   // the skirt
+  if(on&&cnt(H,0.5)){const a=Math.random()*6.283,h=0.4+Math.random()*2.6,r=0.5+h*0.36;H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*4,vy:0.6,vz:Math.cos(a)*4,life:0.6,s0:0.12,s1:0.1,c:'#3d2f20',a:0.9});}   // stones caught in it
  }
  // one-shot effects when a strike lands (queued by step, drawn here because they need the 3D host)
  function impact3(H,z){
@@ -264,9 +274,9 @@ const WeatherFX=(()=>{
     H.emit(false,{x:x+Math.cos(a)*0.4,y:0.25,z:y+Math.sin(a)*0.4,vx:Math.cos(a)*sp,vy:0.7+Math.random()*1.5,vz:Math.sin(a)*sp,life:2+Math.random()*1.8,s0:0.6,s1:2.3,c:Math.random()<0.5?'#c4bdb0':'#a9a295',a:0.4,drag:0.9});}
   }else if(z.vent){
    if(H.env)H.env.flash([0.7,1,0.9],0.5,0.3);const n=H.low?10:24;
-   for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.random()*z.r*0.5;H.emit(false,{x:x+Math.cos(a)*r,y:0.2,z:y+Math.sin(a)*r,vx:Math.cos(a)*(0.5+Math.random()*2),vy:5+Math.random()*5,vz:Math.sin(a)*(0.5+Math.random()*2),life:1.2+Math.random(),s0:0.4,s1:1.7,c:'#e4f3f0',a:0.34,drag:1.4});}
+   for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.random()*z.r*0.5;H.emit(false,{x:x+Math.cos(a)*r,y:0.2,z:y+Math.sin(a)*r,vx:Math.cos(a)*(0.5+Math.random()*2),vy:5+Math.random()*5,vz:Math.sin(a)*(0.5+Math.random()*2),life:1.2+Math.random(),s0:0.6,s1:2.2,c:'#eef4f1',a:0.26,drag:1.4});}
    for(let i=0;i<(H.low?5:12);i++){const a=Math.random()*6.283;H.emit(true,{x,y:0.3,z:y,vx:Math.cos(a)*3,vy:4+Math.random()*5,vz:Math.sin(a)*3,life:0.8,s0:0.14,s1:0.03,c:'#ffb070',a:0.9,g:9});}
-   for(let i=0;i<(H.low?8:16);i++){const a=Math.random()*6.283,sp=2+Math.random()*5;H.emit(false,{x,y:0.3,z:y,vx:Math.cos(a)*sp,vy:6+Math.random()*7,vz:Math.sin(a)*sp,life:1.1+Math.random()*0.5,s0:0.3,s1:0.2,c:'#2e2a27',a:1,g:17});}   // rock thrown out of it
+   for(let i=0;i<(H.low?5:9);i++){const a=Math.random()*6.283,sp=2+Math.random()*5;H.emit(false,{x,y:0.3,z:y,vx:Math.cos(a)*sp,vy:6+Math.random()*7,vz:Math.sin(a)*sp,life:1.1+Math.random()*0.5,s0:0.34,s1:0.24,c:'#2e2a27',a:1,g:17});}   // rock thrown out of it
    S.sparks(x,0.3,y,10,5,rgbOf(H,COL.vent),0.16,0.6,1.6,0);
   }else if(z.k==='a'){if(H.env)H.env.flash([0.72,0.9,1],1.5,0.4);S.sparks(x,PYH,y,16,6,rgbOf(H,COL.arc),0.14,0.5,1.2,0);}
  }
@@ -275,17 +285,17 @@ const WeatherFX=(()=>{
   for(const c of p.clouds){if(t<c.t0||t>=c.t1)continue;const x=fX(c.x),y=fY(c.y),k=steam?cl((t-c.t0)/2,0,1):cl((c.t1-t)/3,0,1)*cl((t-c.t0)/0.6+0.3,0,1);
    H.SFX.disc(x,0.05,y,c.r*1.1,tint,0.34*k,0.46*k);   // the cloud's own footprint on the ground: where it hides a tank
    if(H.quiet)continue;
-   const n=(H.low?0.5:1)*c.r*c.r*(steam?1.5:2.6)/60;
-   for(let i=0;i<3;i++)if(Math.random()<n){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*c.r;
-    H.emit(false,steam?{x:x+Math.cos(a)*r,y:0.2+Math.random()*0.6,z:y+Math.sin(a)*r,vx:0.25,vy:0.3+Math.random()*0.35,life:3,s0:1.2,s1:2.7,c:Math.random()<0.5?'#e4f0f2':'#c9dade',a:0.36*k}
-     :{x:x+Math.cos(a)*r,y:0.3+Math.random()*1.1,z:y+Math.sin(a)*r,vx:0.2,vy:0.12,life:3.4,s0:1.5,s1:3,c:Math.random()<0.5?'#d2cbbd':'#b9b2a4',a:0.46*k});}}
+   const n=cnt(H,(H.low?0.5:1)*c.r*c.r*(steam?0.7:1.3)/20);   // few, large and soft: a cloud is overdraw, and a phone pays for every layer
+   for(let i=0;i<n;i++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*c.r;
+    H.emit(false,steam?{x:x+Math.cos(a)*r,y:0.2+Math.random()*0.6,z:y+Math.sin(a)*r,vx:0.25,vy:0.3+Math.random()*0.35,life:3,s0:1.5,s1:3.2,c:Math.random()<0.5?'#e4f0f2':'#c9dade',a:0.38*k}
+     :{x:x+Math.cos(a)*r,y:0.3+Math.random()*1.1,z:y+Math.sin(a)*r,vx:0.2,vy:0.12,life:3.4,s0:1.7,s1:3.3,c:Math.random()<0.5?'#d2cbbd':'#b9b2a4',a:0.48*k});}}
  }
  // the whole-map vision effect drives the map's own light and haze (MapEnv): nothing is rebuilt
  function envDrive(H,p){
   const E=H.env;if(!E)return;const V=p&&p.vis?WX_VIS[p.vis]:null,L=V&&!V.local?visS*flick:0;
   if(L<=0.004){if(envOn){envOn=false;E.reset(0.5);}return;}
   envOn=true;const B=E.preset(),mx=(a,b)=>a+(b-a)*L,m3=(a,b)=>[mx(a[0],b[0]),mx(a[1],b[1]),mx(a[2],b[2])],my=me?me.y:16;
-  if(p.vis==='flare')E.set({sunI:mx(B.sunI,B.sunI*1.35),sun:m3(B.sun,[1,0.88,0.62]),exposure:mx(B.exposure,B.exposure*1.12),gGain:mx(B.gGain,B.gGain*1.05),fog:0.5*L,fogC:[1,0.86,0.62],fogNear:my-3,fogFar:my-12.5,stars:mx(B.stars,0)},0);
+  if(p.vis==='flare')E.set({sunI:mx(B.sunI,B.sunI*1.35),sun:m3(B.sun,[1,0.88,0.62]),exposure:mx(B.exposure,B.exposure*1.08),gGain:mx(B.gGain,B.gGain*1.03),fog:0.36*L,fogC:[0.96,0.82,0.6],fogNear:my-3.5,fogFar:my-14,stars:mx(B.stars,0)},0);
   else if(p.vis==='dust')E.set({sunI:mx(B.sunI,B.sunI*0.78),hemiI:mx(B.hemiI,B.hemiI*0.95),sun:m3(B.sun,[1,0.84,0.6]),sky:m3(B.sky,[0.66,0.56,0.42]),fog:0.66*L,fogC:[0.62,0.52,0.37],fogNear:my-2.5,fogFar:my-10.5,stars:mx(B.stars,0),earth:mx(B.earth,0.1),clear:m3(B.clear,[0.17,0.13,0.09])},0);
   else if(p.vis==='flicker')E.set({sunI:mx(B.sunI,B.sunI*0.34),hemiI:mx(B.hemiI,B.hemiI*0.55),fillI:mx(B.fillI,B.fillI*0.6),gGain:mx(B.gGain,B.gGain*0.86),shadow:mx(B.shadow,0.25)},0);
  }
@@ -294,12 +304,12 @@ const WeatherFX=(()=>{
   const p=plan();if(!p||!p.vis||visS<=0.01||WX_VIS[p.vis].local)return;top=top||0;const L=visS*flick,tt=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?0:performance.now()/1000,h=vh-top,f0=Math.min(0.2,70/h);
   g.save();g.beginPath();g.rect(0,top,vw,h);g.clip();g.translate(0,top);   // nothing over the HUD band; every wash starts from nothing just under it (f0), so there is no edge
   if(p.vis==='flare'){
-   let gr=g.createLinearGradient(0,0,0,h*0.7);gr.addColorStop(0,'rgba(255,232,180,0)');gr.addColorStop(f0,'rgba(255,232,180,'+0.3*L+')');gr.addColorStop(0.5,'rgba(255,214,150,'+0.12*L+')');gr.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=gr;g.fillRect(0,0,vw,h);
+   let gr=g.createLinearGradient(0,0,0,h*0.7);gr.addColorStop(0,'rgba(255,232,180,0)');gr.addColorStop(f0,'rgba(255,232,180,'+0.2*L+')');gr.addColorStop(0.5,'rgba(255,214,150,'+0.08*L+')');gr.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=gr;g.fillRect(0,0,vw,h);
    g.globalCompositeOperation='lighter';const sx=vw*1.02,sy=-h*0.04,r=Math.max(vw,h)*0.62,b=1+0.04*Math.sin(tt*2.3);   // the sun sits just outside the top right corner: only its bloom reaches in
-   gr=g.createRadialGradient(sx,sy,0,sx,sy,r*b);gr.addColorStop(0,'rgba(255,246,224,'+0.7*L+')');gr.addColorStop(0.2,'rgba(255,228,176,'+0.3*L+')');gr.addColorStop(0.55,'rgba(255,212,150,'+0.08*L+')');gr.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=gr;g.fillRect(0,0,vw,h);
+   gr=g.createRadialGradient(sx,sy,0,sx,sy,r*b);gr.addColorStop(0,'rgba(255,246,224,'+0.5*L+')');gr.addColorStop(0.2,'rgba(255,228,176,'+0.2*L+')');gr.addColorStop(0.55,'rgba(255,212,150,'+0.05*L+')');gr.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=gr;g.fillRect(0,0,vw,h);
    for(let i=1;i<=3;i++){const k=i*0.2,gx=sx+(vw*0.4-sx)*k*2,gy=sy+(h*0.55-sy)*k*2,rr=Math.min(vw,h)*(0.03+0.018*i);gr=g.createRadialGradient(gx,gy,0,gx,gy,rr);gr.addColorStop(0,'rgba(255,220,170,'+0.12*L+')');gr.addColorStop(0.7,'rgba(255,190,120,'+0.05*L+')');gr.addColorStop(1,'rgba(255,190,120,0)');g.fillStyle=gr;g.fillRect(gx-rr,gy-rr,rr*2,rr*2);}   // lens ghosts
   }else if(p.vis==='dust'){
-   const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(206,178,132,0)');gr.addColorStop(f0,'rgba(206,178,132,'+0.36*L+')');gr.addColorStop(0.5,'rgba(200,172,128,'+0.14*L+')');gr.addColorStop(1,'rgba(190,164,122,'+0.04*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,h);
+   const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(206,178,132,0)');gr.addColorStop(f0,'rgba(206,178,132,'+0.26*L+')');gr.addColorStop(0.5,'rgba(200,172,128,'+0.1*L+')');gr.addColorStop(1,'rgba(190,164,122,'+0.04*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,h);
    g.lineCap='round';g.lineWidth=Math.max(1.5,vw/300);   // grit blown across: soft, tan, long
    for(let i=0;i<34;i++){const sp=0.3+hsh(i*3.3)*0.45,x=((hsh(i)*1.4+tt*sp)%1.4-0.2)*vw,y=(0.04+hsh(i*7.1)*0.96)*h,l=vw*(0.1+hsh(i*1.9)*0.16),gl=g.createLinearGradient(x,y,x+l,y);
     gl.addColorStop(0,'rgba(214,186,140,0)');gl.addColorStop(0.5,'rgba(214,186,140,'+0.2*L+')');gl.addColorStop(1,'rgba(214,186,140,0)');g.strokeStyle=gl;g.beginPath();g.moveTo(x,y);g.lineTo(x+l,y+l*0.05);g.stroke();}

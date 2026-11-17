@@ -140,7 +140,7 @@ console.log('PASS plans: ' + nPlans + ' (6 maps x 3 weather kinds x 14 seeds x 5
 const scene = (map, g, body) => W.eval(`(()=>{__seed(11);__events=[];setMap(${J(map)});matchG=${J(g)};battleLoadout=${J(GEAR.stock)};battlePower=powerOf(battleLoadout);battleLg=0;
  MM={n:1,series:false,mp:50,cp:false,wx:${seedOf(2)},wxc:false};populatePreparedMatch();startMatch();
  const me=units[0],foe=units[1],z=wx.P.hz[0],tau=z.t+(z.k==='c'||z.k==='a'?0.01:0.5),at=z.k==='c'?[z.x,z.y]:z.k==='a'?[10,13]:z.k==='t'?[10,16]:wxPos(z,tau);
- const place=u=>{u.x=at[0];u.y=at[1];u.elev=z.k==='t'?1:0;u.hzT=0;};
+ const place=u=>{u.x=at[0];u.y=at[1];u.elev=z.k==='t'?1:0;u.hzT=0;u.sx=-99;u.sy=-99;};   // (not on its own spawn seat: that is safe ground, checked on its own below)
  const strike=()=>{elapsed=tau;simT=tau;weatherTick(0.05);};
  const evs=k=>__events.filter(e=>e[0]===k);
  me.x=1.2;me.y=30.8;me.hzT=0;
@@ -262,6 +262,44 @@ function room(make, cfg) {   // one live room's match, both pilots flown by the 
 { const lg = W.eval('LG_AI_HZ'); ok(lg.length === 7 && lg.every((v, i) => v > 0 && v < 1 && (i === 0 || v >= lg[i - 1])), 'the AI reads a hazard warning by league, never always (' + lg.join(', ') + ')');
   ok(W.eval('HZ_REACT') >= 0.3, 'the AI needs a reaction time before it moves'); }
 
+// ---- 7b. every attacker inside 5 s gets the takedown (the owner's assist), the kill goes to the last; a tank on its own spawn seat is never touched ----
+{ const r = W.eval(`(()=>{__seed(11);__events=[];setMap('classic');matchG='bounty';battleLoadout=${J(GEAR.stock)};battlePower=powerOf(battleLoadout);battleLg=0;
+  MM={n:2,series:false,mp:50,cp:false,wx:${seedOf(2)},wxc:false};populatePreparedMatch();startMatch();
+  const me=units[0],ally=units[1],foe=units[2],z=wx.P.hz[0],tau=z.t+0.01;ally.st={dmg:0,kills:0,td:0,tdv:[]};
+  for(const u of units){u.x=1.2;u.y=30.8;u.hzT=0;}foe.x=z.x;foe.y=z.y;
+  simT=tau-4;takeHit(foe,10,me,null,0);simT=tau-1;takeHit(foe,10,ally,null,0);foe.hp=20;elapsed=tau;simT=tau;weatherTick(0.05);
+  const k=__events.filter(e=>e[0]==='k')[0];return {me:me.st.td,ally:ally.st.td,killer:k?k[2]:null,allyId:ally.id,meKills:me.st.kills,allyKills:ally.st.kills,tdv:me.st.tdv,foeId:foe.id};})()`);
+  ok(r.me === 1 && r.ally === 1 && r.killer === r.allyId && r.meKills === 0 && r.allyKills === 1 && J(r.tdv) === J([r.foeId]), 'two pilots hit a tank within 5 s and the hazard finishes it: both get the takedown, the last one gets the kill ' + J(r));
+  const h = W.eval(`(()=>{__seed(11);setMap('bunker');matchG='bounty';battleLoadout=${J(GEAR.stock)};battlePower=powerOf(battleLoadout);battleLg=0;MM={n:1,series:false,mp:50,cp:false,wx:${seedOf(2)},wxc:false};populatePreparedMatch();startMatch();
+  const foe=units[1],z=wx.P.hz[0],tau=z.t+0.5,p=wxPos(z,tau);foe.hzT=0;foe.sx=p[0];foe.sy=p[1];foe.x=p[0]+1;foe.y=p[1];const h0=foe.hp;elapsed=tau;simT=tau;weatherTick(0.05);const home=foe.hp===h0;
+  foe.sx=p[0]+9;const z2=wx.P.hz[0];foe.x=p[0];foe.y=p[1];weatherTick(0.05);return [home,foe.hp<h0,WX_HOME];})()`);
+  ok(h[0] === true && h[1] === true && h[2] >= 2, 'a tank within ' + h[2] + ' of its own spawn seat is not touched by a hazard that crosses the seat; off the seat it is'); }
+// ---- 9a2. forged takedown claims: an honest fight whose phone claims a takedown for EVERY tank in EVERY sample gains (almost) nothing ----
+{ let honest = 0, kept = 0, extra = 0, extra1 = 0, n = 0; const rows = [];
+  for (const map of MAPS6) for (const [g, m, hs] of [['bounty', '1v1', SR.BTY_HP], ['zone', '2v2', 2], ['arena', '3v3', 3]]) { let h = 0, kp = 0, ex = 0;
+    for (const [i, wxs] of seedsOf(2, 2).concat(seedsOf(3, 2)).entries()) {
+      const r = W.run({ g, m, map, seed: 4100 + i * 17, mp: 40, L: GEAR.rare, lg: 2, dt: 1 / 30, wx: wxs }); n++;
+      const c = { g, m, map, secs: r.secs + 6, won: r.won, drawn: r.drawn, place: 0, series: false, min: 5, spdM: r.spdM, hs, wx: { seed: wxs, clear: false } };
+      const real = checkProof(r.pf, { ...c, st: { dmg: r.st.dmg, kills: r.st.kills, sup: r.st.sup, box: r.st.box, low: r.st.low, td: r.td } });
+      if (!real.ok) { ok(false, map + ' ' + g + ' ' + m + ': an honest weather match fails the record check (' + real.why + ')'); continue; }
+      const D = JSON.parse(J(r.pf)), k = Math.floor(atob(D.s).length / (D.n * 3 + 6)); D.hz = [];
+      for (let s2 = 1; s2 < k && D.hz.length < 400; s2++) for (let u = 1; u < D.n; u++) D.hz.push([s2, u]);   // the server reads at most 400 claims
+      const lie = checkProof(D, { ...c, st: { dmg: r.st.dmg, kills: r.st.kills, sup: r.st.sup, box: r.st.box, low: r.st.low, td: 400 } });
+      ok(real.fix.td <= r.td, map + ' ' + g + ': the record never shows more takedowns than the sim counted (' + real.fix.td + ' of ' + r.td + ')');
+      h += r.td; kp += real.fix.td; ex += Math.max(0, lie.fix.td - r.td); }
+    rows.push(map + ' ' + g + ' ' + m + ': honest ' + h + ', verified ' + kp + ', forged gain ' + ex); honest += h; kept += kp; extra += ex; if (m === '1v1') extra1 += ex; }
+  console.log(rows.join('\n'));
+  ok(honest >= 40, 'the honest matches had takedowns to check (' + honest + ' in ' + n + ' matches)');
+  ok(kept >= honest * 0.7, 'the record check keeps most honest takedowns (' + kept + ' of ' + honest + ')');
+  // what is left is the half-second grain of the record (a real hazard hit on a tank the pilot damaged right at the edge of the 5 s window, or
+  // in the same half second as a team mate): bounded, and never a takedown without a real hazard hit on a tank the pilot was fighting
+  ok(extra1 <= 2, 'in 1v1 (where a claim is unambiguous) claiming a takedown for every tank in every sample gains ' + extra1 + ' in 24 matches');
+  ok(extra <= honest * 0.1, 'claiming a takedown for every tank in every sample gains ' + extra + ' over ' + honest + ' honest ones in ' + n + ' matches (six maps, 1v1 and team modes): under 10%');
+  console.log('PASS forged claims: ' + n + ' matches, honest ' + honest + ', verified ' + kept + ', gained by claiming everything ' + extra); }
+// ---- 9a3. the legacy save migration never takes a finish from the phone; a new ticket without a finished match keeps its weather ----
+{ const S = SR.ecoNorm({}), X = { day: 20000, week: 2857, pk: 't', rnd: () => 0.5 };
+  eco.migrate(S, { paints: { stock: 1, nebula: 1, scorch: 1, grid: 1, arc_live: 1, scorch_live: 1 }, hz: { classic: 99 } }, { box: {}, starter: 0, founder: 0, moonbeam: 0, skin: 0, pass: 0, paint: {} }, X);
+  ok(!S.paints.scorch && !S.paints.grid && !S.paints.arc_live && !S.paints.scorch_live && !(S.hz && S.hz.classic), 'a phone save that says it owns hazard finishes, LIVE finishes or takedowns brings none of them to the server ' + J(Object.keys(S.paints))); }
 // ---- 9b. AI matches end to end: the server seeds the weather, the phone plays it, the server counts from the record ----
 const env = { BOT_TOKEN: '123:ABC', FIREBASE_DB_SECRET: 'SECRET' }, U = { id: 4242, first_name: 'Wx' }, pid = 'tg_4242', E = () => db.get('/eco/' + pid);
 let now = Date.now();
@@ -271,6 +309,8 @@ const startT = async (o) => (await eco.matchStart(env, Object.assign({ g: 'bount
   ok(t0.ok && Array.isArray(t0.wx) && Number.isInteger(t0.wx[0]) && t0.wx[1] === 1, 'a new pilot\'s ticket carries a weather seed and the clear flag ' + J(t0.wx));
   const again = await startT({ cid: 'a'.repeat(16) });
   ok(again.same && J(again.wx) === J(t0.wx), 'asking again for the same match gets the same weather (no re-rolling a ticket)');
+  const other = await startT({ cid: 'b'.repeat(16) }), other2 = await startT({ cid: 'c'.repeat(16), map: 'bunker', g: 'arena', m: '2v2' });
+  ok(J(other.wx) === J(t0.wx) && J(other2.wx) === J(t0.wx), 'a NEW ticket (another match id, another map or mode) before any match is finished gets the same weather: abandoning the VS screen cannot re-roll it');
   db.root.eco[pid].mp = 40;   // a pilot past their first matches
 }
 let simTd = 0, srvTd = 0, played = 0, hzMatches = 0, forged = 0;

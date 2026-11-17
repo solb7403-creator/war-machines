@@ -206,7 +206,7 @@ function respawnTick(dt){
   }
   u.dead=(u.dead||0)+dt;
   if(u.dead>=respawnFor(u)){u.dead=0;u.hp=u.mhp;u.tkn=0;u.x=u.sx;u.y=u.sy;u.px=u.x;u.py=u.y;u.elev=0;u.ox=u.x;u.oy=u.y;u.buffs=[];u.sup=null;u.shieldT=0;u.shieldCd=0;u.flash=0;u.trail=[];u.calm=0;
-   u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.hzT=WX_SPAWN_SAFE;u.lh=null;   // teleported: live players snap to the spawn. hzT: no map hazard touches a tank that has just come back
+   u.tp=(u.tp||0)+1;u.claim=null;u.mb=0;u.hzT=WX_SPAWN_SAFE;u.lh=null;u.lhs=null;   // teleported: live players snap to the spawn. hzT: no map hazard touches a tank that has just come back
    if(u.brain){u.brain.mode='press';u.brain.t=1;u.brain.spot=null;}
    ev('r',u.id);}
  }
@@ -296,7 +296,7 @@ function simStart(){
  gscore=[0,0];gzones=null;cry=null;storm=null;boss=units.find(u=>u.boss)||null;if(boss)evtAt=0;   // Survival: no random events, the megatank is the event
  supF=supFillOf(matchG,MM.n);
  units.forEach((u,i)=>{u.id=i;u.sx=u.x;u.sy=u.y;u.dead=0;u.deaths=0;u.calm=0;u.sp=0;u.supN=0;u.tkn=0;u.rcv=0;u.zo=random()*6.28;u.elev=0;u.ox=u.x;u.oy=u.y;u.cry=0;u.bty=BTY_START;u.focus=null;u.sg=null;u.ms=null;u.place=0;u.tp=0;
-  u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1,td:0}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
+  u.st=u.hum||u.pid||u.gh?{dmg:0,sup:0,box:0,taken:0,arm:0,shd:0,best:0,kills:0,caps:0,cry:0,stars:0,low:1,td:0,tdv:[]}:null;});   // match stats for every human (quests, results). arm/shd: damage soaked by armor / by the plasma shield. best: biggest single hit. low: lowest health all match, as a share of max
  if(matchG==='zone'){const c=zoneSpot(null);gzones=[{x:c.x,y:c.y,r:ZONE_R,cap:0,own:-1,p0:0,p1:0,t:22+random()*6,next:null,moves:0}];}
  if(matchG==='crystal')cry={mine:{x:10,y:16},loose:[],t:2,cd:null,cnt:[0,0]};
  if(matchG==='royale'){const c=freeSpot(10+(random()-0.5)*4,16+(random()-0.5)*4,2.5)||freeSpot(10,16,6)||{x:10,y:16,l:0};storm={x:c.x,y:c.y,l:c.l,r:STORM_R0,tk:0,warned:false};}
@@ -443,7 +443,7 @@ function takeHit(r,amt,src,why,kind,crit,direct,bid){
  const h0=Math.max(0,r.hp);
  r.hp-=amt;r.flash=0.08;r.calm=0;
  supCharge(r,src,h0-Math.max(0,r.hp),kind||0);
- if(src&&src!==r&&src.team!==r.team&&(kind||0)<2)r.lh={s:src,t:simT};   // the last enemy who hit this tank: a hazard that finishes it within WX_CREDIT s credits them (hzDmg)
+ if(src&&src!==r&&src.team!==r.team&&(kind||0)<2){r.lh={s:src,t:simT};(r.lhs||(r.lhs={}))[src.id]=simT;}   // the last enemy who hit this tank (a hazard that finishes it within WX_CREDIT s is their kill) and when each enemy last hit it (their takedown): hzDmg
  if(r.st){r.st.taken+=amt;const f=Math.max(0,r.hp)/r.mhp;if(f<r.st.low)r.st.low=f;}
  ev('h',r.id,amt,kind||0,crit?1:0,direct?1:0,src?src.id:-1,bid||0);
  for(const b of r.buffs)b.taken+=amt;
@@ -1148,7 +1148,7 @@ function dropBoxNear(x0,y0){
 // except an AI pilot's own "did it read the warning" draw (hzSteer), so two sims with the same seed agree hit for hit.
 let wx=null;   // {seed, round, P: this round's plan (rules.js wxPlan), on: the whole-map vision effect is on, act: strikes warned or live}
 function wxStart(){
- for(const u of units){u.hzT=WX_SPAWN_SAFE;u.lh=null;u.hzH=null;u.hzK=null;u.hzC=null;}
+ for(const u of units){u.hzT=WX_SPAWN_SAFE;u.lh=null;u.lhs=null;u.hzH=null;u.hzK=null;u.hzC=null;}
  if(!MM||!Number.isInteger(MM.wx)||!WX_MAP[curMap]){wx=null;return;}
  const rd=series?series.round:0;
  wx={seed:MM.wx,round:rd,P:wxPlan(MM.wx,curMap,rd,series?ROUND_T:GTYPES[matchG].t,!!MM.wxc),on:false,act:[]};
@@ -1162,17 +1162,21 @@ function hzLevel(u,s){
  if(s.k==='n'||s.vent)return (u.elev||0)===0&&!underDeck(u);   // ground level only (a tornado passes the mesa by; vents are in the craters)
  return !underDeck(u);   // meteors, arcs, lasers: a tank under a deck is covered
 }
-const hzCan=(u,s)=>u.hp>0&&!u.boss&&!(u.hzT>0)&&hzLevel(u,s);
+const hzHome=u=>u.sx!==undefined&&Math.hypot(u.x-u.sx,u.y-u.sy)<WX_HOME;   // on its own spawn seat: no hazard reaches it there (rows, tornado paths and meteors can cross a seat)
+const hzCan=(u,s)=>u.hp>0&&!u.boss&&!(u.hzT>0)&&!hzHome(u)&&hzLevel(u,s);
 const hzIn=(u,s,t)=>wxIn(s,t,u.x,u.y,bodyR(u)*0.5);
 // one hazard hit. Never a one-shot: at most WX_CAP of the tank's full hull (before armor and plates cut it further).
-// Skill, not luck: if an enemy hit this tank in the last WX_CREDIT seconds, the hit is their takedown and, if it finishes
-// the tank, their kill (a normal kill: the same stars, zone points and quest progress, nothing extra). Nobody recent: nobody's
+// Skill, not luck: every enemy who hit this tank in the last WX_CREDIT seconds gets a takedown (the owner's assist: "an
+// enemy you hit takes hazard damage within 5 seconds"), and if the hit finishes the tank the kill goes to the LAST of them
+// (a normal kill: the same stars, zone points and quest progress, nothing extra). Nobody recent: nobody's
 function hzDmg(u,s){
  const hz=wx.P.haz,lh=u.lh,c=lh&&simT-lh.t<=WX_CREDIT&&lh.s.team!==u.team&&units.includes(lh.s)?lh.s:null;
  const a=armor(u),gross=Math.min(WX_HZ[hz].dmg*hpScale(),WX_CAP*u.mhp);
  if(u.st)u.st.arm+=gross*a;
- if(c&&c.st){const K=u.hzC||(u.hzC={});   // one takedown per strike and victim (a tornado: one per WX_CREDIT seconds of contact)
-  if(!(simT-(K[s.id]===undefined?-99:K[s.id])<WX_CREDIT)){K[s.id]=simT;c.st.td=(c.st.td||0)+1;ev('D',c.id,u.id);}}
+ if(u.lhs){const K=u.hzC||(u.hzC={});   // one takedown per strike, victim and attacker (a tornado: one per WX_CREDIT seconds of contact)
+  for(const id in u.lhs){const who=units[id];if(!who||!who.st||who.team===u.team||simT-u.lhs[id]>WX_CREDIT)continue;
+   const k=s.id+':'+id;if(simT-(K[k]===undefined?-99:K[k])<WX_CREDIT)continue;
+   K[k]=simT;who.st.td=(who.st.td||0)+1;who.st.tdv.push(u.id);ev('D',who.id,u.id);}}   // tdv: who it was (the match record carries it: js/proof.js)
  takeHit(u,gross*(1-a),c,hz,3);
 }
 function hzShove(u,s,t){   // the train throws a tank along the deck; a tornado spins it round and out
@@ -1211,7 +1215,7 @@ const LG_AI_HZ=[0.5,0.56,0.62,0.68,0.74,0.8,0.85],HZ_REACT=0.35;
 const WX_ARC_SAFE=[[8,8.9],[12,8.9],[5.6,7.6],[14.4,7.6],[8,23.1],[12,23.1],[5.6,24.4],[14.4,24.4]];   // Longshot: spots the containers hide from the pylon
 // is the tank standing where this strike will land (or is landing)
 function hzThreat(u,s,t){
- if(u.hp<=0||u.boss||!hzLevel(u,s))return false;
+ if(u.hp<=0||u.boss||hzHome(u)||!hzLevel(u,s))return false;
  if(s.k==='c')return wxIn(s,t,u.x,u.y,R+0.5);
  if(s.k==='a')return wxArcSees(s,u.x,u.y);
  if(s.k==='t'){if(Math.abs(u.y-s.y)>=s.hw+R+0.2)return false;
@@ -1232,8 +1236,9 @@ function hzSteer(u){   // where an AI pilot drives to get out of a hazard it has
  if(!wx||!wx.act.length||u.boss)return null;const t=elapsed;
  for(const s of wx.act){
   if(s.w>t-HZ_REACT||!hzThreat(u,s,t))continue;
-  const K=u.hzK||(u.hzK={});if(K[s.id]===undefined)K[s.id]=random()<LG_AI_HZ[aiLgOf(u)]?1:0;
-  if(K[s.id])return hzEscape(u,s,t);
+  const K=u.hzK||(u.hzK={}),k=s.k==='n'?s.id+':'+Math.floor(t/3):s.id;   // a tornado lasts 20 s: the AI gets a fresh look at it every 3 s, not one for its whole life
+  if(K[k]===undefined)K[k]=random()<LG_AI_HZ[aiLgOf(u)]?1:0;
+  if(K[k])return hzEscape(u,s,t);
  }
  return null;
 }

@@ -25,7 +25,7 @@ export const PROOF = {
   IH_N: 60,         // the controls fingerprint: your first 30 seconds of input (a script replaying its moves gives the same one)
   LAST_HP: 30,      // in the last sample, a tank under this much health (%) can be the one that went down at the end
   HZ_PAD: 1.2,      // map hazards: how far outside a strike's footprint a sampled position may be (half a second of driving, rounding)
-  HZ_MINE: 11,      // samples back in which your own damage must show (the 5 s credit window, plus one sample)
+  HZ_MINE: 10,      // samples back in which your own damage must show (the 5 s credit window: a hit right on its edge is not counted, never the other way)
 };
 function decode(pf) {
   if (!pf || typeof pf !== "object" || pf.v !== 1 || typeof pf.s !== "string" || !Array.isArray(pf.h)) return null;
@@ -93,6 +93,18 @@ export function checkProof(pf, c) {
   // time: the fight can't be longer than the clock it took (fast forward runs x3 while you're down)
   if (simT > (ffw ? c.secs * 3 : c.secs) + 8) return fail("time");
   if (c.won && simT < c.min * 0.75) return fail("fast");
+  // weather (Session 5E-2e): each round's timetable as the server seeded it (none without the server's seed). r0: the sample
+  // before the round's first one
+  const wxOn = !!(c.wx && Number.isInteger(c.wx.seed) && RULES.WX_MAP[c.map]), rounds = [];
+  if (wxOn) { const T = c.series ? L.ROUND_T : (L.GTYPES[c.g] || {}).t || 180; let rd = c.series ? 1 : 0;
+    rounds.push({ r0: -1, P: RULES.wxPlan(c.wx.seed, c.map, rd, T, !!c.wx.clear) });
+    for (let s = 1; s < k && rounds.length < 6; s++) if (b[s * sz + n * 3 + 2] & 64) rounds.push({ r0: s, P: RULES.wxPlan(c.wx.seed, c.map, ++rd, T, !!c.wx.clear) }); }
+  const roundAt = (s) => { let r = rounds[0]; for (const x of rounds) if (x.r0 <= s) r = x; return r; };
+  // the train throws a tank along the deck and a tornado spins it out: further than it can drive. Allowed while one is live
+  const shoveAt = (s) => { if (!wxOn) return 0; const r = roundAt(s), Pl = r.P; if (Pl.haz !== "train" && Pl.haz !== "tornado") return 0;
+    const t1 = (s - r.r0) * PROOF.DT, H = RULES.WX_HZ[Pl.haz];
+    for (const z of Pl.hz) { if (z.w > t1 + 1.5) break; if (t1 >= z.t - 0.75 && t1 <= RULES.wxEnd(z) + 1.25) return (Pl.haz === "train" ? H.shove : H.push) * 1.15; }
+    return 0; };
   // movement: no tank goes faster than the game allows (a dash, a respawn or a new round excused)
   const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15;
   const vMe = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
@@ -106,10 +118,10 @@ export function checkProof(pf, c) {
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
         const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
-        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0);
+        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s);
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
-      } else { stepsOther++; if (d > vAny + dash) badOther++; }
+      } else { stepsOther++; if (d > vAny + dash + shoveAt(s)) badOther++; }
     }
   }
   if (badMe > PROOF.MOVE_BAD) return fail("move");
@@ -158,43 +170,49 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) > 0 && HP(s, i) === 0) { let mineHit = false; for (let j = Math.max(0, s - 4); j <= s; j++) if (DM(j) > 0) mineHit = true; if (mineHit) kills++; }
     }
   }
-  // Map hazard takedowns (Session 5E-2e). The server gave this match its weather seed with the ticket, so it works out the
-  // same timetable the phone played (rules.js wxPlan) and counts, from the record alone, how often an enemy lost at least
-  // half a hazard hit's worth of health (or went down) in the very sample a strike was live on the spot where it stood, AND
-  // you had damaged someone in the 5 s before. An enemy who dodged while you were shooting it does not pass (c.hs: the mode's hull scale). The phone's own
-  // count is then held to this one (fix.td): nothing the phone reports can add a takedown the record does not show.
-  let td = 0;
-  if (c.wx && Number.isInteger(c.wx.seed) && RULES.WX_MAP[c.map]) {
-    const T = c.series ? L.ROUND_T : (L.GTYPES[c.g] || {}).t || 180, plan = (r) => RULES.wxPlan(c.wx.seed, c.map, r, T, !!c.wx.clear);
-    let round = c.series ? 1 : 0, r0 = -1, Pl = plan(round), seen = {};
-    const hzD = Pl.haz ? RULES.WX_HZ[Pl.haz].dmg * (c.hs || 1) : 0, need = (i) => Math.max(1, (Math.min(hzD, RULES.WX_CAP * mhp[i]) / mhp[i]) * 50 - 1);   // half the hit, in % of the hull
-    for (let s = 1; s < k && Pl.haz; s++) {
-      if (FL(s) & 64) { round++; r0 = s; Pl = plan(round); seen = {}; }
+  // Map hazard takedowns (Session 5E-2e). The phone's record lists each takedown it counted: [sample, the tank that took the
+  // hazard] (js/proof.js). The server gave this match its weather seed with the ticket, so it works out the same timetable
+  // (rules.js wxPlan) and accepts a claim only if the record itself shows all of it: (1) that tank lost at least half a hazard
+  // hit's worth of hull in that sample beyond everything you dealt in it (or went down to more than your own damage), (2) it stood in a live strike's footprint at that strike's time, (3) in
+  // the 5 s before, there is a sample in which you dealt damage, that same tank lost health and it was within your reach, and
+  // (4) one claim per strike and tank (a tornado: one per 5 s). A phone that only raises its count, or adds claims, gains
+  // nothing the record does not show; a match without the server's seed has no weather at all. c.hs: the mode's hull scale.
+  let td = 0; const hzKill = [];
+  if (wxOn && Array.isArray(pf.hz)) {
+    const seen = {}, reach = (s) => { for (let j = Math.max(0, s - 6); j <= s; j++) if (FL(j) & 8) return PROOF.SUPER_REACH; return L.STAT.range + PROOF.REACH; };
+    for (const cl of pf.hz.slice(0, 400)) {
+      if (!Array.isArray(cl) || !Number.isInteger(cl[0]) || !Number.isInteger(cl[1])) continue;
+      const s = cl[0], i = cl[1];
+      if (!(s >= 1 && s < k) || !(i >= 1 && i < n) || !enemy[i] || i === bossI) continue;
+      const r = roundAt(s), Pl = r.P; if (!Pl.haz) continue;
+      // (1) the hull it lost in this sample, less ALL the damage you dealt in it (to anyone) and the rounding of a health
+      // reading, is at least half a hazard hit; or it went down and your own damage in the sample could not have done that
+      const drop = HP(s - 1, i) - HP(s, i), unit = mhp[i] / 100, notMine = drop * unit - DM(s) - unit, hitD = Math.min(RULES.WX_HZ[Pl.haz].dmg * (c.hs || 1), RULES.WX_CAP * mhp[i]);
+      if (!(drop > 0)) continue;
+      if (HP(s, i) > 0 ? notMine < hitD * 0.5 : HP(s - 1, i) * unit - DM(s) < unit) continue;
       let mineHit = false;
-      for (let j = Math.max(0, s - PROOF.HZ_MINE); j <= s; j++) if (DM(j) > 0) mineHit = true;
+      for (let j = Math.max(1, s - PROOF.HZ_MINE); j <= s && !mineHit; j++) if (DM(j) > 0 && HP(j - 1, i) > HP(j, i) && Math.hypot(X(j, i) - X(j, 0), Y(j, i) - Y(j, 0)) <= reach(j)) mineHit = true;
       if (!mineHit) continue;
-      const t1 = (s - r0) * PROOF.DT;   // the round's clock at this sample, within half a second
-      for (let i = 1; i < n; i++) {
-        const drop = HP(s - 1, i) - HP(s, i);
-        if (!enemy[i] || i === bossI || !(drop > 0) || (drop < need(i) && HP(s, i) > 0)) continue;
-        for (const z of Pl.hz) {
-          if (z.w > t1 + 1) break;
-          const end = RULES.wxEnd(z);
-          if (z.soft || end < t1 - 1.5) continue;
-          let inside = false;
-          for (let tau = t1 - 1; tau <= t1 + 0.51 && !inside; tau += 0.25) {
-            if (tau < z.t - 0.5 || tau > end + 0.5) continue;
-            const tt = Math.max(z.t, Math.min(end, tau));
-            inside = RULES.wxIn(z, tt, X(s, i), Y(s, i), PROOF.HZ_PAD) || RULES.wxIn(z, tt, X(s - 1, i), Y(s - 1, i), PROOF.HZ_PAD);
-          }
-          if (!inside) continue;
-          const key = z.id + ":" + i, last = seen[key];
-          if (last === undefined || (z.k === "n" && s - last >= RULES.WX_CREDIT / PROOF.DT)) { seen[key] = s; td++; }
-          break;
+      const t1 = (s - r.r0) * PROOF.DT, late = r.r0 < 0 ? 0.26 : 0.76; let hit = null;   // the round's clock at this sample (a later round's first sample can be half a second in)
+      for (const z of Pl.hz) {
+        if (z.w > t1 + 1.5) break;
+        const end = RULES.wxEnd(z);
+        if (z.soft || end < t1 - 1) continue;
+        for (let tau = t1 - 0.75; tau <= t1 + late && !hit; tau += 0.25) {
+          if (tau < z.t - 0.3 || tau > end + 0.3) continue;
+          const tt = Math.max(z.t, Math.min(end, tau));
+          if (RULES.wxIn(z, tt, X(s, i), Y(s, i), PROOF.HZ_PAD) || RULES.wxIn(z, tt, X(s - 1, i), Y(s - 1, i), PROOF.HZ_PAD)) hit = z;
         }
+        if (hit) break;
       }
+      if (!hit) continue;
+      const key = r.r0 + ":" + hit.id + ":" + i, last = seen[key];
+      if (last !== undefined && !(hit.k === "n" && s - last >= RULES.WX_CREDIT / PROOF.DT)) continue;
+      seen[key] = s; td++;
+      if (HP(s, i) === 0) { let near = false; for (let j = Math.max(0, s - 4); j <= s; j++) if (DM(j) > 0) near = true; if (!near) hzKill.push(key); }   // a hazard kill credited up to 5 s after your last hit: the kill count below only looks back 2 s
     }
   }
+  kills += hzKill.length;
   // supers: never more than the cap in one round (Session 5E-2b2b). The phone's sim refuses the press past the cap, so an
   // honest record cannot hold more; a record that does was not made by the game's own rules
   if (mostSups > (L.SUP_ROUND_CAP || 3)) return fail("supers");

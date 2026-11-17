@@ -263,7 +263,7 @@ const SERIES_X=2,ROUND_T=90;
 // never more than WX_CAP of a full hull per hit; a hazard that finishes a tank credits the last enemy who hit it within
 // WX_CREDIT seconds, and pays exactly what any kill pays (no new points source).
 const WX_ODDS=[0.25,0.35,0.20,0.20];   // clear, vision only, hazard only, both
-const WX_FIRST_CLEAR=3,WX_CREDIT=5,WX_CAP=0.34,WX_SPAWN_SAFE=2.5,WX_FINISH_N=25,WX_W=20,WX_H=32;
+const WX_FIRST_CLEAR=3,WX_CREDIT=5,WX_CAP=0.34,WX_SPAWN_SAFE=2.5,WX_HOME=2.2,WX_FINISH_N=25,WX_W=20,WX_H=32;   // WX_HOME: no hazard touches a tank this close to its own spawn seat
 // hz: the damaging hazard; vis: the vision effect; fin: the paint finish 25 hazard takedowns on this map unlock
 const WX_MAP={
  classic:{hz:'meteor',hn:'Meteor strikes',vis:'haze',vn:'Regolith haze',fin:'scorch'},

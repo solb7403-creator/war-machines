@@ -24,10 +24,12 @@ function prepareMatch(gOver){   // gOver: a game type already picked (a live que
  battleLoadout=JSON.parse(JSON.stringify(myLoadout()));battlePower=powerOf(battleLoadout);battleLg=myLeague(battlePower).i;battleDeployC=battleLoadout.c.c;
  const mp=save.mp||0;
  MM={n:MODES[modeKey()].n,series:matchG==='arena'&&modeKey()==='1v1'&&mp>0,mp,cp:(battleLoadout.chs||[battleLoadout.c]).length>1};   // cp: you can counter-pick back between rounds
- // weather (Session 5E-2e): every match has some. The server's seed comes with the ticket on the VS screen (matchStart) and
- // replaces this one; a match that starts before the ticket arrives plays this phone's own roll, and its hazard takedowns do
- // not count (the server only counts a match it seeded). A pilot's first three matches are always clear
- MM.wx=Number.isInteger(window.LUNAR_WX)?window.LUNAR_WX:(Math.random()*4294967296)|0;MM.wxc=mp<WX_FIRST_CLEAR&&!Number.isInteger(window.LUNAR_WX);battleWx=null;   // LUNAR_WX: a fixed roll for captures and tests (this phone's own roll never counts takedowns)
+ // weather (Session 5E-2e): the SERVER rolls it. Its seed comes with the ticket on the VS screen (matchStart); a match that
+ // starts before the ticket arrives is clear (no seed: no weather), so nothing a phone rolls for itself is ever played for
+ // takedowns. Only where this phone runs the economy itself (no server: tests, a browser without an account) does it roll its
+ // own: LUNAR_WX fixes that roll for captures and tests. A pilot's first three matches are always clear
+ if(SRV_ECO){MM.wx=null;MM.wxc=true;}else{const fx_=Number.isInteger(window.LUNAR_WX);MM.wx=fx_?window.LUNAR_WX:(Math.random()*4294967296)|0;MM.wxc=mp<WX_FIRST_CLEAR&&!fx_;}
+ battleWx=null;
  populatePreparedMatch();
  state='vs';
  matchStart();

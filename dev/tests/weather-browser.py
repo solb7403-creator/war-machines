@@ -35,13 +35,22 @@ async def main():
         await pg.evaluate("()=>doSync(false)"); await pg.wait_for_timeout(800)
         await pg.evaluate("()=>{save.welcomed=true;save.termsOk=1;save.gtype='bounty';save.mode='1v1';save.map='longshot';save.wxTip={};store();closeAll();setGfx('2d');}")
         got = None
-        for i in range(14):   # a ticket whose roll has the hazard (each abandoned VS screen is a new ticket, a new roll)
+        same = []
+        for i in range(3):   # abandoning the VS screen gets the same weather again: the seed only moves when a match is finished
+            await pg.evaluate("()=>{exitBattle();prepareMatch();}"); await until(pg, "()=>battleWx!==null", 6000); same.append(await pg.evaluate("()=>battleWx"))
+        check(same[0] is not None and same[0] == same[1] == same[2], 'three VS screens in a row without a finished match: the same server weather (%s)' % same[0])
+        for i in range(14):   # a match count whose roll has the hazard (the test sets the server's count; a pilot gets there by playing)
+            dev('/__set', {'path': 'eco/tg_%d/mp' % U1['id'], 'value': 13 + i})
             await pg.evaluate("()=>{exitBattle();prepareMatch();}")
             ok = await until(pg, "()=>battleWx!==null", 6000)
             if not ok: continue
             got = await pg.evaluate("()=>({wx:MM.wx,wxc:MM.wxc,k:wxRoll(MM.wx,MM.wxc).k,mp:save.mp})")
             if got['k'] >= 2: break
         check(got is not None and got['k'] >= 2, 'a ticket with the hazard in its roll arrived on the VS screen ' + json.dumps(got))
+        nosrv = await pg.evaluate("async()=>{exitBattle();const f=window.fetch;window.fetch=function(u,o){if(/match\\/start/.test(String(u)))return new Promise(()=>{});return f.apply(this,arguments);};prepareMatch();await new Promise(r=>setTimeout(r,600));startMatch();const r={wx:typeof wx!=='undefined'&&wx?wx.P.k:null,mm:MM.wx};window.fetch=f;exitBattle();return r;}")
+        check(nosrv['wx'] is None and nosrv['mm'] is None, 'a match that starts before the server answered has no weather (the phone never rolls its own on the server economy) ' + json.dumps(nosrv))
+        await pg.evaluate("()=>{exitBattle();prepareMatch();}"); await until(pg, "()=>battleWx!==null", 6000)
+        got = await pg.evaluate("()=>({wx:MM.wx,wxc:MM.wxc,k:wxRoll(MM.wx,MM.wxc).k,mp:save.mp})")
         T = eco(U1['id']).get('mt') or {}; hz0 = (eco(U1['id']).get('hz') or {}).get('longshot', 0)
         check(T.get('ws') == got['wx'] and not T.get('wc') and got['wxc'] is False, 'the phone plays the seed the server stored on the ticket (server %s, phone %s)' % (T.get('ws'), got['wx']))
         await pg.evaluate("()=>{startMatch();setCtl(me,'bot');me.st=me.st||mstat;window.__td=0;window.__hz=0;const o=onSimEv;onSimEv=function(a){if(a[0]==='D'&&units[a[1]]===me)__td++;if(a[0]==='h'&&a[3]===3)__hz++;return o(a);};}")

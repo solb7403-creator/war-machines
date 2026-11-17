@@ -927,7 +927,7 @@ function drawBattle(){
   g.strokeStyle='rgba(199,155,255,.9)';g.lineWidth=3;g.setLineDash([10,7]);g.lineDashOffset=-t*20;g.beginPath();gArc(storm.x,storm.y,storm.r,undefined,undefined,false,CH&&me&&me.hp>0?hOf(me):0);g.stroke();g.setLineDash([]);g.lineDashOffset=0;g.restore();}
  g.restore();   // end arena clip
  if(!D3){g.strokeStyle='#59607a';g.lineWidth=2;g.strokeRect(X(0),Y(0),W*sc,AH);}
- if(WXF)WXF.overlay(g,vw,vh,CH?hudY0():0);   // glare, dust or dimmed lights over the world: under the floating text, the edge markers and the HUD, and never over the HUD band
+ if(WXF)WXF.overlay(g,vw,vh,CH?hudY0()+sc*2.1:0);   // glare, dust or dimmed lights over the world: under the floating text, the edge markers and the HUD, and never over the HUD band
  // floating text: labels stay on screen, damage numbers merge
  g.save();g.beginPath();if(CH)g.rect(-40,-40,vw+80,vh+80);else g.rect(X(0),Y(0)-(D3?sc*3:0),W*sc,AH+(D3?sc*3:0));g.clip();
  const lx=(x,txt)=>{const hw=g.measureText(txt).width/2+4;return CH?Math.max(hw+2,Math.min(vw-hw-2,x)):Math.max(X(0)+hw,Math.min(X(W)-hw,x));},ty0=CH?hudY0()+4:Y(0)+4;
