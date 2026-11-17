@@ -719,8 +719,9 @@ function renderShop(){
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches for your '+esc(CH[shopCh()].n)+'</li></ul>'+
    '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and doesn’t buy $LUNAR.</p></div>':'')+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache for your '+esc(CH[shopCh()].n)+'</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
-  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
+  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap. Science Lab: +1 research slot, research 25% faster and research parts on tiers '+Object.keys(PASS_PREM_PARTS).join(', ')+'.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
+  labShopSec()+
   vaultCard()+
   sec('Weapon caches','','crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('weapon',ri)).join('')+'</div>'+gearPickHead('weapon',false)+gearPickGrid('weapon',false)+
   sec('Chassis crates')+'<div class="crates">'+[0,1,2].map(ri=>crate('chassis',ri)).join('')+'</div>'+gearPickHead('chassis',false)+gearPickGrid('chassis',false)+
@@ -732,6 +733,20 @@ function renderShop(){
   (pend?'<div class="pending">Checking your '+(save.pendingSol?'SOL':'TON')+' payment. It unlocks as soon as it confirms.</div>':'');
 }
 
+// Session 6B: the Science Lab entries with CHECKOUT OFF in every currency (the Worker refuses them): research part packs, the four
+// Legendary set mods and instant finish, with their proposed prices (labPriceLabel: Stars in Telegram, TON + SOL on the website)
+function labShopSec(){
+ const off='<span class="labshop-off">Not on sale yet</span>',btn=p=>'<button class="btn sm btn-quiet" disabled aria-disabled="true">'+labPriceLabel(p)+'</button>';
+ const packs=RS_PACK_ORDER.map(k=>{const P=RS_PACKS[k];return '<div class="labshop-item"><div class="grow"><b>'+esc(P.n)+'</b><span>+'+P.each+' of every research part</span></div>'+btn(P)+off+'</div>';}).join('');
+ const legs=RTREE.order.map(t=>{const id=RTREE.legendary[t],F=rmodOf(id).F,set=rsLegSet(id),own=!!(save.lsm&&save.lsm[id]),done=!!(save.rm&&save.rm[set]);
+  return '<div class="labshop-item leg"><div class="grow"><b>★ '+esc(F.n)+'</b><span>'+esc(RTREE.tracks[t].n)+' · '+(own?'Owned':done?'A step stronger than '+esc(rmodOf(set).F.n):'On sale once you research '+esc(rmodOf(set).F.n))+'</span></div>'+(own?'':btn(RS_LEG_PRICE)+off)+'</div>';}).join('');
+ const f=[20*60e3,2*3600e3,8*3600e3].map(ms=>labPriceLabel(rsFinPrice(ms)));
+ return sec('Science Lab','Research parts · Legendary mods')+'<div class="labshop panel"><p class="mut">For the Science Lab in Conquest. Research is free with the parts you find; these only speed it up. Purchases never give points.</p>'+
+  '<h4 class="ptsh">Research part packs · one of each a week</h4>'+packs+
+  '<h4 class="ptsh">Legendary set mods · a step stronger than the earned set mod</h4>'+legs+
+  '<h4 class="ptsh">Instant finish · priced by the time left</h4><p class="mut">20 min '+f[0]+' · 2 h '+f[1]+' · 8 h '+f[2]+'. Shown on a running job in the Science Lab.</p>'+
+  '<p class="labshop-note">Not on sale yet: nothing in this section can be bought.</p></div>';
+}
 function paintCard(id){
  const P=PAINTS[id],own=!!(save.paints&&save.paints[id]),on=save.paint===id;
  const how=on?'Equipped':own?'Owned':P.only==='founder'?'Founder pack':P.only==='vault'?'Vault level '+VAULT_PAINT_LV:P.pass==='free'?'Pass tier 30':P.pass==='prem'?'Pass premium':priceLabel(P.ton,P.stars);
@@ -749,8 +764,8 @@ function passCard(){
 function openPass(){
  const ov=sheet('pass',()=>{
   const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP;
-  const cell=(r,track,i,claimed,locked)=>{const got=i<=t;
-   return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r))+'</span>'+
+  const cell=(r,track,i,claimed,locked)=>{const got=i<=t,rp=track==='p'&&PASS_PREM_PARTS[i]?' + '+PASS_PREM_PARTS[i]*CQ_PART_ORDER.length+' research parts':'';
+   return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r)+rp)+'</span>'+
     (claimed?'<b class="ok">✓</b>':got&&!locked?'<button class="btn sm btn-gold" data-act="claimpass" data-arg="'+track+':'+i+'">Claim</button>':'')+'</div>';};
   let rows='';for(let i=1;i<=seasonTiers();i++)rows+=(i===PASS_TIERS+1?'<div class="pbonus">Early pilot bonus · launch season only</div>':'')+'<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';
   return '<h3>Lunar Pass</h3><p class="mut">Season '+seasonNo()+': '+(seasonFrozen()?'30 days, the clock starts Nov 1':'ends in '+daysLeft()+(daysLeft()===1?' day':' days'))+'. '+bonusTxt()+' XP per match: win +'+PASS_XP_WIN+', draw +'+PASS_XP_DRAW+', loss +'+PASS_XP_LOSS+', featured mode +'+PASS_XP_FEAT+'. Each daily quest +'+PASS_XP_QUEST+', all '+DQ_SLOTS.length+' +'+PASS_XP_ALL+', each weekly quest +'+PASS_XP_WQ+'.</p>'+

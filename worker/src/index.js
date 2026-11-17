@@ -299,6 +299,10 @@ const descOf = (d) => {
   if (kind === "gear") return RULES.gearTk(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri) } : null;   // a chosen weapon or chassis (Checkpoint 39)
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
+  // Session 6B Science Lab store (part packs, Legendary set mods, instant finish): CHECKOUT OFF in every currency. Refused here, so no
+  // Stars invoice, TON or SOL payment can buy one. Opening it is an owner decision: set RULES.LAB_STORE_OPEN, add the kinds to the
+  // Stars payload and grant paths below, and price "rsfin" from the Conquest record's running job (never from the phone).
+  if (kind === "rspack" || kind === "rsleg" || kind === "rsfin") return null;
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {

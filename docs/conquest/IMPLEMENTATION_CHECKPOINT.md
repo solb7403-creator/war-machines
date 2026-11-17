@@ -4866,7 +4866,21 @@ roadmap row 6B-V.
   −51.3 / core −44.9 dBFS; on a phone −68.3 / −59.4 / −57.7 dB, all under the shipped Arcade beds and 16 dB under a Pulse
   Cannon shot) PASS, in `website-check.yml` beside weapon-sounds; weapon-sounds (479) PASS. Browser 390x844: the slider (40% ->
   saved, muted -> disabled), the bed at a green point, a barren point and the spawn, Sound off/on stops and restores it.
-- NEXT: slice 6 — revenue hooks as real store entries with checkout OFF in every currency: instant finish (priced by time left),
-  research part packs, Lunar Pass premium perks (+1 slot, −25% research time, research parts on some premium tiers, never points),
-  four Legendary set mods; TON / SOL-at-live-rate / Stars proposals; shown on the website and in Telegram; a store test.
+- DONE slice 6 (revenue hooks, CHECKOUT OFF in every currency): `js/rules.js` `LAB_STORE_OPEN=false`, `rsFinPrice` (instant
+  finish by time left: $0.22 x hours^0.85, 5-minute steps, $0.10 minimum; concave like Clash of Clans' 1 h ~20 gems / 1 day ~260),
+  `RS_PACKS` (Field kit +1 of each part 99⭐/1.6 TON, Lab crate +3 each 249⭐/4 TON, Research cache +8 each 599⭐/9.6 TON; one of each
+  a UTC week), `RS_LEG_PRICE` (each Legendary set mod 599⭐/9.6 TON, on sale only after its track's earned set mod is researched),
+  `PASS_PREM_PARTS` (premium tiers 6/12/18/24/30 add 1 of each research part on top of the tier's reward; never points), ecoPrice /
+  ecoOwned / ecoGrant / ecoRefund for `rspack` / `rsleg` / `rsfin` (grants run only from a verified payment, give no points).
+  `worker/src/index.js` descOf refuses every Lab kind, so no Stars invoice, no Telegram-confirmed payment, no TON or SOL log grants
+  one. Phone: `js/conquest/labstore.js` (FINISH NOW on a running job, LEGENDARY on its track, the LAB STORE fold with the packs: all
+  disabled, "Not on sale yet"), the Shop's Science Lab section (`ui.js labShopSec`, after the Lunar Pass card), `labPriceLabel`
+  (`net.js`: Stars in Telegram; TON + SOL at the live rate on the website), the pass card and pass sheet name the research perks,
+  a claimed premium tier toasts its research parts. Stars:TON stays at the shop's 61.5–62.5. Tests: `dev/tests/wtest/lab-store.mjs`
+  (29) and `dev/tests/lab-store-ui.mjs` (20) PASS; conquest-copy scans labstore.js; conquest-research, lab-ui, garage-rules,
+  fair-arcade, mod-behaviors, wtest lab / chassis (105) / web-auth / conquest / conquest-research / conquest-airdrop / pvp (133) /
+  test (204) / farm / hull-plating PASS.
+- NEXT: slice 7 — owner-rules CI check (DAILY_CAP 50,000; CQ_PTS; DQ_PTS 3,500; DQ_ALL_BONUS 1,000; WQ_Q_PTS 12,500; WQ_PTS 5,000;
+  chassis kit model first chassis 77–97 days; conquest-ladder-check ±10%; guard-test limits in one checked-in file), a lint for code
+  after a `//` comment, the wall-storage fix (`worker/src/conquest-plot.js` plot-wall p.ws loop) + its test, all new tests in CI.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.

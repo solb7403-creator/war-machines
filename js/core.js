@@ -396,6 +396,7 @@ function claimPass(track,i){
  i=+i;
  const c=coresFor();return when(ecoRun('pass',{t:track,i,c},(S,X)=>ecoClaimPass(S,track,i,X,c)||{err:'no'}),r=>{
   if(!r||r.err)return null;
+  if(r.parts)setTimeout(()=>showToast('+'+Object.values(r.parts).reduce((a,v)=>a+v,0)+' research parts for your Science Lab'),1200);   // Session 6B premium tiers
   if(r.pts!==undefined){fx('claim');return {pts:r.pts};}
   if(r.paint){save.paint=r.paint;store();fx('buy');return {reveal:{tk:'paint',rar:2,color:PAINTS[r.paint].trim,paint:r.paint,title:PAINTS[r.paint].n+' paint',sub:'Equipped. Change it in the Garage.'}};}
   afterGain(r.box);store();return {reveal:revealOf(r.box)};

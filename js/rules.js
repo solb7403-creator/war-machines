@@ -819,6 +819,9 @@ function ecoPrice(S,d,X){
  if(d.kind==='paint'){const P=PAINTS[d.id];return P&&P.stars?{ton:P.ton,stars:P.stars}:null;}
  if(d.kind==='pass')return {ton:PASS_PRICE.ton,stars:PASS_PRICE.stars};
  if(d.kind==='vault'){const B=VAULT[d.tk];return B?{ton:B.ton,stars:B.stars}:null;}
+ if(d.kind==='rspack'){const P=RS_PACKS[d.tk];return P?{ton:P.ton,stars:P.stars}:null;}
+ if(d.kind==='rsleg')return rsLegSet(d.tk)?{ton:RS_LEG_PRICE.ton,stars:RS_LEG_PRICE.stars}:null;
+ if(d.kind==='rsfin')return rsFinPrice(d.left);   // the time left comes from the Conquest record's job on the Worker, never from the phone
  if(d.kind==='respec'){const t=respecTier(upInvested(chUp(S,chFor(S,d.c))));return t?{ton:Math.round(t*RESPEC_TON_USD*100)/100,stars:Math.round(t*RESPEC_STARS_USD),usd:t}:null;}
  if(d.kind==='gear'){const tk=gearTk(d.tk);if(!tk||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,tk,d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the crate's price right now (before any deal)
  if(d.kind==='core'){if(!isGem(d.tk)||!(d.ri>=0&&d.ri<=2))return null;const m=ecoBoxMult(S,'gem',d.ri,X)*CORE_X;return {ton:Math.round(RPRICE[d.ri]*m*100)/100,stars:Math.round(RSTARS[d.ri]*m)};}   // 1.5x the gem cache's price right now (before any deal)
@@ -829,6 +832,9 @@ function ecoOwned(S,d,X){
  if(d.kind==='starter')return S.starter;if(d.kind==='founder')return S.founder||!FOUNDER_OPEN;if(d.kind==='moonbeam')return S.moonbeam;
  if(d.kind==='skin')return S.skin==='lunar';if(d.kind==='paint')return !!(S.paints&&S.paints[d.id]);if(d.kind==='pass')return ecoPassState(S,X).prem;
  if(d.kind==='respec')return !!S.rsCr;   // a paid reset is already waiting
+ if(d.kind==='rsleg'){const set=rsLegSet(d.tk);return !set||!!(S.lsm&&S.lsm[d.tk])||!(S.rm&&S.rm[set]);}   // owned, or its track's set mod not researched yet: nothing to sell
+ if(d.kind==='rspack')return !RS_PACKS[d.tk]||((S.buys&&S.buys[rsPackKey(d.tk,X)])|0)>=1;   // this week's one is bought
+ if(d.kind==='rsfin')return !/^j\d{1,6}$/.test(String(d.job||''))||!!(S.rsx&&S.rsx[d.job]);   // that job is already paid for
  if(d.kind==='core')return !isGem(d.tk)||!ownsCh(S,d.c)||(chGl(S,d.c)[d.tk]|0)>=5;
  if(d.kind==='gear'){const tk=gearTk(d.tk);return !tk||(tk==='weapon'?hasW(S,d.tk,d.ri):hasC(S,d.tk,d.ri));}   // a chosen item you already own: nothing to sell
  if(d.kind==='box'&&d.tk==='gem'&&d.c&&!ownsCh(S,d.c))return true;   // a gem cache named for a chassis you don't own: refused, never moved to another   // a chosen core for a chassis you don't own, or one already at level 5: nothing to sell
@@ -980,6 +986,9 @@ function ecoGrant(S,d,X){
  else if(d.kind==='paint'){const P=PAINTS[d.id];if(P&&P.stars&&!S.paints[d.id]){S.paints[d.id]=1;S.spendGram+=P.ton||0;outs.push({tk:'paint',id:d.id});}}
  else if(d.kind==='respec'){const t=respecTierOfTon(d.price);S.spendGram+=Number(d.price)||0;outs.push(ecoRespec(S,t,d.c));}
  else if(d.kind==='pass'){const P=ecoPassState(S,X);if(!P.prem){P.prem=true;S.spendGram+=PASS_PRICE.ton;outs.push({tk:'pass',s:P.s});}}
+ else if(d.kind==='rspack'){const P=RS_PACKS[d.tk];if(P){const bk=rsPackKey(d.tk,X);S.buys[bk]=(S.buys[bk]||0)+1;S.spendGram+=Number(d.price)||P.ton;outs.push({tk:'rspack',id:d.tk,parts:ecoAddParts(S,P.each)});}}
+ else if(d.kind==='rsleg'){if(rsLegSet(d.tk)&&!(S.lsm&&S.lsm[d.tk])){S.lsm=S.lsm&&typeof S.lsm==='object'?S.lsm:{};S.lsm[d.tk]=1;S.spendGram+=Number(d.price)||RS_LEG_PRICE.ton;outs.push({tk:'rsleg',id:d.tk});}}
+ else if(d.kind==='rsfin'){if(/^j\d{1,6}$/.test(String(d.job||''))&&!(S.rsx&&S.rsx[d.job])){S.rsx=S.rsx&&typeof S.rsx==='object'?S.rsx:{};S.rsx[d.job]=1;S.spendGram+=Number(d.price)||0;outs.push({tk:'rsfin',job:d.job});}}   // Conquest finishes that job once (conquest-research.js account)
  else if(d.kind==='vault'){const B=VAULT[d.tk];if(B){const lv0=vaultLevel(S.vg);S.vg=(S.vg||0)+B.g;const gg=GENESIS_OPEN?B.g:0;S.vgg=(S.vgg||0)+gg;S.spendGram+=Number(d.price)||B.ton;const lv=vaultLevel(S.vg);
   if(lv>=VAULT_PAINT_LV)S.paints.hyper=1;outs.push({tk:'vault',id:d.tk,g:B.g,gg,lv0,lv,t:S.vg});}}   // any number of times: the Vault never fills
  for(const r of outs)labGain(S,r);
@@ -996,6 +1005,8 @@ function ecoRefund(S,kind,outs){
   else if(o.kind==='dup'){const p=o.pts||0;S.pts=Math.max(0,S.pts-p);S.earned=Math.max(0,S.earned-p);}
   else if(o.tk==='paint'){delete S.paints[o.id];if(o.id==='founder')S.founder=false;}
   else if(o.tk==='moonbeam')S.moonbeam=false;
+  else if(o.tk==='rsleg'){if(S.lsm)delete S.lsm[o.id];}
+  else if(o.tk==='rspack'&&o.parts){S.bpt=S.bpt||{};for(const k of CQ_PART_ORDER)S.bpt[k]=Math.max(0,(S.bpt[k]|0)-(o.parts[k]|0));}   // a finished skip (rsfin) cannot be taken back
   else if(o.tk==='skin')S.skin='default';
   else if(o.tk==='pass'){if(S.pass&&S.pass.s===o.s)S.pass.prem=false;}
   else if(o.tk==='respec'){if(o.credit)S.rsCr=0;else{const p=Math.min(S.pts,o.extra||0);S.pts-=p;S.ptsSpent+=p;}}   // the levels stay cleared; the extra points go back
@@ -1105,9 +1116,10 @@ function ecoClaimPass(S,track,i,X,c){
  const prem=track==='p',list=prem?P.cp:P.cf,r=(prem?PASS_PREM:PASS_FREE)[i];
  if(!r||list.includes(i)||(prem&&!P.prem))return null;
  list.push(i);
- if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1)};   // free track only: the premium track never gives points
- if(r.k==='paint'){S.paints[r.id]=1;labGain(S,{tk:'paint',id:r.id});return {paint:r.id};}
- return {box:ecoOpenBox(S,r.tk,r.ri,X,c)};
+ const ex=prem&&PASS_PREM_PARTS[i]?{parts:ecoAddParts(S,PASS_PREM_PARTS[i])}:{};   // Session 6B: research parts on some premium tiers, on top of the tier's reward
+ if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1),...ex};   // free track only: the premium track never gives points
+ if(r.k==='paint'){S.paints[r.id]=1;labGain(S,{tk:'paint',id:r.id});return {paint:r.id,...ex};}
+ return {box:ecoOpenBox(S,r.tk,r.ri,X,c),...ex};
 }
 // ---- matches ----
 // points for a finished match: mode pay, best of 3, featured, win streak, then the league: base pay and the spendable multiplier
@@ -1407,6 +1419,31 @@ function rsQuote(rs,id,labLv,premium){
 const rsSlots=(labLv,premium)=>(labLv>=1?RTREE.slots.base:0)+(labLv>=3?RTREE.slots.lab3:0)+(premium&&labLv>=1?RTREE.slots.pass:0);
 // the parts a whole tree costs (the economy model and the lab screen read it)
 const rsTreeCost=()=>RTREE.order.reduce((a,t)=>(a[RTREE.tracks[t].part]=RTREE.cost.reduce((x,y)=>x+y,0),a),{});
+// ---- Session 6B Science Lab store (owner decision 8): real store entries with CHECKOUT OFF in every currency. While LAB_STORE_OPEN is
+// false the Worker's descOf (worker/src/index.js) refuses every Lab kind, so no Stars invoice and no TON or SOL payment can buy one;
+// the phone shows each entry with its proposed price and a disabled button. Prices are PROPOSALS priced like the shop: Stars and TON
+// at the shop's own dollar rates (the paid build reset: 77 Stars, 1.25 TON a dollar; the Vault's 62.5 Stars a TON), SOL at the live
+// TON rate; Telegram shows Stars, the website TON and SOL. Ownership is server-verified: only ecoGrant, after a verified payment,
+// writes S.bpt (bonus parts) / S.lsm (Legendary set mods) / S.rsx (finish credits), and the client can never sync them (ECO_KEYS).
+// Nothing here gives points (owner: research, mods and purchases give no airdrop points).
+const LAB_STORE_OPEN=false;
+const RS_STARS_USD=77,RS_TON_USD=1.25;
+// instant finish, priced by the time left: concave like the genre's skip prices (Clash of Clans: 1 h ~20 gems, 1 day ~260): the
+// longer the skip, the cheaper each hour. $0.22 x hours^0.85 (5-minute steps, $0.10 at least): 20 min 8 Stars, 2 h 31, 8 h 100.
+const RS_FIN=Object.freeze({usdH:0.22,exp:0.85,minUsd:0.10,stepMs:300000});
+function rsFinPrice(msLeft){const ms=Math.max(0,Number(msLeft)||0);if(!ms)return null;const h=Math.ceil(ms/RS_FIN.stepMs)*RS_FIN.stepMs/3600000,usd=Math.max(RS_FIN.minUsd,RS_FIN.usdH*Math.pow(h,RS_FIN.exp));
+ return {usd:Math.round(usd*100)/100,ton:Math.round(usd*RS_TON_USD*100)/100,stars:Math.ceil(usd*RS_STARS_USD)};}
+// research part packs: each gives that many of all four parts; one of each pack a UTC week (fair: a payer speeds up, never skips the tree)
+const RS_PACKS=Object.freeze({kit:Object.freeze({n:'Field kit',each:1,stars:99,ton:1.6}),crate:Object.freeze({n:'Lab crate',each:3,stars:249,ton:4}),cache:Object.freeze({n:'Research cache',each:8,stars:599,ton:9.6})});
+const RS_PACK_ORDER=Object.freeze(['kit','crate','cache']);
+const rsPackKey=(tk,X)=>'rsp:'+tk+'|'+X.week;
+// a Legendary set mod: on sale only once its track's earned set mod is researched (a step up from it, never a skip of the tree)
+const RS_LEG_PRICE=Object.freeze({stars:599,ton:9.6});
+const rsLegSet=id=>{const r=rmodOf(id);return r&&r.F.leg?RTREE.mods[r.F.rs][3]:null;};
+// Lunar Pass premium (season perks while premium is active: +1 research slot, jobs 25% faster: RTREE.slots.pass / passTime) and
+// research parts on these premium tiers: tier -> that many of each part, on top of the tier's own reward. Never points.
+const PASS_PREM_PARTS=Object.freeze({6:1,12:1,18:1,24:1,30:1});
+function ecoAddParts(S,n){S.bpt=S.bpt&&typeof S.bpt==='object'?S.bpt:{};const o={};for(const k of CQ_PART_ORDER){S.bpt[k]=Math.min(1e5,(S.bpt[k]|0)+n);o[k]=n;}return o;}
 // ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
 // on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest
 // saves it with the battle). Every trigger is a count or a timer, never a chance. The engines feed it what happened (a shot left,

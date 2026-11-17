@@ -430,3 +430,7 @@
 .cq .cq-supply-eng{font:800 11px/1.4 'Chakra Petch',sans-serif;color:#9ff0e6;letter-spacing:.04em;margin:8px 0}
 .cq .cq-zone-band{font:800 12px/1.35 'Chakra Petch',sans-serif;color:#ffd36b}
 .cq .cq-zone-bands .cq-zone-row{display:block;font-size:11px;color:#cfe0ee;padding:2px 0}.cq .cq-zone-bands .cq-zone-hard{color:#ffb08a}.cq .cq-zone-bands .cq-zone-note{display:block;color:#8fa6b8;font-size:10px;margin-top:4px}
+/* Session 6B: the Lab store rows (checkout off) */
+.cq-lab-buy[disabled]{opacity:.72;cursor:default}
+.cq-lab-off{display:block;margin-top:3px;font-size:11px;opacity:.75}
+.cq-lab-store .cq-lab-pack h3{color:var(--tc,#e8f4ff)}

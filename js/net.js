@@ -165,6 +165,9 @@ function fetchPrices(){
   .catch(()=>{}).finally(()=>{pxBusy=false;});
 }
 function solFor(ton){if(!px.ton||!px.sol)return 0;const v=ton*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
+// Science Lab store proposals (Session 6B, checkout off): Telegram shows the Stars price, the website the TON price and SOL at the
+// live TON rate. A label only: nothing calls pay() for these.
+function labPriceLabel(p){if(!p)return '';if(IN_TG&&!IN_WEB)return fmtNum(p.stars)+' ⭐';if(!px.sol)fetchPrices();const s=solFor(p.ton);return p.ton+' TON · '+(s?s+' SOL':'… SOL');}
 function priceLabel(ton,stars){
  if(save.payCur==='stars')return fmtNum(stars)+' ⭐';
  if(save.payCur==='sol'){const s=solFor(ton);return s?s+' SOL':'… SOL';}
