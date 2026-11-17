@@ -17,9 +17,9 @@ function pending(c,next,note){let p=c.querySelector('.cq-rating-next');const sho
 // a new value: the delta line while it is fresh, then the plain number. o: {next, note} for a pending value
 function update(c,value,o){if(!c||!Number.isFinite(value))return;const k=c.dataset.key,s=load(),was=Number(s[k]),now=Date.now();
  if(Number.isFinite(was)&&was!==Math.round(value)&&c.dataset.v!==String(Math.round(value))){c.dataset.from=String(was);c.dataset.until=String(now+SHOW_MS);c.classList.toggle('up',value>was);c.classList.toggle('down',value<was);}
- c.dataset.v=String(Math.round(value));s[k]=Math.round(value);keep();
+ c.dataset.v=String(Math.round(value));if(s[k]!==Math.round(value)){s[k]=Math.round(value);keep();}   // storage only on a change (the HUD calls this every frame)
  const fresh=Number(c.dataset.until||0)>now,txt=fresh?c.dataset.from+' → '+Math.round(value):String(Math.round(value)),v=c.querySelector('.cq-rating-v');
  if(v&&v.textContent!==txt)v.textContent=txt;if(!fresh&&(c.classList.contains('up')||c.classList.contains('down'))){c.classList.remove('up','down');}
- const pend=pending(c,o?.next,o?.note);c.setAttribute('aria-label',c.dataset.label+' '+txt+pend);}
+ const pend=pending(c,o?.next,o?.note),al=c.dataset.label+' '+txt+pend;if(c.getAttribute?.('aria-label')!==al)c.setAttribute('aria-label',al);}
 root.ConquestRating=Object.freeze({chip,update});
 })(globalThis);

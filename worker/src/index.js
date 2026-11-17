@@ -277,11 +277,18 @@ const LP_SHARE = 0.25;   // not exported: the Workers runtime only accepts handl
 let TONUSD = { v: 0, t: 0 };
 // Session 6B: the live TON and SOL dollar rates for the website's price labels (its security policy keeps third-party connections
 // out, so the page reads them same-origin here). Cached five minutes per isolate; the last good pair is served if the source fails.
-let RATES = { ton: 0, sol: 0, t: 0 };
+// A failed lookup is remembered for a minute and one lookup is shared by every request in flight (review F4: no upstream fan-out).
+let RATES = { ton: 0, sol: 0, t: 0, fail: 0 }, RATES_P = null;
 async function liveRates() {
-  if (RATES.t && Date.now() - RATES.t < 300000) return RATES;
-  try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json(); const t = Number(d["the-open-network"].usd), so = Number(d.solana.usd); if (t > 0 && so > 0) { RATES = { ton: t, sol: so, t: Date.now() }; TONUSD = { v: t, t: Date.now() }; } } catch {}
-  return RATES;
+  const now = Date.now();
+  if (RATES.t && now - RATES.t < 300000) return RATES;
+  if (RATES.fail && now - RATES.fail < 60000) return RATES;
+  if (RATES_P) return RATES_P;
+  RATES_P = (async () => {
+    try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json(); const t = Number(d["the-open-network"].usd), so = Number(d.solana.usd); if (t > 0 && so > 0) { RATES = { ton: t, sol: so, t: Date.now(), fail: 0 }; TONUSD = { v: t, t: Date.now() }; return RATES; } } catch {}
+    RATES = { ...RATES, fail: Date.now() }; return RATES;
+  })().finally(() => { RATES_P = null; });
+  return RATES_P;
 }
 async function tonUsd() {
   if (TONUSD.v && Date.now() - TONUSD.t < 300000) return TONUSD.v;
@@ -748,7 +755,7 @@ export default {
       try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
     }
     if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
-    if (path === "/api/rates" && req.method === "GET") { const r = await liveRates(); return cors(new Response(JSON.stringify({ ton: r.ton, sol: r.sol }), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } }), req); }   // Session 6B: website price labels (no account data)
+    if (path === "/api/rates" && req.method === "GET") { if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req); const r = await liveRates(); return cors(new Response(JSON.stringify({ ton: r.ton, sol: r.sol }), { headers: { "Content-Type": "application/json", "Cache-Control": r.ton > 0 && r.sol > 0 ? "public, max-age=300" : "no-store" } }), req); }   // Session 6B: website price labels (no account data)
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
       if (req.method !== "POST") return cors(new Response("method", { status: 405 }), req);

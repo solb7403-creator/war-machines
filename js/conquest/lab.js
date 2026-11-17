@@ -35,7 +35,7 @@ function screen(d,s,ctx){const {el,button}=ctx,now=Date.now(),r=rsOf(s),L=labOf(
  if(!s?.plot)el('p','cq-lab-why','Claim your town, then build a Science Lab (Command Center 3). Research turns the parts you find into new mods for every mode.',d);
  else if(!L.any)el('p','cq-lab-why','Build a Science Lab in your town (Command Center 3) to start researching. Research turns the parts you find into new mods for every mode.',d);
  else{el('p','cq-lab-status',(L.ruined?'⚠ RUINED · research paused until you repair it · ':'')+(r.jobs||[]).length+' of '+slots+' research slot'+(slots>1?'s':'')+' running'+(L.lv<3?' · a second slot at Science Lab III':''),d);
-  el('small','cq-lab-pass',prem?'LUNAR PASS PREMIUM · +1 research slot and 25% faster jobs':'LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers',d);}
+  el('small','cq-lab-pass',prem?'LUNAR PASS PREMIUM · +1 research slot and 25% faster jobs':LAB_STORE_OPEN?'LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers':'Coming with the Lab store: LUNAR PASS PREMIUM adds a research slot, 25% faster jobs and research parts on its tiers',d);}
  el('p','cq-lab-explain','Research costs only research parts and time. A finished mod is yours for good: fit it in the garage (one per slot) and it works in every mode, PvP too.',d);
  const pr=el('div','cq-lab-parts',null,d);for(const k of CQ_PART_ORDER)partChip(el,pr,k,parts[k]);
  // running jobs, with their timers

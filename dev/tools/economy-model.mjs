@@ -290,7 +290,7 @@ const r0 = x => Math.round(x), pct = x => (x * 100).toFixed(1) + '%', daysTxt = 
 // The Lab follows the regular ladder (docs/conquest/audit/model/audit-economy.json: CC3 day 2.8, CC5 day 6): Lab I and II the
 // day after CC3 (both open at CC3), Lab III the day after CC5. One session a day of M minutes: the day's parts arrive at its start,
 // a free slot starts the cheapest job the pilot can pay for, jobs that end inside the session free their slot for another.
-// Premium (Lunar Pass): +1 slot, jobs x0.75, and PASS_PREM_PARTS on tiers 6/12/18/24/30 (one tier a day: an assumption). Monte
+// Premium (Lunar Pass): +1 slot, jobs x0.75, and PASS_PREM_PARTS on tiers 10/20/30 (one tier a day: an assumption; they start when the Lab store opens). Monte
 // Carlo over fixed seeds: median and 10th / 90th percentile weeks to the 16th mod.
 // ===================================================================================================================
 const AUDIT_LADDER = JSON.parse(read('docs/conquest/audit/model/audit-economy.json')).profiles.regular.base.hit;

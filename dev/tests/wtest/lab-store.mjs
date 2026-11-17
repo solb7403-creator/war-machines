@@ -92,11 +92,12 @@ for (const pl of [{ u: P.id, k: 'rsleg', t: 'sunfire', g: 9.6 }, { u: P.id, k: '
   const bp0 = { ...(E().bpt || {}) }, pts0 = E().pts;
   let [st, res] = await act(P, 'pass', { t: 'p', i: 10, c: 'vanguard' });
   const got = R.CQ_PART_ORDER.map(k => (E().bpt?.[k] | 0) - (bp0[k] | 0));
-  t(st === 200 && got.every(v => v === 1) && E().pts === pts0, 'premium tier 10: its reward plus 1 of each research part, no points (' + got.join(',') + ')');
+  t(st === 200 && got.every(v => v === (R.LAB_STORE_OPEN ? 1 : 0)) && E().pts === pts0, 'premium tier 10: its reward' + (R.LAB_STORE_OPEN ? ' plus 1 of each research part' : ' only while the Lab store is closed (the parts start with the store)') + ', no points (' + got.join(',') + ')');
+  t(R.passPartsAt(10, true) === 1 && R.passPartsAt(20, true) === 1 && R.passPartsAt(5, true) === 0 && R.passPartsAt(10, false) === 0, 'when the Lab store opens: 1 of each part on premium tiers 10, 20, 30');
   [st, res] = await act(P, 'pass', { t: 'p', i: 5, c: 'vanguard' });
-  t(st === 200 && R.CQ_PART_ORDER.every(k => (E().bpt?.[k] | 0) - (bp0[k] | 0) === 1), 'premium tier 5 gives its reward only');
+  t(st === 200 && R.CQ_PART_ORDER.every(k => (E().bpt?.[k] | 0) - (bp0[k] | 0) === (R.LAB_STORE_OPEN ? 1 : 0)), 'premium tier 5 gives its reward only');
   [st, res] = await act(P, 'pass', { t: 'f', i: 10, c: 'vanguard' });
-  t(st === 200 && R.CQ_PART_ORDER.every(k => (E().bpt?.[k] | 0) - (bp0[k] | 0) === 1), 'the free track never gives research parts');
+  t(st === 200 && R.CQ_PART_ORDER.every(k => (E().bpt?.[k] | 0) - (bp0[k] | 0) === (R.LAB_STORE_OPEN ? 1 : 0)), 'the free track never gives research parts');
   t(J(Object.keys(R.PASS_PREM_PARTS).map(Number)) === J([10, 20, 30]) && R.RTREE.slots.pass === 1 && R.RTREE.passTime === 0.75, 'premium perks: research parts on tiers 10, 20, 30; +1 research slot; jobs 25% faster');
   t(R.PASS_PREM.every(r => !r || r.k !== 'pts'), 'the premium track still never gives points'); }
 console.log((bad ? 'FAIL' : 'PASS') + ' wtest lab-store: ' + ok + ' passed, ' + bad + ' failed');

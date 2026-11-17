@@ -45,12 +45,13 @@ ok(r.out?.err==='owned','the garage refuses a mod that was never researched (own
 
 // ---- the premium Lunar Pass on the account: -25% time and an extra slot; bonus parts after earned ones ----
 const Q=9402;s=await pilot(Q,5,1,{thermal:1,coil:5});{const e=eco(Q);const season=R.ecoSeason({day:Math.floor(now/86400000)});e.pass={s:season,xp:0,prem:true,cf:[],cp:[]};e.bpt={thermal:4,coil:0,servo:0,cap:0};putEco(Q,e);}
-r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'vent'});ok(r.status===200&&r.state.rs.jobs[0].ms===15*MIN,JSON.stringify(r.error||'premium pass: the Lab I job takes 15 minutes'));
+r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'vent'});ok(r.status===200&&r.state.rs.jobs[0].ms===(R.LAB_STORE_OPEN?15:20)*MIN,JSON.stringify(r.error||'premium pass: the Lab I job takes '+(R.LAB_STORE_OPEN?'15 minutes':'20 minutes while the Lab store is closed (its perks start with the store)')));
 ok(r.state.rs.jobs[0].paid.e===1&&r.state.rs.jobs[0].paid.b===R.RTREE.cost[0]-1&&r.state.rs.bs.thermal===R.RTREE.cost[0]-1,'earned Thermal Core first, then bonus parts from the account');
-r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'pierce'});ok(r.status===200&&r.state.rs.jobs.length===2,JSON.stringify(r.error||'premium pass: a second slot at Science Lab I'));
+r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'pierce'});ok(R.LAB_STORE_OPEN?r.status===200&&r.state.rs.jobs.length===2:r.status!==200,JSON.stringify(R.LAB_STORE_OPEN?r.error||'premium pass: a second slot at Science Lab I':'premium pass: no second slot while the Lab store is closed'));
+ok(R.passResearch(true,true)&&!R.passResearch(true,false)&&!R.passResearch(false,true)&&R.rsSlots(1,R.passResearch(true,true))===2&&R.rsQuote({done:{},jobs:[]},'vent',1,R.passResearch(true,true)).ms===15*MIN,'when the Lab store opens: the premium pass gives a second slot and 15-minute Lab I jobs');
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'marksman'});ok(r.status===409&&/slot/.test(r.error),'no third slot below Lab III ('+r.error+')');
 // pass gone (a new season): one slot again, full time
-{const e=eco(Q);e.pass={s:e.pass.s+1,xp:0,prem:false,cf:[],cp:[]};putEco(Q,e);}now+=16*MIN;r=await call(Q,'/api/conquest/session');
+{const e=eco(Q);e.pass={s:e.pass.s+1,xp:0,prem:false,cf:[],cp:[]};putEco(Q,e);}now+=(R.LAB_STORE_OPEN?16:21)*MIN;   // the premium job (15 min with the store open, 20 while closed) is overr=await call(Q,'/api/conquest/session');
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'marksman'});ok(r.status===200&&r.state.rs.jobs.find(j=>j.mod==='marksman').ms===20*MIN,JSON.stringify(r.error||'without the pass: the full 20 minutes'));
 // the field must be a research mod id
 r=await call(Q,'/api/conquest/action',{seq:cq(Q).seq+1,action:'research-start',mod:'__proto__'});ok(r.status===409,'unknown mod ids are refused ('+r.error+')');

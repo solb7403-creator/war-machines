@@ -73,30 +73,30 @@
   {
    "file": "dev/tests/conquest-ladder-check.mjs",
    "what": "CC timelines within ±10% of the audit table",
-   "pattern": "Math\\.abs\\(a/b-1\\)<=(\\d*\\.?\\d+)",
+   "pattern": "Math\\.abs\\(a/b-1\\)<=(\\d*\\.?\\d+)(?=\\s*[;),&|])",
    "max": 0.1
   },
   {
    "file": "dev/tests/conquest-ladder-check.mjs",
    "what": "no instant max-out: CC10 never inside the first week",
-   "pattern": "day\\(v,'CC10'\\)>=(\\d+)",
+   "pattern": "day\\(v,'CC10'\\)>=(\\d+)(?=\\s*[;),&|])",
    "min": 7
   },
   {
    "file": "dev/tests/conquest-base-progression.mjs",
    "what": "regular CC10 floor: 21 days",
-   "pattern": "r\\.CC10\\.day>=(\\d+)",
+   "pattern": "r\\.CC10\\.day>=(\\d+)(?=\\s*[;),&|])",
    "min": 21
   },
   {
    "file": "dev/tests/conquest-base-progression.mjs",
    "what": "regular CC5 is not instant",
-   "pattern": "r\\.CC5\\.day>=(\\d+)",
+   "pattern": "r\\.CC5\\.day>=(\\d+)(?=\\s*[;),&|])",
    "min": 4
   }
  ],
  "cpSites": {
-  "about": "every line that adds to or takes from a pilot's CP (ledger.cp +=, -=, =; .cp += / -=). A new CP source or sink is an owner decision.",
+  "about": "every line that adds to or takes from a pilot's CP (ledger.cp or ledger['cp'] with =, +=, -=, *=, /=, ++, --; .cp += / -= / ++ / --) and every debit( call. A new CP source or sink is an owner decision.",
   "files": {
    "worker/src/conquest-campaign.js": 4,
    "worker/src/conquest-economy.js": 5,
@@ -104,16 +104,35 @@
    "worker/src/conquest-plot.js": 2,
    "worker/src/conquest-sim.js": 1,
    "worker/src/conquest.js": 2
+  },
+  "debit": {
+   "worker/src/conquest-campaign.js": 3,
+   "worker/src/conquest-plot.js": 10
   }
  },
  "lint": {
   "about": "code swallowed by a // comment never runs (the wall-storage bug, three dead test checks): none allowed",
   "roots": [
    "js",
-   "worker/src",
+   "worker",
    "dev/tests",
    "dev/tools",
    "web"
   ]
+ },
+ "computed": {
+  "about": "owner-rules runs these guard tests itself and judges their own outputs against these limits, so loosening a test's asserts cannot pass",
+  "ladder": {
+   "run": "dev/tests/conquest-ladder-check.mjs",
+   "out": "docs/conquest/session6/ladder.json",
+   "tolerance": 0.1,
+   "minCC10Day": 7
+  },
+  "baseProgression": {
+   "run": "dev/tests/conquest-base-progression.mjs",
+   "out": "docs/conquest/session5/base-progression-model.json",
+   "minCC10Day": 21,
+   "minCC5Day": 4
+  }
  }
 }

@@ -1116,7 +1116,7 @@ function ecoClaimPass(S,track,i,X,c){
  const prem=track==='p',list=prem?P.cp:P.cf,r=(prem?PASS_PREM:PASS_FREE)[i];
  if(!r||list.includes(i)||(prem&&!P.prem))return null;
  list.push(i);
- const ex=prem&&PASS_PREM_PARTS[i]?{parts:ecoAddParts(S,PASS_PREM_PARTS[i])}:{};   // Session 6B: research parts on some premium tiers, on top of the tier's reward
+ const ex=prem&&passPartsAt(i)?{parts:ecoAddParts(S,passPartsAt(i))}:{};   // Session 6B: research parts on some premium tiers, on top of the tier's reward
  if(r.k==='pts')return {pts:ecoAward(S,r.n,X,1),...ex};   // free track only: the premium track never gives points
  if(r.k==='paint'){S.paints[r.id]=1;labGain(S,{tk:'paint',id:r.id});return {paint:r.id,...ex};}
  return {box:ecoOpenBox(S,r.tk,r.ri,X,c),...ex};
@@ -1445,6 +1445,11 @@ const rsLegSet=id=>{const r=rmodOf(id);return r&&r.F.leg?RTREE.mods[r.F.rs][3]:n
 // 10/20/30 (12 parts a season) make the tree about 25% faster than free (economy model: 5.9 vs 7.9 weeks), near the genre's
 // pass research boosts (Clash of Clans' Gold Pass: about 20%); five tiers (20 parts) halved it, too far ahead of free pilots.
 const PASS_PREM_PARTS=Object.freeze({10:1,20:1,30:1});
+// The pass's research perks are part of the Lab store's revenue hooks, so they start only when the owner opens that checkout
+// (LAB_STORE_OPEN): until then a premium pass changes nothing in the Science Lab and its tiers give no research parts (review F1:
+// nothing new may be sold through the pass's live checkout while the Lab store is closed).
+const passResearch=(premium,open=LAB_STORE_OPEN)=>!!premium&&!!open;
+const passPartsAt=(i,open=LAB_STORE_OPEN)=>open?PASS_PREM_PARTS[i]|0:0;
 function ecoAddParts(S,n){S.bpt=S.bpt&&typeof S.bpt==='object'?S.bpt:{};const o={};for(const k of CQ_PART_ORDER){S.bpt[k]=Math.min(1e5,(S.bpt[k]|0)+n);o[k]=n;}return o;}
 // ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
 // on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest

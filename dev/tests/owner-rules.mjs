@@ -42,11 +42,25 @@ ok(C.LIVING.chain.per===K.SORTIE_CHAIN.per&&C.LIVING.chain.item===K.SORTIE_CHAIN
 // ---- 5. the guard tests are never loosened ----
 for(const g of O.guards){const src=fs.existsSync(g.file)?fs.readFileSync(g.file,'utf8'):'',re=new RegExp(g.pattern,'g'),vals=[...src.matchAll(re)].map(m=>Number(m[1]));
  ok(vals.length>0&&vals.every(v=>g.max!==undefined?v<=g.max:v>=g.min),g.file.split('/').pop()+': '+g.what+' ('+(vals.length?vals.join(', '):'MISSING')+(g.max!==undefined?' <= '+g.max:' >= '+g.min)+')');}
+// ---- 5b. the guarded results themselves: run the guard tests and judge their outputs against the owner's limits (a loosened
+// assert inside a guard test cannot pass this). Their output files are put back as they were, so a local run leaves no diff ----
+{const run=(file,out)=>{const keep=fs.existsSync(out)?fs.readFileSync(out):null;let code=0;try{execFileSync(process.execPath,[file],{stdio:'ignore',timeout:600000});}catch(e){code=e.status||1;}
+  let j=null;try{j=JSON.parse(fs.readFileSync(out,'utf8'));}catch(_){}if(keep)fs.writeFileSync(out,keep);return {code,j};};
+ const Lc=O.computed.ladder,lad=run(Lc.run,Lc.out),A=lad.j?.audit,tol=Lc.tolerance,inBand=(v,a)=>Number.isFinite(v)&&Math.abs(v/a-1)<=tol+1e-9;
+ const W=lad.j?.withChainAndOrders,vals=lad.j?[['Decision 10',lad.j.decision10],['every change on (median)',W],['every change on (mean)',W?.mean]]:[];
+ ok(lad.code===0&&A&&vals.every(([,v])=>inBand(v?.CC5,A.CC5)&&inBand(v?.CC10,A.CC10)),'the ladder itself: CC5 and CC10 within ±'+tol*100+'% of the audit ('+A?.CC5+' / '+A?.CC10+' days): '+vals.map(([n,v])=>n+' '+v?.CC5+' / '+v?.CC10).join('; '));
+ ok(lad.j&&Math.min(lad.j.decision10?.CC10??0,lad.j.withChain?.CC10??0,...(W?.CC10range||[0]))>=Lc.minCC10Day,'no instant max-out: the earliest CC10 of every variant and panel pilot is day '+Math.min(lad.j?.decision10?.CC10??0,lad.j?.withChain?.CC10??0,...(W?.CC10range||[0]))+' (>= '+Lc.minCC10Day+')');
+ const Bc=O.computed.baseProgression,bp=run(Bc.run,Bc.out),rg=bp.j?.regular?.hit;
+ ok(bp.code===0&&rg?.CC10?.day>=Bc.minCC10Day&&rg?.CC5?.day>=Bc.minCC5Day,'base progression itself: a regular pilot reaches CC5 on day '+rg?.CC5?.day+' (>= '+Bc.minCC5Day+') and CC10 on day '+rg?.CC10?.day+' (floor '+Bc.minCC10Day+')');}
 // ---- 6. no CP source or sink added ----
 {const files=[...fs.readdirSync('worker/src').filter(f=>f.endsWith('.js')&&f!=='sim.gen.js').map(f=>'worker/src/'+f),...fs.readdirSync('js/conquest').filter(f=>f.endsWith('.js')).map(f=>'js/conquest/'+f),'js/rules.js'];
- const re=/ledger\.cp\s*(\+|-)=|ledger\.cp\s*=[^=]|\.cp\s*(\+|-)=/g,now={};for(const f of files){const n=(fs.readFileSync(f,'utf8').match(re)||[]).length;if(n)now[f]=n;}
+ const re=/ledger(?:\.cp|\[\s*['"]cp['"]\s*\])\s*(?:[+\-*\/]?=(?!=)|\+\+|--)|\.cp\s*(?:[+\-]=|\+\+|--)|\+\+\s*[\w$.]*ledger\.cp|--\s*[\w$.]*ledger\.cp/g,now={},deb={};for(const f of files){const src=fs.readFileSync(f,'utf8'),n=(src.match(re)||[]).length,d=(src.match(/\bdebit\(/g)||[]).length;if(n)now[f]=n;if(d)deb[f]=d;}
  const want=O.cpSites.files,diff=[...new Set([...Object.keys(now),...Object.keys(want)])].filter(f=>(now[f]|0)!==(want[f]|0)).map(f=>f+' '+(want[f]|0)+' -> '+(now[f]|0));
- ok(!diff.length,'no CP source or sink added or removed: '+(diff.length?diff.join('; '):Object.values(now).reduce((a,b)=>a+b,0)+' CP lines in '+Object.keys(now).length+' files, as decided'));}
+ ok(!diff.length,'no CP source or sink added or removed: '+(diff.length?diff.join('; '):Object.values(now).reduce((a,b)=>a+b,0)+' CP lines in '+Object.keys(now).length+' files, as decided'));
+ const wantD=O.cpSites.debit,dd=[...new Set([...Object.keys(deb),...Object.keys(wantD)])].filter(f=>(deb[f]|0)!==(wantD[f]|0)).map(f=>f+' '+(wantD[f]|0)+' -> '+(deb[f]|0));
+ ok(!dd.length,'no new cost debit: '+(dd.length?dd.join('; '):Object.values(deb).reduce((a,b)=>a+b,0)+' debit calls in '+Object.keys(deb).length+' files, as decided'));
+ // the widened pattern catches the other spellings of a CP change
+ ok(['s.ledger["cp"]-=400','ledger[\'cp\'] = 0','s.ledger.cp++','x.cp-=5','s.ledger.cp*=2'].every(c=>(c.match(re)||[]).length===1)&&!(('s.ledger.cp===0').match(re)),'the CP pattern also catches bracket spellings, ++/--, *= and /=, not comparisons');}
 // ---- 7. no code swallowed by a // comment ----
 {const CODE=[/[;)}\]](for|if|const|let|var|return|while|switch|else|try|do)\b\s*[({]/,/\)\s*\{\s*[A-Za-z_$][\w$.]*\s*(\(|=[^=>])/,/[;)}][A-Za-z_$][\w$.]*\([^)]*\);/,/[A-Za-z0-9_$](assert|ok)(\.[a-z]+)?\(/,/\);\s*(assert|ok|t)(\.[a-z]+)?\(/];
  const swallowed=src=>{const out=[];src.split('\n').forEach((line,i)=>{let q=null,esc=false,k=-1;for(let j=0;j<line.length;j++){const c=line[j];if(esc){esc=false;continue;}if(c==='\\'){esc=true;continue;}if(q){if(c===q)q=null;continue;}if(c==="'"||c==='"'||c==='`'){q=c;continue;}if(c==='/'&&line[j+1]==='/'){k=j;break;}if(c==='/'&&line[j+1]==='*'){const e=line.indexOf('*/',j+2);if(e<0)return;j=e+1;}}

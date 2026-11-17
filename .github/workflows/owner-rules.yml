@@ -19,5 +19,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # docs/owner-rules.json changes only with the owner's 'owner-rules-change' label on the pull request (its creation is exempt)
+      - name: The owner-rules file changes only with the owner's label
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          if git cat-file -e FETCH_HEAD:docs/owner-rules.json 2>/dev/null && ! git diff --quiet FETCH_HEAD -- docs/owner-rules.json; then
+            if [ "${{ contains(github.event.pull_request.labels.*.name, 'owner-rules-change') }}" != "true" ]; then
+              echo "::error::docs/owner-rules.json changed without the owner's 'owner-rules-change' label"; exit 1
+            fi
+          fi
       - name: Owner rules
         run: node dev/tests/owner-rules.mjs

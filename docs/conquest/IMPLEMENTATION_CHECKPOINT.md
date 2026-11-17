@@ -4870,7 +4870,7 @@ roadmap row 6B-V.
   finish by time left: $0.22 x hours^0.85, 5-minute steps, $0.10 minimum; concave like Clash of Clans' 1 h ~20 gems / 1 day ~260),
   `RS_PACKS` (Field kit +1 of each part 99⭐/1.6 TON, Lab crate +3 each 249⭐/4 TON, Research cache +8 each 599⭐/9.6 TON; one of each
   a UTC week), `RS_LEG_PRICE` (each Legendary set mod 599⭐/9.6 TON, on sale only after its track's earned set mod is researched),
-  `PASS_PREM_PARTS` (premium tiers 6/12/18/24/30 add 1 of each research part on top of the tier's reward; never points), ecoPrice /
+  `PASS_PREM_PARTS` (premium tiers 10/20/30 add 1 of each research part on top of the tier's reward, from the day the Lab store opens; never points), ecoPrice /
   ecoOwned / ecoGrant / ecoRefund for `rspack` / `rsleg` / `rsfin` (grants run only from a verified payment, give no points).
   `worker/src/index.js` descOf refuses every Lab kind, so no Stars invoice, no Telegram-confirmed payment, no TON or SOL log grants
   one. Phone: `js/conquest/labstore.js` (FINISH NOW on a running job, LEGENDARY on its track, the LAB STORE fold with the packs: all
@@ -4916,8 +4916,46 @@ roadmap row 6B-V.
   terrain; `/api/rates` (Worker, cached 5 min) feeds the website's SOL label (its security policy blocks third-party price calls);
   the Sound toggle updates the Volume row in place (the website's panel does not redraw); the research fixture resets the account's
   Conquest credit watermark with the record (test placement only).
-- NEXT: critic round (at most 2), two independent read-only reviewers (security/economy, gameplay/performance) with the owner-rule
-  pass/fail table, fixes, CI green, release (bump, merge, deploy, verify, ROADMAP).
+- DONE critic rounds 1 and 2 (UX critic subagent, then the lead on the re-captures): Lab CLOSE at the top, fitted and centred
+  reveal card with FIT as the main button, amber pending POWER line, ticker pill, key hint hidden under dialogs, Supply chip on its
+  own line, 44 px Lab buttons, 28 px volume knob, "Not on sale yet" first in the Shop, "Needs <set mod> first", plainer copy.
+- DONE reviews (two independent read-only subagents, Nov 17) -> BOTH FAILED the first head (82eb4a2). Fixed since:
+  - security F1: the pass's research perks would be sold through the live pass checkout -> gated on `LAB_STORE_OPEN`
+    (`passResearch`, `passPartsAt`; `conquest.js researchCtx`, `ecoClaimPass`); texts say "Coming with the Lab store".
+  - security F2: owner-rules loosening -> limits must be plain literals, owner-rules RUNS the ladder and base-progression tests and
+    judges their outputs itself (and restores their files), wider CP patterns (+ debit calls pinned), `owner-rules-change` label
+    gate in `owner-rules.yml` (creation exempt). 30 checks.
+  - security F3 + gameplay 4 (part): Traction's proof allowance only within the window after a dash flag (`proof.js`);
+    `dev/tests/wtest/proof-mods.mjs` (5) fails on the old code.
+  - security F4: `/api/rates` failure cache (60 s), one shared lookup, `netLimited`, `no-store` on zeros.
+  - gameplay 1 (BLOCKER): mod cues used event `m` (the meteor / megatank impact) -> now `Q` (`game.js modCues`, `match.js`);
+    mod-behaviors guards it (52).
+  - gameplay 5: Conquest cues replayed after a server reply -> `session.js` clears `B.mf.q` after the replay.
+  - gameplay 6: the rating chip wrote localStorage every frame -> only on a change; aria-label only on a change.
+- NEXT (release is BLOCKED until these are fixed, both reviewers re-run and pass, then CI green):
+  1. Gameplay 2 (BLOCKER, live PvP phone/server agreement): (a) Momentum must read the smoothed velocity (`avx/avy`) for live
+     units (server ticks 30 Hz, claims every 100 ms); (b)+(c) put the pilot's own shield time and cooldown in the snapshot and
+     apply them to the pilot in `pvpApply` (Capacitor's fast recharge, Reflex's auto-raise); (d) `dashEnd` must not apply Ram on
+     the phone in a live match (phantom damage/kills); (e) the server must accept Overdrive's second dash within one tick of the
+     first ending (7-tick dash vs the phone's 217 ms); (f) team-0 pilots hear cues twice (local prediction + server): keep one
+     source in live rooms. Add a PvP phone/server agreement test (the reviewer's probes: scratchpad/probes/).
+  2. Gameplay 3: `mfBurn` drops a replaced burn's built-up damage (Inferno loses 15-49%): carry it into the new burn; in Conquest
+     keep burns while `b.t>0||b.a>0`.
+  3. Gameplay 4 (rest): the phone-written dash flag can be faked on every sample: limit dash-flag rising edges to the charges a
+     dash cooldown allows; the charge multiplier only within one burst.
+  4. Gameplay 7 (balance): measured duels contradict `rmodPe` for Overdrive / Momentum and Hyperdrive measures like Overdrive:
+     retune `rmodPe` toward the measured values and give Hyperdrive a real step; then re-check owner-rules (+8% band), the reports
+     (RESOURCE_ECONOMY §6.5) and `mod-power --write`.
+  5. Gameplay 8/9 (low): vent splash counter bonus applied twice; reflect armor Arcade vs Conquest; burns vs barrier; Lab timers
+     static while open; hub RESEARCH still loads the 3D world first.
+  6. Security F5 (latent, before checkout opens): enforce the Lab sale rules inside `ecoGrant`, call `ecoOwned` in the grant paths.
+     F6 (owner judgement): Legendary step is +6.9% over the best research build (55.2% live): owner to confirm or shrink.
+     Pre-existing (owner decision, G9): `solValueOk` fails open when CoinGecko is down (a tiny SOL payment could pass): make it
+     fail closed ("pending").
+  7. Then: re-run `conquest-session6b.py` (5 sizes) + `web-labstore.py`, both reviewers again (fresh, read-only), `dev/bump.sh`,
+     PR (body draft in the scratchpad was lost with the container: rewrite from this checkpoint), CI green, merge, deploy, verify
+     `/pvp/health` and `version.json` from the deploy jobs, ROADMAP (6B RELEASED logic half, row 6B-V, 6C note, fix-queue items
+     done), release record here.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.
 
 ### Research: comparable games (recorded before design; sources searched this session)

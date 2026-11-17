@@ -719,7 +719,7 @@ function renderShop(){
    '<ul><li>Founder paint, never sold again</li><li>An epic weapon you don’t own yet</li><li>2 rare gem caches for your '+esc(CH[shopCh()].n)+'</li></ul>'+
    '<button class="btn btn-gold block" data-act="founder">'+priceLabel(FOUNDER.ton,FOUNDER.stars)+'</button><p class="fnote">One per pilot. Gear and looks only: it adds no points and doesn’t buy $LUNAR.</p></div>':'')+
   (save.starter?'':'<div class="starter"><span class="tag">One time</span><h4>Starter pack</h4><ul><li>A rare weapon you don’t own yet</li><li>A rare chassis you don’t own yet</li><li>A rare gem cache for your '+esc(CH[shopCh()].n)+'</li></ul><button class="btn btn-go block" data-act="starter">'+priceLabel(STARTER.ton,STARTER.stars)+'</button></div>')+
-  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap. Science Lab: +1 research slot, research 25% faster and research parts on tiers '+Object.keys(PASS_PREM_PARTS).join(', ')+'.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
+  (passState().prem?'':'<div class="passbuy"><span class="tag">Season '+seasonNo()+'</span><h4>Lunar Pass</h4><p>'+seasonTiers()+' premium rewards over '+PASS_LEN+' days: Eclipse and Aurora paints, rare weapon caches, a rare and an epic chassis crate, gem caches, plus an extra daily quest swap. '+(LAB_STORE_OPEN?'Science Lab: ':'Coming with the Science Lab store: ')+'+1 research slot, research 25% faster and research parts on tiers '+Object.keys(PASS_PREM_PARTS).join(', ')+'.'+(seasonNo()===1?' Launch season: '+PASS_BONUS+' bonus tiers for early pilots, including an epic weapon cache.':'')+' '+leftTxt()+'.</p>'+
    '<div class="acts"><button class="btn btn-go" data-act="buypass">'+priceLabel(PASS_PRICE.ton,PASS_PRICE.stars)+'</button><button class="btn btn-quiet" data-act="pass">See rewards</button></div></div>')+
   labShopSec()+
   vaultCard()+
@@ -763,7 +763,7 @@ function passCard(){
 function openPass(){
  const ov=sheet('pass',()=>{
   const P=passState(),t=passTier(),xpIn=P.xp-t*PASS_XP;
-  const cell=(r,track,i,claimed,locked)=>{const got=i<=t,rp=track==='p'&&PASS_PREM_PARTS[i]?' + '+PASS_PREM_PARTS[i]*CQ_PART_ORDER.length+' research parts':'';
+  const cell=(r,track,i,claimed,locked)=>{const got=i<=t,rp=track==='p'&&passPartsAt(i)?' + '+passPartsAt(i)*CQ_PART_ORDER.length+' research parts':'';
    return '<div class="pcell'+(claimed?' got':'')+(locked?' lock':'')+'"><span>'+esc(rewardLabel(r)+rp)+'</span>'+
     (claimed?'<b class="ok">✓</b>':got&&!locked?'<button class="btn sm btn-gold" data-act="claimpass" data-arg="'+track+':'+i+'">Claim</button>':'')+'</div>';};
   let rows='';for(let i=1;i<=seasonTiers();i++)rows+=(i===PASS_TIERS+1?'<div class="pbonus">Early pilot bonus · launch season only</div>':'')+'<div class="ptier'+(i<=t?' on':'')+(i===t+1?' next':'')+'"><div class="pn num">'+i+'</div>'+cell(PASS_FREE[i],'f',i,P.cf.includes(i),false)+cell(PASS_PREM[i],'p',i,P.cp.includes(i),!P.prem)+'</div>';

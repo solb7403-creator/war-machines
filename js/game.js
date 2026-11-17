@@ -1112,7 +1112,7 @@ const modS=u=>u&&u.rm?(u.mf||(u.mf=mfNew(u))):null;
 const modDps=u=>Math.max(1,(u.wdps||STAT.dps)*dmgMult(u)*rofMult(u)*projectileImpactMult(u));   // the tank's own clean damage per second
 let modQ=[];   // heat rings and reflections owed: they land after the hit that caused them (never inside it: no chains)
 function modHurt(src,e,amt,why){if(!(amt>0)||!e||e.hp<=0)return 0;const g=amt*cmult(src,e),aE=armor(e),d=g*(1-aE);if(e.st)e.st.arm+=g*aE;takeHit(e,d,src,why,0,false,true,0);if(src&&src.st){src.st.dmg+=d;if(d>src.st.best)src.st.best=d;}return d;}
-function modCues(u){const q=u&&u.mf&&u.mf.q;if(!q||!q.length)return;for(const k of q)ev('m',u.id,k);q.length=0;}
+function modCues(u){const q=u&&u.mf&&u.mf.q;if(!q||!q.length)return;for(const k of q)ev('Q',u.id,k);q.length=0;}   // 'Q': its own event code ('m' is the meteor / megatank impact, and live rooms flip 'm' positions)
 // Reflex Skirts: a marked blast about to land on u (an enemy super in its last moments, a meteor that is about to hit)
 function modDanger(u,lead){
  for(const v of units){if(v.team===u.team||v.hp<=0||!v.sup||!(v.sup.t<=lead))continue;const S=SUP[v.sup.w];if(!S)continue;

@@ -646,7 +646,7 @@ Research costs research parts and time only. Parts drop from heavy Parasites (3%
 | Pilot | Weeks to all 16 mods: median (10th–90th percentile) |
 |---|---|
 | 60 min/day, free | **7.9 (6.6–9.6)** (owner target 6–10) |
-| 60 min/day, Lunar Pass premium (+1 slot, jobs 25% faster, 1 of each part on tiers 10/20/30) | 5.9 (4.9–7.6) |
+| 60 min/day, Lunar Pass premium (+1 slot, jobs 25% faster, 1 of each part on tiers 10/20/30), once the Lab store opens | 5.9 (4.9–7.6) |
 | 30 min/day, free | 15.3 (12.6–18.9) |
 
 Part packs (§9.3) only speed this up; checkout is off.
@@ -712,7 +712,7 @@ Real store entries with **no checkout**: `LAB_STORE_OPEN=false` and the Worker r
 | Lab crate | +3 of every part (12) | 249 | 4 | one a UTC week |
 | Research cache | +8 of every part (32) | 599 | 9.6 | one a UTC week |
 | Legendary set mod (Sunfire Core, Starfall Driver, Hyperdrive, Aegis Prime), each | a step stronger than the earned set mod of its track (§6.5) | 599 | 9.6 | on sale only after that track's earned set mod is researched |
-| Lunar Pass premium perks (the existing pass, 799 Stars / 13 TON) | +1 research slot, research 25% faster, 1 of each part on premium tiers 10, 20 and 30 | — | — | the premium track still never gives points; season dates unchanged |
+| Lunar Pass premium perks (the existing pass, 799 Stars / 13 TON) | +1 research slot, research 25% faster, 1 of each part on premium tiers 10, 20 and 30 | — | — | start only when the Lab store opens (`LAB_STORE_OPEN`, `passResearch`): until then the pass is unchanged and shows them as coming; the premium track never gives points; season dates unchanged |
 
 Free pilots still finish the earned tree in 6–10 weeks (§7.5).
 

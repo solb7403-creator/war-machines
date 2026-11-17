@@ -45,7 +45,7 @@ function arcade(modsA,{secs=10,shieldB=false,hitA=null,map='craters',dashA=null,
  const [A,B]=sim.units;if(noCrit)A.critB=-9;   /* the target carries no armor core; noCrit: no random criticals (measuring exact amounts) */sim.setCtl(A,'net');sim.setCtl(B,'net');A.x=16;A.y=27;B.x=16;B.y=23.5;A.ang=-Math.PI/2;B.hp=B.mhp=1e7;
  const log=[];let t=0;
  for(let i=0;i<secs*60;i++){B.cd=99;B.x=16;B.y=23.5;if(shieldB&&!(B.shieldT>0)){B.shieldCd=0;sim.netShield(B);}if(hitA&&i%hitA.every===0)sim.hit(A,hitA.amt,B,null,0,false,true,0);if(dashA&&dashA.includes(i))sim.netDash(A,0,-1);
-  sim.step(1/60);t+=1/60;for(const e of evs){if(e[0]==='m'&&e[1]===0)log.push({t,k:e[2]});if(e[0]==='h'&&e[1]===1&&e[6]===0)log.push({t,k:'hit',amt:e[2],kind:e[3]});if(e[0]==='b'&&e[2]===0)log.push({t,k:'shot'});}evs.length=0;}
+  sim.step(1/60);t+=1/60;for(const e of evs){if(e[0]==='Q'&&e[1]===0)log.push({t,k:e[2]});if(e[0]==='h'&&e[1]===1&&e[6]===0)log.push({t,k:'hit',amt:e[2],kind:e[3]});if(e[0]==='b'&&e[2]===0)log.push({t,k:'shot'});}evs.length=0;}
  return {sim,A,B,log};}
 const first=(log,k)=>log.find(e=>e.k===k);
 {const {A,log}=arcade(one('vent')),v=first(log,'vent'),shots=log.filter(e=>e.k==='shot'),f0=shots[0].t,iv=shots[1].t-shots[0].t;ok(v&&v.t-f0>=3-1e-6&&v.t-f0<=3+iv+0.02,'Arcade: Vent Barrel\'s first vent round '+(v&&(v.t-f0).toFixed(2))+' s after the first shot (3 s of fire, shot interval '+iv.toFixed(2)+' s)');
@@ -96,4 +96,5 @@ function conquest(mods,{secs=10,shieldE=false,w='pulse',noCrit=false}={}){const 
  ok(we&&pe&&Math.abs(we.hp-pe.hp)<1e-6,'phone and Worker agree on the Parasite\'s hull after 6 s of Inferno fire and burns ('+(pe&&pe.hp.toFixed(1))+')');
  ok(JSON.stringify({...s.battle.mf,q:[]})===JSON.stringify({...B.mf,q:[]}),'phone and Worker agree on every mod counter (streak, Inferno window, dash charges)');}
 
+{const fs=await import('node:fs'),ms=fs.readFileSync('js/match.js','utf8'),gs=fs.readFileSync('js/game.js','utf8');ok(ms.split("case 'm':").length===2&&/case 'm':\{const x=a\[1\],y=a\[2\],r=a\[3\];blasts\.push/.test(ms)&&/case 'Q':\{const u=U\(a\[1\]\)/.test(ms)&&/ev\('Q',u\.id,k\)/.test(gs)&&!/ev\('m',u\.id/.test(gs),'mod cues use their own event code (Q): meteor and megatank impacts keep m (blast, sound, shake)');}
 console.log('PASS mod behaviors ('+passed+' checks)');

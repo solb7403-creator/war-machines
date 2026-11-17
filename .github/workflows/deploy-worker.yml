@@ -59,6 +59,7 @@ jobs:
           node dev/tests/wtest/owner.mjs
           node dev/tests/wtest/conquest-research.mjs
           node dev/tests/wtest/lab-store.mjs
+          node dev/tests/wtest/proof-mods.mjs
           node dev/tests/owner-rules.mjs
       - name: Live-match smoke test in the Workers runtime
         working-directory: worker

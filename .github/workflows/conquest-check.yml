@@ -93,6 +93,7 @@ jobs:
           node dev/tests/conquest-power-chip.mjs
           node dev/tests/lab-store-ui.mjs
           node dev/tests/wtest/lab-store.mjs
+          node dev/tests/wtest/proof-mods.mjs
           node dev/tests/owner-rules.mjs
       - uses: actions/setup-python@v5
         with:
