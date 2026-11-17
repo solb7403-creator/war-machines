@@ -4803,28 +4803,40 @@ spent (behavior held constant across the change) before the +-10% check.
   non-persisted queue fired after the CAS write; client `/api/conquest/an` for transmission_read/skip and quit_point/session_minutes;
   admin sheet tab; `dev/tests/conquest-analytics.mjs`.
 
-## Checkpoint 42 — Session 5E-2e: Arcade weather + map hazards (branch `claude/arcade-weather-map-hazards-ysbkxs`, from main `4659c04`) — IN PROGRESS
+## Checkpoint 42 — Session 5E-2e: Arcade weather + map hazards (branch `claude/arcade-weather-map-hazards-ysbkxs`, from main `4659c04`) — RELEASED Nov 17 (PR #140, merge `bdde102`, build `20261117180140`)
 
 Brief: the owner's Session 5E-2e prompt (Nov 17, 2026): each Arcade map gets exactly one damaging hazard and one vision effect,
 rolled per match from a server seed (25% clear / 35% vision / 20% hazard / 20% both), with six earned hazard finishes and six
 premium LIVE store entries that are not on sale. Owner not monitoring: every choice below is the lead's, with its reason.
 (Checkpoint 41 belongs to Session 6B on `claude/tank-lab-logic-half-nm0485`, unfinished; this session does not touch it.)
 
-### Resume here (kept current)
+### Release record (Nov 17, 2026)
 
-- **Built, tested, reviewed, pushed.** Both independent reviews PASS (A at `8e8939a`, B at `f7fd48b`). Everything in the
-  owner's prompt is built except what "Open items" names.
-- **What is left is the release** (pre-approved in the prompt): `dev/bump.sh`, PR to main, CI green, merge, the Worker and
-  Pages deploys verified, then the release record at the bottom of this checkpoint and `docs/ROADMAP.md` row 5E-2e.
-- **Run before pushing anything:** `node dev/tests/arcade-weather.mjs` (about 3 min), `node dev/tests/fair-arcade.mjs` (about
-  8 min), `node dev/tests/arena-maps.mjs`, `node dev/tests/super-timing.mjs`, `node dev/tests/hf-collection.mjs`,
-  `node dev/tests/defender-isolation.mjs`, `node dev/tests/wtest/test.mjs`, `node dev/tests/wtest/pvp.mjs` (the Worker tests
-  need `npm install --prefix worker` once and `node worker/build-web.mjs`).
+- PR #140 merged 18:45 UTC as `bdde102` (merge commit; head `14333cd`), all 9 checks green on the head (conquest, transmission
+  chromium + webkit, signup-browsers chromium / webkit / firefox, website, balance, verify). Release pre-approved in the
+  owner's prompt; both independent reviews PASS before the merge.
+- Worker: `Deploy Stars server (Cloudflare)` run 44151353382 SUCCESS (server tests including `arcade-weather.mjs`, live-match
+  smoke test, deploy, webhook): `/pvp/health` = `{"ok":true,"v":7,"open":0,"waiting":0,"queues":[]}`; live `version.json` =
+  `{"v":"20261117180140"}` = repo.
+- GitHub Pages: `pages build and deployment` run 44151349157 SUCCESS on `bdde102`. This cloud container cannot reach
+  github.io or workers.dev (network policy, tried), so the live values come from the deploy job's own checks.
+- No live players: no migration code. Revert plan if broken: revert `bdde102` on main (both deploys follow main). Not needed.
+- This record and ROADMAP row 5E-2e went to main in a second, docs-only PR from the same branch (restarted from main).
+- 5E-2e ran before 5E-2d1 / 5E-2d2 because Meshy credits were unavailable; it needs no new models.
+
+### Resume here (next session reads this first)
+
+- **SESSION 5E-2e IS RELEASED** (see "Release record" above). Next on the roadmap: 5E-2d1 / 5E-2d2 (need Meshy credits), and
+  Session 6B Tank Lab on `claude/tank-lab-logic-half-nm0485` (unfinished, Checkpoint 41; not touched here).
+- Open items for the owner are listed at the bottom of this checkpoint ("Open items").
+- **Run before pushing anything that touches the match:** `node dev/tests/arcade-weather.mjs` (about 3 min),
+  `node dev/tests/fair-arcade.mjs` (about 8 min), `node dev/tests/arena-maps.mjs`, `node dev/tests/super-timing.mjs`,
+  `node dev/tests/hf-collection.mjs`, `node dev/tests/defender-isolation.mjs`, `node dev/tests/wtest/test.mjs`,
+  `node dev/tests/wtest/pvp.mjs` (the Worker tests need `npm install --prefix worker` once and `node worker/build-web.mjs`).
 - **Browser tests in this container:** `pip install playwright==1.63.0` (the Python client only; the browser is already at
   `/opt/pw-browsers/chromium`), then `CHROMIUM_PATH=/opt/pw-browsers/chromium SHOTS=<dir> python3 dev/tests/<test>.py`:
   `weather-browser.py` (the journey, about 6 min), `weather-capture.py` (review sheets; slow, run two in the background),
   `weather-perf.py` (frame cost). Stop the dev server (`pkill -f devserver.mjs`) after changing the rules or the Worker.
-- **Do not touch** `claude/tank-lab-logic-half-nm0485` (Session 6B, Checkpoint 41).
 
 ### Research: comparable games (one web-research agent; what we take from each)
 
