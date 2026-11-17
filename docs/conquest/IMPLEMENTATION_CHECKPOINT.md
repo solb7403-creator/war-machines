@@ -4890,6 +4890,20 @@ premium LIVE store entries that are not on sale. Owner not monitoring: every cho
     proposal (7.2 TON / 450 Stars each) and no `ton` / `stars` field, so `ecoPrice` returns null and neither the phone nor
     the server can sell them.
 
+### The six maps (what a pilot meets)
+
+| Map | Hazard: what it does | Its warning (sound, then light) | How to dodge | Vision effect |
+|---|---|---|---|---|
+| Moonbase | **Meteor strikes.** Salvos of four meteors walk a line, with a mirrored twin salvo on the other half 0.3 s apart. 300 damage each (17% of a stock hull) inside 1.7 | 1.6 s: a falling whistle; a fiery streak down the same slanted line every time; the rock's shadow and an amber ring grow on the landing spot and flicker just before impact | Drive off the spot (0.8 s for the slowest tank); the line keeps walking, so move across it | **Regolith haze**: every other impact leaves a cloud (radius 2.5, 9 s). A tank in a cloud, or looking into one, sees 3.2 instead of 6 |
+| Overpass | **Maglev train** along the deck's centre rail, alternating direction. 420 damage (25%) and a shove along the deck | 2.8 s: a two-tone horn, twice; rail lights run along both edges of its lane, faster and brighter; its headlight far down the line | Leave the deck by a ramp, or hug the railing. Tunnels and ramps are never touched | **Solar flare**: one 20 s flare a round. Sight 4.6 for everyone; supers charge twice as fast |
+| Longshot | **Pylon overload.** The centre pylon arcs into every tank with a clear line to it. 320 damage (19%) | 3 s: three rising pulses of the coils (hum + glow + a ring on the ground), then it fires on the fourth beat | Break line of sight: get behind a container (1.4 s from the worst spot) | **Solar flare** (as Overpass), washing out the long sight lines |
+| Crater Field | **Crater vents.** The centre crater, then the flank pair (the lead alternates). 340 damage (20%) inside the crater and its rim | 2.2 s: a rising hiss; the cracks in the crater floor light up from below; wisps of steam | Get out of the crater (1.3 s for the slowest tank from the middle of the big one) | **Vent steam**: a cloud over each crater all match. A tank in the steam is hidden from further than 3.2, and sees no further |
+| Canyon | **Sand tornadoes.** A pair on point-mirrored paths, 20 s each, speed 1.7 (a tank does 4.4). 70 damage twice a second while inside, each tick a jolt that spins the tank out | 2.6 s: it forms where it will start, thin and harmless; wind that gets louder the closer it is; its shadow on the ground | Drive round it: it is slower than the slowest tank in scree. The mesa top and the tunnel are out of its reach | **Dust storm**: 22 s storms. Sight 4.2 for everyone |
+| Underground Bunker | **Ceiling lasers.** A beam sweeps a row end to end in 2.5 s: the middle row (direction alternating), then the two outer rows in opposite directions. 380 damage (22%) | 2 s: a rising whine; the row's wall mounts and ceiling mounts glow red; a faint flicker along the whole row | Step off the row (0.3-0.5 s) | **Power flicker**: the lights stutter and hold dim for 6-8 s. Sight 4.4 for everyone |
+
+Shared rules: nothing hits in the first 8 s of a round or within 2.5 s of a respawn; the megatank is never a target; a tank
+under a deck is covered from meteors; the first three times a pilot meets a hazard one line on screen says how to dodge it.
+
 ### What is built (slice 1)
 
 - `js/rules.js`: `WX_ODDS`, `WX_MAP`, `WX_HZ`, `WX_VIS`, `wxRoll`, `wxPlan`, `wxEnd`, `wxPos`, `wxIn`, `wxArcSees`, `wxWinOn`,

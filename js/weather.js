@@ -23,11 +23,11 @@ const WeatherFX=(()=>{
  const SHORT={meteor:'METEOR STRIKES',train:'MAGLEV TRAIN',arc:'PYLON OVERLOAD',vent:'CRATER VENTS',tornado:'SAND TORNADOES',laser:'CEILING LASERS',
   haze:'REGOLITH HAZE',flare:'SOLAR FLARE',steam:'VENT STEAM',dust:'DUST STORM',flicker:'POWER FLICKER'};
  const VCOL={haze:'#cdbfa8',flare:'#ffcf6a',steam:'#cfeef2',dust:'#e0b877',flicker:'#9fb6ff'};
- const PYH=2.45,BEAM_H=7.5;   // the Longshot pylon's coil; where a ceiling laser comes down from
+ const PYH=2.45,BEAM_H=7.5,LEAN=0.02;   // LEAN: the glow batch lays a ribbon flat along its ground direction, so a beam that goes straight up leans a hair away from the camera to get its width across the screen   // the Longshot pylon's coil; where a ceiling laser comes down from
  const cues=new WeakMap(),pend=[],RG={},BLK=[0,0,0];
  let visS=0,flick=1,tdN=0,mk='',envOn=false,M3=null,arcT=null,tipAt=-99;
  const cl=(v,a,b)=>v<a?a:v>b?b:v,rnd=(a,b)=>a+(b-a)*Math.random(),hsh=n=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
- const plan=()=>typeof wx!=='undefined'&&wx&&(state==='play'||state==='round')?wx.P:null;
+ const plan=()=>typeof wx!=='undefined'&&wx&&(state==='play'||state==='round')&&!(typeof rangeRun!=='undefined'&&rangeRun)?wx.P:null;   // never over the practice range (its engine has no weather)
  const flip=()=>typeof pvpOn==='function'&&pvpOn()&&typeof pvp!=='undefined'&&!!pvp&&!!pvp.flip;   // a live match on team 1: the whole map is turned for you
  const fX=x=>flip()?W-x:x,fY=y=>flip()?H-y:y,fD=d=>flip()?-d:d;
  const cue=z=>{let c=cues.get(z);if(!c){c={w:0,h:0,p:0,sx:null};cues.set(z,c);}return c;};
@@ -104,12 +104,13 @@ const WeatherFX=(()=>{
   const nose=box(body,1.1,0.7,2.0,-0.42,0.52,0);nose.rotation.z=-0.28;box(dark,0.5,0.28,1.7,-0.5,0.8,0).rotation.z=-0.5;
   H.scene.add(g);
   // a sand tornado: two nested open funnels with a streaked skin, turning against each other
-  const cv=document.createElement('canvas');cv.width=128;cv.height=128;const c=cv.getContext('2d');c.clearRect(0,0,128,128);
+  const cv=document.createElement('canvas');cv.width=128;cv.height=128;const c=cv.getContext('2d');c.clearRect(0,0,128,128);c.fillStyle='rgba(255,255,255,0.62)';c.fillRect(0,0,128,128);
+  for(let i=0;i<26;i++){const y=hsh(i*4.3)*128;c.fillStyle='rgba(60,40,20,'+(0.1+hsh(i*2.9)*0.22)+')';c.fillRect(0,y,128,2+hsh(i*5.1)*7);}   // darker bands turning with it
   for(let i=0;i<70;i++){const x=hsh(i*3.1)*128,y=hsh(i*7.7+1)*128,l=18+hsh(i+5)*46,a=0.1+hsh(i*1.7)*0.34;c.strokeStyle='rgba(255,255,255,'+a+')';c.lineWidth=2+hsh(i*2.3)*5;c.beginPath();c.moveTo(x,y);c.lineTo(x+l,y-l*0.34);c.stroke();
    c.beginPath();c.moveTo(x-128,y);c.lineTo(x+l-128,y-l*0.34);c.stroke();}
   const tex=new T.CanvasTexture(cv);tex.wrapS=tex.wrapT=T.RepeatWrapping;
   const torn=[];for(let i=0;i<2;i++){const G=new T.Group(),parts=[];
-   for(const [rt,rb,h,col,op] of [[1.55,0.3,4.4,'#c9a271',0.5],[1.05,0.16,4.0,'#e3c79a',0.42]]){const m=new T.Mesh(new T.CylinderGeometry(rt,rb,h,20,4,true),new T.MeshBasicMaterial({map:tex,color:col,transparent:true,opacity:op,depthWrite:false,side:T.DoubleSide}));m.position.y=h/2;m.userData.op=op;m.renderOrder=17;G.add(m);parts.push(m);}
+   for(const [rt,rb,h,col,op] of [[1.6,0.32,4.6,'#c39a66',0.8],[1.05,0.18,4.2,'#e6cda3',0.7]]){const m=new T.Mesh(new T.CylinderGeometry(rt,rb,h,20,4,true),new T.MeshBasicMaterial({map:tex,color:col,transparent:true,opacity:op,depthWrite:false,side:T.DoubleSide}));m.position.y=h/2;m.userData.op=op;m.renderOrder=17;G.add(m);parts.push(m);}
    G.visible=false;H.scene.add(G);torn.push({G,parts});}
   return M3={scene:H.scene,train:g,torn,tex};
  }
@@ -152,7 +153,7 @@ const WeatherFX=(()=>{
    return;}
   const te=t-z.t;if(te>1.1)return;const k=te/1.1,h=6.5*Math.min(1,te*6);   // the eruption: a column, a ring running out to the edge of the blast
   const f=1-k*k,Wt=rgbOf(H,'#f2fffb');
-  S.seg(x,0.05,y,x,h,y,z.r*0.34*(1-k*0.4),z.r*0.2,C,0.9*f,0.55*f);S.seg(x,0.05,y,x,h*0.85,y,z.r*0.14,0.06,Wt,f,0.6*f);S.sprite(x,0.5,y,z.r*0.55,Wt,0.9*f,0.3*f);
+  S.seg(x,0.05,y,x,h,y-LEAN,z.r*0.34*(1-k*0.4),z.r*0.2,C,0.9*f,0.55*f);S.seg(x,0.05,y,x,h*0.85,y-LEAN,z.r*0.14,0.06,Wt,f,0.6*f);S.sprite(x,0.5,y,z.r*0.55,Wt,0.9*f,0.3*f);
   S.shock(x,0.05,y,z.r*Math.min(1,te*3.4),0.6,C,0.9*(1-k),48);S.churn(x,0.04,y,z.r*Math.min(1,0.35+te*2.6),Wt,0.75*f,0.5*f);S.disc(x,0.045,y,z.r,C,0.5*(1-k),0.2*(1-k));
   if(!H.quiet&&te<0.7)for(let i=0;i<(H.low?1:3);i++){const a=Math.random()*6.283,r=z.r*(0.2+0.6*Math.random());   // steam boiling out over the whole blast, as long as it lasts
    H.emit(false,{x:x+Math.cos(a)*r,y:0.15,z:y+Math.sin(a)*r,vx:Math.cos(a)*2.4,vy:1.5+Math.random()*2.5,vz:Math.sin(a)*2.4,life:1.1,s0:0.5,s1:1.9,c:'#e9f6f3',a:0.42,drag:1.2});}
@@ -198,15 +199,16 @@ const WeatherFX=(()=>{
   const S=H.SFX,C=rgbOf(H,COL.laser),Wt=rgbOf(H,'#ffe9e2'),rz=fY(z.y),end=wxEnd(z);
   if(t>end+0.3)return;
   const pw=cl((t-z.w)/warnT(z),0,1),live=t>=z.t&&t<=end,fl=H.quiet?1:hsh(Math.floor(t*18)+z.id*5);
-  for(const hx of [-0.1,W+0.1])S.sprite(hx,2.14,rz,0.22+0.3*pw,C,0.35+0.55*pw);   // the row's two mounts glow
-  if(!live){if(t<z.t&&fl<0.8)S.seg(0.15,0.05,rz,W-0.15,0.05,rz,0.035,0.035,C,(0.08+0.2*pw)*(0.5+0.5*fl));   // a faint flicker along the row it will sweep
+  for(const hx of [-0.1,W+0.1])S.sprite(hx,2.14,rz,0.22+0.3*pw,C,0.35+0.55*pw);   // the row's two wall mounts glow
+  for(let hx=2;hx<W;hx+=4)S.sprite(hx,3.1,rz,0.1+0.12*pw,C,0.45+0.45*pw);   // and the ceiling mounts along the row
+  if(!live){if(t<z.t&&fl<0.82){S.seg(0.15,0.05,rz,W-0.15,0.05,rz,0.06,0.06,C,(0.2+0.45*pw)*(0.45+0.55*fl));if(pw>0.5)S.seg(0.15,0.05,rz,W-0.15,0.05,rz,0.3,0.3,C,0.12*pw*fl);}   // a faint flicker along the row it will sweep
    if(t<z.t)S.sprite(fX(z.x0)+(fX(z.x0)<10?0.5:-0.5),0.35,rz,0.16+0.14*pw,C,0.3+0.5*pw);
    return;}
   const q=wxPos(z,t),cx=fX(q[0]);let floor=0.03;
   for(const w of walls)if(cx>w[0]&&cx<w[0]+w[2]&&rz>w[1]&&rz<w[1]+w[3]){floor=w.mhp?0.85:1.25;break;}   // it stops on top of whatever stands in the row
-  S.seg(cx,BEAM_H,rz,cx,floor,rz,0.2,0.26,C,0.85);S.seg(cx,BEAM_H,rz,cx,floor,rz,0.06,0.09,Wt,1);
+  S.seg(cx,BEAM_H,rz-LEAN,cx,floor,rz,0.2,0.3,C,0.9);S.seg(cx,BEAM_H,rz-LEAN,cx,floor,rz,0.07,0.11,Wt,1);
   S.disc(cx,floor+0.02,rz,z.r*1.05,C,0.5);S.sprite(cx,floor+0.25,rz,0.55,Wt,0.9);S.sprite(cx,BEAM_H,rz,0.5,C,0.8);
-  S.seg(0.15,0.05,rz,W-0.15,0.05,rz,0.03,0.03,C,0.12);
+  S.seg(0.15,0.05,rz,W-0.15,0.05,rz,0.05,0.05,C,0.3);
   if(!H.quiet){if(Math.random()<0.7)S.sparks(cx,floor+0.1,rz,2,3.2,C,0.12,0.3,1,floor);
    const c=cue(z);if(floor<0.1&&(c.sx===null||Math.abs(cx-c.sx)>0.55)){c.sx=cx;H.scorch(cx,rz,0.34,0.013,0.4);}}
  }
@@ -216,8 +218,9 @@ const WeatherFX=(()=>{
   O.G.visible=true;O.G.position.set(x,0,y);const sw=H.quiet?0:Math.sin(t*1.3+z.id)*0.07;O.G.rotation.set(sw,0,sw*0.7);O.G.scale.set(0.35+0.65*g,0.5+0.5*g,0.35+0.65*g);
   O.parts.forEach((m,i)=>{if(!H.quiet)m.rotation.y+=H.dt*(i?-7.5:5.5);m.material.opacity=m.userData.op*(t<z.t?0.35+0.45*form:1)*fade;m.material.map.offset.y=H.quiet?0:(t*(i?0.5:0.3))%1;});
   if(H.quiet)return;
-  const n=(H.low?1:3);for(let i=0;i<n;i++)if(Math.random()<g){const a=Math.random()*6.283,h=Math.random()*3.8,r=0.3+h*0.3;   // dust carried round the funnel
-   H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*3.2,vy:0.9+Math.random(),vz:Math.cos(a)*3.2,life:0.7,s0:0.3,s1:0.95,c:Math.random()<0.5?'#c9a271':'#a8875e',a:0.3*g});}
+  const n=(H.low?2:4);for(let i=0;i<n;i++)if(Math.random()<g){const a=Math.random()*6.283,h=Math.random()*4.2,r=0.35+h*0.32;   // dust carried round the funnel
+   H.emit(false,{x:x+Math.cos(a)*r,y:h,z:y+Math.sin(a)*r,vx:-Math.sin(a)*3.2,vy:0.9+Math.random(),vz:Math.cos(a)*3.2,life:0.75,s0:0.4,s1:1.2,c:Math.random()<0.5?'#c9a271':'#a8875e',a:0.42*g});}
+  H.SFX.disc(x,0.03,y,z.r*1.25,BLK,1,0.22*g);   // its shadow on the ground: where it is, and how wide
   if(Math.random()<0.7*g){const a=Math.random()*6.283;H.emit(false,{x:x+Math.cos(a)*1.3,y:0.1,z:y+Math.sin(a)*1.3,vx:-Math.sin(a)*2.2,vz:Math.cos(a)*2.2,vy:0.2,life:0.9,s0:0.4,s1:1.2,c:'#b89468',a:0.24*g});}
  }
  // one-shot effects when a strike lands (queued by step, drawn here because they need the 3D host)
@@ -251,28 +254,28 @@ const WeatherFX=(()=>{
   if(L<=0.004){if(envOn){envOn=false;E.reset(0.5);}return;}
   envOn=true;const B=E.preset(),mx=(a,b)=>a+(b-a)*L,m3=(a,b)=>[mx(a[0],b[0]),mx(a[1],b[1]),mx(a[2],b[2])],my=me?me.y:16;
   if(p.vis==='flare')E.set({sunI:mx(B.sunI,B.sunI*1.5),sun:m3(B.sun,[1,0.88,0.62]),exposure:mx(B.exposure,B.exposure*1.25),gGain:mx(B.gGain,B.gGain*1.1),fog:0.6*L,fogC:[1,0.88,0.66],fogNear:my-2.5,fogFar:my-11.5,stars:mx(B.stars,0)},0);
-  else if(p.vis==='dust')E.set({sunI:mx(B.sunI,B.sunI*0.6),hemiI:mx(B.hemiI,B.hemiI*0.9),sun:m3(B.sun,[1,0.76,0.5]),sky:m3(B.sky,[0.6,0.47,0.33]),fog:0.85*L,fogC:[0.46,0.36,0.25],fogNear:my-1.5,fogFar:my-9,stars:mx(B.stars,0),earth:mx(B.earth,0.1),clear:m3(B.clear,[0.17,0.13,0.09])},0);
-  else if(p.vis==='flicker')E.set({sunI:mx(B.sunI,B.sunI*0.14),hemiI:mx(B.hemiI,B.hemiI*0.3),fillI:mx(B.fillI,B.fillI*0.45),gGain:mx(B.gGain,B.gGain*0.8),shadow:mx(B.shadow,0.18)},0);
+  else if(p.vis==='dust')E.set({sunI:mx(B.sunI,B.sunI*0.78),hemiI:mx(B.hemiI,B.hemiI*0.95),sun:m3(B.sun,[1,0.84,0.6]),sky:m3(B.sky,[0.66,0.56,0.42]),fog:0.72*L,fogC:[0.5,0.41,0.28],fogNear:my-2.5,fogFar:my-10.5,stars:mx(B.stars,0),earth:mx(B.earth,0.1),clear:m3(B.clear,[0.17,0.13,0.09])},0);
+  else if(p.vis==='flicker')E.set({sunI:mx(B.sunI,B.sunI*0.34),hemiI:mx(B.hemiI,B.hemiI*0.55),fillI:mx(B.fillI,B.fillI*0.6),gGain:mx(B.gGain,B.gGain*0.86),shadow:mx(B.shadow,0.25)},0);
  }
  // ---- over the whole picture (2D canvas above the world): glare, dust, dimmed lights ----
  function overlay(g,vw,vh){
   const p=plan();if(!p||!p.vis||visS<=0.01||WX_VIS[p.vis].local)return;const L=visS*flick,tt=typeof GraphicsMotion!=='undefined'&&GraphicsMotion.reduced()?0:performance.now()/1000;
   g.save();
   if(p.vis==='flare'){
-   let gr=g.createLinearGradient(0,0,0,vh*0.78);gr.addColorStop(0,'rgba(255,238,196,'+0.6*L+')');gr.addColorStop(0.42,'rgba(255,216,150,'+0.24*L+')');gr.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
+   let gr=g.createLinearGradient(0,0,0,vh*0.78);gr.addColorStop(0,'rgba(255,238,196,'+0.5*L+')');gr.addColorStop(0.42,'rgba(255,216,150,'+0.2*L+')');gr.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
    g.globalCompositeOperation='lighter';const sx=vw*0.74,sy=vh*0.05,r=Math.max(vw,vh)*0.6,b=1+0.05*Math.sin(tt*2.3);
    gr=g.createRadialGradient(sx,sy,0,sx,sy,r*b);gr.addColorStop(0,'rgba(255,250,236,'+0.85*L+')');gr.addColorStop(0.12,'rgba(255,234,186,'+0.42*L+')');gr.addColorStop(0.5,'rgba(255,214,150,'+0.1*L+')');gr.addColorStop(1,'rgba(255,210,140,0)');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
    for(let i=0;i<5;i++){const a=0.55+i*0.42+Math.sin(tt*0.6+i)*0.04,len=r*(0.9+0.25*Math.sin(tt*1.1+i*2));   // the bloom's rays
     gr=g.createLinearGradient(sx,sy,sx+Math.cos(a)*len,sy+Math.sin(a)*len);gr.addColorStop(0,'rgba(255,240,200,'+0.22*L+')');gr.addColorStop(1,'rgba(255,230,180,0)');g.strokeStyle=gr;g.lineWidth=Math.max(6,vw*0.03);g.beginPath();g.moveTo(sx,sy);g.lineTo(sx+Math.cos(a)*len,sy+Math.sin(a)*len);g.stroke();}
    for(let i=1;i<=3;i++){const k=i*0.28,gx=sx+(vw*0.5-sx)*k*2.1,gy=sy+(vh*0.5-sy)*k*2.1,rr=vw*(0.035+0.02*i);gr=g.createRadialGradient(gx,gy,0,gx,gy,rr);gr.addColorStop(0,'rgba(255,220,170,'+0.16*L+')');gr.addColorStop(0.7,'rgba(255,190,120,'+0.07*L+')');gr.addColorStop(1,'rgba(255,190,120,0)');g.fillStyle=gr;g.fillRect(gx-rr,gy-rr,rr*2,rr*2);}   // lens ghosts
   }else if(p.vis==='dust'){
-   const gr=g.createLinearGradient(0,0,0,vh);gr.addColorStop(0,'rgba(150,112,70,'+0.56*L+')');gr.addColorStop(0.5,'rgba(150,115,74,'+0.3*L+')');gr.addColorStop(1,'rgba(140,108,70,'+0.14*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
-   g.strokeStyle='rgba(232,204,160,'+0.2*L+')';g.lineWidth=Math.max(1,vw/420);g.beginPath();
+   const gr=g.createLinearGradient(0,0,0,vh);gr.addColorStop(0,'rgba(176,142,92,'+0.4*L+')');gr.addColorStop(0.45,'rgba(172,140,92,'+0.16*L+')');gr.addColorStop(1,'rgba(160,130,88,'+0.05*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
+   g.strokeStyle='rgba(240,218,178,'+0.26*L+')';g.lineWidth=Math.max(1,vw/420);g.beginPath();
    for(let i=0;i<46;i++){const sp=0.35+hsh(i*3.3)*0.5,x=((hsh(i)*1.3+tt*sp)%1.3-0.15)*vw,y=hsh(i*7.1)*vh,l=vw*(0.05+hsh(i*1.9)*0.09);g.moveTo(x,y);g.lineTo(x+l,y+l*0.06);}
    g.stroke();
   }else if(p.vis==='flicker'){
-   g.fillStyle='rgba(2,4,10,'+0.5*L+')';g.fillRect(0,0,vw,vh);
-   const gr=g.createRadialGradient(vw/2,vh*0.56,Math.min(vw,vh)*0.2,vw/2,vh*0.56,Math.max(vw,vh)*0.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,6,'+0.5*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
+   g.fillStyle='rgba(2,4,10,'+0.2*L+')';g.fillRect(0,0,vw,vh);
+   const gr=g.createRadialGradient(vw/2,vh*0.56,Math.min(vw,vh)*0.2,vw/2,vh*0.56,Math.max(vw,vh)*0.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,6,'+0.42*L+')');g.fillStyle=gr;g.fillRect(0,0,vw,vh);
   }
   g.restore();
  }

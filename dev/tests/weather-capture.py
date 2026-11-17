@@ -29,15 +29,15 @@ async def run(p,name):
         for kind in A.kinds.split(','):
             k={'vis':1,'haz':2,'both':3}[kind]
             seed=await pg.evaluate("(k)=>{for(let s=1;;s++)if(wxRoll(s).k===k)return s;}",k)
-            await pg.evaluate("([c,s,m])=>{closeAll();window.LUNAR_WX=s;window.__hold=0;save.gtype='zone';save.mode=m;save.map=c;store();prepareMatch();startMatch();paused=true;banner=null;}",[mp,seed,A.mode])
+            await pg.evaluate("([c,s,m])=>{closeAll();window.LUNAR_WX=s;window.__hold=0;save.gtype='bounty';save.mode=m;save.map=c;store();prepareMatch();startMatch();paused=true;banner=null;}",[mp,seed,A.mode])
             P=await pg.evaluate("()=>({haz:wx.P.haz,vis:wx.P.vis,hz:wx.P.hz.filter(z=>!z.soft).slice(0,3).map(z=>({k:z.k,w:z.w,t:z.t,e:wxEnd(z),x:z.x,y:z.y})),win:wx.P.win.slice(0,1),clouds:wx.P.clouds.length})")
             tag=mp+'_'+kind+'_'+name+('' if A.quality=='high' else '_low')
             shots=[]
             if P['hz']:
                 z=P['hz'][0];warn=z['t']-z['w']
                 # put the pilot where the strike will be seen: near it, looking at it
-                await pg.evaluate("(z)=>{const p=z.k==='c'?[z.x,z.y]:z.k==='a'?[10,22]:z.k==='t'?[10,21.5]:z.k==='l'?[10,z.y+4]:null;if(p){me.x=Math.max(1,Math.min(19,p[0]+(z.k==='c'?1.5:0)));me.y=Math.min(30.5,p[1]+(z.k==='c'?4.5:0));me.px=me.x;me.py=me.y;window.__hold=1;}}",z)
-                shots+=[('1warn-start',z['w']+warn*0.25),('2warn-late',z['w']+warn*0.85),('3hit',z['t']+(0.12 if z['k'] in 'ca' else 0.45)),('4after',z['e']+0.9)]
+                await pg.evaluate("(z)=>{let p=z.k==='c'?[z.x,z.y]:z.k==='a'?[10,22]:z.k==='t'?[10,21.5]:z.k==='l'?[10,z.y+4]:null;if(z.k==='n'){const q=wxPos(wx.P.hz[0],z.t+3);p=[q[0]+1.5,q[1]+4.5];}if(p){me.x=Math.max(1,Math.min(19,p[0]+(z.k==='c'?1.5:0)));me.y=Math.min(30.5,p[1]+(z.k==='c'?4.5:0));me.px=me.x;me.py=me.y;window.__hold=1;}}",z)
+                shots+=[('1warn-start',z['w']+warn*0.25),('2warn-late',z['w']+warn*0.85),('3hit',z['t']+(0.12 if z['k'] in 'ca' else 1.25 if z['k']=='l' else 3.0 if z['k']=='n' else 0.45)),('4after',(z['t']+7 if z['k']=='n' else z['e']+0.9))]
             if P['win']: shots+=[('5vision',P['win'][0]['t0']+4)]
             elif P['clouds']: shots+=[('5vision',max(12,(P['hz'][0]['t']+2.5) if P['hz'] else 12))]
             shots.sort(key=lambda s:s[1])

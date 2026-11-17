@@ -206,8 +206,11 @@ function applyEco(E){
  if(Number.isFinite(E._rev))ecoSeenRev=E._rev;
  const S=ecoNorm(JSON.parse(JSON.stringify(E)));
  if(typeof rangeRemember==='function')rangeRemember(S);
+ const had=typeof PAINT_HZ!=='undefined'&&save.paints?PAINT_HZ.filter(k=>save.paints[k]):null;
  for(const k of ECO_KEYS)if(S[k]!==undefined)save[k]=S[k];
  fixEquip();labApplySelection();store();
+ // a hazard finish the server has just unlocked (25 takedowns on its map): say so once
+ if(had&&save.paints)for(const k of PAINT_HZ)if(save.paints[k]&&!had.includes(k)&&typeof showToast==='function'){showToast(PAINTS[k].n+' finish unlocked. Put it on in the Garage.');if(typeof fx==='function')fx('claim');}
 }
 const ecoCopy=()=>{const o={};for(const k of ECO_KEYS)if(save[k]!==undefined)o[k]=save[k];return JSON.parse(JSON.stringify(o));};
 // one economy action. local(S, X) runs it on this save; in Telegram the server runs the same thing as action a
