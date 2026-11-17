@@ -4817,6 +4817,16 @@ roadmap row 6B-V.
   Lab III/pass slots, finish credits), outbox `e.rm` -> eco `S.rm` (creditConquest). Tests: `dev/tests/conquest-research.mjs` (82),
   `dev/tests/wtest/conquest-research.mjs` (18) PASS; garage-rules, lab-ui, combat-balance, gear-combat, fair-arcade, wtest lab /
   chassis / hull-plating / web-auth / conquest / conquest-airdrop PASS.
-- NEXT: slice 2 — mod behaviors in both engines (`js/game.js`, `js/conquest/combat.js`/`controls.js`), shared engine in rules.js,
-  PvP snapshot/roster (PVP_V 8), HUD/sound cues; measured duels (`dev/tools/mod-power.mjs`) to check rmodPe.
+- DONE slice 2 (behaviors in both engines): one shared engine in `js/rules.js` (`mfNew/mfStep/mfShot/mfRate/mfHit/mfMiss/mfTaken/
+  mfShieldEnd/mfShieldRate/mfSpeed/mfDash*/mfBurn/mfHud`, `MOD_CUE`), applied in `js/game.js` (turret lead, shot modifiers, rail
+  pass-through, vent splash, burns, heat rings and reflections queued after the hit (no chains), pierce, momentum, overshield, dash
+  charges, ram, capacitor, aegis, reflex vs marked blasts) and in Conquest (`combat.js` hit/moveShots/step + `modTick`, `controls.js`
+  abilityStep/advance/aim/carry); live rooms: roster `rm`, snapshot field 19 (PVP_V unchanged: append-only), `js/pvp.js` decode;
+  cues: Arcade `ev('m',id,cue)` -> `match.js` pop + `fx('mod')`, Conquest `B.mf.q` -> `app.js modHud` pop + chips; HUD chips
+  (`render.js modChips`, `.cq-mods`); 19 synthesized cue sounds + UI/reward/stinger sounds in `js/fx.js`. Proof-of-play allows
+  Traction's speed and Overdrive's dash charges (`worker/src/proof.js`). Tests: `dev/tests/mod-behaviors.mjs` (53) PASS; fair-arcade,
+  combat-balance, gear-combat, wtest pvp (snapshot layout assertion updated to 19 fields), lab-battle, conquest raids/first-hour/
+  living-world/session/recall PASS. Measurements: `dev/tools/mod-power.mjs` (bot and human-profile duels, 240 a mod a kit).
+- NEXT: slice 3 — Science Lab screen in the town sheet (`js/conquest/plotview.js`), reveal card, hub RESEARCH button live, garage
+  research options + lock/compare (`js/ui.js` modText fix), lab-ui/conquest-copy tests.
 - Local notes: `wtest/modules.mjs` needs full git history (`git show 6871efa`): fails in this shallow clone on main too, not in CI.

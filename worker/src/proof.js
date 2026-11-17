@@ -92,8 +92,9 @@ export function checkProof(pf, c) {
   if (simT > (ffw ? c.secs * 3 : c.secs) + 8) return fail("time");
   if (c.won && simT < c.min * 0.75) return fail("fast");
   // movement: no tank goes faster than the game allows (a dash, a respawn or a new round excused)
-  const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15;
-  const vMe = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
+  // research mods (Session 6B): Traction Servo's boost after a dash (c.modSpd) and Overdrive's dash charges back to back (c.dashN)
+  const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15 * Math.max(1, Math.min(3, c.dashN || 1)), msp = Math.max(1, Math.min(2, c.modSpd || 1));
+  const vMe = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * msp * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
   const vAny = L.STAT.speed * 1.25 * 1.24 * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
   let badMe = 0, badOther = 0, stepsOther = 0, moving = 0, noIn = 0, touches = 0;
   for (let s = 1; s < k; s++) {
@@ -103,7 +104,7 @@ export function checkProof(pf, c) {
       if (HP(s - 1, i) === 0 || round) continue;   // respawned, or a new round
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
-        const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
+        const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * msp * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
         const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0);
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }

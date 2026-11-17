@@ -383,3 +383,15 @@
    Everything anchored below the top bar moves down 40 px (the opening radio already sits below them, except on short screens). */
 @media (orientation:portrait) and (max-width:600px){.cq-navigation{top:calc(max(8px,max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px))) + 48px);left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));padding:2px 8px;background:linear-gradient(90deg,#06131dcc,#06131d80 70%,#06131d00);border-left:3px solid #e0c27a}.cq-combat-hud{top:calc(99px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px)))}.cq-reward-ticker{top:152px}.cq .cq-low-hull{top:168px}.cq-base-goal{top:172px}.cq-mn{top:188px}.cq-strike{top:202px}.cq-threat{top:max(34%,222px)}.cq-recall{top:calc(190px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px),var(--tg-content-safe-area-inset-top,0px)))}}
 @media (orientation:portrait) and (max-width:600px) and (max-height:680px){.cq-radio{top:calc(160px + env(safe-area-inset-top,0px))}}   /* clear of the wave line, above DEFEND */
+
+/* Session 6B: research mod chips (right column, over the consumable slot) and the trigger pop */
+.cq .cq-mods{position:absolute;right:18px;bottom:calc(254px + max(env(safe-area-inset-bottom,0px),var(--tg-safe-area-inset-bottom,0px),var(--tg-content-safe-area-inset-bottom,0px)));width:102px;display:flex;flex-direction:column-reverse;gap:4px;z-index:5;pointer-events:none}
+.cq .cq-mods[hidden]{display:none}
+.cq .cq-mod{position:relative;display:block;height:18px;border:1px solid var(--mc,#9fb0c2);border-radius:9px;background:#0a0e17cc;overflow:hidden;font:800 10px/18px 'Chakra Petch',sans-serif;color:#fff;text-align:center;letter-spacing:.05em;white-space:nowrap}
+.cq .cq-mod i{position:absolute;left:2px;top:2px;bottom:2px;right:2px;border-radius:7px;background:var(--mc,#9fb0c2);opacity:.38;transform-origin:left;transform:scaleX(0)}
+.cq .cq-mod b{position:relative}
+.cq .cq-mod.on{box-shadow:0 0 8px var(--mc,#9fb0c2)}.cq .cq-mod.on i{opacity:.62}.cq .cq-mod.cool{color:#9fb0c2}
+.cq .cq-modpop{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);font:800 17px/1 'Chakra Petch',sans-serif;letter-spacing:.08em;color:var(--mc,#fff);text-shadow:0 0 10px #000,0 0 3px #000;opacity:0;pointer-events:none;z-index:6;white-space:nowrap}
+.cq .cq-modpop.show{animation:cq-modpop .9s ease-out forwards}
+@keyframes cq-modpop{0%{opacity:0;transform:translate(-50%,-30%) scale(.9)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%)}}
+@media(prefers-reduced-motion:reduce){.cq .cq-modpop.show{animation:none;opacity:1}}

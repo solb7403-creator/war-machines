@@ -70,7 +70,7 @@ export function refreshState(s,now){campaign(s,now);cosmetics(s,now);veins(s,now
  living(s,now);   // Session 6: hunter packs by held sectors and hour; old incursion / ambush units leave
 }
 function footing(s,p){if(p.surface==='ground'&&W.solidAt(p.x,p.z))return false;const f=W.speedFactor(p);return [[2,0],[-2,0],[0,2],[0,-2]].every(([x,z])=>{const q=W.advance(p,x,z);return Math.hypot(q.x-p.x-x*f,q.z-p.z-z*f)<.1;});}
-export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-W.spawn.x,s.position.z-W.spawn.z)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;s.loadout=copy(L);s.battle=copy(B);}
+export function refitState(s,L){if(s.mission||JSON.stringify(s.loadout)===JSON.stringify(L))return;const safe=atTerminal(s)||Math.hypot(s.position.x-W.spawn.x,s.position.z-W.spawn.z)<20;if(!safe)return;const B=hydrate(s),fresh=new C.Encounter(L,s.position);s.hp=Math.min(s.hp,fresh.playerMax);B.playerStats=fresh.playerStats;B.playerMax=fresh.playerMax;B.combatSpeed=fresh.combatSpeed;B.snapshot=fresh.snapshot;B.playerHp=s.hp;delete B.mf;s.loadout=copy(L);s.battle=copy(B);}   // new mods: their state starts fresh
 function time(previous,seq,now){if(previous?.v!==1||!Number.isSafeInteger(seq)||seq!==previous.seq+1)fail('stale sequence');if(!Number.isSafeInteger(now)||now<previous.lastWall)fail('invalid server clock');}
 export function applyCommands(previous,request,now){
  if(!record(request)||Object.keys(request).some(k=>!['seq','commands'].includes(k)))fail('invalid request');const commands=validateCommands(request.commands);time(previous,request.seq,now);
@@ -89,7 +89,7 @@ export function applyCommands(previous,request,now){
  if(s.mission&&B.state==='defeat')opEnd(s,B,'defeat');
  if(s.mission==='base-defense'&&B.state==='defeat')defenseOutcome(s,'defeat',now);else if(s.mission&&C.operations[s.mission].defense&&B.state==='defeat')sectorDefenseOutcome(s,'defeat',now);else if(s.mission&&B.state==='defeat'){restoreContest(s);settleOpKills(s,now);}
  cosmetics(s,now);
- s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);return s;
+ s.seq=request.seq;s.lastWall=now;s.creditMs=credit-cost;s.battle=copy(B);if(s.battle.mf)s.battle.mf.q=[];return s;   // research mod cues are the phone's (it plays its own prediction's)
 }
 // Gathering (RESOURCE_ECONOMY.md §5.3; Phase 2 bio-flora + Phase 3 minerals): hold GATHER while stationary within reach of a
 // ready bio-flora node or a ready deposit this pilot has discovered. Simulated time only; damage, movement or release resets
@@ -202,5 +202,5 @@ export function applyAction(previous,request,now,ctx={}){
  if(!p)for(const r of [8,12,20,32]){for(let i=0;i<16;i++){const q=W.advance(s.position,Math.cos(i*Math.PI/8)*r,Math.sin(i*Math.PI/8)*r);if(Math.hypot(q.x-s.position.x,q.z-s.position.z)>=6&&footing(s,q)){p=q;break;}}if(p)break;}
  if(!p)fail('no reachable safe position');s.position={...p};s.recoveryAt=now+30000;s.stuckMs=0;
  }
- B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));s.battle=copy(B);s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
+ B.baseModules=copy(s.base?.modules||{});B.baseTier=s.base?.tier||0;B.id=Math.max(Number(B.id)||0,...B.enemies.map(e=>e.id));s.battle=copy(B);if(s.battle.mf)s.battle.mf.q=[];s.seq=request.seq;s.creditMs=Math.min(MAX_CREDIT_MS,s.creditMs+now-s.lastWall);s.lastWall=now;return s;
 }

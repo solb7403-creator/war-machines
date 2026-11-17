@@ -94,8 +94,38 @@ const SND={
  loot1:()=>{tone(784,1046,0.08,'triangle',0.06);tone(1318,1318,0.1,'sine',0.04,0.06);},
  loot2:()=>{tone(988,1318,0.09,'triangle',0.07);tone(1568,2093,0.16,'sine',0.05,0.07);burst(0.06,0.05,5200,0.02);},
  loot3:()=>{[784,988,1318].forEach((f,i)=>tone(f,f,0.16,'triangle',0.06,i*0.06));tone(2093,2637,0.3,'sine',0.045,0.2);tone(110,55,0.3,'sine',0.08);},
- loot4:()=>{[659,880,1175,1568].forEach((f,i)=>tone(f,f,0.18,'triangle',0.07,i*0.07));tone(2349,3136,0.45,'sine',0.05,0.3);tone(90,40,0.45,'sine',0.16);burst(0.14,0.14,6500,0.05);}};
-const SND_GAP={impact:0.09,crystal:0.05,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1};
+ loot4:()=>{[659,880,1175,1568].forEach((f,i)=>tone(f,f,0.18,'triangle',0.07,i*0.07));tone(2349,3136,0.45,'sine',0.05,0.3);tone(90,40,0.45,'sine',0.16);burst(0.14,0.14,6500,0.05);},
+ // Session 6B research mods (rules.js MOD_CUE): one sound per behavior, each its own shape, so a pilot hears which mod fired
+ mVent:()=>{burst(0.32,0.2,950);tone(150,55,0.32,'sawtooth',0.09);burst(0.12,0.08,4200,0.03);},                 // thermal: a heavy vent whump
+ mOver:()=>{tone(380,1500,0.42,'sawtooth',0.045);tone(760,3000,0.42,'sine',0.02);},                                // a rising breech whine
+ mCool:()=>{burst(0.55,0.05,3200);tone(900,300,0.5,'sine',0.02);},                                                 // a cooling hiss
+ mInferno:()=>{burst(0.65,0.14,1500);tone(85,190,0.55,'sawtooth',0.07);burst(0.4,0.07,5200,0.15);},               // ignition roar
+ mRing:()=>{burst(0.42,0.2,1100);tone(230,70,0.36,'triangle',0.1);burst(0.25,0.06,6000,0.08);},                    // a heat ring: boom and sizzle
+ mPierce:()=>{tone(2600,1700,0.05,'square',0.03);burst(0.07,0.06,7000);},                                          // ballistics: glass-crack through a shield
+ mCrit:()=>{tone(1760,2640,0.09,'triangle',0.07);tone(3520,3520,0.05,'sine',0.03,0.04);},                           // a bright sure-crit ping
+ mRail:()=>{tone(3200,280,0.13,'sawtooth',0.06);burst(0.09,0.12,8500);},                                            // an electric rail crack
+ mTraction:()=>{tone(110,430,0.36,'sawtooth',0.06);burst(0.2,0.05,2400,0.05);},                                    // drive: an engine rev
+ mRam:()=>{burst(0.26,0.24,700);tone(95,42,0.32,'square',0.1);},                                                    // a heavy ram clang
+ mMomentum:()=>{tone(300,640,0.22,'sine',0.04);},                                                                   // a soft rising whoosh
+ mDash2:()=>{tone(700,1150,0.08,'triangle',0.05);},                                                                 // a dash charge chirp
+ mCharge:()=>{tone(110,220,0.4,'sine',0.04);tone(330,440,0.4,'sine',0.015);},                                       // field: a capacitor hum
+ mReflect:()=>{tone(1900,620,0.1,'square',0.04);},                                                                  // a reflected zap
+ mReflex:()=>{tone(520,1560,0.12,'triangle',0.07);burst(0.08,0.06,5000);},                                          // a shield snapping up
+ mAegis:()=>{[1320,1760,2093].forEach((f,i)=>tone(f,f*1.01,0.16,'sine',0.04,i*0.05));},                             // an overshield shimmer
+ mBreak:()=>{burst(0.22,0.1,5200);tone(1400,500,0.18,'triangle',0.03);},                                            // the overshield breaking
+ // Session 6B UI and reward sounds (Conquest and the garage)
+ rsDone:()=>{[523,659,784,1047,1319].forEach((f,i)=>tone(f,f,0.2,'triangle',0.07,i*0.08));tone(2093,2794,0.5,'sine',0.045,0.4);tone(65,33,0.6,'sine',0.14,0.05);burst(0.2,0.08,6500,0.38);},   // research complete: a rising fanfare
+ rsStart:()=>{tone(440,880,0.16,'triangle',0.05);tone(660,1320,0.2,'sine',0.03,0.08);},                                                                      // a research job starts
+ bank:()=>{[784,988,1175].forEach((f,i)=>tone(f,f,0.1,'triangle',0.06,i*0.05));burst(0.08,0.06,3000,0.12);},                                                  // salvage banked: coins in the vault
+ built:()=>{burst(0.18,0.14,900);tone(196,392,0.25,'square',0.05,0.05);[523,784].forEach((f,i)=>tone(f,f,0.16,'triangle',0.06,0.18+i*0.08));},                // a build complete: thunk, then a chime
+ plate:()=>{burst(0.14,0.18,1300);tone(140,70,0.2,'square',0.08);tone(1046,1046,0.18,'triangle',0.05,0.12);},                                                 // a plate mounted: a heavy clamp, then a click
+ order:()=>{[659,880,1319].forEach((f,i)=>tone(f,f,0.14,'triangle',0.07,i*0.07));tone(1760,2093,0.3,'sine',0.04,0.2);},                                       // a War Order claimed
+ // stingers: short musical moments for raids, invasions, strikes and victories
+ stRaid:()=>{[220,262,330].forEach((f,i)=>tone(f,f*0.98,0.24,'sawtooth',0.05,i*0.12));tone(55,40,0.7,'sine',0.14);},
+ stInvade:()=>{[330,311,294,277].forEach((f,i)=>tone(f,f,0.18,'square',0.035,i*0.14));tone(70,45,0.8,'sine',0.16);burst(0.5,0.08,800,0.1);},
+ stStrike:()=>{tone(1200,200,0.7,'sawtooth',0.05);burst(0.9,0.16,700,0.3);tone(60,30,0.9,'sine',0.18,0.3);},
+ stVictory:()=>{[392,523,659,784,1047].forEach((f,i)=>tone(f,f,0.24,'triangle',0.08,i*0.11));tone(1568,2093,0.6,'sine',0.05,0.55);tone(98,49,0.8,'sine',0.12,0.2);}};
+const SND_GAP={impact:0.09,crystal:0.05,hit:0.05,crit:0.05,hurt:0.12,warn:0.12,boom:0.08,meteor:0.08,dash:0.1,mPierce:0.25,mReflect:0.25,mCrit:0.2,mRail:0.15,mRing:0.2,mCharge:1,mMomentum:1,mCool:0.5};
 
 // =====================================================================
 // LW: every weapon's shot and every Arcade super, synthesized (Session 5E-2b3, owner Nov 14 2026).
@@ -539,5 +569,14 @@ function fx(name,arg,arg2){
   case 'cqkill':haptic('i','light');sfx('kill');break;
   case 'loot':{const r=Math.max(0,Math.min(4,arg|0));if(r>=2)haptic('n','success');else haptic('i','soft');sfx('loot'+r);break;}
   case 'tap':case 'tick':haptic('s');sfx('tap');break;
+  // Session 6B: a research mod triggered (arg: the rules.js MOD_CUE key); the bigger moments get a haptic too
+  case 'mod':{const C=typeof MOD_CUE!=='undefined'&&MOD_CUE[arg];if(!C||!C.s)break;if(['vent','ring','ram','inferno','reflex','rail'].includes(arg))haptic('i',arg==='ram'||arg==='ring'?'medium':'light');sfx(C.s);break;}
+  case 'research':haptic('n','success');sfx('rsDone');break;
+  case 'rstart':haptic('i','light');sfx('rsStart');break;
+  case 'bank':haptic('n','success');sfx('bank');break;
+  case 'built':haptic('n','success');sfx('built');break;
+  case 'plate':haptic('i','heavy');sfx('plate');break;
+  case 'order':haptic('n','success');sfx('order');break;
+  case 'sting':{const k={raid:'stRaid',invade:'stInvade',strike:'stStrike',victory:'stVictory'}[arg];if(k){haptic('n',arg==='victory'?'success':'warning');sfx(k);}break;}
  }
 }

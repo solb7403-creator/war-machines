@@ -28,19 +28,23 @@ function liveSetup(cfg){
 }
 function liveTank(u,L){Object.assign(u,tankOf(L,hpScale()),{L,pw:powerOf(L)});u.hp=u.mhp;}   // chassis swap on the VS screen or between rounds
 function roster(){return units.map(u=>({id:u.id,team:u.team,name:u.name,cls:u.cls,wtype:u.wtype,wtier:u.wtier,gems:u.gems,gemM:u.gemM,dscale:u.dscale,aura:u.aura,
- fits:u.fits,dashCdM:u.dashCdM||1,shieldCdM:u.shieldCdM||1,paint:u.paint,skin:u.skin||'default',vl:u.vl|0,mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang)}));}
+ fits:u.fits,dashCdM:u.dashCdM||1,shieldCdM:u.shieldCdM||1,paint:u.paint,skin:u.skin||'default',vl:u.vl|0,mhp:u.mhp,spdM:u.spdM,ai:!u.pid,gh:u.gh?1:0,x:r2(u.x),y:r2(u.y),ang:r2(u.ang),
+ ...(u.rm?{rm:u.rm}:{})}));}   // rm: the tank's research mods (Session 6B): the phone predicts its own Traction and Overdrive dashes with the same rules
 // the world, ~15 times a second. Units, in id order:
 // [x, y, turret angle, hull angle, hp, super, flags (1 bridge deck, 2 dashing, 4 repairing, 8 human driving, 16 AI driving a live player's tank, 32 shielded),
 //  crystals, bounty, dash cooldown x10, deaths, time dead x10, teleport count, buffs [[key index, damage taken]] or 0,
 //  super charging [t, angle, seconds since the press, zone start, jackpot centre, outcome+1 (0 = bar still sweeping), super key index] or 0, max hp,
 //  a live pilot's next timing bar [zone start, jackpot centre] (the server draws it before the press, so the phone can show the bar at once) or 0,
-//  supers used this round (rules.js SUP_ROUND_CAP: the sim refuses the next one at the cap; the phone only draws the pips)]
+//  supers used this round (rules.js SUP_ROUND_CAP: the sim refuses the next one at the cap; the phone only draws the pips),
+//  research mods (Session 6B) [streak seconds, flags (1 overclock, 2 cooling, 4 inferno, 8 momentum, 16 traction, 32 overshield, 64 capacitor),
+//  rail shots / marksman hits counted, overshield hp, dash charges (-1 without Overdrive), hull lost toward the next heat ring] or 0]
 // Shells: [id, x, y, super key index x3 + outcome]
 function snapState(){
  const s={u:units.map(u=>[r2(u.x),r2(u.y),r2(u.ang),r2(u.hd===undefined?u.ang:u.hd),Math.round(Math.max(0,u.hp)),Math.round(u.sp),
   ((u.elev||0)===1?1:0)|(u.dash?2:0)|(u.rep>0?4:0)|(u.hum?8:0)|(u.pid&&!u.hum?16:0)|(u.shieldT>0?32:0),u.cry||0,u.bty||0,Math.round((u.dashCd||0)*10),u.deaths||0,Math.round((u.dead||0)*10),u.tp||0,
   u.buffs.length?u.buffs.map(b=>[BUFF_KEYS.indexOf(b.k),Math.round(b.taken)]):0,u.sup?[r2(u.sup.t),r2(u.sup.ang),r2(u.sup.el),u.sup.bar.z0,u.sup.bar.jc,u.sup.oc===undefined?0:u.sup.oc+1,SUP_KEYS.indexOf(u.sup.k)]:0,u.mhp,
-  u.pid&&u.hum?[(u.nbar||(u.nbar=supBar(random))).z0,u.nbar.jc]:0,u.supN||0]),
+  u.pid&&u.hum?[(u.nbar||(u.nbar=supBar(random))).z0,u.nbar.jc]:0,u.supN||0,
+  u.rm&&u.mf?[r2(u.mf.st),(u.mf.ovc?1:0)|(u.mf.cool>0?2:0)|(u.mf.inf>0?4:0)|(u.mf.mom?8:0)|(u.mf.tr>0?16:0)|(u.mf.osh>0?32:0)|(mfShieldRate(u,u.mf)>1?64:0),(u.mf.sc||0)+(u.mf.hc||0),Math.round(u.mf.osh||0),u.mf.dq===undefined?-1:u.mf.dq,Math.round(u.mf.lost||0)]:0]),
   tl:r2(timeLeft),el:r2(elapsed),gs:[r2(gscore[0]),r2(gscore[1])],bx:boxes.map(b=>[r2(b.x),r2(b.y)]),cr:crates.map(c=>[c.id,Math.round(c.hp)]),
   sh:shells.map(q=>[q.id,r2(q.x),r2(q.y),Math.max(0,SUP_KEYS.indexOf(q.k))*3+(q.oc|0)])};
  if(gzones){const z=gzones[0];s.z=[r2(z.x),r2(z.y),z.r,r2(z.cap),z.own,z.p0,z.p1,r2(z.t),z.next?r2(z.next.x):null,z.next?r2(z.next.y):null];}

@@ -431,7 +431,8 @@ export async function matchEnd(env, b, user, pid, now = Date.now()) {
       const me0 = proofL ? R.tankOf(proofL, 1) : null;
       const scale = T.g === "royale" ? R.ROYALE_HP : T.g === "boss" ? 1.5 : R.MODES[T.m].n * (T.g === "bounty" ? R.BTY_HP : 1);
       const variants = [R.LAB_RULES_VERSION,"lab-loadout-v1"].includes(T.rv) && proofL ? (proofL.chs || [proofL.c]).map(c => {const t=R.tankOf(R.loadoutFor(proofL,c),scale);return {ci:R.CHORDER.indexOf(c.c),mhp:t.mhp,spdM:t.spdM};}) : undefined;
-      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minS, spdM: me0 ? me0.spdM : 1, st: s });
+      const rmo = me0 && me0.rm || {};   // Session 6B research mods the proof allows for: Traction's speed boost, Overdrive's dash charges
+      pr = checkProof(r0.pf, { variants, g: T.g, m: T.m, map: T.map, secs, won, drawn, place, series: T.series, min: minS, spdM: me0 ? me0.spdM : 1, modSpd: rmo.traction ? 1 + rmo.traction.spd : 1, dashN: rmo.overdrive ? rmo.overdrive.charges : 1, st: s });
       if (!pr.ok) {
         S.pfw = pr.why;
         flags = watch(S, { pf: true, why: pr.why }, X, now);

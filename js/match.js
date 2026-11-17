@@ -272,6 +272,7 @@ const IMPACT={pulse:{r:2.2,c:'#ffb35a',c2:'#ffe08a'},twin:{r:2.6,c:'#7fd4ff',c2:
 const evColor=c=>typeof c==='number'?tcol(c):c;
 const supCol=(k,fb)=>typeof FX3D!=='undefined'&&FX3D.PAL[k]?FX3D.PAL[k].a:fb;   // a super's own colour (2D fallback)   // a team number means that team's color
 const sndF=(k,a)=>{if(typeof fx==='function')fx(k,a);};
+const modPopAt={};   // the last time each mod pop showed (MOD_CUE gap)
 function onSimEv(a){
  if(typeof ev3D==='function')ev3D(a);   // 3D effects: explosions, wrecks, sparks
  const U=i=>i>=0?units[i]:null,live=typeof pvpOn==='function'&&pvpOn(),d3=typeof use3D==='function'&&use3D()&&typeof SFX!=='undefined'&&!!SFX;
@@ -291,6 +292,10 @@ function onSimEv(a){
    nums.push({x:r.x,y:r.y-R,t:1.1,z:1.4,txt:r===me?'YOU ARE DOWN':'DESTROYED',c:r===me?'#ff6b6b':'#ffd24a'});
    return;}
   case 'n':nums.push({x:a[1],y:a[2],t:0.9,z:a[5],txt:a[3],c:a[4]});return;
+  // a research mod triggered (Session 6B, rules.js MOD_CUE): your own pop and sound (others show it through the sim's own blasts)
+  case 'm':{const u=U(a[1]),C=typeof MOD_CUE!=='undefined'&&MOD_CUE[a[2]];if(!u||!C||u!==me)return;
+   if(C.t){const now=performance.now();if(now-(modPopAt[a[2]]||0)>=(C.gap||0)*1000){modPopAt[a[2]]=now;nums.push({x:u.x,y:u.y-1.55,t:0.95,z:1.05,txt:C.t,c:(RS.tracks[C.tr]||{}).c||'#fff'});}}
+   sndF('mod',a[2]);return;}
   case 'p':pop(a[1],a[2],a[3],evColor(a[4]));return;
   // supers: the 3D view draws each of the ten supers itself (render3d.js ev3D -> FX3D); these lists are the 2D fallback.
   // The colour is the super's own (FX3D palette), the size follows the timing-bar outcome (a[..] oc: 0 miss, 1 hit, 2 jackpot)

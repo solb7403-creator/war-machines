@@ -11,7 +11,9 @@ function visible(B,p,e,range=C.engineeringValues(B.playerStats,B.engineering).ra
 function aim(B,p,input,dt){
  ensure(B);const locked=B.enemies.find(e=>e.id===input.lockId);
  B.lockId=visible(B,p,locked)?locked.id:null;
- const want=B.lockId!==null?Math.atan2(locked.x-p.x,locked.z-p.z):input.aimYaw||0;
+ let lx=locked&&locked.x,lz=locked&&locked.z;
+ if(B.lockId!==null&&B.playerStats.rm&&B.playerStats.rm.predictor){const tof=Math.hypot(locked.x-p.x,locked.z-p.z)/Math.max(1,C.engineeringValues(B.playerStats,B.engineering).velocity)*B.playerStats.rm.predictor.lead;lx+=(locked.vx||0)*tof;lz+=(locked.vz||0)*tof;}   // Predictor Gyro (Session 6B): lead the locked target
+ const want=B.lockId!==null?Math.atan2(lx-p.x,lz-p.z):input.aimYaw||0;
  const turn=STAT.turn*(B.playerStats.turnM||1)*dt;B.turretYaw=wrap(B.turretYaw+clamp(wrap(want-B.turretYaw),-turn,turn));
  const pitch=B.lockId!==null?Math.atan2(locked.y-p.y,Math.hypot(locked.x-p.x,locked.z-p.z)):input.aimPitch||0;
  return {x:p.x+Math.sin(B.turretYaw)*160,y:p.y+2.2+Math.tan(clamp(pitch,-1.2,1.2))*160,z:p.z+Math.cos(B.turretYaw)*160};
@@ -36,12 +38,16 @@ function fireSuper(B,s){
  B.effects.push({kind:'beam',x:start.x,y:start.y,z:start.z,ex:start.x+dx*length,ey:start.y+Math.tan(s.pitch)*length,ez:start.z+dz*length,life:.4,weapon:s.weapon,k:s.k,oc:s.oc||0,w:spec.w,at:B.time});
 }
 C.Battle.prototype.abilityStep=function(dt){
- ensure(this);this.dashCd=Math.max(0,this.dashCd-dt);this.shieldCd=Math.max(0,this.shieldCd-dt);this.shieldT=Math.max(0,this.shieldT-dt);
+ ensure(this);const T=this.playerStats,rm=T.rm,mf=rm?this.modState():null;
+ // research mods (Session 6B, rules.js mf*): Overdrive's dash charges, Capacitor Bank's faster shield, Aegis Matrix when the shield ends
+ {const od=rm&&rm.overdrive?mfDashTick(T,mf,dt,C.engineeringValues(T,this.engineering).dashCooldown):null;this.dashCd=od===null?Math.max(0,this.dashCd-dt):od;}
+ this.shieldCd=Math.max(0,this.shieldCd-dt*(mf?mfShieldRate(T,mf):1));{const was=this.shieldT>0;this.shieldT=Math.max(0,this.shieldT-dt);if(was&&!(this.shieldT>0)&&rm&&rm.aegis)mfShieldEnd(T,mf,this.playerMax);}
  // Session 6 consumables (rules.js CQ_ITEMS), started by the Worker's use-item action and stepped here on both sides:
  // a Repair Kit mends over its seconds; a Decoy Beacon counts down (combat.js lure() reads it).
  if(this.mend){const h=Math.min(this.mend.t,dt);if(h>0&&this.playerHp>0)this.playerHp=Math.min(this.playerMax,this.playerHp+this.mend.rate*h);this.mend.t-=h;if(!(this.mend.t>1e-8))this.mend=null;}
  if(this.decoy){this.decoy.t-=dt;if(!(this.decoy.t>1e-8))this.decoy=null;}
- if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=1e-8)this.dashState=null;}
+ if(this.dashState){this.dashState.t-=dt;if(this.dashState.t<=1e-8){this.dashState=null;const ram=mfRam(T);if(ram&&this.playerHp>0){let e=null,bd=1e9;for(const v of this.enemies){if(v.hp<=0)continue;const d=Math.hypot(v.x-this.player.x,v.z-this.player.z);if(d<5.8&&Math.abs(v.y+2.2-this.player.y)<4&&d<bd){bd=d;e=v;}}   // Ram Servo: a dash that ends against a Parasite
+   if(e){this.modHurt(e,ram.dmg*this.modDps());e.cd=Math.max(e.cd||0,0)+ram.jam;mfCue(mf,'ram');this.effects.push({kind:'destroy',k:'pulse0',oc:0,x:e.x,y:e.y+2,z:e.z,r:3.5,life:.4,at:this.time});}}}}
  // the timing bar (Session 5E-2b, rules.js SUP_BAR_T...): the first SUPER press starts the charge and the sweep, a second
  // press stops it (advance() below); nobody pressing by the end of the sweep is a MISS. It fires SUP_REL after the stop
  if(this.superAttack){const sa=this.superAttack;if(sa.el===undefined||!sa.bar){sa.el=sa.el||0;sa.oc=1;}   // a super saved mid-charge by an older build fires as it was (a normal hit)
@@ -64,8 +70,9 @@ function advance(B,p,input,dt,exploration){
  ensure(B);dt=clamp(dt,0,.25);if(B.playerHp<=0||B.state!=='active')return p;
  const values=C.engineeringValues(B.playerStats,B.engineering);if(input.shield&&B.shieldCd<=0){B.shieldT=values.shieldDuration;B.shieldCd=values.shieldCooldown;}
  let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;
- if(input.dash&&B.dashCd<=0&&!B.dashState){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:values.dashTime,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=values.dashCooldown;}
- let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),B.dashState?.t??Infinity);left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
+ const T=B.playerStats,mf=T.rm?B.modState():null;
+ if(input.dash&&!B.dashState&&(mf?mfDashReady(T,mf,B.dashCd):B.dashCd<=0)){const l=Math.hypot(x,z),yaw=l>.2?Math.atan2(x,z):B.heading??B.turretYaw;B.dashState={t:values.dashTime,x:Math.sin(yaw),z:Math.cos(yaw)};B.dashCd=values.dashCooldown;if(mf){mfDash(T,mf,values.dashCooldown);if(T.rm.overdrive)B.dashCd=mf.dq>0?0:mf.dr;}}   // Overdrive: a charge left; Traction: the boost
+ let left=dt,first=true;while(left>1e-8&&B.state==='active'&&B.playerHp>0){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),B.dashState?.t??Infinity);left-=h;const old=p,speed=B.dashState?B.combatSpeed*values.dashSpeed:(exploration?B.combatSpeed*2:B.combatSpeed)*(mf?mfSpeed(T,mf):1);
  const q=W.advance(p,(B.dashState?.x??x)*speed*h,(B.dashState?.z??z)*speed*h);
  if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(p!==old)B.heading=Math.atan2(p.x-old.x,p.z-old.z);
@@ -93,11 +100,11 @@ function validated(c){return {x:c.x,z:c.z,aimPitch:c.aimPitch||0,aimYaw:Math.ata
 function preview(B,p,input,dt,exploration){
  if(!(dt>0)||B.playerHp<=0||B.state!=='active')return p;const values=C.engineeringValues(B.playerStats,B.engineering);
  let x=Number(input.x)||0,z=Number(input.z)||0,n=Math.max(1,Math.hypot(x,z));x/=n;z/=n;let left=Math.min(dt,STEP),dash=B.dashState?{...B.dashState}:null;
- while(left>1e-8){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),dash?.t??Infinity);left-=h;const speed=dash?B.combatSpeed*values.dashSpeed:exploration?B.combatSpeed*2:B.combatSpeed;
+ const tk=B.playerStats.rm&&B.mf?mfSpeed(B.playerStats,B.mf):1;while(left>1e-8){const h=Math.min(left,1/60,.35/(B.combatSpeed*values.dashSpeed),dash?.t??Infinity);left-=h;const speed=dash?B.combatSpeed*values.dashSpeed:(exploration?B.combatSpeed*2:B.combatSpeed)*tk;
  const q=W.advance(p,(dash?.x??x)*speed*h,(dash?.z??z)*speed*h);if(!baseBlocked(B,q)&&!B.enemies.some(e=>e.hp>0&&Math.hypot(q.x-e.x,q.z-e.z)<3.8&&Math.abs(q.y-e.y)<3))p=q;
  if(dash){dash.t-=h;if(dash.t<=1e-8)dash=null;}}
  return p;
 }
-function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells','mend','decoy'])to[k]=JSON.parse(JSON.stringify(from[k]??null));ensure(to);}
+function carry(from,to){ensure(from);for(const k of ['playerShots','engineering','heat','heatOverflow','overheated','cooldown','charge','turretYaw','dashCd','shieldCd','shieldT','dashState','superAttack','superShells','mend','decoy','mf'])to[k]=JSON.parse(JSON.stringify(from[k]??null));if(to.mf===null)delete to.mf;ensure(to);}   // mf: the research mods' state (Session 6B)
 root.ConquestControl=Object.freeze({advance,aim,visible,carry,ensure,baseBlocked,command,validated,preview,STEP,CONFIG});
 })(globalThis);

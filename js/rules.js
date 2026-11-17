@@ -1407,6 +1407,77 @@ function rsQuote(rs,id,labLv,premium){
 const rsSlots=(labLv,premium)=>(labLv>=1?RS.slots.base:0)+(labLv>=3?RS.slots.lab3:0)+(premium&&labLv>=1?RS.slots.pass:0);
 // the parts a whole tree costs (the economy model and the lab screen read it)
 const rsTreeCost=()=>RS.order.reduce((a,t)=>(a[RS.tracks[t].part]=RS.cost.reduce((x,y)=>x+y,0),a),{});
+// ---- Research mod behaviors: ONE engine for the Arcade/PvP sim (js/game.js) and Conquest (js/conquest/combat.js + controls.js),
+// on the phone and on the Worker. T: the tank (tankOf: T.rm = {behavior: numbers}); mf: its runtime state (plain numbers; Conquest
+// saves it with the battle). Every trigger is a count or a timer, never a chance. The engines feed it what happened (a shot left,
+// a hit landed, a hit was taken, a dash, the shield ended, how fast the tank moves) and apply what it returns to their own world.
+// Damage it adds is in seconds of the tank's own clean damage per second (the engine's modDps), so it is worth the same on every
+// weapon in both engines. mf.q: cue words the engine turns into its HUD pop, effect and sound (then empties it).
+const MF_GAP=0.25;   // a pause longer than one and a half shot intervals plus this ends a firing streak
+function mfNew(T){const R0=T&&T.rm||{},o={st:0,gap:9,iv:0.5,ovc:0,cool:0,inf:0,sc:0,hc:0,ht:-1,lost:0,still:0,fast:0,slow:0,mom:0,tr:0,osh:0,oshT:0,q:[]};if(R0.overdrive){o.dq=R0.overdrive.charges;o.dr=0;}return o;}
+function mfCue(mf,k){const q=mf.q||(mf.q=[]);q.push(k);if(q.length>8)q.shift();}   // at most 8 waiting (the Worker never reads them; the phone drains them each frame)
+const mfBroken=mf=>mf.gap>mf.iv*1.5+MF_GAP;
+// every simulation step. o.spd: the tank's speed as a share of its top speed (dash excluded)
+function mfStep(T,mf,dt,o){const R0=T.rm;if(!R0||!mf)return;mf.gap+=dt;
+ if(mfBroken(mf)){if(mf.ovc){mf.ovc=0;mf.cool=R0.overclock?R0.overclock.cool:0;mfCue(mf,'cool');}mf.st=0;}
+ if(mf.cool>0)mf.cool=Math.max(0,mf.cool-dt);
+ if(mf.inf>0){mf.inf=Math.max(0,mf.inf-dt);if(!(mf.inf>0))mfCue(mf,'infernoEnd');}
+ if(mf.tr>0)mf.tr=Math.max(0,mf.tr-dt);
+ if(mf.oshT>0){mf.oshT=Math.max(0,mf.oshT-dt);if(!(mf.oshT>0))mf.osh=0;}
+ const sp=Math.max(0,Number(o&&o.spd)||0);
+ if(R0.momentum){const M=R0.momentum;if(sp>=M.at){mf.fast+=dt;mf.slow=0;if(!mf.mom&&mf.fast>=M.after){mf.mom=1;mfCue(mf,'momentum');}}else{mf.slow+=dt;mf.fast=0;if(mf.mom&&mf.slow>=M.hold){mf.mom=0;mfCue(mf,'momentumOff');}}}
+ if(R0.capacitor){const was=mf.still>=R0.capacitor.after;if(sp<0.1)mf.still+=dt;else mf.still=0;if(!was&&mf.still>=R0.capacitor.after)mfCue(mf,'charging');}}
+// a shot leaves (iv: this shot's interval in seconds, after fire-rate effects). Returns what the shot carries, or null:
+// vent: extra seconds of damage + splash share; burn: the Inferno numbers (hits set targets burning); rail: the slug's numbers
+function mfShot(T,mf,iv){const R0=T.rm;if(!R0||!mf)return null;
+ if(mfBroken(mf))mf.st=0;else mf.st+=mf.gap;mf.gap=0;mf.iv=Math.max(0.05,iv||0.5);let out=null;
+ if(R0.vent&&mf.st>=R0.vent.after){mf.st=0;out={vent:R0.vent.bonus,splash:R0.vent.splash};mfCue(mf,'vent');}
+ if(R0.overclock&&!mf.ovc&&mf.st>=R0.overclock.after){mf.ovc=1;mfCue(mf,'overclock');}
+ if(R0.inferno){if(mf.inf>0)mf.st=0;else if(mf.st>=R0.inferno.after){mf.inf=R0.inferno.dur;mf.st=0;mfCue(mf,'inferno');}if(mf.inf>0)(out||(out={})).burn=R0.inferno;}
+ if(R0.rail){mf.sc++;if(mf.sc>=R0.rail.n){mf.sc=0;(out||(out={})).rail=R0.rail;mfCue(mf,'rail');}}
+ return out;}
+// the fire-rate multiplier now (Overclock Breech: faster while overclocked, slower while it cools)
+function mfRate(T,mf){const O=T.rm&&T.rm.overclock;if(!O||!mf)return 1;return mf.ovc?O.rate:mf.cool>0?O.slow:1;}
+// a shot of this tank landed on target tid (direct or a graze). Returns true when Marksman Coil makes it a sure critical
+function mfHit(T,mf,tid,direct){const M=T.rm&&T.rm.marksman;if(!M||!mf)return false;if(!direct){mf.hc=0;mf.ht=-1;return false;}
+ if(tid===mf.ht)mf.hc++;else{mf.ht=tid;mf.hc=1;}if(mf.hc>=M.n){mf.hc=0;mfCue(mf,'crit');return true;}return false;}
+function mfMiss(T,mf){if(T.rm&&T.rm.marksman&&mf){mf.hc=0;mf.ht=-1;}}   // a shot that hit nothing restarts the count
+// a hit on this tank after its shield and plates (amt). kind 0 a shot, 1 a super, 2+ the rest; blocked: what its shield stopped.
+// Returns the damage left after Momentum and the overshield, heat rings owed (Heat Sink), damage to reflect (Reflector Field)
+function mfTaken(T,mf,amt,kind,blocked,mhp){const R0=T.rm;if(!R0||!mf)return {amt,ring:0,refl:0};
+ if(R0.momentum&&mf.mom&&kind===0)amt*=1-R0.momentum.cut;
+ if(mf.osh>0&&amt>0){const a=Math.min(mf.osh,amt);mf.osh-=a;amt-=a;if(!(mf.osh>1e-6)){mf.osh=0;mf.oshT=0;mfCue(mf,'oshBreak');}}
+ let ring=0;if(R0.heatsink&&amt>0){mf.lost+=amt;const need=R0.heatsink.every*Math.max(1,mhp);while(mf.lost>=need){mf.lost-=need;ring++;}if(ring)mfCue(mf,'ring');}
+ const refl=R0.reflector&&blocked>0&&kind<=1?blocked*R0.reflector.share:0;if(refl>0)mfCue(mf,'reflect');
+ return {amt,ring,refl};}
+function mfShieldEnd(T,mf,mhp){const A=T.rm&&T.rm.aegis;if(!A||!mf)return;mf.osh=A.share*Math.max(1,mhp);mf.oshT=A.t;mfCue(mf,'aegis');}
+function mfShieldRate(T,mf){const C=T.rm&&T.rm.capacitor;return C&&mf&&mf.still>=C.after?C.rate:1;}   // Capacitor Bank: standing still
+function mfSpeed(T,mf){const Tr=T.rm&&T.rm.traction;return Tr&&mf&&mf.tr>0?1+Tr.spd:1;}           // Traction Servo after a dash
+const mfPierce=T=>{const P=T&&T.rm&&T.rm.pierce;return P?P.keep:0;};                               // share of a shield's protection ignored
+const mfRam=T=>T&&T.rm&&T.rm.ram||null;
+// dashes: can it dash now (Overdrive: a charge left; else the normal cooldown), a dash started, the charges refilling. mfDashTick
+// returns the cooldown the engine shows (0 while a charge is left) or null without Overdrive
+function mfDashReady(T,mf,cdLeft){return T.rm&&T.rm.overdrive&&mf?mf.dq>0:!(cdLeft>0);}
+function mfDash(T,mf,cd){const R0=T.rm;if(!R0||!mf)return;if(R0.traction){mf.tr=R0.traction.t;mfCue(mf,'traction');}if(R0.overdrive){if(mf.dq>0)mf.dq--;if(!(mf.dr>0))mf.dr=cd;if(mf.dq>0)mfCue(mf,'dash2');}}
+function mfDashTick(T,mf,dt,cd){const O=T.rm&&T.rm.overdrive;if(!O||!mf)return null;if(mf.dq<O.charges){if(!(mf.dr>0))mf.dr=cd;mf.dr-=dt;if(mf.dr<=0){mf.dq++;mf.dr=mf.dq<O.charges?cd:0;}}else mf.dr=0;return mf.dq>0?0:Math.max(0,mf.dr);}
+// burns on a target (Inferno Core): at most stack from one source at once; a new one replaces the oldest. b: [{s, d dps, t left}]
+function mfBurn(list,src,I,dps){const L=Array.isArray(list)?list:[],mine=L.filter(b=>b.s===src);if(mine.length>=I.stack){const old=mine.reduce((a,b)=>b.t<a.t?b:a);L.splice(L.indexOf(old),1);}
+ L.push({s:src,d:I.burn*dps/I.burnT,t:I.burnT});return L;}
+// the cue a pilot sees and hears when a mod triggers (both engines): t the pop text (null: the HUD chip shows it), s the sound
+// (js/fx.js SND), gap the shortest time between two pops of it (s)
+const MOD_CUE={vent:{tr:'thermal',t:'VENT ROUND',s:'mVent'},overclock:{tr:'thermal',t:'OVERCLOCK',s:'mOver'},cool:{tr:'thermal',t:'COOLING',s:'mCool',gap:1},inferno:{tr:'thermal',t:'INFERNO',s:'mInferno'},infernoEnd:{tr:'thermal',t:null,s:null},
+ ring:{tr:'thermal',t:'HEAT RING',s:'mRing'},pierce:{tr:'coil',t:'PIERCE',s:'mPierce',gap:0.7},crit:{tr:'coil',t:'SURE CRIT',s:'mCrit',gap:0.3},rail:{tr:'coil',t:'RAIL SLUG',s:'mRail',gap:0.3},traction:{tr:'servo',t:'TRACTION',s:'mTraction'},
+ ram:{tr:'servo',t:'RAM!',s:'mRam'},momentum:{tr:'servo',t:'MOMENTUM',s:'mMomentum',gap:2},momentumOff:{tr:'servo',t:null,s:null},dash2:{tr:'servo',t:'DASH CHARGE',s:'mDash2'},charging:{tr:'cap',t:'CHARGING',s:'mCharge',gap:2},
+ reflect:{tr:'cap',t:'REFLECT',s:'mReflect',gap:0.7},reflex:{tr:'cap',t:'REFLEX SHIELD',s:'mReflex'},aegis:{tr:'cap',t:'OVERSHIELD',s:'mAegis'},oshBreak:{tr:'cap',t:'OVERSHIELD DOWN',s:'mBreak',gap:1}};
+// what the HUD shows for a tank's research mods: one chip per behavior with its live state (the same in both engines)
+function mfHud(T,mf){const R0=T&&T.rm;if(!R0||!mf)return [];const o=[];
+ for(const [b,x] of Object.entries(R0)){const F=FITS[x.slot][x.id],c={b,id:x.id,slot:x.slot,tr:F.rs,leg:!!F.leg,w:F.cue,on:0,v:0};
+  if(b==='vent'||b==='overclock'||b==='inferno'){c.v=Math.min(1,mf.st/x.after);c.on=b==='overclock'?mf.ovc?1:mf.cool>0?-1:0:b==='inferno'?mf.inf>0?1:0:0;if(b==='inferno'&&mf.inf>0)c.v=mf.inf/x.dur;}
+  else if(b==='rail'){c.v=mf.sc/x.n;}else if(b==='marksman'){c.v=mf.hc/x.n;}else if(b==='heatsink'){c.v=Math.min(1,mf.lost/(x.every*Math.max(1,T.mhp||1)));}
+  else if(b==='momentum'){c.on=mf.mom;c.v=mf.mom?1:Math.min(1,mf.fast/x.after);}else if(b==='capacitor'){c.on=mf.still>=x.after?1:0;}
+  else if(b==='traction'){c.on=mf.tr>0?1:0;c.v=mf.tr/x.t;}else if(b==='overdrive'){c.v=mf.dq;c.n=x.charges;}else if(b==='aegis'){c.on=mf.osh>0?1:0;c.v=mf.osh;}
+  o.push(c);}
+ return o;}
 function hasFittings(L){return FIT_ORDER.some(k=>fittingVisuals(L)[k]!=='stock');}
 // Unrounded permanent travel speed, shared by Garage metrics and Conquest physics.
 function machineSpeed(L,t=tankOf(L,1)){return STAT.speed*t.spdM*(1+(t.gems.includes('spd')?GEM.spd.amt*t.gemM.spd:0));}
