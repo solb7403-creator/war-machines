@@ -275,6 +275,21 @@ async function verifySol(sig, amt) {
 // price), never the phone's number; refunds come off. The board file shows the fund (lb.lpf), the Ranks tab and Shop too
 const LP_SHARE = 0.25;   // not exported: the Workers runtime only accepts handlers and classes as exports of the main module
 let TONUSD = { v: 0, t: 0 };
+// Session 6B: the live TON and SOL dollar rates for the website's price labels (its security policy keeps third-party connections
+// out, so the page reads them same-origin here). Cached five minutes per isolate; the last good pair is served if the source fails.
+// A failed lookup is remembered for a minute and one lookup is shared by every request in flight (review F4: no upstream fan-out).
+let RATES = { ton: 0, sol: 0, t: 0, fail: 0 }, RATES_P = null;
+async function liveRates() {
+  const now = Date.now();
+  if (RATES.t && now - RATES.t < 300000) return RATES;
+  if (RATES.fail && now - RATES.fail < 60000) return RATES;
+  if (RATES_P) return RATES_P;
+  RATES_P = (async () => {
+    try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd")).json(); const t = Number(d["the-open-network"].usd), so = Number(d.solana.usd); if (t > 0 && so > 0) { RATES = { ton: t, sol: so, t: Date.now(), fail: 0 }; TONUSD = { v: t, t: Date.now() }; return RATES; } } catch {}
+    RATES = { ...RATES, fail: Date.now() }; return RATES;
+  })().finally(() => { RATES_P = null; });
+  return RATES_P;
+}
 async function tonUsd() {
   if (TONUSD.v && Date.now() - TONUSD.t < 300000) return TONUSD.v;
   try { const d = await (await fetch("https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd")).json(); const v = Number(d["the-open-network"].usd); if (v > 0) TONUSD = { v, t: Date.now() }; } catch {}
@@ -299,6 +314,10 @@ const descOf = (d) => {
   if (kind === "gear") return RULES.gearTk(d.tk) && [0, 1, 2].includes(Number(d.ri)) ? { kind, tk: d.tk, ri: Number(d.ri) } : null;   // a chosen weapon or chassis (Checkpoint 39)
   if (kind === "paint") return RULES.PAINTS[d.id] && RULES.PAINTS[d.id].stars ? { kind, id: d.id } : null;
   if (kind === "vault") return RULES.VAULT[d.tk] ? { kind, tk: d.tk } : null;   // a Hyperspace Vault bundle (Gold, looks only)
+  // Session 6B Science Lab store (part packs, Legendary set mods, instant finish): CHECKOUT OFF in every currency. Refused here, so no
+  // Stars invoice, TON or SOL payment can buy one. Opening it is an owner decision: set RULES.LAB_STORE_OPEN, add the kinds to the
+  // Stars payload and grant paths below, and price "rsfin" from the Conquest record's running job (never from the phone).
+  if (kind === "rspack" || kind === "rsleg" || kind === "rsfin") return null;
   return ["starter", "founder", "moonbeam", "skin", "pass", "respec"].includes(kind) ? { kind, c } : null;
 };
 async function payLog(env, b, user, pid, now = Date.now()) {
@@ -332,14 +351,16 @@ async function payLog(env, b, user, pid, now = Date.now()) {
     S.gout = S.gout || {};
     const gk = safeKey(memo);
     if (S.gout[gk]) return { outs: S.gout[gk], dup: true };
-    const outs = RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
+    // a Lab store item already owned by now (a second order paid for the same thing, Session 6B review F5): nothing is granted, the
+    // payment is kept for a refund. Other kinds keep their own rule (a chosen item owned when its payment lands is re-rolled, Checkpoint 39)
+    const outs = RULES.LAB_KINDS.includes(desc.kind) && RULES.ecoOwned(S, desc, X) ? [{ none: 1, err: "owned" }] : RULES.ecoGrant(S, { ...desc, deal: price.deal, price: price.ton }, X);
     if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);   // the build changed: power and league follow (vault: the looks)
     S.gout[gk] = outs.length ? outs : [{ none: 1 }];
     const ks = Object.keys(S.gout); if (ks.length > 12) for (const k of ks.slice(0, ks.length - 12)) delete S.gout[k];
     return { outs };
   }, now);
-  const outs = (t.outs || []).filter((o) => o && !o.none);
-  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs });
+  const outs = (t.outs || []).filter((o) => o && !o.none), gerr = ((t.outs || []).find((o) => o && o.err) || {}).err || null;
+  await dbPut(env, key, { ...rec, verified: true, granted: true, tx: txid, o: outs, ...(gerr ? { err: gerr } : {}) });   // err "owned": paid, nothing granted (for a refund)
   { const tu = await tonUsd(), usd = tu ? price.ton * tu : Math.min(rec.usd || 0, price.ton * 10); await revAdd(env, usd * 100); }   // the liquidity fund
   // farms: accounts paying from the same wallet are one person's (only a wallet that really paid counts)
   if (src && src !== "payer") {
@@ -587,7 +608,7 @@ async function webhook(req, env) {
       // payment is logged below with the error for the owner. A database failure still throws, so Telegram retries the webhook
       let outs;
       const S0 = JSON.parse(JSON.stringify(S));
-      try { outs = RULES.ecoGrant(S, { ...desc, price: p.g }, X); }
+      try { outs = RULES.LAB_KINDS.includes(desc.kind) && RULES.ecoOwned(S, desc, X) ? [{ none: 1, err: "owned" }] : RULES.ecoGrant(S, { ...desc, price: p.g }, X); }   // a Lab store item already owned by now (two invoices paid, Session 6B review F5): nothing granted, the payment is kept for a refund
       catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, S0); outs = [{ none: 1, err: String((e && e.message) || e).slice(0, 80) }]; }
       if ((S.lab || desc.kind === "respec" || desc.kind === "vault" || desc.kind === "core" || desc.kind === "gear" || desc.kind === "box") && S.L) setLoadout(S, S.L);
       S.gout[charge] = outs.length ? outs : [{ none: 1 }];
@@ -736,6 +757,7 @@ export default {
       try{return await webAuth(req,env);}catch{return json({error:"authentication unavailable"},503);}
     }
     if (path === "/lb.json" && req.method === "GET") return lbFile(req, env);
+    if (path === "/api/rates" && req.method === "GET") { if (await netLimited(req, env)) return cors(json({ error: "rate" }, 429), req); const r = await liveRates(); return cors(new Response(JSON.stringify({ ton: r.ton, sol: r.sol }), { headers: { "Content-Type": "application/json", "Cache-Control": r.ton > 0 && r.sol > 0 ? "public, max-age=300" : "no-store" } }), req); }   // Session 6B: website price labels (no account data)
     if (ROUTES[path]) {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }), req);
       if (req.method !== "POST") return cors(new Response("method", { status: 405 }), req);
@@ -745,7 +767,7 @@ export default {
       // Old browsers cannot render Velocity rewards or simulate its physics. Require a fresh build
       // before any game state/reward is returned; payment callbacks remain independent of clients.
       if ((["/api/sync","/api/act","/api/owner","/api/match/start","/api/match/end","/api/pay-log"].includes(path) || path.startsWith("/api/pvp/") || path.startsWith("/api/conquest/") || (path==="/api/admin" && a.b.a==="owner_gem_epic")) && a.b.gv !== RULES.PVP_V)
-        return cors(json({error:"update",build:"20261117180140"},409),req);
+        return cors(json({error:"update",build:"20261118100557"},409),req);
       if (pidLimited(path, a.pid)) return cors(json({ error: "rate" }, 429), req);
       try {
         const r = await ROUTES[path](env, a);

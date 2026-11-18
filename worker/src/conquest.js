@@ -8,6 +8,7 @@ import {seal,due,pending,acknowledge,airdrop} from './conquest-airdrop.js';
 import {RULES} from './sim.gen.js';
 import {hex} from './db.js';
 import {createState,applyCommands,applyAction,validateCommands,refreshState,refitState,TRAVEL_ACTIONS,LOOT_ACTIONS} from './conquest-sim.js';
+import {RESEARCH_ACTIONS,account as researchAccount} from './conquest-research.js';
 const allowed=(b,keys)=>b&&typeof b==='object'&&!Array.isArray(b)&&Object.keys(b).every(k=>keys.includes(k));
 const response=(status,error,state)=>({status,body:{error,...(state?{state:publicState(state)}:{})}});
 import {publicVeins} from './conquest-veins.js';
@@ -58,7 +59,10 @@ const premiumCaches=new WeakMap();
 async function premiumPass(env,pid,now){const cache=premiumCaches.get(env)||new Map();premiumCaches.set(env,cache);const hit=cache.get(pid);if(hit&&now-hit.at<60000)return hit.value;let value;try{value=passPremium(await readEco(env,pid),now);}catch{return false;}if(cache.size>=5000)cache.delete(cache.keys().next().value);cache.set(pid,{at:now,value});return value;}
 async function canonical(env,pid,now=Date.now()){const S=await readEco(env,pid);if(S.mig===0)throw Error('finish account migration');const day=Math.floor(now/86400000),lgi=S.lgi|0;
  // The HUD's airdrop numbers come from the account on every session open (today's points across all modes, league pay).
- return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null,view:{d:day,dailyPts:S.dailyDay===day?S.dailyPts||0:0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn)}};}
+ return {loadout:S.lab?RULES.labLoadout(S):RULES.ecoLoadout(S,S.L),legacy:S.cqState?.v===1?S.cqState:null,rsAcct:researchCtx(S,now),view:{d:day,dailyPts:S.dailyDay===day?S.dailyPts||0:0,cap:RULES.DAILY_CAP,cq:S.cqd?.d===day?S.cqd.b||0:0,lgi,pay:RULES.LG_BASE_PAY[lgi]||1,at:now,mn:RULES.mnOf(S.mn),ap:RULES.apOf(S.ap),pts:Math.max(0,Math.round(Number(S.pts)||0)),bmn:RULES.mnOf(S.bmn),rm:Object.keys(S.rm||{}).filter(k=>S.rm[k])}};}
+// Session 6B: what research reads from the account (eco record): bonus parts (Lunar Pass premium tiers, part packs), instant-finish
+// credits (written only by a verified purchase; checkout is off until Session 8) and the current season's premium pass (slot + 25%).
+function researchCtx(S,now){const prem=RULES.passResearch(passPremium(S,now));   /* the pass's research perks wait for the Lab store (rules.js passResearch) */return {bpt:{...(S.bpt||{})},rsx:{...(S.rsx||{})},lsm:{...(S.lsm||{})},prem:prem?1:0,premium:prem};}   // lsm: the Legendary set mods bought (a bought one is never researched)
 async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=await syncWarfront(env,pid,r.state.campaignScore||0,now),key=war.id+':'+war.stage;
  if(!r.state.warfront||war.stage>(r.state.warfront.stage||0)||war.stage>0&&!r.state.campaignHistory?.[key]){const saved=await persistWarfront(env,pid,war,now);if(saved){r.state.campaignHistory=saved.campaignHistory;r.state.achievements=saved.achievements;}}
  applyWarfront(r.state,war,now);
@@ -69,15 +73,15 @@ async function projected(env,pid,r,now){if(r.state&&!r.error){try{const war=awai
 async function settleAirdrop(env,pid,r,now,force=false){
  const s=r.state;if(!s||s.v!==1||r.error||!(force?pending(s).length:due(s,now)))return r;
  let c;try{c=await creditConquest(env,pid,pending(s),now);}catch{return r;}
- const view={d:c.day,dailyPts:c.dailyPts,cap:RULES.DAILY_CAP,cq:c.cqToday,lgi:c.lgi,pay:c.pay,at:now,mn:c.mn,ap:c.ap,pts:c.pts};
+ const view={d:c.day,dailyPts:c.dailyPts,cap:RULES.DAILY_CAP,cq:c.cqToday,lgi:c.lgi,pay:c.pay,at:now,mn:c.mn,ap:c.ap,pts:c.pts,rm:c.rm||[]};
  // Prune with its own CAS loop: server bookkeeping, not a pilot request (never counts against the request rate limit).
  for(let i=0;i<8;i++){const {v,tag}=await readTag(env,'conquest/'+pid);if(!v||v.v!==1)break;const cur=structuredClone(v);acknowledge(cur,c.cqw,view);if(await writeIf(env,'conquest/'+pid,cur,tag))break;}
  acknowledge(s,c.cqw,view);s.airdrop.credit={base:c.base,awarded:c.awarded,capped:c.capped,at:now,...(Object.keys(c.minerals||{}).length?{minerals:c.minerals}:{})};return r;}
 function result(r){return r.error?response(r.status||409,r.error,r.state):{status:200,body:{ok:true,state:publicState(r.state),replayed:!!r.replayed}};}
 export async function conquestSession(env,a,now=Date.now()){
  if(!allowed(a.b,['gv','initData']))return response(400,'invalid conquest session');
- const {loadout:L,legacy,view}=await canonical(env,a.pid,now);
- const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);refitState(state,L);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state);return {state,anq};},now);
+ const {loadout:L,legacy,view,rsAcct}=await canonical(env,a.pid,now);
+ const r0=await transaction(env,a.pid,s=>{if(s&&s.v!==1)return {abort:true,error:'unsupported conquest state'};const away=!s||now-(s.lastWall||0)>60000,state=s||legacy||createState(L,now);if(state.chain&&away)delete state.chain;entered(state,now,away);   /* Session 6: the Sortie chain ends when the pilot left Conquest (a reconnect inside a minute keeps it) */refreshState(state,now);researchAccount(state,rsAcct,now);refitState(state,L);seal(state,now);airdrop(state).view=view;const anq=takeQueue(state);return {state,anq};},now);
  if(!r0.abort&&r0.anq?.length)await flush(env,r0.anq,r0.state?.an?.f,now);   // Session 6 analytics: entry, cohort and return, after the write
  const out=await projected(env,a.pid,await settleAirdrop(env,a.pid,r0,now,true),now);
  if(out.status===200&&out.body?.state?.plot)await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});   // builder jobs settle on open
@@ -104,13 +108,13 @@ export async function conquestAction(env,a,now=Date.now()){
   if(!allowed(a.b,['gv','initData','seq','action'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1)return response(400,'invalid conquest action fields');
   if(a.pid!==OWNER_PID||!(await isOwner(env,a,[OWNER_ADMIN])))return response(403,'owner only');
   return submit(env,a,{seq:a.b.seq,action:a.b.action},devAction,now);}
- if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
- if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
+ if(!allowed(a.b,['gv','initData','seq','action','upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod'])||!Number.isSafeInteger(a.b.seq)||a.b.seq<1||!['start-mission','return-exploration','bank','repair','respawn','recover','buy-upgrade','set-tuning',...BASE_ACTIONS,...COSMETIC_ACTIONS,...PLOT_ACTIONS,'start-defense','start-sector-defense',...TRAVEL_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS].includes(a.b.action))return response(400,'invalid conquest action');
+ if(!['buy-upgrade','set-tuning','start-mission','base-module','defense-config','start-sector-defense','fast-travel','build-base',...COSMETIC_ACTIONS,...PLOT_ACTIONS,...LOOT_ACTIONS,...RESEARCH_ACTIONS].includes(a.b.action)&&Object.keys(a.b).some(k=>!['gv','initData','seq','action'].includes(k)))return response(400,'invalid conquest action fields');
  if(a.b.plot!==undefined&&JSON.stringify(a.b.plot).length>(BIG_PLOT_ACTIONS.includes(a.b.action)?9000:2400))return response(400,'invalid conquest action fields');
- const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
+ const request={seq:a.b.seq,action:a.b.action};for(const key of ['upgrade','tuning','position','mission','module','item','slot','destination','plot','order','mod'])if(Object.prototype.hasOwnProperty.call(a.b,key))request[key]=a.b[key];
  // Recall cooldown depends on the account's current-season premium Lunar Pass, read server-side from the eco record.
  // Base stores (Session 5): mineral costs read the account's moved-to-base total (monotonic) once per such action.
- const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:{};const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
+ const ctx=a.b.action==='recall-start'?{premium:await premiumPass(env,a.pid,now)}:MINERAL_PLOT_ACTIONS.includes(a.b.action)?{bmn:RULES.mnOf((await readEco(env,a.pid)).bmn)}:RESEARCH_ACTIONS.includes(a.b.action)?researchCtx(RULES.ecoNorm(await readEco(env,a.pid)),now):{};   /* Session 6B: research reads the account once (bonus parts, finish credits, premium pass) */const owner=a.pid===OWNER_PID&&await isOwner(env,a,[OWNER_ADMIN]).catch(()=>false);
  const out=await submit(env,a,request,(p,r,n)=>owner&&p?.dev?.on?unlimited(p,q=>instant(applyAction(q,r,n,{...ctx,bmn:Object.fromEntries(Object.keys(RULES.mnOf({})).map(k=>[k,9e6]))}),n)):applyAction(p,r,n,ctx),now);
  // Session 5: publish the plot's public snapshot (visits, top 20, Base of the Week) after a verified plot change. Best effort.
  if(out.status===200&&out.body?.state?.plot&&!out.body.replayed&&(PLOT_ACTIONS.includes(a.b.action)||['build-base','upgrade-base','base-module'].includes(a.b.action)))await publishBase(env,a.pid,cleanName(a.user),out.body.state,now).catch(()=>{});

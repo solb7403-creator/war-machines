@@ -160,11 +160,15 @@ let px={ton:0,sol:0,t:0},pxBusy=false;
 function fetchPrices(){
  if(pxBusy||Date.now()-px.t<300000)return;
  pxBusy=true;
- fetch('https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd')
-  .then(r=>r.json()).then(d=>{const t=d['the-open-network'].usd,s=d.solana.usd;if(t>0&&s>0){px={ton:t,sol:s,t:Date.now()};uiDirty('shop');}})
+ // the website's security policy allows only its own server: it reads the rates there (Session 6B, worker /api/rates)
+ (IN_WEB?fetch('/api/rates',{cache:'no-store'}).then(r=>r.json()).then(d=>({t:d.ton,s:d.sol})):fetch('https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,solana&vs_currencies=usd').then(r=>r.json()).then(d=>({t:d['the-open-network'].usd,s:d.solana.usd})))
+  .then(({t,s})=>{if(t>0&&s>0){px={ton:t,sol:s,t:Date.now()};uiDirty('shop');}})
   .catch(()=>{}).finally(()=>{pxBusy=false;});
 }
 function solFor(ton){if(!px.ton||!px.sol)return 0;const v=ton*px.ton/px.sol;return v>=1?Math.round(v*1000)/1000:Math.round(v*10000)/10000;}
+// Science Lab store proposals (Session 6B, checkout off): Telegram shows the Stars price, the website the TON price and SOL at the
+// live TON rate. A label only: nothing calls pay() for these.
+function labPriceLabel(p){if(!p)return '';if(IN_TG&&!IN_WEB)return fmtNum(p.stars)+' ⭐';if(!px.sol)fetchPrices();const s=solFor(p.ton);return p.ton+' TON · '+(s?s+' SOL':'… SOL');}
 function priceLabel(ton,stars){
  if(save.payCur==='stars')return fmtNum(stars)+' ⭐';
  if(save.payCur==='sol'){const s=solFor(ton);return s?s+' SOL':'… SOL';}

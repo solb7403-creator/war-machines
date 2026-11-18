@@ -41,7 +41,8 @@ function decode(pf) {
 }
 const unitsFor = (L, g, m) => (g === "royale" ? 6 : g === "boss" ? (L.MODES[m] || L.MODES["1v1"]).n + 1 : 2 * (L.MODES[m] || L.MODES["1v1"]).n);
 // c: {g, m, map, secs (ticket to result, wall clock), won, drawn, place, series, min (fastest believable win, s),
-//     spdM (your chassis and engine), st: {dmg, kills, sup, box, low} as reported}
+//     spdM (your chassis and engine), st: {dmg, kills, sup, box, low} as reported; research mods (Session 6B, from the server's
+//     loadout): modSpd Traction's speed boost, dashN Overdrive's dash charges, burnT how long an Inferno burn keeps dealing damage}
 // how long the recorded fight lasted (match seconds) and whether fast forward ran (x3 while you're down), or null for no
 // usable record. The server uses it to place a result in time when the ticket came late or never arrived (eco.matchEnd)
 export function proofSpan(pf) {
@@ -107,25 +108,57 @@ export function checkProof(pf, c) {
       for (let tau = t1 - 1; tau <= t1 + 0.76; tau += 0.25) if (RULES.wxIn(z, Math.max(z.t, Math.min(end, tau)), x0, y0, 1.5)) return (Pl.haz === "train" ? H.shove : H.push) * 1.15; }   // only for a tank that was at the strike
     return 0; };
   // movement: no tank goes faster than the game allows (a dash, a respawn or a new round excused)
-  const dash = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15;
-  const vMe = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
+  // research mods (Session 6B): Overdrive's dash charges back to back (c.dashN), and Traction Servo's boost (c.modSpd), allowed only
+  // in the samples right after a dash: the dash itself plus the boost's 2 s (FITS.mobility.traction.x.t) and one sample of slack.
+  // Dashes are CHARGES (Session 6B review, gameplay 4): the phone writes the dash flag, so the record may claim a dash only when the
+  // dash cooldown has given one back (c.dashCdM: the server loadout's cooldown multiplier, 15% slack), up to c.dashN at once; one run
+  // of flagged samples is one burst and may spend every charge left, and only a dash backed by a charge opens Traction's window
+  const dash1 = L.STAT.speed * L.DASH_SPD * L.DASH_T * 1.15, dashN = Math.max(1, Math.min(3, c.dashN || 1)), dash = dash1 * dashN, msp = Math.max(1, Math.min(2, c.modSpd || 1));
+  const dashCd = (L.DASH_CD || 4) * Math.max(0.3, Math.min(2, Number(c.dashCdM) || 1)), refill = PROOF.DT / dashCd * 1.15;
+  let tok = dashN, burst = 0, burstN = 0, badEdge = 0, trac = 0, down0 = 0, badBack = 0;   // trac: Traction's boost distance left (each spent charge adds the boost's 2 s); down0: the pilot's samples at 0 hull
+  const respawns = c.g === 'zone' || c.g === 'crystal' || c.g === 'bounty', tracN = Math.ceil(2 / PROOF.DT);   // modes with respawns (3 s at least: Bounty), FITS traction t 2 s
+  const tracWin = Math.ceil((L.DASH_T + 2) / PROOF.DT) + 1;
+  const vBase = L.STAT.speed * Math.max(0.5, Math.min(2, c.spdM || 1)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT, vMe = vBase + PROOF.QUANT;
+  let lastDash = -1e9;
   const vAny = L.STAT.speed * 1.25 * 1.24 * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT;
   let badMe = 0, badOther = 0, stepsOther = 0, moving = 0, noIn = 0, touches = 0;
   for (let s = 1; s < k; s++) {
     const fl = FL(s), round = fl & 64;
     touches += b[P(s) + 5];
+    // a comeback from 0 hull without a new-round mark is a respawn only in a mode that has them, after its time (reviewer 1: a made-up
+    // 0-hull sample excused the next step, a teleport). One ambiguous reading is forgiven (a hull under 0.5% rounds to 0)
+    const back = HP(s - 1, 0) === 0 && HP(s, 0) > 0 && !round;
+    if (back && (!respawns || down0 < 5)) badBack++;
+    down0 = HP(s, 0) === 0 && !round ? down0 + 1 : 0;
+    tok = round || back ? dashN : Math.min(dashN, tok + refill);   // a new round or a respawn: every charge back
     for (let i = 0; i < n; i++) {
       if (HP(s - 1, i) === 0 || round) continue;   // respawned, or a new round
       const d = Math.hypot(X(s, i) - X(s - 1, i), Y(s, i) - Y(s - 1, i));
       if (i === 0) {
-        const speedLimit = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT + PROOF.QUANT : vMe;
-        const lim0 = speedLimit + ((fl & 2) || (FL(s - 1) & 2) ? dash : 0) + shoveAt(s, i);
+        const edge = (fl & 2) && !(FL(s - 1) & 2);
+        const pace = variantAt ? L.STAT.speed * Math.max(0.5, Math.min(2, variantAt(s).spdM)) * PROOF.BUFF * (1 + 0.08 * 2.25) * PROOF.SLACK * PROOF.DT : vBase;
+        if (edge) { if (tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst = dash1; burstN = 1; lastDash = s; trac += (msp - 1) * pace * tracN; } else { burst = 0; burstN = dashN; badEdge++; } }   // a dash with no charge back yet: no allowance, no Traction boost
+        else if (!(fl & 2) && !(FL(s - 1) & 2)) { burst = 0; burstN = 0; }
+        // Traction Servo (reviewer 1): its boost is a distance budget each spent charge adds (the boost's 2 s at most), not a time
+        // window: a window longer than the dash refill let a phone keep the boost all match
+        if (s - lastDash > tracWin) trac = 0;   // the boost runs out with its 2 s (and one sample of slack), whatever is left of the budget
+        const tb = msp > 1 ? Math.min(trac, (msp - 1) * pace) : 0;
+        const speedLimit = pace + tb + PROOF.QUANT;
+        const base = speedLimit + shoveAt(s, i);   // 5E-2e's shove at a train or tornado strike
+        let lim0 = base;
+        if ((fl & 2) || (FL(s - 1) & 2)) {   // in a burst: the excess over the pace is paid from the burst, which may draw the charges left
+          let ex = Math.max(0, d - base);
+          while (ex > burst && burstN < dashN && tok >= 1 - 0.05) { tok = Math.max(0, tok - 1); burst += dash1; burstN++; lastDash = s; trac += (msp - 1) * pace * tracN; }
+          const use = Math.min(ex, burst); burst -= use; lim0 = base + use;
+        }
+        if (tb > 0) trac = Math.max(0, trac - Math.min(tb, Math.max(0, d - (pace + PROOF.QUANT + shoveAt(s, i)))));   // the boost used this step
         if (d > lim0) badMe++;
         if (d > 0.4 && !(fl & 2)) { moving++; if (Math.hypot(IX(s), IY(s)) < 0.05 && !(fl & 1)) noIn++; }
       } else { stepsOther++; if (d > vAny + dash + shoveAt(s, i)) badOther++; }
     }
   }
   if (badMe > PROOF.MOVE_BAD) return fail("move");
+  if (badBack > 1) return fail("respawn");
   if (badOther > Math.max(3, stepsOther * PROOF.OTHER_BAD)) return fail("others");
   // new-round marks: they clear the per-round super count below, so they are held to the rules for EVERY ticket (review finding:
   // tickets without bound equipment skipped this, and a made-up mark before every third press reset the count). Only a best
@@ -148,6 +181,12 @@ export function checkProof(pf, c) {
   if (inWall > PROOF.WALL_BAD) return fail("walls");
   // damage: what you report matches the record, it was dealt with an enemy in reach, and the enemies lost that health
   const enemy = h.map((u, i) => i > 0 && (c.g === "royale" ? true : u[0] !== h[0][0]));
+  // Inferno Core / Sunfire Core (Session 6B): a burn keeps dealing your damage for c.burnT seconds after the hit that set it, so a
+  // burning tank may have driven out of reach by its last tick. With a burn mod, "in reach" means in reach in any sample of
+  // that window (the hit that set the burn was). The sim counts a burn tick as its source's hit (game.js modTick -> takeHit
+  // kind 0: st.dmg, the 5 s hazard credit), and so does this check (ruling: Checkpoint 41 "Mods and hazards")
+  const burnW = Math.ceil(Math.max(0, Math.min(3, Number(c.burnT) || 0)) / PROOF.DT);
+  const distTo = (s, i) => { let d = 1e9; for (let j = Math.max(0, s - burnW); j <= s; j++) d = Math.min(d, Math.hypot(X(j, i) - X(j, 0), Y(j, i) - Y(j, 0))); return d; };
   let total = 0, bad = 0, lost = 0, kills = 0, sups = 0, boxes = 0, low = 1, roundSups = 0, mostSups = 0, roundsSeen = 1;
   for (let s = 0; s < k; s++) {
     const d = DM(s), fl = FL(s);
@@ -159,7 +198,7 @@ export function checkProof(pf, c) {
     if (d > 0) {
       total += d;
       let dmin = 1e9;
-      for (let i = 1; i < n; i++) if (enemy[i] && (HP(s, i) > 0 || (s > 0 && HP(s - 1, i) > 0))) dmin = Math.min(dmin, Math.hypot(X(s, i) - X(s, 0), Y(s, i) - Y(s, 0)));
+      for (let i = 1; i < n; i++) if (enemy[i] && (HP(s, i) > 0 || (s > 0 && HP(s - 1, i) > 0))) dmin = Math.min(dmin, distTo(s, i));
       let sup = false;   // a super counts for 3 s after the press: the timing bar (up to 1.2 s, Session 5E-2b) plus a Siege shell's flight (up to 1.2 s)
       for (let j = Math.max(0, s - 6); j <= s; j++) if (FL(j) & 8) sup = true;
       if (dmin > (sup ? PROOF.SUPER_REACH : L.STAT.range + PROOF.REACH)) bad += d;
@@ -192,7 +231,7 @@ export function checkProof(pf, c) {
       if (!(drop > 0)) continue;
       if (HP(s, i) > 0 ? notMine < hitD * 0.5 : HP(s - 1, i) * unit - DM(s) < unit) continue;
       let mineHit = false;
-      for (let j = Math.max(1, s - PROOF.HZ_MINE); j <= s && !mineHit; j++) if (DM(j) > 0 && HP(j - 1, i) > HP(j, i) && Math.hypot(X(j, i) - X(j, 0), Y(j, i) - Y(j, 0)) <= reach(j)) mineHit = true;
+      for (let j = Math.max(1, s - PROOF.HZ_MINE); j <= s && !mineHit; j++) if (DM(j) > 0 && HP(j - 1, i) > HP(j, i) && distTo(j, i) <= reach(j)) mineHit = true;   // a burn tick of yours counts (distTo)
       if (!mineHit) continue;
       const t1 = (s - r.r0) * PROOF.DT, late = r.r0 < 0 ? 0.26 : 0.76; let hit = null;   // the round's clock at this sample (a later round's first sample can be half a second in)
       for (const z of Pl.hz) {
@@ -265,5 +304,5 @@ export function checkProof(pf, c) {
     const q = mg < 0.1 ? 0 : 1 + (((Math.round((Math.atan2(iy, ix) / (Math.PI * 2)) * 16) % 16) + 16) % 16) * 3 + (mg > 0.9 ? 2 : mg > 0.5 ? 1 : 0);
     hsh = Math.imul(hsh ^ q, 16777619) >>> 0;
   }
-  return { ok: true, fix, sig: { simT, moving, ni: moving >= 12 ? noIn / moving : 0, touches, ih: k >= PROOF.IH_N && withIn >= PROOF.IH_N / 2 ? hsh.toString(16) : null, ratio: lost > 0 ? total / lost : 0, reachBad: total ? bad / total : 0 } };
+  return { ok: true, fix, sig: { simT, moving, ni: moving >= 12 ? noIn / moving : 0, touches, ih: k >= PROOF.IH_N && withIn >= PROOF.IH_N / 2 ? hsh.toString(16) : null, ratio: lost > 0 ? total / lost : 0, reachBad: total ? bad / total : 0, dashBad: badEdge } };   // dashBad: dash flags with no charge back (they bought nothing)
 }

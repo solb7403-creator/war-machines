@@ -15,7 +15,9 @@ assert(same.accept({x:20000,z:20000},{x:20001,z:20000},.2,8.8));assert(same.has(
 console.log('PASS discovery: blank start, spawn, accepted path continuity, blocked/overspeed/invalid rejection, read-only map queries, persistence, account isolation, no teleport corridor');
 // Execute the production map with a lightweight DOM/canvas, exercising the real button handlers.
 const mapSource=readFileSync('js/conquest/app.js','utf8');
-const mapFunction=mapSource.slice(mapSource.indexOf('function frontline('),mapSource.indexOf('function tick(now)'));
+const mapFunction=mapSource.slice(mapSource.indexOf('function frontline('),mapSource.indexOf('function tick(now)'))
+ // Session 6B: the map's ZONE BANDS fold reads the pilot's POWER through the production helper (no loadout here: it returns null)
+ +'\n'+mapSource.slice(mapSource.indexOf('function tankPower('),mapSource.indexOf('function modStrip('));
 const mapCtx=createContext({console,Map,Set,Math,Number});
 runInContext(readFileSync('js/conquest/world.js','utf8'),mapCtx);
 mapCtx.ledger=account('map-only');

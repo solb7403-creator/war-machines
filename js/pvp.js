@@ -146,7 +146,7 @@ const pvX=x=>pvp.flip?W-x:x,pvY=y=>pvp.flip?H-y:y,pvA=a=>pvp.flip?a+Math.PI:a;
 const pvSwap=a=>pvp.team===1&&!isSolo(matchG)?[a[1],a[0]]:a;
 function pvpUnit(r,old){
  const u=old||{buffs:[],sp:0,sup:null,flash:0,elev:0,trail:[],cd:0,lk:null};
- Object.assign(u,{id:r.id,team:pvT(r.team),fits:r.fits,dashCdM:r.dashCdM||1,shieldCdM:r.shieldCdM||1,name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1});
+ Object.assign(u,{id:r.id,team:pvT(r.team),fits:r.fits,dashCdM:r.dashCdM||1,shieldCdM:r.shieldCdM||1,name:r.name,cls:r.cls,wtype:r.wtype,wtier:r.wtier,gems:r.gems||[],gemM:r.gemM||{},dscale:r.dscale,aura:r.aura,paint:r.paint,skin:r.skin,vl:r.vl|0,mhp:r.mhp,spdM:r.spdM||1,ai:!!r.ai,gh:r.gh?1:0,hum:!r.ai,ctl:'far',dmgM:1,critB:0,fillM:1,rm:r.rm||undefined});   // rm: research mods (Session 6B)
  if(!old){u.x=pvX(r.x);u.y=pvY(r.y);u.ang=pvA(r.ang||0);u.hd=u.ang;u.hp=r.mhp;u.ox=u.x;u.oy=u.y;}
  return u;
 }
@@ -217,6 +217,15 @@ function pvpSnap(m){
  // your own tank: a resync (respawn, new round, or a move the server couldn't follow) snaps you to the server's spot now
  const mu=m.s.u[P.me];
  if(mu&&mu[12]!==P.tp){P.tp=mu[12];me.x=pvX(mu[0]);me.y=pvY(mu[1]);me.ox=me.px=me.x;me.oy=me.py=me.y;me.elev=mu[6]&1;me.dash=null;P.sent=null;}
+ // your own shield, as the room has it (Session 6B review): Capacitor Bank recharges it faster and Reflex Skirts raise it on the room,
+ // so its clock is the room's. A press of yours still in flight keeps your own (up to a second) until the room shows it up
+ const sh=mu&&mu[19];
+ if(Array.isArray(sh)&&me){const pend=P.shP&&now-P.shP<1000;if(!pend||sh[0]>0){P.shP=0;me.shieldT=sh[0]/10;me.shieldCd=sh[1]/10;}}
+ // ...and your dash: Overdrive's charges and refill timer, or the plain cooldown. A dash of yours in the last 0.6 s (still on its way
+ // to the room) or one under way keeps your own; otherwise the room's wins (a respawn's fresh charges, a press the room refused)
+ if(mu&&me&&!me.dash&&!(P.daP&&now-P.daP<600)){const v=mu[18];
+  if(me.rm&&me.rm.overdrive){if(Array.isArray(v)&&v[4]>=0){const mf=modS(me);mf.dq=v[4];mf.dr=(v[6]|0)/10;me.dashCd=mf.dq>0?0:mf.dr;}}
+  else me.dashCd=mu[9]/10;}
 }
 const lerp=(a,b,k)=>a+(b-a)*k;
 const lerpA=(a,b,k)=>{let d=b-a;d=Math.atan2(Math.sin(d),Math.cos(d));return a+d*k;};
@@ -236,6 +245,7 @@ function pvpApply(rt){
   u.buffs=cur[13]?cur[13].map(([ki,tk])=>({k:BUFF_KEYS[ki],taken:tk})):[];
   u.sup=cur[14]?{t:cur[14][0],ang:pvA(cur[14][1]),w:u.wtype,el:cur[14][2],bar:{z0:cur[14][3],jc:cur[14][4]},oc:cur[14][5]?cur[14][5]-1:undefined,k:SUP_KEYS[cur[14][6]]||supKey(u.wtype,u.wtier)}:null;
   u.supN=cur[17]|0;   // supers used this round (the server's count; it refuses the next one at SUP_ROUND_CAP)
+  if(u.rm){const v=cur[18];u.mfv=v?{st:v[0],ovc:v[1]&1,cool:v[1]&2?1:0,inf:v[1]&4?1:0,mom:v[1]&8?1:0,tr:v[1]&16?1:0,osh:v[3]|0,cap:v[1]&64?1:0,n:v[2]|0,dq:v[4],lost:v[5]|0}:null;}   // research mods: the server's state for the HUD chips
   if(u===me&&cur[16])me.nbar={z0:cur[16][0],jc:cur[16][1]};   // my next timing bar, drawn by the server before I press
  });
  timeLeft=B?lerp(s.tl,B.s.tl,k):s.tl;elapsed=B?lerp(s.el,B.s.el,k):s.el;
@@ -292,6 +302,7 @@ function pvpFrame(dt){
   if(P.evq.length>3000)P.evq.splice(0,P.evq.length-3000);
   pvpApply(rt);
  }
+ if(me&&me.mf&&me.mf.tr>0)me.mf.tr=Math.max(0,me.mf.tr-dt);   // Traction Servo's boost runs out on this phone too (the AI-match loop's mfStep does not run here)
  if(state==='play'&&P.phase==='play'&&me&&me.hp>0){
   // your tank answers your stick right away; the server follows your reports at real speed
   if(!dashStep(me,dt)){const [ix,iy]=inputVec(),k=STAT.speed*spdMult(me)*(me.sup?0.6:1)*slowAt(me)*dt;me.x+=ix*k;me.y+=iy*k;push(me);}
@@ -314,8 +325,8 @@ function pvpSuper(a){
 }
 // stop the timing bar: el is the seconds since my press on my own clock; the server's clock judges it (rules.js SUP_TAP_TOL)
 function pvpTap(el){pvpSend({k:'z',p:Math.round(el*1000)/1000});return true;}
-function pvpDash(ix,iy){if(!useDash(me,ix,iy))return false;pvpSend({k:'d',x:Math.round(me.dash.dx*100)/100,y:Math.round(me.dash.dy*100)/100});return true;}
-function pvpShield(){if(!useShield(me))return false;pvpSend({k:'h'});return true;}
+function pvpDash(ix,iy){if(!useDash(me,ix,iy))return false;pvp.daP=performance.now();pvpSend({k:'d',x:Math.round(me.dash.dx*100)/100,y:Math.round(me.dash.dy*100)/100});return true;}
+function pvpShield(){if(!useShield(me))return false;pvp.shP=performance.now();pvpSend({k:'h'});return true;}
 function pvpTarget(id){pvpSend({k:'t',v:id});return true;}
 
 // ---- rounds and the result ----
@@ -333,7 +344,7 @@ function pvpRoundStart(m){
  pvpRoster(m.units);
  bullets=[];shells=[];warns=[];pops=[];nums=[];beams=[];blasts=[];novas=[];feed=[];shakeT=0;shakeM=0;
  for(const u of units){u.trail=[];u.sup=null;u.buffs=[];}
- me.dash=null;me.dashCd=0;me.shieldT=0;me.shieldCd=0;me.rdyShown=false;
+ me.dash=null;me.dashCd=0;me.shieldT=0;me.shieldCd=0;me.rdyShown=false;me.mf=null;P.shP=0;P.daP=0;
  P.phase='play';state='play';
  roundBanner();
  onRoundStart();

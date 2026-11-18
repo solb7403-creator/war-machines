@@ -140,7 +140,7 @@ const LIVING=Object.freeze({packs:Object.freeze([{x:1270,z:946,route:[[1294,946]
 class Battle {
  constructor(loadout,playerPosition){
  this.snapshot=freeze(JSON.parse(JSON.stringify(loadout)));this.playerStats={...tankOf(this.snapshot,1),buffs:[]};this.playerStats.wshot=(profiles[this.playerStats.wtype]||profiles.pulse).interval;this.engineering=engineeringDefaults();this.heat=0;this.overheated=false;this.combatSpeed=machineSpeed(this.snapshot,this.playerStats);
- this.charge=0;this.shieldT=0;this.shieldCd=0;this.dashCd=0;this.turretYaw=0;this.playerMax=this.playerStats.mhp;this.playerHp=this.playerMax;this.objectiveMax=1800;this.objectiveHp=this.objectiveMax;
+ this.charge=0;this.shieldT=0;this.shieldCd=0;this.dashCd=0;this.turretYaw=0;this.modQ=[];this.playerMax=this.playerStats.mhp;this.playerHp=this.playerMax;this.objectiveMax=1800;this.objectiveHp=this.objectiveMax;
  this.objective={x:1150,y:W.groundAt(1150,1080)+10,z:1080};this.state='active';this.enemies=[];this.projectiles=[];this.effects=[];this.wave=0;this.waveCount=formations.length;this.kills=0;this.shots=0;this.time=0;this.cooldown=0;this.nextWave=0;this.id=0;this.seed=0x03012026;this.aim={x:playerPosition.x,y:playerPosition.y+2,z:playerPosition.z+50};this.player=center(playerPosition);this.approachGrace=Math.hypot(playerPosition.x-mission.x,playerPosition.z-mission.z)>65?60:0;this.spawnWave();
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
@@ -166,13 +166,17 @@ class Battle {
  }
  hit(q,t,r){const d=dist(q,q.team==='player'?center(t):t);if(d>r)return false;
  const targetCenter=q.team==='player'?center(t):t,speed2=q.vx*q.vx+q.vy*q.vy+q.vz*q.vz,rx=targetCenter.x-q.x,ry=targetCenter.y-q.y,rz=targetCenter.z-q.z,along=(rx*q.vx+ry*q.vy+rz*q.vz)/Math.sqrt(speed2),off=Math.sqrt(Math.max(0,rx*rx+ry*ry+rz*rz-along*along));
- const owner=q.stats,direct=off<r*.4,isCrit=direct&&this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
+ const owner=q.stats,direct=off<r*.4,mine=q.team==='player'&&owner.rm,sure=mine?mfHit(owner,this.modState(),t.id,direct):false;   // Marksman Coil (Session 6B): every 3rd direct hit in a row is a sure critical
+ const isCrit=direct&&(sure||this.random()<CRIT_BASE+gsum(owner,'lck')+(owner.critB||0)),edge=direct?(isCrit?CRIT_MULT:1):owner.wedge||GRAZE;
  const defender=q.team==='player'?t.stats:t===this.player?this.playerStats:null;
- let damage=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*edge*(defender?cmult(owner,defender)*(1-armor(defender)):1);
- if(q.team!=='player'&&t===this.player){if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,q.kind==='pulse',false);const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
- if(q.team==='player'&&t.pattern==='shield'&&this.time%8<3)damage*=.35;
- if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7,at:this.time});}}
- else if(t===this.player){this.hitBy=q.owner;this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
+ const rawD=owner.wdps*owner.wshot*dmgMult(owner)*projectileImpactMult(owner)*(q.railM||1)*edge+(q.mv||0)*(direct?1:owner.wedge||GRAZE);let damage=rawD*(defender?cmult(owner,defender)*(1-armor(defender)):1);   // q.mv: a vent round's extra seconds of damage
+ let blocked=0;if(q.team!=='player'&&t===this.player){if(this.shieldT>0){blocked=damage*(1-SHIELD_MULT);damage*=SHIELD_MULT;}damage*=plateTaken(this.playerStats,q.kind==='pulse',false);const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;}
+ if(q.team==='player'&&t.pattern==='shield'&&this.time%8<3){const keep=Math.max(q.rail?1:0,mfPierce(owner));damage*=.35+keep*.65;if(keep>0&&!q.rail&&mine)mfCue(this.modState(),'pierce');}   // Penetrator Coil and rail slugs get through the shield commander's barrier
+ if(q.team==='player'){this.alert(t);this.charge=Math.min(SUPER_MAX,this.charge+(Math.min(t.hp,damage)*FILL_DEALT+(isCrit?FILL_CRIT:0))*(this.playerStats.fillM||1));t.hp=Math.max(0,t.hp-damage);if(t.hp===0){this.kills++;this.effects.push({kind:'destroy',x:t.x,y:t.y+2,z:t.z,life:.7,at:this.time});}
+  if(q.burn&&t.hp>0)t.burns=mfBurn(t.burns,0,q.burn,this.modDps());   // Inferno Core: the hit sets its target burning
+  if(q.mv){this.effects.push({kind:'destroy',k:'siege0',oc:0,x:q.x,y:q.y,z:q.z,r:5,life:.5,at:this.time});for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5)this.modHurt(e,rawD*q.ms);}}   // the vent round bursts on the Parasites beside its target (modHurt adds each one's own counter and armor; the target's are not carried over, as in the Arcade)
+ else if(t===this.player){this.hitBy=q.owner;if(this.playerStats.rm){const M=mfTaken(this.playerStats,this.modState(),damage,0,blocked,this.playerMax);damage=M.amt;if(M.ring)this.modQ.push({k:'ring',n:M.ring});if(M.refl>0)this.modQ.push({k:'refl',e:q.owner,d:M.refl});}   // Momentum, the overshield; heat rings and reflections land after this hit
+  this.charge=Math.min(SUPER_MAX,this.charge+Math.min(this.playerHp,damage)*FILL_TAKEN*(this.playerStats.fillM||1)*(this.playerStats.hitChg||1));this.playerHp=Math.max(0,this.playerHp-damage);}else if(this.time>=this.approachGrace)this.objectiveHp=Math.max(0,this.objectiveHp-damage*(this.defenseConfig==='shield'?.6:1));
  this.effects.push({kind:'impact',x:q.x,y:q.y,z:q.z,life:q.kind==='siege'?.3:.15,weapon:q.kind});
  // Heavy shells retain their shared direct damage; fragments affect only nearby distinct targets.
  if(q.kind==='siege'&&q.team==='player')for(const e of this.enemies)if(e!==t&&e.hp>0&&dist(center(e),q)<5&&lineClear(q,center(e))){const dealt=Math.min(e.hp,damage*.3);this.charge=Math.min(SUPER_MAX,this.charge+dealt*FILL_DEALT*(this.playerStats.fillM||1));e.hp=Math.max(0,e.hp-damage*.3);if(e.hp===0){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}}
@@ -183,10 +187,10 @@ class Battle {
  for(const q of this.projectiles){const start={x:q.x,y:q.y,z:q.z};const travel=Math.min(dt,q.life),n=Math.max(1,Math.ceil(Math.hypot(q.vx,q.vy,q.vz)*travel/.35));for(let i=0;i<n&&q.life>0;i++){
  q.x+=q.vx*travel/n;q.y+=q.vy*travel/n;q.z+=q.vz*travel/n;
  if(q.x<0||q.z<0||q.x>W.WIDTH||q.z>W.LENGTH||q.y<=W.groundAt(q.x,q.z)){q.life=0;break;}
- let hit=false;if(q.team==='player'){for(const e of this.enemies)if(e.hp>0&&this.hit(q,e,2.7)){hit=true;break;}}else hit=this.hit(q,this.player,2.5)||(this.objectiveDamageable!==false&&this.hit(q,this.objective,14));
+ let hit=false;if(q.team==='player'){for(const e of this.enemies)if(e.hp>0&&!(q.hit&&q.hit.includes(e.id))&&this.hit(q,e,2.7)){hit=true;q.landed=1;if(q.rail){q.hit.push(e.id);if(q.hit.length<q.rail)hit=false;}break;}}else hit=this.hit(q,this.player,2.5)||(this.objectiveDamageable!==false&&this.hit(q,this.objective,14));   // a rail slug passes through the first Parasite into the next
  if(hit||blocked(q.x,q.y,q.z)){q.life=0;break;}}
  
- q.life-=dt;}
+ q.life-=dt;if(q.life<=0&&q.team==='player'&&!q.landed&&q.stats.rm&&q.stats.rm.marksman)mfMiss(q.stats,this.modState());}   // a shot that hit nothing restarts Marksman Coil's count
  this.projectiles=this.projectiles.filter(q=>q.life>0);
  }
  tick(dt,playerPosition,input={}){
@@ -199,8 +203,11 @@ class Battle {
  const thermal=engineeringValues(this.playerStats,this.engineering);setHeat(this,(this.heat||0)+(this.heatOverflow||0)-(this.overheated?Math.max(thermal.cooling,thermal.capacity*.13):thermal.cooling)*dt,thermal.capacity);
  if(this.overheated&&this.heat+(this.heatOverflow||0)<=thermal.capacity*.35)this.overheated=false;
  if(fire&&!this.overheated&&this.cooldown<=1e-9){if(this.shoot(this.player,this.aim,this.playerStats,'player',this.playerStats.wtype,0)){
- this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=this.playerStats.wshot/rofMult(this.playerStats);this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
+ const mf=this.playerStats.rm?this.modState():null,iv=this.playerStats.wshot/(rofMult(this.playerStats)*mfRate(this.playerStats,mf));   // Overclock Breech changes the interval
+ if(mf){const mo=mfShot(this.playerStats,mf,iv),q=this.projectiles[this.projectiles.length-1];if(mo&&q){if(mo.vent){q.mv=mo.vent*this.modDps();q.ms=mo.splash;}if(mo.rail){const k=mo.rail.spd;q.vx*=k;q.vy*=k;q.vz*=k;q.life/=k;q.rail=mo.rail.through;q.hit=[];q.railM=mo.rail.mult;}if(mo.burn)q.burn=mo.burn;}}   // research mods: a vent round, a rail slug, an Inferno burn
+ this.effects.push({kind:'muzzle',x:this.player.x,y:this.player.y,z:this.player.z,weapon:this.playerStats.wtype,life:.1});this.cooldown+=iv;this.heat=Math.min(thermal.capacity,this.heat+thermal.heatPerShot);if(this.heat>=thermal.capacity)this.overheated=true;
  }}else if(!fire||this.overheated)this.cooldown=Math.max(0,this.cooldown);
+ if(this.playerStats.rm||this.enemies.some(e=>e.burns&&e.burns.length))this.modTick(dt);
  if(this.playerStats.gems.includes('reg'))this.playerHp=Math.min(this.playerMax,this.playerHp+this.playerMax*gsum(this.playerStats,'reg')*dt);
  for(const e of this.enemies){if(e.hp<=0||e.dormant||e.resident&&Math.hypot(e.x-this.player.x,e.z-this.player.z)>240)continue;e.decision-=dt;e.cd-=dt;if(e.decision<=0){if(this.lure(e));else if(e.resident)Encounter.prototype.choose.call(this,e);else this.choose(e);e.decision=.3;}
  const p=this.enemyAdvance?this.enemyAdvance(e,dt):W.advance(e,e.vx*dt,e.vz*dt);if(p!==e){e.x=p.x;e.y=p.y;e.z=p.z;e.surface=p.surface;if(e.vx||e.vz)e.heading=Math.atan2(e.vx,e.vz);}
@@ -212,6 +219,27 @@ class Battle {
  if(!this.localEncounter&&!this.enemies.some(e=>!e.resident&&e.hp>0)){if(this.wave===formations.length){this.state='victory';this.projectiles=[];}else{this.nextWave+=dt;if(this.nextWave>=3)this.spawnWave();}}
  if(!this.localEncounter&&Math.hypot(this.player.x-mission.x,this.player.z-mission.z)>240){this.state='defeat';this.reason='Retreated beyond the defense perimeter';this.projectiles=[];}
  }
+ // ---- Science Lab research mods (Session 6B): the behaviors are rules.js mf* (one engine with the Arcade); this applies them to
+ // the pilot's tank and the Parasites. Deterministic (the battle clock, no randomness), so the phone's prediction and the Worker's
+ // replay agree; the state (this.mf) and the burns on Parasites are saved with the battle.
+ modState(){return this.mf||(this.mf=mfNew(this.playerStats));}
+ modDps(){const t=this.playerStats;return Math.max(1,t.wdps*dmgMult(t)*rofMult(t)*projectileImpactMult(t));}
+ modHurt(e,amount,raw){if(!(amount>0)||!e||e.hp<=0)return 0;const t=this.playerStats,d=raw?amount:amount*cmult(t,e.stats)*(1-armor(e.stats));this.alert(e);const old=e.hp;
+  this.charge=Math.min(SUPER_MAX,this.charge+Math.min(e.hp,d)*FILL_DEALT*(t.fillM||1));e.hp=Math.max(0,e.hp-d);if(old>0&&!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}return d;}
+ modTick(dt){
+  for(const e of this.enemies){if(!e.burns||!e.burns.length)continue;e.bT=(e.bT||0)+dt;for(const b of e.burns){const h=Math.min(dt,b.t);b.a=(b.a||0)+b.d*h;b.t-=h;}   // Inferno Core burns, dealt every half second
+   if(e.bT>=.5||e.burns.every(b=>b.t<=0)){e.bT=0;let a=0;for(const b of e.burns){a+=b.a||0;b.a=0;}if(e.pattern==='shield'&&this.time%8<3)a*=.35+mfPierce(this.playerStats)*.65;   // the shield commander's barrier cuts a burn tick like a shot (Penetrator Coil gets most through), as a raised shield does in the Arcade
+   if(a>0&&e.hp>0){this.modHurt(e,a);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.2,weapon:'siege'});}}
+   e.burns=e.burns.filter(b=>b.t>0||b.a>0);if(!e.burns.length)delete e.burns;}   // a burn whose time ran out between two ticks still deals what it built up (as in the Arcade sim)
+  const t=this.playerStats;if(!t.rm||this.playerHp<=0)return;const mf=this.modState(),p=this.player,lp=this.mfP;
+  const v=lp&&dt>0?Math.hypot(p.x-lp.x,p.z-lp.z)/dt:0;this.mfP={x:p.x,z:p.z};
+  mfStep(t,mf,dt,{spd:this.dashState?1:v/Math.max(.1,this.combatSpeed*mfSpeed(t,mf))});
+  // Reflex Skirts: the shield raises itself when a marked strike is about to land on the pilot
+  if(t.rm.reflex&&!(this.shieldCd>0)&&!(this.shieldT>0)&&(this.hazards||[]).some(h=>h.remaining>0&&h.remaining<=t.rm.reflex.lead&&Math.hypot(p.x-h.x,p.z-h.z)<h.radius+2)){const V=engineeringValues(t,this.engineering);this.shieldT=V.shieldDuration;this.shieldCd=V.shieldCooldown;mfCue(mf,'reflex');}
+  const Q=this.modQ||[];this.modQ=[];
+  for(const m of Q){if(m.k==='ring'){const dmg=m.n*t.rm.heatsink.dmg*this.modDps(),R=engineeringValues(t,this.engineering).range;this.effects.push({kind:'nova',k:'twin1',oc:0,x:p.x,y:p.y-2.2,z:p.z,r:8,life:.45,at:this.time});
+    for(const e of this.enemies)if(e.hp>0&&dist(center(e),p)<=R&&lineClear(p,center(e))){this.modHurt(e,dmg);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25,weapon:'siege'});}}   // Heat Sink Plating: every Parasite in range and sight
+   else if(m.k==='refl'){const e=this.enemies.find(x=>x.id===m.e);if(e&&e.hp>0){this.modHurt(e,m.d*(1-armor(e.stats)),true);this.effects.push({kind:'impact',x:e.x,y:e.y+2,z:e.z,life:.25,weapon:'pulse'});}}}}   // Reflector Field: back at the shooter
  // Decoy Beacon (Session 6 consumable, rules.js CQ_ITEMS.decoy): while it lives, every Parasite within its radius drives to the
  // beacon and fires at it instead of the pilot. Position only: it never reads the pilot's gear (the 5D fairness rule).
  lure(e){const d=this.decoy;if(!d||!(d.t>0)||Math.hypot(e.x-d.x,e.z-d.z)>d.r)return false;const a=archetypes[e.kind],dx=d.x-e.x,dz=d.z-e.z,l=Math.hypot(dx,dz)||1;
@@ -292,7 +320,7 @@ class Operation extends Battle {
  deployCommander(){const o=this.operation;this.deploy(o.commander==='ambush'?'raider':o.commander==='carrier'?'command':'sentinel',o.x+12,o.z-38,'commander');const e=this.enemies.at(-1);e.commander=true;e.pattern=o.commander;e.hp=e.maxHp=o.commander==='ambush'?460:680;e.nextPattern=this.time+4;e.drones=0;this.commanderId=e.id;this.harden(e);}
  defenseStep(dt){if(this.defenseConfig==='drone')this.objectiveHp=Math.min(this.objectiveMax,this.objectiveHp+12*dt);if(this.defenseConfig!=='turret')return;this.turretClock=(this.turretClock||0)-dt;if(this.turretClock>0)return;this.turretClock=.6;const from={x:this.operation.x,y:W.groundAt(this.operation.x,this.operation.z)+6,z:this.operation.z},e=this.enemies.find(e=>!e.resident&&e.hp>0&&Math.hypot(e.x-from.x,e.z-from.z)<65&&lineClear(from,center(e)));if(!e)return;const damage=18+3*(this.baseTier||0);e.hp=Math.max(0,e.hp-damage);this.effects.push({kind:'beam',weapon:'pulse',x:from.x,y:from.y,z:from.z,ex:e.x,ey:e.y+2.2,ez:e.z,life:.15});if(!e.hp){this.kills++;this.effects.push({kind:'destroy',x:e.x,y:e.y+2,z:e.z,life:.7,at:this.time});}}
  deployDefense(){this.defenseWave++;for(let i=0;i<3;i++){this.deploy(i===2?'breacher':'raider',this.operation.x-30+i*20,this.operation.z-40,'defense:'+this.defenseWave+':'+i);this.enemies.at(-1).role=i===2?'facility':'player';}this.objectiveDamageable=true;}
- hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){this.hitBy=-1;let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,h.kind==='plasma',h.kind==='plasma'||h.kind==='orbital');const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
+ hazardStep(dt){this.hazards=Array.isArray(this.hazards)?this.hazards:[];for(const h of this.hazards){h.remaining-=dt;if(h.remaining>0)continue;const d=Math.hypot(this.player.x-h.x,this.player.z-h.z);if(d<h.radius){this.hitBy=-1;let damage=h.damage*(1-.35*d/h.radius)*(1-armor(this.playerStats));if(this.shieldT>0)damage*=SHIELD_MULT;damage*=plateTaken(this.playerStats,h.kind==='plasma',h.kind==='plasma'||h.kind==='orbital');const base=baseBenefits(this.baseTier,this.baseModules);if(Math.hypot(this.player.x-baseDefinition.x,this.player.z-baseDefinition.z)<base.radius)damage*=1-base.mitigation;if(this.playerStats.rm){const M=mfTaken(this.playerStats,this.modState(),damage,2,0,this.playerMax);damage=M.amt;if(M.ring)this.modQ.push({k:'ring',n:M.ring});}this.playerHp=Math.max(0,this.playerHp-damage);}if(this.objectiveDamageable&&Math.hypot(this.objective.x-h.x,this.objective.z-h.z)<h.radius)this.objectiveHp=Math.max(0,this.objectiveHp-h.damage);this.effects.push({kind:'destroy',weapon:h.kind,x:h.x,y:h.y+.8,z:h.z,r:h.radius,life:.6});if(h.kind==='drop')this.landReinforcements(h);}this.hazards=this.hazards.filter(h=>h.remaining>0).slice(-8);
   for(const e of this.enemies){if(!e.commander||!e.pattern||e.hp<=0||this.time<(e.nextPattern||0))continue;{const D=doctrineOf(this.operation);e.nextPattern=this.time+(e.pattern==='artillery'?6:8)*(D?D.cadence*(e.enraged?D.enrageCadence:1):e.enraged?.65:1);}e.telegraph=true;const kind=e.pattern==='plasma'?'plasma':e.pattern==='carrier'?'drone':'orbital';if(e.pattern!=='shield'&&e.pattern!=='ambush'){this.markStrike(kind,this.player.x,this.player.z,e.id);if(e.pattern==='carrier'&&e.drones<droneDefinition.maxPerCarrier&&this.enemies.filter(t=>!t.resident&&t.hp>0).length<8){this.deploy('raider',e.x+8,e.z+8,'drone:'+e.drones);const drone=this.enemies.at(-1);this.harden(drone);drone.drone=true;drone.launchedAt=this.time;drone.surface='air';drone.cd=droneDefinition.takeoffSeconds;drone.telegraph=true;e.drones++;}}}
   if(this.operation.raid&&this.time>=(this.nextHazard||6)){this.nextHazard=this.time+(doctrineOf(this.operation)?.hazardEvery||11);this.markStrike(this.operation.hazard,this.player.x,this.player.z,0);}
  }
@@ -381,5 +409,17 @@ function travelBlock(state,p,enemies,now){if(!state)return 'Online connection re
  if((enemies||[]).some(e=>e.hp>0&&Math.hypot(e.x-p.x,e.z-p.z)<TRAVEL.safeRadius))return 'Hostiles within 60 m — clear the area first';
  if(state.lastHitAt&&(state.quietMs||0)<TRAVEL.quietMs)return 'Under fire — hold 10 s without taking damage';
  if(!travelNodeAt(state,p))return 'Fast travel departs from the Refuge, your Command Base or a sector you hold';return null;}
-root.ConquestCombat=Object.freeze({hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
+// Session 6B zone bands (owner decision 6): the gear rating (POWER) a zone's authored threat asks for, shown on the region map and
+// every briefing. Informational only: no enemy ever reads it (the 5D fair-world rule). A zone's band is its ring's authored tier
+// (docs/conquest/CONQUEST_BLUEPRINT.md §5: Heartland and Rear STANDARD, Frontier the HARD sectors, Warfront the VETERAN sectors, the
+// Inner Ring beyond them); a briefing shows its own operation's authored danger tier. The numbers are the kits that clear each tier in
+// the scripted-pilot tests (dev/tests/conquest-raids.mjs: the stock tank, power 68, clears STANDARD and 8 of 10 HARD raids; an Epic
+// kit, power 164, clears 13 of 15 VETERAN raids where the stock tank clears none). STANDARD starts at 55 so a brand-new account
+// (power 59: no cores owned yet) reads as in band in the Heartland.
+const DANGER_BAND=Object.freeze({STANDARD:Object.freeze([55,100]),HARD:Object.freeze([75,135]),VETERAN:Object.freeze([140,220])});
+const RING_TIER=Object.freeze(['','STANDARD','STANDARD','HARD','VETERAN','VETERAN']);
+const zoneBands=()=>Object.freeze(Object.fromEntries([1,2,3,4,5].map(r=>[r,DANGER_BAND[RING_TIER[r]]])));
+const zoneBand=ring=>DANGER_BAND[RING_TIER[ring]]||DANGER_BAND.STANDARD;
+const operationBand=o=>o&&DANGER_BAND[o.danger]?DANGER_BAND[o.danger]:zoneBand(o?W.ringAt(o.x,o.z):1);
+root.ConquestCombat=Object.freeze({DANGER_BAND,zoneBand,zoneBands,operationBand,hunter,LIVING,strikeSites,meteorStrike,waveKinds,baseProduction,baseYield,RECALL,raidDoctrine,refuge,fieldMissionIds,fieldProgress,raidsUnlocked,TRAVEL,travelNodes,travelNodeAt,travelBlock,travelArrival,sectorDefenseOpen,spawnIds,operations,droneDefinition,raidIds,raidLayouts,sectors,baseDefinition,baseBenefits,Operation,profiles,tracks,costs,tuningKeys,engineeringDefaults,engineeringValues,setHeat,mission,installations,patrols,archetypes,formations,Battle,Encounter,lineClear,blocked});
 })(globalThis);

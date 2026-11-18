@@ -49,6 +49,7 @@ jobs:
           node dev/tests/wtest/test.mjs
           node dev/tests/wtest/referrals.mjs
           node dev/tests/wtest/pvp.mjs
+          node dev/tests/pvp-agree.mjs
           node dev/tests/arcade-weather.mjs
           node dev/tests/wtest/farm.mjs
           node dev/tests/wtest/web-auth.mjs
@@ -58,6 +59,11 @@ jobs:
           node dev/tests/wtest/lab-battle.mjs
           node dev/tests/wtest/ticket-reliability.mjs
           node dev/tests/wtest/owner.mjs
+          node dev/tests/wtest/conquest-research.mjs
+          node dev/tests/wtest/research-economy.mjs
+          node dev/tests/wtest/lab-store.mjs
+          node dev/tests/wtest/proof-mods.mjs
+          node dev/tests/owner-rules.mjs
       - name: Live-match smoke test in the Workers runtime
         working-directory: worker
         env:

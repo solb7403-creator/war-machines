@@ -17,7 +17,8 @@ const fill=(o,keys)=>{const m={};for(const k of keys)m[k]=int(record(o)?o[k]:0);
 // The pilot's loot record (additive; Firebase drops empty maps, so every field is rebuilt on each load).
 // it: consumables · pt: research parts · fr: fragments toward the next piece of each pool · tr: trophies held (count) ·
 // pity: e = elites since a research part, c = commanders since a trophy, cf = commanders fought by doctrine since the last
-// trophy · cd: consumable cooldown ends (server clock) · log: the last finds (newest last), for the LOOT screen.
+// trophy · cd: consumable cooldown ends (server clock) · log: the last finds (newest last), for the LOOT screen ·
+// pd: the earned research parts of a UTC day {d: day, n} (rules.js CQ_PART_DAY: one a day; later finds become fragments).
 export function inventory(s){
  if(!Number.isSafeInteger(s.lseed)||s.lseed<0)s.lseed=lootSeed();
  const v=record(s.inv)?s.inv:(s.inv={});v.v=1;
@@ -25,6 +26,7 @@ export function inventory(s){
  const p=record(v.pity)?v.pity:{};v.pity={e:int(p.e),c:int(p.c),cf:fill(p.cf,R.CQ_TROPHY_ORDER.filter(k=>k!=='core'))};
  v.cd=Object.fromEntries(Object.entries(record(v.cd)?v.cd:{}).filter(([k,t])=>R.CQ_ITEMS[k]&&Number(t)>0).map(([k,t])=>[k,Number(t)]));
  v.log=list(v.log).slice(-12);
+ const pd=record(v.pd)?v.pd:{};v.pd={d:int(pd.d),n:int(pd.n)};
  return v;}
 export const pickItem=key=>{const total=R.CQ_ITEM_ORDER.reduce((a,k)=>a+R.CQ_ITEMS[k].w,0);let x=u32(key)%total;for(const k of R.CQ_ITEM_ORDER){x-=R.CQ_ITEMS[k].w;if(x<0)return k;}return R.CQ_ITEM_ORDER[0];};
 // A rarity step (the Sortie chain at three links): a fragment of the next pool up.
@@ -47,6 +49,7 @@ export function roll(s,src,key,{ring=1,commander=null,steps=0}={}){
  if(src==='commander'&&T.pity?.trophy&&R.CQ_TROPHY[commander]&&commander!=='core'){v.pity.cf[commander]=(v.pity.cf[commander]|0)+1;
   if(out.tr){v.pity.c=0;v.pity.cf=fill({},Object.keys(v.pity.cf));}
   else if(++v.pity.c>=T.pity.trophy){const most=Object.entries(v.pity.cf).reduce((a,b)=>b[1]>a[1]?b:a,[commander,v.pity.cf[commander]])[0];add(out,'tr',most);out.pity='trophy';v.pity.c=0;v.pity.cf=fill({},Object.keys(v.pity.cf));}}
+ if(out.pt&&R.CQ_PART_SWAP[src])out.src=src;   // its source picks the fragment pool if the day's research part is already taken (bind); the pity part too
  return out;}
 // What a roll shows on the ground: the rarest find's rarity and its one-word label.
 export function face(loot){let r=-1,label='SALVAGE';const see=(rar,w)=>{if(rar>r){r=rar;label=w;}};
@@ -62,10 +65,17 @@ function piece(s,pool,now){const ids=CAT.pools[pool]||[],c=s.cosmetics=record(s.
  const left=ids.filter(id=>!c.owned[id]);if(!left.length)return null;const id=left[u32(s.lseed+':piece:'+pool+':'+(ids.length-left.length))%left.length];c.owned[id]={at:now,source:'fragments',pool};return id;}
 // Account-bound grant (pickup or a completion receipt). Minerals are NOT handled here (they are cargo). Returns what was
 // really added: {it,pt,fr,tr,pieces:[cosmetic ids], full:[ids capped out]}.
-export function bind(s,loot,now,{where=null}={}){const v=inventory(s),got={},full=[];
+// Research parts (owner, Nov 17): one EARNED part per account per UTC day (the Worker's clock, R.CQ_PART_DAY), counted here when it
+// reaches the inventory, so a part left on the ground never uses up the day. After it, a found part becomes 1 fragment of its
+// source's pool (R.CQ_PART_SWAP; loot.src from the roll) and got.swap counts them. A part blocked by the 50 cap is not taken.
+export function bind(s,loot,now,{where=null}={}){const v=inventory(s),got={},full=[],day=Math.floor(now/864e5),fr={...(loot?.fr||{})};
+ if(v.pd.d!==day)v.pd={d:day,n:0};
  for(const [k,n] of Object.entries(loot?.it||{})){if(!R.CQ_ITEMS[k])continue;const a=Math.max(0,Math.min(int(n),R.CQ_ITEM_MAX-v.it[k]));if(a)add(got,'it',k,a);if(a<int(n))full.push(k);v.it[k]+=a;}
- for(const [k,n] of Object.entries(loot?.pt||{})){if(!R.CQ_PARTS[k])continue;const a=Math.max(0,Math.min(int(n),R.CQ_PART_MAX-v.pt[k]));if(a)add(got,'pt',k,a);if(a<int(n))full.push(k);v.pt[k]+=a;}
- for(const [k,n] of Object.entries(loot?.fr||{})){if(!R.CQ_FRAG.pools[k])continue;add(got,'fr',k,int(n));v.fr[k]+=int(n);
+ for(const [k,n] of Object.entries(loot?.pt||{})){if(!R.CQ_PARTS[k])continue;for(let i=0;i<int(n);i++){
+  if(v.pd.n>=R.CQ_PART_DAY){const pool=R.CQ_PART_SWAP[loot.src]||'u';fr[pool]=(fr[pool]|0)+1;add(got,'swap',k);continue;}   // the day's part is taken: a fragment of its source's pool
+  if(v.pt[k]>=R.CQ_PART_MAX){if(!full.includes(k))full.push(k);continue;}
+  v.pt[k]++;v.pd.n++;add(got,'pt',k);}}
+ for(const [k,n] of Object.entries(fr)){if(!R.CQ_FRAG.pools[k])continue;add(got,'fr',k,int(n));v.fr[k]+=int(n);
   while(v.fr[k]>=R.CQ_FRAG.need){const id=piece(s,k,now);if(!id){v.fr[k]=R.CQ_FRAG.need;break;}v.fr[k]-=R.CQ_FRAG.need;(got.pieces||(got.pieces=[])).push(id);}}
  for(const [k,n] of Object.entries(loot?.tr||{})){if(!R.CQ_TROPHY[k])continue;add(got,'tr',k,int(n));v.tr[k]+=int(n);}
  if(full.length)got.full=full;

@@ -10,6 +10,7 @@ import {bankMinerals} from './conquest-airdrop.js';
 import {trophyScore,trophySet} from './conquest-loot.js';
 import {orderEvent} from './conquest-orders.js';
 import {track} from './conquest-analytics.js';
+import {tick as researchTick} from './conquest-research.js';
 const P=CONQUEST.Plot,DAY=86400000;
 export const PLOT_ACTIONS=['plot-site','plot-build','plot-upgrade','plot-move','plot-remove','plot-wall','plot-collect','plot-drill','plot-banner','plot-theme','plot-feed','plot-research','plot-repair','plot-layout','plot-name'];
 // Which plot actions may run from the MAP (remote command): upgrades spend already-banked goods, as before Session 5.
@@ -31,10 +32,12 @@ export function plotSync(s,now){const b=s.base;if(!b?.tier&&!s.plot)return null;
  p.ext=record(p.ext)?p.ext:{};p.ext.r=p.ext.r|0;p.ext.d=p.ext.d|0;p.ext.w=Math.max(p.ext.w|0,b?.defense?.wins|0);p.cm=Math.max(0,Number(p.cm)||0);p.fh=Math.max(0,Number(p.fh)||0);
  if(p.theme&&typeof p.theme==='object')p.theme.decor=Array.isArray(p.theme.decor)?p.theme.decor:Object.values(p.theme.decor||{});   // Firebase drops an empty list
  if(!p.b.cc)p.b.cc={t:'cc',...(P.autoPlace(p,'cc')||{i:37,j:37,r:0}),l:p.cc|0};
+ if(p.job?.t==='repair'&&p.job.ready<=now)researchTick(s,p.job.ready);   // Session 6B: a ruined Science Lab pauses research until the repair crews finish, not until the next request
  const done=P.settle(p,now);if(done)s.notice={kind:'plot-built',type:done.t,level:done.l};
  for(const k of Object.keys(p.dmg))if(!P.maxHpOf(p,k)||!(Number(p.dmg[k])>0))delete p.dmg[k];   // damage of a structure that no longer exists
  P.accrue(p,now);b.tier=P.tierOf(p.cc);b.modules=P.modulesOf(p);p.power=P.power(p)+trophyScore(s);p.def=P.defenseRating(p);   // Session 6: +15 Town Score per trophy type held
  p.gar={n:P.garrisonSlots(p),t:Array.isArray(p.gar?.t)?p.gar.t:Object.values(p.gar?.t||{})};   // garrison hook: Hangar defenders (Session 7)
+ researchTick(s,now);   // Session 6B: Science Lab jobs run on the Worker clock while the lab stands
  return p;}
 function mnAvail(s,ctx){const have=RULES.mnOf(ctx?.bmn),spent=s.plot?.mnSpent||{},o={};for(const k of P.MNS)o[k]=Math.max(0,(have[k]||0)-(spent[k]||0));return o;}
 // 'cm' is the town's wall composite (whole units); minerals come from the base stores; everything else is banked.
@@ -73,7 +76,8 @@ export function plotAction(s,r,now,ctx={}){const p=s.plot;if(!p)fail('build your
   const b=own(p.b,a.id)?p.b[a.id]:null;if(!b||['cc','storage'].includes(b.t))fail('that building cannot be removed');if(p.job?.id===a.id)fail('wait for construction');
   const back=s.dev?.used?{}:P.turretRefund(b);for(const [k,n] of Object.entries(back)){if(k==='cp')s.ledger.cp+=n;else s.ledger.banked[k]=(s.ledger.banked[k]||0)+n;}   // a turret returns 50% of its cost; other buildings nothing
   delete p.b[a.id];delete p.dmg[a.id];s.notice={kind:'plot-removed',type:b.t,refund:back};return;}
- if(r.action==='plot-wall'){only(['s']);const plan=P.wallPlan(p,a.s,{dev:!!p.devx});if(plan.err)fail(plan.err);debit(s,plan.cost,ctx);for(const c of plan.cells){const k=P.key(c.i,c.j);p.w[k]=c.code;if(c.isNew)delete p.dmg['w:'+k];}   // re-blending a damaged wall keeps its damage (REPAIR fixes it)for(const [c,n] of Object.entries(plan.used||{})){p.ws[c]=(p.ws[c]|0)-n;if(p.ws[c]<=0)delete p.ws[c];}   // cells from storage (a layout switch) are free
+ if(r.action==='plot-wall'){only(['s']);const plan=P.wallPlan(p,a.s,{dev:!!p.devx});if(plan.err)fail(plan.err);debit(s,plan.cost,ctx);for(const c of plan.cells){const k=P.key(c.i,c.j);p.w[k]=c.code;if(c.isNew)delete p.dmg['w:'+k];}   // re-blending a damaged wall keeps its damage (REPAIR fixes it)
+  for(const [c,n] of Object.entries(plan.used||{})){p.ws[c]=(p.ws[c]|0)-n;if(p.ws[c]<=0)delete p.ws[c];}   // cells from storage (a layout switch) are free, and leave storage (Session 6B fix: this loop sat after the comment above and never ran)
   s.notice={kind:'plot-wall',n:plan.cells.length,fresh:plan.fresh,skip:plan.skip};return;}
  if(r.action==='plot-feed'){only(['n']);const c=P.caps(p);if(!c.fh)fail('build a Foundry first');if(!int(a.n,1,10000))fail('invalid amount');const room=Math.floor(c.fh-(p.fh||0));if(room<1)fail('the Foundry hopper is full');const n=Math.min(a.n,room);
   debit(s,{alloy:n},ctx);p.fh=(p.fh||0)+n;s.notice={kind:'plot-feed',n};return;}

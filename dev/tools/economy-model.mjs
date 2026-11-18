@@ -15,7 +15,7 @@ const read = f => fs.readFileSync(path.join(repo, f), 'utf8');
 const R = new Function(read('js/rules.js') + `;
  const __tankOf = tankOf;
  tankOf = function (L, n) { const T = __tankOf(L, n); if (L.__hp) T.mhp = Math.round(T.mhp * L.__hp); return T; };
- return { LEAGUE, LG_BASE_PAY, LG_MULT, DAILY_CAP, MODES, teamX, isSolo, ROYALE_PTS, streakPts, powerOf, powerWin, STOCK_L, POWER_K_LIVE };`)();
+ return { RTREE, RTREE_ALL, RTREE_LEG, RS_IDS, CQ_PART_DAY, PASS_LEN, rsQuote, rsSlots, rmodOf, LOOT, CQ_PART_ORDER, PASS_PREM_PARTS, RS_PACKS, RS_LEG_PRICE, rsFinPrice, FITS, FIT_BUDGET, fittingStats, LEAGUE, LG_BASE_PAY, LG_MULT, DAILY_CAP, MODES, teamX, isSolo, ROYALE_PTS, streakPts, powerOf, powerWin, STOCK_L, POWER_K_LIVE };`)();
 
 // ===================================================================================================================
 // PROPOSAL (owner decisions applied; everything else is the lead's proposal)
@@ -152,6 +152,23 @@ const platingPower = [1, 2, 3, 4, 5, 6].map(t => {
   return row;
 });
 const legendNoSkin = { ...GEAR.legend, skin: 'default' }, legendNoMoon = { ...GEAR.legend, w: { a: 'pulse', t: 2, q: 1.1, s: false } };
+// 3b. Session 6B research mods: each mod against the same tank with Stock in that slot (gear rating, live win chance), and the best
+// build with research vs the best build without it on the top kit (owner decision 3: about +8%), and with the Legendary set mods.
+const researchPower = (() => {
+  const rows = [];
+  for (const slot of ['hull', 'mobility', 'mount']) for (const [id, F] of Object.entries(R.FITS[slot])) {
+    if (!F.rs) continue; const row = { id, name: F.n, slot, track: F.rs, set: !!F.set, leg: !!F.leg };
+    for (const k of ['stock', 'legend']) { const L = { ...GEAR[k], mods: {} }, p0 = R.powerOf(L), p1 = R.powerOf({ ...L, mods: { [slot]: id } }); row[k] = { p0, p1, gain: p1 / p0 - 1, liveWin: R.powerWin(p1, p0, 0, true) }; }
+    rows.push(row);
+  }
+  const best = (L, allow) => { let top = null; const opts = sl => Object.keys(R.FITS[sl]).filter(id => allow(R.FITS[sl][id]));
+    for (const h of opts('hull')) for (const m of opts('mobility')) for (const t of opts('mount')) { const mods = { hull: h, mobility: m, mount: t }, f = R.fittingStats(mods); if (f.weight > R.FIT_BUDGET.weight || f.power > R.FIT_BUDGET.power) continue; const p = R.powerOf({ ...L, mods }); if (!top || p > top.p) top = { p, mods }; }
+    return top; };
+  const builds = {};
+  for (const k of ['stock', 'legend']) { const L = GEAR[k], free = best(L, F => !F.rs), rs = best(L, F => !F.leg), leg = best(L, () => true);
+    builds[k] = { free, research: rs, legendary: leg, researchGain: rs.p / free.p - 1, legendaryGain: leg.p / rs.p - 1, researchLiveWin: R.powerWin(rs.p, free.p, 0, true), legendaryLiveWin: R.powerWin(leg.p, rs.p, 0, true), legendaryVsFreeLiveWin: R.powerWin(leg.p, free.p, 0, true) }; }
+  return { rows, builds };
+})();
 const reference = {
   lunarSkin: { gain: R.powerOf(GEAR.legend) / R.powerOf(legendNoSkin) - 1, liveWin: R.powerWin(R.powerOf(GEAR.legend), R.powerOf(legendNoSkin), 0, true) },
   moonbeam: { gain: R.powerOf(GEAR.legend) / R.powerOf(legendNoMoon) - 1, liveWin: R.powerWin(R.powerOf(GEAR.legend), R.powerOf(legendNoMoon), 0, true) },
@@ -264,7 +281,73 @@ const firstBaseMinute = Math.round(hour.at(-1).minute + Math.max(0, 2550 - hour.
 // Output
 // ===================================================================================================================
 const r0 = x => Math.round(x), pct = x => (x * 100).toFixed(1) + '%', daysTxt = d => d === undefined ? '2.5+ yr' : d < 14 ? d + ' d' : d < 60 ? (d / 7).toFixed(1) + ' wk' : (d / 30.4).toFixed(1) + ' mo';
-export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute };
+// ===================================================================================================================
+// Session 6B: research parts and the Science Lab tree (owner, Nov 17: RTREE.cost 2 / 4 / 5 / 9, one EARNED part a day per account,
+// each Legendary set mod also researchable: 30 parts, 8 h, Science Lab III, after its track's set mod). Part income from the real
+// drop tables: LOOT.elite 3% a heavy Parasite with hard pity 20, LOOT.commander 12% a raid won (every raid fields its commander),
+// LOOT.strike 15% a secured Meteor Strike; each drop is one random part of the four (worker/src/conquest-loot.js); only the first
+// CQ_PART_DAY drops of a day are parts (the rest become fragments: no research value). Heavy kills, raids won and strikes come from
+// the same assumptions as dayIncome (P.loot.killsPerMin.heavy, the operation mix and win rates, P.strike). The Lab follows the
+// regular ladder (docs/conquest/audit/model/audit-economy.json: CC3 day 2.8, CC5 day 6): Lab I and II the day after CC3 (both open
+// at CC3), Lab III the day after CC5. One session a day of M minutes: the day's parts arrive at its start, a free slot starts the
+// cheapest job the pilot can pay for (the 16 earned mods and, once open, the 4 Legendary set mods), jobs that end inside the
+// session free their slot for another. Premium (Lunar Pass, every season): +1 slot, jobs x0.75, and PASS_PREM_PARTS on tiers
+// 10/20/30 of each 30-day season (one tier a day: an assumption; the perks start when the Lab store opens: a model of that day).
+// Monte Carlo over fixed seeds: median and 10th / 90th percentile days to the 16th earned mod and to the 4th Legendary.
+// ===================================================================================================================
+const AUDIT_LADDER = JSON.parse(read('docs/conquest/audit/model/audit-economy.json')).profiles.regular.base.hit;
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function opsOfDay(m, d) {   // raids won and strikes secured a day (dayIncome's mix and rates)
+  const aVet = ramp(d, 30, 45), ops = 0.45 * m, mix = d < 1 ? { field: 1 } : d < 7 ? { field: .5, raid_hard: .5 } : d < 30 ? { field: .2, raid_hard: .6, defense: .2 } : { raid_hard: .4 * (1 - aVet) + .1, raid_veteran: .4 * aVet + .1 * (1 - aVet), defense: .2, field: .3 * (1 - aVet) };
+  const tot = Object.values(mix).reduce((a, b) => a + b, 0); let raids = 0;
+  for (const [id, f] of Object.entries(mix)) if (id.startsWith('raid')) raids += ops * (f / tot) / A[id].par * (id === 'raid_hard' ? (d < 7 ? 0.7 : 0.9) : 0.8);
+  const strikes = Math.min(1440 / P.strike.everyMin, (m + P.strike.windowMin) / P.strike.everyMin) * (d < 7 ? 0.6 : d < 21 ? 0.85 : 0.95);
+  return { heavy: P.loot.killsPerMin.heavy * m, raids, strikes };
+}
+export function researchModel({ minutes = 60, premium = false, seeds = 201, days = 1200, cost, passParts = R.PASS_PREM_PARTS, partDay = R.CQ_PART_DAY, legendary = true } = {}) {
+  const T = R.RTREE, cost0 = T.cost.slice(); if (cost) T.cost.splice(0, 4, ...cost);
+  try {
+    const labI = Math.ceil(AUDIT_LADDER.CC3.day) + 1, labIII = Math.ceil(AUDIT_LADDER.CC5.day) + 1, L = R.LOOT, earned = R.RTREE_ALL, legs = R.RTREE_LEG, ids = legendary ? R.RS_IDS : earned, outT = [], outL = [], perDay = [];
+    for (let seed = 1; seed <= seeds; seed++) {
+      const rnd = mulberry(seed * 7919), pt = Object.fromEntries(R.CQ_PART_ORDER.map(k => [k, 0])), rs = { done: {}, jobs: [] };
+      let pity = 0, got = 0, dayGot = 0, tree = null, leg = null, simDays = 0; const carry = { heavy: 0, raids: 0, strikes: 0 };
+      const drop = () => { if (dayGot >= partDay) return; dayGot++; pt[R.CQ_PART_ORDER[Math.floor(rnd() * 4)]]++; got++; };   // past the day's part: a fragment (no research value)
+      const doneAll = (list, t) => list.every(id => rs.done[id]) ? t : null;
+      for (let d = 0; d < days && (tree === null || (legendary && leg === null)); d++) {
+        const o = opsOfDay(minutes, d); dayGot = 0; simDays = d + 1;   // fractional counts carry over day to day, so the income matches the averages
+        for (const k of ['heavy', 'raids', 'strikes']) carry[k] += o[k];
+        while (carry.heavy >= 1) { carry.heavy--; if (rnd() < L.elite.rows.find(r => r.part).p) { drop(); pity = 0; } else if (++pity >= L.elite.pity.part) { drop(); pity = 0; } }
+        while (carry.raids >= 1) { carry.raids--; if (rnd() < L.commander.rows.find(r => r.part).p) drop(); }
+        while (carry.strikes >= 1) { carry.strikes--; if (rnd() < L.strike.rows.find(r => r.part).p) drop(); }
+        const tier = d % R.PASS_LEN + 1; if (premium && passParts[tier]) for (const k of R.CQ_PART_ORDER) pt[k] += passParts[tier];   // bonus parts: never limited
+        const lv = d >= labIII ? 3 : d >= labI ? 2 : 0; if (!lv) continue;
+        // the session: 18:00 to 18:00 + minutes; jobs run on the Worker clock, a slot frees when its job ends
+        const t0 = d * 24 + 18, t1 = t0 + minutes / 60;
+        const settle = t => { for (const j of rs.jobs) if (j.end <= t) rs.done[j.mod] = j.end; rs.jobs = rs.jobs.filter(j => j.end > t); };
+        settle(t0); let t = t0;
+        for (;;) {
+          while (rs.jobs.length < R.rsSlots(lv, premium)) {
+            const q = ids.filter(id => !rs.done[id] && !rs.jobs.some(j => j.mod === id)).map(id => ({ id, q: R.rsQuote(rs, id, lv, premium, {}) })).filter(x => !x.q.err && pt[x.q.part] >= x.q.n).sort((a, b) => a.q.n - b.q.n || a.q.ms - b.q.ms)[0];
+            if (!q) break; pt[q.q.part] -= q.q.n; rs.jobs.push({ mod: q.id, end: t + q.q.ms / 3600000 });
+          }
+          const next = rs.jobs.map(j => j.end).filter(e => e <= t1).sort((a, b) => a - b)[0];
+          if (next === undefined) break; t = next; settle(t);
+        }
+        // a job that runs past the session ends on its own: count the finish when its time comes
+        const fin = list => { const all = list.every(id => rs.done[id] || rs.jobs.some(j => j.mod === id)); return all ? Math.max(...list.map(id => rs.done[id] || rs.jobs.find(j => j.mod === id).end)) / 24 : null; };
+        if (tree === null) tree = fin(earned);
+        if (legendary && leg === null) leg = fin(legs);
+      }
+      outT.push(tree === null ? days : tree); outL.push(leg === null ? days : leg); perDay.push(got / Math.max(1, simDays));   // earned parts a simulated day (the daily limit caps it at CQ_PART_DAY)
+    }
+    const stat = out => { const s = out.slice().sort((a, b) => a - b), q = f => s[Math.min(s.length - 1, Math.floor(f * s.length))], wk = v => Math.round(v / 7 * 10) / 10;
+      return { days: { median: Math.round(q(0.5) * 10) / 10, p10: Math.round(q(0.1) * 10) / 10, p90: Math.round(q(0.9) * 10) / 10 }, weeks: { median: wk(q(0.5)), p10: wk(q(0.1)), p90: wk(q(0.9)) } }; };
+    const tr = stat(outT);
+    return { minutes, premium, seeds, partDay, labDays: { I: labI, III: labIII }, treeParts: R.CQ_PART_ORDER.length * T.cost.reduce((a, b) => a + b, 0), legParts: legs.length * T.leg.n, cost: T.cost.slice(),
+      partsPerDay: Math.round(perDay.reduce((a, b) => a + b, 0) / perDay.length * 100) / 100, days: tr.days, weeks: tr.weeks, ...(legendary ? { legendary: stat(outL) } : {}) };
+  } finally { T.cost.splice(0, 4, ...cost0); }
+}
+export const MODEL = { P, PROFILES, timelines, dailyIncome, firstHour: hour, firstBaseMinute, researchModel };
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 const out = [];
 out.push('## Points a minute (base points = airdrop points), standard pilot\n');
@@ -280,6 +363,10 @@ out.push('| Full set | Max HP | Trait | Power gain, stock kit | Power gain, lege
 for (const p of platingPower) out.push(`| ${p.name} | +${pct(p.setHp)} | ${p.traits ? Object.entries(p.traits).map(([k, v]) => '-' + v * 100 + '% ' + k).join(', ') : '-'} | +${pct(p.stock.gain)} | +${pct(p.legend.gain)} | ${pct(p.legend.liveWin)} |`);
 out.push(`| (reference) Lunar Skin | | | | +${pct(reference.lunarSkin.gain)} | ${pct(reference.lunarSkin.liveWin)} |`);
 out.push(`| (reference) Moonbeam vs Epic Pulse | | | | +${pct(reference.moonbeam.gain)} | ${pct(reference.moonbeam.liveWin)} |`);
+out.push('\n## Research mods: gear rating and live win chance (Session 6B; each vs the same tank with Stock in that slot)\n');
+out.push('| Mod | Slot | Track | Gear rating gain, stock kit | Gear rating gain, top kit | Live win vs the same tank without it |'); out.push('|---|---|---|---:|---:|---:|');
+for (const r of researchPower.rows) out.push(`| ${r.leg ? '★ ' : r.set ? '◆ ' : ''}${r.name}${r.leg ? ' (Legendary)' : ''} | ${r.slot} | ${R.RTREE.tracks[r.track].n} | +${pct(r.stock.gain)} | +${pct(r.legend.gain)} | ${pct(r.legend.liveWin)} |`);
+for (const [k, B] of Object.entries(researchPower.builds)) out.push(`\n${k === 'legend' ? 'Top' : 'Stock'} kit, best builds: without research ${B.free.p} (${Object.values(B.free.mods).join(' / ')}), with research ${B.research.p} (${Object.values(B.research.mods).join(' / ')}, +${pct(B.researchGain)}, live win ${pct(B.researchLiveWin)}), with the Legendary set mods ${B.legendary.p} (${Object.values(B.legendary.mods).join(' / ')}, +${pct(B.legendaryGain)} over research, live win ${pct(B.legendaryLiveWin)}; ${pct(B.legendaryVsFreeLiveWin)} vs the best build without research).`);
 out.push('\n## Time to each full armor set (first plate in brackets)\n');
 out.push('| Profile | ' + [1, 2, 3, 4, 5, 6].map(t => TIER_NAMES[t]).join(' | ') + ' |'); out.push('|---|' + '---:|'.repeat(6));
 for (const T of Object.values(timelines)) out.push(`| ${T.label} | ` + [1, 2, 3, 4, 5, 6].map(t => `${daysTxt(T.full[t])} (${daysTxt(T.first[t])})`).join(' | ') + ' |');
@@ -290,12 +377,17 @@ out.push('\n## First hour (new pilot, stock kit, Rookie)\n');
 out.push('| Minute | What happens | Points | CP | Ferrite | Ilmenite | Armalcolite | Plates |'); out.push('|---:|---|---:|---:|---:|---:|---:|---:|');
 for (const h of hour) out.push(`| ${h.minute} | ${h.what} | ${h.pts} | ${h.cp} | ${h.fe} | ${h.il} | ${h.ar} | ${h.plates} |`);
 out.push(`\nCommand Base I (2,550 CP binds): about minute ${firstBaseMinute} at the last segment's CP rate (modeled).`);
+const research = { light: researchModel({ minutes: 30 }), free: researchModel({ minutes: 60 }), heavy: researchModel({ minutes: 120 }), pass: researchModel({ minutes: 60, premium: true }) };
+const RLAB = { light: '30 min/day, free', free: '60 min/day, free', heavy: '120 min/day, free', pass: '60 min/day, Lunar Pass premium (every season)' };
+out.push('\n## Science Lab: days to the whole earned tree (16 mods) and to all four Legendary set mods (their free research path), regular pilot, both slots (Session 6B finish)\n');
+out.push('| Pilot | Earned parts a day | Tree parts | Lab I / III day | Earned tree: days, median (10th-90th) | weeks | All four Legendary: days, median (10th-90th) |'); out.push('|---|---:|---:|---:|---|---:|---|');
+for (const [k, r] of Object.entries(research)) out.push(`| ${RLAB[k]} | ${r.partsPerDay} | ${r.treeParts} | ${r.labDays.I} / ${r.labDays.III} | ${r.days.median} (${r.days.p10}-${r.days.p90}) | ${r.weeks.median} | ${r.legendary.days.median} (${r.legendary.days.p10}-${r.legendary.days.p90}) |`);
 if (isMain) console.log(out.join('\n'));
 
 if (isMain && process.argv.includes('--write')) {
   const model = {
     generatedBy: 'dev/tools/economy-model.mjs', status: 'PROPOSAL for owner approval (Phase 0); modeled, not playtested',
-    proposal: P, kitModel: KIT_MODEL, arcadePpm, conquestPpm, settled: SETTLED, platingPower, reference, timelines, dailyIncome, firstHour: hour, firstBaseMinute,
+    proposal: P, kitModel: KIT_MODEL, arcadePpm, conquestPpm, settled: SETTLED, platingPower, researchPower, reference, timelines, dailyIncome, firstHour: hour, firstBaseMinute, research,
   };
   fs.mkdirSync(path.join(repo, 'docs/economy'), { recursive: true });
   fs.writeFileSync(path.join(repo, 'docs/economy/economy-model.json'), JSON.stringify(model, (k, v) => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v, 1) + '\n');

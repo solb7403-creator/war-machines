@@ -537,6 +537,42 @@ The armor ladder runs from a small first step to a long-term goal. At the top it
 - **AI pilots** never get plating. AI never copies a player's gear, and its strength curve already follows your power.
 - **Conquest** reads the same canonical loadout. It applies the HP and the traits through the existing loadout refit.
 
+### 6.5 Research mods (Session 6B, Science Lab)
+
+Sixteen earned mods (three a track plus its set mod, four tracks) and four Legendary set mods add **new options** in the existing hull, mobility and mount slots, one per slot. Each has one behavior with a felt trade-off; full strength in every mode; part of the canonical loadout, so they count in gear rating, league and matchmaking like plating. Ownership is read only from the server record: a researched mod (`eco.rm`); a Legendary set mod researched in the Science Lab (its free path, `eco.rm`) or bought (`eco.lsm`): one ownership. The existing options, chassis, weapons, plates and legendaries are unchanged. Gear rating (`powerOf`) values each behavior from its numbers (`rmodPe`), so the set mod is the strongest option in its slot and the Legendary a step above. Live win chance uses `POWER_K_LIVE`. Retuned in the Session 6B finish toward the measured duels (Overdrive, Momentum), with lighter trade-offs for Momentum (-2% hull), Overdrive and Hyperdrive (-1%); Hyperdrive's step is +10% top speed.
+
+| Mod | Slot | Track | Gear rating gain, stock kit | Gear rating gain, top kit | Live win vs the same tank without it |
+|---|---|---|---:|---:|---:|
+| Heat Sink Plating | hull | Thermal | +1.5% | +1.7% | 51.3% |
+| Momentum Plating | hull | Drive | +1.5% | +1.3% | 51.0% |
+| Capacitor Bank | hull | Field | +1.5% | +2.1% | 51.6% |
+| Reflector Field | hull | Field | +1.5% | +2.1% | 51.6% |
+| ◆ Aegis Matrix (set) | hull | Field | +2.9% | +3.4% | 52.6% |
+| ★ Aegis Prime (Legendary) | hull | Field | +4.4% | +6.0% | 54.5% |
+| Predictor Gyro | mobility | Ballistics | +1.5% | +2.1% | 51.6% |
+| Traction Servo | mobility | Drive | +2.9% | +1.7% | 51.3% |
+| Ram Servo | mobility | Drive | +1.5% | +1.7% | 51.3% |
+| Reflex Skirts | mobility | Field | +1.5% | +2.6% | 52.0% |
+| ◆ Overdrive (set) | mobility | Drive | +2.9% | +3.0% | 52.3% |
+| ★ Hyperdrive (Legendary) | mobility | Drive | +5.9% | +5.5% | 54.2% |
+| Vent Barrel | mount | Thermal | +1.5% | +1.7% | 51.3% |
+| Overclock Breech | mount | Thermal | +1.5% | +1.7% | 51.3% |
+| ◆ Inferno Core (set) | mount | Thermal | +4.4% | +3.4% | 52.6% |
+| ★ Sunfire Core (Legendary) | mount | Thermal | +5.9% | +5.5% | 54.2% |
+| Penetrator Coil | mount | Ballistics | +1.5% | +1.7% | 51.3% |
+| Marksman Coil | mount | Ballistics | +1.5% | +1.7% | 51.3% |
+| ◆ Rail Driver (set) | mount | Ballistics | +2.9% | +3.0% | 52.3% |
+| ★ Starfall Driver (Legendary) | mount | Ballistics | +5.9% | +5.1% | 53.9% |
+
+**Best builds (the owner's bands, enforced by `dev/tests/owner-rules.mjs`: research about +8% over the best free build, the Legendary set mods about +7% over the best research build, both ±1 point, top kit):**
+
+| Kit | Best without research | Best with research | Best with the Legendary set mods |
+|---|---:|---:|---:|
+| Top (legend) kit | 240 (Plates / Stable / Stock) | **259 (+7.9%)**, live win 55.9% | **276 (+6.6% over research)**, live win 54.9% vs research, 60.7% vs no research |
+| Stock kit | 70 | 74 (+5.7%), live win 54.3% | 80 (+8.1% over research) |
+
+**Measured** (`dev/tools/mod-power.mjs`, the real server sim, 240 duels a mod a kit, both sides the same pilot; `docs/conquest/session6b/mod-power.json`, re-run after the retune): with the Session 2 human-pilot profile Overdrive measures 49.6% vs 52.4% predicted on the top kit and Momentum 48.3% vs 51.0% (both within one standard error now; before the retune bots sat 4-6 standard errors off). Overdrive, the Drive set mod, still performs about like Stock for both pilot profiles: no profile chains dashes (0.32 dashes a duel for the human profile, 1.1 for bots), so a human's dash value stays unmeasured (open item). Hyperdrive measured byte-identical to Overdrive while its step was charges and refill; with +10% top speed it measures 55.0% vs Stock and 55.6% vs Overdrive (human profile), 54.2% vs Stock for bots on the epic kit. Scripted bots under-use dashes, rams and standing still, so those mods measure low with bots; the rating keeps the value a human pilot reaches.
+
 ---
 
 ## 7. Timelines
@@ -603,6 +639,21 @@ The Arcade-only rare set takes about 3 months (owner target). Against the owner'
 
 Every column keeps moving. In month 1 there is a new milestone every 1–3 days. After month 3 there is a new plate every 3–6 weeks, plus the base-builder and competitive ladders.
 
+### 7.5 Science Lab: the earned tree and the Legendary set mods (Session 6B finish, `dev/tools/economy-model.mjs researchModel`)
+
+Research costs research parts and time only. Parts drop from heavy Parasites (3%, never more than 20 without one), raid commanders (12% a raid won) and secured Meteor Strikes (15%), one random part of four a drop. **One earned part a day per account** (the UTC day, counted by the Worker when the part reaches the inventory): a part found after it becomes one blueprint fragment of its source's pool (heavy Parasites uncommon, the pity part too; raid commanders and Meteor Strikes rare), cosmetic only, never points. Parts from Lab store packs and the Lunar Pass are not limited. The tree costs **2 / 4 / 5 / 9** parts a track (20 a track, 80 in all; owner, Nov 17) and 46 hours on the Worker clock (Thermal and Ballistics mods 20 min, Drive and Field 2 h, set mods 8 h); one slot, a second at Science Lab III. Each Legendary set mod also has a **free research path**: 30 of its track's part and 8 h, once Science Lab III stands and its track's set mod is researched (four of them: 120 parts). The Lab follows the regular town ladder: Lab I and II on day 4, Lab III on day 7. Model: 201 seeds, medians with the 10th–90th percentile.
+
+| Pilot | Earned parts a day | Whole earned tree (16 mods): days | weeks | All four Legendary set mods: days |
+|---|---:|---|---:|---|
+| 30 min/day, free | 0.42 | 240 (210–280) | 34.3 | 550 (508–627) |
+| 60 min/day, free | 0.66 | **149 (131–171)** | 21.3 | **343 (321–377)** |
+| 120 min/day, free | 0.90 | 107 (97–126) | 15.3 | 253 (235–278) |
+| 60 min/day, Lunar Pass premium every season (+1 slot, jobs 25% faster, 1 of each part on tiers 10/20/30), once the Lab store opens | 0.66 + pass parts | 90 (80–100) | 12.9 | 210 (200–230) |
+
+These days are report numbers, not targets (the earlier "6–10 weeks" target was never the owner's and was removed). The owner's planning check (Nov 17) gave 237 / 149 / 108 / 91 days for the tree and 545 / 347 / 251 for the Legendaries: this run lands within 2%. For comparison (owner's planning research): Clash Royale takes a free player 12–18 months to max one 8-card deck; Clash of Clans' lab alone 11–12 months (fan estimates); War Robots about 3 months of upgrades per item.
+
+Part packs (§9.3) only speed this up; checkout is off.
+
 ---
 
 ## 8. Sinks and balance health
@@ -652,6 +703,21 @@ Checkout stays **DISABLED** for every item below until payments are certified (`
 | Plate finishes (cosmetic) | tank session | premium looks for plates (trim, glow colors) | none | looks only; the tier stays readable |
 | Raid shields | competitive / PvP base-raid session | protection from player raids for a while | protection in a steal system | only once PvP base raids exist (`base.pvpAvailable=false` today); free shields after being raided; earnable shields; never against PvE alerts |
 | Lunar Pass perks | existing pass (13 TON / 799 Stars) | already halves RECALL; could add scanner range and plate finishes | none | the existing rule holds: the premium track never gives points; never rare+ minerals |
+
+### 9.3 Science Lab store (Session 6B; proposals; checkout OFF in every currency)
+
+Real store entries with **no checkout**: `LAB_STORE_OPEN=false` and the Worker refuses every Lab kind (no Stars invoice, no TON or SOL grant). Prices are priced like the shop: Stars and TON at the shop's own rates (77 Stars and 1.25 TON a dollar; 61.5–62.5 Stars a TON), SOL at the live TON rate. Telegram shows Stars; the website shows TON and SOL. Nothing here gives points.
+
+| Entry | What it gives | Stars | TON | Limit |
+|---|---|---:|---:|---|
+| Instant finish | ends the running research job now | 8 (20 min left) · 31 (2 h) · 100 (8 h) | 0.13 · 0.50 · 1.61 | priced by the time left: $0.22 × hours^0.85, 5-minute steps, $0.10 minimum (the genre's concave skip curve; Clash of Clans ~20 gems an hour, ~260 a day) |
+| Field kit | +1 of every research part (4) | 99 | 1.6 | one a UTC week |
+| Lab crate | +3 of every part (12) | 249 | 4 | one a UTC week |
+| Research cache | +8 of every part (32) | 599 | 9.6 | one a UTC week |
+| Legendary set mod (Sunfire Core, Starfall Driver, Hyperdrive, Aegis Prime), each | a step stronger than the earned set mod of its track (§6.5); **also free in the Science Lab** (30 of its track's part, 8 h, Science Lab III, after that set mod) | 599 | 9.6 | on sale only after that track's earned set mod is researched (Science Lab III alone never opens it); one ownership: researched or being researched = not for sale, bought = never researched, a refund removes only a bought one |
+| Lunar Pass premium perks (the existing pass, 799 Stars / 13 TON) | +1 research slot, research 25% faster, 1 of each part on premium tiers 10, 20 and 30 | — | — | start only when the Lab store opens (`LAB_STORE_OPEN`, `passResearch`): until then the pass is unchanged and shows them as coming; the premium track never gives points; season dates unchanged |
+
+What a free pilot needs is in §7.5 (the earned tree in about 149 days at 60 min a day, every Legendary free in about 343). **PROPOSAL for the owner, before the Lab store opens (Lab store pacing):** with the gates as built, a pilot who buys every pack can finish the tree and buy all four Legendary set mods in about 8–9 days (Science Lab III is the gate; pack weeks start Monday 00:00 UTC, so two weeks of packs fit inside the first seven days). One option from the planning: one Legendary set mod a UTC week; under the owner's revenue rules of Nov 16-17 the lead's recommendation is to keep the gates as built (a weekly limit delays revenue and invites churn before the purchase, and live rooms already seat by power). For scale (reviewer 2's count at the proposed prices): a payer exhausts the Lab by about day 9 for about 4,924 Stars (about $64: two pack weeks 1,894, four Legendary set mods 2,396, every skip 634). Recorded on the roadmap (row 8); nothing is on sale.
 
 ---
 

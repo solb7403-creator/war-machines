@@ -112,7 +112,7 @@ const BUILDINGS=T({
  helium:T({n:'Helium Extractor',w:2,d:2,max:5,cc:3,pw:2,count:[[3,1],[7,2],[10,3]],cost:grow({cp:200,alloy:10,biomass:5},2.4,5),prod:{helium:.45},desc:'Helium-3 from the regolith.'}),
  radar:T({n:'Radar',w:2,d:2,max:5,cc:3,pw:2,count:[[3,1]],cost:grow({cp:200,alloy:10,helium:2},2.4,5),mod:'radar',desc:'Longer SCAN pulses and real radar contacts in the field.'}),
  shield:T({n:'Shield Generator',w:2,d:2,max:5,cc:3,pw:3,count:[[3,1],[6,2],[9,3]],cost:grow({cp:240,alloy:14,helium:2},2.4,5),mod:'defense',desc:'Protective field: less damage at your base and in raids near it.'}),
- lab:T({n:'Science Lab',w:3,d:3,max:3,cc:3,pw:2,count:[[3,1]],cost:grow({cp:320,alloy:18,biomass:8,helium:3},2.4,3),time:TIME3,vital:'secondary',desc:'Built and upgradable now; its research tree (tank mods) is coming soon. A vital: raiders target it.'}),
+ lab:T({n:'Science Lab',w:3,d:3,max:3,cc:3,pw:2,count:[[3,1]],cost:grow({cp:320,alloy:18,biomass:8,helium:3},2.4,3),time:TIME3,vital:'secondary',desc:'Research new tank mods from the parts you find: Thermal and Ballistics at level I, Drive and Field at II, the set mods and a second research slot at III. A vital: if raiders ruin it, research pauses until you repair it.'}),
  uplink:T({n:'Uplink',w:2,d:2,max:5,cc:4,pw:2,count:[[4,1]],cost:grow({cp:260,alloy:14,helium:3},2.4,5),mod:'uplink',desc:'+10% Daily Base Yield CP per level (up to III).'}),
  trophy:T({n:'Trophy Hall',w:3,d:3,max:3,cc:5,pw:1,count:[[5,1]],cost:grow({cp:300,alloy:16},2.4,3),time:TIME3,desc:'Defeated commanders, legendary minerals and future ladder trophies.'}),
  // Eleven turret types (owner decision 7), unlocked across CC levels so early choices stay simple. dt: damage type.
